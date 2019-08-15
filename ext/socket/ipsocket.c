@@ -99,6 +99,11 @@ init_inetsock_internal(struct inetsock_arg *arg)
 	}
 	else {
 	    if (lres) {
+#if !defined(_WIN32) && !defined(__CYGWIN__)
+                status = 1;
+                setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
+                           (char*)&status, (socklen_t)sizeof(status));
+#endif
 		status = bind(fd, lres->ai_addr, lres->ai_addrlen);
 		local = status;
 		syscall = "bind(2)";
@@ -187,6 +192,43 @@ rsock_revlookup_flag(VALUE revlookup, int *norevlookup)
     }
     return 0;
 #undef return_norevlookup
+}
+
+/*
+ * call-seq:
+ *   ipsocket.inspect   -> string
+ *
+ * Return a string describing this IPSocket object.
+ */
+static VALUE
+ip_inspect(VALUE sock)
+{
+    VALUE str = rb_call_super(0, 0);
+    rb_io_t *fptr = RFILE(sock)->fptr;
+    union_sockaddr addr;
+    socklen_t len = (socklen_t)sizeof addr;
+    ID id;
+    if (fptr && fptr->fd >= 0 &&
+	getsockname(fptr->fd, &addr.addr, &len) >= 0 &&
+	(id = rsock_intern_family(addr.addr.sa_family)) != 0) {
+	VALUE family = rb_id2str(id);
+	char hbuf[1024], pbuf[1024];
+	long slen = RSTRING_LEN(str);
+	const char last = (slen > 1 && RSTRING_PTR(str)[slen - 1] == '>') ?
+	    (--slen, '>') : 0;
+	str = rb_str_subseq(str, 0, slen);
+	rb_str_cat_cstr(str, ", ");
+	rb_str_append(str, family);
+	if (!rb_getnameinfo(&addr.addr, len, hbuf, sizeof(hbuf),
+			    pbuf, sizeof(pbuf), NI_NUMERICHOST | NI_NUMERICSERV)) {
+	    rb_str_cat_cstr(str, ", ");
+	    rb_str_cat_cstr(str, hbuf);
+	    rb_str_cat_cstr(str, ", ");
+	    rb_str_cat_cstr(str, pbuf);
+	}
+	if (last) rb_str_cat(str, &last, 1);
+    }
+    return str;
 }
 
 /*
@@ -332,6 +374,7 @@ rsock_init_ipsocket(void)
      * IPSocket is the super class of TCPSocket and UDPSocket.
      */
     rb_cIPSocket = rb_define_class("IPSocket", rb_cBasicSocket);
+    rb_define_method(rb_cIPSocket, "inspect", ip_inspect, 0);
     rb_define_method(rb_cIPSocket, "addr", ip_addr, -1);
     rb_define_method(rb_cIPSocket, "peeraddr", ip_peeraddr, -1);
     rb_define_method(rb_cIPSocket, "recvfrom", ip_recvfrom, -1);

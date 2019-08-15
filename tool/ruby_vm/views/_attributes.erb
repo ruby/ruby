@@ -1,0 +1,35 @@
+%# -*- C -*-
+%# Copyright (c) 2017 Urabe, Shyouhei.  All rights reserved.
+%#
+%# This file is a part of  the programming language Ruby.  Permission is hereby
+%# granted, to either  redistribute and/or modify this file,  provided that the
+%# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+%#
+#ifndef RUBY_VM_EXEC_H
+/* can't #include "vm_exec.h" here... */
+typedef long OFFSET;
+typedef unsigned long lindex_t;
+typedef VALUE GENTRY;
+typedef rb_iseq_t *ISEQ;
+#endif
+
+% attrs = RubyVM::Instructions.map(&:attributes).flatten
+%
+% attrs.each do |a|
+PUREFUNC(MAYBE_UNUSED(static <%= a.declaration %>));
+% end
+%
+% attrs.each do |a|
+
+/* <%= a.pretty_name %> */
+<%= a.definition %>
+{
+% str = render_c_expr a.expr
+% case str when /\A#/ then
+    return
+<%= str -%>
+% else
+    return <%= str -%>
+% end
+}
+% end

@@ -88,7 +88,7 @@ class TestComparable < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, 'min argument must be smaller than max argument') {
       @o.clamp(2, 1)
     }
-   end
+  end
 
   def test_err
     assert_raise(ArgumentError) { 1.0 < nil }

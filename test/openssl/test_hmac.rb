@@ -1,33 +1,28 @@
-# coding: UTF-8
 # frozen_string_literal: false
-
 require_relative 'utils'
 
+if defined?(OpenSSL)
+
 class OpenSSL::TestHMAC < OpenSSL::TestCase
-  def setup
-    @digest = OpenSSL::Digest::MD5
-    @key = "KEY"
-    @data = "DATA"
-    @h1 = OpenSSL::HMAC.new(@key, @digest.new)
-    @h2 = OpenSSL::HMAC.new(@key, "MD5")
-  end
-
   def test_hmac
-    @h1.update(@data)
-    @h2.update(@data)
-    assert_equal(@h1.digest, @h2.digest)
+    # RFC 2202 2. Test Cases for HMAC-MD5
+    hmac = OpenSSL::HMAC.new(["0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"].pack("H*"), "MD5")
+    hmac.update("Hi There")
+    assert_equal ["9294727a3638bb1c13f48ef8158bfc9d"].pack("H*"), hmac.digest
+    assert_equal "9294727a3638bb1c13f48ef8158bfc9d", hmac.hexdigest
 
-    assert_equal(OpenSSL::HMAC.digest(@digest.new, @key, @data), @h1.digest, "digest")
-    assert_equal(OpenSSL::HMAC.hexdigest(@digest.new, @key, @data), @h1.hexdigest, "hexdigest")
-
-    assert_equal(OpenSSL::HMAC.digest("MD5", @key, @data), @h2.digest, "digest")
-    assert_equal(OpenSSL::HMAC.hexdigest("MD5", @key, @data), @h2.hexdigest, "hexdigest")
+    # RFC 4231 4.2. Test Case 1
+    hmac = OpenSSL::HMAC.new(["0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"].pack("H*"), "SHA224")
+    hmac.update("Hi There")
+    assert_equal ["896fb1128abbdf196832107cd49df33f47b4b1169912ba4f53684b22"].pack("H*"), hmac.digest
+    assert_equal "896fb1128abbdf196832107cd49df33f47b4b1169912ba4f53684b22", hmac.hexdigest
   end
 
   def test_dup
-    @h1.update(@data)
-    h = @h1.dup
-    assert_equal(@h1.digest, h.digest, "dup digest")
+    h1 = OpenSSL::HMAC.new("KEY", "MD5")
+    h1.update("DATA")
+    h = h1.dup
+    assert_equal(h1.digest, h.digest, "dup digest")
   end
 
   def test_binary_update
@@ -38,9 +33,12 @@ class OpenSSL::TestHMAC < OpenSSL::TestCase
   end
 
   def test_reset_keep_key
-    first = @h1.update("test").hexdigest
-    @h2.reset
-    second = @h2.update("test").hexdigest
+    h1 = OpenSSL::HMAC.new("KEY", "MD5")
+    first = h1.update("test").hexdigest
+    h1.reset
+    second = h1.update("test").hexdigest
     assert_equal first, second
   end
-end if defined?(OpenSSL::TestUtils)
+end
+
+end

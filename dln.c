@@ -22,6 +22,7 @@
 static void dln_loaderror(const char *format, ...);
 #endif
 #include "dln.h"
+#include "internal.h"
 
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
@@ -231,13 +232,13 @@ load_header(int fd, struct exec *hdrp, long disp)
 #  define R_RIGHTSHIFT(r)	(reloc_r_rightshift[(r)->r_type])
 #  define R_BITSIZE(r) 		(reloc_r_bitsize[(r)->r_type])
 #  define R_LENGTH(r)		(reloc_r_length[(r)->r_type])
-static int reloc_r_rightshift[] = {
+static const int reloc_r_rightshift[] = {
   0, 0, 0, 0, 0, 0, 2, 2, 10, 0, 0, 0, 0, 0, 0,
 };
-static int reloc_r_bitsize[] = {
+static const int reloc_r_bitsize[] = {
   8, 16, 32, 8, 16, 32, 30, 22, 22, 22, 13, 10, 32, 32, 16,
 };
-static int reloc_r_length[] = {
+static const int reloc_r_length[] = {
   0, 1, 2, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 };
 #  define R_PCREL(r) \
@@ -1170,7 +1171,7 @@ dln_strerror(void)
 }
 #endif
 
-#if defined(_AIX) && ! defined(_IA64)
+#if defined(_AIX)
 static void
 aix_loaderror(const char *pathname)
 {
@@ -1242,6 +1243,20 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
 #define translit_separator(str) (void)(str)
 #endif
 
+#ifdef USE_DLN_DLOPEN
+COMPILER_WARNING_PUSH
+#if defined(__clang__) || GCC_VERSION_SINCE(4, 2, 0)
+COMPILER_WARNING_IGNORED(-Wpedantic)
+#endif
+static bool
+dln_incompatible_library_p(void *handle)
+{
+    void *ex = dlsym(handle, EXTERNAL_PREFIX"ruby_xmalloc");
+    return ex && ex != ruby_xmalloc;
+}
+COMPILER_WARNING_POP
+#endif
+
 void*
 dln_load(const char *file)
 {
@@ -1250,7 +1265,6 @@ dln_load(const char *file)
 #endif
 #if !defined(_AIX) && !defined(NeXT)
     const char *error = 0;
-#define DLN_ERROR() (error = dln_strerror(), strcpy(ALLOCA_N(char, strlen(error) + 1), error))
 #endif
 
 #if defined _WIN32
@@ -1330,10 +1344,11 @@ dln_load(const char *file)
 	}
 # if defined RUBY_EXPORT
 	{
-	    void *ex = dlsym(handle, EXTERNAL_PREFIX"ruby_xmalloc");
-	    if (ex && ex != ruby_xmalloc) {
+	    if (dln_incompatible_library_p(handle)) {
 
-#   if defined __APPLE__
+#   if defined __APPLE__ && \
+    defined(MAC_OS_X_VERSION_MIN_REQUIRED) && \
+    (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_11)
 		/* dlclose() segfaults */
 		rb_fatal("%s - %s", incompatible, file);
 #   else
@@ -1347,7 +1362,8 @@ dln_load(const char *file)
 
 	init_fct = (void(*)())(VALUE)dlsym(handle, buf);
 	if (init_fct == NULL) {
-	    error = DLN_ERROR();
+	    const size_t errlen = strlen(error = dln_strerror()) + 1;
+	    error = memcpy(ALLOCA_N(char, errlen), error, errlen);
 	    dlclose(handle);
 	    goto failed;
 	}
@@ -1384,7 +1400,7 @@ dln_load(const char *file)
     }
 #endif /* hpux */
 
-#if defined(_AIX) && ! defined(_IA64)
+#if defined(_AIX)
 #define DLN_DEFINED
     {
 	void (*init_fct)();

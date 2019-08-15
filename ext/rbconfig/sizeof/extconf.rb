@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-$srcs = %w[sizes.c]
+$srcs = %w[sizes.c limits.c]
 $distcleanfiles.concat($srcs)
 
 have_type('int_least8_t')

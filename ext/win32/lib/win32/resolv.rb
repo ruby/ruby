@@ -42,24 +42,39 @@ begin
 rescue LoadError
 end
 
-nt = Module.new do
-  break true if [nil].pack("p").size > 4
-  extend Importer
-  dlload "kernel32.dll"
-  getv = extern "int GetVersionExA(void *)", :stdcall
-  info = [ 148, 0, 0, 0, 0 ].pack('V5') + "\0" * 128
-  getv.call(info)
-  break info.unpack('V5')[4] == 2  # VER_PLATFORM_WIN32_NT
+if [nil].pack("p").size <= 4 # 32bit env
+  begin
+    f = Fiddle
+    osid = f::Handle.new["rb_w32_osid"]
+  rescue f::DLError # not ix86, cannot be Windows 9x
+  else
+    if f::Function.new(osid, [], f::TYPE_INT).call < 2  # VER_PLATFORM_WIN32_NT
+      require_relative 'resolv9x'
+      return
+    end
+  end
 end
-if not nt
-  require_relative 'resolv9x'
-  # return # does not work yet
-else
+
 module Win32
 #====================================================================
 # Windows NT
 #====================================================================
   module Resolv
+    module SZ
+      refine Registry do
+        # ad hoc workaround for broken registry
+        def read_s(key)
+          type, str = read(key)
+          unless type == Registry::REG_SZ
+            warn "Broken registry, #{name}\\#{key} was #{Registry.type2name(type)}, ignored"
+            return String.new
+          end
+          str
+        end
+      end
+    end
+    using SZ
+
     TCPIP_NT = 'SYSTEM\CurrentControlSet\Services\Tcpip\Parameters'
 
     class << self
@@ -130,5 +145,4 @@ module Win32
       end
     end
   end
-end
 end

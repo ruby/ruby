@@ -1222,12 +1222,10 @@ yaml_parser_roll_indent(yaml_parser_t *parser, ptrdiff_t column,
         if (!PUSH(parser, parser->indents, parser->indent))
             return 0;
 
-#if PTRDIFF_MAX > INT_MAX
         if (column > INT_MAX) {
             parser->error = YAML_MEMORY_ERROR;
             return 0;
         }
-#endif
 
         parser->indent = (int)column;
 
@@ -1638,7 +1636,7 @@ yaml_parser_fetch_key(yaml_parser_t *parser)
 
     if (!parser->flow_level)
     {
-        /* Check if we are allowed to start a new key (not nessesary simple). */
+        /* Check if we are allowed to start a new key (not necessary simple). */
 
         if (!parser->simple_key_allowed) {
             return yaml_parser_set_scanner_error(parser, NULL, parser->mark,
@@ -2401,7 +2399,7 @@ yaml_parser_scan_tag(yaml_parser_t *parser, yaml_token_t *token)
     {
         /* Set the handle to '' */
 
-        handle = yaml_malloc(1);
+        handle = YAML_MALLOC(1);
         if (!handle) goto error;
         handle[0] = '\0';
 
@@ -2453,7 +2451,7 @@ yaml_parser_scan_tag(yaml_parser_t *parser, yaml_token_t *token)
             /* Set the handle to '!'. */
 
             yaml_free(handle);
-            handle = yaml_malloc(2);
+            handle = YAML_MALLOC(2);
             if (!handle) goto error;
             handle[0] = '!';
             handle[1] = '\0';
@@ -3162,8 +3160,8 @@ yaml_parser_scan_flow_scalar(yaml_parser_t *parser, yaml_token_t *token,
                         *(string.pointer++) = '"';
                         break;
 
-                    case '\'':
-                        *(string.pointer++) = '\'';
+                    case '/':
+                        *(string.pointer++) = '/';
                         break;
 
                     case '\\':
@@ -3280,6 +3278,11 @@ yaml_parser_scan_flow_scalar(yaml_parser_t *parser, yaml_token_t *token,
 
         /* Check if we are at the end of the scalar. */
 
+        /* Fix for crash unitialized value crash
+         * Credit for the bug and input is to OSS Fuzz
+         * Credit for the fix to Alex Gaynor
+         */
+        if (!CACHE(parser, 1)) goto error;
         if (CHECK(parser->buffer, single ? '\'' : '"'))
             break;
 
@@ -3504,7 +3507,7 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser, yaml_token_t *token)
         {
             if (IS_BLANK(parser->buffer))
             {
-                /* Check for tab character that abuse indentation. */
+                /* Check for tab characters that abuse indentation. */
 
                 if (leading_blanks && (int)parser->mark.column < indent
                         && IS_TAB(parser->buffer)) {
@@ -3573,4 +3576,3 @@ error:
 
     return 0;
 }
-

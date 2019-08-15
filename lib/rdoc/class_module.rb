@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # ClassModule is the base class for objects representing either a class or a
 # module.
@@ -136,7 +136,9 @@ class RDoc::ClassModule < RDoc::Context
                 normalize_comment comment
               end
 
-    @comment_location.delete_if { |(_, l)| l == location }
+    if location.parser == RDoc::Parser::C
+      @comment_location.delete_if { |(_, l)| l == location }
+    end
 
     @comment_location << [comment, location]
 
@@ -208,7 +210,7 @@ class RDoc::ClassModule < RDoc::Context
                 normalize_comment comment
               end
 
-    comment = "#{@comment}\n---\n#{comment}" unless @comment.empty?
+    comment = "#{@comment.to_s}\n---\n#{comment.to_s}" unless @comment.empty?
 
     super comment
   end

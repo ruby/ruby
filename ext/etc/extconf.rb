@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'mkmf'
 
 headers = []
@@ -12,8 +12,10 @@ have_func("uname((struct utsname *)NULL)", headers)
 have_func("getlogin")
 have_func("getpwent")
 have_func("getgrent")
-sysconfdir = RbConfig.expand(RbConfig::CONFIG["sysconfdir"].dup, "prefix"=>"", "DESTDIR"=>"")
-$defs.push("-DSYSCONFDIR=#{Shellwords.escape(sysconfdir.dump)}")
+if (sysconfdir = RbConfig::CONFIG["sysconfdir"] and
+    !RbConfig.expand(sysconfdir.dup, "prefix"=>"", "DESTDIR"=>"").empty?)
+  $defs.push("-DSYSCONFDIR=#{Shellwords.escape(sysconfdir.dump)}")
+end
 
 have_func("sysconf")
 have_func("confstr")
@@ -38,6 +40,12 @@ have_struct_member('struct passwd', 'pw_comment', 'pwd.h') unless /cygwin/ === R
 have_struct_member('struct passwd', 'pw_expire', 'pwd.h')
 have_struct_member('struct passwd', 'pw_passwd', 'pwd.h')
 have_struct_member('struct group', 'gr_passwd', 'grp.h')
+
+# for https://github.com/ruby/etc
+srcdir = File.expand_path("..", __FILE__)
+if !File.exist?("#{srcdir}/depend")
+  %x[#{RbConfig.ruby} #{srcdir}/mkconstants.rb -o #{srcdir}/constdefs.h]
+end
 
 $distcleanfiles << "constdefs.h"
 

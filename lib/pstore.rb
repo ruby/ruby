@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 # = PStore -- Transactional File Storage for Ruby Objects
 #
 # pstore.rb -
@@ -335,7 +335,7 @@ class PStore
             save_data(checksum, original_data_size, file)
           end
         ensure
-          file.close if !file.closed?
+          file.close
         end
       else
         # This can only occur if read_only == true.

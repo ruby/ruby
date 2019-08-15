@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 # = net/smtp.rb
 #
 # Copyright (c) 1999-2007 Yukihiro Matsumoto.
@@ -17,7 +17,7 @@
 # See Net::SMTP for documentation.
 #
 
-require 'net/protocol'
+require_relative 'protocol'
 require 'digest/md5'
 require 'timeout'
 begin
@@ -38,7 +38,7 @@ module Net
     include SMTPError
   end
 
-  # Represents SMTP error code 420 or 450, a temporary error.
+  # Represents SMTP error code 4xx, a temporary error.
   class SMTPServerBusy < ProtoServerError
     include SMTPError
   end
@@ -585,7 +585,7 @@ module Net
     ensure
       unless @started
         # authentication failed, cancel connection.
-        s.close if s and not s.closed?
+        s.close if s
         @socket = nil
       end
     end
@@ -610,10 +610,8 @@ module Net
     end
 
     def new_internet_message_io(s)
-      io = InternetMessageIO.new(s)
-      io.read_timeout = @read_timeout
-      io.debug_output = @debug_output
-      io
+      InternetMessageIO.new(s, read_timeout: @read_timeout,
+                            debug_output: @debug_output)
     end
 
     def do_helo(helo_domain)
@@ -633,7 +631,7 @@ module Net
     ensure
       @started = false
       @error_occurred = false
-      @socket.close if @socket and not @socket.closed?
+      @socket.close if @socket
       @socket = nil
     end
 
@@ -965,7 +963,7 @@ module Net
     end
 
     def recv_response
-      buf = ''
+      buf = ''.dup
       while true
         line = @socket.readline
         buf << line << "\n"
@@ -1055,9 +1053,9 @@ module Net
       end
 
       # Creates a CRAM-MD5 challenge. You can view more information on CRAM-MD5
-      # on Wikipedia: http://en.wikipedia.org/wiki/CRAM-MD5
+      # on Wikipedia: https://en.wikipedia.org/wiki/CRAM-MD5
       def cram_md5_challenge
-        @string.split(/ /)[1].unpack('m')[0]
+        @string.split(/ /)[1].unpack1('m')
       end
 
       # Returns a hash of the human readable reply text in the response if it

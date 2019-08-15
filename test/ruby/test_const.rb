@@ -48,6 +48,12 @@ class TestConst < Test::Unit::TestCase
     assert_equal 8, TEST4
   end
 
+  def test_const_access_from_nil
+    assert_raise(TypeError) { eval("nil::Object") }
+    assert_raise(TypeError) { eval("c = nil; c::Object") }
+    assert_raise(TypeError) { eval("sc = Class.new; sc::C = nil; sc::C::Object") }
+  end
+
   def test_redefinition
     c = Class.new
     name = "X\u{5b9a 6570}"
@@ -64,5 +70,9 @@ WARNING
 350000.times { FOO = :BAR }
 PRE
     assert_no_memory_leak(%w[-W0 -], '', code, 'redefined constant', timeout: 30)
+  end
+
+  def test_toplevel_lookup
+    assert_raise(NameError, '[Feature #11547]') {TestConst::Object}
   end
 end

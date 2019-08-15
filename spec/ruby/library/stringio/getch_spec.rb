@@ -1,0 +1,44 @@
+# -*- encoding: utf-8 -*-
+require_relative '../../spec_helper'
+require 'stringio'
+require_relative 'shared/getc'
+
+# This method is added by io/console on require.
+describe "StringIO#getch" do
+  require 'io/console'
+
+  it_behaves_like :stringio_getc, :getch
+
+  it "returns the character at the current position" do
+    io = StringIO.new("example")
+
+    io.getch.should == ?e
+    io.getch.should == ?x
+    io.getch.should == ?a
+  end
+
+  it "increments #pos by the byte size of the character in multibyte strings" do
+    io = StringIO.new("föóbar")
+
+    io.getch; io.pos.should == 1 # "f" has byte size 1
+    io.getch; io.pos.should == 3 # "ö" has byte size 2
+    io.getch; io.pos.should == 5 # "ó" has byte size 2
+    io.getch; io.pos.should == 6 # "b" has byte size 1
+  end
+
+  it "returns nil at the end of the string" do
+    # empty string case
+    io = StringIO.new("")
+    io.getch.should == nil
+    io.getch.should == nil
+
+    # non-empty string case
+    io = StringIO.new("a")
+    io.getch # skip one
+    io.getch.should == nil
+  end
+
+  describe "StringIO#getch when self is not readable" do
+    it_behaves_like :stringio_getc_not_readable, :getch
+  end
+end

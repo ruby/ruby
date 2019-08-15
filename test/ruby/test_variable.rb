@@ -116,7 +116,7 @@ class TestVariable < Test::Unit::TestCase
     assert_in_out_err(["-e", "$0='t'*1000;print $0"], "", /\At+\z/, [])
   end
 
-  def test_global_variable_poped
+  def test_global_variable_popped
     assert_nothing_raised {
       EnvUtil.suppress_warning {
         eval("$foo; 1")
@@ -124,7 +124,7 @@ class TestVariable < Test::Unit::TestCase
     }
   end
 
-  def test_constant_poped
+  def test_constant_popped
     assert_nothing_raised {
       EnvUtil.suppress_warning {
         eval("TestVariable::Gods; 1")
@@ -135,16 +135,16 @@ class TestVariable < Test::Unit::TestCase
   def test_special_constant_ivars
     [ true, false, :symbol, "dsym#{rand(9999)}".to_sym, 1, 1.0 ].each do |v|
       assert_empty v.instance_variables
-      msg = "can't modify frozen #{v.class}"
+      msg = "can't modify frozen #{v.class}: #{v.inspect}"
 
-      assert_raise_with_message(RuntimeError, msg) do
+      assert_raise_with_message(FrozenError, msg) do
         v.instance_variable_set(:@foo, :bar)
       end
 
       assert_nil EnvUtil.suppress_warning {v.instance_variable_get(:@foo)}
       assert_not_send([v, :instance_variable_defined?, :@foo])
 
-      assert_raise_with_message(RuntimeError, msg) do
+      assert_raise_with_message(FrozenError, msg) do
         v.remove_instance_variable(:@foo)
       end
     end

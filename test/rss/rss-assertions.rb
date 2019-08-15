@@ -1113,8 +1113,11 @@ EOA
           :xml_content => target.xhtml,
         }
       end
-      _assert_maker_atom_element(feed_type, maker_readers, feed_readers,
-                                 maker_extractor, feed_extractor,
+      _assert_maker_atom_element(feed_type,
+                                 maker_readers, true,
+                                 feed_readers,
+                                 maker_extractor,
+                                 feed_extractor,
                                  &block)
     end
 
@@ -1215,8 +1218,11 @@ EOA
           :content => target.content,
         }
       end
-      _assert_maker_atom_element(feed_type, maker_readers, feed_readers,
-                                 maker_extractor, feed_extractor,
+      _assert_maker_atom_element(feed_type,
+                                 maker_readers, false,
+                                 feed_readers,
+                                 maker_extractor,
+                                 feed_extractor,
                                  &block)
     end
 
@@ -1248,13 +1254,21 @@ EOA
       end
     end
 
-    def _assert_maker_atom_element(feed_type, maker_readers, feed_readers,
-                                   maker_extractor, feed_extractor)
+    def _assert_maker_atom_element(feed_type,
+                                   maker_readers,
+                                   maker_readers_need_block,
+                                   feed_readers,
+                                   maker_extractor,
+                                   feed_extractor)
       _wrap_assertion do
         element = nil
         feed = RSS::Maker.make("atom:#{feed_type}") do |maker|
           yield maker
-          target = chain_reader(maker, maker_readers) {|x| x}
+          if maker_readers_need_block
+            target = chain_reader(maker, maker_readers) {|x| x}
+          else
+            target = chain_reader(maker, maker_readers)
+          end
           element = maker_extractor.call(target)
         end
 
@@ -1462,8 +1476,11 @@ EOA
           :content => target.content,
         }
       end
-      _assert_maker_atom_element(feed_type, maker_readers, feed_readers,
-                                 maker_extractor, feed_extractor,
+      _assert_maker_atom_element(feed_type,
+                                 maker_readers, true,
+                                 feed_readers,
+                                 maker_extractor,
+                                 feed_extractor,
                                  &block)
     end
 
@@ -1505,8 +1522,11 @@ EOA
           :content => target.content,
         }
       end
-      _assert_maker_atom_element(feed_type, maker_readers, feed_readers,
-                                 maker_extractor, feed_extractor,
+      _assert_maker_atom_element(feed_type,
+                                 maker_readers, true,
+                                 feed_readers,
+                                 maker_extractor,
+                                 feed_extractor,
                                  &block)
     end
 
@@ -1623,8 +1643,11 @@ EOA
           :uri => target.content,
         }
       end
-      _assert_maker_atom_element(feed_type, maker_readers, feed_readers,
-                                 maker_extractor, feed_extractor,
+      _assert_maker_atom_element(feed_type,
+                                 maker_readers, true,
+                                 feed_readers,
+                                 maker_extractor,
+                                 feed_extractor,
                                  &block)
     end
 
@@ -1664,8 +1687,11 @@ EOA
           nil
         end
       end
-      _assert_maker_atom_element(feed_type, maker_readers, feed_readers,
-                                 maker_extractor, feed_extractor,
+      _assert_maker_atom_element(feed_type,
+                                 maker_readers, true,
+                                 feed_readers,
+                                 maker_extractor,
+                                 feed_extractor,
                                  &block)
     end
 
@@ -1727,8 +1753,11 @@ EOA
           :out_of_line => target.out_of_line?,
         }
       end
-      _assert_maker_atom_element(feed_type, maker_readers, feed_readers,
-                                 maker_extractor, feed_extractor,
+      _assert_maker_atom_element(feed_type,
+                                 maker_readers, true,
+                                 feed_readers,
+                                 maker_extractor,
+                                 feed_extractor,
                                  &block)
     end
 

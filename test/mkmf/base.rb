@@ -1,5 +1,13 @@
 # frozen_string_literal: false
 $extmk = true
+require 'rbconfig'
+RbConfig.fire_update!("top_srcdir", File.expand_path("../..", __dir__))
+File.foreach(RbConfig::CONFIG["topdir"]+"/Makefile") do |line|
+  if /^CC_WRAPPER\s*=\s*/ =~ line
+    RbConfig.fire_update!('CC_WRAPPER', $'.strip)
+    break
+  end
+end
 
 require 'test/unit'
 require 'mkmf'
@@ -49,11 +57,11 @@ module TestMkmf::Base
     def filter(&block)
       @filter = block
     end
-    def write(s)
+    def write(*s)
       if @out
-        @buffer << s
+        @buffer.concat(*s)
       elsif @origin
-        @origin << s
+        @origin.write(*s)
       end
     end
   end
@@ -122,8 +130,10 @@ module TestMkmf::Base
   def mkmf(*args, &block)
     @stdout.clear
     stdout, @stdout.origin, $stdout = @stdout.origin, $stdout, @stdout
+    verbose, $VERBOSE = $VERBOSE, false
     @mkmfobj.instance_eval(*args, &block)
   ensure
+    $VERBOSE = verbose
     $stdout, @stdout.origin = @stdout.origin, stdout
   end
 

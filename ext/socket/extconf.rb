@@ -433,6 +433,7 @@ end
 case RUBY_PLATFORM
 when /mswin(32|64)|mingw/
   test_func = "WSACleanup"
+  have_library("iphlpapi")
   have_library("ws2_32", "WSACleanup", headers)
 when /cygwin/
   test_func = "socket(0,0,0)"
@@ -476,6 +477,7 @@ EOF
     have_func('inet_aton("", (struct in_addr *)0)', headers)
   have_func('getservbyport(0, "")', headers)
   have_func("getifaddrs((struct ifaddrs **)NULL)", headers)
+  have_struct_member("struct if_data", "ifi_vhid", headers) # FreeBSD
 
   have_func("getpeereid", headers)
 
@@ -566,6 +568,7 @@ EOS
     getaddr_info_ok = (:wide if getaddr_info_ok.nil?)
     if have_func("getnameinfo", headers) and have_func("getaddrinfo", headers)
       if CROSS_COMPILING ||
+         $mingw || $mswin ||
          checking_for("system getaddrinfo working") {
            try_run(cpp_include(headers) + GETADDRINFO_GETNAMEINFO_TEST)
          }
@@ -653,7 +656,7 @@ EOS
 #include <netinet/in.h>
 int t(struct in6_addr *addr) {return IN6_IS_ADDR_UNSPECIFIED(addr);}
 SRC
-    print "fixing apple's netinet6/in6.rb ..."; $stdout.flush
+    print "fixing apple's netinet6/in6.h ..."; $stdout.flush
     in6 = File.read("/usr/include/#{hdr}")
     if in6.gsub!(/\*\(const\s+__uint32_t\s+\*\)\(const\s+void\s+\*\)\(&(\(\w+\))->s6_addr\[(\d+)\]\)/) do
         i, r = $2.to_i.divmod(4)

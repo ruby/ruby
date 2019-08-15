@@ -1,0 +1,16 @@
+%# -*- C -*-
+%# Copyright (c) 2017 Urabe, Shyouhei.  All rights reserved.
+%#
+%# This file is a part of  the programming language Ruby.  Permission is hereby
+%# granted, to either  redistribute and/or modify this file,  provided that the
+%# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+%# details.
+%;
+
+/* insn <%= insn.pretty_name %> */
+INSN_ENTRY(<%= insn.name %>)
+{
+    vm_trace(ec, GET_CFP(), GET_PC());
+    DISPATCH_ORIGINAL_INSN(<%= insn.jump_destination %>);
+    END_INSN(<%= insn.name %>);
+}

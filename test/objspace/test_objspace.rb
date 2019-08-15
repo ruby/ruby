@@ -45,7 +45,7 @@ class TestObjSpace < Test::Unit::TestCase
     argf.inplace_mode = nil
     size = ObjectSpace.memsize_of(argf)
     argf.inplace_mode = "inplace_mode_suffix"
-    assert_equal(size + 20, ObjectSpace.memsize_of(argf))
+    assert_equal(size, ObjectSpace.memsize_of(argf))
   end
 
   def test_memsize_of_all
@@ -61,9 +61,19 @@ class TestObjSpace < Test::Unit::TestCase
     res = ObjectSpace.count_objects_size
     assert_not_empty(res)
     assert_operator(res[:TOTAL], :>, 0)
+  end
+
+  def test_count_objects_size_with_hash
     arg = {}
     ObjectSpace.count_objects_size(arg)
     assert_not_empty(arg)
+    arg = {:TOTAL => 1 }
+    ObjectSpace.count_objects_size(arg)
+    assert_not_empty(arg)
+  end
+
+  def test_count_objects_size_with_wrong_type
+    assert_raise(TypeError) { ObjectSpace.count_objects_size(0) }
   end
 
   def test_count_nodes
@@ -88,41 +98,45 @@ class TestObjSpace < Test::Unit::TestCase
     res = ObjectSpace.count_imemo_objects
     assert_not_empty(res)
     assert_not_nil(res[:imemo_cref])
+    assert_not_empty res.inspect
+
     arg = {}
     res = ObjectSpace.count_imemo_objects(arg)
     assert_not_empty(res)
   end
 
   def test_memsize_of_iseq
-    iseqw = RubyVM::InstructionSequence.compile('def a; a = :b; end')
+    iseqw = RubyVM::InstructionSequence.compile('def a; a = :b; a; end')
     base_obj_size = ObjectSpace.memsize_of(Object.new)
     assert_operator(ObjectSpace.memsize_of(iseqw), :>, base_obj_size)
   end
 
   def test_reachable_objects_from
-    assert_separately %w[--disable-gem -robjspace], __FILE__, __LINE__, <<-'eom'
-    assert_equal(nil, ObjectSpace.reachable_objects_from(nil))
-    assert_equal([Array, 'a', 'b', 'c'], ObjectSpace.reachable_objects_from(['a', 'b', 'c']))
+    opts = %w[--disable-gem --disable=frozen-string-literal -robjspace]
+    assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
+    begin;
+      assert_equal(nil, ObjectSpace.reachable_objects_from(nil))
+      assert_equal([Array, 'a', 'b', 'c'], ObjectSpace.reachable_objects_from(['a', 'b', 'c']))
 
-    assert_equal([Array, 'a', 'a', 'a'], ObjectSpace.reachable_objects_from(['a', 'a', 'a']))
-    assert_equal([Array, 'a', 'a'], ObjectSpace.reachable_objects_from(['a', v = 'a', v]))
-    assert_equal([Array, 'a'], ObjectSpace.reachable_objects_from([v = 'a', v, v]))
+      assert_equal([Array, 'a', 'a', 'a'], ObjectSpace.reachable_objects_from(['a', 'a', 'a']))
+      assert_equal([Array, 'a', 'a'], ObjectSpace.reachable_objects_from(['a', v = 'a', v]))
+      assert_equal([Array, 'a'], ObjectSpace.reachable_objects_from([v = 'a', v, v]))
 
-    long_ary = Array.new(1_000){''}
-    max = 0
+      long_ary = Array.new(1_000){''}
+      max = 0
 
-    ObjectSpace.each_object{|o|
-      refs = ObjectSpace.reachable_objects_from(o)
-      max = [refs.size, max].max
+      ObjectSpace.each_object{|o|
+        refs = ObjectSpace.reachable_objects_from(o)
+        max = [refs.size, max].max
 
-      unless refs.nil?
-        refs.each_with_index {|ro, i|
-          assert_not_nil(ro, "#{i}: this referenced object is internal object")
-        }
-      end
-    }
-    assert_operator(max, :>=, long_ary.size+1, "1000 elems + Array class")
-    eom
+        unless refs.nil?
+          refs.each_with_index {|ro, i|
+            assert_not_nil(ro, "#{i}: this referenced object is internal object")
+          }
+        end
+      }
+      assert_operator(max, :>=, long_ary.size+1, "1000 elems + Array class")
+    end;
   end
 
   def test_reachable_objects_from_root
@@ -138,15 +152,16 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_reachable_objects_size
-    assert_separately %w[--disable-gem -robjspace], __FILE__, __LINE__, <<-'eom'
-    ObjectSpace.each_object{|o|
-      ObjectSpace.reachable_objects_from(o).each{|reached_obj|
-        size = ObjectSpace.memsize_of(reached_obj)
-        assert_kind_of(Integer, size)
-        assert_operator(size, :>=, 0)
+    assert_separately %w[--disable-gem -robjspace], "#{<<~"begin;"}\n#{<<~'end;'}"
+    begin;
+      ObjectSpace.each_object{|o|
+        ObjectSpace.reachable_objects_from(o).each{|reached_obj|
+          size = ObjectSpace.memsize_of(reached_obj)
+          assert_kind_of(Integer, size)
+          assert_operator(size, :>=, 0)
+        }
       }
-    }
-    eom
+    end;
   end
 
   def test_trace_object_allocations
@@ -220,8 +235,8 @@ class TestObjSpace < Test::Unit::TestCase
 
   def test_dump_flags
     info = ObjectSpace.dump("foo".freeze)
-    assert_match /"wb_protected":true, "old":true/, info
-    assert_match /"fstring":true/, info
+    assert_match(/"wb_protected":true, "old":true/, info)
+    assert_match(/"fstring":true/, info)
     JSON.parse(info) if defined?(JSON)
   end
 
@@ -253,10 +268,10 @@ class TestObjSpace < Test::Unit::TestCase
 
   def assert_dump_object(info, line)
     loc = caller_locations(1, 1)[0]
-    assert_match /"type":"STRING"/, info
-    assert_match /"embedded":true, "bytesize":11, "value":"hello world", "encoding":"UTF-8"/, info
-    assert_match /"file":"#{Regexp.escape __FILE__}", "line":#{line}/, info
-    assert_match /"method":"#{loc.base_label}"/, info
+    assert_match(/"type":"STRING"/, info)
+    assert_match(/"embedded":true, "bytesize":11, "value":"hello world", "encoding":"UTF-8"/, info)
+    assert_match(/"file":"#{Regexp.escape __FILE__}", "line":#{line}/, info)
+    assert_match(/"method":"#{loc.base_label}"/, info)
     JSON.parse(info) if defined?(JSON)
   end
 
@@ -271,40 +286,130 @@ class TestObjSpace < Test::Unit::TestCase
 
   def test_dump_dynamic_symbol
     dump = ObjectSpace.dump(("foobar%x" % rand(0x10000)).to_sym)
-    assert_match /"type":"SYMBOL"/, dump
-    assert_match /"value":"foobar\h+"/, dump
+    assert_match(/"type":"SYMBOL"/, dump)
+    assert_match(/"value":"foobar\h+"/, dump)
+  end
+
+  def test_dump_includes_imemo_type
+    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        def dump_my_heap_please
+          ObjectSpace.dump_all(output: :stdout)
+        end
+
+        dump_my_heap_please
+      end;
+      heap = output.find_all { |l|
+        obj = JSON.parse(l)
+        obj['type'] == "IMEMO" && obj['imemo_type']
+      }
+      assert_operator heap.length, :>, 0
+    end
+  end
+
+  def test_dump_all_full
+    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        def dump_my_heap_please
+          ObjectSpace.dump_all(output: :stdout, full: true)
+        end
+
+        dump_my_heap_please
+      end;
+      heap = output.find_all { |l| JSON.parse(l)['type'] == "NONE" }
+      assert_operator heap.length, :>, 0
+    end
+  end
+
+  def test_dump_addresses_match_dump_all_addresses
+    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        def dump_my_heap_please
+          obj = Object.new
+          puts ObjectSpace.dump(obj)
+          ObjectSpace.dump_all(output: $stdout)
+        end
+
+        dump_my_heap_please
+      end;
+      needle = JSON.parse(output.first)
+      addr = needle['address']
+      found  = output.drop(1).find { |l| JSON.parse(l)['address'] == addr }
+      assert found, "object #{addr} should be findable in full heap dump"
+    end
+  end
+
+  def test_dump_class_addresses_match_dump_all_addresses
+    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        def dump_my_heap_please
+          obj = Object.new
+          puts ObjectSpace.dump(obj)
+          ObjectSpace.dump_all(output: $stdout)
+        end
+
+        dump_my_heap_please
+      end;
+      needle = JSON.parse(output.first)
+      addr = needle['class']
+      found  = output.drop(1).find { |l| JSON.parse(l)['address'] == addr }
+      assert found, "object #{addr} should be findable in full heap dump"
+    end
+  end
+
+  def test_dump_reference_addresses_match_dump_all_addresses
+    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        def dump_my_heap_please
+          obj = Object.new
+          obj2 = Object.new
+          obj2.instance_variable_set(:@ref, obj)
+          puts ObjectSpace.dump(obj)
+          ObjectSpace.dump_all(output: $stdout)
+        end
+
+        dump_my_heap_please
+      end;
+      needle = JSON.parse(output.first)
+      addr = needle['address']
+      found  = output.drop(1).find { |l| (JSON.parse(l)['references'] || []).include? addr }
+      assert found, "object #{addr} should be findable in full heap dump"
+    end
   end
 
   def test_dump_all
     entry = /"bytesize":11, "value":"TEST STRING", "encoding":"UTF-8", "file":"-", "line":4, "method":"dump_my_heap_please", "generation":/
+    opts = %w[--disable-gem --disable=frozen-string-literal -robjspace]
 
-    assert_in_out_err(%w[-robjspace], <<-'end;') do |output, error|
-      def dump_my_heap_please
-        ObjectSpace.trace_object_allocations_start
-        GC.start
-        str = "TEST STRING".force_encoding("UTF-8")
-        ObjectSpace.dump_all(output: :stdout)
-      end
+    assert_in_out_err(opts, "#{<<-"begin;"}#{<<-'end;'}") do |output, error|
+      begin;
+        def dump_my_heap_please
+          ObjectSpace.trace_object_allocations_start
+          GC.start
+          str = "TEST STRING".force_encoding("UTF-8")
+          ObjectSpace.dump_all(output: :stdout)
+        end
 
-      dump_my_heap_please
-    end;
+        dump_my_heap_please
+      end;
       assert_match(entry, output.grep(/TEST STRING/).join("\n"))
     end
 
-    assert_in_out_err(%w[-robjspace], <<-'end;') do |(output), (error)|
-      def dump_my_heap_please
-        ObjectSpace.trace_object_allocations_start
-        GC.start
-        str = "TEST STRING".force_encoding("UTF-8")
-        ObjectSpace.dump_all().path
-      end
+    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}#{<<-'end;'}") do |(output), (error)|
+      begin;
+        def dump_my_heap_please
+          ObjectSpace.trace_object_allocations_start
+          GC.start
+          (str = "TEST STRING").force_encoding("UTF-8")
+          ObjectSpace.dump_all().path
+        end
 
-      puts dump_my_heap_please
-    end;
-      skip if /is not supported/ =~ error
-      skip error unless output
-      assert_match(entry, File.readlines(output).grep(/TEST STRING/).join("\n"))
+        puts dump_my_heap_please
+      end;
+      assert_nil(error)
+      dump = File.readlines(output)
       File.unlink(output)
+      assert_match(entry, dump.grep(/TEST STRING/).join("\n"))
     end
 
     if defined?(JSON)
@@ -327,8 +432,8 @@ class TestObjSpace < Test::Unit::TestCase
       puts ObjectSpace.dump(File.allocate)
     RUBY
       assert_nil error
-      assert_match /"type":"FILE"/, output
-      assert_not_match /"fd":/, output
+      assert_match(/"type":"FILE"/, output)
+      assert_not_match(/"fd":/, output)
     end
   end
 
@@ -384,13 +489,18 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_count_symbols
-    syms = (1..128).map{|i| ("xyzzy#{i}" * 128).to_sym}
-    c = Class.new{define_method(syms[-1]){}}
+    assert_separately(%w[-robjspace], "#{<<~';;;'}")
+    h0 = ObjectSpace.count_symbols
+
+    syms = (1..128).map{|i| ("xyzzy#{i}_#{Process.pid}_#{rand(1_000_000)}_" * 128).to_sym}
+    syms << Class.new{define_method(syms[-1]){}}
 
     h = ObjectSpace.count_symbols
-    assert_operator h[:mortal_dynamic_symbol],   :>=, 128, h.inspect
-    assert_operator h[:immortal_dynamic_symbol], :>=, 1, h.inspect
-    assert_operator h[:immortal_static_symbol],  :>=, Object.methods.size, h.inspect
-    assert_equal h[:immortal_symbol], h[:immortal_dynamic_symbol] + h[:immortal_static_symbol], h.inspect
+    m = proc {h0.inspect + "\n" + h.inspect}
+    assert_equal 127, h[:mortal_dynamic_symbol] - h0[:mortal_dynamic_symbol],   m
+    assert_equal 1, h[:immortal_dynamic_symbol] - h0[:immortal_dynamic_symbol], m
+    assert_operator h[:immortal_static_symbol],  :>=, Object.methods.size, m
+    assert_equal h[:immortal_symbol], h[:immortal_dynamic_symbol] + h[:immortal_static_symbol], m
+    ;;;
   end
 end

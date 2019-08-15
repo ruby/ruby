@@ -90,5 +90,73 @@ EOT
     assert_equal(sl, "a".ord.chr("utf-32le"))
     assert_equal(sb, "a".ord.chr("utf-32be"))
   end
+
+  def test_utf32be_valid_encoding
+    all_assertions do |a|
+      [
+        "\x00\x00\x00\x00",
+        "\x00\x00\x00a",
+        "\x00\x00\x30\x40",
+        "\x00\x00\xd7\xff",
+        "\x00\x00\xe0\x00",
+        "\x00\x00\xff\xff",
+        "\x00\x10\xff\xff",
+      ].each {|s|
+        s.force_encoding("utf-32be")
+        a.for(s) {
+          assert_predicate(s, :valid_encoding?, "#{encdump s}.valid_encoding?")
+        }
+      }
+      [
+        "a",
+        "\x00a",
+        "\x00\x00a",
+        "\x00\x00\xd8\x00",
+        "\x00\x00\xdb\xff",
+        "\x00\x00\xdc\x00",
+        "\x00\x00\xdf\xff",
+        "\x00\x11\x00\x00",
+      ].each {|s|
+        s.force_encoding("utf-32be")
+        a.for(s) {
+          assert_not_predicate(s, :valid_encoding?, "#{encdump s}.valid_encoding?")
+        }
+      }
+    end
+  end
+
+  def test_utf32le_valid_encoding
+    all_assertions do |a|
+      [
+        "\x00\x00\x00\x00",
+        "a\x00\x00\x00",
+        "\x40\x30\x00\x00",
+        "\xff\xd7\x00\x00",
+        "\x00\xe0\x00\x00",
+        "\xff\xff\x00\x00",
+        "\xff\xff\x10\x00",
+      ].each {|s|
+        s.force_encoding("utf-32le")
+        a.for(s) {
+          assert_predicate(s, :valid_encoding?, "#{encdump s}.valid_encoding?")
+        }
+      }
+      [
+        "a",
+        "a\x00",
+        "a\x00\x00",
+        "\x00\xd8\x00\x00",
+        "\xff\xdb\x00\x00",
+        "\x00\xdc\x00\x00",
+        "\xff\xdf\x00\x00",
+        "\x00\x00\x11\x00",
+      ].each {|s|
+        s.force_encoding("utf-32le")
+        a.for(s) {
+          assert_not_predicate(s, :valid_encoding?, "#{encdump s}.valid_encoding?")
+        }
+      }
+    end
+  end
 end
 

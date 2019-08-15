@@ -1,0 +1,13 @@
+prelude: |
+  require 'time'
+benchmark:
+  - Time.strptime("28/Aug/2005:06:54:20 +0000", "%d/%b/%Y:%T %z")
+  - Time.strptime("1", "%s")
+  - Time.strptime("0 +0100", "%s %z")
+  - Time.strptime("0 UTC", "%s %z")
+  - Time.strptime("1.5", "%s.%N")
+  - Time.strptime("1.000000000001", "%s.%N")
+  - Time.strptime("20010203 -0200", "%Y%m%d %z")
+  - Time.strptime("20010203 UTC", "%Y%m%d %z")
+  - Time.strptime("2018-365", "%Y-%j")
+  - Time.strptime("2018-091", "%Y-%j")

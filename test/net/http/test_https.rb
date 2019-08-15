@@ -4,7 +4,6 @@ begin
   require 'net/https'
   require 'stringio'
   require 'timeout'
-  require File.expand_path("../../openssl/utils", File.dirname(__FILE__))
   require File.expand_path("utils", File.dirname(__FILE__))
 rescue LoadError
   # should skip this test
@@ -13,34 +12,40 @@ end
 class TestNetHTTPS < Test::Unit::TestCase
   include TestNetHTTPUtils
 
-  subject = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
-  exts = [
-    ["keyUsage", "keyEncipherment,digitalSignature", true],
-  ]
-  key = OpenSSL::TestUtils::TEST_KEY_RSA1024
-  cert = OpenSSL::TestUtils.issue_cert(
-    subject, key, 1, Time.now, Time.now + 3600, exts,
-    nil, nil, OpenSSL::Digest::SHA1.new
-  )
+  def self.fixture(key)
+    File.read(File.expand_path("../fixtures/#{key}", __dir__))
+  end
+
+  CA_CERT = OpenSSL::X509::Certificate.new(fixture("cacert.pem"))
+  SERVER_KEY = OpenSSL::PKey.read(fixture("server.key"))
+  SERVER_CERT = OpenSSL::X509::Certificate.new(fixture("server.crt"))
+  DHPARAMS = OpenSSL::PKey::DH.new(fixture("dhparams.pem"))
+  TEST_STORE = OpenSSL::X509::Store.new.tap {|s| s.add_cert(CA_CERT) }
 
   CONFIG = {
     'host' => '127.0.0.1',
     'proxy_host' => nil,
     'proxy_port' => nil,
     'ssl_enable' => true,
-    'ssl_certificate' => cert,
-    'ssl_private_key' => key,
+    'ssl_certificate' => SERVER_CERT,
+    'ssl_private_key' => SERVER_KEY,
+    'ssl_tmp_dh_callback' => proc { DHPARAMS },
   }
 
   def test_get
     http = Net::HTTP.new("localhost", config("port"))
     http.use_ssl = true
+    http.cert_store = TEST_STORE
+    certs = []
     http.verify_callback = Proc.new do |preverify_ok, store_ctx|
-      store_ctx.current_cert.to_der == config('ssl_certificate').to_der
+      certs << store_ctx.current_cert
+      preverify_ok
     end
     http.request_get("/") {|res|
       assert_equal($test_net_http_data, res.body)
     }
+    assert_equal(CA_CERT.to_der, certs[0].to_der)
+    assert_equal(SERVER_CERT.to_der, certs[1].to_der)
   rescue SystemCallError
     skip $!
   end
@@ -48,9 +53,7 @@ class TestNetHTTPS < Test::Unit::TestCase
   def test_post
     http = Net::HTTP.new("localhost", config("port"))
     http.use_ssl = true
-    http.verify_callback = Proc.new do |preverify_ok, store_ctx|
-      store_ctx.current_cert.to_der == config('ssl_certificate').to_der
-    end
+    http.cert_store = TEST_STORE
     data = config('ssl_private_key').to_der
     http.request_post("/", data, {'content-type' => 'application/x-www-form-urlencoded'}) {|res|
       assert_equal(data, res.body)
@@ -60,11 +63,13 @@ class TestNetHTTPS < Test::Unit::TestCase
   end
 
   def test_session_reuse
+    # FIXME: The new_session_cb is known broken for clients in OpenSSL 1.1.0h.
+    # See https://github.com/openssl/openssl/pull/5967 for details.
+    skip if OpenSSL::OPENSSL_LIBRARY_VERSION =~ /OpenSSL 1.1.0h/
+
     http = Net::HTTP.new("localhost", config("port"))
     http.use_ssl = true
-    http.verify_callback = Proc.new do |preverify_ok, store_ctx|
-      store_ctx.current_cert.to_der == config('ssl_certificate').to_der
-    end
+    http.cert_store = TEST_STORE
 
     http.start
     http.get("/")
@@ -72,18 +77,9 @@ class TestNetHTTPS < Test::Unit::TestCase
 
     http.start
     http.get("/")
-    http.finish # three times due to possible bug in OpenSSL 0.9.8
-
-    sid = http.instance_variable_get(:@ssl_session).id
-
-    http.start
-    http.get("/")
 
     socket = http.instance_variable_get(:@socket).io
-
-    assert socket.session_reused?
-
-    assert_equal sid, http.instance_variable_get(:@ssl_session).id
+    assert_equal true, socket.session_reused?
 
     http.finish
   rescue SystemCallError
@@ -91,26 +87,23 @@ class TestNetHTTPS < Test::Unit::TestCase
   end
 
   def test_session_reuse_but_expire
+    # FIXME: The new_session_cb is known broken for clients in OpenSSL 1.1.0h.
+    skip if OpenSSL::OPENSSL_LIBRARY_VERSION =~ /OpenSSL 1.1.0h/
+
     http = Net::HTTP.new("localhost", config("port"))
     http.use_ssl = true
-    http.verify_callback = Proc.new do |preverify_ok, store_ctx|
-      store_ctx.current_cert.to_der == config('ssl_certificate').to_der
-    end
+    http.cert_store = TEST_STORE
 
     http.ssl_timeout = -1
     http.start
     http.get("/")
     http.finish
 
-    sid = http.instance_variable_get(:@ssl_session).id
-
     http.start
     http.get("/")
 
     socket = http.instance_variable_get(:@socket).io
     assert_equal false, socket.session_reused?
-
-    assert_not_equal sid, http.instance_variable_get(:@ssl_session).id
 
     http.finish
   rescue SystemCallError
@@ -161,15 +154,16 @@ class TestNetHTTPS < Test::Unit::TestCase
   end
 
   def test_identity_verify_failure
+    # the certificate's subject has CN=localhost
     http = Net::HTTP.new("127.0.0.1", config("port"))
     http.use_ssl = true
-    http.verify_callback = Proc.new do |preverify_ok, store_ctx|
-      store_ctx.current_cert.to_der == config('ssl_certificate').to_der
-    end
+    http.cert_store = TEST_STORE
+    @log_tester = lambda {|_| }
     ex = assert_raise(OpenSSL::SSL::SSLError){
       http.request_get("/") {|res| }
     }
-    assert_match(/hostname \"127.0.0.1\" does not match/, ex.message)
+    re_msg = /certificate verify failed|hostname \"127.0.0.1\" does not match/
+    assert_match(re_msg, ex.message)
   end
 
   def test_timeout_during_SSL_handshake
@@ -192,4 +186,30 @@ class TestNetHTTPS < Test::Unit::TestCase
       assert th.join(10), bug4246
     }
   end
-end if defined?(OpenSSL::TestUtils)
+
+  def test_min_version
+    http = Net::HTTP.new("localhost", config("port"))
+    http.use_ssl = true
+    http.min_version = :TLS1
+    http.cert_store = TEST_STORE
+    http.request_get("/") {|res|
+      assert_equal($test_net_http_data, res.body)
+    }
+  end
+
+  def test_max_version
+    http = Net::HTTP.new("127.0.0.1", config("port"))
+    http.use_ssl = true
+    http.max_version = :SSL2
+    http.verify_callback = Proc.new do |preverify_ok, store_ctx|
+      true
+    end
+    @log_tester = lambda {|_| }
+    ex = assert_raise(OpenSSL::SSL::SSLError){
+      http.request_get("/") {|res| }
+    }
+    re_msg = /\ASSL_connect returned=1 errno=0 |SSL_CTX_set_max_proto_version/
+    assert_match(re_msg, ex.message)
+  end
+
+end if defined?(OpenSSL::SSL)

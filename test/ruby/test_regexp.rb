@@ -74,6 +74,12 @@ class TestRegexp < Test::Unit::TestCase
     end
   end
 
+  def test_to_s_extended_subexp
+    re = /#\g#{"\n"}/x
+    re = /#{re}/
+    assert_warn('', '[ruby-core:82328] [Bug #13798]') {re.to_s}
+  end
+
   def test_union
     assert_equal :ok, begin
       Regexp.union(
@@ -84,6 +90,11 @@ class TestRegexp < Test::Unit::TestCase
     rescue ArgumentError
       :ok
     end
+    re = Regexp.union(/\//, "")
+    re2 = eval(re.inspect)
+    assert_equal(re.to_s, re2.to_s)
+    assert_equal(re.source, re2.source)
+    assert_equal(re, re2)
   end
 
   def test_word_boundary
@@ -203,6 +214,21 @@ class TestRegexp < Test::Unit::TestCase
   def test_assign_named_capture_to_reserved_word
     /(?<nil>.)/ =~ "a"
     assert_not_include(local_variables, :nil, "[ruby-dev:32675]")
+  end
+
+  def test_assign_named_capture_to_const
+    %W[C \u{1d402}].each do |name|
+      assert_equal(:ok, Class.new.class_eval("#{name} = :ok; /(?<#{name}>.*)/ =~ 'ng'; #{name}"))
+    end
+  end
+
+  def test_assign_named_capture_trace
+    bug = '[ruby-core:79940] [Bug #13287]'
+    assert_normal_exit("#{<<-"begin;"}\n#{<<-"end;"}", bug)
+    begin;
+      / (?<foo>.*)/ =~ "bar" &&
+        true
+    end;
   end
 
   def test_match_regexp
@@ -500,6 +526,8 @@ class TestRegexp < Test::Unit::TestCase
     s = ".........."
     5.times { s.sub!(".", "") }
     assert_equal(".....", s)
+
+    assert_equal("\\\u{3042}", Regexp.new("\\\u{3042}").source)
   end
 
   def test_equal
@@ -543,7 +571,8 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(true, /../.match?('abc', -2))
     assert_equal(false, /../.match?("abc", -4))
     assert_equal(false, /../.match?("abc", 4))
-    assert_equal(true, /../n.match?("\u3042" + '\x', 1))
+    assert_equal(true, /../.match?("\u3042xx", 1))
+    assert_equal(false, /../.match?("\u3042x", 1))
     assert_equal(true, /\z/.match?(""))
     assert_equal(true, /\z/.match?("abc"))
     assert_equal(true, /R.../.match?("Ruby"))
@@ -566,6 +595,10 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("\\v", Regexp.quote("\v"))
     assert_equal("\u3042\\t", Regexp.quote("\u3042\t"))
     assert_equal("\\t\xff", Regexp.quote("\t" + [0xff].pack("C")))
+
+    bug13034 = '[ruby-core:78646] [Bug #13034]'
+    str = "\x00".force_encoding("UTF-16BE")
+    assert_equal(str, Regexp.quote(str), bug13034)
   end
 
   def test_try_convert
@@ -639,14 +672,30 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_match_without_regexp
+    # create a MatchData for each assertion because the internal state may change
+    test = proc {|&blk| "abc".sub("a", ""); blk.call($~) }
+
     bug10877 = '[ruby-core:68209] [Bug #10877]'
-    "abc".sub("a", "")
-    assert_raise_with_message(IndexError, /foo/, bug10877) {$~["foo"]}
+    test.call {|m| assert_raise_with_message(IndexError, /foo/, bug10877) {m["foo"]} }
     key = "\u{3042}"
     [Encoding::UTF_8, Encoding::Shift_JIS, Encoding::EUC_JP].each do |enc|
       idx = key.encode(enc)
-      assert_raise_with_message(IndexError, /#{idx}/, bug10877) {$~[idx]}
+      test.call {|m| assert_raise_with_message(IndexError, /#{idx}/, bug10877) {m[idx]} }
     end
+    test.call {|m| assert_equal(/a/, m.regexp) }
+    test.call {|m| assert_equal("abc", m.string) }
+    test.call {|m| assert_equal(1, m.size) }
+    test.call {|m| assert_equal(0, m.begin(0)) }
+    test.call {|m| assert_equal(1, m.end(0)) }
+    test.call {|m| assert_equal([0, 1], m.offset(0)) }
+    test.call {|m| assert_equal([], m.captures) }
+    test.call {|m| assert_equal([], m.names) }
+    test.call {|m| assert_equal({}, m.named_captures) }
+    test.call {|m| assert_equal(/a/.match("abc"), m) }
+    test.call {|m| assert_equal(/a/.match("abc").hash, m.hash) }
+    test.call {|m| assert_equal("bc", m.post_match) }
+    test.call {|m| assert_equal("", m.pre_match) }
+    test.call {|m| assert_equal(["a", nil], m.values_at(0, 1)) }
   end
 
   def test_last_match
@@ -900,6 +949,29 @@ class TestRegexp < Test::Unit::TestCase
     assert_no_match(/[[:ascii:]]/, "\x80\xFF")
   end
 
+  def test_cclass_R
+    assert_match(/\A\R\z/, "\r")
+    assert_match(/\A\R\z/, "\n")
+    assert_match(/\A\R\z/, "\r\n")
+  end
+
+  def test_cclass_X
+    assert_match(/\A\X\z/, "\u{20 200d}")
+    assert_match(/\A\X\z/, "\u{600 600}")
+    assert_match(/\A\X\z/, "\u{600 20}")
+    assert_match(/\A\X\z/, "\u{261d 1F3FB}")
+    assert_match(/\A\X\z/, "\u{1f600}")
+    assert_match(/\A\X\z/, "\u{20 324}")
+    assert_match(/\A\X\X\z/, "\u{a 324}")
+    assert_match(/\A\X\X\z/, "\u{d 324}")
+    assert_match(/\A\X\z/, "\u{1F477 1F3FF 200D 2640 FE0F}")
+    assert_match(/\A\X\z/, "\u{1F468 200D 1F393}")
+    assert_match(/\A\X\z/, "\u{1F46F 200D 2642 FE0F}")
+    assert_match(/\A\X\z/, "\u{1f469 200d 2764 fe0f 200d 1f469}")
+
+    assert_warning('') {/\X/ =~ "\u{a0}"}
+  end
+
   def test_backward
     assert_equal(3, "foobar".rindex(/b.r/i))
     assert_equal(nil, "foovar".rindex(/b.r/i))
@@ -925,6 +997,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(TypeError) { Regexp.allocate.names }
     assert_raise(TypeError) { Regexp.allocate.named_captures }
 
+    assert_raise(TypeError) { MatchData.allocate.hash }
     assert_raise(TypeError) { MatchData.allocate.regexp }
     assert_raise(TypeError) { MatchData.allocate.names }
     assert_raise(TypeError) { MatchData.allocate.size }
@@ -1002,6 +1075,9 @@ class TestRegexp < Test::Unit::TestCase
     assert_no_match(/^\p{age=3.0}$/u, "\u2754")
     assert_no_match(/^\p{age=2.0}$/u, "\u2754")
     assert_no_match(/^\p{age=1.1}$/u, "\u2754")
+
+    assert_no_match(/^\p{age=12.0}$/u, "\u32FF")
+    assert_match(/^\p{age=12.1}$/u, "\u32FF")
   end
 
   MatchData_A = eval("class MatchData_\u{3042} < MatchData; self; end")
@@ -1019,7 +1095,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("hoge fuga", h["body"])
   end
 
-  def test_regexp_poped
+  def test_regexp_popped
     assert_nothing_raised { eval("a = 1; /\#{ a }/; a") }
     assert_nothing_raised { eval("a = 1; /\#{ a }/o; a") }
   end
@@ -1048,6 +1124,8 @@ class TestRegexp < Test::Unit::TestCase
 
     bug8151 = '[ruby-core:53649]'
     assert_warning(/\A\z/, bug8151) { Regexp.new('(?:[\u{33}])').to_s }
+
+    assert_warning(%r[/.*/\Z]) { Regexp.new("[\n\n]") }
   end
 
   def test_property_warn
@@ -1153,6 +1231,36 @@ class TestRegexp < Test::Unit::TestCase
 
       assert_equal("foo", // =~ "")
     RUBY
+  end
+
+  def test_invalid_free_at_parse_depth_limit_over
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      begin
+        require '-test-/regexp'
+      rescue LoadError
+      else
+        bug = '[ruby-core:79624] [Bug #13234]'
+        Bug::Regexp.parse_depth_limit = 10
+        src = "[" * 100
+        3.times do
+          assert_raise_with_message(RegexpError, /parse depth limit over/, bug) do
+            Regexp.new(src)
+          end
+        end
+      end
+    end;
+  end
+
+  def test_absent
+    assert_equal(0, /(?~(a|c)c)/ =~ "abb")
+    assert_equal("abb", $&)
+
+    assert_equal(0, /\/\*((?~\*\/))\*\// =~ "/*abc*def/xyz*/ /* */")
+    assert_equal("abc*def/xyz", $1)
+
+    assert_equal(0, /(?~(a)c)/ =~ "abb")
+    assert_nil($1)
   end
 
   # This assertion is for porting x2() tests in testpy.py of Onigmo.

@@ -24,8 +24,8 @@
  */
 
 #define PUT_BREAK(emitter)                                                      \
-    (FLUSH(emitter)                                                             \
-     && ((emitter->line_break == YAML_CR_BREAK ?                                \
+    (FLUSH(emitter) ?                                                            \
+      ((emitter->line_break == YAML_CR_BREAK ?                                \
              (*(emitter->buffer.pointer++) = (yaml_char_t) '\r') :              \
           emitter->line_break == YAML_LN_BREAK ?                                \
              (*(emitter->buffer.pointer++) = (yaml_char_t) '\n') :              \
@@ -34,7 +34,7 @@
               *(emitter->buffer.pointer++) = (yaml_char_t) '\n') : 0),          \
          emitter->column = 0,                                                   \
          emitter->line ++,                                                      \
-         1))
+         1) : 0)
 
 /*
  * Copy a character from a string into buffer.
@@ -53,7 +53,7 @@
 #define WRITE_BREAK(emitter,string)                                             \
     (FLUSH(emitter)                                                             \
      && (CHECK(string,'\n') ?                                                   \
-         ((void)PUT_BREAK(emitter),                                             \
+         (PUT_BREAK(emitter),                                                   \
           string.pointer ++,                                                    \
           1) :                                                                  \
          (COPY(emitter->buffer,string),                                         \
@@ -1002,7 +1002,7 @@ yaml_emitter_emit_node(yaml_emitter_t *emitter, yaml_event_t *event,
  */
 
 static int
-yaml_emitter_emit_alias(yaml_emitter_t *emitter, yaml_event_t *event)
+yaml_emitter_emit_alias(yaml_emitter_t *emitter, SHIM(yaml_event_t *event))
 {
     if (!yaml_emitter_process_anchor(emitter))
         return 0;
@@ -1087,7 +1087,7 @@ yaml_emitter_emit_mapping_start(yaml_emitter_t *emitter, yaml_event_t *event)
  */
 
 static int
-yaml_emitter_check_empty_document(yaml_emitter_t *emitter)
+yaml_emitter_check_empty_document(SHIM(yaml_emitter_t *emitter))
 {
     return 0;
 }
@@ -1234,7 +1234,7 @@ yaml_emitter_select_scalar_style(yaml_emitter_t *emitter, yaml_event_t *event)
 }
 
 /*
- * Write an achor.
+ * Write an anchor.
  */
 
 static int
@@ -1493,7 +1493,7 @@ yaml_emitter_analyze_scalar(yaml_emitter_t *emitter,
     int break_space = 0;
     int space_break = 0;
 
-    int preceeded_by_whitespace = 0;
+    int preceded_by_whitespace = 0;
     int followed_by_whitespace = 0;
     int previous_space = 0;
     int previous_break = 0;
@@ -1524,7 +1524,7 @@ yaml_emitter_analyze_scalar(yaml_emitter_t *emitter,
         flow_indicators = 1;
     }
 
-    preceeded_by_whitespace = 1;
+    preceded_by_whitespace = 1;
     followed_by_whitespace = IS_BLANKZ_AT(string, WIDTH(string));
 
     while (string.pointer != string.end)
@@ -1570,7 +1570,7 @@ yaml_emitter_analyze_scalar(yaml_emitter_t *emitter,
                 }
             }
 
-            if (CHECK(string, '#') && preceeded_by_whitespace) {
+            if (CHECK(string, '#') && preceded_by_whitespace) {
                 flow_indicators = 1;
                 block_indicators = 1;
             }
@@ -1619,7 +1619,7 @@ yaml_emitter_analyze_scalar(yaml_emitter_t *emitter,
             previous_break = 0;
         }
 
-        preceeded_by_whitespace = IS_BLANKZ(string);
+        preceded_by_whitespace = IS_BLANKZ(string);
         MOVE(string);
         if (string.pointer != string.end) {
             followed_by_whitespace = IS_BLANKZ_AT(string, WIDTH(string));
@@ -1946,10 +1946,6 @@ yaml_emitter_write_plain_scalar(yaml_emitter_t *emitter,
 
     emitter->whitespace = 0;
     emitter->indention = 0;
-    if (emitter->root_context)
-    {
-        emitter->open_ended = 1;
-    }
 
     return 1;
 }
@@ -2326,4 +2322,3 @@ yaml_emitter_write_folded_scalar(yaml_emitter_t *emitter,
 
     return 1;
 }
-

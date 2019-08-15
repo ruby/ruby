@@ -1,5 +1,14 @@
-# Thread and Fiber
+show_limit %q{
+  threads = []
+  begin
+    threads << Thread.new{sleep}
 
+    raise Exception, "skipping" if threads.count >= 10_000
+  rescue Exception => error
+    puts "Thread count: #{threads.count} (#{error})"
+    break
+  end while true
+}
 assert_equal %q{ok}, %q{
   Thread.new{
   }.join
@@ -9,6 +18,9 @@ assert_equal %q{ok}, %q{
   Thread.new{
     :ok
   }.value
+}
+assert_equal %q{[]}, %q{
+  Thread.new{sleep}.backtrace
 }
 assert_equal %q{ok}, %q{
 begin
@@ -299,10 +311,6 @@ assert_equal 'ok', %q{
 }, '[ruby-dev:34492]'
 
 assert_normal_exit %q{
-  at_exit { Fiber.new{}.resume }
-}
-
-assert_normal_exit %q{
   g = enum_for(:local_variables)
   loop { g.next }
 }, '[ruby-dev:34128]'
@@ -325,10 +333,6 @@ assert_normal_exit %q{
 assert_normal_exit %q{
   g = Module.enum_for(:new)
   loop { g.next }
-}, '[ruby-dev:34128]'
-
-assert_normal_exit %q{
-  Fiber.new(&Object.method(:class_eval)).resume("foo")
 }, '[ruby-dev:34128]'
 
 assert_normal_exit %q{

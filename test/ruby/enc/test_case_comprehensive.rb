@@ -3,9 +3,10 @@
 
 require "test/unit"
 
-class TestComprehensiveCaseFold < Test::Unit::TestCase
+class TestComprehensiveCaseMapping < Test::Unit::TestCase
   UNICODE_VERSION = RbConfig::CONFIG['UNICODE_VERSION']
-  UNICODE_DATA_PATH = "../../../enc/unicode/data/#{UNICODE_VERSION}"
+  path = File.expand_path("../../../enc/unicode/data/#{UNICODE_VERSION}", __dir__)
+  UNICODE_DATA_PATH = File.directory?("#{path}/ucd") ? "#{path}/ucd" : path
 
   def self.hex2utf8(s)
     s.split(' ').map { |c| c.to_i(16) }.pack('U*')
@@ -22,20 +23,20 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
   end
 
   def test_data_files_available
-    unless TestComprehensiveCaseFold.data_files_available?
+    unless TestComprehensiveCaseMapping.data_files_available?
       skip "Unicode data files not available in #{UNICODE_DATA_PATH}."
     end
   end
 end
 
-TestComprehensiveCaseFold.data_files_available? and  class TestComprehensiveCaseFold
+TestComprehensiveCaseMapping.data_files_available? and  class TestComprehensiveCaseMapping
   (CaseTest = Struct.new(:method_name, :attributes, :first_data, :follow_data)).class_eval do
     def initialize(method_name, attributes, first_data, follow_data=first_data)
       super
     end
   end
 
-  def self.read_data_file (filename)
+  def self.read_data_file(filename)
     IO.foreach(expand_filename(filename), encoding: Encoding::ASCII_8BIT) do |line|
       if $. == 1
         if filename == 'UnicodeData'
@@ -72,7 +73,11 @@ TestComprehensiveCaseFold.data_files_available? and  class TestComprehensiveCase
       @@codepoints << code
       upcase[code] = hex2utf8 data[12] unless data[12].empty?
       downcase[code] = hex2utf8 data[13] unless data[13].empty?
-      titlecase[code] = hex2utf8 data[14] unless data[14].empty?
+      if code>="\u1C90" and code<="\u1CBF" # exception for Georgian: use lowercase for titlecase
+        titlecase[code] = hex2utf8(data[13]) unless data[13].empty?
+      else
+        titlecase[code] = hex2utf8 data[14] unless data[14].empty?
+      end
     end
     read_data_file('CaseFolding') do |code, data|
       casefold[code] = hex2utf8(data[2]) if data[1] =~ /^[CF]$/
@@ -140,7 +145,7 @@ TestComprehensiveCaseFold.data_files_available? and  class TestComprehensiveCase
     @@tests ||= []
   end
 
-  def self.generate_unicode_case_mapping_tests (encoding)
+  def self.generate_unicode_case_mapping_tests(encoding)
     all_tests.each do |test|
       attributes = test.attributes.map(&:to_s).join '-'
       attributes.prepend '_' unless attributes.empty?
@@ -149,14 +154,14 @@ TestComprehensiveCaseFold.data_files_available? and  class TestComprehensiveCase
           source = code.encode(encoding) * 5
           target = "#{test.first_data[code]}#{test.follow_data[code]*4}".encode(encoding)
           result = source.__send__(test.method_name, *test.attributes)
-          assert_equal target, target,
+          assert_equal target, result,
             proc{"from #{code*5} (#{source.dump}) expected #{target.dump} but was #{result.dump}"}
         end
       end
     end
   end
 
-  def self.generate_case_mapping_tests (encoding)
+  def self.generate_case_mapping_tests(encoding)
     all_tests
     # preselect codepoints to speed up testing for small encodings
     codepoints = @@codepoints.select do |code|
@@ -198,7 +203,7 @@ TestComprehensiveCaseFold.data_files_available? and  class TestComprehensiveCase
   end
 
   # test for encodings that don't yet (or will never) deal with non-ASCII characters
-  def self.generate_ascii_only_case_mapping_tests (encoding)
+  def self.generate_ascii_only_case_mapping_tests(encoding)
     all_tests
     # preselect codepoints to speed up testing for small encodings
     codepoints = @@codepoints.select do |code|

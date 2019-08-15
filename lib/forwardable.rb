@@ -57,10 +57,9 @@
 #
 # == Another example
 #
-# We want to rely on what has come before obviously, but with delegation we can
-# take just the methods we need and even rename them as appropriate.  In many
-# cases this is preferable to inheritance, which gives us the entire old
-# interface, even if much of it isn't needed.
+# You could use Forwardable as an alternative to inheritance, when you don't want
+# to inherit all methods from the superclass. For instance, here is how you might
+# add a range of +Array+ instance methods to a new class +Queue+:
 #
 #   class Queue
 #     extend Forwardable
@@ -110,8 +109,11 @@
 # +delegate.rb+.
 #
 module Forwardable
+  require 'forwardable/impl'
+
   # Version of +forwardable.rb+
-  FORWARDABLE_VERSION = "1.1.0"
+  VERSION = "1.2.0"
+  FORWARDABLE_VERSION = VERSION
 
   @debug = nil
   class << self
@@ -120,7 +122,8 @@ module Forwardable
   end
 
   # Takes a hash as its argument.  The key is a symbol or an array of
-  # symbols.  These symbols correspond to method names.  The value is
+  # symbols.  These symbols correspond to method names, instance variable
+  # names, or constant names (see def_delegator).  The value is
   # the accessor to which the methods will be delegated.
   #
   # :call-seq:
@@ -128,12 +131,13 @@ module Forwardable
   #    delegate [method, method, ...] => accessor
   #
   def instance_delegate(hash)
-    hash.each{ |methods, accessor|
-      methods = [methods] unless methods.respond_to?(:each)
-      methods.each{ |method|
-        def_instance_delegator(accessor, method)
-      }
-    }
+    hash.each do |methods, accessor|
+      unless defined?(methods.each)
+        def_instance_delegator(accessor, methods)
+      else
+        methods.each {|method| def_instance_delegator(accessor, method)}
+      end
+    end
   end
 
   #
@@ -157,9 +161,12 @@ module Forwardable
 
   # Define +method+ as delegator instance method with an optional
   # alias name +ali+. Method calls to +ali+ will be delegated to
-  # +accessor.method+.
+  # +accessor.method+.  +accessor+ should be a method name, instance
+  # variable name, or constant name.  Use the full path to the
+  # constant if providing the constant name.
   #
   #   class MyQueue
+  #     CONST = 1
   #     extend Forwardable
   #     attr_reader :queue
   #     def initialize
@@ -167,12 +174,14 @@ module Forwardable
   #     end
   #
   #     def_delegator :@queue, :push, :mypush
+  #     def_delegator 'MyQueue::CONST', :to_i
   #   end
   #
   #   q = MyQueue.new
   #   q.mypush 42
   #   q.queue    #=> [42]
   #   q.push 23  #=> NoMethodError
+  #   q.to_i     #=> 1
   #
   def def_instance_delegator(accessor, method, ali = method)
     gen = Forwardable._delegator_method(self, accessor, method, ali)
@@ -195,21 +204,15 @@ module Forwardable
       accessor = "#{accessor}()"
     end
 
-    vm = RubyVM::InstructionSequence
     method_call = ".__send__(:#{method}, *args, &block)"
-    if begin
-         iseq = vm.compile("().#{method}", nil, nil, 0, false)
-       rescue SyntaxError
-       else
-         iseq.to_a.dig(-1, 1, 1, :mid) == method.to_sym
-       end
+    if _valid_method?(method)
       loc, = caller_locations(2,1)
       pre = "_ ="
       mesg = "#{Module === obj ? obj : obj.class}\##{ali} at #{loc.path}:#{loc.lineno} forwarding to private method "
       method_call = "#{<<-"begin;"}\n#{<<-"end;".chomp}"
         begin;
-          unless ::Kernel.instance_method(:respond_to?).bind(_).call(:"#{method}")
-            ::Kernel.warn "\#{caller_locations(1)[0]}: "#{mesg.dump}"\#{_.class}"'##{method}'
+          unless defined? _.#{method}
+            ::Kernel.warn #{mesg.dump}"\#{_.class}"'##{method}', uplevel: 1
             _#{method_call}
           else
             _.#{method}(*args, &block)
@@ -217,7 +220,7 @@ module Forwardable
         end;
     end
 
-    line_no = __LINE__+1; str = "#{<<-"begin;"}\n#{<<-"end;"}"
+    _compile_method("#{<<-"begin;"}\n#{<<-"end;"}", __FILE__, __LINE__+1)
     begin;
       proc do
         def #{ali}(*args, &block)
@@ -228,11 +231,6 @@ module Forwardable
         end
       end
     end;
-
-    vm.compile(str, __FILE__, __FILE__, line_no,
-               trace_instruction: false,
-               tailcall_optimization: true)
-      .eval
   end
 end
 
@@ -270,12 +268,13 @@ module SingleForwardable
   #    delegate [method, method, ...] => accessor
   #
   def single_delegate(hash)
-    hash.each{ |methods, accessor|
-      methods = [methods] unless methods.respond_to?(:each)
-      methods.each{ |method|
-        def_single_delegator(accessor, method)
-      }
-    }
+    hash.each do |methods, accessor|
+      unless defined?(methods.each)
+        def_single_delegator(accessor, methods)
+      else
+        methods.each {|method| def_single_delegator(accessor, method)}
+      end
+    end
   end
 
   #

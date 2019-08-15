@@ -1,3 +1,9 @@
+[![Build Status](https://travis-ci.org/ruby/ruby.svg?branch=master)](https://travis-ci.org/ruby/ruby)
+[![wercker status](https://app.wercker.com/status/e5e7e1704f62b76525022aa424aef6ef/s/master "wercker status")](https://app.wercker.com/project/byKey/e5e7e1704f62b76525022aa424aef6ef)
+[![Build status](https://ci.appveyor.com/api/projects/status/0sy8rrxut4o0k960/branch/master?svg=true)](https://ci.appveyor.com/project/ruby/ruby/branch/master)
+[![Build Status](https://dev.azure.com/rubylang/ruby/_apis/build/status/ruby.ruby?branchName=master)](https://dev.azure.com/rubylang/ruby/_build/latest?definitionId=3&branchName=master)
+
+
 # Rubyとは
 
 Rubyはシンプルかつ強力なオブジェクト指向スクリプト言語です． Rubyは純粋なオブジェクト指向言語として設計されているので，
@@ -10,40 +16,48 @@ Rubyはテキスト処理関係の能力などに優れ，Perlと同じくらい
 
 *   シンプルな文法
 *   普通のオブジェクト指向機能(クラス，メソッドコールなど)
-*   特殊なオブジェクト指向機能(Mixin, 特異メソッドなど)
+*   特殊なオブジェクト指向機能(Mixin，特異メソッドなど)
 *   演算子オーバーロード
 *   例外処理機能
 *   イテレータとクロージャ
 *   ガーベージコレクタ
 *   ダイナミックローディング (アーキテクチャによる)
-*   移植性が高い．多くのUnix-like/POSIX互換プラットフォーム上で動くだけでなく，Windows， Mac OS
-    X，Haikuなどの上でも動く cf.
-    https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/SupportedPlatformsJa
+*   移植性が高い．多くのUnix-like/POSIX互換プラットフォーム上で動くだけでなく，Windows， macOS，
+    Haikuなどの上でも動く cf.
+    https://github.com/ruby/ruby/blob/master/doc/contributing.rdoc#platform-maintainers
 
 
 ## 入手法
 
-### FTPで
+サードパーティーツールを使った方法を含むRubyのインストール方法の一覧は
 
-以下の場所においてあります．
+https://www.ruby-lang.org/ja/downloads/
 
-ftp://ftp.ruby-lang.org/pub/ruby/
+を参照してください．
 
-### Subversionで
+### Git
 
-開発先端のソースコードは次のコマンドで取得できます．
+ミラーをGitHubに公開しています． 以下のコマンドでリポジトリを取得できます．
 
-    $ svn co https://svn.ruby-lang.org/repos/ruby/trunk/ ruby
+    $ git clone https://github.com/ruby/ruby.git
+
+他のブランチの一覧は次のコマンドで見られます．
+
+    $ git ls-remote https://github.com/ruby/ruby.git
+
+Rubyリポジトリの本来のmasterは https://git.ruby-lang.org/ruby.git にあります．
+コミッタはこちらを使います．
+
+### Subversion
+
+古いRubyのバージョンのソースコードは次のコマンドで取得できます．
+
+    $ svn co https://svn.ruby-lang.org/repos/ruby/branches/ruby_2_6/ ruby
 
 他に開発中のブランチの一覧は次のコマンドで見られます．
 
     $ svn ls https://svn.ruby-lang.org/repos/ruby/branches/
 
-### Gitで
-
-SubversionのミラーをGitHubに公開しています． 以下のコマンドでリポジトリを取得できます．
-
-    $ git clone git://github.com/ruby/ruby.git
 
 ## ホームページ
 
@@ -78,7 +92,7 @@ Ruby拡張モジュールについて話し合うruby-extメーリングリス�
 
 以下の手順で行ってください．
 
-1.  もし `configure` ファイルが見つからない，もしくは `configure.in` より古いようなら， `autoconf` を実行して
+1.  もし `configure` ファイルが見つからない，もしくは `configure.ac` より古いようなら， `autoconf` を実行して
     新しく `configure` を生成する
 
 2.  `configure` を実行して `Makefile` などを生成する
@@ -95,7 +109,8 @@ Ruby拡張モジュールについて話し合うruby-extメーリングリス�
     `ext/Setup` に記述したモジュールは静的にリンクされます．
 
     ダイナミックローディングをサポートしていないアーキテクチャでは `Setup` の1行目の「`option nodynamic`」という行のコ
-    メントを外す必要があります．また，このアーキテクチャで拡張モジュールを利用するためには，あらかじめ静的にリンクをしておく必要があります．
+    メントを外す必要があります．
+    また，このアーキテクチャで拡張モジュールを利用するためには，あらかじめ静的にリンクをしておく必要があります．
 
 5.  `make` を実行してコンパイルする
 
@@ -166,6 +181,3 @@ stackoverflow (https://ja.stackoverflow.com/) などのWebサイトに投稿し�
 Rubyのオリジナル版は，1995年にまつもとゆきひろ氏によって設計・開発されました．
 
 <mailto:matz@ruby-lang.org>
-
----
-created at: Thu Aug  3 11:57:36 JST 1995

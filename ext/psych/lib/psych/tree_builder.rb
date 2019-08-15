@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'psych/handler'
 
 module Psych
@@ -23,6 +23,18 @@ module Psych
       @stack = []
       @last  = nil
       @root  = nil
+
+      @start_line   = nil
+      @start_column = nil
+      @end_line     = nil
+      @end_column   = nil
+    end
+
+    def event_location(start_line, start_column, end_line, end_column)
+      @start_line   = start_line
+      @start_column = start_column
+      @end_line     = end_line
+      @end_column   = end_column
     end
 
     %w{
@@ -32,12 +44,15 @@ module Psych
       class_eval %{
         def start_#{node.downcase}(anchor, tag, implicit, style)
           n = Nodes::#{node}.new(anchor, tag, implicit, style)
+          set_start_location(n)
           @last.children << n
           push n
         end
 
         def end_#{node.downcase}
-          pop
+          n = pop
+          set_end_location(n)
+          n
         end
       }
     end
@@ -49,6 +64,7 @@ module Psych
     # See Psych::Handler#start_document
     def start_document version, tag_directives, implicit
       n = Nodes::Document.new version, tag_directives, implicit
+      set_start_location(n)
       @last.children << n
       push n
     end
@@ -60,26 +76,35 @@ module Psych
     # See Psych::Handler#start_document
     def end_document implicit_end = !streaming?
       @last.implicit_end = implicit_end
-      pop
+      n = pop
+      set_end_location(n)
+      n
     end
 
     def start_stream encoding
       @root = Nodes::Stream.new(encoding)
+      set_start_location(@root)
       push @root
     end
 
     def end_stream
-      pop
+      n = pop
+      set_end_location(n)
+      n
     end
 
     def scalar value, anchor, tag, plain, quoted, style
       s = Nodes::Scalar.new(value,anchor,tag,plain,quoted,style)
+      set_location(s)
       @last.children << s
       s
     end
 
     def alias anchor
-      @last.children << Nodes::Alias.new(anchor)
+      a = Nodes::Alias.new(anchor)
+      set_location(a)
+      @last.children << a
+      a
     end
 
     private
@@ -92,6 +117,21 @@ module Psych
       x = @stack.pop
       @last = @stack.last
       x
+    end
+
+    def set_location(node)
+      set_start_location(node)
+      set_end_location(node)
+    end
+
+    def set_start_location(node)
+      node.start_line   = @start_line
+      node.start_column = @start_column
+    end
+
+    def set_end_location(node)
+      node.end_line   = @end_line
+      node.end_column = @end_column
     end
   end
 end
