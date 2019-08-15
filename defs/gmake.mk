@@ -199,7 +199,7 @@ update-github: checkout-github
 	$(eval FORK_REPO := $(shell echo $(PULL_REQUEST_FORK_BRANCH) | cut -d' ' -f1))
 	$(eval PR_BRANCH := $(shell echo $(PULL_REQUEST_FORK_BRANCH) | cut -d' ' -f2))
 	git merge master --no-edit
-	git remote add fork-$(PR) git@github.com:$(FORK_REPO).git
+	git remote get-url fork-$(PR) || git remote add fork-$(PR) git@github.com:$(FORK_REPO).git
 	git push fork-$(PR) gh-$(PR):$(PR_BRANCH)
 	git remote rm fork-$(PR)
 
