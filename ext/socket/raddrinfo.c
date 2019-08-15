@@ -145,15 +145,6 @@ ruby_getaddrinfo__darwin(const char *nodename, const char *servname,
 #define getaddrinfo(node,serv,hints,res) ruby_getaddrinfo__darwin((node),(serv),(hints),(res))
 #endif
 
-#ifndef GETADDRINFO_EMU
-struct getaddrinfo_arg
-{
-    const char *node;
-    const char *service;
-    const struct addrinfo *hints;
-    struct addrinfo **res;
-};
-
 #ifdef HAVE_INET_PTON
 static int
 parse_numeric_port(const char *service, int *portp)
@@ -181,6 +172,15 @@ parse_numeric_port(const char *service, int *portp)
     return 1;
 }
 #endif
+
+#ifndef GETADDRINFO_EMU
+struct getaddrinfo_arg
+{
+    const char *node;
+    const char *service;
+    const struct addrinfo *hints;
+    struct addrinfo **res;
+};
 
 static void *
 nogvl_getaddrinfo(void *arg)
@@ -417,13 +417,13 @@ str_is_number(const char *p)
     char *ep;
 
     if (!p || *p == '\0')
-       return 0;
+        return 0;
     ep = NULL;
     (void)STRTOUL(p, &ep, 10);
     if (ep && *ep == '\0')
-       return 1;
+        return 1;
     else
-       return 0;
+        return 0;
 }
 
 #define str_equal(ptr, len, name) \
@@ -515,7 +515,7 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
     portp = port_str(port, pbuf, sizeof(pbuf), &additional_flags);
 
     if (socktype_hack && hints->ai_socktype == 0 && str_is_number(portp)) {
-       hints->ai_socktype = SOCK_DGRAM;
+        hints->ai_socktype = SOCK_DGRAM;
     }
     hints->ai_flags |= additional_flags;
 
@@ -1114,16 +1114,16 @@ addrinfo_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 static int
-get_afamily(struct sockaddr *addr, socklen_t len)
+get_afamily(const struct sockaddr *addr, socklen_t len)
 {
-    if ((socklen_t)((char*)&addr->sa_family + sizeof(addr->sa_family) - (char*)addr) <= len)
+    if ((socklen_t)((const char*)&addr->sa_family + sizeof(addr->sa_family) - (char*)addr) <= len)
         return addr->sa_family;
     else
         return AF_UNSPEC;
 }
 
 static int
-ai_get_afamily(rb_addrinfo_t *rai)
+ai_get_afamily(const rb_addrinfo_t *rai)
 {
     return get_afamily(&rai->addr.addr, rai->sockaddr_len);
 }
@@ -2550,7 +2550,7 @@ rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len)
         rb_raise(rb_eTypeError, "neither IO nor file descriptor");
     }
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 /*

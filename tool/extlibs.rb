@@ -3,13 +3,21 @@
 # Used to download, extract and patch extension libraries (extlibs)
 # for Ruby. See common.mk for Ruby's usage.
 
-require 'fileutils'
 require 'digest'
 require_relative 'downloader'
+require_relative 'lib/colorize'
 
 class ExtLibs
-  def do_download(url, base, cache_dir)
-    Downloader.download(url, base, cache_dir, nil)
+  def initialize
+    @colorize = Colorize.new
+  end
+
+  def cache_file(url, cache_dir)
+    Downloader.cache_file(url, nil, :cache_dir => cache_dir)
+  end
+
+  def do_download(url, cache_dir)
+    Downloader.download(url, nil, nil, nil, :cache_dir => cache_dir)
   end
 
   def do_checksum(cache, chksums)
@@ -20,16 +28,12 @@ class ExtLibs
         $stdout.flush
       end
       hd = Digest(name.upcase).file(cache).hexdigest
-      if hd == sum
-        if $VERBOSE
-          $stdout.puts " OK"
-          $stdout.flush
-        end
-      else
-        if $VERBOSE
-          $stdout.puts " NG"
-          $stdout.flush
-        end
+      if $VERBOSE
+        $stdout.print " "
+        $stdout.puts hd == sum ? @colorize.pass("OK") : @colorize.fail("NG")
+        $stdout.flush
+      end
+      unless hd == sum
         raise "checksum mismatch: #{cache}, #{name}:#{hd}, expected #{sum}"
       end
     end
@@ -77,22 +81,23 @@ class ExtLibs
   end
 
   def do_command(mode, dest, url, cache_dir, chksums)
-    base = File.basename(url)
-    cache = File.join(cache_dir, base)
-    target = File.join(dest, base[/.*(?=\.tar(?:\.\w+)?\z)/])
-
     extracted = false
+    base = /.*(?=\.tar(?:\.\w+)?\z)/
+
     case mode
     when :download
-      do_download(url, base, cache_dir)
+      cache = do_download(url, cache_dir)
       do_checksum(cache, chksums)
     when :extract
+      cache = cache_file(url, cache_dir)
+      target = File.join(dest, File.basename(cache)[base])
       unless File.directory?(target)
         do_checksum(cache, chksums)
         extracted = do_extract(cache, dest)
       end
     when :all
-      do_download(url, base, cache_dir)
+      cache = do_download(url, cache_dir)
+      target = File.join(dest, File.basename(cache)[base])
       unless File.directory?(target)
         do_checksum(cache, chksums)
         extracted = do_extract(cache, dest)
@@ -102,7 +107,7 @@ class ExtLibs
   end
 
   def run(argv)
-    cache_dir = ENV['CACHE_DIR'] || ".downloaded-cache"
+    cache_dir = nil
     mode = :all
     until argv.empty?
       case argv[0]
@@ -131,8 +136,6 @@ class ExtLibs
       argv.shift
     end
 
-    FileUtils.mkdir_p(cache_dir)
-
     success = true
     argv.each do |dir|
       Dir.glob("#{dir}/**/extlibs") do |list|
@@ -142,16 +145,24 @@ class ExtLibs
         end
         extracted = false
         dest = File.dirname(list)
+        url = chksums = nil
         IO.foreach(list) do |line|
           line.sub!(/\s*#.*/, '')
-          if /^\t/ =~ line
+          if chksums
+            chksums.concat(line.split)
+          elsif /^\t/ =~ line
             if extracted and (mode == :all or mode == :patch)
               patch, *args = line.split
               do_patch(dest, patch, args)
             end
             next
+          else
+            url, *chksums = line.split(' ')
           end
-          url, *chksums = line.split(' ')
+          if chksums.last == '\\'
+            chksums.pop
+            next
+          end
           next unless url
           begin
             extracted = do_command(mode, dest, url, cache_dir, chksums)
@@ -159,6 +170,7 @@ class ExtLibs
             warn e.inspect
             success = false
           end
+          url = chksums = nil
         end
       end
     end

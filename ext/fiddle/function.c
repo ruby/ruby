@@ -113,7 +113,7 @@ initialize(int argc, VALUE argv[], VALUE self)
     Check_Max_Args("args", len);
     ary = rb_ary_subseq(args, 0, len);
     for (i = 0; i < RARRAY_LEN(args); i++) {
-	VALUE a = RARRAY_PTR(args)[i];
+        VALUE a = RARRAY_AREF(args, i);
 	int type = NUM2INT(a);
 	(void)INT2FFI_TYPE(type); /* raise */
 	if (INT2FIX(type) != a) rb_ary_store(ary, i, INT2FIX(type));
@@ -214,7 +214,7 @@ function_call(int argc, VALUE argv[], VALUE self)
 	args.values[i] = (void *)&generic_args[i];
     }
     args.values[argc] = NULL;
-    args.fn = NUM2PTR(cfunc);
+    args.fn = (void(*)(void))NUM2PTR(cfunc);
 
     (void)rb_thread_call_without_gvl(nogvl_ffi_call, &args, 0, 0);
 

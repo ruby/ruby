@@ -58,6 +58,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal '[assign(var_field(a),ref(a))]', parse('a=a')
     assert_equal '[ref(nil)]', parse('nil')
     assert_equal '[ref(true)]', parse('true')
+    assert_include parse('proc{@1}'), '[ref(@1)]'
   end
 
   def test_vcall
@@ -194,38 +195,64 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def test_assign_error
-    # for test_coverage
+    thru_assign_error = false
+    result = parse('self = 1', :on_assign_error) {thru_assign_error = true}
+    assert_equal true, thru_assign_error
+    assert_equal '[assign(assign_error(var_field(self)),1)]', result
   end
 
   def test_assign_error_backref
     thru_assign_error = false
-    parse('$` = 1', :on_assign_error) {thru_assign_error = true}
+    result =
+      parse('$` = 1', :on_assign_error) {thru_assign_error = true}
     assert_equal true, thru_assign_error
+    assert_equal '[assign(assign_error(var_field($`)),1)]', result
+
     thru_assign_error = false
-    parse('$`, _ = 1', :on_assign_error) {thru_assign_error = true}
+    result =
+      parse('$`, _ = 1', :on_assign_error) {thru_assign_error = true}
     assert_equal true, thru_assign_error
+    assert_equal '[massign([assign_error(var_field($`)),var_field(_)],1)]', result
   end
 
   def test_assign_error_const_qualified
     thru_assign_error = false
-    parse('self::X = 1', :on_assign_error) {thru_assign_error = true}
+    result =
+      parse('self::X = 1', :on_assign_error) {thru_assign_error = true}
     assert_equal false, thru_assign_error
-    parse("def m\n self::X = 1\nend", :on_assign_error) {thru_assign_error = true}
-    assert_equal true, thru_assign_error
+    assert_equal "[assign(const_path_field(ref(self),X),1)]", result
+
     thru_assign_error = false
-    parse("def m\n self::X, a = 1, 2\nend", :on_assign_error) {thru_assign_error = true}
+    result =
+      parse("def m\n self::X = 1\nend", :on_assign_error) {thru_assign_error = true}
     assert_equal true, thru_assign_error
+    assert_include result, "assign_error(const_path_field(ref(self),X))"
+
+    thru_assign_error = false
+    result =
+      parse("def m\n self::X, a = 1, 2\nend", :on_assign_error) {thru_assign_error = true}
+    assert_equal true, thru_assign_error
+    assert_include result, "assign_error(const_path_field(ref(self),X))"
   end
 
   def test_assign_error_const
     thru_assign_error = false
-    parse('X = 1', :on_assign_error) {thru_assign_error = true}
+    result = parse('X = 1', :on_assign_error) {thru_assign_error = true}
     assert_equal false, thru_assign_error
-    parse("def m\n X = 1\nend", :on_assign_error) {thru_assign_error = true}
-    assert_equal true, thru_assign_error
+    assert_equal "[assign(var_field(X),1)]", result
+
     thru_assign_error = false
-    parse("def m\n X, a = 1, 2\nend", :on_assign_error) {thru_assign_error = true}
+    result = parse('X, a = 1, 2', :on_assign_error) {thru_assign_error = true}
+    assert_equal false, thru_assign_error
+    assert_include result, "massign([var_field(X),var_field(a)],"
+
+    result = parse("def m\n X = 1\nend", :on_assign_error) {thru_assign_error = true}
     assert_equal true, thru_assign_error
+    assert_include result, "assign_error(var_field(X))"
+    thru_assign_error = false
+    result = parse("def m\n X, a = 1, 2\nend", :on_assign_error) {thru_assign_error = true}
+    assert_equal true, thru_assign_error
+    assert_include result, "assign_error(var_field(X))"
   end
 
   def test_assign_error_const_toplevel
@@ -408,6 +435,13 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal "[call(ref(self),&.,foo,[])]", tree
   end
 
+  def test_methref
+    thru_methref = false
+    tree = parse("obj.:foo", :on_methref) {thru_methref = true}
+    assert_equal true, thru_methref
+    assert_equal "[methref(vcall(obj),foo)]", tree
+  end
+
   def test_excessed_comma
     thru_excessed_comma = false
     parse("proc{|x,|}", :on_excessed_comma) {thru_excessed_comma = true}
@@ -448,7 +482,17 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     }
     assert_equal true, thru_heredoc_dedent
     assert_match(/string_content\(\), heredoc\n/, tree)
+    assert_equal(" heredoc\n", str.children[1])
     assert_equal(1, width)
+  end
+
+  def test_unterminated_heredoc
+    assert_match("can't find string \"a\" anywhere before EOF", compile_error("<<a"))
+    assert_match("can't find string \"a\" anywhere before EOF", compile_error('<<"a"'))
+    assert_match("can't find string \"a\" anywhere before EOF", compile_error("<<'a'"))
+    msg = nil
+    parse('<<"', :on_parse_error) {|_, e| msg = e}
+    assert_equal("unterminated here document identifier", msg)
   end
 
   def test_massign
@@ -470,23 +514,46 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_mlhs_add_star = false
     tree = parse("a, *b = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
     assert_equal true, thru_mlhs_add_star
-    assert_match(/mlhs_add_star\(mlhs_add\(mlhs_new\(\),a\),b\)/, tree)
+    assert_include(tree, "massign([var_field(a),*var_field(b)]")
     thru_mlhs_add_star = false
     tree = parse("a, *b, c = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
     assert_equal true, thru_mlhs_add_star
-    assert_match(/mlhs_add\(mlhs_add_star\(mlhs_add\(mlhs_new\(\),a\),b\),mlhs_add\(mlhs_new\(\),c\)\)/, tree, bug2232)
+    assert_include(tree, "massign([var_field(a),*var_field(b),var_field(c)]", bug2232)
     thru_mlhs_add_star = false
     tree = parse("a, *, c = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
     assert_equal true, thru_mlhs_add_star
-    assert_match(/mlhs_add\(mlhs_add_star\(mlhs_add\(mlhs_new\(\),a\)\),mlhs_add\(mlhs_new\(\),c\)\)/, tree, bug4364)
+    assert_include(tree, "massign([var_field(a),*,var_field(c)]", bug4364)
     thru_mlhs_add_star = false
     tree = parse("*b, c = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
     assert_equal true, thru_mlhs_add_star
-    assert_match(/mlhs_add\(mlhs_add_star\(mlhs_new\(\),b\),mlhs_add\(mlhs_new\(\),c\)\)/, tree, bug4364)
+    assert_include(tree, "massign([*var_field(b),var_field(c)]", bug4364)
     thru_mlhs_add_star = false
     tree = parse("*, c = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
     assert_equal true, thru_mlhs_add_star
-    assert_match(/mlhs_add\(mlhs_add_star\(mlhs_new\(\)\),mlhs_add\(mlhs_new\(\),c\)\)/, tree, bug4364)
+    assert_include(tree, "massign([*,var_field(c)],", bug4364)
+  end
+
+  def test_mlhs_add_post
+    thru_mlhs_add_post = false
+    tree = parse("a, *b = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal false, thru_mlhs_add_post
+    assert_include(tree, "massign([var_field(a),*var_field(b)],")
+    thru_mlhs_add_post = false
+    tree = parse("a, *b, c = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "massign([var_field(a),*var_field(b),var_field(c)],")
+    thru_mlhs_add_post = false
+    tree = parse("a, *, c = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "massign([var_field(a),*,var_field(c)],")
+    thru_mlhs_add_post = false
+    tree = parse("*b, c = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "massign([*var_field(b),var_field(c)],")
+    thru_mlhs_add_post = false
+    tree = parse("*, c = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "massign([*,var_field(c)],")
   end
 
   def test_mlhs_new
@@ -684,6 +751,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal true, thru_ifop
   end
 
+  def test_ignored_nl
+    ignored_nl = []
+    parse("foo # comment\n...\n", :on_ignored_nl) {|_, a| ignored_nl << a}
+    assert_equal ["\n"], ignored_nl
+  end
+
   def test_lambda
     thru_lambda = false
     parse('->{}', :on_lambda) {thru_lambda = true}
@@ -870,7 +943,85 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_params = false
     parse('a {|**x|}', :on_params) {|_, *v| thru_params = true; arg = v}
     assert_equal true, thru_params
-    assert_equal [nil, nil, nil, nil, nil, "x", nil], arg
+    assert_equal [nil, nil, nil, nil, nil, "**x", nil], arg
+  end
+
+  def test_params_mlhs
+    thru_mlhs = false
+    tree = parse("proc {|(a, b)|}", :on_mlhs_paren) {thru_mlhs = true}
+    assert_equal true, thru_mlhs
+    assert_include(tree, "[mlhs([a,b])]")
+  end
+
+  def test_params_mlhs_add
+    thru_mlhs_add = false
+    tree = parse("proc {|(a, b)|}", :on_mlhs_add) {thru_mlhs_add = true}
+    assert_equal true, thru_mlhs_add
+    assert_include(tree, "[mlhs([a,b])]")
+  end
+
+  def test_params_mlhs_add_star
+    thru_mlhs_add_star = false
+    tree = parse("proc {|(a, *b)|}", :on_mlhs_add_star) {thru_mlhs_add_star = true}
+    assert_equal true, thru_mlhs_add_star
+    assert_include(tree, "[mlhs([a,*b])]")
+    thru_mlhs_add_star = false
+    tree = parse("proc {|(a, *b, c)|}", :on_mlhs_add_star) {thru_mlhs_add_star = true}
+    assert_equal true, thru_mlhs_add_star
+    assert_include(tree, "[mlhs([a,*b,c])]")
+    thru_mlhs_add_star = false
+    tree = parse("proc {|(a, *, c)|}", :on_mlhs_add_star) {thru_mlhs_add_star = true}
+    assert_equal true, thru_mlhs_add_star
+    assert_include(tree, "[mlhs([a,*,c])]")
+    thru_mlhs_add_star = false
+    tree = parse("proc {|(*b, c)|}", :on_mlhs_add_star) {thru_mlhs_add_star = true}
+    assert_equal true, thru_mlhs_add_star
+    assert_include(tree, "[mlhs([*b,c])]")
+    thru_mlhs_add_star = false
+    tree = parse("proc {|(*b)|}", :on_mlhs_add_star) {thru_mlhs_add_star = true}
+    assert_equal true, thru_mlhs_add_star
+    assert_include(tree, "[mlhs([*b])]")
+  end
+
+  def test_params_mlhs_add_post
+    thru_mlhs_add_post = false
+    tree = parse("proc {|(a, *b)|}", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal false, thru_mlhs_add_post
+    assert_include(tree, "mlhs([a,*b])")
+    thru_mlhs_add_post = false
+    tree = parse("proc {|(a, *b, c)|}", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "mlhs([a,*b,c])")
+    thru_mlhs_add_post = false
+    tree = parse("proc {|(a, *, c)|}", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "mlhs([a,*,c])")
+    thru_mlhs_add_post = false
+    tree = parse("proc {|(*b, c)|}", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "mlhs([*b,c])")
+    thru_mlhs_add_post = false
+    tree = parse("proc {|(*, c)|}", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "mlhs([*,c])")
+  end
+
+  def test_params_mlhs_new
+    thru_mlhs_new = false
+    tree = parse("proc {|(a, b)|}", :on_mlhs_new) {thru_mlhs_new = true}
+    assert_equal true, thru_mlhs_new
+    assert_include(tree, "[mlhs([a,b])]")
+  end
+
+  def test_params_mlhs_paren
+    thru_mlhs_paren = 0
+    tree = parse("proc {|(a, b)|}", :on_mlhs_paren) {thru_mlhs_paren += 1}
+    assert_equal 1, thru_mlhs_paren
+    assert_include(tree, "[mlhs([a,b])]")
+    thru_mlhs_paren = 0
+    tree = parse("proc {|((a, b))|}", :on_mlhs_paren) {thru_mlhs_paren += 1}
+    assert_equal 2, thru_mlhs_paren
+    assert_include(tree, "[mlhs([a,b])]")
   end
 
   def test_paren
@@ -887,20 +1038,35 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
 
   def test_qwords_add
     thru_qwords_add = false
-    parse('%w[a]', :on_qwords_add) {thru_qwords_add = true}
+    tree = parse('%w[a]', :on_qwords_add) {thru_qwords_add = true}
     assert_equal true, thru_qwords_add
+    assert_equal '[array([a])]', tree
+    thru_qwords_add = false
+    tree = parse('%w[ a ]', :on_qwords_add) {thru_qwords_add = true}
+    assert_equal true, thru_qwords_add
+    assert_equal '[array([a])]', tree
   end
 
   def test_qsymbols_add
     thru_qsymbols_add = false
-    parse('%i[a]', :on_qsymbols_add) {thru_qsymbols_add = true}
+    tree = parse('%i[a]', :on_qsymbols_add) {thru_qsymbols_add = true}
     assert_equal true, thru_qsymbols_add
+    assert_equal '[array([:a])]', tree
+    thru_qsymbols_add = false
+    tree = parse('%i[ a ]', :on_qsymbols_add) {thru_qsymbols_add = true}
+    assert_equal true, thru_qsymbols_add
+    assert_equal '[array([:a])]', tree
   end
 
   def test_symbols_add
     thru_symbols_add = false
-    parse('%I[a]', :on_symbols_add) {thru_symbols_add = true}
+    tree = parse('%I[a]', :on_symbols_add) {thru_symbols_add = true}
     assert_equal true, thru_symbols_add
+    assert_equal '[array([:a])]', tree
+    thru_symbols_add = false
+    tree = parse('%I[ a ]', :on_symbols_add) {thru_symbols_add = true}
+    assert_equal true, thru_symbols_add
+    assert_equal '[array([:a])]', tree
   end
 
   def test_qwords_new
@@ -976,6 +1142,15 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_rest_param = false
     parse('def a(*x) end', :on_rest_param) {thru_rest_param = true}
     assert_equal true, thru_rest_param
+  end
+
+  def test_kwrest_param
+    thru_kwrest = false
+    parse('def a(**) end', :on_kwrest_param) {|n, val| thru_kwrest = val}
+    assert_equal nil, thru_kwrest
+    thru_kwrest = false
+    parse('def a(**x) end', :on_kwrest_param) {|n, val| thru_kwrest = val}
+    assert_equal "x", thru_kwrest
   end
 
   def test_retry
@@ -1241,8 +1416,13 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
 
   def test_words_add
     thru_words_add = false
-    parse('%W[a]', :on_words_add) {thru_words_add = true}
+    tree = parse('%W[a]', :on_words_add) {thru_words_add = true}
     assert_equal true, thru_words_add
+    assert_equal '[array([a])]', tree
+    thru_words_add = false
+    tree = parse('%W[ a ]', :on_words_add) {thru_words_add = true}
+    assert_equal true, thru_words_add
+    assert_equal '[array([a])]', tree
   end
 
   def test_words_new
@@ -1301,8 +1481,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   def test_block_variables
     assert_equal("[fcall(proc,[],&block([],[void()]))]", parse("proc{|;y|}"))
     if defined?(Process::RLIMIT_AS)
-      assert_in_out_err(["-I#{File.dirname(__FILE__)}", "-rdummyparser"],
-                        'Process.setrlimit(Process::RLIMIT_AS,100*1024*1024); puts DummyParser.new("proc{|;y|!y}").parse',
+      dir = File.dirname(__FILE__)
+      as = 100 * 1024 * 1024 # 100MB
+      as *= 2 if RubyVM::MJIT.enabled? # space for compiler
+      assert_in_out_err(%W(-I#{dir} -rdummyparser),
+                        "Process.setrlimit(Process::RLIMIT_AS,#{as}); "\
+                        "puts DummyParser.new('proc{|;y|!y}').parse",
                         ["[fcall(proc,[],&block([],[unary(!,ref(y))]))]"], [], '[ruby-dev:39423]')
     end
   end
@@ -1311,28 +1495,24 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal("unterminated regexp meets end of file", compile_error('/'))
   end
 
+  def test_invalid_numbered_parameter_name
+    assert_equal("leading zero is not allowed as a numbered parameter", compile_error('proc{@0}'))
+  end
+
   def test_invalid_instance_variable_name
-    assert_equal("`@1' is not allowed as an instance variable name", compile_error('@1'))
-    assert_equal("`@%' is not allowed as an instance variable name", compile_error('@%'))
+    assert_equal("`@' without identifiers is not allowed as an instance variable name", compile_error('@%'))
     assert_equal("`@' without identifiers is not allowed as an instance variable name", compile_error('@'))
   end
 
   def test_invalid_class_variable_name
     assert_equal("`@@1' is not allowed as a class variable name", compile_error('@@1'))
-    assert_equal("`@@%' is not allowed as a class variable name", compile_error('@@%'))
+    assert_equal("`@@' without identifiers is not allowed as a class variable name", compile_error('@@%'))
     assert_equal("`@@' without identifiers is not allowed as a class variable name", compile_error('@@'))
   end
 
   def test_invalid_global_variable_name
     assert_equal("`$%' is not allowed as a global variable name", compile_error('$%'))
     assert_equal("`$' without identifiers is not allowed as a global variable name", compile_error('$'))
-  end
-
-  def test_warning_shadowing
-    fmt, *args = warning("x = 1; tap {|;x|}")
-    assert_match(/shadowing outer local variable/, fmt)
-    assert_equal("x", args[0])
-    assert_match(/x/, fmt % args)
   end
 
   def test_warning_ignored_magic_comment
@@ -1345,5 +1525,23 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     fmt = nil
     assert_warn("") {fmt, = warn("\r;")}
     assert_match(/encountered/, fmt)
+  end
+
+  def test_in
+    thru_in = false
+    parse('case 0; in 0; end', :on_in) {thru_in = true}
+    assert_equal true, thru_in
+  end
+
+  def test_aryptn
+    thru_aryptn = false
+    parse('case 0; in [0]; end', :on_aryptn) {thru_aryptn = true}
+    assert_equal true, thru_aryptn
+  end
+
+  def test_hshptn
+    thru_hshptn = false
+    parse('case 0; in {a:}; end', :on_hshptn) {thru_hshptn = true}
+    assert_equal true, thru_hshptn
   end
 end if ripper_test

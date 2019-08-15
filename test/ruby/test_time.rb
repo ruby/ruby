@@ -173,7 +173,7 @@ class TestTime < Test::Unit::TestCase
     assert_equal(10000, Time.at(0.00001).nsec)
     assert_equal(3000, Time.at(0.000003).nsec)
     assert_equal(200, Time.at(0.0000002r).nsec)
-    assert_equal(199, Time.at(0.0000002).nsec)
+    assert_in_delta(200, Time.at(0.0000002).nsec, 1, "should be within FP error")
     assert_equal(10, Time.at(0.00000001).nsec)
     assert_equal(1, Time.at(0.000000001).nsec)
 
@@ -234,6 +234,17 @@ class TestTime < Test::Unit::TestCase
     assert_equal(100, Time.at(0, 0.1).nsec)
     assert_equal(10, Time.at(0, 0.01).nsec)
     assert_equal(1, Time.at(0, 0.001).nsec)
+  end
+
+  def test_at_with_unit
+    assert_equal(123456789, Time.at(0, 123456789, :nanosecond).nsec)
+    assert_equal(123456789, Time.at(0, 123456789, :nsec).nsec)
+    assert_equal(123456000, Time.at(0, 123456, :microsecond).nsec)
+    assert_equal(123456000, Time.at(0, 123456, :usec).nsec)
+    assert_equal(123000000, Time.at(0, 123, :millisecond).nsec)
+    assert_raise(ArgumentError){ Time.at(0, 1, 2) }
+    assert_raise(ArgumentError){ Time.at(0, 1, :invalid) }
+    assert_raise(ArgumentError){ Time.at(0, 1, nil) }
   end
 
   def test_at_rational
@@ -308,7 +319,9 @@ class TestTime < Test::Unit::TestCase
     in_timezone('JST-9') do
       t = Time.local(2013, 2, 24)
       assert_equal('JST', Time.local(2013, 2, 24).zone)
-      assert_equal('JST', Marshal.load(Marshal.dump(t)).zone)
+      t = Marshal.load(Marshal.dump(t))
+      assert_equal('JST', t.zone)
+      assert_equal('JST', (t+1).zone, '[ruby-core:81892] [Bug #13710]')
     end
   end
 
@@ -360,6 +373,16 @@ class TestTime < Test::Unit::TestCase
       assert_equal('UTC', t1.zone)
       assert_equal('UTC', t2.zone)
     end
+  end
+
+  def test_marshal_distant_past
+    assert_marshal_roundtrip(Time.utc(1890, 1, 1))
+    assert_marshal_roundtrip(Time.utc(-4.5e9, 1, 1))
+  end
+
+  def test_marshal_distant_future
+    assert_marshal_roundtrip(Time.utc(30000, 1, 1))
+    assert_marshal_roundtrip(Time.utc(5.67e9, 4, 8))
   end
 
   def test_at3
@@ -543,6 +566,10 @@ class TestTime < Test::Unit::TestCase
 
   def test_zone
     assert_zone_encoding Time.now
+    t = Time.now.utc
+    assert_equal("UTC", t.zone)
+    assert_nil(t.getlocal(0).zone)
+    assert_nil(t.getlocal("+02:00").zone)
   end
 
   def test_plus_minus_succ
@@ -953,6 +980,58 @@ class TestTime < Test::Unit::TestCase
     }
   end
 
+  def test_floor
+    t = Time.utc(1999,12,31, 23,59,59)
+    t2 = (t+0.4).floor
+    assert_equal([59,59,23, 31,12,1999, 5,365,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+0.49).floor
+    assert_equal([59,59,23, 31,12,1999, 5,365,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+0.5).floor
+    assert_equal([59,59,23, 31,12,1999, 5,365,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+1.4).floor
+    assert_equal([0,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+1.49).floor
+    assert_equal([0,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+1.5).floor
+    assert_equal([0,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+
+    t2 = (t+0.123456789).floor(4)
+    assert_equal([59,59,23, 31,12,1999, 5,365,false,"UTC"], t2.to_a)
+    assert_equal(Rational(1234,10000), t2.subsec)
+  end
+
+  def test_ceil
+    t = Time.utc(1999,12,31, 23,59,59)
+    t2 = (t+0.4).ceil
+    assert_equal([0,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+0.49).ceil
+    assert_equal([0,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+0.5).ceil
+    assert_equal([0,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+1.4).ceil
+    assert_equal([1,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+1.49).ceil
+    assert_equal([1,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+1.5).ceil
+    assert_equal([1,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+
+    t2 = (t+0.123456789).ceil(4)
+    assert_equal([59,59,23, 31,12,1999, 5,365,false,"UTC"], t2.to_a)
+    assert_equal(Rational(1235,10000), t2.subsec)
+  end
+
   def test_getlocal_dont_share_eigenclass
     bug5012 = "[ruby-dev:44071]"
 
@@ -1043,6 +1122,29 @@ class TestTime < Test::Unit::TestCase
       assert_equal(min, t.min)
       assert_equal(sec, t.sec)
     }
+    assert_equal(Time.local(2038,3,1), Time.local(2038,2,29))
+    assert_equal(Time.local(2038,3,2), Time.local(2038,2,30))
+    assert_equal(Time.local(2038,3,3), Time.local(2038,2,31))
+    assert_equal(Time.local(2040,2,29), Time.local(2040,2,29))
+    assert_equal(Time.local(2040,3,1), Time.local(2040,2,30))
+    assert_equal(Time.local(2040,3,2), Time.local(2040,2,31))
+    n = 2 ** 64
+    n += 400 - n % 400 # n is over 2^64 and multiple of 400
+    assert_equal(Time.local(n,2,29),Time.local(n,2,29))
+    assert_equal(Time.local(n,3,1), Time.local(n,2,30))
+    assert_equal(Time.local(n,3,2), Time.local(n,2,31))
+    n += 100
+    assert_equal(Time.local(n,3,1), Time.local(n,2,29))
+    assert_equal(Time.local(n,3,2), Time.local(n,2,30))
+    assert_equal(Time.local(n,3,3), Time.local(n,2,31))
+    n += 4
+    assert_equal(Time.local(n,2,29),Time.local(n,2,29))
+    assert_equal(Time.local(n,3,1), Time.local(n,2,30))
+    assert_equal(Time.local(n,3,2), Time.local(n,2,31))
+    n += 1
+    assert_equal(Time.local(n,3,1), Time.local(n,2,29))
+    assert_equal(Time.local(n,3,2), Time.local(n,2,30))
+    assert_equal(Time.local(n,3,3), Time.local(n,2,31))
   end
 
   def test_future
@@ -1091,14 +1193,19 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_strftime_no_hidden_garbage
+    skip unless Thread.list.size == 1
+
     fmt = %w(Y m d).map { |x| "%#{x}" }.join('-') # defeats optimization
     t = Time.at(0).getutc
     ObjectSpace.count_objects(res = {}) # creates strings on first call
+    GC.disable
     before = ObjectSpace.count_objects(res)[:T_STRING]
     val = t.strftime(fmt)
     after = ObjectSpace.count_objects(res)[:T_STRING]
     assert_equal before + 1, after, 'only new string is the created one'
     assert_equal '1970-01-01', val
+  ensure
+    GC.enable
   end
 
   def test_num_exact_error
@@ -1109,5 +1216,23 @@ class TestTime < Test::Unit::TestCase
       define_method(:to_r) {bad}
     end.new
     assert_raise_with_message(TypeError, /Inexact/) {Time.at(x)}
+  end
+
+  def test_memsize
+    # Time objects are common in some code, try to keep them small
+    skip "Time object size test" if /^(?:i.?86|x86_64)-linux/ !~ RUBY_PLATFORM
+    require 'objspace'
+    t = Time.at(0)
+    size = GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
+    case size
+    when 20 then expect = 50
+    when 40 then expect = 86
+    when 48 then expect = 94
+    else
+      flunk "Unsupported RVALUE_SIZE=#{size}, update test_memsize"
+    end
+    assert_equal expect, ObjectSpace.memsize_of(t)
+  rescue LoadError => e
+    skip "failed to load objspace: #{e.message}"
   end
 end

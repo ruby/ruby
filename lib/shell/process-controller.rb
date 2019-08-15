@@ -10,8 +10,6 @@
 #
 #
 require "forwardable"
-
-require "thread"
 require "sync"
 
 class Shell

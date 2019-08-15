@@ -1,1 +1,1 @@
-require_relative '../bm_app_pentomino.rb'
+require_relative '../app_pentomino'

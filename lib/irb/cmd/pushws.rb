@@ -10,8 +10,8 @@
 #
 #
 
-require "irb/cmd/nop.rb"
-require "irb/ext/workspaces.rb"
+require_relative "nop"
+require_relative "../ext/workspaces"
 
 # :stopdoc:
 module IRB

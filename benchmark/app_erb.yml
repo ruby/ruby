@@ -1,0 +1,23 @@
+#
+# Create many HTML strings with ERB.
+#
+prelude: |
+  require 'erb'
+
+  data = <<erb
+  <html>
+    <head> <%= title %> </head>
+    <body>
+      <h1> <%= title %> </h1>
+      <p>
+        <%= content %>
+      </p>
+    </body>
+  </html>
+  erb
+
+  title = "hello world!"
+  content = "hello world!\n" * 10
+benchmark:
+  app_erb: ERB.new(data).result(binding)
+loop_count: 15000
