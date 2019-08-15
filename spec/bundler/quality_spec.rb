@@ -170,7 +170,6 @@ RSpec.describe "The library itself" do
     error_messages = []
     exempt = /vendor|vcr_cassettes/
     Dir.chdir(root) do
-      lib_tracked_files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb` : `git ls-files -z -- lib`
       lib_tracked_files.split("\x0").each do |filename|
         next if filename =~ exempt
         error_messages << check_for_expendable_words(filename)
@@ -200,7 +199,6 @@ RSpec.describe "The library itself" do
 
     Dir.chdir(root) do
       key_pattern = /([a-z\._-]+)/i
-      lib_tracked_files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb` : `git ls-files -z -- lib`
       lib_tracked_files.split("\x0").each do |filename|
         each_line(filename) do |line, number|
           line.scan(/Bundler\.settings\[:#{key_pattern}\]/).flatten.each {|s| all_settings[s] << "referenced at `#{filename}:#{number.succ}`" }
@@ -267,7 +265,6 @@ RSpec.describe "The library itself" do
         lib/bundler/vlad.rb
         lib/bundler/templates/gems.rb
       ]
-      lib_tracked_files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb` : `git ls-files -z -- lib`
       files_to_require = lib_tracked_files.split("\x0").grep(/\.rb$/) - exclusions
       files_to_require.reject! {|f| f.start_with?("lib/bundler/vendor") }
       files_to_require.map! {|f| f.chomp(".rb") }
@@ -289,7 +286,6 @@ RSpec.describe "The library itself" do
     Dir.chdir(root) do
       exempt = %r{templates/|vendor/}
       all_bad_requires = []
-      lib_tracked_files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb` : `git ls-files -z -- lib`
       lib_tracked_files.split("\x0").each do |filename|
         next if filename =~ exempt
         each_line(filename) do |line, number|
