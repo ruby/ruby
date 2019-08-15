@@ -1,5 +1,5 @@
-# frozen_string_literal: false
-require 'rdoc/ri'
+# frozen_string_literal: true
+require 'rdoc/rdoc'
 
 ##
 # The directories where ri data lives.  Paths can be enumerated via ::each, or

@@ -10,7 +10,7 @@ class TestMkmf
         FileUtils.mkdir_p(hdrdir)
         File.write("#{hdrdir}/#{hdrname}", "")
         src = "#{fwdir}/main.c"
-        File.write(src, "void #{fw}(void) {}")
+        File.write(src, "void #{fw}(void) {}\n")
         cmd = LINK_SO.dup
         RbConfig.expand(cmd, RbConfig::CONFIG.merge("OBJS"=>src))
         cmd.gsub!("$@", "#{fwdir}/#{fw}")
@@ -22,11 +22,11 @@ class TestMkmf
     end
 
     def test_single_framework
-      assert(have_framework("Ruby"), mkmflog("try as Objective-C"))
+      assert(have_framework(%w"Ruby ruby.h"), mkmflog("try as Objective-C"))
     end
 
     def test_multi_frameworks
-      assert(have_framework("Ruby"), mkmflog("try as Objective-C"))
+      assert(have_framework(%w"Ruby ruby.h"), mkmflog("try as Objective-C"))
       create_framework("MkmfTest") do |fw|
         assert(have_framework(fw), MKMFLOG)
       end

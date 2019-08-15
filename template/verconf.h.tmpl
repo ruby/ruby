@@ -4,7 +4,7 @@
 % C = rbconfig::MAKEFILE_CONFIG.dup
 % def C.[](name) str = super and (str unless str.empty?); end
 #define RUBY_BASE_NAME			"${RUBY_BASE_NAME}"
-#define RUBY_VERSION_NAME		RUBY_BASE_NAME"-"RUBY_LIB_VERSION
+#define RUBY_VERSION_NAME		"${RUBY_VERSION_NAME}"
 % if C["RUBY_LIB_VERSION_STYLE"]
 #define RUBY_LIB_VERSION_STYLE		${RUBY_LIB_VERSION_STYLE}
 % elsif !C["RUBY_LIB_VERSION"]
@@ -21,13 +21,13 @@
 #define RUBY_SITEARCH_PREFIX_FOR(arch)	"${rubysitearchprefix}"
 #define RUBY_LIB			"${rubylibdir}"
 #define RUBY_ARCH_LIB_FOR(arch) 	"${rubyarchdir}"
-% if C["sitedir"] == "no"
+% if !C["sitedir"] || C["sitedir"] == "no"
 #define NO_RUBY_SITE_LIB		1
 % else
 #define RUBY_SITE_LIB			"${sitedir}"
 #define RUBY_SITE_ARCH_LIB_FOR(arch)	"${sitearchdir}"
 % end
-% if C["vendordir"] == "no"
+% if !C["vendordir"] || C["vendordir"] == "no"
 #define NO_RUBY_VENDOR_LIB		1
 % else
 #define RUBY_VENDOR_LIB 		"${vendordir}"

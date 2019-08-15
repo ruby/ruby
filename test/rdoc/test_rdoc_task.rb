@@ -1,5 +1,5 @@
-# frozen_string_literal: false
-require 'rdoc/test_case'
+# frozen_string_literal: true
+require 'minitest_helper'
 begin
   require 'rake'
 rescue LoadError
@@ -20,19 +20,19 @@ class TestRDocTask < RDoc::TestCase
   end
 
   def test_inline_source
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       assert @t.inline_source
     end
 
     assert_equal "RDoc::Task#inline_source is deprecated\n", err
 
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       @t.inline_source = false
     end
 
     assert_equal "RDoc::Task#inline_source is deprecated\n", err
 
-    capture_io do
+    capture_output do
       assert @t.inline_source
     end
   end

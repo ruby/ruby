@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # Subclass of the RDoc::Markup::ToHtml class that supports looking up method
 # names, classes, etc to create links.  RDoc::CrossReference is used to
@@ -40,7 +40,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
     @show_hash     = @options.show_hash
 
     crossref_re = @hyperlink_all ? ALL_CROSSREF_REGEXP : CROSSREF_REGEXP
-    @markup.add_special crossref_re, :CROSSREF
+    @markup.add_regexp_handling crossref_re, :CROSSREF
 
     @cross_reference = RDoc::CrossReference.new @context
   end
@@ -49,16 +49,19 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   # Creates a link to the reference +name+ if the name exists.  If +text+ is
   # given it is used as the link text, otherwise +name+ is used.
 
-  def cross_reference name, text = nil
+  def cross_reference name, text = nil, code = true
     lookup = name
 
     name = name[1..-1] unless @show_hash if name[0, 1] == '#'
 
-    name = "#{CGI.unescape $'} at #{$1}" if name =~ /(.*[^#:])@/
+    if name =~ /(.*[^#:])@/
+      text ||= "#{CGI.unescape $'} at <code>#{$1}</code>"
+      code = false
+    else
+      text ||= name
+    end
 
-    text = name unless text
-
-    link lookup, text
+    link lookup, text, code
   end
 
   ##
@@ -68,8 +71,8 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   # example, ToHtml is found, even without the <tt>RDoc::Markup::</tt> prefix,
   # because we look for it in module Markup first.
 
-  def handle_special_CROSSREF(special)
-    name = special.text
+  def handle_regexp_CROSSREF(target)
+    name = target.text
 
     return name if name =~ /@[\w-]+\.[\w-]/ # labels that look like emails
 
@@ -87,22 +90,22 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   # Handles <tt>rdoc-ref:</tt> scheme links and allows RDoc::Markup::ToHtml to
   # handle other schemes.
 
-  def handle_special_HYPERLINK special
-    return cross_reference $' if special.text =~ /\Ardoc-ref:/
+  def handle_regexp_HYPERLINK target
+    return cross_reference $' if target.text =~ /\Ardoc-ref:/
 
     super
   end
 
   ##
-  # +special+ is an rdoc-schemed link that will be converted into a hyperlink.
+  # +target+ is an rdoc-schemed link that will be converted into a hyperlink.
   # For the rdoc-ref scheme the cross-reference will be looked up and the
   # given name will be used.
   #
   # All other contents are handled by
-  # {the superclass}[rdoc-ref:RDoc::Markup::ToHtml#handle_special_RDOCLINK]
+  # {the superclass}[rdoc-ref:RDoc::Markup::ToHtml#handle_regexp_RDOCLINK]
 
-  def handle_special_RDOCLINK special
-    url = special.text
+  def handle_regexp_RDOCLINK target
+    url = target.text
 
     case url
     when /\Ardoc-ref:/ then
@@ -119,15 +122,14 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   def gen_url url, text
     return super unless url =~ /\Ardoc-ref:/
 
-    cross_reference $', text
+    name = $'
+    cross_reference name, text, name == text
   end
 
   ##
   # Creates an HTML link to +name+ with the given +text+.
 
-  def link name, text
-    original_name = name
-
+  def link name, text, code = true
     if name =~ /(.*[^#:])@/ then
       name = $1
       label = $'
@@ -135,14 +137,15 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
 
     ref = @cross_reference.resolve name, text
 
-    text = ref.output_name @context if
-      RDoc::MethodAttr === ref and text == original_name
-
     case ref
     when String then
       ref
     else
       path = ref.as_href @from_path
+
+      if code and RDoc::CodeObject === ref and !(RDoc::TopLevel === ref)
+        text = "<code>#{text}</code>"
+      end
 
       if path =~ /#/ then
         path << "-label-#{label}"
@@ -150,7 +153,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
             ref.sections.any? { |section| label == section.title } then
         path << "##{label}"
       else
-        path << "#label-#{label}"
+        path << "##{ref.aref}-label-#{label}"
       end if label
 
       "<a href=\"#{path}\">#{text}</a>"

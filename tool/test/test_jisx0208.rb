@@ -1,6 +1,6 @@
 require 'test/unit'
 
-require '../tool/jisx0208'
+require_relative '../lib/jisx0208'
 
 class Test_JISX0208_Char < Test::Unit::TestCase
   def test_create_with_row_cell

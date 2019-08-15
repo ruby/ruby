@@ -4,7 +4,7 @@ require 'rubygems/command'
 class Gem::Commands::HelpCommand < Gem::Command
 
   # :stopdoc:
-  EXAMPLES = <<-EOF
+  EXAMPLES = <<-EOF.freeze
 Some examples of 'gem' usage.
 
 * Install 'rake', either from local directory or remote server:
@@ -53,7 +53,7 @@ Some examples of 'gem' usage.
     gem update --system
   EOF
 
-  GEM_DEPENDENCIES = <<-EOF
+  GEM_DEPENDENCIES = <<-EOF.freeze
 A gem dependencies file allows installation of a consistent set of gems across
 multiple environments.  The RubyGems implementation is designed to be
 compatible with Bundler's Gemfile format.  You can see additional
@@ -230,7 +230,7 @@ default.  This may be overridden with the :development_group option:
 
   EOF
 
-  PLATFORMS = <<-'EOF'
+  PLATFORMS = <<-'EOF'.freeze
 RubyGems platforms are composed of three parts, a CPU, an OS, and a
 version.  These values are taken from values in rbconfig.rb.  You can view
 your current platform by running `gem environment`.
@@ -277,7 +277,7 @@ platform.
     ["examples",         EXAMPLES],
     ["gem_dependencies", GEM_DEPENDENCIES],
     ["platforms",        PLATFORMS],
-  ]
+  ].freeze
   # :startdoc:
 
   def initialize
@@ -297,8 +297,8 @@ platform.
       begins? command, arg
     end
 
-    if help then
-      if Symbol === help then
+    if help
+      if Symbol === help
         send help
       else
         say help
@@ -306,10 +306,10 @@ platform.
       return
     end
 
-    if options[:help] then
+    if options[:help]
       show_help
 
-    elsif arg then
+    elsif arg
       show_command_help arg
 
     else
@@ -334,7 +334,7 @@ platform.
       command = @command_manager[cmd_name]
 
       summary =
-        if command then
+        if command
           command.summary
         else
           "[No command found for #{cmd_name}]"
@@ -356,20 +356,19 @@ platform.
     say out.join("\n")
   end
 
-  def show_command_help command_name # :nodoc:
+  def show_command_help(command_name) # :nodoc:
     command_name = command_name.downcase
 
     possibilities = @command_manager.find_command_possibilities command_name
 
-    if possibilities.size == 1 then
+    if possibilities.size == 1
       command = @command_manager[possibilities.first]
       command.invoke("--help")
-    elsif possibilities.size > 1 then
+    elsif possibilities.size > 1
       alert_warning "Ambiguous command #{command_name} (#{possibilities.join(', ')})"
     else
-      alert_warning "Unknown command #{command_name}.  Try: gem help commands"
+      alert_warning "Unknown command #{command_name}. Try: gem help commands"
     end
   end
 
 end
-

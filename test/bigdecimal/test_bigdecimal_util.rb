@@ -12,6 +12,8 @@ class TestBigDecimalUtil < Test::Unit::TestCase
   def test_Integer_to_d
     assert_equal(BigDecimal(1), 1.to_d)
     assert_equal(BigDecimal(2<<100), (2<<100).to_d)
+
+    assert(1.to_d.frozen?)
   end
 
   def test_Float_to_d_without_precision
@@ -22,6 +24,11 @@ class TestBigDecimalUtil < Test::Unit::TestCase
 
     bug9214 = '[ruby-core:58858]'
     assert_equal((-0.0).to_d.sign, -1, bug9214)
+
+    assert_raise(TypeError) { 0.3.to_d(nil) }
+    assert_raise(TypeError) { 0.3.to_d(false) }
+
+    assert(1.1.to_d.frozen?)
   end
 
   def test_Float_to_d_with_precision
@@ -32,6 +39,8 @@ class TestBigDecimalUtil < Test::Unit::TestCase
 
     bug9214 = '[ruby-core:58858]'
     assert_equal((-0.0).to_d(digits).sign, -1, bug9214)
+
+    assert(1.1.to_d(digits).frozen?)
   end
 
   def test_Rational_to_d
@@ -39,6 +48,8 @@ class TestBigDecimalUtil < Test::Unit::TestCase
     delta = 1.0/10**(digits)
     assert_in_delta(BigDecimal(1.quo(2), digits), 1.quo(2).to_d(digits), delta)
     assert_in_delta(BigDecimal(355.quo(113), digits), 355.quo(113).to_d(digits), delta)
+
+    assert(355.quo(113).to_d(digits).frozen?)
   end
 
   def test_Rational_to_d_with_zero_precision
@@ -50,11 +61,31 @@ class TestBigDecimalUtil < Test::Unit::TestCase
   end
 
   def test_String_to_d
-    assert_equal("2.5".to_d, BigDecimal.new('2.5'))
+    assert_equal(BigDecimal('1'), "1__1_1".to_d)
+    assert_equal(BigDecimal('2.5'), "2.5".to_d)
+    assert_equal(BigDecimal('2.5'), "2.5 degrees".to_d)
+    assert_equal(BigDecimal('2.5e1'), "2.5e1 degrees".to_d)
+    assert_equal(BigDecimal('0'), "degrees 100.0".to_d)
+    assert_equal(BigDecimal('0.125'), "0.1_2_5".to_d)
+    assert_equal(BigDecimal('0.125'), "0.1_2_5__".to_d)
+    assert_equal(BigDecimal('1'), "1_.125".to_d)
+    assert_equal(BigDecimal('1'), "1._125".to_d)
+    assert_equal(BigDecimal('0.1'), "0.1__2_5".to_d)
+    assert_equal(BigDecimal('0.1'), "0.1_e10".to_d)
+    assert_equal(BigDecimal('0.1'), "0.1e_10".to_d)
+    assert_equal(BigDecimal('1'), "0.1e1__0".to_d)
+    assert_equal(BigDecimal('1.2'), "1.2.3".to_d)
+
+    assert("2.5".to_d.frozen?)
   end
 
   def test_invalid_String_to_d
-    assert_equal("invalid".to_d, BigDecimal.new('0.0'))
+    assert_equal("invalid".to_d, BigDecimal('0.0'))
   end
 
+  def test_Nil_to_d
+    assert_equal(nil.to_d, BigDecimal('0.0'))
+
+    assert(nil.to_d)
+  end
 end

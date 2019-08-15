@@ -1,5 +1,5 @@
-# frozen_string_literal: false
-require 'rdoc/test_case'
+# frozen_string_literal: true
+require 'minitest_helper'
 
 class TestRDocRIPaths < RDoc::TestCase
 
@@ -22,7 +22,7 @@ class TestRDocRIPaths < RDoc::TestCase
     specs.each do |spec|
       spec.loaded_from = spec.spec_file
 
-      open spec.spec_file, 'w' do |file|
+      File.open spec.spec_file, 'w' do |file|
         file.write spec.to_ruby_for_cache
       end
 

@@ -1,7 +1,7 @@
 # frozen_string_literal: false
-require 'rss/trackback'
-require 'rss/maker/1.0'
-require 'rss/maker/2.0'
+require_relative '../trackback'
+require_relative '1.0'
+require_relative '2.0'
 
 module RSS
   module Maker

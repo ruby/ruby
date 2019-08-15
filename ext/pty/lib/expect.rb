@@ -43,13 +43,13 @@ class IO
     @unusedBuf ||= ''
     while true
       if not @unusedBuf.empty?
-        c = @unusedBuf.slice!(0).chr
+        c = @unusedBuf.slice!(0)
       elsif !IO.select([self],nil,nil,timeout) or eof? then
         result = nil
         @unusedBuf = buf
         break
       else
-        c = getc.chr
+        c = getc
       end
       buf << c
       if $expect_verbose
@@ -57,7 +57,7 @@ class IO
         STDOUT.flush
       end
       if mat=e_pat.match(buf) then
-        result = [buf,*mat.to_a[1..-1]]
+        result = [buf,*mat.captures]
         break
       end
     end
