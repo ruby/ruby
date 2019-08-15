@@ -10,7 +10,9 @@ RELINE_TEST_ENCODING ||=
   end
 
 class Reline::TestCase < Test::Unit::TestCase
+=begin
   puts "Test encoding is #{RELINE_TEST_ENCODING}"
+=end
 
   private def convert_str(input, options = {}, normalized = nil)
     return nil if input.nil?
@@ -38,13 +40,13 @@ class Reline::TestCase < Test::Unit::TestCase
         eighth_bit = 0b10000000
         byte = c.bytes.first
         if byte.allbits?(eighth_bit)
-          @line_editor.input_key("\e".ord)
-          byte ^= eighth_bit
+          @line_editor.input_key(Reline::Key.new(byte ^ eighth_bit, byte, true))
+        else
+          @line_editor.input_key(Reline::Key.new(byte, byte, false))
         end
-        @line_editor.input_key(byte)
       else
         c.bytes.each do |b|
-          @line_editor.input_key(b)
+          @line_editor.input_key(Reline::Key.new(b, b, false))
         end
       end
     end

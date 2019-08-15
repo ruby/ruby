@@ -22,11 +22,6 @@ class TestGemInstaller < Gem::InstallerTestCase
     super
     common_installer_setup
 
-    if (self.class.method_defined?(:__name__) ? __name__ : name) =~ /\Atest_install(_|\Z)/
-      FileUtils.rm_r @spec.gem_dir
-      FileUtils.rm_r @user_spec.gem_dir
-    end
-
     @config = Gem.configuration
   end
 
@@ -39,6 +34,8 @@ class TestGemInstaller < Gem::InstallerTestCase
   end
 
   def test_app_script_text
+    installer = setup_base_installer
+
     util_make_exec @spec, ''
 
     expected = <<-EOF
@@ -71,12 +68,14 @@ load Gem.bin_path("a", "executable", version)
 end
     EOF
 
-    wrapper = @installer.app_script_text 'executable'
+    wrapper = installer.app_script_text 'executable'
     assert_equal expected, wrapper
   end
 
   def test_check_executable_overwrite
-    @installer.generate_bin
+    installer = setup_base_installer
+
+    installer.generate_bin
 
     @spec = Gem::Specification.new do |s|
       s.files = ['lib/code.rb']
@@ -88,9 +87,9 @@ end
     end
 
     util_make_exec
-    @installer.gem_dir = @spec.gem_dir
-    @installer.wrappers = true
-    @installer.generate_bin
+    installer.gem_dir = @spec.gem_dir
+    installer.wrappers = true
+    installer.generate_bin
 
     installed_exec = File.join util_inst_bindir, 'executable'
     assert_path_exists installed_exec
@@ -100,6 +99,8 @@ end
   end
 
   def test_check_executable_overwrite_default_bin_dir
+    installer = setup_base_installer
+
     if defined?(RUBY_FRAMEWORK_VERSION)
       orig_RUBY_FRAMEWORK_VERSION = RUBY_FRAMEWORK_VERSION
       Object.send :remove_const, :RUBY_FRAMEWORK_VERSION
@@ -112,7 +113,7 @@ end
     ui = Gem::MockGemUi.new "n\n"
     use_ui ui do
       e = assert_raises Gem::InstallError do
-        @installer.generate_bin
+        installer.generate_bin
       end
 
       conflicted = File.join @gemhome, 'bin', 'executable'
@@ -130,7 +131,9 @@ end
   end
 
   def test_check_executable_overwrite_format_executable
-    @installer.generate_bin
+    installer = setup_base_installer
+
+    installer.generate_bin
 
     @spec = Gem::Specification.new do |s|
       s.files = ['lib/code.rb']
@@ -153,11 +156,11 @@ gem 'other', version
 
     util_make_exec
     Gem::Installer.exec_format = 'foo-%s-bar'
-    @installer.gem_dir = @spec.gem_dir
-    @installer.wrappers = true
-    @installer.format_executable = true
+    installer.gem_dir = @spec.gem_dir
+    installer.wrappers = true
+    installer.format_executable = true
 
-    @installer.generate_bin # should not raise
+    installer.generate_bin # should not raise
 
     installed_exec = File.join util_inst_bindir, 'foo-executable-bar'
     assert_path_exists installed_exec
@@ -169,13 +172,15 @@ gem 'other', version
   end
 
   def test_check_executable_overwrite_other_gem
+    installer = setup_base_installer
+
     util_conflict_executable true
 
     ui = Gem::MockGemUi.new "n\n"
 
     use_ui ui do
       e = assert_raises Gem::InstallError do
-        @installer.generate_bin
+        installer.generate_bin
       end
 
       assert_equal '"executable" from a conflicts with installed executable from conflict',
@@ -184,11 +189,13 @@ gem 'other', version
   end
 
   def test_check_executable_overwrite_other_gem_force
-    util_conflict_executable true
-    @installer.wrappers = true
-    @installer.force = true
+    installer = setup_base_installer
 
-    @installer.generate_bin
+    util_conflict_executable true
+    installer.wrappers = true
+    installer.force = true
+
+    installer.generate_bin
 
     installed_exec = File.join util_inst_bindir, 'executable'
     assert_path_exists installed_exec
@@ -198,10 +205,12 @@ gem 'other', version
   end
 
   def test_check_executable_overwrite_other_non_gem
-    util_conflict_executable false
-    @installer.wrappers = true
+    installer = setup_base_installer
 
-    @installer.generate_bin
+    util_conflict_executable false
+    installer.wrappers = true
+
+    installer.generate_bin
 
     installed_exec = File.join util_inst_bindir, 'executable'
     assert_path_exists installed_exec
@@ -211,7 +220,9 @@ gem 'other', version
   end unless Gem.win_platform?
 
   def test_check_that_user_bin_dir_is_in_path
-    bin_dir = @installer.bin_dir
+    installer = setup_base_installer
+
+    bin_dir = installer.bin_dir
 
     if Gem.win_platform?
       bin_dir = bin_dir.downcase.gsub(File::SEPARATOR, File::ALT_SEPARATOR)
@@ -221,7 +232,7 @@ gem 'other', version
       ENV['PATH'], [ENV['PATH'], bin_dir].join(File::PATH_SEPARATOR)
 
     use_ui @ui do
-      @installer.check_that_user_bin_dir_is_in_path
+      installer.check_that_user_bin_dir_is_in_path
     end
 
     assert_empty @ui.error
@@ -235,10 +246,11 @@ gem 'other', version
     orig_PATH, ENV['PATH'] =
       ENV['PATH'], [ENV['PATH'], '~/bin'].join(File::PATH_SEPARATOR)
 
-    @installer.bin_dir.replace File.join @userhome, 'bin'
+    installer = setup_base_installer
+    installer.bin_dir.replace File.join @userhome, 'bin'
 
     use_ui @ui do
-      @installer.check_that_user_bin_dir_is_in_path
+      installer.check_that_user_bin_dir_is_in_path
     end
 
     assert_empty @ui.error
@@ -247,11 +259,13 @@ gem 'other', version
   end
 
   def test_check_that_user_bin_dir_is_in_path_not_in_path
+    installer = setup_base_installer
+
     use_ui @ui do
-      @installer.check_that_user_bin_dir_is_in_path
+      installer.check_that_user_bin_dir_is_in_path
     end
 
-    expected = @installer.bin_dir
+    expected = installer.bin_dir
 
     if Gem.win_platform?
       expected = expected.downcase.gsub(File::SEPARATOR, File::ALT_SEPARATOR)
@@ -261,14 +275,16 @@ gem 'other', version
   end
 
   def test_ensure_dependency
+    installer = setup_base_installer
+
     util_spec 'a'
 
     dep = Gem::Dependency.new 'a', '>= 2'
-    assert @installer.ensure_dependency(@spec, dep)
+    assert installer.ensure_dependency(@spec, dep)
 
     dep = Gem::Dependency.new 'b', '> 2'
     e = assert_raises Gem::InstallError do
-      @installer.ensure_dependency @spec, dep
+      installer.ensure_dependency @spec, dep
     end
 
     assert_equal 'a requires b (> 2)', e.message
@@ -305,26 +321,30 @@ gem 'other', version
   end
 
   def test_extract_files
-    @installer.extract_files
+    installer = setup_base_installer
+
+    installer.extract_files
 
     assert_path_exists File.join @spec.gem_dir, 'bin/executable'
   end
 
   def test_generate_bin_bindir
-    @installer.wrappers = true
+    installer = setup_base_installer
+
+    installer.wrappers = true
 
     @spec.executables = %w[executable]
     @spec.bindir = 'bin'
 
-    exec_file = @installer.formatted_program_filename 'executable'
+    exec_file = installer.formatted_program_filename 'executable'
     exec_path = File.join @spec.gem_dir, exec_file
     File.open exec_path, 'w' do |f|
       f.puts '#!/usr/bin/ruby'
     end
 
-    @installer.gem_dir = @spec.gem_dir
+    installer.gem_dir = @spec.gem_dir
 
-    @installer.generate_bin
+    installer.generate_bin
 
     assert_directory_exists util_inst_bindir
     installed_exec = File.join(util_inst_bindir, 'executable')
@@ -362,11 +382,13 @@ gem 'other', version
   end
 
   def test_generate_bin_script
-    @installer.wrappers = true
-    util_make_exec
-    @installer.gem_dir = @spec.gem_dir
+    installer = setup_base_installer
 
-    @installer.generate_bin
+    installer.wrappers = true
+    util_make_exec
+    installer.gem_dir = @spec.gem_dir
+
+    installer.generate_bin
     assert_directory_exists util_inst_bindir
     installed_exec = File.join util_inst_bindir, 'executable'
     assert_path_exists installed_exec
@@ -377,13 +399,15 @@ gem 'other', version
   end
 
   def test_generate_bin_script_format
-    @installer.format_executable = true
-    @installer.wrappers = true
+    installer = setup_base_installer
+
+    installer.format_executable = true
+    installer.wrappers = true
     util_make_exec
-    @installer.gem_dir = @spec.gem_dir
+    installer.gem_dir = @spec.gem_dir
 
     Gem::Installer.exec_format = 'foo-%s-bar'
-    @installer.generate_bin
+    installer.generate_bin
     assert_directory_exists util_inst_bindir
     installed_exec = File.join util_inst_bindir, 'foo-executable-bar'
     assert_path_exists installed_exec
@@ -392,12 +416,14 @@ gem 'other', version
   end
 
   def test_generate_bin_script_format_disabled
-    @installer.wrappers = true
+    installer = setup_base_installer
+
+    installer.wrappers = true
     util_make_exec
-    @installer.gem_dir = @spec.gem_dir
+    installer.gem_dir = @spec.gem_dir
 
     Gem::Installer.exec_format = 'foo-%s-bar'
-    @installer.generate_bin
+    installer.generate_bin
     assert_directory_exists util_inst_bindir
     installed_exec = File.join util_inst_bindir, 'executable'
     assert_path_exists installed_exec
@@ -406,7 +432,9 @@ gem 'other', version
   end
 
   def test_generate_bin_script_install_dir
-    @installer.wrappers = true
+    installer = setup_base_installer
+
+    installer.wrappers = true
 
     gem_dir = File.join("#{@gemhome}2", "gems", @spec.full_name)
     gem_bindir = File.join gem_dir, 'bin'
@@ -415,11 +443,11 @@ gem 'other', version
       f.puts "#!/bin/ruby"
     end
 
-    @installer.gem_home = "#{@gemhome}2"
-    @installer.gem_dir = gem_dir
-    @installer.bin_dir = File.join "#{@gemhome}2", 'bin'
+    installer.gem_home = "#{@gemhome}2"
+    installer.gem_dir = gem_dir
+    installer.bin_dir = File.join "#{@gemhome}2", 'bin'
 
-    @installer.generate_bin
+    installer.generate_bin
 
     installed_exec = File.join("#{@gemhome}2", "bin", 'executable')
     assert_path_exists installed_exec
@@ -430,16 +458,20 @@ gem 'other', version
   end
 
   def test_generate_bin_script_no_execs
-    util_execless
+    installer = setup_base_installer
 
-    @installer.wrappers = true
-    @installer.generate_bin
+    installer = util_execless
+
+    installer.wrappers = true
+    installer.generate_bin
 
     refute_path_exists util_inst_bindir, 'bin dir was created when not needed'
   end
 
   def test_generate_bin_script_no_perms
-    @installer.wrappers = true
+    installer = setup_base_installer
+
+    installer.wrappers = true
     util_make_exec
 
     Dir.mkdir util_inst_bindir
@@ -452,7 +484,7 @@ gem 'other', version
       FileUtils.chmod 0000, util_inst_bindir
 
       assert_raises Gem::FilePermissionError do
-        @installer.generate_bin
+        installer.generate_bin
       end
     end
   ensure
@@ -460,7 +492,9 @@ gem 'other', version
   end
 
   def test_generate_bin_script_no_shebang
-    @installer.wrappers = true
+    installer = setup_base_installer
+
+    installer.wrappers = true
     @spec.executables = %w[executable]
 
     gem_dir = File.join @gemhome, 'gems', @spec.full_name
@@ -470,7 +504,7 @@ gem 'other', version
       f.puts "blah blah blah"
     end
 
-    @installer.generate_bin
+    installer.generate_bin
 
     installed_exec = File.join @gemhome, 'bin', 'executable'
     assert_path_exists installed_exec
@@ -483,9 +517,11 @@ gem 'other', version
   end
 
   def test_generate_bin_script_wrappers
-    @installer.wrappers = true
+    installer = setup_base_installer
+
+    installer.wrappers = true
     util_make_exec
-    @installer.gem_dir = @spec.gem_dir
+    installer.gem_dir = @spec.gem_dir
     installed_exec = File.join(util_inst_bindir, 'executable')
 
     real_exec = File.join @spec.gem_dir, 'bin', 'executable'
@@ -496,7 +532,7 @@ gem 'other', version
       FileUtils.ln_s real_exec, installed_exec
     end
 
-    @installer.generate_bin
+    installer.generate_bin
     assert_directory_exists util_inst_bindir
     assert_path_exists installed_exec
     assert_equal mask, File.stat(installed_exec).mode unless win_platform?
@@ -510,11 +546,13 @@ gem 'other', version
   def test_generate_bin_symlink
     return if win_platform? #Windows FS do not support symlinks
 
-    @installer.wrappers = false
-    util_make_exec
-    @installer.gem_dir = @spec.gem_dir
+    installer = setup_base_installer
 
-    @installer.generate_bin
+    installer.wrappers = false
+    util_make_exec
+    installer.gem_dir = @spec.gem_dir
+
+    installer.generate_bin
     assert_directory_exists util_inst_bindir
     installed_exec = File.join util_inst_bindir, 'executable'
     assert_equal true, File.symlink?(installed_exec)
@@ -523,18 +561,22 @@ gem 'other', version
   end
 
   def test_generate_bin_symlink_no_execs
-    util_execless
+    installer = setup_base_installer
 
-    @installer.wrappers = false
-    @installer.generate_bin
+    installer = util_execless
+
+    installer.wrappers = false
+    installer.generate_bin
 
     refute_path_exists util_inst_bindir
   end
 
   def test_generate_bin_symlink_no_perms
-    @installer.wrappers = false
+    installer = setup_base_installer
+
+    installer.wrappers = false
     util_make_exec
-    @installer.gem_dir = @spec.gem_dir
+    installer.gem_dir = @spec.gem_dir
 
     Dir.mkdir util_inst_bindir
 
@@ -546,7 +588,7 @@ gem 'other', version
       FileUtils.chmod 0000, util_inst_bindir
 
       assert_raises Gem::FilePermissionError do
-        @installer.generate_bin
+        installer.generate_bin
       end
     end
   ensure
@@ -556,11 +598,13 @@ gem 'other', version
   def test_generate_bin_symlink_update_newer
     return if win_platform? #Windows FS do not support symlinks
 
-    @installer.wrappers = false
-    util_make_exec
-    @installer.gem_dir = @spec.gem_dir
+    installer = setup_base_installer
 
-    @installer.generate_bin
+    installer.wrappers = false
+    util_make_exec
+    installer.gem_dir = @spec.gem_dir
+
+    installer.generate_bin
     installed_exec = File.join(util_inst_bindir, 'executable')
     assert_equal(File.join(@spec.gem_dir, 'bin', 'executable'),
                  File.readlink(installed_exec))
@@ -575,8 +619,8 @@ gem 'other', version
     end
 
     util_make_exec
-    @installer.gem_dir = @spec.gem_dir
-    @installer.generate_bin
+    installer.gem_dir = @spec.gem_dir
+    installer.generate_bin
     installed_exec = File.join(util_inst_bindir, 'executable')
     assert_equal(@spec.bin_file('executable'),
                  File.readlink(installed_exec),
@@ -586,11 +630,13 @@ gem 'other', version
   def test_generate_bin_symlink_update_older
     return if !symlink_supported?
 
-    @installer.wrappers = false
-    util_make_exec
-    @installer.gem_dir = @spec.gem_dir
+    installer = setup_base_installer
 
-    @installer.generate_bin
+    installer.wrappers = false
+    util_make_exec
+    installer.gem_dir = @spec.gem_dir
+
+    installer.generate_bin
     installed_exec = File.join(util_inst_bindir, 'executable')
     assert_equal(File.join(@spec.gem_dir, 'bin', 'executable'),
                  File.readlink(installed_exec))
@@ -607,10 +653,10 @@ gem 'other', version
     util_make_exec
     one = @spec.dup
     one.version = 1
-    @installer = Gem::Installer.for_spec spec
-    @installer.gem_dir = one.gem_dir
+    installer = Gem::Installer.for_spec spec
+    installer.gem_dir = one.gem_dir
 
-    @installer.generate_bin
+    installer.generate_bin
 
     installed_exec = File.join util_inst_bindir, 'executable'
     expected = File.join @spec.gem_dir, 'bin', 'executable'
@@ -622,11 +668,13 @@ gem 'other', version
   def test_generate_bin_symlink_update_remove_wrapper
     return if !symlink_supported?
 
-    @installer.wrappers = true
-    util_make_exec
-    @installer.gem_dir = @spec.gem_dir
+    installer = setup_base_installer
 
-    @installer.generate_bin
+    installer.wrappers = true
+    util_make_exec
+    installer.gem_dir = @spec.gem_dir
+
+    installer.generate_bin
 
     installed_exec = File.join util_inst_bindir, 'executable'
     assert_path_exists installed_exec
@@ -642,10 +690,10 @@ gem 'other', version
     util_make_exec
 
     util_installer @spec, @gemhome
-    @installer.wrappers = false
-    @installer.gem_dir = @spec.gem_dir
+    installer.wrappers = false
+    installer.gem_dir = @spec.gem_dir
 
-    @installer.generate_bin
+    installer.generate_bin
 
     installed_exec = File.join util_inst_bindir, 'executable'
     assert_equal(@spec.bin_file('executable'),
@@ -659,12 +707,15 @@ gem 'other', version
     old_alt_separator = File::ALT_SEPARATOR
     File.__send__(:remove_const, :ALT_SEPARATOR)
     File.const_set(:ALT_SEPARATOR, '\\')
-    @installer.wrappers = false
+
+    installer = setup_base_installer
+
+    installer.wrappers = false
     util_make_exec
-    @installer.gem_dir = @spec.gem_dir
+    installer.gem_dir = @spec.gem_dir
 
     use_ui @ui do
-      @installer.generate_bin
+      installer.generate_bin
     end
 
     assert_directory_exists util_inst_bindir
@@ -690,10 +741,12 @@ gem 'other', version
   def test_generate_bin_uses_default_shebang
     return if !symlink_supported?
 
-    @installer.wrappers = true
+    installer = setup_base_installer
+
+    installer.wrappers = true
     util_make_exec
 
-    @installer.generate_bin
+    installer.generate_bin
 
     default_shebang = Gem.ruby
     shebang_line = open("#{@gemhome}/bin/executable") { |f| f.readlines.first }
@@ -719,6 +772,8 @@ gem 'other', version
   end
 
   def test_initialize_user_install
+    @gem = setup_base_gem
+
     installer = Gem::Installer.at @gem, :user_install => true
 
     assert_equal File.join(Gem.user_dir, 'gems', @spec.full_name),
@@ -727,6 +782,8 @@ gem 'other', version
   end
 
   def test_initialize_user_install_bin_dir
+    @gem = setup_base_gem
+
     installer =
       Gem::Installer.at @gem, :user_install => true, :bin_dir => @tempdir
 
@@ -736,9 +793,7 @@ gem 'other', version
   end
 
   def test_install
-    Dir.mkdir util_inst_bindir
-    util_setup_gem
-    util_clear_gems
+    installer = util_setup_installer
 
     gemdir     = File.join @gemhome, 'gems', @spec.full_name
     cache_file = File.join @gemhome, 'cache', @spec.file_name
@@ -746,13 +801,13 @@ gem 'other', version
     rakefile   = File.join gemdir, 'ext', 'a', 'Rakefile'
     spec_file  = File.join @gemhome, 'specifications', @spec.spec_name
 
-    Gem.pre_install do |installer|
+    Gem.pre_install do
       refute_path_exists cache_file, 'cache file must not exist yet'
       refute_path_exists spec_file,  'spec file must not exist yet'
       true
     end
 
-    Gem.post_build do |installer|
+    Gem.post_build do
       assert_path_exists gemdir, 'gem install dir must exist'
       assert_path_exists rakefile, 'gem executable must exist'
       refute_path_exists stub_exe, 'gem executable must not exist'
@@ -760,7 +815,7 @@ gem 'other', version
       true
     end
 
-    Gem.post_install do |installer|
+    Gem.post_install do
       assert_path_exists cache_file, 'cache file must exist'
       assert_path_exists spec_file,  'spec file must exist'
     end
@@ -768,7 +823,7 @@ gem 'other', version
     @newspec = nil
     build_rake_in do
       use_ui @ui do
-        @newspec = @installer.install
+        @newspec = installer.install
       end
     end
 
@@ -786,29 +841,25 @@ gem 'other', version
 
     assert_path_exists rakefile
 
-    spec_file = File.join(@gemhome, 'specifications', @spec.spec_name)
-
     assert_equal spec_file, @newspec.loaded_from
     assert_path_exists spec_file
 
-    assert_same @installer, @post_build_hook_arg
-    assert_same @installer, @post_install_hook_arg
-    assert_same @installer, @pre_install_hook_arg
+    assert_same installer, @post_build_hook_arg
+    assert_same installer, @post_install_hook_arg
+    assert_same installer, @pre_install_hook_arg
   end
 
   def test_install_creates_working_binstub
-    Dir.mkdir util_inst_bindir
-    util_setup_gem
-    util_clear_gems
+    installer = util_setup_installer
 
-    @installer.wrappers = true
+    installer.wrappers = true
 
     gemdir = File.join @gemhome, 'gems', @spec.full_name
 
     @newspec = nil
     build_rake_in do
       use_ui @ui do
-        @newspec = @installer.install
+        @newspec = installer.install
       end
     end
 
@@ -822,11 +873,10 @@ gem 'other', version
   end
 
   def test_conflicting_binstubs
-    Dir.mkdir util_inst_bindir
-    util_clear_gems
+    @gem = setup_base_gem
 
     # build old version that has a bin file
-    util_setup_gem do |spec|
+    installer = util_setup_gem do |spec|
       File.open File.join('bin', 'executable'), 'w' do |f|
         f.puts "require 'code'"
       end
@@ -835,17 +885,17 @@ gem 'other', version
       end
     end
 
-    @installer.wrappers = true
+    installer.wrappers = true
     build_rake_in do
       use_ui @ui do
-        @newspec = @installer.install
+        @newspec = installer.install
       end
     end
 
-    old_bin_file = File.join @installer.bin_dir, 'executable'
+    old_bin_file = File.join installer.bin_dir, 'executable'
 
     # build new version that doesn't have a bin file
-    util_setup_gem do |spec|
+    installer = util_setup_gem do |spec|
       FileUtils.rm File.join('bin', 'executable')
       spec.files.delete File.join('bin', 'executable')
       spec.executables.delete 'executable'
@@ -857,7 +907,7 @@ gem 'other', version
 
     build_rake_in do
       use_ui @ui do
-        @newspec = @installer.install
+        @newspec = installer.install
       end
     end
 
@@ -871,16 +921,14 @@ gem 'other', version
   end
 
   def test_install_creates_binstub_that_understand_version
-    Dir.mkdir util_inst_bindir
-    util_setup_gem
-    util_clear_gems
+    installer = util_setup_installer
 
-    @installer.wrappers = true
+    installer.wrappers = true
 
     @newspec = nil
     build_rake_in do
       use_ui @ui do
-        @newspec = @installer.install
+        @newspec = installer.install
       end
     end
 
@@ -902,23 +950,21 @@ gem 'other', version
   end
 
   def test_install_creates_binstub_that_prefers_user_installed_gem_to_default
-    Dir.mkdir util_inst_bindir
-
     install_default_gems new_default_spec('default', '2')
 
-    util_setup_gem do |spec|
+    installer = util_setup_installer do |spec|
       spec.name = 'default'
       spec.version = '2'
     end
 
     util_clear_gems
 
-    @installer.wrappers = true
+    installer.wrappers = true
 
     @newspec = nil
     build_rake_in do
       use_ui @ui do
-        @newspec = @installer.install
+        @newspec = installer.install
       end
     end
 
@@ -932,16 +978,14 @@ gem 'other', version
   end
 
   def test_install_creates_binstub_that_dont_trust_encoding
-    Dir.mkdir util_inst_bindir
-    util_setup_gem
-    util_clear_gems
+    installer = util_setup_installer
 
-    @installer.wrappers = true
+    installer.wrappers = true
 
     @newspec = nil
     build_rake_in do
       use_ui @ui do
-        @newspec = @installer.install
+        @newspec = installer.install
       end
     end
 
@@ -964,20 +1008,19 @@ gem 'other', version
   end
 
   def test_install_with_no_prior_files
-    Dir.mkdir util_inst_bindir
-    util_clear_gems
+    installer = util_setup_installer
 
-    util_setup_gem
     build_rake_in do
       use_ui @ui do
-        assert_equal @spec, @installer.install
+        assert_equal @spec, installer.install
       end
     end
 
     gemdir = File.join(@gemhome, 'gems', @spec.full_name)
     assert_path_exists File.join gemdir, 'lib', 'code.rb'
 
-    util_setup_gem
+    installer = util_setup_installer
+
     # Morph spec to have lib/other.rb instead of code.rb and recreate
     @spec.files = File.join('lib', 'other.rb')
     Dir.chdir @tempdir do
@@ -990,10 +1033,10 @@ gem 'other', version
         Gem::Package.build @spec
       end
     end
-    @installer = Gem::Installer.at @gem
+    installer = Gem::Installer.at @gem
     build_rake_in do
       use_ui @ui do
-        assert_equal @spec, @installer.install
+        assert_equal @spec, installer.install
       end
     end
 
@@ -1013,12 +1056,14 @@ gem 'other', version
   end
 
   def test_install_missing_dirs
+    installer = setup_base_installer
+
     FileUtils.rm_f File.join(Gem.dir, 'cache')
     FileUtils.rm_f File.join(Gem.dir, 'doc')
     FileUtils.rm_f File.join(Gem.dir, 'specifications')
 
     use_ui @ui do
-      @installer.install
+      installer.install
     end
 
     assert_directory_exists File.join(Gem.dir, 'cache')
@@ -1030,7 +1075,7 @@ gem 'other', version
   end
 
   def test_install_post_build_false
-    util_clear_gems
+    installer = setup_base_installer
 
     Gem.post_build do
       false
@@ -1038,7 +1083,7 @@ gem 'other', version
 
     use_ui @ui do
       e = assert_raises Gem::InstallError do
-        @installer.install
+        installer.install
       end
 
       location = "#{__FILE__}:#{__LINE__ - 9}"
@@ -1054,14 +1099,14 @@ gem 'other', version
   end
 
   def test_install_post_build_nil
-    util_clear_gems
+    installer = setup_base_installer
 
     Gem.post_build do
       nil
     end
 
     use_ui @ui do
-      @installer.install
+      installer.install
     end
 
     spec_file = File.join @gemhome, 'specifications', @spec.spec_name
@@ -1072,7 +1117,7 @@ gem 'other', version
   end
 
   def test_install_pre_install_false
-    util_clear_gems
+    installer = setup_base_installer
 
     Gem.pre_install do
       false
@@ -1080,7 +1125,7 @@ gem 'other', version
 
     use_ui @ui do
       e = assert_raises Gem::InstallError do
-        @installer.install
+        installer.install
       end
 
       location = "#{__FILE__}:#{__LINE__ - 9}"
@@ -1093,14 +1138,14 @@ gem 'other', version
   end
 
   def test_install_pre_install_nil
-    util_clear_gems
+    installer = setup_base_installer
 
     Gem.pre_install do
       nil
     end
 
     use_ui @ui do
-      @installer.install
+      installer.install
     end
 
     spec_file = File.join @gemhome, 'specifications', @spec.spec_name
@@ -1108,26 +1153,28 @@ gem 'other', version
   end
 
   def test_install_with_message
+    @spec = setup_base_spec
     @spec.post_install_message = 'I am a shiny gem!'
 
     use_ui @ui do
       path = Gem::Package.build @spec
 
-      @installer = Gem::Installer.at path
-      @installer.install
+      installer = Gem::Installer.at path
+      installer.install
     end
 
     assert_match %r|I am a shiny gem!|, @ui.output
   end
 
   def test_install_with_skipped_message
+    @spec = setup_base_spec
     @spec.post_install_message = 'I am a shiny gem!'
 
     use_ui @ui do
       path = Gem::Package.build @spec
 
-      @installer = Gem::Installer.at path, :post_install_message => false
-      @installer.install
+      installer = Gem::Installer.at path, :post_install_message => false
+      installer.install
     end
 
     refute_match %r|I am a shiny gem!|, @ui.output
@@ -1136,6 +1183,7 @@ gem 'other', version
   def test_install_extension_dir
     gemhome2 = "#{@gemhome}2"
 
+    @spec = setup_base_spec
     @spec.extensions << "extconf.rb"
     write_file File.join(@tempdir, "extconf.rb") do |io|
       io.write <<-RUBY
@@ -1159,6 +1207,8 @@ gem 'other', version
   end
 
   def test_install_extension_dir_is_removed_on_reinstall
+    @spec = setup_base_spec
+
     @spec.extensions << "extconf.rb"
     write_file File.join(@tempdir, "extconf.rb") do |io|
       io.write <<-RUBY
@@ -1194,6 +1244,7 @@ gem 'other', version
   end
 
   def test_install_user_extension_dir
+    @spec = setup_base_spec
     @spec.extensions << "extconf.rb"
     write_file File.join(@tempdir, "extconf.rb") do |io|
       io.write <<-RUBY
@@ -1223,6 +1274,9 @@ gem 'other', version
   end
 
   def test_find_lib_file_after_install
+    skip "extensions don't quite work on jruby" if Gem.java_platform?
+
+    @spec = setup_base_spec
     @spec.extensions << "extconf.rb"
     write_file File.join(@tempdir, "extconf.rb") do |io|
       io.write <<-RUBY
@@ -1266,6 +1320,9 @@ gem 'other', version
   end
 
   def test_install_extension_and_script
+    skip "Makefile creation crashes on jruby" if Gem.java_platform?
+
+    @spec = setup_base_spec
     @spec.extensions << "extconf.rb"
     write_file File.join(@tempdir, "extconf.rb") do |io|
       io.write <<-RUBY
@@ -1296,14 +1353,17 @@ gem 'other', version
     use_ui @ui do
       path = Gem::Package.build @spec
 
-      @installer = Gem::Installer.at path
-      @installer.install
+      installer = Gem::Installer.at path
+      installer.install
     end
     assert_path_exists File.join @spec.gem_dir, rb
     assert_path_exists File.join @spec.gem_dir, rb2
   end
 
   def test_install_extension_flat
+    skip "extensions don't quite work on jruby" if Gem.java_platform?
+
+    @spec = setup_base_spec
     @spec.require_paths = ["."]
 
     @spec.extensions << "extconf.rb"
@@ -1330,8 +1390,8 @@ gem 'other', version
     use_ui @ui do
       path = Gem::Package.build @spec
 
-      @installer = Gem::Installer.at path
-      @installer.install
+      installer = Gem::Installer.at path
+      installer.install
     end
     assert_path_exists so
   rescue
@@ -1350,49 +1410,56 @@ gem 'other', version
   end
 
   def test_installation_satisfies_dependency_eh
+    installer = setup_base_installer
+
     util_spec 'a'
 
     dep = Gem::Dependency.new 'a', '>= 2'
-    assert @installer.installation_satisfies_dependency?(dep)
+    assert installer.installation_satisfies_dependency?(dep)
 
     dep = Gem::Dependency.new 'a', '> 2'
-    refute @installer.installation_satisfies_dependency?(dep)
+    refute installer.installation_satisfies_dependency?(dep)
   end
 
   def test_installation_satisfies_dependency_eh_development
-    @installer.options[:development] = true
-    @installer.options[:dev_shallow] = true
+    installer = setup_base_installer
+    installer.options[:development] = true
+    installer.options[:dev_shallow] = true
 
     util_spec 'a'
 
     dep = Gem::Dependency.new 'a', :development
-    assert @installer.installation_satisfies_dependency?(dep)
+    assert installer.installation_satisfies_dependency?(dep)
   end
 
   def test_pre_install_checks_dependencies
+    installer = setup_base_installer
     @spec.add_dependency 'b', '> 5'
-    util_setup_gem
+    installer = util_setup_gem
 
     use_ui @ui do
       assert_raises Gem::InstallError do
-        @installer.install
+        installer.install
       end
     end
   end
 
   def test_pre_install_checks_dependencies_ignore
+    installer = util_setup_installer
     @spec.add_dependency 'b', '> 5'
-    @installer.ignore_dependencies = true
+    installer.ignore_dependencies = true
 
     build_rake_in do
       use_ui @ui do
-        assert @installer.pre_install_checks
+        assert installer.pre_install_checks
       end
     end
   end
 
   def test_pre_install_checks_dependencies_install_dir
     gemhome2 = "#{@gemhome}2"
+
+    @gem = setup_base_gem
     @spec.add_dependency 'd'
 
     quick_gem 'd', 2
@@ -1455,9 +1522,9 @@ gem 'other', version
     gem = File.join(@gemhome, 'cache', spec.file_name)
 
     use_ui @ui do
-      @installer = Gem::Installer.at gem
+      installer = Gem::Installer.at gem
       e = assert_raises Gem::RuntimeRequirementNotMetError do
-        @installer.pre_install_checks
+        installer.pre_install_checks
       end
       rgv = Gem::VERSION
       assert_equal "old_rubygems_required requires RubyGems version < 0. The current RubyGems version is #{rgv}. " +
@@ -1477,9 +1544,9 @@ gem 'other', version
     gem = File.join(@gemhome, 'cache', spec.file_name)
 
     use_ui @ui do
-      @installer = Gem::Installer.at gem
+      installer = Gem::Installer.at gem
       e = assert_raises Gem::InstallError do
-        @installer.pre_install_checks
+        installer.pre_install_checks
       end
       assert_equal '#<Gem::Specification name=../malicious version=1> has an invalid name', e.message
     end
@@ -1497,9 +1564,9 @@ gem 'other', version
     gem = File.join(@gemhome, 'cache', spec.file_name)
 
     use_ui @ui do
-      @installer = Gem::Installer.at gem
+      installer = Gem::Installer.at gem
       e = assert_raises Gem::InstallError do
-        @installer.pre_install_checks
+        installer.pre_install_checks
       end
       assert_equal "#<Gem::Specification name=malicious\n::Object.const_set(:FROM_EVAL, true)# version=1> has an invalid name", e.message
     end
@@ -1519,9 +1586,9 @@ gem 'other', version
     gem = File.join(@gemhome, 'cache', spec.file_name)
 
     use_ui @ui do
-      @installer = Gem::Installer.at gem
+      installer = Gem::Installer.at gem
       e = assert_raises Gem::InstallError do
-        @installer.pre_install_checks
+        installer.pre_install_checks
       end
       assert_equal "#<Gem::Specification name=malicious version=1> has an invalid require_paths", e.message
     end
@@ -1542,9 +1609,9 @@ gem 'other', version
     gem = File.join(@gemhome, 'cache', spec.file_name)
 
     use_ui @ui do
-      @installer = Gem::Installer.at gem
+      installer = Gem::Installer.at gem
       e = assert_raises Gem::InstallError do
-        @installer.pre_install_checks
+        installer.pre_install_checks
       end
       assert_equal "#<Gem::Specification name=malicious version=1> has an invalid extensions", e.message
     end
@@ -1563,9 +1630,9 @@ gem 'other', version
     gem = File.join(@gemhome, 'cache', spec.file_name)
 
     use_ui @ui do
-      @installer = Gem::Installer.at gem
+      installer = Gem::Installer.at gem
       e = assert_raises Gem::InstallError do
-        @installer.pre_install_checks
+        installer.pre_install_checks
       end
       assert_equal "#<Gem::Specification name=malicious version=1> has an invalid specification_version", e.message
     end
@@ -1584,75 +1651,90 @@ gem 'other', version
     gem = File.join(@gemhome, 'cache', spec.file_name)
 
     use_ui @ui do
-      @installer = Gem::Installer.at gem
-      @installer.ignore_dependencies = true
+      installer = Gem::Installer.at gem
+      installer.ignore_dependencies = true
       e = assert_raises Gem::InstallError do
-        @installer.pre_install_checks
+        installer.pre_install_checks
       end
       assert_equal "#<Gem::Specification name=malicious version=1> has an invalid dependencies", e.message
     end
   end
 
   def test_shebang
+    installer = setup_base_installer
+
     util_make_exec @spec, "#!/usr/bin/ruby"
 
-    shebang = @installer.shebang 'executable'
+    shebang = installer.shebang 'executable'
 
     assert_equal "#!#{Gem.ruby}", shebang
   end
 
   def test_process_options
-    assert_nil @installer.build_root
-    assert_equal File.join(@gemhome, 'bin'), @installer.bin_dir
-    assert_equal @gemhome, @installer.gem_home
+    installer = setup_base_installer
+
+    assert_nil installer.build_root
+    assert_equal File.join(@gemhome, 'bin'), installer.bin_dir
+    assert_equal @gemhome, installer.gem_home
   end
 
   def test_process_options_build_root
     build_root = File.join @tempdir, 'build_root'
 
-    @installer = Gem::Installer.at @gem, :build_root => build_root
+    @gem = setup_base_gem
+    installer = Gem::Installer.at @gem, :build_root => build_root
 
-    assert_equal Pathname(build_root), @installer.build_root
-    assert_equal File.join(build_root, @gemhome, 'bin'), @installer.bin_dir
-    assert_equal File.join(build_root, @gemhome), @installer.gem_home
+    assert_equal Pathname(build_root), installer.build_root
+    assert_equal File.join(build_root, @gemhome, 'bin'), installer.bin_dir
+    assert_equal File.join(build_root, @gemhome), installer.gem_home
   end
 
   def test_shebang_arguments
+    installer = setup_base_installer
+
     util_make_exec @spec, "#!/usr/bin/ruby -ws"
 
-    shebang = @installer.shebang 'executable'
+    shebang = installer.shebang 'executable'
 
     assert_equal "#!#{Gem.ruby} -ws", shebang
   end
 
   def test_shebang_empty
+    installer = setup_base_installer
+
     util_make_exec @spec, ''
 
-    shebang = @installer.shebang 'executable'
+    shebang = installer.shebang 'executable'
     assert_equal "#!#{Gem.ruby}", shebang
   end
 
   def test_shebang_env
+    installer = setup_base_installer
+
     util_make_exec @spec, "#!/usr/bin/env ruby"
 
-    shebang = @installer.shebang 'executable'
+    shebang = installer.shebang 'executable'
 
     assert_equal "#!#{Gem.ruby}", shebang
   end
 
   def test_shebang_env_arguments
+    installer = setup_base_installer
+
     util_make_exec @spec, "#!/usr/bin/env ruby -ws"
 
-    shebang = @installer.shebang 'executable'
+    shebang = installer.shebang 'executable'
 
     assert_equal "#!#{Gem.ruby} -ws", shebang
   end
 
   def test_shebang_env_shebang
-    util_make_exec @spec, ''
-    @installer.env_shebang = true
+    installer = setup_base_installer
 
-    shebang = @installer.shebang 'executable'
+    util_make_exec @spec, ''
+    installer.env_shebang = true
+
+    shebang = installer.shebang 'executable'
 
     env_shebang = "/usr/bin/env" unless Gem.win_platform?
 
@@ -1661,54 +1743,68 @@ gem 'other', version
   end
 
   def test_shebang_nested
+    installer = setup_base_installer
+
     util_make_exec @spec, "#!/opt/local/ruby/bin/ruby"
 
-    shebang = @installer.shebang 'executable'
+    shebang = installer.shebang 'executable'
 
     assert_equal "#!#{Gem.ruby}", shebang
   end
 
   def test_shebang_nested_arguments
+    installer = setup_base_installer
+
     util_make_exec @spec, "#!/opt/local/ruby/bin/ruby -ws"
 
-    shebang = @installer.shebang 'executable'
+    shebang = installer.shebang 'executable'
 
     assert_equal "#!#{Gem.ruby} -ws", shebang
   end
 
   def test_shebang_version
+    installer = setup_base_installer
+
     util_make_exec @spec, "#!/usr/bin/ruby18"
 
-    shebang = @installer.shebang 'executable'
+    shebang = installer.shebang 'executable'
 
     assert_equal "#!#{Gem.ruby}", shebang
   end
 
   def test_shebang_version_arguments
+    installer = setup_base_installer
+
     util_make_exec @spec, "#!/usr/bin/ruby18 -ws"
 
-    shebang = @installer.shebang 'executable'
+    shebang = installer.shebang 'executable'
 
     assert_equal "#!#{Gem.ruby} -ws", shebang
   end
 
   def test_shebang_version_env
+    installer = setup_base_installer
+
     util_make_exec @spec, "#!/usr/bin/env ruby18"
 
-    shebang = @installer.shebang 'executable'
+    shebang = installer.shebang 'executable'
 
     assert_equal "#!#{Gem.ruby}", shebang
   end
 
   def test_shebang_version_env_arguments
+    installer = setup_base_installer
+
     util_make_exec @spec, "#!/usr/bin/env ruby18 -ws"
 
-    shebang = @installer.shebang 'executable'
+    shebang = installer.shebang 'executable'
 
     assert_equal "#!#{Gem.ruby} -ws", shebang
   end
 
   def test_shebang_custom
+    installer = setup_base_installer
+
     conf = Gem::ConfigFile.new []
     conf[:custom_shebang] = 'test'
 
@@ -1716,12 +1812,14 @@ gem 'other', version
 
     util_make_exec @spec, "#!/usr/bin/ruby"
 
-    shebang = @installer.shebang 'executable'
+    shebang = installer.shebang 'executable'
 
     assert_equal "#!test", shebang
   end
 
   def test_shebang_custom_with_expands
+    installer = setup_base_installer
+
     bin_env = win_platform? ? '' : '/usr/bin/env'
     conf = Gem::ConfigFile.new []
     conf[:custom_shebang] = '1 $env 2 $ruby 3 $exec 4 $name'
@@ -1730,12 +1828,14 @@ gem 'other', version
 
     util_make_exec @spec, "#!/usr/bin/ruby"
 
-    shebang = @installer.shebang 'executable'
+    shebang = installer.shebang 'executable'
 
     assert_equal "#!1 #{bin_env} 2 #{Gem.ruby} 3 executable 4 a", shebang
   end
 
   def test_shebang_custom_with_expands_and_arguments
+    installer = setup_base_installer
+
     bin_env = win_platform? ? '' : '/usr/bin/env'
     conf = Gem::ConfigFile.new []
     conf[:custom_shebang] = '1 $env 2 $ruby 3 $exec'
@@ -1744,18 +1844,18 @@ gem 'other', version
 
     util_make_exec @spec, "#!/usr/bin/ruby -ws"
 
-    shebang = @installer.shebang 'executable'
+    shebang = installer.shebang 'executable'
 
     assert_equal "#!1 #{bin_env} 2 #{Gem.ruby} -ws 3 executable", shebang
   end
 
   def test_unpack
-    util_setup_gem
+    installer = util_setup_installer
 
     dest = File.join @gemhome, 'gems', @spec.full_name
 
     Gem::Deprecate.skip_during do
-      @installer.unpack dest
+      installer.unpack dest
     end
 
     assert_path_exists File.join dest, 'lib', 'code.rb'
@@ -1763,13 +1863,15 @@ gem 'other', version
   end
 
   def test_write_build_info_file
+    installer = setup_base_installer
+
     refute_path_exists @spec.build_info_file
 
-    @installer.build_args = %w[
+    installer.build_args = %w[
       --with-libyaml-dir /usr/local/Cellar/libyaml/0.1.4
     ]
 
-    @installer.write_build_info_file
+    installer.write_build_info_file
 
     assert_path_exists @spec.build_info_file
 
@@ -1779,14 +1881,17 @@ gem 'other', version
   end
 
   def test_write_build_info_file_empty
+    installer = setup_base_installer
+
     refute_path_exists @spec.build_info_file
 
-    @installer.write_build_info_file
+    installer.write_build_info_file
 
     refute_path_exists @spec.build_info_file
   end
 
   def test_write_build_info_file_install_dir
+    @gem = setup_base_gem
     installer = Gem::Installer.at @gem, :install_dir => "#{@gemhome}2"
 
     installer.build_args = %w[
@@ -1801,6 +1906,7 @@ gem 'other', version
   end
 
   def test_write_cache_file
+    @gem = setup_base_gem
     cache_file = File.join @gemhome, 'cache', @spec.file_name
     gem = File.join @gemhome, @spec.file_name
 
@@ -1816,13 +1922,14 @@ gem 'other', version
   end
 
   def test_write_spec
+    @spec = setup_base_spec
     FileUtils.rm @spec.spec_file
     refute_path_exists @spec.spec_file
 
-    @installer = Gem::Installer.for_spec @spec
-    @installer.gem_home = @gemhome
+    installer = Gem::Installer.for_spec @spec
+    installer.gem_home = @gemhome
 
-    @installer.write_spec
+    installer.write_spec
 
     assert_path_exists @spec.spec_file
 
@@ -1834,15 +1941,16 @@ gem 'other', version
   end
 
   def test_write_spec_writes_cached_spec
+    @spec = setup_base_spec
     FileUtils.rm @spec.spec_file
     refute_path_exists @spec.spec_file
 
     @spec.files = %w[a.rb b.rb c.rb]
 
-    @installer = Gem::Installer.for_spec @spec
-    @installer.gem_home = @gemhome
+    installer = Gem::Installer.for_spec @spec
+    installer.gem_home = @gemhome
 
-    @installer.write_spec
+    installer.write_spec
 
     # cached specs have no file manifest:
     @spec.files = []
@@ -1851,7 +1959,9 @@ gem 'other', version
   end
 
   def test_dir
-    assert_match %r!/gemhome/gems/a-2$!, @installer.dir
+    installer = setup_base_installer
+
+    assert_match %r!/gemhome/gems/a-2$!, installer.dir
   end
 
   def test_default_gem_loaded_from
@@ -1862,14 +1972,16 @@ gem 'other', version
   end
 
   def test_default_gem_without_wrappers
+    installer = setup_base_installer
+
     FileUtils.rm_f File.join(Gem.dir, 'specifications')
 
-    @installer.wrappers = false
-    @installer.options[:install_as_default] = true
-    @installer.gem_dir = @spec.gem_dir
+    installer.wrappers = false
+    installer.options[:install_as_default] = true
+    installer.gem_dir = @spec.gem_dir
 
     use_ui @ui do
-      @installer.install
+      installer.install
     end
 
     assert_directory_exists File.join(@spec.gem_dir, 'bin')
@@ -1893,14 +2005,14 @@ gem 'other', version
   end
 
   def test_default_gem_with_wrappers
-    FileUtils.rm_f File.join(Gem.dir, 'specifications')
+    installer = setup_base_installer
 
-    @installer.wrappers = true
-    @installer.options[:install_as_default] = true
-    @installer.gem_dir = @spec.gem_dir
+    installer.wrappers = true
+    installer.options[:install_as_default] = true
+    installer.gem_dir = @spec.gem_dir
 
     use_ui @ui do
-      @installer.install
+      installer.install
     end
 
     assert_directory_exists util_inst_bindir
@@ -1913,8 +2025,6 @@ gem 'other', version
   end
 
   def test_default_gem_with_exe_as_bindir
-    FileUtils.rm_f File.join(Gem.dir, 'specifications')
-
     @spec = quick_gem 'c' do |spec|
       util_make_exec spec, '#!/usr/bin/ruby', 'exe'
     end
@@ -1944,6 +2054,16 @@ gem 'other', version
     assert_equal ['exe/executable'], default_spec.files
   end
 
+  def test_package_attribute
+    gem = quick_gem 'c' do |spec|
+      util_make_exec spec, '#!/usr/bin/ruby', 'exe'
+    end
+
+    installer = util_installer(gem, @gemhome)
+    assert_respond_to(installer, :package)
+    assert_kind_of(Gem::Package, installer.package)
+  end
+
   def old_ruby_required(requirement)
     spec = util_spec 'old_ruby_required', '1' do |s|
       s.required_ruby_version = requirement
@@ -1958,7 +2078,7 @@ gem 'other', version
     @spec = util_spec 'z'
     util_build_gem @spec
 
-    @installer = util_installer @spec, @gemhome
+    util_installer @spec, @gemhome
   end
 
   def util_conflict_executable(wrappers)

@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require 'bundler/vendor/molinillo/lib/molinillo/compatibility'
-require 'bundler/vendor/molinillo/lib/molinillo/gem_metadata'
-require 'bundler/vendor/molinillo/lib/molinillo/errors'
-require 'bundler/vendor/molinillo/lib/molinillo/resolver'
-require 'bundler/vendor/molinillo/lib/molinillo/modules/ui'
-require 'bundler/vendor/molinillo/lib/molinillo/modules/specification_provider'
+require_relative 'molinillo/compatibility'
+require_relative 'molinillo/gem_metadata'
+require_relative 'molinillo/errors'
+require_relative 'molinillo/resolver'
+require_relative 'molinillo/modules/ui'
+require_relative 'molinillo/modules/specification_provider'
 
 # Bundler::Molinillo is a generic dependency resolution algorithm.
 module Bundler::Molinillo

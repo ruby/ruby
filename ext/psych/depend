@@ -2,6 +2,7 @@
 psych.o: $(RUBY_EXTCONF_H)
 psych.o: $(arch_hdrdir)/ruby/config.h
 psych.o: $(hdrdir)/ruby.h
+psych.o: $(hdrdir)/ruby/assert.h
 psych.o: $(hdrdir)/ruby/backward.h
 psych.o: $(hdrdir)/ruby/defines.h
 psych.o: $(hdrdir)/ruby/encoding.h
@@ -21,6 +22,7 @@ psych.o: psych_yaml_tree.h
 psych_emitter.o: $(RUBY_EXTCONF_H)
 psych_emitter.o: $(arch_hdrdir)/ruby/config.h
 psych_emitter.o: $(hdrdir)/ruby.h
+psych_emitter.o: $(hdrdir)/ruby/assert.h
 psych_emitter.o: $(hdrdir)/ruby/backward.h
 psych_emitter.o: $(hdrdir)/ruby/defines.h
 psych_emitter.o: $(hdrdir)/ruby/encoding.h
@@ -40,6 +42,7 @@ psych_emitter.o: psych_yaml_tree.h
 psych_parser.o: $(RUBY_EXTCONF_H)
 psych_parser.o: $(arch_hdrdir)/ruby/config.h
 psych_parser.o: $(hdrdir)/ruby.h
+psych_parser.o: $(hdrdir)/ruby/assert.h
 psych_parser.o: $(hdrdir)/ruby/backward.h
 psych_parser.o: $(hdrdir)/ruby/defines.h
 psych_parser.o: $(hdrdir)/ruby/encoding.h
@@ -59,6 +62,7 @@ psych_parser.o: psych_yaml_tree.h
 psych_to_ruby.o: $(RUBY_EXTCONF_H)
 psych_to_ruby.o: $(arch_hdrdir)/ruby/config.h
 psych_to_ruby.o: $(hdrdir)/ruby.h
+psych_to_ruby.o: $(hdrdir)/ruby/assert.h
 psych_to_ruby.o: $(hdrdir)/ruby/backward.h
 psych_to_ruby.o: $(hdrdir)/ruby/defines.h
 psych_to_ruby.o: $(hdrdir)/ruby/encoding.h
@@ -78,6 +82,7 @@ psych_to_ruby.o: psych_yaml_tree.h
 psych_yaml_tree.o: $(RUBY_EXTCONF_H)
 psych_yaml_tree.o: $(arch_hdrdir)/ruby/config.h
 psych_yaml_tree.o: $(hdrdir)/ruby.h
+psych_yaml_tree.o: $(hdrdir)/ruby/assert.h
 psych_yaml_tree.o: $(hdrdir)/ruby/backward.h
 psych_yaml_tree.o: $(hdrdir)/ruby/defines.h
 psych_yaml_tree.o: $(hdrdir)/ruby/encoding.h

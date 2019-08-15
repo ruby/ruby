@@ -200,13 +200,14 @@ class << Merger
     else
       command = %w[git diff --color]
     end
-    IO.popen(command + [file], &:read)
+    IO.popen(command + [file].compact, &:read)
   end
 
   def commit(file)
     if svn_mode?
       begin
         execute('svn', 'ci', '-F', file)
+        execute('svn', 'update') # svn ci doesn't update revision info on working copy
       ensure
         execute('rm', '-f', 'subversion.commitlog')
       end

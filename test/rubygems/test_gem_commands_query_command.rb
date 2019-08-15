@@ -459,7 +459,28 @@ pl (1 i386-linux)
     EOF
 
     assert_equal expected, @stub_ui.output
-    assert_equal "WARNING:  prereleases are always shown locally\n", @stub_ui.error
+  end
+
+  def test_execute_no_prerelease_local
+    spec_fetcher do |fetcher|
+      fetcher.legacy_platform
+    end
+
+    @cmd.handle_options %w[-l --no-prerelease]
+
+    use_ui @stub_ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+
+*** LOCAL GEMS ***
+
+a (2, 1)
+pl (1 i386-linux)
+    EOF
+
+    assert_equal expected, @stub_ui.output
   end
 
   def test_execute_remote
@@ -569,7 +590,7 @@ pl (1 i386-linux)
     @cmd.options[:domain] = :remote
 
     use_ui @stub_ui do
-      @cmd.send :show_gems, /a/i, false
+      @cmd.send :show_gems, /a/i
     end
 
     assert_match %r%^a %,  @stub_ui.output

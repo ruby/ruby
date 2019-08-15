@@ -19,8 +19,14 @@ describe "BigDecimal#to_s" do
     @bigdec.to_s.should =~ /^0\.[0-9]*e[0-9]*$/
   end
 
+  it "does not add an exponent for zero values" do
+    BigDecimal("0").to_s.should == "0.0"
+    BigDecimal("+0").to_s.should == "0.0"
+    BigDecimal("-0").to_s.should == "-0.0"
+  end
+
   it "takes an optional argument" do
-    lambda {@bigdec.to_s("F")}.should_not raise_error()
+    -> {@bigdec.to_s("F")}.should_not raise_error()
   end
 
   it "starts with + if + is supplied and value is positive" do

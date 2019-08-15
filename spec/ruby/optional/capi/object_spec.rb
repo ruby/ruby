@@ -230,7 +230,7 @@ describe "CApiObject" do
       obj = mock("rb_check_convert_type")
       obj.should_receive(:to_array).and_return("string")
 
-      lambda do
+      -> do
         @o.rb_check_convert_type(obj, "Array", "to_array")
       end.should raise_error(TypeError)
     end
@@ -255,7 +255,7 @@ describe "CApiObject" do
       obj = mock("rb_convert_type")
       obj.should_receive(:to_array).and_return(nil)
 
-      lambda do
+      -> do
         @o.rb_convert_type(obj, "Array", "to_array")
       end.should raise_error(TypeError)
     end
@@ -264,7 +264,7 @@ describe "CApiObject" do
       obj = mock("rb_convert_type")
       obj.should_receive(:to_array).and_return("string")
 
-      lambda do
+      -> do
         @o.rb_convert_type(obj, "Array", "to_array")
       end.should raise_error(TypeError)
     end
@@ -308,13 +308,13 @@ describe "CApiObject" do
     it "sends #to_ary to the argument and raises TypeError if it's not a kind of Array" do
       obj = mock("to_ary")
       obj.should_receive(:to_ary).and_return(Object.new)
-      lambda { @o.rb_check_array_type obj }.should raise_error(TypeError)
+      -> { @o.rb_check_array_type obj }.should raise_error(TypeError)
     end
 
     it "does not rescue exceptions raised by #to_ary" do
       obj = mock("to_ary")
       obj.should_receive(:to_ary).and_raise(frozen_error_class)
-      lambda { @o.rb_check_array_type obj }.should raise_error(frozen_error_class)
+      -> { @o.rb_check_array_type obj }.should raise_error(frozen_error_class)
     end
   end
 
@@ -356,13 +356,13 @@ describe "CApiObject" do
     it "sends #to_str to the argument and raises TypeError if it's not a kind of String" do
       obj = mock("to_str")
       obj.should_receive(:to_str).and_return(Object.new)
-      lambda { @o.rb_check_string_type obj }.should raise_error(TypeError)
+      -> { @o.rb_check_string_type obj }.should raise_error(TypeError)
     end
 
     it "does not rescue exceptions raised by #to_str" do
       obj = mock("to_str")
       obj.should_receive(:to_str).and_raise(RuntimeError)
-      lambda { @o.rb_check_string_type obj }.should raise_error(RuntimeError)
+      -> { @o.rb_check_string_type obj }.should raise_error(RuntimeError)
     end
   end
 
@@ -639,7 +639,7 @@ describe "CApiObject" do
   describe "rb_obj_instance_eval" do
     it "evaluates the block in the object context, that includes private methods" do
       obj = ObjectTest
-      lambda do
+      -> do
         @o.rb_obj_instance_eval(obj) { include Kernel }
       end.should_not raise_error(NoMethodError)
     end
@@ -667,18 +667,18 @@ describe "CApiObject" do
     end
 
     it "raises a #{frozen_error_class} if the object passed is frozen" do
-      lambda { @o.rb_obj_taint("".freeze) }.should raise_error(frozen_error_class)
+      -> { @o.rb_obj_taint("".freeze) }.should raise_error(frozen_error_class)
     end
   end
 
   describe "rb_check_frozen" do
     it "raises a #{frozen_error_class} if the obj is frozen" do
-      lambda { @o.rb_check_frozen("".freeze) }.should raise_error(frozen_error_class)
+      -> { @o.rb_check_frozen("".freeze) }.should raise_error(frozen_error_class)
     end
 
     it "does nothing when object isn't frozen" do
       obj = ""
-      lambda { @o.rb_check_frozen(obj) }.should_not raise_error(TypeError)
+      -> { @o.rb_check_frozen(obj) }.should_not raise_error(TypeError)
     end
   end
 
@@ -718,23 +718,23 @@ describe "CApiObject" do
     it "raises a TypeError if #to_int does not return an Integer" do
       x = mock("to_int")
       x.should_receive(:to_int).and_return("5")
-      lambda { @o.rb_to_int(x) }.should raise_error(TypeError)
+      -> { @o.rb_to_int(x) }.should raise_error(TypeError)
     end
 
     it "raises a TypeError if called with nil" do
-      lambda { @o.rb_to_int(nil) }.should raise_error(TypeError)
+      -> { @o.rb_to_int(nil) }.should raise_error(TypeError)
     end
 
     it "raises a TypeError if called with true" do
-      lambda { @o.rb_to_int(true) }.should raise_error(TypeError)
+      -> { @o.rb_to_int(true) }.should raise_error(TypeError)
     end
 
     it "raises a TypeError if called with false" do
-      lambda { @o.rb_to_int(false) }.should raise_error(TypeError)
+      -> { @o.rb_to_int(false) }.should raise_error(TypeError)
     end
 
     it "raises a TypeError if called with a String" do
-      lambda { @o.rb_to_int("1") }.should raise_error(TypeError)
+      -> { @o.rb_to_int("1") }.should raise_error(TypeError)
     end
   end
 
@@ -770,7 +770,7 @@ describe "CApiObject" do
     end
 
     it "raises a TypeError if arg is no class or module" do
-      lambda{
+      ->{
         @o.rb_class_inherited_p(1, 2)
       }.should raise_error(TypeError)
     end

@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-require "bundler/vendored_fileutils"
+require_relative "../vendored_fileutils"
 require "uri"
 
 module Bundler
   class Source
     class Git < Path
-      autoload :GitProxy, "bundler/source/git/git_proxy"
+      autoload :GitProxy, File.expand_path("git/git_proxy", __dir__)
 
       attr_reader :uri, :ref, :branch, :options, :submodules
 
@@ -314,12 +314,10 @@ module Bundler
       # no-op, since we validate when re-serializing the gemspec
       def validate_spec(_spec); end
 
-      if Bundler.rubygems.stubs_provide_full_functionality?
-        def load_gemspec(file)
-          stub = Gem::StubSpecification.gemspec_stub(file, install_path.parent, install_path.parent)
-          stub.full_gem_path = Pathname.new(file).dirname.expand_path(root).to_s.untaint
-          StubSpecification.from_stub(stub)
-        end
+      def load_gemspec(file)
+        stub = Gem::StubSpecification.gemspec_stub(file, install_path.parent, install_path.parent)
+        stub.full_gem_path = Pathname.new(file).dirname.expand_path(root).to_s.untaint
+        StubSpecification.from_stub(stub)
       end
 
       def git_scope

@@ -78,46 +78,58 @@ is too hard to use.
   end
 
   def execute
-    exit_code = 0
-    if options[:args].to_a.empty? and options[:name].source.empty?
-      name = options[:name]
-      no_name = true
-    elsif !options[:name].source.empty?
-      name = Array(options[:name])
-    else
-      args = options[:args].to_a
-      name = options[:exact] ? args.map{|arg| /\A#{Regexp.escape(arg)}\Z/ } : args.map{|arg| /#{arg}/i }
+    gem_names = Array(options[:name])
+
+    if !args.empty?
+      gem_names = options[:exact] ? args.map{|arg| /\A#{Regexp.escape(arg)}\Z/ } : args.map{|arg| /#{arg}/i }
     end
 
-    prerelease = options[:prerelease]
+    terminate_interaction(check_installed_gems(gem_names)) if check_installed_gems?
 
-    unless options[:installed].nil?
-      if no_name
-        alert_error "You must specify a gem name"
-        exit_code |= 4
-      elsif name.count > 1
-        alert_error "You must specify only ONE gem!"
-        exit_code |= 4
-      else
-        installed = installed? name.first, options[:version]
-        installed = !installed unless options[:installed]
-
-        if installed
-          say "true"
-        else
-          say "false"
-          exit_code |= 1
-        end
-      end
-
-      terminate_interaction exit_code
-    end
-
-    names = Array(name)
-    names.each { |n| show_gems n, prerelease }
+    gem_names.each { |n| show_gems(n) }
   end
 
   private
+
+  def check_installed_gems(gem_names)
+    exit_code = 0
+
+    if args.empty? && !gem_name?
+      alert_error "You must specify a gem name"
+      exit_code = 4
+    elsif gem_names.count > 1
+      alert_error "You must specify only ONE gem!"
+      exit_code = 4
+    else
+      installed = installed?(gem_names.first, options[:version])
+      installed = !installed unless options[:installed]
+
+      say(installed)
+      exit_code = 1 if !installed
+    end
+
+    exit_code
+  end
+
+  def check_installed_gems?
+    !options[:installed].nil?
+  end
+
+  def gem_name?
+    !options[:name].source.empty?
+  end
+
+  def prerelease
+    options[:prerelease]
+  end
+
+  def show_prereleases?
+    prerelease.nil? || prerelease
+  end
+
+  def args
+    options[:args].to_a
+  end
 
   def display_header(type)
     if (ui.outs.tty? and Gem.configuration.verbose) or both?
@@ -128,56 +140,57 @@ is too hard to use.
   end
 
   #Guts of original execute
-  def show_gems(name, prerelease)
-    req = Gem::Requirement.default
-    # TODO: deprecate for real
-    dep = Gem::Deprecate.skip_during { Gem::Dependency.new name, req }
-    dep.prerelease = prerelease
+  def show_gems(name)
+    show_local_gems(name)  if local?
+    show_remote_gems(name) if remote?
+  end
 
-    if local?
-      if prerelease and not both?
-        alert_warning "prereleases are always shown locally"
-      end
+  def show_local_gems(name, req = Gem::Requirement.default)
+    display_header("LOCAL")
 
-      display_header 'LOCAL'
-
-      specs = Gem::Specification.find_all do |s|
-        s.name =~ name and req =~ s.version
-      end
-
-      spec_tuples = specs.map do |spec|
-        [spec.name_tuple, spec]
-      end
-
-      output_query_results spec_tuples
+    specs = Gem::Specification.find_all do |s|
+      s.name =~ name and req =~ s.version
     end
 
-    if remote?
-      display_header 'REMOTE'
+    dep = Gem::Deprecate.skip_during { Gem::Dependency.new name, req }
+    specs.select! do |s|
+      dep.match?(s.name, s.version, show_prereleases?)
+    end
 
-      fetcher = Gem::SpecFetcher.fetcher
+    spec_tuples = specs.map do |spec|
+      [spec.name_tuple, spec]
+    end
 
-      type = if options[:all]
-               if options[:prerelease]
-                 :complete
-               else
-                 :released
-               end
-             elsif options[:prerelease]
-               :prerelease
-             else
-               :latest
-             end
+    output_query_results(spec_tuples)
+  end
 
-      if name.respond_to?(:source) && name.source.empty?
-        spec_tuples = fetcher.detect(type) { true }
+  def show_remote_gems(name)
+    display_header("REMOTE")
+
+    fetcher = Gem::SpecFetcher.fetcher
+
+    spec_tuples = if name.respond_to?(:source) && name.source.empty?
+                    fetcher.detect(specs_type) { true }
+                  else
+                    fetcher.detect(specs_type) do |name_tuple|
+                      name === name_tuple.name
+                    end
+                  end
+
+    output_query_results(spec_tuples)
+  end
+
+  def specs_type
+    if options[:all]
+      if options[:prerelease]
+        :complete
       else
-        spec_tuples = fetcher.detect(type) do |name_tuple|
-          name === name_tuple.name
-        end
+        :released
       end
-
-      output_query_results spec_tuples
+    elsif options[:prerelease]
+      :prerelease
+    else
+      :latest
     end
   end
 
@@ -235,7 +248,7 @@ is too hard to use.
 
     name_tuple, spec = detail_tuple
 
-    spec = spec.fetch_spec name_tuple if spec.respond_to? :fetch_spec
+    spec = spec.fetch_spec(name_tuple)if spec.respond_to?(:fetch_spec)
 
     entry << "\n"
 
@@ -285,8 +298,8 @@ is too hard to use.
 
     entry = [name_tuples.first.name]
 
-    entry_versions entry, name_tuples, platforms, specs
-    entry_details  entry, detail_tuple, specs, platforms
+    entry_versions(entry, name_tuples, platforms, specs)
+    entry_details(entry, detail_tuple, specs, platforms)
 
     entry.join
   end
@@ -337,12 +350,13 @@ is too hard to use.
 
     if platforms.length == 1
       title = platforms.values.length == 1 ? 'Platform' : 'Platforms'
-      entry << "    #{title}: #{platforms.values.sort.join ', '}\n"
+      entry << "    #{title}: #{platforms.values.sort.join(', ')}\n"
     else
       entry << "    Platforms:\n"
-      platforms.sort_by do |version,|
-        version
-      end.each do |version, pls|
+
+      sorted_platforms = platforms.sort_by { |version,| version }
+
+      sorted_platforms.each do |version, pls|
         label = "        #{version}: "
         data = format_text pls.sort.join(', '), 68, label.length
         data[0, label.length] = label
