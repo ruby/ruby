@@ -8,8 +8,8 @@
 
 2.  Visual C++ 12.0 (2013) or later.
 
-    [Note] if you want to build x64 or ia64 version, use native compiler for
-           x64/ia64.
+    [Note] if you want to build x64 version, use native compiler for
+           x64.
 
 3.  Please set environment variable +INCLUDE+, +LIB+, +PATH+
     to run required commands properly from the command line.
@@ -21,8 +21,7 @@
     * lib
     * dumpbin
 
-4.  If you want to build from SVN or GIT source, following commands
-    are required.
+4.  If you want to build from GIT source, following commands are required.
     * bison
     * patch
     * sed
@@ -34,12 +33,12 @@
 
 == How to compile and install
 
-1.  Execute win32\configure.bat on your build directory.
+1.  Execute <tt>win32\configure.bat</tt> on your build directory.
     You can specify the target platform as an argument.
     For example, run `<tt>configure --target=i686-mswin32</tt>'
     You can also specify the install directory.
     For example, run `<tt>configure --prefix=<install_directory></tt>'
-    Default of the install directory is /usr .
+    Default of the install directory is <tt>/usr</tt> .
     The default _PLATFORM_ is `+i386-mswin32_+_MSRTVERSION_' on 32-bit
     platforms, or `+x64-mswin64_+_MSRTVERSION_' on x64 platforms.
     _MSRTVERSION_ is the 2- or 3-digits version of the Microsoft
@@ -50,12 +49,11 @@
     And add _RUBYW_INSTALL_NAME_ to change the name of the
     executable without console window if also you want.
 
-3.  Run `<tt>nmake up</tt>' if you are building from SVN or GIT
-    source.
+3.  Run `<tt>nmake up</tt>' if you are building from GIT source.
 
 4.  Run `<tt>nmake</tt>'
 
-5.  Run `<tt>nmake exam</tt>'
+5.  Run `<tt>nmake check</tt>'
 
 6.  Run `<tt>nmake install</tt>'
 
@@ -69,12 +67,16 @@ to their base names.
     $(RUBYW_INSTALL_NAME).ico or rubyw.ico --> $(RUBYW_INSTALL_NAME).exe
     the others                             --> $(RUBY_SO_NAME).dll
 
-Although no icons are distributed with the ruby source or in the official
-site, you can use anything you like. For example, followings are written
-in Japanese, but you can download at least.
+Although no icons are distributed with the ruby source, you can use
+anything you like. You will be able to find many images by search engines.
+For example, followings are made from {Ruby logo
+kit}[https://cache.ruby-lang.org/pub/misc/logo/ruby-logo-kit.zip]:
 
-* http://homepage1.nifty.com/a_nakata/ruby/ or
-  {icon itself}[http://homepage1.nifty.com/a_nakata/ruby/RubyIcon.ico]
+* Small {favicon}[https://www.ruby-lang.org/favicon.ico] in the official
+  site
+
+* http://ruby.morphball.net/vit-ruby-ico_en.html or
+  {icon itself}[http://ruby.morphball.net/icon/vit-ruby.ico]
 
 == Build examples
 
@@ -89,7 +91,7 @@ in Japanese, but you can download at least.
     cd \ruby
     win32\configure --prefix=/usr/local
     nmake
-    nmake test
+    nmake check
     nmake install
 
 * Build on the relative directory from the ruby source directory.
@@ -105,7 +107,7 @@ in Japanese, but you can download at least.
     cd mswin32
     ..\win32\configure --prefix=/usr/local
     nmake
-    nmake test
+    nmake check
     nmake install
 
 * Build on the different drive.
@@ -119,7 +121,7 @@ in Japanese, but you can download at least.
     cd D:\build\ruby
     C:\src\ruby\win32\configure --prefix=/usr/local
     nmake
-    nmake test
+    nmake check
     nmake install DESTDIR=C:
 
 * Build x64 version (requires native x64 VC++ compiler)
@@ -133,7 +135,7 @@ in Japanese, but you can download at least.
     cd \ruby
     win32\configure --prefix=/usr/local --target=x64-mswin64
     nmake
-    nmake test
+    nmake check
     nmake install
 
 == Bugs

@@ -2,7 +2,7 @@
 
 RSpec.describe "bundle install with specific_platform enabled" do
   before do
-    bundle "config specific_platform true"
+    bundle "config set specific_platform true"
 
     build_repo2 do
       build_gem("google-protobuf", "3.0.0.alpha.5.0.5.1")
@@ -49,7 +49,7 @@ RSpec.describe "bundle install with specific_platform enabled" do
   end
 
   let(:google_protobuf) { <<-G }
-    source "file:#{gem_repo2}"
+    source "#{file_uri_for(gem_repo2)}"
     gem "google-protobuf"
   G
 
@@ -75,7 +75,7 @@ RSpec.describe "bundle install with specific_platform enabled" do
 
     it "uses the platform-specific gem with extra dependencies" do
       install_gemfile! <<-G
-        source "file:#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "facter"
       G
 

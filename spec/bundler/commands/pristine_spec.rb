@@ -19,7 +19,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
     end
 
     install_gemfile! <<-G
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "weakling"
       gem "very_simple_binary"
       gem "foo", :git => "#{lib_path("foo")}"
@@ -42,7 +42,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
       expect(changes_txt).to_not be_file
     end
 
-    it "does not delete the bundler gem" do
+    it "does not delete the bundler gem", :rubygems => ">= 2.6.2" do
       ENV["BUNDLER_SPEC_KEEP_DEFAULT_BUNDLER_GEM"] = "true"
       system_gems :bundler
       bundle! "install"
@@ -95,7 +95,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
 
       bundle "pristine"
       expect(File.read(changed_file)).to include(diff)
-      expect(out).to include("Cannot pristine #{spec.name} (#{spec.version}#{spec.git_version}). Gem is sourced from local path.")
+      expect(err).to include("Cannot pristine #{spec.name} (#{spec.version}#{spec.git_version}). Gem is sourced from local path.")
     end
 
     it "reinstall gemspec dependency" do
@@ -118,7 +118,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
       FileUtils.touch(changes_txt)
       expect(changes_txt).to be_file
       bundle "pristine"
-      expect(out).to include("Cannot pristine #{spec.name} (#{spec.version}#{spec.git_version}). Gem is sourced from local path.")
+      expect(err).to include("Cannot pristine #{spec.name} (#{spec.version}#{spec.git_version}). Gem is sourced from local path.")
       expect(changes_txt).to be_file
     end
   end
@@ -142,8 +142,8 @@ RSpec.describe "bundle pristine", :ruby_repo do
 
       bundle! "pristine foo bar weakling"
 
-      expect(out).to include("Cannot pristine bar (1.0). Gem is sourced from local path.").
-        and include("Installing weakling 1.0")
+      expect(err).to include("Cannot pristine bar (1.0). Gem is sourced from local path.")
+      expect(out).to include("Installing weakling 1.0")
 
       expect(weakling_changes_txt).not_to be_file
       expect(foo_changes_txt).not_to be_file
@@ -152,7 +152,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
 
     it "raises when one of them is not in the lockfile" do
       bundle "pristine abcabcabc"
-      expect(out).to include("Could not find gem 'abcabcabc'.")
+      expect(err).to include("Could not find gem 'abcabcabc'.")
     end
   end
 
@@ -160,7 +160,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
     let(:very_simple_binary) { Bundler.definition.specs["very_simple_binary"].first }
     let(:c_ext_dir)          { Pathname.new(very_simple_binary.full_gem_path).join("ext") }
     let(:build_opt)          { "--with-ext-lib=#{c_ext_dir}" }
-    before { bundle "config build.very_simple_binary -- #{build_opt}" }
+    before { bundle "config set build.very_simple_binary -- #{build_opt}" }
 
     # This just verifies that the generated Makefile from the c_ext gem makes
     # use of the build_args from the bundle config
@@ -177,7 +177,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
     let(:git_with_ext) { Bundler.definition.specs["git_with_ext"].first }
     let(:c_ext_dir)          { Pathname.new(git_with_ext.full_gem_path).join("ext") }
     let(:build_opt)          { "--with-ext-lib=#{c_ext_dir}" }
-    before { bundle "config build.git_with_ext -- #{build_opt}" }
+    before { bundle "config set build.git_with_ext -- #{build_opt}" }
 
     # This just verifies that the generated Makefile from the c_ext gem makes
     # use of the build_args from the bundle config

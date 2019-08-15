@@ -974,21 +974,10 @@ rb_econv_open0(const char *sname, const char *dname, int ecflags)
     int num_trans;
     rb_econv_t *ec;
 
-    int sidx, didx;
-
-    if (*sname) {
-        sidx = rb_enc_find_index(sname);
-        if (0 <= sidx) {
-            rb_enc_from_index(sidx);
-        }
-    }
-
-    if (*dname) {
-        didx = rb_enc_find_index(dname);
-        if (0 <= didx) {
-            rb_enc_from_index(didx);
-        }
-    }
+    /* Just check if sname and dname are defined */
+    /* (This check is needed?) */
+    if (*sname) rb_enc_find_index(sname);
+    if (*dname) rb_enc_find_index(dname);
 
     if (*sname == '\0' && *dname == '\0') {
         num_trans = 0;
@@ -1194,7 +1183,6 @@ rb_trans_conv(rb_econv_t *ec,
     if (ec->elems[0].last_result == econv_after_output)
         ec->elems[0].last_result = econv_source_buffer_empty;
 
-    needreport_index = -1;
     for (i = ec->num_trans-1; 0 <= i; i--) {
         switch (ec->elems[i].last_result) {
           case econv_invalid_byte_sequence:
@@ -1203,7 +1191,6 @@ rb_trans_conv(rb_econv_t *ec,
           case econv_after_output:
           case econv_finished:
             sweep_start = i+1;
-            needreport_index = i;
             goto found_needreport;
 
           case econv_destination_buffer_full:

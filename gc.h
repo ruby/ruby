@@ -57,6 +57,10 @@ rb_gc_debug_body(const char *mode, const char *msg, int st, void *ptr)
 #define RUBY_GC_INFO if(0)printf
 #endif
 
+#define RUBY_MARK_NO_PIN_UNLESS_NULL(ptr) do { \
+    VALUE markobj = (ptr); \
+    if (RTEST(markobj)) {rb_gc_mark_movable(markobj);} \
+} while (0)
 #define RUBY_MARK_UNLESS_NULL(ptr) do { \
     VALUE markobj = (ptr); \
     if (RTEST(markobj)) {rb_gc_mark(markobj);} \
@@ -77,6 +81,14 @@ int ruby_get_stack_grow_direction(volatile VALUE *addr);
 # define STACK_UPPER(x, a, b) (stack_growup_p(x) ? (a) : (b))
 #endif
 
+/*
+  STACK_GROW_DIR_DETECTION is used with STACK_DIR_UPPER.
+
+  On most normal systems, stacks grow from high address to lower address. In
+  this case, STACK_DIR_UPPER(a, b) will return (b), but on exotic systems where
+  the stack grows UP (from low address to high address), it will return (a).
+*/
+
 #if STACK_GROW_DIRECTION
 #define STACK_GROW_DIR_DETECTION
 #define STACK_DIR_UPPER(a,b) STACK_UPPER(0, (a), (b))
@@ -88,7 +100,8 @@ int ruby_get_stack_grow_direction(volatile VALUE *addr);
 
 const char *rb_obj_info(VALUE obj);
 const char *rb_raw_obj_info(char *buff, const int buff_size, VALUE obj);
-void rb_obj_info_dump(VALUE obj);
+
+VALUE rb_gc_disable_no_rest(void);
 
 struct rb_thread_struct;
 

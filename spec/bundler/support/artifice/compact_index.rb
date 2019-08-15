@@ -21,7 +21,7 @@ class CompactIndexAPI < Endpoint
       headers "Surrogate-Control" => "max-age=2592000, stale-while-revalidate=60"
       content_type "text/plain"
       requested_range_for(response_body)
-    rescue => e
+    rescue StandardError => e
       puts e
       puts e.backtrace
       raise
@@ -57,11 +57,7 @@ class CompactIndexAPI < Endpoint
     end
 
     def slice_body(body, range)
-      if body.respond_to?(:byteslice)
-        body.byteslice(range)
-      else # pre-1.9.3
-        body.unpack("@#{range.first}a#{range.end + 1}").first
-      end
+      body.byteslice(range)
     end
 
     def gems(gem_repo = GEM_REPO)
@@ -82,8 +78,8 @@ class CompactIndexAPI < Endpoint
               CompactIndex::Dependency.new(d.name, reqs)
             end
             checksum = begin
-                         Digest::SHA256.file("#{GEM_REPO}/gems/#{spec.original_name}.gem").base64digest
-                       rescue
+                         Digest(:SHA256).file("#{GEM_REPO}/gems/#{spec.original_name}.gem").base64digest
+                       rescue StandardError
                          nil
                        end
             CompactIndex::GemVersion.new(spec.version.version, spec.platform.to_s, checksum, nil,

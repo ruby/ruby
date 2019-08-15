@@ -33,7 +33,7 @@ module Bundler
           if extension_cache_path = source.extension_cache_path(spec)
             FileUtils.rm_rf extension_cache_path
           end
-          FileUtils.rm_rf spec.extension_dir if spec.respond_to?(:extension_dir)
+          FileUtils.rm_rf spec.extension_dir
           FileUtils.rm_rf spec.full_gem_path
         else
           Bundler.ui.warn("Cannot pristine #{gem_name}. Gem is sourced from local path.")

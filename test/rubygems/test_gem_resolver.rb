@@ -97,7 +97,7 @@ class TestGemResolver < Gem::TestCase
 
     r1 = Gem::Resolver::DependencyRequest.new dep('a', '= 1'), nil
 
-    act = Gem::Resolver::ActivationRequest.new a1, r1, false
+    act = Gem::Resolver::ActivationRequest.new a1, r1
 
     res = Gem::Resolver.new [a1]
 
@@ -118,7 +118,7 @@ class TestGemResolver < Gem::TestCase
 
     r1 = Gem::Resolver::DependencyRequest.new dep('a', '= 1'), nil
 
-    act = Gem::Resolver::ActivationRequest.new spec, r1, false
+    act = Gem::Resolver::ActivationRequest.new spec, r1
 
     res = Gem::Resolver.new [act]
     res.development = true
@@ -137,7 +137,7 @@ class TestGemResolver < Gem::TestCase
 
     r1 = Gem::Resolver::DependencyRequest.new dep('a', '= 1'), nil
 
-    act = Gem::Resolver::ActivationRequest.new a1, r1, false
+    act = Gem::Resolver::ActivationRequest.new a1, r1
 
     res = Gem::Resolver.new [a1]
     res.ignore_dependencies = true
@@ -675,7 +675,6 @@ class TestGemResolver < Gem::TestCase
   # activemerchant 1.5.0
   # activesupport 2.3.5, 2.3.4
   # Activemerchant needs activesupport >= 2.3.2. When you require activemerchant, it will activate the latest version that meets that requirement which is 2.3.5. Actionmailer on the other hand needs activesupport = 2.3.4. When rubygems tries to activate activesupport 2.3.4, it will raise an error.
-
 
   def test_simple_activesupport_problem
     sup1  = util_spec "activesupport", "2.3.4"

@@ -53,6 +53,17 @@ id_type(ID id)
 }
 
 typedef uint32_t rb_id_serial_t;
+static const uint32_t RB_ID_SERIAL_MAX = /* 256M on LP32 */
+    UINT32_MAX >>
+    ((sizeof(ID)-sizeof(rb_id_serial_t))*CHAR_BIT < RUBY_ID_SCOPE_SHIFT ?
+     RUBY_ID_SCOPE_SHIFT : 0);
+
+typedef struct {
+    rb_id_serial_t last_id;
+    st_table *str_sym;
+    VALUE ids;
+    VALUE dsymbol_fstr_hash;
+} rb_symbols_t;
 
 static inline rb_id_serial_t
 rb_id_to_serial(ID id)

@@ -1,5 +1,7 @@
 require_relative '../../spec_helper'
 
+require 'bigdecimal'
+
 describe "Integer#coerce" do
   context "fixnum" do
     describe "when given a Fixnum" do
@@ -11,7 +13,7 @@ describe "Integer#coerce" do
 
     describe "when given a String" do
       it "raises an ArgumentError when trying to coerce with a non-number String" do
-        lambda { 1.coerce(":)") }.should raise_error(ArgumentError)
+        -> { 1.coerce(":)") }.should raise_error(ArgumentError)
       end
 
       it "returns  an array containing two Floats" do
@@ -21,7 +23,7 @@ describe "Integer#coerce" do
     end
 
     it "raises a TypeError when trying to coerce with nil" do
-      lambda { 1.coerce(nil) }.should raise_error(TypeError)
+      -> { 1.coerce(nil) }.should raise_error(TypeError)
     end
 
     it "tries to convert the given Object into a Float by using #to_f" do
@@ -29,13 +31,13 @@ describe "Integer#coerce" do
       2.coerce(obj).should == [1.0, 2.0]
 
       (obj = mock('0')).should_receive(:to_f).and_return('0')
-      lambda { 2.coerce(obj).should == [1.0, 2.0] }.should raise_error(TypeError)
+      -> { 2.coerce(obj).should == [1.0, 2.0] }.should raise_error(TypeError)
     end
 
     it "raises a TypeError when given an Object that does not respond to #to_f" do
-      lambda { 1.coerce(mock('x'))  }.should raise_error(TypeError)
-      lambda { 1.coerce(1..4)       }.should raise_error(TypeError)
-      lambda { 1.coerce(:test)      }.should raise_error(TypeError)
+      -> { 1.coerce(mock('x'))  }.should raise_error(TypeError)
+      -> { 1.coerce(1..4)       }.should raise_error(TypeError)
+      -> { 1.coerce(:test)      }.should raise_error(TypeError)
     end
   end
 
@@ -62,44 +64,41 @@ describe "Integer#coerce" do
     it "raises a TypeError when not passed a Fixnum or Bignum" do
       a = bignum_value
 
-      lambda { a.coerce(nil)         }.should raise_error(TypeError)
-      lambda { a.coerce(mock('str')) }.should raise_error(TypeError)
-      lambda { a.coerce(1..4)        }.should raise_error(TypeError)
-      lambda { a.coerce(:test)       }.should raise_error(TypeError)
+      -> { a.coerce(nil)         }.should raise_error(TypeError)
+      -> { a.coerce(mock('str')) }.should raise_error(TypeError)
+      -> { a.coerce(1..4)        }.should raise_error(TypeError)
+      -> { a.coerce(:test)       }.should raise_error(TypeError)
     end
 
-    ruby_version_is ""..."2.4" do
-      it "raises a TypeError when passed a String" do
-        a = bignum_value
-        lambda { a.coerce("123") }.should raise_error(TypeError)
-      end
-
-      it "raises a TypeError when passed a Float" do
-        a = bignum_value
-        lambda { a.coerce(12.3) }.should raise_error(TypeError)
-      end
+    it "coerces both values to Floats and returns [other, self] when passed a Float" do
+      a = bignum_value
+      a.coerce(1.2).should == [1.2, a.to_f]
     end
 
-    ruby_version_is "2.4" do
-      it "coerces both values to Floats and returns [other, self] when passed a Float" do
-        a = bignum_value
-        a.coerce(1.2).should == [1.2, a.to_f]
-      end
+    it "coerces both values to Floats and returns [other, self] when passed a String" do
+      a = bignum_value
+      a.coerce("123").should == [123.0, a.to_f]
+    end
 
-      it "coerces both values to Floats and returns [other, self] when passed a String" do
-        a = bignum_value
-        a.coerce("123").should == [123.0, a.to_f]
-      end
+    it "calls #to_f to coerce other to a Float" do
+      b = mock("bignum value")
+      b.should_receive(:to_f).and_return(1.2)
 
-      it "calls #to_f to coerce other to a Float" do
-        b = mock("bignum value")
-        b.should_receive(:to_f).and_return(1.2)
+      a = bignum_value
+      ary = a.coerce(b)
 
-        a = bignum_value
-        ary = a.coerce(b)
-
-        ary.should == [1.2, a.to_f]
-      end
+      ary.should == [1.2, a.to_f]
     end
   end
+
+  context "bigdecimal" do
+    it "produces Floats" do
+      x, y = 3.coerce(BigDecimal("3.4"))
+      x.class.should == Float
+      x.should == 3.4
+      y.class.should == Float
+      y.should == 3.0
+    end
+  end
+
 end

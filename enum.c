@@ -14,15 +14,14 @@
 #include "ruby/util.h"
 #include "id.h"
 #include "symbol.h"
-#include "transient_heap.h"
 
 #include <assert.h>
 
 VALUE rb_mEnumerable;
 
 static ID id_next;
-static ID id_div;
 
+#define id_div idDiv
 #define id_each idEach
 #define id_eqq  idEqq
 #define id_cmp  idCmp
@@ -281,10 +280,12 @@ find_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
  *     (1..100).detect  #=> #<Enumerator: 1..100:detect>
  *     (1..100).find    #=> #<Enumerator: 1..100:find>
  *
- *     (1..10).detect   { |i| i % 5 == 0 and i % 7 == 0 }   #=> nil
- *     (1..10).find     { |i| i % 5 == 0 and i % 7 == 0 }   #=> nil
- *     (1..100).detect  { |i| i % 5 == 0 and i % 7 == 0 }   #=> 35
- *     (1..100).find    { |i| i % 5 == 0 and i % 7 == 0 }   #=> 35
+ *     (1..10).detect         { |i| i % 5 == 0 && i % 7 == 0 }   #=> nil
+ *     (1..10).find           { |i| i % 5 == 0 && i % 7 == 0 }   #=> nil
+ *     (1..10).detect(-> {0}) { |i| i % 5 == 0 && i % 7 == 0 }   #=> 0
+ *     (1..10).find(-> {0})   { |i| i % 5 == 0 && i % 7 == 0 }   #=> 0
+ *     (1..100).detect        { |i| i % 5 == 0 && i % 7 == 0 }   #=> 35
+ *     (1..100).find          { |i| i % 5 == 0 && i % 7 == 0 }   #=> 35
  *
  */
 
@@ -348,9 +349,9 @@ find_index_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
  *
  *  If neither block nor argument is given, an enumerator is returned instead.
  *
- *     (1..10).find_index  { |i| i % 5 == 0 and i % 7 == 0 }  #=> nil
- *     (1..100).find_index { |i| i % 5 == 0 and i % 7 == 0 }  #=> 34
- *     (1..100).find_index(50)                                #=> 49
+ *     (1..10).find_index  { |i| i % 5 == 0 && i % 7 == 0 }  #=> nil
+ *     (1..100).find_index { |i| i % 5 == 0 && i % 7 == 0 }  #=> 34
+ *     (1..100).find_index(50)                               #=> 49
  *
  */
 
@@ -434,7 +435,7 @@ enum_size_over_p(VALUE obj, long n)
  *
  *     [:foo, :bar].filter { |x| x == :foo }   #=> [:foo]
  *
- *  See also Enumerable#reject.
+ *  See also Enumerable#reject, Enumerable#grep.
  */
 
 static VALUE
@@ -449,6 +450,46 @@ enum_find_all(VALUE obj)
 
     return ary;
 }
+
+static VALUE
+filter_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
+{
+    i = rb_yield_values2(argc, argv);
+
+    if (RTEST(i)) {
+        rb_ary_push(ary, i);
+    }
+
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.filter_map { |obj| block } -> array
+ *     enum.filter_map                 -> an_enumerator
+ *
+ *  Returns a new array containing the truthy results (everything except
+ *  +false+ or +nil+) of running the +block+ for every element in +enum+.
+ *
+ *  If no block is given, an Enumerator is returned instead.
+ *
+ *
+ *     (1..10).filter_map { |i| i * 2 if i.even? } #=> [4, 8, 12, 16, 20]
+ *
+ */
+static VALUE
+enum_filter_map(VALUE obj)
+{
+    VALUE ary;
+
+    RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_size);
+
+    ary = rb_ary_new();
+    rb_block_call(obj, id_each, 0, 0, filter_map_i, ary);
+
+    return ary;
+}
+
 
 static VALUE
 reject_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
@@ -967,8 +1008,7 @@ tally_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
  *  elements and the values are numbers of elements in the collection
  *  that correspond to the key.
  *
- *     (1..6).tally   #=> {1=>1, 2=>1, 3=>1, 4=>1, 5=>1, 6=>1}
- *
+ *     ["a", "b", "c", "b"].tally #=> {"a"=>1, "b"=>2, "c"=>1}
  */
 
 static VALUE
@@ -1123,10 +1163,10 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
  *     %w{apple pear fig}.sort_by { |word| word.length }
  *                   #=> ["fig", "pear", "apple"]
  *
- *  The current implementation of <code>sort_by</code> generates an
- *  array of tuples containing the original collection element and the
- *  mapped value. This makes <code>sort_by</code> fairly expensive when
- *  the keysets are simple.
+ *  The current implementation of #sort_by generates an array of
+ *  tuples containing the original collection element and the mapped
+ *  value. This makes #sort_by fairly expensive when the keysets are
+ *  simple.
  *
  *     require 'benchmark'
  *
@@ -1145,15 +1185,15 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
  *
  *  However, consider the case where comparing the keys is a non-trivial
  *  operation. The following code sorts some files on modification time
- *  using the basic <code>sort</code> method.
+ *  using the basic #sort method.
  *
  *     files = Dir["*"]
  *     sorted = files.sort { |a, b| File.new(a).mtime <=> File.new(b).mtime }
  *     sorted   #=> ["mon", "tues", "wed", "thurs"]
  *
- *  This sort is inefficient: it generates two new <code>File</code>
+ *  This sort is inefficient: it generates two new File
  *  objects during every comparison. A slightly better technique is to
- *  use the <code>Kernel#test</code> method to generate the modification
+ *  use the Kernel#test method to generate the modification
  *  times directly.
  *
  *     files = Dir["*"]
@@ -1162,23 +1202,27 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
  *     }
  *     sorted   #=> ["mon", "tues", "wed", "thurs"]
  *
- *  This still generates many unnecessary <code>Time</code> objects. A
- *  more efficient technique is to cache the sort keys (modification
- *  times in this case) before the sort. Perl users often call this
- *  approach a Schwartzian transform, after Randal Schwartz. We
- *  construct a temporary array, where each element is an array
- *  containing our sort key along with the filename. We sort this array,
- *  and then extract the filename from the result.
+ *  This still generates many unnecessary Time objects. A more
+ *  efficient technique is to cache the sort keys (modification times
+ *  in this case) before the sort. Perl users often call this approach
+ *  a Schwartzian transform, after Randal Schwartz. We construct a
+ *  temporary array, where each element is an array containing our
+ *  sort key along with the filename. We sort this array, and then
+ *  extract the filename from the result.
  *
  *     sorted = Dir["*"].collect { |f|
  *        [test(?M, f), f]
  *     }.sort.collect { |f| f[1] }
  *     sorted   #=> ["mon", "tues", "wed", "thurs"]
  *
- *  This is exactly what <code>sort_by</code> does internally.
+ *  This is exactly what #sort_by does internally.
  *
  *     sorted = Dir["*"].sort_by { |f| test(?M, f) }
  *     sorted   #=> ["mon", "tues", "wed", "thurs"]
+ *
+ *  To produce the reverse of a specific order, the following can be used:
+ *
+ *    ary.sort_by { ... }.reverse!
  */
 
 static VALUE
@@ -1716,7 +1760,7 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *     enum.min(n) { |a, b| block } -> array
  *
  *  Returns the object in _enum_ with the minimum value. The
- *  first form assumes all objects implement <code>Comparable</code>;
+ *  first form assumes all objects implement Comparable;
  *  the second uses the block to return <em>a <=> b</em>.
  *
  *     a = %w(albatross dog horse)
@@ -1808,7 +1852,7 @@ max_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *     enum.max(n) { |a, b| block } -> array
  *
  *  Returns the object in _enum_ with the maximum value. The
- *  first form assumes all objects implement <code>Comparable</code>;
+ *  first form assumes all objects implement Comparable;
  *  the second uses the block to return <em>a <=> b</em>.
  *
  *     a = %w(albatross dog horse)
@@ -1967,7 +2011,7 @@ minmax_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
  *
  *  Returns a two element array which contains the minimum and the
  *  maximum value in the enumerable.  The first form assumes all
- *  objects implement <code>Comparable</code>; the second uses the
+ *  objects implement Comparable; the second uses the
  *  block to return <em>a <=> b</em>.
  *
  *     a = %w(albatross dog horse)
@@ -2299,10 +2343,10 @@ member_i(RB_BLOCK_CALL_FUNC_ARGLIST(iter, args))
  *  Returns <code>true</code> if any member of <i>enum</i> equals
  *  <i>obj</i>. Equality is tested using <code>==</code>.
  *
- *     IO.constants.include? :SEEK_SET          #=> true
- *     IO.constants.include? :SEEK_NO_FURTHER   #=> false
- *     IO.constants.member? :SEEK_SET          #=> true
- *     IO.constants.member? :SEEK_NO_FURTHER   #=> false
+ *     (1..10).include? 5  #=> true
+ *     (1..10).include? 15 #=> false
+ *     (1..10).member? 5   #=> true
+ *     (1..10).member? 15  #=> false
  *
  */
 
@@ -2486,10 +2530,15 @@ enum_each_slice_size(VALUE obj, VALUE args, VALUE eobj)
 {
     VALUE n, size;
     long slice_size = NUM2LONG(RARRAY_AREF(args, 0));
+    ID infinite_p;
+    CONST_ID(infinite_p, "infinite?");
     if (slice_size <= 0) rb_raise(rb_eArgError, "invalid slice size");
 
     size = enum_size(obj, 0, 0);
     if (size == Qnil) return Qnil;
+    if (RB_FLOAT_TYPE_P(size) && RTEST(rb_funcall(size, infinite_p, 0))) {
+        return size;
+    }
 
     n = add_int(size, slice_size-1);
     return div_int(n, slice_size);
@@ -3995,6 +4044,10 @@ enum_sum(int argc, VALUE* argv, VALUE obj)
         memo.f = RFLOAT_VALUE(memo.v);
         memo.c = 0.0;
     }
+    else {
+        memo.f = 0.0;
+        memo.c = 0.0;
+    }
 
     if (RTEST(rb_range_values(obj, &beg, &end, &excl))) {
         if (!memo.block_given && !memo.float_value &&
@@ -4070,14 +4123,13 @@ enum_uniq(VALUE obj)
 }
 
 /*
- *  The <code>Enumerable</code> mixin provides collection classes with
- *  several traversal and searching methods, and with the ability to
- *  sort. The class must provide a method <code>each</code>, which
- *  yields successive members of the collection. If
- *  <code>Enumerable#max</code>, <code>#min</code>, or
- *  <code>#sort</code> is used, the objects in the collection must also
- *  implement a meaningful <code><=></code> operator, as these methods
- *  rely on an ordering between members of the collection.
+ *  The Enumerable mixin provides collection classes with several
+ *  traversal and searching methods, and with the ability to sort. The
+ *  class must provide a method #each, which yields
+ *  successive members of the collection. If Enumerable#max, #min, or
+ *  #sort is used, the objects in the collection must also implement a
+ *  meaningful <code><=></code> operator, as these methods rely on an
+ *  ordering between members of the collection.
  */
 
 void
@@ -4103,6 +4155,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "find_all", enum_find_all, 0);
     rb_define_method(rb_mEnumerable, "select", enum_find_all, 0);
     rb_define_method(rb_mEnumerable, "filter", enum_find_all, 0);
+    rb_define_method(rb_mEnumerable, "filter_map", enum_filter_map, 0);
     rb_define_method(rb_mEnumerable, "reject", enum_reject, 0);
     rb_define_method(rb_mEnumerable, "collect", enum_collect, 0);
     rb_define_method(rb_mEnumerable, "map", enum_collect, 0);
@@ -4147,5 +4200,4 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "uniq", enum_uniq, 0);
 
     id_next = rb_intern("next");
-    id_div = rb_intern("div");
 }

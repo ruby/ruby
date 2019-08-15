@@ -23,6 +23,7 @@ P.each{|param|
 static VALUE
 #{fname(param, local)}(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc)
 {
+    RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
     return vm_call_iseq_setup_normal(ec, cfp, calling, cc->me, 0, #{param}, #{local});
 }
 

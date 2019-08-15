@@ -2,17 +2,17 @@ BUNDLE-INJECT(1)					      BUNDLE-INJECT(1)
 
 
 
-1mNAME0m
-       1mbundle-inject 22m- Add named gem(s) with version requirements to Gemfile
+NAME
+       bundle-inject - Add named gem(s) with version requirements to Gemfile
 
-1mSYNOPSIS0m
-       1mbundle inject 22m[GEM] [VERSION]
+SYNOPSIS
+       bundle inject [GEM] [VERSION]
 
-1mDESCRIPTION0m
+DESCRIPTION
        Adds  the  named gem(s) with their version requirements to the resolved
-       [1mGemfile(5)22m][Gemfile(5)].
+       [Gemfile(5)][Gemfile(5)].
 
-       This command will add the gem to both your [1mGemfile(5)22m][Gemfile(5)] and
+       This command will add the gem to both your [Gemfile(5)][Gemfile(5)] and
        Gemfile.lock if it isn't listed yet.
 
        Example:
@@ -25,8 +25,8 @@ BUNDLE-INJECT(1)					      BUNDLE-INJECT(1)
 
 
        This  will  inject the 'rack' gem with a version greater than 0 in your
-       [1mGemfile(5)22m][Gemfile(5)] and Gemfile.lock
+       [Gemfile(5)][Gemfile(5)] and Gemfile.lock
 
 
 
-				 November 2018		      BUNDLE-INJECT(1)
+				  March 2019		      BUNDLE-INJECT(1)

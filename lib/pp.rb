@@ -537,6 +537,10 @@ class RubyVM::AbstractSyntaxTree::Node
         pretty_print_children(q, %w[pre_num pre_init opt first_post post_num post_init rest kw kwrest block])
       when :DEFN
         pretty_print_children(q, %w[mid body])
+      when :ARYPTN
+        pretty_print_children(q, %w[const pre rest post])
+      when :HSHPTN
+        pretty_print_children(q, %w[const kw kwrest])
       else
         pretty_print_children(q)
       end

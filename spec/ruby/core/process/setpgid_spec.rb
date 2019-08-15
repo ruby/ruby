@@ -1,7 +1,8 @@
 require_relative '../../spec_helper'
 
 describe "Process.setpgid" do
-  with_feature :fork do
+  platform_is_not :windows do
+    # Must use fork as setpgid(2) gives EACCESS after execve()
     it "sets the process group id of the specified process" do
       rd, wr = IO.pipe
 

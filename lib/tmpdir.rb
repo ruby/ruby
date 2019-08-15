@@ -112,6 +112,8 @@ class Dir
       Dir.tmpdir
     end
 
+    UNUSABLE_CHARS = [File::SEPARATOR, File::ALT_SEPARATOR, File::PATH_SEPARATOR, ":"].uniq.join("").freeze
+
     def create(basename, tmpdir=nil, max_try: nil, **opts)
       if $SAFE > 0 and tmpdir.tainted?
         tmpdir = '/tmp'
@@ -123,10 +125,10 @@ class Dir
       prefix, suffix = basename
       prefix = (String.try_convert(prefix) or
                 raise ArgumentError, "unexpected prefix: #{prefix.inspect}")
-      prefix = prefix.delete("#{File::SEPARATOR}#{File::ALT_SEPARATOR}")
+      prefix = prefix.delete(UNUSABLE_CHARS)
       suffix &&= (String.try_convert(suffix) or
                   raise ArgumentError, "unexpected suffix: #{suffix.inspect}")
-      suffix &&= suffix.delete("#{File::SEPARATOR}#{File::ALT_SEPARATOR}")
+      suffix &&= suffix.delete(UNUSABLE_CHARS)
       begin
         t = Time.now.strftime("%Y%m%d")
         path = "#{prefix}#{t}-#{$$}-#{rand(0x100000000).to_s(36)}"\

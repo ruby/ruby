@@ -27,7 +27,7 @@ describe "CApiFixnumSpecs" do
 
     platform_is wordsize: 64 do # sizeof(long) > sizeof(int)
       it "raises a TypeError if passed nil" do
-        lambda { @s.FIX2INT(nil) }.should raise_error(TypeError)
+        -> { @s.FIX2INT(nil) }.should raise_error(TypeError)
       end
 
       it "converts a Float" do
@@ -39,16 +39,16 @@ describe "CApiFixnumSpecs" do
       end
 
       it "raises a RangeError if the value does not fit a native int" do
-        lambda { @s.FIX2INT(0x7fff_ffff+1) }.should raise_error(RangeError)
-        lambda { @s.FIX2INT(-(1 << 31) - 1) }.should raise_error(RangeError)
+        -> { @s.FIX2INT(0x7fff_ffff+1) }.should raise_error(RangeError)
+        -> { @s.FIX2INT(-(1 << 31) - 1) }.should raise_error(RangeError)
       end
 
       it "raises a RangeError if the value is more than 32bits" do
-        lambda { @s.FIX2INT(0xffff_ffff+1) }.should raise_error(RangeError)
+        -> { @s.FIX2INT(0xffff_ffff+1) }.should raise_error(RangeError)
       end
 
       it "raises a RangeError if the value is more than 64bits" do
-        lambda { @s.FIX2INT(0xffff_ffff_ffff_ffff+1) }.should raise_error(RangeError)
+        -> { @s.FIX2INT(0xffff_ffff_ffff_ffff+1) }.should raise_error(RangeError)
       end
 
       it "calls #to_int to coerce the value" do
@@ -76,7 +76,7 @@ describe "CApiFixnumSpecs" do
 
     platform_is wordsize: 64 do # sizeof(long) > sizeof(int)
       it "raises a TypeError if passed nil" do
-        lambda { @s.FIX2UINT(nil) }.should raise_error(TypeError)
+        -> { @s.FIX2UINT(nil) }.should raise_error(TypeError)
       end
 
       it "converts a Float" do
@@ -85,16 +85,16 @@ describe "CApiFixnumSpecs" do
 
       it "raises a RangeError if the value does not fit a native uint" do
         # Interestingly, on MRI FIX2UINT(-1) is allowed
-        lambda { @s.FIX2UINT(0xffff_ffff+1) }.should raise_error(RangeError)
-        lambda { @s.FIX2UINT(-(1 << 31) - 1) }.should raise_error(RangeError)
+        -> { @s.FIX2UINT(0xffff_ffff+1) }.should raise_error(RangeError)
+        -> { @s.FIX2UINT(-(1 << 31) - 1) }.should raise_error(RangeError)
       end
 
       it "raises a RangeError if the value is more than 32bits" do
-        lambda { @s.FIX2UINT(0xffff_ffff+1) }.should raise_error(RangeError)
+        -> { @s.FIX2UINT(0xffff_ffff+1) }.should raise_error(RangeError)
       end
 
       it "raises a RangeError if the value is more than 64bits" do
-        lambda { @s.FIX2UINT(0xffff_ffff_ffff_ffff+1) }.should raise_error(RangeError)
+        -> { @s.FIX2UINT(0xffff_ffff_ffff_ffff+1) }.should raise_error(RangeError)
       end
     end
   end

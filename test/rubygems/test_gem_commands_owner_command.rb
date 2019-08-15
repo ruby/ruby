@@ -68,7 +68,6 @@ EOF
     end
   end
 
-
   def test_show_owners_setting_up_host_through_env_var
     response = "- email: user1@example.com\n"
     host = "http://rubygems.example"
