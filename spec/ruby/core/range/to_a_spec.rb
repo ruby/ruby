@@ -6,7 +6,7 @@ describe "Range#to_a" do
     ('A'..'D').to_a.should == ['A','B','C','D']
     ('A'...'D').to_a.should == ['A','B','C']
     (0xfffd...0xffff).to_a.should == [0xfffd,0xfffe]
-    lambda { (0.5..2.4).to_a }.should raise_error(TypeError)
+    -> { (0.5..2.4).to_a }.should raise_error(TypeError)
   end
 
   it "returns empty array for descending-ordered" do

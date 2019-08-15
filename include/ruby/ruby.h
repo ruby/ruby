@@ -27,6 +27,7 @@ extern "C" {
 #endif
 
 #include "defines.h"
+#include "ruby/assert.h"
 
 /* For MinGW, we need __declspec(dllimport) for RUBY_EXTERN on MJIT.
    mswin's RUBY_EXTERN already has that. See also: win32/Makefile.sub */
@@ -512,6 +513,7 @@ enum ruby_value_type {
     RUBY_T_NODE   = 0x1b,
     RUBY_T_ICLASS = 0x1c,
     RUBY_T_ZOMBIE = 0x1d,
+    RUBY_T_MOVED  = 0x1e,
 
     RUBY_T_MASK   = 0x1f
 };
@@ -542,6 +544,7 @@ enum ruby_value_type {
 #define T_UNDEF  RUBY_T_UNDEF
 #define T_NODE   RUBY_T_NODE
 #define T_ZOMBIE RUBY_T_ZOMBIE
+#define T_MOVED RUBY_T_MOVED
 #define T_MASK   RUBY_T_MASK
 
 #define RB_BUILTIN_TYPE(x) (int)(((struct RBasic*)(x))->flags & RUBY_T_MASK)
@@ -845,6 +848,7 @@ enum ruby_fl_type {
     RUBY_FL_FINALIZE  = (1<<7),
     RUBY_FL_TAINT     = (1<<8),
     RUBY_FL_UNTRUSTED = RUBY_FL_TAINT,
+    RUBY_FL_SEEN_OBJ_ID = (1<<9),
     RUBY_FL_EXIVAR    = (1<<10),
     RUBY_FL_FREEZE    = (1<<11),
 
@@ -1050,7 +1054,7 @@ struct RArray {
 	    long len;
 	    union {
 		long capa;
-		VALUE shared;
+                const VALUE shared_root;
 	    } aux;
 	    const VALUE *ptr;
 	} heap;
@@ -1144,7 +1148,8 @@ struct rb_data_type_struct {
 	void (*dmark)(void*);
 	void (*dfree)(void*);
 	size_t (*dsize)(const void *);
-	void *reserved[2]; /* For future extension.
+        void (*dcompact)(void*);
+        void *reserved[1]; /* For future extension.
 			      This array *must* be filled with ZERO. */
     } function;
     const rb_data_type_t *parent;
@@ -1255,6 +1260,7 @@ int rb_big_sign(VALUE);
 #define RBIGNUM_NEGATIVE_P(b) (RBIGNUM_SIGN(b)==0)
 
 #define R_CAST(st)   (struct st*)
+#define RMOVED(obj)  (R_CAST(RMoved)(obj))
 #define RBASIC(obj)  (R_CAST(RBasic)(obj))
 #define ROBJECT(obj) (R_CAST(RObject)(obj))
 #define RCLASS(obj)  (R_CAST(RClass)(obj))
@@ -1273,6 +1279,7 @@ int rb_big_sign(VALUE);
 #define FL_FINALIZE     ((VALUE)RUBY_FL_FINALIZE)
 #define FL_TAINT        ((VALUE)RUBY_FL_TAINT)
 #define FL_UNTRUSTED    ((VALUE)RUBY_FL_UNTRUSTED)
+#define FL_SEEN_OBJ_ID  ((VALUE)RUBY_FL_SEEN_OBJ_ID)
 #define FL_EXIVAR       ((VALUE)RUBY_FL_EXIVAR)
 #define FL_FREEZE       ((VALUE)RUBY_FL_FREEZE)
 
@@ -1743,6 +1750,15 @@ rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
 #define MEMCPY(p1,p2,type,n) memcpy((p1), (p2), sizeof(type)*(size_t)(n))
 #define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(size_t)(n))
 #define MEMCMP(p1,p2,type,n) memcmp((p1), (p2), sizeof(type)*(size_t)(n))
+#ifdef __GLIBC__
+static inline void *
+ruby_nonempty_memcpy(void *dest, const void *src, size_t n)
+{
+    /* if nothing to be copied, src may be NULL */
+    return (n ? memcpy(dest, src, n) : dest);
+}
+#define memcpy(p1,p2,n) ruby_nonempty_memcpy(p1, p2, n)
+#endif
 
 void rb_obj_infect(VALUE victim, VALUE carrier);
 
@@ -2047,6 +2063,7 @@ RUBY_EXTERN VALUE rb_eSysStackError;
 RUBY_EXTERN VALUE rb_eRegexpError;
 RUBY_EXTERN VALUE rb_eEncodingError;
 RUBY_EXTERN VALUE rb_eEncCompatError;
+RUBY_EXTERN VALUE rb_eNoMatchingPatternError;
 
 RUBY_EXTERN VALUE rb_eScriptError;
 RUBY_EXTERN VALUE rb_eNameError;
@@ -2182,6 +2199,7 @@ rb_array_ptr_use_start(VALUE a, int allow_transient)
         }
     }
 #endif
+    (void)allow_transient;
 
     return rb_ary_ptr_use_start(a);
 }
@@ -2192,6 +2210,7 @@ rb_array_ptr_use_end(VALUE a, int allow_transient)
 {
     void rb_ary_ptr_use_end(VALUE a);
     rb_ary_ptr_use_end(a);
+    (void)allow_transient;
 }
 
 #if defined(EXTLIB) && defined(USE_DLN_A_OUT)
@@ -2277,6 +2296,9 @@ static inline int rb_toupper(int c) { return rb_islower(c) ? (c&0x5f) : c; }
 #define ISALPHA(c) rb_isalpha(c)
 #define ISDIGIT(c) rb_isdigit(c)
 #define ISXDIGIT(c) rb_isxdigit(c)
+#define ISBLANK(c) rb_isblank(c)
+#define ISCNTRL(c) rb_iscntrl(c)
+#define ISPUNCT(c) rb_ispunct(c)
 #endif
 #define TOUPPER(c) rb_toupper(c)
 #define TOLOWER(c) rb_tolower(c)
@@ -2300,13 +2322,13 @@ int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
         rb_scan_args0(argc,argvp,fmt,\
 		      (sizeof((VALUE*[]){__VA_ARGS__})/sizeof(VALUE*)), \
 		      ((VALUE*[]){__VA_ARGS__})), \
-        rb_scan_args(argc,argvp,fmt,__VA_ARGS__))
+        rb_scan_args(argc,argvp,fmt,##__VA_ARGS__))
 # if HAVE_ATTRIBUTE_ERRORFUNC
-ERRORFUNC(("bad scan arg format"), int rb_scan_args_bad_format(const char*));
-ERRORFUNC(("variable argument length doesn't match"), int rb_scan_args_length_mismatch(const char*,int));
+ERRORFUNC(("bad scan arg format"), void rb_scan_args_bad_format(const char*));
+ERRORFUNC(("variable argument length doesn't match"), void rb_scan_args_length_mismatch(const char*,int));
 # else
-#   define rb_scan_args_bad_format(fmt) 0
-#   define rb_scan_args_length_mismatch(fmt, varc) 0
+#   define rb_scan_args_bad_format(fmt) ((void)0)
+#   define rb_scan_args_length_mismatch(fmt, varc) ((void)0)
 # endif
 
 # define rb_scan_args_isdigit(c) ((unsigned char)((c)-'0')<10)
@@ -2314,63 +2336,49 @@ ERRORFUNC(("variable argument length doesn't match"), int rb_scan_args_length_mi
 #if !defined(__has_attribute)
 #define __has_attribute(x) 0
 #endif
-# if __has_attribute(diagnose_if)
-#  define rb_scan_args_count_end(fmt, ofs, varc, vari) \
-     (fmt[ofs] ? rb_scan_args_bad_format(fmt) : (vari))
-# else
-#  define rb_scan_args_count_end(fmt, ofs, varc, vari) \
-     ((vari)/(!fmt[ofs] || rb_scan_args_bad_format(fmt)))
-# endif
 
-# define rb_scan_args_count_block(fmt, ofs, varc, vari) \
+#  define rb_scan_args_count_end(fmt, ofs, vari) \
+     (fmt[ofs] ? -1 : (vari))
+
+# define rb_scan_args_count_block(fmt, ofs, vari) \
     (fmt[ofs]!='&' ? \
-     rb_scan_args_count_end(fmt, ofs, varc, vari) : \
-     rb_scan_args_count_end(fmt, ofs+1, varc, vari+1))
+     rb_scan_args_count_end(fmt, ofs, vari) : \
+     rb_scan_args_count_end(fmt, ofs+1, vari+1))
 
-# define rb_scan_args_count_hash(fmt, ofs, varc, vari) \
+# define rb_scan_args_count_hash(fmt, ofs, vari) \
     (fmt[ofs]!=':' ? \
-     rb_scan_args_count_block(fmt, ofs, varc, vari) : \
-     rb_scan_args_count_block(fmt, ofs+1, varc, vari+1))
+     rb_scan_args_count_block(fmt, ofs, vari) : \
+     rb_scan_args_count_block(fmt, ofs+1, vari+1))
 
-# define rb_scan_args_count_trail(fmt, ofs, varc, vari) \
+# define rb_scan_args_count_trail(fmt, ofs, vari) \
     (!rb_scan_args_isdigit(fmt[ofs]) ? \
-     rb_scan_args_count_hash(fmt, ofs, varc, vari) : \
-     rb_scan_args_count_hash(fmt, ofs+1, varc, vari+(fmt[ofs]-'0')))
+     rb_scan_args_count_hash(fmt, ofs, vari) : \
+     rb_scan_args_count_hash(fmt, ofs+1, vari+(fmt[ofs]-'0')))
 
-# define rb_scan_args_count_var(fmt, ofs, varc, vari) \
+# define rb_scan_args_count_var(fmt, ofs, vari) \
     (fmt[ofs]!='*' ? \
-     rb_scan_args_count_trail(fmt, ofs, varc, vari) : \
-     rb_scan_args_count_trail(fmt, ofs+1, varc, vari+1))
+     rb_scan_args_count_trail(fmt, ofs, vari) : \
+     rb_scan_args_count_trail(fmt, ofs+1, vari+1))
 
-# define rb_scan_args_count_opt(fmt, ofs, varc, vari) \
+# define rb_scan_args_count_opt(fmt, ofs, vari) \
     (!rb_scan_args_isdigit(fmt[1]) ? \
-     rb_scan_args_count_var(fmt, ofs, varc, vari) : \
-     rb_scan_args_count_var(fmt, ofs+1, varc, vari+fmt[ofs]-'0'))
+     rb_scan_args_count_var(fmt, ofs, vari) : \
+     rb_scan_args_count_var(fmt, ofs+1, vari+fmt[ofs]-'0'))
 
-# define rb_scan_args_count(fmt, varc) \
+# define rb_scan_args_count(fmt) \
     (!rb_scan_args_isdigit(fmt[0]) ? \
-      rb_scan_args_count_var(fmt, 0, varc, 0) : \
-      rb_scan_args_count_opt(fmt, 1, varc, fmt[0]-'0'))
-
-# define rb_scan_args_verify_count(fmt, varc) \
-    ((varc)/(rb_scan_args_count(fmt, varc) == (varc) || \
-     rb_scan_args_length_mismatch(fmt, varc)))
+      rb_scan_args_count_var(fmt, 0, 0) : \
+      rb_scan_args_count_opt(fmt, 1, fmt[0]-'0'))
 
 # if defined(__has_attribute) && __has_attribute(diagnose_if)
 #  define rb_scan_args_verify(fmt, varc) (void)0
-# elif defined(__GNUC__)
-# define rb_scan_args_verify(fmt, varc) \
-    (void)__extension__ ({ \
-	int verify; \
-	_Pragma("GCC diagnostic push"); \
-	_Pragma("GCC diagnostic ignored \"-Warray-bounds\""); \
-	verify = rb_scan_args_verify_count(fmt, varc); \
-	_Pragma("GCC diagnostic pop"); \
-	verify; \
-    })
 # else
 # define rb_scan_args_verify(fmt, varc) \
-    (void)rb_scan_args_verify_count(fmt, varc)
+    (sizeof(char[1-2*(rb_scan_args_count(fmt)<0)])!=1 ? \
+     rb_scan_args_bad_format(fmt) : \
+     sizeof(char[1-2*(rb_scan_args_count(fmt)!=(varc))])!=1 ? \
+     rb_scan_args_length_mismatch(fmt, varc) : \
+     (void)0)
 # endif
 
 ALWAYS_INLINE(static int rb_scan_args_lead_p(const char *fmt));
@@ -2494,8 +2502,8 @@ rb_scan_args_set(int argc, const VALUE *argv,
 		 int f_var, int f_hash, int f_block,
 		 VALUE *vars[], RB_UNUSED_VAR(char *fmt), RB_UNUSED_VAR(int varc))
 # if defined(__has_attribute) && __has_attribute(diagnose_if)
-    __attribute__((diagnose_if(rb_scan_args_count(fmt,varc)==0,"bad scan arg format","error")))
-    __attribute__((diagnose_if(rb_scan_args_count(fmt,varc)!=varc,"variable argument length doesn't match","error")))
+    __attribute__((diagnose_if(rb_scan_args_count(fmt)<0,"bad scan arg format","error")))
+    __attribute__((diagnose_if(rb_scan_args_count(fmt)!=varc,"variable argument length doesn't match","error")))
 # endif
 {
     int i, argi = 0, vari = 0, last_idx = -1;
@@ -2648,13 +2656,7 @@ void ruby_show_copyright(void);
     ruby_init_stack(&variable_in_this_stack_frame);
 /*! @} */
 
-#ifdef __ia64
-void ruby_init_stack(volatile VALUE*, void*);
-#define ruby_init_stack(addr) ruby_init_stack((addr), rb_ia64_bsp())
-#else
 void ruby_init_stack(volatile VALUE*);
-#endif
-#define Init_stack(addr) ruby_init_stack(addr)
 
 int ruby_setup(void);
 int ruby_cleanup(volatile int);

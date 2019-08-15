@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "require 'bundler/gem_tasks'", :ruby_repo do
+RSpec.describe "require 'bundler/gem_tasks'" do
   before :each do
     bundled_app("foo.gemspec").open("w") do |f|
       f.write <<-GEMSPEC
@@ -19,7 +19,7 @@ RSpec.describe "require 'bundler/gem_tasks'", :ruby_repo do
 
   it "includes the relevant tasks" do
     with_gem_path_as(Spec::Path.base_system_gems.to_s) do
-      sys_exec "#{rake} -T"
+      sys_exec "#{rake} -T", "RUBYOPT" => "-I#{bundler_path}"
     end
 
     expect(err).to eq("")
@@ -39,6 +39,6 @@ RSpec.describe "require 'bundler/gem_tasks'", :ruby_repo do
     with_gem_path_as(Spec::Path.base_system_gems.to_s) do
       sys_exec! %(#{rake} -e 'load "Rakefile"; puts CLOBBER.inspect')
     end
-    expect(last_command.stdout).to eq '["pkg"]'
+    expect(out).to eq '["pkg"]'
   end
 end

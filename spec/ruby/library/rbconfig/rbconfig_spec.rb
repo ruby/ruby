@@ -10,7 +10,7 @@ describe 'RbConfig::CONFIG' do
   end
 
   # These directories have no meanings before the installation.
-  if RbConfig::TOPDIR
+  guard -> { RbConfig::TOPDIR } do
     it "['rubylibdir'] returns the directory containing Ruby standard libraries" do
       rubylibdir = RbConfig::CONFIG['rubylibdir']
       File.directory?(rubylibdir).should == true
@@ -21,6 +21,16 @@ describe 'RbConfig::CONFIG' do
       archdir = RbConfig::CONFIG['archdir']
       File.directory?(archdir).should == true
       File.exist?("#{archdir}/etc.#{RbConfig::CONFIG['DLEXT']}").should == true
+    end
+  end
+end
+
+describe "RbConfig::TOPDIR" do
+  it "either returns nil (if not installed) or the prefix" do
+    if RbConfig::TOPDIR
+      RbConfig::TOPDIR.should == RbConfig::CONFIG["prefix"]
+    else
+      RbConfig::TOPDIR.should == nil
     end
   end
 end

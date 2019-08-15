@@ -614,7 +614,6 @@ ERROR:  Possible alternatives: non_existent_with_hint
     assert_equal args, a2.build_args
   end
 
-
   def test_execute_remote
     spec_fetcher do |fetcher|
       fetcher.gem 'a', 2

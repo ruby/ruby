@@ -385,5 +385,4 @@ class TestGemDependency < Gem::TestCase
     assert_match "Could not find 'b' (= 2.0) among 1 total gem(s)", e.message
   end
 
-
 end

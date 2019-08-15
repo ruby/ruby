@@ -361,10 +361,49 @@ do { \
 #include "zonetab.h"
 
 static int
-str_end_with(const char *s, long l, const char *w)
+str_end_with_word(const char *s, long l, const char *w)
 {
     int n = (int)strlen(w);
-    return (l >= n && strncmp(s - n, w, n) == 0);
+    if (l <= n || !isspace(s[l - n - 1])) return 0;
+    if (strncasecmp(&s[l - n], w, n)) return 0;
+    do ++n; while (l > n && isspace(s[l - n - 1]));
+    return n;
+}
+
+static long
+shrunk_size(const char *s, long l)
+{
+    long i, ni;
+    int sp = 0;
+    for (i = ni = 0; i < l; ++i) {
+	if (!isspace(s[i])) {
+	    if (sp) ni++;
+	    sp = 0;
+	    ni++;
+	}
+	else {
+	    sp = 1;
+	}
+    }
+    return ni < l ? ni : 0;
+}
+
+static long
+shrink_space(char *d, const char *s, long l)
+{
+    long i, ni;
+    int sp = 0;
+    for (i = ni = 0; i < l; ++i) {
+	if (!isspace(s[i])) {
+	    if (sp) d[ni++] = ' ';
+	    sp = 0;
+	    d[ni++] = s[i];
+	}
+	else {
+	    sp = 1;
+	}
+    }
+    return ni;
 }
 
 VALUE
@@ -372,55 +411,40 @@ date_zone_to_diff(VALUE str)
 {
     VALUE offset = Qnil;
     VALUE vbuf = 0;
+    long l = RSTRING_LEN(str);
+    const char *s = RSTRING_PTR(str);
 
-    long l, i;
-    char *s, *dest, *d;
-    int sp = 1;
-
-    l = RSTRING_LEN(str);
-    s = RSTRING_PTR(str);
-
-    dest = d = ALLOCV_N(char, vbuf, l + 1);
-
-    for (i = 0; i < l; i++) {
-	if (isspace((unsigned char)s[i]) || s[i] == '\0') {
-	    if (!sp)
-		*d++ = ' ';
-	    sp = 1;
-	}
-	else {
-	    if (isalpha((unsigned char)s[i]))
-		*d++ = tolower((unsigned char)s[i]);
-	    else
-		*d++ = s[i];
-	    sp = 0;
-	}
-    }
-    if (d > dest) {
-	if (*(d - 1) == ' ')
-	    --d;
-	*d = '\0';
-    }
-    l = d - dest;
-    s = dest;
     {
-	static const char STD[] = " standard time";
-	static const char DST1[] = " daylight time";
-	static const char DST2[] = " dst";
 	int dst = 0;
+	int w;
 
-	if (str_end_with(d, l, STD)) {
-	    l -= sizeof(STD) - 1;
+	if ((w = str_end_with_word(s, l, "time")) > 0) {
+	    int wtime = w;
+	    l -= w;
+	    if ((w = str_end_with_word(s, l, "standard")) > 0) {
+		l -= w;
+	    }
+	    else if ((w = str_end_with_word(s, l, "daylight")) > 0) {
+		l -= w;
+		dst = 1;
+	    }
+	    else {
+		l += wtime;
+	    }
 	}
-	else if (str_end_with(d, l, DST1)) {
-	    l -= sizeof(DST1) - 1;
-	    dst = 1;
-	}
-	else if (str_end_with(d, l, DST2)) {
-	    l -= sizeof(DST2) - 1;
+	else if ((w = str_end_with_word(s, l, "dst")) > 0) {
+	    l -= w;
 	    dst = 1;
 	}
 	{
+	    long sl = shrunk_size(s, l);
+	    if (sl > 0 && sl <= MAX_WORD_LENGTH) {
+		char *d = ALLOCV_N(char, vbuf, sl);
+		l = shrink_space(d, s, l);
+		s = d;
+	    }
+	}
+	if (l > 0 && l <= MAX_WORD_LENGTH) {
 	    const struct zone *z = zonetab(s, (unsigned int)l);
 	    if (z) {
 		int d = z->offset;
@@ -436,8 +460,8 @@ date_zone_to_diff(VALUE str)
 	    long hour = 0, min = 0, sec = 0;
 
 	    if (l > 3 &&
-		(strncmp(s, "gmt", 3) == 0 ||
-		 strncmp(s, "utc", 3) == 0)) {
+		(strncasecmp(s, "gmt", 3) == 0 ||
+		 strncasecmp(s, "utc", 3) == 0)) {
 		s += 3;
 		l -= 3;
 	    }
@@ -1212,6 +1236,9 @@ parse_iso2(VALUE str, VALUE hash)
     return 1;
 }
 
+#define JISX0301_ERA_INITIALS "mtshr"
+#define JISX0301_DEFAULT_ERA 'H' /* obsolete */
+
 static int
 gengo(int c)
 {
@@ -1222,6 +1249,7 @@ gengo(int c)
       case 'T': case 't': e = 1911; break;
       case 'S': case 's': e = 1925; break;
       case 'H': case 'h': e = 1988; break;
+      case 'R': case 'r': e = 2018; break;
       default:  e = 0; break;
     }
     return e;
@@ -1252,11 +1280,11 @@ parse_jis(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 #ifndef TIGHT_PARSER
-	"\\b([mtsh])(\\d+)\\.(\\d+)\\.(\\d+)"
+        "\\b([" JISX0301_ERA_INITIALS "])(\\d+)\\.(\\d+)\\.(\\d+)"
 #else
 	BOS
 	FPW_COM FPT_COM
-	"([mtsh])(\\d+)\\.(\\d+)\\.(\\d+)"
+        "([" JISX0301_ERA_INITIALS "])(\\d+)\\.(\\d+)\\.(\\d+)"
 	TEE_FPT COM_FPW
 	EOS
 #endif
@@ -1859,30 +1887,26 @@ parse_ddd_cb(VALUE m, VALUE hash)
 	set_hash("zone", s5);
 
 	if (*cs5 == '[') {
-	    VALUE vbuf = 0;
-	    char *buf = ALLOCV_N(char, vbuf, l5 + 1);
-	    char *s1, *s2, *s3;
+            const char *s1, *s2;
 	    VALUE zone;
 
-	    memcpy(buf, cs5, l5);
-	    buf[l5 - 1] = '\0';
-
-	    s1 = buf + 1;
-	    s2 = strchr(buf, ':');
+            l5 -= 2;
+            s1 = cs5 + 1;
+            s2 = memchr(s1, ':', l5);
 	    if (s2) {
-		*s2 = '\0';
 		s2++;
+                zone = rb_str_subseq(s5, s2 - cs5, l5 - (s2 - s1));
+                s5 = rb_str_subseq(s5, 1, s2 - s1);
 	    }
-	    if (s2)
-		s3 = s2;
-	    else
-		s3 = s1;
-	    zone = rb_str_new2(s3);
+            else {
+                zone = rb_str_subseq(s5, 1, l5);
+                if (isdigit((unsigned char)*s1))
+                    s5 = rb_str_append(rb_str_new_cstr("+"), zone);
+                else
+                    s5 = zone;
+            }
 	    set_hash("zone", zone);
-	    if (isdigit((unsigned char)*s1))
-		*--s1 = '+';
-	    set_hash("offset", date_zone_to_diff(rb_str_new2(s1)));
-	    ALLOCV_END(vbuf);
+            set_hash("offset", date_zone_to_diff(s5));
 	}
 	RB_GC_GUARD(s5);
     }
@@ -2175,7 +2199,7 @@ date__parse(VALUE str, VALUE comp)
 #endif
 
     {
-	if (RTEST(ref_hash("_bc"))) {
+        if (RTEST(del_hash("_bc"))) {
 	    VALUE y;
 
 	    y = ref_hash("cwyear");
@@ -2190,7 +2214,7 @@ date__parse(VALUE str, VALUE comp)
 	    }
 	}
 
-	if (RTEST(ref_hash("_comp"))) {
+        if (RTEST(del_hash("_comp"))) {
 	    VALUE y;
 
 	    y = ref_hash("cwyear");
@@ -2212,9 +2236,6 @@ date__parse(VALUE str, VALUE comp)
 	}
 
     }
-
-    del_hash("_bc");
-    del_hash("_comp");
 
     {
 	VALUE zone = ref_hash("zone");
@@ -2265,8 +2286,8 @@ iso8601_ext_datetime_cb(VALUE m, VALUE hash)
 	    s[i] = rb_reg_nth_match(i, m);
     }
 
-    if (!NIL_P(s[3])) {
-	set_hash("mday", str2num(s[3]));
+    if (!NIL_P(s[1])) {
+	if (!NIL_P(s[3])) set_hash("mday", str2num(s[3]));
 	if (strcmp(RSTRING_PTR(s[1]), "-") != 0) {
 	    y = str2num(s[1]);
 	    if (RSTRING_LEN(s[1]) < 4)
@@ -2323,7 +2344,7 @@ static int
 iso8601_ext_datetime(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
-	"\\A\\s*(?:([-+]?\\d{2,}|-)-(\\d{2})?-(\\d{2})|"
+	"\\A\\s*(?:([-+]?\\d{2,}|-)-(\\d{2})?(?:-(\\d{2}))?|"
 		"([-+]?\\d{2,})?-(\\d{3})|"
 		"(\\d{4}|\\d{2})?-w(\\d{2})-(\\d)|"
 		"-w-(\\d))"
@@ -2954,7 +2975,7 @@ jisx0301_cb(VALUE m, VALUE hash)
 	    s[i] = rb_reg_nth_match(i, m);
     }
 
-    ep = gengo(NIL_P(s[1]) ? 'h' : *RSTRING_PTR(s[1]));
+    ep = gengo(NIL_P(s[1]) ? JISX0301_DEFAULT_ERA : *RSTRING_PTR(s[1]));
     set_hash("year", f_add(str2num(s[2]), INT2FIX(ep)));
     set_hash("mon", str2num(s[3]));
     set_hash("mday", str2num(s[4]));
@@ -2979,7 +3000,7 @@ static int
 jisx0301(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
-	"\\A\\s*([mtsh])?(\\d{2})\\.(\\d{2})\\.(\\d{2})"
+        "\\A\\s*([" JISX0301_ERA_INITIALS "])?(\\d{2})\\.(\\d{2})\\.(\\d{2})"
 	"(?:t"
 	"(?:(\\d{2}):(\\d{2})(?::(\\d{2})(?:[,.](\\d*))?)?"
 	"(z|[-+]\\d{2}(?::?\\d{2})?)?)?)?\\s*\\z";

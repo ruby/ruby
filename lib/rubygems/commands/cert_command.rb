@@ -319,5 +319,4 @@ For further reading on signing gems see `ri Gem::Security`.
     email =~ /\A.+@.+\z/
   end
 
-
 end if defined?(OpenSSL::SSL)

@@ -20,7 +20,7 @@
             {
                 rb_snum_t i, push_size;
                 push_size = -<%= insn.call_attribute('sp_inc') %> + <%= insn.rets.size %> - <%= insn.pops.size %>;
-                fprintf(f, "    reg_cfp->sp = (VALUE *)reg_cfp->bp + %ld + 1;\n", push_size); /* POPN(INSN_ATTR(popn)); */
+                fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %ld;\n", push_size); /* POPN(INSN_ATTR(popn)); */
                 for (i = 0; i < push_size; i++) {
                     fprintf(f, "    *(reg_cfp->sp + %ld) = stack[%ld];\n", i - push_size, (rb_snum_t)b->stack_size - push_size + i);
                 }
@@ -29,8 +29,8 @@
         }
         else {
 % if insn.handles_sp?
-            fprintf(f, "    reg_cfp->sp = (VALUE *)reg_cfp->bp + %d;\n", b->stack_size + 1 - <%= insn.pops.size %>); /* POPN(INSN_ATTR(popn)); */
+            fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - <%= insn.pops.size %>); /* POPN(INSN_ATTR(popn)); */
 % else
-            fprintf(f, "    reg_cfp->sp = (VALUE *)reg_cfp->bp + %d;\n", b->stack_size + 1);
+            fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
 % end
         }

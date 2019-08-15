@@ -9,11 +9,9 @@ describe "File::Stat#dev_major" do
     rm_r @name
   end
 
-  ruby_version_is "2.4" do
-    platform_is_not :windows do
-      it "returns the major part of File::Stat#dev" do
-        File.stat(@name).dev_major.should be_kind_of(Integer)
-      end
+  platform_is_not :windows do
+    it "returns the major part of File::Stat#dev" do
+      File.stat(@name).dev_major.should be_kind_of(Integer)
     end
   end
 

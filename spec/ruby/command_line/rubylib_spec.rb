@@ -30,6 +30,7 @@ describe "The RUBYLIB environment variable" do
     dir = tmp("rubylib/incl_front")
     ENV["RUBYLIB"] = @pre + dir
     paths = ruby_exe("puts $LOAD_PATH").lines.map(&:chomp)
+    paths.shift if paths.first.end_with?('/gem-rehash')
     if PlatformGuard.implementation? :ruby
       # In a MRI checkout, $PWD and some extra -I entries end up as
       # the first entries in $LOAD_PATH. So just assert that it's not last.

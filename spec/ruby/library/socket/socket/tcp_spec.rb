@@ -49,7 +49,7 @@ describe 'Socket.tcp' do
   end
 
   it 'raises ArgumentError when 6 arguments are provided' do
-    lambda {
+    -> {
       Socket.tcp(@host, @port, @host, 0, {:connect_timeout => 1}, 10)
     }.should raise_error(ArgumentError)
   end

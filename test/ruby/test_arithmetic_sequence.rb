@@ -26,6 +26,11 @@ class TestArithmeticSequence < Test::Unit::TestCase
     assert_equal(10, 10.step(to: 1, by: -2).begin)
     assert_equal(10, 10.step(to: -1, by: -2).begin)
     assert_equal(10.0, 10.0.step(to: -1.0, by: -2.0).begin)
+
+    assert_equal(3, (3..).step(2).begin)
+    assert_equal(4, (4...).step(7).begin)
+    assert_equal(nil, (..10).step(9).begin)
+    assert_equal(nil, (...11).step(5).begin)
   end
 
   def test_end
@@ -44,6 +49,11 @@ class TestArithmeticSequence < Test::Unit::TestCase
     assert_equal(1, 10.step(to: 1, by: -2).end)
     assert_equal(-1, 10.step(to: -1, by: -2).end)
     assert_equal(-1.0, 10.0.step(to: -1.0, by: -2.0).end)
+
+    assert_equal(nil, (3..).step(2).end)
+    assert_equal(nil, (4...).step(7).end)
+    assert_equal(10, (..10).step(9).end)
+    assert_equal(11, (...11).step(5).end)
   end
 
   def test_exclude_end_p
@@ -61,6 +71,11 @@ class TestArithmeticSequence < Test::Unit::TestCase
     assert_equal(false, 10.step(to: 1, by: -1).exclude_end?)
     assert_equal(false, 10.step(to: 1, by: -2).exclude_end?)
     assert_equal(false, 10.step(to: -1, by: -2).exclude_end?)
+
+    assert_equal(false, (3..).step(2).exclude_end?)
+    assert_equal(true,  (4...).step(7).exclude_end?)
+    assert_equal(false, (..10).step(9).exclude_end?)
+    assert_equal(true,  (...11).step(5).exclude_end?)
   end
 
   def test_step
@@ -79,6 +94,11 @@ class TestArithmeticSequence < Test::Unit::TestCase
     assert_equal(-2, 10.step(to: 1, by: -2).step)
     assert_equal(-2, 10.step(to: -1, by: -2).step)
     assert_equal(-2.0, 10.0.step(to: -1.0, by: -2.0).step)
+
+    assert_equal(2, (3..).step(2).step)
+    assert_equal(7, (4...).step(7).step)
+    assert_equal(9, (..10).step(9).step)
+    assert_equal(5, (...11).step(5).step)
   end
 
   def test_eq
@@ -107,6 +127,7 @@ class TestArithmeticSequence < Test::Unit::TestCase
     assert_equal(seq.hash, seq.hash)
     assert_equal(seq.hash, 1.step.hash)
     assert_equal(seq.hash, 1.step(nil).hash)
+    assert_kind_of(String, seq.hash.to_s)
   end
 
   def test_first
@@ -150,6 +171,16 @@ class TestArithmeticSequence < Test::Unit::TestCase
     assert_equal(10.0, seq.first)
     assert_equal([10.0], seq.first(1))
     assert_equal([10.0, 8.0, 6.0], seq.first(3))
+
+    seq = (1..).step(2)
+    assert_equal(1, seq.first)
+    assert_equal([1], seq.first(1))
+    assert_equal([1, 3, 5], seq.first(3))
+
+    seq = (..10).step(2)
+    assert_equal(nil, seq.first)
+    assert_raise(TypeError) { seq.first(1) }
+    assert_raise(TypeError) { seq.first(3) }
   end
 
   def test_first_bug15518

@@ -2,26 +2,26 @@ BUNDLE-SHOW(1)							BUNDLE-SHOW(1)
 
 
 
-1mNAME0m
-       1mbundle-show 22m- Shows all the gems in your bundle, or the path to a gem
+NAME
+       bundle-show - Shows all the gems in your bundle, or the path to a gem
 
-1mSYNOPSIS0m
-       1mbundle show 22m[GEM] [--paths]
+SYNOPSIS
+       bundle show [GEM] [--paths]
 
-1mDESCRIPTION0m
-       Without	the [GEM] option, 1mshow 22mwill print a list of the names and ver-
-       sions of all gems that are required by  your  [1mGemfile(5)22m][Gemfile(5)],
+DESCRIPTION
+       Without	the [GEM] option, show will print a list of the names and ver-
+       sions of all gems that are required by  your  [Gemfile(5)][Gemfile(5)],
        sorted by name.
 
        Calling	show  with  [GEM]  will list the exact location of that gem on
        your machine.
 
-1mOPTIONS0m
-       1m--paths0m
-	      List the paths of all gems  that	are  required  by  your  [1mGem-0m
-	      1mfile(5)22m][Gemfile(5)], sorted by gem name.
+OPTIONS
+       --paths
+	      List the paths of all gems  that	are  required  by  your  [Gem-
+	      file(5)][Gemfile(5)], sorted by gem name.
 
 
 
 
-				 November 2018			BUNDLE-SHOW(1)
+				  March 2019			BUNDLE-SHOW(1)
