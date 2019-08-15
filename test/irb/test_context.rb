@@ -143,6 +143,7 @@ module TestIRB
         "_\n"
       ])
       irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+      irb.context.return_format = "=> %s\n"
 
       # The default
       irb.context.echo = true
