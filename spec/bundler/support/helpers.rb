@@ -200,11 +200,7 @@ module Spec
       ENV["RUBYOPT"] = old
     end
 
-    def gem_command(command, args = "", options = {})
-      if command == :exec
-        args = args.gsub(/(?=")/, "\\")
-        args = %("#{args}")
-      end
+    def gem_command(command, args = "")
       gem = ENV["BUNDLE_GEM"] || "#{Gem.ruby} -S gem --backtrace"
       sys_exec("#{gem} #{command} #{args}")
     end
