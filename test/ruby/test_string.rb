@@ -2010,6 +2010,12 @@ CODE
     r.taint
     a.sub!(/./, r)
     assert_predicate(a, :tainted?)
+
+    bug16105 = '[Bug #16105] heap-use-after-free'
+    a = S("ABCDEFGHIJKLMNOPQRSTUVWXYZ012345678")
+    b = a.dup
+    c = a.slice(1, 100)
+    assert_equal("AABCDEFGHIJKLMNOPQRSTUVWXYZ012345678", b.sub!(c, b), bug16105)
   end
 
   def test_succ
