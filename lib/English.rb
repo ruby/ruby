@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 #  Include the English library file in a Ruby script, and you can
-#  reference the global variables such as \VAR{\$\_} using less
+#  reference the global variables such as <tt>$_</tt> using less
 #  cryptic names, listed below.
 #
 #  Without 'English':
