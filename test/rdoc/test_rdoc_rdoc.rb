@@ -119,7 +119,7 @@ class TestRDocRDoc < RDoc::TestCase
         io.write "a: !ruby.yaml.org,2002:str |\nfoo"
       end
 
-      e = assert_raises RDoc::Error do
+      e = assert_raise RDoc::Error do
         @rdoc.load_options
       end
 
@@ -163,7 +163,7 @@ class TestRDocRDoc < RDoc::TestCase
 
   def test_normalized_file_list_non_file_directory
     dev = File::NULL
-    omit "#{dev} is not a character special" unless
+    skip "#{dev} is not a character special" unless
       File.chardev? dev
 
     files = nil
@@ -349,8 +349,8 @@ class TestRDocRDoc < RDoc::TestCase
   end
 
   def test_parse_file_forbidden
-    omit 'chmod not supported' if Gem.win_platform?
-    omit "assumes that euid is not root" if Process.euid == 0
+    skip 'chmod not supported' if Gem.win_platform?
+    skip "assumes that euid is not root" if Process.euid == 0
 
     @rdoc.store = RDoc::Store.new
 
@@ -463,7 +463,7 @@ class TestRDocRDoc < RDoc::TestCase
     Dir.mktmpdir {|path|
       File.open @rdoc.output_flag_file(path), 'w' do end
 
-      e = assert_raises RDoc::Error do
+      e = assert_raise RDoc::Error do
         @rdoc.setup_output_dir path, false
       end
 
@@ -475,7 +475,7 @@ class TestRDocRDoc < RDoc::TestCase
     tf = Tempfile.open 'test_rdoc_rdoc' do |tempfile|
       path = tempfile.path
 
-      e = assert_raises RDoc::Error do
+      e = assert_raise RDoc::Error do
         @rdoc.setup_output_dir path, false
       end
 
@@ -488,7 +488,7 @@ class TestRDocRDoc < RDoc::TestCase
 
   def test_setup_output_dir_exists_not_rdoc
     Dir.mktmpdir do |dir|
-      e = assert_raises RDoc::Error do
+      e = assert_raise RDoc::Error do
         @rdoc.setup_output_dir dir, false
       end
 

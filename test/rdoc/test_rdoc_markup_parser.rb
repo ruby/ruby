@@ -1087,7 +1087,7 @@ the time
 
     assert_equal [:NEWLINE, "\n", 9, 0], parser.peek_token
 
-    assert_raises RDoc::Markup::Parser::ParseError do
+    assert_raise RDoc::Markup::Parser::ParseError do
       parser.skip :NONE
     end
 
@@ -1661,7 +1661,7 @@ Example heading:
 
     assert_equal [:HEADER, 1, 0, 0], parser.peek_token
 
-    assert_raises @RMP::Error do
+    assert_raise @RMP::Error do
       parser.unget
     end
 

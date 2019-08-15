@@ -34,7 +34,7 @@ class TestRDocMarkupDocument < RDoc::TestCase
 
     assert_empty @d
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       @d << 'hi'
     end
   end
