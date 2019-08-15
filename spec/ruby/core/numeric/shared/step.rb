@@ -8,7 +8,7 @@ require_relative '../fixtures/classes'
 describe :numeric_step, :shared => true do
   before :each do
     ScratchPad.record []
-    @prc = lambda { |x| ScratchPad << x }
+    @prc = -> x { ScratchPad << x }
   end
 
   it "defaults to step = 1" do
@@ -233,33 +233,33 @@ describe :numeric_step, :shared => true do
 
     describe "with self and stop as Fixnums" do
       it "raises an #{error} when step is a numeric representation" do
-        lambda { 1.send(@method, *@step_args.call(5, "1")) {} }.should raise_error(error)
-        lambda { 1.send(@method, *@step_args.call(5, "0.1")) {} }.should raise_error(error)
-        lambda { 1.send(@method, *@step_args.call(5, "1/3")) {} }.should raise_error(error)
+        -> { 1.send(@method, *@step_args.call(5, "1")) {} }.should raise_error(error)
+        -> { 1.send(@method, *@step_args.call(5, "0.1")) {} }.should raise_error(error)
+        -> { 1.send(@method, *@step_args.call(5, "1/3")) {} }.should raise_error(error)
       end
       it "raises an #{error} with step as an alphanumeric string" do
-        lambda { 1.send(@method, *@step_args.call(5, "foo")) {} }.should raise_error(error)
+        -> { 1.send(@method, *@step_args.call(5, "foo")) {} }.should raise_error(error)
       end
     end
 
     describe "with self and stop as Floats" do
       it "raises an #{error} when step is a numeric representation" do
-        lambda { 1.1.send(@method, *@step_args.call(5.1, "1")) {} }.should raise_error(error)
-        lambda { 1.1.send(@method, *@step_args.call(5.1, "0.1")) {} }.should raise_error(error)
-        lambda { 1.1.send(@method, *@step_args.call(5.1, "1/3")) {} }.should raise_error(error)
+        -> { 1.1.send(@method, *@step_args.call(5.1, "1")) {} }.should raise_error(error)
+        -> { 1.1.send(@method, *@step_args.call(5.1, "0.1")) {} }.should raise_error(error)
+        -> { 1.1.send(@method, *@step_args.call(5.1, "1/3")) {} }.should raise_error(error)
       end
       it "raises an #{error} with step as an alphanumeric string" do
-        lambda { 1.1.send(@method, *@step_args.call(5.1, "foo")) {} }.should raise_error(error)
+        -> { 1.1.send(@method, *@step_args.call(5.1, "foo")) {} }.should raise_error(error)
       end
     end
   end
 
   it "does not rescue ArgumentError exceptions" do
-    lambda { 1.send(@method, *@step_args.call(2)) { raise ArgumentError, "" }}.should raise_error(ArgumentError)
+    -> { 1.send(@method, *@step_args.call(2)) { raise ArgumentError, "" }}.should raise_error(ArgumentError)
   end
 
   it "does not rescue TypeError exceptions" do
-    lambda { 1.send(@method, *@step_args.call(2)) { raise TypeError, "" } }.should raise_error(TypeError)
+    -> { 1.send(@method, *@step_args.call(2)) { raise TypeError, "" } }.should raise_error(TypeError)
   end
 
   describe "when no block is given" do
@@ -311,23 +311,23 @@ describe :numeric_step, :shared => true do
 
           describe "with self and stop as Fixnums" do
             it "raises an #{error} when step is a numeric representation" do
-              lambda { 1.send(@method, *@step_args.call(5, "1")).size }.should raise_error(error)
-              lambda { 1.send(@method, *@step_args.call(5, "0.1")).size }.should raise_error(error)
-              lambda { 1.send(@method, *@step_args.call(5, "1/3")).size }.should raise_error(error)
+              -> { 1.send(@method, *@step_args.call(5, "1")).size }.should raise_error(error)
+              -> { 1.send(@method, *@step_args.call(5, "0.1")).size }.should raise_error(error)
+              -> { 1.send(@method, *@step_args.call(5, "1/3")).size }.should raise_error(error)
             end
             it "raises an #{error} with step as an alphanumeric string" do
-              lambda { 1.send(@method, *@step_args.call(5, "foo")).size }.should raise_error(error)
+              -> { 1.send(@method, *@step_args.call(5, "foo")).size }.should raise_error(error)
             end
           end
 
           describe "with self and stop as Floats" do
             it "raises an #{error} when step is a numeric representation" do
-              lambda { 1.1.send(@method, *@step_args.call(5.1, "1")).size }.should raise_error(error)
-              lambda { 1.1.send(@method, *@step_args.call(5.1, "0.1")).size }.should raise_error(error)
-              lambda { 1.1.send(@method, *@step_args.call(5.1, "1/3")).size }.should raise_error(error)
+              -> { 1.1.send(@method, *@step_args.call(5.1, "1")).size }.should raise_error(error)
+              -> { 1.1.send(@method, *@step_args.call(5.1, "0.1")).size }.should raise_error(error)
+              -> { 1.1.send(@method, *@step_args.call(5.1, "1/3")).size }.should raise_error(error)
             end
             it "raises an #{error} with step as an alphanumeric string" do
-              lambda { 1.1.send(@method, *@step_args.call(5.1, "foo")).size }.should raise_error(error)
+              -> { 1.1.send(@method, *@step_args.call(5.1, "foo")).size }.should raise_error(error)
             end
           end
         end

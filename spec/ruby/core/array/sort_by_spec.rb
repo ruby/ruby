@@ -24,11 +24,11 @@ describe "Array#sort_by!" do
   end
 
   it "raises a #{frozen_error_class} on a frozen array" do
-    lambda { ArraySpecs.frozen_array.sort_by! {}}.should raise_error(frozen_error_class)
+    -> { ArraySpecs.frozen_array.sort_by! {}}.should raise_error(frozen_error_class)
   end
 
   it "raises a #{frozen_error_class} on an empty frozen array" do
-    lambda { ArraySpecs.empty_frozen_array.sort_by! {}}.should raise_error(frozen_error_class)
+    -> { ArraySpecs.empty_frozen_array.sort_by! {}}.should raise_error(frozen_error_class)
   end
 
   it "returns the specified value when it would break in the given block" do

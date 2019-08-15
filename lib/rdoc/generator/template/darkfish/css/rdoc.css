@@ -94,7 +94,7 @@ pre {
 
 .missing-docs {
   font-size: 120%;
-  background: white url(images/wrench_orange.png) no-repeat 4px center;
+  background: white url(../images/wrench_orange.png) no-repeat 4px center;
   color: #ccc;
   line-height: 2em;
   border: 1px solid #d00;
@@ -138,11 +138,11 @@ pre {
 .table-of-contents li .toc-toggle {
   width: 16px;
   height: 16px;
-  background: url(images/add.png) no-repeat;
+  background: url(../images/add.png) no-repeat;
 }
 
 .table-of-contents li .toc-toggle.open {
-  background: url(images/delete.png) no-repeat;
+  background: url(../images/delete.png) no-repeat;
 }
 
 /* @end */
@@ -270,7 +270,7 @@ dl.label-list dt {
 }
 
 .calls-super {
-  background: url(images/arrow_up.png) no-repeat right center;
+  background: url(../images/arrow_up.png) no-repeat right center;
 }
 
 /* @end */
@@ -487,7 +487,7 @@ main .method-click-advice {
   visibility: hidden;
   padding-right: 20px;
   line-height: 20px;
-  background: url(images/zoom.png) no-repeat right top;
+  background: url(../images/zoom.png) no-repeat right top;
 }
 main .method-heading:hover .method-click-advice {
   visibility: visible;

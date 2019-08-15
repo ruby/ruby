@@ -4,7 +4,7 @@ RSpec.describe "bundle info" do
   context "with a standard Gemfile" do
     before do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails"
       G
     end
@@ -104,7 +104,7 @@ RSpec.describe "bundle info" do
       expect(out).to include("foo (1.0 #{sha[0..6]})")
     end
 
-    it "handles when a version is a '-' prerelease", :rubygems => "2.1" do
+    it "handles when a version is a '-' prerelease" do
       @git = build_git("foo", "1.0.0-beta.1", :path => lib_path("foo"))
       install_gemfile <<-G
         gem "foo", "1.0.0-beta.1", :git => "#{lib_path("foo")}"
@@ -119,7 +119,7 @@ RSpec.describe "bundle info" do
   context "with a valid regexp for gem name", :ruby_repo do
     it "presents alternatives" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
         gem "rack-obama"
       G
@@ -132,7 +132,7 @@ RSpec.describe "bundle info" do
   context "with an invalid regexp for gem name" do
     it "does not find the gem" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails"
       G
 

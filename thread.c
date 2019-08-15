@@ -66,11 +66,11 @@
 #include "ruby/config.h"
 #include "ruby/io.h"
 #include "eval_intern.h"
-#include "gc.h"
 #include "timev.h"
 #include "ruby/thread.h"
 #include "ruby/thread_native.h"
 #include "ruby/debug.h"
+#include "gc.h"
 #include "internal.h"
 #include "iseq.h"
 #include "vm_core.h"
@@ -691,17 +691,6 @@ thread_do_start(rb_thread_t *th)
 }
 
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
-rb_control_frame_t *
-rb_vm_push_frame(rb_execution_context_t *sec,
-                 const rb_iseq_t *iseq,
-                 VALUE type,
-                 VALUE self,
-                 VALUE specval,
-                 VALUE cref_or_me,
-                 const VALUE *pc,
-                 VALUE *sp,
-                 int local_size,
-                 int stack_max);
 
 static int
 thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
@@ -1679,7 +1668,8 @@ rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
     /* enter to Ruby world: You can access Ruby values, methods and so on. */
     r = (*func)(data1);
     /* leave from Ruby world: You can not access Ruby values, etc. */
-    blocking_region_begin(th, brb, prev_unblock.func, prev_unblock.arg, FALSE);
+    int released = blocking_region_begin(th, brb, prev_unblock.func, prev_unblock.arg, FALSE);
+    RUBY_ASSERT_ALWAYS(released);
     return r;
 }
 
@@ -4720,14 +4710,14 @@ thread_shield_alloc(VALUE klass)
 #define GetThreadShieldPtr(obj) ((VALUE)rb_check_typeddata((obj), &thread_shield_data_type))
 #define THREAD_SHIELD_WAITING_MASK (FL_USER0|FL_USER1|FL_USER2|FL_USER3|FL_USER4|FL_USER5|FL_USER6|FL_USER7|FL_USER8|FL_USER9|FL_USER10|FL_USER11|FL_USER12|FL_USER13|FL_USER14|FL_USER15|FL_USER16|FL_USER17|FL_USER18|FL_USER19)
 #define THREAD_SHIELD_WAITING_SHIFT (FL_USHIFT)
-#define rb_thread_shield_waiting(b) (int)((RBASIC(b)->flags&THREAD_SHIELD_WAITING_MASK)>>THREAD_SHIELD_WAITING_SHIFT)
+#define rb_thread_shield_waiting(b) ((RBASIC(b)->flags&THREAD_SHIELD_WAITING_MASK)>>THREAD_SHIELD_WAITING_SHIFT)
 
 static inline void
 rb_thread_shield_waiting_inc(VALUE b)
 {
-    unsigned int w = rb_thread_shield_waiting(b);
+    unsigned long w = rb_thread_shield_waiting(b);
     w++;
-    if (w > (unsigned int)(THREAD_SHIELD_WAITING_MASK>>THREAD_SHIELD_WAITING_SHIFT))
+    if (w > (THREAD_SHIELD_WAITING_MASK>>THREAD_SHIELD_WAITING_SHIFT))
 	rb_raise(rb_eRuntimeError, "waiting count overflow");
     RBASIC(b)->flags &= ~THREAD_SHIELD_WAITING_MASK;
     RBASIC(b)->flags |= ((VALUE)w << THREAD_SHIELD_WAITING_SHIFT);
@@ -4736,7 +4726,7 @@ rb_thread_shield_waiting_inc(VALUE b)
 static inline void
 rb_thread_shield_waiting_dec(VALUE b)
 {
-    unsigned int w = rb_thread_shield_waiting(b);
+    unsigned long w = rb_thread_shield_waiting(b);
     if (!w) rb_raise(rb_eRuntimeError, "waiting count underflow");
     w--;
     RBASIC(b)->flags &= ~THREAD_SHIELD_WAITING_MASK;

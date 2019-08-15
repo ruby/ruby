@@ -20,11 +20,11 @@ describe "Shellwords#shellwords" do
   end
 
   it "raises ArgumentError when double quoted strings are misquoted" do
-    lambda { shellwords('a "b c d e') }.should raise_error(ArgumentError)
+    -> { shellwords('a "b c d e') }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError when single quoted strings are misquoted" do
-    lambda { shellwords("a 'b c d e") }.should raise_error(ArgumentError)
+    -> { shellwords("a 'b c d e") }.should raise_error(ArgumentError)
   end
 
   # https://bugs.ruby-lang.org/issues/10055

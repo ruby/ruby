@@ -1188,8 +1188,8 @@ class TestProc < Test::Unit::TestCase
   end
 
   def test_to_s
-    assert_match(/^#<Proc:0x\h+@#{ Regexp.quote(__FILE__) }:\d+>$/, proc {}.to_s)
-    assert_match(/^#<Proc:0x\h+@#{ Regexp.quote(__FILE__) }:\d+ \(lambda\)>$/, lambda {}.to_s)
+    assert_match(/^#<Proc:0x\h+ #{ Regexp.quote(__FILE__) }:\d+>$/, proc {}.to_s)
+    assert_match(/^#<Proc:0x\h+ #{ Regexp.quote(__FILE__) }:\d+ \(lambda\)>$/, lambda {}.to_s)
     assert_match(/^#<Proc:0x\h+ \(lambda\)>$/, method(:p).to_proc.to_s)
     x = proc {}
     x.taint
@@ -1483,5 +1483,32 @@ class TestProc < Test::Unit::TestCase
     assert_raise(TypeError) {
       (f >> 5).call(2)
     }
+  end
+
+  def test_orphan_return
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b.call end; def m2(); m1 { return 42 } end }.m2)
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b end; def m2(); m1 { return 42 }.call end }.m2)
+    assert_raise(LocalJumpError) { Module.new { extend self
+      def m1(&b) b end; def m2(); m1 { return 42 } end }.m2.call }
+  end
+
+  def test_orphan_break
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b.call end; def m2(); m1 { break 42 } end }.m2 )
+    assert_raise(LocalJumpError) { Module.new { extend self
+      def m1(&b) b end; def m2(); m1 { break 42 }.call end }.m2 }
+    assert_raise(LocalJumpError) { Module.new { extend self
+      def m1(&b) b end; def m2(); m1 { break 42 } end }.m2.call }
+  end
+
+  def test_not_orphan_next
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b.call end; def m2(); m1 { next 42 } end }.m2)
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b end; def m2(); m1 { next 42 }.call end }.m2)
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b end; def m2(); m1 { next 42 } end }.m2.call)
   end
 end

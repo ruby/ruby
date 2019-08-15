@@ -20,7 +20,7 @@ class TestRDocOptions < RDoc::TestCase
     skip "assumes UNIX permission model" if /mswin|mingw/ =~ RUBY_PLATFORM
     skip "assumes that euid is not root" if Process.euid == 0
 
-    out, err = capture_io do
+    out, err = capture_output do
       temp_dir do
         FileUtils.touch 'unreadable'
         FileUtils.chmod 0, 'unreadable'
@@ -40,7 +40,7 @@ class TestRDocOptions < RDoc::TestCase
   def test_check_files_warn
     @options.verbosity = 2
 
-    out, err = verbose_capture_io do
+    out, err = verbose_capture_output do
       @options.files = %w[nonexistent]
 
       @options.check_files
@@ -218,7 +218,7 @@ rdoc_include:
   end
 
   def test_parse_dash_p
-    out, err = capture_io do
+    out, err = capture_output do
       @options.parse %w[-p]
     end
 
@@ -230,7 +230,7 @@ rdoc_include:
   end
 
   def test_parse_dash_p_files
-    out, err = capture_io do
+    out, err = capture_output do
       @options.parse ['-p', File.expand_path(__FILE__)]
     end
 
@@ -253,7 +253,7 @@ rdoc_include:
     dep_hash = RDoc::Options::DEPRECATED
     options = dep_hash.keys.sort
 
-    out, err = capture_io do
+    out, err = capture_output do
       @options.parse options
     end
 
@@ -278,7 +278,7 @@ rdoc_include:
   end
 
   def test_parse_encoding_invalid
-    out, err = capture_io do
+    out, err = capture_output do
       @options.parse %w[--encoding invalid]
     end
 
@@ -333,7 +333,7 @@ rdoc_include:
   end
 
   def test_parse_h
-    out, = capture_io do
+    out, = capture_output do
       begin
         @options.parse %w[-h]
       rescue SystemExit
@@ -345,7 +345,7 @@ rdoc_include:
   end
 
   def test_parse_help
-    out, = capture_io do
+    out, = capture_output do
       begin
         @options.parse %w[--help]
       rescue SystemExit
@@ -365,7 +365,7 @@ rdoc_include:
       end
     end
 
-    out, = capture_io do
+    out, = capture_output do
       begin
         @options.parse %w[--help]
       rescue SystemExit
@@ -392,7 +392,7 @@ rdoc_include:
   end
 
   def test_parse_ignore_invalid
-    out, err = capture_io do
+    out, err = capture_output do
       @options.parse %w[--ignore-invalid --bogus]
     end
 
@@ -403,7 +403,7 @@ rdoc_include:
   end
 
   def test_parse_ignore_invalid_default
-    out, err = capture_io do
+    out, err = capture_output do
       @options.parse %w[--bogus --main BLAH]
     end
 
@@ -416,7 +416,7 @@ rdoc_include:
   end
 
   def test_parse_ignore_invalid_no
-    out, err = capture_io do
+    out, err = capture_output do
       assert_raises SystemExit do
         @options.parse %w[--no-ignore-invalid --bogus=arg --bobogus --visibility=extended]
       end
@@ -429,7 +429,7 @@ rdoc_include:
   end
 
   def test_parse_ignore_invalid_no_quiet
-    out, err = capture_io do
+    out, err = capture_output do
       assert_raises SystemExit do
         @options.parse %w[--quiet --no-ignore-invalid --bogus=arg --bobogus --visibility=extended]
       end
@@ -442,7 +442,7 @@ rdoc_include:
   end
 
   def test_ignore_needless_arg
-    out, err = capture_io do
+    out, err = capture_output do
       @options.parse %w[--ri=foo]
     end
 
@@ -452,7 +452,7 @@ rdoc_include:
   end
 
   def test_ignore_missing_arg
-    out, err = capture_io do
+    out, err = capture_output do
       @options.parse %w[--copy-files]
     end
 
@@ -462,7 +462,7 @@ rdoc_include:
   end
 
   def test_parse_main
-    out, err = capture_io do
+    out, err = capture_output do
       @options.parse %w[--main MAIN]
     end
 
@@ -473,7 +473,7 @@ rdoc_include:
   end
 
   def test_parse_markup
-    out, err = capture_io do
+    out, err = capture_output do
       @options.parse %w[--markup tomdoc]
     end
 
@@ -486,7 +486,7 @@ rdoc_include:
   def test_parse_page_dir
     assert_nil @options.page_dir
 
-    out, err = capture_io do
+    out, err = capture_output do
       @options.parse %W[--page-dir #{Dir.tmpdir}]
     end
 
@@ -508,7 +508,7 @@ rdoc_include:
       abs_page_dir = File.join dir, 'pages'
       FileUtils.mkdir abs_page_dir
 
-      out, err = capture_io do
+      out, err = capture_output do
         @options.parse %W[--page-dir #{abs_page_dir} --root #{abs_root}]
       end
 
@@ -530,7 +530,7 @@ rdoc_include:
   def test_parse_root
     assert_equal Pathname(Dir.pwd), @options.root
 
-    out, err = capture_io do
+    out, err = capture_output do
       @options.parse %W[--root #{Dir.tmpdir}]
     end
 
@@ -548,13 +548,13 @@ rdoc_include:
     @options.parse %w[-w2]
     assert_equal 2, @options.tab_width
 
-    _, err = capture_io do
+    _, err = capture_output do
       @options.parse %w[-w=2]
     end
 
     assert_match 'invalid options', err
 
-    _, err = capture_io do
+    _, err = capture_output do
       @options.parse %w[-w0]
     end
 
@@ -562,7 +562,7 @@ rdoc_include:
   end
 
   def test_parse_template
-    out, err = capture_io do
+    out, err = capture_output do
       @options.parse %w[--template darkfish]
     end
 
@@ -575,7 +575,7 @@ rdoc_include:
   end
 
   def test_parse_template_nonexistent
-    out, err = capture_io do
+    out, err = capture_output do
       @options.parse %w[--template NONEXISTENT]
     end
 
@@ -598,7 +598,7 @@ rdoc_include:
 
       FileUtils.mkdir_p template_dir
 
-      out, err = capture_io do
+      out, err = capture_output do
         @options.parse %w[--template load_path]
       end
 
@@ -644,7 +644,7 @@ rdoc_include:
   end
 
   def test_parse_extension_alias
-    out, err = capture_io do
+    out, err = capture_output do
       @options.parse %w[--extension foobar=rdoc]
     end
 
@@ -706,7 +706,7 @@ rdoc_include:
   end
 
   def test_warn
-    out, err = capture_io do
+    out, err = capture_output do
       @options.warn "warnings off"
     end
 
@@ -715,7 +715,7 @@ rdoc_include:
 
     @options.verbosity = 2
 
-    out, err = verbose_capture_io do
+    out, err = verbose_capture_output do
       @options.warn "warnings on"
     end
 
@@ -734,7 +734,7 @@ rdoc_include:
   end
 
   def test_version
-    out, _ = capture_io do
+    out, _ = capture_output do
       begin
         @options.parse %w[--version]
       rescue SystemExit
@@ -743,7 +743,7 @@ rdoc_include:
 
     assert out.include?(RDoc::VERSION)
 
-    out, _ = capture_io do
+    out, _ = capture_output do
       begin
         @options.parse %w[-v]
       rescue SystemExit

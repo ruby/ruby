@@ -60,6 +60,8 @@ sufficient information, see the ChangeLog file or Redmine
       .bar(1, 2)
       .display
 
+* The flip-flop syntax deprecation is reverted. [Feature #5400]
+
 === Core classes updates (outstanding ones only)
 
 Complex::
@@ -75,7 +77,7 @@ Encoding::
 
 Enumerable::
 
-  New method::
+  New methods::
 
     * Added Enumerable#filter_map.  [Feature #15323]
 
@@ -147,11 +149,26 @@ Regexp / String::
     * Update Unicode version to 12.1.0, adding support for
       U+32FF SQUARE ERA NAME REIWA.  [Feature #15195]
 
+RubyVM::
+
+  Removed method::
+
+    * RubyVM.resolve_feature_path moved to
+      $LOAD_PATH.resolve_feature_path.  [Feature #15903] [Feature #15230]
+
 Time::
+
+  New methods::
 
     * Added Time#ceil method.  [Feature #15772]
 
     * Added Time#floor method.  [Feature #15653]
+
+$LOAD_PATH::
+
+  New method::
+
+    * Added $LOAD_PATH.resolve_feature_path.  [Feature #15903] [Feature #15230]
 
 === Stdlib updates (outstanding ones only)
 
@@ -188,13 +205,37 @@ IRB::
   * Introduce syntax highlight inspired by pry.gem to Binding#irb source lines,
     REPL input, and inspect output of some core-class objects.
 
+  * Introduce multiline mode by Reline.
+
+  * Show documents when completion.
+
+  * Enable auto indent and save/load history by default.
+
 Net::IMAP::
 
   * Add Server Name Indication (SNI) support.  [Feature #15594]
 
+open-uri::
+
+  * Warn open-uri's "open" method at Kernel.
+    Use URI.open instead.  [Misc #15893]
+
+  * The default charset of text/* media type is UTF-8 instead of ISO-8859-1.
+    [Bug #15933]
+
+Pathname::
+
+  * Delegates 3 arguments from Pathname.glob to Dir.glob to
+    accept base: keyword.
+
 Racc::
 
   * Merge 1.4.15 from upstream repository and added cli of racc.
+
+Reline::
+
+  * New stdlib that is compatible with readline stdlib by pure Ruby and also
+    has a multiline mode.
 
 RSS::
 
@@ -217,6 +258,19 @@ profile.rb, Profiler__::
 === C API updates
 
 === Implementation improvements
+
+Fiber::
+
+  * Allow selecting different coroutine implementation by using
+    `--with-coroutine=`, e.g.
+
+         ./confgure --with-coroutine=ucontext
+         ./confgure --with-coroutine=copy
+
+  * Replace previous stack cache with fiber pool cache. The fiber pool
+    allocates many stacks in a single memory region. Stack allocation
+    becomes O(log N) and fiber creation is amortized O(1). Around 10x
+    performance improvement was measured in micro-benchmarks.
 
 Thread::
 
@@ -245,7 +299,7 @@ JIT::
 
   * Details of our dialect: https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/C99
 
-* Upstream repository is changed from Subversion to Git.
+* Ruby's upstream repository is changed from Subversion to Git.
 
   * https://git.ruby-lang.org/ruby.git
 

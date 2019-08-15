@@ -7,7 +7,7 @@ module Psych
       class TestDelegatorClass < Delegator
         def initialize(obj); super; @obj = obj; end
         def __setobj__(obj); @obj = obj; end
-        def __getobj__; @obj; end
+        def __getobj__; @obj if defined?(@obj); end
       end
 
       class TestSimpleDelegatorClass < SimpleDelegator

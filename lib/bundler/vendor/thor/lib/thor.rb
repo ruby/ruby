@@ -1,5 +1,5 @@
 require "set"
-require "bundler/vendor/thor/lib/thor/base"
+require_relative "thor/base"
 
 class Bundler::Thor
   class << self

@@ -66,7 +66,7 @@ describe "File.chown" do
 
   platform_is_not :windows do
     it "raises an error for a non existent path" do
-      lambda {
+      -> {
         File.chown(nil, nil, "#{@fname}_not_existing")
       }.should raise_error(Errno::ENOENT)
     end

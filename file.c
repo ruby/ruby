@@ -475,7 +475,7 @@ rb_file_path(VALUE obj)
         rb_raise(rb_eIOError, "File is unnamed (TMPFILE?)");
     }
 
-    return rb_obj_taint(rb_str_dup(fptr->pathv));
+    return rb_str_dup(fptr->pathv);
 }
 
 static size_t
@@ -1221,6 +1221,8 @@ rb_statx(VALUE file, struct statx *stx, unsigned int mask)
 }
 
 # define statx_has_birthtime(st) ((st)->stx_mask & STATX_BTIME)
+
+NORETURN(static void statx_notimplement(const char *field_name));
 
 /* rb_notimplement() shows "function is unimplemented on this machine".
    It is not applicable to statx which behavior depends on the filesystem. */
@@ -3219,15 +3221,16 @@ rb_file_s_umask(int argc, VALUE *argv)
 {
     mode_t omask = 0;
 
-    if (argc == 0) {
+    switch (argc) {
+      case 0:
 	omask = umask(0);
 	umask(omask);
-    }
-    else if (argc == 1) {
+        break;
+      case 1:
 	omask = umask(NUM2MODET(argv[0]));
-    }
-    else {
-	rb_check_arity(argc, 0, 1);
+        break;
+      default:
+        rb_error_arity(argc, 0, 1);
     }
     return MODET2NUM(omask);
 }

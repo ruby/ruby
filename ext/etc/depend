@@ -6,6 +6,7 @@ constdefs.h : $(srcdir)/mkconstants.rb
 etc.o: $(RUBY_EXTCONF_H)
 etc.o: $(arch_hdrdir)/ruby/config.h
 etc.o: $(hdrdir)/ruby.h
+etc.o: $(hdrdir)/ruby/assert.h
 etc.o: $(hdrdir)/ruby/backward.h
 etc.o: $(hdrdir)/ruby/defines.h
 etc.o: $(hdrdir)/ruby/encoding.h

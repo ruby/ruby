@@ -39,10 +39,10 @@ end
 describe :stringio_each_byte_not_readable, shared: true do
   it "raises an IOError" do
     io = StringIO.new("xyz", "w")
-    lambda { io.send(@method) { |b| b } }.should raise_error(IOError)
+    -> { io.send(@method) { |b| b } }.should raise_error(IOError)
 
     io = StringIO.new("xyz")
     io.close_read
-    lambda { io.send(@method) { |b| b } }.should raise_error(IOError)
+    -> { io.send(@method) { |b| b } }.should raise_error(IOError)
   end
 end
