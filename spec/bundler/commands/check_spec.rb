@@ -239,37 +239,42 @@ RSpec.describe "bundle check" do
   end
 
   context "--path", :bundler => "< 3" do
-    before do
-      gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rails"
-      G
-      bundle "install --path vendor/bundle"
+    context "after installing gems in the proper directory" do
+      before do
+        gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
+          gem "rails"
+        G
+        bundle "install --path vendor/bundle"
 
-      FileUtils.rm_rf(bundled_app(".bundle"))
+        FileUtils.rm_rf(bundled_app(".bundle"))
+      end
+
+      it "returns success" do
+        bundle! "check --path vendor/bundle"
+        expect(out).to include("The Gemfile's dependencies are satisfied")
+      end
+
+      it "should write to .bundle/config" do
+        bundle "check --path vendor/bundle"
+        bundle! "check"
+      end
     end
 
-    it "returns success" do
-      bundle! "check --path vendor/bundle"
-      expect(out).to include("The Gemfile's dependencies are satisfied")
-    end
+    context "after installing gems on a different directory" do
+      before do
+        install_gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
+          gem "rails"
+        G
 
-    it "should write to .bundle/config" do
-      bundle "check --path vendor/bundle"
-      bundle! "check"
-    end
-  end
+        bundle "check --path vendor/bundle"
+      end
 
-  context "--path vendor/bundle after installing gems in the default directory" do
-    it "returns false" do
-      install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rails"
-      G
-
-      bundle "check --path vendor/bundle"
-      expect(exitstatus).to eq(1) if exitstatus
-      expect(err).to match(/The following gems are missing/)
+      it "returns false" do
+        expect(exitstatus).to eq(1) if exitstatus
+        expect(err).to match(/The following gems are missing/)
+      end
     end
   end
 
