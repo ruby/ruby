@@ -204,6 +204,14 @@ class TestGemRequire < Gem::TestCase
       this test, somehow require will load the benchmark in b, and ignore that the
       stdlib one is already in $LOADED_FEATURES?. Reproducible by running the
       spaceship_specific_file test before this one" if java_platform?
+
+    lp = $LOAD_PATH.dup
+    lib_dir = File.expand_path(File.join(File.dirname(__FILE__), "../../lib"))
+    if File.exist?(lib_dir)
+      $LOAD_PATH.delete lib_dir
+      $LOAD_PATH.push lib_dir
+    end
+
     a1 = util_spec "a", "1", {"b" => ">= 1"}, "lib/test_gem_require_a.rb"
     b1 = util_spec "b", "1", nil, "lib/benchmark.rb"
     b2 = util_spec "b", "2", nil, "lib/benchmark.rb"
@@ -221,6 +229,8 @@ class TestGemRequire < Gem::TestCase
     # the same behavior as eager loading would have.
 
     assert_equal %w(a-1 b-2), loaded_spec_names
+  ensure
+    $LOAD_PATH.replace lp
   end
 
   def test_already_activated_direct_conflict
