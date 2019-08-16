@@ -5807,9 +5807,8 @@ yycompile0(VALUE arg)
 	if (!opt) opt = rb_obj_hide(rb_ident_hash_new());
 	rb_hash_aset(opt, rb_sym_intern_ascii_cstr("coverage_enabled"), cov);
 	prelude = block_append(p, p->eval_tree_begin, body);
-	add_mark_object(p, opt);
 	tree->nd_body = prelude;
-	p->ast->body.compile_option = opt;
+        RB_OBJ_WRITE(p->ast, &p->ast->body.compile_option, opt);
     }
     p->ast->body.root = tree;
     p->ast->body.line_count = p->line_count;

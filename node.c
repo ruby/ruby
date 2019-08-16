@@ -1184,6 +1184,7 @@ void
 rb_ast_mark(rb_ast_t *ast)
 {
     if (ast->node_buffer) rb_gc_mark(ast->node_buffer->mark_ary);
+    if (ast->body.compile_option) rb_gc_mark(ast->body.compile_option);
 }
 
 void
