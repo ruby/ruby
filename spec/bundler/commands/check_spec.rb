@@ -254,7 +254,7 @@ RSpec.describe "bundle check" do
       expect(out).to include("The Gemfile's dependencies are satisfied")
     end
 
-    it "should write to .bundle/config", :bundler => "< 3" do
+    it "should write to .bundle/config" do
       bundle "check --path vendor/bundle"
       bundle! "check"
     end
