@@ -219,7 +219,7 @@ keyword_hash_split_iter(st_data_t key, st_data_t val, st_data_t arg)
     return ST_CONTINUE;
 }
 
-void
+static void
 keyword_hash_split(VALUE *kw_hash_ptr, VALUE *rest_hash_ptr)
 {
     *kw_hash_ptr = rb_hash_new();
