@@ -634,9 +634,14 @@ NORETURN(static void raise_method_missing(rb_execution_context_t *ec, int argc, 
  *       def roman_to_int(str)
  *         # ...
  *       end
- *       def method_missing(methId)
- *         str = methId.id2name
- *         roman_to_int(str)
+ *
+ *       def method_missing(symbol, *args)
+ *         str = symbol.id2name
+ *         begin
+ *           roman_to_int(str)
+ *         rescue
+ *           super(symbol, *args)
+ *         end
  *       end
  *     end
  *
@@ -644,6 +649,7 @@ NORETURN(static void raise_method_missing(rb_execution_context_t *ec, int argc, 
  *     r.iv      #=> 4
  *     r.xxiii   #=> 23
  *     r.mm      #=> 2000
+ *     r.foo     #=> NoMethodError
  */
 
 static VALUE
