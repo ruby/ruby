@@ -593,13 +593,5 @@ module Spec
       end
       port
     end
-
-    def bundler_fileutils
-      if RUBY_VERSION >= "2.4"
-        ::Bundler::FileUtils
-      else
-        ::FileUtils
-      end
-    end
   end
 end

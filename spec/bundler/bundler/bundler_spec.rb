@@ -176,7 +176,7 @@ RSpec.describe Bundler do
       let(:bundler_ui) { Bundler.ui }
       it "should raise a friendly error" do
         allow(File).to receive(:exist?).and_return(true)
-        allow(bundler_fileutils).to receive(:remove_entry_secure).and_raise(ArgumentError)
+        allow(::Bundler::FileUtils).to receive(:remove_entry_secure).and_raise(ArgumentError)
         allow(File).to receive(:world_writable?).and_return(true)
         message = <<EOF
 It is a security vulnerability to allow your home directory to be world-writable, and bundler can not continue.
