@@ -1724,6 +1724,7 @@ addrinfo_equal(VALUE self, VALUE other)
 {
     const rb_addrinfo_t *r1, *r2;
     int afamily;
+    socklen_t len;
 
     if (CLASS_OF(self) != CLASS_OF(other)) return Qfalse;
     r1 = get_addrinfo(self);
@@ -1737,14 +1738,39 @@ addrinfo_equal(VALUE self, VALUE other)
     if (!rb_str_equal(r1->canonname, r2->canonname)) return Qfalse;
     afamily = ai_get_afamily(r1);
     if (afamily != ai_get_afamily(r2)) return Qfalse;
-
-    if (r1->sockaddr_len != r2->sockaddr_len) return Qfalse;
+    len = r1->sockaddr_len;
+    if (len != r2->sockaddr_len) return Qfalse;
     switch (afamily) {
+      case AF_INET:
+# define UNMATCH_INET(r1, r2, len, mem) \
+        ((offsetof(struct sockaddr_in, mem) > len) && \
+         memcmp(&r1->addr.in.mem, &r2->addr.in.mem, len - offsetof(struct sockaddr_in, mem)))
+        if (UNMATCH_INET(r1, r2, len, sin_addr)) return Qfalse;
+        if (UNMATCH_INET(r1, r2, len, sin_port)) return Qfalse;
+        break;
+#ifdef AF_INET6
+      case AF_INET6:
+      {
+# define UNMATCH_INET6(r1, r2, len, mem) \
+        ((offsetof(struct sockaddr_in6, mem) > len) && \
+         memcmp(&r1->addr.in6.mem, &r2->addr.in6.mem, len - offsetof(struct sockaddr_in6, mem)))
+        char hbuf1[1024], hbuf2[1024];
+        if (UNMATCH_INET6(r1, r2, len, sin6_port)) return Qfalse;
+        if (getnameinfo(&r1->addr.addr, len,
+                        hbuf1, (socklen_t)sizeof(hbuf1), NULL, 0,
+                        NI_NUMERICHOST|NI_NUMERICSERV)) return Qfalse;
+        if (getnameinfo(&r2->addr.addr, len,
+                        hbuf2, (socklen_t)sizeof(hbuf2), NULL, 0,
+                        NI_NUMERICHOST|NI_NUMERICSERV)) return Qfalse;
+        if (strcmp(hbuf1, hbuf2)) return Qfalse;
+        break;
+      }
+#endif
 #ifdef HAVE_SYS_UN_H
       case AF_UNIX:
       {
-        long l1 = unixsocket_len(r1);
-        long l2 = unixsocket_len(r2);
+        long l1 = rai_unixsocket_len(r1);
+        long l2 = rai_unixsocket_len(r2);
         if (l1 != l2) return Qfalse;
         if (memcmp(&r1->addr.un.sun_path, &r2->addr.un.sun_path, l1))
             return Qfalse;
