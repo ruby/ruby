@@ -1759,10 +1759,23 @@ time_mark(void *ptr)
     struct time_object *tobj = ptr;
     if (!FIXWV_P(tobj->timew))
         rb_gc_mark(w2v(tobj->timew));
-    rb_gc_mark(tobj->vtm.year);
-    rb_gc_mark(tobj->vtm.subsecx);
-    rb_gc_mark(tobj->vtm.utc_offset);
-    rb_gc_mark(tobj->vtm.zone);
+    rb_gc_mark_movable(tobj->vtm.year);
+    rb_gc_mark_movable(tobj->vtm.subsecx);
+    rb_gc_mark_movable(tobj->vtm.utc_offset);
+    rb_gc_mark_movable(tobj->vtm.zone);
+}
+
+static void
+time_compact(void *ptr)
+{
+    struct time_object *tobj = ptr;
+    if (!FIXWV_P(tobj->timew))
+        rb_gc_mark(w2v(tobj->timew));
+
+    tobj->vtm.year = rb_gc_location(tobj->vtm.year);
+    tobj->vtm.subsecx = rb_gc_location(tobj->vtm.subsecx);
+    tobj->vtm.utc_offset = rb_gc_location(tobj->vtm.utc_offset);
+    tobj->vtm.zone = rb_gc_location(tobj->vtm.zone);
 }
 
 static size_t
@@ -1773,7 +1786,7 @@ time_memsize(const void *tobj)
 
 static const rb_data_type_t time_data_type = {
     "time",
-    {time_mark, RUBY_TYPED_DEFAULT_FREE, time_memsize,},
+    {time_mark, RUBY_TYPED_DEFAULT_FREE, time_memsize, time_compact},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
