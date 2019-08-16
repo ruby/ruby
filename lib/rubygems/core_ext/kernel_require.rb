@@ -40,7 +40,7 @@ module Kernel
       rp = nil
       $LOAD_PATH[0...Gem.load_path_insert_index || -1].each do |lp|
         Gem.suffixes.each do |s|
-          full_path = File.expand_path(File.join(lp, "#{path}#{s}"))
+          full_path = File.expand_path(File.join(lp, "#{path}#{s}").untaint)
           if File.file?(full_path)
             rp = full_path
             break
