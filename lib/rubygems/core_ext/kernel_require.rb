@@ -36,26 +36,6 @@ module Kernel
 
     path = path.to_path if path.respond_to? :to_path
 
-    resolved_path = begin
-      rp = nil
-      $LOAD_PATH[0...Gem.load_path_insert_index || -1].each do |lp|
-        Gem.suffixes.each do |s|
-          full_path = File.expand_path(File.join(lp, "#{path}#{s}").untaint)
-          if File.file?(full_path)
-            rp = full_path
-            break
-          end
-        end
-        break if rp
-      end
-      rp
-    end
-
-    if resolved_path
-      RUBYGEMS_ACTIVATION_MONITOR.exit
-      return gem_original_require(resolved_path)
-    end
-
     if spec = Gem.find_unresolved_default_spec(path)
       begin
         Kernel.send(:gem, spec.name, "#{Gem::Requirement.default}.a")
