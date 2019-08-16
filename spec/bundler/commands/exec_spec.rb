@@ -843,7 +843,7 @@ __FILE__: #{path.to_s.inspect}
           source "#{file_uri_for(gem_repo1)}"
           gem "rack"
         G
-        bundle "config path vendor/bundler"
+        bundle "config set path vendor/bundler"
         bundle! :install, :system_bundler => true
       end
 
