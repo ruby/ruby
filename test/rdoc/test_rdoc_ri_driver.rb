@@ -1239,7 +1239,6 @@ Foo::Bar#bother
   # this test is too fragile. Perhaps using Process.spawn will make this
   # reliable
   def _test_page_in_presence_of_child_status
-    skip 'this test hangs on travis-ci.org' if ENV['CI']
     @driver.use_stdout = false
 
     with_dummy_pager do
