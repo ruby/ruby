@@ -837,14 +837,12 @@ __FILE__: #{path.to_s.inspect}
   context "nested bundle exec" do
     context "when bundle in a local path" do
       before do
-        system_gems :bundler
-
         gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"
           gem "rack"
         G
         bundle "config set path vendor/bundler"
-        bundle! :install, :system_bundler => true
+        bundle! :install
       end
 
       it "correctly shells out", :ruby_repo do
@@ -854,7 +852,7 @@ __FILE__: #{path.to_s.inspect}
           puts `bundle exec echo foo`
         RB
         file.chmod(0o777)
-        bundle! "exec #{file}", :system_bundler => true
+        bundle! "exec #{file}"
         expect(out).to eq("foo")
       end
     end
