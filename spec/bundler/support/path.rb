@@ -13,6 +13,10 @@ module Spec
       @gemspec ||= root.join(ruby_core? ? "lib/bundler/bundler.gemspec" : "bundler.gemspec")
     end
 
+    def gemspec_dir
+      @gemspec_dir ||= gemspec.parent
+    end
+
     def bindir
       @bindir ||= root.join(ruby_core? ? "libexec" : "exe")
     end
