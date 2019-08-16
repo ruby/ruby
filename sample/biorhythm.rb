@@ -25,7 +25,7 @@
 # Environment: basic, dos, os9
 
 include Math
-require "date.rb"
+require "date"
 require "optparse"
 require "optparse/date"
 
