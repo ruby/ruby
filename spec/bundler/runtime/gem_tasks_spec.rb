@@ -11,7 +11,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
     end
     bundled_app("Rakefile").open("w") do |f|
       f.write <<-RAKEFILE
-        $:.unshift("#{bundler_path}")
+        $:.unshift("#{lib}")
         require "bundler/gem_tasks"
       RAKEFILE
     end
@@ -19,7 +19,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
 
   it "includes the relevant tasks" do
     with_gem_path_as(Spec::Path.base_system_gems.to_s) do
-      sys_exec "#{rake} -T", "RUBYOPT" => "-I#{bundler_path}"
+      sys_exec "#{rake} -T", "RUBYOPT" => "-I#{lib}"
     end
 
     expect(err).to eq("")

@@ -95,10 +95,6 @@ module Spec
       run(cmd, *args)
     end
 
-    def lib
-      root.join("lib")
-    end
-
     def spec
       spec_dir.to_s
     end
@@ -196,7 +192,6 @@ module Spec
     end
 
     def gembin(cmd)
-      lib = File.expand_path("../../../lib", __FILE__)
       old = ENV["RUBYOPT"]
       ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -I#{lib}"
       cmd = bundled_app("bin/#{cmd}") unless cmd.to_s.include?("/")
@@ -205,13 +200,8 @@ module Spec
       ENV["RUBYOPT"] = old
     end
 
-    def gem_command(command, args = "", options = {})
-      if command == :exec && !options[:no_quote]
-        args = args.gsub(/(?=")/, "\\")
-        args = %("#{args}")
-      end
-      gem = ENV["BUNDLE_GEM"] || "#{Gem.ruby} -rrubygems -S gem --backtrace"
-      sys_exec("#{gem} #{command} #{args}")
+    def gem_command(command, args = "")
+      sys_exec("#{Path.gem_bin} #{command} #{args}")
     end
     bang :gem_command
 
@@ -307,32 +297,35 @@ module Spec
       options = gems.last.is_a?(Hash) ? gems.pop : {}
       gem_repo = options.fetch(:gem_repo) { gem_repo1 }
       gems.each do |g|
-        path = if g == :bundler
-          if ruby_core?
-            spec = Gem::Specification.load(gemspec.to_s)
-            spec.bindir = "libexec"
-            File.open(root.join("bundler.gemspec").to_s, "w") {|f| f.write spec.to_ruby }
-            Dir.chdir(root) { gem_command! :build, root.join("bundler.gemspec").to_s }
-            FileUtils.rm(root.join("bundler.gemspec"))
-          else
-            Dir.chdir(root) { gem_command! :build, gemspec.to_s }
-          end
-          bundler_path = root + "bundler-#{Bundler::VERSION}.gem"
+        if g == :bundler
+          with_built_bundler {|gem_path| install_gem(gem_path) }
         elsif g.to_s =~ %r{\A(?:[A-Z]:)?/.*\.gem\z}
-          g
+          install_gem(g)
         else
-          "#{gem_repo}/gems/#{g}.gem"
+          install_gem("#{gem_repo}/gems/#{g}.gem")
         end
-
-        raise "OMG `#{path}` does not exist!" unless File.exist?(path)
-
-        gem_command! :install, "--no-document --ignore-dependencies '#{path}'"
-
-        bundler_path && bundler_path.rmtree
       end
     end
 
-    alias_method :install_gem, :install_gems
+    def install_gem(path)
+      raise "OMG `#{path}` does not exist!" unless File.exist?(path)
+
+      gem_command! :install, "--no-document --ignore-dependencies '#{path}'"
+    end
+
+    def with_built_bundler
+      with_root_gemspec do |gemspec|
+        Dir.chdir(root) { gem_command! :build, gemspec.to_s }
+      end
+
+      bundler_path = root + "bundler-#{Bundler::VERSION}.gem"
+
+      begin
+        yield(bundler_path)
+      ensure
+        bundler_path.rmtree
+      end
+    end
 
     def with_gem_path_as(path)
       backup = ENV.to_hash

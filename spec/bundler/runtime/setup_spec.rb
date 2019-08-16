@@ -114,7 +114,7 @@ RSpec.describe "Bundler.setup" do
     def clean_load_path(lp)
       without_bundler_load_path = ruby!("puts $LOAD_PATH").split("\n")
       lp -= without_bundler_load_path
-      lp.map! {|p| p.sub(/^#{Regexp.union system_gem_path.to_s, default_bundle_path.to_s, bundler_path.to_s}/i, "") }
+      lp.map! {|p| p.sub(/^#{Regexp.union system_gem_path.to_s, default_bundle_path.to_s, lib.to_s}/i, "") }
     end
 
     it "puts loaded gems after -I and RUBYLIB", :ruby_repo do
@@ -773,7 +773,7 @@ end
     full_gem_name = gem_name + "-1.0"
     ext_dir = File.join(tmp("extensions", full_gem_name))
 
-    install_gem full_gem_name
+    install_gems full_gem_name
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -804,7 +804,6 @@ end
   context "with bundler is located in symlinked GEM_HOME" do
     let(:gem_home) { Dir.mktmpdir }
     let(:symlinked_gem_home) { Tempfile.new("gem_home").path }
-    let(:bundler_dir) { ruby_core? ? File.expand_path("../../../..", __FILE__) : File.expand_path("../../..", __FILE__) }
     let(:full_name) { "bundler-#{Bundler::VERSION}" }
 
     before do
@@ -814,15 +813,14 @@ end
       Dir.mkdir(gems_dir)
       Dir.mkdir(specifications_dir)
 
-      FileUtils.ln_s(bundler_dir, File.join(gems_dir, full_name))
+      FileUtils.ln_s(root, File.join(gems_dir, full_name))
 
-      gemspec_file = ruby_core? ? "#{bundler_dir}/lib/bundler/bundler.gemspec" : "#{bundler_dir}/bundler.gemspec"
-      gemspec = File.binread(gemspec_file).
-                sub("Bundler::VERSION", %("#{Bundler::VERSION}"))
-      gemspec = gemspec.lines.reject {|line| line =~ %r{lib/bundler/version} }.join
+      gemspec_content = File.binread(gemspec).
+                sub("Bundler::VERSION", %("#{Bundler::VERSION}")).
+                lines.reject {|line| line =~ %r{lib/bundler/version} }.join
 
       File.open(File.join(specifications_dir, "#{full_name}.gemspec"), "wb") do |f|
-        f.write(gemspec)
+        f.write(gemspec_content)
       end
     end
 
