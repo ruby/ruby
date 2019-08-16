@@ -156,6 +156,8 @@ module Bundler
       "Specify a different path than the system default ($BUNDLE_PATH or $GEM_HOME).#{" Bundler will remember this value for future installs on this machine" unless Bundler.feature_flag.forget_cli_options?}"
     map "c" => "check"
     def check
+      remembered_flag_deprecation("path")
+
       require_relative "cli/check"
       Check.new(options).run
     end
