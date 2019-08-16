@@ -795,10 +795,8 @@ class RDoc::Store
 
     return if @dry_run
 
-    marshal = Marshal.dump @cache
-
     File.open cache_path, 'wb' do |io|
-      io.write marshal
+      Marshal.dump @cache, io
     end
   end
 
@@ -871,10 +869,8 @@ class RDoc::Store
 
     FileUtils.rm_f to_delete
 
-    marshal = Marshal.dump klass
-
     File.open path, 'wb' do |io|
-      io.write marshal
+      Marshal.dump klass, io
     end
   end
 
@@ -896,10 +892,8 @@ class RDoc::Store
 
     return if @dry_run
 
-    marshal = Marshal.dump method
-
     File.open method_file(full_name, method.full_name), 'wb' do |io|
-      io.write marshal
+      Marshal.dump method, io
     end
   end
 
@@ -918,10 +912,8 @@ class RDoc::Store
 
     return if @dry_run
 
-    marshal = Marshal.dump page
-
     File.open path, 'wb' do |io|
-      io.write marshal
+      Marshal.dump page, io
     end
   end
 
