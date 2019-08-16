@@ -100,7 +100,7 @@ module Bundler
       files_not_readable_or_writable = []
       files_not_rw_and_owned_by_different_user = []
       files_not_owned_by_current_user_but_still_rw = []
-      Find.find(Bundler.home.to_s).each do |f|
+      Find.find(Bundler.bundle_path.to_s).each do |f|
         if !File.writable?(f) || !File.readable?(f)
           if File.stat(f).uid != Process.uid
             files_not_rw_and_owned_by_different_user << f
