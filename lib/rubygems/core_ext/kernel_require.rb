@@ -38,7 +38,7 @@ module Kernel
 
     resolved_path = begin
       rp = nil
-      $LOAD_PATH[0...Gem.load_path_insert_index || -1].each do |lp|
+      $LOAD_PATH[0...Gem.load_path_insert_index].each do |lp|
         safe_lp = lp.dup.untaint
         next if File.symlink? safe_lp
         Gem.suffixes.each do |s|
