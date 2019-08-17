@@ -457,4 +457,36 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     assert_match(/INFO:  Your expired cert will be located at: .+\Wgem-public_cert\.pem\.expired\.[0-9]+/, output.shift)
   end
 
+  def test_build_is_reproducible
+    epoch = ENV["SOURCE_DATE_EPOCH"]
+    new_epoch = Time.now.to_i.to_s
+    ENV["SOURCE_DATE_EPOCH"] = new_epoch
+
+    gem_file = File.basename(@gem.cache_file)
+
+    gemspec_file = File.join(@tempdir, @gem.spec_name)
+    File.write(gemspec_file, @gem.to_ruby)
+    @cmd.options[:args] = [gemspec_file]
+
+    util_test_build_gem @gem
+
+    build1_contents = File.read(gem_file)
+
+    # Guarantee the time has changed.
+    sleep 1 if Time.now.to_i == new_epoch
+
+    ENV["SOURCE_DATE_EPOCH"] = new_epoch
+
+    @ui = Gem::MockGemUi.new
+    @cmd.options[:args] = [gemspec_file]
+
+    util_test_build_gem @gem
+
+    build2_contents = File.read(gem_file)
+
+    assert_equal build1_contents, build2_contents
+  ensure
+    ENV["SOURCE_DATE_EPOCH"] = epoch
+  end
+
 end

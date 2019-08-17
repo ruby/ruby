@@ -1667,7 +1667,7 @@ class Gem::Specification < Gem::BasicSpecification
   # https://reproducible-builds.org/specs/source-date-epoch/
 
   def date
-    @date ||= ENV["SOURCE_DATE_EPOCH"] ? Time.utc(*Time.at(ENV["SOURCE_DATE_EPOCH"].to_i).utc.to_a[3..5].reverse) : TODAY
+    @date ||= Time.utc(*Gem.source_date_epoch.utc.to_a[3..5].reverse)
   end
 
   DateLike = Object.new # :nodoc:

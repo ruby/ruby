@@ -193,7 +193,7 @@ class Gem::Package
   def initialize(gem, security_policy) # :notnew:
     @gem = gem
 
-    @build_time      = ENV["SOURCE_DATE_EPOCH"] ? Time.at(ENV["SOURCE_DATE_EPOCH"].to_i).utc : Time.now
+    @build_time      = Gem.source_date_epoch
     @checksums       = {}
     @contents        = nil
     @digests         = Hash.new { |h, algorithm| h[algorithm] = {} }
