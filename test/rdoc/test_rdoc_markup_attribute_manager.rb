@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'minitest_helper'
+require_relative 'helper'
 
 class TestRDocMarkupAttributeManager < RDoc::TestCase
 
@@ -75,7 +75,7 @@ class TestRDocMarkupAttributeManager < RDoc::TestCase
   end
 
   def test_add_word_pair_angle
-    e = assert_raises ArgumentError do
+    e = assert_raise ArgumentError do
       @am.add_word_pair '<', '>', 'angles'
     end
 
@@ -83,7 +83,7 @@ class TestRDocMarkupAttributeManager < RDoc::TestCase
   end
 
   def test_add_word_pair_invalid
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       @am.add_word_pair("<", "<", :TEST)
     end
   end

@@ -148,7 +148,7 @@ module Bundler
         end
       end
 
-      if Bundler.git_present?
+      if Bundler.git_present? && options[:git]
         Bundler.ui.info "Initializing git repo in #{target}"
         Dir.chdir(target) do
           `git init`
