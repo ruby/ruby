@@ -2539,6 +2539,50 @@ refined_method_callable_without_refinement(const rb_callable_method_entry_t *me)
     return cme;
 }
 
+static int
+search_refined_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, ID mid, struct rb_call_cache *cc)
+{
+    const rb_cref_t *cref = vm_get_cref(cfp->ep);
+
+    for (; cref; cref = CREF_NEXT(cref)) {
+        const VALUE refinement = find_refinement(CREF_REFINEMENTS(cref), cc->me->owner);
+        if (NIL_P(refinement)) continue;
+
+        const rb_callable_method_entry_t *const ref_me =
+            rb_callable_method_entry(refinement, mid);
+
+        if (ref_me) {
+            if (cc->call == vm_call_super_method) {
+                const rb_control_frame_t *top_cfp = current_method_entry(ec, cfp);
+                const rb_callable_method_entry_t *top_me = rb_vm_frame_method_entry(top_cfp);
+                if (top_me && rb_method_definition_eq(ref_me->def, top_me->def)) {
+                    continue;
+                }
+            }
+            if (cc->me->def->type != VM_METHOD_TYPE_REFINED ||
+                cc->me->def != ref_me->def) {
+                cc->me = ref_me;
+            }
+            if (ref_me->def->type != VM_METHOD_TYPE_REFINED) {
+                return TRUE;
+            }
+        }
+        else {
+            cc->me = NULL;
+            return FALSE;
+        }
+    }
+
+    if (cc->me->def->body.refined.orig_me) {
+        cc->me = refined_method_callable_without_refinement(cc->me);
+    }
+    else {
+        VALUE klass = RCLASS_SUPER(cc->me->defined_class);
+        cc->me = klass ? rb_callable_method_entry(klass, mid) : NULL;
+    }
+    return TRUE;
+}
+
 static VALUE
 vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc)
 {
@@ -2602,48 +2646,11 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
       case VM_METHOD_TYPE_ZSUPER:
         return vm_call_zsuper(ec, cfp, calling, ci, cc, RCLASS_ORIGIN(cc->me->defined_class));
 
-      case VM_METHOD_TYPE_REFINED: {
-        const rb_cref_t *cref = vm_get_cref(cfp->ep);
-
-        for (; cref; cref = CREF_NEXT(cref)) {
-            const rb_callable_method_entry_t *ref_me;
-            VALUE refinements = CREF_REFINEMENTS(cref);
-            VALUE refinement = find_refinement(refinements, cc->me->owner);
-            if (NIL_P(refinement)) continue;
-
-            ref_me = rb_callable_method_entry(refinement, ci->mid);
-
-            if (ref_me) {
-                if (cc->call == vm_call_super_method) {
-                    const rb_control_frame_t *top_cfp = current_method_entry(ec, cfp);
-                    const rb_callable_method_entry_t *top_me = rb_vm_frame_method_entry(top_cfp);
-                    if (top_me && rb_method_definition_eq(ref_me->def, top_me->def)) {
-                        continue;
-                    }
-                }
-                if (cc->me->def->type != VM_METHOD_TYPE_REFINED ||
-                    cc->me->def != ref_me->def) {
-                    cc->me = ref_me;
-                }
-                if (ref_me->def->type != VM_METHOD_TYPE_REFINED) {
-                    return vm_call_method(ec, cfp, calling, ci, cc);
-                }
-            }
-            else {
-                cc->me = NULL;
-                return vm_call_method_nome(ec, cfp, calling, ci, cc);
-            }
-        }
-
-	if (cc->me->def->body.refined.orig_me) {
-	    cc->me = refined_method_callable_without_refinement(cc->me);
-	}
-	else {
-	    VALUE klass = RCLASS_SUPER(cc->me->defined_class);
-	    cc->me = klass ? rb_callable_method_entry(klass, ci->mid) : NULL;
-	}
-	return vm_call_method(ec, cfp, calling, ci, cc);
-      }
+      case VM_METHOD_TYPE_REFINED:
+        if (search_refined_method(ec, cfp, ci->mid, cc))
+            return vm_call_method(ec, cfp, calling, ci, cc);
+        else
+            return vm_call_method_nome(ec, cfp, calling, ci, cc);
     }
 
     rb_bug("vm_call_method: unsupported method type (%d)", cc->me->def->type);
