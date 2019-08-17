@@ -140,7 +140,7 @@ RSpec.describe Bundler::GemHelper do
       end
     end
 
-    describe "#install_gem", :ruby_repo do
+    describe "#install_gem" do
       context "when installation was successful" do
         it "gem is installed" do
           mock_build_message app_name, app_version

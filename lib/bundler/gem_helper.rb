@@ -88,9 +88,9 @@ module Bundler
     def install_gem(built_gem_path = nil, local = false)
       built_gem_path ||= build_gem
       gem = ENV["BUNDLE_GEM"] ? ENV["BUNDLE_GEM"] : "gem"
-      cmd = %W[#{gem} install #{built_gem_path}]
-      cmd << "--local" if local
-      out, status = sh_with_status(cmd)
+      cmd = "#{gem} install #{built_gem_path}"
+      cmd += " --local" if local
+      out, status = sh_with_status(cmd.shellsplit)
       unless status.success? && out[/Successfully installed/]
         raise "Couldn't install gem, run `gem install #{built_gem_path}' for more detailed output"
       end
