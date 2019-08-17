@@ -39,8 +39,10 @@ module Kernel
     resolved_path = begin
       rp = nil
       $LOAD_PATH[0...Gem.load_path_insert_index || -1].each do |lp|
+        safe_lp = lp.dup.untaint
+        next if File.symlink? safe_lp
         Gem.suffixes.each do |s|
-          full_path = File.expand_path(File.join(lp, "#{path}#{s}").untaint)
+          full_path = File.expand_path(File.join(safe_lp, "#{path}#{s}"))
           if File.file?(full_path)
             rp = full_path
             break
