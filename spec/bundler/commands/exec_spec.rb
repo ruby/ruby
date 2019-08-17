@@ -192,7 +192,7 @@ RSpec.describe "bundle exec" do
       it "uses version specified" do
         bundle! "exec irb --version"
 
-        expect(out).to include(specified_irb_version)
+        expect(out).to eq(specified_irb_version)
         expect(err).to be_empty
       end
     end
@@ -222,7 +222,7 @@ RSpec.describe "bundle exec" do
       end
 
       it "uses resolved version" do
-        expect(out).to include(indirect_irb_version)
+        expect(out).to eq(indirect_irb_version)
         expect(err).to be_empty
       end
     end
