@@ -12,6 +12,7 @@ jobs:
     strategy:
       matrix:
         test_task: [ "test-bundler", "test-bundled-gems" ]
+      fail-fast: false
     steps:
       - name: Install libraries
         run: |

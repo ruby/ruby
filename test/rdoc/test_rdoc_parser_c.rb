@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'minitest_helper'
+require_relative 'helper'
 
 =begin
   TODO: test call-seq parsing
@@ -304,32 +304,6 @@ void Init_Blah(void) {
     assert_equal 'This should show up as an alias', methods.last.comment.text
   end
 
-  def test_do_classes_boot_class
-    content = <<-EOF
-/* Document-class: Foo
- * this is the Foo boot class
- */
-VALUE cFoo = boot_defclass("Foo", rb_cObject);
-    EOF
-
-    klass = util_get_class content, 'cFoo'
-    assert_equal "this is the Foo boot class", klass.comment.text
-    assert_equal 'Object', klass.superclass
-  end
-
-  def test_do_classes_boot_class_nil
-    content = <<-EOF
-/* Document-class: Foo
- * this is the Foo boot class
- */
-VALUE cFoo = boot_defclass("Foo", 0);
-    EOF
-
-    klass = util_get_class content, 'cFoo'
-    assert_equal "this is the Foo boot class", klass.comment.text
-    assert_nil klass.superclass
-  end
-
   def test_do_aliases_missing_class
     content = <<-EOF
 void Init_Blah(void) {
@@ -511,7 +485,7 @@ void Init_foo(){
 
     @parser = util_parser content
 
-    @parser.do_classes
+    @parser.do_classes_and_modules
     @parser.do_constants
 
     klass = @parser.classes['cFoo']
@@ -581,8 +555,7 @@ void Init_curses(){
 
     @parser = util_parser content
 
-    @parser.do_modules
-    @parser.do_classes
+    @parser.do_classes_and_modules
     @parser.do_constants
 
     klass = @parser.classes['mCurses']
@@ -608,8 +581,7 @@ void Init_File(void) {
 
     @parser = util_parser content
 
-    @parser.do_modules
-    @parser.do_classes
+    @parser.do_classes_and_modules
     @parser.do_constants
 
     klass = @parser.classes['rb_mFConst']

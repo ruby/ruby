@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'minitest_helper'
+require_relative 'helper'
 require 'timeout'
 
 class TestRDocText < RDoc::TestCase

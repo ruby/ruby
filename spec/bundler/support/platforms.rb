@@ -71,16 +71,7 @@ module Spec
     def local_engine_version
       return ENV["BUNDLER_SPEC_RUBY_ENGINE_VERSION"] if ENV["BUNDLER_SPEC_RUBY_ENGINE_VERSION"]
 
-      case local_ruby_engine
-      when "ruby"
-        RUBY_VERSION
-      when "rbx"
-        Rubinius::VERSION
-      when "jruby"
-        JRUBY_VERSION
-      else
-        RUBY_ENGINE_VERSION
-      end
+      RUBY_ENGINE_VERSION
     end
 
     def not_local_engine_version
