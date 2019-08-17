@@ -196,7 +196,7 @@ module Bundler
         # This shall check if two source object represent the same source.
         #
         # The comparison shall take place only on the attribute that can be
-        # inferred from the options passed from Gemfile and not on attibutes
+        # inferred from the options passed from Gemfile and not on attributes
         # that are used to pin down the gem to specific version (e.g. Git
         # sources should compare on branch and tag but not on commit hash)
         #

@@ -16,29 +16,29 @@ DESCRIPTION
        eral, you should use bundle install(1) bundle-install.1.html to install
        the same exact gems and versions across machines.
 
-       You would use bundle update to explicitly update the version of a  gem.
+       You would use bundle update to explicitly update the version of a gem.
 
 OPTIONS
        --all  Update all gems specified in Gemfile.
 
        --group=<name>, -g=[<name>]
-	      Only  update  the gems in the specified group. For instance, you
-	      can update all gems in the development group with bundle	update
-	      --group  development.  You  can  also  call  bundle update rails
-	      --group test to update the rails gem and all gems  in  the  test
+	      Only update the gems in the specified group. For	instance,  you
+	      can  update all gems in the development group with bundle update
+	      --group development. You	can  also  call  bundle  update  rails
+	      --group  test  to  update the rails gem and all gems in the test
 	      group, for example.
 
        --source=<name>
-	      The  name  of a :git or :path source used in the Gemfile(5). For
-	      instance,       with	 a	  :git	      source	    of
-	      http://github.com/rails/rails.git,  you would call bundle update
+	      The name of a :git or :path source used in the  Gemfile(5).  For
+	      instance,        with	   a	    :git       source	    of
+	      http://github.com/rails/rails.git, you would call bundle	update
 	      --source rails
 
        --local
-	      Do not attempt to fetch gems remotely  and  use  the  gem  cache
+	      Do  not  attempt	to  fetch  gems remotely and use the gem cache
 	      instead.
 
-       --ruby Update  the  locked  version  of	Ruby to the current version of
+       --ruby Update the locked version of Ruby  to  the  current  version  of
 	      Ruby.
 
        --bundler
@@ -328,22 +328,22 @@ PATCH LEVEL EXAMPLES
        the dependency from foo 1.4.5 required it.
 
        In case 2, only foo is requested  to  be  unlocked,  but  bar  is  also
-       allowed	to move because it's not a declared dependency in the Gemfile.
+       allowed to move because it's not a declared dependency in the Gemfile.
 
-       In case 3, bar goes up a whole major release, because a minor  increase
-       is  preferred now for foo, and when it goes to 1.5.1, it requires 3.0.0
+       In  case 3, bar goes up a whole major release, because a minor increase
+       is preferred now for foo, and when it goes to 1.5.1, it requires  3.0.0
        of bar.
 
        In case 4, foo is preferred up to a minor version, but 1.5.1 won't work
-       because	the  --strict  flag removes bar 3.0.0 from consideration since
+       because the --strict flag removes bar 3.0.0  from  consideration  since
        it's a major increment.
 
-       In case 5, both foo and bar have any minor or major increments  removed
-       from  consideration  because of the --strict flag, so the most they can
+       In  case 5, both foo and bar have any minor or major increments removed
+       from consideration because of the --strict flag, so the most  they  can
        move is up to 1.4.4 and 2.0.4.
 
 RECOMMENDED WORKFLOW
-       In general, when working with an application managed with bundler,  you
+       In  general, when working with an application managed with bundler, you
        should use the following workflow:
 
        o   After you create your Gemfile(5) for the first time, run
@@ -354,7 +354,7 @@ RECOMMENDED WORKFLOW
 
 	   $ git add Gemfile.lock
 
-       o   When  checking  out this repository on another development machine,
+       o   When checking out this repository on another  development  machine,
 	   run
 
 	   $ bundle install
@@ -363,7 +363,7 @@ RECOMMENDED WORKFLOW
 
 	   $ bundle install --deployment
 
-       o   After changing the Gemfile(5) to reflect a  new  or	update	depen-
+       o   After  changing  the  Gemfile(5)  to reflect a new or update depen-
 	   dency, run
 
 	   $ bundle install
@@ -377,7 +377,7 @@ RECOMMENDED WORKFLOW
 
 	   $ bundle update rails thin
 
-       o   If you want to update all the gems to the latest possible  versions
+       o   If  you want to update all the gems to the latest possible versions
 	   that still match the gems listed in the Gemfile(5), run
 
 	   $ bundle update --all
@@ -387,4 +387,4 @@ RECOMMENDED WORKFLOW
 
 
 
-				  April 2019		      BUNDLE-UPDATE(1)
+				  August 2019		      BUNDLE-UPDATE(1)

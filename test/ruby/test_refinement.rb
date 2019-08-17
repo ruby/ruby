@@ -2295,6 +2295,34 @@ class TestRefinement < Test::Unit::TestCase
     d
   end
 
+  class RefineInUsing
+    module M1
+      refine RefineInUsing do
+        def foo
+          :ok
+        end
+      end
+    end
+
+    module M2
+      using M1
+      refine RefineInUsing do
+        def call_foo
+	  RefineInUsing.new.foo
+        end
+      end
+    end
+
+    using M2
+    def self.test
+      new.call_foo
+    end
+  end
+
+  def test_refine_in_using
+    assert_equal(:ok, RefineInUsing.test)
+  end
+
   private
 
   def eval_using(mod, s)

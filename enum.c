@@ -4017,7 +4017,7 @@ int_range_sum(VALUE beg, VALUE end, int excl, VALUE init)
  *   { 1 => 10, 2 => 20 }.sum {|k, v| k * v }  #=> 50
  *   (1..10).sum                               #=> 55
  *   (1..10).sum {|v| v * 2 }                  #=> 110
- *   [Object.new].each.sum                     #=> TypeError
+ *   ('a'..'z').sum                            #=> TypeError
  *
  * This method can be used for non-numeric objects by
  * explicit <i>init</i> argument.

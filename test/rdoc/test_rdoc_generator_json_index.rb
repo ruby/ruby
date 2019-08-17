@@ -1,7 +1,7 @@
 # coding: US-ASCII
 # frozen_string_literal: true
 
-require 'minitest_helper'
+require_relative 'helper'
 
 class TestRDocGeneratorJsonIndex < RDoc::TestCase
 

@@ -10,6 +10,7 @@
 #
 #
 require "e2mmap"
+require "ripper"
 
 require "irb/init"
 require "irb/context"
@@ -410,6 +411,35 @@ module IRB
   end
 
   class Irb
+    ASSIGNMENT_NODE_TYPES = [
+      # Local, instance, global, class, constant, instance, and index assignment:
+      #   "foo = bar",
+      #   "@foo = bar",
+      #   "$foo = bar",
+      #   "@@foo = bar",
+      #   "::Foo = bar",
+      #   "a::Foo = bar",
+      #   "Foo = bar"
+      #   "foo.bar = 1"
+      #   "foo[1] = bar"
+      :assign,
+
+      # Operation assignment:
+      #   "foo += bar"
+      #   "foo -= bar"
+      #   "foo ||= bar"
+      #   "foo &&= bar"
+      :opassign,
+
+      # Multiple assignment:
+      #   "foo, bar = 1, 2
+      :massign,
+    ]
+    # Note: instance and index assignment expressions could also be written like:
+    # "foo.bar=(1)" and "foo.[]=(1, bar)", when expressed that way, the former
+    # be parsed as :assign and echo will be suppressed, but the latter is
+    # parsed as a :method_add_arg and the output won't be suppressed
+
     # Creates a new irb session
     def initialize(workspace = nil, input_method = nil, output_method = nil)
       @context = Context.new(self, workspace, input_method, output_method)
@@ -498,7 +528,7 @@ module IRB
           begin
             line.untaint
             @context.evaluate(line, line_no, exception: exc)
-            output_value if @context.echo?
+            output_value if @context.echo? && (@context.echo_on_assignment? || !assignment_expression?(line))
           rescue Interrupt => exc
           rescue SystemExit, SignalException
             raise
@@ -715,6 +745,18 @@ module IRB
         end
       end
       format("#<%s: %s>", self.class, ary.join(", "))
+    end
+
+    def assignment_expression?(line)
+      # Try to parse the line and check if the last of possibly multiple
+      # expressions is an assignment type.
+
+      # If the expression is invalid, Ripper.sexp should return nil which will
+      # result in false being returned. Any valid expression should return an
+      # s-expression where the second selement of the top level array is an
+      # array of parsed expressions. The first element of each expression is the
+      # expression's type.
+      ASSIGNMENT_NODE_TYPES.include?(Ripper.sexp(line)&.dig(1,-1,0))
     end
 
     ATTR_TTY = "\e[%sm"
