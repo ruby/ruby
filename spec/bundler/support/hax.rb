@@ -53,9 +53,7 @@ class Object
     remove_const :RUBY_ENGINE
     RUBY_ENGINE = ENV["BUNDLER_SPEC_RUBY_ENGINE"]
 
-    if RUBY_ENGINE == "jruby"
-      remove_const :JRUBY_VERSION if defined?(JRUBY_VERSION)
-      JRUBY_VERSION = ENV["BUNDLER_SPEC_RUBY_ENGINE_VERSION"]
-    end
+    remove_const :RUBY_ENGINE_VERSION
+    RUBY_ENGINE_VERSION = ENV["BUNDLER_SPEC_RUBY_ENGINE_VERSION"]
   end
 end
