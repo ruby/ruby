@@ -33,7 +33,13 @@
 
 #undef explicit_bzero
 #ifndef HAVE_EXPLICIT_BZERO
- #ifdef HAVE_MEMSET_S
+ #ifdef HAVE_EXPLICIT_MEMSET
+void
+explicit_bzero(void *b, size_t len)
+{
+    (void)explicit_memset(b, 0, len);
+}
+ #elif defined HAVE_MEMSET_S
 void
 explicit_bzero(void *b, size_t len)
 {
