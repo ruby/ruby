@@ -242,19 +242,18 @@ class RDoc::TomDoc < RDoc::Markup::Parser
 
       @tokens << case
                  when @s.scan(/\r?\n/) then
-                   token = [:NEWLINE, @s.matched, *token_pos(pos)]
-                   @line_pos = char_pos @s.pos
-                   @line += 1
+                   token = [:NEWLINE, @s.matched, *pos]
+                   @s.newline!
                    token
                  when @s.scan(/(Examples|Signature)$/) then
-                   @tokens << [:HEADER, 3, *token_pos(pos)]
+                   @tokens << [:HEADER, 3, *pos]
 
-                   [:TEXT, @s[1], *token_pos(pos)]
+                   [:TEXT, @s[1], *pos]
                  when @s.scan(/([:\w][\w\[\]]*)[ ]+- /) then
-                   [:NOTE, @s[1], *token_pos(pos)]
+                   [:NOTE, @s[1], *pos]
                  else
                    @s.scan(/.*/)
-                   [:TEXT, @s.matched.sub(/\r$/, ''), *token_pos(pos)]
+                   [:TEXT, @s.matched.sub(/\r$/, ''), *pos]
                  end
     end
 

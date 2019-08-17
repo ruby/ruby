@@ -18,6 +18,7 @@ jobs:
             vs: 2019
           - os: windows-2019
             vs: 2017
+      fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
       - name: Install libraries with vcpkg

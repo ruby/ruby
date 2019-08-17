@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'minitest/unit'
+require 'test/unit'
 
 ##
 # Test case for creating new RDoc::Markup formatters.  See

@@ -87,7 +87,7 @@ module Gem::GemcutterUtilities
 
       unless (host_uri.scheme == allowed_host_uri.scheme) && (host_uri.host == allowed_host_uri.host)
         alert_error "#{self.host.inspect} is not allowed by the gemspec, which only allows #{allowed_push_host.inspect}"
-        terminate_interaction 1
+        terminate_interaction(ERROR_CODE)
       end
     end
 
