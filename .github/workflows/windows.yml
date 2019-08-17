@@ -4,7 +4,7 @@ jobs:
   make:
     strategy:
       matrix:
-        test_task: [test]
+        test_task: [test, test-all]
         os: [windows-2019]
         vs: [2019]
       fail-fast: false
