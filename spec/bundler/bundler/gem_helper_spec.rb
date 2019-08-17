@@ -50,7 +50,7 @@ RSpec.describe Bundler::GemHelper do
     end
   end
 
-  context "gem management", :ruby_repo do
+  context "gem management" do
     def mock_confirm_message(message)
       expect(Bundler.ui).to receive(:confirm).with(message)
     end
@@ -140,7 +140,7 @@ RSpec.describe Bundler::GemHelper do
       end
     end
 
-    describe "#install_gem" do
+    describe "#install_gem", :ruby_repo do
       context "when installation was successful" do
         it "gem is installed" do
           mock_build_message app_name, app_version

@@ -76,7 +76,7 @@ module Bundler
     def build_gem
       file_name = nil
       gem = ENV["BUNDLE_GEM"] ? ENV["BUNDLE_GEM"] : "gem"
-      sh(%W[#{gem} build -V #{spec_path}]) do
+      sh("#{gem} build -V #{spec_path}".shellsplit) do
         file_name = File.basename(built_gem_path)
         SharedHelpers.filesystem_access(File.join(base, "pkg")) {|p| FileUtils.mkdir_p(p) }
         FileUtils.mv(built_gem_path, "pkg")

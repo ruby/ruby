@@ -210,7 +210,7 @@ RSpec.describe "bundle gem" do
     end
   end
 
-  it "generates a valid gemspec", :ruby_repo do
+  it "generates a valid gemspec" do
     in_app_root
     bundle! "gem newgem --bin"
 
