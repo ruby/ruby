@@ -75,7 +75,7 @@ module Bundler
 
     def build_gem
       file_name = nil
-      gem = ENV["BUNDLE_GEM"] ? ENV["BUNDLE_GEM"] : "gem"
+      gem = ENV["GEM_COMMAND"] ? ENV["GEM_COMMAND"] : "gem"
       sh("#{gem} build -V #{spec_path}".shellsplit) do
         file_name = File.basename(built_gem_path)
         SharedHelpers.filesystem_access(File.join(base, "pkg")) {|p| FileUtils.mkdir_p(p) }
@@ -87,7 +87,7 @@ module Bundler
 
     def install_gem(built_gem_path = nil, local = false)
       built_gem_path ||= build_gem
-      gem = ENV["BUNDLE_GEM"] ? ENV["BUNDLE_GEM"] : "gem"
+      gem = ENV["GEM_COMMAND"] ? ENV["GEM_COMMAND"] : "gem"
       cmd = "#{gem} install #{built_gem_path}"
       cmd += " --local" if local
       out, status = sh_with_status(cmd.shellsplit)

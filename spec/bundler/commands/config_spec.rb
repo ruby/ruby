@@ -389,7 +389,7 @@ E
   end
 
   describe "subcommands" do
-    it "list", :ruby_repo do
+    it "list" do
       bundle! "config list"
       expect(out).to eq "Settings are listed in order of priority. The top value will be used.\nspec_run\nSet via BUNDLE_SPEC_RUN: \"true\""
 
