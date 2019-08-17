@@ -788,7 +788,7 @@ module Bundler
 
       Bundler::SharedHelpers.major_deprecation 2,\
         "The `#{flag_name}` flag is deprecated because it relies on being " \
-        "remembered accross bundler invokations, which bundler will no longer " \
+        "remembered across bundler invokations, which bundler will no longer " \
         "do in future versions. Instead please use `bundle config #{name} " \
         "'#{value}'`, and stop using this flag"
     end
