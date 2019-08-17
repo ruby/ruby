@@ -230,7 +230,7 @@ class TestGemRequire < Gem::TestCase
 
     assert_equal %w(a-1 b-2), loaded_spec_names
   ensure
-    $LOAD_PATH.replace lp
+    $LOAD_PATH.replace lp unless java_platform?
   end
 
   def test_already_activated_direct_conflict
