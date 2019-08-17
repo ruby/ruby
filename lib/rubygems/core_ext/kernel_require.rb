@@ -40,7 +40,7 @@ module Kernel
     # https://github.com/rubygems/rubygems/pull/1868
     resolved_path = begin
       rp = nil
-      $LOAD_PATH[0...Gem.load_path_insert_index].each do |lp|
+      $LOAD_PATH[0...Gem.load_path_insert_index || -1].each do |lp|
         safe_lp = lp.dup.untaint
         next if File.symlink? safe_lp # for backword compatibility
         Gem.suffixes.each do |s|
