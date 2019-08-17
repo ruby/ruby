@@ -114,7 +114,7 @@ def sync_default_gems(gem)
   when "reline"
     rm_rf(%w[lib/reline* test/reline])
     cp_r(Dir.glob("#{upstream}/lib/reline*"), "lib")
-    cp_r("#{upstream}/test", "test/reline")
+    cp_r("#{upstream}/test/reline", "test")
     cp_r("#{upstream}/reline.gemspec", "lib/reline")
   when "json"
     rm_rf(%w[ext/json test/json])
