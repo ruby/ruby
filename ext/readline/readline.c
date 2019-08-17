@@ -2046,6 +2046,10 @@ static VALUE readline_callback_handler_remove(VALUE self) {
     rl_callback_handler_remove();
     return Qnil;
 }
+#else
+# define readline_callback_handler_install rb_f_notimplement
+# define readline_callback_read_char rb_f_notimplement
+# define readline_callback_handler_remove rb_f_notimplement
 #endif
 
 #undef rb_intern
@@ -2164,7 +2168,6 @@ Init_readline(void)
                                readline_s_set_special_prefixes, 1);
     rb_define_singleton_method(mReadline, "special_prefixes",
                                readline_s_get_special_prefixes, 0);
-#ifdef HAVE_RL_CALLBACK_HANDLER_INSTALL
     rb_define_singleton_method(
 	mReadline,
 	"handler_install",
@@ -2183,7 +2186,6 @@ Init_readline(void)
 	readline_callback_handler_remove,
 	0
     );
-#endif
 
 #if USE_INSERT_IGNORE_ESCAPE
     id_orig_prompt = rb_intern("orig_prompt");

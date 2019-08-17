@@ -27,6 +27,8 @@ module BasetestReadline
   end
 
   def test_callback_interface
+    skip "Skip Editline" if /EditLine/n.match(Readline::VERSION)
+    skip "Skip Reline" if defined?(Reline) and Readline == Reline
     with_temp_stdio do |stdin, stdout|
       stdin.write("hello\n")
       stdin.close
