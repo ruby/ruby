@@ -104,7 +104,7 @@ describe "Regexp#match" do
     end
   end
 
-  it "raises TypeError when the given argument cannot be coarce to String" do
+  it "raises TypeError when the given argument cannot be coerced to String" do
     f = 1
     -> { /foo/.match(f)[0] }.should raise_error(TypeError)
   end
