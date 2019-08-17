@@ -3,10 +3,8 @@
 require File.expand_path("../../path.rb", __FILE__)
 include Spec::Path
 
-$LOAD_PATH.unshift Dir[base_system_gems.join("gems/artifice*/lib")].first.to_s
-$LOAD_PATH.unshift(*Dir[base_system_gems.join("gems/rack-*/lib")])
-$LOAD_PATH.unshift Dir[base_system_gems.join("gems/tilt*/lib")].first.to_s
-$LOAD_PATH.unshift Dir[base_system_gems.join("gems/sinatra*/lib")].first.to_s
+$LOAD_PATH.unshift(*Dir[Spec::Path.base_system_gems.join("gems/{artifice,mustermann,rack,tilt,sinatra}-*/lib")].map(&:to_s))
+
 require "artifice"
 require "sinatra/base"
 
