@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-if defined?(Encoding) && Encoding.default_external.name != "UTF-8"
-  # An approximation of ruby -E UTF-8, since it works on 1.8.7
-  Encoding.default_external = Encoding.find("UTF-8")
-end
-
 RSpec.describe "La biblioteca si misma" do
   def check_for_expendable_words(filename)
     failing_line_message = []
