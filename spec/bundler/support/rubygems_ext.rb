@@ -10,18 +10,17 @@ module Spec
       "automatiek" => "~> 0.2.0",
       "rake" => "~> 12.0",
       "ronn" => "~> 0.7.3",
-      "rspec" => "~> 3.6",
+      "rspec" => "~> 3.8",
       "rubocop" => "= 0.74.0",
       "rubocop-performance" => "= 1.4.0",
     }.freeze
 
     DEPS = {
-      # artifice doesn't support rack 2.x now.
-      "rack" => "< 2.0",
+      "rack" => "~> 2.0",
       "rack-test" => "~> 1.1",
       "artifice" => "~> 0.6.0",
       "compact_index" => "~> 0.11.0",
-      "sinatra" => "~> 1.4.7",
+      "sinatra" => "~> 2.0",
       # Rake version has to be consistent for tests to pass
       "rake" => "12.3.2",
       "builder" => "~> 3.2",

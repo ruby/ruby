@@ -155,9 +155,8 @@ class Gem::Command
   ##
   # Display to the user that a gem couldn't be found and reasons why
   #--
-  # TODO: replace +domain+ with a parameter to suppress suggestions
 
-  def show_lookup_failure(gem_name, version, errors, domain, required_by = nil)
+  def show_lookup_failure(gem_name, version, errors, suppress_suggestions = false, required_by = nil)
     gem = "'#{gem_name}' (#{version})"
     msg = String.new "Could not find a valid gem #{gem}"
 
@@ -174,7 +173,7 @@ class Gem::Command
 
     alert_error msg
 
-    unless domain == :local  # HACK
+    unless suppress_suggestions
       suggestions = Gem::SpecFetcher.fetcher.suggest_gems_from_name gem_name
 
       unless suggestions.empty?

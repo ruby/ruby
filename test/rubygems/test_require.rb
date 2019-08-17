@@ -41,6 +41,10 @@ class TestGemRequire < Gem::TestCase
     assert require(path), "'#{path}' was already required"
   end
 
+  def refute_require(path)
+    refute require(path), "'#{path}' was not yet required"
+  end
+
   # Providing -I on the commandline should always beat gems
   def test_dash_i_beats_gems
     a1 = util_spec "a", "1", {"b" => "= 1"}, "lib/test_gem_require_a.rb"
@@ -66,6 +70,7 @@ class TestGemRequire < Gem::TestCase
     assert_require 'test_gem_require_a'
     assert_require 'b/c' # this should be required from -I
     assert_equal "world", ::Object::HELLO
+    assert_equal %w(a-1 b-1), loaded_spec_names
   ensure
     $LOAD_PATH.replace lp
     Object.send :remove_const, :HELLO if Object.const_defined? :HELLO
@@ -166,13 +171,21 @@ class TestGemRequire < Gem::TestCase
       this test, somehow require will load the benchmark in b, and ignore that the
       stdlib one is already in $LOADED_FEATURES?. Reproducible by running the
       spaceship_specific_file test before this one" if java_platform?
+
+    lp = $LOAD_PATH.dup
+    lib_dir = File.expand_path(File.join(File.dirname(__FILE__), "../../lib"))
+    if File.exist?(lib_dir)
+      $LOAD_PATH.delete lib_dir
+      $LOAD_PATH.push lib_dir
+    end
+
     a1 = util_spec "a", "1", {"b" => ">= 1"}, "lib/test_gem_require_a.rb"
     b1 = util_spec "b", "1", nil, "lib/benchmark.rb"
     b2 = util_spec "b", "2", nil, "lib/benchmark.rb"
 
     install_specs b1, b2, a1
 
-    require 'test_gem_require_a'
+    assert_require 'test_gem_require_a'
     assert_equal unresolved_names, ["b (>= 1)"]
 
     refute require('benchmark'), "benchmark should have already been loaded"
@@ -183,6 +196,8 @@ class TestGemRequire < Gem::TestCase
     # the same behavior as eager loading would have.
 
     assert_equal %w(a-1 b-2), loaded_spec_names
+  ensure
+    $LOAD_PATH.replace lp
   end
 
   def test_already_activated_direct_conflict
@@ -298,6 +313,22 @@ class TestGemRequire < Gem::TestCase
     install_default_specs(default_gem_spec)
     assert_require "default/gem"
     assert_equal %w(default-2.0.0.0), loaded_spec_names
+  end
+
+  def test_default_gem_require_activates_just_once
+    default_gem_spec = new_default_spec("default", "2.0.0.0",
+                                        nil, "default/gem.rb")
+    install_default_specs(default_gem_spec)
+
+    assert_require "default/gem"
+
+    times_called = 0
+
+    Kernel.stub(:gem, ->(name, requirement) { times_called += 1 }) do
+      refute_require "default/gem"
+    end
+
+    assert_equal 0, times_called
   end
 
   def test_realworld_default_gem
