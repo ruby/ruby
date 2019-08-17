@@ -15,8 +15,6 @@ Gem::Specification.new do |spec|
   spec.license       = 'Ruby License'
 
   spec.files         = Dir['BSDL', 'COPYING', 'README.md', 'lib/**/*']
-  spec.bindir        = 'exe'
-  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ['lib']
 
   spec.add_development_dependency 'bundler'
