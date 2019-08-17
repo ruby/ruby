@@ -26,6 +26,11 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
                  result
   end
 
+  def test_convert_CROSSREF_label_for_md
+    result = @to.convert 'EXAMPLE@foo'
+    assert_equal para("<a href=\"EXAMPLE_md.html#label-foo\">foo at <code>EXAMPLE</code></a>"), result
+  end
+
   def test_convert_CROSSREF_label_period
     result = @to.convert 'C1@foo.'
     assert_equal para("<a href=\"C1.html#class-C1-label-foo\">foo at <code>C1</code></a>."), result
