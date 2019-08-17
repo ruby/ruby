@@ -87,6 +87,23 @@ describe "Regexp#match" do
     end
   end
 
+  ruby_version_is ""..."2.7" do
+    it "resets $~ if passed nil" do
+      # set $~
+      /./.match("a")
+      $~.should be_kind_of(MatchData)
+  
+      /1/.match(nil)
+      $~.should be_nil
+    end
+  end
+
+  ruby_version_is "2.7" do
+    it "raises TypeError when the given argument is nil" do
+      -> { /foo/.match(nil) }.should raise_error(TypeError)
+    end
+  end
+
   it "raises TypeError when the given argument cannot be coarce to String" do
     f = 1
     -> { /foo/.match(f)[0] }.should raise_error(TypeError)
@@ -118,6 +135,18 @@ describe "Regexp#match?" do
   it "takes matching position as the 2nd argument" do
     /str/i.match?('string', 0).should be_true
     /str/i.match?('string', 1).should be_false
+  end
+
+  ruby_version_is ""..."2.7" do
+    it "returns false when given nil" do
+      /./.match?(nil).should be_false
+    end
+  end
+
+  ruby_version_is "2.7" do
+    it "raises TypeError when given nil" do
+      -> { /./.match?(nil) }.should raise_error(TypeError)
+    end
   end
 end
 
