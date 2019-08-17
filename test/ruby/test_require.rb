@@ -552,7 +552,7 @@ class TestRequire < Test::Unit::TestCase
       t1 = Thread.new do
         Thread.pass until start
         begin
-          require(path)
+          Kernel.send(:require, path)
         rescue RuntimeError
         end
 
@@ -561,7 +561,7 @@ class TestRequire < Test::Unit::TestCase
 
       t2 = Thread.new do
         Thread.pass until scratch[0]
-        t2_res = require(path)
+        t2_res = Kernel.send(:require, path)
       end
 
       t1[:scratch] = t2[:scratch] = scratch
