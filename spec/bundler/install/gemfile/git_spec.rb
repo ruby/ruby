@@ -1110,7 +1110,7 @@ RSpec.describe "bundle install with git sources" do
   end
 
   context "with an extension" do
-    it "installs the extension", :ruby_repo do
+    it "installs the extension" do
       build_git "foo" do |s|
         s.add_dependency "rake"
         s.extensions << "Rakefile"
@@ -1139,7 +1139,7 @@ RSpec.describe "bundle install with git sources" do
       run! <<-R
         puts $:.grep(/ext/)
       R
-      expect(out).to eq(Pathname.glob(default_bundle_path("bundler/gems/extensions/**/foo-1.0-*")).first.to_s)
+      expect(out).to include(Pathname.glob(default_bundle_path("bundler/gems/extensions/**/foo-1.0-*")).first.to_s)
     end
 
     it "does not use old extension after ref changes", :ruby_repo do
