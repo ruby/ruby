@@ -31,7 +31,7 @@ RSpec.describe "Bundler.with_env helpers" do
       end
     end
 
-    it "works with nested bundle exec invocations", :ruby_repo do
+    it "works with nested bundle exec invocations" do
       create_file("exe.rb", <<-'RB')
         count = ARGV.first.to_i
         exit if count < 0

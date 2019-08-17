@@ -1204,7 +1204,7 @@ In Gemfile:
       expect(out).not_to include("gem install foo")
     end
 
-    it "does not reinstall the extension", :ruby_repo do
+    it "does not reinstall the extension" do
       build_git "foo" do |s|
         s.add_dependency "rake"
         s.extensions << "Rakefile"
@@ -1245,7 +1245,7 @@ In Gemfile:
       expect(out).to eq(installed_time)
     end
 
-    it "does not reinstall the extension when changing another gem", :ruby_repo do
+    it "does not reinstall the extension when changing another gem" do
       build_git "foo" do |s|
         s.add_dependency "rake"
         s.extensions << "Rakefile"
@@ -1288,7 +1288,7 @@ In Gemfile:
       expect(out).to eq(installed_time)
     end
 
-    it "does reinstall the extension when changing refs", :ruby_repo do
+    it "does reinstall the extension when changing refs" do
       build_git "foo" do |s|
         s.add_dependency "rake"
         s.extensions << "Rakefile"

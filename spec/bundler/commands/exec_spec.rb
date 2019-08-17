@@ -33,7 +33,7 @@ RSpec.describe "bundle exec" do
     expect(out).to eq("1.0.0")
   end
 
-  it "works when running from a random directory", :ruby_repo do
+  it "works when running from a random directory" do
     install_gemfile <<-G
       gem "rack"
     G
@@ -336,7 +336,7 @@ RSpec.describe "bundle exec" do
     expect(err).to include("bundler: exec needs a command to run")
   end
 
-  it "raises a helpful error when exec'ing to something outside of the bundle", :ruby_repo do
+  it "raises a helpful error when exec'ing to something outside of the bundle" do
     bundle! "config set clean false" # want to keep the rackup binstub
     install_gemfile! <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -688,7 +688,7 @@ RSpec.describe "bundle exec" do
       it_behaves_like "it runs"
     end
 
-    context "when the file uses the current ruby shebang", :ruby_repo do
+    context "when the file uses the current ruby shebang" do
       let(:shebang) { "#!#{Gem.ruby}" }
       it_behaves_like "it runs"
     end
