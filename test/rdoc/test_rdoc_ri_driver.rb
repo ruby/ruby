@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'minitest_helper'
+require_relative 'helper'
 
 class TestRDocRIDriver < RDoc::TestCase
 
@@ -751,7 +751,7 @@ Foo::Bar#bother
   def test_display_name_not_found_special
     util_store
 
-    assert_raises RDoc::RI::Driver::NotFoundError do
+    assert_raise RDoc::RI::Driver::NotFoundError do
       assert_equal false, @driver.display_name('Set#[]')
     end
   end
@@ -887,7 +887,7 @@ Foo::Bar#bother
     assert_equal 'Foo',       @driver.expand_class('F')
     assert_equal 'Foo::Bar',  @driver.expand_class('F::Bar')
 
-    assert_raises RDoc::RI::Driver::NotFoundError do
+    assert_raise RDoc::RI::Driver::NotFoundError do
       @driver.expand_class 'F::B'
     end
   end
@@ -903,7 +903,7 @@ Foo::Bar#bother
     @store1.save
 
     @driver.stores = [@store1]
-    assert_raises RDoc::RI::Driver::NotFoundError do
+    assert_raise RDoc::RI::Driver::NotFoundError do
       @driver.expand_class 'F'
     end
     assert_equal 'Foo::Bar',  @driver.expand_class('F::Bar')
@@ -931,7 +931,7 @@ Foo::Bar#bother
     assert_equal 'Foo',       @driver.expand_name('F')
     assert_equal 'Foo::Bar#', @driver.expand_name('F::Bar#')
 
-    e = assert_raises RDoc::RI::Driver::NotFoundError do
+    e = assert_raise RDoc::RI::Driver::NotFoundError do
       @driver.expand_name 'Z'
     end
 
@@ -942,7 +942,7 @@ Foo::Bar#bother
     assert_equal 'ruby:README', @driver.expand_name('ruby:README')
     assert_equal 'ruby:',       @driver.expand_name('ruby:')
 
-    e = assert_raises RDoc::RI::Driver::NotFoundError do
+    e = assert_raise RDoc::RI::Driver::NotFoundError do
       @driver.expand_name 'nonexistent_gem:'
     end
 
@@ -1021,7 +1021,7 @@ Foo::Bar#bother
     assert_equal 'gem-1.0', @driver.find_store('gem-1.0')
     assert_equal 'gem-1.0', @driver.find_store('gem')
 
-    e = assert_raises RDoc::RI::Driver::NotFoundError do
+    e = assert_raise RDoc::RI::Driver::NotFoundError do
       @driver.find_store 'nonexistent'
     end
 
@@ -1033,17 +1033,17 @@ Foo::Bar#bother
 
     util_ancestors_store
 
-    e = assert_raises RDoc::RI::Driver::NotFoundError do
+    e = assert_raise RDoc::RI::Driver::NotFoundError do
       @driver.lookup_method 'Foo.i_methdo'
     end
     assert_equal "Nothing known about Foo.i_methdo\nDid you mean?  i_method", e.message
 
-    e = assert_raises RDoc::RI::Driver::NotFoundError do
+    e = assert_raise RDoc::RI::Driver::NotFoundError do
       @driver.lookup_method 'Foo#i_methdo'
     end
     assert_equal "Nothing known about Foo#i_methdo\nDid you mean?  i_method", e.message
 
-    e = assert_raises RDoc::RI::Driver::NotFoundError do
+    e = assert_raise RDoc::RI::Driver::NotFoundError do
       @driver.lookup_method 'Foo::i_methdo'
     end
     assert_equal "Nothing known about Foo::i_methdo\nDid you mean?  c_method", e.message
