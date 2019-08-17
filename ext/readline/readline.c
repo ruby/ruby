@@ -1509,6 +1509,7 @@ readline_s_get_special_prefixes(VALUE self)
 #define readline_s_get_special_prefixes rb_f_notimplement
 #endif
 
+#if HAVE_RL_VARIABLE_VALUE
 /*
  * call-set:
  *   Readline.variable_value(variable) -> string
@@ -1526,6 +1527,9 @@ readline_s_variable_value(VALUE self, VALUE variable)
     if (!value) { rb_raise(rb_eRuntimeError, "Variable not set"); }
     return rb_str_new2(value);
 }
+#else
+# define readline_s_variable_value rb_f_notimplement
+#endif
 
 #ifdef HAVE_RL_BASIC_QUOTE_CHARACTERS
 /*
