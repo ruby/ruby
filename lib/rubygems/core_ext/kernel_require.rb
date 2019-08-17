@@ -54,8 +54,12 @@ module Kernel
     end
 
     if resolved_path
-      RUBYGEMS_ACTIVATION_MONITOR.exit
-      return gem_original_require(resolved_path)
+      begin
+        RUBYGEMS_ACTIVATION_MONITOR.exit
+        return gem_original_require(resolved_path)
+      rescue LoadError
+        RUBYGEMS_ACTIVATION_MONITOR.enter
+      end
     end
 
     if spec = Gem.find_unresolved_default_spec(path)
