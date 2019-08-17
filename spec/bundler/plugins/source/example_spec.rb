@@ -6,7 +6,6 @@ RSpec.describe "real source plugins" do
       build_repo2 do
         build_plugin "bundler-source-mpath" do |s|
           s.write "plugins.rb", <<-RUBY
-            require "bundler/vendored_fileutils"
             require "bundler-source-mpath"
 
             class MPath < Bundler::Plugin::API
