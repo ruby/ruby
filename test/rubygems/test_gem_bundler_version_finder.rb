@@ -116,7 +116,7 @@ class TestGemBundlerVersionFinder < Gem::TestCase
       assert_equal %w[1 1.0 1.0.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
     end
     bvf.stub(:bundler_version, v("2.a")) do
-      assert_equal %w[2 2.a 2.0 2.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
+      assert_equal %w[2.a 2 2.0 2.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
     end
     bvf.stub(:bundler_version, v("3")) do
       assert_equal %w[3 3.a 3.0 3.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)

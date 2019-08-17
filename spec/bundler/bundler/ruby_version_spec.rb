@@ -427,7 +427,7 @@ RSpec.describe "Bundler::RubyVersion and its subclasses" do
 
       describe "#engine" do
         before { stub_const("RUBY_ENGINE", "jruby") }
-        before { stub_const("JRUBY_VERSION", "2.1.1") }
+        before { stub_const("RUBY_ENGINE_VERSION", "2.1.1") }
 
         it "should return a copy of the value of RUBY_ENGINE" do
           expect(subject.engine).to eq("jruby")
@@ -438,37 +438,37 @@ RSpec.describe "Bundler::RubyVersion and its subclasses" do
       describe "#engine_version" do
         context "engine is ruby" do
           before do
-            stub_const("RUBY_VERSION", "2.2.4")
+            stub_const("RUBY_ENGINE_VERSION", "2.2.4")
             stub_const("RUBY_ENGINE", "ruby")
           end
 
-          it "should return a copy of the value of RUBY_VERSION" do
+          it "should return a copy of the value of RUBY_ENGINE_VERSION" do
             expect(bundler_system_ruby_version.engine_versions).to eq(["2.2.4"])
-            expect(bundler_system_ruby_version.engine_versions.first).to_not be(RUBY_VERSION)
+            expect(bundler_system_ruby_version.engine_versions.first).to_not be(RUBY_ENGINE_VERSION)
           end
         end
 
         context "engine is rbx" do
           before do
             stub_const("RUBY_ENGINE", "rbx")
-            stub_const("Rubinius::VERSION", "2.0.0")
+            stub_const("RUBY_ENGINE_VERSION", "2.0.0")
           end
 
-          it "should return a copy of the value of Rubinius::VERSION" do
+          it "should return a copy of the value of RUBY_ENGINE_VERSION" do
             expect(bundler_system_ruby_version.engine_versions).to eq(["2.0.0"])
-            expect(bundler_system_ruby_version.engine_versions.first).to_not be(Rubinius::VERSION)
+            expect(bundler_system_ruby_version.engine_versions.first).to_not be(RUBY_ENGINE_VERSION)
           end
         end
 
         context "engine is jruby" do
           before do
             stub_const("RUBY_ENGINE", "jruby")
-            stub_const("JRUBY_VERSION", "2.1.1")
+            stub_const("RUBY_ENGINE_VERSION", "2.1.1")
           end
 
-          it "should return a copy of the value of JRUBY_VERSION" do
+          it "should return a copy of the value of RUBY_ENGINE_VERSION" do
             expect(subject.engine_versions).to eq(["2.1.1"])
-            expect(bundler_system_ruby_version.engine_versions.first).to_not be(JRUBY_VERSION)
+            expect(bundler_system_ruby_version.engine_versions.first).to_not be(RUBY_ENGINE_VERSION)
           end
         end
 

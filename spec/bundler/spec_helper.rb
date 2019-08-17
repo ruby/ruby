@@ -22,8 +22,6 @@ end
 
 $debug = false
 
-Spec::Manpages.setup unless Gem.win_platform?
-
 module Gem
   def self.ruby=(ruby)
     @ruby = ruby
@@ -73,8 +71,8 @@ RSpec.configure do |config|
   config.filter_run_excluding :git => RequirementChecker.against(git_version)
   config.filter_run_excluding :bundler => RequirementChecker.against(Bundler::VERSION.split(".")[0])
   config.filter_run_excluding :ruby_repo => !(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"]).nil?
-  config.filter_run_excluding :no_color_tty => Gem.win_platform? || !!ENV["GITHUB_ACTION"]
-  config.filter_run_excluding :github_action_linux => !!ENV["GITHUB_ACTION"] && (ENV["RUNNER_OS"] == "Linux")
+  config.filter_run_excluding :no_color_tty => Gem.win_platform? || !ENV["GITHUB_ACTION"].nil?
+  config.filter_run_excluding :github_action_linux => !ENV["GITHUB_ACTION"].nil? && (ENV["RUNNER_OS"] == "Linux")
 
   config.filter_run_when_matching :focus unless ENV["CI"]
 

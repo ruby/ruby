@@ -675,6 +675,9 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       def s3_uri_signer.ec2_metadata_credentials_json
         JSON.parse($instance_profile)
       end
+      # Running sign operation to make sure uri.query is not mutated
+      s3_uri_signer.sign
+      raise "URI query is not empty: #{uri.query}" unless uri.query.nil?
       s3_uri_signer
     end
 
