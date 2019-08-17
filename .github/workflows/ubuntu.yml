@@ -55,6 +55,7 @@ jobs:
         continue-on-error: true
       - name: make test-bundler/test-bundled-gems
         run: make -s ${{ matrix.test_task }}
+        if: matrix.test_task != 'check'
         continue-on-error: true
       - name: Leaked Globals
         run: make -s leaked-globals
