@@ -737,7 +737,7 @@ typedef struct rb_vm_struct {
 #endif
 
 #ifndef VM_DEBUG_VERIFY_METHOD_CACHE
-#define VM_DEBUG_VERIFY_METHOD_CACHE (VM_DEBUG_MODE != 0)
+#define VM_DEBUG_VERIFY_METHOD_CACHE (VMDEBUG != 0)
 #endif
 
 struct rb_captured_block {
