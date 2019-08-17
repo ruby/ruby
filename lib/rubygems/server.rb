@@ -35,7 +35,7 @@ class Gem::Server
   include ERB::Util
   include Gem::UserInteraction
 
-  SEARCH = <<-ERB
+  SEARCH = <<-ERB.freeze
       <form class="headerSearch" name="headerSearchForm" method="get" action="/rdoc">
         <div id="search" style="float:right">
           <label for="q">Filter/Search</label>
@@ -45,7 +45,7 @@ class Gem::Server
       </form>
   ERB
 
-  DOC_TEMPLATE = <<-'ERB'
+  DOC_TEMPLATE = <<-'ERB'.freeze
   <?xml version="1.0" encoding="iso-8859-1"?>
   <!DOCTYPE html
        PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -129,7 +129,7 @@ class Gem::Server
   ERB
 
   # CSS is copy & paste from rdoc-style.css, RDoc V1.0.1 - 20041108
-  RDOC_CSS = <<-CSS
+  RDOC_CSS = <<-CSS.freeze
 body {
     font-family: Verdana,Arial,Helvetica,sans-serif;
     font-size:   90%;
@@ -339,7 +339,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
 .ruby-value   { color: #7fffd4; background: transparent; }
   CSS
 
-  RDOC_NO_DOCUMENTATION = <<-'ERB'
+  RDOC_NO_DOCUMENTATION = <<-'ERB'.freeze
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
           "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -373,7 +373,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
 </html>
   ERB
 
-  RDOC_SEARCH_TEMPLATE = <<-'ERB'
+  RDOC_SEARCH_TEMPLATE = <<-'ERB'.freeze
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
           "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -450,7 +450,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
     @have_rdoc_4_plus = nil
   end
 
-  def add_date res
+  def add_date(res)
     res['date'] = @spec_dirs.map do |spec_dir|
       File.stat(spec_dir).mtime
     end.max
@@ -462,8 +462,8 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
     end
   end
 
-  def doc_root gem_name
-    if have_rdoc_4_plus? then
+  def doc_root(gem_name)
+    if have_rdoc_4_plus?
       "/doc_root/#{u gem_name}/"
     else
       "/doc_root/#{u gem_name}/rdoc/index.html"
@@ -491,14 +491,14 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
 
     specs = Marshal.dump specs
 
-    if req.path =~ /\.gz$/ then
-      specs = Gem.gzip specs
+    if req.path =~ /\.gz$/
+      specs = Gem::Util.gzip specs
       res['content-type'] = 'application/x-gzip'
     else
       res['content-type'] = 'application/octet-stream'
     end
 
-    if req.request_method == 'HEAD' then
+    if req.request_method == 'HEAD'
       res['content-length'] = specs.length
     else
       res.body << specs
@@ -509,7 +509,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
   # Creates server sockets based on the addresses option.  If no addresses
   # were given a server socket for all interfaces is created.
 
-  def listen addresses = @addresses
+  def listen(addresses = @addresses)
     addresses = [nil] unless addresses
 
     listeners = 0
@@ -529,14 +529,14 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
       end
     end
 
-    if @server.listeners.empty? then
+    if @server.listeners.empty?
       say "Unable to start a server."
       say "Check for running servers or your --bind and --port arguments"
       terminate_interaction 1
     end
   end
 
-  def prerelease_specs req, res
+  def prerelease_specs(req, res)
     reset_gems
 
     res['content-type'] = 'application/x-gzip'
@@ -552,14 +552,14 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
 
     specs = Marshal.dump specs
 
-    if req.path =~ /\.gz$/ then
-      specs = Gem.gzip specs
+    if req.path =~ /\.gz$/
+      specs = Gem::Util.gzip specs
       res['content-type'] = 'application/x-gzip'
     else
       res['content-type'] = 'application/octet-stream'
     end
 
-    if req.request_method == 'HEAD' then
+    if req.request_method == 'HEAD'
       res['content-length'] = specs.length
     else
       res.body << specs
@@ -579,13 +579,13 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
 
       selector = full_name.inspect
 
-      if specs.empty? then
+      if specs.empty?
         res.status = 404
         res.body = "No gems found matching #{selector}"
-      elsif specs.length > 1 then
+      elsif specs.length > 1
         res.status = 500
         res.body = "Multiple gems found matching #{selector}"
-      elsif marshal_format then
+      elsif marshal_format
         res['content-type'] = 'application/x-deflate'
         res.body << Gem.deflate(Marshal.dump(specs.first))
       end
@@ -607,13 +607,13 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
 
     Gem::Specification.each do |spec|
       total_file_count += spec.files.size
-      deps = spec.dependencies.map { |dep|
+      deps = spec.dependencies.map do |dep|
         {
           "name"    => dep.name,
           "type"    => dep.type,
           "version" => dep.requirement.to_s,
         }
-      }
+      end
 
       deps = deps.sort_by { |dep| [dep["name"].downcase, dep["version"]] }
       deps.last["is_last"] = true unless deps.empty?
@@ -754,9 +754,9 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
   # documentation - just put it underneath the main doc folder.
 
   def show_rdoc_for_pattern(pattern, res)
-    found_gems = Dir.glob("{#{@gem_dirs.join ','}}/doc/#{pattern}").select {|path|
+    found_gems = Dir.glob("{#{@gem_dirs.join ','}}/doc/#{pattern}").select do |path|
       File.exist? File.join(path, 'rdoc/index.html')
-    }
+    end
     case found_gems.length
     when 0
       return false
@@ -818,7 +818,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
       '/gems' => '/cache/',
     }
 
-    if have_rdoc_4_plus? then
+    if have_rdoc_4_plus?
       @server.mount '/doc_root', RDoc::Servlet, '/doc_root'
     else
       file_handlers['/doc_root'] = '/doc/'
@@ -851,14 +851,14 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
 
     specs = Marshal.dump specs
 
-    if req.path =~ /\.gz$/ then
-      specs = Gem.gzip specs
+    if req.path =~ /\.gz$/
+      specs = Gem::Util.gzip specs
       res['content-type'] = 'application/x-gzip'
     else
       res['content-type'] = 'application/octet-stream'
     end
 
-    if req.request_method == 'HEAD' then
+    if req.request_method == 'HEAD'
       res['content-length'] = specs.length
     else
       res.body << specs
@@ -875,4 +875,5 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
 
     system("#{@launch} http://#{host}:#{@port}")
   end
+
 end

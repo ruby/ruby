@@ -34,20 +34,11 @@ describe "Regexps with repetition" do
     /.([0-9]){3,5}?foo/.match("9876543210foo").to_a.should == ["543210foo", "0"]
   end
 
-  ruby_version_is ""..."2.4" do
-    it "does not treat {m,n}+ as possessive" do
+  it "does not treat {m,n}+ as possessive" do
+    -> {
       @regexp = eval "/foo(A{0,1}+)Abar/"
-      @regexp.match("fooAAAbar").to_a.should == ["fooAAAbar", "AA"]
-    end
-  end
-
-  ruby_version_is "2.4" do
-    it "does not treat {m,n}+ as possessive" do
-      -> {
-        @regexp = eval "/foo(A{0,1}+)Abar/"
-      }.should complain(/nested repeat operato/)
-      @regexp.match("fooAAAbar").to_a.should == ["fooAAAbar", "AA"]
-    end
+    }.should complain(/nested repeat operator/)
+    @regexp.match("fooAAAbar").to_a.should == ["fooAAAbar", "AA"]
   end
 
   it "supports ? (0 or 1 of previous subexpression)" do

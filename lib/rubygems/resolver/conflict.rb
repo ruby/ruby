@@ -27,7 +27,7 @@ class Gem::Resolver::Conflict
     @failed_dep = failed_dep
   end
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     self.class === other and
       @dependency == other.dependency and
       @activated  == other.activated  and
@@ -57,7 +57,7 @@ class Gem::Resolver::Conflict
     requirement = dependency.requirement
     alternates  = dependency.matching_specs.map { |spec| spec.full_name }
 
-    unless alternates.empty? then
+    unless alternates.empty?
       matching = <<-MATCHING.chomp
 
   Gems matching %s:
@@ -97,7 +97,7 @@ class Gem::Resolver::Conflict
     @dependency.name == spec.name
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, '[Dependency conflict: ', ']' do
       q.breakable
 
@@ -109,7 +109,7 @@ class Gem::Resolver::Conflict
       q.pp @dependency
 
       q.breakable
-      if @dependency == @failed_dep then
+      if @dependency == @failed_dep
         q.text ' failed'
       else
         q.text ' failed dependency '
@@ -121,7 +121,7 @@ class Gem::Resolver::Conflict
   ##
   # Path of activations from the +current+ list.
 
-  def request_path current
+  def request_path(current)
     path = []
 
     while current do
@@ -153,8 +153,3 @@ class Gem::Resolver::Conflict
   end
 
 end
-
-##
-# TODO: Remove in RubyGems 3
-
-Gem::Resolver::DependencyConflict = Gem::Resolver::Conflict # :nodoc:

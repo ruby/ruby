@@ -117,6 +117,13 @@ to write the specification by hand.  For example:
   some_extension_gem (1.0)
   $
 
+Command Alias
+==========================
+
+You can use `i` command instead of `install`.
+
+  $ gem i GEMNAME
+
     EOF
   end
 
@@ -125,7 +132,7 @@ to write the specification by hand.  For example:
   end
 
   def check_install_dir # :nodoc:
-    if options[:install_dir] and options[:user_install] then
+    if options[:install_dir] and options[:user_install]
       alert_error "Use --install-dir or --user-install but not both"
       terminate_interaction 1
     end
@@ -133,22 +140,22 @@ to write the specification by hand.  For example:
 
   def check_version # :nodoc:
     if options[:version] != Gem::Requirement.default and
-         get_all_gem_names.size > 1 then
-      alert_error "Can't use --version w/ multiple gems. Use name:ver instead."
+         get_all_gem_names.size > 1
+      alert_error "Can't use --version with multiple gems. You can specify multiple gems with" \
+                  " version requirements using `gem install 'my_gem:1.0.0' 'my_other_gem:~>2.0.0'`"
       terminate_interaction 1
     end
   end
 
   def execute
-
-    if options.include? :gemdeps then
+    if options.include? :gemdeps
       install_from_gemdeps
       return # not reached
     end
 
     @installed_specs = []
 
-    ENV.delete 'GEM_PATH' if options[:install_dir].nil? and RUBY_VERSION > '1.9'
+    ENV.delete 'GEM_PATH' if options[:install_dir].nil?
 
     check_install_dir
     check_version
@@ -181,68 +188,27 @@ to write the specification by hand.  For example:
     terminate_interaction
   end
 
-  def install_gem name, version # :nodoc:
+  def install_gem(name, version) # :nodoc:
     return if options[:conservative] and
       not Gem::Dependency.new(name, version).matching_specs.empty?
 
     req = Gem::Requirement.create(version)
 
-    if options[:ignore_dependencies] then
-      install_gem_without_dependencies name, req
-    else
-      inst = Gem::DependencyInstaller.new options
-      request_set = inst.resolve_dependencies name, req
-
-      if options[:explain]
-        puts "Gems to install:"
-
-        request_set.sorted_requests.each do |s|
-          puts "  #{s.full_name}"
-        end
-
-        return
-      else
-        @installed_specs.concat request_set.install options
-      end
-
-      show_install_errors inst.errors
-    end
-  end
-
-  def install_gem_without_dependencies name, req # :nodoc:
-    gem = nil
-
-    if local? then
-      if name =~ /\.gem$/ and File.file? name then
-        source = Gem::Source::SpecificFile.new name
-        spec = source.spec
-      else
-        source = Gem::Source::Local.new
-        spec = source.find_gem name, req
-      end
-      gem = source.download spec if spec
-    end
-
-    if remote? and not gem then
-      dependency = Gem::Dependency.new name, req
-      dependency.prerelease = options[:prerelease]
-
-      fetcher = Gem::RemoteFetcher.fetcher
-      gem = fetcher.download_to_cache dependency
-    end
-
-    inst = Gem::Installer.at gem, options
-    inst.install
-
-    require 'rubygems/dependency_installer'
     dinst = Gem::DependencyInstaller.new options
-    dinst.installed_gems.replace [inst.spec]
 
-    Gem.done_installing_hooks.each do |hook|
-      hook.call dinst, [inst.spec]
-    end unless Gem.done_installing_hooks.empty?
+    request_set = dinst.resolve_dependencies name, req
 
-    @installed_specs.push(inst.spec)
+    if options[:explain]
+      say "Gems to install:"
+
+      request_set.sorted_requests.each do |activation_request|
+        say "  #{activation_request.full_name}"
+      end
+    else
+      @installed_specs.concat request_set.install options
+    end
+
+    show_install_errors dinst.errors
   end
 
   def install_gems # :nodoc:
@@ -250,16 +216,22 @@ to write the specification by hand.  For example:
 
     get_all_gem_names_and_versions.each do |gem_name, gem_version|
       gem_version ||= options[:version]
+      domain = options[:domain]
+      domain = :local unless options[:suggest_alternate]
+      supress_suggestions = (domain == :local)
 
       begin
         install_gem gem_name, gem_version
       rescue Gem::InstallError => e
         alert_error "Error installing #{gem_name}:\n\t#{e.message}"
         exit_code |= 1
-      rescue Gem::GemNotFoundException, Gem::UnsatisfiableDependencyError => e
-        domain = options[:domain]
-        domain = :local unless options[:suggest_alternate]
-        show_lookup_failure e.name, e.version, e.errors, domain
+      rescue Gem::GemNotFoundException => e
+        show_lookup_failure e.name, e.version, e.errors, supress_suggestions
+
+        exit_code |= 2
+      rescue Gem::UnsatisfiableDependencyError => e
+        show_lookup_failure e.name, e.version, e.errors, supress_suggestions,
+                            "'#{gem_name}' (#{gem_version})"
 
         exit_code |= 2
       end
@@ -280,7 +252,7 @@ to write the specification by hand.  For example:
     require 'rubygems/rdoc'
   end
 
-  def show_install_errors errors # :nodoc:
+  def show_install_errors(errors) # :nodoc:
     return unless errors
 
     errors.each do |x|
@@ -300,4 +272,3 @@ to write the specification by hand.  For example:
   end
 
 end
-

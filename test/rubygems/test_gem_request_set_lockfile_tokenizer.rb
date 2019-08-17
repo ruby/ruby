@@ -6,6 +6,7 @@ require 'rubygems/request_set/lockfile/tokenizer'
 require 'rubygems/request_set/lockfile/parser'
 
 class TestGemRequestSetLockfileTokenizer < Gem::TestCase
+
   def setup
     super
 
@@ -294,7 +295,7 @@ GEM
     assert_equal :token, parser.get
   end
 
-  def write_lockfile lockfile
+  def write_lockfile(lockfile)
     File.open @lock_file, 'w' do |io|
       io.write lockfile
     end
@@ -303,4 +304,5 @@ GEM
   def tokenize_lockfile
     Gem::RequestSet::Lockfile::Tokenizer.from_file(@lock_file).to_a
   end
+
 end

@@ -20,4 +20,3 @@ describe "Pathname#relative?" do
   end
 
 end
-

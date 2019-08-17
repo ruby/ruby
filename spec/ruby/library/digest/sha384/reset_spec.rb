@@ -12,4 +12,3 @@ describe "Digest::SHA384#reset" do
   end
 
 end
-

@@ -14,8 +14,7 @@ class TestRDocStore < XrefTestCase
 
     @top_level = @s.add_file 'file.rb'
 
-    @page = @s.add_file 'README.txt'
-    @page.parser = RDoc::Parser::Simple
+    @page = @s.add_file 'README.txt', parser: RDoc::Parser::Simple
     @page.comment = RDoc::Comment.new 'This is a page', @page
 
     @klass = @top_level.add_class RDoc::NormalClass, 'Object'
@@ -146,7 +145,7 @@ class TestRDocStore < XrefTestCase
   end
 
   def test_add_file_relative
-    top_level = @store.add_file 'path/file.rb', 'file.rb'
+    top_level = @store.add_file 'path/file.rb', relative_name: 'file.rb'
 
     assert_kind_of RDoc::TopLevel, top_level
     assert_equal @store, top_level.store
@@ -162,7 +161,7 @@ class TestRDocStore < XrefTestCase
 
   def test_all_classes_and_modules
     expected = %w[
-      C1 C2 C2::C3 C2::C3::H1 C3 C3::H1 C3::H2 C4 C4::C4 C5 C5::C1 C6 C7 C8 C8::S1
+      C1 C2 C2::C3 C2::C3::H1 C3 C3::H1 C3::H2 C4 C4::C4 C5 C5::C1 C6 C7 C8 C8::S1 C9 C9::A C9::B
       Child
       M1 M1::M2
       Parent
@@ -173,7 +172,7 @@ class TestRDocStore < XrefTestCase
   end
 
   def test_all_files
-    assert_equal %w[xref_data.rb],
+    assert_equal %w[EXAMPLE.md xref_data.rb],
                  @store.all_files.map { |m| m.full_name }.sort
   end
 
@@ -213,7 +212,7 @@ class TestRDocStore < XrefTestCase
 
   def test_classes
     expected = %w[
-      C1 C2 C2::C3 C2::C3::H1 C3 C3::H1 C3::H2 C4 C4::C4 C5 C5::C1 C6 C7 C8 C8::S1
+      C1 C2 C2::C3 C2::C3::H1 C3 C3::H1 C3::H2 C4 C4::C4 C5 C5::C1 C6 C7 C8 C8::S1 C9 C9::A C9::B
       Child
       Parent
     ]
@@ -310,8 +309,7 @@ class TestRDocStore < XrefTestCase
   end
 
   def test_find_text_page
-    page = @store.add_file 'PAGE.txt'
-    page.parser = RDoc::Parser::Simple
+    page = @store.add_file 'PAGE.txt', parser: RDoc::Parser::Simple
 
     assert_nil @store.find_text_page 'no such page'
 
@@ -601,8 +599,7 @@ class TestRDocStore < XrefTestCase
   end
 
   def test_page
-    page = @store.add_file 'PAGE.txt'
-    page.parser = RDoc::Parser::Simple
+    page = @store.add_file 'PAGE.txt', parser: RDoc::Parser::Simple
 
     assert_nil @store.page 'no such page'
 

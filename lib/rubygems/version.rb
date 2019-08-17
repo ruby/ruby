@@ -150,12 +150,13 @@
 # a zero to give a sensible result.
 
 class Gem::Version
+
   autoload :Requirement, 'rubygems/requirement'
 
   include Comparable
 
-  VERSION_PATTERN = '[0-9]+(?>\.[0-9a-zA-Z]+)*(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?' # :nodoc:
-  ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/ # :nodoc:
+  VERSION_PATTERN = '[0-9]+(?>\.[0-9a-zA-Z]+)*(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?'.freeze # :nodoc:
+  ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/.freeze # :nodoc:
 
   ##
   # A string representation of this Version.
@@ -169,7 +170,11 @@ class Gem::Version
   ##
   # True if the +version+ string matches RubyGems' requirements.
 
-  def self.correct? version
+  def self.correct?(version)
+    unless Gem::Deprecate.skip
+      warn "nil versions are discouraged and will be deprecated in Rubygems 4" if version.nil?
+    end
+
     !!(version.to_s =~ ANCHORED_VERSION_PATTERN)
   end
 
@@ -181,10 +186,10 @@ class Gem::Version
   #   ver2 = Version.create(ver1)       # -> (ver1)
   #   ver3 = Version.create(nil)        # -> nil
 
-  def self.create input
-    if self === input then # check yourself before you wreck yourself
+  def self.create(input)
+    if self === input  # check yourself before you wreck yourself
       input
-    elsif input.nil? then
+    elsif input.nil?
       nil
     else
       new input
@@ -193,7 +198,7 @@ class Gem::Version
 
   @@all = {}
 
-  def self.new version # :nodoc:
+  def self.new(version) # :nodoc:
     return super unless Gem::Version == self
 
     @@all[version] ||= super
@@ -203,13 +208,13 @@ class Gem::Version
   # Constructs a Version from the +version+ string.  A version string is a
   # series of digits or ASCII letters separated by dots.
 
-  def initialize version
+  def initialize(version)
     unless self.class.correct?(version)
       raise ArgumentError, "Malformed version number string #{version}"
     end
 
     # If version is an empty string convert it to 0
-    version = 0 if version =~ /\A\s*\Z/
+    version = 0 if version.is_a?(String) && version =~ /\A\s*\Z/
 
     @version = version.to_s.strip.gsub("-",".pre.")
     @segments = nil
@@ -236,7 +241,7 @@ class Gem::Version
   # A Version is only eql? to another version if it's specified to the
   # same precision. Version "1.0" is not the same as version "1".
 
-  def eql? other
+  def eql?(other)
     self.class === other and @version == other._version
   end
 
@@ -244,7 +249,7 @@ class Gem::Version
     canonical_segments.hash
   end
 
-  def init_with coder # :nodoc:
+  def init_with(coder) # :nodoc:
     yaml_initialize coder.tag, coder.map
   end
 
@@ -264,7 +269,7 @@ class Gem::Version
   # Load custom marshal format. It's a string for backwards (RubyGems
   # 1.3.5 and earlier) compatibility.
 
-  def marshal_load array
+  def marshal_load(array)
     initialize array[0]
   end
 
@@ -278,7 +283,7 @@ class Gem::Version
     ["@version"]
   end
 
-  def encode_with coder # :nodoc:
+  def encode_with(coder) # :nodoc:
     coder.add 'version', @version
   end
 
@@ -292,7 +297,7 @@ class Gem::Version
     @prerelease
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.text "Gem::Version.new(#{version.inspect})"
   end
 
@@ -324,7 +329,9 @@ class Gem::Version
     segments.pop    while segments.size > 2
     segments.push 0 while segments.size < 2
 
-    "~> #{segments.join(".")}"
+    recommendation = "~> #{segments.join(".")}"
+    recommendation += ".a" if prerelease?
+    recommendation
   end
 
   ##
@@ -333,12 +340,12 @@ class Gem::Version
   # one. Attempts to compare to something that's not a
   # <tt>Gem::Version</tt> return +nil+.
 
-  def <=> other
+  def <=>(other)
     return unless Gem::Version === other
     return 0 if @version == other._version || canonical_segments == other.canonical_segments
 
-    lhsegments = _segments
-    rhsegments = other._segments
+    lhsegments = canonical_segments
+    rhsegments = other.canonical_segments
 
     lhsize = lhsegments.size
     rhsize = rhsegments.size
@@ -389,4 +396,5 @@ class Gem::Version
     numeric_segments = string_segments.slice!(0, string_start || string_segments.size)
     return numeric_segments, string_segments
   end
+
 end

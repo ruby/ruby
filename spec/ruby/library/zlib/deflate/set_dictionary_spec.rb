@@ -12,4 +12,3 @@ describe "Zlib::Deflate#set_dictionary" do
                         2, 0, 21, 134, 3, 248].pack('C*')
   end
 end
-

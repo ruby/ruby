@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require "rexml/parsers/baseparser"
+require_relative "baseparser"
 
 module REXML
   module Parsers

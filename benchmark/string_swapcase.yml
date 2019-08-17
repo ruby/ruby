@@ -1,0 +1,10 @@
+prelude: |
+  str1 = [*"A".."M",*"n".."z",*"0".."9"].join("")
+  str10 = str1 * 10
+  str100 = str10 * 10
+  str1000 = str100 * 10
+benchmark:
+  swapcase-1: str1.swapcase
+  swapcase-10: str10.swapcase
+  swapcase-100: str100.swapcase
+  swapcase-1000: str1000.swapcase

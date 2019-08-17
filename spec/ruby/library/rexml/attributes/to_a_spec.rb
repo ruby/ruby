@@ -17,4 +17,3 @@ describe "REXML::Attributes#to_a" do
     REXML::Element.new("root").attributes.to_a.should == []
   end
 end
-

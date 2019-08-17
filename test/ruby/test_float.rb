@@ -163,6 +163,14 @@ class TestFloat < Test::Unit::TestCase
       assert_equal(-31.0*2**-1027, Float("-0x1f"+("0"*268)+".0p-2099"))
       assert_equal(-31.0*2**-1027, Float("-0x1f"+("0"*600)+".0p-3427"))
     end
+
+    assert_equal(1.0e10, Float("1.0_"+"00000"*Float::DIG+"e10"))
+
+    z = "0" * (Float::DIG * 4 + 10)
+    all_assertions_foreach("long invalid string", "1.0", "1.0e", "1.0e-", "1.0e+") do |n|
+      assert_raise(ArgumentError, n += z + "A") {Float(n)}
+      assert_raise(ArgumentError, n += z + ".0") {Float(n)}
+    end
   end
 
   def test_divmod
@@ -780,7 +788,12 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(ArgumentError) { Float('0xf.p0') }
     assert_raise(ArgumentError) { Float('0xf.f') }
     assert_raise(ArgumentError) { Float('0xf.fp') }
-    assert_equal(Float::INFINITY, Float('0xf.fp1000000000000000'))
+    begin
+      verbose_bak, $VERBOSE = $VERBOSE, nil
+      assert_equal(Float::INFINITY, Float('0xf.fp1000000000000000'))
+    ensure
+      $VERBOSE = verbose_bak
+    end
     assert_equal(1, suppress_warning {Float("1e10_00")}.infinite?)
     assert_raise(TypeError) { Float(nil) }
     assert_raise(TypeError) { Float(:test) }
@@ -792,6 +805,12 @@ class TestFloat < Test::Unit::TestCase
   def test_invalid_str
     bug4310 = '[ruby-core:34820]'
     assert_raise(ArgumentError, bug4310) {under_gc_stress {Float('a'*10000)}}
+  end
+
+  def test_Float_with_invalid_exception
+    assert_raise(ArgumentError) {
+      Float("0", exception: 1)
+    }
   end
 
   def test_Float_with_exception_keyword

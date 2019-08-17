@@ -1,5 +1,5 @@
 #! /your/favourite/path/to/ruby
-# -*- mode: ruby; coding: utf-8; indent-tabs-mode: nil; ruby-indent-level: 2 -*-
+# -*- Ruby -*-
 # -*- frozen_string_literal: true; -*-
 # -*- warn_indent: true; -*-
 #
@@ -25,7 +25,7 @@ class RubyVM::Dumper
   end
 
   def new_erb spec
-    path  = Pathname.new(__FILE__).realpath.dirname
+    path  = Pathname.new(__FILE__).relative_path_from(Pathname.pwd).dirname
     path += '../views'
     path += spec
     src   = path.read mode: 'rt:utf-8:utf-8'
@@ -37,7 +37,7 @@ class RubyVM::Dumper
     else
       erb = ERB.new(src, nil, '%-')
     end
-    erb.filename = path.realpath.to_path
+    erb.filename = path.to_path
     return erb
   end
 
@@ -49,8 +49,8 @@ class RubyVM::Dumper
   end
 
   def replace_pragma_line str, lineno
-    if str == "#pragma RubyVM reset source\n" then
-      return "#line #{lineno + 2} #{@file}\n"
+    if /#(\s*)pragma RubyVM reset source\n/ =~ str then
+      return "##{$1}line #{lineno + 2} #{@file}\n"
     else
       return str
     end
@@ -87,7 +87,7 @@ class RubyVM::Dumper
   def initialize dst
     @erb   = {}
     @empty = new_binding
-    @file  = cstr dst.realdirpath.to_path
+    @file  = cstr dst.to_path
   end
 
   def render partial, opts = { :locals => {} }

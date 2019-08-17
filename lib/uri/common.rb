@@ -10,8 +10,8 @@
 # See URI for general documentation
 #
 
-require "uri/rfc2396_parser"
-require "uri/rfc3986_parser"
+require_relative "rfc2396_parser"
+require_relative "rfc3986_parser"
 
 module URI
   REGEXP = RFC2396_REGEXP
@@ -353,9 +353,6 @@ module URI
   end
   TBLDECWWWCOMP_['+'] = ' '
   TBLDECWWWCOMP_.freeze
-
-  HTML5ASCIIINCOMPAT = defined? Encoding::UTF_7 ? [Encoding::UTF_7, Encoding::UTF_16BE, Encoding::UTF_16LE,
-    Encoding::UTF_32BE, Encoding::UTF_32LE] : [] # :nodoc:
 
   # Encodes given +str+ to URL-encoded form data.
   #

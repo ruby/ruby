@@ -1,4 +1,13 @@
 # frozen_string_literal: true
+
+begin
+  require 'rbconfig'
+rescue LoadError
+  # for make mjit-headers
+end
+
+require_relative "fileutils/version"
+
 #
 # = fileutils.rb
 #
@@ -56,7 +65,7 @@
 #
 # There are some `low level' methods, which do not accept any option:
 #
-#   FileUtils.copy_entry(src, dest, preserve = false, dereference = false)
+#   FileUtils.copy_entry(src, dest, preserve = false, dereference_root = false, remove_destination = false)
 #   FileUtils.copy_file(src, dest, preserve = false, dereference = true)
 #   FileUtils.copy_stream(srcstream, deststream)
 #   FileUtils.remove_entry(path, force = false)
@@ -84,10 +93,7 @@
 # files/directories.  This equates to passing the <tt>:noop</tt> and
 # <tt>:verbose</tt> flags to methods in FileUtils.
 #
-
 module FileUtils
-
-  VERSION = "1.0.2"
 
   def self.private_module_function(name)   #:nodoc:
     module_function name
@@ -108,19 +114,22 @@ module FileUtils
   #
   # Changes the current directory to the directory +dir+.
   #
-  # If this method is called with block, resumes to the old
-  # working directory after the block execution finished.
+  # If this method is called with block, resumes to the previous
+  # working directory after the block execution has finished.
   #
-  #   FileUtils.cd('/', :verbose => true)   # chdir and report it
+  #   FileUtils.cd('/')  # change directory
   #
-  #   FileUtils.cd('/') do  # chdir
+  #   FileUtils.cd('/', :verbose => true)   # change directory and report it
+  #
+  #   FileUtils.cd('/') do  # change directory
   #     # ...               # do something
   #   end                   # return to original directory
   #
   def cd(dir, verbose: nil, &block) # :yield: dir
     fu_output_message "cd #{dir}" if verbose
-    Dir.chdir(dir, &block)
+    result = Dir.chdir(dir, &block)
     fu_output_message 'cd -' if verbose and block
+    result
   end
   module_function :cd
 
@@ -516,13 +525,12 @@ module FileUtils
         if destent.exist?
           if destent.directory?
             raise Errno::EEXIST, d
-          else
-            destent.remove_file if rename_cannot_overwrite_file?
           end
         end
         begin
           File.rename s, d
-        rescue Errno::EXDEV
+        rescue Errno::EXDEV,
+               Errno::EPERM # move from unencrypted to encrypted dir (ext4)
           copy_entry s, d, true
           if secure
             remove_entry_secure s, force
@@ -539,11 +547,6 @@ module FileUtils
 
   alias move mv
   module_function :move
-
-  def rename_cannot_overwrite_file?   #:nodoc:
-    /emx/ =~ RUBY_PLATFORM
-  end
-  private_module_function :rename_cannot_overwrite_file?
 
   #
   # Remove file(s) specified in +list+.  This method cannot remove directories.
@@ -681,22 +684,38 @@ module FileUtils
     unless parent_st.sticky?
       raise ArgumentError, "parent directory is world writable, FileUtils#remove_entry_secure does not work; abort: #{path.inspect} (parent directory mode #{'%o' % parent_st.mode})"
     end
+
     # freeze tree root
     euid = Process.euid
-    File.open(fullpath + '/.') {|f|
-      unless fu_stat_identical_entry?(st, f.stat)
-        # symlink (TOC-to-TOU attack?)
-        File.unlink fullpath
-        return
-      end
-      f.chown euid, -1
-      f.chmod 0700
-      unless fu_stat_identical_entry?(st, File.lstat(fullpath))
-        # TOC-to-TOU attack?
-        File.unlink fullpath
-        return
-      end
-    }
+    dot_file = fullpath + "/."
+    begin
+      File.open(dot_file) {|f|
+        unless fu_stat_identical_entry?(st, f.stat)
+          # symlink (TOC-to-TOU attack?)
+          File.unlink fullpath
+          return
+        end
+        f.chown euid, -1
+        f.chmod 0700
+      }
+    rescue Errno::EISDIR # JRuby in non-native mode can't open files as dirs
+      File.lstat(dot_file).tap {|fstat|
+        unless fu_stat_identical_entry?(st, fstat)
+          # symlink (TOC-to-TOU attack?)
+          File.unlink fullpath
+          return
+        end
+        File.chown euid, -1, dot_file
+        File.chmod 0700, dot_file
+      }
+    end
+
+    unless fu_stat_identical_entry?(st, File.lstat(fullpath))
+      # TOC-to-TOU attack?
+      File.unlink fullpath
+      return
+    end
+
     # ---- tree root is frozen ----
     root = Entry_.new(path)
     root.preorder_traverse do |ent|
@@ -797,8 +816,15 @@ module FileUtils
   #
   def compare_stream(a, b)
     bsize = fu_stream_blksize(a, b)
-    sa = String.new(capacity: bsize)
-    sb = String.new(capacity: bsize)
+
+    if RUBY_VERSION > "2.4"
+      sa = String.new(capacity: bsize)
+      sb = String.new(capacity: bsize)
+    else
+      sa = String.new
+      sb = String.new
+    end
+
     begin
       a.read(bsize, sa)
       b.read(bsize, sb)
@@ -1056,11 +1082,6 @@ module FileUtils
   end
   module_function :chown_R
 
-  begin
-    require 'etc'
-  rescue LoadError # rescue LoadError for miniruby
-  end
-
   def fu_get_uid(user)   #:nodoc:
     return nil unless user
     case user
@@ -1069,6 +1090,7 @@ module FileUtils
     when /\A\d+\z/
       user.to_i
     else
+      require 'etc'
       Etc.getpwnam(user) ? Etc.getpwnam(user).uid : nil
     end
   end
@@ -1082,6 +1104,7 @@ module FileUtils
     when /\A\d+\z/
       group.to_i
     else
+      require 'etc'
       Etc.getgrnam(group) ? Etc.getgrnam(group).gid : nil
     end
   end
@@ -1122,8 +1145,11 @@ module FileUtils
   module StreamUtils_
     private
 
-    def fu_windows?
-      /mswin|mingw|bccwin|emx/ =~ RUBY_PLATFORM
+    case (defined?(::RbConfig) ? ::RbConfig::CONFIG['host_os'] : ::RUBY_PLATFORM)
+    when /mswin|mingw/
+      def fu_windows?; true end
+    else
+      def fu_windows?; false end
     end
 
     def fu_copy_stream0(src, dest, blksize = nil)   #:nodoc:
@@ -1248,9 +1274,15 @@ module FileUtils
     def entries
       opts = {}
       opts[:encoding] = ::Encoding::UTF_8 if fu_windows?
-      Dir.entries(path(), opts)\
-          .reject {|n| n == '.' or n == '..' }\
-          .map {|n| Entry_.new(prefix(), join(rel(), n.untaint)) }
+
+      files = if Dir.respond_to?(:children)
+        Dir.children(path, opts)
+      else
+        Dir.entries(path(), opts)
+           .reject {|n| n == '.' or n == '..' }
+      end
+
+      files.map {|n| Entry_.new(prefix(), join(rel(), n.untaint)) }
     end
 
     def stat
@@ -1514,10 +1546,13 @@ module FileUtils
     else
       DIRECTORY_TERM = "(?=/|\\z)"
     end
-    SYSCASE = File::FNM_SYSCASE.nonzero? ? "-i" : ""
 
     def descendant_directory?(descendant, ascendant)
-      /\A(?#{SYSCASE}:#{Regexp.quote(ascendant)})#{DIRECTORY_TERM}/ =~ File.dirname(descendant)
+      if File::FNM_SYSCASE.nonzero?
+        File.expand_path(File.dirname(descendant)).casecmp(File.expand_path(ascendant)) == 0
+      else
+        File.expand_path(File.dirname(descendant)) == File.expand_path(ascendant)
+      end
     end
   end   # class Entry_
 

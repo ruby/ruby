@@ -369,11 +369,15 @@ module REXMLTests
       assert_equal 2, c
     end
 
+    def match(xpath)
+      XPath.match(@@doc, xpath).collect(&:to_s)
+    end
+
     def test_grouping
-      t = XPath.first( @@doc, "a/d/*[name()='d' and (name()='f' or name()='q')]" )
-      assert_nil t
-      t = XPath.first( @@doc, "a/d/*[(name()='d' and name()='f') or name()='q']" )
-      assert_equal 'q', t.name
+      assert_equal([],
+                   match("a/d/*[name()='d' and (name()='f' or name()='q')]"))
+      assert_equal(["<q id='19'/>"],
+                   match("a/d/*[(name()='d' and name()='f') or name()='q']"))
     end
 
     def test_preceding
@@ -713,7 +717,7 @@ module REXMLTests
       XML
       d = REXML::Document.new( source )
       r = REXML::XPath.match( d, %q{/a/*/*[1]} )
-      assert_equal(["1"],
+      assert_equal(["1", "3"],
                    r.collect {|element| element.attribute("id").value})
     end
 
@@ -849,7 +853,7 @@ module REXMLTests
       EOL
       d = REXML::Document.new( string )
       cs = XPath.match( d, '/a/*/*[1]' )
-      assert_equal(["c1"], cs.collect(&:name))
+      assert_equal(["c1", "c2"], cs.collect(&:name))
     end
 
     def test_sum
@@ -877,12 +881,15 @@ module REXMLTests
 <tag1 xmlns='ns1'>
   <tag2 xmlns='ns2'/>
   <tada>xa</tada>
+  <tada xmlns=''>xb</tada>
 </tag1>
       XML
-      x = d.root
-      num = 0
-      x.each_element('tada') {  num += 1 }
-      assert_equal(1, num)
+      actual = []
+      d.root.each_element('tada') do |element|
+        actual << element.to_s
+      end
+      assert_equal(["<tada>xa</tada>", "<tada xmlns=''>xb</tada>"],
+                   actual)
     end
 
     def test_ticket_39

@@ -17,7 +17,7 @@ describe :string_equal_value, shared: true do
     # not call it.
     obj.stub!(:to_str)
 
-    # Don't use @method for :== in `obj.should_recerive(:==)`
+    # Don't use @method for :== in `obj.should_receive(:==)`
     obj.should_receive(:==).and_return(true)
 
     'hello'.send(@method, obj).should be_true

@@ -279,6 +279,14 @@ rb_str_set_len(VALUE str, long len) ::
   up to len bytes, regardless RSTRING_LEN(str).  len must not exceed
   the capacity of str.
 
+rb_str_modify(VALUE str) ::
+
+  Prepares a Ruby string to modify.  If str is not modifiable, this
+  function raises an exception, or if the buffer of str is shared,
+  this function allocates new buffer to make it unshared.  Always
+  you MUST call this function before modifying the contents using
+  RSTRING_PTR and/or rb_str_set_len.
+
 ==== Array Functions
 
 rb_ary_new() ::
@@ -746,7 +754,7 @@ be assigned to sval, which should be a pointer of the type specified.
 ==== Ruby object to C struct
 
 To retrieve the C pointer from the Data object, use the macro
-Data_Get_Struct().
+TypedData_Get_Struct().
 
   TypedData_Get_Struct(obj, type, &data_type, sval)
 
@@ -894,6 +902,10 @@ which contains the arguments to the method.
 but are not exported to the Ruby world.  You need to protect them by
 
   void rb_global_variable(VALUE *var)
+
+or the objects themselves by
+
+  void rb_gc_register_mark_object(VALUE object)
 
 === Prepare extconf.rb
 
@@ -1337,8 +1349,11 @@ void rb_define_hooked_variable(const char *name, VALUE *var, VALUE (*getter)(), 
 
 void rb_global_variable(VALUE *var) ::
 
-  GC requires C global variables which hold Ruby values to be marked.
-  rb_global_variable tells GC to protect these variables.
+  Tells GC to protect C global variable, which holds Ruby value to be marked.
+
+void rb_gc_register_mark_object(VALUE object) ::
+
+  Tells GC to protect the +object+, which may not be referenced anywhere.
 
 === Constant Definition
 

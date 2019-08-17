@@ -16,7 +16,7 @@ describe "Module#extend_object" do
     end
 
     it "raises a TypeError if calling after rebinded to Class" do
-      lambda {
+      -> {
         Module.instance_method(:extend_object).bind(Class.new).call Object.new
       }.should raise_error(TypeError)
     end
@@ -61,7 +61,7 @@ describe "Module#extend_object" do
     end
 
     it "raises a RuntimeError before extending the object" do
-      lambda { @receiver.send(:extend_object, @object) }.should raise_error(RuntimeError)
+      -> { @receiver.send(:extend_object, @object) }.should raise_error(RuntimeError)
       @object.should_not be_kind_of(@receiver)
     end
   end

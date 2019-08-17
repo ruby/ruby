@@ -8,9 +8,9 @@ describe "StringIO#getc" do
   it "returns the character at the current position" do
     io = StringIO.new("example")
 
-    io.send(@method).should == ?e
-    io.send(@method).should == ?x
-    io.send(@method).should == ?a
+    io.getc.should == ?e
+    io.getc.should == ?x
+    io.getc.should == ?a
   end
 end
 

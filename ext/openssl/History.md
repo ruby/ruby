@@ -1,3 +1,15 @@
+Version 2.1.2
+=============
+
+Merged changes in 2.0.9.
+
+
+Version 2.1.1
+=============
+
+Merged changes in 2.0.8.
+
+
 Version 2.1.0
 =============
 
@@ -53,6 +65,43 @@ Notable changes
 * OpenSSL::PKey::EC::Point#to_octet_string is added.
   OpenSSL::PKey::EC::Point.new can now take String as the second argument.
   [[GitHub #177]](https://github.com/ruby/openssl/pull/177)
+
+
+Version 2.0.9
+=============
+
+Security fixes
+--------------
+
+* OpenSSL::X509::Name#<=> could incorrectly return 0 (= equal) for non-equal
+  objects. CVE-2018-16395 is assigned for this issue.
+  https://hackerone.com/reports/387250
+
+Bug fixes
+---------
+
+* Fixed OpenSSL::PKey::*.{new,generate} immediately aborting if the thread is
+  interrupted.
+  [[Bug #14882]](https://bugs.ruby-lang.org/issues/14882)
+  [[GitHub #205]](https://github.com/ruby/openssl/pull/205)
+* Fixed OpenSSL::X509::Name#to_s failing with OpenSSL::X509::NameError if
+  called against an empty instance.
+  [[GitHub #200]](https://github.com/ruby/openssl/issues/200)
+  [[GitHub #211]](https://github.com/ruby/openssl/pull/211)
+
+
+Version 2.0.8
+=============
+
+Bug fixes
+---------
+
+* OpenSSL::Cipher#pkcs5_keyivgen raises an error when a negative iteration
+  count is given.
+  [[GitHub #184]](https://github.com/ruby/openssl/pull/184)
+* Fixed build with LibreSSL 2.7.
+  [[GitHub #192]](https://github.com/ruby/openssl/issues/192)
+  [[GitHub #193]](https://github.com/ruby/openssl/pull/193)
 
 
 Version 2.0.7

@@ -5,17 +5,15 @@
 # information.
 
 class Gem::StubSpecification < Gem::BasicSpecification
-  # :nodoc:
-  PREFIX = "# stub: "
 
-  OPEN_MODE = # :nodoc:
-    if Object.const_defined? :Encoding then
-      'r:UTF-8:-'
-    else
-      'r'
-    end
+  # :nodoc:
+  PREFIX = "# stub: ".freeze
+
+  # :nodoc:
+  OPEN_MODE = 'r:UTF-8:-'.freeze
 
   class StubLine # :nodoc: all
+
     attr_reader :name, :version, :platform, :require_paths, :extensions,
                 :full_name
 
@@ -26,7 +24,7 @@ class Gem::StubSpecification < Gem::BasicSpecification
       'lib'  => 'lib'.freeze,
       'test' => 'test'.freeze,
       'ext'  => 'ext'.freeze,
-    }
+    }.freeze
 
     # These are common require path lists.  This hash is used to optimize
     # and consolidate require_path objects.  Most specs just specify "lib"
@@ -34,9 +32,9 @@ class Gem::StubSpecification < Gem::BasicSpecification
     # a require path list for that case.
     REQUIRE_PATH_LIST = { # :nodoc:
       'lib' => ['lib'].freeze
-    }
+    }.freeze
 
-    def initialize data, extensions
+    def initialize(data, extensions)
       parts          = data[PREFIX.length..-1].split(" ".freeze, 4)
       @name          = parts[0].freeze
       @version       = if Gem::Version.correct?(parts[1])
@@ -54,23 +52,24 @@ class Gem::StubSpecification < Gem::BasicSpecification
                        end
 
       path_list = parts.last
-      @require_paths = REQUIRE_PATH_LIST[path_list] || path_list.split("\0".freeze).map! { |x|
+      @require_paths = REQUIRE_PATH_LIST[path_list] || path_list.split("\0".freeze).map! do |x|
         REQUIRE_PATHS[x] || x
-      }
+      end
     end
+
   end
 
-  def self.default_gemspec_stub filename, base_dir, gems_dir
+  def self.default_gemspec_stub(filename, base_dir, gems_dir)
     new filename, base_dir, gems_dir, true
   end
 
-  def self.gemspec_stub filename, base_dir, gems_dir
+  def self.gemspec_stub(filename, base_dir, gems_dir)
     new filename, base_dir, gems_dir, false
   end
 
   attr_reader :base_dir, :gems_dir
 
-  def initialize filename, base_dir, gems_dir, default_gem
+  def initialize(filename, base_dir, gems_dir, default_gem)
     super()
     filename.untaint
 
@@ -114,12 +113,11 @@ class Gem::StubSpecification < Gem::BasicSpecification
       begin
         saved_lineno = $.
 
-        # TODO It should be use `File.open`, but bundler-1.16.1 example expects Kernel#open.
-        open loaded_from, OPEN_MODE do |file|
+        File.open loaded_from, OPEN_MODE do |file|
           begin
             file.readline # discard encoding line
             stubline = file.readline.chomp
-            if stubline.start_with?(PREFIX) then
+            if stubline.start_with?(PREFIX)
               extensions = if /\A#{PREFIX}/ =~ file.readline.chomp
                              $'.split "\0"
                            else
@@ -189,7 +187,7 @@ class Gem::StubSpecification < Gem::BasicSpecification
   # The full Gem::Specification for this gem, loaded from evalling its gemspec
 
   def to_spec
-    @spec ||= if @data then
+    @spec ||= if @data
                 loaded = Gem.loaded_specs[name]
                 loaded if loaded && loaded.version == version
               end

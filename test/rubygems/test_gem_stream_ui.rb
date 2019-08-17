@@ -5,6 +5,8 @@ require 'timeout'
 
 class TestGemStreamUI < Gem::TestCase
 
+  SHORT_TIMEOUT = (defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?) ? 1.0 : 0.1 # increase timeout with MJIT for --jit-wait testing
+
   module IsTty
     attr_accessor :tty
 
@@ -36,10 +38,7 @@ class TestGemStreamUI < Gem::TestCase
   end
 
   def test_ask
-    skip 'TTY detection broken on windows' if
-      Gem.win_platform? && RUBY_VERSION <= '1.9.2'
-
-    Timeout.timeout(1) do
+    Timeout.timeout(5) do
       expected_answer = "Arthur, King of the Britons"
       @in.string = "#{expected_answer}\n"
       actual_answer = @sui.ask("What is your name?")
@@ -48,22 +47,16 @@ class TestGemStreamUI < Gem::TestCase
   end
 
   def test_ask_no_tty
-    skip 'TTY detection broken on windows' if
-      Gem.win_platform? && RUBY_VERSION <= '1.9.2'
-
     @in.tty = false
 
-    Timeout.timeout(0.1) do
+    Timeout.timeout(SHORT_TIMEOUT) do
       answer = @sui.ask("what is your favorite color?")
-      assert_equal nil, answer
+      assert_nil answer
     end
   end
 
   def test_ask_for_password
-    skip 'Always uses $stdin on windows' if
-      Gem.win_platform? && RUBY_VERSION <= '1.9.2'
-
-    Timeout.timeout(1) do
+    Timeout.timeout(5) do
       expected_answer = "Arthur, King of the Britons"
       @in.string = "#{expected_answer}\n"
       actual_answer = @sui.ask_for_password("What is your name?")
@@ -72,24 +65,18 @@ class TestGemStreamUI < Gem::TestCase
   end
 
   def test_ask_for_password_no_tty
-    skip 'TTY handling is broken on windows' if
-      Gem.win_platform? && RUBY_VERSION <= '1.9.2'
-
     @in.tty = false
 
-    Timeout.timeout(0.1) do
+    Timeout.timeout(SHORT_TIMEOUT) do
       answer = @sui.ask_for_password("what is the airspeed velocity of an unladen swallow?")
-      assert_equal nil, answer
+      assert_nil answer
     end
   end
 
   def test_ask_yes_no_no_tty_with_default
-    skip 'TTY handling is broken on windows' if
-      Gem.win_platform? && RUBY_VERSION <= '1.9.2'
-
     @in.tty = false
 
-    Timeout.timeout(0.1) do
+    Timeout.timeout(SHORT_TIMEOUT) do
       answer = @sui.ask_yes_no("do coconuts migrate?", false)
       assert_equal false, answer
 
@@ -99,12 +86,9 @@ class TestGemStreamUI < Gem::TestCase
   end
 
   def test_ask_yes_no_no_tty_without_default
-    skip 'TTY handling is broken on windows' if
-      Gem.win_platform? && RUBY_VERSION <= '1.9.2'
-
     @in.tty = false
 
-    Timeout.timeout(0.1) do
+    Timeout.timeout(SHORT_TIMEOUT) do
       assert_raises(Gem::OperationNotSupportedError) do
         @sui.ask_yes_no("do coconuts migrate?")
       end
@@ -174,14 +158,14 @@ class TestGemStreamUI < Gem::TestCase
   def test_download_reporter_anything
     @cfg.verbose = 0
     reporter = @sui.download_reporter
-    assert_kind_of Gem::StreamUI::VerboseDownloadReporter, reporter
+    assert_kind_of Gem::StreamUI::ThreadedDownloadReporter, reporter
   end
 
-  def test_verbose_download_reporter
+  def test_threaded_download_reporter
     @cfg.verbose = true
     reporter = @sui.download_reporter
     reporter.fetch 'a.gem', 1024
-    assert_equal "Fetching: a.gem", @out.string
+    assert_equal "Fetching a.gem\n", @out.string
   end
 
   def test_verbose_download_reporter_progress
@@ -189,7 +173,7 @@ class TestGemStreamUI < Gem::TestCase
     reporter = @sui.download_reporter
     reporter.fetch 'a.gem', 1024
     reporter.update 512
-    assert_equal "Fetching: a.gem\rFetching: a.gem ( 50%)", @out.string
+    assert_equal "Fetching a.gem\n", @out.string
   end
 
   def test_verbose_download_reporter_progress_once
@@ -198,7 +182,7 @@ class TestGemStreamUI < Gem::TestCase
     reporter.fetch 'a.gem', 1024
     reporter.update 510
     reporter.update 512
-    assert_equal "Fetching: a.gem\rFetching: a.gem ( 50%)", @out.string
+    assert_equal "Fetching a.gem\n", @out.string
   end
 
   def test_verbose_download_reporter_progress_complete
@@ -207,7 +191,7 @@ class TestGemStreamUI < Gem::TestCase
     reporter.fetch 'a.gem', 1024
     reporter.update 510
     reporter.done
-    assert_equal "Fetching: a.gem\rFetching: a.gem ( 50%)\rFetching: a.gem (100%)\n", @out.string
+    assert_equal "Fetching a.gem\n", @out.string
   end
 
   def test_verbose_download_reporter_progress_nil_length
@@ -216,7 +200,7 @@ class TestGemStreamUI < Gem::TestCase
     reporter.fetch 'a.gem', nil
     reporter.update 1024
     reporter.done
-    assert_equal "Fetching: a.gem\rFetching: a.gem (1024B)\rFetching: a.gem (1024B)\n", @out.string
+    assert_equal "Fetching a.gem\n", @out.string
   end
 
   def test_verbose_download_reporter_progress_zero_length
@@ -225,7 +209,7 @@ class TestGemStreamUI < Gem::TestCase
     reporter.fetch 'a.gem', 0
     reporter.update 1024
     reporter.done
-    assert_equal "Fetching: a.gem\rFetching: a.gem (1024B)\rFetching: a.gem (1024B)\n", @out.string
+    assert_equal "Fetching a.gem\n", @out.string
   end
 
   def test_verbose_download_reporter_no_tty
@@ -236,4 +220,5 @@ class TestGemStreamUI < Gem::TestCase
     reporter.fetch 'a.gem', 1024
     assert_equal "", @out.string
   end
+
 end

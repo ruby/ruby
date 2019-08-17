@@ -10,4 +10,3 @@ describe "Hash#clone" do
     clone.should_not equal hash
   end
 end
-

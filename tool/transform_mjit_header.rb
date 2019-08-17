@@ -10,8 +10,12 @@ PROGRAM = File.basename($0, ".*")
 module MJITHeader
   ATTR_VALUE_REGEXP  = /[^()]|\([^()]*\)/
   ATTR_REGEXP        = /__attribute__\s*\(\(#{ATTR_VALUE_REGEXP}*\)\)/
-  FUNC_HEADER_REGEXP = /\A(\s*#{ATTR_REGEXP})*[^\[{(]*\((#{ATTR_REGEXP}|[^()])*\)(\s*#{ATTR_REGEXP})*\s*/
-  TARGET_NAME_REGEXP = /\A(rb|ruby|vm|insn|attr)_/
+  # Example:
+  #   VALUE foo(int bar)
+  #   VALUE __attribute__ ((foo)) bar(int baz)
+  #   __attribute__ ((foo)) VALUE bar(int baz)
+  FUNC_HEADER_REGEXP = /\A[^\[{(]*(\s*#{ATTR_REGEXP})*[^\[{(]*\((#{ATTR_REGEXP}|[^()])*\)(\s*#{ATTR_REGEXP})*\s*/
+  TARGET_NAME_REGEXP = /\A(rb|ruby|vm|insn|attr|Init)_/
 
   # Predefined macros for compilers which are already supported by MJIT.
   # We're going to support cl.exe too (WIP) but `cl.exe -E` can't produce macro.
@@ -23,6 +27,7 @@ module MJITHeader
   # These macros are relied on this script's transformation
   PREFIXED_MACROS = [
     'ALWAYS_INLINE',
+    'inline',
   ]
 
   # For MinGW's ras.h. Those macros have its name in its definition and can't be preprocessed multiple times.
@@ -32,7 +37,7 @@ module MJITHeader
   ]
 
   IGNORED_FUNCTIONS = [
-    'vm_search_method_slowpath', # This increases the time to compile when inlined. So we use it as external function.
+    'rb_vm_search_method_slowpath', # This increases the time to compile when inlined. So we use it as external function.
     'rb_equal_opt', # Not used from VM and not compilable
   ]
 
@@ -48,6 +53,8 @@ module MJITHeader
     'vm_opt_gt',
     'vm_opt_ge',
     'vm_opt_ltlt',
+    'vm_opt_and',
+    'vm_opt_or',
     'vm_opt_aref',
     'vm_opt_aset',
     'vm_opt_aref_with',
@@ -141,8 +148,10 @@ module MJITHeader
   end
 
   def self.write(code, out)
-    FileUtils.mkdir_p(File.dirname(out))
-    File.binwrite("#{out}.new", code)
+    # create with strict permission, then will install proper
+    # permission
+    FileUtils.mkdir_p(File.dirname(out), mode: 0700)
+    File.binwrite("#{out}.new", code, perm: 0600)
     FileUtils.mv("#{out}.new", out)
   end
 
@@ -160,21 +169,32 @@ module MJITHeader
     SUPPORTED_CC_MACROS.any? { |macro| code =~ /^#\s*define\s+#{Regexp.escape(macro)}\b/ }
   end
 
-  # This checks if syntax check outputs "error: conflicting types for 'restrict'".
-  # If it's true, this script regards platform as AIX and add -std=c99 as workaround.
+  # This checks if syntax check outputs one of the following messages.
+  #    "error: conflicting types for 'restrict'"
+  #    "error: redefinition of parameter 'restrict'"
+  # If it's true, this script regards platform as AIX or Solaris and adds -std=c99 as workaround.
   def self.conflicting_types?(code, cc, cflags)
     with_code(code) do |path|
       cmd = "#{cc} #{cflags} #{path}"
       out = IO.popen(cmd, err: [:child, :out], &:read)
-      !$?.success? && out.match?(/error: conflicting types for '[^']+'/)
+      !$?.success? &&
+        (out.match?(/error: conflicting types for '[^']+'/) ||
+         out.match?(/error: redefinition of parameter '[^']+'/))
     end
   end
 
   def self.with_code(code)
-    Tempfile.open(['', '.c'], mode: File::BINARY) do |f|
+    # for `system_header` pragma which can't be in the main file.
+    Tempfile.open(['', '.h'], mode: File::BINARY) do |f|
       f.puts code
       f.close
-      return yield(f.path)
+      Tempfile.open(['', '.c'], mode: File::BINARY) do |c|
+        c.puts <<SRC
+#include "#{f.path}"
+SRC
+        c.close
+        return yield(c.path)
+      end
     end
   end
   private_class_method :with_code
@@ -210,6 +230,11 @@ if MJITHeader.windows? # transformation is broken with Windows headers for now
 end
 
 macro, code = MJITHeader.separate_macro_and_code(code) # note: this does not work on MinGW
+code = <<header + code
+#ifdef __GNUC__
+# pragma GCC system_header
+#endif
+header
 code_to_check = "#{code}#{macro}" # macro should not affect code again
 
 if MJITHeader.conflicting_types?(code_to_check, cc, cflags)

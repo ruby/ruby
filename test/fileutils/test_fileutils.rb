@@ -233,7 +233,7 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_assert_output_lines
     assert_raise(MiniTest::Assertion) {
-      Timeout.timeout(0.1) {
+      Timeout.timeout(0.5) {
         assert_output_lines([]) {
           Thread.current.report_on_exception = false
           raise "ok"
@@ -381,6 +381,16 @@ class TestFileUtils < Test::Unit::TestCase
     assert_same_file 'tmp/cpr_src/b', 'tmp/cpr_dest/b'
     assert_same_file 'tmp/cpr_src/c', 'tmp/cpr_dest/c'
     assert_directory 'tmp/cpr_dest/d'
+    assert_raise(ArgumentError) do
+      cp_r 'tmp/cpr_src', './tmp/cpr_src'
+    end
+    assert_raise(ArgumentError) do
+      cp_r './tmp/cpr_src', 'tmp/cpr_src'
+    end
+    assert_raise(ArgumentError) do
+      cp_r './tmp/cpr_src', File.expand_path('tmp/cpr_src')
+    end
+
     my_rm_rf 'tmp/cpr_src'
     my_rm_rf 'tmp/cpr_dest'
 
@@ -740,6 +750,17 @@ class TestFileUtils < Test::Unit::TestCase
     remove_entry_secure 'tmp/tmpdir/c', true
     assert_file_not_exist 'tmp/tmpdir/a'
     assert_file_not_exist 'tmp/tmpdir/c'
+
+    unless root_in_posix?
+      File.chmod(01777, 'tmp/tmpdir')
+      if File.sticky?('tmp/tmpdir')
+        Dir.mkdir 'tmp/tmpdir/d', 0
+        assert_raise(Errno::EACCES) {remove_entry_secure 'tmp/tmpdir/d'}
+        File.chmod 0777, 'tmp/tmpdir/d'
+        Dir.rmdir 'tmp/tmpdir/d'
+      end
+    end
+
     Dir.rmdir 'tmp/tmpdir'
   end
 
@@ -834,13 +855,15 @@ class TestFileUtils < Test::Unit::TestCase
     check_singleton :ln_s
 
     TARGETS.each do |fname|
-      fname = "../#{fname}"
-      lnfname = 'tmp/lnsdest'
-      ln_s fname, lnfname
-      assert FileTest.symlink?(lnfname), 'not symlink'
-      assert_equal fname, File.readlink(lnfname)
-    ensure
-      rm_f lnfname
+      begin
+        fname = "../#{fname}"
+        lnfname = 'tmp/lnsdest'
+        ln_s fname, lnfname
+        assert FileTest.symlink?(lnfname), 'not symlink'
+        assert_equal fname, File.readlink(lnfname)
+      ensure
+        rm_f lnfname
+      end
     end
   end if have_symlink? and !no_broken_symlink?
 
@@ -1611,6 +1634,10 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_cd
     check_singleton :cd
+  end
+
+  def test_cd_result
+    assert_equal 42, cd('.') { 42 }
   end
 
   def test_chdir

@@ -33,6 +33,12 @@ class TestTmpdir < Test::Unit::TestCase
         assert_equal(tmpdir, Dir.tmpdir)
         File.chmod(0777, tmpdir)
         assert_not_equal(tmpdir, Dir.tmpdir)
+        newdir = Dir.mktmpdir("d", tmpdir) do |dir|
+          assert_file.directory? dir
+          assert_equal(tmpdir, File.dirname(dir))
+          dir
+        end
+        assert_file.not_exist?(newdir)
         File.chmod(01777, tmpdir)
         assert_equal(tmpdir, Dir.tmpdir)
       ensure
@@ -64,15 +70,17 @@ class TestTmpdir < Test::Unit::TestCase
 
   def test_mktmpdir_traversal
     expect = Dir.glob(TRAVERSAL_PATH + '*').count
-    Dir.mktmpdir(TRAVERSAL_PATH + 'foo')
-    actual = Dir.glob(TRAVERSAL_PATH + '*').count
-    assert_equal expect, actual
+    Dir.mktmpdir(TRAVERSAL_PATH + 'foo') do
+      actual = Dir.glob(TRAVERSAL_PATH + '*').count
+      assert_equal expect, actual
+    end
   end
 
   def test_mktmpdir_traversal_array
     expect = Dir.glob(TRAVERSAL_PATH + '*').count
-    Dir.mktmpdir([TRAVERSAL_PATH, 'foo'])
-    actual = Dir.glob(TRAVERSAL_PATH + '*').count
-    assert_equal expect, actual
+    Dir.mktmpdir([TRAVERSAL_PATH, 'foo']) do
+      actual = Dir.glob(TRAVERSAL_PATH + '*').count
+      assert_equal expect, actual
+    end
   end
 end

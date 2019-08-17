@@ -237,7 +237,7 @@ GET /
 
   def test_chunked
     crlf = "\x0d\x0a"
-    expect = File.read(__FILE__).freeze
+    expect = File.binread(__FILE__).freeze
     msg = <<-_end_of_message_
       POST /path HTTP/1.1
       Host: test.ruby-lang.org:8080
@@ -420,6 +420,13 @@ GET /
       req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
       req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
       req.body
+    }
+  end
+
+  def test_eof_raised_when_line_is_nil
+    assert_raise(WEBrick::HTTPStatus::EOFError) {
+      req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+      req.parse(StringIO.new(""))
     }
   end
 end

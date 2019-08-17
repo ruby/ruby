@@ -6,5 +6,5 @@ def fib(n):
   else:
     return fib(n-2)+fib(n-1)
 
-print fib(20)
+print(fib(20))
 

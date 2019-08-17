@@ -180,12 +180,19 @@ class RDoc::TomDoc < RDoc::Markup::Parser
 
       case type
       when :TEXT then
-        @section = 'Returns' if data =~ /\AReturns/
+        @section = 'Returns' if data =~ /\A(Returns|Raises)/
 
         paragraph << data
       when :NEWLINE then
         if :TEXT == peek_token[0] then
-          paragraph << ' '
+          # Lines beginning with 'Raises' in the Returns section should not be
+          # treated as multiline text
+          if 'Returns' == @section and
+            peek_token[1].start_with?('Raises') then
+            break
+          else
+            paragraph << ' '
+          end
         else
           break
         end
@@ -235,19 +242,18 @@ class RDoc::TomDoc < RDoc::Markup::Parser
 
       @tokens << case
                  when @s.scan(/\r?\n/) then
-                   token = [:NEWLINE, @s.matched, *token_pos(pos)]
-                   @line_pos = char_pos @s.pos
-                   @line += 1
+                   token = [:NEWLINE, @s.matched, *pos]
+                   @s.newline!
                    token
                  when @s.scan(/(Examples|Signature)$/) then
-                   @tokens << [:HEADER, 3, *token_pos(pos)]
+                   @tokens << [:HEADER, 3, *pos]
 
-                   [:TEXT, @s[1], *token_pos(pos)]
+                   [:TEXT, @s[1], *pos]
                  when @s.scan(/([:\w][\w\[\]]*)[ ]+- /) then
-                   [:NOTE, @s[1], *token_pos(pos)]
+                   [:NOTE, @s[1], *pos]
                  else
                    @s.scan(/.*/)
-                   [:TEXT, @s.matched.sub(/\r$/, ''), *token_pos(pos)]
+                   [:TEXT, @s.matched.sub(/\r$/, ''), *pos]
                  end
     end
 
@@ -255,4 +261,3 @@ class RDoc::TomDoc < RDoc::Markup::Parser
   end
 
 end
-

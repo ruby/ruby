@@ -21,11 +21,9 @@ describe 'GzipReader#ungetbyte' do
         @gz.read.should == '!12345abcde'
       end
 
-      ruby_bug "#13616", ""..."2.6" do
-        it 'decrements pos' do
-          @gz.ungetbyte 0x21
-          @gz.pos.should == -1
-        end
+      it 'decrements pos' do
+        @gz.ungetbyte 0x21
+        @gz.pos.should == -1
       end
     end
 

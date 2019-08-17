@@ -16,12 +16,14 @@ describe BeCloseMatcher do
     BeCloseMatcher.new(5.0, 0.5).matches?(4.51).should == true
   end
 
-  it "does not match when actual == (expected + tolerance)" do
-    BeCloseMatcher.new(5.0, 0.5).matches?(5.5).should == false
+  it "matches when actual == (expected + tolerance)" do
+    BeCloseMatcher.new(5.0, 0.5).matches?(5.5).should == true
+    BeCloseMatcher.new(3, 2).matches?(5).should == true
   end
 
-  it "does not match when actual == (expected - tolerance)" do
-    BeCloseMatcher.new(5.0, 0.5).matches?(4.5).should == false
+  it "matches when actual == (expected - tolerance)" do
+    BeCloseMatcher.new(5.0, 0.5).matches?(4.5).should == true
+    BeCloseMatcher.new(3, 2).matches?(1).should == true
   end
 
   it "does not match when actual < (expected - tolerance)" do

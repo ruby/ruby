@@ -24,4 +24,3 @@ describe "SystemExit#initialize" do
     s.status.should == 0
   end
 end
-

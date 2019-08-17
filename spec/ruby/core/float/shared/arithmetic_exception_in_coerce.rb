@@ -31,4 +31,3 @@ describe :float_arithmetic_exception_in_coerce, shared: true do
     end
   end
 end
-

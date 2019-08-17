@@ -63,6 +63,10 @@ class TestNetHTTPS < Test::Unit::TestCase
   end
 
   def test_session_reuse
+    # FIXME: The new_session_cb is known broken for clients in OpenSSL 1.1.0h.
+    # See https://github.com/openssl/openssl/pull/5967 for details.
+    skip if OpenSSL::OPENSSL_LIBRARY_VERSION =~ /OpenSSL 1.1.0h/
+
     http = Net::HTTP.new("localhost", config("port"))
     http.use_ssl = true
     http.cert_store = TEST_STORE
@@ -73,18 +77,9 @@ class TestNetHTTPS < Test::Unit::TestCase
 
     http.start
     http.get("/")
-    http.finish # three times due to possible bug in OpenSSL 0.9.8
-
-    sid = http.instance_variable_get(:@ssl_session).id
-
-    http.start
-    http.get("/")
 
     socket = http.instance_variable_get(:@socket).io
-
-    assert socket.session_reused?
-
-    assert_equal sid, http.instance_variable_get(:@ssl_session).id
+    assert_equal true, socket.session_reused?
 
     http.finish
   rescue SystemCallError
@@ -92,6 +87,9 @@ class TestNetHTTPS < Test::Unit::TestCase
   end
 
   def test_session_reuse_but_expire
+    # FIXME: The new_session_cb is known broken for clients in OpenSSL 1.1.0h.
+    skip if OpenSSL::OPENSSL_LIBRARY_VERSION =~ /OpenSSL 1.1.0h/
+
     http = Net::HTTP.new("localhost", config("port"))
     http.use_ssl = true
     http.cert_store = TEST_STORE
@@ -101,15 +99,11 @@ class TestNetHTTPS < Test::Unit::TestCase
     http.get("/")
     http.finish
 
-    sid = http.instance_variable_get(:@ssl_session).id
-
     http.start
     http.get("/")
 
     socket = http.instance_variable_get(:@socket).io
     assert_equal false, socket.session_reused?
-
-    assert_not_equal sid, http.instance_variable_get(:@ssl_session).id
 
     http.finish
   rescue SystemCallError
@@ -160,15 +154,16 @@ class TestNetHTTPS < Test::Unit::TestCase
   end
 
   def test_identity_verify_failure
+    # the certificate's subject has CN=localhost
     http = Net::HTTP.new("127.0.0.1", config("port"))
     http.use_ssl = true
-    http.verify_callback = Proc.new do |preverify_ok, store_ctx|
-      true
-    end
+    http.cert_store = TEST_STORE
+    @log_tester = lambda {|_| }
     ex = assert_raise(OpenSSL::SSL::SSLError){
       http.request_get("/") {|res| }
     }
-    assert_match(/hostname \"127.0.0.1\" does not match/, ex.message)
+    re_msg = /certificate verify failed|hostname \"127.0.0.1\" does not match/
+    assert_match(re_msg, ex.message)
   end
 
   def test_timeout_during_SSL_handshake
@@ -193,16 +188,13 @@ class TestNetHTTPS < Test::Unit::TestCase
   end
 
   def test_min_version
-    http = Net::HTTP.new("127.0.0.1", config("port"))
+    http = Net::HTTP.new("localhost", config("port"))
     http.use_ssl = true
     http.min_version = :TLS1
-    http.verify_callback = Proc.new do |preverify_ok, store_ctx|
-      true
-    end
-    ex = assert_raise(OpenSSL::SSL::SSLError){
-      http.request_get("/") {|res| }
+    http.cert_store = TEST_STORE
+    http.request_get("/") {|res|
+      assert_equal($test_net_http_data, res.body)
     }
-    assert_match(/hostname \"127.0.0.1\" does not match/, ex.message)
   end
 
   def test_max_version

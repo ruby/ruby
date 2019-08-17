@@ -14,9 +14,8 @@ describe "Net::HTTPHeader#initialize_http_header when passed Hash" do
   end
 
   it "complains about duplicate keys when in verbose mode" do
-    lambda do
-      $VERBOSE = true
+    -> do
       @headers.initialize_http_header("My-Header" => "test", "my-header" => "another test")
-    end.should complain(/duplicated HTTP header/)
+    end.should complain(/duplicated HTTP header/, verbose: true)
   end
 end

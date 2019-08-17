@@ -1,12 +1,6 @@
 # Copies a file
 def cp(source, dest)
-  File.open(dest, "wb") do |d|
-    File.open(source, "rb") do |s|
-      while data = s.read(1024)
-        d.write data
-      end
-    end
-  end
+  IO.copy_stream source, dest
 end
 
 # Creates each directory in path that does not exist.
