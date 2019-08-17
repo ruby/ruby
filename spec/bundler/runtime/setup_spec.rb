@@ -113,13 +113,8 @@ RSpec.describe "Bundler.setup" do
   context "load order" do
     def clean_load_path(lp)
       without_bundler_load_path = ruby!("puts $LOAD_PATH").split("\n")
-      lp = lp - [
-        bundler_path.to_s,
-        bundler_path.join("gems/bundler-#{Bundler::VERSION}/lib").to_s,
-        tmp("rubygems/lib").to_s,
-        root.join("../lib").expand_path.to_s,
-      ] - without_bundler_load_path
-      lp.map! {|p| p.sub(/^#{Regexp.union system_gem_path.to_s, default_bundle_path.to_s}/i, "") }
+      lp -= without_bundler_load_path
+      lp.map! {|p| p.sub(/^#{Regexp.union system_gem_path.to_s, default_bundle_path.to_s, bundler_path.to_s}/i, "") }
     end
 
     it "puts loaded gems after -I and RUBYLIB", :ruby_repo do
@@ -147,6 +142,8 @@ RSpec.describe "Bundler.setup" do
     end
 
     it "orders the load path correctly when there are dependencies" do
+      system_gems :bundler
+
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rails"
@@ -163,6 +160,7 @@ RSpec.describe "Bundler.setup" do
 
       expect(load_path).to start_with(
         "/gems/rails-2.3.2/lib",
+        "/gems/bundler-#{Bundler::VERSION}/lib",
         "/gems/activeresource-2.3.2/lib",
         "/gems/activerecord-2.3.2/lib",
         "/gems/actionpack-2.3.2/lib",
