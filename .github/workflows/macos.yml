@@ -58,15 +58,3 @@ jobs:
         if: matrix.test_task != 'check'
       - name: Leaked Globals
         run: make -s leaked-globals
-      - uses: 8398a7/action-slack@v1
-        with:
-          type: success
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        if: success()
-      - uses: 8398a7/action-slack@v1
-        with:
-          type: failure
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        if: failure()
