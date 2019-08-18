@@ -5206,6 +5206,14 @@ w32_symlink(UINT cp, const char *src, const char *link)
 	return -1;
     }
 
+    if (!*link) {
+	errno = ENOENT;
+	return -1;
+    }
+    if (!*src) {
+	errno = EINVAL;
+	return -1;
+    }
     len1 = MultiByteToWideChar(cp, 0, src, -1, NULL, 0);
     len2 = MultiByteToWideChar(cp, 0, link, -1, NULL, 0);
     wsrc = ALLOCV_N(WCHAR, buf, len1+len2);
