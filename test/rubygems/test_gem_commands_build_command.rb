@@ -281,6 +281,65 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     assert File.exist?(some_gem)
   end
 
+  def test_execute_multiple_gemspec_without_gem_name
+    some_gem = util_spec "some_gem"
+    another_gem = util_spec "another_gem"
+    gemspec_dir = File.join(@tempdir, "build_command_gem")
+    gemspec_file = File.join(gemspec_dir, some_gem.spec_name)
+    another_gemspec_file = File.join(gemspec_dir, another_gem.spec_name)
+
+    FileUtils.mkdir_p(gemspec_dir)
+
+    File.open(gemspec_file, "w") do |gs|
+      gs.write(some_gem.to_ruby)
+    end
+
+    File.open(another_gemspec_file, "w") do |gs|
+      gs.write(another_gem.to_ruby)
+    end
+
+    @cmd.options[:args] = []
+
+    use_ui @ui do
+      Dir.chdir(gemspec_dir) do
+        @cmd.execute
+      end
+    end
+
+    output = @ui.output.split("\n")
+    assert_equal "  Successfully built RubyGem", output.shift
+    assert_equal "  Name: another_gem", output.shift
+    assert_equal "  Version: 2", output.shift
+    assert_equal "  File: another_gem-2.gem", output.shift
+    assert_equal [], output
+
+    expected_gem = File.join(gemspec_dir, File.basename(another_gem.cache_file))
+    assert File.exist?(expected_gem)
+  end
+
+  def util_test_build_gem(gem)
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    output = @ui.output.split "\n"
+    assert_equal "  Successfully built RubyGem", output.shift
+    assert_equal "  Name: some_gem", output.shift
+    assert_equal "  Version: 2", output.shift
+    assert_equal "  File: some_gem-2.gem", output.shift
+    assert_equal [], output
+
+    gem_file = File.join(@tempdir, File.basename(gem.cache_file))
+    assert File.exist?(gem_file)
+
+    spec = Gem::Package.new(gem_file).spec
+
+    assert_equal "some_gem", spec.name
+    assert_equal "this is a summary", spec.summary
+  end
+
   def util_test_build_gem(gem)
     use_ui @ui do
       Dir.chdir @tempdir do
