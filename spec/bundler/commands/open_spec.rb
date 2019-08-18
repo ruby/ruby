@@ -92,7 +92,7 @@ RSpec.describe "bundle open" do
     end
   end
 
-  context "when opening a default gem" do
+  context "when opening a default gem", :ruby_repo do
     before do
       install_gemfile <<-G
         gem "json"
