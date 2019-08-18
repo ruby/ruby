@@ -241,6 +241,7 @@ keyword_hash_p(VALUE *kw_hash_ptr, VALUE *rest_hash_ptr, int check_only_symbol)
 		*kw_hash_ptr = Qnil;
 		return FALSE;
 	    case KW_HASH_HAS_BOTH_KEYS:
+                *rest_hash_ptr = rb_hash_dup(*rest_hash_ptr);
 		keyword_hash_split(kw_hash_ptr, rest_hash_ptr);
 		return TRUE;
 	    }
