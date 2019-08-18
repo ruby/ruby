@@ -1989,6 +1989,7 @@ long rb_reg_search0(VALUE, VALUE, long, int, int);
 VALUE rb_reg_match_p(VALUE re, VALUE str, long pos);
 bool rb_reg_start_with_p(VALUE re, VALUE str);
 void rb_backref_set_string(VALUE string, long pos, long len);
+void rb_match_unbusy(VALUE);
 int rb_match_count(VALUE match);
 int rb_match_nth_defined(int nth, VALUE match);
 VALUE rb_reg_new_ary(VALUE ary, int options);
