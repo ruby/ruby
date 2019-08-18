@@ -15,15 +15,15 @@ class Reline::Test < Reline::TestCase
     Reline.completion_append_character = ""
     assert_equal(Reline.completion_append_character, nil)
 
-    Reline.completion_append_character = "a"
+    Reline.completion_append_character = "a".encode(Encoding::ASCII)
     assert_equal(Reline.completion_append_character, "a")
     assert_equal(Reline.completion_append_character.encoding, Encoding::default_external)
 
-    Reline.completion_append_character = "ba"
+    Reline.completion_append_character = "ba".encode(Encoding::ASCII)
     assert_equal(Reline.completion_append_character, "b")
     assert_equal(Reline.completion_append_character.encoding, Encoding::default_external)
 
-    Reline.completion_append_character = "cba"
+    Reline.completion_append_character = "cba".encode(Encoding::ASCII)
     assert_equal(Reline.completion_append_character, "c")
     assert_equal(Reline.completion_append_character.encoding, Encoding::default_external)
 
@@ -34,7 +34,7 @@ class Reline::Test < Reline::TestCase
   def test_basic_word_break_characters
     assert_equal(Reline.basic_word_break_characters, " \t\n`><=;|&{(")
 
-    Reline.basic_word_break_characters = "["
+    Reline.basic_word_break_characters = "[".encode(Encoding::ASCII)
     assert_equal(Reline.basic_word_break_characters, "[")
     assert_equal(Reline.basic_word_break_characters.encoding, Encoding::default_external)
   end
@@ -42,7 +42,7 @@ class Reline::Test < Reline::TestCase
   def test_completer_word_break_characters
     assert_equal(Reline.completer_word_break_characters, " \t\n`><=;|&{(")
 
-    Reline.completer_word_break_characters = "["
+    Reline.completer_word_break_characters = "[".encode(Encoding::ASCII)
     assert_equal(Reline.completer_word_break_characters, "[")
     assert_equal(Reline.completer_word_break_characters.encoding, Encoding::default_external)
   end
@@ -50,7 +50,7 @@ class Reline::Test < Reline::TestCase
   def test_basic_quote_characters
     assert_equal(Reline.basic_quote_characters, '"\'')
 
-    Reline.basic_quote_characters = "`"
+    Reline.basic_quote_characters = "`".encode(Encoding::ASCII)
     assert_equal(Reline.basic_quote_characters, "`")
     assert_equal(Reline.basic_quote_characters.encoding, Encoding::default_external)
   end
@@ -58,7 +58,7 @@ class Reline::Test < Reline::TestCase
   def test_completer_quote_characters
     assert_equal(Reline.completer_quote_characters, '"\'')
 
-    Reline.completer_quote_characters = "`"
+    Reline.completer_quote_characters = "`".encode(Encoding::ASCII)
     assert_equal(Reline.completer_quote_characters, "`")
     assert_equal(Reline.completer_quote_characters.encoding, Encoding::default_external)
   end
@@ -66,7 +66,7 @@ class Reline::Test < Reline::TestCase
   def test_filename_quote_characters
     assert_equal(Reline.filename_quote_characters, '')
 
-    Reline.filename_quote_characters = "\'"
+    Reline.filename_quote_characters = "\'".encode(Encoding::ASCII)
     assert_equal(Reline.filename_quote_characters, "\'")
     assert_equal(Reline.filename_quote_characters.encoding, Encoding::default_external)
   end
@@ -74,7 +74,7 @@ class Reline::Test < Reline::TestCase
   def test_special_prefixes
     assert_equal(Reline.special_prefixes, '')
 
-    Reline.special_prefixes = "\'"
+    Reline.special_prefixes = "\'".encode(Encoding::ASCII)
     assert_equal(Reline.special_prefixes, "\'")
     assert_equal(Reline.special_prefixes.encoding, Encoding::default_external)
   end
@@ -85,7 +85,7 @@ class Reline::Test < Reline::TestCase
     Reline.completion_case_fold = true
     assert_equal(Reline.completion_case_fold, true)
 
-    Reline.completion_case_fold = "hoge"
+    Reline.completion_case_fold = "hoge".encode(Encoding::ASCII)
     assert_equal(Reline.completion_case_fold, "hoge")
   end
 
