@@ -327,12 +327,12 @@ def update_default_gems(gem)
   Dir.chdir("../../#{author}/#{repository}") do
     unless `git remote`.match(/ruby\-core/)
       `git remote add ruby-core git@github.com:ruby/ruby.git`
-      `git fetch ruby-core`
+      `git fetch ruby-core --no-tags`
       `git co ruby-core/trunk`
       `git branch ruby-core`
     end
     `git co ruby-core`
-    `git fetch ruby-core trunk`
+    `git fetch ruby-core trunk --no-tags`
     `git rebase ruby-core/trunk`
     `git co master`
     `git stash`
