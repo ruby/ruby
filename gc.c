@@ -7279,7 +7279,7 @@ garbage_collect_with_gvl(rb_objspace_t *objspace, int reason)
  *     ObjectSpace.garbage_collect(full_mark: true, immediate_sweep: true) -> nil
  *     include GC; garbage_collect(full_mark: true, immediate_sweep: true) -> nil
  *
- *  Initiates garbage collection, unless manually disabled.
+ *  Initiates garbage collection, even if manually disabled.
  *
  *  This method is defined with keyword arguments that default to true:
  *
