@@ -5230,6 +5230,7 @@ w32_symlink(UINT cp, const char *src, const char *link)
 	(e = GetLastError()) == ERROR_INVALID_PARAMETER &&
 	(flag & SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE)) {
 	create_flag = 0;
+	flag &= ~SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
 	ret = create_symbolic_link(wlink, wsrc, flag);
 	if (!ret) e = GetLastError();
     }
