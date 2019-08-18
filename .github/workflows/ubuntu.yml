@@ -52,13 +52,17 @@ jobs:
           MSPECOPT: "-ff" # not using `-j` because sometimes `mspec -j` silently dies
       - name: Leaked Globals
         run: make -s leaked-globals
-      - uses: ./.github/actions/notify-slack
+      - uses: k0kubun/action-slack@v1.0.0
         with:
-          status: ${{ job.status }}
-          matrix_name: ${{ matrix.test_task }}
-          committer_name: ${{ github.event.head_commit.committer.name }}
-          commit_message: ${{ github.event.head_commit.message }}
-          commit_timestamp: ${{ github.event.head_commit.timestamp }}
+          payload: |
+            {
+              "attachments": [{
+                "title": "${{ job.status }}: ${{ github.workflow }} / ${{ matrix.test_task }}",
+                "title_link": "https://github.com/${{ github.repository }}/commit/${{ github.sha }}/checks",
+                "text": "${{ github.repository }}@${{ github.ref }}: <https://github.com/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>\nby ${{ github.event.head_commit.committer.name }} on ${{ github.event.head_commit.timestamp }}: ${{ github.event.head_commit.message }}",
+                "color": "danger"
+              }]
+            }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         if: failure() && github.event_name == 'push'
