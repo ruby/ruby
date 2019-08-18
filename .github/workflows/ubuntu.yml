@@ -45,16 +45,20 @@ jobs:
       - name: configure
         run: ./configure -C --disable-install-doc
       - run: make $JOBS
-      - name: make check
+      - name: Tests
         run: make -s ${{ matrix.test_task }}
         env:
           TESTOPTS: "$JOBS -q --tty=no"
           MSPECOPT: "-ff" # not using `-j` because sometimes `mspec -j` silently dies
-        if: matrix.test_task == 'check'
-      # TODO: Remove `continue-on-error` once they become stable and also we have a notification for their failure.
-      - name: make test-bundler/test-bundled-gems
-        run: make -s ${{ matrix.test_task }}
-        if: matrix.test_task != 'check'
-        continue-on-error: true
       - name: Leaked Globals
         run: make -s leaked-globals
+      - uses: ./.github/actions/notify-slack
+        with:
+          status: ${{ job.status }}
+          matrix_name: ${{ matrix.test_task }}
+          committer_name: ${{ github.event.head_commit.committer.name }}
+          commit_message: ${{ github.event.head_commit.message }}
+          commit_timestamp: ${{ github.event.head_commit.timestamp }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: failure() && github.event_name == 'push'
