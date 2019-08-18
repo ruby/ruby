@@ -67,7 +67,6 @@ for:
     - nmake install-nodoc
     - \usr\bin\ruby -v -e "p :locale => Encoding.find('locale'), :filesystem => Encoding.find('filesystem')"
     - if not "%GEMS_FOR_TEST%" == "" \usr\bin\gem install --no-document %GEMS_FOR_TEST%
-  before_test:
     - \usr\bin\ruby -ropenssl -e "puts 'Build    ' + OpenSSL::OPENSSL_VERSION, 'Runtime  ' + OpenSSL::OPENSSL_LIBRARY_VERSION"
   test_script:
     - set /a JOBS=%NUMBER_OF_PROCESSORS%
