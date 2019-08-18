@@ -243,20 +243,11 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   end
 
   def test_execute_without_gem_name
-    some_gem = util_spec "some_gem" do |s|
-      s.license = "AGPL-3.0"
-      s.files = ["README.md"]
-    end
-
+    some_gem = util_spec "some_gem"
     gemspec_dir  = File.join(@tempdir, "build_command_gem")
     gemspec_file = File.join(gemspec_dir, some_gem.spec_name)
-    readme_file  = File.join(gemspec_dir, 'README.md')
 
     FileUtils.mkdir_p(gemspec_dir)
-
-    File.open(readme_file, "w") do |f|
-      f.write("My awesome gem")
-    end
 
     File.open(gemspec_file, "w") do |gs|
       gs.write(some_gem.to_ruby)
