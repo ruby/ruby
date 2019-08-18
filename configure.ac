@@ -2765,6 +2765,7 @@ AS_CASE(["$target_os"],
     ])
 AS_CASE(["$target_cpu-$target_os"],
 [*-darwin*], [
+    AC_CHECK_HEADERS([libproc.h])
     AC_CHECK_HEADERS([execinfo.h])
     AS_IF([test "x$ac_cv_header_execinfo_h" = xyes], [
 	AC_CHECK_LIB([execinfo], [backtrace])
