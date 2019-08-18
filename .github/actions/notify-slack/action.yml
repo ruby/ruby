@@ -1,0 +1,53 @@
+name: notify-slack
+description: You can notify slack of GitHub Actions.
+author: k0kubun
+inputs:
+  status:
+    description: Success or Failure
+  matrix_name:
+    description: Matrix task name
+  committer_name:
+    description: Git committer name
+  commit_message:
+    description: Git commit message
+  commit_timestamp:
+    description: Git commit timestamp
+runs:
+  using: docker
+  image: 'docker://ruby:2.6-slim'
+  args:
+    - /usr/local/bin/ruby
+    - -e
+    - |-
+      require 'json'
+      require 'net/http'
+      require 'uri'
+
+      github_repo = ENV.fetch('GITHUB_REPOSITORY')
+      github_sha  = ENV.fetch('GITHUB_SHA')
+      github_ref  = ENV.fetch('GITHUB_REF')
+
+      workflow = ENV.fetch('GITHUB_WORKFLOW')
+      matrix   = ENV.fetch('INPUT_MATRIX_NAME')
+      status   = ENV.fetch('INPUT_STATUS')
+
+      message   = ENV.fetch('INPUT_COMMIT_MESSAGE')
+      timestamp = ENV.fetch('INPUT_COMMIT_TIMESTAMP')
+      committer = ENV.fetch('INPUT_COMMITTER_NAME')
+
+      commit_url = "https://github.com/#{github_repo}/commit/#{github_sha}"
+      attachment = {
+        title: "#{status}: #{workflow} / #{matrix}",
+        title_link: "#{commit_url}/checks",
+        text: "<#{commit_url}|#{github_sha[0...10]}> of #{github_repo}@#{File.basename(github_ref)} "\
+              "by #{committer} on #{timestamp}: #{message}",
+        color: status == 'Success' ? 'good' : 'danger',
+      }
+
+      resp = Net::HTTP.post(
+        URI(ENV.fetch('SLACK_WEBHOOK_URL')),
+        { attachments: [attachment] }.to_json,
+        { 'Content-Type' => 'application/json' },
+      )
+      puts "#{resp.code} (#{resp.body}) -- #{payload.to_json}"
+      resp.value
