@@ -845,10 +845,14 @@ def install_default_gem(dir, srcdir)
       bin_dir = File.join(gem_dir, 'gems', full_name, gemspec.bindir)
       makedirs(bin_dir)
 
+      orig_cmdtype = $cmdtype
+      $cmdtype = nil if RUBY_PLATFORM =~ /mswin|mingw|bccwin/
+
       gemspec.executables.map {|exec|
         install File.join(srcdir, 'libexec', exec),
                 File.join(bin_dir, exec)
       }
+      $cmdtype = orig_cmdtype
     end
   end
 end
