@@ -34,32 +34,32 @@ class Reline::Test < Reline::TestCase
   def test_basic_word_break_characters
     assert_equal(Reline.basic_word_break_characters, " \t\n`><=;|&{(")
 
-    Reline.basic_word_break_characters = "ああ"
-    assert_equal(Reline.basic_word_break_characters, "ああ")
+    Reline.basic_word_break_characters = "["
+    assert_equal(Reline.basic_word_break_characters, "[")
     assert_equal(Reline.basic_word_break_characters.encoding, Encoding::default_external)
   end
 
   def test_completer_word_break_characters
     assert_equal(Reline.completer_word_break_characters, " \t\n`><=;|&{(")
 
-    Reline.completer_word_break_characters = "ああ"
-    assert_equal(Reline.completer_word_break_characters, "ああ")
+    Reline.completer_word_break_characters = "["
+    assert_equal(Reline.completer_word_break_characters, "[")
     assert_equal(Reline.completer_word_break_characters.encoding, Encoding::default_external)
   end
 
   def test_basic_quote_characters
     assert_equal(Reline.basic_quote_characters, '"\'')
 
-    Reline.basic_quote_characters = "“"
-    assert_equal(Reline.basic_quote_characters, "“")
+    Reline.basic_quote_characters = "`"
+    assert_equal(Reline.basic_quote_characters, "`")
     assert_equal(Reline.basic_quote_characters.encoding, Encoding::default_external)
   end
 
   def test_completer_quote_characters
     assert_equal(Reline.completer_quote_characters, '"\'')
 
-    Reline.completer_quote_characters = "“"
-    assert_equal(Reline.completer_quote_characters, "“")
+    Reline.completer_quote_characters = "`"
+    assert_equal(Reline.completer_quote_characters, "`")
     assert_equal(Reline.completer_quote_characters.encoding, Encoding::default_external)
   end
 
