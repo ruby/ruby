@@ -186,9 +186,19 @@ describe "A lambda literal -> () { }" do
       @a.().should == {}
       @a.(1, 2, 3, a: 4, b: 5).should == {a: 4, b: 5}
 
-      h = mock("keyword splat")
-      h.should_receive(:to_hash).and_return({a: 1})
-      @a.(h).should == {a: 1}
+      def self.suppress_keyword_warning(&block)
+        if RUBY_VERSION > '2.7'
+          suppress_warning(&block)
+        else
+          yield
+        end
+      end
+
+      suppress_keyword_warning do
+        h = mock("keyword splat")
+        h.should_receive(:to_hash).and_return({a: 1})
+        @a.(h).should == {a: 1}
+      end
     end
 
     evaluate <<-ruby do
@@ -520,9 +530,19 @@ describe "A lambda expression 'lambda { ... }'" do
       @a.().should == {}
       @a.(1, 2, 3, a: 4, b: 5).should == {a: 4, b: 5}
 
-      h = mock("keyword splat")
-      h.should_receive(:to_hash).and_return({a: 1})
-      @a.(h).should == {a: 1}
+      def self.suppress_keyword_warning(&block)
+        if RUBY_VERSION > '2.7'
+          suppress_warning(&block)
+        else
+          yield
+        end
+      end
+
+      suppress_keyword_warning do
+        h = mock("keyword splat")
+        h.should_receive(:to_hash).and_return({a: 1})
+        @a.(h).should == {a: 1}
+      end
     end
 
     evaluate <<-ruby do
