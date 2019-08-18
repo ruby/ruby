@@ -175,7 +175,7 @@ describe "C-API Util function" do
 
     it "raises an error if a required argument is not in the hash" do
       h = { :a => 7, :c => 12, :b => 5 }
-      -> { @o.rb_get_kwargs(h, [:b, :d], 2, 0) }.should raise_error(ArgumentError, /missing keyword: d/)
+      -> { @o.rb_get_kwargs(h, [:b, :d], 2, 0) }.should raise_error(ArgumentError, /missing keyword: :?d/)
       h.should == {:a => 7, :c => 12}
     end
 
@@ -187,7 +187,7 @@ describe "C-API Util function" do
 
     it "raises an error if there are additional arguments  and optional is positive" do
       h = { :a => 7, :c => 12, :b => 5 }
-      -> { @o.rb_get_kwargs(h, [:b, :a], 2, 0) }.should raise_error(ArgumentError, /unknown keyword: c/)
+      -> { @o.rb_get_kwargs(h, [:b, :a], 2, 0) }.should raise_error(ArgumentError, /unknown keyword: :?c/)
       h.should == {:c => 12}
     end
 
