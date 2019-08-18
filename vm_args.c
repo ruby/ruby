@@ -585,6 +585,20 @@ get_loc(struct rb_calling_info *calling, const struct rb_call_info *ci)
 }
 
 static inline void
+rb_warn_keyword_to_last_hash(struct rb_calling_info *calling, const struct rb_call_info *ci)
+{
+    if (calling->recv == Qundef) return;
+    VALUE loc = get_loc(calling, ci);
+    if (NIL_P(loc)) {
+        rb_warn("The keyword argument for `%s' is passed as the last hash parameter", rb_id2name(ci->mid));
+    }
+    else {
+        rb_warn("The keyword argument for `%s' (defined at %s:%d) is passed as the last hash parameter",
+                rb_id2name(ci->mid), RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)));
+    }
+}
+
+static inline void
 rb_warn_split_last_hash_to_keyword(struct rb_calling_info *calling, const struct rb_call_info *ci)
 {
     if (calling->recv == Qundef) return;
@@ -746,9 +760,21 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 	 (kw_splat && given_argc > max_argc)) &&
 	args->kw_argv == NULL) {
 	if (((kw_flag & (VM_CALL_KWARG | VM_CALL_KW_SPLAT)) || !ec->cfp->iseq /* called from C */)) {
-	    if (args_pop_keyword_hash(args, &keyword_hash, 0)) {
+            int check_only_symbol = (kw_flag & VM_CALL_KW_SPLAT) &&
+                                    iseq->body->param.flags.has_kw &&
+                                    !iseq->body->param.flags.has_kwrest;
+
+	    if (args_pop_keyword_hash(args, &keyword_hash, check_only_symbol)) {
 		given_argc--;
 	    }
+            else if (check_only_symbol) {
+                if (keyword_hash != Qnil) {
+	            rb_warn_split_last_hash_to_keyword(calling, ci);
+                }
+                else {
+                    rb_warn_keyword_to_last_hash(calling, ci);
+                }
+            }
 	}
 	else if (args_pop_keyword_hash(args, &keyword_hash, 1)) {
 	    /* Warn the following:
