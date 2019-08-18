@@ -22,6 +22,9 @@
 #endif
 #include <mach/vm_map.h>
 #include <mach/mach_init.h>
+#ifdef __LP64__
+#define vm_region_recurse vm_region_recurse_64
+#endif
 #endif
 
 /* see vm_insnhelper.h for the values */
@@ -992,39 +995,39 @@ rb_vm_bugreport(const void *ctx)
 	}
 #endif /* __FreeBSD__ */
 #ifdef __APPLE__
-	vm_address_t addr = 0;
-	vm_size_t size = 0;
-	struct vm_region_submap_info_64 map;
-	mach_msg_type_number_t count = VM_REGION_SUBMAP_INFO_COUNT_64;
-	natural_t depth = 0;
+        vm_address_t addr = 0;
+        vm_size_t size = 0;
+        struct vm_region_submap_info map;
+        mach_msg_type_number_t count = VM_REGION_SUBMAP_INFO_COUNT;
+        natural_t depth = 0;
 
-	fprintf(stderr, "* Process memory map:\n\n");
-	while (1) {
-		if (vm_region_recurse_64(mach_task_self(), &addr, &size, &depth,
-			(vm_region_recurse_info_t)&map, &count) != KERN_SUCCESS) {
-			break;
-		}
+        fprintf(stderr, "* Process memory map:\n\n");
+        while (1) {
+            if (vm_region_recurse(mach_task_self(), &addr, &size, &depth,
+                        (vm_region_recurse_info_t)&map, &count) != KERN_SUCCESS) {
+                break;
+            }
 
-		if (map.is_submap) {
-			// We only look at main addresses
-			depth++;
-		} else {
-			fprintf(stderr, "%lu-%lu %s%s%s", addr, (addr+size),
-				((map.protection & VM_PROT_READ) != 0 ? "r" : "-"),
-				((map.protection & VM_PROT_WRITE) != 0 ? "w" : "-"),
-				((map.protection & VM_PROT_EXECUTE) != 0 ? "x" : "-"));
+            if (map.is_submap) {
+                // We only look at main addresses
+                depth++;
+            } else {
+                fprintf(stderr, "%lx-%lx %s%s%s", addr, (addr+size),
+                        ((map.protection & VM_PROT_READ) != 0 ? "r" : "-"),
+                        ((map.protection & VM_PROT_WRITE) != 0 ? "w" : "-"),
+                    ((map.protection & VM_PROT_EXECUTE) != 0 ? "x" : "-"));
 #ifdef HAVE_LIBPROC_H
-			char buff[PATH_MAX];
-			if (proc_regionfilename(getpid(), addr, buff, sizeof(buff)) > 0) {
-				fprintf(stderr, " %s", buff);
-			}
+                char buff[PATH_MAX];
+                if (proc_regionfilename(getpid(), addr, buff, sizeof(buff)) > 0) {
+                    fprintf(stderr, " %s", buff);
+                }
 #endif
-			fprintf(stderr, "\n");
-		}
+                fprintf(stderr, "\n");
+            }
 
-		addr += size;
-		size = 0;
-	}
+            addr += size;
+            size = 0;
+        }
 #endif
     }
 }
