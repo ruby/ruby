@@ -189,7 +189,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     end
 
     assert_equal '', @ui.output
-    assert_equal "ERROR:  Gemspec file not found: some_gem\n", @ui.error
+    assert_equal "ERROR:  Gemspec file not found: some_gem.gemspec\n", @ui.error
   end
 
   def test_execute_outside_dir

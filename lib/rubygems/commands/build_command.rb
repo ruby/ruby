@@ -62,10 +62,8 @@ Gems can be saved to a specified filename with the output option:
 
   private
 
-  def build_gem(gemspec = get_one_optional_argument)
-    unless File.exist?(gemspec)
-      gemspec += ".gemspec" if File.exist?(gemspec + ".gemspec")
-    end
+  def build_gem(gem_name = get_one_optional_argument)
+    gemspec = File.exist?(gem_name) ? gem_name : "#{gem_name}.gemspec"
 
     if File.exist?(gemspec)
       spec = Gem::Specification.load(gemspec)
