@@ -15,9 +15,11 @@ environment:
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
     - build: vs
       vs: 120
+      ssl: OpenSSL
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
     - build: vs
       vs: 140
+      ssl: OpenSSL-v111
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
   RELINE_TEST_ENCODING: "Windows-31J"
   GEMS_FOR_TEST: "timezone tzinfo"
@@ -32,7 +34,7 @@ for:
     - chcp
     - SET BITS=%Platform:x86=32%
     - SET BITS=%BITS:x=%
-    - SET OPENSSL_DIR=c:\OpenSSL-Win%BITS%
+    - SET OPENSSL_DIR=C:\%ssl%-Win%BITS%
     - CALL SET vcvars=%%^VS%VS%COMNTOOLS^%%..\..\VC\vcvarsall.bat
     - SET vcvars
     - '"%vcvars%" %Platform:x64=amd64%'
@@ -65,6 +67,8 @@ for:
     - nmake install-nodoc
     - \usr\bin\ruby -v -e "p :locale => Encoding.find('locale'), :filesystem => Encoding.find('filesystem')"
     - if not "%GEMS_FOR_TEST%" == "" \usr\bin\gem install --no-document %GEMS_FOR_TEST%
+  before_test:
+    - \usr\bin\ruby -ropenssl -e "puts 'Build    ' + OpenSSL::OPENSSL_VERSION, 'Runtime  ' + OpenSSL::OPENSSL_LIBRARY_VERSION"
   test_script:
     - set /a JOBS=%NUMBER_OF_PROCESSORS%
     - nmake -l "TESTOPTS=-v -q" btest
@@ -110,6 +114,7 @@ for:
     - mingw32-make -j%JOBS% V=1
     - mingw32-make DESTDIR=../install install-nodoc
     - if not "%GEMS_FOR_TEST%" == "" ..\install\bin\gem install --no-document %GEMS_FOR_TEST%
+    - ..\install\bin\ruby.exe -v -ropenssl -e "puts 'Build    ' + OpenSSL::OPENSSL_VERSION, 'Runtime  ' + OpenSSL::OPENSSL_LIBRARY_VERSION"
   test_script:
     - mingw32-make test
     - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --timeout-scale=1.5 --excludes=../ruby/test/excludes/_appveyor -j %JOBS% --exclude win32ole --exclude test_open-uri"
