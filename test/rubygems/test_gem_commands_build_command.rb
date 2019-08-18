@@ -242,6 +242,45 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     util_test_build_gem @gem
   end
 
+  def test_execute_without_gem_name
+    some_gem = util_spec "some_gem" do |s|
+      s.license = "AGPL-3.0"
+      s.files = ["README.md"]
+    end
+
+    gemspec_dir  = File.join(@tempdir, "build_command_gem")
+    gemspec_file = File.join(gemspec_dir, some_gem.spec_name)
+    readme_file  = File.join(gemspec_dir, 'README.md')
+
+    FileUtils.mkdir_p(gemspec_dir)
+
+    File.open(readme_file, "w") do |f|
+      f.write("My awesome gem")
+    end
+
+    File.open(gemspec_file, "w") do |gs|
+      gs.write(some_gem.to_ruby)
+    end
+
+    @cmd.options[:args] = []
+
+    use_ui @ui do
+      Dir.chdir(gemspec_dir) do
+        @cmd.execute
+      end
+    end
+
+    output = @ui.output.split("\n")
+    assert_equal "  Successfully built RubyGem", output.shift
+    assert_equal "  Name: some_gem", output.shift
+    assert_equal "  Version: 2", output.shift
+    assert_equal "  File: some_gem-2.gem", output.shift
+    assert_equal [], output
+
+    some_gem = File.join(gemspec_dir, File.basename(some_gem.cache_file))
+    assert File.exist?(some_gem)
+  end
+
   def util_test_build_gem(gem)
     use_ui @ui do
       Dir.chdir @tempdir do

@@ -57,10 +57,18 @@ Gems can be saved to a specified filename with the output option:
   end
 
   def execute
-    build_gem
+    build_gem(gem_name)
   end
 
   private
+
+  def gem_name
+    get_one_optional_argument || find_gemspecs.first
+  end
+
+  def find_gemspecs
+    Dir.glob("*.gemspec").sort
+  end
 
   def build_gem(gem_name = get_one_optional_argument)
     gemspec = File.exist?(gem_name) ? gem_name : "#{gem_name}.gemspec"
