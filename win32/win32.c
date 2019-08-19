@@ -5177,6 +5177,9 @@ readlink(const char *path, char *buf, size_t bufsize)
 #ifndef SYMBOLIC_LINK_FLAG_DIRECTORY
 #define SYMBOLIC_LINK_FLAG_DIRECTORY (0x1)
 #endif
+#ifndef SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE
+#define SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE (0x2)
+#endif
 
 /* License: Ruby's */
 static int
@@ -5187,10 +5190,12 @@ w32_symlink(UINT cp, const char *src, const char *link)
     WCHAR *wsrc, *wlink;
     DWORD flag = 0;
     BOOLEAN ret;
+    int e;
 
     typedef BOOLEAN (WINAPI *create_symbolic_link_func)(WCHAR*, WCHAR*, DWORD);
     static create_symbolic_link_func create_symbolic_link =
 	(create_symbolic_link_func)-1;
+    static DWORD create_flag = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
 
     if (create_symbolic_link == (create_symbolic_link_func)-1) {
 	create_symbolic_link = (create_symbolic_link_func)
@@ -5201,6 +5206,14 @@ w32_symlink(UINT cp, const char *src, const char *link)
 	return -1;
     }
 
+    if (!*link) {
+	errno = ENOENT;
+	return -1;
+    }
+    if (!*src) {
+	errno = EINVAL;
+	return -1;
+    }
     len1 = MultiByteToWideChar(cp, 0, src, -1, NULL, 0);
     len2 = MultiByteToWideChar(cp, 0, link, -1, NULL, 0);
     wsrc = ALLOCV_N(WCHAR, buf, len1+len2);
@@ -5212,11 +5225,18 @@ w32_symlink(UINT cp, const char *src, const char *link)
     atts = GetFileAttributesW(wsrc);
     if (atts != -1 && atts & FILE_ATTRIBUTE_DIRECTORY)
 	flag = SYMBOLIC_LINK_FLAG_DIRECTORY;
-    ret = create_symbolic_link(wlink, wsrc, flag);
+    ret = create_symbolic_link(wlink, wsrc, flag |= create_flag);
+    if (!ret &&
+	(e = GetLastError()) == ERROR_INVALID_PARAMETER &&
+	(flag & SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE)) {
+	create_flag = 0;
+	flag &= ~SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
+	ret = create_symbolic_link(wlink, wsrc, flag);
+	if (!ret) e = GetLastError();
+    }
     ALLOCV_END(buf);
 
     if (!ret) {
-	int e = GetLastError();
 	errno = map_errno(e);
 	return -1;
     }
