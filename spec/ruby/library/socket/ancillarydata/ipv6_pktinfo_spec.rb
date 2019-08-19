@@ -58,7 +58,7 @@ with_feature :ancillary_data, :ipv6_pktinfo do
         end
 
         it 'is not the same object as the input Addrinfo' do
-          @addr.should_not == @source
+          @addr.should_not equal @source
         end
       end
 

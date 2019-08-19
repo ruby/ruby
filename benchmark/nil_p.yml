@@ -1,0 +1,9 @@
+prelude: |
+  class Niller; def nil?; true; end; end
+  xnil, notnil = nil, Object.new
+  niller = Niller.new
+benchmark:
+  - xnil.nil?
+  - notnil.nil?
+  - niller.nil?
+loop_count: 10000000

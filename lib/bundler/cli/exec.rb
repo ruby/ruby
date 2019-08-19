@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "bundler/current_ruby"
+require_relative "../current_ruby"
 
 module Bundler
   class CLI::Exec
@@ -27,12 +27,7 @@ module Bundler
         if !Bundler.settings[:disable_exec_load] && ruby_shebang?(bin_path)
           return kernel_load(bin_path, *args)
         end
-        # First, try to exec directly to something in PATH
-        if Bundler.current_ruby.jruby_18?
-          kernel_exec(bin_path, *args)
-        else
-          kernel_exec([bin_path, cmd], *args)
-        end
+        kernel_exec(bin_path, *args)
       else
         # exec using the given command
         kernel_exec(cmd, *args)
@@ -69,7 +64,7 @@ module Bundler
       Process.setproctitle(process_title(file, args)) if Process.respond_to?(:setproctitle)
       ui = Bundler.ui
       Bundler.ui = nil
-      require "bundler/setup"
+      require_relative "../setup"
       TRAPPED_SIGNALS.each {|s| trap(s, "DEFAULT") }
       Kernel.load(file)
     rescue SystemExit, SignalException

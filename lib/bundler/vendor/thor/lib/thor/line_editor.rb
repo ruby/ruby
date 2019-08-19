@@ -1,5 +1,5 @@
-require "bundler/vendor/thor/lib/thor/line_editor/basic"
-require "bundler/vendor/thor/lib/thor/line_editor/readline"
+require_relative "line_editor/basic"
+require_relative "line_editor/readline"
 
 class Bundler::Thor
   module LineEditor

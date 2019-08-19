@@ -7,12 +7,12 @@ platform_is :windows do
     end
 
     it "raises TypeError when given non-strings" do
-      lambda { WIN32OLE_METHOD.new(1, 2) }.should raise_error TypeError
+      -> { WIN32OLE_METHOD.new(1, 2) }.should raise_error TypeError
     end
 
     it "raises ArgumentError if only 1 argument is given" do
-      lambda { WIN32OLE_METHOD.new("hello") }.should raise_error ArgumentError
-      lambda { WIN32OLE_METHOD.new(@ole_type) }.should raise_error ArgumentError
+      -> { WIN32OLE_METHOD.new("hello") }.should raise_error ArgumentError
+      -> { WIN32OLE_METHOD.new(@ole_type) }.should raise_error ArgumentError
     end
 
     it "returns a valid WIN32OLE_METHOD object" do
@@ -21,11 +21,11 @@ platform_is :windows do
     end
 
     it "raises WIN32OLERuntimeError if the method does not exist" do
-      lambda { WIN32OLE_METHOD.new(@ole_type, "NonexistentMethod") }.should raise_error WIN32OLERuntimeError
+      -> { WIN32OLE_METHOD.new(@ole_type, "NonexistentMethod") }.should raise_error WIN32OLERuntimeError
     end
 
     it "raises TypeError if second argument is not a String" do
-      lambda { WIN32OLE_METHOD.new(@ole_type, 5) }.should raise_error TypeError
+      -> { WIN32OLE_METHOD.new(@ole_type, 5) }.should raise_error TypeError
     end
 
   end

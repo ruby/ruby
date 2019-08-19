@@ -9,18 +9,24 @@ module Bundler
     end
 
     def run
+      Bundler.ui.silence do
+        Bundler.definition.validate_runtime!
+        Bundler.load.lock
+      end
+
       spec = spec_for_gem(gem_name)
 
-      spec_not_found(gem_name) unless spec
-      return print_gem_path(spec) if @options[:path]
-      print_gem_info(spec)
+      if spec
+        return print_gem_path(spec) if @options[:path]
+        print_gem_info(spec)
+      end
     end
 
   private
 
     def spec_for_gem(gem_name)
       spec = Bundler.definition.specs.find {|s| s.name == gem_name }
-      spec || default_gem_spec(gem_name)
+      spec || default_gem_spec(gem_name) || Bundler::CLI::Common.select_spec(gem_name, :regex_match)
     end
 
     def default_gem_spec(gem_name)
@@ -34,7 +40,13 @@ module Bundler
     end
 
     def print_gem_path(spec)
-      Bundler.ui.info spec.full_gem_path
+      path = if spec.name == "bundler"
+        File.expand_path("../../../..", __FILE__)
+      else
+        spec.full_gem_path
+      end
+
+      Bundler.ui.info path
     end
 
     def print_gem_info(spec)

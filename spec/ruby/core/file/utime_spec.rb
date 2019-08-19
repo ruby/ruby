@@ -27,10 +27,10 @@ describe "File.utime" do
       File.atime(@file2).should be_close(@atime, 0.0001)
       File.mtime(@file2).should be_close(@mtime, 0.0001)
     else
-      File.atime(@file1).to_i.should be_close(@atime.to_i, 2)
-      File.mtime(@file1).to_i.should be_close(@mtime.to_i, 2)
-      File.atime(@file2).to_i.should be_close(@atime.to_i, 2)
-      File.mtime(@file2).to_i.should be_close(@mtime.to_i, 2)
+      File.atime(@file1).to_i.should be_close(@atime.to_i, TIME_TOLERANCE)
+      File.mtime(@file1).to_i.should be_close(@mtime.to_i, TIME_TOLERANCE)
+      File.atime(@file2).to_i.should be_close(@atime.to_i, TIME_TOLERANCE)
+      File.mtime(@file2).to_i.should be_close(@mtime.to_i, TIME_TOLERANCE)
     end
   end
 
@@ -43,10 +43,10 @@ describe "File.utime" do
       File.atime(@file2).should be_close(tn, 0.050)
       File.mtime(@file2).should be_close(tn, 0.050)
     else
-      File.atime(@file1).to_i.should be_close(Time.now.to_i, 2)
-      File.mtime(@file1).to_i.should be_close(Time.now.to_i, 2)
-      File.atime(@file2).to_i.should be_close(Time.now.to_i, 2)
-      File.mtime(@file2).to_i.should be_close(Time.now.to_i, 2)
+      File.atime(@file1).to_i.should be_close(Time.now.to_i, TIME_TOLERANCE)
+      File.mtime(@file1).to_i.should be_close(Time.now.to_i, TIME_TOLERANCE)
+      File.atime(@file2).to_i.should be_close(Time.now.to_i, TIME_TOLERANCE)
+      File.mtime(@file2).to_i.should be_close(Time.now.to_i, TIME_TOLERANCE)
     end
   end
 
@@ -63,10 +63,10 @@ describe "File.utime" do
       File.mtime(@file2).should be_close(@mtime, 0.0001)
     else
       File.utime(@atime.to_i, @mtime.to_i, @file1, @file2)
-      File.atime(@file1).to_i.should be_close(@atime.to_i, 2)
-      File.mtime(@file1).to_i.should be_close(@mtime.to_i, 2)
-      File.atime(@file2).to_i.should be_close(@atime.to_i, 2)
-      File.mtime(@file2).to_i.should be_close(@mtime.to_i, 2)
+      File.atime(@file1).to_i.should be_close(@atime.to_i, TIME_TOLERANCE)
+      File.mtime(@file1).to_i.should be_close(@mtime.to_i, TIME_TOLERANCE)
+      File.atime(@file2).to_i.should be_close(@atime.to_i, TIME_TOLERANCE)
+      File.mtime(@file2).to_i.should be_close(@mtime.to_i, TIME_TOLERANCE)
     end
   end
 

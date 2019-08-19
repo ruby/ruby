@@ -8,6 +8,19 @@ module REXMLTests
     end
 
     class TestInvalid < self
+      def test_top_level_end_tag
+        exception = assert_raise(REXML::ParseException) do
+          parse("</a>")
+        end
+        assert_equal(<<-DETAIL.chomp, exception.to_s)
+Unexpected top-level end tag (got 'a')
+Line: 1
+Position: 4
+Last 80 unconsumed characters:
+
+        DETAIL
+      end
+
       def test_no_end_tag
         exception = assert_raise(REXML::ParseException) do
           parse("<a></")

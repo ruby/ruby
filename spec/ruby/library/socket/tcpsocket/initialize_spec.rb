@@ -5,7 +5,7 @@ describe 'TCPSocket#initialize' do
   SocketSpecs.each_ip_protocol do |family, ip_address|
     describe 'when no server is listening on the given address' do
       it 'raises Errno::ECONNREFUSED' do
-        lambda { TCPSocket.new(ip_address, 666) }.should raise_error(Errno::ECONNREFUSED)
+        -> { TCPSocket.new(ip_address, 666) }.should raise_error(Errno::ECONNREFUSED)
       end
     end
 
@@ -31,7 +31,7 @@ describe 'TCPSocket#initialize' do
       end
 
       it 'raises SocketError when the port number is a non numeric String' do
-        lambda { TCPSocket.new(ip_address, 'cats') }.should raise_error(SocketError)
+        -> { TCPSocket.new(ip_address, 'cats') }.should raise_error(SocketError)
       end
 
       it 'set the socket to binmode' do

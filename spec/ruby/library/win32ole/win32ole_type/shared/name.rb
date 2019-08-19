@@ -7,7 +7,7 @@ platform_is :windows do
     end
 
     it "raises ArgumentError if argument is given" do
-      lambda { @ole_type.send(@method, 1) }.should raise_error ArgumentError
+      -> { @ole_type.send(@method, 1) }.should raise_error ArgumentError
     end
 
     it "returns a String" do

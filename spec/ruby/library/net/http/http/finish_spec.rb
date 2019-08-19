@@ -23,7 +23,7 @@ describe "Net::HTTP#finish" do
 
   describe "when self has not been started yet" do
     it "raises an IOError" do
-      lambda { @http.finish }.should raise_error(IOError)
+      -> { @http.finish }.should raise_error(IOError)
     end
   end
 end

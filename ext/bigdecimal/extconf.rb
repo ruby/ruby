@@ -27,6 +27,7 @@ have_func("rb_rational_num", "ruby.h")
 have_func("rb_rational_den", "ruby.h")
 have_func("rb_array_const_ptr", "ruby.h")
 have_func("rb_sym2str", "ruby.h")
+have_func("rb_opts_exception_p", "ruby.h")
 
 if File.file?(File.expand_path('../lib/bigdecimal.rb', __FILE__))
   bigdecimal_rb = "$(srcdir)/lib/bigdecimal.rb"

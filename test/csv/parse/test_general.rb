@@ -142,7 +142,7 @@ class TestCSVParseGeneral < Test::Unit::TestCase
     error = assert_raise(CSV::MalformedCSVError) do
       CSV.parse_line("1,2\r,3", row_sep: "\n")
     end
-    assert_equal("Unquoted fields do not allow \\r or \\n in line 1.",
+    assert_equal("Unquoted fields do not allow new line <\"\\r\"> in line 1.",
                  error.message)
   end
 
@@ -158,7 +158,7 @@ line,5,jkl
     error = assert_raise(CSV::MalformedCSVError) do
       CSV.parse(csv)
     end
-    assert_equal("Unquoted fields do not allow \\r or \\n in line 4.",
+    assert_equal("Unquoted fields do not allow new line <\"\\r\"> in line 4.",
                  error.message)
   end
 

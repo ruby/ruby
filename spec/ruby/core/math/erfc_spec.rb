@@ -20,7 +20,7 @@ describe "Math.erfc" do
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    lambda { Math.erfc("test") }.should raise_error(TypeError)
+    -> { Math.erfc("test") }.should raise_error(TypeError)
   end
 
   it "returns NaN given NaN" do
@@ -28,7 +28,7 @@ describe "Math.erfc" do
   end
 
   it "raises a TypeError if the argument is nil" do
-    lambda { Math.erfc(nil) }.should raise_error(TypeError)
+    -> { Math.erfc(nil) }.should raise_error(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

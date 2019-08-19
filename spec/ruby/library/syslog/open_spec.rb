@@ -74,10 +74,10 @@ platform_is_not :windows do
 
       it "raises an error if the log is opened" do
         Syslog.open
-        lambda {
+        -> {
           Syslog.open
         }.should raise_error(RuntimeError, /syslog already open/)
-        lambda {
+        -> {
           Syslog.close
           Syslog.open
         }.should_not raise_error

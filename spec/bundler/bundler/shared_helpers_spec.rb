@@ -14,7 +14,7 @@ RSpec.describe Bundler::SharedHelpers do
     before { ENV["BUNDLE_GEMFILE"] = "/path/Gemfile" }
 
     context "Gemfile is present" do
-      let(:expected_gemfile_path) { Pathname.new("/path/Gemfile") }
+      let(:expected_gemfile_path) { Pathname.new("/path/Gemfile").expand_path }
 
       it "returns the Gemfile path" do
         expect(subject.default_gemfile).to eq(expected_gemfile_path)
@@ -74,7 +74,7 @@ RSpec.describe Bundler::SharedHelpers do
     end
 
     context ".bundle is global .bundle" do
-      let(:global_rubygems_dir) { Pathname.new("#{bundled_app}") }
+      let(:global_rubygems_dir) { Pathname.new(bundled_app) }
 
       before do
         Dir.mkdir ".bundle"
@@ -236,7 +236,7 @@ RSpec.describe Bundler::SharedHelpers do
     shared_examples_for "ENV['RUBYOPT'] gets set correctly" do
       it "ensures -rbundler/setup is at the beginning of ENV['RUBYOPT']" do
         subject.set_bundle_environment
-        expect(ENV["RUBYOPT"].split(" ")).to start_with("-rbundler/setup")
+        expect(ENV["RUBYOPT"].split(" ")).to start_with("-r#{lib}/bundler/setup")
       end
     end
 
@@ -255,6 +255,7 @@ RSpec.describe Bundler::SharedHelpers do
     end
 
     it "calls the appropriate set methods" do
+      expect(subject).to receive(:set_bundle_variables)
       expect(subject).to receive(:set_path)
       expect(subject).to receive(:set_rubyopt)
       expect(subject).to receive(:set_rubylib)
@@ -288,7 +289,7 @@ RSpec.describe Bundler::SharedHelpers do
       )
     end
 
-    context "with a jruby path_separator regex", :ruby => "1.9" do
+    context "with a jruby path_separator regex" do
       # In versions of jruby that supported ruby 1.8, the path separator was the standard File::PATH_SEPARATOR
       let(:regex) { Regexp.new("(?<!jar:file|jar|file|classpath|uri:classloader|uri|http|https):") }
       it "does not exit if bundle path is the standard uri path" do
@@ -389,12 +390,13 @@ RSpec.describe Bundler::SharedHelpers do
 
     context "bundle executable in ENV['BUNDLE_BIN_PATH'] does not exist" do
       before { ENV["BUNDLE_BIN_PATH"] = "/does/not/exist" }
-      before { Bundler.rubygems.replace_bin_path [], [] }
+      before { Bundler.rubygems.replace_bin_path [] }
 
       it "sets BUNDLE_BIN_PATH to the bundle executable file" do
         subject.set_bundle_environment
-        bundle_exe = ruby_core? ? "../../../../exe/bundle" : "../../../exe/bundle"
-        expect(ENV["BUNDLE_BIN_PATH"]).to eq(File.expand_path(bundle_exe, __FILE__))
+        bin_path = ENV["BUNDLE_BIN_PATH"]
+        expect(bin_path).to eq(bindir.join("bundle").to_s)
+        expect(File.exist?(bin_path)).to be true
       end
     end
 
@@ -455,7 +457,7 @@ RSpec.describe Bundler::SharedHelpers do
       end
     end
 
-    context "system throws Errno::ENOTSUP", :ruby => "1.9" do
+    context "system throws Errno::ENOTSUP" do
       let(:file_op_block) { proc {|_path| raise Errno::ENOTSUP } }
 
       it "raises a OperationNotSupportedError" do

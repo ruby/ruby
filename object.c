@@ -186,7 +186,11 @@ rb_eql(VALUE obj1, VALUE obj2)
  *
  *  The #eql? method returns <code>true</code> if +obj+ and +other+
  *  refer to the same hash key.  This is used by Hash to test members
- *  for equality.  For objects of class Object, #eql?  is synonymous
+ *  for equality.  For any pair of objects where #eql? returns +true+,
+ *  the #hash value of both objects must be equal. So any subclass
+ *  that overrides #eql? should also override #hash appropriately.
+ *
+ *  For objects of class Object, #eql?  is synonymous
  *  with #==.  Subclasses normally continue this tradition by aliasing
  *  #eql? to their overridden #== method, but there are exceptions.
  *  Numeric types, for example, perform type conversion across #==,
@@ -205,6 +209,25 @@ rb_obj_equal(VALUE obj1, VALUE obj2)
     return Qfalse;
 }
 
+/**
+ * call-seq:
+ *    obj.hash    -> integer
+ *
+ * Generates an Integer hash value for this object.  This function must have the
+ * property that <code>a.eql?(b)</code> implies <code>a.hash == b.hash</code>.
+ *
+ * The hash value is used along with #eql? by the Hash class to determine if
+ * two objects reference the same hash key.  Any hash value that exceeds the
+ * capacity of an Integer will be truncated before being used.
+ *
+ * The hash value for an object may not be identical across invocations or
+ * implementations of Ruby.  If you need a stable identifier across Ruby
+ * invocations and implementations you will need to generate one with a custom
+ * method.
+ *--
+ * \private
+ *++
+ */
 VALUE rb_obj_hash(VALUE obj);
 
 /**
@@ -1664,7 +1687,7 @@ rb_true(VALUE obj)
  */
 
 
-static VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_false(VALUE obj)
 {
     return Qfalse;
@@ -1800,7 +1823,7 @@ rb_mod_to_s(VALUE klass)
 	rb_str_cat2(s, ">");
 	return s;
     }
-    return rb_str_dup(rb_class_name(klass));
+    return rb_class_name(klass);
 }
 
 /*
@@ -2262,9 +2285,14 @@ rb_class_get_superclass(VALUE klass)
     return RCLASS(klass)->super;
 }
 
+static const char bad_instance_name[] = "`%1$s' is not allowed as an instance variable name";
+static const char bad_class_name[] = "`%1$s' is not allowed as a class variable name";
+static const char bad_const_name[] = "wrong constant name %1$s";
+static const char bad_attr_name[] = "invalid attribute name `%1$s'";
+#define wrong_constant_name bad_const_name
+
 /*! \private */
-#define id_for_var(obj, name, part, type) \
-    id_for_setter(obj, name, type, "`%1$s' is not allowed as "#part" "#type" variable name")
+#define id_for_var(obj, name, type) id_for_setter(obj, name, type, bad_##type##_name)
 /*! \private */
 #define id_for_setter(obj, name, type, message) \
     check_setter_id(obj, &(name), rb_is_##type##_id, rb_is_##type##_name, message, strlen(message))
@@ -2295,13 +2323,10 @@ rb_is_attr_id(ID id)
     return rb_is_local_id(id) || rb_is_const_id(id);
 }
 
-static const char wrong_constant_name[] = "wrong constant name %1$s";
-static const char invalid_attribute_name[] = "invalid attribute name `%1$s'";
-
 static ID
 id_for_attr(VALUE obj, VALUE name)
 {
-    ID id = id_for_setter(obj, name, attr, invalid_attribute_name);
+    ID id = id_for_var(obj, name, attr);
     if (!id) id = rb_intern_str(name);
     return id;
 }
@@ -2526,7 +2551,19 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 	    name = ID2SYM(id);
 	    goto wrong_name;
 	}
-	mod = RTEST(recur) ? rb_const_get(mod, id) : rb_const_get_at(mod, id);
+#if 0
+        mod = rb_const_get_0(mod, id, beglen > 0 || !RTEST(recur), RTEST(recur), FALSE);
+#else
+        if (!RTEST(recur)) {
+            mod = rb_const_get_at(mod, id);
+        }
+        else if (beglen == 0) {
+            mod = rb_const_get(mod, id);
+        }
+        else {
+            mod = rb_const_get_from(mod, id);
+        }
+#endif
     }
 
     return mod;
@@ -2554,7 +2591,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 static VALUE
 rb_mod_const_set(VALUE mod, VALUE name, VALUE value)
 {
-    ID id = id_for_setter(mod, name, const, wrong_constant_name);
+    ID id = id_for_var(mod, name, const);
     if (!id) id = rb_intern_str(name);
     rb_const_set(mod, id, value);
 
@@ -2674,16 +2711,30 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
 	    name = ID2SYM(id);
 	    goto wrong_name;
 	}
-	if (RTEST(recur)) {
-	    if (!rb_const_defined(mod, id))
-		return Qfalse;
-	    mod = rb_const_get(mod, id);
-	}
-	else {
+
+#if 0
+        mod = rb_const_search(mod, id, beglen > 0 || !RTEST(recur), RTEST(recur), FALSE);
+        if (mod == Qundef) return Qfalse;
+#else
+        if (!RTEST(recur)) {
 	    if (!rb_const_defined_at(mod, id))
 		return Qfalse;
+            if (p == pend) return Qtrue;
 	    mod = rb_const_get_at(mod, id);
 	}
+        else if (beglen == 0) {
+            if (!rb_const_defined(mod, id))
+                return Qfalse;
+            if (p == pend) return Qtrue;
+            mod = rb_const_get(mod, id);
+        }
+        else {
+            if (!rb_const_defined_from(mod, id))
+                return Qfalse;
+            if (p == pend) return Qtrue;
+            mod = rb_const_get_from(mod, id);
+        }
+#endif
 
 	if (p < pend && !RB_TYPE_P(mod, T_MODULE) && !RB_TYPE_P(mod, T_CLASS)) {
 	    rb_raise(rb_eTypeError, "%"PRIsVALUE" does not refer to class/module",
@@ -2692,6 +2743,105 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
     }
 
     return Qtrue;
+}
+
+static VALUE
+rb_mod_const_source_location(int argc, VALUE *argv, VALUE mod)
+{
+    VALUE name, recur, loc = Qnil;
+    rb_encoding *enc;
+    const char *pbeg, *p, *path, *pend;
+    ID id;
+
+    rb_check_arity(argc, 1, 2);
+    name = argv[0];
+    recur = (argc == 1) ? Qtrue : argv[1];
+
+    if (SYMBOL_P(name)) {
+        if (!rb_is_const_sym(name)) goto wrong_name;
+        id = rb_check_id(&name);
+        if (!id) return Qnil;
+        return RTEST(recur) ? rb_const_source_location(mod, id) : rb_const_source_location_at(mod, id);
+    }
+
+    path = StringValuePtr(name);
+    enc = rb_enc_get(name);
+
+    if (!rb_enc_asciicompat(enc)) {
+        rb_raise(rb_eArgError, "invalid class path encoding (non ASCII)");
+    }
+
+    pbeg = p = path;
+    pend = path + RSTRING_LEN(name);
+
+    if (p >= pend || !*p) {
+      wrong_name:
+        rb_name_err_raise(wrong_constant_name, mod, name);
+    }
+
+    if (p + 2 < pend && p[0] == ':' && p[1] == ':') {
+        mod = rb_cObject;
+        p += 2;
+        pbeg = p;
+    }
+
+    while (p < pend) {
+        VALUE part;
+        long len, beglen;
+
+        while (p < pend && *p != ':') p++;
+
+        if (pbeg == p) goto wrong_name;
+
+        id = rb_check_id_cstr(pbeg, len = p-pbeg, enc);
+        beglen = pbeg-path;
+
+        if (p < pend && p[0] == ':') {
+            if (p + 2 >= pend || p[1] != ':') goto wrong_name;
+            p += 2;
+            pbeg = p;
+        }
+
+        if (!id) {
+            part = rb_str_subseq(name, beglen, len);
+            OBJ_FREEZE(part);
+            if (!rb_is_const_name(part)) {
+                name = part;
+                goto wrong_name;
+            }
+            else {
+                return Qnil;
+            }
+        }
+        if (!rb_is_const_id(id)) {
+            name = ID2SYM(id);
+            goto wrong_name;
+        }
+        if (p < pend) {
+            if (RTEST(recur)) {
+                mod = rb_const_get(mod, id);
+            }
+            else {
+                mod = rb_const_get_at(mod, id);
+            }
+            if (!RB_TYPE_P(mod, T_MODULE) && !RB_TYPE_P(mod, T_CLASS)) {
+                rb_raise(rb_eTypeError, "%"PRIsVALUE" does not refer to class/module",
+                         QUOTE(name));
+            }
+        }
+        else {
+            if (RTEST(recur)) {
+                loc = rb_const_source_location(mod, id);
+            }
+            else {
+                loc = rb_const_source_location_at(mod, id);
+            }
+            break;
+        }
+        recur = Qfalse;
+    }
+
+    return loc;
 }
 
 /*
@@ -2719,7 +2869,7 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
 static VALUE
 rb_obj_ivar_get(VALUE obj, VALUE iv)
 {
-    ID id = id_for_var(obj, iv, an, instance);
+    ID id = id_for_var(obj, iv, instance);
 
     if (!id) {
 	return Qnil;
@@ -2753,7 +2903,7 @@ rb_obj_ivar_get(VALUE obj, VALUE iv)
 static VALUE
 rb_obj_ivar_set(VALUE obj, VALUE iv, VALUE val)
 {
-    ID id = id_for_var(obj, iv, an, instance);
+    ID id = id_for_var(obj, iv, instance);
     if (!id) id = rb_intern_str(iv);
     return rb_ivar_set(obj, id, val);
 }
@@ -2781,7 +2931,7 @@ rb_obj_ivar_set(VALUE obj, VALUE iv, VALUE val)
 static VALUE
 rb_obj_ivar_defined(VALUE obj, VALUE iv)
 {
-    ID id = id_for_var(obj, iv, an, instance);
+    ID id = id_for_var(obj, iv, instance);
 
     if (!id) {
 	return Qfalse;
@@ -2808,7 +2958,7 @@ rb_obj_ivar_defined(VALUE obj, VALUE iv)
 static VALUE
 rb_mod_cvar_get(VALUE obj, VALUE iv)
 {
-    ID id = id_for_var(obj, iv, a, class);
+    ID id = id_for_var(obj, iv, class);
 
     if (!id) {
 	rb_name_err_raise("uninitialized class variable %1$s in %2$s",
@@ -2840,7 +2990,7 @@ rb_mod_cvar_get(VALUE obj, VALUE iv)
 static VALUE
 rb_mod_cvar_set(VALUE obj, VALUE iv, VALUE val)
 {
-    ID id = id_for_var(obj, iv, a, class);
+    ID id = id_for_var(obj, iv, class);
     if (!id) id = rb_intern_str(iv);
     rb_cvar_set(obj, id, val);
     return val;
@@ -2865,7 +3015,7 @@ rb_mod_cvar_set(VALUE obj, VALUE iv, VALUE val)
 static VALUE
 rb_mod_cvar_defined(VALUE obj, VALUE iv)
 {
-    ID id = id_for_var(obj, iv, a, class);
+    ID id = id_for_var(obj, iv, class);
 
     if (!id) {
 	return Qfalse;
@@ -3203,17 +3353,30 @@ rb_Integer(VALUE val)
     return rb_convert_to_integer(val, 0, TRUE);
 }
 
-static int
-opts_exception_p(VALUE opts)
+int
+rb_bool_expected(VALUE obj, const char *flagname)
 {
-    static ID kwds[1];
-    VALUE exception;
-    if (!kwds[0]) {
-        kwds[0] = idException;
+    switch (obj) {
+      case Qtrue: case Qfalse:
+        break;
+      default:
+        rb_raise(rb_eArgError, "true or false is expected as %s: %+"PRIsVALUE,
+                 flagname, obj);
     }
-    rb_get_kwargs(opts, kwds, 0, 1, &exception);
-    return exception != Qfalse;
+    return obj != Qfalse;
 }
+
+int
+rb_opts_exception_p(VALUE opts, int default_value)
+{
+    static ID kwds[1] = {idException};
+    VALUE exception;
+    if (rb_get_kwargs(opts, kwds, 0, 1, &exception))
+        return rb_bool_expected(exception, "exception");
+    return default_value;
+}
+
+#define opts_exception_p(opts) rb_opts_exception_p((opts), TRUE)
 
 /*
  *  call-seq:
@@ -3997,7 +4160,7 @@ rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
  *      DELEGATE = [:puts, :p]
  *
  *      def method_missing(name, *args, &block)
- *        super unless DELEGATE.include? name
+ *        return super unless DELEGATE.include? name
  *        ::Kernel.send(name, *args, &block)
  *      end
  *
@@ -4223,6 +4386,7 @@ InitVM_Object(void)
     rb_define_method(rb_cModule, "const_get", rb_mod_const_get, -1);
     rb_define_method(rb_cModule, "const_set", rb_mod_const_set, 2);
     rb_define_method(rb_cModule, "const_defined?", rb_mod_const_defined, -1);
+    rb_define_method(rb_cModule, "const_source_location", rb_mod_const_source_location, -1);
     rb_define_private_method(rb_cModule, "remove_const",
 			     rb_mod_remove_const, 1); /* in variable.c */
     rb_define_method(rb_cModule, "const_missing",

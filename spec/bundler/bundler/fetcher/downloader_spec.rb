@@ -82,13 +82,32 @@ RSpec.describe Bundler::Fetcher::Downloader do
         expect { subject.fetch(uri, options, counter) }.to raise_error(Bundler::Fetcher::AuthenticationRequiredError,
           /Authentication is required for www.uri-to-fetch.com/)
       end
+
+      context "when the there are credentials provided in the request" do
+        let(:uri) { URI("http://user:password@www.uri-to-fetch.com") }
+
+        it "should raise a Bundler::Fetcher::BadAuthenticationError that doesn't contain the password" do
+          expect { subject.fetch(uri, options, counter) }.
+            to raise_error(Bundler::Fetcher::BadAuthenticationError, /Bad username or password for www.uri-to-fetch.com/)
+        end
+      end
     end
 
     context "when the request response is a Net::HTTPNotFound" do
       let(:http_response) { Net::HTTPNotFound.new("1.1", 404, "Not Found") }
 
       it "should raise a Bundler::Fetcher::FallbackError with Net::HTTPNotFound" do
-        expect { subject.fetch(uri, options, counter) }.to raise_error(Bundler::Fetcher::FallbackError, "Net::HTTPNotFound")
+        expect { subject.fetch(uri, options, counter) }.
+          to raise_error(Bundler::Fetcher::FallbackError, "Net::HTTPNotFound: http://www.uri-to-fetch.com/api/v2/endpoint")
+      end
+
+      context "when the there are credentials provided in the request" do
+        let(:uri) { URI("http://username:password@www.uri-to-fetch.com/api/v2/endpoint") }
+
+        it "should raise a Bundler::Fetcher::FallbackError that doesn't contain the password" do
+          expect { subject.fetch(uri, options, counter) }.
+            to raise_error(Bundler::Fetcher::FallbackError, "Net::HTTPNotFound: http://username@www.uri-to-fetch.com/api/v2/endpoint")
+        end
       end
     end
 

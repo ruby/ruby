@@ -27,12 +27,12 @@ ruby_version_is '2.5' do
     end
 
     it "raises a TypeError when given a non-Integer" do
-      lambda {
+      -> {
         (obj = mock('10')).should_receive(:coerce).any_number_of_times.and_return([42,10])
         13.anybits?(obj)
       }.should raise_error(TypeError)
-      lambda { 13.anybits?("10")    }.should raise_error(TypeError)
-      lambda { 13.anybits?(:symbol) }.should raise_error(TypeError)
+      -> { 13.anybits?("10")    }.should raise_error(TypeError)
+      -> { 13.anybits?(:symbol) }.should raise_error(TypeError)
     end
   end
 end

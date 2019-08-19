@@ -173,7 +173,7 @@ class TestTime < Test::Unit::TestCase
     assert_equal(10000, Time.at(0.00001).nsec)
     assert_equal(3000, Time.at(0.000003).nsec)
     assert_equal(200, Time.at(0.0000002r).nsec)
-    assert_equal(199, Time.at(0.0000002).nsec)
+    assert_in_delta(200, Time.at(0.0000002).nsec, 1, "should be within FP error")
     assert_equal(10, Time.at(0.00000001).nsec)
     assert_equal(1, Time.at(0.000000001).nsec)
 
@@ -373,6 +373,16 @@ class TestTime < Test::Unit::TestCase
       assert_equal('UTC', t1.zone)
       assert_equal('UTC', t2.zone)
     end
+  end
+
+  def test_marshal_distant_past
+    assert_marshal_roundtrip(Time.utc(1890, 1, 1))
+    assert_marshal_roundtrip(Time.utc(-4.5e9, 1, 1))
+  end
+
+  def test_marshal_distant_future
+    assert_marshal_roundtrip(Time.utc(30000, 1, 1))
+    assert_marshal_roundtrip(Time.utc(5.67e9, 4, 8))
   end
 
   def test_at3
@@ -968,6 +978,58 @@ class TestTime < Test::Unit::TestCase
       assert_equal(Rational(i % 10, 10), t2.subsec)
       off += 0.1
     }
+  end
+
+  def test_floor
+    t = Time.utc(1999,12,31, 23,59,59)
+    t2 = (t+0.4).floor
+    assert_equal([59,59,23, 31,12,1999, 5,365,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+0.49).floor
+    assert_equal([59,59,23, 31,12,1999, 5,365,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+0.5).floor
+    assert_equal([59,59,23, 31,12,1999, 5,365,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+1.4).floor
+    assert_equal([0,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+1.49).floor
+    assert_equal([0,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+1.5).floor
+    assert_equal([0,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+
+    t2 = (t+0.123456789).floor(4)
+    assert_equal([59,59,23, 31,12,1999, 5,365,false,"UTC"], t2.to_a)
+    assert_equal(Rational(1234,10000), t2.subsec)
+  end
+
+  def test_ceil
+    t = Time.utc(1999,12,31, 23,59,59)
+    t2 = (t+0.4).ceil
+    assert_equal([0,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+0.49).ceil
+    assert_equal([0,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+0.5).ceil
+    assert_equal([0,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+1.4).ceil
+    assert_equal([1,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+1.49).ceil
+    assert_equal([1,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+1.5).ceil
+    assert_equal([1,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+
+    t2 = (t+0.123456789).ceil(4)
+    assert_equal([59,59,23, 31,12,1999, 5,365,false,"UTC"], t2.to_a)
+    assert_equal(Rational(1235,10000), t2.subsec)
   end
 
   def test_getlocal_dont_share_eigenclass

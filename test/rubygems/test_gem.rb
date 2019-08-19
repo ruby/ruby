@@ -17,6 +17,8 @@ class TestGem < Gem::TestCase
 
   PLUGINS_LOADED = [] # rubocop:disable Style/MutableConstant
 
+  PROJECT_DIR = File.expand_path('../../..', __FILE__).untaint
+
   def setup
     super
 
@@ -267,6 +269,14 @@ class TestGem < Gem::TestCase
     assert_match 'a-2/bin/exec', Gem.bin_path('a', 'exec', '>= 0')
   end
 
+  def test_self_activate_bin_path_no_exec_name
+    e = assert_raises ArgumentError do
+      Gem.activate_bin_path 'a'
+    end
+
+    assert_equal 'you must supply exec_name', e.message
+  end
+
   def test_activate_bin_path_resolves_eagerly
     a1 = util_spec 'a', '1' do |s|
       s.executables = ['exec']
@@ -329,6 +339,40 @@ class TestGem < Gem::TestCase
     assert_includes e.message, "To update to the latest version installed on your system, run `bundle update --bundler`."
     assert_includes e.message, "To install the missing version, run `gem install bundler:9999`"
     refute_includes e.message, "can't find gem bundler (>= 0.a) with executable bundle"
+  end
+
+  def test_activate_bin_path_selects_exact_bundler_version_if_present
+    bundler_latest = util_spec 'bundler', '2.0.1' do |s|
+      s.executables = ['bundle']
+    end
+
+    bundler_previous = util_spec 'bundler', '2.0.0' do |s|
+      s.executables = ['bundle']
+    end
+
+    install_specs bundler_latest, bundler_previous
+
+    File.open("Gemfile.lock", "w") do |f|
+      f.write <<-L.gsub(/ {8}/, "")
+        GEM
+          remote: https://rubygems.org/
+          specs:
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+
+        BUNDLED WITH
+          2.0.0
+      L
+    end
+
+    File.open("Gemfile", "w") { |f| f.puts('source "https://rubygems.org"') }
+
+    load Gem.activate_bin_path("bundler", "bundle", ">= 0.a")
+
+    assert_equal %w(bundler-2.0.0), loaded_spec_names
   end
 
   def test_self_bin_path_no_exec_name
@@ -457,55 +501,43 @@ class TestGem < Gem::TestCase
   end
 
   def test_default_path
-    orig_vendordir = RbConfig::CONFIG['vendordir']
-    RbConfig::CONFIG['vendordir'] = File.join @tempdir, 'vendor'
+    vendordir(File.join(@tempdir, 'vendor')) do
+      FileUtils.rm_rf Gem.user_home
 
-    FileUtils.rm_rf Gem.user_home
+      expected = [Gem.default_dir]
 
-    expected = [Gem.default_dir]
-
-    assert_equal expected, Gem.default_path
-  ensure
-    RbConfig::CONFIG['vendordir'] = orig_vendordir
+      assert_equal expected, Gem.default_path
+    end
   end
 
   def test_default_path_missing_vendor
-    orig_vendordir = RbConfig::CONFIG['vendordir']
-    RbConfig::CONFIG.delete 'vendordir'
+    vendordir(nil) do
+      FileUtils.rm_rf Gem.user_home
 
-    FileUtils.rm_rf Gem.user_home
+      expected = [Gem.default_dir]
 
-    expected = [Gem.default_dir]
-
-    assert_equal expected, Gem.default_path
-  ensure
-    RbConfig::CONFIG['vendordir'] = orig_vendordir
+      assert_equal expected, Gem.default_path
+    end
   end
 
   def test_default_path_user_home
-    orig_vendordir = RbConfig::CONFIG['vendordir']
-    RbConfig::CONFIG['vendordir'] = File.join @tempdir, 'vendor'
+    vendordir(File.join(@tempdir, 'vendor')) do
+      expected = [Gem.user_dir, Gem.default_dir]
 
-    expected = [Gem.user_dir, Gem.default_dir]
-
-    assert_equal expected, Gem.default_path
-  ensure
-    RbConfig::CONFIG['vendordir'] = orig_vendordir
+      assert_equal expected, Gem.default_path
+    end
   end
 
   def test_default_path_vendor_dir
-    orig_vendordir = RbConfig::CONFIG['vendordir']
-    RbConfig::CONFIG['vendordir'] = File.join @tempdir, 'vendor'
+    vendordir(File.join(@tempdir, 'vendor')) do
+      FileUtils.mkdir_p Gem.vendor_dir
 
-    FileUtils.mkdir_p Gem.vendor_dir
+      FileUtils.rm_rf Gem.user_home
 
-    FileUtils.rm_rf Gem.user_home
+      expected = [Gem.default_dir, Gem.vendor_dir]
 
-    expected = [Gem.default_dir, Gem.vendor_dir]
-
-    assert_equal expected, Gem.default_path
-  ensure
-    RbConfig::CONFIG['vendordir'] = orig_vendordir
+      assert_equal expected, Gem.default_path
+    end
   end
 
   def test_self_default_sources
@@ -634,7 +666,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_find_files
-    cwd = File.expand_path("test/rubygems", @@project_dir)
+    cwd = File.expand_path("test/rubygems", PROJECT_DIR)
     $LOAD_PATH.unshift cwd
 
     discover_path = File.join 'lib', 'sff', 'discover.rb'
@@ -654,7 +686,7 @@ class TestGem < Gem::TestCase
     Gem.refresh
 
     expected = [
-      File.expand_path('test/rubygems/sff/discover.rb', @@project_dir),
+      File.expand_path('test/rubygems/sff/discover.rb', PROJECT_DIR),
       File.join(foo2.full_gem_path, discover_path),
       File.join(foo1.full_gem_path, discover_path),
     ]
@@ -666,7 +698,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_find_files_with_gemfile
-    cwd = File.expand_path("test/rubygems", @@project_dir)
+    cwd = File.expand_path("test/rubygems", PROJECT_DIR)
     actual_load_path = $LOAD_PATH.unshift(cwd).dup
 
     discover_path = File.join 'lib', 'sff', 'discover.rb'
@@ -691,18 +723,18 @@ class TestGem < Gem::TestCase
     Gem.use_gemdeps(File.join Dir.pwd, 'Gemfile')
 
     expected = [
-      File.expand_path('test/rubygems/sff/discover.rb', @@project_dir),
+      File.expand_path('test/rubygems/sff/discover.rb', PROJECT_DIR),
       File.join(foo1.full_gem_path, discover_path)
     ].sort
 
     assert_equal expected, Gem.find_files('sff/discover').sort
     assert_equal expected, Gem.find_files('sff/**.rb').sort, '[ruby-core:31730]'
   ensure
-    assert_equal cwd, actual_load_path.shift
+    assert_equal cwd, actual_load_path.shift unless Gem.java_platform?
   end
 
   def test_self_find_latest_files
-    cwd = File.expand_path("test/rubygems", @@project_dir)
+    cwd = File.expand_path("test/rubygems", PROJECT_DIR)
     $LOAD_PATH.unshift cwd
 
     discover_path = File.join 'lib', 'sff', 'discover.rb'
@@ -722,7 +754,7 @@ class TestGem < Gem::TestCase
     Gem.refresh
 
     expected = [
-      File.expand_path('test/rubygems/sff/discover.rb', @@project_dir),
+      File.expand_path('test/rubygems/sff/discover.rb', PROJECT_DIR),
       File.join(foo2.full_gem_path, discover_path),
     ]
 
@@ -874,12 +906,12 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_prefix
-    assert_equal @@project_dir, Gem.prefix
+    assert_equal PROJECT_DIR, Gem.prefix
   end
 
   def test_self_prefix_libdir
     orig_libdir = RbConfig::CONFIG['libdir']
-    RbConfig::CONFIG['libdir'] = @@project_dir
+    RbConfig::CONFIG['libdir'] = PROJECT_DIR
 
     assert_nil Gem.prefix
   ensure
@@ -888,7 +920,7 @@ class TestGem < Gem::TestCase
 
   def test_self_prefix_sitelibdir
     orig_sitelibdir = RbConfig::CONFIG['sitelibdir']
-    RbConfig::CONFIG['sitelibdir'] = @@project_dir
+    RbConfig::CONFIG['sitelibdir'] = PROJECT_DIR
 
     assert_nil Gem.prefix
   ensure
@@ -1224,10 +1256,12 @@ class TestGem < Gem::TestCase
       refute Gem.try_activate 'nonexistent'
     end
 
-    expected = "Ignoring ext-1 because its extensions are not built. " +
-               "Try: gem pristine ext --version 1\n"
+    unless Gem.java_platform?
+      expected = "Ignoring ext-1 because its extensions are not built. " +
+                 "Try: gem pristine ext --version 1\n"
 
-    assert_equal expected, err
+      assert_equal expected, err
+    end
   end
 
   def test_self_use_paths_with_nils
@@ -1295,7 +1329,6 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_needs
-    util_clear_gems
     a = util_spec "a", "1"
     b = util_spec "b", "1", "c" => nil
     c = util_spec "c", "2"
@@ -1314,7 +1347,6 @@ class TestGem < Gem::TestCase
 
   def test_self_needs_picks_up_unresolved_deps
     save_loaded_features do
-      util_clear_gems
       a = util_spec "a", "1"
       b = util_spec "b", "1", "c" => nil
       c = util_spec "c", "2"
@@ -1356,11 +1388,13 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_vendor_dir
-    expected =
-      File.join RbConfig::CONFIG['vendordir'], 'gems',
-                RbConfig::CONFIG['ruby_version']
+    vendordir(File.join(@tempdir, 'vendor')) do
+      expected =
+        File.join RbConfig::CONFIG['vendordir'], 'gems',
+                  RbConfig::CONFIG['ruby_version']
 
-    assert_equal expected, Gem.vendor_dir
+      assert_equal expected, Gem.vendor_dir
+    end
   end
 
   def test_self_vendor_dir_ENV_GEM_VENDOR
@@ -1371,12 +1405,9 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_vendor_dir_missing
-    orig_vendordir = RbConfig::CONFIG['vendordir']
-    RbConfig::CONFIG.delete 'vendordir'
-
-    assert_nil Gem.vendor_dir
-  ensure
-    RbConfig::CONFIG['vendordir'] = orig_vendordir
+    vendordir(nil) do
+      assert_nil Gem.vendor_dir
+    end
   end
 
   def test_load_plugins
@@ -1506,8 +1537,6 @@ class TestGem < Gem::TestCase
   end
 
   def test_auto_activation_of_specific_gemdeps_file
-    util_clear_gems
-
     a = util_spec "a", "1", nil, "lib/a.rb"
     b = util_spec "b", "1", nil, "lib/b.rb"
     c = util_spec "c", "1", nil, "lib/c.rb"
@@ -1530,8 +1559,6 @@ class TestGem < Gem::TestCase
   end
 
   def test_auto_activation_of_used_gemdeps_file
-    util_clear_gems
-
     a = util_spec "a", "1", nil, "lib/a.rb"
     b = util_spec "b", "1", nil, "lib/b.rb"
     c = util_spec "c", "1", nil, "lib/c.rb"
@@ -1548,26 +1575,22 @@ class TestGem < Gem::TestCase
 
     ENV['RUBYGEMS_GEMDEPS'] = "-"
 
-    expected_specs = [a, b, (Gem::USE_BUNDLER_FOR_GEMDEPS || nil) && util_spec("bundler", Bundler::VERSION), c].compact
+    expected_specs = [a, b, util_spec("bundler", Bundler::VERSION), c].compact
     assert_equal expected_specs, Gem.use_gemdeps.sort_by { |s| s.name }
   end
 
   LIB_PATH = File.expand_path "../../../lib".dup.untaint, __FILE__.dup.untaint
-
-  if Gem::USE_BUNDLER_FOR_GEMDEPS
-    BUNDLER_LIB_PATH = File.expand_path $LOAD_PATH.find {|lp| File.file?(File.join(lp, "bundler.rb")) }.dup.untaint
-    BUNDLER_FULL_NAME = "bundler-#{Bundler::VERSION}".freeze
-  end
+  BUNDLER_LIB_PATH = File.expand_path $LOAD_PATH.find {|lp| File.file?(File.join(lp, "bundler.rb")) }.dup.untaint
+  BUNDLER_FULL_NAME = "bundler-#{Bundler::VERSION}".freeze
 
   def add_bundler_full_name(names)
-    return names unless Gem::USE_BUNDLER_FOR_GEMDEPS
     names << BUNDLER_FULL_NAME
     names.sort!
     names
   end
 
   def test_looks_for_gemdeps_files_automatically_on_start
-    util_clear_gems
+    skip "Requiring bundler messes things up" if Gem.java_platform?
 
     a = util_spec "a", "1", nil, "lib/a.rb"
     b = util_spec "b", "1", nil, "lib/b.rb"
@@ -1600,10 +1623,10 @@ class TestGem < Gem::TestCase
     out = IO.popen(cmd, &:read).split(/\n/)
 
     assert_equal ["b-1", "c-1"], out - out0
-  end if Gem::USE_BUNDLER_FOR_GEMDEPS
+  end
 
   def test_looks_for_gemdeps_files_automatically_on_start_in_parent_dir
-    util_clear_gems
+    skip "Requiring bundler messes things up" if Gem.java_platform?
 
     a = util_spec "a", "1", nil, "lib/a.rb"
     b = util_spec "b", "1", nil, "lib/b.rb"
@@ -1640,7 +1663,7 @@ class TestGem < Gem::TestCase
     Dir.rmdir "sub1"
 
     assert_equal ["b-1", "c-1"], out - out0
-  end if Gem::USE_BUNDLER_FOR_GEMDEPS
+  end
 
   def test_register_default_spec
     Gem.clear_default_specs
@@ -1668,33 +1691,6 @@ class TestGem < Gem::TestCase
     assert_equal new_style, Gem.find_unresolved_default_spec("bar.rb")
     assert_nil              Gem.find_unresolved_default_spec("exec")
     assert_nil              Gem.find_unresolved_default_spec("README")
-  end
-
-  def test_default_gems_use_full_paths
-    begin
-      if defined?(RUBY_ENGINE)
-        engine = RUBY_ENGINE
-        Object.send :remove_const, :RUBY_ENGINE
-      end
-      Object.const_set :RUBY_ENGINE, 'ruby'
-
-      refute Gem.default_gems_use_full_paths?
-    ensure
-      Object.send :remove_const, :RUBY_ENGINE
-      Object.const_set :RUBY_ENGINE, engine if engine
-    end
-
-    begin
-      if defined?(RUBY_ENGINE)
-        engine = RUBY_ENGINE
-        Object.send :remove_const, :RUBY_ENGINE
-      end
-      Object.const_set :RUBY_ENGINE, 'jruby'
-      assert Gem.default_gems_use_full_paths?
-    ensure
-      Object.send :remove_const, :RUBY_ENGINE
-      Object.const_set :RUBY_ENGINE, engine if engine
-    end
   end
 
   def test_use_gemdeps
@@ -1819,27 +1815,21 @@ class TestGem < Gem::TestCase
     else
       platform = " #{platform}"
     end
-    expected =
-      if Gem::USE_BUNDLER_FOR_GEMDEPS
-        <<-EXPECTED
+
+    expected = <<-EXPECTED
 Could not find gem 'a#{platform}' in any of the gem sources listed in your Gemfile.
 You may need to `gem install -g` to install missing gems
 
-        EXPECTED
-      else
-        <<-EXPECTED
-Unable to resolve dependency: user requested 'a (>= 0)'
-You may need to `gem install -g` to install missing gems
+    EXPECTED
 
-        EXPECTED
+    Gem::Deprecate.skip_during do
+      assert_output nil, expected do
+        Gem.use_gemdeps
       end
-
-    assert_output nil, expected do
-      Gem.use_gemdeps
     end
   ensure
     ENV['RUBYGEMS_GEMDEPS'] = rubygems_gemdeps
-  end if Gem::USE_BUNDLER_FOR_GEMDEPS
+  end
 
   def test_use_gemdeps_specific
     rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], 'x'
@@ -1913,7 +1903,7 @@ You may need to `gem install -g` to install missing gems
 
   def with_plugin(path)
     test_plugin_path = File.expand_path("test/rubygems/plugin/#{path}",
-                                        @@project_dir)
+                                        PROJECT_DIR)
 
     # A single test plugin should get loaded once only, in order to preserve
     # sane test semantics.

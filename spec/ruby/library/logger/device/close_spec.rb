@@ -15,8 +15,17 @@ describe "Logger::LogDevice#close" do
     rm_r @file_path
   end
 
-  it "closes the LogDevice's stream" do
-    @device.close
-    lambda { @device.write("Test") }.should complain(/\Alog writing failed\./)
+  ruby_version_is ""..."2.7" do
+    it "closes the LogDevice's stream" do
+      @device.close
+      -> { @device.write("Test") }.should complain(/\Alog writing failed\./)
+    end
+  end
+
+  ruby_version_is "2.7" do
+    it "closes the LogDevice's stream" do
+      @device.close
+      -> { @device.write("Test") }.should complain(/\Alog shifting failed\./)
+    end
   end
 end

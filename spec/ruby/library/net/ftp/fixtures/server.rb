@@ -86,7 +86,7 @@ module NetFTPSpecs
     end
 
     def and_respond(text)
-      @handlers[@handler_for] = lambda { |s, *args| s.response(text) }
+      @handlers[@handler_for] = -> s, *args { s.response(text) }
     end
 
     ##

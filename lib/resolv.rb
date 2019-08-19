@@ -166,13 +166,14 @@ class Resolv
   # Resolv::Hosts is a hostname resolver that uses the system hosts file.
 
   class Hosts
-    begin
-      raise LoadError unless /mswin|mingw|cygwin/ =~ RUBY_PLATFORM
-      require 'win32/resolv'
-      DefaultFileName = Win32::Resolv.get_hosts_path || IO::NULL
-    rescue LoadError
-      DefaultFileName = '/etc/hosts'
+    if /mswin|mingw|cygwin/ =~ RUBY_PLATFORM and
+      begin
+        require 'win32/resolv'
+        DefaultFileName = Win32::Resolv.get_hosts_path || IO::NULL
+      rescue LoadError
+      end
     end
+    DefaultFileName ||= '/etc/hosts'
 
     ##
     # Creates a new Resolv::Hosts, using +filename+ for its data source.
@@ -451,6 +452,8 @@ class Resolv
       case address
       when Name
         ptr = address
+      when IPv4, IPv6
+        ptr = address.to_name
       when IPv4::Regex
         ptr = IPv4.create(address).to_name
       when IPv6::Regex
@@ -2528,7 +2531,7 @@ class Resolv
     attr_reader :address
 
     def to_s # :nodoc:
-      address = sprintf("%X:%X:%X:%X:%X:%X:%X:%X", *@address.unpack("nnnnnnnn"))
+      address = sprintf("%x:%x:%x:%x:%x:%x:%x:%x", *@address.unpack("nnnnnnnn"))
       unless address.sub!(/(^|:)0(:0)+(:|$)/, '::')
         address.sub!(/(^|:)0(:|$)/, '::')
       end

@@ -356,7 +356,8 @@ onig_vsnprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc,
 	*s++ = *p++;
       }
       else if (!ONIGENC_IS_CODE_PRINT(enc, *p) &&
-	       !ONIGENC_IS_CODE_SPACE(enc, *p)) {
+	       (!ONIGENC_IS_CODE_SPACE(enc, *p) ||
+                ONIGENC_IS_CODE_CNTRL(enc, *p))) {
 	sprint_byte_with_x((char* )bs, (unsigned int )(*p++));
 	len = onigenc_str_bytelen_null(ONIG_ENCODING_ASCII, bs);
         bp = bs;

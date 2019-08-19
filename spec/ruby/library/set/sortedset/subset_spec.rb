@@ -25,9 +25,9 @@ describe "SortedSet#subset?" do
   end
 
   it "raises an ArgumentError when passed a non-SortedSet" do
-    lambda { SortedSet[].subset?([]) }.should raise_error(ArgumentError)
-    lambda { SortedSet[].subset?(1) }.should raise_error(ArgumentError)
-    lambda { SortedSet[].subset?("test") }.should raise_error(ArgumentError)
-    lambda { SortedSet[].subset?(Object.new) }.should raise_error(ArgumentError)
+    -> { SortedSet[].subset?([]) }.should raise_error(ArgumentError)
+    -> { SortedSet[].subset?(1) }.should raise_error(ArgumentError)
+    -> { SortedSet[].subset?("test") }.should raise_error(ArgumentError)
+    -> { SortedSet[].subset?(Object.new) }.should raise_error(ArgumentError)
   end
 end

@@ -21,6 +21,8 @@ typedef struct rb_iseq_struct rb_iseq_t;
 #define rb_iseq_t rb_iseq_t
 #endif
 
+extern const ID rb_iseq_shared_exc_local_tbl[];
+
 static inline size_t
 rb_call_info_kw_arg_bytes(int keyword_len)
 {
@@ -234,7 +236,7 @@ struct iseq_catch_table_entry {
      *   CATCH_TYPE_REDO, CATCH_TYPE_NEXT:
      *     NULL.
      */
-    const rb_iseq_t *iseq;
+    rb_iseq_t *iseq;
 
     unsigned int start;
     unsigned int end;

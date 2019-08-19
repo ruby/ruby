@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'bundler/vendor/molinillo/lib/molinillo/dependency_graph'
+require_relative 'dependency_graph'
 
 module Bundler::Molinillo
   # This class encapsulates a dependency resolver.
@@ -9,7 +9,7 @@ module Bundler::Molinillo
   #
   #
   class Resolver
-    require 'bundler/vendor/molinillo/lib/molinillo/resolution'
+    require_relative 'resolution'
 
     # @return [SpecificationProvider] the specification provider used
     #   in the resolution process

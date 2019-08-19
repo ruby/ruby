@@ -27,15 +27,15 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
   end
 
   def test_parser
-    assert_match /::Parser\z/, JSON.parser.name
+    assert_match(/::Parser\z/, JSON.parser.name)
   end
 
   def test_generator
-    assert_match /::Generator\z/, JSON.generator.name
+    assert_match(/::Generator\z/, JSON.generator.name)
   end
 
   def test_state
-    assert_match /::Generator::State\z/, JSON.state.name
+    assert_match(/::Generator::State\z/, JSON.state.name)
   end
 
   def test_create_id

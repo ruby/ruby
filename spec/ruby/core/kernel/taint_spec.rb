@@ -15,7 +15,7 @@ describe "Kernel#taint" do
 
   it "raises #{frozen_error_class} on an untainted, frozen object" do
     o = Object.new.freeze
-    lambda { o.taint }.should raise_error(frozen_error_class)
+    -> { o.taint }.should raise_error(frozen_error_class)
   end
 
   it "does not raise an error on a tainted, frozen object" do
@@ -32,13 +32,13 @@ describe "Kernel#taint" do
 
   it "no raises a RuntimeError on symbols" do
     v = :sym
-    lambda { v.taint }.should_not raise_error(RuntimeError)
+    -> { v.taint }.should_not raise_error(RuntimeError)
     v.tainted?.should == false
   end
 
   it "no raises error on fixnum values" do
     [1].each do |v|
-      lambda { v.taint }.should_not raise_error(RuntimeError)
+      -> { v.taint }.should_not raise_error(RuntimeError)
       v.tainted?.should == false
     end
   end

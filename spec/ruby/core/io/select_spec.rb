@@ -80,28 +80,28 @@ describe "IO.select" do
   end
 
   it "raises TypeError if supplied objects are not IO" do
-    lambda { IO.select([Object.new]) }.should raise_error(TypeError)
-    lambda { IO.select(nil, [Object.new]) }.should raise_error(TypeError)
+    -> { IO.select([Object.new]) }.should raise_error(TypeError)
+    -> { IO.select(nil, [Object.new]) }.should raise_error(TypeError)
 
     obj = mock("io")
     obj.should_receive(:to_io).any_number_of_times.and_return(nil)
 
-    lambda { IO.select([obj]) }.should raise_error(TypeError)
-    lambda { IO.select(nil, [obj]) }.should raise_error(TypeError)
+    -> { IO.select([obj]) }.should raise_error(TypeError)
+    -> { IO.select(nil, [obj]) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if the specified timeout value is not Numeric" do
-    lambda { IO.select([@rd], nil, nil, Object.new) }.should raise_error(TypeError)
+    -> { IO.select([@rd], nil, nil, Object.new) }.should raise_error(TypeError)
   end
 
   it "raises TypeError if the first three arguments are not Arrays" do
-    lambda { IO.select(Object.new)}.should raise_error(TypeError)
-    lambda { IO.select(nil, Object.new)}.should raise_error(TypeError)
-    lambda { IO.select(nil, nil, Object.new)}.should raise_error(TypeError)
+    -> { IO.select(Object.new)}.should raise_error(TypeError)
+    -> { IO.select(nil, Object.new)}.should raise_error(TypeError)
+    -> { IO.select(nil, nil, Object.new)}.should raise_error(TypeError)
   end
 
   it "raises an ArgumentError when passed a negative timeout" do
-    lambda { IO.select(nil, nil, nil, -5)}.should raise_error(ArgumentError)
+    -> { IO.select(nil, nil, nil, -5)}.should raise_error(ArgumentError)
   end
 end
 

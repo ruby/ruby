@@ -144,11 +144,11 @@ end
 
 
 # Combining guards
-guard -> { platform_is :windows and ruby_version_is ""..."2.3" } do
-  # Windows and RUBY_VERSION < 2.3
+guard -> { platform_is :windows and ruby_version_is ""..."2.5" } do
+  # Windows and RUBY_VERSION < 2.5
 end
 
-guard_not -> { platform_is :windows and ruby_version_is ""..."2.3" } do
+guard_not -> { platform_is :windows and ruby_version_is ""..."2.5" } do
   # The opposite
 end
 
@@ -170,25 +170,25 @@ If an implementation does not support some feature, simply tag the related specs
 
 ### Shared Specs
 
-Often throughout Ruby, identical functionality is used by different methods and modules. In order 
+Often throughout Ruby, identical functionality is used by different methods and modules. In order
 to avoid duplication of specs, we have shared specs that are re-used in other specs.  The use is a
 bit tricky however, so let's go over it.
 
 Commonly, if a shared spec is only reused within its own module, the shared spec will live within a
-shared directory inside that module's directory. For example, the `core/hash/shared/key.rb` spec is 
+shared directory inside that module's directory. For example, the `core/hash/shared/key.rb` spec is
 only used by `Hash` specs, and so it lives inside `core/hash/shared/`.
 
 When a shared spec is used across multiple modules or classes, it lives within the `shared/` directory.
-An example of this is the `shared/file/socket.rb` which is used by `core/file/socket_spec.rb`, 
+An example of this is the `shared/file/socket.rb` which is used by `core/file/socket_spec.rb`,
 `core/filetest/socket_spec.rb`, and `core/file/state/socket_spec.rb` and so it lives in the root `shared/`.
 
 Defining a shared spec involves adding a `shared: true` option to the top-level `describe` block. This
-will signal not to run the specs directly by the runner.  Shared specs have access to two instance 
+will signal not to run the specs directly by the runner.  Shared specs have access to two instance
 variables from the implementor spec: `@method` and `@object`, which the implementor spec will pass in.
 
 Here's an example of a snippet of a shared spec and two specs which integrates it:
 
-``` ruby
+```ruby
 # core/hash/shared/key.rb
 describe :hash_key_p, shared: true do
   it "returns true if the key's matching value was false" do
@@ -216,7 +216,7 @@ Sometimes, shared specs require more context from the implementor class than a s
 this by passing a lambda as the method, which will have the scope of the implementor.  Here's an example of
 how this is used currently:
 
-``` ruby
+```ruby
 describe :kernel_sprintf, shared: true do
   it "raises TypeError exception if cannot convert to Integer" do
     -> { @method.call("%b", Object.new) }.should raise_error(TypeError)

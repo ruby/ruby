@@ -14,15 +14,14 @@
 #include "ruby/util.h"
 #include "id.h"
 #include "symbol.h"
-#include "transient_heap.h"
 
 #include <assert.h>
 
 VALUE rb_mEnumerable;
 
 static ID id_next;
-static ID id_div;
 
+#define id_div idDiv
 #define id_each idEach
 #define id_eqq  idEqq
 #define id_cmp  idCmp
@@ -281,10 +280,12 @@ find_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
  *     (1..100).detect  #=> #<Enumerator: 1..100:detect>
  *     (1..100).find    #=> #<Enumerator: 1..100:find>
  *
- *     (1..10).detect   { |i| i % 5 == 0 and i % 7 == 0 }   #=> nil
- *     (1..10).find     { |i| i % 5 == 0 and i % 7 == 0 }   #=> nil
- *     (1..100).detect  { |i| i % 5 == 0 and i % 7 == 0 }   #=> 35
- *     (1..100).find    { |i| i % 5 == 0 and i % 7 == 0 }   #=> 35
+ *     (1..10).detect         { |i| i % 5 == 0 && i % 7 == 0 }   #=> nil
+ *     (1..10).find           { |i| i % 5 == 0 && i % 7 == 0 }   #=> nil
+ *     (1..10).detect(-> {0}) { |i| i % 5 == 0 && i % 7 == 0 }   #=> 0
+ *     (1..10).find(-> {0})   { |i| i % 5 == 0 && i % 7 == 0 }   #=> 0
+ *     (1..100).detect        { |i| i % 5 == 0 && i % 7 == 0 }   #=> 35
+ *     (1..100).find          { |i| i % 5 == 0 && i % 7 == 0 }   #=> 35
  *
  */
 
@@ -348,9 +349,9 @@ find_index_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
  *
  *  If neither block nor argument is given, an enumerator is returned instead.
  *
- *     (1..10).find_index  { |i| i % 5 == 0 and i % 7 == 0 }  #=> nil
- *     (1..100).find_index { |i| i % 5 == 0 and i % 7 == 0 }  #=> 34
- *     (1..100).find_index(50)                                #=> 49
+ *     (1..10).find_index  { |i| i % 5 == 0 && i % 7 == 0 }  #=> nil
+ *     (1..100).find_index { |i| i % 5 == 0 && i % 7 == 0 }  #=> 34
+ *     (1..100).find_index(50)                               #=> 49
  *
  */
 
@@ -434,7 +435,7 @@ enum_size_over_p(VALUE obj, long n)
  *
  *     [:foo, :bar].filter { |x| x == :foo }   #=> [:foo]
  *
- *  See also Enumerable#reject.
+ *  See also Enumerable#reject, Enumerable#grep.
  */
 
 static VALUE
@@ -449,6 +450,46 @@ enum_find_all(VALUE obj)
 
     return ary;
 }
+
+static VALUE
+filter_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
+{
+    i = rb_yield_values2(argc, argv);
+
+    if (RTEST(i)) {
+        rb_ary_push(ary, i);
+    }
+
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.filter_map { |obj| block } -> array
+ *     enum.filter_map                 -> an_enumerator
+ *
+ *  Returns a new array containing the truthy results (everything except
+ *  +false+ or +nil+) of running the +block+ for every element in +enum+.
+ *
+ *  If no block is given, an Enumerator is returned instead.
+ *
+ *
+ *     (1..10).filter_map { |i| i * 2 if i.even? } #=> [4, 8, 12, 16, 20]
+ *
+ */
+static VALUE
+enum_filter_map(VALUE obj)
+{
+    VALUE ary;
+
+    RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_size);
+
+    ary = rb_ary_new();
+    rb_block_call(obj, id_each, 0, 0, filter_map_i, ary);
+
+    return ary;
+}
+
 
 static VALUE
 reject_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
@@ -967,8 +1008,7 @@ tally_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
  *  elements and the values are numbers of elements in the collection
  *  that correspond to the key.
  *
- *     (1..6).tally   #=> {1=>1, 2=>1, 3=>1, 4=>1, 5=>1, 6=>1}
- *
+ *     ["a", "b", "c", "b"].tally #=> {"a"=>1, "b"=>2, "c"=>1}
  */
 
 static VALUE
@@ -1179,6 +1219,10 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
  *
  *     sorted = Dir["*"].sort_by { |f| test(?M, f) }
  *     sorted   #=> ["mon", "tues", "wed", "thurs"]
+ *
+ *  To produce the reverse of a specific order, the following can be used:
+ *
+ *    ary.sort_by { ... }.reverse!
  */
 
 static VALUE
@@ -2299,10 +2343,10 @@ member_i(RB_BLOCK_CALL_FUNC_ARGLIST(iter, args))
  *  Returns <code>true</code> if any member of <i>enum</i> equals
  *  <i>obj</i>. Equality is tested using <code>==</code>.
  *
- *     IO.constants.include? :SEEK_SET          #=> true
- *     IO.constants.include? :SEEK_NO_FURTHER   #=> false
- *     IO.constants.member? :SEEK_SET          #=> true
- *     IO.constants.member? :SEEK_NO_FURTHER   #=> false
+ *     (1..10).include? 5  #=> true
+ *     (1..10).include? 15 #=> false
+ *     (1..10).member? 5   #=> true
+ *     (1..10).member? 15  #=> false
  *
  */
 
@@ -2486,10 +2530,15 @@ enum_each_slice_size(VALUE obj, VALUE args, VALUE eobj)
 {
     VALUE n, size;
     long slice_size = NUM2LONG(RARRAY_AREF(args, 0));
+    ID infinite_p;
+    CONST_ID(infinite_p, "infinite?");
     if (slice_size <= 0) rb_raise(rb_eArgError, "invalid slice size");
 
     size = enum_size(obj, 0, 0);
     if (size == Qnil) return Qnil;
+    if (RB_FLOAT_TYPE_P(size) && RTEST(rb_funcall(size, infinite_p, 0))) {
+        return size;
+    }
 
     n = add_int(size, slice_size-1);
     return div_int(n, slice_size);
@@ -3968,7 +4017,7 @@ int_range_sum(VALUE beg, VALUE end, int excl, VALUE init)
  *   { 1 => 10, 2 => 20 }.sum {|k, v| k * v }  #=> 50
  *   (1..10).sum                               #=> 55
  *   (1..10).sum {|v| v * 2 }                  #=> 110
- *   [Object.new].each.sum                     #=> TypeError
+ *   ('a'..'z').sum                            #=> TypeError
  *
  * This method can be used for non-numeric objects by
  * explicit <i>init</i> argument.
@@ -3993,6 +4042,10 @@ enum_sum(int argc, VALUE* argv, VALUE obj)
 
     if ((memo.float_value = RB_FLOAT_TYPE_P(memo.v))) {
         memo.f = RFLOAT_VALUE(memo.v);
+        memo.c = 0.0;
+    }
+    else {
+        memo.f = 0.0;
         memo.c = 0.0;
     }
 
@@ -4102,6 +4155,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "find_all", enum_find_all, 0);
     rb_define_method(rb_mEnumerable, "select", enum_find_all, 0);
     rb_define_method(rb_mEnumerable, "filter", enum_find_all, 0);
+    rb_define_method(rb_mEnumerable, "filter_map", enum_filter_map, 0);
     rb_define_method(rb_mEnumerable, "reject", enum_reject, 0);
     rb_define_method(rb_mEnumerable, "collect", enum_collect, 0);
     rb_define_method(rb_mEnumerable, "map", enum_collect, 0);
@@ -4146,5 +4200,4 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "uniq", enum_uniq, 0);
 
     id_next = rb_intern("next");
-    id_div = rb_intern("div");
 }

@@ -8,6 +8,6 @@ describe "Kernel#tap" do
   end
 
   it "raises a LocalJumpError when no block given" do
-    lambda { 3.tap }.should raise_error(LocalJumpError)
+    -> { 3.tap }.should raise_error(LocalJumpError)
   end
 end

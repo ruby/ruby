@@ -27,7 +27,7 @@ describe "IO#sync=" do
   end
 
   it "raises an IOError on closed stream" do
-    lambda { IOSpecs.closed_io.sync = true }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.sync = true }.should raise_error(IOError)
   end
 end
 
@@ -45,7 +45,7 @@ describe "IO#sync" do
   end
 
   it "raises an IOError on closed stream" do
-    lambda { IOSpecs.closed_io.sync }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.sync }.should raise_error(IOError)
   end
 end
 

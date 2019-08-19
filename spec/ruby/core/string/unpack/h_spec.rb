@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: binary -*-
 require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 require_relative 'shared/basic'
@@ -63,6 +63,10 @@ describe "String#unpack with format 'H'" do
   it "ignores spaces between directives" do
     "\x01\x10".unpack("H H").should == ["0", "1"]
   end
+
+  it "should make strings with US_ASCII encoding" do
+    "\x01".unpack("H")[0].encoding.should == Encoding::US_ASCII
+  end
 end
 
 describe "String#unpack with format 'h'" do
@@ -123,5 +127,9 @@ describe "String#unpack with format 'h'" do
 
   it "ignores spaces between directives" do
     "\x01\x10".unpack("h h").should == ["1", "0"]
+  end
+
+  it "should make strings with US_ASCII encoding" do
+    "\x01".unpack("h")[0].encoding.should == Encoding::US_ASCII
   end
 end

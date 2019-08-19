@@ -63,7 +63,7 @@ class TestDebug < Test::Unit::TestCase
     def each
       yield :each_entry
     end
-   end
+  end
 
   def test_lazy_block
     x = MyRelation.new.any? do

@@ -15,7 +15,7 @@
 #
 #   Find.find(ENV["HOME"]) do |path|
 #     if FileTest.directory?(path)
-#       if File.basename(path)[0] == ?.
+#       if File.basename(path).start_with?('.')
 #         Find.prune       # Don't look any further into this directory.
 #       else
 #         next

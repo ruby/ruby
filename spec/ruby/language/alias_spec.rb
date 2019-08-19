@@ -122,7 +122,7 @@ describe "The alias keyword" do
     end
 
     @obj.__value.should == 5
-    lambda { AliasObject.new.__value }.should raise_error(NoMethodError)
+    -> { AliasObject.new.__value }.should raise_error(NoMethodError)
   end
 
   it "operates on the class/module metaclass when used in instance_eval" do
@@ -131,7 +131,7 @@ describe "The alias keyword" do
     end
 
     AliasObject.__klass_method.should == 7
-    lambda { Object.__klass_method }.should raise_error(NoMethodError)
+    -> { Object.__klass_method }.should raise_error(NoMethodError)
   end
 
   it "operates on the class/module metaclass when used in instance_exec" do
@@ -140,7 +140,7 @@ describe "The alias keyword" do
     end
 
     AliasObject.__klass_method2.should == 7
-    lambda { Object.__klass_method2 }.should raise_error(NoMethodError)
+    -> { Object.__klass_method2 }.should raise_error(NoMethodError)
   end
 
   it "operates on methods defined via attr, attr_reader, and attr_accessor" do
@@ -219,13 +219,13 @@ describe "The alias keyword" do
   end
 
   it "is not allowed against Fixnum or String instances" do
-    lambda do
+    -> do
       1.instance_eval do
         alias :foo :to_s
       end
     end.should raise_error(TypeError)
 
-    lambda do
+    -> do
       :blah.instance_eval do
         alias :foo :to_s
       end
@@ -238,7 +238,7 @@ describe "The alias keyword" do
   end
 
   it "raises a NameError when passed a missing name" do
-    lambda { @meta.class_eval { alias undef_method not_exist } }.should raise_error(NameError) { |e|
+    -> { @meta.class_eval { alias undef_method not_exist } }.should raise_error(NameError) { |e|
       # a NameError and not a NoMethodError
       e.class.should == NameError
     }

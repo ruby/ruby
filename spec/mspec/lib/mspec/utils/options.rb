@@ -384,7 +384,7 @@ class MSpecOptions
   def repeat
     on("-R", "--repeat", "NUMBER",
        "Repeatedly run an example NUMBER times") do |o|
-      MSpec.repeat = o.to_i
+      MSpec.repeat = Integer(o)
     end
   end
 

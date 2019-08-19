@@ -1,4 +1,4 @@
-# -*- makefile -*-
+# -*- mode: makefile; indent-tabs-mode: t -*-
 
 SHELL = $(COMSPEC)
 ECHO1 = $(V:1=@:)
@@ -290,19 +290,18 @@ MISSING = $(MISSING) acosh.obj cbrt.obj erf.obj nan.obj tgamma.obj
 MISSING = $(MISSING) explicit_bzero.obj
 !endif
 DLNOBJ = dln.obj
+
 !if "$(ARCH)" == "x64"
-COROUTINE_OBJ = coroutine/Win64/Context.obj
+COROUTINE_OBJ = coroutine/win64/Context.obj
+COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
 !elseif "$(ARCH)" == "i386"
-COROUTINE_OBJ = coroutine/Win32/Context.obj
+COROUTINE_OBJ = coroutine/win32/Context.obj
+COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
 !else
-COROUTINE_OBJ =
+COROUTINE_OBJ = coroutine/copy/Context.obj
+COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.c)
 !endif
-!if "$(COROUTINE_OBJ)" == ""
-# get rid of empty value not to leave VPATH only in dependencies
-COROUTINE_H = coroutine/Win32/Context.h
-!else
 COROUTINE_H = $(COROUTINE_OBJ:.obj=.h)
-!endif
 
 ARFLAGS = -machine:$(MACHINE) -out:
 LD = $(CC)
@@ -399,7 +398,7 @@ RUBY = ruby
 DTRACE_EXT = dmyh
 
 !if !defined(STACK)
-!if "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
+!if "$(ARCH)" == "x64"
 STACK = 0x400000
 !else
 STACK = 0x200000
@@ -495,12 +494,7 @@ HAVE_GIT = no
 ! endif
 !endif
 
-!if exist($(srcdir)/.svn)
-VCS = svn
-VCSUP = $(VCS) up $(SVNUPOPTIONS)
-!else if exist($(srcdir)/.git/svn)
-VCS = $(GIT) svn
-VCSUP = $(VCS) rebase $(GITSVNREBASEOPTIONS)
+!if defined(VCS)
 !else if exist($(srcdir)/.git)
 VCS = $(GIT)
 VCSUP = $(VCS) pull $(GITPULLOPTIONS)
@@ -651,7 +645,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !else
 #define SIZEOF_OFF_T 4
 !endif
-!if "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
+!if "$(ARCH)" == "x64"
 #define SIZEOF_VOIDP 8
 !else
 #define SIZEOF_VOIDP 4
@@ -673,7 +667,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define NUM2CLOCKID(v) NUM2INT(v)
 #define SIZEOF_CLOCK_T 4
 #define SIZEOF_RLIM_T 0
-!if "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
+!if "$(ARCH)" == "x64"
 #define SIZEOF_SIZE_T 8
 #define SIZEOF_PTRDIFF_T 8
 #define SIZEOF_INTPTR_T 8
@@ -717,7 +711,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !else
 #define PACKED_STRUCT(x) x
 !endif
-!if "$(ARCH)" == "x86" || "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
+!if "$(ARCH)" == "x86" || "$(ARCH)" == "x64"
 #define PACKED_STRUCT_UNALIGNED(x) PACKED_STRUCT(x)
 !else
 #define PACKED_STRUCT_UNALIGNED(x) x
@@ -783,7 +777,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_INTPTR_T 1
 #define HAVE_UINTPTR_T 1
 #define HAVE_SSIZE_T 1
-!if "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
+!if "$(ARCH)" == "x64"
 #define ssize_t __int64
 #define PRI_PTR_PREFIX "I64"
 !else
@@ -873,12 +867,10 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define restrict /* not supported */
 !endif
 #define NEED_IO_SEEK_BETWEEN_RW 1
-!if "$(MACHINE)" == "x86" || "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
+!if "$(MACHINE)" == "x86" || "$(ARCH)" == "x64"
 #define STACK_GROW_DIRECTION -1
 !endif
-!if "$(COROUTINE_OBJ)" != ""
-#define FIBER_USE_COROUTINE "$(COROUTINE_H)"
-!endif
+#define COROUTINE_H "$(COROUTINE_H)"
 #define DEFAULT_KCODE KCODE_NONE
 #define LOAD_RELATIVE 1
 #define DLEXT ".so"
@@ -1240,12 +1232,15 @@ $(ruby_pc): $(RBCONFIG)
 		-output=$@ -mode=$(INSTALL_DATA_MODE) -config=rbconfig.rb \
 		$(srcdir)/template/ruby.pc.in
 
-{$(srcdir)/coroutine/Win32}.asm{coroutine/Win32}.obj:
+{$(srcdir)/coroutine/win32}.asm{coroutine/win32}.obj:
 	$(ECHO) assembling $(<:\=/)
 	$(Q) $(AS) $(ASFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
-{$(srcdir)/coroutine/Win64}.asm{coroutine/Win64}.obj:
+{$(srcdir)/coroutine/win64}.asm{coroutine/win64}.obj:
 	$(ECHO) assembling $(<:\=/)
 	$(Q) $(AS) $(ASFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
+{$(srcdir)/coroutine/copy}.c{coroutine/copy}.obj:
+	$(ECHO) compiling $(<:\=/)
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
 
 {$(srcdir)/enc/trans}.c.obj:
 	$(ECHO) compiling $(<:\=/)
@@ -1369,7 +1364,7 @@ INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 "	  $$(srcdir)/defs/opt_operand.def $$(srcdir)/defs/opt_insn_unif.def \" \
 "	  $$(srcdir)/tool/insns2vm.rb" \
 "	@$$(RM) $$(PROGRAM)" \
-"	$$(BASERUBY) -Ku $$(srcdir)/tool/insns2vm.rb $$(INSNS2VMOPT) %I" \
+"	$$(Q) $$(BASERUBY) -Ku $$(srcdir)/tool/insns2vm.rb $$(INSNS2VMOPT) %I" \
 "" \
 ) do @echo.%~J>>insns_rules.mk]
 !else

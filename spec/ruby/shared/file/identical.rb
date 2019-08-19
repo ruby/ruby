@@ -31,12 +31,12 @@ describe :file_identical, shared: true do
   end
 
   it "raises an ArgumentError if not passed two arguments" do
-    lambda { @object.send(@method, @file1, @file2, @link) }.should raise_error(ArgumentError)
-    lambda { @object.send(@method, @file1) }.should raise_error(ArgumentError)
+    -> { @object.send(@method, @file1, @file2, @link) }.should raise_error(ArgumentError)
+    -> { @object.send(@method, @file1) }.should raise_error(ArgumentError)
   end
 
   it "raises a TypeError if not passed String types" do
-    lambda { @object.send(@method, 1,1) }.should raise_error(TypeError)
+    -> { @object.send(@method, 1,1) }.should raise_error(TypeError)
   end
 
   it "returns true if both named files are identical" do

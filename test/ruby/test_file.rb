@@ -87,7 +87,7 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_bom_32le
-    assert_bom(["\xFF\xFE\0", "\0"], __method__)
+    assert_bom(["\xFF", "\xFE\0\0"], __method__)
   end
 
   def test_truncate_wbuf
@@ -298,7 +298,7 @@ class TestFile < Test::Unit::TestCase
       assert_predicate(File.realpath(base, dir), :tainted?)
       base.untaint
       dir.untaint
-      assert_not_predicate(File.realpath(base, dir), :tainted?)
+      assert_predicate(File.realpath(base, dir), :tainted?)
       assert_predicate(Dir.chdir(dir) {File.realpath(base)}, :tainted?)
     }
   end

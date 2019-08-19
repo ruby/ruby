@@ -56,6 +56,6 @@ describe :thread_wakeup, shared: true do
   it "raises a ThreadError when trying to wake up a dead thread" do
     t = Thread.new { 1 }
     t.join
-    lambda { t.send @method }.should raise_error(ThreadError)
+    -> { t.send @method }.should raise_error(ThreadError)
   end
 end

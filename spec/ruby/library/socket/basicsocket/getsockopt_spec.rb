@@ -41,7 +41,7 @@ describe "BasicSocket#getsockopt" do
   end
 
   it "raises a SystemCallError with an invalid socket option" do
-    lambda { @sock.getsockopt Socket::SOL_SOCKET, -1 }.should raise_error(Errno::ENOPROTOOPT)
+    -> { @sock.getsockopt Socket::SOL_SOCKET, -1 }.should raise_error(Errno::ENOPROTOOPT)
   end
 
   it 'returns a Socket::Option using a constant' do
@@ -69,7 +69,7 @@ describe "BasicSocket#getsockopt" do
   end
 
   it 'raises Errno::ENOPROTOOPT when requesting an invalid option' do
-    lambda { @sock.getsockopt(Socket::SOL_SOCKET, -1) }.should raise_error(Errno::ENOPROTOOPT)
+    -> { @sock.getsockopt(Socket::SOL_SOCKET, -1) }.should raise_error(Errno::ENOPROTOOPT)
   end
 
   describe 'using Symbols as arguments' do

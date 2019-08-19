@@ -14,9 +14,9 @@ module Net::HTTPHeader
     @header = {}
     return unless initheader
     initheader.each do |key, value|
-      warn "net/http: duplicated HTTP header: #{key}", uplevel: 1 if key?(key) and $VERBOSE
+      warn "net/http: duplicated HTTP header: #{key}", uplevel: 3 if key?(key) and $VERBOSE
       if value.nil?
-        warn "net/http: nil HTTP header: #{key}", uplevel: 1 if $VERBOSE
+        warn "net/http: nil HTTP header: #{key}", uplevel: 3 if $VERBOSE
       else
         value = value.strip # raise error for invalid byte sequences
         if value.count("\r\n") > 0
@@ -323,7 +323,7 @@ module Net::HTTPHeader
   end
 
   # Returns "true" if the "transfer-encoding" header is present and
-  # set to "chunked".  This is an HTTP/1.1 feature, allowing the
+  # set to "chunked".  This is an HTTP/1.1 feature, allowing
   # the content to be sent in "chunks" without at the outset
   # stating the entire content length.
   def chunked?

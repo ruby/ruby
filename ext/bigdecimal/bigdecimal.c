@@ -2560,6 +2560,10 @@ BigDecimal_clone(VALUE self)
   return self;
 }
 
+#ifdef HAVE_RB_OPTS_EXCEPTION_P
+int rb_opts_exception_p(VALUE opts, int default_value);
+#define opts_exception_p(opts) rb_opts_exception_p((opts), 1)
+#else
 static int
 opts_exception_p(VALUE opts)
 {
@@ -2568,9 +2572,17 @@ opts_exception_p(VALUE opts)
     if (!kwds[0]) {
         kwds[0] = rb_intern_const("exception");
     }
-    rb_get_kwargs(opts, kwds, 0, 1, &exception);
+    if (!rb_get_kwargs(opts, kwds, 0, 1, &exception)) return 1;
+    switch (exception) {
+      case Qtrue: case Qfalse:
+        break;
+      default:
+        rb_raise(rb_eArgError, "true or false is expected as exception: %+"PRIsVALUE,
+                 exception);
+    }
     return exception != Qfalse;
 }
+#endif
 
 static Real *
 BigDecimal_new(int argc, VALUE *argv)

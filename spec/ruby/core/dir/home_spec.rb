@@ -40,6 +40,6 @@ describe "Dir.home" do
   end
 
   it "raises an ArgumentError if the named user doesn't exist" do
-    lambda { Dir.home('geuw2n288dh2k') }.should raise_error(ArgumentError)
+    -> { Dir.home('geuw2n288dh2k') }.should raise_error(ArgumentError)
   end
 end

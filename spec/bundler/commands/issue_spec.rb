@@ -3,7 +3,7 @@
 RSpec.describe "bundle issue" do
   it "exits with a message" do
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rails"
     G
 

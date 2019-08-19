@@ -592,7 +592,7 @@ class OptionParser
     #            +max+ columns.
     # +indent+:: Prefix string indents all summarized lines.
     #
-    def summarize(sdone = [], ldone = [], width = 1, max = width - 1, indent = "")
+    def summarize(sdone = {}, ldone = {}, width = 1, max = width - 1, indent = "")
       sopts, lopts = [], [], nil
       @short.each {|s| sdone.fetch(s) {sopts << s}; sdone[s] = true} if @short
       @long.each {|s| ldone.fetch(s) {lopts << s}; ldone[s] = true} if @long
@@ -1806,13 +1806,26 @@ XXX
   # is not present. Returns whether successfully loaded.
   #
   # +filename+ defaults to basename of the program without suffix in a
-  # directory ~/.options.
+  # directory ~/.options, then the basename with '.options' suffix
+  # under XDG and Haiku standard places.
   #
   def load(filename = nil)
-    begin
-      filename ||= File.expand_path(File.basename($0, '.*'), '~/.options')
-    rescue
-      return false
+    unless filename
+      basename = File.basename($0, '.*')
+      return true if load(File.expand_path(basename, '~/.options')) rescue nil
+      basename << ".options"
+      return [
+        # XDG
+        ENV['XDG_CONFIG_HOME'],
+        '~/.config',
+        *ENV['XDG_CONFIG_DIRS']&.split(File::PATH_SEPARATOR),
+
+        # Haiku
+        '~/config/settings',
+      ].any? {|dir|
+        next if !dir or dir.empty?
+        load(File.expand_path(basename, dir)) rescue nil
+      }
     end
     begin
       parse(*IO.readlines(filename).each {|s| s.chomp!})

@@ -25,34 +25,34 @@ describe "English" do
 
   it "aliases $FS to $;" do
     original = $;
-    $; = ","
+    suppress_warning {$; = ","}
     $FS.should_not be_nil
     $FS.should == $;
-    $; = original
+    suppress_warning {$; = original}
   end
 
   it "aliases $FIELD_SEPARATOR to $;" do
     original = $;
-    $; = ","
+    suppress_warning {$; = ","}
     $FIELD_SEPARATOR.should_not be_nil
     $FIELD_SEPARATOR.should == $;
-    $; = original
+    suppress_warning {$; = original}
   end
 
   it "aliases $OFS to $," do
     original = $,
-    $, = "|"
+    suppress_warning {$, = "|"}
     $OFS.should_not be_nil
     $OFS.should == $,
-    $, = original
+    suppress_warning {$, = original}
   end
 
   it "aliases $OUTPUT_FIELD_SEPARATOR to $," do
     original = $,
-    $, = "|"
+    suppress_warning {$, = "|"}
     $OUTPUT_FIELD_SEPARATOR.should_not be_nil
     $OUTPUT_FIELD_SEPARATOR.should == $,
-    $, = original
+    suppress_warning {$, = original}
   end
 
   it "aliases $RS to $/" do

@@ -52,13 +52,13 @@ describe "Module#instance_method" do
   end
 
   it "raises a TypeError if not passed a symbol" do
-    lambda { Object.instance_method([]) }.should raise_error(TypeError)
-    lambda { Object.instance_method(0)  }.should raise_error(TypeError)
+    -> { Object.instance_method([]) }.should raise_error(TypeError)
+    -> { Object.instance_method(0)  }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if the given name is not a string/symbol" do
-    lambda { Object.instance_method(nil)       }.should raise_error(TypeError)
-    lambda { Object.instance_method(mock('x')) }.should raise_error(TypeError)
+    -> { Object.instance_method(nil)       }.should raise_error(TypeError)
+    -> { Object.instance_method(mock('x')) }.should raise_error(TypeError)
   end
 
   it "raises a NameError if the method has been undefined" do
@@ -66,13 +66,13 @@ describe "Module#instance_method" do
     child.send :undef_method, :foo
     um = ModuleSpecs::InstanceMeth.instance_method(:foo)
     um.should == @parent_um
-    lambda do
+    -> do
       child.instance_method(:foo)
     end.should raise_error(NameError)
   end
 
   it "raises a NameError if the method does not exist" do
-    lambda { Object.instance_method(:missing) }.should raise_error(NameError)
+    -> { Object.instance_method(:missing) }.should raise_error(NameError)
   end
 
   it "sets the NameError#name attribute to the name of the missing method" do

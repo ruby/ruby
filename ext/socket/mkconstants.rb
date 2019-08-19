@@ -180,6 +180,7 @@ int
 
 %    }
       default:
+        if (!str || !valp) {/* wrong argument */}
         return -1;
     }
 }

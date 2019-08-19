@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: binary -*-
 require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 require_relative 'shared/basic'
@@ -33,10 +33,10 @@ describe "Array#pack with format 'w'" do
   end
 
   it "raises an ArgumentError when passed a negative value" do
-    lambda { [-1].pack("w") }.should raise_error(ArgumentError)
+    -> { [-1].pack("w") }.should raise_error(ArgumentError)
   end
 
-  it "returns an ASCII-8BIT string" do
-    [1].pack('w').encoding.should == Encoding::ASCII_8BIT
+  it "returns a binary string" do
+    [1].pack('w').encoding.should == Encoding::BINARY
   end
 end

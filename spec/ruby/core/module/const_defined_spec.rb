@@ -105,19 +105,19 @@ describe "Module#const_defined?" do
   end
 
   it "raises a NameError if the name does not start with a capital letter" do
-    lambda { ConstantSpecs.const_defined? "name" }.should raise_error(NameError)
+    -> { ConstantSpecs.const_defined? "name" }.should raise_error(NameError)
   end
 
   it "raises a NameError if the name starts with '_'" do
-    lambda { ConstantSpecs.const_defined? "__CONSTX__" }.should raise_error(NameError)
+    -> { ConstantSpecs.const_defined? "__CONSTX__" }.should raise_error(NameError)
   end
 
   it "raises a NameError if the name starts with '@'" do
-    lambda { ConstantSpecs.const_defined? "@Name" }.should raise_error(NameError)
+    -> { ConstantSpecs.const_defined? "@Name" }.should raise_error(NameError)
   end
 
   it "raises a NameError if the name starts with '!'" do
-    lambda { ConstantSpecs.const_defined? "!Name" }.should raise_error(NameError)
+    -> { ConstantSpecs.const_defined? "!Name" }.should raise_error(NameError)
   end
 
   it "returns true or false for the nested name" do
@@ -130,15 +130,15 @@ describe "Module#const_defined?" do
 
   it "raises a NameError if the name contains non-alphabetic characters except '_'" do
     ConstantSpecs.const_defined?("CS_CONSTX").should == false
-    lambda { ConstantSpecs.const_defined? "Name=" }.should raise_error(NameError)
-    lambda { ConstantSpecs.const_defined? "Name?" }.should raise_error(NameError)
+    -> { ConstantSpecs.const_defined? "Name=" }.should raise_error(NameError)
+    -> { ConstantSpecs.const_defined? "Name?" }.should raise_error(NameError)
   end
 
   it "raises a TypeError if conversion to a String by calling #to_str fails" do
     name = mock('123')
-    lambda { ConstantSpecs.const_defined? name }.should raise_error(TypeError)
+    -> { ConstantSpecs.const_defined? name }.should raise_error(TypeError)
 
     name.should_receive(:to_str).and_return(123)
-    lambda { ConstantSpecs.const_defined? name }.should raise_error(TypeError)
+    -> { ConstantSpecs.const_defined? name }.should raise_error(TypeError)
   end
 end

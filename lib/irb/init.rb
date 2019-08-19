@@ -44,16 +44,18 @@ module IRB # :nodoc:
     @CONF[:IRB_RC] = nil
 
     @CONF[:USE_READLINE] = false unless defined?(ReadlineInputMethod)
+    @CONF[:USE_COLORIZE] = true
     @CONF[:INSPECT_MODE] = true
     @CONF[:USE_TRACER] = false
     @CONF[:USE_LOADER] = false
     @CONF[:IGNORE_SIGINT] = true
     @CONF[:IGNORE_EOF] = false
     @CONF[:ECHO] = nil
+    @CONF[:ECHO_ON_ASSIGNMENT] = nil
     @CONF[:VERBOSE] = nil
 
     @CONF[:EVAL_HISTORY] = nil
-    @CONF[:SAVE_HISTORY] = nil
+    @CONF[:SAVE_HISTORY] = 1000
 
     @CONF[:BACK_TRACE_LIMIT] = 16
 
@@ -82,7 +84,7 @@ module IRB # :nodoc:
       :SIMPLE => {
         :PROMPT_I => ">> ",
         :PROMPT_N => ">> ",
-        :PROMPT_S => nil,
+        :PROMPT_S => "%l> ",
         :PROMPT_C => "?> ",
         :RETURN => "=> %s\n"
       },
@@ -104,7 +106,7 @@ module IRB # :nodoc:
     }
 
     @CONF[:PROMPT_MODE] = (STDIN.tty? ? :DEFAULT : :NULL)
-    @CONF[:AUTO_INDENT] = false
+    @CONF[:AUTO_INDENT] = true
 
     @CONF[:CONTEXT_MODE] = 3 # use binding in function on TOPLEVEL_BINDING
     @CONF[:SINGLE_IRB] = false
@@ -112,8 +114,6 @@ module IRB # :nodoc:
     @CONF[:LC_MESSAGES] = Locale.new
 
     @CONF[:AT_EXIT] = []
-
-    @CONF[:DEBUG_LEVEL] = 0
   end
 
   def IRB.init_error
@@ -165,14 +165,26 @@ module IRB # :nodoc:
         @CONF[:USE_READLINE] = true
       when "--noreadline"
         @CONF[:USE_READLINE] = false
+      when "--reidline"
+        @CONF[:USE_REIDLINE] = true
+      when "--noreidline"
+        @CONF[:USE_REIDLINE] = false
       when "--echo"
         @CONF[:ECHO] = true
       when "--noecho"
         @CONF[:ECHO] = false
+      when "--echo-on-assignment"
+        @CONF[:ECHO_ON_ASSIGNMENT] = true
+      when "--noecho-on-assignment"
+        @CONF[:ECHO_ON_ASSIGNMENT] = false
       when "--verbose"
         @CONF[:VERBOSE] = true
       when "--noverbose"
         @CONF[:VERBOSE] = false
+      when "--colorize"
+        @CONF[:USE_COLORIZE] = true
+      when "--nocolorize"
+        @CONF[:USE_COLORIZE] = false
       when /^--prompt-mode(?:=(.+))?/, /^--prompt(?:=(.+))?/
         opt = $1 || argv.shift
         prompt_mode = opt.upcase.tr("-", "_").intern
@@ -191,8 +203,6 @@ module IRB # :nodoc:
         @CONF[:CONTEXT_MODE] = ($1 || argv.shift).to_i
       when "--single-irb"
         @CONF[:SINGLE_IRB] = true
-      when /^--irb_debug(?:=(.+))?/
-        @CONF[:DEBUG_LEVEL] = ($1 || argv.shift).to_i
       when "-v", "--version"
         print IRB.version, "\n"
         exit 0

@@ -345,6 +345,7 @@ class TestEval < Test::Unit::TestCase
       # assert_equal(1, eval("foo11"))
       assert_equal(eval("foo22"), eval("foo22", p))
       assert_equal(55, eval("foo22"))
+      assert_equal(55, foo22)
     }.call
   end
 
@@ -495,6 +496,17 @@ class TestEval < Test::Unit::TestCase
       0.times.to_a
       b.eval('yield')
     }, '[Bug #10368]'
+  end
+
+  def test_gced_eval_location
+    Dir.mktmpdir do |d|
+      File.write("#{d}/2.rb", "")
+      File.write("#{d}/1.rb", "require_relative '2'\n""__FILE__\n")
+      file = "1.rb"
+      path = File.expand_path(file, d)
+      assert_equal(path, eval(File.read(path), nil, File.expand_path(file, d)))
+      assert_equal(path, eval(File.read(path), nil, File.expand_path(file, d)))
+    end
   end
 
   def orphan_proc

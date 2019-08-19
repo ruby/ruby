@@ -77,24 +77,24 @@ describe "Time#getlocal" do
 
   it "raises ArgumentError if the String argument is not of the form (+|-)HH:MM" do
     t = Time.now
-    lambda { t.getlocal("3600") }.should raise_error(ArgumentError)
+    -> { t.getlocal("3600") }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError if the String argument is not in an ASCII-compatible encoding" do
     t = Time.now
-    lambda { t.getlocal("-01:00".encode("UTF-16LE")) }.should raise_error(ArgumentError)
+    -> { t.getlocal("-01:00".encode("UTF-16LE")) }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError if the argument represents a value less than or equal to -86400 seconds" do
     t = Time.new
     t.getlocal(-86400 + 1).utc_offset.should == (-86400 + 1)
-    lambda { t.getlocal(-86400) }.should raise_error(ArgumentError)
+    -> { t.getlocal(-86400) }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError if the argument represents a value greater than or equal to 86400 seconds" do
     t = Time.new
     t.getlocal(86400 - 1).utc_offset.should == (86400 - 1)
-    lambda { t.getlocal(86400) }.should raise_error(ArgumentError)
+    -> { t.getlocal(86400) }.should raise_error(ArgumentError)
   end
 
   ruby_version_is "2.6" do
@@ -116,7 +116,7 @@ describe "Time#getlocal" do
           time
         end
 
-        lambda {
+        -> {
           Time.utc(2000, 1, 1, 12, 0, 0).getlocal(zone).should be_kind_of(Time)
         }.should_not raise_error
       end
@@ -127,7 +127,7 @@ describe "Time#getlocal" do
           time
         end
 
-        lambda {
+        -> {
           Time.utc(2000, 1, 1, 12, 0, 0).getlocal(zone)
         }.should raise_error(TypeError, /can't convert \w+ into an exact number/)
       end
@@ -138,7 +138,7 @@ describe "Time#getlocal" do
           time
         end
 
-        lambda {
+        -> {
           Time.utc(2000, 1, 1, 12, 0, 0).getlocal(zone).should be_kind_of(Time)
         }.should_not raise_error
       end
@@ -158,7 +158,7 @@ describe "Time#getlocal" do
           [Object.new, [], {}, :"some zone"].each do |zone|
             time = TimeSpecs::TimeWithFindTimezone.utc(2000, 1, 1, 12, 0, 0)
 
-            lambda {
+            -> {
               time.getlocal(zone)
             }.should raise_error(TypeError, /can't convert \w+ into an exact number/)
           end

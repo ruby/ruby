@@ -67,15 +67,11 @@ module REXML
     #  e.add_attribute( "nsa:a", "aval" )
     #  e.add_attribute( "b", "bval" )
     #  e.attributes.get_attribute( "a" ).prefix   # -> "nsa"
-    #  e.attributes.get_attribute( "b" ).prefix   # -> "elns"
+    #  e.attributes.get_attribute( "b" ).prefix   # -> ""
     #  a = Attribute.new( "x", "y" )
     #  a.prefix                                   # -> ""
     def prefix
-      pf = super
-      if pf == ""
-        pf = @element.prefix if @element
-      end
-      pf
+      super
     end
 
     # Returns the namespace URL, if defined, or nil otherwise
@@ -86,9 +82,26 @@ module REXML
     #  e.add_attribute("nsx:a", "c")
     #  e.attribute("ns:a").namespace # => "http://url"
     #  e.attribute("nsx:a").namespace # => nil
+    #
+    # This method always returns "" for no namespace attribute. Because
+    # the default namespace doesn't apply to attribute names.
+    #
+    # From https://www.w3.org/TR/xml-names/#uniqAttrs
+    #
+    # > the default namespace does not apply to attribute names
+    #
+    #  e = REXML::Element.new("el")
+    #  e.add_namespace("", "http://example.com/")
+    #  e.namespace # => "http://example.com/"
+    #  e.add_attribute("a", "b")
+    #  e.attribute("a").namespace # => ""
     def namespace arg=nil
       arg = prefix if arg.nil?
-      @element.namespace arg
+      if arg == ""
+        ""
+      else
+        @element.namespace(arg)
+      end
     end
 
     # Returns true if other is an Attribute and has the same name and value,

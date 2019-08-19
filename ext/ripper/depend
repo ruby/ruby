@@ -21,6 +21,7 @@ ripper.y: $(srcdir)/tools/preproc.rb $(srcdir)/tools/dsl.rb $(top_srcdir)/parse.
 	$(ECHO) extracting $@ from $(top_srcdir)/parse.y
 	$(Q) $(RUBY) $(top_srcdir)/tool/id2token.rb --path-separator=.$(PATH_SEPARATOR)./ \
 		--vpath=$(VPATH)$(PATH_SEPARATOR)$(top_srcdir) id.h $(top_srcdir)/parse.y > ripper.tmp.y
+	$(Q) $(RUBY) $(top_srcdir)/tool/pure_parser.rb ripper.tmp.y $(BISON)
 	$(Q) $(RUBY) $(srcdir)/tools/preproc.rb ripper.tmp.y --output=$@
 	$(Q) $(RM) ripper.tmp.y
 
@@ -50,6 +51,7 @@ ripper.E: ripper.c
 ripper.o: $(RUBY_EXTCONF_H)
 ripper.o: $(arch_hdrdir)/ruby/config.h
 ripper.o: $(hdrdir)/ruby.h
+ripper.o: $(hdrdir)/ruby/assert.h
 ripper.o: $(hdrdir)/ruby/backward.h
 ripper.o: $(hdrdir)/ruby/defines.h
 ripper.o: $(hdrdir)/ruby/encoding.h

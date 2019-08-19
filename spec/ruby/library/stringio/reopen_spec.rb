@@ -40,16 +40,16 @@ describe "StringIO#reopen when passed [Object, Integer]" do
   end
 
   it "raises a TypeError when the passed Object can't be converted to a String" do
-    lambda { @io.reopen(Object.new, IO::RDWR) }.should raise_error(TypeError)
+    -> { @io.reopen(Object.new, IO::RDWR) }.should raise_error(TypeError)
   end
 
   it "raises an Errno::EACCES when trying to reopen self with a frozen String in write-mode" do
-    lambda { @io.reopen("burn".freeze, IO::WRONLY) }.should raise_error(Errno::EACCES)
-    lambda { @io.reopen("burn".freeze, IO::WRONLY | IO::APPEND) }.should raise_error(Errno::EACCES)
+    -> { @io.reopen("burn".freeze, IO::WRONLY) }.should raise_error(Errno::EACCES)
+    -> { @io.reopen("burn".freeze, IO::WRONLY | IO::APPEND) }.should raise_error(Errno::EACCES)
   end
 
   it "raises a #{frozen_error_class} when trying to reopen self with a frozen String in truncate-mode" do
-    lambda { @io.reopen("burn".freeze, IO::RDONLY | IO::TRUNC) }.should raise_error(frozen_error_class)
+    -> { @io.reopen("burn".freeze, IO::RDONLY | IO::TRUNC) }.should raise_error(frozen_error_class)
   end
 
   it "does not raise IOError when passed a frozen String in read-mode" do
@@ -107,7 +107,7 @@ describe "StringIO#reopen when passed [Object, Object]" do
   end
 
   it "raises a TypeError when the passed Object can't be converted to a String using #to_str" do
-    lambda { @io.reopen(Object.new, "r") }.should raise_error(TypeError)
+    -> { @io.reopen(Object.new, "r") }.should raise_error(TypeError)
   end
 
   it "resets self's position to 0" do
@@ -132,10 +132,10 @@ describe "StringIO#reopen when passed [Object, Object]" do
   end
 
   it "raises an Errno::EACCES error when trying to reopen self with a frozen String in write-mode" do
-    lambda { @io.reopen("burn".freeze, 'w') }.should raise_error(Errno::EACCES)
-    lambda { @io.reopen("burn".freeze, 'w+') }.should raise_error(Errno::EACCES)
-    lambda { @io.reopen("burn".freeze, 'a') }.should raise_error(Errno::EACCES)
-    lambda { @io.reopen("burn".freeze, "r+") }.should raise_error(Errno::EACCES)
+    -> { @io.reopen("burn".freeze, 'w') }.should raise_error(Errno::EACCES)
+    -> { @io.reopen("burn".freeze, 'w+') }.should raise_error(Errno::EACCES)
+    -> { @io.reopen("burn".freeze, 'a') }.should raise_error(Errno::EACCES)
+    -> { @io.reopen("burn".freeze, "r+") }.should raise_error(Errno::EACCES)
   end
 
   it "does not raise IOError if a frozen string is passed in read mode" do
@@ -185,13 +185,13 @@ describe "StringIO#reopen when passed [Object]" do
   end
 
   it "raises a TypeError when passed an Object that can't be converted to a StringIO" do
-    lambda { @io.reopen(Object.new) }.should raise_error(TypeError)
+    -> { @io.reopen(Object.new) }.should raise_error(TypeError)
   end
 
   it "does not try to convert the passed Object to a String using #to_str" do
     obj = mock("not to_str")
     obj.should_not_receive(:to_str)
-    lambda { @io.reopen(obj) }.should raise_error(TypeError)
+    -> { @io.reopen(obj) }.should raise_error(TypeError)
   end
 
   it "tries to convert the passed Object to a StringIO using #to_strio" do

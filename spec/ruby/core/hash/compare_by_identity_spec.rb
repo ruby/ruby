@@ -82,7 +82,7 @@ describe "Hash#compare_by_identity" do
 
   it "raises a #{frozen_error_class} on frozen hashes" do
     @h = @h.freeze
-    lambda { @h.compare_by_identity }.should raise_error(frozen_error_class)
+    -> { @h.compare_by_identity }.should raise_error(frozen_error_class)
   end
 
   # Behaviour confirmed in bug #1871
@@ -108,13 +108,11 @@ describe "Hash#compare_by_identity" do
     @idh.keys.first.should equal foo
   end
 
-  ruby_bug "#12855", ""..."2.4.1" do
-    it "gives different identity for string literals" do
-      @idh['foo'] = 1
-      @idh['foo'] = 2
-      @idh.values.should == [1, 2]
-      @idh.size.should == 2
-    end
+  it "gives different identity for string literals" do
+    @idh['foo'] = 1
+    @idh['foo'] = 2
+    @idh.values.should == [1, 2]
+    @idh.size.should == 2
   end
 end
 

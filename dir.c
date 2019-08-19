@@ -858,7 +858,6 @@ dir_each_entry(VALUE dir, VALUE (*each)(VALUE, VALUE), VALUE arg, int children_o
 #endif
 	path = rb_external_str_new_with_enc(name, namlen, dirp->enc);
 	(*each)(arg, path);
-	if (dirp->dir == NULL) dir_closed();
     }
     return dir;
 }

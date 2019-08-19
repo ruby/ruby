@@ -60,7 +60,7 @@ describe "TCPServer#accept" do
 
   it "raises an IOError if the socket is closed" do
     @server.close
-    lambda { @server.accept }.should raise_error(IOError)
+    -> { @server.accept }.should raise_error(IOError)
   end
 end
 
@@ -76,7 +76,7 @@ describe 'TCPServer#accept' do
 
     describe 'without a connected client' do
       it 'blocks the caller' do
-        lambda { @server.accept }.should block_caller
+        -> { @server.accept }.should block_caller
       end
     end
 

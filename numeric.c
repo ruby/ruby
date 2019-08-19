@@ -171,7 +171,9 @@ static VALUE flo_to_i(VALUE num);
 static int float_round_overflow(int ndigits, int binexp);
 static int float_round_underflow(int ndigits, int binexp);
 
-static ID id_coerce, id_div, id_divmod;
+static ID id_coerce;
+#define id_div idDiv
+#define id_divmod idDivmod
 #define id_to_i idTo_i
 #define id_eq  idEq
 #define id_cmp idCmp
@@ -885,7 +887,7 @@ num_negative_p(VALUE num)
  *  So you should know its esoteric system. See following:
  *
  *  - http://docs.sun.com/source/806-3568/ncg_goldberg.html
- *  - http://wiki.github.com/rdp/ruby_tutorials_core/ruby-talk-faq#wiki-floats_imprecise
+ *  - https://github.com/rdp/ruby_tutorials_core/wiki/Ruby-Talk-FAQ#floats_imprecise
  *  - http://en.wikipedia.org/wiki/Floating_point#Accuracy_problems
  */
 
@@ -1120,8 +1122,8 @@ rb_flo_div_flo(VALUE x, VALUE y)
  * Returns a new Float which is the result of dividing +float+ by +other+.
  */
 
-static VALUE
-flo_div(VALUE x, VALUE y)
+VALUE
+rb_float_div(VALUE x, VALUE y)
 {
     double num = RFLOAT_VALUE(x);
     double den;
@@ -2002,12 +2004,19 @@ flo_floor(int argc, VALUE *argv, VALUE num)
 static VALUE
 flo_ceil(int argc, VALUE *argv, VALUE num)
 {
-    double number, f;
     int ndigits = 0;
 
     if (rb_check_arity(argc, 0, 1)) {
 	ndigits = NUM2INT(argv[0]);
     }
+    return rb_float_ceil(num, ndigits);
+}
+
+VALUE
+rb_float_ceil(VALUE num, int ndigits)
+{
+    double number, f;
+
     number = RFLOAT_VALUE(num);
     if (number == 0.0) {
 	return ndigits > 0 ? DBL2NUM(number) : INT2FIX(0);
@@ -3418,8 +3427,7 @@ int_chr(int argc, VALUE *argv, VALUE num)
       case 1:
 	break;
       default:
-	rb_check_arity(argc, 0, 1);
-	break;
+        rb_error_arity(argc, 0, 1);
     }
     enc = rb_to_encoding(argv[0]);
     if (!enc) enc = rb_ascii8bit_encoding();
@@ -3711,7 +3719,7 @@ fix_fdiv_double(VALUE x, VALUE y)
         return double_div_double(FIX2LONG(x), RFLOAT_VALUE(y));
     }
     else {
-        return NUM2DBL(rb_num_coerce_bin(x, y, rb_intern("fdiv")));
+        return NUM2DBL(rb_num_coerce_bin(x, y, idFdiv));
     }
 }
 
@@ -4197,7 +4205,6 @@ fix_cmp(VALUE x, VALUE y)
     else {
 	return rb_num_coerce_cmp(x, y, id_cmp);
     }
-    return rb_num_coerce_cmp(x, y, id_cmp);
 }
 
 VALUE
@@ -4630,26 +4637,8 @@ rb_int_rshift(VALUE x, VALUE y)
     return Qnil;
 }
 
-/*
- *  Document-method: Integer#[]
- *  call-seq:
- *     int[n]  ->  0, 1
- *
- *  Bit Reference---Returns the <code>n</code>th bit in the
- *  binary representation of +int+, where <code>int[0]</code>
- *  is the least significant bit.
- *
- *     a = 0b11001100101010
- *     30.downto(0) {|n| print a[n] }
- *     #=> 0000000000000000011001100101010
- *
- *     a = 9**15
- *     50.downto(0) {|n| print a[n] }
- *     #=> 000101110110100000111000011110010100111100010111001
- */
-
-static VALUE
-fix_aref(VALUE fix, VALUE idx)
+MJIT_FUNC_EXPORTED VALUE
+rb_fix_aref(VALUE fix, VALUE idx)
 {
     long val = FIX2LONG(fix);
     long i;
@@ -4675,15 +4664,136 @@ fix_aref(VALUE fix, VALUE idx)
     return INT2FIX(0);
 }
 
-static VALUE
-int_aref(VALUE num, VALUE idx)
+
+/* copied from "r_less" in range.c */
+/* compares _a_ and _b_ and returns:
+ * < 0: a < b
+ * = 0: a = b
+ * > 0: a > b or non-comparable
+ */
+static int
+compare_indexes(VALUE a, VALUE b)
 {
+    VALUE r = rb_funcall(a, id_cmp, 1, b);
+
+    if (NIL_P(r))
+        return INT_MAX;
+    return rb_cmpint(r, a, b);
+}
+
+static VALUE
+generate_mask(VALUE len)
+{
+    return rb_int_minus(rb_int_lshift(INT2FIX(1), len), INT2FIX(1));
+}
+
+static VALUE
+int_aref1(VALUE num, VALUE arg)
+{
+    VALUE orig_num = num, beg, end;
+    int excl;
+
+    if (rb_range_values(arg, &beg, &end, &excl)) {
+        if (NIL_P(beg)) {
+            /* beginless range */
+            if (!RTEST(num_negative_p(end))) {
+                if (!excl) end = rb_int_plus(end, INT2FIX(1));
+                VALUE mask = generate_mask(end);
+                if (RTEST(num_zero_p(rb_int_and(num, mask)))) {
+                    return INT2FIX(0);
+                }
+                else {
+                    rb_raise(rb_eArgError, "The beginless range for Integer#[] results in infinity");
+                }
+            }
+            else {
+                return INT2FIX(0);
+            }
+        }
+        num = rb_int_rshift(num, beg);
+
+        int cmp = compare_indexes(beg, end);
+        if (!NIL_P(end) && cmp < 0) {
+            VALUE len = rb_int_minus(end, beg);
+            if (!excl) len = rb_int_plus(len, INT2FIX(1));
+            VALUE mask = generate_mask(len);
+            num = rb_int_and(num, mask);
+        }
+        else if (cmp == 0) {
+            if (excl) return INT2FIX(0);
+            num = orig_num;
+            arg = beg;
+            goto one_bit;
+        }
+        return num;
+    }
+
+one_bit:
     if (FIXNUM_P(num)) {
-	return fix_aref(num, idx);
+        return rb_fix_aref(num, arg);
     }
     else if (RB_TYPE_P(num, T_BIGNUM)) {
-	return rb_big_aref(num, idx);
+        return rb_big_aref(num, arg);
     }
+    return Qnil;
+}
+
+static VALUE
+int_aref2(VALUE num, VALUE beg, VALUE len)
+{
+    num = rb_int_rshift(num, beg);
+    VALUE mask = generate_mask(len);
+    num = rb_int_and(num, mask);
+    return num;
+}
+
+/*
+ *  Document-method: Integer#[]
+ *  call-seq:
+ *     int[n]    -> 0, 1
+ *     int[n, m] -> num
+ *     int[range] -> num
+ *
+ *  Bit Reference---Returns the <code>n</code>th bit in the
+ *  binary representation of +int+, where <code>int[0]</code>
+ *  is the least significant bit.
+ *
+ *     a = 0b11001100101010
+ *     30.downto(0) {|n| print a[n] }
+ *     #=> 0000000000000000011001100101010
+ *
+ *     a = 9**15
+ *     50.downto(0) {|n| print a[n] }
+ *     #=> 000101110110100000111000011110010100111100010111001
+ *
+ *  In principle, <code>n[i]</code> is equivalent to <code>(n >> i) & 1</code>.
+ *  Thus, any negative index always returns zero:
+ *
+ *     p 255[-1] #=> 0
+ *
+ *  Range operations <code>n[i, len]</code> and <code>n[i..j]</code>
+ *  are naturally extended.
+ *
+ *  * <code>n[i, len]</code> equals to <code>(n >> i) & ((1 << len) - 1)</code>.
+ *  * <code>n[i..j]</code> equals to <code>(n >> i) & ((1 << (j - i + 1)) - 1)</code>.
+ *  * <code>n[i...j]</code> equals to <code>(n >> i) & ((1 << (j - i)) - 1)</code>.
+ *  * <code>n[i..]</code> equals to <code>(n >> i)</code>.
+ *  * <code>n[..j]</code> is zero if <code>n & ((1 << (j + 1)) - 1)</code> is zero.  Otherwise, raises an ArgumentError.
+ *  * <code>n[...j]</code> is zero if <code>n & ((1 << j) - 1)</code> is zero.  Otherwise, raises an ArgumentError.
+ *
+ *  Note that range operation may exhaust memory.
+ *  For example, <code>-1[0, 1000000000000]</code> will raise NoMemoryError.
+ */
+
+static VALUE
+int_aref(int const argc, VALUE * const argv, VALUE const num)
+{
+    rb_check_arity(argc, 1, 2);
+    if (argc == 2) {
+        return int_aref2(num, argv[0], argv[1]);
+    }
+    return int_aref1(num, argv[0]);
+
     return Qnil;
 }
 
@@ -5453,8 +5563,8 @@ Init_Numeric(void)
     _set_Creg(0, 0);
 #endif
     id_coerce = rb_intern("coerce");
-    id_div = rb_intern("div");
-    id_divmod = rb_intern("divmod");
+    id_to = rb_intern("to");
+    id_by = rb_intern("by");
 
     rb_eZeroDivError = rb_define_class("ZeroDivisionError", rb_eStandardError);
     rb_eFloatDomainError = rb_define_class("FloatDomainError", rb_eRangeError);
@@ -5555,7 +5665,7 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "&", rb_int_and, 1);
     rb_define_method(rb_cInteger, "|", int_or,  1);
     rb_define_method(rb_cInteger, "^", int_xor, 1);
-    rb_define_method(rb_cInteger, "[]", int_aref, 1);
+    rb_define_method(rb_cInteger, "[]", int_aref, -1);
 
     rb_define_method(rb_cInteger, "<<", rb_int_lshift, 1);
     rb_define_method(rb_cInteger, ">>", rb_int_rshift, 1);
@@ -5577,7 +5687,9 @@ Init_Numeric(void)
     rb_undef_method(CLASS_OF(rb_cFloat), "new");
 
     /*
-     *  Represents the rounding mode for floating point addition.
+     *  Deprecated, do not use.
+     *
+     *  Represents the rounding mode for floating point addition at the start time.
      *
      *  Usually defaults to 1, rounding to the nearest number.
      *
@@ -5590,6 +5702,7 @@ Init_Numeric(void)
      *	3::	Rounding towards negative infinity
      */
     rb_define_const(rb_cFloat, "ROUNDS", INT2FIX(FLT_ROUNDS));
+    rb_deprecate_constant(rb_cFloat, "ROUNDS");
     /*
      *	The base of the floating point, or number of unique digits used to
      *	represent the number.
@@ -5678,7 +5791,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "+", rb_float_plus, 1);
     rb_define_method(rb_cFloat, "-", flo_minus, 1);
     rb_define_method(rb_cFloat, "*", rb_float_mul, 1);
-    rb_define_method(rb_cFloat, "/", flo_div, 1);
+    rb_define_method(rb_cFloat, "/", rb_float_div, 1);
     rb_define_method(rb_cFloat, "quo", flo_quo, 1);
     rb_define_method(rb_cFloat, "fdiv", flo_quo, 1);
     rb_define_method(rb_cFloat, "%", flo_mod, 1);
@@ -5713,9 +5826,6 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "prev_float", flo_prev_float, 0);
     rb_define_method(rb_cFloat, "positive?", flo_positive_p, 0);
     rb_define_method(rb_cFloat, "negative?", flo_negative_p, 0);
-
-    id_to = rb_intern("to");
-    id_by = rb_intern("by");
 }
 
 #undef rb_float_value

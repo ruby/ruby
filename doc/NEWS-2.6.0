@@ -56,7 +56,7 @@ Array::
 
     * Added Array#union and Array#difference instance methods.  [Feature #14097]
 
-  Modified methods::
+  Modified method::
 
     * Array#to_h now accepts a block that maps elements to new key/value pairs.  [Feature #15143]
 
@@ -67,7 +67,7 @@ Array::
 
 Binding::
 
-  New methods::
+  New method::
 
     * Added Binding#source_location.  [Feature #14230]
 
@@ -87,17 +87,17 @@ Dir::
 
 Enumerable::
 
-  New methods::
+  New method::
 
     * Enumerable#chain returns an enumerator object that iterates over the
       elements of the receiver and then those of each argument
       in sequence.  [Feature #15144]
 
-  Modified methods::
+  Modified method::
 
     * Enumerable#to_h now accepts a block that maps elements to new key/value pairs.  [Feature #15143]
 
-  Aliased methods::
+  Aliased method::
 
     * Enumerable#filter is a new alias for Enumerable#select. [Feature #13784]
 
@@ -116,7 +116,7 @@ Enumerator::Chain::
 
 Enumerator::Lazy::
 
-  Aliased methods::
+  Aliased method::
 
     * Enumerator::Lazy#filter is a new alias for
       Enumerator::Lazy#select.  [Feature #13784]
@@ -130,7 +130,7 @@ Enumerator::
 
 ENV::
 
-  Modified methods::
+  Modified method::
 
     * ENV.to_h now accepts a block that maps names and values to new keys and values.  [Feature #15143]
 
@@ -158,14 +158,14 @@ Hash::
 
 IO::
 
-  New options::
+  New option::
 
     * Added new mode character <code>'x'</code> to open files for exclusive
       access. [Feature #11258]
 
 Kernel::
 
-  Aliased methods::
+  Aliased method::
 
     * Kernel#then is a new alias for Kernel#yield_self. [Feature #14594]
 
@@ -209,20 +209,20 @@ Module::
 
 NameError::
 
-  New options::
+  New option::
 
     * NameError.new accepts a +:receiver+ option to set receiver in Ruby
       code.  [Feature #14313]
 
 NilClass::
 
-  New methods::
+  New method::
 
     * NilClass#=~ is added for compatibility.  [Feature #15231]
 
 NoMethodError::
 
-  New options::
+  New option::
 
     * NoMethodError.new accepts a +:receiver+ option to set receiver in Ruby
       code.  [Feature #14313]
@@ -236,7 +236,7 @@ Numeric::
 
 OpenStruct::
 
-  Modified methods::
+  Modified method::
 
     * OpenStruct#to_h now accepts a block that maps keys and values to new keys and values.  [Feature #15143]
 
@@ -252,13 +252,13 @@ Proc::
 
 Random::
 
-  New methods::
+  New method::
 
     * Added Random.bytes.  [Feature #4938]
 
 Range::
 
-  New methods::
+  New method::
 
     * Added Range#% instance method.  [Feature #14697]
 
@@ -288,12 +288,12 @@ RubyVM::AbstractSyntaxTree::
     * RubyVM::AbstractSyntaxTree.parse_file parses a given file and returns AST
       nodes.  [experimental]
 
-    * RubyVM::AbstractSyntaxTree.of returns AST nodes of the given proc or method.
-      experimental::
+    * RubyVM::AbstractSyntaxTree.of returns AST nodes of the given proc or
+      method.  [experimental]
 
 RubyVM::
 
-  New methods::
+  New method::
 
     * RubyVM.resolve_feature_path identifies the file that will be loaded by
       "require(feature)". [experimental] [Feature #15230]
@@ -308,7 +308,7 @@ String::
 
 Struct::
 
-  Modified methods::
+  Modified method::
 
     * Struct#to_h now accepts a block that maps keys and values to new keys and values.  [Feature #15143]
 
@@ -338,10 +338,10 @@ TracePoint::
 
     * TracePoint#eval_script [Feature #15287]
 
-  Modified methods::
+  Modified method::
 
-    * TracePoint#enable accepts new keywords "target:" and "target_line:".
-      Feature #15289::
+    * TracePoint#enable accepts new keywords "target:" and
+      "target_line:".  [Feature #15289]
 
 === Stdlib updates (outstanding ones only)
 
@@ -350,26 +350,26 @@ BigDecimal::
   Update to version 1.4.0.  This version includes several compatibility
   issues, see Compatibility issues section below for details.
 
-  Modified methods::
+  Modified method::
 
-  * BigDecimal() accepts the new keyword "exception:" similar to Float().
+    * BigDecimal() accepts the new keyword "exception:" similar to Float().
 
   Note for the differences among recent versions::
 
-  You should want to know the differences among recent versions of bigdecimal.
-  Please select the suitable version of bigdecimal according to the following
-  information.
+    You should want to know the differences among recent versions of bigdecimal.
+    Please select the suitable version of bigdecimal according to the following
+    information.
 
-  * 1.3.5 has BigDecimal.new without "exception:" keyword.  You can see the
-    deprecation warning of BigDecimal.new when you specify "-w" option.
-    BigDecimal(), BigDecimal.new, and Object#to_d methods are the same.
+    * 1.3.5 has BigDecimal.new without "exception:" keyword.  You can see the
+      deprecation warning of BigDecimal.new when you specify "-w" option.
+      BigDecimal(), BigDecimal.new, and Object#to_d methods are the same.
 
-  * 1.4.0 has BigDecimal.new with "exception:" keyword.  You always see the
-    deprecation warning of BigDecimal.new.  Object#to_d method is different
-    from BigDecimal() and BigDecimal.new.
+    * 1.4.0 has BigDecimal.new with "exception:" keyword.  You always see the
+      deprecation warning of BigDecimal.new.  Object#to_d method is different
+      from BigDecimal() and BigDecimal.new.
 
-  * 2.0.0 will be released soon after releasing Ruby 2.6.0.  This version
-    will not have the BigDecimal.new method.
+    * 2.0.0 will be released soon after releasing Ruby 2.6.0.  This version
+      will not have the BigDecimal.new method.
 
 Bundler::
 
@@ -534,7 +534,7 @@ RubyGems::
 
 Set::
 
-  Aliased methods::
+  Aliased method::
 
     * Set#filter! is a new alias for Set#select!.  [Feature #13784]
 

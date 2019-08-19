@@ -25,9 +25,9 @@ describe "SortedSet#superset?" do
   end
 
   it "raises an ArgumentError when passed a non-SortedSet" do
-    lambda { SortedSet[].superset?([]) }.should raise_error(ArgumentError)
-    lambda { SortedSet[].superset?(1) }.should raise_error(ArgumentError)
-    lambda { SortedSet[].superset?("test") }.should raise_error(ArgumentError)
-    lambda { SortedSet[].superset?(Object.new) }.should raise_error(ArgumentError)
+    -> { SortedSet[].superset?([]) }.should raise_error(ArgumentError)
+    -> { SortedSet[].superset?(1) }.should raise_error(ArgumentError)
+    -> { SortedSet[].superset?("test") }.should raise_error(ArgumentError)
+    -> { SortedSet[].superset?(Object.new) }.should raise_error(ArgumentError)
   end
 end

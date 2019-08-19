@@ -58,6 +58,9 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
   end
 
   [nil, :crypt, :bcrypt].each do |hash_algo|
+    # OpenBSD does not support insecure DES-crypt
+    next if /openbsd/ =~ RUBY_PLATFORM && hash_algo != :bcrypt
+
     begin
       case hash_algo
       when :crypt
@@ -215,7 +218,7 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
             res["www-authenticate"].scan(DIGESTRES_) do |key, quoted, token|
               params[key.downcase] = token || quoted.delete('\\')
             end
-             params['uri'] = "http://#{addr}:#{port}#{path}"
+            params['uri'] = "http://#{addr}:#{port}#{path}"
           end
 
           g['Authorization'] = credentials_for_request('webrick', "supersecretpassword", params)

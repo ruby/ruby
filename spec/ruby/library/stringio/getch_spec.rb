@@ -17,15 +17,13 @@ describe "StringIO#getch" do
     io.getch.should == ?a
   end
 
-  with_feature :encoding do
-    it "increments #pos by the byte size of the character in multibyte strings" do
-      io = StringIO.new("föóbar")
+  it "increments #pos by the byte size of the character in multibyte strings" do
+    io = StringIO.new("föóbar")
 
-      io.getch; io.pos.should == 1 # "f" has byte size 1
-      io.getch; io.pos.should == 3 # "ö" has byte size 2
-      io.getch; io.pos.should == 5 # "ó" has byte size 2
-      io.getch; io.pos.should == 6 # "b" has byte size 1
-    end
+    io.getch; io.pos.should == 1 # "f" has byte size 1
+    io.getch; io.pos.should == 3 # "ö" has byte size 2
+    io.getch; io.pos.should == 5 # "ó" has byte size 2
+    io.getch; io.pos.should == 6 # "b" has byte size 1
   end
 
   it "returns nil at the end of the string" do

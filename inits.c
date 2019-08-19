@@ -22,6 +22,7 @@ rb_call_inits(void)
     CALL(vm_postponed_job);
     CALL(Method);
     CALL(RandomSeedCore);
+    CALL(encodings);
     CALL(sym);
     CALL(var_tables);
     CALL(Object);
@@ -67,5 +68,6 @@ rb_call_inits(void)
     CALL(vm_trace);
     CALL(vm_stack_canary);
     CALL(ast);
+    CALL(gc_stress);
 }
 #undef CALL

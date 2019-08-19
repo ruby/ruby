@@ -275,6 +275,7 @@ module TestStruct
     klass = @Struct.new(:a)
     o = klass.new(1)
     assert_kind_of(Integer, o.hash)
+    assert_kind_of(String, o.hash.to_s)
   end
 
   def test_eql

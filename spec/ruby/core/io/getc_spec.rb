@@ -23,7 +23,7 @@ describe "IO#getc" do
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.getc }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.getc }.should raise_error(IOError)
   end
 end
 

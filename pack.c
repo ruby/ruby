@@ -286,8 +286,10 @@ VALUE_to_float(VALUE obj)
  *   u            | String  | UU-encoded string
  *   M            | String  | quoted printable, MIME encoding (see also RFC2045)
  *                |         | (text mode but input must use LF and output LF)
- *   m            | String  | base64 encoded string (see RFC 2045, count is width)
+ *   m            | String  | base64 encoded string (see RFC 2045)
  *                |         | (if count is 0, no line feed are added, see RFC 4648)
+ *                |         | (count specifies input bytes between each LF,
+ *                |         | rounded down to nearest multiple of 3)
  *   P            | String  | pointer to a structure (fixed-length string)
  *   p            | String  | pointer to a null-terminated string
  *
@@ -1923,6 +1925,20 @@ pack_unpack(VALUE str, VALUE fmt)
  *  Decodes <i>str</i> (which may contain binary data) according to the
  *  format string, returning the first value extracted.
  *  See also String#unpack, Array#pack.
+ *
+ *  Contrast with String#unpack:
+ *
+ *     "abc \0\0abc \0\0".unpack('A6Z6')   #=> ["abc", "abc "]
+ *     "abc \0\0abc \0\0".unpack1('A6Z6')  #=> "abc"
+ *
+ *  In that case data would be lost but often it's the case that the array
+ *  only holds one value, especially when unpacking binary data. For instance:
+ *
+ *  "\xff\x00\x00\x00".unpack("l")         #=>  [255]
+ *  "\xff\x00\x00\x00".unpack1("l")        #=>  255
+ *
+ *  Thus unpack1 is convenient, makes clear the intention and signals
+ *  the expected return value to those reading the code.
  */
 
 static VALUE

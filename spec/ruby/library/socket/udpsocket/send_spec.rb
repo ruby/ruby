@@ -66,7 +66,7 @@ describe "UDPSocket#send" do
   it "raises EMSGSIZE if data is too too big" do
     @socket = UDPSocket.open
     begin
-      lambda do
+      -> do
         @socket.send('1' * 100_000, 0, SocketSpecs.hostname, @port.to_s)
       end.should raise_error(Errno::EMSGSIZE)
     ensure
@@ -96,7 +96,7 @@ describe 'UDPSocket#send' do
     describe 'using a disconnected socket' do
       describe 'without a destination address' do
         it "raises #{SocketSpecs.dest_addr_req_error}" do
-          lambda { @client.send('hello', 0) }.should raise_error(SocketSpecs.dest_addr_req_error)
+          -> { @client.send('hello', 0) }.should raise_error(SocketSpecs.dest_addr_req_error)
         end
       end
 
@@ -108,7 +108,7 @@ describe 'UDPSocket#send' do
         it 'does not persist the connection after sending data' do
           @client.send('hello', 0, @addr.ip_address, @addr.ip_port)
 
-          lambda { @client.send('hello', 0) }.should raise_error(SocketSpecs.dest_addr_req_error)
+          -> { @client.send('hello', 0) }.should raise_error(SocketSpecs.dest_addr_req_error)
         end
       end
 
@@ -144,7 +144,7 @@ describe 'UDPSocket#send' do
         it 'sends the data to the given address instead' do
           @client.send('hello', 0, @alt_server.getsockname).should == 5
 
-          lambda { @server.recv(5) }.should block_caller
+          -> { @server.recv(5) }.should block_caller
 
           @alt_server.recv(5).should == 'hello'
         end

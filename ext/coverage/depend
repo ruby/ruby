@@ -14,6 +14,7 @@ $(OBJS): $(HDRS) $(ruby_headers) \
 coverage.o: $(RUBY_EXTCONF_H)
 coverage.o: $(arch_hdrdir)/ruby/config.h
 coverage.o: $(hdrdir)/ruby.h
+coverage.o: $(hdrdir)/ruby/assert.h
 coverage.o: $(hdrdir)/ruby/backward.h
 coverage.o: $(hdrdir)/ruby/defines.h
 coverage.o: $(hdrdir)/ruby/encoding.h

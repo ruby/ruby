@@ -5,9 +5,8 @@
 
 require 'erb'
 require 'optparse'
-$:.unshift(File.dirname(__FILE__))
-require 'vpath'
-require 'colorize'
+require_relative 'lib/vpath'
+require_relative 'lib/colorize'
 
 vpath = VPath.new
 timestamp = nil

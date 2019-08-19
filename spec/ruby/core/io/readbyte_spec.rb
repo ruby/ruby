@@ -17,10 +17,8 @@ describe "IO#readbyte" do
 
   it "raises EOFError on EOF" do
     @io.seek(999999)
-    lambda do
+    -> do
       @io.readbyte
     end.should raise_error EOFError
   end
-
-  it "needs to be reviewed for spec completeness"
 end

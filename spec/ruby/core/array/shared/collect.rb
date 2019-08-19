@@ -37,7 +37,7 @@ describe :array_collect, shared: true do
 
   it "raises an ArgumentError when no block and with arguments" do
     a = [1, 2, 3]
-    lambda {
+    -> {
       a.send(@method, :foo)
     }.should raise_error(ArgumentError)
   end
@@ -111,21 +111,21 @@ describe :array_collect_b, shared: true do
 
   describe "when frozen" do
     it "raises a #{frozen_error_class}" do
-      lambda { ArraySpecs.frozen_array.send(@method) {} }.should raise_error(frozen_error_class)
+      -> { ArraySpecs.frozen_array.send(@method) {} }.should raise_error(frozen_error_class)
     end
 
     it "raises a #{frozen_error_class} when empty" do
-      lambda { ArraySpecs.empty_frozen_array.send(@method) {} }.should raise_error(frozen_error_class)
+      -> { ArraySpecs.empty_frozen_array.send(@method) {} }.should raise_error(frozen_error_class)
     end
 
     it "raises a #{frozen_error_class} when calling #each on the returned Enumerator" do
       enumerator = ArraySpecs.frozen_array.send(@method)
-      lambda { enumerator.each {|x| x } }.should raise_error(frozen_error_class)
+      -> { enumerator.each {|x| x } }.should raise_error(frozen_error_class)
     end
 
     it "raises a #{frozen_error_class} when calling #each on the returned Enumerator when empty" do
       enumerator = ArraySpecs.empty_frozen_array.send(@method)
-      lambda { enumerator.each {|x| x } }.should raise_error(frozen_error_class)
+      -> { enumerator.each {|x| x } }.should raise_error(frozen_error_class)
     end
   end
 

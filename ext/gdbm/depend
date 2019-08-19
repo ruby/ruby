@@ -2,6 +2,7 @@
 gdbm.o: $(RUBY_EXTCONF_H)
 gdbm.o: $(arch_hdrdir)/ruby/config.h
 gdbm.o: $(hdrdir)/ruby.h
+gdbm.o: $(hdrdir)/ruby/assert.h
 gdbm.o: $(hdrdir)/ruby/backward.h
 gdbm.o: $(hdrdir)/ruby/defines.h
 gdbm.o: $(hdrdir)/ruby/intern.h

@@ -74,11 +74,16 @@ module RDoc::TokenStream
   ##
   # Adds +tokens+ to the collected tokens
 
-  def add_tokens(*tokens)
-    tokens.flatten.each { |token| @token_stream << token }
+  def add_tokens(tokens)
+    @token_stream.concat(tokens)
   end
 
-  alias add_token add_tokens
+  ##
+  # Adds one +token+ to the collected tokens
+
+  def add_token(token)
+    @token_stream.push(token)
+  end
 
   ##
   # Starts collecting tokens

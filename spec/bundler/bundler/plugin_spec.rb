@@ -32,6 +32,29 @@ RSpec.describe Bundler::Plugin do
     allow(index).to receive(:register_plugin)
   end
 
+  describe "list command" do
+    context "when no plugins are installed" do
+      before { allow(index).to receive(:installed_plugins) { [] } }
+      it "outputs no plugins installed" do
+        expect(Bundler.ui).to receive(:info).with("No plugins installed")
+        subject.list
+      end
+    end
+
+    context "with installed plugins" do
+      before do
+        allow(index).to receive(:installed_plugins) { %w[plug1 plug2] }
+        allow(index).to receive(:plugin_commands).with("plug1") { %w[c11 c12] }
+        allow(index).to receive(:plugin_commands).with("plug2") { %w[c21 c22] }
+      end
+      it "list plugins followed by commands" do
+        expected_output = "plug1\n-----\n  c11\n  c12\n\nplug2\n-----\n  c21\n  c22\n\n"
+        expect(Bundler.ui).to receive(:info).with(expected_output)
+        subject.list
+      end
+    end
+  end
+
   describe "install command" do
     let(:opts) { { "version" => "~> 1.0", "source" => "foo" } }
 

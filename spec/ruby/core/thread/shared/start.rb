@@ -4,7 +4,7 @@ describe :thread_start, shared: true do
   end
 
   it "raises an ArgumentError if not passed a block" do
-    lambda {
+    -> {
       Thread.send(@method)
     }.should raise_error(ArgumentError)
   end

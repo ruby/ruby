@@ -14,10 +14,12 @@ class CSV
       @output = output
       @options = options
       @lineno = 0
+      @fields_converter = nil
       prepare
       if @options[:write_headers] and @headers
         self << @headers
       end
+      @fields_converter = @options[:fields_converter]
     end
 
     def <<(row)
@@ -30,6 +32,8 @@ class CSV
 
       @headers ||= row if @use_headers
       @lineno += 1
+
+      row = @fields_converter.convert(row, nil, lineno) if @fields_converter
 
       converted_row = row.collect do |field|
         quote(field)

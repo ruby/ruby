@@ -34,6 +34,11 @@ class RDoc::Comment
   attr_reader :text
 
   ##
+  # Alias for text
+
+  alias to_s text
+
+  ##
   # Overrides the content returned by #parse.  Use when there is no #text
   # source for this comment
 
@@ -43,9 +48,10 @@ class RDoc::Comment
   # Creates a new comment with +text+ that is found in the RDoc::TopLevel
   # +location+.
 
-  def initialize text = nil, location = nil
+  def initialize text = nil, location = nil, language = nil
     @location = location
     @text     = text.nil? ? nil : text.dup
+    @language = language
 
     @document   = nil
     @format     = 'rdoc'

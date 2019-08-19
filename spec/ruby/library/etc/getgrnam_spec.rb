@@ -21,7 +21,7 @@ platform_is_not :windows do
     end
 
     it "only accepts strings as argument" do
-      lambda {
+      -> {
         Etc.getgrnam(123)
         Etc.getgrnam(nil)
       }.should raise_error(TypeError)

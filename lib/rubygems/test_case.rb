@@ -1,11 +1,6 @@
 # frozen_string_literal: true
-# TODO: $SAFE = 1
 
-if defined? Gem::QuickLoader
-  Gem::QuickLoader.load_full_rubygems_library
-else
-  require 'rubygems'
-end
+require 'rubygems'
 
 # If bundler gemspec exists, add to stubs
 bundler_gemspec = File.expand_path("../../../bundler/bundler.gemspec", __FILE__)
@@ -31,16 +26,8 @@ begin
 rescue LoadError
 end
 
-# We have to load these up front because otherwise we'll try to load
-# them while we're testing rubygems, and thus we can't actually load them.
-unless Gem::Dependency.new('rdoc', '>= 3.10').matching_specs.empty?
-  gem 'rdoc'
-  gem 'json'
-end
+require 'bundler'
 
-if Gem::USE_BUNDLER_FOR_GEMDEPS
-  require 'bundler'
-end
 require 'minitest/autorun'
 
 require 'rubygems/deprecate'
@@ -96,8 +83,6 @@ end
 # gem-related behavior in a sandbox.  Through RubyGemTestCase you can install
 # and uninstall gems, fetch remote gems through a stub fetcher and be assured
 # your normal set of gems is not affected.
-#
-# Tests are always run at a safe level of 1.
 
 class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Unit::TestCase)
 
@@ -154,6 +139,28 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
       RbConfig::CONFIG['enable_shared'] = enable_shared
     else
       RbConfig::CONFIG.delete 'enable_shared'
+    end
+  end
+
+  ##
+  # Sets the vendordir entry in RbConfig::CONFIG to +value+ and restores the
+  # original value when the block ends
+  #
+  def vendordir(value)
+    vendordir = RbConfig::CONFIG['vendordir']
+
+    if value
+      RbConfig::CONFIG['vendordir'] = value
+    else
+      RbConfig::CONFIG.delete 'vendordir'
+    end
+
+    yield
+  ensure
+    if vendordir
+      RbConfig::CONFIG['vendordir'] = vendordir
+    else
+      RbConfig::CONFIG.delete 'vendordir'
     end
   end
 
@@ -225,10 +232,6 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
   undef_method :default_test if instance_methods.include? 'default_test' or
                                 instance_methods.include? :default_test
 
-  @@project_dir = Dir.pwd.untaint unless defined?(@@project_dir)
-
-  @@initial_reset = false
-
   ##
   # #setup prepares a sandboxed location to install gems.  All installs are
   # directed to a temporary directory.  All install plugins are removed.
@@ -236,61 +239,32 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
   # If the +RUBY+ environment variable is set the given path is used for
   # Gem::ruby.  The local platform is set to <tt>i386-mswin32</tt> for Windows
   # or <tt>i686-darwin8.10.1</tt> otherwise.
-  #
-  # If the +KEEP_FILES+ environment variable is set the files will not be
-  # removed from <tt>/tmp/test_rubygems_#{$$}.#{Time.now.to_i}</tt>.
 
   def setup
     super
 
-    @orig_gem_home   = ENV['GEM_HOME']
-    @orig_gem_path   = ENV['GEM_PATH']
-    @orig_gem_vendor = ENV['GEM_VENDOR']
-    @orig_gem_spec_cache = ENV['GEM_SPEC_CACHE']
-    @orig_rubygems_gemdeps = ENV['RUBYGEMS_GEMDEPS']
-    @orig_bundle_gemfile   = ENV['BUNDLE_GEMFILE']
-    @orig_rubygems_host = ENV['RUBYGEMS_HOST']
-    ENV.keys.find_all { |k| k.start_with?('GEM_REQUIREMENT_') }.each do |k|
-      ENV.delete k
-    end
-    @orig_gem_env_requirements = ENV.to_hash
+    @orig_env = ENV.to_hash
 
     ENV['GEM_VENDOR'] = nil
+    ENV['GEMRC'] = nil
     ENV['SOURCE_DATE_EPOCH'] = nil
 
     @current_dir = Dir.pwd
     @fetcher     = nil
 
-    if Gem::USE_BUNDLER_FOR_GEMDEPS
-      Bundler.ui = Bundler::UI::Silent.new
-    end
     @back_ui                       = Gem::DefaultUserInteraction.ui
     @ui                            = Gem::MockGemUi.new
     # This needs to be a new instance since we call use_ui(@ui) when we want to
     # capture output
     Gem::DefaultUserInteraction.ui = Gem::MockGemUi.new
 
-    tmpdir = File.expand_path Dir.tmpdir
+    tmpdir = File.realpath Dir.tmpdir
     tmpdir.untaint
 
-    if ENV['KEEP_FILES']
-      @tempdir = File.join(tmpdir, "test_rubygems_#{$$}.#{Time.now.to_i}")
-    else
-      @tempdir = File.join(tmpdir, "test_rubygems_#{$$}")
-    end
+    @tempdir = File.join(tmpdir, "test_rubygems_#{$$}")
     @tempdir.untaint
 
     FileUtils.mkdir_p @tempdir
-
-    # This makes the tempdir consistent on OS X.
-    # File.expand_path Dir.tmpdir                      #=> "/var/..."
-    # Dir.chdir Dir.tmpdir do File.expand_path '.' end #=> "/private/var/..."
-    # TODO use File#realpath above instead of #expand_path once 1.8 support is
-    # dropped.
-    Dir.chdir @tempdir do
-      @tempdir = File.expand_path '.'
-      @tempdir.untaint
-    end
 
     # This makes the tempdir consistent on Windows.
     # Dir.tmpdir may return short path name, but Dir[Dir.tmpdir] returns long
@@ -319,7 +293,7 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
 
     @orig_LOAD_PATH = $LOAD_PATH.dup
     $LOAD_PATH.map! do |s|
-      expand_path = File.expand_path(s)
+      expand_path = File.realpath(s) rescue File.expand_path(s)
       if expand_path != s
         expand_path.untaint
         if s.instance_variable_defined?(:@gem_prelude_index)
@@ -333,7 +307,6 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
 
     Dir.chdir @tempdir
 
-    @orig_ENV_HOME = ENV['HOME']
     ENV['HOME'] = @userhome
     Gem.instance_variable_set :@user_home, nil
     Gem.instance_variable_set :@gemdeps, nil
@@ -344,33 +317,26 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
     FileUtils.mkdir_p @gemhome
     FileUtils.mkdir_p @userhome
 
-    @orig_gem_private_key_passphrase = ENV['GEM_PRIVATE_KEY_PASSPHRASE']
     ENV['GEM_PRIVATE_KEY_PASSPHRASE'] = PRIVATE_KEY_PASSPHRASE
 
     @default_dir = File.join @tempdir, 'default'
     @default_spec_dir = File.join @default_dir, "specifications", "default"
-    Gem.instance_variable_set :@default_dir, @default_dir
+    if Gem.java_platform?
+      @orig_default_gem_home = RbConfig::CONFIG['default_gem_home']
+      RbConfig::CONFIG['default_gem_home'] = @default_dir
+    else
+      Gem.instance_variable_set(:@default_dir, @default_dir)
+    end
     FileUtils.mkdir_p @default_spec_dir
 
-    # We use Gem::Specification.reset the first time only so that if there
-    # are unresolved deps that leak into the whole test suite, they're at least
-    # reported once.
-    if @@initial_reset
-      Gem::Specification.unresolved_deps.clear # done to avoid cross-test warnings
-    else
-      @@initial_reset = true
-      Gem::Specification.reset
-    end
+    Gem::Specification.unresolved_deps.clear
     Gem.use_paths(@gemhome)
 
     Gem::Security.reset
 
     Gem.loaded_specs.clear
     Gem.clear_default_specs
-    Gem::Specification.unresolved_deps.clear
-    if Gem::USE_BUNDLER_FOR_GEMDEPS
-      Bundler.reset!
-    end
+    Bundler.reset!
 
     Gem.configuration.verbose = true
     Gem.configuration.update_sources = true
@@ -403,7 +369,7 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
 
   ##
   # #teardown restores the process to its original state and removes the
-  # tempdir unless the +KEEP_FILES+ environment variable was set.
+  # tempdir
 
   def teardown
     $LOAD_PATH.replace @orig_LOAD_PATH if @orig_LOAD_PATH
@@ -428,32 +394,17 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
 
     Dir.chdir @current_dir
 
-    FileUtils.rm_rf @tempdir unless ENV['KEEP_FILES']
+    FileUtils.rm_rf @tempdir
 
-    ENV.clear
-    @orig_gem_env_requirements.each do |k,v|
-      ENV[k] = v
-    end
-
-    ENV['GEM_HOME']   = @orig_gem_home
-    ENV['GEM_PATH']   = @orig_gem_path
-    ENV['GEM_VENDOR'] = @orig_gem_vendor
-    ENV['GEM_SPEC_CACHE'] = @orig_gem_spec_cache
-    ENV['RUBYGEMS_GEMDEPS'] = @orig_rubygems_gemdeps
-    ENV['BUNDLE_GEMFILE']   = @orig_bundle_gemfile
-    ENV['RUBYGEMS_HOST'] = @orig_rubygems_host
+    ENV.replace(@orig_env)
 
     Gem.ruby = @orig_ruby if @orig_ruby
 
-    if @orig_ENV_HOME
-      ENV['HOME'] = @orig_ENV_HOME
+    if Gem.java_platform?
+      RbConfig::CONFIG['default_gem_home'] = @orig_default_gem_home
     else
-      ENV.delete 'HOME'
+      Gem.instance_variable_set :@default_dir, nil
     end
-
-    Gem.instance_variable_set :@default_dir, nil
-
-    ENV['GEM_PRIVATE_KEY_PASSPHRASE'] = @orig_gem_private_key_passphrase
 
     Gem::Specification._clear_load_cache
     Gem::Specification.unresolved_deps.clear
@@ -602,22 +553,6 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
   end
 
   ##
-  # creates a temporary directory with hax
-  # TODO: deprecate and remove
-
-  def create_tmpdir
-    tmpdir = nil
-
-    Dir.chdir Dir.tmpdir do
-      tmpdir = Dir.pwd
-    end # HACK OSX /private/tmp
-
-    tmpdir = File.join tmpdir, "test_rubygems_#{$$}"
-    FileUtils.mkdir_p tmpdir
-    return tmpdir
-  end
-
-  ##
   # Enables pretty-print for all tests
 
   def mu_pp(obj)
@@ -694,20 +629,12 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
       io.write spec.to_ruby_for_cache
     end
 
-    spec.loaded_from = spec.loaded_from = written_path
+    spec.loaded_from = written_path
 
     Gem::Specification.reset
 
     return spec
   end
-
-  ##
-  # TODO:  remove in RubyGems 4.0
-
-  def quick_spec(name, version = '2') # :nodoc:
-    util_spec name, version
-  end
-  deprecate :quick_spec, :util_spec, 2018, 12
 
   ##
   # Builds a gem from +spec+ and places it in <tt>File.join @gemhome,
@@ -745,16 +672,11 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
   # Removes all installed gems from +@gemhome+.
 
   def util_clear_gems
-    FileUtils.rm_rf File.join(@gemhome, "gems") # TODO: use Gem::Dirs
+    FileUtils.rm_rf File.join(@gemhome, "gems")
     FileUtils.mkdir File.join(@gemhome, "gems")
     FileUtils.rm_rf File.join(@gemhome, "specifications")
     FileUtils.mkdir File.join(@gemhome, "specifications")
     Gem::Specification.reset
-  end
-
-  def util_clear_default_gems
-    FileUtils.rm_rf @default_spec_dir
-    FileUtils.mkdir @default_spec_dir
   end
 
   ##
@@ -810,52 +732,6 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
     $LOADED_FEATURES.replace old_loaded_features
   end
 
-  ##
-  # new_spec is deprecated as it is never used.
-  #
-  # TODO:  remove in RubyGems 4.0
-
-  def new_spec(name, version, deps = nil, *files) # :nodoc:
-    require 'rubygems/specification'
-
-    spec = Gem::Specification.new do |s|
-      s.platform    = Gem::Platform::RUBY
-      s.name        = name
-      s.version     = version
-      s.author      = 'A User'
-      s.email       = 'example@example.com'
-      s.homepage    = 'http://example.com'
-      s.summary     = "this is a summary"
-      s.description = "This is a test description"
-
-      Array(deps).each do |n, req|
-        s.add_dependency n, (req || '>= 0')
-      end
-
-      s.files.push(*files) unless files.empty?
-
-      yield s if block_given?
-    end
-
-    spec.loaded_from = spec.spec_file
-
-    unless files.empty?
-      write_file spec.spec_file do |io|
-        io.write spec.to_ruby_for_cache
-      end
-
-      util_build_gem spec
-
-      cache_file = File.join @tempdir, 'gems', "#{spec.full_name}.gem"
-      FileUtils.mkdir_p File.dirname cache_file
-      FileUtils.mv spec.cache_file, cache_file
-      FileUtils.rm spec.spec_file
-    end
-
-    spec
-  end
-  deprecate :new_spec, :none, 2018, 12
-
   def new_default_spec(name, version, deps = nil, *files)
     spec = util_spec name, version, deps
 
@@ -863,6 +739,7 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
     spec.files = files
 
     lib_dir = File.join(@tempdir, "default_gems", "lib")
+    lib_dir.instance_variable_set(:@gem_prelude_index, lib_dir)
     $LOAD_PATH.unshift(lib_dir)
     files.each do |file|
       rb_path = File.join(lib_dir, file)
@@ -918,8 +795,6 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
       FileUtils.rm spec.spec_file
     end
 
-    Gem::Specification.reset
-
     return spec
   end
 
@@ -930,9 +805,6 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
   # location are returned.
 
   def util_gem(name, version, deps = nil, &block)
-    # TODO: deprecate
-    raise "deps or block, not both" if deps and block
-
     if deps
       block = proc do |s|
         # Since Hash#each is unordered in 1.8, sort
@@ -1069,31 +941,6 @@ Also, a list:
   end
 
   ##
-  # Sets up a fake fetcher using the gems from #util_make_gems.  Optionally
-  # additional +prerelease+ gems may be included.
-  #
-  # Gems created by this method may be fetched using Gem::RemoteFetcher.
-
-  def util_setup_fake_fetcher(prerelease = false)
-    require 'zlib'
-    require 'socket'
-    require 'rubygems/remote_fetcher'
-
-    @fetcher = Gem::FakeFetcher.new
-
-    util_make_gems(prerelease)
-    Gem::Specification.reset
-
-    @all_gems = [@a1, @a2, @a3a, @a_evil9, @b2, @c1_2].sort
-    @all_gem_names = @all_gems.map { |gem| gem.full_name }
-
-    gem_names = [@a1.full_name, @a2.full_name, @a3a.full_name, @b2.full_name]
-    @gem_names = gem_names.sort.join("\n")
-
-    Gem::RemoteFetcher.fetcher = @fetcher
-  end
-
-  ##
   # Add +spec+ to +@fetcher+ serving the data in the file +path+.
   # +repo+ indicates which repo to make +spec+ appear to be in.
 
@@ -1104,7 +951,6 @@ Also, a list:
 
   ##
   # Sets up Gem::SpecFetcher to return information from the gems in +specs+.
-  # Best used with +@all_gems+ from #util_setup_fake_fetcher.
 
   def util_setup_spec_fetcher(*specs)
     all_specs = Gem::Specification.to_a + specs
@@ -1171,8 +1017,7 @@ Also, a list:
   end
 
   def util_set_RUBY_VERSION(version, patchlevel = nil, revision = nil, description = nil, engine = "ruby", engine_version = nil)
-    if Gem.instance_variables.include? :@ruby_version or
-       Gem.instance_variables.include? '@ruby_version'
+    if Gem.instance_variables.include? :@ruby_version
       Gem.send :remove_instance_variable, :@ruby_version
     end
 
@@ -1229,6 +1074,20 @@ Also, a list:
 
   def win_platform?
     Gem.win_platform?
+  end
+
+  ##
+  # Is this test being run on a Java platform?
+
+  def self.java_platform?
+    Gem.java_platform?
+  end
+
+  ##
+  # Is this test being run on a Java platform?
+
+  def java_platform?
+    Gem.java_platform?
   end
 
   ##
@@ -1351,6 +1210,7 @@ Also, a list:
     # Return the join path, with escaping backticks, dollars, and
     # double-quotes.  Unlike `shellescape`, equal-sign is not escaped.
     private
+
     def escape_path(*path)
       path = File.join(*path)
       if %r'\A[-+:/=@,.\w]+\z' =~ path
@@ -1631,10 +1491,3 @@ rescue LoadError, Gem::LoadError
 end
 
 require 'rubygems/test_utilities'
-tmpdirs = []
-tmpdirs << (ENV['GEM_HOME'] = Dir.mktmpdir("home"))
-tmpdirs << (ENV['GEM_PATH'] = Dir.mktmpdir("path"))
-pid = $$
-END {tmpdirs.each {|dir| Dir.rmdir(dir)} if $$ == pid}
-Gem.clear_paths
-Gem.loaded_specs.clear

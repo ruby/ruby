@@ -11,7 +11,7 @@ platform_is :windows do
     end
 
     it "raises ArgumentError if any argument is give" do
-      lambda { WIN32OLE_TYPE.typelibs(1) }.should raise_error ArgumentError
+      -> { WIN32OLE_TYPE.typelibs(1) }.should raise_error ArgumentError
     end
 
     it "returns array of type libraries" do

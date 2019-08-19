@@ -10,10 +10,10 @@
 # support them, so we define some constants to use later.
 #++
 
+# TODO remove at RubyGems 4
 module Gem
   RubyGemsVersion = VERSION
-
-  # TODO remove at RubyGems 3
+  deprecate_constant(:RubyGemsVersion)
 
   RbConfigPriorities = %w[
     MAJOR
@@ -27,14 +27,14 @@ module Gem
   unless defined?(ConfigMap)
     ##
     # Configuration settings from ::RbConfig
-    ConfigMap = Hash.new do |cm, key| # TODO remove at RubyGems 3
+    ConfigMap = Hash.new do |cm, key|
       cm[key] = RbConfig::CONFIG[key.to_s]
     end
+    deprecate_constant(:ConfigMap)
   else
     RbConfigPriorities.each do |key|
       ConfigMap[key.to_sym] = RbConfig::CONFIG[key]
     end
   end
 
-  RubyGemsPackageVersion = VERSION
 end

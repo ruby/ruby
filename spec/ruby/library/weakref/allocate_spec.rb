@@ -3,6 +3,6 @@ require 'weakref'
 
 describe "WeakRef#allocate" do
   it "assigns nil as the reference" do
-    lambda { WeakRef.allocate.__getobj__ }.should raise_error(WeakRef::RefError)
+    -> { WeakRef.allocate.__getobj__ }.should raise_error(WeakRef::RefError)
   end
 end

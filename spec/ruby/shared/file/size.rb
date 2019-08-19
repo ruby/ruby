@@ -56,7 +56,7 @@ describe :file_size_raise_when_missing, shared: true do
   end
 
   it "raises an error if file_name doesn't exist" do
-    lambda {@object.send(@method, @missing)}.should raise_error(Errno::ENOENT)
+    -> {@object.send(@method, @missing)}.should raise_error(Errno::ENOENT)
   end
 end
 

@@ -8,7 +8,7 @@ require "bundler/cli/doctor"
 RSpec.describe "bundle doctor" do
   before(:each) do
     install_gemfile! <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack"
     G
 
@@ -22,11 +22,17 @@ RSpec.describe "bundle doctor" do
     end
   end
 
+  it "succeeds on a sane installation" do
+    bundle :doctor
+
+    expect(exitstatus).to eq(0)
+  end
+
   context "when all files in home are readable/writable" do
     before(:each) do
       stat = double("stat")
       unwritable_file = double("file")
-      allow(Find).to receive(:find).with(Bundler.home.to_s) { [unwritable_file] }
+      allow(Find).to receive(:find).with(Bundler.bundle_path.to_s) { [unwritable_file] }
       allow(File).to receive(:stat).with(unwritable_file) { stat }
       allow(stat).to receive(:uid) { Process.uid }
       allow(File).to receive(:writable?).with(unwritable_file) { true }
@@ -66,7 +72,7 @@ RSpec.describe "bundle doctor" do
     before(:each) do
       @stat = double("stat")
       @unwritable_file = double("file")
-      allow(Find).to receive(:find).with(Bundler.home.to_s) { [@unwritable_file] }
+      allow(Find).to receive(:find).with(Bundler.bundle_path.to_s) { [@unwritable_file] }
       allow(File).to receive(:stat).with(@unwritable_file) { @stat }
     end
 

@@ -64,7 +64,7 @@ platform_is_not :windows do
 
       it 'raises IO::EAGAINWaitReadable when empty' do
         argf ['-'] do
-          lambda {
+          -> {
             @argf.read_nonblock(4)
           }.should raise_error(IO::EAGAINWaitReadable)
         end

@@ -11,6 +11,14 @@ describe "Hash#hash" do
     { 0=>2, 11=>1 }.hash.should == { 11=>1, 0=>2 }.hash
   end
 
+  it "returns a value in which element values do not cancel each other out" do
+    { a: 2, b: 2 }.hash.should_not == { a: 7, b: 7 }.hash
+  end
+
+  it "returns a value in which element keys and values do not cancel each other out" do
+    { :a => :a }.hash.should_not == { :b => :b }.hash
+  end
+
   it "generates a hash for recursive hash structures" do
     h = {}
     h[:a] = h

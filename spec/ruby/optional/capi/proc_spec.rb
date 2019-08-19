@@ -86,13 +86,13 @@ describe "C-API when calling Proc.new from a C function" do
   # Ruby -> C -> Ruby -> Proc.new
   it "raises an ArgumentError when the C function calls a Ruby method that calls Proc.new" do
     def @p.Proc_new() Proc.new end
-    lambda { @p.rb_Proc_new(2) { :called } }.should raise_error(ArgumentError)
+    -> { @p.rb_Proc_new(2) { :called } }.should raise_error(ArgumentError)
   end
 
   # Ruby -> C -> Ruby -> C -> rb_funcall(Proc.new)
   it "raises an ArgumentError when the C function calls a Ruby method and that method calls a C function that calls Proc.new" do
     def @p.redispatch() rb_Proc_new(0) end
-    lambda { @p.rb_Proc_new(3) { :called } }.should raise_error(ArgumentError)
+    -> { @p.rb_Proc_new(3) { :called } }.should raise_error(ArgumentError)
   end
 
   ruby_version_is ""..."2.7" do

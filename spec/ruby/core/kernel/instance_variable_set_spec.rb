@@ -18,26 +18,26 @@ describe "Kernel#instance_variable_set" do
 
   it "raises a NameError exception if the argument is not of form '@x'" do
     no_dog = Class.new
-    lambda { no_dog.new.instance_variable_set(:c, "cat") }.should raise_error(NameError)
+    -> { no_dog.new.instance_variable_set(:c, "cat") }.should raise_error(NameError)
   end
 
   it "raises a NameError exception if the argument is an invalid instance variable name" do
     digit_dog = Class.new
-    lambda { digit_dog.new.instance_variable_set(:"@0", "cat") }.should raise_error(NameError)
+    -> { digit_dog.new.instance_variable_set(:"@0", "cat") }.should raise_error(NameError)
   end
 
   it "raises a NameError when the argument is '@'" do
     dog_at = Class.new
-    lambda { dog_at.new.instance_variable_set(:"@", "cat") }.should raise_error(NameError)
+    -> { dog_at.new.instance_variable_set(:"@", "cat") }.should raise_error(NameError)
   end
 
   it "raises a TypeError if the instance variable name is a Fixnum" do
-    lambda { "".instance_variable_set(1, 2) }.should raise_error(TypeError)
+    -> { "".instance_variable_set(1, 2) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if the instance variable name is an object that does not respond to to_str" do
     class KernelSpecs::A; end
-    lambda { "".instance_variable_set(KernelSpecs::A.new, 3) }.should raise_error(TypeError)
+    -> { "".instance_variable_set(KernelSpecs::A.new, 3) }.should raise_error(TypeError)
   end
 
   it "raises a NameError if the passed object, when coerced with to_str, does not start with @" do
@@ -46,11 +46,11 @@ describe "Kernel#instance_variable_set" do
         ":c"
       end
     end
-    lambda { "".instance_variable_set(KernelSpecs::B.new, 4) }.should raise_error(NameError)
+    -> { "".instance_variable_set(KernelSpecs::B.new, 4) }.should raise_error(NameError)
   end
 
   it "raises a NameError if pass an object that cannot be a symbol" do
-    lambda { "".instance_variable_set(:c, 1) }.should raise_error(NameError)
+    -> { "".instance_variable_set(:c, 1) }.should raise_error(NameError)
   end
 
   it "accepts as instance variable name any instance of a class that responds to to_str" do
@@ -78,16 +78,16 @@ describe "Kernel#instance_variable_set" do
     end
 
     it "keeps stored object after any exceptions" do
-      lambda { @frozen.instance_variable_set(:@ivar, :replacement) }.should raise_error(Exception)
+      -> { @frozen.instance_variable_set(:@ivar, :replacement) }.should raise_error(Exception)
       @frozen.ivar.should equal(:origin)
     end
 
     it "raises a #{frozen_error_class} when passed replacement is identical to stored object" do
-      lambda { @frozen.instance_variable_set(:@ivar, :origin) }.should raise_error(frozen_error_class)
+      -> { @frozen.instance_variable_set(:@ivar, :origin) }.should raise_error(frozen_error_class)
     end
 
     it "raises a #{frozen_error_class} when passed replacement is different from stored object" do
-      lambda { @frozen.instance_variable_set(:@ivar, :replacement) }.should raise_error(frozen_error_class)
+      -> { @frozen.instance_variable_set(:@ivar, :replacement) }.should raise_error(frozen_error_class)
     end
   end
 end

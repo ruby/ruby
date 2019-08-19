@@ -2,19 +2,17 @@ require_relative '../../spec_helper'
 require 'resolv'
 
 describe "Resolv#getaddress" do
-  platform_is_not :windows do
-    it "resolves localhost" do
-      res = Resolv.new([Resolv::Hosts.new])
+  it "resolves localhost" do
+    hosts = Resolv::Hosts.new(fixture(__FILE__ , "hosts"))
+    res = Resolv.new([hosts])
 
-      lambda {
-        res.getaddress("localhost")
-      }.should_not raise_error(Resolv::ResolvError)
-    end
+    res.getaddress("localhost").should == "127.0.0.1"
+    res.getaddress("localhost4").should == "127.0.0.1"
   end
 
   it "raises ResolvError if the name can not be looked up" do
     res = Resolv.new([])
-    lambda {
+    -> {
       res.getaddress("should.raise.error.")
     }.should raise_error(Resolv::ResolvError)
   end

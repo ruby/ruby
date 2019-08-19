@@ -12,7 +12,7 @@ describe "Module#append_features" do
     end
 
     it "raises a TypeError if calling after rebinded to Class" do
-      lambda {
+      -> {
         Module.instance_method(:append_features).bind(Class.new).call Module.new
       }.should raise_error(TypeError)
     end
@@ -37,11 +37,11 @@ describe "Module#append_features" do
   end
 
   it "raises an ArgumentError on a cyclic include" do
-    lambda {
+    -> {
       ModuleSpecs::CyclicAppendA.send(:append_features, ModuleSpecs::CyclicAppendA)
     }.should raise_error(ArgumentError)
 
-    lambda {
+    -> {
       ModuleSpecs::CyclicAppendB.send(:append_features, ModuleSpecs::CyclicAppendA)
     }.should raise_error(ArgumentError)
 
@@ -66,7 +66,7 @@ describe "Module#append_features" do
     end
 
     it "raises a #{frozen_error_class} before appending self" do
-      lambda { @receiver.send(:append_features, @other) }.should raise_error(frozen_error_class)
+      -> { @receiver.send(:append_features, @other) }.should raise_error(frozen_error_class)
       @other.ancestors.should_not include(@receiver)
     end
   end

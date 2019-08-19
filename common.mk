@@ -1,3 +1,5 @@
+# -*- mode: makefile-gmake; indent-tabs-mode: t -*-
+
 bin: $(PROGRAM) $(WPROGRAM)
 lib: $(LIBRUBY)
 dll: $(LIBRUBY_SO)
@@ -17,7 +19,7 @@ enable_shared = $(ENABLE_SHARED:no=)
 
 UNICODE_VERSION = 12.1.0
 UNICODE_EMOJI_VERSION = 12.0
-UNICODE_BETA = YES
+UNICODE_BETA = NO
 
 ### set the following environment variable or uncomment the line if
 ### the Unicode data files should be updated completely on every update ('make up',...).
@@ -36,6 +38,8 @@ RUBYLIB       = $(PATH_SEPARATOR)
 RUBYOPT       = -
 RUN_OPTS      = --disable-gems
 
+GITPULLOPTIONS = --rebase
+
 INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(UNICODE_HDR_DIR)
 
 GEM_HOME =
@@ -43,13 +47,13 @@ GEM_PATH =
 GEM_VENDOR =
 
 BENCHMARK_DRIVER_GIT_URL = https://github.com/benchmark-driver/benchmark-driver
-BENCHMARK_DRIVER_GIT_REF = v0.14.13
+BENCHMARK_DRIVER_GIT_REF = v0.14.20
 SIMPLECOV_GIT_URL = https://github.com/colszowka/simplecov.git
-SIMPLECOV_GIT_REF = v0.15.0
+SIMPLECOV_GIT_REF = v0.17.0
 SIMPLECOV_HTML_GIT_URL = https://github.com/colszowka/simplecov-html.git
 SIMPLECOV_HTML_GIT_REF = v0.10.2
 DOCLIE_GIT_URL = https://github.com/ms-ati/docile.git
-DOCLIE_GIT_REF = v1.1.5
+DOCLIE_GIT_REF = v1.3.2
 
 STATIC_RUBY   = static-ruby
 
@@ -181,8 +185,8 @@ INSTALL_PROG_MODE = 0755
 INSTALL_DATA_MODE = 0644
 
 TESTSDIR      = $(srcdir)/test
+TOOL_TESTSDIR = $(srcdir)/tool/test
 TEST_EXCLUDES = --excludes-dir=$(TESTSDIR)/excludes --name=!/memory_leak/
-EXCLUDE_TESTFRAMEWORK = --exclude=/testunit/ --exclude=/minitest/
 TESTWORKDIR   = testwork
 TESTOPTS      = $(RUBY_TESTOPTS)
 
@@ -586,10 +590,10 @@ clean: clean-ext clean-enc clean-golf clean-docs clean-extout clean-local clean-
 clean-local:: clean-runnable
 	$(Q)$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	$(Q)$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) dmyenc.$(OBJEXT) $(ARCHFILE) .*.time
-	$(Q)$(RM) y.tab.c y.output encdb.h transdb.h config.log rbconfig.rb $(ruby_pc)
+	$(Q)$(RM) y.tab.c y.output encdb.h transdb.h config.log rbconfig.rb $(ruby_pc) $(COROUTINE_H:/Context.h=/.time)
 	$(Q)$(RM) probes.h probes.$(OBJEXT) probes.stamp ruby-glommed.$(OBJEXT) ruby.imp
 	$(Q)$(RM) GNUmakefile.old Makefile.old $(arch)-fake.rb bisect.sh $(ENC_TRANS_D)
-	-$(Q) $(RMDIR) enc/jis enc/trans enc 2> $(NULL) || exit 0
+	-$(Q) $(RMDIR) enc/jis enc/trans enc $(COROUTINE_H:/Context.h=) coroutine 2> $(NULL) || exit 0
 clean-runnable:: PHONY
 	$(Q)$(CHDIR) bin 2>$(NULL) && $(RM) $(PROGRAM) $(WPROGRAM) $(GORUBY)$(EXEEXT) bin/*.$(DLEXT) 2>$(NULL) || exit 0
 	$(Q)$(CHDIR) lib 2>$(NULL) && $(RM) $(LIBRUBY_A) $(LIBRUBY) $(LIBRUBY_ALIASES) $(RUBY_BASE_NAME)/$(RUBY_PROGRAM_VERSION) $(RUBY_BASE_NAME)/vendor_ruby 2>$(NULL) || exit 0
@@ -672,7 +676,7 @@ timestamp/realclean:: ext/realclean gems/realclean
 
 timestamp/clean timestamp/distclean timestamp/realclean::
 	$(Q)$(RM) $(TIMESTAMPDIR)/.*.time $(TIMESTAMPDIR)/$(arch)/.time
-	$(Q)$(RMDIRS) $(TIMESTAMPDIR)/$(arch) 2> $(NULL) || exit 0
+	$(Q)$(RMDIRS) $(TIMESTAMPDIR)/$(arch) $(TIMESTAMPDIR) 2> $(NULL) || exit 0
 
 clean-ext::
 	-$(Q)$(RM) ext/extinit.$(OBJEXT)
@@ -710,8 +714,9 @@ clean-spec: PHONY
 	-$(Q) $(RM) $(RUBYSPEC_CAPIEXT)/*.$(OBJEXT) $(RUBYSPEC_CAPIEXT)/*.$(DLEXT)
 	-$(Q) $(RMDIRS) $(RUBYSPEC_CAPIEXT) 2> $(NULL) || exit 0
 
-check: main test test-testframework test-almost test-spec
+check: main test test-tool test-all test-spec
 	$(ECHO) check succeeded
+	- $(GIT) --no-pager -C "$(srcdir)" log --format=oneline -G "^ *# *include" origin/master..HEAD
 check-ruby: test test-ruby
 
 fake: $(CROSS_COMPILING)-fake
@@ -749,8 +754,13 @@ yes-test-knownbug: prog PHONY
 
 test-testframework: $(TEST_RUNNABLE)-test-testframework
 yes-test-testframework: prog PHONY
-	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TESTOPTS) testunit minitest
+	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TOOL_TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TESTOPTS) testunit minitest
 no-test-testframework: PHONY
+
+test-tool: $(TEST_RUNNABLE)-test-tool
+yes-test-tool: prog PHONY
+	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TOOL_TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TESTOPTS)
+no-test-tool: PHONY
 
 test-sample: test-basic # backward compatibility for mswin-build
 test-short: btest-ruby test-knownbug test-basic
@@ -760,20 +770,19 @@ test: test-short
 # for example, make test-all TESTOPTS="-j2 -v -n test-name -- test-file-name"
 test-all: $(TEST_RUNNABLE)-test-all
 yes-test-all: programs PHONY
-	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) $(TESTS)
+	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) $(TESTS)
 TESTS_BUILD = mkmf
 no-test-all: PHONY
-	$(gnumake_recursive)$(MINIRUBY) -I"$(srcdir)/lib" "$(srcdir)/test/runner.rb" $(TESTOPTS) $(TESTS_BUILD)
+	$(gnumake_recursive)$(MINIRUBY) -I"$(srcdir)/lib" "$(TESTSDIR)/runner.rb" $(TESTOPTS) $(TESTS_BUILD)
 
-test-almost: $(TEST_RUNNABLE)-test-almost
-yes-test-almost: prog PHONY
-	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) $(EXCLUDE_TESTFRAMEWORK) $(TESTS)
-no-test-almost: PHONY
+test-almost: test-all
+yes-test-almost: yes-test-all
+no-test-almost: no-test-all
 
 test-ruby: $(TEST_RUNNABLE)-test-ruby
 no-test-ruby: PHONY
 yes-test-ruby: prog encs PHONY
-	$(gnumake_recursive)$(RUNRUBY) "$(srcdir)/test/runner.rb" $(TEST_EXCLUDES) $(TESTOPTS) -- ruby -ext-
+	$(gnumake_recursive)$(RUNRUBY) "$(TESTSDIR)/runner.rb" $(TEST_EXCLUDES) $(TESTOPTS) -- ruby -ext-
 
 extconf: $(PREP)
 	$(Q) $(MAKEDIRS) "$(EXTCONFDIR)"
@@ -847,6 +856,7 @@ PHONY:
 {$(srcdir)}.y.c:
 	$(ECHO) generating $@
 	$(Q)$(BASERUBY) $(srcdir)/tool/id2token.rb --path-separator=.$(PATH_SEPARATOR)./ --vpath=$(VPATH) id.h $(SRC_FILE) > parse.tmp.y
+	$(Q)$(BASERUBY) $(srcdir)/tool/pure_parser.rb parse.tmp.y $(YACC)
 	$(Q)$(YACC) -d $(YFLAGS) -o y.tab.c parse.tmp.y
 	$(Q)$(RM) parse.tmp.y
 	$(Q)sed -f $(srcdir)/tool/ytab.sed -e "/^#/s|parse\.tmp\.[iy]|$(SRC_FILE)|" -e "/^#/s!y\.tab\.c!$@!" y.tab.c > $@.new
@@ -863,12 +873,13 @@ exe/$(PROGRAM): ruby-runner.c ruby-runner.h exe/.time miniruby$(EXEEXT) {$(VPATH
 	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $(OUTFLAG)$@ ruby-runner.$(OBJEXT) $(LIBS)
 	$(Q) $(POSTLINK)
 	$(Q) ./miniruby$(EXEEXT) \
-	    -e 'prog, dest = ARGV; dest += "/ruby"' \
+	    -e 'prog, dest, inst = ARGV; dest += "/ruby"' \
+	    -e 'exit unless prog==inst' \
 	    -e 'unless prog=="ruby"' \
 	    -e '  begin File.unlink(dest); rescue Errno::ENOENT; end' \
 	    -e '  File.symlink(prog, dest)' \
 	    -e 'end' \
-	$(@F) $(@D)
+	$(@F) $(@D) $(RUBY_INSTALL_NAME)$(EXEEXT)
 
 exe/.time:
 	$(Q) $(MAKEDIRS) $(@D)
@@ -889,7 +900,7 @@ CCAN_DIR = {$(VPATH)}ccan
 
 RUBY_H_INCLUDES    = {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}defines.h \
 		     {$(VPATH)}intern.h {$(VPATH)}missing.h {$(VPATH)}st.h \
-		     {$(VPATH)}subst.h
+		     {$(VPATH)}assert.h {$(VPATH)}subst.h
 
 ###
 
@@ -912,10 +923,9 @@ strlcat.$(OBJEXT): {$(VPATH)}strlcat.c
 strlcpy.$(OBJEXT): {$(VPATH)}strlcpy.c
 strstr.$(OBJEXT): {$(VPATH)}strstr.c
 nt.$(OBJEXT): {$(VPATH)}nt.c
-ia64.$(OBJEXT): {$(VPATH)}ia64.s
-	$(CC) $(CFLAGS) -c $<
+
 .coroutine_obj $(COROUTINE_OBJ): \
-	{$(VPATH)}$(COROUTINE_H:.h=).$(ASMEXT) \
+	{$(VPATH)}$(COROUTINE_SRC) \
 	$(COROUTINE_H:/Context.h=/.time)
 $(COROUTINE_H:/Context.h=/.time):
 	$(Q) $(MAKEDIRS) $(@D)
@@ -955,7 +965,6 @@ INSNS2VMOPT = --srcdir="$(srcdir)"
 
 srcs_vpath = {$(VPATH)}
 
-# TODO: dependencies on tool/ruby_vm scripts.
 inc_common_headers = $(srcdir)/tool/ruby_vm/views/_copyright.erb $(srcdir)/tool/ruby_vm/views/_notice.erb
 $(srcs_vpath)opt_sc.inc: $(srcdir)/tool/ruby_vm/views/opt_sc.inc.erb $(inc_common_headers)
 $(srcs_vpath)optinsn.inc: $(srcdir)/tool/ruby_vm/views/optinsn.inc.erb $(inc_common_headers)
@@ -964,7 +973,8 @@ $(srcs_vpath)insns.inc: $(srcdir)/tool/ruby_vm/views/insns.inc.erb $(inc_common_
 $(srcs_vpath)insns_info.inc: $(srcdir)/tool/ruby_vm/views/insns_info.inc.erb $(inc_common_headers) \
   $(srcdir)/tool/ruby_vm/views/_insn_type_chars.erb $(srcdir)/tool/ruby_vm/views/_insn_name_info.erb \
   $(srcdir)/tool/ruby_vm/views/_insn_len_info.erb $(srcdir)/tool/ruby_vm/views/_insn_operand_info.erb \
-  $(srcdir)/tool/ruby_vm/views/_attributes.erb $(srcdir)/tool/ruby_vm/views/_insn_stack_increase.erb
+  $(srcdir)/tool/ruby_vm/views/_attributes.erb $(srcdir)/tool/ruby_vm/views/_insn_stack_increase.erb \
+  $(srcdir)/tool/ruby_vm/views/_insn_sp_pc_dependency.erb
 $(srcs_vpath)vmtc.inc: $(srcdir)/tool/ruby_vm/views/vmtc.inc.erb $(inc_common_headers)
 $(srcs_vpath)vm.inc: $(srcdir)/tool/ruby_vm/views/vm.inc.erb $(inc_common_headers) \
   $(srcdir)/tool/ruby_vm/views/_insn_entry.erb $(srcdir)/tool/ruby_vm/views/_trace_instruction.erb
@@ -1087,8 +1097,12 @@ $(srcdir)/revision.h:
 	$(Q)$(gnumake:yes=#) $(RM) $(@F)
 	$(Q)$(gnumake:yes=#) exit > $@ || exit > $(@F)
 
-$(REVISION_H): $(srcdir)/version.h $(srcdir)/tool/file2lastrev.rb $(REVISION_FORCE)
-	-$(Q) $(BASERUBY) $(srcdir)/tool/file2lastrev.rb -q --revision.h "$(srcdir)" > revision.tmp
+revision.tmp::
+	$(Q)exit > $@
+revision.$(HAVE_BASERUBY:yes=tmp):: $(srcdir)/version.h $(srcdir)/tool/file2lastrev.rb $(REVISION_FORCE)
+	$(Q) $(BASERUBY) $(srcdir)/tool/file2lastrev.rb -q --revision.h "$(srcdir)" > $@
+
+$(REVISION_H): revision.tmp
 	$(Q)$(IFCHANGE) "--timestamp=$@" "$(srcdir)/revision.h" revision.tmp
 
 $(srcdir)/ext/ripper/ripper.c: $(srcdir)/ext/ripper/tools/preproc.rb $(srcdir)/parse.y id.h
@@ -1155,20 +1169,16 @@ bisect-ruby: PHONY
 	$(srcdir)/tool/bisect.sh ruby $(srcdir)
 
 COMPARE_RUBY = $(BASERUBY)
-BENCH_RUBY = $(MINIRUBY)
+BENCH_RUBY = $(RUNRUBY)
 ITEM =
-ARGS = $$(ls $(srcdir)/benchmark/*$(ITEM)*.{yml,rb} 2>/dev/null)
+ARGS = $$(find $(srcdir)/benchmark -maxdepth 1 -name '$(ITEM)' -o -name '*$(ITEM)*.yml' -o -name '*$(ITEM)*.rb' | sort)
 OPTS =
 
-# You can pass several options through OPTS environment variable.
-# $ make benchmark ARGS="--help" displays more detail.
-# for example,
-#  $ make benchmark COMPARE_RUBY="ruby-trunk" OPTS="-e ruby-2.2.2"
-# This command compares trunk and built-ruby and 2.2.2
+# See benchmark/README.md for details.
 benchmark: miniruby$(EXEEXT) update-benchmark-driver PHONY
 	$(BASERUBY) -rrubygems -I$(srcdir)/benchmark/lib $(srcdir)/benchmark/benchmark-driver/exe/benchmark-driver \
 	            --executables="compare-ruby::$(COMPARE_RUBY) -I$(EXTOUT)/common --disable-gem" \
-	            --executables="built-ruby::$(BENCH_RUBY) -r$(srcdir)/prelude --disable-gem" \
+	            --executables="built-ruby::$(BENCH_RUBY) --disable-gem" \
 	            $(ARGS) $(OPTS)
 
 run.gdb:
@@ -1215,10 +1225,15 @@ up::
 up::
 	-$(Q)$(MAKE) $(mflags) Q=$(Q) after-update
 
+yes::
+no::
+
 after-update:: extract-extlibs
 
 update-remote:: update-src update-download
-update-download:: update-unicode update-gems download-extlibs
+update-download:: $(ALWAYS_UPDATE_UNICODE:yes=update-unicode)
+update-download:: update-gems
+update-download:: download-extlibs
 
 update-mspec:
 update-rubyspec:
@@ -1278,7 +1293,7 @@ test-bundler-precheck: $(arch)-fake.rb programs
 
 yes-test-bundler-prepare: test-bundler-precheck
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
-		--install-dir .bundle --conservative "rspec:~> 3.5"
+		--install-dir .bundle --conservative "rspec:~> 3.5" "rake:~> 12.0"
 
 RSPECOPTS = --format progress
 BUNDLER_SPECS =
@@ -1288,6 +1303,10 @@ yes-test-bundler: yes-test-bundler-prepare
 	$(XRUBY) -C $(srcdir) -Ispec/bundler .bundle/bin/rspec \
 		--require spec_helper $(RSPECOPTS) spec/bundler/$(BUNDLER_SPECS)
 no-test-bundler:
+
+GEM = up
+sync-default-gems:
+	$(Q) $(XRUBY) -C "$(srcdir)" tool/sync_default_gems.rb $(GEM)
 
 UNICODE_FILES = $(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_SRC_DATA_DIR)/CompositionExclusions.txt \
@@ -1319,7 +1338,8 @@ UNICODE_EMOJI_FILES = \
 		$(UNICODE_SRC_EMOJI_DATA_DIR)/emoji-zwj-sequences.txt \
 		$(empty)
 
-update-unicode: $(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
+update-unicode: $(UNICODE_FILES) $(UNICODE_PROPERTY_FILES) \
+		$(UNICODE_AUXILIARY_FILES) $(UNICODE_EMOJI_FILES)
 
 CACHE_DIR = $(srcdir)/.downloaded-cache
 UNICODE_DOWNLOAD = \
@@ -1344,28 +1364,30 @@ UNICODE_EMOJI_DOWNLOAD = \
 	    -p emoji/$(UNICODE_EMOJI_VERSION) \
 	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode
 
-$(UNICODE_PROPERTY_FILES): update-unicode-property-files
-update-unicode-property-files:
-	$(ECHO) Downloading Unicode $(UNICODE_VERSION) property files...
-	$(Q) $(UNICODE_DOWNLOAD) $(UNICODE_PROPERTY_FILES)
+$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES): update-unicode-files
+update-unicode-files:
+	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data and  property files...
+	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)"
+	$(Q) $(UNICODE_DOWNLOAD) $(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
+
+$(UNICODE_AUXILIARY_FILES): update-unicode-auxiliary-files
+update-unicode-auxiliary-files:
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) auxiliary files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)/auxiliary"
 	$(Q) $(UNICODE_AUXILIARY_DOWNLOAD) $(UNICODE_AUXILIARY_FILES)
+
+$(UNICODE_EMOJI_FILES): update-unicode-emoji-files
+update-unicode-emoji-files:
 	$(ECHO) Downloading Unicode emoji $(UNICODE_EMOJI_VERSION) files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_EMOJI_DATA_DIR)"
 	$(Q) $(UNICODE_EMOJI_DOWNLOAD) $(UNICODE_EMOJI_FILES)
 
-$(UNICODE_FILES): update-unicode-files
-update-unicode-files:
-	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data files...
-	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)"
-	$(Q) $(UNICODE_DOWNLOAD) $(UNICODE_FILES)
-
-$(srcdir)/$(HAVE_BASERUBY:yes=lib/unicode_normalize/tables.rb): \
+$(srcdir)/lib/unicode_normalize/$(HAVE_BASERUBY:yes=tables.rb): \
 	$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time
 
 $(UNICODE_SRC_DATA_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=.unicode-tables.time): \
-	$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
+	$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES) \
+	$(UNICODE_AUXILIARY_FILES) $(UNICODE_EMOJI_FILES)
 
 touch-unicode-files:
 	$(MAKEDIRS) $(UNICODE_SRC_DATA_DIR)
@@ -1378,7 +1400,7 @@ $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
 	$(Q) $(MAKE) $(@D)
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb \
 		-c $(UNICODE_TABLES_TIMESTAMP:yes=-t$@) \
-                -o $(srcdir)/lib/unicode_normalize/tables.rb \
+		-o $(srcdir)/lib/unicode_normalize/tables.rb \
 		-I $(srcdir) \
 		$(srcdir)/template/unicode_norm_gen.tmpl \
 		$(UNICODE_DATA_DIR) lib/unicode_normalize
@@ -1438,9 +1460,6 @@ info-libruby_so: PHONY
 info-arch: PHONY
 	@echo arch=$(arch)
 
-change: PHONY
-	$(BASERUBY) -C "$(srcdir)" ./tool/change_maker.rb $(CHANGES) > change.log
-
 exam: check
 
 love: sudo-precheck up all test exam install
@@ -1454,10 +1473,12 @@ sudo-precheck: PHONY
 	@$(SUDO) echo > $(NULL)
 
 update-man-date: PHONY
-	-$(Q) $(BASERUBY) -I"$(srcdir)/tool" -rvcs -i -p \
+	-$(Q) $(BASERUBY) -I"$(srcdir)/tool/lib" -rvcs -i -p \
 	-e 'BEGIN{@vcs=VCS.detect(ARGV.shift)}' \
 	-e '$$_.sub!(/^(\.Dd ).*/){$$1+@vcs.modified(ARGF.path).strftime("%B %d, %Y")}' \
 	"$(srcdir)" "$(srcdir)"/man/*.1
+
+HELP_EXTRA_TASKS = ""
 
 help: PHONY
 	$(MESSAGE_BEGIN) \
@@ -1475,27 +1496,26 @@ help: PHONY
 	"  runruby:             runs test.rb by ruby you just built" \
 	"  gdb:                 runs test.rb by miniruby under gdb" \
 	"  gdb-ruby:            runs test.rb by ruby under gdb" \
-	"  check:               equals make test test-all test-spec" \
-	"  exam:                equals make check" \
+	"  check:               equals make test test-tool test-all test-spec" \
 	"  test:                ruby core tests" \
 	"  test-all:            all ruby tests [TESTOPTS=-j4 TESTS=<test files>]" \
-	"  test-spec:           run the Ruby spec suite" \
-	"  test-rubyspec:       same as test-spec" \
+	"  test-spec:           run the Ruby spec suite [SPECOPTS=<specs, opts>]" \
 	"  test-bundler:        run the Bundler spec" \
 	"  test-bundled-gems:   run the test suite of bundled gems" \
+	"  test-tool:           tests under the tool/test" \
+	"  update-gems:         download files of the bundled gems" \
+	"  update-bundled_gems: update the latest version of bundled gems" \
+	"  sync-default-gems:   sync default gems from upstream [GEM=<gem_name>]" \
 	"  up:                  update local copy and autogenerated files" \
 	"  benchmark:           benchmark this ruby and COMPARE_RUBY." \
 	"  gcbench:             gc benchmark [GCBENCH_ITEM=<item_name>]" \
-	"  gcbench-rdoc:        gc benchmark with GCBENCH_ITEM=rdoc" \
 	"  install:             install all ruby distributions" \
 	"  install-nodoc:       install without rdoc" \
 	"  install-cross:       install cross compiling stuff" \
 	"  clean:               clean for tarball" \
 	"  distclean:           clean for repository" \
-	"  change:              make change log template" \
-	"  golf:                for golfers" \
-	"  goruby:              same as golf" \
-	"" \
+	"  golf:                build goruby for golfers" \
+	$(HELP_EXTRA_TASKS) \
 	"see DeveloperHowto for more detail: " \
 	"  https://bugs.ruby-lang.org/projects/ruby/wiki/DeveloperHowto" \
 	$(MESSAGE_END)
@@ -1509,6 +1529,7 @@ addr2line.$(OBJEXT): {$(VPATH)}missing.h
 array.$(OBJEXT): $(hdrdir)/ruby.h
 array.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 array.$(OBJEXT): {$(VPATH)}array.c
+array.$(OBJEXT): {$(VPATH)}assert.h
 array.$(OBJEXT): {$(VPATH)}config.h
 array.$(OBJEXT): {$(VPATH)}debug_counter.h
 array.$(OBJEXT): {$(VPATH)}defines.h
@@ -1534,6 +1555,7 @@ ast.$(OBJEXT): $(CCAN_DIR)/list/list.h
 ast.$(OBJEXT): $(CCAN_DIR)/str/str.h
 ast.$(OBJEXT): $(hdrdir)/ruby.h
 ast.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+ast.$(OBJEXT): {$(VPATH)}assert.h
 ast.$(OBJEXT): {$(VPATH)}ast.c
 ast.$(OBJEXT): {$(VPATH)}config.h
 ast.$(OBJEXT): {$(VPATH)}defines.h
@@ -1558,6 +1580,7 @@ ast.$(OBJEXT): {$(VPATH)}vm_core.h
 ast.$(OBJEXT): {$(VPATH)}vm_opts.h
 bignum.$(OBJEXT): $(hdrdir)/ruby.h
 bignum.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+bignum.$(OBJEXT): {$(VPATH)}assert.h
 bignum.$(OBJEXT): {$(VPATH)}bignum.c
 bignum.$(OBJEXT): {$(VPATH)}config.h
 bignum.$(OBJEXT): {$(VPATH)}defines.h
@@ -1580,6 +1603,7 @@ class.$(OBJEXT): $(CCAN_DIR)/list/list.h
 class.$(OBJEXT): $(CCAN_DIR)/str/str.h
 class.$(OBJEXT): $(hdrdir)/ruby.h
 class.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+class.$(OBJEXT): {$(VPATH)}assert.h
 class.$(OBJEXT): {$(VPATH)}class.c
 class.$(OBJEXT): {$(VPATH)}config.h
 class.$(OBJEXT): {$(VPATH)}constant.h
@@ -1605,6 +1629,7 @@ class.$(OBJEXT): {$(VPATH)}vm_core.h
 class.$(OBJEXT): {$(VPATH)}vm_debug.h
 class.$(OBJEXT): {$(VPATH)}vm_opts.h
 compar.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+compar.$(OBJEXT): {$(VPATH)}assert.h
 compar.$(OBJEXT): {$(VPATH)}compar.c
 compar.$(OBJEXT): {$(VPATH)}config.h
 compar.$(OBJEXT): {$(VPATH)}defines.h
@@ -1619,6 +1644,7 @@ compile.$(OBJEXT): $(CCAN_DIR)/list/list.h
 compile.$(OBJEXT): $(CCAN_DIR)/str/str.h
 compile.$(OBJEXT): $(hdrdir)/ruby.h
 compile.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+compile.$(OBJEXT): {$(VPATH)}assert.h
 compile.$(OBJEXT): {$(VPATH)}compile.c
 compile.$(OBJEXT): {$(VPATH)}config.h
 compile.$(OBJEXT): {$(VPATH)}defines.h
@@ -1656,6 +1682,7 @@ compile.$(OBJEXT): {$(VPATH)}vm_debug.h
 compile.$(OBJEXT): {$(VPATH)}vm_opts.h
 complex.$(OBJEXT): $(hdrdir)/ruby.h
 complex.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+complex.$(OBJEXT): {$(VPATH)}assert.h
 complex.$(OBJEXT): {$(VPATH)}complex.c
 complex.$(OBJEXT): {$(VPATH)}config.h
 complex.$(OBJEXT): {$(VPATH)}defines.h
@@ -1677,6 +1704,7 @@ cont.$(OBJEXT): $(CCAN_DIR)/str/str.h
 cont.$(OBJEXT): $(hdrdir)/ruby.h
 cont.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 cont.$(OBJEXT): {$(VPATH)}$(COROUTINE_H)
+cont.$(OBJEXT): {$(VPATH)}assert.h
 cont.$(OBJEXT): {$(VPATH)}config.h
 cont.$(OBJEXT): {$(VPATH)}cont.c
 cont.$(OBJEXT): {$(VPATH)}debug_counter.h
@@ -1709,6 +1737,7 @@ debug.$(OBJEXT): $(CCAN_DIR)/list/list.h
 debug.$(OBJEXT): $(CCAN_DIR)/str/str.h
 debug.$(OBJEXT): $(hdrdir)/ruby.h
 debug.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+debug.$(OBJEXT): {$(VPATH)}assert.h
 debug.$(OBJEXT): {$(VPATH)}config.h
 debug.$(OBJEXT): {$(VPATH)}debug.c
 debug.$(OBJEXT): {$(VPATH)}defines.h
@@ -1751,6 +1780,7 @@ debug_counter.$(OBJEXT): {$(VPATH)}st.h
 debug_counter.$(OBJEXT): {$(VPATH)}subst.h
 dir.$(OBJEXT): $(hdrdir)/ruby.h
 dir.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+dir.$(OBJEXT): {$(VPATH)}assert.h
 dir.$(OBJEXT): {$(VPATH)}config.h
 dir.$(OBJEXT): {$(VPATH)}defines.h
 dir.$(OBJEXT): {$(VPATH)}dir.c
@@ -1769,6 +1799,7 @@ dir.$(OBJEXT): {$(VPATH)}thread.h
 dir.$(OBJEXT): {$(VPATH)}util.h
 dln.$(OBJEXT): $(hdrdir)/ruby.h
 dln.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+dln.$(OBJEXT): {$(VPATH)}assert.h
 dln.$(OBJEXT): {$(VPATH)}config.h
 dln.$(OBJEXT): {$(VPATH)}defines.h
 dln.$(OBJEXT): {$(VPATH)}dln.c
@@ -1779,6 +1810,7 @@ dln.$(OBJEXT): {$(VPATH)}missing.h
 dln.$(OBJEXT): {$(VPATH)}st.h
 dln.$(OBJEXT): {$(VPATH)}subst.h
 dln_find.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+dln_find.$(OBJEXT): {$(VPATH)}assert.h
 dln_find.$(OBJEXT): {$(VPATH)}config.h
 dln_find.$(OBJEXT): {$(VPATH)}defines.h
 dln_find.$(OBJEXT): {$(VPATH)}dln.h
@@ -1788,6 +1820,7 @@ dln_find.$(OBJEXT): {$(VPATH)}missing.h
 dln_find.$(OBJEXT): {$(VPATH)}st.h
 dln_find.$(OBJEXT): {$(VPATH)}subst.h
 dmydln.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+dmydln.$(OBJEXT): {$(VPATH)}assert.h
 dmydln.$(OBJEXT): {$(VPATH)}config.h
 dmydln.$(OBJEXT): {$(VPATH)}defines.h
 dmydln.$(OBJEXT): {$(VPATH)}dmydln.c
@@ -1843,6 +1876,7 @@ enc/utf_8.$(OBJEXT): {$(VPATH)}oniguruma.h
 enc/utf_8.$(OBJEXT): {$(VPATH)}regenc.h
 encoding.$(OBJEXT): $(hdrdir)/ruby.h
 encoding.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+encoding.$(OBJEXT): {$(VPATH)}assert.h
 encoding.$(OBJEXT): {$(VPATH)}config.h
 encoding.$(OBJEXT): {$(VPATH)}defines.h
 encoding.$(OBJEXT): {$(VPATH)}encindex.h
@@ -1861,6 +1895,7 @@ encoding.$(OBJEXT): {$(VPATH)}subst.h
 encoding.$(OBJEXT): {$(VPATH)}util.h
 enum.$(OBJEXT): $(hdrdir)/ruby.h
 enum.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enum.$(OBJEXT): {$(VPATH)}assert.h
 enum.$(OBJEXT): {$(VPATH)}config.h
 enum.$(OBJEXT): {$(VPATH)}defines.h
 enum.$(OBJEXT): {$(VPATH)}encoding.h
@@ -1879,6 +1914,7 @@ enum.$(OBJEXT): {$(VPATH)}transient_heap.h
 enum.$(OBJEXT): {$(VPATH)}util.h
 enumerator.$(OBJEXT): $(hdrdir)/ruby.h
 enumerator.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enumerator.$(OBJEXT): {$(VPATH)}assert.h
 enumerator.$(OBJEXT): {$(VPATH)}config.h
 enumerator.$(OBJEXT): {$(VPATH)}defines.h
 enumerator.$(OBJEXT): {$(VPATH)}encoding.h
@@ -1898,6 +1934,7 @@ error.$(OBJEXT): $(CCAN_DIR)/list/list.h
 error.$(OBJEXT): $(CCAN_DIR)/str/str.h
 error.$(OBJEXT): $(hdrdir)/ruby.h
 error.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+error.$(OBJEXT): {$(VPATH)}assert.h
 error.$(OBJEXT): {$(VPATH)}config.h
 error.$(OBJEXT): {$(VPATH)}defines.h
 error.$(OBJEXT): {$(VPATH)}encoding.h
@@ -1927,6 +1964,7 @@ eval.$(OBJEXT): $(CCAN_DIR)/list/list.h
 eval.$(OBJEXT): $(CCAN_DIR)/str/str.h
 eval.$(OBJEXT): $(hdrdir)/ruby.h
 eval.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+eval.$(OBJEXT): {$(VPATH)}assert.h
 eval.$(OBJEXT): {$(VPATH)}config.h
 eval.$(OBJEXT): {$(VPATH)}debug_counter.h
 eval.$(OBJEXT): {$(VPATH)}defines.h
@@ -1965,6 +2003,7 @@ explicit_bzero.$(OBJEXT): {$(VPATH)}explicit_bzero.c
 explicit_bzero.$(OBJEXT): {$(VPATH)}missing.h
 file.$(OBJEXT): $(hdrdir)/ruby.h
 file.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+file.$(OBJEXT): {$(VPATH)}assert.h
 file.$(OBJEXT): {$(VPATH)}config.h
 file.$(OBJEXT): {$(VPATH)}defines.h
 file.$(OBJEXT): {$(VPATH)}dln.h
@@ -1988,6 +2027,7 @@ gc.$(OBJEXT): $(CCAN_DIR)/list/list.h
 gc.$(OBJEXT): $(CCAN_DIR)/str/str.h
 gc.$(OBJEXT): $(hdrdir)/ruby.h
 gc.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+gc.$(OBJEXT): {$(VPATH)}assert.h
 gc.$(OBJEXT): {$(VPATH)}config.h
 gc.$(OBJEXT): {$(VPATH)}constant.h
 gc.$(OBJEXT): {$(VPATH)}debug.h
@@ -2018,6 +2058,7 @@ gc.$(OBJEXT): {$(VPATH)}ruby_assert.h
 gc.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 gc.$(OBJEXT): {$(VPATH)}st.h
 gc.$(OBJEXT): {$(VPATH)}subst.h
+gc.$(OBJEXT): {$(VPATH)}symbol.h
 gc.$(OBJEXT): {$(VPATH)}thread.h
 gc.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 gc.$(OBJEXT): {$(VPATH)}thread_native.h
@@ -2032,6 +2073,7 @@ golf_prelude.$(OBJEXT): $(CCAN_DIR)/list/list.h
 golf_prelude.$(OBJEXT): $(CCAN_DIR)/str/str.h
 golf_prelude.$(OBJEXT): $(hdrdir)/ruby.h
 golf_prelude.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+golf_prelude.$(OBJEXT): {$(VPATH)}assert.h
 golf_prelude.$(OBJEXT): {$(VPATH)}config.h
 golf_prelude.$(OBJEXT): {$(VPATH)}defines.h
 golf_prelude.$(OBJEXT): {$(VPATH)}encoding.h
@@ -2058,6 +2100,7 @@ golf_prelude.$(OBJEXT): {$(VPATH)}vm_debug.h
 golf_prelude.$(OBJEXT): {$(VPATH)}vm_opts.h
 goruby.$(OBJEXT): $(hdrdir)/ruby.h
 goruby.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+goruby.$(OBJEXT): {$(VPATH)}assert.h
 goruby.$(OBJEXT): {$(VPATH)}backward.h
 goruby.$(OBJEXT): {$(VPATH)}config.h
 goruby.$(OBJEXT): {$(VPATH)}defines.h
@@ -2071,6 +2114,7 @@ goruby.$(OBJEXT): {$(VPATH)}subst.h
 goruby.$(OBJEXT): {$(VPATH)}vm_debug.h
 hash.$(OBJEXT): $(hdrdir)/ruby.h
 hash.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+hash.$(OBJEXT): {$(VPATH)}assert.h
 hash.$(OBJEXT): {$(VPATH)}config.h
 hash.$(OBJEXT): {$(VPATH)}debug_counter.h
 hash.$(OBJEXT): {$(VPATH)}defines.h
@@ -2094,6 +2138,7 @@ hash.$(OBJEXT): {$(VPATH)}transient_heap.h
 hash.$(OBJEXT): {$(VPATH)}util.h
 inits.$(OBJEXT): $(hdrdir)/ruby.h
 inits.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+inits.$(OBJEXT): {$(VPATH)}assert.h
 inits.$(OBJEXT): {$(VPATH)}config.h
 inits.$(OBJEXT): {$(VPATH)}defines.h
 inits.$(OBJEXT): {$(VPATH)}encoding.h
@@ -2112,6 +2157,7 @@ io.$(OBJEXT): $(CCAN_DIR)/list/list.h
 io.$(OBJEXT): $(CCAN_DIR)/str/str.h
 io.$(OBJEXT): $(hdrdir)/ruby.h
 io.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+io.$(OBJEXT): {$(VPATH)}assert.h
 io.$(OBJEXT): {$(VPATH)}config.h
 io.$(OBJEXT): {$(VPATH)}defines.h
 io.$(OBJEXT): {$(VPATH)}dln.h
@@ -2143,6 +2189,7 @@ iseq.$(OBJEXT): $(CCAN_DIR)/list/list.h
 iseq.$(OBJEXT): $(CCAN_DIR)/str/str.h
 iseq.$(OBJEXT): $(hdrdir)/ruby.h
 iseq.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+iseq.$(OBJEXT): {$(VPATH)}assert.h
 iseq.$(OBJEXT): {$(VPATH)}config.h
 iseq.$(OBJEXT): {$(VPATH)}debug_counter.h
 iseq.$(OBJEXT): {$(VPATH)}defines.h
@@ -2182,6 +2229,7 @@ load.$(OBJEXT): $(CCAN_DIR)/list/list.h
 load.$(OBJEXT): $(CCAN_DIR)/str/str.h
 load.$(OBJEXT): $(hdrdir)/ruby.h
 load.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+load.$(OBJEXT): {$(VPATH)}assert.h
 load.$(OBJEXT): {$(VPATH)}config.h
 load.$(OBJEXT): {$(VPATH)}defines.h
 load.$(OBJEXT): {$(VPATH)}dln.h
@@ -2213,6 +2261,7 @@ load.$(OBJEXT): {$(VPATH)}vm_opts.h
 loadpath.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 loadpath.$(OBJEXT): $(hdrdir)/ruby/version.h
 loadpath.$(OBJEXT): $(top_srcdir)/version.h
+loadpath.$(OBJEXT): {$(VPATH)}assert.h
 loadpath.$(OBJEXT): {$(VPATH)}config.h
 loadpath.$(OBJEXT): {$(VPATH)}defines.h
 loadpath.$(OBJEXT): {$(VPATH)}intern.h
@@ -2223,6 +2272,7 @@ loadpath.$(OBJEXT): {$(VPATH)}subst.h
 loadpath.$(OBJEXT): {$(VPATH)}verconf.h
 localeinit.$(OBJEXT): $(hdrdir)/ruby.h
 localeinit.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+localeinit.$(OBJEXT): {$(VPATH)}assert.h
 localeinit.$(OBJEXT): {$(VPATH)}config.h
 localeinit.$(OBJEXT): {$(VPATH)}defines.h
 localeinit.$(OBJEXT): {$(VPATH)}encindex.h
@@ -2238,6 +2288,7 @@ localeinit.$(OBJEXT): {$(VPATH)}st.h
 localeinit.$(OBJEXT): {$(VPATH)}subst.h
 main.$(OBJEXT): $(hdrdir)/ruby.h
 main.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+main.$(OBJEXT): {$(VPATH)}assert.h
 main.$(OBJEXT): {$(VPATH)}backward.h
 main.$(OBJEXT): {$(VPATH)}config.h
 main.$(OBJEXT): {$(VPATH)}defines.h
@@ -2250,6 +2301,7 @@ main.$(OBJEXT): {$(VPATH)}subst.h
 main.$(OBJEXT): {$(VPATH)}vm_debug.h
 marshal.$(OBJEXT): $(hdrdir)/ruby.h
 marshal.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+marshal.$(OBJEXT): {$(VPATH)}assert.h
 marshal.$(OBJEXT): {$(VPATH)}config.h
 marshal.$(OBJEXT): {$(VPATH)}defines.h
 marshal.$(OBJEXT): {$(VPATH)}encindex.h
@@ -2267,6 +2319,7 @@ marshal.$(OBJEXT): {$(VPATH)}subst.h
 marshal.$(OBJEXT): {$(VPATH)}util.h
 math.$(OBJEXT): $(hdrdir)/ruby.h
 math.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+math.$(OBJEXT): {$(VPATH)}assert.h
 math.$(OBJEXT): {$(VPATH)}config.h
 math.$(OBJEXT): {$(VPATH)}defines.h
 math.$(OBJEXT): {$(VPATH)}encoding.h
@@ -2280,6 +2333,7 @@ math.$(OBJEXT): {$(VPATH)}oniguruma.h
 math.$(OBJEXT): {$(VPATH)}st.h
 math.$(OBJEXT): {$(VPATH)}subst.h
 miniinit.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+miniinit.$(OBJEXT): {$(VPATH)}assert.h
 miniinit.$(OBJEXT): {$(VPATH)}config.h
 miniinit.$(OBJEXT): {$(VPATH)}defines.h
 miniinit.$(OBJEXT): {$(VPATH)}encoding.h
@@ -2298,6 +2352,7 @@ mjit.$(OBJEXT): $(CCAN_DIR)/list/list.h
 mjit.$(OBJEXT): $(CCAN_DIR)/str/str.h
 mjit.$(OBJEXT): $(hdrdir)/ruby.h
 mjit.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+mjit.$(OBJEXT): {$(VPATH)}assert.h
 mjit.$(OBJEXT): {$(VPATH)}config.h
 mjit.$(OBJEXT): {$(VPATH)}constant.h
 mjit.$(OBJEXT): {$(VPATH)}debug.h
@@ -2332,6 +2387,7 @@ mjit_compile.$(OBJEXT): $(CCAN_DIR)/list/list.h
 mjit_compile.$(OBJEXT): $(CCAN_DIR)/str/str.h
 mjit_compile.$(OBJEXT): $(hdrdir)/ruby.h
 mjit_compile.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+mjit_compile.$(OBJEXT): {$(VPATH)}assert.h
 mjit_compile.$(OBJEXT): {$(VPATH)}config.h
 mjit_compile.$(OBJEXT): {$(VPATH)}debug_counter.h
 mjit_compile.$(OBJEXT): {$(VPATH)}defines.h
@@ -2364,6 +2420,7 @@ node.$(OBJEXT): $(CCAN_DIR)/list/list.h
 node.$(OBJEXT): $(CCAN_DIR)/str/str.h
 node.$(OBJEXT): $(hdrdir)/ruby.h
 node.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+node.$(OBJEXT): {$(VPATH)}assert.h
 node.$(OBJEXT): {$(VPATH)}config.h
 node.$(OBJEXT): {$(VPATH)}defines.h
 node.$(OBJEXT): {$(VPATH)}encoding.h
@@ -2388,6 +2445,7 @@ node.$(OBJEXT): {$(VPATH)}vm_debug.h
 node.$(OBJEXT): {$(VPATH)}vm_opts.h
 numeric.$(OBJEXT): $(hdrdir)/ruby.h
 numeric.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+numeric.$(OBJEXT): {$(VPATH)}assert.h
 numeric.$(OBJEXT): {$(VPATH)}config.h
 numeric.$(OBJEXT): {$(VPATH)}defines.h
 numeric.$(OBJEXT): {$(VPATH)}encoding.h
@@ -2404,6 +2462,7 @@ numeric.$(OBJEXT): {$(VPATH)}subst.h
 numeric.$(OBJEXT): {$(VPATH)}util.h
 object.$(OBJEXT): $(hdrdir)/ruby.h
 object.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+object.$(OBJEXT): {$(VPATH)}assert.h
 object.$(OBJEXT): {$(VPATH)}config.h
 object.$(OBJEXT): {$(VPATH)}constant.h
 object.$(OBJEXT): {$(VPATH)}defines.h
@@ -2423,6 +2482,7 @@ object.$(OBJEXT): {$(VPATH)}subst.h
 object.$(OBJEXT): {$(VPATH)}util.h
 pack.$(OBJEXT): $(hdrdir)/ruby.h
 pack.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+pack.$(OBJEXT): {$(VPATH)}assert.h
 pack.$(OBJEXT): {$(VPATH)}config.h
 pack.$(OBJEXT): {$(VPATH)}defines.h
 pack.$(OBJEXT): {$(VPATH)}encoding.h
@@ -2437,6 +2497,7 @@ pack.$(OBJEXT): {$(VPATH)}st.h
 pack.$(OBJEXT): {$(VPATH)}subst.h
 parse.$(OBJEXT): $(hdrdir)/ruby.h
 parse.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+parse.$(OBJEXT): {$(VPATH)}assert.h
 parse.$(OBJEXT): {$(VPATH)}config.h
 parse.$(OBJEXT): {$(VPATH)}defines.h
 parse.$(OBJEXT): {$(VPATH)}defs/keywords
@@ -2467,6 +2528,7 @@ prelude.$(OBJEXT): $(CCAN_DIR)/list/list.h
 prelude.$(OBJEXT): $(CCAN_DIR)/str/str.h
 prelude.$(OBJEXT): $(hdrdir)/ruby.h
 prelude.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+prelude.$(OBJEXT): {$(VPATH)}assert.h
 prelude.$(OBJEXT): {$(VPATH)}config.h
 prelude.$(OBJEXT): {$(VPATH)}defines.h
 prelude.$(OBJEXT): {$(VPATH)}encoding.h
@@ -2498,6 +2560,7 @@ proc.$(OBJEXT): $(CCAN_DIR)/list/list.h
 proc.$(OBJEXT): $(CCAN_DIR)/str/str.h
 proc.$(OBJEXT): $(hdrdir)/ruby.h
 proc.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+proc.$(OBJEXT): {$(VPATH)}assert.h
 proc.$(OBJEXT): {$(VPATH)}config.h
 proc.$(OBJEXT): {$(VPATH)}defines.h
 proc.$(OBJEXT): {$(VPATH)}encoding.h
@@ -2529,6 +2592,7 @@ process.$(OBJEXT): $(CCAN_DIR)/list/list.h
 process.$(OBJEXT): $(CCAN_DIR)/str/str.h
 process.$(OBJEXT): $(hdrdir)/ruby.h
 process.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+process.$(OBJEXT): {$(VPATH)}assert.h
 process.$(OBJEXT): {$(VPATH)}config.h
 process.$(OBJEXT): {$(VPATH)}defines.h
 process.$(OBJEXT): {$(VPATH)}dln.h
@@ -2557,6 +2621,7 @@ process.$(OBJEXT): {$(VPATH)}vm_debug.h
 process.$(OBJEXT): {$(VPATH)}vm_opts.h
 random.$(OBJEXT): $(hdrdir)/ruby.h
 random.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+random.$(OBJEXT): {$(VPATH)}assert.h
 random.$(OBJEXT): {$(VPATH)}config.h
 random.$(OBJEXT): {$(VPATH)}defines.h
 random.$(OBJEXT): {$(VPATH)}encoding.h
@@ -2575,6 +2640,7 @@ random.$(OBJEXT): {$(VPATH)}st.h
 random.$(OBJEXT): {$(VPATH)}subst.h
 range.$(OBJEXT): $(hdrdir)/ruby.h
 range.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+range.$(OBJEXT): {$(VPATH)}assert.h
 range.$(OBJEXT): {$(VPATH)}config.h
 range.$(OBJEXT): {$(VPATH)}defines.h
 range.$(OBJEXT): {$(VPATH)}encoding.h
@@ -2590,6 +2656,7 @@ range.$(OBJEXT): {$(VPATH)}st.h
 range.$(OBJEXT): {$(VPATH)}subst.h
 rational.$(OBJEXT): $(hdrdir)/ruby.h
 rational.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+rational.$(OBJEXT): {$(VPATH)}assert.h
 rational.$(OBJEXT): {$(VPATH)}config.h
 rational.$(OBJEXT): {$(VPATH)}defines.h
 rational.$(OBJEXT): {$(VPATH)}encoding.h
@@ -2606,6 +2673,7 @@ rational.$(OBJEXT): {$(VPATH)}st.h
 rational.$(OBJEXT): {$(VPATH)}subst.h
 re.$(OBJEXT): $(hdrdir)/ruby.h
 re.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+re.$(OBJEXT): {$(VPATH)}assert.h
 re.$(OBJEXT): {$(VPATH)}config.h
 re.$(OBJEXT): {$(VPATH)}defines.h
 re.$(OBJEXT): {$(VPATH)}encindex.h
@@ -2625,6 +2693,7 @@ re.$(OBJEXT): {$(VPATH)}st.h
 re.$(OBJEXT): {$(VPATH)}subst.h
 re.$(OBJEXT): {$(VPATH)}util.h
 regcomp.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+regcomp.$(OBJEXT): {$(VPATH)}assert.h
 regcomp.$(OBJEXT): {$(VPATH)}config.h
 regcomp.$(OBJEXT): {$(VPATH)}defines.h
 regcomp.$(OBJEXT): {$(VPATH)}intern.h
@@ -2638,6 +2707,7 @@ regcomp.$(OBJEXT): {$(VPATH)}regparse.h
 regcomp.$(OBJEXT): {$(VPATH)}st.h
 regcomp.$(OBJEXT): {$(VPATH)}subst.h
 regenc.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+regenc.$(OBJEXT): {$(VPATH)}assert.h
 regenc.$(OBJEXT): {$(VPATH)}config.h
 regenc.$(OBJEXT): {$(VPATH)}defines.h
 regenc.$(OBJEXT): {$(VPATH)}intern.h
@@ -2650,6 +2720,7 @@ regenc.$(OBJEXT): {$(VPATH)}regint.h
 regenc.$(OBJEXT): {$(VPATH)}st.h
 regenc.$(OBJEXT): {$(VPATH)}subst.h
 regerror.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+regerror.$(OBJEXT): {$(VPATH)}assert.h
 regerror.$(OBJEXT): {$(VPATH)}config.h
 regerror.$(OBJEXT): {$(VPATH)}defines.h
 regerror.$(OBJEXT): {$(VPATH)}intern.h
@@ -2662,6 +2733,7 @@ regerror.$(OBJEXT): {$(VPATH)}regint.h
 regerror.$(OBJEXT): {$(VPATH)}st.h
 regerror.$(OBJEXT): {$(VPATH)}subst.h
 regexec.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+regexec.$(OBJEXT): {$(VPATH)}assert.h
 regexec.$(OBJEXT): {$(VPATH)}config.h
 regexec.$(OBJEXT): {$(VPATH)}defines.h
 regexec.$(OBJEXT): {$(VPATH)}intern.h
@@ -2674,6 +2746,7 @@ regexec.$(OBJEXT): {$(VPATH)}regint.h
 regexec.$(OBJEXT): {$(VPATH)}st.h
 regexec.$(OBJEXT): {$(VPATH)}subst.h
 regparse.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+regparse.$(OBJEXT): {$(VPATH)}assert.h
 regparse.$(OBJEXT): {$(VPATH)}config.h
 regparse.$(OBJEXT): {$(VPATH)}defines.h
 regparse.$(OBJEXT): {$(VPATH)}intern.h
@@ -2687,6 +2760,7 @@ regparse.$(OBJEXT): {$(VPATH)}regparse.h
 regparse.$(OBJEXT): {$(VPATH)}st.h
 regparse.$(OBJEXT): {$(VPATH)}subst.h
 regsyntax.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+regsyntax.$(OBJEXT): {$(VPATH)}assert.h
 regsyntax.$(OBJEXT): {$(VPATH)}config.h
 regsyntax.$(OBJEXT): {$(VPATH)}defines.h
 regsyntax.$(OBJEXT): {$(VPATH)}intern.h
@@ -2708,6 +2782,7 @@ ruby.$(OBJEXT): $(CCAN_DIR)/str/str.h
 ruby.$(OBJEXT): $(hdrdir)/ruby.h
 ruby.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 ruby.$(OBJEXT): $(hdrdir)/ruby/version.h
+ruby.$(OBJEXT): {$(VPATH)}assert.h
 ruby.$(OBJEXT): {$(VPATH)}config.h
 ruby.$(OBJEXT): {$(VPATH)}debug_counter.h
 ruby.$(OBJEXT): {$(VPATH)}defines.h
@@ -2742,6 +2817,7 @@ safe.$(OBJEXT): $(CCAN_DIR)/list/list.h
 safe.$(OBJEXT): $(CCAN_DIR)/str/str.h
 safe.$(OBJEXT): $(hdrdir)/ruby.h
 safe.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+safe.$(OBJEXT): {$(VPATH)}assert.h
 safe.$(OBJEXT): {$(VPATH)}config.h
 safe.$(OBJEXT): {$(VPATH)}defines.h
 safe.$(OBJEXT): {$(VPATH)}encoding.h
@@ -2766,6 +2842,7 @@ safe.$(OBJEXT): {$(VPATH)}vm_debug.h
 safe.$(OBJEXT): {$(VPATH)}vm_opts.h
 setproctitle.$(OBJEXT): $(hdrdir)/ruby.h
 setproctitle.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+setproctitle.$(OBJEXT): {$(VPATH)}assert.h
 setproctitle.$(OBJEXT): {$(VPATH)}config.h
 setproctitle.$(OBJEXT): {$(VPATH)}defines.h
 setproctitle.$(OBJEXT): {$(VPATH)}intern.h
@@ -2780,6 +2857,7 @@ signal.$(OBJEXT): $(CCAN_DIR)/list/list.h
 signal.$(OBJEXT): $(CCAN_DIR)/str/str.h
 signal.$(OBJEXT): $(hdrdir)/ruby.h
 signal.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+signal.$(OBJEXT): {$(VPATH)}assert.h
 signal.$(OBJEXT): {$(VPATH)}config.h
 signal.$(OBJEXT): {$(VPATH)}debug_counter.h
 signal.$(OBJEXT): {$(VPATH)}defines.h
@@ -2806,6 +2884,7 @@ signal.$(OBJEXT): {$(VPATH)}vm_debug.h
 signal.$(OBJEXT): {$(VPATH)}vm_opts.h
 sprintf.$(OBJEXT): $(hdrdir)/ruby.h
 sprintf.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+sprintf.$(OBJEXT): {$(VPATH)}assert.h
 sprintf.$(OBJEXT): {$(VPATH)}config.h
 sprintf.$(OBJEXT): {$(VPATH)}defines.h
 sprintf.$(OBJEXT): {$(VPATH)}encoding.h
@@ -2828,6 +2907,7 @@ st.$(OBJEXT): $(CCAN_DIR)/list/list.h
 st.$(OBJEXT): $(CCAN_DIR)/str/str.h
 st.$(OBJEXT): $(hdrdir)/ruby.h
 st.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+st.$(OBJEXT): {$(VPATH)}assert.h
 st.$(OBJEXT): {$(VPATH)}config.h
 st.$(OBJEXT): {$(VPATH)}defines.h
 st.$(OBJEXT): {$(VPATH)}encoding.h
@@ -2842,6 +2922,7 @@ st.$(OBJEXT): {$(VPATH)}st.h
 st.$(OBJEXT): {$(VPATH)}subst.h
 strftime.$(OBJEXT): $(hdrdir)/ruby.h
 strftime.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+strftime.$(OBJEXT): {$(VPATH)}assert.h
 strftime.$(OBJEXT): {$(VPATH)}config.h
 strftime.$(OBJEXT): {$(VPATH)}defines.h
 strftime.$(OBJEXT): {$(VPATH)}encoding.h
@@ -2857,6 +2938,7 @@ strftime.$(OBJEXT): {$(VPATH)}subst.h
 strftime.$(OBJEXT): {$(VPATH)}timev.h
 string.$(OBJEXT): $(hdrdir)/ruby.h
 string.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+string.$(OBJEXT): {$(VPATH)}assert.h
 string.$(OBJEXT): {$(VPATH)}config.h
 string.$(OBJEXT): {$(VPATH)}crypt.h
 string.$(OBJEXT): {$(VPATH)}debug_counter.h
@@ -2892,6 +2974,7 @@ struct.$(OBJEXT): $(CCAN_DIR)/list/list.h
 struct.$(OBJEXT): $(CCAN_DIR)/str/str.h
 struct.$(OBJEXT): $(hdrdir)/ruby.h
 struct.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+struct.$(OBJEXT): {$(VPATH)}assert.h
 struct.$(OBJEXT): {$(VPATH)}config.h
 struct.$(OBJEXT): {$(VPATH)}defines.h
 struct.$(OBJEXT): {$(VPATH)}encoding.h
@@ -2917,6 +3000,7 @@ struct.$(OBJEXT): {$(VPATH)}vm_debug.h
 struct.$(OBJEXT): {$(VPATH)}vm_opts.h
 symbol.$(OBJEXT): $(hdrdir)/ruby.h
 symbol.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+symbol.$(OBJEXT): {$(VPATH)}assert.h
 symbol.$(OBJEXT): {$(VPATH)}config.h
 symbol.$(OBJEXT): {$(VPATH)}defines.h
 symbol.$(OBJEXT): {$(VPATH)}encoding.h
@@ -2944,6 +3028,7 @@ thread.$(OBJEXT): $(CCAN_DIR)/list/list.h
 thread.$(OBJEXT): $(CCAN_DIR)/str/str.h
 thread.$(OBJEXT): $(hdrdir)/ruby.h
 thread.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+thread.$(OBJEXT): {$(VPATH)}assert.h
 thread.$(OBJEXT): {$(VPATH)}config.h
 thread.$(OBJEXT): {$(VPATH)}debug.h
 thread.$(OBJEXT): {$(VPATH)}debug_counter.h
@@ -2979,6 +3064,7 @@ thread.$(OBJEXT): {$(VPATH)}vm_debug.h
 thread.$(OBJEXT): {$(VPATH)}vm_opts.h
 time.$(OBJEXT): $(hdrdir)/ruby.h
 time.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+time.$(OBJEXT): {$(VPATH)}assert.h
 time.$(OBJEXT): {$(VPATH)}config.h
 time.$(OBJEXT): {$(VPATH)}defines.h
 time.$(OBJEXT): {$(VPATH)}encoding.h
@@ -2995,6 +3081,7 @@ time.$(OBJEXT): {$(VPATH)}time.c
 time.$(OBJEXT): {$(VPATH)}timev.h
 transcode.$(OBJEXT): $(hdrdir)/ruby.h
 transcode.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+transcode.$(OBJEXT): {$(VPATH)}assert.h
 transcode.$(OBJEXT): {$(VPATH)}config.h
 transcode.$(OBJEXT): {$(VPATH)}defines.h
 transcode.$(OBJEXT): {$(VPATH)}encoding.h
@@ -3010,6 +3097,7 @@ transcode.$(OBJEXT): {$(VPATH)}transcode.c
 transcode.$(OBJEXT): {$(VPATH)}transcode_data.h
 transient_heap.$(OBJEXT): $(hdrdir)/ruby.h
 transient_heap.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+transient_heap.$(OBJEXT): {$(VPATH)}assert.h
 transient_heap.$(OBJEXT): {$(VPATH)}config.h
 transient_heap.$(OBJEXT): {$(VPATH)}debug.h
 transient_heap.$(OBJEXT): {$(VPATH)}debug_counter.h
@@ -3027,6 +3115,7 @@ transient_heap.$(OBJEXT): {$(VPATH)}transient_heap.h
 transient_heap.$(OBJEXT): {$(VPATH)}vm_debug.h
 util.$(OBJEXT): $(hdrdir)/ruby.h
 util.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+util.$(OBJEXT): {$(VPATH)}assert.h
 util.$(OBJEXT): {$(VPATH)}config.h
 util.$(OBJEXT): {$(VPATH)}defines.h
 util.$(OBJEXT): {$(VPATH)}dtoa.c
@@ -3047,6 +3136,7 @@ variable.$(OBJEXT): $(CCAN_DIR)/list/list.h
 variable.$(OBJEXT): $(CCAN_DIR)/str/str.h
 variable.$(OBJEXT): $(hdrdir)/ruby.h
 variable.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+variable.$(OBJEXT): {$(VPATH)}assert.h
 variable.$(OBJEXT): {$(VPATH)}config.h
 variable.$(OBJEXT): {$(VPATH)}constant.h
 variable.$(OBJEXT): {$(VPATH)}debug_counter.h
@@ -3082,6 +3172,7 @@ version.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 version.$(OBJEXT): $(hdrdir)/ruby/version.h
 version.$(OBJEXT): $(top_srcdir)/revision.h
 version.$(OBJEXT): $(top_srcdir)/version.h
+version.$(OBJEXT): {$(VPATH)}assert.h
 version.$(OBJEXT): {$(VPATH)}config.h
 version.$(OBJEXT): {$(VPATH)}debug_counter.h
 version.$(OBJEXT): {$(VPATH)}defines.h
@@ -3107,6 +3198,7 @@ vm.$(OBJEXT): $(CCAN_DIR)/list/list.h
 vm.$(OBJEXT): $(CCAN_DIR)/str/str.h
 vm.$(OBJEXT): $(hdrdir)/ruby.h
 vm.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+vm.$(OBJEXT): {$(VPATH)}assert.h
 vm.$(OBJEXT): {$(VPATH)}config.h
 vm.$(OBJEXT): {$(VPATH)}constant.h
 vm.$(OBJEXT): {$(VPATH)}debug_counter.h
@@ -3160,6 +3252,7 @@ vm_backtrace.$(OBJEXT): $(CCAN_DIR)/list/list.h
 vm_backtrace.$(OBJEXT): $(CCAN_DIR)/str/str.h
 vm_backtrace.$(OBJEXT): $(hdrdir)/ruby.h
 vm_backtrace.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+vm_backtrace.$(OBJEXT): {$(VPATH)}assert.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}config.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}debug.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}defines.h
@@ -3192,6 +3285,7 @@ vm_dump.$(OBJEXT): $(CCAN_DIR)/str/str.h
 vm_dump.$(OBJEXT): $(hdrdir)/ruby.h
 vm_dump.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 vm_dump.$(OBJEXT): {$(VPATH)}addr2line.h
+vm_dump.$(OBJEXT): {$(VPATH)}assert.h
 vm_dump.$(OBJEXT): {$(VPATH)}config.h
 vm_dump.$(OBJEXT): {$(VPATH)}defines.h
 vm_dump.$(OBJEXT): {$(VPATH)}encoding.h
@@ -3222,6 +3316,7 @@ vm_trace.$(OBJEXT): $(CCAN_DIR)/list/list.h
 vm_trace.$(OBJEXT): $(CCAN_DIR)/str/str.h
 vm_trace.$(OBJEXT): $(hdrdir)/ruby.h
 vm_trace.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+vm_trace.$(OBJEXT): {$(VPATH)}assert.h
 vm_trace.$(OBJEXT): {$(VPATH)}config.h
 vm_trace.$(OBJEXT): {$(VPATH)}debug.h
 vm_trace.$(OBJEXT): {$(VPATH)}debug_counter.h

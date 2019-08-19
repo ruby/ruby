@@ -34,10 +34,10 @@ describe "Digest::MD5.file" do
   it_behaves_like :file_read_directory, :file, Digest::MD5
 
   it "raises a Errno::ENOENT when passed a path that does not exist" do
-    lambda { Digest::MD5.file("") }.should raise_error(Errno::ENOENT)
+    -> { Digest::MD5.file("") }.should raise_error(Errno::ENOENT)
   end
 
   it "raises a TypeError when passed nil" do
-    lambda { Digest::MD5.file(nil) }.should raise_error(TypeError)
+    -> { Digest::MD5.file(nil) }.should raise_error(TypeError)
   end
 end

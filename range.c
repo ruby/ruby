@@ -230,7 +230,7 @@ range_hash(VALUE range)
     hash = rb_hash_uint(hash, EXCL(range) << 24);
     hash = rb_hash_end(hash);
 
-    return LONG2FIX(hash);
+    return ST2FIX(hash);
 }
 
 static void
@@ -1012,6 +1012,9 @@ range_first(int argc, VALUE *argv, VALUE range)
 {
     VALUE n, ary[2];
 
+    if (NIL_P(RANGE_BEG(range))) {
+        rb_raise(rb_eRangeError, "cannot get the first element of beginless range");
+    }
     if (argc == 0) return RANGE_BEG(range);
 
     rb_scan_args(argc, argv, "1", &n);
@@ -1208,6 +1211,27 @@ range_max(int argc, VALUE *argv, VALUE range)
     }
 }
 
+/*
+ *  call-seq:
+ *     rng.minmax                       -> [obj, obj]
+ *     rng.minmax {| a,b | block }      -> [obj, obj]
+ *
+ *  Returns a two element array which contains the minimum and the
+ *  maximum value in the range.
+ *
+ *  Can be given an optional block to override the default comparison
+ *  method <code>a <=> b</code>.
+ */
+
+static VALUE
+range_minmax(VALUE range)
+{
+    if (rb_block_given_p()) {
+        return rb_call_super(0, NULL);
+    }
+    return rb_assoc_new(range_min(0, NULL, range), range_max(0, NULL, range));
+}
+
 int
 rb_range_values(VALUE range, VALUE *begp, VALUE *endp, int *exclp)
 {
@@ -1314,10 +1338,16 @@ inspect_range(VALUE range, VALUE dummy, int recur)
     if (recur) {
 	return rb_str_new2(EXCL(range) ? "(... ... ...)" : "(... .. ...)");
     }
-    str = rb_inspect(RANGE_BEG(range));
-    if (!NIL_P(RANGE_END(range))) str2 = rb_inspect(RANGE_END(range));
-    str = rb_str_dup(str);
+    if (!NIL_P(RANGE_BEG(range)) || NIL_P(RANGE_END(range))) {
+        str = rb_str_dup(rb_inspect(RANGE_BEG(range)));
+    }
+    else {
+        str = rb_str_new(0, 0);
+    }
     rb_str_cat(str, "...", EXCL(range) ? 3 : 2);
+    if (NIL_P(RANGE_BEG(range)) || !NIL_P(RANGE_END(range))) {
+        str2 = rb_inspect(RANGE_END(range));
+    }
     if (str2 != Qundef) rb_str_append(str, str2);
     OBJ_INFECT(str, range);
 
@@ -1339,7 +1369,7 @@ range_inspect(VALUE range)
     return rb_exec_recursive(inspect_range, range, 0);
 }
 
-static VALUE range_include_internal(VALUE range, VALUE val);
+static VALUE range_include_internal(VALUE range, VALUE val, int string_use_cover);
 
 /*
  *  call-seq:
@@ -1363,7 +1393,7 @@ static VALUE range_include_internal(VALUE range, VALUE val);
 static VALUE
 range_eqq(VALUE range, VALUE val)
 {
-    VALUE ret = range_include_internal(range, val);
+    VALUE ret = range_include_internal(range, val, 1);
     if (ret != Qundef) return ret;
     return r_cover_p(range, RANGE_BEG(range), RANGE_END(range), val);
 }
@@ -1386,13 +1416,13 @@ range_eqq(VALUE range, VALUE val)
 static VALUE
 range_include(VALUE range, VALUE val)
 {
-    VALUE ret = range_include_internal(range, val);
+    VALUE ret = range_include_internal(range, val, 0);
     if (ret != Qundef) return ret;
     return rb_call_super(1, &val);
 }
 
 static VALUE
-range_include_internal(VALUE range, VALUE val)
+range_include_internal(VALUE range, VALUE val, int string_use_cover)
 {
     VALUE beg = RANGE_BEG(range);
     VALUE end = RANGE_END(range);
@@ -1404,11 +1434,16 @@ range_include_internal(VALUE range, VALUE val)
 	!NIL_P(rb_check_to_integer(end, "to_int"))) {
 	return r_cover_p(range, beg, end, val);
     }
-    else if (RB_TYPE_P(beg, T_STRING)) {
-	if (RB_TYPE_P(end, T_STRING)) {
-	    VALUE rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive);
-	    return rb_str_include_range_p(beg, end, val, RANGE_EXCL(range));
-	}
+    else if (RB_TYPE_P(beg, T_STRING) || RB_TYPE_P(end, T_STRING)) {
+        if (RB_TYPE_P(beg, T_STRING) && RB_TYPE_P(end, T_STRING)) {
+            if (string_use_cover) {
+                return r_cover_p(range, beg, end, val);
+            }
+            else {
+                VALUE rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive);
+                return rb_str_include_range_p(beg, end, val, RANGE_EXCL(range));
+            }
+        }
         else if (NIL_P(beg)) {
 	    VALUE r = rb_funcall(val, id_cmp, 1, end);
 	    if (NIL_P(r)) return Qfalse;
@@ -1446,11 +1481,14 @@ static int r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val);
  *  the end of the sequence must be calculated, which may exhibit poor
  *  performance if <code>c</code> is non-numeric.
  *  Returns <code>false</code> if the begin value of the
- *  range is larger than the end value.
+ *  range is larger than the end value. Also returns +false+ if one of the
+ *  internal calls to <code><=></code> returns +nil+ (indicating the objects
+ *  are not comparable).
  *
  *     ("a".."z").cover?("c")  #=> true
  *     ("a".."z").cover?("5")  #=> false
  *     ("a".."z").cover?("cc") #=> true
+ *     ("a".."z").cover?(1)    #=> false
  *     (1..5).cover?(2..3)     #=> true
  *     (1..5).cover?(0..6)     #=> false
  *     (1..5).cover?(1...6)    #=> true
@@ -1685,6 +1723,7 @@ Init_Range(void)
     rb_define_method(rb_cRange, "last", range_last, -1);
     rb_define_method(rb_cRange, "min", range_min, -1);
     rb_define_method(rb_cRange, "max", range_max, -1);
+    rb_define_method(rb_cRange, "minmax", range_minmax, 0);
     rb_define_method(rb_cRange, "size", range_size, 0);
     rb_define_method(rb_cRange, "to_a", range_to_a, 0);
     rb_define_method(rb_cRange, "entries", range_to_a, 0);

@@ -13,6 +13,7 @@ constdefs.c: constdefs.h
 ancdata.o: $(RUBY_EXTCONF_H)
 ancdata.o: $(arch_hdrdir)/ruby/config.h
 ancdata.o: $(hdrdir)/ruby.h
+ancdata.o: $(hdrdir)/ruby/assert.h
 ancdata.o: $(hdrdir)/ruby/backward.h
 ancdata.o: $(hdrdir)/ruby/defines.h
 ancdata.o: $(hdrdir)/ruby/encoding.h
@@ -34,6 +35,7 @@ ancdata.o: sockport.h
 basicsocket.o: $(RUBY_EXTCONF_H)
 basicsocket.o: $(arch_hdrdir)/ruby/config.h
 basicsocket.o: $(hdrdir)/ruby.h
+basicsocket.o: $(hdrdir)/ruby/assert.h
 basicsocket.o: $(hdrdir)/ruby/backward.h
 basicsocket.o: $(hdrdir)/ruby/defines.h
 basicsocket.o: $(hdrdir)/ruby/encoding.h
@@ -55,6 +57,7 @@ basicsocket.o: sockport.h
 constants.o: $(RUBY_EXTCONF_H)
 constants.o: $(arch_hdrdir)/ruby/config.h
 constants.o: $(hdrdir)/ruby.h
+constants.o: $(hdrdir)/ruby/assert.h
 constants.o: $(hdrdir)/ruby/backward.h
 constants.o: $(hdrdir)/ruby/defines.h
 constants.o: $(hdrdir)/ruby/encoding.h
@@ -77,6 +80,7 @@ constants.o: sockport.h
 ifaddr.o: $(RUBY_EXTCONF_H)
 ifaddr.o: $(arch_hdrdir)/ruby/config.h
 ifaddr.o: $(hdrdir)/ruby.h
+ifaddr.o: $(hdrdir)/ruby/assert.h
 ifaddr.o: $(hdrdir)/ruby/backward.h
 ifaddr.o: $(hdrdir)/ruby/defines.h
 ifaddr.o: $(hdrdir)/ruby/encoding.h
@@ -98,6 +102,7 @@ ifaddr.o: sockport.h
 init.o: $(RUBY_EXTCONF_H)
 init.o: $(arch_hdrdir)/ruby/config.h
 init.o: $(hdrdir)/ruby.h
+init.o: $(hdrdir)/ruby/assert.h
 init.o: $(hdrdir)/ruby/backward.h
 init.o: $(hdrdir)/ruby/defines.h
 init.o: $(hdrdir)/ruby/encoding.h
@@ -119,6 +124,7 @@ init.o: sockport.h
 ipsocket.o: $(RUBY_EXTCONF_H)
 ipsocket.o: $(arch_hdrdir)/ruby/config.h
 ipsocket.o: $(hdrdir)/ruby.h
+ipsocket.o: $(hdrdir)/ruby/assert.h
 ipsocket.o: $(hdrdir)/ruby/backward.h
 ipsocket.o: $(hdrdir)/ruby/defines.h
 ipsocket.o: $(hdrdir)/ruby/encoding.h
@@ -140,6 +146,7 @@ ipsocket.o: sockport.h
 option.o: $(RUBY_EXTCONF_H)
 option.o: $(arch_hdrdir)/ruby/config.h
 option.o: $(hdrdir)/ruby.h
+option.o: $(hdrdir)/ruby/assert.h
 option.o: $(hdrdir)/ruby/backward.h
 option.o: $(hdrdir)/ruby/defines.h
 option.o: $(hdrdir)/ruby/encoding.h
@@ -161,6 +168,7 @@ option.o: sockport.h
 raddrinfo.o: $(RUBY_EXTCONF_H)
 raddrinfo.o: $(arch_hdrdir)/ruby/config.h
 raddrinfo.o: $(hdrdir)/ruby.h
+raddrinfo.o: $(hdrdir)/ruby/assert.h
 raddrinfo.o: $(hdrdir)/ruby/backward.h
 raddrinfo.o: $(hdrdir)/ruby/defines.h
 raddrinfo.o: $(hdrdir)/ruby/encoding.h
@@ -182,6 +190,7 @@ raddrinfo.o: sockport.h
 socket.o: $(RUBY_EXTCONF_H)
 socket.o: $(arch_hdrdir)/ruby/config.h
 socket.o: $(hdrdir)/ruby.h
+socket.o: $(hdrdir)/ruby/assert.h
 socket.o: $(hdrdir)/ruby/backward.h
 socket.o: $(hdrdir)/ruby/defines.h
 socket.o: $(hdrdir)/ruby/encoding.h
@@ -203,6 +212,7 @@ socket.o: sockport.h
 sockssocket.o: $(RUBY_EXTCONF_H)
 sockssocket.o: $(arch_hdrdir)/ruby/config.h
 sockssocket.o: $(hdrdir)/ruby.h
+sockssocket.o: $(hdrdir)/ruby/assert.h
 sockssocket.o: $(hdrdir)/ruby/backward.h
 sockssocket.o: $(hdrdir)/ruby/defines.h
 sockssocket.o: $(hdrdir)/ruby/encoding.h
@@ -224,6 +234,7 @@ sockssocket.o: sockssocket.c
 tcpserver.o: $(RUBY_EXTCONF_H)
 tcpserver.o: $(arch_hdrdir)/ruby/config.h
 tcpserver.o: $(hdrdir)/ruby.h
+tcpserver.o: $(hdrdir)/ruby/assert.h
 tcpserver.o: $(hdrdir)/ruby/backward.h
 tcpserver.o: $(hdrdir)/ruby/defines.h
 tcpserver.o: $(hdrdir)/ruby/encoding.h
@@ -245,6 +256,7 @@ tcpserver.o: tcpserver.c
 tcpsocket.o: $(RUBY_EXTCONF_H)
 tcpsocket.o: $(arch_hdrdir)/ruby/config.h
 tcpsocket.o: $(hdrdir)/ruby.h
+tcpsocket.o: $(hdrdir)/ruby/assert.h
 tcpsocket.o: $(hdrdir)/ruby/backward.h
 tcpsocket.o: $(hdrdir)/ruby/defines.h
 tcpsocket.o: $(hdrdir)/ruby/encoding.h
@@ -266,6 +278,7 @@ tcpsocket.o: tcpsocket.c
 udpsocket.o: $(RUBY_EXTCONF_H)
 udpsocket.o: $(arch_hdrdir)/ruby/config.h
 udpsocket.o: $(hdrdir)/ruby.h
+udpsocket.o: $(hdrdir)/ruby/assert.h
 udpsocket.o: $(hdrdir)/ruby/backward.h
 udpsocket.o: $(hdrdir)/ruby/defines.h
 udpsocket.o: $(hdrdir)/ruby/encoding.h
@@ -287,6 +300,7 @@ udpsocket.o: udpsocket.c
 unixserver.o: $(RUBY_EXTCONF_H)
 unixserver.o: $(arch_hdrdir)/ruby/config.h
 unixserver.o: $(hdrdir)/ruby.h
+unixserver.o: $(hdrdir)/ruby/assert.h
 unixserver.o: $(hdrdir)/ruby/backward.h
 unixserver.o: $(hdrdir)/ruby/defines.h
 unixserver.o: $(hdrdir)/ruby/encoding.h
@@ -308,6 +322,7 @@ unixserver.o: unixserver.c
 unixsocket.o: $(RUBY_EXTCONF_H)
 unixsocket.o: $(arch_hdrdir)/ruby/config.h
 unixsocket.o: $(hdrdir)/ruby.h
+unixsocket.o: $(hdrdir)/ruby/assert.h
 unixsocket.o: $(hdrdir)/ruby/backward.h
 unixsocket.o: $(hdrdir)/ruby/defines.h
 unixsocket.o: $(hdrdir)/ruby/encoding.h

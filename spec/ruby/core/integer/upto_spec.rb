@@ -27,8 +27,8 @@ describe "Integer#upto [stop] when self and stop are Fixnums" do
   end
 
   it "raises an ArgumentError for non-numeric endpoints" do
-    lambda { 1.upto("A") {|x| p x} }.should raise_error(ArgumentError)
-    lambda { 1.upto(nil) {|x| p x} }.should raise_error(ArgumentError)
+    -> { 1.upto("A") {|x| p x} }.should raise_error(ArgumentError)
+    -> { 1.upto(nil) {|x| p x} }.should raise_error(ArgumentError)
   end
 
   describe "when no block is given" do
@@ -45,9 +45,9 @@ describe "Integer#upto [stop] when self and stop are Fixnums" do
       describe "size" do
         it "raises an ArgumentError for non-numeric endpoints" do
           enum = 1.upto("A")
-          lambda { enum.size }.should raise_error(ArgumentError)
+          -> { enum.size }.should raise_error(ArgumentError)
           enum = 1.upto(nil)
-          lambda { enum.size }.should raise_error(ArgumentError)
+          -> { enum.size }.should raise_error(ArgumentError)
         end
 
         it "returns stop - self + 1" do

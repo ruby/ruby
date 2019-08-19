@@ -12,12 +12,12 @@ describe "StringIO#close" do
 
   it "prevents further reading and/or writing" do
     @io.close
-    lambda { @io.read(1) }.should raise_error(IOError)
-    lambda { @io.write('x') }.should raise_error(IOError)
+    -> { @io.read(1) }.should raise_error(IOError)
+    -> { @io.write('x') }.should raise_error(IOError)
   end
 
   it "does not raise anything when self was already closed" do
     @io.close
-    lambda { @io.close }.should_not raise_error(IOError)
+    -> { @io.close }.should_not raise_error(IOError)
   end
 end

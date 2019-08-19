@@ -26,10 +26,10 @@ describe "Module#class_variable_set" do
   end
 
   it "raises a #{frozen_error_class} when self is frozen" do
-    lambda {
+    -> {
       Class.new.freeze.send(:class_variable_set, :@@test, "test")
     }.should raise_error(frozen_error_class)
-    lambda {
+    -> {
       Module.new.freeze.send(:class_variable_set, :@@test, "test")
     }.should raise_error(frozen_error_class)
   end
@@ -37,10 +37,10 @@ describe "Module#class_variable_set" do
   it "raises a NameError when the given name is not allowed" do
     c = Class.new
 
-    lambda {
+    -> {
       c.send(:class_variable_set, :invalid_name, "test")
     }.should raise_error(NameError)
-    lambda {
+    -> {
       c.send(:class_variable_set, "@invalid_name", "test")
     }.should raise_error(NameError)
   end
@@ -55,8 +55,8 @@ describe "Module#class_variable_set" do
   it "raises a TypeError when the given names can't be converted to strings using to_str" do
     c = Class.new { class_variable_set :@@class_var, "test" }
     o = mock('123')
-    lambda { c.send(:class_variable_set, o, "test") }.should raise_error(TypeError)
+    -> { c.send(:class_variable_set, o, "test") }.should raise_error(TypeError)
     o.should_receive(:to_str).and_return(123)
-    lambda { c.send(:class_variable_set, o, "test") }.should raise_error(TypeError)
+    -> { c.send(:class_variable_set, o, "test") }.should raise_error(TypeError)
   end
 end

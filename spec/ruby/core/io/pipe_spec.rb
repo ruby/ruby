@@ -50,7 +50,7 @@ describe "IO.pipe" do
 
     it "closes both IO objects when the block raises" do
       r = w = nil
-      lambda do
+      -> do
         IO.pipe do |_r, _w|
           r = _r
           w = _w

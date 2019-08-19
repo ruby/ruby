@@ -623,6 +623,7 @@ class TestRingServer < Test::Unit::TestCase
     @server = DRb.start_service("druby://localhost:0")
   end
   def teardown
+    @rs.shutdown
     # implementation-dependent
     @ts.instance_eval{
       if th = @keeper
@@ -630,7 +631,6 @@ class TestRingServer < Test::Unit::TestCase
         th.join
       end
     }
-    @rs.shutdown
     @server.stop_service
   end
 

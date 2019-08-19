@@ -14,17 +14,18 @@ module Bundler
       Bundler.ui.info msg
     end
 
-    def self.output_without_groups_message
+    def self.output_without_groups_message(command)
       return if Bundler.settings[:without].empty?
-      Bundler.ui.confirm without_groups_message
+      Bundler.ui.confirm without_groups_message(command)
     end
 
-    def self.without_groups_message
+    def self.without_groups_message(command)
+      command_in_past_tense = command == :install ? "installed" : "updated"
       groups = Bundler.settings[:without]
       group_list = [groups[0...-1].join(", "), groups[-1..-1]].
         reject {|s| s.to_s.empty? }.join(" and ")
-      group_str = (groups.size == 1) ? "group" : "groups"
-      "Gems in the #{group_str} #{group_list} were not installed."
+      group_str = groups.size == 1 ? "group" : "groups"
+      "Gems in the #{group_str} #{group_list} were not #{command_in_past_tense}."
     end
 
     def self.select_spec(name, regex_match = nil)
@@ -49,10 +50,6 @@ module Bundler
     end
 
     def self.ask_for_spec_from(specs)
-      if !$stdout.tty? && ENV["BUNDLE_SPEC_RUN"].nil?
-        raise GemNotFound, gem_not_found_message(name, Bundler.definition.dependencies)
-      end
-
       specs.each_with_index do |spec, index|
         Bundler.ui.info "#{index.succ} : #{spec.name}", true
       end
@@ -63,7 +60,7 @@ module Bundler
     end
 
     def self.gem_not_found_message(missing_gem_name, alternatives)
-      require "bundler/similarity_detector"
+      require_relative "../similarity_detector"
       message = "Could not find gem '#{missing_gem_name}'."
       alternate_names = alternatives.map {|a| a.respond_to?(:name) ? a.name : a }
       suggestions = SimilarityDetector.new(alternate_names).similar_word_list(missing_gem_name)
@@ -72,7 +69,7 @@ module Bundler
     end
 
     def self.ensure_all_gems_in_lockfile!(names, locked_gems = Bundler.locked_gems)
-      locked_names = locked_gems.specs.map(&:name)
+      locked_names = locked_gems.specs.map(&:name).uniq
       names.-(locked_names).each do |g|
         raise GemNotFound, gem_not_found_message(g, locked_names)
       end
@@ -80,10 +77,12 @@ module Bundler
 
     def self.configure_gem_version_promoter(definition, options)
       patch_level = patch_level_options(options)
+      patch_level << :patch if patch_level.empty? && Bundler.settings[:prefer_patch]
       raise InvalidOption, "Provide only one of the following options: #{patch_level.join(", ")}" unless patch_level.length <= 1
+
       definition.gem_version_promoter.tap do |gvp|
         gvp.level = patch_level.first || :major
-        gvp.strict = options[:strict] || options["update-strict"]
+        gvp.strict = options[:strict] || options["update-strict"] || options["filter-strict"]
       end
     end
 

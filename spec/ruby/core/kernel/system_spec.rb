@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe :kernel_system, shared: true do
   it "executes the specified command in a subprocess" do
-    lambda { @object.system("echo a") }.should output_to_fd("a\n")
+    -> { @object.system("echo a") }.should output_to_fd("a\n")
 
     $?.should be_an_instance_of Process::Status
     $?.success?.should == true
@@ -27,11 +27,11 @@ describe :kernel_system, shared: true do
 
   ruby_version_is "2.6" do
     it "raises RuntimeError when `exception: true` is given and the command exits with a non-zero exit status" do
-      lambda { @object.system(ruby_cmd('exit 1'), exception: true) }.should raise_error(RuntimeError)
+      -> { @object.system(ruby_cmd('exit 1'), exception: true) }.should raise_error(RuntimeError)
     end
 
     it "raises Errno::ENOENT when `exception: true` is given and the specified command does not exist" do
-      lambda { @object.system('feature_14386', exception: true) }.should raise_error(Errno::ENOENT)
+      -> { @object.system('feature_14386', exception: true) }.should raise_error(Errno::ENOENT)
     end
   end
 
@@ -44,7 +44,7 @@ describe :kernel_system, shared: true do
   end
 
   it "does not write to stderr when command execution fails" do
-    lambda { @object.system("sad") }.should output_to_fd("", STDERR)
+    -> { @object.system("sad") }.should output_to_fd("", STDERR)
   end
 
   platform_is_not :windows do
@@ -57,12 +57,12 @@ describe :kernel_system, shared: true do
     end
 
     it "executes with `sh` if the command contains shell characters" do
-      lambda { @object.system("echo $0") }.should output_to_fd("sh\n")
+      -> { @object.system("echo $0") }.should output_to_fd("sh\n")
     end
 
     it "ignores SHELL env var and always uses `sh`" do
       ENV['SHELL'] = "/bin/fakeshell"
-      lambda { @object.system("echo $0") }.should output_to_fd("sh\n")
+      -> { @object.system("echo $0") }.should output_to_fd("sh\n")
     end
   end
 
@@ -79,19 +79,19 @@ describe :kernel_system, shared: true do
   end
 
   it "expands shell variables when given a single string argument" do
-    lambda { @object.system("echo #{@shell_var}") }.should output_to_fd("foo\n")
+    -> { @object.system("echo #{@shell_var}") }.should output_to_fd("foo\n")
   end
 
   platform_is_not :windows do
     it "does not expand shell variables when given multiples arguments" do
-      lambda { @object.system("echo", @shell_var) }.should output_to_fd("#{@shell_var}\n")
+      -> { @object.system("echo", @shell_var) }.should output_to_fd("#{@shell_var}\n")
     end
   end
 
   platform_is :windows do
     it "does expand shell variables when given multiples arguments" do
       # See https://bugs.ruby-lang.org/issues/12231
-      lambda { @object.system("echo", @shell_var) }.should output_to_fd("foo\n")
+      -> { @object.system("echo", @shell_var) }.should output_to_fd("foo\n")
     end
   end
 

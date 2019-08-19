@@ -1,0 +1,40 @@
+#!/usr/bin/ruby
+require_relative 'lib/colorize'
+
+until ARGV.empty?
+  case ARGV[0]
+  when /\ASYMBOL_PREFIX=(.*)/
+    SYMBOL_PREFIX = $1
+  when /\ANM=(.*)/              # may be multiple words
+    NM = $1
+  else
+    break
+  end
+  ARGV.shift
+end
+
+config = ARGV.shift
+count = 0
+col = Colorize.new
+REPLACE = File.read(config).scan(/\bAC_(?:REPLACE|CHECK)_FUNCS?\(\K\w+/)
+print "Checking leaked global symbols..."
+STDOUT.flush
+IO.foreach("|#{NM} -Pgp #{ARGV.join(' ')}") do |line|
+  n, t, = line.split
+  next unless /[BDT]/ =~ t
+  next unless n.sub!(/^#{SYMBOL_PREFIX}/o, "")
+  next if n.include?(".")
+  next if /\A(?:Init_|InitVM_|ruby_|rb_|[Oo]nig|st_|dln_|mjit_|coroutine_|nu(?:comp|rat)_)/ =~ n
+  next if REPLACE.include?(n)
+  puts col.fail("leaked") if count.zero?
+  count += 1
+  puts "  #{n}"
+end
+case count
+when 0
+  puts col.pass("none")
+when 1
+  abort col.fail("1 un-prefixed symbol leaked")
+else
+  abort col.fail("#{count} un-prefixed symbols leaked")
+end

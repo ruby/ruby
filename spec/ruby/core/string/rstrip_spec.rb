@@ -41,12 +41,12 @@ describe "String#rstrip!" do
   end
 
   it "raises a #{frozen_error_class} on a frozen instance that is modified" do
-    lambda { "  hello  ".freeze.rstrip! }.should raise_error(frozen_error_class)
+    -> { "  hello  ".freeze.rstrip! }.should raise_error(frozen_error_class)
   end
 
   # see [ruby-core:23666]
   it "raises a #{frozen_error_class} on a frozen instance that would not be modified" do
-    lambda { "hello".freeze.rstrip! }.should raise_error(frozen_error_class)
-    lambda { "".freeze.rstrip!      }.should raise_error(frozen_error_class)
+    -> { "hello".freeze.rstrip! }.should raise_error(frozen_error_class)
+    -> { "".freeze.rstrip!      }.should raise_error(frozen_error_class)
   end
 end

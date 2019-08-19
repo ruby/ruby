@@ -17,7 +17,7 @@ describe "ARGF.readline" do
 
   it "raises an EOFError when reaching end of files" do
     argf [@file1, @file2] do
-      lambda { while @argf.readline; end }.should raise_error(EOFError)
+      -> { while @argf.readline; end }.should raise_error(EOFError)
     end
   end
 end

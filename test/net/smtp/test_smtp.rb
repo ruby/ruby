@@ -190,7 +190,7 @@ module Net
       loop do
         readable, = IO.select(servers.map(&:to_io))
         readable.each do |r|
-          sock, addr = r.accept_nonblock(exception: false)
+          sock, = r.accept_nonblock(exception: false)
           next if sock == :wait_readable
           return sock
         end

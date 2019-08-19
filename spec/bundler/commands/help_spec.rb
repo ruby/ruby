@@ -1,15 +1,6 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle help" do
-  # RubyGems 1.4+ no longer load gem plugins so this test is no longer needed
-  it "complains if older versions of bundler are installed", :rubygems => "< 1.4" do
-    system_gems "bundler-0.8.1"
-
-    bundle "help"
-    expect(err).to include("older than 0.9")
-    expect(err).to include("running `gem cleanup bundler`.")
-  end
-
   it "uses mann when available" do
     with_fake_man do
       bundle "help gemfile"
@@ -81,7 +72,7 @@ RSpec.describe "bundle help" do
     with_fake_man do
       bundle "instill -h"
     end
-    expect(out).to include('Could not find command "instill".')
+    expect(err).to include('Could not find command "instill".')
   end
 
   it "is called when only using the --help flag" do

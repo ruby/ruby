@@ -13,7 +13,7 @@ describe "Net::HTTPGenericRequest#body_exist?" do
   describe "when $VERBOSE is true" do
     it "emits a warning" do
       request = Net::HTTPGenericRequest.new("POST", true, false, "/some/path")
-      lambda {
+      -> {
         request.body_exist?
       }.should complain(/body_exist\? is obsolete/, verbose: true)
     end

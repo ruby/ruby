@@ -272,7 +272,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     unless file
       loc, = caller_locations(1, 1)
       file = loc.path
-      line ||= loc.lineno
+      line ||= loc.lineno + 1
     end
     RubyVM::InstructionSequence.new("proc {|_|_.class_eval {#{src}}}",
                                     file, (path || file), line,
@@ -347,7 +347,7 @@ class TestRubyOptimization < Test::Unit::TestCase
   def test_tailcall_inhibited_by_rescue
     bug12082 = '[ruby-core:73871] [Bug #12082]'
 
-    tailcall("#{<<-"begin;"}\n#{<<~"end;"}")
+    EnvUtil.suppress_warning {tailcall("#{<<-"begin;"}\n#{<<~"end;"}")}
     begin;
       def to_be_rescued
         return do_raise
@@ -425,7 +425,7 @@ class TestRubyOptimization < Test::Unit::TestCase
   def test_tailcall_condition_block
     bug = '[ruby-core:78015] [Bug #12905]'
 
-    src = "#{<<-"begin;"}\n#{<<~"end;"}"
+    src = "#{<<-"begin;"}\n#{<<~"end;"}", __FILE__, nil, __LINE__+1
     begin;
       def run(current, final)
         if current < final
@@ -437,13 +437,13 @@ class TestRubyOptimization < Test::Unit::TestCase
     end;
 
     obj = Object.new
-    self.class.tailcall(obj.singleton_class, src, tailcall: false)
+    self.class.tailcall(obj.singleton_class, *src, tailcall: false)
     e = assert_raise(SystemStackError) {
       obj.run(1, Float::INFINITY)
     }
     level = e.backtrace_locations.size
     obj = Object.new
-    self.class.tailcall(obj.singleton_class, src, tailcall: true)
+    self.class.tailcall(obj.singleton_class, *src, tailcall: true)
     level *= 2
     mesg = message {"#{bug}: #{$!.backtrace_locations.size} / #{level} stack levels"}
     assert_nothing_raised(SystemStackError, mesg) {
@@ -751,6 +751,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     h = {}
     assert_equal(bug, eval('{ok: 42, **h}; bug'))
     assert_equal(:ok, eval('{ok: bug = :ok, **h}; bug'))
+    assert_empty(h)
   end
 
   def test_overwritten_blockparam
@@ -793,6 +794,21 @@ class TestRubyOptimization < Test::Unit::TestCase
       obj
     end
     assert_equal(:ok, x.bug(:ok))
+  end
+
+  def test_jump_elimination_with_optimized_out_block_2
+    x = Object.new
+    def x.bug
+      a = "aaa"
+      ok = :NG
+      if a == "bbb" || a == "ccc" then
+        a = a
+      else
+        ok = :ok
+      end
+      ok
+    end
+    assert_equal(:ok, x.bug)
   end
 
   def test_peephole_jump_after_newarray

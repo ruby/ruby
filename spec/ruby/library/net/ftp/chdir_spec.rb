@@ -29,32 +29,32 @@ describe "Net::FTP#chdir" do
 
     it "does not raise a Net::FTPPermError when the response code is 500" do
       @server.should_receive(:cdup).and_respond("500 Syntax error, command unrecognized.")
-      lambda { @ftp.chdir("..") }.should_not raise_error(Net::FTPPermError)
+      -> { @ftp.chdir("..") }.should_not raise_error(Net::FTPPermError)
     end
 
     it "raises a Net::FTPPermError when the response code is 501" do
       @server.should_receive(:cdup).and_respond("501 Syntax error in parameters or arguments.")
-      lambda { @ftp.chdir("..") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.chdir("..") }.should raise_error(Net::FTPPermError)
     end
 
     it "raises a Net::FTPPermError when the response code is 502" do
       @server.should_receive(:cdup).and_respond("502 Command not implemented.")
-      lambda { @ftp.chdir("..") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.chdir("..") }.should raise_error(Net::FTPPermError)
     end
 
     it "raises a Net::FTPTempError when the response code is 421" do
       @server.should_receive(:cdup).and_respond("421 Service not available, closing control connection.")
-      lambda { @ftp.chdir("..") }.should raise_error(Net::FTPTempError)
+      -> { @ftp.chdir("..") }.should raise_error(Net::FTPTempError)
     end
 
     it "raises a Net::FTPPermError when the response code is 530" do
       @server.should_receive(:cdup).and_respond("530 Not logged in.")
-      lambda { @ftp.chdir("..") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.chdir("..") }.should raise_error(Net::FTPPermError)
     end
 
     it "raises a Net::FTPPermError when the response code is 550" do
       @server.should_receive(:cdup).and_respond("550 Requested action not taken.")
-      lambda { @ftp.chdir("..") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.chdir("..") }.should raise_error(Net::FTPPermError)
     end
   end
 
@@ -69,31 +69,31 @@ describe "Net::FTP#chdir" do
 
   it "raises a Net::FTPPermError when the response code is 500" do
     @server.should_receive(:cwd).and_respond("500 Syntax error, command unrecognized.")
-    lambda { @ftp.chdir("test") }.should raise_error(Net::FTPPermError)
+    -> { @ftp.chdir("test") }.should raise_error(Net::FTPPermError)
   end
 
   it "raises a Net::FTPPermError when the response code is 501" do
     @server.should_receive(:cwd).and_respond("501 Syntax error in parameters or arguments.")
-    lambda { @ftp.chdir("test") }.should raise_error(Net::FTPPermError)
+    -> { @ftp.chdir("test") }.should raise_error(Net::FTPPermError)
   end
 
   it "raises a Net::FTPPermError when the response code is 502" do
     @server.should_receive(:cwd).and_respond("502 Command not implemented.")
-    lambda { @ftp.chdir("test") }.should raise_error(Net::FTPPermError)
+    -> { @ftp.chdir("test") }.should raise_error(Net::FTPPermError)
   end
 
   it "raises a Net::FTPTempError when the response code is 421" do
     @server.should_receive(:cwd).and_respond("421 Service not available, closing control connection.")
-    lambda { @ftp.chdir("test") }.should raise_error(Net::FTPTempError)
+    -> { @ftp.chdir("test") }.should raise_error(Net::FTPTempError)
   end
 
   it "raises a Net::FTPPermError when the response code is 530" do
     @server.should_receive(:cwd).and_respond("530 Not logged in.")
-    lambda { @ftp.chdir("test") }.should raise_error(Net::FTPPermError)
+    -> { @ftp.chdir("test") }.should raise_error(Net::FTPPermError)
   end
 
   it "raises a Net::FTPPermError when the response code is 550" do
     @server.should_receive(:cwd).and_respond("550 Requested action not taken.")
-    lambda { @ftp.chdir("test") }.should raise_error(Net::FTPPermError)
+    -> { @ftp.chdir("test") }.should raise_error(Net::FTPPermError)
   end
 end

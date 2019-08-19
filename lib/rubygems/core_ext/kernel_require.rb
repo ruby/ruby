@@ -36,10 +36,37 @@ module Kernel
 
     path = path.to_path if path.respond_to? :to_path
 
-    if spec = Gem.find_unresolved_default_spec(path)
-      Gem.remove_unresolved_default_spec(spec)
+    # Ensure -I beats a default gem
+    # https://github.com/rubygems/rubygems/pull/1868
+    resolved_path = begin
+      rp = nil
+      $LOAD_PATH[0...Gem.load_path_insert_index || -1].each do |lp|
+        safe_lp = lp.dup.untaint
+        next if File.symlink? safe_lp # for backword compatibility
+        Gem.suffixes.each do |s|
+          full_path = File.expand_path(File.join(safe_lp, "#{path}#{s}"))
+          if File.file?(full_path)
+            rp = full_path
+            break
+          end
+        end
+        break if rp
+      end
+      rp
+    end
+
+    if resolved_path
       begin
-        Kernel.send(:gem, spec.name)
+        RUBYGEMS_ACTIVATION_MONITOR.exit
+        return gem_original_require(resolved_path)
+      rescue LoadError
+        RUBYGEMS_ACTIVATION_MONITOR.enter
+      end
+    end
+
+    if spec = Gem.find_unresolved_default_spec(path)
+      begin
+        Kernel.send(:gem, spec.name, "#{Gem::Requirement.default}.a")
       rescue Exception
         RUBYGEMS_ACTIVATION_MONITOR.exit
         raise

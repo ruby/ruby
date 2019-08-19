@@ -198,9 +198,6 @@ clean_hooks(const rb_execution_context_t *ec, rb_hook_list_t *list)
     }
     else {
         /* local events */
-        if (list->events == 0) {
-            ruby_xfree(list);
-        }
     }
 }
 
@@ -270,13 +267,6 @@ int
 rb_remove_event_hook_with_data(rb_event_hook_func_t func, VALUE data)
 {
     return remove_event_hook(GET_EC(), NULL, func, data);
-}
-
-void
-rb_clear_trace_func(void)
-{
-    rb_execution_context_t *ec = GET_EC();
-    rb_threadptr_remove_event_hook(ec, MATCH_ANY_FILTER_TH, 0, Qundef);
 }
 
 void
@@ -418,7 +408,7 @@ VALUE
 rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
 {
     volatile int raised;
-    VALUE result = Qnil;
+    volatile VALUE result = Qnil;
     rb_execution_context_t *const ec = GET_EC();
     rb_vm_t *const vm = rb_ec_vm_ptr(ec);
     enum ruby_tag_type state;

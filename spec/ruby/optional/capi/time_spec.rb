@@ -96,9 +96,9 @@ describe "CApiTimeSpecs" do
     end
 
     it "throws an argument error for a negative value" do
-      lambda { @s.rb_time_interval(-1232141421) }.should raise_error(ArgumentError)
-      lambda { @s.rb_time_interval(Rational(-3, 2)) }.should raise_error(ArgumentError)
-      lambda { @s.rb_time_interval(-1.5) }.should raise_error(ArgumentError)
+      -> { @s.rb_time_interval(-1232141421) }.should raise_error(ArgumentError)
+      -> { @s.rb_time_interval(Rational(-3, 2)) }.should raise_error(ArgumentError)
+      -> { @s.rb_time_interval(-1.5) }.should raise_error(ArgumentError)
     end
 
   end
@@ -129,13 +129,13 @@ describe "CApiTimeSpecs" do
     end
 
     it "throws an argument error for a negative value" do
-      lambda { @s.rb_time_interval(-1232141421) }.should raise_error(ArgumentError)
-      lambda { @s.rb_time_interval(Rational(-3, 2)) }.should raise_error(ArgumentError)
-      lambda { @s.rb_time_interval(-1.5) }.should raise_error(ArgumentError)
+      -> { @s.rb_time_interval(-1232141421) }.should raise_error(ArgumentError)
+      -> { @s.rb_time_interval(Rational(-3, 2)) }.should raise_error(ArgumentError)
+      -> { @s.rb_time_interval(-1.5) }.should raise_error(ArgumentError)
     end
 
     it "throws an argument error when given a Time instance" do
-      lambda { @s.rb_time_interval(Time.now) }.should raise_error(TypeError)
+      -> { @s.rb_time_interval(Time.now) }.should raise_error(TypeError)
     end
 
   end
@@ -284,8 +284,8 @@ describe "CApiTimeSpecs" do
     end
 
     it "raises an ArgumentError if offset passed is not within range of -86400 and 86400 (exclusive)" do
-      lambda { @s.rb_time_timespec_new(1447087832, 476451125, 86400) }.should raise_error(ArgumentError)
-      lambda { @s.rb_time_timespec_new(1447087832, 476451125, -86400) }.should raise_error(ArgumentError)
+      -> { @s.rb_time_timespec_new(1447087832, 476451125, 86400) }.should raise_error(ArgumentError)
+      -> { @s.rb_time_timespec_new(1447087832, 476451125, -86400) }.should raise_error(ArgumentError)
     end
   end
 
@@ -294,7 +294,7 @@ describe "CApiTimeSpecs" do
       now = Time.now
       time = @s.rb_time_from_timespec(now.utc_offset)
       time.should be_an_instance_of(Time)
-      (time - now).should be_close(0, 10)
+      (time - now).should be_close(0, TIME_TOLERANCE)
     end
   end
 end

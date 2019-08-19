@@ -1,4 +1,4 @@
-require File.expand_path('../jisx0208', __FILE__)
+require File.expand_path('../lib/jisx0208', __FILE__)
 
 ENCODES = [
   {

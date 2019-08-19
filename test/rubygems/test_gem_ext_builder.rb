@@ -329,4 +329,4 @@ install:
     assert_equal %w[--with-foo-dir=/nonexistent], builder.build_args
   end
 
-end
+end unless Gem.java_platform?

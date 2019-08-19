@@ -21,17 +21,17 @@ describe :string_slice, shared: true do
   end
 
   it "raises a TypeError if the given index is nil" do
-    lambda { "hello".send(@method, nil) }.should raise_error(TypeError)
+    -> { "hello".send(@method, nil) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if the given index can't be converted to an Integer" do
-    lambda { "hello".send(@method, mock('x')) }.should raise_error(TypeError)
-    lambda { "hello".send(@method, {})        }.should raise_error(TypeError)
-    lambda { "hello".send(@method, [])        }.should raise_error(TypeError)
+    -> { "hello".send(@method, mock('x')) }.should raise_error(TypeError)
+    -> { "hello".send(@method, {})        }.should raise_error(TypeError)
+    -> { "hello".send(@method, [])        }.should raise_error(TypeError)
   end
 
   it "raises a RangeError if the index is too big" do
-    lambda { "hello".send(@method, bignum_value) }.should raise_error(RangeError)
+    -> { "hello".send(@method, bignum_value) }.should raise_error(RangeError)
   end
 end
 
@@ -140,23 +140,23 @@ describe :string_slice_index_length, shared: true do
   end
 
   it "raises a TypeError when idx or length can't be converted to an integer" do
-    lambda { "hello".send(@method, mock('x'), 0) }.should raise_error(TypeError)
-    lambda { "hello".send(@method, 0, mock('x')) }.should raise_error(TypeError)
+    -> { "hello".send(@method, mock('x'), 0) }.should raise_error(TypeError)
+    -> { "hello".send(@method, 0, mock('x')) }.should raise_error(TypeError)
 
     # I'm deliberately including this here.
     # It means that str.send(@method, other, idx) isn't supported.
-    lambda { "hello".send(@method, "", 0) }.should raise_error(TypeError)
+    -> { "hello".send(@method, "", 0) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when the given index or the given length is nil" do
-    lambda { "hello".send(@method, 1, nil)   }.should raise_error(TypeError)
-    lambda { "hello".send(@method, nil, 1)   }.should raise_error(TypeError)
-    lambda { "hello".send(@method, nil, nil) }.should raise_error(TypeError)
+    -> { "hello".send(@method, 1, nil)   }.should raise_error(TypeError)
+    -> { "hello".send(@method, nil, 1)   }.should raise_error(TypeError)
+    -> { "hello".send(@method, nil, nil) }.should raise_error(TypeError)
   end
 
   it "raises a RangeError if the index or length is too big" do
-    lambda { "hello".send(@method, bignum_value, 1) }.should raise_error(RangeError)
-    lambda { "hello".send(@method, 0, bignum_value) }.should raise_error(RangeError)
+    -> { "hello".send(@method, bignum_value, 1) }.should raise_error(RangeError)
+    -> { "hello".send(@method, 0, bignum_value) }.should raise_error(RangeError)
   end
 
   it "returns subclass instances" do
@@ -399,13 +399,13 @@ describe :string_slice_regexp_index, shared: true do
   end
 
   it "raises a TypeError when the given index can't be converted to Integer" do
-    lambda { "hello".send(@method, /(.)(.)(.)/, mock('x')) }.should raise_error(TypeError)
-    lambda { "hello".send(@method, /(.)(.)(.)/, {})        }.should raise_error(TypeError)
-    lambda { "hello".send(@method, /(.)(.)(.)/, [])        }.should raise_error(TypeError)
+    -> { "hello".send(@method, /(.)(.)(.)/, mock('x')) }.should raise_error(TypeError)
+    -> { "hello".send(@method, /(.)(.)(.)/, {})        }.should raise_error(TypeError)
+    -> { "hello".send(@method, /(.)(.)(.)/, [])        }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when the given index is nil" do
-    lambda { "hello".send(@method, /(.)(.)(.)/, nil) }.should raise_error(TypeError)
+    -> { "hello".send(@method, /(.)(.)(.)/, nil) }.should raise_error(TypeError)
   end
 
   it "returns subclass instances" do
@@ -460,7 +460,7 @@ describe :string_slice_string, shared: true do
     o = mock('x')
     o.should_not_receive(:to_str)
 
-    lambda { "hello".send(@method, o) }.should raise_error(TypeError)
+    -> { "hello".send(@method, o) }.should raise_error(TypeError)
   end
 
   it "returns a subclass instance when given a subclass instance" do
@@ -520,19 +520,19 @@ describe :string_slice_regexp_group, shared: true do
     end
 
     it "raises an IndexError if there is no capture for the given name" do
-      lambda do
+      -> do
         "hello there".send(@method, /[aeiou](.)\1/, 'non')
       end.should raise_error(IndexError)
     end
 
     it "raises a TypeError when the given name is not a String" do
-      lambda { "hello".send(@method, /(?<q>.)/, mock('x')) }.should raise_error(TypeError)
-      lambda { "hello".send(@method, /(?<q>.)/, {})        }.should raise_error(TypeError)
-      lambda { "hello".send(@method, /(?<q>.)/, [])        }.should raise_error(TypeError)
+      -> { "hello".send(@method, /(?<q>.)/, mock('x')) }.should raise_error(TypeError)
+      -> { "hello".send(@method, /(?<q>.)/, {})        }.should raise_error(TypeError)
+      -> { "hello".send(@method, /(?<q>.)/, [])        }.should raise_error(TypeError)
     end
 
     it "raises an IndexError when given the empty String as a group name" do
-      lambda { "hello".send(@method, /(?<q>)/, '') }.should raise_error(IndexError)
+      -> { "hello".send(@method, /(?<q>)/, '') }.should raise_error(IndexError)
     end
 
     it "returns subclass instances" do
@@ -552,6 +552,6 @@ end
 
 describe :string_slice_symbol, shared: true do
   it "raises TypeError" do
-    lambda { 'hello'.send(@method, :hello) }.should raise_error(TypeError)
+    -> { 'hello'.send(@method, :hello) }.should raise_error(TypeError)
   end
 end

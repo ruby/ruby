@@ -52,29 +52,29 @@ describe "The break statement in a captured block" do
 
   describe "when the invocation of the scope creating the block is still active" do
     it "raises a LocalJumpError when invoking the block from the scope creating the block" do
-      lambda { @program.break_in_method }.should raise_error(LocalJumpError)
+      -> { @program.break_in_method }.should raise_error(LocalJumpError)
       ScratchPad.recorded.should == [:a, :xa, :d, :b]
     end
 
     it "raises a LocalJumpError when invoking the block from a method" do
-      lambda { @program.break_in_nested_method }.should raise_error(LocalJumpError)
+      -> { @program.break_in_nested_method }.should raise_error(LocalJumpError)
       ScratchPad.recorded.should == [:a, :xa, :cc, :aa, :b]
     end
 
     it "raises a LocalJumpError when yielding to the block" do
-      lambda { @program.break_in_yielding_method }.should raise_error(LocalJumpError)
+      -> { @program.break_in_yielding_method }.should raise_error(LocalJumpError)
       ScratchPad.recorded.should == [:a, :xa, :cc, :aa, :b]
     end
   end
 
   describe "from a scope that has returned" do
     it "raises a LocalJumpError when calling the block from a method" do
-      lambda { @program.break_in_method_captured }.should raise_error(LocalJumpError)
+      -> { @program.break_in_method_captured }.should raise_error(LocalJumpError)
       ScratchPad.recorded.should == [:a, :za, :xa, :zd, :zb]
     end
 
     it "raises a LocalJumpError when yielding to the block" do
-      lambda { @program.break_in_yield_captured }.should raise_error(LocalJumpError)
+      -> { @program.break_in_yield_captured }.should raise_error(LocalJumpError)
       ScratchPad.recorded.should == [:a, :za, :xa, :zd, :aa, :zb]
     end
   end
@@ -100,7 +100,7 @@ describe "The break statement in a lambda" do
   end
 
   it "returns from the lambda" do
-    l = lambda {
+    l = -> {
       ScratchPad << :before
       break :foo
       ScratchPad << :after
@@ -111,7 +111,7 @@ describe "The break statement in a lambda" do
 
   it "returns from the call site if the lambda is passed as a block" do
     def mid(&b)
-      lambda {
+      -> {
         ScratchPad << :before
         b.call
         ScratchPad << :unreachable1
@@ -208,7 +208,7 @@ describe "Break inside a while loop" do
 
     it "passes the value returned by a method with omitted parenthesis and passed block" do
       obj = BreakSpecs::Block.new
-      lambda { break obj.method :value do |x| x end }.call.should == :value
+      -> { break obj.method :value do |x| x end }.call.should == :value
     end
   end
 

@@ -575,9 +575,9 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         begin
           type, data = read(subkey)
         rescue Error
-          next
+        else
+          yield subkey, type, data
         end
-        yield subkey, type, data
         index += 1
       end
       index

@@ -2545,9 +2545,12 @@ date_s__valid_civil_p(int argc, VALUE *argv, VALUE klass)
  *    Date.valid_date?(year, month, mday[, start=Date::ITALY])   ->  bool
  *
  * Returns true if the given calendar date is valid, and false if not.
+ * Valid in this context is whether the arguments passed to this
+ * method would be accepted by ::new.
  *
  *    Date.valid_date?(2001,2,3)	#=> true
  *    Date.valid_date?(2001,2,29)	#=> false
+ *    Date.valid_date?(2001,2,-1)	#=> true
  *
  * See also ::jd and ::civil.
  */
@@ -4608,6 +4611,10 @@ date_s__jisx0301(VALUE klass, VALUE str)
  * some typical JIS X 0301 formats.
  *
  *    Date.jisx0301('H13.02.03')		#=> #<Date: 2001-02-03 ...>
+ *
+ * For no-era year, legacy format, Heisei is assumed.
+ *
+ *    Date.jisx0301('13.02.03') 		#=> #<Date: 2001-02-03 ...>
  */
 static VALUE
 date_s_jisx0301(int argc, VALUE *argv, VALUE klass)
@@ -7035,9 +7042,13 @@ jisx0301_date_format(char *fmt, size_t size, VALUE jd, VALUE y)
 	    c = 'S';
 	    s = 1925;
 	}
-	else {
+	else if (d < 2458605) {
 	    c = 'H';
 	    s = 1988;
+	}
+	else {
+	    c = 'R';
+	    s = 2018;
 	}
 	snprintf(fmt, size, "%c%02ld" ".%%m.%%d", c, FIX2INT(y) - s);
 	return fmt;
@@ -8144,6 +8155,11 @@ datetime_s_httpdate(int argc, VALUE *argv, VALUE klass)
  * some typical JIS X 0301 formats.
  *
  *    DateTime.jisx0301('H13.02.03T04:05:06+07:00')
+ *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
+ *
+ * For no-era year, legacy format, Heisei is assumed.
+ *
+ *    DateTime.jisx0301('13.02.03T04:05:06+07:00')
  *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
  */
 static VALUE

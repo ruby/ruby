@@ -26,7 +26,7 @@ describe 'Binding#local_variable_defined?' do
 
   it 'returns true when a local variable is defined in a parent scope' do
     foo = 10
-    lambda {
+    -> {
       binding.local_variable_defined?(:foo)
     }.call.should == true
   end

@@ -79,7 +79,7 @@ module TimeSpecs
 
   class TimeWithFindTimezone < Time
     def self.find_timezone(name)
-      TimezoneWithName.new(name: name.to_s, offset: -10*60*60)
+      TimezoneWithName.new(name: name.to_s, offset: 5*3600+30*60)
     end
   end
 end

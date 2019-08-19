@@ -96,7 +96,7 @@ struct st_table {
 
 #define st_is_member(table,key) st_lookup((table),(key),(st_data_t *)0)
 
-enum st_retval {ST_CONTINUE, ST_STOP, ST_DELETE, ST_CHECK};
+enum st_retval {ST_CONTINUE, ST_STOP, ST_DELETE, ST_CHECK, ST_REPLACE};
 
 st_table *st_init_table(const struct st_hash_type *);
 st_table *st_init_table_with_size(const struct st_hash_type *, st_index_t);
@@ -118,6 +118,7 @@ typedef int st_update_callback_func(st_data_t *key, st_data_t *value, st_data_t 
  * results of hash() are same and compare() returns 0, otherwise the
  * behavior is undefined */
 int st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data_t arg);
+int st_foreach_with_replace(st_table *tab, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg);
 int st_foreach(st_table *, int (*)(ANYARGS), st_data_t);
 int st_foreach_check(st_table *, int (*)(ANYARGS), st_data_t, st_data_t);
 st_index_t st_keys(st_table *table, st_data_t *keys, st_index_t size);

@@ -18,6 +18,4 @@ describe "The -x command line option" do
     result = ruby_exe(embedded_ruby)
     result.should == "success\n"
   end
-
-  it "needs to be reviewed for spec completeness"
 end

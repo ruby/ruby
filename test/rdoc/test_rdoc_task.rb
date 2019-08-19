@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'minitest_helper'
+require_relative 'helper'
 begin
   require 'rake'
 rescue LoadError
@@ -20,19 +20,19 @@ class TestRDocTask < RDoc::TestCase
   end
 
   def test_inline_source
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       assert @t.inline_source
     end
 
     assert_equal "RDoc::Task#inline_source is deprecated\n", err
 
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       @t.inline_source = false
     end
 
     assert_equal "RDoc::Task#inline_source is deprecated\n", err
 
-    capture_io do
+    capture_output do
       assert @t.inline_source
     end
   end
@@ -131,7 +131,7 @@ class TestRDocTask < RDoc::TestCase
     assert Rake::Task[:"rdoc"]
     assert Rake::Task[:"rdoc:clean"]
     assert Rake::Task[:"rdoc:force"]
-    assert_raises(RuntimeError) { Rake::Task[:clobber_rdoc] }
+    assert_raise(RuntimeError) { Rake::Task[:clobber_rdoc] }
     assert_equal options, rd.name
   end
 
@@ -143,7 +143,7 @@ class TestRDocTask < RDoc::TestCase
   end
 
   def test_tasks_creation_with_custom_name_hash_raises_exception_if_invalid_option_given
-    assert_raises(ArgumentError) do
+    assert_raise(ArgumentError) do
       RDoc::Task.new(:foo => "bar")
     end
 

@@ -121,6 +121,27 @@ class TestRange < Test::Unit::TestCase
     assert_raise(RangeError) { (1...).max(3) }
   end
 
+  def test_minmax
+    assert_equal([1, 2], (1..2).minmax)
+    assert_equal([nil, nil], (2..1).minmax)
+    assert_equal([1, 1], (1...2).minmax)
+    assert_raise(RangeError) { (1..).minmax }
+    assert_raise(RangeError) { (1...).minmax }
+
+    assert_equal([1.0, 2.0], (1.0..2.0).minmax)
+    assert_equal([nil, nil], (2.0..1.0).minmax)
+    assert_raise(TypeError) { (1.0...2.0).minmax }
+    assert_raise(TypeError) { (1...1.5).minmax }
+    assert_raise(TypeError) { (1.5...2).minmax }
+
+    assert_equal([-0x80000002, -0x80000002], ((-0x80000002)...(-0x80000001)).minmax)
+
+    assert_equal([0, 0], (0..0).minmax)
+    assert_equal([nil, nil], (0...0).minmax)
+
+    assert_equal([2, 1], (1..2).minmax{|a, b| b <=> a})
+  end
+
   def test_initialize_twice
     r = eval("1..2")
     assert_raise(NameError) { r.instance_eval { initialize 3, 4 } }
@@ -203,6 +224,7 @@ class TestRange < Test::Unit::TestCase
     assert_not_equal((0..1).hash, (0...1).hash)
     assert_equal((0..nil).hash, (0..nil).hash)
     assert_not_equal((0..nil).hash, (0...nil).hash)
+    assert_kind_of(String, (0..1).hash.to_s)
   end
 
   def test_step
@@ -442,6 +464,8 @@ class TestRange < Test::Unit::TestCase
     assert_equal("a", ("a"..nil).first)
     assert_raise(RangeError) { (0..nil).last }
     assert_raise(RangeError) { (0..nil).last(3) }
+    assert_raise(RangeError) { (nil..0).first }
+    assert_raise(RangeError) { (nil..0).first(3) }
 
     assert_equal([0, 1, 2], (0..10).first(3.0))
     assert_equal([8, 9, 10], (0..10).last(3.0))
@@ -486,6 +510,10 @@ class TestRange < Test::Unit::TestCase
     assert_equal("0...1", (0...1).inspect)
     assert_equal("0..", (0..nil).inspect)
     assert_equal("0...", (0...nil).inspect)
+    assert_equal("..1", (nil..1).inspect)
+    assert_equal("...1", (nil...1).inspect)
+    assert_equal("nil..nil", (nil..nil).inspect)
+    assert_equal("nil...nil", (nil...nil).inspect)
 
     bug11767 = '[ruby-core:71811] [Bug #11767]'
     assert_predicate(("0".taint.."1").inspect, :tainted?, bug11767)
@@ -498,6 +526,14 @@ class TestRange < Test::Unit::TestCase
     assert_not_operator(0..10, :===, 11)
     assert_operator(5..nil, :===, 11)
     assert_not_operator(5..nil, :===, 0)
+  end
+
+  def test_eqq_string
+    assert_operator('A'..'Z', :===, 'ANA')
+    assert_not_operator('A'..'Z', :===, 'ana')
+    assert_operator('A'.., :===, 'ANA')
+    assert_operator(..'Z', :===, 'ANA')
+    assert_operator(nil..nil, :===, 'ANA')
   end
 
   def test_eqq_time

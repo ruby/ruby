@@ -21,7 +21,7 @@ describe "URI.join" do
   end
 
   it "raises an error if given no argument" do
-    lambda {
+    -> {
       URI.join
     }.should raise_error(ArgumentError)
   end

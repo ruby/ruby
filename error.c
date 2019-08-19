@@ -429,8 +429,9 @@ bug_report_file(const char *file, int line)
 
     if ((ssize_t)fwrite(buf, 1, len, out) == (ssize_t)len ||
 	(ssize_t)fwrite(buf, 1, len, (out = stdout)) == (ssize_t)len) {
-	return out;
+        return out;
     }
+
     return NULL;
 }
 
@@ -519,6 +520,17 @@ bug_report_begin_valist(FILE *out, const char *fmt, va_list args)
     snprintf(buf, sizeof(buf), "\n%s\n\n", ruby_description);
     fputs(buf, out);
     preface_dump(out);
+
+#if RUBY_DEVEL
+    const char *cmd = getenv("RUBY_ON_BUG");
+    if (cmd) {
+        snprintf(buf, sizeof(buf), "%s %d", cmd, getpid());
+        int r = system(buf);
+        if (r == -1) {
+            snprintf(buf, sizeof(buf), "Launching RUBY_ON_BUG command failed.");
+        }
+    }
+#endif
 }
 
 #define bug_report_begin(out, fmt) do { \
@@ -871,6 +883,7 @@ VALUE rb_eSecurityError;
 VALUE rb_eNotImpError;
 VALUE rb_eNoMemError;
 VALUE rb_cNameErrorMesg;
+VALUE rb_eNoMatchingPatternError;
 
 VALUE rb_eScriptError;
 VALUE rb_eSyntaxError;
@@ -883,12 +896,13 @@ static VALUE rb_eNOERROR;
 ID ruby_static_id_cause;
 #define id_cause ruby_static_id_cause
 static ID id_message, id_backtrace;
-static ID id_name, id_key, id_args, id_Errno, id_errno, id_i_path;
+static ID id_key, id_args, id_Errno, id_errno, id_i_path;
 static ID id_receiver, id_recv, id_iseq, id_local_variables;
 static ID id_private_call_p, id_top, id_bottom;
 #define id_bt idBt
 #define id_bt_locations idBt_locations
 #define id_mesg idMesg
+#define id_name idName
 
 #undef rb_exc_new_cstr
 
@@ -1097,7 +1111,7 @@ exc_inspect(VALUE exc)
     klass = CLASS_OF(exc);
     exc = rb_obj_as_string(exc);
     if (RSTRING_LEN(exc) == 0) {
-	return rb_str_dup(rb_class_name(klass));
+        return rb_class_name(klass);
     }
 
     str = rb_str_buf_new2("#<");
@@ -1112,7 +1126,7 @@ exc_inspect(VALUE exc)
 
 /*
  *  call-seq:
- *     exception.backtrace    -> array
+ *     exception.backtrace    -> array or nil
  *
  *  Returns any backtrace associated with the exception. The backtrace
  *  is an array of strings, each containing either ``filename:lineNo: in
@@ -1137,6 +1151,12 @@ exc_inspect(VALUE exc)
  *     prog.rb:2:in `a'
  *     prog.rb:6:in `b'
  *     prog.rb:10
+ *
+ *  In the case no backtrace has been set, +nil+ is returned
+ *
+ *    ex = StandardError.new
+ *    ex.backtrace
+ *    #=> nil
 */
 
 static VALUE
@@ -1177,13 +1197,13 @@ rb_get_backtrace(VALUE exc)
 
 /*
  *  call-seq:
- *     exception.backtrace_locations    -> array
+ *     exception.backtrace_locations    -> array or nil
  *
  *  Returns any backtrace associated with the exception. This method is
  *  similar to Exception#backtrace, but the backtrace is an array of
  *  Thread::Backtrace::Location.
  *
- *  Now, this method is not affected by Exception#set_backtrace().
+ *  This method is not affected by Exception#set_backtrace().
  */
 static VALUE
 exc_backtrace_locations(VALUE exc)
@@ -1393,6 +1413,32 @@ exit_success_p(VALUE exc)
 	return Qtrue;
 
     return Qfalse;
+}
+
+/*
+ * call-seq:
+ *   FrozenError.new(msg=nil, receiver=nil)  -> name_error
+ *
+ * Construct a new FrozenError exception. If given the <i>receiver</i>
+ * parameter may subsequently be examined using the FrozenError#receiver
+ * method.
+ *
+ *    a = [].freeze
+ *    raise FrozenError.new("can't modify frozen array", a)
+ */
+
+static VALUE
+frozen_err_initialize(int argc, VALUE *argv, VALUE self)
+{
+    VALUE mesg, recv;
+
+    argc = rb_scan_args(argc, argv, "02", &mesg, &recv);
+    if (argc > 1) {
+        argc--;
+        rb_ivar_set(self, id_recv, recv);
+    }
+    rb_call_super(argc, argv);
+    return self;
 }
 
 void
@@ -2332,7 +2378,7 @@ syserr_eqq(VALUE self, VALUE exc)
  * Document-class: fatal
  *
  * fatal is an Exception that is raised when Ruby has encountered a fatal
- * error and must exit.  You are not able to rescue fatal.
+ * error and must exit.
  */
 
 /*
@@ -2482,10 +2528,13 @@ Init_Exception(void)
 
     rb_eRuntimeError = rb_define_class("RuntimeError", rb_eStandardError);
     rb_eFrozenError = rb_define_class("FrozenError", rb_eRuntimeError);
+    rb_define_method(rb_eFrozenError, "initialize", frozen_err_initialize, -1);
+    rb_define_method(rb_eFrozenError, "receiver", name_err_receiver, 0);
     rb_eSecurityError = rb_define_class("SecurityError", rb_eException);
     rb_eNoMemError = rb_define_class("NoMemoryError", rb_eException);
     rb_eEncodingError = rb_define_class("EncodingError", rb_eStandardError);
     rb_eEncCompatError = rb_define_class_under(rb_cEncoding, "CompatibilityError", rb_eEncodingError);
+    rb_eNoMatchingPatternError = rb_define_class("NoMatchingPatternError", rb_eRuntimeError);
 
     syserr_tbl = st_init_numtable();
     rb_eSystemCallError = rb_define_class("SystemCallError", rb_eStandardError);
@@ -2508,7 +2557,6 @@ Init_Exception(void)
     id_cause = rb_intern_const("cause");
     id_message = rb_intern_const("message");
     id_backtrace = rb_intern_const("backtrace");
-    id_name = rb_intern_const("name");
     id_key = rb_intern_const("key");
     id_args = rb_intern_const("args");
     id_receiver = rb_intern_const("receiver");
@@ -2844,22 +2892,50 @@ rb_error_frozen(const char *what)
 }
 
 void
+rb_frozen_error_raise(VALUE frozen_obj, const char *fmt, ...)
+{
+    va_list args;
+    VALUE exc, mesg;
+
+    va_start(args, fmt);
+    mesg = rb_vsprintf(fmt, args);
+    va_end(args);
+    exc = rb_exc_new3(rb_eFrozenError, mesg);
+    rb_ivar_set(exc, id_recv, frozen_obj);
+    rb_exc_raise(exc);
+}
+
+static VALUE
+inspect_frozen_obj(VALUE obj, VALUE mesg, int recur)
+{
+    if (recur) {
+        rb_str_cat_cstr(mesg, " ...");
+    }
+    else {
+        rb_str_append(mesg, rb_inspect(obj));
+    }
+    return mesg;
+}
+
+void
 rb_error_frozen_object(VALUE frozen_obj)
 {
     VALUE debug_info;
     const ID created_info = id_debug_created_info;
+    VALUE mesg = rb_sprintf("can't modify frozen %"PRIsVALUE": ",
+                            CLASS_OF(frozen_obj));
+    VALUE exc = rb_exc_new_str(rb_eFrozenError, mesg);
+
+    rb_ivar_set(exc, id_recv, frozen_obj);
+    rb_exec_recursive(inspect_frozen_obj, frozen_obj, mesg);
 
     if (!NIL_P(debug_info = rb_attr_get(frozen_obj, created_info))) {
 	VALUE path = rb_ary_entry(debug_info, 0);
 	VALUE line = rb_ary_entry(debug_info, 1);
 
-	rb_raise(rb_eFrozenError, "can't modify frozen %"PRIsVALUE", created at %"PRIsVALUE":%"PRIsVALUE,
-		 CLASS_OF(frozen_obj), path, line);
+        rb_str_catf(mesg, ", created at %"PRIsVALUE":%"PRIsVALUE, path, line);
     }
-    else {
-	rb_raise(rb_eFrozenError, "can't modify frozen %"PRIsVALUE,
-		 CLASS_OF(frozen_obj));
-    }
+    rb_exc_raise(exc);
 }
 
 #undef rb_check_frozen

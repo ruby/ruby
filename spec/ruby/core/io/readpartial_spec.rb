@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: binary -*-
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
@@ -15,10 +15,10 @@ describe "IO#readpartial" do
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.readpartial(10) }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.readpartial(10) }.should raise_error(IOError)
 
     @rd.close
-    lambda { @rd.readpartial(10) }.should raise_error(IOError)
+    -> { @rd.readpartial(10) }.should raise_error(IOError)
   end
 
   it "reads at most the specified number of bytes" do
@@ -70,23 +70,23 @@ describe "IO#readpartial" do
     @wr.write("abc")
     @wr.close
     @rd.readpartial(10).should == 'abc'
-    lambda { @rd.readpartial(10) }.should raise_error(EOFError)
+    -> { @rd.readpartial(10) }.should raise_error(EOFError)
   end
 
   it "discards the existing buffer content upon error" do
     buffer = 'hello'
     @wr.close
-    lambda { @rd.readpartial(1, buffer) }.should raise_error(EOFError)
+    -> { @rd.readpartial(1, buffer) }.should raise_error(EOFError)
     buffer.should be_empty
   end
 
   it "raises IOError if the stream is closed" do
     @wr.close
-    lambda { @rd.readpartial(1) }.should raise_error(IOError)
+    -> { @rd.readpartial(1) }.should raise_error(IOError)
   end
 
   it "raises ArgumentError if the negative argument is provided" do
-    lambda { @rd.readpartial(-1) }.should raise_error(ArgumentError)
+    -> { @rd.readpartial(-1) }.should raise_error(ArgumentError)
   end
 
   it "immediately returns an empty string if the length argument is 0" do

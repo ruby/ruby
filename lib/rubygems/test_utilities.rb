@@ -241,21 +241,22 @@ class Gem::TestCase::SpecFetcherSetup
 
   def execute_operations # :nodoc:
     @operations.each do |operation, *arguments|
+      block = arguments.pop
       case operation
       when :gem then
-        spec, gem = @test.util_gem(*arguments, &arguments.pop)
+        spec, gem = @test.util_gem(*arguments, &block)
 
         write_spec spec
 
         @gems[spec] = gem
         @installed << spec
       when :download then
-        spec, gem = @test.util_gem(*arguments, &arguments.pop)
+        spec, gem = @test.util_gem(*arguments, &block)
 
         @gems[spec] = gem
         @downloaded << spec
       when :spec then
-        spec = @test.util_spec(*arguments, &arguments.pop)
+        spec = @test.util_spec(*arguments, &block)
 
         write_spec spec
 

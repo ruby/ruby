@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'stringio'
 require 'rubygems/user_interaction'
 
 ##
@@ -46,6 +45,7 @@ class Gem::MockGemUi < Gem::StreamUI
   end
 
   def initialize(input = "")
+    require 'stringio'
     ins = StringIO.new input
     outs = StringIO.new
     errs = StringIO.new

@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 require 'rubygems'
 require 'rubygems/request'
+require 'rubygems/request/connection_pools'
+require 'rubygems/s3_uri_signer'
 require 'rubygems/uri_formatter'
 require 'rubygems/user_interaction'
-require 'rubygems/request/connection_pools'
 require 'resolv'
+require 'rubygems/deprecate'
 
 ##
 # RemoteFetcher handles the details of fetching gems and gem information from
@@ -13,6 +15,7 @@ require 'resolv'
 class Gem::RemoteFetcher
 
   include Gem::UserInteraction
+  extend Gem::Deprecate
 
   ##
   # A FetchError exception wraps up the various possible IO and HTTP failures
@@ -173,7 +176,7 @@ class Gem::RemoteFetcher
         path = source_uri.path
         path = File.dirname(path) if File.extname(path) == '.gem'
 
-        remote_gem_path = correct_for_windows_path(File.join(path, 'gems', gem_file_name))
+        remote_gem_path = Gem::Util.correct_for_windows_path(File.join(path, 'gems', gem_file_name))
 
         FileUtils.cp(remote_gem_path, local_gem_path)
       rescue Errno::EACCES
@@ -210,7 +213,7 @@ class Gem::RemoteFetcher
   # File Fetcher. Dispatched by +fetch_path+. Use it instead.
 
   def fetch_file(uri, *_)
-    Gem.read_binary correct_for_windows_path uri.path
+    Gem.read_binary Gem::Util.correct_for_windows_path uri.path
   end
 
   ##
@@ -275,7 +278,7 @@ class Gem::RemoteFetcher
   rescue Timeout::Error
     raise UnknownHostError.new('timed out', uri.to_s)
   rescue IOError, SocketError, SystemCallError,
-    *(OpenSSL::SSL::SSLError if defined?(OpenSSL)) => e
+         *(OpenSSL::SSL::SSLError if defined?(OpenSSL)) => e
     if e.message =~ /getaddrinfo/
       raise UnknownHostError.new('no such name', uri.to_s)
     else
@@ -284,8 +287,17 @@ class Gem::RemoteFetcher
   end
 
   def fetch_s3(uri, mtime = nil, head = false)
-    public_uri = sign_s3_url(uri)
+    begin
+      public_uri = s3_uri_signer(uri).sign
+    rescue Gem::S3URISigner::ConfigurationError, Gem::S3URISigner::InstanceProfileError => e
+      raise FetchError.new(e.message, "s3://#{uri.host}")
+    end
     fetch_https public_uri, mtime, head
+  end
+
+  # we have our own signing code here to avoid a dependency on the aws-sdk gem
+  def s3_uri_signer(uri)
+    Gem::S3URISigner.new(uri)
   end
 
   ##
@@ -311,19 +323,13 @@ class Gem::RemoteFetcher
   ##
   # Returns the size of +uri+ in bytes.
 
-  def fetch_size(uri) # TODO: phase this out
+  def fetch_size(uri)
     response = fetch_path(uri, nil, true)
 
     response['content-length'].to_i
   end
 
-  def correct_for_windows_path(path)
-    if path[0].chr == '/' && path[1].chr =~ /[a-z]/i && path[2].chr == ':'
-      path[1..-1]
-    else
-      path
-    end
-  end
+  deprecate :fetch_size, :none, 2019, 12
 
   ##
   # Performs a Net::HTTP request of type +request_class+ on +uri+ returning
@@ -349,31 +355,6 @@ class Gem::RemoteFetcher
     @pools.each_value {|pool| pool.close_all}
   end
 
-  protected
-
-  # we have our own signing code here to avoid a dependency on the aws-sdk gem
-  # fortunately, a simple GET request isn't too complex to sign properly
-  def sign_s3_url(uri, expiration = nil)
-    require 'base64'
-    require 'openssl'
-
-    id, secret = s3_source_auth uri
-
-    expiration ||= s3_expiration
-    canonical_path = "/#{uri.host}#{uri.path}"
-    payload = "GET\n\n\n#{expiration}\n#{canonical_path}"
-    digest = OpenSSL::HMAC.digest('sha1', secret, payload)
-    # URI.escape is deprecated, and there isn't yet a replacement that does quite what we want
-    signature = Base64.encode64(digest).gsub("\n", '').gsub(/[\+\/=]/) { |c| BASE64_URI_TRANSLATE[c] }
-    URI.parse("https://#{uri.host}.s3.amazonaws.com#{uri.path}?AWSAccessKeyId=#{id}&Expires=#{expiration}&Signature=#{signature}")
-  end
-
-  def s3_expiration
-    (Time.now + 3600).to_i # one hour from now
-  end
-
-  BASE64_URI_TRANSLATE = { '+' => '%2B', '/' => '%2F', '=' => '%3D' }.freeze
-
   private
 
   def proxy_for(proxy, uri)
@@ -384,23 +365,6 @@ class Gem::RemoteFetcher
     @pool_lock.synchronize do
       @pools[proxy] ||= Gem::Request::ConnectionPools.new proxy, @cert_files
     end
-  end
-
-  def s3_source_auth(uri)
-    return [uri.user, uri.password] if uri.user && uri.password
-
-    s3_source = Gem.configuration[:s3_source] || Gem.configuration['s3_source']
-    host = uri.host
-    raise FetchError.new("no s3_source key exists in .gemrc", "s3://#{host}") unless s3_source
-
-    auth = s3_source[host] || s3_source[host.to_sym]
-    raise FetchError.new("no key for host #{host} in s3_source in .gemrc", "s3://#{host}") unless auth
-
-    id = auth[:id] || auth['id']
-    secret = auth[:secret] || auth['secret']
-    raise FetchError.new("s3_source for #{host} missing id or secret", "s3://#{host}") unless id and secret
-
-    [id, secret]
   end
 
 end

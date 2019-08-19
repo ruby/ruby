@@ -65,6 +65,11 @@ class Gem::Installer
 
   attr_reader :options
 
+  ##
+  # The gem package instance.
+
+  attr_reader :package
+
   @path_warning = false
 
   @install_lock = Mutex.new
@@ -193,7 +198,7 @@ class Gem::Installer
 
     @bin_dir = options[:bin_dir] if options[:bin_dir]
 
-    if options[:user_install] and not options[:unpack]
+    if options[:user_install]
       @gem_home = Gem.user_dir
       @bin_dir = Gem.bindir gem_home unless options[:bin_dir]
       check_that_user_bin_dir_is_in_path
@@ -352,7 +357,7 @@ class Gem::Installer
   def run_pre_install_hooks # :nodoc:
     Gem.pre_install_hooks.each do |hook|
       if hook.call(self) == false
-        location = " at #{$1}" if hook.inspect =~ /@(.*:\d+)/
+        location = " at #{$1}" if hook.inspect =~ /[ @](.*:\d+)/
 
         message = "pre-install hook#{location} failed for #{spec.full_name}"
         raise Gem::InstallError, message
@@ -365,7 +370,7 @@ class Gem::Installer
       if hook.call(self) == false
         FileUtils.rm_rf gem_dir
 
-        location = " at #{$1}" if hook.inspect =~ /@(.*:\d+)/
+        location = " at #{$1}" if hook.inspect =~ /[ @](.*:\d+)/
 
         message = "post-build hook#{location} failed for #{spec.full_name}"
         raise Gem::InstallError, message
@@ -428,6 +433,7 @@ class Gem::Installer
     @gem_dir = directory
     extract_files
   end
+  deprecate :unpack, :none, 2020, 04
 
   ##
   # The location of the spec file that is installed.
@@ -442,7 +448,7 @@ class Gem::Installer
   #
 
   def default_spec_file
-    File.join Gem::Specification.default_specifications_dir, "#{spec.full_name}.gemspec"
+    File.join Gem.default_specifications_dir, "#{spec.full_name}.gemspec"
   end
 
   ##
@@ -726,10 +732,9 @@ class Gem::Installer
     end
   end
 
-  def verify_gem_home(unpack = false) # :nodoc:
+  def verify_gem_home # :nodoc:
     FileUtils.mkdir_p gem_home, :mode => options[:dir_mode] && 0755
-    raise Gem::FilePermissionError, gem_home unless
-      unpack or File.writable?(gem_home)
+    raise Gem::FilePermissionError, gem_home unless File.writable?(gem_home)
   end
 
   def verify_spec
@@ -806,7 +811,7 @@ TEXT
       # stub & ruby.exe withing same folder.  Portable
       <<-TEXT
 @ECHO OFF
-@"%~dp0ruby.exe" "%~dpn0" %*
+@"%~dp0#{ruby_exe}" "%~dpn0" %*
       TEXT
     elsif bindir.downcase.start_with? rb_topdir.downcase
       # stub within ruby folder, but not standard bin.  Portable
@@ -816,14 +821,14 @@ TEXT
       rel  = to.relative_path_from from
       <<-TEXT
 @ECHO OFF
-@"%~dp0#{rel}/ruby.exe" "%~dpn0" %*
+@"%~dp0#{rel}/#{ruby_exe}" "%~dpn0" %*
       TEXT
     else
       # outside ruby folder, maybe -user-install or bundler.  Portable, but ruby
       # is dependent on PATH
       <<-TEXT
 @ECHO OFF
-@ruby.exe "%~dpn0" %*
+@#{ruby_exe} "%~dpn0" %*
       TEXT
     end
   end
@@ -898,7 +903,7 @@ TEXT
   # The dependent check will be skipped if the install is ignoring dependencies.
 
   def pre_install_checks
-    verify_gem_home options[:unpack]
+    verify_gem_home
 
     # The name and require_paths must be verified first, since it could contain
     # ruby code that would be eval'ed in #ensure_loadable_spec

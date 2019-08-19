@@ -54,7 +54,7 @@ rb_coverage_start(int argc, VALUE *argv, VALUE klass)
     }
 
     if (mode & COVERAGE_TARGET_METHODS) {
-	me2counter = rb_hash_new_compare_by_id();
+        me2counter = rb_ident_hash_new();
     }
     else {
 	me2counter = Qnil;

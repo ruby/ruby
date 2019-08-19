@@ -18,8 +18,8 @@ describe "String#+" do
   end
 
   it "raises a TypeError when given any object that fails #to_str" do
-    lambda { "" + Object.new }.should raise_error(TypeError)
-    lambda { "" + 65 }.should raise_error(TypeError)
+    -> { "" + Object.new }.should raise_error(TypeError)
+    -> { "" + 65 }.should raise_error(TypeError)
   end
 
   it "doesn't return subclass instances" do

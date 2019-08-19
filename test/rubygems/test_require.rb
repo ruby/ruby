@@ -41,6 +41,10 @@ class TestGemRequire < Gem::TestCase
     assert require(path), "'#{path}' was already required"
   end
 
+  def refute_require(path)
+    refute require(path), "'#{path}' was not yet required"
+  end
+
   # Providing -I on the commandline should always beat gems
   def test_dash_i_beats_gems
     a1 = util_spec "a", "1", {"b" => "= 1"}, "lib/test_gem_require_a.rb"
@@ -66,6 +70,7 @@ class TestGemRequire < Gem::TestCase
     assert_require 'test_gem_require_a'
     assert_require 'b/c' # this should be required from -I
     assert_equal "world", ::Object::HELLO
+    assert_equal %w(a-1 b-1), loaded_spec_names
   ensure
     $LOAD_PATH.replace lp
     Object.send :remove_const, :HELLO if Object.const_defined? :HELLO
@@ -80,6 +85,39 @@ class TestGemRequire < Gem::TestCase
         FILE_EXIT_LATCH.await
       end
     end
+  end
+
+  # Providing -I on the commandline should always beat gems
+  def test_dash_i_beats_default_gems
+    a1 = new_default_spec "a", "1", {"b" => "= 1"}, "test_gem_require_a.rb"
+    b1 = new_default_spec "b", "1", {"c" => "> 0"}, "b/c.rb"
+    c1 = new_default_spec "c", "1", nil, "c/c.rb"
+    c2 = new_default_spec "c", "2", nil, "c/c.rb"
+
+    install_default_specs c1, c2, b1, a1
+
+    dir = Dir.mktmpdir("test_require", @tempdir)
+    dash_i_arg = File.join dir, 'lib'
+
+    c_rb = File.join dash_i_arg, 'c', 'c.rb'
+
+    FileUtils.mkdir_p File.dirname c_rb
+    File.open(c_rb, 'w') { |f| f.write "class Object; HELLO = 'world' end" }
+
+    assert_require 'test_gem_require_a'
+
+    lp = $LOAD_PATH.dup
+
+    # Pretend to provide a commandline argument that overrides a file in gem b
+    $LOAD_PATH.unshift dash_i_arg
+
+    assert_require 'b/c'
+    assert_require 'c/c' # this should be required from -I
+    assert_equal "world", ::Object::HELLO
+    assert_equal %w(a-1 b-1), loaded_spec_names
+  ensure
+    $LOAD_PATH.replace lp
+    Object.send :remove_const, :HELLO if Object.const_defined? :HELLO
   end
 
   def test_concurrent_require
@@ -162,13 +200,25 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_activate_via_require_respects_loaded_files
+    skip "Not sure what's going on. If another spec creates a 'a' gem before
+      this test, somehow require will load the benchmark in b, and ignore that the
+      stdlib one is already in $LOADED_FEATURES?. Reproducible by running the
+      spaceship_specific_file test before this one" if java_platform?
+
+    lp = $LOAD_PATH.dup
+    lib_dir = File.expand_path(File.join(File.dirname(__FILE__), "../../lib"))
+    if File.exist?(lib_dir)
+      $LOAD_PATH.delete lib_dir
+      $LOAD_PATH.push lib_dir
+    end
+
     a1 = util_spec "a", "1", {"b" => ">= 1"}, "lib/test_gem_require_a.rb"
     b1 = util_spec "b", "1", nil, "lib/benchmark.rb"
     b2 = util_spec "b", "2", nil, "lib/benchmark.rb"
 
     install_specs b1, b2, a1
 
-    require 'test_gem_require_a'
+    assert_require 'test_gem_require_a'
     assert_equal unresolved_names, ["b (>= 1)"]
 
     refute require('benchmark'), "benchmark should have already been loaded"
@@ -179,6 +229,8 @@ class TestGemRequire < Gem::TestCase
     # the same behavior as eager loading would have.
 
     assert_equal %w(a-1 b-2), loaded_spec_names
+  ensure
+    $LOAD_PATH.replace lp unless java_platform?
   end
 
   def test_already_activated_direct_conflict
@@ -296,6 +348,22 @@ class TestGemRequire < Gem::TestCase
     assert_equal %w(default-2.0.0.0), loaded_spec_names
   end
 
+  def test_default_gem_require_activates_just_once
+    default_gem_spec = new_default_spec("default", "2.0.0.0",
+                                        nil, "default/gem.rb")
+    install_default_specs(default_gem_spec)
+
+    assert_require "default/gem"
+
+    times_called = 0
+
+    Kernel.stub(:gem, ->(name, requirement) { times_called += 1 }) do
+      refute_require "default/gem"
+    end
+
+    assert_equal 0, times_called
+  end
+
   def test_realworld_default_gem
     begin
       gem 'json'
@@ -321,6 +389,19 @@ class TestGemRequire < Gem::TestCase
     install_specs(normal_gem_spec)
     assert_require "default/gem"
     assert_equal %w(default-3.0), loaded_spec_names
+  end
+
+  def test_default_gem_prerelease
+    default_gem_spec = new_default_spec("default", "2.0.0",
+                                        nil, "default/gem.rb")
+    install_default_specs(default_gem_spec)
+
+    normal_gem_higher_prerelease_spec = util_spec("default", "3.0.0.rc2", nil,
+                                                  "lib/default/gem.rb")
+    install_default_specs(normal_gem_higher_prerelease_spec)
+
+    assert_require "default/gem"
+    assert_equal %w(default-3.0.0.rc2), loaded_spec_names
   end
 
   def loaded_spec_names
@@ -418,7 +499,8 @@ class TestGemRequire < Gem::TestCase
     end
   end
 
-  if RUBY_VERSION >= "2.5"
+  # uplevel is 2.5+ only and jruby has some issues with it
+  if RUBY_VERSION >= "2.5" && !java_platform?
     def test_no_kernel_require_in_warn_with_uplevel
       lib = File.realpath("../../../lib", __FILE__)
       Dir.mktmpdir("warn_test") do |dir|

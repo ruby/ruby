@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: binary -*-
 describe :io_putc, shared: true do
   after :each do
     @io.close if @io && !@io.closed?
@@ -40,18 +40,18 @@ describe :io_putc, shared: true do
 
   it "raises IOError on a closed stream" do
     @io.close
-    lambda { @io_object.send(@method, "a") }.should raise_error(IOError)
+    -> { @io_object.send(@method, "a") }.should raise_error(IOError)
   end
 
   it "raises a TypeError when passed nil" do
-    lambda { @io_object.send(@method, nil) }.should raise_error(TypeError)
+    -> { @io_object.send(@method, nil) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when passed false" do
-    lambda { @io_object.send(@method, false) }.should raise_error(TypeError)
+    -> { @io_object.send(@method, false) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when passed true" do
-    lambda { @io_object.send(@method, true) }.should raise_error(TypeError)
+    -> { @io_object.send(@method, true) }.should raise_error(TypeError)
   end
 end

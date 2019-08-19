@@ -9,7 +9,7 @@ with_feature :unix_socket do
       end
 
       it "raises an exception" do
-        lambda { @addrinfo.unix_path }.should raise_error(SocketError)
+        -> { @addrinfo.unix_path }.should raise_error(SocketError)
       end
 
     end
@@ -20,7 +20,7 @@ with_feature :unix_socket do
       end
 
       it "raises an exception" do
-        lambda { @addrinfo.unix_path }.should raise_error(SocketError)
+        -> { @addrinfo.unix_path }.should raise_error(SocketError)
       end
     end
 

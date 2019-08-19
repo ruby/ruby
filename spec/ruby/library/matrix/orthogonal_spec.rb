@@ -18,7 +18,7 @@ describe "Matrix.orthogonal?" do
       Matrix.empty(0, 2),
       Matrix.empty(2, 0),
     ].each do |rectangular_matrix|
-      lambda {
+      -> {
         rectangular_matrix.orthogonal?
       }.should raise_error(Matrix::ErrDimensionMismatch)
     end

@@ -33,29 +33,29 @@ describe "IO#reopen" do
   it "raises an IOError if the object returned by #to_io is closed" do
     obj = mock("io")
     obj.should_receive(:to_io).and_return(IOSpecs.closed_io)
-    lambda { @io.reopen obj }.should raise_error(IOError)
+    -> { @io.reopen obj }.should raise_error(IOError)
   end
 
   it "raises a TypeError if #to_io does not return an IO instance" do
     obj = mock("io")
     obj.should_receive(:to_io).and_return("something else")
-    lambda { @io.reopen obj }.should raise_error(TypeError)
+    -> { @io.reopen obj }.should raise_error(TypeError)
   end
 
   it "raises an IOError when called on a closed stream with an object" do
     @io.close
     obj = mock("io")
     obj.should_not_receive(:to_io)
-    lambda { @io.reopen(STDOUT) }.should raise_error(IOError)
+    -> { @io.reopen(STDOUT) }.should raise_error(IOError)
   end
 
   it "raises an IOError if the IO argument is closed" do
-    lambda { @io.reopen(IOSpecs.closed_io) }.should raise_error(IOError)
+    -> { @io.reopen(IOSpecs.closed_io) }.should raise_error(IOError)
   end
 
   it "raises an IOError when called on a closed stream with an IO" do
     @io.close
-    lambda { @io.reopen(STDOUT) }.should raise_error(IOError)
+    -> { @io.reopen(STDOUT) }.should raise_error(IOError)
   end
 end
 
@@ -145,23 +145,6 @@ describe "IO#reopen with a String" do
     File.read(@other_name).should == "new data"
   end
 
-  # File descriptor numbers are not predictable in multi-threaded code;
-  # MJIT will be opening/closing files the background
-  without_feature :mjit do
-    it "closes the file descriptor obtained by opening the new file" do
-      @io = new_io @name, "w"
-
-      @other_io = File.open @other_name, "w"
-      max = @other_io.fileno
-      @other_io.close
-
-      @io.reopen @other_name
-
-      @other_io = File.open @other_name, "w"
-      @other_io.fileno.should == max
-    end
-  end
-
   it "always resets the close-on-exec flag to true on non-STDIO objects" do
     @io = new_io @name, "w"
 
@@ -205,7 +188,7 @@ describe "IO#reopen with a String" do
 
   it "raises an Errno::ENOENT if the file does not exist and the IO is not opened in write mode" do
     @io = new_io @name, "r"
-    lambda { @io.reopen(@other_name) }.should raise_error(Errno::ENOENT)
+    -> { @io.reopen(@other_name) }.should raise_error(Errno::ENOENT)
   end
 end
 

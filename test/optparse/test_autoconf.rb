@@ -32,6 +32,13 @@ class TestOptionParser::AutoConf < Test::Unit::TestCase
     assert_equal(true, @bar)
   end
 
+  def test_enable_value
+    @opt.parse!(%w"--enable-foo=A")
+    assert_equal("A", @foo)
+    @opt.parse!(%w"--enable-bar=B")
+    assert_equal("B", @bar)
+  end
+
   def test_disable
     @opt.parse!(%w"--disable-foo")
     assert_equal(false, @foo)

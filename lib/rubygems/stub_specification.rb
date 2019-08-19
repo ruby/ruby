@@ -113,8 +113,7 @@ class Gem::StubSpecification < Gem::BasicSpecification
       begin
         saved_lineno = $.
 
-        # TODO It should be use `File.open`, but bundler-1.16.1 example expects Kernel#open.
-        open loaded_from, OPEN_MODE do |file|
+        File.open loaded_from, OPEN_MODE do |file|
           begin
             file.readline # discard encoding line
             stubline = file.readline.chomp

@@ -42,6 +42,6 @@ describe "Comparable#>=" do
     b = ComparableSpecs::Weird.new(20)
 
     a.should_receive(:<=>).any_number_of_times.and_return(nil)
-    lambda { (a >= b) }.should raise_error(ArgumentError)
+    -> { (a >= b) }.should raise_error(ArgumentError)
   end
 end

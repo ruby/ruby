@@ -36,7 +36,7 @@ describe "URI#+" do
   end
 
   it "raises a URI::BadURIError when adding two relative URIs" do
-    lambda {URI.parse('a/b/c') + "d"}.should raise_error(URI::BadURIError)
+    -> {URI.parse('a/b/c') + "d"}.should raise_error(URI::BadURIError)
   end
 
   #Todo: make more BDD?

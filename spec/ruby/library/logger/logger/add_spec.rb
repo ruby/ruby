@@ -52,7 +52,7 @@ describe "Logger#add" do
   end
 
   it "receives a block" do
-    lambda {
+    -> {
       @logger.log(nil, "test", "TestApp") do
         1+1
       end
@@ -61,7 +61,7 @@ describe "Logger#add" do
 
   it "calls the block if message is nil" do
     temp = 0
-    lambda {
+    -> {
       @logger.log(nil, nil, "TestApp") do
         temp = 1+1
       end
@@ -71,7 +71,7 @@ describe "Logger#add" do
 
   it "ignores the block if the message is not nil" do
     temp = 0
-    lambda {
+    -> {
       @logger.log(nil, "not nil", "TestApp") do
         temp = 1+1
       end

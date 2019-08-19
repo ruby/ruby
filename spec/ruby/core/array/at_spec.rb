@@ -47,10 +47,10 @@ describe "Array#at" do
   end
 
   it "raises a TypeError when the passed argument can't be coerced to Integer" do
-    lambda { [].at("cat") }.should raise_error(TypeError)
+    -> { [].at("cat") }.should raise_error(TypeError)
   end
 
   it "raises an ArgumentError when 2 or more arguments are passed" do
-    lambda { [:a, :b].at(0,1) }.should raise_error(ArgumentError)
+    -> { [:a, :b].at(0,1) }.should raise_error(ArgumentError)
   end
 end

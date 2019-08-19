@@ -137,7 +137,7 @@ module REXML
             case c.ord
             when *VALID_CHAR
             else
-              raise "Illegal character #{c.inspect} in raw string \"#{string}\""
+              raise "Illegal character #{c.inspect} in raw string #{string.inspect}"
             end
           end
         else
@@ -145,7 +145,7 @@ module REXML
             case c.unpack('U')
             when *VALID_CHAR
             else
-              raise "Illegal character #{c.inspect} in raw string \"#{string}\""
+              raise "Illegal character #{c.inspect} in raw string #{string.inspect}"
             end
           end
         end
@@ -154,13 +154,13 @@ module REXML
       # context sensitive
       string.scan(pattern) do
         if $1[-1] != ?;
-          raise "Illegal character '#{$1}' in raw string \"#{string}\""
+          raise "Illegal character #{$1.inspect} in raw string #{string.inspect}"
         elsif $1[0] == ?&
           if $5 and $5[0] == ?#
             case ($5[1] == ?x ? $5[2..-1].to_i(16) : $5[1..-1].to_i)
             when *VALID_CHAR
             else
-              raise "Illegal character '#{$1}' in raw string \"#{string}\""
+              raise "Illegal character #{$1.inspect} in raw string #{string.inspect}"
             end
           # FIXME: below can't work but this needs API change.
           # elsif @parent and $3 and !SUBSTITUTES.include?($1)

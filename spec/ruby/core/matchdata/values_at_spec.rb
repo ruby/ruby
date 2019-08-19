@@ -11,13 +11,11 @@ describe "MatchData#values_at" do
     end
   end
 
-  ruby_version_is '2.4' do
-    it 'slices captures with the given names' do
-      /(?<a>.)(?<b>.)(?<c>.)/.match('012').values_at(:c, :a).should == ['2', '0']
-    end
+  it 'slices captures with the given names' do
+    /(?<a>.)(?<b>.)(?<c>.)/.match('012').values_at(:c, :a).should == ['2', '0']
+  end
 
-    it 'takes names and indices' do
-      /\A(?<a>.)(?<b>.)\z/.match('01').values_at(0, 1, 2, :a, :b).should == ['01', '0', '1', '0', '1']
-    end
+  it 'takes names and indices' do
+    /\A(?<a>.)(?<b>.)\z/.match('01').values_at(0, 1, 2, :a, :b).should == ['01', '0', '1', '0', '1']
   end
 end

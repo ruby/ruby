@@ -3,10 +3,13 @@
 
 require "test/unit"
 
-class BreakTest
+class TestGraphemeBreaksFromFile < Test::Unit::TestCase
+end
+
+class TestGraphemeBreaksFromFile::BreakTest
   attr_reader :clusters, :string, :comment, :line_number
 
-  def initialize (line_number, data, comment)
+  def initialize(line_number, data, comment)
     @line_number = line_number
     @comment = comment
     @clusters = data.sub(/\A\s*÷\s*/, '')

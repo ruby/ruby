@@ -100,3 +100,18 @@ Lint/UriRegexp:
 Lint/Debugger:
   Exclude:
     - 'core/binding/fixtures/irb.rb'
+
+Style/Lambda:
+  Enabled: true
+  EnforcedStyle: literal
+  Exclude:
+    - 'language/lambda_spec.rb'
+    - 'language/proc_spec.rb'
+    - 'core/kernel/lambda_spec.rb'
+
+Style/EmptyLambdaParameter:
+  Enabled: true
+
+Style/StabbyLambdaParentheses:
+  Enabled: true
+  EnforcedStyle: require_no_parentheses

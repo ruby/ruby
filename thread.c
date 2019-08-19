@@ -66,16 +66,21 @@
 #include "ruby/config.h"
 #include "ruby/io.h"
 #include "eval_intern.h"
-#include "gc.h"
 #include "timev.h"
 #include "ruby/thread.h"
 #include "ruby/thread_native.h"
 #include "ruby/debug.h"
+#include "gc.h"
 #include "internal.h"
 #include "iseq.h"
 #include "vm_core.h"
 #include "mjit.h"
 #include "hrtime.h"
+
+#ifdef __linux__
+// Normally,  gcc(1)  translates  calls to alloca() with inlined code.  This is not done when either the -ansi, -std=c89, -std=c99, or the -std=c11 option is given and the header <alloca.h> is not included.
+#include <alloca.h>
+#endif
 
 #ifndef USE_NATIVE_THREAD_PRIORITY
 #define USE_NATIVE_THREAD_PRIORITY 0
@@ -143,16 +148,9 @@ static inline int blocking_region_begin(rb_thread_t *th, struct rb_blocking_regi
 					rb_unblock_function_t *ubf, void *arg, int fail_if_interrupted);
 static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region);
 
-#ifdef __ia64
-#define RB_GC_SAVE_MACHINE_REGISTER_STACK(th)          \
-    do{(th)->ec->machine.register_stack_end = rb_ia64_bsp();}while(0)
-#else
-#define RB_GC_SAVE_MACHINE_REGISTER_STACK(th)
-#endif
 #define RB_GC_SAVE_MACHINE_CONTEXT(th)				\
     do {							\
 	FLUSH_REGISTER_WINDOWS;					\
-	RB_GC_SAVE_MACHINE_REGISTER_STACK(th);			\
 	setjmp((th)->ec->machine.regs);				\
 	SET_MACHINE_STACK_END(&(th)->ec->machine.stack_end);	\
     } while (0)
@@ -327,11 +325,7 @@ rb_thread_s_debug_set(VALUE self, VALUE val)
 # define PRI_THREAD_ID "p"
 #endif
 
-#ifndef __ia64
-#define thread_start_func_2(th, st, rst) thread_start_func_2(th, st)
-#endif
-NOINLINE(static int thread_start_func_2(rb_thread_t *th, VALUE *stack_start,
-					VALUE *register_stack_start));
+NOINLINE(static int thread_start_func_2(rb_thread_t *th, VALUE *stack_start));
 static void timer_thread_function(void);
 void ruby_sigchld_handler(rb_vm_t *); /* signal.c */
 
@@ -597,15 +591,17 @@ rb_thread_terminate_all(void)
     EC_POP_TAG();
 }
 
+void rb_threadptr_root_fiber_terminate(rb_thread_t *th);
+
 static void
 thread_cleanup_func_before_exec(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
     th->status = THREAD_KILLED;
+    // The thread stack doesn't exist in the forked process:
     th->ec->machine.stack_start = th->ec->machine.stack_end = NULL;
-#ifdef __ia64
-    th->ec->machine.register_stack_start = th->ec->machine.register_stack_end = NULL;
-#endif
+
+    rb_threadptr_root_fiber_terminate(th);
 }
 
 static void
@@ -697,25 +693,34 @@ thread_do_start(rb_thread_t *th)
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
 
 static int
-thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_start)
+thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 {
+    STACK_GROW_DIR_DETECTION;
     enum ruby_tag_type state;
     rb_thread_list_t *join_list;
     rb_thread_t *main_th;
     VALUE errinfo = Qnil;
+    size_t size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
+    VALUE * vm_stack = NULL;
 
-    if (th == th->vm->main_thread)
-	rb_bug("thread_start_func_2 must not be used for main thread");
+    if (th == th->vm->main_thread) {
+        rb_bug("thread_start_func_2 must not be used for main thread");
+    }
+
+    thread_debug("thread start: %p\n", (void *)th);
+    VM_ASSERT((size * sizeof(VALUE)) <= th->ec->machine.stack_maxsize);
+
+    vm_stack = alloca(size * sizeof(VALUE));
+    VM_ASSERT(vm_stack);
+
+    gvl_acquire(th->vm, th);
+
+    rb_ec_initialize_vm_stack(th->ec, vm_stack, size);
+    th->ec->machine.stack_start = STACK_DIR_UPPER(vm_stack + size, vm_stack);
+    th->ec->machine.stack_maxsize -= size * sizeof(VALUE);
 
     ruby_thread_set_native(th);
 
-    th->ec->machine.stack_start = stack_start;
-#ifdef __ia64
-    th->ec->machine.register_stack_start = register_stack_start;
-#endif
-    thread_debug("thread start: %p\n", (void *)th);
-
-    gvl_acquire(th->vm, th);
     {
 	thread_debug("thread start (get lock): %p\n", (void *)th);
 	rb_thread_set_current(th);
@@ -793,9 +798,12 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	rb_threadptr_unlock_all_locking_mutexes(th);
 	rb_check_deadlock(th->vm);
 
-	rb_fiber_close(th->ec->fiber_ptr);
+        rb_fiber_close(th->ec->fiber_ptr);
     }
+
     thread_cleanup_func(th, FALSE);
+    VM_ASSERT(th->ec->vm_stack == NULL);
+
     gvl_release(th->vm);
 
     return 0;
@@ -1660,7 +1668,8 @@ rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
     /* enter to Ruby world: You can access Ruby values, methods and so on. */
     r = (*func)(data1);
     /* leave from Ruby world: You can not access Ruby values, etc. */
-    blocking_region_begin(th, brb, prev_unblock.func, prev_unblock.arg, FALSE);
+    int released = blocking_region_begin(th, brb, prev_unblock.func, prev_unblock.arg, FALSE);
+    RUBY_ASSERT_ALWAYS(released);
     return r;
 }
 
@@ -2242,6 +2251,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	    if (th->status == THREAD_RUNNABLE)
 		th->running_time_us += TIME_QUANTUM_USEC;
 
+            VM_ASSERT(th->ec->cfp);
 	    EXEC_EVENT_HOOK(th->ec, RUBY_INTERNAL_EVENT_SWITCH, th->ec->cfp->self,
 			    0, 0, 0, Qundef);
 
@@ -2404,15 +2414,13 @@ thread_raise_m(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     thr.exit        -> thr or nil
- *     thr.kill        -> thr or nil
- *     thr.terminate   -> thr or nil
+ *     thr.exit        -> thr
+ *     thr.kill        -> thr
+ *     thr.terminate   -> thr
  *
- *  Terminates +thr+ and schedules another thread to be run.
- *
- *  If this thread is already marked to be killed, #exit returns the Thread.
- *
- *  If this is the main thread, or the last thread, exits the process.
+ *  Terminates +thr+ and schedules another thread to be run, returning
+ *  the terminated Thread.  If this is the main thread, or the last
+ *  thread, exits the process.
  */
 
 VALUE
@@ -3325,7 +3333,7 @@ VALUE
 rb_thread_local_aset(VALUE thread, ID id, VALUE val)
 {
     if (OBJ_FROZEN(thread)) {
-	rb_error_frozen("thread locals");
+        rb_frozen_error_raise(thread, "can't modify frozen thread locals");
     }
 
     return threadptr_local_aset(rb_thread_ptr(thread), id, val);
@@ -3402,7 +3410,7 @@ rb_thread_variable_set(VALUE thread, VALUE id, VALUE val)
     VALUE locals;
 
     if (OBJ_FROZEN(thread)) {
-	rb_error_frozen("thread locals");
+        rb_frozen_error_raise(thread, "can't modify frozen thread locals");
     }
 
     locals = rb_ivar_get(thread, id_locals);
@@ -4702,14 +4710,14 @@ thread_shield_alloc(VALUE klass)
 #define GetThreadShieldPtr(obj) ((VALUE)rb_check_typeddata((obj), &thread_shield_data_type))
 #define THREAD_SHIELD_WAITING_MASK (FL_USER0|FL_USER1|FL_USER2|FL_USER3|FL_USER4|FL_USER5|FL_USER6|FL_USER7|FL_USER8|FL_USER9|FL_USER10|FL_USER11|FL_USER12|FL_USER13|FL_USER14|FL_USER15|FL_USER16|FL_USER17|FL_USER18|FL_USER19)
 #define THREAD_SHIELD_WAITING_SHIFT (FL_USHIFT)
-#define rb_thread_shield_waiting(b) (int)((RBASIC(b)->flags&THREAD_SHIELD_WAITING_MASK)>>THREAD_SHIELD_WAITING_SHIFT)
+#define rb_thread_shield_waiting(b) ((RBASIC(b)->flags&THREAD_SHIELD_WAITING_MASK)>>THREAD_SHIELD_WAITING_SHIFT)
 
 static inline void
 rb_thread_shield_waiting_inc(VALUE b)
 {
-    unsigned int w = rb_thread_shield_waiting(b);
+    unsigned long w = rb_thread_shield_waiting(b);
     w++;
-    if (w > (unsigned int)(THREAD_SHIELD_WAITING_MASK>>THREAD_SHIELD_WAITING_SHIFT))
+    if (w > (THREAD_SHIELD_WAITING_MASK>>THREAD_SHIELD_WAITING_SHIFT))
 	rb_raise(rb_eRuntimeError, "waiting count overflow");
     RBASIC(b)->flags &= ~THREAD_SHIELD_WAITING_MASK;
     RBASIC(b)->flags |= ((VALUE)w << THREAD_SHIELD_WAITING_SHIFT);
@@ -4718,7 +4726,7 @@ rb_thread_shield_waiting_inc(VALUE b)
 static inline void
 rb_thread_shield_waiting_dec(VALUE b)
 {
-    unsigned int w = rb_thread_shield_waiting(b);
+    unsigned long w = rb_thread_shield_waiting(b);
     if (!w) rb_raise(rb_eRuntimeError, "waiting count underflow");
     w--;
     RBASIC(b)->flags &= ~THREAD_SHIELD_WAITING_MASK;
@@ -4957,7 +4965,7 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
     struct exec_recursive_params p;
     int outermost;
     p.list = recursive_list_access(sym);
-    p.objid = rb_obj_id(obj);
+    p.objid = rb_memory_id(obj);
     p.obj = obj;
     p.pairid = pairid;
     p.arg = arg;
@@ -5026,7 +5034,7 @@ rb_exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
 VALUE
 rb_exec_recursive_paired(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE paired_obj, VALUE arg)
 {
-    return exec_recursive(func, obj, rb_obj_id(paired_obj), arg, 0);
+    return exec_recursive(func, obj, rb_memory_id(paired_obj), arg, 0);
 }
 
 /*
@@ -5050,7 +5058,7 @@ rb_exec_recursive_outer(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
 VALUE
 rb_exec_recursive_paired_outer(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE paired_obj, VALUE arg)
 {
-    return exec_recursive(func, obj, rb_obj_id(paired_obj), arg, 1);
+    return exec_recursive(func, obj, rb_memory_id(paired_obj), arg, 1);
 }
 
 /*

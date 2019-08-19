@@ -1,5 +1,7 @@
 require_relative '../../spec_helper'
 
+require 'bigdecimal'
+
 describe :rational_coerce, shared: true do
   it "returns the passed argument, self as Float, when given a Float" do
     result = Rational(3, 4).coerce(1.0)
@@ -17,5 +19,11 @@ describe :rational_coerce, shared: true do
 
   it "returns [argument, self] when given a Rational" do
     Rational(3, 7).coerce(Rational(9, 2)).should == [Rational(9, 2), Rational(3, 7)]
+  end
+
+  it "raises an error when passed a BigDecimal" do
+    -> {
+      Rational(500, 3).coerce(BigDecimal('166.666666666'))
+    }.should raise_error(TypeError, /BigDecimal can't be coerced into Rational/)
   end
 end

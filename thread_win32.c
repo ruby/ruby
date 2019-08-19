@@ -256,7 +256,7 @@ typedef LPTHREAD_START_ROUTINE w32_thread_start_func;
 static HANDLE
 w32_create_thread(DWORD stack_size, w32_thread_start_func func, void *val)
 {
-    return start_thread(0, stack_size, func, val, CREATE_SUSPENDED, 0);
+    return start_thread(0, stack_size, func, val, CREATE_SUSPENDED | STACK_SIZE_PARAM_IS_A_RESERVATION, 0);
 }
 
 int
@@ -582,7 +582,7 @@ thread_start_func_1(void *th_ptr)
     thread_debug("thread created (th: %p, thid: %p, event: %p)\n", th,
 		 th->thread_id, th->native_thread_data.interrupt_event);
 
-    thread_start_func_2(th, th->ec->machine.stack_start, rb_ia64_bsp());
+    thread_start_func_2(th, th->ec->machine.stack_start);
 
     w32_close_handle(thread_id);
     thread_debug("thread deleted (th: %p)\n", th);
@@ -592,7 +592,7 @@ thread_start_func_1(void *th_ptr)
 static int
 native_thread_create(rb_thread_t *th)
 {
-    size_t stack_size = 4 * 1024; /* 4KB is the minimum commit size */
+    const size_t stack_size = th->vm->default_params.thread_machine_stack_size + th->vm->default_params.thread_vm_stack_size;
     th->thread_id = w32_create_thread(stack_size, thread_start_func_1, th);
 
     if ((th->thread_id) == 0) {

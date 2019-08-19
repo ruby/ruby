@@ -14,7 +14,6 @@ require 'rubygems/basic_specification'
 require 'rubygems/stub_specification'
 require 'rubygems/specification_policy'
 require 'rubygems/util/list'
-require 'stringio'
 
 ##
 # The Specification class contains the information for a gem.  Typically
@@ -110,6 +109,7 @@ class Gem::Specification < Gem::BasicSpecification
   # rubocop:disable Style/MutableConstant
   LOAD_CACHE = {} # :nodoc:
   # rubocop:enable Style/MutableConstant
+  LOAD_CACHE_MUTEX = Mutex.new
 
   private_constant :LOAD_CACHE if defined? private_constant
 
@@ -654,8 +654,8 @@ class Gem::Specification < Gem::BasicSpecification
   #  # This gem will work with 1.8.6 or greater...
   #  spec.required_ruby_version = '>= 1.8.6'
   #
-  #  # Only with ruby 2.0.x
-  #  spec.required_ruby_version = '~> 2.0'
+  #  # Only with final releases of major version 2 where minor version is at least 3
+  #  spec.required_ruby_version = '~> 2.3'
   #
   #  # Only prereleases or final releases after 2.6.0.preview2
   #  spec.required_ruby_version = '> 2.6.0.preview2'
@@ -732,6 +732,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Formerly used to set rubyforge project.
 
   attr_writer :rubyforge_project
+  deprecate :rubyforge_project=, :none,       2019, 12
 
   ##
   # The Gem::Specification version of this gemspec.
@@ -743,9 +744,6 @@ class Gem::Specification < Gem::BasicSpecification
   def self._all # :nodoc:
     unless defined?(@@all) && @@all
       @@all = stubs.map(&:to_spec)
-      if @@all.any?(&:nil?) # TODO: remove once we're happy
-        raise "pid: #{$$} nil spec! included in #{stubs.inspect}"
-      end
 
       # After a reset, make sure already loaded specs
       # are still marked as activated.
@@ -757,7 +755,9 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   def self._clear_load_cache # :nodoc:
-    LOAD_CACHE.clear
+    LOAD_CACHE_MUTEX.synchronize do
+      LOAD_CACHE.clear
+    end
   end
 
   def self.each_gemspec(dirs) # :nodoc:
@@ -812,7 +812,7 @@ class Gem::Specification < Gem::BasicSpecification
   def self.stubs
     @@stubs ||= begin
       pattern = "*.gemspec"
-      stubs = Gem.loaded_specs.values + default_stubs(pattern) + installed_stubs(dirs, pattern)
+      stubs = Gem.loaded_specs.values + installed_stubs(dirs, pattern) + default_stubs(pattern)
       stubs = uniq_by(stubs) { |stub| stub.full_name }
 
       _resort!(stubs)
@@ -827,7 +827,7 @@ class Gem::Specification < Gem::BasicSpecification
   def self.default_stubs(pattern = "*.gemspec")
     base_dir = Gem.default_dir
     gems_dir = File.join base_dir, "gems"
-    gemspec_stubs_in(default_specifications_dir, pattern) do |path|
+    gemspec_stubs_in(Gem.default_specifications_dir, pattern) do |path|
       Gem::StubSpecification.default_gemspec_stub(path, base_dir, gems_dir)
     end
   end
@@ -843,8 +843,9 @@ class Gem::Specification < Gem::BasicSpecification
       @@stubs_by_name[name] || []
     else
       pattern = "#{name}-*.gemspec"
-      stubs = Gem.loaded_specs.values + default_stubs(pattern) +
-        installed_stubs(dirs, pattern).select { |s| Gem::Platform.match s.platform }
+      stubs = Gem.loaded_specs.values +
+        installed_stubs(dirs, pattern).select { |s| Gem::Platform.match s.platform } +
+        default_stubs(pattern)
       stubs = uniq_by(stubs) { |stub| stub.full_name }.group_by(&:name)
       stubs.each_value { |v| _resort!(v) }
 
@@ -865,7 +866,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Loads the default specifications. It should be called only once.
 
   def self.load_defaults
-    each_spec([default_specifications_dir]) do |spec|
+    each_spec([Gem.default_specifications_dir]) do |spec|
       # #load returns nil if the spec is bad, so we just ignore
       # it at this stage
       Gem.register_default_spec(spec)
@@ -895,7 +896,6 @@ class Gem::Specification < Gem::BasicSpecification
   # -- wilsonb
 
   def self.all=(specs)
-    raise "nil spec!" if specs.any?(&:nil?) # TODO: remove once we're happy
     @@stubs_by_name = specs.group_by(&:name)
     @@all = @@stubs = specs
   end
@@ -1109,7 +1109,7 @@ class Gem::Specification < Gem::BasicSpecification
   def self.load(file)
     return unless file
 
-    _spec = LOAD_CACHE[file]
+    _spec = LOAD_CACHE_MUTEX.synchronize { LOAD_CACHE[file] }
     return _spec if _spec
 
     file = file.dup.untaint
@@ -1124,7 +1124,14 @@ class Gem::Specification < Gem::BasicSpecification
 
       if Gem::Specification === _spec
         _spec.loaded_from = File.expand_path file.to_s
-        LOAD_CACHE[file] = _spec
+        LOAD_CACHE_MUTEX.synchronize do
+          prev = LOAD_CACHE[file]
+          if prev
+            _spec = prev
+          else
+            LOAD_CACHE[file] = _spec
+          end
+        end
         return _spec
       end
 
@@ -1497,16 +1504,7 @@ class Gem::Specification < Gem::BasicSpecification
 
     paths = full_require_paths
 
-    # gem directories must come after -I and ENV['RUBYLIB']
-    insert_index = Gem.load_path_insert_index
-
-    if insert_index
-      # gem directories must come after -I and ENV['RUBYLIB']
-      $LOAD_PATH.insert(insert_index, *paths)
-    else
-      # we are probably testing in core, -I and RUBYLIB don't apply
-      $LOAD_PATH.unshift(*paths)
-    end
+    Gem.add_to_load_path(*paths)
   end
 
   ##
@@ -1532,7 +1530,7 @@ class Gem::Specification < Gem::BasicSpecification
   # a full path.
 
   def bin_dir
-    @bin_dir ||= File.join gem_dir, bindir # TODO: this is unfortunate
+    @bin_dir ||= File.join gem_dir, bindir
   end
 
   ##
@@ -1926,8 +1924,7 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   def gems_dir
-    # TODO: this logic seems terribly broken, but tests fail if just base_dir
-    @gems_dir ||= File.join(loaded_from && base_dir || Gem.dir, "gems")
+    @gems_dir ||= File.join(base_dir, "gems")
   end
 
   ##
@@ -2232,7 +2229,6 @@ class Gem::Specification < Gem::BasicSpecification
 
     e = Gem::LoadError.new msg
     e.name = self.name
-    # TODO: e.requirement = dep.requirement
 
     raise e
   end
@@ -2480,24 +2476,16 @@ class Gem::Specification < Gem::BasicSpecification
       result << nil
       result << "  if s.respond_to? :specification_version then"
       result << "    s.specification_version = #{specification_version}"
+      result << "  end"
       result << nil
 
-      result << "    if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then"
+      result << "  if s.respond_to? :add_runtime_dependency then"
 
       dependencies.each do |dep|
         req = dep.requirements_list.inspect
         dep.instance_variable_set :@type, :runtime if dep.type.nil? # HACK
-        result << "      s.add_#{dep.type}_dependency(%q<#{dep.name}>.freeze, #{req})"
+        result << "    s.add_#{dep.type}_dependency(%q<#{dep.name}>.freeze, #{req})"
       end
-
-      result << "    else"
-
-      dependencies.each do |dep|
-        version_reqs_param = dep.requirements_list.inspect
-        result << "      s.add_dependency(%q<#{dep.name}>.freeze, #{version_reqs_param})"
-      end
-
-      result << '    end'
 
       result << "  else"
       dependencies.each do |dep|
@@ -2548,6 +2536,7 @@ class Gem::Specification < Gem::BasicSpecification
     builder << self
     ast = builder.tree
 
+    require 'stringio'
     io = StringIO.new
     io.set_encoding Encoding::UTF_8
 
@@ -2594,8 +2583,6 @@ class Gem::Specification < Gem::BasicSpecification
   # checks..
 
   def validate(packaging = true, strict = false)
-    require 'rubygems/user_interaction'
-    extend Gem::UserInteraction
     normalize
 
     validation_policy = Gem::SpecificationPolicy.new(self)

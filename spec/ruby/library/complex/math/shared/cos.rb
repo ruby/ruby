@@ -25,6 +25,6 @@ describe :complex_math_cos_bang, shared: true do
   end
 
   it "raises a TypeError when passed a Complex number" do
-    lambda { @object.send(:cos!, Complex(3, 4)) }.should raise_error(TypeError)
+    -> { @object.send(:cos!, Complex(3, 4)) }.should raise_error(TypeError)
   end
 end

@@ -3,8 +3,8 @@
 require 'set'
 require 'tsort'
 
-require 'bundler/vendor/molinillo/lib/molinillo/dependency_graph/log'
-require 'bundler/vendor/molinillo/lib/molinillo/dependency_graph/vertex'
+require_relative 'dependency_graph/log'
+require_relative 'dependency_graph/vertex'
 
 module Bundler::Molinillo
   # A directed acyclic graph that is tuned to hold named dependencies

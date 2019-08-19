@@ -26,20 +26,20 @@ describe "Struct#[]" do
 
   it "fails when it does not know about the requested attribute" do
     car = StructClasses::Car.new('Ford', 'Ranger')
-    lambda { car[3]        }.should raise_error(IndexError)
-    lambda { car[-4]       }.should raise_error(IndexError)
-    lambda { car[:body]    }.should raise_error(NameError)
-    lambda { car['wheels'] }.should raise_error(NameError)
+    -> { car[3]        }.should raise_error(IndexError)
+    -> { car[-4]       }.should raise_error(IndexError)
+    -> { car[:body]    }.should raise_error(NameError)
+    -> { car['wheels'] }.should raise_error(NameError)
   end
 
   it "fails if passed too many arguments" do
     car = StructClasses::Car.new('Ford', 'Ranger')
-    lambda { car[:make, :model] }.should raise_error(ArgumentError)
+    -> { car[:make, :model] }.should raise_error(ArgumentError)
   end
 
   it "fails if not passed a string, symbol, or integer" do
     car = StructClasses::Car.new('Ford', 'Ranger')
-    lambda { car[Object.new] }.should raise_error(TypeError)
+    -> { car[Object.new] }.should raise_error(TypeError)
   end
 
   it "returns attribute names that contain hyphens" do

@@ -16,7 +16,7 @@ describe "IO#eof?" do
   end
 
   it "raises IOError on stream not opened for reading" do
-    lambda do
+    -> do
       File.open(@name, "w") { |f| f.eof? }
     end.should raise_error(IOError)
   end
@@ -67,12 +67,12 @@ describe "IO#eof?" do
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.eof? }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.eof? }.should raise_error(IOError)
   end
 
   it "raises IOError on stream closed for reading by close_read" do
     @io.close_read
-    lambda { @io.eof? }.should raise_error(IOError)
+    -> { @io.eof? }.should raise_error(IOError)
   end
 
   it "returns true on one-byte stream after single-byte read" do

@@ -24,7 +24,7 @@ describe "REXML::Document.new" do
       </x>
 XML
 
-    lambda {
+    -> {
       REXML::Document.new(xml).doctype.entities['x9'].value
     }.should raise_error(REXML::ParseException, /entity expansion has grown too large/)
   end

@@ -19,7 +19,7 @@ describe "Kernel.srand" do
   end
 
   it "defaults number to a random value" do
-    lambda { srand }.should_not raise_error
+    -> { srand }.should_not raise_error
     srand.should_not == 0
   end
 
@@ -48,11 +48,11 @@ describe "Kernel.srand" do
   end
 
   it "raises a TypeError when passed nil" do
-    lambda { srand(nil) }.should raise_error(TypeError)
+    -> { srand(nil) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when passed a String" do
-    lambda { srand("7") }.should raise_error(TypeError)
+    -> { srand("7") }.should raise_error(TypeError)
   end
 end
 

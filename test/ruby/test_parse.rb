@@ -13,6 +13,10 @@ class TestParse < Test::Unit::TestCase
     $VERBOSE = @verbose
   end
 
+  def test_error_line
+    assert_syntax_error('------,,', /\n\z/, 'Message to pipe should end with a newline')
+  end
+
   def test_else_without_rescue
     assert_syntax_error(<<-END, %r":#{__LINE__+2}: else without rescue"o, [__FILE__, __LINE__+1])
       begin
@@ -481,6 +485,7 @@ class TestParse < Test::Unit::TestCase
     t[42, &blk] ||= t.dummy 42 # command_asgn test
     END
     assert_equal([:aref, :aset], a)
+    blk
   end
 
   def test_backquote
@@ -513,13 +518,13 @@ class TestParse < Test::Unit::TestCase
     mesg = 'from the backslash through the invalid char'
 
     e = assert_syntax_error('"\xg1"', /hex escape/)
-    assert_equal('   ^', e.message.lines.last, mesg)
+    assert_equal(' ^~'"\n", e.message.lines.last, mesg)
 
     e = assert_syntax_error('"\u{1234"', 'unterminated Unicode escape')
-    assert_equal('        ^', e.message.lines.last, mesg)
+    assert_equal('        ^'"\n", e.message.lines.last, mesg)
 
     e = assert_syntax_error('"\u{xxxx}"', 'invalid Unicode escape')
-    assert_equal('    ^', e.message.lines.last, mesg)
+    assert_equal('    ^'"\n", e.message.lines.last, mesg)
 
     e = assert_syntax_error('"\u{xxxx', 'Unicode escape')
     assert_pattern_list([
@@ -530,14 +535,14 @@ class TestParse < Test::Unit::TestCase
                           /    \^/,
                           /\n/,
                           /.*: unterminated string.*\n.*\n/,
-                          /        \^/,
+                          /        \^\n/,
                         ], e.message)
 
     e = assert_syntax_error('"\M1"', /escape character syntax/)
-    assert_equal(' ^~~', e.message.lines.last, mesg)
+    assert_equal(' ^~~'"\n", e.message.lines.last, mesg)
 
     e = assert_syntax_error('"\C1"', /escape character syntax/)
-    assert_equal(' ^~~', e.message.lines.last, mesg)
+    assert_equal(' ^~~'"\n", e.message.lines.last, mesg)
 
     src = '"\xD0\u{90'"\n""000000000000000000000000"
     assert_syntax_error(src, /:#{__LINE__}: unterminated/o)
@@ -548,6 +553,19 @@ class TestParse < Test::Unit::TestCase
 
     assert_equal("\x81", eval('"\C-\M-a"'))
     assert_equal("\177", eval('"\c?"'))
+
+    assert_warning(/use \\C-\\s/) {assert_equal("\x00", eval('"\C- "'))}
+    assert_warning(/use \\M-\\s/) {assert_equal("\xa0", eval('"\M- "'))}
+    assert_warning(/use \\M-\\C-\\s/) {assert_equal("\x80", eval('"\M-\C- "'))}
+    assert_warning(/use \\C-\\M-\\s/) {assert_equal("\x80", eval('"\C-\M- "'))}
+    assert_warning(/use \\t/) {assert_equal("\x09", eval("\"\\C-\t\""))}
+    assert_warning(/use \\M-\\t/) {assert_equal("\x89", eval("\"\\M-\t\""))}
+    assert_warning(/use \\M-\\t/) {assert_equal("\x89", eval("\"\\M-\\C-\t\""))}
+    assert_warning(/use \\M-\\t/) {assert_equal("\x89", eval("\"\\C-\\M-\t\""))}
+    assert_syntax_error("\"\\C-\x01\"", 'Invalid escape character syntax')
+    assert_syntax_error("\"\\M-\x01\"", 'Invalid escape character syntax')
+    assert_syntax_error("\"\\M-\\C-\x01\"", 'Invalid escape character syntax')
+    assert_syntax_error("\"\\C-\\M-\x01\"", 'Invalid escape character syntax')
   end
 
   def test_question
@@ -562,6 +580,23 @@ class TestParse < Test::Unit::TestCase
     assert_raise(SyntaxError) { eval(" ?a\x8a".force_encoding("utf-8")) }
     assert_equal("\u{1234}", eval("?\u{1234}"))
     assert_equal("\u{1234}", eval('?\u{1234}'))
+    assert_equal("\u{1234}", eval('?\u1234'))
+    assert_syntax_error('?\u{41 42}', 'Multiple codepoints at single character literal')
+    e = assert_syntax_error('"#{?\u123}"', 'invalid Unicode escape')
+    assert_not_match(/end-of-input/, e.message)
+
+    assert_warning(/use ?\\C-\\s/) {assert_equal("\x00", eval('?\C- '))}
+    assert_warning(/use ?\\M-\\s/) {assert_equal("\xa0", eval('?\M- '))}
+    assert_warning(/use ?\\M-\\C-\\s/) {assert_equal("\x80", eval('?\M-\C- '))}
+    assert_warning(/use ?\\C-\\M-\\s/) {assert_equal("\x80", eval('?\C-\M- '))}
+    assert_warning(/use ?\\t/) {assert_equal("\x09", eval("?\\C-\t"))}
+    assert_warning(/use ?\\M-\\t/) {assert_equal("\x89", eval("?\\M-\t"))}
+    assert_warning(/use ?\\M-\\t/) {assert_equal("\x89", eval("?\\M-\\C-\t"))}
+    assert_warning(/use ?\\M-\\t/) {assert_equal("\x89", eval("?\\C-\\M-\t"))}
+    assert_syntax_error("?\\C-\x01", 'Invalid escape character syntax')
+    assert_syntax_error("?\\M-\x01", 'Invalid escape character syntax')
+    assert_syntax_error("?\\M-\\C-\x01", 'Invalid escape character syntax')
+    assert_syntax_error("?\\C-\\M-\x01", 'Invalid escape character syntax')
   end
 
   def test_percent
@@ -587,6 +622,11 @@ class TestParse < Test::Unit::TestCase
       assert_equal(:foobar, eval(':"foo\u{}bar"'))
       assert_equal(:foobar, eval(':"foo\u{ }bar"'))
     end
+
+    assert_syntax_error(':@@', /is not allowed/)
+    assert_syntax_error(':@@1', /is not allowed/)
+    assert_syntax_error(':@', /is not allowed/)
+    assert_syntax_error(':@1', /is not allowed/)
   end
 
   def test_parse_string
@@ -927,10 +967,12 @@ x = __ENCODING__
     assert_warning(/assigned but unused variable/) {o.instance_eval("def foo; a=1; nil; end")}
     assert_warning(/assigned but unused variable/) {o.instance_eval("def bar; a=1; a(); end")}
     a = "\u{3042}"
-    assert_warning(/#{a}/) {o.instance_eval("def foo; #{a}=1; nil; end")}
-    o = Object.new
-    assert_warning(/assigned but unused variable/) {o.instance_eval("def foo; tap {a=1; a()}; end")}
-    assert_warning('') {o.instance_eval("def bar; a=a=1; nil; end")}
+    assert_warning(/#{a}/) {o.instance_eval("def foo0; #{a}=1; nil; end")}
+    assert_warning(/assigned but unused variable/) {o.instance_eval("def foo1; tap {a=1; a()}; end")}
+    assert_warning('') {o.instance_eval("def bar1; a=a=1; nil; end")}
+    assert_warning(/assigned but unused variable/) {o.instance_eval("def bar2; a, = 1, 2; end")}
+    assert_warning('') {o.instance_eval("def marg1(a); nil; end")}
+    assert_warning('') {o.instance_eval("def marg2((a)); nil; end")}
   end
 
   def test_named_capture_conflict
@@ -1077,11 +1119,14 @@ x = __ENCODING__
   end
 
   def test_unexpected_token_after_numeric
-    assert_raise_with_message(SyntaxError, /^    \^~~\z/) do
+    assert_raise_with_message(SyntaxError, /^    \^~~\Z/) do
       eval('0000xyz')
     end
-    assert_raise_with_message(SyntaxError, /^    \^~~\z/) do
+    assert_raise_with_message(SyntaxError, /^    \^~~\Z/) do
       eval('1.2i1.1')
+    end
+    assert_raise_with_message(SyntaxError, /^   \^~\Z/) do
+      eval('1.2.3')
     end
   end
 
@@ -1109,7 +1154,8 @@ x = __ENCODING__
     end
     o.instance_eval {i (-1.3).abs}
     assert_equal(1.3, o.x)
-    o.instance_eval {i = 0; i (-1.3).abs}
+    o.i(nil)
+    o.instance_eval {i = 0; i (-1.3).abs; i}
     assert_equal(1.3, o.x)
   end
 
@@ -1118,6 +1164,7 @@ x = __ENCODING__
       $VERBOSE = true
       x = 1
       eval("if false; 0 < x < 2; end")
+      x
     end
   end
 
@@ -1128,7 +1175,7 @@ x = __ENCODING__
   end
 
   def test_location_of_invalid_token
-    assert_raise_with_message(SyntaxError, /^      \^~~\z/) do
+    assert_raise_with_message(SyntaxError, /^      \^~~\Z/) do
       eval('class xxx end')
     end
   end

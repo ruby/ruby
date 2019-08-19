@@ -208,7 +208,7 @@ use with other commands.
   def name_pattern(args)
     args << '' if args.empty?
 
-    if args.length == 1 and args.first =~ /\A\/(.*)\/(i)?\z/m
+    if args.length == 1 and args.first =~ /\A(.*)(i)?\z/m
       flags = $2 ? Regexp::IGNORECASE : nil
       Regexp.new $1, flags
     else

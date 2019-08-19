@@ -282,7 +282,7 @@ module SuperSpecs
     #
     # When name3 is called then, Alias2 (NOT Alias3) is presented as the
     # current module to Alias2#name, so that when super is called,
-    # Alias2->superclass is next.
+    # Alias2's superclass is next.
     #
     # Otherwise, Alias2 is next, which is where name was to begin with,
     # causing the wrong #name method to be called.
@@ -377,12 +377,12 @@ module SuperSpecs
       end
 
       def b
-        block_ref = lambda { 15 }
+        block_ref = -> { 15 }
         [super { 14 }, super(&block_ref)]
       end
 
       def c
-        block_ref = lambda { 16 }
+        block_ref = -> { 16 }
         super(&block_ref)
       end
     end

@@ -1,19 +1,18 @@
 # frozen_string_literal: true
 
-require "spec_helper"
 require "bundler/vendored_persistent"
 
 RSpec.describe Bundler::PersistentHTTP do
   describe "#warn_old_tls_version_rubygems_connection" do
     let(:uri) { "https://index.rubygems.org" }
-    let(:connection) { instance_double(subject.http_class) }
+    let(:connection) { instance_double(Bundler::Persistent::Net::HTTP::Persistent::Connection) }
     let(:tls_version) { "TLSv1.2" }
     let(:socket) { double("Socket") }
     let(:socket_io) { double("SocketIO") }
 
     before do
-      allow(connection).to receive(:use_ssl?).and_return(!tls_version.nil?)
-      allow(socket).to receive(:io).and_return(socket_io)
+      allow(connection).to receive_message_chain(:http, :use_ssl?).and_return(!tls_version.nil?)
+      allow(socket).to receive(:io).and_return(socket_io) if socket
       connection.instance_variable_set(:@socket, socket)
 
       if tls_version

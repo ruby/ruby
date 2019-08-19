@@ -37,7 +37,7 @@ describe "SecureRandom.random_bytes" do
   end
 
   it "raises ArgumentError on negative arguments" do
-    lambda {
+    -> {
       SecureRandom.random_bytes(-1)
     }.should raise_error(ArgumentError)
   end

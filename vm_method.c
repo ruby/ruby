@@ -671,8 +671,8 @@ MJIT_FUNC_EXPORTED void
 rb_add_method_iseq(VALUE klass, ID mid, const rb_iseq_t *iseq, rb_cref_t *cref, rb_method_visibility_t visi)
 {
     struct { /* should be same fields with rb_method_iseq_struct */
-	const rb_iseq_t *iseqptr;
-	rb_cref_t *cref;
+        const rb_iseq_t *iseqptr;
+        rb_cref_t *cref;
     } iseq_body;
 
     iseq_body.iseqptr = iseq;
@@ -787,10 +787,10 @@ method_entry_get_without_cache(VALUE klass, ID id,
     return me;
 }
 
-#if VM_DEBUG_VERIFY_METHOD_CACHE
 static void
 verify_method_cache(VALUE klass, ID id, VALUE defined_class, rb_method_entry_t *me)
 {
+    if (!VM_DEBUG_VERIFY_METHOD_CACHE) return;
     VALUE actual_defined_class;
     rb_method_entry_t *actual_me =
       method_entry_get_without_cache(klass, id, &actual_defined_class);
@@ -799,26 +799,23 @@ verify_method_cache(VALUE klass, ID id, VALUE defined_class, rb_method_entry_t *
 	rb_bug("method cache verification failed");
     }
 }
-#endif
 
 static rb_method_entry_t *
 method_entry_get(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
-#if OPT_GLOBAL_METHOD_CACHE
     struct cache_entry *ent;
+    if (!OPT_GLOBAL_METHOD_CACHE) goto nocache;
     ent = GLOBAL_METHOD_CACHE(klass, id);
     if (ent->method_state == GET_GLOBAL_METHOD_STATE() &&
 	ent->class_serial == RCLASS_SERIAL(klass) &&
 	ent->mid == id) {
-#if VM_DEBUG_VERIFY_METHOD_CACHE
 	verify_method_cache(klass, id, ent->defined_class, ent->me);
-#endif
 	if (defined_class_ptr) *defined_class_ptr = ent->defined_class;
 	RB_DEBUG_COUNTER_INC(mc_global_hit);
 	return ent->me;
     }
-#endif
 
+  nocache:
     RB_DEBUG_COUNTER_INC(mc_global_miss);
     return method_entry_get_without_cache(klass, id, defined_class_ptr);
 }
@@ -1135,14 +1132,16 @@ rb_scope_module_func_set(void)
     vm_cref_set_visibility(METHOD_VISI_PRIVATE, TRUE);
 }
 
+const rb_cref_t *rb_vm_cref_in_context(VALUE self, VALUE cbase);
 void
 rb_attr(VALUE klass, ID id, int read, int write, int ex)
 {
     ID attriv;
     rb_method_visibility_t visi;
     const rb_execution_context_t *ec = GET_EC();
+    const rb_cref_t *cref = rb_vm_cref_in_context(klass, klass);
 
-    if (!ex) {
+    if (!ex || !cref) {
 	visi = METHOD_VISI_PUBLIC;
     }
     else {
@@ -2091,7 +2090,7 @@ obj_respond_to_missing(VALUE obj, VALUE mid, VALUE priv)
 void
 Init_Method(void)
 {
-#if OPT_GLOBAL_METHOD_CACHE
+    if (!OPT_GLOBAL_METHOD_CACHE) return;
     char *ptr = getenv("RUBY_GLOBAL_METHOD_CACHE_SIZE");
     int val;
 
@@ -2110,7 +2109,6 @@ Init_Method(void)
 	fprintf(stderr, "[FATAL] failed to allocate memory\n");
 	exit(EXIT_FAILURE);
     }
-#endif
 }
 
 void

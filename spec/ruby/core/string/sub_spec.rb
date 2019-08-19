@@ -166,16 +166,16 @@ describe "String#sub with pattern, replacement" do
 
   not_supported_on :opal do
     it "raises a TypeError when pattern is a Symbol" do
-      lambda { "hello".sub(:woot, "x") }.should raise_error(TypeError)
+      -> { "hello".sub(:woot, "x") }.should raise_error(TypeError)
     end
   end
 
   it "raises a TypeError when pattern is an Array" do
-    lambda { "hello".sub([], "x") }.should raise_error(TypeError)
+    -> { "hello".sub([], "x") }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when pattern can't be converted to a string" do
-    lambda { "hello".sub(Object.new, nil) }.should raise_error(TypeError)
+    -> { "hello".sub(Object.new, nil) }.should raise_error(TypeError)
   end
 
   it "tries to convert replacement to a string using to_str" do
@@ -186,8 +186,8 @@ describe "String#sub with pattern, replacement" do
   end
 
   it "raises a TypeError when replacement can't be converted to a string" do
-    lambda { "hello".sub(/[aeiou]/, []) }.should raise_error(TypeError)
-    lambda { "hello".sub(/[aeiou]/, 99) }.should raise_error(TypeError)
+    -> { "hello".sub(/[aeiou]/, []) }.should raise_error(TypeError)
+    -> { "hello".sub(/[aeiou]/, 99) }.should raise_error(TypeError)
   end
 
   it "returns subclass instances when called on a subclass" do
@@ -330,9 +330,9 @@ describe "String#sub! with pattern, replacement" do
     s = "hello"
     s.freeze
 
-    lambda { s.sub!(/ROAR/, "x")    }.should raise_error(frozen_error_class)
-    lambda { s.sub!(/e/, "e")       }.should raise_error(frozen_error_class)
-    lambda { s.sub!(/[aeiou]/, '*') }.should raise_error(frozen_error_class)
+    -> { s.sub!(/ROAR/, "x")    }.should raise_error(frozen_error_class)
+    -> { s.sub!(/e/, "e")       }.should raise_error(frozen_error_class)
+    -> { s.sub!(/[aeiou]/, '*') }.should raise_error(frozen_error_class)
   end
 end
 
@@ -376,16 +376,16 @@ describe "String#sub! with pattern and block" do
 
   it "raises a RuntimeError if the string is modified while substituting" do
     str = "hello"
-    lambda { str.sub!(//) { str << 'x' } }.should raise_error(RuntimeError)
+    -> { str.sub!(//) { str << 'x' } }.should raise_error(RuntimeError)
   end
 
   it "raises a #{frozen_error_class} when self is frozen" do
     s = "hello"
     s.freeze
 
-    lambda { s.sub!(/ROAR/) { "x" }    }.should raise_error(frozen_error_class)
-    lambda { s.sub!(/e/) { "e" }       }.should raise_error(frozen_error_class)
-    lambda { s.sub!(/[aeiou]/) { '*' } }.should raise_error(frozen_error_class)
+    -> { s.sub!(/ROAR/) { "x" }    }.should raise_error(frozen_error_class)
+    -> { s.sub!(/e/) { "e" }       }.should raise_error(frozen_error_class)
+    -> { s.sub!(/[aeiou]/) { '*' } }.should raise_error(frozen_error_class)
   end
 end
 
@@ -428,7 +428,7 @@ describe "String#sub with pattern and Hash" do
 
   it "uses the hash's value set from default_proc for missing keys" do
     hsh = {}
-    hsh.default_proc = lambda { |k,v| 'lamb' }
+    hsh.default_proc = -> k, v { 'lamb' }
     "food!".sub(/./, hsh).should == "lambood!"
   end
 
@@ -513,7 +513,7 @@ describe "String#sub! with pattern and Hash" do
 
   it "uses the hash's value set from default_proc for missing keys" do
     hsh = {}
-    hsh.default_proc = lambda { |k,v| 'lamb' }
+    hsh.default_proc = -> k, v { 'lamb' }
     "food!".sub!(/./, hsh).should == "lambood!"
   end
 
@@ -560,12 +560,12 @@ end
 
 describe "String#sub with pattern and without replacement and block" do
   it "raises a ArgumentError" do
-    lambda { "abca".sub(/a/) }.should raise_error(ArgumentError)
+    -> { "abca".sub(/a/) }.should raise_error(ArgumentError)
   end
 end
 
 describe "String#sub! with pattern and without replacement and block" do
   it "raises a ArgumentError" do
-    lambda { "abca".sub!(/a/) }.should raise_error(ArgumentError)
+    -> { "abca".sub!(/a/) }.should raise_error(ArgumentError)
   end
 end

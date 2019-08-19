@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'minitest_helper'
+require_relative 'helper'
 
 class TestRDocParserRuby < RDoc::TestCase
 
@@ -100,7 +100,7 @@ class C; end
     assert_equal 'E', name_t[:text]
     assert_equal 'D::E', given_name
 
-    assert_raises RDoc::Error do
+    assert_raise RDoc::Error do
       util_parser("A::\nB").get_class_or_module ctxt
     end
   end
@@ -435,7 +435,7 @@ ruby
     klass = RDoc::NormalClass.new 'Foo'
     klass.parent = @top_level
 
-    comment = RDoc::Comment.new "##\n# my attr\n", @top_level
+    comment = RDoc::Comment.new "##\n# my attr\n", @top_level, :ruby
 
     util_parser "attr :foo, :bar"
 
@@ -472,7 +472,7 @@ ruby
     klass = RDoc::NormalClass.new 'Foo'
     klass.parent = @top_level
 
-    comment = RDoc::Comment.new "##\n# my attr\n", @top_level
+    comment = RDoc::Comment.new "##\n# my attr\n", @top_level, :ruby
 
     util_parser "attr_accessor :foo, :bar"
 
@@ -499,7 +499,7 @@ ruby
     klass = RDoc::NormalClass.new 'Foo'
     klass.parent = @top_level
 
-    comment = RDoc::Comment.new "##\n# my attr\n", @top_level
+    comment = RDoc::Comment.new "##\n# my attr\n", @top_level, :ruby
 
     util_parser "attr_accessor :foo, :bar,\n  :baz,\n  :qux"
 
@@ -584,7 +584,7 @@ ruby
     klass = RDoc::NormalClass.new 'Foo'
     klass.parent = @top_level
 
-    comment = RDoc::Comment.new "##\n# my attr\n", @top_level
+    comment = RDoc::Comment.new "##\n# my attr\n", @top_level, :ruby
 
     util_parser "attr_writer :foo, :bar"
 
@@ -610,7 +610,7 @@ ruby
     klass = RDoc::NormalClass.new 'Foo'
     klass.parent = @top_level
 
-    comment = RDoc::Comment.new "##\n# :attr: \n# my method\n", @top_level
+    comment = RDoc::Comment.new "##\n# :attr: \n# my method\n", @top_level, :ruby
 
     util_parser "add_my_method :foo, :bar"
 
@@ -631,7 +631,7 @@ ruby
     klass.parent = @top_level
 
     comment =
-      RDoc::Comment.new "##\n# :attr_accessor: \n# my method\n", @top_level
+      RDoc::Comment.new "##\n# :attr_accessor: \n# my method\n", @top_level, :ruby
 
     util_parser "add_my_method :foo, :bar"
 
@@ -651,7 +651,7 @@ ruby
     klass = RDoc::NormalClass.new 'Foo'
     klass.parent = @top_level
 
-    comment = RDoc::Comment.new "##\n# :attr: foo\n# my method\n", @top_level
+    comment = RDoc::Comment.new "##\n# :attr: foo\n# my method\n", @top_level, :ruby
 
     util_parser "add_my_method :foo, :bar"
 
@@ -672,7 +672,7 @@ ruby
     klass.parent = @top_level
 
     comment =
-      RDoc::Comment.new "##\n# :attr_reader: \n# my method\n", @top_level
+      RDoc::Comment.new "##\n# :attr_reader: \n# my method\n", @top_level, :ruby
 
     util_parser "add_my_method :foo, :bar"
 
@@ -708,7 +708,7 @@ ruby
     klass.parent = @top_level
 
     comment =
-      RDoc::Comment.new "##\n# :attr_writer: \n# my method\n", @top_level
+      RDoc::Comment.new "##\n# :attr_writer: \n# my method\n", @top_level, :ruby
 
     util_parser "add_my_method :foo, :bar"
 
@@ -724,7 +724,7 @@ ruby
   end
 
   def test_parse_class
-    comment = RDoc::Comment.new "##\n# my class\n", @top_level
+    comment = RDoc::Comment.new "##\n# my class\n", @top_level, :ruby
 
     util_parser "class Foo\nend"
 
@@ -902,7 +902,7 @@ end
 
   def test_parse_class_lower_name_warning
     @options.verbosity = 2
-    stds = capture_io do
+    stds = capture_output do
       util_parser "class foo\nend"
       tk = @parser.get_tk
       @parser.parse_class @top_level, RDoc::Parser::Ruby::NORMAL, tk, @comment
@@ -913,7 +913,7 @@ end
 
   def test_parse_syntax_error_code
     @options.verbosity = 2
-    stds = capture_io do
+    stds = capture_output do
       begin
         util_parser <<INVALID_CODE
 # invalid class name
@@ -1001,7 +1001,7 @@ end
   end
 
   def test_parse_module
-    comment = RDoc::Comment.new "##\n# my module\n", @top_level
+    comment = RDoc::Comment.new "##\n# my module\n", @top_level, :ruby
 
     util_parser "module Foo\nend"
 
@@ -1247,7 +1247,7 @@ EOF
     klass = RDoc::NormalClass.new 'Foo'
     klass.parent = @top_level
 
-    comment = RDoc::Comment.new "##\n# :attr: foo\n# my attr\n", @top_level
+    comment = RDoc::Comment.new "##\n# :attr: foo\n# my attr\n", @top_level, :ruby
 
     util_parser "\n"
 
@@ -1311,7 +1311,7 @@ EOF
     klass = RDoc::NormalClass.new 'Foo'
     klass.parent = @top_level
 
-    comment = RDoc::Comment.new "##\n# :method: foo\n# my method\n", @top_level
+    comment = RDoc::Comment.new "##\n# :method: foo\n# my method\n", @top_level, :ruby
 
     util_parser "\n"
 
@@ -1595,7 +1595,7 @@ end
     klass = RDoc::NormalClass.new 'C'
     klass.parent = @top_level
 
-    comment = RDoc::Comment.new "# my extend\n", @top_level
+    comment = RDoc::Comment.new "# my extend\n", @top_level, :ruby
 
     util_parser "extend I"
 
@@ -1615,7 +1615,7 @@ end
     klass = RDoc::NormalClass.new 'C'
     klass.parent = @top_level
 
-    comment = RDoc::Comment.new "# my include\n", @top_level
+    comment = RDoc::Comment.new "# my include\n", @top_level, :ruby
 
     util_parser "include I"
 
@@ -1635,7 +1635,7 @@ end
     klass = RDoc::NormalClass.new 'Foo'
     klass.parent = @top_level
 
-    comment = RDoc::Comment.new "##\n# my method\n", @top_level
+    comment = RDoc::Comment.new "##\n# my method\n", @top_level, :ruby
 
     util_parser "add_my_method :foo, :bar\nadd_my_method :baz"
 
@@ -1719,7 +1719,7 @@ end
 
   def test_parse_meta_method_define_method
     klass = RDoc::NormalClass.new 'Foo'
-    comment = RDoc::Comment.new "##\n# my method\n", @top_level
+    comment = RDoc::Comment.new "##\n# my method\n", @top_level, :ruby
 
     util_parser "define_method :foo do end"
 
@@ -1738,7 +1738,7 @@ end
     klass.parent = @top_level
 
     comment =
-      RDoc::Comment.new "##\n# :method: woo_hoo!\n# my method\n", @top_level
+      RDoc::Comment.new "##\n# :method: woo_hoo!\n# my method\n", @top_level, :ruby
 
     util_parser "add_my_method :foo, :bar\nadd_my_method :baz"
 
@@ -1757,7 +1757,7 @@ end
     klass.parent = @top_level
 
     comment =
-      RDoc::Comment.new "##\n# :singleton-method:\n# my method\n", @top_level
+      RDoc::Comment.new "##\n# :singleton-method:\n# my method\n", @top_level, :ruby
 
     util_parser "add_my_method :foo, :bar\nadd_my_method :baz"
 
@@ -1778,7 +1778,7 @@ end
 
     comment =
       RDoc::Comment.new "##\n# :singleton-method: woo_hoo!\n# my method\n",
-                        @top_level
+                        @top_level, :ruby
 
     util_parser "add_my_method :foo, :bar\nadd_my_method :baz"
 
@@ -1795,7 +1795,7 @@ end
 
   def test_parse_meta_method_string_name
     klass = RDoc::NormalClass.new 'Foo'
-    comment = RDoc::Comment.new "##\n# my method\n", @top_level
+    comment = RDoc::Comment.new "##\n# my method\n", @top_level, :ruby
 
     util_parser "add_my_method 'foo'"
 
@@ -1827,7 +1827,7 @@ end
 
   def test_parse_meta_method_unknown
     klass = RDoc::NormalClass.new 'Foo'
-    comment = RDoc::Comment.new "##\n# my method\n", @top_level
+    comment = RDoc::Comment.new "##\n# my method\n", @top_level, :ruby
 
     util_parser "add_my_method ('foo')"
 
@@ -1845,7 +1845,7 @@ end
     klass = RDoc::NormalClass.new 'Foo'
     klass.parent = @top_level
 
-    comment = RDoc::Comment.new "##\n# my method\n", @top_level
+    comment = RDoc::Comment.new "##\n# my method\n", @top_level, :ruby
 
     util_parser "def foo() :bar end"
 
@@ -2912,6 +2912,21 @@ EXPECTED
     blah = foo.method_list.first
     markup_code = blah.markup_code.sub(/^.*\n/, '')
     assert_equal expected, markup_code
+  end
+
+  def test_parse_heredoc_end
+    code = "A = <<eos\n""OK\n""eos\n"
+    util_parser code
+    @parser.parse_statements @top_level
+    @parser.scan
+    c = @top_level.classes.first.constants.first
+    assert_equal("A", c.name)
+
+    util_parser code.gsub(/$/, "\r")
+    @parser.parse_statements @top_level
+    @parser.scan
+    c = @top_level.classes.first.constants.first
+    assert_equal("A", c.name)
   end
 
   def test_parse_statements_method_oneliner_with_regexp

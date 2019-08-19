@@ -176,7 +176,7 @@ class_alloc(VALUE flags, VALUE klass)
      */
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
     RCLASS_SERIAL(obj) = rb_next_class_serial();
-    RCLASS_REFINED_CLASS(obj) = Qnil;
+    RB_OBJ_WRITE(obj, &RCLASS_REFINED_CLASS(obj), Qnil);
     RCLASS_EXT(obj)->allocator = 0;
 
     return (VALUE)obj;
@@ -313,6 +313,12 @@ class_init_copy_check(VALUE clone, VALUE orig)
 VALUE
 rb_mod_init_copy(VALUE clone, VALUE orig)
 {
+    /* cloned flag is refer at constant inline cache
+     * see vm_get_const_key_cref() in vm_insnhelper.c
+     */
+    FL_SET(clone, RCLASS_CLONED);
+    FL_SET(orig , RCLASS_CLONED);
+
     if (RB_TYPE_P(clone, T_CLASS)) {
 	class_init_copy_check(clone, orig);
     }
@@ -537,8 +543,8 @@ boot_defclass(const char *name, VALUE super)
     VALUE obj = rb_class_boot(super);
     ID id = rb_intern(name);
 
-    rb_name_class(obj, id);
     rb_const_set((rb_cObject ? rb_cObject : obj), id, obj);
+    rb_vm_add_root_module(id, obj);
     return obj;
 }
 
@@ -550,7 +556,7 @@ Init_class_hierarchy(void)
     rb_gc_register_mark_object(rb_cObject);
 
     /* resolve class name ASAP for order-independence */
-    rb_class_name(rb_cObject);
+    rb_set_class_path_string(rb_cObject, rb_cObject, rb_fstring_lit("Object"));
 
     rb_cModule = boot_defclass("Module", rb_cObject);
     rb_cClass =  boot_defclass("Class",  rb_cModule);
@@ -658,6 +664,9 @@ rb_define_class(const char *name, VALUE super)
 	if (rb_class_real(RCLASS_SUPER(klass)) != super) {
 	    rb_raise(rb_eTypeError, "superclass mismatch for class %s", name);
 	}
+
+        /* Class may have been defined in Ruby and not pin-rooted */
+        rb_vm_add_root_module(id, klass);
 	return klass;
     }
     if (!super) {
@@ -665,7 +674,6 @@ rb_define_class(const char *name, VALUE super)
     }
     klass = rb_define_class_id(id, super);
     rb_vm_add_root_module(id, klass);
-    rb_name_class(klass, id);
     rb_const_set(rb_cObject, id, klass);
     rb_class_inherited(super, klass);
 
@@ -730,6 +738,9 @@ rb_define_class_id_under(VALUE outer, ID id, VALUE super)
 		     " (%"PRIsVALUE" is given but was %"PRIsVALUE")",
 		     outer, rb_id2str(id), RCLASS_SUPER(klass), super);
 	}
+        /* Class may have been defined in Ruby and not pin-rooted */
+        rb_vm_add_root_module(id, klass);
+
 	return klass;
     }
     if (!super) {
@@ -740,6 +751,7 @@ rb_define_class_id_under(VALUE outer, ID id, VALUE super)
     rb_set_class_path_string(klass, outer, rb_id2str(id));
     rb_const_set(outer, id, klass);
     rb_class_inherited(super, klass);
+    rb_vm_add_root_module(id, klass);
     rb_gc_register_mark_object(klass);
 
     return klass;
@@ -759,7 +771,6 @@ rb_define_module_id(ID id)
     VALUE mdl;
 
     mdl = rb_module_new();
-    rb_name_class(mdl, id);
 
     return mdl;
 }
@@ -777,10 +788,13 @@ rb_define_module(const char *name)
 	    rb_raise(rb_eTypeError, "%s is not a module (%"PRIsVALUE")",
 		     name, rb_obj_class(module));
 	}
+        /* Module may have been defined in Ruby and not pin-rooted */
+        rb_vm_add_root_module(id, module);
 	return module;
     }
     module = rb_define_module_id(id);
     rb_vm_add_root_module(id, module);
+    rb_gc_register_mark_object(module);
     rb_const_set(rb_cObject, id, module);
 
     return module;
@@ -1439,6 +1453,9 @@ rb_obj_singleton_methods(int argc, const VALUE *argv, VALUE obj)
     int recur = TRUE;
 
     if (rb_check_arity(argc, 0, 1)) recur = RTEST(argv[0]);
+    if (RB_TYPE_P(obj, T_CLASS) && FL_TEST(obj, FL_SINGLETON)) {
+        rb_singleton_class(obj);
+    }
     klass = CLASS_OF(obj);
     origin = RCLASS_ORIGIN(klass);
     me_arg.list = st_init_numtable();
@@ -1863,8 +1880,8 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
 
 #define extract_kwarg(keyword, val) \
     (key = (st_data_t)(keyword), values ? \
-     rb_hash_stlike_delete(keyword_hash, &key, (val)) : \
-     rb_hash_stlike_lookup(keyword_hash, key, (val)))
+     (rb_hash_stlike_delete(keyword_hash, &key, &(val)) || ((val) = Qundef, 0)) : \
+     rb_hash_stlike_lookup(keyword_hash, key, NULL))
 
     if (NIL_P(keyword_hash)) keyword_hash = 0;
 
@@ -1872,18 +1889,11 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
 	rest = 1;
 	optional = -1-optional;
     }
-    if (values) {
-	for (j = 0; j < required + optional; j++) {
-	    values[j] = Qundef;
-	}
-    }
     if (required) {
 	for (; i < required; i++) {
 	    VALUE keyword = ID2SYM(table[i]);
 	    if (keyword_hash) {
-		st_data_t val;
-		if (extract_kwarg(keyword, &val)) {
-		    if (values) values[i] = (VALUE)val;
+                if (extract_kwarg(keyword, values[i])) {
 		    continue;
 		}
 	    }
@@ -1897,9 +1907,7 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
     j = i;
     if (optional && keyword_hash) {
 	for (i = 0; i < optional; i++) {
-	    st_data_t val;
-	    if (extract_kwarg(ID2SYM(table[required+i]), &val)) {
-		if (values) values[required+i] = (VALUE)val;
+            if (extract_kwarg(ID2SYM(table[required+i]), values[required+i])) {
 		j++;
 	    }
 	}
@@ -1908,6 +1916,11 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
 	if (RHASH_SIZE(keyword_hash) > (unsigned int)(values ? 0 : j)) {
 	    unknown_keyword_error(keyword_hash, table, required+optional);
 	}
+    }
+    if (values && !keyword_hash) {
+        for (i = 0; i < required + optional; i++) {
+            values[i] = Qundef;
+        }
     }
     return j;
 #undef extract_kwarg

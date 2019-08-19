@@ -3,7 +3,7 @@
 module Bundler
   class Source
     class Path < Source
-      autoload :Installer, "bundler/source/path/installer"
+      autoload :Installer, File.expand_path("path/installer", __dir__)
 
       attr_reader :path, :options, :root_path, :original_path
       attr_writer :name
@@ -20,11 +20,16 @@ module Bundler
         @allow_cached = false
         @allow_remote = false
 
-        @root_path = options["root_path"] || Bundler.root
+        @root_path = options["root_path"] || root
 
         if options["path"]
           @path = Pathname.new(options["path"])
-          @path = expand(@path) unless @path.relative?
+          expanded_path = expand(@path)
+          @path = if @path.relative?
+            expanded_path.relative_path_from(root_path.expand_path)
+          else
+            expanded_path
+          end
         end
 
         @name    = options["name"]
@@ -136,7 +141,7 @@ module Bundler
 
       def lockfile_path
         return relative_path(original_path) if original_path.absolute?
-        expand(original_path).relative_path_from(Bundler.root)
+        expand(original_path).relative_path_from(root)
       end
 
       def app_cache_path(custom_path = nil)
@@ -191,10 +196,10 @@ module Bundler
         else
           message = String.new("The path `#{expanded_path}` ")
           message << if File.exist?(expanded_path)
-                       "is not a directory."
-                     else
-                       "does not exist."
-                     end
+            "is not a directory."
+          else
+            "does not exist."
+          end
           raise PathError, message
         end
 

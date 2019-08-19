@@ -108,7 +108,7 @@ describe :bigdecimal_modulo, shared: true do
   end
 
   it "raises TypeError if the argument cannot be coerced to BigDecimal" do
-    lambda {
+    -> {
       @one.send(@method, '2')
     }.should raise_error(TypeError)
   end
@@ -118,8 +118,8 @@ describe :bigdecimal_modulo_zerodivisionerror, shared: true do
   it "raises ZeroDivisionError if other is zero" do
     bd5667 = BigDecimal("5667.19")
 
-    lambda { bd5667.send(@method, 0) }.should raise_error(ZeroDivisionError)
-    lambda { bd5667.send(@method, BigDecimal("0")) }.should raise_error(ZeroDivisionError)
-    lambda { @zero.send(@method, @zero) }.should raise_error(ZeroDivisionError)
+    -> { bd5667.send(@method, 0) }.should raise_error(ZeroDivisionError)
+    -> { bd5667.send(@method, BigDecimal("0")) }.should raise_error(ZeroDivisionError)
+    -> { @zero.send(@method, @zero) }.should raise_error(ZeroDivisionError)
   end
 end

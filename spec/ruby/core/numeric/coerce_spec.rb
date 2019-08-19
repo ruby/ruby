@@ -25,7 +25,7 @@ describe "Numeric#coerce" do
       class << a; true; end
 
       # watch it explode
-      lambda { a.coerce(b) }.should raise_error(TypeError)
+      -> { a.coerce(b) }.should raise_error(TypeError)
     end
   end
 
@@ -38,22 +38,22 @@ describe "Numeric#coerce" do
 
   it "raise TypeError if they are instances of different classes and other does not respond to #to_f" do
     other = mock("numeric")
-    lambda { @obj.coerce(other)   }.should raise_error(TypeError)
+    -> { @obj.coerce(other)   }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when passed nil" do
-    lambda { @obj.coerce(nil)     }.should raise_error(TypeError)
+    -> { @obj.coerce(nil)     }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when passed a boolean" do
-    lambda { @obj.coerce(false)   }.should raise_error(TypeError)
+    -> { @obj.coerce(false)   }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when passed a Symbol" do
-    lambda { @obj.coerce(:symbol) }.should raise_error(TypeError)
+    -> { @obj.coerce(:symbol) }.should raise_error(TypeError)
   end
 
   it "raises an ArgumentError when passed a non-numeric String" do
-    lambda { @obj.coerce("test")  }.should raise_error(ArgumentError)
+    -> { @obj.coerce("test")  }.should raise_error(ArgumentError)
   end
 end

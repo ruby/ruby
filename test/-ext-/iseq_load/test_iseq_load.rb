@@ -92,7 +92,9 @@ class TestIseqLoad < Test::Unit::TestCase
     begin;
       3.times { 3.times { next; @next_broke = true } }
     end;
-    a = ISeq.compile(src, __FILE__, __FILE__, line).to_a
+    a = EnvUtil.suppress_warning {
+      ISeq.compile(src, __FILE__, __FILE__, line)
+    }.to_a
     iseq = ISeq.iseq_load(a)
     iseq.eval
     assert_equal false, @next_broke

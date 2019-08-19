@@ -1,0 +1,85 @@
+#include "transcode_data.h"
+
+<%
+  map = {}
+  map["{00-7f}"] = :nomap
+  map["{c2-df}{80-bf}"] = :nomap
+  map["e0{a0-bf}{80-bf}"] = :nomap
+  map["{e1-ec}{80-bf}{80-bf}"] = :nomap
+  map["ed{80-9f}{80-bf}"] = :nomap
+  map["{ee-ef}{80-bf}{80-bf}"] = :nomap
+  map["ed{a0-af}{80-bf}ed{b0-bf}{80-bf}"] = :func_so # surrogate pairs
+  transcode_generate_node(ActionMap.parse(map), "from_CESU_8")
+
+  map = {}
+  map["{00-7f}"] = :nomap
+  map["{c2-df}{80-bf}"] = :nomap
+  map["e0{a0-bf}{80-bf}"] = :nomap
+  map["{e1-ec}{80-bf}{80-bf}"] = :nomap
+  map["ed{80-9f}{80-bf}"] = :nomap
+  map["{ee-ef}{80-bf}{80-bf}"] = :nomap
+  map["f0{90-bf}{80-bf}{80-bf}"] = :func_so      # planes 1-3
+  map["{f1-f3}{80-bf}{80-bf}{80-bf}"] = :func_so # planes 4-15
+  map["f4{80-8f}{80-bf}{80-bf}"] = :func_so      # plane 16
+  transcode_generate_node(ActionMap.parse(map), "to_CESU_8")
+%>
+
+<%= transcode_generated_code %>
+
+static ssize_t
+fun_so_from_cesu_8(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
+{
+    unsigned int scalar = ( ((s[1]&0x0F)<<16) | ((s[2]&0x3F)<<10)
+                          | ((s[4]&0x0F)<< 6) |  (s[5]&0x3F)
+                          ) + 0x10000;
+    o[0] = 0xF0 |  (scalar>>18);
+    o[1] = 0x80 | ((scalar>>12)&0x3F);
+    o[2] = 0x80 | ((scalar>> 6)&0x3F);
+    o[3] = 0x80 | ( scalar     &0x3F);
+    return 4;
+}
+
+static ssize_t
+fun_so_to_cesu_8(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
+{
+    unsigned int scalar = ((s[0]&0x07)<<18) | ((s[1]&0x3F)<<12)
+                        | ((s[2]&0x3F)<< 6) |  (s[3]&0x3F);
+    scalar -= 0x10000;
+    o[0] = 0xED;
+    o[1] = 0xA0 |  (scalar>>16);
+    o[2] = 0x80 | ((scalar>>10)&0x3F);
+    o[3] = 0xED;
+    o[4] = 0xB0 | ((scalar>> 6)&0x0F);
+    o[5] = 0x80 | (scalar      &0x3F);
+    return 6;
+}
+
+static const rb_transcoder
+rb_from_CESU_8 = {
+    "CESU-8", "UTF-8", from_CESU_8,
+    TRANSCODE_TABLE_INFO,
+    1, /* input_unit_length */
+    6, /* max_input */
+    4, /* max_output */
+    asciicompat_decoder, /* asciicompat_type */
+    0, NULL, NULL, /* state_size, state_init, state_fini */
+    NULL, NULL, NULL, fun_so_from_cesu_8
+};
+
+static const rb_transcoder
+rb_to_CESU_8 = {
+    "UTF-8", "CESU-8", to_CESU_8,
+    TRANSCODE_TABLE_INFO,
+    1, /* input_unit_length */
+    4, /* max_input */
+    6, /* max_output */
+    asciicompat_encoder, /* asciicompat_type */
+    0, NULL, NULL, /* state_size, state_init, state_fini */
+    NULL, NULL, NULL, fun_so_to_cesu_8
+};
+
+TRANS_INIT(cesu_8)
+{
+    rb_register_transcoder(&rb_from_CESU_8);
+    rb_register_transcoder(&rb_to_CESU_8);
+}

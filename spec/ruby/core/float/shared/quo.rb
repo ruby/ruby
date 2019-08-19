@@ -50,10 +50,10 @@ describe :float_quo, shared: true do
   end
 
   it "raises a TypeError when argument isn't numeric" do
-    lambda { 27292.2.send(@method, mock('non-numeric')) }.should raise_error(TypeError)
+    -> { 27292.2.send(@method, mock('non-numeric')) }.should raise_error(TypeError)
   end
 
   it "raises an ArgumentError when passed multiple arguments" do
-    lambda { 272.221.send(@method, 6,0.2) }.should raise_error(ArgumentError)
+    -> { 272.221.send(@method, 6,0.2) }.should raise_error(ArgumentError)
   end
 end

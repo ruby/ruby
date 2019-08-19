@@ -74,12 +74,12 @@ describe "Kernel#freeze" do
       def mutate; @foo = 1; end
     end.new
     o.freeze
-    lambda {o.mutate}.should raise_error(RuntimeError)
+    -> {o.mutate}.should raise_error(RuntimeError)
   end
 
   it "causes instance_variable_set to raise RuntimeError" do
     o = Object.new
     o.freeze
-    lambda {o.instance_variable_set(:@foo, 1)}.should raise_error(RuntimeError)
+    -> {o.instance_variable_set(:@foo, 1)}.should raise_error(RuntimeError)
   end
 end

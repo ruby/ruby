@@ -2,6 +2,15 @@ require_relative '../../spec_helper'
 require 'thread'
 
 describe "ConditionVariable#wait" do
+  it "calls #sleep on the given object" do
+    o = Object.new
+    o.should_receive(:sleep).with(1234)
+
+    cv = ConditionVariable.new
+
+    cv.wait(o, 1234)
+  end
+
   it "returns self" do
     m = Mutex.new
     cv = ConditionVariable.new

@@ -25,7 +25,7 @@ describe "Net::HTTPHeader#fetch" do
     end
 
     it "returns nil when there is no entry for the passed key" do
-      lambda { @headers.fetch("my-header") }.should raise_error(IndexError)
+      -> { @headers.fetch("my-header") }.should raise_error(IndexError)
     end
   end
 

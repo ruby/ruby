@@ -27,7 +27,7 @@ module Bundler
   end
 end
 
-require "bundler/deprecate"
+require_relative "deprecate"
 begin
   Bundler::Deprecate.skip_during do
     require "rubygems/safe_yaml"

@@ -7,5 +7,5 @@ describe "SizedQueue#push" do
 end
 
 describe "SizedQueue#push" do
-  it_behaves_like :sizedqueue_enq, :push, ->(n) { SizedQueue.new(n) }
+  it_behaves_like :sizedqueue_enq, :push, -> n { SizedQueue.new(n) }
 end

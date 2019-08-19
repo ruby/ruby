@@ -10,9 +10,9 @@ describe "Zlib::GzipFile#close" do
 
       gzio.closed?.should == true
 
-      lambda { gzio.orig_name }.should \
+      -> { gzio.orig_name }.should \
         raise_error(Zlib::GzipFile::Error, 'closed gzip stream')
-      lambda { gzio.comment }.should \
+      -> { gzio.comment }.should \
         raise_error(Zlib::GzipFile::Error, 'closed gzip stream')
     end
 

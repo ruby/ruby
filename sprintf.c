@@ -677,6 +677,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	  case '\n':
 	  case '\0':
 	    p--;
+            /* fall through */
 	  case '%':
 	    if (flags != FNONE) {
 		rb_raise(rb_eArgError, "invalid format character - %%");

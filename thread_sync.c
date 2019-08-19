@@ -282,14 +282,18 @@ do_mutex_lock(VALUE self, int interruptible_p)
 		th->status = prev_status;
 	    }
 	    th->vm->sleeper--;
-	    if (mutex->th == th) mutex_locked(th, self);
 
             if (interruptible_p) {
+                /* release mutex before checking for interrupts...as interrupt checking
+                 * code might call rb_raise() */
+                if (mutex->th == th) mutex->th = 0;
                 RUBY_VM_CHECK_INTS_BLOCKING(th->ec); /* may release mutex */
                 if (!mutex->th) {
                     mutex->th = th;
                     mutex_locked(th, self);
                 }
+            } else {
+                if (mutex->th == th) mutex_locked(th, self);
             }
 	}
     }
@@ -903,7 +907,7 @@ queue_do_pop(VALUE self, struct rb_queue *q, int should_block)
 
 	    qw.w.th = GET_THREAD();
 	    qw.as.q = q;
-	    list_add_tail(&qw.as.q->waitq, &qw.w.node);
+	    list_add_tail(queue_waitq(qw.as.q), &qw.w.node);
 	    qw.as.q->num_waiting++;
 
 	    rb_ensure(queue_sleep, self, queue_sleep_done, (VALUE)&qw);

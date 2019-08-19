@@ -1,5 +1,5 @@
 print "a,"
-x = lambda do
+x = -> do
   print "b,"
   Proc.new do
     print "c,"

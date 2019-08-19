@@ -11,6 +11,6 @@ describe "TCPServer#gets" do
   end
 
   it "raises Errno::ENOTCONN on gets" do
-    lambda { @server.gets }.should raise_error(Errno::ENOTCONN)
+    -> { @server.gets }.should raise_error(Errno::ENOTCONN)
   end
 end

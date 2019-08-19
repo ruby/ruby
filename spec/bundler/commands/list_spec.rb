@@ -1,20 +1,11 @@
 # frozen_string_literal: true
 
-RSpec.describe "bundle list", :bundler => "3" do
-  before do
-    install_gemfile <<-G
-      source "file://#{gem_repo1}"
-
-      gem "rack"
-      gem "rspec", :group => [:test]
-    G
-  end
-
+RSpec.describe "bundle list" do
   context "with name-only and paths option" do
     it "raises an error" do
       bundle "list --name-only --paths"
 
-      expect(out).to eq "The `--name-only` and `--paths` options cannot be used together"
+      expect(err).to eq "The `--name-only` and `--paths` options cannot be used together"
     end
   end
 
@@ -22,11 +13,20 @@ RSpec.describe "bundle list", :bundler => "3" do
     it "raises an error" do
       bundle "list --without-group dev --only-group test"
 
-      expect(out).to eq "The `--only-group` and `--without-group` options cannot be used together"
+      expect(err).to eq "The `--only-group` and `--without-group` options cannot be used together"
     end
   end
 
   describe "with without-group option" do
+    before do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+
+        gem "rack"
+        gem "rspec", :group => [:test]
+      G
+    end
+
     context "when group is present" do
       it "prints the gems not in the specified group" do
         bundle! "list --without-group test"
@@ -40,12 +40,21 @@ RSpec.describe "bundle list", :bundler => "3" do
       it "raises an error" do
         bundle "list --without-group random"
 
-        expect(out).to eq "`random` group could not be found."
+        expect(err).to eq "`random` group could not be found."
       end
     end
   end
 
   describe "with only-group option" do
+    before do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+
+        gem "rack"
+        gem "rspec", :group => [:test]
+      G
+    end
+
     context "when group is present" do
       it "prints the gems in the specified group" do
         bundle! "list --only-group default"
@@ -59,12 +68,21 @@ RSpec.describe "bundle list", :bundler => "3" do
       it "raises an error" do
         bundle "list --only-group random"
 
-        expect(out).to eq "`random` group could not be found."
+        expect(err).to eq "`random` group could not be found."
       end
     end
   end
 
   context "with name-only option" do
+    before do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+
+        gem "rack"
+        gem "rspec", :group => [:test]
+      G
+    end
+
     it "prints only the name of the gems in the bundle" do
       bundle "list --name-only"
 
@@ -82,19 +100,16 @@ RSpec.describe "bundle list", :bundler => "3" do
       build_git "git_test", "1.0.0", :path => lib_path("git_test")
 
       build_lib("gemspec_test", :path => tmp.join("gemspec_test")) do |s|
-        s.write("Gemfile", "source :rubygems\ngemspec")
         s.add_dependency "bar", "=1.0.0"
       end
 
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "rack"
         gem "rails"
         gem "git_test", :git => "#{lib_path("git_test")}"
         gemspec :path => "#{tmp.join("gemspec_test")}"
       G
-
-      bundle! "install"
     end
 
     it "prints the path of each gem in the bundle" do
@@ -109,7 +124,7 @@ RSpec.describe "bundle list", :bundler => "3" do
   context "when no gems are in the gemfile" do
     before do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
       G
     end
 
@@ -119,13 +134,35 @@ RSpec.describe "bundle list", :bundler => "3" do
     end
   end
 
-  it "lists gems installed in the bundle" do
-    bundle "list"
-    expect(out).to include("  * rack (1.0.0)")
+  context "without options" do
+    before do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+
+        gem "rack"
+        gem "rspec", :group => [:test]
+      G
+    end
+
+    it "lists gems installed in the bundle" do
+      bundle "list"
+      expect(out).to include("  * rack (1.0.0)")
+    end
   end
 
-  it "aliases the ls command to list" do
-    bundle "ls"
-    expect(out).to include("Gems included by the bundle")
+  context "when using the ls alias" do
+    before do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+
+        gem "rack"
+        gem "rspec", :group => [:test]
+      G
+    end
+
+    it "runs the list command" do
+      bundle "ls"
+      expect(out).to include("Gems included by the bundle")
+    end
   end
 end

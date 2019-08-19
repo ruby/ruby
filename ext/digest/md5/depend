@@ -5,6 +5,7 @@ md5init.o: $(LOCAL_HDRS)
 md5init.o: $(RUBY_EXTCONF_H)
 md5init.o: $(arch_hdrdir)/ruby/config.h
 md5init.o: $(hdrdir)/ruby.h
+md5init.o: $(hdrdir)/ruby/assert.h
 md5init.o: $(hdrdir)/ruby/backward.h
 md5init.o: $(hdrdir)/ruby/defines.h
 md5init.o: $(hdrdir)/ruby/intern.h

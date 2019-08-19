@@ -32,25 +32,25 @@ describe "Module#protected_method_defined?" do
   end
 
   it "raises a TypeError if passed a Fixnum" do
-    lambda do
+    -> do
       ModuleSpecs::CountsMixin.protected_method_defined?(1)
     end.should raise_error(TypeError)
   end
 
   it "raises a TypeError if passed nil" do
-    lambda do
+    -> do
       ModuleSpecs::CountsMixin.protected_method_defined?(nil)
     end.should raise_error(TypeError)
   end
 
   it "raises a TypeError if passed false" do
-    lambda do
+    -> do
       ModuleSpecs::CountsMixin.protected_method_defined?(false)
     end.should raise_error(TypeError)
   end
 
   it "raises a TypeError if passed an object that does not defined #to_str" do
-    lambda do
+    -> do
       ModuleSpecs::CountsMixin.protected_method_defined?(mock('x'))
     end.should raise_error(TypeError)
   end
@@ -59,7 +59,7 @@ describe "Module#protected_method_defined?" do
     sym = mock('symbol')
     def sym.to_sym() :protected_3 end
 
-    lambda do
+    -> do
       ModuleSpecs::CountsMixin.protected_method_defined?(sym)
     end.should raise_error(TypeError)
   end

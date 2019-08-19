@@ -9,7 +9,7 @@ RSpec.describe "gemcutter's dependency API", :realworld => true do
       @server_uri = "http://127.0.0.1:#{port}"
 
       require File.expand_path("../../support/artifice/endpoint_timeout", __FILE__)
-      require "thread"
+
       @t = Thread.new do
         server = Rack::Server.start(:app       => EndpointTimeout,
                                     :Host      => "0.0.0.0",
@@ -22,7 +22,7 @@ RSpec.describe "gemcutter's dependency API", :realworld => true do
       @t.run
 
       wait_for_server("127.0.0.1", port)
-      bundle! "config timeout 1"
+      bundle! "config set timeout 1"
     end
 
     after do

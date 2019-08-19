@@ -16,30 +16,15 @@ RSpec.describe Bundler, "friendly errors" do
       FileUtils.rm(Gem.configuration.config_file_name)
     end
 
-    it "reports a relevant friendly error message", :ruby => ">= 1.9", :rubygems => "< 2.5.0" do
+    it "reports a relevant friendly error message" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 
       bundle :install, :env => { "DEBUG" => true }
 
-      expect(out).to include("Your RubyGems configuration")
-      expect(out).to include("invalid YAML syntax")
-      expect(out).to include("Psych::SyntaxError")
-      expect(out).not_to include("ERROR REPORT TEMPLATE")
-      expect(exitstatus).to eq(25) if exitstatus
-    end
-
-    it "reports a relevant friendly error message", :ruby => ">= 1.9", :rubygems => ">= 2.5.0" do
-      gemfile <<-G
-        source "file://#{gem_repo1}"
-        gem "rack"
-      G
-
-      bundle :install, :env => { "DEBUG" => true }
-
-      expect(last_command.stderr).to include("Failed to load #{home(".gemrc")}")
+      expect(err).to include("Failed to load #{home(".gemrc")}")
       expect(exitstatus).to eq(0) if exitstatus
     end
   end

@@ -21,7 +21,7 @@ end
 
 describe "SystemCallError.new" do
   it "requires at least one argument" do
-    lambda { SystemCallError.new }.should raise_error(ArgumentError)
+    -> { SystemCallError.new }.should raise_error(ArgumentError)
   end
 
   it "accepts single Fixnum argument as errno" do

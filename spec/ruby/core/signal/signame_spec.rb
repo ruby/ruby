@@ -10,7 +10,7 @@ describe "Signal.signame" do
   end
 
   it "raises a TypeError when the passed argument can't be coerced to Integer" do
-    lambda { Signal.signame("hello") }.should raise_error(TypeError)
+    -> { Signal.signame("hello") }.should raise_error(TypeError)
   end
 
   platform_is_not :windows do

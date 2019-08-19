@@ -19,13 +19,13 @@ describe "File.mkfifo" do
 
     context "when path passed is not a String value" do
       it "raises a TypeError" do
-        lambda { File.mkfifo(:"/tmp/fifo") }.should raise_error(TypeError)
+        -> { File.mkfifo(:"/tmp/fifo") }.should raise_error(TypeError)
       end
     end
 
     context "when path does not exist" do
       it "raises an Errno::ENOENT exception" do
-        lambda { File.mkfifo("/bogus/path") }.should raise_error(Errno::ENOENT)
+        -> { File.mkfifo("/bogus/path") }.should raise_error(Errno::ENOENT)
       end
     end
 

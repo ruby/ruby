@@ -20,6 +20,14 @@
 #include <wchar.h>
 #endif
 #ifdef __APPLE__
+# if !(defined(__has_feature) && defined(__has_attribute))
+/* Maybe a bug in SDK of Xcode 10.2.1 */
+/* In this condition, <os/availability.h> does not define
+ * API_AVAILABLE and similar, but __API_AVAILABLE and similar which
+ * are defined in <Availability.h> */
+#   define API_AVAILABLE(...)
+#   define API_DEPRECATED(...)
+# endif
 #include <CoreFoundation/CFString.h>
 #endif
 
@@ -115,6 +123,12 @@ int flock(int, int);
 #define rename(f, t)	rb_w32_urename((f), (t))
 #undef symlink
 #define symlink(s, l)	rb_w32_usymlink((s), (l))
+
+#ifdef HAVE_REALPATH
+/* Don't use native realpath(3) on Windows, as the check for
+   absolute paths does not work for drive letters. */
+#undef HAVE_REALPATH
+#endif
 #else
 #define STAT(p, s)	stat((p), (s))
 #endif
@@ -130,6 +144,16 @@ int flock(int, int);
 /* utime may fail if time is out-of-range for the FS [ruby-dev:38277] */
 #if defined DOSISH || defined __CYGWIN__
 #  define UTIME_EINVAL
+#endif
+
+/* Solaris 10 realpath(3) doesn't support File.realpath */
+#if defined HAVE_REALPATH && defined __sun && defined __SVR4
+#undef HAVE_REALPATH
+#endif
+
+#ifdef HAVE_REALPATH
+#include <limits.h>
+#include <stdlib.h>
 #endif
 
 VALUE rb_cFile;
@@ -451,7 +475,7 @@ rb_file_path(VALUE obj)
         rb_raise(rb_eIOError, "File is unnamed (TMPFILE?)");
     }
 
-    return rb_obj_taint(rb_str_dup(fptr->pathv));
+    return rb_str_dup(fptr->pathv);
 }
 
 static size_t
@@ -1198,6 +1222,8 @@ rb_statx(VALUE file, struct statx *stx, unsigned int mask)
 
 # define statx_has_birthtime(st) ((st)->stx_mask & STATX_BTIME)
 
+NORETURN(static void statx_notimplement(const char *field_name));
+
 /* rb_notimplement() shows "function is unimplemented on this machine".
    It is not applicable to statx which behavior depends on the filesystem. */
 static void
@@ -1905,6 +1931,10 @@ rb_file_world_writable_p(VALUE obj, VALUE fname)
  *
  * Returns <code>true</code> if the named file is executable by the effective
  * user and group id of this process. See eaccess(3).
+ *
+ * Windows does not support execute permissions separately from read
+ * permissions. On Windows, a file is only considered executable if it ends in
+ * .bat, .cmd, .com, or .exe.
  */
 
 static VALUE
@@ -1920,6 +1950,10 @@ rb_file_executable_p(VALUE obj, VALUE fname)
  *
  * Returns <code>true</code> if the named file is executable by the real
  * user and group id of this process. See access(3).
+ *
+ * Windows does not support execute permissions separately from read
+ * permissions. On Windows, a file is only considered executable if it ends in
+ * .bat, .cmd, .com, or .exe.
  */
 
 static VALUE
@@ -3187,15 +3221,16 @@ rb_file_s_umask(int argc, VALUE *argv)
 {
     mode_t omask = 0;
 
-    if (argc == 0) {
+    switch (argc) {
+      case 0:
 	omask = umask(0);
 	umask(omask);
-    }
-    else if (argc == 1) {
+        break;
+      case 1:
 	omask = umask(NUM2MODET(argv[0]));
-    }
-    else {
-	rb_check_arity(argc, 0, 1);
+        break;
+      default:
+        rb_error_arity(argc, 0, 1);
     }
     return MODET2NUM(omask);
 }
@@ -4182,7 +4217,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE f
 }
 
 static VALUE
-rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode)
+rb_check_realpath_emulate(VALUE basedir, VALUE path, enum rb_realpath_mode mode)
 {
     long prefixlen;
     VALUE resolved;
@@ -4270,10 +4305,81 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode
 	}
     }
 
-    OBJ_INFECT(resolved, unresolved_path);
+    rb_obj_taint(resolved);
     RB_GC_GUARD(unresolved_path);
     RB_GC_GUARD(curdir);
     return resolved;
+}
+
+static VALUE rb_file_join(VALUE ary);
+
+static VALUE
+rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode)
+{
+#ifdef HAVE_REALPATH
+    VALUE unresolved_path;
+    rb_encoding *origenc;
+    char *resolved_ptr = NULL;
+    VALUE resolved;
+    struct stat st;
+
+    if (mode == RB_REALPATH_DIR) {
+        return rb_check_realpath_emulate(basedir, path, mode);
+    }
+
+    unresolved_path = rb_str_dup_frozen(path);
+    origenc = rb_enc_get(unresolved_path);
+    if (*RSTRING_PTR(unresolved_path) != '/' && !NIL_P(basedir)) {
+        unresolved_path = rb_file_join(rb_assoc_new(basedir, unresolved_path));
+    }
+    unresolved_path = TO_OSPATH(unresolved_path);
+
+    if((resolved_ptr = realpath(RSTRING_PTR(unresolved_path), NULL)) == NULL) {
+        /* glibc realpath(3) does not allow /path/to/file.rb/../other_file.rb,
+           returning ENOTDIR in that case.
+           glibc realpath(3) can also return ENOENT for paths that exist,
+           such as /dev/fd/5.
+           Fallback to the emulated approach in either of those cases. */
+        if (errno == ENOTDIR ||
+            (errno == ENOENT && rb_file_exist_p(0, unresolved_path))) {
+            return rb_check_realpath_emulate(basedir, path, mode);
+
+        }
+        if (mode == RB_REALPATH_CHECK) {
+            return Qnil;
+        }
+        rb_sys_fail_path(unresolved_path);
+    }
+    resolved = ospath_new(resolved_ptr, strlen(resolved_ptr), rb_filesystem_encoding());
+    free(resolved_ptr);
+
+    if (rb_stat(resolved, &st) < 0) {
+        if (mode == RB_REALPATH_CHECK) {
+            return Qnil;
+        }
+        rb_sys_fail_path(unresolved_path);
+    }
+
+    if (origenc != rb_enc_get(resolved)) {
+        if (!rb_enc_str_asciionly_p(resolved)) {
+            resolved = rb_str_conv_enc(resolved, NULL, origenc);
+        }
+        rb_enc_associate(resolved, origenc);
+    }
+
+    if(rb_enc_str_coderange(resolved) == ENC_CODERANGE_BROKEN) {
+        rb_enc_associate(resolved, rb_filesystem_encoding());
+        if(rb_enc_str_coderange(resolved) == ENC_CODERANGE_BROKEN) {
+            rb_enc_associate(resolved, rb_ascii8bit_encoding());
+        }
+    }
+
+    rb_obj_taint(resolved);
+    RB_GC_GUARD(unresolved_path);
+    return resolved;
+#else
+    return rb_check_realpath_emulate(basedir, path, mode);
+#endif /* HAVE_REALPATH */
 }
 
 VALUE
@@ -4696,8 +4802,6 @@ rb_file_s_split(VALUE klass, VALUE path)
     FilePathStringValue(path);		/* get rid of converting twice */
     return rb_assoc_new(rb_file_dirname(path), rb_file_s_basename(1,&path));
 }
-
-static VALUE rb_file_join(VALUE ary);
 
 static VALUE
 file_inspect_join(VALUE ary, VALUE arg, int recur)

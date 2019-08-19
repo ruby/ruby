@@ -29,7 +29,7 @@ describe "Module#attr_reader" do
       attr_reader :spec_attr_reader
     end
 
-    lambda { true.instance_variable_set("@spec_attr_reader", "a") }.should raise_error(RuntimeError)
+    -> { true.instance_variable_set("@spec_attr_reader", "a") }.should raise_error(RuntimeError)
   end
 
   it "converts non string/symbol/fixnum names to strings using to_str" do
@@ -44,9 +44,9 @@ describe "Module#attr_reader" do
 
   it "raises a TypeError when the given names can't be converted to strings using to_str" do
     o = mock('o')
-    lambda { Class.new { attr_reader o } }.should raise_error(TypeError)
+    -> { Class.new { attr_reader o } }.should raise_error(TypeError)
     (o = mock('123')).should_receive(:to_str).and_return(123)
-    lambda { Class.new { attr_reader o } }.should raise_error(TypeError)
+    -> { Class.new { attr_reader o } }.should raise_error(TypeError)
   end
 
   it "applies current visibility to methods created" do
@@ -55,7 +55,7 @@ describe "Module#attr_reader" do
       attr_reader :foo
     end
 
-    lambda { c.new.foo }.should raise_error(NoMethodError)
+    -> { c.new.foo }.should raise_error(NoMethodError)
   end
 
   ruby_version_is ''...'2.5' do

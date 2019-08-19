@@ -23,6 +23,6 @@ describe :complex_math_exp_bang, shared: true do
   end
 
   it "raises a TypeError when passed a Complex number" do
-    lambda { @object.send(:exp!, Complex(1, 3)) }.should raise_error(TypeError)
+    -> { @object.send(:exp!, Complex(1, 3)) }.should raise_error(TypeError)
   end
 end

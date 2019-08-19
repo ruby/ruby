@@ -44,7 +44,18 @@ extern "C" {
 # define WARN_UNUSED_RESULT(x) x
 #endif
 
+#ifndef __has_feature
+# define __has_feature(x) 0
+#endif
+
+#ifndef __has_extension
+# define __has_extension __has_feature
+#endif
+
 #if 0
+#elif defined(NO_SANITIZE) && __has_feature(memory_sanitizer)
+# define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
+    NO_SANITIZE("memory", NO_SANITIZE("address", NOINLINE(x)))
 #elif defined(NO_SANITIZE)
 # define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
     NO_SANITIZE("address", NOINLINE(x))
@@ -87,14 +98,6 @@ extern "C" {
 
 #define numberof(array) ((int)(sizeof(array) / sizeof((array)[0])))
 
-#ifndef __has_feature
-# define __has_feature(x) 0
-#endif
-
-#ifndef __has_extension
-# define __has_extension __has_feature
-#endif
-
 #ifndef MJIT_HEADER
 
 #ifdef HAVE_SANITIZER_ASAN_INTERFACE_H
@@ -105,45 +108,92 @@ extern "C" {
 # define __asan_poison_memory_region(x, y)
 # define __asan_unpoison_memory_region(x, y)
 # define __asan_region_is_poisoned(x, y) 0
-# define poisoned_object_p(x) 0
 #endif
 
 #ifdef HAVE_SANITIZER_MSAN_INTERFACE_H
-# include <sanitizer/msan_interface.h>
+# if __has_feature(memory_sanitizer)
+#  include <sanitizer/msan_interface.h>
+# endif
 #endif
 
 #if !__has_feature(memory_sanitizer)
-# define __msan_allocated_memory(x, y)
-# define __msan_poison(x, y)
-# define __msan_unpoison(x, y)
-# define __msan_unpoison_string(x)
+# define __msan_allocated_memory(x, y) ((void)(x), (void)(y))
+# define __msan_poison(x, y) ((void)(x), (void)(y))
+# define __msan_unpoison(x, y) ((void)(x), (void)(y))
+# define __msan_unpoison_string(x) ((void)(x))
 #endif
 
+/*!
+ * This function asserts that a (continuous) memory region from ptr to size
+ * being "poisoned".  Both read / write access to such memory region are
+ * prohibited until properly unpoisoned.  The region must be previously
+ * allocated (do not pass a freed pointer here), but not necessarily be an
+ * entire object that the malloc returns.  You can punch hole a part of a
+ * gigantic heap arena.  This is handy when you do not free an allocated memory
+ * region to reuse later: poison when you keep it unused, and unpoison when you
+ * reuse.
+ *
+ * \param[in]  ptr   pointer to the beginning of the memory region to poison.
+ * \param[in]  size  the length of the memory region to poison.
+ */
 static inline void
-poison_memory_region(const volatile void *ptr, size_t size)
+asan_poison_memory_region(const volatile void *ptr, size_t size)
 {
     __msan_poison(ptr, size);
     __asan_poison_memory_region(ptr, size);
 }
 
+/*!
+ * This is a variant of asan_poison_memory_region that takes a VALUE.
+ *
+ * \param[in]  obj   target object.
+ */
 static inline void
-poison_object(VALUE obj)
+asan_poison_object(VALUE obj)
 {
-    struct RVALUE *ptr = (void *)obj;
-    poison_memory_region(ptr, SIZEOF_VALUE);
+    MAYBE_UNUSED(struct RVALUE *) ptr = (void *)obj;
+    asan_poison_memory_region(ptr, SIZEOF_VALUE);
 }
 
-#if __has_feature(address_sanitizer)
-static inline void *
-poisoned_object_p(VALUE obj)
-{
-    struct RVALUE *ptr = (void *)obj;
-    return __asan_region_is_poisoned(ptr, SIZEOF_VALUE);
-}
+#if !__has_feature(address_sanitizer)
+#define asan_poison_object_if(ptr, obj) ((void)(ptr), (void)(obj))
+#else
+#define asan_poison_object_if(ptr, obj) do { \
+        if (ptr) asan_poison_object(obj); \
+    } while (0)
 #endif
 
+/*!
+ * This function predicates if the given object is fully addressable or not.
+ *
+ * \param[in]  obj        target object.
+ * \retval     0          the given object is fully addressable.
+ * \retval     otherwise  pointer to first such byte who is poisoned.
+ */
+static inline void *
+asan_poisoned_object_p(VALUE obj)
+{
+    MAYBE_UNUSED(struct RVALUE *) ptr = (void *)obj;
+    return __asan_region_is_poisoned(ptr, SIZEOF_VALUE);
+}
+
+/*!
+ * This function asserts that a (formally poisoned) memory region from ptr to
+ * size is now addressable.  Write access to such memory region gets allowed.
+ * However read access might or might not be possible depending on situations,
+ * because the region can have contents of previous usages.  That information
+ * should be passed by the malloc_p flag.  If that is true, the contents of the
+ * region is _not_ fully defined (like the return value of malloc behaves).
+ * Reading from there is NG; write something first.  If malloc_p is false on
+ * the other hand, that memory region is fully defined and can be read
+ * immediately.
+ *
+ * \param[in]  ptr       pointer to the beginning of the memory region to unpoison.
+ * \param[in]  size      the length of the memory region.
+ * \param[in]  malloc_p  if the memory region is like a malloc's return value or not.
+ */
 static inline void
-unpoison_memory_region(const volatile void *ptr, size_t size, bool malloc_p)
+asan_unpoison_memory_region(const volatile void *ptr, size_t size, bool malloc_p)
 {
     __asan_unpoison_memory_region(ptr, size);
     if (malloc_p) {
@@ -154,11 +204,17 @@ unpoison_memory_region(const volatile void *ptr, size_t size, bool malloc_p)
     }
 }
 
+/*!
+ * This is a variant of asan_unpoison_memory_region that takes a VALUE.
+ *
+ * \param[in]  obj       target object.
+ * \param[in]  malloc_p  if the memory region is like a malloc's return value or not.
+ */
 static inline void
-unpoison_object(VALUE obj, bool newobj_p)
+asan_unpoison_object(VALUE obj, bool newobj_p)
 {
-    struct RVALUE *ptr = (void *)obj;
-    unpoison_memory_region(ptr, SIZEOF_VALUE, newobj_p);
+    MAYBE_UNUSED(struct RVALUE *) ptr = (void *)obj;
+    asan_unpoison_memory_region(ptr, SIZEOF_VALUE, newobj_p);
 }
 
 #endif
@@ -731,8 +787,8 @@ struct RBignum {
 
 struct RRational {
     struct RBasic basic;
-    const VALUE num;
-    const VALUE den;
+    VALUE num;
+    VALUE den;
 };
 
 #define RRATIONAL(obj) (R_CAST(RRational)(obj))
@@ -748,8 +804,8 @@ struct RFloat {
 
 struct RComplex {
     struct RBasic basic;
-    const VALUE real;
-    const VALUE imag;
+    VALUE real;
+    VALUE imag;
 };
 
 #define RCOMPLEX(obj) (R_CAST(RComplex)(obj))
@@ -759,17 +815,27 @@ struct RComplex {
 #define RCOMPLEX_SET_IMAG(cmp, i) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->imag,(i))
 
 enum ruby_rhash_flags {
-    RHASH_ST_TABLE_FLAG = FL_USER3,
-    RHASH_AR_TABLE_MAX_SIZE = 8,
-    RHASH_AR_TABLE_SIZE_MASK = (FL_USER4|FL_USER5|FL_USER6|FL_USER7),
+    RHASH_PROC_DEFAULT = FL_USER2,                                       /* FL 2 */
+    RHASH_ST_TABLE_FLAG = FL_USER3,                                      /* FL 3 */
+#define RHASH_AR_TABLE_MAX_SIZE SIZEOF_VALUE
+    RHASH_AR_TABLE_SIZE_MASK = (FL_USER4|FL_USER5|FL_USER6|FL_USER7),    /* FL 4..7 */
     RHASH_AR_TABLE_SIZE_SHIFT = (FL_USHIFT+4),
-    RHASH_AR_TABLE_BOUND_MASK = (FL_USER8|FL_USER9|FL_USER10|FL_USER11),
+    RHASH_AR_TABLE_BOUND_MASK = (FL_USER8|FL_USER9|FL_USER10|FL_USER11), /* FL 8..11 */
     RHASH_AR_TABLE_BOUND_SHIFT = (FL_USHIFT+8),
+
+    // we can not put it in "enum" because it can exceed "int" range.
+#define RHASH_LEV_MASK (FL_USER13 | FL_USER14 | FL_USER15 |                /* FL 13..19 */ \
+                        FL_USER16 | FL_USER17 | FL_USER18 | FL_USER19)
+
+#if USE_TRANSIENT_HEAP
+    RHASH_TRANSIENT_FLAG = FL_USER12,                                    /* FL 12 */
+#endif
+
+    RHASH_LEV_SHIFT = (FL_USHIFT + 13),
+    RHASH_LEV_MAX = 127, /* 7 bits */
 
     RHASH_ENUM_END
 };
-
-#define HASH_PROC_DEFAULT FL_USER2
 
 #define RHASH_AR_TABLE_SIZE_RAW(h) \
   ((unsigned int)((RBASIC(h)->flags & RHASH_AR_TABLE_SIZE_MASK) >> RHASH_AR_TABLE_SIZE_SHIFT))
@@ -800,7 +866,6 @@ void rb_hash_st_table_set(VALUE hash, st_table *st);
 #define RHASH_AR_TABLE_BOUND_SHIFT   RHASH_AR_TABLE_BOUND_SHIFT
 
 #if USE_TRANSIENT_HEAP
-#define RHASH_TRANSIENT_FLAG      FL_USER14
 #define RHASH_TRANSIENT_P(hash)   FL_TEST_RAW((hash), RHASH_TRANSIENT_FLAG)
 #define RHASH_SET_TRANSIENT_FLAG(h)   FL_SET_RAW(h, RHASH_TRANSIENT_FLAG)
 #define RHASH_UNSET_TRANSIENT_FLAG(h) FL_UNSET_RAW(h, RHASH_TRANSIENT_FLAG)
@@ -810,25 +875,40 @@ void rb_hash_st_table_set(VALUE hash, st_table *st);
 #define RHASH_UNSET_TRANSIENT_FLAG(h) ((void)0)
 #endif
 
+#if   SIZEOF_VALUE / RHASH_AR_TABLE_MAX_SIZE == 2
+typedef uint16_t ar_hint_t;
+#elif SIZEOF_VALUE / RHASH_AR_TABLE_MAX_SIZE == 1
+typedef unsigned char ar_hint_t;
+#else
+#error unsupported
+#endif
+
 struct RHash {
     struct RBasic basic;
     union {
         st_table *st;
         struct ar_table_struct *ar; /* possibly 0 */
     } as;
-    const int iter_lev;
     const VALUE ifnone;
+    union {
+        ar_hint_t ary[RHASH_AR_TABLE_MAX_SIZE];
+        VALUE word;
+    } ar_hint;
 };
 
-#ifdef RHASH_ITER_LEV
-#  undef RHASH_ITER_LEV
+#ifdef RHASH_IFNONE
 #  undef RHASH_IFNONE
 #  undef RHASH_SIZE
 
-#  define RHASH_ITER_LEV(h)  (RHASH(h)->iter_lev)
 #  define RHASH_IFNONE(h)    (RHASH(h)->ifnone)
 #  define RHASH_SIZE(h)      (RHASH_AR_TABLE_P(h) ? RHASH_AR_TABLE_SIZE_RAW(h) : RHASH_ST_SIZE(h))
-#endif /* #ifdef RHASH_ITER_LEV */
+#endif /* ifdef RHASH_IFNONE */
+
+struct RMoved {
+    VALUE flags;
+    VALUE destination;
+    VALUE next;
+};
 
 /* missing/setproctitle.c */
 #ifndef HAVE_SETPROCTITLE
@@ -948,7 +1028,7 @@ struct rb_classext_struct {
     rb_subclass_entry_t **module_subclasses;
     rb_serial_t class_serial;
     const VALUE origin_;
-    VALUE refined_class;
+    const VALUE refined_class;
     rb_alloc_func_t allocator;
 };
 
@@ -976,6 +1056,7 @@ int rb_singleton_class_internal_p(VALUE sklass);
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT(c)->refined_class)
 #define RCLASS_SERIAL(c) (RCLASS_EXT(c)->class_serial)
 
+#define RCLASS_CLONED     FL_USER6
 #define RICLASS_IS_ORIGIN FL_USER5
 
 static inline void
@@ -1080,7 +1161,7 @@ struct vm_throw_data {
     VALUE reserved;
     const VALUE throw_obj;
     const struct rb_control_frame_struct *catch_frame;
-    VALUE throw_state;
+    int throw_state;
 };
 
 #define THROW_DATA_P(err) RB_TYPE_P((VALUE)(err), T_IMEMO)
@@ -1163,7 +1244,7 @@ struct MEMO {
     union {
 	long cnt;
 	long state;
-	const VALUE value;
+        const VALUE value;
 	VALUE (*func)(ANYARGS);
     } u3;
 };
@@ -1240,7 +1321,7 @@ VALUE rb_gvar_defined(struct rb_global_entry *);
 /* array.c */
 
 #ifndef ARRAY_DEBUG
-#define ARRAY_DEBUG 0
+#define ARRAY_DEBUG (0+RUBY_DEBUG)
 #endif
 
 #ifdef ARRAY_DEBUG
@@ -1306,6 +1387,22 @@ rb_ary_entry_internal(VALUE ary, long offset)
     }
     return ptr[offset];
 }
+
+/* MRI debug support */
+void rb_obj_info_dump(VALUE obj);
+void  ruby_debug_breakpoint(void);
+
+// show obj data structure without any side-effect
+#define rp(obj) rb_obj_info_dump((VALUE)obj);
+// same as rp, but add message header
+#define rp_m(msg, obj) do { \
+    fprintf(stderr, "%s", (msg)); \
+    rb_obj_info_dump((VALUE)obj); \
+} while (0)
+
+// `ruby_debug_breakpoint()` does nothing,
+// but breakpoint is set in run.gdb, so `make gdb` can stop here.
+#define bp() ruby_debug_breakpoint()
 
 /* bignum.c */
 extern const char ruby_digitmap[];
@@ -1451,6 +1548,7 @@ extern ID ruby_static_id_signo, ruby_static_id_status;
 void rb_class_modify_check(VALUE);
 #define id_signo ruby_static_id_signo
 #define id_status ruby_static_id_status
+NORETURN(VALUE rb_f_raise(int argc, VALUE *argv));
 
 /* eval_error.c */
 VALUE rb_get_backtrace(VALUE info);
@@ -1542,9 +1640,6 @@ struct st_table *rb_hash_tbl_raw(VALUE hash);
 #endif
 
 VALUE rb_hash_new_with_size(st_index_t size);
-RUBY_SYMBOL_EXPORT_BEGIN
-VALUE rb_hash_new_compare_by_id(void);
-RUBY_SYMBOL_EXPORT_END
 VALUE rb_hash_has_key(VALUE hash, VALUE key);
 VALUE rb_hash_default_value(VALUE hash, VALUE key);
 VALUE rb_hash_set_default_proc(VALUE hash, VALUE proc);
@@ -1561,11 +1656,11 @@ VALUE rb_hash_rehash(VALUE hash);
 VALUE rb_hash_resurrect(VALUE hash);
 int rb_hash_add_new_element(VALUE hash, VALUE key, VALUE val);
 VALUE rb_hash_set_pair(VALUE hash, VALUE pair);
-void rb_hash_bulk_insert(long, const VALUE *, VALUE);
 
 int rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval);
 int rb_hash_stlike_delete(VALUE hash, st_data_t *pkey, st_data_t *pval);
 int rb_hash_stlike_foreach(VALUE hash, int (*func)(ANYARGS), st_data_t arg);
+int rb_hash_stlike_foreach_with_replace(VALUE hash, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg);
 int rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func func, st_data_t arg);
 
 /* inits.c */
@@ -1668,12 +1763,14 @@ VALUE rb_float_plus(VALUE x, VALUE y);
 VALUE rb_int_minus(VALUE x, VALUE y);
 VALUE rb_int_mul(VALUE x, VALUE y);
 VALUE rb_float_mul(VALUE x, VALUE y);
+VALUE rb_float_div(VALUE x, VALUE y);
 VALUE rb_int_idiv(VALUE x, VALUE y);
 VALUE rb_int_modulo(VALUE x, VALUE y);
 VALUE rb_int_round(VALUE num, int ndigits, enum ruby_num_rounding_mode mode);
 VALUE rb_int2str(VALUE num, int base);
 VALUE rb_dbl_hash(double d);
 VALUE rb_fix_plus(VALUE x, VALUE y);
+VALUE rb_fix_aref(VALUE fix, VALUE idx);
 VALUE rb_int_gt(VALUE x, VALUE y);
 int rb_float_cmp(VALUE x, VALUE y);
 VALUE rb_float_gt(VALUE x, VALUE y);
@@ -1693,6 +1790,7 @@ VALUE rb_int_odd_p(VALUE num);
 int rb_int_positive_p(VALUE num);
 int rb_int_negative_p(VALUE num);
 VALUE rb_num_pow(VALUE x, VALUE y);
+VALUE rb_float_ceil(VALUE num, int ndigits);
 
 static inline VALUE
 rb_num_compare_with_zero(VALUE num, ID mid)
@@ -1830,6 +1928,7 @@ VALUE rb_immutable_obj_clone(int, VALUE *, VALUE);
 VALUE rb_obj_not_equal(VALUE obj1, VALUE obj2);
 VALUE rb_convert_type_with_id(VALUE,int,const char*,ID);
 VALUE rb_check_convert_type_with_id(VALUE,int,const char*,ID);
+int rb_bool_expected(VALUE, const char *);
 
 struct RBasicRaw {
     VALUE flags;
@@ -1915,6 +2014,7 @@ struct rb_execarg {
     unsigned uid_given : 1;
     unsigned gid_given : 1;
     unsigned exception : 1;
+    unsigned exception_given : 1;
     struct waitpid_state *waitpid_state; /* for async process management */
     rb_pid_t pgroup_pgid; /* asis(-1), new pgroup(0), specified pgroup (0<V). */
     VALUE rlimit_limits; /* Qfalse or [[rtype, softlim, hardlim], ...] */
@@ -1967,6 +2067,8 @@ VALUE rb_rational_abs(VALUE self);
 VALUE rb_rational_cmp(VALUE self, VALUE other);
 VALUE rb_rational_pow(VALUE self, VALUE other);
 VALUE rb_numeric_quo(VALUE x, VALUE y);
+VALUE rb_float_numerator(VALUE x);
+VALUE rb_float_denominator(VALUE x);
 
 /* re.c */
 VALUE rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline);
@@ -1975,6 +2077,7 @@ long rb_reg_search0(VALUE, VALUE, long, int, int);
 VALUE rb_reg_match_p(VALUE re, VALUE str, long pos);
 bool rb_reg_start_with_p(VALUE re, VALUE str);
 void rb_backref_set_string(VALUE string, long pos, long len);
+void rb_match_unbusy(VALUE);
 int rb_match_count(VALUE match);
 int rb_match_nth_defined(int nth, VALUE match);
 VALUE rb_reg_new_ary(VALUE ary, int options);
@@ -2018,8 +2121,6 @@ VALUE rb_id_quote_unprintable(ID);
 char *rb_str_fill_terminator(VALUE str, const int termlen);
 void rb_str_change_terminator_length(VALUE str, const int oldtermlen, const int termlen);
 VALUE rb_str_locktmp_ensure(VALUE str, VALUE (*func)(VALUE), VALUE arg);
-VALUE rb_str_tmp_frozen_acquire(VALUE str);
-void rb_str_tmp_frozen_release(VALUE str, VALUE tmp);
 VALUE rb_str_chomp_string(VALUE str, VALUE chomp);
 #ifdef RUBY_ENCODING_H
 VALUE rb_external_str_with_enc(VALUE str, rb_encoding *eenc);
@@ -2041,6 +2142,23 @@ char *rb_str_to_cstr(VALUE str);
 VALUE rb_str_eql(VALUE str1, VALUE str2);
 VALUE rb_obj_as_string_result(VALUE str, VALUE obj);
 const char *ruby_escaped_char(int c);
+VALUE rb_str_opt_plus(VALUE, VALUE);
+
+/* expect tail call optimization */
+static inline VALUE
+rb_str_eql_internal(const VALUE str1, const VALUE str2)
+{
+    const long len = RSTRING_LEN(str1);
+    const char *ptr1, *ptr2;
+
+    if (len != RSTRING_LEN(str2)) return Qfalse;
+    if (!rb_str_comparable(str1, str2)) return Qfalse;
+    if ((ptr1 = RSTRING_PTR(str1)) == (ptr2 = RSTRING_PTR(str2)))
+        return Qtrue;
+    if (memcmp(ptr1, ptr2, len) == 0)
+        return Qtrue;
+    return Qfalse;
+}
 
 /* symbol.c */
 #ifdef RUBY_ENCODING_H
@@ -2086,7 +2204,6 @@ struct timeval rb_time_timeval(VALUE);
 VALUE rb_obj_is_mutex(VALUE obj);
 VALUE rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg);
 void rb_thread_execute_interrupts(VALUE th);
-void rb_clear_trace_func(void);
 VALUE rb_get_coverages(void);
 int rb_get_coverage_mode(void);
 VALUE rb_default_coverage(int);
@@ -2136,6 +2253,7 @@ VALUE rb_search_class_path(VALUE);
 VALUE rb_attr_delete(VALUE, ID);
 VALUE rb_ivar_lookup(VALUE obj, ID id, VALUE undef);
 void rb_autoload_str(VALUE mod, ID id, VALUE file);
+VALUE rb_autoload_at_p(VALUE, ID, int);
 void rb_deprecate_constant(VALUE mod, const char *name);
 NORETURN(VALUE rb_mod_const_missing(VALUE,VALUE));
 rb_gvar_getter_t *rb_gvar_getter_function_of(const struct rb_global_entry *);
@@ -2287,6 +2405,9 @@ void rb_write_error_str(VALUE mesg);
 /* numeric.c (export) */
 VALUE rb_int_positive_pow(long x, unsigned long y);
 
+/* object.c (export) */
+int rb_opts_exception_p(VALUE opts, int default_value);
+
 /* process.c (export) */
 int rb_exec_async_signal_safe(const struct rb_execarg *e, char *errmsg, size_t errmsg_buflen);
 rb_pid_t rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds, char *errmsg, size_t errmsg_buflen);
@@ -2310,6 +2431,8 @@ VALUE rb_gcd_gmp(VALUE x, VALUE y);
 int rb_grantpt(int fd);
 
 /* string.c (export) */
+VALUE rb_str_tmp_frozen_acquire(VALUE str);
+void rb_str_tmp_frozen_release(VALUE str, VALUE tmp);
 #ifdef RUBY_ENCODING_H
 /* internal use */
 VALUE rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encoding *enc);
@@ -2330,6 +2453,7 @@ extern unsigned long ruby_scan_digits(const char *str, ssize_t len, int base, si
 
 /* variable.c (export) */
 void rb_mark_generic_ivar(VALUE);
+void rb_mv_generic_ivar(VALUE src, VALUE dst);
 VALUE rb_const_missing(VALUE klass, VALUE name);
 int rb_class_ivar_set(VALUE klass, ID vid, VALUE value);
 st_table *rb_st_copy(VALUE obj, struct st_table *orig_tbl);
@@ -2341,9 +2465,10 @@ VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE);
 size_t rb_obj_memsize_of(VALUE);
 void rb_gc_verify_internal_consistency(void);
 
-#define RB_OBJ_GC_FLAGS_MAX 5
+#define RB_OBJ_GC_FLAGS_MAX 6
 size_t rb_obj_gc_flags(VALUE, ID[], size_t);
 void rb_gc_mark_values(long n, const VALUE *values);
+void rb_gc_mark_vm_stack_values(long n, const VALUE *values);
 
 #if IMEMO_DEBUG
 VALUE rb_imemo_new_debug(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0, const char *file, int line);
@@ -2445,6 +2570,23 @@ rb_obj_builtin_type(VALUE obj)
 
 #define COMPILER_WARNING_PRAGMA(str) COMPILER_WARNING_PRAGMA_(str)
 #define COMPILER_WARNING_PRAGMA_(str) _Pragma(#str)
+
+#if defined(USE_UNALIGNED_MEMBER_ACCESS) && USE_UNALIGNED_MEMBER_ACCESS && \
+    (defined(__clang__) || GCC_VERSION_SINCE(9, 0, 0))
+# define UNALIGNED_MEMBER_ACCESS(expr) __extension__({ \
+    COMPILER_WARNING_PUSH; \
+    COMPILER_WARNING_IGNORED(-Waddress-of-packed-member); \
+    typeof(expr) unaligned_member_access_result = (expr); \
+    COMPILER_WARNING_POP; \
+    unaligned_member_access_result; \
+})
+#else
+# define UNALIGNED_MEMBER_ACCESS(expr) expr
+#endif
+#define UNALIGNED_MEMBER_PTR(ptr, mem) UNALIGNED_MEMBER_ACCESS(&(ptr)->mem)
+
+#undef RB_OBJ_WRITE
+#define RB_OBJ_WRITE(a, slot, b) UNALIGNED_MEMBER_ACCESS(rb_obj_write((VALUE)(a), (VALUE *)(slot), (VALUE)(b), __FILE__, __LINE__))
 
 #if defined(__cplusplus)
 #if 0

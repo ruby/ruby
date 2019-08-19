@@ -2,7 +2,7 @@ require_relative '../spec_helper'
 
 describe "Safe navigator" do
   it "requires a method name to be provided" do
-    lambda { eval("obj&. {}") }.should raise_error(SyntaxError)
+    -> { eval("obj&. {}") }.should raise_error(SyntaxError)
   end
 
   context "when context is nil" do
@@ -26,7 +26,7 @@ describe "Safe navigator" do
     it "calls the method" do
       eval("false&.to_s").should == "false"
 
-      lambda { eval("false&.unknown") }.should raise_error(NoMethodError)
+      -> { eval("false&.unknown") }.should raise_error(NoMethodError)
     end
   end
 
@@ -34,7 +34,7 @@ describe "Safe navigator" do
     it "calls the method" do
       eval("1&.to_s").should == "1"
 
-      lambda { eval("1&.unknown") }.should raise_error(NoMethodError)
+      -> { eval("1&.unknown") }.should raise_error(NoMethodError)
     end
   end
 
@@ -90,7 +90,7 @@ describe "Safe navigator" do
     end
     obj = klass.new
 
-    lambda {
+    -> {
       eval("obj&.foo += 3")
     }.should raise_error(NoMethodError) { |e|
       e.name.should == :+

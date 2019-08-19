@@ -92,13 +92,13 @@ platform_is :solaris do
     end
 
     it "fails with EBADF acquiring exclusive lock on read-only File" do
-      lambda do
+      -> do
         @read_file.flock File::LOCK_EX
       end.should raise_error(Errno::EBADF)
     end
 
     it "fails with EBADF acquiring shared lock on read-only File" do
-      lambda do
+      -> do
         @write_file.flock File::LOCK_SH
       end.should raise_error(Errno::EBADF)
     end

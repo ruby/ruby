@@ -27,7 +27,7 @@ class Bundler::Thor
       end
 
       # Receives a constant and converts it to a Bundler::Thor namespace. Since Bundler::Thor
-      # commands can be added to a sandbox, this method is also responsable for
+      # commands can be added to a sandbox, this method is also responsible for
       # removing the sandbox namespace.
       #
       # This method should not be used in general because it's used to deal with

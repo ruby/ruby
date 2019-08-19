@@ -51,7 +51,7 @@ RSpec.shared_examples "bundle install --standalone" do
   describe "with simple gems" do
     before do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails"
       G
       bundle! :install, forgotten_command_line_options(:path => bundled_app("bundle")).merge(:standalone => true)
@@ -70,12 +70,12 @@ RSpec.shared_examples "bundle install --standalone" do
   describe "with gems with native extension", :ruby_repo do
     before do
       install_gemfile <<-G, forgotten_command_line_options(:path => bundled_app("bundle")).merge(:standalone => true)
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "very_simple_binary"
       G
     end
 
-    it "generates a bundle/bundler/setup.rb with the proper paths", :rubygems => "2.4" do
+    it "generates a bundle/bundler/setup.rb with the proper paths" do
       expected_path = bundled_app("bundle/bundler/setup.rb")
       extension_line = File.read(expected_path).each_line.find {|line| line.include? "/extensions/" }.strip
       expect(extension_line).to start_with '$:.unshift "#{path}/../#{ruby_engine}/#{ruby_version}/extensions/'
@@ -108,8 +108,8 @@ RSpec.shared_examples "bundle install --standalone" do
     end
 
     it "outputs a helpful error message" do
-      expect(out).to include("You have one or more invalid gemspecs that need to be fixed.")
-      expect(out).to include("bar 1.0 has an invalid gemspec")
+      expect(err).to include("You have one or more invalid gemspecs that need to be fixed.")
+      expect(err).to include("bar 1.0 has an invalid gemspec")
     end
   end
 
@@ -118,7 +118,7 @@ RSpec.shared_examples "bundle install --standalone" do
       build_git "devise", "1.0"
 
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails"
         gem "devise", :git => "#{lib_path("devise-1.0")}"
       G
@@ -141,7 +141,7 @@ RSpec.shared_examples "bundle install --standalone" do
       build_git "devise", "1.0"
 
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails"
 
         group :test do
@@ -175,8 +175,8 @@ RSpec.shared_examples "bundle install --standalone" do
         RUBY
       end
 
-      expect(last_command.stdout).to eq("2.3.2")
-      expect(last_command.stderr).to eq("ZOMG LOAD ERROR")
+      expect(out).to eq("2.3.2")
+      expect(err).to eq("ZOMG LOAD ERROR")
     end
 
     it "allows --without to limit the groups used in a standalone" do
@@ -193,8 +193,8 @@ RSpec.shared_examples "bundle install --standalone" do
         RUBY
       end
 
-      expect(last_command.stdout).to eq("2.3.2")
-      expect(last_command.stderr).to eq("ZOMG LOAD ERROR")
+      expect(out).to eq("2.3.2")
+      expect(err).to eq("ZOMG LOAD ERROR")
     end
 
     it "allows --path to change the location of the standalone bundle", :bundler => "< 3" do
@@ -210,7 +210,7 @@ RSpec.shared_examples "bundle install --standalone" do
         RUBY
       end
 
-      expect(last_command.stdout).to eq("2.3.2")
+      expect(out).to eq("2.3.2")
     end
 
     it "allows --path to change the location of the standalone bundle", :bundler => "3" do
@@ -227,7 +227,7 @@ RSpec.shared_examples "bundle install --standalone" do
         RUBY
       end
 
-      expect(last_command.stdout).to eq("2.3.2")
+      expect(out).to eq("2.3.2")
     end
 
     it "allows remembered --without to limit the groups used in a standalone" do
@@ -245,8 +245,8 @@ RSpec.shared_examples "bundle install --standalone" do
         RUBY
       end
 
-      expect(last_command.stdout).to eq("2.3.2")
-      expect(last_command.stderr).to eq("ZOMG LOAD ERROR")
+      expect(out).to eq("2.3.2")
+      expect(err).to eq("ZOMG LOAD ERROR")
     end
   end
 
@@ -276,7 +276,7 @@ RSpec.shared_examples "bundle install --standalone" do
   describe "with --binstubs", :bundler => "< 3" do
     before do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails"
       G
       bundle! :install, forgotten_command_line_options(:path => bundled_app("bundle")).merge(:standalone => true, :binstubs => true)

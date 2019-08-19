@@ -78,7 +78,7 @@ method(a, b) { |c, d| ... }
     ]
 
     @c2_a.collect_tokens
-    @c2_a.add_tokens(*tokens)
+    @c2_a.add_tokens(tokens)
 
     expected = '<span class="ruby-constant">CONSTANT</span>'
 
@@ -96,7 +96,7 @@ method(a, b) { |c, d| ... }
     ]
 
     @c2_a.collect_tokens
-    @c2_a.add_tokens(*tokens)
+    @c2_a.add_tokens(tokens)
 
     assert_equal <<-EXPECTED.chomp, @c2_a.markup_code
 <span class="ruby-comment"># File xref_data.rb, line 1</span>

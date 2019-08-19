@@ -12,13 +12,13 @@ describe "Socket::BasicSocket#close_read" do
 
   it "closes the reading end of the socket" do
     @server.close_read
-    lambda { @server.read }.should raise_error(IOError)
+    -> { @server.read }.should raise_error(IOError)
   end
 
   it 'does not raise when called on a socket already closed for reading' do
     @server.close_read
     @server.close_read
-    lambda { @server.read }.should raise_error(IOError)
+    -> { @server.read }.should raise_error(IOError)
   end
 
   it 'does not fully close the socket' do
@@ -34,7 +34,7 @@ describe "Socket::BasicSocket#close_read" do
 
   it 'raises IOError when called on a fully closed socket' do
     @server.close
-    lambda { @server.close_read }.should raise_error(IOError)
+    -> { @server.close_read }.should raise_error(IOError)
   end
 
   it "returns nil" do

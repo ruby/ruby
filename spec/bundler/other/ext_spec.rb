@@ -49,18 +49,13 @@ end
 RSpec.describe "Gem::SourceIndex#refresh!" do
   before do
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack"
     G
   end
 
-  it "does not explode when called", :rubygems => "1.7" do
+  it "does not explode when called" do
     run "Gem.source_index.refresh!"
     run "Gem::SourceIndex.new([]).refresh!"
-  end
-
-  it "does not explode when called", :rubygems => "< 1.7" do
-    run "Gem.source_index.refresh!"
-    run "Gem::SourceIndex.from_gems_in([]).refresh!"
   end
 end

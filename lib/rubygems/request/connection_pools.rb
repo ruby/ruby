@@ -76,9 +76,7 @@ class Gem::Request::ConnectionPools # :nodoc:
   end
 
   def net_http_args(uri, proxy_uri)
-    # URI::Generic#hostname was added in ruby 1.9.3, use it if exists, otherwise
-    # don't support IPv6 literals and use host.
-    hostname = uri.respond_to?(:hostname) ? uri.hostname : uri.host
+    hostname = uri.hostname
     net_http_args = [hostname, uri.port]
 
     no_proxy = get_no_proxy_from_env

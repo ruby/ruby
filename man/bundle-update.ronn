@@ -12,8 +12,8 @@ bundle-update(1) -- Update your gems to the latest available versions
                         [--full-index]
                         [--jobs=JOBS]
                         [--quiet]
-                        [--force]
                         [--patch|--minor|--major]
+                        [--redownload]
                         [--strict]
                         [--conservative]
 
@@ -64,8 +64,8 @@ gem.
 * `--quiet`:
   Only output warnings and errors.
 
-* `--force`:
-  Force downloading every gem. `--redownload` is an alias of this option.
+* `--redownload`:
+  Force downloading every gem.
 
 * `--patch`:
   Prefer updating only to next patch version.

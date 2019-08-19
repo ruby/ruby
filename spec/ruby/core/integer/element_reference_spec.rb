@@ -59,13 +59,13 @@ describe "Integer#[]" do
     end
 
     it "raises a TypeError when passed a String" do
-      lambda { 3["3"] }.should raise_error(TypeError)
+      -> { 3["3"] }.should raise_error(TypeError)
     end
 
     it "raises a TypeError when #to_int does not return an Integer" do
       obj = mock('asdf')
       obj.should_receive(:to_int).and_return("asdf")
-      lambda { 3[obj] }.should raise_error(TypeError)
+      -> { 3[obj] }.should raise_error(TypeError)
     end
 
     it "calls #to_int to coerce a String to a Bignum and returns 0" do
@@ -102,10 +102,10 @@ describe "Integer#[]" do
 
     it "raises a TypeError when the given argument can't be converted to Integer" do
       obj = mock('asdf')
-      lambda { @bignum[obj] }.should raise_error(TypeError)
+      -> { @bignum[obj] }.should raise_error(TypeError)
 
       obj.should_receive(:to_int).and_return("asdf")
-      lambda { @bignum[obj] }.should raise_error(TypeError)
+      -> { @bignum[obj] }.should raise_error(TypeError)
     end
   end
 end

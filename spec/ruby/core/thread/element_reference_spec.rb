@@ -38,7 +38,7 @@ describe "Thread#[]" do
   end
 
   it "raises exceptions on the wrong type of keys" do
-    lambda { Thread.current[nil] }.should raise_error(TypeError)
-    lambda { Thread.current[5] }.should raise_error(TypeError)
+    -> { Thread.current[nil] }.should raise_error(TypeError)
+    -> { Thread.current[5] }.should raise_error(TypeError)
   end
 end

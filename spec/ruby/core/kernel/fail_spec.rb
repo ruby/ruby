@@ -7,7 +7,7 @@ describe "Kernel#fail" do
   end
 
   it "raises a RuntimeError" do
-    lambda { fail }.should raise_error(RuntimeError)
+    -> { fail }.should raise_error(RuntimeError)
   end
 
   it "accepts an Object with an exception method returning an Exception" do
@@ -15,16 +15,16 @@ describe "Kernel#fail" do
     def obj.exception(msg)
       StandardError.new msg
     end
-    lambda { fail obj, "..." }.should raise_error(StandardError, "...")
+    -> { fail obj, "..." }.should raise_error(StandardError, "...")
   end
 
   it "instantiates the specified exception class" do
     error_class = Class.new(RuntimeError)
-    lambda { fail error_class }.should raise_error(error_class)
+    -> { fail error_class }.should raise_error(error_class)
   end
 
   it "uses the specified message" do
-    lambda {
+    -> {
       begin
         fail "the duck is not irish."
       rescue => e

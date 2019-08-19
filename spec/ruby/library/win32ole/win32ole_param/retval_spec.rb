@@ -9,7 +9,7 @@ platform_is :windows do
     end
 
     it "raises ArgumentError if argument is given" do
-      lambda { @param_overwritefiles.retval?(1) }.should raise_error ArgumentError
+      -> { @param_overwritefiles.retval?(1) }.should raise_error ArgumentError
     end
 
     it "returns false for 3rd parameter of FileSystemObject's 'CopyFile' method" do

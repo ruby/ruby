@@ -254,9 +254,7 @@ command to remove old versions.
   def update_rubygems_arguments # :nodoc:
     args = []
     args << '--prefix' << Gem.prefix if Gem.prefix
-    # TODO use --document for >= 1.9 , --no-rdoc --no-ri < 1.9
-    args << '--no-rdoc' unless options[:document].include? 'rdoc'
-    args << '--no-ri'   unless options[:document].include? 'ri'
+    args << '--no-document' unless options[:document].include?('rdoc') || options[:document].include?('ri')
     args << '--no-format-executable' if options[:no_format_executable]
     args << '--previous-version' << Gem::VERSION if
       options[:system] == true or

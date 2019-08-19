@@ -58,18 +58,16 @@ describe 'TracePoint#disable' do
     end
   end
 
-  ruby_bug "#14057", ""..."2.5" do
-    it 'can accept param within a block but it should not yield arguments' do
-      trace = TracePoint.new(:line) {}
-      trace.enable
-      begin
-        trace.disable do |*args|
-          args.should == []
-        end
-        trace.enabled?.should == true
-      ensure
-        trace.disable
+  it 'can accept param within a block but it should not yield arguments' do
+    trace = TracePoint.new(:line) {}
+    trace.enable
+    begin
+      trace.disable do |*args|
+        args.should == []
       end
+      trace.enabled?.should == true
+    ensure
+      trace.disable
     end
   end
 end

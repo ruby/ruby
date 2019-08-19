@@ -262,6 +262,7 @@ static const struct token_assoc {
     {tDSTAR,			O(op)},
     {tANDDOT,			O(op)},
     {tMETHREF,			O(op)},
+    {tPIPE,			O(op)},
     {tSTRING_BEG,		O(tstring_beg)},
     {tSTRING_CONTENT,		O(tstring_content)},
     {tSTRING_DBEG,		O(embexpr_beg)},
@@ -293,13 +294,13 @@ static const struct token_assoc {
 };
 
 static ID
-ripper_token2eventid(int tok)
+ripper_token2eventid(enum yytokentype tok)
 {
     int i;
 
     for (i = 0; i < numberof(token_to_eventid); i++) {
 	const struct token_assoc *const a = &token_to_eventid[i];
-        if (a->token == tok)
+        if ((enum yytokentype)a->token == tok)
             return *(const ID *)((const char *)&ripper_scanner_ids + a->id_offset);
     }
     if (tok < 256) {

@@ -12,13 +12,13 @@ describe "Math.acosh" do
   end
 
   it "raises Math::DomainError if the passed argument is less than -1.0 or greater than 1.0" do
-    lambda { Math.acosh(1.0 - TOLERANCE) }.should raise_error(Math::DomainError)
-    lambda { Math.acosh(0) }.should raise_error(Math::DomainError)
-    lambda { Math.acosh(-1.0) }.should raise_error(Math::DomainError)
+    -> { Math.acosh(1.0 - TOLERANCE) }.should raise_error(Math::DomainError)
+    -> { Math.acosh(0) }.should raise_error(Math::DomainError)
+    -> { Math.acosh(-1.0) }.should raise_error(Math::DomainError)
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    lambda { Math.acosh("test") }.should raise_error(TypeError)
+    -> { Math.acosh("test") }.should raise_error(TypeError)
   end
 
   it "returns NaN given NaN" do
@@ -26,7 +26,7 @@ describe "Math.acosh" do
   end
 
   it "raises a TypeError if the argument is nil" do
-    lambda { Math.acosh(nil) }.should raise_error(TypeError)
+    -> { Math.acosh(nil) }.should raise_error(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

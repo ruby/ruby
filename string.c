@@ -321,6 +321,9 @@ rb_fstring(VALUE str)
 	return str;
     }
 
+    if (!OBJ_FROZEN(str))
+        rb_str_resize(str, RSTRING_LEN(str));
+
     fstr = register_fstring(str);
 
     if (!bare) {
@@ -450,7 +453,7 @@ search_nonascii(const char *p, const char *e)
 {
     const uintptr_t *s, *t;
 
-#if defined(__STDC_VERSION) && (__STDC_VERSION__ >= 199901L)
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
 # if SIZEOF_UINTPTR_T == 8
 #  define NONASCII_MASK UINT64_C(0x8080808080808080)
 # elif SIZEOF_UINTPTR_T == 4
@@ -495,7 +498,7 @@ search_nonascii(const char *p, const char *e)
 #define aligned_ptr(value) (uintptr_t *)(value)
 #endif
 	s = aligned_ptr(p);
-	t = aligned_ptr(e - (SIZEOF_VOIDP-1));
+	t = (uintptr_t *)(e - (SIZEOF_VOIDP-1));
 #undef aligned_ptr
 	for (;s < t; s++) {
 	    if (*s & NONASCII_MASK) {
@@ -1161,12 +1164,26 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
 	TERM_FILL(ptr2+len, termlen);
     }
     else {
-	str = rb_str_new_frozen(str);
+        VALUE root;
+        if (STR_SHARED_P(str)) {
+            root = RSTRING(str)->as.heap.aux.shared;
+            RSTRING_GETMEM(str, ptr, len);
+        }
+        else {
+            root = rb_str_new_frozen(str);
+            RSTRING_GETMEM(root, ptr, len);
+        }
+        if (!STR_EMBED_P(str2) && !FL_TEST_RAW(str2, STR_SHARED|STR_NOFREE)) {
+            /* TODO: check if str2 is a shared root */
+            char *ptr2 = STR_HEAP_PTR(str2);
+            if (ptr2 != ptr) {
+                ruby_sized_xfree(ptr2, STR_HEAP_SIZE(str2));
+            }
+        }
 	FL_SET(str2, STR_NOEMBED);
-	RSTRING_GETMEM(str, ptr, len);
 	RSTRING(str2)->as.heap.len = len;
 	RSTRING(str2)->as.heap.ptr = ptr;
-	STR_SET_SHARED(str2, str);
+        STR_SET_SHARED(str2, root);
     }
     return str2;
 }
@@ -1317,6 +1334,7 @@ str_new_empty(VALUE str)
 }
 
 #define STR_BUF_MIN_SIZE 127
+STATIC_ASSERT(STR_BUF_MIN_SIZE, STR_BUF_MIN_SIZE > RSTRING_EMBED_LEN_MAX);
 
 VALUE
 rb_str_buf_new(long capa)
@@ -1504,10 +1522,13 @@ str_duplicate(VALUE klass, VALUE str)
     MEMCPY(RSTRING(dup)->as.ary, RSTRING(str)->as.ary,
 	   char, embed_size);
     if (flags & STR_NOEMBED) {
-	if (UNLIKELY(!(flags & FL_FREEZE))) {
-	    str = str_new_frozen(klass, str);
-	    FL_SET_RAW(str, flags & FL_TAINT);
-	    flags = FL_TEST_RAW(str, flag_mask);
+        if (FL_TEST_RAW(str, STR_SHARED)) {
+            str = RSTRING(str)->as.heap.aux.shared;
+        }
+        else if (UNLIKELY(!(flags & FL_FREEZE))) {
+            str = str_new_frozen(klass, str);
+            FL_SET_RAW(str, flags & FL_TAINT);
+            flags = FL_TEST_RAW(str, flag_mask);
 	}
 	if (flags & STR_NOEMBED) {
 	    RB_OBJ_WRITE(dup, &RSTRING(dup)->as.heap.aux.shared, str);
@@ -1594,7 +1615,18 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
 	    }
 	    str_modifiable(str);
 	    if (STR_EMBED_P(str)) { /* make noembed always */
-		RSTRING(str)->as.heap.ptr = ALLOC_N(char, (size_t)capa + termlen);
+                char *new_ptr = ALLOC_N(char, (size_t)capa + termlen);
+                memcpy(new_ptr, RSTRING(str)->as.ary, RSTRING_EMBED_LEN_MAX + 1);
+                RSTRING(str)->as.heap.ptr = new_ptr;
+            }
+            else if (FL_TEST(str, STR_SHARED|STR_NOFREE)) {
+                const size_t size = (size_t)capa + termlen;
+                const char *const old_ptr = RSTRING_PTR(str);
+                const size_t osize = RSTRING(str)->as.heap.len + TERM_LEN(str);
+                char *new_ptr = ALLOC_N(char, (size_t)capa + termlen);
+                memcpy(new_ptr, old_ptr, osize < size ? osize : size);
+                FL_UNSET_RAW(str, STR_SHARED);
+                RSTRING(str)->as.heap.ptr = new_ptr;
 	    }
 	    else if (STR_HEAP_SIZE(str) != (size_t)capa + termlen) {
 		SIZED_REALLOC_N(RSTRING(str)->as.heap.ptr, char,
@@ -1920,6 +1952,37 @@ rb_str_plus(VALUE str1, VALUE str2)
     return str3;
 }
 
+/* A variant of rb_str_plus that does not raise but return Qundef instead. */
+MJIT_FUNC_EXPORTED VALUE
+rb_str_opt_plus(VALUE str1, VALUE str2)
+{
+    assert(RBASIC_CLASS(str1) == rb_cString);
+    assert(RBASIC_CLASS(str2) == rb_cString);
+    long len1, len2;
+    MAYBE_UNUSED(char) *ptr1, *ptr2;
+    RSTRING_GETMEM(str1, ptr1, len1);
+    RSTRING_GETMEM(str2, ptr2, len2);
+    int enc1 = rb_enc_get_index(str1);
+    int enc2 = rb_enc_get_index(str2);
+
+    if (enc1 < 0) {
+        return Qundef;
+    }
+    else if (enc2 < 0) {
+        return Qundef;
+    }
+    else if (enc1 != enc2) {
+        return Qundef;
+    }
+    else if (len1 > LONG_MAX - len2) {
+        return Qundef;
+    }
+    else {
+        return rb_str_plus(str1, str2);
+    }
+
+}
+
 /*
  *  call-seq:
  *     str * integer   -> new_str
@@ -2052,7 +2115,7 @@ static void
 str_make_independent_expand(VALUE str, long len, long expand, const int termlen)
 {
     char *ptr;
-    const char *oldptr;
+    char *oldptr;
     long capa = len + expand;
 
     if (len > capa) len = capa;
@@ -2070,6 +2133,9 @@ str_make_independent_expand(VALUE str, long len, long expand, const int termlen)
     oldptr = RSTRING_PTR(str);
     if (oldptr) {
 	memcpy(ptr, oldptr, len);
+    }
+    if (FL_TEST_RAW(str, STR_NOEMBED|STR_NOFREE|STR_SHARED) == STR_NOEMBED) {
+        xfree(oldptr);
     }
     STR_SET_NOEMBED(str);
     FL_UNSET(str, STR_SHARED|STR_NOFREE);
@@ -2623,6 +2689,9 @@ str_uplus(VALUE str)
 static VALUE
 str_uminus(VALUE str)
 {
+    if (!BARE_STRING_P(str) && !rb_obj_frozen_p(str)) {
+        str = rb_str_dup(str);
+    }
     return rb_fstring(str);
 }
 
@@ -3220,22 +3289,6 @@ rb_str_cmp(VALUE str1, VALUE str2)
     return -1;
 }
 
-/* expect tail call optimization */
-static VALUE
-str_eql(const VALUE str1, const VALUE str2)
-{
-    const long len = RSTRING_LEN(str1);
-    const char *ptr1, *ptr2;
-
-    if (len != RSTRING_LEN(str2)) return Qfalse;
-    if (!rb_str_comparable(str1, str2)) return Qfalse;
-    if ((ptr1 = RSTRING_PTR(str1)) == (ptr2 = RSTRING_PTR(str2)))
-	return Qtrue;
-    if (memcmp(ptr1, ptr2, len) == 0)
-	return Qtrue;
-    return Qfalse;
-}
-
 /*
  *  call-seq:
  *     str == obj    -> true or false
@@ -3259,7 +3312,7 @@ rb_str_equal(VALUE str1, VALUE str2)
 	}
 	return rb_equal(str2, str1);
     }
-    return str_eql(str1, str2);
+    return rb_str_eql_internal(str1, str2);
 }
 
 /*
@@ -3274,7 +3327,7 @@ rb_str_eql(VALUE str1, VALUE str2)
 {
     if (str1 == str2) return Qtrue;
     if (!RB_TYPE_P(str2, T_STRING)) return Qfalse;
-    return str_eql(str1, str2);
+    return rb_str_eql_internal(str1, str2);
 }
 
 /*
@@ -3364,8 +3417,8 @@ str_casecmp(VALUE str1, VALUE str2)
     if (single_byte_optimizable(str1) && single_byte_optimizable(str2)) {
 	while (p1 < p1end && p2 < p2end) {
 	    if (*p1 != *p2) {
-		unsigned int c1 = TOUPPER(*p1 & 0xff);
-		unsigned int c2 = TOUPPER(*p2 & 0xff);
+                unsigned int c1 = TOLOWER(*p1 & 0xff);
+                unsigned int c2 = TOLOWER(*p2 & 0xff);
                 if (c1 != c2)
                     return INT2FIX(c1 < c2 ? -1 : 1);
 	    }
@@ -3379,8 +3432,8 @@ str_casecmp(VALUE str1, VALUE str2)
             int l2, c2 = rb_enc_ascget(p2, p2end, &l2, enc);
 
             if (0 <= c1 && 0 <= c2) {
-                c1 = TOUPPER(c1);
-                c2 = TOUPPER(c2);
+                c1 = TOLOWER(c1);
+                c2 = TOLOWER(c2);
                 if (c1 != c2)
                     return INT2FIX(c1 < c2 ? -1 : 1);
             }
@@ -4087,7 +4140,7 @@ str_succ(VALUE str)
 {
     rb_encoding *enc;
     char *sbeg, *s, *e, *last_alnum = 0;
-    int c = -1;
+    int found_alnum = 0;
     long l, slen;
     char carry[ONIGENC_CODE_TO_MBC_MAXLEN] = "\1";
     long carry_pos = 0, carry_len = 1;
@@ -4104,7 +4157,6 @@ str_succ(VALUE str)
 	if (neighbor == NEIGHBOR_NOT_CHAR && last_alnum) {
 	    if (ISALPHA(*last_alnum) ? ISDIGIT(*s) :
 		ISDIGIT(*last_alnum) ? ISALPHA(*s) : 0) {
-		s = last_alnum;
 		break;
 	    }
 	}
@@ -4121,11 +4173,11 @@ str_succ(VALUE str)
 	    last_alnum = s;
 	    break;
 	}
-        c = 1;
+        found_alnum = 1;
         carry_pos = s - sbeg;
         carry_len = l;
     }
-    if (c == -1) {		/* str contains no alnum */
+    if (!found_alnum) {		/* str contains no alnum */
 	s = e;
 	while ((s = rb_enc_prev_char(sbeg, s, e, enc)) != 0) {
             enum neighbor_char neighbor;
@@ -5046,7 +5098,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
                 cr = cr2;
 	}
 	plen = end0 - beg0;
-	rp = RSTRING_PTR(repl); rlen = RSTRING_LEN(repl);
+        rlen = RSTRING_LEN(repl);
 	len = RSTRING_LEN(str);
 	if (rlen > plen) {
 	    RESIZE_CAPA(str, len + rlen - plen);
@@ -5055,7 +5107,8 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	if (rlen != plen) {
 	    memmove(p + beg0 + rlen, p + beg0 + plen, len - beg0 - plen);
 	}
-	memcpy(p + beg0, rp, rlen);
+        rp = RSTRING_PTR(repl);
+        memmove(p + beg0, rp, rlen);
 	len += rlen - plen;
 	STR_SET_LEN(str, len);
 	TERM_FILL(&RSTRING_PTR(str)[len], TERM_LEN(str));
@@ -5077,27 +5130,31 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
  *  Returns a copy of +str+ with the _first_ occurrence of +pattern+
  *  replaced by the second argument. The +pattern+ is typically a Regexp; if
  *  given as a String, any regular expression metacharacters it contains will
- *  be interpreted literally, e.g. <code>'\\\d'</code> will match a backslash
+ *  be interpreted literally, e.g. <code>\d</code> will match a backslash
  *  followed by 'd', instead of a digit.
  *
  *  If +replacement+ is a String it will be substituted for the matched text.
  *  It may contain back-references to the pattern's capture groups of the form
- *  <code>"\\d"</code>, where <i>d</i> is a group number, or
- *  <code>"\\k<n>"</code>, where <i>n</i> is a group name. If it is a
- *  double-quoted string, both back-references must be preceded by an
- *  additional backslash. However, within +replacement+ the special match
- *  variables, such as <code>$&</code>, will not refer to the current match.
- *  If +replacement+ is a String that looks like a pattern's capture group but
- *  is actually not a pattern capture group e.g. <code>"\\'"</code>, then it
- *  will have to be preceded by two backslashes like so <code>"\\\\'"</code>.
+ *  <code>\d</code>, where <i>d</i> is a group number, or
+ *  <code>\k<n></code>, where <i>n</i> is a group name.
+ *  Similarly, <code>\&</code>, <code>\'</code>, <code>\`</code>, and
+ *  <code>\+</code> correspond to special variables, <code>$&</code>,
+ *  <code>$'</code>, <code>$`</code>, and <code>$+</code>, respectively.
+ *  (See rdoc-ref:regexp.rdoc for details.)
+ *  <code>\0</code> is the same as <code>\&</code>.
+ *  <code>\\\\</code> is interpreted as an escape, i.e., a single backslash.
+ *  Note that, within +replacement+ the special match variables, such as
+ *  <code>$&</code>, will not refer to the current match.
  *
  *  If the second argument is a Hash, and the matched text is one of its keys,
  *  the corresponding value is the replacement string.
  *
  *  In the block form, the current match string is passed in as a parameter,
  *  and variables such as <code>$1</code>, <code>$2</code>, <code>$`</code>,
- *  <code>$&</code>, and <code>$'</code> will be set appropriately. The value
- *  returned by the block will be substituted for the match on each call.
+ *  <code>$&</code>, and <code>$'</code> will be set appropriately.
+ *  (See rdoc-ref:regexp.rdoc for details.)
+ *  The value returned by the block will be substituted for the match on each
+ *  call.
  *
  *  The result inherits any tainting in the original string or any supplied
  *  replacement string.
@@ -5108,6 +5165,19 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
  *     "hello".sub(/(?<foo>[aeiou])/, '*\k<foo>*')  #=> "h*e*llo"
  *     'Is SHELL your preferred shell?'.sub(/[[:upper:]]{2,}/, ENV)
  *      #=> "Is /bin/bash your preferred shell?"
+ *
+ *  Note that a string literal consumes backslashes.
+ *  (See rdoc-ref:syntax/literals.rdoc for details about string literals.)
+ *  Back-references are typically preceded by an additional backslash.
+ *  For example, if you want to write a back-reference <code>\&</code> in
+ *  +replacement+ with a double-quoted string literal, you need to write:
+ *  <code>"..\\\\&.."</code>.
+ *  If you want to write a non-back-reference string <code>\&</code> in
+ *  +replacement+, you need first to escape the backslash to prevent
+ *  this method from interpreting it as a back-reference, and then you
+ *  need to escape the backslashes again to prevent a string literal from
+ *  consuming them: <code>"..\\\\\\\\&.."</code>.
+ *  You may want to use the block form to avoid a lot of backslashes.
  */
 
 static VALUE
@@ -5148,7 +5218,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	tainted = OBJ_TAINTED_RAW(repl);
 	break;
       default:
-	rb_check_arity(argc, 1, 2);
+        rb_error_arity(argc, 1, 2);
     }
 
     pat = get_pat_quoted(argv[0], 1);
@@ -5280,24 +5350,31 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
  *  <i>pattern</i> substituted for the second argument. The <i>pattern</i> is
  *  typically a Regexp; if given as a String, any
  *  regular expression metacharacters it contains will be interpreted
- *  literally, e.g. <code>'\\\d'</code> will match a backslash followed by 'd',
+ *  literally, e.g. <code>\d</code> will match a backslash followed by 'd',
  *  instead of a digit.
  *
- *  If <i>replacement</i> is a String it will be substituted for
- *  the matched text. It may contain back-references to the pattern's capture
- *  groups of the form <code>\\\d</code>, where <i>d</i> is a group number, or
- *  <code>\\\k<n></code>, where <i>n</i> is a group name. If it is a
- *  double-quoted string, both back-references must be preceded by an
- *  additional backslash. However, within <i>replacement</i> the special match
- *  variables, such as <code>$&</code>, will not refer to the current match.
+ *  If +replacement+ is a String it will be substituted for the matched text.
+ *  It may contain back-references to the pattern's capture groups of the form
+ *  <code>\d</code>, where <i>d</i> is a group number, or
+ *  <code>\k<n></code>, where <i>n</i> is a group name.
+ *  Similarly, <code>\&</code>, <code>\'</code>, <code>\`</code>, and
+ *  <code>\+</code> correspond to special variables, <code>$&</code>,
+ *  <code>$'</code>, <code>$`</code>, and <code>$+</code>, respectively.
+ *  (See rdoc-ref:regexp.rdoc for details.)
+ *  <code>\0</code> is the same as <code>\&</code>.
+ *  <code>\\\\</code> is interpreted as an escape, i.e., a single backslash.
+ *  Note that, within +replacement+ the special match variables, such as
+ *  <code>$&</code>, will not refer to the current match.
  *
  *  If the second argument is a Hash, and the matched text is one
  *  of its keys, the corresponding value is the replacement string.
  *
  *  In the block form, the current match string is passed in as a parameter,
  *  and variables such as <code>$1</code>, <code>$2</code>, <code>$`</code>,
- *  <code>$&</code>, and <code>$'</code> will be set appropriately. The value
- *  returned by the block will be substituted for the match on each call.
+ *  <code>$&</code>, and <code>$'</code> will be set appropriately.
+ *  (See rdoc-ref:regexp.rdoc for details.)
+ *  The value returned by the block will be substituted for the match on each
+ *  call.
  *
  *  The result inherits any tainting in the original string or any supplied
  *  replacement string.
@@ -5310,6 +5387,19 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
  *     "hello".gsub(/./) {|s| s.ord.to_s + ' '}      #=> "104 101 108 108 111 "
  *     "hello".gsub(/(?<foo>[aeiou])/, '{\k<foo>}')  #=> "h{e}ll{o}"
  *     'hello'.gsub(/[eo]/, 'e' => 3, 'o' => '*')    #=> "h3ll*"
+ *
+ *  Note that a string literal consumes backslashes.
+ *  (See rdoc-ref:syntax/literals.rdoc for details on string literals.)
+ *  Back-references are typically preceded by an additional backslash.
+ *  For example, if you want to write a back-reference <code>\&</code> in
+ *  +replacement+ with a double-quoted string literal, you need to write:
+ *  <code>"..\\\\&.."</code>.
+ *  If you want to write a non-back-reference string <code>\&</code> in
+ *  +replacement+, you need first to escape the backslash to prevent
+ *  this method from interpreting it as a back-reference, and then you
+ *  need to escape the backslashes again to prevent a string literal from
+ *  consuming them: <code>"..\\\\\\\\&.."</code>.
+ *  You may want to use the block form to avoid a lot of backslashes.
  */
 
 static VALUE
@@ -6002,14 +6092,16 @@ rb_str_inspect(VALUE str)
  *  call-seq:
  *     str.dump   -> new_str
  *
- *  Produces a quoted version of +str+ with all non-printing characters replaced
- *  by <code>\xHH</code> notation and all special characters escaped.
+ *  Returns a quoted version of the string with all non-printing characters
+ *  replaced by <code>\xHH</code> notation and all special characters escaped.
  *
  *  This method can be used for round-trip: if the resulting +new_str+ is
  *  eval'ed, it will produce the original string.
  *
  *    "hello \n ''".dump     #=> "\"hello \\n ''\""
  *    "\f\x00\xff\\\"".dump  #=> "\"\\f\\x00\\xFF\\\\\\\"\""
+ *
+ *  See also String#undump.
  */
 
 VALUE
@@ -6298,8 +6390,8 @@ static VALUE rb_str_is_ascii_only_p(VALUE str);
  *  call-seq:
  *     str.undump   -> new_str
  *
- *  Produces unescaped version of +str+.
- *  See also String#dump because String#undump does inverse of String#dump.
+ *  Returns an unescaped version of the string.
+ *  This does the inverse of String#dump.
  *
  *    "\"hello \\n ''\"".undump #=> "hello \n ''"
  */
@@ -6403,6 +6495,14 @@ rb_str_check_dummy_enc(rb_encoding *enc)
     }
 }
 
+static rb_encoding *
+str_true_enc(VALUE str)
+{
+    rb_encoding *enc = STR_ENC_GET(str);
+    rb_str_check_dummy_enc(enc);
+    return enc;
+}
+
 static OnigCaseFoldType
 check_case_options(int argc, VALUE *argv, OnigCaseFoldType flags)
 {
@@ -6443,6 +6543,14 @@ check_case_options(int argc, VALUE *argv, OnigCaseFoldType flags)
     return flags;
 }
 
+static inline bool
+case_option_single_p(OnigCaseFoldType flags, rb_encoding *enc, VALUE str)
+{
+    if ((flags & ONIGENC_CASE_ASCII_ONLY) && (enc==rb_utf8_encoding() || rb_enc_mbmaxlen(enc) == 1))
+        return true;
+    return !(flags & ONIGENC_CASE_FOLD_TURKISH_AZERI) && ENC_CODERANGE(str) == ENC_CODERANGE_7BIT;
+}
+
 /* 16 should be long enough to absorb any kind of single character length increase */
 #define CASE_MAPPING_ADDITIONAL_LENGTH 20
 #ifndef CASEMAP_DEBUG
@@ -6457,15 +6565,33 @@ typedef struct mapping_buffer {
     OnigUChar space[FLEX_ARY_LEN];
 } mapping_buffer;
 
+static void
+mapping_buffer_free(void *p)
+{
+    mapping_buffer *previous_buffer;
+    mapping_buffer *current_buffer = p;
+    while (current_buffer) {
+        previous_buffer = current_buffer;
+        current_buffer  = current_buffer->next;
+        ruby_sized_xfree(previous_buffer, previous_buffer->capa);
+    }
+}
+
+static const rb_data_type_t mapping_buffer_type = {
+    "mapping_buffer",
+    {0, mapping_buffer_free,}
+};
+
 static VALUE
 rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 {
     VALUE target;
 
-    OnigUChar *source_current, *source_end;
+    const OnigUChar *source_current, *source_end;
     int target_length = 0;
-    mapping_buffer pre_buffer, /* only next pointer used */
-		  *current_buffer = &pre_buffer;
+    VALUE buffer_anchor;
+    mapping_buffer *current_buffer = 0;
+    mapping_buffer **pre_buffer;
     size_t buffer_count = 0;
     int buffer_length_or_invalid;
 
@@ -6474,14 +6600,17 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
     source_current = (OnigUChar*)RSTRING_PTR(source);
     source_end = (OnigUChar*)RSTRING_END(source);
 
+    buffer_anchor = TypedData_Wrap_Struct(0, &mapping_buffer_type, 0);
+    pre_buffer = (mapping_buffer **)&DATA_PTR(buffer_anchor);
     while (source_current < source_end) {
 	/* increase multiplier using buffer count to converge quickly */
 	size_t capa = (size_t)(source_end-source_current)*++buffer_count + CASE_MAPPING_ADDITIONAL_LENGTH;
 	if (CASEMAP_DEBUG) {
 	    fprintf(stderr, "Buffer allocation, capa is %"PRIuSIZE"\n", capa); /* for tuning */
 	}
-	current_buffer->next = xmalloc(offsetof(mapping_buffer, space) + capa);
-	current_buffer = current_buffer->next;
+        current_buffer = xmalloc(offsetof(mapping_buffer, space) + capa);
+        *pre_buffer = current_buffer;
+        pre_buffer = &current_buffer->next;
 	current_buffer->next = NULL;
 	current_buffer->capa = capa;
 	buffer_length_or_invalid = enc->case_map(flags,
@@ -6490,14 +6619,9 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 				   current_buffer->space+current_buffer->capa,
 				   enc);
 	if (buffer_length_or_invalid < 0) {
-	    mapping_buffer *previous_buffer;
-
-	    current_buffer = pre_buffer.next;
-	    while (current_buffer) {
-		previous_buffer = current_buffer;
-		current_buffer  = current_buffer->next;
-		ruby_sized_xfree(previous_buffer, previous_buffer->capa);
-	    }
+            current_buffer = DATA_PTR(buffer_anchor);
+            DATA_PTR(buffer_anchor) = 0;
+            mapping_buffer_free(current_buffer);
 	    rb_raise(rb_eArgError, "input string invalid");
 	}
 	target_length  += current_buffer->used = buffer_length_or_invalid;
@@ -6508,23 +6632,22 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 
     if (buffer_count==1) {
 	target = rb_str_new_with_class(source, (const char*)current_buffer->space, target_length);
-	ruby_sized_xfree(current_buffer, current_buffer->capa);
     }
     else {
 	char *target_current;
-	mapping_buffer *previous_buffer;
 
 	target = rb_str_new_with_class(source, 0, target_length);
 	target_current = RSTRING_PTR(target);
-	current_buffer=pre_buffer.next;
+        current_buffer = DATA_PTR(buffer_anchor);
 	while (current_buffer) {
 	    memcpy(target_current, current_buffer->space, current_buffer->used);
 	    target_current += current_buffer->used;
-	    previous_buffer = current_buffer;
 	    current_buffer  = current_buffer->next;
-	    ruby_sized_xfree(previous_buffer, previous_buffer->capa);
 	}
     }
+    current_buffer = DATA_PTR(buffer_anchor);
+    DATA_PTR(buffer_anchor) = 0;
+    mapping_buffer_free(current_buffer);
 
     /* TODO: check about string terminator character */
     OBJ_INFECT_RAW(target, source);
@@ -6534,21 +6657,30 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
     return target;
 }
 
-static void
-rb_str_ascii_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
+static VALUE
+rb_str_ascii_casemap(VALUE source, VALUE target, OnigCaseFoldType *flags, rb_encoding *enc)
 {
-    OnigUChar *source_current, *source_end;
+    const OnigUChar *source_current, *source_end;
+    OnigUChar *target_current, *target_end;
     long old_length = RSTRING_LEN(source);
     int length_or_invalid;
 
-    if (old_length == 0) return;
+    if (old_length == 0) return Qnil;
 
     source_current = (OnigUChar*)RSTRING_PTR(source);
     source_end = (OnigUChar*)RSTRING_END(source);
+    if (source == target) {
+        target_current = (OnigUChar*)source_current;
+        target_end = (OnigUChar*)source_end;
+    }
+    else {
+        target_current = (OnigUChar*)RSTRING_PTR(target);
+        target_end = (OnigUChar*)RSTRING_END(target);
+    }
 
     length_or_invalid = onigenc_ascii_only_case_map(flags,
-			       (const OnigUChar**)&source_current, source_end,
-			       source_current, source_end, enc);
+                               &source_current, source_end,
+                               target_current, target_end, enc);
     if (length_or_invalid < 0)
         rb_raise(rb_eArgError, "input string invalid");
     if (CASEMAP_DEBUG && length_or_invalid != old_length) {
@@ -6557,6 +6689,29 @@ rb_str_ascii_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 	rb_raise(rb_eArgError, "internal problem with rb_str_ascii_casemap"
 		 "; old_length=%ld, new_length=%d\n", old_length, length_or_invalid);
     }
+
+    OBJ_INFECT_RAW(target, source);
+    str_enc_copy(target, source);
+
+    return target;
+}
+
+static bool
+upcase_single(VALUE str)
+{
+    char *s = RSTRING_PTR(str), *send = RSTRING_END(str);
+    bool modified = false;
+
+    while (s < send) {
+        unsigned int c = *(unsigned char*)s;
+
+        if (rb_enc_isascii(c, enc) && 'a' <= c && c <= 'z') {
+            *s = 'A' + (c - 'a');
+            modified = true;
+        }
+        s++;
+    }
+    return modified;
 }
 
 /*
@@ -6578,24 +6733,13 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
 
     flags = check_case_options(argc, argv, flags);
     str_modify_keep_cr(str);
-    enc = STR_ENC_GET(str);
-    rb_str_check_dummy_enc(enc);
-    if (((flags&ONIGENC_CASE_ASCII_ONLY) && (enc==rb_utf8_encoding() || rb_enc_mbmaxlen(enc)==1))
-	|| (!(flags&ONIGENC_CASE_FOLD_TURKISH_AZERI) && ENC_CODERANGE(str)==ENC_CODERANGE_7BIT)) {
-        char *s = RSTRING_PTR(str), *send = RSTRING_END(str);
-
-	while (s < send) {
-	    unsigned int c = *(unsigned char*)s;
-
-	    if (rb_enc_isascii(c, enc) && 'a' <= c && c <= 'z') {
-		*s = 'A' + (c - 'a');
-		flags |= ONIGENC_CASE_MODIFIED;
-	    }
-	    s++;
-	}
+    enc = str_true_enc(str);
+    if (case_option_single_p(flags, enc, str)) {
+        if (upcase_single(str))
+            flags |= ONIGENC_CASE_MODIFIED;
     }
     else if (flags&ONIGENC_CASE_ASCII_ONLY)
-        rb_str_ascii_casemap(str, &flags, enc);
+        rb_str_ascii_casemap(str, str, &flags, enc);
     else
 	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
 
@@ -6620,9 +6764,46 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_upcase(int argc, VALUE *argv, VALUE str)
 {
-    str = rb_str_dup(str);
-    rb_str_upcase_bang(argc, argv, str);
-    return str;
+    rb_encoding *enc;
+    OnigCaseFoldType flags = ONIGENC_CASE_UPCASE;
+    VALUE ret;
+
+    flags = check_case_options(argc, argv, flags);
+    enc = str_true_enc(str);
+    if (case_option_single_p(flags, enc, str)) {
+        ret = rb_str_new_with_class(str, RSTRING_PTR(str), RSTRING_LEN(str));
+        OBJ_INFECT_RAW(ret, str);
+        str_enc_copy(ret, str);
+        upcase_single(ret);
+    }
+    else if (flags&ONIGENC_CASE_ASCII_ONLY) {
+        ret = rb_str_new_with_class(str, 0, RSTRING_LEN(str));
+        rb_str_ascii_casemap(str, ret, &flags, enc);
+    }
+    else {
+        ret = rb_str_casemap(str, &flags, enc);
+    }
+
+    return ret;
+}
+
+static bool
+downcase_single(VALUE str)
+{
+    char *s = RSTRING_PTR(str), *send = RSTRING_END(str);
+    bool modified = false;
+
+    while (s < send) {
+        unsigned int c = *(unsigned char*)s;
+
+        if (rb_enc_isascii(c, enc) && 'A' <= c && c <= 'Z') {
+            *s = 'a' + (c - 'A');
+            modified = true;
+        }
+        s++;
+    }
+
+    return modified;
 }
 
 /*
@@ -6644,24 +6825,13 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
 
     flags = check_case_options(argc, argv, flags);
     str_modify_keep_cr(str);
-    enc = STR_ENC_GET(str);
-    rb_str_check_dummy_enc(enc);
-    if (((flags&ONIGENC_CASE_ASCII_ONLY) && (enc==rb_utf8_encoding() || rb_enc_mbmaxlen(enc)==1))
-	|| (!(flags&ONIGENC_CASE_FOLD_TURKISH_AZERI) && ENC_CODERANGE(str)==ENC_CODERANGE_7BIT)) {
-        char *s = RSTRING_PTR(str), *send = RSTRING_END(str);
-
-	while (s < send) {
-	    unsigned int c = *(unsigned char*)s;
-
-	    if (rb_enc_isascii(c, enc) && 'A' <= c && c <= 'Z') {
-		*s = 'a' + (c - 'A');
-		flags |= ONIGENC_CASE_MODIFIED;
-	    }
-	    s++;
-	}
+    enc = str_true_enc(str);
+    if (case_option_single_p(flags, enc, str)) {
+        if (downcase_single(str))
+            flags |= ONIGENC_CASE_MODIFIED;
     }
     else if (flags&ONIGENC_CASE_ASCII_ONLY)
-        rb_str_ascii_casemap(str, &flags, enc);
+        rb_str_ascii_casemap(str, str, &flags, enc);
     else
 	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
 
@@ -6723,9 +6893,27 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_downcase(int argc, VALUE *argv, VALUE str)
 {
-    str = rb_str_dup(str);
-    rb_str_downcase_bang(argc, argv, str);
-    return str;
+    rb_encoding *enc;
+    OnigCaseFoldType flags = ONIGENC_CASE_DOWNCASE;
+    VALUE ret;
+
+    flags = check_case_options(argc, argv, flags);
+    enc = str_true_enc(str);
+    if (case_option_single_p(flags, enc, str)) {
+        ret = rb_str_new_with_class(str, RSTRING_PTR(str), RSTRING_LEN(str));
+        OBJ_INFECT_RAW(ret, str);
+        str_enc_copy(ret, str);
+        downcase_single(ret);
+    }
+    else if (flags&ONIGENC_CASE_ASCII_ONLY) {
+        ret = rb_str_new_with_class(str, 0, RSTRING_LEN(str));
+        rb_str_ascii_casemap(str, ret, &flags, enc);
+    }
+    else {
+        ret = rb_str_casemap(str, &flags, enc);
+    }
+
+    return ret;
 }
 
 
@@ -6755,11 +6943,10 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
 
     flags = check_case_options(argc, argv, flags);
     str_modify_keep_cr(str);
-    enc = STR_ENC_GET(str);
-    rb_str_check_dummy_enc(enc);
+    enc = str_true_enc(str);
     if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str)) return Qnil;
     if (flags&ONIGENC_CASE_ASCII_ONLY)
-        rb_str_ascii_casemap(str, &flags, enc);
+        rb_str_ascii_casemap(str, str, &flags, enc);
     else
 	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
 
@@ -6786,9 +6973,21 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_capitalize(int argc, VALUE *argv, VALUE str)
 {
-    str = rb_str_dup(str);
-    rb_str_capitalize_bang(argc, argv, str);
-    return str;
+    rb_encoding *enc;
+    OnigCaseFoldType flags = ONIGENC_CASE_UPCASE | ONIGENC_CASE_TITLECASE;
+    VALUE ret;
+
+    flags = check_case_options(argc, argv, flags);
+    enc = str_true_enc(str);
+    if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str)) return str;
+    if (flags&ONIGENC_CASE_ASCII_ONLY) {
+        ret = rb_str_new_with_class(str, 0, RSTRING_LEN(str));
+        rb_str_ascii_casemap(str, ret, &flags, enc);
+    }
+    else {
+        ret = rb_str_casemap(str, &flags, enc);
+    }
+    return ret;
 }
 
 
@@ -6812,10 +7011,9 @@ rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
 
     flags = check_case_options(argc, argv, flags);
     str_modify_keep_cr(str);
-    enc = STR_ENC_GET(str);
-    rb_str_check_dummy_enc(enc);
+    enc = str_true_enc(str);
     if (flags&ONIGENC_CASE_ASCII_ONLY)
-        rb_str_ascii_casemap(str, &flags, enc);
+        rb_str_ascii_casemap(str, str, &flags, enc);
     else
 	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
 
@@ -6841,9 +7039,21 @@ rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_swapcase(int argc, VALUE *argv, VALUE str)
 {
-    str = rb_str_dup(str);
-    rb_str_swapcase_bang(argc, argv, str);
-    return str;
+    rb_encoding *enc;
+    OnigCaseFoldType flags = ONIGENC_CASE_UPCASE | ONIGENC_CASE_DOWNCASE;
+    VALUE ret;
+
+    flags = check_case_options(argc, argv, flags);
+    enc = str_true_enc(str);
+    if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str)) return str;
+    if (flags&ONIGENC_CASE_ASCII_ONLY) {
+        ret = rb_str_new_with_class(str, 0, RSTRING_LEN(str));
+        rb_str_ascii_casemap(str, ret, &flags, enc);
+    }
+    else {
+        ret = rb_str_casemap(str, &flags, enc);
+    }
+    return ret;
 }
 
 typedef unsigned char *USTR;
@@ -7759,7 +7969,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     rb_encoding *enc;
     VALUE spat;
     VALUE limit;
-    enum {awk, string, regexp} split_type;
+    enum {awk, string, regexp, chars} split_type;
     long beg, end, i = 0, empty_count = -1;
     int lim = 0;
     VALUE result, tmp;
@@ -7793,6 +8003,9 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     else if (!(spat = rb_fs_check(spat))) {
 	rb_raise(rb_eTypeError, "value of $; must be String or Regexp");
     }
+    else {
+        rb_warn("$; is set to non-nil value");
+    }
     if (split_type != awk) {
 	if (BUILTIN_TYPE(spat) == T_STRING) {
 	    rb_encoding *enc2 = STR_ENC_GET(spat);
@@ -7801,8 +8014,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	    split_type = string;
 	    if (RSTRING_LEN(spat) == 0) {
 		/* Special case - split into chars */
-		spat = rb_reg_regcomp(spat);
-		split_type = regexp;
+                split_type = chars;
 	    }
 	    else if (rb_enc_asciicompat(enc2) == 1) {
 		if (RSTRING_LEN(spat) == 1 && RSTRING_PTR(spat)[0] == ' ') {
@@ -7823,9 +8035,9 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 
     if (result) result = rb_ary_new();
     beg = 0;
+    char *ptr = RSTRING_PTR(str);
+    char *eptr = RSTRING_END(str);
     if (split_type == awk) {
-	char *ptr = RSTRING_PTR(str);
-	char *eptr = RSTRING_END(str);
 	char *bptr = ptr;
 	int skip = 1;
 	unsigned int c;
@@ -7884,10 +8096,8 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	}
     }
     else if (split_type == string) {
-	char *ptr = RSTRING_PTR(str);
 	char *str_start = ptr;
 	char *substr_start = ptr;
-	char *eptr = RSTRING_END(str);
 	char *sptr = RSTRING_PTR(spat);
 	long slen = RSTRING_LEN(spat);
 
@@ -7908,30 +8118,47 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	}
 	beg = ptr - str_start;
     }
+    else if (split_type == chars) {
+        char *str_start = ptr;
+        int n;
+
+        mustnot_broken(str);
+        enc = rb_enc_get(str);
+        while (ptr < eptr &&
+               (n = rb_enc_precise_mbclen(ptr, eptr, enc)) > 0) {
+            SPLIT_STR(ptr - str_start, n);
+            ptr += n;
+            if (!NIL_P(limit) && lim <= ++i) break;
+        }
+        beg = ptr - str_start;
+    }
     else {
-	char *ptr = RSTRING_PTR(str);
 	long len = RSTRING_LEN(str);
 	long start = beg;
 	long idx;
 	int last_null = 0;
 	struct re_registers *regs;
+        VALUE match = 0;
 
-	while ((end = rb_reg_search(spat, str, start, 0)) >= 0) {
-	    regs = RMATCH_REGS(rb_backref_get());
+        for (; (end = rb_reg_search(spat, str, start, 0)) >= 0;
+             (match ? (rb_match_unbusy(match), rb_backref_set(match)) : (void)0)) {
+            match = rb_backref_get();
+            if (!result) rb_match_busy(match);
+            regs = RMATCH_REGS(match);
 	    if (start == end && BEG(0) == END(0)) {
 		if (!ptr) {
 		    SPLIT_STR(0, 0);
 		    break;
 		}
 		else if (last_null == 1) {
-		    SPLIT_STR(beg, rb_enc_fast_mbclen(ptr+beg, ptr+len, enc));
+                    SPLIT_STR(beg, rb_enc_fast_mbclen(ptr+beg, eptr, enc));
 		    beg = start;
 		}
 		else {
                     if (start == len)
                         start++;
                     else
-                        start += rb_enc_fast_mbclen(ptr+start,ptr+len,enc);
+                        start += rb_enc_fast_mbclen(ptr+start,eptr,enc);
 		    last_null = 1;
 		    continue;
 		}
@@ -7948,6 +8175,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	    }
 	    if (!NIL_P(limit) && lim <= ++i) break;
 	}
+        if (match) rb_match_unbusy(match);
     }
     if (RSTRING_LEN(str) > 0 && (!NIL_P(limit) || RSTRING_LEN(str) > beg || lim < 0)) {
 	SPLIT_STR(beg, RSTRING_LEN(str)-beg);
@@ -8425,9 +8653,30 @@ get_reg_grapheme_cluster(rb_encoding *enc)
 	reg_grapheme_cluster = reg_grapheme_cluster_utf8;
     }
     if (!reg_grapheme_cluster) {
-	const OnigUChar source[] = "\\X";
+        const OnigUChar source_ascii[] = "\\X";
         OnigErrorInfo einfo;
-	int r = onig_new(&reg_grapheme_cluster, source, source + sizeof(source) - 1,
+        const OnigUChar *source = source_ascii;
+        size_t source_len = sizeof(source_ascii) - 1;
+        switch (encidx) {
+#define CHARS_16BE(x) (OnigUChar)((x)>>8), (OnigUChar)(x)
+#define CHARS_16LE(x) (OnigUChar)(x), (OnigUChar)((x)>>8)
+#define CHARS_32BE(x) CHARS_16BE((x)>>16), CHARS_16BE(x)
+#define CHARS_32LE(x) CHARS_16LE(x), CHARS_16LE((x)>>16)
+#define CASE_UTF(e) \
+          case ENCINDEX_UTF_##e: { \
+            static const OnigUChar source_UTF_##e[] = {CHARS_##e('\\'), CHARS_##e('X')}; \
+            source = source_UTF_##e; \
+            source_len = sizeof(source_UTF_##e); \
+            break; \
+          }
+            CASE_UTF(16BE); CASE_UTF(16LE); CASE_UTF(32BE); CASE_UTF(32LE);
+#undef CASE_UTF
+#undef CHARS_16BE
+#undef CHARS_16LE
+#undef CHARS_32BE
+#undef CHARS_32LE
+        }
+        int r = onig_new(&reg_grapheme_cluster, source, source + source_len,
                          ONIG_OPTION_DEFAULT, enc, OnigDefaultSyntax, &einfo);
 	if (r) {
             UChar message[ONIG_MAX_ERROR_MESSAGE_LEN];
@@ -9908,6 +10157,9 @@ rb_fs_setter(VALUE val, ID id, VALUE *var)
 		 "value of %"PRIsVALUE" must be String or Regexp",
 		 rb_id2str(id));
     }
+    if (!NIL_P(val)) {
+        rb_warn("non-nil $; will be deprecated");
+    }
     *var = val;
 }
 
@@ -10083,9 +10335,10 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
 {
     int encidx;
     VALUE buf = Qnil;
-    const char *rep;
+    const char *rep, *p, *e, *p1, *sp;
     long replen = -1;
     int tainted = 0;
+    long slen;
 
     if (rb_block_given_p()) {
 	if (!NIL_P(repl))
@@ -10111,10 +10364,13 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
 	rep = replace; replen = (int)sizeof(replace); \
     } while (0)
 
+    slen = RSTRING_LEN(str);
+    p = RSTRING_PTR(str);
+    e = RSTRING_END(str);
+    p1 = p;
+    sp = p;
+
     if (rb_enc_asciicompat(enc)) {
-	const char *p = RSTRING_PTR(str);
-	const char *e = RSTRING_END(str);
-	const char *p1 = p;
 	int rep7bit_p;
 	if (!replen) {
 	    rep = NULL;
@@ -10179,6 +10435,7 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
 		}
 		else {
 		    repl = rb_yield(rb_enc_str_new(p, clen, enc));
+                    str_mod_check(str, sp, slen);
 		    repl = str_compat_and_valid(repl, enc);
 		    tainted |= OBJ_TAINTED_RAW(repl);
 		    rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
@@ -10214,6 +10471,7 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
 	    }
 	    else {
 		repl = rb_yield(rb_enc_str_new(p, e-p, enc));
+                str_mod_check(str, sp, slen);
 		repl = str_compat_and_valid(repl, enc);
 		tainted |= OBJ_TAINTED_RAW(repl);
 		rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
@@ -10224,9 +10482,6 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
     }
     else {
 	/* ASCII incompatible */
-	const char *p = RSTRING_PTR(str);
-	const char *e = RSTRING_END(str);
-	const char *p1 = p;
 	long mbminlen = rb_enc_mbminlen(enc);
 	if (!replen) {
 	    rep = NULL;
@@ -10283,6 +10538,7 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
 		}
 		else {
 		    repl = rb_yield(rb_enc_str_new(p, clen, enc));
+                    str_mod_check(str, sp, slen);
 		    repl = str_compat_and_valid(repl, enc);
 		    tainted |= OBJ_TAINTED_RAW(repl);
 		    rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
@@ -10310,6 +10566,7 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
 	    }
 	    else {
 		repl = rb_yield(rb_enc_str_new(p, e-p, enc));
+                str_mod_check(str, sp, slen);
 		repl = str_compat_and_valid(repl, enc);
 		tainted |= OBJ_TAINTED_RAW(repl);
 		rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
@@ -10453,8 +10710,8 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
 /**********************************************************************
  * Document-class: Symbol
  *
- *  Symbol objects represent names and some strings inside the Ruby
- *  interpreter. They are generated using the <code>:name</code> and
+ *  Symbol objects represent names inside the Ruby interpreter. They
+ *  are generated using the <code>:name</code> and
  *  <code>:"string"</code> literals syntax, and by the various
  *  <code>to_sym</code> methods. The same Symbol object will be
  *  created for a given name or string for the duration of a program's

@@ -1,5 +1,5 @@
 /* ANSI-C code produced by gperf version 3.1 */
-/* Command-line: gperf -E -C -c -P -p -j1 -i 1 -g -o -t -N zonetab zonetab.list  */
+/* Command-line: gperf --ignore-case -C -c -P -p -j1 -i 1 -g -o -t -N zonetab zonetab.list  */
 /* Computed positions: -k'1-4,$' */
 
 #if !((' ' == 32) && ('!' == 33) && ('"' == 34) && ('#' == 35) \
@@ -39,7 +39,58 @@ struct zone {
 static const struct zone *zonetab();
 #line 9 "zonetab.list"
 struct zone;
+
+#define TOTAL_KEYWORDS 170
+#define MIN_WORD_LENGTH 1
+#define MAX_WORD_LENGTH 17
+#define MIN_HASH_VALUE 5
+#define MAX_HASH_VALUE 438
 /* maximum key range = 434, duplicates = 0 */
+
+#ifndef GPERF_DOWNCASE
+#define GPERF_DOWNCASE 1
+static unsigned char gperf_downcase[256] =
+  {
+      0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,
+     15,  16,  17,  18,  19,  20,  21,  22,  23,  24,  25,  26,  27,  28,  29,
+     30,  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,
+     45,  46,  47,  48,  49,  50,  51,  52,  53,  54,  55,  56,  57,  58,  59,
+     60,  61,  62,  63,  64,  97,  98,  99, 100, 101, 102, 103, 104, 105, 106,
+    107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121,
+    122,  91,  92,  93,  94,  95,  96,  97,  98,  99, 100, 101, 102, 103, 104,
+    105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
+    120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134,
+    135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149,
+    150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164,
+    165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179,
+    180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194,
+    195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209,
+    210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224,
+    225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239,
+    240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254,
+    255
+  };
+#endif
+
+#ifndef GPERF_CASE_STRNCMP
+#define GPERF_CASE_STRNCMP 1
+static int
+gperf_case_strncmp (register const char *s1, register const char *s2, register size_t n)
+{
+  for (; n > 0;)
+    {
+      unsigned char c1 = gperf_downcase[(unsigned char)*s1++];
+      unsigned char c2 = gperf_downcase[(unsigned char)*s2++];
+      if (c1 != 0 && c1 == c2)
+        {
+          n--;
+          continue;
+        }
+      return (int)c1 - (int)c2;
+    }
+  return 0;
+}
+#endif
 
 #ifdef __GNUC__
 __inline
@@ -59,10 +110,10 @@ hash (register const char *str, register size_t len)
       439, 439,  19, 439, 439, 439, 439, 439, 439, 439,
       439, 439, 439, 439, 439,   2,   4, 439, 439, 439,
       439, 439,   8,   6,   3, 439, 439, 439, 439, 439,
-      439, 439, 439, 439, 439, 439, 439, 439, 439, 439,
-      439, 439, 439, 439, 439, 439, 439, 439, 439, 439,
-      439, 439, 439, 439, 439, 439, 439, 439, 439, 439,
-      439, 439, 439, 439, 439, 439, 439,   7,  63,  53,
+      439, 439, 439, 439, 439,   7,  63,  53,   2,   4,
+       32, 110,  88,  78,  90,  68,  47, 108,  10,  73,
+       81, 124,   3,   1,   4,  77, 116,  88,  15,  96,
+       45,   5, 439, 439, 439, 439, 439,   7,  63,  53,
         2,   4,  32, 110,  88,  78,  90,  68,  47, 108,
        10,  73,  81, 124,   3,   1,   4,  77, 116,  88,
        15,  96,  45,   5, 439, 439, 439, 439, 439, 439,
@@ -450,15 +501,6 @@ static const struct stringpool_t stringpool_contents =
 const struct zone *
 zonetab (register const char *str, register size_t len)
 {
-  enum
-    {
-      TOTAL_KEYWORDS = 170,
-      MIN_WORD_LENGTH = 1,
-      MAX_WORD_LENGTH = 17,
-      MIN_HASH_VALUE = 5,
-      MAX_HASH_VALUE = 438
-    };
-
   static const struct zone wordlist[] =
     {
       {-1}, {-1}, {-1}, {-1}, {-1},
@@ -884,7 +926,7 @@ zonetab (register const char *str, register size_t len)
             {
               register const char *s = o + stringpool;
 
-              if (*str == *s && !strncmp (str + 1, s + 1, len - 1) && s[len] == '\0')
+              if ((((unsigned char)*str ^ (unsigned char)*s) & ~32) == 0 && !gperf_case_strncmp (str, s, len) && s[len] == '\0')
                 return &wordlist[key];
             }
         }

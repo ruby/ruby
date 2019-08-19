@@ -297,10 +297,6 @@ static VALUE mSyslog_set_mask(VALUE self, VALUE mask)
  *   Syslog.log(Syslog::LOG_ALERT, "Out of memory")
  *   Syslog.alert("Out of memory")
  *
- * Format strings are as for printf/sprintf, except that in addition %m is
- * replaced with the error message string that would be returned by
- * strerror(errno).
- *
  */
 static VALUE mSyslog_log(int argc, VALUE *argv, VALUE self)
 {

@@ -8,7 +8,7 @@ describe "Mutex#synchronize" do
     synchronized = false
 
     th = Thread.new do
-      lambda do
+      -> do
         m1.synchronize do
           synchronized = true
           m2.lock
@@ -28,12 +28,12 @@ describe "Mutex#synchronize" do
   it "blocks the caller if already locked" do
     m = Mutex.new
     m.lock
-    lambda { m.synchronize { } }.should block_caller
+    -> { m.synchronize { } }.should block_caller
   end
 
   it "does not block the caller if not locked" do
     m = Mutex.new
-    lambda { m.synchronize { } }.should_not block_caller
+    -> { m.synchronize { } }.should_not block_caller
   end
 
   it "blocks the caller if another thread is also in the synchronize block" do
@@ -50,7 +50,7 @@ describe "Mutex#synchronize" do
 
     q1.pop.should == :ready
 
-    lambda { m.synchronize { } }.should block_caller
+    -> { m.synchronize { } }.should block_caller
 
     q2.push :done
     t.join
@@ -60,7 +60,7 @@ describe "Mutex#synchronize" do
     m = Mutex.new
 
     m.synchronize do
-      lambda { m.synchronize { } }.should raise_error(ThreadError)
+      -> { m.synchronize { } }.should raise_error(ThreadError)
     end
   end
 end

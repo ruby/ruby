@@ -26,26 +26,26 @@ describe "Binding#eval" do
   it "inherits __LINE__ from the enclosing scope" do
     obj = BindingSpecs::Demo.new(1)
     bind = obj.get_binding
-    bind.eval("__LINE__").should == obj.get_line_of_binding
+    suppress_warning {bind.eval("__LINE__")}.should == obj.get_line_of_binding
   end
 
   it "preserves __LINE__ across multiple calls to eval" do
     obj = BindingSpecs::Demo.new(1)
     bind = obj.get_binding
-    bind.eval("__LINE__").should == obj.get_line_of_binding
-    bind.eval("__LINE__").should == obj.get_line_of_binding
+    suppress_warning {bind.eval("__LINE__")}.should == obj.get_line_of_binding
+    suppress_warning {bind.eval("__LINE__")}.should == obj.get_line_of_binding
   end
 
   it "increments __LINE__ on each line of a multiline eval" do
     obj = BindingSpecs::Demo.new(1)
     bind = obj.get_binding
-    bind.eval("#foo\n__LINE__").should == obj.get_line_of_binding + 1
+    suppress_warning {bind.eval("#foo\n__LINE__")}.should == obj.get_line_of_binding + 1
   end
 
   it "inherits __LINE__ from the enclosing scope even if the Binding is created with #send" do
     obj = BindingSpecs::Demo.new(1)
     bind, line = obj.get_binding_with_send_and_line
-    bind.eval("__LINE__").should == line
+    suppress_warning {bind.eval("__LINE__")}.should == line
   end
 
   it "starts with a __LINE__ of 1 if a filename is passed" do
@@ -63,7 +63,7 @@ describe "Binding#eval" do
   it "inherits __FILE__ from the enclosing scope" do
     obj = BindingSpecs::Demo.new(1)
     bind = obj.get_binding
-    bind.eval("__FILE__").should == obj.get_file_of_binding
+    suppress_warning {bind.eval("__FILE__")}.should == obj.get_file_of_binding
   end
 
   it "uses the __FILE__ that is passed in" do
@@ -77,7 +77,7 @@ describe "Binding#eval" do
       bind = obj.get_binding
 
       bind.eval("__FILE__", "test.rb").should == "test.rb"
-      bind.eval("__FILE__").should_not == "test.rb"
+      suppress_warning {bind.eval("__FILE__")}.should_not == "test.rb"
     end
   end
 

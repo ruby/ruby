@@ -13,7 +13,7 @@ describe "File::Stat#initialize" do
   end
 
   it "raises an exception if the file doesn't exist" do
-    lambda {
+    -> {
       File::Stat.new(tmp("i_am_a_dummy_file_that_doesnt_exist"))
     }.should raise_error(Errno::ENOENT)
   end

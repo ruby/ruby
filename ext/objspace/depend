@@ -2,6 +2,7 @@
 object_tracing.o: $(RUBY_EXTCONF_H)
 object_tracing.o: $(arch_hdrdir)/ruby/config.h
 object_tracing.o: $(hdrdir)/ruby.h
+object_tracing.o: $(hdrdir)/ruby/assert.h
 object_tracing.o: $(hdrdir)/ruby/backward.h
 object_tracing.o: $(hdrdir)/ruby/debug.h
 object_tracing.o: $(hdrdir)/ruby/defines.h
@@ -20,6 +21,7 @@ object_tracing.o: objspace.h
 objspace.o: $(RUBY_EXTCONF_H)
 objspace.o: $(arch_hdrdir)/ruby/config.h
 objspace.o: $(hdrdir)/ruby.h
+objspace.o: $(hdrdir)/ruby/assert.h
 objspace.o: $(hdrdir)/ruby/backward.h
 objspace.o: $(hdrdir)/ruby/defines.h
 objspace.o: $(hdrdir)/ruby/encoding.h
@@ -42,6 +44,7 @@ objspace.o: {$(VPATH)}id.h
 objspace_dump.o: $(RUBY_EXTCONF_H)
 objspace_dump.o: $(arch_hdrdir)/ruby/config.h
 objspace_dump.o: $(hdrdir)/ruby.h
+objspace_dump.o: $(hdrdir)/ruby/assert.h
 objspace_dump.o: $(hdrdir)/ruby/backward.h
 objspace_dump.o: $(hdrdir)/ruby/debug.h
 objspace_dump.o: $(hdrdir)/ruby/defines.h

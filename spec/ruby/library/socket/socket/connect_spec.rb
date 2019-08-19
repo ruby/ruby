@@ -32,7 +32,7 @@ describe 'Socket#connect' do
 
       @client.connect(@server.getsockname).should == 0
 
-      lambda {
+      -> {
         @client.connect(@server.getsockname)
 
         # A second call needed if non-blocking sockets become default

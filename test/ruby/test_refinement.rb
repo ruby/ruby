@@ -1562,6 +1562,7 @@ class TestRefinement < Test::Unit::TestCase
         undef :foo
       end
     end
+    ext
   end
 
   def test_call_refined_method_in_duplicate_module
@@ -2096,7 +2097,7 @@ class TestRefinement < Test::Unit::TestCase
         end
       }
       def call
-        ToProc.call &self
+        ToProc.call(&self)
       end
     end
 
@@ -2111,7 +2112,7 @@ class TestRefinement < Test::Unit::TestCase
       }
 
       def call
-        ToProc.call &self
+        ToProc.call(&self)
       end
     end
 
@@ -2127,14 +2128,14 @@ class TestRefinement < Test::Unit::TestCase
       }
 
       def call
-        ToProc.call &self
+        ToProc.call(&self)
       end
     end
 
 
     class NonProc
       def call
-        ToProc.call &self
+        ToProc.call(&self)
       end
     end
 
@@ -2144,9 +2145,9 @@ class TestRefinement < Test::Unit::TestCase
       end
 
       def call
-        ToProc.call &self
+        ToProc.call(&self)
       end
-      end
+    end
 
     class ToProcAndMethodMissing
       def method_missing *args
@@ -2163,7 +2164,7 @@ class TestRefinement < Test::Unit::TestCase
       }
 
       def call
-        ToProc.call &self
+        ToProc.call(&self)
       end
     end
 
@@ -2182,7 +2183,7 @@ class TestRefinement < Test::Unit::TestCase
       }
 
       def call
-        ToProc.call &self
+        ToProc.call(&self)
       end
     end
   end
@@ -2242,6 +2243,38 @@ class TestRefinement < Test::Unit::TestCase
     INPUT
   end
 
+  def test_call_method_in_unused_refinement
+    bug15720 = '[ruby-core:91916] [Bug #15720]'
+    assert_in_out_err([], <<-INPUT, ["ok"], [], bug15720)
+      module M1
+        refine Kernel do
+          def foo
+            'foo called!'
+          end
+        end
+      end
+
+      module M2
+        refine Kernel do
+          def bar
+            'bar called!'
+          end
+        end
+      end
+
+      using M1
+
+      foo
+
+      begin
+        bar
+      rescue NameError
+      end
+
+      puts "ok"
+    INPUT
+  end
+
   def test_super_from_refined_module
     a = EnvUtil.labeled_module("A") do
       def foo;"[A#{super}]";end
@@ -2259,6 +2292,35 @@ class TestRefinement < Test::Unit::TestCase
       end
     end
     assert_equal("[C[A[B]]]", c.new.foo, '[ruby-dev:50390] [Bug #14232]')
+    d
+  end
+
+  class RefineInUsing
+    module M1
+      refine RefineInUsing do
+        def foo
+          :ok
+        end
+      end
+    end
+
+    module M2
+      using M1
+      refine RefineInUsing do
+        def call_foo
+	  RefineInUsing.new.foo
+        end
+      end
+    end
+
+    using M2
+    def self.test
+      new.call_foo
+    end
+  end
+
+  def test_refine_in_using
+    assert_equal(:ok, RefineInUsing.test)
   end
 
   private

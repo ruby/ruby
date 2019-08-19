@@ -53,7 +53,7 @@ describe 'Socket#initialize' do
       family.stub!(:to_str).and_return(Socket::AF_INET)
       type.stub!(:to_str).and_return(Socket::SOCK_STREAM)
 
-      lambda { Socket.new(family, type) }.should raise_error(TypeError)
+      -> { Socket.new(family, type) }.should raise_error(TypeError)
     end
   end
 
@@ -65,7 +65,7 @@ describe 'Socket#initialize' do
     end
 
     it 'raises TypeError when using a Symbol' do
-      lambda { Socket.new(:INET, :STREAM, :TCP) }.should raise_error(TypeError)
+      -> { Socket.new(:INET, :STREAM, :TCP) }.should raise_error(TypeError)
     end
   end
 
