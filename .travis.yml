@@ -358,6 +358,7 @@ env:
     osx_image: xcode11
     os: osx
     <<: *osx-clang
+    <<: *cron-only
     env:
       - CONFIG_FLAG=--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib
       - TEST_ALL_OPTS="--timeout-scale=2.0 --excludes=\$(TESTSDIR)/excludes/_travis/osx"
@@ -400,7 +401,6 @@ matrix:
   include:
     # To reduce time for finishing all jobs, running the slowest osx build first.
     # Build every commit:
-    - <<: *x86_64-darwin18
     - <<: *x86_64-linux
     - <<: *i686-linux
     - <<: *pedanticism
@@ -413,6 +413,7 @@ matrix:
     - <<: *MSAN
     - <<: *UBSAN
     # Cron only:
+    - <<: *x86_64-darwin18
     - <<: *jemalloc
     - <<: *VM_CHECK_MODE
     - <<: *WITH_COROUTINE_UCONTEXT
