@@ -316,11 +316,11 @@ else
       if resp.code != '200'
         abort "'#{git_uri}' returned status '#{resp.code}':\n#{resp.body}"
       end
-      patch = resp.body
+      patch = resp.body.sub(/^diff --git a\/version\.h b\/version\.h\nindex .*\n--- a\/version\.h\n\+\+\+ b\/version\.h\n@@ .* @@\n(?:[-\+ ].*\n|\n)+/, '')
 
       message = "\n\n#{(patch[/^Subject: (.*)\n\ndiff --git/m, 1] || "Message not found for revision: #{git_rev}\n")}"
       puts '+ git apply'
-      IO.popen(['git', 'apply'], 'w') { |f| f.write(patch) }
+      IO.popen(['git', 'apply'], 'wb') { |f| f.write(patch) }
     else
       default_merge_branch = (%r{^URL: .*/branches/ruby_1_8_} =~ `svn info` ? 'branches/ruby_1_8' : 'trunk')
       svn_src = "#{Merger::REPOS}#{ARGV[1] || default_merge_branch}"
