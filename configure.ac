@@ -780,11 +780,11 @@ AS_CASE(["$target_os"],
 		RUBY_PREPEND_OPTION(LIBS, -lobjc)
 		RUBY_APPEND_OPTIONS(CPPFLAGS, -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE -D_DARWIN_UNLIMITED_SELECT -D_REENTRANT)
 		AC_MSG_CHECKING(whether Mac OS X 10.5 or later)
-		AC_TRY_CPP([#include <AvailabilityMacros.h>
-		    #if MAC_OS_X_VERSION_MAX_ALLOWED <= 1040
-		    #error pre OS X 10.4
-		    [!<===== pre OS X 10.4 =====>]
-		    #endif
+		AC_TRY_CPP([@%:@include <AvailabilityMacros.h>
+		    @%:@if MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_5
+		    @%:@error pre OS X 10.5
+		    [!<===== pre OS X 10.5 =====>]
+		    @%:@endif
 		    ],
 		    [macosx_10_5=yes], [macosx_10_5=no])
 		AC_MSG_RESULT($macosx_10_5)
