@@ -700,8 +700,6 @@ fiber_initialize_coroutine(rb_fiber_t *fiber, size_t * vm_stack_size)
     rb_execution_context_t *sec = &fiber->cont.saved_ec;
     void * vm_stack = NULL;
 
-    STACK_GROW_DIR_DETECTION;
-
     VM_ASSERT(fiber_pool != NULL);
 
     fiber->stack = fiber_pool_stack_acquire(fiber_pool);
