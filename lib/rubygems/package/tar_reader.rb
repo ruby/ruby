@@ -92,11 +92,9 @@ class Gem::Package::TarReader
   # NOTE: Do not call #rewind during #each
 
   def rewind
-    if @init_pos == 0 then
-      raise Gem::Package::NonSeekableIO unless @io.respond_to? :rewind
+    if @init_pos == 0
       @io.rewind
     else
-      raise Gem::Package::NonSeekableIO unless @io.respond_to? :pos=
       @io.pos = @init_pos
     end
   end
@@ -106,7 +104,7 @@ class Gem::Package::TarReader
   # yields it.  Rewinds the tar file to the beginning when the block
   # terminates.
 
-  def seek name # :yields: entry
+  def seek(name) # :yields: entry
     found = find do |entry|
       entry.full_name == name
     end

@@ -172,7 +172,7 @@ dsa_generate(int size)
  * from scratch.
  *
  * === Parameters
- * * +size+ is an integer representing the desired key size.
+ * * _size_ is an integer representing the desired key size.
  *
  */
 static VALUE
@@ -195,12 +195,12 @@ ossl_dsa_s_generate(VALUE klass, VALUE size)
  *    DSA.new(size) -> dsa
  *    DSA.new(string [, pass]) -> dsa
  *
- * Creates a new DSA instance by reading an existing key from +string+.
+ * Creates a new DSA instance by reading an existing key from _string_.
  *
  * === Parameters
- * * +size+ is an integer representing the desired key size.
- * * +string+ contains a DER or PEM encoded key.
- * * +pass+ is a string that contains an optional password.
+ * * _size_ is an integer representing the desired key size.
+ * * _string_ contains a DER or PEM encoded key.
+ * * _pass_ is a string that contains an optional password.
  *
  * === Examples
  *  DSA.new -> dsa
@@ -329,8 +329,8 @@ ossl_dsa_is_private(VALUE self)
  * Encodes this DSA to its PEM encoding.
  *
  * === Parameters
- * * +cipher+ is an OpenSSL::Cipher.
- * * +password+ is a string containing your password.
+ * * _cipher_ is an OpenSSL::Cipher.
+ * * _password_ is a string containing your password.
  *
  * === Examples
  *  DSA.to_pem -> aString
@@ -348,7 +348,7 @@ ossl_dsa_export(int argc, VALUE *argv, VALUE self)
     GetDSA(self, dsa);
     rb_scan_args(argc, argv, "02", &cipher, &pass);
     if (!NIL_P(cipher)) {
-	ciph = GetCipherPtr(cipher);
+	ciph = ossl_evp_get_cipherbyname(cipher);
 	pass = ossl_pem_passwd_value(pass);
     }
     if (!(out = BIO_new(BIO_s_mem()))) {
@@ -503,12 +503,12 @@ ossl_dsa_to_public_key(VALUE self)
  *  call-seq:
  *    dsa.syssign(string) -> aString
  *
- * Computes and returns the DSA signature of +string+, where +string+ is
+ * Computes and returns the DSA signature of _string_, where _string_ is
  * expected to be an already-computed message digest of the original input
  * data. The signature is issued using the private key of this DSA instance.
  *
  * === Parameters
- * * +string+ is a message digest of the original input data to be signed
+ * * _string_ is a message digest of the original input data to be signed.
  *
  * === Example
  *  dsa = OpenSSL::PKey::DSA.new(2048)
@@ -549,11 +549,11 @@ ossl_dsa_sign(VALUE self, VALUE data)
  *    dsa.sysverify(digest, sig) -> true | false
  *
  * Verifies whether the signature is valid given the message digest input. It
- * does so by validating +sig+ using the public key of this DSA instance.
+ * does so by validating _sig_ using the public key of this DSA instance.
  *
  * === Parameters
- * * +digest+ is a message digest of the original input data to be signed
- * * +sig+ is a DSA signature value
+ * * _digest_ is a message digest of the original input data to be signed
+ * * _sig_ is a DSA signature value
  *
  * === Example
  *  dsa = OpenSSL::PKey::DSA.new(2048)
@@ -590,7 +590,7 @@ ossl_dsa_verify(VALUE self, VALUE digest, VALUE sig)
  * call-seq:
  *   dsa.set_pqg(p, q, g) -> self
  *
- * Sets +p+, +q+, +g+ for the DSA instance.
+ * Sets _p_, _q_, _g_ to the DSA instance.
  */
 OSSL_PKEY_BN_DEF3(dsa, DSA, pqg, p, q, g)
 /*
@@ -598,7 +598,7 @@ OSSL_PKEY_BN_DEF3(dsa, DSA, pqg, p, q, g)
  * call-seq:
  *   dsa.set_key(pub_key, priv_key) -> self
  *
- * Sets +pub_key+ and +priv_key+ for the DSA instance. +priv_key+ may be nil.
+ * Sets _pub_key_ and _priv_key_ for the DSA instance. _priv_key_ may be +nil+.
  */
 OSSL_PKEY_BN_DEF2(dsa, DSA, key, pub_key, priv_key)
 
@@ -627,18 +627,12 @@ Init_ossl_dsa(void)
      * DSA, the Digital Signature Algorithm, is specified in NIST's
      * FIPS 186-3. It is an asymmetric public key algorithm that may be used
      * similar to e.g. RSA.
-     * Please note that for OpenSSL versions prior to 1.0.0 the digest
-     * algorithms OpenSSL::Digest::DSS (equivalent to SHA) or
-     * OpenSSL::Digest::DSS1 (equivalent to SHA-1) must be used for issuing
-     * signatures with a DSA key using OpenSSL::PKey#sign.
-     * Starting with OpenSSL 1.0.0, digest algorithms are no longer restricted,
-     * any Digest may be used for signing.
      */
     cDSA = rb_define_class_under(mPKey, "DSA", cPKey);
 
     rb_define_singleton_method(cDSA, "generate", ossl_dsa_s_generate, 1);
     rb_define_method(cDSA, "initialize", ossl_dsa_initialize, -1);
-    rb_define_copy_func(cDSA, ossl_dsa_initialize_copy);
+    rb_define_method(cDSA, "initialize_copy", ossl_dsa_initialize_copy, 1);
 
     rb_define_method(cDSA, "public?", ossl_dsa_is_public, 0);
     rb_define_method(cDSA, "private?", ossl_dsa_is_private, 0);

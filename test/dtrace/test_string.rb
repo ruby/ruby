@@ -4,11 +4,11 @@ require_relative 'helper'
 module DTrace
   class TestStringProbes < TestCase
     def test_object_create_start_string_lit
-      trap_probe(probe, '"omglolwutbbq"') { |_,rbfile,saw|
-        saw = saw.map(&:split).find_all { |klass, file, line, len|
+      trap_probe(probe, '"omglolwutbbq"') { |_,rbfile,orig|
+        saw = orig.map(&:split).find_all { |klass, file, line, len|
           file == rbfile && len == '12' && line == '1'
         }
-        assert_equal(%w{ String }, saw.map(&:first))
+        assert_equal(%w{ String }, saw.map(&:first), orig.inspect)
         assert_equal([rbfile], saw.map { |line| line[1] })
         assert_equal(['1'], saw.map { |line| line[2] })
       }

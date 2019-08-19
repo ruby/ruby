@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # Base class for RDoc markup formatters
 #
@@ -50,7 +50,7 @@ class RDoc::Markup::Formatter
 
     @markup = markup || RDoc::Markup.new
     @am     = @markup.attribute_manager
-    @am.add_special(/<br>/, :HARD_BREAK)
+    @am.add_regexp_handling(/<br>/, :HARD_BREAK)
 
     @attributes = @am.attributes
 
@@ -78,23 +78,24 @@ class RDoc::Markup::Formatter
   end
 
   ##
-  # Adds a special for links of the form rdoc-...:
+  # Adds a regexp handling for links of the form rdoc-...:
 
-  def add_special_RDOCLINK
-    @markup.add_special(/rdoc-[a-z]+:[^\s\]]+/, :RDOCLINK)
+  def add_regexp_handling_RDOCLINK
+    @markup.add_regexp_handling(/rdoc-[a-z]+:[^\s\]]+/, :RDOCLINK)
   end
 
   ##
-  # Adds a special for links of the form {<text>}[<url>] and <word>[<url>]
+  # Adds a regexp handling for links of the form {<text>}[<url>] and
+  # <word>[<url>]
 
-  def add_special_TIDYLINK
-    @markup.add_special(/(?:
-                          \{.*?\} |    # multi-word label
-                          \b[^\s{}]+? # single-word label
-                         )
+  def add_regexp_handling_TIDYLINK
+    @markup.add_regexp_handling(/(?:
+                                  \{.*?\} |    # multi-word label
+                                  \b[^\s{}]+? # single-word label
+                                 )
 
-                         \[\S+?\]     # link target
-                        /x, :TIDYLINK)
+                                 \[\S+?\]     # link target
+                                /x, :TIDYLINK)
   end
 
   ##
@@ -133,8 +134,8 @@ class RDoc::Markup::Formatter
       when RDoc::Markup::AttrChanger then
         off_tags res, item
         on_tags res, item
-      when RDoc::Markup::Special then
-        res << convert_special(item)
+      when RDoc::Markup::RegexpHandling then
+        res << convert_regexp_handling(item)
       else
         raise "Unknown flow element: #{item.inspect}"
       end
@@ -144,29 +145,29 @@ class RDoc::Markup::Formatter
   end
 
   ##
-  # Converts added specials.  See RDoc::Markup#add_special
+  # Converts added regexp handlings. See RDoc::Markup#add_regexp_handling
 
-  def convert_special special
-    return special.text if in_tt?
+  def convert_regexp_handling target
+    return target.text if in_tt?
 
     handled = false
 
-    @attributes.each_name_of special.type do |name|
-      method_name = "handle_special_#{name}"
+    @attributes.each_name_of target.type do |name|
+      method_name = "handle_regexp_#{name}"
 
       if respond_to? method_name then
-        special.text = send method_name, special
+        target.text = send method_name, target
         handled = true
       end
     end
 
     unless handled then
-      special_name = @attributes.as_string special.type
+      target_name = @attributes.as_string target.type
 
-      raise RDoc::Error, "Unhandled special #{special_name}: #{special}"
+      raise RDoc::Error, "Unhandled regexp handling #{target_name}: #{target}"
     end
 
-    special.text
+    target.text
   end
 
   ##

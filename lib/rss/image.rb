@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 require 'rss/1.0'
-require 'rss/dublincore'
+require_relative 'dublincore'
 
 module RSS
 

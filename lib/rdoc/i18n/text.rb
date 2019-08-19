@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # An i18n supported text.
 #
@@ -46,9 +46,9 @@ class RDoc::I18n::Text
     parse do |part|
       case part[:type]
       when :paragraph
-        translated_text << locale.translate(part[:paragraph])
+        translated_text += locale.translate(part[:paragraph])
       when :empty_line
-        translated_text << part[:line]
+        translated_text += part[:line]
       else
         raise "should not reach here: unexpected type: #{type}"
       end
@@ -69,14 +69,14 @@ class RDoc::I18n::Text
         if paragraph.empty?
           emit_empty_line_event(line, line_no, &block)
         else
-          paragraph << line
+          paragraph += line
           emit_paragraph_event(paragraph, paragraph_start_line, line_no,
                                &block)
           paragraph = ''
         end
       else
         paragraph_start_line = line_no if paragraph.empty?
-        paragraph << line
+        paragraph += line
       end
     end
 

@@ -140,9 +140,9 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Regexp#match? [Feature #8110]
     This returns bool and doesn't save backref.
 
-  * Update Onigmo 6.0.0.
+  * Update to Onigmo 6.0.0.
 
-* Regexp/String: Updated Unicode version from 8.0.0 to 9.0.0 [Feature #12513]
+* Regexp/String: Update Unicode version from 8.0.0 to 9.0.0 [Feature #12513]
 
 * RubyVM::Env
 
@@ -316,17 +316,17 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * DateTime#to_time now preserves timezone.  [Bug #12189]
 
-* PSych
+* Psych
 
-  * Update Psych 2.2.2
+  * Update to Psych 2.2.2
 
 * RDoc
 
-  * Update RDoc 5.0.0
+  * Update to RDoc 5.0.0
 
 * RubyGems
 
-  * Update RubyGems 2.6.8
+  * Update to RubyGems 2.6.8
 
 * shellwords
 

@@ -45,10 +45,10 @@ openssl/ossl_config.c
 openssl/ossl_digest.c
 openssl/ossl_engine.c
 openssl/ossl_hmac.c
+openssl/ossl_kdf.c
 openssl/ossl_ns_spki.c
 openssl/ossl_ocsp.c
 openssl/ossl_pkcs12.c
-openssl/ossl_pkcs5.c
 openssl/ossl_pkcs7.c
 openssl/ossl_pkey.c
 openssl/ossl_pkey_dh.c

@@ -54,7 +54,7 @@ use with other commands.
     "#{program_name} REGEXP"
   end
 
-  def fetch_remote_specs dependency # :nodoc:
+  def fetch_remote_specs(dependency) # :nodoc:
     fetcher = Gem::SpecFetcher.fetcher
 
     ss, = fetcher.spec_for_dependency dependency
@@ -62,7 +62,7 @@ use with other commands.
     ss.map { |spec, _| spec }
   end
 
-  def fetch_specs name_pattern, dependency # :nodoc:
+  def fetch_specs(name_pattern, dependency) # :nodoc:
     specs = []
 
     if local?
@@ -79,19 +79,19 @@ use with other commands.
     specs.uniq.sort
   end
 
-  def gem_dependency pattern, version, prerelease # :nodoc:
-    dependency = Gem::Deprecate.skip_during {
+  def gem_dependency(pattern, version, prerelease) # :nodoc:
+    dependency = Gem::Deprecate.skip_during do
       Gem::Dependency.new pattern, version
-    }
+    end
 
     dependency.prerelease = prerelease
 
     dependency
   end
 
-  def display_pipe specs # :nodoc:
+  def display_pipe(specs) # :nodoc:
     specs.each do |spec|
-      unless spec.dependencies.empty? then
+      unless spec.dependencies.empty?
         spec.dependencies.sort_by { |dep| dep.name }.each do |dep|
           say "#{dep.name} --version '#{dep.requirement}'"
         end
@@ -99,12 +99,12 @@ use with other commands.
     end
   end
 
-  def display_readable specs, reverse # :nodoc:
+  def display_readable(specs, reverse) # :nodoc:
     response = String.new
 
     specs.each do |spec|
       response << print_dependencies(spec)
-      unless reverse[spec.full_name].empty? then
+      unless reverse[spec.full_name].empty?
         response << "  Used by\n"
         reverse[spec.full_name].each do |sp, dep|
           response << "    #{sp} (#{dep})\n"
@@ -128,7 +128,7 @@ use with other commands.
 
     reverse = reverse_dependencies specs
 
-    if options[:pipe_format] then
+    if options[:pipe_format]
       display_pipe specs
     else
       display_readable specs, reverse
@@ -136,13 +136,13 @@ use with other commands.
   end
 
   def ensure_local_only_reverse_dependencies # :nodoc:
-    if options[:reverse_dependencies] and remote? and not local? then
+    if options[:reverse_dependencies] and remote? and not local?
       alert_error 'Only reverse dependencies for local gems are supported.'
       terminate_interaction 1
     end
   end
 
-  def ensure_specs specs # :nodoc:
+  def ensure_specs(specs) # :nodoc:
     return unless specs.empty?
 
     patterns = options[:args].join ','
@@ -155,7 +155,7 @@ use with other commands.
   def print_dependencies(spec, level = 0) # :nodoc:
     response = String.new
     response << '  ' * level + "Gem #{spec.full_name}\n"
-    unless spec.dependencies.empty? then
+    unless spec.dependencies.empty?
       spec.dependencies.sort_by { |dep| dep.name }.each do |dep|
         response << '  ' * level + "  #{dep}\n"
       end
@@ -163,7 +163,7 @@ use with other commands.
     response
   end
 
-  def remote_specs dependency # :nodoc:
+  def remote_specs(dependency) # :nodoc:
     fetcher = Gem::SpecFetcher.fetcher
 
     ss, _ = fetcher.spec_for_dependency dependency
@@ -171,7 +171,7 @@ use with other commands.
     ss.map { |s,o| s }
   end
 
-  def reverse_dependencies specs # :nodoc:
+  def reverse_dependencies(specs) # :nodoc:
     reverse = Hash.new { |h, k| h[k] = [] }
 
     return reverse unless options[:reverse_dependencies]
@@ -186,7 +186,7 @@ use with other commands.
   ##
   # Returns an Array of [specification, dep] that are satisfied by +spec+.
 
-  def find_reverse_dependencies spec # :nodoc:
+  def find_reverse_dependencies(spec) # :nodoc:
     result = []
 
     Gem::Specification.each do |sp|
@@ -194,7 +194,7 @@ use with other commands.
         dep = Gem::Dependency.new(*dep) unless Gem::Dependency === dep
 
         if spec.name == dep.name and
-           dep.requirement.satisfied_by?(spec.version) then
+           dep.requirement.satisfied_by?(spec.version)
           result << [sp.full_name, dep]
         end
       end
@@ -205,14 +205,15 @@ use with other commands.
 
   private
 
-  def name_pattern args
+  def name_pattern(args)
     args << '' if args.empty?
 
-    if args.length == 1 and args.first =~ /\A\/(.*)\/(i)?\z/m then
+    if args.length == 1 and args.first =~ /\A(.*)(i)?\z/m
       flags = $2 ? Regexp::IGNORECASE : nil
       Regexp.new $1, flags
     else
       /\A#{Regexp.union(*args)}/
     end
   end
+
 end

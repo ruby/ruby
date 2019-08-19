@@ -52,6 +52,8 @@ module Psych
         @implicit = implicit
         @style    = style
       end
+
+      def mapping?; true; end
     end
   end
 end

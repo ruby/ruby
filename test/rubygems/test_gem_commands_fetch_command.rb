@@ -124,4 +124,3 @@ class TestGemCommandsFetchCommand < Gem::TestCase
   end
 
 end
-

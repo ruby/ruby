@@ -8,10 +8,9 @@ class NameMap
     '*'   => 'multiply',
     '/'   => 'divide',
     '%'   => 'modulo',
-    '<<'  => {'Bignum' => 'left_shift',
-              'Fixnum' => 'left_shift',
-              'IO'     => 'output',
-              :default => 'append' },
+    '<<'  => {'Integer' => 'left_shift',
+              'IO'      => 'output',
+              :default  => 'append' },
     '>>'  => 'right_shift',
     '<'   => 'lt',
     '<='  => 'lte',
@@ -25,33 +24,22 @@ class NameMap
     '[]=' => 'element_set',
     '**'  => 'exponent',
     '!'   => 'not',
-    '~'   => {'Bignum' => 'complement',
-              'Fixnum' => 'complement',
-              'Regexp' => 'match',
-              'String' => 'match' },
+    '~'   => {'Integer' => 'complement',
+              :default  => 'match' },
     '!='  => 'not_equal',
     '!~'  => 'not_match',
     '=~'  => 'match',
-    '&'   => {'Bignum'     => 'bit_and',
-              'Fixnum'     => 'bit_and',
+    '&'   => {'Integer'    => 'bit_and',
               'Array'      => 'intersection',
-              'TrueClass'  => 'and',
-              'FalseClass' => 'and',
-              'NilClass'   => 'and',
-              'Set'        => 'intersection' },
-    '|'   => {'Bignum'     => 'bit_or',
-              'Fixnum'     => 'bit_or',
+              'Set'        => 'intersection',
+              :default     => 'and' },
+    '|'   => {'Integer'    => 'bit_or',
               'Array'      => 'union',
-              'TrueClass'  => 'or',
-              'FalseClass' => 'or',
-              'NilClass'   => 'or',
-              'Set'        => 'union' },
-    '^'   => {'Bignum'     => 'bit_xor',
-              'Fixnum'     => 'bit_xor',
-              'TrueClass'  => 'xor',
-              'FalseClass' => 'xor',
-              'NilClass'   => 'xor',
-              'Set'        => 'exclusion'},
+              'Set'        => 'union',
+              :default     => 'or' },
+    '^'   => {'Integer'    => 'bit_xor',
+              'Set'        => 'exclusion',
+              :default     => 'xor' },
   }
 
   EXCLUDED = %w[
@@ -119,7 +107,12 @@ class NameMap
 
   def file_name(m, c)
     if MAP.key?(m)
-      name = MAP[m].is_a?(Hash) ? MAP[m][c.split('::').last] || MAP[m][:default] : MAP[m]
+      mapping = MAP[m]
+      if mapping.is_a?(Hash)
+        name = mapping[c.split('::').last] || mapping.fetch(:default)
+      else
+        name = mapping
+      end
     else
       name = m.gsub(/[?!=]/, '')
     end

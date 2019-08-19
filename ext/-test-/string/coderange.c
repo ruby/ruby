@@ -17,7 +17,7 @@ coderange_int2sym(int coderange)
 	return sym_broken;
     }
     rb_bug("wrong condition of coderange");
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 /* return coderange without scan */
@@ -36,7 +36,7 @@ str_coderange_scan(VALUE str)
 }
 
 void
-Init_coderange(VALUE klass)
+Init_string_coderange(VALUE klass)
 {
     sym_7bit = ID2SYM(rb_intern("7bit"));
     sym_valid = ID2SYM(rb_intern("valid"));

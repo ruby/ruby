@@ -1,22 +1,24 @@
 class BlockingMatcher
   def matches?(block)
-    started = false
-    blocking = true
-
-    thread = Thread.new do
-      started = true
+    t = Thread.new do
       block.call
-
-      blocking = false
     end
 
-    while !started and status = thread.status and status != "sleep"
-      Thread.pass
+    loop do
+      case t.status
+      when "sleep"    # blocked
+        t.kill
+        t.join
+        return true
+      when false      # terminated normally, so never blocked
+        t.join
+        return false
+      when nil        # terminated exceptionally
+        t.value
+      else
+        Thread.pass
+      end
     end
-    thread.kill
-    thread.join
-
-    blocking
   end
 
   def failure_message
@@ -29,7 +31,7 @@ class BlockingMatcher
 end
 
 module MSpecMatchers
-  private def block_caller(timeout = 0.1)
+  private def block_caller
     BlockingMatcher.new
   end
 end

@@ -1,0 +1,18 @@
+prelude: |
+  class C
+    def m a
+      1
+    end
+  end
+
+  class CC < C
+    def m a
+      super
+    end
+  end
+
+  obj = CC.new
+benchmark:
+  vm2_zsuper: |
+    obj.m 10
+loop_count: 6000000

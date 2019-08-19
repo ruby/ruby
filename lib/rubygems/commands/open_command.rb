@@ -11,13 +11,13 @@ class Gem::Commands::OpenCommand < Gem::Command
   def initialize
     super 'open', 'Open gem sources in editor'
 
-    add_option('-e', '--editor EDITOR', String,
-               "Opens gem sources in EDITOR") do |editor, options|
-      options[:editor] = editor || get_env_editor
+    add_option('-e', '--editor COMMAND', String,
+               "Prepends COMMAND to gem path. Could be used to specify editor.") do |command, options|
+      options[:editor] = command || get_env_editor
     end
     add_option('-v', '--version VERSION', String,
                "Opens specific gem version") do |version|
-      options[:version]  = version
+      options[:version] = version
     end
   end
 
@@ -32,14 +32,14 @@ class Gem::Commands::OpenCommand < Gem::Command
   def description # :nodoc:
     <<-EOF
         The open command opens gem in editor and changes current path
-        to gem's source directory. Editor can be specified with -e option,
-        otherwise rubygems will look for editor in $EDITOR, $VISUAL and
-        $GEM_EDITOR variables.
+        to gem's source directory.
+        Editor command can be specified with -e option, otherwise rubygems
+        will look for editor in $EDITOR, $VISUAL and $GEM_EDITOR variables.
     EOF
   end
 
   def usage # :nodoc:
-    "#{program_name} GEMNAME [-e EDITOR]"
+    "#{program_name} GEMNAME [-e COMMAND]"
   end
 
   def get_env_editor
@@ -58,24 +58,31 @@ class Gem::Commands::OpenCommand < Gem::Command
     terminate_interaction 1 unless found
   end
 
-  def open_gem name
+  def open_gem(name)
     spec = spec_for name
+
     return false unless spec
+
+    if spec.default_gem?
+      say "'#{name}' is a default gem and can't be opened."
+      return false
+    end
 
     open_editor(spec.full_gem_path)
   end
 
-  def open_editor path
+  def open_editor(path)
     Dir.chdir(path) do
       system(*@editor.split(/\s+/) + [path])
     end
   end
 
-  def spec_for name
+  def spec_for(name)
     spec = Gem::Specification.find_all_by_name(name, @version).first
 
     return spec if spec
 
     say "Unable to find gem '#{name}'"
   end
+
 end

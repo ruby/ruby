@@ -135,6 +135,8 @@ def check_arity(h)
   abort if invalid
 end
 
+require_relative "dsl"
+
 def read_ids1_with_locations(path)
   h = {}
   File.open(path) {|f|
@@ -143,6 +145,13 @@ def read_ids1_with_locations(path)
       next if /ripper_dispatch/ =~ line
       line.scan(/\bdispatch(\d)\((\w+)/) do |arity, event|
         (h[event] ||= []).push [f.lineno, arity.to_i]
+      end
+      if line =~ %r</\*% *ripper(?:\[(.*?)\])?: *(.*?) *%\*/>
+        gen = DSL.new($2, ($1 || "").split(","))
+        gen.generate
+        gen.events.each do |event, arity|
+          (h[event] ||= []).push [f.lineno, arity.to_i]
+        end
       end
     end
   }

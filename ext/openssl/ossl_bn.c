@@ -26,11 +26,6 @@
   } \
 } while (0)
 
-#define SafeGetBN(obj, bn) do { \
-  OSSL_Check_Kind((obj), cBN); \
-  GetBN((obj), (bn)); \
-} while (0)
-
 static void
 ossl_bn_free(void *ptr)
 {
@@ -176,8 +171,7 @@ ossl_bn_alloc(VALUE klass)
     return obj;
 }
 
-/* Document-method: OpenSSL::BN.new
- *
+/*
  * call-seq:
  *    OpenSSL::BN.new => aBN
  *    OpenSSL::BN.new(bn) => aBN
@@ -185,7 +179,7 @@ ossl_bn_alloc(VALUE klass)
  *    OpenSSL::BN.new(string) => aBN
  *    OpenSSL::BN.new(string, 0 | 2 | 10 | 16) => aBN
  *
- * Construct a new OpenSSL BigNum object.
+ * Construct a new OpenSSL BIGNUM object.
  */
 static VALUE
 ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
@@ -193,6 +187,7 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
     BIGNUM *bn;
     VALUE str, bs;
     int base = 10;
+    char *ptr;
 
     if (rb_scan_args(argc, argv, "11", &str, &bs) == 2) {
 	base = NUM2INT(bs);
@@ -219,12 +214,14 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
     GetBN(self, bn);
     switch (base) {
     case 0:
-	if (!BN_mpi2bn((unsigned char *)StringValuePtr(str), RSTRING_LENINT(str), bn)) {
+        ptr = StringValuePtr(str);
+        if (!BN_mpi2bn((unsigned char *)ptr, RSTRING_LENINT(str), bn)) {
 	    ossl_raise(eBNError, NULL);
 	}
 	break;
     case 2:
-	if (!BN_bin2bn((unsigned char *)StringValuePtr(str), RSTRING_LENINT(str), bn)) {
+        ptr = StringValuePtr(str);
+        if (!BN_bin2bn((unsigned char *)ptr, RSTRING_LENINT(str), bn)) {
 	    ossl_raise(eBNError, NULL);
 	}
 	break;
@@ -250,7 +247,7 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
  *    bn.to_s(base) => string
  *
  * === Parameters
- * * +base+ - integer
+ * * _base_ - Integer
  *   Valid values:
  *   * 0 - MPI
  *   * 2 - binary
@@ -377,6 +374,21 @@ BIGNUM_BOOL1(is_one)
  */
 BIGNUM_BOOL1(is_odd)
 
+/*
+ * call-seq:
+ *   bn.negative? => true | false
+ */
+static VALUE
+ossl_bn_is_negative(VALUE self)
+{
+    BIGNUM *bn;
+
+    GetBN(self, bn);
+    if (BN_is_zero(bn))
+	return Qfalse;
+    return BN_is_negative(bn) ? Qtrue : Qfalse;
+}
+
 #define BIGNUM_1c(func)					\
     static VALUE					\
     ossl_bn_##func(VALUE self)				\
@@ -498,7 +510,6 @@ BIGNUM_2c(mod_sqr)
 BIGNUM_2c(mod_inverse)
 
 /*
- * Document-method: OpenSSL::BN#/
  * call-seq:
  *    bn1 / bn2 => [result, remainder]
  *
@@ -614,12 +625,11 @@ BIGNUM_BIT(clear_bit)
  */
 BIGNUM_BIT(mask_bits)
 
-/* Document-method: OpenSSL::BN#bit_set?
+/*
  * call-seq:
  *   bn.bit_set?(bit) => true | false
  *
- * Returns boolean of whether +bit+ is set.
- * Bitwise operations for openssl BIGNUMs.
+ * Tests bit _bit_ in _bn_ and returns +true+ if set, +false+ if not set.
  */
 static VALUE
 ossl_bn_is_bit_set(VALUE self, VALUE bit)
@@ -774,15 +784,15 @@ BIGNUM_RAND_RANGE(pseudo_rand)
  * call-seq:
  *    BN.generate_prime(bits, [, safe [, add [, rem]]]) => bn
  *
- * Generates a random prime number of bit length +bits+. If +safe+ is true,
- * generates a safe prime. If +add+ is specified, generates a prime that
+ * Generates a random prime number of bit length _bits_. If _safe_ is set to
+ * +true+, generates a safe prime. If _add_ is specified, generates a prime that
  * fulfills condition <tt>p % add = rem</tt>.
  *
  * === Parameters
- * * +bits+ - integer
- * * +safe+ - boolean
- * * +add+ - BN
- * * +rem+ - BN
+ * * _bits_ - integer
+ * * _safe_ - boolean
+ * * _add_ - BN
+ * * _rem_ - BN
  */
 static VALUE
 ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
@@ -856,6 +866,37 @@ ossl_bn_copy(VALUE self, VALUE other)
     return self;
 }
 
+/*
+ * call-seq:
+ *   +bn -> aBN
+ */
+static VALUE
+ossl_bn_uplus(VALUE self)
+{
+    return self;
+}
+
+/*
+ * call-seq:
+ *   -bn -> aBN
+ */
+static VALUE
+ossl_bn_uminus(VALUE self)
+{
+    VALUE obj;
+    BIGNUM *bn1, *bn2;
+
+    GetBN(self, bn1);
+    obj = NewBN(cBN);
+    bn2 = BN_dup(bn1);
+    if (!bn2)
+	ossl_raise(eBNError, "BN_dup");
+    SetBN(obj, bn2);
+    BN_set_negative(bn2, !BN_is_negative(bn2));
+
+    return obj;
+}
+
 #define BIGNUM_CMP(func)				\
     static VALUE					\
     ossl_bn_##func(VALUE self, VALUE other)		\
@@ -888,7 +929,7 @@ BIGNUM_CMP(ucmp)
  *  call-seq:
  *     bn == obj => true or false
  *
- *  Returns +true+ only if +obj+ has the same value as +bn+. Contrast this
+ *  Returns +true+ only if _obj_ has the same value as _bn_. Contrast this
  *  with OpenSSL::BN#eql?, which requires obj to be OpenSSL::BN.
  */
 static VALUE
@@ -913,7 +954,7 @@ ossl_bn_eq(VALUE self, VALUE other)
  *     bn.eql?(obj) => true or false
  *
  *  Returns <code>true</code> only if <i>obj</i> is a
- *  <code>OpenSSL::BN</code> with the same value as <i>big</i>. Contrast this
+ *  <code>OpenSSL::BN</code> with the same value as <i>bn</i>. Contrast this
  *  with OpenSSL::BN#==, which performs type conversions.
  */
 static VALUE
@@ -941,20 +982,20 @@ static VALUE
 ossl_bn_hash(VALUE self)
 {
     BIGNUM *bn;
-    VALUE hash;
+    VALUE tmp, hash;
     unsigned char *buf;
     int len;
 
     GetBN(self, bn);
     len = BN_num_bytes(bn);
-    buf = xmalloc(len);
+    buf = ALLOCV(tmp, len);
     if (BN_bn2bin(bn, buf) != len) {
-	xfree(buf);
-	ossl_raise(eBNError, NULL);
+	ALLOCV_END(tmp);
+	ossl_raise(eBNError, "BN_bn2bin");
     }
 
-    hash = INT2FIX(rb_memhash(buf, len));
-    xfree(buf);
+    hash = ST2FIX(rb_memhash(buf, len));
+    ALLOCV_END(tmp);
 
     return hash;
 }
@@ -964,12 +1005,12 @@ ossl_bn_hash(VALUE self)
  *    bn.prime? => true | false
  *    bn.prime?(checks) => true | false
  *
- * Performs a Miller-Rabin probabilistic primality test with +checks+
- * iterations. If +nchecks+ is not specified, a number of iterations is used
+ * Performs a Miller-Rabin probabilistic primality test with _checks_
+ * iterations. If _checks_ is not specified, a number of iterations is used
  * that yields a false positive rate of at most 2^-80 for random input.
  *
  * === Parameters
- * * +checks+ - integer
+ * * _checks_ - integer
  */
 static VALUE
 ossl_bn_is_prime(int argc, VALUE *argv, VALUE self)
@@ -1004,8 +1045,8 @@ ossl_bn_is_prime(int argc, VALUE *argv, VALUE self)
  * first attempts trial divisions with some small primes.
  *
  * === Parameters
- * * +checks+ - integer
- * * +trial_div+ - boolean
+ * * _checks_ - integer
+ * * _trial_div_ - boolean
  */
 static VALUE
 ossl_bn_is_prime_fasttest(int argc, VALUE *argv, VALUE self)
@@ -1059,7 +1100,7 @@ Init_ossl_bn(void)
     rb_define_alloc_func(cBN, ossl_bn_alloc);
     rb_define_method(cBN, "initialize", ossl_bn_initialize, -1);
 
-    rb_define_copy_func(cBN, ossl_bn_copy);
+    rb_define_method(cBN, "initialize_copy", ossl_bn_copy, 1);
     rb_define_method(cBN, "copy", ossl_bn_copy, 1);
 
     /* swap (=coerce?) */
@@ -1067,6 +1108,9 @@ Init_ossl_bn(void)
     rb_define_method(cBN, "num_bytes", ossl_bn_num_bytes, 0);
     rb_define_method(cBN, "num_bits", ossl_bn_num_bits, 0);
     /* num_bits_word */
+
+    rb_define_method(cBN, "+@", ossl_bn_uplus, 0);
+    rb_define_method(cBN, "-@", ossl_bn_uminus, 0);
 
     rb_define_method(cBN, "+", ossl_bn_add, 1);
     rb_define_method(cBN, "-", ossl_bn_sub, 1);
@@ -1101,6 +1145,7 @@ Init_ossl_bn(void)
     rb_define_method(cBN, "one?", ossl_bn_is_one, 0);
     /* is_word */
     rb_define_method(cBN, "odd?", ossl_bn_is_odd, 0);
+    rb_define_method(cBN, "negative?", ossl_bn_is_negative, 0);
 
     /* zero
      * one

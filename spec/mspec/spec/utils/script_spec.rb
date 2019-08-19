@@ -172,7 +172,7 @@ describe MSpecScript, "#load" do
     @script.load(@base).should == :loaded
   end
 
-  it "attemps to locate the file in '.'" do
+  it "attempts to locate the file in '.'" do
     path = File.expand_path @file, "."
     File.should_receive(:exist?).with(path).and_return(true)
     Kernel.should_receive(:load).with(path).and_return(:loaded)
@@ -186,7 +186,7 @@ describe MSpecScript, "#load" do
     @script.load(@base).should == :loaded
   end
 
-  it "attemps to locate the file in 'spec'" do
+  it "attempts to locate the file in 'spec'" do
     path = File.expand_path @file, "spec"
     File.should_receive(:exist?).with(path).and_return(true)
     Kernel.should_receive(:load).with(path).and_return(:loaded)
@@ -350,20 +350,20 @@ describe MSpecScript, "#entries" do
   before :each do
     @script = MSpecScript.new
 
-    File.stub(:expand_path).and_return("name")
+    File.stub(:realpath).and_return("name")
     File.stub(:file?).and_return(false)
     File.stub(:directory?).and_return(false)
   end
 
   it "returns the pattern in an array if it is a file" do
-    File.should_receive(:expand_path).with("file").and_return("file/expanded.rb")
+    File.should_receive(:realpath).with("file").and_return("file/expanded.rb")
     File.should_receive(:file?).with("file/expanded.rb").and_return(true)
     @script.entries("file").should == ["file/expanded.rb"]
   end
 
   it "returns Dir['pattern/**/*_spec.rb'] if pattern is a directory" do
     File.should_receive(:directory?).with("name").and_return(true)
-    File.stub(:expand_path).and_return("name","name/**/*_spec.rb")
+    File.stub(:realpath).and_return("name", "name/**/*_spec.rb")
     Dir.should_receive(:[]).with("name/**/*_spec.rb").and_return(["dir1", "dir2"])
     @script.entries("name").should == ["dir1", "dir2"]
   end
@@ -382,13 +382,13 @@ describe MSpecScript, "#entries" do
 
     it "returns the pattern in an array if it is a file" do
       name = "#{@name}.rb"
-      File.should_receive(:expand_path).with(name).and_return(name)
+      File.should_receive(:realpath).with(name).and_return(name)
       File.should_receive(:file?).with(name).and_return(true)
       @script.entries("name.rb").should == [name]
     end
 
     it "returns Dir['pattern/**/*_spec.rb'] if pattern is a directory" do
-      File.stub(:expand_path).and_return(@name, @name+"/**/*_spec.rb")
+      File.stub(:realpath).and_return(@name, @name+"/**/*_spec.rb")
       File.should_receive(:directory?).with(@name).and_return(true)
       Dir.should_receive(:[]).with(@name + "/**/*_spec.rb").and_return(["dir1", "dir2"])
       @script.entries("name").should == ["dir1", "dir2"]
@@ -438,8 +438,9 @@ describe MSpecScript, "#files" do
     @script.files([":files"]).should == ["file1", "file2"]
   end
 
-  it "returns an empty list if the config key is not set" do
-    @script.files([":all_files"]).should == []
+  it "aborts if the config key is not set" do
+    @script.should_receive(:abort).with("Key :all_files not found in mspec config.")
+    @script.files([":all_files"])
   end
 end
 

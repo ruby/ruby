@@ -70,40 +70,6 @@ if false
   end
 end
 
-  def test_s_random_bytes_without_openssl
-    begin
-      require 'openssl'
-    rescue LoadError
-      return
-    end
-    begin
-      load_path = $LOAD_PATH.dup
-      loaded_features = $LOADED_FEATURES.dup
-      openssl = Object.instance_eval { remove_const(:OpenSSL) }
-
-      remove_feature('securerandom.rb')
-      remove_feature('openssl.rb')
-      Dir.mktmpdir do |dir|
-        open(File.join(dir, 'openssl.rb'), 'w') { |f|
-          f << 'raise LoadError'
-        }
-        $LOAD_PATH.unshift(dir)
-        v = $VERBOSE
-        begin
-          $VERBOSE = false
-          require 'securerandom'
-        ensure
-          $VERBOSE = v
-        end
-        test_s_random_bytes
-      end
-    ensure
-      $LOADED_FEATURES.replace(loaded_features)
-      $LOAD_PATH.replace(load_path)
-      Object.const_set(:OpenSSL, openssl)
-    end
-  end
-
   def test_s_hex
     s = @it.hex
     assert_equal(16 * 2, s.size)
@@ -174,7 +140,20 @@ end
   def test_uuid
     uuid = @it.uuid
     assert_equal(36, uuid.size)
+
+    # Check time_hi_and_version and clock_seq_hi_res bits (RFC 4122 4.4)
+    assert_equal('4', uuid[14])
+    assert_include(%w'8 9 a b', uuid[19])
+
     assert_match(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/, uuid)
+  end
+
+  def test_alphanumeric
+    65.times do |n|
+      an = @it.alphanumeric(n)
+      assert_match(/\A[0-9a-zA-Z]*\z/, an)
+      assert_equal(n, an.length)
+    end
   end
 
   def protect
@@ -197,5 +176,24 @@ end
 
   def assert_in_range(range, result, mesg = nil)
     assert(range.cover?(result), message(mesg) {"Expected #{result} to be in #{range}"})
+  end
+
+  def test_with_openssl
+    begin
+      require 'openssl'
+    rescue LoadError
+      return
+    end
+    assert_equal(Encoding::ASCII_8BIT, @it.send(:gen_random_openssl, 16).encoding)
+    65.times do |idx|
+      assert_equal(idx, @it.send(:gen_random_openssl, idx).size)
+    end
+  end
+
+  def test_repeated_gen_random
+    assert_nothing_raised NoMethodError, '[ruby-core:92633] [Bug #15847]' do
+      @it.gen_random(1)
+      @it.gen_random(1)
+    end
   end
 end

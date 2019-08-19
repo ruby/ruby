@@ -9,7 +9,7 @@
 #
 # $IPR: prochandler.rb,v 1.7 2002/09/21 12:23:42 gotoyuzo Exp $
 
-require 'webrick/httpservlet/abstract.rb'
+require_relative 'abstract'
 
 module WEBrick
   module HTTPServlet

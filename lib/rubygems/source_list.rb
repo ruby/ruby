@@ -105,7 +105,7 @@ class Gem::SourceList
     @sources.empty?
   end
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     to_a == other
   end
 
@@ -140,11 +140,12 @@ class Gem::SourceList
   ##
   # Deletes +source+ from the source list which may be a Gem::Source or a URI.
 
-  def delete source
+  def delete(source)
     if source.kind_of? Gem::Source
       @sources.delete source
     else
       @sources.delete_if { |x| x.uri.to_s == source.to_s }
     end
   end
+
 end

@@ -110,7 +110,9 @@ module MarshalTestLib
   class MyException < Exception; def initialize(v, *args) super(*args); @v = v; end; attr_reader :v; end
   def test_exception
     marshal_equal(Exception.new('foo')) {|o| o.message}
-    marshal_equal(assert_raise(NoMethodError) {no_such_method()}) {|o| o.message}
+    obj = Object.new
+    e = assert_raise(NoMethodError) {obj.no_such_method()}
+    marshal_equal(e) {|o| o.message}
   end
 
   def test_exception_subclass

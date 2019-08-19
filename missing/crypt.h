@@ -237,8 +237,6 @@ struct crypt_data {
 	char	cryptresult[1+4+4+11+1];	/* encrypted result */
 };
 
-#define SIZEOF_CRYPT_DATA (KS_SIZE*8+(1+4+4+11+1))
-
 char *crypt(const char *key, const char *setting);
 void setkey(const char *key);
 void encrypt(char *block, int flag);

@@ -996,7 +996,7 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
 /*
  * call-seq: [](n)
  *
- * Return the n-th subgroup in the most recent match.
+ * Returns the n-th subgroup in the most recent match.
  *
  *   s = StringScanner.new("Fri Dec 12 1975 14:39")
  *   s.scan(/(\w+) (\w+) (\d+) /)       # -> "Fri Dec 12 "
@@ -1053,7 +1053,93 @@ strscan_aref(VALUE self, VALUE idx)
 }
 
 /*
- * Return the <i><b>pre</b>-match</i> (in the regular expression sense) of the last scan.
+ * call-seq: size
+ *
+ * Returns the amount of subgroups in the most recent match.
+ * The full match counts as a subgroup.
+ *
+ *   s = StringScanner.new("Fri Dec 12 1975 14:39")
+ *   s.scan(/(\w+) (\w+) (\d+) /)       # -> "Fri Dec 12 "
+ *   s.size                             # -> 4
+ */
+static VALUE
+strscan_size(VALUE self)
+{
+    struct strscanner *p;
+
+    GET_SCANNER(self, p);
+    if (! MATCHED_P(p))        return Qnil;
+    return INT2FIX(p->regs.num_regs);
+}
+
+/*
+ * call-seq: captures
+ *
+ * Returns the subgroups in the most recent match (not including the full match).
+ * If nothing was priorly matched, it returns nil.
+ *
+ *   s = StringScanner.new("Fri Dec 12 1975 14:39")
+ *   s.scan(/(\w+) (\w+) (\d+) /)       # -> "Fri Dec 12 "
+ *   s.captures                         # -> ["Fri", "Dec", "12"]
+ *   s.scan(/(\w+) (\w+) (\d+) /)       # -> nil
+ *   s.captures                         # -> nil
+ */
+static VALUE
+strscan_captures(VALUE self)
+{
+    struct strscanner *p;
+    int   i, num_regs;
+    VALUE new_ary;
+
+    GET_SCANNER(self, p);
+    if (! MATCHED_P(p))        return Qnil;
+
+    num_regs = p->regs.num_regs;
+    new_ary  = rb_ary_new2(num_regs);
+
+    for (i = 1; i < num_regs; i++) {
+        VALUE str = extract_range(p, p->prev + p->regs.beg[i],
+                                     p->prev + p->regs.end[i]);
+        rb_ary_push(new_ary, str);
+    }
+
+    return new_ary;
+}
+
+/*
+ *  call-seq:
+ *     scanner.values_at( i1, i2, ... iN )   -> an_array
+ *
+ * Returns the subgroups in the most recent match at the given indices.
+ * If nothing was priorly matched, it returns nil.
+ *
+ *   s = StringScanner.new("Fri Dec 12 1975 14:39")
+ *   s.scan(/(\w+) (\w+) (\d+) /)       # -> "Fri Dec 12 "
+ *   s.values_at 0, -1, 5, 2            # -> ["Fri Dec 12 ", "12", nil, "Dec"]
+ *   s.scan(/(\w+) (\w+) (\d+) /)       # -> nil
+ *   s.values_at 0, -1, 5, 2            # -> nil
+ */
+
+static VALUE
+strscan_values_at(int argc, VALUE *argv, VALUE self)
+{
+    struct strscanner *p;
+    long i;
+    VALUE new_ary;
+
+    GET_SCANNER(self, p);
+    if (! MATCHED_P(p))        return Qnil;
+
+    new_ary = rb_ary_new2(argc);
+    for (i = 0; i<argc; i++) {
+        rb_ary_push(new_ary, strscan_aref(self, argv[i]));
+    }
+
+    return new_ary;
+}
+
+/*
+ * Returns the <i><b>pre</b>-match</i> (in the regular expression sense) of the last scan.
  *
  *   s = StringScanner.new('test string')
  *   s.scan(/\w+/)           # -> "test"
@@ -1072,7 +1158,7 @@ strscan_pre_match(VALUE self)
 }
 
 /*
- * Return the <i><b>post</b>-match</i> (in the regular expression sense) of the last scan.
+ * Returns the <i><b>post</b>-match</i> (in the regular expression sense) of the last scan.
  *
  *   s = StringScanner.new('test string')
  *   s.scan(/\w+/)           # -> "test"
@@ -1326,6 +1412,7 @@ inspect2(struct strscanner *p)
 void
 Init_strscan(void)
 {
+#undef rb_intern
     ID id_scanerr = rb_intern("ScanError");
     VALUE tmp;
 
@@ -1392,6 +1479,9 @@ Init_strscan(void)
     rb_define_method(StringScanner, "[]",          strscan_aref,        1);
     rb_define_method(StringScanner, "pre_match",   strscan_pre_match,   0);
     rb_define_method(StringScanner, "post_match",  strscan_post_match,  0);
+    rb_define_method(StringScanner, "size",        strscan_size,        0);
+    rb_define_method(StringScanner, "captures",    strscan_captures,    0);
+    rb_define_method(StringScanner, "values_at",   strscan_values_at,  -1);
 
     rb_define_method(StringScanner, "rest",        strscan_rest,        0);
     rb_define_method(StringScanner, "rest_size",   strscan_rest_size,   0);

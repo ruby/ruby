@@ -1,7 +1,6 @@
 require 'drb/drb'
 require 'drb/eq'
 require 'rinda/ring'
-require 'thread'
 
 class RingEcho
   include DRbUndumped

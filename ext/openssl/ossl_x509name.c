@@ -23,10 +23,6 @@
 	ossl_raise(rb_eRuntimeError, "Name wasn't initialized."); \
     } \
 } while (0)
-#define SafeGetX509Name(obj, name) do { \
-    OSSL_Check_Kind((obj), cX509Name); \
-    GetX509Name((obj), (name)); \
-} while (0)
 
 #define OBJECT_TYPE_TEMPLATE \
   rb_const_get(cX509Name, rb_intern("OBJECT_TYPE_TEMPLATE"))
@@ -81,7 +77,7 @@ GetX509NamePtr(VALUE obj)
 {
     X509_NAME *name;
 
-    SafeGetX509Name(obj, name);
+    GetX509Name(obj, name);
 
     return name;
 }
@@ -135,15 +131,15 @@ ossl_x509name_init_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *
  * Creates a new Name.
  *
- * A name may be created from a DER encoded string +der+, an Array
- * representing a +distinguished_name+ or a +distinguished_name+ along with a
- * +template+.
+ * A name may be created from a DER encoded string _der_, an Array
+ * representing a _distinguished_name_ or a _distinguished_name_ along with a
+ * _template_.
  *
  *   name = OpenSSL::X509::Name.new [['CN', 'nobody'], ['DC', 'example']]
  *
  *   name = OpenSSL::X509::Name.new name.to_der
  *
- * See add_entry for a description of the +distinguished_name+ Array's
+ * See add_entry for a description of the _distinguished_name_ Array's
  * contents
  */
 static VALUE
@@ -188,7 +184,7 @@ ossl_x509name_initialize_copy(VALUE self, VALUE other)
 
     rb_check_frozen(self);
     GetX509Name(self, name);
-    SafeGetX509Name(other, name_other);
+    GetX509Name(other, name_other);
 
     name_new = X509_NAME_dup(name_other);
     if (!name_new)
@@ -202,9 +198,9 @@ ossl_x509name_initialize_copy(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    name.add_entry(oid, value [, type]) => self
+ *    name.add_entry(oid, value [, type], loc: -1, set: 0) => self
  *
- * Adds a new entry with the given +oid+ and +value+ to this name.  The +oid+
+ * Adds a new entry with the given _oid_ and _value_ to this name.  The _oid_
  * is an object identifier defined in ASN.1.  Some common OIDs are:
  *
  * C::  Country Name
@@ -213,24 +209,39 @@ ossl_x509name_initialize_copy(VALUE self, VALUE other)
  * O::  Organization Name
  * OU:: Organizational Unit Name
  * ST:: State or Province Name
+ *
+ * The optional keyword parameters _loc_ and _set_ specify where to insert the
+ * new attribute. Refer to the manpage of X509_NAME_add_entry(3) for details.
+ * _loc_ defaults to -1 and _set_ defaults to 0. This appends a single-valued
+ * RDN to the end.
  */
 static
 VALUE ossl_x509name_add_entry(int argc, VALUE *argv, VALUE self)
 {
     X509_NAME *name;
-    VALUE oid, value, type;
+    VALUE oid, value, type, opts, kwargs[2];
+    static ID kwargs_ids[2];
     const char *oid_name;
+    int loc = -1, set = 0;
 
-    rb_scan_args(argc, argv, "21", &oid, &value, &type);
+    if (!kwargs_ids[0]) {
+	kwargs_ids[0] = rb_intern_const("loc");
+	kwargs_ids[1] = rb_intern_const("set");
+    }
+    rb_scan_args(argc, argv, "21:", &oid, &value, &type, &opts);
+    rb_get_kwargs(opts, kwargs_ids, 0, 2, kwargs);
     oid_name = StringValueCStr(oid);
     StringValue(value);
     if(NIL_P(type)) type = rb_aref(OBJECT_TYPE_TEMPLATE, oid);
+    if (kwargs[0] != Qundef)
+	loc = NUM2INT(kwargs[0]);
+    if (kwargs[1] != Qundef)
+	set = NUM2INT(kwargs[1]);
     GetX509Name(self, name);
     if (!X509_NAME_add_entry_by_txt(name, oid_name, NUM2INT(type),
-		(const unsigned char *)RSTRING_PTR(value), RSTRING_LENINT(value), -1, 0)) {
-	ossl_raise(eX509NameError, NULL);
-    }
-
+				    (unsigned char *)RSTRING_PTR(value),
+				    RSTRING_LENINT(value), loc, set))
+	ossl_raise(eX509NameError, "X509_NAME_add_entry_by_txt");
     return self;
 }
 
@@ -239,50 +250,81 @@ ossl_x509name_to_s_old(VALUE self)
 {
     X509_NAME *name;
     char *buf;
-    VALUE str;
 
     GetX509Name(self, name);
     buf = X509_NAME_oneline(name, NULL, 0);
-    str = rb_str_new2(buf);
-    OPENSSL_free(buf);
+    if (!buf)
+	ossl_raise(eX509NameError, "X509_NAME_oneline");
+    return ossl_buf2str(buf, rb_long2int(strlen(buf)));
+}
 
-    return str;
+static VALUE
+x509name_print(VALUE self, unsigned long iflag)
+{
+    X509_NAME *name;
+    BIO *out;
+    int ret;
+
+    GetX509Name(self, name);
+    out = BIO_new(BIO_s_mem());
+    if (!out)
+	ossl_raise(eX509NameError, NULL);
+    ret = X509_NAME_print_ex(out, name, 0, iflag);
+    if (ret < 0 || (iflag == XN_FLAG_COMPAT && ret == 0)) {
+	BIO_free(out);
+	ossl_raise(eX509NameError, "X509_NAME_print_ex");
+    }
+    return ossl_membio2str(out);
 }
 
 /*
  * call-seq:
- *    name.to_s => string
- *    name.to_s(flags) => string
+ *    name.to_s         -> string
+ *    name.to_s(format) -> string
  *
- * Returns this name as a Distinguished Name string.  +flags+ may be one of:
+ * Returns a String representation of the Distinguished Name. _format_ is
+ * one of:
  *
  * * OpenSSL::X509::Name::COMPAT
  * * OpenSSL::X509::Name::RFC2253
  * * OpenSSL::X509::Name::ONELINE
  * * OpenSSL::X509::Name::MULTILINE
+ *
+ * If _format_ is omitted, the largely broken and traditional OpenSSL format
+ * is used.
  */
 static VALUE
 ossl_x509name_to_s(int argc, VALUE *argv, VALUE self)
 {
-    X509_NAME *name;
-    VALUE flag, str;
-    BIO *out;
-    unsigned long iflag;
-
-    rb_scan_args(argc, argv, "01", &flag);
-    if (NIL_P(flag))
+    rb_check_arity(argc, 0, 1);
+    /* name.to_s(nil) was allowed */
+    if (!argc || NIL_P(argv[0]))
 	return ossl_x509name_to_s_old(self);
-    else iflag = NUM2ULONG(flag);
-    if (!(out = BIO_new(BIO_s_mem())))
-	ossl_raise(eX509NameError, NULL);
-    GetX509Name(self, name);
-    if (!X509_NAME_print_ex(out, name, 0, iflag)){
-	BIO_free(out);
-	ossl_raise(eX509NameError, NULL);
-    }
-    str = ossl_membio2str(out);
+    else
+	return x509name_print(self, NUM2ULONG(argv[0]));
+}
 
+/*
+ * call-seq:
+ *    name.to_utf8 -> string
+ *
+ * Returns an UTF-8 representation of the distinguished name, as specified
+ * in {RFC 2253}[https://www.ietf.org/rfc/rfc2253.txt].
+ */
+static VALUE
+ossl_x509name_to_utf8(VALUE self)
+{
+    VALUE str = x509name_print(self, XN_FLAG_RFC2253 & ~ASN1_STRFLGS_ESC_MSB);
+    rb_enc_associate_index(str, rb_utf8_encindex());
     return str;
+}
+
+/* :nodoc: */
+static VALUE
+ossl_x509name_inspect(VALUE self)
+{
+    return rb_enc_sprintf(rb_utf8_encoding(), "#<%"PRIsVALUE" %"PRIsVALUE">",
+			  rb_obj_class(self), ossl_x509name_to_utf8(self));
 }
 
 /*
@@ -338,18 +380,18 @@ ossl_x509name_cmp0(VALUE self, VALUE other)
     X509_NAME *name1, *name2;
 
     GetX509Name(self, name1);
-    SafeGetX509Name(other, name2);
+    GetX509Name(other, name2);
 
     return X509_NAME_cmp(name1, name2);
 }
 
 /*
  * call-seq:
- *    name.cmp other => integer
- *    name.<=> other => integer
+ *    name.cmp(other) -> -1 | 0 | 1
+ *    name <=> other  -> -1 | 0 | 1
  *
- * Compares this Name with +other+ and returns 0 if they are the same and -1 or
- * +1 if they are greater or less than each other respectively.
+ * Compares this Name with _other_ and returns +0+ if they are the same and +-1+
+ * or ++1+ if they are greater or less than each other respectively.
  */
 static VALUE
 ossl_x509name_cmp(VALUE self, VALUE other)
@@ -358,16 +400,16 @@ ossl_x509name_cmp(VALUE self, VALUE other)
 
     result = ossl_x509name_cmp0(self, other);
     if (result < 0) return INT2FIX(-1);
-    if (result > 1) return INT2FIX(1);
+    if (result > 0) return INT2FIX(1);
 
     return INT2FIX(0);
 }
 
 /*
  * call-seq:
- *   name.eql? other => boolean
+ *   name.eql?(other) -> true | false
  *
- * Returns true if +name+ and +other+ refer to the same hash key.
+ * Returns true if _name_ and _other_ refer to the same hash key.
  */
 static VALUE
 ossl_x509name_eql(VALUE self, VALUE other)
@@ -398,7 +440,6 @@ ossl_x509name_hash(VALUE self)
     return ULONG2NUM(hash);
 }
 
-#ifdef HAVE_X509_NAME_HASH_OLD
 /*
  * call-seq:
  *    name.hash_old => integer
@@ -417,7 +458,6 @@ ossl_x509name_hash_old(VALUE self)
 
     return ULONG2NUM(hash);
 }
-#endif
 
 /*
  * call-seq:
@@ -462,6 +502,7 @@ ossl_x509name_to_der(VALUE self)
 void
 Init_ossl_x509name(void)
 {
+#undef rb_intern
     VALUE utf8str, ptrstr, ia5str, hash;
 
 #if 0
@@ -478,17 +519,17 @@ Init_ossl_x509name(void)
 
     rb_define_alloc_func(cX509Name, ossl_x509name_alloc);
     rb_define_method(cX509Name, "initialize", ossl_x509name_initialize, -1);
-    rb_define_copy_func(cX509Name, ossl_x509name_initialize_copy);
+    rb_define_method(cX509Name, "initialize_copy", ossl_x509name_initialize_copy, 1);
     rb_define_method(cX509Name, "add_entry", ossl_x509name_add_entry, -1);
     rb_define_method(cX509Name, "to_s", ossl_x509name_to_s, -1);
+    rb_define_method(cX509Name, "to_utf8", ossl_x509name_to_utf8, 0);
+    rb_define_method(cX509Name, "inspect", ossl_x509name_inspect, 0);
     rb_define_method(cX509Name, "to_a", ossl_x509name_to_a, 0);
     rb_define_method(cX509Name, "cmp", ossl_x509name_cmp, 1);
     rb_define_alias(cX509Name, "<=>", "cmp");
     rb_define_method(cX509Name, "eql?", ossl_x509name_eql, 1);
     rb_define_method(cX509Name, "hash", ossl_x509name_hash, 0);
-#ifdef HAVE_X509_NAME_HASH_OLD
     rb_define_method(cX509Name, "hash_old", ossl_x509name_hash_old, 0);
-#endif
     rb_define_method(cX509Name, "to_der", ossl_x509name_to_der, 0);
 
     utf8str = INT2NUM(V_ASN1_UTF8STRING);

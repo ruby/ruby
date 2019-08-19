@@ -1,38 +1,6 @@
 # frozen_string_literal: true
 require 'rubygems/test_case'
-begin
-  gem_home_files = lambda{
-    if Dir.exist?(ENV["GEM_HOME"])
-      require "find"
-      ary = Find.find(ENV["GEM_HOME"]).to_a
-    else
-      []
-    end
-  }
-  prev_gem_home = ENV["GEM_HOME"]
-  prev_gem_home_files = gem_home_files.call
-  prev_threads = Thread.list.map{|e| e.inspect}
-
-  require 'rubygems/gem_runner'
-ensure
-  if $!
-    msg = <<eom
-***************
-PREV
-  GEM_HOME: #{prev_gem_home}
-  Files in GEM_HOME: #{prev_gem_home_files.inspect}
-  Threads: #{prev_threads.inspect}
-Current:
-  GEM_HOME: #{ENV["GEM_HOME"]}
-  Files in GEM_HOME: #{gem_home_files.call}
-  Threads: #{Thread.list.map{|e| e.inspect}.inspect}
-Exception: #{$!.message}
-eom
-    p $!.class
-    p $!.message.frozen?
-    raise $!.class, msg, $!.backtrace
-  end
-end
+require 'rubygems/gem_runner'
 
 class TestGemGemRunner < Gem::TestCase
 
@@ -98,4 +66,3 @@ class TestGemGemRunner < Gem::TestCase
   end
 
 end
-

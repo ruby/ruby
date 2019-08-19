@@ -17,6 +17,7 @@ require 'rubygems/deprecate'
 # this class necessary anymore?  Especially #ok?, #why_not_ok?
 
 class Gem::DependencyList
+
   attr_reader :specs
 
   include Enumerable
@@ -40,7 +41,7 @@ class Gem::DependencyList
   # Creates a new DependencyList.  If +development+ is true, development
   # dependencies will be included.
 
-  def initialize development = false
+  def initialize(development = false)
     @specs = []
 
     @development = development
@@ -79,8 +80,8 @@ class Gem::DependencyList
     seen = {}
 
     sorted.each do |spec|
-      if index = seen[spec.name] then
-        if result[index].version < spec.version then
+      if index = seen[spec.name]
+        if result[index].version < spec.version
           result[index] = spec
         end
       else
@@ -114,16 +115,16 @@ class Gem::DependencyList
     why_not_ok?(:quick).empty?
   end
 
-  def why_not_ok? quick = false
+  def why_not_ok?(quick = false)
     unsatisfied = Hash.new { |h,k| h[k] = [] }
     each do |spec|
       spec.runtime_dependencies.each do |dep|
-        inst = Gem::Specification.any? { |installed_spec|
+        inst = Gem::Specification.any? do |installed_spec|
           dep.name == installed_spec.name and
             dep.requirement.satisfied_by? installed_spec.version
-        }
+        end
 
-        unless inst or @specs.find { |s| s.satisfies_requirement? dep } then
+        unless inst or @specs.find { |s| s.satisfies_requirement? dep }
           unsatisfied[spec.name] << dep
           return unsatisfied if quick
         end
@@ -134,7 +135,7 @@ class Gem::DependencyList
   end
 
   ##
-  # Is is ok to remove a gemspec from the dependency list?
+  # It is ok to remove a gemspec from the dependency list?
   #
   # If removing the gemspec creates breaks a currently ok dependency, then it
   # is NOT ok to remove the gemspec.
@@ -145,10 +146,10 @@ class Gem::DependencyList
     # If the state is inconsistent, at least don't crash
     return true unless gem_to_remove
 
-    siblings = @specs.find_all { |s|
+    siblings = @specs.find_all do |s|
       s.name == gem_to_remove.name &&
         s.full_name != gem_to_remove.full_name
-    }
+    end
 
     deps = []
 
@@ -160,11 +161,11 @@ class Gem::DependencyList
       end
     end
 
-    deps.all? { |dep|
-      siblings.any? { |s|
+    deps.all? do |dep|
+      siblings.any? do |s|
         s.satisfies_requirement? dep
-      }
-    }
+      end
+    end
   end
 
   ##
@@ -172,11 +173,11 @@ class Gem::DependencyList
   # satisfy items in +dependencies+ (a hash of gem names to arrays of
   # dependencies).
 
-  def remove_specs_unsatisfied_by dependencies
-    specs.reject! { |spec|
+  def remove_specs_unsatisfied_by(dependencies)
+    specs.reject! do |spec|
       dep = dependencies[spec.name]
       dep and not dep.requirement.satisfied_by? spec.version
-    }
+    end
   end
 
   ##
@@ -200,7 +201,7 @@ class Gem::DependencyList
         next if spec == other
 
         other.dependencies.each do |dep|
-          if spec.satisfies_requirement? dep then
+          if spec.satisfies_requirement? dep
             result[spec] << other
           end
         end
@@ -222,7 +223,7 @@ class Gem::DependencyList
 
     dependencies.each do |dep|
       specs.each do |spec|
-        if spec.satisfies_requirement? dep then
+        if spec.satisfies_requirement? dep
           yield spec
           break
         end
@@ -241,4 +242,3 @@ class Gem::DependencyList
   end
 
 end
-

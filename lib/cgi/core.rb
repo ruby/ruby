@@ -261,13 +261,13 @@ class CGI
   private :_header_for_hash
 
   def nph?  #:nodoc:
-    return /IIS\/(\d+)/.match($CGI_ENV['SERVER_SOFTWARE']) && $1.to_i < 5
+    return /IIS\/(\d+)/ =~ $CGI_ENV['SERVER_SOFTWARE'] && $1.to_i < 5
   end
 
   def _header_for_modruby(buf)  #:nodoc:
     request = Apache::request
     buf.scan(/([^:]+): (.+)#{EOL}/o) do |name, value|
-      warn sprintf("name:%s value:%s\n", name, value) if $DEBUG
+      $stderr.printf("name:%s value:%s\n", name, value) if $DEBUG
       case name
       when 'Set-Cookie'
         request.headers_out.add(name, value)
@@ -375,14 +375,14 @@ class CGI
 
   # Parse an HTTP query string into a hash of key=>value pairs.
   #
-  #   params = CGI::parse("query_string")
+  #   params = CGI.parse("query_string")
   #     # {"name1" => ["value1", "value2", ...],
   #     #  "name2" => ["value1", "value2", ...], ... }
   #
-  def CGI::parse(query)
+  def self.parse(query)
     params = {}
     query.split(/[&;]/).each do |pairs|
-      key, value = pairs.split('=',2).collect{|v| CGI::unescape(v) }
+      key, value = pairs.split('=',2).collect{|v| CGI.unescape(v) }
 
       next unless key
 
@@ -421,7 +421,7 @@ class CGI
   module QueryExtension
 
     %w[ CONTENT_LENGTH SERVER_PORT ].each do |env|
-      define_method(env.sub(/^HTTP_/, '').downcase) do
+      define_method(env.delete_prefix('HTTP_').downcase) do
         (val = env_table[env]) && Integer(val)
       end
     end
@@ -434,7 +434,7 @@ class CGI
         HTTP_ACCEPT HTTP_ACCEPT_CHARSET HTTP_ACCEPT_ENCODING
         HTTP_ACCEPT_LANGUAGE HTTP_CACHE_CONTROL HTTP_FROM HTTP_HOST
         HTTP_NEGOTIATE HTTP_PRAGMA HTTP_REFERER HTTP_USER_AGENT ].each do |env|
-      define_method(env.sub(/^HTTP_/, '').downcase) do
+      define_method(env.delete_prefix('HTTP_').downcase) do
         env_table[env]
       end
     end
@@ -607,6 +607,7 @@ class CGI
     end
     def unescape_filename?  #:nodoc:
       user_agent = $CGI_ENV['HTTP_USER_AGENT']
+      return false unless user_agent
       return /Mac/i.match(user_agent) && /Mozilla/i.match(user_agent) && !/MSIE/i.match(user_agent)
     end
 
@@ -648,7 +649,7 @@ class CGI
     # Reads query parameters in the @params field, and cookies into @cookies.
     def initialize_query()
       if ("POST" == env_table['REQUEST_METHOD']) and
-        %r|\Amultipart/form-data.*boundary=\"?([^\";,]+)\"?|.match(env_table['CONTENT_TYPE'])
+        %r|\Amultipart/form-data.*boundary=\"?([^\";,]+)\"?| =~ env_table['CONTENT_TYPE']
         current_max_multipart_length = @max_multipart_length.respond_to?(:call) ? @max_multipart_length.call : @max_multipart_length
         raise StandardError.new("too large multipart data.") if env_table['CONTENT_LENGTH'].to_i > current_max_multipart_length
         boundary = $1.dup
@@ -656,7 +657,7 @@ class CGI
         @params = read_multipart(boundary, Integer(env_table['CONTENT_LENGTH']))
       else
         @multipart = false
-        @params = CGI::parse(
+        @params = CGI.parse(
                     case env_table['REQUEST_METHOD']
                     when "GET", "HEAD"
                       if defined?(MOD_RUBY)
@@ -686,7 +687,7 @@ class CGI
         end
       end
 
-      @cookies = CGI::Cookie::parse((env_table['HTTP_COOKIE'] or env_table['COOKIE']))
+      @cookies = CGI::Cookie.parse((env_table['HTTP_COOKIE'] or env_table['COOKIE']))
     end
     private :initialize_query
 
@@ -862,24 +863,24 @@ class CGI
 
     case @options[:tag_maker]
     when "html3"
-      require 'cgi/html'
+      require_relative 'html'
       extend Html3
       extend HtmlExtension
     when "html4"
-      require 'cgi/html'
+      require_relative 'html'
       extend Html4
       extend HtmlExtension
     when "html4Tr"
-      require 'cgi/html'
+      require_relative 'html'
       extend Html4Tr
       extend HtmlExtension
     when "html4Fr"
-      require 'cgi/html'
+      require_relative 'html'
       extend Html4Tr
       extend Html4Fr
       extend HtmlExtension
     when "html5"
-      require 'cgi/html'
+      require_relative 'html'
       extend Html5
       extend HtmlExtension
     end

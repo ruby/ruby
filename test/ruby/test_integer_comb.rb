@@ -457,6 +457,30 @@ class TestIntegerComb < Test::Unit::TestCase
     }
   end
 
+  def test_allbits_p
+    VS.each {|a|
+      VS.each {|b|
+        assert_equal((a & b) == b, a.allbits?(b), "(#{a}).allbits?(#{b}")
+      }
+    }
+  end
+
+  def test_anybits_p
+    VS.each {|a|
+      VS.each {|b|
+        assert_equal((a & b) != 0, a.anybits?(b), "(#{a}).anybits?(#{b}")
+      }
+    }
+  end
+
+  def test_nobits_p
+    VS.each {|a|
+      VS.each {|b|
+        assert_equal((a & b) == 0, a.nobits?(b), "(#{a}).nobits?(#{b}")
+      }
+    }
+  end
+
   def test_to_s
     2.upto(36) {|radix|
       VS.each {|a|

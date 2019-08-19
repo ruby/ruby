@@ -14,6 +14,8 @@ class Net::HTTPGenericRequest
     @response_has_body = resbody
 
     if URI === uri_or_path then
+      raise ArgumentError, "not an HTTP URI" unless URI::HTTP === uri_or_path
+      raise ArgumentError, "no host component for URI" unless uri_or_path.hostname
       @uri = uri_or_path.dup
       host = @uri.hostname.dup
       host << ":".freeze << @uri.port.to_s if @uri.port != @uri.default_port
@@ -82,7 +84,7 @@ class Net::HTTPGenericRequest
   end
 
   def body_exist?
-    warn "Net::HTTPRequest#body_exist? is obsolete; use response_body_permitted?" if $VERBOSE
+    warn "Net::HTTPRequest#body_exist? is obsolete; use response_body_permitted?", uplevel: 1 if $VERBOSE
     response_body_permitted?
   end
 
@@ -168,9 +170,8 @@ class Net::HTTPGenericRequest
 
     def write(buf)
       # avoid memcpy() of buf, buf can huge and eat memory bandwidth
-      @sock.write("#{buf.bytesize.to_s(16)}\r\n")
-      rv = @sock.write(buf)
-      @sock.write("\r\n")
+      rv = buf.bytesize
+      @sock.write("#{rv.to_s(16)}\r\n", buf, "\r\n")
       rv
     end
 
@@ -299,7 +300,7 @@ class Net::HTTPGenericRequest
 
   def supply_default_content_type
     return if content_type()
-    warn 'net/http: warning: Content-Type did not set; using application/x-www-form-urlencoded' if $VERBOSE
+    warn 'net/http: Content-Type did not set; using application/x-www-form-urlencoded', uplevel: 1 if $VERBOSE
     set_content_type 'application/x-www-form-urlencoded'
   end
 

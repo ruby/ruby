@@ -20,9 +20,13 @@ class TestSocket_UDPSocket < Test::Unit::TestCase
       assert_match(/AF_INET\b/, sock.inspect)
     }
     if Socket.const_defined?(:AF_INET6)
-      UDPSocket.open(Socket::AF_INET6) {|sock|
-        assert_match(/AF_INET6\b/, sock.inspect)
-      }
+      begin
+        UDPSocket.open(Socket::AF_INET6) {|sock|
+          assert_match(/AF_INET6\b/, sock.inspect)
+        }
+      rescue Errno::EAFNOSUPPORT
+        skip 'AF_INET6 not supported by kernel'
+      end
     end
   end
 

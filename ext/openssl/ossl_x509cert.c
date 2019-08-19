@@ -23,10 +23,6 @@
 	ossl_raise(rb_eRuntimeError, "CERT wasn't initialized!"); \
     } \
 } while (0)
-#define SafeGetX509(obj, x509) do { \
-    OSSL_Check_Kind((obj), cX509Cert); \
-    GetX509((obj), (x509)); \
-} while (0)
 
 /*
  * Classes
@@ -71,46 +67,12 @@ ossl_x509_new(X509 *x509)
     return obj;
 }
 
-VALUE
-ossl_x509_new_from_file(VALUE filename)
-{
-    X509 *x509;
-    FILE *fp;
-    VALUE obj;
-
-    rb_check_safe_obj(filename);
-    obj = NewX509(cX509Cert);
-    if (!(fp = fopen(StringValueCStr(filename), "r"))) {
-	ossl_raise(eX509CertError, "%s", strerror(errno));
-    }
-    rb_fd_fix_cloexec(fileno(fp));
-    x509 = PEM_read_X509(fp, NULL, NULL, NULL);
-    /*
-     * prepare for DER...
-#if !defined(OPENSSL_NO_FP_API)
-    if (!x509) {
-    	(void)ERR_get_error();
-	rewind(fp);
-
-	x509 = d2i_X509_fp(fp, NULL);
-    }
-#endif
-    */
-    fclose(fp);
-    if (!x509) {
-	ossl_raise(eX509CertError, NULL);
-    }
-    SetX509(obj, x509);
-
-    return obj;
-}
-
 X509 *
 GetX509CertPtr(VALUE obj)
 {
     X509 *x509;
 
-    SafeGetX509(obj, x509);
+    GetX509(obj, x509);
 
     return x509;
 }
@@ -120,7 +82,7 @@ DupX509CertPtr(VALUE obj)
 {
     X509 *x509;
 
-    SafeGetX509(obj, x509);
+    GetX509(obj, x509);
 
     X509_up_ref(x509);
 
@@ -184,7 +146,7 @@ ossl_x509_copy(VALUE self, VALUE other)
     if (self == other) return self;
 
     GetX509(self, a);
-    SafeGetX509(other, b);
+    GetX509(other, b);
 
     x509 = X509_dup(b);
     if (!x509) ossl_raise(eX509CertError, NULL);
@@ -478,7 +440,7 @@ ossl_x509_set_not_before(VALUE self, VALUE time)
 
     GetX509(self, x509);
     asn1time = ossl_x509_time_adjust(NULL, time);
-    if (!X509_set_notBefore(x509, asn1time)) {
+    if (!X509_set1_notBefore(x509, asn1time)) {
 	ASN1_TIME_free(asn1time);
 	ossl_raise(eX509CertError, "X509_set_notBefore");
     }
@@ -517,7 +479,7 @@ ossl_x509_set_not_after(VALUE self, VALUE time)
 
     GetX509(self, x509);
     asn1time = ossl_x509_time_adjust(NULL, time);
-    if (!X509_set_notAfter(x509, asn1time)) {
+    if (!X509_set1_notAfter(x509, asn1time)) {
 	ASN1_TIME_free(asn1time);
 	ossl_raise(eX509CertError, "X509_set_notAfter");
     }
@@ -546,18 +508,19 @@ ossl_x509_get_public_key(VALUE self)
 
 /*
  * call-seq:
- *    cert.public_key = key => key
+ *    cert.public_key = key
  */
 static VALUE
 ossl_x509_set_public_key(VALUE self, VALUE key)
 {
     X509 *x509;
+    EVP_PKEY *pkey;
 
     GetX509(self, x509);
-    if (!X509_set_pubkey(x509, GetPKeyPtr(key))) { /* DUPs pkey */
-	ossl_raise(eX509CertError, NULL);
-    }
-
+    pkey = GetPKeyPtr(key);
+    ossl_pkey_check_public_key(pkey);
+    if (!X509_set_pubkey(x509, pkey))
+	ossl_raise(eX509CertError, "X509_set_pubkey");
     return key;
 }
 
@@ -573,7 +536,7 @@ ossl_x509_sign(VALUE self, VALUE key, VALUE digest)
     const EVP_MD *md;
 
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
-    md = GetDigestPtr(digest);
+    md = ossl_evp_get_digestbyname(digest);
     GetX509(self, x509);
     if (!X509_sign(x509, pkey, md)) {
 	ossl_raise(eX509CertError, NULL);
@@ -586,7 +549,8 @@ ossl_x509_sign(VALUE self, VALUE key, VALUE digest)
  * call-seq:
  *    cert.verify(key) => true | false
  *
- * Checks that cert signature is made with PRIVversion of this PUBLIC 'key'
+ * Verifies the signature of the certificate, with the public key _key_. _key_
+ * must be an instance of OpenSSL::PKey.
  */
 static VALUE
 ossl_x509_verify(VALUE self, VALUE key)
@@ -594,9 +558,9 @@ ossl_x509_verify(VALUE self, VALUE key)
     X509 *x509;
     EVP_PKEY *pkey;
 
-    pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
     GetX509(self, x509);
-
+    pkey = GetPKeyPtr(key);
+    ossl_pkey_check_public_key(pkey);
     switch (X509_verify(x509, pkey)) {
       case 1:
 	return Qtrue;
@@ -610,9 +574,10 @@ ossl_x509_verify(VALUE self, VALUE key)
 
 /*
  * call-seq:
- *    cert.check_private_key(key)
+ *    cert.check_private_key(key) -> true | false
  *
- * Checks if 'key' is PRIV key for this cert
+ * Returns +true+ if _key_ is the corresponding private key to the Subject
+ * Public Key Information, +false+ otherwise.
  */
 static VALUE
 ossl_x509_check_private_key(VALUE self, VALUE key)
@@ -717,6 +682,26 @@ ossl_x509_inspect(VALUE self)
 		      ossl_x509_get_serial(self),
 		      ossl_x509_get_not_before(self),
 		      ossl_x509_get_not_after(self));
+}
+
+/*
+ * call-seq:
+ *    cert1 == cert2 -> true | false
+ *
+ * Compares the two certificates. Note that this takes into account all fields,
+ * not just the issuer name and the serial number.
+ */
+static VALUE
+ossl_x509_eq(VALUE self, VALUE other)
+{
+    X509 *a, *b;
+
+    GetX509(self, a);
+    if (!rb_obj_is_kind_of(other, cX509Cert))
+	return Qfalse;
+    GetX509(other, b);
+
+    return !X509_cmp(a, b) ? Qtrue : Qfalse;
 }
 
 /*
@@ -829,7 +814,7 @@ Init_ossl_x509cert(void)
 
     rb_define_alloc_func(cX509Cert, ossl_x509_alloc);
     rb_define_method(cX509Cert, "initialize", ossl_x509_initialize, -1);
-    rb_define_copy_func(cX509Cert, ossl_x509_copy);
+    rb_define_method(cX509Cert, "initialize_copy", ossl_x509_copy, 1);
 
     rb_define_method(cX509Cert, "to_der", ossl_x509_to_der, 0);
     rb_define_method(cX509Cert, "to_pem", ossl_x509_to_pem, 0);
@@ -857,4 +842,5 @@ Init_ossl_x509cert(void)
     rb_define_method(cX509Cert, "extensions=", ossl_x509_set_extensions, 1);
     rb_define_method(cX509Cert, "add_extension", ossl_x509_add_extension, 1);
     rb_define_method(cX509Cert, "inspect", ossl_x509_inspect, 0);
+    rb_define_method(cX509Cert, "==", ossl_x509_eq, 1);
 }

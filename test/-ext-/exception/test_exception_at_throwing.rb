@@ -2,7 +2,7 @@
 require 'test/unit'
 
 module Bug
-  class TestException < Test::Unit::TestCase
+  class Test_ExceptionAT < Test::Unit::TestCase
     def test_exception_at_throwing
       assert_separately(%w[-r-test-/exception], "#{<<-"begin;"}\n#{<<-"end;"}")
       begin;

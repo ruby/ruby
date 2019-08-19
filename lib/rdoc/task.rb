@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #--
 # Copyright (c) 2003, 2004 Jim Weirich, 2009 Eric Hodel
 #
@@ -128,7 +128,7 @@ class RDoc::Task < Rake::TaskLib
   attr_accessor :template
 
   ##
-  # Name of format generator (<tt>--format<tt>) used by rdoc. (defaults to
+  # Name of format generator (<tt>--format</tt>) used by rdoc. (defaults to
   # rdoc's default)
 
   attr_accessor :generator

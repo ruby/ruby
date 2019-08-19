@@ -29,7 +29,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   ##
   # Creates a new InstallerSet that will look for gems in +domain+.
 
-  def initialize domain
+  def initialize(domain)
     super()
 
     @domain = domain
@@ -41,6 +41,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
     @ignore_dependencies = false
     @ignore_installed    = false
     @local               = {}
+    @local_source        = Gem::Source::Local.new
     @remote_set          = Gem::Resolver::BestSet.new
     @specs               = {}
   end
@@ -49,14 +50,14 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   # Looks up the latest specification for +dependency+ and adds it to the
   # always_install list.
 
-  def add_always_install dependency
+  def add_always_install(dependency)
     request = Gem::Resolver::DependencyRequest.new dependency, nil
 
     found = find_all request
 
-    found.delete_if { |s|
+    found.delete_if do |s|
       s.version.prerelease? and not s.local?
-    } unless dependency.prerelease?
+    end unless dependency.prerelease?
 
     found = found.select do |s|
       Gem::Source::SpecificFile === s.source or
@@ -64,7 +65,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
         Gem::Platform.local === s.platform
     end
 
-    if found.empty? then
+    if found.empty?
       exc = Gem::UnsatisfiableDependencyError.new request
       exc.errors = errors
 
@@ -82,7 +83,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   # Adds a local gem requested using +dep_name+ with the given +spec+ that can
   # be loaded and installed using the +source+.
 
-  def add_local dep_name, spec, source
+  def add_local(dep_name, spec, source)
     @local[dep_name] = [spec, source]
   end
 
@@ -111,10 +112,10 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   # Returns an array of IndexSpecification objects matching DependencyRequest
   # +req+.
 
-  def find_all req
+  def find_all(req)
     res = []
 
-    dep  = req.dependency
+    dep = req.dependency
 
     return res if @ignore_dependencies and
               @always_install.none? { |spec| dep.match? spec }
@@ -127,7 +128,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
       res << Gem::Resolver::InstalledSpecification.new(self, gemspec)
     end unless @ignore_installed
 
-    if consider_local? then
+    if consider_local?
       matching_local = @local.values.select do |spec, _|
         req.match? spec
       end.map do |spec, source|
@@ -136,13 +137,11 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
 
       res.concat matching_local
 
-      local_source = Gem::Source::Local.new
-
       begin
-        if local_spec = local_source.find_gem(name, dep.requirement) then
+        if local_spec = @local_source.find_gem(name, dep.requirement)
           res << Gem::Resolver::IndexSpecification.new(
             self, local_spec.name, local_spec.version,
-            local_source, local_spec.platform)
+            @local_source, local_spec.platform)
         end
       rescue Gem::Package::FormatError
         # ignore
@@ -162,7 +161,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
     @remote_set.prefetch(reqs) if consider_remote?
   end
 
-  def prerelease= allow_prerelease
+  def prerelease=(allow_prerelease)
     super
 
     @remote_set.prerelease = allow_prerelease
@@ -180,7 +179,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   # Called from IndexSpecification to get a true Specification
   # object.
 
-  def load_spec name, ver, platform, source # :nodoc:
+  def load_spec(name, ver, platform, source) # :nodoc:
     key = "#{name}-#{ver}-#{platform}"
 
     @specs.fetch key do
@@ -193,13 +192,13 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   ##
   # Has a local gem for +dep_name+ been added to this set?
 
-  def local? dep_name # :nodoc:
-    spec, = @local[dep_name]
+  def local?(dep_name) # :nodoc:
+    spec, _ = @local[dep_name]
 
     spec
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, '[InstallerSet', ']' do
       q.breakable
       q.text "domain: #{@domain}"
@@ -214,7 +213,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
     end
   end
 
-  def remote= remote # :nodoc:
+  def remote=(remote) # :nodoc:
     case @domain
     when :local then
       @domain = :both if remote
@@ -226,4 +225,3 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   end
 
 end
-

@@ -23,10 +23,6 @@
 	ossl_raise(rb_eRuntimeError, "Req wasn't initialized!"); \
     } \
 } while (0)
-#define SafeGetX509Req(obj, req) do { \
-    OSSL_Check_Kind((obj), cX509Req); \
-    GetX509Req((obj), (req)); \
-} while (0)
 
 /*
  * Classes
@@ -51,47 +47,14 @@ static const rb_data_type_t ossl_x509req_type = {
 /*
  * Public functions
  */
-VALUE
-ossl_x509req_new(X509_REQ *req)
-{
-    X509_REQ *new;
-    VALUE obj;
-
-    obj = NewX509Req(cX509Req);
-    if (!req) {
-	new = X509_REQ_new();
-    } else {
-	new = X509_REQ_dup(req);
-    }
-    if (!new) {
-	ossl_raise(eX509ReqError, NULL);
-    }
-    SetX509Req(obj, new);
-
-    return obj;
-}
-
 X509_REQ *
 GetX509ReqPtr(VALUE obj)
 {
     X509_REQ *req;
 
-    SafeGetX509Req(obj, req);
+    GetX509Req(obj, req);
 
     return req;
-}
-
-X509_REQ *
-DupX509ReqPtr(VALUE obj)
-{
-    X509_REQ *req, *new;
-
-    SafeGetX509Req(obj, req);
-    if (!(new = X509_REQ_dup(req))) {
-	ossl_raise(eX509ReqError, NULL);
-    }
-
-    return new;
 }
 
 /*
@@ -145,7 +108,7 @@ ossl_x509req_copy(VALUE self, VALUE other)
     rb_check_frozen(self);
     if (self == other) return self;
     GetX509Req(self, a);
-    SafeGetX509Req(other, b);
+    GetX509Req(other, b);
     if (!(req = X509_REQ_dup(b))) {
 	ossl_raise(eX509ReqError, NULL);
     }
@@ -330,11 +293,10 @@ ossl_x509req_set_public_key(VALUE self, VALUE key)
     EVP_PKEY *pkey;
 
     GetX509Req(self, req);
-    pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
-    if (!X509_REQ_set_pubkey(req, pkey)) {
-	ossl_raise(eX509ReqError, NULL);
-    }
-
+    pkey = GetPKeyPtr(key);
+    ossl_pkey_check_public_key(pkey);
+    if (!X509_REQ_set_pubkey(req, pkey))
+	ossl_raise(eX509ReqError, "X509_REQ_set_pubkey");
     return key;
 }
 
@@ -347,7 +309,7 @@ ossl_x509req_sign(VALUE self, VALUE key, VALUE digest)
 
     GetX509Req(self, req);
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
-    md = GetDigestPtr(digest);
+    md = ossl_evp_get_digestbyname(digest);
     if (!X509_REQ_sign(req, pkey, md)) {
 	ossl_raise(eX509ReqError, NULL);
     }
@@ -365,7 +327,8 @@ ossl_x509req_verify(VALUE self, VALUE key)
     EVP_PKEY *pkey;
 
     GetX509Req(self, req);
-    pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
+    pkey = GetPKeyPtr(key);
+    ossl_pkey_check_public_key(pkey);
     switch (X509_REQ_verify(req, pkey)) {
       case 1:
 	return Qtrue;
@@ -457,7 +420,7 @@ Init_ossl_x509req(void)
 
     rb_define_alloc_func(cX509Req, ossl_x509req_alloc);
     rb_define_method(cX509Req, "initialize", ossl_x509req_initialize, -1);
-    rb_define_copy_func(cX509Req, ossl_x509req_copy);
+    rb_define_method(cX509Req, "initialize_copy", ossl_x509req_copy, 1);
 
     rb_define_method(cX509Req, "to_pem", ossl_x509req_to_pem, 0);
     rb_define_method(cX509Req, "to_der", ossl_x509req_to_der, 0);

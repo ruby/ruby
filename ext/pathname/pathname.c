@@ -2,21 +2,75 @@
 #include "ruby/encoding.h"
 
 static VALUE rb_cPathname;
-static ID id_at_path, id_to_path;
-static ID id_ENOTDIR, id_atime, id_basename, id_binread, id_binwrite,
-    id_birthtime, id_blockdev_p, id_chardev_p, id_chmod, id_chown,
-    id_ctime, id_directory_p, id_dirname, id_empty_p, id_entries,
-    id_executable_p, id_executable_real_p, id_exist_p, id_expand_path,
-    id_extname, id_file_p, id_fnmatch, id_foreach, id_ftype, id_getwd,
-    id_glob, id_grpowned_p, id_lchmod, id_lchown, id_link, id_lstat,
-    id_mkdir, id_mtime, id_open, id_owned_p, id_pipe_p, id_read,
-    id_readable_p, id_readable_real_p, id_readlines, id_readlink,
-    id_realdirpath, id_realpath, id_rename, id_rmdir, id_setgid_p,
-    id_setuid_p, id_size, id_size_p, id_socket_p, id_split, id_stat,
-    id_sticky_p, id_sub, id_symlink, id_symlink_p, id_sysopen,
-    id_truncate, id_unlink, id_utime, id_world_readable_p,
-    id_world_writable_p, id_writable_p, id_writable_real_p, id_write,
-    id_zero_p;
+static ID id_ENOTDIR;
+static ID id_at_path;
+static ID id_atime;
+static ID id_base;
+static ID id_basename;
+static ID id_binread;
+static ID id_binwrite;
+static ID id_birthtime;
+static ID id_blockdev_p;
+static ID id_chardev_p;
+static ID id_chmod;
+static ID id_chown;
+static ID id_ctime;
+static ID id_directory_p;
+static ID id_dirname;
+static ID id_empty_p;
+static ID id_entries;
+static ID id_executable_p;
+static ID id_executable_real_p;
+static ID id_exist_p;
+static ID id_expand_path;
+static ID id_extname;
+static ID id_file_p;
+static ID id_fnmatch;
+static ID id_foreach;
+static ID id_ftype;
+static ID id_getwd;
+static ID id_glob;
+static ID id_grpowned_p;
+static ID id_lchmod;
+static ID id_lchown;
+static ID id_link;
+static ID id_lstat;
+static ID id_mkdir;
+static ID id_mtime;
+static ID id_open;
+static ID id_owned_p;
+static ID id_pipe_p;
+static ID id_read;
+static ID id_readable_p;
+static ID id_readable_real_p;
+static ID id_readlines;
+static ID id_readlink;
+static ID id_realdirpath;
+static ID id_realpath;
+static ID id_rename;
+static ID id_rmdir;
+static ID id_setgid_p;
+static ID id_setuid_p;
+static ID id_size;
+static ID id_size_p;
+static ID id_socket_p;
+static ID id_split;
+static ID id_stat;
+static ID id_sticky_p;
+static ID id_sub;
+static ID id_symlink;
+static ID id_symlink_p;
+static ID id_sysopen;
+static ID id_to_path;
+static ID id_truncate;
+static ID id_unlink;
+static ID id_utime;
+static ID id_world_readable_p;
+static ID id_world_writable_p;
+static ID id_writable_p;
+static ID id_writable_real_p;
+static ID id_write;
+static ID id_zero_p;
 
 static VALUE
 get_strpath(VALUE obj)
@@ -314,10 +368,10 @@ path_each_line(int argc, VALUE *argv, VALUE self)
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
     if (rb_block_given_p()) {
-        return rb_block_call(rb_cIO, id_foreach, 1+n, args, 0, 0);
+        return rb_block_call(rb_cFile, id_foreach, 1+n, args, 0, 0);
     }
     else {
-        return rb_funcallv(rb_cIO, id_foreach, 1+n, args);
+        return rb_funcallv(rb_cFile, id_foreach, 1+n, args);
     }
 }
 
@@ -328,7 +382,7 @@ path_each_line(int argc, VALUE *argv, VALUE self)
  *
  * Returns all data from the file, or the first +N+ bytes if specified.
  *
- * See IO.read.
+ * See File.read.
  *
  */
 static VALUE
@@ -339,7 +393,7 @@ path_read(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcallv(rb_cIO, id_read, 1+n, args);
+    return rb_funcallv(rb_cFile, id_read, 1+n, args);
 }
 
 /*
@@ -348,7 +402,7 @@ path_read(int argc, VALUE *argv, VALUE self)
  *
  * Returns all the bytes from the file, or the first +N+ if specified.
  *
- * See IO.binread.
+ * See File.binread.
  *
  */
 static VALUE
@@ -359,7 +413,7 @@ path_binread(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "02", &args[1], &args[2]);
-    return rb_funcallv(rb_cIO, id_binread, 1+n, args);
+    return rb_funcallv(rb_cFile, id_binread, 1+n, args);
 }
 
 /*
@@ -369,7 +423,7 @@ path_binread(int argc, VALUE *argv, VALUE self)
  *
  * Writes +contents+ to the file.
  *
- * See IO.write.
+ * See File.write.
  *
  */
 static VALUE
@@ -380,7 +434,7 @@ path_write(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcallv(rb_cIO, id_write, 1+n, args);
+    return rb_funcallv(rb_cFile, id_write, 1+n, args);
 }
 
 /*
@@ -390,7 +444,7 @@ path_write(int argc, VALUE *argv, VALUE self)
  *
  * Writes +contents+ to the file, opening it in binary mode.
  *
- * See IO.binwrite.
+ * See File.binwrite.
  *
  */
 static VALUE
@@ -401,7 +455,7 @@ path_binwrite(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcallv(rb_cIO, id_binwrite, 1+n, args);
+    return rb_funcallv(rb_cFile, id_binwrite, 1+n, args);
 }
 
 /*
@@ -412,7 +466,7 @@ path_binwrite(int argc, VALUE *argv, VALUE self)
  *
  * Returns all the lines from the file.
  *
- * See IO.readlines.
+ * See File.readlines.
  *
  */
 static VALUE
@@ -423,7 +477,7 @@ path_readlines(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcallv(rb_cIO, id_readlines, 1+n, args);
+    return rb_funcallv(rb_cFile, id_readlines, 1+n, args);
 }
 
 /*
@@ -458,7 +512,7 @@ path_atime(VALUE self)
     return rb_funcall(rb_cFile, id_atime, 1, get_strpath(self));
 }
 
-#if defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC) || defined(_WIN32)
+#if defined(HAVE_RB_FILE_S_BIRTHTIME)
 /*
  * call-seq:
  *   pathname.birthtime	-> time
@@ -474,6 +528,7 @@ path_birthtime(VALUE self)
     return rb_funcall(rb_cFile, id_birthtime, 1, get_strpath(self));
 }
 #else
+/* check at compilation time for `respond_to?` */
 # define path_birthtime rb_f_notimplement
 #endif
 
@@ -1021,7 +1076,7 @@ path_empty_p(VALUE self)
 }
 
 static VALUE
-glob_i(RB_BLOCK_CALL_FUNC_ARGLIST(elt, klass))
+s_glob_i(RB_BLOCK_CALL_FUNC_ARGLIST(elt, klass))
 {
     return rb_yield(rb_class_new_instance(1, &elt, klass));
 }
@@ -1029,20 +1084,20 @@ glob_i(RB_BLOCK_CALL_FUNC_ARGLIST(elt, klass))
 /*
  * Returns or yields Pathname objects.
  *
- *  Pathname.glob("config/" "*.rb")
- *	#=> [#<Pathname:config/environment.rb>, #<Pathname:config/routes.rb>, ..]
+ *  Pathname.glob("lib/i*.rb")
+ *	#=> [#<Pathname:lib/ipaddr.rb>, #<Pathname:lib/irb.rb>]
  *
  * See Dir.glob.
  */
 static VALUE
 path_s_glob(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE args[2];
+    VALUE args[3];
     int n;
 
-    n = rb_scan_args(argc, argv, "11", &args[0], &args[1]);
+    n = rb_scan_args(argc, argv, "12", &args[0], &args[1], &args[2]);
     if (rb_block_given_p()) {
-        return rb_block_call(rb_cDir, id_glob, n, args, glob_i, klass);
+        return rb_block_call(rb_cDir, id_glob, n, args, s_glob_i, klass);
     }
     else {
         VALUE ary;
@@ -1052,6 +1107,54 @@ path_s_glob(int argc, VALUE *argv, VALUE klass)
         for (i = 0; i < RARRAY_LEN(ary); i++) {
             VALUE elt = RARRAY_AREF(ary, i);
             elt = rb_class_new_instance(1, &elt, klass);
+            rb_ary_store(ary, i, elt);
+        }
+        return ary;
+    }
+}
+
+static VALUE
+glob_i(RB_BLOCK_CALL_FUNC_ARGLIST(elt, self))
+{
+    elt = rb_funcall(self, '+', 1, elt);
+    return rb_yield(elt);
+}
+
+/*
+ * Returns or yields Pathname objects.
+ *
+ *  Pathname("ruby-2.4.2").glob("R*.md")
+ *  #=> [#<Pathname:ruby-2.4.2/README.md>, #<Pathname:ruby-2.4.2/README.ja.md>]
+ *
+ * See Dir.glob.
+ * This method uses the +base+ keyword argument of Dir.glob.
+ */
+static VALUE
+path_glob(int argc, VALUE *argv, VALUE self)
+{
+    VALUE args[3];
+    int n;
+
+    n = rb_scan_args(argc, argv, "11", &args[0], &args[1]);
+    if (n == 1)
+      args[1] = INT2FIX(0);
+
+    args[2] = rb_hash_new();
+    rb_hash_aset(args[2], ID2SYM(id_base), get_strpath(self));
+
+    n = 3;
+
+    if (rb_block_given_p()) {
+        return rb_block_call(rb_cDir, id_glob, n, args, glob_i, self);
+    }
+    else {
+        VALUE ary;
+        long i;
+        ary = rb_funcallv(rb_cDir, id_glob, n, args);
+        ary = rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
+        for (i = 0; i < RARRAY_LEN(ary); i++) {
+            VALUE elt = RARRAY_AREF(ary, i);
+            elt = rb_funcall(self, '+', 1, elt);
             rb_ary_store(ary, i, elt);
         }
         return ary;
@@ -1485,6 +1588,7 @@ Init_pathname(void)
     rb_define_singleton_method(rb_cPathname, "glob", path_s_glob, -1);
     rb_define_singleton_method(rb_cPathname, "getwd", path_s_getwd, 0);
     rb_define_singleton_method(rb_cPathname, "pwd", path_s_getwd, 0);
+    rb_define_method(rb_cPathname, "glob", path_glob, -1);
     rb_define_method(rb_cPathname, "entries", path_entries, 0);
     rb_define_method(rb_cPathname, "mkdir", path_mkdir, -1);
     rb_define_method(rb_cPathname, "rmdir", path_rmdir, 0);
@@ -1505,6 +1609,7 @@ InitVM_pathname(void)
     id_ENOTDIR = rb_intern("ENOTDIR");
     id_atime = rb_intern("atime");
     id_basename = rb_intern("basename");
+    id_base = rb_intern("base");
     id_binread = rb_intern("binread");
     id_binwrite = rb_intern("binwrite");
     id_birthtime = rb_intern("birthtime");

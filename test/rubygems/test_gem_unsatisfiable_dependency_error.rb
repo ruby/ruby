@@ -30,4 +30,3 @@ class TestGemUnsatisfiableDependencyError < Gem::TestCase
   end
 
 end
-

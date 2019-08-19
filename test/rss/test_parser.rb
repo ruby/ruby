@@ -61,5 +61,61 @@ EOR
 EOR
       end
     end
+
+    def test_parse_option_validate_nil
+      assert_raise(RSS::MissingTagError) do
+        RSS::Parser.parse(make_RDF(<<-RDF), :validate => nil)
+        RDF
+      end
+    end
+
+    def test_parse_option_validate_true
+      assert_raise(RSS::MissingTagError) do
+        RSS::Parser.parse(make_RDF(<<-RDF), :validate => true)
+        RDF
+      end
+    end
+
+    def test_parse_option_validate_false
+      rdf = RSS::Parser.parse(make_RDF(<<-RDF), :validate => false)
+      RDF
+      assert_nil(rdf.channel)
+    end
+
+    def test_parse_option_ignore_unknown_element_nil
+      assert_nothing_raised do
+        RSS::Parser.parse(make_RDF(<<-RDF), :ignore_unknown_element => nil)
+<unknown/>
+#{make_channel}
+#{make_item}
+#{make_textinput}
+#{make_image}
+        RDF
+      end
+    end
+
+    def test_parse_option_ignore_unknown_element_true
+      assert_nothing_raised do
+        RSS::Parser.parse(make_RDF(<<-RDF), :ignore_unknown_element => true)
+<unknown/>
+#{make_channel}
+#{make_item}
+#{make_textinput}
+#{make_image}
+        RDF
+      end
+    end
+
+    def test_parse_option_ignore_unknown_element_false
+      assert_raise(RSS::NotExpectedTagError) do
+        RSS::Parser.parse(make_RDF(<<-RDF), :ignore_unknown_element => false)
+<unknown/>
+#{make_channel}
+#{make_item}
+#{make_textinput}
+#{make_image}
+        RDF
+      end
+    end
   end
 end

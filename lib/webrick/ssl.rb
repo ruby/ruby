@@ -130,7 +130,7 @@ module WEBrick
       aki = ef.create_extension("authorityKeyIdentifier",
                                 "keyid:always,issuer:always")
       cert.add_extension(aki)
-      cert.sign(rsa, OpenSSL::Digest::SHA1.new)
+      cert.sign(rsa, OpenSSL::Digest::SHA256.new)
 
       return [ cert, rsa ]
     end
@@ -181,7 +181,7 @@ module WEBrick
       unless config[:SSLCertificate]
         cn = config[:SSLCertName]
         comment = config[:SSLCertComment]
-        cert, key = Utils::create_self_signed_cert(1024, cn, comment)
+        cert, key = Utils::create_self_signed_cert(2048, cn, comment)
         config[:SSLCertificate] = cert
         config[:SSLPrivateKey] = key
       end

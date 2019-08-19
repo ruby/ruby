@@ -1,3 +1,4 @@
+#include "ruby/encoding.h"
 #include "internal.h"
 
 static VALUE
@@ -131,7 +132,7 @@ bug_str_s_rb_str_new_frozen(VALUE self, VALUE str)
 }
 
 void
-Init_cstr(VALUE klass)
+Init_string_cstr(VALUE klass)
 {
     rb_define_method(klass, "cstr_term", bug_str_cstr_term, 0);
     rb_define_method(klass, "cstr_unterm", bug_str_cstr_unterm, 1);

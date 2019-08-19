@@ -32,18 +32,18 @@ class TestWEBrickUtils < Test::Unit::TestCase
     m = WEBrick::Utils
     i = 0
     assert_raise(Timeout::Error){
-      m.timeout(0.2){
-        assert_raise(Timeout::Error){ m.timeout(0.1){ i += 1; sleep } }
+      m.timeout(1){
+        assert_raise(Timeout::Error){ m.timeout(0.1){ i += 1; sleep(1) } }
         assert_not_expired(m)
         i += 1
-        sleep
+        sleep(2)
       }
     }
     assert_equal(2, i)
     assert_expired(m)
   end
 
-  def test_timeout_default_execption
+  def test_timeout_default_exception
     m = WEBrick::Utils
     assert_raise(Timeout::Error){ m.timeout(0.01){ sleep } }
     assert_expired(m)

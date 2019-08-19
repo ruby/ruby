@@ -1,7 +1,7 @@
 # coding: utf-8
-# frozen_string_literal: false
+# frozen_string_literal: true
 
-require 'rdoc/test_case'
+require_relative 'helper'
 
 class TestRDocMarkupParser < RDoc::TestCase
 
@@ -20,15 +20,6 @@ class TestRDocMarkupParser < RDoc::TestCase
     ]
 
     assert_equal @RM::Heading.new(3, 'heading three'), parser.build_heading(3)
-  end
-
-  def test_char_pos
-    parser = @RMP.new
-    s = parser.setup_scanner 'cät'
-
-    s.scan(/\S+/)
-
-    assert_equal 3, parser.char_pos(s.pos)
   end
 
   def test_get
@@ -700,7 +691,6 @@ B. l2
 
   def test_parse_trailing_cr
     expected = [ @RM::Paragraph.new('Text') ]
-    # FIXME hangs the parser:
     assert_equal expected, @RMP.parse("Text\r").parts
   end
 
@@ -1045,6 +1035,41 @@ the time
     assert_equal expected, @RMP.parse("  1\n   2\n\n    3").parts
   end
 
+  def test_parse_block_quote
+    expected = [
+      @RM::BlockQuote.new(@RM::Paragraph.new("foo"))
+    ]
+    assert_equal expected, @RMP.parse(<<-DOC).parts
+>>>
+  foo
+    DOC
+
+    expected = [
+      @RM::BlockQuote.new(@RM::Paragraph.new("foo"),
+                          @RM::Verbatim.new("code\n"),
+                          @RM::Paragraph.new("bar"))
+    ]
+    assert_equal expected, @RMP.parse(<<-DOC).parts
+>>>
+  foo
+    code
+  bar
+    DOC
+
+    expected = [
+      @RM::BlockQuote.new(@RM::Paragraph.new("foo"),
+                          @RM::BlockQuote.new(@RM::Paragraph.new("bar")),
+                          @RM::Paragraph.new("zot"))
+    ]
+    assert_equal expected, @RMP.parse(<<-DOC).parts
+>>>
+  foo
+  >>>
+    bar
+  zot
+    DOC
+  end
+
   def test_peek_token
     parser = util_parser
 
@@ -1062,13 +1087,13 @@ the time
 
     assert_equal [:NEWLINE, "\n", 9, 0], parser.peek_token
 
-    assert_raises RDoc::Markup::Parser::ParseError do
+    assert_raise RDoc::Markup::Parser::ParseError do
       parser.skip :NONE
     end
 
     assert_equal [:NEWLINE, "\n", 9, 0], parser.peek_token
 
-    assert_equal nil, parser.skip(:NONE, false)
+    assert_nil parser.skip(:NONE, false)
 
     assert_equal [:NEWLINE, "\n", 9, 0], parser.peek_token
   end
@@ -1612,15 +1637,6 @@ Example heading:
     assert_equal expected, @RMP.tokenize(str)
   end
 
-  def test_token_pos
-    parser = @RMP.new
-    s = parser.setup_scanner 'cät'
-
-    s.scan(/\S+/)
-
-    assert_equal [3, 0], parser.token_pos(s.pos)
-  end
-
   # HACK move to Verbatim test case
   def test_verbatim_normalize
     v = @RM::Verbatim.new "foo\n", "\n", "\n", "bar\n"
@@ -1645,7 +1661,7 @@ Example heading:
 
     assert_equal [:HEADER, 1, 0, 0], parser.peek_token
 
-    assert_raises @RMP::Error do
+    assert_raise @RMP::Error do
       parser.unget
     end
 

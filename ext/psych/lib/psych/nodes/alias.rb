@@ -14,6 +14,8 @@ module Psych
       def initialize anchor
         @anchor = anchor
       end
+
+      def alias?; true; end
     end
   end
 end

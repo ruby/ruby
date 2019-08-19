@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'cgi'
 
 ##
@@ -16,8 +16,8 @@ class RDoc::Markup::ToLabel < RDoc::Markup::Formatter
   def initialize markup = nil
     super nil, markup
 
-    @markup.add_special RDoc::CrossReference::CROSSREF_REGEXP, :CROSSREF
-    @markup.add_special(/(((\{.*?\})|\b\S+?)\[\S+?\])/, :TIDYLINK)
+    @markup.add_regexp_handling RDoc::CrossReference::CROSSREF_REGEXP, :CROSSREF
+    @markup.add_regexp_handling(/(((\{.*?\})|\b\S+?)\[\S+?\])/, :TIDYLINK)
 
     add_tag :BOLD, '', ''
     add_tag :TT,   '', ''
@@ -36,20 +36,20 @@ class RDoc::Markup::ToLabel < RDoc::Markup::Formatter
   end
 
   ##
-  # Converts the CROSSREF +special+ to plain text, removing the suppression
+  # Converts the CROSSREF +target+ to plain text, removing the suppression
   # marker, if any
 
-  def handle_special_CROSSREF special
-    text = special.text
+  def handle_regexp_CROSSREF target
+    text = target.text
 
     text.sub(/^\\/, '')
   end
 
   ##
-  # Converts the TIDYLINK +special+ to just the text part
+  # Converts the TIDYLINK +target+ to just the text part
 
-  def handle_special_TIDYLINK special
-    text = special.text
+  def handle_regexp_TIDYLINK target
+    text = target.text
 
     return text unless text =~ /\{(.*?)\}\[(.*?)\]/ or text =~ /(\S+)\[(.*?)\]/
 
@@ -68,7 +68,7 @@ class RDoc::Markup::ToLabel < RDoc::Markup::Formatter
   alias accept_rule               ignore
   alias accept_verbatim           ignore
   alias end_accepting             ignore
-  alias handle_special_HARD_BREAK ignore
+  alias handle_regexp_HARD_BREAK  ignore
   alias start_accepting           ignore
 
 end

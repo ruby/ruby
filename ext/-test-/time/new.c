@@ -26,7 +26,7 @@ bug_time_s_timespec_now(VALUE klass)
 }
 
 void
-Init_new(VALUE klass)
+Init_time_new(VALUE klass)
 {
     rb_define_singleton_method(klass, "nano_new", bug_time_s_nano_new, 2);
     rb_define_singleton_method(klass, "timespec_new", bug_time_s_timespec_new, 3);

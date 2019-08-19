@@ -22,6 +22,13 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_equal(:m, obj.m, "[ruby-dev:33116]")
   end
 
+  def test_delegate_class_block
+    klass = DelegateClass(Array) do
+      alias foo first
+    end
+    assert_equal(1, klass.new([1]).foo)
+  end
+
   def test_systemcallerror_eq
     e = SystemCallError.new(0)
     assert((SimpleDelegator.new(e) == e) == (e == SimpleDelegator.new(e)), "[ruby-dev:34808]")
@@ -78,6 +85,37 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_equal(:m, bar.send(:delegate_test_m), bug)
   end
 
+  class Parent
+    def parent_public; end
+
+    protected
+
+    def parent_protected; end
+  end
+
+  class Child < DelegateClass(Parent)
+  end
+
+  class Parent
+    def parent_public_added; end
+
+    protected
+
+    def parent_protected_added; end
+  end
+
+  def test_public_instance_methods
+    ignores = Object.public_instance_methods | Delegator.public_instance_methods
+    assert_equal([:parent_public, :parent_public_added], (Child.public_instance_methods - ignores).sort)
+    assert_equal([:parent_public, :parent_public_added], (Child.new(Parent.new).public_methods - ignores).sort)
+  end
+
+  def test_protected_instance_methods
+    ignores = Object.protected_instance_methods | Delegator.protected_instance_methods
+    assert_equal([:parent_protected, :parent_protected_added], (Child.protected_instance_methods - ignores).sort)
+    assert_equal([:parent_protected, :parent_protected_added], (Child.new(Parent.new).protected_methods - ignores).sort)
+  end
+
   class IV < DelegateClass(Integer)
     attr_accessor :var
 
@@ -100,7 +138,7 @@ class TestDelegateClass < Test::Unit::TestCase
     a = [42, :hello].freeze
     d = SimpleDelegator.new(a)
     assert_nothing_raised(bug2679) {d.dup[0] += 1}
-    assert_raise(RuntimeError) {d.clone[0] += 1}
+    assert_raise(FrozenError) {d.clone[0] += 1}
     d.freeze
     assert(d.clone.frozen?)
     assert(!d.dup.frozen?)
@@ -109,7 +147,7 @@ class TestDelegateClass < Test::Unit::TestCase
   def test_frozen
     d = SimpleDelegator.new([1, :foo])
     d.freeze
-    assert_raise(RuntimeError, '[ruby-dev:40314]#1') {d.__setobj__("foo")}
+    assert_raise(FrozenError, '[ruby-dev:40314]#1') {d.__setobj__("foo")}
     assert_equal([1, :foo], d)
   end
 
@@ -257,5 +295,12 @@ class TestDelegateClass < Test::Unit::TestCase
 
   def test_dir_in_delegator_class
     assert_equal(__dir__, Bug9403::DC.dir_name, Bug9403::Name)
+  end
+
+  def test_module_methods_vs_kernel_methods
+    delegate = SimpleDelegator.new(Object.new)
+    assert_raise(NoMethodError) do
+      delegate.constants
+    end
   end
 end

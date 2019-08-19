@@ -102,6 +102,14 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     assert(!ipv4_ai.unix?)
   end
 
+  def test_error_message
+    e = assert_raise_with_message(SocketError, /getaddrinfo:/) do
+      Addrinfo.ip("...")
+    end
+    m = e.message
+    assert_not_equal([false, Encoding::ASCII_8BIT], [m.ascii_only?, m.encoding], proc {m.inspect})
+  end
+
   def test_ipv4_address_predicates
     list = [
       [:ipv4_private?, "10.0.0.0", "10.255.255.255",

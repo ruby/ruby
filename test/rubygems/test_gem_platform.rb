@@ -117,7 +117,7 @@ class TestGemPlatform < Gem::TestCase
 
     assert_equal expected, platform.to_a, 'i386-mswin32 VC6'
   ensure
-    if orig_RUBY_SO_NAME then
+    if orig_RUBY_SO_NAME
       RbConfig::CONFIG['RUBY_SO_NAME'] = orig_RUBY_SO_NAME
     else
       RbConfig::CONFIG.delete 'RUBY_SO_NAME'
@@ -145,7 +145,7 @@ class TestGemPlatform < Gem::TestCase
   end
 
   def test_to_s
-    if win_platform? then
+    if win_platform?
       assert_equal 'x86-mswin32-60', Gem::Platform.local.to_s
     else
       assert_equal 'x86-darwin-8', Gem::Platform.local.to_s
@@ -211,13 +211,13 @@ class TestGemPlatform < Gem::TestCase
     assert((arm   === Gem::Platform.local), 'arm   === armv5')
     assert((armv5 === Gem::Platform.local), 'armv5 === armv5')
     refute((armv7 === Gem::Platform.local), 'armv7 === armv5')
-    refute((Gem::Platform.local ===   arm), 'armv5 === arm')
+    refute((Gem::Platform.local === arm), 'armv5 === arm')
 
     util_set_arch 'armv7-linux'
     assert((arm   === Gem::Platform.local), 'arm   === armv7')
     refute((armv5 === Gem::Platform.local), 'armv5 === armv7')
     assert((armv7 === Gem::Platform.local), 'armv7 === armv7')
-    refute((Gem::Platform.local ===   arm), 'armv7 === arm')
+    refute((Gem::Platform.local === arm), 'armv7 === arm')
   end
 
   def test_equals3_version
@@ -297,12 +297,12 @@ class TestGemPlatform < Gem::TestCase
     assert_local_match 'sparc-solaris2.8-mq5.3'
   end
 
-  def assert_local_match name
+  def assert_local_match(name)
     assert_match Gem::Platform.local, name
   end
 
-  def refute_local_match name
+  def refute_local_match(name)
     refute_match Gem::Platform.local, name
   end
-end
 
+end

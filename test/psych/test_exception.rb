@@ -15,6 +15,26 @@ module Psych
     def setup
       super
       @wups = Wups.new
+
+      @orig_verbose, $VERBOSE = $VERBOSE, nil
+    end
+
+    def teardown
+      $VERBOSE = @orig_verbose
+    end
+
+    def make_ex msg = 'oh no!'
+      begin
+        raise msg
+      rescue ::Exception => e
+        e
+      end
+    end
+
+    def test_backtrace
+      err     = make_ex
+      new_err = Psych.load(Psych.dump(err))
+      assert_equal err.backtrace, new_err.backtrace
     end
 
     def test_naming_exception
@@ -30,9 +50,15 @@ module Psych
       assert_nil ex.file
 
       ex = assert_raises(Psych::SyntaxError) do
-        Psych.load '--- `', 'meow'
+        Psych.load '--- `', filename: 'meow'
       end
       assert_equal 'meow', ex.file
+
+      # deprecated interface
+      ex = assert_raises(Psych::SyntaxError) do
+        Psych.load '--- `', 'deprecated'
+      end
+      assert_equal 'deprecated', ex.file
     end
 
     def test_psych_parse_stream_takes_file
@@ -43,7 +69,7 @@ module Psych
       assert_match '(<unknown>)', ex.message
 
       ex = assert_raises(Psych::SyntaxError) do
-        Psych.parse_stream '--- `', 'omg!'
+        Psych.parse_stream '--- `', filename: 'omg!'
       end
       assert_equal 'omg!', ex.file
       assert_match 'omg!', ex.message
@@ -57,9 +83,15 @@ module Psych
       assert_match '(<unknown>)', ex.message
 
       ex = assert_raises(Psych::SyntaxError) do
-        Psych.load_stream '--- `', 'omg!'
+        Psych.load_stream '--- `', filename: 'omg!'
       end
       assert_equal 'omg!', ex.file
+
+      # deprecated interface
+      ex = assert_raises(Psych::SyntaxError) do
+        Psych.load_stream '--- `', 'deprecated'
+      end
+      assert_equal 'deprecated', ex.file
     end
 
     def test_parse_file_exception
@@ -94,9 +126,15 @@ module Psych
       assert_nil ex.file
 
       ex = assert_raises(Psych::SyntaxError) do
-        Psych.parse '--- `', 'omg!'
+        Psych.parse '--- `', filename: 'omg!'
       end
       assert_match 'omg!', ex.message
+
+      # deprecated interface
+      ex = assert_raises(Psych::SyntaxError) do
+        Psych.parse '--- `', 'deprecated'
+      end
+      assert_match 'deprecated', ex.message
     end
 
     def test_attributes

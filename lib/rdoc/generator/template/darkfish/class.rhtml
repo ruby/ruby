@@ -114,7 +114,7 @@
         <% else %>
         <div class="method-heading">
           <span class="method-name"><%= h method.name %></span><span
-            class="method-args"><%= method.param_seq %></span>
+            class="method-args"><%= h method.param_seq %></span>
           <% if method.token_stream then %>
           <span class="method-click-advice">click to toggle source</span>
           <% end %>

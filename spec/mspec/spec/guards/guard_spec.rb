@@ -4,12 +4,7 @@ require 'rbconfig'
 
 describe SpecGuard, ".ruby_version" do
   before :each do
-    @ruby_version = Object.const_get :RUBY_VERSION
-    Object.const_set :RUBY_VERSION, "8.2.3"
-  end
-
-  after :each do
-    Object.const_set :RUBY_VERSION, @ruby_version
+    stub_const "RUBY_VERSION", "8.2.3"
   end
 
   it "returns the full version for :full" do

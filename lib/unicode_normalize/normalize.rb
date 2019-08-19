@@ -18,7 +18,7 @@
 # content are purely an implementation detail, and should not be exposed in
 # any test or spec or otherwise.
 
-require 'unicode_normalize/tables.rb'
+require_relative 'tables'
 
 
 module UnicodeNormalize  # :nodoc:
@@ -70,7 +70,7 @@ module UnicodeNormalize  # :nodoc:
     if length>1 and 0 <= (lead =string[0].ord-LBASE) and lead  < LCOUNT and
                     0 <= (vowel=string[1].ord-VBASE) and vowel < VCOUNT
       lead_vowel = SBASE + (lead * VCOUNT + vowel) * TCOUNT
-      if length>2 and 0 <= (trail=string[2].ord-TBASE) and trail < TCOUNT
+      if length>2 and 0 < (trail=string[2].ord-TBASE) and trail < TCOUNT
         (lead_vowel + trail).chr(Encoding::UTF_8) + string[3..-1]
       else
         lead_vowel.chr(Encoding::UTF_8) + string[2..-1]

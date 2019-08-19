@@ -2,13 +2,13 @@ require 'spec_helper'
 require 'mspec/expectations/expectations'
 require 'mspec/matchers'
 
-class IVarModMock; end
-
-shared_examples_for "have_class_variable, on all Ruby versions" do
-  after :all do
-    Object.const_set :RUBY_VERSION, @ruby_version
+class IVarModMock
+  def self.class_variables
+    [:@foo]
   end
+end
 
+describe HaveClassVariableMatcher, "on RUBY_VERSION >= 1.9" do
   it "matches when mod has the class variable, given as string" do
     matcher = HaveClassVariableMatcher.new('@foo')
     matcher.matches?(IVarModMock).should be_true
@@ -46,17 +46,4 @@ shared_examples_for "have_class_variable, on all Ruby versions" do
       "but it does"
     ]
   end
-end
-
-describe HaveClassVariableMatcher, "on RUBY_VERSION >= 1.9" do
-  before :all do
-    @ruby_version = Object.const_get :RUBY_VERSION
-    Object.const_set :RUBY_VERSION, '1.9.0'
-
-    def IVarModMock.class_variables
-      [:@foo]
-    end
-  end
-
-  it_should_behave_like "have_class_variable, on all Ruby versions"
 end

@@ -1,5 +1,4 @@
 # frozen_string_literal: false
-require 'thread'
 
 class LocalBarrier
   def initialize(n)

@@ -38,7 +38,7 @@ describe "The -b, --base DIR option" do
     @options.stub(:on)
     @options.should_receive(:on).with("-b", "--base", "DIR",
       an_instance_of(String))
-    @script.options
+    @script.options []
   end
 
   it "sets the base directory relative to which the spec directories are created" do
@@ -62,7 +62,7 @@ describe "The -r, --require LIBRARY option" do
     @options.stub(:on)
     @options.should_receive(:on).with("-r", "--require", "LIBRARY",
       an_instance_of(String))
-    @script.options
+    @script.options []
   end
 
   it "adds CONSTANT to the list of constants" do
@@ -86,7 +86,7 @@ describe "The -V, --version-guard VERSION option" do
     @options.stub(:on)
     @options.should_receive(:on).with("-V", "--version-guard", "VERSION",
       an_instance_of(String))
-    @script.options
+    @script.options []
   end
 
   it "sets the version for the ruby_version_is guards to VERSION" do
@@ -119,7 +119,7 @@ describe MkSpec, "#options" do
     @options.should_receive(:raise).with(MSpecOptions::ParseError, an_instance_of(String))
     @options.stub(:puts)
     @options.stub(:exit)
-    @script.options "--iunknown"
+    @script.options ["--iunknown"]
   end
 end
 
@@ -167,13 +167,13 @@ describe MkSpec, "#write_requires" do
   end
 
   it "writes the spec_helper require line" do
-    @file.should_receive(:puts).with("require File.expand_path('../../../../spec_helper', __FILE__)")
+    @file.should_receive(:puts).with("require_relative '../../../spec_helper'")
     @script.write_requires("spec/core/tcejbo", "spec/core/tcejbo/inspect_spec.rb")
   end
 
   it "writes require lines for each library specified on the command line" do
     @file.stub(:puts)
-    @file.should_receive(:puts).with("require File.expand_path('../../../../spec_helper', __FILE__)")
+    @file.should_receive(:puts).with("require_relative '../../../spec_helper'")
     @file.should_receive(:puts).with("require 'complex'")
     @script.config[:requires] << 'complex'
     @script.write_requires("spec/core/tcejbo", "spec/core/tcejbo/inspect_spec.rb")

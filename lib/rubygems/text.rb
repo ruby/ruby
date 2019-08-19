@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'rubygems'
 
 ##
 # A collection of text-wrangling methods
@@ -28,7 +27,7 @@ module Gem::Text
     work = clean_text(text)
 
     while work.length > wrap do
-      if work =~ /^(.{0,#{wrap}})[ \n]/ then
+      if work =~ /^(.{0,#{wrap}})[ \n]/
         result << $1.rstrip
         work.slice!(0, $&.length)
       else
@@ -40,10 +39,10 @@ module Gem::Text
     result.join("\n").gsub(/^/, " " * indent)
   end
 
-  def min3 a, b, c # :nodoc:
-    if a < b && a < c then
+  def min3(a, b, c) # :nodoc:
+    if a < b && a < c
       a
-    elsif b < c then
+    elsif b < c
       b
     else
       c
@@ -52,7 +51,7 @@ module Gem::Text
 
   # This code is based directly on the Text gem implementation
   # Returns a value representing the "cost" of transforming str1 into str2
-  def levenshtein_distance str1, str2
+  def levenshtein_distance(str1, str2)
     s = str1
     t = str2
     n = s.length
@@ -65,15 +64,15 @@ module Gem::Text
     x = nil
 
     str1.each_char.each_with_index do |char1,i|
-      e = i+1
+      e = i + 1
 
       str2.each_char.each_with_index do |char2,j|
         cost = (char1 == char2) ? 0 : 1
         x = min3(
-             d[j+1] + 1, # insertion
+             d[j + 1] + 1, # insertion
              e + 1,      # deletion
              d[j] + cost # substitution
-            )
+           )
         d[j] = e
         e = x
       end

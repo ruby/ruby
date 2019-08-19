@@ -83,7 +83,7 @@ class TestIOWait < Test::Unit::TestCase
   def test_wait_readable
     assert_nil @r.wait_readable(0)
     @w.syswrite "."
-    sleep 0.1
+    IO.select([@r])
     assert_equal @r, @r.wait_readable(0)
   end
 

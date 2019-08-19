@@ -175,62 +175,12 @@ if defined?(WIN32OLE_TYPE)
       assert_instance_of(Array, ole_types)
       assert_equal(1, ole_types.size)
       assert_match(/^IShellDispatch\d{0,1}$/, ole_types[0].name)
-
-      ie_otype = WIN32OLE_TYPE.new("Microsoft Internet Controls", "InternetExplorer")
-      ole_types = ie_otype.implemented_ole_types
-      assert_equal(4, ole_types.size)
-      otype = ole_types.select{|t| t.name == "IWebBrowser2"}
-      assert_equal(1, otype.size)
-      otype = ole_types.select{|t| t.name == "IWebBrowserApp"}
-      assert_equal(1, otype.size)
-      otype = ole_types.select{|t| t.name == "DWebBrowserEvents2"}
-      assert_equal(1, otype.size)
-      otype = ole_types.select{|t| t.name == "DWebBrowserEvents"}
-      assert_equal(1, otype.size)
-    end
-
-    def test_default_ole_types
-      ie_otype = WIN32OLE_TYPE.new("Microsoft Internet Controls", "InternetExplorer")
-      ole_types = ie_otype.default_ole_types
-      otype = ole_types.select{|t| t.name == "IWebBrowser2"}
-      assert_equal(1, otype.size)
-      otype = ole_types.select{|t| t.name == "IWebBrowserApp"}
-      assert_equal(0, otype.size)
-      otype = ole_types.select{|t| t.name == "DWebBrowserEvents2"}
-      assert_equal(1, otype.size)
-      otype = ole_types.select{|t| t.name == "DWebBrowserEvents"}
-      assert_equal(0, otype.size)
-    end
-
-    def test_source_ole_types
-      ie_otype = WIN32OLE_TYPE.new("Microsoft Internet Controls", "InternetExplorer")
-      ole_types = ie_otype.source_ole_types
-      otype = ole_types.select{|t| t.name == "IWebBrowser2"}
-      assert_equal(0, otype.size)
-      otype = ole_types.select{|t| t.name == "IWebBrowserApp"}
-      assert_equal(0, otype.size)
-      otype = ole_types.select{|t| t.name == "DWebBrowserEvents2"}
-      assert_equal(1, otype.size)
-      otype = ole_types.select{|t| t.name == "DWebBrowserEvents"}
-      assert_equal(1, otype.size)
-    end
-
-    def test_default_event_sources
-      ie_otype = WIN32OLE_TYPE.new("Microsoft Internet Controls", "InternetExplorer")
-      ole_types = ie_otype.default_event_sources
-      otype = ole_types.select{|t| t.name == "IWebBrowser2"}
-      assert_equal(0, otype.size)
-      otype = ole_types.select{|t| t.name == "IWebBrowserApp"}
-      assert_equal(0, otype.size)
-      otype = ole_types.select{|t| t.name == "DWebBrowserEvents2"}
-      assert_equal(1, otype.size)
-      otype = ole_types.select{|t| t.name == "DWebBrowserEvents"}
-      assert_equal(0, otype.size)
     end
 
     def test_inspect
       assert_equal("#<WIN32OLE_TYPE:Shell>", @ole_type.inspect)
     end
+
     # WIN32OLE_TYPE.typelibs will be obsoleted.
     def test_s_typelibs
       tlibs = WIN32OLE_TYPE.typelibs.sort

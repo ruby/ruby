@@ -1,5 +1,5 @@
 # coding: US-ASCII
-# frozen_string_literal: false
+# frozen_string_literal: true
 
 require File.expand_path '../xref_test_case', __FILE__
 
@@ -53,7 +53,7 @@ class TestRDocCodeObject < XrefTestCase
     refute_equal Encoding::UTF_8, ''.encoding, 'Encoding sanity check'
 
     input = 'text'
-    input.force_encoding Encoding::UTF_8
+    input = RDoc::Encoding.change_encoding input, Encoding::UTF_8
 
     @co.comment = input
 
@@ -65,7 +65,7 @@ class TestRDocCodeObject < XrefTestCase
     refute_equal Encoding::UTF_8, ''.encoding, 'Encoding sanity check'
 
     input = ''
-    input.force_encoding Encoding::UTF_8
+    input = RDoc::Encoding.change_encoding input, Encoding::UTF_8
 
     @co.comment = input
 
@@ -213,7 +213,7 @@ class TestRDocCodeObject < XrefTestCase
   end
 
   def test_file_name
-    assert_equal nil, @co.file_name
+    assert_nil @co.file_name
 
     @co.record_location @store.add_file 'lib/file.rb'
 

@@ -65,10 +65,8 @@ assert_equal ':a3c',            ':"a#{1+2}c".inspect'
 assert_equal 'Symbol',          ':"a#{1+2}c".class'
 
 # xstring
-unless nacl?
-  assert_equal "foo\n",           %q(`echo foo`)
-  assert_equal "foo\n",           %q(s = "foo"; `echo #{s}`)
-end
+assert_equal "foo\n",           %q(`echo foo`)
+assert_equal "foo\n",           %q(s = "foo"; `echo #{s}`)
 
 # regexp
 assert_equal '',                '//.source'
@@ -222,6 +220,24 @@ assert_equal 'ok', %q{ #  long hash literal
 
 assert_equal 'ok', %q{ #  long hash literal (optimized)
   eval "a = {#{(1..10_000).map{|n| "#{n} => #{n}"}.join(', ')}}"
+  :ok
+}
+
+assert_equal 'ok', %q{ #  Bug #15536
+  eval <<-END
+    {
+      **{
+        a0: nil, a1: nil, a2: nil, a3: nil, a4: nil, a5: nil, a6: nil, a7: nil, a8: nil,
+      },
+      a0: nil, a1: nil, a2: nil, a3: nil, a4: nil, a5: nil, a6: nil, a7: nil, a8: nil,
+      **{
+        c: nil
+      },
+      b0: nil, b1: nil, b2: nil, b3: nil, b4: nil, b5: nil, b6: nil, b7: nil, b8: nil,
+      b9: nil, b10: nil, b11: nil, b12: nil, b13: nil, b14: nil, b15: nil, b16: nil,
+      b17: nil, b18: nil, b19: nil, b20: nil, b21: nil,
+    }
+  END
   :ok
 }
 

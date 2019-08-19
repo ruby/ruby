@@ -1,15 +1,15 @@
 # frozen_string_literal: false
 require_relative "utils"
 
-if defined?(OpenSSL::TestUtils)
+if defined?(OpenSSL)
 
 class OpenSSL::TestX509Store < OpenSSL::TestCase
   def setup
     super
-    @rsa1024 = OpenSSL::TestUtils::TEST_KEY_RSA1024
-    @rsa2048 = OpenSSL::TestUtils::TEST_KEY_RSA2048
-    @dsa256  = OpenSSL::TestUtils::TEST_KEY_DSA256
-    @dsa512  = OpenSSL::TestUtils::TEST_KEY_DSA512
+    @rsa1024 = Fixtures.pkey("rsa1024")
+    @rsa2048 = Fixtures.pkey("rsa2048")
+    @dsa256  = Fixtures.pkey("dsa256")
+    @dsa512  = Fixtures.pkey("dsa512")
     @ca1 = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA1")
     @ca2 = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA2")
     @ee1 = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=EE1")
@@ -24,14 +24,6 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
       ctx.cleanup
     end
     ctx.verify
-  end
-
-  def issue_cert(*args)
-    OpenSSL::TestUtils.issue_cert(*args)
-  end
-
-  def issue_crl(*args)
-    OpenSSL::TestUtils.issue_crl(*args)
   end
 
   def test_add_file
@@ -217,7 +209,7 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
   end
 
   def test_set_errors
-    return if OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10100000
+    return if openssl?(1, 1, 0) || libressl?
     now = Time.now
     ca1_cert = issue_cert(@ca1, @rsa2048, 1, [], nil, nil)
     store = OpenSSL::X509::Store.new
@@ -233,17 +225,9 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     crl2 = issue_crl(revoke_info, 2, now+1800, now+3600, [],
                      ca1_cert, @rsa2048, OpenSSL::Digest::SHA1.new)
     store.add_crl(crl1)
-    if /0\.9\.8.*-rhel/ =~ OpenSSL::OPENSSL_VERSION
-      # RedHat is distributing a patched version of OpenSSL that allows
-      # multiple CRL for a key (multi-crl.patch)
-      assert_nothing_raised do
-        store.add_crl(crl2) # add CRL issued by same CA twice.
-      end
-    else
-      assert_raise(OpenSSL::X509::StoreError){
-        store.add_crl(crl2) # add CRL issued by same CA twice.
-      }
-    end
+    assert_raise(OpenSSL::X509::StoreError){
+      store.add_crl(crl2) # add CRL issued by same CA twice.
+    }
   end
 
   def test_dup

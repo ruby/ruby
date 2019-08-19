@@ -369,11 +369,15 @@ module REXMLTests
       assert_equal 2, c
     end
 
+    def match(xpath)
+      XPath.match(@@doc, xpath).collect(&:to_s)
+    end
+
     def test_grouping
-      t = XPath.first( @@doc, "a/d/*[name()='d' and (name()='f' or name()='q')]" )
-      assert_nil t
-      t = XPath.first( @@doc, "a/d/*[(name()='d' and name()='f') or name()='q']" )
-      assert_equal 'q', t.name
+      assert_equal([],
+                   match("a/d/*[name()='d' and (name()='f' or name()='q')]"))
+      assert_equal(["<q id='19'/>"],
+                   match("a/d/*[(name()='d' and name()='f') or name()='q']"))
     end
 
     def test_preceding
@@ -632,29 +636,36 @@ module REXMLTests
           <c id='a'/>
         </b>
         <c id='b'/>
+        <c id='c'/>
+        <c/>
       </a>")
-      assert_equal( 1, REXML::XPath.match(doc,
-        "//*[local-name()='c' and @id='b']").size )
-      assert_equal( 1, REXML::XPath.match(doc,
-        "//*[ local-name()='c' and @id='b' ]").size )
-      assert_equal( 1, REXML::XPath.match(doc,
-        "//*[ local-name() = 'c' and @id = 'b' ]").size )
-      assert_equal( 1,
-        REXML::XPath.match(doc, '/a/c[@id]').size )
-      assert_equal( 1,
-        REXML::XPath.match(doc, '/a/c[(@id)]').size )
-      assert_equal( 1,
-        REXML::XPath.match(doc, '/a/c[ @id ]').size )
-      assert_equal( 1,
-        REXML::XPath.match(doc, '/a/c[ (@id) ]').size )
-      assert_equal( 1,
-        REXML::XPath.match(doc, '/a/c[( @id )]').size )
-      assert_equal( 1, REXML::XPath.match(doc.root,
-        '/a/c[ ( @id ) ]').size )
-      assert_equal( 1, REXML::XPath.match(doc,
-        '/a/c [ ( @id ) ] ').size )
-      assert_equal( 1, REXML::XPath.match(doc,
-        ' / a / c [ ( @id ) ] ').size )
+      match = lambda do |xpath|
+        REXML::XPath.match(doc, xpath).collect(&:to_s)
+      end
+      assert_equal(["<c id='b'/>"],
+                   match.call("//*[local-name()='c' and @id='b']"))
+      assert_equal(["<c id='b'/>"],
+                   match.call("//*[ local-name()='c' and @id='b' ]"))
+      assert_equal(["<c id='b'/>"],
+                   match.call("//*[ local-name() = 'c' and @id = 'b' ]"))
+      assert_equal(["<c id='b'/>", "<c id='c'/>"],
+                   match.call('/a/c[@id]'))
+      assert_equal(["<c id='b'/>", "<c id='c'/>"],
+                   match.call('/a/c[(@id)]'))
+      assert_equal(["<c id='b'/>", "<c id='c'/>"],
+                   match.call('/a/c[ @id ]'))
+      assert_equal(["<c id='b'/>", "<c id='c'/>"],
+                   match.call('/a/c[ (@id) ]'))
+      assert_equal(["<c id='b'/>", "<c id='c'/>"],
+                   match.call('/a/c[( @id )]'))
+      assert_equal(["<c id='b'/>", "<c id='c'/>"],
+                   match.call('/a/c[ ( @id ) ]'))
+      assert_equal(["<c id='b'/>", "<c id='c'/>"],
+                   match.call('/a/c [ ( @id ) ] '))
+      assert_equal(["<c id='b'/>", "<c id='c'/>"],
+                   match.call(' / a / c [ ( @id ) ] '))
+      assert_equal(["<c id='b'/>", "<c id='c'/>"],
+                   match.call('/ a / child:: c [( @id )] /'))
     end
 
     def test_text_nodes
@@ -692,11 +703,22 @@ module REXMLTests
     end
 
     def test_ordering
-      source = "<a><b><c id='1'/><c id='2'/></b><b><d id='1'/><d id='2'/></b></a>"
+      source = <<-XML
+<a>
+  <b>
+    <c id='1'/>
+    <c id='2'/>
+  </b>
+  <b>
+    <d id='3'/>
+    <d id='4'/>
+  </b>
+</a>
+      XML
       d = REXML::Document.new( source )
       r = REXML::XPath.match( d, %q{/a/*/*[1]} )
-      assert_equal( 1, r.size )
-      r.each { |el| assert_equal( '1', el.attribute('id').value ) }
+      assert_equal(["1", "3"],
+                   r.collect {|element| element.attribute("id").value})
     end
 
     def test_descendant_or_self_ordering
@@ -830,31 +852,44 @@ module REXMLTests
 </a>
       EOL
       d = REXML::Document.new( string )
-      c1 = XPath.match( d, '/a/*/*[1]' )
-      assert_equal( 1, c1.length )
-      assert_equal( 'c1', c1[0].name )
+      cs = XPath.match( d, '/a/*/*[1]' )
+      assert_equal(["c1", "c2"], cs.collect(&:name))
     end
 
     def test_sum
-      d = Document.new("<a>"+
-      "<b>1</b><b>2</b><b>3</b>"+
-      "<c><d>1</d><d>2</d></c>"+
-      "<e att='1'/><e att='2'/>"+
-      "</a>")
+      d = Document.new(<<-XML)
+<a>
+  <b>1</b>
+  <b>2</b>
+  <b>3</b>
+  <c>
+    <d>1</d>
+    <d>2</d>
+  </c>
+  <e att='1'/>
+  <e att='2'/>
+</a>
+      XML
 
-      for v,p in [[6, "sum(/a/b)"],
-        [9, "sum(//b | //d)"],
-        [3, "sum(/a/e/@*)"] ]
-        assert_equal( v, XPath::match( d, p ).first )
-      end
+      assert_equal([6], XPath::match(d, "sum(/a/b)"))
+      assert_equal([9], XPath::match(d, "sum(//b | //d)"))
+      assert_equal([3], XPath::match(d, "sum(/a/e/@*)"))
     end
 
     def test_xpath_namespace
-      d = REXML::Document.new("<tag1 xmlns='ns1'><tag2 xmlns='ns2'/><tada>xa</tada></tag1>")
-      x = d.root
-      num = 0
-      x.each_element('tada') {  num += 1 }
-      assert_equal(1, num)
+      d = REXML::Document.new(<<-XML)
+<tag1 xmlns='ns1'>
+  <tag2 xmlns='ns2'/>
+  <tada>xa</tada>
+  <tada xmlns=''>xb</tada>
+</tag1>
+      XML
+      actual = []
+      d.root.each_element('tada') do |element|
+        actual << element.to_s
+      end
+      assert_equal(["<tada>xa</tada>", "<tada xmlns=''>xb</tada>"],
+                   actual)
     end
 
     def test_ticket_39
@@ -990,7 +1025,7 @@ EOF
       </a>"
       d = Document.new(data)
       res = d.elements.to_a( "//c" ).collect {|e| e.attributes['id'].to_i}
-      assert_equal( res, res.sort )
+      assert_equal((1..12).to_a, res)
     end
 
     def ticket_61_fixture(doc, xpath)

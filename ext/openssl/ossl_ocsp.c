@@ -22,10 +22,6 @@
     TypedData_Get_Struct((obj), OCSP_REQUEST, &ossl_ocsp_request_type, (req)); \
     if(!(req)) ossl_raise(rb_eRuntimeError, "Request wasn't initialized!"); \
 } while (0)
-#define SafeGetOCSPReq(obj, req) do { \
-    OSSL_Check_Kind((obj), cOCSPReq); \
-    GetOCSPReq((obj), (req)); \
-} while (0)
 
 #define NewOCSPRes(klass) \
     TypedData_Wrap_Struct((klass), &ossl_ocsp_response_type, 0)
@@ -36,10 +32,6 @@
 #define GetOCSPRes(obj, res) do { \
     TypedData_Get_Struct((obj), OCSP_RESPONSE, &ossl_ocsp_response_type, (res)); \
     if(!(res)) ossl_raise(rb_eRuntimeError, "Response wasn't initialized!"); \
-} while (0)
-#define SafeGetOCSPRes(obj, res) do { \
-    OSSL_Check_Kind((obj), cOCSPRes); \
-    GetOCSPRes((obj), (res)); \
 } while (0)
 
 #define NewOCSPBasicRes(klass) \
@@ -52,10 +44,6 @@
     TypedData_Get_Struct((obj), OCSP_BASICRESP, &ossl_ocsp_basicresp_type, (res)); \
     if(!(res)) ossl_raise(rb_eRuntimeError, "Response wasn't initialized!"); \
 } while (0)
-#define SafeGetOCSPBasicRes(obj, res) do { \
-    OSSL_Check_Kind((obj), cOCSPBasicRes); \
-    GetOCSPBasicRes((obj), (res)); \
-} while (0)
 
 #define NewOCSPSingleRes(klass) \
     TypedData_Wrap_Struct((klass), &ossl_ocsp_singleresp_type, 0)
@@ -67,10 +55,6 @@
     TypedData_Get_Struct((obj), OCSP_SINGLERESP, &ossl_ocsp_singleresp_type, (res)); \
     if(!(res)) ossl_raise(rb_eRuntimeError, "SingleResponse wasn't initialized!"); \
 } while (0)
-#define SafeGetOCSPSingleRes(obj, res) do { \
-    OSSL_Check_Kind((obj), cOCSPSingleRes); \
-    GetOCSPSingleRes((obj), (res)); \
-} while (0)
 
 #define NewOCSPCertId(klass) \
     TypedData_Wrap_Struct((klass), &ossl_ocsp_certid_type, 0)
@@ -81,10 +65,6 @@
 #define GetOCSPCertId(obj, cid) do { \
     TypedData_Get_Struct((obj), OCSP_CERTID, &ossl_ocsp_certid_type, (cid)); \
     if(!(cid)) ossl_raise(rb_eRuntimeError, "Cert ID wasn't initialized!"); \
-} while (0)
-#define SafeGetOCSPCertId(obj, cid) do { \
-    OSSL_Check_Kind((obj), cOCSPCertId); \
-    GetOCSPCertId((obj), (cid)); \
 } while (0)
 
 VALUE mOCSP;
@@ -200,7 +180,7 @@ ossl_ocspreq_initialize_copy(VALUE self, VALUE other)
 
     rb_check_frozen(self);
     GetOCSPReq(self, req_old);
-    SafeGetOCSPReq(other, req);
+    GetOCSPReq(other, req);
 
     req_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_REQUEST), req);
     if (!req_new)
@@ -218,7 +198,7 @@ ossl_ocspreq_initialize_copy(VALUE self, VALUE other)
  *   OpenSSL::OCSP::Request.new(request_der) -> request
  *
  * Creates a new OpenSSL::OCSP::Request.  The request may be created empty or
- * from a +request_der+ string.
+ * from a _request_der_ string.
  */
 
 static VALUE
@@ -248,7 +228,7 @@ ossl_ocspreq_initialize(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *   request.add_nonce(nonce = nil) -> request
  *
- * Adds a +nonce+ to the OCSP request.  If no nonce is given a random one will
+ * Adds a _nonce_ to the OCSP request.  If no nonce is given a random one will
  * be generated.
  *
  * The nonce is used to prevent replay attacks but some servers do not support
@@ -281,7 +261,7 @@ ossl_ocspreq_add_nonce(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *   request.check_nonce(response) -> result
  *
- * Checks the nonce validity for this request and +response+.
+ * Checks the nonce validity for this request and _response_.
  *
  * The return value is one of the following:
  *
@@ -291,7 +271,7 @@ ossl_ocspreq_add_nonce(int argc, VALUE *argv, VALUE self)
  *  2 :: nonces both absent.
  *  3 :: nonce present in response only.
  *
- * For most responses, clients can check +result+ > 0.  If a responder doesn't
+ * For most responses, clients can check _result_ > 0.  If a responder doesn't
  * handle nonces <code>result.nonzero?</code> may be necessary.  A result of
  * <code>0</code> is always an error.
  */
@@ -304,7 +284,7 @@ ossl_ocspreq_check_nonce(VALUE self, VALUE basic_resp)
     int res;
 
     GetOCSPReq(self, req);
-    SafeGetOCSPBasicRes(basic_resp, bs);
+    GetOCSPBasicRes(basic_resp, bs);
     res = OCSP_check_nonce(req, bs);
 
     return INT2NUM(res);
@@ -314,7 +294,7 @@ ossl_ocspreq_check_nonce(VALUE self, VALUE basic_resp)
  * call-seq:
  *   request.add_certid(certificate_id) -> request
  *
- * Adds +certificate_id+ to the request.
+ * Adds _certificate_id_ to the request.
  */
 
 static VALUE
@@ -371,17 +351,17 @@ ossl_ocspreq_get_certid(VALUE self)
  * call-seq:
  *   request.sign(cert, key, certs = nil, flags = 0, digest = nil) -> self
  *
- * Signs this OCSP request using +cert+, +key+ and optional +digest+. If
- * +digest+ is not specified, SHA-1 is used. +certs+ is an optional Array of
+ * Signs this OCSP request using _cert_, _key_ and optional _digest_. If
+ * _digest_ is not specified, SHA-1 is used. _certs_ is an optional Array of
  * additional certificates which are included in the request in addition to
- * the signer certificate. Note that if +certs+ is nil or not given, flag
+ * the signer certificate. Note that if _certs_ is +nil+ or not given, flag
  * OpenSSL::OCSP::NOCERTS is enabled. Pass an empty array to include only the
  * signer certificate.
  *
- * +flags+ can be a bitwise OR of the following constants:
+ * _flags_ is a bitwise OR of the following constants:
  *
  * OpenSSL::OCSP::NOCERTS::
- *   Don't include any certificates in the request. +certs+ will be ignored.
+ *   Don't include any certificates in the request. _certs_ will be ignored.
  */
 static VALUE
 ossl_ocspreq_sign(int argc, VALUE *argv, VALUE self)
@@ -404,7 +384,7 @@ ossl_ocspreq_sign(int argc, VALUE *argv, VALUE self)
     if (NIL_P(digest))
 	md = EVP_sha1();
     else
-	md = GetDigestPtr(digest);
+	md = ossl_evp_get_digestbyname(digest);
     if (NIL_P(certs))
 	flg |= OCSP_NOCERTS;
     else
@@ -421,9 +401,12 @@ ossl_ocspreq_sign(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *   request.verify(certificates, store, flags = 0) -> true or false
  *
- * Verifies this request using the given +certificates+ and +store+.
- * +certificates+ is an array of OpenSSL::X509::Certificate, +store+ is an
+ * Verifies this request using the given _certificates_ and _store_.
+ * _certificates_ is an array of OpenSSL::X509::Certificate, _store_ is an
  * OpenSSL::X509::Store.
+ *
+ * Note that +false+ is returned if the request does not have a signature.
+ * Use #signed? to check whether the request is signed or not.
  */
 
 static VALUE
@@ -473,13 +456,29 @@ ossl_ocspreq_to_der(VALUE self)
 }
 
 /*
+ * call-seq:
+ *    request.signed? -> true or false
+ *
+ * Returns +true+ if the request is signed, +false+ otherwise. Note that the
+ * validity of the signature is *not* checked. Use #verify to verify that.
+ */
+static VALUE
+ossl_ocspreq_signed_p(VALUE self)
+{
+    OCSP_REQUEST *req;
+
+    GetOCSPReq(self, req);
+    return OCSP_request_is_signed(req) ? Qtrue : Qfalse;
+}
+
+/*
  * OCSP::Response
  */
 
 /* call-seq:
  *   OpenSSL::OCSP::Response.create(status, basic_response = nil) -> response
  *
- * Creates an OpenSSL::OCSP::Response from +status+ and +basic_response+.
+ * Creates an OpenSSL::OCSP::Response from _status_ and _basic_response_.
  */
 
 static VALUE
@@ -521,7 +520,7 @@ ossl_ocspres_initialize_copy(VALUE self, VALUE other)
 
     rb_check_frozen(self);
     GetOCSPRes(self, res_old);
-    SafeGetOCSPRes(other, res);
+    GetOCSPRes(other, res);
 
     res_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_RESPONSE), res);
     if (!res_new)
@@ -539,7 +538,7 @@ ossl_ocspres_initialize_copy(VALUE self, VALUE other)
  *   OpenSSL::OCSP::Response.new(response_der) -> response
  *
  * Creates a new OpenSSL::OCSP::Response.  The response may be created empty or
- * from a +response_der+ string.
+ * from a _response_der_ string.
  */
 
 static VALUE
@@ -677,7 +676,7 @@ ossl_ocspbres_initialize_copy(VALUE self, VALUE other)
 
     rb_check_frozen(self);
     GetOCSPBasicRes(self, bs_old);
-    SafeGetOCSPBasicRes(other, bs);
+    GetOCSPBasicRes(other, bs);
 
     bs_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_BASICRESP), bs);
     if (!bs_new)
@@ -693,7 +692,7 @@ ossl_ocspbres_initialize_copy(VALUE self, VALUE other)
  * call-seq:
  *   OpenSSL::OCSP::BasicResponse.new(der_string = nil) -> basic_response
  *
- * Creates a new BasicResponse. If +der_string+ is given, decodes +der_string+
+ * Creates a new BasicResponse. If _der_string_ is given, decodes _der_string_
  * as DER.
  */
 
@@ -724,7 +723,7 @@ ossl_ocspbres_initialize(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *   basic_response.copy_nonce(request) -> Integer
  *
- * Copies the nonce from +request+ into this response.  Returns 1 on success
+ * Copies the nonce from _request_ into this response.  Returns 1 on success
  * and 0 on failure.
  */
 
@@ -736,7 +735,7 @@ ossl_ocspbres_copy_nonce(VALUE self, VALUE request)
     int ret;
 
     GetOCSPBasicRes(self, bs);
-    SafeGetOCSPReq(request, req);
+    GetOCSPReq(request, req);
     ret = OCSP_copy_nonce(bs, req);
 
     return INT2NUM(ret);
@@ -746,7 +745,7 @@ ossl_ocspbres_copy_nonce(VALUE self, VALUE request)
  * call-seq:
  *   basic_response.add_nonce(nonce = nil)
  *
- * Adds +nonce+ to this response.  If no nonce was provided a random nonce
+ * Adds _nonce_ to this response.  If no nonce was provided a random nonce
  * will be added.
  */
 
@@ -792,26 +791,26 @@ add_status_convert_time(VALUE obj)
  * call-seq:
  *   basic_response.add_status(certificate_id, status, reason, revocation_time, this_update, next_update, extensions) -> basic_response
  *
- * Adds a certificate status for +certificate_id+. +status+ is the status, and
+ * Adds a certificate status for _certificate_id_. _status_ is the status, and
  * must be one of these:
  *
  * - OpenSSL::OCSP::V_CERTSTATUS_GOOD
  * - OpenSSL::OCSP::V_CERTSTATUS_REVOKED
  * - OpenSSL::OCSP::V_CERTSTATUS_UNKNOWN
  *
- * +reason+ and +revocation_time+ can be given only when +status+ is
- * OpenSSL::OCSP::V_CERTSTATUS_REVOKED. +reason+ describes the reason for the
+ * _reason_ and _revocation_time_ can be given only when _status_ is
+ * OpenSSL::OCSP::V_CERTSTATUS_REVOKED. _reason_ describes the reason for the
  * revocation, and must be one of OpenSSL::OCSP::REVOKED_STATUS_* constants.
- * +revocation_time+ is the time when the certificate is revoked.
+ * _revocation_time_ is the time when the certificate is revoked.
  *
- * +this_update+ and +next_update+ indicate the time at which ths status is
+ * _this_update_ and _next_update_ indicate the time at which ths status is
  * verified to be correct and the time at or before which newer information
- * will be available, respectively. +next_update+ is optional.
+ * will be available, respectively. _next_update_ is optional.
  *
- * +extensions+ is an Array of OpenSSL::X509::Extension to be included in the
+ * _extensions_ is an Array of OpenSSL::X509::Extension to be included in the
  * SingleResponse. This is also optional.
  *
- * Note that the times, +revocation_time+, +this_update+ and +next_update+
+ * Note that the times, _revocation_time_, _this_update_ and _next_update_
  * can be specified in either of Integer or Time object. If they are Integer, it
  * is treated as the relative seconds from the current time.
  */
@@ -829,7 +828,7 @@ ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
     VALUE tmp;
 
     GetOCSPBasicRes(self, bs);
-    SafeGetOCSPCertId(cid, id);
+    GetOCSPCertId(cid, id);
     st = NUM2INT(status);
     if (!NIL_P(ext)) { /* All ext's members must be X509::Extension */
 	ext = rb_check_array_type(ext);
@@ -888,7 +887,7 @@ ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
  * Returns an Array of statuses for this response.  Each status contains a
  * CertificateId, the status (0 for good, 1 for revoked, 2 for unknown), the
  * reason for the status, the revocation time, the time of this update, the time
- * for the next update and a list of OpenSSL::X509::Extensions.
+ * for the next update and a list of OpenSSL::X509::Extension.
  *
  * This should be superseded by BasicResponse#responses and #find_response that
  * return SingleResponse.
@@ -977,7 +976,7 @@ ossl_ocspbres_get_responses(VALUE self)
  * call-seq:
  *   basic_response.find_response(certificate_id) -> SingleResponse | nil
  *
- * Returns a SingleResponse whose CertId matches with +certificate_id+, or nil
+ * Returns a SingleResponse whose CertId matches with _certificate_id_, or +nil+
  * if this BasicResponse does not contain it.
  */
 static VALUE
@@ -988,7 +987,7 @@ ossl_ocspbres_find_response(VALUE self, VALUE target)
     OCSP_CERTID *id;
     int n;
 
-    SafeGetOCSPCertId(target, id);
+    GetOCSPCertId(target, id);
     GetOCSPBasicRes(self, bs);
 
     if ((n = OCSP_resp_find(bs, id, -1)) == -1)
@@ -1006,10 +1005,10 @@ ossl_ocspbres_find_response(VALUE self, VALUE target)
  * call-seq:
  *   basic_response.sign(cert, key, certs = nil, flags = 0, digest = nil) -> self
  *
- * Signs this OCSP response using the +cert+, +key+ and optional +digest+. This
+ * Signs this OCSP response using the _cert_, _key_ and optional _digest_. This
  * behaves in the similar way as OpenSSL::OCSP::Request#sign.
  *
- * +flags+ can include:
+ * _flags_ can include:
  * OpenSSL::OCSP::NOCERTS::    don't include certificates
  * OpenSSL::OCSP::NOTIME::     don't set producedAt
  * OpenSSL::OCSP::RESPID_KEY:: use signer's public key hash as responderID
@@ -1036,7 +1035,7 @@ ossl_ocspbres_sign(int argc, VALUE *argv, VALUE self)
     if (NIL_P(digest))
 	md = EVP_sha1();
     else
-	md = GetDigestPtr(digest);
+	md = ossl_evp_get_digestbyname(digest);
     if (NIL_P(certs))
 	flg |= OCSP_NOCERTS;
     else
@@ -1053,8 +1052,8 @@ ossl_ocspbres_sign(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *   basic_response.verify(certificates, store, flags = 0) -> true or false
  *
- * Verifies the signature of the response using the given +certificates+ and
- * +store+. This works in the similar way as OpenSSL::OCSP::Request#verify.
+ * Verifies the signature of the response using the given _certificates_ and
+ * _store_. This works in the similar way as OpenSSL::OCSP::Request#verify.
  */
 static VALUE
 ossl_ocspbres_verify(int argc, VALUE *argv, VALUE self)
@@ -1184,7 +1183,7 @@ ossl_ocspsres_alloc(VALUE klass)
  * call-seq:
  *   OpenSSL::OCSP::SingleResponse.new(der_string) -> SingleResponse
  *
- * Creates a new SingleResponse from +der_string+.
+ * Creates a new SingleResponse from _der_string_.
  */
 static VALUE
 ossl_ocspsres_initialize(VALUE self, VALUE arg)
@@ -1213,7 +1212,7 @@ ossl_ocspsres_initialize_copy(VALUE self, VALUE other)
 
     rb_check_frozen(self);
     GetOCSPSingleRes(self, sres_old);
-    SafeGetOCSPSingleRes(other, sres);
+    GetOCSPSingleRes(other, sres);
 
     sres_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_SINGLERESP), sres);
     if (!sres_new)
@@ -1235,10 +1234,10 @@ ossl_ocspsres_initialize_copy(VALUE self, VALUE other)
  *
  * It is possible that the OCSP request takes a few seconds or the time is not
  * accurate. To avoid rejecting a valid response, this method allows the times
- * to be within +nsec+ of the current time.
+ * to be within _nsec_ seconds of the current time.
  *
  * Some responders don't set the nextUpdate field. This may cause a very old
- * response to be considered valid. The +maxsec+ parameter can be used to limit
+ * response to be considered valid. The _maxsec_ parameter can be used to limit
  * the age of responses.
  */
 static VALUE
@@ -1329,8 +1328,10 @@ ossl_ocspsres_get_this_update(VALUE self)
     status = OCSP_single_get0_status(sres, NULL, NULL, &time, NULL);
     if (status < 0)
 	ossl_raise(eOCSPError, "OCSP_single_get0_status");
+    if (!time)
+	return Qnil;
 
-    return asn1time_to_time(time); /* will handle NULL */
+    return asn1time_to_time(time);
 }
 
 /*
@@ -1348,6 +1349,8 @@ ossl_ocspsres_get_next_update(VALUE self)
     status = OCSP_single_get0_status(sres, NULL, NULL, NULL, &time);
     if (status < 0)
 	ossl_raise(eOCSPError, "OCSP_single_get0_status");
+    if (!time)
+	return Qnil;
 
     return asn1time_to_time(time);
 }
@@ -1369,6 +1372,8 @@ ossl_ocspsres_get_revocation_time(VALUE self)
 	ossl_raise(eOCSPError, "OCSP_single_get0_status");
     if (status != V_OCSP_CERTSTATUS_REVOKED)
 	ossl_raise(eOCSPError, "certificate is not revoked");
+    if (!time)
+	return Qnil;
 
     return asn1time_to_time(time);
 }
@@ -1468,7 +1473,7 @@ ossl_ocspcid_initialize_copy(VALUE self, VALUE other)
 
     rb_check_frozen(self);
     GetOCSPCertId(self, cid_old);
-    SafeGetOCSPCertId(other, cid);
+    GetOCSPCertId(other, cid);
 
     cid_new = OCSP_CERTID_dup(cid);
     if (!cid_new)
@@ -1485,14 +1490,13 @@ ossl_ocspcid_initialize_copy(VALUE self, VALUE other)
  *   OpenSSL::OCSP::CertificateId.new(subject, issuer, digest = nil) -> certificate_id
  *   OpenSSL::OCSP::CertificateId.new(der_string)                    -> certificate_id
  *
- * Creates a new OpenSSL::OCSP::CertificateId for the given +subject+ and
- * +issuer+ X509 certificates.  The +digest+ is used to compute the
- * certificate ID and must be an OpenSSL::Digest instance.
+ * Creates a new OpenSSL::OCSP::CertificateId for the given _subject_ and
+ * _issuer_ X509 certificates.  The _digest_ is a digest algorithm that is used
+ * to compute the hash values. This defaults to SHA-1.
  *
  * If only one argument is given, decodes it as DER representation of a
  * certificate ID.
  */
-
 static VALUE
 ossl_ocspcid_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -1517,7 +1521,7 @@ ossl_ocspcid_initialize(int argc, VALUE *argv, VALUE self)
 
 	x509s = GetX509CertPtr(subject); /* NO NEED TO DUP */
 	x509i = GetX509CertPtr(issuer); /* NO NEED TO DUP */
-	md = !NIL_P(digest) ? GetDigestPtr(digest) : NULL;
+	md = !NIL_P(digest) ? ossl_evp_get_digestbyname(digest) : NULL;
 
 	newid = OCSP_cert_to_id(md, x509s, x509i);
 	if (!newid)
@@ -1534,7 +1538,7 @@ ossl_ocspcid_initialize(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *   certificate_id.cmp(other) -> true or false
  *
- * Compares this certificate id with +other+ and returns true if they are the
+ * Compares this certificate id with _other_ and returns +true+ if they are the
  * same.
  */
 static VALUE
@@ -1544,7 +1548,7 @@ ossl_ocspcid_cmp(VALUE self, VALUE other)
     int result;
 
     GetOCSPCertId(self, id);
-    SafeGetOCSPCertId(other, id2);
+    GetOCSPCertId(other, id2);
     result = OCSP_id_cmp(id, id2);
 
     return (result == 0) ? Qtrue : Qfalse;
@@ -1554,7 +1558,7 @@ ossl_ocspcid_cmp(VALUE self, VALUE other)
  * call-seq:
  *   certificate_id.cmp_issuer(other) -> true or false
  *
- * Compares this certificate id's issuer with +other+ and returns true if
+ * Compares this certificate id's issuer with _other_ and returns +true+ if
  * they are the same.
  */
 
@@ -1565,7 +1569,7 @@ ossl_ocspcid_cmp_issuer(VALUE self, VALUE other)
     int result;
 
     GetOCSPCertId(self, id);
-    SafeGetOCSPCertId(other, id2);
+    GetOCSPCertId(other, id2);
     result = OCSP_id_issuer_cmp(id, id2);
 
     return (result == 0) ? Qtrue : Qfalse;
@@ -1824,12 +1828,13 @@ Init_ossl_ocsp(void)
 
     cOCSPReq = rb_define_class_under(mOCSP, "Request", rb_cObject);
     rb_define_alloc_func(cOCSPReq, ossl_ocspreq_alloc);
-    rb_define_copy_func(cOCSPReq, ossl_ocspreq_initialize_copy);
+    rb_define_method(cOCSPReq, "initialize_copy", ossl_ocspreq_initialize_copy, 1);
     rb_define_method(cOCSPReq, "initialize", ossl_ocspreq_initialize, -1);
     rb_define_method(cOCSPReq, "add_nonce", ossl_ocspreq_add_nonce, -1);
     rb_define_method(cOCSPReq, "check_nonce", ossl_ocspreq_check_nonce, 1);
     rb_define_method(cOCSPReq, "add_certid", ossl_ocspreq_add_certid, 1);
     rb_define_method(cOCSPReq, "certid", ossl_ocspreq_get_certid, 0);
+    rb_define_method(cOCSPReq, "signed?", ossl_ocspreq_signed_p, 0);
     rb_define_method(cOCSPReq, "sign", ossl_ocspreq_sign, -1);
     rb_define_method(cOCSPReq, "verify", ossl_ocspreq_verify, -1);
     rb_define_method(cOCSPReq, "to_der", ossl_ocspreq_to_der, 0);
@@ -1842,7 +1847,7 @@ Init_ossl_ocsp(void)
     cOCSPRes = rb_define_class_under(mOCSP, "Response", rb_cObject);
     rb_define_singleton_method(cOCSPRes, "create", ossl_ocspres_s_create, 2);
     rb_define_alloc_func(cOCSPRes, ossl_ocspres_alloc);
-    rb_define_copy_func(cOCSPRes, ossl_ocspres_initialize_copy);
+    rb_define_method(cOCSPRes, "initialize_copy", ossl_ocspres_initialize_copy, 1);
     rb_define_method(cOCSPRes, "initialize", ossl_ocspres_initialize, -1);
     rb_define_method(cOCSPRes, "status", ossl_ocspres_status, 0);
     rb_define_method(cOCSPRes, "status_string", ossl_ocspres_status_string, 0);
@@ -1857,7 +1862,7 @@ Init_ossl_ocsp(void)
 
     cOCSPBasicRes = rb_define_class_under(mOCSP, "BasicResponse", rb_cObject);
     rb_define_alloc_func(cOCSPBasicRes, ossl_ocspbres_alloc);
-    rb_define_copy_func(cOCSPBasicRes, ossl_ocspbres_initialize_copy);
+    rb_define_method(cOCSPBasicRes, "initialize_copy", ossl_ocspbres_initialize_copy, 1);
     rb_define_method(cOCSPBasicRes, "initialize", ossl_ocspbres_initialize, -1);
     rb_define_method(cOCSPBasicRes, "copy_nonce", ossl_ocspbres_copy_nonce, 1);
     rb_define_method(cOCSPBasicRes, "add_nonce", ossl_ocspbres_add_nonce, -1);
@@ -1876,7 +1881,7 @@ Init_ossl_ocsp(void)
      */
     cOCSPSingleRes = rb_define_class_under(mOCSP, "SingleResponse", rb_cObject);
     rb_define_alloc_func(cOCSPSingleRes, ossl_ocspsres_alloc);
-    rb_define_copy_func(cOCSPSingleRes, ossl_ocspsres_initialize_copy);
+    rb_define_method(cOCSPSingleRes, "initialize_copy", ossl_ocspsres_initialize_copy, 1);
     rb_define_method(cOCSPSingleRes, "initialize", ossl_ocspsres_initialize, 1);
     rb_define_method(cOCSPSingleRes, "check_validity", ossl_ocspsres_check_validity, -1);
     rb_define_method(cOCSPSingleRes, "certid", ossl_ocspsres_get_certid, 0);
@@ -1895,7 +1900,7 @@ Init_ossl_ocsp(void)
 
     cOCSPCertId = rb_define_class_under(mOCSP, "CertificateId", rb_cObject);
     rb_define_alloc_func(cOCSPCertId, ossl_ocspcid_alloc);
-    rb_define_copy_func(cOCSPCertId, ossl_ocspcid_initialize_copy);
+    rb_define_method(cOCSPCertId, "initialize_copy", ossl_ocspcid_initialize_copy, 1);
     rb_define_method(cOCSPCertId, "initialize", ossl_ocspcid_initialize, -1);
     rb_define_method(cOCSPCertId, "cmp", ossl_ocspcid_cmp, 1);
     rb_define_method(cOCSPCertId, "cmp_issuer", ossl_ocspcid_cmp_issuer, 1);

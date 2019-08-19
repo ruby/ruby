@@ -2,8 +2,8 @@
 require "forwardable"
 require "open-uri"
 
-require "rss/rss"
-require "rss/xml"
+require_relative "rss"
+require_relative "xml"
 
 module RSS
 
@@ -72,12 +72,30 @@ module RSS
         end
       end
 
-      def parse(rss, do_validate=true, ignore_unknown_element=true,
-                parser_class=default_parser)
+      def parse(rss, *args)
+        if args.last.is_a?(Hash)
+          options = args.pop
+        else
+          options = {}
+        end
+        do_validate = boolean_argument(args[0], options[:validate], true)
+        ignore_unknown_element =
+          boolean_argument(args[1], options[:ignore_unknown_element], true)
+        parser_class = args[2] || options[:parser_class] || default_parser
         parser = new(rss, parser_class)
         parser.do_validate = do_validate
         parser.ignore_unknown_element = ignore_unknown_element
         parser.parse
+      end
+
+      private
+      def boolean_argument(positioned_value, option_value, default)
+        value = positioned_value
+        if value.nil? and not option_value.nil?
+          value = option_value
+        end
+        value = default if value.nil?
+        value
       end
     end
 

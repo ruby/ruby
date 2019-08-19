@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # A PO entry in PO
 
@@ -40,11 +40,11 @@ class RDoc::Generator::POT::POEntry
 
   def to_s
     entry = ''
-    entry << format_translator_comment
-    entry << format_extracted_comment
-    entry << format_references
-    entry << format_flags
-    entry << <<-ENTRY
+    entry += format_translator_comment
+    entry += format_extracted_comment
+    entry += format_references
+    entry += format_flags
+    entry += <<-ENTRY
 msgid #{format_message(@msgid)}
 msgstr #{format_message(@msgstr)}
     ENTRY
@@ -75,9 +75,9 @@ msgstr #{format_message(@msgstr)}
 
     formatted_comment = ''
     comment.each_line do |line|
-      formatted_comment << "#{mark} #{line}"
+      formatted_comment += "#{mark} #{line}"
     end
-    formatted_comment << "\n" unless formatted_comment.end_with?("\n")
+    formatted_comment += "\n" unless formatted_comment.end_with?("\n")
     formatted_comment
   end
 
@@ -94,7 +94,7 @@ msgstr #{format_message(@msgstr)}
 
     formatted_references = ''
     @references.sort.each do |file, line|
-      formatted_references << "\#: #{file}:#{line}\n"
+      formatted_references += "\#: #{file}:#{line}\n"
     end
     formatted_references
   end
@@ -111,8 +111,8 @@ msgstr #{format_message(@msgstr)}
 
     formatted_message = '""'
     message.each_line do |line|
-      formatted_message << "\n"
-      formatted_message << "\"#{escape(line)}\""
+      formatted_message += "\n"
+      formatted_message += "\"#{escape(line)}\""
     end
     formatted_message
   end

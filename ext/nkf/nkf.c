@@ -137,8 +137,7 @@ rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
 {
     VALUE tmp;
     reinit();
-    StringValue(opt);
-    nkf_split_options(RSTRING_PTR(opt));
+    nkf_split_options(StringValueCStr(opt));
     if (!output_encoding) rb_raise(rb_eArgError, "no output encoding given");
 
     switch (nkf_enc_to_index(output_encoding)) {
@@ -153,8 +152,7 @@ rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
     incsize = INCSIZE;
 
     input_ctr = 0;
-    StringValue(src);
-    input = (unsigned char *)RSTRING_PTR(src);
+    input = (unsigned char *)StringValuePtr(src);
     i_len = RSTRING_LENINT(src);
     tmp = rb_str_new(0, i_len*3 + 10);
 
@@ -195,8 +193,7 @@ rb_nkf_guess(VALUE obj, VALUE src)
     reinit();
 
     input_ctr = 0;
-    StringValue(src);
-    input = (unsigned char *)RSTRING_PTR(src);
+    input = (unsigned char *)StringValuePtr(src);
     i_len = RSTRING_LENINT(src);
 
     guess_f = TRUE;

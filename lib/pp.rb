@@ -2,35 +2,8 @@
 
 require 'prettyprint'
 
-module Kernel
-  # Returns a pretty printed object as a string.
-  #
-  # In order to use this method you must first require the PP module:
-  #
-  #   require 'pp'
-  #
-  # See the PP module for more information.
-  def pretty_inspect
-    PP.pp(self, ''.dup)
-  end
-
-  # prints arguments in pretty form.
-  #
-  # pp returns argument(s).
-  def pp(*objs)
-    objs.each {|obj|
-      PP.pp(obj)
-    }
-    objs.size <= 1 ? objs.first : objs
-  end
-  module_function :pp
-end
-
 ##
 # A pretty-printer for Ruby objects.
-#
-# All examples assume you have loaded the PP class with:
-#   require 'pp'
 #
 ##
 # == What PP Does
@@ -413,7 +386,7 @@ class Range # :nodoc:
     q.breakable ''
     q.text(self.exclude_end? ? '...' : '..')
     q.breakable ''
-    q.pp self.end
+    q.pp self.end if self.end
   end
 end
 
@@ -541,6 +514,40 @@ class MatchData # :nodoc:
   end
 end
 
+class RubyVM::AbstractSyntaxTree::Node
+  def pretty_print_children(q, names = [])
+    children.zip(names) do |c, n|
+      if n
+        q.breakable
+        q.text "#{n}:"
+      end
+      q.group(2) do
+        q.breakable
+        q.pp c
+      end
+    end
+  end
+
+  def pretty_print(q)
+    q.group(1, "(#{type}@#{first_lineno}:#{first_column}-#{last_lineno}:#{last_column}", ")") {
+      case type
+      when :SCOPE
+        pretty_print_children(q, %w"tbl args body")
+      when :ARGS
+        pretty_print_children(q, %w[pre_num pre_init opt first_post post_num post_init rest kw kwrest block])
+      when :DEFN
+        pretty_print_children(q, %w[mid body])
+      when :ARYPTN
+        pretty_print_children(q, %w[const pre rest post])
+      when :HSHPTN
+        pretty_print_children(q, %w[const kw kwrest])
+      else
+        pretty_print_children(q)
+      end
+    }
+  end
+end
+
 class Object < BasicObject # :nodoc:
   include PP::ObjectMixin
 end
@@ -560,3 +567,27 @@ end
     end
   }
 }
+
+module Kernel
+  # Returns a pretty printed object as a string.
+  #
+  # In order to use this method you must first require the PP module:
+  #
+  #   require 'pp'
+  #
+  # See the PP module for more information.
+  def pretty_inspect
+    PP.pp(self, ''.dup)
+  end
+
+  # prints arguments in pretty form.
+  #
+  # pp returns argument(s).
+  def pp(*objs)
+    objs.each {|obj|
+      PP.pp(obj)
+    }
+    objs.size <= 1 ? objs.first : objs
+  end
+  module_function :pp
+end

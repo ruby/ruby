@@ -422,9 +422,39 @@ EOS
 
     res = Net::HTTPResponse.read_new(io)
     assert_equal(nil, res.message)
-    assert_raise Net::HTTPServerException do
+    assert_raise Net::HTTPClientException do
       res.error!
     end
+  end
+
+  def test_read_code_type
+    res = Net::HTTPUnknownResponse.new('1.0', '???', 'test response')
+    assert_equal Net::HTTPUnknownResponse, res.code_type
+
+    res = Net::HTTPInformation.new('1.0', '1xx', 'test response')
+    assert_equal Net::HTTPInformation, res.code_type
+
+    res = Net::HTTPSuccess.new('1.0', '2xx', 'test response')
+    assert_equal Net::HTTPSuccess, res.code_type
+
+    res = Net::HTTPRedirection.new('1.0', '3xx', 'test response')
+    assert_equal Net::HTTPRedirection, res.code_type
+
+    res = Net::HTTPClientError.new('1.0', '4xx', 'test response')
+    assert_equal Net::HTTPClientError, res.code_type
+
+    res = Net::HTTPServerError.new('1.0', '5xx', 'test response')
+    assert_equal Net::HTTPServerError, res.code_type
+  end
+
+  def test_inspect_response
+    res = Net::HTTPUnknownResponse.new('1.0', '???', 'test response')
+    assert_equal '#<Net::HTTPUnknownResponse ??? test response readbody=false>', res.inspect
+
+    res = Net::HTTPUnknownResponse.new('1.0', '???', 'test response')
+    socket = Net::BufferedIO.new(StringIO.new('test body'))
+    res.reading_body(socket, true) {}
+    assert_equal '#<Net::HTTPUnknownResponse ??? test response readbody=true>', res.inspect
   end
 
 private

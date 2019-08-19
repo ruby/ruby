@@ -1,61 +1,28 @@
 # frozen_string_literal: false
-begin
-  require "readline"
-=begin
-  class << Readline::HISTORY
-    def []=(index, str)
-      raise NotImplementedError
-    end
+require_relative "helper"
+require "test/unit"
 
-    def pop
-      raise NotImplementedError
-    end
-
-    def shift
-      raise NotImplementedError
-    end
-
-    def delete_at(index)
-      raise NotImplementedError
-    end
-  end
-=end
-
-=begin
-  class << Readline::HISTORY
-    def clear
-      raise NotImplementedError
-    end
-  end
-=end
-rescue LoadError
-else
-  require "test/unit"
-end
-
-class Readline::TestHistory < Test::Unit::TestCase
-  include Readline
-
+module BasetestReadlineHistory
   def setup
-    HISTORY.clear
+    Readline::HISTORY.clear
   end
 
   def test_to_s
     expected = "HISTORY"
-    assert_equal(expected, HISTORY.to_s)
+    assert_equal(expected, Readline::HISTORY.to_s)
   end
 
   def test_get
     lines = push_history(5)
     lines.each_with_index do |s, i|
-      assert_external_string_equal(s, HISTORY[i])
+      assert_external_string_equal(s, Readline::HISTORY[i])
     end
   end
 
   def test_get__negative
     lines = push_history(5)
     (1..5).each do |i|
-      assert_equal(lines[-i], HISTORY[-i])
+      assert_equal(lines[-i], Readline::HISTORY[-i])
     end
   end
 
@@ -64,7 +31,7 @@ class Readline::TestHistory < Test::Unit::TestCase
     invalid_indexes = [5, 6, 100, -6, -7, -100]
     invalid_indexes.each do |i|
       assert_raise(IndexError, "i=<#{i}>") do
-        HISTORY[i]
+        Readline::HISTORY[i]
       end
     end
 
@@ -72,7 +39,7 @@ class Readline::TestHistory < Test::Unit::TestCase
                        -100_000_000_000_000_000_000]
     invalid_indexes.each do |i|
       assert_raise(RangeError, "i=<#{i}>") do
-        HISTORY[i]
+        Readline::HISTORY[i]
       end
     end
   end
@@ -82,8 +49,8 @@ class Readline::TestHistory < Test::Unit::TestCase
       push_history(5)
       5.times do |i|
         expected = "set: #{i}"
-        HISTORY[i] = expected
-        assert_external_string_equal(expected, HISTORY[i])
+        Readline::HISTORY[i] = expected
+        assert_external_string_equal(expected, Readline::HISTORY[i])
       end
     rescue NotImplementedError
     end
@@ -91,14 +58,14 @@ class Readline::TestHistory < Test::Unit::TestCase
 
   def test_set__out_of_range
     assert_raise(IndexError, NotImplementedError, "index=<0>") do
-      HISTORY[0] = "set: 0"
+      Readline::HISTORY[0] = "set: 0"
     end
 
     push_history(5)
     invalid_indexes = [5, 6, 100, -6, -7, -100]
     invalid_indexes.each do |i|
       assert_raise(IndexError, NotImplementedError, "index=<#{i}>") do
-        HISTORY[i] = "set: #{i}"
+        Readline::HISTORY[i] = "set: #{i}"
       end
     end
 
@@ -106,7 +73,7 @@ class Readline::TestHistory < Test::Unit::TestCase
                        -100_000_000_000_000_000_000]
     invalid_indexes.each do |i|
       assert_raise(RangeError, NotImplementedError, "index=<#{i}>") do
-        HISTORY[i] = "set: #{i}"
+        Readline::HISTORY[i] = "set: #{i}"
       end
     end
   end
@@ -114,102 +81,102 @@ class Readline::TestHistory < Test::Unit::TestCase
   def test_push
     5.times do |i|
       s = i.to_s
-      assert_equal(HISTORY, HISTORY.push(s))
-      assert_external_string_equal(s, HISTORY[i])
+      assert_equal(Readline::HISTORY, Readline::HISTORY.push(s))
+      assert_external_string_equal(s, Readline::HISTORY[i])
     end
-    assert_equal(5, HISTORY.length)
+    assert_equal(5, Readline::HISTORY.length)
   end
 
   def test_push__operator
     5.times do |i|
       s = i.to_s
-      assert_equal(HISTORY, HISTORY << s)
-      assert_external_string_equal(s, HISTORY[i])
+      assert_equal(Readline::HISTORY, Readline::HISTORY << s)
+      assert_external_string_equal(s, Readline::HISTORY[i])
     end
-    assert_equal(5, HISTORY.length)
+    assert_equal(5, Readline::HISTORY.length)
   end
 
   def test_push__plural
-    assert_equal(HISTORY, HISTORY.push("0", "1", "2", "3", "4"))
+    assert_equal(Readline::HISTORY, Readline::HISTORY.push("0", "1", "2", "3", "4"))
     (0..4).each do |i|
-      assert_external_string_equal(i.to_s, HISTORY[i])
+      assert_external_string_equal(i.to_s, Readline::HISTORY[i])
     end
-    assert_equal(5, HISTORY.length)
+    assert_equal(5, Readline::HISTORY.length)
 
-    assert_equal(HISTORY, HISTORY.push("5", "6", "7", "8", "9"))
+    assert_equal(Readline::HISTORY, Readline::HISTORY.push("5", "6", "7", "8", "9"))
     (5..9).each do |i|
-      assert_external_string_equal(i.to_s, HISTORY[i])
+      assert_external_string_equal(i.to_s, Readline::HISTORY[i])
     end
-    assert_equal(10, HISTORY.length)
+    assert_equal(10, Readline::HISTORY.length)
   end
 
   def test_pop
     begin
-      assert_equal(nil, HISTORY.pop)
+      assert_equal(nil, Readline::HISTORY.pop)
 
       lines = push_history(5)
       (1..5).each do |i|
-        assert_external_string_equal(lines[-i], HISTORY.pop)
-        assert_equal(lines.length - i, HISTORY.length)
+        assert_external_string_equal(lines[-i], Readline::HISTORY.pop)
+        assert_equal(lines.length - i, Readline::HISTORY.length)
       end
 
-      assert_equal(nil, HISTORY.pop)
+      assert_equal(nil, Readline::HISTORY.pop)
     rescue NotImplementedError
     end
   end
 
   def test_shift
     begin
-      assert_equal(nil, HISTORY.shift)
+      assert_equal(nil, Readline::HISTORY.shift)
 
       lines = push_history(5)
       (0..4).each do |i|
-        assert_external_string_equal(lines[i], HISTORY.shift)
-        assert_equal(lines.length - (i + 1), HISTORY.length)
+        assert_external_string_equal(lines[i], Readline::HISTORY.shift)
+        assert_equal(lines.length - (i + 1), Readline::HISTORY.length)
       end
 
-      assert_equal(nil, HISTORY.shift)
+      assert_equal(nil, Readline::HISTORY.shift)
     rescue NotImplementedError
     end
   end
 
   def test_each
-    e = HISTORY.each do |s|
+    e = Readline::HISTORY.each do |s|
       assert(false) # not reachable
     end
-    assert_equal(HISTORY, e)
+    assert_equal(Readline::HISTORY, e)
     lines = push_history(5)
     i = 0
-    e = HISTORY.each do |s|
-      assert_external_string_equal(HISTORY[i], s)
+    e = Readline::HISTORY.each do |s|
+      assert_external_string_equal(Readline::HISTORY[i], s)
       assert_external_string_equal(lines[i], s)
       i += 1
     end
-    assert_equal(HISTORY, e)
+    assert_equal(Readline::HISTORY, e)
   end
 
   def test_each__enumerator
-    e = HISTORY.each
+    e = Readline::HISTORY.each
     assert_instance_of(Enumerator, e)
   end
 
   def test_length
-    assert_equal(0, HISTORY.length)
+    assert_equal(0, Readline::HISTORY.length)
     push_history(1)
-    assert_equal(1, HISTORY.length)
+    assert_equal(1, Readline::HISTORY.length)
     push_history(4)
-    assert_equal(5, HISTORY.length)
-    HISTORY.clear
-    assert_equal(0, HISTORY.length)
+    assert_equal(5, Readline::HISTORY.length)
+    Readline::HISTORY.clear
+    assert_equal(0, Readline::HISTORY.length)
   end
 
   def test_empty_p
     2.times do
-      assert(HISTORY.empty?)
-      HISTORY.push("s")
-      assert_equal(false, HISTORY.empty?)
-      HISTORY.clear
-      assert(HISTORY.empty?)
+      assert(Readline::HISTORY.empty?)
+      Readline::HISTORY.push("s")
+      assert_equal(false, Readline::HISTORY.empty?)
+      Readline::HISTORY.clear
+      assert(Readline::HISTORY.empty?)
     end
   end
 
@@ -217,37 +184,37 @@ class Readline::TestHistory < Test::Unit::TestCase
     begin
       lines = push_history(5)
       (0..4).each do |i|
-        assert_external_string_equal(lines[i], HISTORY.delete_at(0))
+        assert_external_string_equal(lines[i], Readline::HISTORY.delete_at(0))
       end
-      assert(HISTORY.empty?)
+      assert(Readline::HISTORY.empty?)
 
       lines = push_history(5)
       (1..5).each do |i|
-        assert_external_string_equal(lines[lines.length - i], HISTORY.delete_at(-1))
+        assert_external_string_equal(lines[lines.length - i], Readline::HISTORY.delete_at(-1))
       end
-      assert(HISTORY.empty?)
+      assert(Readline::HISTORY.empty?)
 
       lines = push_history(5)
-      assert_external_string_equal(lines[0], HISTORY.delete_at(0))
-      assert_external_string_equal(lines[4], HISTORY.delete_at(3))
-      assert_external_string_equal(lines[1], HISTORY.delete_at(0))
-      assert_external_string_equal(lines[3], HISTORY.delete_at(1))
-      assert_external_string_equal(lines[2], HISTORY.delete_at(0))
-      assert(HISTORY.empty?)
+      assert_external_string_equal(lines[0], Readline::HISTORY.delete_at(0))
+      assert_external_string_equal(lines[4], Readline::HISTORY.delete_at(3))
+      assert_external_string_equal(lines[1], Readline::HISTORY.delete_at(0))
+      assert_external_string_equal(lines[3], Readline::HISTORY.delete_at(1))
+      assert_external_string_equal(lines[2], Readline::HISTORY.delete_at(0))
+      assert(Readline::HISTORY.empty?)
     rescue NotImplementedError
     end
   end
 
   def test_delete_at__out_of_range
     assert_raise(IndexError, NotImplementedError, "index=<0>") do
-      HISTORY.delete_at(0)
+      Readline::HISTORY.delete_at(0)
     end
 
     push_history(5)
     invalid_indexes = [5, 6, 100, -6, -7, -100]
     invalid_indexes.each do |i|
       assert_raise(IndexError, NotImplementedError, "index=<#{i}>") do
-        HISTORY.delete_at(i)
+        Readline::HISTORY.delete_at(i)
       end
     end
 
@@ -255,7 +222,7 @@ class Readline::TestHistory < Test::Unit::TestCase
                        -100_000_000_000_000_000_000]
     invalid_indexes.each do |i|
       assert_raise(RangeError, NotImplementedError, "index=<#{i}>") do
-        HISTORY.delete_at(i)
+        Readline::HISTORY.delete_at(i)
       end
     end
   end
@@ -271,7 +238,7 @@ class Readline::TestHistory < Test::Unit::TestCase
       end
       lines.push("#{i + 1}:#{s}")
     end
-    HISTORY.push(*lines)
+    Readline::HISTORY.push(*lines)
     return lines
   end
 
@@ -283,11 +250,29 @@ class Readline::TestHistory < Test::Unit::TestCase
   def get_default_internal_encoding
     return Encoding.default_internal || Encoding.find("locale")
   end
-end if defined?(::Readline) && defined?(::Readline::HISTORY) &&
+end
+
+class TestReadlineHistory < Test::Unit::TestCase
+  include BasetestReadlineHistory
+
+  def setup
+    use_ext_readline
+    super
+  end
+end if defined?(::ReadlineSo) && defined?(::ReadlineSo::HISTORY) &&
   (
    begin
-     Readline::HISTORY.clear
+     ReadlineSo::HISTORY.clear
    rescue NotImplementedError
      false
    end
    )
+
+class TestRelineAsReadlineHistory < Test::Unit::TestCase
+  include BasetestReadlineHistory
+
+  def setup
+    use_lib_reline
+    super
+  end
+end

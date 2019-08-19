@@ -2,6 +2,7 @@
 
 require 'test/unit'
 require 'open3'
+require_relative 'lib/jit_support'
 
 class TestOpen3 < Test::Unit::TestCase
   RUBY = EnvUtil.rubybin
@@ -54,9 +55,9 @@ class TestOpen3 < Test::Unit::TestCase
     i.close
     assert_equal("baz", o.read)
   ensure
-    i.close if !i.closed?
-    o.close if !o.closed?
-    e.close if !e.closed?
+    i.close
+    o.close
+    e.close
     t.join
   end
 
@@ -76,7 +77,7 @@ class TestOpen3 < Test::Unit::TestCase
   end
 
   def test_env
-    result = Open3.popen3({'A' => 'B', 'C' => 'D'}, RUBY, '-e' 'p ENV["A"]') do |i, out, err, thr|
+    Open3.popen3({'A' => 'B', 'C' => 'D'}, RUBY, '-e' 'p ENV["A"]') do |i, out, err, thr|
       output = out.read
       assert_equal("\"B\"\n", output)
     end
@@ -103,8 +104,8 @@ class TestOpen3 < Test::Unit::TestCase
     r, w = IO.pipe
     yield r, w
   ensure
-    r.close if !r.closed?
-    w.close if !w.closed?
+    r.close
+    w.close
   end
 
   def with_reopen(io, arg)
@@ -113,7 +114,7 @@ class TestOpen3 < Test::Unit::TestCase
     yield old
   ensure
     io.reopen(old)
-    old.close if old && !old.closed?
+    old.close
   end
 
   def test_popen2
@@ -126,7 +127,7 @@ class TestOpen3 < Test::Unit::TestCase
           i.close
           STDERR.reopen(old)
           assert_equal("zo", o.read)
-          assert_equal("ze", r.read)
+          assert_equal("ze", JITSupport.remove_mjit_logs(r.read))
         }
       }
     }
@@ -155,6 +156,17 @@ class TestOpen3 < Test::Unit::TestCase
     assert(s.success?)
   end
 
+  def test_capture3_stdin_data_io
+    IO.pipe {|r, w|
+      w.write "i"
+      w.close
+      o, e, s = Open3.capture3(RUBY, '-e', 'i=STDIN.read; print i+"o"; STDOUT.flush; STDERR.print i+"e"', :stdin_data=>r)
+      assert_equal("io", o)
+      assert_equal("ie", e)
+      assert(s.success?)
+    }
+  end
+
   def test_capture3_flip
     o, e, s = Open3.capture3(RUBY, '-e', 'STDOUT.sync=true; 1000.times { print "o"*1000; STDERR.print "e"*1000 }')
     assert_equal("o"*1000000, o)
@@ -168,10 +180,30 @@ class TestOpen3 < Test::Unit::TestCase
     assert(s.success?)
   end
 
+  def test_capture2_stdin_data_io
+    IO.pipe {|r, w|
+      w.write "i"
+      w.close
+      o, s = Open3.capture2(RUBY, '-e', 'i=STDIN.read; print i+"o"', :stdin_data=>r)
+      assert_equal("io", o)
+      assert(s.success?)
+    }
+  end
+
   def test_capture2e
     oe, s = Open3.capture2e(RUBY, '-e', 'i=STDIN.read; print i+"o"; STDOUT.flush; STDERR.print i+"e"', :stdin_data=>"i")
     assert_equal("ioie", oe)
     assert(s.success?)
+  end
+
+  def test_capture2e_stdin_data_io
+    IO.pipe {|r, w|
+      w.write "i"
+      w.close
+      oe, s = Open3.capture2e(RUBY, '-e', 'i=STDIN.read; print i+"o"; STDOUT.flush; STDERR.print i+"e"', :stdin_data=>r)
+      assert_equal("ioie", oe)
+      assert(s.success?)
+    }
   end
 
   def test_capture3_stdin_data
@@ -284,4 +316,10 @@ class TestOpen3 < Test::Unit::TestCase
     }
   end
 
+  def test_integer_and_symbol_key
+    command = [RUBY, '-e', 'puts "test_integer_and_symbol_key"']
+    out, status = Open3.capture2(*command, :chdir => '.', 2 => IO::NULL)
+    assert_equal("test_integer_and_symbol_key\n", out)
+    assert_predicate(status, :success?)
+  end
 end

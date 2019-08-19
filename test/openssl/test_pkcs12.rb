@@ -1,12 +1,10 @@
 # frozen_string_literal: false
 require_relative "utils"
 
-if defined?(OpenSSL::TestUtils)
+if defined?(OpenSSL)
 
 module OpenSSL
   class TestPKCS12 < OpenSSL::TestCase
-    include OpenSSL::TestUtils
-
     def setup
       super
       ca = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA")
@@ -16,7 +14,7 @@ module OpenSSL
         ["subjectKeyIdentifier","hash",false],
         ["authorityKeyIdentifier","keyid:always",false],
       ]
-      @cacert = issue_cert(ca, TEST_KEY_RSA2048, 1, ca_exts, nil, nil)
+      @cacert = issue_cert(ca, Fixtures.pkey("rsa2048"), 1, ca_exts, nil, nil)
 
       inter_ca = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=Intermediate CA")
       inter_ca_key = OpenSSL::PKey.read <<-_EOS_
@@ -36,25 +34,26 @@ FJx7d3f29gkzynCLJDkCQGQZlEZJC4vWmWJGRKJ24P6MyQn3VsPfErSKOg4lvyM3
 Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
 -----END RSA PRIVATE KEY-----
       _EOS_
-      @inter_cacert = issue_cert(inter_ca, inter_ca_key, 2, ca_exts, @cacert, TEST_KEY_RSA2048)
+      @inter_cacert = issue_cert(inter_ca, inter_ca_key, 2, ca_exts, @cacert, Fixtures.pkey("rsa2048"))
 
       exts = [
         ["keyUsage","digitalSignature",true],
         ["subjectKeyIdentifier","hash",false],
       ]
       ee = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=Ruby PKCS12 Test Certificate")
-      @mycert = issue_cert(ee, TEST_KEY_RSA1024, 3, exts, @inter_cacert, inter_ca_key)
+      @mykey = Fixtures.pkey("rsa1024")
+      @mycert = issue_cert(ee, @mykey, 3, exts, @inter_cacert, inter_ca_key)
     end
 
     def test_create
       pkcs12 = OpenSSL::PKCS12.create(
         "omg",
         "hello",
-        TEST_KEY_RSA1024,
+        @mykey,
         @mycert
       )
-      assert_equal @mycert, pkcs12.certificate
-      assert_equal TEST_KEY_RSA1024, pkcs12.key
+      assert_equal @mycert.to_der, pkcs12.certificate.to_der
+      assert_equal @mykey.to_der, pkcs12.key.to_der
       assert_nil pkcs12.ca_certs
     end
 
@@ -62,11 +61,11 @@ Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
       pkcs12 = OpenSSL::PKCS12.create(
         nil,
         "hello",
-        TEST_KEY_RSA1024,
+        @mykey,
         @mycert
       )
-      assert_equal @mycert, pkcs12.certificate
-      assert_equal TEST_KEY_RSA1024, pkcs12.key
+      assert_equal @mycert.to_der, pkcs12.certificate.to_der
+      assert_equal @mykey.to_der, pkcs12.key.to_der
       assert_nil pkcs12.ca_certs
 
       decoded = OpenSSL::PKCS12.new(pkcs12.to_der)
@@ -79,7 +78,7 @@ Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
       pkcs12 = OpenSSL::PKCS12.create(
         "omg",
         "hello",
-        TEST_KEY_RSA1024,
+        @mykey,
         @mycert,
         chain
       )
@@ -94,7 +93,7 @@ Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
       pkcs12 = OpenSSL::PKCS12.create(
         passwd,
         "hello",
-        TEST_KEY_RSA1024,
+        @mykey,
         @mycert,
         chain
       )
@@ -104,7 +103,7 @@ Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
       assert_include_cert @cacert, decoded.ca_certs
       assert_include_cert @inter_cacert, decoded.ca_certs
       assert_cert @mycert, decoded.certificate
-      assert_equal TEST_KEY_RSA1024.to_der, decoded.key.to_der
+      assert_equal @mykey.to_der, decoded.key.to_der
     end
 
     def test_create_with_bad_nid
@@ -112,7 +111,7 @@ Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
         OpenSSL::PKCS12.create(
           "omg",
           "hello",
-          TEST_KEY_RSA1024,
+          @mykey,
           @mycert,
           [],
           "foo"
@@ -124,7 +123,7 @@ Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
       OpenSSL::PKCS12.create(
         "omg",
         "hello",
-        TEST_KEY_RSA1024,
+        @mykey,
         @mycert,
         [],
         nil,
@@ -136,7 +135,7 @@ Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
         OpenSSL::PKCS12.create(
           "omg",
           "hello",
-          TEST_KEY_RSA1024,
+          @mykey,
           @mycert,
           [],
           nil,
@@ -150,7 +149,7 @@ Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
       OpenSSL::PKCS12.create(
         "omg",
         "hello",
-        TEST_KEY_RSA1024,
+        @mykey,
         @mycert,
         [],
         nil,
@@ -163,7 +162,7 @@ Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
         OpenSSL::PKCS12.create(
           "omg",
           "hello",
-          TEST_KEY_RSA1024,
+          @mykey,
           @mycert,
           [],
           nil,
@@ -216,7 +215,7 @@ vyl2WuMdEwQIMWFFphPkIUICAggA
       EOF
       p12 = OpenSSL::PKCS12.new(str, "abc123")
 
-      assert_equal TEST_KEY_RSA1024.to_der, p12.key.to_der
+      assert_equal @mykey.to_der, p12.key.to_der
       assert_equal @mycert.subject.to_der, p12.certificate.subject.to_der
       assert_equal [], Array(p12.ca_certs)
     end
@@ -275,13 +274,13 @@ Kw4DAhoFAAQUYAuwVtGD1TdgbFK4Yal2XBgwUR4ECEawsN3rNaa6AgIIAA==
       EOF
       p12 = OpenSSL::PKCS12.new(str, "abc123")
 
-      assert_equal TEST_KEY_RSA1024.to_der, p12.key.to_der
+      assert_equal @mykey.to_der, p12.key.to_der
       assert_equal nil, p12.certificate
       assert_equal [], Array(p12.ca_certs)
     end
 
     def test_dup
-      p12 = OpenSSL::PKCS12.create("pass", "name", TEST_KEY_RSA1024, @mycert)
+      p12 = OpenSSL::PKCS12.create("pass", "name", @mykey, @mycert)
       assert_equal p12.to_der, p12.dup.to_der
     end
 
@@ -308,7 +307,6 @@ Kw4DAhoFAAQUYAuwVtGD1TdgbFK4Yal2XBgwUR4ECEawsN3rNaa6AgIIAA==
       end
       false
     end
-
   end
 end
 

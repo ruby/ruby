@@ -68,4 +68,33 @@ class TestGemCommandsOpenCommand < Gem::TestCase
     assert_equal "", @ui.error
   end
 
+  def test_default_gem
+    @cmd.options[:version] = "1.0"
+    @cmd.options[:args] = %w[foo]
+
+    version = @cmd.options[:version]
+    @cmd.define_singleton_method(:spec_for) do |name|
+      spec = Gem::Specification.find_all_by_name(name, version).first
+
+      spec.define_singleton_method(:default_gem?) do
+        true
+      end
+
+      return spec if spec
+
+      say "Unable to find gem '#{name}'"
+    end
+
+    gem("foo", "1.0")
+
+    assert_raises Gem::MockGemUi::TermError do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_match %r|'foo' is a default gem and can't be opened\.| , @ui.output
+    assert_equal "", @ui.error
+  end
+
 end

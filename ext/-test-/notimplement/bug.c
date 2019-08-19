@@ -11,6 +11,8 @@ void
 Init_notimplement(void)
 {
     VALUE mBug = rb_define_module("Bug");
+    VALUE klass = rb_define_class_under(mBug, "NotImplement", rb_cObject);
     rb_define_module_function(mBug, "funcall", bug_funcall, -1);
     rb_define_module_function(mBug, "notimplement", rb_f_notimplement, -1);
+    rb_define_method(klass, "notimplement", rb_f_notimplement, -1);
 }

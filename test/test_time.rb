@@ -105,6 +105,8 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     t = Time.utc(1996, 12, 20, 0, 39, 57)
     s = "1996-12-19T16:39:57-08:00"
     assert_equal(t, Time.__send__(method, s))
+    assert_equal(t, Time.__send__(method, s.sub(/:(?=00\z)/, '')))
+    assert_equal(t, Time.__send__(method, s.sub(/:00\z/, '')))
     # There is no way to generate time string with arbitrary timezone.
     s = "1996-12-20T00:39:57Z"
     assert_equal(t, Time.__send__(method, s))
@@ -343,6 +345,13 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
                  Time.parse("2000-01-01T00:00:00+11:00", nil))
   end
 
+  def test_parse_offset_hour_minute_second
+    t = Time.at(-100000000000).utc
+    assert_equal(t, Time.parse("1200-02-15 BC 14:13:20-00"))
+    assert_equal(t, Time.parse("1200-02-15 BC 14:13:20-00:00"))
+    assert_equal(t, Time.parse("1200-02-15 BC 14:13:20-00:00:00"))
+  end
+
   def test_parse_leap_second
     t = Time.utc(1998,12,31,23,59,59)
     assert_equal(t, Time.parse("Thu Dec 31 23:59:59 UTC 1998"))
@@ -486,6 +495,39 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal(true, t.utc?)
   end
 
+  def test_strptime_j
+    t = Time.strptime("2018-365", "%Y-%j")
+    assert_equal(2018, t.year)
+    assert_equal(12, t.mon)
+    assert_equal(31, t.day)
+    assert_equal(0, t.hour)
+    assert_equal(0, t.min)
+    assert_equal(0, t.sec)
+    t = Time.strptime("2018-091", "%Y-%j")
+    assert_equal(2018, t.year)
+    assert_equal(4, t.mon)
+    assert_equal(1, t.day)
+  end
+
+  def test_strptime_p
+    t = Time.strptime("3am", "%I%p")
+    assert_equal(3, t.hour)
+    t = Time.strptime("3pm", "%I%p")
+    assert_equal(15, t.hour)
+    t = Time.strptime("3a.m.", "%I%p")
+    assert_equal(3, t.hour)
+    t = Time.strptime("3p.m.", "%I%p")
+    assert_equal(15, t.hour)
+    t = Time.strptime("3AM", "%I%p")
+    assert_equal(3, t.hour)
+    t = Time.strptime("3PM", "%I%p")
+    assert_equal(15, t.hour)
+    t = Time.strptime("3A.M.", "%I%p")
+    assert_equal(3, t.hour)
+    t = Time.strptime("3P.M.", "%I%p")
+    assert_equal(15, t.hour)
+  end
+
   def test_nsec
     assert_equal(123456789, Time.parse("2000-01-01T00:00:00.123456789+00:00").tv_nsec)
   end
@@ -503,5 +545,24 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     test = $1
     define_method(test) {__send__(sub, :xmlschema)}
     define_method(test.sub(/xmlschema/, 'iso8601')) {__send__(sub, :iso8601)}
+  end
+
+  def test_parse_with_various_object
+    d  = Date.new(2010, 10, 28)
+    dt = DateTime.new(2010, 10, 28)
+    md = MyDate.new(10, 28, 2010)
+
+    t = Time.local(2010, 10, 28, 21, 26, 00)
+    assert_equal(t, Time.parse("21:26",  d))
+    assert_equal(t, Time.parse("21:26", dt))
+    assert_equal(t, Time.parse("21:26", md))
+  end
+
+  class MyDate
+    attr_reader :mon, :day, :year
+
+    def initialize(mon, day, year)
+      @mon, @day, @year = mon, day, year
+    end
   end
 end

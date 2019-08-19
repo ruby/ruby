@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # Outputs RDoc markup as paragraphs with inline markup only.
 
@@ -44,7 +44,7 @@ class RDoc::Markup::ToHtmlSnippet < RDoc::Markup::ToHtml
     @mask       = 0
     @paragraphs = 0
 
-    @markup.add_special RDoc::CrossReference::CROSSREF_REGEXP, :CROSSREF
+    @markup.add_regexp_handling RDoc::CrossReference::CROSSREF_REGEXP, :CROSSREF
   end
 
   ##
@@ -71,7 +71,7 @@ class RDoc::Markup::ToHtmlSnippet < RDoc::Markup::ToHtml
 
     text = paragraph.text @hard_break
 
-    @res << "#{para}#{wrap to_html text}\n"
+    @res << "#{para}#{to_html text}\n"
 
     add_paragraph
   end
@@ -123,16 +123,16 @@ class RDoc::Markup::ToHtmlSnippet < RDoc::Markup::ToHtml
   end
 
   ##
-  # Removes escaping from the cross-references in +special+
+  # Removes escaping from the cross-references in +target+
 
-  def handle_special_CROSSREF special
-    special.text.sub(/\A\\/, '')
+  def handle_regexp_CROSSREF target
+    target.text.sub(/\A\\/, '')
   end
 
   ##
-  # +special+ is a <code><br></code>
+  # +target+ is a <code><br></code>
 
-  def handle_special_HARD_BREAK special
+  def handle_regexp_HARD_BREAK target
     @characters -= 4
     '<br>'
   end
@@ -226,8 +226,8 @@ class RDoc::Markup::ToHtmlSnippet < RDoc::Markup::ToHtml
       when String then
         text = convert_string item
         res << truncate(text)
-      when RDoc::Markup::Special then
-        text = convert_special item
+      when RDoc::Markup::RegexpHandling then
+        text = convert_regexp_handling item
         res << truncate(text)
       else
         raise "Unknown flow element: #{item.inspect}"

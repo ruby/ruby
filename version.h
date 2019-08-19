@@ -1,10 +1,12 @@
-#define RUBY_VERSION "2.5.0"
+# define RUBY_VERSION_MAJOR RUBY_API_VERSION_MAJOR
+# define RUBY_VERSION_MINOR RUBY_API_VERSION_MINOR
+#define RUBY_VERSION_TEENY 0
 #define RUBY_RELEASE_DATE RUBY_RELEASE_YEAR_STR"-"RUBY_RELEASE_MONTH_STR"-"RUBY_RELEASE_DAY_STR
 #define RUBY_PATCHLEVEL -1
 
-#define RUBY_RELEASE_YEAR 2017
-#define RUBY_RELEASE_MONTH 9
-#define RUBY_RELEASE_DAY 1
+#define RUBY_RELEASE_YEAR 2019
+#define RUBY_RELEASE_MONTH 8
+#define RUBY_RELEASE_DAY 20
 
 #include "ruby/version.h"
 
@@ -43,28 +45,30 @@
 #ifndef RUBY_REVISION
 # include "revision.h"
 #endif
-#ifndef RUBY_REVISION
-# define RUBY_REVISION 0
-#endif
 
-#if RUBY_REVISION
+#ifdef RUBY_REVISION
 # if RUBY_PATCHLEVEL == -1
 #  ifndef RUBY_BRANCH_NAME
-#   define RUBY_BRANCH_NAME "trunk"
+#   define RUBY_BRANCH_NAME "master"
 #  endif
-#  define RUBY_REVISION_STR " "RUBY_BRANCH_NAME" "STRINGIZE(RUBY_REVISION)
+#  define RUBY_REVISION_STR " "RUBY_BRANCH_NAME" "RUBY_REVISION
 # else
-#  define RUBY_REVISION_STR " revision "STRINGIZE(RUBY_REVISION)
+#  define RUBY_REVISION_STR " revision "RUBY_REVISION
 # endif
 #else
+# define RUBY_REVISION "HEAD"
 # define RUBY_REVISION_STR ""
 #endif
+#if !defined RUBY_RELEASE_DATETIME || RUBY_PATCHLEVEL != -1
+# undef RUBY_RELEASE_DATETIME
+# define RUBY_RELEASE_DATETIME RUBY_RELEASE_DATE
+#endif
 
-# define RUBY_DESCRIPTION	    \
+# define RUBY_DESCRIPTION_WITH(opt) \
     "ruby "RUBY_VERSION		    \
     RUBY_PATCHLEVEL_STR		    \
-    " ("RUBY_RELEASE_DATE	    \
-    RUBY_REVISION_STR") "	    \
+    " ("RUBY_RELEASE_DATETIME	    \
+    RUBY_REVISION_STR")"opt" "	    \
     "["RUBY_PLATFORM"]"
 # define RUBY_COPYRIGHT		    \
     "ruby - Copyright (C) "	    \

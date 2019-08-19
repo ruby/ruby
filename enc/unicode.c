@@ -683,8 +683,10 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 	  MODIFIED;
 	  if (flags & ONIGENC_CASE_FOLD_TURKISH_AZERI && code == 'i')
 	    code = I_WITH_DOT_ABOVE;
-	  else
-	    code += 'A' - 'a';
+          else {
+            code -= 'a';
+            code += 'A';
+          }
 	}
       }
       else if (code >= 'A' && code <= 'Z') {
@@ -717,7 +719,11 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 	}
       }
       else if ((folded = onigenc_unicode_fold_lookup(code)) != 0) { /* data about character found in CaseFold_11_Table */
-	if ((flags & ONIGENC_CASE_TITLECASE)                                 /* Titlecase needed, */
+	if ((flags & ONIGENC_CASE_TITLECASE) && code>=0x1C90 && code<=0x1CBF) { /* Georgian MTAVRULI */
+          MODIFIED;
+	  code += 0x10D0 - 0x1C90;
+        }
+        else if ((flags & ONIGENC_CASE_TITLECASE)                            /* Titlecase needed, */
 	    && (OnigCaseFoldFlags(folded->n) & ONIGENC_CASE_IS_TITLECASE)) { /* but already Titlecase  */
 	  /* already Titlecase, no changes needed */
 	}
@@ -770,10 +776,15 @@ SpecialsCopy:
 	  }
 	}
       }
-      else if ((folded = onigenc_unicode_unfold1_lookup(code)) != 0  /* data about character found in CaseUnfold_11_Table */
-	  && flags & OnigCaseFoldFlags(folded->n)) { /* needs and data availability match */
-	MODIFIED;
-	code = folded->code[(flags & OnigCaseFoldFlags(folded->n) & ONIGENC_CASE_TITLECASE) ? 1 : 0];
+      else if ((folded = onigenc_unicode_unfold1_lookup(code)) != 0) { /* data about character found in CaseUnfold_11_Table */
+	if ((flags & ONIGENC_CASE_TITLECASE)                                 /* Titlecase needed, */
+	    && (OnigCaseFoldFlags(folded->n) & ONIGENC_CASE_IS_TITLECASE)) { /* but already Titlecase */
+	  /* already Titlecase, no changes needed */
+	}
+	else if (flags & OnigCaseFoldFlags(folded->n)) { /* needs and data availability match */
+	  MODIFIED;
+	  code = folded->code[(flags & OnigCaseFoldFlags(folded->n) & ONIGENC_CASE_TITLECASE) ? 1 : 0];
+	}
       }
     }
     to += ONIGENC_CODE_TO_MBC(enc, code, to);

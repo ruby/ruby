@@ -46,9 +46,9 @@ assert_equal '1',               '1rescue nil'
 assert_equal '10000000000000000001/10000000000000000000',
              '1.0000000000000000001r'
 
-assert_equal 'syntax error, unexpected tIDENTIFIER, expecting end-of-input',
+assert_equal 'syntax error, unexpected local variable or method, expecting end-of-input',
              %q{begin eval('1ir', nil, '', 0); rescue SyntaxError => e; e.message[/\A:(?:\d+:)? (.*)/, 1] end}
-assert_equal 'syntax error, unexpected tIDENTIFIER, expecting end-of-input',
+assert_equal 'syntax error, unexpected local variable or method, expecting end-of-input',
              %q{begin eval('1.2ir', nil, '', 0); rescue SyntaxError => e; e.message[/\A:(?:\d+:)? (.*)/, 1] end}
-assert_equal 'syntax error, unexpected tIDENTIFIER, expecting end-of-input',
+assert_equal 'syntax error, unexpected local variable or method, expecting end-of-input',
              %q{begin eval('1e1r', nil, '', 0); rescue SyntaxError => e; e.message[/\A:(?:\d+:)? (.*)/, 1] end}

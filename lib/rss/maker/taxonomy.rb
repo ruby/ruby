@@ -1,7 +1,7 @@
 # frozen_string_literal: false
-require 'rss/taxonomy'
-require 'rss/maker/1.0'
-require 'rss/maker/dublincore'
+require_relative '../taxonomy'
+require_relative '1.0'
+require_relative 'dublincore'
 
 module RSS
   module Maker

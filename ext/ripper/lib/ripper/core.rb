@@ -30,6 +30,7 @@ class Ripper
 
   private
 
+  # :stopdoc:
   def _dispatch_0() nil end
   def _dispatch_1(a) a end
   def _dispatch_2(a, b) a end
@@ -38,6 +39,7 @@ class Ripper
   def _dispatch_5(a, b, c, d, e) a end
   def _dispatch_6(a, b, c, d, e, f) a end
   def _dispatch_7(a, b, c, d, e, f, g) a end
+  # :startdoc:
 
   #
   # Parser Events

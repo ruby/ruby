@@ -3,8 +3,7 @@
 
 Gem::Specification.new do |spec|
   spec.name          = "gdbm"
-  spec.version       = "2.0.0.beta1"
-  spec.date          = '2017-04-28'
+  spec.version       = "2.0.0"
   spec.authors       = ["Yukihiro Matsumoto"]
   spec.email         = ["matz@ruby-lang.org"]
 
@@ -18,7 +17,7 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
   spec.extensions    = ["ext/gdbm/extconf.rb"]
-  spec.required_ruby_version = ">= 2.5.0dev"
+  spec.required_ruby_version = ">= 2.3.0"
 
   spec.add_development_dependency "bundler", "~> 1.14"
   spec.add_development_dependency "rake", "~> 10.0"

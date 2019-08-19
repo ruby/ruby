@@ -58,8 +58,8 @@ end
 
 describe MSpec, ".retrieve" do
   it "accesses .store'd data" do
-    MSpec.register :action, :first
-    MSpec.retrieve(:action).should == [:first]
+    MSpec.register :retrieve, :first
+    MSpec.retrieve(:retrieve).should == [:first]
   end
 end
 

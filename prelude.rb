@@ -1,18 +1,15 @@
-class Thread
-  MUTEX_FOR_THREAD_EXCLUSIVE = Thread::Mutex.new # :nodoc:
-  private_constant :MUTEX_FOR_THREAD_EXCLUSIVE
-
+class << Thread
   # call-seq:
-  #    Thread.exclusive { block }   => obj
+  #    Thread.exclusive { block }   -> obj
   #
   # Wraps the block in a single, VM-global Mutex.synchronize, returning the
   # value of the block. A thread executing inside the exclusive section will
   # only block other threads which also use the Thread.exclusive mechanism.
-  def self.exclusive
+  def exclusive(&block) end if false
+  mutex = Mutex.new # :nodoc:
+  define_method(:exclusive) do |&block|
     warn "Thread.exclusive is deprecated, use Thread::Mutex", caller
-    MUTEX_FOR_THREAD_EXCLUSIVE.synchronize{
-      yield
-    }
+    mutex.synchronize(&block)
   end
 end
 
@@ -41,6 +38,10 @@ class IO
   # read_nonblock.
   #
   # read_nonblock causes EOFError on EOF.
+  #
+  # On some platforms, such as Windows, non-blocking mode is not supported
+  # on IO objects other than sockets. In such cases, Errno::EBADF will
+  # be raised.
   #
   # If the read byte buffer is not empty,
   # read_nonblock reads from the buffer like readpartial.
@@ -135,9 +136,88 @@ class IO
   end
 end
 
+class TracePoint
+  # call-seq:
+  #    trace.enable(target: nil, target_line: nil, target_thread: nil)    -> true or false
+  #    trace.enable(target: nil, target_line: nil, target_thread: nil) { block }  -> obj
+  #
+  # Activates the trace.
+  #
+  # Returns +true+ if trace was enabled.
+  # Returns +false+ if trace was disabled.
+  #
+  #   trace.enabled?  #=> false
+  #   trace.enable    #=> false (previous state)
+  #                   #   trace is enabled
+  #   trace.enabled?  #=> true
+  #   trace.enable    #=> true (previous state)
+  #                   #   trace is still enabled
+  #
+  # If a block is given, the trace will only be enabled within the scope of the
+  # block.
+  #
+  #    trace.enabled?
+  #    #=> false
+  #
+  #    trace.enable do
+  #      trace.enabled?
+  #      # only enabled for this block
+  #    end
+  #
+  #    trace.enabled?
+  #    #=> false
+  #
+  # +target+, +target_line+ and +target_thread+ parameters are used to
+  # limit tracing only to specified code objects. +target+ should be a
+  # code object for which RubyVM::InstructionSequence.of will return
+  # an instruction sequence.
+  #
+  #    t = TracePoint.new(:line) { |tp| p tp }
+  #
+  #    def m1
+  #      p 1
+  #    end
+  #
+  #    def m2
+  #      p 2
+  #    end
+  #
+  #    t.enable(target: method(:m1))
+  #
+  #    m1
+  #    # prints #<TracePoint:line@test.rb:5 in `m1'>
+  #    m2
+  #    # prints nothing
+  #
+  # Note: You cannot access event hooks within the +enable+ block.
+  #
+  #    trace.enable { p tp.lineno }
+  #    #=> RuntimeError: access from outside
+  #
+  def enable target: nil, target_line: nil, target_thread: nil, &blk
+    self.__enable target, target_line, target_thread, &blk
+  end
+end
+
 class Binding
+  # :nodoc:
   def irb
     require 'irb'
     irb
   end
+
+  # suppress redefinition warning
+  alias irb irb # :nodoc:
+end
+
+module Kernel
+  def pp(*objs)
+    require 'pp'
+    pp(*objs)
+  end
+
+  # suppress redefinition warning
+  alias pp pp # :nodoc:
+
+  private :pp
 end

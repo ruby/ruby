@@ -1,21 +1,17 @@
 # frozen_string_literal: false
 require_relative "utils"
 
-if defined?(OpenSSL::TestUtils)
+if defined?(OpenSSL)
 
 class OpenSSL::TestX509Certificate < OpenSSL::TestCase
   def setup
     super
-    @rsa1024 = OpenSSL::TestUtils::TEST_KEY_RSA1024
-    @rsa2048 = OpenSSL::TestUtils::TEST_KEY_RSA2048
-    @dsa256  = OpenSSL::TestUtils::TEST_KEY_DSA256
-    @dsa512  = OpenSSL::TestUtils::TEST_KEY_DSA512
+    @rsa1024 = Fixtures.pkey("rsa1024")
+    @rsa2048 = Fixtures.pkey("rsa2048")
+    @dsa256  = Fixtures.pkey("dsa256")
+    @dsa512  = Fixtures.pkey("dsa512")
     @ca = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA")
     @ee1 = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=EE1")
-  end
-
-  def issue_cert(*args)
-    OpenSSL::TestUtils.issue_cert(*args)
   end
 
   def test_serial
@@ -34,13 +30,10 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
       ["authorityKeyIdentifier","keyid:always",false],
     ]
 
-    sha1 = OpenSSL::Digest::SHA1.new
-    dsa_digest = OpenSSL::TestUtils::DSA_SIGNATURE_DIGEST.new
-
     [
-      [@rsa1024, sha1], [@rsa2048, sha1], [@dsa256, dsa_digest], [@dsa512, dsa_digest]
-    ].each{|pk, digest|
-      cert = issue_cert(@ca, pk, 1, exts, nil, nil, digest: digest)
+      @rsa1024, @rsa2048, @dsa256, @dsa512,
+    ].each{|pk|
+      cert = issue_cert(@ca, pk, 1, exts, nil, nil)
       assert_equal(cert.extensions.sort_by(&:to_s)[2].value,
                    OpenSSL::TestUtils.get_subject_key_id(cert))
       cert = OpenSSL::X509::Certificate.new(cert.to_der)
@@ -152,26 +145,15 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
     }
   end
 
-  def test_dsig_algorithm_mismatch
-    assert_raise(OpenSSL::X509::CertificateError) do
-      issue_cert(@ca, @rsa2048, 1, [], nil, nil, digest: OpenSSL::Digest::DSS1.new)
-    end if OpenSSL::OPENSSL_VERSION_NUMBER < 0x10001000 # [ruby-core:42949]
-  end
-
   def test_dsa_with_sha2
-    begin
-      cert = issue_cert(@ca, @dsa256, 1, [], nil, nil, digest: "sha256")
-      assert_equal("dsa_with_SHA256", cert.signature_algorithm)
-    rescue OpenSSL::X509::CertificateError
-      # dsa_with_sha2 not supported. skip following test.
-      return
-    end
+    cert = issue_cert(@ca, @dsa256, 1, [], nil, nil, digest: "sha256")
+    assert_equal("dsa_with_SHA256", cert.signature_algorithm)
     # TODO: need more tests for dsa + sha2
 
     # SHA1 is allowed from OpenSSL 1.0.0 (0.9.8 requires DSS1)
     cert = issue_cert(@ca, @dsa256, 1, [], nil, nil, digest: "sha1")
     assert_equal("dsaWithSHA1", cert.signature_algorithm)
-  end if defined?(OpenSSL::Digest::SHA256)
+  end
 
   def test_check_private_key
     cert = issue_cert(@ca, @rsa2048, 1, [], nil, nil)
@@ -185,6 +167,26 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
       f.rewind
       assert_equal cert.to_der, OpenSSL::X509::Certificate.new(f).to_der
     }
+  end
+
+  def test_eq
+    now = Time.now
+    cacert = issue_cert(@ca, @rsa1024, 1, [], nil, nil,
+                        not_before: now, not_after: now + 3600)
+    cert1 = issue_cert(@ee1, @rsa2048, 2, [], cacert, @rsa1024,
+                       not_before: now, not_after: now + 3600)
+    cert2 = issue_cert(@ee1, @rsa2048, 2, [], cacert, @rsa1024,
+                       not_before: now, not_after: now + 3600)
+    cert3 = issue_cert(@ee1, @rsa2048, 3, [], cacert, @rsa1024,
+                       not_before: now, not_after: now + 3600)
+    cert4 = issue_cert(@ee1, @rsa2048, 2, [], cacert, @rsa1024,
+                       digest: "sha512", not_before: now, not_after: now + 3600)
+
+    assert_equal false, cert1 == 12345
+    assert_equal true, cert1 == cert2
+    assert_equal false, cert1 == cert3
+    assert_equal false, cert1 == cert4
+    assert_equal false, cert3 == cert4
   end
 
   private

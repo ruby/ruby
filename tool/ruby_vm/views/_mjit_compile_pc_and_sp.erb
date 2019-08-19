@@ -1,0 +1,36 @@
+% # Copyright (c) 2018 Takashi Kokubun.  All rights reserved.
+% #
+% # This file is a part of  the programming language Ruby.  Permission is hereby
+% # granted, to either  redistribute and/or modify this file,  provided that the
+% # conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+% # details.
+%
+% # JIT: Move pc for catch table on catch_except_p, and for #caller_locations and rb_profile_frames on !insn.always_leaf?
+        if (body->catch_except_p || <%= insn.always_leaf? ? 'FALSE' : 'TRUE' %>) {
+            fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
+            pc_moved_p = TRUE;
+        }
+%
+% # JIT: move sp to use or preserve stack variables
+        if (status->local_stack_p) {
+% # sp motion is optimized away for `handles_sp? #=> false` case.
+% # Thus sp should be set properly before `goto cancel`.
+% if insn.handles_sp?
+%           # JIT-only behavior (pushing JIT's local variables to VM's stack):
+            {
+                rb_snum_t i, push_size;
+                push_size = -<%= insn.call_attribute('sp_inc') %> + <%= insn.rets.size %> - <%= insn.pops.size %>;
+                fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %ld;\n", push_size); /* POPN(INSN_ATTR(popn)); */
+                for (i = 0; i < push_size; i++) {
+                    fprintf(f, "    *(reg_cfp->sp + %ld) = stack[%ld];\n", i - push_size, (rb_snum_t)b->stack_size - push_size + i);
+                }
+            }
+% end
+        }
+        else {
+% if insn.handles_sp?
+            fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - <%= insn.pops.size %>); /* POPN(INSN_ATTR(popn)); */
+% else
+            fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+% end
+        }

@@ -78,3 +78,43 @@ describe Object, "#with_feature" do
     ScratchPad.recorded.should be_nil
   end
 end
+
+describe Object, "#without_feature" do
+  before :each do
+    ScratchPad.clear
+
+    @guard = FeatureGuard.new :encoding
+    FeatureGuard.stub(:new).and_return(@guard)
+  end
+
+  it "sets the name of the guard to :without_feature" do
+    without_feature(:encoding) { }
+    @guard.name.should == :without_feature
+  end
+
+  it "calls #unregister even when an exception is raised in the guard block" do
+    @guard.should_receive(:match?).and_return(false)
+    @guard.should_receive(:unregister)
+    lambda do
+      without_feature { raise Exception }
+    end.should raise_error(Exception)
+  end
+end
+
+describe Object, "#without_feature" do
+  before :each do
+    ScratchPad.clear
+  end
+
+  it "does not yield if the feature is enabled" do
+    MSpec.should_receive(:feature_enabled?).with(:encoding).and_return(true)
+    without_feature(:encoding) { ScratchPad.record :yield }
+    ScratchPad.recorded.should be_nil
+  end
+
+  it "yields if the feature is disabled" do
+    MSpec.should_receive(:feature_enabled?).with(:encoding).and_return(false)
+    without_feature(:encoding) { ScratchPad.record :yield }
+    ScratchPad.recorded.should == :yield
+  end
+end

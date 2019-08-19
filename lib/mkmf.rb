@@ -7,8 +7,9 @@ require 'rbconfig'
 require 'fileutils'
 require 'shellwords'
 
-# :stopdoc:
 class String
+  # :stopdoc:
+
   # Wraps a string in escaped quotes if it contains whitespace.
   def quote
     /\s/ =~ self ? "\"#{self}\"" : "#{self}"
@@ -31,15 +32,20 @@ class String
   def sans_arguments
     self[/\A[^()]+/]
   end
+
+  # :startdoc:
 end
 
 class Array
+  # :stopdoc:
+
   # Wraps all strings in escaped quotes if they contain whitespace.
   def quote
     map {|s| s.quote}
   end
+
+  # :startdoc:
 end
-# :startdoc:
 
 ##
 # mkmf.rb is used by Ruby C extensions to generate a Makefile which will
@@ -129,7 +135,6 @@ module MakeMakefile
   $vendorarchdir = CONFIG["vendorarchdir"]
 
   $mswin = /mswin/ =~ RUBY_PLATFORM
-  $bccwin = /bccwin/ =~ RUBY_PLATFORM
   $mingw = /mingw/ =~ RUBY_PLATFORM
   $cygwin = /cygwin/ =~ RUBY_PLATFORM
   $netbsd = /netbsd/ =~ RUBY_PLATFORM
@@ -242,7 +247,12 @@ module MakeMakefile
     $topdir ||= RbConfig::CONFIG["topdir"]
     $arch_hdrdir = "$(extout)/include/$(arch)"
   else
-    abort "mkmf.rb can't find header files for ruby at #{$hdrdir}/ruby.h"
+    abort <<MESSAGE
+mkmf.rb can't find header files for ruby at #{$hdrdir}/ruby.h
+
+You might have to install separate package for the ruby development
+environment, ruby-dev or ruby-devel for example.
+MESSAGE
   end
 
   CONFTEST = "conftest".freeze
@@ -658,7 +668,8 @@ MSG
   end
 
   def try_ldflags(flags, opts = {})
-    try_link(MAIN_DOES_NOTHING, flags, {:werror => true}.update(opts))
+    opts = {:werror => true}.update(opts) if $mswin
+    try_link(MAIN_DOES_NOTHING, flags, opts)
   end
 
   def append_ldflags(flags, *opts)
@@ -996,6 +1007,7 @@ SRC
   # <code>--with-FOOlib</code> configuration option.
   #
   def have_library(lib, func = nil, headers = nil, opt = "", &b)
+    dir_config(lib)
     lib = with_config(lib+'lib', lib)
     checking_for checking_message(func && func.funcall_style, LIBARG%lib, opt) do
       if COMMON_LIBS.include?(lib)
@@ -1021,6 +1033,7 @@ SRC
   # library paths searched and linked against.
   #
   def find_library(lib, func, *paths, &b)
+    dir_config(lib)
     lib = with_config(lib+'lib', lib)
     paths = paths.collect {|path| path.split(File::PATH_SEPARATOR)}.flatten
     checking_for checking_message(func && func.funcall_style, LIBARG%lib) do
@@ -1094,6 +1107,7 @@ SRC
   # +HAVE_FOO_H+ preprocessor macro would be passed to the compiler.
   #
   def have_header(header, preheaders = nil, opt = "", &b)
+    dir_config(header[/.*?(?=\/)|.*?(?=\.)/])
     checking_for header do
       if try_header(cpp_include(preheaders)+cpp_include(header), opt, &b)
         $defs.push(format("-DHAVE_%s", header.tr_cpp))
@@ -1737,6 +1751,10 @@ SRC
   # application.
   #
   def dir_config(target, idefault=nil, ldefault=nil)
+    if conf = $config_dirs[target]
+      return conf
+    end
+
     if dir = with_config(target + "-dir", (idefault unless ldefault))
       defaults = Array === dir ? dir : dir.split(File::PATH_SEPARATOR)
       idefault = ldefault = nil
@@ -1767,7 +1785,7 @@ SRC
     end
     $LIBPATH = ldirs | $LIBPATH
 
-    [idir, ldir]
+    $config_dirs[target] = [idir, ldir]
   end
 
   # Returns compile/link information about an installed library in a
@@ -1783,7 +1801,7 @@ SRC
   #
   # Where {option} is, for instance, <code>--cflags</code>.
   #
-  # The values obtained are appended to +$CFLAGS+, +$LDFLAGS+ and
+  # The values obtained are appended to +$INCFLAGS+, +$CFLAGS+, +$LDFLAGS+ and
   # +$libs+.
   #
   # If an <code>option</code> argument is given, the config command is
@@ -1839,9 +1857,9 @@ SRC
 
       $LDFLAGS = [orig_ldflags, ldflags].join(' ')
       Logging::message "package configuration for %s\n", pkg
-      Logging::message "cflags: %s\nldflags: %s\nlibs: %s\n\n",
-                       cflags, ldflags, libs
-      [cflags, ldflags, libs]
+      Logging::message "incflags: %s\ncflags: %s\nldflags: %s\nlibs: %s\n\n",
+                       incflags, cflags, ldflags, libs
+      [[incflags, cflags].join(' '), ldflags, libs]
     else
       Logging::message "package configuration for %s is not found\n", pkg
       nil
@@ -1960,6 +1978,7 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
     headers << '$(RUBY_EXTCONF_H)' if $extconf_h
     mk << %{
 
+CC_WRAPPER = #{CONFIG['CC_WRAPPER']}
 CC = #{CONFIG['CC']}
 CXX = #{CONFIG['CXX']}
 LIBRUBY = #{CONFIG['LIBRUBY']}
@@ -1977,6 +1996,7 @@ cxxflags = #{CONFIG['cxxflags']}
 optflags = #{CONFIG['optflags']}
 debugflags = #{CONFIG['debugflags']}
 warnflags = #{$warnflags}
+cppflags = #{CONFIG['cppflags']}
 CCDLFLAGS = #{$static ? '' : CONFIG['CCDLFLAGS']}
 CFLAGS   = $(CCDLFLAGS) #$CFLAGS $(ARCH_FLAG)
 INCFLAGS = -I. #$INCFLAGS
@@ -2102,7 +2122,6 @@ RULES
       line.gsub!(/\.o\b/, ".#{$OBJEXT}")
       line.gsub!(/\{\$\(VPATH\)\}/, "") unless $nmake
       line.gsub!(/\$\((?:hdr|top)dir\)\/config.h/, $config_h)
-      line.gsub!(%r"\$\(hdrdir\)/(?!ruby(?![^:;/\s]))(?=[-\w]+\.h)", '\&ruby/')
       if $nmake && /\A\s*\$\(RM|COPY\)/ =~ line
         line.gsub!(%r"[-\w\./]{2,}"){$&.tr("/", "\\")}
         line.gsub!(/(\$\((?!RM|COPY)[^:)]+)(?=\))/, '\1:/=\\')
@@ -2124,7 +2143,10 @@ RULES
     unless suffixes.empty?
       depout.unshift(".SUFFIXES: ." + suffixes.uniq.join(" .") + "\n\n")
     end
-    depout.unshift("$(OBJS): $(RUBY_EXTCONF_H)\n\n") if $extconf_h
+    if $extconf_h
+      depout.unshift("$(OBJS): $(RUBY_EXTCONF_H)\n\n")
+      depout.unshift("$(OBJS): $(hdrdir)/ruby/win32.h\n\n") if $mswin or $mingw
+    end
     depout.flatten!
     depout
   end
@@ -2248,7 +2270,7 @@ RULES
     origdef ||= ''
 
     if $extout and $INSTALLFILES
-      $cleanfiles.concat($INSTALLFILES.collect {|files, dir|File.join(dir, files.sub(/\A\.\//, ''))})
+      $cleanfiles.concat($INSTALLFILES.collect {|files, dir|File.join(dir, files.delete_prefix('./'))})
       $distcleandirs.concat($INSTALLFILES.collect {|files, dir| dir})
     end
 
@@ -2492,6 +2514,8 @@ site-install-rb: install-rb
     $enable_shared = config['ENABLE_SHARED'] == 'yes'
     $defs = []
     $extconf_h = nil
+    $config_dirs = {}
+
     if $warnflags = CONFIG['warnflags'] and CONFIG['GCC'] == 'yes'
       # turn warnings into errors only for bundled extensions.
       config['warnflags'] = $warnflags.gsub(/(\A|\s)-Werror[-=]/, '\1-W')
@@ -2503,6 +2527,9 @@ site-install-rb: install-rb
         RbConfig.expand(rbconfig[key] = val.dup) if /warnflags/ =~ val
       end
       $warnflags = config['warnflags'] unless $extmk
+    end
+    if (w = rbconfig['CC_WRAPPER']) and !w.empty? and !File.executable?(w)
+      rbconfig['CC_WRAPPER'] = config['CC_WRAPPER'] = ''
     end
     $CFLAGS = with_config("cflags", arg_config("CFLAGS", config["CFLAGS"])).dup
     $CXXFLAGS = (with_config("cxxflags", arg_config("CXXFLAGS", config["CXXFLAGS"]))||'').dup
@@ -2547,6 +2574,7 @@ site-install-rb: install-rb
     $extout_prefix ||= nil
 
     $arg_config.clear
+    $config_dirs.clear
     dir_config("opt")
   end
 
@@ -2582,7 +2610,8 @@ MESSAGE
       src = src.sub(/\{/) do
         $& +
           "\n  if (argc > 1000000) {\n" +
-          refs.map {|n|"    printf(\"%p\", &#{n});\n"}.join("") +
+          refs.map {|n|"    int (* volatile #{n}p)(void)=(int (*)(void))&#{n};\n"}.join("") +
+          refs.map {|n|"    printf(\"%d\", (*#{n}p)());\n"}.join("") +
           "  }\n"
       end
     end
@@ -2706,7 +2735,7 @@ MESSAGE
   ##
   # A C main function which does no work
 
-  MAIN_DOES_NOTHING = config_string('MAIN_DOES_NOTHING') || "int main(int argc, char **argv)\n{\n  return 0;\n}"
+  MAIN_DOES_NOTHING = config_string('MAIN_DOES_NOTHING') || "int main(int argc, char **argv)\n{\n  return !!argv[argc];\n}"
   UNIVERSAL_INTS = config_string('UNIVERSAL_INTS') {|s| Shellwords.shellwords(s)} ||
     %w[int short long long\ long]
 

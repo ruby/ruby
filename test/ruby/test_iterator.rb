@@ -12,17 +12,12 @@ class Array
 end
 
 class TestIterator < Test::Unit::TestCase
-  def ttt
-    assert(iterator?)
-  end
-
-  def test_iterator
-    assert(!iterator?)
-
-    ttt{}
-
-    # yield at top level	!! here's not toplevel
-    assert(!defined?(yield))
+  def test_yield_at_toplevel
+    assert_separately([],"#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert(!block_given?)
+      assert(!defined?(yield))
+    end;
   end
 
   def test_array
@@ -105,6 +100,16 @@ class TestIterator < Test::Unit::TestCase
     end
     assert_equal(7, x.size)
     assert_equal([1, 2, 3, 4, 5, 6, 7], x)
+  end
+
+  def test_array_for_masgn
+    a = [Struct.new(:to_ary).new([1,2])]
+    x = []
+    a.each {|i,j|x << [i,j]}
+    assert_equal([[1,2]], x)
+    x = []
+    for i,j in a; x << [i,j]; end
+    assert_equal([[1,2]], x)
   end
 
   def test_append_method_to_built_in_class

@@ -66,11 +66,11 @@ module REXML
     def Functions::id( object )
     end
 
-    # UNTESTED
-    def Functions::local_name( node_set=nil )
-      get_namespace( node_set ) do |node|
+    def Functions::local_name(node_set=nil)
+      get_namespace(node_set) do |node|
         return node.local_name
       end
+      ""
     end
 
     def Functions::namespace_uri( node_set=nil )
@@ -86,10 +86,14 @@ module REXML
     # Helper method.
     def Functions::get_namespace( node_set = nil )
       if node_set == nil
-        yield @@context[:node] if defined? @@context[:node].namespace
+        yield @@context[:node] if @@context[:node].respond_to?(:namespace)
       else
         if node_set.respond_to? :each
-          node_set.each { |node| yield node if defined? node.namespace }
+          result = []
+          node_set.each do |node|
+            result << yield(node) if node.respond_to?(:namespace)
+          end
+          result
         elsif node_set.respond_to? :namespace
           yield node_set
         end
@@ -131,22 +135,38 @@ module REXML
     #
     # An object of a type other than the four basic types is converted to a
     # string in a way that is dependent on that type.
-    def Functions::string( object=nil )
-      #object = @context unless object
-      if object.instance_of? Array
-        string( object[0] )
-      elsif defined? object.node_type
-        if object.node_type == :attribute
+    def Functions::string( object=@@context[:node] )
+      if object.respond_to?(:node_type)
+        case object.node_type
+        when :attribute
           object.value
-        elsif object.node_type == :element || object.node_type == :document
+        when :element
           string_value(object)
+        when :document
+          string_value(object.root)
+        when :processing_instruction
+          object.content
         else
           object.to_s
         end
-      elsif object.nil?
-        return ""
       else
-        object.to_s
+        case object
+        when Array
+          string(object[0])
+        when Float
+          if object.nan?
+            "NaN"
+          else
+            integer = object.to_i
+            if object == integer
+              "%d" % integer
+            else
+              object.to_s
+            end
+          end
+        else
+          object.to_s
+        end
       end
     end
 
@@ -167,9 +187,12 @@ module REXML
       rv
     end
 
-    # UNTESTED
     def Functions::concat( *objects )
-      objects.join
+      concatenated = ""
+      objects.each do |object|
+        concatenated << string(object)
+      end
+      concatenated
     end
 
     # Fixed by Mike Stok
@@ -292,18 +315,23 @@ module REXML
       end
     end
 
-    # UNTESTED
-    def Functions::boolean( object=nil )
-      if object.kind_of? String
-        if object =~ /\d+/u
-          return object.to_f != 0
-        else
-          return object.size > 0
-        end
-      elsif object.kind_of? Array
-        object = object.find{|x| x and true}
+    def Functions::boolean(object=@@context[:node])
+      case object
+      when true, false
+        object
+      when Float
+        return false if object.zero?
+        return false if object.nan?
+        true
+      when Numeric
+        not object.zero?
+      when String
+        not object.empty?
+      when Array
+        not object.empty?
+      else
+        object ? true : false
       end
-      return object ? true : false
     end
 
     # UNTESTED
@@ -357,25 +385,23 @@ module REXML
     #
     # an object of a type other than the four basic types is converted to a
     # number in a way that is dependent on that type
-    def Functions::number( object=nil )
-      object = @@context[:node] unless object
+    def Functions::number(object=@@context[:node])
       case object
       when true
         Float(1)
       when false
         Float(0)
       when Array
-        number(string( object ))
+        number(string(object))
       when Numeric
         object.to_f
       else
-        str = string( object )
-        # If XPath ever gets scientific notation...
-        #if str =~ /^\s*-?(\d*\.?\d+|\d+\.)([Ee]\d*)?\s*$/
-        if str =~ /^\s*-?(\d*\.?\d+|\d+\.)\s*$/
-          str.to_f
+        str = string(object)
+        case str.strip
+        when /\A\s*(-?(?:\d+(?:\.\d*)?|\.\d+))\s*\z/
+          $1.to_f
         else
-          (0.0 / 0.0)
+          Float::NAN
         end
       end
     end
@@ -397,7 +423,7 @@ module REXML
       number = number(number)
       begin
         neg = number.negative?
-        number = number.abs.round(half: :up)
+        number = number.abs.round
         neg ? -number : number
       rescue FloatDomainError
         number

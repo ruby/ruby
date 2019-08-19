@@ -2,7 +2,7 @@
 require 'test/unit'
 require "-test-/integer"
 
-class TestIntegerExt < Test::Unit::TestCase
+class Test_MyInteger < Test::Unit::TestCase
   def test_my_integer_to_f
     assert_raise(NotImplementedError) do
       Bug::Integer::MyInteger.new.to_f

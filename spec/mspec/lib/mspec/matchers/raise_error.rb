@@ -1,25 +1,29 @@
-require 'mspec/utils/deprecate'
-
 class RaiseErrorMatcher
   def initialize(exception, message, &block)
     @exception = exception
     @message = message
     @block = block
+    @actual = nil
   end
 
   def matches?(proc)
     @result = proc.call
     return false
-  rescue Exception => @actual
-    if matching_exception?(@actual)
+  rescue Exception => actual
+    @actual = actual
+    if matching_exception?(actual)
+      # The block has its own expectations and will throw an exception if it fails
+      @block[actual] if @block
+
       return true
     else
-      raise @actual
+      raise actual
     end
   end
 
   def matching_exception?(exc)
     return false unless @exception === exc
+
     if @message then
       case @message
       when String
@@ -28,9 +32,6 @@ class RaiseErrorMatcher
         return false if @message !~ exc.message
       end
     end
-
-    # The block has its own expectations and will throw an exception if it fails
-    @block[exc] if @block
 
     return true
   end
@@ -51,13 +52,19 @@ class RaiseErrorMatcher
     exception_class_and_message(exception.class, exception.message)
   end
 
+  def format_result(result)
+    result.pretty_inspect.chomp
+  rescue => e
+    "#pretty_inspect raised #{e.class}; A #<#{result.class}>"
+  end
+
   def failure_message
     message = ["Expected #{format_expected_exception}"]
 
-    if @actual then
+    if @actual
       message << "but got #{format_exception(@actual)}"
     else
-      message << "but no exception was raised (#{@result.pretty_inspect.chomp} was returned)"
+      message << "but no exception was raised (#{format_result(@result)} was returned)"
     end
 
     message

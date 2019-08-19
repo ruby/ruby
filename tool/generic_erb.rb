@@ -5,10 +5,8 @@
 
 require 'erb'
 require 'optparse'
-require 'fileutils'
-$:.unshift(File.dirname(__FILE__))
-require 'vpath'
-require 'colorize'
+require_relative 'lib/vpath'
+require_relative 'lib/colorize'
 
 vpath = VPath.new
 timestamp = nil
@@ -16,24 +14,33 @@ output = nil
 ifchange = nil
 source = false
 color = nil
+templates = []
 
-opt = OptionParser.new do |o|
+ARGV.options do |o|
   o.on('-t', '--timestamp[=PATH]') {|v| timestamp = v || true}
+  o.on('-i', '--input=PATH') {|v| template << v}
   o.on('-o', '--output=PATH') {|v| output = v}
   o.on('-c', '--[no-]if-change') {|v| ifchange = v}
   o.on('-x', '--source') {source = true}
   o.on('--color') {color = true}
   vpath.def_options(o)
   o.order!(ARGV)
+  templates << (ARGV.shift or abort o.to_s) if templates.empty?
 end
 color = Colorize.new(color)
 unchanged = color.pass("unchanged")
 updated = color.fail("updated")
 
-template = ARGV.shift or abort opt.to_s
-erb = ERB.new(File.read(template), nil, '%-')
-erb.filename = template
-result = source ? erb.src : proc{erb.result}.call
+result = templates.map do |template|
+  if ERB.instance_method(:initialize).parameters.assoc(:key) # Ruby 2.6+
+    erb = ERB.new(File.read(template), trim_mode: '%-')
+  else
+    erb = ERB.new(File.read(template), nil, '%-')
+  end
+  erb.filename = template
+  source ? erb.src : proc{erb.result(binding)}.call
+end
+result = result.size == 1 ? result[0] : result.join("")
 if output
   if ifchange and (vpath.open(output, "rb") {|f| f.read} rescue nil) == result
     puts "#{output} #{unchanged}"
@@ -46,7 +53,8 @@ if output
       dir, base = File.split(output)
       timestamp = File.join(dir, ".time." + base)
     end
-    FileUtils.touch(timestamp)
+    File.open(timestamp, 'a') {}
+    File.utime(nil, nil, timestamp)
   end
 else
   print result

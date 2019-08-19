@@ -11,27 +11,20 @@ RUBY_EXTERN const signed char ruby_digit36_to_number_table[];
 static VALUE rb_cCGI, rb_mUtil, rb_mEscape;
 static ID id_accept_charset;
 
-static void
-html_escaped_cat(VALUE str, char c)
-{
-    switch (c) {
-      case '\'':
-	rb_str_cat_cstr(str, "&#39;");
-	break;
-      case '&':
-	rb_str_cat_cstr(str, "&amp;");
-	break;
-      case '"':
-	rb_str_cat_cstr(str, "&quot;");
-	break;
-      case '<':
-	rb_str_cat_cstr(str, "&lt;");
-	break;
-      case '>':
-	rb_str_cat_cstr(str, "&gt;");
-	break;
-    }
-}
+#define HTML_ESCAPE_MAX_LEN 6
+
+static const struct {
+    uint8_t len;
+    char str[HTML_ESCAPE_MAX_LEN+1];
+} html_escape_table[UCHAR_MAX+1] = {
+#define HTML_ESCAPE(c, str) [c] = {rb_strlen_lit(str), str}
+    HTML_ESCAPE('\'', "&#39;"),
+    HTML_ESCAPE('&', "&amp;"),
+    HTML_ESCAPE('"', "&quot;"),
+    HTML_ESCAPE('<', "&lt;"),
+    HTML_ESCAPE('>', "&gt;"),
+#undef HTML_ESCAPE
+};
 
 static inline void
 preserve_original_state(VALUE orig, VALUE dest)
@@ -44,40 +37,34 @@ preserve_original_state(VALUE orig, VALUE dest)
 static VALUE
 optimized_escape_html(VALUE str)
 {
-    long i, len, beg = 0;
-    VALUE dest = 0;
-    const char *cstr;
+    VALUE vbuf;
+    char *buf = ALLOCV_N(char, vbuf, RSTRING_LEN(str) * HTML_ESCAPE_MAX_LEN);
+    const char *cstr = RSTRING_PTR(str);
+    const char *end = cstr + RSTRING_LEN(str);
 
-    len  = RSTRING_LEN(str);
-    cstr = RSTRING_PTR(str);
-
-    for (i = 0; i < len; i++) {
-	switch (cstr[i]) {
-	  case '\'':
-	  case '&':
-	  case '"':
-	  case '<':
-	  case '>':
-	    if (!dest) {
-		dest = rb_str_buf_new(len);
-	    }
-
-	    rb_str_cat(dest, cstr + beg, i - beg);
-	    beg = i + 1;
-
-	    html_escaped_cat(dest, cstr[i]);
-	    break;
-	}
+    char *dest = buf;
+    while (cstr < end) {
+        const unsigned char c = *cstr++;
+        uint8_t len = html_escape_table[c].len;
+        if (len) {
+            memcpy(dest, html_escape_table[c].str, len);
+            dest += len;
+        }
+        else {
+            *dest++ = c;
+        }
     }
 
-    if (dest) {
-	rb_str_cat(dest, cstr + beg, len - beg);
-	preserve_original_state(str, dest);
-	return dest;
+    VALUE escaped;
+    if (RSTRING_LEN(str) < (dest - buf)) {
+        escaped = rb_str_new(buf, dest - buf);
+        preserve_original_state(str, escaped);
     }
     else {
-	return rb_str_dup(str);
+        escaped = rb_str_dup(str);
     }
+    ALLOCV_END(vbuf);
+    return escaped;
 }
 
 static VALUE

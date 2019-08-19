@@ -1,5 +1,4 @@
 # frozen_string_literal: false
-require 'thread'
 
 # The Singleton module implements the Singleton pattern.
 #
@@ -121,6 +120,15 @@ module Singleton
       instance
     end
 
+    def instance # :nodoc:
+      return @singleton__instance__ if @singleton__instance__
+      @singleton__mutex__.synchronize {
+        return @singleton__instance__ if @singleton__instance__
+        @singleton__instance__ = new()
+      }
+      @singleton__instance__
+    end
+
     private
 
     def inherited(sub_klass)
@@ -135,14 +143,6 @@ module Singleton
         @singleton__instance__ = nil
         @singleton__mutex__ = Thread::Mutex.new
       }
-      def klass.instance # :nodoc:
-        return @singleton__instance__ if @singleton__instance__
-        @singleton__mutex__.synchronize {
-          return @singleton__instance__ if @singleton__instance__
-          @singleton__instance__ = new()
-        }
-        @singleton__instance__
-      end
       klass
     end
 
@@ -170,4 +170,8 @@ module Singleton
   ##
   # :singleton-method: _load
   #  By default calls instance(). Override to retain singleton state.
+
+  ##
+  # :singleton-method: instance
+  #  Returns the singleton instance.
 end

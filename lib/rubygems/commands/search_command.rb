@@ -38,4 +38,3 @@ To list local gems use the list command.
   end
 
 end
-

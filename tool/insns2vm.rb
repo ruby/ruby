@@ -3,16 +3,13 @@
 # This is used by Makefile.in to generate .inc files.
 # See Makefile.in for details.
 
-require 'optparse'
-
-Version = %w$Revision: 11626 $[1..-1]
-
-require "#{File.join(File.dirname(__FILE__), 'instruction')}"
+require_relative 'ruby_vm/scripts/insns2vm'
 
 if $0 == __FILE__
-  opts = ARGV.options
-  maker = RubyVM::SourceCodeGenerator.def_options(opts)
-  files = opts.parse!
-  generator = maker.call
-  generator.generate(files)
+  RubyVM::Insns2VM.router(ARGV).each do |(path, generator)|
+    str = generator.generate path
+    path.open 'wb:utf-8' do |fp|
+      fp.write str
+    end
+  end
 end

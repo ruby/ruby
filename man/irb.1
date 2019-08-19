@@ -1,5 +1,5 @@
 .\"Ruby is copyrighted by Yukihiro Matsumoto <matz@netlab.jp>.
-.Dd November 15, 2012
+.Dd August 11, 2019
 .Dt IRB \&1 "Ruby Programmer's Reference Guide"
 .Os UNIX
 .Sh NAME
@@ -8,11 +8,16 @@
 .Sh SYNOPSIS
 .Nm
 .Op Fl -version
-.Op Fl dfm
+.Op Fl dfUw
 .Op Fl I Ar directory
 .Op Fl r Ar library
+.Op Fl E Ar external Ns Op : Ns Ar internal
+.Op Fl W Ns Op Ar level
 .Op Fl - Ns Oo no Oc Ns inspect
 .Op Fl - Ns Oo no Oc Ns readline
+.Op Fl - Ns Oo no Oc Ns echo
+.Op Fl - Ns Oo no Oc Ns colorize
+.Op Fl - Ns Oo no Oc Ns verbose
 .Op Fl -prompt Ar mode
 .Op Fl -prompt-mode Ar mode
 .Op Fl -inf-ruby-mode
@@ -20,7 +25,6 @@
 .Op Fl -noprompt
 .Op Fl -tracer
 .Op Fl -back-trace-limit Ar n
-.Op Fl -irb_debug Ar n
 .Op Fl -
 .Op program_file
 .Op argument ...
@@ -65,6 +69,13 @@ to true.
 Suppresses read of
 .Pa ~/.irbrc .
 .Pp
+.It Fl w
+Same as `ruby -w' .
+.Pp
+.Pp
+.It Fl W
+Same as `ruby -W' .
+.Pp
 .It Fl h
 .It Fl -help
 Prints a summary of the options.
@@ -84,6 +95,27 @@ Uses Readline extension module.
 .Pp
 .It Fl -noreadline
 Doesn't use Readline extension module.
+.Pp
+.Pp
+.It Fl -echo
+Show result(default).
+.Pp
+.It Fl -noecho
+Don't show result.
+.Pp
+.Pp
+.It Fl -colorize
+Use colorization.
+.Pp
+.It Fl -nocolorize
+Don't use colorization.
+.Pp
+.Pp
+.It Fl -verbose
+Show details.
+.Pp
+.It Fl -noverbose
+Don't show details.
 .Pp
 .It Fl -prompt Ar mode
 .It Fl -prompt-mode Ar mode
@@ -109,10 +141,6 @@ Displays backtrace top
 and tail
 .Ar n Ns .
 The default value is 16.
-.Pp
-.It Fl -irb_debug Ar n
-Sets internal debug level to n (not for popular use)
-.Pp
 .El
 .Pp
 .Sh ENVIRONMENT
@@ -138,7 +166,7 @@ Personal irb initialization.
 .Dl irb(main):001:0> Ic 1 + 1
 .Dl 2
 .Dl irb(main):002:0> Ic def t(x)
-.Dl irb(main):003:1> Ic   x+1
+.Dl irb(main):003:1> Ic   x + 1
 .Dl irb(main):004:1> Ic end
 .Dl => :t
 .Dl irb(main):005:0> Ic t(3)

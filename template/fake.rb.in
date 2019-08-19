@@ -7,12 +7,15 @@ while /\A(\w+)=(.*)/ =~ ARGV[0]
 end
 if inc = arg['i']
   src = inc == '-' ? STDIN.read : File.read(inc)
+  def src.value(name)
+    eval(self[/\bruby_#{name}(?:\[\])?\s*=\s*((?:"(?:\\.|[^\"\\])*"\s*)*(?=;)|[^{};]+)/m, 1].gsub(/#/, '\\#'))
+  end
   arg['versions'] = version = {}
   File.read(File.join(arg['srcdir'], 'version.c')).
     scan(/rb_define_global_const\("(RUBY_\w+)",[^;]*?\bMK(?:INT|STR)\(([^()]*)\)/m) do |n, v|
-    version[n] =
-        eval(src[/\bruby_#{v}(?:\[\])?\s*=\s*((?:"(?:\\.|[^\"\\])*"\s*)*(?=;)|[^{};]+)/m, 1].gsub(/#/, '\\#'))
+    version[n] = src.value(v)
   end
+  arg['RUBY_DESCRIPTION_WITH_JIT'] = src.value('description_with_jit')
 end
 %>baseruby="<%=arg['BASERUBY']%>"
 _\
@@ -29,12 +32,19 @@ class Object
   CROSS_COMPILING = RUBY_PLATFORM
   constants.grep(/^RUBY_/) {|n| remove_const n}
 % arg['versions'].each {|n, v|
-  <%=n%> = <%=v.inspect%>
+  <%=n%> = <%if n=='RUBY_DESCRIPTION' %>RubyVM.const_defined?(:MJIT) && RubyVM::MJIT.enabled? ?
+    <%=arg['RUBY_DESCRIPTION_WITH_JIT'].inspect%> :
+    <%end%><%=v.inspect%>
 % }
 end
 builddir = File.dirname(File.expand_path(__FILE__))
 srcdir = "<%=arg['srcdir']%>"
 top_srcdir = File.realpath(srcdir, builddir)
 fake = File.join(top_srcdir, "tool/fake.rb")
-eval(File.read(fake), nil, fake)
-ENV["RUBYOPT"] = ["-r#{__FILE__}", ENV["RUBYOPT"]].compact.join(" ")
+eval(File.binread(fake), nil, fake)
+ropt = "-r#{__FILE__}"
+["RUBYOPT"].each do |flag|
+  opt = ENV[flag]
+  opt = opt ? ([ropt] | opt.b.split(/\s+/)).join(" ") : ropt
+  ENV[flag] = opt
+end

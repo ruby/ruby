@@ -10,7 +10,7 @@
 #
 #
 
-require 'irb/magic-file'
+require_relative 'magic-file'
 
 module IRB
   # Outputs the irb help message, see IRB@Command+line+options.

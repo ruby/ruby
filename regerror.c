@@ -242,8 +242,8 @@ static int to_ascii(OnigEncoding enc, UChar *s, UChar *end,
 }
 
 
-/* for ONIG_MAX_ERROR_MESSAGE_LEN */
-#define MAX_ERROR_PAR_LEN   30
+/* < ONIG_MAX_ERROR_MESSAGE_LEN - max length of messages with %n */
+#define MAX_ERROR_PAR_LEN   50
 
 extern int
 onig_error_code_to_str(UChar* s, OnigPosition code, ...)
@@ -356,7 +356,8 @@ onig_vsnprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc,
 	*s++ = *p++;
       }
       else if (!ONIGENC_IS_CODE_PRINT(enc, *p) &&
-	       !ONIGENC_IS_CODE_SPACE(enc, *p)) {
+	       (!ONIGENC_IS_CODE_SPACE(enc, *p) ||
+                ONIGENC_IS_CODE_CNTRL(enc, *p))) {
 	sprint_byte_with_x((char* )bs, (unsigned int )(*p++));
 	len = onigenc_str_bytelen_null(ONIG_ENCODING_ASCII, bs);
         bp = bs;

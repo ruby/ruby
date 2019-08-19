@@ -12,9 +12,9 @@
 #
 # $IPR: digestauth.rb,v 1.5 2003/02/20 07:15:47 gotoyuzo Exp $
 
-require 'webrick/config'
-require 'webrick/httpstatus'
-require 'webrick/httpauth/authenticator'
+require_relative '../config'
+require_relative '../httpstatus'
+require_relative 'authenticator'
 require 'digest/md5'
 require 'digest/sha1'
 
@@ -235,9 +235,11 @@ module WEBrick
           ha2 = hexdigest(req.request_method, auth_req['uri'])
           ha2_res = hexdigest("", auth_req['uri'])
         elsif auth_req['qop'] == "auth-int"
-          ha2 = hexdigest(req.request_method, auth_req['uri'],
-                          hexdigest(req.body))
-          ha2_res = hexdigest("", auth_req['uri'], hexdigest(res.body))
+          body_digest = @h.new
+          req.body { |chunk| body_digest.update(chunk) }
+          body_digest = body_digest.hexdigest
+          ha2 = hexdigest(req.request_method, auth_req['uri'], body_digest)
+          ha2_res = hexdigest("", auth_req['uri'], body_digest)
         end
 
         if auth_req['qop'] == "auth" || auth_req['qop'] == "auth-int"

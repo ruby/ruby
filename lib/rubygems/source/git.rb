@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'digest'
 require 'rubygems/util'
 
 ##
@@ -51,7 +50,7 @@ class Gem::Source::Git < Gem::Source
   # repository may contain multiple gems.  If +submodules+ is true, submodules
   # will be checked out when the gem is installed.
 
-  def initialize name, repository, reference, submodules = false
+  def initialize(name, repository, reference, submodules = false)
     super repository
 
     @name            = name
@@ -64,7 +63,7 @@ class Gem::Source::Git < Gem::Source
     @git      = ENV['git'] || 'git'
   end
 
-  def <=> other
+  def <=>(other)
     case other
     when Gem::Source::Git then
       0
@@ -78,7 +77,7 @@ class Gem::Source::Git < Gem::Source
     end
   end
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     super and
       @name            == other.name and
       @repository      == other.repository and
@@ -94,7 +93,7 @@ class Gem::Source::Git < Gem::Source
 
     return false unless File.exist? repo_cache_dir
 
-    unless File.exist? install_dir then
+    unless File.exist? install_dir
       system @git, 'clone', '--quiet', '--no-checkout',
              repo_cache_dir, install_dir
     end
@@ -118,7 +117,7 @@ class Gem::Source::Git < Gem::Source
   def cache # :nodoc:
     return unless @remote
 
-    if File.exist? repo_cache_dir then
+    if File.exist? repo_cache_dir
       Dir.chdir repo_cache_dir do
         system @git, 'fetch', '--quiet', '--force', '--tags',
                @repository, 'refs/heads/*:refs/heads/*'
@@ -146,7 +145,7 @@ class Gem::Source::Git < Gem::Source
   ##
   # Nothing to download for git gems
 
-  def download full_spec, path # :nodoc:
+  def download(full_spec, path) # :nodoc:
   end
 
   ##
@@ -158,7 +157,7 @@ class Gem::Source::Git < Gem::Source
     File.join base_dir, 'gems', "#{@name}-#{dir_shortref}"
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, '[Git: ', ']' do
       q.breakable
       q.text @repository
@@ -207,7 +206,7 @@ class Gem::Source::Git < Gem::Source
 
         Dir.chdir directory do
           spec = Gem::Specification.load file
-          if spec then
+          if spec
             spec.base_dir = base_dir
 
             spec.extension_dir =
@@ -226,8 +225,10 @@ class Gem::Source::Git < Gem::Source
   # A hash for the git gem based on the git repository URI.
 
   def uri_hash # :nodoc:
+    require 'digest' # required here to avoid deadlocking in Gem.activate_bin_path (because digest is a gem on 2.5+)
+
     normalized =
-      if @repository =~ %r%^\w+://(\w+@)?% then
+      if @repository =~ %r%^\w+://(\w+@)?%
         uri = URI(@repository).normalize.to_s.sub %r%/$%,''
         uri.sub(/\A(\w+)/) { $1.downcase }
       else
@@ -238,4 +239,3 @@ class Gem::Source::Git < Gem::Source
   end
 
 end
-

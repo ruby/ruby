@@ -17,7 +17,6 @@
 
 require 'drb/drb'
 require 'chasen'
-require 'thread'
 
 class Dhasen
   include DRbUndumped
