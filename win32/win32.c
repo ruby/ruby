@@ -5207,12 +5207,12 @@ w32_symlink(UINT cp, const char *src, const char *link)
     }
 
     if (!*link) {
-	errno = ENOENT;
-	return -1;
+        errno = ENOENT;
+        return -1;
     }
     if (!*src) {
-	errno = EINVAL;
-	return -1;
+        errno = EINVAL;
+        return -1;
     }
     len1 = MultiByteToWideChar(cp, 0, src, -1, NULL, 0);
     len2 = MultiByteToWideChar(cp, 0, link, -1, NULL, 0);
@@ -5227,12 +5227,12 @@ w32_symlink(UINT cp, const char *src, const char *link)
 	flag = SYMBOLIC_LINK_FLAG_DIRECTORY;
     ret = create_symbolic_link(wlink, wsrc, flag |= create_flag);
     if (!ret &&
-	(e = GetLastError()) == ERROR_INVALID_PARAMETER &&
-	(flag & SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE)) {
-	create_flag = 0;
-	flag &= ~SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
-	ret = create_symbolic_link(wlink, wsrc, flag);
-	if (!ret) e = GetLastError();
+        (e = GetLastError()) == ERROR_INVALID_PARAMETER &&
+        (flag & SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE)) {
+        create_flag = 0;
+        flag &= ~SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
+        ret = create_symbolic_link(wlink, wsrc, flag);
+        if (!ret) e = GetLastError();
     }
     ALLOCV_END(buf);
 
