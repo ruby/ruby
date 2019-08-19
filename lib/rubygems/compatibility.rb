@@ -13,6 +13,7 @@
 # TODO remove at RubyGems 4
 module Gem
   RubyGemsVersion = VERSION
+  deprecate_constant(:RubyGemsVersion)
 
   RbConfigPriorities = %w[
     MAJOR
@@ -29,6 +30,7 @@ module Gem
     ConfigMap = Hash.new do |cm, key|
       cm[key] = RbConfig::CONFIG[key.to_s]
     end
+    deprecate_constant(:ConfigMap)
   else
     RbConfigPriorities.each do |key|
       ConfigMap[key.to_sym] = RbConfig::CONFIG[key]

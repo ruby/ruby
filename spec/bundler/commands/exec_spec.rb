@@ -279,12 +279,7 @@ RSpec.describe "bundle exec" do
     G
 
     rubyopt = ENV["RUBYOPT"]
-    setup_path = if ruby_core?
-      File.expand_path("../../../lib/bundler/setup", __dir__)
-    else
-      File.expand_path("../../lib/bundler/setup", __dir__)
-    end
-    rubyopt = "-r#{setup_path} #{rubyopt}"
+    rubyopt = "-r#{lib}/bundler/setup #{rubyopt}"
 
     bundle "exec 'echo $RUBYOPT'"
     expect(out).to have_rubyopts(rubyopt)
@@ -299,7 +294,7 @@ RSpec.describe "bundle exec" do
     G
 
     rubylib = ENV["RUBYLIB"]
-    rubylib = rubylib.to_s.split(File::PATH_SEPARATOR).unshift bundler_path.to_s
+    rubylib = rubylib.to_s.split(File::PATH_SEPARATOR).unshift lib.to_s
     rubylib = rubylib.uniq.join(File::PATH_SEPARATOR)
 
     bundle "exec 'echo $RUBYLIB'"
@@ -840,26 +835,24 @@ __FILE__: #{path.to_s.inspect}
   end
 
   context "nested bundle exec" do
-    let(:system_gems_to_install) { super() << :bundler }
-
-    context "with shared gems disabled" do
+    context "when bundle in a local path" do
       before do
         gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"
           gem "rack"
         G
-        bundle :install, :system_bundler => true, :path => "vendor/bundler"
+        bundle "config set path vendor/bundler"
+        bundle! :install
       end
 
-      it "overrides disable_shared_gems so bundler can be found", :ruby_repo do
-        system_gems :bundler
+      it "correctly shells out", :ruby_repo do
         file = bundled_app("file_that_bundle_execs.rb")
         create_file(file, <<-RB)
           #!#{Gem.ruby}
-          puts `#{system_bundle_bin_path} exec echo foo`
+          puts `bundle exec echo foo`
         RB
         file.chmod(0o777)
-        bundle! "exec #{file}", :system_bundler => true
+        bundle! "exec #{file}"
         expect(out).to eq("foo")
       end
     end

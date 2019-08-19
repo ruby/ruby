@@ -293,7 +293,7 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
 
     @orig_LOAD_PATH = $LOAD_PATH.dup
     $LOAD_PATH.map! do |s|
-      expand_path = File.expand_path(s)
+      expand_path = File.realpath(s) rescue File.expand_path(s)
       if expand_path != s
         expand_path.untaint
         if s.instance_variable_defined?(:@gem_prelude_index)
@@ -739,6 +739,7 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
     spec.files = files
 
     lib_dir = File.join(@tempdir, "default_gems", "lib")
+    lib_dir.instance_variable_set(:@gem_prelude_index, lib_dir)
     $LOAD_PATH.unshift(lib_dir)
     files.each do |file|
       rb_path = File.join(lib_dir, file)
