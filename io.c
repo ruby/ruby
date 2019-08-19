@@ -9560,7 +9560,7 @@ rb_f_select(int argc, VALUE *argv, VALUE obj)
     return rb_ensure(select_call, (VALUE)&args, select_end, (VALUE)&args);
 }
 
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
+#if (defined(__linux__) && !defined(__ANDROID__)) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
  typedef unsigned long ioctl_req_t;
 # define NUM2IOCTLREQ(num) NUM2ULONG(num)
 #else
