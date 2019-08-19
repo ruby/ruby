@@ -47,7 +47,7 @@ module Spec
 
     def scope
       test_number = ENV["TEST_ENV_NUMBER"]
-      return "" if test_number.nil?
+      return "1" if test_number.nil?
 
       test_number.empty? ? "1" : test_number
     end
