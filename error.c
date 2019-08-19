@@ -524,7 +524,7 @@ bug_report_begin_valist(FILE *out, const char *fmt, va_list args)
 #if RUBY_DEVEL
     const char *cmd = getenv("RUBY_ON_BUG");
     if (cmd) {
-        snprintf(buf, sizeof(buf), "%s %d", cmd, getpid());
+        snprintf(buf, sizeof(buf), "%s %"PRI_PIDT_PREFIX"d", cmd, getpid());
         int r = system(buf);
         if (r == -1) {
             snprintf(buf, sizeof(buf), "Launching RUBY_ON_BUG command failed.");
