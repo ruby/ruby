@@ -80,7 +80,7 @@ RSpec.describe "Bundler.load" do
       G
 
       ruby! <<-RUBY
-        require "bundler"
+        require "#{lib}/bundler"
         Bundler.setup :default
         Bundler.require :default
         puts RACK

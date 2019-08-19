@@ -114,7 +114,7 @@ def sync_default_gems(gem)
   when "reline"
     rm_rf(%w[lib/reline* test/reline])
     cp_r(Dir.glob("#{upstream}/lib/reline*"), "lib")
-    cp_r("#{upstream}/test", "test/reline")
+    cp_r("#{upstream}/test/reline", "test")
     cp_r("#{upstream}/reline.gemspec", "lib/reline")
   when "json"
     rm_rf(%w[ext/json test/json])
@@ -327,13 +327,13 @@ def update_default_gems(gem)
   Dir.chdir("../../#{author}/#{repository}") do
     unless `git remote`.match(/ruby\-core/)
       `git remote add ruby-core git@github.com:ruby/ruby.git`
-      `git fetch ruby-core`
-      `git co ruby-core/trunk`
+      `git fetch ruby-core --no-tags`
+      `git co ruby-core/master`
       `git branch ruby-core`
     end
     `git co ruby-core`
-    `git fetch ruby-core trunk`
-    `git rebase ruby-core/trunk`
+    `git fetch ruby-core master --no-tags`
+    `git rebase ruby-core/master`
     `git co master`
     `git stash`
     `git pull --rebase`

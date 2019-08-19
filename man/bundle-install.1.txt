@@ -193,14 +193,14 @@ DEPLOYMENT MODE
 
 
 SUDO USAGE
-       By default, Bundler installs gems to the same location as gem  install.
+       By default, Bundler installs gems to the same location as gem install.
 
-       In  some cases, that location may not be writable by your Unix user. In
+       In some cases, that location may not be writable by your Unix user.  In
        that case, Bundler will stage everything in a temporary directory, then
-       ask  you  for  your  sudo password in order to copy the gems into their
+       ask you for your sudo password in order to copy	the  gems  into  their
        system location.
 
-       From your  perspective,	this  is  identical  to  installing  the  gems
+       From  your  perspective,  this  is  identical  to  installing  the gems
        directly into the system.
 
        You should never use sudo bundle install. This is because several other
@@ -214,36 +214,36 @@ SUDO USAGE
 
 
 
-       Of these three, the first  two  could  theoretically  be  performed  by
-       chowning  the  resulting  files	to $SUDO_USER. The third, however, can
-       only be performed by invoking the git  command  as  the	current  user.
-       Therefore,  git gems are downloaded and installed into ~/.bundle rather
+       Of  these  three,  the  first  two  could theoretically be performed by
+       chowning the resulting files to $SUDO_USER.  The  third,  however,  can
+       only  be  performed  by	invoking  the git command as the current user.
+       Therefore, git gems are downloaded and installed into ~/.bundle	rather
        than $GEM_HOME or $BUNDLE_PATH.
 
-       As a result, you should run bundle install as  the  current  user,  and
+       As  a  result,  you  should run bundle install as the current user, and
        Bundler will ask for your password if it is needed to put the gems into
        their final location.
 
 INSTALLING GROUPS
-       By default, bundle install will install all gems in all groups in  your
+       By  default, bundle install will install all gems in all groups in your
        Gemfile(5), except those declared for a different platform.
 
-       However,  you  can  explicitly  tell Bundler to skip installing certain
-       groups with the --without option. This option takes  a  space-separated
+       However, you can explicitly tell Bundler  to  skip  installing  certain
+       groups  with  the --without option. This option takes a space-separated
        list of groups.
 
-       While  the --without option will skip installing the gems in the speci-
-       fied groups, it will still download those gems and use them to  resolve
+       While the --without option will skip installing the gems in the	speci-
+       fied  groups, it will still download those gems and use them to resolve
        the dependencies of every gem in your Gemfile(5).
 
        This is so that installing a different set of groups on another machine
-       (such as a production server) will not change  the  gems  and  versions
+       (such  as  a  production  server) will not change the gems and versions
        that you have already developed and tested against.
 
        Bundler offers a rock-solid guarantee that the third-party code you are
        running in development and testing is also the third-party code you are
-       running	in  production. You can choose to exclude some of that code in
-       different environments, but you will never  be  caught  flat-footed  by
+       running in production. You can choose to exclude some of that  code  in
+       different  environments,  but  you  will never be caught flat-footed by
        different versions of third-party code being used in different environ-
        ments.
 
@@ -261,63 +261,63 @@ INSTALLING GROUPS
 
 
 
-       In this case, sinatra depends on any version of Rack  (>=  1.0),  while
+       In  this  case,	sinatra depends on any version of Rack (>= 1.0), while
        rack-perftools-profiler depends on 1.x (~> 1.0).
 
-       When  you  run  bundle  install --without production in development, we
-       look at the dependencies of rack-perftools-profiler as well. That  way,
-       you  do	not spend all your time developing against Rack 2.0, using new
-       APIs unavailable in Rack 1.x, only to have Bundler switch to  Rack  1.2
+       When you run bundle install --without  production  in  development,  we
+       look  at the dependencies of rack-perftools-profiler as well. That way,
+       you do not spend all your time developing against Rack 2.0,  using  new
+       APIs  unavailable  in Rack 1.x, only to have Bundler switch to Rack 1.2
        when the production group is used.
 
-       This  should  not  cause  any  problems	in practice, because we do not
-       attempt to install the gems in the excluded groups, and	only  evaluate
+       This should not cause any problems  in  practice,  because  we  do  not
+       attempt	to  install the gems in the excluded groups, and only evaluate
        as part of the dependency resolution process.
 
-       This  also means that you cannot include different versions of the same
-       gem in different groups, because doing so  would  result  in  different
+       This also means that you cannot include different versions of the  same
+       gem  in	different  groups,  because doing so would result in different
        sets of dependencies used in development and production. Because of the
-       vagaries of the dependency resolution  process,	this  usually  affects
-       more  than the gems you list in your Gemfile(5), and can (surprisingly)
+       vagaries  of  the  dependency  resolution process, this usually affects
+       more than the gems you list in your Gemfile(5), and can	(surprisingly)
        radically change the gems you are using.
 
 THE GEMFILE.LOCK
-       When you run bundle install, Bundler will persist the  full  names  and
-       versions  of all gems that you used (including dependencies of the gems
+       When  you  run  bundle install, Bundler will persist the full names and
+       versions of all gems that you used (including dependencies of the  gems
        specified in the Gemfile(5)) into a file called Gemfile.lock.
 
        Bundler uses this file in all subsequent calls to bundle install, which
        guarantees that you always use the same exact code, even as your appli-
        cation moves across machines.
 
-       Because of the way dependency resolution works, even a seemingly  small
+       Because	of the way dependency resolution works, even a seemingly small
        change (for instance, an update to a point-release of a dependency of a
-       gem in your Gemfile(5)) can result in radically	different  gems  being
+       gem  in	your  Gemfile(5)) can result in radically different gems being
        needed to satisfy all dependencies.
 
-       As  a  result, you SHOULD check your Gemfile.lock into version control,
+       As a result, you SHOULD check your Gemfile.lock into  version  control,
        in both applications and gems. If you do not, every machine that checks
        out your repository (including your production server) will resolve all
-       dependencies  again,  which  will  result  in  different  versions   of
+       dependencies   again,  which  will  result  in  different  versions  of
        third-party code being used if any of the gems in the Gemfile(5) or any
        of their dependencies have been updated.
 
-       When Bundler first shipped, the Gemfile.lock was included in the  .git-
+       When  Bundler first shipped, the Gemfile.lock was included in the .git-
        ignore file included with generated gems. Over time, however, it became
-       clear that this practice forces the pain of  broken  dependencies  onto
+       clear  that  this  practice forces the pain of broken dependencies onto
        new  contributors,  while  leaving  existing  contributors  potentially
-       unaware of the problem. Since bundle install is usually the first  step
-       towards	a contribution, the pain of broken dependencies would discour-
-       age new contributors from contributing. As a result,  we  have  revised
-       our  guidance for gem authors to now recommend checking in the lock for
+       unaware	of the problem. Since bundle install is usually the first step
+       towards a contribution, the pain of broken dependencies would  discour-
+       age  new  contributors  from contributing. As a result, we have revised
+       our guidance for gem authors to now recommend checking in the lock  for
        gems.
 
 CONSERVATIVE UPDATING
-       When you make a change to the Gemfile(5) and then run  bundle  install,
+       When  you  make a change to the Gemfile(5) and then run bundle install,
        Bundler will update only the gems that you modified.
 
-       In  other  words,  if  a  gem that you did not modify worked before you
-       called bundle install, it will continue to use the exact same  versions
+       In other words, if a gem that you did  not  modify  worked  before  you
+       called  bundle install, it will continue to use the exact same versions
        of all dependencies as it used before the update.
 
        Let's take a look at an example. Here's your original Gemfile(5):
@@ -331,13 +331,13 @@ CONSERVATIVE UPDATING
 
 
 
-       In  this  case, both actionpack and activemerchant depend on activesup-
-       port. The actionpack gem depends on activesupport  2.3.8  and  rack  ~>
-       1.1.0,  while the activemerchant gem depends on activesupport >= 2.3.2,
+       In this case, both actionpack and activemerchant depend	on  activesup-
+       port.  The  actionpack  gem  depends on activesupport 2.3.8 and rack ~>
+       1.1.0, while the activemerchant gem depends on activesupport >=	2.3.2,
        braintree >= 2.0.0, and builder >= 2.0.0.
 
-       When  the  dependencies	are  first  resolved,  Bundler	 will	select
-       activesupport  2.3.8,  which satisfies the requirements of both gems in
+       When   the   dependencies  are  first  resolved,  Bundler  will	select
+       activesupport 2.3.8, which satisfies the requirements of both  gems  in
        your Gemfile(5).
 
        Next, you modify your Gemfile(5) to:
@@ -351,44 +351,44 @@ CONSERVATIVE UPDATING
 
 
 
-       The actionpack 3.0.0.rc gem has	a  number  of  new  dependencies,  and
-       updates	the activesupport dependency to = 3.0.0.rc and the rack depen-
+       The  actionpack	3.0.0.rc  gem  has  a  number of new dependencies, and
+       updates the activesupport dependency to = 3.0.0.rc and the rack	depen-
        dency to ~> 1.2.1.
 
-       When you run bundle install,  Bundler  notices  that  you  changed  the
-       actionpack  gem,  but not the activemerchant gem. It evaluates the gems
+       When  you  run  bundle  install,  Bundler  notices that you changed the
+       actionpack gem, but not the activemerchant gem. It evaluates  the  gems
        currently being used to satisfy its requirements:
 
        activesupport 2.3.8
-	      also used to satisfy a dependency in  activemerchant,  which  is
+	      also  used  to  satisfy a dependency in activemerchant, which is
 	      not being updated
 
        rack ~> 1.1.0
 	      not currently being used to satisfy another dependency
 
-       Because	you did not explicitly ask to update activemerchant, you would
-       not expect it to suddenly stop working after updating actionpack.  How-
-       ever,  satisfying  the new activesupport 3.0.0.rc dependency of action-
+       Because you did not explicitly ask to update activemerchant, you  would
+       not  expect it to suddenly stop working after updating actionpack. How-
+       ever, satisfying the new activesupport 3.0.0.rc dependency  of  action-
        pack requires updating one of its dependencies.
 
-       Even though activemerchant declares a very loose dependency that  theo-
-       retically  matches  activesupport 3.0.0.rc, Bundler treats gems in your
-       Gemfile(5) that have not changed as an atomic unit together with  their
+       Even  though activemerchant declares a very loose dependency that theo-
+       retically matches activesupport 3.0.0.rc, Bundler treats gems  in  your
+       Gemfile(5)  that have not changed as an atomic unit together with their
        dependencies. In this case, the activemerchant dependency is treated as
-       activemerchant 1.7.1 + activesupport  2.3.8,  so  bundle  install  will
+       activemerchant  1.7.1  +  activesupport	2.3.8,	so bundle install will
        report that it cannot update actionpack.
 
        To explicitly update actionpack, including its dependencies which other
-       gems in the Gemfile(5) still depend on, run  bundle  update  actionpack
+       gems  in  the  Gemfile(5) still depend on, run bundle update actionpack
        (see bundle update(1)).
 
-       Summary:  In  general,  after  making  a change to the Gemfile(5) , you
-       should first try to run bundle install, which will  guarantee  that  no
+       Summary: In general, after making a change  to  the  Gemfile(5)	,  you
+       should  first  try  to run bundle install, which will guarantee that no
        other gem in the Gemfile(5) is impacted by the change. If that does not
        work, run bundle update(1) bundle-update.1.html.
 
 SEE ALSO
-       o   Gem				install 			  docs
+       o   Gem				 install			  docs
 	   http://guides.rubygems.org/rubygems-basics/#installing-gems
 
        o   Rubygems signing docs http://guides.rubygems.org/security/
@@ -398,4 +398,4 @@ SEE ALSO
 
 
 
-				  April 2019		     BUNDLE-INSTALL(1)
+				  August 2019		     BUNDLE-INSTALL(1)

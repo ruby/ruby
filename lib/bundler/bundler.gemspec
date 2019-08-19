@@ -34,11 +34,8 @@ Gem::Specification.new do |s|
   s.required_ruby_version     = ">= 2.3.0"
   s.required_rubygems_version = ">= 2.5.2"
 
-  # s.files = Dir.glob("{lib,exe}/**/*", File::FNM_DOTMATCH).reject {|f| File.directory?(f) }
+  # s.files = Dir.glob("{lib,man,exe}/**/*", File::FNM_DOTMATCH).reject {|f| File.directory?(f) }
 
-  # we don't check in man pages, but we need to ship them because
-  # we use them to generate the long-form help for each command.
-  # s.files += Dir.glob("man/**/*")
   # Include the CHANGELOG.md, LICENSE.md, README.md manually
   # s.files += %w[CHANGELOG.md LICENSE.md README.md]
   # include the gemspec itself because warbler breaks w/o it

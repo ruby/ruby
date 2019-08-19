@@ -13,12 +13,28 @@ module Spec
       @gemspec ||= root.join(ruby_core? ? "lib/bundler/bundler.gemspec" : "bundler.gemspec")
     end
 
+    def gemspec_dir
+      @gemspec_dir ||= gemspec.parent
+    end
+
     def bindir
       @bindir ||= root.join(ruby_core? ? "libexec" : "exe")
     end
 
+    def gem_bin
+      @gem_bin ||= ruby_core? ? ENV["BUNDLE_GEM"] : "#{Gem.ruby} -S gem --backtrace"
+    end
+
     def spec_dir
       @spec_dir ||= root.join(ruby_core? ? "spec/bundler" : "spec")
+    end
+
+    def tracked_files
+      @tracked_files ||= ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb spec/bundler` : `git ls-files -z`
+    end
+
+    def lib_tracked_files
+      @lib_tracked_files ||= ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb` : `git ls-files -z -- lib`
     end
 
     def tmp(*path)
@@ -100,15 +116,11 @@ module Spec
       tmp("gems/system", *path)
     end
 
-    def system_bundle_bin_path
-      system_gem_path("bin/bundle")
-    end
-
     def lib_path(*args)
       tmp("libs", *args)
     end
 
-    def bundler_path
+    def lib
       root.join("lib")
     end
 
@@ -122,6 +134,19 @@ module Spec
 
     def tmpdir(*args)
       tmp "tmpdir", *args
+    end
+
+    def with_root_gemspec
+      if ruby_core?
+        root_gemspec = root.join("bundler.gemspec")
+        spec = Gem::Specification.load(gemspec.to_s)
+        spec.bindir = "libexec"
+        File.open(root_gemspec.to_s, "w") {|f| f.write spec.to_ruby }
+        yield(root_gemspec)
+        FileUtils.rm(root_gemspec)
+      else
+        yield(gemspec)
+      end
     end
 
     def ruby_core?

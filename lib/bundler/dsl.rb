@@ -128,7 +128,7 @@ module Bundler
         else
           Bundler.ui.warn "Your Gemfile lists the gem #{current.name} (#{current.requirement}) more than once.\n" \
                           "You should probably keep only one of them.\n" \
-                          "Remove any duplicate entries and specify the gem only once (per group).\n" \
+                          "Remove any duplicate entries and specify the gem only once.\n" \
                           "While it's not a problem now, it could cause errors if you change the version of one of them later."
         end
 
