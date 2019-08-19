@@ -810,12 +810,12 @@ end
       end
     end
 
-    it "should not remove itself from the LOAD_PATH and require a different copy of 'bundler/setup'", :ruby_repo do
+    it "should not remove itself from the LOAD_PATH and require a different copy of 'bundler/setup'" do
       install_gemfile ""
 
       ruby <<-R, :env => { "GEM_PATH" => symlinked_gem_home }, :no_lib => true
         TracePoint.trace(:class) do |tp|
-          if tp.path.include?("bundler") && !tp.path.start_with?("#{File.expand_path("../..", __dir__)}")
+          if tp.path.include?("bundler") && !tp.path.start_with?("#{root}")
             puts "OMG. Defining a class from another bundler at \#{tp.path}:\#{tp.lineno}"
           end
         end
