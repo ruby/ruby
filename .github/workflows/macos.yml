@@ -20,7 +20,7 @@ jobs:
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
       - name: Install libraries
         run: |
-          brew update || (sleep 5; brew update) || (sleep 60; brew update)
+          brew update || { sleep 5 && brew update; } || { sleep 60 && brew update; }
           brew install gdbm gmp libffi openssl@1.1 zlib autoconf automake libtool readline
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
       - name: Checkout ruby/ruby
