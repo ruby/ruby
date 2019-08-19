@@ -47,6 +47,14 @@ jobs:
         env:
           TESTOPTS: "$JOBS -q --tty=no"
           MSPECOPT: "-ff" # not using `-j` because sometimes `mspec -j` silently dies
+        if: matrix.test_task != 'test-bundled-gems'
+      # test-bundled-gems is separated for marking `continue-on-error` because it randomly fails.
+      - name: Tests
+        run: make -s ${{ matrix.test_task }}
+        env:
+          TESTOPTS: "$JOBS -q --tty=no"
+        continue-on-error: true
+        if: matrix.test_task == 'test-bundled-gems'
       - name: Leaked Globals
         run: make -s leaked-globals
       - uses: k0kubun/action-slack@v1.0.0
