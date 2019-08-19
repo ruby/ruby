@@ -135,7 +135,7 @@ notifications:
               "title_link": "{{buildUrl}}",
               "fallback": "AppVeyor Build {{projectName}} {{buildVersion}} {{status}}",
               "text": "Commit <{{commitUrl}}|{{commitId}}> by {{commitAuthor}} on {{commitDate}}: _{{commitMessage}}_",
-              "color": "{{#passed}}#44ee44{{/passed}}{{#failed}}#ee4444{{/failed}}"
+              "color": "{{#passed}}good{{/passed}}{{#failed}}danger{{/failed}}"
             }
           ],
           "channel": "#alerts"
@@ -157,7 +157,7 @@ notifications:
               "title_link": "{{buildUrl}}",
               "fallback": "AppVeyor Build {{projectName}} {{buildVersion}} {{status}}",
               "text": "Commit <{{commitUrl}}|{{commitId}}> by {{commitAuthor}} on {{commitDate}}: _{{commitMessage}}_",
-              "color": "{{#passed}}#44ee44{{/passed}}{{#failed}}#ee4444{{/failed}}"
+              "color": "{{#passed}}good{{/passed}}{{#failed}}danger{{/failed}}"
             }
           ],
           "channel": "#commits"
