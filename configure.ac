@@ -209,6 +209,21 @@ AS_CASE(["$build_os"],
   ])
 test -z "$CXX" || ac_cv_prog_CXX="$CXX"
 
+AS_CASE(["$target_os"],
+[darwin*], [
+    AC_MSG_CHECKING(if minimum required OS X version is supported)
+    AC_TRY_CPP([@%:@include <AvailabilityMacros.h>
+	@%:@if MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_5
+	@%:@error pre OS X 10.5
+	[!<===== pre OS X 10.5 =====>]
+	@%:@endif
+	],
+	[macosx_min_required=yes],
+	[AC_MSG_RESULT(no)
+	AC_MSG_ERROR([Unsupported OS X version is required])])
+    AC_MSG_RESULT(${macosx_min_required})
+])
+
 AC_PROG_CXX
 RUBY_MINGW32
 AC_PROG_GCC_TRADITIONAL
@@ -779,20 +794,6 @@ AS_CASE(["$target_os"],
 		ORIG_LIBS="$LIBS"
 		RUBY_PREPEND_OPTION(LIBS, -lobjc)
 		RUBY_APPEND_OPTIONS(CPPFLAGS, -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE -D_DARWIN_UNLIMITED_SELECT -D_REENTRANT)
-		AC_MSG_CHECKING(for minimum required Mac OS X version)
-		AC_TRY_CPP([@%:@include <AvailabilityMacros.h>
-		    @%:@if MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_5
-		    @%:@error pre OS X 10.5
-		    [!<===== pre OS X 10.5 =====>]
-		    @%:@endif
-		    ],
-		    [macosx_min_required=ok], [
-			AC_COMPUTE_INT([macosx_min_required], [MAC_OS_X_VERSION_MIN_REQUIRED],
-			    [AC_INCLUDES_DEFAULT([@%:@include <AvailabilityMacros.h>])],
-			    [macosx_min_required=not-found])
-		    ])
-		AC_MSG_RESULT(${macosx_min_required})
-		test "${macosx_min_required}" = ok || AC_MSG_ERROR([Unsupported OS X version is required])
 		AS_IF([test "${target_os@%:@darwin}" -ge 16], [
 		    ac_cv_func___syscall=no
 		    ac_cv_func_syscall=no
