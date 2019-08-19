@@ -779,28 +779,28 @@ AS_CASE(["$target_os"],
 		ORIG_LIBS="$LIBS"
 		RUBY_PREPEND_OPTION(LIBS, -lobjc)
 		RUBY_APPEND_OPTIONS(CPPFLAGS, -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE -D_DARWIN_UNLIMITED_SELECT -D_REENTRANT)
-		AC_MSG_CHECKING(whether Mac OS X 10.5 or later)
+		AC_MSG_CHECKING(for minimum required Mac OS X version)
 		AC_TRY_CPP([@%:@include <AvailabilityMacros.h>
 		    @%:@if MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_5
 		    @%:@error pre OS X 10.5
 		    [!<===== pre OS X 10.5 =====>]
 		    @%:@endif
 		    ],
-		    [macosx_10_5=yes], [macosx_10_5=no])
-		AC_MSG_RESULT($macosx_10_5)
+		    [macosx_min_required=ok], [
+			AC_COMPUTE_INT([macosx_min_required], [MAC_OS_X_VERSION_MIN_REQUIRED],
+			    [AC_INCLUDES_DEFAULT([@%:@include <AvailabilityMacros.h>])],
+			    [macosx_min_required=not-found])
+		    ])
+		AC_MSG_RESULT(${macosx_min_required})
+		test "${macosx_min_required}" = ok || AC_MSG_ERROR([Unsupported OS X version is required])
 		AS_IF([test "${target_os@%:@darwin}" -ge 16], [
 		    ac_cv_func___syscall=no
 		    ac_cv_func_syscall=no
 		    ac_cv_header_sys_syscall_h=no
 		    ac_cv_header_syscall_h=no
 		])
-		AS_IF([test $macosx_10_5 = yes], [
-		    ac_cv_func_getcontext=no
-		    ac_cv_func_setcontext=no
-		], [
-		    AC_DEFINE(BROKEN_SETREUID, 1)
-		    AC_DEFINE(BROKEN_SETREGID, 1)
-		])
+		ac_cv_func_getcontext=no
+		ac_cv_func_setcontext=no
 		incs=`$CC -v -E -xc - < /dev/null 2>&1 | sed ['1,/^@%:@include </d;s/^ *//;s|[^./][^/]*/\.\./||g;/\/include$/!d;s||/lib|;/\/usr\/lib/d']`
 		for d in `$CC -print-search-dirs | sed -e '/^libraries: */!d;s///' | tr : '\012' | fgrep -v /../ | sed -n 's|^\(/.*/lib\)/$|\1|p'`; do
 		    incs=`echo "$incs" | fgrep -v "$d"`
