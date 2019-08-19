@@ -7,8 +7,8 @@ end
 Gem::Specification.new do |spec|
   spec.name          = "logger"
   spec.version       = Logger::VERSION
-  spec.authors       = ["SHIBATA Hiroshi"]
-  spec.email         = ["hsbt@ruby-lang.org"]
+  spec.authors       = ["Naotoshi Seo", "SHIBATA Hiroshi"]
+  spec.email         = ["sonots@gmail.com", "hsbt@ruby-lang.org"]
 
   spec.summary       = %q{Provides a simple logging utility for outputting messages.}
   spec.description   = %q{Provides a simple logging utility for outputting messages.}
