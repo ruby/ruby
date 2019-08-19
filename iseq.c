@@ -236,6 +236,14 @@ rb_iseq_update_references(rb_iseq_t *iseq)
         }
         if (FL_TEST(iseq, ISEQ_MARKABLE_ISEQ)) {
             rb_iseq_each_value(iseq, update_each_insn_value, NULL);
+            VALUE *original_iseq = ISEQ_ORIGINAL_ISEQ(iseq);
+            if (original_iseq) {
+                size_t n = 0;
+                const unsigned int size = body->iseq_size;
+                while (n < size) {
+                    n += iseq_extract_values(original_iseq, n, update_each_insn_value, NULL, rb_vm_insn_null_translator);
+                }
+            }
         }
 
         if (body->param.flags.has_kw && ISEQ_COMPILE_DATA(iseq) == NULL) {
