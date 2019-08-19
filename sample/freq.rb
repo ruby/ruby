@@ -7,6 +7,6 @@ while line = gets()
   end
 end
 
-for word in freq.keys.sort!
+freq.keys.sort!.each do |word|
   print word, " -- ", freq[word], "\n"
 end
