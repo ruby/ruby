@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
 RSpec.describe "Bundler.with_env helpers" do
-  def bundle_exec_ruby!(code)
-    build_bundler_context
-    bundle! "exec '#{Gem.ruby}' -e #{code}"
+  def bundle_exec_ruby!(code, options = {})
+    build_bundler_context options
+    bundle! "exec '#{Gem.ruby}' -e #{code}", options
   end
 
-  def build_bundler_context
+  def build_bundler_context(options = {})
     bundle "config set path vendor/bundle"
     gemfile ""
-    bundle "install"
+    bundle "install", options
   end
 
   describe "Bundler.original_env" do
@@ -75,7 +75,7 @@ RSpec.describe "Bundler.with_env helpers" do
     it "should remove '-rbundler/setup' from RUBYOPT" do
       code = "print #{modified_env}['RUBYOPT']"
       ENV["RUBYOPT"] = "-W2 -rbundler/setup #{ENV["RUBYOPT"]}"
-      bundle_exec_ruby! code.dump
+      bundle_exec_ruby! code.dump, :env => { "BUNDLER_SPEC_DISABLE_DEFAULT_BUNDLER_GEM" => "true" }
       expect(last_command.stdboth).not_to include("-rbundler/setup")
     end
 

@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "BUNDLE\-CONFIG" "1" "May 2019" "" ""
+.TH "BUNDLE\-CONFIG" "1" "August 2019" "" ""
 .
 .SH "NAME"
 \fBbundle\-config\fR \- Set bundler configuration options
@@ -60,7 +60,10 @@ Executing bundle with the \fBBUNDLE_IGNORE_CONFIG\fR environment variable set wi
 Executing \fBbundle config set disable_multisource true\fR upgrades the warning about the Gemfile containing multiple primary sources to an error\. Executing \fBbundle config unset disable_multisource\fR downgrades this error to a warning\.
 .
 .SH "REMEMBERING OPTIONS"
-Flags passed to \fBbundle install\fR or the Bundler runtime, such as \fB\-\-path foo\fR or \fB\-\-without production\fR, are not remembered between commands\. If these options must be remembered, they must be set using \fBbundle config\fR (e\.g\., \fBbundle config set path foo\fR)\.
+Flags passed to \fBbundle install\fR or the Bundler runtime, such as \fB\-\-path foo\fR or \fB\-\-without production\fR, are remembered between commands and saved to your local application\'s configuration (normally, \fB\./\.bundle/config\fR)\.
+.
+.P
+However, this will be changed in bundler 3, so it\'s better not to rely on this behavior\. If these options must be remembered, it\'s better to set them using \fBbundle config\fR (e\.g\., \fBbundle config set path foo\fR)\.
 .
 .P
 The options that can be configured are:
@@ -157,7 +160,7 @@ The following is a list of all configuration keys and their purpose\. You can le
 \fBcache_all_platforms\fR (\fBBUNDLE_CACHE_ALL_PLATFORMS\fR): Cache gems for all platforms\.
 .
 .IP "\(bu" 4
-\fBcache_path\fR (\fBBUNDLE_CACHE_PATH\fR): The directory that bundler will place cached gems in when running \fBbundle package\fR, and that bundler will look in when installing gems\. Defaults to \fBvendor/bundle\fR\.
+\fBcache_path\fR (\fBBUNDLE_CACHE_PATH\fR): The directory that bundler will place cached gems in when running \fBbundle package\fR, and that bundler will look in when installing gems\. Defaults to \fBvendor/cache\fR\.
 .
 .IP "\(bu" 4
 \fBclean\fR (\fBBUNDLE_CLEAN\fR): Whether Bundler should run \fBbundle clean\fR automatically after \fBbundle install\fR\.
@@ -182,9 +185,6 @@ The following is a list of all configuration keys and their purpose\. You can le
 .
 .IP "\(bu" 4
 \fBdisable_multisource\fR (\fBBUNDLE_DISABLE_MULTISOURCE\fR): When set, Gemfiles containing multiple sources will produce errors instead of warnings\. Use \fBbundle config unset disable_multisource\fR to unset\.
-.
-.IP "\(bu" 4
-\fBdisable_platform_warnings\fR (\fBBUNDLE_DISABLE_PLATFORM_WARNINGS\fR): Disable warnings during bundle install when a dependency is unused on the current platform\.
 .
 .IP "\(bu" 4
 \fBdisable_shared_gems\fR (\fBBUNDLE_DISABLE_SHARED_GEMS\fR): Stop Bundler from accessing gems installed to RubyGems\' normal location\.

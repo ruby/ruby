@@ -36,7 +36,7 @@ PRIMARY COMMANDS
 	      Update dependencies to their latest versions
 
        bundle package(1) bundle-package.1.html
-	      Package the .gem files required by  your	application  into  the
+	      Package  the  .gem  files  required by your application into the
 	      vendor/cache directory
 
        bundle exec(1) bundle-exec.1.html
@@ -56,7 +56,7 @@ UTILITIES
 	      Generate binstubs for executables in a gem
 
        bundle check(1) bundle-check.1.html
-	      Determine  whether  the  requirements  for  your application are
+	      Determine whether the  requirements  for	your  application  are
 	      installed and available to Bundler
 
        bundle show(1) bundle-show.1.html
@@ -96,9 +96,9 @@ UTILITIES
 	      Removes gems from the Gemfile
 
 PLUGINS
-       When running a command that isn't listed in PRIMARY COMMANDS or	UTILI-
-       TIES,  Bundler  will  try  to  find  an	executable  on your path named
-       bundler-<command> and execute it, passing down any extra  arguments  to
+       When  running a command that isn't listed in PRIMARY COMMANDS or UTILI-
+       TIES, Bundler will try  to  find  an  executable  on  your  path  named
+       bundler-<command>  and  execute it, passing down any extra arguments to
        it.
 
 OBSOLETE
@@ -113,4 +113,4 @@ OBSOLETE
 
 
 
-				   May 2019			     BUNDLE(1)
+				  August 2019			     BUNDLE(1)

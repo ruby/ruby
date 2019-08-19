@@ -398,25 +398,28 @@ env:
 
 matrix:
   include:
-    # to reduce time for finishing all jobs, run the slowest osx build first.
+    # To reduce time for finishing all jobs, running the slowest osx build first.
+    # Build every commit:
     - <<: *x86_64-darwin18
     - <<: *x86_64-linux
     - <<: *i686-linux
-    - <<: *jemalloc
     - <<: *pedanticism
+    - <<: *assertions
+    - <<: *baseruby
+    - <<: *rubyspec
+    - <<: *dependency
+    # Build every commit (Allowed Failures):
     - <<: *ASAN
     - <<: *MSAN
     - <<: *UBSAN
-    - <<: *assertions
+    # Cron only:
+    - <<: *jemalloc
     - <<: *VM_CHECK_MODE
     - <<: *WITH_COROUTINE_UCONTEXT
     - <<: *WITH_COROUTINE_COPY
     - <<: *TOKEN_THREADED_CODE
     - <<: *CALL_THREADED_CODE
     - <<: *NO_THREADED_CODE
-    - <<: *baseruby
-    - <<: *rubyspec
-    - <<: *dependency
   allow_failures:
     - name: -fsanitize=address
     - name: -fsanitize=memory

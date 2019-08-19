@@ -105,11 +105,10 @@ RSpec.describe "The library itself" do
   end
 
   it "has no malformed whitespace" do
-    exempt = /\.gitmodules|\.marshal|fixtures|vendor|LICENSE|vcr_cassettes|rbreadline\.diff/
+    exempt = /\.gitmodules|fixtures|vendor|LICENSE|vcr_cassettes|rbreadline\.diff|\.txt$/
     error_messages = []
     Dir.chdir(root) do
-      files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb spec/bundler` : `git ls-files -z`
-      files.split("\x0").each do |filename|
+      tracked_files.split("\x0").each do |filename|
         next if filename =~ exempt
         error_messages << check_for_tab_characters(filename)
         error_messages << check_for_extra_spaces(filename)
@@ -122,8 +121,7 @@ RSpec.describe "The library itself" do
     exempt = /vendor|vcr_cassettes|LICENSE|rbreadline\.diff/
     error_messages = []
     Dir.chdir(root) do
-      files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb spec/bundler` : `git ls-files -z`
-      files.split("\x0").each do |filename|
+      tracked_files.split("\x0").each do |filename|
         next if filename =~ exempt
         error_messages << check_for_straneous_quotes(filename)
       end
@@ -132,11 +130,10 @@ RSpec.describe "The library itself" do
   end
 
   it "does not include any leftover debugging or development mechanisms" do
-    exempt = %r{quality_spec.rb|support/helpers|vcr_cassettes|\.md|\.ronn}
+    exempt = %r{quality_spec.rb|support/helpers|vcr_cassettes|\.md|\.ronn|\.txt|\.5|\.1}
     error_messages = []
     Dir.chdir(root) do
-      files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb spec/bundler` : `git ls-files -z`
-      files.split("\x0").each do |filename|
+      tracked_files.split("\x0").each do |filename|
         next if filename =~ exempt
         error_messages << check_for_debugging_mechanisms(filename)
       end
@@ -146,10 +143,9 @@ RSpec.describe "The library itself" do
 
   it "does not include any unresolved merge conflicts" do
     error_messages = []
-    exempt = %r{lock/lockfile_(bundler_1_)?spec|quality_spec|vcr_cassettes|\.ronn|lockfile_parser\.rb}
+    exempt = %r{lock/lockfile_spec|quality_spec|vcr_cassettes|\.ronn|lockfile_parser\.rb}
     Dir.chdir(root) do
-      files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb spec/bundler` : `git ls-files -z`
-      files.split("\x0").each do |filename|
+      tracked_files.split("\x0").each do |filename|
         next if filename =~ exempt
         error_messages << check_for_git_merge_conflicts(filename)
       end
@@ -174,8 +170,7 @@ RSpec.describe "The library itself" do
     error_messages = []
     exempt = /vendor|vcr_cassettes/
     Dir.chdir(root) do
-      lib_files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb` : `git ls-files -z -- lib`
-      lib_files.split("\x0").each do |filename|
+      lib_tracked_files.split("\x0").each do |filename|
         next if filename =~ exempt
         error_messages << check_for_expendable_words(filename)
         error_messages << check_for_specific_pronouns(filename)
@@ -204,8 +199,7 @@ RSpec.describe "The library itself" do
 
     Dir.chdir(root) do
       key_pattern = /([a-z\._-]+)/i
-      lib_files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb` : `git ls-files -z -- lib`
-      lib_files.split("\x0").each do |filename|
+      lib_tracked_files.split("\x0").each do |filename|
         each_line(filename) do |line, number|
           line.scan(/Bundler\.settings\[:#{key_pattern}\]/).flatten.each {|s| all_settings[s] << "referenced at `#{filename}:#{number.succ}`" }
         end
@@ -231,31 +225,15 @@ RSpec.describe "The library itself" do
   end
 
   it "can still be built" do
-    Dir.chdir(root) do
-      begin
-        if ruby_core?
-          spec = Gem::Specification.load(gemspec.to_s)
-          spec.bindir = "libexec"
-          File.open(root.join("bundler.gemspec").to_s, "w") {|f| f.write spec.to_ruby }
-          gem_command! :build, root.join("bundler.gemspec").to_s
-          FileUtils.rm(root.join("bundler.gemspec").to_s)
-        else
-          gem_command! :build, gemspec
-        end
-
-        expect(err).to be_empty, "bundler should build as a gem without warnings, but\n#{err}"
-      ensure
-        # clean up the .gem generated
-        FileUtils.rm("bundler-#{Bundler::VERSION}.gem")
-      end
+    with_built_bundler do |_gem_path|
+      expect(err).to be_empty, "bundler should build as a gem without warnings, but\n#{err}"
     end
   end
 
   it "ships the correct set of files", :ruby_repo do
     Dir.chdir(root) do
-      git_list = IO.popen("git ls-files -z", &:read).split("\x0").select {|f| f.match(%r{^(lib|exe)/}) }
+      git_list = IO.popen("git ls-files -z", &:read).split("\x0").select {|f| f.match(%r{^(lib|man|exe)/}) }
       git_list += %w[CHANGELOG.md LICENSE.md README.md bundler.gemspec]
-      git_list += Dir.glob("man/**/*")
 
       gem_list = Gem::Specification.load(gemspec.to_s).files
 
@@ -272,12 +250,11 @@ RSpec.describe "The library itself" do
         lib/bundler/vlad.rb
         lib/bundler/templates/gems.rb
       ]
-      lib_files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb` : `git ls-files -z -- lib`
-      lib_files = lib_files.split("\x0").grep(/\.rb$/) - exclusions
-      lib_files.reject! {|f| f.start_with?("lib/bundler/vendor") }
-      lib_files.map! {|f| f.chomp(".rb") }
+      files_to_require = lib_tracked_files.split("\x0").grep(/\.rb$/) - exclusions
+      files_to_require.reject! {|f| f.start_with?("lib/bundler/vendor") }
+      files_to_require.map! {|f| f.chomp(".rb") }
       sys_exec!("ruby -w -Ilib") do |input, _, _|
-        lib_files.each do |f|
+        files_to_require.each do |f|
           input.puts "require '#{f.sub(%r{\Alib/}, "")}'"
         end
       end
@@ -294,8 +271,7 @@ RSpec.describe "The library itself" do
     Dir.chdir(root) do
       exempt = %r{templates/|vendor/}
       all_bad_requires = []
-      lib_files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb` : `git ls-files -z -- lib`
-      lib_files.split("\x0").each do |filename|
+      lib_tracked_files.split("\x0").each do |filename|
         next if filename =~ exempt
         each_line(filename) do |line, number|
           line.scan(/^ *require "bundler/).each { all_bad_requires << "#{filename}:#{number.succ}" }
