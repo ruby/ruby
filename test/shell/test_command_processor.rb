@@ -1,4 +1,5 @@
 # frozen_string_literal: false
+require 'test/unit'
 require 'shell'
 require 'tmpdir'
 
@@ -65,5 +66,18 @@ class TestShell::CommandProcessor < Test::Unit::TestCase
   ensure
     Process.waitall
     Dir.rmdir(path)
+  end
+
+  def test_option_type
+    name = 'foo.cmd'
+    path = File.join(@tmpdir, name)
+
+    open(path, 'w', 0755) {}
+    assert_raise(TypeError) {
+      catch(catch_command_start) {@shell.system(name, 42)}
+    }
+  ensure
+    Process.waitall
+    File.unlink(path)
   end
 end

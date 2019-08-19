@@ -16,7 +16,7 @@ class Gem::Resolver::SourceSet < Gem::Resolver::Set
     @sets  = {}
   end
 
-  def find_all req # :nodoc:
+  def find_all(req) # :nodoc:
     if set = get_set(req.dependency.name)
       set.find_all req
     else
@@ -25,7 +25,7 @@ class Gem::Resolver::SourceSet < Gem::Resolver::Set
   end
 
   # potentially no-op
-  def prefetch reqs # :nodoc:
+  def prefetch(reqs) # :nodoc:
     reqs.each do |req|
       if set = get_set(req.dependency.name)
         set.prefetch reqs
@@ -33,11 +33,11 @@ class Gem::Resolver::SourceSet < Gem::Resolver::Set
     end
   end
 
-  def add_source_gem name, source
+  def add_source_gem(name, source)
     @links[name] = source
   end
 
-private
+  private
 
   def get_set(name)
     link = @links[name]
@@ -45,4 +45,3 @@ private
   end
 
 end
-

@@ -1,12 +1,13 @@
-#define tIGNORED_NL      (tLAST_TOKEN + 1)
-#define tCOMMENT         (tLAST_TOKEN + 2)
-#define tEMBDOC_BEG      (tLAST_TOKEN + 3)
-#define tEMBDOC          (tLAST_TOKEN + 4)
-#define tEMBDOC_END      (tLAST_TOKEN + 5)
-#define tSP              (tLAST_TOKEN + 6)
-#define tHEREDOC_BEG     (tLAST_TOKEN + 7)
-#define tHEREDOC_END     (tLAST_TOKEN + 8)
-#define k__END__         (tLAST_TOKEN + 9)
+enum {
+    tIGNORED_NL  = tLAST_TOKEN + 1,
+    tCOMMENT,
+    tEMBDOC_BEG,
+    tEMBDOC,
+    tEMBDOC_END,
+    tHEREDOC_BEG,
+    tHEREDOC_END,
+    k__END__
+};
 
 typedef struct {
     ID ripper_id_backref;
@@ -50,6 +51,7 @@ typedef struct {
     ID ripper_id_label_end;
     ID ripper_id_tlambda;
     ID ripper_id_tlambeg;
+    ID ripper_id_tnumparam;
 
     ID ripper_id_ignored_nl;
     ID ripper_id_comment;
@@ -112,6 +114,7 @@ ripper_init_eventids2(void)
     set_id2(label_end);
     set_id2(tlambda);
     set_id2(tlambeg);
+    set_id2(tnumparam);
 
     set_id2(ignored_nl);
     set_id2(comment);
@@ -258,6 +261,8 @@ static const struct token_assoc {
     {tSTAR,			O(op)},
     {tDSTAR,			O(op)},
     {tANDDOT,			O(op)},
+    {tMETHREF,			O(op)},
+    {tPIPE,			O(op)},
     {tSTRING_BEG,		O(tstring_beg)},
     {tSTRING_CONTENT,		O(tstring_content)},
     {tSTRING_DBEG,		O(embexpr_beg)},
@@ -274,6 +279,7 @@ static const struct token_assoc {
     {tLABEL_END,		O(label_end)},
     {tLAMBDA,			O(tlambda)},
     {tLAMBEG,			O(tlambeg)},
+    {tNUMPARAM, 		O(tnumparam)},
 
     /* ripper specific tokens */
     {tIGNORED_NL,		O(ignored_nl)},
@@ -288,13 +294,13 @@ static const struct token_assoc {
 };
 
 static ID
-ripper_token2eventid(int tok)
+ripper_token2eventid(enum yytokentype tok)
 {
     int i;
 
     for (i = 0; i < numberof(token_to_eventid); i++) {
 	const struct token_assoc *const a = &token_to_eventid[i];
-        if (a->token == tok)
+        if ((enum yytokentype)a->token == tok)
             return *(const ID *)((const char *)&ripper_scanner_ids + a->id_offset);
     }
     if (tok < 256) {
@@ -302,5 +308,5 @@ ripper_token2eventid(int tok)
     }
     rb_raise(rb_eRuntimeError, "[Ripper FATAL] unknown token %d", tok);
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(0);
 }

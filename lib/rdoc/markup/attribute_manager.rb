@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # Manages changes of attributes in a block of text
 
@@ -53,10 +53,10 @@ class RDoc::Markup::AttributeManager
   attr_reader :protectable
 
   ##
-  # And this maps _special_ sequences to a name. A special sequence is
-  # something like a WikiWord
+  # And this maps _regexp handling_ sequences to a name. A regexp handling
+  # sequence is something like a WikiWord
 
-  attr_reader :special
+  attr_reader :regexp_handlings
 
   ##
   # Creates a new attribute manager that understands bold, emphasized and
@@ -66,7 +66,7 @@ class RDoc::Markup::AttributeManager
     @html_tags = {}
     @matching_word_pairs = {}
     @protectable = %w[<]
-    @special = []
+    @regexp_handlings = []
     @word_pair_map = {}
     @attributes = RDoc::Markup::Attributes.new
 
@@ -166,22 +166,22 @@ class RDoc::Markup::AttributeManager
   end
 
   ##
-  # Converts special sequences to RDoc attributes
+  # Converts regexp handling sequences to RDoc attributes
 
-  def convert_specials str, attrs
-    @special.each do |regexp, attribute|
+  def convert_regexp_handlings str, attrs
+    @regexp_handlings.each do |regexp, attribute|
       str.scan(regexp) do
         capture = $~.size == 1 ? 0 : 1
 
         s, e = $~.offset capture
 
-        attrs.set_attrs s, e - s, attribute | @attributes.special
+        attrs.set_attrs s, e - s, attribute | @attributes.regexp_handling
       end
     end
   end
 
   ##
-  # Escapes special sequences of text to prevent conversion to RDoc
+  # Escapes regexp handling sequences of text to prevent conversion to RDoc
 
   def mask_protected_sequences
     # protect __send__, __FILE__, etc.
@@ -193,7 +193,7 @@ class RDoc::Markup::AttributeManager
   end
 
   ##
-  # Unescapes special sequences of text
+  # Unescapes regexp handling sequences of text
 
   def unmask_protected_sequences
     @str.gsub!(/(.)#{PROTECT_ATTR}/, "\\1\000")
@@ -233,28 +233,28 @@ class RDoc::Markup::AttributeManager
   end
 
   ##
-  # Adds a special handler for +pattern+ with +name+.  A simple URL handler
+  # Adds a regexp handling for +pattern+ with +name+.  A simple URL handler
   # would be:
   #
-  #   @am.add_special(/((https?:)\S+\w)/, :HYPERLINK)
+  #   @am.add_regexp_handling(/((https?:)\S+\w)/, :HYPERLINK)
 
-  def add_special pattern, name
-    @special << [pattern, @attributes.bitmap_for(name)]
+  def add_regexp_handling pattern, name
+    @regexp_handlings << [pattern, @attributes.bitmap_for(name)]
   end
 
   ##
-  # Processes +str+ converting attributes, HTML and specials
+  # Processes +str+ converting attributes, HTML and regexp handlings
 
   def flow str
-    @str = str
+    @str = str.dup
 
     mask_protected_sequences
 
     @attrs = RDoc::Markup::AttrSpan.new @str.length
 
-    convert_attrs    @str, @attrs
-    convert_html     @str, @attrs
-    convert_specials @str, @attrs
+    convert_attrs            @str, @attrs
+    convert_html             @str, @attrs
+    convert_regexp_handlings @str, @attrs
 
     unmask_protected_sequences
 
@@ -312,12 +312,12 @@ class RDoc::Markup::AttributeManager
         res << change_attribute(current_attr, new_attr)
         current_attr = new_attr
 
-        if (current_attr & @attributes.special) != 0 then
+        if (current_attr & @attributes.regexp_handling) != 0 then
           i += 1 while
-            i < str_len and (@attrs[i] & @attributes.special) != 0
+            i < str_len and (@attrs[i] & @attributes.regexp_handling) != 0
 
-          res << RDoc::Markup::Special.new(current_attr,
-                                           copy_string(start_pos, i))
+          res << RDoc::Markup::RegexpHandling.new(current_attr,
+                                                  copy_string(start_pos, i))
           start_pos = i
           next
         end

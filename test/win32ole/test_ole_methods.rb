@@ -19,7 +19,6 @@ if defined?(WIN32OLE)
       x = @obj.ole_methods.select {|m|
         m.invoke_kind == 'PROPERTYPUTREF'
       }
-      assert(x.size > 0)
       assert_equal(1, x.size)
       assert_equal('Item', x[0].name)
     end
@@ -28,7 +27,6 @@ if defined?(WIN32OLE)
       x = @obj.ole_put_methods.select {|m|
         m.invoke_kind == 'PROPERTYPUTREF'
       }
-      assert(x.size > 0)
       assert_equal(1, x.size)
       assert_equal('Item', x[0].name)
     end

@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require 'rexml/formatters/pretty'
+require_relative 'pretty'
 
 module REXML
   module Formatters

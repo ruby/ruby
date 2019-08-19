@@ -1,16 +1,9 @@
-#!/usr/bin/env ruby -w
-# encoding: UTF-8
+# -*- coding: utf-8 -*-
 # frozen_string_literal: false
 
-# tc_encodings.rb
-#
-#  Created by James Edward Gray II on 2008-09-13.
-#  Copyright 2008 James Edward Gray II. You can redistribute or modify this code
-#  under the terms of Ruby's license.
+require_relative "helper"
 
-require_relative "base"
-
-class TestCSV::Encodings < TestCSV
+class TestCSVEncodings < Test::Unit::TestCase
   extend DifferentOFS
 
   def setup
@@ -256,14 +249,31 @@ class TestCSV::Encodings < TestCSV
     assert_equal(["foo,\u3042\n".encode(Encoding::Windows_31J), Encoding::Windows_31J], [s, s.encoding], bug9766)
   end
 
+  def test_row_separator_detection_with_invalid_encoding
+    csv = CSV.new("invalid,\xF8\r\nvalid,x\r\n".force_encoding("UTF-8"),
+                  encoding: "UTF-8")
+    assert_equal("\r\n", csv.row_sep)
+  end
+
+  def test_invalid_encoding_row_error
+    csv = CSV.new("valid,x\rinvalid,\xF8\r".force_encoding("UTF-8"),
+                  encoding: "UTF-8", row_sep: "\r")
+    error = assert_raise(CSV::MalformedCSVError) do
+      csv.shift
+      csv.shift
+    end
+    assert_equal("Invalid byte sequence in UTF-8 in line 2.",
+                 error.message)
+  end
+
   private
 
   def assert_parses(fields, encoding, options = { })
     encoding = Encoding.find(encoding) unless encoding.is_a? Encoding
     orig_fields = fields
-    fields   = encode_ary(fields, encoding)
+    fields = encode_ary(fields, encoding)
     data = ary_to_data(fields, options)
-    parsed   = CSV.parse(data, options)
+    parsed = CSV.parse(data, options)
     assert_equal(fields, parsed)
     parsed.flatten.each_with_index do |field, i|
       assert_equal(encoding, field.encoding, "Field[#{i + 1}] was transcoded.")

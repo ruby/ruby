@@ -6,37 +6,18 @@
 #++
 
 require 'rubygems'
-
-# forward-declare
-
-module Gem::Security # :nodoc:
-  class Policy # :nodoc:
-  end
-end
+require 'rubygems/security_option'
 
 ##
 # Mixin methods for install and update options for Gem::Commands
 
 module Gem::InstallUpdateOptions
+  include Gem::SecurityOption
 
   ##
   # Add the install/update options to the option parser.
 
   def add_install_update_options
-    # TODO: use @parser.accept
-    OptionParser.accept Gem::Security::Policy do |value|
-      require 'rubygems/security'
-
-      raise OptionParser::InvalidArgument, 'OpenSSL not installed' unless
-        defined?(Gem::Security::HighSecurity)
-
-      value = Gem::Security::Policies[value]
-      valid = Gem::Security::Policies.keys.sort
-      message = "#{value} (#{valid.join ', '} are valid)"
-      raise OptionParser::InvalidArgument, message if value.nil?
-      value
-    end
-
     add_option(:"Install/Update", '-i', '--install-dir DIR',
                'Gem repository directory to get installed',
                'gems') do |value, options|
@@ -44,12 +25,12 @@ module Gem::InstallUpdateOptions
     end
 
     add_option(:"Install/Update", '-n', '--bindir DIR',
-               'Directory where binary files are',
+               'Directory where executables are',
                'located') do |value, options|
       options[:bin_dir] = File.expand_path(value)
     end
 
-    add_option(:"Install/Update",       '--[no-]document [TYPES]', Array,
+    add_option(:"Install/Update",       '--document [TYPES]', Array,
                'Generate documentation for installed gems',
                'List the documentation types you wish to',
                'generate.  For example: rdoc,ri') do |value, options|
@@ -69,7 +50,7 @@ module Gem::InstallUpdateOptions
     add_option(:"Install/Update", '--vendor',
                'Install gem into the vendor directory.',
                'Only for use by gem repackagers.') do |value, options|
-      unless Gem.vendor_dir then
+      unless Gem.vendor_dir
         raise OptionParser::InvalidOption.new 'your platform is not supported'
       end
 
@@ -80,30 +61,6 @@ module Gem::InstallUpdateOptions
     add_option(:"Install/Update", '-N', '--no-document',
                'Disable documentation generation') do |value, options|
       options[:document] = []
-    end
-
-    add_option(:Deprecated, '--[no-]rdoc',
-               'Generate RDoc for installed gems',
-               'Use --document instead') do |value, options|
-      if value then
-        options[:document] << 'rdoc'
-      else
-        options[:document].delete 'rdoc'
-      end
-
-      options[:document].uniq!
-    end
-
-    add_option(:Deprecated, '--[no-]ri',
-               'Generate ri data for installed gems.',
-               'Use --document instead') do |value, options|
-      if value then
-        options[:document] << 'ri'
-      else
-        options[:document].delete 'ri'
-      end
-
-      options[:document].uniq!
     end
 
     add_option(:"Install/Update", '-E', '--[no-]env-shebang',
@@ -124,11 +81,7 @@ module Gem::InstallUpdateOptions
       options[:wrappers] = value
     end
 
-    add_option(:"Install/Update", '-P', '--trust-policy POLICY',
-               Gem::Security::Policy,
-               'Specify gem trust policy') do |value, options|
-      options[:security_policy] = value
-    end
+    add_security_option
 
     add_option(:"Install/Update", '--ignore-dependencies',
                'Do not install any required dependent gems') do |value, options|
@@ -136,8 +89,8 @@ module Gem::InstallUpdateOptions
     end
 
     add_option(:"Install/Update",       '--[no-]format-executable',
-               'Make installed executable names match ruby.',
-               'If ruby is ruby18, foo_exec will be',
+               'Make installed executable names match Ruby.',
+               'If Ruby is ruby18, foo_exec will be',
                'foo_exec18') do |value, options|
       options[:format_executable] = value
     end
@@ -187,7 +140,7 @@ module Gem::InstallUpdateOptions
         File.exist? file
       end unless v
 
-      unless v then
+      unless v
         message = v ? v : "(tried #{Gem::GEM_DEP_FILES.join ', '})"
 
         raise OptionParser::InvalidArgument,
@@ -225,7 +178,6 @@ module Gem::InstallUpdateOptions
                'Suggest alternates when gems are not found') do |v,o|
       options[:suggest_alternate] = v
     end
-
   end
 
   ##
@@ -236,4 +188,3 @@ module Gem::InstallUpdateOptions
   end
 
 end
-

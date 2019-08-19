@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require "rss/rss"
+require_relative "rss"
 
 module RSS
   ##
@@ -65,15 +65,15 @@ module RSS
   end
 end
 
-require "rss/maker/1.0"
-require "rss/maker/2.0"
-require "rss/maker/feed"
-require "rss/maker/entry"
-require "rss/maker/content"
-require "rss/maker/dublincore"
-require "rss/maker/slash"
-require "rss/maker/syndication"
-require "rss/maker/taxonomy"
-require "rss/maker/trackback"
-require "rss/maker/image"
-require "rss/maker/itunes"
+require_relative "maker/1.0"
+require_relative "maker/2.0"
+require_relative "maker/feed"
+require_relative "maker/entry"
+require_relative "maker/content"
+require_relative "maker/dublincore"
+require_relative "maker/slash"
+require_relative "maker/syndication"
+require_relative "maker/taxonomy"
+require_relative "maker/trackback"
+require_relative "maker/image"
+require_relative "maker/itunes"

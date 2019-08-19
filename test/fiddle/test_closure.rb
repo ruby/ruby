@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 begin
   require_relative 'helper'
 rescue LoadError
@@ -7,15 +7,15 @@ end
 module Fiddle
   class TestClosure < Fiddle::TestCase
     def test_argument_errors
-      assert_raises(TypeError) do
+      assert_raise(TypeError) do
         Closure.new(TYPE_INT, TYPE_INT)
       end
 
-      assert_raises(TypeError) do
+      assert_raise(TypeError) do
         Closure.new('foo', [TYPE_INT])
       end
 
-      assert_raises(TypeError) do
+      assert_raise(TypeError) do
         Closure.new(TYPE_INT, ['meow!'])
       end
     end

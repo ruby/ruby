@@ -15,7 +15,7 @@
 #
 # Previous versions didn't use a module for namespacing, however
 # #timeout is provided for backwards compatibility.  You
-# should prefer Timeout#timeout instead.
+# should prefer Timeout.timeout instead.
 #
 # == Copyright
 #
@@ -23,7 +23,7 @@
 # Copyright:: (C) 2000  Information-technology Promotion Agency, Japan
 
 module Timeout
-  # Raised by Timeout#timeout when the block times out.
+  # Raised by Timeout.timeout when the block times out.
   class Error < RuntimeError
     attr_reader :thread
 
@@ -67,7 +67,9 @@ module Timeout
   # +sec+ seconds, otherwise throws an exception, based on the value of +klass+.
   #
   # The exception thrown to terminate the given block cannot be rescued inside
-  # the block unless +klass+ is given explicitly.
+  # the block unless +klass+ is given explicitly. However, the block can use
+  # ensure to prevent the handling of the exception.  For that reason, this
+  # method cannot be relied on to enforce timeouts for untrusted blocks.
   #
   # Note that this is both a method of module Timeout, so you can <tt>include
   # Timeout</tt> into your classes so they have a #timeout method, as well as
@@ -118,7 +120,7 @@ module Timeout
 end
 
 def timeout(*args, &block)
-  warn "#{caller_locations(1, 1)[0]}: Object##{__method__} is deprecated, use Timeout.timeout instead."
+  warn "Object##{__method__} is deprecated, use Timeout.timeout instead.", uplevel: 1
   Timeout.timeout(*args, &block)
 end
 

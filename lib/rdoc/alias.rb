@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # Represent an alias, which is an old_name/new_name pair associated with a
 # particular context

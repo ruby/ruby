@@ -9,7 +9,6 @@ require "test/unit"
 require "tempfile"
 require "timeout"
 require "tmpdir"
-require "thread"
 require "io/nonblock"
 
 class TestSocket_UNIXSocket < Test::Unit::TestCase
@@ -282,6 +281,16 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     yield io, path
   ensure
     io.close
+    File.unlink path if path && File.socket?(path)
+  end
+
+  def test_open_nul_byte
+    tmpfile = Tempfile.new("s")
+    path = tmpfile.path
+    tmpfile.close(true)
+    assert_raise(ArgumentError) {UNIXServer.open(path+"\0")}
+    assert_raise(ArgumentError) {UNIXSocket.open(path+"\0")}
+  ensure
     File.unlink path if path && File.socket?(path)
   end
 

@@ -155,7 +155,7 @@ ole_val2variant_err(VALUE val, VARIANT *var)
     if (rb_obj_is_kind_of(v, cWIN32OLE_VARIANT)) {
         v = folevariant_value(v);
     }
-    if (TYPE(v) != T_FIXNUM && TYPE(v) != T_BIGNUM && v != Qnil) {
+    if (!(FIXNUM_P(v) || RB_TYPE_P(v, T_BIGNUM) || v == Qnil)) {
         rb_raise(eWIN32OLERuntimeError, "failed to convert VT_ERROR VARIANT:`%"PRIsVALUE"'", rb_inspect(v));
     }
     V_VT(var) = VT_ERROR;
@@ -692,6 +692,7 @@ ole_variant2variant(VALUE val, VARIANT *var)
 void
 Init_win32ole_variant(void)
 {
+#undef rb_intern
     cWIN32OLE_VARIANT = rb_define_class("WIN32OLE_VARIANT", rb_cObject);
     rb_define_alloc_func(cWIN32OLE_VARIANT, folevariant_s_allocate);
     rb_define_singleton_method(cWIN32OLE_VARIANT, "array", folevariant_s_array, 2);

@@ -1,4 +1,4 @@
-require File.expand_path('../jisx0208', __FILE__)
+require File.expand_path('../lib/jisx0208', __FILE__)
 
 ENCODES = [
   {
@@ -93,7 +93,7 @@ def generate_from_ucs(params, pairs)
 end
 
 def make_pairs(code_map)
-  pairs = code_map.inject([]) {|acc, (range, ch)|
+  code_map.inject([]) {|acc, (range, ch)|
     acc += range.map{|uni| pair = [uni, Integer(ch)]; ch = ch.succ; next pair }
   }
 end

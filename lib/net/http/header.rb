@@ -14,11 +14,15 @@ module Net::HTTPHeader
     @header = {}
     return unless initheader
     initheader.each do |key, value|
-      warn "net/http: warning: duplicated HTTP header: #{key}" if key?(key) and $VERBOSE
+      warn "net/http: duplicated HTTP header: #{key}", uplevel: 3 if key?(key) and $VERBOSE
       if value.nil?
-        warn "net/http: warning: nil HTTP header: #{key}" if $VERBOSE
+        warn "net/http: nil HTTP header: #{key}", uplevel: 3 if $VERBOSE
       else
-        @header[key.downcase] = [value.strip]
+        value = value.strip # raise error for invalid byte sequences
+        if value.count("\r\n") > 0
+          raise ArgumentError, "header #{key} has field value #{value.inspect}, this cannot include CR/LF"
+        end
+        @header[key.downcase.to_s] = [value]
       end
     end
   end
@@ -32,17 +36,17 @@ module Net::HTTPHeader
   # Returns the header field corresponding to the case-insensitive key.
   # For example, a key of "Content-Type" might return "text/html"
   def [](key)
-    a = @header[key.downcase] or return nil
+    a = @header[key.downcase.to_s] or return nil
     a.join(', ')
   end
 
   # Sets the header field corresponding to the case-insensitive key.
   def []=(key, val)
     unless val
-      @header.delete key.downcase
+      @header.delete key.downcase.to_s
       return val
     end
-    @header[key.downcase] = [val]
+    set_field(key, val)
   end
 
   # [Ruby 1.8.3]
@@ -61,10 +65,39 @@ module Net::HTTPHeader
   #   p request.get_fields('X-My-Header')   #=> ["a", "b", "c"]
   #
   def add_field(key, val)
-    if @header.key?(key.downcase)
-      @header[key.downcase].push val
+    stringified_downcased_key = key.downcase.to_s
+    if @header.key?(stringified_downcased_key)
+      append_field_value(@header[stringified_downcased_key], val)
     else
-      @header[key.downcase] = [val]
+      set_field(key, val)
+    end
+  end
+
+  private def set_field(key, val)
+    case val
+    when Enumerable
+      ary = []
+      append_field_value(ary, val)
+      @header[key.downcase.to_s] = ary
+    else
+      val = val.to_s # for compatibility use to_s instead of to_str
+      if val.b.count("\r\n") > 0
+        raise ArgumentError, 'header field value cannot include CR/LF'
+      end
+      @header[key.downcase.to_s] = [val]
+    end
+  end
+
+  private def append_field_value(ary, val)
+    case val
+    when Enumerable
+      val.each{|x| append_field_value(ary, x)}
+    else
+      val = val.to_s
+      if /[\r\n]/n.match?(val.b)
+        raise ArgumentError, 'header field value cannot include CR/LF'
+      end
+      ary.push val
     end
   end
 
@@ -80,8 +113,9 @@ module Net::HTTPHeader
   #     #=> "session=al98axx; expires=Fri, 31-Dec-1999 23:58:23, query=rubyscript; expires=Fri, 31-Dec-1999 23:58:23"
   #
   def get_fields(key)
-    return nil unless @header[key.downcase]
-    @header[key.downcase].dup
+    stringified_downcased_key = key.downcase.to_s
+    return nil unless @header[stringified_downcased_key]
+    @header[stringified_downcased_key].dup
   end
 
   # Returns the header field corresponding to the case-insensitive key.
@@ -89,7 +123,7 @@ module Net::HTTPHeader
   # raises an IndexError if there's no header field named +key+
   # See Hash#fetch
   def fetch(key, *args, &block)   #:yield: +key+
-    a = @header.fetch(key.downcase, *args, &block)
+    a = @header.fetch(key.downcase.to_s, *args, &block)
     a.kind_of?(Array) ? a.join(', ') : a
   end
 
@@ -150,12 +184,12 @@ module Net::HTTPHeader
 
   # Removes a header field, specified by case-insensitive key.
   def delete(key)
-    @header.delete(key.downcase)
+    @header.delete(key.downcase.to_s)
   end
 
   # true if +key+ header exists.
   def key?(key)
-    @header.key?(key.downcase)
+    @header.key?(key.downcase.to_s)
   end
 
   # Returns a Hash consisting of header names and array of values.
@@ -289,7 +323,7 @@ module Net::HTTPHeader
   end
 
   # Returns "true" if the "transfer-encoding" header is present and
-  # set to "chunked".  This is an HTTP/1.1 feature, allowing the
+  # set to "chunked".  This is an HTTP/1.1 feature, allowing
   # the content to be sent in "chunks" without at the outset
   # stating the entire content length.
   def chunked?

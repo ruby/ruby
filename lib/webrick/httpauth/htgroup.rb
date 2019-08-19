@@ -36,7 +36,7 @@ module WEBrick
         @path = path
         @mtime = Time.at(0)
         @group = Hash.new
-        open(@path,"a").close unless File::exist?(@path)
+        File.open(@path,"a").close unless File.exist?(@path)
         reload
       end
 
@@ -46,7 +46,7 @@ module WEBrick
       def reload
         if (mtime = File::mtime(@path)) > @mtime
           @group.clear
-          open(@path){|io|
+          File.open(@path){|io|
             while line = io.gets
               line.chomp!
               group, members = line.split(/:\s*/)
@@ -63,15 +63,18 @@ module WEBrick
 
       def flush(output=nil)
         output ||= @path
-        tmp = Tempfile.new("htgroup", File::dirname(output))
+        tmp = Tempfile.create("htgroup", File::dirname(output))
         begin
           @group.keys.sort.each{|group|
             tmp.puts(format("%s: %s", group, self.members(group).join(" ")))
           }
+        ensure
           tmp.close
-          File::rename(tmp.path, output)
-        rescue
-          tmp.close(true)
+          if $!
+            File.unlink(tmp.path)
+          else
+            return File.rename(tmp.path, output)
+          end
         end
       end
 

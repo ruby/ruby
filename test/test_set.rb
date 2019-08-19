@@ -200,6 +200,23 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(false, set.include?(true))
   end
 
+  def test_eqq
+    set = Set[1,2,3]
+
+    assert_equal(true, set === 1)
+    assert_equal(true, set === 2)
+    assert_equal(true, set === 3)
+    assert_equal(false, set === 0)
+    assert_equal(false, set === nil)
+
+    set = Set["1",nil,"2",nil,"0","1",false]
+    assert_equal(true, set === nil)
+    assert_equal(true, set === false)
+    assert_equal(true, set === "1")
+    assert_equal(false, set === 0)
+    assert_equal(false, set === true)
+  end
+
   def test_superset?
     set = Set[1,2,3]
 
@@ -528,6 +545,24 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(Set.new(1..10), set)
   end
 
+  def test_filter!
+    set = Set.new(1..10)
+    ret = set.filter! { |i| i <= 10 }
+    assert_equal(nil, ret)
+    assert_equal(Set.new(1..10), set)
+
+    set = Set.new(1..10)
+    ret = set.filter! { |i| i % 3 != 0 }
+    assert_same(set, ret)
+    assert_equal(Set[1,2,4,5,7,8,10], set)
+
+    set = Set.new(1..10)
+    enum = set.filter!
+    assert_equal(set.size, enum.size)
+    assert_equal(nil, enum.each { |i| i <= 10 })
+    assert_equal(Set.new(1..10), set)
+  end
+
   def test_merge
     set = Set[1,2,3]
 
@@ -676,7 +711,7 @@ class TC_Set < Test::Unit::TestCase
     set << 4
     assert_same orig, set.freeze
     assert_equal true, set.frozen?
-    assert_raise(RuntimeError) {
+    assert_raise(FrozenError) {
       set << 5
     }
     assert_equal 4, set.size
@@ -699,21 +734,31 @@ class TC_Set < Test::Unit::TestCase
     set2 = set1.clone
 
     assert_predicate set2, :frozen?
-    assert_raise(RuntimeError) {
+    assert_raise(FrozenError) {
       set2.add 5
     }
   end
 
   def test_inspect
-    set1 = Set[1]
-
-    assert_equal('#<Set: {1}>', set1.inspect)
+    set1 = Set[1, 2]
+    assert_equal('#<Set: {1, 2}>', set1.inspect)
 
     set2 = Set[Set[0], 1, 2, set1]
-    assert_equal(false, set2.inspect.include?('#<Set: {...}>'))
+    assert_equal('#<Set: {#<Set: {0}>, 1, 2, #<Set: {1, 2}>}>', set2.inspect)
 
     set1.add(set2)
-    assert_equal(true, set1.inspect.include?('#<Set: {...}>'))
+    assert_equal('#<Set: {#<Set: {0}>, 1, 2, #<Set: {1, 2, #<Set: {...}>}>}>', set2.inspect)
+  end
+
+  def test_to_s
+    set1 = Set[1, 2]
+    assert_equal('#<Set: {1, 2}>', set1.to_s)
+
+    set2 = Set[Set[0], 1, 2, set1]
+    assert_equal('#<Set: {#<Set: {0}>, 1, 2, #<Set: {1, 2}>}>', set2.to_s)
+
+    set1.add(set2)
+    assert_equal('#<Set: {#<Set: {0}>, 1, 2, #<Set: {1, 2, #<Set: {...}>}>}>', set2.to_s)
   end
 
   def test_compare_by_identity
@@ -733,6 +778,19 @@ class TC_Set < Test::Unit::TestCase
     set.merge(array)
     assert_equal(3, set.size)
     assert_equal(array.uniq.sort, set.sort)
+  end
+
+  def test_reset
+    [Set, Class.new(Set)].each { |klass|
+      a = [1, 2]
+      b = [1]
+      set = klass.new([a, b])
+
+      b << 2
+      set.reset
+
+      assert_equal(klass.new([a]), set, klass.name)
+    }
   end
 end
 
@@ -801,6 +859,45 @@ class TC_SortedSet < Test::Unit::TestCase
     assert_equal(6, e.size)
     set << 42
     assert_equal(7, e.size)
+  end
+
+  def test_freeze
+    orig = set = SortedSet[3,2,1]
+    assert_equal false, set.frozen?
+    set << 4
+    assert_same orig, set.freeze
+    assert_equal true, set.frozen?
+    assert_raise(FrozenError) {
+      set << 5
+    }
+    assert_equal 4, set.size
+
+    # https://bugs.ruby-lang.org/issues/12091
+    assert_nothing_raised {
+      assert_equal [1,2,3,4], set.to_a
+    }
+  end
+
+  def test_freeze_dup
+    set1 = SortedSet[1,2,3]
+    set1.freeze
+    set2 = set1.dup
+
+    assert_not_predicate set2, :frozen?
+    assert_nothing_raised {
+      set2.add 4
+    }
+  end
+
+  def test_freeze_clone
+    set1 = SortedSet[1,2,3]
+    set1.freeze
+    set2 = set1.clone
+
+    assert_predicate set2, :frozen?
+    assert_raise(FrozenError) {
+      set2.add 5
+    }
   end
 end
 

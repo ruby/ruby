@@ -3166,7 +3166,7 @@ Fri Aug 11 14:37:03 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
 
 	* io.c: マクロREAD_DATA_PENDINGの定義を変更(Linux対応)
 
-	* io.c (io_fptr_finalize): fptrの開放時の処理を指定できるように．
+	* io.c (io_fptr_finalize): fptrの解放時の処理を指定できるように．
 
 Wed Aug  9 16:52:41 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
 
@@ -3448,7 +3448,7 @@ Thu May 18 12:27:23 1995  Yukihiro Matsumoto  <matz@ix-02>
 	  無くなった(と思う)．
 
 	* gc.c (gc): the_scopeをマークしていなかったので，ローカル変数の指
-	  しているオブジェクトが間違って開放される場合があった．
+	  しているオブジェクトが間違って解放される場合があった．
 
 	* gc.c (mark_locations_array): 若干の高速化．
 

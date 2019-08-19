@@ -1,0 +1,12 @@
+prelude: |
+  def m &b
+    b
+  end
+
+  pr = m{
+    a = 1
+  }
+benchmark:
+  vm2_proc: |
+    pr.call
+loop_count: 6000000

@@ -1,6 +1,7 @@
 /*
  *  (c) 1995 Microsoft Corporation. All rights reserved.
- *  Developed by ActiveWare Internet Corp., http://www.ActiveWare.com
+ *  Developed by ActiveWare Internet Corp., now known as
+ *  ActiveState Tool Corp., http://www.ActiveState.com
  *
  *  Other modifications Copyright (c) 1997, 1998 by Gurusamy Sarathy
  *  <gsar@umich.edu> and Jan Dubois <jan.dubois@ibm.net>
@@ -26,7 +27,7 @@
 const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 0xC0, 0x4F, 0x8F, 0x5D, 0x9A}};
 #endif
 
-#define WIN32OLE_VERSION "1.8.5"
+#define WIN32OLE_VERSION "1.8.8"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -824,7 +825,6 @@ ole_initialize(void)
         } else {
             hr = OleInitialize(NULL);
         }
-        hr = OleInitialize(NULL);
         if(FAILED(hr)) {
             ole_raise(hr, rb_eRuntimeError, "fail: OLE initialize");
         }
@@ -1810,7 +1810,9 @@ ole_const_load(ITypeLib *pTypeLib, VALUE klass, VALUE self)
                 *pName = toupper((int)*pName);
                 id = rb_intern(pName);
                 if (rb_is_const_id(id)) {
-                    rb_define_const(klass, pName, val);
+                    if(!rb_const_defined_at(klass, id)) {
+                        rb_define_const(klass, pName, val);
+                    }
                 }
                 else {
                     rb_hash_aset(constant, rb_str_new2(pName), val);
@@ -2072,12 +2074,12 @@ fole_s_const_load(int argc, VALUE *argv, VALUE self)
         hr = pole->pDispatch->lpVtbl->GetTypeInfo(pole->pDispatch,
                                                   0, lcid, &pTypeInfo);
         if(FAILED(hr)) {
-            ole_raise(hr, rb_eRuntimeError, "failed to GetTypeInfo");
+            ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetTypeInfo");
         }
         hr = pTypeInfo->lpVtbl->GetContainingTypeLib(pTypeInfo, &pTypeLib, &index);
         if(FAILED(hr)) {
             OLE_RELEASE(pTypeInfo);
-            ole_raise(hr, rb_eRuntimeError, "failed to GetContainingTypeLib");
+            ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetContainingTypeLib");
         }
         OLE_RELEASE(pTypeInfo);
         if(!RB_TYPE_P(klass, T_NIL)) {
@@ -2441,12 +2443,16 @@ fole_s_ole_uninitialize(VALUE self)
 /*
  *  call-seq:
  *     WIN32OLE.new(server, [host]) -> WIN32OLE object
+ *     WIN32OLE.new(server, license: 'key') -> WIN32OLE object
  *
  *  Returns a new WIN32OLE object(OLE Automation object).
  *  The first argument server specifies OLE Automation server.
  *  The first argument should be CLSID or PROGID.
  *  If second argument host specified, then returns OLE Automation
  *  object on host.
+ *  If :license keyword argument is provided,
+ *  IClassFactory2::CreateInstanceLic is used to create instance of
+ *  licensed server.
  *
  *      WIN32OLE.new('Excel.Application') # => Excel OLE Automation WIN32OLE object.
  *      WIN32OLE.new('{00024500-0000-0000-C000-000000000046}') # => Excel OLE Automation WIN32OLE object.
@@ -2457,13 +2463,19 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
     VALUE svr_name;
     VALUE host;
     VALUE others;
+    VALUE opts;
     HRESULT hr;
     CLSID   clsid;
     OLECHAR *pBuf;
+    OLECHAR *key_buf;
     IDispatch *pDispatch;
+    IClassFactory2 * pIClassFactory2;
     void *p;
+    static ID keyword_ids[1];
+    VALUE kwargs[1];
+
     rb_call_super(0, 0);
-    rb_scan_args(argc, argv, "11*", &svr_name, &host, &others);
+    rb_scan_args(argc, argv, "11*:", &svr_name, &host, &others, &opts);
 
     StringValue(svr_name);
     if (rb_safe_level() > 0 && OBJ_TAINTED(svr_name)) {
@@ -2492,9 +2504,35 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
                   StringValuePtr(svr_name));
     }
 
-    /* get IDispatch interface */
-    hr = CoCreateInstance(&clsid, NULL, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER,
-                          &IID_IDispatch, &p);
+    if (!keyword_ids[0]) {
+        keyword_ids[0] = rb_intern_const("license");
+    }
+    rb_get_kwargs(opts, keyword_ids, 0, 1, kwargs);
+
+    if (kwargs[0] == Qundef) {
+        /* get IDispatch interface */
+        hr = CoCreateInstance(
+            &clsid,
+            NULL,
+            CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER,
+            &IID_IDispatch,
+            &p
+        );
+    } else {
+        hr = CoGetClassObject(
+            &clsid,
+            CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER,
+            NULL,
+            &IID_IClassFactory2,
+            (LPVOID)&pIClassFactory2
+        );
+        if (hr == S_OK) {
+            key_buf = ole_vstr2wc(kwargs[0]);
+            hr = pIClassFactory2->lpVtbl->CreateInstanceLic(pIClassFactory2, NULL, NULL, &IID_IDispatch, key_buf, &p);
+            SysFreeString(key_buf);
+            OLE_RELEASE(pIClassFactory2);
+        }
+    }
     pDispatch = p;
     if(FAILED(hr)) {
         ole_raise(hr, eWIN32OLERuntimeError,
@@ -2611,9 +2649,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
                 &wcmdname, 1, lcid, &DispID);
         SysFreeString(wcmdname);
         if(FAILED(hr)) {
-            ole_raise(hr, rb_eNoMethodError,
-                    "unknown property or method: `%s'",
-                    StringValuePtr(cmd));
+            return rb_eNoMethodError;
         }
     }
 
@@ -2815,7 +2851,11 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
 static VALUE
 fole_invoke(int argc, VALUE *argv, VALUE self)
 {
-    return ole_invoke(argc, argv, self, DISPATCH_METHOD|DISPATCH_PROPERTYGET, FALSE);
+    VALUE v = ole_invoke(argc, argv, self, DISPATCH_METHOD|DISPATCH_PROPERTYGET, FALSE);
+    if (v == rb_eNoMethodError) {
+        return rb_call_super(argc, argv);
+    }
+    return v;
 }
 
 static VALUE
@@ -2828,8 +2868,7 @@ ole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types, USHORT dispkind)
     VARIANT result;
     DISPPARAMS dispParams;
     VARIANTARG* realargs = NULL;
-    int i, j;
-    VALUE obj = Qnil;
+    int i, j; VALUE obj = Qnil;
     VALUE tp, param;
     VALUE v;
     VARTYPE vt;
@@ -3083,7 +3122,11 @@ fole_setproperty2(VALUE self, VALUE dispid, VALUE args, VALUE types)
 static VALUE
 fole_setproperty_with_bracket(int argc, VALUE *argv, VALUE self)
 {
-    return ole_invoke(argc, argv, self, DISPATCH_PROPERTYPUT, TRUE);
+    VALUE v = ole_invoke(argc, argv, self, DISPATCH_PROPERTYPUT, TRUE);
+    if (v == rb_eNoMethodError) {
+        return rb_call_super(argc, argv);
+    }
+    return v;
 }
 
 /*
@@ -3102,7 +3145,11 @@ fole_setproperty_with_bracket(int argc, VALUE *argv, VALUE self)
 static VALUE
 fole_setproperty(int argc, VALUE *argv, VALUE self)
 {
-    return ole_invoke(argc, argv, self, DISPATCH_PROPERTYPUT, FALSE);
+    VALUE v = ole_invoke(argc, argv, self, DISPATCH_PROPERTYPUT, FALSE);
+    if (v == rb_eNoMethodError) {
+        return rb_call_super(argc, argv);
+    }
+    return v;
 }
 
 /*
@@ -3124,7 +3171,11 @@ fole_setproperty(int argc, VALUE *argv, VALUE self)
 static VALUE
 fole_getproperty_with_bracket(int argc, VALUE *argv, VALUE self)
 {
-    return ole_invoke(argc, argv, self, DISPATCH_PROPERTYGET, TRUE);
+    VALUE v = ole_invoke(argc, argv, self, DISPATCH_PROPERTYGET, TRUE);
+    if (v == rb_eNoMethodError) {
+        return rb_call_super(argc, argv);
+    }
+    return v;
 }
 
 static VALUE
@@ -3274,7 +3325,7 @@ fole_each(VALUE self)
 
     if (FAILED(hr)) {
         VariantClear(&result);
-        ole_raise(hr, eWIN32OLERuntimeError, "failed to get IEnum Interface");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to get IEnum Interface");
     }
 
     if (V_VT(&result) == VT_UNKNOWN) {
@@ -3290,7 +3341,7 @@ fole_each(VALUE self)
     }
     if (FAILED(hr) || !pEnum) {
         VariantClear(&result);
-        ole_raise(hr, rb_eRuntimeError, "failed to get IEnum Interface");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to get IEnum Interface");
     }
 
     VariantClear(&result);
@@ -3307,11 +3358,11 @@ fole_each(VALUE self)
 static VALUE
 fole_missing(int argc, VALUE *argv, VALUE self)
 {
-    VALUE mid, sym;
+    VALUE mid, org_mid, sym, v;
     const char* mname;
     long n;
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
-    mid = argv[0];
+    mid = org_mid = argv[0];
     sym = rb_check_symbol(&mid);
     if (!NIL_P(sym)) mid = rb_sym2str(sym);
     mname = StringValueCStr(mid);
@@ -3327,7 +3378,12 @@ fole_missing(int argc, VALUE *argv, VALUE self)
     }
     else {
         argv[0] = rb_enc_associate(rb_str_dup(mid), cWIN32OLE_enc);
-        return ole_invoke(argc, argv, self, DISPATCH_METHOD|DISPATCH_PROPERTYGET, FALSE);
+        v = ole_invoke(argc, argv, self, DISPATCH_METHOD|DISPATCH_PROPERTYGET, FALSE);
+        if (v == rb_eNoMethodError) {
+            argv[0] = org_mid;
+            return rb_call_super(argc, argv);
+        }
+        return v;
     }
 }
 
@@ -3344,7 +3400,7 @@ typeinfo_from_ole(struct oledata *pole, ITypeInfo **ppti)
     HRESULT hr = pole->pDispatch->lpVtbl->GetTypeInfo(pole->pDispatch,
                                                       0, lcid, &pTypeInfo);
     if(FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "failed to GetTypeInfo");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetTypeInfo");
     }
     hr = pTypeInfo->lpVtbl->GetDocumentation(pTypeInfo,
                                              -1,
@@ -3354,7 +3410,7 @@ typeinfo_from_ole(struct oledata *pole, ITypeInfo **ppti)
     hr = pTypeInfo->lpVtbl->GetContainingTypeLib(pTypeInfo, &pTypeLib, &i);
     OLE_RELEASE(pTypeInfo);
     if (FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "failed to GetContainingTypeLib");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetContainingTypeLib");
     }
     count = pTypeLib->lpVtbl->GetTypeInfoCount(pTypeLib);
     for (i = 0; i < count; i++) {
@@ -3479,7 +3535,7 @@ fole_type(VALUE self)
 
     hr = pole->pDispatch->lpVtbl->GetTypeInfo( pole->pDispatch, 0, lcid, &pTypeInfo );
     if(FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "failed to GetTypeInfo");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetTypeInfo");
     }
     type = ole_type_from_itypeinfo(pTypeInfo);
     OLE_RELEASE(pTypeInfo);
@@ -3513,7 +3569,7 @@ fole_typelib(VALUE self)
     hr = pole->pDispatch->lpVtbl->GetTypeInfo(pole->pDispatch,
                                               0, lcid, &pTypeInfo);
     if(FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "failed to GetTypeInfo");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetTypeInfo");
     }
     vtlib = ole_typelib_from_itypeinfo(pTypeInfo);
     OLE_RELEASE(pTypeInfo);
@@ -3560,7 +3616,7 @@ fole_query_interface(VALUE self, VALUE str_iid)
     hr = pole->pDispatch->lpVtbl->QueryInterface(pole->pDispatch, &iid,
                                                  &p);
     if(FAILED(hr)) {
-        ole_raise(hr, eWIN32OLERuntimeError,
+        ole_raise(hr, eWIN32OLEQueryInterfaceError,
                   "failed to get interface `%s'",
                   StringValuePtr(str_iid));
     }
@@ -3801,7 +3857,7 @@ fole_method_help(VALUE self, VALUE cmdname)
     pole = oledata_get_struct(self);
     hr = typeinfo_from_ole(pole, &pTypeInfo);
     if(FAILED(hr))
-        ole_raise(hr, rb_eRuntimeError, "failed to get ITypeInfo");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to get ITypeInfo");
 
     obj = create_win32ole_method(pTypeInfo, cmdname);
 
@@ -3941,11 +3997,11 @@ Init_win32ole(void)
     message_filter.RetryRejectedCall = mf_RetryRejectedCall;
     message_filter.MessagePending = mf_MessagePending;
 
-    enc2cp_hash = TypedData_Wrap_Struct(rb_cData, &win32ole_hash_datatype, 0);
+    enc2cp_hash = TypedData_Wrap_Struct(0, &win32ole_hash_datatype, 0);
     RTYPEDDATA_DATA(enc2cp_hash) = st_init_numtable();
     rb_gc_register_mark_object(enc2cp_hash);
 
-    com_hash = TypedData_Wrap_Struct(rb_cData, &win32ole_hash_datatype, 0);
+    com_hash = TypedData_Wrap_Struct(0, &win32ole_hash_datatype, 0);
     RTYPEDDATA_DATA(com_hash) = st_init_numtable();
     rb_gc_register_mark_object(com_hash);
 

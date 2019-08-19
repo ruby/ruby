@@ -1,11 +1,9 @@
 # frozen_string_literal: false
-require 'rexml/child'
-require 'rexml/source'
-require 'rexml/xmltokens'
+require_relative 'child'
+require_relative 'source'
+require_relative 'xmltokens'
 
 module REXML
-  # God, I hate DTDs.  I really do.  Why this idiot standard still
-  # plagues us is beyond me.
   class Entity < Child
     include XMLTokens
     PUBIDCHAR = "\x20\x0D\x0Aa-zA-Z0-9\\-()+,./:=?;!*@$_%#"
@@ -29,8 +27,7 @@ module REXML
     # the constructor with the entity definition, or use the accessor methods.
     # +WARNING+: There is no validation of entity state except when the entity
     # is read from a stream.  If you start poking around with the accessors,
-    # you can easily create a non-conformant Entity.  The best thing to do is
-    # dump the stupid DTDs and use XMLSchema instead.
+    # you can easily create a non-conformant Entity.
     #
     #  e = Entity.new( 'amp', '&' )
     def initialize stream, value=nil, parent=nil, reference=false
@@ -93,7 +90,7 @@ module REXML
     # object itself is valid.)
     #
     # out::
-    #   An object implementing <TT>&lt;&lt;<TT> to which the entity will be
+    #   An object implementing <TT>&lt;&lt;</TT> to which the entity will be
     #   output
     # indent::
     #   *DEPRECATED* and ignored

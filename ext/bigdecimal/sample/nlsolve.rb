@@ -12,11 +12,11 @@ include Newton
 
 class Function # :nodoc: all
   def initialize()
-    @zero = BigDecimal.new("0.0")
-    @one  = BigDecimal.new("1.0")
-    @two  = BigDecimal.new("2.0")
-    @ten  = BigDecimal.new("10.0")
-    @eps  = BigDecimal.new("1.0e-16")
+    @zero = BigDecimal("0.0")
+    @one  = BigDecimal("1.0")
+    @two  = BigDecimal("2.0")
+    @ten  = BigDecimal("10.0")
+    @eps  = BigDecimal("1.0e-16")
   end
   def zero;@zero;end
   def one ;@one ;end

@@ -1,6 +1,5 @@
 #! /usr/local/bin/ruby
 
-require "thread"
 require "observer"
 
 class Tick

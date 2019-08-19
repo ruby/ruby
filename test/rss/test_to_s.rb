@@ -109,6 +109,30 @@ module RSS
                    '[ruby-core:70667] [Bug #11509]')
     end
 
+    def test_20_empty_text
+      title = "Blog entries"
+      link = "http://blog.example.com/"
+      description = ""
+      rss = RSS::Maker.make("2.0") do |maker|
+        maker.channel.title = title
+        maker.channel.link = link
+        maker.channel.description = description
+      end
+
+      parsed_rss = RSS::Parser.parse(rss.to_s)
+      assert_equal({
+                     title: title,
+                     link: link,
+                     description: description,
+                   },
+                   {
+                     title: parsed_rss.channel.title,
+                     link: parsed_rss.channel.link,
+                     description: parsed_rss.channel.description,
+                   },
+                   "[ruby-core:80965] [Bug #13531]")
+    end
+
     private
     def setup_xml_declaration_info
       @version = "1.0"

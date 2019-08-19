@@ -13,8 +13,8 @@ class TestTranscode < Test::Unit::TestCase
     assert_raise(Encoding::UndefinedConversionError) { "\x80".encode('utf-8','ASCII-8BIT') }
     assert_raise(Encoding::InvalidByteSequenceError) { "\x80".encode('utf-8','US-ASCII') }
     assert_raise(Encoding::UndefinedConversionError) { "\xA5".encode('utf-8','iso-8859-3') }
-    assert_raise(RuntimeError) { 'hello'.freeze.encode!('iso-8859-1') }
-    assert_raise(RuntimeError) { '\u3053\u3093\u306b\u3061\u306f'.freeze.encode!('iso-8859-1') } # こんにちは
+    assert_raise(FrozenError) { 'hello'.freeze.encode!('iso-8859-1') }
+    assert_raise(FrozenError) { '\u3053\u3093\u306b\u3061\u306f'.freeze.encode!('iso-8859-1') } # こんにちは
   end
 
   def test_arguments
@@ -484,7 +484,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u2580", "\xDF", 'IBM775') # ▀
     check_both_ways("\u00D3", "\xE0", 'IBM775') # Ó
     check_both_ways("\u2019", "\xEF", 'IBM775') # ’
-    check_both_ways("\u00AD", "\xF0", 'IBM775') # osft hyphen
+    check_both_ways("\u00AD", "\xF0", 'IBM775') # soft hyphen
     check_both_ways("\u00A0", "\xFF", 'IBM775') # non-breaking space
   end
 
@@ -503,7 +503,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u2580", "\xDF", 'IBM852') # ▀
     check_both_ways("\u00D3", "\xE0", 'IBM852') # Ó
     check_both_ways("\u00B4", "\xEF", 'IBM852') # ´
-    check_both_ways("\u00AD", "\xF0", 'IBM852') # osft hyphen
+    check_both_ways("\u00AD", "\xF0", 'IBM852') # soft hyphen
     check_both_ways("\u00A0", "\xFF", 'IBM852') # non-breaking space
   end
 
@@ -522,7 +522,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u2580", "\xDF", 'IBM855') # ▀
     check_both_ways("\u042F", "\xE0", 'IBM855') # Я
     check_both_ways("\u2116", "\xEF", 'IBM855') # №
-    check_both_ways("\u00AD", "\xF0", 'IBM855') # osft hyphen
+    check_both_ways("\u00AD", "\xF0", 'IBM855') # soft hyphen
     check_both_ways("\u00A0", "\xFF", 'IBM855') # non-breaking space
   end
 
@@ -996,6 +996,92 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u2116", "\xEF", 'CP855') # №
     check_both_ways("\u00AD", "\xF0", 'CP855') # soft hyphen
     check_both_ways("\u00A0", "\xFF", 'CP855') # non-breaking space
+  end
+
+  def test_ill_formed_utf_8_replace
+    fffd1 = "\uFFFD".encode 'UTF-16BE'
+    fffd2 = "\uFFFD\uFFFD".encode 'UTF-16BE'
+    fffd3 = "\uFFFD\uFFFD\uFFFD".encode 'UTF-16BE'
+    fffd4 = "\uFFFD\uFFFD\uFFFD\uFFFD".encode 'UTF-16BE'
+    fffd5 = "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD".encode 'UTF-16BE'
+    fffd6 = "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD".encode 'UTF-16BE'
+
+    assert_equal fffd1, "\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xC3".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xDF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xE0".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xE0\xA0".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xE0\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xE1".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xEC".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xE1\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xEC\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+
+    assert_equal fffd2, "\xC0\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xC0\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xC1\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xC1\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xE0\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xE0\x9F".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xE0\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xE0\x9F\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xED\xA0".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xED\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xED\xA0\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xED\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xF0\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xF0\x8F".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xF0\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xF0\x8F\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xF0\x80\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xF0\x8F\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xF4\x90".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xF4\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xF4\x90\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xF4\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xF4\x90\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xF4\xBF\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xF5\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xF7\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xF5\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xF7\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xF5\x80\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xF7\xBF\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xF8".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xFB".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xF8\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xFB\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xF8\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xFB\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xF8\x80\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xFB\xBF\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd5, "\xF8\x80\x80\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd5, "\xFB\xBF\xBF\xBF\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xFC".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xFD".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xFC\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xFD\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xFC\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xFD\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xFC\x80\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xFD\xBF\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd5, "\xFC\x80\x80\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd5, "\xFD\xBF\xBF\xBF\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd6, "\xFC\x80\x80\x80\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd6, "\xFD\xBF\xBF\xBF\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xFE".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xFF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xFE\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xFF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xFE\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xFF\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xFE\x80\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xFF\xBF\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd5, "\xFE\x80\x80\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd5, "\xFF\xBF\xBF\xBF\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd6, "\xFE\x80\x80\x80\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd6, "\xFF\xBF\xBF\xBF\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
   end
 
   def check_utf_16_both_ways(utf8, raw)
@@ -2030,6 +2116,28 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("D\u00FCrst", "\xC4\xDC\x99\xA2\xA3", 'IBM037') # Dürst
   end
 
+  def test_CESU_8
+    check_both_ways("aijrszAIJRSZ09", "aijrszAIJRSZ09", 'CESU-8') # single bytes
+
+    # check NULL explicitly
+    # this is different in CESU-8 and in Java modified UTF-8 strings
+    check_both_ways("\0", "\0", 'CESU-8')
+
+    # U+0080 U+00FC U+00FF U+0100 U+0400 U+0700 U+07FF
+    two_byte_chars = "\xC2\x80\x20\xC3\xBC\x20\xC3\xBF\x20\xC4\x80\x20\xD0\x80\x20\xDC\x80\x20\xDF\xBF"
+    check_both_ways(two_byte_chars, two_byte_chars, 'CESU-8')
+
+    # U+0800 U+2200 U+4E00 U+D7FF U+E000 U+FFFF
+    three_byte_chars = "\xE0\xA0\x80\x20\xE2\x88\x80\x20\xE4\xB8\x80\x20\xED\x9F\xBF\x20\xEE\x80\x80\x20\xEF\xBF\xBF"
+    check_both_ways(three_byte_chars, three_byte_chars, 'CESU-8')
+
+    # characters outside BMP (double surrogates in CESU-8)
+    # U+10000 U+20000 U+50000 U+10FFFF
+    utf8 = "\xF0\x90\x80\x80 \xF0\xA0\x80\x80 \xF1\x90\x80\x80 \xF4\x8F\xBF\xBF"
+    cesu = "\xED\xA0\x80\xED\xB0\x80 \xED\xA1\x80\xED\xB0\x80 \xED\xA4\x80\xED\xB0\x80 \xED\xAF\xBF\xED\xBF\xBF"
+    check_both_ways(utf8, cesu, 'CESU-8')
+  end
+
   def test_nothing_changed
     a = "James".force_encoding("US-ASCII")
     b = a.encode("Shift_JIS")
@@ -2094,17 +2202,19 @@ class TestTranscode < Test::Unit::TestCase
 
   def test_valid_dummy_encoding
     bug9314 = '[ruby-core:59354] [Bug #9314]'
-    assert_separately(%W[- -- #{bug9314}], <<-'end;')
-    bug = ARGV.shift
-    result = assert_nothing_raised(TypeError, bug) {break "test".encode(Encoding::UTF_16)}
-    assert_equal("\xFE\xFF\x00t\x00e\x00s\x00t", result.b, bug)
-    result = assert_nothing_raised(TypeError, bug) {break "test".encode(Encoding::UTF_32)}
-    assert_equal("\x00\x00\xFE\xFF\x00\x00\x00t\x00\x00\x00e\x00\x00\x00s\x00\x00\x00t", result.b, bug)
+    assert_separately(%W[- -- #{bug9314}], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      bug = ARGV.shift
+      result = assert_nothing_raised(TypeError, bug) {break "test".encode(Encoding::UTF_16)}
+      assert_equal("\xFE\xFF\x00t\x00e\x00s\x00t", result.b, bug)
+      result = assert_nothing_raised(TypeError, bug) {break "test".encode(Encoding::UTF_32)}
+      assert_equal("\x00\x00\xFE\xFF\x00\x00\x00t\x00\x00\x00e\x00\x00\x00s\x00\x00\x00t", result.b, bug)
     end;
   end
 
   def test_loading_race
-    assert_separately([], <<-'end;') #do
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
       bug11277 = '[ruby-dev:49106] [Bug #11277]'
       num = 2
       th = (0...num).map do |i|
@@ -2119,6 +2229,17 @@ class TestTranscode < Test::Unit::TestCase
       expected = "\xa4\xa2".force_encoding(Encoding::EUC_JP)
       assert_equal([expected]*num, result, bug11277)
     end;
+  end
+
+  def test_scrub_encode_with_coderange
+    bug = '[ruby-core:82674] [Bug #13874]'
+    s = "\xe5".b
+    u = Encoding::UTF_8
+    assert_equal("?", s.encode(u, u, invalid: :replace, replace: "?"),
+                 "should replace invalid byte")
+    assert_predicate(s, :valid_encoding?, "any char is valid in binary")
+    assert_equal("?", s.encode(u, u, invalid: :replace, replace: "?"),
+                 "#{bug} coderange should not have side effects")
   end
 
   def test_universal_newline

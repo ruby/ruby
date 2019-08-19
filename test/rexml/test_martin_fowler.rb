@@ -3,7 +3,7 @@ require 'test/unit'
 require 'rexml/document'
 
 module REXMLTests
-  class OrderTester < Test::Unit::TestCase
+  class OrderTesterMF < Test::Unit::TestCase
     DOC = <<END
 <paper>
 <title>Remove this element and figs order differently</title>

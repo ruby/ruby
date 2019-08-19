@@ -10,6 +10,7 @@ class TestFnmatch < Test::Unit::TestCase
       assert_equal(t.include?(i.chr), !File.fnmatch("[!#{s}]", i.chr, File::FNM_DOTMATCH))
     end
   end
+
   def test_fnmatch
     assert_file.for("[ruby-dev:22819]").fnmatch('\[1\]' , '[1]')
     assert_file.for("[ruby-dev:22815]").fnmatch('*?', 'a')
@@ -17,10 +18,16 @@ class TestFnmatch < Test::Unit::TestCase
     assert_file.fnmatch('\[1\]' , '[1]', File::FNM_PATHNAME)
     assert_file.fnmatch('*?', 'a', File::FNM_PATHNAME)
     assert_file.fnmatch('*/', 'a/', File::FNM_PATHNAME)
+  end
+
+  def test_text
     # text
     assert_file.fnmatch('cat', 'cat')
     assert_file.not_fnmatch('cat', 'category')
     assert_file.not_fnmatch('cat', 'wildcat')
+  end
+
+  def test_any_one
     # '?' matches any one character
     assert_file.fnmatch('?at', 'cat')
     assert_file.fnmatch('c?t', 'cat')
@@ -29,6 +36,9 @@ class TestFnmatch < Test::Unit::TestCase
     assert_file.not_fnmatch('c??t', 'cat')
     assert_file.not_fnmatch('??at', 'cat')
     assert_file.not_fnmatch('ca??', 'cat')
+  end
+
+  def test_any_chars
     # '*' matches any number (including 0) of any characters
     assert_file.fnmatch('c*', 'cats')
     assert_file.fnmatch('c*ts', 'cats')
@@ -40,9 +50,15 @@ class TestFnmatch < Test::Unit::TestCase
     assert_file.not_fnmatch('a*abc', 'abc')
     assert_file.fnmatch('a*bc', 'abc')
     assert_file.not_fnmatch('a*bc', 'abcd')
+  end
+
+  def test_char_class
     # [seq] : matches any character listed between bracket
     # [!seq] or [^seq] : matches any character except those listed between bracket
     bracket_test("bd-gikl-mosv-x", "bdefgiklmosvwx")
+  end
+
+  def test_escape
     # escaping character
     assert_file.fnmatch('\?', '?')
     assert_file.not_fnmatch('\?', '\?')
@@ -59,6 +75,9 @@ class TestFnmatch < Test::Unit::TestCase
     assert_file.fnmatch('[a\-c]', 'c')
     assert_file.not_fnmatch('[a\-c]', 'b')
     assert_file.not_fnmatch('[a\-c]', '\\')
+  end
+
+  def test_fnm_escape
     # escaping character loses its meaning if FNM_NOESCAPE is set
     assert_file.not_fnmatch('\?', '?', File::FNM_NOESCAPE)
     assert_file.fnmatch('\?', '\?', File::FNM_NOESCAPE)
@@ -75,6 +94,9 @@ class TestFnmatch < Test::Unit::TestCase
     assert_file.fnmatch('[a\-c]', 'c', File::FNM_NOESCAPE)
     assert_file.fnmatch('[a\-c]', 'b', File::FNM_NOESCAPE) # '\\' < 'b' < 'c'
     assert_file.fnmatch('[a\-c]', '\\', File::FNM_NOESCAPE)
+  end
+
+  def test_fnm_casefold
     # case is ignored if FNM_CASEFOLD is set
     assert_file.not_fnmatch('cat', 'CAT')
     assert_file.fnmatch('cat', 'CAT', File::FNM_CASEFOLD)
@@ -82,11 +104,17 @@ class TestFnmatch < Test::Unit::TestCase
     assert_file.fnmatch('[a-z]', 'D', File::FNM_CASEFOLD)
     assert_file.not_fnmatch('[abc]', 'B')
     assert_file.fnmatch('[abc]', 'B', File::FNM_CASEFOLD)
+  end
+
+  def test_fnm_pathname
     # wildcard doesn't match '/' if FNM_PATHNAME is set
     assert_file.fnmatch('foo?boo', 'foo/boo')
     assert_file.fnmatch('foo*', 'foo/boo')
     assert_file.not_fnmatch('foo?boo', 'foo/boo', File::FNM_PATHNAME)
     assert_file.not_fnmatch('foo*', 'foo/boo', File::FNM_PATHNAME)
+  end
+
+  def test_fnm_dotmatch
     # wildcard matches leading period if FNM_DOTMATCH is set
     assert_file.not_fnmatch('*', '.profile')
     assert_file.fnmatch('*', '.profile', File::FNM_DOTMATCH)
@@ -95,6 +123,9 @@ class TestFnmatch < Test::Unit::TestCase
     assert_file.fnmatch('*/*', 'dave/.profile')
     assert_file.not_fnmatch('*/*', 'dave/.profile', File::FNM_PATHNAME)
     assert_file.fnmatch('*/*', 'dave/.profile', File::FNM_PATHNAME | File::FNM_DOTMATCH)
+  end
+
+  def test_recursive
     # recursive matching
     assert_file.fnmatch('**/foo', 'a/b/c/foo', File::FNM_PATHNAME)
     assert_file.fnmatch('**/foo', '/foo', File::FNM_PATHNAME)

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # AnyMethod is the base class for objects representing methods
 
@@ -244,9 +244,9 @@ class RDoc::AnyMethod < RDoc::MethodAttr
     if @block_params then
       # If this method has explicit block parameters, remove any explicit
       # &block
-      params.sub!(/,?\s*&\w+/, '')
+      params = params.sub(/,?\s*&\w+/, '')
     else
-      params.sub!(/\&(\w+)/, '\1')
+      params = params.sub(/\&(\w+)/, '\1')
     end
 
     params = params.gsub(/\s+/, '').split(',').reject(&:empty?)
@@ -265,7 +265,7 @@ class RDoc::AnyMethod < RDoc::MethodAttr
       params = params.sub(/(\|[^|]+\|)\s*\.\.\.\s*(end|\})/, '\1 \2')
     elsif @params then
       params = @params.gsub(/\s*\#.*/, '')
-      params = params.tr("\n", " ").squeeze(" ")
+      params = params.tr_s("\n ", " ")
       params = "(#{params})" unless params[0] == ?(
     else
       params = ''
@@ -274,12 +274,11 @@ class RDoc::AnyMethod < RDoc::MethodAttr
     if @block_params then
       # If this method has explicit block parameters, remove any explicit
       # &block
-      params.sub!(/,?\s*&\w+/, '')
+      params = params.sub(/,?\s*&\w+/, '')
 
-      block = @block_params.gsub(/\s*\#.*/, '')
-      block = block.tr("\n", " ").squeeze(" ")
+      block = @block_params.tr_s("\n ", " ")
       if block[0] == ?(
-        block.sub!(/^\(/, '').sub!(/\)/, '')
+        block = block.sub(/^\(/, '').sub(/\)/, '')
       end
       params << " { |#{block}| ... }"
     end

@@ -1,6 +1,6 @@
 # frozen_string_literal: false
-require 'rexml/namespace'
-require 'rexml/xmltokens'
+require_relative '../namespace'
+require_relative '../xmltokens'
 
 module REXML
   module Parsers
@@ -185,7 +185,7 @@ module REXML
       #  | '/' RelativeLocationPath?
       #  | '//' RelativeLocationPath
       def LocationPath path, parsed
-        path = path.strip
+        path = path.lstrip
         if path[0] == ?/
           parsed << :document
           if path[1] == ?/
@@ -209,7 +209,12 @@ module REXML
       #  | RelativeLocationPath '//' Step
       AXIS = /^(ancestor|ancestor-or-self|attribute|child|descendant|descendant-or-self|following|following-sibling|namespace|parent|preceding|preceding-sibling|self)::/
       def RelativeLocationPath path, parsed
-        while path.size > 0
+        loop do
+          original_path = path
+          path = path.lstrip
+
+          return original_path if path.empty?
+
           # (axis or @ or <child::>) nodetest predicate  >
           # OR                                          >  / Step
           # (. or ..)                                    >
@@ -239,28 +244,25 @@ module REXML
             n = []
             path = NodeTest( path, n)
 
-            if path[0] == ?[
-              path = Predicate( path, n )
-            end
+            path = Predicate( path, n )
 
             parsed.concat(n)
           end
 
-          if path.size > 0
-            if path[0] == ?/
-              if path[1] == ?/
-                parsed << :descendant_or_self
-                parsed << :node
-                path = path[2..-1]
-              else
-                path = path[1..-1]
-              end
-            else
-              return path
-            end
+          original_path = path
+          path = path.lstrip
+          return original_path if path.empty?
+
+          return original_path if path[0] != ?/
+
+          if path[1] == ?/
+            parsed << :descendant_or_self
+            parsed << :node
+            path = path[2..-1]
+          else
+            path = path[1..-1]
           end
         end
-        return path
       end
 
       # Returns a 1-1 map of the nodeset
@@ -269,15 +271,26 @@ module REXML
       #   String, if a name match
       #NodeTest
       #  | ('*' | NCNAME ':' '*' | QNAME)                NameTest
-      #  | NODE_TYPE '(' ')'                              NodeType
+      #  | '*' ':' NCNAME                                NameTest since XPath 2.0
+      #  | NODE_TYPE '(' ')'                             NodeType
       #  | PI '(' LITERAL ')'                            PI
       #    | '[' expr ']'                                Predicate
-      NCNAMETEST= /^(#{NCNAME_STR}):\*/u
+      PREFIX_WILDCARD = /^\*:(#{NCNAME_STR})/u
+      LOCAL_NAME_WILDCARD = /^(#{NCNAME_STR}):\*/u
       QNAME     = Namespace::NAMESPLIT
       NODE_TYPE  = /^(comment|text|node)\(\s*\)/m
       PI        = /^processing-instruction\(/
       def NodeTest path, parsed
+        original_path = path
+        path = path.lstrip
         case path
+        when PREFIX_WILDCARD
+          prefix = nil
+          name = $1
+          path = $'
+          parsed << :qname
+          parsed << prefix
+          parsed << name
         when /^\*/
           path = $'
           parsed << :any
@@ -297,7 +310,7 @@ module REXML
           end
           parsed << :processing_instruction
           parsed << (literal || '')
-        when NCNAMETEST
+        when LOCAL_NAME_WILDCARD
           prefix = $1
           path = $'
           parsed << :namespace
@@ -310,13 +323,17 @@ module REXML
           parsed << :qname
           parsed << prefix
           parsed << name
+        else
+          path = original_path
         end
         return path
       end
 
       # Filters the supplied nodeset on the predicate(s)
       def Predicate path, parsed
-        return nil unless path[0] == ?[
+        original_path = path
+        path = path.lstrip
+        return original_path unless path[0] == ?[
         predicates = []
         while path[0] == ?[
           path, expr = get_group(path)
@@ -421,13 +438,13 @@ module REXML
         rest
       end
 
-      #| AdditiveExpr ('+' | S '-') MultiplicativeExpr
+      #| AdditiveExpr ('+' | '-') MultiplicativeExpr
       #| MultiplicativeExpr
       def AdditiveExpr path, parsed
         n = []
         rest = MultiplicativeExpr( path, n )
         if rest != path
-          while rest =~ /^\s*(\+| -)\s*/
+          while rest =~ /^\s*(\+|-)\s*/
             if $1[0] == ?+
               n = [ :plus, n, [] ]
             else
@@ -509,13 +526,14 @@ module REXML
       #| LocationPath
       #| FilterExpr ('/' | '//') RelativeLocationPath
       def PathExpr path, parsed
-        path =~ /^\s*/
-        path = $'
+        path = path.lstrip
         n = []
         rest = FilterExpr( path, n )
         if rest != path
           if rest and rest[0] == ?/
-            return RelativeLocationPath(rest, n)
+            rest = RelativeLocationPath(rest, n)
+            parsed.concat(n)
+            return rest
           end
         end
         rest = LocationPath(rest, n) if rest =~ /\A[\/\.\@\[\w*]/
@@ -528,7 +546,7 @@ module REXML
       def FilterExpr path, parsed
         n = []
         path = PrimaryExpr( path, n )
-        path = Predicate(path, n) if path and path[0] == ?[
+        path = Predicate(path, n)
         parsed.concat(n)
         path
       end

@@ -38,4 +38,3 @@ To search for remote gems use the search command.
   end
 
 end
-

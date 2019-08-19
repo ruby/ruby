@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require File.expand_path '../xref_test_case', __FILE__
 
 class TestRDocRequire < XrefTestCase
@@ -12,13 +12,13 @@ class TestRDocRequire < XrefTestCase
   def test_initialize
     assert_equal 'foo', @req.name
 
-    req = RDoc::Require.new '"foo"', ''
+    RDoc::Require.new '"foo"', ''
     assert_equal 'foo', @req.name
 
-    req = RDoc::Require.new '\'foo\'', ''
+    RDoc::Require.new '\'foo\'', ''
     assert_equal 'foo', @req.name
 
-    req = RDoc::Require.new '|foo|', ''
+    RDoc::Require.new '|foo|', ''
     assert_equal 'foo', @req.name, 'for fortran?'
   end
 

@@ -47,7 +47,7 @@ def setup(options = "", *long_options)
     end
     long_options.each do |s|
       opt_name, arg_name = s.split(/(?=[\s=])/, 2)
-      opt_name.sub!(/\A--/, '')
+      opt_name.delete_prefix!('--')
       s = "--#{opt_name.gsub(/([A-Z]+|[a-z])([A-Z])/, '\1-\2').downcase}#{arg_name}"
       puts "#{opt_name}=>#{s}" if $DEBUG
       opt_name = opt_name.intern
@@ -313,17 +313,32 @@ end
 #   --do-not-reverse-lookup     disable reverse lookup
 #   --request-timeout=SECOND    request timeout in seconds
 #   --http-version=VERSION      HTTP version
+#   --server-name=NAME          name of the server host
+#   --server-software=NAME      name and version of the server
+#   --ssl-certificate=CERT      The SSL certificate file for the server
+#   --ssl-private-key=KEY       The SSL private key file for the server certificate
 #   -v                          verbose
 #
 
 def httpd
   setup("", "BindAddress=ADDR", "Port=PORT", "MaxClients=NUM", "TempDir=DIR",
-        "DoNotReverseLookup", "RequestTimeout=SECOND", "HTTPVersion=VERSION") do
+        "DoNotReverseLookup", "RequestTimeout=SECOND", "HTTPVersion=VERSION",
+        "ServerName=NAME", "ServerSoftware=NAME",
+        "SSLCertificate=CERT", "SSLPrivateKey=KEY") do
     |argv, options|
     require 'webrick'
     opt = options[:RequestTimeout] and options[:RequestTimeout] = opt.to_i
     [:Port, :MaxClients].each do |name|
       opt = options[name] and (options[name] = Integer(opt)) rescue nil
+    end
+    if cert = options[:SSLCertificate]
+      key = options[:SSLPrivateKey] or
+        raise "--ssl-private-key option must also be given"
+      require 'webrick/https'
+      options[:SSLEnable] = true
+      options[:SSLCertificate] = OpenSSL::X509::Certificate.new(File.read(cert))
+      options[:SSLPrivateKey] = OpenSSL::PKey.read(File.read(key))
+      options[:Port] ||= 8443   # HTTPS Alternate
     end
     options[:Port] ||= 8080     # HTTP Alternate
     options[:DocumentRoot] = argv.shift || '.'

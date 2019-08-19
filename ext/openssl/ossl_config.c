@@ -41,7 +41,7 @@ DupConfigPtr(VALUE obj)
 
     OSSL_Check_Kind(obj, cConfig);
     str = rb_funcall(obj, rb_intern("to_s"), 0);
-    bio = ossl_obj2bio(str);
+    bio = ossl_obj2bio(&str);
     conf = NCONF_new(NULL);
     if(!conf){
 	BIO_free(bio);

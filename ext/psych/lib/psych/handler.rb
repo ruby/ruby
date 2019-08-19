@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 module Psych
   ###
   # Psych::Handler is an abstract base class that defines the events used
@@ -105,7 +105,7 @@ module Psych
     #   - first element
     #   - *ponies
     #
-    # &ponies is the achor, *ponies is the alias.  In this case, alias is
+    # &ponies is the anchor, *ponies is the alias.  In this case, alias is
     # called with "ponies".
     def alias anchor
     end
@@ -239,6 +239,11 @@ module Psych
     ###
     # Called when the YAML stream ends
     def end_stream
+    end
+
+    ###
+    # Called before each event with line/column information.
+    def event_location(start_line, start_column, end_line, end_column)
     end
 
     ###

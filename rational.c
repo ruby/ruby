@@ -6,6 +6,7 @@
 */
 
 #include "internal.h"
+#include "id.h"
 #include <math.h>
 #include <float.h>
 
@@ -32,33 +33,24 @@
 
 VALUE rb_cRational;
 
-static ID id_abs, id_idiv, id_integer_p, id_to_i,
+static ID id_abs, id_integer_p,
     id_i_num, id_i_den;
+
+#define id_idiv idDiv
+#define id_to_i idTo_i
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 #define f_inspect rb_inspect
 #define f_to_s rb_obj_as_string
 
-#define binop(n,op) \
-inline static VALUE \
-f_##n(VALUE x, VALUE y)\
-{\
-  return rb_funcall(x, (op), 1, y);\
-}
-
-#define fun1(n) \
-inline static VALUE \
-f_##n(VALUE x)\
-{\
-    return rb_funcall(x, id_##n, 0);\
-}
+static VALUE nurat_to_f(VALUE self);
 
 inline static VALUE
 f_add(VALUE x, VALUE y)
 {
-    if (FIXNUM_P(y) && FIXNUM_ZERO_P(y))
+    if (FIXNUM_ZERO_P(y))
 	return x;
-    else if (FIXNUM_P(x) && FIXNUM_ZERO_P(x))
+    if (FIXNUM_ZERO_P(x))
 	return y;
     return rb_funcall(x, '+', 1, y);
 }
@@ -66,7 +58,7 @@ f_add(VALUE x, VALUE y)
 inline static VALUE
 f_div(VALUE x, VALUE y)
 {
-    if (FIXNUM_P(y) && FIX2LONG(y) == 1)
+    if (y == ONE)
 	return x;
     if (RB_INTEGER_TYPE_P(x))
 	return rb_int_div(x, y);
@@ -83,32 +75,25 @@ f_lt_p(VALUE x, VALUE y)
 
 #ifndef NDEBUG
 /* f_mod is used only in f_gcd defined when NDEBUG is not defined */
-binop(mod, '%')
+inline static VALUE
+f_mod(VALUE x, VALUE y)
+{
+    if (RB_INTEGER_TYPE_P(x))
+        return rb_int_modulo(x, y);
+    return rb_funcall(x, '%', 1, y);
+}
 #endif
 
 inline static VALUE
 f_mul(VALUE x, VALUE y)
 {
-    if (FIXNUM_P(y)) {
-	long iy = FIX2LONG(y);
-	if (iy == 0) {
-	    if (RB_INTEGER_TYPE_P(x))
-		return ZERO;
-	}
-	else if (iy == 1)
-	    return x;
-    }
-    else if (FIXNUM_P(x)) {
-	long ix = FIX2LONG(x);
-	if (ix == 0) {
-	    if (RB_INTEGER_TYPE_P(y))
-		return ZERO;
-	}
-	else if (ix == 1)
-	    return y;
-	return rb_int_mul(x, y);
-    }
-    else if (RB_TYPE_P(x, T_BIGNUM))
+    if (FIXNUM_ZERO_P(y) && RB_INTEGER_TYPE_P(x))
+	return ZERO;
+    if (y == ONE) return x;
+    if (FIXNUM_ZERO_P(x) && RB_INTEGER_TYPE_P(y))
+	return ZERO;
+    if (x == ONE) return y;
+    else if (RB_INTEGER_TYPE_P(x))
 	return rb_int_mul(x, y);
     return rb_funcall(x, '*', 1, y);
 }
@@ -129,7 +114,12 @@ f_abs(VALUE x)
     return rb_funcall(x, id_abs, 0);
 }
 
-fun1(integer_p)
+
+inline static VALUE
+f_integer_p(VALUE x)
+{
+    return RB_INTEGER_TYPE_P(x);
+}
 
 inline static VALUE
 f_to_i(VALUE x)
@@ -280,6 +270,9 @@ rb_gcd_gmp(VALUE x, VALUE y)
 inline static long
 i_gcd(long x, long y)
 {
+    unsigned long u, v, t;
+    int shift;
+
     if (x < 0)
 	x = -x;
     if (y < 0)
@@ -290,12 +283,29 @@ i_gcd(long x, long y)
     if (y == 0)
 	return x;
 
-    while (x > 0) {
-	long t = x;
-	x = y % x;
-	y = t;
+    u = (unsigned long)x;
+    v = (unsigned long)y;
+    for (shift = 0; ((u | v) & 1) == 0; ++shift) {
+	u >>= 1;
+	v >>= 1;
     }
-    return y;
+
+    while ((u & 1) == 0)
+	u >>= 1;
+
+    do {
+	while ((v & 1) == 0)
+	    v >>= 1;
+
+	if (u > v) {
+	    t = v;
+	    v = u;
+	    u = t;
+	}
+	v = v - u;
+    } while (v != 0);
+
+    return (long)(u << shift);
 }
 
 inline static VALUE
@@ -379,9 +389,6 @@ f_lcm(VALUE x, VALUE y)
 #define get_dat2(x,y) \
     struct RRational *adat = RRATIONAL(x), *bdat = RRATIONAL(y)
 
-#define RRATIONAL_SET_NUM(rat, n) RB_OBJ_WRITE((rat), &((struct RRational *)(rat))->num,(n))
-#define RRATIONAL_SET_DEN(rat, d) RB_OBJ_WRITE((rat), &((struct RRational *)(rat))->den,(d))
-
 inline static VALUE
 nurat_s_new_internal(VALUE klass, VALUE num, VALUE den)
 {
@@ -389,6 +396,7 @@ nurat_s_new_internal(VALUE klass, VALUE num, VALUE den)
 
     RRATIONAL_SET_NUM(obj, num);
     RRATIONAL_SET_DEN(obj, den);
+    OBJ_FREEZE_RAW(obj);
 
     return (VALUE)obj;
 }
@@ -399,38 +407,6 @@ nurat_s_alloc(VALUE klass)
     return nurat_s_new_internal(klass, ZERO, ONE);
 }
 
-#if 0
-static VALUE
-nurat_s_new_bang(int argc, VALUE *argv, VALUE klass)
-{
-    VALUE num, den;
-
-    switch (rb_scan_args(argc, argv, "11", &num, &den)) {
-      case 1:
-	if (!k_integer_p(num))
-	    num = f_to_i(num);
-	den = ONE;
-	break;
-      default:
-	if (!k_integer_p(num))
-	    num = f_to_i(num);
-	if (!k_integer_p(den))
-	    den = f_to_i(den);
-
-        if (INT_NEGATIVE_P(den)) {
-	    num = rb_int_uminus(num);
-	    den = rb_int_uminus(den);
-        }
-        else if (INT_ZERO_P(den)) {
-            rb_num_zerodiv();
-        }
-	break;
-    }
-
-    return nurat_s_new_internal(klass, num, den);
-}
-#endif
-
 inline static VALUE
 f_rational_new_bang1(VALUE klass, VALUE x)
 {
@@ -438,10 +414,6 @@ f_rational_new_bang1(VALUE klass, VALUE x)
 }
 
 #ifdef CANONICALIZATION_FOR_MATHN
-#define CANON
-#endif
-
-#ifdef CANON
 static int canonicalization = 0;
 
 RUBY_FUNC_EXPORTED void
@@ -474,8 +446,8 @@ nurat_int_value(VALUE num)
 static void
 nurat_canonicalize(VALUE *num, VALUE *den)
 {
-    assert(num != NULL && RB_INTEGER_TYPE_P(*num));
-    assert(den != NULL && RB_INTEGER_TYPE_P(*den));
+    assert(num); assert(RB_INTEGER_TYPE_P(*num));
+    assert(den); assert(RB_INTEGER_TYPE_P(*den));
     if (INT_NEGATIVE_P(*den)) {
         *num = rb_int_uminus(*num);
         *den = rb_int_uminus(*den);
@@ -551,19 +523,31 @@ f_rational_new_no_reduce2(VALUE klass, VALUE x, VALUE y)
     return nurat_s_canonicalize_internal_no_reduce(klass, x, y);
 }
 
+static VALUE nurat_convert(VALUE klass, VALUE numv, VALUE denv, int raise);
 static VALUE nurat_s_convert(int argc, VALUE *argv, VALUE klass);
+
 /*
  * call-seq:
- *    Rational(x[, y])  ->  numeric
+ *    Rational(x, y, exception: true)  ->  rational or nil
+ *    Rational(arg, exception: true)   ->  rational or nil
  *
- * Returns x/y;
+ * Returns +x/y+ or +arg+ as a Rational.
  *
- *    Rational(1, 2)   #=> (1/2)
- *    Rational('1/2')  #=> (1/2)
- *    Rational(nil)    #=> TypeError
- *    Rational(1, nil) #=> TypeError
+ *    Rational(2, 3)   #=> (2/3)
+ *    Rational(5)      #=> (5/1)
+ *    Rational(0.5)    #=> (1/2)
+ *    Rational(0.3)    #=> (5404319552844595/18014398509481984)
  *
- * Syntax of string form:
+ *    Rational("2/3")  #=> (2/3)
+ *    Rational("0.3")  #=> (3/10)
+ *
+ *    Rational("10 cents")  #=> ArgumentError
+ *    Rational(nil)         #=> TypeError
+ *    Rational(1, nil)      #=> TypeError
+ *
+ *    Rational("10 cents", exception: false)  #=> nil
+ *
+ * Syntax of the string form:
  *
  *   string form = extra spaces , rational , extra spaces ;
  *   rational = [ sign ] , unsigned rational ;
@@ -577,12 +561,21 @@ static VALUE nurat_s_convert(int argc, VALUE *argv, VALUE klass);
  *   digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
  *   extra spaces = ? \s* ? ;
  *
- * See String#to_r.
+ * See also String#to_r.
  */
 static VALUE
 nurat_f_rational(int argc, VALUE *argv, VALUE klass)
 {
-    return nurat_s_convert(argc, argv, rb_cRational);
+    VALUE a1, a2, opts = Qnil;
+    int raise = TRUE;
+
+    if (rb_scan_args(argc, argv, "11:", &a1, &a2, &opts) == 1) {
+        a2 = Qundef;
+    }
+    if (!NIL_P(opts)) {
+        raise = rb_opts_exception_p(opts, raise);
+    }
+    return nurat_convert(rb_cRational, a1, a2, raise);
 }
 
 /*
@@ -613,7 +606,6 @@ nurat_numerator(VALUE self)
  *    Rational(7, 1).denominator          #=> 1
  *    Rational(9, -4).denominator         #=> 4
  *    Rational(-2, -10).denominator       #=> 5
- *    rat.numerator.gcd(rat.denominator)  #=> 1
  */
 static VALUE
 nurat_denominator(VALUE self)
@@ -701,7 +693,8 @@ f_addsub(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 	a = rb_int_idiv(bden, g);
 	den = rb_int_mul(a, b);
     }
-    else {
+    else if (RB_INTEGER_TYPE_P(anum) && RB_INTEGER_TYPE_P(aden) &&
+             RB_INTEGER_TYPE_P(bnum) && RB_INTEGER_TYPE_P(bden)) {
 	VALUE g = f_gcd(aden, bden);
 	VALUE a = rb_int_mul(anum, rb_int_idiv(bden, g));
 	VALUE b = rb_int_mul(bnum, rb_int_idiv(aden, g));
@@ -717,6 +710,12 @@ f_addsub(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 	num = rb_int_idiv(c, g);
 	a = rb_int_idiv(bden, g);
 	den = rb_int_mul(a, b);
+    }
+    else {
+        double a = NUM2DBL(anum) / NUM2DBL(aden);
+        double b = NUM2DBL(bnum) / NUM2DBL(bden);
+        double c = k == '+' ? a + b : a - b;
+        return DBL2NUM(c);
     }
     return f_rational_new_no_reduce2(CLASS_OF(self), num, den);
 }
@@ -772,7 +771,7 @@ rb_rational_plus(VALUE self, VALUE other)
  *    Rational(2, 3)  - Rational(2, 3)   #=> (0/1)
  *    Rational(900)   - Rational(1)      #=> (899/1)
  *    Rational(-2, 9) - Rational(-9, 2)  #=> (77/18)
- *    Rational(9, 8)  - 4                #=> (23/8)
+ *    Rational(9, 8)  - 4                #=> (-23/8)
  *    Rational(20, 9) - 9.8              #=> -7.577777777777778
  */
 static VALUE
@@ -810,6 +809,16 @@ f_muldiv(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
     VALUE num, den;
 
     assert(RB_TYPE_P(self, T_RATIONAL));
+
+    /* Integer#** can return Rational with Float right now */
+    if (RB_FLOAT_TYPE_P(anum) || RB_FLOAT_TYPE_P(aden) ||
+        RB_FLOAT_TYPE_P(bnum) || RB_FLOAT_TYPE_P(bden)) {
+        double an = NUM2DBL(anum), ad = NUM2DBL(aden);
+        double bn = NUM2DBL(bnum), bd = NUM2DBL(bden);
+        double x = (an * bn) / (ad * bd);
+        return DBL2NUM(x);
+    }
+
     assert(RB_INTEGER_TYPE_P(anum));
     assert(RB_INTEGER_TYPE_P(aden));
     assert(RB_INTEGER_TYPE_P(bnum));
@@ -861,8 +870,8 @@ f_muldiv(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
  *    Rational(9, 8)  * 4                #=> (9/2)
  *    Rational(20, 9) * 9.8              #=> 21.77777777777778
  */
-static VALUE
-nurat_mul(VALUE self, VALUE other)
+VALUE
+rb_rational_mul(VALUE self, VALUE other)
 {
     if (RB_INTEGER_TYPE_P(other)) {
 	{
@@ -917,8 +926,10 @@ nurat_div(VALUE self, VALUE other)
 			    other, ONE, '/');
 	}
     }
-    else if (RB_FLOAT_TYPE_P(other))
-	return DBL2NUM(nurat_to_double(self) / RFLOAT_VALUE(other));
+    else if (RB_FLOAT_TYPE_P(other)) {
+        VALUE v = nurat_to_f(self);
+        return rb_flo_div_flo(v, other);
+    }
     else if (RB_TYPE_P(other, T_RATIONAL)) {
 	if (f_zero_p(other))
             rb_num_zerodiv();
@@ -939,13 +950,11 @@ nurat_div(VALUE self, VALUE other)
     }
 }
 
-static VALUE nurat_to_f(VALUE self);
-
 /*
  * call-seq:
  *    rat.fdiv(numeric)  ->  float
  *
- * Performs division and returns the value as a float.
+ * Performs division and returns the value as a Float.
  *
  *    Rational(2, 3).fdiv(1)       #=> 0.6666666666666666
  *    Rational(2, 3).fdiv(0.5)     #=> 1.3333333333333333
@@ -956,7 +965,7 @@ nurat_fdiv(VALUE self, VALUE other)
 {
     VALUE div;
     if (f_zero_p(other))
-	return DBL2NUM(nurat_to_double(self) / 0.0);
+        return nurat_div(self, rb_float_new(0.0));
     if (FIXNUM_P(other) && other == LONG2FIX(1))
 	return nurat_to_f(self);
     div = nurat_div(self, other);
@@ -964,7 +973,7 @@ nurat_fdiv(VALUE self, VALUE other)
 	return nurat_to_f(div);
     if (RB_FLOAT_TYPE_P(div))
 	return div;
-    return rb_funcall(div, rb_intern("to_f"), 0);
+    return rb_funcall(div, idTo_f, 0);
 }
 
 inline static VALUE
@@ -982,15 +991,15 @@ f_odd_p(VALUE integer)
  *
  * Performs exponentiation.
  *
- *    Rational(2)    ** Rational(3)    #=> (8/1)
- *    Rational(10)   ** -2             #=> (1/100)
- *    Rational(10)   ** -2.0           #=> 0.01
- *    Rational(-4)   ** Rational(1,2)  #=> (1.2246063538223773e-16+2.0i)
- *    Rational(1, 2) ** 0              #=> (1/1)
- *    Rational(1, 2) ** 0.0            #=> 1.0
+ *    Rational(2)    ** Rational(3)     #=> (8/1)
+ *    Rational(10)   ** -2              #=> (1/100)
+ *    Rational(10)   ** -2.0            #=> 0.01
+ *    Rational(-4)   ** Rational(1, 2)  #=> (0.0+2.0i)
+ *    Rational(1, 2) ** 0               #=> (1/1)
+ *    Rational(1, 2) ** 0.0             #=> 1.0
  */
-static VALUE
-nurat_expt(VALUE self, VALUE other)
+VALUE
+rb_rational_pow(VALUE self, VALUE other)
 {
     if (k_numeric_p(other) && k_exact_zero_p(other))
 	return f_rational_new_bang1(CLASS_OF(self), ONE);
@@ -1043,7 +1052,8 @@ nurat_expt(VALUE self, VALUE other)
 		den = ONE;
 	    }
 	    if (RB_FLOAT_TYPE_P(num)) { /* infinity due to overflow */
-		if (RB_FLOAT_TYPE_P(den)) return DBL2NUM(NAN);
+		if (RB_FLOAT_TYPE_P(den))
+		    return DBL2NUM(nan(""));
 		return num;
 	    }
 	    if (RB_FLOAT_TYPE_P(den)) { /* infinity due to overflow */
@@ -1064,20 +1074,24 @@ nurat_expt(VALUE self, VALUE other)
 	return rb_num_coerce_bin(self, other, rb_intern("**"));
     }
 }
+#define nurat_expt rb_rational_pow
 
 /*
  * call-seq:
- *    rational <=> numeric  ->  -1, 0, +1 or nil
+ *    rational <=> numeric  ->  -1, 0, +1, or nil
  *
- * Performs comparison and returns -1, 0, or +1.
+ * Returns -1, 0, or +1 depending on whether +rational+ is
+ * less than, equal to, or greater than +numeric+.
  *
  * +nil+ is returned if the two values are incomparable.
  *
- *    Rational(2, 3)  <=> Rational(2, 3)  #=> 0
- *    Rational(5)     <=> 5               #=> 0
- *    Rational(2,3)   <=> Rational(1,3)   #=> 1
- *    Rational(1,3)   <=> 1               #=> -1
- *    Rational(1,3)   <=> 0.3             #=> 1
+ *    Rational(2, 3) <=> Rational(2, 3)  #=> 0
+ *    Rational(5)    <=> 5               #=> 0
+ *    Rational(2, 3) <=> Rational(1, 3)  #=> 1
+ *    Rational(1, 3) <=> 1               #=> -1
+ *    Rational(1, 3) <=> 0.3             #=> 1
+ *
+ *    Rational(1, 3) <=> "0.3"           #=> nil
  */
 VALUE
 rb_rational_cmp(VALUE self, VALUE other)
@@ -1123,7 +1137,7 @@ rb_rational_cmp(VALUE self, VALUE other)
  * call-seq:
  *    rat == object  ->  true or false
  *
- * Returns true if rat equals object numerically.
+ * Returns +true+ if +rat+ equals +object+ numerically.
  *
  *    Rational(2, 3)  == Rational(2, 3)   #=> true
  *    Rational(5)     == 5                #=> true
@@ -1135,9 +1149,9 @@ static VALUE
 nurat_eqeq_p(VALUE self, VALUE other)
 {
     if (RB_INTEGER_TYPE_P(other)) {
-	{
-	    get_dat1(self);
+        get_dat1(self);
 
+        if (RB_INTEGER_TYPE_P(dat->num) && RB_INTEGER_TYPE_P(dat->den)) {
 	    if (INT_ZERO_P(dat->num) && INT_ZERO_P(other))
 		return Qtrue;
 
@@ -1147,6 +1161,10 @@ nurat_eqeq_p(VALUE self, VALUE other)
 		return Qfalse;
 	    return rb_int_equal(dat->num, other);
 	}
+        else {
+            const double d = nurat_to_double(self);
+            return f_boolcast(FIXNUM_ZERO_P(rb_dbl_cmp(d, NUM2DBL(other))));
+        }
     }
     else if (RB_FLOAT_TYPE_P(other)) {
 	const double d = nurat_to_double(self);
@@ -1194,42 +1212,9 @@ nurat_coerce(VALUE self, VALUE other)
     return Qnil;
 }
 
-#if 0
-/* :nodoc: */
-static VALUE
-nurat_idiv(VALUE self, VALUE other)
-{
-    return f_idiv(self, other);
-}
-
-/* :nodoc: */
-static VALUE
-nurat_quot(VALUE self, VALUE other)
-{
-    return f_truncate(f_div(self, other));
-}
-
-/* :nodoc: */
-static VALUE
-nurat_quotrem(VALUE self, VALUE other)
-{
-    VALUE val = f_truncate(f_div(self, other));
-    return rb_assoc_new(val, f_sub(self, f_mul(other, val)));
-}
-#endif
-
-#if 0
-/* :nodoc: */
-static VALUE
-nurat_true(VALUE self)
-{
-    return Qtrue;
-}
-#endif
-
 /*
  *  call-seq:
- *     rat.positive? ->  true or false
+ *     rat.positive?  ->  true or false
  *
  *  Returns +true+ if +rat+ is greater than 0.
  */
@@ -1242,7 +1227,7 @@ nurat_positive_p(VALUE self)
 
 /*
  *  call-seq:
- *     rat.negative? ->  true or false
+ *     rat.negative?  ->  true or false
  *
  *  Returns +true+ if +rat+ is less than 0.
  */
@@ -1255,15 +1240,15 @@ nurat_negative_p(VALUE self)
 
 /*
  *  call-seq:
- *     rat.abs       -> rat
- *     rat.magnitude -> rat
+ *     rat.abs        ->  rational
+ *     rat.magnitude  ->  rational
  *
  *  Returns the absolute value of +rat+.
  *
- *     (1/2r).abs    #=> 1/2r
- *     (-1/2r).abs   #=> 1/2r
+ *     (1/2r).abs    #=> (1/2)
+ *     (-1/2r).abs   #=> (1/2)
  *
- *  Rational#magnitude is an alias of Rational#abs.
+ *  Rational#magnitude is an alias for Rational#abs.
  */
 
 VALUE
@@ -1299,11 +1284,11 @@ nurat_ceil(VALUE self)
  *
  * Equivalent to Rational#truncate.
  *
- *    Rational(2, 3).to_i   #=> 0
- *    Rational(3).to_i      #=> 3
- *    Rational(300.6).to_i  #=> 300
- *    Rational(98,71).to_i  #=> 1
- *    Rational(-30,2).to_i  #=> -15
+ *    Rational(2, 3).to_i    #=> 0
+ *    Rational(3).to_i       #=> 3
+ *    Rational(300.6).to_i   #=> 300
+ *    Rational(98, 71).to_i  #=> 1
+ *    Rational(-31, 2).to_i  #=> -15
  */
 static VALUE
 nurat_truncate(VALUE self)
@@ -1395,16 +1380,16 @@ f_round_common(int argc, VALUE *argv, VALUE self, VALUE (*func)(VALUE))
 {
     VALUE n, b, s;
 
-    if (argc == 0)
+    if (rb_check_arity(argc, 0, 1) == 0)
 	return (*func)(self);
 
-    rb_scan_args(argc, argv, "01", &n);
+    n = argv[0];
 
     if (!k_integer_p(n))
 	rb_raise(rb_eTypeError, "not an integer");
 
     b = f_expt10(n);
-    s = nurat_mul(self, b);
+    s = rb_rational_mul(self, b);
 
     if (k_float_p(s)) {
 	if (INT_NEGATIVE_P(n))
@@ -1428,21 +1413,27 @@ f_round_common(int argc, VALUE *argv, VALUE self, VALUE (*func)(VALUE))
 
 /*
  * call-seq:
- *    rat.floor               ->  integer
- *    rat.floor(precision=0)  ->  rational
+ *    rat.floor([ndigits])  ->  integer or rational
  *
- * Returns the truncated value (toward negative infinity).
+ * Returns the largest number less than or equal to +rat+ with
+ * a precision of +ndigits+ decimal digits (default: 0).
+ *
+ * When the precision is negative, the returned value is an integer
+ * with at least <code>ndigits.abs</code> trailing zeros.
+ *
+ * Returns a rational when +ndigits+ is positive,
+ * otherwise returns an integer.
  *
  *    Rational(3).floor      #=> 3
  *    Rational(2, 3).floor   #=> 0
- *    Rational(-3, 2).floor  #=> -1
+ *    Rational(-3, 2).floor  #=> -2
  *
  *      #    decimal      -  1  2  3 . 4  5  6
  *      #                   ^  ^  ^  ^   ^  ^
  *      #   precision      -3 -2 -1  0  +1 +2
  *
- *    '%f' % Rational('-123.456').floor(+1)  #=> "-123.500000"
- *    '%f' % Rational('-123.456').floor(-1)  #=> "-130.000000"
+ *    Rational('-123.456').floor(+1).to_f  #=> -123.5
+ *    Rational('-123.456').floor(-1)       #=> -130
  */
 static VALUE
 nurat_floor_n(int argc, VALUE *argv, VALUE self)
@@ -1452,10 +1443,16 @@ nurat_floor_n(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *    rat.ceil               ->  integer
- *    rat.ceil(precision=0)  ->  rational
+ *    rat.ceil([ndigits])  ->  integer or rational
  *
- * Returns the truncated value (toward positive infinity).
+ * Returns the smallest number greater than or equal to +rat+ with
+ * a precision of +ndigits+ decimal digits (default: 0).
+ *
+ * When the precision is negative, the returned value is an integer
+ * with at least <code>ndigits.abs</code> trailing zeros.
+ *
+ * Returns a rational when +ndigits+ is positive,
+ * otherwise returns an integer.
  *
  *    Rational(3).ceil      #=> 3
  *    Rational(2, 3).ceil   #=> 1
@@ -1465,8 +1462,8 @@ nurat_floor_n(int argc, VALUE *argv, VALUE self)
  *      #                   ^  ^  ^  ^   ^  ^
  *      #   precision      -3 -2 -1  0  +1 +2
  *
- *    '%f' % Rational('-123.456').ceil(+1)  #=> "-123.400000"
- *    '%f' % Rational('-123.456').ceil(-1)  #=> "-120.000000"
+ *    Rational('-123.456').ceil(+1).to_f  #=> -123.4
+ *    Rational('-123.456').ceil(-1)       #=> -120
  */
 static VALUE
 nurat_ceil_n(int argc, VALUE *argv, VALUE self)
@@ -1476,10 +1473,16 @@ nurat_ceil_n(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *    rat.truncate               ->  integer
- *    rat.truncate(precision=0)  ->  rational
+ *    rat.truncate([ndigits])  ->  integer or rational
  *
- * Returns the truncated value (toward zero).
+ * Returns +rat+ truncated (toward zero) to
+ * a precision of +ndigits+ decimal digits (default: 0).
+ *
+ * When the precision is negative, the returned value is an integer
+ * with at least <code>ndigits.abs</code> trailing zeros.
+ *
+ * Returns a rational when +ndigits+ is positive,
+ * otherwise returns an integer.
  *
  *    Rational(3).truncate      #=> 3
  *    Rational(2, 3).truncate   #=> 0
@@ -1489,8 +1492,8 @@ nurat_ceil_n(int argc, VALUE *argv, VALUE self)
  *      #                   ^  ^  ^  ^   ^  ^
  *      #   precision      -3 -2 -1  0  +1 +2
  *
- *    '%f' % Rational('-123.456').truncate(+1)  #=>  "-123.400000"
- *    '%f' % Rational('-123.456').truncate(-1)  #=>  "-120.000000"
+ *    Rational('-123.456').truncate(+1).to_f  #=> -123.4
+ *    Rational('-123.456').truncate(-1)       #=> -120
  */
 static VALUE
 nurat_truncate_n(int argc, VALUE *argv, VALUE self)
@@ -1500,11 +1503,16 @@ nurat_truncate_n(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *    rat.round               ->  integer
- *    rat.round(precision=0)  ->  rational
+ *    rat.round([ndigits] [, half: mode])  ->  integer or rational
  *
- * Returns the truncated value (toward the nearest integer;
- * 0.5 => 1; -0.5 => -1).
+ * Returns +rat+ rounded to the nearest value with
+ * a precision of +ndigits+ decimal digits (default: 0).
+ *
+ * When the precision is negative, the returned value is an integer
+ * with at least <code>ndigits.abs</code> trailing zeros.
+ *
+ * Returns a rational when +ndigits+ is positive,
+ * otherwise returns an integer.
  *
  *    Rational(3).round      #=> 3
  *    Rational(2, 3).round   #=> 1
@@ -1514,8 +1522,21 @@ nurat_truncate_n(int argc, VALUE *argv, VALUE self)
  *      #                   ^  ^  ^  ^   ^  ^
  *      #   precision      -3 -2 -1  0  +1 +2
  *
- *    '%f' % Rational('-123.456').round(+1)  #=> "-123.500000"
- *    '%f' % Rational('-123.456').round(-1)  #=> "-120.000000"
+ *    Rational('-123.456').round(+1).to_f  #=> -123.5
+ *    Rational('-123.456').round(-1)       #=> -120
+ *
+ * The optional +half+ keyword argument is available
+ * similar to Float#round.
+ *
+ *    Rational(25, 100).round(1, half: :up)    #=> (3/10)
+ *    Rational(25, 100).round(1, half: :down)  #=> (1/5)
+ *    Rational(25, 100).round(1, half: :even)  #=> (1/5)
+ *    Rational(35, 100).round(1, half: :up)    #=> (2/5)
+ *    Rational(35, 100).round(1, half: :down)  #=> (3/10)
+ *    Rational(35, 100).round(1, half: :even)  #=> (2/5)
+ *    Rational(-25, 100).round(1, half: :up)   #=> (-3/10)
+ *    Rational(-25, 100).round(1, half: :down) #=> (-1/5)
+ *    Rational(-25, 100).round(1, half: :even) #=> (-1/5)
  */
 static VALUE
 nurat_round_n(int argc, VALUE *argv, VALUE self)
@@ -1532,6 +1553,9 @@ static double
 nurat_to_double(VALUE self)
 {
     get_dat1(self);
+    if (!RB_INTEGER_TYPE_P(dat->num) || !RB_INTEGER_TYPE_P(dat->den)) {
+        return NUM2DBL(dat->num) / NUM2DBL(dat->den);
+    }
     return rb_int_fdiv_double(dat->num, dat->den);
 }
 
@@ -1539,7 +1563,7 @@ nurat_to_double(VALUE self)
  * call-seq:
  *    rat.to_f  ->  float
  *
- * Return the value as a float.
+ * Returns the value as a Float.
  *
  *    Rational(2).to_f      #=> 2.0
  *    Rational(9, 4).to_f   #=> 2.25
@@ -1568,10 +1592,28 @@ nurat_to_r(VALUE self)
 }
 
 #define id_ceil rb_intern("ceil")
-#define f_ceil(x) rb_funcall((x), id_ceil, 0)
+static VALUE
+f_ceil(VALUE x)
+{
+    if (RB_INTEGER_TYPE_P(x))
+        return x;
+    if (RB_FLOAT_TYPE_P(x))
+        return rb_float_ceil(x, 0);
 
-#define id_quo rb_intern("quo")
-#define f_quo(x,y) rb_funcall((x), id_quo, 1, (y))
+    return rb_funcall(x, id_ceil, 0);
+}
+
+#define id_quo idQuo
+static VALUE
+f_quo(VALUE x, VALUE y)
+{
+    if (RB_INTEGER_TYPE_P(x))
+        return rb_int_div(x, y);
+    if (RB_FLOAT_TYPE_P(x))
+        return DBL2NUM(RFLOAT_VALUE(x) / RFLOAT_VALUE(y));
+
+    return rb_funcallv(x, id_quo, 1, &y);
+}
 
 #define f_reciprocal(x) f_quo(ONE, (x))
 
@@ -1669,8 +1711,8 @@ nurat_rationalize_internal(VALUE a, VALUE b, VALUE *p, VALUE *q)
  *    rat.rationalize(eps)  ->  rational
  *
  * Returns a simpler approximation of the value if the optional
- * argument eps is given (rat-|eps| <= result <= rat+|eps|), self
- * otherwise.
+ * argument +eps+ is given (rat-|eps| <= result <= rat+|eps|),
+ * self otherwise.
  *
  *    r = Rational(5033165, 16777216)
  *    r.rationalize                    #=> (5033165/16777216)
@@ -1682,14 +1724,13 @@ nurat_rationalize(int argc, VALUE *argv, VALUE self)
 {
     VALUE e, a, b, p, q;
 
-    if (argc == 0)
+    if (rb_check_arity(argc, 0, 1) == 0)
 	return self;
 
     if (nurat_negative_p(self))
 	return rb_rational_uminus(nurat_rationalize(argc, argv, rb_rational_uminus(self)));
 
-    rb_scan_args(argc, argv, "01", &e);
-    e = f_abs(e);
+    e = f_abs(argv[0]);
     a = f_sub(self, e);
     b = f_add(self, e);
 
@@ -1713,7 +1754,7 @@ nurat_hash(VALUE self)
     n = rb_hash(dat->den);
     h[1] = NUM2LONG(n);
     v = rb_memhash(h, sizeof(h));
-    return LONG2FIX(v);
+    return ST2FIX(v);
 }
 
 static VALUE
@@ -1788,6 +1829,7 @@ nurat_loader(VALUE self, VALUE a)
     nurat_canonicalize(&num, &den);
     RRATIONAL_SET_NUM(dat, num);
     RRATIONAL_SET_DEN(dat, den);
+    OBJ_FREEZE_RAW(self);
 
     return self;
 }
@@ -1839,11 +1881,12 @@ rb_rational_reciprocal(VALUE x)
 
 /*
  * call-seq:
- *    int.gcd(int2)  ->  integer
+ *    int.gcd(other_int)  ->  integer
  *
- * Returns the greatest common divisor (always positive).  0.gcd(x)
- * and x.gcd(0) return abs(x).
+ * Returns the greatest common divisor of the two integers.
+ * The result is always positive. 0.gcd(x) and x.gcd(0) return x.abs.
  *
+ *    36.gcd(60)                  #=> 12
  *    2.gcd(2)                    #=> 2
  *    3.gcd(-7)                   #=> 1
  *    ((1<<31)-1).gcd((1<<61)-1)  #=> 1
@@ -1857,11 +1900,12 @@ rb_gcd(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    int.lcm(int2)  ->  integer
+ *    int.lcm(other_int)  ->  integer
  *
- * Returns the least common multiple (always positive).  0.lcm(x) and
- * x.lcm(0) return zero.
+ * Returns the least common multiple of the two integers.
+ * The result is always positive. 0.lcm(x) and x.lcm(0) return zero.
  *
+ *    36.lcm(60)                  #=> 180
  *    2.lcm(2)                    #=> 2
  *    3.lcm(-7)                   #=> 21
  *    ((1<<31)-1).lcm((1<<61)-1)  #=> 4951760154835678088235319297
@@ -1875,10 +1919,12 @@ rb_lcm(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    int.gcdlcm(int2)  ->  array
+ *    int.gcdlcm(other_int)  ->  array
  *
- * Returns an array; [int.gcd(int2), int.lcm(int2)].
+ * Returns an array with the greatest common divisor and
+ * the least common multiple of the two integers, [gcd, lcm].
  *
+ *    36.gcdlcm(60)                  #=> [12, 180]
  *    2.gcdlcm(2)                    #=> [2, 2]
  *    3.gcdlcm(-7)                   #=> [1, 21]
  *    ((1<<31)-1).gcdlcm((1<<61)-1)  #=> [1, 4951760154835678088235319297]
@@ -1929,7 +1975,7 @@ rb_rational_den(VALUE rat)
 #define id_denominator rb_intern("denominator")
 #define f_denominator(x) rb_funcall((x), id_denominator, 0)
 
-#define id_to_r rb_intern("to_r")
+#define id_to_r idTo_r
 #define f_to_r(x) rb_funcall((x), id_to_r, 0)
 
 /*
@@ -1962,14 +2008,18 @@ numeric_denominator(VALUE self)
  *     num.quo(int_or_rat)   ->  rat
  *     num.quo(flo)          ->  flo
  *
- *  Returns most exact division (rational for integers, float for floats).
+ *  Returns the most exact division (rational for integers, float for floats).
  */
 
-static VALUE
-numeric_quo(VALUE x, VALUE y)
+VALUE
+rb_numeric_quo(VALUE x, VALUE y)
 {
+    if (RB_TYPE_P(x, T_COMPLEX)) {
+        return rb_complex_div(x, y);
+    }
+
     if (RB_FLOAT_TYPE_P(y)) {
-        return rb_funcall(x, rb_intern("fdiv"), 1, y);
+        return rb_funcallv(x, idFdiv, 1, &y);
     }
 
     if (canonicalization) {
@@ -1981,6 +2031,15 @@ numeric_quo(VALUE x, VALUE y)
     return nurat_div(x, y);
 }
 
+VALUE
+rb_rational_canonicalize(VALUE x)
+{
+    if (RB_TYPE_P(x, T_RATIONAL)) {
+        get_dat1(x);
+        if (f_one_p(dat->den)) return dat->num;
+    }
+    return x;
+}
 
 /*
  * call-seq:
@@ -2016,14 +2075,21 @@ static VALUE float_to_r(VALUE self);
  *    n = 0.3.numerator    #=> 5404319552844595
  *    d = 0.3.denominator  #=> 18014398509481984
  *    n.fdiv(d)            #=> 0.3
+ *
+ * See also Float#denominator.
  */
-static VALUE
-float_numerator(VALUE self)
+VALUE
+rb_float_numerator(VALUE self)
 {
     double d = RFLOAT_VALUE(self);
+    VALUE r;
     if (isinf(d) || isnan(d))
 	return self;
-    return nurat_numerator(float_to_r(self));
+    r = float_to_r(self);
+    if (canonicalization && k_integer_p(r)) {
+	return r;
+    }
+    return nurat_numerator(r);
 }
 
 /*
@@ -2033,15 +2099,20 @@ float_numerator(VALUE self)
  * Returns the denominator (always positive).  The result is machine
  * dependent.
  *
- * See numerator.
+ * See also Float#numerator.
  */
-static VALUE
-float_denominator(VALUE self)
+VALUE
+rb_float_denominator(VALUE self)
 {
     double d = RFLOAT_VALUE(self);
+    VALUE r;
     if (isinf(d) || isnan(d))
 	return INT2FIX(1);
-    return nurat_denominator(float_to_r(self));
+    r = float_to_r(self);
+    if (canonicalization && k_integer_p(r)) {
+	return ONE;
+    }
+    return nurat_denominator(r);
 }
 
 /*
@@ -2060,13 +2131,13 @@ nilclass_to_r(VALUE self)
  * call-seq:
  *    nil.rationalize([eps])  ->  (0/1)
  *
- * Returns zero as a rational.  The optional argument eps is always
+ * Returns zero as a rational.  The optional argument +eps+ is always
  * ignored.
  */
 static VALUE
 nilclass_rationalize(int argc, VALUE *argv, VALUE self)
 {
-    rb_scan_args(argc, argv, "01", NULL);
+    rb_check_arity(argc, 0, 1);
     return nilclass_to_r(self);
 }
 
@@ -2089,39 +2160,26 @@ integer_to_r(VALUE self)
  * call-seq:
  *    int.rationalize([eps])  ->  rational
  *
- * Returns the value as a rational.  The optional argument eps is
+ * Returns the value as a rational.  The optional argument +eps+ is
  * always ignored.
  */
 static VALUE
 integer_rationalize(int argc, VALUE *argv, VALUE self)
 {
-    rb_scan_args(argc, argv, "01", NULL);
+    rb_check_arity(argc, 0, 1);
     return integer_to_r(self);
 }
 
 static void
-float_decode_internal(VALUE self, VALUE *rf, VALUE *rn)
+float_decode_internal(VALUE self, VALUE *rf, int *n)
 {
     double f;
-    int n;
 
-    f = frexp(RFLOAT_VALUE(self), &n);
+    f = frexp(RFLOAT_VALUE(self), n);
     f = ldexp(f, DBL_MANT_DIG);
-    n -= DBL_MANT_DIG;
+    *n -= DBL_MANT_DIG;
     *rf = rb_dbl2big(f);
-    *rn = INT2FIX(n);
 }
-
-#if 0
-static VALUE
-float_decode(VALUE self)
-{
-    VALUE f, n;
-
-    float_decode_internal(self, &f, &n);
-    return rb_assoc_new(f, n);
-}
-#endif
 
 /*
  * call-seq:
@@ -2129,33 +2187,34 @@ float_decode(VALUE self)
  *
  * Returns the value as a rational.
  *
- * NOTE: 0.3.to_r isn't the same as '0.3'.to_r.  The latter is
- * equivalent to '3/10'.to_r, but the former isn't so.
- *
  *    2.0.to_r    #=> (2/1)
  *    2.5.to_r    #=> (5/2)
  *    -0.75.to_r  #=> (-3/4)
  *    0.0.to_r    #=> (0/1)
+ *    0.3.to_r    #=> (5404319552844595/18014398509481984)
  *
- * See rationalize.
+ * NOTE: 0.3.to_r isn't the same as "0.3".to_r.  The latter is
+ * equivalent to "3/10".to_r, but the former isn't so.
+ *
+ *    0.3.to_r   == 3/10r  #=> false
+ *    "0.3".to_r == 3/10r  #=> true
+ *
+ * See also Float#rationalize.
  */
 static VALUE
 float_to_r(VALUE self)
 {
-    VALUE f, n;
+    VALUE f;
+    int n;
 
     float_decode_internal(self, &f, &n);
 #if FLT_RADIX == 2
-    {
-	long ln = FIX2LONG(n);
-
-	if (ln == 0)
-	    return rb_rational_new1(f);
-	if (ln > 0)
-	    return rb_rational_new1(rb_int_lshift(f, n));
-	ln = -ln;
-	return rb_rational_new2(f, rb_int_lshift(ONE, INT2FIX(ln)));
-    }
+    if (n == 0)
+        return rb_rational_new1(f);
+    if (n > 0)
+        return rb_rational_new1(rb_int_lshift(f, INT2FIX(n)));
+    n = -n;
+    return rb_rational_new2(f, rb_int_lshift(ONE, INT2FIX(n)));
 #else
     f = rb_int_mul(f, rb_int_pow(INT2FIX(FLT_RADIX), n));
     if (RB_TYPE_P(f, T_RATIONAL))
@@ -2183,33 +2242,26 @@ rb_flt_rationalize_with_prec(VALUE flt, VALUE prec)
 VALUE
 rb_flt_rationalize(VALUE flt)
 {
-    VALUE a, b, f, n, p, q;
+    VALUE a, b, f, p, q;
+    int n;
 
     float_decode_internal(flt, &f, &n);
-    if (INT_ZERO_P(f) || FIX2INT(n) >= 0)
-        return rb_rational_new1(rb_int_lshift(f, n));
+    if (INT_ZERO_P(f) || n >= 0)
+        return rb_rational_new1(rb_int_lshift(f, INT2FIX(n)));
 
-#if FLT_RADIX == 2
-    {
-        VALUE two_times_f, den;
-
-        two_times_f = rb_int_mul(TWO, f);
-        den = rb_int_lshift(ONE, rb_int_minus(ONE, n));
-
-        a = rb_rational_new2(rb_int_minus(two_times_f, ONE), den);
-        b = rb_rational_new2(rb_int_plus(two_times_f, ONE), den);
-    }
-#else
     {
         VALUE radix_times_f, den;
 
         radix_times_f = rb_int_mul(INT2FIX(FLT_RADIX), f);
-        den = rb_int_pow(INT2FIX(FLT_RADIX), rb_int_minus(ONE, n));
+#if FLT_RADIX == 2 && 0
+        den = rb_int_lshift(ONE, INT2FIX(1-n));
+#else
+        den = rb_int_positive_pow(FLT_RADIX, 1-n);
+#endif
 
         a = rb_rational_new2(rb_int_minus(radix_times_f, INT2FIX(FLT_RADIX - 1)), den);
         b = rb_rational_new2(rb_int_plus(radix_times_f, INT2FIX(FLT_RADIX - 1)), den);
     }
-#endif
 
     if (nurat_eqeq_p(a, b))
         return float_to_r(flt);
@@ -2223,28 +2275,25 @@ rb_flt_rationalize(VALUE flt)
  *    flt.rationalize([eps])  ->  rational
  *
  * Returns a simpler approximation of the value (flt-|eps| <= result
- * <= flt+|eps|).  if the optional eps is not given, it will be chosen
- * automatically.
+ * <= flt+|eps|).  If the optional argument +eps+ is not given,
+ * it will be chosen automatically.
  *
  *    0.3.rationalize          #=> (3/10)
  *    1.333.rationalize        #=> (1333/1000)
  *    1.333.rationalize(0.01)  #=> (4/3)
  *
- * See to_r.
+ * See also Float#to_r.
  */
 static VALUE
 float_rationalize(int argc, VALUE *argv, VALUE self)
 {
-    VALUE e;
     double d = RFLOAT_VALUE(self);
 
     if (d < 0.0)
         return rb_rational_uminus(float_rationalize(argc, argv, DBL2NUM(-d)));
 
-    rb_scan_args(argc, argv, "01", &e);
-
-    if (argc != 0) {
-        return rb_flt_rationalize_with_prec(self, e);
+    if (rb_check_arity(argc, 0, 1)) {
+        return rb_flt_rationalize_with_prec(self, argv[0]);
     }
     else {
         return rb_flt_rationalize(self);
@@ -2277,14 +2326,26 @@ islettere(int c)
     return (c == 'e' || c == 'E');
 }
 
+static VALUE
+negate_num(VALUE num)
+{
+    if (FIXNUM_P(num)) {
+	return rb_int_uminus(num);
+    }
+    else {
+	BIGNUM_NEGATE(num);
+	return rb_big_norm(num);
+    }
+}
+
 static int
-read_num(const char **s, const char *const end, VALUE *num, VALUE *div)
+read_num(const char **s, const char *const end, VALUE *num, VALUE *nexp)
 {
     VALUE fp = ONE, exp, fn = ZERO, n = ZERO;
     int expsign = 0, ok = 0;
     char *e;
 
-    *div = ONE;
+    *nexp = ZERO;
     *num = ZERO;
     if (*s < end && **s != '.') {
 	n = rb_int_parse_cstr(*s, end-*s, &e, NULL,
@@ -2306,10 +2367,9 @@ read_num(const char **s, const char *const end, VALUE *num, VALUE *div)
 	    return 1;
 	*s = e;
 	{
-	    VALUE l = f_expt10(SIZET2NUM(count));
+            VALUE l = f_expt10(*nexp = SIZET2NUM(count));
 	    n = n == ZERO ? fp : rb_int_plus(rb_int_mul(*num, l), fp);
 	    *num = n;
-	    *div = l;
 	    fn = SIZET2NUM(count);
 	}
 	ok = 1;
@@ -2326,18 +2386,12 @@ read_num(const char **s, const char *const end, VALUE *num, VALUE *div)
 	if (exp != ZERO) {
 	    if (expsign == '-') {
 		if (fn != ZERO) exp = rb_int_plus(exp, fn);
-		*div = f_expt10(exp);
 	    }
 	    else {
 		if (fn != ZERO) exp = rb_int_minus(exp, fn);
-		if (INT_NEGATIVE_P(exp)) {
-		    *div = f_expt10(exp);
-		}
-		else {
-		    *num = rb_int_mul(n, f_expt10(exp));
-		    *div = ONE;
-		}
+                exp = negate_num(exp);
 	    }
+            *nexp = exp;
 	}
     }
 
@@ -2353,52 +2407,67 @@ skip_ws(const char *s, const char *e)
 }
 
 static VALUE
-parse_rat(const char *s, const char *const e, int strict)
+parse_rat(const char *s, const char *const e, int strict, int raise)
 {
     int sign;
-    VALUE num, den, ndiv, ddiv;
+    VALUE num, den, nexp, dexp;
 
     s = skip_ws(s, e);
     sign = read_sign(&s, e);
 
-    if (!read_num(&s, e, &num, &ndiv)) {
+    if (!read_num(&s, e, &num, &nexp)) {
 	if (strict) return Qnil;
 	return canonicalization ? ZERO : nurat_s_alloc(rb_cRational);
     }
-    nurat_reduce(&num, &ndiv);
-    den = ndiv;
+    den = ONE;
     if (s < e && *s == '/') {
 	s++;
-	if (!read_num(&s, e, &den, &ddiv)) {
+        if (!read_num(&s, e, &den, &dexp)) {
 	    if (strict) return Qnil;
-	    den = ndiv;
+            den = ONE;
 	}
 	else if (den == ZERO) {
+            if (!raise) return Qnil;
 	    rb_num_zerodiv();
 	}
 	else if (strict && skip_ws(s, e) != e) {
 	    return Qnil;
 	}
 	else {
-	    nurat_reduce(&den, &ddiv);
+            nexp = rb_int_minus(nexp, dexp);
 	    nurat_reduce(&num, &den);
-	    nurat_reduce(&ndiv, &ddiv);
-	    if (ndiv != ONE) den = rb_int_mul(den, ndiv);
-	    if (ddiv != ONE) num = rb_int_mul(num, ddiv);
 	}
     }
     else if (strict && skip_ws(s, e) != e) {
 	return Qnil;
     }
 
+    if (nexp != ZERO) {
+        if (INT_NEGATIVE_P(nexp)) {
+            VALUE mul;
+            if (!FIXNUM_P(nexp)) {
+              overflow:
+                return sign == '-' ? DBL2NUM(-HUGE_VAL) : DBL2NUM(HUGE_VAL);
+            }
+            mul = f_expt10(LONG2NUM(-FIX2LONG(nexp)));
+            if (RB_FLOAT_TYPE_P(mul)) goto overflow;
+            num = rb_int_mul(num, mul);
+        }
+        else {
+            VALUE div;
+            if (!FIXNUM_P(nexp)) {
+              underflow:
+                return sign == '-' ? DBL2NUM(-0.0) : DBL2NUM(+0.0);
+            }
+            div = f_expt10(nexp);
+            if (RB_FLOAT_TYPE_P(div)) goto underflow;
+            den = rb_int_mul(den, div);
+        }
+        nurat_reduce(&num, &den);
+    }
+
     if (sign == '-') {
-	if (FIXNUM_P(num)) {
-	    num = rb_int_uminus(num);
-	}
-	else {
-	    BIGNUM_NEGATE(num);
-	    num = rb_big_norm(num);
-	}
+	num = negate_num(num);
     }
 
     if (!canonicalization || den != ONE)
@@ -2407,20 +2476,23 @@ parse_rat(const char *s, const char *const e, int strict)
 }
 
 static VALUE
-string_to_r_strict(VALUE self)
+string_to_r_strict(VALUE self, int raise)
 {
     VALUE num;
 
     rb_must_asciicompat(self);
 
-    num = parse_rat(RSTRING_PTR(self), RSTRING_END(self), 1);
+    num = parse_rat(RSTRING_PTR(self), RSTRING_END(self), 1, raise);
     if (NIL_P(num)) {
-	rb_raise(rb_eArgError, "invalid value for convert(): %+"PRIsVALUE,
-		 self);
+        if (!raise) return Qnil;
+        rb_raise(rb_eArgError, "invalid value for convert(): %+"PRIsVALUE,
+                 self);
     }
 
-    if (RB_FLOAT_TYPE_P(num))
-	rb_raise(rb_eFloatDomainError, "Infinity");
+    if (RB_FLOAT_TYPE_P(num) && !FLOAT_ZERO_P(num)) {
+        if (!raise) return Qnil;
+        rb_raise(rb_eFloatDomainError, "Infinity");
+    }
     return num;
 }
 
@@ -2428,24 +2500,29 @@ string_to_r_strict(VALUE self)
  * call-seq:
  *    str.to_r  ->  rational
  *
- * Returns a rational which denotes the string form.  The parser
- * ignores leading whitespaces and trailing garbage.  Any digit
- * sequences can be separated by an underscore.  Returns zero for null
- * or garbage string.
- *
- * NOTE: '0.3'.to_r isn't the same as 0.3.to_r.  The former is
- * equivalent to '3/10'.to_r, but the latter isn't so.
+ * Returns the result of interpreting leading characters in +str+
+ * as a rational.  Leading whitespace and extraneous characters
+ * past the end of a valid number are ignored.
+ * Digit sequences can be separated by an underscore.
+ * If there is not a valid number at the start of +str+,
+ * zero is returned.  This method never raises an exception.
  *
  *    '  2  '.to_r       #=> (2/1)
  *    '300/2'.to_r       #=> (150/1)
  *    '-9.2'.to_r        #=> (-46/5)
  *    '-9.2e2'.to_r      #=> (-920/1)
  *    '1_234_567'.to_r   #=> (1234567/1)
- *    '21 june 09'.to_r  #=> (21/1)
+ *    '21 June 09'.to_r  #=> (21/1)
  *    '21/06/09'.to_r    #=> (7/2)
- *    'bwv 1079'.to_r    #=> (0/1)
+ *    'BWV 1079'.to_r    #=> (0/1)
  *
- * See Kernel.Rational.
+ * NOTE: "0.3".to_r isn't the same as 0.3.to_r.  The former is
+ * equivalent to "3/10".to_r, but the latter isn't so.
+ *
+ *    "0.3".to_r == 3/10r  #=> true
+ *    0.3.to_r   == 3/10r  #=> false
+ *
+ * See also Kernel#Rational.
  */
 static VALUE
 string_to_r(VALUE self)
@@ -2454,9 +2531,9 @@ string_to_r(VALUE self)
 
     rb_must_asciicompat(self);
 
-    num = parse_rat(RSTRING_PTR(self), RSTRING_END(self), 0);
+    num = parse_rat(RSTRING_PTR(self), RSTRING_END(self), 0, TRUE);
 
-    if (RB_FLOAT_TYPE_P(num))
+    if (RB_FLOAT_TYPE_P(num) && !FLOAT_ZERO_P(num))
 	rb_raise(rb_eFloatDomainError, "Infinity");
     return num;
 }
@@ -2466,82 +2543,138 @@ rb_cstr_to_rat(const char *s, int strict) /* for complex's internal */
 {
     VALUE num;
 
-    num = parse_rat(s, s + strlen(s), strict);
+    num = parse_rat(s, s + strlen(s), strict, TRUE);
 
-    if (RB_FLOAT_TYPE_P(num))
+    if (RB_FLOAT_TYPE_P(num) && !FLOAT_ZERO_P(num))
 	rb_raise(rb_eFloatDomainError, "Infinity");
     return num;
 }
 
 static VALUE
-nurat_s_convert(int argc, VALUE *argv, VALUE klass)
+to_rational(VALUE val)
 {
-    VALUE a1, a2, backref;
+    return rb_convert_type_with_id(val, T_RATIONAL, "Rational", idTo_r);
+}
 
-    rb_scan_args(argc, argv, "11", &a1, &a2);
+static VALUE
+nurat_convert(VALUE klass, VALUE numv, VALUE denv, int raise)
+{
+    VALUE a1 = numv, a2 = denv;
+    int state;
 
-    if (NIL_P(a1) || (argc == 2 && NIL_P(a2)))
-	rb_raise(rb_eTypeError, "can't convert nil into Rational");
+    if (NIL_P(a1) || NIL_P(a2)) {
+        if (!raise) return Qnil;
+        rb_raise(rb_eTypeError, "can't convert nil into Rational");
+    }
 
     if (RB_TYPE_P(a1, T_COMPLEX)) {
-	if (k_exact_zero_p(RCOMPLEX(a1)->imag))
-	    a1 = RCOMPLEX(a1)->real;
+        if (k_exact_zero_p(RCOMPLEX(a1)->imag))
+            a1 = RCOMPLEX(a1)->real;
     }
 
     if (RB_TYPE_P(a2, T_COMPLEX)) {
-	if (k_exact_zero_p(RCOMPLEX(a2)->imag))
-	    a2 = RCOMPLEX(a2)->real;
+        if (k_exact_zero_p(RCOMPLEX(a2)->imag))
+            a2 = RCOMPLEX(a2)->real;
     }
-
-    backref = rb_backref_get();
-    rb_match_busy(backref);
 
     if (RB_FLOAT_TYPE_P(a1)) {
-	a1 = float_to_r(a1);
+        a1 = float_to_r(a1);
     }
     else if (RB_TYPE_P(a1, T_STRING)) {
-	a1 = string_to_r_strict(a1);
+        a1 = string_to_r_strict(a1, raise);
+        if (!raise && NIL_P(a1)) return Qnil;
     }
 
     if (RB_FLOAT_TYPE_P(a2)) {
-	a2 = float_to_r(a2);
+        a2 = float_to_r(a2);
     }
     else if (RB_TYPE_P(a2, T_STRING)) {
-	a2 = string_to_r_strict(a2);
+        a2 = string_to_r_strict(a2, raise);
+        if (!raise && NIL_P(a2)) return Qnil;
     }
-
-    rb_backref_set(backref);
 
     if (RB_TYPE_P(a1, T_RATIONAL)) {
-	if (argc == 1 || (k_exact_one_p(a2)))
-	    return a1;
+        if (a2 == Qundef || (k_exact_one_p(a2)))
+            return a1;
     }
 
-    if (argc == 1) {
-	if (!(k_numeric_p(a1) && k_integer_p(a1)))
-	    return rb_convert_type(a1, T_RATIONAL, "Rational", "to_r");
+    if (a2 == Qundef) {
+        if (!k_integer_p(a1)) {
+            if (!raise) {
+                VALUE result = rb_protect(to_rational, a1, NULL);
+                rb_set_errinfo(Qnil);
+                return result;
+            }
+            return to_rational(a1);
+        }
     }
     else {
-	if ((k_numeric_p(a1) && k_numeric_p(a2)) &&
-	    (!f_integer_p(a1) || !f_integer_p(a2)))
-	    return f_div(a1, a2);
+        if (!k_numeric_p(a1)) {
+            if (!raise) {
+                a1 = rb_protect(to_rational, a1, &state);
+                if (state) {
+                    rb_set_errinfo(Qnil);
+                    return Qnil;
+                }
+            }
+            else {
+                a1 = rb_check_convert_type_with_id(a1, T_RATIONAL, "Rational", idTo_r);
+            }
+        }
+        if (!k_numeric_p(a2)) {
+            if (!raise) {
+                a2 = rb_protect(to_rational, a2, &state);
+                if (state) {
+                    rb_set_errinfo(Qnil);
+                    return Qnil;
+                }
+            }
+            else {
+                a2 = rb_check_convert_type_with_id(a2, T_RATIONAL, "Rational", idTo_r);
+            }
+        }
+        if ((k_numeric_p(a1) && k_numeric_p(a2)) &&
+                (!f_integer_p(a1) || !f_integer_p(a2)))
+            return f_div(a1, a2);
     }
 
     {
-	VALUE argv2[2];
-	argv2[0] = a1;
-	argv2[1] = a2;
-	return nurat_s_new(argc, argv2, klass);
+        int argc;
+        VALUE argv2[2];
+        argv2[0] = a1;
+        if (a2 == Qundef) {
+            argv2[1] = Qnil;
+            argc = 1;
+        }
+        else {
+            if (!k_integer_p(a2) && !raise) return Qnil;
+            argv2[1] = a2;
+            argc = 2;
+        }
+        return nurat_s_new(argc, argv2, klass);
     }
 }
 
+static VALUE
+nurat_s_convert(int argc, VALUE *argv, VALUE klass)
+{
+    VALUE a1, a2;
+
+    if (rb_scan_args(argc, argv, "11", &a1, &a2) == 1) {
+        a2 = Qundef;
+    }
+
+    return nurat_convert(klass, a1, a2, TRUE);
+}
+
 /*
- * A rational number can be represented as a paired integer number;
- * a/b (b>0).  Where a is numerator and b is denominator.  Integer a
- * equals rational a/1 mathematically.
+ * A rational number can be represented as a pair of integer numbers:
+ * a/b (b>0), where a is the numerator and b is the denominator.
+ * Integer a equals rational a/1 mathematically.
  *
- * In ruby, you can create rational object with Rational, to_r,
- * rationalize method or suffixing r to a literal.  The return values will be irreducible.
+ * In Ruby, you can create rational objects with the Kernel#Rational,
+ * to_r, or rationalize methods or by suffixing +r+ to a literal.
+ * The return values will be irreducible fractions.
  *
  *    Rational(1)      #=> (1/1)
  *    Rational(2, 3)   #=> (2/3)
@@ -2549,7 +2682,7 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
  *    3.to_r           #=> (3/1)
  *    2/3r             #=> (2/3)
  *
- * You can also create rational object from floating-point numbers or
+ * You can also create rational objects from floating-point numbers or
  * strings.
  *
  *    Rational(0.3)    #=> (5404319552844595/18014398509481984)
@@ -2562,13 +2695,13 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
  *    0.3.rationalize  #=> (3/10)
  *
  * A rational object is an exact number, which helps you to write
- * program without any rounding errors.
+ * programs without any rounding errors.
  *
- *    10.times.inject(0){|t,| t + 0.1}              #=> 0.9999999999999999
- *    10.times.inject(0){|t,| t + Rational('0.1')}  #=> (1/1)
+ *    10.times.inject(0) {|t| t + 0.1 }              #=> 0.9999999999999999
+ *    10.times.inject(0) {|t| t + Rational('0.1') }  #=> (1/1)
  *
- * However, when an expression has inexact factor (numerical value or
- * operation), will produce an inexact result.
+ * However, when an expression includes an inexact component (numerical value
+ * or operation), it will produce an inexact result.
  *
  *    Rational(10) / 3   #=> (10/3)
  *    Rational(10) / 3.0 #=> 3.3333333333333335
@@ -2583,12 +2716,8 @@ Init_Rational(void)
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
 
-    assert(fprintf(stderr, "assert() is now active\n"));
-
     id_abs = rb_intern("abs");
-    id_idiv = rb_intern("div");
     id_integer_p = rb_intern("integer?");
-    id_to_i = rb_intern("to_i");
     id_i_num = rb_intern("@numerator");
     id_i_den = rb_intern("@denominator");
 
@@ -2597,12 +2726,7 @@ Init_Rational(void)
     rb_define_alloc_func(rb_cRational, nurat_s_alloc);
     rb_undef_method(CLASS_OF(rb_cRational), "allocate");
 
-#if 0
-    rb_define_private_method(CLASS_OF(rb_cRational), "new!", nurat_s_new_bang, -1);
-    rb_define_private_method(CLASS_OF(rb_cRational), "new", nurat_s_new, -1);
-#else
     rb_undef_method(CLASS_OF(rb_cRational), "new");
-#endif
 
     rb_define_global_function("Rational", nurat_f_rational, -1);
 
@@ -2612,7 +2736,7 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "-@", rb_rational_uminus, 0);
     rb_define_method(rb_cRational, "+", rb_rational_plus, 1);
     rb_define_method(rb_cRational, "-", nurat_sub, 1);
-    rb_define_method(rb_cRational, "*", nurat_mul, 1);
+    rb_define_method(rb_cRational, "*", rb_rational_mul, 1);
     rb_define_method(rb_cRational, "/", nurat_div, 1);
     rb_define_method(rb_cRational, "quo", nurat_div, 1);
     rb_define_method(rb_cRational, "fdiv", nurat_fdiv, 1);
@@ -2622,15 +2746,6 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "==", nurat_eqeq_p, 1);
     rb_define_method(rb_cRational, "coerce", nurat_coerce, 1);
 
-#if 0
-    rb_define_method(rb_cRational, "quot", nurat_quot, 1);
-    rb_define_method(rb_cRational, "quotrem", nurat_quotrem, 1);
-#endif
-
-#if 0
-    rb_define_method(rb_cRational, "rational?", nurat_true, 0);
-    rb_define_method(rb_cRational, "exact?", nurat_true, 0);
-#endif
     rb_define_method(rb_cRational, "positive?", nurat_positive_p, 0);
     rb_define_method(rb_cRational, "negative?", nurat_negative_p, 0);
     rb_define_method(rb_cRational, "abs", rb_rational_abs, 0);
@@ -2652,6 +2767,7 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "inspect", nurat_inspect, 0);
 
     rb_define_private_method(rb_cRational, "marshal_dump", nurat_marshal_dump, 0);
+    /* :nodoc: */
     compat = rb_define_class_under(rb_cRational, "compatible", rb_cObject);
     rb_define_private_method(compat, "marshal_load", nurat_marshal_load, 1);
     rb_marshal_define_compat(rb_cRational, compat, nurat_dumper, nurat_loader);
@@ -2664,13 +2780,13 @@ Init_Rational(void)
 
     rb_define_method(rb_cNumeric, "numerator", numeric_numerator, 0);
     rb_define_method(rb_cNumeric, "denominator", numeric_denominator, 0);
-    rb_define_method(rb_cNumeric, "quo", numeric_quo, 1);
+    rb_define_method(rb_cNumeric, "quo", rb_numeric_quo, 1);
 
     rb_define_method(rb_cInteger, "numerator", integer_numerator, 0);
     rb_define_method(rb_cInteger, "denominator", integer_denominator, 0);
 
-    rb_define_method(rb_cFloat, "numerator", float_numerator, 0);
-    rb_define_method(rb_cFloat, "denominator", float_denominator, 0);
+    rb_define_method(rb_cFloat, "numerator", rb_float_numerator, 0);
+    rb_define_method(rb_cFloat, "denominator", rb_float_denominator, 0);
 
     rb_define_method(rb_cNilClass, "to_r", nilclass_to_r, 0);
     rb_define_method(rb_cNilClass, "rationalize", nilclass_rationalize, -1);
@@ -2685,9 +2801,3 @@ Init_Rational(void)
 
     rb_provide("rational.so");	/* for backward compatibility */
 }
-
-/*
-Local variables:
-c-file-style: "ruby"
-End:
-*/

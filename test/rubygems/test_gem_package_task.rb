@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems'
+require 'bundler/errors'
 begin
   require 'rubygems/package_task'
-rescue LoadError
+rescue LoadError, Bundler::GemfileNotFound
 end
 
 class TestGemPackageTask < Gem::TestCase
@@ -81,4 +82,3 @@ class TestGemPackageTask < Gem::TestCase
   end
 
 end if defined?(Rake::PackageTask)
-

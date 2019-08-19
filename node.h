@@ -21,225 +21,138 @@ extern "C" {
 
 enum node_type {
     NODE_SCOPE,
-#define NODE_SCOPE       NODE_SCOPE
     NODE_BLOCK,
-#define NODE_BLOCK       NODE_BLOCK
     NODE_IF,
-#define NODE_IF          NODE_IF
+    NODE_UNLESS,
     NODE_CASE,
-#define NODE_CASE        NODE_CASE
+    NODE_CASE2,
+    NODE_CASE3,
     NODE_WHEN,
-#define NODE_WHEN        NODE_WHEN
-    NODE_OPT_N,
-#define NODE_OPT_N       NODE_OPT_N
+    NODE_IN,
     NODE_WHILE,
-#define NODE_WHILE       NODE_WHILE
     NODE_UNTIL,
-#define NODE_UNTIL       NODE_UNTIL
     NODE_ITER,
-#define NODE_ITER        NODE_ITER
     NODE_FOR,
-#define NODE_FOR         NODE_FOR
+    NODE_FOR_MASGN,
     NODE_BREAK,
-#define NODE_BREAK       NODE_BREAK
     NODE_NEXT,
-#define NODE_NEXT        NODE_NEXT
     NODE_REDO,
-#define NODE_REDO        NODE_REDO
     NODE_RETRY,
-#define NODE_RETRY       NODE_RETRY
     NODE_BEGIN,
-#define NODE_BEGIN       NODE_BEGIN
     NODE_RESCUE,
-#define NODE_RESCUE      NODE_RESCUE
     NODE_RESBODY,
-#define NODE_RESBODY     NODE_RESBODY
     NODE_ENSURE,
-#define NODE_ENSURE      NODE_ENSURE
     NODE_AND,
-#define NODE_AND         NODE_AND
     NODE_OR,
-#define NODE_OR          NODE_OR
     NODE_MASGN,
-#define NODE_MASGN       NODE_MASGN
     NODE_LASGN,
-#define NODE_LASGN       NODE_LASGN
     NODE_DASGN,
-#define NODE_DASGN       NODE_DASGN
     NODE_DASGN_CURR,
-#define NODE_DASGN_CURR  NODE_DASGN_CURR
     NODE_GASGN,
-#define NODE_GASGN       NODE_GASGN
     NODE_IASGN,
-#define NODE_IASGN       NODE_IASGN
-    NODE_IASGN2,
-#define NODE_IASGN2      NODE_IASGN2
     NODE_CDECL,
-#define NODE_CDECL       NODE_CDECL
     NODE_CVASGN,
-#define NODE_CVASGN      NODE_CVASGN
-    NODE_CVDECL,
-#define NODE_CVDECL      NODE_CVDECL
     NODE_OP_ASGN1,
-#define NODE_OP_ASGN1    NODE_OP_ASGN1
     NODE_OP_ASGN2,
-#define NODE_OP_ASGN2    NODE_OP_ASGN2
     NODE_OP_ASGN_AND,
-#define NODE_OP_ASGN_AND NODE_OP_ASGN_AND
     NODE_OP_ASGN_OR,
-#define NODE_OP_ASGN_OR  NODE_OP_ASGN_OR
     NODE_OP_CDECL,
-#define NODE_OP_CDECL    NODE_OP_CDECL
     NODE_CALL,
-#define NODE_CALL        NODE_CALL
+    NODE_OPCALL,
     NODE_FCALL,
-#define NODE_FCALL       NODE_FCALL
     NODE_VCALL,
-#define NODE_VCALL       NODE_VCALL
     NODE_QCALL,
-#define NODE_QCALL       NODE_QCALL
     NODE_SUPER,
-#define NODE_SUPER       NODE_SUPER
     NODE_ZSUPER,
-#define NODE_ZSUPER      NODE_ZSUPER
     NODE_ARRAY,
-#define NODE_ARRAY       NODE_ARRAY
     NODE_ZARRAY,
-#define NODE_ZARRAY      NODE_ZARRAY
     NODE_VALUES,
-#define NODE_VALUES      NODE_VALUES
     NODE_HASH,
-#define NODE_HASH        NODE_HASH
     NODE_RETURN,
-#define NODE_RETURN      NODE_RETURN
     NODE_YIELD,
-#define NODE_YIELD       NODE_YIELD
     NODE_LVAR,
-#define NODE_LVAR        NODE_LVAR
     NODE_DVAR,
-#define NODE_DVAR        NODE_DVAR
     NODE_GVAR,
-#define NODE_GVAR        NODE_GVAR
     NODE_IVAR,
-#define NODE_IVAR        NODE_IVAR
     NODE_CONST,
-#define NODE_CONST       NODE_CONST
     NODE_CVAR,
-#define NODE_CVAR        NODE_CVAR
     NODE_NTH_REF,
-#define NODE_NTH_REF     NODE_NTH_REF
     NODE_BACK_REF,
-#define NODE_BACK_REF    NODE_BACK_REF
     NODE_MATCH,
-#define NODE_MATCH       NODE_MATCH
     NODE_MATCH2,
-#define NODE_MATCH2      NODE_MATCH2
     NODE_MATCH3,
-#define NODE_MATCH3      NODE_MATCH3
     NODE_LIT,
-#define NODE_LIT         NODE_LIT
     NODE_STR,
-#define NODE_STR         NODE_STR
     NODE_DSTR,
-#define NODE_DSTR        NODE_DSTR
     NODE_XSTR,
-#define NODE_XSTR        NODE_XSTR
     NODE_DXSTR,
-#define NODE_DXSTR       NODE_DXSTR
     NODE_EVSTR,
-#define NODE_EVSTR       NODE_EVSTR
     NODE_DREGX,
-#define NODE_DREGX       NODE_DREGX
-    NODE_DREGX_ONCE,
-#define NODE_DREGX_ONCE  NODE_DREGX_ONCE
+    NODE_ONCE,
     NODE_ARGS,
-#define NODE_ARGS        NODE_ARGS
     NODE_ARGS_AUX,
-#define NODE_ARGS_AUX    NODE_ARGS_AUX
     NODE_OPT_ARG,
-#define NODE_OPT_ARG     NODE_OPT_ARG
     NODE_KW_ARG,
-#define NODE_KW_ARG	 NODE_KW_ARG
     NODE_POSTARG,
-#define NODE_POSTARG     NODE_POSTARG
     NODE_ARGSCAT,
-#define NODE_ARGSCAT     NODE_ARGSCAT
     NODE_ARGSPUSH,
-#define NODE_ARGSPUSH    NODE_ARGSPUSH
     NODE_SPLAT,
-#define NODE_SPLAT       NODE_SPLAT
-    NODE_TO_ARY,
-#define NODE_TO_ARY      NODE_TO_ARY
-    NODE_BLOCK_ARG,
-#define NODE_BLOCK_ARG   NODE_BLOCK_ARG
     NODE_BLOCK_PASS,
-#define NODE_BLOCK_PASS  NODE_BLOCK_PASS
     NODE_DEFN,
-#define NODE_DEFN        NODE_DEFN
     NODE_DEFS,
-#define NODE_DEFS        NODE_DEFS
     NODE_ALIAS,
-#define NODE_ALIAS       NODE_ALIAS
     NODE_VALIAS,
-#define NODE_VALIAS      NODE_VALIAS
     NODE_UNDEF,
-#define NODE_UNDEF       NODE_UNDEF
     NODE_CLASS,
-#define NODE_CLASS       NODE_CLASS
     NODE_MODULE,
-#define NODE_MODULE      NODE_MODULE
     NODE_SCLASS,
-#define NODE_SCLASS      NODE_SCLASS
     NODE_COLON2,
-#define NODE_COLON2      NODE_COLON2
     NODE_COLON3,
-#define NODE_COLON3      NODE_COLON3
     NODE_DOT2,
-#define NODE_DOT2        NODE_DOT2
     NODE_DOT3,
-#define NODE_DOT3        NODE_DOT3
     NODE_FLIP2,
-#define NODE_FLIP2       NODE_FLIP2
     NODE_FLIP3,
-#define NODE_FLIP3       NODE_FLIP3
     NODE_SELF,
-#define NODE_SELF        NODE_SELF
     NODE_NIL,
-#define NODE_NIL         NODE_NIL
     NODE_TRUE,
-#define NODE_TRUE        NODE_TRUE
     NODE_FALSE,
-#define NODE_FALSE       NODE_FALSE
     NODE_ERRINFO,
-#define NODE_ERRINFO     NODE_ERRINFO
     NODE_DEFINED,
-#define NODE_DEFINED     NODE_DEFINED
     NODE_POSTEXE,
-#define NODE_POSTEXE     NODE_POSTEXE
-    NODE_ALLOCA,
-#define NODE_ALLOCA      NODE_ALLOCA
-    NODE_BMETHOD,
-#define NODE_BMETHOD     NODE_BMETHOD
     NODE_DSYM,
-#define NODE_DSYM        NODE_DSYM
     NODE_ATTRASGN,
-#define NODE_ATTRASGN    NODE_ATTRASGN
-    NODE_PRELUDE,
-#define NODE_PRELUDE     NODE_PRELUDE
     NODE_LAMBDA,
-#define NODE_LAMBDA      NODE_LAMBDA
+    NODE_METHREF,
+    NODE_ARYPTN,
+    NODE_HSHPTN,
     NODE_LAST
-#define NODE_LAST        NODE_LAST
 };
+
+typedef struct rb_code_position_struct {
+    int lineno;
+    int column;
+} rb_code_position_t;
+
+typedef struct rb_code_location_struct {
+    rb_code_position_t beg_pos;
+    rb_code_position_t end_pos;
+} rb_code_location_t;
+
+static inline rb_code_location_t
+code_loc_gen(rb_code_location_t *loc1, rb_code_location_t *loc2)
+{
+    rb_code_location_t loc;
+    loc.beg_pos = loc1->beg_pos;
+    loc.end_pos = loc2->end_pos;
+    return loc;
+}
 
 typedef struct RNode {
     VALUE flags;
-    VALUE nd_reserved;		/* ex nd_file */
     union {
 	struct RNode *node;
 	ID id;
 	VALUE value;
-	VALUE (*cfunc)(ANYARGS);
 	ID *tbl;
     } u1;
     union {
@@ -254,15 +167,17 @@ typedef struct RNode {
 	long state;
 	struct rb_global_entry *entry;
 	struct rb_args_info *args;
-	long cnt;
+        struct rb_ary_pattern_info *apinfo;
 	VALUE value;
     } u3;
+    rb_code_location_t nd_loc;
+    int node_id;
 } NODE;
 
 #define RNODE(obj)  (R_CAST(RNode)(obj))
 
 /* FL     : 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: FINALIZE, 8: TAINT, 9: UNTRUSTED, 10: EXIVAR, 11: FREEZE */
-/* NODE_FL: 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: NODE_FL_NEWLINE|NODE_FL_CREF_PUSHED_BY_EVAL,
+/* NODE_FL: 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: NODE_FL_NEWLINE,
  *          8..14: nd_type,
  *          15..: nd_line
  */
@@ -271,17 +186,31 @@ typedef struct RNode {
 #define NODE_TYPESHIFT 8
 #define NODE_TYPEMASK  (((VALUE)0x7f)<<NODE_TYPESHIFT)
 
-#define nd_type(n) ((int) (((RNODE(n))->flags & NODE_TYPEMASK)>>NODE_TYPESHIFT))
+#define nd_type(n) ((int) (((n)->flags & NODE_TYPEMASK)>>NODE_TYPESHIFT))
 #define nd_set_type(n,t) \
-    RNODE(n)->flags=((RNODE(n)->flags&~NODE_TYPEMASK)|((((unsigned long)(t))<<NODE_TYPESHIFT)&NODE_TYPEMASK))
+    (n)->flags=(((n)->flags&~NODE_TYPEMASK)|((((unsigned long)(t))<<NODE_TYPESHIFT)&NODE_TYPEMASK))
 
 #define NODE_LSHIFT (NODE_TYPESHIFT+7)
 #define NODE_LMASK  (((SIGNED_VALUE)1<<(sizeof(VALUE)*CHAR_BIT-NODE_LSHIFT))-1)
-#define nd_line(n) (int)(RNODE(n)->flags>>NODE_LSHIFT)
+#define nd_line(n) (int)(((SIGNED_VALUE)(n)->flags)>>NODE_LSHIFT)
 #define nd_set_line(n,l) \
-    RNODE(n)->flags=((RNODE(n)->flags&~((VALUE)(-1)<<NODE_LSHIFT))|((VALUE)((l)&NODE_LMASK)<<NODE_LSHIFT))
+    (n)->flags=(((n)->flags&~((VALUE)(-1)<<NODE_LSHIFT))|((VALUE)((l)&NODE_LMASK)<<NODE_LSHIFT))
 
-#define nd_refinements_  nd_reserved
+#define nd_first_column(n) ((int)((n)->nd_loc.beg_pos.column))
+#define nd_set_first_column(n, v) ((n)->nd_loc.beg_pos.column = (v))
+#define nd_first_lineno(n) ((int)((n)->nd_loc.beg_pos.lineno))
+#define nd_set_first_lineno(n, v) ((n)->nd_loc.beg_pos.lineno = (v))
+#define nd_first_loc(n) ((n)->nd_loc.beg_pos)
+#define nd_set_first_loc(n, v) (nd_first_loc(n) = (v))
+
+#define nd_last_column(n) ((int)((n)->nd_loc.end_pos.column))
+#define nd_set_last_column(n, v) ((n)->nd_loc.end_pos.column = (v))
+#define nd_last_lineno(n) ((int)((n)->nd_loc.end_pos.lineno))
+#define nd_set_last_lineno(n, v) ((n)->nd_loc.end_pos.lineno = (v))
+#define nd_last_loc(n) ((n)->nd_loc.end_pos)
+#define nd_set_last_loc(n, v) (nd_last_loc(n) = (v))
+#define nd_node_id(n) ((n)->node_id)
+#define nd_set_node_id(n,id) ((n)->node_id = (id))
 
 #define nd_head  u1.node
 #define nd_alen  u2.argc
@@ -290,8 +219,6 @@ typedef struct RNode {
 #define nd_cond  u1.node
 #define nd_body  u2.node
 #define nd_else  u3.node
-
-#define nd_orig  u3.value
 
 #define nd_resq  u2.node
 #define nd_ensr  u3.node
@@ -307,7 +234,6 @@ typedef struct RNode {
 #define nd_cval  u3.value
 
 #define nd_oid   u1.id
-#define nd_cnt   u3.cnt
 #define nd_tbl   u1.tbl
 
 #define nd_var   u1.node
@@ -318,7 +244,6 @@ typedef struct RNode {
 
 #define nd_lit   u1.value
 
-#define nd_frml  u2.argc
 #define nd_rest  u1.id
 #define nd_opt   u1.node
 #define nd_pid   u1.id
@@ -329,17 +254,10 @@ typedef struct RNode {
 #define nd_args  u3.node
 #define nd_ainfo u3.args
 
-#define nd_noex  u3.id
 #define nd_defn  u3.node
-
-#define nd_cfnc  u1.cfunc
-#define nd_argc  u2.argc
 
 #define nd_cpath u1.node
 #define nd_super u3.node
-
-#define nd_modl  u1.id
-#define nd_clss_  u1.value
 
 #define nd_beg   u1.node
 #define nd_end   u2.node
@@ -349,137 +267,170 @@ typedef struct RNode {
 #define nd_nth   u2.argc
 
 #define nd_tag   u1.id
-#define nd_tval  u2.value
 
-#define nd_visi_  u2.argc
+#define nd_alias  u1.id
+#define nd_orig   u2.id
+#define nd_undef  u2.node
 
-#define NEW_NODE(t,a0,a1,a2) rb_node_newnode((t),(VALUE)(a0),(VALUE)(a1),(VALUE)(a2))
+#define nd_brace u2.argc
 
-#define NEW_DEFN(i,a,d,p) NEW_NODE(NODE_DEFN,0,i,NEW_SCOPE(a,d))
-#define NEW_DEFS(r,i,a,d) NEW_NODE(NODE_DEFS,r,i,NEW_SCOPE(a,d))
-#define NEW_SCOPE(a,b) NEW_NODE(NODE_SCOPE,local_tbl(),b,a)
-#define NEW_BLOCK(a) NEW_NODE(NODE_BLOCK,a,0,0)
-#define NEW_IF(c,t,e) NEW_NODE(NODE_IF,c,t,e)
-#define NEW_UNLESS(c,t,e) NEW_IF(c,e,t)
-#define NEW_CASE(h,b) NEW_NODE(NODE_CASE,h,b,0)
-#define NEW_WHEN(c,t,e) NEW_NODE(NODE_WHEN,c,t,e)
-#define NEW_OPT_N(b) NEW_NODE(NODE_OPT_N,0,b,0)
-#define NEW_WHILE(c,b,n) NEW_NODE(NODE_WHILE,c,b,n)
-#define NEW_UNTIL(c,b,n) NEW_NODE(NODE_UNTIL,c,b,n)
-#define NEW_FOR(v,i,b) NEW_NODE(NODE_FOR,v,b,i)
-#define NEW_ITER(a,b) NEW_NODE(NODE_ITER,0,NEW_SCOPE(a,b),0)
-#define NEW_LAMBDA(a,b) NEW_NODE(NODE_LAMBDA,0,NEW_SCOPE(a,b),0)
-#define NEW_BREAK(s) NEW_NODE(NODE_BREAK,s,0,0)
-#define NEW_NEXT(s) NEW_NODE(NODE_NEXT,s,0,0)
-#define NEW_REDO() NEW_NODE(NODE_REDO,0,0,0)
-#define NEW_RETRY() NEW_NODE(NODE_RETRY,0,0,0)
-#define NEW_BEGIN(b) NEW_NODE(NODE_BEGIN,0,b,0)
-#define NEW_RESCUE(b,res,e) NEW_NODE(NODE_RESCUE,b,res,e)
-#define NEW_RESBODY(a,ex,n) NEW_NODE(NODE_RESBODY,n,ex,a)
-#define NEW_ENSURE(b,en) NEW_NODE(NODE_ENSURE,b,0,en)
-#define NEW_RETURN(s) NEW_NODE(NODE_RETURN,s,0,0)
-#define NEW_YIELD(a) NEW_NODE(NODE_YIELD,a,0,0)
-#define NEW_LIST(a)  NEW_ARRAY(a)
-#define NEW_ARRAY(a) NEW_NODE(NODE_ARRAY,a,1,0)
-#define NEW_ZARRAY() NEW_NODE(NODE_ZARRAY,0,0,0)
-#define NEW_HASH(a)  NEW_NODE(NODE_HASH,a,0,0)
-#define NEW_MASGN(l,r)   NEW_NODE(NODE_MASGN,l,0,r)
-#define NEW_GASGN(v,val) NEW_NODE(NODE_GASGN,v,val,rb_global_entry(v))
-#define NEW_LASGN(v,val) NEW_NODE(NODE_LASGN,v,val,0)
-#define NEW_DASGN(v,val) NEW_NODE(NODE_DASGN,v,val,0)
-#define NEW_DASGN_CURR(v,val) NEW_NODE(NODE_DASGN_CURR,v,val,0)
-#define NEW_IASGN(v,val) NEW_NODE(NODE_IASGN,v,val,0)
-#define NEW_IASGN2(v,val) NEW_NODE(NODE_IASGN2,v,val,0)
-#define NEW_CDECL(v,val,path) NEW_NODE(NODE_CDECL,v,val,path)
-#define NEW_CVASGN(v,val) NEW_NODE(NODE_CVASGN,v,val,0)
-#define NEW_CVDECL(v,val) NEW_NODE(NODE_CVDECL,v,val,0)
-#define NEW_OP_ASGN1(p,id,a) NEW_NODE(NODE_OP_ASGN1,p,id,a)
-#define NEW_OP_ASGN2(r,t,i,o,val) NEW_NODE(NODE_OP_ASGN2,r,val,NEW_OP_ASGN22(i,o,t))
-#define NEW_OP_ASGN22(i,o,t) NEW_NODE(NODE_OP_ASGN2,i,o,t)
-#define NEW_OP_ASGN_OR(i,val) NEW_NODE(NODE_OP_ASGN_OR,i,val,0)
-#define NEW_OP_ASGN_AND(i,val) NEW_NODE(NODE_OP_ASGN_AND,i,val,0)
-#define NEW_OP_CDECL(v,op,val) NEW_NODE(NODE_OP_CDECL,v,val,op)
-#define NEW_GVAR(v) NEW_NODE(NODE_GVAR,v,0,rb_global_entry(v))
-#define NEW_LVAR(v) NEW_NODE(NODE_LVAR,v,0,0)
-#define NEW_DVAR(v) NEW_NODE(NODE_DVAR,v,0,0)
-#define NEW_IVAR(v) NEW_NODE(NODE_IVAR,v,0,0)
-#define NEW_CONST(v) NEW_NODE(NODE_CONST,v,0,0)
-#define NEW_CVAR(v) NEW_NODE(NODE_CVAR,v,0,0)
-#define NEW_NTH_REF(n)  NEW_NODE(NODE_NTH_REF,0,n,0)
-#define NEW_BACK_REF(n) NEW_NODE(NODE_BACK_REF,0,n,0)
-#define NEW_MATCH(c) NEW_NODE(NODE_MATCH,c,0,0)
-#define NEW_MATCH2(n1,n2) NEW_NODE(NODE_MATCH2,n1,n2,0)
-#define NEW_MATCH3(r,n2) NEW_NODE(NODE_MATCH3,r,n2,0)
-#define NEW_LIT(l) NEW_NODE(NODE_LIT,l,0,0)
-#define NEW_STR(s) NEW_NODE(NODE_STR,s,0,0)
-#define NEW_DSTR(s) NEW_NODE(NODE_DSTR,s,1,0)
-#define NEW_XSTR(s) NEW_NODE(NODE_XSTR,s,0,0)
-#define NEW_DXSTR(s) NEW_NODE(NODE_DXSTR,s,0,0)
-#define NEW_DSYM(s) NEW_NODE(NODE_DSYM,s,0,0)
-#define NEW_EVSTR(n) NEW_NODE(NODE_EVSTR,0,(n),0)
-#define NEW_CALL(r,m,a) NEW_NODE(NODE_CALL,r,m,a)
-#define NEW_FCALL(m,a) NEW_NODE(NODE_FCALL,0,m,a)
-#define NEW_VCALL(m) NEW_NODE(NODE_VCALL,0,m,0)
-#define NEW_SUPER(a) NEW_NODE(NODE_SUPER,0,0,a)
-#define NEW_ZSUPER() NEW_NODE(NODE_ZSUPER,0,0,0)
-#define NEW_ARGS_AUX(r,b) NEW_NODE(NODE_ARGS_AUX,r,b,0)
-#define NEW_OPT_ARG(i,v) NEW_NODE(NODE_OPT_ARG,i,v,0)
-#define NEW_KW_ARG(i,v) NEW_NODE(NODE_KW_ARG,i,v,0)
-#define NEW_POSTARG(i,v) NEW_NODE(NODE_POSTARG,i,v,0)
-#define NEW_ARGSCAT(a,b) NEW_NODE(NODE_ARGSCAT,a,b,0)
-#define NEW_ARGSPUSH(a,b) NEW_NODE(NODE_ARGSPUSH,a,b,0)
-#define NEW_SPLAT(a) NEW_NODE(NODE_SPLAT,a,0,0)
-#define NEW_TO_ARY(a) NEW_NODE(NODE_TO_ARY,a,0,0)
-#define NEW_BLOCK_ARG(v) NEW_NODE(NODE_BLOCK_ARG,v,0,local_cnt(v))
-#define NEW_BLOCK_PASS(b) NEW_NODE(NODE_BLOCK_PASS,0,b,0)
-#define NEW_ALIAS(n,o) NEW_NODE(NODE_ALIAS,n,o,0)
-#define NEW_VALIAS(n,o) NEW_NODE(NODE_VALIAS,n,o,0)
-#define NEW_UNDEF(i) NEW_NODE(NODE_UNDEF,0,i,0)
-#define NEW_CLASS(n,b,s) NEW_NODE(NODE_CLASS,n,NEW_SCOPE(0,b),(s))
-#define NEW_SCLASS(r,b) NEW_NODE(NODE_SCLASS,r,NEW_SCOPE(0,b),0)
-#define NEW_MODULE(n,b) NEW_NODE(NODE_MODULE,n,NEW_SCOPE(0,b),0)
-#define NEW_COLON2(c,i) NEW_NODE(NODE_COLON2,c,i,0)
-#define NEW_COLON3(i) NEW_NODE(NODE_COLON3,0,i,0)
-#define NEW_DOT2(b,e) NEW_NODE(NODE_DOT2,b,e,0)
-#define NEW_DOT3(b,e) NEW_NODE(NODE_DOT3,b,e,0)
-#define NEW_SELF() NEW_NODE(NODE_SELF,0,0,0)
-#define NEW_NIL() NEW_NODE(NODE_NIL,0,0,0)
-#define NEW_TRUE() NEW_NODE(NODE_TRUE,0,0,0)
-#define NEW_FALSE() NEW_NODE(NODE_FALSE,0,0,0)
-#define NEW_ERRINFO() NEW_NODE(NODE_ERRINFO,0,0,0)
-#define NEW_DEFINED(e) NEW_NODE(NODE_DEFINED,e,0,0)
-#define NEW_PREEXE(b) NEW_SCOPE(b)
-#define NEW_POSTEXE(b) NEW_NODE(NODE_POSTEXE,0,b,0)
-#define NEW_BMETHOD(b) NEW_NODE(NODE_BMETHOD,0,0,b)
-#define NEW_ATTRASGN(r,m,a) NEW_NODE(NODE_ATTRASGN,r,m,a)
-#define NEW_PRELUDE(p,b,o) NEW_NODE(NODE_PRELUDE,p,b,o)
+#define nd_pconst     u1.node
+#define nd_pkwargs    u2.node
+#define nd_pkwrestarg u3.node
+
+#define nd_apinfo u3.apinfo
+
+#define NEW_NODE(t,a0,a1,a2,loc) rb_node_newnode((t),(VALUE)(a0),(VALUE)(a1),(VALUE)(a2),loc)
+
+#define NEW_DEFN(i,a,d,loc) NEW_NODE(NODE_DEFN,0,i,NEW_SCOPE(a,d,loc),loc)
+#define NEW_DEFS(r,i,a,d,loc) NEW_NODE(NODE_DEFS,r,i,NEW_SCOPE(a,d,loc),loc)
+#define NEW_SCOPE(a,b,loc) NEW_NODE(NODE_SCOPE,local_tbl(p),b,a,loc)
+#define NEW_BLOCK(a,loc) NEW_NODE(NODE_BLOCK,a,0,0,loc)
+#define NEW_IF(c,t,e,loc) NEW_NODE(NODE_IF,c,t,e,loc)
+#define NEW_UNLESS(c,t,e,loc) NEW_NODE(NODE_UNLESS,c,t,e,loc)
+#define NEW_CASE(h,b,loc) NEW_NODE(NODE_CASE,h,b,0,loc)
+#define NEW_CASE2(b,loc) NEW_NODE(NODE_CASE2,0,b,0,loc)
+#define NEW_CASE3(h,b,loc) NEW_NODE(NODE_CASE3,h,b,0,loc)
+#define NEW_WHEN(c,t,e,loc) NEW_NODE(NODE_WHEN,c,t,e,loc)
+#define NEW_IN(c,t,e,loc) NEW_NODE(NODE_IN,c,t,e,loc)
+#define NEW_WHILE(c,b,n,loc) NEW_NODE(NODE_WHILE,c,b,n,loc)
+#define NEW_UNTIL(c,b,n,loc) NEW_NODE(NODE_UNTIL,c,b,n,loc)
+#define NEW_FOR(i,b,loc) NEW_NODE(NODE_FOR,0,b,i,loc)
+#define NEW_FOR_MASGN(v,loc) NEW_NODE(NODE_FOR_MASGN,v,0,0,loc)
+#define NEW_ITER(a,b,loc) NEW_NODE(NODE_ITER,0,NEW_SCOPE(a,b,loc),0,loc)
+#define NEW_LAMBDA(a,b,loc) NEW_NODE(NODE_LAMBDA,0,NEW_SCOPE(a,b,loc),0,loc)
+#define NEW_BREAK(s,loc) NEW_NODE(NODE_BREAK,s,0,0,loc)
+#define NEW_NEXT(s,loc) NEW_NODE(NODE_NEXT,s,0,0,loc)
+#define NEW_REDO(loc) NEW_NODE(NODE_REDO,0,0,0,loc)
+#define NEW_RETRY(loc) NEW_NODE(NODE_RETRY,0,0,0,loc)
+#define NEW_BEGIN(b,loc) NEW_NODE(NODE_BEGIN,0,b,0,loc)
+#define NEW_RESCUE(b,res,e,loc) NEW_NODE(NODE_RESCUE,b,res,e,loc)
+#define NEW_RESBODY(a,ex,n,loc) NEW_NODE(NODE_RESBODY,n,ex,a,loc)
+#define NEW_ENSURE(b,en,loc) NEW_NODE(NODE_ENSURE,b,0,en,loc)
+#define NEW_RETURN(s,loc) NEW_NODE(NODE_RETURN,s,0,0,loc)
+#define NEW_YIELD(a,loc) NEW_NODE(NODE_YIELD,a,0,0,loc)
+#define NEW_LIST(a,loc)  NEW_ARRAY(a,loc)
+#define NEW_ARRAY(a,loc) NEW_NODE(NODE_ARRAY,a,1,0,loc)
+#define NEW_ZARRAY(loc) NEW_NODE(NODE_ZARRAY,0,0,0,loc)
+#define NEW_HASH(a,loc)  NEW_NODE(NODE_HASH,a,0,0,loc)
+#define NEW_MASGN(l,r,loc)   NEW_NODE(NODE_MASGN,l,0,r,loc)
+#define NEW_GASGN(v,val,loc) NEW_NODE(NODE_GASGN,v,val,rb_global_entry(v),loc)
+#define NEW_LASGN(v,val,loc) NEW_NODE(NODE_LASGN,v,val,0,loc)
+#define NEW_DASGN(v,val,loc) NEW_NODE(NODE_DASGN,v,val,0,loc)
+#define NEW_DASGN_CURR(v,val,loc) NEW_NODE(NODE_DASGN_CURR,v,val,0,loc)
+#define NEW_IASGN(v,val,loc) NEW_NODE(NODE_IASGN,v,val,0,loc)
+#define NEW_CDECL(v,val,path,loc) NEW_NODE(NODE_CDECL,v,val,path,loc)
+#define NEW_CVASGN(v,val,loc) NEW_NODE(NODE_CVASGN,v,val,0,loc)
+#define NEW_OP_ASGN1(p,id,a,loc) NEW_NODE(NODE_OP_ASGN1,p,id,a,loc)
+#define NEW_OP_ASGN2(r,t,i,o,val,loc) NEW_NODE(NODE_OP_ASGN2,r,val,NEW_OP_ASGN22(i,o,t,loc),loc)
+#define NEW_OP_ASGN22(i,o,t,loc) NEW_NODE(NODE_OP_ASGN2,i,o,t,loc)
+#define NEW_OP_ASGN_OR(i,val,loc) NEW_NODE(NODE_OP_ASGN_OR,i,val,0,loc)
+#define NEW_OP_ASGN_AND(i,val,loc) NEW_NODE(NODE_OP_ASGN_AND,i,val,0,loc)
+#define NEW_OP_CDECL(v,op,val,loc) NEW_NODE(NODE_OP_CDECL,v,val,op,loc)
+#define NEW_GVAR(v,loc) NEW_NODE(NODE_GVAR,v,0,rb_global_entry(v),loc)
+#define NEW_LVAR(v,loc) NEW_NODE(NODE_LVAR,v,0,0,loc)
+#define NEW_DVAR(v,loc) NEW_NODE(NODE_DVAR,v,0,0,loc)
+#define NEW_IVAR(v,loc) NEW_NODE(NODE_IVAR,v,0,0,loc)
+#define NEW_CONST(v,loc) NEW_NODE(NODE_CONST,v,0,0,loc)
+#define NEW_CVAR(v,loc) NEW_NODE(NODE_CVAR,v,0,0,loc)
+#define NEW_NTH_REF(n,loc)  NEW_NODE(NODE_NTH_REF,0,n,0,loc)
+#define NEW_BACK_REF(n,loc) NEW_NODE(NODE_BACK_REF,0,n,0,loc)
+#define NEW_MATCH(c,loc) NEW_NODE(NODE_MATCH,c,0,0,loc)
+#define NEW_MATCH2(n1,n2,loc) NEW_NODE(NODE_MATCH2,n1,n2,0,loc)
+#define NEW_MATCH3(r,n2,loc) NEW_NODE(NODE_MATCH3,r,n2,0,loc)
+#define NEW_LIT(l,loc) NEW_NODE(NODE_LIT,l,0,0,loc)
+#define NEW_STR(s,loc) NEW_NODE(NODE_STR,s,0,0,loc)
+#define NEW_DSTR(s,loc) NEW_NODE(NODE_DSTR,s,1,0,loc)
+#define NEW_XSTR(s,loc) NEW_NODE(NODE_XSTR,s,0,0,loc)
+#define NEW_DXSTR(s,loc) NEW_NODE(NODE_DXSTR,s,0,0,loc)
+#define NEW_DSYM(s,loc) NEW_NODE(NODE_DSYM,s,0,0,loc)
+#define NEW_EVSTR(n,loc) NEW_NODE(NODE_EVSTR,0,(n),0,loc)
+#define NEW_CALL(r,m,a,loc) NEW_NODE(NODE_CALL,r,m,a,loc)
+#define NEW_OPCALL(r,m,a,loc) NEW_NODE(NODE_OPCALL,r,m,a,loc)
+#define NEW_FCALL(m,a,loc) NEW_NODE(NODE_FCALL,0,m,a,loc)
+#define NEW_VCALL(m,loc) NEW_NODE(NODE_VCALL,0,m,0,loc)
+#define NEW_SUPER(a,loc) NEW_NODE(NODE_SUPER,0,0,a,loc)
+#define NEW_ZSUPER(loc) NEW_NODE(NODE_ZSUPER,0,0,0,loc)
+#define NEW_ARGS_AUX(r,b,loc) NEW_NODE(NODE_ARGS_AUX,r,b,0,loc)
+#define NEW_OPT_ARG(i,v,loc) NEW_NODE(NODE_OPT_ARG,i,v,0,loc)
+#define NEW_KW_ARG(i,v,loc) NEW_NODE(NODE_KW_ARG,i,v,0,loc)
+#define NEW_POSTARG(i,v,loc) NEW_NODE(NODE_POSTARG,i,v,0,loc)
+#define NEW_ARGSCAT(a,b,loc) NEW_NODE(NODE_ARGSCAT,a,b,0,loc)
+#define NEW_ARGSPUSH(a,b,loc) NEW_NODE(NODE_ARGSPUSH,a,b,0,loc)
+#define NEW_SPLAT(a,loc) NEW_NODE(NODE_SPLAT,a,0,0,loc)
+#define NEW_BLOCK_PASS(b,loc) NEW_NODE(NODE_BLOCK_PASS,0,b,0,loc)
+#define NEW_ALIAS(n,o,loc) NEW_NODE(NODE_ALIAS,n,o,0,loc)
+#define NEW_VALIAS(n,o,loc) NEW_NODE(NODE_VALIAS,n,o,0,loc)
+#define NEW_UNDEF(i,loc) NEW_NODE(NODE_UNDEF,0,i,0,loc)
+#define NEW_CLASS(n,b,s,loc) NEW_NODE(NODE_CLASS,n,NEW_SCOPE(0,b,loc),(s),loc)
+#define NEW_SCLASS(r,b,loc) NEW_NODE(NODE_SCLASS,r,NEW_SCOPE(0,b,loc),0,loc)
+#define NEW_MODULE(n,b,loc) NEW_NODE(NODE_MODULE,n,NEW_SCOPE(0,b,loc),0,loc)
+#define NEW_COLON2(c,i,loc) NEW_NODE(NODE_COLON2,c,i,0,loc)
+#define NEW_COLON3(i,loc) NEW_NODE(NODE_COLON3,0,i,0,loc)
+#define NEW_DOT2(b,e,loc) NEW_NODE(NODE_DOT2,b,e,0,loc)
+#define NEW_DOT3(b,e,loc) NEW_NODE(NODE_DOT3,b,e,0,loc)
+#define NEW_SELF(loc) NEW_NODE(NODE_SELF,0,0,0,loc)
+#define NEW_NIL(loc) NEW_NODE(NODE_NIL,0,0,0,loc)
+#define NEW_TRUE(loc) NEW_NODE(NODE_TRUE,0,0,0,loc)
+#define NEW_FALSE(loc) NEW_NODE(NODE_FALSE,0,0,0,loc)
+#define NEW_ERRINFO(loc) NEW_NODE(NODE_ERRINFO,0,0,0,loc)
+#define NEW_DEFINED(e,loc) NEW_NODE(NODE_DEFINED,e,0,0,loc)
+#define NEW_PREEXE(b,loc) NEW_SCOPE(b,loc)
+#define NEW_POSTEXE(b,loc) NEW_NODE(NODE_POSTEXE,0,b,0,loc)
+#define NEW_ATTRASGN(r,m,a,loc) NEW_NODE(NODE_ATTRASGN,r,m,a,loc)
+#define NEW_METHREF(r,m,loc) NEW_NODE(NODE_METHREF,r,m,0,loc)
+
+#define NODE_SPECIAL_REQUIRED_KEYWORD ((NODE *)-1)
+#define NODE_REQUIRED_KEYWORD_P(node) ((node)->nd_value == NODE_SPECIAL_REQUIRED_KEYWORD)
+#define NODE_SPECIAL_NO_NAME_REST     ((NODE *)-1)
+#define NODE_NAMED_REST_P(node) ((node) != NODE_SPECIAL_NO_NAME_REST)
+#define NODE_SPECIAL_EXCESSIVE_COMMA   ((ID)1)
+
+VALUE rb_node_case_when_optimizable_literal(const NODE *const node);
 
 RUBY_SYMBOL_EXPORT_BEGIN
+
+typedef struct node_buffer_struct node_buffer_t;
+/* T_IMEMO/ast */
+typedef struct rb_ast_body_struct {
+    const NODE *root;
+    VALUE compile_option;
+    int line_count;
+} rb_ast_body_t;
+typedef struct rb_ast_struct {
+    VALUE flags;
+    node_buffer_t *node_buffer;
+    rb_ast_body_t body;
+} rb_ast_t;
+rb_ast_t *rb_ast_new(void);
+void rb_ast_mark(rb_ast_t*);
+void rb_ast_dispose(rb_ast_t*);
+void rb_ast_free(rb_ast_t*);
+size_t rb_ast_memsize(const rb_ast_t*);
+void rb_ast_add_mark_object(rb_ast_t*, VALUE);
+NODE *rb_ast_newnode(rb_ast_t*);
+void rb_ast_delete_node(rb_ast_t*, NODE *n);
 
 VALUE rb_parser_new(void);
 VALUE rb_parser_end_seen_p(VALUE);
 VALUE rb_parser_encoding(VALUE);
 VALUE rb_parser_get_yydebug(VALUE);
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
-VALUE rb_parser_dump_tree(NODE *node, int comment);
-NODE *rb_parser_append_print(VALUE, NODE *);
-NODE *rb_parser_while_loop(VALUE, NODE *, int, int);
+VALUE rb_parser_dump_tree(const NODE *node, int comment);
+void rb_parser_set_options(VALUE, int, int, int, int);
 
-NODE *rb_parser_compile_cstr(VALUE, const char*, const char*, int, int);
-NODE *rb_parser_compile_string(VALUE, const char*, VALUE, int);
-NODE *rb_parser_compile_file(VALUE, const char*, VALUE, int);
-NODE *rb_parser_compile_string_path(VALUE vparser, VALUE fname, VALUE src, int line);
-NODE *rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE input, int line);
+rb_ast_t *rb_parser_compile_cstr(VALUE, const char*, const char*, int, int);
+rb_ast_t *rb_parser_compile_string(VALUE, const char*, VALUE, int);
+rb_ast_t *rb_parser_compile_file(VALUE, const char*, VALUE, int);
+rb_ast_t *rb_parser_compile_string_path(VALUE vparser, VALUE fname, VALUE src, int line);
+rb_ast_t *rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE input, int line);
+rb_ast_t *rb_parser_compile_generic(VALUE vparser, VALUE (*lex_gets)(VALUE, int), VALUE fname, VALUE input, int line);
 
-NODE *rb_compile_cstr(const char*, const char*, int, int);
-NODE *rb_compile_string(const char*, VALUE, int);
-NODE *rb_compile_file(const char*, VALUE, int);
+rb_ast_t *rb_compile_cstr(const char*, const char*, int, int);
+rb_ast_t *rb_compile_string(const char*, VALUE, int);
+rb_ast_t *rb_compile_file(const char*, VALUE, int);
 
-NODE *rb_node_newnode(enum node_type,VALUE,VALUE,VALUE);
-NODE *rb_node_newnode_longlife(enum node_type,VALUE,VALUE,VALUE);
-void rb_gc_free_node(VALUE obj);
-size_t rb_node_memsize(VALUE obj);
-VALUE rb_gc_mark_node(NODE *obj);
+void rb_node_init(NODE *n, enum node_type type, VALUE a0, VALUE a1, VALUE a2);
 
 const struct kwtable *rb_reserved_word(const char *, unsigned int);
 
@@ -501,12 +452,18 @@ struct rb_args_info {
     NODE *opt_args;
 };
 
+struct rb_ary_pattern_info {
+    NODE *pre_args;
+    NODE *rest_arg;
+    NODE *post_args;
+};
+
 struct parser_params;
 void *rb_parser_malloc(struct parser_params *, size_t);
 void *rb_parser_realloc(struct parser_params *, void *, size_t);
 void *rb_parser_calloc(struct parser_params *, size_t, size_t);
 void rb_parser_free(struct parser_params *, void *);
-void rb_parser_printf(struct parser_params *parser, const char *fmt, ...);
+PRINTF_ARGS(void rb_parser_printf(struct parser_params *parser, const char *fmt, ...), 2, 3);
 
 RUBY_SYMBOL_EXPORT_END
 

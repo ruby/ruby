@@ -10,13 +10,13 @@
 # $IPR: httpserver.rb,v 1.63 2002/10/01 17:16:32 gotoyuzo Exp $
 
 require 'io/wait'
-require 'webrick/server'
-require 'webrick/httputils'
-require 'webrick/httpstatus'
-require 'webrick/httprequest'
-require 'webrick/httpresponse'
-require 'webrick/httpservlet'
-require 'webrick/accesslog'
+require_relative 'server'
+require_relative 'httputils'
+require_relative 'httpstatus'
+require_relative 'httprequest'
+require_relative 'httpresponse'
+require_relative 'httpservlet'
+require_relative 'accesslog'
 
 module WEBrick
   class HTTPServerError < ServerError; end
@@ -68,8 +68,8 @@ module WEBrick
 
     def run(sock)
       while true
-        res = HTTPResponse.new(@config)
-        req = HTTPRequest.new(@config)
+        req = create_request(@config)
+        res = create_response(@config)
         server = self
         begin
           timeout = @config[:RequestTimeout]
@@ -225,6 +225,20 @@ module WEBrick
     end
 
     ##
+    # Creates the HTTPRequest used when handling the HTTP
+    # request. Can be overridden by subclasses.
+    def create_request(with_webrick_config)
+      HTTPRequest.new(with_webrick_config)
+    end
+
+    ##
+    # Creates the HTTPResponse used when handling the HTTP
+    # request. Can be overridden by subclasses.
+    def create_response(with_webrick_config)
+      HTTPResponse.new(with_webrick_config)
+    end
+
+    ##
     # Mount table for the path a servlet is mounted on in the directory space
     # of the server.  Users of WEBrick can only access this indirectly via
     # WEBrick::HTTPServer#mount, WEBrick::HTTPServer#unmount and
@@ -267,12 +281,12 @@ module WEBrick
         k.sort!
         k.reverse!
         k.collect!{|path| Regexp.escape(path) }
-        @scanner = Regexp.new("^(" + k.join("|") +")(?=/|$)")
+        @scanner = Regexp.new("\\A(" + k.join("|") +")(?=/|\\z)")
       end
 
       def normalize(dir)
         ret = dir ? dir.dup : ""
-        ret.sub!(%r|/+$|, "")
+        ret.sub!(%r|/+\z|, "")
         ret
       end
     end

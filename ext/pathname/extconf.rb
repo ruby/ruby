@@ -1,4 +1,4 @@
 # frozen_string_literal: false
 require 'mkmf'
-have_struct_member("struct stat", "st_birthtimespec", "sys/stat.h")
+have_func("rb_file_s_birthtime")
 create_makefile('pathname')

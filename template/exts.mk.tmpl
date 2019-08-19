@@ -8,7 +8,7 @@ ECHO = $(ECHO1:0=@echo)
 require './rbconfig'
 macros = {}
 deps = []
-note = []
+notes = {}
 rubies = []
 exeext = RbConfig::CONFIG['EXEEXT']
 gnumake = false
@@ -16,10 +16,11 @@ opt = OptionParser.new do |o|
   o.on('--gnumake=BOOL') {|v| gnumake = v == 'yes'}
   o.order!(ARGV)
 end
+contpat = /(?>(?>[^\\\n]|\\.)*\\\n)*(?>[^\\\n]|\\.)*/
 Dir.glob("{ext,gems}/*/exts.mk") do |e|
   gem = /\Agems(?=\/)/ =~ e
   s = File.read(e)
-  s.scan(/^(extensions|EXT[A-Z]+|MFLAGS)[ \t]*=[ \t]*((?>(?>[^\\\n]|\\.)*\\\n)*(?>[^\\\n]|\\.)*)$/) do |n, v|
+  s.scan(/^(extensions|SUBMAKEOPTS|EXT[A-Z]+|MFLAGS|NOTE_[A-Z]+)[ \t]*=[ \t]*(#{contpat})$/o) do |n, v|
     v.gsub!(/\\\n[ \t]*/, ' ')
     next if v.empty?
     next if gem and n != "extensions"
@@ -46,10 +47,17 @@ Dir.glob("{ext,gems}/*/exts.mk") do |e|
               (?:dist|real)?clean
              ):.+$
            "x) do
-    deps << $&
+    deps << $&.sub(/ +note$/, '')
   end
-  s.scan(%r"^note:\n((?:\t.+\n)+)") do |(n)|
-    note |= n.split(/^/)
+  s.scan(%r"^(note(?:-\w+)?):(:)?[ \t]*(#{contpat})\n((?:\t.+\n)*)"o) do |(t, m, d, n)|
+    note = (notes[t] ||= [[m||""], []])
+    note[0] |= d.split(/(?:\\\n|[ \t])[ \t]*/)
+    n = n.split(/^/)
+    if m
+      note[1].concat(n)
+    else
+      note[1] |= n
+    end
   end
 end
 deps.uniq!
@@ -88,23 +96,12 @@ else
   mflags = " $(MFLAGS)"
 end
 -%>
-% unless macros["MFLAGS"].empty?
-MFLAGS =<%= macros["MFLAGS"].fold(column) %>
+% macros.each_pair do |k, v|
+<%=k%> =<%= v.fold(column) %>
 % end
 % RbConfig::MAKEFILE_CONFIG.keys.grep(/RM/) do |k|
 <%=k%> = <%=RbConfig::MAKEFILE_CONFIG[k]%>
 % end
-
-extensions =<%= macros["extensions"].fold(column) %>
-EXTOBJS =<%= macros["EXTOBJS"].fold(column) %>
-EXTLIBS =<%= macros["EXTLIBS"].fold(column) %>
-EXTSO =<%= macros["EXTSO"].fold(column) %>
-EXTLDFLAGS =<%= macros["EXTLDFLAGS"].fold(column) %>
-EXTINITS =<%= macros["EXTINITS"].fold(column) %>
-SUBMAKEOPTS = DLDOBJS="$(EXTOBJS) $(EXTENCS)" EXTOBJS= \
-	      EXTSOLIBS="$(EXTLIBS)" LIBRUBY_SO_UPDATE=$(LIBRUBY_EXTS) \
-	      EXTLDFLAGS="$(EXTLDFLAGS)" EXTINITS="$(EXTINITS)" \
-	      UPDATE_LIBRARIES="$(UPDATE_LIBRARIES)" SHOWFLAGS=
 
 all:
 static:
@@ -114,11 +111,16 @@ clean:
 distclean:
 	-$(Q)$(RM) ext/extinit.c
 
-<%= deps.join("\n") %>
+% deps.each do |d|
+<%= d %>
+% end
 
 % rubies.each do |ruby|
 <%= ruby %>:
 	$(Q)$(MAKE)<%=mflags%> $(SUBMAKEOPTS) $@
+% end
+% if rubies.size > 1
+<%= rubies[1..-1].join(' ')%>: <%= rubies[0] %>
 % end
 
 libencs:
@@ -126,19 +128,32 @@ libencs:
 ext/extinit.<%=objext%>:
 	$(Q)$(MAKE)<%=mflags%> V=$(V) EXTINITS="$(EXTINITS)" $@
 
-% targets.product(macros["extensions"].map {|e|e.chomp("/.")}) do |t, e|
-<%=e%>/<%=t%>:
-%   if /^(dist|real)clean$/ =~ t
+% exts = macros["extensions"].map {|e|e.chomp("/.")}.sort
+% targets.each do |tgt|
+%   exts.each do |d|
+%     t = "#{d}/#{tgt}"
+%     if /^(dist|real)?clean$/ =~ tgt
+%       deps = exts.select {|e|e.start_with?("#{d}/")}.map {|e|"#{e}/#{tgt}"}
+%       pd = ' ' + deps.join(' ') unless deps.empty?
+%     else
+%       pext = File.dirname(d)
+%       pd = " #{pext}/#{tgt}" if exts.include?(pext)
+%     end
+<%=t%>:<%=pd%>
+%     if /^(dist|real)clean$/ =~ tgt
 	$(ECHO) $(@F)ing $(@D)
-%   end
+%     end
 	$(Q)<%= submake %><%=mflags%> V=$(V) $(@F)
-%   if /^(dist|real)clean$/ =~ t
+%     if /^(dist|real)clean$/ =~ tgt
 	$(Q)$(RMDIRS) $(@D)
+%     end
 %   end
 % end
 
 extso:
 	@echo EXTSO=$(EXTSO)
 
-note:
-<%= note.join("") %>
+% notes.each_pair do |k, (d, n)|
+<%= k %>:<%= d.join(' ') %>
+<%= n.join("") %>
+% end

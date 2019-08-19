@@ -6,7 +6,8 @@ class TestIseqLoad < Test::Unit::TestCase
   ISeq = RubyVM::InstructionSequence
 
   def test_bug8543
-    assert_iseq_roundtrip <<-'end;'
+    assert_iseq_roundtrip "#{<<~"begin;"}\n#{<<~'end;'}"
+    begin;
       puts "tralivali"
       def funct(a, b)
         a**b
@@ -15,8 +16,35 @@ class TestIseqLoad < Test::Unit::TestCase
     end;
   end
 
+  def test_stressful_roundtrip
+    assert_separately(%w[-r-test-/iseq_load], "#{<<~"begin;"}\n#{<<~'end;;'}", timeout: 120)
+    begin;
+      ISeq = RubyVM::InstructionSequence
+      def assert_iseq_roundtrip(src, line=caller_locations(1,1)[0].lineno+1)
+        a = ISeq.compile(src, __FILE__, __FILE__, line).to_a
+        b = ISeq.iseq_load(a).to_a
+        assert_equal a, b, proc {diff(a, b)}
+        b = ISeq.iseq_load(b).to_a
+        assert_equal a, b, proc {diff(a, b)}
+      end
+      def test_bug8543
+        assert_iseq_roundtrip "#{<<~"begin;"}\n#{<<~'end;'}"
+        begin;
+          puts "tralivali"
+          def funct(a, b)
+            a**b
+          end
+          3.times { |i| puts "Hello, world#{funct(2,i)}!" }
+        end;
+      end
+      GC.stress = true
+      test_bug8543
+    end;;
+  end
+
   def test_case_when
-    assert_iseq_roundtrip <<-'end;'
+    assert_iseq_roundtrip "#{<<~"begin;"}\n#{<<~'end;'}"
+    begin;
       def user_mask(target)
         target.each_char.inject(0) do |mask, chr|
           case chr
@@ -37,27 +65,36 @@ class TestIseqLoad < Test::Unit::TestCase
   end
 
   def test_splatsplat
-    assert_iseq_roundtrip('def splatsplat(**); end')
+    assert_iseq_roundtrip("#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+      def splatsplat(**); end
+    end;
   end
 
   def test_hidden
-    assert_iseq_roundtrip('def x(a, (b, *c), d: false); end')
+    assert_iseq_roundtrip("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      def x(a, (b, *c), d: false); end
+    end;
   end
 
-  def assert_iseq_roundtrip(src)
-    a = ISeq.compile(src).to_a
+  def assert_iseq_roundtrip(src, line=caller_locations(1,1)[0].lineno+1)
+    a = ISeq.compile(src, __FILE__, __FILE__, line).to_a
     b = ISeq.iseq_load(a).to_a
-    warn diff(a, b) if a != b
-    assert_equal a, b
-    assert_equal a, ISeq.iseq_load(b).to_a
+    assert_equal a, b, proc {diff(a, b)}
+    b = ISeq.iseq_load(b).to_a
+    assert_equal a, b, proc {diff(a, b)}
   end
 
   def test_next_in_block_in_block
     @next_broke = false
-    src = <<-'end;'
+    src, line = "#{<<~"begin;"}#{<<~'end;'}", __LINE__+2
+    begin;
       3.times { 3.times { next; @next_broke = true } }
     end;
-    a = ISeq.compile(src).to_a
+    a = EnvUtil.suppress_warning {
+      ISeq.compile(src, __FILE__, __FILE__, line)
+    }.to_a
     iseq = ISeq.iseq_load(a)
     iseq.eval
     assert_equal false, @next_broke
@@ -66,7 +103,8 @@ class TestIseqLoad < Test::Unit::TestCase
   end
 
   def test_break_ensure
-    src = <<-'end;'
+    src, line = "#{<<~"begin;"}#{<<~'end;'}", __LINE__+2
+    begin;
       def test_break_ensure_def_method
         bad = true
         while true
@@ -79,7 +117,7 @@ class TestIseqLoad < Test::Unit::TestCase
         bad
       end
     end;
-    a = ISeq.compile(src).to_a
+    a = ISeq.compile(src, __FILE__, __FILE__, line).to_a
     iseq = ISeq.iseq_load(a)
     iseq.eval
     assert_equal false, test_break_ensure_def_method
@@ -88,7 +126,8 @@ class TestIseqLoad < Test::Unit::TestCase
   end
 
   def test_kwarg
-    assert_iseq_roundtrip <<-'end;'
+    assert_iseq_roundtrip "#{<<~"begin;"}\n#{<<~'end;'}"
+    begin;
       def foo(kwarg: :foo)
         kwarg
       end

@@ -1,8 +1,8 @@
 %{
-struct kwtable {int name, id[2], state;};
+struct kwtable {short name, id[2], state;};
 const struct kwtable *rb_reserved_word(const char *, unsigned int);
 #ifndef RIPPER
-static const struct kwtable *reserved_word(const char *, unsigned int);
+static const struct kwtable *reserved_word(/*!ANSI{*/const char *, unsigned int/*}!ANSI*/);
 #define rb_reserved_word(str, len) reserved_word(str, len)
 %}
 

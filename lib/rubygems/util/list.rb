@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 module Gem
   class List
+
     include Enumerable
     attr_accessor :value, :tail
 
@@ -25,7 +26,7 @@ module Gem
       List.new value, self
     end
 
-    def pretty_print q # :nodoc:
+    def pretty_print(q) # :nodoc:
       q.pp to_a
     end
 
@@ -33,5 +34,6 @@ module Gem
       return List.new(value) unless list
       List.new value, list
     end
+
   end
 end

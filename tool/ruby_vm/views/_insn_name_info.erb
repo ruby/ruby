@@ -1,0 +1,38 @@
+%# -*- C -*-
+%# Copyright (c) 2017 Urabe, Shyouhei.  All rights reserved.
+%#
+%# This file is a part of  the programming language Ruby.  Permission is hereby
+%# granted, to either  redistribute and/or modify this file,  provided that the
+%# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+%# details.
+%
+% a = RubyVM::Instructions.map {|i| i.name }
+% b = (0...a.size)
+% c = a.inject([0]) {|r, i| r << (r[-1] + i.length + 1) }
+% c.pop
+%
+CONSTFUNC(MAYBE_UNUSED(static const char *insn_name(VALUE insn)));
+
+#ifdef RUBY_VM_INSNS_INFO
+const int rb_vm_max_insn_name_size = <%= a.map(&:size).max %>;
+#endif
+
+const char *
+insn_name(VALUE i)
+{
+    static const char x[] =
+% a.each do |i|
+        <%=cstr i%> "\0"
+% end
+        ;
+
+    static const unsigned short y[] = {
+% c.each_slice 12 do |d|
+        <%= d.map {|i| sprintf("%4d", i) }.join(', ') %>,
+% end
+    };
+
+    ASSERT_VM_INSTRUCTION_SIZE(y);
+
+    return &x[y[i]];
+}

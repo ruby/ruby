@@ -31,7 +31,8 @@ class TestBeginEndBlock < Test::Unit::TestCase
   end
 
   def test_endblockwarn
-    assert_in_out_err([], <<-'end;', [], ['-:2: warning: END in method; use at_exit'])
+    assert_in_out_err([], "#{<<~"begin;"}#{<<~'end;'}", [], ['-:2: warning: END in method; use at_exit'])
+    begin;
       def end1
         END {}
       end
@@ -39,7 +40,8 @@ class TestBeginEndBlock < Test::Unit::TestCase
   end
 
   def test_endblockwarn_in_eval
-    assert_in_out_err([], <<-'end;', [], ['(eval):2: warning: END in method; use at_exit'])
+    assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", [], ['(eval):2: warning: END in method; use at_exit'])
+    begin;
       eval <<-EOE
         def end2
           END {}
@@ -72,7 +74,8 @@ class TestBeginEndBlock < Test::Unit::TestCase
   end
 
   def test_propagate_signaled
-    status = assert_in_out_err([], <<-'end;', [], /Interrupt$/)
+    status = assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", [], /Interrupt$/)
+    begin;
       trap(:INT, "DEFAULT")
       at_exit{Process.kill(:INT, $$)}
     end;
@@ -82,7 +85,8 @@ class TestBeginEndBlock < Test::Unit::TestCase
   end
 
   def test_endblock_raise
-    assert_in_out_err([], <<-'end;', %w(e6 e4 e2), [:*, /e5/, :*, /e3/, :*, /e1/, :*])
+    assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", %w(e6 e4 e2), [:*, /e5/, :*, /e3/, :*, /e1/, :*])
+    begin;
       END {raise "e1"}; END {puts "e2"}
       END {raise "e3"}; END {puts "e4"}
       END {raise "e5"}; END {puts "e6"}
@@ -99,7 +103,8 @@ class TestBeginEndBlock < Test::Unit::TestCase
                  "inner1",
                  "outer0" ]
 
-    assert_in_out_err([], <<-'end;', expected, [], "[ruby-core:35237]")
+    assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", expected, [], "[ruby-core:35237]")
+    begin;
       at_exit { puts :outer0 }
       at_exit { puts :outer1_begin; at_exit { puts :inner1 }; puts :outer1_end }
       at_exit { puts :outer2_begin; at_exit { puts :inner2 }; puts :outer2_end }
@@ -122,18 +127,19 @@ class TestBeginEndBlock < Test::Unit::TestCase
 
   def test_callcc_at_exit
     bug9110 = '[ruby-core:58329][Bug #9110]'
-    script = <<EOS
-require "continuation"
-c = nil
-at_exit { c.call }
-at_exit { callcc {|_c| c = _c } }
-EOS
-    assert_normal_exit(script, bug9110)
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}", bug9110)
+    begin;
+      require "continuation"
+      c = nil
+      at_exit { c.call }
+      at_exit { callcc {|_c| c = _c } }
+    end;
   end
 
   def test_errinfo_at_exit
     bug12302 = '[ruby-core:75038] [Bug #12302]'
-    assert_in_out_err([], <<-'end;', %w[2:exit 1:exit], [], bug12302)
+    assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", %w[2:exit 1:exit], [], bug12302)
+    begin;
       at_exit do
         puts "1:#{$!}"
       end
@@ -147,5 +153,27 @@ EOS
         exit
       end
     end;
+  end
+
+  if defined?(fork)
+    def test_internal_errinfo_at_exit
+      # TODO: use other than break-in-fork to throw an internal
+      # error info.
+      error, pid, status = IO.pipe do |r, w|
+        pid = fork do
+          r.close
+          STDERR.reopen(w)
+          at_exit do
+            $!.class
+          end
+          break
+        end
+        w.close
+        [r.read, *Process.wait2(pid)]
+      end
+      assert_not_predicate(status, :success?)
+      assert_not_predicate(status, :signaled?)
+      assert_match(/unexpected break/, error)
+    end
   end
 end

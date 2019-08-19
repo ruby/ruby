@@ -3,11 +3,12 @@ require 'pp'
 require 'optparse'
 
 $list = true
-$gcprof = true
+$gcprof = false
 
 opt = OptionParser.new
 opt.on('-q'){$list = false}
 opt.on('-d'){$gcprof = false}
+opt.on('-p'){$gcprof = true}
 opt.parse!(ARGV)
 
 script = File.join(File.dirname(__FILE__), ARGV.shift)

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 module Psych
   module Nodes
     ###
@@ -56,6 +56,8 @@ module Psych
       def root
         children.first
       end
+
+      def document?; true; end
     end
   end
 end

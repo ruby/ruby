@@ -26,22 +26,25 @@ class TestGemDependencyInstaller < Gem::TestCase
   end
 
   def util_setup_gems
-    @a1, @a1_gem         = util_gem 'a', '1' do |s| s.executables << 'a_bin' end
+    @a1, @a1_gem = util_gem 'a', '1' do |s|
+      s.executables << 'a_bin'
+    end
+
     @a1_pre, @a1_pre_gem = util_gem 'a', '1.a'
+
     @b1, @b1_gem         = util_gem 'b', '1' do |s|
       s.add_dependency 'a'
       s.add_development_dependency 'aa'
     end
 
-    @c1, @c1_gem         = util_gem 'c', '1' do |s|
+    @c1, @c1_gem = util_gem 'c', '1' do |s|
       s.add_development_dependency 'b'
     end
 
-    @d1, @d1_gem         = util_gem 'd', '1' do |s|
+    @d1, @d1_gem = util_gem 'd', '1' do |s|
       s.add_development_dependency 'c'
     end
 
-    util_clear_gems
     util_reset_gems
   end
 
@@ -52,7 +55,9 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     inst = Gem::DependencyInstaller.new
 
-    available = inst.available_set_for 'a', Gem::Requirement.default
+    available = Gem::Deprecate.skip_during do
+      inst.available_set_for 'a', Gem::Requirement.default
+    end
 
     assert_equal %w[a-1], available.set.map { |s| s.spec.full_name }
   end
@@ -64,7 +69,9 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     inst = Gem::DependencyInstaller.new :prerelease => true
 
-    available = inst.available_set_for 'a', Gem::Requirement.default
+    available = Gem::Deprecate.skip_during do
+      inst.available_set_for 'a', Gem::Requirement.default
+    end
 
     assert_equal %w[a-10.a],
                  available.sorted.map { |s| s.spec.full_name }
@@ -79,7 +86,9 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     dep = Gem::Dependency.new 'a', Gem::Requirement.default
 
-    available = inst.available_set_for dep, Gem::Requirement.default
+    available = Gem::Deprecate.skip_during do
+      inst.available_set_for dep, Gem::Requirement.default
+    end
 
     assert_equal %w[a-1], available.set.map { |s| s.spec.full_name }
   end
@@ -94,7 +103,9 @@ class TestGemDependencyInstaller < Gem::TestCase
     dep = Gem::Dependency.new 'a', Gem::Requirement.default
     dep.prerelease = true
 
-    available = inst.available_set_for dep, Gem::Requirement.default
+    available = Gem::Deprecate.skip_during do
+      inst.available_set_for dep, Gem::Requirement.default
+    end
 
     assert_equal %w[a-10.a],
                  available.sorted.map { |s| s.spec.full_name }
@@ -121,7 +132,6 @@ class TestGemDependencyInstaller < Gem::TestCase
     p1a, gem = util_gem 'a', '10.a'
 
     util_setup_spec_fetcher(p1a, @a1, @a1_pre)
-    util_clear_gems
 
     p1a_data = Gem.read_binary(gem)
 
@@ -160,7 +170,6 @@ class TestGemDependencyInstaller < Gem::TestCase
     p1a, gem = util_gem 'p', '1.a'
 
     util_setup_spec_fetcher(p1a)
-    util_clear_gems
 
     p1a_data = Gem.read_binary(gem)
 
@@ -180,7 +189,6 @@ class TestGemDependencyInstaller < Gem::TestCase
     util_setup_gems
 
     util_setup_spec_fetcher(@a1, @a1_pre)
-    util_clear_gems
 
     p1a_data = Gem.read_binary(@a1_gem)
 
@@ -200,8 +208,6 @@ class TestGemDependencyInstaller < Gem::TestCase
     _, e1_gem = util_gem 'e', '1' do |s|
       s.add_dependency 'b'
     end
-
-    util_clear_gems
 
     FileUtils.mv @a1_gem, @tempdir
     FileUtils.mv @b1_gem, @tempdir
@@ -424,14 +430,14 @@ class TestGemDependencyInstaller < Gem::TestCase
     extconf_rb = File.join @gemhome, 'gems', 'e-1', 'extconf.rb'
     FileUtils.mkdir_p File.dirname extconf_rb
 
-    open extconf_rb, 'w' do |io|
+    File.open extconf_rb, 'w' do |io|
       io.write <<-EXTCONF_RB
         require 'mkmf'
         create_makefile 'e'
       EXTCONF_RB
     end
 
-    e1 = new_spec 'e', '1', nil, 'extconf.rb' do |s|
+    e1 = util_spec 'e', '1', nil, 'extconf.rb' do |s|
       s.extensions << 'extconf.rb'
     end
     e1_gem = File.join @tempdir, 'gems', "#{e1.full_name}.gem"
@@ -445,9 +451,13 @@ class TestGemDependencyInstaller < Gem::TestCase
     FileUtils.mv f1_gem, @tempdir
     inst = nil
 
-    Dir.chdir @tempdir do
+    pwd = Dir.getwd
+    Dir.chdir @tempdir
+    begin
       inst = Gem::DependencyInstaller.new
       inst.install 'f'
+    ensure
+      Dir.chdir pwd
     end
 
     assert_equal %w[f-1], inst.installed_gems.map { |s| s.full_name }
@@ -558,8 +568,6 @@ class TestGemDependencyInstaller < Gem::TestCase
     _, b2_gem = util_gem 'b', '2' do |s|
       s.add_dependency 'a'
     end
-
-    util_clear_gems
 
     FileUtils.mv @a1_gem, @tempdir
     FileUtils.mv @b1_gem, @tempdir
@@ -861,15 +869,18 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     si = util_setup_spec_fetcher @a1, a2_o
 
-    util_clear_gems
-
     @fetcher.data['http://gems.example.com/gems/yaml'] = si.to_yaml
 
     a1_data = nil
     a2_o_data = nil
 
-    File.open @a1_gem, 'rb' do |fp| a1_data = fp.read end
-    File.open a2_o_gem, 'rb' do |fp| a2_o_data = fp.read end
+    File.open @a1_gem, 'rb' do |fp|
+      a1_data = fp.read
+    end
+
+    File.open a2_o_gem, 'rb' do |fp|
+      a2_o_data = fp.read
+    end
 
     @fetcher.data["http://gems.example.com/gems/#{@a1.file_name}"] =
       a1_data
@@ -893,7 +904,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     assert_equal %w[a-1-cpu-other_platform-1], inst.installed_gems.map { |s| s.full_name }
   end
 
-  if defined? OpenSSL then
+  if defined? OpenSSL
     def test_install_security_policy
       util_setup_gems
 
@@ -918,7 +929,7 @@ class TestGemDependencyInstaller < Gem::TestCase
   end
 
   # Wrappers don't work on mswin
-  unless win_platform? then
+  unless win_platform?
     def test_install_no_wrappers
       util_setup_gems
 
@@ -971,7 +982,9 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     Gem::Specification.reset
 
-    set = inst.find_gems_with_sources(dep)
+    set = Gem::Deprecate.skip_during do
+      inst.find_gems_with_sources(dep)
+    end
 
     assert_kind_of Gem::AvailableSet, set
 
@@ -989,7 +1002,9 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     inst = Gem::DependencyInstaller.new
 
-    available = inst.find_spec_by_name_and_version('*.gem')
+    available = Gem::Deprecate.skip_during do
+      inst.find_spec_by_name_and_version('*.gem')
+    end
 
     assert_equal %w[a-1], available.each_spec.map { |spec| spec.full_name }
   end
@@ -1000,7 +1015,9 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = Gem::DependencyInstaller.new
 
     assert_raises Gem::Package::FormatError do
-      inst.find_spec_by_name_and_version '*.gem'
+      Gem::Deprecate.skip_during do
+        inst.find_spec_by_name_and_version '*.gem'
+      end
     end
   end
 
@@ -1010,7 +1027,9 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = Gem::DependencyInstaller.new
 
     e = assert_raises Gem::Package::FormatError do
-      inst.find_spec_by_name_and_version 'rdoc.gem'
+      Gem::Deprecate.skip_during do
+        inst.find_spec_by_name_and_version 'rdoc.gem'
+      end
     end
 
     full_path = File.join @tempdir, 'rdoc.gem'
@@ -1023,7 +1042,9 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = Gem::DependencyInstaller.new
 
     e = assert_raises Gem::SpecificGemNotFoundException do
-      inst.find_spec_by_name_and_version 'rdoc'
+      Gem::Deprecate.skip_during do
+        inst.find_spec_by_name_and_version 'rdoc'
+      end
     end
 
     assert_equal "Could not find a valid gem 'rdoc' (>= 0) " +
@@ -1037,7 +1058,9 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = Gem::DependencyInstaller.new
 
     e = assert_raises Gem::SpecificGemNotFoundException do
-      inst.find_spec_by_name_and_version 'rdoc'
+      Gem::Deprecate.skip_during do
+        inst.find_spec_by_name_and_version 'rdoc'
+      end
     end
 
     assert_equal "Could not find a valid gem 'rdoc' (>= 0) " +
@@ -1054,7 +1077,9 @@ class TestGemDependencyInstaller < Gem::TestCase
     set = nil
 
     Dir.chdir @tempdir do
-      set = inst.find_gems_with_sources dep
+      set = Gem::Deprecate.skip_during do
+        inst.find_gems_with_sources dep
+      end
     end
 
     gems = set.sorted
@@ -1069,7 +1094,6 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     assert_equal 'a-1', remote.spec.full_name, 'remote spec'
     assert_equal Gem::Source.new(@gem_repo), remote.source, 'remote path'
-
   end
 
   def test_find_gems_with_sources_prerelease
@@ -1079,16 +1103,22 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     dependency = Gem::Dependency.new('a', Gem::Requirement.default)
 
-    releases =
-      installer.find_gems_with_sources(dependency).all_specs
+    set = Gem::Deprecate.skip_during do
+      installer.find_gems_with_sources(dependency)
+    end
+
+    releases = set.all_specs
 
     assert releases.any? { |s| s.name == 'a' and s.version.to_s == '1' }
     refute releases.any? { |s| s.name == 'a' and s.version.to_s == '1.a' }
 
     dependency.prerelease = true
 
-    prereleases =
-      installer.find_gems_with_sources(dependency).all_specs
+    set = Gem::Deprecate.skip_during do
+      installer.find_gems_with_sources(dependency)
+    end
+
+    prereleases = set.all_specs
 
     assert_equal [@a1_pre, @a1], prereleases
   end
@@ -1105,8 +1135,11 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     dependency = Gem::Dependency.new('a', Gem::Requirement.default)
 
-    releases =
-      installer.find_gems_with_sources(dependency, true).all_specs
+    set = Gem::Deprecate.skip_during do
+      installer.find_gems_with_sources(dependency, true)
+    end
+
+    releases = set.all_specs
 
     assert_equal [a1_x86_mingw32], releases
   end
@@ -1118,7 +1151,9 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     dep = Gem::Dependency.new('a')
 
-    out = installer.find_gems_with_sources(dep)
+    out = Gem::Deprecate.skip_during do
+      installer.find_gems_with_sources(dep)
+    end
 
     assert out.empty?
     assert_kind_of Gem::SourceFetchProblem, installer.errors.first
@@ -1229,7 +1264,6 @@ class TestGemDependencyInstaller < Gem::TestCase
     util_setup_spec_fetcher(*[@a1, @a1_pre, @b1, @c1_pre,
                               @d1, @d2, @x1_m, @x1_o, @w1, @y1,
                               @y1_1_p, @z1].compact)
-
-    util_clear_gems
   end
+
 end

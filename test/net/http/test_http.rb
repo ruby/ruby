@@ -59,6 +59,33 @@ class TestNetHTTP < Test::Unit::TestCase
     end
   end
 
+  def test_addr_port
+    http = Net::HTTP.new 'hostname.example', nil, nil
+    addr_port = http.__send__ :addr_port
+    assert_equal 'hostname.example', addr_port
+
+    http.use_ssl = true
+    addr_port = http.__send__ :addr_port
+    assert_equal 'hostname.example:80', addr_port
+
+    http = Net::HTTP.new '203.0.113.1', nil, nil
+    addr_port = http.__send__ :addr_port
+    assert_equal '203.0.113.1', addr_port
+
+    http.use_ssl = true
+    addr_port = http.__send__ :addr_port
+    assert_equal '203.0.113.1:80', addr_port
+
+    http = Net::HTTP.new '2001:db8::1', nil, nil
+    addr_port = http.__send__ :addr_port
+    assert_equal '[2001:db8::1]', addr_port
+
+    http.use_ssl = true
+    addr_port = http.__send__ :addr_port
+    assert_equal '[2001:db8::1]:80', addr_port
+
+  end
+
   def test_edit_path
     http = Net::HTTP.new 'hostname.example', nil, nil
 
@@ -97,6 +124,16 @@ class TestNetHTTP < Test::Unit::TestCase
     end
   end
 
+  def test_proxy_address_no_proxy
+    clean_http_proxy_env do
+      http = Net::HTTP.new 'hostname.example', nil, 'proxy.example', nil, nil, nil, 'example'
+      assert_nil http.proxy_address
+
+      http = Net::HTTP.new '10.224.1.1', nil, 'proxy.example', nil, nil, nil, 'example,10.224.0.0/22'
+      assert_nil http.proxy_address
+    end
+  end
+
   def test_proxy_from_env_ENV
     clean_http_proxy_env do
       ENV['http_proxy'] = 'http://proxy.example:8000'
@@ -131,6 +168,23 @@ class TestNetHTTP < Test::Unit::TestCase
       http = Net::HTTP.new 'hostname.example'
 
       assert_equal true, http.proxy?
+    end
+  end
+
+  def test_proxy_eh_ENV_with_user
+    clean_http_proxy_env do
+      ENV['http_proxy'] = 'http://foo:bar@proxy.example:8000'
+
+      http = Net::HTTP.new 'hostname.example'
+
+      assert_equal true, http.proxy?
+      if Net::HTTP::ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE
+        assert_equal 'foo', http.proxy_user
+        assert_equal 'bar', http.proxy_pass
+      else
+        assert_nil http.proxy_user
+        assert_nil http.proxy_pass
+      end
     end
   end
 
@@ -208,13 +262,42 @@ class TestNetHTTP < Test::Unit::TestCase
     def host.to_str; raise SocketError, "open failure"; end
     uri = Struct.new(:scheme, :hostname, :port).new("http", host, port)
     assert_raise_with_message(SocketError, /#{host}:#{port}/) do
-      Net::HTTP.get(uri)
+      clean_http_proxy_env{ Net::HTTP.get(uri) }
     end
   end
 
 end
 
 module TestNetHTTP_version_1_1_methods
+
+  def test_s_start
+    begin
+      h = Net::HTTP.start(config('host'), config('port'))
+    ensure
+      h&.finish
+    end
+    assert_equal config('host'), h.address
+    assert_equal config('port'), h.port
+    assert_equal true, h.instance_variable_get(:@proxy_from_env)
+
+    begin
+      h = Net::HTTP.start(config('host'), config('port'), :ENV)
+    ensure
+      h&.finish
+    end
+    assert_equal config('host'), h.address
+    assert_equal config('port'), h.port
+    assert_equal true, h.instance_variable_get(:@proxy_from_env)
+
+    begin
+      h = Net::HTTP.start(config('host'), config('port'), nil)
+    ensure
+      h&.finish
+    end
+    assert_equal config('host'), h.address
+    assert_equal config('port'), h.port
+    assert_equal false, h.instance_variable_get(:@proxy_from_env)
+  end
 
   def test_s_get
     assert_equal $test_net_http_data,
@@ -385,12 +468,15 @@ module TestNetHTTP_version_1_1_methods
   end
 
   def test_s_post
-    url = "http://#{config('host')}:#{config('port')}/"
-    res = Net::HTTP.post(
+    url = "http://#{config('host')}:#{config('port')}/?q=a"
+    res = assert_warning(/Content-Type did not set/) do
+      Net::HTTP.post(
               URI.parse(url),
               "a=x")
+    end
     assert_equal "application/x-www-form-urlencoded", res["Content-Type"]
     assert_equal "a=x", res.body
+    assert_equal url, res["X-request-uri"]
 
     res = Net::HTTP.post(
               URI.parse(url),
@@ -445,6 +531,32 @@ module TestNetHTTP_version_1_1_methods
     assert_equal data, res.entity
   end
 
+  def test_timeout_during_HTTP_session_write
+    th = nil
+    # listen for connections... but deliberately do not read
+    TCPServer.open('localhost', 0) {|server|
+      port = server.addr[1]
+
+      conn = Net::HTTP.new('localhost', port)
+      conn.write_timeout = EnvUtil.apply_timeout_scale(0.01)
+      conn.read_timeout = EnvUtil.apply_timeout_scale(0.01) if windows?
+      conn.open_timeout = EnvUtil.apply_timeout_scale(0.1)
+
+      th = Thread.new do
+        err = !windows? ? Net::WriteTimeout : Net::ReadTimeout
+        assert_raise(err) do
+          assert_warning(/Content-Type did not set/) do
+            conn.post('/', "a"*50_000_000)
+          end
+        end
+      end
+      assert th.join(EnvUtil.apply_timeout_scale(10))
+    }
+  ensure
+    th&.kill
+    th&.join
+  end
+
   def test_timeout_during_HTTP_session
     bug4246 = "expected the HTTP session to have timed out but have not. c.f. [ruby-core:34203]"
 
@@ -454,15 +566,15 @@ module TestNetHTTP_version_1_1_methods
       port = server.addr[1]
 
       conn = Net::HTTP.new('localhost', port)
-      conn.read_timeout = 0.01
-      conn.open_timeout = 0.1
+      conn.read_timeout = EnvUtil.apply_timeout_scale(0.01)
+      conn.open_timeout = EnvUtil.apply_timeout_scale(0.1)
 
       th = Thread.new do
         assert_raise(Net::ReadTimeout) {
           conn.get('/')
         }
       end
-      assert th.join(10), bug4246
+      assert th.join(EnvUtil.apply_timeout_scale(10)), bug4246
     }
   ensure
     th.kill
@@ -883,7 +995,7 @@ class TestNetHTTPContinue < Test::Unit::TestCase
       raise WEBrick::HTTPStatus::Forbidden
     }
     start {|http|
-      uheader = {'content-length' => '5', 'expect' => '100-continue'}
+      uheader = {'content-type' => 'application/x-www-form-urlencoded', 'content-length' => '5', 'expect' => '100-continue'}
       http.continue_timeout = 1 # allow the server to respond before sending
       http.request_post('/continue', 'data', uheader) {|res|
         assert_equal(res.code, '403')
@@ -935,7 +1047,8 @@ class TestNetHTTPSwitchingProtocols < Test::Unit::TestCase
     }
     start {|http|
       http.continue_timeout = 0.2
-      http.request_post('/continue', 'body=BODY') {|res|
+      http.request_post('/continue', 'body=BODY',
+                        'content-type' => 'application/x-www-form-urlencoded') {|res|
         assert_equal('BODY', res.read_body)
       }
     }
@@ -995,6 +1108,58 @@ class TestNetHTTPKeepAlive < Test::Unit::TestCase
       res = http.get('/')
       assert_kind_of Net::HTTPResponse, res
       assert_kind_of String, res.body
+    }
+  end
+
+  class MockSocket
+    attr_reader :count
+    def initialize(success_after: nil)
+      @success_after = success_after
+      @count = 0
+    end
+    def close
+    end
+    def closed?
+    end
+    def write(_)
+    end
+    def readline
+      @count += 1
+      if @success_after && @success_after <= @count
+        "HTTP/1.1 200 OK"
+      else
+        raise Errno::ECONNRESET
+      end
+    end
+    def readuntil(*_)
+      ""
+    end
+    def read_all(_)
+    end
+  end
+
+  def test_http_retry_success
+    start {|http|
+      socket = MockSocket.new(success_after: 10)
+      http.instance_variable_get(:@socket).close
+      http.instance_variable_set(:@socket, socket)
+      assert_equal 0, socket.count
+      http.max_retries = 10
+      res = http.get('/')
+      assert_equal 10, socket.count
+      assert_kind_of Net::HTTPResponse, res
+      assert_kind_of String, res.body
+    }
+  end
+
+  def test_http_retry_failed
+    start {|http|
+      socket = MockSocket.new
+      http.instance_variable_get(:@socket).close
+      http.instance_variable_set(:@socket, socket)
+      http.max_retries = 10
+      assert_raise(Errno::ECONNRESET){ http.get('/') }
+      assert_equal 11, socket.count
     }
   end
 

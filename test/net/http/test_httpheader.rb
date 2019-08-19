@@ -16,6 +16,26 @@ class HTTPHeaderTest < Test::Unit::TestCase
     @c = C.new
   end
 
+  def test_initialize
+    @c.initialize_http_header("foo"=>"abc")
+    assert_equal "abc", @c["foo"]
+    @c.initialize_http_header("foo"=>"abc", "bar"=>"xyz")
+    assert_equal "xyz", @c["bar"]
+    @c.initialize_http_header([["foo", "abc"]])
+    assert_equal "abc", @c["foo"]
+    @c.initialize_http_header([["foo", "abc"], ["bar","xyz"]])
+    assert_equal "xyz", @c["bar"]
+    assert_raise(NoMethodError){ @c.initialize_http_header("foo"=>[]) }
+    assert_raise(ArgumentError){ @c.initialize_http_header("foo"=>"a\nb") }
+    assert_raise(ArgumentError){ @c.initialize_http_header("foo"=>"a\rb") }
+    assert_raise(ArgumentError){ @c.initialize_http_header("foo"=>"a\xff") }
+  end
+
+  def test_initialize_with_symbol
+    @c.initialize_http_header(foo: "abc")
+    assert_equal "abc", @c["foo"]
+  end
+
   def test_size
     assert_equal 0, @c.size
     @c['a'] = 'a'
@@ -40,6 +60,16 @@ class HTTPHeaderTest < Test::Unit::TestCase
     @c['aaA'] = 'aaa'
     @c['AAa'] = 'aaa'
     assert_equal 2, @c.length
+
+    @c['aaa'] = ['aaa', ['bbb', [3]]]
+    assert_equal 2, @c.length
+    assert_equal ['aaa', 'bbb', '3'], @c.get_fields('aaa')
+
+    @c['aaa'] = "aaa\xff"
+    assert_equal 2, @c.length
+
+    assert_raise(ArgumentError){ @c['foo'] = "a\nb" }
+    assert_raise(ArgumentError){ @c['foo'] = ["a\nb"] }
   end
 
   def test_AREF
@@ -65,6 +95,10 @@ class HTTPHeaderTest < Test::Unit::TestCase
     @c.add_field 'My-Header', 'd, d'
     assert_equal 'a, b, c, d, d', @c['My-Header']
     assert_equal ['a', 'b', 'c', 'd, d'], @c.get_fields('My-Header')
+    assert_raise(ArgumentError){ @c.add_field 'My-Header', "d\nd" }
+    @c.add_field 'My-Header', ['e', ["\xff", 7]]
+    assert_equal "a, b, c, d, d, e, \xff, 7", @c['My-Header']
+    assert_equal ['a', 'b', 'c', 'd, d', 'e', "\xff", '7'], @c.get_fields('My-Header')
   end
 
   def test_get_fields
@@ -85,7 +119,19 @@ class HTTPHeaderTest < Test::Unit::TestCase
   class D; include Net::HTTPHeader; end
 
   def test_nil_variable_header
-    assert_nothing_raised { D.new.initialize_http_header({Authorization: nil}) }
+    assert_nothing_raised do
+      assert_warning("#{__FILE__}:#{__LINE__+1}: warning: net/http: nil HTTP header: Authorization\n") do
+        D.new.initialize_http_header({Authorization: nil})
+      end
+    end
+  end
+
+  def test_duplicated_variable_header
+    assert_nothing_raised do
+      assert_warning("#{__FILE__}:#{__LINE__+1}: warning: net/http: duplicated HTTP header: Authorization\n") do
+        D.new.initialize_http_header({"AUTHORIZATION": "yes", "Authorization": "no"})
+      end
+    end
   end
 
   def test_delete

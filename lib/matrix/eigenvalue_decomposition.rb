@@ -43,7 +43,7 @@ class Matrix
     def eigenvector_matrix
       Matrix.send(:new, build_eigenvectors.transpose)
     end
-    alias v eigenvector_matrix
+    alias_method :v, :eigenvector_matrix
 
     # Returns the inverse of the eigenvector matrix +V+
     #
@@ -52,7 +52,7 @@ class Matrix
       r = r.transpose.inverse unless @symmetric
       r
     end
-    alias v_inv eigenvector_matrix_inv
+    alias_method :v_inv, :eigenvector_matrix_inv
 
     # Returns the eigenvalues in an array
     #
@@ -73,7 +73,7 @@ class Matrix
     def eigenvalue_matrix
       Matrix.diagonal(*eigenvalues)
     end
-    alias d eigenvalue_matrix
+    alias_method :d, :eigenvalue_matrix
 
     # Returns [eigenvector_matrix, eigenvalue_matrix, eigenvector_matrix_inv]
     #
@@ -82,8 +82,8 @@ class Matrix
     end
     alias_method :to_a, :to_ary
 
-  private
-    def build_eigenvectors
+
+    private def build_eigenvectors
       # JAMA stores complex eigenvectors in a strange way
       # See http://web.archive.org/web/20111016032731/http://cio.nist.gov/esd/emaildir/lists/jama/msg01021.html
       @e.each_with_index.map do |imag, i|
@@ -96,9 +96,10 @@ class Matrix
         end
       end
     end
+
     # Complex scalar division.
 
-    def cdiv(xr, xi, yr, yi)
+    private def cdiv(xr, xi, yr, yi)
       if (yr.abs > yi.abs)
         r = yi/yr
         d = yr + r*yi
@@ -113,7 +114,7 @@ class Matrix
 
     # Symmetric Householder reduction to tridiagonal form.
 
-    def tridiagonalize
+    private def tridiagonalize
 
       #  This is derived from the Algol procedures tred2 by
       #  Bowdler, Martin, Reinsch, and Wilkinson, Handbook for
@@ -231,7 +232,7 @@ class Matrix
 
     # Symmetric tridiagonal QL algorithm.
 
-    def diagonalize
+    private def diagonalize
       #  This is derived from the Algol procedures tql2, by
       #  Bowdler, Martin, Reinsch, and Wilkinson, Handbook for
       #  Auto. Comp., Vol.ii-Linear Algebra, and the corresponding
@@ -350,7 +351,7 @@ class Matrix
 
     # Nonsymmetric reduction to Hessenberg form.
 
-    def reduce_to_hessenberg
+    private def reduce_to_hessenberg
       #  This is derived from the Algol procedures orthes and ortran,
       #  by Martin and Wilkinson, Handbook for Auto. Comp.,
       #  Vol.ii-Linear Algebra, and the corresponding
@@ -440,11 +441,9 @@ class Matrix
       end
     end
 
-
-
     # Nonsymmetric reduction from Hessenberg to real Schur form.
 
-    def hessenberg_to_real_schur
+    private def hessenberg_to_real_schur
 
       #  This is derived from the Algol procedure hqr2,
       #  by Martin and Wilkinson, Handbook for Auto. Comp.,

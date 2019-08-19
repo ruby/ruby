@@ -1,0 +1,10 @@
+prelude: |
+  str1 = [*"A".."Z",*"0".."9"].join("")
+  str10 = str1 * 10
+  str100 = str10 * 10
+  str1000 = str100 * 10
+benchmark:
+  downcase-1: str1.upcase
+  downcase-10: str10.upcase
+  downcase-100: str100.upcase
+  downcase-1000: str1000.upcase

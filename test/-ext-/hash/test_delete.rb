@@ -2,7 +2,7 @@
 require 'test/unit'
 require '-test-/hash'
 
-class TestHash < Test::Unit::TestCase
+class Test_Hash < Test::Unit::TestCase
   class TestDelete < Test::Unit::TestCase
     def test_delete
       hash = Bug::Hash.new

@@ -1,0 +1,4 @@
+benchmark:
+  vm2_module_ann_const_set: |
+    Module.new.const_set(:X, Module.new)
+loop_count: 6000000

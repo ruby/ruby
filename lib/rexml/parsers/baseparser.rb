@@ -1,8 +1,9 @@
 # frozen_string_literal: false
-require 'rexml/parseexception'
-require 'rexml/undefinednamespaceexception'
-require 'rexml/source'
+require_relative '../parseexception'
+require_relative '../undefinednamespaceexception'
+require_relative '../source'
 require 'set'
+require "strscan"
 
 module REXML
   module Parsers
@@ -32,8 +33,12 @@ module REXML
       COMBININGCHAR = '' # TODO
       EXTENDER = ''      # TODO
 
-      NCNAME_STR= "[#{LETTER}_:][-[:alnum:]._:#{COMBININGCHAR}#{EXTENDER}]*"
-      NAME_STR= "(?:(#{NCNAME_STR}):)?(#{NCNAME_STR})"
+      NCNAME_STR= "[#{LETTER}_][-[:alnum:]._#{COMBININGCHAR}#{EXTENDER}]*"
+      QNAME_STR= "(?:(#{NCNAME_STR}):)?(#{NCNAME_STR})"
+      QNAME = /(#{QNAME_STR})/
+
+      # Just for backward compatibility. For example, kramdown uses this.
+      # It's not used in REXML.
       UNAME_STR= "(?:#{NCNAME_STR}:)?#{NCNAME_STR}"
 
       NAMECHAR = '[\-\w\.:]'
@@ -46,7 +51,7 @@ module REXML
       DOCTYPE_START = /\A\s*<!DOCTYPE\s/um
       DOCTYPE_END = /\A\s*\]\s*>/um
       DOCTYPE_PATTERN = /\s*<!DOCTYPE\s+(.*?)(\[|>)/um
-      ATTRIBUTE_PATTERN = /\s*(#{NAME_STR})\s*=\s*(["'])(.*?)\4/um
+      ATTRIBUTE_PATTERN = /\s*(#{QNAME_STR})\s*=\s*(["'])(.*?)\4/um
       COMMENT_START = /\A<!--/u
       COMMENT_PATTERN = /<!--(.*?)-->/um
       CDATA_START = /\A<!\[CDATA\[/u
@@ -55,9 +60,9 @@ module REXML
       XMLDECL_START = /\A<\?xml\s/u;
       XMLDECL_PATTERN = /<\?xml\s+(.*?)\?>/um
       INSTRUCTION_START = /\A<\?/u
-      INSTRUCTION_PATTERN = /<\?(.*?)(\s+.*?)?\?>/um
-      TAG_MATCH = /^<((?>#{NAME_STR}))\s*((?>\s+#{UNAME_STR}\s*=\s*(["']).*?\5)*)\s*(\/)?>/um
-      CLOSE_MATCH = /^\s*<\/(#{NAME_STR})\s*>/um
+      INSTRUCTION_PATTERN = /<\?#{NAME}(\s+.*?)?\?>/um
+      TAG_MATCH = /^<((?>#{QNAME_STR}))/um
+      CLOSE_MATCH = /^\s*<\/(#{QNAME_STR})\s*>/um
 
       VERSION = /\bversion\s*=\s*["'](.*?)['"]/um
       ENCODING = /\bencoding\s*=\s*["'](.*?)['"]/um
@@ -106,13 +111,6 @@ module REXML
         'quot' => [/&quot;/, '&quot;', '"', /"/],
         "apos" => [/&apos;/, "&apos;", "'", /'/]
       }
-
-
-      ######################################################################
-      # These are patterns to identify common markup errors, to make the
-      # error messages more informative.
-      ######################################################################
-      MISSING_ATTRIBUTE_QUOTES = /^<#{NAME_STR}\s+#{NAME_STR}\s*=\s*[^"']/um
 
       def initialize( source )
         self.stream = source
@@ -224,7 +222,7 @@ module REXML
             standalone = standalone[1] unless standalone.nil?
             return [ :xmldecl, version, encoding, standalone ]
           when INSTRUCTION_START
-            return [ :processing_instruction, *@source.match(INSTRUCTION_PATTERN, true)[1,2] ]
+            return process_instruction
           when DOCTYPE_START
             md = @source.match( DOCTYPE_PATTERN, true )
             @nsstack.unshift(curr_ns=Set.new)
@@ -336,11 +334,16 @@ module REXML
             if @source.buffer[1] == ?/
               @nsstack.shift
               last_tag = @tags.pop
-              #md = @source.match_to_consume( '>', CLOSE_MATCH)
               md = @source.match( CLOSE_MATCH, true )
-              raise REXML::ParseException.new( "Missing end tag for "+
-                "'#{last_tag}' (got \"#{md[1]}\")",
-                @source) unless last_tag == md[1]
+              if md and !last_tag
+                message = "Unexpected top-level end tag (got '#{md[1]}')"
+                raise REXML::ParseException.new(message, @source)
+              end
+              if md.nil? or last_tag != md[1]
+                message = "Missing end tag for '#{last_tag}'"
+                message << " (got '#{md[1]}')" if md
+                raise REXML::ParseException.new(message, @source)
+              end
               return [ :end_element, last_tag ]
             elsif @source.buffer[1] == ?!
               md = @source.match(/\A(\s*[^>]*>)/um)
@@ -362,52 +365,17 @@ module REXML
               raise REXML::ParseException.new( "Declarations can only occur "+
                 "in the doctype declaration.", @source)
             elsif @source.buffer[1] == ??
-              md = @source.match( INSTRUCTION_PATTERN, true )
-              return [ :processing_instruction, md[1], md[2] ] if md
-              raise REXML::ParseException.new( "Bad instruction declaration",
-                @source)
+              return process_instruction
             else
               # Get the next tag
               md = @source.match(TAG_MATCH, true)
               unless md
-                # Check for missing attribute quotes
-                raise REXML::ParseException.new("missing attribute quote", @source) if @source.match(MISSING_ATTRIBUTE_QUOTES )
                 raise REXML::ParseException.new("malformed XML: missing tag start", @source)
               end
-              attributes = {}
               prefixes = Set.new
               prefixes << md[2] if md[2]
               @nsstack.unshift(curr_ns=Set.new)
-              if md[4].size > 0
-                attrs = md[4].scan( ATTRIBUTE_PATTERN )
-                raise REXML::ParseException.new( "error parsing attributes: [#{attrs.join ', '}], excess = \"#$'\"", @source) if $' and $'.strip.size > 0
-                attrs.each do |attr_name, prefix, local_part, quote, value|
-                  if prefix == "xmlns"
-                    if local_part == "xml"
-                      if value != "http://www.w3.org/XML/1998/namespace"
-                        msg = "The 'xml' prefix must not be bound to any other namespace "+
-                        "(http://www.w3.org/TR/REC-xml-names/#ns-decl)"
-                        raise REXML::ParseException.new( msg, @source, self )
-                      end
-                    elsif local_part == "xmlns"
-                      msg = "The 'xmlns' prefix must not be declared "+
-                      "(http://www.w3.org/TR/REC-xml-names/#ns-decl)"
-                      raise REXML::ParseException.new( msg, @source, self)
-                    end
-                    curr_ns << local_part
-                  elsif prefix
-                    prefixes << prefix unless prefix == "xml"
-                  end
-
-                  if attributes.has_key?(attr_name)
-                    msg = "Duplicate attribute #{attr_name.inspect}"
-                    raise REXML::ParseException.new(msg, @source, self)
-                  end
-
-                  attributes[attr_name] = value
-                end
-              end
-
+              attributes, closed = parse_attributes(prefixes, curr_ns)
               # Verify that all of the prefixes have been defined
               for prefix in prefixes
                 unless @nsstack.find{|k| k.member?(prefix)}
@@ -415,7 +383,7 @@ module REXML
                 end
               end
 
-              if md[6]
+              if closed
                 @closed = md[1]
                 @nsstack.shift
               else
@@ -438,7 +406,7 @@ module REXML
           raise
         rescue REXML::ParseException
           raise
-        rescue Exception, NameError => error
+        rescue => error
           raise REXML::ParseException.new( "Exception parsing",
             @source, self, (error ? error : $!) )
         end
@@ -507,6 +475,99 @@ module REXML
         return false if xml_declaration_encoding.nil?
         return false if /\AUTF-16\z/i =~ xml_declaration_encoding
         true
+      end
+
+      def process_instruction
+        match_data = @source.match(INSTRUCTION_PATTERN, true)
+        unless match_data
+          message = "Invalid processing instruction node"
+          raise REXML::ParseException.new(message, @source)
+        end
+        [:processing_instruction, match_data[1], match_data[2]]
+      end
+
+      def parse_attributes(prefixes, curr_ns)
+        attributes = {}
+        closed = false
+        match_data = @source.match(/^(.*?)(\/)?>/um, true)
+        if match_data.nil?
+          message = "Start tag isn't ended"
+          raise REXML::ParseException.new(message, @source)
+        end
+
+        raw_attributes = match_data[1]
+        closed = !match_data[2].nil?
+        return attributes, closed if raw_attributes.nil?
+        return attributes, closed if raw_attributes.empty?
+
+        scanner = StringScanner.new(raw_attributes)
+        until scanner.eos?
+          if scanner.scan(/\s+/)
+            break if scanner.eos?
+          end
+
+          pos = scanner.pos
+          loop do
+            break if scanner.scan(ATTRIBUTE_PATTERN)
+            unless scanner.scan(QNAME)
+              message = "Invalid attribute name: <#{scanner.rest}>"
+              raise REXML::ParseException.new(message, @source)
+            end
+            name = scanner[0]
+            unless scanner.scan(/\s*=\s*/um)
+              message = "Missing attribute equal: <#{name}>"
+              raise REXML::ParseException.new(message, @source)
+            end
+            quote = scanner.scan(/['"]/)
+            unless quote
+              message = "Missing attribute value start quote: <#{name}>"
+              raise REXML::ParseException.new(message, @source)
+            end
+            unless scanner.scan(/.*#{Regexp.escape(quote)}/um)
+              match_data = @source.match(/^(.*?)(\/)?>/um, true)
+              if match_data
+                scanner << "/" if closed
+                scanner << ">"
+                scanner << match_data[1]
+                scanner.pos = pos
+                closed = !match_data[2].nil?
+                next
+              end
+              message =
+                "Missing attribute value end quote: <#{name}>: <#{quote}>"
+              raise REXML::ParseException.new(message, @source)
+            end
+          end
+          name = scanner[1]
+          prefix = scanner[2]
+          local_part = scanner[3]
+          # quote = scanner[4]
+          value = scanner[5]
+          if prefix == "xmlns"
+            if local_part == "xml"
+              if value != "http://www.w3.org/XML/1998/namespace"
+                msg = "The 'xml' prefix must not be bound to any other namespace "+
+                  "(http://www.w3.org/TR/REC-xml-names/#ns-decl)"
+                raise REXML::ParseException.new( msg, @source, self )
+              end
+            elsif local_part == "xmlns"
+              msg = "The 'xmlns' prefix must not be declared "+
+                "(http://www.w3.org/TR/REC-xml-names/#ns-decl)"
+              raise REXML::ParseException.new( msg, @source, self)
+            end
+            curr_ns << local_part
+          elsif prefix
+            prefixes << prefix unless prefix == "xml"
+          end
+
+          if attributes.has_key?(name)
+            msg = "Duplicate attribute #{name.inspect}"
+            raise REXML::ParseException.new(msg, @source, self)
+          end
+
+          attributes[name] = value
+        end
+        return attributes, closed
       end
     end
   end

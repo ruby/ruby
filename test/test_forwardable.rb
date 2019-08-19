@@ -3,6 +3,7 @@ require 'test/unit'
 require 'forwardable'
 
 class TestForwardable < Test::Unit::TestCase
+  INTEGER = 42
   RECEIVER = BasicObject.new
   RETURNED1 = BasicObject.new
   RETURNED2 = BasicObject.new
@@ -24,6 +25,16 @@ class TestForwardable < Test::Unit::TestCase
       end
 
       assert_same RETURNED1, cls.new.delegated1
+    end
+  end
+
+  def test_def_instance_delegator_constant
+    %i[def_delegator def_instance_delegator].each do |m|
+      cls = forwardable_class do
+        __send__ m, 'TestForwardable::INTEGER', :to_i
+      end
+
+      assert_equal 42, cls.new.to_i
     end
   end
 
@@ -294,6 +305,14 @@ class TestForwardable < Test::Unit::TestCase
     assert_warn(/forwarding to private method/) do
       assert_equal(:foo, cls.new.bar)
     end
+  end
+
+  def test_non_module
+    str = String.new
+    str.extend Forwardable
+    str.instance_variable_set("@h", 42)
+    str.def_delegator("@h", :to_s, :forty_two)
+    assert_equal("42", str.forty_two)
   end
 
   private

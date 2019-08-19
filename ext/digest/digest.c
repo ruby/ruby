@@ -728,6 +728,7 @@ rb_digest_base_block_length(VALUE self)
 void
 Init_digest(void)
 {
+#undef rb_intern
     id_reset           = rb_intern("reset");
     id_update          = rb_intern("update");
     id_finish          = rb_intern("finish");

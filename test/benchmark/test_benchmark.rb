@@ -34,12 +34,8 @@ class TestBenchmark < Test::Unit::TestCase
     end
   end
 
-  def capture_output
-    capture_io { yield }.first.gsub(/[ \-]\d\.\d{6}/, ' --time--')
-  end
-
   def capture_bench_output(type, *args, &block)
-    capture_output { bench(type, *args, &block) }
+    capture_output { bench(type, *args, &block) }.first.gsub(/[ \-]\d\.\d{6}/, ' --time--')
   end
 
   def test_tms_outputs_nicely
@@ -85,7 +81,7 @@ BENCH
 
   def test_bm_returns_an_Array_of_the_times_with_the_labels
     [:bm, :bmbm].each do |meth|
-      capture_io do
+      capture_output do
         results = bench(meth)
         assert_instance_of(Array, results)
         assert_equal(labels.size, results.size)

@@ -64,6 +64,35 @@ class TestPOP < Test::Unit::TestCase
     end
   end
 
+  def test_popmail
+    # totally not representative of real messages, but
+    # enough to test frozen bugs
+    lines = [ "[ruby-core:85210]" , "[Bug #14416]" ].freeze
+    command = Object.new
+    command.instance_variable_set(:@lines, lines)
+
+    def command.retr(n)
+      @lines.each { |l| yield "#{l}\r\n" }
+    end
+
+    def command.top(number, nl)
+      @lines.each do |l|
+        yield "#{l}\r\n"
+        break if (nl -= 1) <= 0
+      end
+    end
+
+    net_pop = :unused
+    popmail = Net::POPMail.new(1, 123, net_pop, command)
+    res = popmail.pop
+    assert_equal "[ruby-core:85210]\r\n[Bug #14416]\r\n", res
+    assert_not_predicate res, :frozen?
+
+    res = popmail.top(1)
+    assert_equal "[ruby-core:85210]\r\n", res
+    assert_not_predicate res, :frozen?
+  end
+
   def pop_test(apop=false)
     host = 'localhost'
     server = TCPServer.new(host, 0)

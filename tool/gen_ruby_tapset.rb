@@ -31,7 +31,7 @@ text.gsub!(/^\};/, "")
 # probename()
 text.gsub!(/probe (.+)\( *\);/) {
   probe_name = $1
-  probe = <<-End
+  <<-End
     probe #{probe_name} = process("ruby").provider("ruby").mark("#{probe_name}")
     {
     }
@@ -43,7 +43,7 @@ text.gsub!(/ *probe (.+)\(([^,)]+)\);/) {
   probe_name = $1
   arg1 = $2
 
-  probe = <<-End
+  <<-End
     probe #{probe_name} = process("ruby").provider("ruby").mark("#{probe_name}")
     {
       #{set_argument(arg1, 1)}
@@ -57,7 +57,7 @@ text.gsub!(/ *probe (.+)\(([^,)]+),([^,)]+)\);/) {
   arg1 = $2
   arg2 = $3
 
-  probe = <<-End
+  <<-End
     probe #{probe_name} = process("#{ruby_path}").provider("ruby").mark("#{probe_name}")
     {
       #{set_argument(arg1, 1)}
@@ -73,7 +73,7 @@ text.gsub!(/ *probe (.+)\(([^,)]+),([^,)]+),([^,)]+)\);/) {
   arg2 = $3
   arg3 = $4
 
-  probe = <<-End
+  <<-End
     probe #{probe_name} = process("#{ruby_path}").provider("ruby").mark("#{probe_name}")
     {
       #{set_argument(arg1, 1)}
@@ -91,7 +91,7 @@ text.gsub!(/ *probe (.+)\(([^,)]+),([^,)]+),([^,)]+),([^,)]+)\);/) {
   arg3 = $4
   arg4 = $5
 
-  probe = <<-End
+  <<-End
     probe #{probe_name} = process("#{ruby_path}").provider("ruby").mark("#{probe_name}")
     {
       #{set_argument(arg1, 1)}
@@ -103,4 +103,3 @@ text.gsub!(/ *probe (.+)\(([^,)]+),([^,)]+),([^,)]+),([^,)]+)\);/) {
 }
 
 print text
-

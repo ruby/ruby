@@ -1,12 +1,9 @@
 # frozen_string_literal: false
-require_relative 'utils'
-require 'base64'
+require_relative "utils"
 
-if defined?(OpenSSL::TestUtils)
+if defined?(OpenSSL)
 
 class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
-  RSA1024 = OpenSSL::TestUtils::TEST_KEY_RSA1024
-
   def test_padding
     key = OpenSSL::PKey::RSA.new(512, 3)
 
@@ -63,6 +60,13 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     end
   end
 
+  def test_generate
+    key = OpenSSL::PKey::RSA.generate(512, 17)
+    assert_equal 512, key.n.num_bits
+    assert_equal 17, key.e
+    assert_not_nil key.d
+  end
+
   def test_new_break
     assert_nil(OpenSSL::PKey::RSA.new(1024) { break })
     assert_raise(RuntimeError) do
@@ -71,22 +75,23 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
   end
 
   def test_sign_verify
+    rsa1024 = Fixtures.pkey("rsa1024")
     data = "Sign me!"
-    signature = RSA1024.sign("SHA1", data)
-    assert_equal true, RSA1024.verify("SHA1", signature, data)
+    signature = rsa1024.sign("SHA1", data)
+    assert_equal true, rsa1024.verify("SHA1", signature, data)
 
     signature0 = (<<~'end;').unpack("m")[0]
       oLCgbprPvfhM4pjFQiDTFeWI9Sk+Og7Nh9TmIZ/xSxf2CGXQrptlwo7NQ28+
       WA6YQo8jPH4hSuyWIM4Gz4qRYiYRkl5TDMUYob94zm8Si1HxEiS9354tzvqS
       zS8MLW2BtNPuTubMxTItHGTnOzo9sUg0LAHVFt8kHG2NfKAw/gQ=
     end;
-    assert_equal true, RSA1024.verify("SHA256", signature0, data)
+    assert_equal true, rsa1024.verify("SHA256", signature0, data)
     signature1 = signature0.succ
-    assert_equal false, RSA1024.verify("SHA256", signature1, data)
+    assert_equal false, rsa1024.verify("SHA256", signature1, data)
   end
 
   def test_digest_state_irrelevant_sign
-    key = RSA1024
+    key = Fixtures.pkey("rsa1024")
     digest1 = OpenSSL::Digest::SHA1.new
     digest2 = OpenSSL::Digest::SHA1.new
     data = 'Sign me!'
@@ -97,7 +102,7 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
   end
 
   def test_digest_state_irrelevant_verify
-    key = RSA1024
+    key = Fixtures.pkey("rsa1024")
     digest1 = OpenSSL::Digest::SHA1.new
     digest2 = OpenSSL::Digest::SHA1.new
     data = 'Sign me!'
@@ -115,21 +120,55 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     }
   end
 
+  def test_sign_verify_pss
+    key = Fixtures.pkey("rsa1024")
+    data = "Sign me!"
+    invalid_data = "Sign me?"
+
+    signature = key.sign_pss("SHA256", data, salt_length: 20, mgf1_hash: "SHA1")
+    assert_equal 128, signature.bytesize
+    assert_equal true,
+      key.verify_pss("SHA256", signature, data, salt_length: 20, mgf1_hash: "SHA1")
+    assert_equal true,
+      key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA1")
+    assert_equal false,
+      key.verify_pss("SHA256", signature, invalid_data, salt_length: 20, mgf1_hash: "SHA1")
+
+    signature = key.sign_pss("SHA256", data, salt_length: :digest, mgf1_hash: "SHA1")
+    assert_equal true,
+      key.verify_pss("SHA256", signature, data, salt_length: 32, mgf1_hash: "SHA1")
+    assert_equal true,
+      key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA1")
+    assert_equal false,
+      key.verify_pss("SHA256", signature, data, salt_length: 20, mgf1_hash: "SHA1")
+
+    signature = key.sign_pss("SHA256", data, salt_length: :max, mgf1_hash: "SHA1")
+    assert_equal true,
+      key.verify_pss("SHA256", signature, data, salt_length: 94, mgf1_hash: "SHA1")
+    assert_equal true,
+      key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA1")
+
+    assert_raise(OpenSSL::PKey::RSAError) {
+      key.sign_pss("SHA256", data, salt_length: 95, mgf1_hash: "SHA1")
+    }
+  end
+
   def test_RSAPrivateKey
+    rsa1024 = Fixtures.pkey("rsa1024")
     asn1 = OpenSSL::ASN1::Sequence([
       OpenSSL::ASN1::Integer(0),
-      OpenSSL::ASN1::Integer(RSA1024.n),
-      OpenSSL::ASN1::Integer(RSA1024.e),
-      OpenSSL::ASN1::Integer(RSA1024.d),
-      OpenSSL::ASN1::Integer(RSA1024.p),
-      OpenSSL::ASN1::Integer(RSA1024.q),
-      OpenSSL::ASN1::Integer(RSA1024.dmp1),
-      OpenSSL::ASN1::Integer(RSA1024.dmq1),
-      OpenSSL::ASN1::Integer(RSA1024.iqmp)
+      OpenSSL::ASN1::Integer(rsa1024.n),
+      OpenSSL::ASN1::Integer(rsa1024.e),
+      OpenSSL::ASN1::Integer(rsa1024.d),
+      OpenSSL::ASN1::Integer(rsa1024.p),
+      OpenSSL::ASN1::Integer(rsa1024.q),
+      OpenSSL::ASN1::Integer(rsa1024.dmp1),
+      OpenSSL::ASN1::Integer(rsa1024.dmq1),
+      OpenSSL::ASN1::Integer(rsa1024.iqmp)
     ])
     key = OpenSSL::PKey::RSA.new(asn1.to_der)
     assert_predicate key, :private?
-    assert_same_rsa RSA1024, key
+    assert_same_rsa rsa1024, key
 
     pem = <<~EOF
     -----BEGIN RSA PRIVATE KEY-----
@@ -149,13 +188,14 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     -----END RSA PRIVATE KEY-----
     EOF
     key = OpenSSL::PKey::RSA.new(pem)
-    assert_same_rsa RSA1024, key
+    assert_same_rsa rsa1024, key
 
-    assert_equal asn1.to_der, RSA1024.to_der
-    assert_equal pem, RSA1024.export
+    assert_equal asn1.to_der, rsa1024.to_der
+    assert_equal pem, rsa1024.export
   end
 
   def test_RSAPrivateKey_encrypted
+    rsa1024 = Fixtures.pkey("rsa1024")
     # key = abcdef
     pem = <<~EOF
     -----BEGIN RSA PRIVATE KEY-----
@@ -178,26 +218,27 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     -----END RSA PRIVATE KEY-----
     EOF
     key = OpenSSL::PKey::RSA.new(pem, "abcdef")
-    assert_same_rsa RSA1024, key
+    assert_same_rsa rsa1024, key
     key = OpenSSL::PKey::RSA.new(pem) { "abcdef" }
-    assert_same_rsa RSA1024, key
+    assert_same_rsa rsa1024, key
 
     cipher = OpenSSL::Cipher.new("aes-128-cbc")
-    exported = RSA1024.to_pem(cipher, "abcdef\0\1")
-    assert_same_rsa RSA1024, OpenSSL::PKey::RSA.new(exported, "abcdef\0\1")
+    exported = rsa1024.to_pem(cipher, "abcdef\0\1")
+    assert_same_rsa rsa1024, OpenSSL::PKey::RSA.new(exported, "abcdef\0\1")
     assert_raise(OpenSSL::PKey::RSAError) {
       OpenSSL::PKey::RSA.new(exported, "abcdef")
     }
   end
 
   def test_RSAPublicKey
+    rsa1024 = Fixtures.pkey("rsa1024")
     asn1 = OpenSSL::ASN1::Sequence([
-      OpenSSL::ASN1::Integer(RSA1024.n),
-      OpenSSL::ASN1::Integer(RSA1024.e)
+      OpenSSL::ASN1::Integer(rsa1024.n),
+      OpenSSL::ASN1::Integer(rsa1024.e)
     ])
     key = OpenSSL::PKey::RSA.new(asn1.to_der)
     assert_not_predicate key, :private?
-    assert_same_rsa dup_public(RSA1024), key
+    assert_same_rsa dup_public(rsa1024), key
 
     pem = <<~EOF
     -----BEGIN RSA PUBLIC KEY-----
@@ -207,10 +248,11 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     -----END RSA PUBLIC KEY-----
     EOF
     key = OpenSSL::PKey::RSA.new(pem)
-    assert_same_rsa dup_public(RSA1024), key
+    assert_same_rsa dup_public(rsa1024), key
   end
 
   def test_PUBKEY
+    rsa1024 = Fixtures.pkey("rsa1024")
     asn1 = OpenSSL::ASN1::Sequence([
       OpenSSL::ASN1::Sequence([
         OpenSSL::ASN1::ObjectId("rsaEncryption"),
@@ -218,14 +260,14 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
       ]),
       OpenSSL::ASN1::BitString(
         OpenSSL::ASN1::Sequence([
-          OpenSSL::ASN1::Integer(RSA1024.n),
-          OpenSSL::ASN1::Integer(RSA1024.e)
+          OpenSSL::ASN1::Integer(rsa1024.n),
+          OpenSSL::ASN1::Integer(rsa1024.e)
         ]).to_der
       )
     ])
     key = OpenSSL::PKey::RSA.new(asn1.to_der)
     assert_not_predicate key, :private?
-    assert_same_rsa dup_public(RSA1024), key
+    assert_same_rsa dup_public(rsa1024), key
 
     pem = <<~EOF
     -----BEGIN PUBLIC KEY-----
@@ -236,14 +278,25 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     -----END PUBLIC KEY-----
     EOF
     key = OpenSSL::PKey::RSA.new(pem)
-    assert_same_rsa dup_public(RSA1024), key
+    assert_same_rsa dup_public(rsa1024), key
 
-    assert_equal asn1.to_der, dup_public(RSA1024).to_der
-    assert_equal pem, dup_public(RSA1024).export
+    assert_equal asn1.to_der, dup_public(rsa1024).to_der
+    assert_equal pem, dup_public(rsa1024).export
+  end
+
+  def test_pem_passwd
+    key = Fixtures.pkey("rsa1024")
+    pem3c = key.to_pem("aes-128-cbc", "key")
+    assert_match (/ENCRYPTED/), pem3c
+    assert_equal key.to_der, OpenSSL::PKey.read(pem3c, "key").to_der
+    assert_equal key.to_der, OpenSSL::PKey.read(pem3c) { "key" }.to_der
+    assert_raise(OpenSSL::PKey::PKeyError) {
+      OpenSSL::PKey.read(pem3c) { nil }
+    }
   end
 
   def test_dup
-    key = OpenSSL::PKey::RSA.generate(256, 17)
+    key = Fixtures.pkey("rsa1024")
     key2 = key.dup
     assert_equal key.params, key2.params
     key2.set_key(key2.n, 3, key2.d)

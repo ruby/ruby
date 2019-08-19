@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require File.expand_path '../xref_test_case', __FILE__
 
 class TestRDocClassModule < XrefTestCase
@@ -9,21 +9,24 @@ class TestRDocClassModule < XrefTestCase
     tl3 = @store.add_file 'three.rb'
 
     cm = RDoc::ClassModule.new 'Klass'
-    cm.add_comment '# comment 1', tl1
+    comment_tl1 = RDoc::Comment.new('# comment 1', @top_level, :ruby)
+    cm.add_comment comment_tl1, tl1
 
-    assert_equal [['comment 1', tl1]], cm.comment_location
-    assert_equal 'comment 1', cm.comment
+    assert_equal [[comment_tl1, tl1]], cm.comment_location
+    assert_equal 'comment 1', cm.comment.text
 
-    cm.add_comment '# comment 2', tl2
+    comment_tl2 = RDoc::Comment.new('# comment 2', @top_level, :ruby)
+    cm.add_comment comment_tl2, tl2
 
-    assert_equal [['comment 1', tl1], ['comment 2', tl2]], cm.comment_location
+    assert_equal [[comment_tl1, tl1], [comment_tl2, tl2]], cm.comment_location
     assert_equal "comment 1\n---\ncomment 2", cm.comment
 
-    cm.add_comment "# * comment 3", tl3
+    comment_tl3 = RDoc::Comment.new('# * comment 3', @top_level, :ruby)
+    cm.add_comment comment_tl3, tl3
 
-    assert_equal [['comment 1', tl1],
-                  ['comment 2', tl2],
-                  ['* comment 3', tl3]], cm.comment_location
+    assert_equal [[comment_tl1, tl1],
+                  [comment_tl2, tl2],
+                  [comment_tl3, tl3]], cm.comment_location
     assert_equal "comment 1\n---\ncomment 2\n---\n* comment 3", cm.comment
   end
 
@@ -39,10 +42,13 @@ class TestRDocClassModule < XrefTestCase
     tl1 = @store.add_file 'one.rb'
 
     cm = RDoc::ClassModule.new 'Klass'
-    cm.add_comment '# comment 1', tl1
-    cm.add_comment '# comment 2', tl1
+    comment1 = RDoc::Comment.new('# comment 1', @top_level, :ruby)
+    comment2 = RDoc::Comment.new('# comment 2', @top_level, :ruby)
+    cm.add_comment comment1, tl1
+    cm.add_comment comment2, tl1
 
-    assert_equal [['comment 2', tl1]], cm.comment_location
+    assert_equal [[comment1, tl1],
+                  [comment2, tl1]], cm.comment_location
   end
 
   def test_add_comment_stopdoc
@@ -62,17 +68,17 @@ class TestRDocClassModule < XrefTestCase
 
   def test_comment_equals
     cm = RDoc::ClassModule.new 'Klass'
-    cm.comment = '# comment 1'
+    cm.comment = RDoc::Comment.new('# comment 1', @top_level, :ruby)
 
-    assert_equal 'comment 1', cm.comment
+    assert_equal 'comment 1', cm.comment.to_s
 
-    cm.comment = '# comment 2'
+    cm.comment = RDoc::Comment.new('# comment 2', @top_level, :ruby)
 
-    assert_equal "comment 1\n---\ncomment 2", cm.comment
+    assert_equal "comment 1\n---\ncomment 2", cm.comment.to_s
 
-    cm.comment = "# * comment 3"
+    cm.comment = RDoc::Comment.new('# * comment 3', @top_level, :ruby)
 
-    assert_equal "comment 1\n---\ncomment 2\n---\n* comment 3", cm.comment
+    assert_equal "comment 1\n---\ncomment 2\n---\n* comment 3", cm.comment.to_s
   end
 
   def test_comment_equals_comment
@@ -90,6 +96,7 @@ class TestRDocClassModule < XrefTestCase
 
     assert @c1.document_self_or_methods
 
+    @c1_plus.document_self = false
     @c1_m.document_self = false
 
     assert @c1.document_self_or_methods
@@ -1276,7 +1283,8 @@ class TestRDocClassModule < XrefTestCase
     n1 = @xref_data.add_module RDoc::NormalClass, 'N1'
     n1_k2 = n1.add_module RDoc::NormalClass, 'N2'
 
-    n1.add_module_alias n1_k2, 'A1', @xref_data
+    a1 = RDoc::Constant.new 'A1', '', ''
+    n1.add_module_alias n1_k2, n1_k2.name, a1, @xref_data
 
     n1_a1_c = n1.constants.find { |c| c.name == 'A1' }
     refute_nil n1_a1_c
@@ -1300,7 +1308,8 @@ class TestRDocClassModule < XrefTestCase
     n1 = @xref_data.add_module RDoc::NormalModule, 'N1'
     n1_n2 = n1.add_module RDoc::NormalModule, 'N2'
 
-    n1.add_module_alias n1_n2, 'A1', @xref_data
+    a1 = RDoc::Constant.new 'A1', '', ''
+    n1.add_module_alias n1_n2, n1_n2.name, a1, @xref_data
 
     n1_a1_c = n1.constants.find { |c| c.name == 'A1' }
     refute_nil n1_a1_c
@@ -1325,7 +1334,8 @@ class TestRDocClassModule < XrefTestCase
     l1_l2 = l1.add_module RDoc::NormalModule, 'L2'
     o1 = @xref_data.add_module RDoc::NormalModule, 'O1'
 
-    o1.add_module_alias l1_l2, 'A1', @xref_data
+    a1 = RDoc::Constant.new 'A1', '', ''
+    o1.add_module_alias l1_l2, l1_l2.name, a1, @xref_data
 
     o1_a1_c = o1.constants.find { |c| c.name == 'A1' }
     refute_nil o1_a1_c
@@ -1357,7 +1367,8 @@ class TestRDocClassModule < XrefTestCase
     const.record_location top_level
     const.is_alias_for = klass
 
-    top_level.add_module_alias klass, 'A', top_level
+    a = RDoc::Constant.new 'A', '', ''
+    top_level.add_module_alias klass, klass.name, a, top_level
 
     object.add_constant const
 

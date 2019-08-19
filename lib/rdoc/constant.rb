@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # A constant
 
@@ -36,7 +36,7 @@ class RDoc::Constant < RDoc::CodeObject
     @value = value
 
     @is_alias_for = nil
-    @visibility   = nil
+    @visibility   = :public
 
     self.comment = comment
   end
@@ -136,7 +136,7 @@ class RDoc::Constant < RDoc::CodeObject
     initialize array[1], nil, array[5]
 
     @full_name     = array[2]
-    @visibility    = array[3]
+    @visibility    = array[3] || :public
     @is_alias_for  = array[4]
     #                      5 handled above
     #                      6 handled below

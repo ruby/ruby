@@ -1,0 +1,205 @@
+#!/usr/bin/env ruby
+#
+# Tool to update w.r-l.o files on release
+#
+# This receives `make dist`'s output, and prints
+#
+# * links and digests of tarballs for releate article
+# * patch for below data files
+#   * _data/branches.yml
+#   * _data/downloads.yml
+#   * _data/releases.yml
+#
+# To apply the patch, `patch -p1 < patch.txt`
+require "diffy"
+
+Diffy::Diff.default_options.merge!(
+  include_diff_info: true,
+  context: 1,
+)
+WWW = Dir.pwd # workdir of https://github.com/ruby/www.ruby-lang.org
+
+class Tarball
+  attr_reader :version, :sha256
+
+  def initialize(path, size, sha1, sha256, sha512)
+    /\A\/(?:[^\/\n]*\/)*(?:ruby-(?<ver>(?<xy>\d+\.\d+)\.\d+(?:-(?:preview|rc)\d+)?)[0-9a-z.\-]+)/ =~ path \
+      or raise "tarball path doesn't mach regexp"
+    @path = path
+    @size = size
+    @sha1 = sha1
+    @sha256 = sha256
+    @sha512 = sha512
+    @version = ver
+    @xy = xy
+  end
+
+  def gz?;  @path.end_with?('.gz'); end
+  def zip?; @path.end_with?('.zip'); end
+  def bz2?; @path.end_with?('.bz2'); end
+  def xz?;  @path.end_with?('.xz'); end
+
+  def ext; @path[/(?:zip|tar\.(?:gz|bz2|xz))\z/]; end
+
+  def to_md
+    <<eom
+* <https://cache.ruby-lang.org/pub/ruby/#{@xy}/ruby-#{@version}.#{ext}>
+
+      SIZE:   #{@size} bytes
+      SHA1:   #{@sha1}
+      SHA256: #{@sha256}
+      SHA512: #{@sha512}
+
+eom
+  end
+
+  # * /home/naruse/obj/ruby-trunk/tmp/ruby-2.6.0-preview3.tar.gz
+  #   SIZE:   17116009 bytes
+  #   SHA1:   21f62c369661a2ab1b521fd2fa8191a4273e12a1
+  #   SHA256: 97cea8aa63dfa250ba6902b658a7aa066daf817b22f82b7ee28f44aec7c2e394
+  #   SHA512: 1e2042324821bb4e110af7067f52891606dcfc71e640c194ab1c117f0b941550e0b3ac36ad3511214ac80c536b9e5cfaf8789eec74cf56971a832ea8fc4e6d94
+  def self.parse(io)
+    ary = []
+    ver = nil
+    io.read.scan(/^\* .*(?:\n .*)*/) do |unit|
+      path, size, sha1, sha256, sha512 = unit.lines.map(&:chomp)
+      path.slice!(0, 2)
+      size = size[/\d+/].to_i
+      sha1 = sha1[/\h{40}/]
+      sha256 = sha256[/\h{64}/]
+      sha512 = sha512[/\h{128}/]
+      tarball = Tarball.new(path, size, sha1, sha256, sha512)
+      if ver
+        raise "mixed versions" if tarball.version != ver
+      else
+        ver = tarball.version
+      end
+      ary << tarball
+    end
+    xy = ver[/\A\d+\.\d+/]
+    ary.each do |tarball|
+      puts tarball.to_md
+    end
+    update_branches_yml(ver, xy)
+    update_downloads_yml(ver, xy)
+    update_releases_yml(ver, xy, ary)
+    ary
+  end
+
+  def self.update_branches_yml(ver, xy)
+    filename = "_data/branches.yml"
+    orig_data = File.read(File.join(WWW, filename))
+    data = orig_data.dup
+    if data.include?("\n- name: #{xy}\n")
+      data.sub!(/\n- name: #{Regexp.escape(xy)}\n(?:  .*\n)*/) do |node|
+        unless ver.include?("-")
+          # assume this is X.Y.0 release
+          node.sub!(/^  status: preview\n/, "  status: normal maintenance\n")
+          node.sub!(/^  date:\n/, "  date: #{Time.now.year}-12-25\n")
+        end
+        node
+      end
+    else
+      if ver.include?("-")
+        status = "preview"
+        year = nil
+      else
+        status = "normal maintenance"
+        year = Time.now.year
+      end
+      entry = <<eom
+- name: #{xy}
+  status: #{status}
+  date:#{ year && " #{year}-12-25" }
+  eol_date:
+
+eom
+      data.sub!(/(?=^- name)/, entry)
+    end
+    if data != orig_data
+      diff = Diffy::Diff.new(orig_data, data)
+      show_diff(filename, diff)
+    end
+  end
+
+  def self.update_downloads_yml(ver, xy)
+    filename = "_data/downloads.yml"
+    orig_data = File.read(File.join(WWW, filename))
+    data = orig_data.dup
+
+    if /^preview:\n\n(?:  .*\n)*  - #{Regexp.escape(xy)}\./ =~ data
+      if ver.include?("-")
+        data.sub!(/^  - #{Regexp.escape(xy)}\..*/, "  - #{ver}")
+      else
+        data.sub!(/^  - #{Regexp.escape(xy)}\..*\n/, "")
+        data.sub!(/(?<=^stable:\n\n)/, "  - #{ver}\n")
+      end
+    else
+      unless data.sub!(/^  - #{Regexp.escape(xy)}\..*/, "  - #{ver}")
+        if ver.include?("-")
+          data.sub!(/(?<=^preview:\n\n)/, "  - #{ver}\n")
+        else
+          data.sub!(/(?<=^stable:\n\n)/, "  - #{ver}\n")
+        end
+      end
+    end
+    if data != orig_data
+      diff = Diffy::Diff.new(orig_data, data)
+      show_diff(filename, diff)
+    end
+  end
+
+  def self.update_releases_yml(ver, xy, ary)
+    filename = "_data/releases.yml"
+    orig_data = File.read(File.join(WWW, filename))
+    data = orig_data.dup
+
+    date = Time.now
+    entry = <<eom
+- version: #{ver}
+  date: #{date.strftime("%Y-%m-%d")}
+  post: /en/news/#{date.strftime("%Y/%m/%d")}/ruby-#{ver.tr('.', '-')}-released/
+  url:
+    gz:  https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.tar.gz
+    zip: https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.zip
+    bz2: https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.tar.bz2
+    xz:  https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.tar.xz
+  sha256:
+    gz:  #{ary.find{|x|x.gz? }.sha256}
+    zip: #{ary.find{|x|x.zip?}.sha256}
+    bz2: #{ary.find{|x|x.bz2?}.sha256}
+    xz:  #{ary.find{|x|x.xz? }.sha256}
+eom
+
+    if data.include?("\n- version: #{ver}\n")
+    elsif data.sub!(/\n# #{Regexp.escape(xy)} series\n/, "\\&\n#{entry}")
+    else
+      data.sub!(/^$/, "\n# #{xy} series\n\n#{entry}")
+    end
+    if data != orig_data
+      diff =  Diffy::Diff.new(orig_data, data)
+      show_diff(filename, diff)
+    end
+  end
+
+  def self.show_diff(filename, diff)
+    diff.each_with_index do |line, index|
+      case index
+      when 0
+        line.sub!(/\A--- (.*)\t(\d+-\d+-\d+ [0-9:.]+ [\-+]\d+)\Z/) do
+          "--- a/#{filename}\t#{$2}"
+        end
+      when 1
+        line.sub!(/\A\+\+\+ (.*)\t(\d+-\d+-\d+ [0-9:.]+ [\-+]\d+)\Z/) do
+          "+++ b/#{filename}\t#{$2}"
+        end
+      end
+      puts line
+    end
+  end
+end
+
+def main
+  Tarball.parse(ARGF)
+end
+main

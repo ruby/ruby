@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 module Fiddle
   # A mixin that provides methods for parsing C struct and prototype signatures.
   #
@@ -21,6 +21,7 @@ module Fiddle
     # Parses a C struct's members
     #
     # Example:
+    #   require 'fiddle/import'
     #
     #   include Fiddle::CParser
     #     #=> Object
@@ -66,6 +67,7 @@ module Fiddle
     # be looked up.
     #
     # Example:
+    #   require 'fiddle/import'
     #
     #   include Fiddle::CParser
     #     #=> Object
@@ -102,6 +104,7 @@ module Fiddle
     # value will be the C type to be looked up.
     #
     # Example:
+    #   require 'fiddle/import'
     #
     #   include Fiddle::CParser
     #     #=> Object

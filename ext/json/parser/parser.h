@@ -39,6 +39,7 @@ typedef struct JSON_ParserStruct {
     int symbolize_names;
     VALUE object_class;
     VALUE array_class;
+    VALUE decimal_class;
     int create_additions;
     VALUE match_string;
     FBuffer *fbuffer;

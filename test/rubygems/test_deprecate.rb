@@ -45,6 +45,7 @@ class TestDeprecate < Gem::TestCase
   end
 
   class Thing
+
     extend Gem::Deprecate
     attr_accessor :message
     def foo
@@ -54,6 +55,7 @@ class TestDeprecate < Gem::TestCase
       @message = "bar"
     end
     deprecate :foo, :bar, 2099, 3
+
   end
 
   def test_deprecated_method_calls_the_old_method
@@ -74,4 +76,5 @@ class TestDeprecate < Gem::TestCase
     assert_match(/Thing#foo is deprecated; use bar instead\./, err)
     assert_match(/on or after 2099-03-01/, err)
   end
+
 end

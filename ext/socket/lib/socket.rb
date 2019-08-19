@@ -77,7 +77,7 @@ class Addrinfo
       sock
     end
   end
-  private :connect_internal
+  protected :connect_internal
 
   # :call-seq:
   #   addrinfo.connect_from([local_addr_args], [opts]) {|socket| ... }
@@ -158,7 +158,7 @@ class Addrinfo
   #
   def connect_to(*args, timeout: nil, &block)
     remote_addrinfo = family_addrinfo(*args)
-    remote_addrinfo.send(:connect_internal, self, timeout, &block)
+    remote_addrinfo.connect_internal(self, timeout, &block)
   end
 
   # creates a socket bound to self.
@@ -336,6 +336,7 @@ class BasicSocket < IO
   # === Parameters
   # * +maxlen+ - the number of bytes to receive from the socket
   # * +flags+ - zero or more of the +MSG_+ options
+  # * +buf+ - destination String buffer
   # * +options+ - keyword hash, supporting `exception: false`
   #
   # === Example
@@ -441,6 +442,19 @@ class BasicSocket < IO
   def recvmsg_nonblock(dlen = nil, flags = 0, clen = nil,
                        scm_rights: false, exception: true)
     __recvmsg_nonblock(dlen, flags, clen, scm_rights, exception)
+  end
+
+  # Linux-specific optimizations to avoid fcntl for IO#read_nonblock
+  # and IO#write_nonblock using MSG_DONTWAIT
+  # Do other platforms support MSG_DONTWAIT reliably?
+  if RUBY_PLATFORM =~ /linux/ && Socket.const_defined?(:MSG_DONTWAIT)
+    def read_nonblock(len, str = nil, exception: true) # :nodoc:
+      __read_nonblock(len, str, exception)
+    end
+
+    def write_nonblock(buf, exception: true) # :nodoc:
+      __write_nonblock(buf, exception)
+    end
   end
 end
 
@@ -897,6 +911,7 @@ class Socket < BasicSocket
         ip_list << ai
       end
     }
+    ip_list.uniq!(&:to_sockaddr)
 
     if port == 0
       sockets = ip_sockets_port0(ip_list, false)

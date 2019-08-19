@@ -440,7 +440,7 @@ rb_fiddle_ptr_inspect(VALUE self)
 
     TypedData_Get_Struct(self, struct ptr_data, &fiddle_ptr_data_type, data);
     return rb_sprintf("#<%"PRIsVALUE":%p ptr=%p size=%ld free=%p>",
-		      RB_OBJ_CLASSNAME(self), data, data->ptr, data->size, data->free);
+		      RB_OBJ_CLASSNAME(self), (void *)data, data->ptr, data->size, (void *)data->free);
 }
 
 /*
@@ -677,6 +677,7 @@ rb_fiddle_ptr_s_to_ptr(VALUE self, VALUE val)
 void
 Init_fiddle_pointer(void)
 {
+#undef rb_intern
     id_to_ptr = rb_intern("to_ptr");
 
     /* Document-class: Fiddle::Pointer

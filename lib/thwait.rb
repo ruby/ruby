@@ -5,8 +5,7 @@
 #       $Revision: 1.3 $
 #       by Keiju ISHITSUKA(Nihon Rational Software Co.,Ltd.)
 
-require "thread.rb"
-require "e2mmap.rb"
+require "e2mmap"
 
 #
 # This class watches for termination of multiple threads.  Basic functionality

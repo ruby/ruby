@@ -3,6 +3,7 @@ require 'test/unit'
 require 'resolv'
 require 'socket'
 require 'tempfile'
+require 'minitest/mock'
 
 class TestResolvDNS < Test::Unit::TestCase
   def setup
@@ -158,7 +159,7 @@ class TestResolvDNS < Test::Unit::TestCase
     u.bind("127.0.0.1", 0)
     _, port, _, host = u.addr
     u.close
-    # A rase condition here.
+    # A race condition here.
     # Another program may use the port.
     # But no way to prevent it.
     Timeout.timeout(5) do
@@ -175,6 +176,16 @@ class TestResolvDNS < Test::Unit::TestCase
       tmpfile.close
       assert_nothing_raised(ArgumentError, bug9273) do
         Resolv::DNS::Config.parse_resolv_conf(tmpfile.path)
+      end
+    end
+  end
+
+  def test_resolv_conf_by_command
+    Dir.mktmpdir do |dir|
+      Dir.chdir(dir) do
+        assert_raise(Errno::ENOENT, Errno::EINVAL) do
+          Resolv::DNS::Config.parse_resolv_conf("|echo foo")
+        end
       end
     end
   end
@@ -201,8 +212,24 @@ class TestResolvDNS < Test::Unit::TestCase
 
   def test_ipv6_create
     ref = '[Bug #11910] [ruby-core:72559]'
-    assert_instance_of Resolv::IPv6, Resolv::IPv6.create('::1')
-    assert_instance_of Resolv::IPv6, Resolv::IPv6.create('::1:127.0.0.1')
+    assert_instance_of Resolv::IPv6, Resolv::IPv6.create('::1'), ref
+    assert_instance_of Resolv::IPv6, Resolv::IPv6.create('::1:127.0.0.1'), ref
+  end
+
+  def test_ipv6_to_s
+    test_cases = [
+      ["2001::abcd:abcd:abcd", "2001::ABcd:abcd:ABCD"],
+      ["2001:db8::1", "2001:db8::0:1"],
+      ["::", "0:0:0:0:0:0:0:0"],
+      ["2001::", "2001::0"],
+      ["2001:db8::1:1:1:1:1", "2001:db8:0:1:1:1:1:1"],
+      ["1::1:0:0:0:1", "1:0:0:1:0:0:0:1"],
+      ["1::1:0:0:1", "1:0:0:0:1:0:0:1"],
+    ]
+
+    test_cases.each do |expected, ipv6|
+      assert_equal expected, Resolv::IPv6.create(ipv6).to_s
+    end
   end
 
   def test_ipv6_should_be_16
@@ -235,5 +262,47 @@ class TestResolvDNS < Test::Unit::TestCase
       }
     }
     assert_operator(2**14, :<, m.to_s.length)
+  end
+
+  def assert_no_fd_leak
+    socket = assert_throw(self) do |tag|
+      Resolv::DNS.stub(:bind_random_port, ->(s, *) {throw(tag, s)}) do
+        yield.getname("8.8.8.8")
+      end
+    end
+
+    assert_predicate(socket, :closed?, "file descriptor leaked")
+  end
+
+  def test_no_fd_leak_connected
+    assert_no_fd_leak {Resolv::DNS.new(nameserver_port: [['127.0.0.1', 53]])}
+  end
+
+  def test_no_fd_leak_unconnected
+    assert_no_fd_leak {Resolv::DNS.new}
+  end
+
+  def test_each_name
+    dns = Resolv::DNS.new
+    def dns.each_resource(name, typeclass)
+      yield typeclass.new(name)
+    end
+
+    dns.each_name('127.0.0.1') do |ptr|
+      assert_equal('1.0.0.127.in-addr.arpa', ptr.to_s)
+    end
+    dns.each_name(Resolv::IPv4.create('127.0.0.1')) do |ptr|
+      assert_equal('1.0.0.127.in-addr.arpa', ptr.to_s)
+    end
+    dns.each_name('::1') do |ptr|
+      assert_equal('1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa', ptr.to_s)
+    end
+    dns.each_name(Resolv::IPv6.create('::1')) do |ptr|
+      assert_equal('1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa', ptr.to_s)
+    end
+    dns.each_name(Resolv::DNS::Name.create('1.0.0.127.in-addr.arpa.')) do |ptr|
+      assert_equal('1.0.0.127.in-addr.arpa', ptr.to_s)
+    end
+    assert_raise(Resolv::ResolvError) { dns.each_name('example.com') }
   end
 end

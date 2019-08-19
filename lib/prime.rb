@@ -35,7 +35,7 @@ class Integer
     return self >= 2 if self <= 3
     return true if self == 5
     return false unless 30.gcd(self) == 1
-    (7..Math.sqrt(self).to_i).step(30) do |p|
+    (7..Integer.sqrt(self)).step(30) do |p|
       return false if
         self%(p)    == 0 || self%(p+4)  == 0 || self%(p+6)  == 0 || self%(p+10) == 0 ||
         self%(p+12) == 0 || self%(p+16) == 0 || self%(p+22) == 0 || self%(p+24) == 0
@@ -95,6 +95,9 @@ end
 #   has many prime factors. e.g. for Prime#prime? .
 
 class Prime
+
+  VERSION = "0.1.0"
+
   include Enumerable
   include Singleton
 
@@ -280,9 +283,9 @@ class Prime
     end
 
     # see +Enumerator+#with_index.
-    def with_index(offset = 0)
-      return enum_for(:with_index, offset) { Float::INFINITY } unless block_given?
-      return each_with_index(&proc) if offset == 0
+    def with_index(offset = 0, &block)
+      return enum_for(:with_index, offset) { Float::INFINITY } unless block
+      return each_with_index(&block) if offset == 0
 
       each do |prime|
         yield prime, offset
@@ -388,13 +391,6 @@ class Prime
       @ulticheck_next_squared = 121   # @primes[@ulticheck_index + 1] ** 2
     end
 
-    # Returns the cached prime numbers.
-    def cache
-      @primes
-    end
-    alias primes cache
-    alias primes_so_far cache
-
     # Returns the +index+th prime number.
     #
     # +index+ is a 0-based index.
@@ -419,7 +415,7 @@ class Prime
     end
   end
 
-  # Internal use. An implementation of eratosthenes' sieve
+  # Internal use. An implementation of Eratosthenes' sieve
   class EratosthenesSieve
     include Singleton
 
@@ -445,7 +441,7 @@ class Prime
 
       segment_min = @max_checked
       segment_max = [segment_min + max_segment_size, max_cached_prime * 2].min
-      root = Integer(Math.sqrt(segment_max).floor)
+      root = Integer.sqrt(segment_max)
 
       segment = ((segment_min + 1) .. segment_max).step(2).to_a
 

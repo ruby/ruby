@@ -1,1 +1,1 @@
-require_relative '../bm_app_aobench.rb'
+require_relative '../app_aobench'

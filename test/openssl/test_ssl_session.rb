@@ -1,57 +1,15 @@
 # frozen_string_literal: false
 require_relative "utils"
 
-if defined?(OpenSSL::TestUtils)
+if defined?(OpenSSL)
 
 class OpenSSL::TestSSLSession < OpenSSL::SSLTestCase
-  def test_session_equals
-    session = OpenSSL::SSL::Session.new <<-SESSION
------BEGIN SSL SESSION PARAMETERS-----
-MIIDFgIBAQICAwEEAgA5BCCY3pW6iTkPoD5SENuztz/gZjhvey6XnHbsxd22k0Ol
-dgQw8uaN3hCRnlhoIKPWInCFzrp/tQsDRFs9jDjc9pwpy/oKHmJdQQMQA1g8FYnO
-gpdVoQYCBE52ikKiBAICASyjggKOMIICijCCAXKgAwIBAgIBAjANBgkqhkiG9w0B
-AQUFADA9MRMwEQYKCZImiZPyLGQBGRYDb3JnMRkwFwYKCZImiZPyLGQBGRYJcnVi
-eS1sYW5nMQswCQYDVQQDDAJDQTAeFw0xMTA5MTkwMDE4MTBaFw0xMTA5MTkwMDQ4
-MTBaMEQxEzARBgoJkiaJk/IsZAEZFgNvcmcxGTAXBgoJkiaJk/IsZAEZFglydWJ5
-LWxhbmcxEjAQBgNVBAMMCWxvY2FsaG9zdDCBnzANBgkqhkiG9w0BAQEFAAOBjQAw
-gYkCgYEAy8LEsNRApz7U/j5DoB4XBgO9Z8Atv5y/OVQRp0ag8Tqo1YewsWijxEWB
-7JOATwpBN267U4T1nPZIxxEEO7n/WNa2ws9JWsjah8ssEBFSxZqdXKSLf0N4Hi7/
-GQ/aYoaMCiQ8jA4jegK2FJmXM71uPe+jFN/peeBOpRfyXxRFOYcCAwEAAaMSMBAw
-DgYDVR0PAQH/BAQDAgWgMA0GCSqGSIb3DQEBBQUAA4IBAQARC7GP7InX1t7VEXz2
-I8RI57S0/HSJL4fDIYP3zFpitHX1PZeo+7XuzMilvPjjBo/ky9Jzo8TYiY+N+JEz
-mY/A/zPA4ZsJ7KYj6/FEdIc/vRlS0CvsbClbNjw1jl/PoB2FLr2b3uuBcZEsyZeP
-yq154ijq37Ajf8K5Mi5FgshoP41BPtRPj+VVf61rv1IcEnNWdDCS6DR4XsaNC+zt
-G6AqCqkytIXWRuDw6n6vYLF3A/tn2sldLo7/scY0PMDNbo63O/LTxkDHmPhSkD68
-8m9SsMeTR+RCiDEZWFPVcAH/8mDfi+5k8uN3qS+gOU/PPrmHGgl5ykiSFgqs4v61
-tddwpBAEDjcwMzA5NTYzMTU1MzAwpQMCARM=
------END SSL SESSION PARAMETERS-----
-    SESSION
-
-    start_server(ignore_listener_error: true) { |_, port|
-      ctx = OpenSSL::SSL::SSLContext.new
-      ctx.session_cache_mode = OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT
-      ctx.session_id_context = self.object_id.to_s
-
-      sock = TCPSocket.new '127.0.0.1', port
-      begin
-        ssl = OpenSSL::SSL::SSLSocket.new sock, ctx
-        ssl.session = session
-
-        assert_equal session, ssl.session
-      ensure
-        sock.close
-      end
-    }
-  end
-
   def test_session
-    Timeout.timeout(5) do
-      start_server do |server, port|
-        sock = TCPSocket.new("127.0.0.1", port)
-        ctx = OpenSSL::SSL::SSLContext.new("TLSv1")
-        ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
-        ssl.sync_close = true
-        ssl.connect
+    pend "TLS 1.2 is not supported" unless tls12_supported?
+
+    ctx_proc = proc { |ctx| ctx.ssl_version = :TLSv1_2 }
+    start_server(ctx_proc: ctx_proc) do |port|
+      server_connect_with_session(port, nil, nil) { |ssl|
         session = ssl.session
         assert(session == OpenSSL::SSL::Session.new(session.to_pem))
         assert(session == OpenSSL::SSL::Session.new(ssl))
@@ -68,8 +26,7 @@ tddwpBAEDjcwMzA5NTYzMTU1MzAwpQMCARM=
         pem.gsub!(/-----(BEGIN|END) SSL SESSION PARAMETERS-----/, '').gsub!(/[\r\n]+/m, '')
         assert_equal(session.to_der, pem.unpack('m*')[0])
         assert_not_nil(session.to_text)
-        ssl.close
-      end
+      }
     end
   end
 
@@ -150,230 +107,293 @@ __EOS__
 
   def test_session_exts_read
     assert(OpenSSL::SSL::Session.new(DUMMY_SESSION))
-  end if OpenSSL::OPENSSL_VERSION_NUMBER >= 0x009080bf
+  end
 
-  def test_client_session
-    last_session = nil
-    start_server do |server, port|
-      2.times do
-        sock = TCPSocket.new("127.0.0.1", port)
-        # Debian's openssl 0.9.8g-13 failed at assert(ssl.session_reused?),
-        # when use default SSLContext. [ruby-dev:36167]
-        ctx = OpenSSL::SSL::SSLContext.new("TLSv1")
-        ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
-        ssl.sync_close = true
-        ssl.session = last_session if last_session
-        ssl.connect
+  def test_resumption
+    non_resumable = nil
+    start_server { |port|
+      server_connect_with_session(port, nil, nil) { |ssl|
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+        non_resumable = ssl.session
+      }
+    }
 
-        session = ssl.session
-        if last_session
-          assert(ssl.session_reused?)
-          assert_equal(session.id, last_session.id)
-          assert_equal(session.to_pem, last_session.to_pem)
-          assert_equal(session.to_der, last_session.to_der)
-          # Older version of OpenSSL may not be consistent.  Look up which versions later.
-          assert_equal(session.to_text, last_session.to_text)
-        else
-          assert(!ssl.session_reused?)
-        end
-        last_session = session
+    ctx_proc = proc { |ctx|
+      ctx.options &= ~OpenSSL::SSL::OP_NO_TICKET
+      # Disable server-side session cache which is enabled by default
+      ctx.session_cache_mode = OpenSSL::SSL::SSLContext::SESSION_CACHE_OFF
+    }
+    start_server(ctx_proc: ctx_proc) do |port|
+      sess1 = server_connect_with_session(port, nil, nil) { |ssl|
+        ssl.puts("abc"); assert_equal "abc\n", ssl.gets
+        assert_equal false, ssl.session_reused?
+        ssl.session
+      }
 
-        str = "x" * 100 + "\n"
-        ssl.puts(str)
-        assert_equal(str, ssl.gets)
+      server_connect_with_session(port, nil, non_resumable) { |ssl|
+        ssl.puts("abc"); assert_equal "abc\n", ssl.gets
+        assert_equal false, ssl.session_reused?
+      }
 
-        ssl.close
-      end
+      server_connect_with_session(port, nil, sess1) { |ssl|
+        ssl.puts("abc"); assert_equal "abc\n", ssl.gets
+        assert_equal true, ssl.session_reused?
+      }
     end
   end
 
-  def test_server_session
-    connections = 0
-    saved_session = nil
+  def test_server_session_cache
+    pend "TLS 1.2 is not supported" unless tls12_supported?
 
-    ctx_proc = Proc.new do |ctx, ssl|
-# add test for session callbacks here
+    ctx_proc = Proc.new do |ctx|
+      ctx.ssl_version = :TLSv1_2
+      ctx.options |= OpenSSL::SSL::OP_NO_TICKET
     end
 
+    connections = nil
+    saved_session = nil
     server_proc = Proc.new do |ctx, ssl|
-      session = ssl.session
       stats = ctx.session_cache_stats
 
       case connections
       when 0
-        assert_equal(stats[:cache_num], 1)
-        assert_equal(stats[:cache_hits], 0)
-        assert_equal(stats[:cache_misses], 0)
-        assert(!ssl.session_reused?)
+        assert_equal false, ssl.session_reused?
+        assert_equal 1, stats[:cache_num]
+        assert_equal 0, stats[:cache_hits]
+        assert_equal 0, stats[:cache_misses]
       when 1
-        assert_equal(stats[:cache_num], 1)
-        assert_equal(stats[:cache_hits], 1)
-        assert_equal(stats[:cache_misses], 0)
-        assert(ssl.session_reused?)
-        ctx.session_remove(session)
-        saved_session = session.to_der
+        assert_equal true, ssl.session_reused?
+        assert_equal 1, stats[:cache_num]
+        assert_equal 1, stats[:cache_hits]
+        assert_equal 0, stats[:cache_misses]
+
+        saved_session = ssl.session
+        assert_equal true, ctx.session_remove(ssl.session)
       when 2
-        assert_equal(stats[:cache_num], 1)
-        assert_equal(stats[:cache_hits], 1)
-        assert_equal(stats[:cache_misses], 1)
-        assert(!ssl.session_reused?)
-        ctx.session_add(OpenSSL::SSL::Session.new(saved_session))
+        assert_equal false, ssl.session_reused?
+        assert_equal 1, stats[:cache_num]
+        assert_equal 1, stats[:cache_hits]
+        assert_equal 1, stats[:cache_misses]
+
+        assert_equal true, ctx.session_add(saved_session.dup)
       when 3
-        assert_equal(stats[:cache_num], 2)
-        assert_equal(stats[:cache_hits], 2)
-        assert_equal(stats[:cache_misses], 1)
-        assert(ssl.session_reused?)
+        assert_equal true, ssl.session_reused?
+        assert_equal 2, stats[:cache_num]
+        assert_equal 2, stats[:cache_hits]
+        assert_equal 1, stats[:cache_misses]
+
         ctx.flush_sessions(Time.now + 10000)
       when 4
-        assert_equal(stats[:cache_num], 1)
-        assert_equal(stats[:cache_hits], 2)
-        assert_equal(stats[:cache_misses], 2)
-        assert(!ssl.session_reused?)
-        ctx.session_add(OpenSSL::SSL::Session.new(saved_session))
+        assert_equal false, ssl.session_reused?
+        assert_equal 1, stats[:cache_num]
+        assert_equal 2, stats[:cache_hits]
+        assert_equal 2, stats[:cache_misses]
+
+        assert_equal true, ctx.session_add(saved_session.dup)
       end
-      connections += 1
 
       readwrite_loop(ctx, ssl)
     end
 
-    first_session = nil
-    start_server(ctx_proc: ctx_proc, server_proc: server_proc) do |server, port|
+    start_server(ctx_proc: ctx_proc, server_proc: server_proc) do |port|
+      first_session = nil
       10.times do |i|
-        sock = TCPSocket.new("127.0.0.1", port)
-        ctx = OpenSSL::SSL::SSLContext.new
-        # disable RFC4507 support
-        ctx.options = OpenSSL::SSL::OP_NO_TICKET
-        ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
-        ssl.sync_close = true
-        ssl.session = first_session if first_session
-        ssl.connect
+        connections = i
+        cctx = OpenSSL::SSL::SSLContext.new
+        cctx.ssl_version = :TLSv1_2
+        server_connect_with_session(port, cctx, first_session) { |ssl|
+          ssl.puts("abc"); assert_equal "abc\n", ssl.gets
+          first_session ||= ssl.session
 
-        session = ssl.session
-        if first_session
-          case i
-          when 1; assert(ssl.session_reused?)
-          when 2; assert(!ssl.session_reused?)
-          when 3; assert(ssl.session_reused?)
-          when 4; assert(!ssl.session_reused?)
-          when 5..10; assert(ssl.session_reused?)
+          case connections
+          when 0;
+          when 1; assert_equal true, ssl.session_reused?
+          when 2; assert_equal false, ssl.session_reused?
+          when 3; assert_equal true, ssl.session_reused?
+          when 4; assert_equal false, ssl.session_reused?
+          when 5..9; assert_equal true, ssl.session_reused?
           end
-        end
-        first_session ||= session
-
-        str = "x" * 100 + "\n"
-        ssl.puts(str)
-        assert_equal(str, ssl.gets)
-
-        ssl.close
+        }
       end
     end
   end
 
+  # Skipping tests that use session_remove_cb by default because it may cause
+  # deadlock.
+  TEST_SESSION_REMOVE_CB = ENV["OSSL_TEST_ALL"] == "1"
+
   def test_ctx_client_session_cb
-    called = {}
-    ctx = OpenSSL::SSL::SSLContext.new
-    ctx.session_cache_mode = OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT
+    pend "TLS 1.2 is not supported" unless tls12_supported?
 
-    ctx.session_new_cb = lambda { |ary|
-      sock, sess = ary
-      called[:new] = [sock, sess]
-    }
+    ctx_proc = proc { |ctx| ctx.ssl_version = :TLSv1_2 }
+    start_server(ctx_proc: ctx_proc) do |port|
+      called = {}
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.session_cache_mode = OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT
+      ctx.session_new_cb = lambda { |ary|
+        sock, sess = ary
+        called[:new] = [sock, sess]
+      }
+      if TEST_SESSION_REMOVE_CB
+        ctx.session_remove_cb = lambda { |ary|
+          ctx, sess = ary
+          called[:remove] = [ctx, sess]
+          # any resulting value is OK (ignored)
+        }
+      end
 
-    ctx.session_remove_cb = lambda { |ary|
-      ctx, sess = ary
-      called[:remove] = [ctx, sess]
-      # any resulting value is OK (ignored)
-    }
-
-    start_server do |server, port|
-      sock = TCPSocket.new("127.0.0.1", port)
-      begin
-        ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
-        ssl.sync_close = true
-        ssl.connect
+      server_connect_with_session(port, ctx, nil) { |ssl|
         assert_equal(1, ctx.session_cache_stats[:cache_num])
         assert_equal(1, ctx.session_cache_stats[:connect_good])
         assert_equal([ssl, ssl.session], called[:new])
         assert(ctx.session_remove(ssl.session))
         assert(!ctx.session_remove(ssl.session))
-        assert_equal([ctx, ssl.session], called[:remove])
-        ssl.close
-      ensure
-        sock.close if !sock.closed?
-      end
+        if TEST_SESSION_REMOVE_CB
+          assert_equal([ctx, ssl.session], called[:remove])
+        end
+      }
     end
   end
 
   def test_ctx_server_session_cb
-    called = {}
+    pend "TLS 1.2 is not supported" unless tls12_supported?
 
-    ctx_proc = Proc.new { |ctx, ssl|
-      ctx.session_cache_mode = OpenSSL::SSL::SSLContext::SESSION_CACHE_SERVER
-      ctx.options = OpenSSL::SSL::OP_NO_TICKET
-      last_server_session = nil
+    connections = nil
+    called = {}
+    cctx = OpenSSL::SSL::SSLContext.new
+    cctx.ssl_version = :TLSv1_2
+    sctx = nil
+    ctx_proc = Proc.new { |ctx|
+      sctx = ctx
+      ctx.ssl_version = :TLSv1_2
+      ctx.options |= OpenSSL::SSL::OP_NO_TICKET
 
       # get_cb is called whenever a client proposed to resume a session but
       # the session could not be found in the internal session cache.
+      last_server_session = nil
       ctx.session_get_cb = lambda { |ary|
-        sess, data = ary
-        if last_server_session
-          called[:get2] = [sess, data]
-          last_server_session
+        _sess, data = ary
+        called[:get] = data
+
+        if connections == 2
+          last_server_session.dup
         else
-          called[:get1] = [sess, data]
-          last_server_session = sess
           nil
         end
       }
 
       ctx.session_new_cb = lambda { |ary|
-        sock, sess = ary
-        called[:new] = [sock, sess]
-        # SSL server doesn't cache sessions so get_cb is called next time.
-        ctx.session_remove(sess)
+        _sock, sess = ary
+        called[:new] = sess
+        last_server_session = sess
       }
 
-      ctx.session_remove_cb = lambda { |ary|
-        ctx, sess = ary
-        called[:remove] = [ctx, sess]
+      if TEST_SESSION_REMOVE_CB
+        ctx.session_remove_cb = lambda { |ary|
+          _ctx, sess = ary
+          called[:remove] = sess
+        }
+      end
+    }
+    start_server(ctx_proc: ctx_proc) do |port|
+      connections = 0
+      sess0 = server_connect_with_session(port, cctx, nil) { |ssl|
+        ssl.puts("abc"); assert_equal "abc\n", ssl.gets
+        assert_equal false, ssl.session_reused?
+        ssl.session
       }
-    }
+      assert_nil called[:get]
+      assert_not_nil called[:new]
+      assert_equal sess0.id, called[:new].id
+      if TEST_SESSION_REMOVE_CB
+        assert_nil called[:remove]
+      end
+      called.clear
 
-    server_proc = Proc.new { |c, ssl|
-      ssl.session
-      c.session_cache_stats
-      readwrite_loop(c, ssl)
-    }
-    start_server(ctx_proc: ctx_proc, server_proc: server_proc) do |server, port|
-      last_client_session = nil
-      3.times do
-        sock = TCPSocket.new("127.0.0.1", port)
-        begin
-          ssl = OpenSSL::SSL::SSLSocket.new(sock, OpenSSL::SSL::SSLContext.new())
-          ssl.sync_close = true
-          ssl.session = last_client_session if last_client_session
-          ssl.connect
-          last_client_session = ssl.session
-          ssl.close
-          Timeout.timeout(5) do
-            Thread.pass until called.key?(:new)
-            assert(called.delete(:new))
-            Thread.pass until called.key?(:remove)
-            assert(called.delete(:remove))
-          end
-        ensure
-          sock.close if !sock.closed?
+      # Internal cache hit
+      connections = 1
+      server_connect_with_session(port, cctx, sess0.dup) { |ssl|
+        ssl.puts("abc"); assert_equal "abc\n", ssl.gets
+        assert_equal true, ssl.session_reused?
+        ssl.session
+      }
+      assert_nil called[:get]
+      assert_nil called[:new]
+      if TEST_SESSION_REMOVE_CB
+        assert_nil called[:remove]
+      end
+      called.clear
+
+      sctx.flush_sessions(Time.now + 10000)
+      if TEST_SESSION_REMOVE_CB
+        assert_not_nil called[:remove]
+        assert_equal sess0.id, called[:remove].id
+      end
+      called.clear
+
+      # External cache hit
+      connections = 2
+      sess2 = server_connect_with_session(port, cctx, sess0.dup) { |ssl|
+        ssl.puts("abc"); assert_equal "abc\n", ssl.gets
+        if !ssl.session_reused? && openssl?(1, 1, 0) && !openssl?(1, 1, 0, 7)
+          # OpenSSL >= 1.1.0, < 1.1.0g
+          pend "External session cache is not working; " \
+            "see https://github.com/openssl/openssl/pull/4014"
         end
+        assert_equal true, ssl.session_reused?
+        ssl.session
+      }
+      assert_equal sess0.id, sess2.id
+      assert_equal sess0.id, called[:get]
+      assert_nil called[:new]
+      if TEST_SESSION_REMOVE_CB
+        assert_nil called[:remove]
+      end
+      called.clear
+
+      sctx.flush_sessions(Time.now + 10000)
+      if TEST_SESSION_REMOVE_CB
+        assert_not_nil called[:remove]
+        assert_equal sess0.id, called[:remove].id
+      end
+      called.clear
+
+      # Cache miss
+      connections = 3
+      sess3 = server_connect_with_session(port, cctx, sess0.dup) { |ssl|
+        ssl.puts("abc"); assert_equal "abc\n", ssl.gets
+        assert_equal false, ssl.session_reused?
+        ssl.session
+      }
+      assert_not_equal sess0.id, sess3.id
+      assert_equal sess0.id, called[:get]
+      assert_not_nil called[:new]
+      assert_equal sess3.id, called[:new].id
+      if TEST_SESSION_REMOVE_CB
+        assert_nil called[:remove]
       end
     end
-    assert(called[:get1])
-    assert(called[:get2])
   end
 
   def test_dup
     sess_orig = OpenSSL::SSL::Session.new(DUMMY_SESSION)
     sess_dup = sess_orig.dup
     assert_equal(sess_orig.to_der, sess_dup.to_der)
+  end
+
+  private
+
+  def server_connect_with_session(port, ctx = nil, sess = nil)
+    sock = TCPSocket.new("127.0.0.1", port)
+    ctx ||= OpenSSL::SSL::SSLContext.new
+    ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+    ssl.session = sess if sess
+    ssl.sync_close = true
+    ssl.connect
+    yield ssl if block_given?
+  ensure
+    ssl&.close
+    sock&.close
   end
 end
 

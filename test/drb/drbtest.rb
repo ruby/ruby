@@ -7,32 +7,44 @@ require 'timeout'
 module DRbTests
 
 class DRbService
-  @@manager = DRb::ExtServManager.new
   @@ruby = [EnvUtil.rubybin]
   @@ruby << "-d" if $DEBUG
   def self.add_service_command(nm)
     dir = File.dirname(File.expand_path(__FILE__))
+    if /ssl/ =~ nm && RUBY_PLATFORM =~ /solaris/i
+      @@ruby[1..-1] = "-dv"
+    end
     DRb::ExtServManager.command[nm] = @@ruby + ["#{dir}/#{nm}"]
   end
 
-  %w(ut_drb.rb ut_array.rb ut_port.rb ut_large.rb ut_safe1.rb ut_eval.rb ut_eq.rb).each do |nm|
+  %w(ut_drb.rb ut_array.rb ut_port.rb ut_large.rb ut_safe1.rb ut_eq.rb).each do |nm|
     add_service_command(nm)
   end
-  @server = @@server = DRb::DRbServer.new('druby://localhost:0', @@manager, {})
-  @@manager.uri = @@server.uri
-  def self.manager
-    @@manager
+
+  def initialize
+    @manager = DRb::ExtServManager.new
+    start
+    @manager.uri = server.uri
   end
-  def self.server
-    @server || @@server
+
+  def start
+    @server = DRb::DRbServer.new('druby://localhost:0', manager, {})
   end
-  def self.ext_service(name)
+
+  attr_reader :manager
+  attr_reader :server
+
+  def ext_service(name)
     Timeout.timeout(100, RuntimeError) do
       manager.service(name)
     end
   end
-  def self.finish
-    @server.instance_variable_get(:@grp).list.each {|th| th.join }
+
+  def finish
+    server.instance_variable_get(:@grp).list.each {|th| th.join }
+    server.stop_service
+    manager.instance_variable_get(:@queue)&.push(nil)
+    manager.instance_variable_get(:@thread)&.join
   end
 end
 
@@ -68,35 +80,42 @@ class XArray < Array
 end
 
 module DRbBase
+  def setup
+    @drb_service ||= DRbService.new
+  end
+
   def setup_service(service_name)
     @service_name = service_name
-    @ext = DRbService.ext_service(@service_name)
+    @ext = @drb_service.ext_service(@service_name)
     @there = @ext.front
   end
 
   def teardown
     @ext.stop_service if defined?(@ext) && @ext
-    DRbService.manager.unregist(@service_name)
-    while (@there&&@there.to_s rescue nil)
-      # nop
-    end
-    signal = /mswin|mingw/ =~ RUBY_PLATFORM ? :KILL : :TERM
-    Thread.list.each {|th|
-      if th.respond_to?(:pid) && th[:drb_service] == @service_name
-        10.times do
-          begin
-            Process.kill signal, th.pid
-            break
-          rescue Errno::ESRCH
-            break
-          rescue Errno::EPERM # on Windows
-            sleep 0.1
-            retry
-          end
-        end
-        th.join
+    if defined?(@service_name) && @service_name
+      @drb_service.manager.unregist(@service_name)
+      while (@there&&@there.to_s rescue nil)
+        # nop
       end
-    }
+      signal = /mswin|mingw/ =~ RUBY_PLATFORM ? :KILL : :TERM
+      Thread.list.each {|th|
+        if th.respond_to?(:pid) && th[:drb_service] == @service_name
+          10.times do
+            begin
+              Process.kill signal, th.pid
+              break
+            rescue Errno::ESRCH
+              break
+            rescue Errno::EPERM # on Windows
+              sleep 0.1
+              retry
+            end
+          end
+          th.join
+        end
+      }
+    end
+    @drb_service&.finish
   end
 end
 
@@ -124,10 +143,10 @@ module DRbCore
     ary = @there.to_a
     assert_kind_of(DRb::DRbObject, ary)
 
-    assert(@there.respond_to?(:to_a, true))
-    assert(@there.respond_to?(:eval, true))
-    assert(! @there.respond_to?(:eval, false))
-    assert(! @there.respond_to?(:eval))
+    assert_respond_to(@there, [:to_a, true])
+    assert_respond_to(@there, [:eval, true])
+    assert_not_respond_to(@there, [:eval, false])
+    assert_not_respond_to(@there, :eval)
   end
 
   def test_01_02_loop
@@ -171,23 +190,23 @@ module DRbCore
 
   def test_04
     assert_respond_to(@there, 'sum')
-    assert(!(@there.respond_to? "foobar"))
+    assert_not_respond_to(@there, "foobar")
   end
 
   def test_05_eq
     a = @there.to_a[0]
     b = @there.to_a[0]
-    assert(a.object_id != b.object_id)
-    assert(a == b)
+    assert_not_same(a, b)
     assert_equal(a, b)
-    assert(a == @there)
+    assert_equal(a, @there)
     assert_equal(a.hash, b.hash)
     assert_equal(a.hash, @there.hash)
-    assert(a.eql?(b))
-    assert(a.eql?(@there))
+    assert_operator(a, :eql?, b)
+    assert_operator(a, :eql?, @there)
   end
 
   def test_06_timeout
+    skip if RUBY_PLATFORM.include?("armv7l-linux")
     ten = Onecky.new(10)
     assert_raise(Timeout::Error) do
       @there.do_timeout(ten)

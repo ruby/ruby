@@ -1,0 +1,111 @@
+#
+# Wercker is dedicated for testing MJIT. Please use Travis or AppVeyor for non-MJIT testing.
+# This runs all Ruby tests with --jit, or --jit-wait which synchronously JITs all methods.
+#
+box: ruby:2.5-stretch
+no-response-timeout: 30
+command-timeout: 60
+
+# --jit + --jit-wait (test, test-spec)
+mjit-test1:
+  steps:
+    - install-packages:
+        packages: bison sudo
+    - script:
+        name: workaround ipv6 localhost
+        code: ruby -e "hosts = File.read('/etc/hosts').sub(/^::1\s*localhost.*$/, ''); File.write('/etc/hosts', hosts)"
+    - script:
+        name: create user # some file permission tests don't succeed with root.
+        code: useradd --shell /bin/bash --create-home test && chown -R test:test .
+    - script:
+        name: configure
+        code: /usr/bin/sudo -H -u test -- bash -c 'autoconf && ./configure --disable-install-doc --prefix=/tmp/ruby-prefix'
+    - script:
+        name: make all install
+        code: /usr/bin/sudo -H -u test -- make -j$(nproc) all install
+    - script:
+        name: install mjit-debug-on-fail
+        code: |
+          cat <<'EOS' > /usr/local/bin/mjit-debug-on-fail
+          #!/bin/bash -x
+          if ! "$@"; then
+            git clone --depth=1 git@github.com:ruby/mjit-debug
+            cd mjit-debug
+
+            debug_dir="$(date '+%F_%T')"
+            mkdir "$debug_dir"
+            cp /tmp/_ruby_mjit*.c "$debug_dir"
+
+            git config --global user.email "ruby@app.wercker.com"
+            git config --global user.name "Wercker ruby/ruby"
+            git add "$debug_dir"
+            git commit -m "Debug ${debug_dir}: ${WERCKER_BUILD_URL}"
+            git push origin master
+            exit 1
+          fi
+          EOS
+          chmod +x /usr/local/bin/mjit-debug-on-fail
+    # git push access to ruby/mjit-debug (private repository)
+    - add-ssh-key:
+        keyname: MJIT_DEBUG
+        host: github.com
+    - add-to-known_hosts:
+        hostname: github.com
+
+    # --jit
+    - script:
+        name: make test (JIT)
+        code: /usr/bin/sudo -H -u test -- make test RUN_OPTS="--disable-gems --jit --jit-warnings"
+    - script:
+        name: make test-spec (JIT)
+        code: /usr/bin/sudo -H -u test -- make test-spec RUN_OPTS="--disable-gems --jit --jit-warnings"
+    - script:
+        name: make test-all (JIT)
+        code: /usr/local/bin/mjit-debug-on-fail /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-verbose=1 --jit-save-temps --jit-warnings" TESTOPTS="-v --color=never --job-status=normal --longest 10 --timeout-scale=3.0 --excludes=test/excludes/_wercker/jit"
+
+    # --jit-wait (test, test-spec)
+    - script:
+        name: make test (JIT wait)
+        code: /usr/bin/sudo -H -u test -- make test RUN_OPTS="--disable-gems --jit-wait --jit-warnings"
+    - script:
+        name: make test-spec (JIT wait)
+        code: /usr/bin/sudo -H -u test -- make test-spec RUN_OPTS="--disable-gems --jit-wait --jit-warnings"
+
+  after-steps:
+    - wantedly/pretty-slack-notify:
+      webhook_url: $SLACK_WEBHOOK_URL
+      username: Wercker mjit-test1
+      channel: alerts
+      notify_on: "failed"
+      branches: ^master$
+
+# --jit-wait (test-all)
+mjit-test2:
+  steps:
+    - install-packages:
+        packages: bison sudo
+    - script:
+        name: workaround ipv6 localhost
+        code: ruby -e "hosts = File.read('/etc/hosts').sub(/^::1\s*localhost.*$/, ''); File.write('/etc/hosts', hosts)"
+    - script:
+        name: create user # some file permission tests don't succeed with root.
+        code: useradd --shell /bin/bash --create-home test && chown -R test:test .
+    - script:
+        name: configure
+        code: /usr/bin/sudo -H -u test -- bash -c 'autoconf && ./configure --disable-install-doc --prefix=/tmp/ruby-prefix'
+    - script:
+        name: make all install
+        code: /usr/bin/sudo -H -u test -- make -j$(nproc) all install
+
+    # --jit-wait (test-all)
+    - script:
+        name: make test-all (JIT wait)
+        code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTOPTS="-v --test-order=random --color=never --job-status=normal --timeout-scale=3.0 --excludes=test/excludes/_wercker/jit-wait"
+
+  after-steps:
+    - wantedly/pretty-slack-notify:
+      webhook_url: $SLACK_WEBHOOK_URL
+      username: Wercker mjit-test2
+      channel: alerts
+      notify_on: "failed"
+      branches: ^master$

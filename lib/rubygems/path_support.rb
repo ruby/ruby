@@ -5,6 +5,7 @@
 # to the rest of RubyGems.
 #
 class Gem::PathSupport
+
   ##
   # The default system path for managing Gems.
   attr_reader :home
@@ -23,11 +24,13 @@ class Gem::PathSupport
   # hashtable, or defaults to ENV, the system environment.
   #
   def initialize(env)
-    @home     = env["GEM_HOME"] || Gem.default_dir
+    @home = env["GEM_HOME"] || Gem.default_dir
 
-    if File::ALT_SEPARATOR then
-      @home   = @home.gsub(File::ALT_SEPARATOR, File::SEPARATOR)
+    if File::ALT_SEPARATOR
+      @home = @home.gsub(File::ALT_SEPARATOR, File::SEPARATOR)
     end
+
+    @home = expand(@home)
 
     @path = split_gem_path env["GEM_PATH"], @home
 
@@ -41,7 +44,7 @@ class Gem::PathSupport
   ##
   # Split the Gem search path (as reported by Gem.path).
 
-  def split_gem_path gpaths, home
+  def split_gem_path(gpaths, home)
     # FIX: it should be [home, *path], not [*path, home]
 
     gem_path = []
@@ -54,7 +57,7 @@ class Gem::PathSupport
         gem_path += default_path
       end
 
-      if File::ALT_SEPARATOR then
+      if File::ALT_SEPARATOR
         gem_path.map! do |this_path|
           this_path.gsub File::ALT_SEPARATOR, File::SEPARATOR
         end
@@ -65,7 +68,7 @@ class Gem::PathSupport
       gem_path = default_path
     end
 
-    gem_path.uniq
+    gem_path.map { |path| expand(path) }.uniq
   end
 
   # Return the default Gem path
@@ -77,4 +80,13 @@ class Gem::PathSupport
     end
     gem_path
   end
+
+  def expand(path)
+    if File.directory?(path)
+      File.realpath(path)
+    else
+      path
+    end
+  end
+
 end

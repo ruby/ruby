@@ -15,7 +15,7 @@
 #
 #   Find.find(ENV["HOME"]) do |path|
 #     if FileTest.directory?(path)
-#       if File.basename(path)[0] == ?.
+#       if File.basename(path).start_with?('.')
 #         Find.prune       # Don't look any further into this directory.
 #       else
 #         next
@@ -55,14 +55,13 @@ module Find
           end
           if s.directory? then
             begin
-              fs = Dir.entries(file, encoding: enc)
+              fs = Dir.children(file, encoding: enc)
             rescue Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG
               raise unless ignore_error
               next
             end
             fs.sort!
             fs.reverse_each {|f|
-              next if f == "." or f == ".."
               f = File.join(file, f)
               ps.unshift f.untaint
             }

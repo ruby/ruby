@@ -102,11 +102,11 @@ class TestSuper < Test::Unit::TestCase
   def test_optional2
     assert_raise(ArgumentError) do
       # call Base#optional with 2 arguments; the 2nd arg is supplied
-      assert_equal(9, Optional2.new.optional(9))
+      Optional2.new.optional(9)
     end
     assert_raise(ArgumentError) do
       # call Base#optional with 2 arguments
-      assert_equal(9, Optional2.new.optional(9, 2))
+      Optional2.new.optional(9, 2)
     end
   end
   def test_optional3
@@ -543,5 +543,21 @@ class TestSuper < Test::Unit::TestCase
     assert_raise_with_message(RuntimeError, "exception in M") {
       c.new
     }
+  end
+
+  class TestFor_super_with_modified_rest_parameter_base
+    def foo *args
+      args
+    end
+  end
+
+  class TestFor_super_with_modified_rest_parameter < TestFor_super_with_modified_rest_parameter_base
+    def foo *args
+      args = 13
+      super
+    end
+  end
+  def test_super_with_modified_rest_parameter
+    assert_equal [13], TestFor_super_with_modified_rest_parameter.new.foo
   end
 end

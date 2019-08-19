@@ -10,9 +10,6 @@
 #
 # --
 
-
-require 'thread'
-
 # = mutex_m.rb
 #
 # When 'mutex_m' is required, any object that extends or includes Mutex_m will
@@ -28,16 +25,23 @@ require 'thread'
 #   obj.extend Mutex_m
 #
 # Or mixin Mutex_m into your module to your class inherit Mutex instance
-# methods.
+# methods --- remember to call super() in your class initialize method.
 #
 #   class Foo
 #     include Mutex_m
+#     def initialize
+#       # ...
+#       super()
+#     end
 #     # ...
 #   end
 #   obj = Foo.new
 #   # this obj can be handled like Mutex
 #
 module Mutex_m
+
+  VERSION = "0.1.0"
+
   def Mutex_m.define_aliases(cl) # :nodoc:
     cl.module_eval %q{
       alias locked? mu_locked?

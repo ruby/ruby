@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 
-class TestIfunless < Test::Unit::TestCase
+class TestIfUnless < Test::Unit::TestCase
   def test_if_unless
     x = 'test';
     assert(if x == x then true else false end)

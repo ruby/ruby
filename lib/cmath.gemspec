@@ -1,16 +1,23 @@
-Gem::Specification.new do |s|
-  s.name = "cmath"
-  s.version = '0.0.1'
-  s.date = '2017-02-02'
-  s.summary = "Provides Trigonometric and Transcendental functions for complex numbers"
-  s.description = "CMath is a library that provides trigonometric and transcendental functions for complex numbers. The functions in this module accept integers, floating-point numbers or complex numbers as arguments."
+# coding: utf-8
+# frozen_string_literal: true
 
-  s.require_path = %w{lib}
-  s.files = %w{cmath.rb}
-  s.required_ruby_version = ">= 2.5.0dev"
+Gem::Specification.new do |spec|
+  spec.name          = "cmath"
+  spec.version       = "1.0.0"
+  spec.authors       = ["Tadayoshi Funaba"]
+  spec.email         = [nil]
 
-  s.authors = ["Tadayoshi Funaba"]
-  s.email = [nil]
-  s.homepage = "https://www.ruby-lang.org"
-  s.license = "BSD-2-Clause"
+  spec.summary       = "Provides Trigonometric and Transcendental functions for complex numbers"
+  spec.description   = "CMath is a library that provides trigonometric and transcendental functions for complex numbers. The functions in this module accept integers, floating-point numbers or complex numbers as arguments."
+  spec.homepage      = "https://github.com/ruby/cmath"
+  spec.license       = "BSD-2-Clause"
+
+  spec.files         = "lib/cmath.rb"
+  spec.bindir        = "exe"
+  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
+  spec.require_paths = ["lib"]
+  spec.required_ruby_version = ">= 2.3.0"
+
+  spec.add_development_dependency "bundler"
+  spec.add_development_dependency "rake"
 end

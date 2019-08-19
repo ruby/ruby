@@ -6,14 +6,14 @@
 
 class Gem::Resolver::GitSpecification < Gem::Resolver::SpecSpecification
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     self.class === other and
       @set  == other.set and
       @spec == other.spec and
       @source == other.source
   end
 
-  def add_dependency dependency # :nodoc:
+  def add_dependency(dependency) # :nodoc:
     spec.dependencies << dependency
   end
 
@@ -21,7 +21,7 @@ class Gem::Resolver::GitSpecification < Gem::Resolver::SpecSpecification
   # Installing a git gem only involves building the extensions and generating
   # the executables.
 
-  def install options = {}
+  def install(options = {})
     require 'rubygems/installer'
 
     installer = Gem::Installer.for_spec spec, options
@@ -35,7 +35,7 @@ class Gem::Resolver::GitSpecification < Gem::Resolver::SpecSpecification
     installer.run_post_install_hooks
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, '[GitSpecification', ']' do
       q.breakable
       q.text "name: #{name}"
@@ -56,4 +56,3 @@ class Gem::Resolver::GitSpecification < Gem::Resolver::SpecSpecification
   end
 
 end
-

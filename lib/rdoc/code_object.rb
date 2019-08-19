@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # Base class for the RDoc code tree.
 #
@@ -68,13 +68,6 @@ class RDoc::CodeObject
   # Hash of arbitrary metadata for this CodeObject
 
   attr_reader :metadata
-
-  ##
-  # Offset in #file where this CodeObject was defined
-  #--
-  # TODO character or byte?
-
-  attr_accessor :offset
 
   ##
   # Sets the parent CodeObject
@@ -151,7 +144,7 @@ class RDoc::CodeObject
                    # HACK correct fix is to have #initialize create @comment
                    #      with the correct encoding
                    if String === @comment and @comment.empty? then
-                     @comment.force_encoding comment.encoding
+                     @comment = RDoc::Encoding.change_encoding @comment, comment.encoding
                    end
                    @comment
                  end

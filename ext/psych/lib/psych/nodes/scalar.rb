@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 module Psych
   module Nodes
     ###
@@ -63,6 +63,8 @@ module Psych
         @quoted = quoted
         @style  = style
       end
+
+      def scalar?; true; end
     end
   end
 end

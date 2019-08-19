@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # Allows an ERB template to be rendered in the context (binding) of an
 # existing ERB template evaluation.

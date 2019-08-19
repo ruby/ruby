@@ -12,53 +12,6 @@
 
 #include "ruby/config.h"
 
-/* added in 0.9.8X */
-#if !defined(HAVE_EVP_CIPHER_CTX_NEW)
-EVP_CIPHER_CTX *ossl_EVP_CIPHER_CTX_new(void);
-#  define EVP_CIPHER_CTX_new ossl_EVP_CIPHER_CTX_new
-#endif
-
-#if !defined(HAVE_EVP_CIPHER_CTX_FREE)
-void ossl_EVP_CIPHER_CTX_free(EVP_CIPHER_CTX *);
-#  define EVP_CIPHER_CTX_free ossl_EVP_CIPHER_CTX_free
-#endif
-
-#if !defined(HAVE_SSL_CTX_CLEAR_OPTIONS)
-#  define SSL_CTX_clear_options(ctx, op) ((ctx)->options &= ~(op))
-#endif
-
-/* added in 1.0.0 */
-#if !defined(HAVE_EVP_PKEY_BASE_ID)
-#  define EVP_PKEY_base_id(pkey) EVP_PKEY_type((pkey)->type)
-#endif
-
-#if !defined(HAVE_EVP_CIPHER_CTX_COPY)
-int ossl_EVP_CIPHER_CTX_copy(EVP_CIPHER_CTX *, const EVP_CIPHER_CTX *);
-#  define EVP_CIPHER_CTX_copy ossl_EVP_CIPHER_CTX_copy
-#endif
-
-#if !defined(HAVE_HMAC_CTX_COPY)
-int ossl_HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in);
-#  define HMAC_CTX_copy ossl_HMAC_CTX_copy
-#endif
-
-#if !defined(HAVE_X509_STORE_CTX_GET0_CURRENT_CRL)
-#  define X509_STORE_CTX_get0_current_crl(x) ((x)->current_crl)
-#endif
-
-#if !defined(HAVE_X509_STORE_SET_VERIFY_CB)
-#  define X509_STORE_set_verify_cb X509_STORE_set_verify_cb_func
-#endif
-
-#if !defined(HAVE_I2D_ASN1_SET_ANY)
-#  define i2d_ASN1_SET_ANY(sk, x) i2d_ASN1_SET_OF_ASN1_TYPE((sk), (x), \
-		i2d_ASN1_TYPE, V_ASN1_SET, V_ASN1_UNIVERSAL, 0)
-#endif
-
-#if !defined(HAVE_EVP_PKEY_GET0)
-#  define EVP_PKEY_get0(pk) (pk->pkey.ptr)
-#endif
-
 /* added in 1.0.2 */
 #if !defined(OPENSSL_NO_EC)
 #if !defined(HAVE_EC_CURVE_NIST2NID)
@@ -196,7 +149,7 @@ void ossl_X509_REQ_get0_signature(const X509_REQ *, const ASN1_BIT_STRING **, co
 static inline _type *EVP_PKEY_get0_##_type(EVP_PKEY *pkey) { \
 	return pkey->pkey._name; }
 #define IMPL_KEY_ACCESSOR2(_type, _group, a1, a2, _fail_cond) \
-static inline void _type##_get0_##_group(_type *obj, const BIGNUM **a1, const BIGNUM **a2) { \
+static inline void _type##_get0_##_group(const _type *obj, const BIGNUM **a1, const BIGNUM **a2) { \
 	if (a1) *a1 = obj->a1; \
 	if (a2) *a2 = obj->a2; } \
 static inline int _type##_set0_##_group(_type *obj, BIGNUM *a1, BIGNUM *a2) { \
@@ -205,7 +158,7 @@ static inline int _type##_set0_##_group(_type *obj, BIGNUM *a1, BIGNUM *a2) { \
 	BN_clear_free(obj->a2); obj->a2 = a2; \
 	return 1; }
 #define IMPL_KEY_ACCESSOR3(_type, _group, a1, a2, a3, _fail_cond) \
-static inline void _type##_get0_##_group(_type *obj, const BIGNUM **a1, const BIGNUM **a2, const BIGNUM **a3) { \
+static inline void _type##_get0_##_group(const _type *obj, const BIGNUM **a1, const BIGNUM **a2, const BIGNUM **a3) { \
 	if (a1) *a1 = obj->a1; \
 	if (a2) *a2 = obj->a2; \
 	if (a3) *a3 = obj->a3; } \
@@ -232,7 +185,7 @@ IMPL_KEY_ACCESSOR3(DSA, pqg, p, q, g, (p == obj->p || q == obj->q || g == obj->g
 #if !defined(OPENSSL_NO_DH)
 IMPL_PKEY_GETTER(DH, dh)
 IMPL_KEY_ACCESSOR2(DH, key, pub_key, priv_key, (pub_key == obj->pub_key || (obj->priv_key && priv_key == obj->priv_key)))
-IMPL_KEY_ACCESSOR3(DH, pqg, p, q, g, (p == obj->p || obj->q && q == obj->q || g == obj->g))
+IMPL_KEY_ACCESSOR3(DH, pqg, p, q, g, (p == obj->p || (obj->q && q == obj->q) || g == obj->g))
 static inline ENGINE *DH_get0_engine(DH *dh) { return dh->engine; }
 #endif
 
@@ -245,7 +198,7 @@ IMPL_PKEY_GETTER(EC_KEY, ec)
 #undef IMPL_KEY_ACCESSOR3
 #endif /* HAVE_OPAQUE_OPENSSL */
 
-#if defined(HAVE_AUTHENTICATED_ENCRYPTION) && !defined(EVP_CTRL_AEAD_GET_TAG)
+#if !defined(EVP_CTRL_AEAD_GET_TAG)
 #  define EVP_CTRL_AEAD_GET_TAG EVP_CTRL_GCM_GET_TAG
 #  define EVP_CTRL_AEAD_SET_TAG EVP_CTRL_GCM_SET_TAG
 #  define EVP_CTRL_AEAD_SET_IVLEN EVP_CTRL_GCM_SET_IVLEN
@@ -256,6 +209,10 @@ IMPL_PKEY_GETTER(EC_KEY, ec)
 #  define X509_get0_notAfter(x) X509_get_notAfter(x)
 #  define X509_CRL_get0_lastUpdate(x) X509_CRL_get_lastUpdate(x)
 #  define X509_CRL_get0_nextUpdate(x) X509_CRL_get_nextUpdate(x)
+#  define X509_set1_notBefore(x, t) X509_set_notBefore(x, t)
+#  define X509_set1_notAfter(x, t) X509_set_notAfter(x, t)
+#  define X509_CRL_set1_lastUpdate(x, t) X509_CRL_set_lastUpdate(x, t)
+#  define X509_CRL_set1_nextUpdate(x, t) X509_CRL_set_nextUpdate(x, t)
 #endif
 
 #if !defined(HAVE_SSL_SESSION_GET_PROTOCOL_VERSION)

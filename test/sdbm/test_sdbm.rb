@@ -108,6 +108,7 @@ class TestSDBM < Test::Unit::TestCase
 
   def test_s_open_error
     skip "doesn't support to avoid read access by owner on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
+    skip "skipped because root can open anything" if Process.uid == 0
     assert_instance_of(SDBM, sdbm = SDBM.open("#{@tmpdir}/#{@prefix}", 0))
     assert_raise(Errno::EACCES) {
       SDBM.open("#{@tmpdir}/#{@prefix}", 0)
@@ -519,6 +520,7 @@ class TestSDBM < Test::Unit::TestCase
   end
 
   def test_readonly
+    skip "skipped because root can read anything" if /mswin|mingw/ !~ RUBY_PLATFORM && Process.uid == 0
     @sdbm["bar"] = "baz"
     @sdbm.close
     File.chmod(0444, @path + ".dir")

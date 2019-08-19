@@ -3,6 +3,7 @@ require 'rubygems/command'
 
 unless defined? Gem::Commands::MirrorCommand
   class Gem::Commands::MirrorCommand < Gem::Command
+
     def initialize
       super('mirror', 'Mirror all gem files (requires rubygems-mirror)')
       begin

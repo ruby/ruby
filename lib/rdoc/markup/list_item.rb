@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # An item within a List that contains paragraphs, headings, etc.
 #

@@ -9,10 +9,10 @@ typedef unsigned int rb_atomic_t;
 # define ATOMIC_DEC(var) __atomic_fetch_sub(&(var), 1, __ATOMIC_SEQ_CST)
 # define ATOMIC_OR(var, val) __atomic_fetch_or(&(var), (val), __ATOMIC_SEQ_CST)
 # define ATOMIC_EXCHANGE(var, val) __atomic_exchange_n(&(var), (val), __ATOMIC_SEQ_CST)
-# define ATOMIC_CAS(var, oldval, newval) \
-({ __typeof__(var) oldvaldup = (oldval); /* oldval should not be modified */ \
+# define ATOMIC_CAS(var, oldval, newval) RB_GNUC_EXTENSION_BLOCK( \
+   __typeof__(var) oldvaldup = (oldval); /* oldval should not be modified */ \
    __atomic_compare_exchange_n(&(var), &oldvaldup, (newval), 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST); \
-   oldvaldup; })
+   oldvaldup )
 
 # define ATOMIC_SIZE_ADD(var, val) __atomic_fetch_add(&(var), (val), __ATOMIC_SEQ_CST)
 # define ATOMIC_SIZE_SUB(var, val) __atomic_fetch_sub(&(var), (val), __ATOMIC_SEQ_CST)
@@ -90,6 +90,10 @@ rb_w32_atomic_cas(volatile rb_atomic_t *var, rb_atomic_t oldval, rb_atomic_t new
 #  define ATOMIC_SIZE_EXCHANGE(var, val) InterlockedExchange((LONG *)&(var), (val))
 # endif
 
+# ifdef InterlockedExchangePointer
+#   define ATOMIC_PTR_EXCHANGE(var, val) InterlockedExchangePointer((PVOID volatile *)&(var), (PVOID)(val))
+# endif /* See below for definitions of other situations */
+
 #elif defined(__sun) && defined(HAVE_ATOMIC_H)
 #include <atomic.h>
 typedef unsigned int rb_atomic_t;
@@ -146,12 +150,15 @@ ruby_atomic_size_exchange(size_t *ptr, size_t val)
 #ifndef ATOMIC_SIZE_INC
 # define ATOMIC_SIZE_INC(var) ATOMIC_INC(var)
 #endif
+
 #ifndef ATOMIC_SIZE_DEC
 # define ATOMIC_SIZE_DEC(var) ATOMIC_DEC(var)
 #endif
+
 #ifndef ATOMIC_SIZE_EXCHANGE
 # define ATOMIC_SIZE_EXCHANGE(var, val) ATOMIC_EXCHANGE(var, val)
 #endif
+
 #ifndef ATOMIC_SIZE_CAS
 # define ATOMIC_SIZE_CAS(var, oldval, val) ATOMIC_CAS(var, oldval, val)
 #endif
@@ -160,6 +167,7 @@ ruby_atomic_size_exchange(size_t *ptr, size_t val)
 # ifndef ATOMIC_PTR_EXCHANGE
 #   define ATOMIC_PTR_EXCHANGE(var, val) ATOMIC_EXCHANGE(var, val)
 # endif
+
 # ifndef ATOMIC_PTR_CAS
 #   define ATOMIC_PTR_CAS(var, oldval, newval) ATOMIC_CAS(var, oldval, newval)
 # endif
@@ -167,6 +175,7 @@ ruby_atomic_size_exchange(size_t *ptr, size_t val)
 # ifndef ATOMIC_VALUE_EXCHANGE
 #   define ATOMIC_VALUE_EXCHANGE(var, val) ATOMIC_EXCHANGE(var, val)
 # endif
+
 # ifndef ATOMIC_VALUE_CAS
 #   define ATOMIC_VALUE_CAS(var, oldval, val) ATOMIC_CAS(var, oldval, val)
 # endif
@@ -186,6 +195,7 @@ ruby_atomic_ptr_exchange(const void **ptr, const void *val)
 }
 # endif
 #endif
+
 #ifndef ATOMIC_PTR_CAS
 # if SIZEOF_VOIDP == SIZEOF_SIZE_T
 #   define ATOMIC_PTR_CAS(var, oldval, val) (void *)ATOMIC_SIZE_CAS(*(size_t *)&(var), (size_t)(oldval), (size_t)(val))
@@ -215,6 +225,7 @@ ruby_atomic_value_exchange(VALUE *ptr, VALUE val)
 }
 # endif
 #endif
+
 #ifndef ATOMIC_VALUE_CAS
 # if SIZEOF_VALUE == SIZEOF_SIZE_T
 #   define ATOMIC_VALUE_CAS(var, oldval, val) ATOMIC_SIZE_CAS(*(size_t *)&(var), (size_t)(oldval), (size_t)(val))

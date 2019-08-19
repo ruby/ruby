@@ -17,6 +17,7 @@ require "forwardable"
 require "shell/error"
 require "shell/command-processor"
 require "shell/process-controller"
+require "shell/version"
 
 # Shell implements an idiomatic Ruby interface for common UNIX shell commands.
 #
@@ -262,7 +263,7 @@ class Shell
   def chdir(path = nil, verbose = @verbose)
     check_point
 
-    if iterator?
+    if block_given?
       notify("chdir(with block) #{path}") if verbose
       cwd_old = @cwd
       begin
@@ -296,7 +297,7 @@ class Shell
   def pushdir(path = nil, verbose = @verbose)
     check_point
 
-    if iterator?
+    if block_given?
       notify("pushdir(with block) #{path}") if verbose
       pushdir(path, nil)
       begin
@@ -445,7 +446,7 @@ class Shell
       _head = true
       STDERR.print opts.collect{|mes|
         mes = mes.dup
-        yield mes if iterator?
+        yield mes if block_given?
         if _head
           _head = false
           prefix + mes

@@ -8,17 +8,22 @@ rescue LoadError
 end
 require "test/unit"
 
+if defined?(WIN32OLE)
+  module Word; end
+end
+
 def word_installed?
   installed = false
   w = nil
   if defined?(WIN32OLE)
     begin
       w = WIN32OLE.new('Word.Application')
+      WIN32OLE.const_load(w, Word)
       installed = true
     rescue
     ensure
       if w
-        w.quit
+        w.quit(Word::WdDoNotSaveChanges)
         w = nil
       end
     end
@@ -59,7 +64,7 @@ if defined?(WIN32OLE)
 
       def teardown
         if @obj
-          @obj.quit
+          @obj.quit(Word::WdDoNotSaveChanges)
           @obj = nil
         end
       end

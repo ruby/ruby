@@ -55,7 +55,7 @@ void
 Init_limits(void)
 {
     VALUE h = rb_hash_new();
-    rb_define_const(rb_define_module("RbConfig"), "Limits", h);
+    rb_define_const(rb_define_module("RbConfig"), "LIMITS", h);
 
 #ifdef HAVE_LONG_LONG
 #ifndef ULLONG_MAX
@@ -93,4 +93,5 @@ Init_limits(void)
 #undef DEFINE
 #undef MIN2NUM
 #undef MAX2NUM
+    OBJ_FREEZE(h);
 }

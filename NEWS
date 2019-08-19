@@ -1,62 +1,308 @@
 # -*- rdoc -*-
 
-= NEWS for Ruby 2.5.0
+= NEWS for Ruby 2.7.0
 
 This document is a list of user visible feature changes made between
 releases except for bug fixes.
 
-Note that each entry is kept so brief that no reason behind or
-reference information is supplied with.  For a full list of changes
-with all sufficient information, see the ChangeLog file or Redmine
+Note that each entry is kept so brief that no reason behind or reference
+information is supplied with.  For a full list of changes with all
+sufficient information, see the ChangeLog file or Redmine
 (e.g. <tt>https://bugs.ruby-lang.org/issues/$FEATURE_OR_BUG_NUMBER</tt>)
 
-== Changes since the 2.4.0 release
+== Changes since the 2.6.0 release
 
 === Language changes
 
-* Top-level constant look-up is removed.  [Feature #11547]
+* Pattern matching is introduced as an experimental feature. [Feature #14912]
 
-* rescue/else/ensure are allowed inside do/end blocks.  [Feature #12906]
+* Method reference operator, <code>.:</code> is introduced as an
+  experimental feature.  [Feature #12125] [Feature #13581]
+
+* Proc.new and proc with no block in a method called with a block is warned
+  now.
+
+* lambda with no block in a method called with a block errs.
+
+* Non-Symbol keys in a keyword arguments hash were prohibited in 2.6.0,
+  but are now allowed again.  [Bug #15658]
+
+* Numbered parameter as the default block parameter is introduced as an
+  experimental feature.  [Feature #4475]
+
+* A beginless range is experimentally introduced.  It might not be as useful
+  as an endless range, but would be good for DSL purpose.  [Feature #14799]
+
+     ary[..3]  # identical to ary[0..3]
+     where(sales: ..100)
+
+* Setting <code>$;</code> to non-nil value is warned now.  Use of it in
+  String#split is warned too.
+
+* Setting <code>$,</code> to non-nil value is warned now.  Use of it in
+  Array#join is warned too.
+
+* Quoted here-document identifier must end within the same line.
+
+     <<"EOS
+     " # This has been warned since 2.4
+     EOS
+
+* Pipeline operator is experimentally added.
+
+  This code equals to the next code.
+
+     foo()
+      |> bar 1, 2
+      |> display
+
+     foo()
+      .bar(1, 2)
+      .display
+
+* The flip-flop syntax deprecation is reverted. [Feature #5400]
 
 === Core classes updates (outstanding ones only)
 
-* Integer
+Complex::
 
-  * Integer.sqrt  [Feature #13219]
+  New method::
 
-* Regexp
-  * Update Onigmo 6.1.1.
-    * Support absent operator https://github.com/k-takata/Onigmo/issues/82
+    * Added Complex#<=>. So 0 <=> 0i will not raise NoMethodError.
+      [Bug #15857]
 
-* Thread
+Encoding::
 
-  * Thread#fetch  [Feature #13009]
+  * Added new encoding CESU-8 [Feature #15931]
 
-* String
+Enumerable::
 
-  * String#-@ deduplicates unfrozen strings.  Already-frozen
-    strings remain unchanged for compatibility.  [Feature #13077]
-  * -"literal" (String#-@) optimized to return the same object
-    (same as "literal".freeze in Ruby 2.1+) [Feature #13295]
+  New methods::
+
+    * Added Enumerable#filter_map.  [Feature #15323]
+
+    * Added Enumerable#tally.  [Feature #11076]
+
+Enumerator::
+
+  New method::
+
+    * Added Enumerator::Yielder#to_proc so that a Yielder object
+      can be directly passed to another method as a block
+      argument.  [Feature #15618]
+
+FrozenError::
+
+  New method::
+
+    * Added FrozenError#receiver to return the frozen object that
+      modification was attempted on.  To set this object when raising
+      FrozenError in Ruby code, pass it as the second argument to
+      FrozenError.new.
+
+GC::
+
+  New method::
+
+    * Added GC.compact method for compacting the heap.
+      This function compacts live objects in the heap so that fewer pages may
+      be used, and the heap may be more CoW friendly. [Feature #15626]
+
+      Details on the algorithm and caveats can be found here:
+      https://bugs.ruby-lang.org/issues/15626
+
+IO::
+
+  New method::
+
+    * Added IO#set_encoding_by_bom to check the BOM and set the external
+      encoding.  [Bug #15210]
+
+Integer::
+
+  Modified method::
+
+    * Integer#[] now supports range operation.  [Feature #8842]
+
+         0b01001101[2, 4]  #=> 0b0011
+         0b01001100[2..5]  #=> 0b0011
+         0b01001100[2...6] #=> 0b0011
+             ^^^^
+
+Module::
+
+  New method::
+
+    * Added Module#const_source_location to retrieve the location where a
+      constant is defined.  [Feature #10771]
+
+  Modified method::
+
+    * Module#autoload? now takes an +inherit+ optional argument, like as
+      Module#const_defined?.  [Feature #15777]
+
+Regexp / String::
+
+    * Update Unicode version and Emoji version from 11.0.0 to
+      12.0.0.  [Feature #15321]
+
+    * Update Unicode version to 12.1.0, adding support for
+      U+32FF SQUARE ERA NAME REIWA.  [Feature #15195]
+
+RubyVM::
+
+  Removed method::
+
+    * RubyVM.resolve_feature_path moved to
+      $LOAD_PATH.resolve_feature_path.  [Feature #15903] [Feature #15230]
+
+Time::
+
+  New methods::
+
+    * Added Time#ceil method.  [Feature #15772]
+
+    * Added Time#floor method.  [Feature #15653]
+
+$LOAD_PATH::
+
+  New method::
+
+    * Added $LOAD_PATH.resolve_feature_path.  [Feature #15903] [Feature #15230]
 
 === Stdlib updates (outstanding ones only)
 
-=== Compatibility issues (excluding feature bug fixes)
+Bundler::
 
-* Random.raw_seed renamed to become Random.urandom.  It is now
-  applicable to non-seeding purposes due to [Bug #9569].
+  * Upgrade to Bundler 2.1.0.pre.1
+    Bundled from https://github.com/bundler/bundler/commit/a53709556b95a914e874b22ed2116a46b0528852
+
+CGI::
+
+  * CGI.escapeHTML becomes 2~5x faster when there's at least one escaped character.
+
+CSV::
+
+  * Upgrade to 3.0.9.
+    See https://github.com/ruby/csv/blob/master/NEWS.md.
+
+Date::
+
+  * Date.jisx0301, Date#jisx0301, and Date.parse support the new Japanese
+    era.  [Feature #15742]
+
+Delegator::
+
+  * Object#DelegateClass accepts a block and module_evals it in the context
+    of the returned class, similar to Class.new and Struct.new.
+
+ERB::
+
+  * Prohibit marshaling ERB instance.
+
+IRB::
+
+  * Introduce syntax highlight inspired by pry.gem to Binding#irb source lines,
+    REPL input, and inspect output of some core-class objects.
+
+  * Introduce multiline mode by Reline.
+
+  * Show documents when completion.
+
+  * Enable auto indent and save/load history by default.
+
+Net::IMAP::
+
+  * Add Server Name Indication (SNI) support.  [Feature #15594]
+
+open-uri::
+
+  * Warn open-uri's "open" method at Kernel.
+    Use URI.open instead.  [Misc #15893]
+
+  * The default charset of text/* media type is UTF-8 instead of ISO-8859-1.
+    [Bug #15933]
+
+Pathname::
+
+  * Delegates 3 arguments from Pathname.glob to Dir.glob to
+    accept base: keyword.
+
+Racc::
+
+  * Merge 1.4.15 from upstream repository and added cli of racc.
+
+Reline::
+
+  * New stdlib that is compatible with readline stdlib by pure Ruby and also
+    has a multiline mode.
+
+RSS::
+
+  * Upgrade to RSS 0.2.8.
+    See https://github.com/ruby/rss/blob/master/NEWS.md.
+
+RubyGems::
+
+  * Upgrade to RubyGems 3.1.0.pre1
+    Bundled from https://github.com/rubygems/rubygems/commit/97b264f0fa248c864b6ee9a23d3ff1cdd217dddb
+
+=== Compatibility issues (excluding feature bug fixes)
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
-=== C API updates
+profile.rb, Profiler__::
 
-=== Supported platform changes
+  * Removed from standard library. No one maintains it from Ruby 2.0.0.
+
+=== C API updates
 
 === Implementation improvements
 
-* (This might not be a "user visible feature change" but) Hash class's
-  hash function is now SipHash13. [Feature #13017]
+Fiber::
 
-* SecureRandom now prefers OS-provided sources than OpenSSL. [Bug #9569]
+  * Allow selecting different coroutine implementation by using
+    `--with-coroutine=`, e.g.
+
+         ./confgure --with-coroutine=ucontext
+         ./confgure --with-coroutine=copy
+
+  * Replace previous stack cache with fiber pool cache. The fiber pool
+    allocates many stacks in a single memory region. Stack allocation
+    becomes O(log N) and fiber creation is amortized O(1). Around 10x
+    performance improvement was measured in micro-benchmarks.
+
+Thread::
+
+  * VM stack memory allocation is now combined with native thread stack,
+    improving thread allocation performance and reducing allocation related
+    failures. ~10x performance improvement was measured in micro-benchmarks.
+
+JIT::
+
+  * JIT-ed code is recompiled to less-optimized code when an optimization assumption is invalidated.
+
+  * Method inlining is performed when a method is considered as pure.
+    This optimization is still experimental and many methods are NOT considered as pure yet.
+
+  * Default value of +--jit-max-cache+ is changed from 1,000 to 100
+
+  * Default value of +--jit-min-calls+ is changed from 5 to 10,000
 
 === Miscellaneous changes
+
+* Support for IA64 architecture has been removed. Hardware for testing was
+  difficult to find, native fiber code is difficult to implement, and it added
+  non-trivial complexity to the interpreter. [Feature #15894]
+
+* Require compilers to support C99 [Misc #15347]
+
+  * Details of our dialect: https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/C99
+
+* Ruby's upstream repository is changed from Subversion to Git.
+
+  * https://git.ruby-lang.org/ruby.git
+
+  * RUBY_REVISION class is changed from Integer to String.
+
+  * RUBY_DESCRIPTION includes Git revision instead of Subversion's one.

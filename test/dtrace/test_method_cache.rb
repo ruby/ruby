@@ -19,7 +19,7 @@ module DTrace
     def probe
       <<-eoprobe
 ruby$target:::method-cache-clear
-/arg1/
+/arg1 && arg2/
 {
   printf("%s %s %d\\n", copyinstr(arg0), copyinstr(arg1), arg2);
 }

@@ -1,0 +1,13 @@
+prelude: |
+  require 'irb/color'
+  code = <<~'CODE'
+    def self.foo # bar
+      :"erb #{ERB.new("<%= self %>", trim_mode: ?-).result}"
+    end
+  CODE
+benchmark:
+  irb_color_complete: |
+    IRB::Color.colorize_code(code, complete: true)
+  irb_color_incomplete: |
+    IRB::Color.colorize_code(code, complete: false)
+loop_count: 2000000

@@ -12,6 +12,10 @@
 #ifndef RUBY_ENCODING_H
 #define RUBY_ENCODING_H 1
 
+#ifdef RUBY_INTERNAL_H
+#error "Include this file before internal.h"
+#endif
+
 #if defined(__cplusplus)
 extern "C" {
 #if 0
@@ -118,7 +122,9 @@ PUREFUNC(int rb_enc_dummy_p(rb_encoding *enc));
 PUREFUNC(int rb_enc_to_index(rb_encoding *enc));
 int rb_enc_get_index(VALUE obj);
 void rb_enc_set_index(VALUE obj, int encindex);
+int rb_enc_capable(VALUE obj);
 int rb_enc_find_index(const char *name);
+int rb_enc_alias(const char *alias, const char *orig);
 int rb_to_encoding_index(VALUE);
 rb_encoding *rb_to_encoding(VALUE);
 rb_encoding *rb_find_encoding(VALUE);

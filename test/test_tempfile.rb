@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 require 'test/unit'
 require 'tempfile'
-require 'thread'
 
 class TestTempfile < Test::Unit::TestCase
   def initialize(*)
@@ -39,6 +38,8 @@ class TestTempfile < Test::Unit::TestCase
     assert_nothing_raised(SecurityError, bug3733) {
       proc {$SAFE = 1; File.expand_path(Dir.tmpdir)}.call
     }
+  ensure
+    $SAFE = 0
   end
 
   def test_saves_in_given_directory
@@ -343,6 +344,13 @@ puts Tempfile.new('foo').path
       assert_file.exist?(path)
     }
     assert_file.not_exist?(path)
+
+    Tempfile.create("tempfile-create") {|f|
+      path = f.path
+      f.close
+      File.unlink(f.path)
+    }
+    assert_file.not_exist?(path)
   end
 
   def test_create_without_block
@@ -353,7 +361,7 @@ puts Tempfile.new('foo').path
     f.close
     assert_file.exist?(path)
   ensure
-    f.close if f && !f.closed?
+    f&.close
     File.unlink path if path
   end
 
@@ -365,5 +373,54 @@ puts Tempfile.new('foo').path
     }
     assert_file.not_exist?(path)
   end
-end
 
+  TRAVERSAL_PATH = Array.new(Dir.pwd.split('/').count, '..').join('/') + Dir.pwd + '/'
+
+  def test_open_traversal_dir
+    expect = Dir.glob(TRAVERSAL_PATH + '*').count
+    t = Tempfile.open([TRAVERSAL_PATH, 'foo'])
+    actual = Dir.glob(TRAVERSAL_PATH + '*').count
+    assert_equal expect, actual
+  rescue Errno::EINVAL
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      assert "ok"
+    else
+      raise $!
+    end
+  ensure
+    t&.close!
+  end
+
+  def test_new_traversal_dir
+    expect = Dir.glob(TRAVERSAL_PATH + '*').count
+    t = Tempfile.new(TRAVERSAL_PATH + 'foo')
+    actual = Dir.glob(TRAVERSAL_PATH + '*').count
+    assert_equal expect, actual
+  rescue Errno::EINVAL
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      assert "ok"
+    else
+      raise $!
+    end
+  ensure
+    t&.close!
+  end
+
+  def test_create_traversal_dir
+    expect = Dir.glob(TRAVERSAL_PATH + '*').count
+    t = Tempfile.create(TRAVERSAL_PATH + 'foo')
+    actual = Dir.glob(TRAVERSAL_PATH + '*').count
+    assert_equal expect, actual
+  rescue Errno::EINVAL
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      assert "ok"
+    else
+      raise $!
+    end
+  ensure
+    if t
+      t.close
+      File.unlink(t.path)
+    end
+  end
+end

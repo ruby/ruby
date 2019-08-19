@@ -1,0 +1,71 @@
+/* -*- C -*- */
+
+%# Copyright (c) 2017 Urabe, Shyouhei.  All rights reserved.
+%#
+%# This file is a part of  the programming language Ruby.  Permission is hereby
+%# granted, to either  redistribute and/or modify this file,  provided that the
+%# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+%# details.
+<%= render 'copyright' -%>
+<%= render 'notice', locals: {
+    this_file: 'is for threaded code',
+    edit: __FILE__,
+} -%>
+
+static INSN *
+insn_operands_unification(INSN *iobj)
+{
+#ifdef OPT_OPERANDS_UNIFICATION
+    VALUE *op = iobj->operands;
+
+    switch (iobj->insn_id) {
+    default:
+        /* do nothing */;
+        break;
+
+% RubyVM::OperandsUnifications.each_group do |orig, unifs|
+    case <%= orig.bin %>:
+%   unifs.each do |insn|
+
+        /* <%= insn.pretty_name %> */
+        if ( <%= insn.condition('op') %> ) {
+%       insn.opes.each_with_index do |o, x|
+%         n = insn.operand_shift_of(o)
+%         if n != 0 then
+            op[<%= x %>] = op[<%= x + n %>];
+%         end
+%       end
+            iobj->insn_id      = <%= insn.bin %>;
+            iobj->operand_size = <%= insn.opes.size %>;
+            break;
+        }
+%   end
+
+        break;
+% end
+    }
+#endif
+    return iobj;
+}
+
+int
+rb_insn_unified_local_var_level(VALUE insn)
+{
+#ifdef OPT_OPERANDS_UNIFICATION
+    /* optimize rule */
+    switch (insn) {
+      default:
+	return -1; /* do nothing */;
+% RubyVM::OperandsUnifications.each_group do |orig, unifs|
+%   unifs.each do|insn|
+      case <%= insn.bin %>:
+%     insn.spec.map{|(var,val)|val}.reject{|i| i == '*' }.each do |val|
+	return <%= val %>;
+%       break
+%     end
+%   end
+% end
+    }
+#endif
+    return -1;
+}

@@ -14,8 +14,8 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def self.get_linenum
-    if /:(\d+):/ =~ caller[1]
-      $1.to_i
+    if loc = caller_locations(2, 1)
+      loc[0].lineno
     else
       nil
     end
@@ -221,6 +221,8 @@ class TestPathname < Test::Unit::TestCase
 
   defassert(:plus, 'a//b/d//e', 'a//b/c', '../d//e')
 
+  defassert(:plus, '//foo/var/bar', '//foo/var', 'bar')
+
   def test_slash
     assert_kind_of(Pathname, Pathname("a") / Pathname("b"))
   end
@@ -289,9 +291,10 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def relative_path_from(dest_directory, base_directory)
-    Pathname.new(dest_directory).relative_path_from(Pathname.new(base_directory)).to_s
+    Pathname.new(dest_directory).relative_path_from(base_directory).to_s
   end
 
+  defassert(:relative_path_from, "../a", Pathname.new("a"), "b")
   defassert(:relative_path_from, "../a", "a", "b")
   defassert(:relative_path_from, "../a", "a", "b/")
   defassert(:relative_path_from, "../a", "a/", "b")
@@ -542,7 +545,7 @@ class TestPathname < Test::Unit::TestCase
   defassert(:pathsubext, 'lex.yy.o', 'lex.yy.c', '.o')
   defassert(:pathsubext, 'fooaa.o', 'fooaa', '.o')
   defassert(:pathsubext, 'd.e/aa.o', 'd.e/aa', '.o')
-  defassert(:pathsubext, 'long_enough.bug-3664', 'long_enough.not_to_be_embeded[ruby-core:31640]', '.bug-3664')
+  defassert(:pathsubext, 'long_enough.bug-3664', 'long_enough.not_to_be_embedded[ruby-core:31640]', '.bug-3664')
 
   def test_sub_matchdata
     result = Pathname("abc.gif").sub(/\..*/) {
@@ -633,7 +636,7 @@ class TestPathname < Test::Unit::TestCase
     obj = Pathname.new("a")
     obj.freeze
     assert_equal(false, obj.tainted?)
-    assert_raise(RuntimeError) { obj.taint }
+    assert_raise(FrozenError) { obj.taint }
 
     obj = Pathname.new("a")
     obj.taint
@@ -786,10 +789,20 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_birthtime
-    assert_kind_of(Time, Pathname(__FILE__).birthtime)
-  rescue NotImplementedError
-    assert_raise(NotImplementedError) do
-      File.birthtime(__FILE__)
+    # Check under a (probably) local filesystem.
+    # Remote filesystems often may not support birthtime.
+    with_tmpchdir('rubytest-pathname') do |dir|
+      open("a", "w") {}
+      assert_kind_of(Time, Pathname("a").birthtime)
+    rescue Errno::EPERM
+      # Docker prohibits statx syscall by the default.
+      skip("statx(2) is prohibited by seccomp")
+    rescue Errno::ENOSYS
+      skip("statx(2) is not supported on this filesystem")
+    rescue NotImplementedError
+      # assert_raise(NotImplementedError) do
+      #   File.birthtime("a")
+      # end
     end
   end
 
@@ -910,11 +923,11 @@ class TestPathname < Test::Unit::TestCase
       }
 
       Pathname("b").open("w", 0444) {|f| f.write "def" }
-      assert_equal(0444, File.stat("b").mode & 0777)
+      assert_equal(0444 & ~File.umask, File.stat("b").mode & 0777)
       assert_equal("def", File.read("b"))
 
       Pathname("c").open("w", 0444, {}) {|f| f.write "ghi" }
-      assert_equal(0444, File.stat("c").mode & 0777)
+      assert_equal(0444 & ~File.umask, File.stat("c").mode & 0777)
       assert_equal("ghi", File.read("c"))
 
       g = path.open
@@ -1238,6 +1251,17 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_s_glob_3args
+    with_tmpchdir('rubytest-pathname') {|dir|
+      open("f", "w") {|f| f.write "abc" }
+      Dir.chdir("/") {
+        assert_equal(
+          [Pathname("."), Pathname(".."), Pathname("f")],
+          Pathname.glob("*", File::FNM_DOTMATCH, base: dir).sort)
+      }
+    }
+  end
+
   def test_s_getwd
     wd = Pathname.getwd
     assert_kind_of(Pathname, wd)
@@ -1246,6 +1270,19 @@ class TestPathname < Test::Unit::TestCase
   def test_s_pwd
     wd = Pathname.pwd
     assert_kind_of(Pathname, wd)
+  end
+
+  def test_glob
+    with_tmpchdir('rubytest-pathname') {|dir|
+      Dir.mkdir("d")
+      open("d/f", "w") {|f| f.write "abc" }
+      Dir.mkdir("d/e")
+      assert_equal([Pathname("d/e"), Pathname("d/f")], Pathname("d").glob("*").sort)
+      a = []
+      Pathname("d").glob("*") {|path| a << path }
+      a.sort!
+      assert_equal([Pathname("d/e"), Pathname("d/f")], a)
+    }
   end
 
   def test_entries
@@ -1321,6 +1358,7 @@ class TestPathname < Test::Unit::TestCase
         assert_equal([Pathname("d"), Pathname("d/x")], a)
 
         skip "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
+        skip 'skipped in root privilege' if Process.uid == 0
         a = [];
         assert_raise_with_message(Errno::EACCES, %r{d/x}) do
           Pathname(".").find(ignore_error: false) {|v| a << v }
@@ -1396,6 +1434,8 @@ class TestPathname < Test::Unit::TestCase
       $SAFE = 1
       assert_equal("foo/bar", File.join(Pathname.new("foo"), Pathname.new("bar").taint))
     }.call
+  ensure
+    $SAFE = 0
   end
 
   def test_relative_path_from_casefold
@@ -1409,5 +1449,20 @@ class TestPathname < Test::Unit::TestCase
       bar = Pathname.new("b\u{e4}r".encode("ISO-8859-1"))
       assert_instance_of(Pathname, foo.relative_path_from(bar))
     end;
+  end
+
+  def test_relative_path_from_mock
+    assert_equal(
+      Pathname.new("../bar"),
+      Pathname.new("/foo/bar").relative_path_from(Pathname.new("/foo/baz")))
+    assert_equal(
+      Pathname.new("../bar"),
+      Pathname.new("/foo/bar").relative_path_from("/foo/baz"))
+    obj = Object.new
+    def obj.cleanpath() Pathname.new("/foo/baz") end
+    def obj.is_a?(m) m == Pathname end
+    assert_equal(
+      Pathname.new("../bar"),
+      Pathname.new("/foo/bar").relative_path_from(obj))
   end
 end

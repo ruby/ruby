@@ -65,6 +65,19 @@ class HTTPRequestTest < Test::Unit::TestCase
                          'Bug #7381 - do not decode content if the user overrides'
   end if Net::HTTP::HAVE_ZLIB
 
+  def test_initialize_GET_uri
+    req = Net::HTTP::Get.new(URI("http://example.com/foo"))
+    assert_equal "/foo", req.path
+    assert_equal "example.com", req['Host']
+
+    req = Net::HTTP::Get.new(URI("https://example.com/foo"))
+    assert_equal "/foo", req.path
+    assert_equal "example.com", req['Host']
+
+    assert_raise(ArgumentError){ Net::HTTP::Get.new(URI("urn:ietf:rfc:7231")) }
+    assert_raise(ArgumentError){ Net::HTTP::Get.new(URI("http://")) }
+  end
+
   def test_header_set
     req = Net::HTTP::Get.new '/'
 

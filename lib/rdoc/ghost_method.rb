@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # GhostMethod represents a method referenced only by a comment
 

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 module Psych
   ###
   # If an object defines +encode_with+, then an instance of Psych::Coder will

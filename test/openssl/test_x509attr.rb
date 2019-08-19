@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 require_relative "utils"
 
-if defined?(OpenSSL::TestUtils)
+if defined?(OpenSSL)
 
 class OpenSSL::TestX509Attribute < OpenSSL::TestCase
   def test_new
@@ -61,6 +61,23 @@ class OpenSSL::TestX509Attribute < OpenSSL::TestCase
     ])
     attr = OpenSSL::X509::Attribute.new("challengePassword", val)
     assert_equal(attr.to_der, attr.dup.to_der)
+  end
+
+  def test_eq
+    val1 = OpenSSL::ASN1::Set([
+      OpenSSL::ASN1::UTF8String("abc123")
+    ])
+    attr1 = OpenSSL::X509::Attribute.new("challengePassword", val1)
+    attr2 = OpenSSL::X509::Attribute.new("challengePassword", val1)
+    ef = OpenSSL::X509::ExtensionFactory.new
+    val2 = OpenSSL::ASN1::Set.new([OpenSSL::ASN1::Sequence.new([
+      ef.create_extension("keyUsage", "keyCertSign", true)
+    ])])
+    attr3 = OpenSSL::X509::Attribute.new("extReq", val2)
+
+    assert_equal false, attr1 == 12345
+    assert_equal true, attr1 == attr2
+    assert_equal false, attr1 == attr3
   end
 end
 

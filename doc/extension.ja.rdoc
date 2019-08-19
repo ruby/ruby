@@ -226,6 +226,10 @@ rb_tainted_str_new_cstr(const char *ptr) ::
 
   Cの文字列から汚染マークが付加されたRubyの文字列を生成する．
 
+rb_str_append(VALUE str1, VALUE str2) ::
+
+  Rubyの文字列str1にRubyの文字列str2を追加する．
+
 rb_sprintf(const char *format, ...) ::
 rb_vsprintf(const char *format, va_list ap) ::
 
@@ -251,15 +255,15 @@ rb_str_vcatf(VALUE str, const char* format, va_list ap) ::
 
   Cの文字列formatと続く引数をprintf(3)のフォーマットにしたがって
   整形し，Rubyの文字列strに追加する．この関数の機能は，それぞれ
-  rb_str_cat2(str, rb_sprintf(format, ...)) や
-  rb_str_cat2(str, rb_vsprintf(format, ap)) と同等である．
+  rb_str_append(str, rb_sprintf(format, ...)) や
+  rb_str_append(str, rb_vsprintf(format, ap)) と同等である．
 
 rb_enc_str_new(const char *ptr, long len, rb_encoding *enc) ::
 rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc) ::
 
   指定されたエンコーディングでRubyの文字列を生成する.
 
-rb_enc_str_new_literal(const char *ptr) ::
+rb_enc_str_new_literal(const char *ptr, rb_encoding *enc) ::
 
   Cのリテラル文字列から指定されたエンコーディングでRubyの文字列を生成する．
 
@@ -297,6 +301,14 @@ rb_str_set_len(VALUE str, long len) ::
   lenバイトまでの内容は保存される．lenはstrの容量を越えてい
   てはならない．
 
+rb_str_modify(VALUE str) ::
+
+  Rubyの文字列の変更する準備をする．strが変更可能でなければ例
+  外が発生する．strのバッファが共有されている場合は，新しいバッ
+  ファを割り当てて共有されていない状態にする．RSTRING_PTRを使っ
+  て中身を変更したり，rb_str_set_lenを呼んだりする前には，
+  必ずこの関数を呼ばなけれならない．
+
 ==== 配列に対する関数
 
 rb_ary_new() ::
@@ -328,7 +340,7 @@ rb_ary_to_ary(VALUE obj) ::
 引数aryに配列を渡さなければならない. さもないと
 コアを吐く.
 
-rb_ary_aref(argc, VALUE *argv, VALUE ary) ::
+rb_ary_aref(int argc, const VALUE *argv, VALUE ary) ::
 
   Array#[]と同等.
 
@@ -707,6 +719,8 @@ Dataから派生しない場合には, 必ずrb_undef_alloc_func(klass)
 
 rb_data_type_tは次のように定義されています．
 
+  typedef struct rb_data_type_struct rb_data_type_t;
+
   struct rb_data_type_struct {
           const char *wrap_struct_name;
           struct {
@@ -777,8 +791,8 @@ RUBY_TYPED_WB_PROTECTED ::
   メソッドの実装に適切にライトバリアを挿入する責任があります．
   さもなくばRubyは実行時にクラッシュする可能性があります．
 
-  ライトバリアについてはdoc/extension.rdocのAppendix D
-  "Generational GC"も参照してください．
+  ライトバリアについてはdoc/extension.ja.rdocのAppendix D
+  "世代別GC"も参照してください．
 
 
 Cの構造体の割当と対応するオブジェクトの生成を同時に行うマク
@@ -1319,8 +1333,13 @@ void rb_define_hooked_variable(const char *name, VALUE *var, VALUE (*getter)(), 
 
 void rb_global_variable(VALUE *var) ::
 
-  GCのため，Rubyプログラムからはアクセスされないが, Rubyオブ
-  ジェクトを含む大域変数をマークする．
+  マークする必要のあるRubyオブジェクトを含む大域変数を，GC
+  によって解放されないように保護する．
+
+void rb_gc_register_mark_object(VALUE object) ::
+
+  マークする必要のあるRubyオブジェクトを，GCによって解放さ
+  れないように登録する．
 
 === 定数
 

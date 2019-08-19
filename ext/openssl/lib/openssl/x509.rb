@@ -41,6 +41,11 @@ module OpenSSL
     end
 
     class Extension
+      def ==(other)
+        return false unless Extension === other
+        to_der == other.to_der
+      end
+
       def to_s # "oid = critical, value"
         str = self.oid
         str << " = "
@@ -139,7 +144,13 @@ module OpenSSL
         end
 
         def parse_openssl(str, template=OBJECT_TYPE_TEMPLATE)
-          ary = str.scan(/\s*([^\/,]+)\s*/).collect{|i| i[0].split("=", 2) }
+          if str.start_with?("/")
+            # /A=B/C=D format
+            ary = str[1..-1].split("/").map { |i| i.split("=", 2) }
+          else
+            # Comma-separated
+            ary = str.split(",").map { |i| i.strip.split("=", 2) }
+          end
           self.new(ary, template)
         end
 
@@ -151,6 +162,13 @@ module OpenSSL
           q.text ' '
           q.text to_s(OpenSSL::X509::Name::RFC2253)
         }
+      end
+    end
+
+    class Attribute
+      def ==(other)
+        return false unless Attribute === other
+        to_der == other.to_der
       end
     end
 
@@ -170,6 +188,27 @@ module OpenSSL
           q.text 'not_before='; q.pp self.not_before; q.text ','; q.breakable
           q.text 'not_after='; q.pp self.not_after
         }
+      end
+    end
+
+    class CRL
+      def ==(other)
+        return false unless CRL === other
+        to_der == other.to_der
+      end
+    end
+
+    class Revoked
+      def ==(other)
+        return false unless Revoked === other
+        to_der == other.to_der
+      end
+    end
+
+    class Request
+      def ==(other)
+        return false unless Request === other
+        to_der == other.to_der
       end
     end
   end

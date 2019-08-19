@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-SIMPLE_GEM = <<-GEMDATA
+SIMPLE_GEM = <<-GEMDATA.freeze
         MD5SUM = "989bf34a1cbecd52e0ea66b662b3a405"
         if $0 == __FILE__
           require 'optparse'

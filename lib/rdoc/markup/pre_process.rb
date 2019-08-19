@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # Handle common directives that can occur in a block of text:
 #
@@ -105,7 +105,7 @@ class RDoc::Markup::PreProcess
     # regexp helper (square brackets for optional)
     # $1      $2  $3        $4      $5
     # [prefix][\]:directive:[spaces][param]newline
-    text.gsub!(/^([ \t]*(?:#|\/?\*)?[ \t]*)(\\?):(\w+):([ \t]*)(.+)?(\r?\n|$)/) do
+    text = text.gsub(/^([ \t]*(?:#|\/?\*)?[ \t]*)(\\?):(\w+):([ \t]*)(.+)?(\r?\n|$)/) do
       # skip something like ':toto::'
       next $& if $4.empty? and $5 and $5[0, 1] == ':'
 
@@ -123,7 +123,11 @@ class RDoc::Markup::PreProcess
       handle_directive $1, $3, $5, code_object, text.encoding, &block
     end
 
-    comment = text unless comment
+    if comment then
+      comment.text = text
+    else
+      comment = text
+    end
 
     self.class.post_processors.each do |handler|
       handler.call comment, code_object
@@ -150,7 +154,7 @@ class RDoc::Markup::PreProcess
 
     case directive
     when 'arg', 'args' then
-      return "#{prefix}:#{directive}: #{param}\n" unless code_object
+      return "#{prefix}:#{directive}: #{param}\n" unless code_object && code_object.kind_of?(RDoc::AnyMethod)
 
       code_object.params = param
 
@@ -212,7 +216,7 @@ class RDoc::Markup::PreProcess
     when 'yield', 'yields' then
       return blankline unless code_object
       # remove parameter &block
-      code_object.params.sub!(/,?\s*&\w+/, '') if code_object.params
+      code_object.params = code_object.params.sub(/,?\s*&\w+/, '') if code_object.params
 
       code_object.block_params = param
 
@@ -262,6 +266,7 @@ class RDoc::Markup::PreProcess
     end
 
     content = RDoc::Encoding.read_file full_name, encoding, true
+    content = RDoc::Encoding.remove_magic_comment content
 
     # strip magic comment
     content = content.sub(/\A# .*coding[=:].*$/, '').lstrip

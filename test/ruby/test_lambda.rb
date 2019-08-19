@@ -157,6 +157,21 @@ class TestLambdaParameters < Test::Unit::TestCase
     assert_equal(42, return_in_callee(42), feature8693)
   end
 
+  def break_in_current(val)
+    1.tap(&->(*) {break 0})
+    val
+  end
+
+  def break_in_callee(val)
+    yield_block(&->(*) {break 0})
+    val
+  end
+
+  def test_break
+    assert_equal(42, break_in_current(42))
+    assert_equal(42, break_in_callee(42))
+  end
+
   def test_do_lambda_source_location
     exp_lineno = __LINE__ + 3
     lmd = ->(x,
@@ -179,5 +194,32 @@ class TestLambdaParameters < Test::Unit::TestCase
     file, lineno = lmd.source_location
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
     assert_equal(exp_lineno, lineno, "must be at the beginning of the block")
+  end
+
+  def test_not_orphan_return
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b.call end; def m2(); m1(&-> { return 42 }) end }.m2)
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b end; def m2(); m1(&-> { return 42 }).call end }.m2)
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b end; def m2(); m1(&-> { return 42 }) end }.m2.call)
+  end
+
+  def test_not_orphan_break
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b.call end; def m2(); m1(&-> { break 42 }) end }.m2)
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b end; def m2(); m1(&-> { break 42 }).call end }.m2)
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b end; def m2(); m1(&-> { break 42 }) end }.m2.call)
+  end
+
+  def test_not_orphan_next
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b.call end; def m2(); m1(&-> { next 42 }) end }.m2)
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b end; def m2(); m1(&-> { next 42 }).call end }.m2)
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b end; def m2(); m1(&-> { next 42 }) end }.m2.call)
   end
 end

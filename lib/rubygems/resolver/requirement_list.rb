@@ -18,7 +18,7 @@ class Gem::Resolver::RequirementList
     @list = []
   end
 
-  def initialize_copy other # :nodoc:
+  def initialize_copy(other) # :nodoc:
     @exact = @exact.dup
     @list = @list.dup
   end
@@ -79,4 +79,5 @@ class Gem::Resolver::RequirementList
     x = @exact[0,5]
     x + @list[0,5 - x.size]
   end
+
 end

@@ -32,6 +32,10 @@ read_status(VALUE self)
     error = task_info(mach_task_self(), flavor,
 		      (task_info_t)&taskinfo, &out_count);
     if (error != KERN_SUCCESS) return Qnil;
+#ifndef ULL2NUM
+/* "long long" does not exist here, use size_t instead.  */
+#define ULL2NUM SIZET2NUM
+#endif
     size = ULL2NUM(taskinfo.virtual_size);
     rss = ULL2NUM(taskinfo.resident_size);
     rb_struct_aset(self, INT2FIX(1), rss);

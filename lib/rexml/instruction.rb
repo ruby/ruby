@@ -1,13 +1,14 @@
 # frozen_string_literal: false
-require "rexml/child"
-require "rexml/source"
+
+require_relative "child"
+require_relative "source"
 
 module REXML
   # Represents an XML Instruction; IE, <? ... ?>
   # TODO: Add parent arg (3rd arg) to constructor
   class Instruction < Child
-    START = '<\?'
-    STOP = '\?>'
+    START = "<?"
+    STOP = "?>"
 
     # target is the "name" of the Instruction; IE, the "tag" in <?tag ...?>
     # content is everything else.
@@ -17,20 +18,25 @@ module REXML
     # @param target can be one of a number of things.  If String, then
     # the target of this instruction is set to this.  If an Instruction,
     # then the Instruction is shallowly cloned (target and content are
-    # copied).  If a Source, then the source is scanned and parsed for
-    # an Instruction declaration.
+    # copied).
     # @param content Must be either a String, or a Parent.  Can only
     # be a Parent if the target argument is a Source.  Otherwise, this
     # String is set as the content of this instruction.
     def initialize(target, content=nil)
-      if target.kind_of? String
+      case target
+      when String
         super()
         @target = target
         @content = content
-      elsif target.kind_of? Instruction
+      when Instruction
         super(content)
         @target = target.target
         @content = target.content
+      else
+        message =
+          "processing instruction target must be String or REXML::Instruction: "
+        message << "<#{target.inspect}>"
+        raise ArgumentError, message
       end
       @content.strip! if @content
     end
@@ -43,13 +49,15 @@ module REXML
     # See the rexml/formatters package
     #
     def write writer, indent=-1, transitive=false, ie_hack=false
-      Kernel.warn( "#{self.class.name}.write is deprecated" )
+      Kernel.warn( "#{self.class.name}.write is deprecated", uplevel: 1)
       indent(writer, indent)
-      writer << START.sub(/\\/u, '')
+      writer << START
       writer << @target
-      writer << ' '
-      writer << @content
-      writer << STOP.sub(/\\/u, '')
+      if @content
+        writer << ' '
+        writer << @content
+      end
+      writer << STOP
     end
 
     # @return true if other is an Instruction, and the content and target

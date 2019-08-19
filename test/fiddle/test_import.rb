@@ -1,5 +1,5 @@
 # coding: US-ASCII
-# frozen_string_literal: false
+# frozen_string_literal: true
 begin
   require_relative 'helper'
   require 'fiddle/import'
@@ -45,7 +45,7 @@ module Fiddle
 
   class TestImport < TestCase
     def test_ensure_call_dlload
-      err = assert_raises(RuntimeError) do
+      err = assert_raise(RuntimeError) do
         Class.new do
           extend Importer
           extern "void *strcpy(char*, char*)"
@@ -64,7 +64,7 @@ module Fiddle
       assert_equal(SIZEOF_VOIDP, LIBC.sizeof("FILE*"))
       assert_equal(LIBC::MyStruct.size(), LIBC.sizeof(LIBC::MyStruct))
       assert_equal(LIBC::MyStruct.size(), LIBC.sizeof(LIBC::MyStruct.malloc()))
-      assert_equal(SIZEOF_LONG_LONG, LIBC.sizeof("long long"))
+      assert_equal(SIZEOF_LONG_LONG, LIBC.sizeof("long long")) if defined?(SIZEOF_LONG_LONG)
     end
 
     Fiddle.constants.grep(/\ATYPE_(?!VOID\z)(.*)/) do
@@ -128,7 +128,7 @@ module Fiddle
     end
 
     def test_strcpy()
-      buff = "000"
+      buff = +"000"
       str = LIBC.strcpy(buff, "123")
       assert_equal("123", buff)
       assert_equal("123", str.to_s)
@@ -146,6 +146,10 @@ module Fiddle
     def test_atof
       r = LIBC.atof("12.34")
       assert_includes(12.00..13.00, r)
+    end
+
+    def test_no_message_with_debug
+      assert_in_out_err(%w[--debug --disable=gems -rfiddle/import], 'p Fiddle::Importer', ['Fiddle::Importer'])
     end
   end
 end if defined?(Fiddle)

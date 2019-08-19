@@ -1,8 +1,9 @@
 # frozen_string_literal: false
+
 module REXML
   module Formatters
     class Default
-      # Prints out the XML document with no formatting -- except if id_hack is
+      # Prints out the XML document with no formatting -- except if ie_hack is
       # set.
       #
       # ie_hack::
@@ -101,11 +102,14 @@ module REXML
       end
 
       def write_instruction( node, output )
-        output << Instruction::START.sub(/\\/u, '')
+        output << Instruction::START
         output << node.target
-        output << ' '
-        output << node.content
-        output << Instruction::STOP.sub(/\\/u, '')
+        content = node.content
+        if content
+          output << ' '
+          output << content
+        end
+        output << Instruction::STOP
       end
     end
   end

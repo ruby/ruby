@@ -1,5 +1,5 @@
-# frozen_string_literal: false
-require 'rdoc/test_case'
+# frozen_string_literal: true
+require_relative 'helper'
 
 =begin
   TODO: test call-seq parsing
@@ -304,32 +304,6 @@ void Init_Blah(void) {
     assert_equal 'This should show up as an alias', methods.last.comment.text
   end
 
-  def test_do_classes_boot_class
-    content = <<-EOF
-/* Document-class: Foo
- * this is the Foo boot class
- */
-VALUE cFoo = boot_defclass("Foo", rb_cObject);
-    EOF
-
-    klass = util_get_class content, 'cFoo'
-    assert_equal "this is the Foo boot class", klass.comment.text
-    assert_equal 'Object', klass.superclass
-  end
-
-  def test_do_classes_boot_class_nil
-    content = <<-EOF
-/* Document-class: Foo
- * this is the Foo boot class
- */
-VALUE cFoo = boot_defclass("Foo", 0);
-    EOF
-
-    klass = util_get_class content, 'cFoo'
-    assert_equal "this is the Foo boot class", klass.comment.text
-    assert_equal nil, klass.superclass
-  end
-
   def test_do_aliases_missing_class
     content = <<-EOF
 void Init_Blah(void) {
@@ -337,7 +311,7 @@ void Init_Blah(void) {
 }
     EOF
 
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       refute util_get_class(content, 'cDate')
     end
 
@@ -355,6 +329,25 @@ VALUE cFoo = rb_define_class("Foo", rb_cObject);
 
     klass = util_get_class content, 'cFoo'
     assert_equal "this is the Foo class", klass.comment.text
+  end
+
+  def test_do_classes_duplicate_class
+    content = <<-EOF
+/* Document-class: Foo
+ * first
+ */
+VALUE cFoo = rb_define_class("Foo", rb_cObject);
+/* Document-class: Foo
+ * second
+ */
+VALUE cFoo = rb_define_class("Foo", rb_cObject);
+    EOF
+
+    klass = util_get_class content, 'cFoo'
+    assert_equal 1, klass.comment_location.size
+    first = klass.comment_location.first
+    first_comment = first[0]
+    assert_equal 'first', first_comment.text
   end
 
   def test_do_classes_struct
@@ -492,7 +485,7 @@ void Init_foo(){
 
     @parser = util_parser content
 
-    @parser.do_classes
+    @parser.do_classes_and_modules
     @parser.do_constants
 
     klass = @parser.classes['cFoo']
@@ -562,8 +555,7 @@ void Init_curses(){
 
     @parser = util_parser content
 
-    @parser.do_modules
-    @parser.do_classes
+    @parser.do_classes_and_modules
     @parser.do_constants
 
     klass = @parser.classes['mCurses']
@@ -589,8 +581,7 @@ void Init_File(void) {
 
     @parser = util_parser content
 
-    @parser.do_modules
-    @parser.do_classes
+    @parser.do_classes_and_modules
     @parser.do_constants
 
     klass = @parser.classes['rb_mFConst']
@@ -638,10 +629,11 @@ void Init_Blah(void) {
 
     klass = nil
 
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       klass = util_get_class content, 'cDate'
     end
 
+    assert_equal 'Date', klass.full_name
     assert_match ' blah.c ', err
   end
 
@@ -660,10 +652,11 @@ void Init_Blah(void) {
 
     klass = nil
 
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       klass = util_get_class content, 'cDate'
     end
 
+    assert_equal 'Date', klass.full_name
     assert_match ' blah.cpp ', err
   end
 
@@ -682,10 +675,11 @@ void Init_Blah(void) {
 
     klass = nil
 
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       klass = util_get_class content, 'cDate'
     end
 
+    assert_equal 'Date', klass.full_name
     assert_match ' blah.y ', err
   end
 
@@ -748,7 +742,7 @@ void Init_Blah(void) {
     parser.missing_dependencies['y'] = ['y', :class, 'Y', 'Object', 'z']
     parser.missing_dependencies['z'] = ['z', :class, 'Z', 'Object', 'y']
 
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       parser.do_missing
     end
 
@@ -1037,7 +1031,7 @@ Init_Foo(void) {
                  other_function.comment.text
     assert_equal '()', other_function.params
 
-    code = other_function.token_stream.first.text
+    code = other_function.token_stream.first[:text]
 
     assert_equal "VALUE\nother_function() {\n}", code
   end
@@ -1107,7 +1101,7 @@ Init_Foo(void) {
                  other_function.comment.text
     assert_equal '()', other_function.params
 
-    code = other_function.token_stream.first.text
+    code = other_function.token_stream.first[:text]
 
     assert_equal "VALUE\nother_function() {\n}", code
   end
@@ -1139,10 +1133,9 @@ Init_Foo(void) {
     assert_equal 'my_method', other_function.name
     assert_equal 'a comment for rb_other_function', other_function.comment.text
     assert_equal '()', other_function.params
-    assert_equal 118, other_function.offset
     assert_equal 8, other_function.line
 
-    code = other_function.token_stream.first.text
+    code = other_function.token_stream.first[:text]
 
     assert_equal "VALUE\nrb_other_function() {\n}", code
   end
@@ -1173,10 +1166,9 @@ Init_Foo(void) {
     assert_equal 'my_method', other_function.name
     assert_equal 'a comment for other_function', other_function.comment.text
     assert_equal '()', other_function.params
-    assert_equal 39, other_function.offset
     assert_equal 4, other_function.line
 
-    code = other_function.token_stream.first.text
+    code = other_function.token_stream.first[:text]
 
     assert_equal "#define other_function rb_other_function", code
   end
@@ -1316,7 +1308,7 @@ Init_Foo(void) {
                  other_function.comment.text
     assert_equal '()', other_function.params
 
-    code = other_function.token_stream.first.text
+    code = other_function.token_stream.first[:text]
 
     assert_equal "DLL_LOCAL VALUE\nother_function() {\n}", code
   end
@@ -1357,11 +1349,11 @@ commercial() -> Date <br />
 
     parser.find_modifiers comment, method_obj
 
-    assert_equal nil, method_obj.document_self
+    assert_nil method_obj.document_self
   end
 
   def test_find_modifiers_yields
-    comment = RDoc::Comment.new <<-COMMENT
+    comment = RDoc::Comment.new <<-COMMENT, @top_level, :c
 /* :yields: a, b
  *
  * Blah
@@ -1402,7 +1394,6 @@ rb_m(int argc, VALUE *argv, VALUE obj) {
 
     assert_equal 'm', m.name
     assert_equal @top_level, m.file
-    assert_equal 115, m.offset
     assert_equal 7, m.line
 
     assert_equal '(p1)', m.params
@@ -1609,6 +1600,19 @@ Init_IO(void) {
     assert_equal "Method Comment!   ", read_method.comment.text
     assert_equal "rb_io_s_read", read_method.c_function
     assert read_method.singleton
+  end
+
+  def test_define_method_dynamically
+    content = <<-EOF
+void
+Init_foo(void)
+{
+    rb_define_singleton_method(obj, "foo", foo, -1);
+}
+    EOF
+
+    klass = util_get_class content, 'obj'
+    assert_nil klass
   end
 
   def test_define_method_with_prototype

@@ -15,7 +15,7 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
   # The +name+, +version+ and +platform+ are the name, version and platform of
   # the gem.
 
-  def initialize set, name, version, source, platform
+  def initialize(set, name, version, source, platform)
     super()
 
     @set = set
@@ -38,12 +38,12 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
     '#<%s %s source %s>' % [self.class, full_name, @source]
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, '[Index specification', ']' do
       q.breakable
       q.text full_name
 
-      unless Gem::Platform::RUBY == @platform then
+      unless Gem::Platform::RUBY == @platform
         q.breakable
         q.text @platform.to_s
       end
@@ -67,4 +67,3 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
   end
 
 end
-

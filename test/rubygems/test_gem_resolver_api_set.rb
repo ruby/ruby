@@ -206,4 +206,3 @@ class TestGemResolverAPISet < Gem::TestCase
   end
 
 end
-

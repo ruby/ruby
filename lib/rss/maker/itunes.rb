@@ -1,6 +1,6 @@
 # frozen_string_literal: false
-require 'rss/itunes'
-require 'rss/maker/2.0'
+require_relative '../itunes'
+require_relative '2.0'
 
 module RSS
   module Maker
@@ -13,8 +13,8 @@ module RSS
           klass.def_other_element(full_name)
         when :yes_other
           def_yes_other_accessor(klass, full_name)
-        when :yes_clean_other
-          def_yes_clean_other_accessor(klass, full_name)
+        when :explicit_clean_other
+          def_explicit_clean_other_accessor(klass, full_name)
         when :csv
           def_csv_accessor(klass, full_name)
         when :element, :attribute
@@ -43,11 +43,11 @@ module RSS
         EOC
       end
 
-      def def_yes_clean_other_accessor(klass, full_name)
+      def def_explicit_clean_other_accessor(klass, full_name)
         klass.def_other_element(full_name)
         klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
           def #{full_name}?
-            Utils::YesCleanOther.parse(#{full_name})
+            Utils::ExplicitCleanOther.parse(#{full_name})
           end
         EOC
       end

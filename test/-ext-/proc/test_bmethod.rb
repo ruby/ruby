@@ -2,12 +2,12 @@
 require 'test/unit'
 require '-test-/proc'
 
-class TestProc < Test::Unit::TestCase
+class Test_Proc < Test::Unit::TestCase
   class TestBMethod < Test::Unit::TestCase
   end
 end
 
-class TestProc::TestBMethod
+class Test_Proc::TestBMethod
   class Base
     def foo(*a)
       a

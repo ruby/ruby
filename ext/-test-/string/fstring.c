@@ -9,7 +9,7 @@ bug_s_fstring(VALUE self, VALUE str)
 }
 
 void
-Init_fstring(VALUE klass)
+Init_string_fstring(VALUE klass)
 {
     rb_define_singleton_method(klass, "fstring", bug_s_fstring, 1);
 }

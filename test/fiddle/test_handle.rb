@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 begin
   require_relative 'helper'
 rescue LoadError
@@ -8,23 +8,27 @@ module Fiddle
   class TestHandle < TestCase
     include Fiddle
 
-    include Test::Unit::Assertions
-
     def test_safe_handle_open
-      t = Thread.new do
+      Thread.new do
         $SAFE = 1
-        Fiddle::Handle.new(LIBC_SO.taint)
-      end
-      assert_raise(SecurityError) { t.value }
+        assert_raise(SecurityError) {
+          Fiddle::Handle.new(LIBC_SO.dup.taint)
+        }
+      end.join
+    ensure
+      $SAFE = 0
     end
 
     def test_safe_function_lookup
-      t = Thread.new do
+      Thread.new do
         h = Fiddle::Handle.new(LIBC_SO)
         $SAFE = 1
-        h["qsort".taint]
-      end
-      assert_raise(SecurityError) { t.value }
+        assert_raise(SecurityError) {
+          h["qsort".dup.taint]
+        }
+      end.join
+    ensure
+      $SAFE = 0
     end
 
     def test_to_i

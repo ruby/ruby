@@ -16,7 +16,7 @@ You can insert comments about all places. Two styles of comments can be used, Ru
 The class block is formed like this:
 
   class CLASS_NAME
-    [precedance table]
+    [precedence table]
     [token declarations]
     [expected number of S/R conflicts]
     [options]

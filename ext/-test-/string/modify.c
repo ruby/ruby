@@ -15,7 +15,7 @@ bug_str_modify_expand(VALUE str, VALUE expand)
 }
 
 void
-Init_modify(VALUE klass)
+Init_string_modify(VALUE klass)
 {
     rb_define_method(klass, "modify!", bug_str_modify, 0);
     rb_define_method(klass, "modify_expand!", bug_str_modify_expand, 1);

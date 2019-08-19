@@ -141,5 +141,28 @@ class TestGemResolverAPISpecification < Gem::TestCase
     assert_equal 'a-1', spec.full_name
   end
 
-end
+  def test_spec_jruby_platform
+    spec_fetcher do |fetcher|
+      fetcher.gem 'j', 1 do |spec|
+        spec.platform = 'jruby'
+      end
+    end
 
+    dep_uri = URI(@gem_repo) + 'api/v1/dependencies'
+    set = Gem::Resolver::APISet.new dep_uri
+    data = {
+      :name         => 'j',
+      :number       => '1',
+      :platform     => 'jruby',
+      :dependencies => [],
+    }
+
+    api_spec = Gem::Resolver::APISpecification.new set, data
+
+    spec = api_spec.spec
+
+    assert_kind_of Gem::Specification, spec
+    assert_equal 'j-1-java', spec.full_name
+  end
+
+end
