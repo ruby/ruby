@@ -92,8 +92,18 @@ RSpec.describe "bundle open" do
     end
   end
 
-  context "when opening a default gem", :ruby_repo do
+  context "when opening a default gem" do
+    let(:default_gems) do
+      ruby!(<<-RUBY).split("\n")
+        if Gem::Specification.is_a?(Enumerable)
+          puts Gem::Specification.select(&:default_gem?).map(&:name)
+        end
+      RUBY
+    end
+
     before do
+      skip "No default gems available on this test run" if default_gems.empty?
+
       install_gemfile <<-G
         gem "json"
       G
