@@ -1390,10 +1390,12 @@ rb_ary_entry_internal(VALUE ary, long offset)
 
 /* MRI debug support */
 void rb_obj_info_dump(VALUE obj);
-void  ruby_debug_breakpoint(void);
+void rb_obj_info_dump_loc(VALUE obj, const char *file, int line, const char *func);
+void ruby_debug_breakpoint(void);
 
 // show obj data structure without any side-effect
-#define rp(obj) rb_obj_info_dump((VALUE)obj);
+#define rp(obj) rb_obj_info_dump_loc((VALUE)(obj), __FILE__, __LINE__, __func__)
+
 // same as rp, but add message header
 #define rp_m(msg, obj) do { \
     fprintf(stderr, "%s", (msg)); \
