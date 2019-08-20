@@ -96,7 +96,7 @@ RUBY_BASE_NAME=`echo ruby | sed "$program_transform_name"`
 RUBYW_BASE_NAME=`echo rubyw | sed "$program_transform_name"`
 AC_SUBST(RUBY_BASE_NAME)
 AC_SUBST(RUBYW_BASE_NAME)
-AC_SUBST(RUBY_VERSION_NAME, '${RUBY_BASE_NAME}-${ruby_version}')
+AC_SUBST(RUBY_VERSION_NAME, '${RUBY_BASE_NAME}-${ruby_version_dir_name}')
 
 AC_CANONICAL_TARGET
 test x"$target_alias" = x &&
@@ -3649,9 +3649,6 @@ AS_CASE(["$target_os"],
     rubyw_install_name='$(RUBYW_INSTALL_NAME)'
     ])
 
-rubylibdir='${rubylibprefix}/${ruby_version}'
-rubyarchdir=${multiarch+'${rubyarchprefix}/${ruby_version}'}${multiarch-'${rubylibdir}/${arch}'}
-
 rubyarchprefix=${multiarch+'${archlibdir}/${RUBY_BASE_NAME}'}${multiarch-'${rubylibprefix}/${arch}'}
 AC_ARG_WITH(rubyarchprefix,
 	    AS_HELP_STRING([--with-rubyarchprefix=DIR],
@@ -3674,56 +3671,62 @@ AC_ARG_WITH(ridir,
 AC_SUBST(ridir)
 AC_SUBST(RI_BASE_NAME)
 
-AC_ARG_WITH(ruby-version,
-	    AS_HELP_STRING([--with-ruby-version=STR], [ruby version string for version specific directories [[full]] (full|minor|STR)]),
-            [ruby_version=$withval],
-            [ruby_version=full])
 unset RUBY_LIB_VERSION
-unset RUBY_LIB_VERSION_STYLE
-AS_CASE(["$ruby_version"],
-  [full],  [RUBY_LIB_VERSION_STYLE='3	/* full */'],
-  [minor], [RUBY_LIB_VERSION_STYLE='2	/* minor */'])
-AS_IF([test ${RUBY_LIB_VERSION_STYLE+set}], [
-    {
-    echo "#define RUBY_LIB_VERSION_STYLE $RUBY_LIB_VERSION_STYLE"
-    echo '#define STRINGIZE(x) x'
-    test -f revision.h -o -f "${srcdir}/revision.h" || echo '#define RUBY_REVISION 0'
-    echo '#include "version.h"'
-    echo 'ruby_version=RUBY_LIB_VERSION'
-    } > conftest.c
-    ruby_version="`$CPP -I. -I"${srcdir}" -I"${srcdir}/include" conftest.c | sed '/^ruby_version=/!d;s/ //g'`"
-    eval $ruby_version
-], [test -z "${ruby_version}"], [
-    AC_MSG_ERROR([No ruby version, No place for bundled libraries])
-], [
-    RUBY_LIB_VERSION="${ruby_version}"
-])
+RUBY_LIB_VERSION_STYLE='3	/* full */'
+{
+echo "#define RUBY_LIB_VERSION_STYLE $RUBY_LIB_VERSION_STYLE"
+echo '#define STRINGIZE(x) x'
+test -f revision.h -o -f "${srcdir}/revision.h" || echo '#define RUBY_REVISION 0'
+echo '#include "version.h"'
+echo 'ruby_version=RUBY_LIB_VERSION'
+} > conftest.c
+ruby_version="`$CPP -I. -I"${srcdir}" -I"${srcdir}/include" conftest.c | sed '/^ruby_version=/!d;s/ //g'`"
+eval $ruby_version
+
+RUBY_LIB_VERSION="${ruby_version}"
+
 AC_SUBST(RUBY_LIB_VERSION_STYLE)
 AC_SUBST(RUBY_LIB_VERSION)
+
+AC_ARG_WITH(ruby-version,
+	    AS_HELP_STRING([--with-ruby-version=STR], [ruby version string for version specific directories [[full]] (full|STR)]),
+            [ruby_version_dir_name=$withval],
+            [ruby_version_dir_name=full])
+AS_CASE(["$ruby_version_dir_name"],
+  [full], [ruby_version_dir_name='${ruby_version}'])
+
+ruby_version_dir=/'${ruby_version_dir_name}'
+
+if test -z "${ruby_version_dir_name}"; then
+    AC_MSG_ERROR([No ruby version, No place for bundled libraries])
+fi
+
+rubylibdir='${rubylibprefix}'${ruby_version_dir}
+rubyarchdir=${multiarch+'${rubyarchprefix}'${ruby_version_dir}}${multiarch-'${rubylibdir}/${arch}'}
 
 AC_ARG_WITH(sitedir,
 	    AS_HELP_STRING([--with-sitedir=DIR], [site libraries in DIR [[RUBY_LIB_PREFIX/site_ruby]], "no" to disable site directory]),
             [sitedir=$withval],
             [sitedir='${rubylibprefix}/site_ruby'])
-sitelibdir='${sitedir}/${ruby_version}'
+sitelibdir='${sitedir}'${ruby_version_dir}
 
 AC_ARG_WITH(sitearchdir,
 	    AS_HELP_STRING([--with-sitearchdir=DIR],
 			   [architecture dependent site libraries in DIR [[SITEDIR/SITEARCH]], "no" to disable site directory]),
             [sitearchdir=$withval],
-            [sitearchdir=${multiarch+'${rubysitearchprefix}/site_ruby/${ruby_version}'}${multiarch-'${sitelibdir}/${sitearch}'}])
+            [sitearchdir=${multiarch+'${rubysitearchprefix}/site_ruby'${ruby_version_dir}}${multiarch-'${sitelibdir}/${sitearch}'}])
 
 AC_ARG_WITH(vendordir,
 	    AS_HELP_STRING([--with-vendordir=DIR], [vendor libraries in DIR [[RUBY_LIB_PREFIX/vendor_ruby]], "no" to disable vendor directory]),
             [vendordir=$withval],
             [vendordir='${rubylibprefix}/vendor_ruby'])
-vendorlibdir='${vendordir}/${ruby_version}'
+vendorlibdir='${vendordir}'${ruby_version_dir}
 
 AC_ARG_WITH(vendorarchdir,
 	    AS_HELP_STRING([--with-vendorarchdir=DIR],
 			   [architecture dependent vendor libraries in DIR [[VENDORDIR/SITEARCH]], "no" to disable vendor directory]),
             [vendorarchdir=$withval],
-            [vendorarchdir=${multiarch+'${rubysitearchprefix}/vendor_ruby/${ruby_version}'}${multiarch-'${vendorlibdir}/${sitearch}'}])
+            [vendorarchdir=${multiarch+'${rubysitearchprefix}/vendor_ruby'${ruby_version_dir}}${multiarch-'${vendorlibdir}/${sitearch}'}])
 
 AS_IF([test "${LOAD_RELATIVE+set}"], [
     AC_DEFINE_UNQUOTED(LOAD_RELATIVE, $LOAD_RELATIVE)
@@ -3740,6 +3743,7 @@ AC_SUBST(sitearchincludedir)dnl
 AC_SUBST(arch)dnl
 AC_SUBST(sitearch)dnl
 AC_SUBST(ruby_version)dnl
+AC_SUBST(ruby_version_dir_name)dnl
 AC_SUBST(rubylibdir)dnl
 AC_SUBST(rubyarchdir)dnl
 AC_SUBST(sitedir)dnl

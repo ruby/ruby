@@ -10,7 +10,7 @@ module RDoc::RI::Paths
   #:stopdoc:
   require 'rbconfig'
 
-  version = RbConfig::CONFIG['ruby_version']
+  version = RbConfig::CONFIG['ruby_version_dir_name'] || RbConfig::CONFIG['ruby_version']
 
   BASE    = if RbConfig::CONFIG.key? 'ridir' then
               File.join RbConfig::CONFIG['ridir'], version
