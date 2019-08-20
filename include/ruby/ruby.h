@@ -1149,8 +1149,6 @@ struct rb_data_type_struct {
 	void (*dfree)(void*);
 	size_t (*dsize)(const void *);
         void (*dcompact)(void*);
-        void *reserved[1]; /* For future extension.
-			      This array *must* be filled with ZERO. */
     } function;
     const rb_data_type_t *parent;
     void *data;        /* This area can be used for any purpose
