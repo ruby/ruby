@@ -33,7 +33,7 @@ RSpec.describe "bundle exec" do
     expect(out).to eq("1.0.0")
   end
 
-  it "works when running from a random directory", :ruby_repo do
+  it "works when running from a random directory" do
     install_gemfile <<-G
       gem "rack"
     G
@@ -56,14 +56,14 @@ RSpec.describe "bundle exec" do
   end
 
   it "respects custom process title when loading through ruby", :github_action_linux do
-    script_that_changes_its_own_title_and_checks_if_picked_up_by_ps_unix_utility = <<~RUBY
-      Process.setproctitle("1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16")
-      puts `ps -eo args | grep [1]-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16`
+    script_that_changes_its_own_title_and_checks_if_picked_up_by_ps_unix_utility = <<~'RUBY'
+      Process.setproctitle("1-2-3-4-5-6-7-8-9-10-11-12-13-14-15")
+      puts `ps -ocommand= -p#{$$}`
     RUBY
     create_file "Gemfile"
     create_file "a.rb", script_that_changes_its_own_title_and_checks_if_picked_up_by_ps_unix_utility
     bundle "exec ruby a.rb"
-    expect(out).to eq("1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16")
+    expect(out).to eq("1-2-3-4-5-6-7-8-9-10-11-12-13-14-15")
   end
 
   it "accepts --verbose" do
@@ -192,7 +192,7 @@ RSpec.describe "bundle exec" do
       it "uses version specified" do
         bundle! "exec irb --version"
 
-        expect(out).to include(specified_irb_version)
+        expect(out).to eq(specified_irb_version)
         expect(err).to be_empty
       end
     end
@@ -222,7 +222,7 @@ RSpec.describe "bundle exec" do
       end
 
       it "uses resolved version" do
-        expect(out).to include(indirect_irb_version)
+        expect(out).to eq(indirect_irb_version)
         expect(err).to be_empty
       end
     end
@@ -336,7 +336,7 @@ RSpec.describe "bundle exec" do
     expect(err).to include("bundler: exec needs a command to run")
   end
 
-  it "raises a helpful error when exec'ing to something outside of the bundle", :ruby_repo do
+  it "raises a helpful error when exec'ing to something outside of the bundle" do
     bundle! "config set clean false" # want to keep the rackup binstub
     install_gemfile! <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -688,7 +688,7 @@ RSpec.describe "bundle exec" do
       it_behaves_like "it runs"
     end
 
-    context "when the file uses the current ruby shebang", :ruby_repo do
+    context "when the file uses the current ruby shebang" do
       let(:shebang) { "#!#{Gem.ruby}" }
       it_behaves_like "it runs"
     end

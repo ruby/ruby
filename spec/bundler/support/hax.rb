@@ -1,6 +1,14 @@
 # frozen_string_literal: true
 
 module Gem
+  def self.ruby=(ruby)
+    @ruby = ruby
+  end
+
+  if ENV["RUBY"]
+    Gem.ruby = ENV["RUBY"]
+  end
+
   if version = ENV["BUNDLER_SPEC_RUBYGEMS_VERSION"]
     remove_const(:VERSION) if const_defined?(:VERSION)
     VERSION = version

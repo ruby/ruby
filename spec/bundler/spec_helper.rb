@@ -70,7 +70,7 @@ RSpec.configure do |config|
   config.filter_run_excluding :rubygems => RequirementChecker.against(Gem::VERSION)
   config.filter_run_excluding :git => RequirementChecker.against(git_version)
   config.filter_run_excluding :bundler => RequirementChecker.against(Bundler::VERSION.split(".")[0])
-  config.filter_run_excluding :ruby_repo => !(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"]).nil?
+  config.filter_run_excluding :ruby_repo => !ENV["GEM_COMMAND"].nil?
   config.filter_run_excluding :no_color_tty => Gem.win_platform? || !ENV["GITHUB_ACTION"].nil?
   config.filter_run_excluding :github_action_linux => !ENV["GITHUB_ACTION"].nil? && (ENV["RUNNER_OS"] == "Linux")
 
@@ -88,12 +88,12 @@ RSpec.configure do |config|
   end
 
   config.around :each do |example|
-    if ENV["BUNDLE_RUBY"]
+    if ENV["RUBY"]
       orig_ruby = Gem.ruby
-      Gem.ruby = ENV["BUNDLE_RUBY"]
+      Gem.ruby = ENV["RUBY"]
     end
     example.run
-    Gem.ruby = orig_ruby if ENV["BUNDLE_RUBY"]
+    Gem.ruby = orig_ruby if ENV["RUBY"]
   end
 
   config.before :suite do
@@ -108,7 +108,7 @@ RSpec.configure do |config|
 
     original_env = ENV.to_hash
 
-    if ENV["BUNDLE_RUBY"]
+    if ENV["RUBY"]
       FileUtils.cp_r Spec::Path.bindir, File.join(Spec::Path.root, "lib", "exe")
     end
   end
@@ -139,7 +139,7 @@ RSpec.configure do |config|
   end
 
   config.after :suite do
-    if ENV["BUNDLE_RUBY"]
+    if ENV["RUBY"]
       FileUtils.rm_rf File.join(Spec::Path.root, "lib", "exe")
     end
   end
