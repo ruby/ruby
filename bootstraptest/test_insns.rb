@@ -414,10 +414,25 @@ tests = [
 ]
 
 # normal path
-tests.compact.each {|(insn, expr, *a)| assert_equal 'true', expr, insn, *a }
+tests.compact.each do |(insn, expr, *a)|
+  if a.last.is_a?(Hash)
+    a = a.dup
+    kw = a.pop
+    assert_equal 'true', expr, insn, *a, **kw
+  else
+    assert_equal 'true', expr, insn, *a
+  end
+end
+
 
 # with trace
 tests.compact.each {|(insn, expr, *a)|
   progn = "set_trace_func(proc{})\n" + expr
-  assert_equal 'true', progn, 'trace_' + insn, *a
+  if a.last.is_a?(Hash)
+    a = a.dup
+    kw = a.pop
+    assert_equal 'true', progn, 'trace_' + insn, *a, **kw
+  else
+    assert_equal 'true', progn, 'trace_' + insn, *a
+  end
 }

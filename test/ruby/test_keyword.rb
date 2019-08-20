@@ -302,14 +302,24 @@ class TestKeywordArguments < Test::Unit::TestCase
     bug7665 = '[ruby-core:51278]'
     bug8463 = '[ruby-core:55203] [Bug #8463]'
     expect = [*%w[foo bar], {zzz: 42}]
-    assert_equal(expect, rest_keyrest(*expect), bug7665)
+    assert_warn(/The last argument for `rest_keyrest' .* is used as the keyword parameter/) do
+      assert_equal(expect, rest_keyrest(*expect), bug7665)
+    end
     pr = proc {|*args, **opt| next *args, opt}
-    assert_equal(expect, pr.call(*expect), bug7665)
-    assert_equal(expect, pr.call(expect), bug8463)
+    assert_warn(/The last argument for `call' is used as the keyword parameter/) do
+      assert_equal(expect, pr.call(*expect), bug7665)
+    end
+    assert_warn(/The last argument for `call' is used as the keyword parameter/) do
+      assert_equal(expect, pr.call(expect), bug8463)
+    end
     pr = proc {|a, *b, **opt| next a, *b, opt}
-    assert_equal(expect, pr.call(expect), bug8463)
+    assert_warn(/The last argument for `call' is used as the keyword parameter/) do
+      assert_equal(expect, pr.call(expect), bug8463)
+    end
     pr = proc {|a, **opt| next a, opt}
-    assert_equal(expect.values_at(0, -1), pr.call(expect), bug8463)
+    assert_warn(/The last argument for `call' is used as the keyword parameter/) do
+      assert_equal(expect.values_at(0, -1), pr.call(expect), bug8463)
+    end
   end
 
   def opt_plus_keyword(x=1, **h)
@@ -324,16 +334,24 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, {:a=>1}], opt_plus_keyword(:a=>1))
     assert_equal([1, {"a"=>1}], opt_plus_keyword("a"=>1))
     assert_equal([1, {"a"=>1, :a=>1}], opt_plus_keyword("a"=>1, :a=>1))
-    assert_equal([1, {:a=>1}], opt_plus_keyword({:a=>1}))
+    assert_warn(/The last argument for `opt_plus_keyword' .* is used as the keyword parameter/) do
+      assert_equal([1, {:a=>1}], opt_plus_keyword({:a=>1}))
+    end
     assert_equal([{"a"=>1}, {}], opt_plus_keyword({"a"=>1}))
-    assert_equal([{"a"=>1}, {:a=>1}], opt_plus_keyword({"a"=>1, :a=>1}))
+    assert_warn(/The last argument for `opt_plus_keyword' .* is split into positional and keyword parameters/) do
+      assert_equal([{"a"=>1}, {:a=>1}], opt_plus_keyword({"a"=>1, :a=>1}))
+    end
 
     assert_equal([[], {:a=>1}], splat_plus_keyword(:a=>1))
     assert_equal([[], {"a"=>1}], splat_plus_keyword("a"=>1))
     assert_equal([[], {"a"=>1, :a=>1}], splat_plus_keyword("a"=>1, :a=>1))
-    assert_equal([[], {:a=>1}], splat_plus_keyword({:a=>1}))
+    assert_warn(/The last argument for `splat_plus_keyword' .* is used as the keyword parameter/) do
+      assert_equal([[], {:a=>1}], splat_plus_keyword({:a=>1}))
+    end
     assert_equal([[{"a"=>1}], {}], splat_plus_keyword({"a"=>1}))
-    assert_equal([[{"a"=>1}], {:a=>1}], splat_plus_keyword({"a"=>1, :a=>1}))
+    assert_warn(/The last argument for `splat_plus_keyword' .* is split into positional and keyword parameters/) do
+      assert_equal([[{"a"=>1}], {:a=>1}], splat_plus_keyword({"a"=>1, :a=>1}))
+    end
   end
 
   def test_bare_kwrest
@@ -551,8 +569,12 @@ class TestKeywordArguments < Test::Unit::TestCase
     o = Object.new
     def o.to_hash() { k: 9 } end
     assert_equal([1, 42, [], o, :key, {}, nil], f9(1, o))
-    assert_equal([1, 9], m1(1, o) {|a, k: 0| break [a, k]}, bug10016)
-    assert_equal([1, 9], m1(1, o, &->(a, k: 0) {break [a, k]}), bug10016)
+    assert_warn(/The last argument for `m1' .* is used as the keyword parameter/) do
+      assert_equal([1, 9], m1(1, o) {|a, k: 0| break [a, k]}, bug10016)
+    end
+    assert_warn(/The last argument for `m1' .* is used as the keyword parameter/) do
+      assert_equal([1, 9], m1(1, o, &->(a, k: 0) {break [a, k]}), bug10016)
+    end
   end
 
   def test_splat_hash
