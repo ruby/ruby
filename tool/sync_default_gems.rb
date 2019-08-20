@@ -240,17 +240,14 @@ def sync_default_gems_with_commits(gem, range)
   end
   `git fetch --no-tags #{gem}`
 
-  commits = []
-
-  IO.popen(%W"git log --format=%H,%s #{range}") do |f|
-    commits = f.read.split("\n").reverse.map{|commit| commit.split(',', 2)}
+  commits = IO.popen(%W"git log --format=%H,%s #{range}") do |f|
+    f.read.split("\n").reverse.map{|commit| commit.split(',', 2)}
   end
 
   # Ignore Merge commit and insufficiency commit for ruby core repository.
   commits.delete_if do |sha, subject|
-    files = []
-    IO.popen(%W"git diff-tree --no-commit-id --name-only -r #{sha}") do |f|
-      files = f.read.split("\n")
+    files = IO.popen(%W"git diff-tree --no-commit-id --name-only -r #{sha}") do |f|
+      f.readlines
     end
     subject =~ /^Merge/ || subject =~ /^Auto Merge/ || files.all?{|file| file =~ IGNORE_FILE_PATTERN}
   end
