@@ -144,25 +144,3 @@ notifications:
     on_build_success: false
     on_build_failure: true
     on_build_status_changed: true
-  - provider: Webhook
-    method: POST
-    url:
-      secure: iMINHMS0nZabaDsxN9omRDsekxzVvAAzEq5ev7lN6vb+gUETT+rbDKLGxBxBpEpxlnPlLdzroIJ+DTKlwfJA8VkGawTn9EXNsucH0OkSf2M= # AppVeyor CI
-    body: >-
-      {{^isPullRequest}}
-        {
-          "attachments": [
-            {
-              "title": "Build {{projectName}} {{buildVersion}} {{status}}",
-              "title_link": "{{buildUrl}}",
-              "fallback": "AppVeyor Build {{projectName}} {{buildVersion}} {{status}}",
-              "text": "Commit <{{commitUrl}}|{{commitId}}> by {{commitAuthor}} on {{commitDate}}: _{{commitMessage}}_",
-              "color": "{{#passed}}good{{/passed}}{{#failed}}danger{{/failed}}"
-            }
-          ],
-          "channel": "#commits"
-        }
-      {{/isPullRequest}}
-    on_build_success: false
-    on_build_failure: true
-    on_build_status_changed: true
