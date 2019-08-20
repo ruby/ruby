@@ -243,7 +243,7 @@ def sync_default_gems_with_commits(gem, range)
   commits = []
 
   IO.popen(%W"git log --format=%H,%s #{range}") do |f|
-    commits = f.read.split("\n").reverse.map{|commit| commit.split(',')}
+    commits = f.read.split("\n").reverse.map{|commit| commit.split(',', 2)}
   end
 
   # Ignore Merge commit and insufficiency commit for ruby core repository.
