@@ -221,13 +221,13 @@ class TestGemUninstaller < Gem::InstallerTestCase
 
     uninstaller = Gem::Uninstaller.new spec.name, :executables => true
 
-    e = assert_raises Gem::InstallError do
+    use_ui @ui do
       uninstaller.uninstall
     end
 
-    assert_equal 'gem "default" cannot be uninstalled ' +
-                 'because it is a default gem',
-                 e.message
+    lines = @ui.output.split("\n")
+
+    assert_equal 'Gem default-2 cannot be uninstalled because it is a default gem', lines.shift
   end
 
   def test_uninstall_default_gem_with_same_version
