@@ -854,11 +854,7 @@ class Reline::LineEditor
     else
       temp_buffer[@line_index] = @line
     end
-    if temp_buffer.any?{ |l| l.chomp != '' }
-      @confirm_multiline_termination_proc.(temp_buffer.join("\n") + "\n")
-    else
-      false
-    end
+    @confirm_multiline_termination_proc.(temp_buffer.join("\n") + "\n")
   end
 
   def insert_text(text)
