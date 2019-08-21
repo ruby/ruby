@@ -1293,7 +1293,7 @@ test-bundler-precheck: $(arch)-fake.rb programs
 
 yes-test-bundler-prepare: test-bundler-precheck
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
-		--install-dir .bundle --conservative "rspec:~> 3.5" "rake:~> 12.0"
+		--install-dir .bundle --conservative "rspec:~> 3.5" "rake:~> 12.0" "parallel_tests:~> 2.29"
 
 RSPECOPTS = --format progress
 BUNDLER_SPECS =
@@ -1302,6 +1302,14 @@ yes-test-bundler: yes-test-bundler-prepare
 	$(XRUBY) -C $(srcdir) -Ispec/bundler .bundle/bin/rspec \
 		--require spec_helper $(RSPECOPTS) spec/bundler/$(BUNDLER_SPECS)
 no-test-bundler:
+
+PARALLELRSPECOPTS = --runtime-log $(srcdir)/tmp/parallel_runtime_rspec.log
+test-bundler-parallel: $(TEST_RUNNABLE)-test-bundler-parallel
+yes-test-bundler-parallel: yes-test-bundler-prepare
+	$(XRUBY) -C $(srcdir) -Ispec/bundler .bundle/bin/parallel_rspec \
+		-o "--require ${srcdir}/spec/bundler/spec_helper --require ${srcdir}/spec/bundler/support/parallel" \
+		${PARALLELRSPECOPTS} spec/bundler/$(BUNDLER_SPECS)
+no-test-bundler-parallel:
 
 GEM = up
 sync-default-gems:
