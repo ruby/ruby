@@ -735,7 +735,13 @@ Init_digest(void)
     id_digest          = rb_intern("digest");
     id_hexdigest       = rb_intern("hexdigest");
     id_digest_length   = rb_intern("digest_length");
+    id_metadata        = rb_intern("metadata");
+    InitVM(digest);
+}
 
+void
+InitVM_digest(void)
+{
     /*
      * module Digest
      */
@@ -781,8 +787,6 @@ Init_digest(void)
     /* class methods */
     rb_define_singleton_method(rb_cDigest_Class, "digest", rb_digest_class_s_digest, -1);
     rb_define_singleton_method(rb_cDigest_Class, "hexdigest", rb_digest_class_s_hexdigest, -1);
-
-    id_metadata = rb_intern("metadata");
 
     /* class Digest::Base < Digest::Class */
     rb_cDigest_Base = rb_define_class_under(rb_mDigest, "Base", rb_cDigest_Class);
