@@ -493,7 +493,7 @@ class TestLogDevice < Test::Unit::TestCase
     end
   end
 
-  env_tz_works = /linux|darwin|freebsd/ =~ RUBY_PLATFORM # borrow from test/ruby/test_time_tz.rb
+  env_tz_works = /linux|darwin|freebsd|openbsd/ =~ RUBY_PLATFORM # borrow from test/ruby/test_time_tz.rb
 
   def test_shifting_weekly
     Dir.mktmpdir do |tmpdir|
