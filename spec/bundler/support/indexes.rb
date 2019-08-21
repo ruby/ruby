@@ -27,12 +27,6 @@ module Spec
       end
       source_requirements ||= {}
       Bundler::Resolver.resolve(deps, @index, source_requirements, *args)
-    rescue NoMethodError => e
-      if e.receiver.is_a?(String) and e.name == :name
-        PP.pp([deps, @index, source_requirements, *args], STDERR)
-        STDERR.puts e.message, e.backtrace
-      end
-      raise
     end
 
     def should_resolve_as(specs)
