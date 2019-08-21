@@ -35,14 +35,12 @@ void
 Init_sha2(void)
 {
     VALUE mDigest, cDigest_Base;
-    ID id_metadata;
+    ID id_metadata = rb_id_metadata();
 
 #define DECLARE_ALGO_CLASS(bitlen) \
     VALUE cDigest_SHA##bitlen;
 
     FOREACH_BITLEN(DECLARE_ALGO_CLASS)
-
-    id_metadata = rb_intern_const("metadata");
 
     mDigest = rb_digest_namespace();
     cDigest_Base = rb_path2class("Digest::Base");

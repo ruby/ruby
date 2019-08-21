@@ -735,7 +735,7 @@ Init_digest(void)
     id_digest          = rb_intern("digest");
     id_hexdigest       = rb_intern("hexdigest");
     id_digest_length   = rb_intern("digest_length");
-    id_metadata        = rb_intern("metadata");
+    id_metadata        = rb_id_metadata();
     InitVM(digest);
 }
 

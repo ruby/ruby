@@ -56,3 +56,9 @@ rb_digest_namespace(void)
     rb_require("digest");
     return rb_path2class("Digest");
 }
+
+static inline ID
+rb_id_metadata(void)
+{
+    return rb_intern_const("metadata");
+}
