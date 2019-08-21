@@ -28,7 +28,7 @@ module Bundler
         Bundler.ui.warn <<-WARN, :wrap => true
           You must recompile Ruby with OpenSSL support or change the sources in your \
           Gemfile from 'https' to 'http'. Instructions for compiling with OpenSSL \
-          using RVM are available at http://rvm.io/packages/openssl.
+          using RVM are available at https://rvm.io/packages/openssl.
         WARN
         Bundler.ui.trace error
       when Interrupt
