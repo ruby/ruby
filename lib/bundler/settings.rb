@@ -24,6 +24,7 @@ module Bundler
       disable_exec_load
       disable_local_branch_check
       disable_multisource
+      disable_platform_warnings
       disable_shared_gems
       disable_version_check
       force_ruby_platform
