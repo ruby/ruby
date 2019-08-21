@@ -47,6 +47,7 @@ jobs:
         env:
           TESTOPTS: "$JOBS -q --tty=no"
           MSPECOPT: "-ff" # not using `-j` because sometimes `mspec -j` silently dies
+          PARALLEL_TESTS_EXECUTABLE: $GITHUB_WORKSPACE/.bundle/bin/rspec
         if: matrix.test_task != 'test-bundled-gems' && !contains(github.event.head_commit.message, '[ci skip]')
       # test-bundled-gems is separated for marking `continue-on-error` because it randomly fails.
       - name: Tests
