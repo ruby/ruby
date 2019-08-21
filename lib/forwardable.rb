@@ -150,7 +150,7 @@ module Forwardable
   #
   def def_instance_delegators(accessor, *methods)
     methods.each do |method|
-      next if method.to_s == "__send__" || method.to_s == "__id__"
+      next if /\A__(?:send|id)__\z/ =~ method
       def_instance_delegator(accessor, method)
     end
   end
@@ -286,7 +286,7 @@ module SingleForwardable
   #
   def def_single_delegators(accessor, *methods)
     methods.each do |method|
-      next if method.to_s == "__send__" || method.to_s == "__id__"
+      next if /\A__(?:send|id)__\z/ =~ method
       def_single_delegator(accessor, method)
     end
   end
