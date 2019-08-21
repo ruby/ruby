@@ -1295,7 +1295,7 @@ yes-test-bundler-prepare: test-bundler-precheck
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
 		--install-dir .bundle --conservative "rspec:~> 3.5" "rake:~> 12.0" "parallel_tests:~> 2.29"
 
-RSPECOPTS = --format progress
+RSPECOPTS =
 BUNDLER_SPECS =
 test-bundler: $(TEST_RUNNABLE)-test-bundler
 yes-test-bundler: yes-test-bundler-prepare
