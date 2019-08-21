@@ -42,6 +42,10 @@ jobs:
       - name: configure
         run: ./configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
       - run: make $JOBS
+      - run: echo $PWD
+      - run: |
+          make yes-test-bundler-prepare
+          ls -lA
       - name: Tests
         run: make -s ${{ matrix.test_task }}
         env:
