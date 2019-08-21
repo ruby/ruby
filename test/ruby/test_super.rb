@@ -307,6 +307,29 @@ class TestSuper < Test::Unit::TestCase
     end
   end
 
+  def test_super_in_instance_eval_in_module
+    super_class = EnvUtil.labeled_class("Super\u{30af 30e9 30b9}") {
+      def foo
+        return [:super, self]
+      end
+    }
+    mod = EnvUtil.labeled_module("Mod\u{30af 30e9 30b9}") {
+      def foo
+        x = Object.new
+        x.instance_eval do
+          super()
+        end
+      end
+    }
+    sub_class = EnvUtil.labeled_class("Sub\u{30af 30e9 30b9}", super_class) {
+      include mod
+    }
+    obj = sub_class.new
+    assert_raise_with_message(TypeError, /Sub\u{30af 30e9 30b9}/) do
+      obj.foo
+    end
+  end
+
   def test_super_in_orphan_block
     super_class = EnvUtil.labeled_class("Super\u{30af 30e9 30b9}") {
       def foo
