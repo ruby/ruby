@@ -60,6 +60,11 @@ jobs:
         if: matrix.test_task == 'test-bundled-gems' && !contains(github.event.head_commit.message, '[ci skip]')
       - name: Leaked Globals
         run: make -s leaked-globals
+      - name: Debug GitHub context
+        run: echo "$GITHUB_CONTEXT"
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        if: failure() && github.event_name == 'push'
       - uses: k0kubun/action-slack@v1.0.0
         with:
           payload: |
