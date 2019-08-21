@@ -921,6 +921,7 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
 	}
 	iclass = rb_include_class_new(module, RCLASS_SUPER(c));
 	c = RCLASS_SET_SUPER(c, iclass);
+        RCLASS_SET_INCLUDER(iclass, klass);
 
 	{
 	    VALUE m = module;

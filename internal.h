@@ -1039,6 +1039,7 @@ struct rb_classext_struct {
     const VALUE origin_;
     const VALUE refined_class;
     rb_alloc_func_t allocator;
+    const VALUE includer;
 };
 
 typedef struct rb_classext_struct rb_classext_t;
@@ -1078,6 +1079,7 @@ int rb_singleton_class_internal_p(VALUE sklass);
 #else
 # define RCLASS_SERIAL(c) (RCLASS_EXT(c)->class_serial)
 #endif
+#define RCLASS_INCLUDER(c) (RCLASS_EXT(c)->includer)
 
 #define RCLASS_CLONED     FL_USER6
 #define RICLASS_IS_ORIGIN FL_USER5
@@ -1088,6 +1090,12 @@ RCLASS_SET_ORIGIN(VALUE klass, VALUE origin)
 {
     RB_OBJ_WRITE(klass, &RCLASS_ORIGIN(klass), origin);
     if (klass != origin) FL_SET(origin, RICLASS_IS_ORIGIN);
+}
+
+static inline void
+RCLASS_SET_INCLUDER(VALUE iclass, VALUE klass)
+{
+    RB_OBJ_WRITE(iclass, &RCLASS_INCLUDER(iclass), klass);
 }
 
 #undef RCLASS_SUPER
