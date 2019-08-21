@@ -9233,7 +9233,7 @@ struct ibf_iseq_constant_body {
     enum iseq_type type; /* instruction sequence type */
 
     unsigned int iseq_size;
-    VALUE *iseq_encoded; /* encoded iseq (insn addr and operands) */
+    ibf_offset_t iseq_offset; /* encoded iseq (insn addr and operands) */
 
     struct {
         struct {
@@ -9440,11 +9440,11 @@ ibf_dump_callinfo(struct ibf_dump *dump, const struct rb_call_info *ci)
 
 static ibf_offset_t ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq);
 
-static rb_iseq_t *
+static int
 ibf_dump_iseq(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
     if (iseq == NULL) {
-        return (rb_iseq_t *)-1;
+        return -1;
     }
     else {
         int iseq_index = ibf_table_lookup(dump->iseq_table, (st_data_t)iseq);
@@ -9452,7 +9452,7 @@ ibf_dump_iseq(struct ibf_dump *dump, const rb_iseq_t *iseq)
             iseq_index = ibf_table_index(dump->iseq_table, (st_data_t)iseq);
             rb_ary_store(dump->iseq_list, iseq_index, LONG2NUM(ibf_dump_iseq_each(dump, rb_iseq_check(iseq))));
         }
-        return (rb_iseq_t *)(VALUE)iseq_index;
+        return iseq_index;
     }
 }
 
@@ -9469,7 +9469,7 @@ ibf_load_gentry(const struct ibf_load *load, const struct rb_global_entry *entry
     return (VALUE)rb_global_entry(gid);
 }
 
-static VALUE *
+static ibf_offset_t
 ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
     const struct rb_iseq_constant_body *const body = iseq->body;
@@ -9532,7 +9532,8 @@ ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
 	assert(insn_len(insn) == op_index+1);
     }
 
-    return IBF_W(code, VALUE, iseq_size);
+    IBF_W_ALIGN(VALUE);
+    return ibf_dump_write(dump, code, sizeof(VALUE) * iseq_size);
 }
 
 static VALUE *
@@ -9540,7 +9541,7 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, const struct i
 {
     const int iseq_size = body->iseq_size;
     int code_index;
-    VALUE *code = IBF_R(body->iseq_encoded, VALUE, iseq_size);
+    VALUE *code = IBF_R(body->iseq_offset, VALUE, iseq_size);
 
     struct rb_iseq_constant_body *load_body = iseq->body;
     struct rb_call_info *ci_entries = load_body->ci_entries;
@@ -9767,7 +9768,7 @@ ibf_dump_catch_table(struct ibf_dump *dump, const rb_iseq_t *iseq)
         dump_table->size = table->size;
         for (i=0; i<table->size; i++) {
             dump_table->entries[i] = table->entries[i];
-            dump_table->entries[i].iseq = ibf_dump_iseq(dump, table->entries[i].iseq);
+            dump_table->entries[i].iseq = (rb_iseq_t *)(VALUE)ibf_dump_iseq(dump, table->entries[i].iseq);
         }
         return ibf_dump_write(dump, dump_table, byte_size);
     }
@@ -9871,7 +9872,6 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     memset(&dump_body, 0, sizeof(struct ibf_iseq_constant_body));
     dump_body.type = iseq->body->type;
     dump_body.iseq_size = iseq->body->iseq_size;
-    dump_body.iseq_encoded = iseq->body->iseq_encoded;
     dump_body.param.flags.has_lead = iseq->body->param.flags.has_lead;
     dump_body.param.flags.has_opt = iseq->body->param.flags.has_opt;
     dump_body.param.flags.has_rest = iseq->body->param.flags.has_rest;
@@ -9904,7 +9904,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     dump_body.location.base_label = ibf_dump_object(dump, dump_body.location.base_label);
     dump_body.location.label = ibf_dump_object(dump, dump_body.location.label);
 
-    dump_body.iseq_encoded =         ibf_dump_code(dump, iseq);
+    dump_body.iseq_offset =         ibf_dump_code(dump, iseq);
     dump_body.param.opt_table_offset = ibf_dump_param_opt_table(dump, iseq);
     dump_body.param.keyword =        ibf_dump_param_keyword(dump, iseq);
     dump_body.insns_info.body_offset = ibf_dump_insns_info_body(dump, iseq);
@@ -9915,8 +9915,8 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
 
     dump_body.local_table_offset =   ibf_dump_local_table(dump, iseq);
     dump_body.catch_table_offset =   ibf_dump_catch_table(dump, iseq);
-    dump_body.parent_iseq_index =    (int)(VALUE)ibf_dump_iseq(dump, iseq->body->parent_iseq);
-    dump_body.local_iseq_index =     (int)(VALUE)ibf_dump_iseq(dump, iseq->body->local_iseq);
+    dump_body.parent_iseq_index =    ibf_dump_iseq(dump, iseq->body->parent_iseq);
+    dump_body.local_iseq_index =     ibf_dump_iseq(dump, iseq->body->local_iseq);
     dump_body.ci_entries_offset =    ibf_dump_ci_entries(dump, iseq);
 
     IBF_W_ALIGN(struct ibf_iseq_constant_body);
