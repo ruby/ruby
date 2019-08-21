@@ -11,7 +11,7 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        test_task: [ "check", "test-bundler", "test-bundled-gems" ]
+        test_task: [ "check", "test-bundler-parallel", "test-bundled-gems" ]
       fail-fast: false
     steps:
       - name: Disable Firewall
