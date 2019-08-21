@@ -9481,55 +9481,55 @@ ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
     code = ALLOCA_N(VALUE, iseq_size);
 
     for (code_index=0; code_index<iseq_size;) {
-	const VALUE insn = orig_code[code_index];
-	const char *types = insn_op_types(insn);
-	int op_index;
+        const VALUE insn = orig_code[code_index];
+        const char *types = insn_op_types(insn);
+        int op_index;
 
-	code[code_index++] = (VALUE)insn;
+        code[code_index++] = (VALUE)insn;
 
-	for (op_index=0; types[op_index]; op_index++, code_index++) {
-	    VALUE op = orig_code[code_index];
-	    switch (types[op_index]) {
-	      case TS_CDHASH:
-	      case TS_VALUE:
-		code[code_index] = ibf_dump_object(dump, op);
-		break;
-	      case TS_ISEQ:
-		code[code_index] = (VALUE)ibf_dump_iseq(dump, (const rb_iseq_t *)op);
-		break;
-	      case TS_IC:
-	      case TS_ISE:
-		{
-		    unsigned int i;
-		    for (i=0; i<body->is_size; i++) {
-			if (op == (VALUE)&body->is_entries[i]) {
-			    break;
-			}
-		    }
-		    code[code_index] = i;
-		}
-		break;
-	      case TS_CALLINFO:
-		code[code_index] = ibf_dump_callinfo(dump, (const struct rb_call_info *)op);
-		break;
-	      case TS_CALLCACHE:
-		code[code_index] = 0;
-		break;
-	      case TS_ID:
-		code[code_index] = ibf_dump_id(dump, (ID)op);
-		break;
-	      case TS_GENTRY:
-		code[code_index] = ibf_dump_gentry(dump, (const struct rb_global_entry *)op);
-		break;
-	      case TS_FUNCPTR:
-		rb_raise(rb_eRuntimeError, "TS_FUNCPTR is not supported");
-		break;
-	      default:
-		code[code_index] = op;
-		break;
-	    }
-	}
-	assert(insn_len(insn) == op_index+1);
+        for (op_index=0; types[op_index]; op_index++, code_index++) {
+            VALUE op = orig_code[code_index];
+            switch (types[op_index]) {
+              case TS_CDHASH:
+              case TS_VALUE:
+                code[code_index] = ibf_dump_object(dump, op);
+                break;
+              case TS_ISEQ:
+                code[code_index] = (VALUE)ibf_dump_iseq(dump, (const rb_iseq_t *)op);
+                break;
+              case TS_IC:
+              case TS_ISE:
+                {
+                    unsigned int i;
+                    for (i=0; i<body->is_size; i++) {
+                        if (op == (VALUE)&body->is_entries[i]) {
+                            break;
+                        }
+                    }
+                    code[code_index] = i;
+                }
+                break;
+              case TS_CALLINFO:
+                code[code_index] = ibf_dump_callinfo(dump, (const struct rb_call_info *)op);
+                break;
+              case TS_CALLCACHE:
+                code[code_index] = 0;
+                break;
+              case TS_ID:
+                code[code_index] = ibf_dump_id(dump, (ID)op);
+                break;
+              case TS_GENTRY:
+                code[code_index] = ibf_dump_gentry(dump, (const struct rb_global_entry *)op);
+                break;
+              case TS_FUNCPTR:
+                rb_raise(rb_eRuntimeError, "TS_FUNCPTR is not supported");
+                break;
+              default:
+                code[code_index] = op;
+                break;
+            }
+        }
+        assert(insn_len(insn) == op_index+1);
     }
 
     IBF_W_ALIGN(VALUE);
@@ -9552,26 +9552,26 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, const struct i
     load_body->iseq_encoded = code;
     load_body->iseq_size = 0;
     for (code_index=0; code_index<iseq_size;) {
-	const VALUE insn = code[code_index++];
-	const char *types = insn_op_types(insn);
+        const VALUE insn = code[code_index++];
+        const char *types = insn_op_types(insn);
         int op_index;
 
-	for (op_index=0; types[op_index]; op_index++, code_index++) {
-	    VALUE op = code[code_index];
+        for (op_index=0; types[op_index]; op_index++, code_index++) {
+            VALUE op = code[code_index];
 
-	    switch (types[op_index]) {
-	      case TS_CDHASH:
-	      case TS_VALUE:
-	        {
-		    VALUE v = ibf_load_object(load, op);
-		    code[code_index] = v;
-		    if (!SPECIAL_CONST_P(v)) {
-			RB_OBJ_WRITTEN(iseq, Qundef, v);
-			FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
-		    }
-		    break;
-		}
-	      case TS_ISEQ:
+            switch (types[op_index]) {
+              case TS_CDHASH:
+              case TS_VALUE:
+                {
+                    VALUE v = ibf_load_object(load, op);
+                    code[code_index] = v;
+                    if (!SPECIAL_CONST_P(v)) {
+                        RB_OBJ_WRITTEN(iseq, Qundef, v);
+                        FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
+                    }
+                    break;
+                }
+              case TS_ISEQ:
                 {
                     VALUE v = (VALUE)ibf_load_iseq(load, (const rb_iseq_t *)op);
                     code[code_index] = v;
@@ -9581,35 +9581,35 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, const struct i
                     }
                     break;
                 }
-	      case TS_ISE:
-		FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
+              case TS_ISE:
+                FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
                 /* fall through */
-	      case TS_IC:
-		code[code_index] = (VALUE)&is_entries[(int)op];
-		break;
-	      case TS_CALLINFO:
-		code[code_index] = op ? (VALUE)ci_kw_entries++ : (VALUE)ci_entries++; /* op is Qtrue (kw) or Qfalse (!kw) */
-		break;
-	      case TS_CALLCACHE:
-		code[code_index] = (VALUE)cc_entries++;
-		break;
-	      case TS_ID:
-		code[code_index] = ibf_load_id(load, (ID)op);
-		break;
-	      case TS_GENTRY:
-		code[code_index] = ibf_load_gentry(load, (const struct rb_global_entry *)op);
-		break;
-	      case TS_FUNCPTR:
-		rb_raise(rb_eRuntimeError, "TS_FUNCPTR is not supported");
-		break;
-	      default:
-		/* code[code_index] = op; */
-		continue;
-	    }
-	}
-	if (insn_len(insn) != op_index+1) {
-	    rb_raise(rb_eRuntimeError, "operand size mismatch");
-	}
+              case TS_IC:
+                code[code_index] = (VALUE)&is_entries[(int)op];
+                break;
+              case TS_CALLINFO:
+                code[code_index] = op ? (VALUE)ci_kw_entries++ : (VALUE)ci_entries++; /* op is Qtrue (kw) or Qfalse (!kw) */
+                break;
+              case TS_CALLCACHE:
+                code[code_index] = (VALUE)cc_entries++;
+                break;
+              case TS_ID:
+                code[code_index] = ibf_load_id(load, (ID)op);
+                break;
+              case TS_GENTRY:
+                code[code_index] = ibf_load_gentry(load, (const struct rb_global_entry *)op);
+                break;
+              case TS_FUNCPTR:
+                rb_raise(rb_eRuntimeError, "TS_FUNCPTR is not supported");
+                break;
+              default:
+                /* code[code_index] = op; */
+                continue;
+            }
+        }
+        if (insn_len(insn) != op_index+1) {
+            rb_raise(rb_eRuntimeError, "operand size mismatch");
+        }
     }
     load_body->iseq_size = code_index;
 
