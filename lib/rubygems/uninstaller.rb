@@ -88,6 +88,10 @@ class Gem::Uninstaller
       list << spec
     end
 
+    if list.empty?
+      raise Gem::InstallError, "gem #{@gem.inspect} is not installed"
+    end
+
     default_specs, list = list.partition do |spec|
       spec.default_gem?
     end
@@ -101,9 +105,7 @@ class Gem::Uninstaller
 
     if list.empty?
       if other_repo_specs.empty?
-        if default_specs.empty?
-          raise Gem::InstallError, "gem #{@gem.inspect} is not installed"
-        else
+        if default_specs.any?
           message =
             "gem #{@gem.inspect} cannot be uninstalled " +
             "because it is a default gem"
