@@ -9380,15 +9380,15 @@ static rb_iseq_t *
 ibf_dump_iseq(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
     if (iseq == NULL) {
-	return (rb_iseq_t *)-1;
+        return (rb_iseq_t *)-1;
     }
     else {
-	int iseq_index = ibf_table_lookup(dump->iseq_table, (st_data_t)iseq);
-	if (iseq_index < 0) {
-	    iseq_index = ibf_table_index(dump->iseq_table, (st_data_t)iseq);
-	    rb_ary_store(dump->iseq_list, iseq_index, LONG2NUM(ibf_dump_iseq_each(dump, rb_iseq_check(iseq))));
-	}
-	return (rb_iseq_t *)(VALUE)iseq_index;
+        int iseq_index = ibf_table_lookup(dump->iseq_table, (st_data_t)iseq);
+        if (iseq_index < 0) {
+            iseq_index = ibf_table_index(dump->iseq_table, (st_data_t)iseq);
+            rb_ary_store(dump->iseq_list, iseq_index, LONG2NUM(ibf_dump_iseq_each(dump, rb_iseq_check(iseq))));
+        }
+        return (rb_iseq_t *)(VALUE)iseq_index;
     }
 }
 
@@ -10656,11 +10656,11 @@ rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
     VALUE str;
 
     if (iseq->body->parent_iseq != NULL ||
-	iseq->body->local_iseq != iseq) {
-	rb_raise(rb_eRuntimeError, "should be top of iseq");
+        iseq->body->local_iseq != iseq) {
+        rb_raise(rb_eRuntimeError, "should be top of iseq");
     }
     if (RTEST(ISEQ_COVERAGE(iseq))) {
-	rb_raise(rb_eRuntimeError, "should not compile with coverage");
+        rb_raise(rb_eRuntimeError, "should not compile with coverage");
     }
 
     dump_obj = TypedData_Make_Struct(0, struct ibf_dump, &ibf_dump_type, dump);
@@ -10682,13 +10682,13 @@ rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
     header.size = ibf_dump_pos(dump);
 
     if (RTEST(opt)) {
-	VALUE opt_str = opt;
-	const char *ptr = StringValuePtr(opt_str);
-	header.extra_size = RSTRING_LENINT(opt_str);
-	ibf_dump_write(dump, ptr, header.extra_size);
+        VALUE opt_str = opt;
+        const char *ptr = StringValuePtr(opt_str);
+        header.extra_size = RSTRING_LENINT(opt_str);
+        ibf_dump_write(dump, ptr, header.extra_size);
     }
     else {
-	header.extra_size = 0;
+        header.extra_size = 0;
     }
 
     ibf_dump_overwrite(dump, &header, sizeof(header), 0);
