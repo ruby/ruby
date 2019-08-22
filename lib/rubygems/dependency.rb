@@ -140,7 +140,7 @@ class Gem::Dependency
 
     if defined?(@version_requirement) && @version_requirement
       version = @version_requirement.instance_variable_get :@version
-      @version_requirement  = nil
+      @version_requirement = nil
       @version_requirements = Gem::Requirement.new version
     end
 
@@ -266,7 +266,7 @@ class Gem::Dependency
     end
 
     default = Gem::Requirement.default
-    self_req  = self.requirement
+    self_req = self.requirement
     other_req = other.requirement
 
     return self.class.new name, self_req  if other_req == default

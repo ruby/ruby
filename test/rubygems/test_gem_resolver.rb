@@ -740,7 +740,7 @@ class TestGemResolver < Gem::TestCase
   def test_select_local_platforms
     r = Gem::Resolver.new nil, nil
 
-    a1    = util_spec 'a', 1
+    a1 = util_spec 'a', 1
 
     a1_p1 = util_spec 'a', 1 do |s|
       s.platform = Gem::Platform.local
@@ -756,7 +756,7 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_search_for_local_platform_partial_string_match
-    a1    = util_spec 'a', 1
+    a1 = util_spec 'a', 1
 
     a1_p1 = util_spec 'a', 1 do |s|
       s.platform = Gem::Platform.local.os

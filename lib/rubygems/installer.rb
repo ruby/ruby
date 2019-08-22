@@ -698,7 +698,7 @@ class Gem::Installer
     @development         = options[:development]
     @build_root          = options[:build_root]
 
-    @build_args          = options[:build_args] || Gem::Command.build_args
+    @build_args = options[:build_args] || Gem::Command.build_args
 
     unless @build_root.nil?
       require 'pathname'

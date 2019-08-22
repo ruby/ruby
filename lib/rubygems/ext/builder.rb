@@ -108,7 +108,7 @@ class Gem::Ext::Builder
     @build_args = build_args
     @gem_dir    = spec.full_gem_path
 
-    @ran_rake   = false
+    @ran_rake = false
   end
 
   ##

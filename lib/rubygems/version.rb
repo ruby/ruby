@@ -392,7 +392,7 @@ class Gem::Version
 
   def _split_segments
     string_start = _segments.index {|s| s.is_a?(String) }
-    string_segments  = segments
+    string_segments = segments
     numeric_segments = string_segments.slice!(0, string_start || string_segments.size)
     return numeric_segments, string_segments
   end
