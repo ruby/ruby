@@ -28,8 +28,8 @@ g(MAYBE_UNUSED(VALUE q), void* w)
     const int *e = (const int *)w;
     const int  r = *e++;
     const int  t = *e++;
-    VALUE      y[t];
-    int        u[t];
+    VALUE     *y = ALLOCA_N(VALUE, t);
+    int       *u = ALLOCA_N(int, t);
 
     rb_profile_frames(r, t, y, u);
 }
