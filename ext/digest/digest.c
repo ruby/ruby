@@ -573,6 +573,12 @@ get_digest_base_metadata(VALUE klass)
     return algo;
 }
 
+static rb_digest_metadata_t *
+get_digest_obj_metadata(VALUE obj)
+{
+    return get_digest_base_metadata(rb_obj_class(obj));
+}
+
 static const rb_data_type_t digest_type = {
     "digest",
     {0, RUBY_TYPED_DEFAULT_FREE, 0,},
@@ -619,8 +625,8 @@ rb_digest_base_copy(VALUE copy, VALUE obj)
 
     rb_check_frozen(copy);
 
-    algo = get_digest_base_metadata(rb_obj_class(copy));
-    if (algo != get_digest_base_metadata(rb_obj_class(obj)))
+    algo = get_digest_obj_metadata(copy);
+    if (algo != get_digest_obj_metadata(obj))
 	rb_raise(rb_eTypeError, "different algorithms");
 
     TypedData_Get_Struct(obj, void, &digest_type, pctx1);
@@ -641,7 +647,7 @@ rb_digest_base_reset(VALUE self)
     rb_digest_metadata_t *algo;
     void *pctx;
 
-    algo = get_digest_base_metadata(rb_obj_class(self));
+    algo = get_digest_obj_metadata(self);
 
     TypedData_Get_Struct(self, void, &digest_type, pctx);
 
@@ -663,7 +669,7 @@ rb_digest_base_update(VALUE self, VALUE str)
     rb_digest_metadata_t *algo;
     void *pctx;
 
-    algo = get_digest_base_metadata(rb_obj_class(self));
+    algo = get_digest_obj_metadata(self);
 
     TypedData_Get_Struct(self, void, &digest_type, pctx);
 
@@ -682,7 +688,7 @@ rb_digest_base_finish(VALUE self)
     void *pctx;
     VALUE str;
 
-    algo = get_digest_base_metadata(rb_obj_class(self));
+    algo = get_digest_obj_metadata(self);
 
     TypedData_Get_Struct(self, void, &digest_type, pctx);
 
@@ -705,7 +711,7 @@ rb_digest_base_digest_length(VALUE self)
 {
     rb_digest_metadata_t *algo;
 
-    algo = get_digest_base_metadata(rb_obj_class(self));
+    algo = get_digest_obj_metadata(self);
 
     return INT2NUM(algo->digest_len);
 }
@@ -720,7 +726,7 @@ rb_digest_base_block_length(VALUE self)
 {
     rb_digest_metadata_t *algo;
 
-    algo = get_digest_base_metadata(rb_obj_class(self));
+    algo = get_digest_obj_metadata(self);
 
     return INT2NUM(algo->block_len);
 }
