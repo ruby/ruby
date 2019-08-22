@@ -9233,7 +9233,8 @@ struct ibf_iseq_constant_body {
     enum iseq_type type; /* instruction sequence type */
 
     unsigned int iseq_size;
-    ibf_offset_t iseq_offset; /* encoded iseq (insn addr and operands) */
+    ibf_offset_t bytecode_offset;
+    ibf_offset_t bytecode_size;
 
     struct {
         struct {
@@ -9469,33 +9470,106 @@ ibf_load_gentry(const struct ibf_load *load, const struct rb_global_entry *entry
     return (VALUE)rb_global_entry(gid);
 }
 
+static void
+ibf_dump_code_write_bytes(VALUE str, const unsigned char *bytes, ibf_offset_t size)
+{
+    rb_str_cat(str, (const char *)bytes, size);
+}
+
+static void
+ibf_dump_code_write_byte(VALUE str, unsigned char x)
+{
+    ibf_dump_code_write_bytes(str, (const unsigned char *)&x, sizeof(x));
+}
+
+static unsigned char
+ibf_load_code_read_byte(const unsigned char *bytes, ibf_offset_t size, ibf_offset_t *index)
+{
+    if (*index >= size) { rb_raise(rb_eRuntimeError, "invalid bytecode"); }
+    return bytes[(*index)++];
+}
+
+/*
+ * Small uint serialization
+ * 0x0000_0000 - 0x0000_007f: 1byte | 0XXX XXXX |
+ * 0x0000_0080 - 0x0000_3fff: 2byte | 1XXX XXXX | 0XXX XXXX |
+ * 0x0000_4000 - 0x001f_ffff: 3byte | 1XXX XXXX | 1XXX XXXX | 0XXX XXXX |
+ * 0x0002_0000 - 0x0fff_ffff: 4byte | 1XXX XXXX | 1XXX XXXX | 1XXX XXXX | 0XXX XXXX |
+ * ...
+ */
+static void
+ibf_dump_code_write_small_value(VALUE str, VALUE x)
+{
+    enum { max_byte_length = sizeof(VALUE) * 8 / 7 + 1 };
+
+    unsigned char bytes[max_byte_length];
+    ibf_offset_t n = 0;
+
+    bytes[max_byte_length - (++n)] = (x & 0x7f);
+    x >>= 7;
+
+    while (x) {
+        bytes[max_byte_length - (++n)] = 0x80 | (x & 0x7f);
+        x >>= 7;
+    }
+
+    assert(n <= max_byte_length);
+    ibf_dump_code_write_bytes(str, bytes + max_byte_length - n, n);
+}
+
+static VALUE
+ibf_load_code_read_small_value(const unsigned char *bytecode, ibf_offset_t bytecode_size, ibf_offset_t *bytecode_index)
+{
+    enum { max_byte_length = sizeof(VALUE) * 8 / 7 + 1 };
+
+    ibf_offset_t n = 0;
+    VALUE x = 0;
+
+    do {
+        if (n >= max_byte_length || *bytecode_index + n >= bytecode_size) {
+            rb_raise(rb_eRuntimeError, "invalid byte sequence");
+        }
+
+        x <<= 7;
+        x |= bytecode[*bytecode_index + n] & 0x7f;
+    } while (bytecode[*bytecode_index + n++] & 0x80);
+
+    *bytecode_index += n;
+    return x;
+}
+
 static ibf_offset_t
 ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
     const struct rb_iseq_constant_body *const body = iseq->body;
     const int iseq_size = body->iseq_size;
     int code_index;
-    VALUE *code;
     const VALUE *orig_code = rb_iseq_original_iseq(iseq);
 
-    code = ALLOCA_N(VALUE, iseq_size);
+    VALUE bytecode = rb_str_new(0, 0);
 
     for (code_index=0; code_index<iseq_size;) {
-        const VALUE insn = orig_code[code_index];
+        const VALUE insn = orig_code[code_index++];
         const char *types = insn_op_types(insn);
         int op_index;
 
-        code[code_index++] = (VALUE)insn;
+        /* opcode */
+        if (insn >= 0x100) { rb_raise(rb_eRuntimeError, "invalid instruction"); }
+        ibf_dump_code_write_small_value(bytecode, insn);
 
+        /* operands */
         for (op_index=0; types[op_index]; op_index++, code_index++) {
             VALUE op = orig_code[code_index];
             switch (types[op_index]) {
               case TS_CDHASH:
               case TS_VALUE:
-                code[code_index] = ibf_dump_object(dump, op);
+                ibf_dump_code_write_small_value(bytecode, ibf_dump_object(dump, op));
                 break;
               case TS_ISEQ:
-                code[code_index] = (VALUE)ibf_dump_iseq(dump, (const rb_iseq_t *)op);
+                {
+                    unsigned int index = (unsigned int)ibf_dump_iseq(dump, (const rb_iseq_t *)op);
+                    ibf_dump_code_write_small_value(bytecode, (VALUE)(index + 1));
+                }
                 break;
               case TS_IC:
               case TS_ISE:
@@ -9506,42 +9580,48 @@ ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
                             break;
                         }
                     }
-                    code[code_index] = i;
+                    ibf_dump_code_write_small_value(bytecode, (VALUE)i);
                 }
                 break;
               case TS_CALLINFO:
-                code[code_index] = ibf_dump_callinfo(dump, (const struct rb_call_info *)op);
+                {
+                    VALUE callinfo = ibf_dump_callinfo(dump, (const struct rb_call_info *)op);
+                    /* ibf_dump_callinfo() always returns either Qtrue or Qfalse */
+                    ibf_dump_code_write_byte(bytecode, callinfo == Qtrue);
+                }
                 break;
               case TS_CALLCACHE:
-                code[code_index] = 0;
+                /* do nothing */
                 break;
               case TS_ID:
-                code[code_index] = ibf_dump_id(dump, (ID)op);
+                ibf_dump_code_write_small_value(bytecode, ibf_dump_id(dump, (ID)op));
                 break;
               case TS_GENTRY:
-                code[code_index] = ibf_dump_gentry(dump, (const struct rb_global_entry *)op);
+                ibf_dump_code_write_small_value(bytecode, ibf_dump_gentry(dump, (const struct rb_global_entry *)op));
                 break;
               case TS_FUNCPTR:
                 rb_raise(rb_eRuntimeError, "TS_FUNCPTR is not supported");
                 break;
               default:
-                code[code_index] = op;
+                ibf_dump_code_write_small_value(bytecode, op);
                 break;
             }
         }
         assert(insn_len(insn) == op_index+1);
     }
 
-    IBF_W_ALIGN(VALUE);
-    return ibf_dump_write(dump, code, sizeof(VALUE) * iseq_size);
+    return ibf_dump_write(dump, RSTRING_PTR(bytecode), RSTRING_LEN(bytecode));
 }
 
 static VALUE *
 ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, const struct ibf_iseq_constant_body *body)
 {
-    const int iseq_size = body->iseq_size;
-    int code_index;
-    VALUE *code = IBF_R(body->iseq_offset, VALUE, iseq_size);
+    const unsigned int iseq_size = body->iseq_size;
+    const ibf_offset_t bytecode_size = body->bytecode_size;
+    unsigned int code_index;
+    ibf_offset_t bytecode_index = 0;
+    const unsigned char *bytecode = (unsigned char *)(load->buff + body->bytecode_offset);
+    VALUE *code = ruby_xmalloc(sizeof(VALUE) * body->iseq_size);
 
     struct rb_iseq_constant_body *load_body = iseq->body;
     struct rb_call_info *ci_entries = load_body->ci_entries;
@@ -9549,20 +9629,19 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, const struct i
     struct rb_call_cache *cc_entries = load_body->cc_entries;
     union iseq_inline_storage_entry *is_entries = load_body->is_entries;
 
-    load_body->iseq_encoded = code;
-    load_body->iseq_size = 0;
     for (code_index=0; code_index<iseq_size;) {
-        const VALUE insn = code[code_index++];
+        /* opcode */
+        const VALUE insn = code[code_index++] = ibf_load_code_read_small_value(bytecode, bytecode_size, &bytecode_index);
         const char *types = insn_op_types(insn);
         int op_index;
 
+        /* operands */
         for (op_index=0; types[op_index]; op_index++, code_index++) {
-            VALUE op = code[code_index];
-
             switch (types[op_index]) {
               case TS_CDHASH:
               case TS_VALUE:
                 {
+                    VALUE op = ibf_load_code_read_small_value(bytecode, bytecode_size, &bytecode_index);
                     VALUE v = ibf_load_object(load, op);
                     code[code_index] = v;
                     if (!SPECIAL_CONST_P(v)) {
@@ -9573,6 +9652,7 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, const struct i
                 }
               case TS_ISEQ:
                 {
+                    VALUE op = (VALUE)((int)ibf_load_code_read_small_value(bytecode, bytecode_size, &bytecode_index) - 1);
                     VALUE v = (VALUE)ibf_load_iseq(load, (const rb_iseq_t *)op);
                     code[code_index] = v;
                     if (!SPECIAL_CONST_P(v)) {
@@ -9585,25 +9665,37 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, const struct i
                 FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
                 /* fall through */
               case TS_IC:
-                code[code_index] = (VALUE)&is_entries[(int)op];
+                {
+                    VALUE op = ibf_load_code_read_small_value(bytecode, bytecode_size, &bytecode_index);
+                    code[code_index] = (VALUE)&is_entries[op];
+                }
                 break;
               case TS_CALLINFO:
-                code[code_index] = op ? (VALUE)ci_kw_entries++ : (VALUE)ci_entries++; /* op is Qtrue (kw) or Qfalse (!kw) */
+                {
+                    unsigned char op = ibf_load_code_read_byte(bytecode, bytecode_size, &bytecode_index);
+                    code[code_index] = op ? (VALUE)ci_kw_entries++ : (VALUE)ci_entries++; /* op is 1 (kw) or 0 (!kw) */
+                }
                 break;
               case TS_CALLCACHE:
                 code[code_index] = (VALUE)cc_entries++;
                 break;
               case TS_ID:
-                code[code_index] = ibf_load_id(load, (ID)op);
+                {
+                    VALUE op = ibf_load_code_read_small_value(bytecode, bytecode_size, &bytecode_index);
+                    code[code_index] = ibf_load_id(load, (ID)(VALUE)op);
+                }
                 break;
               case TS_GENTRY:
-                code[code_index] = ibf_load_gentry(load, (const struct rb_global_entry *)op);
+                {
+                    VALUE op = ibf_load_code_read_small_value(bytecode, bytecode_size, &bytecode_index);
+                    code[code_index] = ibf_load_gentry(load, (const struct rb_global_entry *)(VALUE)op);
+                }
                 break;
               case TS_FUNCPTR:
                 rb_raise(rb_eRuntimeError, "TS_FUNCPTR is not supported");
                 break;
               default:
-                /* code[code_index] = op; */
+                code[code_index] = ibf_load_code_read_small_value(bytecode, bytecode_size, &bytecode_index);
                 continue;
             }
         }
@@ -9611,8 +9703,10 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, const struct i
             rb_raise(rb_eRuntimeError, "operand size mismatch");
         }
     }
+    load_body->iseq_encoded = code;
     load_body->iseq_size = code_index;
 
+    assert(code_index == iseq_size);
     return code;
 }
 
@@ -9904,9 +9998,10 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     dump_body.location.base_label = ibf_dump_object(dump, dump_body.location.base_label);
     dump_body.location.label = ibf_dump_object(dump, dump_body.location.label);
 
-    dump_body.iseq_offset =         ibf_dump_code(dump, iseq);
+    dump_body.bytecode_offset =        ibf_dump_code(dump, iseq);
+    dump_body.bytecode_size =          ibf_dump_pos(dump) - dump_body.bytecode_offset;
     dump_body.param.opt_table_offset = ibf_dump_param_opt_table(dump, iseq);
-    dump_body.param.keyword =        ibf_dump_param_keyword(dump, iseq);
+    dump_body.param.keyword =          ibf_dump_param_keyword(dump, iseq);
     dump_body.insns_info.body_offset = ibf_dump_insns_info_body(dump, iseq);
 
     positions = rb_iseq_insns_info_decode_positions(iseq->body);
