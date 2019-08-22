@@ -122,7 +122,7 @@ mjit_update_references(const rb_iseq_t *iseq)
         iseq->body->jit_unit->iseq = (rb_iseq_t *)rb_gc_location((VALUE)iseq->body->jit_unit->iseq);
         // We need to invalidate JIT-ed code for the ISeq because it embeds pointer addresses.
         // To efficiently do that, we use the same thing as TracePoint and thus everything is cancelled for now.
-	// See mjit.h and tool/ruby_vm/views/_mjit_compile_insn.erb for how `mjit_call_p` is used.
+        // See mjit.h and tool/ruby_vm/views/_mjit_compile_insn.erb for how `mjit_call_p` is used.
         mjit_call_p = false; // TODO: instead of cancelling all, invalidate only this one and recompile it with some threshold.
     }
 
