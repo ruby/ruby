@@ -293,19 +293,18 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
     use_ui @ui do
       Dir.chdir(gemspec_dir) do
-        @cmd.execute
+        assert_raises Gem::MockGemUi::TermError do
+          @cmd.execute
+        end
       end
     end
 
-    output = @ui.output.split("\n")
-    assert_equal "  Successfully built RubyGem", output.shift
-    assert_equal "  Name: another_gem", output.shift
-    assert_equal "  Version: 2", output.shift
-    assert_equal "  File: another_gem-2.gem", output.shift
-    assert_equal [], output
+    gemspecs = ["another_gem-2.gemspec", "some_gem-2.gemspec"]
+    assert_equal "", @ui.output
+    assert_equal @ui.error, "ERROR:  Multiple gemspecs found: #{gemspecs}, please specify one\n"
 
     expected_gem = File.join(gemspec_dir, File.basename(another_gem.cache_file))
-    assert File.exist?(expected_gem)
+    refute File.exist?(expected_gem)
   end
 
   def util_test_build_gem(gem)
@@ -323,29 +322,6 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     assert_equal [], output
 
     gem_file = File.join(@tempdir, File.basename(gem.cache_file))
-    assert File.exist?(gem_file)
-
-    spec = Gem::Package.new(gem_file).spec
-
-    assert_equal "some_gem", spec.name
-    assert_equal "this is a summary", spec.summary
-  end
-
-  def util_test_build_gem(gem)
-    use_ui @ui do
-      Dir.chdir @tempdir do
-        @cmd.execute
-      end
-    end
-
-    output = @ui.output.split "\n"
-    assert_equal "  Successfully built RubyGem", output.shift
-    assert_equal "  Name: some_gem", output.shift
-    assert_equal "  Version: 2", output.shift
-    assert_equal "  File: some_gem-2.gem", output.shift
-    assert_equal [], output
-
-    gem_file = File.join @tempdir, File.basename(gem.cache_file)
     assert File.exist?(gem_file)
 
     spec = Gem::Package.new(gem_file).spec

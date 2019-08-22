@@ -63,11 +63,18 @@ Gems can be saved to a specified filename with the output option:
   private
 
   def gem_name
-    get_one_optional_argument || find_gemspecs.first
+    get_one_optional_argument || find_gemspec
   end
 
-  def find_gemspecs
-    Dir.glob("*.gemspec").sort
+  def find_gemspec
+    gemspecs = Dir.glob("*.gemspec").sort
+
+    if gemspecs.size > 1
+      alert_error "Multiple gemspecs found: #{gemspecs}, please specify one"
+      terminate_interaction(1)
+    end
+
+    gemspecs.first
   end
 
   def build_gem(gem_name = get_one_optional_argument)
