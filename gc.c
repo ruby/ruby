@@ -536,6 +536,10 @@ typedef struct rb_objspace {
 #endif
     } flags;
 
+#if USE_TRANSIENT_HEAP
+    struct transient_heap* theap;
+#endif
+
     rb_event_flag_t hook_events;
     size_t total_allocated_objects;
 
@@ -1417,12 +1421,23 @@ rb_objspace_alloc(void)
     malloc_limit = gc_params.malloc_limit_min;
     list_head_init(&objspace->eden_heap.pages);
     list_head_init(&objspace->tomb_heap.pages);
-
+#if USE_TRANSIENT_HEAP
+    objspace->theap = calloc(1, sizeof(struct transient_heap));
+#endif
     return objspace;
 }
 
 static void free_stack_chunks(mark_stack_t *);
 static void heap_page_free(rb_objspace_t *objspace, struct heap_page *page);
+
+#if USE_TRANSIENT_HEAP
+struct transient_heap *
+rb_objspace_get_theap(void)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    return objspace->theap;
+}
+#endif
 
 void
 rb_objspace_free(rb_objspace_t *objspace)
@@ -1459,6 +1474,11 @@ rb_objspace_free(rb_objspace_t *objspace)
     st_free_table(objspace->id_to_obj_tbl);
     st_free_table(objspace->obj_to_id_tbl);
     free_stack_chunks(&objspace->mark_stack);
+#if USE_TRANSIENT_HEAP
+    if (objspace->theap->arena) rb_aligned_free(objspace->theap->arena);
+    free(objspace->theap->promoted_objects);
+    free(objspace->theap);
+#endif
     free(objspace);
 }
 

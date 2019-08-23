@@ -1597,6 +1597,9 @@ extern int ruby_disable_gc;
 void Init_heap(void);
 void *ruby_mimmalloc(size_t size);
 void ruby_mimfree(void *ptr);
+#if USE_TRANSIENT_HEAP
+struct transient_heap *rb_objspace_get_theap(void);
+#endif
 void rb_objspace_set_event_hook(const rb_event_flag_t event);
 #if USE_RGENGC
 void rb_gc_writebarrier_remember(VALUE obj);

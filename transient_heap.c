@@ -16,95 +16,6 @@
 #include "debug_counter.h"
 
 #if USE_TRANSIENT_HEAP /* USE_TRANSIENT_HEAP */
-/*
- * 1: enable assertions
- * 2: enable verify all transient heaps
- */
-#ifndef TRANSIENT_HEAP_CHECK_MODE
-#define TRANSIENT_HEAP_CHECK_MODE 0
-#endif
-#define TH_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(TRANSIENT_HEAP_CHECK_MODE > 0, expr, #expr)
-
-/*
- * 1: show events
- * 2: show dump at events
- * 3: show all operations
- */
-#define TRANSIENT_HEAP_DEBUG 0
-
-/* For Debug: Provide blocks infinitely.
- * This mode generates blocks unlimitedly
- * and prohibit access free'ed blocks to check invalid access.
- */
-#define TRANSIENT_HEAP_DEBUG_INFINITE_BLOCK 0
-
-#if TRANSIENT_HEAP_DEBUG_INFINITE_BLOCK
-#include <sys/mman.h>
-#include <errno.h>
-#endif
-
-/* For Debug: Prohibit promoting to malloc space.
- */
-#define TRANSIENT_HEAP_DEBUG_DONT_PROMOTE 0
-
-/* size configuration */
-#define TRANSIENT_HEAP_PROMOTED_DEFAULT_SIZE 1024
-
-                                          /*  K      M */
-#define TRANSIENT_HEAP_BLOCK_SIZE  (1024 *   32       ) /* 32KB int16_t */
-#define TRANSIENT_HEAP_TOTAL_SIZE  (1024 * 1024 *   32) /* 32 MB */
-#define TRANSIENT_HEAP_ALLOC_MAX   (1024 *    2       ) /* 2 KB */
-#define TRANSIENT_HEAP_BLOCK_NUM   (TRANSIENT_HEAP_TOTAL_SIZE / TRANSIENT_HEAP_BLOCK_SIZE)
-
-#define TRANSIENT_HEAP_ALLOC_MAGIC 0xfeab
-#define TRANSIENT_HEAP_ALLOC_ALIGN RUBY_ALIGNOF(void *)
-
-#define TRANSIENT_HEAP_ALLOC_MARKING_LAST -1
-#define TRANSIENT_HEAP_ALLOC_MARKING_FREE -2
-
-enum transient_heap_status {
-    transient_heap_none,
-    transient_heap_marking,
-    transient_heap_escaping
-};
-
-struct transient_heap_block {
-    struct transient_heap_block_header {
-        int16_t size; /* sizeof(block) = TRANSIENT_HEAP_BLOCK_SIZE - sizeof(struct transient_heap_block_header) */
-        int16_t index;
-        int16_t last_marked_index;
-        int16_t objects;
-        struct transient_heap_block *next_block;
-    } info;
-    char buff[TRANSIENT_HEAP_BLOCK_SIZE - sizeof(struct transient_heap_block_header)];
-};
-
-struct transient_heap {
-    struct transient_heap_block *using_blocks;
-    struct transient_heap_block *marked_blocks;
-    struct transient_heap_block *free_blocks;
-    int total_objects;
-    int total_marked_objects;
-    int total_blocks;
-    enum transient_heap_status status;
-
-    VALUE *promoted_objects;
-    int promoted_objects_size;
-    int promoted_objects_index;
-
-    struct transient_heap_block *arena;
-    int arena_index; /* increment only */
-};
-
-struct transient_alloc_header {
-    uint16_t magic;
-    uint16_t size;
-    int16_t next_marked_index;
-    int16_t dummy;
-    VALUE obj;
-};
-
-static struct transient_heap global_transient_heap;
 
 static void  transient_heap_promote_add(struct transient_heap* theap, VALUE obj);
 static const void *transient_heap_ptr(VALUE obj, int error);
@@ -147,11 +58,12 @@ transient_heap_dump(struct transient_heap* theap)
     transient_heap_blocks_dump(theap, theap->free_blocks, "free_blocks");
 }
 
-/* Debug: dump all tarnsient_heap blocks */
+/* Debug: dump all transient_heap blocks */
 void
 rb_transient_heap_dump(void)
 {
-    transient_heap_dump(&global_transient_heap);
+    struct transient_heap *theap = rb_objspace_get_theap();
+    transient_heap_dump(theap);
 }
 
 #if TRANSIENT_HEAP_CHECK_MODE >= 2
@@ -218,13 +130,14 @@ transient_heap_verify(struct transient_heap *theap)
 void
 rb_transient_heap_verify(void)
 {
-    transient_heap_verify(&global_transient_heap);
+    struct transient_heap *theap = rb_objspace_get_theap();
+    transient_heap_verify(theap);
 }
 
 static struct transient_heap*
 transient_heap_get(void)
 {
-    struct transient_heap* theap = &global_transient_heap;
+    struct transient_heap *theap = rb_objspace_get_theap();
     transient_heap_verify(theap);
     return theap;
 }
