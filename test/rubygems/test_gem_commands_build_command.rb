@@ -244,7 +244,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
   def test_execute_without_gem_name
     some_gem = util_spec "some_gem"
-    gemspec_dir  = File.join(@tempdir, "build_command_gem")
+    gemspec_dir = File.join(@tempdir, "build_command_gem")
     gemspec_file = File.join(gemspec_dir, some_gem.spec_name)
 
     FileUtils.mkdir_p(gemspec_dir)
