@@ -167,7 +167,11 @@ struct local_vars {
     struct local_vars *prev;
 };
 
-#define NUMPARAM_MAX 100 /* INT_MAX */
+enum {
+    ORDINAL_PARM = -1,
+    NO_PARAM = 0,
+    NUMPARAM_MAX = 100,
+};
 
 #define DVARS_INHERIT ((void*)1)
 #define DVARS_TOPSCOPE NULL
@@ -3366,7 +3370,7 @@ opt_block_param	: none
 block_param_def	: '|' opt_bv_decl '|'
 		    {
 			p->cur_arg = 0;
-			p->max_numparam = -1;
+			p->max_numparam = ORDINAL_PARM;
 		    /*%%%*/
 			$$ = 0;
 		    /*% %*/
@@ -3374,7 +3378,7 @@ block_param_def	: '|' opt_bv_decl '|'
 		    }
 		| tOROP
 		    {
-			p->max_numparam = -1;
+			p->max_numparam = ORDINAL_PARM;
 		    /*%%%*/
 			$$ = 0;
 		    /*% %*/
@@ -3383,7 +3387,7 @@ block_param_def	: '|' opt_bv_decl '|'
 		| '|' block_param opt_bv_decl '|'
 		    {
 			p->cur_arg = 0;
-			p->max_numparam = -1;
+			p->max_numparam = ORDINAL_PARM;
 		    /*%%%*/
 			$$ = $2;
 		    /*% %*/
@@ -3461,7 +3465,7 @@ f_larglist	: '(' f_args opt_bv_decl ')'
 		    {
 		    /*%%%*/
 			$$ = $2;
-			p->max_numparam = -1;
+			p->max_numparam = ORDINAL_PARM;
 		    /*% %*/
 		    /*% ripper: paren!($2) %*/
 		    }
@@ -3469,7 +3473,7 @@ f_larglist	: '(' f_args opt_bv_decl ')'
 		    {
 		    /*%%%*/
 			if (!args_info_empty_p($1->nd_ainfo))
-			    p->max_numparam = -1;
+			    p->max_numparam = ORDINAL_PARM;
 		    /*% %*/
 			$$ = $1;
 		    }
@@ -4858,7 +4862,7 @@ f_norm_arg	: f_bad_arg
 		| tIDENTIFIER
 		    {
 			formal_argument(p, get_id($1));
-			p->max_numparam = -1;
+			p->max_numparam = ORDINAL_PARM;
 			$$ = $1;
 		    }
 		;
@@ -4921,7 +4925,7 @@ f_label 	: tLABEL
 			ID id = get_id($1);
 			arg_var(p, formal_argument(p, id));
 			p->cur_arg = id;
-			p->max_numparam = -1;
+			p->max_numparam = ORDINAL_PARM;
 			$$ = $1;
 		    }
 		;
@@ -8450,7 +8454,7 @@ parser_numbered_param(struct parser_params *p, unsigned long n)
 	compile_error(p, "numbered parameter outside block");
 	return false;
     }
-    if (p->max_numparam < 0) {
+    if (p->max_numparam < NO_PARAM) {
 	compile_error(p, "ordinary parameter is defined");
 	return false;
     }
@@ -11213,7 +11217,7 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
 static NODE *
 args_with_numbered(struct parser_params *p, NODE *args, int max_numparam)
 {
-    if (max_numparam > 0) {
+    if (max_numparam > NO_PARAM) {
 	if (!args) args = new_args_tail(p, 0, 0, 0, 0);
 	args->nd_ainfo->pre_args_num = max_numparam;
 	args->nd_ainfo->rest_arg = NODE_SPECIAL_EXCESSIVE_COMMA;
