@@ -303,7 +303,7 @@ detect_bom(VALUE str, int *bomlen)
 
       case 0:
 	if (len < 4) break;
-	if ((unsigned char)p[1] == 0 && (unsigned char)p[2] == 0xFE & (unsigned char)p[3] == 0xFF) {
+	if ((unsigned char)p[1] == 0 && (unsigned char)p[2] == 0xFE && (unsigned char)p[3] == 0xFF) {
 	    *bomlen = 4;
 	    return rb_enc_find_index("UTF-32BE");
 	}
