@@ -36,11 +36,11 @@ module Reline
       auto_indent_proc
       pre_input_hook
       dig_perfect_match_proc
-    ).each(&method(:attr_reader)).freeze
+    ).each(&method(:attr_reader))
 
     ATTR_ACCESSOR_NAMES = %i(
       completion_case_fold
-    ).each(&method(:attr_accessor)).freeze
+    ).each(&method(:attr_accessor))
 
     attr_accessor :config
     attr_accessor :key_stroke
