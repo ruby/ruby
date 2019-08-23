@@ -450,11 +450,11 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_cp_r_dev
     devs = Dir['/dev/*']
-    chardev = Dir['/dev/*'].find{|f| File.chardev?(f)}
-    blockdev = Dir['/dev/*'].find{|f| File.blockdev?(f)}
+    chardev = devs.find{|f| File.chardev?(f)}
+    blockdev = devs.find{|f| File.blockdev?(f)}
     Dir.mkdir('tmp/cpr_dest')
-    assert_raise(RuntimeError) { cp_r chardev, 'tmp/cpr_dest/cd' }
-    assert_raise(RuntimeError) { cp_r blockdev, 'tmp/cpr_dest/bd' }
+    assert_raise(RuntimeError) { cp_r chardev, 'tmp/cpr_dest/cd' } if chardev
+    assert_raise(RuntimeError) { cp_r blockdev, 'tmp/cpr_dest/bd' } if blockdev
   end
 
   begin
