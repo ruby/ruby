@@ -139,10 +139,8 @@ git = Git.new('HEAD^', 'HEAD')
 
 Dir.chdir(git.toplevel) do
   paths = git.updated_paths
-  paths.select! {|l|
-    /^\d/ !~ l and /\.bat\z/ !~ l and
-    (/\A(?:config|[Mm]akefile|GNUmakefile|README)/ =~ File.basename(l) or
-     /\A\z|\.(?:[chsy]|\d+|e?rb|tmpl|bas[eh]|z?sh|in|ma?k|def|src|trans|rdoc|ja|en|el|sed|awk|p[ly]|scm|mspec|html|)\z/ =~ File.extname(l))
+  paths.select! {|f|
+    (f.end_with?('.c') || f.end_with?('.h') || f == 'insns.def') && EXPANDTAB_IGNORED_FILES.all? { |re| !f.match(re) }
   }
   files = paths.select {|n| File.file?(n)}
   exit if files.empty?
@@ -152,7 +150,7 @@ Dir.chdir(git.toplevel) do
 
     expanded = false
     updated_lines = git.updated_lines(f)
-    if !updated_lines.empty? && (f.end_with?('.c') || f.end_with?('.h') || f == 'insns.def') && EXPANDTAB_IGNORED_FILES.all? { |re| !f.match(re) }
+    unless updated_lines.empty?
       src.gsub!(/^.*$/).with_index do |line, lineno|
         if updated_lines.include?(lineno) && line.start_with?("\t") # last-committed line with hard tabs
           expanded = true
