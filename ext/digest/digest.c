@@ -554,9 +554,21 @@ get_digest_base_metadata(VALUE klass)
     if (NIL_P(p))
         rb_raise(rb_eRuntimeError, "Digest::Base cannot be directly inherited in Ruby");
 
+    if (!RB_TYPE_P(obj, T_DATA) || RTYPEDDATA_P(obj)) {
+      wrong:
+        if (p == klass)
+            rb_raise(rb_eTypeError, "%"PRIsVALUE"::metadata is not initialized properly",
+                     klass);
+        else
+            rb_raise(rb_eTypeError, "%"PRIsVALUE"(%"PRIsVALUE")::metadata is not initialized properly",
+                     klass, p);
+    }
+
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
     Data_Get_Struct(obj, rb_digest_metadata_t, algo);
+
+    if (!algo) goto wrong;
 
     switch (algo->api_version) {
       case 3:
