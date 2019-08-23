@@ -168,6 +168,7 @@ struct local_vars {
 };
 
 enum {
+    IMPLICIT_PARAM = -2,
     ORDINAL_PARAM = -1,
     NO_PARAM = 0,
     NUMPARAM_MAX = 9,
@@ -8483,12 +8484,24 @@ static bool
 parser_numbered_param(struct parser_params *p, unsigned long n)
 {
     if (DVARS_TERMINAL_P(p->lvtbl->args) || DVARS_TERMINAL_P(p->lvtbl->args->prev)) {
-	compile_error(p, "numbered parameter outside block");
+	compile_error(p, "implicit parameter outside block");
 	return false;
     }
     if (p->max_numparam < NO_PARAM) {
-	compile_error(p, "ordinary parameter is defined");
-	return false;
+	if (p->max_numparam == ORDINAL_PARAM) {
+	    compile_error(p, "ordinary parameter is defined");
+	    return false;
+	}
+	else if (n > 0) {
+	    compile_error(p, "implicit parameter is used");
+	    return false;
+	}
+    }
+    else if (p->max_numparam > NO_PARAM) {
+	if (n == 0) {
+	    compile_error(p, "numbered parameter is used");
+	    return false;
+	}
     }
     set_yylval_name(numparam_id(p, (int)n));
     SET_LEX_STATE(EXPR_ARG);
@@ -11228,10 +11241,15 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
 static NODE *
 args_with_numbered(struct parser_params *p, NODE *args, int max_numparam)
 {
-    if (max_numparam > NO_PARAM) {
+    if (max_numparam > NO_PARAM || max_numparam == IMPLICIT_PARAM) {
 	if (!args) args = new_args_tail(p, 0, 0, 0, 0);
-	args->nd_ainfo->pre_args_num = max_numparam;
-	args->nd_ainfo->rest_arg = NODE_SPECIAL_EXCESSIVE_COMMA;
+	if (max_numparam == IMPLICIT_PARAM) {
+	    args->nd_ainfo->pre_args_num = 1;
+	}
+	else {
+	    args->nd_ainfo->pre_args_num = max_numparam;
+	    args->nd_ainfo->rest_arg = NODE_SPECIAL_EXCESSIVE_COMMA;
+	}
     }
     return args;
 }
@@ -11240,8 +11258,12 @@ ID
 rb_parser_numparam_id(struct parser_params *p, int idx)
 {
     struct vtable *args;
-    if (idx <= 0) return (ID)0;
-    if (p->max_numparam < idx) {
+    if (idx < 0) return (ID)0;
+    else if (idx == 0) {
+	p->max_numparam = IMPLICIT_PARAM;
+	idx = 1;
+    }
+    else if (p->max_numparam < idx) {
 	p->max_numparam = idx;
     }
     args = p->lvtbl->args;
