@@ -2822,8 +2822,6 @@ rb_hash_initialize_copy(VALUE hash, VALUE hash2)
     rb_hash_modify_check(hash);
     hash2 = to_hash(hash2);
 
-    Check_Type(hash2, T_HASH);
-
     if (hash == hash2) return hash;
 
     if (RHASH_AR_TABLE_P(hash2)) {
