@@ -2824,6 +2824,10 @@ rb_hash_initialize_copy(VALUE hash, VALUE hash2)
 
     if (hash == hash2) return hash;
 
+    if (RHASH_ITER_LEV(hash) > 0) {
+        rb_raise(rb_eRuntimeError, "can't replace hash during iteration");
+    }
+
     if (RHASH_ST_TABLE_P(hash)) {
         st_free_table(RHASH_ST_TABLE(hash));
         RHASH_ST_CLEAR(hash);
@@ -2832,18 +2836,13 @@ rb_hash_initialize_copy(VALUE hash, VALUE hash2)
         ar_free_and_clear_table(hash);
     }
 
-    if (RHASH_AR_TABLE_P(hash2)) {
-        ar_copy(hash, hash2);
-        if (RHASH_AR_TABLE_SIZE(hash))
-	    rb_hash_rehash(hash);
-    }
-    else {
-        RHASH_ST_TABLE_SET(hash, st_copy(RHASH_ST_TABLE(hash2)));
-        if (RHASH_ST_TABLE(hash)->num_entries)
-            rb_hash_rehash(hash);
+    if (RHASH_ST_TABLE_P(hash2)) {
+        RHASH_ST_TABLE_SET(hash, st_init_table_with_size(RHASH_ST_TABLE(hash2)->type, RHASH_ST_SIZE(hash2)));
     }
 
+    rb_hash_foreach(hash2, rb_hash_rehash_i, (VALUE)hash);
     COPY_DEFAULT(hash, hash2);
+    rb_gc_writebarrier_remember(hash);
 
     return hash;
 }
