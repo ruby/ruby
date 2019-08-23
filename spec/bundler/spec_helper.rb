@@ -71,7 +71,6 @@ RSpec.configure do |config|
   config.filter_run_excluding :bundler => RequirementChecker.against(Bundler::VERSION.split(".")[0])
   config.filter_run_excluding :ruby_repo => !ENV["GEM_COMMAND"].nil?
   config.filter_run_excluding :no_color_tty => Gem.win_platform? || !ENV["GITHUB_ACTION"].nil?
-  config.filter_run_excluding :github_action_linux => !ENV["GITHUB_ACTION"].nil? && (ENV["RUNNER_OS"] == "Linux")
 
   config.filter_run_when_matching :focus unless ENV["CI"]
 
