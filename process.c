@@ -7133,8 +7133,9 @@ p_uid_have_saved_id(void)
 
 #if defined(HAVE_SETRESUID) || defined(HAVE_SETEUID) || defined(_POSIX_SAVED_IDS)
 static VALUE
-p_uid_sw_ensure(rb_uid_t id)
+p_uid_sw_ensure(VALUE i)
 {
+    rb_uid_t id = (rb_uid_t/* narrowing */)i;
     under_uid_switch = 0;
     id = rb_seteuid_core(id);
     return UIDT2NUM(id);
@@ -7246,8 +7247,9 @@ p_gid_have_saved_id(void)
 
 #if defined(HAVE_SETRESGID) || defined(HAVE_SETEGID) || defined(_POSIX_SAVED_IDS)
 static VALUE
-p_gid_sw_ensure(rb_gid_t id)
+p_gid_sw_ensure(VALUE i)
 {
+    rb_gid_t id = (rb_gid_t/* narrowing */)i;
     under_gid_switch = 0;
     id = rb_setegid_core(id);
     return GIDT2NUM(id);
