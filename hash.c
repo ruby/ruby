@@ -2837,16 +2837,10 @@ rb_hash_initialize_copy(VALUE hash, VALUE hash2)
         if (RHASH_AR_TABLE_SIZE(hash))
 	    rb_hash_rehash(hash);
     }
-    else if (RHASH_ST_TABLE_P(hash2)) {
+    else {
         RHASH_ST_TABLE_SET(hash, st_copy(RHASH_ST_TABLE(hash2)));
         if (RHASH_ST_TABLE(hash)->num_entries)
             rb_hash_rehash(hash);
-    }
-    else if (RHASH_AR_TABLE_P(hash)) {
-        ar_clear(hash);
-    }
-    else if (RHASH_ST_TABLE_P(hash)) {
-        st_clear(RHASH_ST_TABLE(hash));
     }
 
     COPY_DEFAULT(hash, hash2);
