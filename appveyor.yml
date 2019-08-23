@@ -131,10 +131,7 @@ notifications:
         {
           "attachments": [
             {
-              "title": "Build {{projectName}} {{buildVersion}} {{status}}",
-              "title_link": "{{buildUrl}}",
-              "fallback": "AppVeyor Build {{projectName}} {{buildVersion}} {{status}}",
-              "text": "Commit <{{commitUrl}}|{{commitId}}> by {{commitAuthor}} on {{commitDate}}: _{{commitMessage}}_",
+              "text": "Build <{{buildUrl}}|#{{buildVersion}}> (<{{commitUrl}}|{{commitId}}>) of {{repositoryName}}@{{branch}} by {{commitAuthor}} {{status}} in {{duration}}",
               "color": "{{#passed}}good{{/passed}}{{#failed}}danger{{/failed}}"
             }
           ],
