@@ -2824,14 +2824,20 @@ rb_hash_initialize_copy(VALUE hash, VALUE hash2)
 
     if (hash == hash2) return hash;
 
+    if (RHASH_ST_TABLE_P(hash)) {
+        st_free_table(RHASH_ST_TABLE(hash));
+        RHASH_ST_CLEAR(hash);
+    }
+    else {
+        ar_free_and_clear_table(hash);
+    }
+
     if (RHASH_AR_TABLE_P(hash2)) {
-        if (RHASH_AR_TABLE_P(hash)) ar_free_and_clear_table(hash);
         ar_copy(hash, hash2);
         if (RHASH_AR_TABLE_SIZE(hash))
 	    rb_hash_rehash(hash);
     }
     else if (RHASH_ST_TABLE_P(hash2)) {
-        if (RHASH_ST_TABLE_P(hash)) st_free_table(RHASH_ST_TABLE(hash));
         RHASH_ST_TABLE_SET(hash, st_copy(RHASH_ST_TABLE(hash2)));
         if (RHASH_ST_TABLE(hash)->num_entries)
             rb_hash_rehash(hash);
