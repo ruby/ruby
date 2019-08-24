@@ -26,8 +26,8 @@
  * A class which allows both internal and external iteration.
  *
  * An Enumerator can be created by the following methods.
- * - Kernel#to_enum
- * - Kernel#enum_for
+ * - Object#to_enum
+ * - Object#enum_for
  * - Enumerator.new
  *
  * Most methods have two forms: a block form where the contents
@@ -417,7 +417,7 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *ar
  * In the second, deprecated, form, a generated Enumerator iterates over the
  * given object using the given method with the given arguments passed.
  *
- * Use of this form is discouraged.  Use Kernel#enum_for or Kernel#to_enum
+ * Use of this form is discouraged.  Use Object#enum_for or Object#to_enum
  * instead.
  *
  *   e = Enumerator.new(ObjectSpace, :each_object)
@@ -1862,7 +1862,7 @@ lazy_to_enum_i(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator
  *
  * For example, continuing from the example in Object#to_enum:
  *
- *   # See Kernel#to_enum for the definition of repeat
+ *   # See Object#to_enum for the definition of repeat
  *   r = 1..Float::INFINITY
  *   r.repeat(2).first(5) # => [1, 1, 2, 2, 3]
  *   r.repeat(2).class # => Enumerator

@@ -300,7 +300,7 @@ warning_write(int argc, VALUE *argv, VALUE buf)
 
 /*
  * call-seq:
- *    warn(msg, ...)   -> nil
+ *    warn(*msgs, uplevel: nil)   -> nil
  *
  * If warnings have been disabled (for example with the
  * <code>-W0</code> flag), does nothing.  Otherwise,
@@ -2446,6 +2446,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *    * IndexError
  *      * KeyError
  *      * StopIteration
+ *        * ClosedQueueError
  *    * LocalJumpError
  *    * NameError
  *      * NoMethodError

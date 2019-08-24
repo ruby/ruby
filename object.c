@@ -572,23 +572,23 @@ rb_obj_size(VALUE self, VALUE args, VALUE obj)
  *     3.next.then {|x| x**x }.to_s             #=> "256"
  *     "my string".yield_self {|s| s.upcase }   #=> "MY STRING"
  *
- *  Good usage for +yield_self+ is value piping in method chains:
+ *  Good usage for +then+ is value piping in method chains:
  *
  *     require 'open-uri'
  *     require 'json'
  *
  *     construct_url(arguments).
- *       yield_self {|url| open(url).read }.
- *       yield_self {|response| JSON.parse(response) }
+ *       then {|url| open(url).read }.
+ *       then {|response| JSON.parse(response) }
  *
  *  When called without block, the method returns +Enumerator+,
  *  which can be used, for example, for conditional
  *  circuit-breaking:
  *
  *     # meets condition, no-op
- *     1.yield_self.detect(&:odd?)            # => 1
+ *     1.then.detect(&:odd?)            # => 1
  *     # does not meet condition, drop value
- *     2.yield_self.detect(&:odd?)            # => nil
+ *     2.then.detect(&:odd?)            # => nil
  *
  */
 
