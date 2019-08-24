@@ -547,7 +547,7 @@ class VCS
         warn "retry trunk instead of master", uplevel: 0
         STDERR.puts "existing branches:"
         system(COMMAND, "branch", "-a", 1 => 2)
-        url = Branch.new("trunk")
+        url.to_str.replace("trunk")
         retry
       end
       raise
