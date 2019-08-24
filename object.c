@@ -209,25 +209,6 @@ rb_obj_equal(VALUE obj1, VALUE obj2)
     return Qfalse;
 }
 
-/**
- * call-seq:
- *    obj.hash    -> integer
- *
- * Generates an Integer hash value for this object.  This function must have the
- * property that <code>a.eql?(b)</code> implies <code>a.hash == b.hash</code>.
- *
- * The hash value is used along with #eql? by the Hash class to determine if
- * two objects reference the same hash key.  Any hash value that exceeds the
- * capacity of an Integer will be truncated before being used.
- *
- * The hash value for an object may not be identical across invocations or
- * implementations of Ruby.  If you need a stable identifier across Ruby
- * invocations and implementations you will need to generate one with a custom
- * method.
- *--
- * \private
- *++
- */
 VALUE rb_obj_hash(VALUE obj);
 
 /**
@@ -4276,7 +4257,7 @@ InitVM_Object(void)
     rb_define_method(rb_mKernel, "=~", rb_obj_match, 1);
     rb_define_method(rb_mKernel, "!~", rb_obj_not_match, 1);
     rb_define_method(rb_mKernel, "eql?", rb_obj_equal, 1);
-    rb_define_method(rb_mKernel, "hash", rb_obj_hash, 0);
+    rb_define_method(rb_mKernel, "hash", rb_obj_hash, 0); /* in hash.c */
     rb_define_method(rb_mKernel, "<=>", rb_obj_cmp, 1);
 
     rb_define_method(rb_mKernel, "class", rb_obj_class, 0);
