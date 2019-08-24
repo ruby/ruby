@@ -540,6 +540,7 @@ class VCS
     end
 
     def export(revision, url, dir, keep_temp = false)
+      puts "branches:"; system(COMMAND, "branch", "-a") # for debug
       ret = system(COMMAND, "clone", "-s", (@srcdir || '.').to_s, "-b", url, dir)
       ret
     end
