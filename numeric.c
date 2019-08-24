@@ -410,7 +410,7 @@ NORETURN(static void coerce_failed(VALUE x, VALUE y));
 static void
 coerce_failed(VALUE x, VALUE y)
 {
-    if (SPECIAL_CONST_P(y) || BUILTIN_TYPE(y) == T_FLOAT) {
+    if (SPECIAL_CONST_P(y) || SYMBOL_P(y) || RB_FLOAT_TYPE_P(y)) {
 	y = rb_inspect(y);
     }
     else {
