@@ -1520,14 +1520,14 @@ module FileUtils
 
     private
 
-    $fileutils_rb_have_lchmod = nil
+    @@fileutils_rb_have_lchmod = nil
 
     def have_lchmod?
       # This is not MT-safe, but it does not matter.
-      if $fileutils_rb_have_lchmod == nil
-        $fileutils_rb_have_lchmod = check_have_lchmod?
+      if @@fileutils_rb_have_lchmod == nil
+        @@fileutils_rb_have_lchmod = check_have_lchmod?
       end
-      $fileutils_rb_have_lchmod
+      @@fileutils_rb_have_lchmod
     end
 
     def check_have_lchmod?
@@ -1538,14 +1538,14 @@ module FileUtils
       return false
     end
 
-    $fileutils_rb_have_lchown = nil
+    @@fileutils_rb_have_lchown = nil
 
     def have_lchown?
       # This is not MT-safe, but it does not matter.
-      if $fileutils_rb_have_lchown == nil
-        $fileutils_rb_have_lchown = check_have_lchown?
+      if @@fileutils_rb_have_lchown == nil
+        @@fileutils_rb_have_lchown = check_have_lchown?
       end
-      $fileutils_rb_have_lchown
+      @@fileutils_rb_have_lchown
     end
 
     def check_have_lchown?
