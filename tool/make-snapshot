@@ -202,7 +202,7 @@ end
 def package(vcs, rev, destdir, tmp = nil)
   patchlevel = false
   prerelease = false
-  if rev and revision = rev[/@(\d+)\z/, 1]
+  if rev and revision = rev[/@(\h+)\z/, 1]
     rev = $`
   end
   case rev
