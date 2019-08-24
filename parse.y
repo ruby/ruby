@@ -168,7 +168,7 @@ struct local_vars {
 };
 
 enum {
-    ORDINAL_PARM = -1,
+    ORDINAL_PARAM = -1,
     NO_PARAM = 0,
     NUMPARAM_MAX = 100,
 };
@@ -3370,7 +3370,7 @@ opt_block_param	: none
 block_param_def	: '|' opt_bv_decl '|'
 		    {
 			p->cur_arg = 0;
-			p->max_numparam = ORDINAL_PARM;
+			p->max_numparam = ORDINAL_PARAM;
 		    /*%%%*/
 			$$ = 0;
 		    /*% %*/
@@ -3378,7 +3378,7 @@ block_param_def	: '|' opt_bv_decl '|'
 		    }
 		| tOROP
 		    {
-			p->max_numparam = ORDINAL_PARM;
+			p->max_numparam = ORDINAL_PARAM;
 		    /*%%%*/
 			$$ = 0;
 		    /*% %*/
@@ -3387,7 +3387,7 @@ block_param_def	: '|' opt_bv_decl '|'
 		| '|' block_param opt_bv_decl '|'
 		    {
 			p->cur_arg = 0;
-			p->max_numparam = ORDINAL_PARM;
+			p->max_numparam = ORDINAL_PARAM;
 		    /*%%%*/
 			$$ = $2;
 		    /*% %*/
@@ -3465,7 +3465,7 @@ f_larglist	: '(' f_args opt_bv_decl ')'
 		    {
 		    /*%%%*/
 			$$ = $2;
-			p->max_numparam = ORDINAL_PARM;
+			p->max_numparam = ORDINAL_PARAM;
 		    /*% %*/
 		    /*% ripper: paren!($2) %*/
 		    }
@@ -3473,7 +3473,7 @@ f_larglist	: '(' f_args opt_bv_decl ')'
 		    {
 		    /*%%%*/
 			if (!args_info_empty_p($1->nd_ainfo))
-			    p->max_numparam = ORDINAL_PARM;
+			    p->max_numparam = ORDINAL_PARAM;
 		    /*% %*/
 			$$ = $1;
 		    }
@@ -4862,7 +4862,7 @@ f_norm_arg	: f_bad_arg
 		| tIDENTIFIER
 		    {
 			formal_argument(p, get_id($1));
-			p->max_numparam = ORDINAL_PARM;
+			p->max_numparam = ORDINAL_PARAM;
 			$$ = $1;
 		    }
 		;
@@ -4925,7 +4925,7 @@ f_label 	: tLABEL
 			ID id = get_id($1);
 			arg_var(p, formal_argument(p, id));
 			p->cur_arg = id;
-			p->max_numparam = ORDINAL_PARM;
+			p->max_numparam = ORDINAL_PARAM;
 			$$ = $1;
 		    }
 		;
