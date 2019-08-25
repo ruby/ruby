@@ -4350,7 +4350,6 @@ rb_io_ungetc(VALUE io, VALUE c)
 
     GetOpenFile(io, fptr);
     rb_io_check_char_readable(fptr);
-    if (NIL_P(c)) return Qnil;
     if (FIXNUM_P(c)) {
 	c = rb_enc_uint_chr(FIX2UINT(c), io_read_encoding(fptr));
     }
