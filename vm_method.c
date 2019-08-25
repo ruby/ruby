@@ -1127,8 +1127,20 @@ rb_scope_visibility_set(rb_method_visibility_t visi)
 }
 
 static void
+scope_visibility_check(void)
+{
+    /* Check for public/protected/private/module_function called inside a method */
+    rb_control_frame_t *cfp = rb_current_execution_context()->cfp+1;
+    if (cfp && cfp->iseq && cfp->iseq->body->type == ISEQ_TYPE_METHOD) {
+        rb_warn("calling %s without arguments inside a method may not have the intended effect",
+            rb_id2name(rb_frame_this_func()));
+    }
+}
+
+static void
 rb_scope_module_func_set(void)
 {
+    scope_visibility_check();
     vm_cref_set_visibility(METHOD_VISI_PRIVATE, TRUE);
 }
 
@@ -1663,7 +1675,8 @@ static VALUE
 set_visibility(int argc, const VALUE *argv, VALUE module, rb_method_visibility_t visi)
 {
     if (argc == 0) {
-	rb_scope_visibility_set(visi);
+        scope_visibility_check();
+        rb_scope_visibility_set(visi);
     }
     else {
 	set_method_visibility(module, argc, argv, visi);

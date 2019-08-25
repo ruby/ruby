@@ -131,6 +131,48 @@ class TestClass < Test::Unit::TestCase
       [:module_function, :extend_object, :append_features, :prepend_features])
   end
 
+  def test_visibility_inside_method
+    assert_warn(/calling private without arguments inside a method may not have the intended effect/, '[ruby-core:79751]') do
+      Class.new do
+        def self.foo
+          private
+        end
+        foo
+      end
+    end
+
+    assert_warn(/calling protected without arguments inside a method may not have the intended effect/, '[ruby-core:79751]') do
+      Class.new do
+        def self.foo
+          protected
+        end
+        foo
+      end
+    end
+
+    assert_warn(/calling public without arguments inside a method may not have the intended effect/, '[ruby-core:79751]') do
+      Class.new do
+        def self.foo
+          public
+        end
+        foo
+      end
+    end
+
+    assert_warn(/calling private without arguments inside a method may not have the intended effect/, '[ruby-core:79751]') do
+      Class.new do
+        class << self
+          alias priv private
+        end
+
+        def self.foo
+          priv
+        end
+        foo
+      end
+    end
+  end
+
   def test_method_redefinition
     feature2155 = '[ruby-dev:39400]'
 
