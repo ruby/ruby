@@ -4026,7 +4026,7 @@ int_range_sum(VALUE beg, VALUE end, int excl, VALUE init)
  *   "a\nb\nc".each_line.lazy.map(&:chomp).sum("")  #=> "abc"
  *
  * Enumerable#sum method may not respect method redefinition of "+"
- * methods such as Integer#+.
+ * methods such as Integer#+, or "each" methods such as Range#each.
  */
 static VALUE
 enum_sum(int argc, VALUE* argv, VALUE obj)
