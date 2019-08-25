@@ -1394,6 +1394,17 @@ class TestModule < Test::Unit::TestCase
     assert_match(/: warning: previous definition of foo/, stderr)
   end
 
+  def test_module_function_inside_method
+    assert_warn(/calling module_function without arguments inside a method may not have the intended effect/, '[ruby-core:79751]') do
+      Module.new do
+        def self.foo
+          module_function
+        end
+        foo
+      end
+    end
+  end
+
   def test_protected_singleton_method
     klass = Class.new
     x = klass.new
