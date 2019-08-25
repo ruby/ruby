@@ -131,7 +131,7 @@ notifications:
         {
           "attachments": [
             {
-              "text": "Build <{{buildUrl}}|#{{buildVersion}}> (<{{commitUrl}}|{{commitId}}>) of {{repositoryName}}@{{branch}} by {{commitAuthor}} {{status}} in {{duration}}",
+              "text": "Build <{{buildUrl}}|#{{buildVersion}}> (<{{commitUrl}}|{{commitId}}>) of {{repositoryName}}@{{branch}} by {{commitAuthor}} {{status}}",
               "color": "{{#passed}}good{{/passed}}{{#failed}}danger{{/failed}}"
             }
           ],
