@@ -540,17 +540,7 @@ class VCS
     end
 
     def export(revision, url, dir, keep_temp = false)
-      ret = system(COMMAND, "clone", "-s", (@srcdir || '.').to_s, "-b", url, dir)
-      ret
-    rescue => e
-      if "master" == url.to_str && e.message == "Command failed with exit 128: git"
-        warn "retry trunk instead of master", uplevel: 0
-        STDERR.puts "existing branches:"
-        system(COMMAND, "branch", "-a", 1 => 2)
-        url.to_str.replace("trunk")
-        retry
-      end
-      raise
+      system(COMMAND, "clone", "-s", (@srcdir || '.').to_s, "-b", url, dir)
     end
 
     def after_export(dir)
