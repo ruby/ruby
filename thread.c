@@ -693,6 +693,7 @@ thread_do_start(rb_thread_t *th)
         }
 
         rb_adjust_argv_kw_splat(&args_len, &args_ptr, &kw_splat);
+        vm_check_ints_blocking(th->ec);
         th->value = rb_vm_invoke_proc(th->ec, proc,
                                       args_len, args_ptr,
                                       kw_splat, VM_BLOCK_HANDLER_NONE);
