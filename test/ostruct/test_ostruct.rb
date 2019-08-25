@@ -89,7 +89,7 @@ class TC_OpenStruct < Test::Unit::TestCase
     a = o.delete_field :a
     assert_not_respond_to(o, :a, bug)
     assert_not_respond_to(o, :a=, bug)
-    assert_equal(a, 'a')
+    assert_equal('a', a)
     s = Object.new
     def s.to_sym
       :foo
@@ -102,12 +102,14 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_not_respond_to(o, :foo=)
 
     assert_raise(NameError) { o.delete_field(s) }
-    assert_equal(o.delete_field(s) { :foo }, s.to_sym)
+    assert_equal(s.to_sym, o.delete_field(s) { :foo })
 
     o[s] = :foobar
     assert_respond_to(o, :foo)
     assert_respond_to(o, :foo=)
-    assert_equal(o.delete_field(s) { :baz }, :foobar)
+    assert_equal(:foobar, o.delete_field(s) { :baz })
+
+    assert_equal(42, OpenStruct.new(foo: 42).delete_field(:foo) { :bug })
   end
 
   def test_setter

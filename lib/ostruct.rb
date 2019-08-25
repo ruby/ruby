@@ -284,7 +284,7 @@ class OpenStruct
   end
 
   #
-  # Remove the named field from the object. Returns the value that the field
+  # Removes the named field from the object. Returns the value that the field
   # contained if it was defined, else a NameError is raised.
   # Optionally, provide a value that will be returned in the event the
   # deleting field does not exist.
@@ -310,9 +310,9 @@ class OpenStruct
     begin
       singleton_class.remove_method(sym, "#{sym}=")
     rescue NameError
-      return yield if block_given?
     end
     @table.delete(sym) do
+      return yield if block_given?
       raise NameError.new("no field `#{sym}' in #{self}", sym)
     end
   end
