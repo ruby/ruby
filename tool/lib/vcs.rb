@@ -573,10 +573,17 @@ class VCS
         end
         rev unless rev.empty?
       end
-      unless /./.match(from ||= branch_beginning(url))
-        raise "cannot find the beginning revision of the branch"
+      if /./.match(from) or /./.match(from = branch_beginning(url))
+        from += "^"
+      else
+        warn "no starting commit found", uplevel: 1
+        from = cmd_pipe(%W[ #{COMMAND} log --format=format:%H --reverse --since=1\ year\ ago], &:gets)
+        from.strip!
+        unless /./.match(from)
+          raise "cannot find the beginning revision of the branch"
+        end
       end
-      range = [from, (to || 'HEAD')].join('^..')
+      range = [from, (to || 'HEAD')].join('..')
       cmd_pipe({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
                %W"#{COMMAND} log --format=medium --notes=commits --date=iso-local --topo-order #{range}", "rb") do |r|
         format_changelog(r, path)
