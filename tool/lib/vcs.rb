@@ -270,7 +270,7 @@ class VCS
     end
 
     def _get_revisions(path, srcdir = nil)
-      if srcdir and local_path?(path)
+      if srcdir and self.class.local_path?(path)
         path = File.join(srcdir, path)
       end
       if srcdir
