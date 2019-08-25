@@ -567,6 +567,11 @@ class VCS
         warn "no starting commit found", uplevel: 1
         from = nil
       end
+      _rev = cmd_read({'LANG' => 'C', 'LC_ALL' => 'C'},
+                     %W"#{COMMAND} show-ref notes/commits")
+      unless $?.success?
+        raise "need notes/commits tree; run `git fetch origin refs/notes/commits:refs/notes/commits` in the repository"
+      end
       range = [from, (to || 'HEAD')].compact.join('^..')
       cmd_pipe({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
                %W"#{COMMAND} log --format=medium --notes=commits --date=iso-local --topo-order #{range}", "rb") do |r|
