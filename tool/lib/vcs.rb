@@ -270,7 +270,7 @@ class VCS
     end
 
     def _get_revisions(path, srcdir = nil)
-      if srcdir and local_path?(path)
+      if srcdir and self.class.local_path?(path)
         path = File.join(srcdir, path)
       end
       if srcdir
@@ -540,8 +540,7 @@ class VCS
     end
 
     def export(revision, url, dir, keep_temp = false)
-      ret = system(COMMAND, "clone", "-s", (@srcdir || '.').to_s, "-b", url, dir)
-      ret
+      system(COMMAND, "clone", "-s", (@srcdir || '.').to_s, "-b", url, dir)
     end
 
     def after_export(dir)
@@ -564,10 +563,16 @@ class VCS
         end
         rev unless rev.empty?
       end
-      unless /./.match(from ||= branch_beginning(url))
-        raise "cannot find the beginning revision of the branch"
+      unless /./.match(from) or /./.match(from = branch_beginning(url))
+        warn "no starting commit found", uplevel: 1
+        from = nil
       end
-      range = [from, (to || 'HEAD')].join('^..')
+      _rev = cmd_read({'LANG' => 'C', 'LC_ALL' => 'C'},
+                     %W"#{COMMAND} show-ref notes/commits")
+      unless $?.success?
+        raise "need notes/commits tree; run `git fetch origin refs/notes/commits:refs/notes/commits` in the repository"
+      end
+      range = [from, (to || 'HEAD')].compact.join('^..')
       cmd_pipe({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
                %W"#{COMMAND} log --format=medium --notes=commits --date=iso-local --topo-order #{range}", "rb") do |r|
         format_changelog(r, path)

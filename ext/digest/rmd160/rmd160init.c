@@ -49,12 +49,10 @@ Init_rmd160(void)
 {
     VALUE mDigest, cDigest_Base, cDigest_RMD160;
 
-    rb_require("digest");
-
 #if 0
     mDigest = rb_define_module("Digest"); /* let rdoc know */
 #endif
-    mDigest = rb_path2class("Digest");
+    mDigest = rb_digest_namespace();
     cDigest_Base = rb_path2class("Digest::Base");
 
     cDigest_RMD160 = rb_define_class_under(mDigest, "RMD160", cDigest_Base);

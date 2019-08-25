@@ -51,12 +51,10 @@ Init_md5(void)
 {
     VALUE mDigest, cDigest_Base, cDigest_MD5;
 
-    rb_require("digest");
-
 #if 0
     mDigest = rb_define_module("Digest"); /* let rdoc know */
 #endif
-    mDigest = rb_path2class("Digest");
+    mDigest = rb_digest_namespace();
     cDigest_Base = rb_path2class("Digest::Base");
 
     cDigest_MD5 = rb_define_class_under(mDigest, "MD5", cDigest_Base);

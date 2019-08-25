@@ -190,11 +190,11 @@ RSpec.describe Bundler::Env do
     end
   end
 
-  describe ".version_of", :ruby_repo do
+  describe ".version_of" do
     let(:parsed_version) { described_class.send(:version_of, "ruby") }
 
     it "strips version of new line characters" do
-      expect(parsed_version).to_not include("\n")
+      expect(parsed_version).to_not end_with("\n")
     end
   end
 end

@@ -601,7 +601,7 @@ RSpec.describe "bundle clean" do
     expect(out).to eq("1.0")
   end
 
-  it "doesn't blow up on path gems without a .gempsec" do
+  it "doesn't blow up on path gems without a .gemspec" do
     relative_path = "vendor/private_gems/bar-1.0"
     absolute_path = bundled_app(relative_path)
     FileUtils.mkdir_p("#{absolute_path}/lib/bar")

@@ -22,7 +22,7 @@ module Spec
     end
 
     def gem_bin
-      @gem_bin ||= ruby_core? ? ENV["BUNDLE_GEM"] : "#{Gem.ruby} -S gem --backtrace"
+      @gem_bin ||= ruby_core? ? ENV["GEM_COMMAND"] : "#{Gem.ruby} -S gem --backtrace"
     end
 
     def spec_dir
@@ -30,7 +30,11 @@ module Spec
     end
 
     def tracked_files
-      @tracked_files ||= ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb spec/bundler` : `git ls-files -z`
+      @tracked_files ||= ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb spec/bundler man/bundler*` : `git ls-files -z`
+    end
+
+    def shipped_files
+      @shipped_files ||= ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb man/bundler* libexec/bundle*` : `git ls-files -z -- lib man exe CHANGELOG.md LICENSE.md README.md bundler.gemspec`
     end
 
     def lib_tracked_files
@@ -38,7 +42,14 @@ module Spec
     end
 
     def tmp(*path)
-      root.join("tmp", *path)
+      root.join("tmp", scope, *path)
+    end
+
+    def scope
+      test_number = ENV["TEST_ENV_NUMBER"]
+      return "1" if test_number.nil?
+
+      test_number.empty? ? "1" : test_number
     end
 
     def home(*path)
@@ -150,11 +161,11 @@ module Spec
     end
 
     def ruby_core?
-      # avoid to wornings
+      # avoid to warnings
       @ruby_core ||= nil
 
       if @ruby_core.nil?
-        @ruby_core = true & (ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
+        @ruby_core = true & ENV["GEM_COMMAND"]
       else
         @ruby_core
       end

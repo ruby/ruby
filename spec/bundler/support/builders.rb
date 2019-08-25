@@ -557,7 +557,7 @@ module Spec
             "#!/usr/bin/env ruby\n"
           end
           @spec.files << executable
-          write executable, "#{shebang}require '#{@name}' ; puts #{Builders.constantize(@name)}"
+          write executable, "#{shebang}require_relative '../lib/#{@name}' ; puts #{Builders.constantize(@name)}"
         end
       end
 
