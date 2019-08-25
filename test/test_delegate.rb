@@ -322,4 +322,12 @@ class TestDelegateClass < Test::Unit::TestCase
       delegate.constants
     end
   end
+
+  def test_basicobject
+    o = BasicObject.new
+    def o.bar; 1; end
+    delegate = SimpleDelegator.new(o)
+    assert_equal(1, delegate.bar)
+    assert_raise(NoMethodError, /undefined method `foo' for/) { delegate.foo }
+  end
 end
