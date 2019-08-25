@@ -24,9 +24,9 @@ class Git
   # [0, 1, 4, ...]
   def updated_lines(file)
     lines = []
-    revs_pattern = /\A0{40} /
+    revs_pattern = ("0"*40) + " "
     with_clean_env { IO.popen(['git', 'blame', '-l', '--', file], &:readlines) }.each_with_index do |line, index|
-      if revs_pattern =~ line
+      if line.b.start_with?(revs_pattern)
         lines << index
       end
     end
