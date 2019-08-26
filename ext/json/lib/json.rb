@@ -44,14 +44,6 @@ require 'json/common'
 #   require 'json'
 #   puts {:hello => "goodbye"}.to_json => "{\"hello\":\"goodbye\"}"
 #
-# <tt>JSON.generate</tt> only allows objects or arrays to be converted
-# to JSON syntax. <tt>to_json</tt>, however, accepts many Ruby classes
-# even though it acts only as a method for serialization:
-#
-#   require 'json'
-#
-#   1.to_json => "1"
-#
 module JSON
   require 'json/version'
 
