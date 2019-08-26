@@ -2082,14 +2082,14 @@ EOT
 
   def test_strip_bom
     with_tmpdir {
-      text = "\uFEFFa"
-      stripped = "a"
+      text = "\uFEFF\u0100a"
+      stripped = "\u0100a"
       %w/UTF-8 UTF-16BE UTF-16LE UTF-32BE UTF-32LE/.each do |name|
         path = '%s-bom.txt' % name
         content = text.encode(name)
         generate_file(path, content)
         result = File.read(path, mode: 'rb:BOM|UTF-8')
-        assert_equal(content[1].force_encoding("ascii-8bit"),
+        assert_equal(content[1..-1].force_encoding("ascii-8bit"),
                      result.force_encoding("ascii-8bit"))
         result = File.read(path, mode: 'rb:BOM|UTF-8:UTF-8')
         assert_equal(Encoding::UTF_8, result.encoding)
@@ -2099,10 +2099,10 @@ EOT
       bug3407 = '[ruby-core:30641]'
       path = 'UTF-8-bom.txt'
       result = File.read(path, encoding: 'BOM|UTF-8')
-      assert_equal("a", result.force_encoding("ascii-8bit"), bug3407)
+      assert_equal(stripped.b, result.force_encoding("ascii-8bit"), bug3407)
 
       bug8323 = '[ruby-core:54563] [Bug #8323]'
-      expected = "a\xff".force_encoding("utf-8")
+      expected = (stripped.b + "\xff").force_encoding("utf-8")
       open(path, 'ab') {|f| f.write("\xff")}
       result = File.read(path, encoding: 'BOM|UTF-8')
       assert_not_predicate(result, :valid_encoding?, bug8323)
