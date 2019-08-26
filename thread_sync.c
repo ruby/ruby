@@ -1363,8 +1363,9 @@ do_sleep(VALUE args)
 }
 
 static VALUE
-delete_from_waitq(struct sync_waiter *w)
+delete_from_waitq(VALUE v)
 {
+    struct sync_waiter *w = (void *)v;
     list_del(&w->node);
 
     return Qnil;

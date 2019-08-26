@@ -520,8 +520,9 @@ pty_open(VALUE klass)
 }
 
 static VALUE
-pty_detach_process(struct pty_info *info)
+pty_detach_process(VALUE v)
 {
+    struct pty_info *info = (void *)v;
 #ifdef WNOHANG
     int st;
     if (rb_waitpid(info->child_pid, &st, WNOHANG) <= 0)

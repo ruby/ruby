@@ -2755,7 +2755,7 @@ objspace_each_objects_protected(VALUE arg)
 }
 
 static VALUE
-incremental_enable(void)
+incremental_enable(VALUE _)
 {
     rb_objspace_t *objspace = &rb_objspace;
 

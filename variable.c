@@ -671,8 +671,9 @@ struct trace_data {
 };
 
 static VALUE
-trace_ev(struct trace_data *data)
+trace_ev(VALUE v)
 {
+    struct trace_data *data = (void *)v;
     struct trace_var *trace = data->trace;
 
     while (trace) {
@@ -684,8 +685,9 @@ trace_ev(struct trace_data *data)
 }
 
 static VALUE
-trace_en(struct rb_global_variable *var)
+trace_en(VALUE v)
 {
+    struct rb_global_variable *var = (void *)v;
     var->block_trace = 0;
     remove_trace(var);
     return Qnil;		/* not reached */

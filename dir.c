@@ -1010,8 +1010,9 @@ struct chdir_data {
 };
 
 static VALUE
-chdir_yield(struct chdir_data *args)
+chdir_yield(VALUE v)
 {
+    struct chdir_data *args = (void *)v;
     dir_chdir(args->new_path);
     args->done = TRUE;
     chdir_blocking++;
@@ -1021,8 +1022,9 @@ chdir_yield(struct chdir_data *args)
 }
 
 static VALUE
-chdir_restore(struct chdir_data *args)
+chdir_restore(VALUE v)
 {
+    struct chdir_data *args = (void *)v;
     if (args->done) {
 	chdir_blocking--;
 	if (chdir_blocking == 0)
