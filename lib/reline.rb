@@ -341,7 +341,6 @@ module Reline
   def_single_delegators :core, :input=, :output=
   def_single_delegators :core, :vi_editing_mode, :emacs_editing_mode
   def_single_delegators :core, :readline
-  def_single_delegators :core, :readline
   def_instance_delegators self, :readline
 
 
