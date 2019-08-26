@@ -1548,7 +1548,7 @@ st_update(st_table *tab, st_data_t key,
    different for ST_CHECK and when the current element is removed
    during traversing.  */
 static inline int
-st_general_foreach(st_table *tab, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg,
+st_general_foreach(st_table *tab, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg,
 		   int check_p)
 {
     st_index_t bin;
@@ -1659,20 +1659,33 @@ st_general_foreach(st_table *tab, int (*func)(ANYARGS), st_update_callback_func 
 }
 
 int
-st_foreach_with_replace(st_table *tab, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg)
+st_foreach_with_replace(st_table *tab, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg)
 {
     return st_general_foreach(tab, func, replace, arg, TRUE);
 }
 
-int
-st_foreach(st_table *tab, int (*func)(ANYARGS), st_data_t arg)
+struct functor {
+    st_foreach_callback_func *func;
+    st_data_t arg;
+};
+
+static int
+apply_functor(st_data_t k, st_data_t v, st_data_t d, int _)
 {
-    return st_general_foreach(tab, func, NULL, arg, FALSE);
+    const struct functor *f = (void *)d;
+    return f->func(k, v, f->arg);
+}
+
+int
+st_foreach(st_table *tab, st_foreach_callback_func *func, st_data_t arg)
+{
+    const struct functor f = { func, arg };
+    return st_general_foreach(tab, apply_functor, NULL, (st_data_t)&f, FALSE);
 }
 
 /* See comments for function st_delete_safe.  */
 int
-st_foreach_check(st_table *tab, int (*func)(ANYARGS), st_data_t arg,
+st_foreach_check(st_table *tab, st_foreach_check_callback_func *func, st_data_t arg,
                  st_data_t never ATTRIBUTE_UNUSED)
 {
     return st_general_foreach(tab, func, NULL, arg, TRUE);
