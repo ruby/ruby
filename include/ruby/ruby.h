@@ -1969,8 +1969,8 @@ VALUE rb_block_call(VALUE,ID,int,const VALUE*,rb_block_call_func_t,VALUE);
 VALUE rb_rescue(VALUE(*)(VALUE),VALUE,VALUE(*)(VALUE,VALUE),VALUE);
 VALUE rb_rescue2(VALUE(*)(VALUE),VALUE,VALUE(*)(VALUE,VALUE),VALUE,...);
 VALUE rb_ensure(VALUE(*)(VALUE),VALUE,VALUE(*)(VALUE),VALUE);
-VALUE rb_catch(const char*,VALUE(*)(ANYARGS),VALUE);
-VALUE rb_catch_obj(VALUE,VALUE(*)(ANYARGS),VALUE);
+VALUE rb_catch(const char*,rb_block_call_func_t,VALUE);
+VALUE rb_catch_obj(VALUE,rb_block_call_func_t,VALUE);
 NORETURN(void rb_throw(const char*,VALUE));
 NORETURN(void rb_throw_obj(VALUE,VALUE));
 

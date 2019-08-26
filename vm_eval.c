@@ -1921,7 +1921,7 @@ rb_throw(const char *tag, VALUE val)
 }
 
 static VALUE
-catch_i(VALUE tag, VALUE data)
+catch_i(RB_BLOCK_CALL_FUNC_ARGLIST(tag, _))
 {
     return rb_yield_0(1, &tag);
 }
@@ -1985,7 +1985,7 @@ rb_f_catch(int argc, VALUE *argv, VALUE self)
 }
 
 VALUE
-rb_catch(const char *tag, VALUE (*func)(), VALUE data)
+rb_catch(const char *tag, rb_block_call_func_t func, VALUE data)
 {
     VALUE vtag = tag ? rb_sym_intern_ascii_cstr(tag) : rb_obj_alloc(rb_cObject);
     return rb_catch_obj(vtag, func, data);
@@ -2027,7 +2027,7 @@ rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, enum ruby_tag_ty
 }
 
 VALUE
-rb_catch_obj(VALUE t, VALUE (*func)(), VALUE data)
+rb_catch_obj(VALUE t, rb_block_call_func_t func, VALUE data)
 {
     enum ruby_tag_type state;
     rb_execution_context_t *ec = GET_EC();
