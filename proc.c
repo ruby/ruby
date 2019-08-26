@@ -2790,7 +2790,7 @@ bmcall(RB_BLOCK_CALL_FUNC_ARGLIST(args, method))
 
 VALUE
 rb_proc_new(
-    VALUE (*func)(ANYARGS), /* VALUE yieldarg[, VALUE procarg] */
+    rb_block_call_func_t func,
     VALUE val)
 {
     VALUE procval = rb_iterate(mproc, 0, func, val);
@@ -2987,7 +2987,7 @@ proc_binding(VALUE self)
     return bindval;
 }
 
-static VALUE curry(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc);
+static rb_block_call_func curry;
 
 static VALUE
 make_curry_proc(VALUE proc, VALUE passed, VALUE arity)
@@ -3007,7 +3007,7 @@ make_curry_proc(VALUE proc, VALUE passed, VALUE arity)
 }
 
 static VALUE
-curry(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
+curry(RB_BLOCK_CALL_FUNC_ARGLIST(_, args))
 {
     VALUE proc, passed, arity;
     proc = RARRAY_AREF(args, 0);
@@ -3018,14 +3018,14 @@ curry(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
     rb_ary_freeze(passed);
 
     if (RARRAY_LEN(passed) < FIX2INT(arity)) {
-	if (!NIL_P(passed_proc)) {
+        if (!NIL_P(blockarg)) {
 	    rb_warn("given block not used");
 	}
 	arity = make_curry_proc(proc, passed, arity);
 	return arity;
     }
     else {
-	return rb_proc_call_with_block(proc, check_argc(RARRAY_LEN(passed)), RARRAY_CONST_PTR(passed), passed_proc);
+        return rb_proc_call_with_block(proc, check_argc(RARRAY_LEN(passed)), RARRAY_CONST_PTR(passed), blockarg);
     }
 }
 
@@ -3130,16 +3130,16 @@ rb_method_curry(int argc, const VALUE *argv, VALUE self)
 }
 
 static VALUE
-compose(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
+compose(RB_BLOCK_CALL_FUNC_ARGLIST(_, args))
 {
     VALUE f, g, fargs;
     f = RARRAY_AREF(args, 0);
     g = RARRAY_AREF(args, 1);
 
     if (rb_obj_is_proc(g))
-        fargs = rb_proc_call_with_block(g, argc, argv, passed_proc);
+        fargs = rb_proc_call_with_block(g, argc, argv, blockarg);
     else
-        fargs = rb_funcall_with_block(g, idCall, argc, argv, passed_proc);
+        fargs = rb_funcall_with_block(g, idCall, argc, argv, blockarg);
 
     if (rb_obj_is_proc(f))
         return rb_proc_call(f, rb_ary_new3(1, fargs));

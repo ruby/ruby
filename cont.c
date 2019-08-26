@@ -1770,7 +1770,7 @@ rb_fiber_initialize(int argc, VALUE* argv, VALUE self)
 }
 
 VALUE
-rb_fiber_new(VALUE (*func)(ANYARGS), VALUE obj)
+rb_fiber_new(rb_block_call_func_t func, VALUE obj)
 {
     return fiber_initialize(fiber_alloc(rb_cFiber), rb_proc_new(func, obj), &shared_fiber_pool);
 }
