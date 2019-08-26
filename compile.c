@@ -9272,6 +9272,7 @@ struct ibf_iseq_constant_body {
     } insns_info;
 
     ibf_offset_t local_table_offset;
+    ibf_offset_t catch_table_size;
     ibf_offset_t catch_table_offset;
 
     /* for child iseq */
@@ -9793,27 +9794,68 @@ ibf_load_param_keyword(const struct ibf_load *load, const struct ibf_iseq_consta
 static ibf_offset_t
 ibf_dump_insns_info_body(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
-    IBF_W_ALIGN(struct iseq_insn_info_entry);
-    return ibf_dump_write(dump, iseq->body->insns_info.body, sizeof(struct iseq_insn_info_entry) * iseq->body->insns_info.size);
+    ibf_offset_t offset = ibf_dump_pos(dump);
+    const struct iseq_insn_info_entry *entries = iseq->body->insns_info.body;
+
+    unsigned int i;
+    for (i = 0; i < iseq->body->insns_info.size; i++) {
+        ibf_dump_code_write_small_value(dump->str, entries[i].line_no);
+        ibf_dump_code_write_small_value(dump->str, entries[i].events);
+    }
+
+    return offset;
 }
 
 static struct iseq_insn_info_entry *
 ibf_load_insns_info_body(const struct ibf_load *load, const struct ibf_iseq_constant_body *body)
 {
-    return IBF_R(body->insns_info.body_offset, struct iseq_insn_info_entry, body->insns_info.size);
+    const unsigned char *buffer = (const unsigned char *)load->buff;
+    const ibf_offset_t buffer_size = (ibf_offset_t)RSTRING_LEN(load->str);
+    ibf_offset_t offset = body->insns_info.body_offset;
+
+    struct iseq_insn_info_entry *entries = ALLOC_N(struct iseq_insn_info_entry, body->insns_info.size);
+
+    unsigned int i;
+    for (i = 0; i < body->insns_info.size; i++) {
+        entries[i].line_no = ibf_load_code_read_small_value(buffer, buffer_size, &offset);
+        entries[i].events = ibf_load_code_read_small_value(buffer, buffer_size, &offset);
+    }
+
+    return entries;
 }
 
 static ibf_offset_t
 ibf_dump_insns_info_positions(struct ibf_dump *dump, const struct ibf_iseq_constant_body *body, const unsigned int *positions)
 {
-    IBF_W_ALIGN(unsigned int);
-    return ibf_dump_write(dump, positions, sizeof(unsigned int) * body->insns_info.size);
+    ibf_offset_t offset = ibf_dump_pos(dump);
+
+    unsigned int last = 0;
+    unsigned int i;
+    for (i = 0; i < body->insns_info.size; i++) {
+        ibf_dump_code_write_small_value(dump->str, positions[i] - last);
+        last = positions[i];
+    }
+
+    return offset;
 }
 
 static unsigned int *
 ibf_load_insns_info_positions(const struct ibf_load *load, const struct ibf_iseq_constant_body *body)
 {
-    return IBF_R(body->insns_info.positions_offset, unsigned int, body->insns_info.size);
+    const unsigned char *buffer = (const unsigned char *)load->buff;
+    const ibf_offset_t buffer_size = (ibf_offset_t)RSTRING_LEN(load->str);
+    ibf_offset_t offset_read = body->insns_info.positions_offset;
+
+    unsigned int *positions = ruby_xmalloc(sizeof(unsigned int) * body->insns_info.size);
+
+    unsigned int last = 0;
+    unsigned int i;
+    for (i = 0; i < body->insns_info.size; i++) {
+        positions[i] = last + ibf_load_code_read_small_value(buffer, buffer_size, &offset_read);
+        last = positions[i];
+    }
+
+    return positions;
 }
 
 static ibf_offset_t
@@ -9857,32 +9899,51 @@ ibf_dump_catch_table(struct ibf_dump *dump, const rb_iseq_t *iseq)
     const struct iseq_catch_table *table = iseq->body->catch_table;
 
     if (table) {
-        int byte_size = iseq_catch_table_bytes(iseq->body->catch_table->size);
-        struct iseq_catch_table *dump_table = (struct iseq_catch_table *)ALLOCA_N(char, byte_size);
+        int *iseq_indices = ALLOCA_N(int, table->size);
         unsigned int i;
-        dump_table->size = table->size;
+
         for (i=0; i<table->size; i++) {
-            dump_table->entries[i] = table->entries[i];
-            dump_table->entries[i].iseq = (rb_iseq_t *)(VALUE)ibf_dump_iseq(dump, table->entries[i].iseq);
+            iseq_indices[i] = ibf_dump_iseq(dump, table->entries[i].iseq);
         }
-        return ibf_dump_write(dump, dump_table, byte_size);
+
+        const ibf_offset_t offset = ibf_dump_pos(dump);
+
+        for (i=0; i<table->size; i++) {
+            ibf_dump_code_write_small_value(dump->str, iseq_indices[i]);
+            ibf_dump_code_write_small_value(dump->str, table->entries[i].type);
+            ibf_dump_code_write_small_value(dump->str, table->entries[i].start);
+            ibf_dump_code_write_small_value(dump->str, table->entries[i].end);
+            ibf_dump_code_write_small_value(dump->str, table->entries[i].cont);
+            ibf_dump_code_write_small_value(dump->str, table->entries[i].sp);
+        }
+        return offset;
     }
     else {
-        return 0;
+        return ibf_dump_pos(dump);
     }
 }
 
 static struct iseq_catch_table *
 ibf_load_catch_table(const struct ibf_load *load, const struct ibf_iseq_constant_body *body)
 {
-    if (body->catch_table_offset != 0) {
-        struct iseq_catch_table *table;
+    if (body->catch_table_size) {
+        struct iseq_catch_table *table = ruby_xmalloc(iseq_catch_table_bytes(body->catch_table_size));
+        table->size = body->catch_table_size;
+
+        const unsigned char *buffer = (const unsigned char *)load->buff;
+        const ibf_offset_t buffer_size = (ibf_offset_t)RSTRING_LEN(load->str);
+        ibf_offset_t offset = body->catch_table_offset;
+
         unsigned int i;
-        unsigned int size;
-        size = *(unsigned int *)(load->buff + body->catch_table_offset);
-        table = ibf_load_alloc(load, body->catch_table_offset, iseq_catch_table_bytes(size));
-        for (i=0; i<size; i++) {
-            table->entries[i].iseq = ibf_load_iseq(load, table->entries[i].iseq);
+        for (i=0; i<table->size; i++) {
+            int iseq_index = (int)ibf_load_code_read_small_value(buffer, buffer_size, &offset);
+            table->entries[i].type = ibf_load_code_read_small_value(buffer, buffer_size, &offset);
+            table->entries[i].start = ibf_load_code_read_small_value(buffer, buffer_size, &offset);
+            table->entries[i].end = ibf_load_code_read_small_value(buffer, buffer_size, &offset);
+            table->entries[i].cont = ibf_load_code_read_small_value(buffer, buffer_size, &offset);
+            table->entries[i].sp = ibf_load_code_read_small_value(buffer, buffer_size, &offset);
+
+            table->entries[i].iseq = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)iseq_index);
         }
         return table;
     }
@@ -9898,60 +9959,89 @@ ibf_dump_ci_entries(struct ibf_dump *dump, const rb_iseq_t *iseq)
     const unsigned int ci_size = body->ci_size;
     const unsigned int ci_kw_size = body->ci_kw_size;
     const struct rb_call_info *ci_entries = body->ci_entries;
-    struct rb_call_info *dump_ci_entries;
-    struct rb_call_info_with_kwarg *dump_ci_kw_entries;
-    int byte_size = ci_size * sizeof(struct rb_call_info) +
-                    ci_kw_size * sizeof(struct rb_call_info_with_kwarg);
+    const struct rb_call_info_with_kwarg *ci_kw_entries = (const struct rb_call_info_with_kwarg *)&body->ci_entries[ci_size];
+
+    // struct rb_call_info *dump_ci_entries;
+    // struct rb_call_info_with_kwarg *dump_ci_kw_entries;
+    // int byte_size = ci_size * sizeof(struct rb_call_info) +
+    //                 ci_kw_size * sizeof(struct rb_call_info_with_kwarg);
+
+    ibf_offset_t offset = ibf_dump_pos(dump);
+
     unsigned int i;
 
-    dump_ci_entries = (struct rb_call_info *)ALLOCA_N(char, byte_size);
-    dump_ci_kw_entries = (struct rb_call_info_with_kwarg *)&dump_ci_entries[ci_size];
-    memcpy(dump_ci_entries, ci_entries, byte_size);
+    for (i = 0; i < ci_size; i++) {
+        VALUE mid = ibf_dump_id(dump, ci_entries[i].mid);
 
-    for (i=0; i<ci_size; i++) { /* conver ID for each ci */
-        dump_ci_entries[i].mid = ibf_dump_id(dump, dump_ci_entries[i].mid);
+        ibf_dump_code_write_small_value(dump->str, mid);
+        ibf_dump_code_write_small_value(dump->str, ci_entries[i].flag);
+        ibf_dump_code_write_small_value(dump->str, ci_entries[i].orig_argc);
     }
-    for (i=0; i<ci_kw_size; i++) {
-        const struct rb_call_info_kw_arg *kw_arg = dump_ci_kw_entries[i].kw_arg;
+
+    for (i = 0; i < ci_kw_size; i++) {
+        const struct rb_call_info_kw_arg *kw_arg = ci_kw_entries[i].kw_arg;
+
+        VALUE mid = ibf_dump_id(dump, ci_kw_entries[i].ci.mid);
+
+        ibf_dump_code_write_small_value(dump->str, mid);
+        ibf_dump_code_write_small_value(dump->str, ci_kw_entries[i].ci.flag);
+        ibf_dump_code_write_small_value(dump->str, ci_kw_entries[i].ci.orig_argc);
+
+        ibf_dump_code_write_small_value(dump->str, kw_arg->keyword_len);
+
         int j;
-        VALUE *keywords = ALLOCA_N(VALUE, kw_arg->keyword_len);
-        for (j=0; j<kw_arg->keyword_len; j++) {
-            keywords[j] = (VALUE)ibf_dump_object(dump, kw_arg->keywords[j]); /* kw_arg->keywords[n] is Symbol */
-        }
-        dump_ci_kw_entries[i].kw_arg = (struct rb_call_info_kw_arg *)(VALUE)ibf_dump_write(dump, &kw_arg->keyword_len, sizeof(int));
-        ibf_dump_write(dump, keywords, sizeof(VALUE) * kw_arg->keyword_len);
+        for (j = 0; j < ci_kw_entries[i].kw_arg->keyword_len; j++) {
+            VALUE keyword = ibf_dump_object(dump, kw_arg->keywords[j]); /* kw_arg->keywords[n] is Symbol */
 
-        dump_ci_kw_entries[i].ci.mid = ibf_dump_id(dump, dump_ci_kw_entries[i].ci.mid);
+            ibf_dump_code_write_small_value(dump->str, keyword);
+        }
     }
-    return ibf_dump_write(dump, dump_ci_entries, byte_size);
+
+    return offset;
 }
 
 static struct rb_call_info *
 ibf_load_ci_entries(const struct ibf_load *load, const struct ibf_iseq_constant_body *body)
 {
+    const unsigned char *buffer = (const unsigned char *)load->buff;
+    const ibf_offset_t buffer_size = RSTRING_LEN(load->str);
+    ibf_offset_t offset_read = body->ci_entries_offset;
+
     unsigned int i;
     const unsigned int ci_size = body->ci_size;
     const unsigned int ci_kw_size = body->ci_kw_size;
-    struct rb_call_info *ci_entries = ibf_load_alloc(load, body->ci_entries_offset,
-                                                     sizeof(struct rb_call_info) * body->ci_size +
-                                                     sizeof(struct rb_call_info_with_kwarg) * body->ci_kw_size);
+
+    struct rb_call_info *ci_entries = ruby_xmalloc(sizeof(struct rb_call_info) * body->ci_size +
+                                                   sizeof(struct rb_call_info_with_kwarg) * body->ci_kw_size);
     struct rb_call_info_with_kwarg *ci_kw_entries = (struct rb_call_info_with_kwarg *)&ci_entries[ci_size];
 
-    for (i=0; i<ci_size; i++) {
-        ci_entries[i].mid = ibf_load_id(load, ci_entries[i].mid);
+    for (i = 0; i < ci_size; i++) {
+        VALUE mid_index = ibf_load_code_read_small_value(buffer, buffer_size, &offset_read);
+
+        ci_entries[i].mid = ibf_load_id(load, mid_index);
+        ci_entries[i].flag = ibf_load_code_read_small_value(buffer, buffer_size, &offset_read);
+        ci_entries[i].orig_argc = ibf_load_code_read_small_value(buffer, buffer_size, &offset_read);
     }
-    for (i=0; i<ci_kw_size; i++) {
+
+    for (i = 0; i < ci_kw_size; i++) {
+        VALUE mid_index = ibf_load_code_read_small_value(buffer, buffer_size, &offset_read);
+
+        ci_kw_entries[i].ci.mid = ibf_load_id(load, mid_index);
+        ci_kw_entries[i].ci.flag = ibf_load_code_read_small_value(buffer, buffer_size, &offset_read);
+        ci_kw_entries[i].ci.orig_argc = ibf_load_code_read_small_value(buffer, buffer_size, &offset_read);
+
+        int keyword_len = (int)ibf_load_code_read_small_value(buffer, buffer_size, &offset_read);
+
+        ci_kw_entries[i].kw_arg = ruby_xmalloc(sizeof(struct rb_call_info_kw_arg) + sizeof(VALUE) * (keyword_len - 1));
+
+        ci_kw_entries[i].kw_arg->keyword_len = keyword_len;
+
         int j;
-        ibf_offset_t kw_arg_offset = IBF_OFFSET(ci_kw_entries[i].kw_arg);
-        const int keyword_len = *(int *)(load->buff + kw_arg_offset);
-        const VALUE *keywords = (VALUE *)(load->buff + kw_arg_offset + sizeof(int));
-        struct rb_call_info_kw_arg *kw_arg = ruby_xmalloc(sizeof(struct rb_call_info_kw_arg) + sizeof(VALUE) * (keyword_len - 1));
-        kw_arg->keyword_len = keyword_len;
-        for (j=0; j<kw_arg->keyword_len; j++) {
-            kw_arg->keywords[j] = (VALUE)ibf_load_object(load, keywords[j]);
+        for (j = 0; j < ci_kw_entries[i].kw_arg->keyword_len; j++) {
+            VALUE keyword = ibf_load_code_read_small_value(buffer, buffer_size, &offset_read);
+
+            ci_kw_entries[i].kw_arg->keywords[j] = ibf_load_object(load, keyword);
         }
-        ci_kw_entries[i].kw_arg = kw_arg;
-        ci_kw_entries[i].ci.mid = ibf_load_id(load, ci_kw_entries[i].ci.mid);
     }
 
     return ci_entries;
@@ -9982,6 +10072,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     dump_body.param.block_start = iseq->body->param.block_start;
     dump_body.location = iseq->body->location;
     dump_body.insns_info.size = iseq->body->insns_info.size;
+    dump_body.catch_table_size = iseq->body->catch_table ? iseq->body->catch_table->size : 0;
     dump_body.variable.flip_count = iseq->body->variable.flip_count;
     dump_body.variable.pc2branchindex = iseq->body->variable.pc2branchindex;
     dump_body.local_table_size = iseq->body->local_table_size;
@@ -10053,7 +10144,8 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_code_write_small_value(dump->str, offset - dump_body.insns_info.positions_offset);
     ibf_dump_code_write_small_value(dump->str, dump_body.insns_info.size);
     ibf_dump_code_write_small_value(dump->str, offset - dump_body.local_table_offset);
-    ibf_dump_code_write_small_value(dump->str, dump_body.catch_table_offset);
+    ibf_dump_code_write_small_value(dump->str, dump_body.catch_table_size);
+    ibf_dump_code_write_small_value(dump->str, offset - dump_body.catch_table_offset);
     ibf_dump_code_write_small_value(dump->str, dump_body.parent_iseq_index);
     ibf_dump_code_write_small_value(dump->str, dump_body.local_iseq_index);
     ibf_dump_code_write_small_value(dump->str, offset - dump_body.ci_entries_offset);
@@ -10117,7 +10209,8 @@ ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t of
     ibf_offset_t insns_info_positions_offset = offset - ibf_load_code_read_small_value(buffer, buffer_size, &offset_read);
     unsigned int insns_info_size = ibf_load_code_read_small_value(buffer, buffer_size, &offset_read);
     ibf_offset_t local_table_offset = offset - ibf_load_code_read_small_value(buffer, buffer_size, &offset_read);
-    ibf_offset_t catch_table_offset = ibf_load_code_read_small_value(buffer, buffer_size, &offset_read);
+    ibf_offset_t catch_table_size = ibf_load_code_read_small_value(buffer, buffer_size, &offset_read);
+    ibf_offset_t catch_table_offset = offset - ibf_load_code_read_small_value(buffer, buffer_size, &offset_read);
     int parent_iseq_index = ibf_load_code_read_small_value(buffer, buffer_size, &offset_read);
     int local_iseq_index = ibf_load_code_read_small_value(buffer, buffer_size, &offset_read);
     ibf_offset_t ci_entries_offset = offset - ibf_load_code_read_small_value(buffer, buffer_size, &offset_read);
@@ -10164,6 +10257,7 @@ ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t of
     body.insns_info.positions_offset = insns_info_positions_offset;
     body.insns_info.size = insns_info_size;
     body.local_table_offset = local_table_offset;
+    body.catch_table_size = catch_table_size;
     body.catch_table_offset = catch_table_offset;
     body.parent_iseq_index = parent_iseq_index;
     body.local_iseq_index = local_iseq_index;
