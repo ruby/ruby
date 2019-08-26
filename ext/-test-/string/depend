@@ -173,6 +173,17 @@ qsort.o: $(hdrdir)/ruby/subst.h
 qsort.o: $(hdrdir)/ruby/util.h
 qsort.o: $(top_srcdir)/include/ruby.h
 qsort.o: qsort.c
+rb_str_dup.o: $(RUBY_EXTCONF_H)
+rb_str_dup.o: $(arch_hdrdir)/ruby/config.h
+rb_str_dup.o: $(hdrdir)/ruby.h
+rb_str_dup.o: $(hdrdir)/ruby/backward.h
+rb_str_dup.o: $(hdrdir)/ruby/defines.h
+rb_str_dup.o: $(hdrdir)/ruby/intern.h
+rb_str_dup.o: $(hdrdir)/ruby/missing.h
+rb_str_dup.o: $(hdrdir)/ruby/ruby.h
+rb_str_dup.o: $(hdrdir)/ruby/st.h
+rb_str_dup.o: $(hdrdir)/ruby/subst.h
+rb_str_dup.o: rb_str_dup.c
 set_len.o: $(RUBY_EXTCONF_H)
 set_len.o: $(arch_hdrdir)/ruby/config.h
 set_len.o: $(hdrdir)/ruby/backward.h
