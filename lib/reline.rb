@@ -371,8 +371,6 @@ module Reline
   def_single_delegators :core, :readmultiline
   def_instance_delegators self, :readmultiline
 
-  private
-
   def self.core
     @core ||= Core.new { |core|
       core.config = Reline::Config.new
