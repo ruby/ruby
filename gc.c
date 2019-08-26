@@ -8867,7 +8867,7 @@ compat_key(VALUE key)
 }
 
 static VALUE
-default_proc_for_compat_func(VALUE hash, VALUE dmy, int argc, VALUE *argv)
+default_proc_for_compat_func(RB_BLOCK_CALL_FUNC_ARGLIST(hash, _))
 {
     VALUE key, new_key;
 

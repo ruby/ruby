@@ -238,7 +238,7 @@ VALUE rb_singleton_class(VALUE);
 int rb_cmpint(VALUE, VALUE, VALUE);
 NORETURN(void rb_cmperr(VALUE, VALUE));
 /* cont.c */
-VALUE rb_fiber_new(VALUE (*)(ANYARGS), VALUE);
+VALUE rb_fiber_new(rb_block_call_func_t, VALUE);
 VALUE rb_fiber_resume(VALUE fib, int argc, const VALUE *argv);
 VALUE rb_fiber_yield(int argc, const VALUE *argv);
 VALUE rb_fiber_current(void);
@@ -446,7 +446,7 @@ void rb_obj_call_init(VALUE, int, const VALUE*);
 VALUE rb_class_new_instance(int, const VALUE*, VALUE);
 VALUE rb_block_proc(void);
 VALUE rb_block_lambda(void);
-VALUE rb_proc_new(VALUE (*)(ANYARGS/* VALUE yieldarg[, VALUE procarg] */), VALUE);
+VALUE rb_proc_new(rb_block_call_func_t, VALUE);
 VALUE rb_obj_is_proc(VALUE);
 VALUE rb_proc_call(VALUE, VALUE);
 VALUE rb_proc_call_with_block(VALUE, int argc, const VALUE *argv, VALUE);

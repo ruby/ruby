@@ -713,7 +713,7 @@ next_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, obj))
 }
 
 static VALUE
-next_i(VALUE curr, VALUE obj)
+next_i(RB_BLOCK_CALL_FUNC_ARGLIST(_, obj))
 {
     struct enumerator *e = enumerator_ptr(obj);
     VALUE nil = Qnil;
