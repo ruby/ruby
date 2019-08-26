@@ -63,6 +63,7 @@ module SecureRandom
             class << self
               remove_method :gen_random
               alias gen_random gen_random_openssl
+              public :gen_random
             end
           end
           return gen_random(n)
@@ -72,6 +73,7 @@ module SecureRandom
           class << self
             remove_method :gen_random
             alias gen_random gen_random_urandom
+            public :gen_random
           end
         end
         return gen_random(n)

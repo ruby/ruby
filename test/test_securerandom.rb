@@ -184,4 +184,11 @@ end
       assert_equal(idx, @it.send(:gen_random_openssl, idx).size)
     end
   end
+
+  def test_repeated_gen_random
+    assert_nothing_raised NoMethodError, '[ruby-core:92633] [Bug #15847]' do
+      @it.gen_random(1)
+      @it.gen_random(1)
+    end
+  end
 end
