@@ -35,6 +35,7 @@
 
 #define CASE_FOLD_IS_APPLIED_INSIDE_NEGATIVE_CCLASS
 
+extern const int onigenc_unicode_version_number[3];
 
 const OnigSyntaxType OnigSyntaxRuby = {
   (( SYN_GNU_REGEX_OP | ONIG_SYN_OP_QMARK_NON_GREEDY |
@@ -6063,7 +6064,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     np1 = node_new_cclass();
     if (IS_NULL(np1)) goto err;
     cc = NCCLASS(np1);
-    {
+    if (onigenc_unicode_version_number[0] < 10) {
       static const OnigCodePoint ranges[] = {
 	13,
 	0x1F308, 0x1F308,
@@ -6205,7 +6206,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     if (IS_NULL(np1)) goto err;
     cc = NCCLASS(np1);
     {
-      static const OnigCodePoint ranges[] = {
+      static const OnigCodePoint ranges9[] = {
 	8,
 	0x1F3C2, 0x1F3C2,
 	0x1F3C7, 0x1F3C7,
@@ -6216,6 +6217,14 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 	0x1F574, 0x1F574,
 	0x1F6CC, 0x1F6CC,
       };
+      static const OnigCodePoint ranges10[] = {
+	3,
+	0x1F3F3, 0x1F3F3,
+	0x1F441, 0x1F441,
+	0x1F46F, 0x1F46F,
+      };
+      const OnigCodePoint *ranges =
+        (onigenc_unicode_version_number[0] < 10) ? ranges9 : ranges10;
       r = add_ctype_to_cc_by_range(cc, -1, 0, env, sb_out, ranges);
       if (r != 0) goto err;
     }

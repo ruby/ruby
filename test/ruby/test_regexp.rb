@@ -955,6 +955,8 @@ class TestRegexp < Test::Unit::TestCase
     assert_match /\A\X\z/, "\u{1F468 200D 1F393}"
     assert_match /\A\X\z/, "\u{1F46F 200D 2642 FE0F}"
     assert_match /\A\X\z/, "\u{1f469 200d 2764 fe0f 200d 1f469}"
+
+    assert_warning('') {/\X/ =~ "\u{a0}"}
   end
 
   def test_backward
