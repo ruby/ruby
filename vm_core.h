@@ -975,7 +975,7 @@ typedef struct rb_thread_struct {
             VALUE args;
         } proc;
         struct {
-            VALUE (*func)(ANYARGS);
+            VALUE (*func)(void *);
             void *arg;
         } func;
     } invoke_arg;
