@@ -5865,6 +5865,7 @@ rb_w32_lstati128(const char *path, struct stati128 *st)
     return w32_stati128(path, st, filecp(), TRUE);
 }
 
+/* License: Ruby's */
 off_t
 rb_w32_lseek(int fd, off_t ofs, int whence)
 {
