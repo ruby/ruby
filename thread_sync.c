@@ -289,14 +289,18 @@ do_mutex_lock(VALUE self, int interruptible_p)
 		th->status = prev_status;
 	    }
 	    th->vm->sleeper--;
-	    if (mutex->th == th) mutex_locked(th, self);
 
             if (interruptible_p) {
+                /* release mutex before checking for interrupts...as interrupt checking
+                 * code might call rb_raise() */
+                if (mutex->th == th) mutex->th = 0;
                 RUBY_VM_CHECK_INTS_BLOCKING(th->ec); /* may release mutex */
                 if (!mutex->th) {
                     mutex->th = th;
                     mutex_locked(th, self);
                 }
+            } else {
+                if (mutex->th == th) mutex_locked(th, self);
             }
 	}
     }
