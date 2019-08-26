@@ -1193,7 +1193,7 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
 
 VALUE
 rb_iterate(VALUE (* it_proc)(VALUE), VALUE data1,
-	   VALUE (* bl_proc)(ANYARGS), VALUE data2)
+           rb_block_call_func_t bl_proc, VALUE data2)
 {
     return rb_iterate0(it_proc, data1,
 		       bl_proc ? rb_vm_ifunc_proc_new(bl_proc, (void *)data2) : 0,

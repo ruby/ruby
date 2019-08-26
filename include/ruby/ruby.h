@@ -1964,7 +1964,7 @@ VALUE rb_yield_splat(VALUE);
 VALUE rb_yield_block(VALUE, VALUE, int, const VALUE *, VALUE); /* rb_block_call_func */
 int rb_block_given_p(void);
 void rb_need_block(void);
-VALUE rb_iterate(VALUE(*)(VALUE),VALUE,VALUE(*)(ANYARGS),VALUE);
+VALUE rb_iterate(VALUE(*)(VALUE),VALUE,rb_block_call_func_t,VALUE);
 VALUE rb_block_call(VALUE,ID,int,const VALUE*,rb_block_call_func_t,VALUE);
 VALUE rb_rescue(VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE);
 VALUE rb_rescue2(VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE,...);
