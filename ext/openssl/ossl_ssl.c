@@ -592,7 +592,7 @@ ssl_renegotiation_cb(const SSL *ssl)
 #if !defined(OPENSSL_NO_NEXTPROTONEG) || \
     defined(HAVE_SSL_CTX_SET_ALPN_SELECT_CB)
 static VALUE
-ssl_npn_encode_protocol_i(VALUE cur, VALUE encoded)
+ssl_npn_encode_protocol_i(RB_BLOCK_CALL_FUNC_ARGLIST(cur, encoded))
 {
     int len = RSTRING_LENINT(cur);
     char len_byte;
