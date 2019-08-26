@@ -572,9 +572,14 @@ class VCS
       unless $?.success?
         raise "need notes/commits tree; run `git fetch origin refs/notes/commits:refs/notes/commits` in the repository"
       end
-      range = [from, (to || 'HEAD')].compact.join('^..')
-      cmd_pipe({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
-               %W"#{COMMAND} log --format=medium --notes=commits --date=iso-local --topo-order #{range}", "rb") do |r|
+      cmd = %W"#{COMMAND} log --format=medium --notes=commits --date=iso-local --topo-order"
+      to ||= 'HEAD'
+      if from
+        cmd.push("#{from}^..#{to}")
+      else
+        cmd.push("--since=25 Dec 00:00:00", to)
+      end
+      cmd_pipe({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'}, cmd, "rb") do |r|
         format_changelog(r, path)
       end
     end
