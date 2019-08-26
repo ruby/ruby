@@ -1,0 +1,68 @@
+name: coverage
+on:
+  schedule:
+    - cron: '0 * * * *'
+  pull_request:
+    branches:
+      - '*'
+jobs:
+  latest:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test_task: [ "check" ]
+      fail-fast: false
+    steps:
+      - name: Install libraries
+        run: |
+          set -x
+          sudo sed /etc/apt/sources.list -e "s/^# deb-src/deb-src/g" -i
+          sudo apt-get update
+          sudo apt-get install ruby2.5 lcov xz-utils
+          sudo apt-get build-dep ruby2.5
+
+      # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
+      - name: Checkout ruby/ruby
+        run: git clone --depth=1 https://github.com/ruby/ruby . && git reset --hard "$GITHUB_SHA"
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        if: github.event_name == 'schedule'
+      - name: Checkout a pull request
+        run: git clone --depth=1 "--branch=$GITHUB_BRANCH" "https://github.com/${GITHUB_REPO}" . && git reset --hard "$GITHUB_REV"
+        env:
+          GITHUB_REV: ${{ github.event.pull_request.head.sha }}
+          GITHUB_BRANCH: ${{ github.event.pull_request.head.ref }}
+          GITHUB_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        if: github.event_name == 'pull_request'
+
+      - name: Fixed world writable dirs
+        run: |
+          chmod go-w $HOME
+          sudo chmod -R go-w /usr/share
+      - run: autoconf
+      - name: Configure with gcov
+        run: ./configure --enable-gcov
+      - name: Setup coverage tools
+        run: make update-coverage
+      - name: Build
+        run: make -j$((1 + $(nproc --all)))
+      - name: Tests
+        run: make -s check COVERAGE=true
+      - name: Aggregate coverage results
+        run: make lcov
+      - name: Upload results
+        run: |
+          xz -9 lcov-all.info
+          aws s3 cp lcov-all.info.xz s3://rubyci/coverage/lcov-all-"$GITHUB_SHA".info.xz
+          aws s3 sync lcov-out s3://rubyci/coverage-latest-html
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        if: github.event_name == 'schedule'
+
+      - name: Debug GitHub context
+        run: echo "$GITHUB_CONTEXT"
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        if: failure() && github.event_name == 'schedule'
