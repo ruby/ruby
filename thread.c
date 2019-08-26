@@ -810,7 +810,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 }
 
 static VALUE
-thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
+thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(void *))
 {
     rb_thread_t *th = rb_thread_ptr(thval), *current_th = GET_THREAD();
     int err;
@@ -944,7 +944,7 @@ thread_initialize(VALUE thread, VALUE args)
 }
 
 VALUE
-rb_thread_create(VALUE (*fn)(ANYARGS), void *arg)
+rb_thread_create(VALUE (*fn)(void *), void *arg)
 {
     return thread_create_core(rb_thread_alloc(rb_cThread), (VALUE)arg, fn);
 }

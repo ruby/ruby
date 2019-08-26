@@ -474,7 +474,7 @@ VALUE rb_thread_wakeup(VALUE);
 VALUE rb_thread_wakeup_alive(VALUE);
 VALUE rb_thread_run(VALUE);
 VALUE rb_thread_kill(VALUE);
-VALUE rb_thread_create(VALUE (*)(ANYARGS), void*);
+VALUE rb_thread_create(VALUE (*)(void *), void*);
 int rb_thread_fd_select(int, rb_fdset_t *, rb_fdset_t *, rb_fdset_t *, struct timeval *);
 void rb_thread_wait_for(struct timeval);
 VALUE rb_thread_current(void);
