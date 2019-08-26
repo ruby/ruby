@@ -10379,8 +10379,9 @@ open_key_args(VALUE klass, int argc, VALUE *argv, VALUE opt, struct foreach_arg 
 }
 
 static VALUE
-io_s_foreach(struct getline_arg *arg)
+io_s_foreach(VALUE v)
 {
+    struct getline_arg *arg = (void *)v;
     VALUE str;
 
     while (!NIL_P(str = rb_io_getline_1(arg->rs, arg->limit, arg->chomp, arg->io))) {
@@ -10437,8 +10438,9 @@ rb_io_s_foreach(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-io_s_readlines(struct getline_arg *arg)
+io_s_readlines(VALUE v)
 {
+    struct getline_arg *arg = (void *)v;
     return io_readlines(arg, arg->io);
 }
 
@@ -10489,8 +10491,9 @@ rb_io_s_readlines(int argc, VALUE *argv, VALUE io)
 }
 
 static VALUE
-io_s_read(struct foreach_arg *arg)
+io_s_read(VALUE v)
 {
+    struct foreach_arg *arg = (void *)v;
     return io_read(arg->argc, arg->argv, arg->io);
 }
 
@@ -10626,8 +10629,9 @@ rb_io_s_binread(int argc, VALUE *argv, VALUE io)
 }
 
 static VALUE
-io_s_write0(struct write_arg *arg)
+io_s_write0(VALUE v)
 {
+    struct write_arg *arg = (void * )v;
     return io_write(arg->io,arg->str,arg->nosync);
 }
 

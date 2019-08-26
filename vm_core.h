@@ -839,7 +839,7 @@ typedef struct rb_thread_list_struct{
 
 typedef struct rb_ensure_entry {
     VALUE marker;
-    VALUE (*e_proc)(ANYARGS);
+    VALUE (*e_proc)(VALUE);
     VALUE data2;
 } rb_ensure_entry_t;
 

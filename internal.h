@@ -1469,7 +1469,7 @@ struct rb_thread_struct;
 /* cont.c */
 VALUE rb_obj_is_fiber(VALUE);
 void rb_fiber_reset_root_local_storage(struct rb_thread_struct *);
-void ruby_register_rollback_func_for_ensure(VALUE (*ensure_func)(ANYARGS), VALUE (*rollback_func)(ANYARGS));
+void ruby_register_rollback_func_for_ensure(VALUE (*ensure_func)(VALUE), VALUE (*rollback_func)(VALUE));
 
 /* debug.c */
 PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);

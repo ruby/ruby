@@ -1071,7 +1071,7 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
  * \ingroup exception
  */
 VALUE
-rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE data2)
+rb_ensure(VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE data2)
 {
     int state;
     volatile VALUE result = Qnil;

@@ -231,7 +231,7 @@ etc_getpwnam(VALUE obj, VALUE nam)
 #ifdef HAVE_GETPWENT
 static int passwd_blocking = 0;
 static VALUE
-passwd_ensure(void)
+passwd_ensure(VALUE _)
 {
     endpwent();
     passwd_blocking = (int)Qfalse;
@@ -239,7 +239,7 @@ passwd_ensure(void)
 }
 
 static VALUE
-passwd_iterate(void)
+passwd_iterate(VALUE _)
 {
     struct passwd *pw;
 
@@ -475,7 +475,7 @@ etc_getgrnam(VALUE obj, VALUE nam)
 #ifdef HAVE_GETGRENT
 static int group_blocking = 0;
 static VALUE
-group_ensure(void)
+group_ensure(VALUE _)
 {
     endgrent();
     group_blocking = (int)Qfalse;
@@ -484,7 +484,7 @@ group_ensure(void)
 
 
 static VALUE
-group_iterate(void)
+group_iterate(VALUE _)
 {
     struct group *pw;
 

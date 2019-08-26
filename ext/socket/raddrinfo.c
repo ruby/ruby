@@ -654,8 +654,9 @@ struct hostent_arg {
 };
 
 static VALUE
-make_hostent_internal(struct hostent_arg *arg)
+make_hostent_internal(VALUE v)
 {
+    struct hostent_arg *arg = (void *)v;
     VALUE host = arg->host;
     struct addrinfo* addr = arg->addr->ai;
     VALUE (*ipaddr)(struct sockaddr*, socklen_t) = arg->ipaddr;

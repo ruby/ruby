@@ -85,6 +85,7 @@ static void zstream_passthrough_input(struct zstream*);
 static VALUE zstream_detach_input(struct zstream*);
 static void zstream_reset(struct zstream*);
 static VALUE zstream_end(struct zstream*);
+static VALUE zstream_ensure_end(VALUE v);
 static void zstream_run(struct zstream*, Bytef*, long, int);
 static VALUE zstream_sync(struct zstream*, Bytef*, long);
 static void zstream_mark(void*);
@@ -955,6 +956,12 @@ zstream_end(struct zstream *z)
     return Qnil;
 }
 
+static VALUE
+zstream_ensure_end(VALUE v)
+{
+    return zstream_end((struct zstream *)v);
+}
+
 static void *
 zstream_run_func(void *ptr)
 {
@@ -1640,7 +1647,7 @@ rb_deflate_s_deflate(int argc, VALUE *argv, VALUE klass)
 
     args[0] = (VALUE)&z;
     args[1] = src;
-    dst = rb_ensure(deflate_run, (VALUE)args, zstream_end, (VALUE)&z);
+    dst = rb_ensure(deflate_run, (VALUE)args, zstream_ensure_end, (VALUE)&z);
 
     OBJ_INFECT(dst, src);
     return dst;
@@ -1955,7 +1962,7 @@ rb_inflate_s_inflate(VALUE obj, VALUE src)
 
     args[0] = (VALUE)&z;
     args[1] = src;
-    dst = rb_ensure(inflate_run, (VALUE)args, zstream_end, (VALUE)&z);
+    dst = rb_ensure(inflate_run, (VALUE)args, zstream_ensure_end, (VALUE)&z);
 
     OBJ_INFECT(dst, src);
     return dst;
@@ -2919,7 +2926,7 @@ gzfile_writer_end(struct gzfile *gz)
     if (ZSTREAM_IS_CLOSING(&gz->z)) return;
     gz->z.flags |= ZSTREAM_FLAG_CLOSING;
 
-    rb_ensure(gzfile_writer_end_run, (VALUE)gz, zstream_end, (VALUE)&gz->z);
+    rb_ensure(gzfile_writer_end_run, (VALUE)gz, zstream_ensure_end, (VALUE)&gz->z);
 }
 
 static VALUE
@@ -2941,7 +2948,7 @@ gzfile_reader_end(struct gzfile *gz)
     if (ZSTREAM_IS_CLOSING(&gz->z)) return;
     gz->z.flags |= ZSTREAM_FLAG_CLOSING;
 
-    rb_ensure(gzfile_reader_end_run, (VALUE)gz, zstream_end, (VALUE)&gz->z);
+    rb_ensure(gzfile_reader_end_run, (VALUE)gz, zstream_ensure_end, (VALUE)&gz->z);
 }
 
 static void
