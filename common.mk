@@ -256,6 +256,7 @@ showflags:
 	"	LANG = $(LANG)" \
 	"	LC_ALL = $(LC_ALL)" \
 	"	LC_CTYPE = $(LC_CTYPE)" \
+	"	MFLAGS = $(MFLAGS)" \
 	$(MESSAGE_END)
 	-@$(CC_VERSION)
 
