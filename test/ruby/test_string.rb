@@ -68,6 +68,20 @@ class TestString < Test::Unit::TestCase
     assert_raise(FrozenError){ str.__send__(:initialize, encoding: 'euc-jp') }
     assert_raise(FrozenError){ str.__send__(:initialize, 'abc', encoding: 'euc-jp') }
     assert_raise(FrozenError){ str.__send__(:initialize, 'abc', capacity: 1000, encoding: 'euc-jp') }
+
+    str = S("")
+    assert_equal("mystring", str.__send__(:initialize, "mystring"))
+    str = S("mystring")
+    assert_equal("mystring", str.__send__(:initialize, str))
+    str = S("")
+    assert_equal("mystring", str.__send__(:initialize, "mystring", capacity: 1000))
+    str = S("mystring")
+    assert_equal("mystring", str.__send__(:initialize, str, capacity: 1000))
+  end
+
+  def test_initialize_shared
+    String.new(str = "mystring" * 10).__send__(:initialize, capacity: str.bytesize)
+    assert_equal("mystring", str[0, 8])
   end
 
   def test_initialize_nonstring
