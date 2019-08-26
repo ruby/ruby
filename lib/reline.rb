@@ -330,6 +330,7 @@ module Reline
     end
   end
 
+  extend Forwardable
   extend SingleForwardable
 
   #--------------------------------------------------------
@@ -337,11 +338,13 @@ module Reline
   #--------------------------------------------------------
 
   (Core::ATTR_READER_NAMES + Core::ATTR_ACCESSOR_NAMES).each { |name|
-    def_delegators :core, "#{name}", "#{name}="
+    def_single_delegators :core, "#{name}", "#{name}="
   }
-  def_delegators :core, :input=, :output=
-  def_delegators :core, :vi_editing_mode, :emacs_editing_mode
-  def_delegators :core, :readline
+  def_single_delegators :core, :input=, :output=
+  def_single_delegators :core, :vi_editing_mode, :emacs_editing_mode
+  def_single_delegators :core, :readline
+  def_single_delegators :core, :readline
+  def_instance_delegators :core, :readline
 
 
   #--------------------------------------------------------
@@ -349,11 +352,13 @@ module Reline
   #--------------------------------------------------------
 
   # Testable in original
-  def_delegators :core, :get_screen_size
-  def_delegators :line_editor, :delete_text
-  def_delegator :line_editor, :line, :line_buffer
-  def_delegator :line_editor, :byte_pointer, :point
-  def_delegator :line_editor, :byte_pointer=, :point=
+  def_single_delegators :core, :get_screen_size
+  def_single_delegators :line_editor, :eof?
+  def_instance_delegators self, :eof?
+  def_single_delegators :line_editor, :delete_text
+  def_single_delegator :line_editor, :line, :line_buffer
+  def_single_delegator :line_editor, :byte_pointer, :point
+  def_single_delegator :line_editor, :byte_pointer=, :point=
 
   def self.insert_text(*args, &block)
     line_editor.insert_text(*args, &block)
@@ -361,11 +366,12 @@ module Reline
   end
 
   # Untestable in original
-  def_delegator :line_editor, :rerender, :redisplay
-  def_delegators :core, :vi_editing_mode?, :emacs_editing_mode?
-  def_delegators :core, :ambiguous_width
+  def_single_delegator :line_editor, :rerender, :redisplay
+  def_single_delegators :core, :vi_editing_mode?, :emacs_editing_mode?
+  def_single_delegators :core, :ambiguous_width
 
-  def_delegators :core, :readmultiline
+  def_single_delegators :core, :readmultiline
+  def_instance_delegators self, :readmultiline
 
   private
 
