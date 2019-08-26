@@ -1895,6 +1895,17 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[@cls[1,2], nil, 'dog', 'cat'], a.unshift(@cls[1, 2]))
   end
 
+  def test_unshift_frozen
+    bug15952 = '[Bug #15952]'
+    assert_raise(FrozenError, bug15952) do
+      a = [1] * 100
+      b = a[4..-1]
+      a.replace([1])
+      b.freeze
+      b.unshift("a")
+    end
+  end
+
   def test_OR # '|'
     assert_equal(@cls[],  @cls[]  | @cls[])
     assert_equal(@cls[1], @cls[1] | @cls[])
