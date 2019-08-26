@@ -112,7 +112,7 @@ static VALUE rb_marshal_dump_limited(VALUE obj, VALUE port, int limit);
 static VALUE rb_marshal_load_with_proc(VALUE port, VALUE proc);
 
 static int
-mark_marshal_compat_i(st_data_t key, st_data_t value)
+mark_marshal_compat_i(st_data_t key, st_data_t value, st_data_t _)
 {
     marshal_compat_t *p = (marshal_compat_t *)value;
     rb_gc_mark(p->newclass);
