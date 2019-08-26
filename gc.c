@@ -7770,9 +7770,11 @@ hash_foreach_replace(st_data_t key, st_data_t value, st_data_t argp, int error)
 }
 
 static void
-gc_update_table_refs(rb_objspace_t * objspace, st_table *ht)
+gc_update_table_refs(rb_objspace_t * objspace, st_table *tbl)
 {
-    if (st_foreach_with_replace(ht, hash_foreach_replace, hash_replace_ref, (st_data_t)objspace)) {
+    if (!tbl || tbl->num_entries == 0) return;
+
+    if (st_foreach_with_replace(tbl, hash_foreach_replace, hash_replace_ref, (st_data_t)objspace)) {
         rb_raise(rb_eRuntimeError, "hash modified during iteration");
     }
 }
