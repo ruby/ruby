@@ -75,6 +75,28 @@ class TestObject < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /\u{1f4a9}/) do
       Object.new.clone(freeze: x)
     end
+
+    c = Class.new do
+      attr_reader :f
+    end
+    o = c.new
+    f = true
+    def o.initialize_clone(_, freeze: true)
+      @f = freeze
+      super
+    end
+    clone = o.clone
+    assert_kind_of c, clone
+    assert_equal true, clone.f
+    clone = o.clone(freeze: false)
+    assert_kind_of c, clone
+    assert_equal false, clone.f
+
+    def o.initialize_clone(_)
+      super
+    end
+    assert_kind_of c, o.clone
+    assert_raise(ArgumentError) { o.clone(freeze: false) }
   end
 
   def test_init_dupclone
