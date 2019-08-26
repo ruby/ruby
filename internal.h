@@ -1181,15 +1181,15 @@ struct vm_ifunc_argc {
 struct vm_ifunc {
     VALUE flags;
     VALUE reserved;
-    VALUE (*func)(ANYARGS);
+    rb_block_call_func_t func;
     const void *data;
     struct vm_ifunc_argc argc;
 };
 
 #define IFUNC_NEW(a, b, c) ((struct vm_ifunc *)rb_imemo_new(imemo_ifunc, (VALUE)(a), (VALUE)(b), (VALUE)(c), 0))
-struct vm_ifunc *rb_vm_ifunc_new(VALUE (*func)(ANYARGS), const void *data, int min_argc, int max_argc);
+struct vm_ifunc *rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int max_argc);
 static inline struct vm_ifunc *
-rb_vm_ifunc_proc_new(VALUE (*func)(ANYARGS), const void *data)
+rb_vm_ifunc_proc_new(rb_block_call_func_t func, const void *data)
 {
     return rb_vm_ifunc_new(func, data, 0, UNLIMITED_ARGUMENTS);
 }

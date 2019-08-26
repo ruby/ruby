@@ -43,7 +43,7 @@ VALUE rb_cMethod;
 VALUE rb_cBinding;
 VALUE rb_cProc;
 
-static VALUE bmcall(VALUE, VALUE, int, VALUE *, VALUE);
+static rb_block_call_func bmcall;
 static int method_arity(VALUE);
 static int method_min_max_arity(VALUE, int *max);
 
@@ -696,7 +696,7 @@ sym_proc_new(VALUE klass, VALUE sym)
 }
 
 struct vm_ifunc *
-rb_vm_ifunc_new(VALUE (*func)(ANYARGS), const void *data, int min_argc, int max_argc)
+rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int max_argc)
 {
     union {
 	struct vm_ifunc_argc argc;
@@ -2783,9 +2783,9 @@ mlambda(VALUE method)
 }
 
 static VALUE
-bmcall(VALUE args, VALUE method, int argc, VALUE *argv, VALUE passed_proc)
+bmcall(RB_BLOCK_CALL_FUNC_ARGLIST(args, method))
 {
-    return rb_method_call_with_block(argc, argv, method, passed_proc);
+    return rb_method_call_with_block(argc, argv, method, blockarg);
 }
 
 VALUE

@@ -809,9 +809,11 @@ rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE rea
 }
 
 rb_iseq_t *
-rb_iseq_new_ifunc(const struct vm_ifunc *ifunc, VALUE name, VALUE path, VALUE realpath,
-		       VALUE first_lineno, const rb_iseq_t *parent,
-		       enum iseq_type type, const rb_compile_option_t *option)
+rb_iseq_new_with_callback(
+    const struct rb_iseq_new_with_callback_callback_func * ifunc,
+    VALUE name, VALUE path, VALUE realpath,
+    VALUE first_lineno, const rb_iseq_t *parent,
+    enum iseq_type type, const rb_compile_option_t *option)
 {
     /* TODO: argument check */
     rb_iseq_t *iseq = iseq_alloc();
@@ -819,7 +821,7 @@ rb_iseq_new_ifunc(const struct vm_ifunc *ifunc, VALUE name, VALUE path, VALUE re
     if (!option) option = &COMPILE_OPTION_DEFAULT;
     prepare_iseq_build(iseq, name, path, realpath, first_lineno, NULL, -1, parent, type, option);
 
-    rb_iseq_compile_ifunc(iseq, ifunc);
+    rb_iseq_compile_callback(iseq, ifunc);
     finish_iseq_build(iseq);
 
     return iseq_translate(iseq);

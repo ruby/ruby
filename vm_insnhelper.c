@@ -2858,7 +2858,7 @@ vm_yield_with_cfunc(rb_execution_context_t *ec,
 		  VM_GUARDED_PREV_EP(captured->ep),
                   (VALUE)me,
 		  0, ec->cfp->sp, 0, 0);
-    val = (*ifunc->func)(arg, ifunc->data, argc, argv, blockarg);
+    val = (*ifunc->func)(arg, (VALUE)ifunc->data, argc, argv, blockarg);
     rb_vm_pop_frame(ec);
 
     return val;

@@ -615,7 +615,7 @@ validate_labels(rb_iseq_t *iseq, st_table *labels_table)
 }
 
 VALUE
-rb_iseq_compile_ifunc(rb_iseq_t *iseq, const struct vm_ifunc *ifunc)
+rb_iseq_compile_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_callback_callback_func * ifunc)
 {
     DECL_ANCHOR(ret);
     INIT_ANCHOR(ret);
@@ -1206,16 +1206,16 @@ new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
 }
 
 static rb_iseq_t *
-new_child_iseq_ifunc(rb_iseq_t *iseq, const struct vm_ifunc *ifunc,
+new_child_iseq_with_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_callback_callback_func *ifunc,
 		     VALUE name, const rb_iseq_t *parent, enum iseq_type type, int line_no)
 {
     rb_iseq_t *ret_iseq;
 
-    debugs("[new_child_iseq_ifunc]> ---------------------------------------\n");
-    ret_iseq = rb_iseq_new_ifunc(ifunc, name,
+    debugs("[new_child_iseq_with_callback]> ---------------------------------------\n");
+    ret_iseq = rb_iseq_new_with_callback(ifunc, name,
 				 rb_iseq_path(iseq), rb_iseq_realpath(iseq),
 				 INT2FIX(line_no), parent, type, ISEQ_COMPILE_DATA(iseq)->option);
-    debugs("[new_child_iseq_ifunc]< ---------------------------------------\n");
+    debugs("[new_child_iseq_with_callback]< ---------------------------------------\n");
     iseq_add_mark_object_compile_time(iseq, (VALUE)ret_iseq);
     return ret_iseq;
 }
@@ -4629,12 +4629,11 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
     }
 }
 
-static VALUE
-build_defined_rescue_iseq(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *unused)
+static void
+build_defined_rescue_iseq(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const void *unused)
 {
     ADD_INSN(ret, 0, putnil);
     iseq_set_exception_local_table(iseq);
-    return Qnil;
 }
 
 static void
@@ -4648,7 +4647,9 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	LABEL *lstart = NEW_LABEL(line);
 	LABEL *lend = NEW_LABEL(line);
 	const rb_iseq_t *rescue;
-	rescue = new_child_iseq_ifunc(iseq, IFUNC_NEW(build_defined_rescue_iseq, 0, 0),
+        struct rb_iseq_new_with_callback_callback_func *ifunc =
+            rb_iseq_new_with_callback_new_callback(build_defined_rescue_iseq, NULL);
+        rescue = new_child_iseq_with_callback(iseq, ifunc,
 				      rb_str_concat(rb_str_new2("defined guard in "),
 						    iseq->body->location.label),
 				      iseq, ISEQ_TYPE_RESCUE, 0);
@@ -4871,9 +4872,10 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
     return ret;
 }
 
-static VALUE
-build_postexe_iseq(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *body)
+static void
+build_postexe_iseq(rb_iseq_t *iseq, LINK_ANCHOR *ret, const void *ptr)
 {
+    const NODE *body = ptr;
     int line = nd_line(body);
     VALUE argc = INT2FIX(0);
     const rb_iseq_t *block = NEW_CHILD_ISEQ(body, make_name_for_block(iseq->body->parent_iseq), ISEQ_TYPE_BLOCK, line);
@@ -4881,7 +4883,6 @@ build_postexe_iseq(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *body)
     ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
     ADD_CALL_WITH_BLOCK(ret, line, id_core_set_postexe, argc, block);
     iseq_set_local_table(iseq, 0);
-    return Qnil;
 }
 
 static void
@@ -8008,8 +8009,10 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	 *   ONCE{ rb_mRubyVMFrozenCore::core#set_postexe{ ... } }
 	 */
 	int is_index = body->is_size++;
+        struct rb_iseq_new_with_callback_callback_func *ifunc =
+            rb_iseq_new_with_callback_new_callback(build_postexe_iseq, node->nd_body);
 	const rb_iseq_t *once_iseq =
-	    new_child_iseq_ifunc(iseq, IFUNC_NEW(build_postexe_iseq, node->nd_body, 0),
+            new_child_iseq_with_callback(iseq, ifunc,
 				 rb_fstring(make_name_for_block(iseq)), iseq, ISEQ_TYPE_BLOCK, line);
 
 	ADD_INSN2(ret, line, once, once_iseq, INT2FIX(is_index));
@@ -8978,7 +8981,7 @@ typedef struct {
 
 static const rb_iseq_t *
 method_for_self(VALUE name, VALUE arg, rb_insn_func_t func,
-		VALUE (*build)(rb_iseq_t *, LINK_ANCHOR *const, VALUE))
+                void (*build)(rb_iseq_t *, LINK_ANCHOR *, const void *))
 {
     VALUE path, realpath;
     accessor_args acc;
@@ -8986,13 +8989,15 @@ method_for_self(VALUE name, VALUE arg, rb_insn_func_t func,
     acc.arg = arg;
     acc.func = func;
     acc.line = caller_location(&path, &realpath);
-    return rb_iseq_new_ifunc(IFUNC_NEW(build, (VALUE)&acc, 0),
+    struct rb_iseq_new_with_callback_callback_func *ifunc =
+        rb_iseq_new_with_callback_new_callback(build, &acc);
+    return rb_iseq_new_with_callback(ifunc,
 			     rb_sym2str(name), path, realpath,
 			     INT2FIX(acc.line), 0, ISEQ_TYPE_METHOD, 0);
 }
 
-static VALUE
-for_self_aref(rb_iseq_t *iseq, LINK_ANCHOR *const ret, VALUE a)
+static void
+for_self_aref(rb_iseq_t *iseq, LINK_ANCHOR *ret, const void *a)
 {
     const accessor_args *const args = (void *)a;
     const int line = args->line;
@@ -9004,11 +9009,10 @@ for_self_aref(rb_iseq_t *iseq, LINK_ANCHOR *const ret, VALUE a)
 
     ADD_INSN1(ret, line, putobject, args->arg);
     ADD_INSN1(ret, line, opt_call_c_function, (VALUE)args->func);
-    return Qnil;
 }
 
-static VALUE
-for_self_aset(rb_iseq_t *iseq, LINK_ANCHOR *const ret, VALUE a)
+static void
+for_self_aset(rb_iseq_t *iseq, LINK_ANCHOR *ret, const void *a)
 {
     const accessor_args *const args = (void *)a;
     const int line = args->line;
@@ -9023,7 +9027,6 @@ for_self_aset(rb_iseq_t *iseq, LINK_ANCHOR *const ret, VALUE a)
     ADD_INSN1(ret, line, putobject, args->arg);
     ADD_INSN1(ret, line, opt_call_c_function, (VALUE)args->func);
     ADD_INSN(ret, line, pop);
-    return Qnil;
 }
 
 /*

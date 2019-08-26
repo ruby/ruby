@@ -1022,8 +1022,23 @@ rb_iseq_t *rb_iseq_new_top     (const rb_ast_body_t *ast, VALUE name, VALUE path
 rb_iseq_t *rb_iseq_new_main    (const rb_ast_body_t *ast,             VALUE path, VALUE realpath, const rb_iseq_t *parent);
 rb_iseq_t *rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath, VALUE first_lineno,
 				const rb_iseq_t *parent, enum iseq_type, const rb_compile_option_t*);
-rb_iseq_t *rb_iseq_new_ifunc(const struct vm_ifunc *ifunc, VALUE name, VALUE path, VALUE realpath, VALUE first_lineno,
-			     const rb_iseq_t *parent, enum iseq_type, const rb_compile_option_t*);
+struct iseq_link_anchor;
+struct rb_iseq_new_with_callback_callback_func {
+    VALUE flags;
+    VALUE reserved;
+    void (*func)(rb_iseq_t *, struct iseq_link_anchor *, const void *);
+    const void *data;
+};
+static inline struct rb_iseq_new_with_callback_callback_func *
+rb_iseq_new_with_callback_new_callback(
+    void (*func)(rb_iseq_t *, struct iseq_link_anchor *, const void *), const void *ptr)
+{
+    VALUE memo = rb_imemo_new(imemo_ifunc, (VALUE)func, (VALUE)ptr, Qundef, Qfalse);
+    return (struct rb_iseq_new_with_callback_callback_func *)memo;
+}
+rb_iseq_t *rb_iseq_new_with_callback(const struct rb_iseq_new_with_callback_callback_func * ifunc,
+    VALUE name, VALUE path, VALUE realpath, VALUE first_lineno,
+    const rb_iseq_t *parent, enum iseq_type, const rb_compile_option_t*);
 
 /* src -> iseq */
 rb_iseq_t *rb_iseq_compile(VALUE src, VALUE file, VALUE line);
