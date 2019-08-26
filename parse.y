@@ -5141,7 +5141,7 @@ none		: /* none */
 # define yylval  (*parser->lval)
 
 static int parser_regx_options(struct parser_params*);
-static int parser_tokadd_string(struct parser_params*,int,int,int,long*,rb_encoding**);
+static int parser_tokadd_string(struct parser_params*,int,int,int,long*,rb_encoding**,rb_encoding**);
 static void parser_tokaddmbc(struct parser_params *parser, int c, rb_encoding *enc);
 static enum yytokentype parser_parse_string(struct parser_params*,rb_strterm_literal_t*);
 static enum yytokentype parser_here_document(struct parser_params*,rb_strterm_heredoc_t*);
@@ -5156,7 +5156,7 @@ static enum yytokentype parser_here_document(struct parser_params*,rb_strterm_he
 # define read_escape(flags,e)         parser_read_escape(parser, (flags), (e))
 # define tokadd_escape(e)             parser_tokadd_escape(parser, (e))
 # define regx_options()               parser_regx_options(parser)
-# define tokadd_string(f,t,p,n,e)     parser_tokadd_string(parser,(f),(t),(p),(n),(e))
+# define tokadd_string(f,t,p,n,e,e2)  parser_tokadd_string(parser,(f),(t),(p),(n),(e),(e2))
 # define parse_string(n)              parser_parse_string(parser,(n))
 # define tokaddmbc(c, enc)            parser_tokaddmbc(parser, (c), (enc))
 # define here_document(n)             parser_here_document(parser,(n))
@@ -6339,32 +6339,38 @@ parser_update_heredoc_indent(struct parser_params *parser, int c)
     return FALSE;
 }
 
+static void
+parser_mixed_error(struct parser_params *parser, rb_encoding *enc1, rb_encoding *enc2)
+{
+    static const char mixed_msg[] = "%s mixed within %s source";
+    const char *n1 = rb_enc_name(enc1), *n2 = rb_enc_name(enc2);
+    const size_t len = sizeof(mixed_msg) - 4 + strlen(n1) + strlen(n2);
+    char *errbuf = ALLOCA_N(char, len);
+    snprintf(errbuf, len, mixed_msg, n1, n2);
+    yyerror0(errbuf);
+}
+
+static void
+parser_mixed_escape(struct parser_params *p, const char *beg, rb_encoding *enc1, rb_encoding *enc2)
+{
+    const char *pos = p->lex.pcur;
+    p->lex.pcur = beg;
+    parser_mixed_error(p, enc1, enc2);
+    p->lex.pcur = pos;
+}
+
 static int
 parser_tokadd_string(struct parser_params *parser,
 		     int func, int term, int paren, long *nest,
-		     rb_encoding **encp)
+		     rb_encoding **encp, rb_encoding **enc)
 {
     int c;
-    rb_encoding *enc = 0;
-    char *errbuf = 0;
-    static const char mixed_msg[] = "%s mixed within %s source";
+    bool erred = false;
 
-#define mixed_error(enc1, enc2) if (!errbuf) {	\
-	size_t len = sizeof(mixed_msg) - 4;	\
-	len += strlen(rb_enc_name(enc1));	\
-	len += strlen(rb_enc_name(enc2));	\
-	errbuf = ALLOCA_N(char, len);		\
-	snprintf(errbuf, len, mixed_msg,	\
-		 rb_enc_name(enc1),		\
-		 rb_enc_name(enc2));		\
-	yyerror0(errbuf);			\
-    }
-#define mixed_escape(beg, enc1, enc2) do {	\
-	const char *pos = lex_p;		\
-	lex_p = (beg);				\
-	mixed_error((enc1), (enc2));		\
-	lex_p = pos;				\
-    } while (0)
+#define mixed_error(enc1, enc2) \
+    (void)(erred || (parser_mixed_error(parser, enc1, enc2), erred = true))
+#define mixed_escape(beg, enc1, enc2) \
+    (void)(erred || (parser_mixed_escape(parser, beg, enc1, enc2), erred = true))
 
     while ((c = nextc()) != -1) {
 	if (heredoc_indent > 0) {
@@ -6414,7 +6420,7 @@ parser_tokadd_string(struct parser_params *parser,
 		    tokadd('\\');
 		    break;
 		}
-		if (!parser_tokadd_utf8(parser, &enc, term,
+		if (!parser_tokadd_utf8(parser, enc, term,
 					func & STR_FUNC_SYMBOL,
 					func & STR_FUNC_REGEXP)) {
 		    return -1;
@@ -6433,17 +6439,17 @@ parser_tokadd_string(struct parser_params *parser,
 			continue;
 		    }
 		    pushback(c);
-		    if ((c = tokadd_escape(&enc)) < 0)
+		    if ((c = tokadd_escape(enc)) < 0)
 			return -1;
-		    if (enc && enc != *encp) {
-			mixed_escape(parser->tokp+2, enc, *encp);
+		    if (*enc && *enc != *encp) {
+			mixed_escape(parser->tokp+2, *enc, *encp);
 		    }
 		    continue;
 		}
 		else if (func & STR_FUNC_EXPAND) {
 		    pushback(c);
 		    if (func & STR_FUNC_ESCAPE) tokadd('\\');
-		    c = read_escape(0, &enc);
+		    c = read_escape(0, enc);
 		}
 		else if ((func & STR_FUNC_QWORDS) && ISSPACE(c)) {
 		    /* ignore backslashed spaces in %w */
@@ -6457,11 +6463,11 @@ parser_tokadd_string(struct parser_params *parser,
 	}
 	else if (!parser_isascii()) {
 	  non_ascii:
-	    if (!enc) {
-		enc = *encp;
+	    if (!*enc) {
+		*enc = *encp;
 	    }
-	    else if (enc != *encp) {
-		mixed_error(enc, *encp);
+	    else if (*enc != *encp) {
+		mixed_error(*enc, *encp);
 		continue;
 	    }
 	    if (tokadd_mbchar(c) == -1) return -1;
@@ -6472,18 +6478,18 @@ parser_tokadd_string(struct parser_params *parser,
 	    break;
 	}
         if (c & 0x80) {
-	    if (!enc) {
-		enc = *encp;
+	    if (!*enc) {
+		*enc = *encp;
 	    }
-	    else if (enc != *encp) {
-		mixed_error(enc, *encp);
+	    else if (*enc != *encp) {
+		mixed_error(*enc, *encp);
 		continue;
 	    }
         }
 	tokadd(c);
     }
   terminate:
-    if (enc) *encp = enc;
+    if (*enc) *encp = *enc;
     return c;
 }
 
@@ -6612,6 +6618,7 @@ parser_parse_string(struct parser_params *parser, rb_strterm_literal_t *quote)
     int paren = (int)quote->u2.paren;
     int c, space = 0;
     rb_encoding *enc = current_enc;
+    rb_encoding *base_enc = 0;
     VALUE lit;
 
     if (func & STR_FUNC_TERM) {
@@ -6652,7 +6659,7 @@ parser_parse_string(struct parser_params *parser, rb_strterm_literal_t *quote)
     }
     pushback(c);
     if (tokadd_string(func, term, paren, &quote->u0.nest,
-		      &enc) == -1) {
+		      &enc, &base_enc) == -1) {
 	if (parser->eofp) {
 #ifndef RIPPER
 # define unterminated_literal(mesg) yyerror0(mesg)
@@ -6987,6 +6994,7 @@ parser_here_document(struct parser_params *parser, rb_strterm_heredoc_t *here)
     long len;
     VALUE str = 0;
     rb_encoding *enc = current_enc;
+    rb_encoding *base_enc = 0;
     int bol;
 
     eos = RSTRING_PTR(here->term);
@@ -7099,7 +7107,8 @@ parser_here_document(struct parser_params *parser, rb_strterm_heredoc_t *here)
 	}
 	do {
 	    pushback(c);
-	    if ((c = tokadd_string(func, '\n', 0, NULL, &enc)) == -1) {
+            enc = current_enc;
+	    if ((c = tokadd_string(func, '\n', 0, NULL, &enc, &base_enc)) == -1) {
 		if (parser->eofp) goto error;
 		goto restore;
 	    }

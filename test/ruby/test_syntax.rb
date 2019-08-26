@@ -711,6 +711,35 @@ eom
     assert_syntax_error('<<~ "#{}"', /unexpected <</)
   end
 
+  def test_heredoc_mixed_encoding
+    assert_syntax_error(<<-'HEREDOC', 'UTF-8 mixed within Windows-31J source')
+      #encoding: cp932
+      <<-TEXT
+      \xe9\x9d\u1234
+      TEXT
+    HEREDOC
+    assert_syntax_error(<<-'HEREDOC', 'UTF-8 mixed within Windows-31J source')
+      #encoding: cp932
+      <<-TEXT
+      \xe9\x9d
+      \u1234
+      TEXT
+    HEREDOC
+    assert_syntax_error(<<-'HEREDOC', 'UTF-8 mixed within Windows-31J source')
+      #encoding: cp932
+      <<-TEXT
+      \u1234\xe9\x9d
+      TEXT
+    HEREDOC
+    assert_syntax_error(<<-'HEREDOC', 'UTF-8 mixed within Windows-31J source')
+      #encoding: cp932
+      <<-TEXT
+      \u1234
+      \xe9\x9d
+      TEXT
+    HEREDOC
+  end
+
   def test_lineno_operation_brace_block
     expected = __LINE__ + 1
     actual = caller_lineno\
