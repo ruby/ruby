@@ -140,7 +140,7 @@ static void gzfile_reset(struct gzfile*);
 static void gzfile_close(struct gzfile*, int);
 static void gzfile_write_raw(struct gzfile*);
 static VALUE gzfile_read_raw_partial(VALUE);
-static VALUE gzfile_read_raw_rescue(VALUE);
+static VALUE gzfile_read_raw_rescue(VALUE,VALUE);
 static VALUE gzfile_read_raw(struct gzfile*, VALUE outbuf);
 static int gzfile_read_raw_ensure(struct gzfile*, long, VALUE outbuf);
 static char *gzfile_read_raw_until_zero(struct gzfile*, long);
@@ -2385,7 +2385,7 @@ gzfile_read_raw_partial(VALUE arg)
 }
 
 static VALUE
-gzfile_read_raw_rescue(VALUE arg)
+gzfile_read_raw_rescue(VALUE arg, VALUE _)
 {
     struct read_raw_arg *ra = (struct read_raw_arg *)arg;
     VALUE str = Qnil;
@@ -4888,5 +4888,3 @@ Init_zlib(void)
  * Raised when the data length recorded in the gzip file footer is not equivalent
  * to the length of the actual uncompressed data.
  */
-
-

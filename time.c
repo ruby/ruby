@@ -5204,7 +5204,7 @@ mload_zone(VALUE time, VALUE zone)
     VALUE z, args[2];
     args[0] = time;
     args[1] = zone;
-    z = rb_rescue(mload_findzone, (VALUE)args, (VALUE (*)(ANYARGS))NULL, Qnil);
+    z = rb_rescue(mload_findzone, (VALUE)args, 0, Qnil);
     if (NIL_P(z)) return rb_fstring(zone);
     if (RB_TYPE_P(z, T_STRING)) return rb_fstring(z);
     return z;

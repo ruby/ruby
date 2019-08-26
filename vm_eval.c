@@ -322,16 +322,18 @@ struct rescue_funcall_args {
 };
 
 static VALUE
-check_funcall_exec(struct rescue_funcall_args *args)
+check_funcall_exec(VALUE v)
 {
+    struct rescue_funcall_args *args = (void *)v;
     return call_method_entry(args->ec, args->defined_class,
 			     args->recv, idMethodMissing,
 			     args->me, args->argc, args->argv);
 }
 
 static VALUE
-check_funcall_failed(struct rescue_funcall_args *args, VALUE e)
+check_funcall_failed(VALUE v, VALUE e)
 {
+    struct rescue_funcall_args *args = (void *)v;
     int ret = args->respond;
     if (!ret) {
 	switch (rb_method_boundp(args->defined_class, args->mid,
@@ -1075,7 +1077,7 @@ rb_yield_block(VALUE val, VALUE arg, int argc, const VALUE *argv, VALUE blockarg
 }
 
 static VALUE
-loop_i(void)
+loop_i(VALUE _)
 {
     for (;;) {
 	rb_yield_0(0, 0);
