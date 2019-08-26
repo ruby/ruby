@@ -1567,7 +1567,7 @@ lazy_init_block_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
 #define LAZY_MEMO_RESET_PACKED(memo) ((memo)->memo_flags &= ~LAZY_MEMO_PACKED)
 
 static VALUE
-lazy_init_yielder(VALUE val, VALUE m, int argc, VALUE *argv)
+lazy_init_yielder(RB_BLOCK_CALL_FUNC_ARGLIST(_, m))
 {
     VALUE yielder = RARRAY_AREF(m, 0);
     VALUE procs_array = RARRAY_AREF(m, 1);
@@ -1598,7 +1598,7 @@ lazy_init_yielder(VALUE val, VALUE m, int argc, VALUE *argv)
 }
 
 static VALUE
-lazy_init_block(VALUE val, VALUE m, int argc, VALUE *argv)
+lazy_init_block(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
 {
     VALUE procs = RARRAY_AREF(m, 1);
 
@@ -2860,7 +2860,7 @@ enum_chain_enum_size(VALUE obj, VALUE args, VALUE eobj)
 }
 
 static VALUE
-enum_chain_yield_block(VALUE arg, VALUE block, int argc, VALUE *argv)
+enum_chain_yield_block(RB_BLOCK_CALL_FUNC_ARGLIST(_, block))
 {
     return rb_funcallv(block, id_call, argc, argv);
 }
