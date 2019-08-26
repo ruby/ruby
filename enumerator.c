@@ -2231,7 +2231,7 @@ call_next(VALUE obj)
 }
 
 static VALUE
-next_stopped(VALUE obj)
+next_stopped(VALUE obj, VALUE _)
 {
     return Qnil;
 }

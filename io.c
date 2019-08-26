@@ -11457,7 +11457,7 @@ copy_stream_fallback(struct copy_stream_struct *stp)
 	rb_raise(rb_eArgError, "cannot specify src_offset for non-IO");
     }
     rb_rescue2(copy_stream_fallback_body, (VALUE)stp,
-               (VALUE (*) (ANYARGS))0, (VALUE)0,
+               (VALUE (*) (VALUE, VALUE))0, (VALUE)0,
                rb_eEOFError, (VALUE)0);
     return Qnil;
 }

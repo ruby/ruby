@@ -931,8 +931,8 @@ rb_need_block(void)
  * \ingroup exception
  */
 VALUE
-rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
-	   VALUE (* r_proc) (ANYARGS), VALUE data2, ...)
+rb_rescue2(VALUE (* b_proc) (VALUE), VALUE data1,
+           VALUE (* r_proc) (VALUE, VALUE), VALUE data2, ...)
 {
     enum ruby_tag_type state;
     rb_execution_context_t * volatile ec = GET_EC();
@@ -1003,8 +1003,8 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
  * \ingroup exception
  */
 VALUE
-rb_rescue(VALUE (* b_proc)(ANYARGS), VALUE data1,
-	  VALUE (* r_proc)(ANYARGS), VALUE data2)
+rb_rescue(VALUE (* b_proc)(VALUE), VALUE data1,
+          VALUE (* r_proc)(VALUE, VALUE), VALUE data2)
 {
     return rb_rescue2(b_proc, data1, r_proc, data2, rb_eStandardError,
 		      (VALUE)0);

@@ -2723,14 +2723,16 @@ zip_ary(RB_BLOCK_CALL_FUNC_ARGLIST(val, memoval))
 }
 
 static VALUE
-call_next(VALUE *v)
+call_next(VALUE w)
 {
+    VALUE *v = (VALUE *)w;
     return v[0] = rb_funcallv(v[1], id_next, 0, 0);
 }
 
 static VALUE
-call_stop(VALUE *v)
+call_stop(VALUE w, VALUE _)
 {
+    VALUE *v = (VALUE *)w;
     return v[0] = Qundef;
 }
 
