@@ -10427,8 +10427,6 @@ struct ibf_object_header {
     unsigned int frozen: 1;
     unsigned int internal: 1;
 };
-static const size_t ibf_object_header_align =
-    RUBY_ALIGNOF(struct ibf_object_header);
 
 enum ibf_object_class_index {
     IBF_OBJECT_CLASS_OBJECT,
@@ -10438,20 +10436,9 @@ enum ibf_object_class_index {
     IBF_OBJECT_CLASS_TYPE_ERROR,
 };
 
-struct ibf_object_string {
-    long encindex;
-    long len;
-    char ptr[FLEX_ARY_LEN];
-};
-
 struct ibf_object_regexp {
     long srcstr;
     char option;
-};
-
-struct ibf_object_array {
-    long len;
-    long ary[FLEX_ARY_LEN];
 };
 
 struct ibf_object_hash {
@@ -10486,8 +10473,6 @@ struct ibf_object_symbol {
 
 #define IBF_ALIGNED_OFFSET(align, offset) /* offset > 0 */ \
     ((((offset) - 1) / (align) + 1) * (align))
-#define IBF_OBJHEADER(offset)     (const struct ibf_object_header *)\
-    ibf_load_check_offset(load, IBF_ALIGNED_OFFSET(ibf_object_header_align, offset))
 #define IBF_OBJBODY(type, offset) (const type *)\
     ibf_load_check_offset(load, IBF_ALIGNED_OFFSET(RUBY_ALIGNOF(type), offset))
 
@@ -10522,13 +10507,13 @@ ibf_dump_object_class(struct ibf_dump *dump, VALUE obj)
 {
     enum ibf_object_class_index cindex;
     if (obj == rb_cObject) {
-	cindex = IBF_OBJECT_CLASS_OBJECT;
+        cindex = IBF_OBJECT_CLASS_OBJECT;
     }
     else if (obj == rb_cArray) {
-	cindex = IBF_OBJECT_CLASS_ARRAY;
+        cindex = IBF_OBJECT_CLASS_ARRAY;
     }
     else if (obj == rb_eStandardError) {
-	cindex = IBF_OBJECT_CLASS_STANDARD_ERROR;
+        cindex = IBF_OBJECT_CLASS_STANDARD_ERROR;
     }
     else if (obj == rb_eNoMatchingPatternError) {
         cindex = IBF_OBJECT_CLASS_NO_MATCHING_PATTERN_ERROR;
@@ -10537,11 +10522,11 @@ ibf_dump_object_class(struct ibf_dump *dump, VALUE obj)
         cindex = IBF_OBJECT_CLASS_TYPE_ERROR;
     }
     else {
-	rb_obj_info_dump(obj);
-	rb_p(obj);
-	rb_bug("unsupported class");
+        rb_obj_info_dump(obj);
+        rb_p(obj);
+        rb_bug("unsupported class");
     }
-    ibf_dump_write(dump, &cindex, sizeof(cindex));
+    IBF_W(&cindex, enum ibf_object_class_index, 1);
 }
 
 static VALUE
@@ -10587,30 +10572,34 @@ ibf_dump_object_string(struct ibf_dump *dump, VALUE obj)
     long encindex = (long)rb_enc_get_index(obj);
     long len = RSTRING_LEN(obj);
     const char *ptr = RSTRING_PTR(obj);
-    long buff[2];
 
     if (encindex > RUBY_ENCINDEX_BUILTIN_MAX) {
-	rb_encoding *enc = rb_enc_from_index((int)encindex);
-	const char *enc_name = rb_enc_name(enc);
-	encindex = RUBY_ENCINDEX_BUILTIN_MAX + ibf_dump_object(dump, rb_str_new2(enc_name));
+        rb_encoding *enc = rb_enc_from_index((int)encindex);
+        const char *enc_name = rb_enc_name(enc);
+        encindex = RUBY_ENCINDEX_BUILTIN_MAX + ibf_dump_object(dump, rb_str_new2(enc_name));
     }
 
-    buff[0] = encindex;
-    buff[1] = len;
-    (void)IBF_W(buff, long, 2);
+    ibf_dump_code_write_small_value(dump->str, encindex);
+    ibf_dump_code_write_small_value(dump->str, len);
     IBF_WP(ptr, char, len);
 }
 
 static VALUE
 ibf_load_object_string(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
 {
-    const struct ibf_object_string *string = IBF_OBJBODY(struct ibf_object_string, offset);
-    VALUE str = rb_str_new(string->ptr, string->len);
-    int encindex = (int)string->encindex;
+    const unsigned char *buffer = (const unsigned char *)load->buff;
+    const ibf_offset_t buffer_size = RSTRING_LEN(load->str);
+    ibf_offset_t offset_read = offset;
+
+    int encindex = (int)ibf_load_code_read_small_value(buffer, buffer_size, &offset_read);
+    const long len = (long)ibf_load_code_read_small_value(buffer, buffer_size, &offset_read);
+    const char *ptr = (const char *)buffer + offset_read;
+
+    VALUE str = rb_str_new(ptr, len);
 
     if (encindex > RUBY_ENCINDEX_BUILTIN_MAX) {
-	VALUE enc_name_str = ibf_load_object(load, encindex - RUBY_ENCINDEX_BUILTIN_MAX);
-	encindex = rb_enc_find_index(RSTRING_PTR(enc_name_str));
+        VALUE enc_name_str = ibf_load_object(load, encindex - RUBY_ENCINDEX_BUILTIN_MAX);
+        encindex = rb_enc_find_index(RSTRING_PTR(enc_name_str));
     }
     rb_enc_associate_index(str, encindex);
 
@@ -10648,22 +10637,28 @@ static void
 ibf_dump_object_array(struct ibf_dump *dump, VALUE obj)
 {
     long i, len = (int)RARRAY_LEN(obj);
-    (void)IBF_W(&len, long, 1);
+    ibf_dump_code_write_small_value(dump->str, len);
     for (i=0; i<len; i++) {
-	long index = (long)ibf_dump_object(dump, RARRAY_AREF(obj, i));
-	IBF_WV(index);
+        long index = (long)ibf_dump_object(dump, RARRAY_AREF(obj, i));
+        ibf_dump_code_write_small_value(dump->str, index);
     }
 }
 
 static VALUE
 ibf_load_object_array(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
 {
-    const struct ibf_object_array *array = IBF_OBJBODY(struct ibf_object_array, offset);
-    VALUE ary = rb_ary_new_capa(array->len);
+    const unsigned char *buffer = (const unsigned char *)load->buff;
+    const ibf_offset_t buffer_size = RSTRING_LEN(load->str);
+    ibf_offset_t offset_read = offset;
+
+    const long len = (long)ibf_load_code_read_small_value(buffer, buffer_size, &offset_read);
+
+    VALUE ary = rb_ary_new_capa(len);
     int i;
 
-    for (i=0; i<array->len; i++) {
-	rb_ary_push(ary, ibf_load_object(load, array->ary[i]));
+    for (i=0; i<len; i++) {
+        const VALUE index = ibf_load_code_read_small_value(buffer, buffer_size, &offset_read);
+        rb_ary_push(ary, ibf_load_object(load, index));
     }
 
     if (header->internal) rb_obj_hide(ary);
@@ -10885,6 +10880,32 @@ static ibf_dump_object_function dump_object_functions[RUBY_T_MASK+1] = {
     ibf_dump_object_unsupported, /* 0x1f */
 };
 
+static void
+ibf_dump_object_object_header(struct ibf_dump *dump, const struct ibf_object_header header)
+{
+    unsigned char byte =
+        (header.type          << 0) |
+        (header.special_const << 5) |
+        (header.frozen        << 6) |
+        (header.internal      << 7);
+
+    IBF_WV(byte);
+}
+
+static struct ibf_object_header
+ibf_load_object_object_header(const struct ibf_load *load, ibf_offset_t *offset)
+{
+    unsigned char byte = load->buff[(*offset)++];
+
+    struct ibf_object_header header;
+    header.type          = (byte >> 0) & 0x1f;
+    header.special_const = (byte >> 5) & 0x01;
+    header.frozen        = (byte >> 6) & 0x01;
+    header.internal      = (byte >> 7) & 0x01;
+
+    return header;
+}
+
 static ibf_offset_t
 ibf_dump_object_object(struct ibf_dump *dump, VALUE obj)
 {
@@ -10897,24 +10918,24 @@ ibf_dump_object_object(struct ibf_dump *dump, VALUE obj)
     current_offset = ibf_dump_pos(dump);
 
     if (SPECIAL_CONST_P(obj)) {
-	if (RB_TYPE_P(obj, T_SYMBOL) ||
-	    RB_TYPE_P(obj, T_FLOAT)) {
-	    obj_header.internal = FALSE;
-	    goto dump_object;
-	}
-	obj_header.special_const = TRUE;
-	obj_header.frozen = TRUE;
-	obj_header.internal = TRUE;
-	IBF_WV(obj_header);
-	(void)IBF_W(&obj, VALUE, 1);
+        if (RB_TYPE_P(obj, T_SYMBOL) ||
+            RB_TYPE_P(obj, T_FLOAT)) {
+            obj_header.internal = FALSE;
+            goto dump_object;
+        }
+        obj_header.special_const = TRUE;
+        obj_header.frozen = TRUE;
+        obj_header.internal = TRUE;
+        ibf_dump_object_object_header(dump, obj_header);
+        ibf_dump_code_write_small_value(dump->str, obj);
     }
     else {
-	obj_header.internal = (RBASIC_CLASS(obj) == 0) ? TRUE : FALSE;
-      dump_object:
-	obj_header.special_const = FALSE;
-	obj_header.frozen = FL_TEST(obj, FL_FREEZE) ? TRUE : FALSE;
-	IBF_WV(obj_header);
-	(*dump_object_functions[obj_header.type])(dump, obj);
+        obj_header.internal = (RBASIC_CLASS(obj) == 0) ? TRUE : FALSE;
+        dump_object:
+        obj_header.special_const = FALSE;
+        obj_header.frozen = FL_TEST(obj, FL_FREEZE) ? TRUE : FALSE;
+        ibf_dump_object_object_header(dump, obj_header);
+        (*dump_object_functions[obj_header.type])(dump, obj);
     }
 
     return current_offset;
@@ -10960,49 +10981,46 @@ static VALUE
 ibf_load_object(const struct ibf_load *load, VALUE object_index)
 {
     if (object_index == 0) {
-	return Qnil;
+        return Qnil;
     }
     else if (object_index >= load->header->object_list_size) {
-	rb_raise(rb_eIndexError, "object index out of range: %"PRIdVALUE, object_index);
+        rb_raise(rb_eIndexError, "object index out of range: %"PRIdVALUE, object_index);
     }
     else {
-	VALUE obj = rb_ary_entry(load->obj_list, (long)object_index);
-	if (obj == Qnil) { /* TODO: avoid multiple Qnil load */
-	    ibf_offset_t *offsets = (ibf_offset_t *)(load->header->object_list_offset + load->buff);
-	    ibf_offset_t offset = offsets[object_index];
-	    const struct ibf_object_header *header = IBF_OBJHEADER(offset);
-	    size_t value_offset;
+        VALUE obj = rb_ary_entry(load->obj_list, (long)object_index);
+        if (obj == Qnil) { /* TODO: avoid multiple Qnil load */
+            ibf_offset_t *offsets = (ibf_offset_t *)(load->header->object_list_offset + load->buff);
+            ibf_offset_t offset = offsets[object_index];
+            const struct ibf_object_header header = ibf_load_object_object_header(load, &offset);
 
 #if IBF_ISEQ_DEBUG
-	    fprintf(stderr, "ibf_load_object: list=%#x offsets=%p offset=%#x\n",
-	            load->header->object_list_offset, offsets, offset);
-	    fprintf(stderr, "ibf_load_object: type=%#x special=%d frozen=%d internal=%d\n",
-	            header->type, header->special_const, header->frozen, header->internal);
+            fprintf(stderr, "ibf_load_object: list=%#x offsets=%p offset=%#x\n",
+                    load->header->object_list_offset, offsets, offset);
+            fprintf(stderr, "ibf_load_object: type=%#x special=%d frozen=%d internal=%d\n",
+                    header.type, header.special_const, header.frozen, header.internal);
 #endif
-	    value_offset = (const char *)(header + 1) - load->buff;
-	    if (value_offset >= (size_t)RSTRING_LEN(load->str)) {
-		rb_raise(rb_eIndexError, "object offset out of range: %"PRIdSIZE, value_offset);
-	    }
-	    offset = (ibf_offset_t)value_offset;
+            if (offset >= (size_t)RSTRING_LEN(load->str)) {
+                rb_raise(rb_eIndexError, "object offset out of range: %u", offset);
+            }
 
-	    if (header->special_const) {
-		const VALUE *vp = IBF_OBJBODY(VALUE, offset);
-#if IBF_ISEQ_DEBUG
-		fprintf(stderr, "ibf_load_object: vp=%p\n", vp);
-#endif
-		obj = *vp;
-	    }
-	    else {
-		obj = (*load_object_functions[header->type])(load, header, offset);
-	    }
+            if (header.special_const) {
+                const unsigned char *buffer = (const unsigned char *)load->buff;
+                const ibf_offset_t buffer_size = RSTRING_LEN(load->str);
+                ibf_offset_t offset_read = offset;
 
-	    rb_ary_store(load->obj_list, (long)object_index, obj);
-	}
+                obj = ibf_load_code_read_small_value(buffer, buffer_size, &offset_read);
+            }
+            else {
+                obj = (*load_object_functions[header.type])(load, &header, offset);
+            }
+
+            rb_ary_store(load->obj_list, (long)object_index, obj);
+        }
 #if IBF_ISEQ_DEBUG
-	fprintf(stderr, "ibf_load_object: index=%#"PRIxVALUE" obj=%#"PRIxVALUE"\n",
-	        object_index, obj);
+        fprintf(stderr, "ibf_load_object: index=%#"PRIxVALUE" obj=%#"PRIxVALUE"\n",
+                object_index, obj);
 #endif
-	return obj;
+        return obj;
     }
 }
 
