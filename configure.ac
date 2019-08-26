@@ -198,15 +198,20 @@ AS_CASE([$CC],
 [gcc_prefix= gcc_suffix=])
 
 dnl Select the appropriate C++ compiler in OS X
-AS_CASE(["$build_os"],
-  [darwin1*.*], [
-    AS_CASE(["x$CC"],
-      [xgcc-4.2|x/usr/bin/gcc-4.2], [: ${CXX=g++-4.2}],
-      [xgcc|x/usr/bin/gcc],         [: ${CXX=g++}],
-      [xcc|x/usr/bin/cc],           [: ${CXX=c++}],
-      [xicc],                       [: ${CXX=icpc}],
-      [xclang|x/usr/bin/clang],     [: ${CXX=clang++}])
-  ])
+AS_CASE(["$build_os:${CXX}"],
+    [darwin1*.*:], [
+        AC_MSG_CHECKING([CXX for $CC])
+        AS_CASE(["/$CC "],
+            [*" gcc-4.2 "*|*"/gcc-4.2 "*], [pat='gcc-4\.2' =g++-4.2],
+            [*" gcc "*|*"/gcc "*],         [pat=gcc CXX=g++],
+            [*" cc "*|*"/cc "*],           [pat=cc CXX=c++],
+            [*" icc "*|*"/icc "*],         [pat=icc CXX=icpc],
+            [*" clang "*|*"/clang "*],     [pat=clang CXX=clang++])
+        AS_IF([test "${CXX}"], [
+            CXX=`echo "/$CC " | sed ["s:\([ /]\)${pat}:\1$CXX:; s:^/::; s: *$::"]`
+        ])
+        AC_MSG_RESULT([$CXX])
+    ])
 test -z "$CXX" || ac_cv_prog_CXX="$CXX"
 
 AS_CASE(["$target_os"],
