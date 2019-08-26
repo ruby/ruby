@@ -50,6 +50,21 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_equal(SimpleDelegator,simple.clone.class)
   end
 
+  def test_simpledelegator_clone
+    simple=SimpleDelegator.new([])
+    simple.freeze
+
+    clone = simple.clone
+    assert_predicate clone, :frozen?
+    assert_predicate clone.__getobj__, :frozen?
+    assert_equal true, Kernel.instance_method(:frozen?).bind(clone).call
+
+    clone = simple.clone(freeze: false)
+    assert_not_predicate clone, :frozen?
+    assert_not_predicate clone.__getobj__, :frozen?
+    assert_equal false, Kernel.instance_method(:frozen?).bind(clone).call
+  end
+
   class Object
     def m
       :o

@@ -730,6 +730,17 @@ class TC_Set < Test::Unit::TestCase
     }
   end
 
+  def test_freeze_clone_false
+    set1 = Set[1,2,3]
+    set1.freeze
+    set2 = set1.clone(freeze: false)
+
+    assert_not_predicate set2, :frozen?
+    set2.add 5
+    assert_equal Set[1,2,3,5], set2
+    assert_equal Set[1,2,3], set1
+  end
+
   def test_inspect
     set1 = Set[1, 2]
     assert_equal('#<Set: {1, 2}>', set1.inspect)

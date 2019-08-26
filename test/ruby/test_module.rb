@@ -2491,6 +2491,12 @@ class TestModule < Test::Unit::TestCase
     assert_equal :M2, CloneTestC2.new.foo, '[Bug #15877]'
   end
 
+  def test_clone_freeze
+    m = Module.new.freeze
+    assert_predicate m.clone, :frozen?
+    assert_not_predicate m.clone(freeze: false), :frozen?
+  end
+
   private
 
   def assert_top_method_is_private(method)

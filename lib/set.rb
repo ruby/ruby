@@ -137,9 +137,9 @@ class Set
   end
 
   # Clone internal hash.
-  def initialize_clone(orig)
+  def initialize_clone(orig, freeze: true)
     super
-    @hash = orig.instance_variable_get(:@hash).clone
+    @hash = orig.instance_variable_get(:@hash).clone(freeze: freeze)
   end
 
   def freeze    # :nodoc:

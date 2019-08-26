@@ -476,10 +476,24 @@ mutable_obj_clone(VALUE obj, int kwfreeze)
     }
 
     init_copy(clone, obj);
-    rb_funcall(clone, id_init_clone, 1, obj);
 
     if (kwfreeze) {
+        rb_funcall(clone, id_init_clone, 1, obj);
 	RBASIC(clone)->flags |= RBASIC(obj)->flags & FL_FREEZE;
+    }
+    else {
+        static VALUE freeze_false_hash;
+        VALUE argv[2];
+        if (!freeze_false_hash) {
+            freeze_false_hash = rb_hash_new();
+            rb_hash_aset(freeze_false_hash, ID2SYM(rb_intern("freeze")), Qfalse);
+            rb_obj_freeze(freeze_false_hash);
+            rb_gc_register_mark_object(freeze_false_hash);
+        }
+
+        argv[0] = obj;
+        argv[1] = freeze_false_hash;
+        rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_CALLED_KEYWORDS);
     }
 
     return clone;
@@ -637,15 +651,36 @@ rb_obj_init_copy(VALUE obj, VALUE orig)
 /*!
  * :nodoc:
  *--
- * Default implementation of \c #initialize_dup and \c #initialize_clone
+ * Default implementation of \c #initialize_dup
  *
  * \param[in,out] obj the receiver being initialized
- * \param[in] orig    the object to be dup or cloned from.
+ * \param[in] orig    the object to be dup from.
  *++
  **/
 VALUE
 rb_obj_init_dup_clone(VALUE obj, VALUE orig)
 {
+    rb_funcall(obj, id_init_copy, 1, orig);
+    return obj;
+}
+
+/*!
+ * :nodoc:
+ *--
+ * Default implementation of \c #initialize_clone
+ *
+ * \param[in] The number of arguments
+ * \param[in] The array of arguments
+ * \param[in] obj the receiver being initialized
+ *++
+ **/
+static VALUE
+rb_obj_init_clone(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE orig, opts;
+    rb_scan_args(argc, argv, "1:", &orig, &opts);
+    /* Ignore a freeze keyword */
+    if (argc == 2) (void)freeze_opt(1, &opts);
     rb_funcall(obj, id_init_copy, 1, orig);
     return obj;
 }
@@ -1968,10 +2003,11 @@ rb_mod_initialize(VALUE module)
 
 /* :nodoc: */
 static VALUE
-rb_mod_initialize_clone(VALUE clone, VALUE orig)
+rb_mod_initialize_clone(int argc, VALUE* argv, VALUE clone)
 {
-    VALUE ret;
-    ret = rb_obj_init_dup_clone(clone, orig);
+    VALUE ret, orig, opts;
+    rb_scan_args(argc, argv, "1:", &orig, &opts);
+    ret = rb_obj_init_clone(argc, argv, clone);
     if (OBJ_FROZEN(orig))
         rb_class_name(clone);
     return ret;
@@ -4579,7 +4615,7 @@ InitVM_Object(void)
     rb_define_method(rb_mKernel, "then", rb_obj_yield_self, 0);
     rb_define_method(rb_mKernel, "initialize_copy", rb_obj_init_copy, 1);
     rb_define_method(rb_mKernel, "initialize_dup", rb_obj_init_dup_clone, 1);
-    rb_define_method(rb_mKernel, "initialize_clone", rb_obj_init_dup_clone, 1);
+    rb_define_method(rb_mKernel, "initialize_clone", rb_obj_init_clone, -1);
 
     rb_define_method(rb_mKernel, "taint", rb_obj_taint, 0);
     rb_define_method(rb_mKernel, "tainted?", rb_obj_tainted, 0);
@@ -4666,7 +4702,7 @@ InitVM_Object(void)
 
     rb_define_alloc_func(rb_cModule, rb_module_s_alloc);
     rb_define_method(rb_cModule, "initialize", rb_mod_initialize, 0);
-    rb_define_method(rb_cModule, "initialize_clone", rb_mod_initialize_clone, 1);
+    rb_define_method(rb_cModule, "initialize_clone", rb_mod_initialize_clone, -1);
     rb_define_method(rb_cModule, "instance_methods", rb_class_instance_methods, -1); /* in class.c */
     rb_define_method(rb_cModule, "public_instance_methods",
 		     rb_class_public_instance_methods, -1);    /* in class.c */
