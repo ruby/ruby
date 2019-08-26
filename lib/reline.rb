@@ -188,9 +188,7 @@ module Reline
       line
     end
 
-    private
-
-    def inner_readline(prompt, add_hist, multiline, &confirm_multiline_termination)
+    private def inner_readline(prompt, add_hist, multiline, &confirm_multiline_termination)
       if ENV['RELINE_STDERR_TTY']
         $stderr.reopen(ENV['RELINE_STDERR_TTY'], 'w')
         $stderr.sync = true
@@ -254,7 +252,7 @@ module Reline
     #
     # GNU Readline will wait for the 2nd character with "keyseq-timeout"
     # milli-seconds but wait forever after 3rd characters.
-    def read_io(keyseq_timeout, &block)
+    private def read_io(keyseq_timeout, &block)
       buffer = []
       loop do
         c = Reline::IOGate.getc
@@ -298,7 +296,7 @@ module Reline
       end
     end
 
-    def read_escaped_key(keyseq_timeout, buffer, block)
+    private def read_escaped_key(keyseq_timeout, buffer, block)
       begin
         escaped_c = nil
         Timeout.timeout(keyseq_timeout / 1000.0) {
@@ -319,7 +317,7 @@ module Reline
       end
     end
 
-    def may_req_ambiguous_char_width
+    private def may_req_ambiguous_char_width
       ambiguous_width = 2 if Reline::IOGate == Reline::GeneralIO or STDOUT.is_a?(File)
       return if ambiguous_width
       Reline::IOGate.move_cursor_column(0)
