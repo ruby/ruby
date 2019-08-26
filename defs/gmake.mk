@@ -103,7 +103,7 @@ ifeq ($(if $(filter yes,$(CROSS_COMPILING)),,$(CC)),)
 	touch $@
 else
 	@$(ECHO) building make_des_table
-	$(CC) $(CPPFLAGS) -DDUMP $(LDFLAGS) $(XLDFLAGS) $(LIBS) -omake_des_table $(srcdir)/missing/crypt.c
+	$(CC) $(INCFLAGS) $(CPPFLAGS) -DDUMP $(LDFLAGS) $(XLDFLAGS) $(LIBS) -omake_des_table $(srcdir)/missing/crypt.c
 	@[ -x ./make_des_table ]
 	@$(ECHO) generating $@
 	$(Q) $(MAKEDIRS) $(@D)
