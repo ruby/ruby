@@ -599,6 +599,11 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], self.class.instance_method(:pmk7).parameters)
   end
 
+  def test_hidden_parameters
+    instance_eval("def m((_)"+",(_)"*256+");end")
+    assert_empty(method(:m).parameters.map{|_,n|n}.compact)
+  end
+
   def test_public_method_with_zsuper_method
     c = Class.new
     c.class_eval do

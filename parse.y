@@ -11583,8 +11583,9 @@ rb_init_parse(void)
 static ID
 internal_id_gen(struct parser_params *parser)
 {
+    const ID max_id = RB_ID_SERIAL_MAX & ~0xffff;
     ID id = (ID)vtable_size(lvtbl->args) + (ID)vtable_size(lvtbl->vars);
-    id += ((tLAST_TOKEN - ID_INTERNAL) >> ID_SCOPE_SHIFT) + 1;
+    id = max_id - id;
     return ID_STATIC_SYM | ID_INTERNAL | (id << ID_SCOPE_SHIFT);
 }
 
