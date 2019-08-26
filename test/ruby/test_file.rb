@@ -298,7 +298,7 @@ class TestFile < Test::Unit::TestCase
       assert_predicate(File.realpath(base, dir), :tainted?)
       base.untaint
       dir.untaint
-      assert_not_predicate(File.realpath(base, dir), :tainted?)
+      assert_predicate(File.realpath(base, dir), :tainted?)
       assert_predicate(Dir.chdir(dir) {File.realpath(base)}, :tainted?)
     }
   end
