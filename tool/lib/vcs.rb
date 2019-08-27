@@ -266,7 +266,7 @@ class VCS
     end
 
     def self.short_revision(rev)
-      rev
+      Integer(rev)
     end
 
     def _get_revisions(path, srcdir = nil)
