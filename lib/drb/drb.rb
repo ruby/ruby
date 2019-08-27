@@ -1726,7 +1726,9 @@ module DRb
             invoke_method = InvokeMethod.new(self, client)
             succ, result = invoke_method.perform
             error_print(result) if !succ && verbose
-            client.send_reply(succ, result)
+            unless DRbConnError === result && result.message == 'connection closed'
+              client.send_reply(succ, result)
+            end
           rescue Exception => e
             error_print(e) if verbose
           ensure
