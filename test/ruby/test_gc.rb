@@ -384,6 +384,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_stress_at_startup
+    skip # it'll be fixed later
     assert_in_out_err([{"RUBY_DEBUG"=>"gc_stress"}], '', [], [], '[Bug #15784]', success: true)
   end
 
