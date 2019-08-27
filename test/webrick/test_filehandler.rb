@@ -289,7 +289,7 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
     return if File.executable?(__FILE__) # skip on strange file system
 
     config = {
-      :CGIInterpreter => TestWEBrick::RubyBin,
+      :CGIInterpreter => TestWEBrick::RubyBinArray,
       :DocumentRoot => File.dirname(__FILE__),
       :CGIPathEnv => ENV['PATH'],
       :RequestCallback => Proc.new{|req, res|
