@@ -19,12 +19,12 @@ jobs:
 
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
       - name: Checkout ruby/ruby
-        run: git clone --depth=1 https://github.com/ruby/ruby . && git reset --hard "$GITHUB_SHA"
+        run: git clone --depth=10 https://github.com/ruby/ruby . && git reset --hard "$GITHUB_SHA"
         env:
           GITHUB_SHA: ${{ github.sha }}
         if: github.event_name == 'schedule'
       - name: Checkout a pull request
-        run: git clone --depth=1 "--branch=$GITHUB_BRANCH" "https://github.com/${GITHUB_REPO}" . && git reset --hard "$GITHUB_REV"
+        run: git clone --depth=10 "--branch=$GITHUB_BRANCH" "https://github.com/${GITHUB_REPO}" . && git reset --hard "$GITHUB_REV"
         env:
           GITHUB_REV: ${{ github.event.pull_request.head.sha }}
           GITHUB_BRANCH: ${{ github.event.pull_request.head.ref }}
