@@ -2,51 +2,69 @@ name: doxygen
 on:
   schedule:
     - cron: '0 * * * *'
-  pull_request:
-    branches:
-      - '*'
+
 jobs:
   latest:
     runs-on: ubuntu-latest
     steps:
+      - name: Download current index.html
+        run: |
+          mkdir -p tmp
+          curl -o tmp/index.html https://rubyci.s3.amazonaws.com/doxygen-latest-html/index.html || touch tmp/index.html
       - name: Install libraries
         run: |
           set -x
+          if grep -q "${GITHUB_SHA}" tmp/index.html; then exit; fi
           sudo sed /etc/apt/sources.list -e "s/^# deb-src/deb-src/g" -i
           sudo apt-get update
           sudo apt-get install ruby2.5 doxygen graphviz
           sudo apt-get build-dep ruby2.5
+        env:
+          GITHUB_SHA: ${{ github.sha }}
 
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
       - name: Checkout ruby/ruby
-        run: git clone --depth=10 https://github.com/ruby/ruby . && git reset --hard "$GITHUB_SHA"
+        run: |
+          if grep -q "${GITHUB_SHA}" tmp/index.html; then exit; fi
+          git clone --depth=10 https://github.com/ruby/ruby . && git reset --hard "$GITHUB_SHA"
         env:
           GITHUB_SHA: ${{ github.sha }}
-        if: github.event_name == 'schedule'
-      - name: Checkout a pull request
-        run: git clone --depth=10 "--branch=$GITHUB_BRANCH" "https://github.com/${GITHUB_REPO}" . && git reset --hard "$GITHUB_REV"
-        env:
-          GITHUB_REV: ${{ github.event.pull_request.head.sha }}
-          GITHUB_BRANCH: ${{ github.event.pull_request.head.ref }}
-          GITHUB_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-        if: github.event_name == 'pull_request'
 
       - name: Fixed world writable dirs
         run: |
+          if grep -q "${GITHUB_SHA}" tmp/index.html; then exit; fi
           chmod go-w $HOME
           sudo chmod -R go-w /usr/share
-      - run: autoconf
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+      - run: |
+          if grep -q "${GITHUB_SHA}" tmp/index.html; then exit; fi
+          autoconf
+        env:
+          GITHUB_SHA: ${{ github.sha }}
       - name: Configure
-        run: ./configure
+        run: |
+          if grep -q "${GITHUB_SHA}" tmp/index.html; then exit; fi
+          ./configure
+        env:
+          GITHUB_SHA: ${{ github.sha }}
       - name: Generate Doxyfile
-        run: make Doxyfile
+        run: |
+          if grep -q "${GITHUB_SHA}" tmp/index.html; then exit; fi
+          make Doxyfile
+        env:
+          GITHUB_SHA: ${{ github.sha }}
       - name: Run Doxygen
-        run: doxygen
+        run: |
+          if grep -q "${GITHUB_SHA}" tmp/index.html; then exit; fi
+          doxygen
+        env:
+          GITHUB_SHA: ${{ github.sha }}
       - name: Upload results
         run: |
+          if grep -q "${GITHUB_SHA}" tmp/index.html; then exit; fi
           aws s3 sync doc/capi/html/ s3://rubyci/doxygen-latest-html
         env:
           GITHUB_SHA: ${{ github.sha }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        if: github.event_name == 'schedule'
