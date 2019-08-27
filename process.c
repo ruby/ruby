@@ -8038,6 +8038,26 @@ rb_clock_getres(int argc, VALUE *argv)
     }
 }
 
+/*
+ *  call-seq:
+ *     Process.exist?(pid)    -> boolean
+ *
+ * Checks the given process to see whether it is alive.
+ */
+static VALUE
+rb_proc_exist(VALUE self, VALUE val_pid)
+{
+    int pid = NUM2PIDT(val_pid);
+
+    if (kill(pid, 0) == 0) {
+        return Qtrue;
+    } else if (errno == EPERM) {
+        return Qtrue;
+    } else {
+        return Qfalse;
+    }
+}
+
 VALUE rb_mProcess;
 static VALUE rb_mProcUID;
 static VALUE rb_mProcGID;
@@ -8091,6 +8111,7 @@ InitVM_process(void)
     rb_define_singleton_method(rb_mProcess, "last_status", proc_s_last_status, 0);
 
     rb_define_module_function(rb_mProcess, "kill", rb_f_kill, -1); /* in signal.c */
+    rb_define_module_function(rb_mProcess, "exist?", rb_proc_exist, 1);
     rb_define_module_function(rb_mProcess, "wait", proc_wait, -1);
     rb_define_module_function(rb_mProcess, "wait2", proc_wait2, -1);
     rb_define_module_function(rb_mProcess, "waitpid", proc_wait, -1);

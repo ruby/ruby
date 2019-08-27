@@ -2434,4 +2434,32 @@ EOS
     Process.wait spawn(RUBY, "-e", "exit 13")
     assert_same(Process.last_status, $?)
   end
+
+  def test_process_exists_when_exists
+    IO.popen([EnvUtil.rubybin, "-egets"], "w") do |f|
+      pid = f.pid
+      assert_send [Process, :exist?, pid], 'Process should exist'
+    end
+  end
+
+  def test_process_exists_when_exists_no_perms
+    skip "process 1 doesn't exist in windows" if windows?
+    # Process 1 usually exists in posix systems and belongs to the root user.
+    assert_send [Process, :exist?, 1], 'Process should exist'
+  end
+
+  def test_process_exists_when_not_exists
+    # Create a PID which is immediately gone.
+    pid = Process.spawn(EnvUtil.rubybin, "-eexit")
+
+    Process.wait pid
+
+    assert_not_send [Process, :exist?, pid], 'Process should not exist'
+  end
+
+  def test_process_exists_when_invalid_type
+    assert_raise TypeError do
+      Process.exist?(:test)
+    end
+  end
 end
