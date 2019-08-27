@@ -957,7 +957,7 @@ void rb_free_generic_ivar(VALUE);
 VALUE rb_ivar_get(VALUE, ID);
 VALUE rb_ivar_set(VALUE, ID, VALUE);
 VALUE rb_ivar_defined(VALUE, ID);
-void rb_ivar_foreach(VALUE, int (*)(ANYARGS), st_data_t);
+void rb_ivar_foreach(VALUE, int (*)(ID, VALUE, st_data_t), st_data_t);
 st_index_t rb_ivar_count(VALUE);
 VALUE rb_attr_get(VALUE, ID);
 VALUE rb_obj_instance_variables(VALUE);

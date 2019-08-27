@@ -1391,9 +1391,11 @@ rb_ivar_defined(VALUE obj, ID id)
     return Qfalse;
 }
 
+typedef int rb_ivar_foreach_callback_func(ID key, VALUE val, st_data_t arg);
+
 struct obj_ivar_tag {
     VALUE obj;
-    int (*func)(ID key, VALUE val, st_data_t arg);
+    rb_ivar_foreach_callback_func *func;
     st_data_t arg;
 };
 
@@ -1411,7 +1413,7 @@ obj_ivar_i(st_data_t key, st_data_t index, st_data_t arg)
 }
 
 static void
-obj_ivar_each(VALUE obj, int (*func)(ANYARGS), st_data_t arg)
+obj_ivar_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg)
 {
     st_table *tbl;
     struct obj_ivar_tag data;
@@ -1429,7 +1431,7 @@ obj_ivar_each(VALUE obj, int (*func)(ANYARGS), st_data_t arg)
 
 struct gen_ivar_tag {
     struct gen_ivtbl *ivtbl;
-    int (*func)(ID key, VALUE val, st_data_t arg);
+    rb_ivar_foreach_callback_func *func;
     st_data_t arg;
 };
 
@@ -1448,7 +1450,7 @@ gen_ivar_each_i(st_data_t key, st_data_t index, st_data_t data)
 }
 
 static void
-gen_ivar_each(VALUE obj, int (*func)(ANYARGS), st_data_t arg)
+gen_ivar_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg)
 {
     struct gen_ivar_tag data;
     st_table *iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
@@ -1531,7 +1533,7 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
 }
 
 void
-rb_ivar_foreach(VALUE obj, int (*func)(ANYARGS), st_data_t arg)
+rb_ivar_foreach(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg)
 {
     if (SPECIAL_CONST_P(obj)) return;
     switch (BUILTIN_TYPE(obj)) {
