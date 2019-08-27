@@ -1228,15 +1228,20 @@ module DRb
     def self.open(remote_uri)  # :nodoc:
       begin
         conn = nil
+        pid = $$
 
         @mutex.synchronize do
           #FIXME
           new_pool = []
           @pool.each do |c|
-            if conn.nil? and c.uri == remote_uri
-              conn = c if c.alive?
+            if c.pid == pid
+              if conn.nil? and c.uri == remote_uri
+                conn = c if c.alive?
+              else
+                new_pool.push c
+              end
             else
-              new_pool.push c
+              c.close
             end
           end
           @pool = new_pool
@@ -1262,9 +1267,11 @@ module DRb
 
     def initialize(remote_uri)  # :nodoc:
       @uri = remote_uri
+      @pid = $$
       @protocol = DRbProtocol.open(remote_uri, DRb.config)
     end
     attr_reader :uri  # :nodoc:
+    attr_reader :pid  # :nodoc:
 
     def send_message(ref, msg_id, arg, block)  # :nodoc:
       @protocol.send_request(ref, msg_id, arg, block)
