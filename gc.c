@@ -2388,6 +2388,10 @@ Init_heap(void)
 
     gc_stress_set(objspace, ruby_initial_gc_stress);
 
+    dont_gc = 1;
+
+    gc_stress_set(objspace, ruby_initial_gc_stress);
+
 #if RGENGC_ESTIMATE_OLDMALLOC
     objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
 #endif
@@ -2407,6 +2411,14 @@ Init_heap(void)
 
     objspace->profile.invoke_time = getrusage_time();
     finalizer_table = st_init_numtable();
+}
+
+void
+Init_gc_stress(void)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+
+    dont_gc = 0;
 }
 
 typedef int each_obj_callback(void *, void *, size_t, void *);
