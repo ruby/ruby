@@ -13,6 +13,10 @@ VALUE kernel_spec_call_proc(VALUE arg_array) {
   return rb_funcall(proc, rb_intern("call"), 1, arg);
 }
 
+VALUE kernel_spec_call_proc_raise(VALUE arg_array, VALUE raised_exc) {
+  return kernel_spec_call_proc(arg_array);
+}
+
 static VALUE kernel_spec_rb_block_given_p(VALUE self) {
   return rb_block_given_p() ? Qtrue : Qfalse;
 }
@@ -30,7 +34,7 @@ VALUE kernel_spec_rb_block_lambda(VALUE self) {
   return rb_block_lambda();
 }
 
-VALUE block_call_inject(VALUE yield_value, VALUE data2) {
+VALUE block_call_inject(RB_BLOCK_CALL_FUNC_ARGLIST(yield_value, data2)) {
   /* yield_value yields the first block argument */
   VALUE elem = yield_value;
   VALUE elem_incr = INT2FIX(FIX2INT(elem) + 1);
@@ -41,7 +45,7 @@ VALUE kernel_spec_rb_block_call(VALUE self, VALUE ary) {
   return rb_block_call(ary, rb_intern("map"), 0, NULL, block_call_inject, Qnil);
 }
 
-VALUE block_call_inject_multi_arg(VALUE yield_value, VALUE data2, int argc, VALUE argv[]) {
+VALUE block_call_inject_multi_arg(RB_BLOCK_CALL_FUNC_ARGLIST(yield_value, data2)) {
   /* yield_value yields the first block argument */
   VALUE sum  = yield_value;
   VALUE elem = argv[1];
@@ -80,7 +84,7 @@ VALUE kernel_spec_rb_ensure(VALUE self, VALUE main_proc, VALUE arg,
       kernel_spec_call_proc, ensure_array);
 }
 
-VALUE kernel_spec_call_proc_with_catch(VALUE arg, VALUE data) {
+VALUE kernel_spec_call_proc_with_catch(RB_BLOCK_CALL_FUNC_ARGLIST(arg, data)) {
   return rb_funcall(data, rb_intern("call"), 0);
 }
 
@@ -88,7 +92,7 @@ VALUE kernel_spec_rb_catch(VALUE self, VALUE sym, VALUE main_proc) {
   return rb_catch(StringValuePtr(sym), kernel_spec_call_proc_with_catch, main_proc);
 }
 
-VALUE kernel_spec_call_proc_with_catch_obj(VALUE arg, VALUE data) {
+VALUE kernel_spec_call_proc_with_catch_obj(RB_BLOCK_CALL_FUNC_ARGLIST(arg, data)) {
   return rb_funcall(data, rb_intern("call"), 0);
 }
 
@@ -161,7 +165,7 @@ VALUE kernel_spec_rb_rescue2(int argc, VALUE *args, VALUE self) {
   rb_ary_push(raise_array, args[3]);
 
   return rb_rescue2(kernel_spec_call_proc, main_array,
-      kernel_spec_call_proc, raise_array, args[4], args[5], (VALUE)0);
+      kernel_spec_call_proc_raise, raise_array, args[4], args[5], (VALUE)0);
 }
 
 static VALUE kernel_spec_rb_protect_yield(VALUE self, VALUE obj, VALUE ary) {
