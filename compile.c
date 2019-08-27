@@ -8676,8 +8676,10 @@ iseq_build_callinfo_from_hash(rb_iseq_t *iseq, VALUE op)
 	    kw_arg->keyword_len = len;
 	    for (i = 0; i < len; i++) {
 		VALUE kw = RARRAY_AREF(vkw_arg, i);
-		SYM2ID(kw);	/* make immortal */
 		kw_arg->keywords[i] = kw;
+                if (!SPECIAL_CONST_P(kw)) {
+                    FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
+                }
 	    }
 	}
     }
