@@ -2311,7 +2311,6 @@ void Init_vm_stack_canary(void);
 
 /* vm_method.c */
 void Init_eval_method(void);
-int rb_method_defined_by(VALUE obj, ID mid, VALUE (*cfunc)(ANYARGS));
 
 /* miniprelude.c, prelude.c */
 void Init_prelude(void);
