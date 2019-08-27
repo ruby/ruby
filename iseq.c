@@ -151,32 +151,32 @@ iseq_extract_values(VALUE *code, size_t pos, iseq_value_itr_t * func, void *data
     for (op_no = 0; types[op_no]; op_no++) {
 	char type = types[op_no];
 	switch (type) {
-	    case TS_CDHASH:
-	    case TS_ISEQ:
-	    case TS_VALUE:
-		{
-		    VALUE op = code[pos + op_no + 1];
-		    if (!SPECIAL_CONST_P(op)) {
-                        VALUE newop = func(data, op);
-                        if (newop != op) {
-                            code[pos + op_no + 1] = newop;
-                        }
-		    }
-		    break;
-		}
-	    case TS_ISE:
-		{
-		    union iseq_inline_storage_entry *const is = (union iseq_inline_storage_entry *)code[pos + op_no + 1];
-		    if (is->once.value) {
-                        VALUE nv = func(data, is->once.value);
-                        if (is->once.value != nv) {
-                            is->once.value = nv;
-                        }
-		    }
-		    break;
-		}
-	    default:
-		break;
+          case TS_CDHASH:
+          case TS_ISEQ:
+          case TS_VALUE:
+            {
+              VALUE op = code[pos + op_no + 1];
+              if (!SPECIAL_CONST_P(op)) {
+                  VALUE newop = func(data, op);
+                  if (newop != op) {
+                      code[pos + op_no + 1] = newop;
+                  }
+              }
+            }
+            break;
+          case TS_ISE:
+            {
+              union iseq_inline_storage_entry *const is = (union iseq_inline_storage_entry *)code[pos + op_no + 1];
+              if (is->once.value) {
+                  VALUE nv = func(data, is->once.value);
+                  if (is->once.value != nv) {
+                      is->once.value = nv;
+                  }
+              }
+            }
+            break;
+          default:
+            break;
 	}
     }
 
