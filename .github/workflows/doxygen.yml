@@ -18,7 +18,7 @@ jobs:
           set -x
           sudo sed /etc/apt/sources.list -e "s/^# deb-src/deb-src/g" -i
           sudo apt-get update
-          sudo apt-get install ruby2.5 doxygen
+          sudo apt-get install ruby2.5 doxygen graphviz
           sudo apt-get build-dep ruby2.5
 
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
