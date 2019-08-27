@@ -5507,7 +5507,7 @@ rb_default_coverage(int n)
 }
 
 VALUE
-rb_uninterruptible(VALUE (*b_proc)(ANYARGS), VALUE data)
+rb_uninterruptible(VALUE (*b_proc)(VALUE), VALUE data)
 {
     VALUE interrupt_mask = rb_ident_hash_new();
     rb_thread_t *cur_th = GET_THREAD();
