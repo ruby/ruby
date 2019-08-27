@@ -59,8 +59,8 @@ typedef char st_check_for_sizeof_st_index_t[SIZEOF_VOIDP == (int)sizeof(st_index
 #define SIZEOF_ST_INDEX_T SIZEOF_VOIDP
 
 struct st_hash_type {
-    int (*compare)(ANYARGS /*st_data_t, st_data_t*/); /* st_compare_func* */
-    st_index_t (*hash)(ANYARGS /*st_data_t*/);        /* st_hash_func* */
+    int (*compare)(st_data_t, st_data_t); /* st_compare_func* */
+    st_index_t (*hash)(st_data_t);        /* st_hash_func* */
 };
 
 #define ST_INDEX_BITS (SIZEOF_ST_INDEX_T * CHAR_BIT)
