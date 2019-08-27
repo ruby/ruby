@@ -9,6 +9,8 @@
 /* vim: ft=css et sw=2 ts=2 sts=2 */
 /* Base Green is: #6C8C22 */
 
+.hide { display: none !important; }
+
 * { padding: 0; margin: 0; }
 
 body {
@@ -46,6 +48,16 @@ h4:hover span,
 h5:hover span,
 h6:hover span {
   display: inline;
+}
+
+h1:target,
+h2:target,
+h3:target,
+h4:target,
+h5:target,
+h6:target {
+  margin-left: -10px;
+  border-left: 10px solid #f1edba;
 }
 
 :link,
@@ -441,7 +453,16 @@ main header h3 {
 /* @group Method Details */
 
 main .method-source-code {
-  display: none;
+  max-height: 0;
+  overflow: hidden;
+  transition-duration: 200ms;
+  transition-delay: 0ms;
+  transition-property: all;
+  transition-timing-function: ease-in-out;
+}
+
+main .method-source-code.active-menu {
+  max-height: 100vh;
 }
 
 main .method-description .method-calls-super {
