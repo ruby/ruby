@@ -970,7 +970,9 @@ sigbus(int sig SIGINFO_ARG)
 }
 #endif
 
+#ifndef __sun
 NORETURN(static void ruby_abort(void));
+#endif
 
 static void
 ruby_abort(void)
