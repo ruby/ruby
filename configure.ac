@@ -202,11 +202,11 @@ AS_CASE(["$build_os:${CXX}"],
     [darwin1*.*:], [
         AC_MSG_CHECKING([CXX for $CC])
         AS_CASE(["/$CC "],
-            [*" gcc-4.2 "*|*"/gcc-4.2 "*], [pat='gcc-4\.2' =g++-4.2],
-            [*" gcc "*|*"/gcc "*],         [pat=gcc CXX=g++],
-            [*" cc "*|*"/cc "*],           [pat=cc CXX=c++],
-            [*" icc "*|*"/icc "*],         [pat=icc CXX=icpc],
-            [*" clang "*|*"/clang "*],     [pat=clang CXX=clang++])
+            [*@<:@\ /@:>@"gcc-4.2 "*], [pat='gcc-4\.2' CXX=g++-4.2],
+            [*@<:@\ /@:>@"gcc "*],     [pat=gcc CXX=g++],
+            [*@<:@\ /@:>@"cc "*],      [pat=cc CXX=c++],
+            [*@<:@\ /@:>@"icc "*],     [pat=icc CXX=icpc],
+            [*@<:@\ /@:>@"clang "*],   [pat=clang CXX=clang++])
         AS_IF([test "${CXX}"], [
             CXX=`echo "/$CC " | sed ["s:\([ /]\)${pat}:\1$CXX:; s:^/::; s: *$::"]`
         ])
