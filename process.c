@@ -8039,13 +8039,13 @@ rb_clock_getres(int argc, VALUE *argv)
 }
 
 static VALUE
-get_$CHILD_STATUS(ID _x, VALUE *_y)
+get_CHILD_STATUS(ID _x, VALUE *_y)
 {
     return rb_last_status_get();
 }
 
 static VALUE
-get_$PROCESS_ID(ID _x, VALUE *_y)
+get_PROCESS_ID(ID _x, VALUE *_y)
 {
     return get_pid();
 }
@@ -8066,8 +8066,8 @@ InitVM_process(void)
 {
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
-    rb_define_virtual_variable("$?", get_$CHILD_STATUS, 0);
-    rb_define_virtual_variable("$$", get_$PROCESS_ID, 0);
+    rb_define_virtual_variable("$?", get_CHILD_STATUS, 0);
+    rb_define_virtual_variable("$$", get_PROCESS_ID, 0);
     rb_define_global_function("exec", rb_f_exec, -1);
     rb_define_global_function("fork", rb_f_fork, 0);
     rb_define_global_function("exit!", rb_f_exit_bang, -1);
