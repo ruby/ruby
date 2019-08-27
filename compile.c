@@ -1827,7 +1827,7 @@ struct cdhash_set_label_struct {
 };
 
 static int
-cdhash_set_label_i(VALUE key, VALUE val, void *ptr)
+cdhash_set_label_i(VALUE key, VALUE val, VALUE ptr)
 {
     struct cdhash_set_label_struct *data = (struct cdhash_set_label_struct *)ptr;
     LABEL *lobj = (LABEL *)(val & ~1);
