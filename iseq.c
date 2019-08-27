@@ -189,22 +189,15 @@ rb_iseq_each_value(const rb_iseq_t *iseq, iseq_value_itr_t * func, void *data)
     unsigned int size;
     VALUE *code;
     size_t n;
-    rb_vm_insns_translator_t * translator;
+    rb_vm_insns_translator_t *const translator =
+#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
+        (FL_TEST(iseq, ISEQ_TRANSLATED)) ? rb_vm_insn_addr2insn2 :
+#endif
+        rb_vm_insn_null_translator;
     const struct rb_iseq_constant_body *const body = iseq->body;
 
     size = body->iseq_size;
     code = body->iseq_encoded;
-
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-    if (FL_TEST(iseq, ISEQ_TRANSLATED)) {
-	translator = rb_vm_insn_addr2insn2;
-    }
-    else {
-	translator = rb_vm_insn_null_translator;
-    }
-#else
-    translator = rb_vm_insn_null_translator;
-#endif
 
     for (n = 0; n < size;) {
 	n += iseq_extract_values(code, n, func, data, translator);
