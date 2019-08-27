@@ -1245,7 +1245,7 @@ struct MEMO {
 	long cnt;
 	long state;
         const VALUE value;
-	VALUE (*func)(ANYARGS);
+        void (*func)(void);
     } u3;
 };
 
