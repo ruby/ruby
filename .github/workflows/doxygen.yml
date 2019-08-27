@@ -8,10 +8,6 @@ on:
 jobs:
   latest:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        test_task: [ "check" ]
-      fail-fast: false
     steps:
       - name: Install libraries
         run: |
