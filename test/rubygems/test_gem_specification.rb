@@ -1193,6 +1193,11 @@ dependencies: []
     assert_equal ['b-1'], Gem::Specification.stubs_for('b').map { |s| s.full_name }
     assert_equal 2, Gem::Specification.class_variable_get(:@@stubs_by_name).length
 
+    assert_equal(
+      Gem::Specification.stubs_for('a').map { |s| s.object_id },
+      Gem::Specification.stubs_for('a').map { |s| s.object_id }
+    )
+
     Gem.loaded_specs.delete 'a'
     Gem.loaded_specs.delete 'b'
     Gem::Specification.class_variable_set(:@@stubs, nil)
