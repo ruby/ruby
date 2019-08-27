@@ -145,16 +145,17 @@ static const struct st_hash_type st_hashtype_num = {
     st_numhash,
 };
 
-/* extern int strcmp(const char *, const char *); */
+static int st_strcmp(st_data_t, st_data_t);
 static st_index_t strhash(st_data_t);
 static const struct st_hash_type type_strhash = {
-    strcmp,
+    st_strcmp,
     strhash,
 };
 
+static int st_locale_insensitive_strcasecmp_i(st_data_t lhs, st_data_t rhs);
 static st_index_t strcasehash(st_data_t);
 static const struct st_hash_type type_strcasehash = {
-    st_locale_insensitive_strcasecmp,
+    st_locale_insensitive_strcasecmp_i,
     strcasehash,
 };
 
@@ -2089,6 +2090,22 @@ st_locale_insensitive_strncasecmp(const char *s1, const char *s2, size_t n)
         }
     }
     return 0;
+}
+
+static int
+st_strcmp(st_data_t lhs, st_data_t rhs)
+{
+    const char *s1 = (char *)lhs;
+    const char *s2 = (char *)rhs;
+    return strcmp(s1, s2);
+}
+
+static int
+st_locale_insensitive_strcasecmp_i(st_data_t lhs, st_data_t rhs)
+{
+    const char *s1 = (char *)lhs;
+    const char *s2 = (char *)rhs;
+    return st_locale_insensitive_strcasecmp(s1, s2);
 }
 
 NO_SANITIZE("unsigned-integer-overflow", PUREFUNC(static st_index_t strcasehash(st_data_t)));
