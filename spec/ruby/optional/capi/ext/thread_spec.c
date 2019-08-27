@@ -125,7 +125,7 @@ static VALUE thread_spec_rb_thread_create(VALUE self, VALUE proc, VALUE arg) {
   rb_ary_push(args, proc);
   rb_ary_push(args, arg);
 
-  return rb_thread_create(thread_spec_call_proc, (void*)args);
+  return rb_thread_create((VALUE (*)(void *))thread_spec_call_proc, (void*)args);
 }
 
 
