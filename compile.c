@@ -2004,6 +2004,20 @@ add_adjust_info(struct iseq_insn_info_entry *insns_info, unsigned int *positions
     return FALSE;
 }
 
+static int
+kw_arg_markable_p(const struct rb_call_info_kw_arg *kw_args)
+{
+    const VALUE *const keywords = kw_args->keywords;
+    const int kw_len = kw_args->keyword_len;
+    for (int i = 0; i < kw_len; ++i) {
+        const VALUE kw = keywords[i];
+        if (!SPECIAL_CONST_P(kw)) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
 /**
   ruby insn object list -> raw instruction sequence
  */
@@ -2192,6 +2206,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 				*ci_kw = *((struct rb_call_info_with_kwarg *)base_ci);
 				ci = (struct rb_call_info *)ci_kw;
 				assert(ISEQ_COMPILE_DATA(iseq)->ci_kw_index <= body->ci_kw_size);
+                                if (kw_arg_markable_p(ci_kw->kw_arg)) {
+                                    FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
+                                }
 			    }
 			    else {
 				ci = &body->ci_entries[ISEQ_COMPILE_DATA(iseq)->ci_index++];
