@@ -1824,25 +1824,25 @@ rb_reg_match_last(VALUE match)
 }
 
 static VALUE
-last_match_getter(void)
+last_match_getter(ID _x, VALUE *_y)
 {
     return rb_reg_last_match(rb_backref_get());
 }
 
 static VALUE
-prematch_getter(void)
+prematch_getter(ID _x, VALUE *_y)
 {
     return rb_reg_match_pre(rb_backref_get());
 }
 
 static VALUE
-postmatch_getter(void)
+postmatch_getter(ID _x, VALUE *_y)
 {
     return rb_reg_match_post(rb_backref_get());
 }
 
 static VALUE
-last_paren_match_getter(void)
+last_paren_match_getter(ID _x, VALUE *_y)
 {
     return rb_reg_match_last(rb_backref_get());
 }
@@ -3919,27 +3919,27 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
 }
 
 static VALUE
-kcode_getter(void)
+kcode_getter(ID _x, VALUE *_y)
 {
     rb_warn("variable $KCODE is no longer effective");
     return Qnil;
 }
 
 static void
-kcode_setter(VALUE val, ID id)
+kcode_setter(VALUE val, ID id, VALUE *_)
 {
     rb_warn("variable $KCODE is no longer effective; ignored");
 }
 
 static VALUE
-ignorecase_getter(void)
+ignorecase_getter(ID _x, VALUE *_y)
 {
     rb_warn("variable $= is no longer effective");
     return Qfalse;
 }
 
 static void
-ignorecase_setter(VALUE val, ID id)
+ignorecase_setter(VALUE val, ID id, VALUE *_)
 {
     rb_warn("variable $= is no longer effective; ignored");
 }
@@ -3954,8 +3954,14 @@ match_getter(void)
     return match;
 }
 
+static VALUE
+get_$LAST_MATCH_INFO(ID _x, VALUE *_y)
+{
+    return match_getter();
+}
+
 static void
-match_setter(VALUE val)
+match_setter(VALUE val, ID _x, VALUE *_y)
 {
     if (!NIL_P(val)) {
 	Check_Type(val, T_MATCH);
@@ -4042,7 +4048,7 @@ Init_Regexp(void)
     onig_set_warn_func(re_warn);
     onig_set_verb_warn_func(re_warn);
 
-    rb_define_virtual_variable("$~", match_getter, match_setter);
+    rb_define_virtual_variable("$~", get_$LAST_MATCH_INFO, match_setter);
     rb_define_virtual_variable("$&", last_match_getter, 0);
     rb_define_virtual_variable("$`", prematch_getter, 0);
     rb_define_virtual_variable("$'", postmatch_getter, 0);

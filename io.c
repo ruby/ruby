@@ -12986,6 +12986,18 @@ rb_readwrite_syserr_fail(enum rb_io_wait_readwrite writable, int n, const char *
     }
 }
 
+static VALUE
+get_$LAST_READ_LINE(ID _x, VALUE *_y)
+{
+    return rb_lastline_get();
+}
+
+static void
+set_$LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
+{
+    rb_lastline_set(val);
+}
+
 /*
  * Document-class: IOError
  *
@@ -13259,7 +13271,7 @@ Init_IO(void)
     rb_define_hooked_variable("$-0", &rb_rs, 0, rb_str_setter);
     rb_define_hooked_variable("$\\", &rb_output_rs, 0, rb_str_setter);
 
-    rb_define_virtual_variable("$_", rb_lastline_get, rb_lastline_set);
+    rb_define_virtual_variable("$_", get_$LAST_READ_LINE, set_$LAST_READ_LINE);
 
     rb_define_method(rb_cIO, "initialize_copy", rb_io_init_copy, 1);
     rb_define_method(rb_cIO, "reopen", rb_io_reopen, -1);

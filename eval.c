@@ -1816,7 +1816,7 @@ get_errinfo(void)
 }
 
 static VALUE
-errinfo_getter(ID id)
+errinfo_getter(ID id, VALUE *_)
 {
     return get_errinfo();
 }
@@ -1851,7 +1851,7 @@ rb_set_errinfo(VALUE err)
 }
 
 static VALUE
-errat_getter(ID id)
+errat_getter(ID id, VALUE *_)
 {
     VALUE err = get_errinfo();
     if (!NIL_P(err)) {

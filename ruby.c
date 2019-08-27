@@ -1446,13 +1446,13 @@ VALUE rb_argv0;
 VALUE rb_e_script;
 
 static VALUE
-false_value(void)
+false_value(ID _x, VALUE *_y)
 {
     return Qfalse;
 }
 
 static VALUE
-true_value(void)
+true_value(ID _x, VALUE *_y)
 {
     return Qtrue;
 }
@@ -2230,7 +2230,7 @@ ruby_setproctitle(VALUE title)
 }
 
 static void
-set_arg0(VALUE val, ID id)
+set_arg0(VALUE val, ID id, VALUE *_)
 {
     if (origarg.argv == 0)
 	rb_raise(rb_eRuntimeError, "$0 not initialized");
@@ -2304,16 +2304,14 @@ forbid_setid(const char *s, const ruby_cmdline_options_t *opt)
 }
 
 static void
-verbose_setter(VALUE val, ID id, void *data)
+verbose_setter(VALUE val, ID id, VALUE *variable)
 {
-    VALUE *variable = data;
     *variable = RTEST(val) ? Qtrue : val;
 }
 
 static VALUE
-opt_W_getter(ID id, void *data)
+opt_W_getter(ID id, VALUE *variable)
 {
-    VALUE *variable = data;
     switch (*variable) {
       case Qnil:
 	return INT2FIX(0);

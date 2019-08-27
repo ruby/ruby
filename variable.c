@@ -309,7 +309,7 @@ struct trace_var {
 struct rb_global_variable {
     int counter;
     int block_trace;
-    void *data;
+    VALUE *data;
     rb_gvar_getter_t *getter;
     rb_gvar_setter_t *setter;
     rb_gvar_marker_t *marker;
@@ -354,7 +354,7 @@ rb_global_entry(ID id)
 }
 
 VALUE
-rb_gvar_undef_getter(ID id, void *data, struct rb_global_variable *var)
+rb_gvar_undef_getter(ID id, VALUE *_)
 {
     rb_warning("global variable `%"PRIsVALUE"' not initialized", QUOTE_ID(id));
 
@@ -362,8 +362,9 @@ rb_gvar_undef_getter(ID id, void *data, struct rb_global_variable *var)
 }
 
 void
-rb_gvar_undef_setter(VALUE val, ID id, void *d, struct rb_global_variable *var)
+rb_gvar_undef_setter(VALUE val, ID id, VALUE *_)
 {
+    struct rb_global_variable *var = rb_global_entry(id)->var;
     var->getter = rb_gvar_val_getter;
     var->setter = rb_gvar_val_setter;
     var->marker = rb_gvar_val_marker;
@@ -377,14 +378,15 @@ rb_gvar_undef_marker(VALUE *var)
 }
 
 VALUE
-rb_gvar_val_getter(ID id, void *data, struct rb_global_variable *var)
+rb_gvar_val_getter(ID id, VALUE *data)
 {
     return (VALUE)data;
 }
 
 void
-rb_gvar_val_setter(VALUE val, ID id, void *data, struct rb_global_variable *var)
+rb_gvar_val_setter(VALUE val, ID id, VALUE *_)
 {
+    struct rb_global_variable *var = rb_global_entry(id)->var;
     var->data = (void*)val;
 }
 
@@ -396,17 +398,16 @@ rb_gvar_val_marker(VALUE *var)
 }
 
 VALUE
-rb_gvar_var_getter(ID id, void *data, struct rb_global_variable *gvar)
+rb_gvar_var_getter(ID id, VALUE *var)
 {
-    VALUE *var = data;
     if (!var) return Qnil;
     return *var;
 }
 
 void
-rb_gvar_var_setter(VALUE val, ID id, void *data, struct rb_global_variable *g)
+rb_gvar_var_setter(VALUE val, ID id, VALUE *data)
 {
-    *(VALUE *)data = val;
+    *data = val;
 }
 
 void
@@ -416,7 +417,7 @@ rb_gvar_var_marker(VALUE *var)
 }
 
 void
-rb_gvar_readonly_setter(VALUE v, ID id, void *d, struct rb_global_variable *g)
+rb_gvar_readonly_setter(VALUE v, ID id, VALUE *_)
 {
     rb_name_error(id, "%"PRIsVALUE" is a read-only variable", QUOTE_ID(id));
 }
@@ -487,8 +488,8 @@ void
 rb_define_hooked_variable(
     const char *name,
     VALUE *var,
-    VALUE (*getter)(ANYARGS),
-    void  (*setter)(ANYARGS))
+    rb_gvar_getter_t *getter,
+    rb_gvar_setter_t *setter)
 {
     volatile VALUE tmp = var ? *var : Qnil;
     ID id = global_id(name);
@@ -517,8 +518,8 @@ rb_define_readonly_variable(const char *name, const VALUE *var)
 void
 rb_define_virtual_variable(
     const char *name,
-    VALUE (*getter)(ANYARGS),
-    void  (*setter)(ANYARGS))
+    rb_gvar_getter_t *getter,
+    rb_gvar_setter_t *setter)
 {
     if (!getter) getter = rb_gvar_val_getter;
     if (!setter) setter = rb_gvar_readonly_setter;
@@ -662,7 +663,7 @@ MJIT_FUNC_EXPORTED VALUE
 rb_gvar_get(struct rb_global_entry *entry)
 {
     struct rb_global_variable *var = entry->var;
-    return (*var->getter)(entry->id, var->data, var);
+    return (*var->getter)(entry->id, var->data);
 }
 
 struct trace_data {
@@ -699,7 +700,7 @@ rb_gvar_set(struct rb_global_entry *entry, VALUE val)
     struct trace_data trace;
     struct rb_global_variable *var = entry->var;
 
-    (*var->setter)(val, entry->id, var->data, var);
+    (*var->setter)(val, entry->id, var->data);
 
     if (var->trace && !var->block_trace) {
 	var->block_trace = 1;
