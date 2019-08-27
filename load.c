@@ -156,7 +156,7 @@ get_loaded_features(void)
 }
 
 static VALUE
-get_$LOADED_FEATURES(ID _x, VALUE *_y)
+get_LOADED_FEATURES(ID _x, VALUE *_y)
 {
     return get_loaded_features();
 }
@@ -1265,8 +1265,8 @@ Init_load(void)
     vm->load_path_check_cache = 0;
     rb_define_singleton_method(vm->load_path, "resolve_feature_path", rb_resolve_feature_path, 1);
 
-    rb_define_virtual_variable("$\"", get_$LOADED_FEATURES, 0);
-    rb_define_virtual_variable("$LOADED_FEATURES", get_$LOADED_FEATURES, 0);
+    rb_define_virtual_variable("$\"", get_LOADED_FEATURES, 0);
+    rb_define_virtual_variable("$LOADED_FEATURES", get_LOADED_FEATURES, 0);
     vm->loaded_features = rb_ary_new();
     vm->loaded_features_snapshot = rb_ary_tmp_new(0);
     vm->loaded_features_index = st_init_numtable();

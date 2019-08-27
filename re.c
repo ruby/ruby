@@ -3955,7 +3955,7 @@ match_getter(void)
 }
 
 static VALUE
-get_$LAST_MATCH_INFO(ID _x, VALUE *_y)
+get_LAST_MATCH_INFO(ID _x, VALUE *_y)
 {
     return match_getter();
 }
@@ -4048,7 +4048,7 @@ Init_Regexp(void)
     onig_set_warn_func(re_warn);
     onig_set_verb_warn_func(re_warn);
 
-    rb_define_virtual_variable("$~", get_$LAST_MATCH_INFO, match_setter);
+    rb_define_virtual_variable("$~", get_LAST_MATCH_INFO, match_setter);
     rb_define_virtual_variable("$&", last_match_getter, 0);
     rb_define_virtual_variable("$`", prematch_getter, 0);
     rb_define_virtual_variable("$'", postmatch_getter, 0);
