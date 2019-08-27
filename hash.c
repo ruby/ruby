@@ -868,7 +868,7 @@ ar_add_direct_with_hash(VALUE hash, st_data_t key, st_data_t val, st_hash_t hash
 }
 
 static int
-ar_general_foreach(VALUE hash, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg)
+ar_general_foreach(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg)
 {
     if (RHASH_AR_TABLE_SIZE(hash) > 0) {
         unsigned i, bound = RHASH_AR_TABLE_BOUND(hash);
@@ -909,19 +909,32 @@ ar_general_foreach(VALUE hash, int (*func)(ANYARGS), st_update_callback_func *re
 }
 
 static int
-ar_foreach_with_replace(VALUE hash, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg)
+ar_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg)
 {
     return ar_general_foreach(hash, func, replace, arg);
 }
 
+struct functor {
+    st_foreach_callback_func *func;
+    st_data_t arg;
+};
+
 static int
-ar_foreach(VALUE hash, int (*func)(ANYARGS), st_data_t arg)
+apply_functor(st_data_t k, st_data_t v, st_data_t d, int _)
 {
-    return ar_general_foreach(hash, func, NULL, arg);
+    const struct functor *f = (void *)d;
+    return f->func(k, v, f->arg);
 }
 
 static int
-ar_foreach_check(VALUE hash, int (*func)(ANYARGS), st_data_t arg,
+ar_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t arg)
+{
+    const struct functor f = { func, arg };
+    return ar_general_foreach(hash, apply_functor, NULL, (st_data_t)&f);
+}
+
+static int
+ar_foreach_check(VALUE hash, st_foreach_check_callback_func *func, st_data_t arg,
                      st_data_t never)
 {
     if (RHASH_AR_TABLE_SIZE(hash) > 0) {
@@ -1267,7 +1280,7 @@ foreach_safe_i(st_data_t key, st_data_t value, st_data_t args, int error)
 }
 
 void
-st_foreach_safe(st_table *table, int (*func)(ANYARGS), st_data_t a)
+st_foreach_safe(st_table *table, st_foreach_func *func, st_data_t a)
 {
     struct foreach_safe_arg arg;
 
@@ -1415,7 +1428,7 @@ hash_foreach_ensure(VALUE hash)
 }
 
 int
-rb_hash_stlike_foreach(VALUE hash, int (*func)(ANYARGS), st_data_t arg)
+rb_hash_stlike_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t arg)
 {
     if (RHASH_AR_TABLE_P(hash)) {
         return ar_foreach(hash, func, arg);
@@ -1426,7 +1439,7 @@ rb_hash_stlike_foreach(VALUE hash, int (*func)(ANYARGS), st_data_t arg)
 }
 
 int
-rb_hash_stlike_foreach_with_replace(VALUE hash, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg)
+rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg)
 {
     if (RHASH_AR_TABLE_P(hash)) {
         return ar_foreach_with_replace(hash, func, replace, arg);
@@ -1456,7 +1469,7 @@ hash_foreach_call(VALUE arg)
 }
 
 void
-rb_hash_foreach(VALUE hash, int (*func)(ANYARGS), VALUE farg)
+rb_hash_foreach(VALUE hash, rb_foreach_func *func, VALUE farg)
 {
     struct hash_foreach_arg arg;
 
@@ -2923,7 +2936,7 @@ rb_hash_empty_p(VALUE hash)
 }
 
 static int
-each_value_i(VALUE key, VALUE value)
+each_value_i(VALUE key, VALUE value, VALUE _)
 {
     rb_yield(value);
     return ST_CONTINUE;
@@ -2957,7 +2970,7 @@ rb_hash_each_value(VALUE hash)
 }
 
 static int
-each_key_i(VALUE key, VALUE value)
+each_key_i(VALUE key, VALUE value, VALUE _)
 {
     rb_yield(key);
     return ST_CONTINUE;
@@ -2990,14 +3003,14 @@ rb_hash_each_key(VALUE hash)
 }
 
 static int
-each_pair_i(VALUE key, VALUE value)
+each_pair_i(VALUE key, VALUE value, VALUE _)
 {
     rb_yield(rb_assoc_new(key, value));
     return ST_CONTINUE;
 }
 
 static int
-each_pair_i_fast(VALUE key, VALUE value)
+each_pair_i_fast(VALUE key, VALUE value, VALUE _)
 {
     VALUE argv[2];
     argv[0] = key;
@@ -5918,7 +5931,7 @@ env_replace(VALUE env, VALUE hash)
 }
 
 static int
-env_update_i(VALUE key, VALUE val)
+env_update_i(VALUE key, VALUE val, VALUE _)
 {
     if (rb_block_given_p()) {
 	val = rb_yield_values(3, key, rb_f_getenv(Qnil, key), val);

@@ -500,8 +500,9 @@ w_unique(VALUE s, struct dump_arg *arg)
 static void w_object(VALUE,struct dump_arg*,int);
 
 static int
-hash_each(VALUE key, VALUE value, struct dump_call_arg *arg)
+hash_each(VALUE key, VALUE value, VALUE v)
 {
+    struct dump_call_arg *arg = (void *)v;
     w_object(key, arg->arg, arg->limit);
     w_object(value, arg->arg, arg->limit);
     return ST_CONTINUE;
