@@ -42,13 +42,13 @@ jobs:
       - name: configure
         run: ./configure -C --disable-install-doc
       - run: make -j$((1 + $(nproc --all)))
-      - name: Tests (${{ matrix.test_task }})
+      - name: Tests
         run: make -s TESTOPTS="-j$((1 + $(nproc --all))) -q --tty=no" ${{ matrix.test_task }}
         env:
           MSPECOPT: "-ff" # not using `-j` because sometimes `mspec -j` silently dies
         if: matrix.test_task != 'test-bundled-gems' && !contains(github.event.head_commit.message, '[ci skip]')
       # test-bundled-gems is separated for marking `continue-on-error` because it randomly fails.
-      - name: Tests (${{ matrix.test_task }})
+      - name: Tests
         run: make -s ${{ matrix.test_task }}
         env:
           TESTOPTS: "-q --tty=no"
