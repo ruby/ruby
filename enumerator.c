@@ -3112,12 +3112,6 @@ enum_chain_enum_size(VALUE obj, VALUE args, VALUE eobj)
 }
 
 static VALUE
-enum_chain_yield_block(RB_BLOCK_CALL_FUNC_ARGLIST(_, block))
-{
-    return rb_funcallv(block, id_call, argc, argv);
-}
-
-static VALUE
 enum_chain_enum_no_size(VALUE obj, VALUE args, VALUE eobj)
 {
     return Qnil;
@@ -3148,10 +3142,9 @@ enum_chain_each(int argc, VALUE *argv, VALUE obj)
     enums = objptr->enums;
     block = rb_block_proc();
 
-
     for (i = 0; i < RARRAY_LEN(enums); i++) {
         objptr->pos = i;
-        rb_block_call(RARRAY_AREF(enums, i), id_each, argc, argv, enum_chain_yield_block, block);
+        rb_funcall_with_block(RARRAY_AREF(enums, i), id_each, argc, argv, block);
     }
 
     return obj;
