@@ -308,7 +308,7 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
     TestWEBrick.start_httpserver(config, log_tester) do |server, addr, port, log|
       http = Net::HTTP.new(addr, port)
       http.read_timeout = EnvUtil.apply_timeout_scale(60)
-      http.write_timeout = EnvUtil.apply_timeout_scale(60) if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.6.0')
+      http.write_timeout = EnvUtil.apply_timeout_scale(60) if http.respond_to?(:write_timeout=)
 
       req = Net::HTTP::Get.new("/webrick.cgi/test")
       http.request(req) do |res|
