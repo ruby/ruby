@@ -18,6 +18,8 @@ module Merger
 end
 
 class << Merger
+  include Merger
+
   def help
     puts <<-HELP
 \e[1msimple backport\e[0m
@@ -139,7 +141,8 @@ class << Merger
         end
       end
       tag_url = "#{REPOS}tags/#{tagname}"
-      unless system('svn', 'info', tag_url, out: IO::NULL, err: IO::NULL)
+      system('svn', 'info', tag_url, out: IO::NULL, err: IO::NULL)
+      if $?.success?
         abort 'specfied tag already exists. check tag name and remove it if you want to force re-tagging'
       end
       execute('svn', 'cp', '-m', "add tag #{tagname}", branch_url, tag_url, interactive: true)
