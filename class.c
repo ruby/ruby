@@ -1540,6 +1540,9 @@ rb_define_method_id(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc)
     rb_add_method_cfunc(klass, mid, func, argc, METHOD_VISI_PUBLIC);
 }
 
+#ifdef rb_define_method
+#undef rb_define_method
+#endif
 void
 rb_define_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc)
 {

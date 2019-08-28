@@ -421,9 +421,9 @@ int rb_method_basic_definition_p(VALUE, ID);
 VALUE rb_eval_cmd(VALUE, VALUE, int);
 int rb_obj_respond_to(VALUE, ID, int);
 int rb_respond_to(VALUE, ID);
-NORETURN(VALUE rb_f_notimplement(int argc, const VALUE *argv, VALUE obj));
+NORETURN(VALUE rb_f_notimplement(int argc, const VALUE *argv, VALUE obj, VALUE marker));
 #if !defined(RUBY_EXPORT) && defined(_WIN32)
-RUBY_EXTERN VALUE (*const rb_f_notimplement_)(int, const VALUE *, VALUE);
+RUBY_EXTERN VALUE (*const rb_f_notimplement_)(int, const VALUE *, VALUE, VALUE marker);
 #define rb_f_notimplement (*rb_f_notimplement_)
 #endif
 NORETURN(void rb_interrupt(void));
