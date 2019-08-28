@@ -1234,6 +1234,28 @@ class TestProc < Test::Unit::TestCase
     assert_empty(pr.parameters.map{|_,n|n}.compact)
   end
 
+  def test_parameters_lambda
+    assert_equal([], proc {}.parameters(lambda: true))
+    assert_equal([], proc {||}.parameters(lambda: true))
+    assert_equal([[:req, :a]], proc {|a|}.parameters(lambda: true))
+    assert_equal([[:req, :a], [:req, :b]], proc {|a, b|}.parameters(lambda: true))
+    assert_equal([[:opt, :a], [:block, :b]], proc {|a=:a, &b|}.parameters(lambda: true))
+    assert_equal([[:req, :a], [:opt, :b]], proc {|a, b=:b|}.parameters(lambda: true))
+    assert_equal([[:rest, :a]], proc {|*a|}.parameters(lambda: true))
+    assert_equal([[:req, :a], [:rest, :b], [:block, :c]], proc {|a, *b, &c|}.parameters(lambda: true))
+    assert_equal([[:req, :a], [:rest, :b], [:req, :c]], proc {|a, *b, c|}.parameters(lambda: true))
+    assert_equal([[:req, :a], [:rest, :b], [:req, :c], [:block, :d]], proc {|a, *b, c, &d|}.parameters(lambda: true))
+    assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:block, :e]], proc {|a, b=:b, *c, d, &e|}.parameters(lambda: true))
+    assert_equal([[:req], [:block, :b]], proc {|(a), &b|a}.parameters(lambda: true))
+    assert_equal([[:req, :a], [:req, :b], [:opt, :c], [:opt, :d], [:rest, :e], [:req, :f], [:req, :g], [:block, :h]], proc {|a,b,c=:c,d=:d,*e,f,g,&h|}.parameters(lambda: true))
+
+    pr = eval("proc{|"+"(_),"*30+"|}")
+    assert_empty(pr.parameters(lambda: true).map{|_,n|n}.compact)
+
+    assert_equal([[:opt, :a]], lambda {|a|}.parameters(lambda: false))
+    assert_equal([[:opt, :a], [:opt, :b], [:opt, :c], [:opt, :d], [:rest, :e], [:opt, :f], [:opt, :g], [:block, :h]], lambda {|a,b,c=:c,d=:d,*e,f,g,&h|}.parameters(lambda: false))
+  end
+
   def pm0() end
   def pm1(a) end
   def pm2(a, b) end

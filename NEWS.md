@@ -69,6 +69,7 @@ Note: We're only listing outstanding class updates.
 
 * Proc
     * Proc#dup returns an instance of subclass. [[Bug #17545]]
+    * Proc#parameters now accepts lambda keyword. [[Feature #15357]]
 
 * Refinement
     * Refinement#refined_class has been added. [[Feature #12737]]
@@ -170,6 +171,7 @@ The following deprecated APIs are removed.
 [Feature #13110]: https://bugs.ruby-lang.org/issues/13110
 [Feature #14332]: https://bugs.ruby-lang.org/issues/14332
 [Feature #15231]: https://bugs.ruby-lang.org/issues/15231
+[Feature #15357]: https://bugs.ruby-lang.org/issues/15357
 [Bug #15928]:     https://bugs.ruby-lang.org/issues/15928
 [Feature #16131]: https://bugs.ruby-lang.org/issues/16131
 [Feature #16806]: https://bugs.ruby-lang.org/issues/16806
