@@ -521,7 +521,7 @@ rb_mutex_synchronize(VALUE mutex, VALUE (*func)(VALUE arg), VALUE arg)
  * completes.  See the example under +Mutex+.
  */
 static VALUE
-rb_mutex_synchronize_m(VALUE self, VALUE args)
+rb_mutex_synchronize_m(VALUE self)
 {
     if (!rb_block_given_p()) {
 	rb_raise(rb_eThreadError, "must be called with a block");
