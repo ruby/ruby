@@ -20,8 +20,6 @@ jobs:
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
       - name: Checkout ruby/ruby
         run: git clone --depth=10 https://github.com/ruby/ruby . && git reset --hard "$GITHUB_SHA"
-        env:
-          GITHUB_SHA: ${{ github.sha }}
         if: github.event_name == 'schedule'
       - name: Checkout a pull request
         run: git clone --depth=10 "--branch=$GITHUB_BRANCH" "https://github.com/${GITHUB_REPO}" . && git reset --hard "$GITHUB_REV"
@@ -52,7 +50,6 @@ jobs:
           aws s3 cp lcov-all.info.xz s3://rubyci/coverage/lcov-all-"$GITHUB_SHA".info.xz
           aws s3 sync lcov-out s3://rubyci/coverage-latest-html
         env:
-          GITHUB_SHA: ${{ github.sha }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         if: github.event_name == 'schedule'
