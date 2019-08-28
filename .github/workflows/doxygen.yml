@@ -32,7 +32,8 @@ jobs:
           if grep -q "${GITHUB_SHA}" /tmp/index.html; then exit; fi
           chmod go-w $HOME
           sudo chmod -R go-w /usr/share
-      - run: |
+      - name: Autoconf
+        run: |
           if grep -q "${GITHUB_SHA}" /tmp/index.html; then exit; fi
           autoconf
       - name: Configure
