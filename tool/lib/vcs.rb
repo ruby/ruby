@@ -266,7 +266,7 @@ class VCS
     end
 
     def self.short_revision(rev)
-      Integer(rev)
+      rev
     end
 
     def _get_revisions(path, srcdir = nil)
@@ -281,7 +281,7 @@ class VCS
       _, last, _, changed, _ = info_xml.split(/revision="(\d+)"/)
       modified = info_xml[/<date>([^<>]*)/, 1]
       branch = info_xml[%r'<relative-url>\^/(?:branches/|tags/)?([^<>]+)', 1]
-      [last, changed, modified, branch]
+      [Integer(last), Integer(changed), modified, branch]
     end
 
     def self.search_root(path)
