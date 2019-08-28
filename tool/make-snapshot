@@ -293,14 +293,10 @@ def package(vcs, rev, destdir, tmp = nil)
   end
 
   open("#{v}/revision.h", "wb") {|f|
-    if revision.is_a?(Integer)
-      f.puts "#define RUBY_REVISION #{revision}"
-    else
-      short = vcs.short_revision(revision)
-      f.puts "#define RUBY_REVISION #{short.inspect}"
-      unless short == revision
-        f.puts "#define RUBY_FULL_REVISION #{revision.inspect}"
-      end
+    short = vcs.short_revision(revision)
+    f.puts "#define RUBY_REVISION #{short.inspect}"
+    unless short == revision
+      f.puts "#define RUBY_FULL_REVISION #{revision.inspect}"
     end
   }
   version ||= (versionhdr = IO.read("#{v}/version.h"))[RUBY_VERSION_PATTERN, 1]
