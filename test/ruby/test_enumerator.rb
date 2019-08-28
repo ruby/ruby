@@ -864,4 +864,20 @@ class TestEnumerator < Test::Unit::TestCase
       ], enum.to_a
     }
   end
+
+  def test_chain_each_lambda
+    c = Class.new do
+      include Enumerable
+      attr_reader :is_lambda
+      def each(&block)
+        return to_enum unless block
+        @is_lambda = block.lambda?
+      end
+    end
+    e = c.new
+    e.chain.each{}
+    assert_equal(false, e.is_lambda)
+    e.chain.each(&->{})
+    assert_equal(true, e.is_lambda)
+  end
 end
