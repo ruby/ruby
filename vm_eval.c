@@ -1880,7 +1880,7 @@ uncaught_throw_to_s(VALUE exc)
  */
 
 static VALUE
-rb_f_throw(int argc, VALUE *argv)
+rb_f_throw(int argc, VALUE *argv, VALUE _)
 {
     VALUE tag, value;
 
@@ -2085,7 +2085,7 @@ local_var_list_add(const struct local_var_list *vars, ID lid)
  */
 
 static VALUE
-rb_f_local_variables(void)
+rb_f_local_variables(VALUE _)
 {
     struct local_var_list vars;
     rb_execution_context_t *ec = GET_EC();
@@ -2142,7 +2142,7 @@ rb_f_local_variables(void)
 
 
 static VALUE
-rb_f_block_given_p(void)
+rb_f_block_given_p(VALUE _)
 {
     rb_execution_context_t *ec = GET_EC();
     rb_control_frame_t *cfp = ec->cfp;

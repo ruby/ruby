@@ -1767,7 +1767,9 @@ rb_define_module_function(VALUE module, const char *name, VALUE (*func)(ANYARGS)
     rb_define_singleton_method(module, name, func, argc);
 }
 
-
+#ifdef rb_define_global_function
+#undef rb_define_global_function
+#endif
 /*!
  * Defines a global function
  * \param name    name of the function

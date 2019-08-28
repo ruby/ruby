@@ -769,6 +769,12 @@ rb_f_raise(int argc, VALUE *argv)
 }
 
 static VALUE
+f_raise(int c, VALUE *v, VALUE _)
+{
+    return rb_f_raise(c, v);
+}
+
+static VALUE
 make_exception(int argc, const VALUE *argv, int isstr)
 {
     VALUE mesg, exc;
@@ -1883,7 +1889,7 @@ errat_setter(VALUE val, ID id, VALUE *var)
  */
 
 static VALUE
-rb_f_method_name(void)
+rb_f_method_name(VALUE _)
 {
     ID fname = prev_frame_func(); /* need *method* ID */
 
@@ -1905,7 +1911,7 @@ rb_f_method_name(void)
  */
 
 static VALUE
-rb_f_callee_name(void)
+rb_f_callee_name(VALUE _)
 {
     ID fname = prev_frame_callee(); /* need *callee* ID */
 
@@ -1928,7 +1934,7 @@ rb_f_callee_name(void)
  *
  */
 static VALUE
-f_current_dirname(void)
+f_current_dirname(VALUE _)
 {
     VALUE base = rb_current_realfilepath();
     if (NIL_P(base)) {
@@ -1938,16 +1944,34 @@ f_current_dirname(void)
     return base;
 }
 
+static VALUE
+f_global_variables(VALUE _)
+{
+    return rb_f_global_variables();
+}
+
+static VALUE
+f_trace_var(int c, const VALUE *a, VALUE _)
+{
+    return rb_f_trace_var(c, a);
+}
+
+static VALUE
+f_untrace_var(int c, const VALUE *a, VALUE _)
+{
+    return rb_f_untrace_var(c, a);
+}
+
 void
 Init_eval(void)
 {
     rb_define_virtual_variable("$@", errat_getter, errat_setter);
     rb_define_virtual_variable("$!", errinfo_getter, 0);
 
-    rb_define_global_function("raise", rb_f_raise, -1);
-    rb_define_global_function("fail", rb_f_raise, -1);
+    rb_define_global_function("raise", f_raise, -1);
+    rb_define_global_function("fail", f_raise, -1);
 
-    rb_define_global_function("global_variables", rb_f_global_variables, 0);	/* in variable.c */
+    rb_define_global_function("global_variables", f_global_variables, 0);
 
     rb_define_global_function("__method__", rb_f_method_name, 0);
     rb_define_global_function("__callee__", rb_f_callee_name, 0);
@@ -1980,8 +2004,8 @@ Init_eval(void)
 
     rb_define_method(rb_mKernel, "extend", rb_obj_extend, -1);
 
-    rb_define_global_function("trace_var", rb_f_trace_var, -1);	/* in variable.c */
-    rb_define_global_function("untrace_var", rb_f_untrace_var, -1);	/* in variable.c */
+    rb_define_global_function("trace_var", f_trace_var, -1);
+    rb_define_global_function("untrace_var", f_untrace_var, -1);
 
     rb_vm_register_special_exception(ruby_error_reenter, rb_eFatal, "exception reentered");
     rb_vm_register_special_exception(ruby_error_stackfatal, rb_eFatal, "machine stack overflow in critical region");

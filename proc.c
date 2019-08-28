@@ -836,6 +836,12 @@ rb_block_proc(void)
     return proc_new(rb_cProc, FALSE);
 }
 
+static VALUE
+f_proc(VALUE _)
+{
+    return rb_block_proc();
+}
+
 /*
  * call-seq:
  *   lambda { |...| block }  -> a_proc
@@ -848,6 +854,12 @@ VALUE
 rb_block_lambda(void)
 {
     return proc_new(rb_cProc, TRUE);
+}
+
+static VALUE
+f_lambda(VALUE _)
+{
+    return rb_block_lambda();
 }
 
 /*  Document-method: Proc#===
@@ -3623,8 +3635,8 @@ Init_Proc(void)
     rb_vm_register_special_exception(ruby_error_sysstack, rb_eSysStackError, "stack level too deep");
 
     /* utility functions */
-    rb_define_global_function("proc", rb_block_proc, 0);
-    rb_define_global_function("lambda", rb_block_lambda, 0);
+    rb_define_global_function("proc", f_proc, 0);
+    rb_define_global_function("lambda", f_lambda, 0);
 
     /* Method */
     rb_cMethod = rb_define_class("Method", rb_cObject);

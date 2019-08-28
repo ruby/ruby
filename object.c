@@ -4048,6 +4048,12 @@ rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
     return obj;
 }
 
+static VALUE
+f_sprintf(int c, const VALUE *v, VALUE _)
+{
+    return rb_f_sprintf(c, v);
+}
+
 /*
  *  Document-class: Class
  *
@@ -4299,8 +4305,8 @@ InitVM_Object(void)
     rb_define_method(rb_mKernel, "is_a?", rb_obj_is_kind_of, 1);
     rb_define_method(rb_mKernel, "tap", rb_obj_tap, 0);
 
-    rb_define_global_function("sprintf", rb_f_sprintf, -1); /* in sprintf.c */
-    rb_define_global_function("format", rb_f_sprintf, -1);  /* in sprintf.c */
+    rb_define_global_function("sprintf", f_sprintf, -1);
+    rb_define_global_function("format", f_sprintf, -1);
 
     rb_define_global_function("Integer", rb_f_integer, -1);
     rb_define_global_function("Float", rb_f_float, -1);

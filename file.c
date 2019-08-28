@@ -5225,7 +5225,7 @@ test_check(int n, int argc, VALUE *argv)
  */
 
 static VALUE
-rb_f_test(int argc, VALUE *argv)
+rb_f_test(int argc, VALUE *argv, VALUE _)
 {
     int cmd;
 

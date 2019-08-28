@@ -7183,7 +7183,7 @@ check_pipe_command(VALUE filename_or_command)
  */
 
 static VALUE
-rb_f_open(int argc, VALUE *argv)
+rb_f_open(int argc, VALUE *argv, VALUE _)
 {
     ID to_open = 0;
     int redirect = FALSE;
@@ -7518,7 +7518,7 @@ rb_io_printf(int argc, const VALUE *argv, VALUE out)
  */
 
 static VALUE
-rb_f_printf(int argc, VALUE *argv)
+rb_f_printf(int argc, VALUE *argv, VALUE _)
 {
     VALUE out;
 
@@ -7619,7 +7619,7 @@ rb_io_print(int argc, const VALUE *argv, VALUE out)
  */
 
 static VALUE
-rb_f_print(int argc, const VALUE *argv)
+rb_f_print(int argc, const VALUE *argv, VALUE _)
 {
     rb_io_print(argc, argv, rb_stdout);
     return Qnil;
@@ -10007,7 +10007,7 @@ rb_io_fcntl(int argc, VALUE *argv, VALUE io)
  */
 
 static VALUE
-rb_f_syscall(int argc, VALUE *argv)
+rb_f_syscall(int argc, VALUE *argv, VALUE _)
 {
     VALUE arg[8];
 #if SIZEOF_VOIDP == 8 && defined(HAVE___SYSCALL) && SIZEOF_INT != 8 /* mainly *BSD */
