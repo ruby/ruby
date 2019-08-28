@@ -435,6 +435,12 @@ get_pid(void)
     return PIDT2NUM(getpid());
 }
 
+static VALUE
+proc_get_pid(VALUE _)
+{
+    return get_pid();
+}
+
 
 /*
  *  call-seq:
@@ -456,6 +462,12 @@ static VALUE
 get_ppid(void)
 {
     return PIDT2NUM(getppid());
+}
+
+static VALUE
+proc_get_ppid(VALUE _)
+{
+    return get_ppid();
 }
 
 
@@ -1303,6 +1315,12 @@ proc_wait(int argc, VALUE *argv)
     return PIDT2NUM(pid);
 }
 
+static VALUE
+proc_m_wait(int c, VALUE *v, VALUE _)
+{
+    return proc_wait(c, v);
+}
+
 
 /*
  *  call-seq:
@@ -1321,7 +1339,7 @@ proc_wait(int argc, VALUE *argv)
  */
 
 static VALUE
-proc_wait2(int argc, VALUE *argv)
+proc_wait2(int argc, VALUE *argv, VALUE _)
 {
     VALUE pid = proc_wait(argc, argv);
     if (NIL_P(pid)) return Qnil;
@@ -1350,7 +1368,7 @@ proc_wait2(int argc, VALUE *argv)
  */
 
 static VALUE
-proc_waitall(void)
+proc_waitall(VALUE _)
 {
     VALUE result;
     rb_pid_t pid;
@@ -4869,7 +4887,7 @@ rb_f_sleep(int argc, VALUE *argv)
  */
 
 static VALUE
-proc_getpgrp(void)
+proc_getpgrp(VALUE _)
 {
     rb_pid_t pgrp;
 
@@ -4898,7 +4916,7 @@ proc_getpgrp(void)
  */
 
 static VALUE
-proc_setpgrp(void)
+proc_setpgrp(VALUE _)
 {
   /* check for posix setpgid() first; this matches the posix */
   /* getpgrp() above.  It appears that configure will set SETPGRP_VOID */
@@ -4980,7 +4998,7 @@ proc_setpgid(VALUE obj, VALUE pid, VALUE pgrp)
  *     Process.getsid(Process.pid())   #=> 27422
  */
 static VALUE
-proc_getsid(int argc, VALUE *argv)
+proc_getsid(int argc, VALUE *argv, VALUE _)
 {
     rb_pid_t sid;
     rb_pid_t pid = 0;
@@ -5014,7 +5032,7 @@ static rb_pid_t ruby_setsid(void);
  */
 
 static VALUE
-proc_setsid(void)
+proc_setsid(VALUE _)
 {
     rb_pid_t pid;
 
@@ -6477,7 +6495,7 @@ static int rb_daemon(int nochdir, int noclose);
  */
 
 static VALUE
-proc_daemon(int argc, VALUE *argv)
+proc_daemon(int argc, VALUE *argv, VALUE _)
 {
     int n, nochdir = FALSE, noclose = FALSE;
 
@@ -6996,7 +7014,7 @@ p_gid_grant_privilege(VALUE obj, VALUE id)
  */
 
 static VALUE
-p_uid_exchangeable(void)
+p_uid_exchangeable(VALUE _)
 {
 #if defined(HAVE_SETRESUID)
     return Qtrue;
@@ -7058,7 +7076,7 @@ p_uid_exchange(VALUE obj)
  */
 
 static VALUE
-p_gid_exchangeable(void)
+p_gid_exchangeable(VALUE _)
 {
 #if defined(HAVE_SETRESGID)
     return Qtrue;
@@ -7121,7 +7139,7 @@ p_gid_exchange(VALUE obj)
  */
 
 static VALUE
-p_uid_have_saved_id(void)
+p_uid_have_saved_id(VALUE _)
 {
 #if defined(HAVE_SETRESUID) || defined(HAVE_SETEUID) || defined(_POSIX_SAVED_IDS)
     return Qtrue;
@@ -7236,7 +7254,7 @@ p_uid_switch(VALUE obj)
  */
 
 static VALUE
-p_gid_have_saved_id(void)
+p_gid_have_saved_id(VALUE _)
 {
 #if defined(HAVE_SETRESGID) || defined(HAVE_SETEGID) || defined(_POSIX_SAVED_IDS)
     return Qtrue;
@@ -7737,8 +7755,8 @@ ruby_real_ms_time(void)
  *  So the result can be interpreted differently across systems.
  *  Time.now is recommended over CLOCK_REALTIME.
  */
-VALUE
-rb_clock_gettime(int argc, VALUE *argv)
+static VALUE
+rb_clock_gettime(int argc, VALUE *argv, VALUE _)
 {
     int ret;
 
@@ -7934,8 +7952,8 @@ rb_clock_gettime(int argc, VALUE *argv)
  *    #=> 1.0e-09
  *
  */
-VALUE
-rb_clock_getres(int argc, VALUE *argv)
+static VALUE
+rb_clock_getres(int argc, VALUE *argv, VALUE _)
 {
     struct timetick tt;
     timetick_int_t numerators[2];
@@ -8050,6 +8068,12 @@ get_PROCESS_ID(ID _x, VALUE *_y)
     return get_pid();
 }
 
+static VALUE
+proc_rb_f_kill(int c, const VALUE *v, VALUE _)
+{
+    return rb_f_kill(c, v);
+}
+
 VALUE rb_mProcess;
 static VALUE rb_mProcUID;
 static VALUE rb_mProcGID;
@@ -8102,10 +8126,10 @@ InitVM_process(void)
     rb_define_singleton_method(rb_mProcess, "abort", rb_f_abort, -1);
     rb_define_singleton_method(rb_mProcess, "last_status", proc_s_last_status, 0);
 
-    rb_define_module_function(rb_mProcess, "kill", rb_f_kill, -1); /* in signal.c */
-    rb_define_module_function(rb_mProcess, "wait", proc_wait, -1);
+    rb_define_module_function(rb_mProcess, "kill", proc_rb_f_kill, -1);
+    rb_define_module_function(rb_mProcess, "wait", proc_m_wait, -1);
     rb_define_module_function(rb_mProcess, "wait2", proc_wait2, -1);
-    rb_define_module_function(rb_mProcess, "waitpid", proc_wait, -1);
+    rb_define_module_function(rb_mProcess, "waitpid", proc_m_wait, -1);
     rb_define_module_function(rb_mProcess, "waitpid2", proc_wait2, -1);
     rb_define_module_function(rb_mProcess, "waitall", proc_waitall, 0);
     rb_define_module_function(rb_mProcess, "detach", proc_detach, 1);
@@ -8137,8 +8161,8 @@ InitVM_process(void)
     rb_define_method(rb_cProcessStatus, "success?", pst_success_p, 0);
     rb_define_method(rb_cProcessStatus, "coredump?", pst_wcoredump, 0);
 
-    rb_define_module_function(rb_mProcess, "pid", get_pid, 0);
-    rb_define_module_function(rb_mProcess, "ppid", get_ppid, 0);
+    rb_define_module_function(rb_mProcess, "pid", proc_get_pid, 0);
+    rb_define_module_function(rb_mProcess, "ppid", proc_get_ppid, 0);
 
     rb_define_module_function(rb_mProcess, "getpgrp", proc_getpgrp, 0);
     rb_define_module_function(rb_mProcess, "setpgrp", proc_setpgrp, 0);
