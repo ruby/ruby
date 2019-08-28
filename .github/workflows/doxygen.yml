@@ -10,7 +10,7 @@ jobs:
       - name: Download current index.html
         run: |
           curl -o /tmp/index.html https://rubyci.s3.amazonaws.com/doxygen-latest-html/index.html || touch /tmp/index.html
-          grep projectnumber /tmp/index.html
+          grep projectnumber /tmp/index.html || :
           echo "GITHUB_SHA=${GITHUB_SHA}"
       - name: Install libraries
         run: |
