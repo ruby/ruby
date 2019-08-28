@@ -690,7 +690,7 @@ rb_load_protect(VALUE fname, int wrap, int *pstate)
  */
 
 static VALUE
-rb_f_load(int argc, VALUE *argv)
+rb_f_load(int argc, VALUE *argv, VALUE _)
 {
     VALUE fname, wrap, path, orig_fname;
 

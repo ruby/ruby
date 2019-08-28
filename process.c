@@ -2981,6 +2981,12 @@ rb_f_exec(int argc, const VALUE *argv)
     UNREACHABLE_RETURN(Qnil);
 }
 
+static VALUE
+f_exec(int c, const VALUE *a, VALUE _)
+{
+    return rb_f_exec(c, a);
+}
+
 #define ERRMSG(str) do { if (errmsg && 0 < errmsg_buflen) strlcpy(errmsg, (str), errmsg_buflen); } while (0)
 #define ERRMSG1(str, a) do { if (errmsg && 0 < errmsg_buflen) snprintf(errmsg, errmsg_buflen, (str), (a)); } while (0)
 #define ERRMSG2(str, a, b) do { if (errmsg && 0 < errmsg_buflen) snprintf(errmsg, errmsg_buflen, (str), (a), (b)); } while (0)
@@ -4256,6 +4262,11 @@ rb_f_exit(int argc, const VALUE *argv)
     UNREACHABLE_RETURN(Qnil);
 }
 
+static VALUE
+f_exit(int c, const VALUE *a, VALUE _)
+{
+    return rb_f_exit(c, a);
+}
 
 /*
  *  call-seq:
@@ -4291,6 +4302,12 @@ rb_f_abort(int argc, const VALUE *argv)
     }
 
     UNREACHABLE_RETURN(Qnil);
+}
+
+static VALUE
+f_abort(int c, const VALUE *a, VALUE _)
+{
+    return rb_f_abort(c, a);
 }
 
 void
@@ -4484,7 +4501,7 @@ rb_spawn(int argc, const VALUE *argv)
  */
 
 static VALUE
-rb_f_system(int argc, VALUE *argv)
+rb_f_system(int argc, VALUE *argv, VALUE _)
 {
     /*
      * n.b. using alloca for now to simplify future Thread::Light code
@@ -4811,7 +4828,7 @@ rb_f_system(int argc, VALUE *argv)
  */
 
 static VALUE
-rb_f_spawn(int argc, VALUE *argv)
+rb_f_spawn(int argc, VALUE *argv, VALUE _)
 {
     rb_pid_t pid;
     char errmsg[CHILD_ERRMSG_BUFLEN] = { '\0' };
@@ -4855,7 +4872,7 @@ rb_f_spawn(int argc, VALUE *argv)
  */
 
 static VALUE
-rb_f_sleep(int argc, VALUE *argv)
+rb_f_sleep(int argc, VALUE *argv, VALUE _)
 {
     time_t beg, end;
 
@@ -8092,14 +8109,14 @@ InitVM_process(void)
 #define rb_intern(str) rb_intern_const(str)
     rb_define_virtual_variable("$?", get_CHILD_STATUS, 0);
     rb_define_virtual_variable("$$", get_PROCESS_ID, 0);
-    rb_define_global_function("exec", rb_f_exec, -1);
+    rb_define_global_function("exec", f_exec, -1);
     rb_define_global_function("fork", rb_f_fork, 0);
     rb_define_global_function("exit!", rb_f_exit_bang, -1);
     rb_define_global_function("system", rb_f_system, -1);
     rb_define_global_function("spawn", rb_f_spawn, -1);
     rb_define_global_function("sleep", rb_f_sleep, -1);
-    rb_define_global_function("exit", rb_f_exit, -1);
-    rb_define_global_function("abort", rb_f_abort, -1);
+    rb_define_global_function("exit", f_exit, -1);
+    rb_define_global_function("abort", f_abort, -1);
 
     rb_mProcess = rb_define_module("Process");
 
@@ -8118,12 +8135,12 @@ InitVM_process(void)
     rb_define_const(rb_mProcess, "WUNTRACED", INT2FIX(0));
 #endif
 
-    rb_define_singleton_method(rb_mProcess, "exec", rb_f_exec, -1);
+    rb_define_singleton_method(rb_mProcess, "exec", f_exec, -1);
     rb_define_singleton_method(rb_mProcess, "fork", rb_f_fork, 0);
     rb_define_singleton_method(rb_mProcess, "spawn", rb_f_spawn, -1);
     rb_define_singleton_method(rb_mProcess, "exit!", rb_f_exit_bang, -1);
-    rb_define_singleton_method(rb_mProcess, "exit", rb_f_exit, -1);
-    rb_define_singleton_method(rb_mProcess, "abort", rb_f_abort, -1);
+    rb_define_singleton_method(rb_mProcess, "exit", f_exit, -1);
+    rb_define_singleton_method(rb_mProcess, "abort", f_abort, -1);
     rb_define_singleton_method(rb_mProcess, "last_status", proc_s_last_status, 0);
 
     rb_define_module_function(rb_mProcess, "kill", proc_rb_f_kill, -1);

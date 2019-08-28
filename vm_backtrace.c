@@ -1007,7 +1007,7 @@ rb_vm_thread_backtrace_locations(int argc, const VALUE *argv, VALUE thval)
  */
 
 static VALUE
-rb_f_caller(int argc, VALUE *argv)
+rb_f_caller(int argc, VALUE *argv, VALUE _)
 {
     return ec_backtrace_to_ary(GET_EC(), argc, argv, 1, 1, 1);
 }
@@ -1035,7 +1035,7 @@ rb_f_caller(int argc, VALUE *argv)
  *  entries within the specified range.
  */
 static VALUE
-rb_f_caller_locations(int argc, VALUE *argv)
+rb_f_caller_locations(int argc, VALUE *argv, VALUE _)
 {
     return ec_backtrace_to_ary(GET_EC(), argc, argv, 1, 1, 0);
 }
