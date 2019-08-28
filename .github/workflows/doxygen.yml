@@ -12,46 +12,47 @@ jobs:
           curl -o /tmp/index.html https://rubyci.s3.amazonaws.com/doxygen-latest-html/index.html || touch /tmp/index.html
           grep projectnumber /tmp/index.html || :
           echo "GITHUB_SHA=${GITHUB_SHA}"
+          if grep -q "${GITHUB_SHA}" /tmp/index.html; then
+            echo '##[set-env name=SKIP_DOXYGEN]'true
+          else
+            echo '##[set-env name=SKIP_DOXYGEN]'false
+          fi
       - name: Install libraries
         run: |
           set -x
-          if grep -q "${GITHUB_SHA}" /tmp/index.html; then exit; fi
           sudo sed /etc/apt/sources.list -e "s/^# deb-src/deb-src/g" -i
           sudo apt-get update
           sudo apt-get install ruby2.5 doxygen graphviz
           sudo apt-get build-dep ruby2.5
+        if: job.env.SKIP_DOXYGEN != 'true'
 
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
       - name: Checkout ruby/ruby
         run: |
-          if grep -q "${GITHUB_SHA}" /tmp/index.html; then exit; fi
           git clone --depth=10 https://github.com/ruby/ruby . && git reset --hard "$GITHUB_SHA"
+        if: job.env.SKIP_DOXYGEN != 'true'
 
       - name: Fixed world writable dirs
         run: |
-          if grep -q "${GITHUB_SHA}" /tmp/index.html; then exit; fi
           chmod go-w $HOME
           sudo chmod -R go-w /usr/share
-      - name: Autoconf
-        run: |
-          if grep -q "${GITHUB_SHA}" /tmp/index.html; then exit; fi
-          autoconf
+        if: job.env.SKIP_DOXYGEN != 'true'
+      - run: autoconf
+        if: job.env.SKIP_DOXYGEN != 'true'
       - name: Configure
         run: |
-          if grep -q "${GITHUB_SHA}" /tmp/index.html; then exit; fi
           ./configure
+        if: job.env.SKIP_DOXYGEN != 'true'
       - name: Generate Doxyfile
-        run: |
-          if grep -q "${GITHUB_SHA}" /tmp/index.html; then exit; fi
-          make Doxyfile
+        run: make Doxyfile
+        if: job.env.SKIP_DOXYGEN != 'true'
       - name: Run Doxygen
-        run: |
-          if grep -q "${GITHUB_SHA}" /tmp/index.html; then exit; fi
-          doxygen
+        run: doxygen
+        if: job.env.SKIP_DOXYGEN != 'true'
       - name: Upload results
         run: |
-          if grep -q "${GITHUB_SHA}" /tmp/index.html; then exit; fi
           aws s3 sync doc/capi/html/ s3://rubyci/doxygen-latest-html
+        if: job.env.SKIP_DOXYGEN != 'true'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
