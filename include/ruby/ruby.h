@@ -2688,4 +2688,52 @@ RUBY_SYMBOL_EXPORT_END
 #endif
 }  /* extern "C" { */
 #endif
+
+#if defined(__has_attribute) && defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
+#if __has_attribute(transparent_union) && __has_attribute(unused) && __has_attribute(weakref) && __has_attribute(nonnull)
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_methodm3(VALUE,const char*,VALUE(*)(ANYARGS),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_methodm2(VALUE,const char*,VALUE(*)(VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_methodm1(VALUE,const char*,VALUE(*)(int,union __attribute__((__transparent_union__)){VALUE*x;const VALUE*y;},VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method0 (VALUE,const char*,VALUE(*)(VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method1 (VALUE,const char*,VALUE(*)(VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method2 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method3 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method4 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method5 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method6 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method7 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method8 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method9 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method10(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method11(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method12(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method13(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method14(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method15(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+
+#define rb_f_notimplement_p(f)                    __builtin_types_compatible_p(__typeof__(f),__typeof__(rb_f_notimplement))
+#define rb_define_method_if_constexpr(x, t, f)    __builtin_choose_expr(__builtin_choose_expr(__builtin_constant_p(x),(x),0),(t),(f))
+#define rb_define_method_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_method15,rb_define_methodm3)
+#define rb_define_method_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_method14,rb_define_method_choose_prototype15(n))
+#define rb_define_method_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_method13,rb_define_method_choose_prototype14(n))
+#define rb_define_method_choose_prototype12(n)    rb_define_method_if_constexpr((n)==12,rb_define_method12,rb_define_method_choose_prototype13(n))
+#define rb_define_method_choose_prototype11(n)    rb_define_method_if_constexpr((n)==11,rb_define_method11,rb_define_method_choose_prototype12(n))
+#define rb_define_method_choose_prototype10(n)    rb_define_method_if_constexpr((n)==10,rb_define_method10,rb_define_method_choose_prototype11(n))
+#define rb_define_method_choose_prototype9(n)     rb_define_method_if_constexpr((n)== 9,rb_define_method9, rb_define_method_choose_prototype10(n))
+#define rb_define_method_choose_prototype8(n)     rb_define_method_if_constexpr((n)== 8,rb_define_method8, rb_define_method_choose_prototype9(n))
+#define rb_define_method_choose_prototype7(n)     rb_define_method_if_constexpr((n)== 7,rb_define_method7, rb_define_method_choose_prototype8(n))
+#define rb_define_method_choose_prototype6(n)     rb_define_method_if_constexpr((n)== 6,rb_define_method6, rb_define_method_choose_prototype7(n))
+#define rb_define_method_choose_prototype5(n)     rb_define_method_if_constexpr((n)== 5,rb_define_method5, rb_define_method_choose_prototype6(n))
+#define rb_define_method_choose_prototype4(n)     rb_define_method_if_constexpr((n)== 4,rb_define_method4, rb_define_method_choose_prototype5(n))
+#define rb_define_method_choose_prototype3(n)     rb_define_method_if_constexpr((n)== 3,rb_define_method3, rb_define_method_choose_prototype4(n))
+#define rb_define_method_choose_prototype2(n)     rb_define_method_if_constexpr((n)== 2,rb_define_method2, rb_define_method_choose_prototype3(n))
+#define rb_define_method_choose_prototype1(n)     rb_define_method_if_constexpr((n)== 1,rb_define_method1, rb_define_method_choose_prototype2(n))
+#define rb_define_method_choose_prototype0(n)     rb_define_method_if_constexpr((n)== 0,rb_define_method0, rb_define_method_choose_prototype1(n))
+#define rb_define_method_choose_prototypem1(n)    rb_define_method_if_constexpr((n)==-1,rb_define_methodm1,rb_define_method_choose_prototype0(n))
+#define rb_define_method_choose_prototypem2(n)    rb_define_method_if_constexpr((n)==-2,rb_define_methodm2,rb_define_method_choose_prototypem1(n))
+#define rb_define_method_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_methodm3,rb_define_method_choose_prototypem2(n))
+#define rb_define_method(klass, mid, func, arity) rb_define_method_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
+#endif
+#endif
+
 #endif /* RUBY_RUBY_H */

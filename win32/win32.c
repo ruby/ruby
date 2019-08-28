@@ -8169,7 +8169,7 @@ rb_w32_set_thread_description_str(HANDLE th, VALUE name)
     return result;
 }
 
-VALUE (*const rb_f_notimplement_)(int, const VALUE *, VALUE) = rb_f_notimplement;
+VALUE (*const rb_f_notimplement_)(int, const VALUE *, VALUE, VALUE) = rb_f_notimplement;
 
 #if RUBY_MSVCRT_VERSION < 120
 #include "missing/nextafter.c"

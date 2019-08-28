@@ -114,7 +114,7 @@ rb_clear_method_cache_by_class(VALUE klass)
 }
 
 VALUE
-rb_f_notimplement(int argc, const VALUE *argv, VALUE obj)
+rb_f_notimplement(int argc, const VALUE *argv, VALUE obj, VALUE marker)
 {
     rb_notimplement();
 
