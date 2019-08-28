@@ -338,7 +338,7 @@ ossl_clear_error(void)
  * implementation.
  */
 VALUE
-ossl_get_errors(void)
+ossl_get_errors(VALUE _)
 {
     VALUE ary;
     long e;

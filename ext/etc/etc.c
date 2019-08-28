@@ -647,7 +647,7 @@ etc_sysconfdir(VALUE obj)
  * Returns system temporary directory; typically "/tmp".
  */
 static VALUE
-etc_systmpdir(void)
+etc_systmpdir(VALUE _)
 {
     VALUE tmpdir;
 #ifdef _WIN32

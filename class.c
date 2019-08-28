@@ -1750,8 +1750,9 @@ rb_define_singleton_method(VALUE obj, const char *name, VALUE (*func)(ANYARGS), 
     rb_define_method(singleton_class_of(obj), name, func, argc);
 }
 
-
-
+#ifdef rb_define_module_function
+#undef rb_define_module_function
+#endif
 /*!
  * Defines a module function for \a module.
  * \param module  an module or a class.

@@ -1047,7 +1047,7 @@ io_needed(void)
  * * objects which define singleton methods
  */
 static VALUE
-marshal_dump(int argc, VALUE *argv)
+marshal_dump(int argc, VALUE *argv, VALUE _)
 {
     VALUE obj, port, a1, a2;
     int limit = -1;
@@ -2104,7 +2104,7 @@ clear_load_arg(struct load_arg *arg)
  * Please see the overview for further details.
  */
 static VALUE
-marshal_load(int argc, VALUE *argv)
+marshal_load(int argc, VALUE *argv, VALUE _)
 {
     VALUE port, proc;
 
