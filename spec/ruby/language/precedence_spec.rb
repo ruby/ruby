@@ -300,7 +300,7 @@ describe "Operators" do
    # Use variables to avoid warnings
    from = 1
    to = 2
-   # These are Range instances, not flip-flop
+   # These are flip-flop, not Range instances
    (from..to ? 3 : 4).should == 3
    (from...to ? 3 : 4).should == 3
  end
