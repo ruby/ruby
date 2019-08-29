@@ -5310,7 +5310,7 @@ ripper_yylval_id(struct parser_params *p, ID x)
 {
     return ripper_new_yylval(p, x, ID2SYM(x), 0);
 }
-# define set_yylval_str(x) (yylval.val = add_mark_object(p, (x)))
+# define set_yylval_str(x) (yylval.val = (x))
 # define set_yylval_num(x) (yylval.val = ripper_new_yylval(p, (x), 0, 0))
 # define set_yylval_id(x)  (void)(x)
 # define set_yylval_name(x) (void)(yylval.val = ripper_yylval_id(p, x))
@@ -7843,6 +7843,7 @@ static void
 parser_prepare(struct parser_params *p)
 {
     int c = nextc(p);
+    p->lval = 0;
     p->token_info_enabled = !compile_for_eval && RTEST(ruby_verbose);
     switch (c) {
       case '#':
@@ -12098,6 +12099,9 @@ parser_mark(void *ptr)
     rb_gc_mark(p->compile_option);
     rb_gc_mark(p->error_buffer);
 #else
+    if (p->lval && !RB_TYPE_P(p->lval->val, T_NODE)) {
+        rb_gc_mark(p->lval->val);
+    }
     rb_gc_mark(p->delayed);
     rb_gc_mark(p->value);
     rb_gc_mark(p->result);
