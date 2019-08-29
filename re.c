@@ -3998,7 +3998,7 @@ match_setter(VALUE val, ID _x, VALUE *_y)
  */
 
 static VALUE
-rb_reg_s_last_match(int argc, VALUE *argv)
+rb_reg_s_last_match(int argc, VALUE *argv, VALUE _)
 {
     if (rb_check_arity(argc, 0, 1) == 1) {
         VALUE match = rb_backref_get();

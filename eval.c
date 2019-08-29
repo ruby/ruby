@@ -355,7 +355,7 @@ ruby_exec_node(void *n)
  */
 
 static VALUE
-rb_mod_nesting(void)
+rb_mod_nesting(VALUE _)
 {
     VALUE ary = rb_ary_new();
     const rb_cref_t *cref = rb_vm_cref();
@@ -1614,7 +1614,7 @@ used_modules_i(VALUE _, VALUE mod, VALUE ary)
  *     [B, A]
  */
 static VALUE
-rb_mod_s_used_modules(void)
+rb_mod_s_used_modules(VALUE _)
 {
     const rb_cref_t *cref = rb_vm_cref();
     VALUE ary = rb_ary_new();

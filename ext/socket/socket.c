@@ -1042,7 +1042,7 @@ sock_s_gethostbyname(VALUE obj, VALUE host)
  *
  */
 static VALUE
-sock_s_gethostbyaddr(int argc, VALUE *argv)
+sock_s_gethostbyaddr(int argc, VALUE *argv, VALUE _)
 {
     VALUE addr, family;
     struct hostent *h;
@@ -1104,7 +1104,7 @@ sock_s_gethostbyaddr(int argc, VALUE *argv)
  *   Socket.getservbyname("syslog", "udp") #=> 514
  */
 static VALUE
-sock_s_getservbyname(int argc, VALUE *argv)
+sock_s_getservbyname(int argc, VALUE *argv, VALUE _)
 {
     VALUE service, proto;
     struct servent *sp;
@@ -1145,7 +1145,7 @@ sock_s_getservbyname(int argc, VALUE *argv)
  *
  */
 static VALUE
-sock_s_getservbyport(int argc, VALUE *argv)
+sock_s_getservbyport(int argc, VALUE *argv, VALUE _)
 {
     VALUE port, proto;
     struct servent *sp;
@@ -1203,7 +1203,7 @@ sock_s_getservbyport(int argc, VALUE *argv)
  * If Addrinfo object is preferred, use Addrinfo.getaddrinfo.
  */
 static VALUE
-sock_s_getaddrinfo(int argc, VALUE *argv)
+sock_s_getaddrinfo(int argc, VALUE *argv, VALUE _)
 {
     VALUE host, port, family, socktype, protocol, flags, ret, revlookup;
     struct addrinfo hints;
@@ -1257,7 +1257,7 @@ sock_s_getaddrinfo(int argc, VALUE *argv)
  * If Addrinfo object is preferred, use Addrinfo#getnameinfo.
  */
 static VALUE
-sock_s_getnameinfo(int argc, VALUE *argv)
+sock_s_getnameinfo(int argc, VALUE *argv, VALUE _)
 {
     VALUE sa, af = Qnil, host = Qnil, port = Qnil, flags, tmp;
     char *hptr, *pptr;

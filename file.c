@@ -2538,7 +2538,7 @@ chmod_internal(const char *path, void *mode)
  */
 
 static VALUE
-rb_file_s_chmod(int argc, VALUE *argv)
+rb_file_s_chmod(int argc, VALUE *argv, VALUE _)
 {
     mode_t mode;
 
@@ -2610,7 +2610,7 @@ lchmod_internal(const char *path, void *mode)
  */
 
 static VALUE
-rb_file_s_lchmod(int argc, VALUE *argv)
+rb_file_s_lchmod(int argc, VALUE *argv, VALUE _)
 {
     mode_t mode;
 
@@ -2669,7 +2669,7 @@ chown_internal(const char *path, void *arg)
  */
 
 static VALUE
-rb_file_s_chown(int argc, VALUE *argv)
+rb_file_s_chown(int argc, VALUE *argv, VALUE _)
 {
     struct chown_args arg;
 
@@ -2741,7 +2741,7 @@ lchown_internal(const char *path, void *arg)
  */
 
 static VALUE
-rb_file_s_lchown(int argc, VALUE *argv)
+rb_file_s_lchown(int argc, VALUE *argv, VALUE _)
 {
     struct chown_args arg;
 
@@ -2919,7 +2919,7 @@ utime_internal_i(int argc, VALUE *argv, int follow)
  */
 
 static VALUE
-rb_file_s_utime(int argc, VALUE *argv)
+rb_file_s_utime(int argc, VALUE *argv, VALUE _)
 {
     return utime_internal_i(argc, argv, FALSE);
 }
@@ -2938,7 +2938,7 @@ rb_file_s_utime(int argc, VALUE *argv)
  */
 
 static VALUE
-rb_file_s_lutime(int argc, VALUE *argv)
+rb_file_s_lutime(int argc, VALUE *argv, VALUE _)
 {
     return utime_internal_i(argc, argv, TRUE);
 }
@@ -3217,7 +3217,7 @@ rb_file_s_rename(VALUE klass, VALUE from, VALUE to)
  */
 
 static VALUE
-rb_file_s_umask(int argc, VALUE *argv)
+rb_file_s_umask(int argc, VALUE *argv, VALUE _)
 {
     mode_t omask = 0;
 
@@ -4032,6 +4032,13 @@ rb_file_expand_path_fast(VALUE fname, VALUE dname)
     return expand_path(fname, dname, 0, 0, EXPAND_PATH_BUFFER());
 }
 
+VALUE
+rb_file_s_expand_path(int argc, const VALUE *argv)
+{
+    rb_check_arity(argc, 1, 2);
+    return rb_file_expand_path(argv[0], argc > 1 ? argv[1] : Qnil);
+}
+
 /*
  *  call-seq:
  *     File.expand_path(file_name [, dir_string] )  ->  abs_file_name
@@ -4060,11 +4067,10 @@ rb_file_expand_path_fast(VALUE fname, VALUE dname)
  *  parent, the root of the project and appends +lib/mygem.rb+.
  */
 
-VALUE
-rb_file_s_expand_path(int argc, const VALUE *argv)
+static VALUE
+s_expand_path(int c, const VALUE * v, VALUE _)
 {
-    rb_check_arity(argc, 1, 2);
-    return rb_file_expand_path(argv[0], argc > 1 ? argv[1] : Qnil);
+    return rb_file_s_expand_path(c, v);
 }
 
 VALUE
@@ -4072,6 +4078,13 @@ rb_file_absolute_path(VALUE fname, VALUE dname)
 {
     check_expand_path_args(fname, dname);
     return expand_path(fname, dname, 1, 1, EXPAND_PATH_BUFFER());
+}
+
+VALUE
+rb_file_s_absolute_path(int argc, const VALUE *argv)
+{
+    rb_check_arity(argc, 1, 2);
+    return rb_file_absolute_path(argv[0], argc > 1 ? argv[1] : Qnil);
 }
 
 /*
@@ -4087,11 +4100,10 @@ rb_file_absolute_path(VALUE fname, VALUE dname)
  *     File.absolute_path("~oracle/bin")       #=> "<relative_path>/~oracle/bin"
  */
 
-VALUE
-rb_file_s_absolute_path(int argc, const VALUE *argv)
+static VALUE
+s_absolute_path(int c, const VALUE * v, VALUE _)
 {
-    rb_check_arity(argc, 1, 2);
-    return rb_file_absolute_path(argv[0], argc > 1 ? argv[1] : Qnil);
+    return rb_file_s_absolute_path(c, v);
 }
 
 enum rb_realpath_mode {
@@ -4556,7 +4568,7 @@ ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encodin
  */
 
 static VALUE
-rb_file_s_basename(int argc, VALUE *argv)
+rb_file_s_basename(int argc, VALUE *argv, VALUE _)
 {
     VALUE fname, fext, basename;
     const char *name, *p;
@@ -4800,7 +4812,7 @@ static VALUE
 rb_file_s_split(VALUE klass, VALUE path)
 {
     FilePathStringValue(path);		/* get rid of converting twice */
-    return rb_assoc_new(rb_file_dirname(path), rb_file_s_basename(1,&path));
+    return rb_assoc_new(rb_file_dirname(path), rb_file_s_basename(1,&path,Qundef));
 }
 
 static VALUE
@@ -6032,7 +6044,7 @@ nogvl_mkfifo(void *ptr)
  */
 
 static VALUE
-rb_file_s_mkfifo(int argc, VALUE *argv)
+rb_file_s_mkfifo(int argc, VALUE *argv, VALUE _)
 {
     VALUE path;
     struct mkfifo_arg ma;
@@ -6490,8 +6502,8 @@ Init_File(void)
     rb_define_singleton_method(rb_cFile, "umask", rb_file_s_umask, -1);
     rb_define_singleton_method(rb_cFile, "truncate", rb_file_s_truncate, 2);
     rb_define_singleton_method(rb_cFile, "mkfifo", rb_file_s_mkfifo, -1);
-    rb_define_singleton_method(rb_cFile, "expand_path", rb_file_s_expand_path, -1);
-    rb_define_singleton_method(rb_cFile, "absolute_path", rb_file_s_absolute_path, -1);
+    rb_define_singleton_method(rb_cFile, "expand_path", s_expand_path, -1);
+    rb_define_singleton_method(rb_cFile, "absolute_path", s_absolute_path, -1);
     rb_define_singleton_method(rb_cFile, "realpath", rb_file_s_realpath, -1);
     rb_define_singleton_method(rb_cFile, "realdirpath", rb_file_s_realdirpath, -1);
     rb_define_singleton_method(rb_cFile, "basename", rb_file_s_basename, -1);

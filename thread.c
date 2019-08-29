@@ -2494,7 +2494,7 @@ rb_thread_s_kill(VALUE obj, VALUE th)
  */
 
 static VALUE
-rb_thread_exit(void)
+rb_thread_exit(VALUE _)
 {
     rb_thread_t *th = GET_THREAD();
     return rb_thread_kill(th->self);
@@ -2573,6 +2573,17 @@ rb_thread_run(VALUE thread)
 }
 
 
+VALUE
+rb_thread_stop(void)
+{
+    if (rb_thread_alone()) {
+        rb_raise(rb_eThreadError,
+                 "stopping only thread\n\tnote: use sleep to stop forever");
+    }
+    rb_thread_sleep_deadly();
+    return Qnil;
+}
+
 /*
  *  call-seq:
  *     Thread.stop   -> nil
@@ -2588,18 +2599,33 @@ rb_thread_run(VALUE thread)
  *     #=> "abc"
  */
 
-VALUE
-rb_thread_stop(void)
+static VALUE
+thread_stop(VALUE _)
 {
-    if (rb_thread_alone()) {
-	rb_raise(rb_eThreadError,
-		 "stopping only thread\n\tnote: use sleep to stop forever");
-    }
-    rb_thread_sleep_deadly();
-    return Qnil;
+    return rb_thread_stop();
 }
 
 /********************************************************************/
+
+VALUE
+rb_thread_list(void)
+{
+    VALUE ary = rb_ary_new();
+    rb_vm_t *vm = GET_THREAD()->vm;
+    rb_thread_t *th = 0;
+
+    list_for_each(&vm->living_threads, th, vmlt_node) {
+        switch (th->status) {
+          case THREAD_RUNNABLE:
+          case THREAD_STOPPED:
+          case THREAD_STOPPED_FOREVER:
+            rb_ary_push(ary, th->self);
+          default:
+            break;
+        }
+    }
+    return ary;
+}
 
 /*
  *  call-seq:
@@ -2621,24 +2647,10 @@ rb_thread_stop(void)
  *     #<Thread:0x401bdf4c run>
  */
 
-VALUE
-rb_thread_list(void)
+static VALUE
+thread_list(VALUE _)
 {
-    VALUE ary = rb_ary_new();
-    rb_vm_t *vm = GET_THREAD()->vm;
-    rb_thread_t *th = 0;
-
-    list_for_each(&vm->living_threads, th, vmlt_node) {
-	switch (th->status) {
-	  case THREAD_RUNNABLE:
-	  case THREAD_STOPPED:
-	  case THREAD_STOPPED_FOREVER:
-	    rb_ary_push(ary, th->self);
-	  default:
-	    break;
-	}
-    }
-    return ary;
+    return rb_thread_list();
 }
 
 VALUE
@@ -2703,7 +2715,7 @@ rb_thread_s_main(VALUE klass)
  */
 
 static VALUE
-rb_thread_s_abort_exc(void)
+rb_thread_s_abort_exc(VALUE _)
 {
     return GET_THREAD()->vm->thread_abort_on_exception ? Qtrue : Qfalse;
 }
@@ -2833,7 +2845,7 @@ rb_thread_abort_exc_set(VALUE thread, VALUE val)
  */
 
 static VALUE
-rb_thread_s_report_exc(void)
+rb_thread_s_report_exc(VALUE _)
 {
     return GET_THREAD()->vm->thread_report_on_exception ? Qtrue : Qfalse;
 }
@@ -5132,11 +5144,11 @@ Init_Thread(void)
     rb_define_singleton_method(rb_cThread, "fork", thread_start, -2);
     rb_define_singleton_method(rb_cThread, "main", rb_thread_s_main, 0);
     rb_define_singleton_method(rb_cThread, "current", thread_s_current, 0);
-    rb_define_singleton_method(rb_cThread, "stop", rb_thread_stop, 0);
+    rb_define_singleton_method(rb_cThread, "stop", thread_stop, 0);
     rb_define_singleton_method(rb_cThread, "kill", rb_thread_s_kill, 1);
     rb_define_singleton_method(rb_cThread, "exit", rb_thread_exit, 0);
     rb_define_singleton_method(rb_cThread, "pass", thread_s_pass, 0);
-    rb_define_singleton_method(rb_cThread, "list", rb_thread_list, 0);
+    rb_define_singleton_method(rb_cThread, "list", thread_list, 0);
     rb_define_singleton_method(rb_cThread, "abort_on_exception", rb_thread_s_abort_exc, 0);
     rb_define_singleton_method(rb_cThread, "abort_on_exception=", rb_thread_s_abort_exc_set, 1);
     rb_define_singleton_method(rb_cThread, "report_on_exception", rb_thread_s_report_exc, 0);

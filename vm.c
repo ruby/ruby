@@ -2827,7 +2827,7 @@ core_hash_merge_kwd(VALUE hash, VALUE kw)
 
 /* Returns true if JIT is enabled */
 static VALUE
-mjit_enabled_p(void)
+mjit_enabled_p(VALUE _)
 {
     return mjit_enabled ? Qtrue : Qfalse;
 }
@@ -2847,6 +2847,12 @@ mjit_pause_m(int argc, VALUE *argv, RB_UNUSED_VAR(VALUE self))
     }
 
     return mjit_pause(RTEST(wait));
+}
+
+static VALUE
+mjit_resume_m(VALUE _)
+{
+    return mjit_resume();
 }
 
 extern VALUE *rb_gc_stack_start;
@@ -2974,7 +2980,7 @@ Init_VM(void)
     mjit = rb_define_module_under(rb_cRubyVM, "MJIT");
     rb_define_singleton_method(mjit, "enabled?", mjit_enabled_p, 0);
     rb_define_singleton_method(mjit, "pause", mjit_pause_m, -1);
-    rb_define_singleton_method(mjit, "resume", mjit_resume, 0);
+    rb_define_singleton_method(mjit, "resume", mjit_resume_m, 0);
 
     /*
      * Document-class: Thread

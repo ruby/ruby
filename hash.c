@@ -4808,7 +4808,7 @@ rb_f_getenv(VALUE obj, VALUE name)
  * be returned when no block is given.
  */
 static VALUE
-env_fetch(int argc, VALUE *argv)
+env_fetch(int argc, VALUE *argv, VALUE _)
 {
     VALUE key;
     long block_given;
@@ -5138,12 +5138,6 @@ env_aset(VALUE nm, VALUE val)
     return val;
 }
 
-/*
- * call-seq:
- *   ENV.keys -> Array
- *
- * Returns every environment variable name in an Array
- */
 static VALUE
 env_keys(void)
 {
@@ -5161,6 +5155,19 @@ env_keys(void)
     }
     FREE_ENVIRON(environ);
     return ary;
+}
+
+/*
+ * call-seq:
+ *   ENV.keys -> Array
+ *
+ * Returns every environment variable name in an Array
+ */
+
+static VALUE
+env_f_keys(VALUE _)
+{
+    return env_keys();
 }
 
 static VALUE
@@ -5202,12 +5209,6 @@ env_each_key(VALUE ehash)
     return ehash;
 }
 
-/*
- * call-seq:
- *   ENV.values -> Array
- *
- * Returns every environment variable value as an Array
- */
 static VALUE
 env_values(void)
 {
@@ -5225,6 +5226,19 @@ env_values(void)
     }
     FREE_ENVIRON(environ);
     return ary;
+}
+
+/*
+ * call-seq:
+ *   ENV.values -> Array
+ *
+ * Returns every environment variable value as an Array
+ */
+
+static VALUE
+env_f_values(VALUE _)
+{
+    return env_values();
 }
 
 /*
@@ -5354,7 +5368,7 @@ env_delete_if(VALUE ehash)
  * the given names.  See also ENV.select.
  */
 static VALUE
-env_values_at(int argc, VALUE *argv)
+env_values_at(int argc, VALUE *argv, VALUE _)
 {
     VALUE result;
     long i;
@@ -5465,7 +5479,7 @@ env_keep_if(VALUE ehash)
  *     ENV.slice("TERM","HOME")  #=> {"TERM"=>"xterm-256color", "HOME"=>"/Users/rhc"}
  */
 static VALUE
-env_slice(int argc, VALUE *argv)
+env_slice(int argc, VALUE *argv, VALUE _)
 {
     int i;
     VALUE key, value, result;
@@ -5485,12 +5499,6 @@ env_slice(int argc, VALUE *argv)
     return result;
 }
 
-/*
- * call-seq:
- *   ENV.clear
- *
- * Removes every environment variable.
- */
 VALUE
 rb_env_clear(void)
 {
@@ -5510,12 +5518,24 @@ rb_env_clear(void)
 
 /*
  * call-seq:
+ *   ENV.clear
+ *
+ * Removes every environment variable.
+ */
+static VALUE
+env_clear(VALUE _)
+{
+    return rb_env_clear();
+}
+
+/*
+ * call-seq:
  *   ENV.to_s -> "ENV"
  *
  * Returns "ENV"
  */
 static VALUE
-env_to_s(void)
+env_to_s(VALUE _)
 {
     return rb_usascii_str_new2("ENV");
 }
@@ -5527,7 +5547,7 @@ env_to_s(void)
  * Returns the contents of the environment as a String.
  */
 static VALUE
-env_inspect(void)
+env_inspect(VALUE _)
 {
     char **env;
     VALUE str, i;
@@ -5566,7 +5586,7 @@ env_inspect(void)
  *
  */
 static VALUE
-env_to_a(void)
+env_to_a(VALUE _)
 {
     char **env;
     VALUE ary;
@@ -5593,7 +5613,7 @@ env_to_a(void)
  * compatibility with Hash.
  */
 static VALUE
-env_none(void)
+env_none(VALUE _)
 {
     return Qnil;
 }
@@ -5606,7 +5626,7 @@ env_none(void)
  * Returns the number of environment variables.
  */
 static VALUE
-env_size(void)
+env_size(VALUE _)
 {
     int i;
     char **env;
@@ -5625,7 +5645,7 @@ env_size(void)
  * Returns true when there are no environment variables
  */
 static VALUE
-env_empty_p(void)
+env_empty_p(VALUE _)
 {
     char **env;
 
@@ -5782,13 +5802,6 @@ env_index(VALUE dmy, VALUE value)
     return env_key(dmy, value);
 }
 
-/*
- * call-seq:
- *   ENV.to_hash -> hash
- *
- * Creates a hash with a copy of the environment variables.
- *
- */
 static VALUE
 env_to_hash(void)
 {
@@ -5811,6 +5824,20 @@ env_to_hash(void)
 
 /*
  * call-seq:
+ *   ENV.to_hash -> hash
+ *
+ * Creates a hash with a copy of the environment variables.
+ *
+ */
+
+static VALUE
+env_f_to_hash(VALUE _)
+{
+    return env_to_hash();
+}
+
+/*
+ * call-seq:
  *   ENV.to_h                        -> hash
  *   ENV.to_h {|name, value| block } -> hash
  *
@@ -5818,7 +5845,7 @@ env_to_hash(void)
  *
  */
 static VALUE
-env_to_h(void)
+env_to_h(VALUE _)
 {
     VALUE hash = env_to_hash();
     if (rb_block_given_p()) {
@@ -5836,7 +5863,7 @@ env_to_h(void)
  * environment.
  */
 static VALUE
-env_reject(void)
+env_reject(VALUE _)
 {
     return rb_hash_delete_if(env_to_hash());
 }
@@ -5863,7 +5890,7 @@ env_freeze(VALUE self)
  * an Array.  Returns +nil+ if when the environment is empty.
  */
 static VALUE
-env_shift(void)
+env_shift(VALUE _)
 {
     char **env;
     VALUE result = Qnil;
@@ -5890,7 +5917,7 @@ env_shift(void)
  * and values as names.
  */
 static VALUE
-env_invert(void)
+env_invert(VALUE _)
 {
     return rb_hash_invert(env_to_hash());
 }
@@ -6203,7 +6230,7 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "delete_if", env_delete_if, 0);
     rb_define_singleton_method(envtbl, "keep_if", env_keep_if, 0);
     rb_define_singleton_method(envtbl, "slice", env_slice, -1);
-    rb_define_singleton_method(envtbl, "clear", rb_env_clear, 0);
+    rb_define_singleton_method(envtbl, "clear", env_clear, 0);
     rb_define_singleton_method(envtbl, "reject", env_reject, 0);
     rb_define_singleton_method(envtbl, "reject!", env_reject_bang, 0);
     rb_define_singleton_method(envtbl, "select", env_select, 0);
@@ -6225,8 +6252,8 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "size", env_size, 0);
     rb_define_singleton_method(envtbl, "length", env_size, 0);
     rb_define_singleton_method(envtbl, "empty?", env_empty_p, 0);
-    rb_define_singleton_method(envtbl, "keys", env_keys, 0);
-    rb_define_singleton_method(envtbl, "values", env_values, 0);
+    rb_define_singleton_method(envtbl, "keys", env_f_keys, 0);
+    rb_define_singleton_method(envtbl, "values", env_f_values, 0);
     rb_define_singleton_method(envtbl, "values_at", env_values_at, -1);
     rb_define_singleton_method(envtbl, "include?", env_has_key, 1);
     rb_define_singleton_method(envtbl, "member?", env_has_key, 1);
@@ -6234,7 +6261,7 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "has_value?", env_has_value, 1);
     rb_define_singleton_method(envtbl, "key?", env_has_key, 1);
     rb_define_singleton_method(envtbl, "value?", env_has_value, 1);
-    rb_define_singleton_method(envtbl, "to_hash", env_to_hash, 0);
+    rb_define_singleton_method(envtbl, "to_hash", env_f_to_hash, 0);
     rb_define_singleton_method(envtbl, "to_h", env_to_h, 0);
     rb_define_singleton_method(envtbl, "assoc", env_assoc, 1);
     rb_define_singleton_method(envtbl, "rassoc", env_rassoc, 1);
