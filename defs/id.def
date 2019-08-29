@@ -57,6 +57,19 @@ firstline, predefined = __LINE__+1, %[\
   nil
 
   _                                                     UScore
+
+  # MUST be successive
+  _0  NUMPARAM_0
+  _1  NUMPARAM_1
+  _2  NUMPARAM_2
+  _3  NUMPARAM_3
+  _4  NUMPARAM_4
+  _5  NUMPARAM_5
+  _6  NUMPARAM_6
+  _7  NUMPARAM_7
+  _8  NUMPARAM_8
+  _9  NUMPARAM_9
+
   "/*NULL*/"                                            NULL
   empty?
   eql?

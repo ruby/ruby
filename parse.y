@@ -11652,6 +11652,10 @@ arg_var(struct parser_params *p, ID id)
 static void
 local_var(struct parser_params *p, ID id)
 {
+    if (id >= idNUMPARAM_0 && id <= idNUMPARAM_9) {
+	rb_warn1("`_%d' is used as numbered parameter",
+		 WARN_I((int)(id - idNUMPARAM_0)));
+    }
     vtable_add(p->lvtbl->vars, id);
     if (p->lvtbl->used) {
 	vtable_add(p->lvtbl->used, (ID)p->ruby_sourceline);
