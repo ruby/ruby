@@ -69,6 +69,10 @@ class Reline::LineEditor
       Reline::IOGate.move_cursor_column(0)
       @old_trap.call if @old_trap.respond_to?(:call) # can also be string, ex: "DEFAULT"
     }
+    Reline::IOGate.set_winch_handler do
+      @rest_height = (Reline::IOGate.get_screen_size.first - 1) - Reline::IOGate.cursor_pos.y
+      @screen_size = Reline::IOGate.get_screen_size
+    end
   end
 
   def finalize
