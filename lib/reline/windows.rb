@@ -51,7 +51,9 @@ class Reline::Windows
 
   VK_MENU = 0x12
   VK_SHIFT = 0x10
+  STD_INPUT_HANDLE = -10
   STD_OUTPUT_HANDLE = -11
+  WINDOW_BUFFER_SIZE_EVENT = 0x04
   @@getwch = Win32API.new('msvcrt', '_getwch', [], 'I')
   @@kbhit = Win32API.new('msvcrt', '_kbhit', [], 'I')
   @@GetKeyState = Win32API.new('user32', 'GetKeyState', ['L'], 'L')
@@ -61,6 +63,9 @@ class Reline::Windows
   @@FillConsoleOutputCharacter = Win32API.new('kernel32', 'FillConsoleOutputCharacter', ['L', 'L', 'L', 'L', 'P'], 'L')
   @@ScrollConsoleScreenBuffer = Win32API.new('kernel32', 'ScrollConsoleScreenBuffer', ['L', 'P', 'P', 'L', 'P'], 'L')
   @@hConsoleHandle = @@GetStdHandle.call(STD_OUTPUT_HANDLE)
+  @@hConsoleInputHandle = @@GetStdHandle.call(STD_INPUT_HANDLE)
+  @@GetNumberOfConsoleInputEvents = Win32API.new('kernel32', 'GetNumberOfConsoleInputEvents', ['L', 'P'], 'L')
+  @@ReadConsoleInput = Win32API.new('kernel32', 'ReadConsoleInput', ['L', 'P', 'L', 'P'], 'L')
   @@buf = []
 
   def self.getwch
@@ -81,6 +86,17 @@ class Reline::Windows
   end
 
   def self.getc
+    num_of_events = 0.chr * 8
+    while @@GetNumberOfConsoleInputEvents.(@@hConsoleInputHandle, num_of_events) != 0 and num_of_events.unpack('L').first > 0
+      input_record = 0.chr * 18
+      read_event = 0.chr * 4
+      if @@ReadConsoleInput.(@@hConsoleInputHandle, input_record, 1, read_event) != 0
+        event = input_record[0, 2].unpack('s*').first
+        if event == WINDOW_BUFFER_SIZE_EVENT
+          @@winch_handler.()
+        end
+      end
+    end
     unless @@buf.empty?
       return @@buf.shift
     end
@@ -182,6 +198,7 @@ class Reline::Windows
   end
 
   def self.set_winch_handler(&handler)
+    @@winch_handler = handler
   end
 
   def self.prep
