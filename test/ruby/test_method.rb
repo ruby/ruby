@@ -1120,16 +1120,20 @@ class TestMethod < Test::Unit::TestCase
 
   def test_method_reference_operator
     m = 1.:succ
+    assert_predicate(m, :frozen?)
     assert_equal(1.method(:succ), m)
     assert_equal(2, m.())
     m = 1.:+
+    assert_predicate(m, :frozen?)
     assert_equal(1.method(:+), m)
     assert_equal(42, m.(41))
     m = 1.:-@
+    assert_predicate(m, :frozen?)
     assert_equal(1.method(:-@), m)
     assert_equal(-1, m.())
     o = Object.new
     def o.foo; 42; end
+    assert_predicate(o.:foo, :frozen?)
     m = o.method(:foo)
     assert_equal(m, o.:foo)
     def o.method(m); nil; end
