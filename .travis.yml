@@ -485,7 +485,7 @@ before_script:
         # Debugging "Permission defined" failure on darwin like https://travis-ci.org/ruby/ruby/jobs/508683759
         set -x
         date
-        ./miniruby -e 'ARGV.map{[@1,File.stat(@1)]}.sort_by{@2.mtime}.each{p mtime:@2.mtime.to_f, ctime:@2.ctime.to_f, path:@1}' .ext/.timestamp/.RUBYCOMMONDIR*time .ext/common/bigdecimal/*.rb ../ext/bigdecimal/lib/bigdecimal/*.rb . .. .ext .ext/common .ext/common/bigdecimal ext/bigdecimal ../ext ../ext/bigdecimal ../ext/bigdecimal/lib ../ext/bigdecimal/lib/bigdecimal
+        ./miniruby -e 'ARGV.map{|path|[path,File.stat(path)]}.sort_by{|path,st|st.mtime}.each{|path,st|p mtime:st.mtime.to_f, ctime:st.ctime.to_f, path:path}' .ext/.timestamp/.RUBYCOMMONDIR*time .ext/common/bigdecimal/*.rb ../ext/bigdecimal/lib/bigdecimal/*.rb . .. .ext .ext/common .ext/common/bigdecimal ext/bigdecimal ../ext ../ext/bigdecimal ../ext/bigdecimal/lib ../ext/bigdecimal/lib/bigdecimal
         make COPY='cp -f' install
       else
         exit 1
