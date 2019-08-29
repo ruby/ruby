@@ -1141,9 +1141,21 @@ rb_obj_tap(VALUE obj)
  */
 
 static VALUE
-rb_obj_dummy(void)
+rb_obj_dummy()
 {
     return Qnil;
+}
+
+static VALUE
+rb_obj_dummy0(VALUE _)
+{
+    return rb_obj_dummy();
+}
+
+static VALUE
+rb_obj_dummy1(VALUE _x, VALUE _y)
+{
+    return rb_obj_dummy();
 }
 
 /**
@@ -4486,16 +4498,16 @@ InitVM_Object(void)
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
 
-    rb_define_private_method(rb_cBasicObject, "initialize", rb_obj_dummy, 0);
+    rb_define_private_method(rb_cBasicObject, "initialize", rb_obj_dummy0, 0);
     rb_define_alloc_func(rb_cBasicObject, rb_class_allocate_instance);
     rb_define_method(rb_cBasicObject, "==", rb_obj_equal, 1);
     rb_define_method(rb_cBasicObject, "equal?", rb_obj_equal, 1);
     rb_define_method(rb_cBasicObject, "!", rb_obj_not, 0);
     rb_define_method(rb_cBasicObject, "!=", rb_obj_not_equal, 1);
 
-    rb_define_private_method(rb_cBasicObject, "singleton_method_added", rb_obj_dummy, 1);
-    rb_define_private_method(rb_cBasicObject, "singleton_method_removed", rb_obj_dummy, 1);
-    rb_define_private_method(rb_cBasicObject, "singleton_method_undefined", rb_obj_dummy, 1);
+    rb_define_private_method(rb_cBasicObject, "singleton_method_added", rb_obj_dummy1, 1);
+    rb_define_private_method(rb_cBasicObject, "singleton_method_removed", rb_obj_dummy1, 1);
+    rb_define_private_method(rb_cBasicObject, "singleton_method_undefined", rb_obj_dummy1, 1);
 
     /* Document-module: Kernel
      *
@@ -4511,13 +4523,13 @@ InitVM_Object(void)
      */
     rb_mKernel = rb_define_module("Kernel");
     rb_include_module(rb_cObject, rb_mKernel);
-    rb_define_private_method(rb_cClass, "inherited", rb_obj_dummy, 1);
-    rb_define_private_method(rb_cModule, "included", rb_obj_dummy, 1);
-    rb_define_private_method(rb_cModule, "extended", rb_obj_dummy, 1);
-    rb_define_private_method(rb_cModule, "prepended", rb_obj_dummy, 1);
-    rb_define_private_method(rb_cModule, "method_added", rb_obj_dummy, 1);
-    rb_define_private_method(rb_cModule, "method_removed", rb_obj_dummy, 1);
-    rb_define_private_method(rb_cModule, "method_undefined", rb_obj_dummy, 1);
+    rb_define_private_method(rb_cClass, "inherited", rb_obj_dummy1, 1);
+    rb_define_private_method(rb_cModule, "included", rb_obj_dummy1, 1);
+    rb_define_private_method(rb_cModule, "extended", rb_obj_dummy1, 1);
+    rb_define_private_method(rb_cModule, "prepended", rb_obj_dummy1, 1);
+    rb_define_private_method(rb_cModule, "method_added", rb_obj_dummy1, 1);
+    rb_define_private_method(rb_cModule, "method_removed", rb_obj_dummy1, 1);
+    rb_define_private_method(rb_cModule, "method_undefined", rb_obj_dummy1, 1);
 
     rb_define_method(rb_mKernel, "nil?", rb_false, 0);
     rb_define_method(rb_mKernel, "===", rb_equal, 1);
