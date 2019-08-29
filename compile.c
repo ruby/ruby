@@ -10173,7 +10173,6 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_object_list(dump, output_obj_list, &dump_body.local_object_list_offset, &dump_body.local_object_list_size);
 #endif
 
-    IBF_W_ALIGN(VALUE); /* to avoid "unaligned iseq offset" error */
     ibf_offset_t offset = ibf_dump_pos(dump);
 
     /* dump the constant body */
@@ -11285,10 +11284,6 @@ rb_ibf_load_iseq_complete(rb_iseq_t *iseq)
 	    iseq->aux.loader.index, offset,
 	    load->header->size);
 #endif
-    if (offset % sizeof(VALUE)) {
-        rb_raise(rb_eArgError, "unaligned iseq offset: %#x @ %u",
-                 offset, iseq->aux.loader.index);
-    }
     ibf_load_iseq_each(load, iseq, offset);
     ISEQ_COMPILE_DATA_CLEAR(iseq);
     FL_UNSET(iseq, ISEQ_NOT_LOADED_YET);
