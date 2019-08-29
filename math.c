@@ -982,7 +982,7 @@ InitVM_Math(void)
     rb_define_const(rb_mMath, "PI", DBL2NUM(M_PI));
 
 #ifdef M_E
-    /*  Definition of the mathematical constant E (e) as a Float number. */
+    /*  Definition of the mathematical constant for Euler's number E (e) as a Float number. */
     rb_define_const(rb_mMath, "E", DBL2NUM(M_E));
 #else
     rb_define_const(rb_mMath, "E", DBL2NUM(exp(1.0)));
