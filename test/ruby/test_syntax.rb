@@ -1388,15 +1388,6 @@ eom
     assert_syntax_error('@1', /outside block/)
   end
 
-  def test_pipeline_operator
-    assert_valid_syntax('x |> y')
-    x = nil
-    assert_equal("121", eval('x = 12 |> pow(2) |> to_s 11'))
-    assert_equal(12, x)
-    assert_equal([2, 4, 6], eval("1.. |> take 3\n|> map do @1 * 2 end"))
-    assert_syntax_error('a|>-b', /unexpected '-'/)
-  end
-
   def test_value_expr_in_condition
     mesg = /void value expression/
     assert_syntax_error("tap {a = (true ? next : break)}", mesg)

@@ -1009,7 +1009,7 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %type <node> literal numeric simple_numeric ssym dsym symbol cpath
 %type <node> top_compstmt top_stmts top_stmt begin_block
 %type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
-%type <node> expr_value expr_value_do arg_value primary_value fcall rel_expr pipeline
+%type <node> expr_value expr_value_do arg_value primary_value fcall rel_expr
 %type <node> if_tail opt_else case_body case_args cases opt_rescue exc_list exc_var opt_ensure
 %type <node> args call_args opt_call_args
 %type <node> paren_args opt_paren_args args_tail opt_args_tail block_args_tail opt_block_args_tail
@@ -1067,7 +1067,6 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %token <id> tANDDOT	RUBY_TOKEN(ANDDOT) "&."
 %token <id> tCOLON2	RUBY_TOKEN(COLON2) "::"
 %token <id> tMETHREF	RUBY_TOKEN(METHREF) ".:"
-%token tPIPE		RUBY_TOKEN(PIPE) "|>"
 %token tCOLON3		":: at EXPR_BEG"
 %token <id> tOP_ASGN	"operator-assignment" /* +=, -=  etc. */
 %token tASSOC		"=>"
@@ -1103,7 +1102,6 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %nonassoc  modifier_if modifier_unless modifier_while modifier_until
 %left  keyword_or keyword_and
 %right keyword_not
-%left  tPIPE
 %nonassoc keyword_defined
 %right '=' tOP_ASGN
 %left modifier_rescue
@@ -1512,37 +1510,6 @@ expr		: command_call
 			$$ = call_uni_op(p, method_cond(p, $2, &@2), '!', &@1, &@$);
 		    }
 		| arg
-		| pipeline
-		;
-
-pipeline	: expr tPIPE operation opt_paren_args
-		    {
-		    /*%%%*/
-			$$ = new_command_qcall(p, ID2VAL(idPIPE), $1, $3, $4, Qnull, &@3, &@$);
-		    /*% %*/
-		    /*% ripper: command_call!($1, ID2VAL(idPIPE), $3, $4) %*/
-		    }
-		| expr tPIPE operation opt_paren_args brace_block
-		    {
-		    /*%%%*/
-			$$ = new_command_qcall(p, ID2VAL(idPIPE), $1, $3, $4, $5, &@3, &@$);
-		    /*% %*/
-		    /*% ripper: method_add_block!(command_call!($1, ID2VAL(idPIPE), $3, $4), $5) %*/
-		    }
-		| expr tPIPE operation command_args
-		    {
-		    /*%%%*/
-			$$ = new_command_qcall(p, ID2VAL(idPIPE), $1, $3, $4, Qnull, &@3, &@$);
-		    /*% %*/
-		    /*% ripper: command_call!($1, ID2VAL(idPIPE), $3, $4) %*/
-		    }
-		| expr tPIPE operation command_args do_block
-		    {
-		    /*%%%*/
-			$$ = new_command_qcall(p, ID2VAL(idPIPE), $1, $3, $4, $5, &@3, &@$);
-		    /*% %*/
-		    /*% ripper: method_add_block!(command_call!($1, ID2VAL(idPIPE), $3, $4), $5) %*/
-		    }
 		;
 
 expr_value	: expr
@@ -8710,11 +8677,10 @@ parser_yylex(struct parser_params *p)
 	      case '\13': /* '\v' */
 		space_seen = 1;
 		break;
-	      case '|':
 	      case '&':
 	      case '.': {
 		dispatch_delayed_token(p, tIGNORED_NL);
-		if (c == '|' ? peek(p, '>') : (peek(p, '.') == (c == '&'))) {
+		if (peek(p, '.') == (c == '&')) {
 		    pushback(p, c);
 		    dispatch_scan_event(p, tSP);
 		    goto retry;
@@ -8988,10 +8954,6 @@ parser_yylex(struct parser_params *p)
             set_yylval_id('|');
 	    SET_LEX_STATE(EXPR_BEG);
 	    return tOP_ASGN;
-	}
-	if (c == '>') {
-	    SET_LEX_STATE(EXPR_DOT);
-	    return tPIPE;
 	}
 	SET_LEX_STATE(IS_AFTER_OPERATOR() ? EXPR_ARG : EXPR_BEG|EXPR_LABEL);
 	pushback(p, c);
