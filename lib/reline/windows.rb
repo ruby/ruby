@@ -131,7 +131,7 @@ class Reline::Windows
     csbi = 0.chr * 22
     @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi)
     x = csbi[4, 2].unpack('s*').first
-    y = csbi[6, 4].unpack('s*').first
+    y = csbi[6, 2].unpack('s*').first
     Reline::CursorPos.new(x, y)
   end
 
