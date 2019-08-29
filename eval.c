@@ -717,6 +717,28 @@ extract_raise_opts(int argc, const VALUE *argv, VALUE *opts)
     return argc;
 }
 
+VALUE
+rb_f_raise(int argc, VALUE *argv)
+{
+    VALUE err;
+    VALUE opts[raise_max_opt], *const cause = &opts[raise_opt_cause];
+
+    argc = extract_raise_opts(argc, argv, opts);
+    if (argc == 0) {
+        if (*cause != Qundef) {
+            rb_raise(rb_eArgError, "only cause is given with no arguments");
+        }
+        err = get_errinfo();
+        if (!NIL_P(err)) {
+            argc = 1;
+            argv = &err;
+        }
+    }
+    rb_raise_jump(rb_make_exception(argc, argv), *cause);
+
+    UNREACHABLE_RETURN(Qnil);
+}
+
 /*
  *  call-seq:
  *     raise
@@ -745,28 +767,6 @@ extract_raise_opts(int argc, const VALUE *argv, VALUE *opts)
  *     raise "Failed to create socket"
  *     raise ArgumentError, "No parameters", caller
  */
-
-VALUE
-rb_f_raise(int argc, VALUE *argv)
-{
-    VALUE err;
-    VALUE opts[raise_max_opt], *const cause = &opts[raise_opt_cause];
-
-    argc = extract_raise_opts(argc, argv, opts);
-    if (argc == 0) {
-	if (*cause != Qundef) {
-	    rb_raise(rb_eArgError, "only cause is given with no arguments");
-	}
-	err = get_errinfo();
-	if (!NIL_P(err)) {
-	    argc = 1;
-	    argv = &err;
-	}
-    }
-    rb_raise_jump(rb_make_exception(argc, argv), *cause);
-
-    UNREACHABLE_RETURN(Qnil);
-}
 
 static VALUE
 f_raise(int c, VALUE *v, VALUE _)
@@ -1944,17 +1944,59 @@ f_current_dirname(VALUE _)
     return base;
 }
 
+/*
+ *  call-seq:
+ *     global_variables    -> array
+ *
+ *  Returns an array of the names of global variables.
+ *
+ *     global_variables.grep /std/   #=> [:$stdin, :$stdout, :$stderr]
+ */
+
 static VALUE
 f_global_variables(VALUE _)
 {
     return rb_f_global_variables();
 }
 
+/*
+ *  call-seq:
+ *     trace_var(symbol, cmd )             -> nil
+ *     trace_var(symbol) {|val| block }    -> nil
+ *
+ *  Controls tracing of assignments to global variables. The parameter
+ *  +symbol+ identifies the variable (as either a string name or a
+ *  symbol identifier). _cmd_ (which may be a string or a
+ *  +Proc+ object) or block is executed whenever the variable
+ *  is assigned. The block or +Proc+ object receives the
+ *  variable's new value as a parameter. Also see
+ *  Kernel::untrace_var.
+ *
+ *     trace_var :$_, proc {|v| puts "$_ is now '#{v}'" }
+ *     $_ = "hello"
+ *     $_ = ' there'
+ *
+ *  <em>produces:</em>
+ *
+ *     $_ is now 'hello'
+ *     $_ is now ' there'
+ */
+
 static VALUE
 f_trace_var(int c, const VALUE *a, VALUE _)
 {
     return rb_f_trace_var(c, a);
 }
+
+/*
+ *  call-seq:
+ *     untrace_var(symbol [, cmd] )   -> array or nil
+ *
+ *  Removes tracing for the specified command on the given global
+ *  variable and returns +nil+. If no command is specified,
+ *  removes all tracing for that variable and returns an array
+ *  containing the commands actually removed.
+ */
 
 static VALUE
 f_untrace_var(int c, const VALUE *a, VALUE _)

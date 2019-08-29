@@ -419,6 +419,12 @@ parent_redirect_close(int fd)
  * Module to handle processes.
  */
 
+static VALUE
+get_pid(void)
+{
+    return PIDT2NUM(getpid());
+}
+
 /*
  *  call-seq:
  *     Process.pid   -> integer
@@ -430,17 +436,16 @@ parent_redirect_close(int fd)
  */
 
 static VALUE
-get_pid(void)
-{
-    return PIDT2NUM(getpid());
-}
-
-static VALUE
 proc_get_pid(VALUE _)
 {
     return get_pid();
 }
 
+static VALUE
+get_ppid(void)
+{
+    return PIDT2NUM(getppid());
+}
 
 /*
  *  call-seq:
@@ -457,12 +462,6 @@ proc_get_pid(VALUE _)
  *     I am 27417
  *     Dad is 27417
  */
-
-static VALUE
-get_ppid(void)
-{
-    return PIDT2NUM(getppid());
-}
 
 static VALUE
 proc_get_ppid(VALUE _)
@@ -1230,6 +1229,31 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
     return w.ret;
 }
 
+static VALUE
+proc_wait(int argc, VALUE *argv)
+{
+    rb_pid_t pid;
+    int flags, status;
+
+    flags = 0;
+    if (rb_check_arity(argc, 0, 2) == 0) {
+        pid = -1;
+    }
+    else {
+        VALUE vflags;
+        pid = NUM2PIDT(argv[0]);
+        if (argc == 2 && !NIL_P(vflags = argv[1])) {
+            flags = NUM2UINT(vflags);
+        }
+    }
+    if ((pid = rb_waitpid(pid, &status, flags)) < 0)
+        rb_sys_fail(0);
+    if (pid == 0) {
+        rb_last_status_clear();
+        return Qnil;
+    }
+    return PIDT2NUM(pid);
+}
 
 /* [MG]:FIXME: I wasn't sure how this should be done, since ::wait()
    has historically been documented as if it didn't take any arguments
@@ -1288,32 +1312,6 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
  *     waitpid(pid, 0)                  #=> 27440
  *     Time.now                         #=> 2008-03-08 19:56:19 +0900
  */
-
-static VALUE
-proc_wait(int argc, VALUE *argv)
-{
-    rb_pid_t pid;
-    int flags, status;
-
-    flags = 0;
-    if (rb_check_arity(argc, 0, 2) == 0) {
-	pid = -1;
-    }
-    else {
-	VALUE vflags;
-	pid = NUM2PIDT(argv[0]);
-	if (argc == 2 && !NIL_P(vflags = argv[1])) {
-	    flags = NUM2UINT(vflags);
-	}
-    }
-    if ((pid = rb_waitpid(pid, &status, flags)) < 0)
-	rb_sys_fail(0);
-    if (pid == 0) {
-	rb_last_status_clear();
-	return Qnil;
-    }
-    return PIDT2NUM(pid);
-}
 
 static VALUE
 proc_m_wait(int c, VALUE *v, VALUE _)
@@ -2883,6 +2881,31 @@ rb_execarg_fail(VALUE execarg_obj, int err, const char *errmsg)
 }
 #endif
 
+VALUE
+rb_f_exec(int argc, const VALUE *argv)
+{
+    VALUE execarg_obj, fail_str;
+    struct rb_execarg *eargp;
+#define CHILD_ERRMSG_BUFLEN 80
+    char errmsg[CHILD_ERRMSG_BUFLEN] = { '\0' };
+    int err;
+
+    execarg_obj = rb_execarg_new(argc, argv, TRUE, FALSE);
+    eargp = rb_execarg_get(execarg_obj);
+    if (mjit_enabled) mjit_finish(false); // avoid leaking resources, and do not leave files. XXX: JIT-ed handle can leak after exec error is rescued.
+    before_exec(); /* stop timer thread before redirects */
+    rb_execarg_parent_start(execarg_obj);
+    fail_str = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
+
+    err = exec_async_signal_safe(eargp, errmsg, sizeof(errmsg));
+    after_exec(); /* restart timer thread */
+
+    rb_exec_fail(eargp, err, errmsg);
+    RB_GC_GUARD(execarg_obj);
+    rb_syserr_fail_str(err, fail_str);
+    UNREACHABLE_RETURN(Qnil);
+}
+
 /*
  *  call-seq:
  *     exec([env,] command... [,options])
@@ -2955,31 +2978,6 @@ rb_execarg_fail(VALUE execarg_obj, int err, const char *errmsg)
  *     exec "echo", "*"    # echoes an asterisk
  *     # never get here
  */
-
-VALUE
-rb_f_exec(int argc, const VALUE *argv)
-{
-    VALUE execarg_obj, fail_str;
-    struct rb_execarg *eargp;
-#define CHILD_ERRMSG_BUFLEN 80
-    char errmsg[CHILD_ERRMSG_BUFLEN] = { '\0' };
-    int err;
-
-    execarg_obj = rb_execarg_new(argc, argv, TRUE, FALSE);
-    eargp = rb_execarg_get(execarg_obj);
-    if (mjit_enabled) mjit_finish(false); // avoid leaking resources, and do not leave files. XXX: JIT-ed handle can leak after exec error is rescued.
-    before_exec(); /* stop timer thread before redirects */
-    rb_execarg_parent_start(execarg_obj);
-    fail_str = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
-
-    err = exec_async_signal_safe(eargp, errmsg, sizeof(errmsg));
-    after_exec(); /* restart timer thread */
-
-    rb_exec_fail(eargp, err, errmsg);
-    RB_GC_GUARD(execarg_obj);
-    rb_syserr_fail_str(err, fail_str);
-    UNREACHABLE_RETURN(Qnil);
-}
 
 static VALUE
 f_exec(int c, const VALUE *a, VALUE _)
@@ -4204,6 +4202,21 @@ rb_exit(int status)
     ruby_stop(status);
 }
 
+VALUE
+rb_f_exit(int argc, const VALUE *argv)
+{
+    int istatus;
+
+    if (rb_check_arity(argc, 0, 1) == 1) {
+        istatus = exit_status_code(argv[0]);
+    }
+    else {
+        istatus = EXIT_SUCCESS;
+    }
+    rb_exit(istatus);
+
+    UNREACHABLE_RETURN(Qnil);
+}
 
 /*
  *  call-seq:
@@ -4245,22 +4258,6 @@ rb_exit(int status)
  *     at_exit function
  *     in finalizer
  */
-
-VALUE
-rb_f_exit(int argc, const VALUE *argv)
-{
-    int istatus;
-
-    if (rb_check_arity(argc, 0, 1) == 1) {
-	istatus = exit_status_code(argv[0]);
-    }
-    else {
-	istatus = EXIT_SUCCESS;
-    }
-    rb_exit(istatus);
-
-    UNREACHABLE_RETURN(Qnil);
-}
 
 static VALUE
 f_exit(int c, const VALUE *a, VALUE _)
@@ -8084,6 +8081,42 @@ get_PROCESS_ID(ID _x, VALUE *_y)
 {
     return get_pid();
 }
+
+/*
+ *  call-seq:
+ *     Process.kill(signal, pid, ...)    -> integer
+ *
+ *  Sends the given signal to the specified process id(s) if _pid_ is positive.
+ *  If _pid_ is zero, _signal_ is sent to all processes whose group ID is equal
+ *  to the group ID of the process. If _pid_ is negative, results are dependent
+ *  on the operating system. _signal_ may be an integer signal number or
+ *  a POSIX signal name (either with or without a +SIG+ prefix). If _signal_ is
+ *  negative (or starts with a minus sign), kills process groups instead of
+ *  processes. Not all signals are available on all platforms.
+ *  The keys and values of Signal.list are known signal names and numbers,
+ *  respectively.
+ *
+ *     pid = fork do
+ *        Signal.trap("HUP") { puts "Ouch!"; exit }
+ *        # ... do some work ...
+ *     end
+ *     # ...
+ *     Process.kill("HUP", pid)
+ *     Process.wait
+ *
+ *  <em>produces:</em>
+ *
+ *     Ouch!
+ *
+ *  If _signal_ is an integer but wrong for signal, Errno::EINVAL or
+ *  RangeError will be raised.  Otherwise unless _signal_ is a String
+ *  or a Symbol, and a known signal name, ArgumentError will be
+ *  raised.
+ *
+ *  Also, Errno::ESRCH or RangeError for invalid _pid_, Errno::EPERM
+ *  when failed because of no privilege, will be raised.  In these
+ *  cases, signals may have been sent to preceding processes.
+ */
 
 static VALUE
 proc_rb_f_kill(int c, const VALUE *v, VALUE _)
