@@ -1116,6 +1116,7 @@ rb_node_init(NODE *n, enum node_type type, VALUE a0, VALUE a1, VALUE a2)
 
 typedef struct node_buffer_elem_struct {
     struct node_buffer_elem_struct *next;
+    long len;
     NODE buf[FLEX_ARY_LEN];
 } node_buffer_elem_t;
 
@@ -1133,6 +1134,7 @@ rb_node_buffer_new(void)
     nb->idx = 0;
     nb->len = NODE_BUF_DEFAULT_LEN;
     nb->head = nb->last = (node_buffer_elem_t*) &nb[1];
+    nb->head->len = nb->len;
     nb->head->next = NULL;
     nb->mark_ary = rb_ary_tmp_new(0);
     return nb;
@@ -1159,6 +1161,7 @@ rb_ast_newnode(rb_ast_t *ast)
 	long n = nb->len * 2;
 	node_buffer_elem_t *nbe;
 	nbe = xmalloc(offsetof(node_buffer_elem_t, buf) + n * sizeof(NODE));
+        nbe->len = n;
 	nb->idx = 0;
 	nb->len = n;
 	nbe->next = nb->head;
@@ -1185,11 +1188,58 @@ rb_ast_new(void)
     return ast;
 }
 
+typedef void node_itr_t(void *ctx, NODE * node);
+
+static void
+iterate_buffer_elements(node_buffer_elem_t *nbe, long len, node_itr_t *func, void *ctx)
+{
+    long cursor;
+    for (cursor = 0; cursor < len; cursor++) {
+        func(ctx, &nbe->buf[cursor]);
+    }
+}
+
+static void
+iterate_node_values(node_buffer_t *nb, node_itr_t * func, void *ctx)
+{
+    node_buffer_elem_t *nbe = nb->head;
+
+    /* iterate over the head first because it's not full */
+    iterate_buffer_elements(nbe, nb->idx, func, ctx);
+
+    nbe = nbe->next;
+    while (nbe) {
+        iterate_buffer_elements(nbe, nbe->len, func, ctx);
+        nbe = nbe->next;
+    }
+}
+
+static void
+mark_ast_value(void *ctx, NODE * node)
+{
+    switch (nd_type(node)) {
+        case NODE_LIT:
+        case NODE_STR:
+        case NODE_XSTR:
+        case NODE_DSTR:
+        case NODE_DXSTR:
+        case NODE_DREGX:
+        case NODE_DSYM:
+            rb_gc_mark(node->nd_lit);
+            break;
+    }
+}
+
 void
 rb_ast_mark(rb_ast_t *ast)
 {
     if (ast->node_buffer) rb_gc_mark(ast->node_buffer->mark_ary);
     if (ast->body.compile_option) rb_gc_mark(ast->body.compile_option);
+    if (ast->node_buffer) {
+        node_buffer_t *nb = ast->node_buffer;
+
+        iterate_node_values(nb, mark_ast_value, NULL);
+    }
 }
 
 void

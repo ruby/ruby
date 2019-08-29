@@ -299,7 +299,7 @@ struct parser_params {
 };
 
 #define new_tmpbuf() \
-    (rb_imemo_tmpbuf_t *)add_mark_object(p, rb_imemo_tmpbuf_auto_free_pointer(NULL))
+    (rb_imemo_tmpbuf_t *)add_tmpbuf_mark_object(p, rb_imemo_tmpbuf_auto_free_pointer(NULL))
 
 #define intern_cstr(n,l,en) rb_intern3(n,l,en)
 
@@ -337,6 +337,13 @@ rb_discard_node(struct parser_params *p, NODE *n)
 {
     rb_ast_delete_node(p->ast, n);
 }
+
+static inline VALUE
+add_tmpbuf_mark_object(struct parser_params *p, VALUE obj)
+{
+    rb_ast_add_mark_object(p->ast, obj);
+    return obj;
+}
 #endif
 
 static inline VALUE
@@ -347,7 +354,11 @@ add_mark_object(struct parser_params *p, VALUE obj)
 	&& !RB_TYPE_P(obj, T_NODE) /* Ripper jumbles NODE objects and other objects... */
 #endif
     ) {
+#ifdef RIPPER
 	rb_ast_add_mark_object(p->ast, obj);
+#else
+        RB_OBJ_WRITTEN(p->ast, Qundef, obj);
+#endif
     }
     return obj;
 }
