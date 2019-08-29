@@ -2902,6 +2902,24 @@ static VALUE usage_analysis_operand_clear(VALUE self);
 static VALUE usage_analysis_register_clear(VALUE self);
 #endif
 
+static VALUE
+f_raise(int c, VALUE *v, VALUE _)
+{
+    return rb_f_raise(c, v);
+}
+
+static VALUE
+f_proc(VALUE _)
+{
+    return rb_block_proc();
+}
+
+static VALUE
+f_lambda(VALUE _)
+{
+    return rb_block_lambda();
+}
+
 void
 Init_VM(void)
 {
@@ -2940,9 +2958,9 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_set_postexe, m_core_set_postexe, 0);
     rb_define_method_id(klass, id_core_hash_merge_ptr, m_core_hash_merge_ptr, -1);
     rb_define_method_id(klass, id_core_hash_merge_kwd, m_core_hash_merge_kwd, 2);
-    rb_define_method_id(klass, id_core_raise, rb_f_raise, -1);
-    rb_define_method_id(klass, idProc, rb_block_proc, 0);
-    rb_define_method_id(klass, idLambda, rb_block_lambda, 0);
+    rb_define_method_id(klass, id_core_raise, f_raise, -1);
+    rb_define_method_id(klass, idProc, f_proc, 0);
+    rb_define_method_id(klass, idLambda, f_lambda, 0);
     rb_obj_freeze(fcore);
     RBASIC_CLEAR_CLASS(klass);
     rb_obj_freeze(klass);
