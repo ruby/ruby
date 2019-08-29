@@ -138,7 +138,7 @@ struct enumerator {
     int kw_splat;
 };
 
-static VALUE rb_cGenerator, rb_cYielder;
+static VALUE rb_cGenerator, rb_cYielder, rb_cEnumProducer;
 
 struct generator {
     VALUE proc;
@@ -146,6 +146,11 @@ struct generator {
 };
 
 struct yielder {
+    VALUE proc;
+};
+
+struct producer {
+    VALUE init;
     VALUE proc;
 };
 
@@ -2758,6 +2763,150 @@ stop_result(VALUE self)
 }
 
 /*
+ * Producer
+ */
+
+static void
+producer_mark(void *p)
+{
+    struct producer *ptr = p;
+    rb_gc_mark_movable(ptr->init);
+    rb_gc_mark_movable(ptr->proc);
+}
+
+static void
+producer_compact(void *p)
+{
+    struct producer *ptr = p;
+    ptr->init = rb_gc_location(ptr->init);
+    ptr->proc = rb_gc_location(ptr->proc);
+}
+
+#define producer_free RUBY_TYPED_DEFAULT_FREE
+
+static size_t
+producer_memsize(const void *p)
+{
+    return sizeof(struct producer);
+}
+
+static const rb_data_type_t producer_data_type = {
+    "producer",
+    {
+        producer_mark,
+        producer_free,
+        producer_memsize,
+        producer_compact,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+static struct producer *
+producer_ptr(VALUE obj)
+{
+    struct producer *ptr;
+
+    TypedData_Get_Struct(obj, struct producer, &producer_data_type, ptr);
+    if (!ptr || ptr->proc == Qundef) {
+        rb_raise(rb_eArgError, "uninitialized producer");
+    }
+    return ptr;
+}
+
+/* :nodoc: */
+static VALUE
+producer_allocate(VALUE klass)
+{
+    struct producer *ptr;
+    VALUE obj;
+
+    obj = TypedData_Make_Struct(klass, struct producer, &producer_data_type, ptr);
+    ptr->init = Qundef;
+    ptr->proc = Qundef;
+
+    return obj;
+}
+
+static VALUE
+producer_init(VALUE obj, VALUE init, VALUE proc)
+{
+    struct producer *ptr;
+
+    TypedData_Get_Struct(obj, struct producer, &producer_data_type, ptr);
+
+    if (!ptr) {
+        rb_raise(rb_eArgError, "unallocated producer");
+    }
+
+    ptr->init = init;
+    ptr->proc = proc;
+
+    return obj;
+}
+
+static VALUE
+producer_each_stop(VALUE dummy, VALUE exc)
+{
+    return rb_attr_get(exc, id_result);
+}
+
+static VALUE
+producer_each_i(VALUE obj)
+{
+    struct producer *ptr;
+    VALUE init, proc, curr;
+
+    ptr = producer_ptr(obj);
+    init = ptr->init;
+    proc = ptr->proc;
+
+    if (init == Qundef) {
+        curr = Qnil;
+    } else {
+        rb_yield(init);
+        curr = init;
+    }
+
+    for (;;) {
+        curr = rb_funcall(proc, id_call, 1, curr);
+        rb_yield(curr);
+    }
+
+    return Qnil;
+}
+
+/* :nodoc: */
+static VALUE
+producer_each(VALUE obj)
+{
+    rb_need_block();
+
+    return rb_rescue2(producer_each_i, obj, producer_each_stop, (VALUE)0, rb_eStopIteration, (VALUE)0);
+}
+
+static VALUE
+producer_size(VALUE obj, VALUE args, VALUE eobj)
+{
+    return DBL2NUM(HUGE_VAL);
+}
+
+static VALUE
+enumerator_s_produce(int argc, VALUE *argv, VALUE klass)
+{
+    VALUE init, producer;
+
+    if (!rb_block_given_p()) rb_raise(rb_eArgError, "no block given");
+
+    if (rb_scan_args(argc, argv, "01", &init) == 0) {
+        init = Qundef;
+    }
+
+    producer = producer_init(producer_allocate(rb_cEnumProducer), init, rb_block_proc());
+
+    return rb_enumeratorize_with_size(producer, sym_each, 0, 0, producer_size);
+}
+
+/*
  * Document-class: Enumerator::Chain
  *
  * Enumerator::Chain is a subclass of Enumerator, which represents a
@@ -3868,6 +4017,12 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cYielder, "yield", yielder_yield, -2);
     rb_define_method(rb_cYielder, "<<", yielder_yield_push, 1);
     rb_define_method(rb_cYielder, "to_proc", yielder_to_proc, 0);
+
+    /* Producer */
+    rb_cEnumProducer = rb_define_class_under(rb_cEnumerator, "Producer", rb_cObject);
+    rb_define_alloc_func(rb_cEnumProducer, producer_allocate);
+    rb_define_method(rb_cEnumProducer, "each", producer_each, 0);
+    rb_define_singleton_method(rb_cEnumerator, "produce", enumerator_s_produce, -1);
 
     /* Chain */
     rb_cEnumChain = rb_define_class_under(rb_cEnumerator, "Chain", rb_cEnumerator);
