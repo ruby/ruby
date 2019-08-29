@@ -112,8 +112,7 @@ def sync_default_gems(gem)
     rm_rf(%w[lib/rdoc/markdown.kpeg lib/rdoc/markdown/literals.kpeg lib/rdoc/rd/block_parser.ry lib/rdoc/rd/inline_parser.ry])
     `git checkout lib/rdoc/.document`
   when "reline"
-    rm_rf(%w[lib/readline.rb lib/reline* test/reline])
-    cp("#{upstream}/lib/readline.rb", "lib")
+    rm_rf(%w[lib/reline* test/reline])
     cp_r(Dir.glob("#{upstream}/lib/reline*"), "lib")
     cp_r("#{upstream}/test/reline", "test")
     cp_r("#{upstream}/reline.gemspec", "lib/reline")
