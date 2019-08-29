@@ -1561,6 +1561,9 @@ rb_define_protected_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS)
     rb_add_method_cfunc(klass, rb_intern(name), func, argc, METHOD_VISI_PROTECTED);
 }
 
+#ifdef rb_define_private_method
+#undef rb_define_private_method
+#endif
 void
 rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc)
 {

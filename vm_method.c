@@ -1802,7 +1802,7 @@ rb_mod_private_method(int argc, VALUE *argv, VALUE obj)
  */
 
 static VALUE
-top_public(int argc, VALUE *argv)
+top_public(int argc, VALUE *argv, VALUE _)
 {
     return rb_mod_public(argc, argv, rb_cObject);
 }
@@ -1820,7 +1820,7 @@ top_public(int argc, VALUE *argv)
  *  String arguments are converted to symbols.
  */
 static VALUE
-top_private(int argc, VALUE *argv)
+top_private(int argc, VALUE *argv, VALUE _)
 {
     return rb_mod_private(argc, argv, rb_cObject);
 }
