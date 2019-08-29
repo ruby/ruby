@@ -1746,6 +1746,9 @@ rb_singleton_class(VALUE obj)
  * \{
  */
 
+#ifdef rb_define_singleton_method
+#undef rb_define_singleton_method
+#endif
 /*!
  * Defines a singleton method for \a obj.
  * \param obj    an arbitrary object

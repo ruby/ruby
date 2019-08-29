@@ -9108,6 +9108,16 @@ gc_stress_set_m(VALUE self, VALUE flag)
     return flag;
 }
 
+VALUE
+rb_gc_enable(void)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    int old = dont_gc;
+
+    dont_gc = FALSE;
+    return old ? Qtrue : Qfalse;
+}
+
 /*
  *  call-seq:
  *     GC.enable    -> true or false
@@ -9120,15 +9130,10 @@ gc_stress_set_m(VALUE self, VALUE flag)
  *     GC.enable    #=> false
  *
  */
-
-VALUE
-rb_gc_enable(void)
+static VALUE
+gc_enable(VALUE _)
 {
-    rb_objspace_t *objspace = &rb_objspace;
-    int old = dont_gc;
-
-    dont_gc = FALSE;
-    return old ? Qtrue : Qfalse;
+    return rb_gc_enable();
 }
 
 VALUE
@@ -9138,6 +9143,15 @@ rb_gc_disable_no_rest(void)
     int old = dont_gc;
     dont_gc = TRUE;
     return old ? Qtrue : Qfalse;
+}
+
+
+VALUE
+rb_gc_disable(void)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    gc_rest(objspace);
+    return rb_gc_disable_no_rest();
 }
 
 /*
@@ -9152,12 +9166,10 @@ rb_gc_disable_no_rest(void)
  *
  */
 
-VALUE
-rb_gc_disable(void)
+static VALUE
+gc_disable(VALUE _)
 {
-    rb_objspace_t *objspace = &rb_objspace;
-    gc_rest(objspace);
-    return rb_gc_disable_no_rest();
+    return rb_gc_disable();
 }
 
 static int
@@ -10794,7 +10806,7 @@ gc_prof_set_heap_info(rb_objspace_t *objspace)
  */
 
 static VALUE
-gc_profile_clear(void)
+gc_profile_clear(VALUE _)
 {
     rb_objspace_t *objspace = &rb_objspace;
     void *p = objspace->profile.records;
@@ -10859,7 +10871,7 @@ gc_profile_clear(void)
  */
 
 static VALUE
-gc_profile_record_get(void)
+gc_profile_record_get(VALUE _)
 {
     VALUE prof;
     VALUE gc_profile = rb_ary_new();
@@ -11046,7 +11058,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
  */
 
 static VALUE
-gc_profile_result(void)
+gc_profile_result(VALUE _)
 {
     VALUE str = rb_str_buf_new(0);
     gc_profile_dump_on(str, rb_str_buf_append);
@@ -11120,7 +11132,7 @@ gc_profile_enable_get(VALUE self)
  */
 
 static VALUE
-gc_profile_enable(void)
+gc_profile_enable(VALUE _)
 {
     rb_objspace_t *objspace = &rb_objspace;
     objspace->profile.run = TRUE;
@@ -11137,7 +11149,7 @@ gc_profile_enable(void)
  */
 
 static VALUE
-gc_profile_disable(void)
+gc_profile_disable(VALUE _)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
@@ -11669,8 +11681,8 @@ Init_GC(void)
 
     rb_mGC = rb_define_module("GC");
     rb_define_singleton_method(rb_mGC, "start", gc_start_internal, -1);
-    rb_define_singleton_method(rb_mGC, "enable", rb_gc_enable, 0);
-    rb_define_singleton_method(rb_mGC, "disable", rb_gc_disable, 0);
+    rb_define_singleton_method(rb_mGC, "enable", gc_enable, 0);
+    rb_define_singleton_method(rb_mGC, "disable", gc_disable, 0);
     rb_define_singleton_method(rb_mGC, "stress", gc_stress_get, 0);
     rb_define_singleton_method(rb_mGC, "stress=", gc_stress_set_m, 1);
     rb_define_singleton_method(rb_mGC, "count", gc_count, 0);

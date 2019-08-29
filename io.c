@@ -7042,7 +7042,7 @@ rb_io_s_open(int argc, VALUE *argv, VALUE klass)
  */
 
 static VALUE
-rb_io_s_sysopen(int argc, VALUE *argv)
+rb_io_s_sysopen(int argc, VALUE *argv, VALUE _)
 {
     VALUE fname, vmode, vperm;
     VALUE intmode;

@@ -93,14 +93,14 @@ typedef struct {
 static rb_random_t default_rand;
 
 static VALUE rand_init(struct MT *mt, VALUE vseed);
-static VALUE random_seed(void);
+static VALUE random_seed(VALUE);
 
 static rb_random_t *
 rand_start(rb_random_t *r)
 {
     struct MT *mt = &r->mt;
     if (!genrand_initialized(mt)) {
-	r->seed = rand_init(mt, random_seed());
+        r->seed = rand_init(mt, random_seed(Qundef));
     }
     return r;
 }
@@ -261,7 +261,7 @@ random_init(int argc, VALUE *argv, VALUE obj)
 
     if (rb_check_arity(argc, 0, 1) == 0) {
 	rb_check_frozen(obj);
-	vseed = random_seed();
+        vseed = random_seed(obj);
     }
     else {
 	vseed = argv[0];
@@ -498,7 +498,7 @@ make_seed_value(uint32_t *ptr, size_t len)
  *   Random.new_seed  #=> 115032730400174366788466674494640623225
  */
 static VALUE
-random_seed(void)
+random_seed(VALUE _)
 {
     VALUE v;
     uint32_t buf[DEFAULT_SEED_CNT+1];
@@ -691,7 +691,7 @@ rb_f_srand(int argc, VALUE *argv, VALUE obj)
     rb_random_t *r = &default_rand;
 
     if (rb_check_arity(argc, 0, 1) == 0) {
-	seed = random_seed();
+        seed = random_seed(obj);
     }
     else {
 	seed = rb_to_int(argv[0]);
