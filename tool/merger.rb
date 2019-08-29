@@ -18,6 +18,8 @@ module Merger
 end
 
 class << Merger
+  include Merger
+
   def help
     puts <<-HELP
 \e[1msimple backport\e[0m
@@ -139,7 +141,8 @@ class << Merger
         end
       end
       tag_url = "#{REPOS}tags/#{tagname}"
-      unless system('svn', 'info', tag_url, out: IO::NULL, err: IO::NULL)
+      system('svn', 'info', tag_url, out: IO::NULL, err: IO::NULL)
+      if $?.success?
         abort 'specfied tag already exists. check tag name and remove it if you want to force re-tagging'
       end
       execute('svn', 'cp', '-m', "add tag #{tagname}", branch_url, tag_url, interactive: true)
@@ -316,11 +319,11 @@ else
       if resp.code != '200'
         abort "'#{git_uri}' returned status '#{resp.code}':\n#{resp.body}"
       end
-      patch = resp.body
+      patch = resp.body.sub(/^diff --git a\/version\.h b\/version\.h\nindex .*\n--- a\/version\.h\n\+\+\+ b\/version\.h\n@@ .* @@\n(?:[-\+ ].*\n|\n)+/, '')
 
       message = "\n\n#{(patch[/^Subject: (.*)\n\ndiff --git/m, 1] || "Message not found for revision: #{git_rev}\n")}"
       puts '+ git apply'
-      IO.popen(['git', 'apply'], 'w') { |f| f.write(patch) }
+      IO.popen(['git', 'apply'], 'wb') { |f| f.write(patch) }
     else
       default_merge_branch = (%r{^URL: .*/branches/ruby_1_8_} =~ `svn info` ? 'branches/ruby_1_8' : 'trunk')
       svn_src = "#{Merger::REPOS}#{ARGV[1] || default_merge_branch}"

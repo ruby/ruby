@@ -414,42 +414,6 @@ static RETSIGTYPE sighandler(int sig);
 static int signal_ignored(int sig);
 static void signal_enque(int sig);
 
-/*
- *  call-seq:
- *     Process.kill(signal, pid, ...)    -> integer
- *
- *  Sends the given signal to the specified process id(s) if _pid_ is positive.
- *  If _pid_ is zero, _signal_ is sent to all processes whose group ID is equal
- *  to the group ID of the process. If _pid_ is negative, results are dependent
- *  on the operating system. _signal_ may be an integer signal number or
- *  a POSIX signal name (either with or without a +SIG+ prefix). If _signal_ is
- *  negative (or starts with a minus sign), kills process groups instead of
- *  processes. Not all signals are available on all platforms.
- *  The keys and values of Signal.list are known signal names and numbers,
- *  respectively.
- *
- *     pid = fork do
- *        Signal.trap("HUP") { puts "Ouch!"; exit }
- *        # ... do some work ...
- *     end
- *     # ...
- *     Process.kill("HUP", pid)
- *     Process.wait
- *
- *  <em>produces:</em>
- *
- *     Ouch!
- *
- *  If _signal_ is an integer but wrong for signal, Errno::EINVAL or
- *  RangeError will be raised.  Otherwise unless _signal_ is a String
- *  or a Symbol, and a known signal name, ArgumentError will be
- *  raised.
- *
- *  Also, Errno::ESRCH or RangeError for invalid _pid_, Errno::EPERM
- *  when failed because of no privilege, will be raised.  In these
- *  cases, signals may have been sent to preceding processes.
- */
-
 VALUE
 rb_f_kill(int argc, const VALUE *argv)
 {
@@ -970,7 +934,9 @@ sigbus(int sig SIGINFO_ARG)
 }
 #endif
 
+#ifndef __sun
 NORETURN(static void ruby_abort(void));
+#endif
 
 static void
 ruby_abort(void)
@@ -1403,7 +1369,7 @@ reserved_signal_p(int signo)
  *     Terminating: 27460
  */
 static VALUE
-sig_trap(int argc, VALUE *argv)
+sig_trap(int argc, VALUE *argv, VALUE _)
 {
     int sig;
     sighandler_t func;
@@ -1446,7 +1412,7 @@ sig_trap(int argc, VALUE *argv)
  *   Signal.list   #=> {"EXIT"=>0, "HUP"=>1, "INT"=>2, "QUIT"=>3, "ILL"=>4, "TRAP"=>5, "IOT"=>6, "ABRT"=>6, "FPE"=>8, "KILL"=>9, "BUS"=>7, "SEGV"=>11, "SYS"=>31, "PIPE"=>13, "ALRM"=>14, "TERM"=>15, "URG"=>23, "STOP"=>19, "TSTP"=>20, "CONT"=>18, "CHLD"=>17, "CLD"=>17, "TTIN"=>21, "TTOU"=>22, "IO"=>29, "XCPU"=>24, "XFSZ"=>25, "VTALRM"=>26, "PROF"=>27, "WINCH"=>28, "USR1"=>10, "USR2"=>12, "PWR"=>30, "POLL"=>29}
  */
 static VALUE
-sig_list(void)
+sig_list(VALUE _)
 {
     VALUE h = rb_hash_new();
     const struct signals *sigs;

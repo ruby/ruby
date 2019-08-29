@@ -66,13 +66,13 @@ rb_set_safe_level(int level)
 }
 
 static VALUE
-safe_getter(void)
+safe_getter(ID _x, VALUE *_y)
 {
     return INT2NUM(rb_safe_level());
 }
 
 static void
-safe_setter(VALUE val)
+safe_setter(VALUE val, ID _x, VALUE *_y)
 {
     int level = NUM2INT(val);
     rb_set_safe_level(level);

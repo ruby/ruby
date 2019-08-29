@@ -166,7 +166,7 @@ static VALUE array_spec_rb_assoc_new(VALUE self, VALUE first, VALUE second) {
   return rb_assoc_new(first, second);
 }
 
-static VALUE copy_ary(VALUE el, VALUE new_ary) {
+static VALUE copy_ary(RB_BLOCK_CALL_FUNC_ARGLIST(el, new_ary)) {
   return rb_ary_push(new_ary, el);
 }
 
@@ -178,7 +178,7 @@ static VALUE array_spec_rb_iterate(VALUE self, VALUE ary) {
   return new_ary;
 }
 
-static VALUE sub_pair(VALUE el, VALUE holder) {
+static VALUE sub_pair(RB_BLOCK_CALL_FUNC_ARGLIST(el, holder)) {
   return rb_ary_push(holder, rb_ary_entry(el, 1));
 }
 
@@ -194,7 +194,7 @@ static VALUE array_spec_rb_iterate_each_pair(VALUE self, VALUE obj) {
   return new_ary;
 }
 
-static VALUE iter_yield(VALUE el, VALUE ary) {
+static VALUE iter_yield(RB_BLOCK_CALL_FUNC_ARGLIST(el, ary)) {
   rb_yield(el);
   return Qnil;
 }

@@ -212,7 +212,7 @@ require 'webrick/version.rb'
 require 'webrick/config.rb'
 require 'webrick/log.rb'
 require 'webrick/server.rb'
-require 'webrick/utils.rb'
+require_relative 'webrick/utils.rb'
 require 'webrick/accesslog'
 
 require 'webrick/htmlutils.rb'

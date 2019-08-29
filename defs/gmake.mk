@@ -25,6 +25,8 @@ TEST_TARGETS := $(patsubst test-short,btest-ruby test-knownbug test-basic,$(TEST
 TEST_DEPENDS := $(filter-out test-short $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_DEPENDS += $(if $(filter great exam love check,$(MAKECMDGOALS)),all exts)
 
+in-srcdir := $(if $(filter-out .,$(srcdir)),$(CHDIR) $(srcdir) &&)
+
 ifneq ($(filter -O0 -Od,$(optflags)),)
 override XCFLAGS := $(filter-out -D_FORTIFY_SOURCE=%,$(XCFLAGS))
 endif
@@ -101,7 +103,7 @@ ifeq ($(if $(filter yes,$(CROSS_COMPILING)),,$(CC)),)
 	touch $@
 else
 	@$(ECHO) building make_des_table
-	$(CC) $(CPPFLAGS) -DDUMP $(LDFLAGS) $(XLDFLAGS) $(LIBS) -omake_des_table $(srcdir)/missing/crypt.c
+	$(CC) $(INCFLAGS) $(CPPFLAGS) -DDUMP $(LDFLAGS) $(XLDFLAGS) $(LIBS) -omake_des_table $(srcdir)/missing/crypt.c
 	@[ -x ./make_des_table ]
 	@$(ECHO) generating $@
 	$(Q) $(MAKEDIRS) $(@D)
@@ -148,7 +150,7 @@ commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS
 	@$(BASERUBY) -C "$(srcdir)" -I./tool/lib -rvcs -e 'VCS.detect(".").commit'
 	+$(Q) \
 	{ \
-	  $(CHDIR) "$(srcdir)"; \
+	  $(in-srcdir) \
 	  exec sed -f tool/prereq.status defs/gmake.mk template/Makefile.in common.mk; \
 	} | \
 	$(MAKE) $(mflags) Q=$(Q) ECHO=$(ECHO) srcdir="$(srcdir)" srcs_vpath="" CHDIR="$(CHDIR)" \
@@ -196,13 +198,13 @@ update-github: fetch-github
 	  curl -s $(if $(GITHUB_TOKEN),-H "Authorization: bearer $(GITHUB_TOKEN)") $(PULL_REQUEST_API) | \
 	  $(BASERUBY) -rjson -e 'JSON.parse(STDIN.read)["head"].tap { |h| print "#{h["repo"]["full_name"]} #{h["ref"]}" }' \
 	))
-	$(eval FORK_REPO := $(shell echo $(PULL_REQUEST_FORK_BRANCH) | cut -d' ' -f1))
-	$(eval PR_BRANCH := $(shell echo $(PULL_REQUEST_FORK_BRANCH) | cut -d' ' -f2))
+	$(eval FORK_REPO := $(word 1,$(PULL_REQUEST_FORK_BRANCH)))
+	$(eval PR_BRANCH := $(word 2,$(PULL_REQUEST_FORK_BRANCH)))
 
 	$(eval GITHUB_UPDATE_WORKTREE := $(shell mktemp -d "$(srcdir)/gh-$(PR)-XXXXXX"))
 	git -C "$(srcdir)" worktree add $(notdir $(GITHUB_UPDATE_WORKTREE)) "gh-$(PR)"
 	git -C "$(GITHUB_UPDATE_WORKTREE)" merge master --no-edit
-	@$(BASERUBY) -e 'print "Are you sure to push this to PR=$(PR)? [Y/n]: "; exit(gets.chomp == "n" ? 1 : 0)'
+	@$(BASERUBY) -e 'print "Are you sure to push this to PR=$(PR)? [Y/n]: "; exit(gets.chomp != "n")'
 	git -C "$(srcdir)" remote add fork-$(PR) git@github.com:$(FORK_REPO).git
 	git -C "$(GITHUB_UPDATE_WORKTREE)" push fork-$(PR) gh-$(PR):$(PR_BRANCH)
 	git -C "$(srcdir)" remote rm fork-$(PR)

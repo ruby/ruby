@@ -2539,6 +2539,50 @@ refined_method_callable_without_refinement(const rb_callable_method_entry_t *me)
     return cme;
 }
 
+static int
+search_refined_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, ID mid, struct rb_call_cache *cc)
+{
+    const rb_cref_t *cref = vm_get_cref(cfp->ep);
+
+    for (; cref; cref = CREF_NEXT(cref)) {
+        const VALUE refinement = find_refinement(CREF_REFINEMENTS(cref), cc->me->owner);
+        if (NIL_P(refinement)) continue;
+
+        const rb_callable_method_entry_t *const ref_me =
+            rb_callable_method_entry(refinement, mid);
+
+        if (ref_me) {
+            if (cc->call == vm_call_super_method) {
+                const rb_control_frame_t *top_cfp = current_method_entry(ec, cfp);
+                const rb_callable_method_entry_t *top_me = rb_vm_frame_method_entry(top_cfp);
+                if (top_me && rb_method_definition_eq(ref_me->def, top_me->def)) {
+                    continue;
+                }
+            }
+            if (cc->me->def->type != VM_METHOD_TYPE_REFINED ||
+                cc->me->def != ref_me->def) {
+                cc->me = ref_me;
+            }
+            if (ref_me->def->type != VM_METHOD_TYPE_REFINED) {
+                return TRUE;
+            }
+        }
+        else {
+            cc->me = NULL;
+            return FALSE;
+        }
+    }
+
+    if (cc->me->def->body.refined.orig_me) {
+        cc->me = refined_method_callable_without_refinement(cc->me);
+    }
+    else {
+        VALUE klass = RCLASS_SUPER(cc->me->defined_class);
+        cc->me = klass ? rb_callable_method_entry(klass, mid) : NULL;
+    }
+    return TRUE;
+}
+
 static VALUE
 vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc)
 {
@@ -2602,50 +2646,11 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
       case VM_METHOD_TYPE_ZSUPER:
         return vm_call_zsuper(ec, cfp, calling, ci, cc, RCLASS_ORIGIN(cc->me->defined_class));
 
-      case VM_METHOD_TYPE_REFINED: {
-        const rb_cref_t *cref = vm_get_cref(cfp->ep);
-	VALUE refinements = cref ? CREF_REFINEMENTS(cref) : Qnil;
-	VALUE refinement;
-	const rb_callable_method_entry_t *ref_me;
-
-	refinement = find_refinement(refinements, cc->me->owner);
-
-	if (NIL_P(refinement)) {
-	    goto no_refinement_dispatch;
-	}
-	ref_me = rb_callable_method_entry(refinement, ci->mid);
-
-	if (ref_me) {
-	    if (cc->call == vm_call_super_method) {
-		const rb_control_frame_t *top_cfp = current_method_entry(ec, cfp);
-		const rb_callable_method_entry_t *top_me = rb_vm_frame_method_entry(top_cfp);
-		if (top_me && rb_method_definition_eq(ref_me->def, top_me->def)) {
-		    goto no_refinement_dispatch;
-		}
-	    }
-            if (cc->me->def->type != VM_METHOD_TYPE_REFINED ||
-                 cc->me->def != ref_me->def) {
-                 cc->me = ref_me;
-            }
-	    if (ref_me->def->type != VM_METHOD_TYPE_REFINED) {
-		return vm_call_method(ec, cfp, calling, ci, cc);
-	    }
-	}
-	else {
-	    cc->me = NULL;
-	    return vm_call_method_nome(ec, cfp, calling, ci, cc);
-	}
-
-      no_refinement_dispatch:
-	if (cc->me->def->body.refined.orig_me) {
-	    cc->me = refined_method_callable_without_refinement(cc->me);
-	}
-	else {
-	    VALUE klass = RCLASS_SUPER(cc->me->defined_class);
-	    cc->me = klass ? rb_callable_method_entry(klass, ci->mid) : NULL;
-	}
-	return vm_call_method(ec, cfp, calling, ci, cc);
-      }
+      case VM_METHOD_TYPE_REFINED:
+        if (search_refined_method(ec, cfp, ci->mid, cc))
+            return vm_call_method(ec, cfp, calling, ci, cc);
+        else
+            return vm_call_method_nome(ec, cfp, calling, ci, cc);
     }
 
     rb_bug("vm_call_method: unsupported method type (%d)", cc->me->def->type);
@@ -2853,7 +2858,7 @@ vm_yield_with_cfunc(rb_execution_context_t *ec,
 		  VM_GUARDED_PREV_EP(captured->ep),
                   (VALUE)me,
 		  0, ec->cfp->sp, 0, 0);
-    val = (*ifunc->func)(arg, ifunc->data, argc, argv, blockarg);
+    val = (*ifunc->func)(arg, (VALUE)ifunc->data, argc, argv, blockarg);
     rb_vm_pop_frame(ec);
 
     return val;
@@ -3384,7 +3389,7 @@ static VALUE
 vm_check_if_class(ID id, rb_num_t flags, VALUE super, VALUE klass)
 {
     if (!RB_TYPE_P(klass, T_CLASS)) {
-	rb_raise(rb_eTypeError, "%"PRIsVALUE" is not a class", rb_id2str(id));
+        return 0;
     }
     else if (VM_DEFINECLASS_HAS_SUPERCLASS_P(flags)) {
 	VALUE tmp = rb_class_real(RCLASS_SUPER(klass));
@@ -3407,7 +3412,7 @@ static VALUE
 vm_check_if_module(ID id, VALUE mod)
 {
     if (!RB_TYPE_P(mod, T_MODULE)) {
-	rb_raise(rb_eTypeError, "%"PRIsVALUE" is not a module", rb_id2str(id));
+        return 0;
     }
     else {
 	return mod;
@@ -3437,6 +3442,22 @@ vm_declare_module(ID id, VALUE cbase)
     return mod;
 }
 
+NORETURN(static void unmatched_redefinition(const char *type, VALUE cbase, ID id, VALUE old));
+static void
+unmatched_redefinition(const char *type, VALUE cbase, ID id, VALUE old)
+{
+    VALUE name = rb_id2str(id);
+    VALUE message = rb_sprintf("%"PRIsVALUE" is not a %s",
+                               name, type);
+    VALUE location = rb_const_source_location_at(cbase, id);
+    if (!NIL_P(location)) {
+        rb_str_catf(message, "\n%"PRIsVALUE":%"PRIsVALUE":"
+                    " previous definition of %"PRIsVALUE" was here",
+                    rb_ary_entry(location, 0), rb_ary_entry(location, 1), name);
+    }
+    rb_exc_raise(rb_exc_new_str(rb_eTypeError, message));
+}
+
 static VALUE
 vm_define_class(ID id, rb_num_t flags, VALUE cbase, VALUE super)
 {
@@ -3453,7 +3474,9 @@ vm_define_class(ID id, rb_num_t flags, VALUE cbase, VALUE super)
     /* find klass */
     rb_autoload_load(cbase, id);
     if ((klass = vm_const_get_under(id, flags, cbase)) != 0) {
-	return vm_check_if_class(id, flags, super, klass);
+        if (!vm_check_if_class(id, flags, super, klass))
+            unmatched_redefinition("class", cbase, id, klass);
+        return klass;
     }
     else {
 	return vm_declare_class(id, flags, cbase, super);
@@ -3467,7 +3490,9 @@ vm_define_module(ID id, rb_num_t flags, VALUE cbase)
 
     vm_check_if_namespace(cbase);
     if ((mod = vm_const_get_under(id, flags, cbase)) != 0) {
-	return vm_check_if_module(id, mod);
+        if (!vm_check_if_module(id, mod))
+            unmatched_redefinition("module", cbase, id, mod);
+        return mod;
     }
     else {
 	return vm_declare_module(id, cbase);

@@ -75,7 +75,7 @@ module IRB
         open(history_file) do |f|
           f.each { |l|
             l = l.chomp
-            if history.last&.end_with?("\\")
+            if self.class == ReidlineInputMethod and history.last&.end_with?("\\")
               history.last.delete_suffix!("\\")
               history.last << "\n" << l
             else

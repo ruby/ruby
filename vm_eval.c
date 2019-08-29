@@ -322,16 +322,18 @@ struct rescue_funcall_args {
 };
 
 static VALUE
-check_funcall_exec(struct rescue_funcall_args *args)
+check_funcall_exec(VALUE v)
 {
+    struct rescue_funcall_args *args = (void *)v;
     return call_method_entry(args->ec, args->defined_class,
 			     args->recv, idMethodMissing,
 			     args->me, args->argc, args->argv);
 }
 
 static VALUE
-check_funcall_failed(struct rescue_funcall_args *args, VALUE e)
+check_funcall_failed(VALUE v, VALUE e)
 {
+    struct rescue_funcall_args *args = (void *)v;
     int ret = args->respond;
     if (!ret) {
 	switch (rb_method_boundp(args->defined_class, args->mid,
@@ -634,9 +636,14 @@ NORETURN(static void raise_method_missing(rb_execution_context_t *ec, int argc, 
  *       def roman_to_int(str)
  *         # ...
  *       end
- *       def method_missing(methId)
- *         str = methId.id2name
- *         roman_to_int(str)
+ *
+ *       def method_missing(symbol, *args)
+ *         str = symbol.id2name
+ *         begin
+ *           roman_to_int(str)
+ *         rescue
+ *           super(symbol, *args)
+ *         end
  *       end
  *     end
  *
@@ -644,6 +651,7 @@ NORETURN(static void raise_method_missing(rb_execution_context_t *ec, int argc, 
  *     r.iv      #=> 4
  *     r.xxiii   #=> 23
  *     r.mm      #=> 2000
+ *     r.foo     #=> NoMethodError
  */
 
 static VALUE
@@ -1069,7 +1077,7 @@ rb_yield_block(VALUE val, VALUE arg, int argc, const VALUE *argv, VALUE blockarg
 }
 
 static VALUE
-loop_i(void)
+loop_i(VALUE _)
 {
     for (;;) {
 	rb_yield_0(0, 0);
@@ -1187,7 +1195,7 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
 
 VALUE
 rb_iterate(VALUE (* it_proc)(VALUE), VALUE data1,
-	   VALUE (* bl_proc)(ANYARGS), VALUE data2)
+           rb_block_call_func_t bl_proc, VALUE data2)
 {
     return rb_iterate0(it_proc, data1,
 		       bl_proc ? rb_vm_ifunc_proc_new(bl_proc, (void *)data2) : 0,
@@ -1212,7 +1220,7 @@ iterate_method(VALUE obj)
 
 VALUE
 rb_block_call(VALUE obj, ID mid, int argc, const VALUE * argv,
-	      VALUE (*bl_proc) (ANYARGS), VALUE data2)
+	      rb_block_call_func_t bl_proc, VALUE data2)
 {
     struct iter_method_arg arg;
 
@@ -1251,7 +1259,7 @@ iterate_check_method(VALUE obj)
 
 VALUE
 rb_check_block_call(VALUE obj, ID mid, int argc, const VALUE *argv,
-		    VALUE (*bl_proc) (ANYARGS), VALUE data2)
+		    rb_block_call_func_t bl_proc, VALUE data2)
 {
     struct iter_method_arg arg;
 
@@ -1872,7 +1880,7 @@ uncaught_throw_to_s(VALUE exc)
  */
 
 static VALUE
-rb_f_throw(int argc, VALUE *argv)
+rb_f_throw(int argc, VALUE *argv, VALUE _)
 {
     VALUE tag, value;
 
@@ -1913,7 +1921,7 @@ rb_throw(const char *tag, VALUE val)
 }
 
 static VALUE
-catch_i(VALUE tag, VALUE data)
+catch_i(RB_BLOCK_CALL_FUNC_ARGLIST(tag, _))
 {
     return rb_yield_0(1, &tag);
 }
@@ -1977,7 +1985,7 @@ rb_f_catch(int argc, VALUE *argv, VALUE self)
 }
 
 VALUE
-rb_catch(const char *tag, VALUE (*func)(), VALUE data)
+rb_catch(const char *tag, rb_block_call_func_t func, VALUE data)
 {
     VALUE vtag = tag ? rb_sym_intern_ascii_cstr(tag) : rb_obj_alloc(rb_cObject);
     return rb_catch_obj(vtag, func, data);
@@ -2019,7 +2027,7 @@ rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, enum ruby_tag_ty
 }
 
 VALUE
-rb_catch_obj(VALUE t, VALUE (*func)(), VALUE data)
+rb_catch_obj(VALUE t, rb_block_call_func_t func, VALUE data)
 {
     enum ruby_tag_type state;
     rb_execution_context_t *ec = GET_EC();
@@ -2077,7 +2085,7 @@ local_var_list_add(const struct local_var_list *vars, ID lid)
  */
 
 static VALUE
-rb_f_local_variables(void)
+rb_f_local_variables(VALUE _)
 {
     struct local_var_list vars;
     rb_execution_context_t *ec = GET_EC();
@@ -2134,7 +2142,7 @@ rb_f_local_variables(void)
 
 
 static VALUE
-rb_f_block_given_p(void)
+rb_f_block_given_p(VALUE _)
 {
     rb_execution_context_t *ec = GET_EC();
     rb_control_frame_t *cfp = ec->cfp;

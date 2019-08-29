@@ -48,17 +48,6 @@ sufficient information, see the ChangeLog file or Redmine
      " # This has been warned since 2.4
      EOS
 
-* Pipeline operator is experimentally added.
-
-  This code equals to the next code.
-
-     foo()
-      |> bar 1, 2
-      |> display
-
-     foo()
-      .bar(1, 2)
-      .display
 
 * The flip-flop syntax deprecation is reverted. [Feature #5400]
 
@@ -140,6 +129,13 @@ Module::
 
     * Module#autoload? now takes an +inherit+ optional argument, like as
       Module#const_defined?.  [Feature #15777]
+
+ObjectSpace::WeakMap::
+
+  Modified method::
+
+    * ObjectSpace::WeakMap#[]= now accepts special objects as either key or
+      values.  [Feature #16035]
 
 Regexp / String::
 

@@ -1181,15 +1181,15 @@ struct vm_ifunc_argc {
 struct vm_ifunc {
     VALUE flags;
     VALUE reserved;
-    VALUE (*func)(ANYARGS);
+    rb_block_call_func_t func;
     const void *data;
     struct vm_ifunc_argc argc;
 };
 
 #define IFUNC_NEW(a, b, c) ((struct vm_ifunc *)rb_imemo_new(imemo_ifunc, (VALUE)(a), (VALUE)(b), (VALUE)(c), 0))
-struct vm_ifunc *rb_vm_ifunc_new(VALUE (*func)(ANYARGS), const void *data, int min_argc, int max_argc);
+struct vm_ifunc *rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int max_argc);
 static inline struct vm_ifunc *
-rb_vm_ifunc_proc_new(VALUE (*func)(ANYARGS), const void *data)
+rb_vm_ifunc_proc_new(rb_block_call_func_t func, const void *data)
 {
     return rb_vm_ifunc_new(func, data, 0, UNLIMITED_ARGUMENTS);
 }
@@ -1245,7 +1245,7 @@ struct MEMO {
 	long cnt;
 	long state;
         const VALUE value;
-	VALUE (*func)(ANYARGS);
+        void (*func)(void);
     } u3;
 };
 
@@ -1390,10 +1390,12 @@ rb_ary_entry_internal(VALUE ary, long offset)
 
 /* MRI debug support */
 void rb_obj_info_dump(VALUE obj);
-void  ruby_debug_breakpoint(void);
+void rb_obj_info_dump_loc(VALUE obj, const char *file, int line, const char *func);
+void ruby_debug_breakpoint(void);
 
 // show obj data structure without any side-effect
-#define rp(obj) rb_obj_info_dump((VALUE)obj);
+#define rp(obj) rb_obj_info_dump_loc((VALUE)(obj), __FILE__, __LINE__, __func__)
+
 // same as rp, but add message header
 #define rp_m(msg, obj) do { \
     fprintf(stderr, "%s", (msg)); \
@@ -1467,7 +1469,7 @@ struct rb_thread_struct;
 /* cont.c */
 VALUE rb_obj_is_fiber(VALUE);
 void rb_fiber_reset_root_local_storage(struct rb_thread_struct *);
-void ruby_register_rollback_func_for_ensure(VALUE (*ensure_func)(ANYARGS), VALUE (*rollback_func)(ANYARGS));
+void ruby_register_rollback_func_for_ensure(VALUE (*ensure_func)(VALUE), VALUE (*rollback_func)(VALUE));
 
 /* debug.c */
 PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
@@ -1659,8 +1661,8 @@ VALUE rb_hash_set_pair(VALUE hash, VALUE pair);
 
 int rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval);
 int rb_hash_stlike_delete(VALUE hash, st_data_t *pkey, st_data_t *pval);
-int rb_hash_stlike_foreach(VALUE hash, int (*func)(ANYARGS), st_data_t arg);
-int rb_hash_stlike_foreach_with_replace(VALUE hash, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg);
+int rb_hash_stlike_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t arg);
+int rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg);
 int rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func func, st_data_t arg);
 
 /* inits.c */
@@ -2213,7 +2215,7 @@ VALUE rb_thread_shield_release(VALUE self);
 VALUE rb_thread_shield_destroy(VALUE self);
 int rb_thread_to_be_killed(VALUE thread);
 void rb_mutex_allow_trap(VALUE self, int val);
-VALUE rb_uninterruptible(VALUE (*b_proc)(ANYARGS), VALUE data);
+VALUE rb_uninterruptible(VALUE (*b_proc)(VALUE), VALUE data);
 VALUE rb_mutex_owned_p(VALUE self);
 
 /* transcode.c */
@@ -2309,7 +2311,6 @@ void Init_vm_stack_canary(void);
 
 /* vm_method.c */
 void Init_eval_method(void);
-int rb_method_defined_by(VALUE obj, ID mid, VALUE (*cfunc)(ANYARGS));
 
 /* miniprelude.c, prelude.c */
 void Init_prelude(void);

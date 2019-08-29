@@ -13,16 +13,43 @@ module Spec
       @gemspec ||= root.join(ruby_core? ? "lib/bundler/bundler.gemspec" : "bundler.gemspec")
     end
 
+    def gemspec_dir
+      @gemspec_dir ||= gemspec.parent
+    end
+
     def bindir
       @bindir ||= root.join(ruby_core? ? "libexec" : "exe")
+    end
+
+    def gem_bin
+      @gem_bin ||= ruby_core? ? ENV["GEM_COMMAND"] : "#{Gem.ruby} -S gem --backtrace"
     end
 
     def spec_dir
       @spec_dir ||= root.join(ruby_core? ? "spec/bundler" : "spec")
     end
 
+    def tracked_files
+      @tracked_files ||= ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb spec/bundler man/bundler*` : `git ls-files -z`
+    end
+
+    def shipped_files
+      @shipped_files ||= ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb man/bundler* libexec/bundle*` : `git ls-files -z -- lib man exe CHANGELOG.md LICENSE.md README.md bundler.gemspec`
+    end
+
+    def lib_tracked_files
+      @lib_tracked_files ||= ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb` : `git ls-files -z -- lib`
+    end
+
     def tmp(*path)
-      root.join("tmp", *path)
+      root.join("tmp", scope, *path)
+    end
+
+    def scope
+      test_number = ENV["TEST_ENV_NUMBER"]
+      return "1" if test_number.nil?
+
+      test_number.empty? ? "1" : test_number
     end
 
     def home(*path)
@@ -100,15 +127,11 @@ module Spec
       tmp("gems/system", *path)
     end
 
-    def system_bundle_bin_path
-      system_gem_path("bin/bundle")
-    end
-
     def lib_path(*args)
       tmp("libs", *args)
     end
 
-    def bundler_path
+    def lib
       root.join("lib")
     end
 
@@ -124,12 +147,25 @@ module Spec
       tmp "tmpdir", *args
     end
 
+    def with_root_gemspec
+      if ruby_core?
+        root_gemspec = root.join("bundler.gemspec")
+        spec = Gem::Specification.load(gemspec.to_s)
+        spec.bindir = "libexec"
+        File.open(root_gemspec.to_s, "w") {|f| f.write spec.to_ruby }
+        yield(root_gemspec)
+        FileUtils.rm(root_gemspec)
+      else
+        yield(gemspec)
+      end
+    end
+
     def ruby_core?
-      # avoid to wornings
+      # avoid to warnings
       @ruby_core ||= nil
 
       if @ruby_core.nil?
-        @ruby_core = true & (ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
+        @ruby_core = true & ENV["GEM_COMMAND"]
       else
         @ruby_core
       end

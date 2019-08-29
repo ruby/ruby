@@ -2827,7 +2827,7 @@ core_hash_merge_kwd(VALUE hash, VALUE kw)
 
 /* Returns true if JIT is enabled */
 static VALUE
-mjit_enabled_p(void)
+mjit_enabled_p(VALUE _)
 {
     return mjit_enabled ? Qtrue : Qfalse;
 }
@@ -2847,6 +2847,12 @@ mjit_pause_m(int argc, VALUE *argv, RB_UNUSED_VAR(VALUE self))
     }
 
     return mjit_pause(RTEST(wait));
+}
+
+static VALUE
+mjit_resume_m(VALUE _)
+{
+    return mjit_resume();
 }
 
 extern VALUE *rb_gc_stack_start;
@@ -2902,6 +2908,24 @@ static VALUE usage_analysis_operand_clear(VALUE self);
 static VALUE usage_analysis_register_clear(VALUE self);
 #endif
 
+static VALUE
+f_raise(int c, VALUE *v, VALUE _)
+{
+    return rb_f_raise(c, v);
+}
+
+static VALUE
+f_proc(VALUE _)
+{
+    return rb_block_proc();
+}
+
+static VALUE
+f_lambda(VALUE _)
+{
+    return rb_block_lambda();
+}
+
 void
 Init_VM(void)
 {
@@ -2913,9 +2937,13 @@ Init_VM(void)
     /*
      * Document-class: RubyVM
      *
-     * The RubyVM module provides some access to Ruby internals.
+     * The RubyVM module only exists on MRI. +RubyVM+ is not defined in
+     * other Ruby implementations such as JRuby and TruffleRuby.
+     *
+     * The RubyVM module provides some access to MRI internals.
      * This module is for very limited purposes, such as debugging,
      * prototyping, and research.  Normal users must not use it.
+     * This module is not portable between Ruby implementations.
      */
     rb_cRubyVM = rb_define_class("RubyVM", rb_cObject);
     rb_undef_alloc_func(rb_cRubyVM);
@@ -2936,20 +2964,23 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_set_postexe, m_core_set_postexe, 0);
     rb_define_method_id(klass, id_core_hash_merge_ptr, m_core_hash_merge_ptr, -1);
     rb_define_method_id(klass, id_core_hash_merge_kwd, m_core_hash_merge_kwd, 2);
-    rb_define_method_id(klass, id_core_raise, rb_f_raise, -1);
-    rb_define_method_id(klass, idProc, rb_block_proc, 0);
-    rb_define_method_id(klass, idLambda, rb_block_lambda, 0);
+    rb_define_method_id(klass, id_core_raise, f_raise, -1);
+    rb_define_method_id(klass, idProc, f_proc, 0);
+    rb_define_method_id(klass, idLambda, f_lambda, 0);
     rb_obj_freeze(fcore);
     RBASIC_CLEAR_CLASS(klass);
     rb_obj_freeze(klass);
     rb_gc_register_mark_object(fcore);
     rb_mRubyVMFrozenCore = fcore;
 
-    /* RubyVM::MJIT */
+    /* ::RubyVM::MJIT
+     * Provides access to the Method JIT compiler of MRI.
+     * Of course, this module is MRI specific.
+     */
     mjit = rb_define_module_under(rb_cRubyVM, "MJIT");
     rb_define_singleton_method(mjit, "enabled?", mjit_enabled_p, 0);
     rb_define_singleton_method(mjit, "pause", mjit_pause_m, -1);
-    rb_define_singleton_method(mjit, "resume", mjit_resume, 0);
+    rb_define_singleton_method(mjit, "resume", mjit_resume_m, 0);
 
     /*
      * Document-class: Thread
@@ -3134,7 +3165,10 @@ Init_VM(void)
     rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_REGISTER_CLEAR", usage_analysis_register_clear, 0);
 #endif
 
-    /* ::RubyVM::OPTS, which shows vm build options */
+    /* ::RubyVM::OPTS
+     * An Array of VM build options.
+     * This constant is MRI specific.
+     */
     rb_define_const(rb_cRubyVM, "OPTS", opts = rb_ary_new());
 
 #if   OPT_DIRECT_THREADED_CODE
@@ -3161,11 +3195,14 @@ Init_VM(void)
     rb_ary_push(opts, rb_str_new2("block inlining"));
 #endif
 
-    /* ::RubyVM::INSTRUCTION_NAMES */
+    /* ::RubyVM::INSTRUCTION_NAMES
+     * A list of bytecode instruction names in MRI.
+     * This constant is MRI specific.
+     */
     rb_define_const(rb_cRubyVM, "INSTRUCTION_NAMES", rb_insns_name_array());
 
     /* ::RubyVM::DEFAULT_PARAMS
-     * This constant variable shows VM's default parameters.
+     * This constant exposes the VM's default parameters.
      * Note that changing these values does not affect VM execution.
      * Specification is not stable and you should not depend on this value.
      * Of course, this constant is MRI specific.

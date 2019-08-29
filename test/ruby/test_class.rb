@@ -591,15 +591,17 @@ class TestClass < Test::Unit::TestCase
 
   def test_redefinition_mismatch
     m = Module.new
-    m.module_eval "A = 1"
-    assert_raise_with_message(TypeError, /is not a class/) {
+    m.module_eval "A = 1", __FILE__, line = __LINE__
+    e = assert_raise_with_message(TypeError, /is not a class/) {
       m.module_eval "class A; end"
     }
+    assert_include(e.message, "#{__FILE__}:#{line}: previous definition")
     n = "M\u{1f5ff}"
-    m.module_eval "#{n} = 42"
-    assert_raise_with_message(TypeError, "#{n} is not a class") {
+    m.module_eval "#{n} = 42", __FILE__, line = __LINE__
+    e = assert_raise_with_message(TypeError, /#{n} is not a class/) {
       m.module_eval "class #{n}; end"
     }
+    assert_include(e.message, "#{__FILE__}:#{line}: previous definition")
 
     assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
     begin;

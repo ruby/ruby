@@ -83,10 +83,10 @@ debugflags = @debugflags@
 warnflags = @warnflags@ @strict_warnflags@
 cppflags = @cppflags@
 MATHN = @MATHN@
-XCFLAGS = @XCFLAGS@ $(MATHN:yes=-DCANONICALIZATION_FOR_MATHN)
+XCFLAGS = @XCFLAGS@ $(MATHN:yes=-DCANONICALIZATION_FOR_MATHN) $(INCFLAGS)
 USE_RUBYGEMS = @USE_RUBYGEMS@
 USE_RUBYGEMS_ = $(USE_RUBYGEMS:yes=)
-CPPFLAGS = @CPPFLAGS@ $(INCFLAGS) $(USE_RUBYGEMS_:no=-DDISABLE_RUBYGEMS=1)
+CPPFLAGS = @CPPFLAGS@ $(USE_RUBYGEMS_:no=-DDISABLE_RUBYGEMS=1)
 MJIT_SUPPORT = @MJIT_SUPPORT@
 MJIT_HEADER_FLAGS = @MJIT_HEADER_FLAGS@
 MJIT_HEADER_SUFFIX =
@@ -639,7 +639,7 @@ mjit_config.h:
 yes-test-almost yes-test-all: mjit_build_dir.$(SOEXT)
 mjit_build_dir.$(SOEXT): $(MJIT_MIN_HEADER) $(srcdir)/ruby-runner.c ruby-runner.h
 	$(ECHO) making $@
-	$(Q) $(DLDSHARED) $(MJIT_DLDFLAGS) $(ARCH_FLAG) $(CFLAGS) $(CPPFLAGS) \
+	$(Q) $(DLDSHARED) $(MJIT_DLDFLAGS) $(ARCH_FLAG) $(CFLAGS) $(INCFLAGS) $(CPPFLAGS) \
 		-DMAKE_MJIT_BUILD_DIR=1 -DMJIT_MIN_HEADER='"$(MJIT_MIN_HEADER)"' \
 		$(OUTFLAG)$@ $(srcdir)/ruby-runner.c
 

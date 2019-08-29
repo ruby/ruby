@@ -33,7 +33,7 @@ RSpec.describe "bundle exec" do
     expect(out).to eq("1.0.0")
   end
 
-  it "works when running from a random directory", :ruby_repo do
+  it "works when running from a random directory" do
     install_gemfile <<-G
       gem "rack"
     G
@@ -55,15 +55,15 @@ RSpec.describe "bundle exec" do
     expect(out).to eq("hi")
   end
 
-  it "respects custom process title when loading through ruby", :github_action_linux do
-    script_that_changes_its_own_title_and_checks_if_picked_up_by_ps_unix_utility = <<~RUBY
-      Process.setproctitle("1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16")
-      puts `ps -eo args | grep [1]-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16`
+  it "respects custom process title when loading through ruby" do
+    script_that_changes_its_own_title_and_checks_if_picked_up_by_ps_unix_utility = <<~'RUBY'
+      Process.setproctitle("1-2-3-4-5-6-7-8-9-10-11-12-13-14-15")
+      puts `ps -ocommand= -p#{$$}`
     RUBY
     create_file "Gemfile"
     create_file "a.rb", script_that_changes_its_own_title_and_checks_if_picked_up_by_ps_unix_utility
     bundle "exec ruby a.rb"
-    expect(out).to eq("1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16")
+    expect(out).to eq("1-2-3-4-5-6-7-8-9-10-11-12-13-14-15")
   end
 
   it "accepts --verbose" do
@@ -192,7 +192,7 @@ RSpec.describe "bundle exec" do
       it "uses version specified" do
         bundle! "exec irb --version"
 
-        expect(out).to include(specified_irb_version)
+        expect(out).to eq(specified_irb_version)
         expect(err).to be_empty
       end
     end
@@ -222,7 +222,7 @@ RSpec.describe "bundle exec" do
       end
 
       it "uses resolved version" do
-        expect(out).to include(indirect_irb_version)
+        expect(out).to eq(indirect_irb_version)
         expect(err).to be_empty
       end
     end
@@ -279,12 +279,7 @@ RSpec.describe "bundle exec" do
     G
 
     rubyopt = ENV["RUBYOPT"]
-    setup_path = if ruby_core?
-      File.expand_path("../../../lib/bundler/setup", __dir__)
-    else
-      File.expand_path("../../lib/bundler/setup", __dir__)
-    end
-    rubyopt = "-r#{setup_path} #{rubyopt}"
+    rubyopt = "-r#{lib}/bundler/setup #{rubyopt}"
 
     bundle "exec 'echo $RUBYOPT'"
     expect(out).to have_rubyopts(rubyopt)
@@ -299,7 +294,7 @@ RSpec.describe "bundle exec" do
     G
 
     rubylib = ENV["RUBYLIB"]
-    rubylib = rubylib.to_s.split(File::PATH_SEPARATOR).unshift bundler_path.to_s
+    rubylib = rubylib.to_s.split(File::PATH_SEPARATOR).unshift lib.to_s
     rubylib = rubylib.uniq.join(File::PATH_SEPARATOR)
 
     bundle "exec 'echo $RUBYLIB'"
@@ -341,7 +336,7 @@ RSpec.describe "bundle exec" do
     expect(err).to include("bundler: exec needs a command to run")
   end
 
-  it "raises a helpful error when exec'ing to something outside of the bundle", :ruby_repo do
+  it "raises a helpful error when exec'ing to something outside of the bundle" do
     bundle! "config set clean false" # want to keep the rackup binstub
     install_gemfile! <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -693,7 +688,7 @@ RSpec.describe "bundle exec" do
       it_behaves_like "it runs"
     end
 
-    context "when the file uses the current ruby shebang", :ruby_repo do
+    context "when the file uses the current ruby shebang" do
       let(:shebang) { "#!#{Gem.ruby}" }
       it_behaves_like "it runs"
     end
@@ -840,26 +835,24 @@ __FILE__: #{path.to_s.inspect}
   end
 
   context "nested bundle exec" do
-    let(:system_gems_to_install) { super() << :bundler }
-
-    context "with shared gems disabled" do
+    context "when bundle in a local path" do
       before do
         gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"
           gem "rack"
         G
-        bundle :install, :system_bundler => true, :path => "vendor/bundler"
+        bundle "config set path vendor/bundler"
+        bundle! :install
       end
 
-      it "overrides disable_shared_gems so bundler can be found", :ruby_repo do
-        system_gems :bundler
+      it "correctly shells out", :ruby_repo do
         file = bundled_app("file_that_bundle_execs.rb")
         create_file(file, <<-RB)
           #!#{Gem.ruby}
-          puts `#{system_bundle_bin_path} exec echo foo`
+          puts `bundle exec echo foo`
         RB
         file.chmod(0o777)
-        bundle! "exec #{file}", :system_bundler => true
+        bundle! "exec #{file}"
         expect(out).to eq("foo")
       end
     end

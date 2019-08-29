@@ -1,7 +1,7 @@
 # coding: US-ASCII
 # frozen_string_literal: true
 
-require 'minitest_helper'
+require_relative 'helper'
 
 class TestRDocEncoding < RDoc::TestCase
 
@@ -171,7 +171,7 @@ class TestRDocEncoding < RDoc::TestCase
 
     assert_nil encoding
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       s = RDoc::Encoding.detect_encoding "# -*- encoding: undecided -*-\n"
     end
   end

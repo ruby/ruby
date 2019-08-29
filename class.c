@@ -1534,24 +1534,36 @@ rb_obj_singleton_methods(int argc, const VALUE *argv, VALUE obj)
  * \{
  */
 
+#ifdef rb_define_method_id
+#undef rb_define_method_id
+#endif
 void
 rb_define_method_id(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc)
 {
     rb_add_method_cfunc(klass, mid, func, argc, METHOD_VISI_PUBLIC);
 }
 
+#ifdef rb_define_method
+#undef rb_define_method
+#endif
 void
 rb_define_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
     rb_add_method_cfunc(klass, rb_intern(name), func, argc, METHOD_VISI_PUBLIC);
 }
 
+#ifdef rb_define_protected_method
+#undef rb_define_protected_method
+#endif
 void
 rb_define_protected_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
     rb_add_method_cfunc(klass, rb_intern(name), func, argc, METHOD_VISI_PROTECTED);
 }
 
+#ifdef rb_define_private_method
+#undef rb_define_private_method
+#endif
 void
 rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
@@ -1734,6 +1746,9 @@ rb_singleton_class(VALUE obj)
  * \{
  */
 
+#ifdef rb_define_singleton_method
+#undef rb_define_singleton_method
+#endif
 /*!
  * Defines a singleton method for \a obj.
  * \param obj    an arbitrary object
@@ -1747,8 +1762,9 @@ rb_define_singleton_method(VALUE obj, const char *name, VALUE (*func)(ANYARGS), 
     rb_define_method(singleton_class_of(obj), name, func, argc);
 }
 
-
-
+#ifdef rb_define_module_function
+#undef rb_define_module_function
+#endif
 /*!
  * Defines a module function for \a module.
  * \param module  an module or a class.
@@ -1763,7 +1779,9 @@ rb_define_module_function(VALUE module, const char *name, VALUE (*func)(ANYARGS)
     rb_define_singleton_method(module, name, func, argc);
 }
 
-
+#ifdef rb_define_global_function
+#undef rb_define_global_function
+#endif
 /*!
  * Defines a global function
  * \param name    name of the function

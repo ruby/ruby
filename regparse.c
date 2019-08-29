@@ -493,7 +493,7 @@ onig_print_names(FILE* fp, regex_t* reg)
 
   if (IS_NOT_NULL(t)) {
     fprintf(fp, "name table\n");
-    onig_st_foreach(t, i_print_name_entry, (HashDataType )fp);
+    onig_st_foreach(t, (st_foreach_callback_func *)i_print_name_entry, (HashDataType )fp);
     fputs("\n", fp);
   }
   return 0;
@@ -516,7 +516,7 @@ names_clear(regex_t* reg)
   NameTable* t = (NameTable* )reg->name_table;
 
   if (IS_NOT_NULL(t)) {
-    onig_st_foreach(t, i_free_name_entry, 0);
+    onig_st_foreach(t, (st_foreach_callback_func *)i_free_name_entry, 0);
   }
   return 0;
 }
@@ -585,7 +585,7 @@ onig_foreach_name(regex_t* reg,
     narg.reg  = reg;
     narg.arg  = arg;
     narg.enc  = reg->enc; /* should be pattern encoding. */
-    onig_st_foreach(t, i_names, (HashDataType )&narg);
+    onig_st_foreach(t, (st_foreach_callback_func *)i_names, (HashDataType )&narg);
   }
   return narg.ret;
 }
@@ -613,7 +613,7 @@ onig_renumber_name_table(regex_t* reg, GroupNumRemap* map)
   NameTable* t = (NameTable* )reg->name_table;
 
   if (IS_NOT_NULL(t)) {
-    onig_st_foreach(t, i_renumber_name, (HashDataType )map);
+    onig_st_foreach(t, (st_foreach_callback_func *)i_renumber_name, (HashDataType )map);
   }
   return 0;
 }

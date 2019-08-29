@@ -2,6 +2,21 @@ $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
 require 'reline'
 require 'test/unit'
 
+module Reline
+  class <<self
+    def test_mode
+        remove_const('IOGate') if const_defined?('IOGate')
+        const_set('IOGate', Reline::GeneralIO)
+        send(:core).config.instance_variable_set(:@test_mode, true)
+        send(:core).config.reset
+    end
+
+    def test_reset
+      Reline.instance_variable_set(:@core, nil)
+    end
+  end
+end
+
 RELINE_TEST_ENCODING ||=
   if ENV['RELINE_TEST_ENCODING']
     Encoding.find(ENV['RELINE_TEST_ENCODING'])
@@ -10,10 +25,6 @@ RELINE_TEST_ENCODING ||=
   end
 
 class Reline::TestCase < Test::Unit::TestCase
-=begin
-  puts "Test encoding is #{RELINE_TEST_ENCODING}"
-=end
-
   private def convert_str(input, options = {}, normalized = nil)
     return nil if input.nil?
     input.chars.map { |c|

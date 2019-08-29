@@ -11197,6 +11197,28 @@ rb_to_symbol(VALUE name)
 }
 
 /*
+ *  call-seq:
+ *     Symbol.all_symbols    => array
+ *
+ *  Returns an array of all the symbols currently in Ruby's symbol
+ *  table.
+ *
+ *     Symbol.all_symbols.size    #=> 903
+ *     Symbol.all_symbols[1,20]   #=> [:floor, :ARGV, :Binding, :symlink,
+ *                                     :chown, :EOFError, :$;, :String,
+ *                                     :LOCK_SH, :"setuid?", :$<,
+ *                                     :default_proc, :compact, :extend,
+ *                                     :Tms, :getwd, :$=, :ThreadGroup,
+ *                                     :wait2, :$>]
+ */
+
+static VALUE
+sym_all_symbols(VALUE _)
+{
+    return rb_sym_all_symbols();
+}
+
+/*
  *  A String object holds and manipulates an arbitrary sequence of
  *  bytes, typically representing characters. String objects may be created
  *  using String::new or as literals.
@@ -11382,7 +11404,7 @@ Init_String(void)
     rb_include_module(rb_cSymbol, rb_mComparable);
     rb_undef_alloc_func(rb_cSymbol);
     rb_undef_method(CLASS_OF(rb_cSymbol), "new");
-    rb_define_singleton_method(rb_cSymbol, "all_symbols", rb_sym_all_symbols, 0); /* in symbol.c */
+    rb_define_singleton_method(rb_cSymbol, "all_symbols", sym_all_symbols, 0);
 
     rb_define_method(rb_cSymbol, "==", sym_equal, 1);
     rb_define_method(rb_cSymbol, "===", sym_equal, 1);

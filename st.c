@@ -145,16 +145,17 @@ static const struct st_hash_type st_hashtype_num = {
     st_numhash,
 };
 
-/* extern int strcmp(const char *, const char *); */
+static int st_strcmp(st_data_t, st_data_t);
 static st_index_t strhash(st_data_t);
 static const struct st_hash_type type_strhash = {
-    strcmp,
+    st_strcmp,
     strhash,
 };
 
+static int st_locale_insensitive_strcasecmp_i(st_data_t lhs, st_data_t rhs);
 static st_index_t strcasehash(st_data_t);
 static const struct st_hash_type type_strcasehash = {
-    st_locale_insensitive_strcasecmp,
+    st_locale_insensitive_strcasecmp_i,
     strcasehash,
 };
 
@@ -344,10 +345,7 @@ do_hash(st_data_t key, st_table *tab)
 static int
 get_power2(st_index_t size)
 {
-    unsigned int n;
-
-    for (n = 0; size != 0; n++)
-        size >>= 1;
+    unsigned int n = ST_INDEX_BITS - nlz_intptr(size);
     if (n <= MAX_POWER2)
         return n < MINIMAL_POWER2 ? MINIMAL_POWER2 : n;
 #ifndef NOT_RUBY
@@ -1548,7 +1546,7 @@ st_update(st_table *tab, st_data_t key,
    different for ST_CHECK and when the current element is removed
    during traversing.  */
 static inline int
-st_general_foreach(st_table *tab, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg,
+st_general_foreach(st_table *tab, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg,
 		   int check_p)
 {
     st_index_t bin;
@@ -1659,20 +1657,33 @@ st_general_foreach(st_table *tab, int (*func)(ANYARGS), st_update_callback_func 
 }
 
 int
-st_foreach_with_replace(st_table *tab, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg)
+st_foreach_with_replace(st_table *tab, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg)
 {
     return st_general_foreach(tab, func, replace, arg, TRUE);
 }
 
-int
-st_foreach(st_table *tab, int (*func)(ANYARGS), st_data_t arg)
+struct functor {
+    st_foreach_callback_func *func;
+    st_data_t arg;
+};
+
+static int
+apply_functor(st_data_t k, st_data_t v, st_data_t d, int _)
 {
-    return st_general_foreach(tab, func, NULL, arg, FALSE);
+    const struct functor *f = (void *)d;
+    return f->func(k, v, f->arg);
+}
+
+int
+st_foreach(st_table *tab, st_foreach_callback_func *func, st_data_t arg)
+{
+    const struct functor f = { func, arg };
+    return st_general_foreach(tab, apply_functor, NULL, (st_data_t)&f, FALSE);
 }
 
 /* See comments for function st_delete_safe.  */
 int
-st_foreach_check(st_table *tab, int (*func)(ANYARGS), st_data_t arg,
+st_foreach_check(st_table *tab, st_foreach_check_callback_func *func, st_data_t arg,
                  st_data_t never ATTRIBUTE_UNUSED)
 {
     return st_general_foreach(tab, func, NULL, arg, TRUE);
@@ -2076,6 +2087,22 @@ st_locale_insensitive_strncasecmp(const char *s1, const char *s2, size_t n)
         }
     }
     return 0;
+}
+
+static int
+st_strcmp(st_data_t lhs, st_data_t rhs)
+{
+    const char *s1 = (char *)lhs;
+    const char *s2 = (char *)rhs;
+    return strcmp(s1, s2);
+}
+
+static int
+st_locale_insensitive_strcasecmp_i(st_data_t lhs, st_data_t rhs)
+{
+    const char *s1 = (char *)lhs;
+    const char *s2 = (char *)rhs;
+    return st_locale_insensitive_strcasecmp(s1, s2);
 }
 
 NO_SANITIZE("unsigned-integer-overflow", PUREFUNC(static st_index_t strcasehash(st_data_t)));

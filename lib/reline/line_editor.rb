@@ -69,6 +69,10 @@ class Reline::LineEditor
       Reline::IOGate.move_cursor_column(0)
       @old_trap.call if @old_trap.respond_to?(:call) # can also be string, ex: "DEFAULT"
     }
+    Reline::IOGate.set_winch_handler do
+      @rest_height = (Reline::IOGate.get_screen_size.first - 1) - Reline::IOGate.cursor_pos.y
+      @screen_size = Reline::IOGate.get_screen_size
+    end
   end
 
   def finalize
@@ -854,11 +858,7 @@ class Reline::LineEditor
     else
       temp_buffer[@line_index] = @line
     end
-    if temp_buffer.any?{ |l| l.chomp != '' }
-      @confirm_multiline_termination_proc.(temp_buffer.join("\n") + "\n")
-    else
-      false
-    end
+    @confirm_multiline_termination_proc.(temp_buffer.join("\n") + "\n")
   end
 
   def insert_text(text)
@@ -1712,8 +1712,8 @@ class Reline::LineEditor
   end
 
   private def ed_delete_next_char(key, arg: 1)
-    unless @line.empty?
-      byte_size = Reline::Unicode.get_next_mbchar_size(@line, @byte_pointer)
+    byte_size = Reline::Unicode.get_next_mbchar_size(@line, @byte_pointer)
+    unless @line.empty? || byte_size == 0
       @line, mbchar = byteslice!(@line, @byte_pointer, byte_size)
       copy_for_vi(mbchar)
       width = Reline::Unicode.get_mbchar_width(mbchar)

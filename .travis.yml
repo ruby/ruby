@@ -358,6 +358,7 @@ env:
     osx_image: xcode11
     os: osx
     <<: *osx-clang
+    <<: *cron-only
     env:
       - CONFIG_FLAG=--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib
       - TEST_ALL_OPTS="--timeout-scale=2.0 --excludes=\$(TESTSDIR)/excludes/_travis/osx"
@@ -398,25 +399,28 @@ env:
 
 matrix:
   include:
-    # to reduce time for finishing all jobs, run the slowest osx build first.
-    - <<: *x86_64-darwin18
+    # To reduce time for finishing all jobs, running the slowest osx build first.
+    # Build every commit:
     - <<: *x86_64-linux
     - <<: *i686-linux
-    - <<: *jemalloc
     - <<: *pedanticism
+    - <<: *assertions
+    - <<: *baseruby
+    - <<: *rubyspec
+    - <<: *dependency
+    # Build every commit (Allowed Failures):
     - <<: *ASAN
     - <<: *MSAN
     - <<: *UBSAN
-    - <<: *assertions
+    # Cron only:
+    - <<: *x86_64-darwin18
+    - <<: *jemalloc
     - <<: *VM_CHECK_MODE
     - <<: *WITH_COROUTINE_UCONTEXT
     - <<: *WITH_COROUTINE_COPY
     - <<: *TOKEN_THREADED_CODE
     - <<: *CALL_THREADED_CODE
     - <<: *NO_THREADED_CODE
-    - <<: *baseruby
-    - <<: *rubyspec
-    - <<: *dependency
   allow_failures:
     - name: -fsanitize=address
     - name: -fsanitize=memory
@@ -481,7 +485,7 @@ before_script:
         # Debugging "Permission defined" failure on darwin like https://travis-ci.org/ruby/ruby/jobs/508683759
         set -x
         date
-        ./miniruby -e 'ARGV.map{[@1,File.stat(@1)]}.sort_by{@2.mtime}.each{p mtime:@2.mtime.to_f, ctime:@2.ctime.to_f, path:@1}' .ext/.timestamp/.RUBYCOMMONDIR*time .ext/common/bigdecimal/*.rb ../ext/bigdecimal/lib/bigdecimal/*.rb . .. .ext .ext/common .ext/common/bigdecimal ext/bigdecimal ../ext ../ext/bigdecimal ../ext/bigdecimal/lib ../ext/bigdecimal/lib/bigdecimal
+        ./miniruby -e 'ARGV.map{|path|[path,File.stat(path)]}.sort_by{|path,st|st.mtime}.each{|path,st|p mtime:st.mtime.to_f, ctime:st.ctime.to_f, path:path}' .ext/.timestamp/.RUBYCOMMONDIR*time .ext/common/bigdecimal/*.rb ../ext/bigdecimal/lib/bigdecimal/*.rb . .. .ext .ext/common .ext/common/bigdecimal ext/bigdecimal ../ext ../ext/bigdecimal ../ext/bigdecimal/lib ../ext/bigdecimal/lib/bigdecimal
         make COPY='cp -f' install
       else
         exit 1
@@ -523,7 +527,6 @@ notifications:
 
   slack:
     rooms:
-      - secure: i1GLETSKye85ea6dGNA3MxI/5myChmMFiZtBd5C69xK+s1sBFqEgOSbaSf9KHc0CYrHVyNhQMaZRruieV7xS+6Pfs0Zvxf1DO6QQTWC2KhkqwFDLvZncAzjoyASdR90hbr+iRPOngQ+HJuE94zemALAwEqNAinzA74PMiJXktqY= # ruby:<token>#commits
       - secure: ah7UEHBvncXT7bM5mvYIQAO+tIyV/wl7nXLb7wQD16dO2v8Gragy0mWjB79Q09hrrMGmp6H9bCDpdGS80boIA5EHaHoG4QaP0i9bsSt8U2AMWgZtfyIgQKJ4H2kXkGlrjO+AXTgnIkP7LNjdgAVUUTGQPb26T3QmoN2Splt+fIQ= # ruby:<token>#alerts
     on_pull_requests: false
     on_success: change

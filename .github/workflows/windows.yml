@@ -18,6 +18,7 @@ jobs:
             vs: 2019
           - os: windows-2019
             vs: 2017
+      fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
       - name: Install libraries with vcpkg
@@ -52,3 +53,18 @@ jobs:
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           nmake ${{ matrix.test_task }}
+        if: "!contains(github.event.head_commit.message, '[ci skip]')"
+      - uses: k0kubun/action-slack@v2.0.0
+        with:
+          payload: |
+            {
+              "attachments": [{
+                "text": "${{ job.status}}: <https://github.com/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ github.workflow }} / ${{ matrix.test_task }}> " +
+                        "(<https://github.com/${{ github.repository }}/commit/${{ github.sha }}|" + "${{ github.sha }}".substring(0, 10) + ">) " +
+                        "of ${{ github.repository }}@" + "${{ github.ref }}".split('/').reverse()[0] + " by ${{ github.event.head_commit.committer.name }}",
+                "color": "danger"
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: failure() && github.event_name == 'push'

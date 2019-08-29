@@ -256,6 +256,7 @@ showflags:
 	"	LANG = $(LANG)" \
 	"	LC_ALL = $(LC_ALL)" \
 	"	LC_CTYPE = $(LC_CTYPE)" \
+	"	MFLAGS = $(MFLAGS)" \
 	$(MESSAGE_END)
 	-@$(CC_VERSION)
 
@@ -727,7 +728,7 @@ no-fake -fake: PHONY
 # version.o depends on.
 $(arch)-fake.rb: $(srcdir)/template/fake.rb.in $(srcdir)/tool/generic_erb.rb version.$(OBJEXT) miniruby$(EXEEXT)
 	$(ECHO) generating $@
-	$(Q) $(CPP) $(warnflags) $(XCFLAGS) $(CPPFLAGS) "$(srcdir)/version.c" | \
+	$(Q) $(CPP) -DRUBY_EXPORT $(INCFLAGS) $(CPPFLAGS) "$(srcdir)/version.c" | \
 	$(BOOTSTRAPRUBY) "$(srcdir)/tool/generic_erb.rb" -o $@ "$(srcdir)/template/fake.rb.in" \
 		i=- srcdir="$(srcdir)" BASERUBY="$(BASERUBY)"
 
@@ -869,8 +870,8 @@ $(PLATFORM_D):
 	@exit > $@
 
 exe/$(PROGRAM): ruby-runner.c ruby-runner.h exe/.time miniruby$(EXEEXT) {$(VPATH)}config.h
-	$(Q) $(CC) $(CFLAGS) $(CPPFLAGS) -DRUBY_INSTALL_NAME=$(@F) $(COUTFLAG)ruby-runner.$(OBJEXT) -c $(CSRCFLAG)$(srcdir)/ruby-runner.c
-	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $(OUTFLAG)$@ ruby-runner.$(OBJEXT) $(LIBS)
+	$(Q) $(CC) $(CFLAGS) $(INCFLAGS) $(CPPFLAGS) -DRUBY_INSTALL_NAME=$(@F) $(COUTFLAG)ruby-runner.$(OBJEXT) -c $(CSRCFLAG)$(srcdir)/ruby-runner.c
+	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(LDFLAGS) $(OUTFLAG)$@ ruby-runner.$(OBJEXT) $(LIBS)
 	$(Q) $(POSTLINK)
 	$(Q) ./miniruby$(EXEEXT) \
 	    -e 'prog, dest, inst = ARGV; dest += "/ruby"' \
@@ -1171,7 +1172,7 @@ bisect-ruby: PHONY
 COMPARE_RUBY = $(BASERUBY)
 BENCH_RUBY = $(RUNRUBY)
 ITEM =
-ARGS = $$(find $(srcdir)/benchmark -maxdepth 1 -name '*$(ITEM)*.yml' -o -name '*$(ITEM)*.rb' | sort)
+ARGS = $$(find $(srcdir)/benchmark -maxdepth 1 -name '$(ITEM)' -o -name '*$(ITEM)*.yml' -o -name '*$(ITEM)*.rb' | sort)
 OPTS =
 
 # See benchmark/README.md for details.
@@ -1293,16 +1294,23 @@ test-bundler-precheck: $(arch)-fake.rb programs
 
 yes-test-bundler-prepare: test-bundler-precheck
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
-		--install-dir .bundle --conservative "rspec:~> 3.5" "rake:~> 12.0"
+		--install-dir .bundle --conservative "rspec:~> 3.5" "rake:~> 12.0" "parallel_tests:~> 2.29"
 
-RSPECOPTS = --format progress
+RSPECOPTS =
 BUNDLER_SPECS =
 test-bundler: $(TEST_RUNNABLE)-test-bundler
 yes-test-bundler: yes-test-bundler-prepare
-	$(gnumake_recursive)$(Q) \
 	$(XRUBY) -C $(srcdir) -Ispec/bundler .bundle/bin/rspec \
 		--require spec_helper $(RSPECOPTS) spec/bundler/$(BUNDLER_SPECS)
 no-test-bundler:
+
+PARALLELRSPECOPTS = --runtime-log $(srcdir)/tmp/parallel_runtime_rspec.log
+test-bundler-parallel: $(TEST_RUNNABLE)-test-bundler-parallel
+yes-test-bundler-parallel: yes-test-bundler-prepare
+	$(XRUBY) -C $(srcdir) -Ispec/bundler .bundle/bin/parallel_rspec \
+		-o "--require $(srcdir)/spec/bundler/spec_helper --require $(srcdir)/spec/bundler/support/parallel" \
+		$(PARALLELRSPECOPTS) spec/bundler/$(BUNDLER_SPECS)
+no-test-bundler-parallel:
 
 GEM = up
 sync-default-gems:

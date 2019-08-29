@@ -328,7 +328,7 @@ ERROR:  Could not find a valid gem 'other' (>= 0) in any repository
     end
 
     use_ui @ui do
-      @cmd.show_lookup_failure misspelled, Gem::Requirement.default, [], :remote
+      @cmd.show_lookup_failure misspelled, Gem::Requirement.default, []
     end
 
     expected = <<-EXPECTED

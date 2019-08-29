@@ -298,7 +298,16 @@ class RubyLex
       when :on_kw
         next if index > 0 and @tokens[index - 1][3].allbits?(Ripper::EXPR_FNAME)
         case t[2]
-        when 'def', 'do', 'case', 'for', 'begin', 'class', 'module'
+        when 'do'
+          if index > 0 and @tokens[index - 1][3].allbits?(Ripper::EXPR_CMDARG)
+            # method_with_bock do; end
+            indent += 1
+          else
+            # while cond do; end # also "until" or "for"
+            # This "do" doesn't increment indent because "while" already
+            # incremented.
+          end
+        when 'def', 'case', 'for', 'begin', 'class', 'module'
           indent += 1
         when 'if', 'unless', 'while', 'until'
           # postfix if/unless/while/until/rescue must be Ripper::EXPR_LABEL
@@ -332,7 +341,16 @@ class RubyLex
       when :on_kw
         next if index > 0 and @tokens[index - 1][3].allbits?(Ripper::EXPR_FNAME)
         case t[2]
-        when 'def', 'do', 'case', 'for', 'begin', 'class', 'module'
+        when 'do'
+          if index > 0 and @tokens[index - 1][3].allbits?(Ripper::EXPR_CMDARG)
+            # method_with_bock do; end
+            depth_difference += 1
+          else
+            # while cond do; end # also "until" or "for"
+            # This "do" doesn't increment indent because "while" already
+            # incremented.
+          end
+        when 'def', 'case', 'for', 'begin', 'class', 'module'
           depth_difference += 1
         when 'if', 'unless', 'while', 'until'
           # postfix if/unless/while/until/rescue must be Ripper::EXPR_LABEL

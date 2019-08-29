@@ -605,6 +605,16 @@ module Bundler::Molinillo
         requirements[name_for_locking_dependency_source] = [locked_requirement] if locked_requirement
         vertex.incoming_edges.each do |edge|
           (requirements[edge.origin.payload.latest_version] ||= []).unshift(edge.requirement)
+        rescue NoMethodError => e
+          if e.receiver.is_a?(String) and e.name == :name
+            PP.pp({vertex: vertex,
+                   incoming_edges: vertex.incoming_edges,
+                   edge: edge,
+                   origin: edge.origin,
+                   payload: edge.origin.payload}, STDERR)
+            STDERR.puts e.message, e.backtrace
+          end
+          raise
         end
 
         activated_by_name = {}

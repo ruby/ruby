@@ -143,8 +143,9 @@ rb_get_expanded_load_path(void)
 }
 
 static VALUE
-load_path_getter(ID id, rb_vm_t *vm)
+load_path_getter(ID id, VALUE * p)
 {
+    rb_vm_t *vm = (void *)p;
     return vm->load_path;
 }
 
@@ -152,6 +153,12 @@ static VALUE
 get_loaded_features(void)
 {
     return GET_VM()->loaded_features;
+}
+
+static VALUE
+get_LOADED_FEATURES(ID _x, VALUE *_y)
+{
+    return get_loaded_features();
 }
 
 static void
@@ -587,7 +594,7 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
 }
 
 static inline enum ruby_tag_type
-rb_load_internal0(rb_execution_context_t *ec, VALUE fname, int wrap)
+load_wrapping(rb_execution_context_t *ec, VALUE fname)
 {
     enum ruby_tag_type state;
     rb_thread_t *th = rb_ec_thread_ptr(ec);
@@ -599,15 +606,10 @@ rb_load_internal0(rb_execution_context_t *ec, VALUE fname, int wrap)
 
     ec->errinfo = Qnil; /* ensure */
 
-    if (!wrap) {
-	th->top_wrapper = 0;
-    }
-    else {
-	/* load in anonymous module as toplevel */
-	th->top_self = rb_obj_clone(rb_vm_top_self());
-	th->top_wrapper = rb_module_new();
-	rb_extend_object(th->top_self, th->top_wrapper);
-    }
+    /* load in anonymous module as toplevel */
+    th->top_self = rb_obj_clone(rb_vm_top_self());
+    th->top_wrapper = rb_module_new();
+    rb_extend_object(th->top_self, th->top_wrapper);
 
     EC_PUSH_TAG(ec);
     state = EC_EXEC_TAG();
@@ -641,7 +643,14 @@ static void
 rb_load_internal(VALUE fname, int wrap)
 {
     rb_execution_context_t *ec = GET_EC();
-    raise_load_if_failed(ec, rb_load_internal0(ec, fname, wrap));
+    enum ruby_tag_type state = TAG_NONE;
+    if (wrap) {
+        state = load_wrapping(ec, fname);
+    }
+    else {
+        load_iseq_eval(ec, fname);
+    }
+    raise_load_if_failed(ec, state);
 }
 
 void
@@ -681,7 +690,7 @@ rb_load_protect(VALUE fname, int wrap, int *pstate)
  */
 
 static VALUE
-rb_f_load(int argc, VALUE *argv)
+rb_f_load(int argc, VALUE *argv, VALUE _)
 {
     VALUE fname, wrap, path, orig_fname;
 
@@ -719,7 +728,7 @@ load_lock(const char *ftptr)
     }
     else if (imemo_type_p(data, imemo_memo)) {
 	struct MEMO *memo = MEMO_CAST(data);
-	void (*init)(void) = (void (*)(void))memo->u3.func;
+        void (*init)(void) = memo->u3.func;
 	data = (st_data_t)rb_thread_shield_new();
 	st_insert(loading_tbl, (st_data_t)ftptr, data);
 	(*init)();
@@ -1256,8 +1265,8 @@ Init_load(void)
     vm->load_path_check_cache = 0;
     rb_define_singleton_method(vm->load_path, "resolve_feature_path", rb_resolve_feature_path, 1);
 
-    rb_define_virtual_variable("$\"", get_loaded_features, 0);
-    rb_define_virtual_variable("$LOADED_FEATURES", get_loaded_features, 0);
+    rb_define_virtual_variable("$\"", get_LOADED_FEATURES, 0);
+    rb_define_virtual_variable("$LOADED_FEATURES", get_LOADED_FEATURES, 0);
     vm->loaded_features = rb_ary_new();
     vm->loaded_features_snapshot = rb_ary_tmp_new(0);
     vm->loaded_features_index = st_init_numtable();

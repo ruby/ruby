@@ -1007,9 +1007,6 @@ eom
     assert_warn(/literal in condition/) do
       eval('1 if //')
     end
-    assert_warn(/literal in condition/) do
-      eval('1 if true..false')
-    end
     assert_warning(/literal in condition/) do
       eval('1 if 1')
     end
@@ -1037,6 +1034,27 @@ eom
     end
     assert_warning('') do
       eval('1 if !:"#{"foo".upcase}"')
+    end
+  end
+
+  def test_warning_literal_in_flip_flop
+    assert_warn(/literal in flip-flop/) do
+      eval('1 if ""..false')
+    end
+    assert_warning(/literal in flip-flop/) do
+      eval('1 if :foo..false')
+    end
+    assert_warning(/literal in flip-flop/) do
+      eval('1 if :"#{"foo".upcase}"..false')
+    end
+    assert_warn(/literal in flip-flop/) do
+      eval('1 if ""...false')
+    end
+    assert_warning(/literal in flip-flop/) do
+      eval('1 if :foo...false')
+    end
+    assert_warning(/literal in flip-flop/) do
+      eval('1 if :"#{"foo".upcase}"...false')
     end
   end
 
@@ -1386,15 +1404,6 @@ eom
     assert_syntax_error('proc {@1_}', /unexpected/)
     assert_syntax_error('proc {@9999999999999999}', /too large/)
     assert_syntax_error('@1', /outside block/)
-  end
-
-  def test_pipeline_operator
-    assert_valid_syntax('x |> y')
-    x = nil
-    assert_equal("121", eval('x = 12 |> pow(2) |> to_s 11'))
-    assert_equal(12, x)
-    assert_equal([2, 4, 6], eval("1.. |> take 3\n|> map do @1 * 2 end"))
-    assert_syntax_error('a|>-b', /unexpected '-'/)
   end
 
   def test_value_expr_in_condition

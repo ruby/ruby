@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-VALUE proc_spec_rb_proc_new_function(VALUE args) {
+VALUE proc_spec_rb_proc_new_function(RB_BLOCK_CALL_FUNC_ARGLIST(args, dummy)) {
   return rb_funcall(args, rb_intern("inspect"), 0);
 }
 

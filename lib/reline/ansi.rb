@@ -106,6 +106,11 @@ class Reline::ANSI
     print "\e[1;1H"
   end
 
+  @@old_winch_handler = nil
+  def self.set_winch_handler(&handler)
+    @@old_winch_handler = Signal.trap('WINCH', &handler)
+  end
+
   def self.prep
     int_handle = Signal.trap('INT', 'IGNORE')
     otio = `stty -g`.chomp
@@ -123,5 +128,6 @@ class Reline::ANSI
     int_handle = Signal.trap('INT', 'IGNORE')
     `stty #{otio}`
     Signal.trap('INT', int_handle)
+    Signal.trap('WINCH', @@old_winch_handler) if @@old_winch_handler
   end
 end

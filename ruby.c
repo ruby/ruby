@@ -1446,13 +1446,13 @@ VALUE rb_argv0;
 VALUE rb_e_script;
 
 static VALUE
-false_value(void)
+false_value(ID _x, VALUE *_y)
 {
     return Qfalse;
 }
 
 static VALUE
-true_value(void)
+true_value(ID _x, VALUE *_y)
 {
     return Qtrue;
 }
@@ -1484,7 +1484,7 @@ uscore_get(void)
  */
 
 static VALUE
-rb_f_sub(int argc, VALUE *argv)
+rb_f_sub(int argc, VALUE *argv, VALUE _)
 {
     VALUE str = rb_funcall_passing_block(uscore_get(), rb_intern("sub"), argc, argv);
     rb_lastline_set(str);
@@ -1503,7 +1503,7 @@ rb_f_sub(int argc, VALUE *argv)
  */
 
 static VALUE
-rb_f_gsub(int argc, VALUE *argv)
+rb_f_gsub(int argc, VALUE *argv, VALUE _)
 {
     VALUE str = rb_funcall_passing_block(uscore_get(), rb_intern("gsub"), argc, argv);
     rb_lastline_set(str);
@@ -1521,7 +1521,7 @@ rb_f_gsub(int argc, VALUE *argv)
  */
 
 static VALUE
-rb_f_chop(void)
+rb_f_chop(VALUE _)
 {
     VALUE str = rb_funcall_passing_block(uscore_get(), rb_intern("chop"), 0, 0);
     rb_lastline_set(str);
@@ -1541,7 +1541,7 @@ rb_f_chop(void)
  */
 
 static VALUE
-rb_f_chomp(int argc, VALUE *argv)
+rb_f_chomp(int argc, VALUE *argv, VALUE _)
 {
     VALUE str = rb_funcall_passing_block(uscore_get(), rb_intern("chomp"), argc, argv);
     rb_lastline_set(str);
@@ -2230,7 +2230,7 @@ ruby_setproctitle(VALUE title)
 }
 
 static void
-set_arg0(VALUE val, ID id)
+set_arg0(VALUE val, ID id, VALUE *_)
 {
     if (origarg.argv == 0)
 	rb_raise(rb_eRuntimeError, "$0 not initialized");
@@ -2304,16 +2304,14 @@ forbid_setid(const char *s, const ruby_cmdline_options_t *opt)
 }
 
 static void
-verbose_setter(VALUE val, ID id, void *data)
+verbose_setter(VALUE val, ID id, VALUE *variable)
 {
-    VALUE *variable = data;
     *variable = RTEST(val) ? Qtrue : val;
 }
 
 static VALUE
-opt_W_getter(ID id, void *data)
+opt_W_getter(ID id, VALUE *variable)
 {
-    VALUE *variable = data;
     switch (*variable) {
       case Qnil:
 	return INT2FIX(0);

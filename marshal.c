@@ -112,7 +112,7 @@ static VALUE rb_marshal_dump_limited(VALUE obj, VALUE port, int limit);
 static VALUE rb_marshal_load_with_proc(VALUE port, VALUE proc);
 
 static int
-mark_marshal_compat_i(st_data_t key, st_data_t value)
+mark_marshal_compat_i(st_data_t key, st_data_t value, st_data_t _)
 {
     marshal_compat_t *p = (marshal_compat_t *)value;
     rb_gc_mark(p->newclass);
@@ -500,8 +500,9 @@ w_unique(VALUE s, struct dump_arg *arg)
 static void w_object(VALUE,struct dump_arg*,int);
 
 static int
-hash_each(VALUE key, VALUE value, struct dump_call_arg *arg)
+hash_each(VALUE key, VALUE value, VALUE v)
 {
+    struct dump_call_arg *arg = (void *)v;
     w_object(key, arg->arg, arg->limit);
     w_object(value, arg->arg, arg->limit);
     return ST_CONTINUE;
@@ -1046,7 +1047,7 @@ io_needed(void)
  * * objects which define singleton methods
  */
 static VALUE
-marshal_dump(int argc, VALUE *argv)
+marshal_dump(int argc, VALUE *argv, VALUE _)
 {
     VALUE obj, port, a1, a2;
     int limit = -1;
@@ -2103,7 +2104,7 @@ clear_load_arg(struct load_arg *arg)
  * Please see the overview for further details.
  */
 static VALUE
-marshal_load(int argc, VALUE *argv)
+marshal_load(int argc, VALUE *argv, VALUE _)
 {
     VALUE port, proc;
 

@@ -43,7 +43,7 @@ VALUE rb_cMethod;
 VALUE rb_cBinding;
 VALUE rb_cProc;
 
-static VALUE bmcall(VALUE, VALUE, int, VALUE *, VALUE);
+static rb_block_call_func bmcall;
 static int method_arity(VALUE);
 static int method_min_max_arity(VALUE, int *max);
 
@@ -696,7 +696,7 @@ sym_proc_new(VALUE klass, VALUE sym)
 }
 
 struct vm_ifunc *
-rb_vm_ifunc_new(VALUE (*func)(ANYARGS), const void *data, int min_argc, int max_argc)
+rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int max_argc)
 {
     union {
 	struct vm_ifunc_argc argc;
@@ -823,6 +823,12 @@ rb_proc_s_new(int argc, VALUE *argv, VALUE klass)
     return block;
 }
 
+VALUE
+rb_block_proc(void)
+{
+    return proc_new(rb_cProc, FALSE);
+}
+
 /*
  * call-seq:
  *   proc   { |...| block }  -> a_proc
@@ -830,10 +836,16 @@ rb_proc_s_new(int argc, VALUE *argv, VALUE klass)
  * Equivalent to Proc.new.
  */
 
-VALUE
-rb_block_proc(void)
+static VALUE
+f_proc(VALUE _)
 {
-    return proc_new(rb_cProc, FALSE);
+    return rb_block_proc();
+}
+
+VALUE
+rb_block_lambda(void)
+{
+    return proc_new(rb_cProc, TRUE);
 }
 
 /*
@@ -844,10 +856,10 @@ rb_block_proc(void)
  * number of parameters passed when called.
  */
 
-VALUE
-rb_block_lambda(void)
+static VALUE
+f_lambda(VALUE _)
 {
-    return proc_new(rb_cProc, TRUE);
+    return rb_block_lambda();
 }
 
 /*  Document-method: Proc#===
@@ -1935,8 +1947,10 @@ rb_mod_public_instance_method(VALUE mod, VALUE vid)
  *
  *  Defines an instance method in the receiver. The _method_
  *  parameter can be a +Proc+, a +Method+ or an +UnboundMethod+ object.
- *  If a block is specified, it is used as the method body. This block
- *  is evaluated using #instance_eval.
+ *  If a block is specified, it is used as the method body.
+ *  If a block or the _method_ parameter has parameters,
+ *  they're used as method parameters.
+ *  This block is evaluated using #instance_eval.
  *
  *     class A
  *       def fred
@@ -1946,6 +1960,7 @@ rb_mod_public_instance_method(VALUE mod, VALUE vid)
  *         self.class.define_method(name, &block)
  *       end
  *       define_method(:wilma) { puts "Charge it!" }
+ *       define_method(:flint) {|name| puts "I'm #{name}!"}
  *     end
  *     class B < A
  *       define_method(:barney, instance_method(:fred))
@@ -1953,6 +1968,7 @@ rb_mod_public_instance_method(VALUE mod, VALUE vid)
  *     a = B.new
  *     a.barney
  *     a.wilma
+ *     a.flint('Dino')
  *     a.create_method(:betty) { p self }
  *     a.betty
  *
@@ -1960,6 +1976,7 @@ rb_mod_public_instance_method(VALUE mod, VALUE vid)
  *
  *     In Fred
  *     Charge it!
+ *     I'm Dino!
  *     #<B:0x401b39e8>
  */
 
@@ -2064,6 +2081,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
  *  Defines a singleton method in the receiver. The _method_
  *  parameter can be a +Proc+, a +Method+ or an +UnboundMethod+ object.
  *  If a block is specified, it is used as the method body.
+ *  If a block or a method has parameters, they're used as method parameters.
  *
  *     class A
  *       class << self
@@ -2080,6 +2098,10 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
  *     guy = "Bob"
  *     guy.define_singleton_method(:hello) { "#{self}: Hello there!" }
  *     guy.hello    #=>  "Bob: Hello there!"
+ *
+ *     chris = "Chris"
+ *     chris.define_singleton_method(:greet) {|greeting| "#{greeting}, I'm Chris!" }
+ *     chris.greet("Hi") #=> "Hi, I'm Chris!"
  */
 
 static VALUE
@@ -2773,14 +2795,14 @@ mlambda(VALUE method)
 }
 
 static VALUE
-bmcall(VALUE args, VALUE method, int argc, VALUE *argv, VALUE passed_proc)
+bmcall(RB_BLOCK_CALL_FUNC_ARGLIST(args, method))
 {
-    return rb_method_call_with_block(argc, argv, method, passed_proc);
+    return rb_method_call_with_block(argc, argv, method, blockarg);
 }
 
 VALUE
 rb_proc_new(
-    VALUE (*func)(ANYARGS), /* VALUE yieldarg[, VALUE procarg] */
+    rb_block_call_func_t func,
     VALUE val)
 {
     VALUE procval = rb_iterate(mproc, 0, func, val);
@@ -2977,7 +2999,7 @@ proc_binding(VALUE self)
     return bindval;
 }
 
-static VALUE curry(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc);
+static rb_block_call_func curry;
 
 static VALUE
 make_curry_proc(VALUE proc, VALUE passed, VALUE arity)
@@ -2997,7 +3019,7 @@ make_curry_proc(VALUE proc, VALUE passed, VALUE arity)
 }
 
 static VALUE
-curry(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
+curry(RB_BLOCK_CALL_FUNC_ARGLIST(_, args))
 {
     VALUE proc, passed, arity;
     proc = RARRAY_AREF(args, 0);
@@ -3008,14 +3030,14 @@ curry(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
     rb_ary_freeze(passed);
 
     if (RARRAY_LEN(passed) < FIX2INT(arity)) {
-	if (!NIL_P(passed_proc)) {
+        if (!NIL_P(blockarg)) {
 	    rb_warn("given block not used");
 	}
 	arity = make_curry_proc(proc, passed, arity);
 	return arity;
     }
     else {
-	return rb_proc_call_with_block(proc, check_argc(RARRAY_LEN(passed)), RARRAY_CONST_PTR(passed), passed_proc);
+        return rb_proc_call_with_block(proc, check_argc(RARRAY_LEN(passed)), RARRAY_CONST_PTR(passed), blockarg);
     }
 }
 
@@ -3120,16 +3142,16 @@ rb_method_curry(int argc, const VALUE *argv, VALUE self)
 }
 
 static VALUE
-compose(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
+compose(RB_BLOCK_CALL_FUNC_ARGLIST(_, args))
 {
     VALUE f, g, fargs;
     f = RARRAY_AREF(args, 0);
     g = RARRAY_AREF(args, 1);
 
     if (rb_obj_is_proc(g))
-        fargs = rb_proc_call_with_block(g, argc, argv, passed_proc);
+        fargs = rb_proc_call_with_block(g, argc, argv, blockarg);
     else
-        fargs = rb_funcall_with_block(g, idCall, argc, argv, passed_proc);
+        fargs = rb_funcall_with_block(g, idCall, argc, argv, blockarg);
 
     if (rb_obj_is_proc(f))
         return rb_proc_call(f, rb_ary_new3(1, fargs));
@@ -3613,8 +3635,8 @@ Init_Proc(void)
     rb_vm_register_special_exception(ruby_error_sysstack, rb_eSysStackError, "stack level too deep");
 
     /* utility functions */
-    rb_define_global_function("proc", rb_block_proc, 0);
-    rb_define_global_function("lambda", rb_block_lambda, 0);
+    rb_define_global_function("proc", f_proc, 0);
+    rb_define_global_function("lambda", f_lambda, 0);
 
     /* Method */
     rb_cMethod = rb_define_class("Method", rb_cObject);

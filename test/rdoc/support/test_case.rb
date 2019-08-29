@@ -1,13 +1,24 @@
-# frozen_string_literal: true
+##
+# RDoc::TestCase is an abstract TestCase to provide common setup and teardown
+# across all RDoc tests.  The test case uses minitest, so all the assertions
+# of minitest may be used.
+#
+# The testcase provides the following:
+#
+# * A reset code-object tree
+# * A reset markup preprocessor (RDoc::Markup::PreProcess)
+# * The <code>@RM</code> alias of RDoc::Markup (for less typing)
+# * <code>@pwd</code> containing the current working directory
+# * FileUtils, pp, Tempfile, Dir.tmpdir and StringIO
+
 require 'bundler/errors'
 begin
-  gem 'minitest', '~> 5.0'
+  gem 'test-unit'
 rescue NoMethodError, Gem::LoadError, Bundler::GemfileNotFound
   # for ruby tests
 end
 
-require 'minitest/autorun'
-require 'minitest/benchmark' unless ENV['NOBENCHMARK']
+require 'test/unit'
 
 require 'fileutils'
 require 'pp'
@@ -30,7 +41,7 @@ require 'rdoc'
 # * <code>@pwd</code> containing the current working directory
 # * FileUtils, pp, Tempfile, Dir.tmpdir and StringIO
 
-class RDoc::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Unit::TestCase)
+class RDoc::TestCase < Test::Unit::TestCase
 
   ##
   # Abstract test-case setup
@@ -189,7 +200,7 @@ class RDoc::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Un
   end
 
   ##
-  # run capture_output with setting $VERBOSE = true
+  # run capture_io with setting $VERBOSE = true
 
   def verbose_capture_output
     capture_output do

@@ -212,7 +212,7 @@ static void extract_user_token _((struct cparse_params *v,
                                   VALUE block_args, VALUE *tok, VALUE *val));
 static void shift _((struct cparse_params* v, long act, VALUE tok, VALUE val));
 static int reduce _((struct cparse_params* v, long act));
-static VALUE reduce0 _((VALUE block_args, VALUE data, VALUE self));
+static rb_block_call_func reduce0;
 
 #ifdef DEBUG
 # define D_puts(msg)        if (v->sys_debug) puts(msg)
@@ -708,7 +708,7 @@ reduce(struct cparse_params *v, long act)
 }
 
 static VALUE
-reduce0(VALUE val, VALUE data, VALUE self)
+reduce0(RB_BLOCK_CALL_FUNC_ARGLIST(_, data))
 {
     struct cparse_params *v = rb_check_typeddata(data, &cparse_params_type);
     VALUE reduce_to, reduce_len, method_id;

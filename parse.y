@@ -167,7 +167,11 @@ struct local_vars {
     struct local_vars *prev;
 };
 
-#define NUMPARAM_MAX 100 /* INT_MAX */
+enum {
+    ORDINAL_PARAM = -1,
+    NO_PARAM = 0,
+    NUMPARAM_MAX = 100,
+};
 
 #define DVARS_INHERIT ((void*)1)
 #define DVARS_TOPSCOPE NULL
@@ -1005,7 +1009,7 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %type <node> literal numeric simple_numeric ssym dsym symbol cpath
 %type <node> top_compstmt top_stmts top_stmt begin_block
 %type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
-%type <node> expr_value expr_value_do arg_value primary_value fcall rel_expr pipeline
+%type <node> expr_value expr_value_do arg_value primary_value fcall rel_expr
 %type <node> if_tail opt_else case_body case_args cases opt_rescue exc_list exc_var opt_ensure
 %type <node> args call_args opt_call_args
 %type <node> paren_args opt_paren_args args_tail opt_args_tail block_args_tail opt_block_args_tail
@@ -1063,7 +1067,6 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %token <id> tANDDOT	RUBY_TOKEN(ANDDOT) "&."
 %token <id> tCOLON2	RUBY_TOKEN(COLON2) "::"
 %token <id> tMETHREF	RUBY_TOKEN(METHREF) ".:"
-%token tPIPE		RUBY_TOKEN(PIPE) "|>"
 %token tCOLON3		":: at EXPR_BEG"
 %token <id> tOP_ASGN	"operator-assignment" /* +=, -=  etc. */
 %token tASSOC		"=>"
@@ -1099,7 +1102,6 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %nonassoc  modifier_if modifier_unless modifier_while modifier_until
 %left  keyword_or keyword_and
 %right keyword_not
-%left  tPIPE
 %nonassoc keyword_defined
 %right '=' tOP_ASGN
 %left modifier_rescue
@@ -1508,37 +1510,6 @@ expr		: command_call
 			$$ = call_uni_op(p, method_cond(p, $2, &@2), '!', &@1, &@$);
 		    }
 		| arg
-		| pipeline
-		;
-
-pipeline	: expr tPIPE operation opt_paren_args
-		    {
-		    /*%%%*/
-			$$ = new_command_qcall(p, ID2VAL(idPIPE), $1, $3, $4, Qnull, &@3, &@$);
-		    /*% %*/
-		    /*% ripper: command_call!($1, ID2VAL(idPIPE), $3, $4) %*/
-		    }
-		| expr tPIPE operation opt_paren_args brace_block
-		    {
-		    /*%%%*/
-			$$ = new_command_qcall(p, ID2VAL(idPIPE), $1, $3, $4, $5, &@3, &@$);
-		    /*% %*/
-		    /*% ripper: method_add_block!(command_call!($1, ID2VAL(idPIPE), $3, $4), $5) %*/
-		    }
-		| expr tPIPE operation command_args
-		    {
-		    /*%%%*/
-			$$ = new_command_qcall(p, ID2VAL(idPIPE), $1, $3, $4, Qnull, &@3, &@$);
-		    /*% %*/
-		    /*% ripper: command_call!($1, ID2VAL(idPIPE), $3, $4) %*/
-		    }
-		| expr tPIPE operation command_args do_block
-		    {
-		    /*%%%*/
-			$$ = new_command_qcall(p, ID2VAL(idPIPE), $1, $3, $4, $5, &@3, &@$);
-		    /*% %*/
-		    /*% ripper: method_add_block!(command_call!($1, ID2VAL(idPIPE), $3, $4), $5) %*/
-		    }
 		;
 
 expr_value	: expr
@@ -3366,7 +3337,7 @@ opt_block_param	: none
 block_param_def	: '|' opt_bv_decl '|'
 		    {
 			p->cur_arg = 0;
-			p->max_numparam = -1;
+			p->max_numparam = ORDINAL_PARAM;
 		    /*%%%*/
 			$$ = 0;
 		    /*% %*/
@@ -3374,7 +3345,7 @@ block_param_def	: '|' opt_bv_decl '|'
 		    }
 		| tOROP
 		    {
-			p->max_numparam = -1;
+			p->max_numparam = ORDINAL_PARAM;
 		    /*%%%*/
 			$$ = 0;
 		    /*% %*/
@@ -3383,7 +3354,7 @@ block_param_def	: '|' opt_bv_decl '|'
 		| '|' block_param opt_bv_decl '|'
 		    {
 			p->cur_arg = 0;
-			p->max_numparam = -1;
+			p->max_numparam = ORDINAL_PARAM;
 		    /*%%%*/
 			$$ = $2;
 		    /*% %*/
@@ -3461,7 +3432,7 @@ f_larglist	: '(' f_args opt_bv_decl ')'
 		    {
 		    /*%%%*/
 			$$ = $2;
-			p->max_numparam = -1;
+			p->max_numparam = ORDINAL_PARAM;
 		    /*% %*/
 		    /*% ripper: paren!($2) %*/
 		    }
@@ -3469,7 +3440,7 @@ f_larglist	: '(' f_args opt_bv_decl ')'
 		    {
 		    /*%%%*/
 			if (!args_info_empty_p($1->nd_ainfo))
-			    p->max_numparam = -1;
+			    p->max_numparam = ORDINAL_PARAM;
 		    /*% %*/
 			$$ = $1;
 		    }
@@ -4858,7 +4829,7 @@ f_norm_arg	: f_bad_arg
 		| tIDENTIFIER
 		    {
 			formal_argument(p, get_id($1));
-			p->max_numparam = -1;
+			p->max_numparam = ORDINAL_PARAM;
 			$$ = $1;
 		    }
 		;
@@ -4921,7 +4892,7 @@ f_label 	: tLABEL
 			ID id = get_id($1);
 			arg_var(p, formal_argument(p, id));
 			p->cur_arg = id;
-			p->max_numparam = -1;
+			p->max_numparam = ORDINAL_PARAM;
 			$$ = $1;
 		    }
 		;
@@ -5803,9 +5774,8 @@ yycompile0(VALUE arg)
 	if (!opt) opt = rb_obj_hide(rb_ident_hash_new());
 	rb_hash_aset(opt, rb_sym_intern_ascii_cstr("coverage_enabled"), cov);
 	prelude = block_append(p, p->eval_tree_begin, body);
-	add_mark_object(p, opt);
 	tree->nd_body = prelude;
-	p->ast->body.compile_option = opt;
+        RB_OBJ_WRITE(p->ast, &p->ast->body.compile_option, opt);
     }
     p->ast->body.root = tree;
     p->ast->body.line_count = p->line_count;
@@ -8450,7 +8420,7 @@ parser_numbered_param(struct parser_params *p, unsigned long n)
 	compile_error(p, "numbered parameter outside block");
 	return false;
     }
-    if (p->max_numparam < 0) {
+    if (p->max_numparam < NO_PARAM) {
 	compile_error(p, "ordinary parameter is defined");
 	return false;
     }
@@ -8707,11 +8677,10 @@ parser_yylex(struct parser_params *p)
 	      case '\13': /* '\v' */
 		space_seen = 1;
 		break;
-	      case '|':
 	      case '&':
 	      case '.': {
 		dispatch_delayed_token(p, tIGNORED_NL);
-		if (c == '|' ? peek(p, '>') : (peek(p, '.') == (c == '&'))) {
+		if (peek(p, '.') == (c == '&')) {
 		    pushback(p, c);
 		    dispatch_scan_event(p, tSP);
 		    goto retry;
@@ -8985,10 +8954,6 @@ parser_yylex(struct parser_params *p)
             set_yylval_id('|');
 	    SET_LEX_STATE(EXPR_BEG);
 	    return tOP_ASGN;
-	}
-	if (c == '>') {
-	    SET_LEX_STATE(EXPR_DOT);
-	    return tPIPE;
 	}
 	SET_LEX_STATE(IS_AFTER_OPERATOR() ? EXPR_ARG : EXPR_BEG|EXPR_LABEL);
 	pushback(p, c);
@@ -10859,19 +10824,20 @@ assign_in_cond(struct parser_params *p, NODE *node)
     return 1;
 }
 
-static void
-warn_unless_e_option(struct parser_params *p, NODE *node, const char *str)
-{
-    if (!e_option_supplied(p)) parser_warn(p, node, str);
-}
+enum cond_type {
+    COND_IN_OP,
+    COND_IN_COND,
+    COND_IN_FF
+};
 
-static void
-warning_unless_e_option(struct parser_params *p, NODE *node, const char *str)
-{
-    if (!e_option_supplied(p)) parser_warning(p, node, str);
-}
+#define SWITCH_BY_COND_TYPE(t, w, arg) \
+    switch (t) { \
+      case COND_IN_OP: break; \
+      case COND_IN_COND: rb_##w##0(arg "literal in condition"); break; \
+      case COND_IN_FF: rb_##w##0(arg "literal in flip-flop"); break; \
+    }
 
-static NODE *cond0(struct parser_params*,NODE*,int,const YYLTYPE*);
+static NODE *cond0(struct parser_params*,NODE*,enum cond_type,const YYLTYPE*);
 
 static NODE*
 range_op(struct parser_params *p, NODE *node, const YYLTYPE *loc)
@@ -10883,35 +10849,14 @@ range_op(struct parser_params *p, NODE *node, const YYLTYPE *loc)
     type = nd_type(node);
     value_expr(node);
     if (type == NODE_LIT && FIXNUM_P(node->nd_lit)) {
-	warn_unless_e_option(p, node, "integer literal in conditional range");
+	if (!e_option_supplied(p)) parser_warn(p, node, "integer literal in flip-flop");
 	return NEW_CALL(node, tEQ, NEW_LIST(NEW_GVAR(rb_intern("$."), loc), loc), loc);
     }
-    return cond0(p, node, FALSE, loc);
-}
-
-static int
-literal_node(NODE *node)
-{
-    if (!node) return 1;	/* same as NODE_NIL */
-    if (!(node = nd_once_body(node))) return 1;
-    switch (nd_type(node)) {
-      case NODE_LIT:
-      case NODE_STR:
-      case NODE_DSTR:
-      case NODE_EVSTR:
-      case NODE_DREGX:
-      case NODE_DSYM:
-	return 2;
-      case NODE_TRUE:
-      case NODE_FALSE:
-      case NODE_NIL:
-	return 1;
-    }
-    return 0;
+    return cond0(p, node, COND_IN_FF, loc);
 }
 
 static NODE*
-cond0(struct parser_params *p, NODE *node, int method_op, const YYLTYPE *loc)
+cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *loc)
 {
     if (node == 0) return 0;
     if (!(node = nd_once_body(node))) return 0;
@@ -10921,21 +10866,18 @@ cond0(struct parser_params *p, NODE *node, int method_op, const YYLTYPE *loc)
       case NODE_DSTR:
       case NODE_EVSTR:
       case NODE_STR:
-	if (!method_op) rb_warn0("string literal in condition");
+	SWITCH_BY_COND_TYPE(type, warn, "string ")
 	break;
 
       case NODE_DREGX:
-	{
-	    if (!method_op)
-		warning_unless_e_option(p, node, "regex literal in condition");
+	if (!e_option_supplied(p)) SWITCH_BY_COND_TYPE(type, warning, "regex ")
 
-	    return NEW_MATCH2(node, NEW_GVAR(idLASTLINE, loc), loc);
-	}
+	return NEW_MATCH2(node, NEW_GVAR(idLASTLINE, loc), loc);
 
       case NODE_AND:
       case NODE_OR:
-	node->nd_1st = cond0(p, node->nd_1st, FALSE, loc);
-	node->nd_2nd = cond0(p, node->nd_2nd, FALSE, loc);
+	node->nd_1st = cond0(p, node->nd_1st, COND_IN_COND, loc);
+	node->nd_2nd = cond0(p, node->nd_2nd, COND_IN_COND, loc);
 	break;
 
       case NODE_DOT2:
@@ -10944,23 +10886,15 @@ cond0(struct parser_params *p, NODE *node, int method_op, const YYLTYPE *loc)
 	node->nd_end = range_op(p, node->nd_end, loc);
 	if (nd_type(node) == NODE_DOT2) nd_set_type(node,NODE_FLIP2);
 	else if (nd_type(node) == NODE_DOT3) nd_set_type(node, NODE_FLIP3);
-	if (!method_op && !e_option_supplied(p)) {
-	    int b = literal_node(node->nd_beg);
-	    int e = literal_node(node->nd_end);
-	    if ((b == 1 && e == 1) || (b + e >= 2 && RTEST(ruby_verbose))) {
-		parser_warn(p, node, "range literal in condition");
-	    }
-	}
 	break;
 
       case NODE_DSYM:
-	if (!method_op) parser_warning(p, node, "literal in condition");
+	SWITCH_BY_COND_TYPE(type, warning, "string ")
 	break;
 
       case NODE_LIT:
 	if (RB_TYPE_P(node->nd_lit, T_REGEXP)) {
-	    if (!method_op)
-		warn_unless_e_option(p, node, "regex literal in condition");
+	    if (!e_option_supplied(p)) SWITCH_BY_COND_TYPE(type, warn, "regex ")
 	    nd_set_type(node, NODE_MATCH);
 	}
 	else if (node->nd_lit == Qtrue ||
@@ -10968,8 +10902,7 @@ cond0(struct parser_params *p, NODE *node, int method_op, const YYLTYPE *loc)
 	    /* booleans are OK, e.g., while true */
 	}
 	else {
-	    if (!method_op)
-		parser_warning(p, node, "literal in condition");
+	    SWITCH_BY_COND_TYPE(type, warning, "")
 	}
       default:
 	break;
@@ -10981,21 +10914,21 @@ static NODE*
 cond(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 {
     if (node == 0) return 0;
-    return cond0(p, node, FALSE, loc);
+    return cond0(p, node, COND_IN_COND, loc);
 }
 
 static NODE*
 method_cond(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 {
     if (node == 0) return 0;
-    return cond0(p, node, TRUE, loc);
+    return cond0(p, node, COND_IN_OP, loc);
 }
 
 static NODE*
 new_if(struct parser_params *p, NODE *cc, NODE *left, NODE *right, const YYLTYPE *loc)
 {
     if (!cc) return right;
-    cc = cond0(p, cc, FALSE, loc);
+    cc = cond0(p, cc, COND_IN_COND, loc);
     return newline_node(NEW_IF(cc, left, right, loc));
 }
 
@@ -11003,7 +10936,7 @@ static NODE*
 new_unless(struct parser_params *p, NODE *cc, NODE *left, NODE *right, const YYLTYPE *loc)
 {
     if (!cc) return right;
-    cc = cond0(p, cc, FALSE, loc);
+    cc = cond0(p, cc, COND_IN_COND, loc);
     return newline_node(NEW_UNLESS(cc, left, right, loc));
 }
 
@@ -11213,7 +11146,7 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
 static NODE *
 args_with_numbered(struct parser_params *p, NODE *args, int max_numparam)
 {
-    if (max_numparam > 0) {
+    if (max_numparam > NO_PARAM) {
 	if (!args) args = new_args_tail(p, 0, 0, 0, 0);
 	args->nd_ainfo->pre_args_num = max_numparam;
 	args->nd_ainfo->rest_arg = NODE_SPECIAL_EXCESSIVE_COMMA;

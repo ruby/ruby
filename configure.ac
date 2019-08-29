@@ -198,16 +198,36 @@ AS_CASE([$CC],
 [gcc_prefix= gcc_suffix=])
 
 dnl Select the appropriate C++ compiler in OS X
-AS_CASE(["$build_os"],
-  [darwin1*.*], [
-    AS_CASE(["x$CC"],
-      [xgcc-4.2|x/usr/bin/gcc-4.2], [: ${CXX=g++-4.2}],
-      [xgcc|x/usr/bin/gcc],         [: ${CXX=g++}],
-      [xcc|x/usr/bin/cc],           [: ${CXX=c++}],
-      [xicc],                       [: ${CXX=icpc}],
-      [xclang|x/usr/bin/clang],     [: ${CXX=clang++}])
-  ])
+AS_CASE(["$build_os:${CXX}"],
+    [darwin1*.*:], [
+        AC_MSG_CHECKING([CXX for $CC])
+        AS_CASE(["/$CC "],
+            [*@<:@\ /@:>@"gcc-4.2 "*], [pat='gcc-4\.2' CXX=g++-4.2],
+            [*@<:@\ /@:>@"gcc "*],     [pat=gcc CXX=g++],
+            [*@<:@\ /@:>@"cc "*],      [pat=cc CXX=c++],
+            [*@<:@\ /@:>@"icc "*],     [pat=icc CXX=icpc],
+            [*@<:@\ /@:>@"clang "*],   [pat=clang CXX=clang++])
+        AS_IF([test "${CXX}"], [
+            CXX=`echo "/$CC " | sed ["s:\([ /]\)${pat}:\1$CXX:; s:^/::; s: *$::"]`
+        ])
+        AC_MSG_RESULT([$CXX])
+    ])
 test -z "$CXX" || ac_cv_prog_CXX="$CXX"
+
+AS_CASE(["$target_os"],
+[darwin*], [
+    AC_MSG_CHECKING(if minimum required OS X version is supported)
+    AC_TRY_CPP([@%:@include <AvailabilityMacros.h>
+	@%:@if MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_5
+	@%:@error pre OS X 10.5
+	[!<===== pre OS X 10.5 =====>]
+	@%:@endif
+	],
+	[macosx_min_required=yes],
+	[AC_MSG_RESULT(no)
+	AC_MSG_ERROR([Unsupported OS X version is required])])
+    AC_MSG_RESULT(${macosx_min_required})
+])
 
 AC_PROG_CXX
 RUBY_MINGW32
@@ -224,9 +244,7 @@ AS_IF([test "$GCC" = yes], [
     gcc_minor=`echo =__GNUC_MINOR__ | $CC -E -xc - | sed '/^=/!d;s///'`
     test -n "$gcc_major" || gcc_major=0
     test -n "$gcc_minor" || gcc_minor=0
-    AS_CASE(["x$CC"], [xicc], [
-      icc_version=`echo =__ICC | $CC -E -xc - | sed '/^=/!d;s///'`
-    ])
+    icc_version=`echo =__ICC | $CC -E -xc - | sed '/^=/!d;s///;/^__ICC/d'`
     test -n "$icc_version" || icc_version=0
     # RUBY_APPEND_OPTIONS(XCFLAGS, ["-include ruby/config.h" "-include ruby/missing.h"])
 ], [
@@ -779,28 +797,20 @@ AS_CASE(["$target_os"],
 		ORIG_LIBS="$LIBS"
 		RUBY_PREPEND_OPTION(LIBS, -lobjc)
 		RUBY_APPEND_OPTIONS(CPPFLAGS, -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE -D_DARWIN_UNLIMITED_SELECT -D_REENTRANT)
-		AC_MSG_CHECKING(whether Mac OS X 10.5 or later)
-		AC_TRY_CPP([#include <AvailabilityMacros.h>
-		    #if MAC_OS_X_VERSION_MAX_ALLOWED <= 1040
-		    #error pre OS X 10.4
-		    [!<===== pre OS X 10.4 =====>]
-		    #endif
-		    ],
-		    [macosx_10_5=yes], [macosx_10_5=no])
-		AC_MSG_RESULT($macosx_10_5)
-		AS_IF([test "${target_os@%:@darwin}" -ge 16], [
+		AC_CACHE_CHECK([whether syscall(2) is deprecated], rb_cv_syscall_deprecated,
+		    [RUBY_WERROR_FLAG([
+			AC_TRY_COMPILE([@%:@include <unistd.h>],
+				       [if (syscall(0)) return 1;],
+			    [rb_cv_syscall_deprecated=no],
+			    [rb_cv_syscall_deprecated=yes])])])
+		AS_IF([test $rb_cv_syscall_deprecated = yes], [
 		    ac_cv_func___syscall=no
 		    ac_cv_func_syscall=no
 		    ac_cv_header_sys_syscall_h=no
 		    ac_cv_header_syscall_h=no
 		])
-		AS_IF([test $macosx_10_5 = yes], [
-		    ac_cv_func_getcontext=no
-		    ac_cv_func_setcontext=no
-		], [
-		    AC_DEFINE(BROKEN_SETREUID, 1)
-		    AC_DEFINE(BROKEN_SETREGID, 1)
-		])
+		ac_cv_func_getcontext=no
+		ac_cv_func_setcontext=no
 		incs=`$CC -v -E -xc - < /dev/null 2>&1 | sed ['1,/^@%:@include </d;s/^ *//;s|[^./][^/]*/\.\./||g;/\/include$/!d;s||/lib|;/\/usr\/lib/d']`
 		for d in `$CC -print-search-dirs | sed -e '/^libraries: */!d;s///' | tr : '\012' | fgrep -v /../ | sed -n 's|^\(/.*/lib\)/$|\1|p'`; do
 		    incs=`echo "$incs" | fgrep -v "$d"`
@@ -1761,6 +1771,7 @@ AC_CHECK_FUNCS(dup3)
 AC_CHECK_FUNCS(eaccess)
 AC_CHECK_FUNCS(endgrent)
 AC_CHECK_FUNCS(eventfd)
+AC_CHECK_FUNCS(explicit_memset)
 AC_CHECK_FUNCS(fcopyfile)
 AC_CHECK_FUNCS(fchmod)
 AC_CHECK_FUNCS(fchown)
@@ -2764,6 +2775,7 @@ AS_CASE(["$target_os"],
     ])
 AS_CASE(["$target_cpu-$target_os"],
 [*-darwin*], [
+    AC_CHECK_HEADERS([libproc.h])
     AC_CHECK_HEADERS([execinfo.h])
     AS_IF([test "x$ac_cv_header_execinfo_h" = xyes], [
 	AC_CHECK_LIB([execinfo], [backtrace])

@@ -443,6 +443,16 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line('abc')
   end
 
+  def test_ed_delete_next_char
+    input_keys('abc')
+    assert_cursor(3)
+    assert_cursor_max(3)
+    @line_editor.input_key(Reline::Key.new(:key_delete, :key_delete, false))
+    assert_cursor(3)
+    assert_cursor_max(3)
+    assert_line('abc')
+  end
+
   def test_em_next_word
     assert_byte_pointer_size('')
     assert_cursor(0)

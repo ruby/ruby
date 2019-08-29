@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-if defined?(Encoding) && Encoding.default_external.name != "UTF-8"
-  # An approximation of ruby -E UTF-8, since it works on 1.8.7
-  Encoding.default_external = Encoding.find("UTF-8")
-end
-
 RSpec.describe "La biblioteca si misma" do
   def check_for_expendable_words(filename)
     failing_line_message = []
@@ -55,11 +50,11 @@ RSpec.describe "La biblioteca si misma" do
     expect(error_messages.compact).to be_well_formed
   end
 
-  it "mantiene la calidad de lenguaje de oraciones usadas en el código fuente", :ruby_repo do
+  it "mantiene la calidad de lenguaje de oraciones usadas en el código fuente" do
     error_messages = []
     exempt = /vendor/
     Dir.chdir(root) do
-      `git ls-files -z -- lib`.split("\x0").each do |filename|
+      lib_tracked_files.split("\x0").each do |filename|
         next if filename =~ exempt
         error_messages << check_for_expendable_words(filename)
         error_messages << check_for_specific_pronouns(filename)

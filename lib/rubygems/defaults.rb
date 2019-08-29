@@ -34,16 +34,9 @@ module Gem
                'Gems',
                RbConfig::CONFIG['ruby_version']
              ]
-           elsif RbConfig::CONFIG['rubylibprefix']
-             [
-               RbConfig::CONFIG['rubylibprefix'],
-               'gems',
-               RbConfig::CONFIG['ruby_version']
-             ]
            else
              [
-               RbConfig::CONFIG['libdir'],
-               ruby_engine,
+               RbConfig::CONFIG['rubylibprefix'],
                'gems',
                RbConfig::CONFIG['ruby_version']
              ]

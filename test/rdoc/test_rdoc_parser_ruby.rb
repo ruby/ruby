@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'minitest_helper'
+require_relative 'helper'
 
 class TestRDocParserRuby < RDoc::TestCase
 
@@ -100,7 +100,7 @@ class C; end
     assert_equal 'E', name_t[:text]
     assert_equal 'D::E', given_name
 
-    assert_raises RDoc::Error do
+    assert_raise RDoc::Error do
       util_parser("A::\nB").get_class_or_module ctxt
     end
   end

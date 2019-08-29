@@ -1304,7 +1304,7 @@ int rb_big_sign(VALUE);
 #define FL_USER16 	((VALUE)RUBY_FL_USER16)
 #define FL_USER17 	((VALUE)RUBY_FL_USER17)
 #define FL_USER18 	((VALUE)RUBY_FL_USER18)
-#define FL_USER19 	((VALUE)RUBY_FL_USER19)
+#define FL_USER19 	((VALUE)(unsigned int)RUBY_FL_USER19)
 
 #define RB_SPECIAL_CONST_P(x) (RB_IMMEDIATE_P(x) || !RB_TEST(x))
 #define SPECIAL_CONST_P(x) RB_SPECIAL_CONST_P(x)
@@ -1776,29 +1776,27 @@ void rb_include_module(VALUE,VALUE);
 void rb_extend_object(VALUE,VALUE);
 void rb_prepend_module(VALUE,VALUE);
 
-struct rb_global_variable;
-
-typedef VALUE rb_gvar_getter_t(ID id, void *data, struct rb_global_variable *gvar);
-typedef void  rb_gvar_setter_t(VALUE val, ID id, void *data, struct rb_global_variable *gvar);
+typedef VALUE rb_gvar_getter_t(ID id, VALUE *data);
+typedef void  rb_gvar_setter_t(VALUE val, ID id, VALUE *data);
 typedef void  rb_gvar_marker_t(VALUE *var);
 
-VALUE rb_gvar_undef_getter(ID id, void *data, struct rb_global_variable *gvar);
-void  rb_gvar_undef_setter(VALUE val, ID id, void *data, struct rb_global_variable *gvar);
-void  rb_gvar_undef_marker(VALUE *var);
+rb_gvar_getter_t rb_gvar_undef_getter;
+rb_gvar_setter_t rb_gvar_undef_setter;
+rb_gvar_marker_t rb_gvar_undef_marker;
 
-VALUE rb_gvar_val_getter(ID id, void *data, struct rb_global_variable *gvar);
-void  rb_gvar_val_setter(VALUE val, ID id, void *data, struct rb_global_variable *gvar);
-void  rb_gvar_val_marker(VALUE *var);
+rb_gvar_getter_t rb_gvar_val_getter;
+rb_gvar_setter_t rb_gvar_val_setter;
+rb_gvar_marker_t rb_gvar_val_marker;
 
-VALUE rb_gvar_var_getter(ID id, void *data, struct rb_global_variable *gvar);
-void  rb_gvar_var_setter(VALUE val, ID id, void *data, struct rb_global_variable *gvar);
-void  rb_gvar_var_marker(VALUE *var);
+rb_gvar_getter_t rb_gvar_var_getter;
+rb_gvar_setter_t rb_gvar_var_setter;
+rb_gvar_marker_t rb_gvar_var_marker;
 
-NORETURN(void  rb_gvar_readonly_setter(VALUE val, ID id, void *data, struct rb_global_variable *gvar));
+NORETURN(rb_gvar_setter_t rb_gvar_readonly_setter);
 
 void rb_define_variable(const char*,VALUE*);
-void rb_define_virtual_variable(const char*,VALUE(*)(ANYARGS),void(*)(ANYARGS));
-void rb_define_hooked_variable(const char*,VALUE*,VALUE(*)(ANYARGS),void(*)(ANYARGS));
+void rb_define_virtual_variable(const char*,rb_gvar_getter_t*,rb_gvar_setter_t*);
+void rb_define_hooked_variable(const char*,VALUE*,rb_gvar_getter_t*,rb_gvar_setter_t*);
 void rb_define_readonly_variable(const char*,const VALUE*);
 void rb_define_const(VALUE,const char*,VALUE);
 void rb_define_global_const(const char*,VALUE);
@@ -1949,16 +1947,12 @@ PRINTF_ARGS(void rb_sys_warning(const char*, ...), 1, 2);
 COLDFUNC PRINTF_ARGS(void rb_warn(const char*, ...), 1, 2);
 PRINTF_ARGS(void rb_compile_warn(const char *, int, const char*, ...), 3, 4);
 
+#define RB_BLOCK_CALL_FUNC_STRICT 1
 #define RUBY_BLOCK_CALL_FUNC_TAKES_BLOCKARG 1
 #define RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg) \
     VALUE yielded_arg, VALUE callback_arg, int argc, const VALUE *argv, VALUE blockarg
 typedef VALUE rb_block_call_func(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg));
-
-#if defined RB_BLOCK_CALL_FUNC_STRICT && RB_BLOCK_CALL_FUNC_STRICT
 typedef rb_block_call_func *rb_block_call_func_t;
-#else
-typedef VALUE (*rb_block_call_func_t)(ANYARGS);
-#endif
 
 VALUE rb_each(VALUE);
 VALUE rb_yield(VALUE);
@@ -1968,13 +1962,13 @@ VALUE rb_yield_splat(VALUE);
 VALUE rb_yield_block(VALUE, VALUE, int, const VALUE *, VALUE); /* rb_block_call_func */
 int rb_block_given_p(void);
 void rb_need_block(void);
-VALUE rb_iterate(VALUE(*)(VALUE),VALUE,VALUE(*)(ANYARGS),VALUE);
+VALUE rb_iterate(VALUE(*)(VALUE),VALUE,rb_block_call_func_t,VALUE);
 VALUE rb_block_call(VALUE,ID,int,const VALUE*,rb_block_call_func_t,VALUE);
-VALUE rb_rescue(VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE);
-VALUE rb_rescue2(VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE,...);
-VALUE rb_ensure(VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE);
-VALUE rb_catch(const char*,VALUE(*)(ANYARGS),VALUE);
-VALUE rb_catch_obj(VALUE,VALUE(*)(ANYARGS),VALUE);
+VALUE rb_rescue(VALUE(*)(VALUE),VALUE,VALUE(*)(VALUE,VALUE),VALUE);
+VALUE rb_rescue2(VALUE(*)(VALUE),VALUE,VALUE(*)(VALUE,VALUE),VALUE,...);
+VALUE rb_ensure(VALUE(*)(VALUE),VALUE,VALUE(*)(VALUE),VALUE);
+VALUE rb_catch(const char*,rb_block_call_func_t,VALUE);
+VALUE rb_catch_obj(VALUE,rb_block_call_func_t,VALUE);
 NORETURN(void rb_throw(const char*,VALUE));
 NORETURN(void rb_throw_obj(VALUE,VALUE));
 
@@ -2694,4 +2688,146 @@ RUBY_SYMBOL_EXPORT_END
 #endif
 }  /* extern "C" { */
 #endif
+
+#if defined(__has_attribute) && defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
+#if __has_attribute(transparent_union) && __has_attribute(unused) && __has_attribute(weakref) && __has_attribute(nonnull)
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_methodm3(VALUE,const char*,VALUE(*)(ANYARGS),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_methodm2(VALUE,const char*,VALUE(*)(VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_methodm1(VALUE,const char*,VALUE(*)(int,union __attribute__((__transparent_union__)){VALUE*x;const VALUE*y;},VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method0 (VALUE,const char*,VALUE(*)(VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method1 (VALUE,const char*,VALUE(*)(VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method2 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method3 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method4 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method5 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method6 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method7 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method8 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method9 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method10(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method11(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method12(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method13(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method14(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method15(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+
+#define rb_f_notimplement_p(f)                    __builtin_types_compatible_p(__typeof__(f),__typeof__(rb_f_notimplement))
+#define rb_define_method_if_constexpr(x, t, f)    __builtin_choose_expr(__builtin_choose_expr(__builtin_constant_p(x),(x),0),(t),(f))
+#define rb_define_method_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_method15,rb_define_methodm3)
+#define rb_define_method_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_method14,rb_define_method_choose_prototype15(n))
+#define rb_define_method_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_method13,rb_define_method_choose_prototype14(n))
+#define rb_define_method_choose_prototype12(n)    rb_define_method_if_constexpr((n)==12,rb_define_method12,rb_define_method_choose_prototype13(n))
+#define rb_define_method_choose_prototype11(n)    rb_define_method_if_constexpr((n)==11,rb_define_method11,rb_define_method_choose_prototype12(n))
+#define rb_define_method_choose_prototype10(n)    rb_define_method_if_constexpr((n)==10,rb_define_method10,rb_define_method_choose_prototype11(n))
+#define rb_define_method_choose_prototype9(n)     rb_define_method_if_constexpr((n)== 9,rb_define_method9, rb_define_method_choose_prototype10(n))
+#define rb_define_method_choose_prototype8(n)     rb_define_method_if_constexpr((n)== 8,rb_define_method8, rb_define_method_choose_prototype9(n))
+#define rb_define_method_choose_prototype7(n)     rb_define_method_if_constexpr((n)== 7,rb_define_method7, rb_define_method_choose_prototype8(n))
+#define rb_define_method_choose_prototype6(n)     rb_define_method_if_constexpr((n)== 6,rb_define_method6, rb_define_method_choose_prototype7(n))
+#define rb_define_method_choose_prototype5(n)     rb_define_method_if_constexpr((n)== 5,rb_define_method5, rb_define_method_choose_prototype6(n))
+#define rb_define_method_choose_prototype4(n)     rb_define_method_if_constexpr((n)== 4,rb_define_method4, rb_define_method_choose_prototype5(n))
+#define rb_define_method_choose_prototype3(n)     rb_define_method_if_constexpr((n)== 3,rb_define_method3, rb_define_method_choose_prototype4(n))
+#define rb_define_method_choose_prototype2(n)     rb_define_method_if_constexpr((n)== 2,rb_define_method2, rb_define_method_choose_prototype3(n))
+#define rb_define_method_choose_prototype1(n)     rb_define_method_if_constexpr((n)== 1,rb_define_method1, rb_define_method_choose_prototype2(n))
+#define rb_define_method_choose_prototype0(n)     rb_define_method_if_constexpr((n)== 0,rb_define_method0, rb_define_method_choose_prototype1(n))
+#define rb_define_method_choose_prototypem1(n)    rb_define_method_if_constexpr((n)==-1,rb_define_methodm1,rb_define_method_choose_prototype0(n))
+#define rb_define_method_choose_prototypem2(n)    rb_define_method_if_constexpr((n)==-2,rb_define_methodm2,rb_define_method_choose_prototypem1(n))
+#define rb_define_method_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_methodm3,rb_define_method_choose_prototypem2(n))
+#define rb_define_method(klass, mid, func, arity) rb_define_method_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
+
+__attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_functionm3(VALUE,const char*,VALUE(*)(ANYARGS),int);
+__attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_functionm2(VALUE,const char*,VALUE(*)(VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_functionm1(VALUE,const char*,VALUE(*)(int,union __attribute__((__transparent_union__)){VALUE*x;const VALUE*y;},VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_function0 (VALUE,const char*,VALUE(*)(VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_function1 (VALUE,const char*,VALUE(*)(VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_function2 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_function3 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_function4 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_function5 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_function6 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_function7 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_function8 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_function9 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_function10(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_function11(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_function12(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_function13(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_function14(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_function15(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+
+#define rb_define_module_function_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_module_function15,rb_define_module_functionm3)
+#define rb_define_module_function_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_module_function14,rb_define_module_function_choose_prototype15(n))
+#define rb_define_module_function_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_module_function13,rb_define_module_function_choose_prototype14(n))
+#define rb_define_module_function_choose_prototype12(n)    rb_define_method_if_constexpr((n)==12,rb_define_module_function12,rb_define_module_function_choose_prototype13(n))
+#define rb_define_module_function_choose_prototype11(n)    rb_define_method_if_constexpr((n)==11,rb_define_module_function11,rb_define_module_function_choose_prototype12(n))
+#define rb_define_module_function_choose_prototype10(n)    rb_define_method_if_constexpr((n)==10,rb_define_module_function10,rb_define_module_function_choose_prototype11(n))
+#define rb_define_module_function_choose_prototype9(n)     rb_define_method_if_constexpr((n)== 9,rb_define_module_function9, rb_define_module_function_choose_prototype10(n))
+#define rb_define_module_function_choose_prototype8(n)     rb_define_method_if_constexpr((n)== 8,rb_define_module_function8, rb_define_module_function_choose_prototype9(n))
+#define rb_define_module_function_choose_prototype7(n)     rb_define_method_if_constexpr((n)== 7,rb_define_module_function7, rb_define_module_function_choose_prototype8(n))
+#define rb_define_module_function_choose_prototype6(n)     rb_define_method_if_constexpr((n)== 6,rb_define_module_function6, rb_define_module_function_choose_prototype7(n))
+#define rb_define_module_function_choose_prototype5(n)     rb_define_method_if_constexpr((n)== 5,rb_define_module_function5, rb_define_module_function_choose_prototype6(n))
+#define rb_define_module_function_choose_prototype4(n)     rb_define_method_if_constexpr((n)== 4,rb_define_module_function4, rb_define_module_function_choose_prototype5(n))
+#define rb_define_module_function_choose_prototype3(n)     rb_define_method_if_constexpr((n)== 3,rb_define_module_function3, rb_define_module_function_choose_prototype4(n))
+#define rb_define_module_function_choose_prototype2(n)     rb_define_method_if_constexpr((n)== 2,rb_define_module_function2, rb_define_module_function_choose_prototype3(n))
+#define rb_define_module_function_choose_prototype1(n)     rb_define_method_if_constexpr((n)== 1,rb_define_module_function1, rb_define_module_function_choose_prototype2(n))
+#define rb_define_module_function_choose_prototype0(n)     rb_define_method_if_constexpr((n)== 0,rb_define_module_function0, rb_define_module_function_choose_prototype1(n))
+#define rb_define_module_function_choose_prototypem1(n)    rb_define_method_if_constexpr((n)==-1,rb_define_module_functionm1,rb_define_module_function_choose_prototype0(n))
+#define rb_define_module_function_choose_prototypem2(n)    rb_define_method_if_constexpr((n)==-2,rb_define_module_functionm2,rb_define_module_function_choose_prototypem1(n))
+#define rb_define_module_function_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_module_functionm3,rb_define_module_function_choose_prototypem2(n))
+#define rb_define_module_function(klass, mid, func, arity) rb_define_module_function_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
+
+__attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_functionm3(const char*,VALUE(*)(ANYARGS),int);
+__attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_functionm2(const char*,VALUE(*)(VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_functionm1(const char*,VALUE(*)(int,union __attribute__((__transparent_union__)){VALUE*x;const VALUE*y;},VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_function0 (const char*,VALUE(*)(VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_function1 (const char*,VALUE(*)(VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_function2 (const char*,VALUE(*)(VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_function3 (const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_function4 (const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_function5 (const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_function6 (const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_function7 (const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_function8 (const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_function9 (const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_function10(const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_function11(const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_function12(const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_function13(const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_function14(const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_function15(const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+
+#define rb_define_global_function_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_global_function15,rb_define_global_functionm3)
+#define rb_define_global_function_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_global_function14,rb_define_global_function_choose_prototype15(n))
+#define rb_define_global_function_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_global_function13,rb_define_global_function_choose_prototype14(n))
+#define rb_define_global_function_choose_prototype12(n)    rb_define_method_if_constexpr((n)==12,rb_define_global_function12,rb_define_global_function_choose_prototype13(n))
+#define rb_define_global_function_choose_prototype11(n)    rb_define_method_if_constexpr((n)==11,rb_define_global_function11,rb_define_global_function_choose_prototype12(n))
+#define rb_define_global_function_choose_prototype10(n)    rb_define_method_if_constexpr((n)==10,rb_define_global_function10,rb_define_global_function_choose_prototype11(n))
+#define rb_define_global_function_choose_prototype9(n)     rb_define_method_if_constexpr((n)== 9,rb_define_global_function9, rb_define_global_function_choose_prototype10(n))
+#define rb_define_global_function_choose_prototype8(n)     rb_define_method_if_constexpr((n)== 8,rb_define_global_function8, rb_define_global_function_choose_prototype9(n))
+#define rb_define_global_function_choose_prototype7(n)     rb_define_method_if_constexpr((n)== 7,rb_define_global_function7, rb_define_global_function_choose_prototype8(n))
+#define rb_define_global_function_choose_prototype6(n)     rb_define_method_if_constexpr((n)== 6,rb_define_global_function6, rb_define_global_function_choose_prototype7(n))
+#define rb_define_global_function_choose_prototype5(n)     rb_define_method_if_constexpr((n)== 5,rb_define_global_function5, rb_define_global_function_choose_prototype6(n))
+#define rb_define_global_function_choose_prototype4(n)     rb_define_method_if_constexpr((n)== 4,rb_define_global_function4, rb_define_global_function_choose_prototype5(n))
+#define rb_define_global_function_choose_prototype3(n)     rb_define_method_if_constexpr((n)== 3,rb_define_global_function3, rb_define_global_function_choose_prototype4(n))
+#define rb_define_global_function_choose_prototype2(n)     rb_define_method_if_constexpr((n)== 2,rb_define_global_function2, rb_define_global_function_choose_prototype3(n))
+#define rb_define_global_function_choose_prototype1(n)     rb_define_method_if_constexpr((n)== 1,rb_define_global_function1, rb_define_global_function_choose_prototype2(n))
+#define rb_define_global_function_choose_prototype0(n)     rb_define_method_if_constexpr((n)== 0,rb_define_global_function0, rb_define_global_function_choose_prototype1(n))
+#define rb_define_global_function_choose_prototypem1(n)    rb_define_method_if_constexpr((n)==-1,rb_define_global_functionm1,rb_define_global_function_choose_prototype0(n))
+#define rb_define_global_function_choose_prototypem2(n)    rb_define_method_if_constexpr((n)==-2,rb_define_global_functionm2,rb_define_global_function_choose_prototypem1(n))
+#define rb_define_global_function_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_global_functionm3,rb_define_global_function_choose_prototypem2(n))
+#define rb_define_global_function(mid, func, arity) rb_define_global_function_choose_prototypem3((arity),(func))((mid),(func),(arity));
+#endif
+#endif
+
+#ifdef _WIN32
+#ifdef rb_define_method
+#undef rb_define_method
+#endif
+#ifdef rb_define_module_function
+#undef rb_define_module_function
+#endif
+#ifdef rb_define_global_function
+#undef rb_define_global_function
+#endif
+#endif
+
 #endif /* RUBY_RUBY_H */

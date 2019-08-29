@@ -60,6 +60,42 @@ RSpec.describe "bundle gem" do
     end
   end
 
+  describe "git repo initialization" do
+    let(:gem_name) { "test-gem" }
+
+    shared_examples_for "a gem with an initial git repo" do
+      before do
+        execute_bundle_gem(gem_name, flags)
+      end
+      it "generates a gem skeleton with a .git folder" do
+        gem_skeleton_assertions(gem_name)
+        expect(bundled_app("test-gem/.git")).to exist
+      end
+    end
+
+    context "when using the default" do
+      it_behaves_like "a gem with an initial git repo" do
+        let(:flags) { "" }
+      end
+    end
+
+    context "when explicitly passing --git" do
+      it_behaves_like "a gem with an initial git repo" do
+        let(:flags) { "--git" }
+      end
+    end
+
+    context "when passing --no-git" do
+      before do
+        execute_bundle_gem(gem_name, "--no-git")
+      end
+      it "generates a gem skeleton without a .git folder" do
+        gem_skeleton_assertions(gem_name)
+        expect(bundled_app("test-gem/.git")).not_to exist
+      end
+    end
+  end
+
   shared_examples_for "--mit flag" do
     before do
       execute_bundle_gem(gem_name, "--mit")
@@ -174,16 +210,14 @@ RSpec.describe "bundle gem" do
     end
   end
 
-  it "generates a valid gemspec", :ruby_repo do
+  it "generates a valid gemspec" do
     in_app_root
     bundle! "gem newgem --bin"
 
     prepare_gemspec(bundled_app("newgem", "newgem.gemspec"))
 
     Dir.chdir(bundled_app("newgem")) do
-      gems = ["rake-12.3.2", :bundler]
-      # for Ruby core repository, Ruby 2.6+ has bundler as standard library.
-      gems.delete(:bundler) if ruby_core?
+      gems = ["rake-12.3.2"]
       system_gems gems, :path => :bundle_path
       bundle! "exec rake build"
     end
@@ -275,8 +309,7 @@ RSpec.describe "bundle gem" do
     end
 
     it "sets a minimum ruby version" do
-      gemspec_path = ruby_core? ? "../../../lib/bundler" : "../.."
-      bundler_gemspec = Bundler::GemHelper.new(File.expand_path(gemspec_path, __dir__)).gemspec
+      bundler_gemspec = Bundler::GemHelper.new(gemspec_dir).gemspec
 
       expect(bundler_gemspec.required_ruby_version).to eq(generated_gemspec.required_ruby_version)
     end

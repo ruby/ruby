@@ -236,6 +236,14 @@ rb_iseq_update_references(rb_iseq_t *iseq)
         }
         if (FL_TEST(iseq, ISEQ_MARKABLE_ISEQ)) {
             rb_iseq_each_value(iseq, update_each_insn_value, NULL);
+            VALUE *original_iseq = ISEQ_ORIGINAL_ISEQ(iseq);
+            if (original_iseq) {
+                size_t n = 0;
+                const unsigned int size = body->iseq_size;
+                while (n < size) {
+                    n += iseq_extract_values(original_iseq, n, update_each_insn_value, NULL, rb_vm_insn_null_translator);
+                }
+            }
         }
 
         if (body->param.flags.has_kw && ISEQ_COMPILE_DATA(iseq) == NULL) {
@@ -801,9 +809,11 @@ rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE rea
 }
 
 rb_iseq_t *
-rb_iseq_new_ifunc(const struct vm_ifunc *ifunc, VALUE name, VALUE path, VALUE realpath,
-		       VALUE first_lineno, const rb_iseq_t *parent,
-		       enum iseq_type type, const rb_compile_option_t *option)
+rb_iseq_new_with_callback(
+    const struct rb_iseq_new_with_callback_callback_func * ifunc,
+    VALUE name, VALUE path, VALUE realpath,
+    VALUE first_lineno, const rb_iseq_t *parent,
+    enum iseq_type type, const rb_compile_option_t *option)
 {
     /* TODO: argument check */
     rb_iseq_t *iseq = iseq_alloc();
@@ -811,7 +821,7 @@ rb_iseq_new_ifunc(const struct vm_ifunc *ifunc, VALUE name, VALUE path, VALUE re
     if (!option) option = &COMPILE_OPTION_DEFAULT;
     prepare_iseq_build(iseq, name, path, realpath, first_lineno, NULL, -1, parent, type, option);
 
-    rb_iseq_compile_ifunc(iseq, ifunc);
+    rb_iseq_compile_callback(iseq, ifunc);
     finish_iseq_build(iseq);
 
     return iseq_translate(iseq);
@@ -3456,14 +3466,14 @@ succ_index_lookup(const struct succ_index_table *sd, int x)
  *  Document-class: RubyVM::InstructionSequence
  *
  *  The InstructionSequence class represents a compiled sequence of
- *  instructions for the Ruby Virtual Machine. Not all implementations of Ruby
+ *  instructions for the Virtual Machine used in MRI. Not all implementations of Ruby
  *  may implement this class, and for the implementations that implement it,
  *  the methods defined and behavior of the methods can change in any version.
  *
  *  With it, you can get a handle to the instructions that make up a method or
  *  a proc, compile strings of Ruby code down to VM instructions, and
  *  disassemble instruction sequences to strings for easy inspection. It is
- *  mostly useful if you want to learn how the Ruby VM works, but it also lets
+ *  mostly useful if you want to learn how YARV works, but it also lets
  *  you control various settings for the Ruby iseq compiler.
  *
  *  You can find the source for the VM instructions in +insns.def+ in the Ruby
@@ -3472,6 +3482,8 @@ succ_index_lookup(const struct succ_index_table *sd, int x)
  *  The instruction sequence results will almost certainly change as Ruby
  *  changes, so example output in this documentation may be different from what
  *  you see.
+ *
+ *  Of course, this class is MRI specific.
  */
 
 void

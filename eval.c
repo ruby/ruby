@@ -47,7 +47,7 @@ extern ID ruby_static_id_cause;
      (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE))
 
 /*!
- * Initializes the Ruby VM and builtin libraries.
+ * Initializes the VM and builtin libraries.
  * @retval 0 if succeeded.
  * @retval non-zero an error occurred.
  */
@@ -355,7 +355,7 @@ ruby_exec_node(void *n)
  */
 
 static VALUE
-rb_mod_nesting(void)
+rb_mod_nesting(VALUE _)
 {
     VALUE ary = rb_ary_new();
     const rb_cref_t *cref = rb_vm_cref();
@@ -717,6 +717,28 @@ extract_raise_opts(int argc, const VALUE *argv, VALUE *opts)
     return argc;
 }
 
+VALUE
+rb_f_raise(int argc, VALUE *argv)
+{
+    VALUE err;
+    VALUE opts[raise_max_opt], *const cause = &opts[raise_opt_cause];
+
+    argc = extract_raise_opts(argc, argv, opts);
+    if (argc == 0) {
+        if (*cause != Qundef) {
+            rb_raise(rb_eArgError, "only cause is given with no arguments");
+        }
+        err = get_errinfo();
+        if (!NIL_P(err)) {
+            argc = 1;
+            argv = &err;
+        }
+    }
+    rb_raise_jump(rb_make_exception(argc, argv), *cause);
+
+    UNREACHABLE_RETURN(Qnil);
+}
+
 /*
  *  call-seq:
  *     raise
@@ -746,26 +768,10 @@ extract_raise_opts(int argc, const VALUE *argv, VALUE *opts)
  *     raise ArgumentError, "No parameters", caller
  */
 
-VALUE
-rb_f_raise(int argc, VALUE *argv)
+static VALUE
+f_raise(int c, VALUE *v, VALUE _)
 {
-    VALUE err;
-    VALUE opts[raise_max_opt], *const cause = &opts[raise_opt_cause];
-
-    argc = extract_raise_opts(argc, argv, opts);
-    if (argc == 0) {
-	if (*cause != Qundef) {
-	    rb_raise(rb_eArgError, "only cause is given with no arguments");
-	}
-	err = get_errinfo();
-	if (!NIL_P(err)) {
-	    argc = 1;
-	    argv = &err;
-	}
-    }
-    rb_raise_jump(rb_make_exception(argc, argv), *cause);
-
-    UNREACHABLE_RETURN(Qnil);
+    return rb_f_raise(c, v);
 }
 
 static VALUE
@@ -931,8 +937,8 @@ rb_need_block(void)
  * \ingroup exception
  */
 VALUE
-rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
-	   VALUE (* r_proc) (ANYARGS), VALUE data2, ...)
+rb_rescue2(VALUE (* b_proc) (VALUE), VALUE data1,
+           VALUE (* r_proc) (VALUE, VALUE), VALUE data2, ...)
 {
     enum ruby_tag_type state;
     rb_execution_context_t * volatile ec = GET_EC();
@@ -1003,8 +1009,8 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
  * \ingroup exception
  */
 VALUE
-rb_rescue(VALUE (* b_proc)(ANYARGS), VALUE data1,
-	  VALUE (* r_proc)(ANYARGS), VALUE data2)
+rb_rescue(VALUE (* b_proc)(VALUE), VALUE data1,
+          VALUE (* r_proc)(VALUE, VALUE), VALUE data2)
 {
     return rb_rescue2(b_proc, data1, r_proc, data2, rb_eStandardError,
 		      (VALUE)0);
@@ -1071,7 +1077,7 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
  * \ingroup exception
  */
 VALUE
-rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE data2)
+rb_ensure(VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE data2)
 {
     int state;
     volatile VALUE result = Qnil;
@@ -1608,7 +1614,7 @@ used_modules_i(VALUE _, VALUE mod, VALUE ary)
  *     [B, A]
  */
 static VALUE
-rb_mod_s_used_modules(void)
+rb_mod_s_used_modules(VALUE _)
 {
     const rb_cref_t *cref = rb_vm_cref();
     VALUE ary = rb_ary_new();
@@ -1816,7 +1822,7 @@ get_errinfo(void)
 }
 
 static VALUE
-errinfo_getter(ID id)
+errinfo_getter(ID id, VALUE *_)
 {
     return get_errinfo();
 }
@@ -1851,7 +1857,7 @@ rb_set_errinfo(VALUE err)
 }
 
 static VALUE
-errat_getter(ID id)
+errat_getter(ID id, VALUE *_)
 {
     VALUE err = get_errinfo();
     if (!NIL_P(err)) {
@@ -1883,7 +1889,7 @@ errat_setter(VALUE val, ID id, VALUE *var)
  */
 
 static VALUE
-rb_f_method_name(void)
+rb_f_method_name(VALUE _)
 {
     ID fname = prev_frame_func(); /* need *method* ID */
 
@@ -1905,7 +1911,7 @@ rb_f_method_name(void)
  */
 
 static VALUE
-rb_f_callee_name(void)
+rb_f_callee_name(VALUE _)
 {
     ID fname = prev_frame_callee(); /* need *callee* ID */
 
@@ -1928,7 +1934,7 @@ rb_f_callee_name(void)
  *
  */
 static VALUE
-f_current_dirname(void)
+f_current_dirname(VALUE _)
 {
     VALUE base = rb_current_realfilepath();
     if (NIL_P(base)) {
@@ -1938,16 +1944,76 @@ f_current_dirname(void)
     return base;
 }
 
+/*
+ *  call-seq:
+ *     global_variables    -> array
+ *
+ *  Returns an array of the names of global variables.
+ *
+ *     global_variables.grep /std/   #=> [:$stdin, :$stdout, :$stderr]
+ */
+
+static VALUE
+f_global_variables(VALUE _)
+{
+    return rb_f_global_variables();
+}
+
+/*
+ *  call-seq:
+ *     trace_var(symbol, cmd )             -> nil
+ *     trace_var(symbol) {|val| block }    -> nil
+ *
+ *  Controls tracing of assignments to global variables. The parameter
+ *  +symbol+ identifies the variable (as either a string name or a
+ *  symbol identifier). _cmd_ (which may be a string or a
+ *  +Proc+ object) or block is executed whenever the variable
+ *  is assigned. The block or +Proc+ object receives the
+ *  variable's new value as a parameter. Also see
+ *  Kernel::untrace_var.
+ *
+ *     trace_var :$_, proc {|v| puts "$_ is now '#{v}'" }
+ *     $_ = "hello"
+ *     $_ = ' there'
+ *
+ *  <em>produces:</em>
+ *
+ *     $_ is now 'hello'
+ *     $_ is now ' there'
+ */
+
+static VALUE
+f_trace_var(int c, const VALUE *a, VALUE _)
+{
+    return rb_f_trace_var(c, a);
+}
+
+/*
+ *  call-seq:
+ *     untrace_var(symbol [, cmd] )   -> array or nil
+ *
+ *  Removes tracing for the specified command on the given global
+ *  variable and returns +nil+. If no command is specified,
+ *  removes all tracing for that variable and returns an array
+ *  containing the commands actually removed.
+ */
+
+static VALUE
+f_untrace_var(int c, const VALUE *a, VALUE _)
+{
+    return rb_f_untrace_var(c, a);
+}
+
 void
 Init_eval(void)
 {
     rb_define_virtual_variable("$@", errat_getter, errat_setter);
     rb_define_virtual_variable("$!", errinfo_getter, 0);
 
-    rb_define_global_function("raise", rb_f_raise, -1);
-    rb_define_global_function("fail", rb_f_raise, -1);
+    rb_define_global_function("raise", f_raise, -1);
+    rb_define_global_function("fail", f_raise, -1);
 
-    rb_define_global_function("global_variables", rb_f_global_variables, 0);	/* in variable.c */
+    rb_define_global_function("global_variables", f_global_variables, 0);
 
     rb_define_global_function("__method__", rb_f_method_name, 0);
     rb_define_global_function("__callee__", rb_f_callee_name, 0);
@@ -1980,8 +2046,8 @@ Init_eval(void)
 
     rb_define_method(rb_mKernel, "extend", rb_obj_extend, -1);
 
-    rb_define_global_function("trace_var", rb_f_trace_var, -1);	/* in variable.c */
-    rb_define_global_function("untrace_var", rb_f_untrace_var, -1);	/* in variable.c */
+    rb_define_global_function("trace_var", f_trace_var, -1);
+    rb_define_global_function("untrace_var", f_untrace_var, -1);
 
     rb_vm_register_special_exception(ruby_error_reenter, rb_eFatal, "exception reentered");
     rb_vm_register_special_exception(ruby_error_stackfatal, rb_eFatal, "machine stack overflow in critical region");

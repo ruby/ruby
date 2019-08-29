@@ -810,7 +810,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 }
 
 static VALUE
-thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
+thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(void *))
 {
     rb_thread_t *th = rb_thread_ptr(thval), *current_th = GET_THREAD();
     int err;
@@ -944,7 +944,7 @@ thread_initialize(VALUE thread, VALUE args)
 }
 
 VALUE
-rb_thread_create(VALUE (*fn)(ANYARGS), void *arg)
+rb_thread_create(VALUE (*fn)(void *), void *arg)
 {
     return thread_create_core(rb_thread_alloc(rb_cThread), (VALUE)arg, fn);
 }
@@ -2494,7 +2494,7 @@ rb_thread_s_kill(VALUE obj, VALUE th)
  */
 
 static VALUE
-rb_thread_exit(void)
+rb_thread_exit(VALUE _)
 {
     rb_thread_t *th = GET_THREAD();
     return rb_thread_kill(th->self);
@@ -2573,6 +2573,17 @@ rb_thread_run(VALUE thread)
 }
 
 
+VALUE
+rb_thread_stop(void)
+{
+    if (rb_thread_alone()) {
+        rb_raise(rb_eThreadError,
+                 "stopping only thread\n\tnote: use sleep to stop forever");
+    }
+    rb_thread_sleep_deadly();
+    return Qnil;
+}
+
 /*
  *  call-seq:
  *     Thread.stop   -> nil
@@ -2588,18 +2599,33 @@ rb_thread_run(VALUE thread)
  *     #=> "abc"
  */
 
-VALUE
-rb_thread_stop(void)
+static VALUE
+thread_stop(VALUE _)
 {
-    if (rb_thread_alone()) {
-	rb_raise(rb_eThreadError,
-		 "stopping only thread\n\tnote: use sleep to stop forever");
-    }
-    rb_thread_sleep_deadly();
-    return Qnil;
+    return rb_thread_stop();
 }
 
 /********************************************************************/
+
+VALUE
+rb_thread_list(void)
+{
+    VALUE ary = rb_ary_new();
+    rb_vm_t *vm = GET_THREAD()->vm;
+    rb_thread_t *th = 0;
+
+    list_for_each(&vm->living_threads, th, vmlt_node) {
+        switch (th->status) {
+          case THREAD_RUNNABLE:
+          case THREAD_STOPPED:
+          case THREAD_STOPPED_FOREVER:
+            rb_ary_push(ary, th->self);
+          default:
+            break;
+        }
+    }
+    return ary;
+}
 
 /*
  *  call-seq:
@@ -2621,24 +2647,10 @@ rb_thread_stop(void)
  *     #<Thread:0x401bdf4c run>
  */
 
-VALUE
-rb_thread_list(void)
+static VALUE
+thread_list(VALUE _)
 {
-    VALUE ary = rb_ary_new();
-    rb_vm_t *vm = GET_THREAD()->vm;
-    rb_thread_t *th = 0;
-
-    list_for_each(&vm->living_threads, th, vmlt_node) {
-	switch (th->status) {
-	  case THREAD_RUNNABLE:
-	  case THREAD_STOPPED:
-	  case THREAD_STOPPED_FOREVER:
-	    rb_ary_push(ary, th->self);
-	  default:
-	    break;
-	}
-    }
-    return ary;
+    return rb_thread_list();
 }
 
 VALUE
@@ -2703,7 +2715,7 @@ rb_thread_s_main(VALUE klass)
  */
 
 static VALUE
-rb_thread_s_abort_exc(void)
+rb_thread_s_abort_exc(VALUE _)
 {
     return GET_THREAD()->vm->thread_abort_on_exception ? Qtrue : Qfalse;
 }
@@ -2833,7 +2845,7 @@ rb_thread_abort_exc_set(VALUE thread, VALUE val)
  */
 
 static VALUE
-rb_thread_s_report_exc(void)
+rb_thread_s_report_exc(VALUE _)
 {
     return GET_THREAD()->vm->thread_report_on_exception ? Qtrue : Qfalse;
 }
@@ -4708,16 +4720,22 @@ thread_shield_alloc(VALUE klass)
 }
 
 #define GetThreadShieldPtr(obj) ((VALUE)rb_check_typeddata((obj), &thread_shield_data_type))
-#define THREAD_SHIELD_WAITING_MASK (FL_USER0|FL_USER1|FL_USER2|FL_USER3|FL_USER4|FL_USER5|FL_USER6|FL_USER7|FL_USER8|FL_USER9|FL_USER10|FL_USER11|FL_USER12|FL_USER13|FL_USER14|FL_USER15|FL_USER16|FL_USER17|FL_USER18|FL_USER19)
+#define THREAD_SHIELD_WAITING_MASK (((FL_USER19-1)&~(FL_USER0-1))|FL_USER19)
 #define THREAD_SHIELD_WAITING_SHIFT (FL_USHIFT)
-#define rb_thread_shield_waiting(b) ((RBASIC(b)->flags&THREAD_SHIELD_WAITING_MASK)>>THREAD_SHIELD_WAITING_SHIFT)
+#define THREAD_SHIELD_WAITING_MAX (THREAD_SHIELD_WAITING_MASK>>THREAD_SHIELD_WAITING_SHIFT)
+STATIC_ASSERT(THREAD_SHIELD_WAITING_MAX, THREAD_SHIELD_WAITING_MAX <= UINT_MAX);
+static inline unsigned int
+rb_thread_shield_waiting(VALUE b)
+{
+    return ((RBASIC(b)->flags&THREAD_SHIELD_WAITING_MASK)>>THREAD_SHIELD_WAITING_SHIFT);
+}
 
 static inline void
 rb_thread_shield_waiting_inc(VALUE b)
 {
-    unsigned long w = rb_thread_shield_waiting(b);
+    unsigned int w = rb_thread_shield_waiting(b);
     w++;
-    if (w > (THREAD_SHIELD_WAITING_MASK>>THREAD_SHIELD_WAITING_SHIFT))
+    if (w > THREAD_SHIELD_WAITING_MAX)
 	rb_raise(rb_eRuntimeError, "waiting count overflow");
     RBASIC(b)->flags &= ~THREAD_SHIELD_WAITING_MASK;
     RBASIC(b)->flags |= ((VALUE)w << THREAD_SHIELD_WAITING_SHIFT);
@@ -4726,7 +4744,7 @@ rb_thread_shield_waiting_inc(VALUE b)
 static inline void
 rb_thread_shield_waiting_dec(VALUE b)
 {
-    unsigned long w = rb_thread_shield_waiting(b);
+    unsigned int w = rb_thread_shield_waiting(b);
     if (!w) rb_raise(rb_eRuntimeError, "waiting count underflow");
     w--;
     RBASIC(b)->flags &= ~THREAD_SHIELD_WAITING_MASK;
@@ -5126,11 +5144,11 @@ Init_Thread(void)
     rb_define_singleton_method(rb_cThread, "fork", thread_start, -2);
     rb_define_singleton_method(rb_cThread, "main", rb_thread_s_main, 0);
     rb_define_singleton_method(rb_cThread, "current", thread_s_current, 0);
-    rb_define_singleton_method(rb_cThread, "stop", rb_thread_stop, 0);
+    rb_define_singleton_method(rb_cThread, "stop", thread_stop, 0);
     rb_define_singleton_method(rb_cThread, "kill", rb_thread_s_kill, 1);
     rb_define_singleton_method(rb_cThread, "exit", rb_thread_exit, 0);
     rb_define_singleton_method(rb_cThread, "pass", thread_s_pass, 0);
-    rb_define_singleton_method(rb_cThread, "list", rb_thread_list, 0);
+    rb_define_singleton_method(rb_cThread, "list", thread_list, 0);
     rb_define_singleton_method(rb_cThread, "abort_on_exception", rb_thread_s_abort_exc, 0);
     rb_define_singleton_method(rb_cThread, "abort_on_exception=", rb_thread_s_abort_exc_set, 1);
     rb_define_singleton_method(rb_cThread, "report_on_exception", rb_thread_s_report_exc, 0);
@@ -5501,7 +5519,7 @@ rb_default_coverage(int n)
 }
 
 VALUE
-rb_uninterruptible(VALUE (*b_proc)(ANYARGS), VALUE data)
+rb_uninterruptible(VALUE (*b_proc)(VALUE), VALUE data)
 {
     VALUE interrupt_mask = rb_ident_hash_new();
     rb_thread_t *cur_th = GET_THREAD();

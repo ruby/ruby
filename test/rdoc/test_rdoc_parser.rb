@@ -1,7 +1,7 @@
 # -*- coding: us-ascii -*-
 # frozen_string_literal: true
 
-require 'minitest_helper'
+require_relative 'helper'
 
 class TestRDocParser < RDoc::TestCase
 

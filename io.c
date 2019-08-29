@@ -7042,7 +7042,7 @@ rb_io_s_open(int argc, VALUE *argv, VALUE klass)
  */
 
 static VALUE
-rb_io_s_sysopen(int argc, VALUE *argv)
+rb_io_s_sysopen(int argc, VALUE *argv, VALUE _)
 {
     VALUE fname, vmode, vperm;
     VALUE intmode;
@@ -7183,7 +7183,7 @@ check_pipe_command(VALUE filename_or_command)
  */
 
 static VALUE
-rb_f_open(int argc, VALUE *argv)
+rb_f_open(int argc, VALUE *argv, VALUE _)
 {
     ID to_open = 0;
     int redirect = FALSE;
@@ -7518,7 +7518,7 @@ rb_io_printf(int argc, const VALUE *argv, VALUE out)
  */
 
 static VALUE
-rb_f_printf(int argc, VALUE *argv)
+rb_f_printf(int argc, VALUE *argv, VALUE _)
 {
     VALUE out;
 
@@ -7619,7 +7619,7 @@ rb_io_print(int argc, const VALUE *argv, VALUE out)
  */
 
 static VALUE
-rb_f_print(int argc, const VALUE *argv)
+rb_f_print(int argc, const VALUE *argv, VALUE _)
 {
     rb_io_print(argc, argv, rb_stdout);
     return Qnil;
@@ -9560,7 +9560,7 @@ rb_f_select(int argc, VALUE *argv, VALUE obj)
     return rb_ensure(select_call, (VALUE)&args, select_end, (VALUE)&args);
 }
 
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
+#if (defined(__linux__) && !defined(__ANDROID__)) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
  typedef unsigned long ioctl_req_t;
 # define NUM2IOCTLREQ(num) NUM2ULONG(num)
 #else
@@ -10007,7 +10007,7 @@ rb_io_fcntl(int argc, VALUE *argv, VALUE io)
  */
 
 static VALUE
-rb_f_syscall(int argc, VALUE *argv)
+rb_f_syscall(int argc, VALUE *argv, VALUE _)
 {
     VALUE arg[8];
 #if SIZEOF_VOIDP == 8 && defined(HAVE___SYSCALL) && SIZEOF_INT != 8 /* mainly *BSD */
@@ -10379,8 +10379,9 @@ open_key_args(VALUE klass, int argc, VALUE *argv, VALUE opt, struct foreach_arg 
 }
 
 static VALUE
-io_s_foreach(struct getline_arg *arg)
+io_s_foreach(VALUE v)
 {
+    struct getline_arg *arg = (void *)v;
     VALUE str;
 
     while (!NIL_P(str = rb_io_getline_1(arg->rs, arg->limit, arg->chomp, arg->io))) {
@@ -10437,8 +10438,9 @@ rb_io_s_foreach(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-io_s_readlines(struct getline_arg *arg)
+io_s_readlines(VALUE v)
 {
+    struct getline_arg *arg = (void *)v;
     return io_readlines(arg, arg->io);
 }
 
@@ -10489,8 +10491,9 @@ rb_io_s_readlines(int argc, VALUE *argv, VALUE io)
 }
 
 static VALUE
-io_s_read(struct foreach_arg *arg)
+io_s_read(VALUE v)
 {
+    struct foreach_arg *arg = (void *)v;
     return io_read(arg->argc, arg->argv, arg->io);
 }
 
@@ -10626,8 +10629,9 @@ rb_io_s_binread(int argc, VALUE *argv, VALUE io)
 }
 
 static VALUE
-io_s_write0(struct write_arg *arg)
+io_s_write0(VALUE v)
 {
+    struct write_arg *arg = (void * )v;
     return io_write(arg->io,arg->str,arg->nosync);
 }
 
@@ -11457,7 +11461,7 @@ copy_stream_fallback(struct copy_stream_struct *stp)
 	rb_raise(rb_eArgError, "cannot specify src_offset for non-IO");
     }
     rb_rescue2(copy_stream_fallback_body, (VALUE)stp,
-               (VALUE (*) (ANYARGS))0, (VALUE)0,
+               (VALUE (*) (VALUE, VALUE))0, (VALUE)0,
                rb_eEOFError, (VALUE)0);
     return Qnil;
 }
@@ -12982,6 +12986,18 @@ rb_readwrite_syserr_fail(enum rb_io_wait_readwrite writable, int n, const char *
     }
 }
 
+static VALUE
+get_LAST_READ_LINE(ID _x, VALUE *_y)
+{
+    return rb_lastline_get();
+}
+
+static void
+set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
+{
+    rb_lastline_set(val);
+}
+
 /*
  * Document-class: IOError
  *
@@ -13255,7 +13271,7 @@ Init_IO(void)
     rb_define_hooked_variable("$-0", &rb_rs, 0, rb_str_setter);
     rb_define_hooked_variable("$\\", &rb_output_rs, 0, rb_str_setter);
 
-    rb_define_virtual_variable("$_", rb_lastline_get, rb_lastline_set);
+    rb_define_virtual_variable("$_", get_LAST_READ_LINE, set_LAST_READ_LINE);
 
     rb_define_method(rb_cIO, "initialize_copy", rb_io_init_copy, 1);
     rb_define_method(rb_cIO, "reopen", rb_io_reopen, -1);

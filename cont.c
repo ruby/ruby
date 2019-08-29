@@ -700,8 +700,6 @@ fiber_initialize_coroutine(rb_fiber_t *fiber, size_t * vm_stack_size)
     rb_execution_context_t *sec = &fiber->cont.saved_ec;
     void * vm_stack = NULL;
 
-    STACK_GROW_DIR_DETECTION;
-
     VM_ASSERT(fiber_pool != NULL);
 
     fiber->stack = fiber_pool_stack_acquire(fiber_pool);
@@ -1507,10 +1505,12 @@ make_passing_arg(int argc, const VALUE *argv)
     }
 }
 
+typedef VALUE e_proc(VALUE);
+
 /* CAUTION!! : Currently, error in rollback_func is not supported  */
 /* same as rb_protect if set rollback_func to NULL */
 void
-ruby_register_rollback_func_for_ensure(VALUE (*ensure_func)(ANYARGS), VALUE (*rollback_func)(ANYARGS))
+ruby_register_rollback_func_for_ensure(e_proc *ensure_func, e_proc *rollback_func)
 {
     st_table **table_p = &GET_VM()->ensure_rollback_table;
     if (UNLIKELY(*table_p == NULL)) {
@@ -1519,14 +1519,14 @@ ruby_register_rollback_func_for_ensure(VALUE (*ensure_func)(ANYARGS), VALUE (*ro
     st_insert(*table_p, (st_data_t)ensure_func, (st_data_t)rollback_func);
 }
 
-static inline VALUE
-lookup_rollback_func(VALUE (*ensure_func)(ANYARGS))
+static inline e_proc *
+lookup_rollback_func(e_proc *ensure_func)
 {
     st_table *table = GET_VM()->ensure_rollback_table;
     st_data_t val;
     if (table && st_lookup(table, (st_data_t)ensure_func, &val))
-        return (VALUE) val;
-    return Qundef;
+        return (e_proc *) val;
+    return (e_proc *) Qundef;
 }
 
 
@@ -1539,7 +1539,7 @@ rollback_ensure_stack(VALUE self,rb_ensure_list_t *current,rb_ensure_entry_t *ta
     size_t cur_size;
     size_t target_size;
     size_t base_point;
-    VALUE (*func)(ANYARGS);
+    e_proc *func;
 
     cur_size = 0;
     for (p=current; p; p=p->next)
@@ -1574,7 +1574,7 @@ rollback_ensure_stack(VALUE self,rb_ensure_list_t *current,rb_ensure_entry_t *ta
     }
     /* push ensure stack */
     for (j = 0; j < i; j++) {
-        func = (VALUE (*)(ANYARGS)) lookup_rollback_func(target[i - j - 1].e_proc);
+        func = lookup_rollback_func(target[i - j - 1].e_proc);
         if ((VALUE)func != Qundef) {
             (*func)(target[i - j - 1].data2);
         }
@@ -1678,13 +1678,13 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
  *    end
  *
  *    puts fiber.resume 10
- *    puts fiber.resume 14
- *    puts fiber.resume 18
+ *    puts fiber.resume 1_000_000
+ *    puts fiber.resume "The fiber will be dead before I can cause trouble"
  *
  *  <em>produces</em>
  *
  *    12
- *    14
+ *    1000000
  *    FiberError: dead fiber called
  *
  */
@@ -1770,7 +1770,7 @@ rb_fiber_initialize(int argc, VALUE* argv, VALUE self)
 }
 
 VALUE
-rb_fiber_new(VALUE (*func)(ANYARGS), VALUE obj)
+rb_fiber_new(rb_block_call_func_t func, VALUE obj)
 {
     return fiber_initialize(fiber_alloc(rb_cFiber), rb_proc_new(func, obj), &shared_fiber_pool);
 }

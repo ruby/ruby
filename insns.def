@@ -707,7 +707,7 @@ methodref
 (VALUE ret)
 {
     ret = rb_obj_method(val, ID2SYM(id));
-    rb_obj_freeze(ret);
+    RB_OBJ_FREEZE_RAW(ret);
 }
 
 /**********************************************************/

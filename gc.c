@@ -2755,7 +2755,7 @@ objspace_each_objects_protected(VALUE arg)
 }
 
 static VALUE
-incremental_enable(void)
+incremental_enable(VALUE _)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
@@ -2986,18 +2986,12 @@ should_be_callable(VALUE block)
 }
 
 static void
-should_be_finalizable_internal(VALUE obj)
+should_be_finalizable(VALUE obj)
 {
     if (!FL_ABLE(obj)) {
 	rb_raise(rb_eArgError, "cannot define finalizer for %s",
 		 rb_obj_classname(obj));
     }
-}
-
-static void
-should_be_finalizable(VALUE obj)
-{
-    should_be_finalizable_internal(obj);
     rb_check_frozen(obj);
 }
 
@@ -5620,7 +5614,7 @@ gc_check_after_marks_i(st_data_t k, st_data_t v, void *ptr)
 }
 
 static void
-gc_marks_check(rb_objspace_t *objspace, int (*checker_func)(ANYARGS), const char *checker_name)
+gc_marks_check(rb_objspace_t *objspace, st_foreach_callback_func *checker_func, const char *checker_name)
 {
     size_t saved_malloc_increase = objspace->malloc_params.increase;
 #if RGENGC_ESTIMATE_OLDMALLOC
@@ -7279,7 +7273,7 @@ garbage_collect_with_gvl(rb_objspace_t *objspace, int reason)
  *     ObjectSpace.garbage_collect(full_mark: true, immediate_sweep: true) -> nil
  *     include GC; garbage_collect(full_mark: true, immediate_sweep: true) -> nil
  *
- *  Initiates garbage collection, unless manually disabled.
+ *  Initiates garbage collection, even if manually disabled.
  *
  *  This method is defined with keyword arguments that default to true:
  *
@@ -7769,10 +7763,47 @@ hash_foreach_replace(st_data_t key, st_data_t value, st_data_t argp, int error)
     return ST_CONTINUE;
 }
 
-static void
-gc_update_table_refs(rb_objspace_t * objspace, st_table *ht)
+static int
+hash_replace_ref_value(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
 {
-    if (st_foreach_with_replace(ht, hash_foreach_replace, hash_replace_ref, (st_data_t)objspace)) {
+    rb_objspace_t *objspace = (rb_objspace_t *)argp;
+
+    if (gc_object_moved_p(objspace, (VALUE)*value)) {
+        *value = rb_gc_location((VALUE)*value);
+    }
+
+    return ST_CONTINUE;
+}
+
+static int
+hash_foreach_replace_value(st_data_t key, st_data_t value, st_data_t argp, int error)
+{
+    rb_objspace_t *objspace;
+
+    objspace = (rb_objspace_t *)argp;
+
+    if (gc_object_moved_p(objspace, (VALUE)value)) {
+        return ST_REPLACE;
+    }
+    return ST_CONTINUE;
+}
+
+static void
+gc_update_tbl_refs(rb_objspace_t * objspace, st_table *tbl)
+{
+    if (!tbl || tbl->num_entries == 0) return;
+
+    if (st_foreach_with_replace(tbl, hash_foreach_replace_value, hash_replace_ref_value, (st_data_t)objspace)) {
+        rb_raise(rb_eRuntimeError, "hash modified during iteration");
+    }
+}
+
+static void
+gc_update_table_refs(rb_objspace_t * objspace, st_table *tbl)
+{
+    if (!tbl || tbl->num_entries == 0) return;
+
+    if (st_foreach_with_replace(tbl, hash_foreach_replace, hash_replace_ref, (st_data_t)objspace)) {
         rb_raise(rb_eRuntimeError, "hash modified during iteration");
     }
 }
@@ -8018,7 +8049,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         }
         if (!RCLASS_EXT(obj)) break;
         if (RCLASS_IV_TBL(obj)) {
-            gc_update_table_refs(objspace, RCLASS_IV_TBL(obj));
+            gc_update_tbl_refs(objspace, RCLASS_IV_TBL(obj));
         }
         update_class_ext(objspace, RCLASS_EXT(obj));
         update_const_tbl(objspace, RCLASS_CONST_TBL(obj));
@@ -8033,7 +8064,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         }
         if (!RCLASS_EXT(obj)) break;
         if (RCLASS_IV_TBL(obj)) {
-            gc_update_table_refs(objspace, RCLASS_IV_TBL(obj));
+            gc_update_tbl_refs(objspace, RCLASS_IV_TBL(obj));
         }
         update_class_ext(objspace, RCLASS_EXT(obj));
         update_m_tbl(objspace, RCLASS_CALLABLE_M_TBL(obj));
@@ -8830,7 +8861,7 @@ compat_key(VALUE key)
 }
 
 static VALUE
-default_proc_for_compat_func(VALUE hash, VALUE dmy, int argc, VALUE *argv)
+default_proc_for_compat_func(RB_BLOCK_CALL_FUNC_ARGLIST(hash, _))
 {
     VALUE key, new_key;
 
@@ -9071,6 +9102,16 @@ gc_stress_set_m(VALUE self, VALUE flag)
     return flag;
 }
 
+VALUE
+rb_gc_enable(void)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    int old = dont_gc;
+
+    dont_gc = FALSE;
+    return old ? Qtrue : Qfalse;
+}
+
 /*
  *  call-seq:
  *     GC.enable    -> true or false
@@ -9083,15 +9124,10 @@ gc_stress_set_m(VALUE self, VALUE flag)
  *     GC.enable    #=> false
  *
  */
-
-VALUE
-rb_gc_enable(void)
+static VALUE
+gc_enable(VALUE _)
 {
-    rb_objspace_t *objspace = &rb_objspace;
-    int old = dont_gc;
-
-    dont_gc = FALSE;
-    return old ? Qtrue : Qfalse;
+    return rb_gc_enable();
 }
 
 VALUE
@@ -9101,6 +9137,15 @@ rb_gc_disable_no_rest(void)
     int old = dont_gc;
     dont_gc = TRUE;
     return old ? Qtrue : Qfalse;
+}
+
+
+VALUE
+rb_gc_disable(void)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    gc_rest(objspace);
+    return rb_gc_disable_no_rest();
 }
 
 /*
@@ -9115,12 +9160,10 @@ rb_gc_disable_no_rest(void)
  *
  */
 
-VALUE
-rb_gc_disable(void)
+static VALUE
+gc_disable(VALUE _)
 {
-    rb_objspace_t *objspace = &rb_objspace;
-    gc_rest(objspace);
-    return rb_gc_disable_no_rest();
+    return rb_gc_disable();
 }
 
 static int
@@ -10204,6 +10247,7 @@ wmap_allocate(VALUE klass)
 static int
 wmap_live_p(rb_objspace_t *objspace, VALUE obj)
 {
+    if (!FL_ABLE(obj)) return TRUE;
     if (!is_id_value(objspace, obj)) return FALSE;
     if (!is_live_object(objspace, obj)) return FALSE;
     return TRUE;
@@ -10461,10 +10505,13 @@ wmap_aset(VALUE self, VALUE wmap, VALUE orig)
     struct weakmap *w;
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
-    should_be_finalizable_internal(orig);
-    should_be_finalizable_internal(wmap);
-    define_final0(orig, w->final);
-    define_final0(wmap, w->final);
+    if (FL_ABLE(orig)) {
+        define_final0(orig, w->final);
+    }
+    if (FL_ABLE(wmap)) {
+        define_final0(wmap, w->final);
+    }
+
     st_update(w->obj2wmap, (st_data_t)orig, wmap_aset_update, wmap);
     st_insert(w->wmap2obj, (st_data_t)wmap, (st_data_t)orig);
     return nonspecial_obj_id(orig);
@@ -10757,7 +10804,7 @@ gc_prof_set_heap_info(rb_objspace_t *objspace)
  */
 
 static VALUE
-gc_profile_clear(void)
+gc_profile_clear(VALUE _)
 {
     rb_objspace_t *objspace = &rb_objspace;
     void *p = objspace->profile.records;
@@ -10822,7 +10869,7 @@ gc_profile_clear(void)
  */
 
 static VALUE
-gc_profile_record_get(void)
+gc_profile_record_get(VALUE _)
 {
     VALUE prof;
     VALUE gc_profile = rb_ary_new();
@@ -11009,7 +11056,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
  */
 
 static VALUE
-gc_profile_result(void)
+gc_profile_result(VALUE _)
 {
     VALUE str = rb_str_buf_new(0);
     gc_profile_dump_on(str, rb_str_buf_append);
@@ -11083,7 +11130,7 @@ gc_profile_enable_get(VALUE self)
  */
 
 static VALUE
-gc_profile_enable(void)
+gc_profile_enable(VALUE _)
 {
     rb_objspace_t *objspace = &rb_objspace;
     objspace->profile.run = TRUE;
@@ -11100,7 +11147,7 @@ gc_profile_enable(void)
  */
 
 static VALUE
-gc_profile_disable(void)
+gc_profile_disable(VALUE _)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
@@ -11449,6 +11496,13 @@ rb_obj_info_dump(VALUE obj)
     fprintf(stderr, "rb_obj_info_dump: %s\n", rb_raw_obj_info(buff, 0x100, obj));
 }
 
+void
+rb_obj_info_dump_loc(VALUE obj, const char *file, int line, const char *func)
+{
+    char buff[0x100];
+    fprintf(stderr, "<OBJ_INFO:%s@%s:%d> %s\n", func, file, line, rb_raw_obj_info(buff, 0x100, obj));
+}
+
 #if GC_DEBUG
 
 void
@@ -11625,8 +11679,8 @@ Init_GC(void)
 
     rb_mGC = rb_define_module("GC");
     rb_define_singleton_method(rb_mGC, "start", gc_start_internal, -1);
-    rb_define_singleton_method(rb_mGC, "enable", rb_gc_enable, 0);
-    rb_define_singleton_method(rb_mGC, "disable", rb_gc_disable, 0);
+    rb_define_singleton_method(rb_mGC, "enable", gc_enable, 0);
+    rb_define_singleton_method(rb_mGC, "disable", gc_disable, 0);
     rb_define_singleton_method(rb_mGC, "stress", gc_stress_get, 0);
     rb_define_singleton_method(rb_mGC, "stress=", gc_stress_set_m, 1);
     rb_define_singleton_method(rb_mGC, "count", gc_count, 0);
