@@ -10891,8 +10891,7 @@ cond0(struct parser_params *p, NODE *node, int method_op, const YYLTYPE *loc)
 
       case NODE_DREGX:
 	{
-	    if (!method_op)
-		warning_unless_e_option(p, node, "regex literal in condition");
+	    warning_unless_e_option(p, node, "the regex literal matches $_ implicitly");
 
 	    return NEW_MATCH2(node, NEW_GVAR(idLASTLINE, loc), loc);
 	}
@@ -10924,8 +10923,7 @@ cond0(struct parser_params *p, NODE *node, int method_op, const YYLTYPE *loc)
 
       case NODE_LIT:
 	if (RB_TYPE_P(node->nd_lit, T_REGEXP)) {
-	    if (!method_op)
-		warn_unless_e_option(p, node, "regex literal in condition");
+	    warn_unless_e_option(p, node, "the regex literal matches $_ implicitly");
 	    nd_set_type(node, NODE_MATCH);
 	}
 	else if (node->nd_lit == Qtrue ||
