@@ -130,6 +130,13 @@ Module::
     * Module#autoload? now takes an +inherit+ optional argument, like as
       Module#const_defined?.  [Feature #15777]
 
+ObjectSpace::WeakMap::
+
+  Modified method::
+
+    * ObjectSpace::WeakMap#[]= now accepts special objects as either key or
+      values.  [Feature #16035]
+
 Regexp / String::
 
     * Update Unicode version and Emoji version from 11.0.0 to
