@@ -1007,9 +1007,6 @@ eom
     assert_warn(/literal in condition/) do
       eval('1 if //')
     end
-    assert_warn(/literal in condition/) do
-      eval('1 if true..false')
-    end
     assert_warning(/literal in condition/) do
       eval('1 if 1')
     end
@@ -1037,6 +1034,27 @@ eom
     end
     assert_warning('') do
       eval('1 if !:"#{"foo".upcase}"')
+    end
+  end
+
+  def test_warning_literal_in_flip_flop
+    assert_warn(/literal in flip-flop/) do
+      eval('1 if ""..false')
+    end
+    assert_warning(/literal in flip-flop/) do
+      eval('1 if :foo..false')
+    end
+    assert_warning(/literal in flip-flop/) do
+      eval('1 if :"#{"foo".upcase}"..false')
+    end
+    assert_warn(/literal in flip-flop/) do
+      eval('1 if ""...false')
+    end
+    assert_warning(/literal in flip-flop/) do
+      eval('1 if :foo...false')
+    end
+    assert_warning(/literal in flip-flop/) do
+      eval('1 if :"#{"foo".upcase}"...false')
     end
   end
 

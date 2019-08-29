@@ -10824,19 +10824,20 @@ assign_in_cond(struct parser_params *p, NODE *node)
     return 1;
 }
 
-static void
-warn_unless_e_option(struct parser_params *p, NODE *node, const char *str)
-{
-    if (!e_option_supplied(p)) parser_warn(p, node, str);
-}
+enum cond_type {
+    COND_IN_OP,
+    COND_IN_COND,
+    COND_IN_FF
+};
 
-static void
-warning_unless_e_option(struct parser_params *p, NODE *node, const char *str)
-{
-    if (!e_option_supplied(p)) parser_warning(p, node, str);
-}
+#define SWITCH_BY_COND_TYPE(t, w, arg) \
+    switch (t) { \
+      case COND_IN_OP: break; \
+      case COND_IN_COND: rb_##w##0(arg "literal in condition"); break; \
+      case COND_IN_FF: rb_##w##0(arg "literal in flip-flop"); break; \
+    }
 
-static NODE *cond0(struct parser_params*,NODE*,int,const YYLTYPE*);
+static NODE *cond0(struct parser_params*,NODE*,enum cond_type,const YYLTYPE*);
 
 static NODE*
 range_op(struct parser_params *p, NODE *node, const YYLTYPE *loc)
@@ -10848,35 +10849,14 @@ range_op(struct parser_params *p, NODE *node, const YYLTYPE *loc)
     type = nd_type(node);
     value_expr(node);
     if (type == NODE_LIT && FIXNUM_P(node->nd_lit)) {
-	warn_unless_e_option(p, node, "integer literal in conditional range");
+	if (!e_option_supplied(p)) parser_warn(p, node, "integer literal in flip-flop");
 	return NEW_CALL(node, tEQ, NEW_LIST(NEW_GVAR(rb_intern("$."), loc), loc), loc);
     }
-    return cond0(p, node, FALSE, loc);
-}
-
-static int
-literal_node(NODE *node)
-{
-    if (!node) return 1;	/* same as NODE_NIL */
-    if (!(node = nd_once_body(node))) return 1;
-    switch (nd_type(node)) {
-      case NODE_LIT:
-      case NODE_STR:
-      case NODE_DSTR:
-      case NODE_EVSTR:
-      case NODE_DREGX:
-      case NODE_DSYM:
-	return 2;
-      case NODE_TRUE:
-      case NODE_FALSE:
-      case NODE_NIL:
-	return 1;
-    }
-    return 0;
+    return cond0(p, node, COND_IN_FF, loc);
 }
 
 static NODE*
-cond0(struct parser_params *p, NODE *node, int method_op, const YYLTYPE *loc)
+cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *loc)
 {
     if (node == 0) return 0;
     if (!(node = nd_once_body(node))) return 0;
@@ -10886,21 +10866,18 @@ cond0(struct parser_params *p, NODE *node, int method_op, const YYLTYPE *loc)
       case NODE_DSTR:
       case NODE_EVSTR:
       case NODE_STR:
-	if (!method_op) rb_warn0("string literal in condition");
+	SWITCH_BY_COND_TYPE(type, warn, "string ")
 	break;
 
       case NODE_DREGX:
-	{
-	    if (!method_op)
-		warning_unless_e_option(p, node, "regex literal in condition");
+	if (!e_option_supplied(p)) SWITCH_BY_COND_TYPE(type, warning, "regex ")
 
-	    return NEW_MATCH2(node, NEW_GVAR(idLASTLINE, loc), loc);
-	}
+	return NEW_MATCH2(node, NEW_GVAR(idLASTLINE, loc), loc);
 
       case NODE_AND:
       case NODE_OR:
-	node->nd_1st = cond0(p, node->nd_1st, FALSE, loc);
-	node->nd_2nd = cond0(p, node->nd_2nd, FALSE, loc);
+	node->nd_1st = cond0(p, node->nd_1st, COND_IN_COND, loc);
+	node->nd_2nd = cond0(p, node->nd_2nd, COND_IN_COND, loc);
 	break;
 
       case NODE_DOT2:
@@ -10909,23 +10886,15 @@ cond0(struct parser_params *p, NODE *node, int method_op, const YYLTYPE *loc)
 	node->nd_end = range_op(p, node->nd_end, loc);
 	if (nd_type(node) == NODE_DOT2) nd_set_type(node,NODE_FLIP2);
 	else if (nd_type(node) == NODE_DOT3) nd_set_type(node, NODE_FLIP3);
-	if (!method_op && !e_option_supplied(p)) {
-	    int b = literal_node(node->nd_beg);
-	    int e = literal_node(node->nd_end);
-	    if ((b == 1 && e == 1) || (b + e >= 2 && RTEST(ruby_verbose))) {
-		parser_warn(p, node, "range literal in condition");
-	    }
-	}
 	break;
 
       case NODE_DSYM:
-	if (!method_op) parser_warning(p, node, "literal in condition");
+	SWITCH_BY_COND_TYPE(type, warning, "string ")
 	break;
 
       case NODE_LIT:
 	if (RB_TYPE_P(node->nd_lit, T_REGEXP)) {
-	    if (!method_op)
-		warn_unless_e_option(p, node, "regex literal in condition");
+	    if (!e_option_supplied(p)) SWITCH_BY_COND_TYPE(type, warn, "regex ")
 	    nd_set_type(node, NODE_MATCH);
 	}
 	else if (node->nd_lit == Qtrue ||
@@ -10933,8 +10902,7 @@ cond0(struct parser_params *p, NODE *node, int method_op, const YYLTYPE *loc)
 	    /* booleans are OK, e.g., while true */
 	}
 	else {
-	    if (!method_op)
-		parser_warning(p, node, "literal in condition");
+	    SWITCH_BY_COND_TYPE(type, warning, "")
 	}
       default:
 	break;
@@ -10946,21 +10914,21 @@ static NODE*
 cond(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 {
     if (node == 0) return 0;
-    return cond0(p, node, FALSE, loc);
+    return cond0(p, node, COND_IN_COND, loc);
 }
 
 static NODE*
 method_cond(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 {
     if (node == 0) return 0;
-    return cond0(p, node, TRUE, loc);
+    return cond0(p, node, COND_IN_OP, loc);
 }
 
 static NODE*
 new_if(struct parser_params *p, NODE *cc, NODE *left, NODE *right, const YYLTYPE *loc)
 {
     if (!cc) return right;
-    cc = cond0(p, cc, FALSE, loc);
+    cc = cond0(p, cc, COND_IN_COND, loc);
     return newline_node(NEW_IF(cc, left, right, loc));
 }
 
@@ -10968,7 +10936,7 @@ static NODE*
 new_unless(struct parser_params *p, NODE *cc, NODE *left, NODE *right, const YYLTYPE *loc)
 {
     if (!cc) return right;
-    cc = cond0(p, cc, FALSE, loc);
+    cc = cond0(p, cc, COND_IN_COND, loc);
     return newline_node(NEW_UNLESS(cc, left, right, loc));
 }
 
