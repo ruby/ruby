@@ -1171,4 +1171,19 @@ __attribute__((__unused__,__weakref__("rb_define_singleton_method"),__nonnull__(
 #endif
 #endif
 
+#ifdef _WIN32
+#ifdef rb_define_method_id
+#undef rb_define_method_id
+#endif
+#ifdef rb_define_private_function
+#undef rb_define_private_function
+#endif
+#ifdef rb_define_protected_function
+#undef rb_define_protected_function
+#endif
+#ifdef rb_define_singleton_function
+#undef rb_define_singleton_function
+#endif
+#endif
+
 #endif /* RUBY_INTERN_H */

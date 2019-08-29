@@ -2818,4 +2818,16 @@ __attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1
 #endif
 #endif
 
+#ifdef _WIN32
+#ifdef rb_define_method
+#undef rb_define_method
+#endif
+#ifdef rb_define_module_function
+#undef rb_define_module_function
+#endif
+#ifdef rb_define_global_function
+#undef rb_define_global_function
+#endif
+#endif
+
 #endif /* RUBY_RUBY_H */
