@@ -414,42 +414,6 @@ static RETSIGTYPE sighandler(int sig);
 static int signal_ignored(int sig);
 static void signal_enque(int sig);
 
-/*
- *  call-seq:
- *     Process.kill(signal, pid, ...)    -> integer
- *
- *  Sends the given signal to the specified process id(s) if _pid_ is positive.
- *  If _pid_ is zero, _signal_ is sent to all processes whose group ID is equal
- *  to the group ID of the process. If _pid_ is negative, results are dependent
- *  on the operating system. _signal_ may be an integer signal number or
- *  a POSIX signal name (either with or without a +SIG+ prefix). If _signal_ is
- *  negative (or starts with a minus sign), kills process groups instead of
- *  processes. Not all signals are available on all platforms.
- *  The keys and values of Signal.list are known signal names and numbers,
- *  respectively.
- *
- *     pid = fork do
- *        Signal.trap("HUP") { puts "Ouch!"; exit }
- *        # ... do some work ...
- *     end
- *     # ...
- *     Process.kill("HUP", pid)
- *     Process.wait
- *
- *  <em>produces:</em>
- *
- *     Ouch!
- *
- *  If _signal_ is an integer but wrong for signal, Errno::EINVAL or
- *  RangeError will be raised.  Otherwise unless _signal_ is a String
- *  or a Symbol, and a known signal name, ArgumentError will be
- *  raised.
- *
- *  Also, Errno::ESRCH or RangeError for invalid _pid_, Errno::EPERM
- *  when failed because of no privilege, will be raised.  In these
- *  cases, signals may have been sent to preceding processes.
- */
-
 VALUE
 rb_f_kill(int argc, const VALUE *argv)
 {

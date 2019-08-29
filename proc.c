@@ -823,6 +823,12 @@ rb_proc_s_new(int argc, VALUE *argv, VALUE klass)
     return block;
 }
 
+VALUE
+rb_block_proc(void)
+{
+    return proc_new(rb_cProc, FALSE);
+}
+
 /*
  * call-seq:
  *   proc   { |...| block }  -> a_proc
@@ -830,16 +836,16 @@ rb_proc_s_new(int argc, VALUE *argv, VALUE klass)
  * Equivalent to Proc.new.
  */
 
-VALUE
-rb_block_proc(void)
-{
-    return proc_new(rb_cProc, FALSE);
-}
-
 static VALUE
 f_proc(VALUE _)
 {
     return rb_block_proc();
+}
+
+VALUE
+rb_block_lambda(void)
+{
+    return proc_new(rb_cProc, TRUE);
 }
 
 /*
@@ -849,12 +855,6 @@ f_proc(VALUE _)
  * Equivalent to Proc.new, except the resulting Proc objects check the
  * number of parameters passed when called.
  */
-
-VALUE
-rb_block_lambda(void)
-{
-    return proc_new(rb_cProc, TRUE);
-}
 
 static VALUE
 f_lambda(VALUE _)
