@@ -301,10 +301,8 @@ describe "Operators" do
    from = 1
    to = 2
    # These are Range instances, not flip-flop
-   suppress_warning do
-     (eval("from..to") ? 3 : 4).should == 3
-     (eval("from...to") ? 3 : 4).should == 3
-   end
+   (from..to ? 3 : 4).should == 3
+   (from...to ? 3 : 4).should == 3
  end
 
   it "? : is right-associative" do

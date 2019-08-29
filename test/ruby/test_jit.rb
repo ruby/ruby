@@ -112,13 +112,10 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_setspecial
-    verbose_bak, $VERBOSE = $VERBOSE, nil
     assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: 'true', insns: %i[setspecial])
     begin;
       true if nil.nil?..nil.nil?
     end;
-  ensure
-    $VERBOSE = verbose_bak
   end
 
   def test_compile_insn_instancevariable
