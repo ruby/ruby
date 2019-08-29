@@ -181,6 +181,9 @@ class Reline::Windows
     raise NotImplementedError
   end
 
+  def self.set_winch_handler(&handler)
+  end
+
   def self.prep
     # do nothing
     nil
