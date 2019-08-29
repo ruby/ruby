@@ -1534,6 +1534,9 @@ rb_obj_singleton_methods(int argc, const VALUE *argv, VALUE obj)
  * \{
  */
 
+#ifdef rb_define_method_id
+#undef rb_define_method_id
+#endif
 void
 rb_define_method_id(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc)
 {
