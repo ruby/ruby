@@ -305,20 +305,18 @@ class VCS
     end
 
     def url
-      unless @url
+      @url ||= begin
         url = get_info[/<root>(.*)<\/root>/, 1]
         @url = URI.parse(url+"/") if url
       end
-      @url
     end
 
     def wcroot
-      unless @wcroot
+      @wcroot ||= begin
         info = get_info
         @wcroot = info[/<wcroot-abspath>(.*)<\/wcroot-abspath>/, 1]
         @wcroot ||= self.class.search_root(@srcdir)
       end
-      @wcroot
     end
 
     def branch(name)
