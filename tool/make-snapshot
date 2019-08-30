@@ -428,7 +428,7 @@ touch-unicode-files:
       end
       ENV["CACHE_SAVE"] = "no"
       system(ENV["MAKE"] || ENV["make"] || "make", "prepare-package", *args.map {|arg| arg.join("=")})
-      clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk")
+      clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk", "ext/ripper/y.output")
       print "prerequisites"
     else
       system(*%W"#{YACC} -o parse.c parse.y")
