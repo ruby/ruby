@@ -238,7 +238,7 @@ def package(vcs, rev, destdir, tmp = nil)
   end
   if !revision and revision = vcs.get_revisions(url)
     url ||= vcs.branch(revision[3])
-    revision = revision[0]
+    revision = revision[1]
   end
   version = nil
   unless revision
@@ -248,7 +248,7 @@ def package(vcs, rev, destdir, tmp = nil)
       warn "#{$0}: #{rev} not found"
       return
     end
-    revision = vcs.get_revisions(url)[0]
+    revision = vcs.get_revisions(url)[1]
   end
   v = nil
   if $exported
