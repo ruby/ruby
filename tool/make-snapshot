@@ -58,8 +58,7 @@ PACKAGES = {
 if system("7z", out: IO::NULL)
   PACKAGES["gzip"] = %w".tar.gz 7z a dummy -tgzip -mx -so"
   PACKAGES["zip"]  = %w".zip    7z a -tzip  -mx" << {out: IO::NULL}
-end
-if gzip = ENV.delete("GZIP")
+elsif gzip = ENV.delete("GZIP")
   PACKAGES["gzip"].concat(gzip.shellsplit)
 end
 
@@ -239,7 +238,7 @@ def package(vcs, rev, destdir, tmp = nil)
   end
   if !revision and revision = vcs.get_revisions(url)
     url ||= vcs.branch(revision[3])
-    revision = revision[0]
+    revision = revision[1]
   end
   version = nil
   unless revision
@@ -249,7 +248,7 @@ def package(vcs, rev, destdir, tmp = nil)
       warn "#{$0}: #{rev} not found"
       return
     end
-    revision = vcs.get_revisions(url)[0]
+    revision = vcs.get_revisions(url)[1]
   end
   v = nil
   if $exported
@@ -429,7 +428,7 @@ touch-unicode-files:
       end
       ENV["CACHE_SAVE"] = "no"
       system(ENV["MAKE"] || ENV["make"] || "make", "prepare-package", *args.map {|arg| arg.join("=")})
-      clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk")
+      clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk", "ext/ripper/y.output")
       print "prerequisites"
     else
       system(*%W"#{YACC} -o parse.c parse.y")

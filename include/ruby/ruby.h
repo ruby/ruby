@@ -2693,7 +2693,7 @@ RUBY_SYMBOL_EXPORT_END
 #if __has_attribute(transparent_union) && __has_attribute(unused) && __has_attribute(weakref) && __has_attribute(nonnull)
 __attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_methodm3(VALUE,const char*,VALUE(*)(ANYARGS),int);
 __attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_methodm2(VALUE,const char*,VALUE(*)(VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_methodm1(VALUE,const char*,VALUE(*)(int,union __attribute__((__transparent_union__)){VALUE*x;const VALUE*y;},VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_methodm1(VALUE,const char*,VALUE(*)(int,union{VALUE*x;const VALUE*y;}__attribute__((__transparent_union__)),VALUE),int);
 __attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method0 (VALUE,const char*,VALUE(*)(VALUE),int);
 __attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method1 (VALUE,const char*,VALUE(*)(VALUE,VALUE),int);
 __attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_method2 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE),int);
@@ -2736,7 +2736,7 @@ __attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))stat
 
 __attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_functionm3(VALUE,const char*,VALUE(*)(ANYARGS),int);
 __attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_functionm2(VALUE,const char*,VALUE(*)(VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_functionm1(VALUE,const char*,VALUE(*)(int,union __attribute__((__transparent_union__)){VALUE*x;const VALUE*y;},VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_functionm1(VALUE,const char*,VALUE(*)(int,union{VALUE*x;const VALUE*y;}__attribute__((__transparent_union__)),VALUE),int);
 __attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_function0 (VALUE,const char*,VALUE(*)(VALUE),int);
 __attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_function1 (VALUE,const char*,VALUE(*)(VALUE,VALUE),int);
 __attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2,3)))static void rb_define_module_function2 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE),int);
@@ -2777,7 +2777,7 @@ __attribute__((__unused__,__weakref__("rb_define_module_function"),__nonnull__(2
 
 __attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_functionm3(const char*,VALUE(*)(ANYARGS),int);
 __attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_functionm2(const char*,VALUE(*)(VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_functionm1(const char*,VALUE(*)(int,union __attribute__((__transparent_union__)){VALUE*x;const VALUE*y;},VALUE),int);
+__attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_functionm1(const char*,VALUE(*)(int,union{VALUE*x;const VALUE*y;}__attribute__((__transparent_union__)),VALUE),int);
 __attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_function0 (const char*,VALUE(*)(VALUE),int);
 __attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_function1 (const char*,VALUE(*)(VALUE,VALUE),int);
 __attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1,2)))static void rb_define_global_function2 (const char*,VALUE(*)(VALUE,VALUE,VALUE),int);

@@ -60,6 +60,10 @@ module TestStruct
     assert_equal(1, o.a)
   end
 
+  def test_attrset_id
+    assert_raise(ArgumentError) { Struct.new(:x=) }
+  end
+
   def test_members
     klass = @Struct.new(:a)
     o = klass.new(1)

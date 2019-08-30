@@ -551,6 +551,9 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     tbl = RHASH_TBL(rest);
     for (i=0; i<argc; i++) {
 	VALUE mem = rb_to_symbol(argv[i]);
+        if (rb_is_attrset_sym(mem)) {
+            rb_raise(rb_eArgError, "invalid struct member: %"PRIsVALUE, mem);
+        }
 	if (st_insert(tbl, mem, Qtrue)) {
 	    rb_raise(rb_eArgError, "duplicate member: %"PRIsVALUE, mem);
 	}
