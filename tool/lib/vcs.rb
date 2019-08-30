@@ -252,12 +252,16 @@ class VCS
   def after_export(dir)
   end
 
+  def revision_handler(rev)
+    self.class
+  end
+
   def revision_name(rev)
-    self.class.revision_name(rev)
+    revision_handler(rev).revision_name(rev)
   end
 
   def short_revision(rev)
-    self.class.short_revision(rev)
+    revision_handler(rev).short_revision(rev)
   end
 
   class SVN < self
@@ -446,12 +450,26 @@ class VCS
       cmd_read_at(@srcdir, cmds)
     end
 
+    def svn_revision(log)
+      if /^ *git-svn-id: .*@(\d+) .*\n+\z/ =~ log
+        $1.to_i
+      end
+    end
+
     def _get_revisions(path, srcdir = nil)
       gitcmd = [COMMAND]
       last = cmd_read_at(srcdir, [[*gitcmd, 'rev-parse', 'HEAD']]).rstrip
       log = cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--date=iso', '--pretty=fuller', *path]])
       changed = log[/\Acommit (\h+)/, 1]
       modified = log[/^CommitDate:\s+(.*)/, 1]
+      if rev = svn_revision(log)
+        if changed == last
+          last = rev
+        else
+          last = svn_revision(cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--format=%B', last]]))
+        end
+        changed = rev
+      end
       branch = cmd_read_at(srcdir, [gitcmd + %W[symbolic-ref --short HEAD]])
       if branch.empty?
         branch_list = cmd_read_at(srcdir, [gitcmd + %W[branch --list --contains HEAD]]).lines.to_a
@@ -486,6 +504,15 @@ class VCS
 
     def self.short_revision(rev)
       rev[0, 10]
+    end
+
+    def revision_handler(rev)
+      case rev
+      when Integer
+        SVN
+      else
+        super
+      end
     end
 
     def without_gitconfig
@@ -625,10 +652,6 @@ class VCS
   class GITSVN < GIT
     def self.revision_name(rev)
       SVN.revision_name(rev)
-    end
-
-    def self.short_revision(rev)
-      SVN.short_revision(rev)
     end
 
     def format_changelog(r, path)
