@@ -699,7 +699,7 @@ checktype
     ret = (TYPE(val) == (int)type) ? Qtrue : Qfalse;
 }
 
-/* get method reference. */
+/* get frozen method reference. */
 DEFINE_INSN
 methodref
 (ID id)
