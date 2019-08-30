@@ -19,6 +19,25 @@ sufficient information, see the ChangeLog file or Redmine
 * Method reference operator, <code>.:</code> is introduced as an
   experimental feature.  [Feature #12125] [Feature #13581]
 
+* Preparations for the redesign of keyword arguments towards Ruby 3.
+  [Feature #14183]
+  * Automatic conversion from a Hash to keyword arguments is deprecated:
+    when a method call passes a Hash at the last argument, and when the
+    called method accepts keywords, it is warned.
+    Please add a double splat operator.
+
+     def foo(key: 42); end; foo({key: 42})   # warned
+     def foo(**kw);    end; foo({key: 42})   # warned
+     def foo(key: 42); end; foo(**{key: 42}) # OK
+     def foo(opt={});  end; foo( key: 42 )   # OK
+
+  * Non-symbol keys are allowed as a keyword argument.
+
+     def foo(**kw); p kw; end; foo("str" => 1) #=> {"str"=>1}
+
+* Automatic conversion of keyword arguments and positional ones is warned.
+  [Feature #14183]
+
 * Proc.new and proc with no block in a method called with a block is warned
   now.
 
