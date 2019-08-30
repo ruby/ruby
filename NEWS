@@ -177,7 +177,7 @@ without allocation of intermediate Method object.
       end
     end
     class Bar < Foo
-      def add_1 # override
+      def add_1(x) # override
         x + 2
       end
     end
