@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require 'pp'
 
 module Bundler::Molinillo
   class Resolver
