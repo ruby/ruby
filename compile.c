@@ -10485,14 +10485,13 @@ ibf_dump_object_class(struct ibf_dump *dump, VALUE obj_list, VALUE obj)
         rb_p(obj);
         rb_bug("unsupported class");
     }
-    IBF_W(&cindex, enum ibf_object_class_index, 1);
+    ibf_dump_small_value(dump, (VALUE)cindex);
 }
 
 static VALUE
 ibf_load_object_class(const struct ibf_load *load, const struct ibf_load_lists *lists, const struct ibf_object_header *header, ibf_offset_t offset)
 {
-    const enum ibf_object_class_index *cindexp = IBF_OBJBODY(enum ibf_object_class_index, offset);
-    enum ibf_object_class_index cindex = *cindexp;
+    enum ibf_object_class_index cindex = (enum ibf_object_class_index)ibf_load_small_value(load, &offset);
 
     switch (cindex) {
       case IBF_OBJECT_CLASS_OBJECT:
@@ -10569,20 +10568,24 @@ ibf_load_object_string(const struct ibf_load *load, const struct ibf_load_lists 
 static void
 ibf_dump_object_regexp(struct ibf_dump *dump, VALUE obj_list, VALUE obj)
 {
-    struct ibf_object_regexp regexp;
     VALUE srcstr = RREGEXP_SRC(obj);
-    IBF_ZERO(regexp);
+    struct ibf_object_regexp regexp;
     regexp.option = (char)rb_reg_options(obj);
     regexp.srcstr = (long)ibf_dump_object(obj_list, srcstr);
-    (void)IBF_W(&regexp, struct ibf_object_regexp, 1);
+
+    ibf_dump_code_write_byte(dump->str, (unsigned char)regexp.option);
+    ibf_dump_small_value(dump, regexp.srcstr);
 }
 
 static VALUE
 ibf_load_object_regexp(const struct ibf_load *load, const struct ibf_load_lists *lists, const struct ibf_object_header *header, ibf_offset_t offset)
 {
-    const struct ibf_object_regexp *regexp = IBF_OBJBODY(struct ibf_object_regexp, offset);
-    VALUE srcstr = ibf_load_object(load, lists, regexp->srcstr);
-    VALUE reg = rb_reg_compile(srcstr, (int)regexp->option, NULL, 0);
+    struct ibf_object_regexp regexp;
+    regexp.option = ibf_load_byte(load, &offset);
+    regexp.srcstr = ibf_load_small_value(load, &offset);
+
+    VALUE srcstr = ibf_load_object(load, lists, regexp.srcstr);
+    VALUE reg = rb_reg_compile(srcstr, (int)regexp.option, NULL, 0);
 
     if (header->internal) rb_obj_hide(reg);
     if (header->frozen)   rb_obj_freeze(reg);
@@ -10593,7 +10596,7 @@ ibf_load_object_regexp(const struct ibf_load *load, const struct ibf_load_lists 
 static void
 ibf_dump_object_array(struct ibf_dump *dump, VALUE obj_list, VALUE obj)
 {
-    long i, len = (int)RARRAY_LEN(obj);
+    long i, len = RARRAY_LEN(obj);
     ibf_dump_small_value(dump, len);
     for (i=0; i<len; i++) {
         long index = (long)ibf_dump_object(obj_list, RARRAY_AREF(obj, i));
@@ -10629,10 +10632,11 @@ ibf_dump_object_hash_i(st_data_t key, st_data_t val, st_data_t ptr)
     struct ibf_dump *dump = (struct ibf_dump *)args[0];
     VALUE obj_list = args[1];
 
-    long keyval[2];
-    keyval[0] = (long)ibf_dump_object(obj_list, (VALUE)key);
-    keyval[1] = (long)ibf_dump_object(obj_list, (VALUE)val);
-    (void)IBF_W(keyval, long, 2);
+    VALUE key_index = ibf_dump_object(obj_list, (VALUE)key);
+    VALUE val_index = ibf_dump_object(obj_list, (VALUE)val);
+
+    ibf_dump_small_value(dump, key_index);
+    ibf_dump_small_value(dump, val_index);
     return ST_CONTINUE;
 }
 
@@ -10640,7 +10644,7 @@ static void
 ibf_dump_object_hash(struct ibf_dump *dump, VALUE obj_list, VALUE obj)
 {
     long len = RHASH_SIZE(obj);
-    (void)IBF_W(&len, long, 1);
+    ibf_dump_small_value(dump, (VALUE)len);
 
     VALUE args[2] = { (VALUE)dump, obj_list };
     if (len > 0) rb_hash_foreach(obj, ibf_dump_object_hash_i, (VALUE)args);
@@ -10649,14 +10653,17 @@ ibf_dump_object_hash(struct ibf_dump *dump, VALUE obj_list, VALUE obj)
 static VALUE
 ibf_load_object_hash(const struct ibf_load *load, const struct ibf_load_lists *lists, const struct ibf_object_header *header, ibf_offset_t offset)
 {
-    const struct ibf_object_hash *hash = IBF_OBJBODY(struct ibf_object_hash, offset);
-    VALUE obj = rb_hash_new_with_size(hash->len);
+    long len = (long)ibf_load_small_value(load, &offset);
+    VALUE obj = rb_hash_new_with_size(len);
     int i;
 
-    for (i=0; i<hash->len; i++) {
-	VALUE key = ibf_load_object(load, lists, hash->keyval[i*2  ]);
-	VALUE val = ibf_load_object(load, lists, hash->keyval[i*2+1]);
-	rb_hash_aset(obj, key, val);
+    for (i = 0; i < len; i++) {
+        VALUE key_index = ibf_load_small_value(load, &offset);
+        VALUE val_index = ibf_load_small_value(load, &offset);
+
+        VALUE key = ibf_load_object(load, lists, key_index);
+        VALUE val = ibf_load_object(load, lists, val_index);
+        rb_hash_aset(obj, key, val);
     }
     rb_hash_rehash(obj);
 
@@ -10790,16 +10797,16 @@ static void
 ibf_dump_object_symbol(struct ibf_dump *dump, VALUE obj_list, VALUE obj)
 {
     VALUE str = rb_sym2str(obj);
-    long str_index = (long)ibf_dump_object(obj_list, str);
-    (void)IBF_W(&str_index, long, 1);
+    VALUE str_index = ibf_dump_object(obj_list, str);
+
+    ibf_dump_small_value(dump, str_index);
 }
 
 static VALUE
 ibf_load_object_symbol(const struct ibf_load *load, const struct ibf_load_lists *lists, const struct ibf_object_header *header, ibf_offset_t offset)
 {
-    /* const struct ibf_object_header *header = IBF_OBJHEADER(offset); */
-    const struct ibf_object_symbol *symbol = IBF_OBJBODY(struct ibf_object_symbol, offset);
-    VALUE str = ibf_load_object(load, lists, symbol->str);
+    VALUE str_index = ibf_load_small_value(load, &offset);
+    VALUE str = ibf_load_object(load, lists, str_index);
     ID id = rb_intern_str(str);
     return ID2SYM(id);
 }
