@@ -171,7 +171,7 @@ def install(src, dest, options = {})
   strip = options.delete(:strip)
   options[:preserve] = true
   d = with_destdir(dest)
-  super(src, d, options)
+  super(src, d, **options)
   srcs = Array(src)
   if strip
     d = srcs.map {|s| File.join(d, File.basename(s))} if $made_dirs[dest]
