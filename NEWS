@@ -160,6 +160,34 @@ Time::
 
     * Added Time#floor method.  [Feature #15653]
 
+UnboundMethod::
+
+  New methods::
+
+    * Added UnboundMethod#bind_call method.  [Feature #15955]
+
+`umethod.bind_call(obj, ...)` is semantically equivalent to
+`umethod.bind(obj).call(...)`.  This idiom is used in some libraries to
+call a method that is overridden.  The added method does the same
+without allocation of intermediate Method object.
+
+    class Foo
+      def add_1(x)
+        x + 1
+      end
+    end
+    class Bar < Foo
+      def add_1 # override
+        x + 2
+      end
+    end
+
+    obj = Bar.new
+    p obj.add_1(1) #=> 3
+    p Foo.instance_method(:add_1).bind(obj).call(1) #=> 2
+    p Foo.instance_method(:add_1).bind_call(obj, 1) #=> 2
+
+
 $LOAD_PATH::
 
   New method::

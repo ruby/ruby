@@ -2318,6 +2318,46 @@ rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE passe
  *
  */
 
+static void
+convert_umethod_to_method_components(VALUE method, VALUE recv, VALUE *methclass_out, VALUE *klass_out, const rb_method_entry_t **me_out)
+{
+    struct METHOD *data;
+
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
+
+    VALUE methclass = data->me->owner;
+    VALUE klass = CLASS_OF(recv);
+
+    if (!RB_TYPE_P(methclass, T_MODULE) &&
+	methclass != CLASS_OF(recv) && !rb_obj_is_kind_of(recv, methclass)) {
+	if (FL_TEST(methclass, FL_SINGLETON)) {
+	    rb_raise(rb_eTypeError,
+		     "singleton method called for a different object");
+	}
+	else {
+	    rb_raise(rb_eTypeError, "bind argument must be an instance of % "PRIsVALUE,
+		     methclass);
+	}
+    }
+
+    const rb_method_entry_t *me = rb_method_entry_clone(data->me);
+
+    if (RB_TYPE_P(me->owner, T_MODULE)) {
+	VALUE ic = rb_class_search_ancestor(klass, me->owner);
+	if (ic) {
+	    klass = ic;
+	}
+	else {
+	    klass = rb_include_class_new(methclass, klass);
+	}
+        me = (const rb_method_entry_t *) rb_method_entry_complement_defined_class(me, me->called_id, klass);
+    }
+
+    *methclass_out = methclass;
+    *klass_out = klass;
+    *me_out = me;
+}
+
 /*
  *  call-seq:
  *     umeth.bind(obj) -> method
@@ -2356,44 +2396,44 @@ rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE passe
 static VALUE
 umethod_bind(VALUE method, VALUE recv)
 {
-    struct METHOD *data, *bound;
     VALUE methclass, klass;
+    const rb_method_entry_t *me;
+    convert_umethod_to_method_components(method, recv, &methclass, &klass, &me);
 
-    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-
-    methclass = data->me->owner;
-
-    if (!RB_TYPE_P(methclass, T_MODULE) &&
-	methclass != CLASS_OF(recv) && !rb_obj_is_kind_of(recv, methclass)) {
-	if (FL_TEST(methclass, FL_SINGLETON)) {
-	    rb_raise(rb_eTypeError,
-		     "singleton method called for a different object");
-	}
-	else {
-	    rb_raise(rb_eTypeError, "bind argument must be an instance of % "PRIsVALUE,
-		     methclass);
-	}
-    }
-
-    klass  = CLASS_OF(recv);
-
+    struct METHOD *bound;
     method = TypedData_Make_Struct(rb_cMethod, struct METHOD, &method_data_type, bound);
     RB_OBJ_WRITE(method, &bound->recv, recv);
-    RB_OBJ_WRITE(method, &bound->klass, data->klass);
-    RB_OBJ_WRITE(method, &bound->me, rb_method_entry_clone(data->me));
-
-    if (RB_TYPE_P(bound->me->owner, T_MODULE)) {
-	VALUE ic = rb_class_search_ancestor(klass, bound->me->owner);
-	if (ic) {
-	    klass = ic;
-	}
-	else {
-	    klass = rb_include_class_new(methclass, klass);
-	}
-	RB_OBJ_WRITE(method, &bound->me, rb_method_entry_complement_defined_class(bound->me, bound->me->called_id, klass));
-    }
+    RB_OBJ_WRITE(method, &bound->klass, klass);
+    RB_OBJ_WRITE(method, &bound->me, me);
 
     return method;
+}
+
+/*
+ *  call-seq:
+ *     umeth.bind_call(obj, args, ...) -> obj
+ *
+ *  Bind <i>umeth</i> to <i>obj</i> and then invokes the method with the
+ *  specified arguments.
+ *  This is semantically equivalent to <code>umeth.bind(obj).call(args, ...)</code>.
+ */
+static VALUE
+umethod_bind_call(int argc, VALUE *argv, VALUE method)
+{
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
+    VALUE recv = argv[0];
+    argc--;
+    argv++;
+
+    VALUE methclass, klass;
+    const rb_method_entry_t *me;
+    convert_umethod_to_method_components(method, recv, &methclass, &klass, &me);
+    struct METHOD bound = { recv, klass, 0, me };
+
+    VALUE passed_procval = rb_block_given_p() ? rb_block_proc() : Qnil;
+
+    rb_execution_context_t *ec = GET_EC();
+    return call_method_data(ec, &bound, argc, argv, passed_procval);
 }
 
 /*
@@ -3683,6 +3723,7 @@ Init_Proc(void)
     rb_define_method(rb_cUnboundMethod, "original_name", method_original_name, 0);
     rb_define_method(rb_cUnboundMethod, "owner", method_owner, 0);
     rb_define_method(rb_cUnboundMethod, "bind", umethod_bind, 1);
+    rb_define_method(rb_cUnboundMethod, "bind_call", umethod_bind_call, -1);
     rb_define_method(rb_cUnboundMethod, "source_location", rb_method_location, 0);
     rb_define_method(rb_cUnboundMethod, "parameters", rb_method_parameters, 0);
     rb_define_method(rb_cUnboundMethod, "super_method", method_super_method, 0);

@@ -1140,4 +1140,13 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(m, o.:foo)
     assert_nil(o.method(:foo))
   end
+
+  def test_umethod_bind_call
+    foo = Base.instance_method(:foo)
+    assert_equal(:base, foo.bind_call(Base.new))
+    assert_equal(:base, foo.bind_call(Derived.new))
+
+    plus = Integer.instance_method(:+)
+    assert_equal(3, plus.bind_call(1, 2))
+  end
 end
