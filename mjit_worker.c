@@ -792,7 +792,7 @@ compile_c_to_o(const char *c_file, const char *o_file)
         "-c", NULL
     };
 
-    char **args = form_args(4, cc_common_args, CC_CODEFLAG_ARGS, files, CC_DLDFLAGS_ARGS);
+    char **args = form_args(3, cc_common_args, CC_CODEFLAG_ARGS, files);
     if (args == NULL)
         return false;
 
