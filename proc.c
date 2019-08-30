@@ -2411,11 +2411,11 @@ umethod_bind(VALUE method, VALUE recv)
 
 /*
  *  call-seq:
- *     umeth.bind_call(obj, args, ...) -> obj
+ *     umeth.bind_call(recv, args, ...) -> obj
  *
- *  Bind <i>umeth</i> to <i>obj</i> and then invokes the method with the
+ *  Bind <i>umeth</i> to <i>recv</i> and then invokes the method with the
  *  specified arguments.
- *  This is semantically equivalent to <code>umeth.bind(obj).call(args, ...)</code>.
+ *  This is semantically equivalent to <code>umeth.bind(recv).call(args, ...)</code>.
  */
 static VALUE
 umethod_bind_call(int argc, VALUE *argv, VALUE method)
