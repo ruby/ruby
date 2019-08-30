@@ -268,8 +268,9 @@ static const char *const CC_DEBUG_ARGS[] = {MJIT_DEBUGFLAGS NULL};
 static const char *const CC_OPTIMIZE_ARGS[] = {MJIT_OPTFLAGS NULL};
 
 static const char *const CC_LDSHARED_ARGS[] = {MJIT_LDSHARED GCC_PIC_FLAGS NULL};
-static const char *const CC_DLDFLAGS_ARGS[] = {
-    MJIT_DLDFLAGS
+static const char *const CC_DLDFLAGS_ARGS[] = {MJIT_DLDFLAGS NULL};
+// `CC_LINKER_ARGS` are linker flags which must be passed to `-c` as well.
+static const char *const CC_LINKER_ARGS[] = {
 #if defined __GNUC__ && !defined __clang__ && !defined(__OpenBSD__)
     "-nostartfiles",
 #endif
@@ -792,7 +793,7 @@ compile_c_to_o(const char *c_file, const char *o_file)
         "-c", NULL
     };
 
-    char **args = form_args(3, cc_common_args, CC_CODEFLAG_ARGS, files);
+    char **args = form_args(4, cc_common_args, CC_CODEFLAG_ARGS, files, CC_LINKER_ARGS);
     if (args == NULL)
         return false;
 
@@ -816,8 +817,8 @@ link_o_to_so(const char **o_files, const char *so_file)
         NULL
     };
 
-    char **args = form_args(6, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
-            options, o_files, CC_LIBS, CC_DLDFLAGS_ARGS);
+    char **args = form_args(7, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
+            options, o_files, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
     if (args == NULL)
         return false;
 
