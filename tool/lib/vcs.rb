@@ -182,8 +182,11 @@ class VCS
   NullDevice = defined?(IO::NULL) ? IO::NULL :
     %w[/dev/null NUL NIL: NL:].find {|dev| File.exist?(dev)}
 
-  # return a pair of strings, the last revision and the last revision in which
-  # +path+ was modified.
+  # returns
+  # * the last revision of the current branch
+  # * the last revision in which +path+ was modified
+  # * the last modified time of +path+
+  # * the last commit title since the latest upstream
   def get_revisions(path)
     if self.class.local_path?(path)
       path = relative_to(path)
