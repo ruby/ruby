@@ -596,10 +596,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal({}, m.f1(*a, o), '[ruby-core:91825] [Bug #10856]')
 
     o = {a: 42}
-    assert_warning(/splat keyword/, 'splat to mandatory') do
+    assert_warning('', 'splat to mandatory') do
       assert_equal({a: 42}, m.f1(**o))
     end
-    assert_warning(/splat keyword/) do
+    assert_warning('') do
       assert_equal({a: 42}, m.f2(**o), '[ruby-core:82280] [Bug #13791]')
     end
     assert_warning('', 'splat to kwrest') do
@@ -609,7 +609,7 @@ class TestKeywordArguments < Test::Unit::TestCase
       assert_equal([{a: 42}], m.f4(**o))
     end
 
-    assert_warning(/splat keyword/) do
+    assert_warning('') do
       assert_equal({a: 42}, m.f2("a".to_sym => 42), '[ruby-core:82291] [Bug #13793]')
     end
 
