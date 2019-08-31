@@ -585,13 +585,16 @@ static inline void
 rb_warn_keyword_to_last_hash(struct rb_calling_info *calling, const struct rb_call_info *ci, const rb_iseq_t * const iseq)
 {
     if (calling->recv == Qundef) return;
+    VALUE name = rb_id2str(ci->mid);
     VALUE loc = rb_iseq_location(iseq);
     if (NIL_P(loc)) {
-        rb_warn("The keyword argument for `%s' is passed as the last hash parameter", rb_id2name(ci->mid));
+        rb_warn("The keyword argument for `%"PRIsVALUE"' is passed as the last hash parameter",
+                name);
     }
     else {
-        rb_warn("The keyword argument for `%s' (defined at %s:%d) is passed as the last hash parameter",
-                rb_id2name(ci->mid), RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)));
+        rb_warn("The keyword argument is passed as the last hash parameter");
+        rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
+                        "for `%"PRIsVALUE"' defined here", name);
     }
 }
 
@@ -599,13 +602,16 @@ static inline void
 rb_warn_split_last_hash_to_keyword(struct rb_calling_info *calling, const struct rb_call_info *ci, const rb_iseq_t * const iseq)
 {
     if (calling->recv == Qundef) return;
+    VALUE name = rb_id2str(ci->mid);
     VALUE loc = rb_iseq_location(iseq);
     if (NIL_P(loc)) {
-        rb_warn("The last argument for `%s' is split into positional and keyword parameters", rb_id2name(ci->mid));
+        rb_warn("The last argument for `%"PRIsVALUE"' is split into positional and keyword parameters",
+                name);
     }
     else {
-        rb_warn("The last argument for `%s' (defined at %s:%d) is split into positional and keyword parameters",
-                rb_id2name(ci->mid), RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)));
+        rb_warn("The last argument is split into positional and keyword parameters");
+        rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
+                        "for `%"PRIsVALUE"' defined here", name);
     }
 }
 
@@ -613,13 +619,16 @@ static inline void
 rb_warn_last_hash_to_keyword(struct rb_calling_info *calling, const struct rb_call_info *ci, const rb_iseq_t * const iseq)
 {
     if (calling->recv == Qundef) return;
+    VALUE name = rb_id2str(ci->mid);
     VALUE loc = rb_iseq_location(iseq);
     if (NIL_P(loc)) {
-        rb_warn("The last argument for `%s' is used as the keyword parameter", rb_id2name(ci->mid));
+        rb_warn("The last argument for `%"PRIsVALUE"' is used as the keyword parameter",
+                name);
     }
     else {
-        rb_warn("The last argument for `%s' (defined at %s:%d) is used as the keyword parameter",
-                rb_id2name(ci->mid), RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)));
+        rb_warn("The last argument is used as the keyword parameter");
+        rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
+                        "for `%"PRIsVALUE"' defined here", name);
     }
 }
 

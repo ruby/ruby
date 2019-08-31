@@ -155,7 +155,7 @@ class TestSyntax < Test::Unit::TestCase
     h = {k3: 31}
     assert_raise(ArgumentError) {o.kw(**h)}
     h = {"k1"=>11, k2: 12}
-    assert_warn(/The last argument for `kw' .* is split into positional and keyword parameters/) do
+    assert_warn(/The last argument is split into positional and keyword parameters.* for `kw'/m) do
       assert_raise(ArgumentError) {o.kw(**h)}
     end
   end
