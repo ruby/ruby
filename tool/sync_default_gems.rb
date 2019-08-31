@@ -108,6 +108,11 @@ def sync_default_gems(gem)
       code.gsub!(%r[require(?:_relative)?\s+"(?:[^\"/]*/)*vendored_fileutils"], 'require "fileutils"')
       File.binwrite(src, code)
     end
+    `git grep -z -l Bundler::FileUtils lib/bundler.rb lib/bundler spec/bundler`.split("\0").each do |src|
+      code = File.binread(src)
+      code.gsub!(/Bundler::FileUtils/, 'FileUtils')
+      File.binwrite(src, code)
+    end
   when "rdoc"
     rm_rf(%w[lib/rdoc* test/rdoc libexec/rdoc libexec/ri])
     cp_r(Dir.glob("#{upstream}/lib/rdoc*"), "lib")
