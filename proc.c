@@ -1183,7 +1183,7 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
     return NULL;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+static VALUE
 iseq_location(const rb_iseq_t *iseq)
 {
     VALUE loc[2];
@@ -1194,6 +1194,12 @@ iseq_location(const rb_iseq_t *iseq)
     loc[1] = iseq->body->location.first_lineno;
 
     return rb_ary_new4(2, loc);
+}
+
+MJIT_FUNC_EXPORTED VALUE
+rb_iseq_location(const rb_iseq_t *iseq)
+{
+    return iseq_location(iseq);
 }
 
 /*

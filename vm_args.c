@@ -579,13 +579,13 @@ ignore_keyword_hash_p(VALUE keyword_hash, const rb_iseq_t * const iseq) {
     return 0;
 }
 
-VALUE iseq_location(const rb_iseq_t *iseq);
+VALUE rb_iseq_location(const rb_iseq_t *iseq);
 
 static inline void
 rb_warn_keyword_to_last_hash(struct rb_calling_info *calling, const struct rb_call_info *ci, const rb_iseq_t * const iseq)
 {
     if (calling->recv == Qundef) return;
-    VALUE loc = iseq_location(iseq);
+    VALUE loc = rb_iseq_location(iseq);
     if (NIL_P(loc)) {
         rb_warn("The keyword argument for `%s' is passed as the last hash parameter", rb_id2name(ci->mid));
     }
@@ -599,7 +599,7 @@ static inline void
 rb_warn_split_last_hash_to_keyword(struct rb_calling_info *calling, const struct rb_call_info *ci, const rb_iseq_t * const iseq)
 {
     if (calling->recv == Qundef) return;
-    VALUE loc = iseq_location(iseq);
+    VALUE loc = rb_iseq_location(iseq);
     if (NIL_P(loc)) {
         rb_warn("The last argument for `%s' is split into positional and keyword parameters", rb_id2name(ci->mid));
     }
@@ -613,7 +613,7 @@ static inline void
 rb_warn_last_hash_to_keyword(struct rb_calling_info *calling, const struct rb_call_info *ci, const rb_iseq_t * const iseq)
 {
     if (calling->recv == Qundef) return;
-    VALUE loc = iseq_location(iseq);
+    VALUE loc = rb_iseq_location(iseq);
     if (NIL_P(loc)) {
         rb_warn("The last argument for `%s' is used as the keyword parameter", rb_id2name(ci->mid));
     }
