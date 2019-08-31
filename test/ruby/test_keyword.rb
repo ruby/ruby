@@ -308,18 +308,18 @@ class TestKeywordArguments < Test::Unit::TestCase
       assert_equal(expect, rest_keyrest(*expect), bug7665)
     end
     pr = proc {|*args, **opt| next *args, opt}
-    assert_warn(/The last argument for `call' is used as the keyword parameter/) do
+    assert_warn(/The last argument for `call' .* is used as the keyword parameter/) do
       assert_equal(expect, pr.call(*expect), bug7665)
     end
-    assert_warn(/The last argument for `call' is used as the keyword parameter/) do
+    assert_warn(/The last argument for `call' .* is used as the keyword parameter/) do
       assert_equal(expect, pr.call(expect), bug8463)
     end
     pr = proc {|a, *b, **opt| next a, *b, opt}
-    assert_warn(/The last argument for `call' is used as the keyword parameter/) do
+    assert_warn(/The last argument for `call' .* is used as the keyword parameter/) do
       assert_equal(expect, pr.call(expect), bug8463)
     end
     pr = proc {|a, **opt| next a, opt}
-    assert_warn(/The last argument for `call' is used as the keyword parameter/) do
+    assert_warn(/The last argument for `call' .* is used as the keyword parameter/) do
       assert_equal(expect.values_at(0, -1), pr.call(expect), bug8463)
     end
   end

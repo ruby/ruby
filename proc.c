@@ -1183,7 +1183,7 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
     return NULL;
 }
 
-static VALUE
+MJIT_FUNC_EXPORTED VALUE
 iseq_location(const rb_iseq_t *iseq)
 {
     VALUE loc[2];
