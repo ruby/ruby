@@ -717,7 +717,9 @@ describe "A method" do
       ruby
 
       m(1, b: 2).should == [1, 2]
-      -> { m("a" => 1, b: 2) }.should raise_error(ArgumentError)
+      suppress_keyword_warning.call do
+        -> { m("a" => 1, b: 2) }.should raise_error(ArgumentError)
+      end
     end
 
     evaluate <<-ruby do
@@ -726,7 +728,9 @@ describe "A method" do
 
       m(2).should == [2, 1]
       m(1, b: 2).should == [1, 2]
-      m("a" => 1, b: 2).should == [{"a" => 1, b: 2}, 1]
+      suppress_keyword_warning.call do
+        m("a" => 1, b: 2).should == [{"a" => 1, b: 2}, 1]
+      end
     end
 
     evaluate <<-ruby do
@@ -735,7 +739,9 @@ describe "A method" do
 
       m(1).should == 1
       m(1, a: 2, b: 3).should == 1
-      m("a" => 1, b: 2).should == {"a" => 1, b: 2}
+      suppress_keyword_warning.call do
+        m("a" => 1, b: 2).should == {"a" => 1, b: 2}
+      end
     end
 
     evaluate <<-ruby do
@@ -744,7 +750,9 @@ describe "A method" do
 
       m(1).should == [1, {}]
       m(1, a: 2, b: 3).should == [1, {a: 2, b: 3}]
-      m("a" => 1, b: 2).should == [{"a" => 1, b: 2}, {}]
+      suppress_keyword_warning.call do
+        m("a" => 1, b: 2).should == [{"a" => 1, b: 2}, {}]
+      end
     end
 
     evaluate <<-ruby do

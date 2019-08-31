@@ -756,41 +756,45 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     if (kw_flag & VM_CALL_KW_SPLAT) {
 	kw_splat = !iseq->body->param.flags.has_rest;
     }
-    if (given_argc > min_argc &&
-	(iseq->body->param.flags.has_kw || iseq->body->param.flags.has_kwrest ||
+    if ((iseq->body->param.flags.has_kw || iseq->body->param.flags.has_kwrest ||
 	 (kw_splat && given_argc > max_argc)) &&
 	args->kw_argv == NULL) {
-	if (((kw_flag & (VM_CALL_KWARG | VM_CALL_KW_SPLAT)) || !ec->cfp->iseq /* called from C */)) {
-            int check_only_symbol = (kw_flag & VM_CALL_KW_SPLAT) &&
-                                    iseq->body->param.flags.has_kw &&
-                                    !iseq->body->param.flags.has_kwrest;
+        if (given_argc > min_argc) {
+            if (((kw_flag & (VM_CALL_KWARG | VM_CALL_KW_SPLAT)) || !ec->cfp->iseq /* called from C */)) {
+                int check_only_symbol = (kw_flag & VM_CALL_KW_SPLAT) &&
+                                        iseq->body->param.flags.has_kw &&
+                                        !iseq->body->param.flags.has_kwrest;
 
-	    if (args_pop_keyword_hash(args, &keyword_hash, check_only_symbol)) {
-		given_argc--;
-	    }
-            else if (check_only_symbol) {
-                if (keyword_hash != Qnil) {
-	            rb_warn_split_last_hash_to_keyword(calling, ci);
+                if (args_pop_keyword_hash(args, &keyword_hash, check_only_symbol)) {
+                    given_argc--;
                 }
-                else {
-                    rb_warn_keyword_to_last_hash(calling, ci);
+                else if (check_only_symbol) {
+                    if (keyword_hash != Qnil) {
+                        rb_warn_split_last_hash_to_keyword(calling, ci);
+                    }
+                    else {
+                        rb_warn_keyword_to_last_hash(calling, ci);
+                    }
                 }
             }
-	}
-	else if (args_pop_keyword_hash(args, &keyword_hash, 1)) {
-	    /* Warn the following:
-	     * def foo(k:1) p [k]; end
-	     * foo({k:42}) #=> 42
-	     */
-	    if (ec->cfp->iseq) {
-		/* called from Ruby level */
-		rb_warn_last_hash_to_keyword(calling, ci);
-	    }
-	    given_argc--;
-	}
-	else if (keyword_hash != Qnil && ec->cfp->iseq) {
-	    rb_warn_split_last_hash_to_keyword(calling, ci);
-	}
+            else if (args_pop_keyword_hash(args, &keyword_hash, 1)) {
+                /* Warn the following:
+                 * def foo(k:1) p [k]; end
+                 * foo({k:42}) #=> 42
+                 */
+                if (ec->cfp->iseq) {
+                    /* called from Ruby level */
+                    rb_warn_last_hash_to_keyword(calling, ci);
+                }
+                given_argc--;
+            }
+            else if (keyword_hash != Qnil && ec->cfp->iseq) {
+                rb_warn_split_last_hash_to_keyword(calling, ci);
+            }
+        }
+        else if (given_argc == min_argc && kw_flag) {
+            rb_warn_keyword_to_last_hash(calling, ci);
+        }
     }
 
     if (given_argc > max_argc && max_argc != UNLIMITED_ARGUMENTS) {

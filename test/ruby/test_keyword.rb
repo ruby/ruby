@@ -22,7 +22,9 @@ class TestKeywordArguments < Test::Unit::TestCase
 
   def test_f2
     assert_equal([:xyz, "foo", 424242], f2(:xyz))
-    assert_equal([{"bar"=>42}, "foo", 424242], f2("bar"=>42))
+    assert_warn(/The keyword argument for `f2' .* is passed as the last hash parameter/) do
+      assert_equal([{"bar"=>42}, "foo", 424242], f2("bar"=>42))
+    end
   end
 
 
@@ -322,6 +324,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     end
   end
 
+  def req_plus_keyword(x, **h)
+    [x, h]
+  end
+
   def opt_plus_keyword(x=1, **h)
     [x, h]
   end
@@ -331,6 +337,19 @@ class TestKeywordArguments < Test::Unit::TestCase
   end
 
   def test_keyword_split
+    assert_warn(/The keyword argument for `req_plus_keyword' .* is passed as the last hash parameter/) do
+      assert_equal([{:a=>1}, {}], req_plus_keyword(:a=>1))
+    end
+    assert_warn(/The keyword argument for `req_plus_keyword' .* is passed as the last hash parameter/) do
+      assert_equal([{"a"=>1}, {}], req_plus_keyword("a"=>1))
+    end
+    assert_warn(/The keyword argument for `req_plus_keyword' .* is passed as the last hash parameter/) do
+      assert_equal([{"a"=>1, :a=>1}, {}], req_plus_keyword("a"=>1, :a=>1))
+    end
+    assert_equal([{:a=>1}, {}], req_plus_keyword({:a=>1}))
+    assert_equal([{"a"=>1}, {}], req_plus_keyword({"a"=>1}))
+    assert_equal([{"a"=>1, :a=>1}, {}], req_plus_keyword({"a"=>1, :a=>1}))
+
     assert_equal([1, {:a=>1}], opt_plus_keyword(:a=>1))
     assert_equal([1, {"a"=>1}], opt_plus_keyword("a"=>1))
     assert_equal([1, {"a"=>1, :a=>1}], opt_plus_keyword("a"=>1, :a=>1))
@@ -536,7 +555,9 @@ class TestKeywordArguments < Test::Unit::TestCase
         [a, b, c, d, e, f, g]
       end
     end
-    assert_equal([1, 2, 1, [], {:f=>5}, 2, {}], a.new.foo(1, 2, f:5), bug8993)
+    assert_warn(/The keyword argument for `foo' .* is passed as the last hash parameter/) do
+      assert_equal([1, 2, 1, [], {:f=>5}, 2, {}], a.new.foo(1, 2, f:5), bug8993)
+    end
   end
 
   def test_splat_keyword_nondestructive
