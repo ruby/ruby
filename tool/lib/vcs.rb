@@ -250,6 +250,7 @@ class VCS
   end
 
   def after_export(dir)
+    FileUtils.rm_rf(Dir.glob("#{dir}/.git*"))
   end
 
   def revision_handler(rev)
@@ -386,6 +387,7 @@ class VCS
     end
 
     def after_export(dir)
+      super
       FileUtils.rm_rf(dir+"/.svn")
     end
 
@@ -569,10 +571,6 @@ class VCS
 
     def export(revision, url, dir, keep_temp = false)
       system(COMMAND, "clone", "-s", (@srcdir || '.').to_s, "-b", url, dir)
-    end
-
-    def after_export(dir)
-      FileUtils.rm_rf(Dir.glob("#{dir}/.git*"))
     end
 
     def branch_beginning(url)
