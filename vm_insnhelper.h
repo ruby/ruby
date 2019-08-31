@@ -240,6 +240,7 @@ THROW_DATA_CONSUMED_SET(struct vm_throw_data *obj)
 
 #define IS_ARGS_SPLAT(ci)   ((ci)->flag & VM_CALL_ARGS_SPLAT)
 #define IS_ARGS_KEYWORD(ci) ((ci)->flag & VM_CALL_KWARG)
+#define IS_ARGS_KW_SPLAT(ci) ((ci)->flag & VM_CALL_KW_SPLAT)
 
 /* If this returns true, an optimized function returned by `vm_call_iseq_setup_func`
    can be used as a fastpath. */

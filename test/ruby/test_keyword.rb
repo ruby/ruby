@@ -177,6 +177,55 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(["bar", 111111], f[str: "bar", num: 111111])
   end
 
+  def test_lambda_kwsplat_call
+    kw = {}
+    h = {'a'=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    f = -> { true }
+    assert_equal(true, f[**{}])
+    assert_equal(true, f[**kw])
+    assert_raise(ArgumentError) { f[**h] }
+    assert_raise(ArgumentError) { f[**h2] }
+    assert_raise(ArgumentError) { f[**h3] }
+
+    f = ->(a) { a }
+    assert_raise(ArgumentError) { f[**{}] }
+    assert_raise(ArgumentError) { f[**kw] }
+    assert_equal(h, f[**h])
+    assert_equal(h2, f[**h2])
+    assert_equal(h3, f[**h3])
+
+    f = ->(**x) { x }
+    assert_equal(kw, f[**{}])
+    assert_equal(kw, f[**kw])
+    assert_equal(h, f[**h])
+    assert_equal(h2, f[**h2])
+    assert_equal(h3, f[**h3])
+
+    f = ->(a, **x) { [a,x] }
+    assert_raise(ArgumentError) { f[**{}] }
+    assert_warn(/The keyword argument for `\[\]' .* is passed as the last hash parameter/) do
+      assert_equal([{}, {}], f[**kw])
+    end
+    assert_warn(/The keyword argument for `\[\]' .* is passed as the last hash parameter/) do
+      assert_equal([h, {}], f[**h])
+    end
+    assert_warn(/The keyword argument for `\[\]' .* is passed as the last hash parameter/) do
+      assert_equal([h2, {}], f[**h2])
+    end
+    assert_warn(/The keyword argument for `\[\]' .* is passed as the last hash parameter/) do
+      assert_equal([h3, {}], f[**h3])
+    end
+
+    f = ->(a=1, **x) { [a, x] }
+    assert_equal([1, kw], f[**{}])
+    assert_equal([1, kw], f[**kw])
+    assert_equal([1, h], f[**h])
+    assert_equal([1, h2], f[**h2])
+    assert_equal([1, h3], f[**h3])
+  end
 
   def p1
     Proc.new do |str: "foo", num: 424242|

@@ -2912,6 +2912,12 @@ vm_callee_setup_block_arg(rb_execution_context_t *ec, struct rb_calling_info *ca
 
 	CALLER_SETUP_ARG(cfp, calling, ci, 1); /* splat arg */
 
+        if (UNLIKELY(IS_ARGS_KW_SPLAT(ci))) {
+            if (RHASH_EMPTY_P(argv[calling->argc-1])) {
+                calling->argc--;
+            }
+        }
+
 	if (arg_setup_type == arg_setup_block &&
 	    calling->argc == 1 &&
 	    iseq->body->param.flags.has_lead &&
