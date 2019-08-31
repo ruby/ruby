@@ -4,7 +4,7 @@ $:.unshift File.expand_path("..", __FILE__)
 $:.unshift File.expand_path("../../lib", __FILE__)
 
 require "bundler/psyched_yaml"
-require "bundler/vendored_fileutils"
+require "fileutils"
 require "uri"
 require "digest"
 

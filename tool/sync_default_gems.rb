@@ -102,6 +102,12 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/spec", "spec/bundler")
     cp_r(Dir.glob("#{upstream}/man/*.{1,5,1\.txt,5\.txt,ronn}"), "man")
     rm_rf(%w[spec/bundler/support/artifice/vcr_cassettes])
+    rm_rf(%w[lib/bundler/vendor/fileutils lib/bundler/vendored_fileutils.rb])
+    `git grep -z -l vendored_fileutils lib/bundler.rb lib/bundler spec/bundler`.split("\0").each do |src|
+      code = File.binread(src)
+      code.gsub!(%r[require(?:_relative)?\s+"(?:[^\"/]*/)*vendored_fileutils"], 'require "fileutils"')
+      File.binwrite(src, code)
+    end
   when "rdoc"
     rm_rf(%w[lib/rdoc* test/rdoc libexec/rdoc libexec/ri])
     cp_r(Dir.glob("#{upstream}/lib/rdoc*"), "lib")
