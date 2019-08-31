@@ -7,17 +7,22 @@ on:
     branches:
       - '*'
 jobs:
+  check-ci-skip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check [ci skip]
+        run: |
+          echo fail to skip
+          false
+        if: contains(github.event.head_commit.message, '[ci skip]')
   latest:
+    needs: check-ci-skip
     runs-on: ubuntu-latest
     strategy:
       matrix:
         test_task: [ "check", "test-bundler", "test-bundled-gems" ]
       fail-fast: false
     steps:
-      - name: Check [ci skip]
-        run: |
-          echo ci skip
-        if: contains(github.event.head_commit.message, '[ci skip]')
       - name: Install libraries
         run: |
           set -x
@@ -28,51 +33,45 @@ jobs:
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
       - name: Checkout ruby/ruby
         run: git clone --depth=50 https://github.com/ruby/ruby . && git reset --hard "$GITHUB_SHA"
-        if: "!contains(github.event.head_commit.message, '[ci skip]') && github.event_name == 'push'"
+        if: github.event_name == 'push'
       - name: Checkout a pull request
         run: git clone --depth=50 "--branch=$GITHUB_BRANCH" "https://github.com/${GITHUB_REPO}" . && git reset --hard "$GITHUB_REV"
         env:
           GITHUB_REV: ${{ github.event.pull_request.head.sha }}
           GITHUB_BRANCH: ${{ github.event.pull_request.head.ref }}
           GITHUB_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-        if: "!contains(github.event.head_commit.message, '[ci skip]') && github.event_name == 'pull_request'"
+        if: github.event_name == 'pull_request'
       - name: Fixed world writable dirs
         run: |
           chmod go-w $HOME
           sudo chmod -R go-w /usr/share
-        if: "!contains(github.event.head_commit.message, '[ci skip]')"
       - name: Set ENV
         run: |
           echo '##[set-env name=JOBS]'-j$((1 + $(nproc --all)))
-        if: "!contains(github.event.head_commit.message, '[ci skip]')"
       - run: autoconf
-        if: "!contains(github.event.head_commit.message, '[ci skip]')"
       - name: configure
         run: ./configure -C --disable-install-doc
-        if: "!contains(github.event.head_commit.message, '[ci skip]')"
       - run: make $JOBS
-        if: "!contains(github.event.head_commit.message, '[ci skip]')"
       - name: Tests
         run: make -s ${{ matrix.test_task }}
         env:
           TESTOPTS: "$JOBS -q --tty=no"
           MSPECOPT: "-ff" # not using `-j` because sometimes `mspec -j` silently dies
-        if: "!contains(github.event.head_commit.message, '[ci skip]') && matrix.test_task != 'test-bundled-gems'"
+        if: matrix.test_task != 'test-bundled-gems' && !contains(github.event.head_commit.message, '[ci skip]')
       # test-bundled-gems is separated for marking `continue-on-error` because it randomly fails.
       - name: Tests (test-bundled-gems)
         run: make -s ${{ matrix.test_task }}
         env:
           TESTOPTS: "-q --tty=no"
         continue-on-error: true
-        if: "!contains(github.event.head_commit.message, '[ci skip]') && matrix.test_task == 'test-bundled-gems'"
+        if: matrix.test_task == 'test-bundled-gems' && !contains(github.event.head_commit.message, '[ci skip]')
       - name: Leaked Globals
         run: make -s leaked-globals
-        if: "!contains(github.event.head_commit.message, '[ci skip]')"
       - name: Debug GitHub context
         run: echo "$GITHUB_CONTEXT"
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
-        if: "!contains(github.event.head_commit.message, '[ci skip]') && failure() && github.event_name == 'push'"
+        if: failure() && github.event_name == 'push'
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |
@@ -86,4 +85,4 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        if: "!contains(github.event.head_commit.message, '[ci skip]') && failure() && github.event_name == 'push'"
+        if: failure() && github.event_name == 'push'

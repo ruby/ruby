@@ -6,7 +6,16 @@ on:
     branches:
       - '*'
 jobs:
+  check-ci-skip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check [ci skip]
+        run: |
+          echo fail to skip
+          false
+        if: contains(github.event.head_commit.message, '[ci skip]')
   latest:
+    needs: check-ci-skip
     runs-on: ubuntu-latest
     steps:
       - name: Install libraries
