@@ -1003,7 +1003,7 @@ RUBY_SYMBOL_EXPORT_END
 }  /* extern "C" { */
 #endif
 
-#if defined(__has_attribute) && defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
+#if defined(__has_attribute) && defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P) && !defined(_WIN32)
 #if __has_attribute(transparent_union) && __has_attribute(unused) && __has_attribute(weakref) && __has_attribute(nonnull)
 __attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))static void rb_define_method_idm3(VALUE,ID,VALUE(*)(ANYARGS),int);
 __attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))static void rb_define_method_idm2(VALUE,ID,VALUE(*)(VALUE,VALUE),int);
@@ -1168,21 +1168,6 @@ __attribute__((__unused__,__weakref__("rb_define_singleton_method"),__nonnull__(
 #define rb_define_singleton_method_choose_prototypem2(n)    rb_define_method_if_constexpr((n)==-2,rb_define_singleton_methodm2,rb_define_singleton_method_choose_prototypem1(n))
 #define rb_define_singleton_method_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_singleton_methodm3,rb_define_singleton_method_choose_prototypem2(n))
 #define rb_define_singleton_method(klass, mid, func, arity) rb_define_singleton_method_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
-#endif
-#endif
-
-#ifdef _WIN32
-#ifdef rb_define_method_id
-#undef rb_define_method_id
-#endif
-#ifdef rb_define_private_function
-#undef rb_define_private_function
-#endif
-#ifdef rb_define_protected_function
-#undef rb_define_protected_function
-#endif
-#ifdef rb_define_singleton_function
-#undef rb_define_singleton_function
 #endif
 #endif
 

@@ -2689,7 +2689,7 @@ RUBY_SYMBOL_EXPORT_END
 }  /* extern "C" { */
 #endif
 
-#if defined(__has_attribute) && defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
+#if defined(__has_attribute) && defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P) && !defined(_WIN32)
 #if __has_attribute(transparent_union) && __has_attribute(unused) && __has_attribute(weakref) && __has_attribute(nonnull)
 __attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_methodm3(VALUE,const char*,VALUE(*)(ANYARGS),int);
 __attribute__((__unused__,__weakref__("rb_define_method"),__nonnull__(2,3)))static void rb_define_methodm2(VALUE,const char*,VALUE(*)(VALUE,VALUE),int);
@@ -2815,18 +2815,6 @@ __attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1
 #define rb_define_global_function_choose_prototypem2(n)    rb_define_method_if_constexpr((n)==-2,rb_define_global_functionm2,rb_define_global_function_choose_prototypem1(n))
 #define rb_define_global_function_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_global_functionm3,rb_define_global_function_choose_prototypem2(n))
 #define rb_define_global_function(mid, func, arity) rb_define_global_function_choose_prototypem3((arity),(func))((mid),(func),(arity));
-#endif
-#endif
-
-#ifdef _WIN32
-#ifdef rb_define_method
-#undef rb_define_method
-#endif
-#ifdef rb_define_module_function
-#undef rb_define_module_function
-#endif
-#ifdef rb_define_global_function
-#undef rb_define_global_function
 #endif
 #endif
 
