@@ -44,7 +44,7 @@ jobs:
         run: ./configure -C --disable-install-doc
       - run: make $JOBS
       - name: Tests
-        run: make -s ${{ matrix.test_task }}
+        run: make -s $JOBS ${{ matrix.test_task }}
         env:
           TESTOPTS: "$JOBS -q --tty=no"
           MSPECOPT: "-ff" # not using `-j` because sometimes `mspec -j` silently dies
