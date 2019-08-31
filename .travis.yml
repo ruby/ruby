@@ -85,11 +85,13 @@ env:
 
   - &gcc-8
     compiler: gcc-8
-    addons:
-      apt:
-        sources:
-          - ubuntu-toolchain-r-test
+    # # Not using addon to control retries
+    # addons:
+    #   apt:
+    #     sources:
+    #       - ubuntu-toolchain-r-test
     before_install:
+      - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
       - |-
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
@@ -350,6 +352,10 @@ env:
     dist: trusty # xenial no longer has ruby-1.9.3
     language: ruby
     rvm: 1.9.3
+    # For some reason, enabling apt addon seems to be required to pass `apt-get update` on trusty.
+    addons:
+      apt:
+        sources: []
 
   - &x86_64-darwin18
     name: x86_64-darwin18
