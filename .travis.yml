@@ -92,7 +92,7 @@ env:
     #       - ubuntu-toolchain-r-test
     before_install:
       - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
-      - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update ${APT_GET_UPDATE_OPTIONS} -yq"
+      - tool/travis_retry.sh sudo bash -c "${BEFORE_APT_GET_UPDATE}; rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
       - |-
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
           gcc-8 \
@@ -353,7 +353,8 @@ env:
     language: ruby
     rvm: 1.9.3
     env:
-      - APT_GET_UPDATE_OPTIONS="--allow-unauthenticated"
+      # for `apt-get update` error on trusty
+      - BEFORE_APT_GET_UPDATE="apt-get install debian-keyring debian-archive-keyring"
 
   - &x86_64-darwin18
     name: x86_64-darwin18
