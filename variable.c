@@ -2491,7 +2491,7 @@ rb_const_source_location(VALUE klass, ID id)
     return rb_const_location(klass, id, FALSE, TRUE, FALSE);
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_const_source_location_at(VALUE klass, ID id)
 {
     return rb_const_location(klass, id, TRUE, FALSE, FALSE);
