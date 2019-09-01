@@ -35,7 +35,7 @@ class DRbService
   attr_reader :server
 
   def ext_service(name)
-    Timeout.timeout(100, RuntimeError) do
+    EnvUtil.timeout(100, RuntimeError) do
       manager.service(name)
     end
   end
