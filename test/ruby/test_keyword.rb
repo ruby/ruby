@@ -321,6 +321,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([h2], c.method(:m)[**h2])
     assert_equal([h3], c.method(:m)[**h3])
 
+    c.singleton_class.remove_method(:m)
     def c.m; end
     assert_nil(c.method(:m)[**{}])
     assert_nil(c.method(:m)[**kw])
@@ -328,6 +329,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(ArgumentError) { c.method(:m)[**h2] }
     assert_raise(ArgumentError) { c.method(:m)[**h3] }
 
+    c.singleton_class.remove_method(:m)
     def c.m(args)
       args
     end
@@ -337,6 +339,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, c.method(:m)[**h2])
     assert_equal(h3, c.method(:m)[**h3])
 
+    c.singleton_class.remove_method(:m)
     def c.m(**args)
       args
     end
@@ -346,6 +349,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, c.method(:m)[**h2])
     assert_equal(h3, c.method(:m)[**h3])
 
+    c.singleton_class.remove_method(:m)
     def c.m(arg, **args)
       [arg, args]
     end
@@ -355,6 +359,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([h2, kw], c.method(:m)[**h2])
     assert_equal([h3, kw], c.method(:m)[**h3])
 
+    c.singleton_class.remove_method(:m)
     def c.m(arg=1, **args)
       [arg=1, args]
     end
@@ -381,6 +386,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([h2], c.send(:m, **h2))
     assert_equal([h3], c.send(:m, **h3))
 
+    c.singleton_class.remove_method(:m)
     def c.m; end
     assert_nil(c.send(:m, **{}))
     assert_nil(c.send(:m, **kw))
@@ -388,6 +394,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(ArgumentError) { c.send(:m, **h2) }
     assert_raise(ArgumentError) { c.send(:m, **h3) }
 
+    c.singleton_class.remove_method(:m)
     def c.m(args)
       args
     end
@@ -397,6 +404,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, c.send(:m, **h2))
     assert_equal(h3, c.send(:m, **h3))
 
+    c.singleton_class.remove_method(:m)
     def c.m(**args)
       args
     end
@@ -406,6 +414,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, c.send(:m, **h2))
     assert_equal(h3, c.send(:m, **h3))
 
+    c.singleton_class.remove_method(:m)
     def c.m(arg, **args)
       [arg, args]
     end
@@ -423,6 +432,7 @@ class TestKeywordArguments < Test::Unit::TestCase
       assert_equal([h3, kw], c.send(:m, **h3))
     end
 
+    c.singleton_class.remove_method(:m)
     def c.m(arg=1, **args)
       [arg=1, args]
     end
