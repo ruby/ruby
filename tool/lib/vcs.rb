@@ -575,6 +575,7 @@ class VCS
 
     def export(revision, url, dir, keep_temp = false)
       system(COMMAND, "clone", "-s", (@srcdir || '.').to_s, "-b", url, dir)
+      system(COMMAND, "fetch", "origin", "+refs/notes/commits:refs/notes/commits", chdir: dir)
     end
 
     def branch_beginning(url)
