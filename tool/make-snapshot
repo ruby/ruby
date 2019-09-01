@@ -199,6 +199,7 @@ rescue => e
 end
 
 def package(vcs, rev, destdir, tmp = nil)
+  pwd = Dir.pwd
   patchlevel = false
   prerelease = false
   if rev and revision = rev[/@(\h+)\z/, 1]
@@ -507,6 +508,7 @@ after-update::
   end.compact
 ensure
   FileUtils.rm_rf(v) if v and !$exported and !$keep_temp
+  Dir.chdir(pwd)
 end
 
 if [$srcdir, ($svn||=nil), ($git||=nil)].compact.size > 1
