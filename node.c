@@ -1065,7 +1065,12 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         F_NODE(nd_pconst, "constant");
         F_NODE(nd_pkwargs, "keyword arguments");
         LAST_NODE;
-        F_NODE(nd_pkwrestarg, "keyword rest argument");
+        if (node->nd_pkwrestarg == NODE_SPECIAL_NO_REST_KEYWORD) {
+            F_MSG(nd_pkwrestarg, "keyword rest argument", "NODE_SPECIAL_NO_REST_KEYWORD (**nil)");
+        }
+        else {
+            F_NODE(nd_pkwrestarg, "keyword rest argument");
+        }
         return;
 
       case NODE_ARGS_AUX:

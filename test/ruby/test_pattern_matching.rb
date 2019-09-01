@@ -847,6 +847,44 @@ END
     end
 
     assert_block do
+      [{}, C.new({})].all? do |i|
+        case i
+        in **nil
+          true
+        end
+      end
+    end
+
+    assert_block do
+      [{a: 0}, C.new({a: 0})].all? do |i|
+        case i
+        in **nil
+        else
+          true
+        end
+      end
+    end
+
+    assert_block do
+      [{a: 0}, C.new({a: 0})].all? do |i|
+        case i
+        in a:, **nil
+          true
+        end
+      end
+    end
+
+    assert_block do
+      [{a: 0, b: 1}, C.new({a: 0, b: 1})].all? do |i|
+        case i
+        in a:, **nil
+        else
+          true
+        end
+      end
+    end
+
+    assert_block do
       case C.new({a: 0})
       in C(a: 0)
         true

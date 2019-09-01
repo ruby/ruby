@@ -1033,7 +1033,7 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %type <id>   keyword_variable user_variable sym operation operation2 operation3
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
 %type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords relop dot_or_colon
-%type <id>   p_kwrest
+%type <id>   p_kwrest p_kwnorest
 %type <id>   f_no_kwarg
 %token END_OF_INPUT 0	"end-of-input"
 %token <id> '.'
@@ -3950,6 +3950,14 @@ p_kwargs	: p_kwarg ',' p_kwrest
 		    {
 			$$ =  new_hash_pattern_tail(p, new_hash(p, Qnone, &@$), $1, &@$);
 		    }
+		| p_kwarg ',' p_kwnorest
+		    {
+			$$ =  new_hash_pattern_tail(p, new_unique_key_hash(p, $1, &@$), ID2SYM(idNil), &@$);
+		    }
+		| p_kwnorest
+		    {
+			$$ =  new_hash_pattern_tail(p, new_hash(p, Qnone, &@$), ID2SYM(idNil), &@$);
+		    }
 		;
 
 p_kwarg 	: p_kw
@@ -4021,6 +4029,12 @@ p_kwrest	: kwrest_mark tIDENTIFIER
 		        $$ = $2;
 		    }
 		| kwrest_mark
+		    {
+		        $$ = 0;
+		    }
+		;
+
+p_kwnorest	: kwrest_mark keyword_nil
 		    {
 		        $$ = 0;
 		    }
@@ -11253,7 +11267,10 @@ new_hash_pattern_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, co
     int saved_line = p->ruby_sourceline;
     NODE *node, *kw_rest_arg_node;
 
-    if (kw_rest_arg) {
+    if (kw_rest_arg == ID2SYM(idNil)) {
+	kw_rest_arg_node = NODE_SPECIAL_NO_REST_KEYWORD;
+    }
+    else if (kw_rest_arg) {
 	kw_rest_arg_node = assignable(p, kw_rest_arg, 0, loc);
     }
     else {

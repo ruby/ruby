@@ -5467,7 +5467,15 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
          *     end
          *   end
          *   if pattern.has_kw_rest_arg_node?
-         *     pattern.kw_rest_arg_node.match?(d)
+         *     if pattern.no_rest_keyword?
+         *       unless d.empty?
+         *         goto match_failed
+         *       end
+         *     else
+         *       unless pattern.kw_rest_arg_node.match?(d)
+         *         goto match_failed
+         *       end
+         *     end
          *   end
          *   true
          *   goto fin
@@ -5563,9 +5571,16 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         }
 
         if (node->nd_pkwrestarg) {
-            ADD_INSN(ret, line, dup);
-            iseq_compile_pattern_each(iseq, ret, node->nd_pkwrestarg, in_alt_pattern);
-            ADD_INSNL(ret, line, branchunless, match_failed);
+            if (node->nd_pkwrestarg == NODE_SPECIAL_NO_REST_KEYWORD) {
+                ADD_INSN(ret, line, dup);
+                ADD_SEND(ret, line, idEmptyP, INT2FIX(0));
+                ADD_INSNL(ret, line, branchunless, match_failed);
+            }
+            else {
+                ADD_INSN(ret, line, dup);
+                iseq_compile_pattern_each(iseq, ret, node->nd_pkwrestarg, in_alt_pattern);
+                ADD_INSNL(ret, line, branchunless, match_failed);
+            }
         }
 
         ADD_INSN(ret, line, pop);

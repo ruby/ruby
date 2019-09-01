@@ -652,10 +652,13 @@ node_children(rb_ast_t *ast, NODE *node)
         }
       case NODE_HSHPTN:
         {
+            VALUE kwrest = node->nd_pkwrestarg == NODE_SPECIAL_NO_REST_KEYWORD ? ID2SYM(rb_intern("NODE_SPECIAL_NO_REST_KEYWORD")) :
+                                                                                 NEW_CHILD(ast, node->nd_pkwrestarg);
+
             return rb_ary_new_from_args(3,
                                         NEW_CHILD(ast, node->nd_pconst),
                                         NEW_CHILD(ast, node->nd_pkwargs),
-                                        NEW_CHILD(ast, node->nd_pkwrestarg));
+                                        kwrest);
         }
       case NODE_ARGS_AUX:
       case NODE_LAST:
