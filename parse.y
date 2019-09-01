@@ -3248,7 +3248,7 @@ block_args_tail	: f_block_kwarg ',' f_kwrest opt_f_block_arg
 		    }
 		| f_no_kwarg opt_f_block_arg
 		    {
-			$$ = new_args_tail(p, Qnone, ID2SYM(rb_intern("nil")), $2, &@1);
+			$$ = new_args_tail(p, Qnone, ID2SYM(idNil), $2, &@1);
 		    }
 		| f_block_arg
 		    {
@@ -4719,7 +4719,7 @@ args_tail	: f_kwarg ',' f_kwrest opt_f_block_arg
 		    }
 		| f_no_kwarg opt_f_block_arg
 		    {
-			$$ = new_args_tail(p, Qnone, ID2SYM(rb_intern("nil")), $2, &@1);
+			$$ = new_args_tail(p, Qnone, ID2SYM(idNil), $2, &@1);
 		    }
 		| f_block_arg
 		    {
@@ -11152,7 +11152,7 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
 	args->kw_rest_arg = NEW_DVAR(kw_rest_arg, loc);
 	args->kw_rest_arg->nd_cflag = kw_bits;
     }
-    else if (kw_rest_arg == ID2SYM(rb_intern("nil"))) {
+    else if (kw_rest_arg == ID2SYM(idNil)) {
 	args->no_kwarg = 1;
     }
     else if (kw_rest_arg) {
