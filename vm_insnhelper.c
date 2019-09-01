@@ -2310,8 +2310,8 @@ vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct
 	ci = &ci_entry.ci;
 	ci_entry.ci = *orig_ci;
     }
-    unsigned int kw_splat = 0;
-    if (ci->flag & VM_CALL_KWARG) {
+    unsigned int kw_splat = ci->flag & VM_CALL_KW_SPLAT;
+    if (!kw_splat && (ci->flag & VM_CALL_KWARG)) {
         /* TODO: delegate kw_arg without making a Hash object */
         ci->flag = ci->flag & ~VM_CALL_KWARG;
         kw_splat = VM_CALL_KW_SPLAT;

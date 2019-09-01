@@ -365,6 +365,74 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h3], c.method(:m)[**h3])
   end
 
+  def test_send_kwsplat
+    kw = {}
+    h = {'a'=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    c = Object.new
+    def c.m(*args)
+      args
+    end
+    assert_equal([], c.send(:m, **{}))
+    assert_equal([], c.send(:m, **kw))
+    assert_equal([h], c.send(:m, **h))
+    assert_equal([h2], c.send(:m, **h2))
+    assert_equal([h3], c.send(:m, **h3))
+
+    def c.m; end
+    assert_nil(c.send(:m, **{}))
+    assert_nil(c.send(:m, **kw))
+    assert_raise(ArgumentError) { c.send(:m, **h) }
+    assert_raise(ArgumentError) { c.send(:m, **h2) }
+    assert_raise(ArgumentError) { c.send(:m, **h3) }
+
+    def c.m(args)
+      args
+    end
+    assert_raise(ArgumentError) { c.send(:m, **{}) }
+    assert_raise(ArgumentError) { c.send(:m, **kw) }
+    assert_equal(h, c.send(:m, **h))
+    assert_equal(h2, c.send(:m, **h2))
+    assert_equal(h3, c.send(:m, **h3))
+
+    def c.m(**args)
+      args
+    end
+    assert_equal(kw, c.send(:m, **{}))
+    assert_equal(kw, c.send(:m, **kw))
+    assert_equal(h, c.send(:m, **h))
+    assert_equal(h2, c.send(:m, **h2))
+    assert_equal(h3, c.send(:m, **h3))
+
+    def c.m(arg, **args)
+      [arg, args]
+    end
+    assert_raise(ArgumentError) { c.send(:m, **{}) }
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([kw, kw], c.send(:m, **kw))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h, kw], c.send(:m, **h))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h2, kw], c.send(:m, **h2))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h3, kw], c.send(:m, **h3))
+    end
+
+    def c.m(arg=1, **args)
+      [arg=1, args]
+    end
+    assert_equal([1, kw], c.send(:m, **{}))
+    assert_equal([1, kw], c.send(:m, **kw))
+    assert_equal([1, h], c.send(:m, **h))
+    assert_equal([1, h2], c.send(:m, **h2))
+    assert_equal([1, h3], c.send(:m, **h3))
+  end
+
   def p1
     Proc.new do |str: "foo", num: 424242|
       [str, num]
