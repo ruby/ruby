@@ -457,8 +457,9 @@ class VCS
     end
 
     def _get_revisions(path, srcdir = nil)
+      ref = Branch === path ? path.to_str : 'HEAD'
       gitcmd = [COMMAND]
-      last = cmd_read_at(srcdir, [[*gitcmd, 'rev-parse', 'HEAD']]).rstrip
+      last = cmd_read_at(srcdir, [[*gitcmd, 'rev-parse', ref]]).rstrip
       log = cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--date=iso', '--pretty=fuller', *path]])
       changed = log[/\Acommit (\h+)/, 1]
       modified = log[/^CommitDate:\s+(.*)/, 1]
@@ -470,9 +471,12 @@ class VCS
         end
         changed = rev
       end
-      branch = cmd_read_at(srcdir, [gitcmd + %W[symbolic-ref --short HEAD]])
+      branch = cmd_read_at(srcdir, [gitcmd + %W[symbolic-ref --short #{ref}]])
       if branch.empty?
-        branch_list = cmd_read_at(srcdir, [gitcmd + %W[branch --list --contains HEAD]]).lines.to_a
+        branch = cmd_read_at(srcdir, [gitcmd + %W[tag --list #{ref}]]).strip
+      end
+      if branch.empty?
+        branch_list = cmd_read_at(srcdir, [gitcmd + %W[branch --list --contains #{ref}]]).lines.to_a
         branch, = branch_list.grep(/\A\*/)
         case branch
         when /\A\* *\(\S+ detached at (.*)\)\Z/
@@ -493,7 +497,7 @@ class VCS
       branch = ":detached:" if branch.empty?
       upstream = cmd_read_at(srcdir, [gitcmd + %W[branch --list --format=%(upstream:short) #{branch}]])
       upstream.chomp!
-      title = cmd_read_at(srcdir, [gitcmd + %W[log --format=%s -n1 #{upstream}..HEAD]])
+      title = cmd_read_at(srcdir, [gitcmd + %W[log --format=%s -n1 #{upstream}..#{ref}]])
       title = nil if title.empty?
       [last, changed, modified, branch, title]
     end
