@@ -143,6 +143,8 @@ env:
     name: x86_64-linux
     os: linux
     <<: *gcc-8
+    env:
+      - TEST_MJIT_SYMBOLS=1 # detect exports missing for MJIT
 
   - &jemalloc
     name: --with-jemalloc
