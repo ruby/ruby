@@ -507,7 +507,7 @@ after-update::
     end
   end.compact
 ensure
-  FileUtils.rm_rf(v) if v and !$exported and !$keep_temp
+  FileUtils.rm_rf(tmp ? File.join(tmp, v) : v) if v and !$exported and !$keep_temp
   Dir.chdir(pwd)
 end
 
