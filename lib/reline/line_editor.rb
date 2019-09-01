@@ -71,7 +71,60 @@ class Reline::LineEditor
     }
     Reline::IOGate.set_winch_handler do
       @rest_height = (Reline::IOGate.get_screen_size.first - 1) - Reline::IOGate.cursor_pos.y
+      old_screen_size = @screen_size
       @screen_size = Reline::IOGate.get_screen_size
+      if old_screen_size.last < @screen_size.last # columns increase
+        @rerender_all = true
+        rerender
+      else
+        special_prompt = nil
+        if @vi_arg
+          prompt = "(arg: #{@vi_arg}) "
+          prompt_width = calculate_width(prompt)
+          special_prompt = prompt
+        elsif @searching_prompt
+          prompt = @searching_prompt
+          prompt_width = calculate_width(prompt)
+          special_prompt = prompt
+        else
+          prompt = @prompt
+          prompt_width = calculate_width(prompt, true)
+        end
+        back = 0
+        new_buffer = whole_lines
+        prompt_list = nil
+        if @prompt_proc
+          prompt_list = @prompt_proc.(new_buffer)
+          prompt_list[@line_index] = special_prompt if special_prompt
+          prompt = prompt_list[@line_index]
+          prompt_width = calculate_width(prompt, true)
+        end
+        new_buffer.each_with_index do |line, index|
+          prompt_width = calculate_width(prompt_list[index], true) if @prompt_proc
+          width = prompt_width + calculate_width(line)
+          height = calculate_height_by_width(width)
+          back += height
+        end
+        @highest_in_all = back
+        @highest_in_this = calculate_height_by_width(prompt_width + @cursor_max)
+        @first_line_started_from =
+          if @line_index.zero?
+            0
+          else
+            @buffer_of_lines[0..(@line_index - 1)].inject(0) { |result, line|
+              result + calculate_height_by_width(prompt_width + calculate_width(line)) # TODO prompt_list
+            }
+          end
+        if @prompt_proc
+          prompt = prompt_list[@line_index]
+          prompt_width = calculate_width(prompt, true)
+        end
+        calculate_nearest_cursor
+        @started_from = calculate_height_by_width(prompt_width + @cursor) - 1
+        Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
+        @highest_in_this = calculate_height_by_width(prompt_width + @cursor_max)
+        @rerender_all = true
+      end
     end
   end
 
