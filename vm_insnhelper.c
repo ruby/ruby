@@ -2408,6 +2408,9 @@ vm_call_method_missing(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, 
     argc = calling->argc+1;
 
     ci_entry.flag = VM_CALL_FCALL | VM_CALL_OPT_SEND;
+    if (orig_ci->flag & VM_CALL_KW_SPLAT) {
+        ci_entry.flag |= VM_CALL_KW_SPLAT;
+    }
     ci_entry.mid = idMethodMissing;
     ci_entry.orig_argc = argc;
     ci = &ci_entry;
