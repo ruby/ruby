@@ -2186,6 +2186,13 @@ vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
     VALUE recv = calling->recv;
     VALUE block_handler = calling->block_handler;
     int argc = calling->argc;
+    int orig_argc = argc;
+
+    if (UNLIKELY(IS_ARGS_KW_SPLAT(ci))) {
+        if (RHASH_EMPTY_P(*(GET_SP()-1))) {
+            argc--;
+        }
+    }
 
     RUBY_DTRACE_CMETHOD_ENTRY_HOOK(ec, me->owner, me->def->original_id);
     EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, recv, me->def->original_id, ci->mid, me->owner, Qundef);
@@ -2196,7 +2203,7 @@ vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
 
     if (len >= 0) rb_check_arity(argc, len, len);
 
-    reg_cfp->sp -= argc + 1;
+    reg_cfp->sp -= orig_argc + 1;
     val = (*cfunc->invoker)(recv, argc, reg_cfp->sp + 1, cfunc->func);
 
     CHECK_CFP_CONSISTENCY("vm_call_cfunc");

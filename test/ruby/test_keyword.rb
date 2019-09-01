@@ -227,6 +227,144 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h3], f[**h3])
   end
 
+  def test_cfunc_kwsplat_call
+    kw = {}
+    h = {'a'=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    sc = Class.new do
+      attr_reader :args
+      class << self
+        alias [] new
+      end
+    end
+
+    c = Class.new(sc) do
+      def initialize(*args)
+        @args = args
+      end
+    end
+    assert_equal([], c[**{}].args)
+    assert_equal([], c[**kw].args)
+    assert_equal([h], c[**h].args)
+    assert_equal([h2], c[**h2].args)
+    assert_equal([h3], c[**h3].args)
+
+    c = Class.new(sc) do
+      def initialize; end
+    end
+    assert_nil(c[**{}].args)
+    assert_nil(c[**kw].args)
+    assert_raise(ArgumentError) { c[**h] }
+    assert_raise(ArgumentError) { c[**h2] }
+    assert_raise(ArgumentError) { c[**h3] }
+
+    c = Class.new(sc) do
+      def initialize(args)
+        @args = args
+      end
+    end
+    assert_raise(ArgumentError) { c[**{}] }
+    assert_raise(ArgumentError) { c[**kw] }
+    assert_equal(h, c[**h].args)
+    assert_equal(h2, c[**h2].args)
+    assert_equal(h3, c[**h3].args)
+
+    c = Class.new(sc) do
+      def initialize(**args)
+        @args = args
+      end
+    end
+    assert_equal(kw, c[**{}].args)
+    assert_equal(kw, c[**kw].args)
+    assert_equal(h, c[**h].args)
+    assert_equal(h2, c[**h2].args)
+    assert_equal(h3, c[**h3].args)
+
+    c = Class.new(sc) do
+      def initialize(arg, **args)
+        @args = [arg, args]
+      end
+    end
+    assert_raise(ArgumentError) { c[**{}] }
+    assert_raise(ArgumentError) { c[**kw] }
+    assert_equal([h, kw], c[**h].args)
+    assert_equal([h2, kw], c[**h2].args)
+    assert_equal([h3, kw], c[**h3].args)
+
+    c = Class.new(sc) do
+      def initialize(arg=1, **args)
+        @args = [arg=1, args]
+      end
+    end
+    assert_equal([1, kw], c[**{}].args)
+    assert_equal([1, kw], c[**kw].args)
+    assert_equal([1, h], c[**h].args)
+    assert_equal([1, h2], c[**h2].args)
+    assert_equal([1, h3], c[**h3].args)
+  end
+
+  def test_method_kwsplat_call
+    kw = {}
+    h = {'a'=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    c = Object.new
+    def c.m(*args)
+      args
+    end
+    assert_equal([], c.method(:m)[**{}])
+    assert_equal([], c.method(:m)[**kw])
+    assert_equal([h], c.method(:m)[**h])
+    assert_equal([h2], c.method(:m)[**h2])
+    assert_equal([h3], c.method(:m)[**h3])
+
+    def c.m; end
+    assert_nil(c.method(:m)[**{}])
+    assert_nil(c.method(:m)[**kw])
+    assert_raise(ArgumentError) { c.method(:m)[**h] }
+    assert_raise(ArgumentError) { c.method(:m)[**h2] }
+    assert_raise(ArgumentError) { c.method(:m)[**h3] }
+
+    def c.m(args)
+      args
+    end
+    assert_raise(ArgumentError) { c.method(:m)[**{}] }
+    assert_raise(ArgumentError) { c.method(:m)[**kw] }
+    assert_equal(h, c.method(:m)[**h])
+    assert_equal(h2, c.method(:m)[**h2])
+    assert_equal(h3, c.method(:m)[**h3])
+
+    def c.m(**args)
+      args
+    end
+    assert_equal(kw, c.method(:m)[**{}])
+    assert_equal(kw, c.method(:m)[**kw])
+    assert_equal(h, c.method(:m)[**h])
+    assert_equal(h2, c.method(:m)[**h2])
+    assert_equal(h3, c.method(:m)[**h3])
+
+    def c.m(arg, **args)
+      [arg, args]
+    end
+    assert_raise(ArgumentError) { c.method(:m)[**{}] }
+    assert_raise(ArgumentError) { c.method(:m)[**kw] }
+    assert_equal([h, kw], c.method(:m)[**h])
+    assert_equal([h2, kw], c.method(:m)[**h2])
+    assert_equal([h3, kw], c.method(:m)[**h3])
+
+    def c.m(arg=1, **args)
+      [arg=1, args]
+    end
+    assert_equal([1, kw], c.method(:m)[**{}])
+    assert_equal([1, kw], c.method(:m)[**kw])
+    assert_equal([1, h], c.method(:m)[**h])
+    assert_equal([1, h2], c.method(:m)[**h2])
+    assert_equal([1, h3], c.method(:m)[**h3])
+  end
+
   def p1
     Proc.new do |str: "foo", num: 424242|
       [str, num]
