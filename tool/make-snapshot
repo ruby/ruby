@@ -423,6 +423,10 @@ update-gems:
 $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time:
 touch-unicode-files:
       APPEND
+      mk << <<-APPEND
+after-update::
+\t$(Q) $(RUNRUBY) -C gems -e 'Dir.glob("*") {|f|File.rename(File.readlink(f), f) rescue nil}'
+      APPEND
       open(clean.add("Makefile"), "w") do |f|
         f.puts mk
       end
