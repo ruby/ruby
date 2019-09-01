@@ -66,23 +66,27 @@ class Reline::Windows
   @@hConsoleInputHandle = @@GetStdHandle.call(STD_INPUT_HANDLE)
   @@GetNumberOfConsoleInputEvents = Win32API.new('kernel32', 'GetNumberOfConsoleInputEvents', ['L', 'P'], 'L')
   @@ReadConsoleInput = Win32API.new('kernel32', 'ReadConsoleInput', ['L', 'P', 'L', 'P'], 'L')
-  @@buf = []
+  @@input_buf = []
+  @@output_buf = []
 
   def self.getwch
+    unless @@input_buf.empty?
+      return @@input_buf.shift
+    end
     while @@kbhit.call == 0
       sleep(0.001)
     end
-    result = []
     until @@kbhit.call == 0
       ret = @@getwch.call
       begin
-        result.concat(ret.chr(Encoding::UTF_8).encode(Encoding.default_external).bytes)
+        bytes = ret.chr(Encoding::UTF_8).encode(Encoding.default_external).bytes
+        @@input_buf.push(*bytes)
       rescue Encoding::UndefinedConversionError
-        result << ret
-        result << @@getwch.call if ret == 224
+        @@input_buf << ret
+        @@input_buf << @@getwch.call if ret == 224
       end
     end
-    result
+    @@input_buf.shift
   end
 
   def self.getc
@@ -97,44 +101,42 @@ class Reline::Windows
         end
       end
     end
-    unless @@buf.empty?
-      return @@buf.shift
+    unless @@output_buf.empty?
+      return @@output_buf.shift
     end
     input = getwch
     alt = (@@GetKeyState.call(VK_MENU) & 0x80) != 0
-    shift_enter = (@@GetKeyState.call(VK_SHIFT) & 0x80) != 0 && input.first == 0x0D
+    shift_enter = !input.instance_of?(Array) && (@@GetKeyState.call(VK_SHIFT) & 0x80) != 0 && input == 0x0D
     if shift_enter
       # It's treated as Meta+Enter on Windows
-      @@buf.concat(["\e".ord])
-      @@buf.concat(input)
-    elsif input.size > 1
-      @@buf.concat(input)
-    else # single byte
-      case input[0]
+      @@output_buf.push("\e".ord)
+      @@output_buf.push(input)
+    else
+      case input
       when 0x00
         getwch
         alt = false
         input = getwch
-        @@buf.concat(input)
+        @@output_buf.push(*input)
       when 0xE0
-        @@buf.concat(input)
+        @@output_buf.push(input)
         input = getwch
-        @@buf.concat(input)
+        @@output_buf.push(*input)
       when 0x03
-        @@buf.concat(input)
+        @@output_buf.push(input)
       else
-        @@buf.concat(input)
+        @@output_buf.push(input)
       end
     end
     if alt
       "\e".ord
     else
-      @@buf.shift
+      @@output_buf.shift
     end
   end
 
   def self.ungetc(c)
-    @@buf.unshift(c)
+    @@output_buf.unshift(c)
   end
 
   def self.get_screen_size
