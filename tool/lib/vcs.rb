@@ -158,6 +158,10 @@ class VCS
     super()
   end
 
+  def chdir(path)
+    @srcdir = path
+  end
+
   def parse_options(opts, parser = OptionParser.new)
     case opts
     when Array
@@ -377,13 +381,13 @@ class VCS
             FileUtils.mv(Dir.glob("#{tmpdir}/#{subdir}/{.[^.]*,..?*,*}"), dir)
             Dir.rmdir(tmpdir)
           end
-          return true
+          return self
         end
       end
       IO.popen(%W"#{COMMAND} export -r #{revision} #{url} #{dir}") do |pipe|
         pipe.each {|line| /^A/ =~ line or yield line}
       end
-      $?.success?
+      self if $?.success?
     end
 
     def after_export(dir)
@@ -574,8 +578,9 @@ class VCS
     end
 
     def export(revision, url, dir, keep_temp = false)
-      system(COMMAND, "clone", "-s", (@srcdir || '.').to_s, "-b", url, dir)
-      system(COMMAND, "fetch", "origin", "+refs/notes/commits:refs/notes/commits", chdir: dir)
+      system(COMMAND, "clone", "-s", (@srcdir || '.').to_s, "-b", url, dir) or return
+      system(COMMAND, "fetch", "origin", "+refs/notes/commits:refs/notes/commits", chdir: dir) or return
+      (Integer === revision ? GITSVN : GIT).new(File.expand_path(dir))
     end
 
     def branch_beginning(url)

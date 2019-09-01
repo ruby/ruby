@@ -259,7 +259,7 @@ def package(vcs, rev, destdir, tmp = nil)
     v = "ruby"
     puts "Exporting #{rev}@#{revision}"
     exported = tmp ? File.join(tmp, v) : v
-    unless vcs.export(revision, url, exported, true) {|line| print line}
+    unless vcs = vcs.export(revision, url, exported, true) {|line| print line}
       warn("Export failed")
       return
     end
@@ -330,7 +330,7 @@ def package(vcs, rev, destdir, tmp = nil)
       n = "ruby-#{version}-#{tag}"
     end
     File.directory?(n) or File.rename v, n
-    v = n
+    vcs.chdir(File.expand_path(v = n))
   end
   system(*%W"patch -d #{v} -p0 -i #{$patch_file}") if $patch_file
   if !$exported or $patch_file
