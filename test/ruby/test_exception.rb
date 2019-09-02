@@ -488,20 +488,15 @@ end.join
   end
 
   def test_exception_in_name_error_to_str
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     bug5575 = '[ruby-core:41612]'
-    Tempfile.create(["test_exception_in_name_error_to_str", ".rb"]) do |t|
-      t.puts <<-EOC
+    begin;
       begin
         BasicObject.new.inspect
       rescue
-        $!.inspect
+        assert_nothing_raised(NameError, bug5575) {$!.inspect}
       end
-    EOC
-      t.close
-      assert_nothing_raised(NameError, bug5575) do
-        load(t.path)
-      end
-    end
+    end;
   end
 
   def test_equal
@@ -511,19 +506,16 @@ end.join
   end
 
   def test_exception_in_exception_equal
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     bug5865 = '[ruby-core:41979]'
-    Tempfile.create(["test_exception_in_exception_equal", ".rb"]) do |t|
-      t.puts <<-EOC
+    begin;
       o = Object.new
       def o.exception(arg)
       end
-      _ = RuntimeError.new("a") == o
-      EOC
-      t.close
       assert_nothing_raised(ArgumentError, bug5865) do
-        load(t.path)
+        RuntimeError.new("a") == o
       end
-    end
+    end;
   end
 
   Bug4438 = '[ruby-core:35364]'
