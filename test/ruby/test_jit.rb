@@ -248,6 +248,10 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_compile_insn_newarraykwsplat
+    assert_compile_once('[**{ x: 1 }]', result_inspect: '[{:x=>1}]', insns: %i[newarraykwsplat])
+  end
+
   def test_compile_insn_intern_duparray
     assert_compile_once('[:"#{0}"] + [1,2,3]', result_inspect: '[:"0", 1, 2, 3]', insns: %i[intern duparray])
   end
