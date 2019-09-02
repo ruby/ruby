@@ -19,6 +19,8 @@
 
 language: c
 
+os: linux
+
 dist: xenial
 
 git:
@@ -32,7 +34,7 @@ cache:
 
 env:
   global:
-    # Reset timestamps early, before updating Homebrew etc.
+    # Reset timestamps early
     - _=$(touch NEWS && find . -type f -exec touch -r NEWS {} +)
     - CONFIGURE_TTY=no
     - CCACHE_COMPILERCHECK=none
@@ -117,14 +119,12 @@ env:
 
   - &x86_64-linux
     name: x86_64-linux
-    os: linux
     <<: *gcc-8
     env:
       - TEST_MJIT_SYMBOLS=1 # detect exports missing for MJIT
 
   - &jemalloc
     name: --with-jemalloc
-    os: linux
     <<: *gcc-8
     <<: *cron-only
     env:
@@ -132,7 +132,6 @@ env:
 
   - &assertions
     name: RUBY_DEBUG=1
-    os: linux
     <<: *gcc-8
     #<<: *cron-only
     <<: *make-test-only
@@ -142,7 +141,6 @@ env:
 
   - &VM_CHECK_MODE
     name: VM_CHECK_MODE=3
-    os: linux
     <<: *gcc-8
     <<: *cron-only
     <<: *make-test-only
@@ -152,7 +150,6 @@ env:
 
   - &SUPPORT_JOKE
     name: SUPPORT_JOKE
-    os: linux
     <<: *gcc-8
     <<: *cron-only
     <<: *make-test-only
@@ -161,7 +158,6 @@ env:
 
   - &WITH_COROUTINE_UCONTEXT
     name: COROUTINE=ucontext
-    os: linux
     <<: *gcc-8
     <<: *cron-only
     env:
@@ -169,7 +165,6 @@ env:
 
   - &WITH_COROUTINE_COPY
     name: COROUTINE=copy
-    os: linux
     <<: *gcc-8
     <<: *cron-only
     env:
@@ -177,7 +172,6 @@ env:
 
   - &TOKEN_THREADED_CODE
     name: TOKEN_THREADED_CODE
-    os: linux
     <<: *gcc-8
     <<: *cron-only
     <<: *make-test-only
@@ -187,7 +181,6 @@ env:
 
   - &CALL_THREADED_CODE
     name: CALL_THREADED_CODE
-    os: linux
     <<: *gcc-8
     <<: *cron-only
     <<: *make-test-only
@@ -197,7 +190,6 @@ env:
 
   - &NO_THREADED_CODE
     name: NO_THREADED_CODE
-    os: linux
     <<: *gcc-8
     <<: *cron-only
     <<: *make-test-only
@@ -207,7 +199,6 @@ env:
 
   - &ASAN
     name: -fsanitize=address
-    os: linux
     <<: *clang-8
     #<<: *cron-only
     <<: *make-test-only
@@ -223,7 +214,6 @@ env:
 
   - &MSAN
     name: -fsanitize=memory
-    os: linux
     <<: *clang-8
     #<<: *cron-only
     <<: *make-test-only
@@ -237,7 +227,6 @@ env:
 
   - &UBSAN
     name: -fsanitize=undefined
-    os: linux
     <<: *clang-8
     #<<: *cron-only
     <<: *make-test-only
@@ -252,7 +241,6 @@ env:
 
   - &i686-linux
     name: i686-linux
-    os: linux
     compiler: gcc-8
     env:
       - GCC_FLAGS=-m32
@@ -286,7 +274,6 @@ env:
 
   - &pedanticism
     name: -std=c99 -pedantic
-    os: linux
     compiler: clang
     <<: *make-test-only
     env:
@@ -320,7 +307,6 @@ env:
 
   - &rubyspec
     name: Check ruby/spec version guards on Ruby 2.4
-    os: linux
     language: ruby
     rvm: 2.4.6
     before_install:
@@ -333,7 +319,6 @@ env:
 
   - &baseruby
     name: "BASERUBY: Ruby 1.9.3"
-    os: linux
     <<: *gcc-8
     <<: *make-test-only
     dist: trusty # xenial no longer has ruby-1.9.3
@@ -346,7 +331,6 @@ env:
 
   - &dependency
     name: Check dependencies in makefiles
-    os: linux
     language: ruby
     before_install:
     install:
