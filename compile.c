@@ -6607,9 +6607,8 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
             }
             else {
                 COMPILE_ERROR(ERROR_ARGS "invalid goto/label format");
-                goto ng;
+                return COMPILE_NG;
             }
-
 
             if (mid == goto_id) {
                 ADD_INSNL(ret, line, jump, label);
@@ -7267,7 +7266,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       case NODE_QCALL: /* obj&.foo */
       case NODE_FCALL: /* foo() */
       case NODE_VCALL: /* foo (variable or call) */
-        compile_call(iseq, ret, node, type, line, popped);
+        if (compile_call(iseq, ret, node, type, line, popped) == COMPILE_NG) {
+            goto ng;
+        }
         break;
       case NODE_SUPER:
       case NODE_ZSUPER:{
