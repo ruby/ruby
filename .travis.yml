@@ -533,7 +533,6 @@ notifications:
   irc:
     channels:
       - "chat.freenode.net#ruby-core"
-      - "chat.freenode.net#ruby-ja"
     on_success: change # [always|never|change] # default: always
     on_failure: always # [always|never|change] # default: always
     template:
