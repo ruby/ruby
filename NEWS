@@ -254,6 +254,10 @@ IRB::
 
   * Enable auto indent and save/load history by default.
 
+Net::FTP::
+
+  * Add features and options.  [Feature #15964]
+
 Net::IMAP::
 
   * Add Server Name Indication (SNI) support.  [Feature #15594]
