@@ -94,6 +94,7 @@ env:
       - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
       - |-
+        ${BEFORE_INSTALL}
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
           gcc-8 \
           libffi-dev \
@@ -181,7 +182,7 @@ env:
     <<: *cron-only
     <<: *make-test-only
     env:
-      - cppflags=-DSUPPORT_JOKE
+      - BEFORE_INSTALL="sed vm_opts.h -e 's/SUPPORT_JOKE *0/SUPPORT_JOKE 1/' -i"
 
   - &WITH_COROUTINE_UCONTEXT
     name: COROUTINE=ucontext
