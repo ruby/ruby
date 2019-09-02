@@ -624,7 +624,7 @@ reverse
 }
 
 /* for stack caching. */
-DEFINE_INSN
+DEFINE_INSN_IF(STACK_CACHING)
 reput
 ()
 (..., VALUE val)
@@ -1485,7 +1485,7 @@ opt_call_c_function
 }
 
 /* BLT */
-DEFINE_INSN
+DEFINE_INSN_IF(SUPPORT_JOKE)
 bitblt
 ()
 ()
@@ -1495,7 +1495,7 @@ bitblt
 }
 
 /* The Answer to Life, the Universe, and Everything */
-DEFINE_INSN
+DEFINE_INSN_IF(SUPPORT_JOKE)
 answer
 ()
 ()
