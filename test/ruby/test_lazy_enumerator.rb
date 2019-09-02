@@ -466,6 +466,54 @@ EOS
     assert_equal [1, 2, 3], lazy.to_enum.to_a
   end
 
+  def test_lazy_to_enum_lazy_methods
+    a = [1, 2, 3].to_enum
+    pr = proc{|x| [x, x * 2]}
+    selector = proc{|x| x*2 if x % 2 == 0}
+
+    [
+      [:with_index, nil],
+      [:with_index, 10, nil],
+      [:with_index, 10, pr],
+      [:map, nil],
+      [:map, pr],
+      [:collect, nil],
+      [:flat_map, nil],
+      [:flat_map, pr],
+      [:collect_concat, nil],
+      [:select, nil],
+      [:select, selector],
+      [:find_all, nil],
+      [:filter, nil],
+      [:filter_map, selector],
+      [:filter_map, nil],
+      [:reject, selector],
+      [:grep, selector, nil],
+      [:grep, selector, pr],
+      [:grep_v, selector, nil],
+      [:grep_v, selector, pr],
+      [:zip, a, nil],
+      [:take, 3, nil],
+      [:take_while, nil],
+      [:take_while, selector],
+      [:drop, 1, nil],
+      [:drop_while, nil],
+      [:drop_while, selector],
+      [:uniq, nil],
+      [:uniq, proc{|x| x.odd?}],
+    ].each do |args|
+      block = args.pop
+      assert_equal [1, 2, 3].to_enum.to_enum(*args).first(2).to_a, [1, 2, 3].to_enum.lazy.to_enum(*args).first(2).to_a
+      assert_equal (0..50).to_enum.to_enum(*args).first(2).to_a, (0..50000).to_enum.lazy.to_enum(*args).first(2).to_a
+      if block
+        assert_equal [1, 2, 3, 4].to_enum.to_enum(*args).map(&block).first(2).to_a, [1, 2, 3, 4].to_enum.lazy.to_enum(*args).map(&block).first(2).to_a
+        unless args.first == :take_while || args.first == :drop_while
+          assert_equal (0..50).to_enum.to_enum(*args).map(&block).first(2).to_a, (0..50000).to_enum.lazy.to_enum(*args).map(&block).first(2).to_a
+        end
+      end
+    end
+  end
+
   def test_size
     lazy = [1, 2, 3].lazy
     assert_equal 3, lazy.size
