@@ -198,6 +198,16 @@ rescue => e
   false
 end
 
+def touch_all(time, pattern, opt)
+  Dir.glob(pattern, opt) do |n|
+    File.utime(time, time, n) if File.file?(n) or File.directory?(n)
+  end
+rescue
+  false
+else
+  true
+end
+
 def package(vcs, rev, destdir, tmp = nil)
   pwd = Dir.pwd
   patchlevel = false
@@ -334,23 +344,24 @@ def package(vcs, rev, destdir, tmp = nil)
     vcs.chdir(File.expand_path(v = n))
   end
   system(*%W"patch -d #{v} -p0 -i #{$patch_file}") if $patch_file
-  if !$exported or $patch_file
-    colors = %w[red yellow green cyan blue magenta]
-    "take a breath, and go ahead".scan(/./) do |c|
-      if c == ' '
-        print c
-      else
-        colors.push(color = colors.shift)
-        print $colorize.decorate(c, color)
-      end
-      sleep(c == "," ? 0.7 : 0.05)
-    end
-    puts
-  end
   def (clean = []).add(n) push(n); n end
   Dir.chdir(v) do
     unless File.exist?("ChangeLog")
       vcs.export_changelog(url, nil, revision, "ChangeLog")
+    end
+
+    if !$exported or $patch_file and !touch_all(Time.now - 10, "**/*", File::FNM_DOTMATCH)
+      colors = %w[red yellow green cyan blue magenta]
+      "take a breath, and go ahead".scan(/./) do |c|
+        if c == ' '
+          print c
+        else
+          colors.push(color = colors.shift)
+          print $colorize.decorate(c, color)
+        end
+        sleep(c == "," ? 0.7 : 0.05)
+      end
+      puts
     end
 
     File.open(clean.add("cross.rb"), "w") do |f|
