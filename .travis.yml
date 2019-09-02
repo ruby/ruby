@@ -174,6 +174,15 @@ env:
       - GEMS_FOR_TEST=
       - cppflags=-DVM_CHECK_MODE=0x0003
 
+  - &SUPPORT_JOKE
+    name: SUPPORT_JOKE
+    os: linux
+    <<: *gcc-8
+    <<: *cron-only
+    <<: *make-test-only
+    env:
+      - cppflags=-DSUPPORT_JOKE
+
   - &WITH_COROUTINE_UCONTEXT
     name: COROUTINE=ucontext
     os: linux
@@ -422,6 +431,7 @@ matrix:
     - <<: *x86_64-darwin18
     - <<: *jemalloc
     - <<: *VM_CHECK_MODE
+    - <<: *SUPPORT_JOKE
     - <<: *WITH_COROUTINE_UCONTEXT
     - <<: *WITH_COROUTINE_COPY
     - <<: *TOKEN_THREADED_CODE
