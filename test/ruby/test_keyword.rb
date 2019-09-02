@@ -443,7 +443,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h3], c.send(:m, **h3))
   end
 
-  def test_send_kwsplat
+  def test_method_missing_kwsplat
     kw = {}
     h = {'a'=>1}
     h2 = {'a'=>1}
