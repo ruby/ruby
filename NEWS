@@ -19,8 +19,9 @@ sufficient information, see the ChangeLog file or Redmine
 * Method reference operator, <code>.:</code> is introduced as an
   experimental feature.  [Feature #12125] [Feature #13581]
 
-* Preparations for the redesign of keyword arguments towards Ruby 3.
-  [Feature #14183]
+* Preparations for the redesign of keyword arguments towards
+  Ruby 3.  [Feature #14183]
+
   * Automatic conversion from a Hash to keyword arguments is deprecated:
     when a method call passes a Hash at the last argument, and when the
     called method accepts keywords, it is warned.
@@ -35,8 +36,8 @@ sufficient information, see the ChangeLog file or Redmine
 
      def foo(**kw); p kw; end; foo("str" => 1) #=> {"str"=>1}
 
-* Automatic conversion of keyword arguments and positional ones is warned.
-  [Feature #14183]
+* Automatic conversion of keyword arguments and positional ones is
+  warned.  [Feature #14183]
 
 * Proc.new and proc with no block in a method called with a block is warned
   now.
@@ -76,8 +77,7 @@ Complex::
 
   New method::
 
-    * Added Complex#<=>. So 0 <=> 0i will not raise NoMethodError.
-      [Bug #15857]
+    * Added Complex#<=>. So 0 <=> 0i will not raise NoMethodError. [Bug #15857]
 
 Encoding::
 
@@ -263,8 +263,8 @@ open-uri::
   * Warn open-uri's "open" method at Kernel.
     Use URI.open instead.  [Misc #15893]
 
-  * The default charset of text/* media type is UTF-8 instead of ISO-8859-1.
-    [Bug #15933]
+  * The default charset of text/* media type is UTF-8 instead of
+    ISO-8859-1.  [Bug #15933]
 
 Pathname::
 
