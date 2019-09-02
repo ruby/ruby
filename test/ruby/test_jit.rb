@@ -591,11 +591,8 @@ class TestJIT < Test::Unit::TestCase
     assert_compile_once('!!true', result_inspect: 'true', insns: %i[opt_not])
   end
 
-  def test_compile_insn_opt_regexpmatch1
-    assert_compile_once("/true/ =~ 'true'", result_inspect: '0', insns: %i[opt_regexpmatch1])
-  end
-
   def test_compile_insn_opt_regexpmatch2
+    assert_compile_once("/true/ =~ 'true'", result_inspect: '0', insns: %i[opt_regexpmatch2])
     assert_compile_once("'true' =~ /true/", result_inspect: '0', insns: %i[opt_regexpmatch2])
   end
 

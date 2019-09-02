@@ -399,8 +399,8 @@ tests = [
     ! X.new
   },
 
-  [ 'opt_regexpmatch1',  %q{ /true/ =~ 'true' && $~ }, ],
-  [ 'opt_regexpmatch1', <<-'},', ],       # {
+  [ 'opt_regexpmatch2',  %q{ /true/ =~ 'true' && $~ }, ],
+  [ 'opt_regexpmatch2', <<-'},', ],       # {
     class Regexp; def =~ other; true; end; end
     /true/ =~ 'true'
   },
