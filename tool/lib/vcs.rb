@@ -608,20 +608,19 @@ class VCS
       unless $?.success?
         raise "need notes/commits tree; run `git fetch origin refs/notes/commits:refs/notes/commits` in the repository"
       end
-      cmd = %W"#{COMMAND} log --format=medium --notes=commits --date=iso-local --topo-order"
       to ||= 'HEAD'
       if from
-        cmd.push("#{from}^..#{to}")
+        arg = ["#{from}^..#{to}"]
       else
-        cmd.push("--since=25 Dec 00:00:00", to)
+        arg = ["--since=25 Dec 00:00:00", to]
       end
-      cmd_pipe({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'}, cmd, "rb") do |r|
-        format_changelog(r, path)
-      end
+      format_changelog(path, arg)
     end
 
-    def format_changelog(r, path)
-      IO.copy_stream(r, path)
+    def format_changelog(path, arg)
+      cmd = %W"#{COMMAND} log --format=medium --notes=commits --date=iso-local --topo-order"
+      cmd.concat(arg)
+      system({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'}, *cmd, chdir: @srcdir, out: path)
     end
 
     def upstream
@@ -660,26 +659,25 @@ class VCS
       SVN.revision_name(rev)
     end
 
-    def format_changelog(r, path)
+    def format_changelog(path, arg)
+      cmd = %W"#{COMMAND} log --topo-order --no-notes"
+      cmd << "--format=%x00%an%n%at%n%B"
+      cmd.concat(arg)
       open(path, 'w') do |w|
         sep = "-"*72
         w.puts sep
-        while s = r.gets('')
-          author = s[/^Author:\s*(\S+)/, 1]
-          time = s[/^Date:\s*(.+)/, 1]
-          s = r.gets('')
-          s.gsub!(/^ {4}/, '')
-          s.sub!(/^git-svn-id: .*@(\d+) .*\n+\z/, '')
-          rev = $1
-          s.gsub!(/^ {8}/, '') if /^(?! {8}|$)/ !~ s
-          s.sub!(/\n\n\z/, "\n")
-          if /\A(\d+)-(\d+)-(\d+)/ =~ time
-            date = Time.new($1.to_i, $2.to_i, $3.to_i).strftime("%a, %d %b %Y")
+        cmd_pipe(cmd) do |r|
+          r.getc                # skip first NUL
+          while s = r.gets("\0")
+            s.chomp!("\0")
+            author, time, s = s.split("\n", 3)
+            s.sub!(/\n\ngit-svn-id: .*@(\d+) .*\n\Z/, '')
+            rev = $1
+            time = Time.at(time.to_i).getlocal("+09:00").strftime("%F %T %z (%a, %d %b %Y)")
+            lines = s.count("\n")
+            lines = "#{lines} line#{lines == 1 ? '' : 's'}"
+            w.puts "r#{rev} | #{author} | #{time} | #{lines}\n\n", s, sep
           end
-          lines = s.count("\n")
-          lines = "#{lines} line#{lines == 1 ? '' : 's'}"
-          w.puts "r#{rev} | #{author} | #{time} (#{date}) | #{lines}\n\n"
-          w.puts s, sep
         end
       end
     end
