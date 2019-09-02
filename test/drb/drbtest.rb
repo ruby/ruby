@@ -207,12 +207,15 @@ module DRbCore
 
   def test_06_timeout
     skip if RUBY_PLATFORM.include?("armv7l-linux")
-    ten = Onecky.new(10)
-    assert_raise(Timeout::Error) do
-      @there.do_timeout(ten)
-    end
-    assert_raise(Timeout::Error) do
-      @there.do_timeout(ten)
+    skip if RUBY_PLATFORM.include?("sparc-solaris2.10")
+    Timeout.timeout(60) do
+      ten = Onecky.new(10)
+      assert_raise(Timeout::Error) do
+        @there.do_timeout(ten)
+      end
+      assert_raise(Timeout::Error) do
+        @there.do_timeout(ten)
+      end
     end
   end
 
