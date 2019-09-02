@@ -4025,8 +4025,21 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 	    else {
 		if (!popped || kw) {
 		    switch (type) {
-		      case COMPILE_ARRAY_TYPE_ARRAY:
-			ADD_INSN1(anchor, line, newarray, INT2FIX(i));
+                      case COMPILE_ARRAY_TYPE_ARRAY: {
+                        const NODE *check_node = node_root;
+
+                        /* Find last node in array, and if it is a keyword argument, then set
+                           flag to check and remove empty keyword arguments hash from array */
+                        while(check_node->nd_next) {
+                            check_node = check_node->nd_next;
+                        }
+                        if (nd_type(check_node->nd_head) == NODE_HASH && check_node->nd_head->nd_brace == 0) {
+                            ADD_INSN1(anchor, line, newarraykwsplat, INT2FIX(i));
+                        }
+                        else {
+                            ADD_INSN1(anchor, line, newarray, INT2FIX(i));
+                        }
+
 
 			if (first) {
 			    first = 0;
@@ -4037,6 +4050,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 
 			APPEND_LIST(ret, anchor);
 			break;
+                      }
 		      case COMPILE_ARRAY_TYPE_HASH:
 			if (i > 0) {
 			    if (first) {
