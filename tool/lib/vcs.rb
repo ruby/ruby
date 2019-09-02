@@ -660,14 +660,12 @@ class VCS
     end
 
     def format_changelog(path, arg)
-      cmd = %W"#{COMMAND} log --topo-order --no-notes"
-      cmd << "--format=%x00%an%n%at%n%B"
+      cmd = %W"#{COMMAND} log --topo-order --no-notes -z --format=%an%n%at%n%B"
       cmd.concat(arg)
       open(path, 'w') do |w|
         sep = "-"*72
         w.puts sep
         cmd_pipe(cmd) do |r|
-          r.getc                # skip first NUL
           while s = r.gets("\0")
             s.chomp!("\0")
             author, time, s = s.split("\n", 3)
