@@ -970,11 +970,11 @@ exc_exception(int argc, VALUE *argv, VALUE self)
 {
     VALUE exc;
 
+    argc = rb_check_arity(argc, 0, 1);
     if (argc == 0) return self;
     if (argc == 1 && self == argv[0]) return self;
     exc = rb_obj_clone(self);
-    exc_initialize(argc, argv, exc);
-
+    rb_ivar_set(exc, id_mesg, argv[0]);
     return exc;
 }
 

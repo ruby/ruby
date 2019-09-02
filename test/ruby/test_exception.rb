@@ -518,6 +518,18 @@ end.join
     end;
   end
 
+  def test_backtrace_by_exception
+    begin
+      line = __LINE__; raise "foo"
+    rescue => e
+    end
+    e2 = e.exception("bar")
+    assert_not_equal(e.message, e2.message)
+    assert_equal(e.backtrace, e2.backtrace)
+    loc = e2.backtrace_locations[0]
+    assert_equal([__FILE__, line], [loc.path, loc.lineno])
+  end
+
   Bug4438 = '[ruby-core:35364]'
 
   def test_rescue_single_argument
