@@ -79,6 +79,13 @@ Complex::
 
     * Added Complex#<=>. So 0 <=> 0i will not raise NoMethodError. [Bug #15857]
 
+Dir::
+
+  Modified method::
+
+    * Dir#glob and Dir#[] no longer allow NUL-separated glob pattern.
+      Use Array instead.  [Feature #14643]
+
 Encoding::
 
   * Added new encoding CESU-8 [Feature #15931]

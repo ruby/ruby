@@ -138,9 +138,8 @@ class TestDir < Test::Unit::TestCase
                  Dir.glob(File.join(@root, "*"), File::FNM_DOTMATCH).sort)
     assert_equal([@root] + ("a".."z").map {|f| File.join(@root, f) }.sort,
                  Dir.glob([@root, File.join(@root, "*")]).sort)
-    assert_warning(/nul-separated patterns/) do
-      assert_equal([@root] + ("a".."z").map {|f| File.join(@root, f) }.sort,
-                   Dir.glob(@root + "\0\0\0" + File.join(@root, "*")).sort)
+    assert_raise_with_message(ArgumentError, /nul-separated/) do
+      Dir.glob(@root + "\0\0\0" + File.join(@root, "*"))
     end
 
     assert_equal(("a".."z").step(2).map {|f| File.join(File.join(@root, f), "") }.sort,

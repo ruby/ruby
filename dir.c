@@ -2694,14 +2694,15 @@ push_glob(VALUE ary, VALUE str, VALUE base, int flags)
 static VALUE
 rb_push_glob(VALUE str, VALUE base, int flags) /* '\0' is delimiter */
 {
-    long offset = 0;
-    long len;
     VALUE ary;
-    int warned = FALSE;
+    int status;
 
     /* can contain null bytes as separators */
-    if (!RB_TYPE_P((str), T_STRING)) {
+    if (!RB_TYPE_P(str, T_STRING)) {
 	FilePathValue(str);
+    }
+    else if (!rb_str_to_cstr(str)) {
+        rb_raise(rb_eArgError, "nul-separated glob pattern is deprecated");
     }
     else {
 	rb_check_safe_obj(str);
@@ -2709,26 +2710,8 @@ rb_push_glob(VALUE str, VALUE base, int flags) /* '\0' is delimiter */
     }
     ary = rb_ary_new();
 
-    while (offset < (len = RSTRING_LEN(str))) {
-	int status;
-        long rest = len - offset;
-        const char *pbeg = RSTRING_PTR(str), *p = pbeg + offset;
-        const char *pend = memchr(p, '\0', rest);
-        if (pend) {
-            if (!warned) {
-                rb_warn("use glob patterns list instead of nul-separated patterns");
-                warned = TRUE;
-            }
-            rest = ++pend - p;
-            offset = pend - pbeg;
-        }
-        else {
-            offset = len;
-        }
-	status = push_glob(ary, rb_str_subseq(str, p-pbeg, rest),
-			   base, flags);
-	if (status) GLOB_JUMP_TAG(status);
-    }
+    status = push_glob(ary, str, base, flags);
+    if (status) GLOB_JUMP_TAG(status);
 
     return ary;
 }
