@@ -152,7 +152,7 @@ class Gem::S3URISigner
 
     iam_info = ec2_metadata_request(EC2_IAM_INFO)
     # Expected format: arn:aws:iam::<id>:instance-profile/<role_name>
-    role_name = iam_info['InstanceProfileArn'].split('/')[1]
+    role_name = iam_info['InstanceProfileArn'].split('/').last
     ec2_metadata_request(EC2_IAM_SECURITY_CREDENTIALS + role_name)
   end
 
