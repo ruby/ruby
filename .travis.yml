@@ -527,9 +527,6 @@ branches:
     - ruby_2_4
     - ruby_2_5
     - ruby_2_6
-    - /^feature\//
-    - /^bug\//
-    - /^travis-/
 
 # We want to be notified when something happens.
 notifications:
