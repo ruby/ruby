@@ -3837,14 +3837,16 @@ __END__
   end if IO.method_defined?(:pread) and IO.method_defined?(:pwrite)
 
   def test_select_exceptfds
-    if Etc.uname[:sysname] == 'SunOS' && Etc.uname[:release] == '5.11'
-      skip "Solaris 11 fails this"
+    if Etc.uname[:sysname] == 'SunOS'
+      str = 'h'.freeze #(???) Only 1 byte with MSG_OOB on Solaris
+    else
+      str = 'hello'.freeze
     end
 
     TCPServer.open('localhost', 0) do |svr|
       con = TCPSocket.new('localhost', svr.addr[1])
       acc = svr.accept
-      assert_equal 5, con.send('hello', Socket::MSG_OOB)
+      assert_equal str.length, con.send(str, Socket::MSG_OOB)
       set = IO.select(nil, nil, [acc], 30)
       assert_equal([[], [], [acc]], set, 'IO#select exceptions array OK')
       acc.close
