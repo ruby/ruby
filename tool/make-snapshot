@@ -49,6 +49,7 @@ end
 
 DIGESTS = %w[SHA1 SHA256 SHA512]
 PACKAGES = {
+  "tar"  => %w".tar",
   "bzip" => %w".tar.bz2 bzip2 -c",
   "gzip" => %w".tar.gz  gzip -c",
   "xz"   => %w".tar.xz  xz -c",
@@ -164,7 +165,10 @@ def tar_create(tarball, dir)
   uname = gname = "ruby"
   File.open(tarball, "wb") do |f|
     w = Gem::Package::TarWriter.new(f)
-    Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH) do |path|
+    list = Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH)
+    list.reject! {|name| name.end_with?("/.")}
+    list.sort_by! {|name| name.split("/")}
+    list.each do |path|
       next if File.basename(path) == "."
       s = File.stat(path)
       mode = 0644
@@ -198,9 +202,13 @@ rescue => e
   false
 end
 
-def touch_all(time, pattern, opt)
+def touch_all(time, pattern, opt, &cond)
   Dir.glob(pattern, opt) do |n|
-    File.utime(time, time, n) if File.file?(n) or File.directory?(n)
+    stat = File.stat(n)
+    if stat.file? or stat.directory?
+      next if cond and !yield(n, stat)
+      File.utime(time, time, n)
+    end
   end
 rescue
   false
@@ -247,7 +255,13 @@ def package(vcs, rev, destdir, tmp = nil)
     warn "#{$0}: unknown version - #{rev}"
     return
   end
-  if !revision and revision = vcs.get_revisions(url)
+  if info = vcs.get_revisions(url)
+    modified = info[2]
+  else
+    modified = Time.now - 10
+  end
+  if !revision and info
+    revision = info
     url ||= vcs.branch(revision[3])
     revision = revision[1]
   end
@@ -350,7 +364,8 @@ def package(vcs, rev, destdir, tmp = nil)
       vcs.export_changelog(url, nil, revision, "ChangeLog")
     end
 
-    if !$exported or $patch_file and !touch_all(Time.now - 10, "**/*", File::FNM_DOTMATCH)
+    if !$exported or $patch_file and !touch_all(modified, "**/*", File::FNM_DOTMATCH)
+      modified = nil
       colors = %w[red yellow green cyan blue magenta]
       "take a breath, and go ahead".scan(/./) do |c|
         if c == ' '
@@ -425,10 +440,9 @@ def package(vcs, rev, destdir, tmp = nil)
       mk << commonmk.gsub(/\{\$([^(){}]*)[^{}]*\}/, "")
       mk << <<-'APPEND'
 
-prepare-package: touch-unicode-files
-prepare-package: prereq update-download clean-cache $(CLEAN_CACHE)
-clean-cache $(CLEAN_CACHE): after-update
-update-download:: update-gems
+update-download:: touch-unicode-files after-update
+prepare-package: prereq
+clean-cache: $(CLEAN_CACHE)
 after-update:: extract-gems
 extract-gems: update-gems
 update-gems:
@@ -443,8 +457,18 @@ after-update::
         f.puts mk
       end
       ENV["CACHE_SAVE"] = "no"
-      system(ENV["MAKE"] || ENV["make"] || "make", "prepare-package", *args.map {|arg| arg.join("=")})
-      clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk", "ext/ripper/y.output")
+      make = ENV["MAKE"] || ENV["make"] || "make"
+      args = args.map {|arg| arg.join("=")}
+      system(make, "update-download", *args)
+      clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk", "ext/ripper/y.output", ".revision.time")
+      if modified
+        new_time = modified + 2
+        touch_all(new_time, "**/*", File::FNM_DOTMATCH) do |name, stat|
+          stat.mtime > modified unless clean.include?(name)
+        end
+        modified = new_time
+      end
+      system(make, "prepare-package", "clean-cache", *args)
       print "prerequisites"
     else
       system(*%W"#{YACC} -o parse.c parse.y")
@@ -461,6 +485,9 @@ after-update::
       FileUtils.rm_f(gems)
     else
       FileUtils.rm_rf("gems")
+    end
+    touch_all(modified, "**/*/", 0) do |name, stat|
+      stat.mtime > modified
     end
     unless $?.success?
       puts $colorize.fail(" failed")
@@ -487,10 +514,11 @@ after-update::
       if tarball
         next if tarball.empty?
       else
-        tarball = "#{$archname||v}.tar"
+        tarball = cmd.empty? ? file : "#{$archname||v}.tar"
         print "creating tarball... #{tarball}"
         if tar_create(tarball, v)
           puts $colorize.pass(" done")
+          next if cmd.empty?
         else
           puts $colorize.fail(" failed")
           tarball = ""
