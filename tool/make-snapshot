@@ -55,7 +55,7 @@ PACKAGES = {
   "xz"   => %w".tar.xz  xz -c",
   "zip"  => %w".zip     zip -qr",
 }
-
+DEFAULT_PACKAGES = PACKAGES.keys - ["tar"]
 if system("7z", out: IO::NULL)
   PACKAGES["gzip"] = %w".tar.gz 7z a dummy -tgzip -mx -so"
   PACKAGES["zip"]  = %w".zip    7z a -tzip  -mx" << {out: IO::NULL}
@@ -105,12 +105,12 @@ end
 
 $packages &&= $packages.split(/[, ]+/).tap {|pkg|
   if all = pkg.index("all")
-    pkg[all, 1] = PACKAGES.keys - pkg
+    pkg[all, 1] = DEFAULT_PACKAGES - pkg
   end
   pkg -= PACKAGES.keys
   pkg.empty? or abort "#{File.basename $0}: unknown packages - #{pkg.join(", ")}"
 }
-$packages ||= PACKAGES.keys
+$packages ||= DEFAULT_PACKAGES
 
 $digests &&= $digests.split(/[, ]+/).tap {|dig|
   dig -= DIGESTS
@@ -514,11 +514,11 @@ after-update::
       if tarball
         next if tarball.empty?
       else
-        tarball = cmd.empty? ? file : "#{$archname||v}.tar"
+        tarball = ext == ".tar" ? file : "#{$archname||v}.tar"
         print "creating tarball... #{tarball}"
         if tar_create(tarball, v)
           puts $colorize.pass(" done")
-          next if cmd.empty?
+          next if tarball == file
         else
           puts $colorize.fail(" failed")
           tarball = ""
