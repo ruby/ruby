@@ -2185,6 +2185,7 @@ vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
 
     VALUE recv = calling->recv;
     VALUE block_handler = calling->block_handler;
+    VALUE frame_type = VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL;
     int argc = calling->argc;
     int orig_argc = argc;
 
@@ -2193,11 +2194,14 @@ vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
             argc--;
         }
     }
+    if (UNLIKELY(IS_ARGS_KW_OR_KW_SPLAT(ci))) {
+        frame_type |= VM_FRAME_FLAG_CFRAME_KW;
+    }
 
     RUBY_DTRACE_CMETHOD_ENTRY_HOOK(ec, me->owner, me->def->original_id);
     EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, recv, me->def->original_id, ci->mid, me->owner, Qundef);
 
-    vm_push_frame(ec, NULL, VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL, recv,
+    vm_push_frame(ec, NULL, frame_type, recv,
 		  block_handler, (VALUE)me,
 		  0, ec->cfp->sp, 0, 0);
 
