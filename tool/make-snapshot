@@ -521,6 +521,7 @@ after-update::
         print "creating tarball... #{tarball}"
         if tar_create(tarball, v)
           puts $colorize.pass(" done")
+          File.utime(modified, modified, tarball) if modified
           next if tarball == file
         else
           puts $colorize.fail(" failed")
