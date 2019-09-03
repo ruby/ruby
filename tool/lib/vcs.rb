@@ -618,9 +618,15 @@ class VCS
     end
 
     def format_changelog(path, arg)
-      cmd = %W"#{COMMAND} log --format=medium --notes=commits --date=iso-local --topo-order"
+      env = {'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'}
+      cmd = %W"#{COMMAND} log --format=medium --notes=commits --topo-order"
+      date = "--date=iso-local"
+      unless system(env, *cmd, date, chdir: @srcdir, out: NullDevice, exception: false)
+        date = "--date=iso"
+      end
+      cmd << date
       cmd.concat(arg)
-      system({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'}, *cmd, chdir: @srcdir, out: path)
+      system(env, *cmd, chdir: @srcdir, out: path)
     end
 
     def upstream
