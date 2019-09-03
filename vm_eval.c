@@ -32,6 +32,7 @@ typedef enum call_type {
     CALL_PUBLIC,
     CALL_FCALL,
     CALL_VCALL,
+    CALL_PUBLIC_KW,
     CALL_TYPE_MAX
 } call_type;
 
@@ -41,7 +42,7 @@ static VALUE vm_call0_body(rb_execution_context_t* ec, struct rb_calling_info *c
 #ifndef MJIT_HEADER
 
 MJIT_FUNC_EXPORTED VALUE
-rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me)
+rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me, int kw_splat)
 {
     struct rb_calling_info calling_entry, *calling;
     struct rb_call_info ci_entry;
@@ -49,14 +50,14 @@ rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE
 
     calling = &calling_entry;
 
-    ci_entry.flag = 0;
+    ci_entry.flag = kw_splat ? VM_CALL_KW_SPLAT : 0;
     ci_entry.mid = id;
 
     cc_entry.me = me;
 
     calling->recv = recv;
     calling->argc = argc;
-    calling->kw_splat = 0;
+    calling->kw_splat = kw_splat;
 
     return vm_call0_body(ec, calling, &ci_entry, &cc_entry, argv);
 }
@@ -206,7 +207,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
 VALUE
 rb_vm_call(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me)
 {
-    return rb_vm_call0(ec, recv, id, argc, argv, me);
+    return rb_vm_call0(ec, recv, id, argc, argv, me, VM_NO_KEYWORDS);
 }
 
 static inline VALUE
@@ -231,7 +232,7 @@ vm_call_super(rb_execution_context_t *ec, int argc, const VALUE *argv)
 	return method_missing(recv, id, argc, argv, MISSING_SUPER);
     }
     else {
-        return rb_vm_call0(ec, recv, id, argc, argv, me);
+        return rb_vm_call0(ec, recv, id, argc, argv, me, VM_NO_KEYWORDS);
     }
 }
 
@@ -290,10 +291,17 @@ static inline enum method_missing_reason rb_method_call_status(rb_execution_cont
 static inline VALUE
 rb_call0(rb_execution_context_t *ec,
 	 VALUE recv, ID mid, int argc, const VALUE *argv,
-	 call_type scope, VALUE self)
+         call_type call_scope, VALUE self)
 {
     const rb_callable_method_entry_t *me;
     enum method_missing_reason call_status;
+    call_type scope = call_scope;
+    int kw_splat = VM_NO_KEYWORDS;
+
+    if (scope == CALL_PUBLIC_KW) {
+        scope = CALL_PUBLIC;
+        kw_splat = 1;
+    }
 
     if (scope == CALL_PUBLIC) {
         me = rb_callable_method_entry_with_refinements(CLASS_OF(recv), mid, NULL);
@@ -307,7 +315,7 @@ rb_call0(rb_execution_context_t *ec,
 	return method_missing(recv, mid, argc, argv, call_status);
     }
     stack_check(ec);
-    return rb_vm_call0(ec, recv, mid, argc, argv, me);
+    return rb_vm_call0(ec, recv, mid, argc, argv, me, kw_splat);
 }
 
 struct rescue_funcall_args {
@@ -434,7 +442,7 @@ rb_check_funcall_default(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE 
 	return ret;
     }
     stack_check(ec);
-    return rb_vm_call0(ec, recv, mid, argc, argv, me);
+    return rb_vm_call0(ec, recv, mid, argc, argv, me, VM_NO_KEYWORDS);
 }
 
 VALUE
@@ -460,7 +468,7 @@ rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
     }
     stack_check(ec);
     (*hook)(TRUE, recv, mid, argc, argv, arg);
-    return rb_vm_call0(ec, recv, mid, argc, argv, me);
+    return rb_vm_call0(ec, recv, mid, argc, argv, me, VM_NO_KEYWORDS);
 }
 
 const char *
@@ -766,7 +774,7 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missin
     me = rb_callable_method_entry(klass, idMethodMissing);
     if (!me || METHOD_ENTRY_BASIC(me)) goto missing;
     vm_passed_block_handler_set(ec, block_handler);
-    result = rb_vm_call0(ec, obj, idMethodMissing, argc, argv, me);
+    result = rb_vm_call0(ec, obj, idMethodMissing, argc, argv, me, VM_NO_KEYWORDS);
     if (work) ALLOCV_END(work);
     return result;
 }
@@ -884,7 +892,7 @@ rb_funcallv_with_cc(struct rb_call_cache_and_mid *cc, VALUE recv, ID mid, int ar
         vm_search_method(&ci, &cc->cc, recv);
 
         if (LIKELY(! UNDEFINED_METHOD_ENTRY_P(cc->cc.me))) {
-            return rb_vm_call0(GET_EC(), recv, mid, argc, argv, cc->cc.me);
+            return rb_vm_call0(GET_EC(), recv, mid, argc, argv, cc->cc.me, VM_NO_KEYWORDS);
         }
     }
 
@@ -907,6 +915,16 @@ rb_funcall_with_block(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE pas
     }
 
     return rb_call(recv, mid, argc, argv, CALL_PUBLIC);
+}
+
+VALUE
+rb_funcall_with_block_kw(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE passed_procval, int kw_splat)
+{
+    if (!NIL_P(passed_procval)) {
+        vm_passed_block_handler_set(GET_EC(), passed_procval);
+    }
+
+    return rb_call(recv, mid, argc, argv, kw_splat ? CALL_PUBLIC_KW : CALL_PUBLIC);
 }
 
 static VALUE *
@@ -1601,7 +1619,7 @@ yield_under(VALUE under, VALUE self, int argc, const VALUE *argv)
 	    goto again;
 	  case block_handler_type_symbol:
 	    return rb_sym_proc_call(SYM2ID(VM_BH_TO_SYMBOL(block_handler)),
-				    argc, argv, VM_BLOCK_HANDLER_NONE);
+                                    argc, argv, VM_NO_KEYWORDS, VM_BLOCK_HANDLER_NONE);
 	}
 
 	new_captured.self = self;
