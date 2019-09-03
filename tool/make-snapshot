@@ -486,8 +486,11 @@ after-update::
     else
       FileUtils.rm_rf("gems")
     end
-    touch_all(modified, "**/*/", 0) do |name, stat|
-      stat.mtime > modified
+    if modified
+      touch_all(modified, "**/*/", 0) do |name, stat|
+        stat.mtime > modified
+      end
+      File.utime(modified, modified, ".")
     end
     unless $?.success?
       puts $colorize.fail(" failed")
