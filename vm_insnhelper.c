@@ -2866,11 +2866,10 @@ vm_yield_with_cfunc(rb_execution_context_t *ec,
     }
 
     blockarg = rb_vm_bh_to_procval(ec, block_handler);
-    /* XXX: Set VM_FRAME_FLAG_CFRAME_KW https://github.com/ruby/ruby/pull/2422 */
 
     vm_push_frame(ec, (const rb_iseq_t *)captured->code.ifunc,
                   VM_FRAME_MAGIC_IFUNC | VM_FRAME_FLAG_CFRAME |
-                  (me ? VM_FRAME_FLAG_BMETHOD : 0),
+                  (me ? VM_FRAME_FLAG_BMETHOD : 0) | (kw_splat ? VM_FRAME_FLAG_CFRAME_KW : 0),
 		  self,
 		  VM_GUARDED_PREV_EP(captured->ep),
                   (VALUE)me,
