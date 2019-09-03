@@ -58,7 +58,10 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal '[assign(var_field(a),ref(a))]', parse('a=a')
     assert_equal '[ref(nil)]', parse('nil')
     assert_equal '[ref(true)]', parse('true')
-    assert_include parse('proc{@1}'), '[ref(@1)]'
+    assert_equal '[vcall(_0)]', parse('_0')
+    assert_equal '[vcall(_1)]', parse('_1')
+    assert_include parse('proc{_0}'), '[ref(_0)]'
+    assert_include parse('proc{_1}'), '[ref(_1)]'
   end
 
   def test_vcall
@@ -1505,11 +1508,8 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal("unterminated regexp meets end of file", compile_error('/'))
   end
 
-  def test_invalid_numbered_parameter_name
-    assert_equal("leading zero is not allowed as a numbered parameter", compile_error('proc{@0}'))
-  end
-
   def test_invalid_instance_variable_name
+    assert_equal("`@1' is not allowed as an instance variable name", compile_error('proc{@1}'))
     assert_equal("`@' without identifiers is not allowed as an instance variable name", compile_error('@%'))
     assert_equal("`@' without identifiers is not allowed as an instance variable name", compile_error('@'))
   end
