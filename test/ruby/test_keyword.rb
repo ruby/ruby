@@ -522,6 +522,81 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h3], c.send(:m, **h3))
   end
 
+  def test_define_method_kwsplat
+    kw = {}
+    h = {'a'=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    c = Object.new
+    class << c
+      define_method(:m) { }
+    end
+    assert_nil(c.m(**{}))
+    assert_nil(c.m(**kw))
+    assert_raise(ArgumentError) { c.m(**h) }
+    assert_raise(ArgumentError) { c.m(**h2) }
+    assert_raise(ArgumentError) { c.m(**h3) }
+
+    c = Object.new
+    class << c
+      define_method(:m) {|arg| }
+    end
+    assert_raise(ArgumentError) { c.m(**{}) }
+    assert_raise(ArgumentError) { c.m(**kw) }
+    assert_nil(c.m(**h))
+    assert_nil(c.m(**h2))
+    assert_nil(c.m(**h3))
+
+    c = Object.new
+    class << c
+      define_method(:m) {|*args| }
+    end
+    assert_nil(c.m(**{}))
+    assert_nil(c.m(**kw))
+    assert_nil(c.m(**h))
+    assert_nil(c.m(**h2))
+    assert_nil(c.m(**h3))
+
+    c = Object.new
+    class << c
+      define_method(:m) {|**opt| }
+    end
+    assert_nil(c.m(**{}))
+    assert_nil(c.m(**kw))
+    assert_nil(c.m(**h))
+    assert_nil(c.m(**h2))
+    assert_nil(c.m(**h3))
+
+    c = Object.new
+    class << c
+      define_method(:m) {|arg, **opt| [arg, opt] }
+    end
+    assert_raise(ArgumentError) { c.m(**{}) }
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal([kw, kw], c.m(**kw))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal([h, kw], c.m(**h))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal([h2, kw], c.m(**h2))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal([h3, kw], c.m(**h3))
+    end
+
+    c = Object.new
+    class << c
+      define_method(:m) {|arg=1, **opt| }
+    end
+    assert_nil(c.m(**{}))
+    assert_nil(c.m(**kw))
+    assert_nil(c.m(**h))
+    assert_nil(c.m(**h2))
+    assert_nil(c.m(**h3))
+  end
+
   def p1
     Proc.new do |str: "foo", num: 424242|
       [str, num]
