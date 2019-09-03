@@ -2189,7 +2189,7 @@ vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
     int argc = calling->argc;
     int orig_argc = argc;
 
-    if (UNLIKELY(IS_ARGS_KW_SPLAT(ci))) {
+    if (UNLIKELY(calling->kw_splat)) {
         if (RHASH_EMPTY_P(*(GET_SP()-1))) {
             argc--;
         }
@@ -2254,7 +2254,7 @@ vm_call_bmethod_body(rb_execution_context_t *ec, struct rb_calling_info *calling
 
     /* control block frame */
     GetProcPtr(cc->me->def->body.bmethod.proc, proc);
-    val = rb_vm_invoke_bmethod(ec, proc, calling->recv, calling->argc, argv, calling->block_handler, cc->me);
+    val = rb_vm_invoke_bmethod(ec, proc, calling->recv, calling->argc, argv, calling->kw_splat, calling->block_handler, cc->me);
 
     return val;
 }
@@ -2848,7 +2848,7 @@ block_proc_is_lambda(const VALUE procval)
 static VALUE
 vm_yield_with_cfunc(rb_execution_context_t *ec,
 		    const struct rb_captured_block *captured,
-                    VALUE self, int argc, const VALUE *argv, VALUE block_handler,
+                    VALUE self, int argc, const VALUE *argv, int kw_splat, VALUE block_handler,
                     const rb_callable_method_entry_t *me)
 {
     int is_lambda = FALSE; /* TODO */
@@ -2866,6 +2866,7 @@ vm_yield_with_cfunc(rb_execution_context_t *ec,
     }
 
     blockarg = rb_vm_bh_to_procval(ec, block_handler);
+    /* XXX: Set VM_FRAME_FLAG_CFRAME_KW https://github.com/ruby/ruby/pull/2422 */
 
     vm_push_frame(ec, (const rb_iseq_t *)captured->code.ifunc,
                   VM_FRAME_MAGIC_IFUNC | VM_FRAME_FLAG_CFRAME |
@@ -2881,8 +2882,9 @@ vm_yield_with_cfunc(rb_execution_context_t *ec,
 }
 
 static VALUE
-vm_yield_with_symbol(rb_execution_context_t *ec,  VALUE symbol, int argc, const VALUE *argv, VALUE block_handler)
+vm_yield_with_symbol(rb_execution_context_t *ec,  VALUE symbol, int argc, const VALUE *argv, int kw_splat, VALUE block_handler)
 {
+    /* XXX: need to pass kw_splat? */
     return rb_sym_proc_call(SYM2ID(symbol), argc, argv, rb_vm_bh_to_procval(ec, block_handler));
 }
 
@@ -2923,7 +2925,7 @@ vm_callee_setup_block_arg(rb_execution_context_t *ec, struct rb_calling_info *ca
 
 	CALLER_SETUP_ARG(cfp, calling, ci, 1); /* splat arg */
 
-        if (UNLIKELY(IS_ARGS_KW_SPLAT(ci))) {
+        if (UNLIKELY(calling->kw_splat)) {
             if (RHASH_EMPTY_P(argv[calling->argc-1])) {
                 calling->argc--;
             }
@@ -2962,7 +2964,7 @@ vm_callee_setup_block_arg(rb_execution_context_t *ec, struct rb_calling_info *ca
 }
 
 static int
-vm_yield_setup_args(rb_execution_context_t *ec, const rb_iseq_t *iseq, const int argc, VALUE *argv, VALUE block_handler, enum arg_setup_type arg_setup_type)
+vm_yield_setup_args(rb_execution_context_t *ec, const rb_iseq_t *iseq, const int argc, VALUE *argv, int kw_splat, VALUE block_handler, enum arg_setup_type arg_setup_type)
 {
     struct rb_calling_info calling_entry, *calling;
     struct rb_call_info ci_entry, *ci;
@@ -2970,9 +2972,10 @@ vm_yield_setup_args(rb_execution_context_t *ec, const rb_iseq_t *iseq, const int
     calling = &calling_entry;
     calling->argc = argc;
     calling->block_handler = block_handler;
+    calling->kw_splat = kw_splat;
     calling->recv = Qundef;
 
-    ci_entry.flag = 0;
+    ci_entry.flag = kw_splat ? VM_CALL_KW_SPLAT : 0;
     ci = &ci_entry;
 
     return vm_callee_setup_block_arg(ec, calling, ci, iseq, argv, arg_setup_type);
@@ -3012,7 +3015,7 @@ vm_invoke_symbol_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     int argc;
     CALLER_SETUP_ARG(ec->cfp, calling, ci, 0);
     argc = calling->argc;
-    val = vm_yield_with_symbol(ec, symbol, argc, STACK_ADDR_FROM_TOP(argc), calling->block_handler);
+    val = vm_yield_with_symbol(ec, symbol, argc, STACK_ADDR_FROM_TOP(argc), calling->kw_splat, calling->block_handler);
     POPN(argc);
     return val;
 }
@@ -3026,7 +3029,7 @@ vm_invoke_ifunc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     int argc;
     CALLER_SETUP_ARG(ec->cfp, calling, ci, 0);
     argc = calling->argc;
-    val = vm_yield_with_cfunc(ec, captured, captured->self, argc, STACK_ADDR_FROM_TOP(argc), calling->block_handler, NULL);
+    val = vm_yield_with_cfunc(ec, captured, captured->self, argc, STACK_ADDR_FROM_TOP(argc), calling->kw_splat, calling->block_handler, NULL);
     POPN(argc); /* TODO: should put before C/yield? */
     return val;
 }
@@ -3659,6 +3662,7 @@ vm_sendish(
     struct rb_calling_info calling;
 
     calling.block_handler = block_handler;
+    calling.kw_splat = IS_ARGS_KW_SPLAT(ci);
     calling.recv = recv;
     calling.argc = argc;
 

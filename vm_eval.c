@@ -56,6 +56,7 @@ rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE
 
     calling->recv = recv;
     calling->argc = argc;
+    calling->kw_splat = 0;
 
     return vm_call0_body(ec, calling, &ci_entry, &cc_entry, argv);
 }
@@ -184,7 +185,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
 	    {
 		rb_proc_t *proc;
 		GetProcPtr(calling->recv, proc);
-		ret = rb_vm_invoke_proc(ec, proc, calling->argc, argv, calling->block_handler);
+		ret = rb_vm_invoke_proc(ec, proc, calling->argc, argv, calling->kw_splat, calling->block_handler);
 		goto success;
 	    }
 	  default:

@@ -681,7 +681,7 @@ thread_do_start(rb_thread_t *th)
 
         th->value = rb_vm_invoke_proc(th->ec, proc,
                                       (int)args_len, args_ptr,
-                                      VM_BLOCK_HANDLER_NONE);
+                                      0 /* kw_splat */, VM_BLOCK_HANDLER_NONE);
 
         EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
     }
