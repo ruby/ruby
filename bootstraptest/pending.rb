@@ -37,3 +37,8 @@ assert_normal_exit %q{
   r.instance_eval { initialize r, r }
   r.inspect
 }
+
+# This randomly fails on mswin.
+assert_equal %q{[]}, %q{
+  Thread.new{sleep}.backtrace
+}
