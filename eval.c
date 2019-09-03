@@ -899,6 +899,14 @@ rb_block_given_p(void)
     }
 }
 
+int rb_vm_cframe_keyword_p(const rb_control_frame_t *cfp);
+
+int
+rb_keyword_given_p(void)
+{
+    return rb_vm_cframe_keyword_p(GET_EC()->cfp);
+}
+
 VALUE rb_eThreadError;
 
 /*! Declares that the current method needs a block.
