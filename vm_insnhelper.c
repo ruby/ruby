@@ -2192,6 +2192,7 @@ vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
     if (UNLIKELY(calling->kw_splat)) {
         if (RHASH_EMPTY_P(*(GET_SP()-1))) {
             argc--;
+            calling->kw_splat = 0;
         }
     }
     if (UNLIKELY(IS_ARGS_KW_OR_KW_SPLAT(ci))) {
@@ -2927,6 +2928,7 @@ vm_callee_setup_block_arg(rb_execution_context_t *ec, struct rb_calling_info *ca
         if (UNLIKELY(calling->kw_splat)) {
             if (RHASH_EMPTY_P(argv[calling->argc-1])) {
                 calling->argc--;
+                calling->kw_splat = 0;
             }
         }
 
