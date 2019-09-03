@@ -96,7 +96,7 @@ VM_CF_BLOCK_HANDLER(const rb_control_frame_t * const cfp)
     return VM_ENV_BLOCK_HANDLER(ep);
 }
 
-VALUE
+int
 rb_vm_cframe_keyword_p(const rb_control_frame_t *cfp)
 {
     return VM_FRAME_CFRAME_KW_P(cfp);

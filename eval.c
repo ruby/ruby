@@ -899,7 +899,7 @@ rb_block_given_p(void)
     }
 }
 
-VALUE rb_vm_cframe_keyword_p(const rb_control_frame_t *cfp);
+int rb_vm_cframe_keyword_p(const rb_control_frame_t *cfp);
 
 int
 rb_keyword_given_p(void)
