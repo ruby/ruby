@@ -10887,7 +10887,7 @@ sym_to_sym(VALUE sym)
 }
 
 MJIT_FUNC_EXPORTED VALUE
-rb_sym_proc_call(ID mid, int argc, const VALUE *argv, VALUE passed_proc)
+rb_sym_proc_call(ID mid, int argc, const VALUE *argv, int kw_splat, VALUE passed_proc)
 {
     VALUE obj;
 
@@ -10895,7 +10895,7 @@ rb_sym_proc_call(ID mid, int argc, const VALUE *argv, VALUE passed_proc)
 	rb_raise(rb_eArgError, "no receiver given");
     }
     obj = argv[0];
-    return rb_funcall_with_block(obj, mid, argc - 1, argv + 1, passed_proc);
+    return rb_funcall_with_block_kw(obj, mid, argc - 1, argv + 1, passed_proc, kw_splat);
 }
 
 #if 0

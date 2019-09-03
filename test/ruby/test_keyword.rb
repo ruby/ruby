@@ -447,6 +447,79 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h3], c.send(:m, **h3))
   end
 
+  def test_sym_proc_kwsplat
+    kw = {}
+    h = {'a'=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    c = Object.new
+    def c.m(*args)
+      args
+    end
+    assert_equal([], :m.to_proc.call(c, **{}))
+    assert_equal([], :m.to_proc.call(c, **kw))
+    assert_equal([h], :m.to_proc.call(c, **h))
+    assert_equal([h2], :m.to_proc.call(c, **h2))
+    assert_equal([h3], :m.to_proc.call(c, **h3))
+
+    c.singleton_class.remove_method(:m)
+    def c.m; end
+    assert_nil(:m.to_proc.call(c, **{}))
+    assert_nil(:m.to_proc.call(c, **kw))
+    assert_raise(ArgumentError) { :m.to_proc.call(c, **h) }
+    assert_raise(ArgumentError) { :m.to_proc.call(c, **h2) }
+    assert_raise(ArgumentError) { :m.to_proc.call(c, **h3) }
+
+    c.singleton_class.remove_method(:m)
+    def c.m(args)
+      args
+    end
+    assert_raise(ArgumentError) { :m.to_proc.call(c, **{}) }
+    assert_raise(ArgumentError) { :m.to_proc.call(c, **kw) }
+    assert_equal(h, :m.to_proc.call(c, **h))
+    assert_equal(h2, :m.to_proc.call(c, **h2))
+    assert_equal(h3, :m.to_proc.call(c, **h3))
+
+    c.singleton_class.remove_method(:m)
+    def c.m(**args)
+      args
+    end
+    assert_equal(kw, :m.to_proc.call(c, **{}))
+    assert_equal(kw, :m.to_proc.call(c, **kw))
+    assert_equal(h, :m.to_proc.call(c, **h))
+    assert_equal(h2, :m.to_proc.call(c, **h2))
+    assert_equal(h3, :m.to_proc.call(c, **h3))
+
+    c.singleton_class.remove_method(:m)
+    def c.m(arg, **args)
+      [arg, args]
+    end
+    assert_raise(ArgumentError) { :m.to_proc.call(c, **{}) }
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([kw, kw], :m.to_proc.call(c, **kw))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h, kw], :m.to_proc.call(c, **h))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h2, kw], :m.to_proc.call(c, **h2))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h3, kw], :m.to_proc.call(c, **h3))
+    end
+
+    c.singleton_class.remove_method(:m)
+    def c.m(arg=1, **args)
+      [arg=1, args]
+    end
+    assert_equal([1, kw], :m.to_proc.call(c, **{}))
+    assert_equal([1, kw], :m.to_proc.call(c, **kw))
+    assert_equal([1, h], :m.to_proc.call(c, **h))
+    assert_equal([1, h2], :m.to_proc.call(c, **h2))
+    assert_equal([1, h3], :m.to_proc.call(c, **h3))
+  end
+
   def test_method_missing_kwsplat
     kw = {}
     h = {'a'=>1}
