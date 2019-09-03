@@ -549,10 +549,7 @@ PRINTF_ARGS(void rb_parser_fatal(struct parser_params *p, const char *fmt, ...),
 YYLTYPE *rb_parser_set_location_from_strterm_heredoc(struct parser_params *p, rb_strterm_heredoc_t *here, YYLTYPE *yylloc);
 YYLTYPE *rb_parser_set_location_of_none(struct parser_params *p, YYLTYPE *yylloc);
 YYLTYPE *rb_parser_set_location(struct parser_params *p, YYLTYPE *yylloc);
-ID rb_parser_numparam_id(struct parser_params *p, int num);
 RUBY_SYMBOL_EXPORT_END
-
-#define numparam_id rb_parser_numparam_id
 
 static void parser_token_value_print(struct parser_params *p, enum yytokentype type, const YYSTYPE *valp);
 static ID formal_argument(struct parser_params*, ID);
@@ -1010,7 +1007,6 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %token <id>   tCONSTANT      "constant"
 %token <id>   tCVAR          "class variable"
 %token <id>   tLABEL
-%token <id>   tNUMPARAM      "numbered parameter"
 %token <node> tINTEGER       "integer literal"
 %token <node> tFLOAT         "float literal"
 %token <node> tRATIONAL      "rational literal"
@@ -4584,13 +4580,6 @@ string_dvar	: tGVAR
 		    /*% %*/
 		    /*% ripper: var_ref!($1) %*/
 		    }
-		| tNUMPARAM
-		    {
-		    /*%%%*/
-			$$ = NEW_DVAR($1, &@1);
-		    /*% %*/
-		    /*% ripper: var_ref!($1) %*/
-		    }
 		| backref
 		;
 
@@ -4646,7 +4635,6 @@ user_variable	: tIDENTIFIER
 		| tGVAR
 		| tCONSTANT
 		| tCVAR
-		| tNUMPARAM
 		;
 
 keyword_variable: keyword_nil {$$ = KWD2EID(nil, $1);}
@@ -8480,9 +8468,12 @@ parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
     return tGVAR;
 }
 
+#ifndef RIPPER
 static bool
-parser_numbered_param(struct parser_params *p, unsigned long n)
+parser_numbered_param(struct parser_params *p, int n)
 {
+    if (n < 0) return false;
+
     if (DVARS_TERMINAL_P(p->lvtbl->args) || DVARS_TERMINAL_P(p->lvtbl->args->prev)) {
 	compile_error(p, "implicit parameter outside block");
 	return false;
@@ -8503,10 +8494,22 @@ parser_numbered_param(struct parser_params *p, unsigned long n)
 	    return false;
 	}
     }
-    set_yylval_name(numparam_id(p, (int)n));
-    SET_LEX_STATE(EXPR_ARG);
+    struct vtable *args = p->lvtbl->args;
+    if (n == 0) {
+	p->max_numparam = IMPLICIT_PARAM;
+	vtable_add(args, idNUMPARAM_0);
+    }
+    else {
+	if (p->max_numparam < n) {
+	    p->max_numparam = n;
+	}
+	while (n > args->pos) {
+	    vtable_add(args, NUMPARAM_IDX_TO_ID(args->pos+1));
+	}
+    }
     return true;
 }
+#endif
 
 static enum yytokentype
 parse_atmark(struct parser_params *p, const enum lex_state_e last_state)
@@ -8540,31 +8543,17 @@ parse_atmark(struct parser_params *p, const enum lex_state_e last_state)
 	return result;
     }
     else if (ISDIGIT(c)) {
-	const char *ptr = p->lex.pcur - 1;
-	size_t len = p->lex.pend - ptr;
-	int overflow;
-	unsigned long n = ruby_scan_digits(ptr, len, 10, &len, &overflow);
-	p->lex.pcur = ptr + len;
+	pushback(p, c);
 	RUBY_SET_YYLLOC(loc);
 	if (result == tIVAR) {
-	    if (IS_lex_state_for(last_state, EXPR_FNAME)) {
-		compile_error(p, "`@%c' is not allowed as an instance variable name", c);
-	    }
-	    else if (ptr[0] == '0') {
-		compile_error(p, "leading zero is not allowed as a numbered parameter");
-	    }
-	    else if (overflow || n > NUMPARAM_MAX) {
-		compile_error(p, "too large numbered parameter");
-	    }
-	    else if (parser_numbered_param(p, n)) {
-		return tNUMPARAM;
-	    }
+	    compile_error(p, "`@%c' is not allowed as an instance variable name", c);
 	}
 	else {
 	    compile_error(p, "`@@%c' is not allowed as a class variable name", c);
 	}
 	parser_show_error_line(p, &loc);
 	set_yylval_noname();
+	SET_LEX_STATE(EXPR_END);
 	return result;
     }
 
@@ -9869,6 +9858,11 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
 	    node = NEW_LVAR(id, loc);
 	    return node;
 	}
+	if (dyna_in_block(p) && NUMPARAM_ID_P(id) &&
+	    parser_numbered_param(p, NUMPARAM_ID_TO_IDX(id))) {
+	    node = NEW_DVAR(id, loc);
+	    return node;
+	}
 # if WARN_PAST_SCOPE
 	if (!p->in_defined && RTEST(ruby_verbose) && past_dvar_p(p, id)) {
 	    rb_warning1("possible reference to past scope - %"PRIsWARN, rb_id2str(id));
@@ -10073,7 +10067,9 @@ id_is_var(struct parser_params *p, ID id)
 	  case ID_INTERNAL:
 	    return vtable_included(p->lvtbl->args, id);
 	  case ID_LOCAL:
-	    if (dyna_in_block(p) && dvar_defined(p, id)) return 1;
+	    if (dyna_in_block(p)) {
+		if (NUMPARAM_ID_P(id) || dvar_defined(p, id)) return 1;
+	    }
 	    if (local_id(p, id)) return 1;
 	    /* method call without arguments */
 	    return 0;
@@ -11252,25 +11248,6 @@ args_with_numbered(struct parser_params *p, NODE *args, int max_numparam)
 	}
     }
     return args;
-}
-
-ID
-rb_parser_numparam_id(struct parser_params *p, int idx)
-{
-    struct vtable *args;
-    if (idx < 0) return (ID)0;
-    else if (idx == 0) {
-	p->max_numparam = IMPLICIT_PARAM;
-	idx = 1;
-    }
-    else if (p->max_numparam < idx) {
-	p->max_numparam = idx;
-    }
-    args = p->lvtbl->args;
-    while (idx > args->pos) {
-	vtable_add(args, internal_id(p));
-    }
-    return args->tbl[idx-1];
 }
 
 static NODE*

@@ -51,7 +51,6 @@ typedef struct {
     ID ripper_id_label_end;
     ID ripper_id_tlambda;
     ID ripper_id_tlambeg;
-    ID ripper_id_tnumparam;
 
     ID ripper_id_ignored_nl;
     ID ripper_id_comment;
@@ -114,7 +113,6 @@ ripper_init_eventids2(void)
     set_id2(label_end);
     set_id2(tlambda);
     set_id2(tlambeg);
-    set_id2(tnumparam);
 
     set_id2(ignored_nl);
     set_id2(comment);
@@ -278,7 +276,6 @@ static const struct token_assoc {
     {tLABEL_END,		O(label_end)},
     {tLAMBDA,			O(tlambda)},
     {tLAMBEG,			O(tlambeg)},
-    {tNUMPARAM, 		O(tnumparam)},
 
     /* ripper specific tokens */
     {tIGNORED_NL,		O(ignored_nl)},

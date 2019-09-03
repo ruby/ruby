@@ -360,13 +360,6 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('ivar', 'm(lvar, @ivar, @@cvar, $gvar)')
   end
 
-  def test_tnumparam
-    assert_equal [],
-                 scan('tnumparam', '')
-    assert_equal ['@1'],
-                 scan('tnumparam', 'proc {@1}')
-  end
-
   def test_kw
     assert_equal [],
                  scan('kw', '')
