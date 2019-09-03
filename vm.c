@@ -1160,7 +1160,7 @@ static VALUE
 vm_yield_with_cref(rb_execution_context_t *ec, int argc, const VALUE *argv, const rb_cref_t *cref, int is_lambda)
 {
     return invoke_block_from_c_bh(ec, check_block_handler(ec),
-				  argc, argv, 0 /* kw_splat */, VM_BLOCK_HANDLER_NONE,
+                                  argc, argv, VM_NO_KEYWORDS, VM_BLOCK_HANDLER_NONE,
 				  cref, is_lambda, FALSE);
 }
 
@@ -1168,7 +1168,7 @@ static VALUE
 vm_yield(rb_execution_context_t *ec, int argc, const VALUE *argv)
 {
     return invoke_block_from_c_bh(ec, check_block_handler(ec),
-				  argc, argv, 0 /* kw_splat */, VM_BLOCK_HANDLER_NONE,
+                                  argc, argv, VM_NO_KEYWORDS, VM_BLOCK_HANDLER_NONE,
 				  NULL, FALSE, FALSE);
 }
 
@@ -1176,7 +1176,7 @@ static VALUE
 vm_yield_with_block(rb_execution_context_t *ec, int argc, const VALUE *argv, VALUE block_handler)
 {
     return invoke_block_from_c_bh(ec, check_block_handler(ec),
-				  argc, argv, 0 /* kw_splat */, block_handler,
+                                  argc, argv, VM_NO_KEYWORDS, block_handler,
 				  NULL, FALSE, FALSE);
 }
 
@@ -1184,7 +1184,7 @@ static VALUE
 vm_yield_force_blockarg(rb_execution_context_t *ec, VALUE args)
 {
     return invoke_block_from_c_bh(ec, check_block_handler(ec), 1, &args,
-				  0 /* kw_splat */, VM_BLOCK_HANDLER_NONE, NULL, FALSE, TRUE);
+                                  VM_NO_KEYWORDS, VM_BLOCK_HANDLER_NONE, NULL, FALSE, TRUE);
 }
 
 ALWAYS_INLINE(static VALUE
