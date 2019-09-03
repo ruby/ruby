@@ -1576,7 +1576,7 @@ rb_eql_opt(VALUE obj1, VALUE obj2)
     return opt_eql_func(obj1, obj2, &ci, &cc);
 }
 
-extern VALUE rb_vm_call0(rb_execution_context_t *ec, VALUE, ID, int, const VALUE*, const rb_callable_method_entry_t *);
+extern VALUE rb_vm_call0(rb_execution_context_t *ec, VALUE, ID, int, const VALUE*, const rb_callable_method_entry_t *, int kw_splat);
 
 static VALUE
 check_match(rb_execution_context_t *ec, VALUE pattern, VALUE target, enum vm_check_match_type type)
@@ -1593,7 +1593,7 @@ check_match(rb_execution_context_t *ec, VALUE pattern, VALUE target, enum vm_che
 	const rb_callable_method_entry_t *me =
 	    rb_callable_method_entry_with_refinements(CLASS_OF(pattern), idEqq, NULL);
 	if (me) {
-            return rb_vm_call0(ec, pattern, idEqq, 1, &target, me);
+            return rb_vm_call0(ec, pattern, idEqq, 1, &target, me, VM_NO_KEYWORDS);
 	}
 	else {
 	    /* fallback to funcall (e.g. method_missing) */

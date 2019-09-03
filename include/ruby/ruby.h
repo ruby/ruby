@@ -1892,6 +1892,7 @@ VALUE rb_funcallv_public(VALUE, ID, int, const VALUE*);
 #define rb_funcall3 rb_funcallv_public
 VALUE rb_funcall_passing_block(VALUE, ID, int, const VALUE*);
 VALUE rb_funcall_with_block(VALUE, ID, int, const VALUE*, VALUE);
+VALUE rb_funcall_with_block_kw(VALUE, ID, int, const VALUE*, VALUE, int);
 #if GCC_VERSION_SINCE(3, 3, 0)
 __attribute__((__nonnull__ (1))) /* TODO: should check using configure */
 #endif

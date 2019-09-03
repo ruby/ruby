@@ -996,7 +996,7 @@ vm_to_proc(VALUE proc)
 	    rb_callable_method_entry_with_refinements(CLASS_OF(proc), idTo_proc, NULL);
 
 	if (me) {
-            b = rb_vm_call0(GET_EC(), proc, idTo_proc, 0, NULL, me);
+            b = rb_vm_call0(GET_EC(), proc, idTo_proc, 0, NULL, me, VM_NO_KEYWORDS);
 	}
 	else {
 	    /* NOTE: calling method_missing */
@@ -1047,7 +1047,7 @@ refine_sym_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
     if (!me) {
 	return method_missing(obj, mid, argc, argv, MISSING_NOENTRY);
     }
-    return rb_vm_call0(ec, obj, mid, argc, argv, me);
+    return rb_vm_call0(ec, obj, mid, argc, argv, me, VM_NO_KEYWORDS);
 }
 
 static VALUE
