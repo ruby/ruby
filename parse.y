@@ -2797,10 +2797,10 @@ primary		: literal
 			ID id = internal_id(p);
 			NODE *m = NEW_ARGS_AUX(0, 0, &NULL_LOC);
 			NODE *args, *scope, *internal_var = NEW_DVAR(id, &@2);
-			rb_imemo_tmpbuf_t *tmpbuf = new_tmpbuf();
 			ID *tbl = ALLOC_N(ID, 2);
+			VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer(tbl);
+                        RB_OBJ_WRITTEN(p->ast, Qnil, tmpbuf);
 			tbl[0] = 1 /* length of local var table */; tbl[1] = id /* internal id */;
-			tmpbuf->ptr = (VALUE *)tbl;
 
 			switch (nd_type($2)) {
 			  case NODE_LASGN:
@@ -2821,6 +2821,7 @@ primary		: literal
 			args = new_args(p, m, 0, id, 0, new_args_tail(p, 0, 0, 0, &@2), &@2);
 			scope = NEW_NODE(NODE_SCOPE, tbl, $5, args, &@$);
 			$$ = NEW_FOR($4, scope, &@$);
+                        $$->nd_lit = tmpbuf;
 			fixpos($$, $2);
 		    /*% %*/
 		    /*% ripper: for!($2, $4, $5) %*/
@@ -11136,11 +11137,11 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
     int saved_line = p->ruby_sourceline;
     struct rb_args_info *args;
     NODE *node;
-    rb_imemo_tmpbuf_t *tmpbuf = new_tmpbuf();
 
     args = ZALLOC(struct rb_args_info);
-    tmpbuf->ptr = (VALUE *)args;
-    node = NEW_NODE(NODE_ARGS, 0, 0, args, &NULL_LOC);
+    VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer(args);
+    RB_OBJ_WRITTEN(p->ast, Qnil, tmpbuf);
+    node = NEW_NODE(NODE_ARGS, tmpbuf, 0, args, &NULL_LOC);
     if (p->error_p) return node;
 
     args->block_arg      = block;
@@ -11245,11 +11246,11 @@ new_array_pattern_tail(struct parser_params *p, NODE *pre_args, int has_rest, ID
     int saved_line = p->ruby_sourceline;
     struct rb_ary_pattern_info *apinfo;
     NODE *node;
-    rb_imemo_tmpbuf_t *tmpbuf = new_tmpbuf();
 
     apinfo = ZALLOC(struct rb_ary_pattern_info);
-    tmpbuf->ptr = (VALUE *)apinfo;
-    node = NEW_NODE(NODE_ARYPTN, 0, 0, apinfo, loc);
+    VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer(apinfo);
+    node = NEW_NODE(NODE_ARYPTN, tmpbuf, 0, apinfo, loc);
+    RB_OBJ_WRITTEN(p->ast, Qnil, tmpbuf);
 
     apinfo->pre_args = pre_args;
 

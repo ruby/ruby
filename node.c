@@ -1225,6 +1225,9 @@ mark_ast_value(void *ctx, NODE * node)
         case NODE_DXSTR:
         case NODE_DREGX:
         case NODE_DSYM:
+        case NODE_ARGS:
+        case NODE_FOR:
+        case NODE_ARYPTN:
             rb_gc_mark(node->nd_lit);
             break;
     }
