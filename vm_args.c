@@ -584,7 +584,10 @@ VALUE rb_iseq_location(const rb_iseq_t *iseq);
 static inline void
 rb_warn_keyword_to_last_hash(struct rb_calling_info *calling, const struct rb_call_info *ci, const rb_iseq_t * const iseq)
 {
-    if (calling->recv == Qundef) return;
+    if (calling->recv == Qundef) {
+        rb_warn("The keyword argument is passed as the last hash parameter");
+        return;
+    }
     VALUE name = rb_id2str(ci->mid);
     VALUE loc = rb_iseq_location(iseq);
     if (NIL_P(loc)) {
