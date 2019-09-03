@@ -1429,27 +1429,6 @@ ruby_eval_string_from_file(const char *str, const char *filename)
     return eval_string_with_cref(rb_vm_top_self(), rb_str_new2(str), NULL, file, 1);
 }
 
-struct eval_string_from_file_arg {
-    VALUE str;
-    VALUE filename;
-};
-
-static VALUE
-eval_string_from_file_helper(VALUE data)
-{
-    const struct eval_string_from_file_arg *const arg = (struct eval_string_from_file_arg*)data;
-    return eval_string_with_cref(rb_vm_top_self(), arg->str, NULL, arg->filename, 1);
-}
-
-VALUE
-ruby_eval_string_from_file_protect(const char *str, const char *filename, int *state)
-{
-    struct eval_string_from_file_arg arg;
-    arg.str = rb_str_new_cstr(str);
-    arg.filename = filename ? rb_str_new_cstr(filename) : 0;
-    return rb_protect(eval_string_from_file_helper, (VALUE)&arg, state);
-}
-
 /**
  * Evaluates the given string in an isolated binding.
  *
