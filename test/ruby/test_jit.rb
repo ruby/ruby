@@ -20,15 +20,11 @@ class TestJIT < Test::Unit::TestCase
     # not supported yet
     :defineclass,
     :opt_call_c_function,
-
-    # joke
-    :bitblt,
-    :answer,
-
-    # TODO: write tests for them
-    :reput,
-    :tracecoverage,
-  ]
+  ].each do |insn|
+    if !RubyVM::INSTRUCTION_NAMES.include?(insn.to_s)
+      warn "instruction #{insn.inspect} is not defined but included in TestJIT::TEST_PENDING_INSNS"
+    end
+  end
 
   def self.untested_insns
     @untested_insns ||= (RubyVM::INSTRUCTION_NAMES.map(&:to_sym) - TEST_PENDING_INSNS)
