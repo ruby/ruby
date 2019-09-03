@@ -2884,8 +2884,7 @@ vm_yield_with_cfunc(rb_execution_context_t *ec,
 static VALUE
 vm_yield_with_symbol(rb_execution_context_t *ec,  VALUE symbol, int argc, const VALUE *argv, int kw_splat, VALUE block_handler)
 {
-    /* XXX: need to pass kw_splat? */
-    return rb_sym_proc_call(SYM2ID(symbol), argc, argv, rb_vm_bh_to_procval(ec, block_handler));
+    return rb_sym_proc_call(SYM2ID(symbol), argc, argv, kw_splat, rb_vm_bh_to_procval(ec, block_handler));
 }
 
 static inline int
