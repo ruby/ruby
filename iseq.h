@@ -109,7 +109,7 @@ struct iseq_compile_data {
     unsigned int ci_kw_index;
     const rb_compile_option_t *option;
     struct rb_id_table *ivar_cache_table;
-#if SUPPORT_JOKE
+#if OPT_SUPPORT_JOKE
     st_table *labels_table;
 #endif
 };

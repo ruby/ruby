@@ -732,7 +732,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 	ADD_INSN(ret, ISEQ_COMPILE_DATA(iseq)->last_line, leave);
     }
 
-#if SUPPORT_JOKE
+#if OPT_SUPPORT_JOKE
     if (ISEQ_COMPILE_DATA(iseq)->labels_table) {
 	st_table *labels_table = ISEQ_COMPILE_DATA(iseq)->labels_table;
 	ISEQ_COMPILE_DATA(iseq)->labels_table = 0;
@@ -6570,7 +6570,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 
     INIT_ANCHOR(recv);
     INIT_ANCHOR(args);
-#if SUPPORT_JOKE
+#if OPT_SUPPORT_JOKE
     if (nd_type(node) == NODE_VCALL) {
         ID id_bitblt;
         ID id_answer;

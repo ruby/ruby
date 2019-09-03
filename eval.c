@@ -478,7 +478,7 @@ static VALUE get_ec_errinfo(const rb_execution_context_t *ec);
 static VALUE
 exc_setup_cause(VALUE exc, VALUE cause)
 {
-#if SUPPORT_JOKE
+#if OPT_SUPPORT_JOKE
     if (NIL_P(cause)) {
 	ID id_true_cause;
 	CONST_ID(id_true_cause, "true_cause");
