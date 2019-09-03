@@ -1003,7 +1003,7 @@ RUBY_SYMBOL_EXPORT_END
 }  /* extern "C" { */
 #endif
 
-#if defined(__has_attribute) && defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P) && !defined(_WIN32)
+#if defined(__has_attribute) && defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P) && !defined(_WIN32) && !defined(__CYGWIN__)
 #if __has_attribute(transparent_union) && __has_attribute(unused) && __has_attribute(weakref) && __has_attribute(nonnull)
 __attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))static void rb_define_method_idm3(VALUE,ID,VALUE(*)(ANYARGS),int);
 __attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))static void rb_define_method_idm2(VALUE,ID,VALUE(*)(VALUE,VALUE),int);
