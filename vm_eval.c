@@ -879,15 +879,8 @@ VALUE
 rb_funcallv_with_cc(void **ptr, VALUE recv, ID mid, int argc, const VALUE *argv)
 {
     VM_ASSERT(ptr);
-    const VALUE klass = CLASS_OF(recv);
-    VM_ASSERT(klass != Qfalse);
-    VM_ASSERT(RBASIC_CLASS(klass) == 0 || rb_obj_is_kind_of(klass, rb_cClass));
-    rb_serial_t now = GET_GLOBAL_METHOD_STATE();
-    rb_serial_t serial = RCLASS_SERIAL(klass);
     struct opaque {
-        const rb_callable_method_entry_t *me;
-        rb_serial_t updated_at;
-        rb_serial_t class_at;
+        struct rb_call_cache cc;
         ID mid;
     } *cc;
     if (UNLIKELY(! *ptr)) {
@@ -895,20 +888,21 @@ rb_funcallv_with_cc(void **ptr, VALUE recv, ID mid, int argc, const VALUE *argv)
     }
     cc = *ptr;
 
-    if (cc->updated_at != now ||
-        cc->class_at != serial ||
-        cc->mid != mid) {
-        *cc = (struct opaque) {
-            rb_callable_method_entry(klass, mid), now, serial, mid,
-        };
+    const struct rb_call_info ci = { mid, VM_CALL_ARGS_SIMPLE, argc, };
+    if (UNLIKELY(cc->mid != mid)) {
+        *cc = (struct opaque) /* reset */ { { 0, }, mid, };
+        return rb_funcallv(recv, mid, argc, argv);
+    }
+    else {
+        vm_search_method(&ci, &cc->cc, recv);
     }
 
-    if (UNLIKELY(UNDEFINED_METHOD_ENTRY_P(cc->me))) {
+    if (UNLIKELY(UNDEFINED_METHOD_ENTRY_P(cc->cc.me))) {
         /* :FIXME: this path can be made faster */
         return rb_funcallv(recv, mid, argc, argv);
     }
     else {
-        return rb_vm_call0(GET_EC(), recv, mid, argc, argv, cc->me);
+        return rb_vm_call0(GET_EC(), recv, mid, argc, argv, cc->cc.me);
     }
 }
 
