@@ -298,9 +298,6 @@ struct parser_params {
 #endif
 };
 
-#define new_tmpbuf() \
-    (rb_imemo_tmpbuf_t *)add_tmpbuf_mark_object(p, rb_imemo_tmpbuf_auto_free_pointer(NULL))
-
 #define intern_cstr(n,l,en) rb_intern3(n,l,en)
 
 #define STR_NEW(ptr,len) rb_enc_str_new((ptr),(len),p->enc)
@@ -336,13 +333,6 @@ static inline void
 rb_discard_node(struct parser_params *p, NODE *n)
 {
     rb_ast_delete_node(p->ast, n);
-}
-
-static inline VALUE
-add_tmpbuf_mark_object(struct parser_params *p, VALUE obj)
-{
-    rb_ast_add_mark_object(p->ast, obj);
-    return obj;
 }
 #endif
 
@@ -2797,10 +2787,11 @@ primary		: literal
 			ID id = internal_id(p);
 			NODE *m = NEW_ARGS_AUX(0, 0, &NULL_LOC);
 			NODE *args, *scope, *internal_var = NEW_DVAR(id, &@2);
-			ID *tbl = ALLOC_N(ID, 2);
+			ID *tbl = ALLOC_N(ID, 3);
 			VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer(tbl);
                         RB_OBJ_WRITTEN(p->ast, Qnil, tmpbuf);
 			tbl[0] = 1 /* length of local var table */; tbl[1] = id /* internal id */;
+                        tbl[2] = tmpbuf;
 
 			switch (nd_type($2)) {
 			  case NODE_LASGN:
@@ -2821,7 +2812,6 @@ primary		: literal
 			args = new_args(p, m, 0, id, 0, new_args_tail(p, 0, 0, 0, &@2), &@2);
 			scope = NEW_NODE(NODE_SCOPE, tbl, $5, args, &@$);
 			$$ = NEW_FOR($4, scope, &@$);
-                        $$->nd_lit = tmpbuf;
 			fixpos($$, $2);
 		    /*% %*/
 		    /*% ripper: for!($2, $4, $5) %*/
@@ -11635,11 +11625,9 @@ local_tbl(struct parser_params *p)
     int cnt = cnt_args + cnt_vars;
     int i, j;
     ID *buf;
-    rb_imemo_tmpbuf_t *tmpbuf = new_tmpbuf();
 
     if (cnt <= 0) return 0;
-    buf = ALLOC_N(ID, cnt + 1);
-    tmpbuf->ptr = (void *)buf;
+    buf = ALLOC_N(ID, cnt + 2);
     MEMCPY(buf+1, p->lvtbl->args->tbl, ID, cnt_args);
     /* remove IDs duplicated to warn shadowing */
     for (i = 0, j = cnt_args+1; i < cnt_vars; ++i) {
@@ -11648,8 +11636,12 @@ local_tbl(struct parser_params *p)
 	    buf[j++] = id;
 	}
     }
-    if (--j < cnt) tmpbuf->ptr = (void *)REALLOC_N(buf, ID, (cnt = j) + 1);
+    if (--j < cnt) REALLOC_N(buf, ID, (cnt = j) + 2);
     buf[0] = cnt;
+
+    VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer(buf);
+    buf[cnt + 1] = (ID)tmpbuf;
+    RB_OBJ_WRITTEN(p->ast, Qnil, tmpbuf);
 
     return buf;
 }
