@@ -1120,28 +1120,41 @@ typedef struct node_buffer_elem_struct {
     NODE buf[FLEX_ARY_LEN];
 } node_buffer_elem_t;
 
-struct node_buffer_struct {
+typedef struct {
     long idx, len;
     node_buffer_elem_t *head;
     node_buffer_elem_t *last;
+} node_buffer_list_t;
+
+struct node_buffer_struct {
+    node_buffer_list_t unmarkable;
+    node_buffer_list_t markable;
     VALUE mark_ary;
 };
+
+static void
+init_node_buffer_list(node_buffer_list_t * nb, node_buffer_elem_t *head)
+{
+    nb->idx = 0;
+    nb->len = NODE_BUF_DEFAULT_LEN;
+    nb->head = nb->last = head;
+    nb->head->len = nb->len;
+    nb->head->next = NULL;
+}
 
 static node_buffer_t *
 rb_node_buffer_new(void)
 {
-    node_buffer_t *nb = xmalloc(sizeof(node_buffer_t) + offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_LEN * sizeof(NODE));
-    nb->idx = 0;
-    nb->len = NODE_BUF_DEFAULT_LEN;
-    nb->head = nb->last = (node_buffer_elem_t*) &nb[1];
-    nb->head->len = nb->len;
-    nb->head->next = NULL;
+    size_t bucket_size = offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_LEN * sizeof(NODE);
+    node_buffer_t *nb = xmalloc(sizeof(node_buffer_t) + (bucket_size * 2));
+    init_node_buffer_list(&nb->unmarkable, (node_buffer_elem_t*)&nb[1]);
+    init_node_buffer_list(&nb->markable, (node_buffer_elem_t*)((size_t)nb->unmarkable.head + bucket_size));
     nb->mark_ary = rb_ary_tmp_new(0);
     return nb;
 }
 
 static void
-rb_node_buffer_free(node_buffer_t *nb)
+node_buffer_list_free(node_buffer_list_t * nb)
 {
     node_buffer_elem_t *nbe = nb->head;
 
@@ -1150,13 +1163,19 @@ rb_node_buffer_free(node_buffer_t *nb)
 	nbe = nbe->next;
 	xfree(buf);
     }
+}
+
+static void
+rb_node_buffer_free(node_buffer_t *nb)
+{
+    node_buffer_list_free(&nb->unmarkable);
+    node_buffer_list_free(&nb->markable);
     xfree(nb);
 }
 
-NODE *
-rb_ast_newnode(rb_ast_t *ast)
+static NODE *
+ast_newnode_in_bucket(node_buffer_list_t *nb)
 {
-    node_buffer_t *nb = ast->node_buffer;
     if (nb->idx >= nb->len) {
 	long n = nb->len * 2;
 	node_buffer_elem_t *nbe;
@@ -1168,6 +1187,27 @@ rb_ast_newnode(rb_ast_t *ast)
 	nb->head = nbe;
     }
     return &nb->head->buf[nb->idx++];
+}
+
+NODE *
+rb_ast_newnode(rb_ast_t *ast, enum node_type type)
+{
+    node_buffer_t *nb = ast->node_buffer;
+    switch (type) {
+        case NODE_LIT:
+        case NODE_STR:
+        case NODE_XSTR:
+        case NODE_DSTR:
+        case NODE_DXSTR:
+        case NODE_DREGX:
+        case NODE_DSYM:
+        case NODE_ARGS:
+        case NODE_SCOPE:
+        case NODE_ARYPTN:
+            return ast_newnode_in_bucket(&nb->markable);
+        default:
+            return ast_newnode_in_bucket(&nb->unmarkable);
+    }
 }
 
 void
@@ -1200,7 +1240,7 @@ iterate_buffer_elements(node_buffer_elem_t *nbe, long len, node_itr_t *func, voi
 }
 
 static void
-iterate_node_values(node_buffer_t *nb, node_itr_t * func, void *ctx)
+iterate_node_values(node_buffer_list_t *nb, node_itr_t * func, void *ctx)
 {
     node_buffer_elem_t *nbe = nb->head;
 
@@ -1249,7 +1289,7 @@ rb_ast_mark(rb_ast_t *ast)
     if (ast->node_buffer) {
         node_buffer_t *nb = ast->node_buffer;
 
-        iterate_node_values(nb, mark_ast_value, NULL);
+        iterate_node_values(&nb->markable, mark_ast_value, NULL);
     }
 }
 
@@ -1262,6 +1302,18 @@ rb_ast_free(rb_ast_t *ast)
     }
 }
 
+static size_t
+buffer_list_size(node_buffer_list_t *nb)
+{
+    size_t size = 0;
+    node_buffer_elem_t *nbe = nb->head;
+    while (nbe != nb->last) {
+        nbe = nbe->next;
+        size += offsetof(node_buffer_elem_t, buf) + nb->len * sizeof(NODE);
+    }
+    return size;
+}
+
 size_t
 rb_ast_memsize(const rb_ast_t *ast)
 {
@@ -1270,11 +1322,8 @@ rb_ast_memsize(const rb_ast_t *ast)
 
     if (nb) {
         size += sizeof(node_buffer_t) + offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_LEN * sizeof(NODE);
-        node_buffer_elem_t *nbe = nb->head;
-        while (nbe != nb->last) {
-            nbe = nbe->next;
-            size += offsetof(node_buffer_elem_t, buf) + nb->len * sizeof(NODE);
-        }
+        size += buffer_list_size(&nb->unmarkable);
+        size += buffer_list_size(&nb->markable);
     }
     return size;
 }
