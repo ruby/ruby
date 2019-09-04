@@ -9611,9 +9611,7 @@ literal_concat(struct parser_params *p, NODE *head, NODE *tail, const YYLTYPE *l
 	    goto append;
 	}
 	else {
-	    nd_set_type(tail, NODE_ARRAY);
-	    tail->nd_head = NEW_STR(tail->nd_lit, loc);
-	    list_concat(head, tail);
+	    list_concat(head, NEW_NODE(NODE_ARRAY, NEW_STR(tail->nd_lit, loc), tail->nd_alen, tail->nd_next, loc));
 	}
 	break;
 
