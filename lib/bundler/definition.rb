@@ -317,7 +317,7 @@ module Bundler
     end
 
     def spec_git_paths
-      sources.git_sources.map {|s| File.realpath(s.path) }
+      sources.git_sources.map {|s| File.realpath(s.path) if File.exist?(s.path) }.compact
     end
 
     def groups
