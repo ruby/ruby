@@ -234,17 +234,6 @@ union iseq_inline_storage_entry {
     struct iseq_inline_cache_entry cache;
 };
 
-enum method_missing_reason {
-    MISSING_NOENTRY   = 0x00,
-    MISSING_PRIVATE   = 0x01,
-    MISSING_PROTECTED = 0x02,
-    MISSING_FCALL     = 0x04,
-    MISSING_VCALL     = 0x08,
-    MISSING_SUPER     = 0x10,
-    MISSING_MISSING   = 0x20,
-    MISSING_NONE      = 0x40
-};
-
 struct rb_call_info {
     /* fixed at compile time */
     ID mid;
@@ -268,26 +257,8 @@ struct rb_calling_info {
     int argc;
 };
 
-struct rb_call_cache;
 struct rb_execution_context_struct;
 typedef VALUE (*vm_call_handler)(struct rb_execution_context_struct *ec, struct rb_control_frame_struct *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc);
-
-struct rb_call_cache {
-    /* inline cache: keys */
-    rb_serial_t method_state;
-    rb_serial_t class_serial;
-
-    /* inline cache: values */
-    const rb_callable_method_entry_t *me;
-
-    vm_call_handler call;
-
-    union {
-	unsigned int index; /* used by ivar */
-	enum method_missing_reason method_missing_reason; /* used by method_missing */
-	int inc_sp; /* used by cfunc */
-    } aux;
-};
 
 #if 1
 #define CoreDataFromValue(obj, type) (type*)DATA_PTR(obj)

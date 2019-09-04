@@ -2314,6 +2314,58 @@ void Init_vm_stack_canary(void);
 /* vm_method.c */
 void Init_eval_method(void);
 
+enum method_missing_reason {
+    MISSING_NOENTRY   = 0x00,
+    MISSING_PRIVATE   = 0x01,
+    MISSING_PROTECTED = 0x02,
+    MISSING_FCALL     = 0x04,
+    MISSING_VCALL     = 0x08,
+    MISSING_SUPER     = 0x10,
+    MISSING_MISSING   = 0x20,
+    MISSING_NONE      = 0x40
+};
+struct rb_callable_method_entry_struct;
+struct rb_execution_context_struct;
+struct rb_control_frame_struct;
+struct rb_calling_info;
+struct rb_call_info;
+struct rb_call_cache {
+    /* inline cache: keys */
+    rb_serial_t method_state;
+    rb_serial_t class_serial;
+
+    /* inline cache: values */
+    const struct rb_callable_method_entry_struct *me;
+
+    VALUE (*call)(struct rb_execution_context_struct *ec,
+                  struct rb_control_frame_struct *cfp,
+                  struct rb_calling_info *calling,
+                  const struct rb_call_info *ci,
+                  struct rb_call_cache *cc);
+
+    union {
+        unsigned int index; /* used by ivar */
+        enum method_missing_reason method_missing_reason; /* used by method_missing */
+        int inc_sp; /* used by cfunc */
+    } aux;
+};
+struct rb_call_cache_and_mid {
+    struct rb_call_cache cc;
+    ID mid;
+};
+VALUE rb_funcallv_with_cc(struct rb_call_cache_and_mid*, VALUE, ID, int, const VALUE*)
+#if GCC_VERSION_SINCE(3, 3, 0) && defined(__OPTIMIZE__)
+__attribute__((__visibility__("default"), __nonnull__(1)))
+# define rb_funcallv(recv, mid, argc, argv) \
+    __extension__({ \
+        static struct rb_call_cache_and_mid \
+            rb_funcallv_opaque_cc = { {0, }, 0, }; \
+        rb_funcallv_with_cc(&rb_funcallv_opaque_cc, \
+            recv, mid, argc,argv); \
+    })
+#endif
+    ;
+
 /* miniprelude.c, prelude.c */
 void Init_prelude(void);
 

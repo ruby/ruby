@@ -876,34 +876,19 @@ rb_funcallv_public(VALUE recv, ID mid, int argc, const VALUE *argv)
  * \param argv   pointer to an array of method arguments
  */
 VALUE
-rb_funcallv_with_cc(void **ptr, VALUE recv, ID mid, int argc, const VALUE *argv)
+rb_funcallv_with_cc(struct rb_call_cache_and_mid *cc, VALUE recv, ID mid, int argc, const VALUE *argv)
 {
-    VM_ASSERT(ptr);
-    struct opaque {
-        struct rb_call_cache cc;
-        ID mid;
-    } *cc;
-    if (UNLIKELY(! *ptr)) {
-        *ptr = ZALLOC(struct opaque);
-    }
-    cc = *ptr;
-
-    const struct rb_call_info ci = { mid, VM_CALL_ARGS_SIMPLE, argc, };
-    if (UNLIKELY(cc->mid != mid)) {
-        *cc = (struct opaque) /* reset */ { { 0, }, mid, };
-        return rb_funcallv(recv, mid, argc, argv);
-    }
-    else {
+    if (LIKELY(cc->mid == mid)) {
+        const struct rb_call_info ci = { mid, VM_CALL_ARGS_SIMPLE, argc, };
         vm_search_method(&ci, &cc->cc, recv);
+
+        if (LIKELY(! UNDEFINED_METHOD_ENTRY_P(cc->cc.me))) {
+            return rb_vm_call0(GET_EC(), recv, mid, argc, argv, cc->cc.me);
+        }
     }
 
-    if (UNLIKELY(UNDEFINED_METHOD_ENTRY_P(cc->cc.me))) {
-        /* :FIXME: this path can be made faster */
-        return rb_funcallv(recv, mid, argc, argv);
-    }
-    else {
-        return rb_vm_call0(GET_EC(), recv, mid, argc, argv, cc->cc.me);
-    }
+    *cc = (struct rb_call_cache_and_mid) /* reset */ { { 0, }, mid, };
+    return rb_funcallv(recv, mid, argc, argv);
 }
 
 VALUE
