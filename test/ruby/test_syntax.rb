@@ -125,6 +125,13 @@ class TestSyntax < Test::Unit::TestCase
     assert_equal([kw], [kw, **kw, **kw])
     assert_equal([h], [h, **kw, **kw])
     assert_equal([h, h], [h, **kw, **kw, **h])
+
+    assert_equal([h, {:a=>2}], [h, **{}, **h, a: 2])
+    assert_equal([h, h], [h, **{}, a: 2, **h])
+    assert_equal([h, h], [h, a: 2, **{}, **h])
+    assert_equal([h, h], [h, a: 2, **h, **{}])
+    assert_equal([h, {:a=>2}], [h, **h, a: 2, **{}])
+    assert_equal([h, {:a=>2}], [h, **h, **{}, a: 2])
   end
 
   def test_normal_argument
