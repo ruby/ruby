@@ -1149,7 +1149,7 @@ rb_node_buffer_new(void)
     node_buffer_t *nb = xmalloc(sizeof(node_buffer_t) + (bucket_size * 2));
     init_node_buffer_list(&nb->unmarkable, (node_buffer_elem_t*)&nb[1]);
     init_node_buffer_list(&nb->markable, (node_buffer_elem_t*)((size_t)nb->unmarkable.head + bucket_size));
-    nb->mark_ary = rb_ary_tmp_new(0);
+    nb->mark_ary = Qnil;
     return nb;
 }
 
@@ -1222,9 +1222,7 @@ rb_ast_t *
 rb_ast_new(void)
 {
     node_buffer_t *nb = rb_node_buffer_new();
-    VALUE mark_ary = nb->mark_ary;
     rb_ast_t *ast = (rb_ast_t *)rb_imemo_new(imemo_ast, 0, 0, 0, (VALUE)nb);
-    RB_OBJ_WRITTEN(ast, Qnil, mark_ary);
     return ast;
 }
 
@@ -1337,5 +1335,8 @@ rb_ast_dispose(rb_ast_t *ast)
 void
 rb_ast_add_mark_object(rb_ast_t *ast, VALUE obj)
 {
+    if (NIL_P(ast->node_buffer->mark_ary)) {
+        RB_OBJ_WRITE(ast, &ast->node_buffer->mark_ary, rb_ary_tmp_new(0));
+    }
     rb_ary_push(ast->node_buffer->mark_ary, obj);
 }
