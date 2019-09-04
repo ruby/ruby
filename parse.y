@@ -5209,8 +5209,14 @@ assoc		: arg_value tASSOC arg_value
 		    {
 		    /*%%%*/
                         if (nd_type($2) == NODE_HASH &&
-                            !($2->nd_head && $2->nd_head->nd_alen))
-                            $$ = 0;
+                            !($2->nd_head && $2->nd_head->nd_alen)) {
+                            static VALUE empty_hash;
+                            if (!empty_hash) {
+                                empty_hash = rb_obj_freeze(rb_hash_new());
+                                rb_gc_register_mark_object(empty_hash);
+                            }
+                            $$ = list_append(p, NEW_LIST(0, &@$), NEW_LIT(empty_hash, &@$));
+                        }
                         else
                             $$ = list_append(p, NEW_LIST(0, &@$), $2);
 		    /*% %*/

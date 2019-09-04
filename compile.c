@@ -3940,6 +3940,8 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
     else {
 	int opt_p = 1;
 	int first = 1, i;
+        int single_kw = 0;
+        int num_kw = 0;
 
 	while (node) {
 	    const NODE *start_node = node, *end_node;
@@ -3955,11 +3957,15 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 
                 if (type == COMPILE_ARRAY_TYPE_HASH && !node->nd_head) {
 		    kw = node->nd_next;
+                    num_kw++;
 		    node = 0;
 		    if (kw) {
 			opt_p = 0;
 			node = kw->nd_next;
 			kw = kw->nd_head;
+                        if (!single_kw && !node) {
+                            single_kw = 1;
+                        }
 		    }
 		    break;
 		}
@@ -4053,6 +4059,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
                       }
 		      case COMPILE_ARRAY_TYPE_HASH:
 			if (i > 0) {
+                            num_kw++;
 			    if (first) {
 				if (!popped) {
 				    ADD_INSN1(anchor, line, newhash, INT2FIX(i));
@@ -4071,16 +4078,27 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 			    }
 			}
 			if (kw) {
-			    if (!popped) {
-				ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-				if (i > 0 || !first) ADD_INSN(ret, line, swap);
-				else ADD_INSN1(ret, line, newhash, INT2FIX(0));
+                            int empty_kw = nd_type(kw) == NODE_LIT;
+                            int first_kw = num_kw == 1;
+                            int only_kw = single_kw && first_kw;
+
+                            if (!popped && !empty_kw) {
+                                ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                                if (i > 0 || !first) ADD_INSN(ret, line, swap);
+                                else ADD_INSN1(ret, line, newhash, INT2FIX(0));
 			    }
-                            NO_CHECK(COMPILE(ret, "keyword splat", kw));
+
+                            if (empty_kw && first_kw && !only_kw) {
+                                ADD_INSN1(ret, line, newhash, INT2FIX(0));
+                            }
+                            else if (!empty_kw || only_kw) {
+                                NO_CHECK(COMPILE(ret, "keyword splat", kw));
+                            }
+
 			    if (popped) {
 				ADD_INSN(ret, line, pop);
 			    }
-			    else {
+                            else if (!empty_kw) {
 				ADD_SEND(ret, line, id_core_hash_merge_kwd, INT2FIX(2));
 			    }
 			}
