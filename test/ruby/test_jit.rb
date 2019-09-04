@@ -739,6 +739,28 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_inlined_setivar_frozen
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "FrozenError\n", success_count: 2, min_calls: 3)
+    begin;
+      class A
+        def a
+          @a = 1
+        end
+      end
+
+      a = A.new
+      a.a
+      a.a
+      a.a
+      a.freeze
+      begin
+        a.a
+      rescue FrozenError => e
+        p e.class
+      end
+    end;
+  end
+
   def test_attr_reader
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "4nil\nnil\n6", success_count: 2, min_calls: 2)
     begin;
