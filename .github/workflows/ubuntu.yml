@@ -50,7 +50,8 @@ jobs:
         if: matrix.test_task != 'test-bundled-gems' && !contains(github.event.head_commit.message, '[ci skip]')
       # test-bundled-gems is separated for marking `continue-on-error` because it randomly fails.
       - name: Tests (test-bundled-gems)
-        run: make -s ${{ matrix.test_task }}
+        # Remove TEST_BUNDLED_GEMS_ALLOW_FAILURES=minitest if https://github.com/seattlerb/minitest/pull/798 resolved
+        run: make -s ${{ matrix.test_task }} TEST_BUNDLED_GEMS_ALLOW_FAILURES=minitest
         env:
           RUBY_TESTOPTS: "-q --tty=no"
         continue-on-error: true
