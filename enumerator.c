@@ -1676,15 +1676,34 @@ lazy_generator_init(VALUE enumerator, VALUE procs)
  *
  *    # This will fetch all URLs before selecting
  *    # necessary data
- *    URLS.map { |u| JSON.parse(open(u).read) }.
- *      select { |data| data.key?('stats') }.
- *      first(5)
+ *    URLS.map { |u| JSON.parse(open(u).read) }
+ *      .select { |data| data.key?('stats') }
+ *      .first(5)
  *
  *    # This will fetch URLs one-by-one, only till
  *    # there is enough data to satisfy the condition
- *    URLS.lazy.map { |u| JSON.parse(open(u).read) }.
- *      select { |data| data.key?('stats') }.
- *      first(5)
+ *    URLS.lazy.map { |u| JSON.parse(open(u).read) }
+ *      .select { |data| data.key?('stats') }
+ *      .first(5)
+ *
+ * Ending a chain with ".eager" generates a non-lazy enumerator, which
+ * is suitable for returning or passing to another method that expects
+ * a normal enumerator.
+ *
+ *    def active_items
+ *      groups
+ *        .lazy
+ *        .flat_map(&:items)
+ *        .reject(&:disabled)
+ *        .eager
+ *    end
+ *
+ *    # This works lazily; if a checked item is found, it stops
+ *    # iteration and does not look into remaining groups.
+ *    first_checked = active_items.find(&:checked)
+ *
+ *    # This returns an array of items like a normal enumerator does.
+ *    all_checked = active_items.select(&:checked)
  *
  */
 
