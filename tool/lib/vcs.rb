@@ -7,6 +7,10 @@ require 'optparse'
 
 ENV.delete('PWD')
 
+class VCS
+  DEBUG_OUT = STDERR.dup
+end
+
 unless File.respond_to? :realpath
   require 'pathname'
   def File.realpath(arg)
@@ -15,7 +19,7 @@ unless File.respond_to? :realpath
 end
 
 def IO.pread(*args)
-  STDERR.puts(args.inspect) if $DEBUG
+  VCS::DEBUG_OUT.puts(args.inspect) if $DEBUG
   popen(*args) {|f|f.read}
 end
 
@@ -85,7 +89,7 @@ else
     verbose, $VERBOSE = $VERBOSE, nil if RUBY_VERSION < "2.1"
     refine IO.singleton_class do
       def popen(*args)
-        STDERR.puts args.inspect if $DEBUG
+        VCS::DEBUG_OUT.puts args.inspect if $DEBUG
         super
       end
     end
@@ -95,7 +99,7 @@ else
   using DebugPOpen
   module DebugSystem
     def system(*args)
-      STDERR.puts args.inspect if $DEBUG
+      VCS::DEBUG_OUT.puts args.inspect if $DEBUG
       exception = false
       opts = Hash.try_convert(args[-1])
       if RUBY_VERSION >= "2.6"
@@ -417,7 +421,7 @@ class VCS
     def commit
       args = %W"#{COMMAND} commit"
       if dryrun?
-        STDERR.puts(args.inspect)
+        VCS::DEBUG_OUT.puts(args.inspect)
         return true
       end
       system(*args)
@@ -434,7 +438,7 @@ class VCS
       if srcdir and self.class.local_path?(srcdir)
         opts[:chdir] ||= srcdir
       end
-      STDERR.puts cmds.inspect if debug?
+      VCS::DEBUG_OUT.puts cmds.inspect if debug?
       cmds
     end
 
@@ -649,7 +653,7 @@ class VCS
       branches = %W[refs/notes/commits:refs/notes/commits HEAD:#{branch}]
       if dryrun?
         branches.each do |b|
-          STDERR.puts((args + [b]).inspect)
+          VCS::DEBUG_OUT.puts((args + [b]).inspect)
         end
         return true
       end
