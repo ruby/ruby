@@ -1218,6 +1218,15 @@ static void
 mark_ast_value(void *ctx, NODE * node)
 {
     switch (nd_type(node)) {
+        case NODE_SCOPE:
+        {
+            ID *buf = node->nd_tbl;
+            if (buf) {
+                unsigned int size = (unsigned int)*buf;
+                rb_gc_mark((VALUE)buf[size + 1]);
+            }
+            break;
+        }
         case NODE_LIT:
         case NODE_STR:
         case NODE_XSTR:
@@ -1226,7 +1235,6 @@ mark_ast_value(void *ctx, NODE * node)
         case NODE_DREGX:
         case NODE_DSYM:
         case NODE_ARGS:
-        case NODE_FOR:
         case NODE_ARYPTN:
             rb_gc_mark(node->nd_lit);
             break;
