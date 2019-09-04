@@ -179,7 +179,7 @@ class TestKeywordArguments < Test::Unit::TestCase
 
   def test_lambda_kwsplat_call
     kw = {}
-    h = {'a'=>1}
+    h = {:a=>1}
     h2 = {'a'=>1}
     h3 = {'a'=>1, :a=>1}
 
@@ -187,6 +187,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(true, f[**{}])
     assert_equal(true, f[**kw])
     assert_raise(ArgumentError) { f[**h] }
+    assert_raise(ArgumentError) { f[a: 1] }
     assert_raise(ArgumentError) { f[**h2] }
     assert_raise(ArgumentError) { f[**h3] }
 
@@ -194,15 +195,19 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(ArgumentError) { f[**{}] }
     assert_raise(ArgumentError) { f[**kw] }
     assert_equal(h, f[**h])
+    assert_equal(h, f[a: 1])
     assert_equal(h2, f[**h2])
     assert_equal(h3, f[**h3])
+    assert_equal(h3, f[a: 1, **h2])
 
     f = ->(**x) { x }
     assert_equal(kw, f[**{}])
     assert_equal(kw, f[**kw])
     assert_equal(h, f[**h])
+    assert_equal(h, f[a: 1])
     assert_equal(h2, f[**h2])
     assert_equal(h3, f[**h3])
+    assert_equal(h3, f[a: 1, **h2])
 
     f = ->(a, **x) { [a,x] }
     assert_warn(/The keyword argument is passed as the last hash parameter.* for `\[\]'/m) do
@@ -215,23 +220,31 @@ class TestKeywordArguments < Test::Unit::TestCase
       assert_equal([h, {}], f[**h])
     end
     assert_warn(/The keyword argument is passed as the last hash parameter.* for `\[\]'/m) do
+      assert_equal([h, {}], f[a: 1])
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `\[\]'/m) do
       assert_equal([h2, {}], f[**h2])
     end
     assert_warn(/The keyword argument is passed as the last hash parameter.* for `\[\]'/m) do
       assert_equal([h3, {}], f[**h3])
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `\[\]'/m) do
+      assert_equal([h3, {}], f[a: 1, **h2])
     end
 
     f = ->(a=1, **x) { [a, x] }
     assert_equal([1, kw], f[**{}])
     assert_equal([1, kw], f[**kw])
     assert_equal([1, h], f[**h])
+    assert_equal([1, h], f[a: 1])
     assert_equal([1, h2], f[**h2])
     assert_equal([1, h3], f[**h3])
+    assert_equal([1, h3], f[a: 1, **h2])
   end
 
   def test_cfunc_kwsplat_call
     kw = {}
-    h = {'a'=>1}
+    h = {:a=>1}
     h2 = {'a'=>1}
     h3 = {'a'=>1, :a=>1}
 
@@ -250,8 +263,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([], c[**{}].args)
     assert_equal([], c[**kw].args)
     assert_equal([h], c[**h].args)
+    assert_equal([h], c[a: 1].args)
     assert_equal([h2], c[**h2].args)
     assert_equal([h3], c[**h3].args)
+    assert_equal([h3], c[a: 1, **h2].args)
 
     c = Class.new(sc) do
       def initialize; end
@@ -259,8 +274,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_nil(c[**{}].args)
     assert_nil(c[**kw].args)
     assert_raise(ArgumentError) { c[**h] }
+    assert_raise(ArgumentError) { c[a: 1] }
     assert_raise(ArgumentError) { c[**h2] }
     assert_raise(ArgumentError) { c[**h3] }
+    assert_raise(ArgumentError) { c[a: 1, **h2] }
 
     c = Class.new(sc) do
       def initialize(args)
@@ -270,8 +287,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(ArgumentError) { c[**{}] }
     assert_raise(ArgumentError) { c[**kw] }
     assert_equal(h, c[**h].args)
+    assert_equal(h, c[a: 1].args)
     assert_equal(h2, c[**h2].args)
     assert_equal(h3, c[**h3].args)
+    assert_equal(h3, c[a: 1, **h2].args)
 
     c = Class.new(sc) do
       def initialize(**args)
@@ -281,8 +300,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(kw, c[**{}].args)
     assert_equal(kw, c[**kw].args)
     assert_equal(h, c[**h].args)
+    assert_equal(h, c[a: 1].args)
     assert_equal(h2, c[**h2].args)
     assert_equal(h3, c[**h3].args)
+    assert_equal(h3, c[a: 1, **h2].args)
 
     c = Class.new(sc) do
       def initialize(arg, **args)
@@ -292,8 +313,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(ArgumentError) { c[**{}] }
     assert_raise(ArgumentError) { c[**kw] }
     assert_equal([h, kw], c[**h].args)
+    assert_equal([h, kw], c[a: 1].args)
     assert_equal([h2, kw], c[**h2].args)
     assert_equal([h3, kw], c[**h3].args)
+    assert_equal([h3, kw], c[a: 1, **h2].args)
 
     c = Class.new(sc) do
       def initialize(arg=1, **args)
@@ -303,13 +326,15 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, kw], c[**{}].args)
     assert_equal([1, kw], c[**kw].args)
     assert_equal([1, h], c[**h].args)
+    assert_equal([1, h], c[a: 1].args)
     assert_equal([1, h2], c[**h2].args)
     assert_equal([1, h3], c[**h3].args)
+    assert_equal([1, h3], c[a: 1, **h2].args)
   end
 
   def test_method_kwsplat_call
     kw = {}
-    h = {'a'=>1}
+    h = {:a=>1}
     h2 = {'a'=>1}
     h3 = {'a'=>1, :a=>1}
 
@@ -320,16 +345,20 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([], c.method(:m)[**{}])
     assert_equal([], c.method(:m)[**kw])
     assert_equal([h], c.method(:m)[**h])
+    assert_equal([h], c.method(:m)[a: 1])
     assert_equal([h2], c.method(:m)[**h2])
     assert_equal([h3], c.method(:m)[**h3])
+    assert_equal([h3], c.method(:m)[a: 1, **h2])
 
     c.singleton_class.remove_method(:m)
     def c.m; end
     assert_nil(c.method(:m)[**{}])
     assert_nil(c.method(:m)[**kw])
     assert_raise(ArgumentError) { c.method(:m)[**h] }
+    assert_raise(ArgumentError) { c.method(:m)[a: 1] }
     assert_raise(ArgumentError) { c.method(:m)[**h2] }
     assert_raise(ArgumentError) { c.method(:m)[**h3] }
+    assert_raise(ArgumentError) { c.method(:m)[a: 1, **h2] }
 
     c.singleton_class.remove_method(:m)
     def c.m(args)
@@ -338,8 +367,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(ArgumentError) { c.method(:m)[**{}] }
     assert_raise(ArgumentError) { c.method(:m)[**kw] }
     assert_equal(h, c.method(:m)[**h])
+    assert_equal(h, c.method(:m)[a: 1])
     assert_equal(h2, c.method(:m)[**h2])
     assert_equal(h3, c.method(:m)[**h3])
+    assert_equal(h3, c.method(:m)[a: 1, **h2])
 
     c.singleton_class.remove_method(:m)
     def c.m(**args)
@@ -348,8 +379,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(kw, c.method(:m)[**{}])
     assert_equal(kw, c.method(:m)[**kw])
     assert_equal(h, c.method(:m)[**h])
+    assert_equal(h, c.method(:m)[a: 1])
     assert_equal(h2, c.method(:m)[**h2])
     assert_equal(h3, c.method(:m)[**h3])
+    assert_equal(h3, c.method(:m)[a: 1, **h2])
 
     c.singleton_class.remove_method(:m)
     def c.m(arg, **args)
@@ -358,8 +391,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(ArgumentError) { c.method(:m)[**{}] }
     assert_raise(ArgumentError) { c.method(:m)[**kw] }
     assert_equal([h, kw], c.method(:m)[**h])
+    assert_equal([h, kw], c.method(:m)[a: 1])
     assert_equal([h2, kw], c.method(:m)[**h2])
     assert_equal([h3, kw], c.method(:m)[**h3])
+    assert_equal([h3, kw], c.method(:m)[a: 1, **h2])
 
     c.singleton_class.remove_method(:m)
     def c.m(arg=1, **args)
@@ -368,13 +403,15 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, kw], c.method(:m)[**{}])
     assert_equal([1, kw], c.method(:m)[**kw])
     assert_equal([1, h], c.method(:m)[**h])
+    assert_equal([1, h], c.method(:m)[a: 1])
     assert_equal([1, h2], c.method(:m)[**h2])
     assert_equal([1, h3], c.method(:m)[**h3])
+    assert_equal([1, h3], c.method(:m)[a: 1, **h2])
   end
 
   def test_send_kwsplat
     kw = {}
-    h = {'a'=>1}
+    h = {:a=>1}
     h2 = {'a'=>1}
     h3 = {'a'=>1, :a=>1}
 
@@ -385,16 +422,20 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([], c.send(:m, **{}))
     assert_equal([], c.send(:m, **kw))
     assert_equal([h], c.send(:m, **h))
+    assert_equal([h], c.send(:m, a: 1))
     assert_equal([h2], c.send(:m, **h2))
     assert_equal([h3], c.send(:m, **h3))
+    assert_equal([h3], c.send(:m, a: 1, **h2))
 
     c.singleton_class.remove_method(:m)
     def c.m; end
     assert_nil(c.send(:m, **{}))
     assert_nil(c.send(:m, **kw))
     assert_raise(ArgumentError) { c.send(:m, **h) }
+    assert_raise(ArgumentError) { c.send(:m, a: 1) }
     assert_raise(ArgumentError) { c.send(:m, **h2) }
     assert_raise(ArgumentError) { c.send(:m, **h3) }
+    assert_raise(ArgumentError) { c.send(:m, a: 1, **h2) }
 
     c.singleton_class.remove_method(:m)
     def c.m(args)
@@ -403,8 +444,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(ArgumentError) { c.send(:m, **{}) }
     assert_raise(ArgumentError) { c.send(:m, **kw) }
     assert_equal(h, c.send(:m, **h))
+    assert_equal(h, c.send(:m, a: 1))
     assert_equal(h2, c.send(:m, **h2))
     assert_equal(h3, c.send(:m, **h3))
+    assert_equal(h3, c.send(:m, a: 1, **h2))
 
     c.singleton_class.remove_method(:m)
     def c.m(**args)
@@ -413,8 +456,9 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(kw, c.send(:m, **{}))
     assert_equal(kw, c.send(:m, **kw))
     assert_equal(h, c.send(:m, **h))
+    assert_equal(h, c.send(:m, a: 1))
     assert_equal(h2, c.send(:m, **h2))
-    assert_equal(h3, c.send(:m, **h3))
+    assert_equal(h3, c.send(:m, a: 1, **h2))
 
     c.singleton_class.remove_method(:m)
     def c.m(arg, **args)
@@ -430,10 +474,16 @@ class TestKeywordArguments < Test::Unit::TestCase
       assert_equal([h, kw], c.send(:m, **h))
     end
     assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h, kw], c.send(:m, a: 1))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
       assert_equal([h2, kw], c.send(:m, **h2))
     end
     assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
       assert_equal([h3, kw], c.send(:m, **h3))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h3, kw], c.send(:m, a: 1, **h2))
     end
 
     c.singleton_class.remove_method(:m)
@@ -443,13 +493,15 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, kw], c.send(:m, **{}))
     assert_equal([1, kw], c.send(:m, **kw))
     assert_equal([1, h], c.send(:m, **h))
+    assert_equal([1, h], c.send(:m, a: 1))
     assert_equal([1, h2], c.send(:m, **h2))
     assert_equal([1, h3], c.send(:m, **h3))
+    assert_equal([1, h3], c.send(:m, a: 1, **h2))
   end
 
   def test_sym_proc_kwsplat
     kw = {}
-    h = {'a'=>1}
+    h = {:a=>1}
     h2 = {'a'=>1}
     h3 = {'a'=>1, :a=>1}
 
@@ -460,16 +512,20 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([], :m.to_proc.call(c, **{}))
     assert_equal([], :m.to_proc.call(c, **kw))
     assert_equal([h], :m.to_proc.call(c, **h))
+    assert_equal([h], :m.to_proc.call(c, a: 1))
     assert_equal([h2], :m.to_proc.call(c, **h2))
     assert_equal([h3], :m.to_proc.call(c, **h3))
+    assert_equal([h3], :m.to_proc.call(c, a: 1, **h2))
 
     c.singleton_class.remove_method(:m)
     def c.m; end
     assert_nil(:m.to_proc.call(c, **{}))
     assert_nil(:m.to_proc.call(c, **kw))
     assert_raise(ArgumentError) { :m.to_proc.call(c, **h) }
+    assert_raise(ArgumentError) { :m.to_proc.call(c, a: 1) }
     assert_raise(ArgumentError) { :m.to_proc.call(c, **h2) }
     assert_raise(ArgumentError) { :m.to_proc.call(c, **h3) }
+    assert_raise(ArgumentError) { :m.to_proc.call(c, a: 1, **h2) }
 
     c.singleton_class.remove_method(:m)
     def c.m(args)
@@ -478,8 +534,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(ArgumentError) { :m.to_proc.call(c, **{}) }
     assert_raise(ArgumentError) { :m.to_proc.call(c, **kw) }
     assert_equal(h, :m.to_proc.call(c, **h))
+    assert_equal(h, :m.to_proc.call(c, a: 1))
     assert_equal(h2, :m.to_proc.call(c, **h2))
     assert_equal(h3, :m.to_proc.call(c, **h3))
+    assert_equal(h3, :m.to_proc.call(c, a: 1, **h2))
 
     c.singleton_class.remove_method(:m)
     def c.m(**args)
@@ -488,8 +546,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(kw, :m.to_proc.call(c, **{}))
     assert_equal(kw, :m.to_proc.call(c, **kw))
     assert_equal(h, :m.to_proc.call(c, **h))
+    assert_equal(h, :m.to_proc.call(c, a: 1))
     assert_equal(h2, :m.to_proc.call(c, **h2))
     assert_equal(h3, :m.to_proc.call(c, **h3))
+    assert_equal(h3, :m.to_proc.call(c, a: 1, **h2))
 
     c.singleton_class.remove_method(:m)
     def c.m(arg, **args)
@@ -503,10 +563,16 @@ class TestKeywordArguments < Test::Unit::TestCase
       assert_equal([h, kw], :m.to_proc.call(c, **h))
     end
     assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h, kw], :m.to_proc.call(c, a: 1))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
       assert_equal([h2, kw], :m.to_proc.call(c, **h2))
     end
     assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
       assert_equal([h3, kw], :m.to_proc.call(c, **h3))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h3, kw], :m.to_proc.call(c, a: 1, **h2))
     end
 
     c.singleton_class.remove_method(:m)
@@ -516,13 +582,15 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, kw], :m.to_proc.call(c, **{}))
     assert_equal([1, kw], :m.to_proc.call(c, **kw))
     assert_equal([1, h], :m.to_proc.call(c, **h))
+    assert_equal([1, h], :m.to_proc.call(c, a: 1))
     assert_equal([1, h2], :m.to_proc.call(c, **h2))
     assert_equal([1, h3], :m.to_proc.call(c, **h3))
+    assert_equal([1, h3], :m.to_proc.call(c, a: 1, **h2))
   end
 
   def test_method_missing_kwsplat
     kw = {}
-    h = {'a'=>1}
+    h = {:a=>1}
     h2 = {'a'=>1}
     h3 = {'a'=>1, :a=>1}
 
@@ -533,16 +601,20 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([], c.send(:m, **{}))
     assert_equal([], c.send(:m, **kw))
     assert_equal([h], c.send(:m, **h))
+    assert_equal([h], c.send(:m, a: 1))
     assert_equal([h2], c.send(:m, **h2))
     assert_equal([h3], c.send(:m, **h3))
+    assert_equal([h3], c.send(:m, a: 1, **h2))
 
     c.singleton_class.remove_method(:method_missing)
     def c.method_missing(_); end
     assert_nil(c.send(:m, **{}))
     assert_nil(c.send(:m, **kw))
     assert_raise(ArgumentError) { c.send(:m, **h) }
+    assert_raise(ArgumentError) { c.send(:m, a: 1) }
     assert_raise(ArgumentError) { c.send(:m, **h2) }
     assert_raise(ArgumentError) { c.send(:m, **h3) }
+    assert_raise(ArgumentError) { c.send(:m, a: 1, **h2) }
 
     c.singleton_class.remove_method(:method_missing)
     def c.method_missing(_, args)
@@ -551,8 +623,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(ArgumentError) { c.send(:m, **{}) }
     assert_raise(ArgumentError) { c.send(:m, **kw) }
     assert_equal(h, c.send(:m, **h))
+    assert_equal(h, c.send(:m, a: 1))
     assert_equal(h2, c.send(:m, **h2))
     assert_equal(h3, c.send(:m, **h3))
+    assert_equal(h3, c.send(:m, a: 1, **h2))
 
     c.singleton_class.remove_method(:method_missing)
     def c.method_missing(_, **args)
@@ -561,8 +635,9 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(kw, c.send(:m, **{}))
     assert_equal(kw, c.send(:m, **kw))
     assert_equal(h, c.send(:m, **h))
+    assert_equal(h, c.send(:m, a: 1))
     assert_equal(h2, c.send(:m, **h2))
-    assert_equal(h3, c.send(:m, **h3))
+    assert_equal(h3, c.send(:m, a: 1, **h2))
 
     c.singleton_class.remove_method(:method_missing)
     def c.method_missing(_, arg, **args)
@@ -578,10 +653,16 @@ class TestKeywordArguments < Test::Unit::TestCase
       assert_equal([h, kw], c.send(:m, **h))
     end
     assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([h, kw], c.send(:m, a: 1))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
       assert_equal([h2, kw], c.send(:m, **h2))
     end
     assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
       assert_equal([h3, kw], c.send(:m, **h3))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([h3, kw], c.send(:m, a: 1, **h2))
     end
 
     c.singleton_class.remove_method(:method_missing)
@@ -591,13 +672,15 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, kw], c.send(:m, **{}))
     assert_equal([1, kw], c.send(:m, **kw))
     assert_equal([1, h], c.send(:m, **h))
+    assert_equal([1, h], c.send(:m, a: 1))
     assert_equal([1, h2], c.send(:m, **h2))
     assert_equal([1, h3], c.send(:m, **h3))
+    assert_equal([1, h3], c.send(:m, a: 1, **h2))
   end
 
   def test_define_method_kwsplat
     kw = {}
-    h = {'a'=>1}
+    h = {:a=>1}
     h2 = {'a'=>1}
     h3 = {'a'=>1, :a=>1}
 
@@ -608,38 +691,46 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_nil(c.m(**{}))
     assert_nil(c.m(**kw))
     assert_raise(ArgumentError) { c.m(**h) }
+    assert_raise(ArgumentError) { c.m(a: 1) }
     assert_raise(ArgumentError) { c.m(**h2) }
     assert_raise(ArgumentError) { c.m(**h3) }
+    assert_raise(ArgumentError) { c.m(a: 1, **h2) }
 
     c = Object.new
     class << c
-      define_method(:m) {|arg| }
+      define_method(:m) {|arg| arg }
     end
     assert_raise(ArgumentError) { c.m(**{}) }
     assert_raise(ArgumentError) { c.m(**kw) }
-    assert_nil(c.m(**h))
-    assert_nil(c.m(**h2))
-    assert_nil(c.m(**h3))
+    assert_equal(h, c.m(**h))
+    assert_equal(h, c.m(a: 1))
+    assert_equal(h2, c.m(**h2))
+    assert_equal(h3, c.m(**h3))
+    assert_equal(h3, c.m(a: 1, **h2))
 
     c = Object.new
     class << c
-      define_method(:m) {|*args| }
+      define_method(:m) {|*args| args }
     end
-    assert_nil(c.m(**{}))
-    assert_nil(c.m(**kw))
-    assert_nil(c.m(**h))
-    assert_nil(c.m(**h2))
-    assert_nil(c.m(**h3))
+    assert_equal([], c.m(**{}))
+    assert_equal([], c.m(**kw))
+    assert_equal([h], c.m(**h))
+    assert_equal([h], c.m(a: 1))
+    assert_equal([h2], c.m(**h2))
+    assert_equal([h3], c.m(**h3))
+    assert_equal([h3], c.m(a: 1, **h2))
 
     c = Object.new
     class << c
-      define_method(:m) {|**opt| }
+      define_method(:m) {|**opt| opt}
     end
-    assert_nil(c.m(**{}))
-    assert_nil(c.m(**kw))
-    assert_nil(c.m(**h))
-    assert_nil(c.m(**h2))
-    assert_nil(c.m(**h3))
+    assert_equal(kw, c.m(**{}))
+    assert_equal(kw, c.m(**kw))
+    assert_equal(h, c.m(**h))
+    assert_equal(h, c.m(a: 1))
+    assert_equal(h2, c.m(**h2))
+    assert_equal(h3, c.m(**h3))
+    assert_equal(h3, c.m(a: 1, **h2))
 
     c = Object.new
     class << c
@@ -653,21 +744,29 @@ class TestKeywordArguments < Test::Unit::TestCase
       assert_equal([h, kw], c.m(**h))
     end
     assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal([h, kw], c.m(a: 1))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
       assert_equal([h2, kw], c.m(**h2))
     end
     assert_warn(/The keyword argument is passed as the last hash parameter/m) do
       assert_equal([h3, kw], c.m(**h3))
     end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal([h3, kw], c.m(a: 1, **h2))
+    end
 
     c = Object.new
     class << c
-      define_method(:m) {|arg=1, **opt| }
+      define_method(:m) {|arg=1, **opt| [arg, opt] }
     end
-    assert_nil(c.m(**{}))
-    assert_nil(c.m(**kw))
-    assert_nil(c.m(**h))
-    assert_nil(c.m(**h2))
-    assert_nil(c.m(**h3))
+    assert_equal([1, kw], c.m(**{}))
+    assert_equal([1, kw], c.m(**kw))
+    assert_equal([1, h], c.m(**h))
+    assert_equal([1, h], c.m(a: 1))
+    assert_equal([1, h2], c.m(**h2))
+    assert_equal([1, h3], c.m(**h3))
+    assert_equal([1, h3], c.m(a: 1, **h2))
   end
 
   def p1

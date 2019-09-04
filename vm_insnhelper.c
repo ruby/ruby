@@ -2255,7 +2255,7 @@ vm_call_bmethod_body(rb_execution_context_t *ec, struct rb_calling_info *calling
 
     /* control block frame */
     GetProcPtr(cc->me->def->body.bmethod.proc, proc);
-    val = rb_vm_invoke_bmethod(ec, proc, calling->recv, calling->argc, argv, calling->kw_splat, calling->block_handler, cc->me);
+    val = rb_vm_invoke_bmethod(ec, proc, calling->recv, calling->argc, argv, calling->kw_splat || (ci->flag & (VM_CALL_KWARG | VM_CALL_KW_SPLAT)), calling->block_handler, cc->me);
 
     return val;
 }
@@ -2412,7 +2412,8 @@ vm_call_method_missing(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, 
     CALLER_SETUP_ARG(reg_cfp, calling, orig_ci, 0);
     argc = calling->argc+1;
 
-    ci_entry.flag = VM_CALL_FCALL | VM_CALL_OPT_SEND | (orig_ci->flag & VM_CALL_KW_SPLAT);
+    ci_entry.flag = VM_CALL_FCALL | VM_CALL_OPT_SEND |
+                    (orig_ci->flag & (VM_CALL_KW_SPLAT |VM_CALL_KWARG) ? VM_CALL_KW_SPLAT : 0);
     ci_entry.mid = idMethodMissing;
     ci_entry.orig_argc = argc;
     ci = &ci_entry;
@@ -3015,7 +3016,7 @@ vm_invoke_symbol_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     int argc;
     CALLER_SETUP_ARG(ec->cfp, calling, ci, 0);
     argc = calling->argc;
-    val = vm_yield_with_symbol(ec, symbol, argc, STACK_ADDR_FROM_TOP(argc), calling->kw_splat, calling->block_handler);
+    val = vm_yield_with_symbol(ec, symbol, argc, STACK_ADDR_FROM_TOP(argc), calling->kw_splat || (ci->flag & (VM_CALL_KWARG | VM_CALL_KW_SPLAT)), calling->block_handler);
     POPN(argc);
     return val;
 }
