@@ -543,6 +543,10 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
 static int io_fflush(rb_io_t *);
 static rb_io_t *flush_before_seek(rb_io_t *fptr, bool discard_rbuf);
 static void clear_codeconv(rb_io_t *fptr);
+static off_t io_setpos(rb_io_t *fptr, off_t pos, int whence);
+static void io_binmode(rb_io_t *fptr);
+static VALUE io_getbyte(rb_io_t *fptr);
+static void io_ungetbytes(const char *ptr, long len, rb_io_t *fptr);
 
 #define FMODE_SIGNAL_ON_EPIPE (1<<17)
 
@@ -944,7 +948,14 @@ static void
 io_ungetbyte(VALUE str, rb_io_t *fptr)
 {
     long len = RSTRING_LEN(str);
+    const char *ptr = RSTRING_PTR(str);
+    io_ungetbytes(ptr, len, fptr);
+    RB_GC_GUARD(str);
+}
 
+static void
+io_ungetbytes(const char *ptr, long len, rb_io_t *fptr)
+{
     if (fptr->rbuf.ptr == NULL) {
         const int min_capa = IO_RBUF_CAPA_FOR(fptr);
         fptr->rbuf.off = 0;
@@ -970,7 +981,7 @@ io_ungetbyte(VALUE str, rb_io_t *fptr)
     }
     fptr->rbuf.off-=(int)len;
     fptr->rbuf.len+=(int)len;
-    MEMMOVE(fptr->rbuf.ptr+fptr->rbuf.off, RSTRING_PTR(str), char, len);
+    MEMMOVE(fptr->rbuf.ptr+fptr->rbuf.off, ptr, char, len);
 }
 
 static rb_io_t *
@@ -2431,7 +2442,7 @@ rb_io_tell(VALUE io)
     return OFFT2NUM(pos);
 }
 
-static VALUE
+static off_t
 rb_io_seek(VALUE io, VALUE offset, int whence)
 {
     rb_io_t *fptr;
@@ -2439,10 +2450,16 @@ rb_io_seek(VALUE io, VALUE offset, int whence)
 
     pos = NUM2OFFT(offset);
     GetOpenFile(io, fptr);
+    return io_setpos(fptr, pos, whence);
+}
+
+static off_t
+io_setpos(rb_io_t *fptr, off_t pos, int whence)
+{
     pos = io_seek(fptr, pos, whence);
     if (pos < 0 && errno) rb_sys_fail_path(fptr->pathv);
 
-    return INT2FIX(0);
+    return pos;
 }
 
 static int
@@ -2522,7 +2539,8 @@ rb_io_seek_m(int argc, VALUE *argv, VALUE io)
         whence = interpret_seek_whence(ptrname);
     }
 
-    return rb_io_seek(io, offset, whence);
+    rb_io_seek(io, offset, whence);
+    return INT2FIX(0);
 }
 
 /*
@@ -2545,13 +2563,9 @@ rb_io_seek_m(int argc, VALUE *argv, VALUE io)
 static VALUE
 rb_io_set_pos(VALUE io, VALUE offset)
 {
-    rb_io_t *fptr;
     rb_off_t pos;
 
-    pos = NUM2OFFT(offset);
-    GetOpenFile(io, fptr);
-    pos = io_seek(fptr, pos, SEEK_SET);
-    if (pos < 0 && errno) rb_sys_fail_path(fptr->pathv);
+    pos = rb_io_seek(io, offset, SEEK_SET);
 
     return OFFT2NUM(pos);
 }
@@ -2588,7 +2602,7 @@ rb_io_rewind(VALUE io)
     rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
-    if (io_seek(fptr, 0L, 0) < 0 && errno) rb_sys_fail_path(fptr->pathv);
+    io_setpos(fptr, 0L, SEEK_SET);
     if (io == ARGF.current_file) {
         ARGF.lineno -= fptr->lineno;
     }
@@ -5037,9 +5051,16 @@ VALUE
 rb_io_getbyte(VALUE io)
 {
     rb_io_t *fptr;
-    int c;
 
     GetOpenFile(io, fptr);
+    return io_getbyte(fptr);
+}
+
+static VALUE
+io_getbyte(rb_io_t *fptr)
+{
+    int c;
+
     rb_io_check_byte_readable(fptr);
     READ_CHECK(fptr);
     VALUE r_stdout = rb_ractor_stdout();
@@ -6299,6 +6320,13 @@ rb_io_binmode(VALUE io)
     rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
+    io_binmode(fptr);
+    return io;
+}
+
+static void
+io_binmode(rb_io_t *fptr)
+{
     if (fptr->readconv)
         rb_econv_binmode(fptr->readconv);
     if (fptr->writeconv)
@@ -6314,7 +6342,6 @@ rb_io_binmode(VALUE io)
         setmode(fptr->fd, O_BINARY);
     }
 #endif
-    return io;
 }
 
 static void
@@ -7067,83 +7094,92 @@ io_check_tty(rb_io_t *fptr)
 }
 
 static VALUE rb_io_internal_encoding(VALUE);
+static VALUE io_internal_encoding(rb_io_t *fptr);
 static void io_encoding_set(rb_io_t *, VALUE, VALUE, VALUE);
 
 static int
-io_strip_bom(VALUE io)
+io_strip_bom(rb_io_t *fptr)
 {
     VALUE b1, b2, b3, b4;
-    rb_io_t *fptr;
+    char buf[4];
+    int n = 0, idx = 0;
 
-    GetOpenFile(io, fptr);
     if (!(fptr->mode & FMODE_READABLE)) return 0;
-    if (NIL_P(b1 = rb_io_getbyte(io))) return 0;
+    if (NIL_P(b1 = io_getbyte(fptr))) return 0;
     switch (b1) {
       case INT2FIX(0xEF):
-        if (NIL_P(b2 = rb_io_getbyte(io))) break;
-        if (b2 == INT2FIX(0xBB) && !NIL_P(b3 = rb_io_getbyte(io))) {
+        buf[n++] = 0xEF;
+        if (NIL_P(b2 = io_getbyte(fptr))) break;
+        buf[n++] = FIX2INT(b2);
+        if (b2 == INT2FIX(0xBB) && !NIL_P(b3 = io_getbyte(fptr))) {
+            buf[n++] = FIX2INT(b3);
             if (b3 == INT2FIX(0xBF)) {
                 return rb_utf8_encindex();
             }
-            rb_io_ungetbyte(io, b3);
         }
-        rb_io_ungetbyte(io, b2);
         break;
 
       case INT2FIX(0xFE):
-        if (NIL_P(b2 = rb_io_getbyte(io))) break;
+        buf[n++] = 0xFE;
+        if (NIL_P(b2 = io_getbyte(fptr))) break;
+        buf[n++] = FIX2INT(b2);
         if (b2 == INT2FIX(0xFF)) {
             return ENCINDEX_UTF_16BE;
         }
-        rb_io_ungetbyte(io, b2);
         break;
 
       case INT2FIX(0xFF):
-        if (NIL_P(b2 = rb_io_getbyte(io))) break;
+        buf[n++] = 0xFF;
+        if (NIL_P(b2 = io_getbyte(fptr))) break;
+        buf[n++] = FIX2INT(b2);
         if (b2 == INT2FIX(0xFE)) {
-            b3 = rb_io_getbyte(io);
-            if (b3 == INT2FIX(0) && !NIL_P(b4 = rb_io_getbyte(io))) {
+            idx = ENCINDEX_UTF_16LE;
+            n = 0;              /* don't unget UTF-16LE BOM */
+
+            if (NIL_P(b3 = io_getbyte(fptr))) break;
+            buf[n++] = FIX2INT(b3);
+            if (b3 == INT2FIX(0) && !NIL_P(b4 = io_getbyte(fptr))) {
+                buf[n++] = FIX2INT(b4);
                 if (b4 == INT2FIX(0)) {
                     return ENCINDEX_UTF_32LE;
                 }
-                rb_io_ungetbyte(io, b4);
             }
-            rb_io_ungetbyte(io, b3);
-            return ENCINDEX_UTF_16LE;
         }
-        rb_io_ungetbyte(io, b2);
         break;
 
       case INT2FIX(0):
-        if (NIL_P(b2 = rb_io_getbyte(io))) break;
-        if (b2 == INT2FIX(0) && !NIL_P(b3 = rb_io_getbyte(io))) {
-            if (b3 == INT2FIX(0xFE) && !NIL_P(b4 = rb_io_getbyte(io))) {
+        buf[n++] = 0;
+        if (NIL_P(b2 = io_getbyte(fptr))) break;
+        buf[n++] = FIX2INT(b2);
+        if (b2 == INT2FIX(0) && !NIL_P(b3 = io_getbyte(fptr))) {
+            buf[n++] = FIX2INT(b3);
+            if (b3 == INT2FIX(0xFE) && !NIL_P(b4 = io_getbyte(fptr))) {
+                buf[n++] = FIX2INT(b4);
                 if (b4 == INT2FIX(0xFF)) {
                     return ENCINDEX_UTF_32BE;
                 }
-                rb_io_ungetbyte(io, b4);
             }
-            rb_io_ungetbyte(io, b3);
         }
-        rb_io_ungetbyte(io, b2);
+        break;
+
+      default:
+        buf[n++] = FIX2INT(b1);
         break;
     }
-    rb_io_ungetbyte(io, b1);
-    return 0;
+    if (n > 0) io_ungetbytes(buf, n, fptr);
+    return idx;
 }
 
 static rb_encoding *
-io_set_encoding_by_bom(VALUE io)
+io_set_encoding_by_bom(rb_io_t *fptr)
 {
-    int idx = io_strip_bom(io);
-    rb_io_t *fptr;
+    int idx = io_strip_bom(fptr);
     rb_encoding *extenc = NULL;
 
-    GetOpenFile(io, fptr);
     if (idx) {
         extenc = rb_enc_from_index(idx);
         io_encoding_set(fptr, rb_enc_from_encoding(extenc),
-                        rb_io_internal_encoding(io), Qnil);
+                        io_internal_encoding(fptr), Qnil);
     }
     else {
         fptr->encs.enc2 = NULL;
@@ -7181,7 +7217,7 @@ rb_file_open_generic(VALUE io, VALUE filename, int oflags, int fmode,
 #endif
     fptr->fd = rb_sysopen(pathv, oflags, perm);
     io_check_tty(fptr);
-    if (fmode & FMODE_SETENC_BY_BOM) io_set_encoding_by_bom(io);
+    if (fmode & FMODE_SETENC_BY_BOM) io_set_encoding_by_bom(fptr);
 
     return io;
 }
@@ -9524,7 +9560,7 @@ io_initialize(VALUE io, VALUE fnum, VALUE vmode, VALUE opt)
     else if (fileno(stderr) == fd)
         fp->stdio_file = stderr;
 
-    if (fmode & FMODE_SETENC_BY_BOM) io_set_encoding_by_bom(io);
+    if (fmode & FMODE_SETENC_BY_BOM) io_set_encoding_by_bom(fp);
     return io;
 }
 
@@ -9568,7 +9604,7 @@ rb_io_set_encoding_by_bom(VALUE io)
         rb_raise(rb_eArgError, "encoding is set to %s already",
                  rb_enc_name(fptr->encs.enc));
     }
-    if (!io_set_encoding_by_bom(io)) return Qnil;
+    if (!io_set_encoding_by_bom(fptr)) return Qnil;
     return rb_enc_from_encoding(fptr->encs.enc);
 }
 
@@ -12142,7 +12178,7 @@ io_s_read(VALUE v)
 
 struct seek_arg {
     VALUE io;
-    VALUE offset;
+    off_t offset;
     int mode;
 };
 
@@ -12150,8 +12186,11 @@ static VALUE
 seek_before_access(VALUE argp)
 {
     struct seek_arg *arg = (struct seek_arg *)argp;
-    rb_io_binmode(arg->io);
-    return rb_io_seek(arg->io, arg->offset, arg->mode);
+    rb_io_t *fptr;
+    GetOpenFile(arg->io, fptr);
+    io_binmode(fptr);
+    io_setpos(fptr, arg->offset, arg->mode);
+    return Qnil;
 }
 
 /*
@@ -12213,7 +12252,7 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
         struct seek_arg sarg;
         int state = 0;
         sarg.io = arg.io;
-        sarg.offset = offset;
+        sarg.offset = NUM2OFFT(offset);
         sarg.mode = SEEK_SET;
         rb_protect(seek_before_access, (VALUE)&sarg, &state);
         if (state) {
@@ -12263,7 +12302,7 @@ rb_io_s_binread(int argc, VALUE *argv, VALUE io)
         struct seek_arg sarg;
         int state = 0;
         sarg.io = arg.io;
-        sarg.offset = offset;
+        sarg.offset = NUM2OFFT(offset);
         sarg.mode = SEEK_SET;
         rb_protect(seek_before_access, (VALUE)&sarg, &state);
         if (state) {
@@ -12310,16 +12349,16 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
 
     if (NIL_P(arg.io)) return Qnil;
     if (!NIL_P(offset)) {
-       struct seek_arg sarg;
-       int state = 0;
-       sarg.io = arg.io;
-       sarg.offset = offset;
-       sarg.mode = SEEK_SET;
-       rb_protect(seek_before_access, (VALUE)&sarg, &state);
-       if (state) {
-           rb_io_close(arg.io);
-           rb_jump_tag(state);
-       }
+        struct seek_arg sarg;
+        int state = 0;
+        sarg.io = arg.io;
+        sarg.offset = NUM2OFFT(offset);
+        sarg.mode = SEEK_SET;
+        rb_protect(seek_before_access, (VALUE)&sarg, &state);
+        if (state) {
+            rb_io_close(arg.io);
+            rb_jump_tag(state);
+        }
     }
 
     warg.io = arg.io;
@@ -13435,6 +13474,12 @@ rb_io_internal_encoding(VALUE io)
 {
     rb_io_t *fptr = RFILE(rb_io_taint_check(io))->fptr;
 
+    return io_internal_encoding(fptr);
+}
+
+static VALUE
+io_internal_encoding(rb_io_t *fptr)
+{
     if (!fptr->encs.enc2) return Qnil;
     return rb_enc_from_encoding(io_read_encoding(fptr));
 }
