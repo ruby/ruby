@@ -24,7 +24,6 @@ extern void rb_method_definition_set(const rb_method_entry_t *me, rb_method_defi
 extern int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
 extern VALUE rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
                                          int argc, const VALUE *argv, int priv);
-extern void rb_warn_keyword_to_last_hash(struct rb_calling_info *calling, const struct rb_call_info *ci, const rb_iseq_t * const iseq);
 
 /* control stack frame */
 
