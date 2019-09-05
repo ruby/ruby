@@ -581,15 +581,16 @@ ignore_keyword_hash_p(VALUE keyword_hash, const rb_iseq_t * const iseq) {
 
 VALUE rb_iseq_location(const rb_iseq_t *iseq);
 
-static inline void
+void
 rb_warn_keyword_to_last_hash(struct rb_calling_info *calling, const struct rb_call_info *ci, const rb_iseq_t * const iseq)
 {
+    VALUE name, loc;
     if (calling->recv == Qundef) {
         rb_warn("The keyword argument is passed as the last hash parameter");
         return;
     }
-    VALUE name = rb_id2str(ci->mid);
-    VALUE loc = rb_iseq_location(iseq);
+    name = rb_id2str(ci->mid);
+    loc = rb_iseq_location(iseq);
     if (NIL_P(loc)) {
         rb_warn("The keyword argument for `%"PRIsVALUE"' is passed as the last hash parameter",
                 name);
@@ -604,9 +605,10 @@ rb_warn_keyword_to_last_hash(struct rb_calling_info *calling, const struct rb_ca
 static inline void
 rb_warn_split_last_hash_to_keyword(struct rb_calling_info *calling, const struct rb_call_info *ci, const rb_iseq_t * const iseq)
 {
+    VALUE name, loc;
     if (calling->recv == Qundef) return;
-    VALUE name = rb_id2str(ci->mid);
-    VALUE loc = rb_iseq_location(iseq);
+    name = rb_id2str(ci->mid);
+    loc = rb_iseq_location(iseq);
     if (NIL_P(loc)) {
         rb_warn("The last argument for `%"PRIsVALUE"' is split into positional and keyword parameters",
                 name);
@@ -621,9 +623,10 @@ rb_warn_split_last_hash_to_keyword(struct rb_calling_info *calling, const struct
 static inline void
 rb_warn_last_hash_to_keyword(struct rb_calling_info *calling, const struct rb_call_info *ci, const rb_iseq_t * const iseq)
 {
+    VALUE name, loc;
     if (calling->recv == Qundef) return;
-    VALUE name = rb_id2str(ci->mid);
-    VALUE loc = rb_iseq_location(iseq);
+    name = rb_id2str(ci->mid);
+    loc = rb_iseq_location(iseq);
     if (NIL_P(loc)) {
         rb_warn("The last argument for `%"PRIsVALUE"' is used as the keyword parameter",
                 name);
@@ -651,6 +654,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     VALUE keyword_hash = Qnil;
     VALUE * const orig_sp = ec->cfp->sp;
     unsigned int i;
+    int remove_empty_keyword_hash = 1;
 
     vm_check_canary(ec, orig_sp);
     /*
@@ -700,6 +704,10 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 	args->kw_argv = NULL;
     }
 
+    if (given_argc == min_argc) {
+        remove_empty_keyword_hash = 0;
+    }
+
     if (ci->flag & VM_CALL_ARGS_SPLAT) {
 	args->rest = locals[--args->argc];
 	args->rest_index = 0;
@@ -707,19 +715,29 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         if (kw_flag & VM_CALL_KW_SPLAT) {
             int len = RARRAY_LENINT(args->rest);
             if (len > 0 && ignore_keyword_hash_p(RARRAY_AREF(args->rest, len - 1), iseq)) {
-                arg_rest_dup(args);
-                rb_ary_pop(args->rest);
-                given_argc--;
-                kw_flag &= ~VM_CALL_KW_SPLAT;
+                if (remove_empty_keyword_hash) {
+                    arg_rest_dup(args);
+                    rb_ary_pop(args->rest);
+                    given_argc--;
+                    kw_flag &= ~VM_CALL_KW_SPLAT;
+                }
+                else {
+                    rb_warn_keyword_to_last_hash(calling, ci, iseq);
+                }
 	    }
         }
     }
     else {
         if (kw_flag & VM_CALL_KW_SPLAT) {
             if (ignore_keyword_hash_p(args->argv[args->argc-1], iseq)) {
-                args->argc--;
-                given_argc--;
-                kw_flag &= ~VM_CALL_KW_SPLAT;
+                if (remove_empty_keyword_hash) {
+                    args->argc--;
+                    given_argc--;
+                    kw_flag &= ~VM_CALL_KW_SPLAT;
+                }
+                else {
+                    rb_warn_keyword_to_last_hash(calling, ci, iseq);
+                }
 	    }
         }
 	args->rest = Qfalse;
