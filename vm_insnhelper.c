@@ -1740,13 +1740,20 @@ rb_iseq_only_kwparam_p(const rb_iseq_t *iseq)
 static inline void
 CALLER_SETUP_ARG(struct rb_control_frame_struct *restrict cfp,
                  struct rb_calling_info *restrict calling,
-                 const struct rb_call_info *restrict ci, int cfunc)
+                 const struct rb_call_info *restrict ci, int remove_empty_keyword_hash)
 {
     if (UNLIKELY(IS_ARGS_SPLAT(ci))) {
         vm_caller_setup_arg_splat(cfp, calling);
     }
     if (UNLIKELY(IS_ARGS_KEYWORD(ci))) {
         vm_caller_setup_arg_kw(cfp, calling, ci);
+    }
+    if (UNLIKELY(calling->kw_splat && remove_empty_keyword_hash)) {
+        if (RHASH_EMPTY_P(cfp->sp[-1])) {
+            cfp->sp--;
+            calling->argc--;
+            calling->kw_splat = 0;
+        }
     }
 }
 
@@ -2189,12 +2196,6 @@ vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
     int argc = calling->argc;
     int orig_argc = argc;
 
-    if (UNLIKELY(calling->kw_splat)) {
-        if (RHASH_EMPTY_P(*(GET_SP()-1))) {
-            argc--;
-            calling->kw_splat = 0;
-        }
-    }
     if (UNLIKELY(IS_ARGS_KW_OR_KW_SPLAT(ci))) {
         frame_type |= VM_FRAME_FLAG_CFRAME_KW;
     }
@@ -2315,12 +2316,6 @@ vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct
 	ci = &ci_entry.ci;
 	ci_entry.ci = *orig_ci;
     }
-    unsigned int kw_splat = ci->flag & VM_CALL_KW_SPLAT;
-    if (!kw_splat && (ci->flag & VM_CALL_KWARG)) {
-        /* TODO: delegate kw_arg without making a Hash object */
-        ci->flag = ci->flag & ~VM_CALL_KWARG;
-        kw_splat = VM_CALL_KW_SPLAT;
-    }
 
     /* setup new cc */
     cc_entry = *orig_cc;
@@ -2350,7 +2345,7 @@ vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct
     }
 
     cc->me = rb_callable_method_entry_with_refinements(CLASS_OF(calling->recv), ci->mid, NULL);
-    ci->flag = VM_CALL_FCALL | VM_CALL_OPT_SEND | kw_splat;
+    ci->flag = VM_CALL_FCALL | VM_CALL_OPT_SEND | (calling->kw_splat ? VM_CALL_KW_SPLAT : 0);
     return vm_call_method(ec, reg_cfp, calling, ci, cc);
 }
 
@@ -2923,13 +2918,6 @@ vm_callee_setup_block_arg(rb_execution_context_t *ec, struct rb_calling_info *ca
 	VALUE arg0;
 
 	CALLER_SETUP_ARG(cfp, calling, ci, 1); /* splat arg */
-
-        if (UNLIKELY(calling->kw_splat)) {
-            if (RHASH_EMPTY_P(argv[calling->argc-1])) {
-                calling->argc--;
-                calling->kw_splat = 0;
-            }
-        }
 
 	if (arg_setup_type == arg_setup_block &&
 	    calling->argc == 1 &&

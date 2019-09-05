@@ -464,12 +464,8 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.m(arg, **args)
       [arg, args]
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
-      assert_equal([kw, kw], c.send(:m, **{}))
-    end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
-      assert_equal([kw, kw], c.send(:m, **kw))
-    end
+    assert_raise(ArgumentError) { c.send(:m, **{}) }
+    assert_raise(ArgumentError) { c.send(:m, **kw) }
     assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
       assert_equal([h, kw], c.send(:m, **h))
     end
@@ -643,12 +639,8 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.method_missing(_, arg, **args)
       [arg, args]
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
-      assert_equal([kw, kw], c.send(:m, **{}))
-    end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
-      assert_equal([kw, kw], c.send(:m, **kw))
-    end
+    assert_raise(ArgumentError) { c.send(:m, **{}) }
+    assert_raise(ArgumentError) { c.send(:m, **kw) }
     assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
       assert_equal([h, kw], c.send(:m, **h))
     end
@@ -737,9 +729,7 @@ class TestKeywordArguments < Test::Unit::TestCase
       define_method(:m) {|arg, **opt| [arg, opt] }
     end
     assert_raise(ArgumentError) { c.m(**{}) }
-    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
-      assert_equal([kw, kw], c.m(**kw))
-    end
+    assert_raise(ArgumentError) { c.m(**kw) }
     assert_warn(/The keyword argument is passed as the last hash parameter/m) do
       assert_equal([h, kw], c.m(**h))
     end
