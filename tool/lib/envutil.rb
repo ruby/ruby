@@ -149,6 +149,9 @@ module EnvUtil
       if (!th_stdout || th_stdout.join(timeout)) && (!th_stderr || th_stderr.join(timeout))
         timeout_error = nil
       else
+        if File.exist?("/home/ko1/ruby/build-ruby/gdbscript")
+          system("gdb", "-p", pid.to_s, "-x", "/home/ko1/ruby/build-ruby/gdbscript", "-batch", "-quiet")
+        end
         status = terminate(pid, signal, opt[:pgroup], reprieve)
         terminated = Time.now
       end
