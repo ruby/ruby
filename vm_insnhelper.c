@@ -2294,7 +2294,7 @@ vm_call_bmethod(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_c
     VALUE *argv;
     int argc;
 
-    CALLER_SETUP_ARG(cfp, calling, ci);
+    CALLER_SETUP_ARG_WITHOUT_KW_SPLAT(cfp, calling, ci);
     argc = calling->argc;
     argv = ALLOCA_N(VALUE, argc);
     MEMCPY(argv, cfp->sp - argc, VALUE, argc);
@@ -2949,10 +2949,12 @@ vm_callee_setup_block_arg(rb_execution_context_t *ec, struct rb_calling_info *ca
 	rb_control_frame_t *cfp = ec->cfp;
 	VALUE arg0;
 
-        CALLER_SETUP_ARG(cfp, calling, ci);
-
-        if (calling->kw_splat) {
+        if (calling->kw_splat && calling->argc == iseq->body->param.lead_num + iseq->body->param.post_num && RHASH_EMPTY_P(cfp->sp[-1])) {
+            CALLER_SETUP_ARG_WITHOUT_KW_SPLAT(cfp, calling, ci);
             rb_warn_keyword_to_last_hash(calling, ci, iseq);
+        }
+        else {
+            CALLER_SETUP_ARG(cfp, calling, ci);
         }
 
 	if (arg_setup_type == arg_setup_block &&
