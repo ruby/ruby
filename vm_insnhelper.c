@@ -2206,7 +2206,7 @@ vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
     int argc = calling->argc;
     int orig_argc = argc;
 
-    if (UNLIKELY(IS_ARGS_KW_OR_KW_SPLAT(ci))) {
+    if (UNLIKELY(calling->kw_splat)) {
         frame_type |= VM_FRAME_FLAG_CFRAME_KW;
     }
 
@@ -2417,7 +2417,7 @@ vm_call_method_missing(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, 
     CALLER_SETUP_ARG(reg_cfp, calling, orig_ci, 0);
     argc = calling->argc+1;
 
-    ci_entry.flag = VM_CALL_FCALL | VM_CALL_OPT_SEND | (orig_ci->flag & VM_CALL_KW_SPLAT);
+    ci_entry.flag = VM_CALL_FCALL | VM_CALL_OPT_SEND | (calling->kw_splat ? VM_CALL_KW_SPLAT : 0);
     ci_entry.mid = idMethodMissing;
     ci_entry.orig_argc = argc;
     ci = &ci_entry;
