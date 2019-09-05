@@ -1743,12 +1743,22 @@ CALLER_SETUP_ARG(struct rb_control_frame_struct *restrict cfp,
                  const struct rb_call_info *restrict ci, int remove_empty_keyword_hash)
 {
     if (UNLIKELY(IS_ARGS_SPLAT(ci))) {
+        /* This expands the rest argument to the stack.
+         * So, ci->flag & VM_CALL_ARGS_SPLAT is now inconsistent.
+         */
         vm_caller_setup_arg_splat(cfp, calling);
     }
     if (UNLIKELY(IS_ARGS_KEYWORD(ci))) {
+        /* This converts VM_CALL_KWARG style to VM_CALL_KW_SPLAT style
+         * by creating a keyword hash.
+         * So, ci->flag & VM_CALL_KWARG is now inconsistent.
+         */
         vm_caller_setup_arg_kw(cfp, calling, ci);
     }
     if (UNLIKELY(calling->kw_splat && remove_empty_keyword_hash)) {
+        /* This removes the last Hash object if it is empty.
+         * So, ci->flag & VM_CALL_KW_SPLAT is now inconsistent.
+         */
         if (RHASH_EMPTY_P(cfp->sp[-1])) {
             cfp->sp--;
             calling->argc--;
