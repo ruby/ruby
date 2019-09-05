@@ -1746,7 +1746,7 @@ CALLER_SETUP_ARG(struct rb_control_frame_struct *restrict cfp,
         vm_caller_setup_arg_splat(cfp, calling);
     }
     if (UNLIKELY(IS_ARGS_KEYWORD(ci))) {
-        vm_caller_setup_arg_kw(cfp, calling, ci, cfunc);
+        vm_caller_setup_arg_kw(cfp, calling, ci);
     }
 }
 

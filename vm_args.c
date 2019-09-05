@@ -969,7 +969,7 @@ vm_caller_setup_arg_splat(rb_control_frame_t *cfp, struct rb_calling_info *calli
 }
 
 static inline void
-vm_caller_setup_arg_kw(rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, int cfunc)
+vm_caller_setup_arg_kw(rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci)
 {
     struct rb_call_info_with_kwarg *ci_kw = (struct rb_call_info_with_kwarg *)ci;
     const VALUE *const passed_keywords = ci_kw->kw_arg->keywords;
