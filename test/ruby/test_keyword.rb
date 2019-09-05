@@ -594,80 +594,83 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.method_missing(_, *args)
       args
     end
-    assert_equal([], c.send(:m, **{}))
-    assert_equal([], c.send(:m, **kw))
-    assert_equal([h], c.send(:m, **h))
-    assert_equal([h], c.send(:m, a: 1))
-    assert_equal([h2], c.send(:m, **h2))
-    assert_equal([h3], c.send(:m, **h3))
-    assert_equal([h3], c.send(:m, a: 1, **h2))
+    assert_equal([], c.m(**{}))
+    assert_equal([], c.m(**kw))
+    assert_equal([h], c.m(**h))
+    assert_equal([h], c.m(a: 1))
+    assert_equal([h2], c.m(**h2))
+    assert_equal([h3], c.m(**h3))
+    assert_equal([h3], c.m(a: 1, **h2))
 
     c.singleton_class.remove_method(:method_missing)
     def c.method_missing(_); end
-    assert_nil(c.send(:m, **{}))
-    assert_nil(c.send(:m, **kw))
-    assert_raise(ArgumentError) { c.send(:m, **h) }
-    assert_raise(ArgumentError) { c.send(:m, a: 1) }
-    assert_raise(ArgumentError) { c.send(:m, **h2) }
-    assert_raise(ArgumentError) { c.send(:m, **h3) }
-    assert_raise(ArgumentError) { c.send(:m, a: 1, **h2) }
+    assert_nil(c.m(**{}))
+    assert_nil(c.m(**kw))
+    assert_raise(ArgumentError) { c.m(**h) }
+    assert_raise(ArgumentError) { c.m(a: 1) }
+    assert_raise(ArgumentError) { c.m(**h2) }
+    assert_raise(ArgumentError) { c.m(**h3) }
+    assert_raise(ArgumentError) { c.m(a: 1, **h2) }
 
     c.singleton_class.remove_method(:method_missing)
     def c.method_missing(_, args)
       args
     end
-    assert_raise(ArgumentError) { c.send(:m, **{}) }
-    assert_raise(ArgumentError) { c.send(:m, **kw) }
-    assert_equal(h, c.send(:m, **h))
-    assert_equal(h, c.send(:m, a: 1))
-    assert_equal(h2, c.send(:m, **h2))
-    assert_equal(h3, c.send(:m, **h3))
-    assert_equal(h3, c.send(:m, a: 1, **h2))
+    assert_raise(ArgumentError) { c.m(**{}) }
+    assert_raise(ArgumentError) { c.m(**kw) }
+    assert_equal(h, c.m(**h))
+    assert_equal(h, c.m(a: 1))
+    assert_equal(h2, c.m(**h2))
+    assert_equal(h3, c.m(**h3))
+    assert_equal(h3, c.m(a: 1, **h2))
 
     c.singleton_class.remove_method(:method_missing)
     def c.method_missing(_, **args)
       args
     end
-    assert_equal(kw, c.send(:m, **{}))
-    assert_equal(kw, c.send(:m, **kw))
-    assert_equal(h, c.send(:m, **h))
-    assert_equal(h, c.send(:m, a: 1))
-    assert_equal(h2, c.send(:m, **h2))
-    assert_equal(h3, c.send(:m, a: 1, **h2))
+    assert_equal(kw, c.m(**{}))
+    assert_equal(kw, c.m(**kw))
+    assert_equal(h, c.m(**h))
+    assert_equal(h, c.m(a: 1))
+    assert_equal(h2, c.m(**h2))
+    assert_equal(h3, c.m(a: 1, **h2))
 
     c.singleton_class.remove_method(:method_missing)
     def c.method_missing(_, arg, **args)
       [arg, args]
     end
-    assert_raise(ArgumentError) { c.send(:m, **{}) }
-    assert_raise(ArgumentError) { c.send(:m, **kw) }
+    assert_raise(ArgumentError) { c.m(**{}) }
+    assert_raise(ArgumentError) { c.send(:m, **kw) } # XXX: fix it after the commit
     assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
-      assert_equal([h, kw], c.send(:m, **h))
+      assert_equal([kw, kw], c.m(**kw))
     end
     assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
-      assert_equal([h, kw], c.send(:m, a: 1))
+      assert_equal([h, kw], c.m(**h))
     end
     assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
-      assert_equal([h2, kw], c.send(:m, **h2))
+      assert_equal([h, kw], c.m(a: 1))
     end
     assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
-      assert_equal([h3, kw], c.send(:m, **h3))
+      assert_equal([h2, kw], c.m(**h2))
     end
     assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
-      assert_equal([h3, kw], c.send(:m, a: 1, **h2))
+      assert_equal([h3, kw], c.m(**h3))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([h3, kw], c.m(a: 1, **h2))
     end
 
     c.singleton_class.remove_method(:method_missing)
     def c.method_missing(_, arg=1, **args)
       [arg=1, args]
     end
-    assert_equal([1, kw], c.send(:m, **{}))
-    assert_equal([1, kw], c.send(:m, **kw))
-    assert_equal([1, h], c.send(:m, **h))
-    assert_equal([1, h], c.send(:m, a: 1))
-    assert_equal([1, h2], c.send(:m, **h2))
-    assert_equal([1, h3], c.send(:m, **h3))
-    assert_equal([1, h3], c.send(:m, a: 1, **h2))
+    assert_equal([1, kw], c.m(**{}))
+    assert_equal([1, kw], c.m(**kw))
+    assert_equal([1, h], c.m(**h))
+    assert_equal([1, h], c.m(a: 1))
+    assert_equal([1, h2], c.m(**h2))
+    assert_equal([1, h3], c.m(**h3))
+    assert_equal([1, h3], c.m(a: 1, **h2))
   end
 
   def test_define_method_kwsplat
