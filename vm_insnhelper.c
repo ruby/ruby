@@ -2929,6 +2929,10 @@ vm_callee_setup_block_arg(rb_execution_context_t *ec, struct rb_calling_info *ca
 
 	CALLER_SETUP_ARG(cfp, calling, ci, 0); /* splat arg */
 
+        if (calling->kw_splat) {
+            rb_warn_keyword_to_last_hash(calling, ci, iseq);
+        }
+
 	if (arg_setup_type == arg_setup_block &&
 	    calling->argc == 1 &&
 	    iseq->body->param.flags.has_lead &&
