@@ -1269,11 +1269,13 @@ mark_ast_value(void *ctx, NODE * node)
         {
             struct rb_ary_pattern_info *apinfo = node->nd_apinfo;
             rb_gc_mark(apinfo->imemo);
+            break;
         }
         case NODE_ARGS:
         {
             struct rb_args_info *args = node->nd_ainfo;
             rb_gc_mark(args->imemo);
+            break;
         }
         case NODE_LIT:
         case NODE_STR:
