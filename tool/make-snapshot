@@ -562,7 +562,7 @@ if $srcdir
 elsif $svn
   vcs = VCS::SVN.new($svn == true ? SVNURL : URI.parse($svn))
 elsif $git
-  vcs = VCS::GIT.new($git == true ? GITURL : URI.parse($git))
+  abort "#{File.basename $0}: use -srcdir with cloned local repository"
 else
   vcs = VCS::SVN.new(SVNURL)
 end
