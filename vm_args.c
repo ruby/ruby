@@ -581,7 +581,7 @@ ignore_keyword_hash_p(VALUE keyword_hash, const rb_iseq_t * const iseq) {
 
 VALUE rb_iseq_location(const rb_iseq_t *iseq);
 
-void
+MJIT_FUNC_EXPORTED void
 rb_warn_keyword_to_last_hash(struct rb_calling_info *calling, const struct rb_call_info *ci, const rb_iseq_t * const iseq)
 {
     VALUE name, loc;
