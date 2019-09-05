@@ -11152,6 +11152,11 @@ ibf_load_setup(struct ibf_load *load, VALUE loader_obj, VALUE str)
     if (RSTRING_LENINT(str) < (int)sizeof(struct ibf_header)) {
         rb_raise(rb_eRuntimeError, "broken binary format");
     }
+
+#if USE_LAZY_LOAD
+    str = rb_str_new(RSTRING_PTR(str), RSTRING_LEN(str));
+#endif
+
     RB_OBJ_WRITE(loader_obj, &load->str, str);
     load->loader_obj = loader_obj;
     load->global_buffer.buff = StringValuePtr(str);
