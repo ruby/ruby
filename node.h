@@ -409,7 +409,7 @@ void rb_ast_dispose(rb_ast_t*);
 void rb_ast_free(rb_ast_t*);
 size_t rb_ast_memsize(const rb_ast_t*);
 void rb_ast_add_mark_object(rb_ast_t*, VALUE);
-NODE *rb_ast_newnode(rb_ast_t*, enum node_type type);
+NODE *rb_ast_newnode(rb_ast_t*);
 void rb_ast_delete_node(rb_ast_t*, NODE *n);
 
 VALUE rb_parser_new(void);
@@ -452,14 +452,12 @@ struct rb_args_info {
 
     NODE *opt_args;
     int no_kwarg;
-    VALUE imemo;
 };
 
 struct rb_ary_pattern_info {
     NODE *pre_args;
     NODE *rest_arg;
     NODE *post_args;
-    VALUE imemo;
 };
 
 struct parser_params;

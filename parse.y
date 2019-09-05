@@ -298,6 +298,9 @@ struct parser_params {
 #endif
 };
 
+#define new_tmpbuf() \
+    (rb_imemo_tmpbuf_t *)add_mark_object(p, rb_imemo_tmpbuf_auto_free_pointer(NULL))
+
 #define intern_cstr(n,l,en) rb_intern3(n,l,en)
 
 #define STR_NEW(ptr,len) rb_enc_str_new((ptr),(len),p->enc)
@@ -344,11 +347,7 @@ add_mark_object(struct parser_params *p, VALUE obj)
 	&& !RB_TYPE_P(obj, T_NODE) /* Ripper jumbles NODE objects and other objects... */
 #endif
     ) {
-#ifdef RIPPER
 	rb_ast_add_mark_object(p->ast, obj);
-#else
-        RB_OBJ_WRITTEN(p->ast, Qundef, obj);
-#endif
     }
     return obj;
 }
@@ -2787,11 +2786,10 @@ primary		: literal
 			ID id = internal_id(p);
 			NODE *m = NEW_ARGS_AUX(0, 0, &NULL_LOC);
 			NODE *args, *scope, *internal_var = NEW_DVAR(id, &@2);
-			ID *tbl = ALLOC_N(ID, 3);
-			VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer(tbl);
-                        RB_OBJ_WRITTEN(p->ast, Qnil, tmpbuf);
+			rb_imemo_tmpbuf_t *tmpbuf = new_tmpbuf();
+			ID *tbl = ALLOC_N(ID, 2);
 			tbl[0] = 1 /* length of local var table */; tbl[1] = id /* internal id */;
-                        tbl[2] = tmpbuf;
+			tmpbuf->ptr = (VALUE *)tbl;
 
 			switch (nd_type($2)) {
 			  case NODE_LASGN:
@@ -9357,7 +9355,7 @@ yylex(YYSTYPE *lval, YYLTYPE *yylloc, struct parser_params *p)
 static NODE*
 node_newnode(struct parser_params *p, enum node_type type, VALUE a0, VALUE a1, VALUE a2, const rb_code_location_t *loc)
 {
-    NODE *n = rb_ast_newnode(p->ast, type);
+    NODE *n = rb_ast_newnode(p->ast);
 
     rb_node_init(n, type, a0, a1, a2);
 
@@ -9611,7 +9609,9 @@ literal_concat(struct parser_params *p, NODE *head, NODE *tail, const YYLTYPE *l
 	    goto append;
 	}
 	else {
-	    list_concat(head, NEW_NODE(NODE_ARRAY, NEW_STR(tail->nd_lit, loc), tail->nd_alen, tail->nd_next, loc));
+	    nd_set_type(tail, NODE_ARRAY);
+	    tail->nd_head = NEW_STR(tail->nd_lit, loc);
+	    list_concat(head, tail);
 	}
 	break;
 
@@ -11125,11 +11125,10 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
     int saved_line = p->ruby_sourceline;
     struct rb_args_info *args;
     NODE *node;
+    rb_imemo_tmpbuf_t *tmpbuf = new_tmpbuf();
 
     args = ZALLOC(struct rb_args_info);
-    VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer(args);
-    args->imemo = tmpbuf;
-    RB_OBJ_WRITTEN(p->ast, Qnil, tmpbuf);
+    tmpbuf->ptr = (VALUE *)args;
     node = NEW_NODE(NODE_ARGS, 0, 0, args, &NULL_LOC);
     if (p->error_p) return node;
 
@@ -11235,12 +11234,11 @@ new_array_pattern_tail(struct parser_params *p, NODE *pre_args, int has_rest, ID
     int saved_line = p->ruby_sourceline;
     struct rb_ary_pattern_info *apinfo;
     NODE *node;
+    rb_imemo_tmpbuf_t *tmpbuf = new_tmpbuf();
 
     apinfo = ZALLOC(struct rb_ary_pattern_info);
-    VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer(apinfo);
+    tmpbuf->ptr = (VALUE *)apinfo;
     node = NEW_NODE(NODE_ARYPTN, 0, 0, apinfo, loc);
-    apinfo->imemo = tmpbuf;
-    RB_OBJ_WRITTEN(p->ast, Qnil, tmpbuf);
 
     apinfo->pre_args = pre_args;
 
@@ -11625,9 +11623,11 @@ local_tbl(struct parser_params *p)
     int cnt = cnt_args + cnt_vars;
     int i, j;
     ID *buf;
+    rb_imemo_tmpbuf_t *tmpbuf = new_tmpbuf();
 
     if (cnt <= 0) return 0;
-    buf = ALLOC_N(ID, cnt + 2);
+    buf = ALLOC_N(ID, cnt + 1);
+    tmpbuf->ptr = (void *)buf;
     MEMCPY(buf+1, p->lvtbl->args->tbl, ID, cnt_args);
     /* remove IDs duplicated to warn shadowing */
     for (i = 0, j = cnt_args+1; i < cnt_vars; ++i) {
@@ -11636,12 +11636,8 @@ local_tbl(struct parser_params *p)
 	    buf[j++] = id;
 	}
     }
-    if (--j < cnt) REALLOC_N(buf, ID, (cnt = j) + 2);
+    if (--j < cnt) tmpbuf->ptr = (void *)REALLOC_N(buf, ID, (cnt = j) + 1);
     buf[0] = cnt;
-
-    VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer(buf);
-    buf[cnt + 1] = (ID)tmpbuf;
-    RB_OBJ_WRITTEN(p->ast, Qnil, tmpbuf);
 
     return buf;
 }
