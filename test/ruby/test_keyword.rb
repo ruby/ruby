@@ -633,8 +633,12 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.m(args)
       args
     end
-    assert_raise(ArgumentError) { :m.to_proc.call(c, **{}) }
-    assert_raise(ArgumentError) { :m.to_proc.call(c, **kw) }
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal(kw, :m.to_proc.call(c, **{}))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal(kw, :m.to_proc.call(c, **kw))
+    end
     assert_equal(h, :m.to_proc.call(c, **h))
     assert_equal(h, :m.to_proc.call(c, a: 1))
     assert_equal(h2, :m.to_proc.call(c, **h2))
@@ -657,8 +661,12 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.m(arg, **args)
       [arg, args]
     end
-    assert_raise(ArgumentError) { :m.to_proc.call(c, **{}) }
-    assert_raise(ArgumentError) { :m.to_proc.call(c, **kw) }
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([kw, kw], :m.to_proc.call(c, **{}))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([kw, kw], :m.to_proc.call(c, **kw))
+    end
     assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
       assert_equal([h, kw], :m.to_proc.call(c, **h))
     end

@@ -3039,7 +3039,7 @@ vm_invoke_symbol_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 {
     VALUE val;
     int argc;
-    CALLER_SETUP_ARG(ec->cfp, calling, ci);
+    CALLER_SETUP_ARG_WITHOUT_KW_SPLAT(ec->cfp, calling, ci);
     argc = calling->argc;
     val = vm_yield_with_symbol(ec, symbol, argc, STACK_ADDR_FROM_TOP(argc), calling->kw_splat, calling->block_handler);
     POPN(argc);
