@@ -465,7 +465,9 @@ class TestKeywordArguments < Test::Unit::TestCase
       [arg, args]
     end
     assert_raise(ArgumentError) { c.send(:m, **{}) }
-    assert_raise(ArgumentError) { c.send(:m, **kw) }
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([kw, kw], c.send(:m, **kw))
+    end
     assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
       assert_equal([h, kw], c.send(:m, **h))
     end
@@ -640,7 +642,6 @@ class TestKeywordArguments < Test::Unit::TestCase
       [arg, args]
     end
     assert_raise(ArgumentError) { c.m(**{}) }
-    assert_raise(ArgumentError) { c.send(:m, **kw) } # XXX: fix it after the commit
     assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
       assert_equal([kw, kw], c.m(**kw))
     end

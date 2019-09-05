@@ -2309,7 +2309,7 @@ vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct
     struct rb_call_info_with_kwarg ci_entry;
     struct rb_call_cache cc_entry, *cc;
 
-    CALLER_SETUP_ARG(reg_cfp, calling, orig_ci, 1);
+    CALLER_SETUP_ARG(reg_cfp, calling, orig_ci, 0);
 
     i = calling->argc - 1;
 
