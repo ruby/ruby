@@ -2227,7 +2227,7 @@ vm_call_cfunc(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb
 {
     RB_DEBUG_COUNTER_INC(ccf_cfunc);
 
-    CALLER_SETUP_ARG(reg_cfp, calling, ci, 1);
+    CALLER_SETUP_ARG(reg_cfp, calling, ci, 0);
     return vm_call_cfunc_with_frame(ec, reg_cfp, calling, ci, cc);
 }
 

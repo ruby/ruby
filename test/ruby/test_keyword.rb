@@ -261,7 +261,7 @@ class TestKeywordArguments < Test::Unit::TestCase
       end
     end
     assert_equal([], c[**{}].args)
-    assert_equal([], c[**kw].args)
+    assert_equal([{}], c[**kw].args)
     assert_equal([h], c[**h].args)
     assert_equal([h], c[a: 1].args)
     assert_equal([h2], c[**h2].args)
@@ -272,7 +272,7 @@ class TestKeywordArguments < Test::Unit::TestCase
       def initialize; end
     end
     assert_nil(c[**{}].args)
-    assert_nil(c[**kw].args)
+    assert_raise(ArgumentError) { c[**kw] }
     assert_raise(ArgumentError) { c[**h] }
     assert_raise(ArgumentError) { c[a: 1] }
     assert_raise(ArgumentError) { c[**h2] }
@@ -285,7 +285,7 @@ class TestKeywordArguments < Test::Unit::TestCase
       end
     end
     assert_raise(ArgumentError) { c[**{}] }
-    assert_raise(ArgumentError) { c[**kw] }
+    assert_equal(kw, c[**kw].args)
     assert_equal(h, c[**h].args)
     assert_equal(h, c[a: 1].args)
     assert_equal(h2, c[**h2].args)
@@ -311,7 +311,7 @@ class TestKeywordArguments < Test::Unit::TestCase
       end
     end
     assert_raise(ArgumentError) { c[**{}] }
-    assert_raise(ArgumentError) { c[**kw] }
+    assert_equal([kw, kw], c[**kw].args)
     assert_equal([h, kw], c[**h].args)
     assert_equal([h, kw], c[a: 1].args)
     assert_equal([h2, kw], c[**h2].args)
@@ -343,7 +343,7 @@ class TestKeywordArguments < Test::Unit::TestCase
       args
     end
     assert_equal([], c.method(:m)[**{}])
-    assert_equal([], c.method(:m)[**kw])
+    assert_equal([{}], c.method(:m)[**kw])
     assert_equal([h], c.method(:m)[**h])
     assert_equal([h], c.method(:m)[a: 1])
     assert_equal([h2], c.method(:m)[**h2])
@@ -353,7 +353,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     c.singleton_class.remove_method(:m)
     def c.m; end
     assert_nil(c.method(:m)[**{}])
-    assert_nil(c.method(:m)[**kw])
+    assert_raise(ArgumentError) { c.method(:m)[**kw] }
     assert_raise(ArgumentError) { c.method(:m)[**h] }
     assert_raise(ArgumentError) { c.method(:m)[a: 1] }
     assert_raise(ArgumentError) { c.method(:m)[**h2] }
@@ -365,7 +365,7 @@ class TestKeywordArguments < Test::Unit::TestCase
       args
     end
     assert_raise(ArgumentError) { c.method(:m)[**{}] }
-    assert_raise(ArgumentError) { c.method(:m)[**kw] }
+    assert_equal(kw, c.method(:m)[**kw])
     assert_equal(h, c.method(:m)[**h])
     assert_equal(h, c.method(:m)[a: 1])
     assert_equal(h2, c.method(:m)[**h2])
@@ -389,7 +389,7 @@ class TestKeywordArguments < Test::Unit::TestCase
       [arg, args]
     end
     assert_raise(ArgumentError) { c.method(:m)[**{}] }
-    assert_raise(ArgumentError) { c.method(:m)[**kw] }
+    assert_equal([kw, kw], c.method(:m)[**kw])
     assert_equal([h, kw], c.method(:m)[**h])
     assert_equal([h, kw], c.method(:m)[a: 1])
     assert_equal([h2, kw], c.method(:m)[**h2])
