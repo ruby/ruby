@@ -24,6 +24,7 @@ extern void rb_method_definition_set(const rb_method_entry_t *me, rb_method_defi
 extern int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
 extern VALUE rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
                                          int argc, const VALUE *argv, int priv);
+extern void rb_warn_keyword_to_last_hash(struct rb_calling_info *calling, const struct rb_call_info *ci, const rb_iseq_t * const iseq);
 
 /* control stack frame */
 
@@ -1738,9 +1739,9 @@ rb_iseq_only_kwparam_p(const rb_iseq_t *iseq)
 
 
 static inline void
-CALLER_SETUP_ARG(struct rb_control_frame_struct *restrict cfp,
-                 struct rb_calling_info *restrict calling,
-                 const struct rb_call_info *restrict ci)
+CALLER_SETUP_ARG_WITHOUT_KW_SPLAT(struct rb_control_frame_struct *restrict cfp,
+                                  struct rb_calling_info *restrict calling,
+                                  const struct rb_call_info *restrict ci)
 {
     if (UNLIKELY(IS_ARGS_SPLAT(ci))) {
         /* This expands the rest argument to the stack.
@@ -1755,6 +1756,15 @@ CALLER_SETUP_ARG(struct rb_control_frame_struct *restrict cfp,
          */
         vm_caller_setup_arg_kw(cfp, calling, ci);
     }
+}
+
+static inline void
+CALLER_SETUP_ARG(struct rb_control_frame_struct *restrict cfp,
+                 struct rb_calling_info *restrict calling,
+                 const struct rb_call_info *restrict ci)
+{
+    CALLER_SETUP_ARG_WITHOUT_KW_SPLAT(cfp, calling, ci);
+
     if (UNLIKELY(calling->kw_splat)) {
         /* This removes the last Hash object if it is empty.
          * So, ci->flag & VM_CALL_KW_SPLAT is now inconsistent.
@@ -2314,7 +2324,7 @@ vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct
     struct rb_call_info_with_kwarg ci_entry;
     struct rb_call_cache cc_entry, *cc;
 
-    CALLER_SETUP_ARG(reg_cfp, calling, orig_ci);
+    CALLER_SETUP_ARG_WITHOUT_KW_SPLAT(reg_cfp, calling, orig_ci); 
 
     i = calling->argc - 1;
 
@@ -2624,7 +2634,14 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
 	return vm_call_cfunc(ec, cfp, calling, ci, cc);
 
       case VM_METHOD_TYPE_ATTRSET:
-        CALLER_SETUP_ARG(cfp, calling, ci);
+        if (calling->argc == 1 && calling->kw_splat && RHASH_EMPTY_P(cfp->sp[-1])) {
+            CALLER_SETUP_ARG_WITHOUT_KW_SPLAT(cfp, calling, ci);
+            rb_warn_keyword_to_last_hash(calling, ci, NULL);
+        }
+        else {
+            CALLER_SETUP_ARG(cfp, calling, ci);
+        }
+
 	rb_check_arity(calling->argc, 1, 1);
 	cc->aux.index = 0;
         CC_SET_FASTPATH(cc, vm_call_attrset, !((ci->flag & VM_CALL_ARGS_SPLAT) || (ci->flag & VM_CALL_KWARG)));
