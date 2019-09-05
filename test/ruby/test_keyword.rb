@@ -185,20 +185,42 @@ class TestKeywordArguments < Test::Unit::TestCase
 
     f = -> { true }
     assert_equal(true, f[**{}])
-    assert_raise(ArgumentError) { f[**kw] }
-    assert_raise(ArgumentError) { f[**h] }
-    assert_raise(ArgumentError) { f[a: 1] }
-    assert_raise(ArgumentError) { f[**h2] }
-    assert_raise(ArgumentError) { f[**h3] }
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_raise(ArgumentError) { f[**kw] }
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_raise(ArgumentError) { f[**h] }
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_raise(ArgumentError) { f[a: 1] }
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_raise(ArgumentError) { f[**h2] }
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_raise(ArgumentError) { f[**h3] }
+    end
 
     f = ->(a) { a }
     assert_raise(ArgumentError) { f[**{}] }
-    assert_equal(kw, f[**kw])
-    assert_equal(h, f[**h])
-    assert_equal(h, f[a: 1])
-    assert_equal(h2, f[**h2])
-    assert_equal(h3, f[**h3])
-    assert_equal(h3, f[a: 1, **h2])
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal(kw, f[**kw])
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal(h, f[**h])
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal(h, f[a: 1])
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal(h2, f[**h2])
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal(h3, f[**h3])
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal(h3, f[a: 1, **h2])
+    end
 
     f = ->(**x) { x }
     assert_equal(kw, f[**{}])
@@ -685,24 +707,48 @@ class TestKeywordArguments < Test::Unit::TestCase
       define_method(:m) { }
     end
     assert_nil(c.m(**{}))
-    assert_raise(ArgumentError) { c.m(**kw) }
-    assert_raise(ArgumentError) { c.m(**h) }
-    assert_raise(ArgumentError) { c.m(a: 1) }
-    assert_raise(ArgumentError) { c.m(**h2) }
-    assert_raise(ArgumentError) { c.m(**h3) }
-    assert_raise(ArgumentError) { c.m(a: 1, **h2) }
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_raise(ArgumentError) { c.m(**kw) }
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_raise(ArgumentError) { c.m(**h) }
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_raise(ArgumentError) { c.m(a: 1) }
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_raise(ArgumentError) { c.m(**h2) }
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_raise(ArgumentError) { c.m(**h3) }
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_raise(ArgumentError) { c.m(a: 1, **h2) }
+    end
 
     c = Object.new
     class << c
       define_method(:m) {|arg| arg }
     end
     assert_raise(ArgumentError) { c.m(**{}) }
-    assert_equal(kw, c.m(**kw))
-    assert_equal(h, c.m(**h))
-    assert_equal(h, c.m(a: 1))
-    assert_equal(h2, c.m(**h2))
-    assert_equal(h3, c.m(**h3))
-    assert_equal(h3, c.m(a: 1, **h2))
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal(kw, c.m(**kw))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal(h, c.m(**h))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal(h, c.m(a: 1))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal(h2, c.m(**h2))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal(h3, c.m(**h3))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal(h3, c.m(a: 1, **h2))
+    end
 
     c = Object.new
     class << c
@@ -1211,10 +1257,14 @@ class TestKeywordArguments < Test::Unit::TestCase
 
     o = Object.new
     def o.to_hash() { a: 1 } end
-    assert_equal({a: 1}, m1(**o) {|x| break x}, bug9898)
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal({a: 1}, m1(**o) {|x| break x}, bug9898)
+    end
     o2 = Object.new
     def o2.to_hash() { b: 2 } end
-    assert_equal({a: 1, b: 2}, m1(**o, **o2) {|x| break x}, bug9898)
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal({a: 1, b: 2}, m1(**o, **o2) {|x| break x}, bug9898)
+    end
   end
 
   def test_implicit_hash_conversion
