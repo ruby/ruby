@@ -1968,6 +1968,7 @@ VALUE rb_iterate(VALUE(*)(VALUE),VALUE,rb_block_call_func_t,VALUE);
 VALUE rb_block_call(VALUE,ID,int,const VALUE*,rb_block_call_func_t,VALUE);
 VALUE rb_rescue(VALUE(*)(VALUE),VALUE,VALUE(*)(VALUE,VALUE),VALUE);
 VALUE rb_rescue2(VALUE(*)(VALUE),VALUE,VALUE(*)(VALUE,VALUE),VALUE,...);
+VALUE rb_vrescue2(VALUE(*)(VALUE),VALUE,VALUE(*)(VALUE,VALUE),VALUE,va_list);
 VALUE rb_ensure(VALUE(*)(VALUE),VALUE,VALUE(*)(VALUE),VALUE);
 VALUE rb_catch(const char*,rb_block_call_func_t,VALUE);
 VALUE rb_catch_obj(VALUE,rb_block_call_func_t,VALUE);
@@ -2818,6 +2819,10 @@ __attribute__((__unused__,__weakref__("rb_define_global_function"),__nonnull__(1
 #define rb_define_global_function_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_global_functionm3,rb_define_global_function_choose_prototypem2(n))
 #define rb_define_global_function(mid, func, arity) rb_define_global_function_choose_prototypem3((arity),(func))((mid),(func),(arity));
 #endif
+#endif
+
+#ifdef __cplusplus
+#include "backward/cxxanyargs.hpp"
 #endif
 
 #endif /* RUBY_RUBY_H */

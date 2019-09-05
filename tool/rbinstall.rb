@@ -253,7 +253,7 @@ def install_recursive(srcdir, dest, options = {})
         elsif stat.symlink?
           # skip
         else
-          files << [src, d, false] if File.fnmatch?(glob, f) and !skip[f]
+          files << [src, d, false] if File.fnmatch?(glob, f, File::FNM_EXTGLOB) and !skip[f]
         end
       end
       paths.insert(0, *files)
@@ -576,7 +576,7 @@ install?(:local, :comm, :hdr, :'comm-hdr') do
     noinst << "win32.h"
   end
   noinst = nil if noinst.empty?
-  install_recursive(File.join(srcdir, "include"), rubyhdrdir, :no_install => noinst, :glob => "*.h", :mode => $data_mode)
+  install_recursive(File.join(srcdir, "include"), rubyhdrdir, :no_install => noinst, :glob => "*.{h,hpp}", :mode => $data_mode)
 end
 
 install?(:local, :comm, :man) do

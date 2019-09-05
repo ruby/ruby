@@ -948,12 +948,26 @@ VALUE
 rb_rescue2(VALUE (* b_proc) (VALUE), VALUE data1,
            VALUE (* r_proc) (VALUE, VALUE), VALUE data2, ...)
 {
+    va_list ap;
+    va_start(ap, data2);
+    return rb_vrescue2(b_proc, data1, r_proc, data2, ap);
+    va_end(ap);
+}
+
+/*!
+ * \copydoc rb_rescue2
+ * \param[in] args exception classes, terminated by 0.
+ */
+VALUE
+rb_vrescue2(VALUE (* b_proc) (VALUE), VALUE data1,
+            VALUE (* r_proc) (VALUE, VALUE), VALUE data2,
+            va_list args)
+{
     enum ruby_tag_type state;
     rb_execution_context_t * volatile ec = GET_EC();
     rb_control_frame_t *volatile cfp = ec->cfp;
     volatile VALUE result = Qfalse;
     volatile VALUE e_info = ec->errinfo;
-    va_list args;
 
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
@@ -976,14 +990,12 @@ rb_rescue2(VALUE (* b_proc) (VALUE), VALUE data1,
 	    int handle = FALSE;
 	    VALUE eclass;
 
-	    va_init_list(args, data2);
 	    while ((eclass = va_arg(args, VALUE)) != 0) {
 		if (rb_obj_is_kind_of(ec->errinfo, eclass)) {
 		    handle = TRUE;
 		    break;
 		}
 	    }
-	    va_end(args);
 
 	    if (handle) {
 		result = Qnil;
