@@ -2429,7 +2429,7 @@ vm_call_method_missing(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, 
     struct rb_call_cache cc_entry, *cc;
     unsigned int argc;
 
-    CALLER_SETUP_ARG(reg_cfp, calling, orig_ci);
+    CALLER_SETUP_ARG_WITHOUT_KW_SPLAT(reg_cfp, calling, orig_ci);
     argc = calling->argc+1;
 
     ci_entry.flag = VM_CALL_FCALL | VM_CALL_OPT_SEND | (calling->kw_splat ? VM_CALL_KW_SPLAT : 0);
