@@ -733,7 +733,9 @@ class TestKeywordArguments < Test::Unit::TestCase
       define_method(:m) {|arg, **opt| [arg, opt] }
     end
     assert_raise(ArgumentError) { c.m(**{}) }
-    assert_raise(ArgumentError) { c.m(**kw) }
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal([kw, kw], c.m(**kw))
+    end
     assert_warn(/The keyword argument is passed as the last hash parameter/m) do
       assert_equal([h, kw], c.m(**h))
     end

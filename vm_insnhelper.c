@@ -2279,7 +2279,7 @@ vm_call_bmethod(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_c
     VALUE *argv;
     int argc;
 
-    CALLER_SETUP_ARG(cfp, calling, ci, 1);
+    CALLER_SETUP_ARG(cfp, calling, ci, 0);
     argc = calling->argc;
     argv = ALLOCA_N(VALUE, argc);
     MEMCPY(argv, cfp->sp - argc, VALUE, argc);
