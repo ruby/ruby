@@ -11128,8 +11128,9 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
 
     args = ZALLOC(struct rb_args_info);
     VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer(args);
+    args->imemo = tmpbuf;
     RB_OBJ_WRITTEN(p->ast, Qnil, tmpbuf);
-    node = NEW_NODE(NODE_ARGS, tmpbuf, 0, args, &NULL_LOC);
+    node = NEW_NODE(NODE_ARGS, 0, 0, args, &NULL_LOC);
     if (p->error_p) return node;
 
     args->block_arg      = block;
@@ -11237,7 +11238,8 @@ new_array_pattern_tail(struct parser_params *p, NODE *pre_args, int has_rest, ID
 
     apinfo = ZALLOC(struct rb_ary_pattern_info);
     VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer(apinfo);
-    node = NEW_NODE(NODE_ARYPTN, tmpbuf, 0, apinfo, loc);
+    node = NEW_NODE(NODE_ARYPTN, 0, 0, apinfo, loc);
+    apinfo->imemo = tmpbuf;
     RB_OBJ_WRITTEN(p->ast, Qnil, tmpbuf);
 
     apinfo->pre_args = pre_args;

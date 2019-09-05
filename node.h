@@ -452,12 +452,14 @@ struct rb_args_info {
 
     NODE *opt_args;
     int no_kwarg;
+    VALUE imemo;
 };
 
 struct rb_ary_pattern_info {
     NODE *pre_args;
     NODE *rest_arg;
     NODE *post_args;
+    VALUE imemo;
 };
 
 struct parser_params;

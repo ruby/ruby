@@ -1265,6 +1265,16 @@ mark_ast_value(void *ctx, NODE * node)
             }
             break;
         }
+        case NODE_ARYPTN:
+        {
+            struct rb_ary_pattern_info *apinfo = node->nd_apinfo;
+            rb_gc_mark(apinfo->imemo);
+        }
+        case NODE_ARGS:
+        {
+            struct rb_args_info *args = node->nd_ainfo;
+            rb_gc_mark(args->imemo);
+        }
         case NODE_LIT:
         case NODE_STR:
         case NODE_XSTR:
@@ -1272,8 +1282,6 @@ mark_ast_value(void *ctx, NODE * node)
         case NODE_DXSTR:
         case NODE_DREGX:
         case NODE_DSYM:
-        case NODE_ARGS:
-        case NODE_ARYPTN:
             rb_gc_mark(node->nd_lit);
             break;
         default:
