@@ -547,6 +547,7 @@ static off_t io_setpos(rb_io_t *fptr, off_t pos, int whence);
 static void io_binmode(rb_io_t *fptr);
 static VALUE io_getbyte(rb_io_t *fptr);
 static void io_ungetbytes(const char *ptr, long len, rb_io_t *fptr);
+static rb_encoding *io_set_encoding_by_bom(rb_io_t *fptr);
 
 #define FMODE_SIGNAL_ON_EPIPE (1<<17)
 
@@ -2458,6 +2459,8 @@ io_setpos(rb_io_t *fptr, off_t pos, int whence)
 {
     pos = io_seek(fptr, pos, whence);
     if (pos < 0 && errno) rb_sys_fail_path(fptr->pathv);
+    if (pos == 0 && (fptr->mode & FMODE_SETENC_BY_BOM))
+        io_set_encoding_by_bom(fptr);
 
     return pos;
 }

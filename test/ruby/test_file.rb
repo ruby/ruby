@@ -49,7 +49,7 @@ class TestFile < Test::Unit::TestCase
     }
   end
 
-  def assert_bom(bytes, name)
+  def assert_insufficient_bom(bytes, name)
     bug6487 = '[ruby-core:45203]'
 
     Tempfile.create(name.to_s) {|f|
@@ -70,24 +70,43 @@ class TestFile < Test::Unit::TestCase
     }
   end
 
+  def assert_bom_after_rewinding(name)
+    Tempfile.create(name.to_s, encoding: "utf-#{name[/\d+\w*\z/]}:utf-8") do |f|
+      f.write("\uFEFF" "abc")
+      f.close
+      File.open(f.path, 'r:bom|utf-8:utf-8') do |f|
+        assert_equal("abc", s = f.read, "first read: #{s.dump}")
+        f.pos = 0
+        assert_equal("abc", s = f.read, "after pos=0: #{s.dump}")
+        f.rewind
+        assert_equal("abc", s = f.read, "after rewind: #{s.dump}")
+      end
+    end
+  end
+
   def test_bom_8
-    assert_bom(["\xEF", "\xBB", "\xBF"], __method__)
+    assert_insufficient_bom(["\xEF", "\xBB", "\xBF"], __method__)
+    assert_bom_after_rewinding(__method__)
   end
 
   def test_bom_16be
-    assert_bom(["\xFE", "\xFF"], __method__)
+    assert_insufficient_bom(["\xFE", "\xFF"], __method__)
+    assert_bom_after_rewinding(__method__)
   end
 
   def test_bom_16le
-    assert_bom(["\xFF", "\xFE"], __method__)
+    assert_insufficient_bom(["\xFF", "\xFE"], __method__)
+    assert_bom_after_rewinding(__method__)
   end
 
   def test_bom_32be
-    assert_bom(["\0", "\0", "\xFE", "\xFF"], __method__)
+    assert_insufficient_bom(["\0", "\0", "\xFE", "\xFF"], __method__)
+    assert_bom_after_rewinding(__method__)
   end
 
   def test_bom_32le
-    assert_bom(["\xFF", "\xFE\0\0"], __method__)
+    assert_insufficient_bom(["\xFF", "\xFE\0\0"], __method__)
+    assert_bom_after_rewinding(__method__)
   end
 
   def test_truncate_wbuf
