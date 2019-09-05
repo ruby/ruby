@@ -759,6 +759,52 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h3], c.m(a: 1, **h2))
   end
 
+  def test_attr_reader_kwsplat
+    kw = {}
+    h = {:a=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    c = Object.new
+    class << c
+      attr_reader :m
+    end
+    assert_nil(c.m(**{}))
+    assert_nil(c.m(**kw))
+    assert_raise(ArgumentError) { c.m(**h) }
+    assert_raise(ArgumentError) { c.m(a: 1) }
+    assert_raise(ArgumentError) { c.m(**h2) }
+    assert_raise(ArgumentError) { c.m(**h3) }
+    assert_raise(ArgumentError) { c.m(a: 1, **h2) }
+  end
+
+  def test_attr_writer_kwsplat
+    kw = {}
+    h = {:a=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    c = Object.new
+    class << c
+      attr_writer :m
+    end
+    assert_raise(ArgumentError) { c.send(:m=, **{}) }
+    assert_raise(ArgumentError) { c.send(:m=, **kw) }
+    assert_equal(h, c.send(:m=, **h))
+    assert_equal(h, c.send(:m=, a: 1))
+    assert_equal(h2, c.send(:m=, **h2))
+    assert_equal(h3, c.send(:m=, **h3))
+    assert_equal(h3, c.send(:m=, a: 1, **h2))
+
+    assert_equal(42, c.send(:m=, 42, **{}))
+    assert_equal(42, c.send(:m=, 42, **kw))
+    assert_raise(ArgumentError) { c.send(:m=, 42, **h) }
+    assert_raise(ArgumentError) { c.send(:m=, 42, a: 1) }
+    assert_raise(ArgumentError) { c.send(:m=, 42, **h2) }
+    assert_raise(ArgumentError) { c.send(:m=, 42, **h3) }
+    assert_raise(ArgumentError) { c.send(:m=, 42, a: 1, **h2) }
+  end
+
   def p1
     Proc.new do |str: "foo", num: 424242|
       [str, num]
