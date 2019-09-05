@@ -2927,7 +2927,7 @@ vm_callee_setup_block_arg(rb_execution_context_t *ec, struct rb_calling_info *ca
 	rb_control_frame_t *cfp = ec->cfp;
 	VALUE arg0;
 
-	CALLER_SETUP_ARG(cfp, calling, ci, 1); /* splat arg */
+	CALLER_SETUP_ARG(cfp, calling, ci, 0); /* splat arg */
 
 	if (arg_setup_type == arg_setup_block &&
 	    calling->argc == 1 &&
