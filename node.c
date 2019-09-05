@@ -1276,6 +1276,8 @@ mark_ast_value(void *ctx, NODE * node)
         case NODE_ARYPTN:
             rb_gc_mark(node->nd_lit);
             break;
+        default:
+            rb_bug("unreachable");
     }
 }
 
