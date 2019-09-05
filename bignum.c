@@ -5369,6 +5369,15 @@ rb_integer_float_cmp(VALUE x, VALUE y)
     return INT2FIX(-1);
 }
 
+COMPILER_WARNING_PUSH
+#ifdef __has_warning
+#if __has_warning("-Wimplicit-int-float-conversion")
+COMPILER_WARNING_IGNORED(-Wimplicit-int-float-conversion)
+#endif
+#endif
+static const double LONG_MAX_as_double = LONG_MAX;
+COMPILER_WARNING_POP
+
 VALUE
 rb_integer_float_eq(VALUE x, VALUE y)
 {
@@ -5388,7 +5397,7 @@ rb_integer_float_eq(VALUE x, VALUE y)
         return Qtrue;
 #else
         long xn, yn;
-        if (yi < LONG_MIN || LONG_MAX < yi)
+        if (yi < LONG_MIN || LONG_MAX_as_double <= yi)
             return Qfalse;
         xn = FIX2LONG(x);
         yn = (long)yi;
@@ -5400,6 +5409,7 @@ rb_integer_float_eq(VALUE x, VALUE y)
     y = rb_dbl2big(yi);
     return rb_big_eq(x, y);
 }
+
 
 VALUE
 rb_big_cmp(VALUE x, VALUE y)
