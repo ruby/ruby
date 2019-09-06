@@ -178,8 +178,9 @@ namespace test_rb_catch {
     VALUE
     test(VALUE self)
     {
-        rb_catch(nullptr, RUBY_METHOD_FUNC(catcher), self); // old
-        return rb_catch(nullptr, catcher, self); // new
+        static const char *zero = 0;
+        rb_catch(zero, RUBY_METHOD_FUNC(catcher), self); // old
+        return rb_catch(zero, catcher, self); // new
     }
 }
 
