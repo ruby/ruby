@@ -361,7 +361,7 @@ class TestFiber < Test::Unit::TestCase
   def test_stack_size
     h_default = eval(invoke_rec('p RubyVM::DEFAULT_PARAMS', nil, nil, false))
     h_0 = eval(invoke_rec('p RubyVM::DEFAULT_PARAMS', 0, 0, false))
-    h_large = eval(invoke_rec('p RubyVM::DEFAULT_PARAMS', 1024 * 1024 * 10, 1024 * 1024 * 10, false))
+    h_large = eval(invoke_rec('p RubyVM::DEFAULT_PARAMS', 1024 * 1024 * 5, 1024 * 1024 * 10, false))
 
     assert_operator(h_default[:fiber_vm_stack_size], :>, h_0[:fiber_vm_stack_size])
     assert_operator(h_default[:fiber_vm_stack_size], :<, h_large[:fiber_vm_stack_size])
@@ -374,7 +374,7 @@ class TestFiber < Test::Unit::TestCase
     assert_operator(size_default, :>, 0)
     size_0 = invoke_rec script, 0, nil
     assert_operator(size_default, :>, size_0)
-    size_large = invoke_rec script, 1024 * 1024 * 10, nil
+    size_large = invoke_rec script, 1024 * 1024 * 5, nil
     assert_operator(size_default, :<, size_large)
 
     return if /mswin|mingw/ =~ RUBY_PLATFORM
