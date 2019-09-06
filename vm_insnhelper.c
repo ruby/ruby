@@ -2206,8 +2206,9 @@ vm_method_cfunc_entry(const rb_callable_method_entry_t *me)
     return UNALIGNED_MEMBER_PTR(me->def, body.cfunc);
 }
 
+/* -- Remove empty_kw_splat In 3.0 -- */
 static VALUE
-vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc)
+vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, int empty_kw_splat)
 {
     VALUE val;
     const rb_callable_method_entry_t *me = cc->me;
@@ -2222,6 +2223,9 @@ vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
 
     if (UNLIKELY(calling->kw_splat)) {
         frame_type |= VM_FRAME_FLAG_CFRAME_KW;
+    }
+    else if (UNLIKELY(empty_kw_splat)) {
+        frame_type |= VM_FRAME_FLAG_CFRAME_EMPTY_KW;
     }
 
     RUBY_DTRACE_CMETHOD_ENTRY_HOOK(ec, me->owner, me->def->original_id);
@@ -2249,10 +2253,14 @@ vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
 static VALUE
 vm_call_cfunc(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc)
 {
+    int empty_kw_splat = calling->kw_splat;
     RB_DEBUG_COUNTER_INC(ccf_cfunc);
 
     CALLER_SETUP_ARG(reg_cfp, calling, ci);
-    return vm_call_cfunc_with_frame(ec, reg_cfp, calling, ci, cc);
+    if (empty_kw_splat && calling->kw_splat) {
+        empty_kw_splat = 0;
+    }
+    return vm_call_cfunc_with_frame(ec, reg_cfp, calling, ci, cc, empty_kw_splat);
 }
 
 static VALUE

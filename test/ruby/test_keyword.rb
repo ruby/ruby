@@ -340,7 +340,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h3], f[a: 1, **h2])
   end
 
-  def test_cfunc_kwsplat_call
+  def test_Class_new_kwsplat_call
     kw = {}
     h = {:a=>1}
     h2 = {'a'=>1}
@@ -382,8 +382,12 @@ class TestKeywordArguments < Test::Unit::TestCase
         @args = args
       end
     end
-    assert_raise(ArgumentError) { c[**{}] }
-    assert_raise(ArgumentError) { c[**kw] }
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+      assert_equal(kw, c[**{}].args)
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+      assert_equal(kw, c[**kw].args)
+    end
     assert_equal(h, c[**h].args)
     assert_equal(h, c[a: 1].args)
     assert_equal(h2, c[**h2].args)
@@ -408,13 +412,27 @@ class TestKeywordArguments < Test::Unit::TestCase
         @args = [arg, args]
       end
     end
-    assert_raise(ArgumentError) { c[**{}] }
-    assert_raise(ArgumentError) { c[**kw] }
-    assert_equal([h, kw], c[**h].args)
-    assert_equal([h, kw], c[a: 1].args)
-    assert_equal([h2, kw], c[**h2].args)
-    assert_equal([h3, kw], c[**h3].args)
-    assert_equal([h3, kw], c[a: 1, **h2].args)
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+      assert_equal([kw, kw], c[**{}].args)
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+      assert_equal([kw, kw], c[**kw].args)
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+      assert_equal([h, kw], c[**h].args)
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+      assert_equal([h, kw], c[a: 1].args)
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+      assert_equal([h2, kw], c[**h2].args)
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+      assert_equal([h3, kw], c[**h3].args)
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+      assert_equal([h3, kw], c[a: 1, **h2].args)
+    end
 
     c = Class.new(sc) do
       def initialize(arg=1, **args)
@@ -430,7 +448,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h3], c[a: 1, **h2].args)
   end
 
-  def test_method_kwsplat_call
+  def test_Method_call_kwsplat_call
     kw = {}
     h = {:a=>1}
     h2 = {'a'=>1}
@@ -462,8 +480,12 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.m(args)
       args
     end
-    assert_raise(ArgumentError) { c.method(:m)[**{}] }
-    assert_raise(ArgumentError) { c.method(:m)[**kw] }
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal(kw, c.method(:m)[**{}])
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal(kw, c.method(:m)[**kw])
+    end
     assert_equal(h, c.method(:m)[**h])
     assert_equal(h, c.method(:m)[a: 1])
     assert_equal(h2, c.method(:m)[**h2])
@@ -486,13 +508,27 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.m(arg, **args)
       [arg, args]
     end
-    assert_raise(ArgumentError) { c.method(:m)[**{}] }
-    assert_raise(ArgumentError) { c.method(:m)[**kw] }
-    assert_equal([h, kw], c.method(:m)[**h])
-    assert_equal([h, kw], c.method(:m)[a: 1])
-    assert_equal([h2, kw], c.method(:m)[**h2])
-    assert_equal([h3, kw], c.method(:m)[**h3])
-    assert_equal([h3, kw], c.method(:m)[a: 1, **h2])
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([kw, kw], c.method(:m)[**{}])
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([kw, kw], c.method(:m)[**kw])
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h, kw], c.method(:m)[**h])
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h, kw], c.method(:m)[a: 1])
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h2, kw], c.method(:m)[**h2])
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h3, kw], c.method(:m)[**h3])
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h3, kw], c.method(:m)[a: 1, **h2])
+    end
 
     c.singleton_class.remove_method(:m)
     def c.m(arg=1, **args)
@@ -505,6 +541,102 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h2], c.method(:m)[**h2])
     assert_equal([1, h3], c.method(:m)[**h3])
     assert_equal([1, h3], c.method(:m)[a: 1, **h2])
+  end
+
+  def test_UnboundMethod_bindcall_kwsplat_call
+    kw = {}
+    h = {:a=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    c = Object.new
+    sc = c.singleton_class
+    def c.m(*args)
+      args
+    end
+    assert_equal([], sc.instance_method(:m).bind_call(c, **{}))
+    assert_equal([], sc.instance_method(:m).bind_call(c, **kw))
+    assert_equal([h], sc.instance_method(:m).bind_call(c, **h))
+    assert_equal([h], sc.instance_method(:m).bind_call(c, a: 1))
+    assert_equal([h2], sc.instance_method(:m).bind_call(c, **h2))
+    assert_equal([h3], sc.instance_method(:m).bind_call(c, **h3))
+    assert_equal([h3], sc.instance_method(:m).bind_call(c, a: 1, **h2))
+
+    sc.remove_method(:m)
+    def c.m; end
+    assert_nil(sc.instance_method(:m).bind_call(c, **{}))
+    assert_nil(sc.instance_method(:m).bind_call(c, **kw))
+    assert_raise(ArgumentError) { sc.instance_method(:m).bind_call(c, **h) }
+    assert_raise(ArgumentError) { sc.instance_method(:m).bind_call(c, a: 1) }
+    assert_raise(ArgumentError) { sc.instance_method(:m).bind_call(c, **h2) }
+    assert_raise(ArgumentError) { sc.instance_method(:m).bind_call(c, **h3) }
+    assert_raise(ArgumentError) { sc.instance_method(:m).bind_call(c, a: 1, **h2) }
+
+    sc.remove_method(:m)
+    def c.m(args)
+      args
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal(kw, sc.instance_method(:m).bind_call(c, **{}))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal(kw, sc.instance_method(:m).bind_call(c, **kw))
+    end
+    assert_equal(h, sc.instance_method(:m).bind_call(c, **h))
+    assert_equal(h, sc.instance_method(:m).bind_call(c, a: 1))
+    assert_equal(h2, sc.instance_method(:m).bind_call(c, **h2))
+    assert_equal(h3, sc.instance_method(:m).bind_call(c, **h3))
+    assert_equal(h3, sc.instance_method(:m).bind_call(c, a: 1, **h2))
+
+    sc.remove_method(:m)
+    def c.m(**args)
+      args
+    end
+    assert_equal(kw, sc.instance_method(:m).bind_call(c, **{}))
+    assert_equal(kw, sc.instance_method(:m).bind_call(c, **kw))
+    assert_equal(h, sc.instance_method(:m).bind_call(c, **h))
+    assert_equal(h, sc.instance_method(:m).bind_call(c, a: 1))
+    assert_equal(h2, sc.instance_method(:m).bind_call(c, **h2))
+    assert_equal(h3, sc.instance_method(:m).bind_call(c, **h3))
+    assert_equal(h3, sc.instance_method(:m).bind_call(c, a: 1, **h2))
+
+    sc.remove_method(:m)
+    def c.m(arg, **args)
+      [arg, args]
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([kw, kw], sc.instance_method(:m).bind_call(c, **{}))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([kw, kw], sc.instance_method(:m).bind_call(c, **kw))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h, kw], sc.instance_method(:m).bind_call(c, **h))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h, kw], sc.instance_method(:m).bind_call(c, a: 1))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h2, kw], sc.instance_method(:m).bind_call(c, **h2))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h3, kw], sc.instance_method(:m).bind_call(c, **h3))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h3, kw], sc.instance_method(:m).bind_call(c, a: 1, **h2))
+    end
+
+    sc.remove_method(:m)
+    def c.m(arg=1, **args)
+      [arg=1, args]
+    end
+    assert_equal([1, kw], sc.instance_method(:m).bind_call(c, **{}))
+    assert_equal([1, kw], sc.instance_method(:m).bind_call(c, **kw))
+    assert_equal([1, h], sc.instance_method(:m).bind_call(c, **h))
+    assert_equal([1, h], sc.instance_method(:m).bind_call(c, a: 1))
+    assert_equal([1, h2], sc.instance_method(:m).bind_call(c, **h2))
+    assert_equal([1, h3], sc.instance_method(:m).bind_call(c, **h3))
+    assert_equal([1, h3], sc.instance_method(:m).bind_call(c, a: 1, **h2))
   end
 
   def test_send_kwsplat

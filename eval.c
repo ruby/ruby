@@ -907,6 +907,22 @@ rb_keyword_given_p(void)
     return rb_vm_cframe_keyword_p(GET_EC()->cfp);
 }
 
+/* -- Remove In 3.0 -- */
+int rb_vm_cframe_empty_keyword_p(const rb_control_frame_t *cfp);
+int
+rb_empty_keyword_given_p(void)
+{
+    return rb_vm_cframe_empty_keyword_p(GET_EC()->cfp);
+}
+VALUE *
+rb_add_empty_keyword(int argc, const VALUE *argv)
+{
+    VALUE *ptr = ALLOC_N(VALUE,argc+1);
+    memcpy(ptr, argv, sizeof(VALUE)*(argc));
+    ptr[argc] = rb_hash_new();
+    return ptr;
+}
+
 VALUE rb_eThreadError;
 
 /*! Declares that the current method needs a block.
@@ -1664,7 +1680,12 @@ void
 rb_obj_call_init(VALUE obj, int argc, const VALUE *argv)
 {
     PASS_PASSED_BLOCK_HANDLER();
-    rb_funcallv(obj, idInitialize, argc, argv);
+    if (rb_empty_keyword_given_p()) {
+        rb_funcallv_kw(obj, idInitialize, argc+1, rb_add_empty_keyword(argc, argv), 1);
+    }
+    else {
+        rb_funcallv_kw(obj, idInitialize, argc, argv, rb_keyword_given_p());
+    }
 }
 
 /*!

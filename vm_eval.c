@@ -33,6 +33,7 @@ typedef enum call_type {
     CALL_FCALL,
     CALL_VCALL,
     CALL_PUBLIC_KW,
+    CALL_FCALL_KW,
     CALL_TYPE_MAX
 } call_type;
 
@@ -210,6 +211,12 @@ rb_vm_call(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc, const VAL
     return rb_vm_call0(ec, recv, id, argc, argv, me, VM_NO_KEYWORDS);
 }
 
+VALUE
+rb_vm_call_kw(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me, int kw_splat)
+{
+    return rb_vm_call0(ec, recv, id, argc, argv, me, kw_splat);
+}
+
 static inline VALUE
 vm_call_super(rb_execution_context_t *ec, int argc, const VALUE *argv)
 {
@@ -298,9 +305,17 @@ rb_call0(rb_execution_context_t *ec,
     call_type scope = call_scope;
     int kw_splat = VM_NO_KEYWORDS;
 
-    if (scope == CALL_PUBLIC_KW) {
+    switch(scope) {
+      case(CALL_PUBLIC_KW):
         scope = CALL_PUBLIC;
         kw_splat = 1;
+        break;
+      case(CALL_FCALL_KW):
+        scope = CALL_FCALL;
+        kw_splat = 1;
+        break;
+      default:
+        break;
     }
 
     if (scope == CALL_PUBLIC) {
@@ -859,6 +874,12 @@ VALUE
 rb_funcallv(VALUE recv, ID mid, int argc, const VALUE *argv)
 {
     return rb_call(recv, mid, argc, argv, CALL_FCALL);
+}
+
+VALUE
+rb_funcallv_kw(VALUE recv, ID mid, int argc, const VALUE *argv, int kw_splat)
+{
+    return rb_call(recv, mid, argc, argv, kw_splat ? CALL_FCALL_KW : CALL_FCALL);
 }
 
 /*!
