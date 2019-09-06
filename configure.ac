@@ -162,11 +162,11 @@ AS_IF([test -z "${CFLAGS+set}"], [
     orig_cflags="$cflags"
     cflags="$cflags "'${optflags} ${debugflags} ${warnflags}'
 ])
-AS_IF([test -z "${CXXFLAGS+set}"], [
-    cxxflags=`echo " $cxxflags " | sed "$cflagspat;s/^ *//;s/ *$//"`
-    orig_cxxflags="$cxxflags"
-    cxxflags="$cxxflags "'${optflags} ${debugflags} ${warnflags}'
-])
+dnl AS_IF([test -z "${CXXFLAGS+set}"], [
+dnl     cxxflags=`echo " $cxxflags " | sed "$cflagspat;s/^ *//;s/ *$//"`
+dnl     orig_cxxflags="$cxxflags"
+dnl     cxxflags="$cxxflags "'${optflags} ${debugflags} ${warnflags}'
+dnl ])
 
 AS_CASE(["$host_os:$build_os"],
 [darwin*:darwin*], [
@@ -3594,7 +3594,7 @@ rb_cv_warnflags=`echo "$rb_cv_warnflags" | sed 's/^ *//;s/ *$//'`
 warnflags="$rb_cv_warnflags"
 AC_SUBST(cppflags)dnl
 AC_SUBST(cflags, ["${orig_cflags:+$orig_cflags }"'${optflags} ${debugflags} ${warnflags}'])dnl
-AC_SUBST(cxxflags, ["${orig_cxxflags:+$orig_cxxflags }"'${optflags} ${debugflags} ${warnflags}'])dnl
+AC_SUBST(cxxflags)dnl
 AC_SUBST(optflags)dnl
 AC_SUBST(debugflags)dnl
 AC_SUBST(warnflags)dnl
