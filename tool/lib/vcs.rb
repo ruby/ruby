@@ -435,7 +435,7 @@ class VCS
     def cmd_args(cmds, srcdir = nil)
       (opts = cmds.last).kind_of?(Hash) or cmds << (opts = {})
       opts[:external_encoding] ||= "UTF-8"
-      if srcdir and self.class.local_path?(srcdir)
+      if srcdir
         opts[:chdir] ||= srcdir
       end
       VCS::DEBUG_OUT.puts cmds.inspect if debug?
@@ -536,9 +536,7 @@ class VCS
 
     def initialize(*)
       super
-      if srcdir = @srcdir and self.class.local_path?(srcdir)
-        @srcdir = File.realpath(srcdir)
-      end
+      @srcdir = File.realpath(@srcdir)
       self
     end
 
