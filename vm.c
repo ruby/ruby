@@ -102,6 +102,13 @@ rb_vm_cframe_keyword_p(const rb_control_frame_t *cfp)
     return VM_FRAME_CFRAME_KW_P(cfp);
 }
 
+/* -- Remove In 3.0 -- */
+int
+rb_vm_cframe_empty_keyword_p(const rb_control_frame_t *cfp)
+{
+    return VM_FRAME_CFRAME_EMPTY_KW_P(cfp);
+}
+
 VALUE
 rb_vm_frame_block_handler(const rb_control_frame_t *cfp)
 {

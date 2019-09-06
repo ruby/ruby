@@ -1138,11 +1138,11 @@ typedef rb_control_frame_t *
 
 enum {
     /* Frame/Environment flag bits:
-     *   MMMM MMMM MMMM MMMM ____ _FFF FFFF EEEX (LSB)
+     *   MMMM MMMM MMMM MMMM ____ FFFF FFFF EEEX (LSB)
      *
      * X   : tag for GC marking (It seems as Fixnum)
      * EEE : 3 bits Env flags
-     * FF..: 7 bits Frame flags
+     * FF..: 8 bits Frame flags
      * MM..: 15 bits frame magic (to check frame corruption)
      */
 
@@ -1167,6 +1167,7 @@ enum {
     VM_FRAME_FLAG_LAMBDA    = 0x0100,
     VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM = 0x0200,
     VM_FRAME_FLAG_CFRAME_KW = 0x0400,
+    VM_FRAME_FLAG_CFRAME_EMPTY_KW = 0x0800, /* -- Remove In 3.0 -- */
 
     /* env flag */
     VM_ENV_FLAG_LOCAL       = 0x0002,
@@ -1225,6 +1226,13 @@ static inline int
 VM_FRAME_CFRAME_KW_P(const rb_control_frame_t *cfp)
 {
     return VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_CFRAME_KW) != 0;
+}
+
+/* -- Remove In 3.0 -- */
+static inline int
+VM_FRAME_CFRAME_EMPTY_KW_P(const rb_control_frame_t *cfp)
+{
+    return VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_CFRAME_EMPTY_KW) != 0;
 }
 
 static inline int
@@ -1652,6 +1660,8 @@ void rb_vm_inc_const_missing_count(void);
 void rb_vm_gvl_destroy(rb_vm_t *vm);
 VALUE rb_vm_call(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc,
 		 const VALUE *argv, const rb_callable_method_entry_t *me);
+VALUE rb_vm_call_kw(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc,
+                 const VALUE *argv, const rb_callable_method_entry_t *me, int kw_splat);
 MJIT_STATIC void rb_vm_pop_frame(rb_execution_context_t *ec);
 
 void rb_thread_start_timer_thread(void);

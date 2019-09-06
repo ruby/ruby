@@ -2223,8 +2223,14 @@ call_method_data(rb_execution_context_t *ec, const struct METHOD *data,
 		 int argc, const VALUE *argv, VALUE passed_procval)
 {
     vm_passed_block_handler_set(ec, proc_to_block_handler(passed_procval));
-    return rb_vm_call(ec, data->recv, data->me->called_id, argc, argv,
-		      method_callable_method_entry(data));
+    if (rb_empty_keyword_given_p()) {
+        return rb_vm_call_kw(ec, data->recv, data->me->called_id, argc+1, rb_add_empty_keyword(argc, argv),
+                      method_callable_method_entry(data), 1);
+    }
+    else {
+        return rb_vm_call_kw(ec, data->recv, data->me->called_id, argc, argv,
+                      method_callable_method_entry(data), rb_keyword_given_p());
+    }
 }
 
 static VALUE
