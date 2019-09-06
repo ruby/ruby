@@ -878,7 +878,8 @@ rb_funcallv_public(VALUE recv, ID mid, int argc, const VALUE *argv)
 
 /*!
  * Calls a method
- * \param ptr    opaque call cache
+ * \private
+ * \param cc     opaque call cache
  * \param recv   receiver of the method
  * \param mid    an ID that represents the name of the method
  * \param argc   the number of arguments
