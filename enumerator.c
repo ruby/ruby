@@ -135,6 +135,7 @@ struct enumerator {
     VALUE size;
     VALUE procs;
     rb_enumerator_size_func *size_fn;
+    int kw_splat;
 };
 
 static VALUE rb_cGenerator, rb_cYielder;
@@ -364,8 +365,10 @@ enumerator_allocate(VALUE klass)
     return enum_obj;
 }
 
+#define PASS_KW_SPLAT (rb_empty_keyword_given_p() ? 2 : rb_keyword_given_p())
+
 static VALUE
-enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, VALUE size)
+enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, VALUE size, int kw_splat)
 {
     struct enumerator *ptr;
 
@@ -378,7 +381,13 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *ar
 
     ptr->obj  = obj;
     ptr->meth = rb_to_id(meth);
-    if (argc) ptr->args = rb_ary_new4(argc, argv);
+    if (kw_splat == 2) {
+        if (argc) ptr->args = rb_ary_new4(argc+1, rb_add_empty_keyword(argc, argv));
+        else ptr->args = rb_ary_new_from_args(1, rb_hash_new());
+        kw_splat = 1;
+    } else {
+        if (argc) ptr->args = rb_ary_new4(argc, argv);
+    }
     ptr->fib = 0;
     ptr->dst = Qnil;
     ptr->lookahead = Qundef;
@@ -386,6 +395,7 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *ar
     ptr->stop_exc = Qfalse;
     ptr->size = size;
     ptr->size_fn = size_fn;
+    ptr->kw_splat = kw_splat;
 
     return enum_obj;
 }
@@ -433,6 +443,7 @@ enumerator_initialize(int argc, VALUE *argv, VALUE obj)
 {
     VALUE recv, meth = sym_each;
     VALUE size = Qnil;
+    int kw_splat = 0;
 
     if (rb_block_given_p()) {
 	rb_check_arity(argc, 0, 1);
@@ -456,9 +467,10 @@ enumerator_initialize(int argc, VALUE *argv, VALUE obj)
 	    meth = *argv++;
 	    --argc;
 	}
+        kw_splat = PASS_KW_SPLAT;
     }
 
-    return enumerator_init(obj, recv, meth, argc, argv, 0, size);
+    return enumerator_init(obj, recv, meth, argc, argv, 0, size, kw_splat);
 }
 
 /* :nodoc: */
@@ -513,7 +525,7 @@ rb_enumeratorize_with_size(VALUE obj, VALUE meth, int argc, const VALUE *argv, r
 	return lazy_to_enum_i(obj, meth, argc, argv, size_fn);
     else
 	return enumerator_init(enumerator_allocate(rb_cEnumerator),
-			       obj, meth, argc, argv, size_fn, Qnil);
+                               obj, meth, argc, argv, size_fn, Qnil, PASS_KW_SPLAT);
 }
 
 static VALUE
@@ -528,7 +540,7 @@ enumerator_block_call(VALUE obj, rb_block_call_func *func, VALUE arg)
 	argc = RARRAY_LENINT(e->args);
 	argv = RARRAY_CONST_PTR(e->args);
     }
-    return rb_block_call(e->obj, meth, argc, argv, func, arg);
+    return rb_block_call_kw(e->obj, meth, argc, argv, func, arg, e->kw_splat);
 }
 
 /*
@@ -1742,7 +1754,7 @@ lazy_initialize(int argc, VALUE *argv, VALUE self)
     }
     generator = generator_allocate(rb_cGenerator);
     rb_block_call(generator, id_initialize, 0, 0, lazy_init_block_i, obj);
-    enumerator_init(self, generator, sym_each, 0, 0, 0, size);
+    enumerator_init(self, generator, sym_each, 0, 0, 0, size, 0);
     rb_ivar_set(self, id_receiver, obj);
 
     return self;
@@ -1867,7 +1879,7 @@ static VALUE
 lazy_to_enum_i(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn)
 {
     return enumerator_init(enumerator_allocate(rb_cLazy),
-			   obj, meth, argc, argv, size_fn, Qnil);
+                           obj, meth, argc, argv, size_fn, Qnil, PASS_KW_SPLAT);
 }
 
 /*
@@ -1929,7 +1941,7 @@ static VALUE
 lazy_eager(VALUE self)
 {
     return enumerator_init(enumerator_allocate(rb_cEnumerator),
-                           self, sym_each, 0, 0, lazy_eager_size, Qnil);
+                           self, sym_each, 0, 0, lazy_eager_size, Qnil, 0);
 }
 
 static VALUE
@@ -3054,7 +3066,7 @@ rb_arith_seq_new(VALUE obj, VALUE meth, int argc, VALUE const *argv,
                  VALUE beg, VALUE end, VALUE step, int excl)
 {
     VALUE aseq = enumerator_init(enumerator_allocate(rb_cArithSeq),
-                                 obj, meth, argc, argv, size_fn, Qnil);
+                                 obj, meth, argc, argv, size_fn, Qnil, PASS_KW_SPLAT);
     rb_ivar_set(aseq, id_begin, beg);
     rb_ivar_set(aseq, id_end, end);
     rb_ivar_set(aseq, id_step, step);

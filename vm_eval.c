@@ -1276,6 +1276,7 @@ struct iter_method_arg {
     ID mid;
     int argc;
     const VALUE *argv;
+    int kw_splat;
 };
 
 static VALUE
@@ -1284,7 +1285,7 @@ iterate_method(VALUE obj)
     const struct iter_method_arg * arg =
       (struct iter_method_arg *) obj;
 
-    return rb_call(arg->obj, arg->mid, arg->argc, arg->argv, CALL_FCALL);
+    return rb_call(arg->obj, arg->mid, arg->argc, arg->argv, arg->kw_splat ? CALL_FCALL_KW : CALL_FCALL);
 }
 
 VALUE
@@ -1297,6 +1298,21 @@ rb_block_call(VALUE obj, ID mid, int argc, const VALUE * argv,
     arg.mid = mid;
     arg.argc = argc;
     arg.argv = argv;
+    arg.kw_splat = 0;
+    return rb_iterate(iterate_method, (VALUE)&arg, bl_proc, data2);
+}
+
+VALUE
+rb_block_call_kw(VALUE obj, ID mid, int argc, const VALUE * argv,
+              rb_block_call_func_t bl_proc, VALUE data2, int kw_splat)
+{
+    struct iter_method_arg arg;
+
+    arg.obj = obj;
+    arg.mid = mid;
+    arg.argc = argc;
+    arg.argv = argv;
+    arg.kw_splat = kw_splat;
     return rb_iterate(iterate_method, (VALUE)&arg, bl_proc, data2);
 }
 
@@ -1313,6 +1329,7 @@ rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
     arg.mid = mid;
     arg.argc = argc;
     arg.argv = argv;
+    arg.kw_splat = 0;
     block = rb_vm_ifunc_new(bl_proc, (void *)data2, min_argc, max_argc);
     return rb_iterate0(iterate_method, (VALUE)&arg, block, GET_EC());
 }
@@ -1336,6 +1353,7 @@ rb_check_block_call(VALUE obj, ID mid, int argc, const VALUE *argv,
     arg.mid = mid;
     arg.argc = argc;
     arg.argv = argv;
+    arg.kw_splat = 0;
     return rb_iterate(iterate_check_method, (VALUE)&arg, bl_proc, data2);
 }
 
