@@ -131,14 +131,15 @@ class VCS
     @@dirs << [dir, self, pred]
   end
 
-  def self.detect(path = '.', options = {}, argv = ::ARGV)
+  def self.detect(path = '.', options = {}, parser = nil)
     uplevel_limit = options.fetch(:uplevel_limit, 0)
     curr = path
     begin
       @@dirs.each do |dir, klass, pred|
         if pred ? pred[curr, dir] : File.directory?(File.join(curr, dir))
           vcs = klass.new(curr)
-          vcs.parse_options(argv)
+          vcs.define_options(parser) if parser
+          vcs.set_options(options)
           return vcs
         end
       end
@@ -155,6 +156,13 @@ class VCS
     String === path or path.respond_to?(:to_path)
   end
 
+  def self.define_options(parser, opts = {})
+    parser.separator("  VCS common options:")
+    parser.define("--[no-]dryrun") {|v| opts[:dryrun] = v}
+    parser.define("--[no-]debug") {|v| opts[:debug] = v}
+    opts
+  end
+
   attr_reader :srcdir
 
   def initialize(path)
@@ -166,21 +174,12 @@ class VCS
     @srcdir = path
   end
 
-  def parse_options(opts, parser = OptionParser.new)
-    case opts
-    when Array
-      parser.on("--[no-]dryrun") {|v| @dryrun = v}
-      parser.on("--[no-]debug") {|v| @debug = v}
-      parser.parse(opts)
-      @debug = $DEBUG unless defined?(@debug)
-      @dryrun = @debug unless defined?(@dryrun)
-    when Hash
-      unless (keys = opts.keys - [:debug, :dryrun]).empty?
-        raise "Unknown options: #{keys.join(', ')}"
-      end
-      @debug = opts.fetch(:debug) {$DEBUG}
-      @dryrun = opts.fetch(:dryrun) {@debug}
-    end
+  def define_options(parser)
+  end
+
+  def set_options(opts)
+    @debug = opts.fetch(:debug) {$DEBUG}
+    @dryrun = opts.fetch(:dryrun) {@debug}
   end
 
   attr_reader :dryrun, :debug
