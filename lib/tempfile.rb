@@ -287,8 +287,8 @@ class Tempfile < DelegateClass(File)
     #   ensure
     #      f.close
     #   end
-    def open(*args)
-      tempfile = new(*args)
+    def open(*args, **kw)
+      tempfile = new(*args, **kw)
 
       if block_given?
         begin
