@@ -84,7 +84,7 @@ rb_define_hooked_variable(const char *q, VALUE *w, type *e, void_type *r)
 /// @name Exceptions and tag jumps
 /// @{
 
-DEPRECATED_BY(::rb_block_call,)
+DEPRECATED_TYPE(("Use rb_block_call instead"),)
 /// @brief       Old way to implement iterators.
 /// @param[in]   q  A function that can yield.
 /// @param[in]   w  Passed to `q`.

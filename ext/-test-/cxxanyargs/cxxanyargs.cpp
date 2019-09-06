@@ -98,7 +98,7 @@ namespace test_rb_block_call {
     test(VALUE self)
     {
         const ID mid = rb_intern("each");
-        const VALUE argv[] = {};
+        const VALUE argv[] = { Qundef };
         rb_block_call(self, mid, 0, argv, RUBY_METHOD_FUNC(block), self); // old
         return rb_block_call(self, mid, 0, argv, block, self); // new
     }
