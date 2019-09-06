@@ -482,7 +482,7 @@ class VCS
       end
       branch = cmd_read_at(srcdir, [gitcmd + %W[symbolic-ref --short #{ref}]])
       if branch.empty?
-        branch = cmd_read_at(srcdir, [gitcmd + %W[tag --list #{ref}]]).strip
+        branch = cmd_read_at(srcdir, [gitcmd + %W[describe --contains #{ref}]]).strip
       end
       if branch.empty?
         branch_list = cmd_read_at(srcdir, [gitcmd + %W[branch --list --contains #{ref}]]).lines.to_a
