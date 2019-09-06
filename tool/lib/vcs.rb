@@ -446,7 +446,9 @@ class VCS
     end
 
     def cmd_read_at(srcdir, cmds)
-      without_gitconfig { IO.pread(*cmd_args(cmds, srcdir)) }
+      result = without_gitconfig { IO.pread(*cmd_args(cmds, srcdir)) }
+      VCS::DEBUG_OUT.puts result.inspect if debug?
+      result
     end
 
     def cmd_pipe(*cmds, &block)
@@ -536,6 +538,7 @@ class VCS
     def initialize(*)
       super
       @srcdir = File.realpath(@srcdir)
+      VCS::DEBUG_OUT.puts @srcdir.inspect if debug?
       self
     end
 
