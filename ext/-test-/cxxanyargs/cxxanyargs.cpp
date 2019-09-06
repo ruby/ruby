@@ -335,7 +335,7 @@ namespace test_rb_ivar_foreach {
     }
 }
 
-void
+extern "C" void
 Init_cxxanyargs(void)
 {
     VALUE b = rb_define_module("Bug");
