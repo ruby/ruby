@@ -30,7 +30,7 @@ class TestLogDevice < Test::Unit::TestCase
   end
 
   def d(log, opt = {})
-    Logger::LogDevice.new(log, opt)
+    Logger::LogDevice.new(log, **opt)
   end
 
   def test_initialize
