@@ -192,7 +192,7 @@ AS_CASE([$CC],
 [gcc-*], [
     gcc_prefix=gcc- gcc_suffix=`echo "$CC" | sed 's/^gcc//'`
     AC_PROG_CXX(g++${gcc_suffix})],
-[clang-*], [
+[clang-*|clang], [
     gcc_prefix=clang- gcc_suffix=`echo "$CC" | sed 's/^clang//'`
     AC_PROG_CXX(clang++${gcc_suffix})],
 [gcc_prefix= gcc_suffix=])
