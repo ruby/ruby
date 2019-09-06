@@ -8,8 +8,8 @@ class TestTempfile < Test::Unit::TestCase
     @tempfile = nil
   end
 
-  def tempfile(*args, &block)
-    t = Tempfile.new(*args, &block)
+  def tempfile(*args, **kw, &block)
+    t = Tempfile.new(*args, **kw, &block)
     @tempfile = (t unless block)
   end
 
