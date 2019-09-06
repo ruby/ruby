@@ -786,7 +786,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 	 (kw_splat && given_argc > max_argc)) &&
 	args->kw_argv == NULL) {
         if (given_argc > min_argc) {
-            if (((kw_flag & (VM_CALL_KWARG | VM_CALL_KW_SPLAT)) || !ec->cfp->iseq /* called from C */)) {
+            if (kw_flag) {
                 int check_only_symbol = (kw_flag & VM_CALL_KW_SPLAT) &&
                                         iseq->body->param.flags.has_kw &&
                                         !iseq->body->param.flags.has_kwrest;
@@ -808,13 +808,10 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                  * def foo(k:1) p [k]; end
                  * foo({k:42}) #=> 42
                  */
-                if (ec->cfp->iseq) {
-                    /* called from Ruby level */
-                    rb_warn_last_hash_to_keyword(calling, ci, iseq);
-                }
+                rb_warn_last_hash_to_keyword(calling, ci, iseq);
                 given_argc--;
             }
-            else if (keyword_hash != Qnil && ec->cfp->iseq) {
+            else if (keyword_hash != Qnil) {
                 rb_warn_split_last_hash_to_keyword(calling, ci, iseq);
             }
         }
