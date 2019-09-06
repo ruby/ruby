@@ -2323,7 +2323,7 @@ vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct
     struct rb_call_info_with_kwarg ci_entry;
     struct rb_call_cache cc_entry, *cc;
 
-    CALLER_SETUP_ARG_WITHOUT_KW_SPLAT(reg_cfp, calling, orig_ci); 
+    CALLER_SETUP_ARG_WITHOUT_KW_SPLAT(reg_cfp, calling, orig_ci);
 
     i = calling->argc - 1;
 
