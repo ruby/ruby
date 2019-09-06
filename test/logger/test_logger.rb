@@ -363,4 +363,19 @@ class TestLogger < Test::Unit::TestCase
     r.close
     assert_equal("msg2\n\n", msg)
   end
+
+  class CustomLogger < Logger
+    def level
+      INFO
+    end
+  end
+
+  def test_overriding_level
+    logger = CustomLogger.new(nil)
+    log = log(logger, :info) { "msg" }
+    assert_equal "msg\n", log.msg
+    #
+    log = log(logger, :debug) { "msg" }
+    assert_nil log.msg
+  end
 end
