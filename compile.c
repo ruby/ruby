@@ -3872,7 +3872,7 @@ compile_args(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_roo
     return len;
 }
 
-enum compile_array_type_t {
+enum compile_list_type_t {
     COMPILE_ARRAY_TYPE_ARRAY,
     COMPILE_ARRAY_TYPE_HASH,
 };
@@ -3922,8 +3922,8 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
 }
 
 static int
-compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_root,
-              enum compile_array_type_t type, int popped)
+compile_list(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_root,
+              enum compile_list_type_t type, int popped)
 {
     const NODE *node = node_root;
     int line = (int)nd_line(node);
@@ -3952,7 +3952,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 
 	    for (i=0; i<max && node; i++, len++, node = node->nd_next) {
 		if (CPDEBUG > 0) {
-		    EXPECT_NODE("compile_array", node, NODE_LIST, -1);
+		    EXPECT_NODE("compile_list", node, NODE_LIST, -1);
 		}
 
                 if (type == COMPILE_ARRAY_TYPE_HASH && !node->nd_head) {
@@ -4840,7 +4840,7 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
           }
           case NODE_ARGSCAT:
           case NODE_ARGSPUSH: {
-            int next_is_array = (nd_type(argn->nd_head) == NODE_LIST);
+            int next_is_list = (nd_type(argn->nd_head) == NODE_LIST);
             VALUE argc = setup_args_core(iseq, args, argn->nd_head, 1, NULL, NULL);
             NO_CHECK(COMPILE(args, "args (cat: splat)", argn->nd_body));
             if (flag) {
@@ -4851,7 +4851,7 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
                     *flag |= VM_CALL_KW_SPLAT;
             }
             if (nd_type(argn) == NODE_ARGSCAT) {
-                if (next_is_array) {
+                if (next_is_list) {
                     ADD_INSN1(args, nd_line(argn), splatarray, Qtrue);
                     return INT2FIX(FIX2INT(argc) + 1);
                 }
@@ -7435,7 +7435,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	break;
       }
       case NODE_LIST:{
-        CHECK(compile_array(iseq, ret, node, COMPILE_ARRAY_TYPE_ARRAY, popped) >= 0);
+        CHECK(compile_list(iseq, ret, node, COMPILE_ARRAY_TYPE_ARRAY, popped) >= 0);
 	break;
       }
       case NODE_ZLIST:{
@@ -7463,7 +7463,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	INIT_ANCHOR(list);
 	switch (type) {
 	  case NODE_LIST:
-            CHECK(compile_array(iseq, list, node->nd_head, COMPILE_ARRAY_TYPE_HASH, popped) >= 0);
+            CHECK(compile_list(iseq, list, node->nd_head, COMPILE_ARRAY_TYPE_HASH, popped) >= 0);
 	    ADD_SEQ(ret, list);
 	    break;
 

@@ -460,7 +460,7 @@ static NODE *new_defined(struct parser_params *p, NODE *expr, const YYLTYPE *loc
 
 static NODE *new_regexp(struct parser_params *, NODE *, int, const YYLTYPE *);
 
-#define make_array(ary, loc) ((ary) ? (nd_set_loc(ary, loc), ary) : NEW_ZLIST(loc))
+#define make_list(list, loc) ((list) ? (nd_set_loc(list, loc), list) : NEW_ZLIST(loc))
 
 static NODE *new_xstring(struct parser_params *, NODE *, const YYLTYPE *loc);
 
@@ -2606,7 +2606,7 @@ primary		: literal
 		| tLBRACK aref_args ']'
 		    {
 		    /*%%%*/
-			$$ = make_array($2, &@$);
+			$$ = make_list($2, &@$);
 		    /*% %*/
 		    /*% ripper: array!(escape_Qundef($2)) %*/
 		    }
@@ -4293,7 +4293,7 @@ regexp		: tREGEXP_BEG regexp_contents tREGEXP_END
 words		: tWORDS_BEG ' ' word_list tSTRING_END
 		    {
 		    /*%%%*/
-			$$ = make_array($3, &@$);
+			$$ = make_list($3, &@$);
 		    /*% %*/
 		    /*% ripper: array!($3) %*/
 		    }
@@ -4329,7 +4329,7 @@ word		: string_content
 symbols 	: tSYMBOLS_BEG ' ' symbol_list tSTRING_END
 		    {
 		    /*%%%*/
-			$$ = make_array($3, &@$);
+			$$ = make_list($3, &@$);
 		    /*% %*/
 		    /*% ripper: array!($3) %*/
 		    }
@@ -4354,7 +4354,7 @@ symbol_list	: /* none */
 qwords		: tQWORDS_BEG ' ' qword_list tSTRING_END
 		    {
 		    /*%%%*/
-			$$ = make_array($3, &@$);
+			$$ = make_list($3, &@$);
 		    /*% %*/
 		    /*% ripper: array!($3) %*/
 		    }
@@ -4363,7 +4363,7 @@ qwords		: tQWORDS_BEG ' ' qword_list tSTRING_END
 qsymbols	: tQSYMBOLS_BEG ' ' qsym_list tSTRING_END
 		    {
 		    /*%%%*/
-			$$ = make_array($3, &@$);
+			$$ = make_list($3, &@$);
 		    /*% %*/
 		    /*% ripper: array!($3) %*/
 		    }
@@ -11451,7 +11451,7 @@ new_ary_op_assign(struct parser_params *p, NODE *ary,
 {
     NODE *asgn;
 
-    args = make_array(args, args_loc);
+    args = make_list(args, args_loc);
     if (nd_type(args) == NODE_BLOCK_PASS) {
 	args = NEW_ARGSCAT(args, rhs, loc);
     }
