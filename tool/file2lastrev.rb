@@ -110,7 +110,6 @@ OptionParser.new {|opts|
     raise "unknown output format `#{@output}'"
   end
 
-srcdir ||= File.dirname(File.dirname(Program))
 ok = true
 (ARGV.empty? ? [nil] : ARGV).each do |arg|
   begin
