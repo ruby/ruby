@@ -31,7 +31,7 @@ OptionParser.new {|opts|
       VCS.detect(path, vcs_options, opts.new)
     rescue VCS::NotFoundError => e
       abort "#{File.basename(Program)}: #{e.message}" unless @suppress_not_found
-      opts.pop
+      opts.remove
     end
   end
   opts.new
