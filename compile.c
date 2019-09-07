@@ -4049,7 +4049,9 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popp
 {
     int line = (int)nd_line(node);
 
-    if (nd_type(node) == NODE_ZLIST) {
+    node = node->nd_head;
+
+    if (!node || nd_type(node) == NODE_ZLIST) {
 	if (!popped) {
 	    ADD_INSN1(ret, line, newhash, INT2FIX(0));
 	}
@@ -7516,29 +7518,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	ADD_INSN1(ret, line, newarray, INT2FIX(node->nd_alen));
 	break;
       }
-      case NODE_HASH:{
-	DECL_ANCHOR(list);
-	enum node_type type = node->nd_head ? nd_type(node->nd_head) : NODE_ZLIST;
-
-	INIT_ANCHOR(list);
-	switch (type) {
-	  case NODE_LIST:
-            CHECK(compile_hash(iseq, list, node->nd_head, popped) >= 0);
-	    ADD_SEQ(ret, list);
-	    break;
-
-	  case NODE_ZLIST:
-	    if (popped) break;
-	    ADD_INSN1(ret, line, newhash, INT2FIX(0));
-	    break;
-
-	  default:
-	    COMPILE_ERROR(ERROR_ARGS_AT(node->nd_head) "can't make hash with this node: %s",
-			  ruby_node_name(type));
-	    goto ng;
-	}
-	break;
-      }
+      case NODE_HASH:
+        CHECK(compile_hash(iseq, ret, node, popped) >= 0);
+        break;
       case NODE_RETURN:
 	CHECK(compile_return(iseq, ret, node, popped));
 	break;
