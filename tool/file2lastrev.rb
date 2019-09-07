@@ -66,6 +66,7 @@ OptionParser.new {|opts|
     new_vcs["."]
   end
 }
+exit unless vcs
 
 @output =
   case @output
