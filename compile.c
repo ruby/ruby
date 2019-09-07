@@ -3998,7 +3998,6 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
 
             if ((first_chunk && stack_len == 0 && !node_tmp) || count >= min_tmp_ary_len) {
                 /* The literal contains only optimizable elements, or the subarray is long enough */
-
                 VALUE ary = rb_ary_tmp_new(count);
 
                 /* Create a hidden array */
@@ -4041,6 +4040,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
     }
 
     FLUSH_CHUNK(newarray);
+#undef FLUSH_CHUNK
     return 1;
 }
 
