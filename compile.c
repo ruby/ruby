@@ -4191,20 +4191,32 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popp
                 int last_kw = !node->nd_next->nd_next;        /* foo(  ..., **kw) */
                 int only_kw = last_kw && first_kw;            /* foo(1,2,3, **kw) */
 
-                if (!empty_kw) {
+                if (empty_kw) {
+                    if (only_kw) {
+                        /* **{} appears at the last, so it won't be modified.
+                         * kw is a special NODE_LIT that contains a special empty hash,
+                         * so this emits: putobject {}
+                         */
+                        NO_CHECK(COMPILE(ret, "keyword splat", kw));
+                    }
+                    else if (first_kw) {
+                        /* **{} appears at the first, so it may be modified.
+                         * We need to create a fresh hash object.
+                         */
+                        ADD_INSN1(ret, line, newhash, INT2FIX(0));
+                    }
+                }
+                else {
+                    /* This is not empty hash: **{k:1}.
+                     * We need to clone the hash (if first), or merge the hash to
+                     * the accumulated hash (if not first).
+                     */
                     ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                    if (!first_kw) ADD_INSN(ret, line, swap);
-                    else ADD_INSN1(ret, line, newhash, INT2FIX(0));
-                }
+                    if (first_kw) ADD_INSN1(ret, line, newhash, INT2FIX(0));
+                    else ADD_INSN(ret, line, swap);
 
-                if (empty_kw && first_kw && !only_kw) {
-                    ADD_INSN1(ret, line, newhash, INT2FIX(0));
-                }
-                else if (!empty_kw || only_kw) {
                     NO_CHECK(COMPILE(ret, "keyword splat", kw));
-                }
 
-                if (!empty_kw) {
                     ADD_SEND(ret, line, id_core_hash_merge_kwd, INT2FIX(2));
                 }
 
