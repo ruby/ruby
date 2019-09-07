@@ -16,6 +16,10 @@ class TestForwardable < Test::Unit::TestCase
     def delegated2
       RETURNED2
     end
+
+    def delegated1_kw(**kw)
+      [RETURNED1, kw]
+    end
   end
 
   def test_def_instance_delegator
@@ -25,6 +29,18 @@ class TestForwardable < Test::Unit::TestCase
       end
 
       assert_same RETURNED1, cls.new.delegated1
+    end
+  end
+
+  def test_def_instance_delegator_kw
+    %i[def_delegator def_instance_delegator].each do |m|
+      cls = forwardable_class do
+        __send__ m, :@receiver, :delegated1_kw
+      end
+
+      ary = cls.new.delegated1_kw b: 1
+      assert_same RETURNED1, ary[0]
+      assert_equal({b: 1}, ary[1])
     end
   end
 
