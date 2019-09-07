@@ -337,7 +337,7 @@ dump_array(rb_ast_t *ast, NODE *node)
     VALUE ary = rb_ary_new();
     rb_ary_push(ary, NEW_CHILD(ast, node->nd_head));
 
-    while (node->nd_next && nd_type(node->nd_next) == NODE_ARRAY) {
+    while (node->nd_next && nd_type(node->nd_next) == NODE_LIST) {
         node = node->nd_next;
         rb_ary_push(ary, NEW_CHILD(ast, node->nd_head));
     }
@@ -491,12 +491,12 @@ node_children(rb_ast_t *ast, NODE *node)
         return rb_ary_new_from_node_args(ast, 1, node->nd_args);
       case NODE_ZSUPER:
         return rb_ary_new_from_node_args(ast, 0);
-      case NODE_ARRAY:
+      case NODE_LIST:
         goto ary;
       case NODE_VALUES:
       ary:
         return dump_array(ast, node);
-      case NODE_ZARRAY:
+      case NODE_ZLIST:
         return rb_ary_new_from_node_args(ast, 0);
       case NODE_HASH:
         return rb_ary_new_from_node_args(ast, 1, node->nd_head);

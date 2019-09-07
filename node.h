@@ -64,8 +64,8 @@ enum node_type {
     NODE_QCALL,
     NODE_SUPER,
     NODE_ZSUPER,
-    NODE_ARRAY,
-    NODE_ZARRAY,
+    NODE_LIST,
+    NODE_ZLIST,
     NODE_VALUES,
     NODE_HASH,
     NODE_RETURN,
@@ -309,9 +309,8 @@ typedef struct RNode {
 #define NEW_ENSURE(b,en,loc) NEW_NODE(NODE_ENSURE,b,0,en,loc)
 #define NEW_RETURN(s,loc) NEW_NODE(NODE_RETURN,s,0,0,loc)
 #define NEW_YIELD(a,loc) NEW_NODE(NODE_YIELD,a,0,0,loc)
-#define NEW_LIST(a,loc)  NEW_ARRAY(a,loc)
-#define NEW_ARRAY(a,loc) NEW_NODE(NODE_ARRAY,a,1,0,loc)
-#define NEW_ZARRAY(loc) NEW_NODE(NODE_ZARRAY,0,0,0,loc)
+#define NEW_LIST(a,loc) NEW_NODE(NODE_LIST,a,1,0,loc)
+#define NEW_ZLIST(loc) NEW_NODE(NODE_ZLIST,0,0,0,loc)
 #define NEW_HASH(a,loc)  NEW_NODE(NODE_HASH,a,0,0,loc)
 #define NEW_MASGN(l,r,loc)   NEW_NODE(NODE_MASGN,l,0,r,loc)
 #define NEW_GASGN(v,val,loc) NEW_NODE(NODE_GASGN,v,val,rb_global_entry(v),loc)

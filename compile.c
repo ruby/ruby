@@ -3758,7 +3758,7 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
       case NODE_LIT:		/* NODE_LIT is always true */
       case NODE_TRUE:
       case NODE_STR:
-      case NODE_ZARRAY:
+      case NODE_ZLIST:
       case NODE_LAMBDA:
 	/* printf("useless condition eliminate (%s)\n",  ruby_node_name(nd_type(cond))); */
 	ADD_INSNL(ret, nd_line(cond), jump, then_label);
@@ -3768,7 +3768,7 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
 	/* printf("useless condition eliminate (%s)\n", ruby_node_name(nd_type(cond))); */
 	ADD_INSNL(ret, nd_line(cond), jump, else_label);
 	break;
-      case NODE_ARRAY:
+      case NODE_LIST:
       case NODE_ARGSCAT:
       case NODE_DREGX:
       case NODE_DSTR:
@@ -3802,13 +3802,13 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 {
     if (kw_arg_ptr == NULL) return FALSE;
 
-    if (nd_type(root_node) == NODE_HASH && !root_node->nd_brace && root_node->nd_head && nd_type(root_node->nd_head) == NODE_ARRAY) {
+    if (nd_type(root_node) == NODE_HASH && !root_node->nd_brace && root_node->nd_head && nd_type(root_node->nd_head) == NODE_LIST) {
 	const NODE *node = root_node->nd_head;
 
 	while (node) {
 	    const NODE *key_node = node->nd_head;
 
-	    assert(nd_type(node) == NODE_ARRAY);
+	    assert(nd_type(node) == NODE_LIST);
 	    if (!key_node) {
 		if (flag) *flag |= VM_CALL_KW_SPLAT;
 		return FALSE;
@@ -3857,7 +3857,7 @@ compile_args(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_roo
 
     for (; node; len++, node = node->nd_next) {
         if (CPDEBUG > 0) {
-            EXPECT_NODE("compile_args", node, NODE_ARRAY, -1);
+            EXPECT_NODE("compile_args", node, NODE_LIST, -1);
         }
 
         if (node->nd_next == NULL /* last node */ &&
@@ -3929,7 +3929,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
     int line = (int)nd_line(node);
     int len = 0;
 
-    if (nd_type(node) == NODE_ZARRAY) {
+    if (nd_type(node) == NODE_ZLIST) {
 	if (!popped) {
 	    switch (type) {
 	      case COMPILE_ARRAY_TYPE_ARRAY: ADD_INSN1(ret, line, newarray, INT2FIX(0)); break;
@@ -3952,7 +3952,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 
 	    for (i=0; i<max && node; i++, len++, node = node->nd_next) {
 		if (CPDEBUG > 0) {
-		    EXPECT_NODE("compile_array", node, NODE_ARRAY, -1);
+		    EXPECT_NODE("compile_array", node, NODE_LIST, -1);
 		}
 
                 if (type == COMPILE_ARRAY_TYPE_HASH && !node->nd_head) {
@@ -4184,7 +4184,7 @@ when_splat_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
     const int line = nd_line(vals);
 
     switch (nd_type(vals)) {
-      case NODE_ARRAY:
+      case NODE_LIST:
         if (when_vals(iseq, cond_seq, vals, l1, only_special_literals, literals) < 0)
             return COMPILE_NG;
         break;
@@ -4294,7 +4294,7 @@ compile_massign_opt(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
     mem[memindex++] = (v); \
 }
 
-    if (rhsn == 0 || nd_type(rhsn) != NODE_ARRAY) {
+    if (rhsn == 0 || nd_type(rhsn) != NODE_LIST) {
 	return 0;
     }
 
@@ -4514,7 +4514,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	expr_type = DEFINED_FALSE;
 	break;
 
-      case NODE_ARRAY:{
+      case NODE_LIST:{
 	const NODE *vals = node;
 
 	do {
@@ -4529,7 +4529,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         /* fall through */
       case NODE_STR:
       case NODE_LIT:
-      case NODE_ZARRAY:
+      case NODE_ZLIST:
       case NODE_AND:
       case NODE_OR:
       default:
@@ -4815,7 +4815,7 @@ check_keyword(const NODE *node)
 {
     /* This check is essentially a code clone of compile_keyword_arg. */
 
-    if (nd_type(node) == NODE_ARRAY) {
+    if (nd_type(node) == NODE_LIST) {
         while (node->nd_next) {
             node = node->nd_next;
         }
@@ -4840,7 +4840,7 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
           }
           case NODE_ARGSCAT:
           case NODE_ARGSPUSH: {
-            int next_is_array = (nd_type(argn->nd_head) == NODE_ARRAY);
+            int next_is_array = (nd_type(argn->nd_head) == NODE_LIST);
             VALUE argc = setup_args_core(iseq, args, argn->nd_head, 1, NULL, NULL);
             NO_CHECK(COMPILE(args, "args (cat: splat)", argn->nd_body));
             if (flag) {
@@ -4867,7 +4867,7 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
                 return argc;
             }
           }
-          case NODE_ARRAY: {
+          case NODE_LIST: {
             int len = compile_args(iseq, args, argn, keywords, flag);
             return INT2FIX(len);
           }
@@ -5136,7 +5136,7 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
 	vals = node->nd_head;
 	if (vals) {
 	    switch (nd_type(vals)) {
-	      case NODE_ARRAY:
+	      case NODE_LIST:
 		only_special_literals = when_vals(iseq, cond_seq, vals, l1, only_special_literals, literals);
 		if (only_special_literals < 0) return COMPILE_NG;
 		break;
@@ -5151,7 +5151,7 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
 	    }
 	}
 	else {
-	    EXPECT_NODE_NONULL("NODE_CASE", node, NODE_ARRAY, COMPILE_NG);
+	    EXPECT_NODE_NONULL("NODE_CASE", node, NODE_LIST, COMPILE_NG);
 	}
 
 	node = node->nd_next;
@@ -5234,11 +5234,11 @@ compile_case2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
 
 	vals = node->nd_head;
 	if (!vals) {
-	    COMPILE_ERROR(ERROR_ARGS "NODE_WHEN: must be NODE_ARRAY, but 0");
+	    COMPILE_ERROR(ERROR_ARGS "NODE_WHEN: must be NODE_LIST, but 0");
 	    return COMPILE_NG;
 	}
 	switch (nd_type(vals)) {
-	  case NODE_ARRAY:
+	  case NODE_LIST:
 	    while (vals) {
 		LABEL *lnext;
 		val = vals->nd_head;
@@ -5639,8 +5639,8 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
       case NODE_DSTR:
       case NODE_DSYM:
       case NODE_DREGX:
-      case NODE_ARRAY:
-      case NODE_ZARRAY:
+      case NODE_LIST:
+      case NODE_ZLIST:
       case NODE_LAMBDA:
       case NODE_DOT2:
       case NODE_DOT3:
@@ -5729,7 +5729,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         fin = NEW_LABEL(line);
 
         n = node->nd_head;
-        if (! (nd_type(n) == NODE_ARRAY && n->nd_alen == 2)) {
+        if (! (nd_type(n) == NODE_LIST && n->nd_alen == 2)) {
             COMPILE_ERROR(ERROR_ARGS "unexpected node");
             return COMPILE_NG;
         }
@@ -6322,7 +6322,7 @@ compile_resbody(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node,
 	narg = resq->nd_args;
 	if (narg) {
 	    switch (nd_type(narg)) {
-	      case NODE_ARRAY:
+	      case NODE_LIST:
 		while (narg) {
 		    ADD_GETLOCAL(ret, line, LVAR_ERRINFO, 0);
 		    CHECK(COMPILE(ret, "rescue arg", narg->nd_head));
@@ -6549,7 +6549,7 @@ compile_call_precheck_freeze(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
      *   obj["literal"] -> opt_aref_with(obj, "literal")
      */
     if (node->nd_mid == idAREF && !private_recv_p(node) && node->nd_args &&
-        nd_type(node->nd_args) == NODE_ARRAY && node->nd_args->nd_alen == 1 &&
+        nd_type(node->nd_args) == NODE_LIST && node->nd_args->nd_alen == 1 &&
         nd_type(node->nd_args->nd_head) == NODE_STR &&
         ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
         !ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal &&
@@ -6977,7 +6977,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	}
 	asgnflag = COMPILE_RECV(ret, "NODE_OP_ASGN1 recv", node);
 	switch (nd_type(node->nd_args->nd_head)) {
-	  case NODE_ZARRAY:
+	  case NODE_ZLIST:
 	    argc = INT2FIX(0);
 	    break;
 	  case NODE_BLOCK_PASS:
@@ -7434,11 +7434,11 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	}
 	break;
       }
-      case NODE_ARRAY:{
+      case NODE_LIST:{
         CHECK(compile_array(iseq, ret, node, COMPILE_ARRAY_TYPE_ARRAY, popped) >= 0);
 	break;
       }
-      case NODE_ZARRAY:{
+      case NODE_ZLIST:{
 	if (!popped) {
 	    ADD_INSN1(ret, line, newarray, INT2FIX(0));
 	}
@@ -7458,16 +7458,16 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       }
       case NODE_HASH:{
 	DECL_ANCHOR(list);
-	enum node_type type = node->nd_head ? nd_type(node->nd_head) : NODE_ZARRAY;
+	enum node_type type = node->nd_head ? nd_type(node->nd_head) : NODE_ZLIST;
 
 	INIT_ANCHOR(list);
 	switch (type) {
-	  case NODE_ARRAY:
+	  case NODE_LIST:
             CHECK(compile_array(iseq, list, node->nd_head, COMPILE_ARRAY_TYPE_HASH, popped) >= 0);
 	    ADD_SEQ(ret, list);
 	    break;
 
-	  case NODE_ZARRAY:
+	  case NODE_ZLIST:
 	    if (popped) break;
 	    ADD_INSN1(ret, line, newhash, INT2FIX(0));
 	    break;
@@ -8116,7 +8116,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	 *   obj["literal"] = value -> opt_aset_with(obj, "literal", value)
 	 */
 	if (mid == idASET && !private_recv_p(node) && node->nd_args &&
-	    nd_type(node->nd_args) == NODE_ARRAY && node->nd_args->nd_alen == 2 &&
+	    nd_type(node->nd_args) == NODE_LIST && node->nd_args->nd_alen == 2 &&
 	    nd_type(node->nd_args->nd_head) == NODE_STR &&
 	    ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
             !ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal &&

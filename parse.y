@@ -460,7 +460,7 @@ static NODE *new_defined(struct parser_params *p, NODE *expr, const YYLTYPE *loc
 
 static NODE *new_regexp(struct parser_params *, NODE *, int, const YYLTYPE *);
 
-#define make_array(ary, loc) ((ary) ? (nd_set_loc(ary, loc), ary) : NEW_ZARRAY(loc))
+#define make_array(ary, loc) ((ary) ? (nd_set_loc(ary, loc), ary) : NEW_ZLIST(loc))
 
 static NODE *new_xstring(struct parser_params *, NODE *, const YYLTYPE *loc);
 
@@ -5130,8 +5130,8 @@ singleton	: var_ref
 			  case NODE_DXSTR:
 			  case NODE_DREGX:
 			  case NODE_LIT:
-			  case NODE_ARRAY:
-			  case NODE_ZARRAY:
+			  case NODE_LIST:
+			  case NODE_ZLIST:
 			    yyerror1(&@3, "can't define singleton method for literals");
 			    break;
 			  default:
@@ -5166,7 +5166,7 @@ assocs		: assoc
 			}
 			else if (tail) {
                             if (assocs->nd_head &&
-                                !tail->nd_head && nd_type(tail->nd_next) == NODE_ARRAY &&
+                                !tail->nd_head && nd_type(tail->nd_next) == NODE_LIST &&
                                 nd_type(tail->nd_next->nd_head) == NODE_HASH) {
                                 /* DSTAR */
                                 tail = tail->nd_next->nd_head->nd_head;
@@ -7133,7 +7133,7 @@ heredoc_dedent(struct parser_params *p, NODE *root)
     if (!root) return root;
 
     prev_node = node = str_node = root;
-    if (nd_type(root) == NODE_ARRAY) str_node = root->nd_head;
+    if (nd_type(root) == NODE_LIST) str_node = root->nd_head;
 
     while (str_node) {
 	VALUE lit = str_node->nd_lit;
@@ -7161,7 +7161,7 @@ heredoc_dedent(struct parser_params *p, NODE *root)
 	str_node = 0;
 	while ((node = (prev_node = node)->nd_next) != 0) {
 	  next_str:
-	    if (nd_type(node) != NODE_ARRAY) break;
+	    if (nd_type(node) != NODE_LIST) break;
 	    if ((str_node = node->nd_head) != 0) {
 		enum node_type type = nd_type(str_node);
 		if (type == NODE_STR || type == NODE_DSTR) break;
@@ -9609,7 +9609,7 @@ literal_concat(struct parser_params *p, NODE *head, NODE *tail, const YYLTYPE *l
 	    goto append;
 	}
 	else {
-	    nd_set_type(tail, NODE_ARRAY);
+	    nd_set_type(tail, NODE_LIST);
 	    tail->nd_head = NEW_STR(tail->nd_lit, loc);
 	    list_concat(head, tail);
 	}
@@ -10428,7 +10428,7 @@ arg_append(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *loc
 {
     if (!node1) return NEW_LIST(node2, &node2->nd_loc);
     switch (nd_type(node1))  {
-      case NODE_ARRAY:
+      case NODE_LIST:
 	return list_append(p, node1, node2);
       case NODE_BLOCK_PASS:
 	node1->nd_head = arg_append(p, node1->nd_head, node2, loc);
@@ -10440,7 +10440,7 @@ arg_append(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *loc
 	nd_set_type(node1, NODE_ARGSCAT);
 	return node1;
       case NODE_ARGSCAT:
-        if (nd_type(node1->nd_body) != NODE_ARRAY) break;
+        if (nd_type(node1->nd_body) != NODE_LIST) break;
         node1->nd_body = list_append(p, node1->nd_body, node2);
         node1->nd_loc.end_pos = node1->nd_body->nd_loc.end_pos;
         return node1;
@@ -10460,13 +10460,13 @@ arg_concat(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *loc
 	    node1->nd_head = NEW_LIST(node2, loc);
 	return node1;
       case NODE_ARGSPUSH:
-	if (nd_type(node2) != NODE_ARRAY) break;
+	if (nd_type(node2) != NODE_LIST) break;
 	node1->nd_body = list_concat(NEW_LIST(node1->nd_body, loc), node2);
 	nd_set_type(node1, NODE_ARGSCAT);
 	return node1;
       case NODE_ARGSCAT:
-	if (nd_type(node2) != NODE_ARRAY ||
-	    nd_type(node1->nd_body) != NODE_ARRAY) break;
+	if (nd_type(node2) != NODE_LIST ||
+	    nd_type(node1->nd_body) != NODE_LIST) break;
 	node1->nd_body = list_concat(node1->nd_body, node2);
 	return node1;
     }
@@ -10487,7 +10487,7 @@ static NODE *
 rest_arg_append(struct parser_params *p, NODE *args, NODE *rest_arg, const YYLTYPE *loc)
 {
     NODE *n1;
-    if ((nd_type(rest_arg) == NODE_ARRAY) && (n1 = splat_array(args)) != 0) {
+    if ((nd_type(rest_arg) == NODE_LIST) && (n1 = splat_array(args)) != 0) {
 	return list_concat(n1, rest_arg);
     }
     return arg_concat(p, args, rest_arg, loc);
@@ -10497,7 +10497,7 @@ static NODE *
 splat_array(NODE* node)
 {
     if (nd_type(node) == NODE_SPLAT) node = node->nd_head;
-    if (nd_type(node) == NODE_ARRAY) return node;
+    if (nd_type(node) == NODE_LIST) return node;
     return 0;
 }
 
@@ -10820,7 +10820,7 @@ is_static_content(NODE *node)
     switch (nd_type(node)) {
       case NODE_HASH:
 	if (!(node = node->nd_head)) break;
-      case NODE_ARRAY:
+      case NODE_LIST:
 	do {
 	    if (!is_static_content(node->nd_head)) return 0;
 	} while ((node = node->nd_next) != 0);
@@ -10829,7 +10829,7 @@ is_static_content(NODE *node)
       case NODE_NIL:
       case NODE_TRUE:
       case NODE_FALSE:
-      case NODE_ZARRAY:
+      case NODE_ZLIST:
 	break;
       default:
 	return 0;
@@ -11012,7 +11012,7 @@ ret_args(struct parser_params *p, NODE *node)
 {
     if (node) {
 	no_blockarg(p, node);
-	if (nd_type(node) == NODE_ARRAY) {
+	if (nd_type(node) == NODE_LIST) {
 	    if (node->nd_next == 0) {
 		node = node->nd_head;
 	    }
@@ -11990,7 +11990,7 @@ parser_append_options(struct parser_params *p, NODE *node)
 
     if (p->do_print) {
 	NODE *print = NEW_FCALL(rb_intern("print"),
-				NEW_ARRAY(NEW_GVAR(idLASTLINE, LOC), LOC),
+				NEW_LIST(NEW_GVAR(idLASTLINE, LOC), LOC),
 				LOC);
 	node = block_append(p, node, print);
     }

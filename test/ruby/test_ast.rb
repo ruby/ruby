@@ -74,7 +74,7 @@ class TestAst < Test::Unit::TestCase
       children = node.children.grep(RubyVM::AbstractSyntaxTree::Node)
 
       return true if children.empty?
-      # These NODE_D* has NODE_ARRAY as nd_next->nd_next whose last locations
+      # These NODE_D* has NODE_LIST as nd_next->nd_next whose last locations
       # we can not update when item is appended.
       return true if [:DSTR, :DXSTR, :DREGX, :DSYM].include? node.type
 

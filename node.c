@@ -114,7 +114,7 @@ dump_array(VALUE buf, VALUE indent, int comment, const NODE *node)
     const char *next_indent = default_indent;
     F_LONG(nd_alen, "length");
     F_NODE(nd_head, "element");
-    while (node->nd_next && nd_type(node->nd_next) == NODE_ARRAY) {
+    while (node->nd_next && nd_type(node->nd_next) == NODE_LIST) {
 	node = node->nd_next;
 	F_NODE(nd_head, "element");
     }
@@ -557,8 +557,8 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	ANN("example: super");
 	return;
 
-      case NODE_ARRAY:
-	ANN("array constructor");
+      case NODE_LIST:
+	ANN("list constructor");
 	ANN("format: [ [nd_head], [nd_next].. ] (length: [nd_alen])");
 	ANN("example: [1, 2, 3]");
 	goto ary;
@@ -570,8 +570,8 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	dump_array(buf, indent, comment, node);
 	return;
 
-      case NODE_ZARRAY:
-	ANN("empty array constructor");
+      case NODE_ZLIST:
+	ANN("empty list constructor");
 	ANN("format: []");
 	ANN("example: []");
 	return;
