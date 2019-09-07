@@ -2614,7 +2614,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = new_hash(p, $2, &@$);
-			$$->nd_alen = TRUE;
+			$$->nd_brace = TRUE;
 		    /*% %*/
 		    /*% ripper: hash!(escape_Qundef($2)) %*/
 		    }
