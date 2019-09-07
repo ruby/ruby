@@ -3795,6 +3795,12 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
 }
 
 static int
+keyword_node_p(const NODE *const node)
+{
+    return nd_type(node) == NODE_HASH && node->nd_brace == FALSE;
+}
+
+static int
 compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 			  const NODE *const root_node,
 			  struct rb_call_info_kw_arg **const kw_arg_ptr,
@@ -3802,7 +3808,7 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 {
     if (kw_arg_ptr == NULL) return FALSE;
 
-    if (nd_type(root_node) == NODE_HASH && !root_node->nd_brace && root_node->nd_head && nd_type(root_node->nd_head) == NODE_LIST) {
+    if (keyword_node_p(root_node) && root_node->nd_head && nd_type(root_node->nd_head) == NODE_LIST) {
 	const NODE *node = root_node->nd_head;
 
 	while (node) {
@@ -4028,7 +4034,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
             NO_CHECK(COMPILE_(ret, "array element", node->nd_head, 0));
             stack_len++;
 
-            if (!node->nd_next && nd_type(node->nd_head) == NODE_HASH && node->nd_head->nd_brace == 0) {
+            if (!node->nd_next && keyword_node_p(node->nd_head)) {
                 /* Reached the end, and the last element is a keyword */
                 FLUSH_CHUNK(newarraykwsplat);
                 return 1;
@@ -4884,8 +4890,7 @@ check_keyword(const NODE *node)
         node = node->nd_head;
     }
 
-    if (nd_type(node) == NODE_HASH && !node->nd_brace) return TRUE;
-    return FALSE;
+    return keyword_node_p(node);
 }
 
 static VALUE
