@@ -7009,7 +7009,6 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	break;
       }
       case NODE_OP_ASGN1: {
-	DECL_ANCHOR(args);
 	VALUE argc;
 	unsigned int flag = 0;
 	unsigned int asgnflag = 0;
@@ -7051,10 +7050,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    boff = 1;
             /* fall through */
 	  default:
-	    INIT_ANCHOR(args);
-	    argc = setup_args(iseq, args, node->nd_args->nd_head, &flag, NULL);
+	    argc = setup_args(iseq, ret, node->nd_args->nd_head, &flag, NULL);
 	    CHECK(!NIL_P(argc));
-	    ADD_SEQ(ret, args);
 	}
 	ADD_INSN1(ret, line, dupn, FIXNUM_INC(argc, 1 + boff));
 	ADD_SEND_WITH_FLAG(ret, line, idAREF, argc, INT2FIX(flag));
