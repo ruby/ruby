@@ -21,7 +21,7 @@ have_dot = dot.empty? ? "NO" : "YES"
 PROJECT_NAME           = Ruby
 PROJECT_NUMBER         = <%=RUBY_VERSION%><%= RUBY_PATCHLEVEL < 0 ? 'dev' : "p#{RUBY_PATCHLEVEL}" %> (<%=RUBY_RELEASE_DATE%> revision <%=RUBY_REVISION%>)
 STRIP_FROM_PATH        = <%=srcdir%>
-FILE_VERSION_FILTER    = "<%=miniruby%> <%=srcdir%>/tool/file2lastrev.rb -q"
+FILE_VERSION_FILTER    = "<%=miniruby%> <%=srcdir%>/tool/file2lastrev.rb -q --srcdir=<%=srcdir%>"
 INPUT                  = <%=srcdir%> .
 INPUT_FILTER           = "<%=miniruby%> <%=srcdir%>/tool/strip-rdoc.rb"
 

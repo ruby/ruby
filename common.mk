@@ -1101,7 +1101,7 @@ $(srcdir)/revision.h:
 revision.tmp::
 	$(Q)exit > $@
 revision.$(HAVE_BASERUBY:yes=tmp):: $(srcdir)/version.h $(srcdir)/tool/file2lastrev.rb $(REVISION_FORCE)
-	$(Q) $(BASERUBY) $(srcdir)/tool/file2lastrev.rb -q --revision.h "$(srcdir)" > $@
+	$(Q) $(BASERUBY) $(srcdir)/tool/file2lastrev.rb -q --revision.h --srcdir="$(srcdir)" > $@
 
 $(REVISION_H): revision.tmp
 	$(Q)$(IFCHANGE) "--timestamp=$@" "$(srcdir)/revision.h" revision.tmp
