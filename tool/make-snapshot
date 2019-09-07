@@ -300,7 +300,7 @@ def package(vcs, rev, destdir, tmp = nil)
         rescue SystemCallError
         end
         begin
-          FileUtils.cp_r(file, dest, preserve: true)
+          FileUtils.cp_r(file, dest)
         rescue SystemCallError
         end
       end
@@ -449,10 +449,6 @@ update-gems:
 $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time:
 touch-unicode-files:
       APPEND
-      mk << <<-APPEND
-after-update::
-\t$(Q) $(RUNRUBY) -C gems -e 'Dir.glob("*") {|f|File.rename(File.readlink(f), f) rescue nil}'
-      APPEND
       open(clean.add("Makefile"), "w") do |f|
         f.puts mk
       end
@@ -463,6 +459,13 @@ after-update::
       args = args.map {|arg| arg.join("=")}
       system(make, "update-download", *args)
       clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk", "ext/ripper/y.output", ".revision.time")
+      Dir.glob("**/*") do |dest|
+        next unless File.symlink?(dest)
+        orig = File.expand_path(File.readlink(dest), File.dirname(dest))
+        File.unlink(dest)
+        FileUtils.cp_r(orig, dest)
+      end
+      File.utime(modified, modified, *Dir.glob(["tool/config.{guess,sub}", "gems/*.gem", "tool"]))
       if modified
         new_time = modified + 2
         touch_all(new_time, "**/*", File::FNM_DOTMATCH) do |name, stat|
