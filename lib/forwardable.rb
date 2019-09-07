@@ -183,7 +183,9 @@ module Forwardable
     gen = Forwardable._delegator_method(self, accessor, method, ali)
 
     # If it's not a class or module, it's an instance
-    (Module === self ? self : singleton_class).module_eval(&gen)
+    mod = Module === self ? self : singleton_class
+    mod.module_eval(&gen)
+    mod.send(:ruby2_keywords, ali) if RUBY_VERSION >= '2.7'
   end
 
   alias delegate instance_delegate
@@ -301,6 +303,7 @@ module SingleForwardable
     gen = Forwardable._delegator_method(self, accessor, method, ali)
 
     instance_eval(&gen)
+    singleton_class.send(:ruby2_keywords, ali) if RUBY_VERSION >= '2.7'
   end
 
   alias delegate single_delegate
