@@ -950,8 +950,9 @@ rb_rescue2(VALUE (* b_proc) (VALUE), VALUE data1,
 {
     va_list ap;
     va_start(ap, data2);
-    return rb_vrescue2(b_proc, data1, r_proc, data2, ap);
+    VALUE ret = rb_vrescue2(b_proc, data1, r_proc, data2, ap);
     va_end(ap);
+    return ret;
 }
 
 /*!
