@@ -3919,95 +3919,93 @@ static int
 compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped)
 {
     int line = (int)nd_line(node);
-    int len = 0;
 
     if (nd_type(node) == NODE_ZLIST) {
 	if (!popped) {
 	    ADD_INSN1(ret, line, newarray, INT2FIX(0));
 	}
+        return 0;
     }
-    else {
-	int opt_p = 1;
-	int first = 1, i;
 
-	while (node) {
-	    const NODE *start_node = node, *end_node, *prev_node;
-	    const int max = 0x100;
-	    DECL_ANCHOR(anchor);
-	    INIT_ANCHOR(anchor);
+    EXPECT_NODE("compile_array", node, NODE_LIST, -1);
 
-	    for (i=0; i<max && node; i++, len++, prev_node = node, node = node->nd_next) {
-		if (CPDEBUG > 0) {
-		    EXPECT_NODE("compile_array", node, NODE_LIST, -1);
-		}
-
-                if (opt_p && !static_literal_node_p(node, iseq)) {
-		    opt_p = 0;
-		}
-
-                NO_CHECK(COMPILE_(anchor, "array element", node->nd_head, popped));
-	    }
-
-            if (opt_p) {
-		if (!popped) {
-		    VALUE ary = rb_ary_tmp_new(i);
-
-		    end_node = node;
-		    node = start_node;
-
-		    while (node != end_node) {
-                        rb_ary_push(ary, static_literal_value(node, iseq));
-			node = node->nd_next;
-		    }
-                    while (node && static_literal_node_p(node, iseq)) {
-                        rb_ary_push(ary, static_literal_value(node, iseq));
-                        node = node->nd_next;
-                        len++;
-                    }
-
-		    OBJ_FREEZE(ary);
-
-		    iseq_add_mark_object_compile_time(iseq, ary);
-
-		    if (first) {
-			first = 0;
-                        ADD_INSN1(ret, line, duparray, ary);
-		    }
-		    else {
-                        ADD_INSN1(ret, line, putobject, ary);
-                        ADD_INSN(ret, line, concatarray);
-		    }
-		}
-	    }
-	    else {
-		if (!popped) {
-                    /* Find last node in array, and if it is a keyword argument, then set
-                       flag to check and remove empty keyword arguments hash from array */
-                    if (!node && nd_type(prev_node->nd_head) == NODE_HASH && prev_node->nd_head->nd_brace == 0) {
-                        ADD_INSN1(anchor, line, newarraykwsplat, INT2FIX(i));
-                    }
-                    else {
-                        ADD_INSN1(anchor, line, newarray, INT2FIX(i));
-                    }
-
-
-                    if (first) {
-                        first = 0;
-                    }
-                    else {
-                        ADD_INSN(anchor, line, concatarray);
-                    }
-
-                    APPEND_LIST(ret, anchor);
-		}
-		else {
-		    /* popped */
-		    APPEND_LIST(ret, anchor);
-		}
-	    }
-	}
+    if (popped) {
+        for (; node; node = node->nd_next) {
+            NO_CHECK(COMPILE_(ret, "array element", node->nd_head, popped));
+        }
+        return 1;
     }
-    return len;
+
+    int opt_p = 1;
+    int first = 1, i;
+
+    while (node) {
+        const NODE *start_node = node, *end_node, *prev_node;
+        const int max = 0x100;
+        DECL_ANCHOR(anchor);
+        INIT_ANCHOR(anchor);
+
+        for (i=0; i<max && node; i++, prev_node = node, node = node->nd_next) {
+            if (CPDEBUG > 0) {
+                EXPECT_NODE("compile_array", node, NODE_LIST, -1);
+            }
+
+            if (opt_p && !static_literal_node_p(node, iseq)) {
+                opt_p = 0;
+            }
+
+            NO_CHECK(COMPILE_(anchor, "array element", node->nd_head, 0));
+        }
+
+        if (opt_p) {
+            VALUE ary = rb_ary_tmp_new(i);
+
+            end_node = node;
+            node = start_node;
+
+            while (node != end_node) {
+                rb_ary_push(ary, static_literal_value(node, iseq));
+                node = node->nd_next;
+            }
+            while (node && static_literal_node_p(node, iseq)) {
+                rb_ary_push(ary, static_literal_value(node, iseq));
+                node = node->nd_next;
+            }
+
+            OBJ_FREEZE(ary);
+
+            iseq_add_mark_object_compile_time(iseq, ary);
+
+            if (first) {
+                first = 0;
+                ADD_INSN1(ret, line, duparray, ary);
+            }
+            else {
+                ADD_INSN1(ret, line, putobject, ary);
+                ADD_INSN(ret, line, concatarray);
+            }
+        }
+        else {
+            /* Find last node in array, and if it is a keyword argument, then set
+               flag to check and remove empty keyword arguments hash from array */
+            if (!node && nd_type(prev_node->nd_head) == NODE_HASH && prev_node->nd_head->nd_brace == 0) {
+                ADD_INSN1(anchor, line, newarraykwsplat, INT2FIX(i));
+            }
+            else {
+                ADD_INSN1(anchor, line, newarray, INT2FIX(i));
+            }
+
+            if (first) {
+                first = 0;
+            }
+            else {
+                ADD_INSN(anchor, line, concatarray);
+            }
+
+            APPEND_LIST(ret, anchor);
+        }
+    }
+    return 1;
 }
 
 static int
