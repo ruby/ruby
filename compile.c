@@ -3936,75 +3936,111 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
         return 1;
     }
 
-    int opt_p = 1;
-    int first = 1, i;
+    /* Compilation of an array literal.
+     * The following code is essentially the same as:
+     *
+     *     for (int count = 0; node; count++; node->nd_next) {
+     *         compile(node->nd_head);
+     *     }
+     *     ADD_INSN(newarray, count);
+     *
+     * However, there are three points.
+     *
+     * - The code above causes stack overflow for a big string literal.
+     *   The following limits the stack length up to max_stack_len.
+     *
+     *   [x1,x2,...,x10000] =>
+     *     push x1  ; push x2  ; ...; push x256; newarray 256; 
+     *     push x257; push x258; ...; push x512; newarray 256; concatarray;
+     *     push x513; push x514; ...; push x768; newarray 256; concatarray;
+     *     ...
+     *
+     * - Long subarray can be optimized by pre-allocating a hidden array.
+     *
+     *   [1,2,3,...,100] =>
+     *     duparray [1,2,3,...,100]
+     *
+     *   [x, 1,2,3,...,100, z] =>
+     *     push x; newarray 1;
+     *     putobject [1,2,3,...,100] (<- hidden array); concatarray;
+     *     push z; newarray 1; concatarray
+     *
+     * - If the last element is a keyword, newarraykwsplat should be emitted
+     *   to check and remove empty keyword arguments hash from array.
+     *   (Note: a keyword is NODE_HASH which is not static_literal_node_p.)
+     *
+     *   [1,2,3,**kw] =>
+     *     putobject 1; putobject 2; putobject 3; push kw; newarraykwsplat
+     */
+
+    const int max_stack_len = 0x100;
+    const int min_tmp_ary_len = 0x40;
+    int stack_len = 0;
+    int first_chunk = 1;
+
+    /* Convert pushed elements to an array, and concatarray if needed */
+#define FLUSH_CHUNK(newarrayinsn)                               \
+    if (stack_len) {                                            \
+        ADD_INSN1(ret, line, newarrayinsn, INT2FIX(stack_len)); \
+        if (!first_chunk) ADD_INSN(ret, line, concatarray);     \
+        first_chunk = stack_len = 0;                            \
+    }
 
     while (node) {
-        const NODE *start_node = node, *end_node, *prev_node;
-        const int max = 0x100;
-        DECL_ANCHOR(anchor);
-        INIT_ANCHOR(anchor);
+        int count = 1;
 
-        for (i=0; i<max && node; i++, prev_node = node, node = node->nd_next) {
+        /* pre-allocation check (this branch can be omittable) */
+        if (static_literal_node_p(node, iseq)) {
+            /* count the elements that are optimizable */
+            const NODE *node_tmp = node->nd_next;
+            for(; node_tmp && static_literal_node_p(node_tmp, iseq); node_tmp = node_tmp->nd_next)
+                count++;
+
+            if ((first_chunk && stack_len == 0 && !node_tmp) || count >= min_tmp_ary_len) {
+                /* The literal contains only optimizable elements, or the subarray is long enough */
+
+                VALUE ary = rb_ary_tmp_new(count);
+
+                /* Create a hidden array */
+                for (; count; count--, node = node->nd_next)
+                    rb_ary_push(ary, static_literal_value(node, iseq));
+                OBJ_FREEZE(ary);
+                iseq_add_mark_object_compile_time(iseq, ary);
+
+                /* Emit optimized code */
+                FLUSH_CHUNK(newarray);
+                if (first_chunk) {
+                    ADD_INSN1(ret, line, duparray, ary);
+                    first_chunk = 0;
+                }
+                else {
+                    ADD_INSN1(ret, line, putobject, ary);
+                    ADD_INSN(ret, line, concatarray);
+                }
+            }
+        }
+
+        /* Base case: Compile "count" elements */
+        for (; count; count--, node = node->nd_next) {
             if (CPDEBUG > 0) {
                 EXPECT_NODE("compile_array", node, NODE_LIST, -1);
             }
 
-            if (opt_p && !static_literal_node_p(node, iseq)) {
-                opt_p = 0;
+            NO_CHECK(COMPILE_(ret, "array element", node->nd_head, 0));
+            stack_len++;
+
+            if (!node->nd_next && nd_type(node->nd_head) == NODE_HASH && node->nd_head->nd_brace == 0) {
+                /* Reached the end, and the last element is a keyword */
+                FLUSH_CHUNK(newarraykwsplat);
+                return 1;
             }
 
-            NO_CHECK(COMPILE_(anchor, "array element", node->nd_head, 0));
-        }
-
-        if (opt_p) {
-            VALUE ary = rb_ary_tmp_new(i);
-
-            end_node = node;
-            node = start_node;
-
-            while (node != end_node) {
-                rb_ary_push(ary, static_literal_value(node, iseq));
-                node = node->nd_next;
-            }
-            while (node && static_literal_node_p(node, iseq)) {
-                rb_ary_push(ary, static_literal_value(node, iseq));
-                node = node->nd_next;
-            }
-
-            OBJ_FREEZE(ary);
-
-            iseq_add_mark_object_compile_time(iseq, ary);
-
-            if (first) {
-                first = 0;
-                ADD_INSN1(ret, line, duparray, ary);
-            }
-            else {
-                ADD_INSN1(ret, line, putobject, ary);
-                ADD_INSN(ret, line, concatarray);
-            }
-        }
-        else {
-            /* Find last node in array, and if it is a keyword argument, then set
-               flag to check and remove empty keyword arguments hash from array */
-            if (!node && nd_type(prev_node->nd_head) == NODE_HASH && prev_node->nd_head->nd_brace == 0) {
-                ADD_INSN1(anchor, line, newarraykwsplat, INT2FIX(i));
-            }
-            else {
-                ADD_INSN1(anchor, line, newarray, INT2FIX(i));
-            }
-
-            if (first) {
-                first = 0;
-            }
-            else {
-                ADD_INSN(anchor, line, concatarray);
-            }
-
-            APPEND_LIST(ret, anchor);
+            /* If there are many pushed elements, flush them to avoid stack overflow */
+            if (stack_len >= max_stack_len) FLUSH_CHUNK(newarray);
         }
     }
+
+    FLUSH_CHUNK(newarray);
     return 1;
 }
 
