@@ -583,7 +583,7 @@ class VCS
     end
 
     def export(revision, url, dir, keep_temp = false)
-      system(COMMAND, "clone", "-s", (@srcdir || '.').to_s, "-b", url, dir) or return
+      system(COMMAND, "clone", "-c", "advice.detachedHead=false", "-s", (@srcdir || '.').to_s, "-b", url, dir) or return
       system(COMMAND, "fetch", "origin", "+refs/notes/commits:refs/notes/commits", chdir: dir) or return
       (Integer === revision ? GITSVN : GIT).new(File.expand_path(dir))
     end
