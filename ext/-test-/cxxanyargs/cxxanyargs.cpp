@@ -65,6 +65,7 @@ struct test_rb_define_hooked_variable {
         return self;
     }
 };
+VALUE test_rb_define_hooked_variable::v = Qundef;
 
 namespace test_rb_iterate {
     VALUE
@@ -247,6 +248,7 @@ struct test_rb_thread_create {
         return rb_thread_create(thread, &v); // new
     }
 };
+VALUE test_rb_thread_create::v = Qundef;
 
 namespace test_st_foreach {
     static int
