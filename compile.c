@@ -3950,7 +3950,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
      *   The following limits the stack length up to max_stack_len.
      *
      *   [x1,x2,...,x10000] =>
-     *     push x1  ; push x2  ; ...; push x256; newarray 256; 
+     *     push x1  ; push x2  ; ...; push x256; newarray 256;
      *     push x257; push x258; ...; push x512; newarray 256; concatarray;
      *     push x513; push x514; ...; push x768; newarray 256; concatarray;
      *     ...
