@@ -569,7 +569,11 @@ elsif $svn
 elsif $git
   abort "#{File.basename $0}: use -srcdir with cloned local repository"
 else
-  vcs = VCS::SVN.new(SVNURL)
+  begin
+    vcs = VCS.detect(File.expand_path("../..", __FILE__))
+  rescue VCS::NotFoundError
+    vcs = VCS::SVN.new(SVNURL)
+  end
 end
 
 success = true
