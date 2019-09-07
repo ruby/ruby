@@ -4050,6 +4050,12 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
     return 1;
 }
 
+static inline int
+static_literal_node_pair_p(const NODE *node, const rb_iseq_t *iseq)
+{
+    return node->nd_head && static_literal_node_p(node, iseq) && static_literal_node_p(node->nd_next, iseq);
+}
+
 static int
 compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped)
 {
@@ -4073,97 +4079,121 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popp
         return 1;
     }
 
-    int opt_p = 1;
-    int first = 1, i;
-    int single_kw = 0;
-    int num_kw = 0;
+    /* Compilation of a hash literal (or keyword arguments).
+     * This is very similar to compile_array, but there are some differences:
+     *
+     * - It contains key-value pairs.  So we need to take every two elments.
+     *   We can assume that the length is always even.
+     *
+     * - Merging is done by a method call (id_core_hash_merge_ptr).
+     *   Sometimes we need to insert the receiver, so "anchor" is needed.
+     *   In addition, a method call is much slower than concatarray.
+     *   So it pays only when the subsequence is really long.
+     *   (min_tmp_hash_len must be much larger than min_tmp_ary_len.)
+     *
+     * - We need to handle keyword splat: **kw.
+     *   For **kw, the key part (node->nd_head) is NULL, and the value part
+     *   (node->nd_next->nd_head) is "kw".
+     *   The code is a bit difficult to avoid hash allocation for **{}.
+     */
+
+    const int max_stack_len = 0x100;
+    const int min_tmp_hash_len = 0x800;
+    int stack_len = 0;
+    int first_chunk = 1;
+    DECL_ANCHOR(anchor);
+    INIT_ANCHOR(anchor);
+
+    /* Convert pushed elements to a hash, and merge if needed */
+#define FLUSH_CHUNK()                                                                   \
+    if (stack_len) {                                                                    \
+        if (first_chunk) {                                                              \
+            APPEND_LIST(ret, anchor);                                                   \
+            ADD_INSN1(ret, line, newhash, INT2FIX(stack_len));                          \
+        }                                                                               \
+        else {                                                                          \
+            ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));  \
+            ADD_INSN(ret, line, swap);                                                  \
+            APPEND_LIST(ret, anchor);                                                   \
+            ADD_SEND(ret, line, id_core_hash_merge_ptr, INT2FIX(stack_len + 1));        \
+        }                                                                               \
+        INIT_ANCHOR(anchor);                                                            \
+        first_chunk = stack_len = 0;                                                    \
+    }
 
     while (node) {
-        const NODE *start_node = node, *end_node;
-        const NODE *kw = 0;
-        const int max = 0x100;
-        DECL_ANCHOR(anchor);
-        INIT_ANCHOR(anchor);
+        int count = 1;
 
-        for (i=0; i<max && node; i++, node = node->nd_next) {
-            if (CPDEBUG > 0) {
-                EXPECT_NODE("compile_hash", node, NODE_LIST, -1);
-            }
+        /* pre-allocation check (this branch can be omittable) */
+        if (static_literal_node_pair_p(node, iseq)) {
+            /* count the elements that are optimizable */
+            const NODE *node_tmp = node->nd_next->nd_next;
+            for(; node_tmp && static_literal_node_pair_p(node_tmp, iseq); node_tmp = node_tmp->nd_next->nd_next)
+                count++;
 
-            if (!node->nd_head) {
-                num_kw++;
-                opt_p = 0;
-                kw = node->nd_next->nd_head;
-                node = node->nd_next->nd_next;
-                if (!single_kw && !node) {
-                    single_kw = 1;
+            if ((first_chunk && stack_len == 0 && !node_tmp) || count >= min_tmp_hash_len) {
+                /* The literal contains only optimizable elements, or the subsequence is long enough */
+                VALUE ary = rb_ary_tmp_new(count);
+
+                /* Create a hidden hash */
+                for (; count; count--, node = node->nd_next->nd_next) {
+                    VALUE elem[2];
+                    elem[0] = static_literal_value(node, iseq);
+                    elem[1] = static_literal_value(node->nd_next, iseq);
+                    rb_ary_cat(ary, elem, 2);
                 }
-                break;
-            }
-
-            if (opt_p && !static_literal_node_p(node, iseq)) {
-                opt_p = 0;
-            }
-
-            NO_CHECK(COMPILE_(anchor, "hash element", node->nd_head, 0));
-        }
-
-        if (opt_p) {
-            VALUE ary = rb_ary_tmp_new(i);
-
-            end_node = node;
-            node = start_node;
-
-            while (node != end_node) {
-                rb_ary_push(ary, static_literal_value(node, iseq));
-                node = node->nd_next;
-            }
-            while (node && node->nd_next &&
-                   static_literal_node_p(node, iseq) &&
-                   static_literal_node_p(node->nd_next, iseq)) {
-                VALUE elem[2];
-                elem[0] = static_literal_value(node, iseq);
-                elem[1] = static_literal_value(node->nd_next, iseq);
-                rb_ary_cat(ary, elem, 2);
-                node = node->nd_next->nd_next;
-            }
-
-            if (first) {
-                first = 0;
-                VALUE hash;
-
-                hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
+                VALUE hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
                 rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR_TRANSIENT(ary), hash);
-                iseq_add_mark_object_compile_time(iseq, rb_obj_hide(hash));
-                ADD_INSN1(ret, line, duphash, hash);
-            }
-            else {
-                COMPILE_ERROR(ERROR_ARGS "core#hash_merge_ary");
-                return -1;
-            }
-        }
-        else {
-            if (i > 0) {
-                num_kw++;
-                if (first) {
-                    ADD_INSN1(anchor, line, newhash, INT2FIX(i));
-                    APPEND_LIST(ret, anchor);
+                hash = rb_obj_hide(hash);
+                OBJ_FREEZE(hash);
+                iseq_add_mark_object_compile_time(iseq, hash);
+
+                /* Emit optimized code */
+                FLUSH_CHUNK();
+                if (first_chunk) {
+                    ADD_INSN1(ret, line, duphash, hash);
+                    first_chunk = 0;
                 }
                 else {
                     ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
                     ADD_INSN(ret, line, swap);
-                    APPEND_LIST(ret, anchor);
-                    ADD_SEND(ret, line, id_core_hash_merge_ptr, INT2FIX(i + 1));
+
+                    ADD_INSN1(ret, line, putobject, hash);
+
+                    ADD_SEND(ret, line, id_core_hash_merge_kwd, INT2FIX(2));
                 }
             }
-            if (kw) {
-                int empty_kw = nd_type(kw) == NODE_LIT;
-                int first_kw = num_kw == 1;
-                int only_kw = single_kw && first_kw;
+        }
+
+        /* Base case: Compile "count" elements */
+        for (; count; count--, node = node->nd_next->nd_next) {
+
+            if (CPDEBUG > 0) {
+                EXPECT_NODE("compile_hash", node, NODE_LIST, -1);
+            }
+
+            if (node->nd_head) {
+                /* Normal key-value pair */
+                NO_CHECK(COMPILE_(anchor, "hash key element", node->nd_head, 0));
+                NO_CHECK(COMPILE_(anchor, "hash value element", node->nd_next->nd_head, 0));
+                stack_len += 2;
+
+                /* If there are many pushed elements, flush them to avoid stack overflow */
+                if (stack_len >= max_stack_len) FLUSH_CHUNK();
+            }
+            else {
+                /* kwsplat case: foo(..., **kw, ...) */
+                FLUSH_CHUNK();
+
+                const NODE *kw = node->nd_next->nd_head;
+                int empty_kw = nd_type(kw) == NODE_LIT;       /* foo(  ..., **{}, ...) */
+                int first_kw = first_chunk && stack_len == 0; /* foo(1,2,3, **kw, ...) */
+                int last_kw = !node->nd_next->nd_next;        /* foo(  ..., **kw) */
+                int only_kw = last_kw && first_kw;            /* foo(1,2,3, **kw) */
 
                 if (!empty_kw) {
                     ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                    if (i > 0 || !first) ADD_INSN(ret, line, swap);
+                    if (!first_kw) ADD_INSN(ret, line, swap);
                     else ADD_INSN1(ret, line, newhash, INT2FIX(0));
                 }
 
@@ -4177,10 +4207,14 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popp
                 if (!empty_kw) {
                     ADD_SEND(ret, line, id_core_hash_merge_kwd, INT2FIX(2));
                 }
+
+                first_chunk = 0;
             }
-            first = 0;
         }
     }
+
+    FLUSH_CHUNK();
+#undef FLUSH_CHUNK
     return 1;
 }
 
