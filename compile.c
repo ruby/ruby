@@ -4012,149 +4012,139 @@ static int
 compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped)
 {
     int line = (int)nd_line(node);
-    int len = 0;
 
     if (nd_type(node) == NODE_ZLIST) {
 	if (!popped) {
 	    ADD_INSN1(ret, line, newhash, INT2FIX(0));
 	}
+        return 0;
     }
-    else {
-	int opt_p = 1;
-	int first = 1, i;
-        int single_kw = 0;
-        int num_kw = 0;
 
-	while (node) {
-	    const NODE *start_node = node, *end_node;
-	    const NODE *kw = 0;
-	    const int max = 0x100;
-	    DECL_ANCHOR(anchor);
-	    INIT_ANCHOR(anchor);
+    EXPECT_NODE("compile_hash", node, NODE_LIST, -1);
 
-	    for (i=0; i<max && node; i++, len++, node = node->nd_next) {
-		if (CPDEBUG > 0) {
-		    EXPECT_NODE("compile_hash", node, NODE_LIST, -1);
-		}
+    if (popped) {
+        for (; node; node = node->nd_next) {
+            NO_CHECK(COMPILE_(ret, "hash element", node->nd_head, popped));
+        }
+        return 1;
+    }
 
-                if (!node->nd_head) {
-		    kw = node->nd_next;
-                    num_kw++;
-		    node = 0;
-		    if (kw) {
-			opt_p = 0;
-			node = kw->nd_next;
-			kw = kw->nd_head;
-                        if (!single_kw && !node) {
-                            single_kw = 1;
-                        }
-		    }
-		    break;
-		}
-                if (opt_p && !static_literal_node_p(node, iseq)) {
-		    opt_p = 0;
-		}
+    int opt_p = 1;
+    int first = 1, i;
+    int single_kw = 0;
+    int num_kw = 0;
 
-                NO_CHECK(COMPILE_(anchor, "array element", node->nd_head, popped));
-	    }
+    while (node) {
+        const NODE *start_node = node, *end_node;
+        const NODE *kw = 0;
+        const int max = 0x100;
+        DECL_ANCHOR(anchor);
+        INIT_ANCHOR(anchor);
 
-            if (opt_p) {
-		if (!popped) {
-		    VALUE ary = rb_ary_tmp_new(i);
+        for (i=0; i<max && node; i++, node = node->nd_next) {
+            if (CPDEBUG > 0) {
+                EXPECT_NODE("compile_hash", node, NODE_LIST, -1);
+            }
 
-		    end_node = node;
-		    node = start_node;
-
-		    while (node != end_node) {
-                        rb_ary_push(ary, static_literal_value(node, iseq));
-			node = node->nd_next;
-		    }
-                    while (node && node->nd_next &&
-                           static_literal_node_p(node, iseq) &&
-                           static_literal_node_p(node->nd_next, iseq)) {
-                        VALUE elem[2];
-                        elem[0] = static_literal_value(node, iseq);
-                        elem[1] = static_literal_value(node->nd_next, iseq);
-                        rb_ary_cat(ary, elem, 2);
-                        node = node->nd_next->nd_next;
-                        len++;
+            if (!node->nd_head) {
+                kw = node->nd_next;
+                num_kw++;
+                node = 0;
+                if (kw) {
+                    opt_p = 0;
+                    node = kw->nd_next;
+                    kw = kw->nd_head;
+                    if (!single_kw && !node) {
+                        single_kw = 1;
                     }
-
-		    OBJ_FREEZE(ary);
-
-		    iseq_add_mark_object_compile_time(iseq, ary);
-
-		    if (first) {
-			first = 0;
-                        VALUE hash;
-
-                        hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
-                        rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR_TRANSIENT(ary), hash);
-                        iseq_add_mark_object_compile_time(iseq, rb_obj_hide(hash));
-                        ADD_INSN1(ret, line, duphash, hash);
-		    }
-		    else {
-                        COMPILE_ERROR(ERROR_ARGS "core#hash_merge_ary");
-                        return -1;
-		    }
-		}
-	    }
-	    else {
-                if (!popped || kw) {
-                    if (i > 0) {
-                        num_kw++;
-                        if (first) {
-                            if (!popped) {
-                                ADD_INSN1(anchor, line, newhash, INT2FIX(i));
-                            }
-                            APPEND_LIST(ret, anchor);
-                        }
-                        else {
-                            if (!popped) {
-                                ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                                ADD_INSN(ret, line, swap);
-                            }
-                            APPEND_LIST(ret, anchor);
-                            if (!popped) {
-                                ADD_SEND(ret, line, id_core_hash_merge_ptr, INT2FIX(i + 1));
-                            }
-                        }
-                    }
-                    if (kw) {
-                        int empty_kw = nd_type(kw) == NODE_LIT;
-                        int first_kw = num_kw == 1;
-                        int only_kw = single_kw && first_kw;
-
-                        if (!popped && !empty_kw) {
-                            ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                            if (i > 0 || !first) ADD_INSN(ret, line, swap);
-                            else ADD_INSN1(ret, line, newhash, INT2FIX(0));
-                        }
-
-                        if (empty_kw && first_kw && !only_kw) {
-                            ADD_INSN1(ret, line, newhash, INT2FIX(0));
-                        }
-                        else if (!empty_kw || only_kw) {
-                            NO_CHECK(COMPILE(ret, "keyword splat", kw));
-                        }
-
-                        if (popped) {
-                            ADD_INSN(ret, line, pop);
-                        }
-                        else if (!empty_kw) {
-                            ADD_SEND(ret, line, id_core_hash_merge_kwd, INT2FIX(2));
-                        }
-                    }
-                    first = 0;
                 }
-		else {
-		    /* popped */
-		    APPEND_LIST(ret, anchor);
-		}
-	    }
-	}
+                break;
+            }
+            if (opt_p && !static_literal_node_p(node, iseq)) {
+                opt_p = 0;
+            }
+
+            NO_CHECK(COMPILE_(anchor, "hash element", node->nd_head, 0));
+        }
+
+        if (opt_p) {
+            VALUE ary = rb_ary_tmp_new(i);
+
+            end_node = node;
+            node = start_node;
+
+            while (node != end_node) {
+                rb_ary_push(ary, static_literal_value(node, iseq));
+                node = node->nd_next;
+            }
+            while (node && node->nd_next &&
+                   static_literal_node_p(node, iseq) &&
+                   static_literal_node_p(node->nd_next, iseq)) {
+                VALUE elem[2];
+                elem[0] = static_literal_value(node, iseq);
+                elem[1] = static_literal_value(node->nd_next, iseq);
+                rb_ary_cat(ary, elem, 2);
+                node = node->nd_next->nd_next;
+            }
+
+            OBJ_FREEZE(ary);
+
+            iseq_add_mark_object_compile_time(iseq, ary);
+
+            if (first) {
+                first = 0;
+                VALUE hash;
+
+                hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
+                rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR_TRANSIENT(ary), hash);
+                iseq_add_mark_object_compile_time(iseq, rb_obj_hide(hash));
+                ADD_INSN1(ret, line, duphash, hash);
+            }
+            else {
+                COMPILE_ERROR(ERROR_ARGS "core#hash_merge_ary");
+                return -1;
+            }
+        }
+        else {
+            if (i > 0) {
+                num_kw++;
+                if (first) {
+                    ADD_INSN1(anchor, line, newhash, INT2FIX(i));
+                    APPEND_LIST(ret, anchor);
+                }
+                else {
+                    ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                    ADD_INSN(ret, line, swap);
+                    APPEND_LIST(ret, anchor);
+                    ADD_SEND(ret, line, id_core_hash_merge_ptr, INT2FIX(i + 1));
+                }
+            }
+            if (kw) {
+                int empty_kw = nd_type(kw) == NODE_LIT;
+                int first_kw = num_kw == 1;
+                int only_kw = single_kw && first_kw;
+
+                if (!empty_kw) {
+                    ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                    if (i > 0 || !first) ADD_INSN(ret, line, swap);
+                    else ADD_INSN1(ret, line, newhash, INT2FIX(0));
+                }
+
+                if (empty_kw && first_kw && !only_kw) {
+                    ADD_INSN1(ret, line, newhash, INT2FIX(0));
+                }
+                else if (!empty_kw || only_kw) {
+                    NO_CHECK(COMPILE(ret, "keyword splat", kw));
+                }
+
+                if (!empty_kw) {
+                    ADD_SEND(ret, line, id_core_hash_merge_kwd, INT2FIX(2));
+                }
+            }
+            first = 0;
+        }
     }
-    return len;
+    return 1;
 }
 
 VALUE
