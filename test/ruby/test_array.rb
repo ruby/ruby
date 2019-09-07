@@ -3213,6 +3213,14 @@ class TestArray < Test::Unit::TestCase
     assert_raise(TypeError) {[1].sum("")}
   end
 
+  def test_big_array_literal_with_kwsplat
+    lit = "["
+    10000.times { lit << "{}," }
+    lit << "**{}]"
+
+    assert_equal(10000, eval(lit).size)
+  end
+
   private
   def need_continuation
     unless respond_to?(:callcc, true)
