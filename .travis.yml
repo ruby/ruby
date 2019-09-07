@@ -74,6 +74,7 @@ env:
         ${BEFORE_INSTALL}
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
           gcc-8 \
+          g++-8 \
           libffi-dev \
           libgdbm-dev \
           libgmp-dev \
@@ -244,6 +245,7 @@ env:
     compiler: gcc-8
     env:
       - GCC_FLAGS=-m32
+      - CXX='g++-8 -m32'
       - debugflags=-g0
       - SETARCH='setarch i686 --verbose --3gb'
     # # Not using addon to control retries
@@ -257,6 +259,9 @@ env:
       - |-
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
           gcc-8-multilib \
+          g++-8 \
+          g++-8-multilib \
+          libstdc++-8-dev:i386 \
           libffi-dev:i386 \
           libffi6:i386 \
           libgdbm-dev:i386 \
