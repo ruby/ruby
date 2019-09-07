@@ -476,7 +476,8 @@ class VCS
         if changed == last
           last = rev
         else
-          last = svn_revision(cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--format=%B', last]]))
+          svn_rev = svn_revision(cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--format=%B', last]]))
+          last = svn_rev if svn_rev
         end
         changed = rev
       end
