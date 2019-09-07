@@ -437,7 +437,7 @@ def package(vcs, rev, destdir, tmp = nil)
       vars["UNICODE_VERSION"] = $unicode_version if $unicode_version
       args = vars.dup
       mk.gsub!(/@([A-Za-z_]\w*)@/) {args.delete($1); vars[$1] || ENV[$1]}
-      mk << commonmk.gsub(/\{\$([^(){}]*)[^{}]*\}/, "")
+      mk << commonmk.gsub(/\{\$([^(){}]*)[^{}]*\}/, "").sub(/^revision\.tmp::$/, '\& Makefile')
       mk << <<-'APPEND'
 
 update-download:: touch-unicode-files after-update
@@ -456,6 +456,8 @@ after-update::
       open(clean.add("Makefile"), "w") do |f|
         f.puts mk
       end
+      File.open(clean.add("revision.tmp"), "w") {}
+      File.open(clean.add(".revision.time"), "w") {}
       ENV["CACHE_SAVE"] = "no"
       make = ENV["MAKE"] || ENV["make"] || "make"
       args = args.map {|arg| arg.join("=")}
