@@ -3987,16 +3987,25 @@ compile_list(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_roo
                         rb_ary_push(ary, static_literal_value(node, iseq));
 			node = node->nd_next;
 		    }
-		    while (node && node->nd_next &&
-                           static_literal_node_p(node, iseq) &&
-                           static_literal_node_p(node->nd_next, iseq)) {
-			VALUE elem[2];
-                        elem[0] = static_literal_value(node, iseq);
-                        elem[1] = static_literal_value(node->nd_next, iseq);
-			rb_ary_cat(ary, elem, 2);
-			node = node->nd_next->nd_next;
-			len++;
-		    }
+                    if (type == COMPILE_ARRAY_TYPE_ARRAY) {
+                        while (node && static_literal_node_p(node, iseq)) {
+                            rb_ary_push(ary, static_literal_value(node, iseq));
+                            node = node->nd_next;
+                            len++;
+                        }
+                    }
+                    else { /* COMPILE_ARRAY_TYPE_HASH */
+                        while (node && node->nd_next &&
+                               static_literal_node_p(node, iseq) &&
+                               static_literal_node_p(node->nd_next, iseq)) {
+                            VALUE elem[2];
+                            elem[0] = static_literal_value(node, iseq);
+                            elem[1] = static_literal_value(node->nd_next, iseq);
+                            rb_ary_cat(ary, elem, 2);
+                            node = node->nd_next->nd_next;
+                            len++;
+                        }
+                    }
 
 		    OBJ_FREEZE(ary);
 
