@@ -4083,19 +4083,16 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popp
             }
 
             if (!node->nd_head) {
-                kw = node->nd_next;
                 num_kw++;
-                node = 0;
-                if (kw) {
-                    opt_p = 0;
-                    node = kw->nd_next;
-                    kw = kw->nd_head;
-                    if (!single_kw && !node) {
-                        single_kw = 1;
-                    }
+                opt_p = 0;
+                kw = node->nd_next->nd_head;
+                node = node->nd_next->nd_next;
+                if (!single_kw && !node) {
+                    single_kw = 1;
                 }
                 break;
             }
+
             if (opt_p && !static_literal_node_p(node, iseq)) {
                 opt_p = 0;
             }
