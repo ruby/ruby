@@ -307,16 +307,12 @@ RUBY_FUNC_EXPORTED
 VALUE
 rb_fstring(VALUE str)
 {
-    VALUE fstr;
-    int bare;
-
     Check_Type(str, T_STRING);
 
     if (FL_TEST(str, RSTRING_FSTR))
 	return str;
 
-    bare = BARE_STRING_P(str);
-    if (STR_EMBED_P(str) && !bare) {
+    if (!BARE_STRING_P(str)) {
 	OBJ_FREEZE_RAW(str);
 	return str;
     }
@@ -324,14 +320,7 @@ rb_fstring(VALUE str)
     if (!OBJ_FROZEN(str))
         rb_str_resize(str, RSTRING_LEN(str));
 
-    fstr = register_fstring(str);
-
-    if (!bare) {
-	str_replace_shared_without_enc(str, fstr);
-	OBJ_FREEZE_RAW(str);
-	return str;
-    }
-    return fstr;
+    return register_fstring(str);
 }
 
 static VALUE
