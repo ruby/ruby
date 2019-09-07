@@ -14,27 +14,35 @@ jobs:
           sudo apt-get update
           sudo apt-get install ruby2.5 doxygen graphviz
           sudo apt-get build-dep ruby2.5
+        if: github.repository == 'ruby/ruby'
 
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
       - name: Checkout ruby/ruby
         run: |
           git clone --depth=10 https://github.com/ruby/ruby . && git reset --hard "$GITHUB_SHA"
+        if: github.repository == 'ruby/ruby'
 
       - name: Fixed world writable dirs
         run: |
           chmod go-w $HOME
           sudo chmod -R go-w /usr/share
+        if: github.repository == 'ruby/ruby'
       - run: autoconf
+        if: github.repository == 'ruby/ruby'
       - name: Configure
         run: |
           ./configure
+        if: github.repository == 'ruby/ruby'
       - name: Generate Doxyfile
         run: make Doxyfile
+        if: github.repository == 'ruby/ruby'
       - name: Run Doxygen
         run: doxygen
+        if: github.repository == 'ruby/ruby'
       - name: Upload results
         run: |
           aws s3 sync doc/capi/html/ s3://rubyci/doxygen-latest-html
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        if: github.repository == 'ruby/ruby'
