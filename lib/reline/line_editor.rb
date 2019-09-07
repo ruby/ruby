@@ -1049,6 +1049,8 @@ class Reline::LineEditor
     end
   end
 
+  private def ed_unassigned(key) end # do nothing
+
   private def ed_insert(key)
     if key.instance_of?(String)
       width = Reline::Unicode.get_mbchar_width(key)
