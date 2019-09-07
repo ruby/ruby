@@ -4123,10 +4123,6 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popp
                 node = node->nd_next->nd_next;
             }
 
-            OBJ_FREEZE(ary);
-
-            iseq_add_mark_object_compile_time(iseq, ary);
-
             if (first) {
                 first = 0;
                 VALUE hash;
