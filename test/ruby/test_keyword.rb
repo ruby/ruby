@@ -178,6 +178,99 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(["bar", 111111], f[str: "bar", num: 111111])
   end
 
+  def test_pass_keywords
+    c = Class.new do
+      pass_keywords def foo(meth, *args)
+        send(meth, *args)
+      end
+
+      pass_keywords def foo_bar(*args)
+        bar(*args)
+      end
+
+      pass_keywords def foo_baz(*args)
+        baz(*args)
+      end
+
+      pass_keywords def foo_mod(meth, *args)
+        args << 1
+        send(meth, *args)
+      end
+
+      pass_keywords def foo_bar_mod(*args)
+        args << 1
+        bar(*args)
+      end
+
+      pass_keywords def foo_baz_mod(*args)
+        args << 1
+        baz(*args)
+      end
+
+      def bar(*args, **kw)
+        [args, kw]
+      end
+
+      def baz(*args)
+        args
+      end
+    end
+    o = c.new
+
+    assert_equal([[1], {:a=>1}], o.foo(:bar, 1, :a=>1))
+    assert_equal([1, {:a=>1}], o.foo(:baz, 1, :a=>1))
+    assert_equal([[1], {:a=>1}], o.foo_bar(1, :a=>1))
+    assert_equal([1, {:a=>1}], o.foo_baz(1, :a=>1))
+
+    assert_equal([[1], {:a=>1}], o.foo(:bar, 1, **{:a=>1}))
+    assert_equal([1, {:a=>1}], o.foo(:baz, 1, **{:a=>1}))
+    assert_equal([[1], {:a=>1}], o.foo_bar(1, **{:a=>1}))
+    assert_equal([1, {:a=>1}], o.foo_baz(1, **{:a=>1}))
+
+    assert_warn(/The last argument is used as the keyword parameter.* for `bar'/m) do
+      assert_equal([[1], {:a=>1}], o.foo(:bar, 1, {:a=>1}))
+    end
+    assert_equal([1, {:a=>1}], o.foo(:baz, 1, {:a=>1}))
+    assert_warn(/The last argument is used as the keyword parameter.* for `bar'/m) do
+      assert_equal([[1], {:a=>1}], o.foo_bar(1, {:a=>1}))
+    end
+    assert_equal([1, {:a=>1}], o.foo_baz(1, {:a=>1}))
+
+    assert_equal([[1, {:a=>1}, 1], {}], o.foo_mod(:bar, 1, :a=>1))
+    assert_equal([1, {:a=>1}, 1], o.foo_mod(:baz, 1, :a=>1))
+    assert_equal([[1, {:a=>1}, 1], {}], o.foo_bar_mod(1, :a=>1))
+    assert_equal([1, {:a=>1}, 1], o.foo_baz_mod(1, :a=>1))
+
+    assert_equal([[1, {:a=>1}, 1], {}], o.foo_mod(:bar, 1, **{:a=>1}))
+    assert_equal([1, {:a=>1}, 1], o.foo_mod(:baz, 1, **{:a=>1}))
+    assert_equal([[1, {:a=>1}, 1], {}], o.foo_bar_mod(1, **{:a=>1}))
+    assert_equal([1, {:a=>1}, 1], o.foo_baz_mod(1, **{:a=>1}))
+
+    assert_equal([[1, {:a=>1}, 1], {}], o.foo_mod(:bar, 1, {:a=>1}))
+    assert_equal([1, {:a=>1}, 1], o.foo_mod(:baz, 1, {:a=>1}))
+    assert_equal([[1, {:a=>1}, 1], {}], o.foo_bar_mod(1, {:a=>1}))
+    assert_equal([1, {:a=>1}, 1], o.foo_baz_mod(1, {:a=>1}))
+
+    assert_warn(/Skipping set of pass_keywords flag for bar \(method not defined in Ruby, method accepts keywords, or method does not accept argument splat\)/) do
+      assert_nil(c.send(:pass_keywords, :bar))
+    end
+
+    sc = Class.new(c)
+    assert_warn(/Skipping set of pass_keywords flag for bar \(can only set in method defining module\)/) do
+      sc.send(:pass_keywords, :bar)
+    end
+    m = Module.new
+    assert_warn(/Skipping set of pass_keywords flag for system \(can only set in method defining module\)/) do
+      m.send(:pass_keywords, :system)
+    end
+
+    assert_raise(NameError) { c.send(:pass_keywords, "a5e36ccec4f5080a1d5e63f8") }
+    assert_raise(NameError) { c.send(:pass_keywords, :quux) }
+
+    c.freeze
+    assert_raise(FrozenError) { c.send(:pass_keywords, :baz) }
+  end
+
   def test_regular_kwsplat
     kw = {}
     h = {:a=>1}

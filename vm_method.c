@@ -1747,6 +1747,82 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
 
 /*
  *  call-seq:
+ *     pass_keywords(method_name, ...)    -> self
+ *
+ *  For the given method names, marks the method as passing keywords through
+ *  a normal argument splat.  This should only be called on methods that
+ *  accept an argument splat (<tt>*args</tt>) but not explicit keywords or
+ *  a keyword splat.  It marks the method such that if the method is called
+ *  with keyword arguments, method calls directly inside the method with
+ *  argument splats where the last argument is a hash will convert the last
+ *  argument to a keyword splat.  In other words, keywords will be passed
+ *  through the method to other methods.
+ *
+ *  This should only be used for methods that delegate keywords to another
+ *  method, and only for backwards compatibility with Ruby versions before
+ *  2.7.
+ *
+ *  This method will probably be removed at some point, as it exists only
+ *  for backwards compatibility, so always check that the module responds
+ *  to this method before calling it.
+ *
+ *    module Mod
+ *      def foo(meth, *args, &block)
+ *        send(:"do_#{meth}", *args, &block)
+ *      end
+ *      pass_keywords(:foo) if respond_to?(:pass_keywords, true)
+ *    end
+ */
+
+static VALUE
+rb_mod_pass_keywords(int argc, VALUE *argv, VALUE module)
+{
+    int i;
+    VALUE origin_class = RCLASS_ORIGIN(module);
+
+    rb_check_frozen(module);
+
+    for (i = 0; i < argc; i++) {
+        VALUE v = argv[i];
+        ID name = rb_check_id(&v);
+        rb_method_entry_t *me;
+        VALUE defined_class;
+
+        if (!name) {
+            rb_print_undef_str(module, v);
+        }
+
+        me = search_method(origin_class, name, &defined_class);
+        if (!me && RB_TYPE_P(module, T_MODULE)) {
+            me = search_method(rb_cObject, name, &defined_class);
+        }
+
+        if (UNDEFINED_METHOD_ENTRY_P(me) ||
+            UNDEFINED_REFINED_METHOD_P(me->def)) {
+            rb_print_undef(module, name, METHOD_VISI_UNDEF);
+        }
+
+        if (module == defined_class || origin_class == defined_class) {
+            if (me->def->type == VM_METHOD_TYPE_ISEQ &&
+                    me->def->body.iseq.iseqptr->body->param.flags.has_rest &&
+                    !me->def->body.iseq.iseqptr->body->param.flags.has_kw &&
+                    !me->def->body.iseq.iseqptr->body->param.flags.has_kwrest) {
+                me->def->body.iseq.iseqptr->body->param.flags.pass_keywords = 1;
+                rb_clear_method_cache_by_class(module);
+            }
+            else {
+                rb_warn("Skipping set of pass_keywords flag for %s (method not defined in Ruby, method accepts keywords, or method does not accept argument splat)", rb_id2name(name));
+            }
+        }
+        else {
+            rb_warn("Skipping set of pass_keywords flag for %s (can only set in method defining module)", rb_id2name(name));
+        }
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
  *     mod.public_class_method(symbol, ...)    -> mod
  *     mod.public_class_method(string, ...)    -> mod
  *
@@ -2127,6 +2203,7 @@ Init_eval_method(void)
     rb_define_private_method(rb_cModule, "protected", rb_mod_protected, -1);
     rb_define_private_method(rb_cModule, "private", rb_mod_private, -1);
     rb_define_private_method(rb_cModule, "module_function", rb_mod_modfunc, -1);
+    rb_define_private_method(rb_cModule, "pass_keywords", rb_mod_pass_keywords, -1);
 
     rb_define_method(rb_cModule, "method_defined?", rb_mod_method_defined, -1);
     rb_define_method(rb_cModule, "public_method_defined?", rb_mod_public_method_defined, -1);

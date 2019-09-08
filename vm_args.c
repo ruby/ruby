@@ -659,7 +659,8 @@ static int
 setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * const iseq,
 			 struct rb_calling_info *const calling,
 			 const struct rb_call_info *ci,
-			 VALUE * const locals, const enum arg_setup_type arg_setup_type)
+                         VALUE * const locals, const enum arg_setup_type arg_setup_type,
+                         int *frame_flag)
 {
     const int min_argc = iseq->body->param.lead_num + iseq->body->param.post_num;
     const int max_argc = (iseq->body->param.flags.has_rest == FALSE) ? min_argc + iseq->body->param.opt_num : UNLIMITED_ARGUMENTS;
@@ -720,10 +721,25 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 	args->kw_argv = NULL;
     }
 
+    if (iseq->body->param.flags.pass_keywords && kw_flag && frame_flag) {
+        *frame_flag = VM_FRAME_FLAG_PASS_KEYWORDS;
+    }
+
     if (ci->flag & VM_CALL_ARGS_SPLAT) {
 	args->rest = locals[--args->argc];
 	args->rest_index = 0;
 	given_argc += RARRAY_LENINT(args->rest) - 1;
+
+        if (VM_FRAME_PASS_KEYWORDS_P(ec->cfp) &&
+                !kw_flag &&
+                RARRAY_LENINT(args->rest) > 0) {
+            VALUE rest_last = RARRAY_AREF(args->rest, RARRAY_LENINT(args->rest) - 1);
+
+            if (RB_TYPE_P(rest_last, T_HASH)) {
+                kw_flag |= VM_CALL_KW_SPLAT;
+            }
+        }
+
         if (kw_flag & VM_CALL_KW_SPLAT) {
             int len = RARRAY_LENINT(args->rest);
             if (len > 0 && ignore_keyword_hash_p(RARRAY_AREF(args->rest, len - 1), iseq)) {
