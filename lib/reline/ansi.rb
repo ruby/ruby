@@ -26,7 +26,8 @@ class Reline::ANSI
     unless @@buf.empty?
       return @@buf.shift
     end
-    @@input.raw(&:getbyte)
+    c = @@input.raw(&:getbyte)
+    (c == 0x16 && @@input.raw(min: 0, tim: 0, &:getbyte)) || c
   end
 
   def self.ungetc(c)
