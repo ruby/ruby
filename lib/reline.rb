@@ -287,7 +287,7 @@ module Reline
           end
         when :unmatched
           if buffer.size == 1 and c == "\e".ord
-            read_escaped_key(keyseq_timeout, buffer, block)
+            read_escaped_key(keyseq_timeout, c, block)
           else
             block.(buffer.map{ |c| Reline::Key.new(c, c, false) })
           end
@@ -296,7 +296,7 @@ module Reline
       end
     end
 
-    private def read_escaped_key(keyseq_timeout, buffer, block)
+    private def read_escaped_key(keyseq_timeout, c, block)
       begin
         escaped_c = nil
         Timeout.timeout(keyseq_timeout / 1000.0) {
