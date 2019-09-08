@@ -184,6 +184,27 @@ class TestDelegateClass < Test::Unit::TestCase
     end
   end
 
+  def test_keyword_and_hash
+    foo = Object.new
+    def foo.bar(*args)
+      args
+    end
+    def foo.foo(*args, **kw)
+      [args, kw]
+    end
+    d = SimpleDelegator.new(foo)
+    assert_equal([[], {}], d.foo)
+    assert_equal([], d.bar)
+    assert_equal([[], {:a=>1}], d.foo(:a=>1))
+    assert_equal([{:a=>1}], d.bar(:a=>1))
+    assert_warn(/The last argument is used as the keyword parameter.* for `method_missing'/m) do
+      assert_equal([[], {:a=>1}], d.foo({:a=>1}))
+    end
+    assert_warn(/The last argument is used as the keyword parameter.* for `method_missing'/m) do
+      assert_equal([{:a=>1}], d.bar({:a=>1}))
+    end
+  end
+
   def test_private_method
     foo = Foo.new
     d = SimpleDelegator.new(foo)
