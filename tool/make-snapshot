@@ -37,8 +37,6 @@ options:
   -unicode_version=VER  Unicode version to generate encodings
   -svn[=URL]            make snapshot from SVN repository
                         (#{SVNURL})
-  -git[=URL]            make snapshot from GIT repository
-                        (#{GITURL})
   -s3=PATH              s3 bucket path(default=tmp)
   -help, --help         show this message
 version:
