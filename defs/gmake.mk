@@ -90,13 +90,8 @@ sudo-precheck: test yes-test-testframework no-test-testframework
 install-prereq: sudo-precheck
 yes-test-all no-test-all: install
 endif
-ifneq ($(filter love install reinstall,$(MAKECMDGOALS)),)
 # Cross referece needs to parse all files at once
-RDOCFLAGS = --force-update
-endif
-ifneq ($(filter great,$(MAKECMDGOALS)),)
-love: test-rubyspec
-endif
+love install reinstall: RDOCFLAGS = --force-update
 
 $(srcdir)/missing/des_tables.c: $(srcdir)/missing/crypt.c
 ifeq ($(if $(filter yes,$(CROSS_COMPILING)),,$(CC)),)
