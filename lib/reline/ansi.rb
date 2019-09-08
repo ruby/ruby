@@ -1,3 +1,5 @@
+require 'io/console'
+
 class Reline::ANSI
   RAW_KEYSTROKE_CONFIG = {
     [27, 91, 65] => :ed_prev_history,     # ↑
@@ -30,7 +32,7 @@ class Reline::ANSI
     unless @@buf.empty?
       return @@buf.shift
     end
-    c = @@input.getbyte
+    c = @@input.raw(intr: true, &:getbyte)
     (c == 0x16 && @@input.raw(min: 0, tim: 0, &:getbyte)) || c
   end
 
@@ -127,29 +129,12 @@ class Reline::ANSI
   def self.prep
     retrieve_keybuffer
     int_handle = Signal.trap('INT', 'IGNORE')
-    begin
-      otio = IO.popen(%w[stty -g], in: @@input, &:read).chomp
-    rescue ArgumentError
-    else
-      setting = %w'-echo -icrnl cbreak -ixoff -iexten'
-      stty = IO.popen(%w[stty -a], in: @@input, &:read)
-      if /-parenb\b/ =~ stty
-        setting << 'pass8'
-      end
-      system("stty", *setting, in: @@input)
-    end
     Signal.trap('INT', int_handle)
-    otio
+    nil
   end
 
   def self.deprep(otio)
     int_handle = Signal.trap('INT', 'IGNORE')
-    if otio
-      begin
-        system("stty #{otio}", in: @@input, err: File::NULL)
-      rescue ArgumentError
-      end
-    end
     Signal.trap('INT', int_handle)
     Signal.trap('WINCH', @@old_winch_handler) if @@old_winch_handler
   end
