@@ -1747,6 +1747,75 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
 
 /*
  *  call-seq:
+ *     pass_positional_hash(method_name, ...)    -> self
+ *
+ *  For the given method names, marks each the method as not issuing a warning
+ *  if converting a positional hash to a keyword argument, and automatically
+ *  converts keyword splats inside the method into positional arguments if
+ *  the method was called with positional hash that was converted to a keyword
+ *  argument.
+ *
+ *  This should only be used for methods that delegate keywords to another
+ *  method, suppressing a warning when the target method does not accept
+ *  keyword arguments the final argument is a hash.
+ *
+ *  Will only be present in 2.7, will be removed in 3.0, so always check that
+ *  the module responds to this method before calling it.
+ *
+ *    module Mod
+ *      def foo(meth, *args, **kw, &block)
+ *        send(:"do_#{meth}", *args, **kw, &block)
+ *      end
+ *      pass_positional_hash(:foo) if respond_to?(:pass_positional_hash, false)
+ *    end
+ */
+
+static VALUE
+rb_mod_pass_positional_hash(int argc, VALUE *argv, VALUE module)
+{
+    int i;
+    VALUE origin_class = RCLASS_ORIGIN(module);
+
+    rb_check_frozen(module);
+
+    for (i = 0; i < argc; i++) {
+        VALUE v = argv[i];
+        ID name = rb_check_id(&v);
+        rb_method_entry_t *me;
+        VALUE defined_class;
+
+        if (!name) {
+            rb_print_undef_str(module, v);
+        }
+
+        me = search_method(origin_class, name, &defined_class);
+        if (!me && RB_TYPE_P(module, T_MODULE)) {
+            me = search_method(rb_cObject, name, &defined_class);
+        }
+
+        if (UNDEFINED_METHOD_ENTRY_P(me) ||
+            UNDEFINED_REFINED_METHOD_P(me->def)) {
+            rb_print_undef(module, name, METHOD_VISI_UNDEF);
+        }
+
+        if (module == defined_class || origin_class == defined_class) {
+            if (me->def->type == VM_METHOD_TYPE_ISEQ && me->def->body.iseq.iseqptr->body->param.flags.has_kwrest) {
+                me->def->body.iseq.iseqptr->body->param.flags.pass_positional_hash = 1;
+                rb_clear_method_cache_by_class(module);
+            }
+            else {
+                rb_warn("Skipping set of pass positional hash flag for %s (method not defined in Ruby or method does not accept keyword arguments)", rb_id2name(name));
+            }
+        }
+        else {
+            rb_warn("Skipping set of pass positional hash flag for %s (can only set in method defining module)", rb_id2name(name));
+        }
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
  *     mod.public_class_method(symbol, ...)    -> mod
  *     mod.public_class_method(string, ...)    -> mod
  *
@@ -2127,6 +2196,7 @@ Init_eval_method(void)
     rb_define_private_method(rb_cModule, "protected", rb_mod_protected, -1);
     rb_define_private_method(rb_cModule, "private", rb_mod_private, -1);
     rb_define_private_method(rb_cModule, "module_function", rb_mod_modfunc, -1);
+    rb_define_private_method(rb_cModule, "pass_positional_hash", rb_mod_pass_positional_hash, -1); /* -- Remove In 3.0 -- */
 
     rb_define_method(rb_cModule, "method_defined?", rb_mod_method_defined, -1);
     rb_define_method(rb_cModule, "public_method_defined?", rb_mod_public_method_defined, -1);

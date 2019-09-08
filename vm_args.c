@@ -642,7 +642,8 @@ static int
 setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * const iseq,
 			 struct rb_calling_info *const calling,
 			 const struct rb_call_info *ci,
-			 VALUE * const locals, const enum arg_setup_type arg_setup_type)
+                         VALUE * const locals, const enum arg_setup_type arg_setup_type,
+                         int *frame_flag)
 {
     const int min_argc = iseq->body->param.lead_num + iseq->body->param.post_num;
     const int max_argc = (iseq->body->param.flags.has_rest == FALSE) ? min_argc + iseq->body->param.opt_num : UNLIMITED_ARGUMENTS;
@@ -681,6 +682,10 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     given_argc = args->argc = calling->argc;
     args->argv = locals;
     args->rest_dupped = FALSE;
+
+    if (VM_FRAME_PASS_POSITIONAL_HASH_P(ec->cfp)) {
+        kw_flag &= ~VM_CALL_KW_SPLAT;
+    }
 
     if (kw_flag & VM_CALL_KWARG) {
 	args->kw_arg = ((struct rb_call_info_with_kwarg *)ci)->kw_arg;
@@ -808,7 +813,14 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                  * def foo(k:1) p [k]; end
                  * foo({k:42}) #=> 42
                  */
-                rb_warn_last_hash_to_keyword(calling, ci, iseq);
+                if (iseq->body->param.flags.pass_positional_hash) {
+                    if (frame_flag) {
+                        *frame_flag = VM_FRAME_FLAG_PASS_POSITIONAL_HASH;
+                    }
+                }
+                else {
+                    rb_warn_last_hash_to_keyword(calling, ci, iseq);
+                }
                 given_argc--;
             }
             else if (keyword_hash != Qnil) {

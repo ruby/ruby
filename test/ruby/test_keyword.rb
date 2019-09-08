@@ -177,6 +177,50 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(["bar", 111111], f[str: "bar", num: 111111])
   end
 
+  def test_pass_positional_hash
+    c = Class.new do
+      pass_positional_hash def foo(x, *args, **kw)
+        send(x ? :bar : :baz, *args, **kw)
+      end
+
+      def bar(*args, **kw)
+        [args, kw]
+      end
+
+      def baz(*args)
+        args
+      end
+    end
+    o = c.new
+
+    assert_equal([[1], {:a=>1}], o.foo(true, 1, :a=>1))
+    assert_equal([1, {:a=>1}], o.foo(false, 1, :a=>1))
+
+    assert_warn(/The last argument is used as the keyword parameter.* for `bar'/m) do
+      assert_equal([[1], {:a=>1}], o.foo(true, 1, {:a=>1}))
+    end
+    assert_equal([1, {:a=>1}], o.foo(false, 1, {:a=>1}))
+
+    assert_warn(/Skipping set of pass positional hash flag for baz \(method not defined in Ruby or method does not accept keyword arguments\)/) do
+      assert_nil(c.send(:pass_positional_hash, :baz))
+    end
+
+    sc = Class.new(c)
+    assert_warn(/Skipping set of pass positional hash flag for bar \(can only set in method defining module\)/) do
+      sc.send(:pass_positional_hash, :bar)
+    end
+    m = Module.new
+    assert_warn(/Skipping set of pass positional hash flag for system \(can only set in method defining module\)/) do
+      m.send(:pass_positional_hash, :system)
+    end
+
+    assert_raise(NameError) { c.send(:pass_positional_hash, "a5e36ccec4f5080a1d5e63f8") }
+    assert_raise(NameError) { c.send(:pass_positional_hash, :quux) }
+
+    c.freeze
+    assert_raise(FrozenError) { c.send(:pass_positional_hash, :baz) }
+  end
+
   def test_regular_kwsplat
     kw = {}
     h = {:a=>1}

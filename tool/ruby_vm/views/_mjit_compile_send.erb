@@ -68,7 +68,7 @@
 % # JIT: Special CALL_METHOD. Bypass cc_copy->call and inline vm_call_iseq_setup_normal for vm_call_iseq_setup_func FASTPATH.
                 fprintf(f, "        {\n");
                 fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
+                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d, 0);\n",
                         (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");

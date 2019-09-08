@@ -75,7 +75,7 @@ class Delegator < BasicObject
   #
   # Handles the magic of delegation through \_\_getobj\_\_.
   #
-  def method_missing(m, *args, **kw, &block)
+  pass_positional_hash def method_missing(m, *args, **kw, &block)
     r = true
     target = self.__getobj__ {r = false}
 

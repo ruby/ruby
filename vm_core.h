@@ -358,6 +358,7 @@ struct rb_iseq_constant_body {
 
 	    unsigned int ambiguous_param0 : 1; /* {|a|} */
 	    unsigned int accepts_no_kwarg : 1;
+            unsigned int pass_positional_hash: 1; /* -- Remove In 3.0 -- */
 	} flags;
 
 	unsigned int size;
@@ -1138,11 +1139,11 @@ typedef rb_control_frame_t *
 
 enum {
     /* Frame/Environment flag bits:
-     *   MMMM MMMM MMMM MMMM ____ FFFF FFFF EEEX (LSB)
+     *   MMMM MMMM MMMM MMMM ___F FFFF FFFF EEEX (LSB)
      *
      * X   : tag for GC marking (It seems as Fixnum)
      * EEE : 3 bits Env flags
-     * FF..: 8 bits Frame flags
+     * FF..: 9 bits Frame flags
      * MM..: 15 bits frame magic (to check frame corruption)
      */
 
@@ -1168,6 +1169,7 @@ enum {
     VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM = 0x0200,
     VM_FRAME_FLAG_CFRAME_KW = 0x0400,
     VM_FRAME_FLAG_CFRAME_EMPTY_KW = 0x0800, /* -- Remove In 3.0 -- */
+    VM_FRAME_FLAG_PASS_POSITIONAL_HASH = 0x1000, /* -- Remove In 3.0 -- */
 
     /* env flag */
     VM_ENV_FLAG_LOCAL       = 0x0002,
@@ -1233,6 +1235,11 @@ static inline int
 VM_FRAME_CFRAME_EMPTY_KW_P(const rb_control_frame_t *cfp)
 {
     return VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_CFRAME_EMPTY_KW) != 0;
+}
+static inline int
+VM_FRAME_PASS_POSITIONAL_HASH_P(const rb_control_frame_t *cfp)
+{
+    return VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_PASS_POSITIONAL_HASH) != 0;
 }
 
 static inline int
