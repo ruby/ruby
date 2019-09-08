@@ -26,7 +26,7 @@ class Reline::ANSI
     unless @@buf.empty?
       return @@buf.shift
     end
-    @@input.getch&.ord
+    @@input.raw(&:getbyte)
   end
 
   def self.ungetc(c)
