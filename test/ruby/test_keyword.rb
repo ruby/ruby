@@ -271,6 +271,226 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h3], c.m(a: 1, **h2))
   end
 
+  def test_implicit_super_kwsplat
+    kw = {}
+    h = {:a=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    sc = Class.new
+    c = sc.new
+    def c.m(*args, **kw)
+      super
+    end
+    sc.class_eval do
+      def m(*args)
+        args
+      end
+    end
+    assert_equal([], c.m(**{}))
+    assert_equal([], c.m(**kw))
+    assert_equal([h], c.m(**h))
+    assert_equal([h], c.m(a: 1))
+    assert_equal([h2], c.m(**h2))
+    assert_equal([h3], c.m(**h3))
+    assert_equal([h3], c.m(a: 1, **h2))
+
+    sc.class_eval do
+      remove_method(:m)
+      def m; end
+    end
+    assert_nil(c.m(**{}))
+    assert_nil(c.m(**kw))
+    assert_raise(ArgumentError) { c.m(**h) }
+    assert_raise(ArgumentError) { c.m(a: 1) }
+    assert_raise(ArgumentError) { c.m(**h2) }
+    assert_raise(ArgumentError) { c.m(**h3) }
+    assert_raise(ArgumentError) { c.m(a: 1, **h2) }
+
+    sc.class_eval do
+      remove_method(:m)
+      def m(args)
+        args
+      end
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal(kw, c.m(**{}))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal(kw, c.m(**kw))
+    end
+    assert_equal(h, c.m(**h))
+    assert_equal(h, c.m(a: 1))
+    assert_equal(h2, c.m(**h2))
+    assert_equal(h3, c.m(**h3))
+    assert_equal(h3, c.m(a: 1, **h2))
+
+    sc.class_eval do
+      remove_method(:m)
+      def m(**args)
+        args
+      end
+    end
+    assert_equal(kw, c.m(**{}))
+    assert_equal(kw, c.m(**kw))
+    assert_equal(h, c.m(**h))
+    assert_equal(h, c.m(a: 1))
+    assert_equal(h2, c.m(**h2))
+    assert_equal(h3, c.m(a: 1, **h2))
+
+    sc.class_eval do
+      remove_method(:m)
+      def m(arg, **args)
+        [arg, args]
+      end
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      c.m(**{})
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      c.m(**kw)
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h, kw], c.m(**h))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h, kw], c.m(a: 1))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h2, kw], c.m(**h2))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h3, kw], c.m(**h3))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h3, kw], c.m(a: 1, **h2))
+    end
+
+    sc.class_eval do
+      remove_method(:m)
+      def m(arg=1, **args)
+        [arg=1, args]
+      end
+    end
+    assert_equal([1, kw], c.m(**{}))
+    assert_equal([1, kw], c.m(**kw))
+    assert_equal([1, h], c.m(**h))
+    assert_equal([1, h], c.m(a: 1))
+    assert_equal([1, h2], c.m(**h2))
+    assert_equal([1, h3], c.m(**h3))
+    assert_equal([1, h3], c.m(a: 1, **h2))
+  end
+
+  def test_explicit_super_kwsplat
+    kw = {}
+    h = {:a=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    sc = Class.new
+    c = sc.new
+    def c.m(*args, **kw)
+      super(*args, **kw)
+    end
+    sc.class_eval do
+      def m(*args)
+        args
+      end
+    end
+    assert_equal([], c.m(**{}))
+    assert_equal([], c.m(**kw))
+    assert_equal([h], c.m(**h))
+    assert_equal([h], c.m(a: 1))
+    assert_equal([h2], c.m(**h2))
+    assert_equal([h3], c.m(**h3))
+    assert_equal([h3], c.m(a: 1, **h2))
+
+    sc.class_eval do
+      remove_method(:m)
+      def m; end
+    end
+    assert_nil(c.m(**{}))
+    assert_nil(c.m(**kw))
+    assert_raise(ArgumentError) { c.m(**h) }
+    assert_raise(ArgumentError) { c.m(a: 1) }
+    assert_raise(ArgumentError) { c.m(**h2) }
+    assert_raise(ArgumentError) { c.m(**h3) }
+    assert_raise(ArgumentError) { c.m(a: 1, **h2) }
+
+    sc.class_eval do
+      remove_method(:m)
+      def m(args)
+        args
+      end
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal(kw, c.m(**{}))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal(kw, c.m(**kw))
+    end
+    assert_equal(h, c.m(**h))
+    assert_equal(h, c.m(a: 1))
+    assert_equal(h2, c.m(**h2))
+    assert_equal(h3, c.m(**h3))
+    assert_equal(h3, c.m(a: 1, **h2))
+
+    sc.class_eval do
+      remove_method(:m)
+      def m(**args)
+        args
+      end
+    end
+    assert_equal(kw, c.m(**{}))
+    assert_equal(kw, c.m(**kw))
+    assert_equal(h, c.m(**h))
+    assert_equal(h, c.m(a: 1))
+    assert_equal(h2, c.m(**h2))
+    assert_equal(h3, c.m(a: 1, **h2))
+
+    sc.class_eval do
+      remove_method(:m)
+      def m(arg, **args)
+        [arg, args]
+      end
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      c.m(**{})
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      c.m(**kw)
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h, kw], c.m(**h))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h, kw], c.m(a: 1))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h2, kw], c.m(**h2))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h3, kw], c.m(**h3))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h3, kw], c.m(a: 1, **h2))
+    end
+
+    sc.class_eval do
+      remove_method(:m)
+      def m(arg=1, **args)
+        [arg=1, args]
+      end
+    end
+    assert_equal([1, kw], c.m(**{}))
+    assert_equal([1, kw], c.m(**kw))
+    assert_equal([1, h], c.m(**h))
+    assert_equal([1, h], c.m(a: 1))
+    assert_equal([1, h2], c.m(**h2))
+    assert_equal([1, h3], c.m(**h3))
+    assert_equal([1, h3], c.m(a: 1, **h2))
+  end
+
   def test_lambda_kwsplat_call
     kw = {}
     h = {:a=>1}
