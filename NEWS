@@ -197,6 +197,14 @@ RubyVM::
     * RubyVM.resolve_feature_path moved to
       $LOAD_PATH.resolve_feature_path.  [Feature #15903] [Feature #15230]
 
+Symbol::
+
+  Modified method::
+
+    * Symbol#to_s now always returns a frozen String. The returned String is
+      always the same for a given Symbol. This change is experimental.
+      [Feature #16150]
+
 Time::
 
   New methods::
