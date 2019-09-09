@@ -7918,6 +7918,8 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
         rb_iseq_update_references((rb_iseq_t *)obj);
         break;
       case imemo_ast:
+        rb_ast_update_references((rb_ast_t *)obj);
+        break;
       case imemo_parser_strterm:
       case imemo_tmpbuf:
         break;

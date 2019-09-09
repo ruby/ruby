@@ -1262,20 +1262,20 @@ mark_ast_value(void *ctx, NODE * node)
             ID *buf = node->nd_tbl;
             if (buf) {
                 unsigned int size = (unsigned int)*buf;
-                rb_gc_mark((VALUE)buf[size + 1]);
+                rb_gc_mark_movable((VALUE)buf[size + 1]);
             }
             break;
         }
         case NODE_ARYPTN:
         {
             struct rb_ary_pattern_info *apinfo = node->nd_apinfo;
-            rb_gc_mark(apinfo->imemo);
+            rb_gc_mark_movable(apinfo->imemo);
             break;
         }
         case NODE_ARGS:
         {
             struct rb_args_info *args = node->nd_ainfo;
-            rb_gc_mark(args->imemo);
+            rb_gc_mark_movable(args->imemo);
             break;
         }
         case NODE_MATCH:
@@ -1286,10 +1286,59 @@ mark_ast_value(void *ctx, NODE * node)
         case NODE_DXSTR:
         case NODE_DREGX:
         case NODE_DSYM:
-            rb_gc_mark(node->nd_lit);
+            rb_gc_mark_movable(node->nd_lit);
             break;
         default:
             rb_bug("unreachable node %s", ruby_node_name(nd_type(node)));
+    }
+}
+
+static void
+update_ast_value(void *ctx, NODE * node)
+{
+    switch (nd_type(node)) {
+        case NODE_SCOPE:
+        {
+            ID *buf = node->nd_tbl;
+            if (buf) {
+                unsigned int size = (unsigned int)*buf;
+                buf[size + 1] = rb_gc_location((VALUE)buf[size + 1]);
+            }
+            break;
+        }
+        case NODE_ARYPTN:
+        {
+            struct rb_ary_pattern_info *apinfo = node->nd_apinfo;
+            apinfo->imemo = rb_gc_location(apinfo->imemo);
+            break;
+        }
+        case NODE_ARGS:
+        {
+            struct rb_args_info *args = node->nd_ainfo;
+            args->imemo = rb_gc_location(args->imemo);
+            break;
+        }
+        case NODE_LIT:
+        case NODE_STR:
+        case NODE_XSTR:
+        case NODE_DSTR:
+        case NODE_DXSTR:
+        case NODE_DREGX:
+        case NODE_DSYM:
+            node->nd_lit = rb_gc_location(node->nd_lit);
+            break;
+        default:
+            rb_bug("unreachable");
+    }
+}
+
+void
+rb_ast_update_references(rb_ast_t *ast)
+{
+    if (ast->node_buffer) {
+        node_buffer_t *nb = ast->node_buffer;
+
+        iterate_node_values(&nb->markable, update_ast_value, NULL);
     }
 }
 

@@ -130,4 +130,18 @@ class TestGCCompact < Test::Unit::TestCase
     GC.verify_compaction_references(toward: :empty)
     assert_equal hash, list_of_objects.hash
   end
+
+  def walk_ast ast
+    children = ast.children.grep(RubyVM::AbstractSyntaxTree::Node)
+    children.each do |child|
+      assert child.type
+      walk_ast child
+    end
+  end
+
+  def test_ast_compacts
+    ast = RubyVM::AbstractSyntaxTree.parse_file __FILE__
+    assert GC.compact
+    walk_ast ast
+  end
 end
