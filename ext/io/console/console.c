@@ -766,6 +766,21 @@ console_beep(VALUE io)
     return io;
 }
 
+static int
+mode_in_range(VALUE val, int high, const char *modename)
+{
+    int mode;
+    if (NIL_P(val)) return 0;
+    if (!RB_INTEGER_TYPE_P(val)) {
+      wrong_value:
+	rb_raise(rb_eArgError, "wrong %s mode: %"PRIsVALUE, modename, val);
+    }
+    if ((mode = NUM2INT(val)) < 0 || mode > high) {
+	goto wrong_value;
+    }
+    return mode;
+}
+
 #if defined _WIN32
 static VALUE
 console_goto(VALUE io, VALUE x, VALUE y)
@@ -837,6 +852,87 @@ console_goto_column(VALUE io, VALUE val)
     if (!SetConsoleCursorPosition(h, *pos)) {
 	rb_syserr_fail(LAST_ERROR, 0);
     }
+    return io;
+}
+
+static void
+constat_clear(HANDLE handle, WORD attr, DWORD len, COORD pos)
+{
+    DWORD written;
+
+    FillConsoleOutputAttribute(handle, attr, len, pos, &written);
+    FillConsoleOutputCharacterW(handle, L' ', len, pos, &written);
+}
+
+static VALUE
+console_erase_line(VALUE io, VALUE val)
+{
+    rb_io_t *fptr;
+    HANDLE h;
+    rb_console_size_t ws;
+    COORD *pos = &ws.dwCursorPosition;
+    DWORD written, w;
+    int mode = mode_in_range(val, 2, "line erase");
+
+    GetOpenFile(io, fptr);
+    h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(fptr));
+    if (!GetConsoleScreenBufferInfo(h, &ws)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+    w = winsize_col(&ws);
+    switch (mode) {
+      case 0:			/* after cursor */
+	w -= pos->X;
+	break;
+      case 1:			/* before *and* cursor */
+	w = pos->X + 1;
+	pos->X = 0;
+	break;
+      case 2:			/* entire line */
+	pos->X = 0;
+	break;
+    }
+    constat_clear(h, ws.wAttributes, w, *pos);
+    return io;
+}
+
+static VALUE
+console_erase_screen(VALUE io, VALUE val)
+{
+    rb_io_t *fptr;
+    HANDLE h;
+    rb_console_size_t ws;
+    COORD *pos = &ws.dwCursorPosition;
+    DWORD written, w;
+    int mode = mode_in_range(val, 3, "screen erase");
+
+    GetOpenFile(io, fptr);
+    h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(fptr));
+    if (!GetConsoleScreenBufferInfo(h, &ws)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+    w = winsize_col(&ws);
+    switch (mode) {
+      case 0:	/* erase after cursor */
+	w = (w * (ws.srWindow.Bottom - pos->Y + 1) - pos->X);
+	break;
+      case 1:	/* erase before *and* cursor */
+	w = (w * (pos->Y - ws.srWindow.Top) + pos->X + 1);
+	pos->X = 0;
+	pos->Y = ws.srWindow.Top;
+	break;
+      case 2:	/* erase entire screen */
+	w = (w * winsize_row(&ws));
+	pos->X = 0;
+	pos->Y = ws.srWindow.Top;
+	break;
+      case 3:	/* erase entire screen */
+	w = (w * ws.dwSize.Y);
+	pos->X = 0;
+	pos->Y = 0;
+	break;
+    }
+    constat_clear(h, ws.wAttributes, w, *pos);
     return io;
 }
 #include "win32_vk.inc"
@@ -947,6 +1043,22 @@ static VALUE
 console_goto_column(VALUE io, VALUE val)
 {
     rb_io_write(io, rb_sprintf("\x1b[%dG", NUM2UINT(val)+1));
+    return io;
+}
+
+static VALUE
+console_erase_line(VALUE io, VALUE val)
+{
+    int mode = mode_in_range(val, 2, "line erase");
+    rb_io_write(io, rb_sprintf("\x1b[%dK", mode));
+    return io;
+}
+
+static VALUE
+console_erase_screen(VALUE io, VALUE val)
+{
+    int mode = mode_in_range(val, 3, "screen erase");
+    rb_io_write(io, rb_sprintf("\x1b[%dJ", mode));
     return io;
 }
 # define console_key_pressed_p rb_f_notimplement
@@ -1221,6 +1333,9 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "cursor_left", console_cursor_left, 1);
     rb_define_method(rb_cIO, "cursor_right", console_cursor_right, 1);
     rb_define_method(rb_cIO, "goto_column", console_goto_column, 1);
+    rb_define_method(rb_cIO, "erase_line", console_erase_line, 1);
+    rb_define_method(rb_cIO, "erase_screen", console_erase_screen, 1);
+    rb_define_method(rb_cIO, "clear_screen", console_clear_screen, 0);
     rb_define_method(rb_cIO, "pressed?", console_key_pressed_p, 1);
 #if ENABLE_IO_GETPASS
     rb_define_method(rb_cIO, "getpass", console_getpass, -1);
