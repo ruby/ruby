@@ -215,6 +215,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
       assert_equal(kw, c.m(**kw))
     end
+    assert_equal(kw, c.m(kw, **kw))
     assert_equal(h, c.m(**h))
     assert_equal(h, c.m(a: 1))
     assert_equal(h2, c.m(**h2))
