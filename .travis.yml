@@ -31,6 +31,7 @@ cache:
   directories:
     - $HOME/config_2nd
     - $HOME/.downloaded-cache
+    - $HOME/local
 
 env:
   global:
@@ -390,6 +391,54 @@ matrix:
     - <<: *TOKEN_THREADED_CODE
     - <<: *CALL_THREADED_CODE
     - <<: *NO_THREADED_CODE
+    - name: x86_64-linux-openssl-fips
+      <<: *gcc-8
+      env:
+        - "OPENSSL_FIPS_VERSION=2.0.16"
+        # OpenSSL 1.0.2 is the latest version supporting openssl-fips.
+        # https://github.com/openssl/openssl/issues/7582
+        - "OPENSSL_VERSION=1.0.2s"
+        - "OPENSSL_DIR=$HOME/local/openssl-$OPENSSL_VERSION"
+        - "OPENSSL_FIPS_DIR=$HOME/local/openssl-fips-$OPENSSL_FIPS_VERSION"
+        - "PATH=$OPENSSL_DIR/bin:$PATH"
+        - "CFLAGS=-I$OPENSSL_DIR/include"
+        - "LDFLAGS=-L$OPENSSL_DIR/lib"
+        - "LD_LIBRARY_PATH=$OPENSSL_DIR/lib"
+        - "PKG_CONFIG_PATH=$OPENSSL_DIR/lib/pkgconfig"
+      install:
+        # Install openssl-fips
+        - "curl -sL -O https://www.openssl.org/source/openssl-fips-$OPENSSL_FIPS_VERSION.tar.gz"
+        - "tar xzf openssl-fips-$OPENSSL_FIPS_VERSION.tar.gz"
+        - "pushd openssl-fips-$OPENSSL_FIPS_VERSION"
+        - "./config --prefix=$OPENSSL_FIPS_DIR"
+        - "make -s && make install"
+        - "popd"
+        # Install openssl with the installed openssl-fips.
+        - "curl -sL -O https://www.openssl.org/source/openssl-$OPENSSL_VERSION.tar.gz"
+        - "tar xzf openssl-$OPENSSL_VERSION.tar.gz"
+        - "pushd openssl-$OPENSSL_VERSION"
+        - |
+          ./Configure \
+            --prefix=$OPENSSL_DIR \
+            fips \
+            --with-fipsdir=$OPENSSL_FIPS_DIR \
+            -fPIC \
+            linux-x86_64
+        - "make -s"
+        - "make install_sw"
+        - "popd"
+        - "openssl version"
+      script:
+        - export PATH="/tmp/ruby-prefix/bin:$PATH"
+        - which ruby
+        - ruby --version
+        - ruby -e "require 'openssl'; puts OpenSSL::OPENSSL_VERSION"
+        - ruby -e "require 'openssl'; puts OpenSSL::OPENSSL_FIPS"
+        - ruby -e "require 'openssl'; puts OpenSSL.fips_mode"
+        - "$SETARCH make -s test TESTOPTS=--color=never"
+        - "export TEST_ALL_TESTOPTS=\"${TEST_ALL_TESTOPTS:- -q --color=never --job-status=normal}\""
+        - "$SETARCH make -s $JOBS test-all -o exts TESTOPTS=\"$TEST_ALL_TESTOPTS\""
+        - "$SETARCH make -s $JOBS test-spec MSPECOPT=-fs" # not using `-j` because sometimes `mspec -j` silently dies
   allow_failures:
     - name: -fsanitize=address
     - name: -fsanitize=memory
