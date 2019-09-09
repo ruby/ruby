@@ -104,11 +104,21 @@ typedef struct {
 } rawmode_arg_t;
 
 static rawmode_arg_t *
-rawmode_opt(int argc, VALUE *argv, rawmode_arg_t *opts)
+rawmode_opt(int *argcp, VALUE *argv, int min_argc, int max_argc, rawmode_arg_t *opts)
 {
+    int argc = *argcp;
     rawmode_arg_t *optp = NULL;
-    VALUE vopts;
-    rb_scan_args(argc, argv, "0:", &vopts);
+    VALUE vopts = Qnil;
+    if (argc > min_argc)  {
+	vopts = rb_check_hash_type(argv[argc-1]);
+	if (!NIL_P(vopts)) {
+	    argv[argc-1] = vopts;
+	    vopts = rb_extract_keywords(&argv[argc-1]);
+	    if (!argv[argc-1]) *argcp = --argc;
+	    if (!vopts) vopts = Qnil;
+	}
+    }
+    rb_check_arity(argc, min_argc, max_argc);
     if (!NIL_P(vopts)) {
 	VALUE vmin = rb_hash_aref(vopts, ID2SYM(id_min));
 	VALUE vtime = rb_hash_aref(vopts, ID2SYM(id_time));
@@ -233,7 +243,7 @@ get_write_fd(const rb_io_t *fptr)
 #define FD_PER_IO 2
 
 static VALUE
-ttymode(VALUE io, VALUE (*func)(VALUE), void (*setter)(conmode *, void *), void *arg)
+ttymode(VALUE io, VALUE (*func)(VALUE), VALUE farg, void (*setter)(conmode *, void *), void *arg)
 {
     rb_io_t *fptr;
     int status = -1;
@@ -264,7 +274,7 @@ ttymode(VALUE io, VALUE (*func)(VALUE), void (*setter)(conmode *, void *), void 
 	}
     }
     if (status == 0) {
-	result = rb_protect(func, io, &status);
+	result = rb_protect(func, farg, &status);
     }
     GetOpenFile(io, fptr);
     if (fd[0] != -1 && fd[0] == GetReadFD(fptr)) {
@@ -286,6 +296,29 @@ ttymode(VALUE io, VALUE (*func)(VALUE), void (*setter)(conmode *, void *), void 
 	rb_jump_tag(status);
     }
     return result;
+}
+
+struct ttymode_callback_args {
+    VALUE (*func)(VALUE, VALUE);
+    VALUE io;
+    VALUE farg;
+};
+
+static VALUE
+ttymode_callback(VALUE args)
+{
+    struct ttymode_callback_args *argp = (struct ttymode_callback_args *)args;
+    return argp->func(argp->io, argp->farg);
+}
+
+static VALUE
+ttymode_with_io(VALUE io, VALUE (*func)(VALUE, VALUE), VALUE farg, void (*setter)(conmode *, void *), void *arg)
+{
+    struct ttymode_callback_args cargs;
+    cargs.func = func;
+    cargs.io = io;
+    cargs.farg = farg;
+    return ttymode(io, ttymode_callback, (VALUE)&cargs, setter, arg);
 }
 
 /*
@@ -311,8 +344,8 @@ ttymode(VALUE io, VALUE (*func)(VALUE), void (*setter)(conmode *, void *), void 
 static VALUE
 console_raw(int argc, VALUE *argv, VALUE io)
 {
-    rawmode_arg_t opts, *optp = rawmode_opt(argc, argv, &opts);
-    return ttymode(io, rb_yield, set_rawmode, optp);
+    rawmode_arg_t opts, *optp = rawmode_opt(&argc, argv, 0, 0, &opts);
+    return ttymode(io, rb_yield, io, set_rawmode, optp);
 }
 
 /*
@@ -333,7 +366,7 @@ console_set_raw(int argc, VALUE *argv, VALUE io)
     conmode t;
     rb_io_t *fptr;
     int fd;
-    rawmode_arg_t opts, *optp = rawmode_opt(argc, argv, &opts);
+    rawmode_arg_t opts, *optp = rawmode_opt(&argc, argv, 0, 0, &opts);
 
     GetOpenFile(io, fptr);
     fd = GetReadFD(fptr);
@@ -358,7 +391,7 @@ console_set_raw(int argc, VALUE *argv, VALUE io)
 static VALUE
 console_cooked(VALUE io)
 {
-    return ttymode(io, rb_yield, set_cookedmode, NULL);
+    return ttymode(io, rb_yield, io, set_cookedmode, NULL);
 }
 
 /*
@@ -407,9 +440,9 @@ getc_call(VALUE io)
 static VALUE
 console_getch(int argc, VALUE *argv, VALUE io)
 {
-    rawmode_arg_t opts, *optp = rawmode_opt(argc, argv, &opts);
+    rawmode_arg_t opts, *optp = rawmode_opt(&argc, argv, 0, 0, &opts);
 #ifndef _WIN32
-    return ttymode(io, getc_call, set_rawmode, optp);
+    return ttymode(io, getc_call, io, set_rawmode, optp);
 #else
     rb_io_t *fptr;
     VALUE str;
@@ -468,7 +501,7 @@ console_getch(int argc, VALUE *argv, VALUE io)
 static VALUE
 console_noecho(VALUE io)
 {
-    return ttymode(io, rb_yield, set_noecho, NULL);
+    return ttymode(io, rb_yield, io, set_noecho, NULL);
 }
 
 /*
@@ -805,6 +838,43 @@ console_key_pressed_p(VALUE io, VALUE k)
 # define console_goto rb_f_notimplement
 # define console_cursor_pos rb_f_notimplement
 # define console_cursor_set rb_f_notimplement
+static VALUE
+read_vt_response(VALUE io, VALUE query)
+{
+    VALUE result, b;
+    int num = 0;
+    if (!NIL_P(query)) rb_io_write(io, query);
+    rb_io_flush(io);
+    if (rb_io_getbyte(io) != INT2FIX(0x1b)) return Qnil;
+    if (rb_io_getbyte(io) != INT2FIX('[')) return Qnil;
+    result = rb_ary_new();
+    while (!NIL_P(b = rb_io_getbyte(io))) {
+	int c = NUM2UINT(b);
+	if (c == ';') {
+	    rb_ary_push(result, INT2NUM(num));
+	    num = 0;
+	}
+	else if (ISDIGIT(c)) {
+	    num = num * 10 + c - '0';
+	}
+	else {
+	    char last = (char)c;
+	    rb_ary_push(result, INT2NUM(num));
+	    b = rb_str_new(&last, 1);
+	    break;
+	}
+    }
+    return rb_ary_push(result, b);
+}
+
+static VALUE
+console_vt_response(int argc, VALUE *argv, VALUE io)
+{
+    rawmode_arg_t opts, *optp = rawmode_opt(&argc, argv, 0, 1, &opts);
+    VALUE query = argc ? argv[0] : Qnil;
+    VALUE ret = ttymode_with_io(io, read_vt_response, query, set_rawmode, optp);
+    return ret;
+}
 # define console_key_pressed_p rb_f_notimplement
 #endif
 
@@ -927,7 +997,7 @@ puts_call(VALUE io)
 static VALUE
 getpass_call(VALUE io)
 {
-    return ttymode(io, rb_io_gets, set_noecho, NULL);
+    return ttymode(io, rb_io_gets, io, set_noecho, NULL);
 }
 
 static void
