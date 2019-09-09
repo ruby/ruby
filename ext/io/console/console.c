@@ -935,6 +935,38 @@ console_erase_screen(VALUE io, VALUE val)
     constat_clear(h, ws.wAttributes, w, *pos);
     return io;
 }
+
+static VALUE
+console_scroll(VALUE io, int line)
+{
+    rb_io_t *fptr;
+    HANDLE h;
+    rb_console_size_t ws;
+    COORD *pos = &ws.dwCursorPosition;
+
+    GetOpenFile(io, fptr);
+    h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(fptr));
+    if (!GetConsoleScreenBufferInfo(h, &ws)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+    if (line) {
+	SMALL_RECT scroll;
+	COORD destination;
+	CHAR_INFO fill;
+	scroll.Left = 0;
+	scroll.Top = line > 0 ? line : 0;
+	scroll.Right = winsize_col(&ws) - 1;
+	scroll.Bottom = winsize_row(&ws) - 1 + (line < 0 ? line : 0);
+	destination.X = 0;
+	destination.Y = line < 0 ? -line : 0;
+	fill.Char.UnicodeChar = L' ';
+	fill.Attributes = ws.wAttributes;
+
+	ScrollConsoleScreenBuffer(h, &scroll, NULL, destination, &fill);
+    }
+    return io;
+}
+
 #include "win32_vk.inc"
 
 static VALUE
@@ -1061,6 +1093,17 @@ console_erase_screen(VALUE io, VALUE val)
     rb_io_write(io, rb_sprintf("\x1b[%dJ", mode));
     return io;
 }
+
+static VALUE
+console_scroll(VALUE io, int line)
+{
+    if (line) {
+	VALUE s = rb_sprintf("\x1b[%d%c", line < 0 ? -line : line,
+			     line < 0 ? 'T' : 'S');
+	rb_io_write(io, s);
+    }
+    return io;
+}
 # define console_key_pressed_p rb_f_notimplement
 #endif
 
@@ -1094,6 +1137,18 @@ static VALUE
 console_cursor_right(VALUE io, VALUE val)
 {
     return console_move(io, +NUM2INT(val), 0);
+}
+
+static VALUE
+console_scroll_forward(VALUE io, VALUE val)
+{
+    return console_scroll(io, +NUM2INT(val));
+}
+
+static VALUE
+console_scroll_backward(VALUE io, VALUE val)
+{
+    return console_scroll(io, -NUM2INT(val));
 }
 
 static VALUE
@@ -1335,6 +1390,8 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "goto_column", console_goto_column, 1);
     rb_define_method(rb_cIO, "erase_line", console_erase_line, 1);
     rb_define_method(rb_cIO, "erase_screen", console_erase_screen, 1);
+    rb_define_method(rb_cIO, "scroll_forward", console_scroll_forward, 1);
+    rb_define_method(rb_cIO, "scroll_backward", console_scroll_backward, 1);
     rb_define_method(rb_cIO, "clear_screen", console_clear_screen, 0);
     rb_define_method(rb_cIO, "pressed?", console_key_pressed_p, 1);
 #if ENABLE_IO_GETPASS
