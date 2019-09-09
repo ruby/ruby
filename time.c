@@ -2698,12 +2698,6 @@ rb_time_timespec(VALUE time)
     return time_timespec(time, FALSE);
 }
 
-struct timespec
-rb_time_timespec_interval(VALUE num)
-{
-    return time_timespec(num, TRUE);
-}
-
 enum {
     TMOPT_IN,
     TMOPT_MAX_
