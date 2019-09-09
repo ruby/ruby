@@ -181,7 +181,9 @@ AS_CASE(["$host_os:$build_os"],
 	@%:@endif
 SRC
 	AC_MSG_ERROR([clang version 3.0 or later is required])
-    ])
+    ])],
+[openbsd*:openbsd*], [
+    AC_CHECK_TOOLS(CC, [cc])
 ])
 AS_IF([test x"${build}" != x"${host}"], [
   AC_CHECK_TOOL(CC, gcc)
@@ -210,7 +212,9 @@ AS_CASE(["$build_os:${CXX}"],
         AS_IF([test "${CXX}"], [
             CXX=`echo "/$CC " | sed ["s:\([ /]\)${pat}:\1$CXX:; s:^/::; s: *$::"]`
         ])
-        AC_MSG_RESULT([$CXX])
+        AC_MSG_RESULT([$CXX])],
+    [openbsd*:*], [
+        AC_CHECK_TOOLS(CXX, [c++])
     ])
 test -z "$CXX" || ac_cv_prog_CXX="$CXX"
 
