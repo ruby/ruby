@@ -799,6 +799,27 @@ console_cursor_pos(VALUE io)
     return rb_assoc_new(UINT2NUM(ws.dwCursorPosition.X), UINT2NUM(ws.dwCursorPosition.Y));
 }
 
+static VALUE
+console_move(VALUE io, int x, int y)
+{
+    rb_io_t *fptr;
+    HANDLE h;
+    rb_console_size_t ws;
+    COORD *pos = &ws.dwCursorPosition;
+
+    GetOpenFile(io, fptr);
+    h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(fptr));
+    if (!GetConsoleScreenBufferInfo(h, &ws)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+    pos->X += x;
+    pos->Y += y;
+    if (!SetConsoleCursorPosition(h, *pos)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+    return io;
+}
+
 #include "win32_vk.inc"
 
 static VALUE
@@ -889,6 +910,19 @@ console_goto(VALUE io, VALUE x, VALUE y)
     rb_io_write(io, rb_sprintf("\x1b[%d;%dH", NUM2UINT(y), NUM2UINT(x)));
     return io;
 }
+
+static VALUE
+console_move(VALUE io, int x, int y)
+{
+    if (x || y) {
+	VALUE s = rb_str_new_cstr("");
+	if (y) rb_str_catf(s, "\x1b[%d%c", y < 0 ? -y : y, y < 0 ? 'A' : 'B');
+	if (x) rb_str_catf(s, "\x1b[%d%c", x < 0 ? -x : x, x < 0 ? 'D' : 'C');
+	rb_io_write(io, s);
+	rb_io_flush(io);
+    }
+    return io;
+}
 # define console_key_pressed_p rb_f_notimplement
 #endif
 
@@ -898,6 +932,38 @@ console_cursor_set(VALUE io, VALUE cpos)
     cpos = rb_convert_type(cpos, T_ARRAY, "Array", "to_ary");
     if (RARRAY_LEN(cpos) != 2) rb_raise(rb_eArgError, "expected 2D coordinate");
     return console_goto(io, RARRAY_AREF(cpos, 0), RARRAY_AREF(cpos, 1));
+}
+
+static VALUE
+console_cursor_up(VALUE io, VALUE val)
+{
+    return console_move(io, 0, -NUM2INT(val));
+}
+
+static VALUE
+console_cursor_down(VALUE io, VALUE val)
+{
+    return console_move(io, 0, +NUM2INT(val));
+}
+
+static VALUE
+console_cursor_left(VALUE io, VALUE val)
+{
+    return console_move(io, -NUM2INT(val), 0);
+}
+
+static VALUE
+console_cursor_right(VALUE io, VALUE val)
+{
+    return console_move(io, +NUM2INT(val), 0);
+}
+
+static VALUE
+console_clear_screen(VALUE io)
+{
+    console_erase_screen(io, INT2FIX(2));
+    console_goto(io, INT2FIX(1), INT2FIX(1));
+    return io;
 }
 
 /*
@@ -1124,6 +1190,10 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "goto", console_goto, 2);
     rb_define_method(rb_cIO, "cursor", console_cursor_pos, 0);
     rb_define_method(rb_cIO, "cursor=", console_cursor_set, 1);
+    rb_define_method(rb_cIO, "cursor_up", console_cursor_up, 1);
+    rb_define_method(rb_cIO, "cursor_down", console_cursor_down, 1);
+    rb_define_method(rb_cIO, "cursor_left", console_cursor_left, 1);
+    rb_define_method(rb_cIO, "cursor_right", console_cursor_right, 1);
     rb_define_method(rb_cIO, "pressed?", console_key_pressed_p, 1);
 #if ENABLE_IO_GETPASS
     rb_define_method(rb_cIO, "getpass", console_getpass, -1);
