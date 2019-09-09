@@ -689,7 +689,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     end
 
     def test_addrinfo_timeout
-      ai = Addrinfo.getaddrinfo("localhost.localdomain", "http", Socket::PF_INET, Socket::SOCK_STREAM, timeout: 1).fetch(0)
+      ai = Addrinfo.getaddrinfo("localhost", "http", Socket::PF_INET, Socket::SOCK_STREAM, timeout: 1).fetch(0)
       assert_equal(6, ai.protocol)
       assert_equal(80, ai.ip_port)
     end
