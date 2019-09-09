@@ -799,14 +799,6 @@ console_cursor_pos(VALUE io)
     return rb_assoc_new(UINT2NUM(ws.dwCursorPosition.X), UINT2NUM(ws.dwCursorPosition.Y));
 }
 
-static VALUE
-console_cursor_set(VALUE io, VALUE cpos)
-{
-    cpos = rb_convert_type(cpos, T_ARRAY, "Array", "to_ary");
-    if (RARRAY_LEN(cpos) != 2) rb_raise(rb_eArgError, "expected 2D coordinate");
-    return console_goto(io, RARRAY_AREF(cpos, 0), RARRAY_AREF(cpos, 1));
-}
-
 #include "win32_vk.inc"
 
 static VALUE
@@ -835,8 +827,6 @@ console_key_pressed_p(VALUE io, VALUE k)
     return GetKeyState(vk) & 0x80 ? Qtrue : Qfalse;
 }
 #else
-# define console_goto rb_f_notimplement
-# define console_cursor_set rb_f_notimplement
 static VALUE
 read_vt_response(VALUE io, VALUE query)
 {
@@ -892,8 +882,23 @@ console_cursor_pos(VALUE io)
     RARRAY_ASET(resp, 1, row);
     return resp;
 }
+
+static VALUE
+console_goto(VALUE io, VALUE x, VALUE y)
+{
+    rb_io_write(io, rb_sprintf("\x1b[%d;%dH", NUM2UINT(y), NUM2UINT(x)));
+    return io;
+}
 # define console_key_pressed_p rb_f_notimplement
 #endif
+
+static VALUE
+console_cursor_set(VALUE io, VALUE cpos)
+{
+    cpos = rb_convert_type(cpos, T_ARRAY, "Array", "to_ary");
+    if (RARRAY_LEN(cpos) != 2) rb_raise(rb_eArgError, "expected 2D coordinate");
+    return console_goto(io, RARRAY_AREF(cpos, 0), RARRAY_AREF(cpos, 1));
+}
 
 /*
  * call-seq:
