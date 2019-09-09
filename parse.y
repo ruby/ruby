@@ -336,22 +336,18 @@ rb_discard_node(struct parser_params *p, NODE *n)
 }
 #endif
 
+#ifdef RIPPER
 static inline VALUE
 add_mark_object(struct parser_params *p, VALUE obj)
 {
     if (!SPECIAL_CONST_P(obj)
-#ifdef RIPPER
 	&& !RB_TYPE_P(obj, T_NODE) /* Ripper jumbles NODE objects and other objects... */
-#endif
     ) {
-#ifdef RIPPER
 	rb_ast_add_mark_object(p->ast, obj);
-#else
-        RB_OBJ_WRITTEN(p->ast, Qundef, obj);
-#endif
     }
     return obj;
 }
+#endif
 
 static NODE* node_newnode(struct parser_params *, enum node_type, VALUE, VALUE, VALUE, const rb_code_location_t*);
 #define rb_node_newnode(type, a1, a2, a3, loc) node_newnode(p, (type), (a1), (a2), (a3), (loc))
@@ -4245,7 +4241,8 @@ strings		: string
 		    /*%%%*/
 			NODE *node = $1;
 			if (!node) {
-			    node = NEW_STR(add_mark_object(p, STR_NEW0()), &@$);
+			    node = NEW_STR(STR_NEW0(), &@$);
+                            RB_OBJ_WRITTEN(p->ast, Qnil, node->nd_lit);
 			}
 			else {
 			    node = evstr2dstr(p, node);
@@ -4609,7 +4606,7 @@ numeric 	: simple_numeric
 		    {
 		    /*%%%*/
 			$$ = $2;
-			add_mark_object(p, $$->nd_lit = negate_lit(p, $$->nd_lit));
+			RB_OBJ_WRITTEN(p->ast, &$$->nd_lit, $$->nd_lit = negate_lit(p, $$->nd_lit));
 		    /*% %*/
 		    /*% ripper: unary!(ID2VAL(idUMinus), $2) %*/
 		    }
@@ -5186,7 +5183,7 @@ assoc		: arg_value tASSOC arg_value
 		    /*%%%*/
 			if (nd_type($1) == NODE_STR) {
 			    nd_set_type($1, NODE_LIT);
-			    add_mark_object(p, $1->nd_lit = rb_fstring($1->nd_lit));
+			    RB_OBJ_WRITTEN(p->ast, &$1->nd_lit, $1->nd_lit = rb_fstring($1->nd_lit));
 			}
 			$$ = list_append(p, NEW_LIST($1, &@$), $3);
 		    /*% %*/
@@ -5304,8 +5301,16 @@ static enum yytokentype here_document(struct parser_params*,rb_strterm_heredoc_t
   rb_parser_set_location(p, &_cur_loc);			\
   yylval.node = (x);					\
 }
-# define set_yylval_str(x) set_yylval_node(NEW_STR(add_mark_object(p, (x)), &_cur_loc))
-# define set_yylval_literal(x) set_yylval_node(NEW_LIT(add_mark_object(p, (x)), &_cur_loc))
+# define set_yylval_str(x) \
+do { \
+  set_yylval_node(NEW_STR(x, &_cur_loc)); \
+  RB_OBJ_WRITTEN(p->ast, Qnil, x); \
+} while(0)
+# define set_yylval_literal(x) \
+do { \
+  set_yylval_node(NEW_LIT(x, &_cur_loc)); \
+  RB_OBJ_WRITTEN(p->ast, Qnil, x); \
+} while(0)
 # define set_yylval_num(x) (yylval.num = (x))
 # define set_yylval_id(x)  (yylval.id = (x))
 # define set_yylval_name(x)  (yylval.id = (x))
@@ -9549,7 +9554,8 @@ literal_concat(struct parser_params *p, NODE *head, NODE *tail, const YYLTYPE *l
 
     htype = nd_type(head);
     if (htype == NODE_EVSTR) {
-	NODE *node = NEW_DSTR(add_mark_object(p, STR_NEW0()), loc);
+	NODE *node = NEW_DSTR(STR_NEW0(), loc);
+        RB_OBJ_WRITTEN(p->ast, Qnil, node->nd_lit);
 	head = list_append(p, node, head);
 	htype = NODE_DSTR;
     }
@@ -9630,7 +9636,9 @@ static NODE *
 evstr2dstr(struct parser_params *p, NODE *node)
 {
     if (nd_type(node) == NODE_EVSTR) {
-	node = list_append(p, NEW_DSTR(add_mark_object(p, STR_NEW0()), &node->nd_loc), node);
+	NODE * dstr = NEW_DSTR(STR_NEW0(), &node->nd_loc);
+        RB_OBJ_WRITTEN(p->ast, Qnil, dstr->nd_lit);
+	node = list_append(p, dstr, node);
     }
     return node;
 }
@@ -9785,14 +9793,18 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
 		file = rb_str_new(0, 0);
 	    else
 		file = rb_str_dup(file);
-	    node = NEW_STR(add_mark_object(p, file), loc);
+	    node = NEW_STR(file, loc);
+            RB_OBJ_WRITTEN(p->ast, Qnil, file);
 	}
 	return node;
       case keyword__LINE__:
 	WARN_LOCATION("__LINE__");
 	return NEW_LIT(INT2FIX(p->tokline), loc);
       case keyword__ENCODING__:
-	return NEW_LIT(add_mark_object(p, rb_enc_from_encoding(p->enc)), loc);
+        node = NEW_LIT(rb_enc_from_encoding(p->enc), loc);
+        RB_OBJ_WRITTEN(p->ast, Qnil, node->nd_lit);
+        return node;
+
     }
     switch (id_type(id)) {
       case ID_INTERNAL:
@@ -9882,7 +9894,7 @@ symbol_append(struct parser_params *p, NODE *symbols, NODE *symbol)
     }
     else {
 	nd_set_type(symbol, NODE_LIT);
-	symbol->nd_lit = add_mark_object(p, rb_str_intern(symbol->nd_lit));
+	RB_OBJ_WRITTEN(p->ast, Qnil, symbol->nd_lit = rb_str_intern(symbol->nd_lit));
     }
     return list_append(p, symbols, symbol);
 }
@@ -9894,7 +9906,9 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
     VALUE lit;
 
     if (!node) {
-	return NEW_LIT(add_mark_object(p, reg_compile(p, STR_NEW0(), options)), loc);
+	node = NEW_LIT(reg_compile(p, STR_NEW0(), options), loc);
+	RB_OBJ_WRITTEN(p->ast, Qnil, node->nd_lit);
+        return node;
     }
     switch (nd_type(node)) {
       case NODE_STR:
@@ -9902,12 +9916,13 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
 	    VALUE src = node->nd_lit;
 	    nd_set_type(node, NODE_LIT);
 	    nd_set_loc(node, loc);
-	    add_mark_object(p, node->nd_lit = reg_compile(p, src, options));
+	    RB_OBJ_WRITTEN(p->ast, Qnil, node->nd_lit = reg_compile(p, src, options));
 	}
 	break;
       default:
-	add_mark_object(p, lit = STR_NEW0());
+	lit = STR_NEW0();
 	node = NEW_NODE(NODE_DSTR, lit, 1, NEW_LIST(node, loc), loc);
+        RB_OBJ_WRITTEN(p->ast, Qnil, lit);
 	/* fall through */
       case NODE_DSTR:
 	nd_set_type(node, NODE_DREGX);
@@ -9939,7 +9954,7 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
 	if (!node->nd_next) {
 	    VALUE src = node->nd_lit;
 	    nd_set_type(node, NODE_LIT);
-	    add_mark_object(p, node->nd_lit = reg_compile(p, src, options));
+	    RB_OBJ_WRITTEN(p->ast, Qnil, node->nd_lit = reg_compile(p, src, options));
 	}
 	if (options & RE_OPTION_ONCE) {
 	    node = NEW_NODE(NODE_ONCE, 0, node, 0, loc);
@@ -9962,7 +9977,7 @@ new_xstring(struct parser_params *p, NODE *node, const YYLTYPE *loc)
     if (!node) {
 	VALUE lit = STR_NEW0();
 	NODE *xstr = NEW_XSTR(lit, loc);
-	add_mark_object(p, lit);
+	RB_OBJ_WRITTEN(p->ast, Qnil, lit);
 	return xstr;
     }
     switch (nd_type(node)) {
@@ -9991,7 +10006,7 @@ check_literal_when(struct parser_params *p, NODE *arg, const YYLTYPE *loc)
     lit = rb_node_case_when_optimizable_literal(arg);
     if (lit == Qundef) return;
     if (nd_type(arg) == NODE_STR) {
-	arg->nd_lit = add_mark_object(p, lit);
+	RB_OBJ_WRITTEN(p->ast, Qnil, arg->nd_lit = lit);
     }
 
     if (NIL_P(p->case_labels)) {
@@ -11307,7 +11322,7 @@ dsym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 	break;
       case NODE_STR:
 	lit = node->nd_lit;
-	add_mark_object(p, node->nd_lit = ID2SYM(rb_intern_str(lit)));
+	RB_OBJ_WRITTEN(p->ast, Qnil, node->nd_lit = ID2SYM(rb_intern_str(lit)));
 	nd_set_type(node, NODE_LIT);
 	nd_set_loc(node, loc);
 	break;
