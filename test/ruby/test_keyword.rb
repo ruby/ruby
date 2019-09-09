@@ -179,27 +179,81 @@ class TestKeywordArguments < Test::Unit::TestCase
 
   def test_pass_positional_hash
     c = Class.new do
-      pass_positional_hash def foo(x, *args, **kw)
-        send(x ? :bar : :baz, *args, **kw)
+      pass_positional_hash def foo(meth, *args, **kw)
+        send(meth, *args, **kw)
       end
-
       def bar(*args, **kw)
         [args, kw]
       end
-
       def baz(*args)
         args
+      end
+      def noarg
+      end
+      def arg(a)
+        a
+      end
+      def opts(**o)
+        o
+      end
+      def arg0o(a=nil, **o)
+        [a,o]
+      end
+      def arg1o(a, **o)
+        [a,o]
       end
     end
     o = c.new
 
-    assert_equal([[1], {:a=>1}], o.foo(true, 1, :a=>1))
-    assert_equal([1, {:a=>1}], o.foo(false, 1, :a=>1))
+    assert_equal([[1], {:a=>1}], o.foo(:bar, 1, :a=>1))
+    assert_equal([1, {:a=>1}], o.foo(:baz, 1, :a=>1))
 
     assert_warn(/The last argument is used as the keyword parameter.* for `bar'/m) do
-      assert_equal([[1], {:a=>1}], o.foo(true, 1, {:a=>1}))
+      assert_equal([[1], {:a=>1}], o.foo(:bar, 1, {:a=>1}))
     end
-    assert_equal([1, {:a=>1}], o.foo(false, 1, {:a=>1}))
+    assert_equal([1, {:a=>1}], o.foo(:baz, 1, {:a=>1}))
+
+    assert_nil(o.foo(:noarg))
+    assert_nil(o.foo(:noarg, **{}))
+    assert_raise(ArgumentError) { o.foo(:noarg, {}) }
+
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `arg'/m) do
+      assert_equal({}, o.foo(:arg))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `arg'/m) do
+      assert_equal({}, o.foo(:arg, **{}))
+    end
+    assert_equal({}, o.foo(:arg, {}))
+
+    assert_equal({}, o.foo(:opts))
+    assert_equal({}, o.foo(:opts, **{}))
+    assert_warn(/The last argument is used as the keyword parameter.* for `opts'/m) do
+      assert_equal({}, o.foo(:opts, {}))
+    end
+
+    assert_equal([nil, {}], o.foo(:arg0o))
+    assert_equal([nil, {}], o.foo(:arg0o, **{}))
+    assert_equal([1, {}], o.foo(:arg0o, 1))
+    assert_equal([1, {}], o.foo(:arg0o, 1, **{}))
+    assert_warn(/The last argument is used as the keyword parameter.* for `arg0o'/m) do
+      assert_equal([nil, {}], o.foo(:arg0o, {}))
+    end
+    assert_warn(/The last argument is used as the keyword parameter.* for `arg0o'/m) do
+      assert_equal([1, {}], o.foo(:arg0o, 1, {}))
+    end
+
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `arg1o'/m) do
+      assert_equal([{}, {}], o.foo(:arg1o))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `arg1o'/m) do
+      assert_equal([{}, {}], o.foo(:arg1o, **{}))
+    end
+    assert_equal([1, {}], o.foo(:arg1o, 1))
+    assert_equal([1, {}], o.foo(:arg1o, 1, **{}))
+    assert_equal([{}, {}], o.foo(:arg1o, {}))
+    assert_warn(/The last argument is used as the keyword parameter.* for `arg1o'/m) do
+      assert_equal([1, {}], o.foo(:arg1o, 1, {}))
+    end
 
     assert_warn(/Skipping set of pass positional hash flag for baz \(method not defined in Ruby or method does not accept keyword arguments\)/) do
       assert_nil(c.send(:pass_positional_hash, :baz))
