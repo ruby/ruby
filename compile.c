@@ -4082,7 +4082,7 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popp
     /* Compilation of a hash literal (or keyword arguments).
      * This is very similar to compile_array, but there are some differences:
      *
-     * - It contains key-value pairs.  So we need to take every two elments.
+     * - It contains key-value pairs.  So we need to take every two elements.
      *   We can assume that the length is always even.
      *
      * - Merging is done by a method call (id_core_hash_merge_ptr).
