@@ -836,7 +836,6 @@ console_key_pressed_p(VALUE io, VALUE k)
 }
 #else
 # define console_goto rb_f_notimplement
-# define console_cursor_pos rb_f_notimplement
 # define console_cursor_set rb_f_notimplement
 static VALUE
 read_vt_response(VALUE io, VALUE query)
@@ -874,6 +873,24 @@ console_vt_response(int argc, VALUE *argv, VALUE io)
     VALUE query = argc ? argv[0] : Qnil;
     VALUE ret = ttymode_with_io(io, read_vt_response, query, set_rawmode, optp);
     return ret;
+}
+
+static VALUE
+console_cursor_pos(VALUE io)
+{
+    VALUE query = rb_str_new_cstr("\e[6n");
+    VALUE resp = console_vt_response(1, &query, io);
+    VALUE row, column, term;
+    if (!RB_TYPE_P(resp, T_ARRAY) || RARRAY_LEN(resp) != 3) return Qnil;
+    term = RARRAY_AREF(resp, 2);
+    if (!RB_TYPE_P(term, T_STRING) || RSTRING_LEN(term) != 1) return Qnil;
+    if (RSTRING_PTR(term)[0] != 'R') return Qnil;
+    row = RARRAY_AREF(resp, 0);
+    column = RARRAY_AREF(resp, 1);
+    rb_ary_resize(resp, 2);
+    RARRAY_ASET(resp, 0, column);
+    RARRAY_ASET(resp, 1, row);
+    return resp;
 }
 # define console_key_pressed_p rb_f_notimplement
 #endif
