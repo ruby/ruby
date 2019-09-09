@@ -122,6 +122,7 @@ class TestDir < Test::Unit::TestCase
   end
 
   def test_chroot_nodir
+    skip if RUBY_PLATFORM =~ /android/
     assert_raise(NotImplementedError, Errno::ENOENT, Errno::EPERM
 		) { Dir.chroot(File.join(@nodir, "")) }
   end

@@ -642,6 +642,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_birthtime
+    skip if RUBY_PLATFORM =~ /android/
     [regular_file, utf8_file].each do |file|
       t1 = File.birthtime(file)
       t2 = File.open(file) {|f| f.birthtime}

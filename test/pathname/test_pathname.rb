@@ -789,6 +789,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_birthtime
+    skip if RUBY_PLATFORM =~ /android/
     # Check under a (probably) local filesystem.
     # Remote filesystems often may not support birthtime.
     with_tmpchdir('rubytest-pathname') do |dir|

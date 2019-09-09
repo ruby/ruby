@@ -1583,6 +1583,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_setegid
+    skip "root can use Process.egid on Android platform" if RUBY_PLATFORM =~ /android/
     assert_nothing_raised(TypeError) {Process.egid += 0}
   rescue NotImplementedError
   end
@@ -1871,6 +1872,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_execopts_uid
+    skip "root can use uid option of Kernel#system on Android platform" if RUBY_PLATFORM =~ /android/
     feature6975 = '[ruby-core:47414]'
 
     [30000, [Process.uid, ENV["USER"]]].each do |uid, user|
@@ -1902,6 +1904,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_execopts_gid
     skip "Process.groups not implemented on Windows platform" if windows?
+    skip "root can use Process.groups on Android platform" if RUBY_PLATFORM =~ /android/
     feature6975 = '[ruby-core:47414]'
 
     groups = Process.groups.map do |g|
