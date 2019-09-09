@@ -671,6 +671,30 @@ console_set_winsize(VALUE io, VALUE size)
 }
 #endif
 
+#ifdef _WIN32
+static VALUE
+console_check_winsize_changed(VALUE io)
+{
+    rb_io_t *fptr;
+    HANDLE h;
+    DWORD num;
+
+    GetOpenFile(io, fptr);
+    h = (HANDLE)rb_w32_get_osfhandle(GetReadFD(fptr));
+    while (GetNumberOfConsoleInputEvents(h, &num) && num > 0) {
+	INPUT_RECORD rec;
+	if (ReadConsoleInput(h, &rec, 1, &num)) {
+	    if (rec.EventType == WINDOW_BUFFER_SIZE_EVENT) {
+		rb_yield(Qnil);
+	    }
+	}
+    }
+    return io;
+}
+#else
+#define console_check_winsize_changed rb_f_notimplement
+#endif
+
 /*
  * call-seq:
  *   io.iflush
@@ -1394,6 +1418,7 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "scroll_backward", console_scroll_backward, 1);
     rb_define_method(rb_cIO, "clear_screen", console_clear_screen, 0);
     rb_define_method(rb_cIO, "pressed?", console_key_pressed_p, 1);
+    rb_define_method(rb_cIO, "check_winsize_changed", console_check_winsize_changed, 0);
 #if ENABLE_IO_GETPASS
     rb_define_method(rb_cIO, "getpass", console_getpass, -1);
 #endif
