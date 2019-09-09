@@ -820,6 +820,25 @@ console_move(VALUE io, int x, int y)
     return io;
 }
 
+static VALUE
+console_goto_column(VALUE io, VALUE val)
+{
+    rb_io_t *fptr;
+    HANDLE h;
+    rb_console_size_t ws;
+    COORD *pos = &ws.dwCursorPosition;
+
+    GetOpenFile(io, fptr);
+    h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(fptr));
+    if (!GetConsoleScreenBufferInfo(h, &ws)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+    pos->X = NUM2INT(val);
+    if (!SetConsoleCursorPosition(h, *pos)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+    return io;
+}
 #include "win32_vk.inc"
 
 static VALUE
@@ -921,6 +940,13 @@ console_move(VALUE io, int x, int y)
 	rb_io_write(io, s);
 	rb_io_flush(io);
     }
+    return io;
+}
+
+static VALUE
+console_goto_column(VALUE io, VALUE val)
+{
+    rb_io_write(io, rb_sprintf("\x1b[%dG", NUM2UINT(val)+1));
     return io;
 }
 # define console_key_pressed_p rb_f_notimplement
@@ -1194,6 +1220,7 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "cursor_down", console_cursor_down, 1);
     rb_define_method(rb_cIO, "cursor_left", console_cursor_left, 1);
     rb_define_method(rb_cIO, "cursor_right", console_cursor_right, 1);
+    rb_define_method(rb_cIO, "goto_column", console_goto_column, 1);
     rb_define_method(rb_cIO, "pressed?", console_key_pressed_p, 1);
 #if ENABLE_IO_GETPASS
     rb_define_method(rb_cIO, "getpass", console_getpass, -1);
