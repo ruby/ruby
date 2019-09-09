@@ -1054,7 +1054,12 @@ struct RArray {
 	    long len;
 	    union {
 		long capa;
-                const VALUE shared_root;
+#if defined(__clang__)      /* <- clang++ is sane */ || \
+    !defined(__cplusplus)   /* <- C99 is sane */     || \
+    (__cplusplus > 199711L) /* <- C++11 is sane */
+                const
+#endif
+                VALUE shared_root;
 	    } aux;
 	    const VALUE *ptr;
 	} heap;
