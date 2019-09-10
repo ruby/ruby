@@ -4608,7 +4608,7 @@ numeric 	: simple_numeric
 		    {
 		    /*%%%*/
 			$$ = $2;
-			RB_OBJ_WRITTEN(p->ast, &$$->nd_lit, $$->nd_lit = negate_lit(p, $$->nd_lit));
+			RB_OBJ_WRITE(p->ast, &$$->nd_lit, negate_lit(p, $$->nd_lit));
 		    /*% %*/
 		    /*% ripper: unary!(ID2VAL(idUMinus), $2) %*/
 		    }
@@ -5185,7 +5185,7 @@ assoc		: arg_value tASSOC arg_value
 		    /*%%%*/
 			if (nd_type($1) == NODE_STR) {
 			    nd_set_type($1, NODE_LIT);
-			    RB_OBJ_WRITTEN(p->ast, &$1->nd_lit, $1->nd_lit = rb_fstring($1->nd_lit));
+			    RB_OBJ_WRITE(p->ast, &$1->nd_lit, rb_fstring($1->nd_lit));
 			}
 			$$ = list_append(p, NEW_LIST($1, &@$), $3);
 		    /*% %*/
