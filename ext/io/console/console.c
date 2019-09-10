@@ -311,6 +311,7 @@ ttymode_callback(VALUE args)
     return argp->func(argp->io, argp->farg);
 }
 
+#if !defined _WIN32
 static VALUE
 ttymode_with_io(VALUE io, VALUE (*func)(VALUE, VALUE), VALUE farg, void (*setter)(conmode *, void *), void *arg)
 {
@@ -320,6 +321,7 @@ ttymode_with_io(VALUE io, VALUE (*func)(VALUE, VALUE), VALUE farg, void (*setter
     cargs.farg = farg;
     return ttymode(io, ttymode_callback, (VALUE)&cargs, setter, arg);
 }
+#endif
 
 /*
  * call-seq:
@@ -895,7 +897,7 @@ console_erase_line(VALUE io, VALUE val)
     HANDLE h;
     rb_console_size_t ws;
     COORD *pos = &ws.dwCursorPosition;
-    DWORD written, w;
+    DWORD w;
     int mode = mode_in_range(val, 2, "line erase");
 
     GetOpenFile(io, fptr);
@@ -927,7 +929,7 @@ console_erase_screen(VALUE io, VALUE val)
     HANDLE h;
     rb_console_size_t ws;
     COORD *pos = &ws.dwCursorPosition;
-    DWORD written, w;
+    DWORD w;
     int mode = mode_in_range(val, 3, "screen erase");
 
     GetOpenFile(io, fptr);
@@ -966,7 +968,6 @@ console_scroll(VALUE io, int line)
     rb_io_t *fptr;
     HANDLE h;
     rb_console_size_t ws;
-    COORD *pos = &ws.dwCursorPosition;
 
     GetOpenFile(io, fptr);
     h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(fptr));
