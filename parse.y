@@ -1140,7 +1140,7 @@ program		:  {
 			    node = remove_begin(node);
 			    void_expr(p, node);
 			}
-			p->eval_tree = NEW_SCOPE(0, block_append(p, p->eval_tree, $2), &@$);
+			p->eval_tree = (NEW_SCOPE(0, block_append(p, p->eval_tree, $2), &@$));
 		    /*% %*/
 		    /*% ripper[final]: program!($2) %*/
 			local_pop(p);
