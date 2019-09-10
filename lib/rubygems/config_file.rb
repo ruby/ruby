@@ -265,7 +265,7 @@ if you believe they were disclosed to a third party.
     if File.exist? credentials
       credentials
     else
-      File.join Gem.config_home, "gem", "credentials"
+      File.join Gem.cache_home, "gem", "credentials"
     end
   end
 
