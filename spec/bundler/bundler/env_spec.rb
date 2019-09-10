@@ -43,7 +43,11 @@ RSpec.describe Bundler::Env do
       it "prints user path" do
         with_clear_paths("HOME", "/a/b/c") do
           out = described_class.report
-          expect(out).to include("User Path   /a/b/c/.gem")
+          if Gem::VERSION >= "3.1.0.pre.1"
+            expect(out).to include("User Path   /a/b/c/.local/share/gem")
+          else
+            expect(out).to include("User Path   /a/b/c/.gem")
+          end
         end
       end
 

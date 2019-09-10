@@ -1364,18 +1364,6 @@ class TestGem < Gem::TestCase
     assert_equal File.join(parts), Gem.user_dir
   end
 
-  def test_self_user_dir_xdg
-    FileUtils.rm_rf File.join(@userhome, ".gem")
-    orig_env = ENV['XDG_DATA_HOME']
-    ENV['XDG_DATA_HOME'] = File.join @userhome, ".local", "share"
-
-    xdg_parts = [Gem.user_home, ".local", "share", "gem", Gem.ruby_engine]
-    xdg_parts << RbConfig::CONFIG['ruby_version'] unless RbConfig::CONFIG['ruby_version'].empty?
-
-    assert_equal File.join(xdg_parts), Gem.user_dir
-    ENV['XDG_DATA_HOME'] = orig_env
-  end
-
   def test_self_user_home
     if ENV['HOME']
       assert_equal ENV['HOME'], Gem.user_home
