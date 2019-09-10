@@ -1194,6 +1194,7 @@ rb_ast_newnode(rb_ast_t *ast, enum node_type type)
 {
     node_buffer_t *nb = ast->node_buffer;
     switch (type) {
+        case NODE_MATCH:
         case NODE_LIT:
         case NODE_STR:
         case NODE_XSTR:
@@ -1277,6 +1278,7 @@ mark_ast_value(void *ctx, NODE * node)
             rb_gc_mark(args->imemo);
             break;
         }
+        case NODE_MATCH:
         case NODE_LIT:
         case NODE_STR:
         case NODE_XSTR:
@@ -1287,7 +1289,7 @@ mark_ast_value(void *ctx, NODE * node)
             rb_gc_mark(node->nd_lit);
             break;
         default:
-            rb_bug("unreachable");
+            rb_bug("unreachable node %s", ruby_node_name(nd_type(node)));
     }
 }
 
