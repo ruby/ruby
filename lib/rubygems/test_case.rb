@@ -363,6 +363,9 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
     Dir.chdir @tempdir
 
     ENV['HOME'] = @userhome
+    FileUtils.mkdir_p File.join(@userhome, ".gem")
+    FileUtils.touch File.join(@userhome, ".gemrc")
+    FileUtils.touch File.join(@userhome, ".gem" "credentials",)
     Gem.instance_variable_set :@user_home, nil
     Gem.instance_variable_set :@gemdeps, nil
     Gem.instance_variable_set :@env_requirements_by_name, nil
