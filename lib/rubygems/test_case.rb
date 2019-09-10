@@ -370,6 +370,7 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
     File.open temp_cred, 'w', 0600 do |fp|
       fp.puts ':rubygems_api_key: 701229f217cdf23b1344c7b4b54ca97'
     end
+    ENV['XDG_DATA_HOME'] = File.join @userhome, ".local", "share"
     Gem.instance_variable_set :@user_home, nil
     Gem.instance_variable_set :@gemdeps, nil
     Gem.instance_variable_set :@env_requirements_by_name, nil
