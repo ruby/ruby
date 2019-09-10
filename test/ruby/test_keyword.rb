@@ -271,6 +271,33 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(NameError) { c.send(:pass_positional_hash, "a5e36ccec4f5080a1d5e63f8") }
     assert_raise(NameError) { c.send(:pass_positional_hash, :quux) }
 
+    c.class_eval do
+      pass_positional_hash def f(meth, *args, **kw)
+        send(meth, *args, a: 1, **kw)
+      end
+      pass_positional_hash def g(meth, *args, **kw)
+        kw[:a] = 1
+        send(meth, *args, **kw)
+      end
+      pass_positional_hash def h(meth, *args, **kw)
+        send(meth, *args, 2, **kw)
+      end
+    end
+    assert_warn(/The last argument is used as the keyword parameter.* for `bar'/m) do
+      assert_equal([[1], {b: 1, a: 1}], o.f(:bar, 1, {b: 1}))
+    end
+    assert_warn(/The last argument is used as the keyword parameter.* for `bar'/m) do
+      assert_equal([[1], {b: 1, a: 1}], o.g(:bar, 1, {b: 1}))
+    end
+    assert_warn(/The last argument is used as the keyword parameter.* for `bar'/m) do
+      assert_equal([[1, 2], {b: 1}], o.h(:bar, 1, {b: 1}))
+    end
+
+    # Different behavior in Ruby 3 without warning! (pass_positional_hash should not have been used)
+    assert_equal([1, {b: 1, a: 1}], o.f(:baz, 1, {b: 1})) # Ruby 3: [1, {b: 1}, {a: 1}]
+    assert_equal([1, {b: 1, a: 1}], o.g(:baz, 1, {b: 1})) # Ruby 3: [1, {b: 1}, {a: 1}]
+    assert_equal([1, 2, {b: 1}], o.h(:baz, 1, {b: 1}))    # Ruby 3: [1, {b: 1}, 2]
+
     c.freeze
     assert_raise(FrozenError) { c.send(:pass_positional_hash, :baz) }
   end

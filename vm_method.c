@@ -1757,10 +1757,15 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
  *
  *  This should only be used for methods that delegate keywords to another
  *  method, suppressing a warning when the target method does not accept
- *  keyword arguments the final argument is a hash.
+ *  keyword arguments and the final positional argument is a hash.
  *
- *  Will only be present in 2.7, will be removed in 3.0, so always check that
- *  the module responds to this method before calling it.
+ *  +pass_positional_hash+ should only called with a method if keyword arguments are
+ *  not modified inside the method before splatting, and additional arguments are
+ *  not appended to the array of positional arguments.  Otherwise the behavior may
+ *  differ in Ruby 3 and will not be warned about.
+ *
+ *  +pass_positional_hash+ is only be present in 2.7, it will be removed in 3.0. You
+ *  should always check that the module responds to this method before calling it.
  *
  *    module Mod
  *      def foo(meth, *args, **kw, &block)
