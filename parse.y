@@ -347,13 +347,12 @@ add_mark_object(struct parser_params *p, VALUE obj)
     }
     return obj;
 }
+#else
+static NODE* node_newnode_with_locals(struct parser_params *, enum node_type, VALUE, VALUE, const rb_code_location_t*);
 #endif
 
 static NODE* node_newnode(struct parser_params *, enum node_type, VALUE, VALUE, VALUE, const rb_code_location_t*);
 #define rb_node_newnode(type, a1, a2, a3, loc) node_newnode(p, (type), (a1), (a2), (a3), (loc))
-
-static NODE* node_newnode_with_locals(struct parser_params *, enum node_type, VALUE, VALUE, VALUE, const rb_code_location_t*);
-#define rb_node_newnode_with_locals(type, a1, a2, a3, loc) node_newnode_with_locals(p, (type), (a1), (a2), (a3), (loc))
 
 static NODE *nd_set_loc(NODE *nd, const YYLTYPE *loc);
 
@@ -9374,23 +9373,6 @@ node_newnode(struct parser_params *p, enum node_type type, VALUE a0, VALUE a1, V
     return n;
 }
 
-static NODE*
-node_newnode_with_locals(struct parser_params *p, enum node_type type, VALUE a0, VALUE a1, VALUE a2, const rb_code_location_t *loc)
-{
-    NODE *n = rb_ast_newnode(p->ast, type);
-
-    VALUE tbl = 0;
-    a0 = local_tbl(p, &tbl);
-
-    rb_node_init(n, type, a0, a1, a2);
-
-    nd_set_loc(n, loc);
-    nd_set_node_id(n, parser_get_node_id(p));
-
-    tbl && RB_OBJ_WRITTEN(p->ast, Qnil, tbl);
-    return n;
-}
-
 static NODE *
 nd_set_loc(NODE *nd, const YYLTYPE *loc)
 {
@@ -11680,6 +11662,20 @@ local_tbl(struct parser_params *p, VALUE *tmp)
 
     return buf;
 }
+
+static NODE*
+node_newnode_with_locals(struct parser_params *p, enum node_type type, VALUE a1, VALUE a2, const rb_code_location_t *loc)
+{
+    ID *a0;
+    NODE *n;
+    VALUE tbl = 0;
+
+    a0 = local_tbl(p, &tbl);
+    n = NEW_NODE(type, a0, a1, a2, loc);
+    tbl && RB_OBJ_WRITTEN(p->ast, Qnil, tbl);
+    return n;
+}
+
 #endif
 
 static void
