@@ -9531,34 +9531,42 @@ ibf_load_byte(const struct ibf_load *load, ibf_offset_t *offset)
 }
 
 /*
- * Small uint serialization (LEB128)
- * 0x0000_0000 - 0x0000_007f: 1byte | 0XXX XXXX |
- * 0x0000_0080 - 0x0000_3fff: 2byte | 1XXX XXXX | 0XXX XXXX |
- * 0x0000_4000 - 0x001f_ffff: 3byte | 1XXX XXXX | 1XXX XXXX | 0XXX XXXX |
- * 0x0002_0000 - 0x0fff_ffff: 4byte | 1XXX XXXX | 1XXX XXXX | 1XXX XXXX | 0XXX XXXX |
+ * Small uint serialization
+ * 0x00000000_00000000 - 0x00000000_0000007f: 1byte | XXXX XXX1 |
+ * 0x00000000_00000080 - 0x00000000_00003fff: 2byte | XXXX XX10 | XXXX XXXX |
+ * 0x00000000_00004000 - 0x00000000_001fffff: 3byte | XXXX X100 | XXXX XXXX | XXXX XXXX |
+ * 0x00000000_00020000 - 0x00000000_0fffffff: 4byte | XXXX 1000 | XXXX XXXX | XXXX XXXX | XXXX XXXX |
  * ...
+ * 0x00010000_00000000 - 0x00ffffff_ffffffff: 8byte | 1000 0000 | XXXX XXXX | XXXX XXXX | XXXX XXXX | XXXX XXXX | XXXX XXXX | XXXX XXXX | XXXX XXXX |
+ * 0x01000000_00000000 - 0xffffffff_ffffffff: 9byte | 0000 0000 | XXXX XXXX | XXXX XXXX | XXXX XXXX | XXXX XXXX | XXXX XXXX | XXXX XXXX | XXXX XXXX | XXXX XXXX |
  */
 static void
 ibf_dump_code_write_small_value(VALUE str, VALUE x)
 {
-    enum { max_byte_length = sizeof(VALUE) * 8 / 7 + 1 };
-
-    unsigned char bytes[max_byte_length];
-    ibf_offset_t n = 0;
-
-    bytes[max_byte_length - (++n)] = (x & 0x7f);
-    x >>= 7;
-
-    while (x) {
-        bytes[max_byte_length - (++n)] = 0x80 | (x & 0x7f);
-        x >>= 7;
+    if (sizeof(VALUE) > 8 || CHAR_BIT != 8) {
+        ibf_dump_code_write_bytes(str, (const unsigned char *)&x, sizeof(VALUE));
     }
 
-    assert(n <= max_byte_length);
+    enum { max_byte_length = sizeof(VALUE) + 1 };
+
+    unsigned char bytes[max_byte_length];
+    ibf_offset_t n;
+
+    for (n = 0; n < sizeof(VALUE) && (x >> (7 - n)); n++, x >>= 8) {
+        bytes[max_byte_length - 1 - n] = (unsigned char)x;
+    }
+
+    x <<= 1;
+    x |= 1;
+    x <<= n;
+    bytes[max_byte_length - 1 - n] = (unsigned char)x;
+    n++;
+
     ibf_dump_code_write_bytes(str, bytes + max_byte_length - n, n);
 }
 
-static void ibf_dump_small_value(struct ibf_dump *dump, VALUE x)
+static void
+ibf_dump_small_value(struct ibf_dump *dump, VALUE x)
 {
     ibf_dump_code_write_small_value(dump->str, x);
 }
@@ -9566,21 +9574,34 @@ static void ibf_dump_small_value(struct ibf_dump *dump, VALUE x)
 static VALUE
 ibf_load_small_value(const struct ibf_load *load, ibf_offset_t *offset)
 {
-    enum { max_byte_length = sizeof(VALUE) * 8 / 7 + 1 };
+    if (sizeof(VALUE) > 8 || CHAR_BIT != 8) {
+        union { char s[sizeof(VALUE)]; VALUE v; } x;
 
-    const ibf_offset_t size = RSTRING_LEN(load->str);
+        memcpy(x.s, load->buff + *offset, sizeof(VALUE));
+        *offset += sizeof(VALUE);
 
-    ibf_offset_t n = 0;
-    VALUE x = 0;
+        return x.v;
+    }
 
-    do {
-        if (n >= max_byte_length || *offset + n >= size) {
-            rb_raise(rb_eRuntimeError, "invalid byte sequence");
-        }
+    enum { max_byte_length = sizeof(VALUE) + 1 };
 
-        x <<= 7;
-        x |= (unsigned char)load->buff[*offset + n] & 0x7f;
-    } while ((unsigned char)load->buff[*offset + n++] & 0x80);
+    const unsigned char *buffer = (const unsigned char *)load->current_buffer->buff;
+    const unsigned char c = buffer[*offset];
+
+    ibf_offset_t n =
+        c & 1 ? 1 :
+        c == 0 ? 9 : ntz_int32(c) + 1;
+    VALUE x = (VALUE)c >> n;
+
+    if (*offset + n > RSTRING_LEN(load->str)) {
+        rb_raise(rb_eRuntimeError, "invalid byte sequence");
+    }
+
+    ibf_offset_t i;
+    for (i = 1; i < n; i++) {
+        x <<= 8;
+        x |= (VALUE)buffer[*offset + i];
+    }
 
     *offset += n;
     return x;
