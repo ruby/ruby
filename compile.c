@@ -8647,7 +8647,7 @@ insn_make_insn_table(void)
 {
     struct st_table *table;
     int i;
-    table = st_init_numtable();
+    table = st_init_numtable_with_size(VM_INSTRUCTION_SIZE);
 
     for (i=0; i<VM_INSTRUCTION_SIZE; i++) {
 	st_insert(table, ID2SYM(rb_intern(insn_name(i))), i);
