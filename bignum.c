@@ -5369,6 +5369,7 @@ rb_integer_float_cmp(VALUE x, VALUE y)
     return INT2FIX(-1);
 }
 
+#if SIZEOF_LONG * CHAR_BIT >= DBL_MANT_DIG /* assume FLT_RADIX == 2 */
 COMPILER_WARNING_PUSH
 #ifdef __has_warning
 #if __has_warning("-Wimplicit-int-float-conversion")
@@ -5377,6 +5378,7 @@ COMPILER_WARNING_IGNORED(-Wimplicit-int-float-conversion)
 #endif
 static const double LONG_MAX_as_double = LONG_MAX;
 COMPILER_WARNING_POP
+#endif
 
 VALUE
 rb_integer_float_eq(VALUE x, VALUE y)
