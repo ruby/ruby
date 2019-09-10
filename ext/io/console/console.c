@@ -298,6 +298,7 @@ ttymode(VALUE io, VALUE (*func)(VALUE), VALUE farg, void (*setter)(conmode *, vo
     return result;
 }
 
+#if !defined _WIN32
 struct ttymode_callback_args {
     VALUE (*func)(VALUE, VALUE);
     VALUE io;
@@ -311,7 +312,6 @@ ttymode_callback(VALUE args)
     return argp->func(argp->io, argp->farg);
 }
 
-#if !defined _WIN32
 static VALUE
 ttymode_with_io(VALUE io, VALUE (*func)(VALUE, VALUE), VALUE farg, void (*setter)(conmode *, void *), void *arg)
 {
