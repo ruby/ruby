@@ -1410,7 +1410,7 @@ AC_CACHE_CHECK([for __attribute__((__depreacted__(msg))) in C++],
       [rb_cv_CentOS6_CXX_workaround=yes],
       [rb_cv_CentOS6_CXX_workaround=no])
     AC_LANG_POP()]))
-AS_IF([test "rb_cv_CentOS6_CXX_workaround" != no],[
+AS_IF([test "$rb_cv_CentOS6_CXX_workaround" != no],[
   AC_DEFINE([RUBY_CXX_DEPRECATED(msg)],
     [__attribute__((__deprecated__(msg)))])])
 
