@@ -284,7 +284,12 @@ typedef struct RNode {
 
 #define NEW_DEFN(i,a,d,loc) NEW_NODE(NODE_DEFN,0,i,NEW_SCOPE(a,d,loc),loc)
 #define NEW_DEFS(r,i,a,d,loc) NEW_NODE(NODE_DEFS,r,i,NEW_SCOPE(a,d,loc),loc)
-#define NEW_SCOPE(a,b,loc) NEW_NODE(NODE_SCOPE,local_tbl(p),b,a,loc)
+#define NEW_SCOPE(a,b,loc) ({ \
+    VALUE tbl = 0; \
+    NODE * _n = NEW_NODE(NODE_SCOPE,local_tbl(p, &tbl),b,a,loc); \
+    tbl && RB_OBJ_WRITTEN(p->ast, Qnil, tbl); \
+    _n; \
+})
 #define NEW_BLOCK(a,loc) NEW_NODE(NODE_BLOCK,a,0,0,loc)
 #define NEW_IF(c,t,e,loc) NEW_NODE(NODE_IF,c,t,e,loc)
 #define NEW_UNLESS(c,t,e,loc) NEW_NODE(NODE_UNLESS,c,t,e,loc)

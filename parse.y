@@ -465,7 +465,7 @@ static NODE *symbol_append(struct parser_params *p, NODE *symbols, NODE *symbol)
 
 static NODE *match_op(struct parser_params*,NODE*,NODE*,const YYLTYPE*,const YYLTYPE*);
 
-static ID  *local_tbl(struct parser_params*);
+static ID  *local_tbl(struct parser_params*, VALUE *tmp);
 
 static VALUE reg_compile(struct parser_params*, VALUE, int);
 static void reg_fragment_setenc(struct parser_params*, VALUE, int);
@@ -11144,8 +11144,8 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
     args = ZALLOC(struct rb_args_info);
     VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer(args);
     args->imemo = tmpbuf;
-    RB_OBJ_WRITTEN(p->ast, Qnil, tmpbuf);
     node = NEW_NODE(NODE_ARGS, 0, 0, args, &NULL_LOC);
+    RB_OBJ_WRITTEN(p->ast, Qnil, tmpbuf);
     if (p->error_p) return node;
 
     args->block_arg      = block;
@@ -11633,7 +11633,7 @@ local_pop(struct parser_params *p)
 
 #ifndef RIPPER
 static ID*
-local_tbl(struct parser_params *p)
+local_tbl(struct parser_params *p, VALUE *tmp)
 {
     int cnt_args = vtable_size(p->lvtbl->args);
     int cnt_vars = vtable_size(p->lvtbl->vars);
@@ -11655,8 +11655,8 @@ local_tbl(struct parser_params *p)
     buf[0] = cnt;
 
     VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer(buf);
+    *tmp = tmpbuf;
     buf[cnt + 1] = (ID)tmpbuf;
-    RB_OBJ_WRITTEN(p->ast, Qnil, tmpbuf);
 
     return buf;
 }
