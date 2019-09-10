@@ -33,7 +33,7 @@ class TestGemSpecFetcher < Gem::TestCase
   end
 
   def test_initialize_nonexistent_home_dir
-    FileUtils.rmdir Gem.user_home
+    FileUtils.rm_rf Gem.user_home
 
     assert Gem::SpecFetcher.new
   end

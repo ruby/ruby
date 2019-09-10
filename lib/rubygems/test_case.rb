@@ -364,8 +364,12 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
 
     ENV['HOME'] = @userhome
     FileUtils.mkdir_p File.join(@userhome, ".gem")
-    FileUtils.touch File.join(@userhome, ".gemrc")
-    FileUtils.touch File.join(@userhome, ".gem" "credentials",)
+    File.open(File.join(@userhome, ".gemrc"), "w"){|f| f.puts "--- {}" }
+    temp_cred = File.join(@userhome, '.gem', 'credentials')
+    FileUtils.mkdir_p File.dirname(temp_cred)
+    File.open temp_cred, 'w', 0600 do |fp|
+      fp.puts ':rubygems_api_key: 701229f217cdf23b1344c7b4b54ca97'
+    end
     Gem.instance_variable_set :@user_home, nil
     Gem.instance_variable_set :@gemdeps, nil
     Gem.instance_variable_set :@env_requirements_by_name, nil
