@@ -281,7 +281,7 @@ class Gem::Dependency
       requirement.satisfied_by?(spec.version) && env_req.satisfied_by?(spec.version)
     end.map(&:to_spec)
 
-    Gem::BundlerVersionFinder.filter!(matches) if name == "bundler".freeze
+    Gem::BundlerVersionFinder.filter!(matches) if name == "bundler".freeze && !requirement.specific?
 
     if platform_only
       matches.reject! do |spec|
