@@ -352,6 +352,13 @@ module Gem
   end
 
   ##
+  # The path to standard location of the user's data directory.
+
+  def self.data_home
+    @data_home ||= (ENV["XDG_DATA_HOME"] || File.join(Gem.user_home, '.local', 'share'))
+  end
+
+  ##
   # The path to standard location of the user's .gemrc file.
 
   def self.config_file
