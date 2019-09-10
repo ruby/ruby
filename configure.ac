@@ -1399,6 +1399,21 @@ AS_IF([test "$rb_cv_func_weak" != x], [
    AC_DEFINE(HAVE_FUNC_WEAK)
 ])
 
+AC_CACHE_CHECK([for __attribute__((__depreacted__(msg))) in C++],
+  rb_cv_CentOS6_CXX_workaround,
+  RUBY_WERROR_FLAG([
+    AC_LANG_PUSH([C++])
+    AC_COMPILE_IFELSE(
+      [AC_LANG_PROGRAM(
+        [],
+        [__attribute__((__deprecated__("message"))) int conftest(...);])],
+      [rb_cv_CentOS6_CXX_workaround=yes],
+      [rb_cv_CentOS6_CXX_workaround=no])
+    AC_LANG_POP()]))
+AS_IF([test "rb_cv_CentOS6_CXX_workaround" != no],[
+  AC_DEFINE([RUBY_CXX_DEPRECATED(msg)],
+    [__attribute__((__deprecated__(msg)))])])
+
 if_i386=${universal_binary+[defined __i386__]}
 RUBY_FUNC_ATTRIBUTE(__stdcall__,  FUNC_STDCALL,  rb_cv_func_stdcall,  ${if_i386})
 RUBY_FUNC_ATTRIBUTE(__cdecl__,    FUNC_CDECL,    rb_cv_func_cdecl,    ${if_i386})

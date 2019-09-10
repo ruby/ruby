@@ -47,7 +47,7 @@ typedef int int_type(ANYARGS);
 /// @name Hooking global variables
 /// @{
 
-DEPRECATED_TYPE(("Use of ANYARGS in this function is deprected"),)
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
 /// @brief       Define a function-backended global variable.
 /// @param[in]   q  Name of the variable.
 /// @param[in]   w  Getter function.
@@ -63,7 +63,7 @@ rb_define_virtual_variable(const char *q, type *w, void_type *e)
     ::rb_define_virtual_variable(q, r, t);
 }
 
-DEPRECATED_TYPE(("Use of ANYARGS in this function is deprected"),)
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
 /// @brief       Define a function-backended global variable.
 /// @param[in]   q  Name of the variable.
 /// @param[in]   w  Variable storage.
@@ -84,7 +84,7 @@ rb_define_hooked_variable(const char *q, VALUE *w, type *e, void_type *r)
 /// @name Exceptions and tag jumps
 /// @{
 
-DEPRECATED_TYPE(("Use rb_block_call instead"),)
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
 /// @brief       Old way to implement iterators.
 /// @param[in]   q  A function that can yield.
 /// @param[in]   w  Passed to `q`.
@@ -101,7 +101,7 @@ rb_iterate(VALUE(*q)(VALUE), VALUE w, type *e, VALUE r)
     return ::rb_iterate(q, w, t, r);
 }
 
-DEPRECATED_TYPE(("Use of ANYARGS in this function is deprected"),)
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
 /// @brief       Call a method with a block.
 /// @param[in]   q  The self.
 /// @param[in]   w  The method.
@@ -119,7 +119,7 @@ rb_block_call(VALUE q, ID w, int e, const VALUE *r, type *t, VALUE y)
     return ::rb_block_call(q, w, e, r, u, y);
 }
 
-DEPRECATED_TYPE(("Use of ANYARGS in this function is deprected"),)
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
 /// @brief       An equivalent of `rescue` clause.
 /// @param[in]   q  A function that can raise.
 /// @param[in]   w  Passed to `q`.
@@ -142,7 +142,7 @@ rb_rescue(type *q, VALUE w, type *e, VALUE r)
     return ::rb_rescue(t, w, y, r);
 }
 
-DEPRECATED_TYPE(("Use of ANYARGS in this function is deprected"),)
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
 /// @brief       An equivalent of `rescue` clause.
 /// @param[in]   q    A function that can raise.
 /// @param[in]   w    Passed to `q`.
@@ -169,7 +169,7 @@ rb_rescue2(type *q, VALUE w, type *e, VALUE r, ...)
     va_end(ap);
 }
 
-DEPRECATED_TYPE(("Use of ANYARGS in this function is deprected"),)
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
 /// @brief       An equivalent of `ensure` clause.
 /// @param[in]   q  A function that can raise.
 /// @param[in]   w  Passed to `q`.
@@ -190,7 +190,7 @@ rb_ensure(type *q, VALUE w, type *e, VALUE r)
     return ::rb_ensure(t, w, y, r);
 }
 
-DEPRECATED_TYPE(("Use of ANYARGS in this function is deprected"),)
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
 /// @brief       An equivalent of `Kernel#catch`.
 /// @param[in]   q  The "tag" string.
 /// @param[in]   w  A function that can throw.
@@ -209,7 +209,7 @@ rb_catch(const char *q, type *w, VALUE e)
     return ::rb_catch(q, r, e);
 }
 
-DEPRECATED_TYPE(("Use of ANYARGS in this function is deprected"),)
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
 /// @brief       An equivalent of `Kernel#catch`.
 /// @param[in]   q  The "tag" object.
 /// @param[in]   w  A function that can throw.
@@ -232,7 +232,7 @@ rb_catch_obj(VALUE q, type *w, VALUE e)
 /// @name Procs, Fibers and Threads
 /// @{
 
-DEPRECATED_TYPE(("Use of ANYARGS in this function is deprected"),)
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
 /// @brief       Creates a @ref rb_cFiber instance.
 /// @param[in]   q  The fiber body.
 /// @param[in]   w  Passed to `q`.
@@ -248,7 +248,7 @@ rb_fiber_new(type *q, VALUE w)
     return ::rb_fiber_new(e, w);
 }
 
-DEPRECATED_TYPE(("Use of ANYARGS in this function is deprected"),)
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
 /// @brief       Creates a @ref rb_cProc instance.
 /// @param[in]   q  The proc body.
 /// @param[in]   w  Passed to `q`.
@@ -264,7 +264,7 @@ rb_proc_new(type *q, VALUE w)
     return ::rb_proc_new(e, w);
 }
 
-DEPRECATED_TYPE(("Use of ANYARGS in this function is deprected"),)
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
 /// @brief       Creates a @ref rb_cThread instance.
 /// @param[in]   q  The thread body.
 /// @param[in]   w  Passed to `q`.
@@ -285,7 +285,7 @@ rb_thread_create(type *q, void *w)
 /// @name Hash and st_table
 /// @{
 
-DEPRECATED_TYPE(("Use of ANYARGS in this function is deprected"),)
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
 /// @brief       Iteration over the given table.
 /// @param[in]   q  A table to scan.
 /// @param[in]   w  A function to iterate.
@@ -303,7 +303,7 @@ st_foreach(st_table *q, int_type *w, st_data_t e)
     return ::st_foreach(q, r, e);
 }
 
-DEPRECATED_TYPE(("Use of ANYARGS in this function is deprected"),)
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
 /// @brief       Iteration over the given table.
 /// @param[in]   q  A table to scan.
 /// @param[in]   w  A function to iterate.
@@ -321,7 +321,7 @@ st_foreach_check(st_table *q, int_type *w, st_data_t e, st_data_t)
     return ::st_foreach_check(q, t, e, 0);
 }
 
-DEPRECATED_TYPE(("Use of ANYARGS in this function is deprected"),)
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
 /// @brief       Iteration over the given table.
 /// @param[in]   q  A table to scan.
 /// @param[in]   w  A function to iterate.
@@ -337,7 +337,7 @@ st_foreach_safe(st_table *q, int_type *w, st_data_t e)
     ::st_foreach_safe(q, r, e);
 }
 
-DEPRECATED_TYPE(("Use of ANYARGS in this function is deprected"),)
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
 /// @brief       Iteration over the given hash.
 /// @param[in]   q  A hash to scan.
 /// @param[in]   w  A function to iterate.
@@ -353,7 +353,7 @@ rb_hash_foreach(VALUE q, int_type *w, VALUE e)
     ::rb_hash_foreach(q, r, e);
 }
 
-DEPRECATED_TYPE(("Use of ANYARGS in this function is deprected"),)
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
 /// @brief       Iteration over each instance variable of the object.
 /// @param[in]   q  An object.
 /// @param[in]   w  A function to iterate.

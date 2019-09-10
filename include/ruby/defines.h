@@ -38,6 +38,9 @@ extern "C" {
 #ifndef DEPRECATED_TYPE
 # define DEPRECATED_TYPE(mesg, decl) decl
 #endif
+#ifndef RUBY_CXX_DEPRECATED
+# define RUBY_CXX_DEPRECATED(mesg) /* nothing */
+#endif
 #ifndef NOINLINE
 # define NOINLINE(x) x
 #endif
