@@ -2609,8 +2609,8 @@ rb_obj_builtin_type(VALUE obj)
 # define COMPILER_WARNING_IGNORED(flag) \
     COMPILER_WARNING_PRAGMA(COMPILER_WARNING_SPECIFIER(ignored, flag))
 
-#elif GCC_VERSION_SINCE(4, 2, 0)
-/* https://gcc.gnu.org/onlinedocs/gcc-4.2.0/gcc/Diagnostic-Pragmas.html */
+#elif GCC_VERSION_SINCE(4, 6, 0)
+/* https://gcc.gnu.org/onlinedocs/gcc-4.6.4/gcc/Diagnostic-Pragmas.html */
 # define COMPILER_WARNING_PUSH          _Pragma("GCC diagnostic push")
 # define COMPILER_WARNING_POP           _Pragma("GCC diagnostic pop")
 # define COMPILER_WARNING_SPECIFIER(kind, msg) \
