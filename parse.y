@@ -347,6 +347,8 @@ add_mark_object(struct parser_params *p, VALUE obj)
     }
     return obj;
 }
+#else
+static NODE* node_newnode_with_locals(struct parser_params *, enum node_type, VALUE, VALUE, const rb_code_location_t*);
 #endif
 
 static NODE* node_newnode(struct parser_params *, enum node_type, VALUE, VALUE, VALUE, const rb_code_location_t*);
@@ -11660,6 +11662,20 @@ local_tbl(struct parser_params *p, VALUE *tmp)
 
     return buf;
 }
+
+static NODE*
+node_newnode_with_locals(struct parser_params *p, enum node_type type, VALUE a1, VALUE a2, const rb_code_location_t *loc)
+{
+    ID *a0;
+    NODE *n;
+    VALUE tbl = 0;
+
+    a0 = local_tbl(p, &tbl);
+    n = NEW_NODE(type, a0, a1, a2, loc);
+    tbl && RB_OBJ_WRITTEN(p->ast, Qnil, tbl);
+    return n;
+}
+
 #endif
 
 static void

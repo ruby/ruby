@@ -281,15 +281,11 @@ typedef struct RNode {
 #define nd_apinfo u3.apinfo
 
 #define NEW_NODE(t,a0,a1,a2,loc) rb_node_newnode((t),(VALUE)(a0),(VALUE)(a1),(VALUE)(a2),loc)
+#define NEW_NODE_WITH_LOCALS(t,a1,a2,loc) node_newnode_with_locals(p, (t),(VALUE)(a1),(VALUE)(a2),loc)
 
 #define NEW_DEFN(i,a,d,loc) NEW_NODE(NODE_DEFN,0,i,NEW_SCOPE(a,d,loc),loc)
 #define NEW_DEFS(r,i,a,d,loc) NEW_NODE(NODE_DEFS,r,i,NEW_SCOPE(a,d,loc),loc)
-#define NEW_SCOPE(a,b,loc) ({ \
-    VALUE tbl = 0; \
-    NODE * _n = NEW_NODE(NODE_SCOPE,local_tbl(p, &tbl),b,a,loc); \
-    tbl && RB_OBJ_WRITTEN(p->ast, Qnil, tbl); \
-    _n; \
-})
+#define NEW_SCOPE(a,b,loc) NEW_NODE_WITH_LOCALS(NODE_SCOPE,b,a,loc)
 #define NEW_BLOCK(a,loc) NEW_NODE(NODE_BLOCK,a,0,0,loc)
 #define NEW_IF(c,t,e,loc) NEW_NODE(NODE_IF,c,t,e,loc)
 #define NEW_UNLESS(c,t,e,loc) NEW_NODE(NODE_UNLESS,c,t,e,loc)
