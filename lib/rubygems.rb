@@ -345,6 +345,13 @@ module Gem
   end
 
   ##
+  # The path to standard location of the user's cache directory.
+
+  def self.cache_home
+    @cache_home ||= (ENV["XDG_CACHE_HOME"] || File.join(Gem.user_home, '.cache'))
+  end
+
+  ##
   # The path to standard location of the user's .gemrc file.
 
   def self.config_file
