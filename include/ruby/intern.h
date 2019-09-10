@@ -936,6 +936,7 @@ VALUE rb_time_num_new(VALUE, VALUE);
 struct timeval rb_time_interval(VALUE num);
 struct timeval rb_time_timeval(VALUE time);
 struct timespec rb_time_timespec(VALUE time);
+struct timespec rb_time_timespec_interval(VALUE num);
 VALUE rb_time_utc_offset(VALUE time);
 /* variable.c */
 VALUE rb_mod_name(VALUE);
