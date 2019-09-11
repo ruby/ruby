@@ -985,7 +985,7 @@ s,@OBJEXT@,$(OBJEXT),;t t
 s,@ASMEXT@,$(ASMEXT),;t t
 s,@XCFLAGS@,$(XCFLAGS),;t t
 s,@XLDFLAGS@,$(XLDFLAGS),;t t
-s,@DLDFLAGS@,$(DLDFLAGS) $$(LIBPATH),;t t
+s,@DLDFLAGS@,$(DLDFLAGS),;t t
 s,@EXTDLDFLAGS@,$(EXTDLDFLAGS),;t t
 s,@ARCH_FLAG@,$(ARCH_FLAG),;t t
 s,@STATIC@,$(STATIC),;t t
@@ -1042,7 +1042,7 @@ s,@ASSEMBLE_C@,$$(CC) $$(CFLAGS) $$(CPPFLAGS) -Fa$$(@) -c $$(CSRCFLAG)$$(<:\=/),
 s,@ASSEMBLE_CXX@,$$(CXX) $$(CXXFLAGS) $$(CPPFLAGS) -Fa$$(@) -c -Tp$$(<:\=/),;t t
 s,@COMPILE_RULES@,{$$(*VPATH*)}.%s.%s: .%s.%s:,;t t
 s,@RULE_SUBST@,{.;$$(VPATH)}%s,;t t
-s,@TRY_LINK@,$$(CC) -Feconftest $$(INCFLAGS) -I$$(hdrdir) $$(CPPFLAGS) $$(CFLAGS) $$(src) $$(LOCAL_LIBS) $$(LIBS) -link $$(LDFLAGS) $$(LIBPATH) $$(XLDFLAGS),;t t
+s,@TRY_LINK@,$$(CC) -Feconftest $$(INCFLAGS) -I$$(hdrdir) $$(CPPFLAGS) $$(CFLAGS) $$(src) $$(LOCAL_LIBS) $$(LIBS) -link $$(LDFLAGS) $$(XLDFLAGS),;t t
 s,@COMMON_LIBS@,$(COMMON_LIBS),;t t
 s,@COMMON_MACROS@,$(COMMON_MACROS),;t t
 s,@COMMON_HEADERS@,$(COMMON_HEADERS),;t t
