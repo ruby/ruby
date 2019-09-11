@@ -9776,8 +9776,8 @@ ibf_load_insns_info_body(const struct ibf_load *load, ibf_offset_t body_offset, 
 
     unsigned int i;
     for (i = 0; i < size; i++) {
-        entries[i].line_no = ibf_load_small_value(load, &reading_pos);
-        entries[i].events = ibf_load_small_value(load, &reading_pos);
+        entries[i].line_no = (int)ibf_load_small_value(load, &reading_pos);
+        entries[i].events = (rb_event_flag_t)ibf_load_small_value(load, &reading_pos);
     }
 
     return entries;
@@ -9807,7 +9807,7 @@ ibf_load_insns_info_positions(const struct ibf_load *load, ibf_offset_t position
     unsigned int last = 0;
     unsigned int i;
     for (i = 0; i < size; i++) {
-        positions[i] = last + ibf_load_small_value(load, &reading_pos);
+        positions[i] = last + (unsigned int)ibf_load_small_value(load, &reading_pos);
         last = positions[i];
     }
 
@@ -9889,11 +9889,11 @@ ibf_load_catch_table(const struct ibf_load *load, ibf_offset_t catch_table_offse
         unsigned int i;
         for (i=0; i<table->size; i++) {
             int iseq_index = (int)ibf_load_small_value(load, &reading_pos);
-            table->entries[i].type = ibf_load_small_value(load, &reading_pos);
-            table->entries[i].start = ibf_load_small_value(load, &reading_pos);
-            table->entries[i].end = ibf_load_small_value(load, &reading_pos);
-            table->entries[i].cont = ibf_load_small_value(load, &reading_pos);
-            table->entries[i].sp = ibf_load_small_value(load, &reading_pos);
+            table->entries[i].type = (enum catch_type)ibf_load_small_value(load, &reading_pos);
+            table->entries[i].start = (unsigned int)ibf_load_small_value(load, &reading_pos);
+            table->entries[i].end = (unsigned int)ibf_load_small_value(load, &reading_pos);
+            table->entries[i].cont = (unsigned int)ibf_load_small_value(load, &reading_pos);
+            table->entries[i].sp = (unsigned int)ibf_load_small_value(load, &reading_pos);
 
             table->entries[i].iseq = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)iseq_index);
         }
@@ -9965,16 +9965,16 @@ ibf_load_ci_entries(const struct ibf_load *load,
         VALUE mid_index = ibf_load_small_value(load, &reading_pos);
 
         ci_entries[i].mid = ibf_load_id(load, mid_index);
-        ci_entries[i].flag = ibf_load_small_value(load, &reading_pos);
-        ci_entries[i].orig_argc = ibf_load_small_value(load, &reading_pos);
+        ci_entries[i].flag = (unsigned int)ibf_load_small_value(load, &reading_pos);
+        ci_entries[i].orig_argc = (int)ibf_load_small_value(load, &reading_pos);
     }
 
     for (i = 0; i < ci_kw_size; i++) {
         VALUE mid_index = ibf_load_small_value(load, &reading_pos);
 
         ci_kw_entries[i].ci.mid = ibf_load_id(load, mid_index);
-        ci_kw_entries[i].ci.flag = ibf_load_small_value(load, &reading_pos);
-        ci_kw_entries[i].ci.orig_argc = ibf_load_small_value(load, &reading_pos);
+        ci_kw_entries[i].ci.flag = (unsigned int)ibf_load_small_value(load, &reading_pos);
+        ci_kw_entries[i].ci.orig_argc = (int)ibf_load_small_value(load, &reading_pos);
 
         int keyword_len = (int)ibf_load_small_value(load, &reading_pos);
 
@@ -10164,45 +10164,45 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
 #  define IBF_BODY_OFFSET(x) (offset - (x))
 #endif
 
-    const unsigned int type = ibf_load_small_value(load, &reading_pos);
-    const unsigned int iseq_size = ibf_load_small_value(load, &reading_pos);
-    const ibf_offset_t bytecode_offset = IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
-    const ibf_offset_t bytecode_size = ibf_load_small_value(load, &reading_pos);
-    const unsigned char param_flags = ibf_load_byte(load, &reading_pos);
-    const unsigned int param_size = ibf_load_small_value(load, &reading_pos);
-    const int param_lead_num = ibf_load_small_value(load, &reading_pos);
-    const int param_opt_num = ibf_load_small_value(load, &reading_pos);
-    const int param_rest_start = ibf_load_small_value(load, &reading_pos);
-    const int param_post_start = ibf_load_small_value(load, &reading_pos);
-    const int param_post_num = ibf_load_small_value(load, &reading_pos);
-    const int param_block_start = ibf_load_small_value(load, &reading_pos);
-    const ibf_offset_t param_opt_table_offset = IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
-    const ibf_offset_t param_keyword_offset = ibf_load_small_value(load, &reading_pos);
+    const unsigned int type = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const unsigned int iseq_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const ibf_offset_t bytecode_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
+    const ibf_offset_t bytecode_size = (ibf_offset_t)ibf_load_small_value(load, &reading_pos);
+    const unsigned char param_flags = (unsigned char)ibf_load_byte(load, &reading_pos);
+    const unsigned int param_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const int param_lead_num = (int)ibf_load_small_value(load, &reading_pos);
+    const int param_opt_num = (int)ibf_load_small_value(load, &reading_pos);
+    const int param_rest_start = (int)ibf_load_small_value(load, &reading_pos);
+    const int param_post_start = (int)ibf_load_small_value(load, &reading_pos);
+    const int param_post_num = (int)ibf_load_small_value(load, &reading_pos);
+    const int param_block_start = (int)ibf_load_small_value(load, &reading_pos);
+    const ibf_offset_t param_opt_table_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
+    const ibf_offset_t param_keyword_offset = (ibf_offset_t)ibf_load_small_value(load, &reading_pos);
     const VALUE location_pathobj_index = ibf_load_small_value(load, &reading_pos);
     const VALUE location_base_label_index = ibf_load_small_value(load, &reading_pos);
     const VALUE location_label_index = ibf_load_small_value(load, &reading_pos);
     const VALUE location_first_lineno = ibf_load_small_value(load, &reading_pos);
-    const int location_node_id = ibf_load_small_value(load, &reading_pos);
-    const int location_code_location_beg_pos_lineno = ibf_load_small_value(load, &reading_pos);
-    const int location_code_location_beg_pos_column = ibf_load_small_value(load, &reading_pos);
-    const int location_code_location_end_pos_lineno = ibf_load_small_value(load, &reading_pos);
-    const int location_code_location_end_pos_column = ibf_load_small_value(load, &reading_pos);
-    const ibf_offset_t insns_info_body_offset = IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
-    const ibf_offset_t insns_info_positions_offset = IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
-    const unsigned int insns_info_size = ibf_load_small_value(load, &reading_pos);
-    const ibf_offset_t local_table_offset = IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
-    const unsigned int catch_table_size = ibf_load_small_value(load, &reading_pos);
-    const ibf_offset_t catch_table_offset = IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
-    const int parent_iseq_index = ibf_load_small_value(load, &reading_pos);
-    const int local_iseq_index = ibf_load_small_value(load, &reading_pos);
-    const ibf_offset_t ci_entries_offset = IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
-    const rb_snum_t variable_flip_count = ibf_load_small_value(load, &reading_pos);
-    const unsigned int local_table_size = ibf_load_small_value(load, &reading_pos);
-    const unsigned int is_size = ibf_load_small_value(load, &reading_pos);
-    const unsigned int ci_size = ibf_load_small_value(load, &reading_pos);
-    const unsigned int ci_kw_size = ibf_load_small_value(load, &reading_pos);
-    const unsigned int stack_max = ibf_load_small_value(load, &reading_pos);
-    const char catch_except_p = ibf_load_small_value(load, &reading_pos);
+    const int location_node_id = (int)ibf_load_small_value(load, &reading_pos);
+    const int location_code_location_beg_pos_lineno = (int)ibf_load_small_value(load, &reading_pos);
+    const int location_code_location_beg_pos_column = (int)ibf_load_small_value(load, &reading_pos);
+    const int location_code_location_end_pos_lineno = (int)ibf_load_small_value(load, &reading_pos);
+    const int location_code_location_end_pos_column = (int)ibf_load_small_value(load, &reading_pos);
+    const ibf_offset_t insns_info_body_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
+    const ibf_offset_t insns_info_positions_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
+    const unsigned int insns_info_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const ibf_offset_t local_table_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
+    const unsigned int catch_table_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const ibf_offset_t catch_table_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
+    const int parent_iseq_index = (int)ibf_load_small_value(load, &reading_pos);
+    const int local_iseq_index = (int)ibf_load_small_value(load, &reading_pos);
+    const ibf_offset_t ci_entries_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
+    const rb_snum_t variable_flip_count = (rb_snum_t)ibf_load_small_value(load, &reading_pos);
+    const unsigned int local_table_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const unsigned int is_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const unsigned int ci_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const unsigned int ci_kw_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const unsigned int stack_max = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const char catch_except_p = (char)ibf_load_small_value(load, &reading_pos);
 
 #undef IBF_BODY_OFFSET
 
@@ -10304,14 +10304,14 @@ static void
 ibf_dump_iseq_list(struct ibf_dump *dump, struct ibf_header *header)
 {
     VALUE list = rb_ary_tmp_new(RARRAY_LEN(dump->iseq_list));
-    int i;
+    long i;
 
     for (i = 0; i < RARRAY_LEN(dump->iseq_list); i++) {
         ibf_offset_t offset = ibf_dump_iseq_each(dump, (rb_iseq_t *)RARRAY_AREF(dump->iseq_list, i));
         rb_ary_push(list, UINT2NUM(offset));
     }
 
-    int size = RARRAY_LEN(dump->iseq_list);
+    long size = RARRAY_LEN(dump->iseq_list);
     ibf_offset_t *offsets = ALLOCA_N(ibf_offset_t, size);
 
     for (i = 0; i < size; i++) {
