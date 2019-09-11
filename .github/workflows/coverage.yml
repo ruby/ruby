@@ -47,8 +47,8 @@ jobs:
       - name: Upload results
         run: |
           xz -9 lcov-all.info
-          aws s3 cp lcov-all.info.xz s3://rubyci/coverage/lcov-all-"$GITHUB_SHA".info.xz
-          aws s3 sync lcov-out s3://rubyci/coverage-latest-html
+          aws s3 cp lcov-all.info.xz s3://rubyci/coverage/lcov-all-"$GITHUB_SHA".info.xz --no-progress
+          aws s3 sync lcov-out s3://rubyci/coverage-latest-html --no-progress
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

@@ -41,7 +41,7 @@ jobs:
         if: github.repository == 'ruby/ruby'
       - name: Upload results
         run: |
-          aws s3 sync doc/capi/html/ s3://rubyci/doxygen-latest-html
+          aws s3 sync doc/capi/html/ s3://rubyci/doxygen-latest-html --no-progress
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
