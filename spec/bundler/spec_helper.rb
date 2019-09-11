@@ -86,7 +86,6 @@ RSpec.configure do |config|
     ENV["BUNDLE_SPEC_RUN"] = "true"
     ENV["BUNDLE_USER_CONFIG"] = ENV["BUNDLE_USER_CACHE"] = ENV["BUNDLE_USER_PLUGIN"] = nil
     ENV["GEMRC"] = nil
-    ENV["XDG_DATA_HOME"] = nil
 
     # Don't wrap output in tests
     ENV["THOR_COLUMNS"] = "10000"
