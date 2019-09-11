@@ -11672,7 +11672,7 @@ node_newnode_with_locals(struct parser_params *p, enum node_type type, VALUE a1,
 
     a0 = local_tbl(p, &tbl);
     n = NEW_NODE(type, a0, a1, a2, loc);
-    tbl && RB_OBJ_WRITTEN(p->ast, Qnil, tbl);
+    if (tbl) RB_OBJ_WRITTEN(p->ast, Qnil, tbl);
     return n;
 }
 
