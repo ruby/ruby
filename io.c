@@ -12212,12 +12212,13 @@ argf_getpartial(int argc, VALUE *argv, VALUE argf, VALUE opts, int nonblock)
         rb_eof_error();
     }
     if (ARGF_GENERIC_INPUT_P()) {
+        VALUE (*const rescue_does_nothing)(VALUE, VALUE) = 0;
 	struct argf_call_arg arg;
 	arg.argc = argc;
 	arg.argv = argv;
 	arg.argf = argf;
 	tmp = rb_rescue2(argf_forward_call, (VALUE)&arg,
-			 RUBY_METHOD_FUNC(0), Qnil, rb_eEOFError, (VALUE)0);
+                         rescue_does_nothing, Qnil, rb_eEOFError, (VALUE)0);
     }
     else {
         tmp = io_getpartial(argc, argv, ARGF.current_file, no_exception, nonblock);
