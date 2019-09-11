@@ -672,6 +672,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     VALUE keyword_hash = Qnil;
     VALUE * const orig_sp = ec->cfp->sp;
     unsigned int i;
+    int remove_empty_keyword_hash = 1;
 
     vm_check_canary(ec, orig_sp);
     /*
@@ -722,6 +723,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     }
 
     if (iseq->body->param.flags.pass_keywords && kw_flag && frame_flag) {
+        remove_empty_keyword_hash = 0;
         *frame_flag = VM_FRAME_FLAG_PASS_KEYWORDS;
     }
 
@@ -744,10 +746,12 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
             int len = RARRAY_LENINT(args->rest);
             if (len > 0 && ignore_keyword_hash_p(RARRAY_AREF(args->rest, len - 1), iseq)) {
                 if (given_argc != min_argc) {
-                    arg_rest_dup(args);
-                    rb_ary_pop(args->rest);
-                    given_argc--;
-                    kw_flag &= ~VM_CALL_KW_SPLAT;
+                    if (remove_empty_keyword_hash) {
+                        arg_rest_dup(args);
+                        rb_ary_pop(args->rest);
+                        given_argc--;
+                        kw_flag &= ~VM_CALL_KW_SPLAT;
+                    }
                 }
                 else {
                     rb_warn_keyword_to_last_hash(calling, ci, iseq);
@@ -759,9 +763,11 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         if (kw_flag & VM_CALL_KW_SPLAT) {
             if (ignore_keyword_hash_p(args->argv[args->argc-1], iseq)) {
                 if (given_argc != min_argc) {
-                    args->argc--;
-                    given_argc--;
-                    kw_flag &= ~VM_CALL_KW_SPLAT;
+                    if (remove_empty_keyword_hash) {
+                        args->argc--;
+                        given_argc--;
+                        kw_flag &= ~VM_CALL_KW_SPLAT;
+                    }
                 }
                 else {
                     rb_warn_keyword_to_last_hash(calling, ci, iseq);

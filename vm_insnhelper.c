@@ -1771,9 +1771,9 @@ rb_iseq_only_kwparam_p(const rb_iseq_t *iseq)
 
 
 static inline void
-CALLER_SETUP_ARG_WITHOUT_KW_SPLAT(struct rb_control_frame_struct *restrict cfp,
-                                  struct rb_calling_info *restrict calling,
-                                  const struct rb_call_info *restrict ci)
+CALLER_SETUP_ARG(struct rb_control_frame_struct *restrict cfp,
+                 struct rb_calling_info *restrict calling,
+                 const struct rb_call_info *restrict ci)
 {
     if (UNLIKELY(IS_ARGS_SPLAT(ci))) {
         /* This expands the rest argument to the stack.
@@ -1795,16 +1795,13 @@ CALLER_SETUP_ARG_WITHOUT_KW_SPLAT(struct rb_control_frame_struct *restrict cfp,
             RB_TYPE_P(*(cfp->sp - 1), T_HASH)) {
         calling->kw_splat = 1;
     }
-
 }
 
 static inline void
-CALLER_SETUP_ARG(struct rb_control_frame_struct *restrict cfp,
-                 struct rb_calling_info *restrict calling,
-                 const struct rb_call_info *restrict ci)
+CALLER_REMOVE_EMPTY_KW_SPLAT(struct rb_control_frame_struct *restrict cfp,
+                             struct rb_calling_info *restrict calling,
+                             const struct rb_call_info *restrict ci)
 {
-    CALLER_SETUP_ARG_WITHOUT_KW_SPLAT(cfp, calling, ci);
-
     if (UNLIKELY(calling->kw_splat)) {
         /* This removes the last Hash object if it is empty.
          * So, ci->flag & VM_CALL_KW_SPLAT is now inconsistent.
@@ -1929,6 +1926,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
         if (LIKELY(rb_simple_iseq_p(iseq))) {
             rb_control_frame_t *cfp = ec->cfp;
             CALLER_SETUP_ARG(cfp, calling, ci);
+            CALLER_REMOVE_EMPTY_KW_SPLAT(cfp, calling, ci);
 
             if (calling->argc != iseq->body->param.lead_num) {
                 argument_arity_error(ec, iseq, calling->argc, iseq->body->param.lead_num, iseq->body->param.lead_num);
@@ -1940,6 +1938,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
         else if (rb_iseq_only_optparam_p(iseq)) {
             rb_control_frame_t *cfp = ec->cfp;
             CALLER_SETUP_ARG(cfp, calling, ci);
+            CALLER_REMOVE_EMPTY_KW_SPLAT(cfp, calling, ci);
 
             const int lead_num = iseq->body->param.lead_num;
             const int opt_num = iseq->body->param.opt_num;
@@ -2295,10 +2294,12 @@ vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
 static VALUE
 vm_call_cfunc(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc)
 {
-    int empty_kw_splat = calling->kw_splat;
+    int empty_kw_splat;
     RB_DEBUG_COUNTER_INC(ccf_cfunc);
 
     CALLER_SETUP_ARG(reg_cfp, calling, ci);
+    empty_kw_splat = calling->kw_splat;
+    CALLER_REMOVE_EMPTY_KW_SPLAT(reg_cfp, calling, ci);
     if (empty_kw_splat && calling->kw_splat) {
         empty_kw_splat = 0;
     }
@@ -2343,7 +2344,7 @@ vm_call_bmethod(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_c
     VALUE *argv;
     int argc;
 
-    CALLER_SETUP_ARG_WITHOUT_KW_SPLAT(cfp, calling, ci);
+    CALLER_SETUP_ARG(cfp, calling, ci);
     argc = calling->argc;
     argv = ALLOCA_N(VALUE, argc);
     MEMCPY(argv, cfp->sp - argc, VALUE, argc);
@@ -2373,7 +2374,7 @@ vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct
     struct rb_call_info_with_kwarg ci_entry;
     struct rb_call_cache cc_entry, *cc;
 
-    CALLER_SETUP_ARG_WITHOUT_KW_SPLAT(reg_cfp, calling, orig_ci);
+    CALLER_SETUP_ARG(reg_cfp, calling, orig_ci);
 
     i = calling->argc - 1;
 
@@ -2478,7 +2479,7 @@ vm_call_method_missing(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, 
     struct rb_call_cache cc_entry, *cc;
     unsigned int argc;
 
-    CALLER_SETUP_ARG_WITHOUT_KW_SPLAT(reg_cfp, calling, orig_ci);
+    CALLER_SETUP_ARG(reg_cfp, calling, orig_ci);
     argc = calling->argc+1;
 
     ci_entry.flag = VM_CALL_FCALL | VM_CALL_OPT_SEND | (calling->kw_splat ? VM_CALL_KW_SPLAT : 0);
@@ -2683,12 +2684,12 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
 	return vm_call_cfunc(ec, cfp, calling, ci, cc);
 
       case VM_METHOD_TYPE_ATTRSET:
+        CALLER_SETUP_ARG(cfp, calling, ci);
         if (calling->argc == 1 && calling->kw_splat && RHASH_EMPTY_P(cfp->sp[-1])) {
-            CALLER_SETUP_ARG_WITHOUT_KW_SPLAT(cfp, calling, ci);
             rb_warn_keyword_to_last_hash(calling, ci, NULL);
         }
         else {
-            CALLER_SETUP_ARG(cfp, calling, ci);
+            CALLER_REMOVE_EMPTY_KW_SPLAT(cfp, calling, ci);
         }
 
 	rb_check_arity(calling->argc, 1, 1);
@@ -2698,6 +2699,7 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
 
       case VM_METHOD_TYPE_IVAR:
         CALLER_SETUP_ARG(cfp, calling, ci);
+        CALLER_REMOVE_EMPTY_KW_SPLAT(cfp, calling, ci);
 	rb_check_arity(calling->argc, 0, 0);
 	cc->aux.index = 0;
         CC_SET_FASTPATH(cc, vm_call_ivar, !(ci->flag & VM_CALL_ARGS_SPLAT));
@@ -3008,12 +3010,12 @@ vm_callee_setup_block_arg(rb_execution_context_t *ec, struct rb_calling_info *ca
 	rb_control_frame_t *cfp = ec->cfp;
 	VALUE arg0;
 
+        CALLER_SETUP_ARG(cfp, calling, ci);
         if (calling->kw_splat && calling->argc == iseq->body->param.lead_num + iseq->body->param.post_num && RHASH_EMPTY_P(cfp->sp[-1])) {
-            CALLER_SETUP_ARG_WITHOUT_KW_SPLAT(cfp, calling, ci);
             rb_warn_keyword_to_last_hash(calling, ci, iseq);
         }
         else {
-            CALLER_SETUP_ARG(cfp, calling, ci);
+            CALLER_REMOVE_EMPTY_KW_SPLAT(cfp, calling, ci);
         }
 
 	if (arg_setup_type == arg_setup_block &&
@@ -3098,7 +3100,7 @@ vm_invoke_symbol_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 {
     VALUE val;
     int argc;
-    CALLER_SETUP_ARG_WITHOUT_KW_SPLAT(ec->cfp, calling, ci);
+    CALLER_SETUP_ARG(ec->cfp, calling, ci);
     argc = calling->argc;
     val = vm_yield_with_symbol(ec, symbol, argc, STACK_ADDR_FROM_TOP(argc), calling->kw_splat, calling->block_handler);
     POPN(argc);
@@ -3114,6 +3116,7 @@ vm_invoke_ifunc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     int argc;
     int kw_splat = calling->kw_splat;
     CALLER_SETUP_ARG(ec->cfp, calling, ci);
+    CALLER_REMOVE_EMPTY_KW_SPLAT(ec->cfp, calling, ci);
     if (kw_splat && !calling->kw_splat) {
         kw_splat = 2;
     }

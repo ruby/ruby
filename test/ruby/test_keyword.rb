@@ -214,42 +214,193 @@ class TestKeywordArguments < Test::Unit::TestCase
       def baz(*args)
         args
       end
+
+      pass_keywords def foo_dbar(*args)
+        dbar(*args)
+      end
+
+      pass_keywords def foo_dbaz(*args)
+        dbaz(*args)
+      end
+
+      define_method(:dbar) do |*args, **kw|
+        [args, kw]
+      end
+
+      define_method(:dbaz) do |*args|
+        args
+      end
+
+      pass_keywords def block(*args)
+        ->(*args, **kw){[args, kw]}.(*args)
+      end
+
+      pass_keywords def cfunc(*args)
+        self.class.new(*args).init_args
+      end
+
+      attr_reader :init_args
+      def initialize(*args, **kw)
+        @init_args = [args, kw]
+      end
     end
+
+    mmkw = Class.new do
+      def method_missing(*args, **kw)
+        [args, kw]
+      end
+    end
+
+    mmnokw = Class.new do
+      def method_missing(*args)
+        args
+      end
+    end
+
+    implicit_super = Class.new(c) do
+      pass_keywords def bar(*args)
+        super
+      end
+
+      pass_keywords def baz(*args)
+        super
+      end
+    end
+
+    explicit_super = Class.new(c) do
+      pass_keywords def bar(*args)
+        super(*args)
+      end
+
+      pass_keywords def baz(*args)
+        super(*args)
+      end
+    end
+
+    h1 = {a: 1}
     o = c.new
 
-    assert_equal([[1], {:a=>1}], o.foo(:bar, 1, :a=>1))
-    assert_equal([1, {:a=>1}], o.foo(:baz, 1, :a=>1))
-    assert_equal([[1], {:a=>1}], o.foo_bar(1, :a=>1))
-    assert_equal([1, {:a=>1}], o.foo_baz(1, :a=>1))
+    assert_equal([[1], h1], o.foo(:bar, 1, :a=>1))
+    assert_equal([1, h1], o.foo(:baz, 1, :a=>1))
+    assert_equal([[1], h1], o.foo_bar(1, :a=>1))
+    assert_equal([1, h1], o.foo_baz(1, :a=>1))
 
-    assert_equal([[1], {:a=>1}], o.foo(:bar, 1, **{:a=>1}))
-    assert_equal([1, {:a=>1}], o.foo(:baz, 1, **{:a=>1}))
-    assert_equal([[1], {:a=>1}], o.foo_bar(1, **{:a=>1}))
-    assert_equal([1, {:a=>1}], o.foo_baz(1, **{:a=>1}))
+    assert_equal([[1], h1], o.foo(:bar, 1, **h1))
+    assert_equal([1, h1], o.foo(:baz, 1, **h1))
+    assert_equal([[1], h1], o.foo_bar(1, **h1))
+    assert_equal([1, h1], o.foo_baz(1, **h1))
+
+    assert_equal([[h1], {}], o.foo(:bar, h1, **{}))
+    assert_equal([h1], o.foo(:baz, h1, **{}))
+    assert_equal([[h1], {}], o.foo_bar(h1, **{}))
+    assert_equal([h1], o.foo_baz(h1, **{}))
 
     assert_warn(/The last argument is used as the keyword parameter.* for `bar'/m) do
-      assert_equal([[1], {:a=>1}], o.foo(:bar, 1, {:a=>1}))
+      assert_equal([[1], h1], o.foo(:bar, 1, h1))
     end
-    assert_equal([1, {:a=>1}], o.foo(:baz, 1, {:a=>1}))
+    assert_equal([1, h1], o.foo(:baz, 1, h1))
     assert_warn(/The last argument is used as the keyword parameter.* for `bar'/m) do
-      assert_equal([[1], {:a=>1}], o.foo_bar(1, {:a=>1}))
+      assert_equal([[1], h1], o.foo_bar(1, h1))
     end
-    assert_equal([1, {:a=>1}], o.foo_baz(1, {:a=>1}))
+    assert_equal([1, h1], o.foo_baz(1, h1))
 
-    assert_equal([[1, {:a=>1}, 1], {}], o.foo_mod(:bar, 1, :a=>1))
-    assert_equal([1, {:a=>1}, 1], o.foo_mod(:baz, 1, :a=>1))
-    assert_equal([[1, {:a=>1}, 1], {}], o.foo_bar_mod(1, :a=>1))
-    assert_equal([1, {:a=>1}, 1], o.foo_baz_mod(1, :a=>1))
+    assert_equal([[1, h1, 1], {}], o.foo_mod(:bar, 1, :a=>1))
+    assert_equal([1, h1, 1], o.foo_mod(:baz, 1, :a=>1))
+    assert_equal([[1, h1, 1], {}], o.foo_bar_mod(1, :a=>1))
+    assert_equal([1, h1, 1], o.foo_baz_mod(1, :a=>1))
 
-    assert_equal([[1, {:a=>1}, 1], {}], o.foo_mod(:bar, 1, **{:a=>1}))
-    assert_equal([1, {:a=>1}, 1], o.foo_mod(:baz, 1, **{:a=>1}))
-    assert_equal([[1, {:a=>1}, 1], {}], o.foo_bar_mod(1, **{:a=>1}))
-    assert_equal([1, {:a=>1}, 1], o.foo_baz_mod(1, **{:a=>1}))
+    assert_equal([[1, h1, 1], {}], o.foo_mod(:bar, 1, **h1))
+    assert_equal([1, h1, 1], o.foo_mod(:baz, 1, **h1))
+    assert_equal([[1, h1, 1], {}], o.foo_bar_mod(1, **h1))
+    assert_equal([1, h1, 1], o.foo_baz_mod(1, **h1))
 
-    assert_equal([[1, {:a=>1}, 1], {}], o.foo_mod(:bar, 1, {:a=>1}))
-    assert_equal([1, {:a=>1}, 1], o.foo_mod(:baz, 1, {:a=>1}))
-    assert_equal([[1, {:a=>1}, 1], {}], o.foo_bar_mod(1, {:a=>1}))
-    assert_equal([1, {:a=>1}, 1], o.foo_baz_mod(1, {:a=>1}))
+    assert_equal([[h1, {}, 1], {}], o.foo_mod(:bar, h1, **{}))
+    assert_equal([h1, {}, 1], o.foo_mod(:baz, h1, **{}))
+    assert_equal([[h1, {}, 1], {}], o.foo_bar_mod(h1, **{}))
+    assert_equal([h1, {}, 1], o.foo_baz_mod(h1, **{}))
+
+    assert_equal([[1, h1, 1], {}], o.foo_mod(:bar, 1, h1))
+    assert_equal([1, h1, 1], o.foo_mod(:baz, 1, h1))
+    assert_equal([[1, h1, 1], {}], o.foo_bar_mod(1, h1))
+    assert_equal([1, h1, 1], o.foo_baz_mod(1, h1))
+
+    assert_equal([[1], h1], o.foo(:dbar, 1, :a=>1))
+    assert_equal([1, h1], o.foo(:dbaz, 1, :a=>1))
+    assert_equal([[1], h1], o.foo_dbar(1, :a=>1))
+    assert_equal([1, h1], o.foo_dbaz(1, :a=>1))
+
+    assert_equal([[1], h1], o.foo(:dbar, 1, **h1))
+    assert_equal([1, h1], o.foo(:dbaz, 1, **h1))
+    assert_equal([[1], h1], o.foo_dbar(1, **h1))
+    assert_equal([1, h1], o.foo_dbaz(1, **h1))
+
+    assert_equal([[h1], {}], o.foo(:dbar, h1, **{}))
+    assert_equal([h1], o.foo(:dbaz, h1, **{}))
+    assert_equal([[h1], {}], o.foo_dbar(h1, **{}))
+    assert_equal([h1], o.foo_dbaz(h1, **{}))
+
+    assert_warn(/The last argument is used as the keyword parameter.* for method/m) do
+      assert_equal([[1], h1], o.foo(:dbar, 1, h1))
+    end
+    assert_equal([1, h1], o.foo(:dbaz, 1, h1))
+    assert_warn(/The last argument is used as the keyword parameter.* for method/m) do
+      assert_equal([[1], h1], o.foo_dbar(1, h1))
+    end
+    assert_equal([1, h1], o.foo_dbaz(1, h1))
+
+    assert_equal([[1], h1], o.block(1, :a=>1))
+    assert_equal([[1], h1], o.block(1, **h1))
+    assert_warn(/The last argument is used as the keyword parameter.* for `call'/m) do
+      assert_equal([[1], h1], o.block(1, h1))
+    end
+    assert_equal([[h1], {}], o.block(h1, **{}))
+
+    assert_equal([[1], h1], o.cfunc(1, :a=>1))
+    assert_equal([[1], h1], o.cfunc(1, **h1))
+    assert_warn(/The last argument is used as the keyword parameter.* for `initialize'/m) do
+      assert_equal([[1], h1], o.cfunc(1, h1))
+    end
+    assert_equal([[h1], {}], o.cfunc(h1, **{}))
+
+    o = mmkw.new
+    assert_equal([[:b, 1], h1], o.b(1, :a=>1))
+    assert_equal([[:b, 1], h1], o.b(1, **h1))
+    assert_warn(/The last argument is used as the keyword parameter.* for `method_missing'/m) do
+      assert_equal([[:b, 1], h1], o.b(1, h1))
+    end
+    assert_equal([[:b, h1], {}], o.b(h1, **{}))
+
+    o = mmnokw.new
+    assert_equal([:b, 1, h1], o.b(1, :a=>1))
+    assert_equal([:b, 1, h1], o.b(1, **h1))
+    assert_equal([:b, 1, h1], o.b(1, h1))
+    assert_equal([:b, h1], o.b(h1, **{}))
+
+    o = implicit_super.new
+    assert_equal([[1], h1], o.bar(1, :a=>1))
+    assert_equal([[1], h1], o.bar(1, **h1))
+    assert_warn(/The last argument is used as the keyword parameter.* for `bar'/m) do
+      assert_equal([[1], h1], o.bar(1, h1))
+    end
+    assert_equal([[h1], {}], o.bar(h1, **{}))
+
+    assert_equal([1, h1], o.baz(1, :a=>1))
+    assert_equal([1, h1], o.baz(1, **h1))
+    assert_equal([1, h1], o.baz(1, h1))
+    assert_equal([h1], o.baz(h1, **{}))
+
+    o = explicit_super.new
+    assert_equal([[1], h1], o.bar(1, :a=>1))
+    assert_equal([[1], h1], o.bar(1, **h1))
+    assert_warn(/The last argument is used as the keyword parameter.* for `bar'/m) do
+      assert_equal([[1], h1], o.bar(1, h1))
+    end
+    assert_equal([[h1], {}], o.bar(h1, **{}))
+
+    assert_equal([1, h1], o.baz(1, :a=>1))
+    assert_equal([1, h1], o.baz(1, **h1))
+    assert_equal([1, h1], o.baz(1, h1))
+    assert_equal([h1], o.baz(h1, **{}))
 
     assert_warn(/Skipping set of pass_keywords flag for bar \(method not defined in Ruby, method accepts keywords, or method does not accept argument splat\)/) do
       assert_nil(c.send(:pass_keywords, :bar))
