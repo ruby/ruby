@@ -461,6 +461,9 @@ class Gem::Installer
   ##
   # Writes the full .gemspec specification (in Ruby) to the gem home's
   # specifications/default directory.
+  #
+  # In contrast to #write_spec, this keeps file lists, so the `gem contents`
+  # command works.
 
   def write_default_spec
     Gem.write_binary(default_spec_file, spec.to_ruby)
