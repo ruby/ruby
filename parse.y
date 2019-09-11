@@ -732,7 +732,15 @@ static VALUE
 new_array_pattern(struct parser_params *p, VALUE constant, VALUE pre_arg, VALUE aryptn, const YYLTYPE *loc)
 {
     NODE *t = (NODE *)aryptn;
-    VALUE pre_args = t->u1.value, rest_arg = t->u2.value, post_args = t->u3.value;
+    struct rb_ary_pattern_info *apinfo = t->nd_apinfo;
+    VALUE pre_args = Qnil, rest_arg = Qnil, post_args = Qnil;
+
+    if (apinfo) {
+        pre_args = rb_ary_entry(apinfo->imemo, 0);
+        rest_arg = rb_ary_entry(apinfo->imemo, 1);
+        post_args = rb_ary_entry(apinfo->imemo, 2);
+    }
+
     if (!NIL_P(pre_arg)) {
 	if (!NIL_P(pre_args)) {
 	    rb_ary_unshift(pre_args, pre_arg);
@@ -748,17 +756,23 @@ static VALUE
 new_array_pattern_tail(struct parser_params *p, VALUE pre_args, VALUE has_rest, VALUE rest_arg, VALUE post_args, const YYLTYPE *loc)
 {
     NODE *t;
+    struct rb_ary_pattern_info *apinfo;
+
     if (has_rest) {
 	rest_arg = dispatch1(var_field, rest_arg ? rest_arg : Qnil);
     }
     else {
 	rest_arg = Qnil;
     }
-    t = rb_node_newnode(NODE_ARYPTN, pre_args, rest_arg, post_args, &NULL_LOC);
 
-    add_mark_object(p, pre_args);
-    add_mark_object(p, rest_arg);
-    add_mark_object(p, post_args);
+    apinfo = ZALLOC(struct rb_ary_pattern_info);
+    /* VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer(apinfo); */
+    VALUE tmpbuf = rb_imemo_new(imemo_tmpbuf, (VALUE)apinfo, 0, 0, 0);
+    apinfo->imemo = rb_ary_new_from_args(4, pre_args, rest_arg, post_args, tmpbuf);
+
+    t = rb_node_newnode(NODE_ARYPTN, Qnil, Qnil, (VALUE)apinfo, &NULL_LOC);
+    RB_OBJ_WRITTEN(p->ast, Qnil, apinfo->imemo);
+
     return (VALUE)t;
 }
 
