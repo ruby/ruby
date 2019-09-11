@@ -597,8 +597,14 @@ rb_warn_keyword_to_last_hash(struct rb_calling_info *calling, const struct rb_ca
     }
     else {
         rb_warn("The keyword argument is passed as the last hash parameter");
-        rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
-                        "for `%"PRIsVALUE"' defined here", name);
+        if (name) {
+            rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
+                            "for `%"PRIsVALUE"' defined here", name);
+        }
+        else {
+            rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
+                            "for method defined here");
+        }
     }
 }
 
@@ -606,7 +612,6 @@ static inline void
 rb_warn_split_last_hash_to_keyword(struct rb_calling_info *calling, const struct rb_call_info *ci, const rb_iseq_t * const iseq)
 {
     VALUE name, loc;
-    if (calling->recv == Qundef) return;
     name = rb_id2str(ci->mid);
     loc = rb_iseq_location(iseq);
     if (NIL_P(loc)) {
@@ -615,8 +620,14 @@ rb_warn_split_last_hash_to_keyword(struct rb_calling_info *calling, const struct
     }
     else {
         rb_warn("The last argument is split into positional and keyword parameters");
-        rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
-                        "for `%"PRIsVALUE"' defined here", name);
+        if (calling->recv != Qundef) {
+            rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
+                            "for `%"PRIsVALUE"' defined here", name);
+        }
+        else {
+            rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
+                            "for method defined here");
+        }
     }
 }
 
@@ -624,7 +635,6 @@ static inline void
 rb_warn_last_hash_to_keyword(struct rb_calling_info *calling, const struct rb_call_info *ci, const rb_iseq_t * const iseq)
 {
     VALUE name, loc;
-    if (calling->recv == Qundef) return;
     name = rb_id2str(ci->mid);
     loc = rb_iseq_location(iseq);
     if (NIL_P(loc)) {
@@ -633,8 +643,14 @@ rb_warn_last_hash_to_keyword(struct rb_calling_info *calling, const struct rb_ca
     }
     else {
         rb_warn("The last argument is used as the keyword parameter");
-        rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
-                        "for `%"PRIsVALUE"' defined here", name);
+        if (calling->recv != Qundef) {
+            rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
+                            "for `%"PRIsVALUE"' defined here", name);
+        }
+        else {
+            rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
+                            "for method defined here");
+        }
     }
 }
 

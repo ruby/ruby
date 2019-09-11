@@ -1238,6 +1238,28 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h2], c.m(**h2))
     assert_equal([1, h3], c.m(**h3))
     assert_equal([1, h3], c.m(a: 1, **h2))
+
+    c = Object.new
+    class << c
+      define_method(:m) {|*args, **opt| [args, opt] }
+    end
+    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+      assert_equal([[], h], c.m(h))
+    end
+    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+      assert_equal([[h], h], c.m(h, h))
+    end
+
+    c = Object.new
+    class << c
+      define_method(:m) {|arg=nil, a: nil| [arg, a] }
+    end
+    assert_warn(/The last argument is split into positional and keyword parameters.*for method/m) do
+      assert_equal([h2, 1], c.m(h3))
+    end
+    assert_warn(/The last argument is split into positional and keyword parameters.*for method/m) do
+      assert_equal([h2, 1], c.m(**h3))
+    end
   end
 
   def test_attr_reader_kwsplat
