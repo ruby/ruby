@@ -2787,7 +2787,6 @@ primary		: literal
 			NODE *args, *scope, *internal_var = NEW_DVAR(id, &@2);
 			ID *tbl = ALLOC_N(ID, 3);
 			VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer(tbl);
-                        RB_OBJ_WRITTEN(p->ast, Qnil, tmpbuf);
 			tbl[0] = 1 /* length of local var table */; tbl[1] = id /* internal id */;
                         tbl[2] = tmpbuf;
 
@@ -2809,6 +2808,7 @@ primary		: literal
 			/* {|*internal_id| <m> = internal_id; ... } */
 			args = new_args(p, m, 0, id, 0, new_args_tail(p, 0, 0, 0, &@2), &@2);
 			scope = NEW_NODE(NODE_SCOPE, tbl, $5, args, &@$);
+                        RB_OBJ_WRITTEN(p->ast, Qnil, tmpbuf);
 			$$ = NEW_FOR($4, scope, &@$);
 			fixpos($$, $2);
 		    /*% %*/
