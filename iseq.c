@@ -60,16 +60,22 @@ obj_resurrect(VALUE obj)
 }
 
 static void
+free_arena(struct iseq_compile_data_storage *cur)
+{
+    struct iseq_compile_data_storage *next;
+
+    while (cur) {
+        next = cur->next;
+        ruby_xfree(cur);
+        cur = next;
+    }
+}
+
+static void
 compile_data_free(struct iseq_compile_data *compile_data)
 {
     if (compile_data) {
-	struct iseq_compile_data_storage *cur, *next;
-	cur = compile_data->storage_head;
-	while (cur) {
-	    next = cur->next;
-	    ruby_xfree(cur);
-	    cur = next;
-	}
+	free_arena(compile_data->storage_head);
 	if (compile_data->ivar_cache_table) {
 	    rb_id_table_free(compile_data->ivar_cache_table);
 	}
@@ -507,6 +513,21 @@ set_relation(rb_iseq_t *iseq, const rb_iseq_t *piseq)
     }
 }
 
+static struct iseq_compile_data_storage *
+new_arena(void)
+{
+    struct iseq_compile_data_storage * new_arena =
+        (struct iseq_compile_data_storage *)
+        ALLOC_N(char, INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE +
+                offsetof(struct iseq_compile_data_storage, buff));
+
+    new_arena->pos = 0;
+    new_arena->next = 0;
+    new_arena->size = INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE;
+
+    return new_arena;
+}
+
 static VALUE
 prepare_iseq_build(rb_iseq_t *iseq,
                    VALUE name, VALUE path, VALUE realpath, VALUE first_lineno, const rb_code_location_t *code_location, const int node_id,
@@ -535,17 +556,9 @@ prepare_iseq_build(rb_iseq_t *iseq,
     ISEQ_COMPILE_DATA_ALLOC(iseq);
     RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->err_info, err_info);
     RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->mark_ary, rb_ary_tmp_new(3));
-
-    ISEQ_COMPILE_DATA(iseq)->storage_head = ISEQ_COMPILE_DATA(iseq)->storage_current =
-      (struct iseq_compile_data_storage *)
-	ALLOC_N(char, INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE +
-		offsetof(struct iseq_compile_data_storage, buff));
-
     RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->catch_table_ary, Qnil);
-    ISEQ_COMPILE_DATA(iseq)->storage_head->pos = 0;
-    ISEQ_COMPILE_DATA(iseq)->storage_head->next = 0;
-    ISEQ_COMPILE_DATA(iseq)->storage_head->size =
-      INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE;
+
+    ISEQ_COMPILE_DATA(iseq)->storage_head = ISEQ_COMPILE_DATA(iseq)->storage_current = new_arena();
     ISEQ_COMPILE_DATA(iseq)->option = option;
 
     ISEQ_COMPILE_DATA(iseq)->ivar_cache_table = NULL;
