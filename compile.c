@@ -1564,7 +1564,6 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
 	    switch (nd_type(val_node)) {
 	      case NODE_LIT:
 		dv = val_node->nd_lit;
-		iseq_add_mark_object_compile_time(iseq, dv);
 		break;
 	      case NODE_NIL:
 		dv = Qnil;
