@@ -14,7 +14,11 @@ if RUBY_VERSION >= "2.5"
 
     module_function define_method(:warn) {|*messages, **kw|
       unless uplevel = kw[:uplevel]
-        return original_warn.call(*messages, **kw)
+        if Gem.java_platform?
+          return original_warn.call(*messages)
+        else
+          return original_warn.call(*messages, **kw)
+        end
       end
 
       # Ensure `uplevel` fits a `long`
