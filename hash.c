@@ -4759,9 +4759,14 @@ env_delete(VALUE name)
  *   ENV.delete(name)                  -> value
  *   ENV.delete(name) { |name| block } -> value
  *
- * Deletes the environment variable with +name+ and returns the value of the
- * variable.  If a block is given it will be called when the named environment
- * does not exist.
+ * Deletes the environment variable +name+ and returns its value:
+ *   ENV.delete('LINES') #=> "300"
+ * If the environment variable does not exist and no block is given, returns +nil+:
+ *   ENV.delete('LINES') #=> nil
+ * If the environment variable does not exist and a block is given, calls the block with +name+:
+ *   ENV.delete('LINES') { |name| p name } #=> "LINES"
+ * Raises a +TypeError+ if +name+ is not a +String+:
+ *   ENV.delete(1) #=> TypeError raised
  */
 static VALUE
 env_delete_m(VALUE obj, VALUE name)
@@ -4777,8 +4782,12 @@ env_delete_m(VALUE obj, VALUE name)
  * call-seq:
  *   ENV[name] -> value
  *
- * Retrieves the +value+ for environment variable +name+ as a String.  Returns
- * +nil+ if the named variable does not exist.
+ * Retrieves the +value+ for environment variable +name+ as a +String+:
+ *   ENV['LINES']  #=> "300"
+ * Returns +nil+ if the named variable does not exist:
+ *   ENV['NOSUCH'] #=> nil
+ * Raisies +TypeError+ if +name+ is not a +String+:
+ *   ENV[1] = 'FOO' #=> TypeError
  */
 static VALUE
 rb_f_getenv(VALUE obj, VALUE name)
@@ -4796,16 +4805,23 @@ rb_f_getenv(VALUE obj, VALUE name)
 /*
  * :yield: missing_name
  * call-seq:
- *   ENV.fetch(name)                          -> value
- *   ENV.fetch(name, default)                 -> value
- *   ENV.fetch(name) { |missing_name| block } -> value
+ *   ENV.fetch(name)                  -> value
+ *   ENV.fetch(name) { |name| block } -> value
+ *   ENV.fetch(name, default)         -> value
  *
- * Retrieves the environment variable +name+.
+ * Returns the value environment variable +name+:
+ *   ENV.fetch('LINES') #=> "300"
  *
- * If the given name does not exist and neither +default+ nor a block is
- * provided, a KeyError is raised.  If a block is given it is called with
- * the missing name to provide a value.  If a default value is given it will
- * be returned when no block is given.
+ * If the given name does not exist:
+ * - If a block given, calls the block with +name+.
+ * - Otherwise, if a default given, returns the default.
+ * - Otherwise, raises a +KeyError+.
+ * Thus:
+ *   ENV.fetch('NOSUCH') { |name| p name } #=> "NOSUCH"
+ *   ENV.fetch('NOSUCH', 'Nope') #=> "Nope"
+ *   ENV.fetch('NOSUCH') #=> KeyError
+ * Raises a +TypeError+ if +name+ is not a +String+:
+ *   Env.fetch(1) #=> TypeError raised
  */
 static VALUE
 env_fetch(int argc, VALUE *argv, VALUE _)
@@ -5093,10 +5109,15 @@ ruby_unsetenv(const char *name)
  *   ENV[name] = value
  *   ENV.store(name, value) -> value
  *
- * Sets the environment variable +name+ to +value+.  If the value given is
- * +nil+ the environment variable is deleted.
- * +name+ must be a string.
- *
+ * Sets the environment variable +name+ to +value+:
+ *   ENV['FOO'] = 'BAR'  #=> "BAR"
+ * If +value+ is +nil+, deletes the environment variable:
+ *   ENV['FOO'] = nil    #=> nil
+ *   ENV.include?('FOO') #=> false
+ * Raises a +TypeError+ if +name+ is not a +String+:
+ *   ENV[1] = 'BAR'      #=> TypeError raised
+ * Raises a +TypeError+ if +value+ is not a +String+:
+ *   ENV['BAR'] = 1      #=> TypeError raised
  */
 static VALUE
 env_aset_m(VALUE obj, VALUE nm, VALUE val)
@@ -5188,12 +5209,17 @@ rb_env_size(VALUE ehash, VALUE args, VALUE eobj)
 
 /*
  * call-seq:
- *   ENV.each_key { |name| block } -> Hash
+ *   ENV.each_key { |name| block } -> ENV
  *   ENV.each_key                  -> Enumerator
  *
- * Yields each environment variable name.
+ * Yields each environment variable name:
+ *   count = 0
+ *   e = ENV.each_key { |name| count += 1 }
+ *   e.count #=> 46
+ *   ENV.count #=> 46
  *
- * An Enumerator is returned if no block is given.
+ * Returns an enumerator if no block is given:
+ *   ENV.each_key #=> Enumerator
  */
 static VALUE
 env_each_key(VALUE ehash)
@@ -5246,9 +5272,15 @@ env_f_values(VALUE _)
  *   ENV.each_value { |value| block } -> Hash
  *   ENV.each_value                   -> Enumerator
  *
- * Yields each environment variable +value+.
  *
- * An Enumerator is returned if no block was given.
+ * Yields each environment variable value:
+ *   count = 0
+ *   e = ENV.each_value { |name| count += 1 }
+ *   e.count #=> 46
+ *   ENV.count #=> 46
+ *
+ * Returns an enumerator if no block is given:
+ *   ENV.each_value #=> Enumerator
  */
 static VALUE
 env_each_value(VALUE ehash)
@@ -5266,14 +5298,21 @@ env_each_value(VALUE ehash)
 
 /*
  * call-seq:
- *   ENV.each      { |name, value| block } -> Hash
+ *   ENV.each      { |name, value| block } -> ENV
  *   ENV.each                              -> Enumerator
- *   ENV.each_pair { |name, value| block } -> Hash
+ *   ENV.each_pair { |name, value| block } -> ENV
  *   ENV.each_pair                         -> Enumerator
  *
- * Yields each environment variable +name+ and +value+.
+ * Yields each +name+/+value+ pair in +ENV+; returns +ENV+:
+ *   entry_count = 0
+ *   e = ENV.each_pair { |name, value| entry_count += 1 }
+ *   entry_count #=> 46
+ *   e.size #=> 46
  *
- * If no block is given an Enumerator is returned.
+ * If no block is given, returns an enumerator:
+ *   ENV.each_pair #=> Enumerator
+ *
+ * +ENV.each+ is an alias of +ENV.each_pair+.
  */
 static VALUE
 env_each_pair(VALUE ehash)
@@ -5345,12 +5384,18 @@ env_reject_bang(VALUE ehash)
 
 /*
  * call-seq:
- *   ENV.delete_if { |name, value| block } -> Hash
+ *   ENV.delete_if { |name, value| block } -> ENV
  *   ENV.delete_if                         -> Enumerator
  *
- * Deletes every environment variable for which the block evaluates to +true+.
+ * Deletes each environment variable for which the return value of the block is truthy;
+ * returns the updated +ENV+:
+ *   ENV.size #=> 45
+ *   e = ENV.delete_if { |name, value| name.match(/PROCESSOR/) }
+ *   e.size   #=> 41
+ *   ENV.size #=> 41
  *
- * If no block is given an enumerator is returned instead.
+ * If no block is given, returns an enumerator:
+ *   ENV.delete_if.class #=> Enumerator
  */
 static VALUE
 env_delete_if(VALUE ehash)
@@ -5387,11 +5432,13 @@ env_values_at(int argc, VALUE *argv, VALUE _)
  *   ENV.filter { |name, value| block } -> Hash
  *   ENV.filter                         -> Enumerator
  *
- * Returns a copy of the environment for entries where the block returns true.
- *
- * Returns an Enumerator if no block was given.
- *
  * ENV.filter is an alias for ENV.select.
+ *
+ * Returns a +Hash+ of those +name+/+value+ pairs for which the block is truthy:
+ *   ENV.select { |name, value| name.length < 3 } #=> {"OS"=>"Windows_NT"}
+ *
+ * Returns an enumerator if no block was given:
+ *   ENV.select #=> Enumerator
  */
 static VALUE
 env_select(VALUE ehash)
@@ -5424,9 +5471,20 @@ env_select(VALUE ehash)
  *   ENV.filter! { |name, value| block } -> ENV or nil
  *   ENV.filter!                         -> Enumerator
  *
- * Equivalent to ENV.keep_if but returns +nil+ if no changes were made.
- *
  * ENV.filter! is an alias for ENV.select!.
+ *
+ * Similar to ENV.keep_if but returns +nil+ if +ENV+ is unchanged.
+ *
+ * Removes from +ENV+ each entry for which the block returns +false+ or +nil+.
+ * Returns +ENV+ if any entry removed, or +nil+ if none removed:
+ *   ENV.size #=> 46
+ *   ENV.select! { |name, value| name.size < 10} #=> ENV
+ *   ENV.size #=> 19
+ *   ENV.select! { |name, value| name.size < 10} #=> nil
+ *   ENV.size #=> 19
+ *
+ * Returns an enumerator if no block given:
+ *   ENV.select! #=> Enumerator
  */
 static VALUE
 env_select_bang(VALUE ehash)
@@ -5455,7 +5513,7 @@ env_select_bang(VALUE ehash)
 
 /*
  * call-seq:
- *   ENV.keep_if { |name, value| block } -> Hash
+ *   ENV.keep_if { |name, value| block } -> ENV
  *   ENV.keep_if                         -> Enumerator
  *
  * Deletes every environment variable where the block evaluates to +false+.
@@ -5520,7 +5578,10 @@ rb_env_clear(void)
  * call-seq:
  *   ENV.clear
  *
- * Removes every environment variable.
+ * Removes every environment variable:
+ *   ENV.size  #=> 45
+ *   ENV.clear #=> {}
+ *   ENV.size  #=> 0
  */
 static VALUE
 env_clear(VALUE _)
@@ -5642,7 +5703,12 @@ env_size(VALUE _)
  * call-seq:
  *   ENV.empty? -> true or false
  *
- * Returns true when there are no environment variables
+ * Returns +true+ when there are no environment variables, otherwise +false+:
+ *    ENV.size #=> 46
+      ENV.empty? #=> false
+      ENV.clear
+      ENV.size #=> 0
+      ENV.empty? #=> true
  */
 static VALUE
 env_empty_p(VALUE _)
@@ -5681,8 +5747,13 @@ env_has_key(VALUE env, VALUE key)
  * call-seq:
  *   ENV.assoc(name) -> Array or nil
  *
- * Returns an Array of the name and value of the environment variable with
- * +name+ or +nil+ if the name cannot be found.
+ * Returns a 2-element +Array+ of the name and value of the environment variable with
+ * +name+:
+ *   ENV.assoc('LINES') #=> ["LINES", "300"]
+ * Returns +nil+ if the name cannot be found:
+ *   ENV.assoc('NOSUCH') #=> nil
+ * Raises a +TypeError+ if +name+ is not a +String:
+ *   ENV.assoc(1) => TypeError raised
  */
 static VALUE
 env_assoc(VALUE env, VALUE key)
@@ -5873,7 +5944,8 @@ env_reject(VALUE _)
  *   ENV.freeze -> raises TypeError
  *
  * Ruby does not allow ENV to be frozen, so calling ENV.freeze
- * raises TypeError.
+ * raises TypeError:
+ *   ENV.freeze #=> TypeError raised
  */
 static VALUE
 env_freeze(VALUE self)
@@ -6208,6 +6280,14 @@ Init_Hash(void)
     /* Document-class: ENV
      *
      * ENV is a hash-like accessor for environment variables.
+     *
+     * Some of the methods below return +ENV+.
+     * That returned object is _not_ a new copy of the environment variables;
+     * it is the _one_ _and_ _only_ +ENV+:
+     *   orig_env_id = ENV.object_id
+     *   returned_env = ENV.delete_if { |name, value| }
+     *   returned_env.object_id == orig_env_id #=> true
+     *   returned_env.object_id == ENV.object_id #=> true
      */
 
     /*
