@@ -2890,6 +2890,28 @@ producer_size(VALUE obj, VALUE args, VALUE eobj)
     return DBL2NUM(HUGE_VAL);
 }
 
+/*
+ * call-seq:
+ *    Enumerator.produce(initial = nil) { |val| } -> enumerator
+ *
+ * Creates an infinite enumerator from any block, just called over and
+ * over.  Result of the previous iteration is passed to the next one.
+ * If +initial+ is provided, it is passed to the first iteration, and
+ * becomes the first element of the enumerator; if it is not provided,
+ * first iteration receives +nil+, and its result becomes first
+ * element of the iterator.
+ *
+ * Raising StopIteration from the block stops an iteration.
+ *
+ * Examples of usage:
+ *
+ *   Enumerator.produce(1, &:succ)   # => enumerator of 1, 2, 3, 4, ....
+ *
+ *   Enumerator.produce { rand(10) } # => infinite random number sequence
+ *
+ *   ancestors = Enumerator.produce(node) { |prev| node = prev.parent or raise StopIteration }
+ *   enclosing_section = ancestors.find { |n| n.type == :section }
+ */
 static VALUE
 enumerator_s_produce(int argc, VALUE *argv, VALUE klass)
 {
