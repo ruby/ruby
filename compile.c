@@ -882,7 +882,7 @@ compile_data_alloc_with_arena(struct iseq_compile_data_storage **arena, size_t s
 static void *
 compile_data_alloc(rb_iseq_t *iseq, size_t size)
 {
-    struct iseq_compile_data_storage ** arena = &ISEQ_COMPILE_DATA(iseq)->storage_current;
+    struct iseq_compile_data_storage ** arena = &ISEQ_COMPILE_DATA(iseq)->node.storage_current;
     return compile_data_alloc_with_arena(arena, size);
 }
 
