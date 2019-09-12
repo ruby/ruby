@@ -841,11 +841,10 @@ calc_padding(void *ptr, size_t size)
 #endif /* STRICT_ALIGNMENT */
 
 static void *
-compile_data_alloc(rb_iseq_t *iseq, size_t size)
+compile_data_alloc_with_arena(struct iseq_compile_data_storage **arena, size_t size)
 {
     void *ptr = 0;
-    struct iseq_compile_data_storage *storage =
-	ISEQ_COMPILE_DATA(iseq)->storage_current;
+    struct iseq_compile_data_storage *storage = *arena;
 #ifdef STRICT_ALIGNMENT
     size_t padding = calc_padding((void *)&storage->buff[storage->pos], size);
 #else
@@ -862,7 +861,7 @@ compile_data_alloc(rb_iseq_t *iseq, size_t size)
 	}
 	storage->next = (void *)ALLOC_N(char, alloc_size +
 					offsetof(struct iseq_compile_data_storage, buff));
-	storage = ISEQ_COMPILE_DATA(iseq)->storage_current = storage->next;
+	storage = *arena = storage->next;
 	storage->next = 0;
 	storage->pos = 0;
 	storage->size = alloc_size;
@@ -878,6 +877,13 @@ compile_data_alloc(rb_iseq_t *iseq, size_t size)
     ptr = (void *)&storage->buff[storage->pos];
     storage->pos += (int)size;
     return ptr;
+}
+
+static void *
+compile_data_alloc(rb_iseq_t *iseq, size_t size)
+{
+    struct iseq_compile_data_storage ** arena = &ISEQ_COMPILE_DATA(iseq)->storage_current;
+    return compile_data_alloc_with_arena(arena, size);
 }
 
 static INSN *
