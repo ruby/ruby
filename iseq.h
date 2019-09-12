@@ -99,8 +99,14 @@ struct iseq_compile_data {
     struct iseq_label_data *redo_label;
     const rb_iseq_t *current_block;
     struct iseq_compile_data_ensure_node_stack *ensure_node_stack;
-    struct iseq_compile_data_storage *storage_head;
-    struct iseq_compile_data_storage *storage_current;
+    struct {
+      struct iseq_compile_data_storage *storage_head;
+      struct iseq_compile_data_storage *storage_current;
+    } node;
+    struct {
+      struct iseq_compile_data_storage *storage_head;
+      struct iseq_compile_data_storage *storage_current;
+    } insn;
     int loopval_popped;	/* used by NODE_BREAK */
     int last_line;
     int label_no;

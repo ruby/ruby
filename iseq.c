@@ -75,7 +75,8 @@ static void
 compile_data_free(struct iseq_compile_data *compile_data)
 {
     if (compile_data) {
-	free_arena(compile_data->storage_head);
+	free_arena(compile_data->node.storage_head);
+	free_arena(compile_data->insn.storage_head);
 	if (compile_data->ivar_cache_table) {
 	    rb_id_table_free(compile_data->ivar_cache_table);
 	}
@@ -420,7 +421,7 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
 
 	size += sizeof(struct iseq_compile_data);
 
-	cur = compile_data->storage_head;
+	cur = compile_data->node.storage_head;
 	while (cur) {
 	    size += cur->size + offsetof(struct iseq_compile_data_storage, buff);
 	    cur = cur->next;
@@ -558,7 +559,8 @@ prepare_iseq_build(rb_iseq_t *iseq,
     RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->mark_ary, rb_ary_tmp_new(3));
     RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->catch_table_ary, Qnil);
 
-    ISEQ_COMPILE_DATA(iseq)->storage_head = ISEQ_COMPILE_DATA(iseq)->storage_current = new_arena();
+    ISEQ_COMPILE_DATA(iseq)->node.storage_head = ISEQ_COMPILE_DATA(iseq)->node.storage_current = new_arena();
+    ISEQ_COMPILE_DATA(iseq)->insn.storage_head = ISEQ_COMPILE_DATA(iseq)->insn.storage_current = new_arena();
     ISEQ_COMPILE_DATA(iseq)->option = option;
 
     ISEQ_COMPILE_DATA(iseq)->ivar_cache_table = NULL;
