@@ -516,6 +516,21 @@ class TestGemRequire < Gem::TestCase
         assert_equal "main.rb:1: warning: uplevel\ntest\n", err
       end
     end
+
+    def test_no_other_behavioral_changes_with_kernel_warn
+      lib = File.realpath("../../../lib", __FILE__)
+      Dir.mktmpdir("warn_test") do |dir|
+        File.write(dir + "/main.rb", "warn({x:1}, {y:2}, {})\n")
+        _, err = capture_subprocess_io do
+          system(@@ruby, "-w", "-rpp", "--disable=gems", "-I", lib, "-C", dir, "-I.", "main.rb")
+        end
+        assert_equal "{:x=>1}\n{:y=>2}\n", err
+        _, err = capture_subprocess_io do
+          system(@@ruby, "-w", "-rpp", "--enable=gems", "-I", lib, "-C", dir, "-I.", "main.rb")
+        end
+        assert_equal "{:x=>1}\n{:y=>2}\n", err
+      end
+    end
   end
 
   def silence_warnings

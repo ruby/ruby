@@ -43,6 +43,7 @@ if RUBY_VERSION >= "2.5"
         end
         uplevel = start
       end
+
       kw[:uplevel] = uplevel
       original_warn.call(*messages, **kw)
     }
