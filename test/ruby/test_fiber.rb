@@ -270,7 +270,9 @@ class TestFiber < Test::Unit::TestCase
           Fiber.new {
             xpid = fork do
               # enough to trigger GC on old root fiber
-              10000.times do
+              count = 10000
+              count = 1000 if /openbsd/i =~ RUBY_PLATFORM
+              count.times do
                 Fiber.new {}.transfer
                 Fiber.new { Fiber.yield }
               end
