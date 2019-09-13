@@ -142,12 +142,12 @@ eot
   end
 
   pattern_matching_data = {
-    %q{ case 0; in 0; end } =>
+    [__LINE__, %q{ case 0; in 0; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in, [:@int, "0", [1, 11]], [[:void_stmt]], nil]],
 
-    %q{ case 0; in 0 if a; end } =>
+    [__LINE__, %q{ case 0; in 0 if a; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -155,7 +155,7 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in 0 unless a; end } =>
+    [__LINE__, %q{ case 0; in 0 unless a; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -163,12 +163,12 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in a; end } =>
+    [__LINE__, %q{ case 0; in a; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in, [:var_field, [:@ident, "a", [1, 11]]], [[:void_stmt]], nil]],
 
-    %q{ case 0; in a,; end } =>
+    [__LINE__, %q{ case 0; in a,; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -180,7 +180,7 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in a,b; end } =>
+    [__LINE__, %q{ case 0; in a,b; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -193,7 +193,7 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in *a; end } =>
+    [__LINE__, %q{ case 0; in *a; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -201,7 +201,7 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in *a,b; end } =>
+    [__LINE__, %q{ case 0; in *a,b; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -213,7 +213,7 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in *a,b,c; end } =>
+    [__LINE__, %q{ case 0; in *a,b,c; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -226,12 +226,12 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in *; end } =>
+    [__LINE__, %q{ case 0; in *; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in, [:aryptn, nil, nil, [:var_field, nil], nil], [[:void_stmt]], nil]],
 
-    %q{ case 0; in *,a; end } =>
+    [__LINE__, %q{ case 0; in *,a; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -243,7 +243,7 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in a:,**b; end } =>
+    [__LINE__, %q{ case 0; in a:,**b; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -254,7 +254,7 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in **a; end } =>
+    [__LINE__, %q{ case 0; in **a; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -262,12 +262,12 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in **; end } =>
+    [__LINE__, %q{ case 0; in **; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in, [:hshptn, nil, [], nil], [[:void_stmt]], nil]],
 
-    %q{ case 0; in a: 0; end } =>
+    [__LINE__, %q{ case 0; in a: 0; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -275,7 +275,7 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in a:; end } =>
+    [__LINE__, %q{ case 0; in a:; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -283,7 +283,7 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in "a": 0; end } =>
+    [__LINE__, %q{ case 0; in "a": 0; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -295,7 +295,7 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in "a":; end } =>
+    [__LINE__, %q{ case 0; in "a":; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -306,7 +306,7 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in a: 0, b: 0; end } =>
+    [__LINE__, %q{ case 0; in a: 0, b: 0; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -318,7 +318,7 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in 0 => a; end } =>
+    [__LINE__, %q{ case 0; in 0 => a; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -329,7 +329,7 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in 0 | 1; end } =>
+    [__LINE__, %q{ case 0; in 0 | 1; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -337,7 +337,7 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in A(0); end } =>
+    [__LINE__, %q{ case 0; in A(0); end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -349,7 +349,7 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in A(a:); end } =>
+    [__LINE__, %q{ case 0; in A(a:); end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -360,7 +360,7 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in A(); end } =>
+    [__LINE__, %q{ case 0; in A(); end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -368,7 +368,7 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in A[a]; end } =>
+    [__LINE__, %q{ case 0; in A[a]; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -380,7 +380,7 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in A[a:]; end } =>
+    [__LINE__, %q{ case 0; in A[a:]; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -391,7 +391,7 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in A[]; end } =>
+    [__LINE__, %q{ case 0; in A[]; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -399,7 +399,7 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in [a]; end } =>
+    [__LINE__, %q{ case 0; in [a]; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -407,12 +407,12 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in []; end } =>
+    [__LINE__, %q{ case 0; in []; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in, [:aryptn, nil, nil, nil, nil], [[:void_stmt]], nil]],
 
-    %q{ case 0; in {a: 0}; end } =>
+    [__LINE__, %q{ case 0; in {a: 0}; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in,
@@ -420,23 +420,23 @@ eot
         [[:void_stmt]],
         nil]],
 
-    %q{ case 0; in {}; end } =>
+    [__LINE__, %q{ case 0; in {}; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in, [:hshptn, nil, nil, nil], [[:void_stmt]], nil]],
 
-    %q{ case 0; in (0); end } =>
+    [__LINE__, %q{ case 0; in (0); end }] =>
     [:case,
       [:@int, "0", [1, 5]],
       [:in, [:@int, "0", [1, 12]], [[:void_stmt]], nil]],
 
-    %q{ case 0; in a:, a:; end } =>
+    [__LINE__, %q{ case 0; in a:, a:; end }] =>
     nil,
 
-    %q{ case 0; in a?:; end } =>
+    [__LINE__, %q{ case 0; in a?:; end }] =>
     nil,
   }
-  pattern_matching_data.each_with_index do |(src, expected), i|
+  pattern_matching_data.each do |(i, src), expected|
     define_method(:"test_pattern_matching_#{i}") do
       sexp = Ripper.sexp(src.strip)
       assert_equal expected, sexp && sexp[1][0], src
