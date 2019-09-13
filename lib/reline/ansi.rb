@@ -1,5 +1,3 @@
-require 'io/console'
-
 class Reline::ANSI
   RAW_KEYSTROKE_CONFIG = {
     [27, 91, 65] => :ed_prev_history,     # ↑
@@ -26,7 +24,14 @@ class Reline::ANSI
     unless @@buf.empty?
       return @@buf.shift
     end
-    @@input.getch&.ord
+    c = nil
+    loop do
+      result = select([@@input], [], [], 0.1)
+      next if result.nil?
+      c = @@input.read(1)
+      break
+    end
+    c&.ord
   end
 
   def self.ungetc(c)
