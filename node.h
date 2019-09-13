@@ -432,6 +432,7 @@ rb_ast_t *rb_compile_string(const char*, VALUE, int);
 rb_ast_t *rb_compile_file(const char*, VALUE, int);
 
 void rb_node_init(NODE *n, enum node_type type, VALUE a0, VALUE a1, VALUE a2);
+const char *ruby_node_name(int node);
 
 const struct kwtable *rb_reserved_word(const char *, unsigned int);
 

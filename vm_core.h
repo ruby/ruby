@@ -1020,7 +1020,6 @@ rb_iseq_t *rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VA
 
 VALUE rb_iseq_disasm(const rb_iseq_t *iseq);
 int rb_iseq_disasm_insn(VALUE str, const VALUE *iseqval, size_t pos, const rb_iseq_t *iseq, VALUE child);
-const char *ruby_node_name(int node);
 
 VALUE rb_iseq_coverage(const rb_iseq_t *iseq);
 
