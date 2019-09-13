@@ -2926,7 +2926,7 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
       case VM_METHOD_TYPE_ATTRSET:
         CALLER_SETUP_ARG(cfp, calling, ci);
         if (calling->argc == 1 && calling->kw_splat && RHASH_EMPTY_P(cfp->sp[-1])) {
-            rb_warn_keyword_to_last_hash(calling, ci, NULL);
+            rb_warn_keyword_to_last_hash(ec, calling, ci, NULL);
         }
         else {
             CALLER_REMOVE_EMPTY_KW_SPLAT(cfp, calling, ci);
@@ -3264,7 +3264,7 @@ vm_callee_setup_block_arg(rb_execution_context_t *ec, struct rb_calling_info *ca
 
         CALLER_SETUP_ARG(cfp, calling, ci);
         if (calling->kw_splat && calling->argc == iseq->body->param.lead_num + iseq->body->param.post_num && RHASH_EMPTY_P(cfp->sp[-1])) {
-            rb_warn_keyword_to_last_hash(calling, ci, iseq);
+            rb_warn_keyword_to_last_hash(ec, calling, ci, iseq);
         }
         else {
             CALLER_REMOVE_EMPTY_KW_SPLAT(cfp, calling, ci);

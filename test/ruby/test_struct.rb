@@ -113,7 +113,8 @@ module TestStruct
     assert_equal @Struct::KeywordInitTrue.new(a: 1, b: 2).values, @Struct::KeywordInitFalse.new(1, 2).values
     assert_equal "#{@Struct}::KeywordInitFalse", @Struct::KeywordInitFalse.inspect
     assert_equal "#{@Struct}::KeywordInitTrue(keyword_init: true)", @Struct::KeywordInitTrue.inspect
-    k = Class.new(@Struct::KeywordInitFalse) {def initialize(**) end}
+    # eval is neede to prevent the warning duplication filter
+    k = eval("Class.new(@Struct::KeywordInitFalse) {def initialize(**) end}")
     assert_warn(/The last argument is used as the keyword parameter/) {k.new(a: 1, b: 2)}
     k = Class.new(@Struct::KeywordInitTrue) {def initialize(**) end}
     assert_warn('') {k.new(a: 1, b: 2)}
