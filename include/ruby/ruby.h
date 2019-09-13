@@ -1967,6 +1967,10 @@ VALUE rb_yield_values(int n, ...);
 VALUE rb_yield_values2(int n, const VALUE *argv);
 VALUE rb_yield_splat(VALUE);
 VALUE rb_yield_block(VALUE, VALUE, int, const VALUE *, VALUE); /* rb_block_call_func */
+#define RB_NO_KEYWORDS 0
+#define RB_PASS_KEYWORDS 1
+#define RB_PASS_EMPTY_KEYWORDS 2
+#define RB_PASS_CALLED_KEYWORDS 3
 int rb_keyword_given_p(void);
 int rb_block_given_p(void);
 void rb_need_block(void);

@@ -1554,7 +1554,6 @@ NORETURN(VALUE rb_f_raise(int argc, VALUE *argv));
 
 /* -- Remove In 3.0 -- */
 int rb_empty_keyword_given_p(void);
-VALUE * rb_add_empty_keyword(int argc, const VALUE *argv);
 
 /* eval_error.c */
 VALUE rb_get_backtrace(VALUE info);

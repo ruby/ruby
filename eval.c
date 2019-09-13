@@ -914,14 +914,6 @@ rb_empty_keyword_given_p(void)
 {
     return rb_vm_cframe_empty_keyword_p(GET_EC()->cfp);
 }
-VALUE *
-rb_add_empty_keyword(int argc, const VALUE *argv)
-{
-    VALUE *ptr = ALLOC_N(VALUE,argc+1);
-    memcpy(ptr, argv, sizeof(VALUE)*(argc));
-    ptr[argc] = rb_hash_new();
-    return ptr;
-}
 
 VALUE rb_eThreadError;
 
@@ -1680,12 +1672,7 @@ void
 rb_obj_call_init(VALUE obj, int argc, const VALUE *argv)
 {
     PASS_PASSED_BLOCK_HANDLER();
-    if (rb_empty_keyword_given_p()) {
-        rb_funcallv_kw(obj, idInitialize, argc+1, rb_add_empty_keyword(argc, argv), 1);
-    }
-    else {
-        rb_funcallv_kw(obj, idInitialize, argc, argv, rb_keyword_given_p());
-    }
+    rb_funcallv_kw(obj, idInitialize, argc, argv, RB_PASS_CALLED_KEYWORDS);
 }
 
 /*!

@@ -370,7 +370,7 @@ enumerator_allocate(VALUE klass)
     return enum_obj;
 }
 
-#define PASS_KW_SPLAT (rb_empty_keyword_given_p() ? 2 : rb_keyword_given_p())
+#define PASS_KW_SPLAT (rb_empty_keyword_given_p() ? RB_PASS_EMPTY_KEYWORDS : rb_keyword_given_p())
 
 static VALUE
 enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, VALUE size, int kw_splat)
@@ -386,13 +386,7 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *ar
 
     ptr->obj  = obj;
     ptr->meth = rb_to_id(meth);
-    if (kw_splat == 2) {
-        if (argc) ptr->args = rb_ary_new4(argc+1, rb_add_empty_keyword(argc, argv));
-        else ptr->args = rb_ary_new_from_args(1, rb_hash_new());
-        kw_splat = 1;
-    } else {
-        if (argc) ptr->args = rb_ary_new4(argc, argv);
-    }
+    if (argc) ptr->args = rb_ary_new4(argc, argv);
     ptr->fib = 0;
     ptr->dst = Qnil;
     ptr->lookahead = Qundef;

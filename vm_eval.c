@@ -235,6 +235,26 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
     return ret;
 }
 
+static void
+add_empty_keyword(int *argc, const VALUE **argv, int *kw_splat)
+{
+    if (*kw_splat == RB_PASS_CALLED_KEYWORDS || *kw_splat == RB_PASS_EMPTY_KEYWORDS) {
+        if (*kw_splat == RB_PASS_EMPTY_KEYWORDS || rb_empty_keyword_given_p()) {
+            int n = *argc;
+            VALUE *ptr = ALLOC_N(VALUE,n+1);
+
+            memcpy(ptr, *argv, sizeof(VALUE)*n);
+            ptr[n] = rb_hash_new();
+            *argc = ++n; 
+            *argv = ptr;
+            *kw_splat = 1;
+        }
+        else {
+            *kw_splat = rb_keyword_given_p();
+        }
+    }
+}
+
 VALUE
 rb_vm_call(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me)
 {
@@ -244,6 +264,7 @@ rb_vm_call(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc, const VAL
 VALUE
 rb_vm_call_kw(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me, int kw_splat)
 {
+    add_empty_keyword(&argc, &argv, &kw_splat);
     return rb_vm_call0(ec, recv, id, argc, argv, me, kw_splat);
 }
 
@@ -269,7 +290,7 @@ vm_call_super(rb_execution_context_t *ec, int argc, const VALUE *argv)
 	return method_missing(recv, id, argc, argv, MISSING_SUPER);
     }
     else {
-        return rb_vm_call0(ec, recv, id, argc, argv, me, VM_NO_KEYWORDS);
+        return rb_vm_call0(ec, recv, id, argc, argv, me, RB_PASS_CALLED_KEYWORDS);
     }
 }
 
@@ -909,6 +930,7 @@ rb_funcallv(VALUE recv, ID mid, int argc, const VALUE *argv)
 VALUE
 rb_funcallv_kw(VALUE recv, ID mid, int argc, const VALUE *argv, int kw_splat)
 {
+    add_empty_keyword(&argc, &argv, &kw_splat);
     return rb_call(recv, mid, argc, argv, kw_splat ? CALL_FCALL_KW : CALL_FCALL);
 }
 
@@ -976,6 +998,7 @@ rb_funcall_with_block_kw(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE 
         vm_passed_block_handler_set(GET_EC(), passed_procval);
     }
 
+    add_empty_keyword(&argc, &argv, &kw_splat);
     return rb_call(recv, mid, argc, argv, kw_splat ? CALL_PUBLIC_KW : CALL_PUBLIC);
 }
 
@@ -1340,6 +1363,7 @@ rb_block_call_kw(VALUE obj, ID mid, int argc, const VALUE * argv,
 {
     struct iter_method_arg arg;
 
+    add_empty_keyword(&argc, &argv, &kw_splat);
     arg.obj = obj;
     arg.mid = mid;
     arg.argc = argc;
