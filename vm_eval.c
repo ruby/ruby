@@ -245,7 +245,7 @@ add_empty_keyword(int *argc, const VALUE **argv, int *kw_splat)
 
             memcpy(ptr, *argv, sizeof(VALUE)*n);
             ptr[n] = rb_hash_new();
-            *argc = ++n; 
+            *argc = ++n;
             *argv = ptr;
             *kw_splat = 1;
         }
