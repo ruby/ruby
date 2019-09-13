@@ -199,14 +199,26 @@ module Gem
   # The default signing key path
 
   def self.default_key_path
-    File.join Gem.user_home, ".gem", "gem-private_key.pem"
+    default_key_path = File.join Gem.user_home, ".gem", "gem-private_key.pem"
+
+    unless File.exist?(default_key_path)
+      default_key_path = File.join Gem.data_home, "gem", "gem-private_key.pem"
+    end
+
+    default_key_path
   end
 
   ##
   # The default signing certificate chain path
 
   def self.default_cert_path
-    File.join Gem.user_home, ".gem", "gem-public_cert.pem"
+    default_cert_path = File.join Gem.user_home, ".gem", "gem-public_cert.pem"
+
+    unless File.exist?(default_cert_path)
+      default_cert_path = File.join Gem.data_home, "gem", "gem-public_cert.pem"
+    end
+
+    default_cert_path
   end
 
   ##
