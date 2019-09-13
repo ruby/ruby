@@ -74,13 +74,24 @@ vm_call0_cfunc_with_frame(rb_execution_context_t* ec, struct rb_calling_info *ca
     int argc = calling->argc;
     ID mid = ci->mid;
     VALUE block_handler = calling->block_handler;
+    int frame_flags = VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL;
+
+    if (calling->kw_splat) {
+        if (argc > 0 && RB_TYPE_P(argv[argc-1], T_HASH) && RHASH_EMPTY_P(argv[argc-1])) {
+            frame_flags |= VM_FRAME_FLAG_CFRAME_EMPTY_KW;
+            argc--;
+        }
+        else {
+            frame_flags |= VM_FRAME_FLAG_CFRAME_KW;
+        }
+    }
 
     RUBY_DTRACE_CMETHOD_ENTRY_HOOK(ec, me->owner, me->def->original_id);
     EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, recv, me->def->original_id, mid, me->owner, Qnil);
     {
 	rb_control_frame_t *reg_cfp = ec->cfp;
 
-	vm_push_frame(ec, 0, VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL, recv,
+        vm_push_frame(ec, 0, frame_flags, recv,
 		      block_handler, (VALUE)me,
 		      0, reg_cfp->sp, 0, 0);
 
@@ -135,10 +146,29 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
 	ret = vm_call0_cfunc(ec, calling, ci, cc, argv);
 	goto success;
       case VM_METHOD_TYPE_ATTRSET:
+        if (calling->kw_splat &&
+                calling->argc > 0 &&
+                RB_TYPE_P(argv[calling->argc-1], T_HASH) &&
+                RHASH_EMPTY_P(argv[calling->argc-1])) {
+            if (calling->argc == 1) {
+                rb_warn("The keyword argument is passed as the last hash parameter");
+            }
+            else {
+                calling->argc--;
+            }
+        }
+
 	rb_check_arity(calling->argc, 1, 1);
 	ret = rb_ivar_set(calling->recv, cc->me->def->body.attr.id, argv[0]);
 	goto success;
       case VM_METHOD_TYPE_IVAR:
+        if (calling->kw_splat &&
+                calling->argc > 0 &&
+                RB_TYPE_P(argv[calling->argc-1], T_HASH) &&
+                RHASH_EMPTY_P(argv[calling->argc-1])) {
+            calling->argc--;
+        }
+
 	rb_check_arity(calling->argc, 0, 0);
 	ret = rb_attr_get(calling->recv, cc->me->def->body.attr.id);
 	goto success;
@@ -181,7 +211,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
       case VM_METHOD_TYPE_OPTIMIZED:
 	switch (cc->me->def->body.optimize_type) {
 	  case OPTIMIZED_METHOD_TYPE_SEND:
-	    ret = send_internal(calling->argc, argv, calling->recv, CALL_FCALL);
+            ret = send_internal(calling->argc, argv, calling->recv, calling->kw_splat ? CALL_FCALL_KW : CALL_FCALL);
 	    goto success;
 	  case OPTIMIZED_METHOD_TYPE_CALL:
 	    {
@@ -966,8 +996,9 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
     VALUE self;
     VALUE ret, vargv = 0;
     rb_execution_context_t *ec = GET_EC();
+    int public = scope == CALL_PUBLIC || scope == CALL_PUBLIC_KW;
 
-    if (scope == CALL_PUBLIC) {
+    if (public) {
 	self = Qundef;
     }
     else {
@@ -985,7 +1016,7 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
 	if (rb_method_basic_definition_p(CLASS_OF(recv), idMethodMissing)) {
 	    VALUE exc = rb_make_no_method_exception(rb_eNoMethodError, 0,
 						    recv, argc, argv,
-						    scope != CALL_PUBLIC);
+                                                    !public);
 	    rb_exc_raise(exc);
 	}
 	if (!SYMBOL_P(*argv)) {
