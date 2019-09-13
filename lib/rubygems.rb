@@ -338,39 +338,6 @@ module Gem
   end
 
   ##
-  # The path to standard location of the user's configuration directory.
-
-  def self.config_home
-    @config_home ||= (ENV["XDG_CONFIG_HOME"] || File.join(Gem.user_home, '.config'))
-  end
-
-  ##
-  # The path to standard location of the user's cache directory.
-
-  def self.cache_home
-    @cache_home ||= (ENV["XDG_CACHE_HOME"] || File.join(Gem.user_home, '.cache'))
-  end
-
-  ##
-  # The path to standard location of the user's data directory.
-
-  def self.data_home
-    @data_home ||= (ENV["XDG_DATA_HOME"] || File.join(Gem.user_home, '.local', 'share'))
-  end
-
-  ##
-  # The path to standard location of the user's .gemrc file.
-
-  def self.config_file
-    gemrc = File.join Gem.user_home, '.gemrc'
-    if File.exist? gemrc
-      @config_file ||= gemrc
-    else
-      @config_file ||= File.join Gem.config_home, "gem", "gemrc"
-    end
-  end
-
-  ##
   # The standard configuration object for gems.
 
   def self.configuration

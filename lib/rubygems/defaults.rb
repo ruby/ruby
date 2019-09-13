@@ -71,6 +71,40 @@ module Gem
   end
 
   ##
+  # Finds the user's home directory.
+  #--
+  # Some comments from the ruby-talk list regarding finding the home
+  # directory:
+  #
+  #   I have HOME, USERPROFILE and HOMEDRIVE + HOMEPATH. Ruby seems
+  #   to be depending on HOME in those code samples. I propose that
+  #   it should fallback to USERPROFILE and HOMEDRIVE + HOMEPATH (at
+  #   least on Win32).
+  #++
+  #--
+  #
+  #++
+
+  def self.find_home
+    Dir.home.dup
+  rescue
+    if Gem.win_platform?
+      File.expand_path File.join(ENV['HOMEDRIVE'] || ENV['SystemDrive'], '/')
+    else
+      File.expand_path "/"
+    end
+  end
+
+  private_class_method :find_home
+
+  ##
+  # The home directory for the user.
+
+  def self.user_home
+    @user_home ||= find_home.untaint
+  end
+
+  ##
   # Path for gems in the user's home directory
 
   def self.user_dir
@@ -79,6 +113,39 @@ module Gem
     parts = [gem_dir, ruby_engine]
     parts << RbConfig::CONFIG['ruby_version'] unless RbConfig::CONFIG['ruby_version'].empty?
     File.join parts
+  end
+
+  ##
+  # The path to standard location of the user's configuration directory.
+
+  def self.config_home
+    @config_home ||= (ENV["XDG_CONFIG_HOME"] || File.join(Gem.user_home, '.config'))
+  end
+
+  ##
+  # The path to standard location of the user's .gemrc file.
+
+  def self.config_file
+    gemrc = File.join Gem.user_home, '.gemrc'
+    if File.exist? gemrc
+      @config_file ||= gemrc
+    else
+      @config_file ||= File.join Gem.config_home, "gem", "gemrc"
+    end
+  end
+
+  ##
+  # The path to standard location of the user's cache directory.
+
+  def self.cache_home
+    @cache_home ||= (ENV["XDG_CACHE_HOME"] || File.join(Gem.user_home, '.cache'))
+  end
+
+  ##
+  # The path to standard location of the user's data directory.
+
+  def self.data_home
+    @data_home ||= (ENV["XDG_DATA_HOME"] || File.join(Gem.user_home, '.local', 'share'))
   end
 
   ##
