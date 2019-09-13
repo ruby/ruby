@@ -9184,6 +9184,14 @@ rb_method_for_self_aset(VALUE name, VALUE arg, rb_insn_func_t func)
 typedef unsigned int ibf_offset_t;
 #define IBF_OFFSET(ptr) ((ibf_offset_t)(VALUE)(ptr))
 
+#define IBF_MAJOR_VERSION ISEQ_MAJOR_VERSION
+#if RUBY_DEVEL
+#define IBF_DEVEL_VERSION 0
+#define IBF_MINOR_VERSION (ISEQ_MINOR_VERSION * 10000 + IBF_DEVEL_VERSION)
+#else
+#define IBF_MINOR_VERSION ISEQ_MINOR_VERSION
+#endif
+
 struct ibf_header {
     char magic[4]; /* YARB */
     unsigned int major_version;
@@ -10666,8 +10674,8 @@ rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
     header.magic[1] = 'A';
     header.magic[2] = 'R';
     header.magic[3] = 'B';
-    header.major_version = ISEQ_MAJOR_VERSION;
-    header.minor_version = ISEQ_MINOR_VERSION;
+    header.major_version = IBF_MAJOR_VERSION;
+    header.minor_version = IBF_MINOR_VERSION;
     ibf_dump_iseq_list(dump, &header);
     ibf_dump_id_list(dump, &header);
     ibf_dump_object_list(dump, &header);
@@ -10804,10 +10812,10 @@ ibf_load_setup(struct ibf_load *load, VALUE loader_obj, VALUE str)
     if (strncmp(load->header->magic, "YARB", 4) != 0) {
 	rb_raise(rb_eRuntimeError, "unknown binary format");
     }
-    if (load->header->major_version != ISEQ_MAJOR_VERSION ||
-	load->header->minor_version != ISEQ_MINOR_VERSION) {
+    if (load->header->major_version != IBF_MAJOR_VERSION ||
+	load->header->minor_version != IBF_MINOR_VERSION) {
 	rb_raise(rb_eRuntimeError, "unmatched version file (%u.%u for %u.%u)",
-		 load->header->major_version, load->header->minor_version, ISEQ_MAJOR_VERSION, ISEQ_MINOR_VERSION);
+		 load->header->major_version, load->header->minor_version, IBF_MAJOR_VERSION, IBF_MINOR_VERSION);
     }
     if (strcmp(load->buff + sizeof(struct ibf_header), RUBY_PLATFORM) != 0) {
 	rb_raise(rb_eRuntimeError, "unmatched platform");
