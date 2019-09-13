@@ -1280,7 +1280,7 @@ class Reline::LineEditor
         @line = Reline::HISTORY[@history_pointer]
       end
     end
-    if @config.editing_mode_is?(:emacs)
+    if @config.editing_mode_is?(:emacs, :vi_insert)
       @cursor_max = @cursor = calculate_width(@line)
       @byte_pointer = @line.bytesize
     elsif @config.editing_mode_is?(:vi_command)
