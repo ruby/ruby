@@ -115,8 +115,12 @@ class Reline::ANSI
     int_handle = Signal.trap('INT', 'IGNORE')
     otio = `stty -g`.chomp
     setting = ' -echo -icrnl cbreak'
-    if /-parenb\b/ =~ `stty -a`
+    stty = `stty -a`
+    if /-parenb\b/ =~ stty
       setting << ' pass8'
+    end
+    if /\bdsusp *=/ =~ stty
+      setting << ' dsusp undef'
     end
     setting << ' -ixoff'
     `stty #{setting}`
