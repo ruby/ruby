@@ -269,7 +269,7 @@ rb_vm_call_kw(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc, const 
 }
 
 static inline VALUE
-vm_call_super(rb_execution_context_t *ec, int argc, const VALUE *argv)
+vm_call_super(rb_execution_context_t *ec, int argc, const VALUE *argv, int kw_splat)
 {
     VALUE recv = ec->cfp->self;
     VALUE klass;
@@ -290,8 +290,17 @@ vm_call_super(rb_execution_context_t *ec, int argc, const VALUE *argv)
 	return method_missing(recv, id, argc, argv, MISSING_SUPER);
     }
     else {
-        return rb_vm_call0(ec, recv, id, argc, argv, me, RB_PASS_CALLED_KEYWORDS);
+        add_empty_keyword(&argc, &argv, &kw_splat);
+        return rb_vm_call0(ec, recv, id, argc, argv, me, kw_splat);
     }
+}
+
+VALUE
+rb_call_super_kw(int argc, const VALUE *argv, int kw_splat)
+{
+    rb_execution_context_t *ec = GET_EC();
+    PASS_PASSED_BLOCK_HANDLER_EC(ec);
+    return vm_call_super(ec, argc, argv, kw_splat);
 }
 
 VALUE
@@ -299,7 +308,7 @@ rb_call_super(int argc, const VALUE *argv)
 {
     rb_execution_context_t *ec = GET_EC();
     PASS_PASSED_BLOCK_HANDLER_EC(ec);
-    return vm_call_super(ec, argc, argv);
+    return vm_call_super(ec, argc, argv, RB_NO_KEYWORDS);
 }
 
 VALUE

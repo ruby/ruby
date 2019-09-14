@@ -1901,6 +1901,7 @@ VALUE rb_funcall_with_block(VALUE, ID, int, const VALUE*, VALUE);
 VALUE rb_funcall_with_block_kw(VALUE, ID, int, const VALUE*, VALUE, int);
 int rb_scan_args(int, const VALUE*, const char*, ...);
 VALUE rb_call_super(int, const VALUE*);
+VALUE rb_call_super_kw(int, const VALUE*, int);
 VALUE rb_current_receiver(void);
 int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *);
 VALUE rb_extract_keywords(VALUE *orighash);

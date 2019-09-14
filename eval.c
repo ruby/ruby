@@ -1672,7 +1672,14 @@ void
 rb_obj_call_init(VALUE obj, int argc, const VALUE *argv)
 {
     PASS_PASSED_BLOCK_HANDLER();
-    rb_funcallv_kw(obj, idInitialize, argc, argv, RB_PASS_CALLED_KEYWORDS);
+    rb_funcallv_kw(obj, idInitialize, argc, argv, RB_NO_KEYWORDS);
+}
+
+void
+rb_obj_call_init_kw(VALUE obj, int argc, const VALUE *argv, int kw_splat)
+{
+    PASS_PASSED_BLOCK_HANDLER();
+    rb_funcallv_kw(obj, idInitialize, argc, argv, kw_splat);
 }
 
 /*!

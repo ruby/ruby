@@ -2196,7 +2196,19 @@ rb_class_s_new(int argc, const VALUE *argv, VALUE klass)
     VALUE obj;
 
     obj = rb_class_alloc(klass);
-    rb_obj_call_init(obj, argc, argv);
+    rb_obj_call_init_kw(obj, argc, argv, RB_PASS_CALLED_KEYWORDS);
+
+    return obj;
+}
+
+VALUE
+rb_class_new_instance_kw(int argc, const VALUE *argv, VALUE klass, int kw_splat)
+{
+    VALUE obj;
+    Check_Type(klass, T_CLASS);
+
+    obj = rb_class_alloc(klass);
+    rb_obj_call_init_kw(obj, argc, argv, kw_splat);
 
     return obj;
 }
@@ -2216,8 +2228,13 @@ rb_class_s_new(int argc, const VALUE *argv, VALUE klass)
 VALUE
 rb_class_new_instance(int argc, const VALUE *argv, VALUE klass)
 {
+    VALUE obj;
     Check_Type(klass, T_CLASS);
-    return rb_class_s_new(argc, argv, klass);
+
+    obj = rb_class_alloc(klass);
+    rb_obj_call_init_kw(obj, argc, argv, RB_NO_KEYWORDS);
+
+    return obj;
 }
 
 /**

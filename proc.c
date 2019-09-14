@@ -819,7 +819,7 @@ rb_proc_s_new(int argc, VALUE *argv, VALUE klass)
 {
     VALUE block = proc_new(klass, FALSE);
 
-    rb_obj_call_init(block, argc, argv);
+    rb_obj_call_init_kw(block, argc, argv, RB_PASS_CALLED_KEYWORDS);
     return block;
 }
 
@@ -2204,6 +2204,20 @@ method_clone(VALUE self)
  *     m.call(20)   #=> 32
  */
 
+static VALUE
+rb_method_call_pass_called_kw(int argc, const VALUE *argv, VALUE method)
+{
+    VALUE procval = rb_block_given_p() ? rb_block_proc() : Qnil;
+    return rb_method_call_with_block_kw(argc, argv, method, procval, RB_PASS_CALLED_KEYWORDS);
+}
+
+VALUE
+rb_method_call_kw(int argc, const VALUE *argv, VALUE method, int kw_splat)
+{
+    VALUE procval = rb_block_given_p() ? rb_block_proc() : Qnil;
+    return rb_method_call_with_block_kw(argc, argv, method, procval, kw_splat);
+}
+
 VALUE
 rb_method_call(int argc, const VALUE *argv, VALUE method)
 {
@@ -2220,17 +2234,17 @@ method_callable_method_entry(const struct METHOD *data)
 
 static inline VALUE
 call_method_data(rb_execution_context_t *ec, const struct METHOD *data,
-		 int argc, const VALUE *argv, VALUE passed_procval)
+                 int argc, const VALUE *argv, VALUE passed_procval, int kw_splat)
 {
     vm_passed_block_handler_set(ec, proc_to_block_handler(passed_procval));
     return rb_vm_call_kw(ec, data->recv, data->me->called_id, argc, argv,
-                         method_callable_method_entry(data), RB_PASS_CALLED_KEYWORDS);
+                         method_callable_method_entry(data), kw_splat);
 }
 
 static VALUE
 call_method_data_safe(rb_execution_context_t *ec, const struct METHOD *data,
 		      int argc, const VALUE *argv, VALUE passed_procval,
-		      int safe)
+                      int safe, int kw_splat)
 {
     VALUE result = Qnil;	/* OK */
     enum ruby_tag_type state;
@@ -2239,7 +2253,7 @@ call_method_data_safe(rb_execution_context_t *ec, const struct METHOD *data,
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	/* result is used only if state == 0, no exceptions is caught. */
 	/* otherwise it doesn't matter even if clobbered. */
-	NO_CLOBBERED(result) = call_method_data(ec, data, argc, argv, passed_procval);
+        NO_CLOBBERED(result) = call_method_data(ec, data, argc, argv, passed_procval, kw_splat);
     }
     EC_POP_TAG();
     rb_set_safe_level_force(safe);
@@ -2249,7 +2263,7 @@ call_method_data_safe(rb_execution_context_t *ec, const struct METHOD *data,
 }
 
 VALUE
-rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE passed_procval)
+rb_method_call_with_block_kw(int argc, const VALUE *argv, VALUE method, VALUE passed_procval, int kw_splat)
 {
     const struct METHOD *data;
     rb_execution_context_t *ec = GET_EC();
@@ -2263,10 +2277,16 @@ rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE passe
 	int safe = rb_safe_level();
 	if (safe < safe_level_to_run) {
 	    rb_set_safe_level_force(safe_level_to_run);
-	    return call_method_data_safe(ec, data, argc, argv, passed_procval, safe);
+            return call_method_data_safe(ec, data, argc, argv, passed_procval, safe, kw_splat);
 	}
     }
-    return call_method_data(ec, data, argc, argv, passed_procval);
+    return call_method_data(ec, data, argc, argv, passed_procval, kw_splat);
+}
+
+VALUE
+rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE passed_procval)
+{
+    return rb_method_call_with_block_kw(argc, argv, method, passed_procval, RB_NO_KEYWORDS);
 }
 
 /**********************************************************************
@@ -2439,7 +2459,7 @@ umethod_bind_call(int argc, VALUE *argv, VALUE method)
     VALUE passed_procval = rb_block_given_p() ? rb_block_proc() : Qnil;
 
     rb_execution_context_t *ec = GET_EC();
-    return call_method_data(ec, &bound, argc, argv, passed_procval);
+    return call_method_data(ec, &bound, argc, argv, passed_procval, RB_PASS_CALLED_KEYWORDS);
 }
 
 /*
@@ -3692,12 +3712,12 @@ Init_Proc(void)
     rb_define_method(rb_cMethod, "eql?", method_eq, 1);
     rb_define_method(rb_cMethod, "hash", method_hash, 0);
     rb_define_method(rb_cMethod, "clone", method_clone, 0);
-    rb_define_method(rb_cMethod, "call", rb_method_call, -1);
-    rb_define_method(rb_cMethod, "===", rb_method_call, -1);
+    rb_define_method(rb_cMethod, "call", rb_method_call_pass_called_kw, -1);
+    rb_define_method(rb_cMethod, "===", rb_method_call_pass_called_kw, -1);
     rb_define_method(rb_cMethod, "curry", rb_method_curry, -1);
     rb_define_method(rb_cMethod, "<<", rb_method_compose_to_left, 1);
     rb_define_method(rb_cMethod, ">>", rb_method_compose_to_right, 1);
-    rb_define_method(rb_cMethod, "[]", rb_method_call, -1);
+    rb_define_method(rb_cMethod, "[]", rb_method_call_pass_called_kw, -1);
     rb_define_method(rb_cMethod, "arity", method_arity_m, 0);
     rb_define_method(rb_cMethod, "inspect", method_inspect, 0);
     rb_define_method(rb_cMethod, "to_s", method_inspect, 0);
