@@ -5516,9 +5516,12 @@ env_select_bang(VALUE ehash)
  *   ENV.keep_if { |name, value| block } -> ENV
  *   ENV.keep_if                         -> Enumerator
  *
- * Deletes every environment variable where the block evaluates to +false+.
+ * Deletes every environment variable where the block returns +false+ or +nil+:
+ *   ENV.size #=> 46
+     ENV.keep_if { |name, value| name.size < 3 } #=> {"OS"=>"Windows_NT"}
  *
- * Returns an enumerator if no block was given.
+ * Returns an enumerator if no block was given:
+ *   ENV.keep_if #=> Enumerator
  */
 static VALUE
 env_keep_if(VALUE ehash)
@@ -5605,7 +5608,11 @@ env_to_s(VALUE _)
  * call-seq:
  *   ENV.inspect -> string
  *
- * Returns the contents of the environment as a String.
+ * Returns the contents of the environment as a +String+:
+ *   ENV.clear
+     ENV['FOO'] = "One"
+     ENV['BAR'] = "Two"
+     ENV.inspect #=> "{"BAR"=>"Two", "FOO"=>"One"}"
  */
 static VALUE
 env_inspect(VALUE _)
@@ -5731,7 +5738,15 @@ env_empty_p(VALUE _)
  *   ENV.has_key?(name) -> true or false
  *   ENV.member?(name)  -> true or false
  *
- * Returns +true+ if there is an environment variable with the given +name+.
+ * Methods ENV.key?, ENV.include?, and ENV.member? are aliases of ENV.has_key?.
+ *
+ * Returns +true+ if there is an environment variable with the given +name+, else +false+:
+ *   ENV['LINES'] #=> "300"
+ *   ENV.has_key?('LINES') #=> true
+ *   ENV.has_key?('NOSUCH') #=> false
+ *
+ * Raises +TypeError+ if +name+ is not a +String+.
+ *   ENV.has_key?(1) #=> TypeError raised
  */
 static VALUE
 env_has_key(VALUE env, VALUE key)
@@ -5771,7 +5786,15 @@ env_assoc(VALUE env, VALUE key)
  *   ENV.value?(value) -> true or false
  *   ENV.has_value?(value) -> true or false
  *
- * Returns +true+ if there is an environment variable with the given +value+.
+ * Method ENV.value? is an alias of ENV.has_value?.
+
+ * Returns +true+ if there is an environment variable with the given +value+, else +false+:
+ *   ENV['LINES'] #=> "300"
+ *   ENV.has_value?('300') #=> true
+ *   ENV.has_value?('301') #=> false
+ *
+ * Returns +nil+ if +value+ is not a +String+ (and raises no exception):
+ *   ENV.has_value(300) #=> nil
  */
 static VALUE
 env_has_value(VALUE dmy, VALUE obj)
@@ -5943,7 +5966,7 @@ env_reject(VALUE _)
  * call-seq:
  *   ENV.freeze -> raises TypeError
  *
- * Ruby does not allow ENV to be frozen, so calling ENV.freeze
+ * Ruby does not allow +ENV+ to be frozen, so calling ENV.freeze
  * raises TypeError:
  *   ENV.freeze #=> TypeError raised
  */
@@ -5985,8 +6008,14 @@ env_shift(VALUE _)
  * call-seq:
  *   ENV.invert -> Hash
  *
- * Returns a new hash created by using environment variable names as values
- * and values as names.
+ * Returns a +Hash+ created by using environment variable names as values
+ * and values as names:
+ *
+ *   ENV.clear
+     ENV['FOO'] = "One"
+     ENV['BAR'] = "Two"
+     ENV['BAZ'] = "Two"
+     ENV.invert #=> {"Two"=>"BAZ", "One"=>"FOO"}
  */
 static VALUE
 env_invert(VALUE _)
@@ -6046,8 +6075,18 @@ env_update_i(VALUE key, VALUE val, VALUE _)
  *   ENV.merge!(hash)                                        -> Hash
  *   ENV.merge!(hash) { |name, old_value, new_value| block } -> Hash
  *
- * Adds the contents of +hash+ to the environment variables.  If no block is
- * specified entries with duplicate keys are overwritten, otherwise the value
+ * Adds the contents of +hash+ to the environment variables:
+ *   ENV['FOO'] #=> nil
+ *   ENV['BAR'] #=> nil
+ *   ENV.update({'FOO' => '0', 'BAR' => '1'}) #=> ENV
+ *   ENV['FOO'] #=> "0"
+     ENV['BAR'] #=> "1"
+ * If no block is given, values for existing keys are overwritten:
+ *   ENV.update({'FOO' => '2', 'BAR' => '3'}) #=> ENV
+ *   ENV['FOO'] #=> "2"
+ *   ENV['BAR'] #=> "3"
+ * If a block is given, it is called for each existing key:
+ * otherwise the value
  * of each duplicate name is determined by calling the block with the key, its
  * value from the environment and its value from the hash.
  */
@@ -6335,7 +6374,7 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "keys", env_f_keys, 0);
     rb_define_singleton_method(envtbl, "values", env_f_values, 0);
     rb_define_singleton_method(envtbl, "values_at", env_values_at, -1);
-    rb_define_singleton_method(envtbl, "include?", env_has_key, 1);
+    rb_define_singleton_method(envtbl, "include?", _key_key, 1);
     rb_define_singleton_method(envtbl, "member?", env_has_key, 1);
     rb_define_singleton_method(envtbl, "has_key?", env_has_key, 1);
     rb_define_singleton_method(envtbl, "has_value?", env_has_value, 1);
