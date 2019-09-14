@@ -255,6 +255,12 @@ add_empty_keyword(int *argc, const VALUE **argv, int *kw_splat)
             *kw_splat = rb_keyword_given_p();
         }
     }
+
+    if (*kw_splat && *argc > 0 && !RB_TYPE_P((*argv)[(*argc)-1], T_HASH)) {
+        rb_warn("Keyword flag passed calling internal method, but last entry is not a hash, unsetting keyword flag");
+        *kw_splat = 0;
+    }
+
     return 0;
 }
 
