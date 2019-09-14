@@ -189,7 +189,7 @@ class TestRubyLiteral < Test::Unit::TestCase
     def test_debug_frozen_string
       src = 'n = 1; _="foo#{n ? "-#{n}" : ""}"'; f = "test.rb"; n = 1
       opt = {frozen_string_literal: true, debug_frozen_string_literal: true}
-      str = RubyVM::InstructionSequence.compile(src, f, f, n, opt).eval
+      str = RubyVM::InstructionSequence.compile(src, f, f, n, **opt).eval
       assert_equal("foo-1", str)
       assert_predicate(str, :frozen?)
       assert_raise_with_message(FrozenError, /created at #{Regexp.quote(f)}:#{n}/) {
@@ -200,7 +200,7 @@ class TestRubyLiteral < Test::Unit::TestCase
     def test_debug_frozen_string_in_array_literal
       src = '["foo"]'; f = "test.rb"; n = 1
       opt = {frozen_string_literal: true, debug_frozen_string_literal: true}
-      ary = RubyVM::InstructionSequence.compile(src, f, f, n, opt).eval
+      ary = RubyVM::InstructionSequence.compile(src, f, f, n, **opt).eval
       assert_equal("foo", ary.first)
       assert_predicate(ary.first, :frozen?)
       assert_raise_with_message(FrozenError, /created at #{Regexp.quote(f)}:#{n}/) {

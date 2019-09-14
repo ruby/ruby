@@ -23,7 +23,8 @@ class TestIO_M17N < Test::Unit::TestCase
 
   def pipe(*args, wp, rp)
     re, we = nil, nil
-    r, w = IO.pipe(*args)
+    kw = args.last.is_a?(Hash) ? args.pop : {}
+    r, w = IO.pipe(*args, **kw)
     rt = Thread.new do
       begin
         rp.call(r)

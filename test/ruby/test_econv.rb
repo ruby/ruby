@@ -3,7 +3,12 @@ require 'test/unit'
 
 class TestEncodingConverter < Test::Unit::TestCase
   def check_ec(edst, esrc, eres, dst, src, ec, off, len, opts=nil)
-    res = ec.primitive_convert(src, dst, off, len, opts)
+    case opts
+    when Hash
+      res = ec.primitive_convert(src, dst, off, len, **opts)
+    else
+      res = ec.primitive_convert(src, dst, off, len, opts)
+    end
     assert_equal([edst.b, esrc.b, eres],
                  [dst.b,  src.b,  res])
   end

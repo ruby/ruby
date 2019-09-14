@@ -637,7 +637,7 @@ class CSV
     file_opts = {universal_newline: false}.merge(options)
 
     begin
-      f = File.open(filename, mode, file_opts)
+      f = File.open(filename, mode, **file_opts)
     rescue ArgumentError => e
       raise unless /needs binmode/.match?(e.message) and mode == "r"
       mode = "rb"

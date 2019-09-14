@@ -2324,6 +2324,9 @@ unsigned long ruby_strtoul(const char *str, char **endptr, int base);
 PRINTF_ARGS(int ruby_snprintf(char *str, size_t n, char const *fmt, ...), 3, 4);
 int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 
+/* -- Remove In 3.0, Only public for rb_scan_args optimized version -- */
+int rb_empty_keyword_given_p(void);
+
 #if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P) && defined(HAVE_VA_ARGS_MACRO) && defined(__OPTIMIZE__)
 # define rb_scan_args(argc,argvp,fmt,...) \
     __builtin_choose_expr(__builtin_constant_p(fmt), \
@@ -2373,12 +2376,17 @@ ERRORFUNC(("variable argument length doesn't match"), void rb_scan_args_length_m
      rb_scan_args_count_var(fmt, ofs, vari) : \
      rb_scan_args_count_var(fmt, ofs+1, vari+fmt[ofs]-'0'))
 
+# define rb_scan_kw_p(c) ((c) == 'k' || (c) == 'e' || (c) == 'n')
+
 # define rb_scan_args_count_lead(fmt, ofs, vari) \
     (!rb_scan_args_isdigit(fmt[ofs]) ? \
       rb_scan_args_count_var(fmt, ofs, vari) : \
       rb_scan_args_count_opt(fmt, ofs+1, vari+fmt[ofs]-'0'))
 
-# define rb_scan_args_count(fmt) rb_scan_args_count_lead(fmt, 0, 0)
+# define rb_scan_args_count(fmt) \
+    (rb_scan_kw_p(fmt[0]) ? \
+     rb_scan_args_count_lead((fmt+1), 0, 0) : \
+     rb_scan_args_count_lead((fmt), 0, 0))
 
 # if defined(__has_attribute) && __has_attribute(diagnose_if)
 #  define rb_scan_args_verify(fmt, varc) (void)0
@@ -2391,39 +2399,75 @@ ERRORFUNC(("variable argument length doesn't match"), void rb_scan_args_length_m
      (void)0)
 # endif
 
+ALWAYS_INLINE(static int rb_scan_args_kw_p(const char *fmt));
+static inline int
+rb_scan_args_kw_p(const char *fmt)
+{
+    switch (fmt[0]) {
+      case 'k':
+      case 'e':
+      case 'n':
+        return 1;
+    }
+    return 0;
+}
+
+ALWAYS_INLINE(static int rb_scan_args_kw(const char *fmt));
+static inline int
+rb_scan_args_kw(const char *fmt)
+{
+    switch (fmt[0]) {
+      case 'k':
+        return 1;
+      case 'e':
+        return 2;
+      case 'n':
+        return 3;
+    }
+    return 0;
+}
+
+ALWAYS_INLINE(static int rb_scan_args_n_lead_idx(const char *fmt));
+static inline int
+rb_scan_args_n_lead_idx(const char *fmt)
+{
+    return rb_scan_args_kw_p(fmt);
+}
+
 ALWAYS_INLINE(static int rb_scan_args_lead_p(const char *fmt));
 static inline int
 rb_scan_args_lead_p(const char *fmt)
 {
-    return rb_scan_args_isdigit(fmt[0]);
+    return rb_scan_args_isdigit(fmt[rb_scan_args_n_lead_idx(fmt)]);
 }
 
 ALWAYS_INLINE(static int rb_scan_args_n_lead(const char *fmt));
 static inline int
 rb_scan_args_n_lead(const char *fmt)
 {
-    return (rb_scan_args_lead_p(fmt) ? fmt[0]-'0' : 0);
+    return (rb_scan_args_lead_p(fmt) ? fmt[rb_scan_args_n_lead_idx(fmt)]-'0' : 0);
 }
 
 ALWAYS_INLINE(static int rb_scan_args_opt_p(const char *fmt));
 static inline int
 rb_scan_args_opt_p(const char *fmt)
 {
-    return (rb_scan_args_lead_p(fmt) && rb_scan_args_isdigit(fmt[1]));
+    return (rb_scan_args_lead_p(fmt) && rb_scan_args_isdigit(fmt[rb_scan_args_n_lead_idx(fmt)+1]));
 }
 
 ALWAYS_INLINE(static int rb_scan_args_n_opt(const char *fmt));
 static inline int
 rb_scan_args_n_opt(const char *fmt)
 {
-    return (rb_scan_args_opt_p(fmt) ? fmt[1]-'0' : 0);
+    return (rb_scan_args_opt_p(fmt) ? fmt[rb_scan_args_n_lead_idx(fmt)+1]-'0' : 0);
 }
 
 ALWAYS_INLINE(static int rb_scan_args_var_idx(const char *fmt));
 static inline int
 rb_scan_args_var_idx(const char *fmt)
 {
-    return (!rb_scan_args_lead_p(fmt) ? 0 : !rb_scan_args_isdigit(fmt[1]) ? 1 : 2);
+    const int idx  = rb_scan_args_n_lead_idx(fmt);
+    return idx + (!rb_scan_args_lead_p(fmt) ? 0 : !rb_scan_args_isdigit(fmt[idx+1]) ? 1 : 2);
 }
 
 ALWAYS_INLINE(static int rb_scan_args_f_var(const char *fmt));
@@ -2493,6 +2537,7 @@ rb_scan_args_end_idx(const char *fmt)
 /* https://bugs.llvm.org/show_bug.cgi?id=38095 */
 # define rb_scan_args0(argc, argv, fmt, varc, vars) \
     rb_scan_args_set(argc, argv, \
+                     rb_scan_args_kw(fmt), \
 		     rb_scan_args_n_lead(fmt), \
 		     rb_scan_args_n_opt(fmt), \
 		     rb_scan_args_n_trail(fmt), \
@@ -2501,13 +2546,13 @@ rb_scan_args_end_idx(const char *fmt)
 		     rb_scan_args_f_block(fmt), \
 		     (rb_scan_args_verify(fmt, varc), vars), (char *)fmt, varc)
 ALWAYS_INLINE(static int
-rb_scan_args_set(int argc, const VALUE *argv,
+rb_scan_args_set(int argc, const VALUE *argv, int kw_flag,
 		 int n_lead, int n_opt, int n_trail,
 		 int f_var, int f_hash, int f_block,
 		 VALUE *vars[], char *fmt, int varc));
 
 inline int
-rb_scan_args_set(int argc, const VALUE *argv,
+rb_scan_args_set(int argc, const VALUE *argv, int kw_flag,
 		 int n_lead, int n_opt, int n_trail,
 		 int f_var, int f_hash, int f_block,
 		 VALUE *vars[], RB_UNUSED_VAR(char *fmt), RB_UNUSED_VAR(int varc))
@@ -2519,30 +2564,99 @@ rb_scan_args_set(int argc, const VALUE *argv,
     int i, argi = 0, vari = 0, last_idx = -1;
     VALUE *var, hash = Qnil, last_hash = 0;
     const int n_mand = n_lead + n_trail;
+    const int f_kw = (f_hash && (f_var || n_opt));
+    int keyword_given = 0;
+    int empty_keyword_given = 0;
+    int allow_hash_to_keyword = 0;
+    VALUE tmp_buffer = 0;
 
-    /* capture an option hash - phase 1: pop */
-    if (f_hash && n_mand < argc) {
-	VALUE last = argv[argc - 1];
-
-	if (RB_NIL_P(last)) {
-	    /* nil is taken as an empty option hash only if it is not
-	       ambiguous; i.e. '*' is not specified and arguments are
-	       given more than sufficient */
-	    if (!f_var && n_mand + n_opt < argc)
-		argc--;
-	}
-	else {
-	    hash = rb_check_hash_type(last);
-	    if (!RB_NIL_P(hash)) {
-		VALUE opts = rb_extract_keywords(&hash);
-		if (!(last_hash = hash)) argc--;
-		else last_idx = argc - 1;
-		hash = opts ? opts : Qnil;
-	    }
-	}
+    switch (kw_flag) {
+      case 0:
+        if (!(keyword_given =  rb_keyword_given_p())) {
+            empty_keyword_given = rb_empty_keyword_given_p();
+        }
+        break;
+      case 1:
+        keyword_given = 1;
+        break;
+      case 2:
+        empty_keyword_given = 1;
+        break;
+      case 3:
+        allow_hash_to_keyword = 1;
+        break;
     }
 
-    rb_check_arity(argc, n_mand, f_var ? UNLIMITED_ARGUMENTS : n_mand + n_opt);
+    /* capture an option hash - phase 1: pop */
+    /* In keyword arugment mode, ignore final positional hash if empty keywords given */
+    if (argc > 0 && !(f_kw && empty_keyword_given)) {
+        VALUE last = argv[argc - 1];
+
+        /* Ruby 3: if (f_hash && (f_kw && keyword_given) || n_mand < argc)) { */
+        if (f_hash && n_mand < argc) {
+            if (f_kw && keyword_given) {
+                if (!RB_TYPE_P(last, T_HASH)) {
+                    rb_warn("Keyword flag set when calling rb_scan_args, but last entry is not a hash");
+                }
+                else {
+                    hash = last;
+                }
+            }
+            else if (NIL_P(last)) {
+                /* For backwards compatibility, nil is taken as an empty
+                   option hash only if it is not ambiguous; i.e. '*' is
+                   not specified and arguments are given more than sufficient.
+                   This will be removed in Ruby 3. */
+                if (!f_var && n_mand + n_opt < argc) {
+                    rb_warn("The last argument is nil, treating as empty keywords");
+                    argc--;
+                }
+            }
+            else {
+                hash = rb_check_hash_type(last);
+            }
+
+            /* Ruby 3: Remove if branch, as it will not attempt to split hashes */
+            if (!NIL_P(hash)) {
+                VALUE opts = rb_extract_keywords(&hash);
+
+                if (!(last_hash = hash)) {
+                    if (f_kw && !keyword_given && !allow_hash_to_keyword) {
+                        /* Warn in keyword argument mode if treating positional
+                           as keyword, as in Ruby 3, this will be an error */
+                        rb_warn("The last argument is used as the keyword parameter");
+                    }
+                    argc--;
+                }
+                else {
+                    /* Warn in keyword argument mode if splitting either positional hash
+                       to keywords or keywords to positional hash, as in Ruby 3,
+                       no splitting will be done */
+                    rb_warn("The last argument is split into positional and keyword parameters");
+                    last_idx = argc - 1;
+                }
+                hash = opts ? opts : Qnil;
+            }
+        }
+        else if (f_kw && keyword_given && n_mand == argc) {
+            /* Warn in keyword argument mode if treating keywords as positional,
+               as in Ruby 3, this will be an error */
+            rb_warn("The keyword argument is passed as the last hash parameter");
+        }
+    }
+    if (f_hash && n_mand == argc+1 && empty_keyword_given) {
+        VALUE *ptr = (VALUE *)rb_alloc_tmp_buffer2(&tmp_buffer, argc+1, sizeof(VALUE));
+        memcpy(ptr, argv, sizeof(VALUE)*argc);
+        ptr[argc] = rb_hash_new();
+        argc++;
+        *(&argv) = ptr;
+        rb_warn("The keyword argument is passed as the last hash parameter");
+    }
+
+
+    if (argc < n_mand) {
+        goto argc_error;
+    }
 
     /* capture leading mandatory arguments */
     for (i = n_lead; i-- > 0; ) {
@@ -2600,6 +2714,13 @@ rb_scan_args_set(int argc, const VALUE *argv,
 	}
     }
 
+    if (argi < argc) {
+      argc_error:
+        if(tmp_buffer) rb_free_tmp_buffer(&tmp_buffer);
+        rb_error_arity(argc, n_mand, f_var ? UNLIMITED_ARGUMENTS : n_mand + n_opt);
+    }
+
+    if(tmp_buffer) rb_free_tmp_buffer(&tmp_buffer);
     return argc;
 }
 #endif

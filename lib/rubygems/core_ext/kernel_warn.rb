@@ -12,9 +12,9 @@ if RUBY_VERSION >= "2.5"
 
     original_warn = method(:warn)
 
-    module_function define_method(:warn) {|*messages, uplevel: nil|
-      unless uplevel
-        return original_warn.call(*messages)
+    module_function define_method(:warn) {|*messages, **kw|
+      unless uplevel = kw[:uplevel]
+        return original_warn.call(*messages, **kw)
       end
 
       # Ensure `uplevel` fits a `long`
@@ -39,7 +39,8 @@ if RUBY_VERSION >= "2.5"
         end
         uplevel = start
       end
-      original_warn.call(*messages, uplevel: uplevel)
+      kw[:uplevel] = uplevel
+      original_warn.call(*messages, **kw)
     }
   end
 end

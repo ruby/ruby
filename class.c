@@ -1954,7 +1954,30 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
     int f_var = 0, f_hash = 0, f_block = 0;
     int n_lead = 0, n_opt = 0, n_trail = 0, n_mand;
     int argi = 0, last_idx = -1;
+    int f_kw = 0;
+    int keyword_given = 0;
+    int empty_keyword_given = 0;
+    int allow_hash_to_keyword = 0;
     VALUE hash = Qnil, last_hash = 0;
+    VALUE tmp_buffer = 0;
+
+    if (*p == 'k') {
+        keyword_given = 1;
+        p++;
+    }
+    else if (*p == 'e') {
+        empty_keyword_given = 1;
+        p++;
+    }
+    else if (*p == 'n') {
+        allow_hash_to_keyword = 1;
+        p++;
+    }
+    else {
+        if(!(keyword_given = rb_keyword_given_p())) {
+            empty_keyword_given = rb_empty_keyword_given_p();
+        }
+    }
 
     if (ISDIGIT(*p)) {
 	n_lead = *p - '0';
@@ -1974,6 +1997,9 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
     }
     if (*p == ':') {
 	f_hash = 1;
+        /* Optional or variable arguments turn on keyword argument mode */
+        /* If all arguments are mandatory, operate in regular argument mode */
+        f_kw = f_var || n_opt;
 	p++;
     }
     if (*p == '&') {
@@ -1985,32 +2011,79 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
     }
     n_mand = n_lead + n_trail;
 
-    if (argc < n_mand)
-	goto argc_error;
-
     va_start(vargs, fmt);
 
     /* capture an option hash - phase 1: pop */
-    if (f_hash && n_mand < argc) {
-	VALUE last = argv[argc - 1];
+    /* In keyword arugment mode, ignore final positional hash if empty keywords given */
+    if (argc > 0 && !(f_kw && empty_keyword_given)) {
+        VALUE last = argv[argc - 1];
 
-	if (NIL_P(last)) {
-	    /* nil is taken as an empty option hash only if it is not
-	       ambiguous; i.e. '*' is not specified and arguments are
-	       given more than sufficient */
-	    if (!f_var && n_mand + n_opt < argc)
-		argc--;
-	}
-	else {
-	    hash = rb_check_hash_type(last);
-	    if (!NIL_P(hash)) {
-		VALUE opts = rb_extract_keywords(&hash);
-		if (!(last_hash = hash)) argc--;
-		else last_idx = argc - 1;
-		hash = opts ? opts : Qnil;
-	    }
-	}
+        /* Ruby 3: if (f_hash && (f_kw && keyword_given) || n_mand < argc)) { */
+        if (f_hash && n_mand < argc) {
+            if (f_kw && keyword_given) {
+                if (!RB_TYPE_P(last, T_HASH)) {
+                    rb_warn("Keyword flag set when calling rb_scan_args, but last entry is not a hash");
+                }
+                else {
+                    hash = last;
+                }
+            }
+            else if (NIL_P(last)) {
+                /* For backwards compatibility, nil is taken as an empty
+                   option hash only if it is not ambiguous; i.e. '*' is
+                   not specified and arguments are given more than sufficient.
+                   This will be removed in Ruby 3. */
+                if (!f_var && n_mand + n_opt < argc) {
+                    rb_warn("The last argument is nil, treating as empty keywords");
+                    argc--;
+                }
+            }
+            else {
+                hash = rb_check_hash_type(last);
+            }
+
+            /* Ruby 3: Remove if branch, as it will not attempt to split hashes */
+            if (!NIL_P(hash)) {
+                VALUE opts = rb_extract_keywords(&hash);
+
+                if (!(last_hash = hash)) {
+                    if (f_kw && !keyword_given && !allow_hash_to_keyword) {
+                        /* Warn in keyword argument mode if treating positional
+                           as keyword, as in Ruby 3, this will be an error */
+                        rb_warn("The last argument is used as the keyword parameter");
+                    }
+                    argc--;
+                }
+                else {
+                    /* Warn in keyword argument mode if splitting either positional hash
+                       to keywords or keywords to positional hash, as in Ruby 3,
+                       no splitting will be done */
+                    rb_warn("The last argument is split into positional and keyword parameters");
+                    last_idx = argc - 1;
+                }
+                hash = opts ? opts : Qnil;
+            }
+        }
+        else if (f_kw && keyword_given && n_mand == argc) {
+            /* Warn in keyword argument mode if treating keywords as positional,
+               as in Ruby 3, this will be an error */
+            rb_warn("The keyword argument is passed as the last hash parameter");
+        }
     }
+    if (f_hash && n_mand == argc+1 && empty_keyword_given) {
+        VALUE *ptr = rb_alloc_tmp_buffer2(&tmp_buffer, argc+1, sizeof(VALUE));
+        memcpy(ptr, argv, sizeof(VALUE)*argc);
+        ptr[argc] = rb_hash_new();
+        argc++;
+        *(&argv) = ptr;
+        rb_warn("The keyword argument is passed as the last hash parameter");
+    }
+
+    if (argc < n_mand) {
+        va_end(vargs);
+        goto argc_error;
+    }
+
     /* capture leading mandatory arguments */
     for (i = n_lead; i-- > 0; ) {
 	var = va_arg(vargs, VALUE *);
@@ -2070,9 +2143,11 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
 
     if (argi < argc) {
       argc_error:
+        if(tmp_buffer) rb_free_tmp_buffer(&tmp_buffer);
 	rb_error_arity(argc, n_mand, f_var ? UNLIMITED_ARGUMENTS : n_mand + n_opt);
     }
 
+    if(tmp_buffer) rb_free_tmp_buffer(&tmp_buffer);
     return argc;
 }
 
