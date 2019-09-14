@@ -12,7 +12,6 @@ require File.expand_path("../lib/colorize", __FILE__)
 STDOUT.sync = true
 
 $srcdir ||= nil
-$exported = nil if ($exported ||= nil) == ""
 $archname = nil if ($archname ||= nil) == ""
 $keep_temp ||= nil
 $patch_file ||= nil
@@ -28,7 +27,6 @@ def usage
 usage: #{File.basename $0} [option...] new-directory-to-save [version ...]
 options:
   -srcdir=PATH          source directory path
-  -exported=PATH        make snapshot from already exported working directory
   -archname=NAME        make the basename of snapshots NAME
   -keep_temp            keep temporary working directory
   -patch_file=PATCH     apply PATCH file after export
@@ -143,16 +141,19 @@ unless destdir = ARGV.shift
   abort usage
 end
 revisions = ARGV.empty? ? [nil] : ARGV
-unless tmp = $exported
-  FileUtils.mkpath(destdir)
-  destdir = File.expand_path(destdir)
-  tmp = Dir.mktmpdir("ruby-snapshot")
-  FileUtils.mkpath(tmp)
-  at_exit {
-    Dir.chdir "/"
-    FileUtils.rm_rf(tmp)
-  } unless $keep_temp
+
+if $exported
+  abort "#{File.basename $0}: -exported option is deprecated; use -srcdir instead"
 end
+
+FileUtils.mkpath(destdir)
+destdir = File.expand_path(destdir)
+tmp = Dir.mktmpdir("ruby-snapshot")
+FileUtils.mkpath(tmp)
+at_exit {
+  Dir.chdir "/"
+  FileUtils.rm_rf(tmp)
+} unless $keep_temp
 
 def tar_create(tarball, dir)
   require 'rubygems'
@@ -273,34 +274,28 @@ def package(vcs, rev, destdir, tmp = nil)
     end
     revision = vcs.get_revisions(url)[1]
   end
-  v = nil
-  if $exported
-    if String === $exported
-      v = $exported
-    end
-  else
-    v = "ruby"
-    puts "Exporting #{rev}@#{revision}"
-    exported = tmp ? File.join(tmp, v) : v
-    unless vcs = vcs.export(revision, url, exported, true) {|line| print line}
-      warn("Export failed")
-      return
-    end
-    if $srcdir
-      Dir.glob($srcdir + "/{tool/config.{guess,sub},gems/*.gem,.downloaded-cache/*,enc/unicode/data/**/*.txt}") do |file|
-        puts "copying #{file}"
-        dest = exported + file[$srcdir.size..-1]
-        FileUtils.mkpath(File.dirname(dest))
-        begin
-          FileUtils.ln(file, dest, force: true)
-          next unless File.symlink?(dest)
-          File.unlink(dest)
-        rescue SystemCallError
-        end
-        begin
-          FileUtils.cp_r(file, dest)
-        rescue SystemCallError
-        end
+
+  v = "ruby"
+  puts "Exporting #{rev}@#{revision}"
+  exported = tmp ? File.join(tmp, v) : v
+  unless vcs = vcs.export(revision, url, exported, true) {|line| print line}
+    warn("Export failed")
+    return
+  end
+  if $srcdir
+    Dir.glob($srcdir + "/{tool/config.{guess,sub},gems/*.gem,.downloaded-cache/*,enc/unicode/data/**/*.txt}") do |file|
+      puts "copying #{file}"
+      dest = exported + file[$srcdir.size..-1]
+      FileUtils.mkpath(File.dirname(dest))
+      begin
+        FileUtils.ln(file, dest, force: true)
+        next unless File.symlink?(dest)
+        File.unlink(dest)
+      rescue SystemCallError
+      end
+      begin
+        FileUtils.cp_r(file, dest)
+      rescue SystemCallError
       end
     end
   end
@@ -344,17 +339,17 @@ def package(vcs, rev, destdir, tmp = nil)
   else
     tag ||= vcs.revision_name(revision)
   end
-  unless v == $exported
-    if $archname
-      n = $archname
-    elsif tag.empty?
-      n = "ruby-#{version}"
-    else
-      n = "ruby-#{version}-#{tag}"
-    end
-    File.directory?(n) or File.rename v, n
-    vcs.chdir(File.expand_path(v = n))
+
+  if $archname
+    n = $archname
+  elsif tag.empty?
+    n = "ruby-#{version}"
+  else
+    n = "ruby-#{version}-#{tag}"
   end
+  File.directory?(n) or File.rename v, n
+  vcs.chdir(File.expand_path(v = n))
+
   system(*%W"patch -d #{v} -p0 -i #{$patch_file}") if $patch_file
   def (clean = []).add(n) push(n); n end
   Dir.chdir(v) do
@@ -362,7 +357,7 @@ def package(vcs, rev, destdir, tmp = nil)
       vcs.export_changelog(url, nil, revision, "ChangeLog")
     end
 
-    if !$exported or $patch_file and !touch_all(modified, "**/*", File::FNM_DOTMATCH)
+    unless touch_all(modified, "**/*", File::FNM_DOTMATCH)
       modified = nil
       colors = %w[red yellow green cyan blue magenta]
       "take a breath, and go ahead".scan(/./) do |c|
@@ -553,7 +548,7 @@ touch-unicode-files:
     end
   end.compact
 ensure
-  FileUtils.rm_rf(tmp ? File.join(tmp, v) : v) if v and !$exported and !$keep_temp
+  FileUtils.rm_rf(tmp ? File.join(tmp, v) : v) if v and !$keep_temp
   Dir.chdir(pwd)
 end
 
