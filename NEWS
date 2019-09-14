@@ -109,6 +109,13 @@ Enumerator::
       can be directly passed to another method as a block
       argument.  [Feature #15618]
 
+Fiber::
+
+  New method::
+
+    * Added Fiber#raise that behaves like Fiber#resume but raises an
+      exception on the resumed fiber.  [Feature #10344]
+
 FrozenError::
 
   New method::
