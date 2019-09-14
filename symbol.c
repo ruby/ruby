@@ -743,7 +743,8 @@ rb_str_intern(VALUE str)
 	enc = ascii;
     }
     else {
-	str = rb_str_new_frozen(str);
+        str = rb_str_dup(str);
+        OBJ_FREEZE(str);
     }
     str = rb_fstring(str);
     type = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
