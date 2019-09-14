@@ -241,8 +241,9 @@ add_empty_keyword(int *argc, const VALUE **argv, int *kw_splat)
     if (*kw_splat == RB_PASS_CALLED_KEYWORDS || *kw_splat == RB_PASS_EMPTY_KEYWORDS) {
         if (*kw_splat == RB_PASS_EMPTY_KEYWORDS || rb_empty_keyword_given_p()) {
             int n = *argc;
-            VALUE *ptr = ALLOC_N(VALUE,n+1);
-
+            VALUE v;
+            VALUE *ptr;
+            ptr = rb_alloc_tmp_buffer2(&v, n, sizeof(VALUE));
             memcpy(ptr, *argv, sizeof(VALUE)*n);
             ptr[n] = rb_hash_new();
             *argc = ++n;
