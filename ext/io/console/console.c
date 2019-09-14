@@ -74,7 +74,7 @@ getattr(int fd, conmode *t)
 #define SET_LAST_ERROR (0)
 #endif
 
-static ID id_getc, id_console, id_close, id_min, id_time;
+static ID id_getc, id_console, id_close, id_min, id_time, id_intr;
 #if ENABLE_IO_GETPASS
 static ID id_gets;
 #endif
@@ -101,6 +101,7 @@ rb_f_send(int argc, VALUE *argv, VALUE recv)
 typedef struct {
     int vmin;
     int vtime;
+    int intr;
 } rawmode_arg_t;
 
 static rawmode_arg_t *
@@ -122,9 +123,11 @@ rawmode_opt(int *argcp, VALUE *argv, int min_argc, int max_argc, rawmode_arg_t *
     if (!NIL_P(vopts)) {
 	VALUE vmin = rb_hash_aref(vopts, ID2SYM(id_min));
 	VALUE vtime = rb_hash_aref(vopts, ID2SYM(id_time));
+	VALUE intr = rb_hash_aref(vopts, ID2SYM(id_intr));
 	/* default values by `stty raw` */
 	opts->vmin = 1;
 	opts->vtime = 0;
+	opts->intr = 0;
 	if (!NIL_P(vmin)) {
 	    opts->vmin = NUM2INT(vmin);
 	    optp = opts;
@@ -134,6 +137,21 @@ rawmode_opt(int *argcp, VALUE *argv, int min_argc, int max_argc, rawmode_arg_t *
 	    vtime = rb_funcall3(vtime, '*', 1, &v10);
 	    opts->vtime = NUM2INT(vtime);
 	    optp = opts;
+	}
+	switch (intr) {
+	  case Qtrue:
+	    opts->intr = 1;
+	    optp = opts;
+	    break;
+	  case Qfalse:
+	    opts->intr = 0;
+	    optp = opts;
+	    break;
+	  case Qnil:
+	    break;
+	  default:
+	    rb_raise(rb_eArgError, "true or false expected as intr: %"PRIsVALUE,
+		     intr);
 	}
     }
     return optp;
@@ -162,6 +180,10 @@ set_rawmode(conmode *t, void *arg)
 	const rawmode_arg_t *r = arg;
 	if (r->vmin >= 0) t->c_cc[VMIN] = r->vmin;
 	if (r->vtime >= 0) t->c_cc[VTIME] = r->vtime;
+	if (r->intr) {
+	    t->c_iflag |= BRKINT|IXON;
+	    t->c_lflag |= ISIG|IEXTEN;
+	}
     }
 #endif
 }
@@ -1382,6 +1404,7 @@ Init_console(void)
     id_close = rb_intern("close");
     id_min = rb_intern("min");
     id_time = rb_intern("time");
+    id_intr = rb_intern("intr");
 #ifndef HAVE_RB_F_SEND
     id___send__ = rb_intern("__send__");
 #endif
