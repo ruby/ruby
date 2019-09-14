@@ -584,7 +584,9 @@ class VCS
 
     def export(revision, url, dir, keep_temp = false)
       system(COMMAND, "clone", "-c", "advice.detachedHead=false", "-s", (@srcdir || '.').to_s, "-b", url, dir) or return
-      system(COMMAND, "fetch", "origin", "+refs/notes/commits:refs/notes/commits", chdir: dir) or return
+      unless system(COMMAND, "fetch", "origin", "+refs/notes/commits:refs/notes/commits", chdir: dir, exception: false)
+        warn "No notes/commits tree"
+      end
       (Integer === revision ? GITSVN : GIT).new(File.expand_path(dir))
     end
 
