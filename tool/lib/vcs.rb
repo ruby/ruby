@@ -623,7 +623,7 @@ class VCS
 
     def format_changelog(path, arg)
       env = {'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'}
-      cmd = %W"#{COMMAND} log --format=medium --notes=commits --topo-order"
+      cmd = %W"#{COMMAND} log --format=medium --notes=commits --topo-order --no-merges"
       date = "--date=iso-local"
       unless system(env, *cmd, date, chdir: @srcdir, out: NullDevice, exception: false)
         date = "--date=iso"
