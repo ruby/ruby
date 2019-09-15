@@ -5182,7 +5182,11 @@ env_keys(void)
  * call-seq:
  *   ENV.keys -> Array
  *
- * Returns every environment variable name in an Array
+ * Returns environment variable names as an +Array+:
+ *   ENV.clear #=> {}
+ *   ENV['FOO'] = '0' #=> "0"
+ *   ENV['BAR'] = '1' #=> "1"
+ *   ENV.keys #=> ["BAR", "FOO"]
  */
 
 static VALUE
@@ -5258,7 +5262,10 @@ env_values(void)
  * call-seq:
  *   ENV.values -> Array
  *
- * Returns every environment variable value as an Array
+ * Returns ENV values as an Array:
+ *   ENV.size #=> 46
+ *   values = ENV.values #=> Array
+ *   values.size #=> 46
  */
 
 static VALUE
@@ -5353,9 +5360,15 @@ env_each_pair(VALUE ehash)
  *   ENV.reject! { |name, value| block } -> ENV or nil
  *   ENV.reject!                         -> Enumerator
  *
- * Equivalent to ENV.delete_if but returns +nil+ if no changes were made.
- *
- * Returns an Enumerator if no block was given.
+ * Similar to ENV.delete_if,but returns +nil+ if no changes were made:
+ *   ENV.size #=> 46
+ *   ENV.reject! { |name, value| name.length < 4 } #=> ENV
+ *   ENV.size #=> 44
+ *   ENV.reject! { |name, value| name.length < 4 } #=> nil
+ * Returns an Enumerator if no block was given:
+ *   enum = ENV.reject!
+ *   enum.class #=> Enumerator
+ *   enum.size #=> 44
  */
 static VALUE
 env_reject_bang(VALUE ehash)
@@ -5407,10 +5420,13 @@ env_delete_if(VALUE ehash)
 
 /*
  * call-seq:
- *   ENV.values_at(name, ...) -> Array
+ *   ENV.values_at(*names) -> Array
  *
- * Returns an array containing the environment variable values associated with
- * the given names.  See also ENV.select.
+ * Returns an Array of values whose names given by +names+:
+ *   ENV.values_at('LINES', 'COLUMNS') #=> ["300", "158"]
+ * Raises TypeError if any argument is not a String:
+ *   ENV.values_at('LINES', 1) #=> TypeError raised
+ * See also ENV.select.
  */
 static VALUE
 env_values_at(int argc, VALUE *argv, VALUE _)
@@ -5533,11 +5549,12 @@ env_keep_if(VALUE ehash)
 
 /*
  *  call-seq:
- *     ENV.slice(*keys) -> a_hash
+ *     ENV.slice(*names) -> Hash
  *
- *  Returns a hash containing only the given keys from ENV and their values.
- *
- *     ENV.slice("TERM","HOME")  #=> {"TERM"=>"xterm-256color", "HOME"=>"/Users/rhc"}
+ * Returns a Hash containing a key/value pair for each ENV name given by +names+:
+ *   ENV.slice('LINES', 'COLUMNS') #=> {"LINES"=>"300", "COLUMNS"=>"158"}
+ * Raises TypeError if any argument is not a String:
+ *   ENV.slice('LINES', 1) => TypeError raised
  */
 static VALUE
 env_slice(int argc, VALUE *argv, VALUE _)
@@ -5596,7 +5613,8 @@ env_clear(VALUE _)
  * call-seq:
  *   ENV.to_s -> "ENV"
  *
- * Returns "ENV"
+ * Returns String "ENV:
+ *   ENV.to_s #=> "ENV"
  */
 static VALUE
 env_to_s(VALUE _)
@@ -5677,8 +5695,8 @@ env_to_a(VALUE _)
  * call-seq:
  *   ENV.rehash
  *
- * Re-hashing the environment variables does nothing.  It is provided for
- * compatibility with Hash.
+ * Does nothing;  it is provided for compatibility with Hash.  Returns nil.
+ *   ENV.rehash #=> nil
  */
 static VALUE
 env_none(VALUE _)
@@ -5691,7 +5709,12 @@ env_none(VALUE _)
  *   ENV.length
  *   ENV.size
  *
- * Returns the number of environment variables.
+ * Returns the number of environment variables:
+ *   ENV.length #=> 46
+ *   ENV['FOO'] = '0' #=> "0"
+ *   ENV.length #=> 47
+ *   ENV.clear #=> {}
+ *   ENV.length #=> 0
  */
 static VALUE
 env_size(VALUE _)
@@ -5762,8 +5785,8 @@ env_has_key(VALUE env, VALUE key)
  * call-seq:
  *   ENV.assoc(name) -> Array or nil
  *
- * Returns a 2-element +Array+ of the name and value of the environment variable with
- * +name+:
+ * Returns a 2-element +Array+ of the name and value of the first-found environment variable
+ * whose name is +name+:
  *   ENV.assoc('LINES') #=> ["LINES", "300"]
  * Returns +nil+ if the name cannot be found:
  *   ENV.assoc('NOSUCH') #=> nil
@@ -5824,8 +5847,14 @@ env_has_value(VALUE dmy, VALUE obj)
  * call-seq:
  *   ENV.rassoc(value)
  *
- * Returns an Array of the name and value of the environment variable with
- * +value+ or +nil+ if the value cannot be found.
+ * Returns an 2-element +Array+ of the value and name of the first-found entry whose value is +value+:
+ *   ENV.clear #=> ENV
+ *   ENV['FOO'] = '0' #=> "0"
+ *   ENV['BAR'] = '1' #=> "1"
+ *   ENV['BAZ'] = '1' #=> "1"
+ *   ENV.rassoc('1') #=> ["BAR", "1"]
+ * Returns +nil+ if +value+ is not found:
+ *   ENV.rassoc('NOSUCH') #=> nil
  */
 static VALUE
 env_rassoc(VALUE dmy, VALUE obj)
@@ -5856,8 +5885,12 @@ env_rassoc(VALUE dmy, VALUE obj)
  * call-seq:
  *   ENV.key(value) -> name
  *
- * Returns the name of the environment variable with +value+.  If the value is
- * not found +nil+ is returned.
+ * Returns the name of the first-found environment variable whose value is +value+:
+ *   ENV['FOO'] = '0' #=> "0"
+ *   ENV['BAR'] = '0' #=> "0"
+ *   ENV.key('0') #=> "BAR"
+ * Returns +nil+ f +value+ is not found:
+ *   ENV.key('NOSUCH') #=> nil
  */
 static VALUE
 env_key(VALUE dmy, VALUE value)
@@ -5918,10 +5951,13 @@ env_to_hash(void)
 
 /*
  * call-seq:
- *   ENV.to_hash -> hash
+ *   ENV.to_hash -> Hash
  *
- * Creates a hash with a copy of the environment variables.
- *
+ * Returns a Hash formed from the name/value pairs of ENV:
+ *   ENV.size #=> 46
+ *   h = ENV.to_hash #=> Hash
+ *   h.class #=> Hash
+ *   h.size #=> 46
  */
 
 static VALUE
@@ -5932,11 +5968,24 @@ env_f_to_hash(VALUE _)
 
 /*
  * call-seq:
- *   ENV.to_h                        -> hash
- *   ENV.to_h {|name, value| block } -> hash
+ *   ENV.to_h                        -> Hash
+ *   ENV.to_h {|name, value| block } -> Hash
  *
- * Creates a hash with a copy of the environment variables.
- *
+ * If no block given,, returns a Hash of all name/value pairs from ENV:
+ *   ENV.size #=> 46
+ *   h = ENV.to_h
+ *   h.class #=> Hash
+ *   h.size #=> 46
+ * If block given, the block must return a 2-element Array
+ * whose two elements will become a name/value pair in the returned Hash:
+ *   ENV.clear #=> {}
+ *   ENV['FOO'] = 'foo' @=> "foo"
+ *   ENV['BAR'] = 'bar' #=> "bar"
+ *   ENV.to_h { |name, value| [name.downcase, value.upcase] } #=> {"bar"=>"BAR", "foo"=>"FOO"}
+ * Raises TypeError if the block's return is not an Array:
+ *   ENV.to_h { |name, value| true } #=> TypeError raised
+ * Raises ArgumentError if the block returns an Array of length other than 2:
+ *   ENV.to_h { |name, value| true } #=> ArgumentError raised
  */
 static VALUE
 env_to_h(VALUE _)
@@ -5953,8 +6002,16 @@ env_to_h(VALUE _)
  *   ENV.reject { |name, value| block } -> Hash
  *   ENV.reject                         -> Enumerator
  *
- * Same as ENV.delete_if, but works on (and returns) a copy of the
- * environment.
+ * Similar to ENV.delete_if, but creates, operates on, and returns a Hash (ENV itself is unmodified):
+ *   ENV.size #=> 46
+ *   h = ENV.reject { |name, value | name.length < 4 }
+ *   h.class # => Hash
+ *   h.size #=> 44
+ *   ENV.size #=> 46
+ * Returns an Enumerator if no block given:
+ *   e = ENV.reject
+ *   e.class #=> Enumerator
+ *   e.size #=> 46
  */
 static VALUE
 env_reject(VALUE _)
@@ -5981,8 +6038,16 @@ env_freeze(VALUE self)
  * call-seq:
  *   ENV.shift -> Array or nil
  *
- * Removes an environment variable name-value pair from ENV and returns it as
- * an Array.  Returns +nil+ if when the environment is empty.
+ * Removes the first name-value pair from ENV and returns it as a 2-element Array:
+ *   ENV.size #=> 46
+ *   name, value = ENV.shift #=> 2-element Array
+ *   ENV.size #=> 45
+ * Returns +nil+ if when ENV is empty:
+ *   ENV.clear
+ *   ENV.size #=> 0
+ *   name, value = ENV.shift #=> nil
+ *   name #=> nil
+ *   value #=> nil
  */
 static VALUE
 env_shift(VALUE _)
@@ -6035,10 +6100,14 @@ env_replace_i(VALUE key, VALUE val, VALUE keys)
 
 /*
  * call-seq:
- *   ENV.replace(hash) -> env
+ *   ENV.replace(hash) -> ENV
  *
- * Replaces the contents of the environment variables with the contents of
- * +hash+.
+ * Replaces the content of ENV with the contents of +hash+:
+ *   ENV.size #=> 46
+ *   ENV.replace({'FOO' => '0', 'BAR' => '1'}) #=> ENV
+ *   ENV.size #=> 2
+ * Raises a TypeError if the argument is not a Hash:
+ *   ENV.replace(1) #=> TypeError raised
  */
 static VALUE
 env_replace(VALUE env, VALUE hash)
