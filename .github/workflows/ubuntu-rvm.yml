@@ -1,0 +1,34 @@
+name: ubuntu-rvm
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ruby: [ 'ruby-head', '2.2.10' ]
+        test_tool: [ "rubygems", "bundler" ]
+    steps:
+    - uses: actions/checkout@master
+    - run: git submodule update -i
+    - name: Set up RVM
+      run: |
+        curl -sSL https://get.rvm.io | bash
+    - name: Set up Ruby
+      run: |
+        source $HOME/.rvm/scripts/rvm
+        rvm install ${{ matrix.ruby }} --binary
+        rvm --default use ${{ matrix.ruby }}
+    - name: Install dependencies
+      run: |
+        source $HOME/.rvm/scripts/rvm
+        util/ci.sh before_script
+      env:
+        TEST_TOOL: ${{ matrix.test_tool }}
+    - name: Run test
+      run: |
+        source $HOME/.rvm/scripts/rvm
+        util/ci.sh script
+      env:
+        TEST_TOOL: ${{ matrix.test_tool }}
