@@ -2,20 +2,12 @@ on: pull_request
 
 jobs:
   macos:
-    name: rake test
     runs-on: macos-latest
     strategy:
       matrix:
         ruby: [ '2.3.x', '2.4.x', '2.5.x', '2.6.x' ]
     steps:
-      - name: Disable Firewall
-        run: |
-          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
-          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
-      - name: Checkout
-        uses: actions/checkout@master
-        with:
-          fetch-depth: 5
+      - uses: actions/checkout@master
       - name: Setup ruby
         uses: actions/setup-ruby@v1
         with:
