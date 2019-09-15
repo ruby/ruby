@@ -2370,14 +2370,16 @@ ERRORFUNC(("variable argument length doesn't match"), void rb_scan_args_length_m
      rb_scan_args_count_trail(fmt, ofs+1, vari+1))
 
 # define rb_scan_args_count_opt(fmt, ofs, vari) \
-    (!rb_scan_args_isdigit(fmt[1]) ? \
+    (!rb_scan_args_isdigit(fmt[ofs]) ? \
      rb_scan_args_count_var(fmt, ofs, vari) : \
      rb_scan_args_count_var(fmt, ofs+1, vari+fmt[ofs]-'0'))
 
-# define rb_scan_args_count(fmt) \
-    (!rb_scan_args_isdigit(fmt[0]) ? \
-      rb_scan_args_count_var(fmt, 0, 0) : \
-      rb_scan_args_count_opt(fmt, 1, fmt[0]-'0'))
+# define rb_scan_args_count_lead(fmt, ofs, vari) \
+    (!rb_scan_args_isdigit(fmt[ofs]) ? \
+      rb_scan_args_count_var(fmt, ofs, vari) : \
+      rb_scan_args_count_opt(fmt, ofs+1, vari+fmt[ofs]-'0'))
+
+# define rb_scan_args_count(fmt) rb_scan_args_count_lead(fmt, 0, 0)
 
 # if defined(__has_attribute) && __has_attribute(diagnose_if)
 #  define rb_scan_args_verify(fmt, varc) (void)0
