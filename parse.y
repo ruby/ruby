@@ -8737,6 +8737,10 @@ parser_yylex(struct parser_params *p)
 	      case '\13': /* '\v' */
 		space_seen = 1;
 		break;
+	      case '#':
+		pushback(p, c);
+		if (space_seen) dispatch_scan_event(p, tSP);
+		goto retry;
 	      case '&':
 	      case '.': {
 		dispatch_delayed_token(p, tIGNORED_NL);

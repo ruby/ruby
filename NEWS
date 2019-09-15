@@ -71,6 +71,12 @@ sufficient information, see the ChangeLog file or Redmine
 
 * The flip-flop syntax deprecation is reverted. [Feature #5400]
 
+* Comment lines can be placed between fluent dot now.
+
+    foo
+      # .bar
+      .baz # => foo.baz
+
 === Core classes updates (outstanding ones only)
 
 Complex::
