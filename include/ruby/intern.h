@@ -1008,28 +1008,12 @@ RUBY_SYMBOL_EXPORT_END
 }  /* extern "C" { */
 #endif
 
-#if defined(__has_attribute) && defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P) && !defined(_WIN32) && !defined(__CYGWIN__)
-#if __has_attribute(transparent_union) && __has_attribute(unused) && __has_attribute(weakref) && __has_attribute(nonnull)
-__attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))static void rb_define_method_idm3(VALUE,ID,VALUE(*)(ANYARGS),int);
-__attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))static void rb_define_method_idm2(VALUE,ID,VALUE(*)(VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))static void rb_define_method_idm1(VALUE,ID,VALUE(*)(int,union{VALUE*x;const VALUE*y;}__attribute__((__transparent_union__)),VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))static void rb_define_method_id0 (VALUE,ID,VALUE(*)(VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))static void rb_define_method_id1 (VALUE,ID,VALUE(*)(VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))static void rb_define_method_id2 (VALUE,ID,VALUE(*)(VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))static void rb_define_method_id3 (VALUE,ID,VALUE(*)(VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))static void rb_define_method_id4 (VALUE,ID,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))static void rb_define_method_id5 (VALUE,ID,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))static void rb_define_method_id6 (VALUE,ID,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))static void rb_define_method_id7 (VALUE,ID,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))static void rb_define_method_id8 (VALUE,ID,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))static void rb_define_method_id9 (VALUE,ID,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))static void rb_define_method_id10(VALUE,ID,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))static void rb_define_method_id11(VALUE,ID,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))static void rb_define_method_id12(VALUE,ID,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))static void rb_define_method_id13(VALUE,ID,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))static void rb_define_method_id14(VALUE,ID,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))static void rb_define_method_id15(VALUE,ID,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
+#ifdef RB_METHOD_DEFINITION_DECL
 
+RB_METHOD_DEFINITION_DECL(rb_define_method_id, (3), (VALUE klass, ID name), (klass, name))
+#ifdef __cplusplus
+#define rb_define_method_id(m, n, f, a) rb_define_method_id_tmpl<a>::define(m, n, f)
+#else
 #define rb_define_method_id_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_method_id15,rb_define_method_idm3)
 #define rb_define_method_id_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_method_id14,rb_define_method_id_choose_prototype15(n))
 #define rb_define_method_id_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_method_id13,rb_define_method_id_choose_prototype14(n))
@@ -1050,27 +1034,12 @@ __attribute__((__unused__,__weakref__("rb_define_method_id"),__nonnull__(3)))sta
 #define rb_define_method_id_choose_prototypem2(n)    rb_define_method_if_constexpr((n)==-2,rb_define_method_idm2,rb_define_method_id_choose_prototypem1(n))
 #define rb_define_method_id_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_method_idm3,rb_define_method_id_choose_prototypem2(n))
 #define rb_define_method_id(klass, mid, func, arity) rb_define_method_id_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
+#endif
 
-__attribute__((__unused__,__weakref__("rb_define_protected_method"),__nonnull__(2,3)))static void rb_define_protected_methodm3(VALUE,const char*,VALUE(*)(ANYARGS),int);
-__attribute__((__unused__,__weakref__("rb_define_protected_method"),__nonnull__(2,3)))static void rb_define_protected_methodm2(VALUE,const char*,VALUE(*)(VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_protected_method"),__nonnull__(2,3)))static void rb_define_protected_methodm1(VALUE,const char*,VALUE(*)(int,union{VALUE*x;const VALUE*y;}__attribute__((__transparent_union__)),VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_protected_method"),__nonnull__(2,3)))static void rb_define_protected_method0 (VALUE,const char*,VALUE(*)(VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_protected_method"),__nonnull__(2,3)))static void rb_define_protected_method1 (VALUE,const char*,VALUE(*)(VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_protected_method"),__nonnull__(2,3)))static void rb_define_protected_method2 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_protected_method"),__nonnull__(2,3)))static void rb_define_protected_method3 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_protected_method"),__nonnull__(2,3)))static void rb_define_protected_method4 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_protected_method"),__nonnull__(2,3)))static void rb_define_protected_method5 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_protected_method"),__nonnull__(2,3)))static void rb_define_protected_method6 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_protected_method"),__nonnull__(2,3)))static void rb_define_protected_method7 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_protected_method"),__nonnull__(2,3)))static void rb_define_protected_method8 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_protected_method"),__nonnull__(2,3)))static void rb_define_protected_method9 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_protected_method"),__nonnull__(2,3)))static void rb_define_protected_method10(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_protected_method"),__nonnull__(2,3)))static void rb_define_protected_method11(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_protected_method"),__nonnull__(2,3)))static void rb_define_protected_method12(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_protected_method"),__nonnull__(2,3)))static void rb_define_protected_method13(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_protected_method"),__nonnull__(2,3)))static void rb_define_protected_method14(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_protected_method"),__nonnull__(2,3)))static void rb_define_protected_method15(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-
+RB_METHOD_DEFINITION_DECL(rb_define_protected_method, (2,3), (VALUE klass, const char *name), (klass, name))
+#ifdef __cplusplus
+#define rb_define_protected_method(m, n, f, a) rb_define_protected_method_tmpl<a>::define(m, n, f)
+#else
 #define rb_define_protected_method_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_protected_method15,rb_define_protected_methodm3)
 #define rb_define_protected_method_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_protected_method14,rb_define_protected_method_choose_prototype15(n))
 #define rb_define_protected_method_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_protected_method13,rb_define_protected_method_choose_prototype14(n))
@@ -1091,27 +1060,12 @@ __attribute__((__unused__,__weakref__("rb_define_protected_method"),__nonnull__(
 #define rb_define_protected_method_choose_prototypem2(n)    rb_define_method_if_constexpr((n)==-2,rb_define_protected_methodm2,rb_define_protected_method_choose_prototypem1(n))
 #define rb_define_protected_method_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_protected_methodm3,rb_define_protected_method_choose_prototypem2(n))
 #define rb_define_protected_method(klass, mid, func, arity) rb_define_protected_method_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
+#endif
 
-__attribute__((__unused__,__weakref__("rb_define_private_method"),__nonnull__(2,3)))static void rb_define_private_methodm3(VALUE,const char*,VALUE(*)(ANYARGS),int);
-__attribute__((__unused__,__weakref__("rb_define_private_method"),__nonnull__(2,3)))static void rb_define_private_methodm2(VALUE,const char*,VALUE(*)(VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_private_method"),__nonnull__(2,3)))static void rb_define_private_methodm1(VALUE,const char*,VALUE(*)(int,union{VALUE*x;const VALUE*y;}__attribute__((__transparent_union__)),VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_private_method"),__nonnull__(2,3)))static void rb_define_private_method0 (VALUE,const char*,VALUE(*)(VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_private_method"),__nonnull__(2,3)))static void rb_define_private_method1 (VALUE,const char*,VALUE(*)(VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_private_method"),__nonnull__(2,3)))static void rb_define_private_method2 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_private_method"),__nonnull__(2,3)))static void rb_define_private_method3 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_private_method"),__nonnull__(2,3)))static void rb_define_private_method4 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_private_method"),__nonnull__(2,3)))static void rb_define_private_method5 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_private_method"),__nonnull__(2,3)))static void rb_define_private_method6 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_private_method"),__nonnull__(2,3)))static void rb_define_private_method7 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_private_method"),__nonnull__(2,3)))static void rb_define_private_method8 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_private_method"),__nonnull__(2,3)))static void rb_define_private_method9 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_private_method"),__nonnull__(2,3)))static void rb_define_private_method10(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_private_method"),__nonnull__(2,3)))static void rb_define_private_method11(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_private_method"),__nonnull__(2,3)))static void rb_define_private_method12(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_private_method"),__nonnull__(2,3)))static void rb_define_private_method13(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_private_method"),__nonnull__(2,3)))static void rb_define_private_method14(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_private_method"),__nonnull__(2,3)))static void rb_define_private_method15(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-
+RB_METHOD_DEFINITION_DECL(rb_define_private_method, (2,3), (VALUE klass, const char *name), (klass, name))
+#ifdef __cplusplus
+#define rb_define_private_method(m, n, f, a) rb_define_private_method_tmpl<a>::define(m, n, f)
+#else
 #define rb_define_private_method_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_private_method15,rb_define_private_methodm3)
 #define rb_define_private_method_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_private_method14,rb_define_private_method_choose_prototype15(n))
 #define rb_define_private_method_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_private_method13,rb_define_private_method_choose_prototype14(n))
@@ -1132,27 +1086,12 @@ __attribute__((__unused__,__weakref__("rb_define_private_method"),__nonnull__(2,
 #define rb_define_private_method_choose_prototypem2(n)    rb_define_method_if_constexpr((n)==-2,rb_define_private_methodm2,rb_define_private_method_choose_prototypem1(n))
 #define rb_define_private_method_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_private_methodm3,rb_define_private_method_choose_prototypem2(n))
 #define rb_define_private_method(klass, mid, func, arity) rb_define_private_method_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
+#endif
 
-__attribute__((__unused__,__weakref__("rb_define_singleton_method"),__nonnull__(2,3)))static void rb_define_singleton_methodm3(VALUE,const char*,VALUE(*)(ANYARGS),int);
-__attribute__((__unused__,__weakref__("rb_define_singleton_method"),__nonnull__(2,3)))static void rb_define_singleton_methodm2(VALUE,const char*,VALUE(*)(VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_singleton_method"),__nonnull__(2,3)))static void rb_define_singleton_methodm1(VALUE,const char*,VALUE(*)(int,union{VALUE*x;const VALUE*y;}__attribute__((__transparent_union__)),VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_singleton_method"),__nonnull__(2,3)))static void rb_define_singleton_method0 (VALUE,const char*,VALUE(*)(VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_singleton_method"),__nonnull__(2,3)))static void rb_define_singleton_method1 (VALUE,const char*,VALUE(*)(VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_singleton_method"),__nonnull__(2,3)))static void rb_define_singleton_method2 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_singleton_method"),__nonnull__(2,3)))static void rb_define_singleton_method3 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_singleton_method"),__nonnull__(2,3)))static void rb_define_singleton_method4 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_singleton_method"),__nonnull__(2,3)))static void rb_define_singleton_method5 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_singleton_method"),__nonnull__(2,3)))static void rb_define_singleton_method6 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_singleton_method"),__nonnull__(2,3)))static void rb_define_singleton_method7 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_singleton_method"),__nonnull__(2,3)))static void rb_define_singleton_method8 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_singleton_method"),__nonnull__(2,3)))static void rb_define_singleton_method9 (VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_singleton_method"),__nonnull__(2,3)))static void rb_define_singleton_method10(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_singleton_method"),__nonnull__(2,3)))static void rb_define_singleton_method11(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_singleton_method"),__nonnull__(2,3)))static void rb_define_singleton_method12(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_singleton_method"),__nonnull__(2,3)))static void rb_define_singleton_method13(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_singleton_method"),__nonnull__(2,3)))static void rb_define_singleton_method14(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-__attribute__((__unused__,__weakref__("rb_define_singleton_method"),__nonnull__(2,3)))static void rb_define_singleton_method15(VALUE,const char*,VALUE(*)(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE),int);
-
+RB_METHOD_DEFINITION_DECL(rb_define_singleton_method, (2,3), (VALUE klass, const char *name), (klass, name))
+#ifdef __cplusplus
+#define rb_define_singleton_method(m, n, f, a) rb_define_singleton_method_tmpl<a>::define(m, n, f)
+#else
 #define rb_define_singleton_method_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_singleton_method15,rb_define_singleton_methodm3)
 #define rb_define_singleton_method_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_singleton_method14,rb_define_singleton_method_choose_prototype15(n))
 #define rb_define_singleton_method_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_singleton_method13,rb_define_singleton_method_choose_prototype14(n))
@@ -1174,6 +1113,7 @@ __attribute__((__unused__,__weakref__("rb_define_singleton_method"),__nonnull__(
 #define rb_define_singleton_method_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_singleton_methodm3,rb_define_singleton_method_choose_prototypem2(n))
 #define rb_define_singleton_method(klass, mid, func, arity) rb_define_singleton_method_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
 #endif
+
 #endif
 
 #endif /* RUBY_INTERN_H */
