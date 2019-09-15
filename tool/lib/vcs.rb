@@ -607,10 +607,9 @@ class VCS
         warn "no starting commit found", uplevel: 1
         from = nil
       end
-      _rev = cmd_read({'LANG' => 'C', 'LC_ALL' => 'C'},
-                     %W"#{COMMAND} show-ref notes/commits")
-      unless $?.success?
-        raise "need notes/commits tree; run `git fetch origin refs/notes/commits:refs/notes/commits` in the repository"
+      unless system(*%W"#{COMMAND} fetch origin refs/notes/commits:refs/notes/commits",
+                    chdir: @srcdir, exception: false)
+        abort "Could not fetch notes/commits tree"
       end
       to ||= 'HEAD'
       if from
