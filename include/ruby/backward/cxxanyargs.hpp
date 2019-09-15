@@ -105,7 +105,7 @@ RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
 /// @brief       Call a method with a block.
 /// @param[in]   q  The self.
 /// @param[in]   w  The method.
-/// @param[in]   e  The 3 of elems of `r`
+/// @param[in]   e  The # of elems of `r`
 /// @param[in]   r  The arguments.
 /// @param[in]   t  What is to be yielded.
 /// @param[in]   y  Passed to `t`
