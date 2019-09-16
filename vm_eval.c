@@ -15,7 +15,7 @@ struct local_var_list {
     VALUE tbl;
 };
 
-static inline VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missing_reason call_status);
+static inline VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missing_reason call_status, int kw_splat);
 static inline VALUE vm_yield_with_cref(rb_execution_context_t *ec, int argc, const VALUE *argv, const rb_cref_t *cref, int is_lambda);
 static inline VALUE vm_yield(rb_execution_context_t *ec, int argc, const VALUE *argv);
 static inline VALUE vm_yield_with_block(rb_execution_context_t *ec, int argc, const VALUE *argv, VALUE block_handler);
@@ -193,7 +193,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
 
 	    if (!super_class || !(cc->me = rb_callable_method_entry(super_class, ci->mid))) {
 		enum method_missing_reason ex = (type == VM_METHOD_TYPE_ZSUPER) ? MISSING_SUPER : 0;
-		ret = method_missing(calling->recv, ci->mid, calling->argc, argv, ex);
+                ret = method_missing(calling->recv, ci->mid, calling->argc, argv, ex, calling->kw_splat);
 		goto success;
 	    }
 	    RUBY_VM_CHECK_INTS(ec);
@@ -206,7 +206,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
 	{
 	    vm_passed_block_handler_set(ec, calling->block_handler);
 	    return method_missing(calling->recv, ci->mid, calling->argc,
-				  argv, MISSING_NOENTRY);
+                                  argv, MISSING_NOENTRY, calling->kw_splat);
 	}
       case VM_METHOD_TYPE_OPTIMIZED:
 	switch (cc->me->def->body.optimize_type) {
@@ -284,6 +284,7 @@ vm_call_super(rb_execution_context_t *ec, int argc, const VALUE *argv, int kw_sp
 {
     VALUE recv = ec->cfp->self;
     VALUE klass;
+    VALUE v, ret;
     ID id;
     rb_control_frame_t *cfp = ec->cfp;
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
@@ -297,15 +298,15 @@ vm_call_super(rb_execution_context_t *ec, int argc, const VALUE *argv, int kw_sp
     id = me->def->original_id;
     me = rb_callable_method_entry(klass, id);
 
+    v = add_empty_keyword(&argc, &argv, &kw_splat);
     if (!me) {
-	return method_missing(recv, id, argc, argv, MISSING_SUPER);
+        ret = method_missing(recv, id, argc, argv, MISSING_SUPER, kw_splat);
     }
     else {
-        VALUE v = add_empty_keyword(&argc, &argv, &kw_splat);
-        VALUE ret = rb_vm_call0(ec, recv, id, argc, argv, me, kw_splat);
-        rb_free_tmp_buffer(&v);
-        return ret;
+        ret = rb_vm_call0(ec, recv, id, argc, argv, me, kw_splat);
     }
+    rb_free_tmp_buffer(&v);
+    return ret;
 }
 
 VALUE
@@ -400,7 +401,7 @@ rb_call0(rb_execution_context_t *ec,
     call_status = rb_method_call_status(ec, me, scope, self);
 
     if (call_status != MISSING_NONE) {
-	return method_missing(recv, mid, argc, argv, call_status);
+        return method_missing(recv, mid, argc, argv, call_status, kw_splat);
     }
     stack_check(ec);
     return rb_vm_call0(ec, recv, mid, argc, argv, me, kw_splat);
@@ -830,7 +831,7 @@ vm_raise_method_missing(rb_execution_context_t *ec, int argc, const VALUE *argv,
 }
 
 static inline VALUE
-method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missing_reason call_status)
+method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missing_reason call_status, int kw_splat)
 {
     VALUE *nargv, result, work, klass;
     rb_execution_context_t *ec = GET_EC();
@@ -862,7 +863,7 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missin
     me = rb_callable_method_entry(klass, idMethodMissing);
     if (!me || METHOD_ENTRY_BASIC(me)) goto missing;
     vm_passed_block_handler_set(ec, block_handler);
-    result = rb_vm_call0(ec, obj, idMethodMissing, argc, argv, me, VM_NO_KEYWORDS);
+    result = rb_vm_call0(ec, obj, idMethodMissing, argc, argv, me, kw_splat);
     if (work) ALLOCV_END(work);
     return result;
 }
