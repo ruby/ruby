@@ -889,7 +889,8 @@ compile_data_alloc(rb_iseq_t *iseq, size_t size)
 static INSN *
 compile_data_alloc_insn(rb_iseq_t *iseq)
 {
-    return (INSN *)compile_data_alloc(iseq, sizeof(INSN));
+    struct iseq_compile_data_storage ** arena = &ISEQ_COMPILE_DATA(iseq)->insn.storage_current;
+    return (INSN *)compile_data_alloc_with_arena(arena, sizeof(INSN));
 }
 
 static LABEL *
