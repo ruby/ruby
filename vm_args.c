@@ -13,7 +13,7 @@ NORETURN(static void argument_arity_error(rb_execution_context_t *ec, const rb_i
 NORETURN(static void argument_kw_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const char *error, const VALUE keys));
 VALUE rb_keyword_error_new(const char *error, VALUE keys); /* class.c */
 static VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv,
-			    enum method_missing_reason call_status);
+                            enum method_missing_reason call_status, int kw_splat);
 
 struct args_info {
     /* basic args info */
@@ -1072,7 +1072,7 @@ refine_sym_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
 	vm_passed_block_handler_set(ec, blockarg);
     }
     if (!me) {
-	return method_missing(obj, mid, argc, argv, MISSING_NOENTRY);
+        return method_missing(obj, mid, argc, argv, MISSING_NOENTRY, VM_NO_KEYWORDS);
     }
     return rb_vm_call0(ec, obj, mid, argc, argv, me, VM_NO_KEYWORDS);
 }

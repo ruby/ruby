@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require '-test-/rb_call_super_kw'
 
 class TestKeywordArguments < Test::Unit::TestCase
   def f1(str: "foo", num: 424242)
@@ -1431,6 +1432,199 @@ class TestKeywordArguments < Test::Unit::TestCase
     h3 = {'a'=>1, :a=>1}
 
     c = Object.new
+    def c.method_missing(_, *args)
+      args
+    end
+    assert_equal([], c.m(**{}))
+    assert_equal([], c.m(**kw))
+    assert_equal([h], c.m(**h))
+    assert_equal([h], c.m(a: 1))
+    assert_equal([h2], c.m(**h2))
+    assert_equal([h3], c.m(**h3))
+    assert_equal([h3], c.m(a: 1, **h2))
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_); end
+    assert_nil(c.m(**{}))
+    assert_nil(c.m(**kw))
+    assert_raise(ArgumentError) { c.m(**h) }
+    assert_raise(ArgumentError) { c.m(a: 1) }
+    assert_raise(ArgumentError) { c.m(**h2) }
+    assert_raise(ArgumentError) { c.m(**h3) }
+    assert_raise(ArgumentError) { c.m(a: 1, **h2) }
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_, args)
+      args
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal(kw, c.m(**{}))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal(kw, c.m(**kw))
+    end
+    assert_equal(h, c.m(**h))
+    assert_equal(h, c.m(a: 1))
+    assert_equal(h2, c.m(**h2))
+    assert_equal(h3, c.m(**h3))
+    assert_equal(h3, c.m(a: 1, **h2))
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_, **args)
+      args
+    end
+    assert_equal(kw, c.m(**{}))
+    assert_equal(kw, c.m(**kw))
+    assert_equal(h, c.m(**h))
+    assert_equal(h, c.m(a: 1))
+    assert_equal(h2, c.m(**h2))
+    assert_equal(h3, c.m(a: 1, **h2))
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_, arg, **args)
+      [arg, args]
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([kw, kw], c.m(**{}))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([kw, kw], c.m(**kw))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([h, kw], c.m(**h))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([h, kw], c.m(a: 1))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([h2, kw], c.m(**h2))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([h3, kw], c.m(**h3))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([h3, kw], c.m(a: 1, **h2))
+    end
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_, arg=1, **args)
+      [arg=1, args]
+    end
+    assert_equal([1, kw], c.m(**{}))
+    assert_equal([1, kw], c.m(**kw))
+    assert_equal([1, h], c.m(**h))
+    assert_equal([1, h], c.m(a: 1))
+    assert_equal([1, h2], c.m(**h2))
+    assert_equal([1, h3], c.m(**h3))
+    assert_equal([1, h3], c.m(a: 1, **h2))
+  end
+
+  def test_super_method_missing_kwsplat
+    kw = {}
+    h = {:a=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    c = Class.new do
+      def m(*args, **kw)
+        super
+      end
+    end.new
+    def c.method_missing(_, *args)
+      args
+    end
+    assert_equal([], c.m(**{}))
+    assert_equal([], c.m(**kw))
+    assert_equal([h], c.m(**h))
+    assert_equal([h], c.m(a: 1))
+    assert_equal([h2], c.m(**h2))
+    assert_equal([h3], c.m(**h3))
+    assert_equal([h3], c.m(a: 1, **h2))
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_); end
+    assert_nil(c.m(**{}))
+    assert_nil(c.m(**kw))
+    assert_raise(ArgumentError) { c.m(**h) }
+    assert_raise(ArgumentError) { c.m(a: 1) }
+    assert_raise(ArgumentError) { c.m(**h2) }
+    assert_raise(ArgumentError) { c.m(**h3) }
+    assert_raise(ArgumentError) { c.m(a: 1, **h2) }
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_, args)
+      args
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal(kw, c.m(**{}))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal(kw, c.m(**kw))
+    end
+    assert_equal(h, c.m(**h))
+    assert_equal(h, c.m(a: 1))
+    assert_equal(h2, c.m(**h2))
+    assert_equal(h3, c.m(**h3))
+    assert_equal(h3, c.m(a: 1, **h2))
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_, **args)
+      args
+    end
+    assert_equal(kw, c.m(**{}))
+    assert_equal(kw, c.m(**kw))
+    assert_equal(h, c.m(**h))
+    assert_equal(h, c.m(a: 1))
+    assert_equal(h2, c.m(**h2))
+    assert_equal(h3, c.m(a: 1, **h2))
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_, arg, **args)
+      [arg, args]
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([kw, kw], c.m(**{}))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([kw, kw], c.m(**kw))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([h, kw], c.m(**h))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([h, kw], c.m(a: 1))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([h2, kw], c.m(**h2))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([h3, kw], c.m(**h3))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([h3, kw], c.m(a: 1, **h2))
+    end
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_, arg=1, **args)
+      [arg=1, args]
+    end
+    assert_equal([1, kw], c.m(**{}))
+    assert_equal([1, kw], c.m(**kw))
+    assert_equal([1, h], c.m(**h))
+    assert_equal([1, h], c.m(a: 1))
+    assert_equal([1, h2], c.m(**h2))
+    assert_equal([1, h3], c.m(**h3))
+    assert_equal([1, h3], c.m(a: 1, **h2))
+  end
+
+  def test_rb_call_super_kw_method_missing_kwsplat
+    kw = {}
+    h = {:a=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    c = Object.new
+    c.extend Bug::RbCallSuperKw
     def c.method_missing(_, *args)
       args
     end
