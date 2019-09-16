@@ -6394,9 +6394,13 @@ Init_Hash(void)
      *
      * Though somewhat hash-like, ENV is not a Hash.  Its actual class is Object.
      *
-     * One difference between Hash and +ENV+:
-     * - In Hash, a key or value may be any object, of any class.
-     * - In ENV, the only allowed name or value is a String.
+     * Differences between Hash and ENV :
+     * - Content allowed:
+     *   - In a Hash, a key or value may be any object, of any class.
+     *   - In ENV, each name or value must be a String.
+     * - Order:
+     *   - A Hash enumerates its entries in the order that the keys were inserted.
+     *   - In ENV, the order of entries is OS-dependent.
      *
      * Some of the methods below return ENV.
      * That returned ENV is _not_ a new object; it is the _one_ _and_ _only_ ENV object:
