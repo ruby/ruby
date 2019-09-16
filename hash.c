@@ -4763,7 +4763,7 @@ env_delete(VALUE name)
  *   ENV.delete('LINES') # => "300"
  * If +name+ is not found:
  * - Returns +nil+ if no block given.
- * - Calls the block if block given; returns +nil+.
+ * - Calls the block, if given; returns +nil+.
  * Thus:
  *   ENV.delete('LINES') # => nil
  *   ENV.delete('NOSUCH') { |name| name } # => nil
@@ -4807,21 +4807,21 @@ rb_f_getenv(VALUE obj, VALUE name)
 /*
  * :yield: missing_name
  * call-seq:
- *   ENV.fetch(name)                  -> value
- *   ENV.fetch(name) { |name| block } -> value
- *   ENV.fetch(name, default)         -> value
+ *   ENV.fetch(name)                  -> value or KeyError
+ *   ENV.fetch(name) { |name| block } -> value or block return value
+ *   ENV.fetch(name, default)         -> value or default
  *
- * Returns the value environment variable +name+:
+ * Returns the value for environment variable +name+:
  *   ENV.fetch('LINES') # => "300"
  *
  * If the given name does not exist:
- * - If a block given, calls the block with +name+.
- * - Otherwise, if a default given, returns the default.
+ * - If block given, calls the block with +name+; returns block return value.
+ * - Otherwise, if +default+ given, returns +default+.
  * - Otherwise, raises KeyError.
  * Thus:
  *   ENV.fetch('NOSUCH') { |name| p name } # => "NOSUCH"
  *   ENV.fetch('NOSUCH', 'Nope') # => "Nope"
- *   ENV.fetch('NOSUCH') # => KeyError
+ *   ENV.fetch('NOSUCH') # => KeyError raised
  * Raises TypeError if +name+ is not a String :
  *   Env.fetch(1) # => TypeError raised
  */
@@ -5218,13 +5218,12 @@ rb_env_size(VALUE ehash, VALUE args, VALUE eobj)
  *   ENV.each_key { |name| block } -> ENV
  *   ENV.each_key                  -> Enumerator
  *
- * Yields each environment variable name:
+ * Calls the block, if given, with the name from each ENV entry; returns ENV :
  *   count = 0
- *   e = ENV.each_key { |name| count += 1 }
- *   e.count # => 46
+ *   ENV.each_key { |name| count += 1 } # => ENV
  *   ENV.count # => 46
  *
- * Returns an Enumerator if no block is given:
+ * Returns an Enumerator if no block given:
  *   ENV.each_key # => Enumerator
  */
 static VALUE
@@ -5278,17 +5277,16 @@ env_f_values(VALUE _)
 
 /*
  * call-seq:
- *   ENV.each_value { |value| block } -> Hash
+ *   ENV.each_value { |value| block } -> ENV
  *   ENV.each_value                   -> Enumerator
  *
  *
- * Yields each environment variable value:
+ * Calls block, if given, with the value of each ENV entry; returns ENV :
  *   count = 0
- *   e = ENV.each_value { |name| count += 1 }
- *   e.count # => 46
+ *   ENV.each_value { |name| count += 1 } # => ENV
  *   ENV.count # => 46
  *
- * Returns an Enumerator if no block is given:
+ * Returns an Enumerator if no block given:
  *   ENV.each_value # => Enumerator
  */
 static VALUE
@@ -5312,16 +5310,16 @@ env_each_value(VALUE ehash)
  *   ENV.each_pair { |name, value| block } -> ENV
  *   ENV.each_pair                         -> Enumerator
  *
- * Calls the block, if given, with each +name+ and +value+; returns ENV :
+ * Calls the block, if given, with the name and value for each ENV entry; returns ENV :
  *   entry_count = 0
- *   ENV.each_pair { |name, value| entry_count += 1 }
+ *   ENV.each_pair { |name, value| entry_count += 1 } # => ENV
  *   entry_count # => 46
  *   ENV.size # => 46
  *
- * Returns an Enumerator if no block is given:
+ * Returns an Enumerator if no block given:
  *   ENV.each_pair # => Enumerator
  *
- * +ENV.each+ is an alias of +ENV.each_pair+.
+ * ENV.each is an alias for ENV.each_pair.
  */
 static VALUE
 env_each_pair(VALUE ehash)
@@ -5367,7 +5365,7 @@ env_each_pair(VALUE ehash)
  *   ENV.reject! { |name, value| name.length < 4 } # => ENV
  *   ENV.size # => 44
  *   ENV.reject! { |name, value| name.length < 4 } # => nil
- * Returns an Enumerator if no block was given:
+ * Returns an Enumerator if no block given:
  *   enum = ENV.reject!
  *   enum.class # => Enumerator
  *   enum.size # => 44
@@ -5408,7 +5406,7 @@ env_reject_bang(VALUE ehash)
  *   ENV.delete_if { |name, value| name.match(/PROCESSOR/) }
  *   ENV.size # => 41
  *
- * Returns an Enumerator if no block is given:
+ * Returns an Enumerator if no block given:
  *   ENV.delete_if.class # => Enumerator
  */
 static VALUE
@@ -5423,7 +5421,7 @@ env_delete_if(VALUE ehash)
  * call-seq:
  *   ENV.values_at(*names) -> Array
  *
- * Returns an Array of values whose names given by +names+:
+ * Returns an Array of values whose names are arguments +*names+:
  *   ENV.values_at('LINES', 'COLUMNS') # => ["300", "158"]
  * Raises TypeError if any argument is not a String :
  *   ENV.values_at('LINES', 1) # => TypeError raised
@@ -5454,7 +5452,7 @@ env_values_at(int argc, VALUE *argv, VALUE _)
  * Returns a Hash of those +name+/+value+ pairs for which the block is truthy:
  *   ENV.select { |name, value| name.length < 3 } # => {"OS"=>"Windows_NT"}
  *
- * Returns an Enumerator if no block was given:
+ * Returns an Enumerator if no block given:
  *   ENV.select # => Enumerator
  */
 static VALUE
@@ -5537,7 +5535,7 @@ env_select_bang(VALUE ehash)
  *   ENV.size # => 46
      ENV.keep_if { |name, value| name.size < 3 } # => {"OS"=>"Windows_NT"}
  *
- * Returns an Enumerator if no block was given:
+ * Returns an Enumerator if no block given:
  *   ENV.keep_if # => Enumerator
  */
 static VALUE
@@ -5552,7 +5550,7 @@ env_keep_if(VALUE ehash)
  *  call-seq:
  *     ENV.slice(*names) -> Hash
  *
- * Returns a Hash containing a key/value pair for each ENV name given by +names+:
+ * Returns a Hash containing a key/value pair for each name given by arguments +*names+:
  *   ENV.slice('LINES', 'COLUMNS') # => {"LINES"=>"300", "COLUMNS"=>"158"}
  * Raises TypeError if any argument is not a String :
  *   ENV.slice('LINES', 1) => TypeError raised
@@ -5737,7 +5735,7 @@ env_size(VALUE _)
  * Returns +true+ when there are no environment variables, otherwise +false+:
  *    ENV.size # => 46
       ENV.empty? # => false
-      ENV.clear
+      ENV.clear # => ENV
       ENV.size # => 0
       ENV.empty? # => true
  */
@@ -5762,7 +5760,7 @@ env_empty_p(VALUE _)
  *   ENV.has_key?(name) -> true or false
  *   ENV.member?(name)  -> true or false
  *
- * Methods ENV.key?, ENV.include?, and ENV.member? are aliases of ENV.has_key?.
+ * Methods ENV.key?, ENV.include?, and ENV.member? are aliases for ENV.has_key?.
  *
  * Returns +true+ if there is an environment variable with the given +name+, else +false+:
  *   ENV['LINES'] # => "300"
@@ -5971,7 +5969,7 @@ env_f_to_hash(VALUE _)
  *   ENV.to_h                        -> Hash
  *   ENV.to_h {|name, value| block } -> Hash
  *
- * If no block given,, returns a Hash of all name/value pairs from ENV :
+ * If no block given, returns a Hash of all name/value pairs from ENV :
  *   ENV.size # => 46
  *   h = ENV.to_h
  *   h.class # => Hash
@@ -6150,11 +6148,11 @@ env_update_i(VALUE key, VALUE val, VALUE _)
  *   ENV.update({'FOO' => '0', 'BAR' => '1'}) # => ENV
  *   ENV['FOO'] # => "0"
      ENV['BAR'] # => "1"
- * If no block is given, values for existing keys are overwritten:
+ * If no block given, values for existing keys are overwritten:
  *   ENV.update({'FOO' => '2', 'BAR' => '3'}) # => ENV
  *   ENV['FOO'] # => "2"
  *   ENV['BAR'] # => "3"
- * If a block is given, it is called for each existing key:
+ * If a block given, it is called for each existing key:
  * otherwise the value
  * of each duplicate name is determined by calling the block with the key, its
  * value from the environment and its value from the hash.
