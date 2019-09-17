@@ -2731,3 +2731,306 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_valid_syntax("bug15087(**{}, &nil)")
   end
 end
+
+class TestKeywordArgumentsSymProcRefinements < Test::Unit::TestCase
+  class C
+    def call(*args, **kw)
+      yield(self, *args, **kw)
+    end
+  end
+  using(Module.new do
+    refine C do
+      def m(*args, **kw)
+        super
+      end
+    end
+  end)
+
+  def test_sym_proc_refine_kwsplat
+    kw = {}
+    h = {:a=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    c = C.new
+    def c.m(*args)
+      args
+    end
+    assert_equal([], c.call(**{}, &:m))
+    assert_equal([], c.call(**kw, &:m))
+    assert_equal([h], c.call(**h, &:m))
+    assert_equal([h], c.call(h, **{}, &:m))
+    assert_equal([h], c.call(a: 1, &:m))
+    assert_equal([h2], c.call(**h2, &:m))
+    assert_equal([h3], c.call(**h3, &:m))
+    assert_equal([h3], c.call(a: 1, **h2, &:m))
+
+    c.singleton_class.remove_method(:m)
+    def c.m; end
+    assert_nil(c.call(**{}, &:m))
+    assert_nil(c.call(**kw, &:m))
+    assert_raise(ArgumentError) { c.call(**h, &:m) }
+    assert_raise(ArgumentError) { c.call(a: 1, &:m) }
+    assert_raise(ArgumentError) { c.call(**h2, &:m) }
+    assert_raise(ArgumentError) { c.call(**h3, &:m) }
+    assert_raise(ArgumentError) { c.call(a: 1, **h2, &:m) }
+
+    c.singleton_class.remove_method(:m)
+    def c.m(args)
+      args
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal(kw, c.call(**{}, &:m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal(kw, c.call(**kw, &:m))
+    end
+    assert_equal(h, c.call(**h, &:m))
+    assert_equal(h, c.call(a: 1, &:m))
+    assert_equal(h2, c.call(**h2, &:m))
+    assert_equal(h3, c.call(**h3, &:m))
+    assert_equal(h3, c.call(a: 1, **h2, &:m))
+
+    c.singleton_class.remove_method(:m)
+    def c.m(**args)
+      args
+    end
+    assert_equal(kw, c.call(**{}, &:m))
+    assert_equal(kw, c.call(**kw, &:m))
+    assert_equal(h, c.call(**h, &:m))
+    assert_equal(h, c.call(a: 1, &:m))
+    assert_equal(h2, c.call(**h2, &:m))
+    assert_equal(h3, c.call(**h3, &:m))
+    assert_equal(h3, c.call(a: 1, **h2, &:m))
+
+    c.singleton_class.remove_method(:m)
+    def c.m(arg, **args)
+      [arg, args]
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([kw, kw], c.call(**{}, &:m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([kw, kw], c.call(**kw, &:m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h, kw], c.call(**h, &:m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h, kw], c.call(a: 1, &:m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h2, kw], c.call(**h2, &:m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h3, kw], c.call(**h3, &:m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h3, kw], c.call(a: 1, **h2, &:m))
+    end
+
+    c.singleton_class.remove_method(:m)
+    def c.m(arg=1, **args)
+      [arg=1, args]
+    end
+    assert_equal([1, kw], c.call(**{}, &:m))
+    assert_equal([1, kw], c.call(**kw, &:m))
+    assert_equal([1, h], c.call(**h, &:m))
+    assert_equal([1, h], c.call(a: 1, &:m))
+    assert_equal([1, h2], c.call(**h2, &:m))
+    assert_equal([1, h3], c.call(**h3, &:m))
+    assert_equal([1, h3], c.call(a: 1, **h2, &:m))
+  end
+
+  def test_sym_proc_refine_super_method_missing_kwsplat
+    kw = {}
+    h = {:a=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    c = C.new
+    def c.method_missing(_, *args)
+      args
+    end
+    assert_equal([], c.call(**{}, &:m))
+    assert_equal([], c.call(**kw, &:m))
+    assert_equal([h], c.call(**h, &:m))
+    assert_equal([h], c.call(h, **{}, &:m))
+    assert_equal([h], c.call(a: 1, &:m))
+    assert_equal([h2], c.call(**h2, &:m))
+    assert_equal([h3], c.call(**h3, &:m))
+    assert_equal([h3], c.call(a: 1, **h2, &:m))
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_) end
+    assert_nil(c.call(**{}, &:m))
+    assert_nil(c.call(**kw, &:m))
+    assert_raise(ArgumentError) { c.call(**h, &:m) }
+    assert_raise(ArgumentError) { c.call(a: 1, &:m) }
+    assert_raise(ArgumentError) { c.call(**h2, &:m) }
+    assert_raise(ArgumentError) { c.call(**h3, &:m) }
+    assert_raise(ArgumentError) { c.call(a: 1, **h2, &:m) }
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_, args)
+      args
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal(kw, c.call(**{}, &:m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal(kw, c.call(**kw, &:m))
+    end
+    assert_equal(h, c.call(**h, &:m))
+    assert_equal(h, c.call(a: 1, &:m))
+    assert_equal(h2, c.call(**h2, &:m))
+    assert_equal(h3, c.call(**h3, &:m))
+    assert_equal(h3, c.call(a: 1, **h2, &:m))
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_, **args)
+      args
+    end
+    assert_equal(kw, c.call(**{}, &:m))
+    assert_equal(kw, c.call(**kw, &:m))
+    assert_equal(h, c.call(**h, &:m))
+    assert_equal(h, c.call(a: 1, &:m))
+    assert_equal(h2, c.call(**h2, &:m))
+    assert_equal(h3, c.call(**h3, &:m))
+    assert_equal(h3, c.call(a: 1, **h2, &:m))
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_, arg, **args)
+      [arg, args]
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([kw, kw], c.call(**{}, &:m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([kw, kw], c.call(**kw, &:m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([h, kw], c.call(**h, &:m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([h, kw], c.call(a: 1, &:m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([h2, kw], c.call(**h2, &:m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([h3, kw], c.call(**h3, &:m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([h3, kw], c.call(a: 1, **h2, &:m))
+    end
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_, arg=1, **args)
+      [arg=1, args]
+    end
+    assert_equal([1, kw], c.call(**{}, &:m))
+    assert_equal([1, kw], c.call(**kw, &:m))
+    assert_equal([1, h], c.call(**h, &:m))
+    assert_equal([1, h], c.call(a: 1, &:m))
+    assert_equal([1, h2], c.call(**h2, &:m))
+    assert_equal([1, h3], c.call(**h3, &:m))
+    assert_equal([1, h3], c.call(a: 1, **h2, &:m))
+  end
+
+  def test_sym_proc_refine_method_missing_kwsplat
+    kw = {}
+    h = {:a=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    c = C.new
+    def c.method_missing(_, *args)
+      args
+    end
+    assert_equal([], c.call(**{}, &:m2))
+    assert_equal([], c.call(**kw, &:m2))
+    assert_equal([h], c.call(**h, &:m2))
+    assert_equal([h], c.call(h, **{}, &:m2))
+    assert_equal([h], c.call(a: 1, &:m2))
+    assert_equal([h2], c.call(**h2, &:m2))
+    assert_equal([h3], c.call(**h3, &:m2))
+    assert_equal([h3], c.call(a: 1, **h2, &:m2))
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_) end
+    assert_nil(c.call(**{}, &:m2))
+    assert_nil(c.call(**kw, &:m2))
+    assert_raise(ArgumentError) { c.call(**h, &:m2) }
+    assert_raise(ArgumentError) { c.call(a: 1, &:m2) }
+    assert_raise(ArgumentError) { c.call(**h2, &:m2) }
+    assert_raise(ArgumentError) { c.call(**h3, &:m2) }
+    assert_raise(ArgumentError) { c.call(a: 1, **h2, &:m2) }
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_, args)
+      args
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal(kw, c.call(**{}, &:m2))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal(kw, c.call(**kw, &:m2))
+    end
+    assert_equal(h, c.call(**h, &:m2))
+    assert_equal(h, c.call(a: 1, &:m2))
+    assert_equal(h2, c.call(**h2, &:m2))
+    assert_equal(h3, c.call(**h3, &:m2))
+    assert_equal(h3, c.call(a: 1, **h2, &:m2))
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_, **args)
+      args
+    end
+    assert_equal(kw, c.call(**{}, &:m2))
+    assert_equal(kw, c.call(**kw, &:m2))
+    assert_equal(h, c.call(**h, &:m2))
+    assert_equal(h, c.call(a: 1, &:m2))
+    assert_equal(h2, c.call(**h2, &:m2))
+    assert_equal(h3, c.call(**h3, &:m2))
+    assert_equal(h3, c.call(a: 1, **h2, &:m2))
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_, arg, **args)
+      [arg, args]
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([kw, kw], c.call(**{}, &:m2))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([kw, kw], c.call(**kw, &:m2))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([h, kw], c.call(**h, &:m2))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([h, kw], c.call(a: 1, &:m2))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([h2, kw], c.call(**h2, &:m2))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([h3, kw], c.call(**h3, &:m2))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+      assert_equal([h3, kw], c.call(a: 1, **h2, &:m2))
+    end
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_, arg=1, **args)
+      [arg=1, args]
+    end
+    assert_equal([1, kw], c.call(**{}, &:m2))
+    assert_equal([1, kw], c.call(**kw, &:m2))
+    assert_equal([1, h], c.call(**h, &:m2))
+    assert_equal([1, h], c.call(a: 1, &:m2))
+    assert_equal([1, h2], c.call(**h2, &:m2))
+    assert_equal([1, h3], c.call(**h3, &:m2))
+    assert_equal([1, h3], c.call(a: 1, **h2, &:m2))
+  end
+end
