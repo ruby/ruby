@@ -6220,7 +6220,7 @@ env_update(VALUE env, VALUE hash)
  *
  *  Each named key is a symbol you can access in hash:
  *
- *    options[:font_size]  #=> 10
+ *    options[:font_size]  # => 10
  *
  *  A Hash can also be created through its ::new method:
  *
@@ -6240,7 +6240,7 @@ env_update(VALUE env, VALUE hash)
  *
  *  Accessing a value in a Hash requires using its key:
  *
- *    puts grades["Jane Doe"] #=> 0
+ *    puts grades["Jane Doe"] # => 0
  *
  *  === Common Uses
  *
