@@ -236,8 +236,8 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
 }
 
 /* Caller should keep the reference to the return value until argv becomes useless. */
-static VALUE
-add_empty_keyword(int *argc, const VALUE **argv, int *kw_splat)
+MJIT_FUNC_EXPORTED VALUE
+rb_adjust_argv_kw_splat(int *argc, const VALUE **argv, int *kw_splat)
 {
     if (*kw_splat == RB_PASS_CALLED_KEYWORDS || *kw_splat == RB_PASS_EMPTY_KEYWORDS) {
         if (*kw_splat == RB_PASS_EMPTY_KEYWORDS || rb_empty_keyword_given_p()) {
@@ -273,7 +273,7 @@ rb_vm_call(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc, const VAL
 VALUE
 rb_vm_call_kw(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me, int kw_splat)
 {
-    VALUE v = add_empty_keyword(&argc, &argv, &kw_splat);
+    VALUE v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
     VALUE ret = rb_vm_call0(ec, recv, id, argc, argv, me, kw_splat);
     rb_free_tmp_buffer(&v);
     return ret;
@@ -298,7 +298,7 @@ vm_call_super(rb_execution_context_t *ec, int argc, const VALUE *argv, int kw_sp
     id = me->def->original_id;
     me = rb_callable_method_entry(klass, id);
 
-    v = add_empty_keyword(&argc, &argv, &kw_splat);
+    v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
     if (!me) {
         ret = method_missing(recv, id, argc, argv, MISSING_SUPER, kw_splat);
     }
@@ -953,7 +953,7 @@ rb_funcallv(VALUE recv, ID mid, int argc, const VALUE *argv)
 VALUE
 rb_funcallv_kw(VALUE recv, ID mid, int argc, const VALUE *argv, int kw_splat)
 {
-    VALUE v = add_empty_keyword(&argc, &argv, &kw_splat);
+    VALUE v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
     VALUE ret = rb_call(recv, mid, argc, argv, kw_splat ? CALL_FCALL_KW : CALL_FCALL);
     rb_free_tmp_buffer(&v);
     return ret;
@@ -1023,7 +1023,7 @@ rb_funcall_with_block_kw(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE 
         vm_passed_block_handler_set(GET_EC(), passed_procval);
     }
 
-    VALUE v = add_empty_keyword(&argc, &argv, &kw_splat);
+    VALUE v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
     VALUE ret = rb_call(recv, mid, argc, argv, kw_splat ? CALL_PUBLIC_KW : CALL_PUBLIC);
     rb_free_tmp_buffer(&v);
     return ret;
@@ -1390,7 +1390,7 @@ rb_block_call_kw(VALUE obj, ID mid, int argc, const VALUE * argv,
 {
     struct iter_method_arg arg;
 
-    VALUE v = add_empty_keyword(&argc, &argv, &kw_splat);
+    VALUE v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
     arg.obj = obj;
     arg.mid = mid;
     arg.argc = argc;

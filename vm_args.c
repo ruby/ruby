@@ -14,6 +14,7 @@ NORETURN(static void argument_kw_error(rb_execution_context_t *ec, const rb_iseq
 VALUE rb_keyword_error_new(const char *error, VALUE keys); /* class.c */
 static VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv,
                             enum method_missing_reason call_status, int kw_splat);
+extern VALUE rb_adjust_argv_kw_splat(int *argc, const VALUE **argv, int *kw_splat);
 
 struct args_info {
     /* basic args info */
@@ -1051,6 +1052,9 @@ refine_sym_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
     rb_execution_context_t *ec;
     const VALUE symbol = RARRAY_AREF(callback_arg, 0);
     const VALUE refinements = RARRAY_AREF(callback_arg, 1);
+    int kw_splat = RB_PASS_CALLED_KEYWORDS;
+    VALUE v;
+    VALUE ret;
     VALUE klass;
 
     if (argc-- < 1) {
@@ -1071,10 +1075,15 @@ refine_sym_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
     if (!NIL_P(blockarg)) {
 	vm_passed_block_handler_set(ec, blockarg);
     }
+    v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
     if (!me) {
-        return method_missing(obj, mid, argc, argv, MISSING_NOENTRY, VM_NO_KEYWORDS);
+        ret = method_missing(obj, mid, argc, argv, MISSING_NOENTRY, kw_splat);
     }
-    return rb_vm_call0(ec, obj, mid, argc, argv, me, VM_NO_KEYWORDS);
+    else {
+        ret = rb_vm_call0(ec, obj, mid, argc, argv, me, kw_splat);
+    }
+    rb_free_tmp_buffer(&v);
+    return ret;
 }
 
 static VALUE
