@@ -1713,19 +1713,19 @@ set_proc_default(VALUE hash, VALUE proc)
  *     h = Hash.new("Go Fish")
  *     h["a"] = 100
  *     h["b"] = 200
- *     h["a"]           # => 100
- *     h["c"]           # => "Go Fish"
+ *     h["a"]           #=> 100
+ *     h["c"]           #=> "Go Fish"
  *     # The following alters the single default object
- *     h["c"].upcase!   # => "GO FISH"
- *     h["d"]           # => "GO FISH"
- *     h.keys           # => ["a", "b"]
+ *     h["c"].upcase!   #=> "GO FISH"
+ *     h["d"]           #=> "GO FISH"
+ *     h.keys           #=> ["a", "b"]
  *
  *     # While this creates a new default object each time
  *     h = Hash.new { |hash, key| hash[key] = "Go Fish: #{key}" }
- *     h["c"]           # => "Go Fish: c"
- *     h["c"].upcase!   # => "GO FISH: C"
- *     h["d"]           # => "Go Fish: d"
- *     h.keys           # => ["c", "d"]
+ *     h["c"]           #=> "Go Fish: c"
+ *     h["c"].upcase!   #=> "GO FISH: C"
+ *     h["d"]           #=> "Go Fish: d"
+ *     h.keys           #=> ["c", "d"]
  *
  */
 
@@ -1764,9 +1764,9 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
  *  The second and third form take a single argument which is either an array
  *  of key-value pairs or an object convertible to a hash.
  *
- *     Hash["a", 100, "b", 200]             # => {"a"=>100, "b"=>200}
- *     Hash[ [ ["a", 100], ["b", 200] ] ]   # => {"a"=>100, "b"=>200}
- *     Hash["a" => 100, "b" => 200]         # => {"a"=>100, "b"=>200}
+ *     Hash["a", 100, "b", 200]             #=> {"a"=>100, "b"=>200}
+ *     Hash[ [ ["a", 100], ["b", 200] ] ]   #=> {"a"=>100, "b"=>200}
+ *     Hash["a" => 100, "b" => 200]         #=> {"a"=>100, "b"=>200}
  */
 
 static VALUE
@@ -1846,8 +1846,8 @@ rb_check_hash_type(VALUE hash)
  *  Returns converted hash or nil if <i>obj</i> cannot be converted
  *  for any reason.
  *
- *     Hash.try_convert({1=>2})   # => {1=>2}
- *     Hash.try_convert("1=>2")   # => nil
+ *     Hash.try_convert({1=>2})   #=> {1=>2}
+ *     Hash.try_convert("1=>2")   #=> nil
  */
 static VALUE
 rb_hash_s_try_convert(VALUE dummy, VALUE hash)
@@ -1885,11 +1885,11 @@ rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
  *     a = [ "a", "b" ]
  *     c = [ "c", "d" ]
  *     h = { a => 100, c => 300 }
- *     h[a]       # => 100
+ *     h[a]       #=> 100
  *     a[0] = "z"
- *     h[a]       # => nil
- *     h.rehash   # => {["z", "b"]=>100, ["c", "d"]=>300}
- *     h[a]       # => 100
+ *     h[a]       #=> nil
+ *     h.rehash   #=> {["z", "b"]=>100, ["c", "d"]=>300}
+ *     h[a]       #=> 100
  */
 
 VALUE
@@ -1966,8 +1966,8 @@ rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
  *  Hash::new for details).
  *
  *     h = { "a" => 100, "b" => 200 }
- *     h["a"]   # => 100
- *     h["c"]   # => nil
+ *     h["a"]   #=> 100
+ *     h["c"]   #=> nil
  *
  */
 
@@ -2015,9 +2015,9 @@ rb_hash_lookup(VALUE hash, VALUE key)
  *  then that will be run and its result returned.
  *
  *     h = { "a" => 100, "b" => 200 }
- *     h.fetch("a")                            # => 100
- *     h.fetch("z", "go fish")                 # => "go fish"
- *     h.fetch("z") { |el| "go fish, #{el}"}   # => "go fish, z"
+ *     h.fetch("a")                            #=> 100
+ *     h.fetch("z", "go fish")                 #=> "go fish"
+ *     h.fetch("z") { |el| "go fish, #{el}"}   #=> "go fish, z"
  *
  *  The following example shows that an exception is raised if the key
  *  is not found and a default value is not supplied.
@@ -2082,17 +2082,17 @@ rb_hash_fetch(VALUE hash, VALUE key)
  *  <i>hsh</i>[<i>key</i>] if <i>key</i> did not exist in <i>hsh</i>.
  *  See also Hash::new and Hash#default=.
  *
- *     h = Hash.new                            # => {}
- *     h.default                               # => nil
- *     h.default(2)                            # => nil
+ *     h = Hash.new                            #=> {}
+ *     h.default                               #=> nil
+ *     h.default(2)                            #=> nil
  *
- *     h = Hash.new("cat")                     # => {}
- *     h.default                               # => "cat"
- *     h.default(2)                            # => "cat"
+ *     h = Hash.new("cat")                     #=> {}
+ *     h.default                               #=> "cat"
+ *     h.default(2)                            #=> "cat"
  *
- *     h = Hash.new {|h,k| h[k] = k.to_i*10}   # => {}
- *     h.default                               # => nil
- *     h.default(2)                            # => 20
+ *     h = Hash.new {|h,k| h[k] = k.to_i*10}   #=> {}
+ *     h.default                               #=> nil
+ *     h.default(2)                            #=> 20
  */
 
 static VALUE
@@ -2121,14 +2121,14 @@ rb_hash_default(int argc, VALUE *argv, VALUE hash)
  *
  *     h = { "a" => 100, "b" => 200 }
  *     h.default = "Go fish"
- *     h["a"]     # => 100
- *     h["z"]     # => "Go fish"
+ *     h["a"]     #=> 100
+ *     h["z"]     #=> "Go fish"
  *     # This doesn't do what you might hope...
  *     h.default = proc do |hash, key|
  *       hash[key] = key + key
  *     end
- *     h[2]       # => #<Proc:0x401b3948@-:6>
- *     h["cat"]   # => #<Proc:0x401b3948@-:6>
+ *     h[2]       #=> #<Proc:0x401b3948@-:6>
+ *     h["cat"]   #=> #<Proc:0x401b3948@-:6>
  */
 
 static VALUE
@@ -2146,11 +2146,11 @@ rb_hash_set_default(VALUE hash, VALUE ifnone)
  *  If Hash::new was invoked with a block, return that
  *  block, otherwise return <code>nil</code>.
  *
- *     h = Hash.new {|h,k| h[k] = k*k }   # => {}
- *     p = h.default_proc                 # => #<Proc:0x401b3d08@-:1>
- *     a = []                             # => []
+ *     h = Hash.new {|h,k| h[k] = k*k }   #=> {}
+ *     p = h.default_proc                 #=> #<Proc:0x401b3d08@-:1>
+ *     a = []                             #=> []
  *     p.call(a, 2)
- *     a                                  # => [nil, nil, 4]
+ *     a                                  #=> [nil, nil, 4]
  */
 
 
@@ -2172,8 +2172,8 @@ rb_hash_default_proc(VALUE hash)
  *     h.default_proc = proc do |hash, key|
  *       hash[key] = key + key
  *     end
- *     h[2]       # => 4
- *     h["cat"]   # => "catcat"
+ *     h[2]       #=> 4
+ *     h["cat"]   #=> "catcat"
  */
 
 VALUE
@@ -2217,9 +2217,9 @@ key_i(VALUE key, VALUE value, VALUE arg)
  *  not found, returns <code>nil</code>.
  *
  *     h = { "a" => 100, "b" => 200, "c" => 300, "d" => 300 }
- *     h.key(200)   # => "b"
- *     h.key(300)   # => "c"
- *     h.key(999)   # => nil
+ *     h.key(200)   #=> "b"
+ *     h.key(300)   #=> "c"
+ *     h.key(999)   #=> nil
  *
  */
 
@@ -2303,9 +2303,9 @@ rb_hash_delete(VALUE hash, VALUE key)
  *  <i>block</i>.
  *
  *     h = { "a" => 100, "b" => 200 }
- *     h.delete("a")                              # => 100
- *     h.delete("z")                              # => nil
- *     h.delete("z") { |el| "#{el} not found" }   # => "z not found"
+ *     h.delete("a")                              #=> 100
+ *     h.delete("z")                              #=> nil
+ *     h.delete("z") { |el| "#{el} not found" }   #=> "z not found"
  *
  */
 
@@ -2354,8 +2354,8 @@ shift_i_safe(VALUE key, VALUE value, VALUE arg)
  *  the hash's default value if the hash is empty.
  *
  *     h = { 1 => "a", 2 => "b", 3 => "c" }
- *     h.shift   # => [1, "a"]
- *     h         # => {2=>"b", 3=>"c"}
+ *     h.shift   #=> [1, "a"]
+ *     h         #=> {2=>"b", 3=>"c"}
  */
 
 static VALUE
@@ -2423,7 +2423,7 @@ hash_enum_size(VALUE hash, VALUE args, VALUE eobj)
  *  If no block is given, an enumerator is returned instead.
  *
  *     h = { "a" => 100, "b" => 200, "c" => 300 }
- *     h.delete_if {|key, value| key >= "b" }   # => {"a"=>100}
+ *     h.delete_if {|key, value| key >= "b" }   #=> {"a"=>100}
  *
  */
 
@@ -2480,8 +2480,8 @@ reject_i(VALUE key, VALUE value, VALUE result)
  *  If no block is given, an enumerator is returned instead.
  *
  *     h = { "a" => 100, "b" => 200, "c" => 300 }
- *     h.reject {|k,v| k < "b"}  # => {"b" => 200, "c" => 300}
- *     h.reject {|k,v| v > 100}  # => {"a" => 100}
+ *     h.reject {|k,v| k < "b"}  #=> {"b" => 200, "c" => 300}
+ *     h.reject {|k,v| v > 100}  #=> {"a" => 100}
  */
 
 VALUE
@@ -2510,8 +2510,8 @@ rb_hash_reject(VALUE hash)
  *  Returns a hash containing only the given keys and their values.
  *
  *     h = { a: 100, b: 200, c: 300 }
- *     h.slice(:a)           # => {:a=>100}
- *     h.slice(:b, :c, :d)   # => {:b=>200, :c=>300}
+ *     h.slice(:a)           #=> {:a=>100}
+ *     h.slice(:b, :c, :d)   #=> {:b=>200, :c=>300}
  */
 
 static VALUE
@@ -2543,7 +2543,7 @@ rb_hash_slice(int argc, VALUE *argv, VALUE hash)
  * Also see Hash.select.
  *
  *   h = { "cat" => "feline", "dog" => "canine", "cow" => "bovine" }
- *   h.values_at("cow", "cat")  # => ["bovine", "feline"]
+ *   h.values_at("cow", "cat")  #=> ["bovine", "feline"]
  */
 
 VALUE
@@ -2569,9 +2569,9 @@ rb_hash_values_at(int argc, VALUE *argv, VALUE hash)
  *
  *   h = { "cat" => "feline", "dog" => "canine", "cow" => "bovine" }
  *
- *   h.fetch_values("cow", "cat")                   # => ["bovine", "feline"]
+ *   h.fetch_values("cow", "cat")                   #=> ["bovine", "feline"]
  *   h.fetch_values("cow", "bird")                  # raises KeyError
- *   h.fetch_values("cow", "bird") { |k| k.upcase } # => ["bovine", "BIRD"]
+ *   h.fetch_values("cow", "bird") { |k| k.upcase } #=> ["bovine", "BIRD"]
  */
 
 VALUE
@@ -2607,8 +2607,8 @@ select_i(VALUE key, VALUE value, VALUE result)
  *  If no block is given, an enumerator is returned instead.
  *
  *     h = { "a" => 100, "b" => 200, "c" => 300 }
- *     h.select {|k,v| k > "a"}  # => {"b" => 200, "c" => 300}
- *     h.select {|k,v| v < 200}  # => {"a" => 100}
+ *     h.select {|k,v| k > "a"}  #=> {"b" => 200, "c" => 300}
+ *     h.select {|k,v| v < 200}  #=> {"a" => 100}
  *
  *  Hash#filter is an alias for Hash#select.
  */
@@ -2698,8 +2698,8 @@ clear_i(VALUE key, VALUE value, VALUE dummy)
  *
  *  Removes all key-value pairs from <i>hsh</i>.
  *
- *     h = { "a" => 100, "b" => 200 }   # => {"a"=>100, "b"=>200}
- *     h.clear                          # => {}
+ *     h = { "a" => 100, "b" => 200 }   #=> {"a"=>100, "b"=>200}
+ *     h.clear                          #=> {}
  *
  */
 
@@ -2771,9 +2771,9 @@ NOINSERT_UPDATE_CALLBACK(hash_aset_str)
  *     h = { "a" => 100, "b" => 200 }
  *     h["a"] = 9
  *     h["c"] = 4
- *     h   # => {"a"=>9, "b"=>200, "c"=>4}
- *     h.store("d", 42) # => 42
- *     h   # => {"a"=>9, "b"=>200, "c"=>4, "d"=>42}
+ *     h   #=> {"a"=>9, "b"=>200, "c"=>4}
+ *     h.store("d", 42) #=> 42
+ *     h   #=> {"a"=>9, "b"=>200, "c"=>4, "d"=>42}
  *
  *  +key+ should not have its value changed while it is in use as a key (an
  *  <tt>unfrozen String</tt> passed as a key will be duplicated and frozen).
@@ -2781,8 +2781,8 @@ NOINSERT_UPDATE_CALLBACK(hash_aset_str)
  *     a = "a"
  *     b = "b".freeze
  *     h = { a => 100, b => 200 }
- *     h.key(100).equal? a # => false
- *     h.key(200).equal? b # => true
+ *     h.key(100).equal? a #=> false
+ *     h.key(200).equal? b #=> true
  *
  */
 
@@ -2858,7 +2858,7 @@ rb_hash_initialize_copy(VALUE hash, VALUE hash2)
  *  <i>other_hash</i>.
  *
  *     h = { "a" => 100, "b" => 200 }
- *     h.replace({ "c" => 300, "d" => 400 })   # => {"c"=>300, "d"=>400}
+ *     h.replace({ "c" => 300, "d" => 400 })   #=> {"c"=>300, "d"=>400}
  *
  */
 
@@ -2899,10 +2899,10 @@ rb_hash_replace(VALUE hash, VALUE hash2)
  *  Returns the number of key-value pairs in the hash.
  *
  *     h = { "d" => 100, "a" => 200, "v" => 300, "e" => 400 }
- *     h.size          # => 4
- *     h.delete("a")   # => 200
- *     h.size          # => 3
- *     h.length        # => 3
+ *     h.size          #=> 4
+ *     h.delete("a")   #=> 200
+ *     h.size          #=> 3
+ *     h.length        #=> 3
  *
  *  Hash#length is an alias for Hash#size.
  */
@@ -2925,7 +2925,7 @@ rb_hash_size_num(VALUE hash)
  *
  *  Returns <code>true</code> if <i>hsh</i> contains no key-value pairs.
  *
- *     {}.empty?   # => true
+ *     {}.empty?   #=> true
  *
  */
 
@@ -3070,10 +3070,10 @@ transform_keys_i(VALUE key, VALUE value, VALUE result)
  *  This method does not change the values.
  *
  *     h = { a: 1, b: 2, c: 3 }
- *     h.transform_keys {|k| k.to_s }  # => { "a" => 1, "b" => 2, "c" => 3 }
- *     h.transform_keys(&:to_s)        # => { "a" => 1, "b" => 2, "c" => 3 }
+ *     h.transform_keys {|k| k.to_s }  #=> { "a" => 1, "b" => 2, "c" => 3 }
+ *     h.transform_keys(&:to_s)        #=> { "a" => 1, "b" => 2, "c" => 3 }
  *     h.transform_keys.with_index {|k, i| "#{k}.#{i}" }
- *                                     # => { "a.0" => 1, "b.1" => 2, "c.2" => 3 }
+ *                                     #=> { "a.0" => 1, "b.1" => 2, "c.2" => 3 }
  *
  *  If no block is given, an enumerator is returned instead.
  */
@@ -3103,10 +3103,10 @@ static VALUE rb_hash_flatten(int argc, VALUE *argv, VALUE hash);
  *  This method does not change the values.
  *
  *     h = { a: 1, b: 2, c: 3 }
- *     h.transform_keys! {|k| k.to_s }  # => { "a" => 1, "b" => 2, "c" => 3 }
- *     h.transform_keys!(&:to_sym)      # => { a: 1, b: 2, c: 3 }
+ *     h.transform_keys! {|k| k.to_s }  #=> { "a" => 1, "b" => 2, "c" => 3 }
+ *     h.transform_keys!(&:to_sym)      #=> { a: 1, b: 2, c: 3 }
  *     h.transform_keys!.with_index {|k, i| "#{k}.#{i}" }
- *                                      # => { "a.0" => 1, "b.1" => 2, "c.2" => 3 }
+ *                                      #=> { "a.0" => 1, "b.1" => 2, "c.2" => 3 }
  *
  *  If no block is given, an enumerator is returned instead.
  */
@@ -3146,10 +3146,10 @@ transform_values_i(VALUE key, VALUE value, VALUE result)
  *  This method does not change the keys.
  *
  *     h = { a: 1, b: 2, c: 3 }
- *     h.transform_values {|v| v * v + 1 }  # => { a: 2, b: 5, c: 10 }
- *     h.transform_values(&:to_s)           # => { a: "1", b: "2", c: "3" }
+ *     h.transform_values {|v| v * v + 1 }  #=> { a: 2, b: 5, c: 10 }
+ *     h.transform_values(&:to_s)           #=> { a: "1", b: "2", c: "3" }
  *     h.transform_values.with_index {|v, i| "#{v}.#{i}" }
- *                                          # => { a: "1.0", b: "2.1", c: "3.2" }
+ *                                          #=> { a: "1.0", b: "2.1", c: "3.2" }
  *
  *  If no block is given, an enumerator is returned instead.
  */
@@ -3177,10 +3177,10 @@ rb_hash_transform_values(VALUE hash)
  *  This method does not change the keys.
  *
  *     h = { a: 1, b: 2, c: 3 }
- *     h.transform_values! {|v| v * v + 1 }  # => { a: 2, b: 5, c: 10 }
- *     h.transform_values!(&:to_s)           # => { a: "2", b: "5", c: "10" }
+ *     h.transform_values! {|v| v * v + 1 }  #=> { a: 2, b: 5, c: 10 }
+ *     h.transform_values!(&:to_s)           #=> { a: "2", b: "5", c: "10" }
  *     h.transform_values!.with_index {|v, i| "#{v}.#{i}" }
- *                                           # => { a: "2.0", b: "5.1", c: "10.2" }
+ *                                           #=> { a: "2.0", b: "5.1", c: "10.2" }
  *
  *  If no block is given, an enumerator is returned instead.
  */
@@ -3209,7 +3209,7 @@ to_a_i(VALUE key, VALUE value, VALUE ary)
  *  value</i> <code>]</code> arrays.
  *
  *     h = { "c" => 300, "a" => 100, "d" => 400, "c" => 300  }
- *     h.to_a   # => [["c", 300], ["a", 100], ["d", 400]]
+ *     h.to_a   #=> [["c", 300], ["a", 100], ["d", 400]]
  */
 
 static VALUE
@@ -3268,7 +3268,7 @@ inspect_hash(VALUE hash, VALUE dummy, int recur)
  * Return the contents of this hash as a string.
  *
  *     h = { "c" => 300, "a" => 100, "d" => 400, "c" => 300  }
- *     h.to_s   # => "{\"c\"=>300, \"a\"=>100, \"d\"=>400}"
+ *     h.to_s   #=> "{\"c\"=>300, \"a\"=>100, \"d\"=>400}"
  */
 
 static VALUE
@@ -3366,7 +3366,7 @@ keys_i(VALUE key, VALUE value, VALUE ary)
  *  Hash#values.
  *
  *     h = { "a" => 100, "b" => 200, "c" => 300, "d" => 400 }
- *     h.keys   # => ["a", "b", "c", "d"]
+ *     h.keys   #=> ["a", "b", "c", "d"]
  *
  */
 
@@ -3413,7 +3413,7 @@ values_i(VALUE key, VALUE value, VALUE ary)
  *  also Hash#keys.
  *
  *     h = { "a" => 100, "b" => 200, "c" => 300 }
- *     h.values   # => [100, 200, 300]
+ *     h.values   #=> [100, 200, 300]
  *
  */
 
@@ -3459,8 +3459,8 @@ rb_hash_values(VALUE hash)
  *  Returns <code>true</code> if the given key is present in <i>hsh</i>.
  *
  *     h = { "a" => 100, "b" => 200 }
- *     h.has_key?("a")   # => true
- *     h.has_key?("z")   # => false
+ *     h.has_key?("a")   #=> true
+ *     h.has_key?("z")   #=> false
  *
  *  Note that #include? and #member? do not test member
  *  equality using <code>==</code> as do other Enumerables.
@@ -3500,8 +3500,8 @@ rb_hash_search_value(VALUE key, VALUE value, VALUE arg)
  *  in <i>hsh</i>.
  *
  *     h = { "a" => 100, "b" => 200 }
- *     h.value?(100)   # => true
- *     h.value?(999)   # => false
+ *     h.value?(100)   #=> true
+ *     h.value?(999)   #=> false
  */
 
 static VALUE
@@ -3608,15 +3608,15 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
  *     h2 = { 7 => 35, "c" => 2, "a" => 1 }
  *     h3 = { "a" => 1, "c" => 2, 7 => 35 }
  *     h4 = { "a" => 1, "d" => 2, "f" => 35 }
- *     h1 == h2   # => false
- *     h2 == h3   # => true
- *     h3 == h4   # => false
+ *     h1 == h2   #=> false
+ *     h2 == h3   #=> true
+ *     h3 == h4   #=> false
  *
  *  The orders of each hashes are not compared.
  *
  *     h1 = { "a" => 1, "c" => 2 }
  *     h2 = { "c" => 2, "a" => 1 }
- *     h1 == h2   # => true
+ *     h1 == h2   #=> true
  *
  */
 
@@ -3693,23 +3693,23 @@ rb_hash_invert_i(VALUE key, VALUE value, VALUE hash)
  *  the last one defined will be used, the earlier value(s) will be discarded.
  *
  *     h = { "n" => 100, "m" => 100, "y" => 300, "d" => 200, "a" => 0 }
- *     h.invert   # => {0=>"a", 100=>"m", 200=>"d", 300=>"y"}
+ *     h.invert   #=> {0=>"a", 100=>"m", 200=>"d", 300=>"y"}
  *
  *  If there is no key with the same value, Hash#invert is involutive.
  *
  *    h = { a: 1, b: 3, c: 4 }
- *    h.invert.invert == h # => true
+ *    h.invert.invert == h #=> true
  *
  *  The condition, no key with the same value, can be tested by comparing
  *  the size of inverted hash.
  *
  *    # no key with the same value
  *    h = { a: 1, b: 3, c: 4 }
- *    h.size == h.invert.size # => true
+ *    h.size == h.invert.size #=> true
  *
  *    # two (or more) keys has the same value
  *    h = { a: 1, b: 3, c: 1 }
- *    h.size == h.invert.size # => false
+ *    h.size == h.invert.size #=> false
  *
  */
 
@@ -3790,27 +3790,27 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *  its value in each +other_hash+.
  *
  *     h1 = { "a" => 100, "b" => 200 }
- *     h1.merge!          # => {"a"=>100, "b"=>200}
- *     h1                 # => {"a"=>100, "b"=>200}
+ *     h1.merge!          #=> {"a"=>100, "b"=>200}
+ *     h1                 #=> {"a"=>100, "b"=>200}
  *
  *     h1 = { "a" => 100, "b" => 200 }
  *     h2 = { "b" => 246, "c" => 300 }
- *     h1.merge!(h2)      # => {"a"=>100, "b"=>246, "c"=>300}
- *     h1                 # => {"a"=>100, "b"=>246, "c"=>300}
+ *     h1.merge!(h2)      #=> {"a"=>100, "b"=>246, "c"=>300}
+ *     h1                 #=> {"a"=>100, "b"=>246, "c"=>300}
  *
  *     h1 = { "a" => 100, "b" => 200 }
  *     h2 = { "b" => 246, "c" => 300 }
  *     h3 = { "b" => 357, "d" => 400 }
  *     h1.merge!(h2, h3)
- *                        # => {"a"=>100, "b"=>357, "c"=>300, "d"=>400}
- *     h1                 # => {"a"=>100, "b"=>357, "c"=>300, "d"=>400}
+ *                        #=> {"a"=>100, "b"=>357, "c"=>300, "d"=>400}
+ *     h1                 #=> {"a"=>100, "b"=>357, "c"=>300, "d"=>400}
  *
  *     h1 = { "a" => 100, "b" => 200 }
  *     h2 = { "b" => 246, "c" => 300 }
  *     h3 = { "b" => 357, "d" => 400 }
  *     h1.merge!(h2, h3) {|key, v1, v2| v1 }
- *                        # => {"a"=>100, "b"=>200, "c"=>300, "d"=>400}
- *     h1                 # => {"a"=>100, "b"=>200, "c"=>300, "d"=>400}
+ *                        #=> {"a"=>100, "b"=>200, "c"=>300, "d"=>400}
+ *     h1                 #=> {"a"=>100, "b"=>200, "c"=>300, "d"=>400}
  *
  *  Hash#update is an alias for Hash#merge!.
  */
@@ -3908,14 +3908,14 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
  *     h1 = { "a" => 100, "b" => 200 }
  *     h2 = { "b" => 246, "c" => 300 }
  *     h3 = { "b" => 357, "d" => 400 }
- *     h1.merge          # => {"a"=>100, "b"=>200}
- *     h1.merge(h2)      # => {"a"=>100, "b"=>246, "c"=>300}
- *     h1.merge(h2, h3)  # => {"a"=>100, "b"=>357, "c"=>300, "d"=>400}
+ *     h1.merge          #=> {"a"=>100, "b"=>200}
+ *     h1.merge(h2)      #=> {"a"=>100, "b"=>246, "c"=>300}
+ *     h1.merge(h2, h3)  #=> {"a"=>100, "b"=>357, "c"=>300, "d"=>400}
  *     h1.merge(h2) {|key, oldval, newval| newval - oldval}
- *                       # => {"a"=>100, "b"=>46,  "c"=>300}
+ *                       #=> {"a"=>100, "b"=>46,  "c"=>300}
  *     h1.merge(h2, h3) {|key, oldval, newval| newval - oldval}
- *                       # => {"a"=>100, "b"=>311, "c"=>300, "d"=>400}
- *     h1                # => {"a"=>100, "b"=>200}
+ *                       #=> {"a"=>100, "b"=>311, "c"=>300, "d"=>400}
+ *     h1                #=> {"a"=>100, "b"=>200}
  *
  */
 
@@ -3974,8 +3974,8 @@ assoc_i(VALUE key, VALUE val, VALUE arg)
  *
  *     h = {"colors"  => ["red", "blue", "green"],
  *          "letters" => ["a", "b", "c" ]}
- *     h.assoc("letters")  # => ["letters", ["a", "b", "c"]]
- *     h.assoc("foo")      # => nil
+ *     h.assoc("letters")  #=> ["letters", ["a", "b", "c"]]
+ *     h.assoc("foo")      #=> nil
  */
 
 VALUE
@@ -4035,8 +4035,8 @@ rassoc_i(VALUE key, VALUE val, VALUE arg)
  *  also Array#rassoc.
  *
  *     a = {1=> "one", 2 => "two", 3 => "three", "ii" => "two"}
- *     a.rassoc("two")    # => [2, "two"]
- *     a.rassoc("four")   # => nil
+ *     a.rassoc("two")    #=> [2, "two"]
+ *     a.rassoc("four")   #=> nil
  */
 
 VALUE
@@ -4074,8 +4074,8 @@ flatten_i(VALUE key, VALUE val, VALUE ary)
  *  <i>level</i> argument determines the level of recursion to flatten.
  *
  *     a =  {1=> "one", 2 => [2,"two"], 3 => "three"}
- *     a.flatten    # => [1, "one", 2, [2, "two"], 3, "three"]
- *     a.flatten(2) # => [1, "one", 2, 2, "two", 3, "three"]
+ *     a.flatten    #=> [1, "one", 2, [2, "two"], 3, "three"]
+ *     a.flatten(2) #=> [1, "one", 2, 2, "two", 3, "three"]
  */
 
 static VALUE
@@ -4136,8 +4136,8 @@ set_if_not_nil(VALUE key, VALUE value, VALUE hash)
  *  Returns a new hash with the nil values/key pairs removed
  *
  *     h = { a: 1, b: false, c: nil }
- *     h.compact     # => { a: 1, b: false }
- *     h             # => { a: 1, b: false, c: nil }
+ *     h.compact     #=> { a: 1, b: false }
+ *     h             #=> { a: 1, b: false, c: nil }
  *
  */
 
@@ -4159,7 +4159,7 @@ rb_hash_compact(VALUE hash)
  *  Returns nil if no changes were made, otherwise returns the hash.
  *
  *     h = { a: 1, b: false, c: nil }
- *     h.compact!     # => { a: 1, b: false }
+ *     h.compact!     #=> { a: 1, b: false }
  *
  */
 
@@ -4185,11 +4185,11 @@ rb_hash_compact_bang(VALUE hash)
  *  will consider exact same objects as same keys.
  *
  *     h1 = { "a" => 100, "b" => 200, :c => "c" }
- *     h1["a"]        # => 100
+ *     h1["a"]        #=> 100
  *     h1.compare_by_identity
- *     h1.compare_by_identity? # => true
- *     h1["a".dup]    # => nil  # different objects.
- *     h1[:c]         # => "c"  # same symbols are all same.
+ *     h1.compare_by_identity? #=> true
+ *     h1["a".dup]    #=> nil  # different objects.
+ *     h1[:c]         #=> "c"  # same symbols are all same.
  *
  */
 
@@ -4337,13 +4337,13 @@ rb_hash_any_p(int argc, VALUE *argv, VALUE hash)
  *
  *   h = { foo: {bar: {baz: 1}}}
  *
- *   h.dig(:foo, :bar, :baz)     # => 1
- *   h.dig(:foo, :zot, :xyz)     # => nil
+ *   h.dig(:foo, :bar, :baz)     #=> 1
+ *   h.dig(:foo, :zot, :xyz)     #=> nil
  *
  *   g = { foo: [10, 11, 12] }
- *   g.dig(:foo, 1)              # => 11
- *   g.dig(:foo, 1, 0)           # => TypeError: Integer does not have #dig method
- *   g.dig(:foo, :bar)           # => TypeError: no implicit conversion of Symbol into Integer
+ *   g.dig(:foo, 1)              #=> 11
+ *   g.dig(:foo, 1, 0)           #=> TypeError: Integer does not have #dig method
+ *   g.dig(:foo, :bar)           #=> TypeError: no implicit conversion of Symbol into Integer
  */
 
 static VALUE
@@ -4385,9 +4385,9 @@ hash_le(VALUE hash1, VALUE hash2)
  *
  *    h1 = {a:1, b:2}
  *    h2 = {a:1, b:2, c:3}
- *    h1 <= h2   # => true
- *    h2 <= h1   # => false
- *    h1 <= h1   # => true
+ *    h1 <= h2   #=> true
+ *    h2 <= h1   #=> false
+ *    h1 <= h1   #=> true
  */
 static VALUE
 rb_hash_le(VALUE hash, VALUE other)
@@ -4406,9 +4406,9 @@ rb_hash_le(VALUE hash, VALUE other)
  *
  *    h1 = {a:1, b:2}
  *    h2 = {a:1, b:2, c:3}
- *    h1 < h2    # => true
- *    h2 < h1    # => false
- *    h1 < h1    # => false
+ *    h1 < h2    #=> true
+ *    h2 < h1    #=> false
+ *    h1 < h1    #=> false
  */
 static VALUE
 rb_hash_lt(VALUE hash, VALUE other)
@@ -4427,9 +4427,9 @@ rb_hash_lt(VALUE hash, VALUE other)
  *
  *    h1 = {a:1, b:2}
  *    h2 = {a:1, b:2, c:3}
- *    h1 >= h2   # => false
- *    h2 >= h1   # => true
- *    h1 >= h1   # => true
+ *    h1 >= h2   #=> false
+ *    h2 >= h1   #=> true
+ *    h1 >= h1   #=> true
  */
 static VALUE
 rb_hash_ge(VALUE hash, VALUE other)
@@ -4448,9 +4448,9 @@ rb_hash_ge(VALUE hash, VALUE other)
  *
  *    h1 = {a:1, b:2}
  *    h2 = {a:1, b:2, c:3}
- *    h1 > h2    # => false
- *    h2 > h1    # => true
- *    h1 > h1    # => false
+ *    h1 > h2    #=> false
+ *    h2 > h1    #=> true
+ *    h1 > h1    #=> false
  */
 static VALUE
 rb_hash_gt(VALUE hash, VALUE other)
@@ -4475,10 +4475,10 @@ hash_proc_call(VALUE key, VALUE hash, int argc, const VALUE *argv, VALUE passed_
  *
  *   h = {a:1, b:2}
  *   hp = h.to_proc
- *   hp.call(:a)          # => 1
- *   hp.call(:b)          # => 2
- *   hp.call(:c)          # => nil
- *   [:a, :b, :c].map(&h) # => [1, 2, nil]
+ *   hp.call(:a)          #=> 1
+ *   hp.call(:b)          #=> 2
+ *   hp.call(:c)          #=> nil
+ *   [:a, :b, :c].map(&h) #=> [1, 2, nil]
  */
 static VALUE
 rb_hash_to_proc(VALUE hash)
@@ -4760,15 +4760,15 @@ env_delete(VALUE name)
  *   ENV.delete(name) { |name| block } -> nil
  *
  * Deletes the entry for +name+, if found; returns its value:
- *   ENV.delete('LINES') # => "300"
+ *   ENV.delete('LINES') #=> "300"
  * If +name+ is not found:
  * - Returns +nil+ if no block given.
  * - Calls the block, if given; returns +nil+.
  * Thus:
- *   ENV.delete('LINES') # => nil
- *   ENV.delete('COLUMNS') { |name| name } # => nil
+ *   ENV.delete('LINES') #=> nil
+ *   ENV.delete('COLUMNS') { |name| name } #=> nil
  * Raises TypeError if +name+ is not a String :
- *   ENV.delete(1) # => TypeError raised
+ *   ENV.delete(1) #=> TypeError raised
  */
 static VALUE
 env_delete_m(VALUE obj, VALUE name)
@@ -4785,11 +4785,11 @@ env_delete_m(VALUE obj, VALUE name)
  *   ENV[name] -> value or nil
  *
  * Returns the value for +name+, if found:
- *   ENV['LINES']  # => "300"
+ *   ENV['LINES']  #=> "300"
  * Returns +nil+ if +name+ is not found:
- *   ENV['NOSUCH'] # => nil
+ *   ENV['NOSUCH'] #=> nil
  * Raises TypeError if +name+ is not a String :
- *   ENV[1] = 'FOO' # => TypeError raised
+ *   ENV[1] = 'FOO' #=> TypeError raised
  */
 static VALUE
 rb_f_getenv(VALUE obj, VALUE name)
@@ -4812,18 +4812,18 @@ rb_f_getenv(VALUE obj, VALUE name)
  *   ENV.fetch(name, default)         -> value or default
  *
  * Returns the value for the ENV entry whose name is +name+:
- *   ENV.fetch('LINES') # => "300"
+ *   ENV.fetch('LINES') #=> "300"
  *
  * If the given name does not exist:
  * - If block given, calls the block with +name+; returns block return value.
  * - Otherwise, if +default+ given, returns +default+.
  * - Otherwise, raises KeyError.
  * Thus:
- *   ENV.fetch('NOSUCH') { |name| name } # => "NOSUCH"
- *   ENV.fetch('NOSUCH', 'Nope') # => "Nope"
- *   ENV.fetch('NOSUCH') # => KeyError raised
+ *   ENV.fetch('NOSUCH') { |name| name } #=> "NOSUCH"
+ *   ENV.fetch('NOSUCH', 'Nope') #=> "Nope"
+ *   ENV.fetch('NOSUCH') #=> KeyError raised
  * Raises TypeError if +name+ is not a String :
- *   Env.fetch(1) # => TypeError raised
+ *   Env.fetch(1) #=> TypeError raised
  */
 static VALUE
 env_fetch(int argc, VALUE *argv, VALUE _)
@@ -5114,18 +5114,18 @@ ruby_unsetenv(const char *name)
  * ENV.store is an alias for ENV.[]=.
  *
  * Creates or updates the ENV entry whose name is +name+, assigning it value +value+, and returning +value+:
- *   ENV['FOO'] = 'BAR'  # => "BAR"
- *   ENV.store('FOO', 'BAR') # => "BAR"
+ *   ENV['FOO'] = 'BAR'  #=> "BAR"
+ *   ENV.store('FOO', 'BAR') #=> "BAR"
  * For +nil+ +value+, deletes the ENV entry whose name is +name+, returning +nil+:
- *   ENV['FOO'] = nil    # => nil
- *   ENV.store('FOO', nil) # => nil
- *   ENV.include?('FOO') # => false
+ *   ENV['FOO'] = nil    #=> nil
+ *   ENV.store('FOO', nil) #=> nil
+ *   ENV.include?('FOO') #=> false
  * Raises TypeError if +name+ is not a String :
- *   ENV[1] = 'BAR' # => TypeError raised
- *   ENV.store(1, 'BAR') # => TypeError raised
+ *   ENV[1] = 'BAR' #=> TypeError raised
+ *   ENV.store(1, 'BAR') #=> TypeError raised
  * Raises TypeError if +value+ is not a String :
- *   ENV['BAR'] = 1 # => TypeError raised
- *   ENV.store('BAR', 1) # => TypeErorr raised
+ *   ENV['BAR'] = 1 #=> TypeError raised
+ *   ENV.store('BAR', 1) #=> TypeErorr raised
  */
 static VALUE
 env_aset_m(VALUE obj, VALUE nm, VALUE val)
@@ -5192,9 +5192,9 @@ env_keys(void)
  *
  * Returns all ENV names in an Array :
  *   ENV.clear
- *   ENV['FOO'] = '0' # => "0"
- *   ENV['BAR'] = '1' # => "1"
- *   ENV.keys # => ["BAR", "FOO"]
+ *   ENV['FOO'] = '0' #=> "0"
+ *   ENV['BAR'] = '1' #=> "1"
+ *   ENV.keys #=> ["BAR", "FOO"]
  */
 
 static VALUE
@@ -5226,11 +5226,11 @@ rb_env_size(VALUE ehash, VALUE args, VALUE eobj)
  *
  * Calls the block, if given, with the name from each ENV entry; returns ENV :
  *   count = 0
- *   ENV.each_key { |name| count += 1 } # => ENV
- *   ENV.count # => 46
+ *   ENV.each_key { |name| count += 1 } #=> ENV
+ *   ENV.count #=> 46
  *
  * Returns an Enumerator if no block given:
- *   ENV.each_key # => Enumerator
+ *   ENV.each_key #=> Enumerator
  */
 static VALUE
 env_each_key(VALUE ehash)
@@ -5270,9 +5270,9 @@ env_values(void)
  *   ENV.values -> Array
  *
  * Returns ENV values as an Array :
- *   ENV.size # => 46
- *   values = ENV.values # => Array
- *   values.size # => 46
+ *   ENV.size #=> 46
+ *   values = ENV.values #=> Array
+ *   values.size #=> 46
  */
 
 static VALUE
@@ -5289,11 +5289,11 @@ env_f_values(VALUE _)
  *
  * Calls block, if given, with the value of each ENV entry; returns ENV :
  *   count = 0
- *   ENV.each_value { |name| count += 1 } # => ENV
- *   ENV.count # => 46
+ *   ENV.each_value { |name| count += 1 } #=> ENV
+ *   ENV.count #=> 46
  *
  * Returns an Enumerator if no block given:
- *   ENV.each_value # => Enumerator
+ *   ENV.each_value #=> Enumerator
  */
 static VALUE
 env_each_value(VALUE ehash)
@@ -5320,12 +5320,12 @@ env_each_value(VALUE ehash)
  *
  * Calls the block, if given, with the name and value for each ENV entry; returns ENV :
  *   entry_count = 0
- *   ENV.each_pair { |name, value| entry_count += 1 } # => ENV
- *   entry_count # => 46
- *   ENV.size # => 46
+ *   ENV.each_pair { |name, value| entry_count += 1 } #=> ENV
+ *   entry_count #=> 46
+ *   ENV.size #=> 46
  *
  * Returns an Enumerator if no block given:
- *   ENV.each_pair # => Enumerator
+ *   ENV.each_pair #=> Enumerator
  */
 static VALUE
 env_each_pair(VALUE ehash)
@@ -5368,12 +5368,12 @@ env_each_pair(VALUE ehash)
  *
  * Deletes each environment variable for which the return value of the block is truthy;
  * returns ENV if any entry was deleted, else +nil+:
- *   ENV.size # => 45
- *   ENV.reject! { |name, value| name.match(/PROCESSOR/) } # => ENV
- *   ENV.size # => 41
+ *   ENV.size #=> 45
+ *   ENV.reject! { |name, value| name.match(/PROCESSOR/) } #=> ENV
+ *   ENV.size #=> 41
  *   ENV.reject! { |name, value| name.match(/PROCESSOR/) } # +nil
  * Returns an Enumerator if no block given:
- *   ENV.reject! # => Enumerator
+ *   ENV.reject! #=> Enumerator
  */
 
 static VALUE
@@ -5408,12 +5408,12 @@ env_reject_bang(VALUE ehash)
  *
  * Deletes each environment variable for which the return value of the block is truthy;
  * returns the updated ENV :
- *   ENV.size # => 45
+ *   ENV.size #=> 45
  *   ENV.delete_if { |name, value| name.match(/PROCESSOR/) }
- *   ENV.size # => 41
+ *   ENV.size #=> 41
  *
  * Returns an Enumerator if no block given:
- *   ENV.delete_if # => Enumerator
+ *   ENV.delete_if #=> Enumerator
  */
 static VALUE
 env_delete_if(VALUE ehash)
@@ -5428,9 +5428,9 @@ env_delete_if(VALUE ehash)
  *   ENV.values_at(*names) -> Array
  *
  * Returns an Array of values whose names are arguments +*names+:
- *   ENV.values_at('LINES', 'COLUMNS') # => ["300", "158"]
+ *   ENV.values_at('LINES', 'COLUMNS') #=> ["300", "158"]
  * Raises TypeError if any argument is not a String :
- *   ENV.values_at('LINES', 1) # => TypeError raised
+ *   ENV.values_at('LINES', 1) #=> TypeError raised
  * See also ENV.select.
  */
 static VALUE
@@ -5456,12 +5456,12 @@ env_values_at(int argc, VALUE *argv, VALUE _)
  * ENV.filter is an alias for ENV.select.
  *
  * Returns a Hash of those +name+/+value+ pairs for which the block is truthy:
- *   h = ENV.select { |name, value| name.length < 3 } # => {"OS"=>"Windows_NT"}
+ *   h = ENV.select { |name, value| name.length < 3 } #=> {"OS"=>"Windows_NT"}
  *   h.class 3 => Hash
- *   h.size # => 1
+ *   h.size #=> 1
  *
  * Returns an Enumerator if no block given:
- *   ENV.select # => Enumerator
+ *   ENV.select #=> Enumerator
  */
 static VALUE
 env_select(VALUE ehash)
@@ -5498,14 +5498,14 @@ env_select(VALUE ehash)
  *
  * Removes from ENV each entry for which the block returns +false+ or +nil+.
  * Returns ENV if any entry removed, else +nil+:
- *   ENV.size # => 46
- *   ENV.select! { |name, value| name.size < 10} # => ENV
- *   ENV.size # => 19
- *   ENV.select! { |name, value| name.size < 10} # => nil
- *   ENV.size # => 19
+ *   ENV.size #=> 46
+ *   ENV.select! { |name, value| name.size < 10} #=> ENV
+ *   ENV.size #=> 19
+ *   ENV.select! { |name, value| name.size < 10} #=> nil
+ *   ENV.size #=> 19
  *
  * Returns an Enumerator if no block given:
- *   ENV.select! # => Enumerator
+ *   ENV.select! #=> Enumerator
  */
 static VALUE
 env_select_bang(VALUE ehash)
@@ -5538,12 +5538,12 @@ env_select_bang(VALUE ehash)
  *   ENV.keep_if                         -> Enumerator
  *
  * Deletes each ENV entry for which the block returns +false+ or +nil+; returns ENV :
- *   ENV.size # => 46
- *   ENV.keep_if { |name, value| name.size < 3 } # => ENV
- *   ENV.size # => 1
+ *   ENV.size #=> 46
+ *   ENV.keep_if { |name, value| name.size < 3 } #=> ENV
+ *   ENV.size #=> 1
  *
  * Returns an Enumerator if no block given:
- *   ENV.keep_if # => Enumerator
+ *   ENV.keep_if #=> Enumerator
  */
 static VALUE
 env_keep_if(VALUE ehash)
@@ -5558,11 +5558,11 @@ env_keep_if(VALUE ehash)
  *   ENV.slice(*names) -> Hash
  *
  * Returns a Hash containing a key/value pair for each name given by the arguments:
- *   h = ENV.slice('LINES', 'COLUMNS') # => {"LINES"=>"300", "COLUMNS"=>"158"}
- *   h.class # => Hash
- *   h.size # => 2
+ *   h = ENV.slice('LINES', 'COLUMNS') #=> {"LINES"=>"300", "COLUMNS"=>"158"}
+ *   h.class #=> Hash
+ *   h.size #=> 2
  * Raises TypeError if any argument is not a String :
- *   ENV.slice('LINES', 1) # => TypeError raised
+ *   ENV.slice('LINES', 1) #=> TypeError raised
  */
 static VALUE
 env_slice(int argc, VALUE *argv, VALUE _)
@@ -5607,9 +5607,9 @@ rb_env_clear(void)
  *   ENV.clear -> ENV
  *
  * Removes every environment variable; returns the now-empty ENV :
- *   ENV.size  # => 45
- *   ENV.clear # => ENV
- *   ENV.size  # => 0
+ *   ENV.size  #=> 45
+ *   ENV.clear #=> ENV
+ *   ENV.size  #=> 0
  */
 static VALUE
 env_clear(VALUE _)
@@ -5622,7 +5622,7 @@ env_clear(VALUE _)
  *   ENV.to_s -> "ENV"
  *
  * Returns String "ENV":
- *   ENV.to_s # => "ENV"
+ *   ENV.to_s #=> "ENV"
  */
 static VALUE
 env_to_s(VALUE _)
@@ -5638,7 +5638,7 @@ env_to_s(VALUE _)
  *   ENV.clear
  *   ENV['FOO'] = "One"
  *   ENV['BAR'] = "Two"
- *   ENV.inspect # => "{"BAR"=>"Two", "FOO"=>"One"}"
+ *   ENV.inspect #=> "{"BAR"=>"Two", "FOO"=>"One"}"
  */
 static VALUE
 env_inspect(VALUE _)
@@ -5677,12 +5677,12 @@ env_inspect(VALUE _)
  * Returns an Array formed from the entries in ENV.
  * Each ENV entry's name and value are formed into a 2-element Array
  * that becomes an element in the returned Array :
- *    ENV.clear # => ENV
- *    ENV['FOO'] = '0' # => "0"
- *    ENV['BAR'] = '1' # => "1"
- *    ary = ENV.to_a # => [["BAR", "1"], ["FOO", "0"]]
- *    ary.class # => Array
- *    ary.size # => 2
+ *    ENV.clear #=> ENV
+ *    ENV['FOO'] = '0' #=> "0"
+ *    ENV['BAR'] = '1' #=> "1"
+ *    ary = ENV.to_a #=> [["BAR", "1"], ["FOO", "0"]]
+ *    ary.class #=> Array
+ *    ary.size #=> 2
  */
 static VALUE
 env_to_a(VALUE _)
@@ -5709,7 +5709,7 @@ env_to_a(VALUE _)
  *   ENV.rehash -> nil
  *
  * Does nothing;  it is provided for compatibility with Hash.  Returns nil.
- *   ENV.rehash # => nil
+ *   ENV.rehash #=> nil
  */
 static VALUE
 env_none(VALUE _)
@@ -5725,11 +5725,11 @@ env_none(VALUE _)
  * ENV.length is an alias for ENV.size.
  *
  * Returns the number of ENV entries:
- *   ENV.length # => 46
- *   ENV['FOO'] = '0' # => "0"
- *   ENV.length # => 47
- *   ENV.clear # => ENV
- *   ENV.length # => 0
+ *   ENV.length #=> 46
+ *   ENV['FOO'] = '0' #=> "0"
+ *   ENV.length #=> 47
+ *   ENV.clear #=> ENV
+ *   ENV.length #=> 0
  */
 static VALUE
 env_size(VALUE _)
@@ -5749,11 +5749,11 @@ env_size(VALUE _)
  *   ENV.empty? -> true or false
  *
  * Returns +true+ when there are no ENV entries, otherwise +false+:
- *    ENV.size # => 46
-  *   ENV.empty? # => false
-  *   ENV.clear # => ENV
-  *   ENV.size # => 0
-  *   ENV.empty? # => true
+ *    ENV.size #=> 46
+  *   ENV.empty? #=> false
+  *   ENV.clear #=> ENV
+  *   ENV.size #=> 0
+  *   ENV.empty? #=> true
  */
 static VALUE
 env_empty_p(VALUE _)
@@ -5779,12 +5779,12 @@ env_empty_p(VALUE _)
  * Methods ENV.key?, ENV.include?, and ENV.member? are aliases for ENV.has_key?.
  *
  * Returns +true+ if there is an ENV entry with the given +name+, else +false+:
- *   ENV['LINES'] # => "300"
- *   ENV.has_key?('LINES') # => true
- *   ENV.has_key?('NOSUCH') # => false
+ *   ENV['LINES'] #=> "300"
+ *   ENV.has_key?('LINES') #=> true
+ *   ENV.has_key?('NOSUCH') #=> false
  *
  * Raises TypeError if +name+ is not a String.
- *   ENV.has_key?(1) # => TypeError raised
+ *   ENV.has_key?(1) #=> TypeError raised
  */
 static VALUE
 env_has_key(VALUE env, VALUE key)
@@ -5801,9 +5801,9 @@ env_has_key(VALUE env, VALUE key)
  *   ENV.assoc(name) -> Array or nil
  *
  * Returns a 2-element Array containing +name+ and its value, if found:
- *   ENV.assoc('LINES') # => ["LINES", "300"]
+ *   ENV.assoc('LINES') #=> ["LINES", "300"]
  * Returns +nil+ if +name+ is not found:
- *   ENV.assoc('NOSUCH') # => nil
+ *   ENV.assoc('NOSUCH') #=> nil
  * Raises TypeError if +name+ is not a String :
  *   ENV.assoc(1) => TypeError raised
  */
@@ -5830,10 +5830,10 @@ env_assoc(VALUE env, VALUE key)
  * - Otherwise, +false+ if +value+ is a String.
  * - Otherwise, +nil+:
  * Thus:
- *   ENV['LINES'] # => "300"
- *   ENV.has_value?('300') # => true
- *   ENV.has_value?('NOSUCH') # => false
- *   ENV.has_value(300) # => nil
+ *   ENV['LINES'] #=> "300"
+ *   ENV.has_value?('300') #=> true
+ *   ENV.has_value?('NOSUCH') #=> false
+ *   ENV.has_value(300) #=> nil
  */
 static VALUE
 env_has_value(VALUE dmy, VALUE obj)
@@ -5864,14 +5864,14 @@ env_has_value(VALUE dmy, VALUE obj)
  *   ENV.rassoc(value) -> Array or nil
  *
  * Returns an 2-element Array of the value and name of the first-found entry whose value is +value+:
- *   ENV.clear # => ENV
- *   ENV['FOO'] = '0' # => "0"
- *   ENV['BAR'] = '1' # => "1"
- *   ENV['BAZ'] = '1' # => "1"
- *   ENV.rassoc('1') # => ["BAR", "1"]
+ *   ENV.clear #=> ENV
+ *   ENV['FOO'] = '0' #=> "0"
+ *   ENV['BAR'] = '1' #=> "1"
+ *   ENV['BAZ'] = '1' #=> "1"
+ *   ENV.rassoc('1') #=> ["BAR", "1"]
  * Returns +nil+ if +value+ is not found:
- *   ENV.rassoc('NOSUCH') # => nil
- *   ENV.rassoc(1) # => nil
+ *   ENV.rassoc('NOSUCH') #=> nil
+ *   ENV.rassoc(1) #=> nil
  */
 static VALUE
 env_rassoc(VALUE dmy, VALUE obj)
@@ -5903,13 +5903,13 @@ env_rassoc(VALUE dmy, VALUE obj)
  *   ENV.key(value) -> name or nil
  *
  * Returns the name of the first-found ENV entry whose value is +value+:
- *   ENV['FOO'] = '0' # => "0"
- *   ENV['BAR'] = '0' # => "0"
- *   ENV.key('0') # => "BAR"
+ *   ENV['FOO'] = '0' #=> "0"
+ *   ENV['BAR'] = '0' #=> "0"
+ *   ENV.key('0') #=> "BAR"
  * Returns +nil+ if +value+ is not found:
- *   ENV.key('NOSUCH') # => nil
+ *   ENV.key('NOSUCH') #=> nil
  * Raises TypeError if +value+ is not a String :
- *   ENV.key(1) # => TypeError raised
+ *   ENV.key(1) #=> TypeError raised
  */
 static VALUE
 env_key(VALUE dmy, VALUE value)
@@ -5973,10 +5973,10 @@ env_to_hash(void)
  *   ENV.to_hash -> Hash
  *
  * Returns a Hash formed from the name/value pairs of ENV :
- *   ENV.size # => 46
- *   h = ENV.to_hash # => Hash
- *   h.class # => Hash
- *   h.size # => 46
+ *   ENV.size #=> 46
+ *   h = ENV.to_hash #=> Hash
+ *   h.class #=> Hash
+ *   h.size #=> 46
  */
 
 static VALUE
@@ -5991,22 +5991,22 @@ env_f_to_hash(VALUE _)
  *   ENV.to_h {|name, value| block } -> Hash
  *
  * If no block given, returns a Hash of all name/value pairs from ENV :
- *   ENV.size # => 46
- *   h = ENV.to_h # => Hash
- *   h.class # => Hash
- *   h.size # => 46
+ *   ENV.size #=> 46
+ *   h = ENV.to_h #=> Hash
+ *   h.class #=> Hash
+ *   h.size #=> 46
  * If block given, the block must return a 2-element Array
  * whose two elements will become a name/value pair in the returned +Hash+:
- *   ENV.clear # => ENV
- *   ENV['FOO'] = 'foo' # => "foo"
- *   ENV['BAR'] = 'bar' # => "bar"
- *   h  = ENV.to_h { |name, value| [name.downcase, value.upcase] } # => Hash
- *   h.class # => Hash
- *   h.size # => 2
+ *   ENV.clear #=> ENV
+ *   ENV['FOO'] = 'foo' #=> "foo"
+ *   ENV['BAR'] = 'bar' #=> "bar"
+ *   h  = ENV.to_h { |name, value| [name.downcase, value.upcase] } #=> Hash
+ *   h.class #=> Hash
+ *   h.size #=> 2
  * Raises TypeError if the block's return is not an Array :
- *   ENV.to_h { |name, value| true } # => TypeError raised
+ *   ENV.to_h { |name, value| true } #=> TypeError raised
  * Raises ArgumentError if the block returns an Array of length other than 2:
- *   ENV.to_h { |name, value| true } # => ArgumentError raised
+ *   ENV.to_h { |name, value| true } #=> ArgumentError raised
  */
 static VALUE
 env_to_h(VALUE _)
@@ -6025,14 +6025,14 @@ env_to_h(VALUE _)
  *
  * Returns a Hash determined by the block, if given.
  * Each ENV entry for which the block returns +false+ or +nil+ is included in the returned Hash :
- *   ENV.size # => 46
+ *   ENV.size #=> 46
  *   h = ENV.reject { |name, value | name.length < 4 }
- *   h.class # => Hash
- *   h.size # => 44
+ *   h.class #=> Hash
+ *   h.size #=> 44
  * ENV itself is unmodified:
- *   ENV.size # => 46
+ *   ENV.size #=> 46
  * Returns an Enumerator if no block given:
- *   ENV.reject # => Enumerator
+ *   ENV.reject #=> Enumerator
  */
 static VALUE
 env_reject(VALUE _)
@@ -6046,7 +6046,7 @@ env_reject(VALUE _)
  *
  * Ruby does not allow ENV to be frozen, so calling ENV.freeze
  * raises TypeError:
- *   ENV.freeze # => TypeError raised
+ *   ENV.freeze #=> TypeError raised
  */
 static VALUE
 env_freeze(VALUE self)
@@ -6060,15 +6060,15 @@ env_freeze(VALUE self)
  *   ENV.shift -> Array or nil
  *
  * Removes the first name-value pair from ENV and returns it as a 2-element Array :
- *   ENV.size # => 46
- *   name, value = ENV.shift # => 2-element Array
- *   ENV.size # => 45
+ *   ENV.size #=> 46
+ *   name, value = ENV.shift #=> 2-element Array
+ *   ENV.size #=> 45
  * Returns +nil+ if ENV is empty:
  *   ENV.clear
- *   ENV.size # => 0
- *   name, value = ENV.shift # => nil
- *   name # => nil
- *   value # => nil
+ *   ENV.size #=> 0
+ *   name, value = ENV.shift #=> nil
+ *   name #=> nil
+ *   value #=> nil
  */
 static VALUE
 env_shift(VALUE _)
@@ -6101,9 +6101,9 @@ env_shift(VALUE _)
  *   ENV['FOO'] = "One"
  *   ENV['BAR'] = "Two"
  *   ENV['BAZ'] = "Two"
- *   h = ENV.invert # => {"Two"=>"BAZ", "One"=>"FOO"}
- *   h.class # => Hash
- *   h.size # => 2
+ *   h = ENV.invert #=> {"Two"=>"BAZ", "One"=>"FOO"}
+ *   h.class #=> Hash
+ *   h.size #=> 2
  */
 static VALUE
 env_invert(VALUE _)
@@ -6126,11 +6126,11 @@ env_replace_i(VALUE key, VALUE val, VALUE keys)
  *   ENV.replace(hash) -> ENV
  *
  * Replaces the content of ENV with the contents of +hash+; returns ENV :
- *   ENV.size # => 46
- *   ENV.replace({'FOO' => '0', 'BAR' => '1'}) # => ENV
- *   ENV.size # => 2
+ *   ENV.size #=> 46
+ *   ENV.replace({'FOO' => '0', 'BAR' => '1'}) #=> ENV
+ *   ENV.size #=> 2
  * Raises TypeError if the argument is not a Hash :
- *   ENV.replace(1) # => TypeError raised
+ *   ENV.replace(1) #=> TypeError raised
  */
 static VALUE
 env_replace(VALUE env, VALUE hash)
@@ -6170,22 +6170,22 @@ env_update_i(VALUE key, VALUE val, VALUE _)
  * ENV.merge! is an alias for ENV.update.
  *
  * Adds the contents of +hash+ to ENV; returns ENV :
- *   ENV['FOO'] # => nil
- *   ENV['BAR'] # => nil
- *   ENV.update({'FOO' => '0', 'BAR' => '1'}) # => ENV
- *   ENV['FOO'] # => "0"
- *   ENV['BAR'] # => "1"
+ *   ENV['FOO'] #=> nil
+ *   ENV['BAR'] #=> nil
+ *   ENV.update({'FOO' => '0', 'BAR' => '1'}) #=> ENV
+ *   ENV['FOO'] #=> "0"
+ *   ENV['BAR'] #=> "1"
  * If no block given, the old value for each existing name is overwritten by the new value; returns ENV :
- *   ENV.update({'FOO' => '2', 'BAR' => '3'}) # => ENV
- *   ENV['FOO'] # => "2"
- *   ENV['BAR'] # => "3"
+ *   ENV.update({'FOO' => '2', 'BAR' => '3'}) #=> ENV
+ *   ENV['FOO'] #=> "2"
+ *   ENV['BAR'] #=> "3"
  * If block given, it is called with the name, the old value, and the new value,
  * and the return value from the block is assigned to that name;  returns ENV :
- *   ENV['LINES'] # => '300'
+ *   ENV['LINES'] #=> '300'
  *   ENV.update({'LINES' => '301'}) { |name, old_val, new_val| old_val }
- *   ENV['LINES'] # => '300'
+ *   ENV['LINES'] #=> '300'
  * Raises TypeError if +hash+ is not a Hash :
- *   ENV.key(1) # => TypeError raised
+ *   ENV.key(1) #=> TypeError raised
  */
 static VALUE
 env_update(VALUE env, VALUE hash)
@@ -6220,7 +6220,7 @@ env_update(VALUE env, VALUE hash)
  *
  *  Each named key is a symbol you can access in hash:
  *
- *    options[:font_size]  # => 10
+ *    options[:font_size]  #=> 10
  *
  *  A Hash can also be created through its ::new method:
  *
@@ -6240,7 +6240,7 @@ env_update(VALUE env, VALUE hash)
  *
  *  Accessing a value in a Hash requires using its key:
  *
- *    puts grades["Jane Doe"] # => 0
+ *    puts grades["Jane Doe"] #=> 0
  *
  *  === Common Uses
  *
@@ -6304,7 +6304,7 @@ env_update(VALUE env, VALUE hash)
  *    reviews[book1] = 'Great reference!'
  *    reviews[book2] = 'Nice and compact!'
  *
- *    reviews.length # => 1
+ *    reviews.length #=> 1
  *
  *  See also Object#hash and Object#eql?
  */
@@ -6437,8 +6437,8 @@ Init_Hash(void)
      * That returned ENV is _not_ a new object; it is the _one_ _and_ _only_ ENV object:
      *   original_env_id = ENV.object_id
      *   returned_env = ENV.clear
-     *   returned_env.object_id == original_env_id # => true
-     *   returned_env.object_id == ENV.object_id # => true
+     *   returned_env.object_id == original_env_id #=> true
+     *   returned_env.object_id == ENV.object_id #=> true
      *
      * == About the Examples
      *
