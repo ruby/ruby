@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ruby: [ 'ruby-head' ]
+        ruby: [ 'ruby-head', 'jruby-9.2.8.0' ]
         test_tool: [ "rubygems", "bundler" ]
     steps:
     - uses: actions/checkout@master
