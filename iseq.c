@@ -336,6 +336,9 @@ rb_iseq_mark(const rb_iseq_t *iseq)
     }
     else if (FL_TEST_RAW(iseq, ISEQ_USE_COMPILE_DATA)) {
 	const struct iseq_compile_data *const compile_data = ISEQ_COMPILE_DATA(iseq);
+
+        rb_iseq_mark_insn_storage(compile_data->insn.storage_head);
+
         if (RTEST(compile_data->mark_ary)) {
             rb_gc_mark(compile_data->mark_ary);
         }

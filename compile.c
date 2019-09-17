@@ -8953,6 +8953,57 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
 }
 
 void
+rb_iseq_mark_insn_storage(struct iseq_compile_data_storage *storage)
+{
+    INSN *iobj = 0;
+    size_t size = sizeof(INSN);
+    unsigned int pos = 0;
+
+    while (storage) {
+#ifdef STRICT_ALIGNMENT
+        size_t padding = calc_padding((void *)&storage->buff[pos], size);
+#else
+        const size_t padding = 0; /* expected to be optimized by compiler */
+#endif /* STRICT_ALIGNMENT */
+        size_t offset = pos + size + padding;
+        if (offset > storage->size || offset > storage->pos) {
+            pos = 0;
+            storage = storage->next;
+        } else {
+#ifdef STRICT_ALIGNMENT
+            pos += (int)padding;
+#endif /* STRICT_ALIGNMENT */
+
+            iobj = (INSN *)&storage->buff[pos];
+
+            if (iobj->operands) {
+                int j;
+                const char *types = insn_op_types(iobj->insn_id);
+
+                for(j = 0; types[j]; j++) {
+                    char type = types[j];
+                    switch(type) {
+                        case TS_CDHASH:
+                        case TS_ISEQ:
+                        case TS_VALUE:
+                        {
+                            VALUE op = OPERAND_AT(iobj, j);
+                            if (!SPECIAL_CONST_P(op)) {
+                                rb_gc_mark(op);
+                            }
+                            break;
+                        }
+                        default:
+                            break;
+                    }
+                }
+            }
+            pos += (int)size;
+        }
+    }
+}
+
+void
 rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 			 VALUE exception, VALUE body)
 {
