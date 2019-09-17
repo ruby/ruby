@@ -5108,7 +5108,7 @@ ruby_unsetenv(const char *name)
 
 /*
  * call-seq:
- *   ENV[name] = value or nil
+ *   ENV[name] = value -> value or nil
  *   ENV.store(name, value) -> value or nil
  *
  * ENV.store is an alias for ENV.[]=.
@@ -5604,7 +5604,7 @@ rb_env_clear(void)
 
 /*
  * call-seq:
- *   ENV.clear
+ *   ENV.clear -> ENV
  *
  * Removes every environment variable; returns the now-empty ENV :
  *   ENV.size  # => 45
@@ -5706,7 +5706,7 @@ env_to_a(VALUE _)
 
 /*
  * call-seq:
- *   ENV.rehash
+ *   ENV.rehash -> nil
  *
  * Does nothing;  it is provided for compatibility with Hash.  Returns nil.
  *   ENV.rehash # => nil
@@ -5861,7 +5861,7 @@ env_has_value(VALUE dmy, VALUE obj)
 
 /*
  * call-seq:
- *   ENV.rassoc(value)
+ *   ENV.rassoc(value) -> Array or nil
  *
  * Returns an 2-element Array of the value and name of the first-found entry whose value is +value+:
  *   ENV.clear # => ENV
@@ -5871,6 +5871,7 @@ env_has_value(VALUE dmy, VALUE obj)
  *   ENV.rassoc('1') # => ["BAR", "1"]
  * Returns +nil+ if +value+ is not found:
  *   ENV.rassoc('NOSUCH') # => nil
+ *   ENV.rassoc(1) # => nil
  */
 static VALUE
 env_rassoc(VALUE dmy, VALUE obj)
@@ -5907,6 +5908,8 @@ env_rassoc(VALUE dmy, VALUE obj)
  *   ENV.key('0') # => "BAR"
  * Returns +nil+ if +value+ is not found:
  *   ENV.key('NOSUCH') # => nil
+ * Raises TypeError if +value+ is not a String :
+ *   ENV.key(1) # => TypeError raised
  */
 static VALUE
 env_key(VALUE dmy, VALUE value)
@@ -6039,7 +6042,7 @@ env_reject(VALUE _)
 
 /*
  * call-seq:
- *   ENV.freeze -> raises TypeError
+ *   ENV.freeze
  *
  * Ruby does not allow ENV to be frozen, so calling ENV.freeze
  * raises TypeError:
@@ -6181,6 +6184,8 @@ env_update_i(VALUE key, VALUE val, VALUE _)
  *   ENV['LINES'] # => '300'
  *   ENV.update({'LINES' => '301'}) { |name, old_val, new_val| old_val }
  *   ENV['LINES'] # => '300'
+ * Raises TypeError if +hash+ is not a Hash :
+ *   ENV.key(1) # => TypeError raised
  */
 static VALUE
 env_update(VALUE env, VALUE hash)
