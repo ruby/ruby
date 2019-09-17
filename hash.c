@@ -6491,7 +6491,7 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "keys", env_f_keys, 0);
     rb_define_singleton_method(envtbl, "values", env_f_values, 0);
     rb_define_singleton_method(envtbl, "values_at", env_values_at, -1);
-    rb_define_singleton_method(envtbl, "include?", _key_key, 1);
+    rb_define_singleton_method(envtbl, "include?", env_has_key, 1);
     rb_define_singleton_method(envtbl, "member?", env_has_key, 1);
     rb_define_singleton_method(envtbl, "has_key?", env_has_key, 1);
     rb_define_singleton_method(envtbl, "has_value?", env_has_value, 1);
