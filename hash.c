@@ -5450,7 +5450,9 @@ env_values_at(int argc, VALUE *argv, VALUE _)
  * ENV.filter is an alias for ENV.select.
  *
  * Returns a Hash of those +name+/+value+ pairs for which the block is truthy:
- *   ENV.select { |name, value| name.length < 3 } # => {"OS"=>"Windows_NT"}
+ *   e = ENV.select { |name, value| name.length < 3 } # => {"OS"=>"Windows_NT"}
+ *   e.class 3 => Hash
+ *   e.size # => 1
  *
  * Returns an Enumerator if no block given:
  *   ENV.select # => Enumerator
@@ -5488,10 +5490,8 @@ env_select(VALUE ehash)
  *
  * ENV.filter! is an alias for ENV.select!.
  *
- * Similar to ENV.keep_if but returns +nil+ if ENV is unchanged.
- *
  * Removes from ENV each entry for which the block returns +false+ or +nil+.
- * Returns ENV if any entry removed, or +nil+ if none removed:
+ * Returns ENV if any entry removed, else +nil+:
  *   ENV.size # => 46
  *   ENV.select! { |name, value| name.size < 10} # => ENV
  *   ENV.size # => 19
@@ -5709,11 +5709,13 @@ env_none(VALUE _)
  *   ENV.length
  *   ENV.size
  *
+ * ENV.length is an alias for ENV.size.
+ *
  * Returns the number of ENV entries:
  *   ENV.length # => 46
  *   ENV['FOO'] = '0' # => "0"
  *   ENV.length # => 47
- *   ENV.clear # => {}
+ *   ENV.clear # => ENV
  *   ENV.length # => 0
  */
 static VALUE
@@ -5977,8 +5979,8 @@ env_f_to_hash(VALUE _)
  *   h.size # => 46
  * If block given, the block must return a 2-element Array
  * whose two elements will become a name/value pair in the returned +Hash+:
- *   ENV.clear # => {}
- *   ENV['FOO'] = 'foo' @=> "foo"
+ *   ENV.clear # => ENV
+ *   ENV['FOO'] = 'foo' # => "foo"
  *   ENV['BAR'] = 'bar' # => "bar"
  *   ENV.to_h { |name, value| [name.downcase, value.upcase] } # => {"bar"=>"BAR", "foo"=>"FOO"}
  * Raises TypeError if the block's return is not an Array :
@@ -6041,7 +6043,7 @@ env_freeze(VALUE self)
  *   ENV.size # => 46
  *   name, value = ENV.shift # => 2-element Array
  *   ENV.size # => 45
- * Returns +nil+ if when ENV is empty:
+ * Returns +nil+ if ENV is empty:
  *   ENV.clear
  *   ENV.size # => 0
  *   name, value = ENV.shift # => nil
@@ -6079,7 +6081,9 @@ env_shift(VALUE _)
  *   ENV['FOO'] = "One"
  *   ENV['BAR'] = "Two"
  *   ENV['BAZ'] = "Two"
- *   ENV.invert # => {"Two"=>"BAZ", "One"=>"FOO"}
+ *   e = ENV.invert # => {"Two"=>"BAZ", "One"=>"FOO"}
+ *   e.class # => Hash
+ *   e.size # => 2
  */
 static VALUE
 env_invert(VALUE _)
