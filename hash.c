@@ -1846,8 +1846,8 @@ rb_check_hash_type(VALUE hash)
  *  Returns converted hash or nil if <i>obj</i> cannot be converted
  *  for any reason.
  *
- *     Hash.try_convert({1=>2})   #=> {1=>2}
- *     Hash.try_convert("1=>2")   #=> nil
+ *     Hash.try_convert({1=>2})   # => {1=>2}
+ *     Hash.try_convert("1=>2")   # => nil
  */
 static VALUE
 rb_hash_s_try_convert(VALUE dummy, VALUE hash)
@@ -4074,8 +4074,8 @@ flatten_i(VALUE key, VALUE val, VALUE ary)
  *  <i>level</i> argument determines the level of recursion to flatten.
  *
  *     a =  {1=> "one", 2 => [2,"two"], 3 => "three"}
- *     a.flatten    #=> [1, "one", 2, [2, "two"], 3, "three"]
- *     a.flatten(2) #=> [1, "one", 2, 2, "two", 3, "three"]
+ *     a.flatten    # => [1, "one", 2, [2, "two"], 3, "three"]
+ *     a.flatten(2) # => [1, "one", 2, 2, "two", 3, "three"]
  */
 
 static VALUE
