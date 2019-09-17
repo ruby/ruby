@@ -18,10 +18,6 @@ jobs:
         run: |
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
-      - name: Install libraries
-        run: |
-          brew update || { sleep 5 && brew update; } || { sleep 60 && brew update; }
-          brew install gdbm gmp libffi openssl@1.1 zlib autoconf automake libtool readline
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
       - name: Checkout ruby/ruby
         run: git clone --depth=50 https://github.com/ruby/ruby . && git reset --hard "$GITHUB_SHA"
@@ -33,6 +29,11 @@ jobs:
           GITHUB_BRANCH: ${{ github.event.pull_request.head.ref }}
           GITHUB_REPO: ${{ github.event.pull_request.head.repo.full_name }}
         if: github.event_name == 'pull_request'
+      - name: Install libraries
+        run: |
+          export WAITS='5 60'
+          tool/travis_retry.sh brew update
+          tool/travis_retry.sh brew install gdbm gmp libffi openssl@1.1 zlib autoconf automake libtool readline
       - name: Set ENV
         run: |
           echo '##[set-env name=JOBS]'-j$((1 + $(sysctl -n hw.activecpu)))
