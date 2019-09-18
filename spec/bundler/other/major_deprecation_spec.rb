@@ -108,7 +108,7 @@ RSpec.describe "major deprecations" do
     it "should print a deprecation warning", :bundler => "2" do
       expect(deprecations).to include(
         "The `--path` flag is deprecated because it relies on being " \
-        "remembered accross bundler invokations, which bundler will no " \
+        "remembered across bundler invokations, which bundler will no " \
         "longer do in future versions. Instead please use `bundle config set " \
         "path 'vendor/bundle'`, and stop using this flag"
       )
