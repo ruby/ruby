@@ -2776,7 +2776,17 @@ distclean: clean distclean-so distclean-static distclean-rb-default distclean-rb
 realclean: distclean
 "
 
-  module CXX
+  @lang = Hash.new(self)
+
+  def self.[](name)
+    @lang.fetch(name)
+  end
+
+  def self.[]=(name, mod)
+    @lang[name] = mod
+  end
+
+  self["C++"] = Module.new do
     include MakeMakefile
     extend self
 

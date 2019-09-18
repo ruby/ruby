@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 
-cxx = MakeMakefile::CXX
+cxx = MakeMakefile["C++"]
 
 ok = cxx.try_compile(<<~'begin', "") do |x|
   #include "ruby/config.h"
