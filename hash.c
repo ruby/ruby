@@ -4764,10 +4764,10 @@ env_delete(VALUE name)
  * If +name+ is not found:
  * - Returns +nil+ if no block given.
  * - Calls the block, if given; returns +nil+.
- * Thus:
+ * Examples:
  *   ENV.delete('LINES') #=> nil
  *   ENV.delete('COLUMNS') { |name| name } #=> nil
- * Raises TypeError if +name+ is not a String :
+ * Raises TypeError if +name+ is not a String:
  *   ENV.delete(1) #=> TypeError raised
  */
 static VALUE
@@ -4788,7 +4788,7 @@ env_delete_m(VALUE obj, VALUE name)
  *   ENV['LINES']  #=> "300"
  * Returns +nil+ if +name+ is not found:
  *   ENV['NOSUCH'] #=> nil
- * Raises TypeError if +name+ is not a String :
+ * Raises TypeError if +name+ is not a String:
  *   ENV[1] = 'FOO' #=> TypeError raised
  */
 static VALUE
@@ -4818,11 +4818,11 @@ rb_f_getenv(VALUE obj, VALUE name)
  * - If block given, calls the block with +name+; returns block return value.
  * - Otherwise, if +default+ given, returns +default+.
  * - Otherwise, raises KeyError.
- * Thus:
+ * Examples:
  *   ENV.fetch('NOSUCH') { |name| name } #=> "NOSUCH"
  *   ENV.fetch('NOSUCH', 'Nope') #=> "Nope"
  *   ENV.fetch('NOSUCH') #=> KeyError raised
- * Raises TypeError if +name+ is not a String :
+ * Raises TypeError if +name+ is not a String:
  *   Env.fetch(1) #=> TypeError raised
  */
 static VALUE
@@ -5120,10 +5120,10 @@ ruby_unsetenv(const char *name)
  *   ENV['FOO'] = nil    #=> nil
  *   ENV.store('FOO', nil) #=> nil
  *   ENV.include?('FOO') #=> false
- * Raises TypeError if +name+ is not a String :
+ * Raises TypeError if +name+ is not a String:
  *   ENV[1] = 'BAR' #=> TypeError raised
  *   ENV.store(1, 'BAR') #=> TypeError raised
- * Raises TypeError if +value+ is not a String :
+ * Raises TypeError if +value+ is not a String:
  *   ENV['BAR'] = 1 #=> TypeError raised
  *   ENV.store('BAR', 1) #=> TypeErorr raised
  */
@@ -5190,7 +5190,7 @@ env_keys(void)
  * call-seq:
  *   ENV.keys -> Array
  *
- * Returns all ENV names in an Array :
+ * Returns all ENV names in an Array:
  *   ENV.clear
  *   ENV['FOO'] = '0' #=> "0"
  *   ENV['BAR'] = '1' #=> "1"
@@ -5224,7 +5224,7 @@ rb_env_size(VALUE ehash, VALUE args, VALUE eobj)
  *   ENV.each_key { |name| block } -> ENV
  *   ENV.each_key                  -> Enumerator
  *
- * Calls the block, if given, with the name from each ENV entry; returns ENV :
+ * Calls the block, if given, with the name from each ENV entry; returns ENV:
  *   count = 0
  *   ENV.each_key { |name| count += 1 } #=> ENV
  *   ENV.count #=> 46
@@ -5269,7 +5269,7 @@ env_values(void)
  * call-seq:
  *   ENV.values -> Array
  *
- * Returns ENV values as an Array :
+ * Returns ENV values as an Array:
  *   ENV.size #=> 46
  *   values = ENV.values #=> Array
  *   values.size #=> 46
@@ -5287,7 +5287,7 @@ env_f_values(VALUE _)
  *   ENV.each_value                   -> Enumerator
  *
  *
- * Calls block, if given, with the value of each ENV entry; returns ENV :
+ * Calls block, if given, with the value of each ENV entry; returns ENV:
  *   count = 0
  *   ENV.each_value { |name| count += 1 } #=> ENV
  *   ENV.count #=> 46
@@ -5318,7 +5318,7 @@ env_each_value(VALUE ehash)
  *
  * ENV.each is an alias for ENV.each_pair.
  *
- * Calls the block, if given, with the name and value for each ENV entry; returns ENV :
+ * Calls the block, if given, with the name and value for each ENV entry; returns ENV:
  *   entry_count = 0
  *   ENV.each_pair { |name, value| entry_count += 1 } #=> ENV
  *   entry_count #=> 46
@@ -5407,7 +5407,7 @@ env_reject_bang(VALUE ehash)
  *   ENV.delete_if                         -> Enumerator
  *
  * Deletes each environment variable for which the return value of the block is truthy;
- * returns the updated ENV :
+ * returns the updated ENV:
  *   ENV.size #=> 45
  *   ENV.delete_if { |name, value| name.match(/PROCESSOR/) }
  *   ENV.size #=> 41
@@ -5429,7 +5429,7 @@ env_delete_if(VALUE ehash)
  *
  * Returns an Array of values whose names are arguments +*names+:
  *   ENV.values_at('LINES', 'COLUMNS') #=> ["300", "158"]
- * Raises TypeError if any argument is not a String :
+ * Raises TypeError if any argument is not a String:
  *   ENV.values_at('LINES', 1) #=> TypeError raised
  * See also ENV.select.
  */
@@ -5537,7 +5537,7 @@ env_select_bang(VALUE ehash)
  *   ENV.keep_if { |name, value| block } -> ENV
  *   ENV.keep_if                         -> Enumerator
  *
- * Deletes each ENV entry for which the block returns +false+ or +nil+; returns ENV :
+ * Deletes each ENV entry for which the block returns +false+ or +nil+; returns ENV:
  *   ENV.size #=> 46
  *   ENV.keep_if { |name, value| name.size < 3 } #=> ENV
  *   ENV.size #=> 1
@@ -5561,7 +5561,7 @@ env_keep_if(VALUE ehash)
  *   h = ENV.slice('LINES', 'COLUMNS') #=> {"LINES"=>"300", "COLUMNS"=>"158"}
  *   h.class #=> Hash
  *   h.size #=> 2
- * Raises TypeError if any argument is not a String :
+ * Raises TypeError if any argument is not a String:
  *   ENV.slice('LINES', 1) #=> TypeError raised
  */
 static VALUE
@@ -5606,7 +5606,7 @@ rb_env_clear(void)
  * call-seq:
  *   ENV.clear -> ENV
  *
- * Removes every environment variable; returns the now-empty ENV :
+ * Removes every environment variable; returns the now-empty ENV:
  *   ENV.size  #=> 45
  *   ENV.clear #=> ENV
  *   ENV.size  #=> 0
@@ -5634,7 +5634,7 @@ env_to_s(VALUE _)
  * call-seq:
  *   ENV.inspect -> string
  *
- * Returns the contents of the environment as a String :
+ * Returns the contents of the environment as a String:
  *   ENV.clear
  *   ENV['FOO'] = "One"
  *   ENV['BAR'] = "Two"
@@ -5676,7 +5676,7 @@ env_inspect(VALUE _)
  *
  * Returns an Array formed from the entries in ENV.
  * Each ENV entry's name and value are formed into a 2-element Array
- * that becomes an element in the returned Array :
+ * that becomes an element in the returned Array:
  *    ENV.clear #=> ENV
  *    ENV['FOO'] = '0' #=> "0"
  *    ENV['BAR'] = '1' #=> "1"
@@ -5804,7 +5804,7 @@ env_has_key(VALUE env, VALUE key)
  *   ENV.assoc('LINES') #=> ["LINES", "300"]
  * Returns +nil+ if +name+ is not found:
  *   ENV.assoc('NOSUCH') #=> nil
- * Raises TypeError if +name+ is not a String :
+ * Raises TypeError if +name+ is not a String:
  *   ENV.assoc(1) => TypeError raised
  */
 static VALUE
@@ -5829,7 +5829,7 @@ env_assoc(VALUE env, VALUE key)
  * - +true+ if there is an ENV entry with the given +value+.
  * - Otherwise, +false+ if +value+ is a String.
  * - Otherwise, +nil+:
- * Thus:
+ * Examples:
  *   ENV['LINES'] #=> "300"
  *   ENV.has_value?('300') #=> true
  *   ENV.has_value?('NOSUCH') #=> false
@@ -5908,7 +5908,7 @@ env_rassoc(VALUE dmy, VALUE obj)
  *   ENV.key('0') #=> "BAR"
  * Returns +nil+ if +value+ is not found:
  *   ENV.key('NOSUCH') #=> nil
- * Raises TypeError if +value+ is not a String :
+ * Raises TypeError if +value+ is not a String:
  *   ENV.key(1) #=> TypeError raised
  */
 static VALUE
@@ -5972,7 +5972,7 @@ env_to_hash(void)
  * call-seq:
  *   ENV.to_hash -> Hash
  *
- * Returns a Hash formed from the name/value pairs of ENV :
+ * Returns a Hash formed from the name/value pairs of ENV:
  *   ENV.size #=> 46
  *   h = ENV.to_hash #=> Hash
  *   h.class #=> Hash
@@ -5990,7 +5990,7 @@ env_f_to_hash(VALUE _)
  *   ENV.to_h                        -> Hash
  *   ENV.to_h {|name, value| block } -> Hash
  *
- * If no block given, returns a Hash of all name/value pairs from ENV :
+ * If no block given, returns a Hash of all name/value pairs from ENV:
  *   ENV.size #=> 46
  *   h = ENV.to_h #=> Hash
  *   h.class #=> Hash
@@ -6003,7 +6003,7 @@ env_f_to_hash(VALUE _)
  *   h  = ENV.to_h { |name, value| [name.downcase, value.upcase] } #=> Hash
  *   h.class #=> Hash
  *   h.size #=> 2
- * Raises TypeError if the block's return is not an Array :
+ * Raises TypeError if the block's return is not an Array:
  *   ENV.to_h { |name, value| true } #=> TypeError raised
  * Raises ArgumentError if the block returns an Array of length other than 2:
  *   ENV.to_h { |name, value| true } #=> ArgumentError raised
@@ -6024,7 +6024,7 @@ env_to_h(VALUE _)
  *   ENV.reject                         -> Enumerator
  *
  * Returns a Hash determined by the block, if given.
- * Each ENV entry for which the block returns +false+ or +nil+ is included in the returned Hash :
+ * Each ENV entry for which the block returns +false+ or +nil+ is included in the returned Hash:
  *   ENV.size #=> 46
  *   h = ENV.reject { |name, value | name.length < 4 }
  *   h.class #=> Hash
@@ -6059,7 +6059,7 @@ env_freeze(VALUE self)
  * call-seq:
  *   ENV.shift -> Array or nil
  *
- * Removes the first name-value pair from ENV and returns it as a 2-element Array :
+ * Removes the first name-value pair from ENV and returns it as a 2-element Array:
  *   ENV.size #=> 46
  *   name, value = ENV.shift #=> 2-element Array
  *   ENV.size #=> 45
@@ -6125,11 +6125,11 @@ env_replace_i(VALUE key, VALUE val, VALUE keys)
  * call-seq:
  *   ENV.replace(hash) -> ENV
  *
- * Replaces the content of ENV with the contents of +hash+; returns ENV :
+ * Replaces the content of ENV with the contents of +hash+; returns ENV:
  *   ENV.size #=> 46
  *   ENV.replace({'FOO' => '0', 'BAR' => '1'}) #=> ENV
  *   ENV.size #=> 2
- * Raises TypeError if the argument is not a Hash :
+ * Raises TypeError if the argument is not a Hash:
  *   ENV.replace(1) #=> TypeError raised
  */
 static VALUE
@@ -6169,22 +6169,22 @@ env_update_i(VALUE key, VALUE val, VALUE _)
  *
  * ENV.merge! is an alias for ENV.update.
  *
- * Adds the contents of +hash+ to ENV; returns ENV :
+ * Adds the contents of +hash+ to ENV; returns ENV:
  *   ENV['FOO'] #=> nil
  *   ENV['BAR'] #=> nil
  *   ENV.update({'FOO' => '0', 'BAR' => '1'}) #=> ENV
  *   ENV['FOO'] #=> "0"
  *   ENV['BAR'] #=> "1"
- * If no block given, the old value for each existing name is overwritten by the new value; returns ENV :
+ * If no block given, the old value for each existing name is overwritten by the new value; returns ENV:
  *   ENV.update({'FOO' => '2', 'BAR' => '3'}) #=> ENV
  *   ENV['FOO'] #=> "2"
  *   ENV['BAR'] #=> "3"
  * If block given, it is called with the name, the old value, and the new value,
- * and the return value from the block is assigned to that name;  returns ENV :
+ * and the return value from the block is assigned to that name;  returns ENV:
  *   ENV['LINES'] #=> '300'
  *   ENV.update({'LINES' => '301'}) { |name, old_val, new_val| old_val }
  *   ENV['LINES'] #=> '300'
- * Raises TypeError if +hash+ is not a Hash :
+ * Raises TypeError if +hash+ is not a Hash:
  *   ENV.key(1) #=> TypeError raised
  */
 static VALUE
@@ -6425,7 +6425,7 @@ Init_Hash(void)
      *
      * Though somewhat hash-like, ENV is not a Hash.  Its actual class is Object.
      *
-     * Differences between Hash and ENV :
+     * Differences between Hash and ENV:
      * - Content allowed:
      *   - In a Hash, a key or value may be any object, of any class.
      *   - In ENV, each name or value must be a String.
@@ -6442,7 +6442,7 @@ Init_Hash(void)
      *
      * == About the Examples
      *
-     * ENV typically contains dozen of entries, and sometimes hundreds.
+     * ENV typically contains dozens of entries, and sometimes hundreds.
      * For simplicity, the examples below sometimes greatly reduce the number of ENV entries.
      */
 
