@@ -1916,12 +1916,14 @@ rb_method_basic_definition_p(VALUE klass, ID id)
 
 static VALUE
 call_method_entry(rb_execution_context_t *ec, VALUE defined_class, VALUE obj, ID id,
-		  const rb_method_entry_t *me, int argc, const VALUE *argv)
+                  const rb_method_entry_t *me, int argc, const VALUE *argv, int kw_splat)
 {
     const rb_callable_method_entry_t *cme =
-	prepare_callable_method_entry(defined_class, id, me);
+        prepare_callable_method_entry(defined_class, id, me);
     VALUE passed_block_handler = vm_passed_block_handler(ec);
-    VALUE result = rb_vm_call0(ec, obj, id, argc, argv, cme, VM_NO_KEYWORDS);
+    VALUE v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
+    VALUE result = rb_vm_call0(ec, obj, id, argc, argv, cme, kw_splat);
+    rb_free_tmp_buffer(&v);
     vm_passed_block_handler_set(ec, passed_block_handler);
     return result;
 }
@@ -1938,7 +1940,7 @@ basic_obj_respond_to_missing(rb_execution_context_t *ec, VALUE klass, VALUE obj,
     if (!me || METHOD_ENTRY_BASIC(me)) return Qundef;
     args[0] = mid;
     args[1] = priv;
-    return call_method_entry(ec, defined_class, obj, rtmid, me, 2, args);
+    return call_method_entry(ec, defined_class, obj, rtmid, me, 2, args, RB_NO_KEYWORDS);
 }
 
 static inline int
@@ -2005,7 +2007,7 @@ vm_respond_to(rb_execution_context_t *ec, VALUE klass, VALUE obj, ID id, int pri
 		}
 	    }
 	}
-	result = call_method_entry(ec, defined_class, obj, resid, me, argc, args);
+        result = call_method_entry(ec, defined_class, obj, resid, me, argc, args, RB_NO_KEYWORDS);
 	return RTEST(result);
     }
 }

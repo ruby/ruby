@@ -4071,8 +4071,11 @@ rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
 		break;
 	    }
 	}
-	return rb_check_funcall_with_hook(obj, id_dig, argc, argv,
-					  no_dig_method, obj);
+        return rb_check_funcall_with_hook_kw(obj, id_dig, argc, argv,
+                                          no_dig_method, obj,
+                                          rb_empty_keyword_given_p() ?
+                                            RB_PASS_EMPTY_KEYWORDS :
+                                            RB_NO_KEYWORDS);
     }
     return obj;
 }

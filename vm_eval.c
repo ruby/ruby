@@ -417,6 +417,7 @@ struct rescue_funcall_args {
     unsigned int respond_to_missing: 1;
     int argc;
     const VALUE *argv;
+    int kw_splat;
 };
 
 static VALUE
@@ -425,7 +426,7 @@ check_funcall_exec(VALUE v)
     struct rescue_funcall_args *args = (void *)v;
     return call_method_entry(args->ec, args->defined_class,
 			     args->recv, idMethodMissing,
-			     args->me, args->argc, args->argv);
+                             args->me, args->argc, args->argv, args->kw_splat);
 }
 
 static VALUE
@@ -466,7 +467,7 @@ check_funcall_callable(rb_execution_context_t *ec, const rb_callable_method_entr
 }
 
 static VALUE
-check_funcall_missing(rb_execution_context_t *ec, VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int respond, VALUE def)
+check_funcall_missing(rb_execution_context_t *ec, VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int respond, VALUE def, int kw_splat)
 {
     struct rescue_funcall_args args;
     const rb_method_entry_t *me;
@@ -498,6 +499,7 @@ check_funcall_missing(rb_execution_context_t *ec, VALUE klass, VALUE recv, ID mi
 	args.mid = mid;
 	args.argc = argc + 1;
 	args.argv = new_args;
+        args.kw_splat = kw_splat;
 	ret = rb_rescue2(check_funcall_exec, (VALUE)&args,
 			 check_funcall_failed, (VALUE)&args,
 			 rb_eNoMethodError, (VALUE)0);
@@ -526,19 +528,20 @@ rb_check_funcall_default(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE 
     me = rb_search_method_entry(recv, mid);
     if (!check_funcall_callable(ec, me)) {
 	VALUE ret = check_funcall_missing(ec, klass, recv, mid, argc, argv,
-					  respond, def);
+                                          respond, def, RB_NO_KEYWORDS);
 	if (ret == Qundef) ret = def;
 	return ret;
     }
     stack_check(ec);
-    return rb_vm_call0(ec, recv, mid, argc, argv, me, VM_NO_KEYWORDS);
+    return rb_vm_call0(ec, recv, mid, argc, argv, me, RB_NO_KEYWORDS);
 }
 
 VALUE
-rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
-			   rb_check_funcall_hook *hook, VALUE arg)
+rb_check_funcall_with_hook_kw(VALUE recv, ID mid, int argc, const VALUE *argv,
+                           rb_check_funcall_hook *hook, VALUE arg, int kw_splat)
 {
     VALUE klass = CLASS_OF(recv);
+    VALUE v, ret;
     const rb_callable_method_entry_t *me;
     rb_execution_context_t *ec = GET_EC();
     int respond = check_funcall_respond_to(ec, klass, recv, mid);
@@ -550,14 +553,24 @@ rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
 
     me = rb_search_method_entry(recv, mid);
     if (!check_funcall_callable(ec, me)) {
-	VALUE ret = check_funcall_missing(ec, klass, recv, mid, argc, argv,
-					  respond, Qundef);
+        ret = check_funcall_missing(ec, klass, recv, mid, argc, argv,
+                                          respond, Qundef, kw_splat);
 	(*hook)(ret != Qundef, recv, mid, argc, argv, arg);
 	return ret;
     }
     stack_check(ec);
     (*hook)(TRUE, recv, mid, argc, argv, arg);
-    return rb_vm_call0(ec, recv, mid, argc, argv, me, VM_NO_KEYWORDS);
+    v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
+    ret = rb_vm_call0(ec, recv, mid, argc, argv, me, kw_splat);
+    rb_free_tmp_buffer(&v);
+    return ret;
+}
+
+VALUE
+rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
+                           rb_check_funcall_hook *hook, VALUE arg)
+{
+    return rb_check_funcall_with_hook_kw(recv, mid, argc, argv, hook, arg, RB_NO_KEYWORDS);
 }
 
 const char *

@@ -2204,6 +2204,226 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(ArgumentError) { m.call(42, a: 1, **h2) }
   end
 
+  def test_dig_kwsplat
+    kw = {}
+    h = {:a=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    c = Object.new
+    def c.dig(*args)
+      args
+    end
+    assert_equal(c, [c].dig(0, **{}))
+    assert_equal(c, [c].dig(0, **kw))
+    assert_equal([h], [c].dig(0, **h))
+    assert_equal([h], [c].dig(0, a: 1))
+    assert_equal([h2], [c].dig(0, **h2))
+    assert_equal([h3], [c].dig(0, **h3))
+    assert_equal([h3], [c].dig(0, a: 1, **h2))
+
+    c.singleton_class.remove_method(:dig)
+    def c.dig; end
+    assert_equal(c, [c].dig(0, **{}))
+    assert_equal(c, [c].dig(0, **kw))
+    assert_raise(ArgumentError) { [c].dig(0, **h) }
+    assert_raise(ArgumentError) { [c].dig(0, a: 1) }
+    assert_raise(ArgumentError) { [c].dig(0, **h2) }
+    assert_raise(ArgumentError) { [c].dig(0, **h3) }
+    assert_raise(ArgumentError) { [c].dig(0, a: 1, **h2) }
+
+    c.singleton_class.remove_method(:dig)
+    def c.dig(args)
+      args
+    end
+    assert_equal(c, [c].dig(0, **{}))
+    assert_equal(c, [c].dig(0, **kw))
+    assert_equal(kw, [c].dig(0, kw, **kw))
+    assert_equal(h, [c].dig(0, **h))
+    assert_equal(h, [c].dig(0, a: 1))
+    assert_equal(h2, [c].dig(0, **h2))
+    assert_equal(h3, [c].dig(0, **h3))
+    assert_equal(h3, [c].dig(0, a: 1, **h2))
+
+    c.singleton_class.remove_method(:dig)
+    def c.dig(**args)
+      args
+    end
+    assert_equal(c, [c].dig(0, **{}))
+    assert_equal(c, [c].dig(0, **kw))
+    assert_warn(/The last argument is used as the keyword parameter.*for `dig'/m) do
+      assert_equal(h, [c].dig(0, **h))
+    end
+    assert_warn(/The last argument is used as the keyword parameter.*for `dig'/m) do
+      assert_equal(h, [c].dig(0, a: 1))
+    end
+    assert_warn(/The last argument is split into positional and keyword parameters.*for `dig'/m) do
+      assert_raise(ArgumentError) { [c].dig(0, **h3) }
+    end
+    assert_warn(/The last argument is split into positional and keyword parameters.*for `dig'/m) do
+      assert_raise(ArgumentError) { [c].dig(0, a: 1, **h2) }
+    end
+    assert_warn(/The last argument is used as the keyword parameter.*for `dig'/m) do
+      assert_equal(h, [c].dig(0, h))
+    end
+    assert_raise(ArgumentError) { [c].dig(0, h2) }
+    assert_warn(/The last argument is split into positional and keyword parameters.*for `dig'/m) do
+      assert_raise(ArgumentError) { [c].dig(0, h3) }
+    end
+
+    c.singleton_class.remove_method(:dig)
+    def c.dig(arg, **args)
+      [arg, args]
+    end
+    assert_equal(c, [c].dig(0, **{}))
+    assert_equal(c, [c].dig(0, **kw))
+    assert_equal([h, kw], [c].dig(0, **h))
+    assert_equal([h, kw], [c].dig(0, a: 1))
+    assert_equal([h2, kw], [c].dig(0, **h2))
+    assert_equal([h3, kw], [c].dig(0, **h3))
+    assert_equal([h3, kw], [c].dig(0, a: 1, **h2))
+
+    c.singleton_class.remove_method(:dig)
+    def c.dig(arg=1, **args)
+      [arg, args]
+    end
+    assert_equal(c, [c].dig(0, **{}))
+    assert_equal(c, [c].dig(0, **kw))
+    assert_warn(/The last argument is used as the keyword parameter.*for `dig'/m) do
+      assert_equal([1, h], [c].dig(0, **h))
+    end
+    assert_warn(/The last argument is used as the keyword parameter.*for `dig'/m) do
+      assert_equal([1, h], [c].dig(0, a: 1))
+    end
+    assert_equal([h2, kw], [c].dig(0, **h2))
+    assert_warn(/The last argument is split into positional and keyword parameters.*for `dig'/m) do
+      assert_equal([h2, h], [c].dig(0, **h3))
+    end
+    assert_warn(/The last argument is split into positional and keyword parameters.*for `dig'/m) do
+      assert_equal([h2, h], [c].dig(0, a: 1, **h2))
+    end
+    assert_warn(/The last argument is used as the keyword parameter.*for `dig'/m) do
+      assert_equal([1, h], [c].dig(0, h))
+    end
+    assert_equal([h2, kw], [c].dig(0, h2))
+    assert_warn(/The last argument is split into positional and keyword parameters.*for `dig'/m) do
+      assert_equal([h2, h], [c].dig(0, h3))
+    end
+    assert_equal([h, kw], [c].dig(0, h, **{}))
+    assert_equal([h2, kw], [c].dig(0, h2, **{}))
+    assert_equal([h3, kw], [c].dig(0, h3, **{}))
+  end
+
+  def test_dig_method_missing_kwsplat
+    kw = {}
+    h = {:a=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    c = Object.new
+    def c.method_missing(_, *args)
+      args
+    end
+    assert_equal(c, [c].dig(0, **{}))
+    assert_equal(c, [c].dig(0, **kw))
+    assert_equal([h], [c].dig(0, **h))
+    assert_equal([h], [c].dig(0, a: 1))
+    assert_equal([h2], [c].dig(0, **h2))
+    assert_equal([h3], [c].dig(0, **h3))
+    assert_equal([h3], [c].dig(0, a: 1, **h2))
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing; end
+    assert_equal(c, [c].dig(0, **{}))
+    assert_equal(c, [c].dig(0, **kw))
+    assert_raise(ArgumentError) { [c].dig(0, **h) }
+    assert_raise(ArgumentError) { [c].dig(0, a: 1) }
+    assert_raise(ArgumentError) { [c].dig(0, **h2) }
+    assert_raise(ArgumentError) { [c].dig(0, **h3) }
+    assert_raise(ArgumentError) { [c].dig(0, a: 1, **h2) }
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_, args)
+      args
+    end
+    assert_equal(c, [c].dig(0, **{}))
+    assert_equal(c, [c].dig(0, **kw))
+    assert_equal(kw, [c].dig(0, kw, **kw))
+    assert_equal(h, [c].dig(0, **h))
+    assert_equal(h, [c].dig(0, a: 1))
+    assert_equal(h2, [c].dig(0, **h2))
+    assert_equal(h3, [c].dig(0, **h3))
+    assert_equal(h3, [c].dig(0, a: 1, **h2))
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_, **args)
+      args
+    end
+    assert_equal(c, [c].dig(0, **{}))
+    assert_equal(c, [c].dig(0, **kw))
+    assert_warn(/The last argument is used as the keyword parameter.*for `method_missing'/m) do
+      assert_equal(h, [c].dig(0, **h))
+    end
+    assert_warn(/The last argument is used as the keyword parameter.*for `method_missing'/m) do
+      assert_equal(h, [c].dig(0, a: 1))
+    end
+    assert_warn(/The last argument is split into positional and keyword parameters.*for `method_missing'/m) do
+      assert_raise(ArgumentError) { [c].dig(0, **h3) }
+    end
+    assert_warn(/The last argument is split into positional and keyword parameters.*for `method_missing'/m) do
+      assert_raise(ArgumentError) { [c].dig(0, a: 1, **h2) }
+    end
+    assert_warn(/The last argument is used as the keyword parameter.*for `method_missing'/m) do
+      assert_equal(h, [c].dig(0, h))
+    end
+    assert_raise(ArgumentError) { [c].dig(0, h2) }
+    assert_warn(/The last argument is split into positional and keyword parameters.*for `method_missing'/m) do
+      assert_raise(ArgumentError) { [c].dig(0, h3) }
+    end
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_, arg, **args)
+      [arg, args]
+    end
+    assert_equal(c, [c].dig(0, **{}))
+    assert_equal(c, [c].dig(0, **kw))
+    assert_equal([h, kw], [c].dig(0, **h))
+    assert_equal([h, kw], [c].dig(0, a: 1))
+    assert_equal([h2, kw], [c].dig(0, **h2))
+    assert_equal([h3, kw], [c].dig(0, **h3))
+    assert_equal([h3, kw], [c].dig(0, a: 1, **h2))
+
+    c.singleton_class.remove_method(:method_missing)
+    def c.method_missing(_, arg=1, **args)
+      [arg, args]
+    end
+    assert_equal(c, [c].dig(0, **{}))
+    assert_equal(c, [c].dig(0, **kw))
+    assert_warn(/The last argument is used as the keyword parameter.*for `method_missing'/m) do
+      assert_equal([1, h], [c].dig(0, **h))
+    end
+    assert_warn(/The last argument is used as the keyword parameter.*for `method_missing'/m) do
+      assert_equal([1, h], [c].dig(0, a: 1))
+    end
+    assert_equal([h2, kw], [c].dig(0, **h2))
+    assert_warn(/The last argument is split into positional and keyword parameters.*for `method_missing'/m) do
+      assert_equal([h2, h], [c].dig(0, **h3))
+    end
+    assert_warn(/The last argument is split into positional and keyword parameters.*for `method_missing'/m) do
+      assert_equal([h2, h], [c].dig(0, a: 1, **h2))
+    end
+    assert_warn(/The last argument is used as the keyword parameter.*for `method_missing'/m) do
+      assert_equal([1, h], [c].dig(0, h))
+    end
+    assert_equal([h2, kw], [c].dig(0, h2))
+    assert_warn(/The last argument is split into positional and keyword parameters.*for `method_missing'/m) do
+      assert_equal([h2, h], [c].dig(0, h3))
+    end
+    assert_equal([h, kw], [c].dig(0, h, **{}))
+    assert_equal([h2, kw], [c].dig(0, h2, **{}))
+    assert_equal([h3, kw], [c].dig(0, h3, **{}))
+  end
+
   def p1
     Proc.new do |str: "foo", num: 424242|
       [str, num]
