@@ -145,7 +145,7 @@ their plugins.
 You can find a list of all the gems containing gem plugins
 by running
 
-    ruby -rubygems -e "puts Gem.find_files('rubygems_plugin.rb')"
+    ruby -rrubygems -e "puts Gem.find_files('rubygems_plugin.rb')"
 
 At the very least, you should remove all but the newest
 version of each gem plugin, and also remove all gem plugins

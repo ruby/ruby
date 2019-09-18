@@ -165,7 +165,7 @@ RUBYGEMS PLUGINS
 
 
 
-	   ruby -rubygems -e "puts Gem.find_files('rubygems_plugin.rb')"
+	   ruby -rrubygems -e "puts Gem.find_files('rubygems_plugin.rb')"
 
 
 
@@ -175,4 +175,4 @@ RUBYGEMS PLUGINS
 
 
 
-				  August 2019			BUNDLE-EXEC(1)
+				September 2019			BUNDLE-EXEC(1)
