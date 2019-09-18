@@ -41,4 +41,4 @@ DESCRIPTION
 
 
 
-				  August 2019		    BUNDLE-PRISTINE(1)
+				September 2019		    BUNDLE-PRISTINE(1)
