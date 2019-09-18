@@ -2782,8 +2782,6 @@ realclean: distclean
     include MakeMakefile
     extend self
 
-    # Logging.message "CXX_EXT=#{CONFIG['CXX_EXT']}\n"
-
     CONFTEST_CXX = "#{CONFTEST}.#{config_string('CXX_EXT') || CXX_EXT[0]}"
 
     def conftest_source
