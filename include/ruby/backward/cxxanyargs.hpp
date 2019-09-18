@@ -66,6 +66,36 @@ rb_define_virtual_variable(const char *q, type *w, void_type *e)
 RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
 /// @brief       Define a function-backended global variable.
 /// @param[in]   q  Name of the variable.
+/// @param[in]   w  Getter function.
+/// @param[in]   e  Setter function.
+/// @note        Both functions can be nullptr.
+/// @see         rb_define_hooked_variable()
+/// @deprecated  Use glanular typed overload instead.
+inline void
+rb_define_virtual_variable(const char *q, rb_gvar_getter_t *w, void_type *e)
+{
+    rb_gvar_setter_t *t = reinterpret_cast<rb_gvar_setter_t*>(e);
+    ::rb_define_virtual_variable(q, w, t);
+}
+
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
+/// @brief       Define a function-backended global variable.
+/// @param[in]   q  Name of the variable.
+/// @param[in]   w  Getter function.
+/// @param[in]   e  Setter function.
+/// @note        Both functions can be nullptr.
+/// @see         rb_define_hooked_variable()
+/// @deprecated  Use glanular typed overload instead.
+inline void
+rb_define_virtual_variable(const char *q, type *w, rb_gvar_setter_t *e)
+{
+    rb_gvar_getter_t *r = reinterpret_cast<rb_gvar_getter_t*>(w);
+    ::rb_define_virtual_variable(q, r, e);
+}
+
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
+/// @brief       Define a function-backended global variable.
+/// @param[in]   q  Name of the variable.
 /// @param[in]   w  Variable storage.
 /// @param[in]   e  Getter function.
 /// @param[in]   r  Setter function.
@@ -78,6 +108,38 @@ rb_define_hooked_variable(const char *q, VALUE *w, type *e, void_type *r)
     rb_gvar_getter_t *t = reinterpret_cast<rb_gvar_getter_t*>(e);
     rb_gvar_setter_t *y = reinterpret_cast<rb_gvar_setter_t*>(r);
     ::rb_define_hooked_variable(q, w, t, y);
+}
+
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
+/// @brief       Define a function-backended global variable.
+/// @param[in]   q  Name of the variable.
+/// @param[in]   w  Variable storage.
+/// @param[in]   e  Getter function.
+/// @param[in]   r  Setter function.
+/// @note        Both functions can be nullptr.
+/// @see         rb_define_virtual_variable()
+/// @deprecated  Use glanular typed overload instead.
+inline void
+rb_define_hooked_variable(const char *q, VALUE *w, rb_gvar_getter_t *e, void_type *r)
+{
+    rb_gvar_setter_t *y = reinterpret_cast<rb_gvar_setter_t*>(r);
+    ::rb_define_hooked_variable(q, w, e, y);
+}
+
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
+/// @brief       Define a function-backended global variable.
+/// @param[in]   q  Name of the variable.
+/// @param[in]   w  Variable storage.
+/// @param[in]   e  Getter function.
+/// @param[in]   r  Setter function.
+/// @note        Both functions can be nullptr.
+/// @see         rb_define_virtual_variable()
+/// @deprecated  Use glanular typed overload instead.
+inline void
+rb_define_hooked_variable(const char *q, VALUE *w, type *e, rb_gvar_setter_t *r)
+{
+    rb_gvar_getter_t *t = reinterpret_cast<rb_gvar_getter_t*>(e);
+    ::rb_define_hooked_variable(q, w, t, r);
 }
 
 /// @}
