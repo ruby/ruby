@@ -2,3 +2,4 @@
 require_relative "../auto_ext.rb"
 have_func("rb_pin_dynamic_symbol")
 auto_ext
+raise File.read("mkmf.log") unless $makefile_created
