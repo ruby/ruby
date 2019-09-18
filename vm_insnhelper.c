@@ -3070,7 +3070,6 @@ vm_invoke_ifunc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 {
     VALUE val;
     int argc;
-    int frame_flag = 0;
     int kw_splat = calling->kw_splat;
     CALLER_SETUP_ARG(ec->cfp, calling, ci);
     if (kw_splat && !calling->kw_splat) {
