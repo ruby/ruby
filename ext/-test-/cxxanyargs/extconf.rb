@@ -2,7 +2,7 @@
 
 cxx = MakeMakefile::CXX
 
-ok = cxx.try_compile(<<~'begin', "", lang: 'C++') do |x|
+ok = cxx.try_compile(<<~'begin', "") do |x|
   #include "ruby/config.h"
 
   namespace {
