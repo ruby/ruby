@@ -2328,6 +2328,7 @@ enum method_missing_reason {
     MISSING_NONE      = 0x40
 };
 struct rb_callable_method_entry_struct;
+struct rb_method_definition_struct;
 struct rb_execution_context_struct;
 struct rb_control_frame_struct;
 struct rb_calling_info;
@@ -2339,6 +2340,7 @@ struct rb_call_cache {
 
     /* inline cache: values */
     const struct rb_callable_method_entry_struct *me;
+    const struct rb_method_definition_struct *def;
 
     VALUE (*call)(struct rb_execution_context_struct *ec,
                   struct rb_control_frame_struct *cfp,

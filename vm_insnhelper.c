@@ -1374,16 +1374,41 @@ vm_expandarray(VALUE *sp, VALUE ary, rb_num_t num, int flag)
 
 static VALUE vm_call_general(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc);
 
+#ifdef __has_attribute
+#if __has_attribute(artificial)
+__attribute__((__artificial__))
+#endif
+#endif
+static inline vm_call_handler
+calccall(const struct rb_call_cache *cc, const rb_callable_method_entry_t *me)
+{
+    if (UNLIKELY(!me)) {
+        return vm_call_general; /* vm_call_method_nome() situation */
+    }
+    else if (LIKELY(cc->me != me)) {
+        return vm_call_general; /* normal cases */
+    }
+    else if (UNLIKELY(cc->def != me->def)) {
+        return vm_call_general;  /* cc->me was refined elsewhere */
+    }
+    else {
+        return cc->call;
+    }
+}
+
 MJIT_FUNC_EXPORTED void
 rb_vm_search_method_slowpath(const struct rb_call_info *ci, struct rb_call_cache *cc, VALUE klass)
 {
-    cc->me = rb_callable_method_entry(klass, ci->mid);
+    const rb_callable_method_entry_t *me =
+        rb_callable_method_entry(klass, ci->mid);
+    *cc = (struct rb_call_cache) {
+        GET_GLOBAL_METHOD_STATE(),
+        RCLASS_SERIAL(klass),
+        me,
+        me ? me->def : NULL,
+        calccall(cc, me),
+    };
     VM_ASSERT(callable_method_entry_p(cc->me));
-    cc->call = vm_call_general;
-#if OPT_INLINE_METHOD_CACHE
-    cc->method_state = GET_GLOBAL_METHOD_STATE();
-    cc->class_serial = RCLASS_SERIAL(klass);
-#endif
 }
 
 static void
