@@ -2776,8 +2776,6 @@ distclean: clean distclean-so distclean-static distclean-rb-default distclean-rb
 realclean: distclean
 "
 
-  C = self
-
   module CXX
     include MakeMakefile
     extend self
