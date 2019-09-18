@@ -1921,9 +1921,7 @@ call_method_entry(rb_execution_context_t *ec, VALUE defined_class, VALUE obj, ID
     const rb_callable_method_entry_t *cme =
         prepare_callable_method_entry(defined_class, id, me);
     VALUE passed_block_handler = vm_passed_block_handler(ec);
-    VALUE v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
-    VALUE result = rb_vm_call0(ec, obj, id, argc, argv, cme, kw_splat);
-    rb_free_tmp_buffer(&v);
+    VALUE result = rb_vm_call_kw(ec, obj, id, argc, argv, cme, kw_splat);
     vm_passed_block_handler_set(ec, passed_block_handler);
     return result;
 }
