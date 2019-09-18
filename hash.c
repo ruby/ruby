@@ -4759,7 +4759,7 @@ env_delete(VALUE name)
  *   ENV.delete(name)                  -> value or nil
  *   ENV.delete(name) { |name| block } -> nil
  *
- * Deletes the entry for +name+, if found; returns its value:
+ * Deletes the environment variable named +name+, if found; returns its value:
  *   ENV.delete('LINES') #=> "300"
  * If +name+ is not found:
  * - Returns +nil+ if no block given.
@@ -4811,7 +4811,7 @@ rb_f_getenv(VALUE obj, VALUE name)
  *   ENV.fetch(name) { |name| block } -> block return value
  *   ENV.fetch(name, default)         -> value or default
  *
- * Returns the value for the ENV entry whose name is +name+:
+ * Returns the value for the environment variable whose name is +name+:
  *   ENV.fetch('LINES') #=> "300"
  *
  * If the given name does not exist:
@@ -5113,10 +5113,10 @@ ruby_unsetenv(const char *name)
  *
  * ENV.store is an alias for ENV.[]=.
  *
- * Creates or updates the ENV entry whose name is +name+, assigning it value +value+, and returning +value+:
+ * Creates or updates the environment variable whose name is +name+, assigning it value +value+, and returning +value+:
  *   ENV['FOO'] = 'BAR'  #=> "BAR"
  *   ENV.store('FOO', 'BAR') #=> "BAR"
- * For +nil+ +value+, deletes the ENV entry whose name is +name+, returning +nil+:
+ * For +nil+ +value+, deletes the environment variable whose name is +name+, returning +nil+:
  *   ENV['FOO'] = nil    #=> nil
  *   ENV.store('FOO', nil) #=> nil
  *   ENV.include?('FOO') #=> false
@@ -5224,7 +5224,7 @@ rb_env_size(VALUE ehash, VALUE args, VALUE eobj)
  *   ENV.each_key { |name| block } -> ENV
  *   ENV.each_key                  -> Enumerator
  *
- * Calls the block, if given, with the name from each ENV entry; returns ENV:
+ * Calls the block, if given, with the name from each environment variable; returns ENV:
  *   count = 0
  *   ENV.each_key { |name| count += 1 } #=> ENV
  *   ENV.count #=> 46
@@ -5287,7 +5287,7 @@ env_f_values(VALUE _)
  *   ENV.each_value                   -> Enumerator
  *
  *
- * Calls block, if given, with the value of each ENV entry; returns ENV:
+ * Calls block, if given, with the value of each environment variable; returns ENV:
  *   count = 0
  *   ENV.each_value { |name| count += 1 } #=> ENV
  *   ENV.count #=> 46
@@ -5318,7 +5318,7 @@ env_each_value(VALUE ehash)
  *
  * ENV.each is an alias for ENV.each_pair.
  *
- * Calls the block, if given, with the name and value for each ENV entry; returns ENV:
+ * Calls the block, if given, with the name and value for each environment variable; returns ENV:
  *   entry_count = 0
  *   ENV.each_pair { |name, value| entry_count += 1 } #=> ENV
  *   entry_count #=> 46
@@ -5367,7 +5367,7 @@ env_each_pair(VALUE ehash)
  *   ENV.reject!                         -> Enumerator
  *
  * Deletes each environment variable for which the return value of the block is truthy;
- * returns ENV if any entry was deleted, else +nil+:
+ * returns ENV if any environment variable was deleted, else +nil+:
  *   ENV.size #=> 45
  *   ENV.reject! { |name, value| name.match(/PROCESSOR/) } #=> ENV
  *   ENV.size #=> 41
@@ -5496,8 +5496,8 @@ env_select(VALUE ehash)
  *
  * ENV.filter! is an alias for ENV.select!.
  *
- * Removes from ENV each entry for which the block returns +false+ or +nil+.
- * Returns ENV if any entry removed, else +nil+:
+ * Removes each environment variable for which the block returns +false+ or +nil+.
+ * Returns ENV if any removed, else +nil+:
  *   ENV.size #=> 46
  *   ENV.select! { |name, value| name.size < 10} #=> ENV
  *   ENV.size #=> 19
@@ -5537,7 +5537,7 @@ env_select_bang(VALUE ehash)
  *   ENV.keep_if { |name, value| block } -> ENV
  *   ENV.keep_if                         -> Enumerator
  *
- * Deletes each ENV entry for which the block returns +false+ or +nil+; returns ENV:
+ * Deletes each environment variable for which the block returns +false+ or +nil+; returns ENV:
  *   ENV.size #=> 46
  *   ENV.keep_if { |name, value| name.size < 3 } #=> ENV
  *   ENV.size #=> 1
@@ -5674,8 +5674,8 @@ env_inspect(VALUE _)
  * call-seq:
  *   ENV.to_a -> Array
  *
- * Returns an Array formed from the entries in ENV.
- * Each ENV entry's name and value are formed into a 2-element Array
+ * Returns an Array formed from the environment variables.
+ * Each name and value are formed into a 2-element Array
  * that becomes an element in the returned Array:
  *    ENV.clear #=> ENV
  *    ENV['FOO'] = '0' #=> "0"
@@ -5724,7 +5724,7 @@ env_none(VALUE _)
  *
  * ENV.length is an alias for ENV.size.
  *
- * Returns the number of ENV entries:
+ * Returns the number of environment variables:
  *   ENV.length #=> 46
  *   ENV['FOO'] = '0' #=> "0"
  *   ENV.length #=> 47
@@ -5748,7 +5748,7 @@ env_size(VALUE _)
  * call-seq:
  *   ENV.empty? -> true or false
  *
- * Returns +true+ when there are no ENV entries, otherwise +false+:
+ * Returns +true+ when there are no environment variables, otherwise +false+:
  *    ENV.size #=> 46
   *   ENV.empty? #=> false
   *   ENV.clear #=> ENV
@@ -5778,7 +5778,7 @@ env_empty_p(VALUE _)
  *
  * Methods ENV.key?, ENV.include?, and ENV.member? are aliases for ENV.has_key?.
  *
- * Returns +true+ if there is an ENV entry with the given +name+, else +false+:
+ * Returns +true+ if there is an environment variable with the given +name+, else +false+:
  *   ENV['LINES'] #=> "300"
  *   ENV.has_key?('LINES') #=> true
  *   ENV.has_key?('NOSUCH') #=> false
@@ -5826,7 +5826,7 @@ env_assoc(VALUE env, VALUE key)
  * Method ENV.value? is an alias of ENV.has_value?.
  *
  * Returns:
- * - +true+ if there is an ENV entry with the given +value+.
+ * - +true+ if there is an environment variable with the given +value+.
  * - Otherwise, +false+ if +value+ is a String.
  * - Otherwise, +nil+:
  * Examples:
@@ -5863,7 +5863,8 @@ env_has_value(VALUE dmy, VALUE obj)
  * call-seq:
  *   ENV.rassoc(value) -> Array or nil
  *
- * Returns an 2-element Array of the value and name of the first-found entry whose value is +value+:
+ * Returns an 2-element Array of the value and name
+ * of the first-found environment variable whose value is +value+:
  *   ENV.clear #=> ENV
  *   ENV['FOO'] = '0' #=> "0"
  *   ENV['BAR'] = '1' #=> "1"
@@ -5902,7 +5903,7 @@ env_rassoc(VALUE dmy, VALUE obj)
  * call-seq:
  *   ENV.key(value) -> name or nil
  *
- * Returns the name of the first-found ENV entry whose value is +value+:
+ * Returns the name of the first-found environment variable whose value is +value+:
  *   ENV['FOO'] = '0' #=> "0"
  *   ENV['BAR'] = '0' #=> "0"
  *   ENV.key('0') #=> "BAR"
@@ -6024,7 +6025,8 @@ env_to_h(VALUE _)
  *   ENV.reject                         -> Enumerator
  *
  * Returns a Hash determined by the block, if given.
- * Each ENV entry for which the block returns +false+ or +nil+ is included in the returned Hash:
+ * Each environment variable's name and value
+ * for which the block returns +false+ or +nil+ is included in the returned Hash:
  *   ENV.size #=> 46
  *   h = ENV.reject { |name, value | name.length < 4 }
  *   h.class #=> Hash
@@ -6419,7 +6421,7 @@ Init_Hash(void)
      *
      * == About ENV
      *
-     * The ENV object contains entries for all current environment variables.
+     * The ENV object contains the name and value for each current environment variable.
      * Creating, deleting, or changing a value in ENV changes the environment,
      * both for the current process and for any launched child processes.
      *
@@ -6431,7 +6433,7 @@ Init_Hash(void)
      *   - In ENV, each name or value must be a String.
      * - Order:
      *   - A Hash enumerates its entries in the order that the keys were inserted.
-     *   - In ENV, the order of entries is OS-dependent.
+     *   - In ENV, the order of environment variables is operating-system-dependent.
      *
      * Some of the methods below return ENV.
      * That returned ENV is _not_ a new object; it is the _one_ _and_ _only_ ENV object:
@@ -6442,8 +6444,9 @@ Init_Hash(void)
      *
      * == About the Examples
      *
-     * ENV typically contains dozens of entries, and sometimes hundreds.
-     * For simplicity, the examples below sometimes greatly reduce the number of ENV entries.
+     * ENV typically contains dozens of environment variables, and sometimes hundreds.
+     * For simplicity, the examples below sometimes greatly reduce
+     * the number of environment variables.
      */
 
     /*
