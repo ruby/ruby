@@ -270,7 +270,7 @@ rb_vm_call(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc, const VAL
     return rb_vm_call0(ec, recv, id, argc, argv, me, VM_NO_KEYWORDS);
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_vm_call_kw(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me, int kw_splat)
 {
     VALUE v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
@@ -284,7 +284,6 @@ vm_call_super(rb_execution_context_t *ec, int argc, const VALUE *argv, int kw_sp
 {
     VALUE recv = ec->cfp->self;
     VALUE klass;
-    VALUE v, ret;
     ID id;
     rb_control_frame_t *cfp = ec->cfp;
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
@@ -298,15 +297,10 @@ vm_call_super(rb_execution_context_t *ec, int argc, const VALUE *argv, int kw_sp
     id = me->def->original_id;
     me = rb_callable_method_entry(klass, id);
 
-    v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
     if (!me) {
-        ret = method_missing(recv, id, argc, argv, MISSING_SUPER, kw_splat);
+        return method_missing(recv, id, argc, argv, MISSING_SUPER, kw_splat);
     }
-    else {
-        ret = rb_vm_call0(ec, recv, id, argc, argv, me, kw_splat);
-    }
-    rb_free_tmp_buffer(&v);
-    return ret;
+    return rb_vm_call_kw(ec, recv, id, argc, argv, me, kw_splat);
 }
 
 VALUE
@@ -404,7 +398,7 @@ rb_call0(rb_execution_context_t *ec,
         return method_missing(recv, mid, argc, argv, call_status, kw_splat);
     }
     stack_check(ec);
-    return rb_vm_call0(ec, recv, mid, argc, argv, me, kw_splat);
+    return rb_vm_call_kw(ec, recv, mid, argc, argv, me, kw_splat);
 }
 
 struct rescue_funcall_args {
@@ -524,7 +518,6 @@ VALUE
 rb_check_funcall_default_kw(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE def, int kw_splat)
 {
     VALUE klass = CLASS_OF(recv);
-    VALUE v, ret;
     const rb_callable_method_entry_t *me;
     rb_execution_context_t *ec = GET_EC();
     int respond = check_funcall_respond_to(ec, klass, recv, mid);
@@ -534,16 +527,13 @@ rb_check_funcall_default_kw(VALUE recv, ID mid, int argc, const VALUE *argv, VAL
 
     me = rb_search_method_entry(recv, mid);
     if (!check_funcall_callable(ec, me)) {
-        ret = check_funcall_missing(ec, klass, recv, mid, argc, argv,
-                                    respond, def, kw_splat);
+        VALUE ret = check_funcall_missing(ec, klass, recv, mid, argc, argv,
+                                          respond, def, kw_splat);
 	if (ret == Qundef) ret = def;
 	return ret;
     }
     stack_check(ec);
-    v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
-    ret = rb_vm_call0(ec, recv, mid, argc, argv, me, kw_splat);
-    rb_free_tmp_buffer(&v);
-    return ret;
+    return rb_vm_call_kw(ec, recv, mid, argc, argv, me, kw_splat);
 }
 
 VALUE
@@ -557,7 +547,6 @@ rb_check_funcall_with_hook_kw(VALUE recv, ID mid, int argc, const VALUE *argv,
                            rb_check_funcall_hook *hook, VALUE arg, int kw_splat)
 {
     VALUE klass = CLASS_OF(recv);
-    VALUE v, ret;
     const rb_callable_method_entry_t *me;
     rb_execution_context_t *ec = GET_EC();
     int respond = check_funcall_respond_to(ec, klass, recv, mid);
@@ -569,17 +558,14 @@ rb_check_funcall_with_hook_kw(VALUE recv, ID mid, int argc, const VALUE *argv,
 
     me = rb_search_method_entry(recv, mid);
     if (!check_funcall_callable(ec, me)) {
-        ret = check_funcall_missing(ec, klass, recv, mid, argc, argv,
-                                    respond, Qundef, kw_splat);
+        VALUE ret = check_funcall_missing(ec, klass, recv, mid, argc, argv,
+                                          respond, Qundef, kw_splat);
 	(*hook)(ret != Qundef, recv, mid, argc, argv, arg);
 	return ret;
     }
     stack_check(ec);
     (*hook)(TRUE, recv, mid, argc, argv, arg);
-    v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
-    ret = rb_vm_call0(ec, recv, mid, argc, argv, me, kw_splat);
-    rb_free_tmp_buffer(&v);
-    return ret;
+    return rb_vm_call_kw(ec, recv, mid, argc, argv, me, kw_splat);
 }
 
 VALUE
@@ -892,7 +878,7 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missin
     me = rb_callable_method_entry(klass, idMethodMissing);
     if (!me || METHOD_ENTRY_BASIC(me)) goto missing;
     vm_passed_block_handler_set(ec, block_handler);
-    result = rb_vm_call0(ec, obj, idMethodMissing, argc, argv, me, kw_splat);
+    result = rb_vm_call_kw(ec, obj, idMethodMissing, argc, argv, me, kw_splat);
     if (work) ALLOCV_END(work);
     return result;
 }
