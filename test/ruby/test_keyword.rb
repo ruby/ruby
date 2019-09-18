@@ -2424,6 +2424,105 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([h3, kw], [c].dig(0, h3, **{}))
   end
 
+  def test_enumerator_size_kwsplat
+    kw = {}
+    h = {:a=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    c = Object.new
+    c.to_enum(:each){|*args| args}.size
+    m = ->(*args){ args }
+    assert_equal([], c.to_enum(:each, **{}, &m).size)
+    assert_equal([], c.to_enum(:each, **kw, &m).size)
+    assert_equal([h], c.to_enum(:each, **h, &m).size)
+    assert_equal([h], c.to_enum(:each, a: 1, &m).size)
+    assert_equal([h2], c.to_enum(:each, **h2, &m).size)
+    assert_equal([h3], c.to_enum(:each, **h3, &m).size)
+    assert_equal([h3], c.to_enum(:each, a: 1, **h2, &m).size)
+
+    m = ->(){  }
+    assert_nil(c.to_enum(:each, **{}, &m).size)
+    assert_nil(c.to_enum(:each, **kw, &m).size)
+    assert_raise(ArgumentError) { c.to_enum(:each, **h, &m).size }
+    assert_raise(ArgumentError) { c.to_enum(:each, a: 1, &m).size }
+    assert_raise(ArgumentError) { c.to_enum(:each, **h2, &m).size }
+    assert_raise(ArgumentError) { c.to_enum(:each, **h3, &m).size }
+    assert_raise(ArgumentError) { c.to_enum(:each, a: 1, **h2, &m).size }
+
+    m = ->(args){ args }
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal(kw, c.to_enum(:each, **{}, &m).size)
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal(kw, c.to_enum(:each, **kw, &m).size)
+    end
+    assert_equal(kw, c.to_enum(:each, kw, **kw, &m).size)
+    assert_equal(h, c.to_enum(:each, **h, &m).size)
+    assert_equal(h, c.to_enum(:each, a: 1, &m).size)
+    assert_equal(h2, c.to_enum(:each, **h2, &m).size)
+    assert_equal(h3, c.to_enum(:each, **h3, &m).size)
+    assert_equal(h3, c.to_enum(:each, a: 1, **h2, &m).size)
+
+    m = ->(**args){ args }
+    assert_equal(kw, c.to_enum(:each, **{}, &m).size)
+    assert_equal(kw, c.to_enum(:each, **kw, &m).size)
+    assert_equal(h, c.to_enum(:each, **h, &m).size)
+    assert_equal(h, c.to_enum(:each, a: 1, &m).size)
+    assert_equal(h2, c.to_enum(:each, **h2, &m).size)
+    assert_equal(h3, c.to_enum(:each, **h3, &m).size)
+    assert_equal(h3, c.to_enum(:each, a: 1, **h2, &m).size)
+    assert_warn(/The last argument is used as the keyword parameter/m) do
+      assert_equal(h, c.to_enum(:each, h, &m).size)
+    end
+    assert_raise(ArgumentError) { c.to_enum(:each, h2, &m).size }
+    assert_warn(/The last argument is split into positional and keyword parameters/m) do
+      assert_raise(ArgumentError) { c.to_enum(:each, h3, &m).size }
+    end
+
+    m = ->(arg, **args){ [arg, args] }
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      c.to_enum(:each, **{}, &m).size
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      c.to_enum(:each, **kw, &m).size
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal([h, kw], c.to_enum(:each, **h, &m).size)
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal([h, kw], c.to_enum(:each, a: 1, &m).size)
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal([h2, kw], c.to_enum(:each, **h2, &m).size)
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal([h3, kw], c.to_enum(:each, **h3, &m).size)
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal([h3, kw], c.to_enum(:each, a: 1, **h2, &m).size)
+    end
+    assert_equal([h, kw], c.to_enum(:each, h, &m).size)
+    assert_equal([h2, kw], c.to_enum(:each, h2, &m).size)
+    assert_equal([h3, kw], c.to_enum(:each, h3, &m).size)
+
+    m = ->(arg=1, **args){ [arg, args] }
+    assert_equal([1, kw], c.to_enum(:each, **{}, &m).size)
+    assert_equal([1, kw], c.to_enum(:each, **kw, &m).size)
+    assert_equal([1, h], c.to_enum(:each, **h, &m).size)
+    assert_equal([1, h], c.to_enum(:each, a: 1, &m).size)
+    assert_equal([1, h2], c.to_enum(:each, **h2, &m).size)
+    assert_equal([1, h3], c.to_enum(:each, **h3, &m).size)
+    assert_equal([1, h3], c.to_enum(:each, a: 1, **h2, &m).size)
+    assert_warn(/The last argument is used as the keyword parameter/m) do
+      assert_equal([1, h], c.to_enum(:each, h, &m).size)
+    end
+    assert_equal([h2, kw], c.to_enum(:each, h2, &m).size)
+    assert_warn(/The last argument is split into positional and keyword parameters/m) do
+      assert_equal([h2, h], c.to_enum(:each, h3, &m).size)
+    end
+  end
+
   def p1
     Proc.new do |str: "foo", num: 424242|
       [str, num]

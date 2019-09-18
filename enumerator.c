@@ -1223,7 +1223,7 @@ enumerator_size(VALUE obj)
 	argc = (int)RARRAY_LEN(e->args);
 	argv = RARRAY_CONST_PTR(e->args);
     }
-    size = rb_check_funcall(e->size, id_call, argc, argv);
+    size = rb_check_funcall_kw(e->size, id_call, argc, argv, e->kw_splat);
     if (size != Qundef) return size;
     return e->size;
 }
