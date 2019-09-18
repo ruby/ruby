@@ -1,21 +1,8 @@
 # frozen_string_literal: false
 
-cfg = RbConfig::CONFIG.merge(
-  'hdrdir'      => $hdrdir.quote,
-  'src'         => "#{CONFTEST_C}",
-  'arch_hdrdir' => $arch_hdrdir.quote,
-  'top_srcdir'  => $top_srcdir.quote,
-  'CC'          => RbConfig::CONFIG['CXX'],
-  'CFLAGS'      => RbConfig::CONFIG['CXXFLAGS'],
-  'INCFLAGS'    => "#$INCFLAGS",
-  'CPPFLAGS'    => "#$CPPFLAGS",
-  'ARCH_FLAG'   => "#$ARCH_FLAG",
-  'LDFLAGS'     => "#$LDFLAGS",
-  'LOCAL_LIBS'  => "#$LOCAL_LIBS",
-  'LIBS'        => "#$LIBS"
-)
-cxx = RbConfig::expand(TRY_LINK.dup, cfg)
-src = create_tmpsrc(<<~'begin') do |x|
+cxx = MakeMakefile::CXX
+
+ok = cxx.try_compile(<<~'begin', "", lang: 'C++') do |x|
   #include "ruby/config.h"
 
   namespace {
@@ -34,8 +21,6 @@ begin
   x.sub! %<#include "ruby.h">, ''
 end
 
-begin
-  create_makefile("-test-/cxxanyargs") if xsystem(cxx)
-ensure
-  log_src src
+if ok
+  create_makefile("-test-/cxxanyargs")
 end

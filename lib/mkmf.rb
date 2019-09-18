@@ -434,6 +434,10 @@ EOM
 EOM
   end
 
+  def conftest_source
+    CONFTEST_C
+  end
+
   def create_tmpsrc(src)
     src = "#{COMMON_HEADERS}\n#{src}"
     src = yield(src) if block_given?
@@ -442,7 +446,7 @@ EOM
     src.sub!(/[^\n]\z/, "\\&\n")
     count = 0
     begin
-      open(CONFTEST_C, "wb") do |cfile|
+      open(conftest_source, "wb") do |cfile|
         cfile.print src
       end
     rescue Errno::EACCES
@@ -477,10 +481,10 @@ MSG
     end
   end
 
-  def link_command(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
+  def link_config(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
     librubyarg = $extmk ? $LIBRUBYARG_STATIC : "$(LIBRUBYARG)"
     conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote,
-                                  'src' => "#{CONFTEST_C}",
+                                  'src' => "#{conftest_source}",
                                   'arch_hdrdir' => $arch_hdrdir.quote,
                                   'top_srcdir' => $top_srcdir.quote,
                                   'INCFLAGS' => "#$INCFLAGS",
@@ -491,21 +495,29 @@ MSG
                                   'LOCAL_LIBS' => "#$LOCAL_LIBS #$libs",
                                   'LIBS' => "#{librubyarg} #{opt} #$LIBS")
     conf['LIBPATH'] = libpathflag(libpath.map {|s| RbConfig::expand(s.dup, conf)})
+    conf
+  end
+
+  def link_command(ldflags, *opts)
+    conf = link_config(ldflags, *opts)
     RbConfig::expand(TRY_LINK.dup, conf)
   end
 
-  def cc_command(opt="")
+  def cc_config(opt="")
     conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote,
                                   'arch_hdrdir' => $arch_hdrdir.quote,
                                   'top_srcdir' => $top_srcdir.quote)
+    conf
+  end
+
+  def cc_command(opt="")
+    conf = cc_config(opt)
     RbConfig::expand("$(CC) #$INCFLAGS #$CPPFLAGS #$CFLAGS #$ARCH_FLAG #{opt} -c #{CONFTEST_C}",
                      conf)
   end
 
   def cpp_command(outfile, opt="")
-    conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote,
-                                  'arch_hdrdir' => $arch_hdrdir.quote,
-                                  'top_srcdir' => $top_srcdir.quote)
+    conf = cc_config(opt)
     if $universal and (arch_flag = conf['ARCH_FLAG']) and !arch_flag.empty?
       conf['ARCH_FLAG'] = arch_flag.gsub(/(?:\G|\s)-arch\s+\S+/, '')
     end
@@ -2763,6 +2775,27 @@ distclean: clean distclean-so distclean-static distclean-rb-default distclean-rb
 
 realclean: distclean
 "
+
+  C = self
+
+  module CXX
+    include MakeMakefile
+    extend self
+
+    # Logging.message "CXX_EXT=#{CONFIG['CXX_EXT']}\n"
+
+    CONFTEST_CXX = "#{CONFTEST}.#{config_string('CXX_EXT') || CXX_EXT[0]}"
+
+    def conftest_source
+      CONFTEST_CXX
+    end
+
+    def cc_command(opt="")
+      conf = cc_config(opt)
+      RbConfig::expand("$(CXX) #$INCFLAGS #$CPPFLAGS #$CXXFLAGS #$ARCH_FLAG #{opt} -c #{CONFTEST_CXX}",
+                       conf)
+    end
+  end
 end
 
 include MakeMakefile
