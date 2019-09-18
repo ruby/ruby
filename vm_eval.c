@@ -509,15 +509,22 @@ check_funcall_missing(rb_execution_context_t *ec, VALUE klass, VALUE recv, ID mi
 }
 
 VALUE
-rb_check_funcall(VALUE recv, ID mid, int argc, const VALUE *argv)
+rb_check_funcall_kw(VALUE recv, ID mid, int argc, const VALUE *argv, int kw_splat)
 {
-    return rb_check_funcall_default(recv, mid, argc, argv, Qundef);
+    return rb_check_funcall_default_kw(recv, mid, argc, argv, Qundef, kw_splat);
 }
 
 VALUE
-rb_check_funcall_default(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE def)
+rb_check_funcall(VALUE recv, ID mid, int argc, const VALUE *argv)
+{
+    return rb_check_funcall_default_kw(recv, mid, argc, argv, Qundef, RB_NO_KEYWORDS);
+}
+
+VALUE
+rb_check_funcall_default_kw(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE def, int kw_splat)
 {
     VALUE klass = CLASS_OF(recv);
+    VALUE v, ret;
     const rb_callable_method_entry_t *me;
     rb_execution_context_t *ec = GET_EC();
     int respond = check_funcall_respond_to(ec, klass, recv, mid);
@@ -527,13 +534,22 @@ rb_check_funcall_default(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE 
 
     me = rb_search_method_entry(recv, mid);
     if (!check_funcall_callable(ec, me)) {
-	VALUE ret = check_funcall_missing(ec, klass, recv, mid, argc, argv,
-                                          respond, def, RB_NO_KEYWORDS);
+        ret = check_funcall_missing(ec, klass, recv, mid, argc, argv,
+                                    respond, def, kw_splat);
 	if (ret == Qundef) ret = def;
 	return ret;
     }
     stack_check(ec);
-    return rb_vm_call0(ec, recv, mid, argc, argv, me, RB_NO_KEYWORDS);
+    v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
+    ret = rb_vm_call0(ec, recv, mid, argc, argv, me, kw_splat);
+    rb_free_tmp_buffer(&v);
+    return ret;
+}
+
+VALUE
+rb_check_funcall_default(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE def)
+{
+    return rb_check_funcall_default_kw(recv, mid, argc, argv, def, RB_NO_KEYWORDS);
 }
 
 VALUE
@@ -554,7 +570,7 @@ rb_check_funcall_with_hook_kw(VALUE recv, ID mid, int argc, const VALUE *argv,
     me = rb_search_method_entry(recv, mid);
     if (!check_funcall_callable(ec, me)) {
         ret = check_funcall_missing(ec, klass, recv, mid, argc, argv,
-                                          respond, Qundef, kw_splat);
+                                    respond, Qundef, kw_splat);
 	(*hook)(ret != Qundef, recv, mid, argc, argv, arg);
 	return ret;
     }

@@ -319,6 +319,7 @@ void rb_check_copyable(VALUE obj, VALUE orig);
 int rb_sourceline(void);
 const char *rb_sourcefile(void);
 VALUE rb_check_funcall(VALUE, ID, int, const VALUE*);
+VALUE rb_check_funcall_kw(VALUE, ID, int, const VALUE*, int);
 
 NORETURN(MJIT_STATIC void rb_error_arity(int, int, int));
 static inline int
