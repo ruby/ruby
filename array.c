@@ -4500,7 +4500,7 @@ ary_recycle_hash(VALUE hash)
  *  Array Difference
  *
  *  Returns a new array that is a copy of the original array, removing all
- *  occurences of any item that also appear in +other_ary+. The order is
+ *  occurrences of any item that also appear in +other_ary+. The order is
  *  preserved from the original array.
  *
  *  It compares elements using their #hash and #eql? methods for efficiency.
@@ -4508,7 +4508,7 @@ ary_recycle_hash(VALUE hash)
  *     [ 1, 1, 2, 2, 3, 3, 4, 5 ] - [ 1, 2, 4 ]  #=>  [ 3, 3, 5 ]
  *
  *  Note that while 1 and 2 were only present once in the array argument, and
- *  were present twice in the receiver array, all occurences of each Integer are
+ *  were present twice in the receiver array, all occurrences of each Integer are
  *  removed in the returned array.
  *
  *  If you need set-like behavior, see the library class Set.
@@ -4551,7 +4551,7 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *  Array Difference
  *
  *  Returns a new array that is a copy of the original array, removing all
- *  occurences of any item that also appear in +other_ary+. The order is
+ *  occurrences of any item that also appear in +other_ary+. The order is
  *  preserved from the original array.
  *
  *  It compares elements using their #hash and #eql? methods for efficiency.
@@ -4559,10 +4559,10 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *     [ 1, 1, 2, 2, 3, 3, 4, 5 ].difference([ 1, 2, 4 ])     #=> [ 3, 3, 5 ]
  *
  *  Note that while 1 and 2 were only present once in the array argument, and
- *  were present twice in the receiver array, all occurences of each Integer are
+ *  were present twice in the receiver array, all occurrences of each Integer are
  *  removed in the returned array.
  *
- *  Multiple array arguments can be supplied and all occurences of any element
+ *  Multiple array arguments can be supplied and all occurrences of any element
  *  in those supplied arrays that match the receiver will be removed from the
  *  returned array.
  *
