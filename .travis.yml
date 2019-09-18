@@ -326,13 +326,8 @@ env:
     name: "BASERUBY: Ruby 1.9.3"
     <<: *gcc-8
     <<: *make-test-only
-    dist: trusty # xenial no longer has ruby-1.9.3
     language: ruby
     rvm: 1.9.3
-    # For some reason, enabling apt addon seems to be required to pass `apt-get update` on trusty.
-    addons:
-      apt:
-        sources: []
 
   - &dependency
     name: Check dependencies in makefiles
