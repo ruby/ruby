@@ -2523,6 +2523,458 @@ class TestKeywordArguments < Test::Unit::TestCase
     end
   end
 
+  def test_instance_exec_kwsplat
+    kw = {}
+    h = {:a=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    c = Object.new
+    m = ->(*args) { args }
+    assert_equal([], c.instance_exec(**{}, &m))
+    assert_equal([], c.instance_exec(**kw, &m))
+    assert_equal([h], c.instance_exec(**h, &m))
+    assert_equal([h], c.instance_exec(a: 1, &m))
+    assert_equal([h2], c.instance_exec(**h2, &m))
+    assert_equal([h3], c.instance_exec(**h3, &m))
+    assert_equal([h3], c.instance_exec(a: 1, **h2, &m))
+
+    m = ->() { nil }
+    assert_nil(c.instance_exec(**{}, &m))
+    assert_nil(c.instance_exec(**kw, &m))
+    assert_raise(ArgumentError) { c.instance_exec(**h, &m) }
+    assert_raise(ArgumentError) { c.instance_exec(a: 1, &m) }
+    assert_raise(ArgumentError) { c.instance_exec(**h2, &m) }
+    assert_raise(ArgumentError) { c.instance_exec(**h3, &m) }
+    assert_raise(ArgumentError) { c.instance_exec(a: 1, **h2, &m) }
+
+    m = ->(args) { args }
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal(kw, c.instance_exec(**{}, &m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal(kw, c.instance_exec(**kw, &m))
+    end
+    assert_equal(kw, c.instance_exec(kw, **kw, &m))
+    assert_equal(h, c.instance_exec(**h, &m))
+    assert_equal(h, c.instance_exec(a: 1, &m))
+    assert_equal(h2, c.instance_exec(**h2, &m))
+    assert_equal(h3, c.instance_exec(**h3, &m))
+    assert_equal(h3, c.instance_exec(a: 1, **h2, &m))
+
+    m = ->(**args) { args }
+    assert_equal(kw, c.instance_exec(**{}, &m))
+    assert_equal(kw, c.instance_exec(**kw, &m))
+    assert_equal(h, c.instance_exec(**h, &m))
+    assert_equal(h, c.instance_exec(a: 1, &m))
+    assert_equal(h2, c.instance_exec(**h2, &m))
+    assert_equal(h3, c.instance_exec(**h3, &m))
+    assert_equal(h3, c.instance_exec(a: 1, **h2, &m))
+    assert_warn(/The last argument is used as the keyword parameter/) do
+      assert_equal(h, c.instance_exec(h, &m))
+    end
+    assert_raise(ArgumentError) { c.instance_exec(h2, &m) }
+    assert_warn(/The last argument is split into positional and keyword parameters/) do
+      assert_raise(ArgumentError) { c.instance_exec(h3, &m) }
+    end
+
+    m = ->(arg, **args) { [arg, args] }
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      c.instance_exec(**{}, &m)
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      c.instance_exec(**kw, &m)
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h, kw], c.instance_exec(**h, &m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h, kw], c.instance_exec(a: 1, &m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h2, kw], c.instance_exec(**h2, &m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h3, kw], c.instance_exec(**h3, &m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h3, kw], c.instance_exec(a: 1, **h2, &m))
+    end
+    assert_equal([h, kw], c.instance_exec(h, &m))
+    assert_equal([h2, kw], c.instance_exec(h2, &m))
+    assert_equal([h3, kw], c.instance_exec(h3, &m))
+
+    m = ->(arg=1, **args) { [arg, args] }
+    assert_equal([1, kw], c.instance_exec(**{}, &m))
+    assert_equal([1, kw], c.instance_exec(**kw, &m))
+    assert_equal([1, h], c.instance_exec(**h, &m))
+    assert_equal([1, h], c.instance_exec(a: 1, &m))
+    assert_equal([1, h2], c.instance_exec(**h2, &m))
+    assert_equal([1, h3], c.instance_exec(**h3, &m))
+    assert_equal([1, h3], c.instance_exec(a: 1, **h2, &m))
+    assert_warn(/The last argument is used as the keyword parameter/m) do
+      assert_equal([1, h], c.instance_exec(h, &m))
+    end
+    assert_equal([h2, kw], c.instance_exec(h2, &m))
+    assert_warn(/The last argument is split into positional and keyword parameters/m) do
+      assert_equal([h2, h], c.instance_exec(h3, &m))
+    end
+  end
+
+  def test_instance_exec_method_kwsplat
+    kw = {}
+    h = {:a=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    c = Object.new
+    def c.m(*args)
+      args
+    end
+    m  = c.method(:m)
+    assert_equal([], c.instance_exec(**{}, &m))
+    assert_equal([], c.instance_exec(**kw, &m))
+    assert_equal([h], c.instance_exec(**h, &m))
+    assert_equal([h], c.instance_exec(a: 1, &m))
+    assert_equal([h2], c.instance_exec(**h2, &m))
+    assert_equal([h3], c.instance_exec(**h3, &m))
+    assert_equal([h3], c.instance_exec(a: 1, **h2, &m))
+
+    c.singleton_class.remove_method(:m)
+    def c.m
+    end
+    m  = c.method(:m)
+    assert_nil(c.instance_exec(**{}, &m))
+    assert_nil(c.instance_exec(**kw, &m))
+    assert_raise(ArgumentError) { c.instance_exec(**h, &m) }
+    assert_raise(ArgumentError) { c.instance_exec(a: 1, &m) }
+    assert_raise(ArgumentError) { c.instance_exec(**h2, &m) }
+    assert_raise(ArgumentError) { c.instance_exec(**h3, &m) }
+    assert_raise(ArgumentError) { c.instance_exec(a: 1, **h2, &m) }
+
+    c.singleton_class.remove_method(:m)
+    def c.m(args)
+      args
+    end
+    m  = c.method(:m)
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal(kw, c.instance_exec(**{}, &m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal(kw, c.instance_exec(**kw, &m))
+    end
+    assert_equal(kw, c.instance_exec(kw, **kw, &m))
+    assert_equal(h, c.instance_exec(**h, &m))
+    assert_equal(h, c.instance_exec(a: 1, &m))
+    assert_equal(h2, c.instance_exec(**h2, &m))
+    assert_equal(h3, c.instance_exec(**h3, &m))
+    assert_equal(h3, c.instance_exec(a: 1, **h2, &m))
+
+    c.singleton_class.remove_method(:m)
+    def c.m(**args)
+      args
+    end
+    m  = c.method(:m)
+    assert_equal(kw, c.instance_exec(**{}, &m))
+    assert_equal(kw, c.instance_exec(**kw, &m))
+    assert_equal(h, c.instance_exec(**h, &m))
+    assert_equal(h, c.instance_exec(a: 1, &m))
+    assert_equal(h2, c.instance_exec(**h2, &m))
+    assert_equal(h3, c.instance_exec(**h3, &m))
+    assert_equal(h3, c.instance_exec(a: 1, **h2, &m))
+    assert_warn(/The last argument is used as the keyword parameter/) do
+      assert_equal(h, c.instance_exec(h, &m))
+    end
+    assert_raise(ArgumentError) { c.instance_exec(h2, &m) }
+    assert_warn(/The last argument is split into positional and keyword parameters/) do
+      assert_raise(ArgumentError) { c.instance_exec(h3, &m) }
+    end
+
+    c.singleton_class.remove_method(:m)
+    def c.m(arg, **args)
+      [arg, args]
+    end
+    m  = c.method(:m)
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      c.instance_exec(**{}, &m)
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      c.instance_exec(**kw, &m)
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h, kw], c.instance_exec(**h, &m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h, kw], c.instance_exec(a: 1, &m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h2, kw], c.instance_exec(**h2, &m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h3, kw], c.instance_exec(**h3, &m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h3, kw], c.instance_exec(a: 1, **h2, &m))
+    end
+    assert_equal([h, kw], c.instance_exec(h, &m))
+    assert_equal([h2, kw], c.instance_exec(h2, &m))
+    assert_equal([h3, kw], c.instance_exec(h3, &m))
+
+    c.singleton_class.remove_method(:m)
+    def c.m(arg=1, **args)
+      [arg, args]
+    end
+    m  = c.method(:m)
+    assert_equal([1, kw], c.instance_exec(**{}, &m))
+    assert_equal([1, kw], c.instance_exec(**kw, &m))
+    assert_equal([1, h], c.instance_exec(**h, &m))
+    assert_equal([1, h], c.instance_exec(a: 1, &m))
+    assert_equal([1, h2], c.instance_exec(**h2, &m))
+    assert_equal([1, h3], c.instance_exec(**h3, &m))
+    assert_equal([1, h3], c.instance_exec(a: 1, **h2, &m))
+    assert_warn(/The last argument is used as the keyword parameter/m) do
+      assert_equal([1, h], c.instance_exec(h, &m))
+    end
+    assert_equal([h2, kw], c.instance_exec(h2, &m))
+    assert_warn(/The last argument is split into positional and keyword parameters/) do
+      assert_equal([h2, h], c.instance_exec(h3, &m))
+    end
+  end
+
+  def test_instance_exec_define_method_kwsplat
+    kw = {}
+    h = {:a=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    c = Object.new
+    c.define_singleton_method(:m) do |*args|
+      args
+    end
+    m  = c.method(:m)
+    assert_equal([], c.instance_exec(**{}, &m))
+    assert_equal([], c.instance_exec(**kw, &m))
+    assert_equal([h], c.instance_exec(**h, &m))
+    assert_equal([h], c.instance_exec(a: 1, &m))
+    assert_equal([h2], c.instance_exec(**h2, &m))
+    assert_equal([h3], c.instance_exec(**h3, &m))
+    assert_equal([h3], c.instance_exec(a: 1, **h2, &m))
+
+    c.singleton_class.remove_method(:m)
+    c.define_singleton_method(:m) do
+    end
+    m  = c.method(:m)
+    assert_nil(c.instance_exec(**{}, &m))
+    assert_nil(c.instance_exec(**kw, &m))
+    assert_raise(ArgumentError) { c.instance_exec(**h, &m) }
+    assert_raise(ArgumentError) { c.instance_exec(a: 1, &m) }
+    assert_raise(ArgumentError) { c.instance_exec(**h2, &m) }
+    assert_raise(ArgumentError) { c.instance_exec(**h3, &m) }
+    assert_raise(ArgumentError) { c.instance_exec(a: 1, **h2, &m) }
+
+    c.singleton_class.remove_method(:m)
+    c.define_singleton_method(:m) do |args|
+      args
+    end
+    m  = c.method(:m)
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal(kw, c.instance_exec(**{}, &m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal(kw, c.instance_exec(**kw, &m))
+    end
+    assert_equal(kw, c.instance_exec(kw, **kw, &m))
+    assert_equal(h, c.instance_exec(**h, &m))
+    assert_equal(h, c.instance_exec(a: 1, &m))
+    assert_equal(h2, c.instance_exec(**h2, &m))
+    assert_equal(h3, c.instance_exec(**h3, &m))
+    assert_equal(h3, c.instance_exec(a: 1, **h2, &m))
+
+    c.singleton_class.remove_method(:m)
+    c.define_singleton_method(:m) do |**args|
+      args
+    end
+    m  = c.method(:m)
+    assert_equal(kw, c.instance_exec(**{}, &m))
+    assert_equal(kw, c.instance_exec(**kw, &m))
+    assert_equal(h, c.instance_exec(**h, &m))
+    assert_equal(h, c.instance_exec(a: 1, &m))
+    assert_equal(h2, c.instance_exec(**h2, &m))
+    assert_equal(h3, c.instance_exec(**h3, &m))
+    assert_equal(h3, c.instance_exec(a: 1, **h2, &m))
+    assert_warn(/The last argument is used as the keyword parameter/) do
+      assert_equal(h, c.instance_exec(h, &m))
+    end
+    assert_raise(ArgumentError) { c.instance_exec(h2, &m) }
+    assert_warn(/The last argument is split into positional and keyword parameters/) do
+      assert_raise(ArgumentError) { c.instance_exec(h3, &m) }
+    end
+
+    c.singleton_class.remove_method(:m)
+    c.define_singleton_method(:m) do |arg, **args|
+      [arg, args]
+    end
+    m  = c.method(:m)
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      c.instance_exec(**{}, &m)
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      c.instance_exec(**kw, &m)
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h, kw], c.instance_exec(**h, &m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h, kw], c.instance_exec(a: 1, &m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h2, kw], c.instance_exec(**h2, &m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h3, kw], c.instance_exec(**h3, &m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h3, kw], c.instance_exec(a: 1, **h2, &m))
+    end
+    assert_equal([h, kw], c.instance_exec(h, &m))
+    assert_equal([h2, kw], c.instance_exec(h2, &m))
+    assert_equal([h3, kw], c.instance_exec(h3, &m))
+
+    c.singleton_class.remove_method(:m)
+    c.define_singleton_method(:m) do |arg=1, **args|
+      [arg, args]
+    end
+    m  = c.method(:m)
+    assert_equal([1, kw], c.instance_exec(**{}, &m))
+    assert_equal([1, kw], c.instance_exec(**kw, &m))
+    assert_equal([1, h], c.instance_exec(**h, &m))
+    assert_equal([1, h], c.instance_exec(a: 1, &m))
+    assert_equal([1, h2], c.instance_exec(**h2, &m))
+    assert_equal([1, h3], c.instance_exec(**h3, &m))
+    assert_equal([1, h3], c.instance_exec(a: 1, **h2, &m))
+    assert_warn(/The last argument is used as the keyword parameter/m) do
+      assert_equal([1, h], c.instance_exec(h, &m))
+    end
+    assert_equal([h2, kw], c.instance_exec(h2, &m))
+    assert_warn(/The last argument is split into positional and keyword parameters/) do
+      assert_equal([h2, h], c.instance_exec(h3, &m))
+    end
+  end
+
+  def test_instance_exec_sym_proc_kwsplat
+    kw = {}
+    h = {:a=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    c = Object.new
+    def c.m(*args)
+      args
+    end
+    assert_equal([], c.instance_exec(c, **{}, &:m))
+    assert_equal([], c.instance_exec(c, **kw, &:m))
+    assert_equal([h], c.instance_exec(c, **h, &:m))
+    assert_equal([h], c.instance_exec(c, a: 1, &:m))
+    assert_equal([h2], c.instance_exec(c, **h2, &:m))
+    assert_equal([h3], c.instance_exec(c, **h3, &:m))
+    assert_equal([h3], c.instance_exec(c, a: 1, **h2, &:m))
+
+    c.singleton_class.remove_method(:m)
+    def c.m
+    end
+    assert_nil(c.instance_exec(c, **{}, &:m))
+    assert_nil(c.instance_exec(c, **kw, &:m))
+    assert_raise(ArgumentError) { c.instance_exec(c, **h, &:m) }
+    assert_raise(ArgumentError) { c.instance_exec(c, a: 1, &:m) }
+    assert_raise(ArgumentError) { c.instance_exec(c, **h2, &:m) }
+    assert_raise(ArgumentError) { c.instance_exec(c, **h3, &:m) }
+    assert_raise(ArgumentError) { c.instance_exec(c, a: 1, **h2, &:m) }
+
+    c.singleton_class.remove_method(:m)
+    def c.m(args)
+      args
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal(kw, c.instance_exec(c, **{}, &:m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal(kw, c.instance_exec(c, **kw, &:m))
+    end
+    assert_equal(kw, c.instance_exec(c, kw, **kw, &:m))
+    assert_equal(h, c.instance_exec(c, **h, &:m))
+    assert_equal(h, c.instance_exec(c, a: 1, &:m))
+    assert_equal(h2, c.instance_exec(c, **h2, &:m))
+    assert_equal(h3, c.instance_exec(c, **h3, &:m))
+    assert_equal(h3, c.instance_exec(c, a: 1, **h2, &:m))
+
+    c.singleton_class.remove_method(:m)
+    def c.m(**args)
+      args
+    end
+    assert_equal(kw, c.instance_exec(c, **{}, &:m))
+    assert_equal(kw, c.instance_exec(c, **kw, &:m))
+    assert_equal(h, c.instance_exec(c, **h, &:m))
+    assert_equal(h, c.instance_exec(c, a: 1, &:m))
+    assert_equal(h2, c.instance_exec(c, **h2, &:m))
+    assert_equal(h3, c.instance_exec(c, **h3, &:m))
+    assert_equal(h3, c.instance_exec(c, a: 1, **h2, &:m))
+    assert_warn(/The last argument is used as the keyword parameter/) do
+      assert_equal(h, c.instance_exec(c, h, &:m))
+    end
+    assert_raise(ArgumentError) { c.instance_exec(c, h2, &:m) }
+    assert_warn(/The last argument is split into positional and keyword parameters/) do
+      assert_raise(ArgumentError) { c.instance_exec(c, h3, &:m) }
+    end
+
+    c.singleton_class.remove_method(:m)
+    def c.m(arg, **args)
+      [arg, args]
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      c.instance_exec(c, **{}, &:m)
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      c.instance_exec(c, **kw, &:m)
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h, kw], c.instance_exec(c, **h, &:m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h, kw], c.instance_exec(c, a: 1, &:m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h2, kw], c.instance_exec(c, **h2, &:m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h3, kw], c.instance_exec(c, **h3, &:m))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h3, kw], c.instance_exec(c, a: 1, **h2, &:m))
+    end
+    assert_equal([h, kw], c.instance_exec(c, h, &:m))
+    assert_equal([h2, kw], c.instance_exec(c, h2, &:m))
+    assert_equal([h3, kw], c.instance_exec(c, h3, &:m))
+
+    c.singleton_class.remove_method(:m)
+    def c.m(arg=1, **args)
+      [arg, args]
+    end
+    assert_equal([1, kw], c.instance_exec(c, **{}, &:m))
+    assert_equal([1, kw], c.instance_exec(c, **kw, &:m))
+    assert_equal([1, h], c.instance_exec(c, **h, &:m))
+    assert_equal([1, h], c.instance_exec(c, a: 1, &:m))
+    assert_equal([1, h2], c.instance_exec(c, **h2, &:m))
+    assert_equal([1, h3], c.instance_exec(c, **h3, &:m))
+    assert_equal([1, h3], c.instance_exec(c, a: 1, **h2, &:m))
+    assert_warn(/The last argument is used as the keyword parameter/m) do
+      assert_equal([1, h], c.instance_exec(c, h, &:m))
+    end
+    assert_equal([h2, kw], c.instance_exec(c, h2, &:m))
+    assert_warn(/The last argument is split into positional and keyword parameters/) do
+      assert_equal([h2, h], c.instance_exec(c, h3, &:m))
+    end
+  end
+
   def p1
     Proc.new do |str: "foo", num: 424242|
       [str, num]

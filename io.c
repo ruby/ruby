@@ -12421,7 +12421,7 @@ argf_block_call_line_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, argf))
     if (!global_argf_p(argf)) {
 	ARGF.last_lineno = ++ARGF.lineno;
     }
-    return argf_block_call_i(i, argf, argc, argv, blockarg);
+    return argf_block_call_i(i, argf, argc, argv, blockarg, kw_splat);
 }
 
 static void

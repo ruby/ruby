@@ -4471,7 +4471,7 @@ rb_hash_gt(VALUE hash, VALUE other)
 }
 
 static VALUE
-hash_proc_call(VALUE key, VALUE hash, int argc, const VALUE *argv, VALUE passed_proc)
+hash_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(key, hash))
 {
     rb_check_arity(argc, 1, 1);
     return rb_hash_aref(hash, *argv);

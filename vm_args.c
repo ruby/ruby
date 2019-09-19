@@ -1052,7 +1052,7 @@ refine_sym_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
     rb_execution_context_t *ec;
     const VALUE symbol = RARRAY_AREF(callback_arg, 0);
     const VALUE refinements = RARRAY_AREF(callback_arg, 1);
-    int kw_splat = RB_PASS_CALLED_KEYWORDS;
+    int kwsplat = RB_PASS_CALLED_KEYWORDS;
     VALUE v;
     VALUE ret;
     VALUE klass;
@@ -1075,12 +1075,12 @@ refine_sym_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
     if (!NIL_P(blockarg)) {
 	vm_passed_block_handler_set(ec, blockarg);
     }
-    v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
+    v = rb_adjust_argv_kw_splat(&argc, &argv, &kwsplat);
     if (!me) {
-        ret = method_missing(obj, mid, argc, argv, MISSING_NOENTRY, kw_splat);
+        ret = method_missing(obj, mid, argc, argv, MISSING_NOENTRY, kwsplat);
     }
     else {
-        ret = rb_vm_call0(ec, obj, mid, argc, argv, me, kw_splat);
+        ret = rb_vm_call0(ec, obj, mid, argc, argv, me, kwsplat);
     }
     rb_free_tmp_buffer(&v);
     return ret;

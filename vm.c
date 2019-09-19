@@ -1164,10 +1164,10 @@ check_block_handler(rb_execution_context_t *ec)
 }
 
 static VALUE
-vm_yield_with_cref(rb_execution_context_t *ec, int argc, const VALUE *argv, const rb_cref_t *cref, int is_lambda)
+vm_yield_with_cref(rb_execution_context_t *ec, int argc, const VALUE *argv, int kw_splat, const rb_cref_t *cref, int is_lambda)
 {
     return invoke_block_from_c_bh(ec, check_block_handler(ec),
-                                  argc, argv, VM_NO_KEYWORDS, VM_BLOCK_HANDLER_NONE,
+                                  argc, argv, kw_splat, VM_BLOCK_HANDLER_NONE,
 				  cref, is_lambda, FALSE);
 }
 
