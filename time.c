@@ -4056,7 +4056,6 @@ time_asctime(VALUE time)
 
 /*
  *  call-seq:
- *     time.inspect -> string
  *     time.to_s    -> string
  *
  *  Returns a string representing _time_. Equivalent to calling
@@ -4080,6 +4079,52 @@ time_to_s(VALUE time)
         return strftimev("%Y-%m-%d %H:%M:%S UTC", time, rb_usascii_encoding());
     else
         return strftimev("%Y-%m-%d %H:%M:%S %z", time, rb_usascii_encoding());
+}
+
+/*
+ *  call-seq:
+ *     time.inspect -> string
+ *
+ *  Returns a detailed string representing _time_.
+ *
+ *     t = Time.now
+ *     t.to_s                              #=> "2012-11-10 18:16:12 +0100"
+ *     t.strftime "%Y-%m-%d %H:%M:%S %z"   #=> "2012-11-10 18:16:12 +0100"
+ *
+ *     t.utc.to_s                          #=> "2012-11-10 17:16:12 UTC"
+ *     t.strftime "%Y-%m-%d %H:%M:%S UTC"  #=> "2012-11-10 17:16:12 UTC"
+ */
+
+static VALUE
+time_inspect(VALUE time)
+{
+    struct time_object *tobj;
+    VALUE str, subsec;
+
+    GetTimeval(time, tobj);
+    str = strftimev("%Y-%m-%d %H:%M:%S", time, rb_usascii_encoding());
+    subsec = wmod(tobj->timew, WINT2FIXWV(TIME_SCALE));
+    if (FIXNUM_P(subsec) && FIX2LONG(subsec) == 0) {
+    }
+    else if (FIXNUM_P(subsec) && FIX2LONG(subsec) < TIME_SCALE) {
+        long len;
+        str = rb_sprintf("%"PRIsVALUE".%09ld", str, FIX2LONG(subsec));
+        for (len=RSTRING_LEN(str); RSTRING_PTR(str)[len-1] == '0' && len > 0; len--)
+            ;
+        rb_str_resize(str, len);
+    }
+    else {
+        rb_str_cat_cstr(str, " ");
+        subsec = quov(w2v(subsec), INT2FIX(TIME_SCALE));
+        rb_str_concat(str, rb_obj_as_string(subsec));
+    }
+    if (TZMODE_UTC_P(tobj)) {
+        rb_str_cat_cstr(str, " UTC");
+    }
+    else {
+        rb_str_concat(str, strftimev(" %z", time, rb_usascii_encoding()));
+    }
+    return str;
 }
 
 static VALUE
@@ -5560,7 +5605,7 @@ Init_tm(VALUE outer, const char *name)
     rb_define_method(tm, "utc?", time_utc_p, 0);
     rb_define_method(tm, "gmt?", time_utc_p, 0);
     rb_define_method(tm, "to_s", time_to_s, 0);
-    rb_define_method(tm, "inspect", time_to_s, 0);
+    rb_define_method(tm, "inspect", time_inspect, 0);
     rb_define_method(tm, "to_a", time_to_a, 0);
     rb_define_method(tm, "tv_sec", time_to_i, 0);
     rb_define_method(tm, "tv_usec", time_usec, 0);
@@ -5811,7 +5856,7 @@ Init_Time(void)
     rb_define_method(rb_cTime, "ctime", time_asctime, 0);
     rb_define_method(rb_cTime, "asctime", time_asctime, 0);
     rb_define_method(rb_cTime, "to_s", time_to_s, 0);
-    rb_define_method(rb_cTime, "inspect", time_to_s, 0);
+    rb_define_method(rb_cTime, "inspect", time_inspect, 0);
     rb_define_method(rb_cTime, "to_a", time_to_a, 0);
 
     rb_define_method(rb_cTime, "+", time_plus, 1);

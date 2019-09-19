@@ -553,6 +553,30 @@ class TestTime < Test::Unit::TestCase
     assert_equal(Time.at(946684800).getlocal.to_s, Time.at(946684800).to_s)
   end
 
+  def test_inspect
+    t2000 = get_t2000
+    assert_equal("2000-01-01 00:00:00 UTC", t2000.inspect)
+    assert_equal(Encoding::US_ASCII, t2000.inspect.encoding)
+    assert_kind_of(String, Time.at(946684800).getlocal.inspect)
+    assert_equal(Time.at(946684800).getlocal.inspect, Time.at(946684800).inspect)
+
+    t2000 = get_t2000 + 1/10r
+    assert_equal("2000-01-01 00:00:00.1 UTC", t2000.inspect)
+    t2000 = get_t2000 + 1/1000000000r
+    assert_equal("2000-01-01 00:00:00.000000001 UTC", t2000.inspect)
+    t2000 = get_t2000 + 1/10000000000r
+    assert_equal("2000-01-01 00:00:00 1/10000000000 UTC", t2000.inspect)
+    t2000 = get_t2000 + 0.1
+    assert_equal("2000-01-01 00:00:00 3602879701896397/36028797018963968 UTC", t2000.inspect)
+
+    t2000 = get_t2000
+    t2000 = t2000.localtime(9*3600)
+    assert_equal("2000-01-01 09:00:00 +0900", t2000.inspect)
+
+    t2000 = get_t2000.localtime(9*3600) + 1/10r
+    assert_equal("2000-01-01 09:00:00.1 +0900", t2000.inspect)
+  end
+
   def assert_zone_encoding(time)
     zone = time.zone
     assert_predicate(zone, :valid_encoding?)

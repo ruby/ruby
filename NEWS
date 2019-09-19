@@ -202,6 +202,11 @@ Time::
 
     * Added Time#floor method.  [Feature #15653]
 
+  Modified method::
+
+    * Time#inspect is separated from Time#to_s and it shows its sub second.
+      [Feature #15958]
+
 UnboundMethod::
 
   New methods::
