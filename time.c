@@ -4108,7 +4108,7 @@ time_inspect(VALUE time)
     }
     else if (FIXNUM_P(subsec) && FIX2LONG(subsec) < TIME_SCALE) {
         long len;
-        str = rb_sprintf("%"PRIsVALUE".%09ld", str, FIX2LONG(subsec));
+        str = rb_enc_sprintf(rb_usascii_encoding(), "%"PRIsVALUE".%09ld", str, FIX2LONG(subsec));
         for (len=RSTRING_LEN(str); RSTRING_PTR(str)[len-1] == '0' && len > 0; len--)
             ;
         rb_str_resize(str, len);
