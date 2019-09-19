@@ -1109,7 +1109,8 @@ enum imemo_type {
     imemo_iseq           =  7,
     imemo_tmpbuf         =  8,
     imemo_ast            =  9,
-    imemo_parser_strterm = 10
+    imemo_parser_strterm = 10,
+    imemo_ifunc_kw       = 11  /*!< iterator function with keyword flag */
 };
 #define IMEMO_MASK   0x0f
 
@@ -1182,7 +1183,10 @@ struct vm_ifunc_argc {
 struct vm_ifunc {
     VALUE flags;
     VALUE reserved;
-    rb_block_call_func_t func;
+    union {
+        rb_block_call_func_t nokw;
+        rb_block_call_kw_func_t kw;
+    } func;
     const void *data;
     struct vm_ifunc_argc argc;
 };
@@ -1193,6 +1197,14 @@ static inline struct vm_ifunc *
 rb_vm_ifunc_proc_new(rb_block_call_func_t func, const void *data)
 {
     return rb_vm_ifunc_new(func, data, 0, UNLIMITED_ARGUMENTS);
+}
+
+#define IFUNC_KW_NEW(a, b, c) ((struct vm_ifunc *)rb_imemo_new(imemo_ifunc_kw, (VALUE)(a), (VALUE)(b), (VALUE)(c), 0))
+struct vm_ifunc *rb_vm_ifunc_kw_new(rb_block_call_kw_func_t func, const void *data, int min_argc, int max_argc);
+static inline struct vm_ifunc *
+rb_vm_ifunc_kw_proc_new(rb_block_call_kw_func_t func, const void *data)
+{
+    return rb_vm_ifunc_kw_new(func, data, 0, UNLIMITED_ARGUMENTS);
 }
 
 typedef struct rb_imemo_tmpbuf_struct {
@@ -1983,6 +1995,7 @@ st_index_t rb_hash_proc(st_index_t hash, VALUE proc);
 int rb_block_arity(void);
 int rb_block_min_max_arity(int *max);
 VALUE rb_func_proc_new(rb_block_call_func_t func, VALUE val);
+VALUE rb_func_kw_proc_new(rb_block_call_kw_func_t func, VALUE val);
 VALUE rb_func_lambda_new(rb_block_call_func_t func, VALUE val, int min_argc, int max_argc);
 VALUE rb_block_to_s(VALUE self, const struct rb_block *block, const char *additional_info);
 

@@ -528,7 +528,7 @@ rb_enumeratorize_with_size(VALUE obj, VALUE meth, int argc, const VALUE *argv, r
 }
 
 static VALUE
-enumerator_block_call(VALUE obj, rb_block_call_func *func, VALUE arg)
+enumerator_block_call(VALUE obj, rb_block_call_kw_func *func, VALUE arg)
 {
     int argc = 0;
     const VALUE *argv = 0;
@@ -604,7 +604,7 @@ enumerator_each(int argc, VALUE *argv, VALUE obj)
 }
 
 static VALUE
-enumerator_with_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
+enumerator_with_index_i(RB_BLOCK_CALL_KW_FUNC_ARGLIST(val, m))
 {
     struct MEMO *memo = (struct MEMO *)m;
     VALUE idx = memo->v1;
@@ -665,7 +665,7 @@ enumerator_each_with_index(VALUE obj)
 }
 
 static VALUE
-enumerator_with_object_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, memo))
+enumerator_with_object_i(RB_BLOCK_CALL_KW_FUNC_ARGLIST(val, memo))
 {
     if (argc <= 1)
 	return rb_yield_values(2, val, memo);

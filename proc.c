@@ -43,7 +43,7 @@ VALUE rb_cMethod;
 VALUE rb_cBinding;
 VALUE rb_cProc;
 
-static rb_block_call_func bmcall;
+static rb_block_call_kw_func bmcall;
 static int method_arity(VALUE);
 static int method_min_max_arity(VALUE, int *max);
 
@@ -51,7 +51,7 @@ static int method_min_max_arity(VALUE, int *max);
 
 /* Proc */
 
-#define IS_METHOD_PROC_IFUNC(ifunc) ((ifunc)->func == bmcall)
+#define IS_METHOD_PROC_IFUNC(ifunc) ((ifunc)->func.kw == bmcall)
 
 static void
 block_mark(const struct rb_block *block)
@@ -724,10 +724,46 @@ rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int m
     return IFUNC_NEW(func, data, arity.packed);
 }
 
+struct vm_ifunc *
+rb_vm_ifunc_kw_new(rb_block_call_kw_func_t func, const void *data, int min_argc, int max_argc)
+{
+    union {
+        struct vm_ifunc_argc argc;
+        VALUE packed;
+    } arity;
+
+    if (min_argc < UNLIMITED_ARGUMENTS ||
+#if SIZEOF_INT * 2 > SIZEOF_VALUE
+        min_argc >= (int)(1U << (SIZEOF_VALUE * CHAR_BIT) / 2) ||
+#endif
+        0) {
+        rb_raise(rb_eRangeError, "minimum argument number out of range: %d",
+                 min_argc);
+    }
+    if (max_argc < UNLIMITED_ARGUMENTS ||
+#if SIZEOF_INT * 2 > SIZEOF_VALUE
+        max_argc >= (int)(1U << (SIZEOF_VALUE * CHAR_BIT) / 2) ||
+#endif
+        0) {
+        rb_raise(rb_eRangeError, "maximum argument number out of range: %d",
+                 max_argc);
+    }
+    arity.argc.min = min_argc;
+    arity.argc.max = max_argc;
+    return IFUNC_KW_NEW(func, data, arity.packed);
+}
+
 MJIT_FUNC_EXPORTED VALUE
 rb_func_proc_new(rb_block_call_func_t func, VALUE val)
 {
     struct vm_ifunc *ifunc = rb_vm_ifunc_proc_new(func, (void *)val);
+    return cfunc_proc_new(rb_cProc, (VALUE)ifunc, 0);
+}
+
+MJIT_FUNC_EXPORTED VALUE
+rb_func_kw_proc_new(rb_block_call_kw_func_t func, VALUE val)
+{
+    struct vm_ifunc *ifunc = rb_vm_ifunc_kw_proc_new(func, (void *)val);
     return cfunc_proc_new(rb_cProc, (VALUE)ifunc, 0);
 }
 
@@ -2861,9 +2897,9 @@ mlambda(VALUE method)
 }
 
 static VALUE
-bmcall(RB_BLOCK_CALL_FUNC_ARGLIST(args, method))
+bmcall(RB_BLOCK_CALL_KW_FUNC_ARGLIST(args, method))
 {
-    return rb_method_call_with_block(argc, argv, method, blockarg);
+    return rb_method_call_with_block_kw(argc, argv, method, blockarg, kw_splat);
 }
 
 VALUE
@@ -2872,6 +2908,15 @@ rb_proc_new(
     VALUE val)
 {
     VALUE procval = rb_iterate(mproc, 0, func, val);
+    return procval;
+}
+
+VALUE
+rb_proc_new_kw(
+    rb_block_call_kw_func_t func,
+    VALUE val)
+{
+    VALUE procval = rb_iterate_kw(mproc, 0, func, val);
     return procval;
 }
 
@@ -2897,7 +2942,7 @@ method_to_proc(VALUE method)
      *   end
      * end
      */
-    procval = rb_iterate(mlambda, 0, bmcall, method);
+    procval = rb_iterate_kw(mlambda, 0, bmcall, method);
     GetProcPtr(procval, proc);
     proc->is_from_method = 1;
     return procval;

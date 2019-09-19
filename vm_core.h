@@ -1428,7 +1428,8 @@ VM_BH_IFUNC_P(VALUE block_handler)
     if ((block_handler & 0x03) == 0x03) {
 #if VM_CHECK_MODE > 0
 	struct rb_captured_block *captured = (void *)(block_handler & ~0x03);
-	VM_ASSERT(imemo_type_p(captured->code.val, imemo_ifunc));
+        VM_ASSERT(imemo_type_p(captured->code.val, imemo_ifunc) ||
+                  imemo_type_p(captured->code.val, imemo_ifunc_kw));
 #endif
 	return 1;
     }
@@ -1495,7 +1496,8 @@ vm_block_type(const struct rb_block *block)
 	VM_ASSERT(imemo_type_p(block->as.captured.code.val, imemo_iseq));
 	break;
       case block_type_ifunc:
-	VM_ASSERT(imemo_type_p(block->as.captured.code.val, imemo_ifunc));
+        VM_ASSERT(imemo_type_p(block->as.captured.code.val, imemo_ifunc) ||
+                  imemo_type_p(block->as.captured.code.val, imemo_ifunc_kw));
 	break;
       case block_type_symbol:
 	VM_ASSERT(SYMBOL_P(block->as.symbol));

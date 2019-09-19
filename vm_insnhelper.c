@@ -2960,7 +2960,12 @@ vm_yield_with_cfunc(rb_execution_context_t *ec,
 		  VM_GUARDED_PREV_EP(captured->ep),
                   (VALUE)me,
 		  0, ec->cfp->sp, 0, 0);
-    val = (*ifunc->func)(arg, (VALUE)ifunc->data, argc, argv, blockarg);
+    if (imemo_type((VALUE)ifunc) == imemo_ifunc_kw) {
+        val = (*ifunc->func.kw)(arg, (VALUE)ifunc->data, argc, argv, blockarg, kw_splat > 0);
+    }
+    else {
+        val = (*ifunc->func.nokw)(arg, (VALUE)ifunc->data, argc, argv, blockarg);
+    }
     rb_vm_pop_frame(ec);
 
     return val;

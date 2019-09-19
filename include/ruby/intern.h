@@ -239,6 +239,7 @@ int rb_cmpint(VALUE, VALUE, VALUE);
 NORETURN(void rb_cmperr(VALUE, VALUE));
 /* cont.c */
 VALUE rb_fiber_new(rb_block_call_func_t, VALUE);
+VALUE rb_fiber_new_kw(rb_block_call_kw_func_t, VALUE);
 VALUE rb_fiber_resume(VALUE fib, int argc, const VALUE *argv);
 VALUE rb_fiber_yield(int argc, const VALUE *argv);
 VALUE rb_fiber_current(void);
@@ -450,6 +451,7 @@ VALUE rb_class_new_instance_kw(int, const VALUE*, VALUE, int);
 VALUE rb_block_proc(void);
 VALUE rb_block_lambda(void);
 VALUE rb_proc_new(rb_block_call_func_t, VALUE);
+VALUE rb_proc_new_kw(rb_block_call_kw_func_t, VALUE);
 VALUE rb_obj_is_proc(VALUE);
 VALUE rb_proc_call(VALUE, VALUE);
 VALUE rb_proc_call_with_block(VALUE, int argc, const VALUE *argv, VALUE);

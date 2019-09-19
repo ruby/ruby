@@ -1535,7 +1535,7 @@ nmin_filter(struct nmin_data *data)
 }
 
 static VALUE
-nmin_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _data))
+nmin_i(RB_BLOCK_CALL_KW_FUNC_ARGLIST(i, _data))
 {
     struct nmin_data *data = (struct nmin_data *)_data;
     VALUE cmpv;
@@ -1595,11 +1595,11 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
 	for (i = 0; i < RARRAY_LEN(obj); i++) {
 	    VALUE args[1];
 	    args[0] = RARRAY_AREF(obj, i);
-            nmin_i(obj, (VALUE)&data, 1, args, Qundef);
+            nmin_i(obj, (VALUE)&data, 1, args, Qundef, RB_NO_KEYWORDS);
 	}
     }
     else {
-	rb_block_call(obj, id_each, 0, 0, nmin_i, (VALUE)&data);
+        rb_block_call_kw(obj, id_each, 0, 0, nmin_i, (VALUE)&data, RB_NO_KEYWORDS);
     }
     nmin_filter(&data);
     result = data.buf;

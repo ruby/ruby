@@ -260,6 +260,7 @@ RB_DEBUG_COUNTER(obj_imemo_cref)
 RB_DEBUG_COUNTER(obj_imemo_svar)
 RB_DEBUG_COUNTER(obj_imemo_throw_data)
 RB_DEBUG_COUNTER(obj_imemo_ifunc)
+RB_DEBUG_COUNTER(obj_imemo_ifunc_kw)
 RB_DEBUG_COUNTER(obj_imemo_memo)
 RB_DEBUG_COUNTER(obj_imemo_parser_strterm)
 

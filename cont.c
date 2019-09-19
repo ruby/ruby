@@ -1775,6 +1775,12 @@ rb_fiber_new(rb_block_call_func_t func, VALUE obj)
     return fiber_initialize(fiber_alloc(rb_cFiber), rb_proc_new(func, obj), &shared_fiber_pool);
 }
 
+VALUE
+rb_fiber_new_kw(rb_block_call_kw_func_t func, VALUE obj)
+{
+    return fiber_initialize(fiber_alloc(rb_cFiber), rb_proc_new_kw(func, obj), &shared_fiber_pool);
+}
+
 static void rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt);
 
 void

@@ -1965,13 +1965,18 @@ PRINTF_ARGS(void rb_compile_warn(const char *, int, const char*, ...), 3, 4);
     VALUE yielded_arg, VALUE callback_arg, int argc, const VALUE *argv, VALUE blockarg
 typedef VALUE rb_block_call_func(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg));
 typedef rb_block_call_func *rb_block_call_func_t;
+#define RB_BLOCK_CALL_KW_FUNC_ARGLIST(yielded_arg, callback_arg) \
+    VALUE yielded_arg, VALUE callback_arg, int argc, const VALUE *argv, VALUE blockarg, int kw_splat
+typedef VALUE rb_block_call_kw_func(RB_BLOCK_CALL_KW_FUNC_ARGLIST(yielded_arg, callback_arg));
+typedef rb_block_call_kw_func *rb_block_call_kw_func_t;
 
 VALUE rb_each(VALUE);
 VALUE rb_yield(VALUE);
 VALUE rb_yield_values(int n, ...);
 VALUE rb_yield_values2(int n, const VALUE *argv);
 VALUE rb_yield_splat(VALUE);
-VALUE rb_yield_block(VALUE, VALUE, int, const VALUE *, VALUE); /* rb_block_call_func */
+VALUE rb_yield_block(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg)); /* rb_block_call_func */
+VALUE rb_yield_block_kw(RB_BLOCK_CALL_KW_FUNC_ARGLIST(yielded_arg, callback_arg)); /* rb_block_call_kw_func */
 #define RB_NO_KEYWORDS 0
 #define RB_PASS_KEYWORDS 1
 #define RB_PASS_EMPTY_KEYWORDS 2
@@ -1980,8 +1985,9 @@ int rb_keyword_given_p(void);
 int rb_block_given_p(void);
 void rb_need_block(void);
 VALUE rb_iterate(VALUE(*)(VALUE),VALUE,rb_block_call_func_t,VALUE);
+VALUE rb_iterate_kw(VALUE(*)(VALUE),VALUE,rb_block_call_kw_func_t,VALUE);
 VALUE rb_block_call(VALUE,ID,int,const VALUE*,rb_block_call_func_t,VALUE);
-VALUE rb_block_call_kw(VALUE,ID,int,const VALUE*,rb_block_call_func_t,VALUE,int);
+VALUE rb_block_call_kw(VALUE,ID,int,const VALUE*,rb_block_call_kw_func_t,VALUE,int);
 VALUE rb_rescue(VALUE(*)(VALUE),VALUE,VALUE(*)(VALUE,VALUE),VALUE);
 VALUE rb_rescue2(VALUE(*)(VALUE),VALUE,VALUE(*)(VALUE,VALUE),VALUE,...);
 VALUE rb_vrescue2(VALUE(*)(VALUE),VALUE,VALUE(*)(VALUE,VALUE),VALUE,va_list);

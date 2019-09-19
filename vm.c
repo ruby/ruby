@@ -938,7 +938,8 @@ rb_vm_make_proc_lambda(const rb_execution_context_t *ec, const struct rb_capture
     }
     VM_ASSERT(VM_EP_IN_HEAP_P(ec, captured->ep));
     VM_ASSERT(imemo_type_p(captured->code.val, imemo_iseq) ||
-	      imemo_type_p(captured->code.val, imemo_ifunc));
+              imemo_type_p(captured->code.val, imemo_ifunc) ||
+              imemo_type_p(captured->code.val, imemo_ifunc_kw));
 
     procval = vm_proc_create_from_captured(klass, captured,
 					   imemo_type(captured->code.val) == imemo_iseq ? block_type_iseq : block_type_ifunc, FALSE, is_lambda);
@@ -1164,10 +1165,10 @@ check_block_handler(rb_execution_context_t *ec)
 }
 
 static VALUE
-vm_yield_with_cref(rb_execution_context_t *ec, int argc, const VALUE *argv, const rb_cref_t *cref, int is_lambda)
+vm_yield_with_cref(rb_execution_context_t *ec, int argc, const VALUE *argv, int kw_splat, const rb_cref_t *cref, int is_lambda)
 {
     return invoke_block_from_c_bh(ec, check_block_handler(ec),
-                                  argc, argv, VM_NO_KEYWORDS, VM_BLOCK_HANDLER_NONE,
+                                  argc, argv, kw_splat, VM_BLOCK_HANDLER_NONE,
 				  cref, is_lambda, FALSE);
 }
 
@@ -1180,10 +1181,10 @@ vm_yield(rb_execution_context_t *ec, int argc, const VALUE *argv)
 }
 
 static VALUE
-vm_yield_with_block(rb_execution_context_t *ec, int argc, const VALUE *argv, VALUE block_handler)
+vm_yield_with_block(rb_execution_context_t *ec, int argc, const VALUE *argv, VALUE block_handler, int kw_splat)
 {
     return invoke_block_from_c_bh(ec, check_block_handler(ec),
-                                  argc, argv, VM_NO_KEYWORDS, block_handler,
+                                  argc, argv, kw_splat, block_handler,
 				  NULL, FALSE, FALSE);
 }
 
