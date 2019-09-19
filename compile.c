@@ -5347,8 +5347,7 @@ compile_case2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
 
 	vals = node->nd_head;
 	if (!vals) {
-	    COMPILE_ERROR(ERROR_ARGS "NODE_WHEN: must be NODE_LIST, but 0");
-	    return COMPILE_NG;
+            EXPECT_NODE_NONULL("NODE_WHEN", node, NODE_LIST, COMPILE_NG);
 	}
 	switch (nd_type(vals)) {
 	  case NODE_LIST:
