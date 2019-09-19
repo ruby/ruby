@@ -170,8 +170,12 @@ struct local_vars {
 enum {
     ORDINAL_PARAM = -1,
     NO_PARAM = 0,
-    NUMPARAM_MAX = 100,
+    NUMPARAM_MAX = 9,
 };
+
+#define NUMPARAM_ID_P(id) (is_local_id(id) && NUMPARAM_ID_TO_IDX(id) <= NUMPARAM_MAX)
+#define NUMPARAM_ID_TO_IDX(id) (unsigned int)(((id) >> ID_SCOPE_SHIFT) - tNUMPARAM_0)
+#define NUMPARAM_IDX_TO_ID(idx) TOKEN2LOCALID((tNUMPARAM_0 + (idx)))
 
 #define DVARS_INHERIT ((void*)1)
 #define DVARS_TOPSCOPE NULL
@@ -11705,9 +11709,9 @@ arg_var(struct parser_params *p, ID id)
 static void
 local_var(struct parser_params *p, ID id)
 {
-    if (id >= idNUMPARAM_0 && id <= idNUMPARAM_9) {
+    if (NUMPARAM_ID_P(id)) {
 	rb_warn1("`_%d' is used as numbered parameter",
-		 WARN_I((int)(id - idNUMPARAM_0)));
+		 WARN_I(NUMPARAM_ID_TO_IDX(id)));
     }
     vtable_add(p->lvtbl->vars, id);
     if (p->lvtbl->used) {

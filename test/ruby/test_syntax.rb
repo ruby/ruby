@@ -1459,6 +1459,7 @@ eom
     assert_syntax_error('proc {@1_}', /unexpected/)
     assert_syntax_error('proc {@9999999999999999}', /too large/)
     assert_syntax_error('@1', /outside block/)
+    assert_warn(/`_2' is used as numbered parameter/) {eval('_2=1')}
   end
 
   def test_value_expr_in_condition
