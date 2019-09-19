@@ -10598,9 +10598,18 @@ static void
 ibf_dump_mark(void *ptr)
 {
     struct ibf_dump *dump = (struct ibf_dump *)ptr;
-    rb_gc_mark(dump->str);
-    rb_gc_mark(dump->iseq_list);
-    rb_gc_mark(dump->obj_list);
+    rb_gc_mark_movable(dump->str);
+    rb_gc_mark_movable(dump->iseq_list);
+    rb_gc_mark_movable(dump->obj_list);
+}
+
+static void
+ibf_dump_compact(void *ptr)
+{
+    struct ibf_dump *dump = (struct ibf_dump *)ptr;
+    dump->str = rb_gc_location(dump->str);
+    dump->iseq_list = rb_gc_location(dump->iseq_list);
+    dump->obj_list = rb_gc_location(dump->obj_list);
 }
 
 static void
@@ -10630,7 +10639,7 @@ ibf_dump_memsize(const void *ptr)
 
 static const rb_data_type_t ibf_dump_type = {
     "ibf_dump",
-    {ibf_dump_mark, ibf_dump_free, ibf_dump_memsize,},
+    {ibf_dump_mark, ibf_dump_free, ibf_dump_memsize, ibf_dump_compact, },
     0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
 };
 
@@ -10838,9 +10847,18 @@ static void
 ibf_loader_mark(void *ptr)
 {
     struct ibf_load *load = (struct ibf_load *)ptr;
-    rb_gc_mark(load->str);
-    rb_gc_mark(load->iseq_list);
-    rb_gc_mark(load->obj_list);
+    rb_gc_mark_movable(load->str);
+    rb_gc_mark_movable(load->iseq_list);
+    rb_gc_mark_movable(load->obj_list);
+}
+
+static void
+ibf_loader_compact(void *ptr)
+{
+    struct ibf_load *load = (struct ibf_load *)ptr;
+    load->str = rb_gc_location(load->str);
+    load->iseq_list = rb_gc_location(load->iseq_list);
+    load->obj_list = rb_gc_location(load->obj_list);
 }
 
 static void
@@ -10860,7 +10878,7 @@ ibf_loader_memsize(const void *ptr)
 
 static const rb_data_type_t ibf_load_type = {
     "ibf_loader",
-    {ibf_loader_mark, ibf_loader_free, ibf_loader_memsize,},
+    {ibf_loader_mark, ibf_loader_free, ibf_loader_memsize, ibf_loader_compact,},
     0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
 };
 
