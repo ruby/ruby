@@ -2,7 +2,6 @@
 
 cxx = MakeMakefile["C++"]
 
-begin
 ok = cxx.try_compile(<<~'begin', "") do |x|
   #include "ruby/config.h"
 
@@ -21,11 +20,7 @@ begin
   # subject we are going to test in this extension library.
   x.sub! %<#include "ruby.h">, ''
 end
-rescue
-end
 
 if ok
   create_makefile("-test-/cxxanyargs")
-else
-  File.write("Makefile", "all:\n\tcat mkmf.log\n")
 end

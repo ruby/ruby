@@ -271,9 +271,11 @@ def extmake(target, basedir = 'ext', maybestatic = true)
   ensure
     Logging::log_close
     if error
-      STDERR.print("#{message}\n\t#{error.backtrace.join("\n\t")}\n")
-      if File.exist?("mkmf.log")
-        IO.copy_stream("mkmf.log", STDERR)
+      begin
+        if File.exist?("mkmf.log")
+          IO.copy_stream("mkmf.log", STDERR)
+        end
+      rescue SystemCallError
       end
     end
     if rbconfig0
