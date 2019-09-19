@@ -23,4 +23,6 @@ end
 
 if ok
   create_makefile("-test-/cxxanyargs")
+else
+  File.write("Makefile", "all:\n\tcat mkmf.log\n")
 end

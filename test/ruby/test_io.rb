@@ -2003,8 +2003,6 @@ class TestIO < Test::Unit::TestCase
       end
     end
     false
-  rescue LoadError
-    raise File.read("ext/-test-/file/mkmf.log")
   end
 
   def test_seek
