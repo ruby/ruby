@@ -2792,6 +2792,14 @@ realclean: distclean
 
     CONFTEST_CXX = "#{CONFTEST}.#{config_string('CXX_EXT') || CXX_EXT[0]}"
 
+    def have_devel?
+      unless defined? @have_devel
+        @have_devel = true
+        @have_devel = try_link(MAIN_DOES_NOTHING)
+      end
+      @have_devel
+    end
+
     def conftest_source
       CONFTEST_CXX
     end
