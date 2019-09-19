@@ -24,16 +24,5 @@ end
 if ok
   $srcs = %w[cxxanyargs.cpp]
   $cleanfiles << "failure.failed"
-  create_makefile("-test-/cxxanyargs") do |mk|
-    mk << <<MK
-
-cxxanyargs.#$OBJEXT: failure.failed
-
-failure.failed: failure.cpp
-\t$(Q)$(RUBY) -rfileutils \\
-\t  -e "err = IO.popen(%[$(MAKE) failure.#$OBJEXT], err:[:child, :out], &:read)" \\
-\t  -e "abort err unless /rb_define_method/ =~ err" \\
-\t  -e "FileUtils.touch(*ARGV)" $@
-MK
-  end
+  create_makefile("-test-/cxxanyargs")
 end
