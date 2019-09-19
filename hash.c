@@ -6423,7 +6423,7 @@ Init_Hash(void)
      *
      * The ENV object contains the name and value for each current environment variable.
      * Creating, deleting, or changing a value in ENV changes the environment,
-     * both for the current process and for any launched child processes.
+     * both for the current process and initially for any launched child processes.
      *
      * Though somewhat hash-like, ENV is not a Hash.  Its actual class is Object.
      *
@@ -6444,8 +6444,8 @@ Init_Hash(void)
      *
      * == About the Examples
      *
-     * ENV typically contains dozens of environment variables, and sometimes hundreds.
-     * For simplicity, the examples below sometimes greatly reduce
+     * ENV typically has dozens of environment variables, and sometimes hundreds.
+     * For simplicity, some of the examples below greatly reduce
      * the number of environment variables.
      */
 
