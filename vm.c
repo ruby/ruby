@@ -1180,10 +1180,10 @@ vm_yield(rb_execution_context_t *ec, int argc, const VALUE *argv)
 }
 
 static VALUE
-vm_yield_with_block(rb_execution_context_t *ec, int argc, const VALUE *argv, VALUE block_handler)
+vm_yield_with_block(rb_execution_context_t *ec, int argc, const VALUE *argv, VALUE block_handler, int kw_splat)
 {
     return invoke_block_from_c_bh(ec, check_block_handler(ec),
-                                  argc, argv, VM_NO_KEYWORDS, block_handler,
+                                  argc, argv, kw_splat, block_handler,
 				  NULL, FALSE, FALSE);
 }
 

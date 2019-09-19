@@ -18,7 +18,7 @@ struct local_var_list {
 static inline VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missing_reason call_status, int kw_splat);
 static inline VALUE vm_yield_with_cref(rb_execution_context_t *ec, int argc, const VALUE *argv, int kw_splat, const rb_cref_t *cref, int is_lambda);
 static inline VALUE vm_yield(rb_execution_context_t *ec, int argc, const VALUE *argv);
-static inline VALUE vm_yield_with_block(rb_execution_context_t *ec, int argc, const VALUE *argv, VALUE block_handler);
+static inline VALUE vm_yield_with_block(rb_execution_context_t *ec, int argc, const VALUE *argv, VALUE block_handler, int kw_splat);
 static inline VALUE vm_yield_force_blockarg(rb_execution_context_t *ec, VALUE args);
 VALUE vm_exec(rb_execution_context_t *ec, int mjit_enable_p);
 static void vm_set_eval_stack(rb_execution_context_t * th, const rb_iseq_t *iseq, const rb_cref_t *cref, const struct rb_block *base_block);
@@ -1247,10 +1247,18 @@ rb_yield_force_blockarg(VALUE values)
 }
 
 VALUE
-rb_yield_block(VALUE val, VALUE arg, int argc, const VALUE *argv, VALUE blockarg)
+rb_yield_block(RB_BLOCK_CALL_FUNC_ARGLIST(val, arg))
 {
-    return vm_yield_with_block(GET_EC(), argc, argv,
-			       NIL_P(blockarg) ? VM_BLOCK_HANDLER_NONE : blockarg);
+    VALUE v = 0, ret;
+    if (rb_empty_keyword_given_p()) {
+        kw_splat = RB_PASS_EMPTY_KEYWORDS;
+        v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
+    }
+    ret = vm_yield_with_block(GET_EC(), argc, argv,
+                              NIL_P(blockarg) ? VM_BLOCK_HANDLER_NONE : blockarg,
+                              kw_splat);
+    rb_free_tmp_buffer(&v);
+    return ret;
 }
 
 static VALUE
