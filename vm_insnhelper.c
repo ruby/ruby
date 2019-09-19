@@ -1380,7 +1380,7 @@ __attribute__((__artificial__))
 #endif
 #endif
 static inline vm_call_handler
-calccall(const struct rb_call_cache *cc, const rb_callable_method_entry_t *me)
+calccall(const struct rb_call_info *ci, const struct rb_call_cache *cc, const rb_callable_method_entry_t *me)
 {
     if (UNLIKELY(!me)) {
         return vm_call_general; /* vm_call_method_nome() situation */
@@ -1390,6 +1390,14 @@ calccall(const struct rb_call_cache *cc, const rb_callable_method_entry_t *me)
     }
     else if (UNLIKELY(cc->def != me->def)) {
         return vm_call_general;  /* cc->me was refined elsewhere */
+    }
+    /* "Calling a formerly-public method, which is now privatised, with an
+     * explicit receiver" is the only situation we have to check here.  A
+     * formerly-private method now publicised is an absolutely safe thing.
+     * Calling a private method without specifying a receiver is also safe. */
+    else if ((METHOD_ENTRY_VISI(cc->me) != METHOD_VISI_PUBLIC) &&
+             !(ci->flag & VM_CALL_FCALL)) {
+        return vm_call_general;
     }
     else {
         return cc->call;
@@ -1406,7 +1414,7 @@ rb_vm_search_method_slowpath(const struct rb_call_info *ci, struct rb_call_cache
         RCLASS_SERIAL(klass),
         me,
         me ? me->def : NULL,
-        calccall(cc, me),
+        calccall(ci, cc, me),
     };
     VM_ASSERT(callable_method_entry_p(cc->me));
 }
