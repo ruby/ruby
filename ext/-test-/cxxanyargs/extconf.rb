@@ -2,6 +2,7 @@
 
 cxx = MakeMakefile["C++"]
 
+begin
 ok = cxx.try_compile(<<~'begin', "") do |x|
   #include "ruby/config.h"
 
@@ -19,6 +20,8 @@ begin
   # We are wiping ruby.h from the source because that header file is the
   # subject we are going to test in this extension library.
   x.sub! %<#include "ruby.h">, ''
+end
+rescue
 end
 
 if ok
