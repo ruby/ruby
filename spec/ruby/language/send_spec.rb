@@ -258,10 +258,18 @@ describe "Invoking a private setter method" do
 end
 
 describe "Invoking a private getter method" do
-  it "does not permit self as a receiver" do
-    receiver = LangSendSpecs::PrivateGetter.new
-    -> { receiver.call_self_foo }.should_not raise_error(NoMethodError)
-    -> { receiver.call_self_foo_or_equals(6) }.should raise_error(NoMethodError)
+  ruby_version_is ""..."2.7" do
+    it "does not permit self as a receiver" do
+      receiver = LangSendSpecs::PrivateGetter.new
+      -> { receiver.call_self_foo }.should raise_error(NoMethodError)
+      -> { receiver.call_self_foo_or_equals(6) }.should raise_error(NoMethodError)
+    end
+  end
+  ruby_version_is "2.7" do
+    it "permits self as a receiver" do
+      receiver = LangSendSpecs::PrivateGetter.new
+      -> { receiver.call_self_foo }.should_not raise_error(NoMethodError)
+    end
   end
 end
 
