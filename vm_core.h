@@ -775,7 +775,11 @@ enum rb_thread_status {
     THREAD_KILLED
 };
 
+#ifdef RUBY_JMP_BUF
 typedef RUBY_JMP_BUF rb_jmpbuf_t;
+#else
+typedef void *rb_jmpbuf_t[5];
+#endif
 
 /*
   the members which are written in EC_PUSH_TAG() should be placed at
