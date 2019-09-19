@@ -270,14 +270,6 @@ def extmake(target, basedir = 'ext', maybestatic = true)
     end
   ensure
     Logging::log_close
-    if error
-      begin
-        if File.exist?("mkmf.log")
-          IO.copy_stream("mkmf.log", STDERR)
-        end
-      rescue SystemCallError
-      end
-    end
     if rbconfig0
       RbConfig.module_eval {
 	remove_const(:CONFIG)
