@@ -2792,6 +2792,11 @@ realclean: distclean
 
     CONFTEST_CXX = "#{CONFTEST}.#{config_string('CXX_EXT') || CXX_EXT[0]}"
 
+    TRY_LINK_CXX = config_string('TRY_LINK_CXX') ||
+                   ((cmd = TRY_LINK.gsub(/\$\(C(?:C|(FLAGS))\)/, '$(CXX\1)')) != TRY_LINK && cmd) ||
+                   "$(CXX) #{OUTFLAG}#{CONFTEST}#{$EXEEXT} $(INCFLAGS) $(CPPFLAGS) " \
+                   "$(CXXFLAGS) $(src) $(LIBPATH) $(LDFLAGS) $(ARCH_FLAG) $(LOCAL_LIBS) $(LIBS)"
+
     def have_devel?
       unless defined? @have_devel
         @have_devel = true
@@ -2808,6 +2813,11 @@ realclean: distclean
       conf = cc_config(opt)
       RbConfig::expand("$(CXX) #$INCFLAGS #$CPPFLAGS #$CXXFLAGS #$ARCH_FLAG #{opt} -c #{CONFTEST_CXX}",
                        conf)
+    end
+
+    def link_command(ldflags, *opts)
+      conf = link_config(ldflags, *opts)
+      RbConfig::expand(TRY_LINK_CXX.dup, conf)
     end
   end
 end
