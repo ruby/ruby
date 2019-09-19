@@ -991,7 +991,18 @@ rb_funcallv_with_cc(struct rb_call_cache_and_mid *cc, VALUE recv, ID mid, int ar
         vm_search_method(&ci, &cc->cc, recv);
 
         if (LIKELY(! UNDEFINED_METHOD_ENTRY_P(cc->cc.me))) {
-            return rb_vm_call0(GET_EC(), recv, mid, argc, argv, cc->cc.me, VM_NO_KEYWORDS);
+            return vm_call0_body(
+                GET_EC(),
+                &(struct rb_calling_info) {
+                    Qundef,
+                    recv,
+                    argc,
+                    VM_NO_KEYWORDS,
+                },
+                &ci,
+                &cc->cc,
+                argv
+            );
         }
     }
 
