@@ -352,7 +352,7 @@ static void iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line,
 #define COMPILE_RECV(anchor, desc, node) \
     (private_recv_p(node) ? \
      (ADD_INSN(anchor, nd_line(node), putself), VM_CALL_FCALL) : \
-     (COMPILE(anchor, desc, node->nd_recv), 0))
+     COMPILE(anchor, desc, node->nd_recv) ? 0 : -1)
 
 #define OPERAND_AT(insn, idx) \
   (((INSN*)(insn))->operands[(idx)])
@@ -7057,7 +7057,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       case NODE_OP_ASGN1: {
 	VALUE argc;
 	unsigned int flag = 0;
-	unsigned int asgnflag = 0;
+	int asgnflag = 0;
 	ID id = node->nd_mid;
 	int boff = 0;
 
@@ -7088,6 +7088,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    ADD_INSN(ret, line, putnil);
 	}
 	asgnflag = COMPILE_RECV(ret, "NODE_OP_ASGN1 recv", node);
+        CHECK(asgnflag != -1);
 	switch (nd_type(node->nd_args->nd_head)) {
 	  case NODE_ZLIST:
 	    argc = INT2FIX(0);
@@ -7191,7 +7192,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       case NODE_OP_ASGN2:{
 	ID atype = node->nd_next->nd_mid;
 	ID vid = node->nd_next->nd_vid, aid = rb_id_attrset(vid);
-	VALUE asgnflag;
+        int asgnflag;
 	LABEL *lfin = NEW_LABEL(line);
 	LABEL *lcfin = NEW_LABEL(line);
 	LABEL *lskip = 0;
@@ -7238,6 +7239,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	*/
 
 	asgnflag = COMPILE_RECV(ret, "NODE_OP_ASGN2#recv", node);
+        CHECK(asgnflag != -1);
 	if (node->nd_next->nd_aid) {
 	    lskip = NEW_LABEL(line);
 	    ADD_INSN(ret, line, dup);
@@ -8231,7 +8233,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	argc = setup_args(iseq, args, node->nd_args, &flag, NULL);
 	CHECK(!NIL_P(argc));
 
-	flag |= COMPILE_RECV(recv, "recv", node);
+        int asgnflag = COMPILE_RECV(recv, "recv", node);
+        CHECK(asgnflag != -1);
+        flag |= (unsigned int)asgnflag;
 
 	debugp_param("argc", argc);
 	debugp_param("nd_mid", ID2SYM(mid));
