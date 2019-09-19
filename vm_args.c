@@ -722,7 +722,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 	args->kw_argv = NULL;
     }
 
-    if (iseq->body->param.flags.pass_keywords && kw_flag && frame_flag) {
+    if (iseq->body->param.flags.ruby2_keywords && kw_flag && frame_flag) {
         remove_empty_keyword_hash = 0;
         *frame_flag = VM_FRAME_FLAG_PASS_KEYWORDS;
     }

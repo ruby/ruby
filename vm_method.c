@@ -1747,7 +1747,7 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
 
 /*
  *  call-seq:
- *     pass_keywords(method_name, ...)    -> self
+ *     ruby2_keywords(method_name, ...)    -> self
  *
  *  For the given method names, marks the method as passing keywords through
  *  a normal argument splat.  This should only be called on methods that
@@ -1770,12 +1770,12 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
  *      def foo(meth, *args, &block)
  *        send(:"do_#{meth}", *args, &block)
  *      end
- *      pass_keywords(:foo) if respond_to?(:pass_keywords, true)
+ *      ruby2_keywords(:foo) if respond_to?(:ruby2_keywords, true)
  *    end
  */
 
 static VALUE
-rb_mod_pass_keywords(int argc, VALUE *argv, VALUE module)
+rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
 {
     int i;
     VALUE origin_class = RCLASS_ORIGIN(module);
@@ -1807,15 +1807,15 @@ rb_mod_pass_keywords(int argc, VALUE *argv, VALUE module)
                     me->def->body.iseq.iseqptr->body->param.flags.has_rest &&
                     !me->def->body.iseq.iseqptr->body->param.flags.has_kw &&
                     !me->def->body.iseq.iseqptr->body->param.flags.has_kwrest) {
-                me->def->body.iseq.iseqptr->body->param.flags.pass_keywords = 1;
+                me->def->body.iseq.iseqptr->body->param.flags.ruby2_keywords = 1;
                 rb_clear_method_cache_by_class(module);
             }
             else {
-                rb_warn("Skipping set of pass_keywords flag for %s (method not defined in Ruby, method accepts keywords, or method does not accept argument splat)", rb_id2name(name));
+                rb_warn("Skipping set of ruby2_keywords flag for %s (method not defined in Ruby, method accepts keywords, or method does not accept argument splat)", rb_id2name(name));
             }
         }
         else {
-            rb_warn("Skipping set of pass_keywords flag for %s (can only set in method defining module)", rb_id2name(name));
+            rb_warn("Skipping set of ruby2_keywords flag for %s (can only set in method defining module)", rb_id2name(name));
         }
     }
     return Qnil;
@@ -2203,7 +2203,7 @@ Init_eval_method(void)
     rb_define_private_method(rb_cModule, "protected", rb_mod_protected, -1);
     rb_define_private_method(rb_cModule, "private", rb_mod_private, -1);
     rb_define_private_method(rb_cModule, "module_function", rb_mod_modfunc, -1);
-    rb_define_private_method(rb_cModule, "pass_keywords", rb_mod_pass_keywords, -1);
+    rb_define_private_method(rb_cModule, "ruby2_keywords", rb_mod_ruby2_keywords, -1);
 
     rb_define_method(rb_cModule, "method_defined?", rb_mod_method_defined, -1);
     rb_define_method(rb_cModule, "public_method_defined?", rb_mod_public_method_defined, -1);

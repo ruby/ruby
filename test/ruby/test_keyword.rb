@@ -178,31 +178,31 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(["bar", 111111], f[str: "bar", num: 111111])
   end
 
-  def test_pass_keywords
+  def test_ruby2_keywords
     c = Class.new do
-      pass_keywords def foo(meth, *args)
+      ruby2_keywords def foo(meth, *args)
         send(meth, *args)
       end
 
-      pass_keywords def foo_bar(*args)
+      ruby2_keywords def foo_bar(*args)
         bar(*args)
       end
 
-      pass_keywords def foo_baz(*args)
+      ruby2_keywords def foo_baz(*args)
         baz(*args)
       end
 
-      pass_keywords def foo_mod(meth, *args)
+      ruby2_keywords def foo_mod(meth, *args)
         args << 1
         send(meth, *args)
       end
 
-      pass_keywords def foo_bar_mod(*args)
+      ruby2_keywords def foo_bar_mod(*args)
         args << 1
         bar(*args)
       end
 
-      pass_keywords def foo_baz_mod(*args)
+      ruby2_keywords def foo_baz_mod(*args)
         args << 1
         baz(*args)
       end
@@ -215,11 +215,11 @@ class TestKeywordArguments < Test::Unit::TestCase
         args
       end
 
-      pass_keywords def foo_dbar(*args)
+      ruby2_keywords def foo_dbar(*args)
         dbar(*args)
       end
 
-      pass_keywords def foo_dbaz(*args)
+      ruby2_keywords def foo_dbaz(*args)
         dbaz(*args)
       end
 
@@ -231,11 +231,11 @@ class TestKeywordArguments < Test::Unit::TestCase
         args
       end
 
-      pass_keywords def block(*args)
+      ruby2_keywords def block(*args)
         ->(*args, **kw){[args, kw]}.(*args)
       end
 
-      pass_keywords def cfunc(*args)
+      ruby2_keywords def cfunc(*args)
         self.class.new(*args).init_args
       end
 
@@ -258,21 +258,21 @@ class TestKeywordArguments < Test::Unit::TestCase
     end
 
     implicit_super = Class.new(c) do
-      pass_keywords def bar(*args)
+      ruby2_keywords def bar(*args)
         super
       end
 
-      pass_keywords def baz(*args)
+      ruby2_keywords def baz(*args)
         super
       end
     end
 
     explicit_super = Class.new(c) do
-      pass_keywords def bar(*args)
+      ruby2_keywords def bar(*args)
         super(*args)
       end
 
-      pass_keywords def baz(*args)
+      ruby2_keywords def baz(*args)
         super(*args)
       end
     end
@@ -402,24 +402,24 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h1], o.baz(1, h1))
     assert_equal([h1], o.baz(h1, **{}))
 
-    assert_warn(/Skipping set of pass_keywords flag for bar \(method not defined in Ruby, method accepts keywords, or method does not accept argument splat\)/) do
-      assert_nil(c.send(:pass_keywords, :bar))
+    assert_warn(/Skipping set of ruby2_keywords flag for bar \(method not defined in Ruby, method accepts keywords, or method does not accept argument splat\)/) do
+      assert_nil(c.send(:ruby2_keywords, :bar))
     end
 
     sc = Class.new(c)
-    assert_warn(/Skipping set of pass_keywords flag for bar \(can only set in method defining module\)/) do
-      sc.send(:pass_keywords, :bar)
+    assert_warn(/Skipping set of ruby2_keywords flag for bar \(can only set in method defining module\)/) do
+      sc.send(:ruby2_keywords, :bar)
     end
     m = Module.new
-    assert_warn(/Skipping set of pass_keywords flag for system \(can only set in method defining module\)/) do
-      m.send(:pass_keywords, :system)
+    assert_warn(/Skipping set of ruby2_keywords flag for system \(can only set in method defining module\)/) do
+      m.send(:ruby2_keywords, :system)
     end
 
-    assert_raise(NameError) { c.send(:pass_keywords, "a5e36ccec4f5080a1d5e63f8") }
-    assert_raise(NameError) { c.send(:pass_keywords, :quux) }
+    assert_raise(NameError) { c.send(:ruby2_keywords, "a5e36ccec4f5080a1d5e63f8") }
+    assert_raise(NameError) { c.send(:ruby2_keywords, :quux) }
 
     c.freeze
-    assert_raise(FrozenError) { c.send(:pass_keywords, :baz) }
+    assert_raise(FrozenError) { c.send(:ruby2_keywords, :baz) }
   end
 
   def test_regular_kwsplat
