@@ -269,6 +269,7 @@ describe "Invoking a private getter method" do
     it "permits self as a receiver" do
       receiver = LangSendSpecs::PrivateGetter.new
       -> { receiver.call_self_foo }.should_not raise_error(NoMethodError)
+      -> { receiver.call_self_foo_or_equals(6) }.should_not raise_error(NoMethodError)
     end
   end
 end
