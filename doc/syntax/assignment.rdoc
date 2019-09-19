@@ -93,7 +93,8 @@ be cached.  To call the method, use <code>self.big_calculation</code>.
 
 You can force a method call by using empty argument parentheses as shown above
 or by using an explicit receiver like <code>self.</code>.  Using an explicit
-receiver may raise a NameError if the method's visibility is not public.
+receiver may raise a NameError if the method's visibility is not public or the
+receiver is the literal <code>self</code>.
 
 Another commonly confusing case is when using a modifier +if+:
 

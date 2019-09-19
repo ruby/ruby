@@ -191,8 +191,8 @@ Here is an example:
   a.n b # raises NoMethodError A is not a subclass of B
 
 The third visibility is +private+.  A private method may not be called with a
-receiver, not even +self+.  If a private method is called with a receiver a
-NoMethodError will be raised.
+receiver, not even if it equals +self+.  If a private method is called with a
+receiver other than a literal +self+ a NoMethodError will be raised.
 
 === +alias+ and +undef+
 
