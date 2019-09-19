@@ -71,11 +71,11 @@ error !
 #define LABEL_PTR(x) RB_GNUC_EXTENSION(&&LABEL(x))
 
 #define INSN_ENTRY_SIG(insn) \
-  if (0) fprintf(stderr, "exec: %s@(%d, %d)@%s:%d\n", #insn, \
-		 (int)(reg_pc - reg_cfp->iseq->body->iseq_encoded), \
-		 (int)(reg_cfp->pc - reg_cfp->iseq->body->iseq_encoded), \
-		 RSTRING_PTR(rb_iseq_path(reg_cfp->iseq)), \
-		 (int)(rb_iseq_line_no(reg_cfp->iseq, reg_pc - reg_cfp->iseq->body->iseq_encoded)));
+  if (0) fprintf(stderr, "exec: %s@(%ld, %ld)@%s:%u\n", #insn, \
+                 (reg_pc - reg_cfp->iseq->body->iseq_encoded), \
+                 (reg_cfp->pc - reg_cfp->iseq->body->iseq_encoded), \
+                 RSTRING_PTR(rb_iseq_path(reg_cfp->iseq)), \
+                 rb_iseq_line_no(reg_cfp->iseq, reg_pc - reg_cfp->iseq->body->iseq_encoded));
 
 #define INSN_DISPATCH_SIG(insn)
 
