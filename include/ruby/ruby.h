@@ -2711,7 +2711,7 @@ RUBY_SYMBOL_EXPORT_END
 # define rb_f_notimplement_p(f) 0
 #endif
 
-#if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
+#if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P) && !defined(_WIN32) && !defined(__CYGWIN__)
 #if defined(__has_attribute) && __has_attribute(transparent_union) && __has_attribute(unused) && __has_attribute(weakref) && __has_attribute(nonnull)
 #define RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,vars,funcargs) \
     __attribute__((__unused__,__weakref__(#def),__nonnull__ nonnull))static void defname(RB_UNWRAP_MACRO decl,VALUE(*func)funcargs,int arity);
