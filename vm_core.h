@@ -491,7 +491,7 @@ rb_iseq_check(const rb_iseq_t *iseq)
 }
 
 static inline const rb_iseq_t *
-def_iseq_ptr(rb_method_definition_t *def)
+def_iseq_ptr(const rb_method_definition_t *def)
 {
 #if VM_CHECK_MODE > 0
     if (def->type != VM_METHOD_TYPE_ISEQ) rb_bug("def_iseq_ptr: not iseq (%d)", def->type);

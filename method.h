@@ -122,32 +122,32 @@ typedef struct rb_iseq_struct rb_iseq_t;
 #endif
 
 typedef struct rb_method_iseq_struct {
-    rb_iseq_t * iseqptr; /*!< iseq pointer, should be separated from iseqval */
-    rb_cref_t * cref;          /*!< class reference, should be marked */
-} rb_method_iseq_t; /* check rb_add_method_iseq() when modify the fields */
+    const rb_iseq_t *const iseqptr; /*!< iseq pointer, should be separated from iseqval */
+    rb_cref_t *const cref;          /*!< class reference, should be marked */
+} rb_method_iseq_t;
 
 typedef struct rb_method_cfunc_struct {
-    VALUE (*func)(ANYARGS);
-    VALUE (*invoker)(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS));
-    int argc;
+    VALUE (*const func)(ANYARGS);
+    VALUE (*const invoker)(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS));
+    const int argc;
 } rb_method_cfunc_t;
 
 typedef struct rb_method_attr_struct {
-    ID id;
-    VALUE location; /* should be marked */
+    const ID id;
+    const VALUE location; /* should be marked */
 } rb_method_attr_t;
 
 typedef struct rb_method_alias_struct {
-    struct rb_method_entry_struct * original_me; /* original_me->klass is original owner */
+    const struct rb_method_entry_struct *const original_me; /* original_me->klass is original owner */
 } rb_method_alias_t;
 
 typedef struct rb_method_refined_struct {
-    struct rb_method_entry_struct * orig_me;
-    VALUE owner;
+    const struct rb_method_entry_struct *const orig_me;
+    const VALUE owner;
 } rb_method_refined_t;
 
 typedef struct rb_method_bmethod_struct {
-    VALUE proc; /* should be marked */
+    const VALUE proc; /* should be marked */
     struct rb_hook_list_struct *hooks;
 } rb_method_bmethod_t;
 
@@ -159,22 +159,22 @@ enum method_optimized_type {
 };
 
 struct rb_method_definition_struct {
-    BITFIELD(rb_method_type_t, type, VM_METHOD_TYPE_MINIMUM_BITS);
+    BITFIELD(rb_method_type_t, const type, VM_METHOD_TYPE_MINIMUM_BITS);
     int alias_count : 28;
     int complemented_count : 28;
 
     union {
-	rb_method_iseq_t iseq;
-	rb_method_cfunc_t cfunc;
-	rb_method_attr_t attr;
-	rb_method_alias_t alias;
-	rb_method_refined_t refined;
+        const rb_method_iseq_t iseq;
+        const rb_method_cfunc_t cfunc;
+        const rb_method_attr_t attr;
+        const rb_method_alias_t alias;
+        const rb_method_refined_t refined;
         rb_method_bmethod_t bmethod;
 
-        enum method_optimized_type optimize_type;
+        const enum method_optimized_type optimize_type;
     } body;
 
-    ID original_id;
+    const ID original_id;
 };
 
 typedef struct rb_method_definition_struct rb_method_definition_t;

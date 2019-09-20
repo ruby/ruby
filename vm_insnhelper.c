@@ -19,7 +19,7 @@
 #include "ruby/config.h"
 #include "debug_counter.h"
 
-extern rb_method_definition_t *rb_method_definition_create(rb_method_type_t type, ID mid);
+extern const rb_method_definition_t *rb_method_definition_create(rb_method_type_t type, ID mid);
 extern void rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, void *opts);
 extern int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
 extern VALUE rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
@@ -2589,9 +2589,9 @@ aliased_callable_method_entry(const rb_callable_method_entry_t *me)
 	    RB_OBJ_WRITE(me, &me->def->body.alias.original_me, cme);
 	}
 	else {
-	    rb_method_definition_t *def =
+	    const rb_method_definition_t *def =
 		rb_method_definition_create(VM_METHOD_TYPE_ALIAS, me->def->original_id);
-	    rb_method_definition_set((rb_method_entry_t *)me, def, (void *)cme);
+	    rb_method_definition_set((rb_method_entry_t *)me, (void *)def, (void *)cme);
 	}
     }
     else {

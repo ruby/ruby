@@ -15,6 +15,8 @@
 #include "vm_core.h"
 #include "iseq.h"
 
+extern const rb_method_definition_t *rb_method_definition_create(rb_method_type_t type, ID mid);
+
 /* Proc.new with no block will raise an exception in the future
  * versions */
 #define PROC_NEW_REQUIRES_BLOCK 0
@@ -1475,15 +1477,12 @@ mnew_missing(VALUE klass, VALUE obj, ID id, VALUE mclass)
     struct METHOD *data;
     VALUE method = TypedData_Make_Struct(mclass, struct METHOD, &method_data_type, data);
     rb_method_entry_t *me;
-    rb_method_definition_t *def;
+    const rb_method_definition_t *def;
 
     RB_OBJ_WRITE(method, &data->recv, obj);
     RB_OBJ_WRITE(method, &data->klass, klass);
 
-    def = ZALLOC(rb_method_definition_t);
-    def->type = VM_METHOD_TYPE_MISSING;
-    def->original_id = id;
-
+    def = rb_method_definition_create(VM_METHOD_TYPE_MISSING, id);
     me = rb_method_entry_create(id, klass, METHOD_VISI_UNDEF, def);
 
     RB_OBJ_WRITE(method, &data->me, me);
