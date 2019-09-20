@@ -337,6 +337,49 @@ namespace test_rb_ivar_foreach {
     }
 }
 
+namespace test_rb_define_method {
+    static VALUE
+    m1(VALUE, VALUE)
+    {
+        return Qnil;
+    }
+
+    static VALUE
+    m2(VALUE, VALUE, VALUE)
+    {
+        return Qnil;
+    }
+
+    static VALUE
+    ma(VALUE, VALUE)
+    {
+        return Qnil;
+    }
+
+    static VALUE
+    mv(int, VALUE*, VALUE)
+    {
+        return Qnil;
+    }
+
+    VALUE
+    test(VALUE self)
+    {
+        // No cast
+        rb_define_method(self, "m1", m1, 1);
+        rb_define_method(self, "m2", m2, 2);
+        rb_define_method(self, "ma", ma, -2);
+        rb_define_method(self, "mv", mv, -1);
+
+        // Cast by RUBY_METHOD_FUNC
+        rb_define_method(self, "m1", RUBY_METHOD_FUNC(m1), 1);
+        rb_define_method(self, "m2", RUBY_METHOD_FUNC(m2), 2);
+        rb_define_method(self, "ma", RUBY_METHOD_FUNC(ma), -2);
+        rb_define_method(self, "mv", RUBY_METHOD_FUNC(mv), -1);
+        return self;
+    }
+}
+
 extern "C" void
 Init_cxxanyargs(void)
 {
@@ -361,4 +404,5 @@ Init_cxxanyargs(void)
     test(st_foreach_safe);
     test(rb_hash_foreach);
     test(rb_ivar_foreach);
+    test(rb_define_method);
 }

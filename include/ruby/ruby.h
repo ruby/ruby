@@ -2711,12 +2711,24 @@ RUBY_SYMBOL_EXPORT_END
 # define rb_f_notimplement_p(f) 0
 #endif
 
-#if defined(__has_attribute) && (defined(__cplusplus) || defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)) && !defined(_WIN32) && !defined(__CYGWIN__)
-#if (defined(__cplusplus) || __has_attribute(transparent_union)) && __has_attribute(unused) && __has_attribute(weakref) && __has_attribute(nonnull)
+#if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
+#if defined(__has_attribute) && __has_attribute(transparent_union) && __has_attribute(unused) && __has_attribute(weakref) && __has_attribute(nonnull)
+#define RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,vars,funcargs) \
+    __attribute__((__unused__,__weakref__(#def),__nonnull__ nonnull))static void defname(RB_UNWRAP_MACRO decl,VALUE(*func)funcargs,int arity);
+#endif
+#endif
+
+#if defined(RB_METHOD_DEFINITION_DECL_C) || defined(__cplusplus)
+#ifndef RB_METHOD_DEFINITION_DECL_C
+#define RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,vars,funcargs) \
+    static inline void defname(RB_UNWRAP_MACRO decl,VALUE(*func)funcargs,int arity) \
+    { \
+        def(RB_UNWRAP_MACRO vars,(VALUE(*)(ANYARGS))(func),arity); \
+    }
+#endif
 
 #define RB_UNWRAP_MACRO(...) __VA_ARGS__
-#define RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,funcargs) \
-    __attribute__((__unused__,__weakref__(#def),__nonnull__ nonnull))static void defname(RB_UNWRAP_MACRO decl,VALUE(*func)funcargs,int arity);
+
 #ifdef __cplusplus
 #define RB_METHOD_DEFINITION_DECL_CXX_BEGIN(def) template <int Arity> struct def##_tmpl {};
 #define RB_METHOD_DEFINITION_DECL_CXX(def,defname,decl,vars,funcargs,arity) \
@@ -2728,7 +2740,7 @@ RUBY_SYMBOL_EXPORT_END
 #define RB_METHOD_DEFINITION_DECL_CXX(def,defname,decl,vars,funcargs,arity) /* nothing */
 #endif
 #define RB_METHOD_DEFINITION_DECL_1(def,nonnull,defname,arity,decl,vars,funcargs) \
-    RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,funcargs) \
+    RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,vars,funcargs) \
     RB_METHOD_DEFINITION_DECL_CXX(def,defname,decl,vars,funcargs,arity)
 
 #define RB_METHOD_DEFINITION_DECL(def,nonnull,decl,vars) \
@@ -2754,15 +2766,19 @@ RB_METHOD_DEFINITION_DECL_1(def,nonnull,def##m2,-2,decl,vars,(VALUE,VALUE)) \
 RB_METHOD_DEFINITION_DECL_M1(def,nonnull,def##m1,decl,vars) /* END */
 #ifdef __cplusplus
 #define RB_METHOD_DEFINITION_DECL_M1(def,nonnull,defname,decl,vars) \
-    RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,(int,VALUE*,VALUE)) \
-    RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,(int,const VALUE*,VALUE)) \
-    RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,(int,const VALUE*,VALUE,VALUE))
+    RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,vars,(int,VALUE*,VALUE)) \
+    RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,vars,(int,const VALUE*,VALUE)) \
+    RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,vars,(int,const VALUE*,VALUE,VALUE)) \
+    template <> struct def##_tmpl<-1> { \
+        static void define(RB_UNWRAP_MACRO decl, VALUE (*func)(int,VALUE*,VALUE)) {::defname(RB_UNWRAP_MACRO vars, func, -1);} \
+        static void define(RB_UNWRAP_MACRO decl, VALUE (*func)(int,const VALUE*,VALUE)) {::defname(RB_UNWRAP_MACRO vars, func, -1);} \
+        static void define(RB_UNWRAP_MACRO decl, VALUE (*func)(int,const VALUE*,VALUE,VALUE)) {::defname(RB_UNWRAP_MACRO vars, func, -1);} \
+    };
 #else
 #define RB_METHOD_DEFINITION_DECL_M1(def,nonnull,defname,decl,vars) \
-    RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,(int,union{VALUE*x;const VALUE*y;}__attribute__((__transparent_union__)),VALUE))
+    RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,vars,(int,union{VALUE*x;const VALUE*y;}__attribute__((__transparent_union__)),VALUE))
 #endif
 
-#endif
 #endif
 
 #ifdef RB_METHOD_DEFINITION_DECL
