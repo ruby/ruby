@@ -376,6 +376,13 @@ namespace test_rb_define_method {
         rb_define_method(self, "m2", RUBY_METHOD_FUNC(m2), 2);
         rb_define_method(self, "ma", RUBY_METHOD_FUNC(ma), -2);
         rb_define_method(self, "mv", RUBY_METHOD_FUNC(mv), -1);
+
+        // Explicit cast instead of RUBY_METHOD_FUNC
+        rb_define_method(self, "m1", (VALUE (*)(...))(m1), 1);
+        rb_define_method(self, "m2", (VALUE (*)(...))(m2), 2);
+        rb_define_method(self, "ma", (VALUE (*)(...))(ma), -2);
+        rb_define_method(self, "mv", (VALUE (*)(...))(mv), -1);
+
         return self;
     }
 }
