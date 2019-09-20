@@ -298,17 +298,6 @@ rb_vm_cref_new_toplevel(void)
     return vm_cref_new_toplevel(GET_EC());
 }
 
-static void
-vm_cref_dump(const char *mesg, const rb_cref_t *cref)
-{
-    fprintf(stderr, "vm_cref_dump: %s (%p)\n", mesg, (void *)cref);
-
-    while (cref) {
-	fprintf(stderr, "= cref| klass: %s\n", RSTRING_PTR(rb_class_path(CREF_CLASS(cref))));
-	cref = CREF_NEXT(cref);
-    }
-}
-
 void
 rb_vm_block_ep_update(VALUE obj, const struct rb_block *dst, const VALUE *ep)
 {
