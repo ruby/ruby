@@ -28,7 +28,6 @@
 # * https://github.com/ruby/rexml
 # * https://github.com/ruby/rss
 # * https://github.com/ruby/irb
-# * https://github.com/ruby/sync
 # * https://github.com/ruby/tracer
 # * https://github.com/ruby/forwardable
 # * https://github.com/ruby/e2mmap
