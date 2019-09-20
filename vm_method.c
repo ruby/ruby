@@ -132,9 +132,7 @@ rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_me
 {
     if (argc < -2 || 15 < argc) rb_raise(rb_eArgError, "arity out of range: %d for -2..15", argc);
     if (func != rb_f_notimplement) {
-	rb_method_cfunc_t opt;
-	opt.func = func;
-	opt.argc = argc;
+        rb_method_cfunc_t opt = { func, 0, argc, };
 	rb_add_method(klass, mid, VM_METHOD_TYPE_CFUNC, &opt, visi);
     }
     else {
@@ -213,14 +211,6 @@ static VALUE
     }
 }
 
-static void
-setup_method_cfunc_struct(rb_method_cfunc_t *cfunc, VALUE (*func)(), int argc)
-{
-    cfunc->func = func;
-    cfunc->argc = argc;
-    cfunc->invoker = call_cfunc_invoker_func(argc);
-}
-
 MJIT_FUNC_EXPORTED void
 rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, void *opts)
 {
@@ -250,8 +240,13 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
 	    }
 	  case VM_METHOD_TYPE_CFUNC:
 	    {
-		rb_method_cfunc_t *cfunc = (rb_method_cfunc_t *)opts;
-		setup_method_cfunc_struct(UNALIGNED_MEMBER_PTR(def, body.cfunc), cfunc->func, cfunc->argc);
+                const rb_method_cfunc_t *p = (const rb_method_cfunc_t *)opts;
+                rb_method_cfunc_t c = {
+                    p->func,
+                    call_cfunc_invoker_func(p->argc),
+                    p->argc,
+                };
+                memcpy((void *)&def->body.cfunc, &c, sizeof c);
 		return;
 	    }
 	  case VM_METHOD_TYPE_ATTRSET:
@@ -261,7 +256,7 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
 		rb_control_frame_t *cfp;
 		int line;
 
-		def->body.attr.id = (ID)(VALUE)opts;
+                memcpy((void *)&def->body.attr, &(rb_method_attr_t) { (ID)(VALUE)opts }, sizeof(rb_method_attr_t));
 
 		cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
 
@@ -275,14 +270,21 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
 		return;
 	    }
 	  case VM_METHOD_TYPE_BMETHOD:
-            RB_OBJ_WRITE(me, &def->body.bmethod.proc, (VALUE)opts);
+            memcpy((void *)&def->body.bmethod, &(rb_method_bmethod_t) { (VALUE)opts }, sizeof(rb_method_bmethod_t));
+            RB_OBJ_WRITTEN(me, &def->body.bmethod.proc, (VALUE)opts);
 	    return;
 	  case VM_METHOD_TYPE_NOTIMPLEMENTED:
-	    setup_method_cfunc_struct(UNALIGNED_MEMBER_PTR(def, body.cfunc), rb_f_notimplement, -1);
-	    return;
+            {
+                rb_method_cfunc_t f = { rb_f_notimplement, call_cfunc_m1, -1, };
+                memcpy((void *)&def->body.cfunc, &f, sizeof f);
+                return;
+            }
 	  case VM_METHOD_TYPE_OPTIMIZED:
-	    def->body.optimize_type = (enum method_optimized_type)opts;
-	    return;
+            {
+                enum method_optimized_type t = (enum method_optimized_type)opts;
+                memcpy((void *)&def->body.optimize_type, &t, sizeof t);
+                return;
+            }
 	  case VM_METHOD_TYPE_REFINED:
 	    {
 		const rb_method_refined_t *refined = (rb_method_refined_t *)opts;
@@ -304,7 +306,7 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
 static void
 method_definition_reset(const rb_method_entry_t *me)
 {
-    rb_method_definition_t *def = me->def;
+    const rb_method_definition_t *def = me->def;
 
     switch(def->type) {
       case VM_METHOD_TYPE_ISEQ:
@@ -337,14 +339,16 @@ method_definition_reset(const rb_method_entry_t *me)
     }
 }
 
-MJIT_FUNC_EXPORTED rb_method_definition_t *
+MJIT_FUNC_EXPORTED const rb_method_definition_t *
 rb_method_definition_create(rb_method_type_t type, ID mid)
 {
-    rb_method_definition_t *def;
-    def = ZALLOC(rb_method_definition_t);
-    def->type = type;
-    def->original_id = mid;
-    return def;
+    rb_method_definition_t template = {
+        .type = type,
+        .original_id = mid,
+    };
+    void *ptr = ALLOC(rb_method_definition_t);
+    memcpy(ptr, &template, sizeof template);
+    return ptr;
 }
 
 static rb_method_definition_t *
@@ -405,7 +409,7 @@ rb_method_entry_clone(const rb_method_entry_t *src_me)
 MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
 rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID called_id, VALUE defined_class)
 {
-    rb_method_definition_t *def = src_me->def;
+    const rb_method_definition_t *def = src_me->def;
     rb_method_entry_t *me;
     struct {
 	const struct rb_method_entry_struct *orig_me;
@@ -423,13 +427,13 @@ rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID cal
 	def = NULL;
     }
     else {
-	def = method_definition_addref_complement(def);
+	def = method_definition_addref_complement((rb_method_definition_t *)def);
     }
     me = rb_method_entry_alloc(called_id, src_me->owner, defined_class, def);
     METHOD_ENTRY_FLAGS_COPY(me, src_me);
     if (!def) {
 	def = rb_method_definition_create(VM_METHOD_TYPE_REFINED, called_id);
-	rb_method_definition_set(me, def, &refined);
+	rb_method_definition_set(me, (rb_method_definition_t *)def, &refined);
     }
 
     VM_ASSERT(RB_TYPE_P(me->owner, T_MODULE));
@@ -459,7 +463,7 @@ make_method_entry_refined(VALUE owner, rb_method_entry_t *me)
 	    struct rb_method_entry_struct *orig_me;
 	    VALUE owner;
 	} refined;
-	rb_method_definition_t *def;
+        const rb_method_definition_t *def;
 
 	rb_vm_check_redefinition_opt_method(me, me->owner);
 
@@ -472,7 +476,7 @@ make_method_entry_refined(VALUE owner, rb_method_entry_t *me)
 	refined.owner = owner;
 
 	def = rb_method_definition_create(VM_METHOD_TYPE_REFINED, me->called_id);
-	rb_method_definition_set(me, def, (void *)&refined);
+        rb_method_definition_set(me, (void *)def, (void *)&refined);
 	METHOD_ENTRY_VISI_SET(me, METHOD_VISI_PUBLIC);
     }
 }
@@ -515,7 +519,7 @@ check_override_opt_method(VALUE klass, VALUE arg)
  */
 static rb_method_entry_t *
 rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibility_t visi,
-		     rb_method_type_t type, rb_method_definition_t *def, ID original_id, void *opts)
+                     rb_method_type_t type, const rb_method_definition_t *def, ID original_id, void *opts)
 {
     rb_method_entry_t *me;
     struct rb_id_table *mtbl;
@@ -556,7 +560,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     /* check re-definition */
     if (rb_id_table_lookup(mtbl, mid, &data)) {
 	rb_method_entry_t *old_me = (rb_method_entry_t *)data;
-	rb_method_definition_t *old_def = old_me->def;
+	const rb_method_definition_t *old_def = old_me->def;
 
 	if (rb_method_definition_eq(old_def, def)) return old_me;
 	rb_vm_check_redefinition_opt_method(old_me, klass);
@@ -595,7 +599,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     /* create method entry */
     me = rb_method_entry_create(mid, defined_class, visi, NULL);
     if (def == NULL) def = rb_method_definition_create(type, original_id);
-    rb_method_definition_set(me, def, opts);
+    rb_method_definition_set(me, (void *)def, opts);
 
     rb_clear_method_cache_by_class(klass);
 
@@ -665,13 +669,7 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 MJIT_FUNC_EXPORTED void
 rb_add_method_iseq(VALUE klass, ID mid, const rb_iseq_t *iseq, rb_cref_t *cref, rb_method_visibility_t visi)
 {
-    struct { /* should be same fields with rb_method_iseq_struct */
-        const rb_iseq_t *iseqptr;
-        rb_cref_t *cref;
-    } iseq_body;
-
-    iseq_body.iseqptr = iseq;
-    iseq_body.cref = cref;
+    rb_method_iseq_t iseq_body = { iseq, cref };
     rb_add_method(klass, mid, VM_METHOD_TYPE_ISEQ, &iseq_body, visi);
 }
 
