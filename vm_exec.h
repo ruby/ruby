@@ -71,7 +71,7 @@ error !
 #define LABEL_PTR(x) RB_GNUC_EXTENSION(&&LABEL(x))
 
 #define INSN_ENTRY_SIG(insn) \
-  if (0) fprintf(stderr, "exec: %s@(%ld, %ld)@%s:%u\n", #insn, \
+  if (0) fprintf(stderr, "exec: %s@(%"PRIdPTRDIFF", %"PRIdPTRDIFF")@%s:%u\n", #insn, \
                  (reg_pc - reg_cfp->iseq->body->iseq_encoded), \
                  (reg_cfp->pc - reg_cfp->iseq->body->iseq_encoded), \
                  RSTRING_PTR(rb_iseq_path(reg_cfp->iseq)), \
