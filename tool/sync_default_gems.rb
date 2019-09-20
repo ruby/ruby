@@ -30,7 +30,6 @@
 # * https://github.com/ruby/irb
 # * https://github.com/ruby/sync
 # * https://github.com/ruby/tracer
-# * https://github.com/ruby/shell
 # * https://github.com/ruby/forwardable
 # * https://github.com/ruby/thwait
 # * https://github.com/ruby/e2mmap
@@ -72,7 +71,6 @@ $repositories = {
   irb: 'ruby/irb',
   sync: 'ruby/sync',
   tracer: 'ruby/tracer',
-  shell: 'ruby/shell',
   forwardable: "ruby/forwardable",
   thwait: "ruby/thwait",
   e2mmap: "ruby/e2mmap",
@@ -218,7 +216,7 @@ def sync_default_gems(gem)
     cp_r(Dir.glob("#{upstream}/ext/racc/cparse/*"), "ext/racc/cparse")
     cp_r("#{upstream}/test", "test/racc")
     `git checkout ext/racc/cparse/README`
-  when "rexml", "rss", "matrix", "irb", "csv", "shell", "logger", "ostruct", "webrick", "fileutils", "forwardable", "prime", "tracer", "ipaddr", "mutex_m", "sync"
+  when "rexml", "rss", "matrix", "irb", "csv", "logger", "ostruct", "webrick", "fileutils", "forwardable", "prime", "tracer", "ipaddr", "mutex_m", "sync"
     sync_lib gem
   else
   end

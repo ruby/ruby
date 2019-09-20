@@ -220,9 +220,6 @@ Zachary Scott (zzak)
 [lib/rss.rb, lib/rss/*]
   Kouhei Sutou (kou)
   https://github.com/ruby/rss
-[lib/shell.rb, lib/shell/*]
-  Keiju ISHITSUKA (keiju)
-  https://github.com/ruby/shell
 [lib/sync.rb]
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/sync
