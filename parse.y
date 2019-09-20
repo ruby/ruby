@@ -2595,6 +2595,7 @@ primary		: literal
 		| tLPAREN_ARG stmt {SET_LEX_STATE(EXPR_ENDARG);} rparen
 		    {
 		    /*%%%*/
+			if (nd_type($2) == NODE_SELF) $2->nd_state = 0;
 			$$ = $2;
 		    /*% %*/
 		    /*% ripper: paren!($2) %*/
@@ -2602,6 +2603,7 @@ primary		: literal
 		| tLPAREN compstmt ')'
 		    {
 		    /*%%%*/
+			if (nd_type($2) == NODE_SELF) $2->nd_state = 0;
 			$$ = $2;
 		    /*% %*/
 		    /*% ripper: paren!($2) %*/

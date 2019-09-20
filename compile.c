@@ -4599,7 +4599,16 @@ compile_cpath(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const NODE *cpath)
     }
 }
 
-#define private_recv_p(node) (nd_type((node)->nd_recv) == NODE_SELF)
+static inline int
+private_recv_p(const NODE *node)
+{
+    if (nd_type(node->nd_recv) == NODE_SELF) {
+        NODE *self = node->nd_recv;
+        return self->nd_state != 0;
+    }
+    return 0;
+}
+
 static void
 defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	     const NODE *const node, LABEL **lfinish, VALUE needstr);

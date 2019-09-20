@@ -369,7 +369,7 @@ typedef struct RNode {
 #define NEW_COLON3(i,loc) NEW_NODE(NODE_COLON3,0,i,0,loc)
 #define NEW_DOT2(b,e,loc) NEW_NODE(NODE_DOT2,b,e,0,loc)
 #define NEW_DOT3(b,e,loc) NEW_NODE(NODE_DOT3,b,e,0,loc)
-#define NEW_SELF(loc) NEW_NODE(NODE_SELF,0,0,0,loc)
+#define NEW_SELF(loc) NEW_NODE(NODE_SELF,0,0,1,loc)
 #define NEW_NIL(loc) NEW_NODE(NODE_NIL,0,0,0,loc)
 #define NEW_TRUE(loc) NEW_NODE(NODE_TRUE,0,0,0,loc)
 #define NEW_FALSE(loc) NEW_NODE(NODE_FALSE,0,0,0,loc)
