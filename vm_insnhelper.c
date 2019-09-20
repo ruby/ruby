@@ -269,8 +269,7 @@ vm_push_frame(rb_execution_context_t *ec,
 	      int local_size,
 	      int stack_max)
 {
-    rb_control_frame_t *const cfp = ec->cfp - 1;
-    int i;
+    rb_control_frame_t *const cfp = RUBY_VM_NEXT_CONTROL_FRAME(ec->cfp);
 
     vm_check_frame(type, specval, cref_or_me, iseq);
     VM_ASSERT(local_size >= 0);
@@ -290,7 +289,7 @@ vm_push_frame(rb_execution_context_t *ec,
     /* setup vm value stack */
 
     /* initialize local variables */
-    for (i=0; i < local_size; i++) {
+    for (int i=0; i < local_size; i++) {
 	*sp++ = Qnil;
     }
 
