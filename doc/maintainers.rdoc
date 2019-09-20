@@ -220,9 +220,6 @@ Zachary Scott (zzak)
 [lib/rss.rb, lib/rss/*]
   Kouhei Sutou (kou)
   https://github.com/ruby/rss
-[lib/scanf.rb]
-  David A. Black (dblack)
-  https://github.com/ruby/scanf
 [lib/shell.rb, lib/shell/*]
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/shell

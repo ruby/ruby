@@ -329,6 +329,7 @@ RubyGems::
 
 * Removed unmaintained libraries.
   * CMath
+  * Scanf
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
