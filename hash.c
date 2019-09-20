@@ -5276,9 +5276,9 @@ env_each_value(VALUE ehash)
 
 /*
  * call-seq:
- *   ENV.each      { |name, value| block } -> Hash
+ *   ENV.each      { |name, value| block } -> ENV
  *   ENV.each                              -> Enumerator
- *   ENV.each_pair { |name, value| block } -> Hash
+ *   ENV.each_pair { |name, value| block } -> ENV
  *   ENV.each_pair                         -> Enumerator
  *
  * Yields each environment variable +name+ and +value+.
