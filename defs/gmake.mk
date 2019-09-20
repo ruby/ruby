@@ -229,7 +229,7 @@ fetch-github-%:
 
 .PHONY: checkout-github-%
 checkout-github-%: fetch-github-%
-	git -C "$(srcdir)" checkout "gh-$(1)"
+	git -C "$(srcdir)" checkout "gh-$*"
 
 .PHONY: pr-% pull-github-%
 pr-% pull-github-%: fetch-github-%
