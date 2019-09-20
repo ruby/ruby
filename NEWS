@@ -77,7 +77,7 @@ sufficient information, see the ChangeLog file or Redmine
       # .bar
       .baz # => foo.baz
 
-* Calling a private method with a literal <code>self.</code> as the receiver
+* Calling a private method with a literal <code>self</code> as the receiver
   is now allowed. [Feature #11297] [Feature #16123]
 
 === Core classes updates (outstanding ones only)
