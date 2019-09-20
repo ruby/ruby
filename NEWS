@@ -327,6 +327,9 @@ RubyGems::
 
 === Compatibility issues (excluding feature bug fixes)
 
+* Removed unmaintained libraries.
+  * CMath
+
 === Stdlib compatibility issues (excluding feature bug fixes)
 
 profile.rb, Profiler__::

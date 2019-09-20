@@ -72,7 +72,6 @@ WIN32OLE:: Provides an interface for OLE Automation in Ruby
 == Libraries
 
 Bundler:: Manage your Ruby application's gem dependencies
-CMath:: Provides Trigonometric and Transcendental functions for complex numbers
 CSV:: Provides an interface to read and write CSV files and data
 E2MM:: Module for defining custom exceptions with specific messages
 FileUtils:: Several file utility methods for copying, moving, removing, etc

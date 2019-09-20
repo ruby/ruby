@@ -173,9 +173,6 @@ Zachary Scott (zzak)
 [lib/bundler.rb, lib/bundler/*]
   Hiroshi SHIBATA (hsbt)
   https://github.com/bundler/bundler
-[lib/cmath.rb]
-  _unmaintained_
-  https://github.com/ruby/cmath
 [lib/csv.rb]
   Kenta Murata (mrkn), Kouhei Sutou (kou)
   https://github.com/ruby/csv

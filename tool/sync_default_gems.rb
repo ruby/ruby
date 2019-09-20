@@ -20,7 +20,6 @@
 # * https://github.com/ruby/zlib
 # * https://github.com/ruby/fcntl
 # * https://github.com/ruby/scanf
-# * https://github.com/ruby/cmath
 # * https://github.com/ruby/strscan
 # * https://github.com/ruby/ipaddr
 # * https://github.com/ruby/logger
@@ -64,7 +63,6 @@ $repositories = {
   zlib: 'ruby/zlib',
   fcntl: 'ruby/fcntl',
   scanf: 'ruby/scanf',
-  cmath: 'ruby/cmath',
   strscan: 'ruby/strscan',
   ipaddr: 'ruby/ipaddr',
   logger: 'ruby/logger',
@@ -222,7 +220,7 @@ def sync_default_gems(gem)
     cp_r(Dir.glob("#{upstream}/ext/racc/cparse/*"), "ext/racc/cparse")
     cp_r("#{upstream}/test", "test/racc")
     `git checkout ext/racc/cparse/README`
-  when "rexml", "rss", "matrix", "irb", "csv", "shell", "logger", "ostruct", "scanf", "webrick", "fileutils", "forwardable", "prime", "tracer", "ipaddr", "cmath", "mutex_m", "sync"
+  when "rexml", "rss", "matrix", "irb", "csv", "shell", "logger", "ostruct", "scanf", "webrick", "fileutils", "forwardable", "prime", "tracer", "ipaddr", "mutex_m", "sync"
     sync_lib gem
   else
   end
