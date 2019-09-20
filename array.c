@@ -5119,13 +5119,16 @@ static VALUE
 flatten(VALUE ary, int level, int *modified)
 {
     long i = 0;
-    VALUE stack, result, tmp, elt;
+    VALUE stack, result, tmp, elt, vmemo;
     st_table *memo;
     st_data_t id;
 
     stack = ary_new(0, ARY_DEFAULT_SIZE);
     result = ary_new(0, RARRAY_LEN(ary));
+    vmemo = rb_hash_new();
+    RBASIC_CLEAR_CLASS(vmemo);
     memo = st_init_numtable();
+    rb_hash_st_table_set(vmemo, memo);
     st_insert(memo, (st_data_t)ary, (st_data_t)Qtrue);
     *modified = 0;
 
@@ -5138,6 +5141,8 @@ flatten(VALUE ary, int level, int *modified)
 	    }
 	    tmp = rb_check_array_type(elt);
 	    if (RBASIC(result)->klass) {
+                RB_GC_GUARD(vmemo);
+                st_clear(memo);
 		rb_raise(rb_eRuntimeError, "flatten reentered");
 	    }
 	    if (NIL_P(tmp)) {
@@ -5147,7 +5152,7 @@ flatten(VALUE ary, int level, int *modified)
 		*modified = 1;
 		id = (st_data_t)tmp;
 		if (st_lookup(memo, id, 0)) {
-		    st_free_table(memo);
+                    st_clear(memo);
 		    rb_raise(rb_eArgError, "tried to flatten recursive array");
 		}
 		st_insert(memo, id, (st_data_t)Qtrue);
@@ -5167,7 +5172,7 @@ flatten(VALUE ary, int level, int *modified)
 	ary = rb_ary_pop(stack);
     }
 
-    st_free_table(memo);
+    st_clear(memo);
 
     RBASIC_SET_CLASS(result, rb_obj_class(ary));
     return result;
