@@ -368,11 +368,11 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
 
     iseq->body->jit_func = (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC;
     create_unit(iseq);
-    if (compile_info != NULL)
-        iseq->body->jit_unit->compile_info = *compile_info;
     if (iseq->body->jit_unit == NULL)
         // Failure in creating the unit.
         return;
+    if (compile_info != NULL)
+        iseq->body->jit_unit->compile_info = *compile_info;
 
     CRITICAL_SECTION_START(3, "in add_iseq_to_process");
     add_to_list(iseq->body->jit_unit, &unit_queue);
