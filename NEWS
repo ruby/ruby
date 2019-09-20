@@ -332,6 +332,7 @@ RubyGems::
   * Scanf
   * Shell
   * Synchronizer
+  * ThreadsWait
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 

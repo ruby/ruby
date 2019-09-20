@@ -31,7 +31,6 @@
 # * https://github.com/ruby/sync
 # * https://github.com/ruby/tracer
 # * https://github.com/ruby/forwardable
-# * https://github.com/ruby/thwait
 # * https://github.com/ruby/e2mmap
 # * https://github.com/ruby/mutex_m
 # * https://github.com/ruby/racc
@@ -72,7 +71,6 @@ $repositories = {
   sync: 'ruby/sync',
   tracer: 'ruby/tracer',
   forwardable: "ruby/forwardable",
-  thwait: "ruby/thwait",
   e2mmap: "ruby/e2mmap",
   mutex_m: "ruby/mutex_m",
   racc: "ruby/racc"
@@ -194,10 +192,6 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/ext/fcntl", "ext")
     cp_r("#{upstream}/fcntl.gemspec", "ext/fcntl")
     `git checkout ext/fcntl/depend`
-  when "thwait"
-    rm_rf(%w[lib/thwait*])
-    cp_r(Dir.glob("#{upstream}/lib/*"), "lib")
-    cp_r("#{upstream}/thwait.gemspec", "lib/thwait")
   when "e2mmap"
     rm_rf(%w[lib/e2mmap*])
     cp_r(Dir.glob("#{upstream}/lib/*"), "lib")

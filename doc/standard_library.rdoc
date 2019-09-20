@@ -87,7 +87,6 @@ Racc:: A LALR(1) parser generator written in Ruby.
 RDoc:: Produces HTML and command-line documentation for Ruby
 REXML:: An XML toolkit for Ruby
 RSS:: Family of libraries that support various formats of XML "feeds"
-ThreadsWait:: Watches for termination of multiple threads
 Tracer:: Outputs a source level execution trace of a Ruby program
 WEBrick:: An HTTP server toolkit for Ruby
 
