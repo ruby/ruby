@@ -189,15 +189,13 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
     volatile VALUE errs[2] = { Qundef, Qundef };
     int nerr;
     rb_thread_t *th = rb_ec_thread_ptr(ec);
-    rb_thread_t *volatile const th0 = th;
     volatile int sysex = EXIT_SUCCESS;
     volatile int step = 0;
 
     rb_threadptr_interrupt(th);
     rb_threadptr_check_signal(th);
     EC_PUSH_TAG(ec);
-    th = th0;
-    if ((state = EC_EXEC_TAG(), th = th0, state) == TAG_NONE) {
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         SAVE_ROOT_JMPBUF(th, { RUBY_VM_CHECK_INTS(ec); });
 
       step_0: step++;
@@ -550,9 +548,10 @@ static void
 setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE cause)
 {
     VALUE e;
+    const char *file = 0;
     int line;
-    const char *const file = rb_source_location_cstr(&line);
 
+    file = rb_source_location_cstr(&line);
     if ((file && !NIL_P(mesg)) || (cause != Qundef))  {
 	volatile int state = 0;
 
