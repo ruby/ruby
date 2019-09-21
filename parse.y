@@ -5902,7 +5902,7 @@ yycompile0(VALUE arg)
     struct parser_params *p = (struct parser_params *)arg;
     VALUE cov = Qfalse;
 
-    if (!compile_for_eval && rb_safe_level() == 0 && !NIL_P(p->ruby_sourcefile_string)) {
+    if (!compile_for_eval && !NIL_P(p->ruby_sourcefile_string)) {
 	p->debug_lines = debug_lines(p->ruby_sourcefile_string);
 	if (p->debug_lines && p->ruby_sourceline > 0) {
 	    VALUE str = STR_NEW0();

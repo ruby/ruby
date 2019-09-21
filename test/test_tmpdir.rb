@@ -11,19 +11,6 @@ class TestTmpdir < Test::Unit::TestCase
     assert_equal(tmpdir_org, Dir.tmpdir)
   end
 
-  def test_tmpdir_modifiable_safe
-    Thread.new {
-      $SAFE = 1
-      tmpdir = Dir.tmpdir
-      assert_equal(false, tmpdir.frozen?)
-      tmpdir_org = tmpdir.dup
-      tmpdir << "foo"
-      assert_equal(tmpdir_org, Dir.tmpdir)
-    }.join
-  ensure
-    $SAFE = 0
-  end
-
   def test_world_writable
     skip "no meaning on this platform" if /mswin|mingw/ =~ RUBY_PLATFORM
     Dir.mktmpdir do |tmpdir|

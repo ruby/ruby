@@ -1024,7 +1024,7 @@ sig_do_nothing(int sig)
 #endif
 
 static int
-signal_exec(VALUE cmd, int safe, int sig)
+signal_exec(VALUE cmd, int sig)
 {
     rb_execution_context_t *ec = GET_EC();
     volatile rb_atomic_t old_interrupt_mask = ec->interrupt_mask;
@@ -1043,7 +1043,7 @@ signal_exec(VALUE cmd, int safe, int sig)
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	VALUE signum = INT2NUM(sig);
-	rb_eval_cmd(cmd, rb_ary_new3(1, signum), safe);
+        rb_eval_cmd(cmd, rb_ary_new3(1, signum), 0);
     }
     EC_POP_TAG();
     ec = GET_EC();
@@ -1063,7 +1063,7 @@ rb_vm_trap_exit(rb_vm_t *vm)
 
     if (trap_exit) {
 	vm->trap_list.cmd[0] = 0;
-	signal_exec(trap_exit, vm->trap_list.safe[0], 0);
+        signal_exec(trap_exit, 0);
     }
 }
 
@@ -1083,7 +1083,6 @@ rb_signal_exec(rb_thread_t *th, int sig)
 {
     rb_vm_t *vm = GET_VM();
     VALUE cmd = vm->trap_list.cmd[sig];
-    int safe = vm->trap_list.safe[sig];
 
     if (cmd == 0) {
 	switch (sig) {
@@ -1116,7 +1115,7 @@ rb_signal_exec(rb_thread_t *th, int sig)
 	rb_threadptr_signal_exit(th);
     }
     else {
-	return signal_exec(cmd, safe, sig);
+        return signal_exec(cmd, sig);
     }
     return FALSE;
 }
@@ -1302,7 +1301,6 @@ trap(int sig, sighandler_t func, VALUE command)
     }
 
     ACCESS_ONCE(VALUE, vm->trap_list.cmd[sig]) = command;
-    vm->trap_list.safe[sig] = rb_safe_level();
 
     return oldcmd;
 }

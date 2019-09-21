@@ -47,12 +47,6 @@ class TestAlias < Test::Unit::TestCase
     assert_raise(NoMethodError) { x.quux }
   end
 
-  class C
-    def m
-      $SAFE
-    end
-  end
-
   def test_nonexistmethod
     assert_raise(NameError){
       Class.new{

@@ -398,13 +398,6 @@ class TestRequire < Test::Unit::TestCase
 
       assert_separately([], <<-INPUT)
         abs_dir = "#{ abs_dir }"
-        $: << abs_dir.taint
-        $SAFE = 1
-        assert_raise(SecurityError) {require "#{ file }"}
-      INPUT
-
-      assert_separately([], <<-INPUT)
-        abs_dir = "#{ abs_dir }"
         $: << abs_dir << 'elsewhere'.taint
         assert_nothing_raised {require "#{ file }"}
       INPUT

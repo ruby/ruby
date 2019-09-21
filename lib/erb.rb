@@ -57,7 +57,6 @@ require "cgi/util"
 #
 # There are several settings you can change when you use ERB:
 # * the nature of the tags that are recognized;
-# * the value of <tt>$SAFE</tt> under which the template is run;
 # * the binding used to resolve local variables in the template.
 #
 # See the ERB.new and ERB#result methods for more detail.
@@ -747,9 +746,7 @@ class ERB
   # Constructs a new ERB object with the template specified in _str_.
   #
   # An ERB object works by building a chunk of Ruby code that will output
-  # the completed template when run. If _safe_level_ is set to a non-nil value,
-  # ERB code will be run in a separate thread with <b>$SAFE</b> set to the
-  # provided level.
+  # the completed template when run.
   #
   # If _trim_mode_ is passed a String containing one or more of the following
   # modifiers, ERB will adjust its code generation as listed:
@@ -813,8 +810,6 @@ class ERB
     # Complex initializer for $SAFE deprecation at [Feature #14256]. Use keyword arguments to pass trim_mode or eoutvar.
     if safe_level != NOT_GIVEN
       warn 'Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.', uplevel: 1 if $VERBOSE || !ZERO_SAFE_LEVELS.include?(safe_level)
-    else
-      safe_level = nil
     end
     if legacy_trim_mode != NOT_GIVEN
       warn 'Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.', uplevel: 1 if $VERBOSE
@@ -825,7 +820,6 @@ class ERB
       eoutvar = legacy_eoutvar
     end
 
-    @safe_level = safe_level
     compiler = make_compiler(trim_mode)
     set_eoutvar(compiler, eoutvar)
     @src, @encoding, @frozen_string = *compiler.compile(str)
@@ -908,17 +902,7 @@ class ERB
     unless @_init.equal?(self.class.singleton_class)
       raise ArgumentError, "not initialized"
     end
-    if @safe_level
-      proc do
-        prev_safe_level = $SAFE
-        $SAFE = @safe_level
-        eval(@src, b, (@filename || '(erb)'), @lineno)
-      ensure
-        $SAFE = prev_safe_level
-      end.call
-    else
-      eval(@src, b, (@filename || '(erb)'), @lineno)
-    end
+    eval(@src, b, (@filename || '(erb)'), @lineno)
   end
 
   # Render a template on a new toplevel binding with local variables specified

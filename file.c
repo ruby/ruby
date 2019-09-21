@@ -195,14 +195,10 @@ check_path_encoding(VALUE str)
 }
 
 VALUE
-rb_get_path_check_to_string(VALUE obj, int level)
+rb_get_path_check_to_string(VALUE obj)
 {
     VALUE tmp;
     ID to_path;
-
-    if (insecure_obj_p(obj, level)) {
-	rb_insecure_operation();
-    }
 
     if (RB_TYPE_P(obj, T_STRING)) {
 	return obj;
@@ -214,38 +210,28 @@ rb_get_path_check_to_string(VALUE obj, int level)
 }
 
 VALUE
-rb_get_path_check_convert(VALUE obj, VALUE tmp, int level)
+rb_get_path_check_convert(VALUE obj)
 {
-    tmp = file_path_convert(tmp);
-    if (obj != tmp && insecure_obj_p(tmp, level)) {
-	rb_insecure_operation();
-    }
+    obj = file_path_convert(obj);
 
-    check_path_encoding(tmp);
-    if (!rb_str_to_cstr(tmp)) {
+    check_path_encoding(obj);
+    if (!rb_str_to_cstr(obj)) {
 	rb_raise(rb_eArgError, "path name contains null byte");
     }
 
-    return rb_str_new4(tmp);
-}
-
-VALUE
-rb_get_path_check(VALUE obj, int level)
-{
-    VALUE tmp = rb_get_path_check_to_string(obj, level);
-    return rb_get_path_check_convert(obj, tmp, level);
+    return rb_str_new4(obj);
 }
 
 VALUE
 rb_get_path_no_checksafe(VALUE obj)
 {
-    return rb_get_path_check(obj, 0);
+    return rb_get_path(obj);
 }
 
 VALUE
 rb_get_path(VALUE obj)
 {
-    return rb_get_path_check(obj, rb_safe_level());
+    return rb_get_path_check_convert(rb_get_path_check_to_string(obj));
 }
 
 VALUE
@@ -6290,13 +6276,14 @@ copy_path_class(VALUE path, VALUE orig)
 }
 
 int
-rb_find_file_ext(VALUE *filep, const char *const *ext)
+rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int _level)
 {
-    return rb_find_file_ext_safe(filep, ext, rb_safe_level());
+    rb_warn("rb_find_file_ext_safe will be removed in Ruby 3.0");
+    return rb_find_file_ext(filep, ext);
 }
 
 int
-rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int safe_level)
+rb_find_file_ext(VALUE *filep, const char *const *ext)
 {
     const char *f = StringValueCStr(*filep);
     VALUE fname = *filep, load_path, tmp;
@@ -6307,18 +6294,12 @@ rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int safe_level)
 
     if (f[0] == '~') {
 	fname = file_expand_path_1(fname);
-	if (safe_level >= 1 && OBJ_TAINTED(fname)) {
-	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
-	}
 	f = RSTRING_PTR(fname);
 	*filep = fname;
 	expanded = 1;
     }
 
     if (expanded || rb_is_absolute_path(f) || is_explicit_relative(f)) {
-	if (safe_level >= 1 && !fpath_check(fname)) {
-	    rb_raise(rb_eSecurityError, "loading from unsafe path %s", f);
-	}
 	if (!expanded) fname = file_expand_path_1(fname);
 	fnlen = RSTRING_LEN(fname);
 	for (i=0; ext[i]; i++) {
@@ -6345,7 +6326,7 @@ rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int safe_level)
 	for (i = 0; i < RARRAY_LEN(load_path); i++) {
 	    VALUE str = RARRAY_AREF(load_path, i);
 
-	    RB_GC_GUARD(str) = rb_get_path_check(str, safe_level);
+            RB_GC_GUARD(str) = rb_get_path(str);
 	    if (RSTRING_LEN(str) == 0) continue;
 	    rb_file_expand_path_internal(fname, str, 0, 0, tmp);
 	    if (rb_file_load_ok(RSTRING_PTR(tmp))) {
@@ -6362,13 +6343,14 @@ rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int safe_level)
 }
 
 VALUE
-rb_find_file(VALUE path)
+rb_find_file_safe(VALUE path, int _level)
 {
-    return rb_find_file_safe(path, rb_safe_level());
+    rb_warn("rb_find_file_safe will be removed in Ruby 3.0");
+    return rb_find_file(path);
 }
 
 VALUE
-rb_find_file_safe(VALUE path, int safe_level)
+rb_find_file(VALUE path)
 {
     VALUE tmp, load_path;
     const char *f = StringValueCStr(path);
@@ -6376,18 +6358,12 @@ rb_find_file_safe(VALUE path, int safe_level)
 
     if (f[0] == '~') {
 	tmp = file_expand_path_1(path);
-	if (safe_level >= 1 && OBJ_TAINTED(tmp)) {
-	    rb_raise(rb_eSecurityError, "loading from unsafe file %"PRIsVALUE, tmp);
-	}
 	path = copy_path_class(tmp, path);
 	f = RSTRING_PTR(path);
 	expanded = 1;
     }
 
     if (expanded || rb_is_absolute_path(f) || is_explicit_relative(f)) {
-	if (safe_level >= 1 && !fpath_check(path)) {
-	    rb_raise(rb_eSecurityError, "loading from unsafe path %"PRIsVALUE, path);
-	}
 	if (!rb_file_load_ok(f)) return 0;
 	if (!expanded)
 	    path = copy_path_class(file_expand_path_1(path), path);
@@ -6402,7 +6378,7 @@ rb_find_file_safe(VALUE path, int safe_level)
 	rb_enc_associate_index(tmp, rb_usascii_encindex());
 	for (i = 0; i < RARRAY_LEN(load_path); i++) {
 	    VALUE str = RARRAY_AREF(load_path, i);
-	    RB_GC_GUARD(str) = rb_get_path_check(str, safe_level);
+            RB_GC_GUARD(str) = rb_get_path(str);
 	    if (RSTRING_LEN(str) > 0) {
 		rb_file_expand_path_internal(path, str, 0, 0, tmp);
 		f = RSTRING_PTR(tmp);
@@ -6417,10 +6393,6 @@ rb_find_file_safe(VALUE path, int safe_level)
     }
 
   found:
-    if (safe_level >= 1 && !fpath_check(tmp)) {
-	rb_raise(rb_eSecurityError, "loading from unsafe file %"PRIsVALUE, tmp);
-    }
-
     return copy_path_class(tmp, path);
 }
 

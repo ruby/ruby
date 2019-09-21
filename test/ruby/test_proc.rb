@@ -157,45 +157,6 @@ class TestProc < Test::Unit::TestCase
     assert_equal(12, Proc.new{|a,&b| b.call(a)}.call(12) {|x| x})
   end
 
-  def test_safe
-    safe = $SAFE
-    c = Class.new
-    x = c.new
-
-    p = proc {
-      $SAFE += 1
-      proc {$SAFE}
-    }.call
-
-    assert_equal(safe + 1, $SAFE)
-    assert_equal(safe + 1, p.call)
-    assert_equal(safe + 1, $SAFE)
-
-    $SAFE = 0
-    c.class_eval {define_method(:safe, p)}
-    assert_equal(safe, x.safe)
-
-    $SAFE = 0
-    p = proc {$SAFE += 1}
-    assert_equal(safe + 1, p.call)
-    assert_equal(safe + 1, $SAFE)
-
-    $SAFE = 0
-    c.class_eval {define_method(:inc, p)}
-    assert_equal(safe + 1, proc {x.inc; $SAFE}.call)
-    assert_equal(safe + 1, $SAFE)
-
-    $SAFE = 0
-    assert_equal(safe + 1, proc {x.method(:inc).call; $SAFE}.call)
-    assert_equal(safe + 1, $SAFE)
-
-    $SAFE = 0
-    assert_equal(safe + 1, proc {x.method(:inc).to_proc.call; $SAFE}.call)
-    assert_equal(safe + 1, $SAFE)
-  ensure
-    $SAFE = 0
-  end
-
   def m2
     "OK"
   end

@@ -162,7 +162,6 @@ struct ruby_cmdline_options {
 #if USE_MJIT
     struct mjit_options mjit;
 #endif
-    int safe_level;
     int sflag, xflag;
     unsigned int warning: 1;
     unsigned int verbose: 1;
@@ -264,7 +263,6 @@ usage(const char *name, int help)
 	M("-rlibrary",	   "",			   "require the library before executing your script"),
 	M("-s",		   "",			   "enable some switch parsing for switches after script name"),
 	M("-S",		   "",			   "look for the script using PATH environment variable"),
-	M("-T[level=1]",   "",			   "turn on tainting checks"),
 	M("-v",		   "",			   "print the version number, then turn on verbose mode"),
 	M("-w",		   "",			   "turn warnings on for your script"),
 	M("-W[level=2]",   "",			   "set warning level; 0=silence, 1=medium, 2=verbose"),
@@ -490,13 +488,7 @@ str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to)
 # define str_conv_enc(str, from, to) (str)
 #endif
 
-void ruby_init_loadpath_safe(int safe_level);
-
-void
-ruby_init_loadpath(void)
-{
-    ruby_init_loadpath_safe(0);
-}
+void ruby_init_loadpath(void);
 
 #if defined(LOAD_RELATIVE)
 static VALUE
@@ -576,7 +568,7 @@ runtime_libruby_path(void)
 VALUE ruby_archlibdir_path, ruby_prefix_path;
 
 void
-ruby_init_loadpath_safe(int safe_level)
+ruby_init_loadpath(void)
 {
     VALUE load_path, archlibdir = 0;
     ID id_initial_load_path_mark;
@@ -659,9 +651,7 @@ ruby_init_loadpath_safe(int safe_level)
 
     load_path = GET_VM()->load_path;
 
-    if (safe_level == 0) {
-	ruby_push_include(getenv("RUBYLIB"), identical_path);
-    }
+    ruby_push_include(getenv("RUBYLIB"), identical_path);
 
     id_initial_load_path_mark = INITIAL_LOAD_PATH_MARK;
     while (*paths) {
@@ -1225,18 +1215,18 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 	    goto reswitch;
 
 	  case 'T':
-	    {
-		size_t numlen;
-		int v = 1;
+            {
+                size_t numlen;
+                int v = 1;
 
-		if (*++s) {
-		    v = scan_oct(s, 2, &numlen);
-		    if (numlen == 0)
-			v = 1;
-		    s += numlen;
-		}
-		if (v > opt->safe_level) opt->safe_level = v;
-	    }
+                if (*++s) {
+                    v = scan_oct(s, 2, &numlen);
+                    if (numlen == 0)
+                        v = 1;
+                    s += numlen;
+                }
+            }
+            rb_warn("ruby -T will be removed in Ruby 3.0");
 	    goto reswitch;
 
 	  case 'I':
@@ -1576,8 +1566,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     argc -= i;
     argv += i;
 
-    if ((opt->features.set & FEATURE_BIT(rubyopt)) &&
-	opt->safe_level == 0 && (s = getenv("RUBYOPT"))) {
+    if ((opt->features.set & FEATURE_BIT(rubyopt)) && (s = getenv("RUBYOPT"))) {
 	VALUE src_enc_name = opt->src.enc.name;
 	VALUE ext_enc_name = opt->ext.enc.name;
 	VALUE int_enc_name = opt->intern.enc.name;
@@ -1655,12 +1644,12 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     translit_char(RSTRING_PTR(opt->script_name), '\\', '/');
 #endif
 
-    ruby_gc_set_params(opt->safe_level);
-    ruby_init_loadpath_safe(opt->safe_level);
+    ruby_gc_set_params();
+    ruby_init_loadpath();
 
 #if USE_MJIT
     if (opt->mjit.on)
-        /* Using TMP_RUBY_PREFIX created by ruby_init_loadpath_safe(). */
+        /* Using TMP_RUBY_PREFIX created by ruby_init_loadpath(). */
         mjit_init(&opt->mjit);
 #endif
 
@@ -1883,8 +1872,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     if ((rb_e_script = opt->e_script) != 0) {
         rb_gc_register_mark_object(opt->e_script);
     }
-
-    rb_set_safe_level(opt->safe_level);
 
     {
         rb_execution_context_t *ec = GET_EC();
@@ -2282,9 +2269,6 @@ init_ids(ruby_cmdline_options_t *opt)
 
     if (uid != euid) opt->setids |= 1;
     if (egid != gid) opt->setids |= 2;
-    if (uid && opt->setids) {
-	if (opt->safe_level < 1) opt->safe_level = 1;
-    }
 }
 
 #undef forbid_setid
@@ -2295,8 +2279,6 @@ forbid_setid(const char *s, const ruby_cmdline_options_t *opt)
         rb_raise(rb_eSecurityError, "no %s allowed while running setuid", s);
     if (opt->setids & 2)
         rb_raise(rb_eSecurityError, "no %s allowed while running setgid", s);
-    if (opt->safe_level > 0)
-        rb_raise(rb_eSecurityError, "no %s allowed in tainted mode", s);
 }
 
 static void

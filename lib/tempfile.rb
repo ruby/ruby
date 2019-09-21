@@ -98,10 +98,6 @@ class Tempfile < DelegateClass(File)
   #
   # The temporary file will be placed in the directory as specified
   # by the +tmpdir+ parameter. By default, this is +Dir.tmpdir+.
-  # When $SAFE > 0 and the given +tmpdir+ is tainted, it uses
-  # '/tmp' as the temporary directory. Please note that ENV values
-  # are tainted by default, and +Dir.tmpdir+'s return value might
-  # come from environment variables (e.g. <tt>$TMPDIR</tt>).
   #
   #   file = Tempfile.new('hello', '/home/aisaka')
   #   file.path  # => something like: "/home/aisaka/hello2843-8392-92849382--0"

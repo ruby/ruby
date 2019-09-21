@@ -204,7 +204,6 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
         th = th0;
         errs[1] = ec->errinfo;
         if (THROW_DATA_P(ec->errinfo)) ec->errinfo = Qnil;
-	rb_set_safe_level_force(0);
 	ruby_init_stack(&errs[STACK_UPPER(errs, 0, 1)]);
 
         SAVE_ROOT_JMPBUF(th, rb_ec_teardown(ec));

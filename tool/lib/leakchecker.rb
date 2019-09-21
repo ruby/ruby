@@ -16,14 +16,9 @@ class LeakChecker
       check_tempfile_leak(test_name),
       check_env(test_name),
       check_encodings(test_name),
-      check_safe(test_name),
       check_verbose(test_name),
     ]
     GC.start if leaks.any?
-  end
-
-  def check_safe test_name
-    puts "#{test_name}: $SAFE == #{$SAFE}" unless $SAFE == 0
   end
 
   def check_verbose test_name

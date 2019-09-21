@@ -771,8 +771,6 @@ __LINE__         String          The current line number in the source file. [r/
 $LOAD_PATH       Array           A synonym for $:. [r/o]
 $-p              Object          Set to true if the -p option (which puts an implicit while gets . . . end
                                  loop around your program) is present on the command line. [r/o]
-$SAFE            Fixnum          The current safe level. This variable’s value may never be
-                                 reduced by assignment. [thread] (Not implemented in Rubinius)
 $VERBOSE         Object          Set to true if the -v, --version, -W, or -w option is specified on the com-
                                  mand line. Set to false if no option, or -W1 is given. Set to nil if -W0
                                  was specified. Setting this option to true causes the interpreter and some

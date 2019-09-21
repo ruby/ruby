@@ -20,19 +20,6 @@ class IMAPResponseParserTest < Test::Unit::TestCase
     end
   end
 
-  def test_flag_list_safe
-    parser = Net::IMAP::ResponseParser.new
-    response = lambda {
-      $SAFE = 1
-      parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
-* LIST (\\HasChildren) "." "INBOX"
-EOF
-    }.call
-    assert_equal [:Haschildren], response.data.attr
-  ensure
-    $SAFE = 0
-  end
-
   def test_flag_list_too_many_flags
     parser = Net::IMAP::ResponseParser.new
     assert_nothing_raised do

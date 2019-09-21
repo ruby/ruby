@@ -1777,19 +1777,13 @@ rb_eval_string_wrap(const char *str, int *pstate)
 }
 
 VALUE
-rb_eval_cmd(VALUE cmd, VALUE arg, int level)
+rb_eval_cmd(VALUE cmd, VALUE arg, int _level)
 {
     enum ruby_tag_type state;
     volatile VALUE val = Qnil;		/* OK */
-    const int VAR_NOCLOBBERED(current_safe_level) = rb_safe_level();
     rb_execution_context_t * volatile ec = GET_EC();
 
-    if (OBJ_TAINTED(cmd)) {
-	level = RUBY_SAFE_LEVEL_MAX;
-    }
-
     EC_PUSH_TAG(ec);
-    rb_set_safe_level_force(level);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	if (!RB_TYPE_P(cmd, T_STRING)) {
 	    val = rb_funcallv(cmd, idCall, RARRAY_LENINT(arg),
@@ -1801,7 +1795,6 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
     }
     EC_POP_TAG();
 
-    rb_set_safe_level_force(current_safe_level);
     if (state) EC_JUMP_TAG(ec, state);
     return val;
 }

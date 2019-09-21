@@ -2275,27 +2275,6 @@ call_method_data(rb_execution_context_t *ec, const struct METHOD *data,
                          method_callable_method_entry(data), kw_splat);
 }
 
-static VALUE
-call_method_data_safe(rb_execution_context_t *ec, const struct METHOD *data,
-		      int argc, const VALUE *argv, VALUE passed_procval,
-                      int safe, int kw_splat)
-{
-    VALUE result = Qnil;	/* OK */
-    enum ruby_tag_type state;
-
-    EC_PUSH_TAG(ec);
-    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-	/* result is used only if state == 0, no exceptions is caught. */
-	/* otherwise it doesn't matter even if clobbered. */
-        NO_CLOBBERED(result) = call_method_data(ec, data, argc, argv, passed_procval, kw_splat);
-    }
-    EC_POP_TAG();
-    rb_set_safe_level_force(safe);
-    if (state)
-	EC_JUMP_TAG(ec, state);
-    return result;
-}
-
 VALUE
 rb_method_call_with_block_kw(int argc, const VALUE *argv, VALUE method, VALUE passed_procval, int kw_splat)
 {
@@ -2305,14 +2284,6 @@ rb_method_call_with_block_kw(int argc, const VALUE *argv, VALUE method, VALUE pa
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     if (data->recv == Qundef) {
 	rb_raise(rb_eTypeError, "can't call unbound method; bind first");
-    }
-    if (OBJ_TAINTED(method)) {
-	const int safe_level_to_run = RUBY_SAFE_LEVEL_MAX;
-	int safe = rb_safe_level();
-	if (safe < safe_level_to_run) {
-	    rb_set_safe_level_force(safe_level_to_run);
-            return call_method_data_safe(ec, data, argc, argv, passed_procval, safe, kw_splat);
-	}
     }
     return call_method_data(ec, data, argc, argv, passed_procval, kw_splat);
 }
