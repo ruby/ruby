@@ -671,6 +671,8 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     VALUE keyword_hash = Qnil;
     VALUE * const orig_sp = ec->cfp->sp;
     unsigned int i;
+    int remove_empty_keyword_hash = 1;
+    VALUE flag_keyword_hash = 0;
 
     vm_check_canary(ec, orig_sp);
     /*
@@ -720,39 +722,77 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 	args->kw_argv = NULL;
     }
 
+    if (kw_flag && iseq->body->param.flags.ruby2_keywords) {
+        remove_empty_keyword_hash = 0;
+    }
+
     if (ci->flag & VM_CALL_ARGS_SPLAT) {
+        VALUE rest_last = 0;
+        int len;
 	args->rest = locals[--args->argc];
 	args->rest_index = 0;
-	given_argc += RARRAY_LENINT(args->rest) - 1;
+        len = RARRAY_LENINT(args->rest);
+        given_argc += len - 1;
+        rest_last = RARRAY_AREF(args->rest, len - 1);
+
+        if (!kw_flag && len > 0) {
+            if (RB_TYPE_P(rest_last, T_HASH) &&
+                (((struct RHash *)rest_last)->basic.flags & RHASH_PASS_AS_KEYWORDS)) {
+                kw_flag |= VM_CALL_KW_SPLAT;
+            } else {
+                rest_last = 0;
+            }
+        }
+
         if (kw_flag & VM_CALL_KW_SPLAT) {
-            int len = RARRAY_LENINT(args->rest);
             if (len > 0 && ignore_keyword_hash_p(RARRAY_AREF(args->rest, len - 1), iseq)) {
                 if (given_argc != min_argc) {
-                    arg_rest_dup(args);
-                    rb_ary_pop(args->rest);
-                    given_argc--;
-                    kw_flag &= ~VM_CALL_KW_SPLAT;
+                    if (remove_empty_keyword_hash) {
+                        arg_rest_dup(args);
+                        rb_ary_pop(args->rest);
+                        given_argc--;
+                        kw_flag &= ~VM_CALL_KW_SPLAT;
+                    }
+                    else {
+                        flag_keyword_hash = rest_last;
+                    }
                 }
                 else {
                     rb_warn_keyword_to_last_hash(calling, ci, iseq);
                 }
 	    }
+            else if (!remove_empty_keyword_hash && rest_last) {
+                flag_keyword_hash = rest_last;
+            }
         }
     }
     else {
         if (kw_flag & VM_CALL_KW_SPLAT) {
-            if (ignore_keyword_hash_p(args->argv[args->argc-1], iseq)) {
+            VALUE last_arg = args->argv[args->argc-1];
+            if (ignore_keyword_hash_p(last_arg, iseq)) {
                 if (given_argc != min_argc) {
-                    args->argc--;
-                    given_argc--;
-                    kw_flag &= ~VM_CALL_KW_SPLAT;
+                    if (remove_empty_keyword_hash) {
+                        args->argc--;
+                        given_argc--;
+                        kw_flag &= ~VM_CALL_KW_SPLAT;
+                    }
+                    else {
+                        flag_keyword_hash = last_arg;
+                    }
                 }
                 else {
                     rb_warn_keyword_to_last_hash(calling, ci, iseq);
                 }
 	    }
+            else if (!remove_empty_keyword_hash) {
+                flag_keyword_hash = args->argv[args->argc-1];
+            }
         }
 	args->rest = Qfalse;
+    }
+
+    if (flag_keyword_hash && RB_TYPE_P(flag_keyword_hash, T_HASH)) {
+        ((struct RHash *)flag_keyword_hash)->basic.flags |= RHASH_PASS_AS_KEYWORDS;
     }
 
     if (kw_flag && iseq->body->param.flags.accepts_no_kwarg) {

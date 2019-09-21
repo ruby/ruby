@@ -815,6 +815,7 @@ struct RComplex {
 #define RCOMPLEX_SET_IMAG(cmp, i) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->imag,(i))
 
 enum ruby_rhash_flags {
+    RHASH_PASS_AS_KEYWORDS = FL_USER1,                                   /* FL 1 */
     RHASH_PROC_DEFAULT = FL_USER2,                                       /* FL 2 */
     RHASH_ST_TABLE_FLAG = FL_USER3,                                      /* FL 3 */
 #define RHASH_AR_TABLE_MAX_SIZE SIZEOF_VALUE

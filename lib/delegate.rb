@@ -75,7 +75,7 @@ class Delegator < BasicObject
   #
   # Handles the magic of delegation through \_\_getobj\_\_.
   #
-  def method_missing(m, *args, &block)
+  ruby2_keywords def method_missing(m, *args, &block)
     r = true
     target = self.__getobj__ {r = false}
 
