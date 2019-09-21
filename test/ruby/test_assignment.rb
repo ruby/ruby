@@ -119,31 +119,31 @@ class TestAssignment < Test::Unit::TestCase
       def []=(i, a); 42; end
     end
 
-    assert_raise(NoMethodError) {
+    assert_raise(NoMethodError, bug11096) {
       o.instance_eval {o.foo = 1}
     }
-    assert_nothing_raised(NoMethodError) {
+    assert_nothing_raised(NoMethodError, bug11096) {
       assert_equal(1, o.instance_eval {self.foo = 1})
     }
 
-    assert_raise(NoMethodError) {
+    assert_raise(NoMethodError, bug11096) {
       o.instance_eval {o[0] = 1}
     }
-    assert_nothing_raised(NoMethodError) {
+    assert_nothing_raised(NoMethodError, bug11096) {
       assert_equal(1, o.instance_eval {self[0] = 1})
     }
 
-    assert_nothing_raised(NoMethodError) {
+    assert_nothing_raised(NoMethodError, bug11096) {
       o.instance_eval {self.foo += 1}
     }
-    assert_nothing_raised(NoMethodError) {
+    assert_nothing_raised(NoMethodError, bug11096) {
       o.instance_eval {self.foo &&= 1}
     }
 
-    assert_nothing_raised(NoMethodError) {
+    assert_nothing_raised(NoMethodError, bug11096) {
       o.instance_eval {self[0] += 1}
     }
-    assert_nothing_raised(NoMethodError) {
+    assert_nothing_raised(NoMethodError, bug11096) {
       o.instance_eval {self[0] &&= 1}
     }
   end
