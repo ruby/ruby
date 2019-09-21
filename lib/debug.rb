@@ -5,11 +5,6 @@
 
 require 'continuation'
 
-if $SAFE > 0
-  STDERR.print "-r debug.rb is not available in safe mode\n"
-  exit 1
-end
-
 require 'tracer'
 require 'pp'
 

@@ -162,7 +162,6 @@ static VALUE mSyslog_open(int argc, VALUE *argv, VALUE self)
         ident = rb_gv_get("$0");
     }
     ident_ptr = StringValueCStr(ident);
-    rb_check_safe_obj(ident);
     syslog_ident = strdup(ident_ptr);
 
     if (NIL_P(opt)) {

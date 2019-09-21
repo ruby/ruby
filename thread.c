@@ -3112,7 +3112,8 @@ rb_thread_stop_p(VALUE thread)
 static VALUE
 rb_thread_safe_level(VALUE thread)
 {
-    return UINT2NUM(rb_safe_level());
+    rb_warn("Thread#safe_level will be removed in Ruby 3.0");
+    return UINT2NUM(GET_VM()->safe_level_);
 }
 
 /*

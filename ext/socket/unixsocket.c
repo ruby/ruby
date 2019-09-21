@@ -39,7 +39,6 @@ unixsock_path_value(VALUE path)
 #endif
     if (isstr) {
         if (RSTRING_LEN(name) == 0 || RSTRING_PTR(name)[0] == '\0') {
-            rb_check_safe_obj(name);
             return name;             /* ignore encoding */
         }
     }

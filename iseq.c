@@ -1175,8 +1175,6 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
     VALUE src, file = Qnil, path = Qnil, line = INT2FIX(1), opt = Qnil;
     int i;
 
-    rb_secure(1);
-
     i = rb_scan_args(argc, argv, "1*:", &src, NULL, &opt);
     if (i > 4+NIL_P(opt)) rb_error_arity(argc, 1, 5);
     switch (i) {
@@ -1225,7 +1223,6 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
     rb_compile_option_t option;
     int i;
 
-    rb_secure(1);
     i = rb_scan_args(argc, argv, "1*:", &file, NULL, &opt);
     if (i > 1+NIL_P(opt)) rb_error_arity(argc, 1, 2);
     switch (i) {
@@ -1292,7 +1289,6 @@ static VALUE
 iseqw_s_compile_option_set(VALUE self, VALUE opt)
 {
     rb_compile_option_t option;
-    rb_secure(1);
     make_compile_option(&option, opt);
     COMPILE_OPTION_DEFAULT = option;
     return opt;
@@ -1344,7 +1340,6 @@ rb_iseqw_to_iseq(VALUE iseqw)
 static VALUE
 iseqw_eval(VALUE self)
 {
-    rb_secure(1);
     return rb_iseq_eval(iseqw_check(self));
 }
 
@@ -1579,7 +1574,6 @@ static VALUE
 iseqw_to_a(VALUE self)
 {
     const rb_iseq_t *iseq = iseqw_check(self);
-    rb_secure(1);
     return iseq_data_to_ary(iseq);
 }
 
@@ -2134,8 +2128,6 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
     const char *indent_str;
     long indent_len;
 
-    rb_secure(1);
-
     size = body->iseq_size;
 
     indent_len = RSTRING_LEN(indent);
@@ -2437,8 +2429,6 @@ static VALUE
 iseqw_s_of(VALUE klass, VALUE body)
 {
     const rb_iseq_t *iseq = NULL;
-
-    rb_secure(1);
 
     if (rb_obj_is_proc(body)) {
         iseq = vm_proc_iseq(body);

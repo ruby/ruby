@@ -604,21 +604,18 @@ char *rb_string_value_cstr(volatile VALUE*);
 #define StringValueCStr(v) rb_string_value_cstr(&(v))
 
 void rb_check_safe_obj(VALUE);
-#define SafeStringValue(v) do {\
-    StringValue(v);\
-    rb_check_safe_obj(v);\
-} while (0)
+#define SafeStringValue(v) StringValue(v)
 #if GCC_VERSION_SINCE(4,4,0)
-void rb_check_safe_str(VALUE) __attribute__((error("rb_check_safe_str() and Check_SafeStr() are obsolete; use SafeStringValue() instead")));
+void rb_check_safe_str(VALUE) __attribute__((error("rb_check_safe_str() and Check_SafeStr() are obsolete; use StringValue() instead")));
 # define Check_SafeStr(v) rb_check_safe_str((VALUE)(v))
 #else
-# define rb_check_safe_str(x) [<"rb_check_safe_str() is obsolete; use SafeStringValue() instead">]
-# define Check_SafeStr(v) [<"Check_SafeStr() is obsolete; use SafeStringValue() instead">]
+# define rb_check_safe_str(x) [<"rb_check_safe_str() is obsolete; use StringValue() instead">]
+# define Check_SafeStr(v) [<"Check_SafeStr() is obsolete; use StringValue() instead">]
 #endif
 
 VALUE rb_str_export(VALUE);
 #define ExportStringValue(v) do {\
-    SafeStringValue(v);\
+    StringValue(v);\
    (v) = rb_str_export(v);\
 } while (0)
 VALUE rb_str_export_locale(VALUE);
@@ -627,8 +624,9 @@ VALUE rb_get_path(VALUE);
 #define FilePathValue(v) (RB_GC_GUARD(v) = rb_get_path(v))
 
 VALUE rb_get_path_no_checksafe(VALUE);
-#define FilePathStringValue(v) ((v) = rb_get_path_no_checksafe(v))
+#define FilePathStringValue(v) ((v) = rb_get_path(v))
 
+/* Remove in 3.0 */
 #define RUBY_SAFE_LEVEL_MAX 1
 void rb_secure(int);
 int rb_safe_level(void);

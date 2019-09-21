@@ -459,7 +459,8 @@ int rb_provided(const char*);
 int rb_feature_provided(const char *, const char **);
 void rb_provide(const char*);
 VALUE rb_f_require(VALUE, VALUE);
-VALUE rb_require_safe(VALUE, int);
+VALUE rb_require_safe(VALUE, int); /* Remove in 3.0 */
+VALUE rb_require_string(VALUE);
 void rb_obj_call_init(VALUE, int, const VALUE*);
 void rb_obj_call_init_kw(VALUE, int, const VALUE*, int);
 VALUE rb_class_new_instance(int, const VALUE*, VALUE);
@@ -519,8 +520,8 @@ VALUE rb_file_expand_path(VALUE, VALUE);
 VALUE rb_file_s_absolute_path(int, const VALUE *);
 VALUE rb_file_absolute_path(VALUE, VALUE);
 VALUE rb_file_dirname(VALUE fname);
-int rb_find_file_ext_safe(VALUE*, const char* const*, int);
-VALUE rb_find_file_safe(VALUE, int);
+int rb_find_file_ext_safe(VALUE*, const char* const*, int); /* Remove in 3.0 */
+VALUE rb_find_file_safe(VALUE, int); /* Remove in 3.0 */
 int rb_find_file_ext(VALUE*, const char* const*);
 VALUE rb_find_file(VALUE);
 VALUE rb_file_directory_p(VALUE,VALUE);

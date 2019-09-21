@@ -1805,7 +1805,6 @@ struct autoload_const {
     VALUE ad; /* autoload_data_i */
     VALUE value;
     ID id;
-    int safe_level;
     rb_const_flag_t flag;
 };
 
@@ -1999,7 +1998,6 @@ rb_autoload_str(VALUE mod, ID id, VALUE file)
         ac->mod = mod;
         ac->id = id;
         ac->value = Qundef;
-        ac->safe_level = rb_safe_level();
         ac->flag = CONST_PUBLIC;
         ac->ad = ad;
         list_add_tail(&ele->constants, &ac->cnode);
@@ -2039,27 +2037,12 @@ autoload_delete(VALUE mod, ID id)
 }
 
 static VALUE
-autoload_provided(VALUE arg)
-{
-    const char **p = (const char **)arg;
-    return rb_feature_provided(*p, p);
-}
-
-static VALUE
-reset_safe(VALUE safe)
-{
-    rb_set_safe_level_force((int)safe);
-    return safe;
-}
-
-static VALUE
 check_autoload_required(VALUE mod, ID id, const char **loadingpath)
 {
     VALUE file;
     VALUE load = autoload_data(mod, id);
     struct autoload_data_i *ele;
     const char *loading;
-    int safe;
 
     if (!load || !(ele = get_autoload_data(load, 0))) {
 	return 0;
@@ -2081,9 +2064,7 @@ check_autoload_required(VALUE mod, ID id, const char **loadingpath)
     }
 
     loading = RSTRING_PTR(file);
-    safe = rb_safe_level();
-    rb_set_safe_level_force(0);
-    if (!rb_ensure(autoload_provided, (VALUE)&loading, reset_safe, (VALUE)safe)) {
+    if (!rb_feature_provided(loading, &loading)) {
 	return load;
     }
     if (loadingpath && loading) {
@@ -2186,12 +2167,10 @@ autoload_reset(VALUE arg)
     /* At the last, move a value defined in autoload to constant table */
     if (RTEST(state->result)) {
         struct autoload_const *next;
-        int safe_backup = rb_safe_level();
 
         list_for_each_safe(&ele->constants, ac, next, cnode) {
             if (ac->value != Qundef) {
-                rb_ensure(autoload_const_set, (VALUE)ac,
-                          reset_safe, (VALUE)safe_backup);
+                autoload_const_set((VALUE)ac);
             }
         }
     }

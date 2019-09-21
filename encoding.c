@@ -654,7 +654,7 @@ load_encoding(const char *name)
     ruby_verbose = Qfalse;
     ruby_debug = Qfalse;
     errinfo = rb_errinfo();
-    loaded = rb_require_internal(enclib, rb_safe_level());
+    loaded = rb_require_internal(enclib);
     ruby_verbose = verbose;
     ruby_debug = debug;
     rb_set_errinfo(errinfo);

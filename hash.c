@@ -5719,7 +5719,6 @@ env_has_value(VALUE dmy, VALUE obj)
 
     obj = rb_check_string_type(obj);
     if (NIL_P(obj)) return Qnil;
-    rb_check_safe_obj(obj);
     env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=');
@@ -5750,7 +5749,6 @@ env_rassoc(VALUE dmy, VALUE obj)
 
     obj = rb_check_string_type(obj);
     if (NIL_P(obj)) return Qnil;
-    rb_check_safe_obj(obj);
     env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=');

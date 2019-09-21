@@ -1467,16 +1467,6 @@ class TestPathname < Test::Unit::TestCase
     assert(File.fnmatch("*.*", Pathname.new("bar.baz")))
   end
 
-  def test_file_join
-    assert_equal("foo/bar", File.join(Pathname.new("foo"), Pathname.new("bar")))
-    lambda {
-      $SAFE = 1
-      assert_equal("foo/bar", File.join(Pathname.new("foo"), Pathname.new("bar").taint))
-    }.call
-  ensure
-    $SAFE = 0
-  end
-
   def test_relative_path_from_casefold
     assert_separately([], <<-'end;') #    do
       module File::Constants

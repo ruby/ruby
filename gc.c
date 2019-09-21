@@ -3232,7 +3232,7 @@ define_final0(VALUE obj, VALUE block)
 
     RBASIC(obj)->flags |= FL_FINALIZE;
 
-    block = rb_ary_new3(2, INT2FIX(rb_safe_level()), block);
+    block = rb_ary_new3(2, INT2FIX(0), block);
     OBJ_FREEZE(block);
 
     if (st_lookup(finalizer_table, obj, &data)) {
@@ -3291,7 +3291,6 @@ run_single_final(VALUE final, VALUE objid)
     const int level = OBJ_TAINTED(cmd) ?
 	RUBY_SAFE_LEVEL_MAX : FIX2INT(RARRAY_AREF(final, 0));
 
-    rb_set_safe_level_force(level);
     return rb_check_funcall(cmd, idCall, 1, &objid);
 }
 
@@ -3305,15 +3304,12 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
 	VALUE objid;
 	rb_control_frame_t *cfp;
 	long finished;
-	int safe;
     } saved;
     rb_execution_context_t * volatile ec = GET_EC();
 #define RESTORE_FINALIZER() (\
 	ec->cfp = saved.cfp, \
-	rb_set_safe_level_force(saved.safe), \
 	rb_set_errinfo(saved.errinfo))
 
-    saved.safe = rb_safe_level();
     saved.errinfo = rb_errinfo();
     saved.objid = rb_obj_id(obj);
     saved.cfp = ec->cfp;
@@ -9389,10 +9385,8 @@ gc_set_initial_pages(void)
  */
 
 void
-ruby_gc_set_params(int safe_level)
+ruby_gc_set_params(void)
 {
-    if (safe_level > 0) return;
-
     /* RUBY_GC_HEAP_FREE_SLOTS */
     if (get_envparam_size("RUBY_GC_HEAP_FREE_SLOTS", &gc_params.heap_free_slots, 0)) {
 	/* ok */

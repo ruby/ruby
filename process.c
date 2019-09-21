@@ -1574,16 +1574,6 @@ after_fork_ruby(void)
 
 #include "dln.h"
 
-static void
-security(const char *str)
-{
-    if (rb_env_path_tainted()) {
-	if (rb_safe_level() > 0) {
-	    rb_raise(rb_eSecurityError, "Insecure PATH - %s", str);
-	}
-    }
-}
-
 #if defined(HAVE_WORKING_FORK)
 
 /* try_with_sh and exec_with_sh should be async-signal-safe. Actually it is.*/
@@ -1759,7 +1749,6 @@ proc_spawn_cmd_internal(char **argv, char *prog)
 
     if (!prog)
 	prog = argv[0];
-    security(prog);
     prog = dln_find_exe_r(prog, 0, fbuf, sizeof(fbuf));
     if (!prog)
 	return -1;
@@ -2371,7 +2360,6 @@ rb_check_argv(int argc, VALUE *argv)
 	argv[i] = rb_str_new_frozen(argv[i]);
 	StringValueCStr(argv[i]);
     }
-    security(name ? name : RSTRING_PTR(argv[0]));
     return prog;
 }
 

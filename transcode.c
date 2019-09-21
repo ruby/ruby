@@ -375,7 +375,7 @@ load_transcoder_entry(transcoder_entry_t *entry)
         rb_str_set_len(fn, total_len);
         FL_UNSET(fn, FL_TAINT);
         OBJ_FREEZE(fn);
-        rb_require_safe(fn, rb_safe_level());
+        rb_require_string(fn);
     }
 
     if (entry->transcoder)

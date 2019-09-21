@@ -79,14 +79,6 @@ class TestRubyOptions < Test::Unit::TestCase
     ENV['RUBYOPT'] = save_rubyopt
   end
 
-  def test_safe_level
-    assert_in_out_err(%w(-T -e) + [""], "", [],
-                      /no -e allowed in tainted mode \(SecurityError\)/)
-
-    assert_in_out_err(%w(-T4 -S foo.rb), "", [],
-                      /no -S allowed in tainted mode \(SecurityError\)/)
-  end
-
   def test_debug
     assert_in_out_err(["--disable-gems", "-de", "p $DEBUG"], "", %w(true), [])
 
@@ -325,12 +317,6 @@ class TestRubyOptions < Test::Unit::TestCase
 
     ENV['RUBYOPT'] = '-e "p 1"'
     assert_in_out_err([], "", [], /invalid switch in RUBYOPT: -e \(RuntimeError\)/)
-
-    ENV['RUBYOPT'] = '-T1'
-    assert_in_out_err(["--disable-gems"], "", [], /no program input from stdin allowed in tainted mode \(SecurityError\)/)
-
-    ENV['RUBYOPT'] = '-T4'
-    assert_in_out_err(["--disable-gems"], "", [], /no program input from stdin allowed in tainted mode \(SecurityError\)/)
 
     ENV['RUBYOPT'] = '-Eus-ascii -KN'
     assert_in_out_err(%w(-Eutf-8 -KU), "p '\u3042'") do |r, e|

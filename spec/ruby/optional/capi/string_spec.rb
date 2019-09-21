@@ -558,20 +558,22 @@ describe "C-API String function" do
   end
 
   describe "SafeStringValue" do
-    it "raises for tained string when $SAFE is 1" do
-      begin
-        Thread.new {
-          $SAFE = 1
-          -> {
-            @s.SafeStringValue("str".taint)
-          }.should raise_error(SecurityError)
-        }.join
-      ensure
-        $SAFE = 0
+    ruby_version_is ''...'2.7' do
+      it "raises for tained string when $SAFE is 1" do
+        begin
+          Thread.new {
+            $SAFE = 1
+            -> {
+              @s.SafeStringValue("str".taint)
+            }.should raise_error(SecurityError)
+          }.join
+        ensure
+          $SAFE = 0
+        end
       end
-    end
 
-    it_behaves_like :string_value_macro, :SafeStringValue
+      it_behaves_like :string_value_macro, :SafeStringValue
+    end
   end
 
   describe "rb_str_modify_expand" do

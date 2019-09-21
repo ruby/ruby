@@ -533,23 +533,6 @@ class TestThread < Test::Unit::TestCase
     waiter&.kill&.join
   end
 
-  def test_safe_level
-    ok = false
-    t = Thread.new do
-      EnvUtil.suppress_warning do
-        $SAFE = 1
-      end
-      ok = true
-      sleep
-    end
-    Thread.pass until ok
-    assert_equal($SAFE, Thread.current.safe_level)
-    assert_equal($SAFE, t.safe_level)
-  ensure
-    $SAFE = 0
-    t&.kill&.join
-  end
-
   def test_thread_local
     t = Thread.new { sleep }
 

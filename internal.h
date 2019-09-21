@@ -1570,9 +1570,8 @@ void rb_file_const(const char*, VALUE);
 int rb_file_load_ok(const char *);
 VALUE rb_file_expand_path_fast(VALUE, VALUE);
 VALUE rb_file_expand_path_internal(VALUE, VALUE, int, int, VALUE);
-VALUE rb_get_path_check_to_string(VALUE, int);
-VALUE rb_get_path_check_convert(VALUE, VALUE, int);
-VALUE rb_get_path_check(VALUE, int);
+VALUE rb_get_path_check_to_string(VALUE);
+VALUE rb_get_path_check_convert(VALUE);
 void Init_File(void);
 int ruby_is_fd_loadable(int fd);
 
@@ -1604,7 +1603,7 @@ void rb_gc_writebarrier_remember(VALUE obj);
 #else
 #define rb_gc_writebarrier_remember(obj) 0
 #endif
-void ruby_gc_set_params(int safe_level);
+void ruby_gc_set_params(void);
 void rb_copy_wb_protected_attribute(VALUE dest, VALUE obj);
 
 #if defined(HAVE_MALLOC_USABLE_SIZE) || defined(HAVE_MALLOC_SIZE) || defined(_WIN32)
@@ -1696,7 +1695,7 @@ void rb_io_fptr_finalize_internal(void *ptr);
 
 /* load.c */
 VALUE rb_get_expanded_load_path(void);
-int rb_require_internal(VALUE fname, int safe);
+int rb_require_internal(VALUE fname);
 NORETURN(void rb_load_fail(VALUE, const char*));
 
 /* loadpath.c */

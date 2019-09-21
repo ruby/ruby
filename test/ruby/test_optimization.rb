@@ -714,17 +714,6 @@ class TestRubyOptimization < Test::Unit::TestCase
     END
   end
 
-  def test_block_parameter_should_restore_safe_level
-    assert_separately [], <<-END
-      #
-      def foo &b
-        $SAFE = 1
-        b.call
-      end
-      assert_equal 1, foo{$SAFE}
-    END
-  end
-
   def test_peephole_optimization_without_trace
     assert_separately [], <<-END
       RubyVM::InstructionSequence.compile_option = {trace_instruction: false}

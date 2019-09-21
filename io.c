@@ -12839,9 +12839,6 @@ opt_i_get(ID id, VALUE *var)
 static VALUE
 argf_inplace_mode_set(VALUE argf, VALUE val)
 {
-    if (rb_safe_level() >= 1 && OBJ_TAINTED(val))
-	rb_insecure_operation();
-
     if (!RTEST(val)) {
 	ARGF.inplace = Qfalse;
     }

@@ -471,18 +471,6 @@ class TestFile < Test::Unit::TestCase
     end
   end
 
-  def test_untainted_path
-    bug5374 = '[ruby-core:39745]'
-    cwd = ("./"*40+".".taint).dup.untaint
-    in_safe = proc {|safe| $SAFE = safe; File.stat(cwd)}
-    assert_not_send([cwd, :tainted?])
-    (0..1).each do |level|
-      assert_nothing_raised(SecurityError, bug5374) {in_safe[level]}
-    end
-  ensure
-    $SAFE = 0
-  end
-
   if /(bcc|ms|cyg)win|mingw|emx/ =~ RUBY_PLATFORM
     def test_long_unc
       feature3399 = '[ruby-core:30623]'
