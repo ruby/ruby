@@ -3360,12 +3360,13 @@ tbl_copy_i(st_data_t key, st_data_t value, st_data_t data)
     return ST_CONTINUE;
 }
 
-st_table *
-rb_st_copy(VALUE obj, struct st_table *orig_tbl)
+void
+rb_iv_tbl_copy(VALUE dst, VALUE src)
 {
+    st_table *orig_tbl = RCLASS_IV_TBL(src);
     st_table *new_tbl = st_copy(orig_tbl);
-    st_foreach(new_tbl, tbl_copy_i, (st_data_t)obj);
-    return new_tbl;
+    st_foreach(new_tbl, tbl_copy_i, (st_data_t)dst);
+    RCLASS_IV_TBL(dst) = new_tbl;
 }
 
 MJIT_FUNC_EXPORTED rb_const_entry_t *

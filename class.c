@@ -341,7 +341,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     if (RCLASS_IV_TBL(orig)) {
 	st_data_t id;
 
-	RCLASS_IV_TBL(clone) = rb_st_copy(clone, RCLASS_IV_TBL(orig));
+	rb_iv_tbl_copy(clone, orig);
 	CONST_ID(id, "__tmp_classpath__");
 	st_delete(RCLASS_IV_TBL(clone), &id, 0);
 	CONST_ID(id, "__classpath__");
@@ -394,7 +394,7 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
 	RCLASS_SET_SUPER(clone, RCLASS_SUPER(klass));
 	RCLASS_EXT(clone)->allocator = RCLASS_EXT(klass)->allocator;
 	if (RCLASS_IV_TBL(klass)) {
-	    RCLASS_IV_TBL(clone) = rb_st_copy(clone, RCLASS_IV_TBL(klass));
+	    rb_iv_tbl_copy(clone, klass);
 	}
 	if (RCLASS_CONST_TBL(klass)) {
 	    struct clone_const_arg arg;
