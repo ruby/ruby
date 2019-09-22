@@ -129,8 +129,10 @@ jobs:
         run: cd ruby-*/ && make $JOBS check TESTOPTS="-q --tty=no" MSPECOPT="-ff"
       - name: make install
         run: cd ruby-*/ && sudo make $JOBS install
+        if: always() # `make check` may fail when 2.4.x
       - name: ruby -v
         run: ruby -v
+        if: always() # `make check` may fail when 2.4.x
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |
