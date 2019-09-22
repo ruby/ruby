@@ -72,6 +72,8 @@ VALUE rb_cSymbol;
  * 1:     RSTRING_NOEMBED
  * 2:     STR_SHARED (== ELTS_SHARED)
  * 2-6:   RSTRING_EMBED_LEN (5 bits == 32)
+ * 5:     STR_SHARED_ROOT (RSTRING_NOEMBED==1 && STR_SHARED == 0, there may be
+ *                         other strings that rely on this string's buffer)
  * 6:     STR_IS_SHARED_M (shared, when RSTRING_NOEMBED==1 && klass==0)
  * 7:     STR_TMPLOCK
  * 8-9:   ENC_CODERANGE (2 bits)
@@ -82,6 +84,7 @@ VALUE rb_cSymbol;
  */
 
 #define RUBY_MAX_CHAR_LEN 16
+#define STR_SHARED_ROOT FL_USER5
 #define STR_IS_SHARED_M FL_USER6
 #define STR_TMPLOCK FL_USER7
 #define STR_NOFREE FL_USER18
@@ -155,6 +158,7 @@ VALUE rb_cSymbol;
     if (!FL_TEST(str, STR_FAKESTR)) { \
 	RB_OBJ_WRITE((str), &RSTRING(str)->as.heap.aux.shared, (shared_str)); \
 	FL_SET((str), STR_SHARED); \
+        FL_SET((shared_str), STR_SHARED_ROOT); \
 	if (RBASIC_CLASS((shared_str)) == 0) /* for CoW-friendliness */ \
 	    FL_SET_RAW((shared_str), STR_IS_SHARED_M); \
     } \
@@ -316,9 +320,15 @@ rb_fstring(VALUE str)
 	return str;
 
     bare = BARE_STRING_P(str);
-    if (STR_EMBED_P(str) && !bare) {
-	OBJ_FREEZE_RAW(str);
-	return str;
+    if (!bare) {
+        if (STR_EMBED_P(str)) {
+            OBJ_FREEZE_RAW(str);
+            return str;
+        }
+        if (FL_TEST_RAW(str, STR_NOEMBED|STR_SHARED_ROOT|STR_SHARED) == (STR_NOEMBED|STR_SHARED_ROOT)) {
+            assert(OBJ_FROZEN(str));
+            return str;
+        }
     }
 
     if (!OBJ_FROZEN(str))
@@ -1174,7 +1184,9 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
             RSTRING_GETMEM(root, ptr, len);
         }
         if (!STR_EMBED_P(str2) && !FL_TEST_RAW(str2, STR_SHARED|STR_NOFREE)) {
-            /* TODO: check if str2 is a shared root */
+            if (FL_TEST_RAW(str2, STR_SHARED_ROOT)) {
+                rb_fatal("about to free a possible shared root");
+            }
             char *ptr2 = STR_HEAP_PTR(str2);
             if (ptr2 != ptr) {
                 ruby_sized_xfree(ptr2, STR_HEAP_SIZE(str2));
