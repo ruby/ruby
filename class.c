@@ -1956,7 +1956,6 @@ struct rb_scan_args_t {
     int n_mand;
     int argi;
     int last_idx;
-    int f_kw;
     VALUE hash;
     VALUE last_hash;
     VALUE *tmp_buffer;
@@ -2010,9 +2009,6 @@ rb_scan_args_parse(int kw_flag, int argc, const VALUE *argv, const char *fmt, st
     }
     if (*p == ':') {
         arg->f_hash = 1;
-        /* Optional or variable arguments turn on keyword argument mode */
-        /* If all arguments are mandatory, operate in regular argument mode */
-        arg->f_kw = arg->f_var || arg->n_opt;
 	p++;
     }
     if (*p == '&') {
@@ -2025,13 +2021,12 @@ rb_scan_args_parse(int kw_flag, int argc, const VALUE *argv, const char *fmt, st
     arg->n_mand = arg->n_lead + arg->n_trail;
 
     /* capture an option hash - phase 1: pop */
-    /* In keyword arugment mode, ignore final positional hash if empty keywords given */
-    if (argc > 0 && !(arg->f_kw && empty_keyword_given)) {
+    /* Ignore final positional hash if empty keywords given */
+    if (argc > 0 && !(arg->f_hash && empty_keyword_given)) {
         VALUE last = argv[argc - 1];
 
-        /* Ruby 3: if (arg->f_hash && (arg->f_kw && keyword_given) || arg->n_mand < argc)) { */
         if (arg->f_hash && arg->n_mand < argc) {
-            if (arg->f_kw && keyword_given) {
+            if (keyword_given) {
                 if (!RB_TYPE_P(last, T_HASH)) {
                     rb_warn("Keyword flag set when calling rb_scan_args, but last entry is not a hash");
                 }
@@ -2058,26 +2053,24 @@ rb_scan_args_parse(int kw_flag, int argc, const VALUE *argv, const char *fmt, st
                 VALUE opts = rb_extract_keywords(&arg->hash);
 
                 if (!(arg->last_hash = arg->hash)) {
-                    if (arg->f_kw && !keyword_given && !last_hash_keyword) {
-                        /* Warn in keyword argument mode if treating positional
-                           as keyword, as in Ruby 3, this will be an error */
+                    if (!keyword_given && !last_hash_keyword) {
+                        /* Warn if treating positional as keyword, as in Ruby 3,
+                           this will be an error */
                         rb_warn("The last argument is used as the keyword parameter");
                     }
                     argc--;
                 }
                 else {
-                    /* Warn in keyword argument mode if splitting either positional hash
-                       to keywords or keywords to positional hash, as in Ruby 3,
-                       no splitting will be done */
+                    /* Warn if splitting either positional hash to keywords or keywords
+                       to positional hash, as in Ruby 3, no splitting will be done */
                     rb_warn("The last argument is split into positional and keyword parameters");
                     arg->last_idx = argc - 1;
                 }
                 arg->hash = opts ? opts : Qnil;
             }
         }
-        else if (arg->f_kw && keyword_given && arg->n_mand == argc) {
-            /* Warn in keyword argument mode if treating keywords as positional,
-               as in Ruby 3, this will be an error */
+        else if (arg->f_hash && keyword_given && arg->n_mand == argc) {
+            /* Warn if treating keywords as positional, as in Ruby 3, this will be an error */
             rb_warn("The keyword argument is passed as the last hash parameter");
         }
     }

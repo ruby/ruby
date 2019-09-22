@@ -3045,7 +3045,7 @@ static VALUE
 new_wrap(VALUE tmp)
 {
     new_wrap_arg_t *arg = (new_wrap_arg_t *)tmp;
-    return rb_class_new_instance(arg->argc, arg->argv, arg->klass);
+    return rb_class_new_instance_kw(arg->argc, arg->argv, arg->klass, RB_PASS_CALLED_KEYWORDS);
 }
 
 static VALUE
@@ -3078,7 +3078,7 @@ gzfile_wrap(int argc, VALUE *argv, VALUE klass, int close_io_on_error)
 	}
     }
     else {
-	obj = rb_class_new_instance(argc, argv, klass);
+	obj = rb_class_new_instance_kw(argc, argv, klass, RB_PASS_CALLED_KEYWORDS);
     }
 
     if (rb_block_given_p()) {

@@ -2527,7 +2527,6 @@ rb_scan_args_set(int argc, const VALUE *argv,
     int i, argi = 0, vari = 0, last_idx = -1;
     VALUE *var, hash = Qnil, last_hash = 0;
     const int n_mand = n_lead + n_trail;
-    const int f_kw = (f_hash && (f_var || n_opt));
     int keyword_given = rb_keyword_given_p();
     int empty_keyword_given = 0;
     VALUE tmp_buffer = 0;
@@ -2537,13 +2536,12 @@ rb_scan_args_set(int argc, const VALUE *argv,
     }
 
     /* capture an option hash - phase 1: pop */
-    /* In keyword arugment mode, ignore final positional hash if empty keywords given */
-    if (argc > 0 && !(f_kw && empty_keyword_given)) {
+    /* Ignore final positional hash if empty keywords given */
+    if (argc > 0 && !(f_hash && empty_keyword_given)) {
         VALUE last = argv[argc - 1];
 
-        /* Ruby 3: if (f_hash && (f_kw && keyword_given) || n_mand < argc)) { */
         if (f_hash && n_mand < argc) {
-            if (f_kw && keyword_given) {
+            if (keyword_given) {
                 if (!RB_TYPE_P(last, T_HASH)) {
                     rb_warn("Keyword flag set when calling rb_scan_args, but last entry is not a hash");
                 }
@@ -2570,26 +2568,24 @@ rb_scan_args_set(int argc, const VALUE *argv,
                 VALUE opts = rb_extract_keywords(&hash);
 
                 if (!(last_hash = hash)) {
-                    if (f_kw && !keyword_given) {
-                        /* Warn in keyword argument mode if treating positional
-                           as keyword, as in Ruby 3, this will be an error */
+                    if (!keyword_given) {
+                        /* Warn if treating positional as keyword, as in Ruby 3,
+                           this will be an error */
                         rb_warn("The last argument is used as the keyword parameter");
                     }
                     argc--;
                 }
                 else {
-                    /* Warn in keyword argument mode if splitting either positional hash
-                       to keywords or keywords to positional hash, as in Ruby 3,
-                       no splitting will be done */
+                    /* Warn if splitting either positional hash to keywords or keywords
+                       to positional hash, as in Ruby 3, no splitting will be done */
                     rb_warn("The last argument is split into positional and keyword parameters");
                     last_idx = argc - 1;
                 }
                 hash = opts ? opts : Qnil;
             }
         }
-        else if (f_kw && keyword_given && n_mand == argc) {
-            /* Warn in keyword argument mode if treating keywords as positional,
-               as in Ruby 3, this will be an error */
+        else if (f_hash && keyword_given && n_mand == argc) {
+            /* Warn if treating keywords as positional, as in Ruby 3, this will be an error */
             rb_warn("The keyword argument is passed as the last hash parameter");
         }
     }

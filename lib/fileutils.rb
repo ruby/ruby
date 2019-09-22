@@ -1276,9 +1276,9 @@ module FileUtils
       opts[:encoding] = ::Encoding::UTF_8 if fu_windows?
 
       files = if Dir.respond_to?(:children)
-        Dir.children(path, opts)
+        Dir.children(path, **opts)
       else
-        Dir.entries(path(), opts)
+        Dir.entries(path(), **opts)
            .reject {|n| n == '.' or n == '..' }
       end
 

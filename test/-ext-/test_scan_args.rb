@@ -93,11 +93,11 @@ class TestScanArgs < Test::Unit::TestCase
     assert_equal([1, "a", nil], Bug::ScanArgs.lead_hash("a"))
     assert_raise(ArgumentError) {Bug::ScanArgs.lead_hash("a", "b")}
     assert_equal([1, "a", {b: 1}], Bug::ScanArgs.lead_hash("a", b: 1))
-    assert_equal([1, {b: 1}, nil], Bug::ScanArgs.lead_hash(b: 1))
-    assert_equal([1, {"a"=>0, b: 1}, nil], Bug::ScanArgs.lead_hash({"a"=>0, b: 1}, **{}))
-    assert_warn(/The last argument is split into positional and keyword parameters/) do
-      assert_raise(ArgumentError) {Bug::ScanArgs.lead_hash(1, {"a"=>0, b: 1}, **{})}
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([1, {b: 1}, nil], Bug::ScanArgs.lead_hash(b: 1))
     end
+    assert_equal([1, {"a"=>0, b: 1}, nil], Bug::ScanArgs.lead_hash({"a"=>0, b: 1}, **{}))
+    assert_raise(ArgumentError) {Bug::ScanArgs.lead_hash(1, {"a"=>0, b: 1}, **{})}
     assert_warn(/The keyword argument is passed as the last hash parameter/) do
       assert_equal([1, {}, nil], Bug::ScanArgs.lead_hash(**{}))
     end
