@@ -106,7 +106,9 @@ enum SLEEP_FLAGS {
 #define THREAD_LOCAL_STORAGE_INITIALISED FL_USER13
 #define THREAD_LOCAL_STORAGE_INITIALISED_P(th) RB_FL_TEST_RAW((th), THREAD_LOCAL_STORAGE_INITIALISED)
 
-static VALUE inline rb_thread_local_storage(VALUE thread) {
+static inline VALUE
+rb_thread_local_storage(VALUE thread)
+{
     if (LIKELY(!THREAD_LOCAL_STORAGE_INITIALISED_P(thread))) {
         rb_ivar_set(thread, idLocals, rb_hash_new());
         RB_FL_SET_RAW(thread, THREAD_LOCAL_STORAGE_INITIALISED);
