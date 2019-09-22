@@ -49,7 +49,7 @@ PACKAGES = {
   "bzip" => %w".tar.bz2 bzip2 -c",
   "gzip" => %w".tar.gz  gzip -c",
   "xz"   => %w".tar.xz  xz -c",
-  "zip"  => %w".zip     zip -qr",
+  "zip"  => %w".zip     zip -Xqr",
 }
 DEFAULT_PACKAGES = PACKAGES.keys - ["tar"]
 if system("7z", out: IO::NULL)
