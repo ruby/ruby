@@ -74,7 +74,8 @@ VALUE rb_cSymbol;
  * 2-6:   RSTRING_EMBED_LEN (5 bits == 32)
  * 5:     STR_SHARED_ROOT (RSTRING_NOEMBED==1 && STR_SHARED == 0, there may be
  *                         other strings that rely on this string's buffer)
- * 6:     STR_IS_SHARED_M (shared, when RSTRING_NOEMBED==1 && klass==0)
+ * 6:     STR_BORROWED (when RSTRING_NOEMBED==1 && klass==0, unsafe to recycle
+ *                      early, specific to rb_str_tmp_frozen_{acquire,release})
  * 7:     STR_TMPLOCK
  * 8-9:   ENC_CODERANGE (2 bits)
  * 10-16: ENCODING (7 bits == 128)
@@ -85,7 +86,7 @@ VALUE rb_cSymbol;
 
 #define RUBY_MAX_CHAR_LEN 16
 #define STR_SHARED_ROOT FL_USER5
-#define STR_IS_SHARED_M FL_USER6
+#define STR_BORROWED FL_USER6
 #define STR_TMPLOCK FL_USER7
 #define STR_NOFREE FL_USER18
 #define STR_FAKESTR FL_USER19
@@ -160,7 +161,7 @@ VALUE rb_cSymbol;
 	FL_SET((str), STR_SHARED); \
         FL_SET((shared_str), STR_SHARED_ROOT); \
 	if (RBASIC_CLASS((shared_str)) == 0) /* for CoW-friendliness */ \
-	    FL_SET_RAW((shared_str), STR_IS_SHARED_M); \
+	    FL_SET_RAW((shared_str), STR_BORROWED); \
     } \
 } while (0)
 
@@ -1262,7 +1263,7 @@ rb_str_tmp_frozen_release(VALUE orig, VALUE tmp)
 	    !FL_TEST_RAW(orig, STR_TMPLOCK|RUBY_FL_FREEZE)) {
 	VALUE shared = RSTRING(orig)->as.heap.aux.shared;
 
-	if (shared == tmp && !FL_TEST_RAW(tmp, STR_IS_SHARED_M)) {
+	if (shared == tmp && !FL_TEST_RAW(tmp, STR_BORROWED)) {
 	    FL_UNSET_RAW(orig, STR_SHARED);
 	    assert(RSTRING(orig)->as.heap.ptr == RSTRING(tmp)->as.heap.ptr);
 	    assert(RSTRING(orig)->as.heap.len == RSTRING(tmp)->as.heap.len);
@@ -1300,7 +1301,7 @@ str_new_frozen(VALUE klass, VALUE orig)
 	    }
 	    else {
 		if (RBASIC_CLASS(shared) == 0)
-		    FL_SET_RAW(shared, STR_IS_SHARED_M);
+		    FL_SET_RAW(shared, STR_BORROWED);
 		return shared;
 	    }
 	}
@@ -1321,7 +1322,7 @@ str_new_frozen(VALUE klass, VALUE orig)
 	    RBASIC(orig)->flags &= ~STR_NOFREE;
 	    STR_SET_SHARED(orig, str);
 	    if (klass == 0)
-		FL_UNSET_RAW(str, STR_IS_SHARED_M);
+		FL_UNSET_RAW(str, STR_BORROWED);
 	}
     }
 
