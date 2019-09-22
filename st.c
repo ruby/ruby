@@ -1197,7 +1197,7 @@ st_insert(st_table *tab, st_data_t key, st_data_t value)
 
 /* Insert (KEY, VALUE, HASH) into table TAB.  The table should not have
    entry with KEY before the insertion.  */
-void
+static inline void
 st_add_direct_with_hash(st_table *tab,
 			st_data_t key, st_data_t value, st_hash_t hash)
 {
