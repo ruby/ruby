@@ -254,7 +254,7 @@ static VALUE
 scan_args_k_lead_opt_hash(int argc, VALUE *argv, VALUE self)
 {
     VALUE args[4];
-    int n = rb_scan_args(argc, argv, "k11:", args+1, args+2, args+3);
+    int n = rb_scan_args_kw(RB_SCAN_ARGS_KEYWORDS, argc, argv, "11:", args+1, args+2, args+3);
     args[0] = INT2NUM(n);
     return rb_ary_new_from_values(numberof(args), args);
 }
@@ -263,7 +263,7 @@ static VALUE
 scan_args_e_lead_opt_hash(int argc, VALUE *argv, VALUE self)
 {
     VALUE args[4];
-    int n = rb_scan_args(argc, argv, "e11:", args+1, args+2, args+3);
+    int n = rb_scan_args_kw(RB_SCAN_ARGS_EMPTY_KEYWORDS, argc, argv, "11:", args+1, args+2, args+3);
     args[0] = INT2NUM(n);
     return rb_ary_new_from_values(numberof(args), args);
 }
@@ -272,7 +272,7 @@ static VALUE
 scan_args_n_lead_opt_hash(int argc, VALUE *argv, VALUE self)
 {
     VALUE args[4];
-    int n = rb_scan_args(argc, argv, "n11:", args+1, args+2, args+3);
+    int n = rb_scan_args_kw(RB_SCAN_ARGS_LAST_HASH_KEYWORDS, argc, argv, "11:", args+1, args+2, args+3);
     args[0] = INT2NUM(n);
     return rb_ary_new_from_values(numberof(args), args);
 }

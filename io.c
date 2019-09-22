@@ -10373,7 +10373,7 @@ open_key_args(VALUE klass, int argc, VALUE *argv, VALUE opt, struct foreach_arg 
 	v = rb_to_array_type(v);
 	n = RARRAY_LENINT(v);
 	rb_check_arity(n, 0, 3); /* rb_io_open */
-        rb_scan_args(n, RARRAY_CONST_PTR(v), "n02:", &vmode, &vperm, &opt);
+        rb_scan_args_kw(RB_SCAN_ARGS_LAST_HASH_KEYWORDS, n, RARRAY_CONST_PTR(v), "02:", &vmode, &vperm, &opt);
     }
     arg->io = rb_io_open(klass, path, vmode, vperm, opt);
 }

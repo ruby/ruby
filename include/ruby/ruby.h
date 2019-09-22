@@ -1899,6 +1899,11 @@ VALUE rb_funcall_passing_block(VALUE, ID, int, const VALUE*);
 VALUE rb_funcall_with_block(VALUE, ID, int, const VALUE*, VALUE);
 VALUE rb_funcall_with_block_kw(VALUE, ID, int, const VALUE*, VALUE, int);
 int rb_scan_args(int, const VALUE*, const char*, ...);
+#define RB_SCAN_ARGS_PASS_CALLED_KEYWORDS 0
+#define RB_SCAN_ARGS_KEYWORDS 1
+#define RB_SCAN_ARGS_EMPTY_KEYWORDS 2
+#define RB_SCAN_ARGS_LAST_HASH_KEYWORDS 3
+int rb_scan_args_kw(int, int, const VALUE*, const char*, ...);
 VALUE rb_call_super(int, const VALUE*);
 VALUE rb_call_super_kw(int, const VALUE*, int);
 VALUE rb_current_receiver(void);
@@ -2376,17 +2381,12 @@ ERRORFUNC(("variable argument length doesn't match"), void rb_scan_args_length_m
      rb_scan_args_count_var(fmt, ofs, vari) : \
      rb_scan_args_count_var(fmt, ofs+1, vari+fmt[ofs]-'0'))
 
-# define rb_scan_kw_p(c) ((c) == 'k' || (c) == 'e' || (c) == 'n')
-
 # define rb_scan_args_count_lead(fmt, ofs, vari) \
     (!rb_scan_args_isdigit(fmt[ofs]) ? \
       rb_scan_args_count_var(fmt, ofs, vari) : \
       rb_scan_args_count_opt(fmt, ofs+1, vari+fmt[ofs]-'0'))
 
-# define rb_scan_args_count(fmt) \
-    (rb_scan_kw_p(fmt[0]) ? \
-     rb_scan_args_count_lead((fmt+1), 0, 0) : \
-     rb_scan_args_count_lead((fmt), 0, 0))
+# define rb_scan_args_count(fmt) rb_scan_args_count_lead(fmt, 0, 0)
 
 # if defined(__has_attribute) && __has_attribute(diagnose_if)
 #  define rb_scan_args_verify(fmt, varc) (void)0
@@ -2399,75 +2399,39 @@ ERRORFUNC(("variable argument length doesn't match"), void rb_scan_args_length_m
      (void)0)
 # endif
 
-ALWAYS_INLINE(static int rb_scan_args_kw_p(const char *fmt));
-static inline int
-rb_scan_args_kw_p(const char *fmt)
-{
-    switch (fmt[0]) {
-      case 'k':
-      case 'e':
-      case 'n':
-        return 1;
-    }
-    return 0;
-}
-
-ALWAYS_INLINE(static int rb_scan_args_kw(const char *fmt));
-static inline int
-rb_scan_args_kw(const char *fmt)
-{
-    switch (fmt[0]) {
-      case 'k':
-        return 1;
-      case 'e':
-        return 2;
-      case 'n':
-        return 3;
-    }
-    return 0;
-}
-
-ALWAYS_INLINE(static int rb_scan_args_n_lead_idx(const char *fmt));
-static inline int
-rb_scan_args_n_lead_idx(const char *fmt)
-{
-    return rb_scan_args_kw_p(fmt);
-}
-
 ALWAYS_INLINE(static int rb_scan_args_lead_p(const char *fmt));
 static inline int
 rb_scan_args_lead_p(const char *fmt)
 {
-    return rb_scan_args_isdigit(fmt[rb_scan_args_n_lead_idx(fmt)]);
+    return rb_scan_args_isdigit(fmt[0]);
 }
 
 ALWAYS_INLINE(static int rb_scan_args_n_lead(const char *fmt));
 static inline int
 rb_scan_args_n_lead(const char *fmt)
 {
-    return (rb_scan_args_lead_p(fmt) ? fmt[rb_scan_args_n_lead_idx(fmt)]-'0' : 0);
+    return (rb_scan_args_lead_p(fmt) ? fmt[0]-'0' : 0);
 }
 
 ALWAYS_INLINE(static int rb_scan_args_opt_p(const char *fmt));
 static inline int
 rb_scan_args_opt_p(const char *fmt)
 {
-    return (rb_scan_args_lead_p(fmt) && rb_scan_args_isdigit(fmt[rb_scan_args_n_lead_idx(fmt)+1]));
+    return (rb_scan_args_lead_p(fmt) && rb_scan_args_isdigit(fmt[1]));
 }
 
 ALWAYS_INLINE(static int rb_scan_args_n_opt(const char *fmt));
 static inline int
 rb_scan_args_n_opt(const char *fmt)
 {
-    return (rb_scan_args_opt_p(fmt) ? fmt[rb_scan_args_n_lead_idx(fmt)+1]-'0' : 0);
+    return (rb_scan_args_opt_p(fmt) ? fmt[1]-'0' : 0);
 }
 
 ALWAYS_INLINE(static int rb_scan_args_var_idx(const char *fmt));
 static inline int
 rb_scan_args_var_idx(const char *fmt)
 {
-    const int idx  = rb_scan_args_n_lead_idx(fmt);
-    return idx + (!rb_scan_args_lead_p(fmt) ? 0 : !rb_scan_args_isdigit(fmt[idx+1]) ? 1 : 2);
+    return (!rb_scan_args_lead_p(fmt) ? 0 : !rb_scan_args_isdigit(fmt[1]) ? 1 : 2);
 }
 
 ALWAYS_INLINE(static int rb_scan_args_f_var(const char *fmt));
@@ -2537,7 +2501,6 @@ rb_scan_args_end_idx(const char *fmt)
 /* https://bugs.llvm.org/show_bug.cgi?id=38095 */
 # define rb_scan_args0(argc, argv, fmt, varc, vars) \
     rb_scan_args_set(argc, argv, \
-                     rb_scan_args_kw(fmt), \
 		     rb_scan_args_n_lead(fmt), \
 		     rb_scan_args_n_opt(fmt), \
 		     rb_scan_args_n_trail(fmt), \
@@ -2546,13 +2509,13 @@ rb_scan_args_end_idx(const char *fmt)
 		     rb_scan_args_f_block(fmt), \
 		     (rb_scan_args_verify(fmt, varc), vars), (char *)fmt, varc)
 ALWAYS_INLINE(static int
-rb_scan_args_set(int argc, const VALUE *argv, int kw_flag,
+rb_scan_args_set(int argc, const VALUE *argv,
 		 int n_lead, int n_opt, int n_trail,
 		 int f_var, int f_hash, int f_block,
 		 VALUE *vars[], char *fmt, int varc));
 
 inline int
-rb_scan_args_set(int argc, const VALUE *argv, int kw_flag,
+rb_scan_args_set(int argc, const VALUE *argv,
 		 int n_lead, int n_opt, int n_trail,
 		 int f_var, int f_hash, int f_block,
 		 VALUE *vars[], RB_UNUSED_VAR(char *fmt), RB_UNUSED_VAR(int varc))
@@ -2565,26 +2528,12 @@ rb_scan_args_set(int argc, const VALUE *argv, int kw_flag,
     VALUE *var, hash = Qnil, last_hash = 0;
     const int n_mand = n_lead + n_trail;
     const int f_kw = (f_hash && (f_var || n_opt));
-    int keyword_given = 0;
+    int keyword_given = rb_keyword_given_p();
     int empty_keyword_given = 0;
-    int allow_hash_to_keyword = 0;
     VALUE tmp_buffer = 0;
 
-    switch (kw_flag) {
-      case 0:
-        if (!(keyword_given =  rb_keyword_given_p())) {
-            empty_keyword_given = rb_empty_keyword_given_p();
-        }
-        break;
-      case 1:
-        keyword_given = 1;
-        break;
-      case 2:
-        empty_keyword_given = 1;
-        break;
-      case 3:
-        allow_hash_to_keyword = 1;
-        break;
+    if (!keyword_given) {
+        empty_keyword_given = rb_empty_keyword_given_p();
     }
 
     /* capture an option hash - phase 1: pop */
@@ -2621,7 +2570,7 @@ rb_scan_args_set(int argc, const VALUE *argv, int kw_flag,
                 VALUE opts = rb_extract_keywords(&hash);
 
                 if (!(last_hash = hash)) {
-                    if (f_kw && !keyword_given && !allow_hash_to_keyword) {
+                    if (f_kw && !keyword_given) {
                         /* Warn in keyword argument mode if treating positional
                            as keyword, as in Ruby 3, this will be an error */
                         rb_warn("The last argument is used as the keyword parameter");
