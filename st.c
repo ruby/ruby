@@ -2027,7 +2027,7 @@ st_hash_end(st_index_t h)
 
 #undef st_hash_start
 st_index_t
-st_hash_start(st_index_t h)
+rb_st_hash_start(st_index_t h)
 {
     return h;
 }

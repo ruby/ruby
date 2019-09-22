@@ -534,7 +534,8 @@ size_t rb_gc_stat(VALUE);
 VALUE rb_gc_latest_gc_info(VALUE);
 void rb_gc_adjust_memory_usage(ssize_t);
 /* hash.c */
-void st_foreach_safe(struct st_table *, int (*)(st_data_t, st_data_t, st_data_t), st_data_t);
+void rb_st_foreach_safe(struct st_table *, int (*)(st_data_t, st_data_t, st_data_t), st_data_t);
+#define st_foreach_safe rb_st_foreach_safe
 VALUE rb_check_hash_type(VALUE);
 void rb_hash_foreach(VALUE, int (*)(VALUE, VALUE, VALUE), VALUE);
 VALUE rb_hash(VALUE);
