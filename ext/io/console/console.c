@@ -1058,6 +1058,10 @@ direct_query(VALUE io, VALUE query)
 	if (write(fptr->fd, RSTRING_PTR(query), RSTRING_LEN(query)) != -1) {
 	    return 1;
 	}
+	if (fptr->fd == 0 &&
+	    write(1, RSTRING_PTR(query), RSTRING_LEN(query)) != -1) {
+	    return 1;
+	}
     }
     return 0;
 }
