@@ -26,7 +26,7 @@ class Reline::ANSI
     end
     c = nil
     loop do
-      result = select([@@input], [], [], 0.1)
+      result = select([@@input], [], [], 0.001)
       next if result.nil?
       c = @@input.read(1)
       break
@@ -39,7 +39,7 @@ class Reline::ANSI
   end
 
   def self.retrieve_keybuffer
-      result = select([@@input], [], [], 0.1)
+      result = select([@@input], [], [], 0.001)
       return if result.nil?
       str = @@input.read_nonblock(1024)
       str.bytes.each do |c|
