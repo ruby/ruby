@@ -1123,6 +1123,29 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
     return ret;
 }
 
+static VALUE
+send_internal_kw(int argc, const VALUE *argv, VALUE recv, call_type scope)
+{
+    VALUE v=0, ret;
+    int kw_splat = RB_PASS_CALLED_KEYWORDS;
+    v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
+    if (kw_splat) {
+        switch (scope) {
+          case CALL_PUBLIC:
+            scope = CALL_PUBLIC_KW;
+            break;
+          case CALL_FCALL:
+            scope = CALL_FCALL_KW;
+            break;
+          default:
+            break;
+        }
+    }
+    ret = send_internal(argc, argv, recv, scope);
+    rb_free_tmp_buffer(&v);
+    return ret;
+}
+
 /*
  * call-seq:
  *    foo.send(symbol [, args...])       -> obj
@@ -1150,7 +1173,7 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
 VALUE
 rb_f_send(int argc, VALUE *argv, VALUE recv)
 {
-    return send_internal(argc, argv, recv, CALL_FCALL);
+    return send_internal_kw(argc, argv, recv, CALL_FCALL);
 }
 
 /*
@@ -1170,7 +1193,7 @@ rb_f_send(int argc, VALUE *argv, VALUE recv)
 static VALUE
 rb_f_public_send(int argc, VALUE *argv, VALUE recv)
 {
-    return send_internal(argc, argv, recv, CALL_PUBLIC);
+    return send_internal_kw(argc, argv, recv, CALL_PUBLIC);
 }
 
 /* yield */
