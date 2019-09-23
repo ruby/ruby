@@ -1218,6 +1218,108 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h3], c.send(:m, a: 1, **h2))
   end
 
+  def test_public_send_kwsplat
+    kw = {}
+    h = {:a=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    c = Object.new
+    def c.m(*args)
+      args
+    end
+    assert_equal([], c.public_send(:m, **{}))
+    assert_equal([], c.public_send(:m, **kw))
+    assert_equal([h], c.public_send(:m, **h))
+    assert_equal([h], c.public_send(:m, a: 1))
+    assert_equal([h2], c.public_send(:m, **h2))
+    assert_equal([h3], c.public_send(:m, **h3))
+    assert_equal([h3], c.public_send(:m, a: 1, **h2))
+
+    c.singleton_class.remove_method(:m)
+    def c.m; end
+    assert_nil(c.public_send(:m, **{}))
+    assert_nil(c.public_send(:m, **kw))
+    assert_raise(ArgumentError) { c.public_send(:m, **h) }
+    assert_raise(ArgumentError) { c.public_send(:m, a: 1) }
+    assert_raise(ArgumentError) { c.public_send(:m, **h2) }
+    assert_raise(ArgumentError) { c.public_send(:m, **h3) }
+    assert_raise(ArgumentError) { c.public_send(:m, a: 1, **h2) }
+
+    c.singleton_class.remove_method(:m)
+    def c.m(args)
+      args
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal(kw, c.public_send(:m, **{}))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal(kw, c.public_send(:m, **kw))
+    end
+    assert_equal(h, c.public_send(:m, **h))
+    assert_equal(h, c.public_send(:m, a: 1))
+    assert_equal(h2, c.public_send(:m, **h2))
+    assert_equal(h3, c.public_send(:m, **h3))
+    assert_equal(h3, c.public_send(:m, a: 1, **h2))
+
+    c.singleton_class.remove_method(:m)
+    def c.m(**args)
+      args
+    end
+    assert_equal(kw, c.public_send(:m, **{}))
+    assert_equal(kw, c.public_send(:m, **kw))
+    assert_equal(h, c.public_send(:m, **h))
+    assert_equal(h, c.public_send(:m, a: 1))
+    assert_equal(h2, c.public_send(:m, **h2))
+    assert_equal(h3, c.public_send(:m, **h3))
+    assert_equal(h3, c.public_send(:m, a: 1, **h2))
+    assert_warn(/The last argument is used as the keyword parameter.*for `m'/m) do
+      assert_equal(h, c.public_send(:m, h))
+    end
+    assert_raise(ArgumentError) { c.public_send(:m, h2) }
+    assert_warn(/The last argument is split into positional and keyword parameters.*for `m'/m) do
+      assert_raise(ArgumentError) { c.public_send(:m, h3) }
+    end
+
+    c.singleton_class.remove_method(:m)
+    def c.m(arg, **args)
+      [arg, args]
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      c.public_send(:m, **{})
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      c.public_send(:m, **kw)
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h, kw], c.public_send(:m, **h))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h, kw], c.public_send(:m, a: 1))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h2, kw], c.public_send(:m, **h2))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h3, kw], c.public_send(:m, **h3))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+      assert_equal([h3, kw], c.public_send(:m, a: 1, **h2))
+    end
+
+    c.singleton_class.remove_method(:m)
+    def c.m(arg=1, **args)
+      [arg, args]
+    end
+    assert_equal([1, kw], c.public_send(:m, **{}))
+    assert_equal([1, kw], c.public_send(:m, **kw))
+    assert_equal([1, h], c.public_send(:m, **h))
+    assert_equal([1, h], c.public_send(:m, a: 1))
+    assert_equal([1, h2], c.public_send(:m, **h2))
+    assert_equal([1, h3], c.public_send(:m, **h3))
+    assert_equal([1, h3], c.public_send(:m, a: 1, **h2))
+  end
+
   def test_send_method_kwsplat
     kw = {}
     h = {:a=>1}
