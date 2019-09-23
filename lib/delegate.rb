@@ -218,7 +218,7 @@ class Delegator < BasicObject
     end
   end
 
-  def initialize_clone(obj, freeze: true) # :nodoc:
+  def initialize_clone(obj, freeze: nil) # :nodoc:
     self.__setobj__(obj.__getobj__.clone(freeze: freeze))
   end
   def initialize_dup(obj) # :nodoc:

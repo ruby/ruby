@@ -47,15 +47,27 @@ class TestObject < Test::Unit::TestCase
     a = Object.new
     def a.b; 2 end
 
+    c = a.clone
+    assert_equal(false, c.frozen?)
+    assert_equal(false, a.frozen?)
+    assert_equal(2, c.b)
+
+    c = a.clone(freeze: true)
+    assert_equal(true, c.frozen?)
+    assert_equal(false, a.frozen?)
+    assert_equal(2, c.b)
+
     a.freeze
     c = a.clone
     assert_equal(true, c.frozen?)
+    assert_equal(true, a.frozen?)
     assert_equal(2, c.b)
 
     assert_raise(ArgumentError) {a.clone(freeze: [])}
     d = a.clone(freeze: false)
     def d.e; 3; end
     assert_equal(false, d.frozen?)
+    assert_equal(true, a.frozen?)
     assert_equal(2, d.b)
     assert_equal(3, d.e)
 

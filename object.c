@@ -369,9 +369,9 @@ init_copy(VALUE dest, VALUE obj)
     }
 }
 
-static int freeze_opt(int argc, VALUE *argv);
-static VALUE immutable_obj_clone(VALUE obj, int kwfreeze);
-static VALUE mutable_obj_clone(VALUE obj, int kwfreeze);
+static VALUE freeze_opt(int argc, VALUE *argv);
+static VALUE immutable_obj_clone(VALUE obj, VALUE kwfreeze);
+static VALUE mutable_obj_clone(VALUE obj, VALUE kwfreeze);
 PUREFUNC(static inline int special_object_p(VALUE obj)); /*!< \private */
 static inline int
 special_object_p(VALUE obj)
@@ -390,21 +390,25 @@ special_object_p(VALUE obj)
     }
 }
 
-static int
+static VALUE
 obj_freeze_opt(VALUE freeze)
 {
-    if (freeze == Qfalse) return FALSE;
-
-    if (freeze != Qtrue)
+    switch(freeze) {
+      case Qfalse:
+      case Qtrue:
+      case Qnil:
+        break;
+      default:
         rb_raise(rb_eArgError, "unexpected value for freeze: %"PRIsVALUE, rb_obj_class(freeze));
+    }
 
-    return TRUE;
+    return freeze;
 }
 
 static VALUE
 rb_obj_clone2(rb_execution_context_t *ec, VALUE obj, VALUE freeze)
 {
-    int kwfreeze = obj_freeze_opt(freeze);
+    VALUE kwfreeze = obj_freeze_opt(freeze);
     if (!special_object_p(obj))
 	return mutable_obj_clone(obj, kwfreeze);
     return immutable_obj_clone(obj, kwfreeze);
@@ -414,17 +418,16 @@ rb_obj_clone2(rb_execution_context_t *ec, VALUE obj, VALUE freeze)
 VALUE
 rb_immutable_obj_clone(int argc, VALUE *argv, VALUE obj)
 {
-    int kwfreeze = freeze_opt(argc, argv);
+    VALUE kwfreeze = freeze_opt(argc, argv);
     return immutable_obj_clone(obj, kwfreeze);
 }
 
-static int
+static VALUE
 freeze_opt(int argc, VALUE *argv)
 {
     static ID keyword_ids[1];
     VALUE opt;
-    VALUE kwfreeze;
-    int ret = 1;
+    VALUE kwfreeze = Qnil;
 
     if (!keyword_ids[0]) {
 	CONST_ID(keyword_ids[0], "freeze");
@@ -432,24 +435,26 @@ freeze_opt(int argc, VALUE *argv)
     rb_scan_args(argc, argv, "0:", &opt);
     if (!NIL_P(opt)) {
 	rb_get_kwargs(opt, keyword_ids, 0, 1, &kwfreeze);
-        if (kwfreeze != Qundef) ret = obj_freeze_opt(kwfreeze);
+        if (kwfreeze != Qundef)
+            kwfreeze = obj_freeze_opt(kwfreeze);
     }
-    return ret;
+    return kwfreeze;
 }
 
 static VALUE
-immutable_obj_clone(VALUE obj, int kwfreeze)
+immutable_obj_clone(VALUE obj, VALUE kwfreeze)
 {
-    if (!kwfreeze)
+    if (kwfreeze == Qfalse)
 	rb_raise(rb_eArgError, "can't unfreeze %"PRIsVALUE,
 		 rb_obj_class(obj));
     return obj;
 }
 
 static VALUE
-mutable_obj_clone(VALUE obj, int kwfreeze)
+mutable_obj_clone(VALUE obj, VALUE kwfreeze)
 {
     VALUE clone, singleton;
+    VALUE argv[2];
 
     clone = rb_obj_alloc(rb_obj_class(obj));
 
@@ -461,23 +466,44 @@ mutable_obj_clone(VALUE obj, int kwfreeze)
 
     init_copy(clone, obj);
 
-    if (kwfreeze) {
+    switch (kwfreeze) {
+      case Qnil:
         rb_funcall(clone, id_init_clone, 1, obj);
 	RBASIC(clone)->flags |= RBASIC(obj)->flags & FL_FREEZE;
-    }
-    else {
+        break;
+      case Qtrue:
+        {
+        static VALUE freeze_true_hash;
+        if (!freeze_true_hash) {
+            freeze_true_hash = rb_hash_new();
+            rb_gc_register_mark_object(freeze_true_hash);
+            rb_hash_aset(freeze_true_hash, ID2SYM(rb_intern("freeze")), Qtrue);
+            rb_obj_freeze(freeze_true_hash);
+        }
+
+        argv[0] = obj;
+        argv[1] = freeze_true_hash;
+        rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
+        RBASIC(clone)->flags |= FL_FREEZE;
+        break;
+        }
+      case Qfalse:
+        {
         static VALUE freeze_false_hash;
-        VALUE argv[2];
         if (!freeze_false_hash) {
             freeze_false_hash = rb_hash_new();
+            rb_gc_register_mark_object(freeze_false_hash);
             rb_hash_aset(freeze_false_hash, ID2SYM(rb_intern("freeze")), Qfalse);
             rb_obj_freeze(freeze_false_hash);
-            rb_gc_register_mark_object(freeze_false_hash);
         }
 
         argv[0] = obj;
         argv[1] = freeze_false_hash;
         rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
+        break;
+        }
+      default:
+        rb_bug("invalid kwfreeze passed to mutable_obj_clone");
     }
 
     return clone;
@@ -493,7 +519,7 @@ VALUE
 rb_obj_clone(VALUE obj)
 {
     if (special_object_p(obj)) return obj;
-    return mutable_obj_clone(obj, Qtrue);
+    return mutable_obj_clone(obj, Qnil);
 }
 
 /**
