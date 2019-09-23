@@ -38,6 +38,15 @@ class Reline::ANSI
     @@buf.unshift(c)
   end
 
+  def self.retrieve_keybuffer
+      result = select([@@input], [], [], 0.1)
+      return if result.nil?
+      str = @@input.read_nonblock(1024)
+      str.bytes.each do |c|
+        @@buf.push(c)
+      end
+  end
+
   def self.get_screen_size
     @@input.winsize
   rescue Errno::ENOTTY
@@ -112,6 +121,7 @@ class Reline::ANSI
   end
 
   def self.prep
+    retrieve_keybuffer
     int_handle = Signal.trap('INT', 'IGNORE')
     otio = `stty -g`.chomp
     setting = ' -echo -icrnl cbreak'
