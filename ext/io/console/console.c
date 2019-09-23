@@ -1042,13 +1042,32 @@ console_key_pressed_p(VALUE io, VALUE k)
     return GetKeyState(vk) & 0x80 ? Qtrue : Qfalse;
 }
 #else
+static int
+direct_query(VALUE io, VALUE query)
+{
+    if (RB_TYPE_P(io, T_FILE)) {
+	rb_io_t *fptr;
+	VALUE wio;
+	GetOpenFile(io, fptr);
+	wio = fptr->tied_io_for_writing;
+	if (wio) {
+	    rb_io_write(wio, query);
+	    rb_io_flush(wio);
+	    return 1;
+	}
+	if (write(fptr->fd, RSTRING_PTR(query), RSTRING_LEN(query)) != -1) {
+	    return 1;
+	}
+    }
+    return 0;
+}
+
 static VALUE
 read_vt_response(VALUE io, VALUE query)
 {
     VALUE result, b;
     int num = 0;
-    if (!NIL_P(query)) rb_io_write(io, query);
-    rb_io_flush(io);
+    if (!NIL_P(query) && !direct_query(io, query)) return Qnil;
     if (rb_io_getbyte(io) != INT2FIX(0x1b)) return Qnil;
     if (rb_io_getbyte(io) != INT2FIX('[')) return Qnil;
     result = rb_ary_new();
