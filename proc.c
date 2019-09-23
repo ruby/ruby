@@ -15,7 +15,7 @@
 #include "vm_core.h"
 #include "iseq.h"
 
-extern const rb_method_definition_t *rb_method_definition_create(rb_method_type_t type, ID mid);
+extern const rb_method_definition_t *rb_method_definition_create(rb_method_type_t type, ID mid, const void *opts);
 
 /* Proc.new with no block will raise an exception in the future
  * versions */
@@ -1482,7 +1482,7 @@ mnew_missing(VALUE klass, VALUE obj, ID id, VALUE mclass)
     RB_OBJ_WRITE(method, &data->recv, obj);
     RB_OBJ_WRITE(method, &data->klass, klass);
 
-    def = rb_method_definition_create(VM_METHOD_TYPE_MISSING, id);
+    def = rb_method_definition_create(VM_METHOD_TYPE_MISSING, id, NULL);
     me = rb_method_entry_create(id, klass, METHOD_VISI_UNDEF, def);
 
     RB_OBJ_WRITE(method, &data->me, me);
