@@ -1208,7 +1208,6 @@ new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
 				    rb_iseq_path(iseq), rb_iseq_realpath(iseq),
 				    INT2FIX(line_no), parent, type, ISEQ_COMPILE_DATA(iseq)->option);
     debugs("[new_child_iseq]< ---------------------------------------\n");
-    iseq_add_mark_object_compile_time(iseq, (VALUE)ret_iseq);
     return ret_iseq;
 }
 
@@ -1223,7 +1222,6 @@ new_child_iseq_with_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_call
 				 rb_iseq_path(iseq), rb_iseq_realpath(iseq),
 				 INT2FIX(line_no), parent, type, ISEQ_COMPILE_DATA(iseq)->option);
     debugs("[new_child_iseq_with_callback]< ---------------------------------------\n");
-    iseq_add_mark_object_compile_time(iseq, (VALUE)ret_iseq);
     return ret_iseq;
 }
 
@@ -1571,7 +1569,6 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
 	    switch (nd_type(val_node)) {
 	      case NODE_LIT:
 		dv = val_node->nd_lit;
-		iseq_add_mark_object_compile_time(iseq, dv);
 		break;
 	      case NODE_NIL:
 		dv = Qnil;
@@ -2826,11 +2823,11 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    int excl = FIX2INT(OPERAND_AT(range, 0));
 	    VALUE lit_range = rb_range_new(str_beg, str_end, excl);
 
-	    iseq_add_mark_object_compile_time(iseq, lit_range);
 	    ELEM_REMOVE(&beg->link);
 	    ELEM_REMOVE(&end->link);
 	    range->insn_id = BIN(putobject);
 	    OPERAND_AT(range, 0) = lit_range;
+	    iseq_add_mark_object_compile_time(iseq, lit_range);
 	}
     }
 
@@ -4017,7 +4014,6 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
                 for (; count; count--, node = node->nd_next)
                     rb_ary_push(ary, static_literal_value(node, iseq));
                 OBJ_FREEZE(ary);
-                iseq_add_mark_object_compile_time(iseq, ary);
 
                 /* Emit optimized code */
                 FLUSH_CHUNK(newarray);
@@ -4029,6 +4025,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
                     ADD_INSN1(ret, line, putobject, ary);
                     ADD_INSN(ret, line, concatarray);
                 }
+                iseq_add_mark_object_compile_time(iseq, ary);
             }
         }
 
@@ -4153,7 +4150,6 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popp
                 rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR_TRANSIENT(ary), hash);
                 hash = rb_obj_hide(hash);
                 OBJ_FREEZE(hash);
-                iseq_add_mark_object_compile_time(iseq, hash);
 
                 /* Emit optimized code */
                 FLUSH_CHUNK();
@@ -4169,6 +4165,7 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popp
 
                     ADD_SEND(ret, line, id_core_hash_merge_kwd, INT2FIX(2));
                 }
+                iseq_add_mark_object_compile_time(iseq, hash);
             }
         }
 
@@ -5048,6 +5045,7 @@ build_postexe_iseq(rb_iseq_t *iseq, LINK_ANCHOR *ret, const void *ptr)
 
     ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
     ADD_CALL_WITH_BLOCK(ret, line, id_core_set_postexe, argc, block);
+    iseq_add_mark_object_compile_time(iseq, (VALUE)block);
     iseq_set_local_table(iseq, 0);
 }
 
@@ -5314,10 +5312,9 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
     }
 
     if (only_special_literals && ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-	iseq_add_mark_object_compile_time(iseq, literals);
-
 	ADD_INSN(ret, nd_line(orig_node), dup);
 	ADD_INSN2(ret, nd_line(orig_node), opt_case_dispatch, literals, elselabel);
+	iseq_add_mark_object_compile_time(iseq, literals);
 	LABEL_REF(elselabel);
     }
 
@@ -5656,7 +5653,6 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         if (node->nd_pkwargs && !node->nd_pkwrestarg) {
             const NODE *kw_args = node->nd_pkwargs->nd_head;
             keys = rb_ary_new_capa(kw_args ? kw_args->nd_alen/2 : 0);
-            iseq_add_mark_object_compile_time(iseq, rb_obj_hide(keys));
             while (kw_args) {
                 rb_ary_push(keys, kw_args->nd_head->nd_lit);
                 kw_args = kw_args->nd_next->nd_next;
@@ -5680,6 +5676,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         }
         else {
             ADD_INSN1(ret, line, duparray, keys);
+            iseq_add_mark_object_compile_time(iseq, rb_obj_hide(keys));
         }
         ADD_SEND(ret, line, rb_intern("deconstruct_keys"), INT2FIX(1));
 
@@ -7791,9 +7788,11 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 		VALUE debug_info = Qnil;
 		if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
 		    debug_info = rb_ary_new_from_args(2, rb_iseq_path(iseq), INT2FIX(line));
-		    iseq_add_mark_object_compile_time(iseq, rb_obj_freeze(debug_info));
 		}
 		ADD_INSN1(ret, line, freezestring, debug_info);
+                if (!NIL_P(debug_info)) {
+                    iseq_add_mark_object_compile_time(iseq, rb_obj_freeze(debug_info));
+                }
 	    }
 	}
 	break;
@@ -7835,6 +7834,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	block_iseq = NEW_CHILD_ISEQ(node->nd_body, make_name_for_block(iseq), ISEQ_TYPE_PLAIN, line);
 
 	ADD_INSN2(ret, line, once, block_iseq, INT2FIX(ic_index));
+        iseq_add_mark_object_compile_time(iseq, (VALUE)block_iseq);
 
 	if (popped) {
 	    ADD_INSN(ret, line, pop);
@@ -7889,6 +7889,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 
 	debugp_param("defn/iseq", rb_iseqw_new(method_iseq));
         ADD_INSN2(ret, line, definemethod, ID2SYM(mid), method_iseq);
+        iseq_add_mark_object_compile_time(iseq, (VALUE)method_iseq);
 
         if (!popped) {
             ADD_INSN1(ret, line, putobject, ID2SYM(mid));
@@ -7905,6 +7906,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
         debugp_param("defs/iseq", rb_iseqw_new(singleton_method_iseq));
         CHECK(COMPILE(ret, "defs: recv", node->nd_recv));
         ADD_INSN2(ret, line, definesmethod, ID2SYM(mid), singleton_method_iseq);
+        iseq_add_mark_object_compile_time(iseq, (VALUE)singleton_method_iseq);
 
         if (!popped) {
             ADD_INSN1(ret, line, putobject, ID2SYM(mid));
@@ -7955,6 +7957,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 
 	CHECK(COMPILE(ret, "super", node->nd_super));
 	ADD_INSN3(ret, line, defineclass, ID2SYM(node->nd_cpath->nd_mid), class_iseq, INT2FIX(flags));
+        iseq_add_mark_object_compile_time(iseq, (VALUE)class_iseq);
 
 	if (popped) {
 	    ADD_INSN(ret, line, pop);
@@ -7970,6 +7973,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 
 	ADD_INSN (ret, line, putnil); /* dummy */
 	ADD_INSN3(ret, line, defineclass, ID2SYM(node->nd_cpath->nd_mid), module_iseq, INT2FIX(flags));
+        iseq_add_mark_object_compile_time(iseq, (VALUE)module_iseq);
 
 	if (popped) {
 	    ADD_INSN(ret, line, pop);
@@ -7987,6 +7991,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	ADD_INSN3(ret, line, defineclass,
 		  ID2SYM(singletonclass), singleton_class,
 		  INT2FIX(VM_DEFINECLASS_TYPE_SINGLETON_CLASS));
+        iseq_add_mark_object_compile_time(iseq, (VALUE)singleton_class);
 
 	if (popped) {
 	    ADD_INSN(ret, line, pop);
@@ -8071,8 +8076,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	if (number_literal_p(b) && number_literal_p(e)) {
 	    if (!popped) {
 		VALUE val = rb_range_new(b->nd_lit, e->nd_lit, excl);
-		iseq_add_mark_object_compile_time(iseq, val);
 		ADD_INSN1(ret, line, putobject, val);
+		iseq_add_mark_object_compile_time(iseq, val);
 	    }
 	}
 	else {
@@ -8165,6 +8170,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 				 rb_fstring(make_name_for_block(iseq)), iseq, ISEQ_TYPE_BLOCK, line);
 
 	ADD_INSN2(ret, line, once, once_iseq, INT2FIX(is_index));
+        iseq_add_mark_object_compile_time(iseq, (VALUE)once_iseq);
 
 	if (popped) {
 	    ADD_INSN(ret, line, pop);
@@ -8306,6 +8312,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 	ADD_CALL_WITH_BLOCK(ret, line, idLambda, argc, block);
+        iseq_add_mark_object_compile_time(iseq, (VALUE)block);
 
 	if (popped) {
 	    ADD_INSN(ret, line, pop);
