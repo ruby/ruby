@@ -1,13 +1,13 @@
 module Kernel
   #
   #  call-seq:
-  #     obj.clone(freeze: true) -> an_object
+  #     obj.clone(freeze: nil) -> an_object
   #
   #  Produces a shallow copy of <i>obj</i>---the instance variables of
   #  <i>obj</i> are copied, but not the objects they reference.
-  #  #clone copies the frozen (unless +:freeze+ keyword argument is
-  #  given with a false value) state of <i>obj</i>.  See
-  #  also the discussion under Object#dup.
+  #  #clone copies the frozen value state of <i>obj</i>, unless the
+  #  +:freeze+ keyword argument is given with a false or true value.
+  #  See also the discussion under Object#dup.
   #
   #     class Klass
   #        attr_accessor :str
@@ -23,7 +23,7 @@ module Kernel
   #  behavior will be documented under the #+initialize_copy+ method of
   #  the class.
   #
-  def clone(freeze: true)
+  def clone(freeze: nil)
     __builtin_rb_obj_clone2(freeze)
   end
 end
