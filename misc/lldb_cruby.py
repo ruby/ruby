@@ -7,7 +7,6 @@
 #
 
 import lldb
-import commands
 import os
 import shlex
 
