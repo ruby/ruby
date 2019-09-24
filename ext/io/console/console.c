@@ -1109,6 +1109,7 @@ console_cursor_pos(VALUE io)
     VALUE query = rb_str_new_cstr("\e[6n");
     VALUE resp = console_vt_response(1, &query, io);
     VALUE row, column, term;
+    unsigned int r, c;
     if (!RB_TYPE_P(resp, T_ARRAY) || RARRAY_LEN(resp) != 3) return Qnil;
     term = RARRAY_AREF(resp, 2);
     if (!RB_TYPE_P(term, T_STRING) || RSTRING_LEN(term) != 1) return Qnil;
@@ -1116,13 +1117,17 @@ console_cursor_pos(VALUE io)
     row = RARRAY_AREF(resp, 0);
     column = RARRAY_AREF(resp, 1);
     rb_ary_resize(resp, 2);
+    r = NUM2UINT(row) - 1;
+    c = NUM2UINT(column) - 1;
+    RARRAY_ASET(resp, 0, INT2NUM(r));
+    RARRAY_ASET(resp, 1, INT2NUM(c));
     return resp;
 }
 
 static VALUE
 console_goto(VALUE io, VALUE y, VALUE x)
 {
-    rb_io_write(io, rb_sprintf("\x1b[%d;%dH", NUM2UINT(y), NUM2UINT(x)));
+    rb_io_write(io, rb_sprintf("\x1b[%d;%dH", NUM2UINT(y)+1, NUM2UINT(x)+1));
     return io;
 }
 
@@ -1223,7 +1228,7 @@ static VALUE
 console_clear_screen(VALUE io)
 {
     console_erase_screen(io, INT2FIX(2));
-    console_goto(io, INT2FIX(1), INT2FIX(1));
+    console_goto(io, INT2FIX(0), INT2FIX(0));
     return io;
 }
 
