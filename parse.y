@@ -290,6 +290,10 @@ struct parser_params {
     VALUE error_buffer;
     VALUE debug_lines;
     const struct rb_block *base_block;
+
+    struct {
+	NODE *outer, *inner, *current;
+    } numparam;
 #else
     /* Ripper only */
 
@@ -575,6 +579,9 @@ static int dvar_defined_ref(struct parser_params*, ID, ID**);
 static int dvar_curr(struct parser_params*,ID);
 
 static int lvar_defined(struct parser_params*, ID);
+
+static NODE *numparam_push(struct parser_params *p);
+static void numparam_pop(struct parser_params *p, NODE *prev_inner);
 
 #ifdef RIPPER
 # define METHOD_NOT idNOT
@@ -3426,6 +3433,9 @@ lambda		:   {
 			$<num>$ = p->max_numparam;
 			p->max_numparam = 0;
 		    }
+		    {
+			$<node>$ = numparam_push(p);
+		    }
 		  f_larglist
 		    {
 			CMDARG_PUSH(0);
@@ -3436,16 +3446,17 @@ lambda		:   {
 			p->lex.lpar_beg = $<num>2;
 			p->max_numparam = $<num>3;
 			CMDARG_POP();
-			$4 = args_with_numbered(p, $4, max_numparam);
+			$5 = args_with_numbered(p, $5, max_numparam);
 		    /*%%%*/
                         {
-                            YYLTYPE loc = code_loc_gen(&@4, &@6);
-                            $$ = NEW_LAMBDA($4, $6, &loc);
-                            nd_set_line($$->nd_body, @6.end_pos.lineno);
-                            nd_set_line($$, @4.end_pos.lineno);
+                            YYLTYPE loc = code_loc_gen(&@5, &@7);
+                            $$ = NEW_LAMBDA($5, $7, &loc);
+                            nd_set_line($$->nd_body, @7.end_pos.lineno);
+                            nd_set_line($$, @5.end_pos.lineno);
                         }
 		    /*% %*/
-		    /*% ripper: lambda!($4, $6) %*/
+		    /*% ripper: lambda!($5, $7) %*/
+			numparam_pop(p, $<node>4);
 			dyna_pop(p, $<vars>1);
 		    }
 		;
@@ -3624,15 +3635,19 @@ brace_body	: {$<vars>$ = dyna_push(p);}
 			$<num>$ = p->max_numparam;
 			p->max_numparam = 0;
 		    }
+		    {
+			$<node>$ = numparam_push(p);
+		    }
 		  opt_block_param compstmt
 		    {
 			int max_numparam = p->max_numparam;
 			p->max_numparam = $<num>2;
-			$3 = args_with_numbered(p, $3, max_numparam);
+			$4 = args_with_numbered(p, $4, max_numparam);
 		    /*%%%*/
-			$$ = NEW_ITER($3, $4, &@$);
+			$$ = NEW_ITER($4, $5, &@$);
 		    /*% %*/
-		    /*% ripper: brace_block!(escape_Qundef($3), $4) %*/
+		    /*% ripper: brace_block!(escape_Qundef($4), $5) %*/
+			numparam_pop(p, $<node>3);
 			dyna_pop(p, $<vars>1);
 		    }
 		;
@@ -3641,18 +3656,22 @@ do_body 	: {$<vars>$ = dyna_push(p);}
 		    {
 			$<num>$ = p->max_numparam;
 			p->max_numparam = 0;
+		    }
+		    {
+			$<node>$ = numparam_push(p);
 			CMDARG_PUSH(0);
 		    }
 		  opt_block_param bodystmt
 		    {
 			int max_numparam = p->max_numparam;
 			p->max_numparam = $<num>2;
-			$3 = args_with_numbered(p, $3, max_numparam);
+			$4 = args_with_numbered(p, $4, max_numparam);
 		    /*%%%*/
-			$$ = NEW_ITER($3, $4, &@$);
+			$$ = NEW_ITER($4, $5, &@$);
 		    /*% %*/
-		    /*% ripper: do_block!(escape_Qundef($3), $4) %*/
+		    /*% ripper: do_block!(escape_Qundef($4), $5) %*/
 			CMDARG_POP();
+			numparam_pop(p, $<node>3);
 			dyna_pop(p, $<vars>1);
 		    }
 		;
@@ -9799,6 +9818,24 @@ past_dvar_p(struct parser_params *p, ID id)
     } \
 } while (0)
 
+static int
+numparam_nested_p(struct parser_params *p)
+{
+    NODE *outer = p->numparam.outer;
+    NODE *inner = p->numparam.inner;
+    if (outer || inner) {
+	NODE *used = outer ? outer : inner;
+	compile_error(p, "%s parameter is already used in\n"
+		      "%s:%d: %s block here",
+		      used->nd_vid == idNUMPARAM_0 ? "implicit" : "numbered",
+		      p->ruby_sourcefile, nd_line(used),
+		      outer ? "outer" : "inner");
+	parser_show_error_line(p, &used->nd_loc);
+	return 1;
+    }
+    return 0;
+}
+
 static NODE*
 gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
 {
@@ -9843,6 +9880,7 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
 	break;
       case ID_LOCAL:
 	if (dyna_in_block(p) && dvar_defined_ref(p, id, &vidp)) {
+	    if (NUMPARAM_ID_P(id) && numparam_nested_p(p)) return 0;
 	    if (id == p->cur_arg) {
 		rb_warn1("circular argument reference - %"PRIsWARN, rb_id2str(id));
 	    }
@@ -9860,7 +9898,9 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
 	}
 	if (dyna_in_block(p) && NUMPARAM_ID_P(id) &&
 	    parser_numbered_param(p, NUMPARAM_ID_TO_IDX(id))) {
+	    if (numparam_nested_p(p)) return 0;
 	    node = NEW_DVAR(id, loc);
+	    if (!p->numparam.current) p->numparam.current = node;
 	    return node;
 	}
 # if WARN_PAST_SCOPE
@@ -11654,6 +11694,11 @@ local_pop(struct parser_params *p)
     COND_POP();
     ruby_sized_xfree(p->lvtbl, sizeof(*p->lvtbl));
     p->lvtbl = local;
+# ifndef RIPPER
+    p->numparam.outer = 0;
+    p->numparam.inner = 0;
+    p->numparam.current = 0;
+# endif
 }
 
 #ifndef RIPPER
@@ -11752,6 +11797,46 @@ static int
 local_id(struct parser_params *p, ID id)
 {
     return local_id_ref(p, id, NULL);
+}
+
+static NODE *
+numparam_push(struct parser_params *p)
+{
+#ifndef RIPPER
+    NODE *inner = p->numparam.inner;
+    if (!p->numparam.outer) {
+	p->numparam.outer = p->numparam.current;
+    }
+    p->numparam.inner = 0;
+    p->numparam.current = 0;
+    return inner;
+#else
+    return 0;
+#endif
+}
+
+static void
+numparam_pop(struct parser_params *p, NODE *prev_inner)
+{
+#ifndef RIPPER
+    if (prev_inner) {
+	/* prefer first one */
+	p->numparam.inner = prev_inner;
+    }
+    else if (p->numparam.current) {
+	/* current and inner are exclusive */
+	p->numparam.inner = p->numparam.current;
+    }
+    if (p->max_numparam > NO_PARAM || p->max_numparam == IMPLICIT_PARAM) {
+	/* current and outer are exclusive */
+	p->numparam.current = p->numparam.outer;
+	p->numparam.outer = 0;
+    }
+    else {
+	/* no numbered parameter */
+	p->numparam.current = 0;
+    }
+#endif
 }
 
 static const struct vtable *
@@ -13008,3 +13093,10 @@ InitVM_ripper(void)
 
 }
 #endif /* RIPPER */
+
+/*
+ * Local variables:
+ * mode: c
+ * c-file-style: ruby
+ * End:
+ */
