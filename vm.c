@@ -3227,13 +3227,12 @@ Init_VM(void)
 	rb_thread_t *th = GET_THREAD();
 	VALUE filename = rb_fstring_lit("<main>");
 	const rb_iseq_t *iseq = rb_iseq_new(0, filename, filename, Qnil, 0, ISEQ_TYPE_TOP);
-        volatile VALUE th_self;
 
 	/* create vm object */
 	vm->self = TypedData_Wrap_Struct(rb_cRubyVM, &vm_data_type, vm);
 
 	/* create main thread */
-	th_self = th->self = TypedData_Wrap_Struct(rb_cThread, &thread_data_type, th);
+        th->self = TypedData_Wrap_Struct(rb_cThread, &thread_data_type, th);
 	vm->main_thread = th;
 	vm->running_thread = th;
 	th->vm = vm;
