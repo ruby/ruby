@@ -72,8 +72,8 @@ jobs:
           GITHUB_REF=$(echo $GITHUB_REF | sed -e "s#/draft/#/#")
           TARGET_VERSION=$(echo $GITHUB_REF | sed -e "s#refs/tags/v##" -e "s/_\([a-z]\)/-\1/" -e "y/_/./")
           for ext in .tar.gz .tar.bz2 .tar.xz .zip; do
-            aws s3 cp "pkg/ruby-${TARGET_VERSION}$ext" "s3://ftp.r-l.o/pub/tmp/ruby-${TARGET_VERSION}$ext.draft" --no-progress
-            curl -sS -X PURGE -H "Fastly-Soft-Purge:1" "https://cache.ruby-lang.org/pub/tmp/ruby-${TARGET_VERSION}$ext.draft"
+            aws s3 cp "pkg/ruby-${TARGET_VERSION}$ext" "s3://ftp.r-l.o/pub/tmp/ruby-${TARGET_VERSION}-draft$ext" --no-progress
+            curl -sS -X PURGE -H "Fastly-Soft-Purge:1" "https://cache.ruby-lang.org/pub/tmp/ruby-${TARGET_VERSION}-draft$ext"
           done
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -107,13 +107,13 @@ jobs:
           set -x
           GITHUB_REF=$(echo $GITHUB_REF | sed -e "s#/draft/#/#")
           TARGET_VERSION=$(echo $GITHUB_REF | sed -e "s#refs/tags/v##" -e "s/_\([a-z]\)/-\1/" -e "y/_/./")
-          curl -sSLo ruby-${TARGET_VERSION}.tar.xz https://cache.ruby-lang.org/pub/tmp/ruby-${TARGET_VERSION}.tar.xz.draft
+          curl -sSLO https://cache.ruby-lang.org/pub/tmp/ruby-${TARGET_VERSION}-draft.tar.xz
       - name: Extract
         run: |
           set -x
           GITHUB_REF=$(echo $GITHUB_REF | sed -e "s#/draft/#/#")
           TARGET_VERSION=$(echo $GITHUB_REF | sed -e "s#refs/tags/v##" -e "s/_\([a-z]\)/-\1/" -e "y/_/./")
-          tar xf ruby-${TARGET_VERSION}.tar.xz
+          tar xf ruby-${TARGET_VERSION}-draft.tar.xz
       - name: Fixed world writable dirs
         run: |
           chmod go-w $HOME
