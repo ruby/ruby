@@ -443,10 +443,13 @@ rb_method_definition_new(rb_method_type_t type, ID mid, const void *opts)
 }
 
 MJIT_FUNC_EXPORTED void
-rb_method_definition_set(const rb_method_entry_t *me, const rb_method_definition_t *def)
+rb_method_entry_spoof(const rb_method_entry_t *me)
 {
-    memcpy((void *)&me->def, &def, sizeof def);
-    method_definition_reset(me);
+    VALUE v = (VALUE)me;
+    VALUE o = me->owner;
+    rb_id_table_insert(RCLASS_M_TBL(o), me->called_id, v);
+    RB_OBJ_WRITTEN(o, Qundef, v);
+    rb_clear_method_cache_by_class(o);
 }
 
 MJIT_FUNC_EXPORTED const rb_method_definition_t *
@@ -495,7 +498,7 @@ filter_defined_class(VALUE klass)
     rb_bug("filter_defined_class: %s", rb_obj_info(klass));
 }
 
-rb_method_entry_t *
+MJIT_FUNC_EXPORTED rb_method_entry_t *
 rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, const rb_method_definition_t *def)
 {
     rb_method_entry_t *me = rb_method_entry_alloc(called_id, klass, filter_defined_class(klass), def);
@@ -554,11 +557,11 @@ rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src)
     METHOD_ENTRY_FLAGS_COPY(dst, src);
 }
 
-static void
+static rb_method_entry_t*
 make_method_entry_refined(VALUE owner, rb_method_entry_t *me)
 {
     if (me->def->type == VM_METHOD_TYPE_REFINED) {
-	return;
+        return me;
     }
     else {
 	rb_vm_check_redefinition_opt_method(me, me->owner);
@@ -577,8 +580,15 @@ make_method_entry_refined(VALUE owner, rb_method_entry_t *me)
                     .owner   = owner,
                 }
             );
-        rb_method_definition_set(me, def);
-	METHOD_ENTRY_VISI_SET(me, METHOD_VISI_PUBLIC);
+        rb_method_entry_t *new_me =
+            rb_method_entry_create(
+                me->called_id,
+                me->owner,
+                me->defined_class,
+                def);
+        METHOD_ENTRY_FLAGS_COPY(new_me, me);
+        METHOD_ENTRY_VISI_SET(new_me, METHOD_VISI_PUBLIC);
+        return new_me;
     }
 }
 
@@ -588,7 +598,8 @@ rb_add_refined_method_entry(VALUE refined_class, ID mid)
     rb_method_entry_t *me = lookup_method_table(refined_class, mid);
 
     if (me) {
-	make_method_entry_refined(refined_class, me);
+        me = make_method_entry_refined(refined_class, me);
+        rb_method_entry_spoof(me);
 	rb_clear_method_cache_by_class(refined_class);
     }
     else {
@@ -723,7 +734,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     }
 
     if (make_refined) {
-	make_method_entry_refined(klass, me);
+        me = make_method_entry_refined(klass, me);
     }
 
     rb_id_table_insert(mtbl, mid, (VALUE)me);

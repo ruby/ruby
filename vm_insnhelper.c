@@ -20,7 +20,7 @@
 #include "debug_counter.h"
 
 extern const rb_method_definition_t *rb_method_definition_create(rb_method_type_t type, ID mid, const void *opts);
-extern void rb_method_definition_set(const rb_method_entry_t *me, const rb_method_definition_t *def);
+extern void rb_method_entry_spoof(const rb_method_entry_t *me);
 extern int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
 extern VALUE rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
                                          int argc, const VALUE *argv, int priv);
@@ -2574,32 +2574,39 @@ find_defined_class_by_owner(VALUE current_class, VALUE target_owner)
     return current_class; /* maybe module function */
 }
 
-static const rb_callable_method_entry_t *
-aliased_callable_method_entry(const rb_callable_method_entry_t *me)
+static const void*
+aliased_callable_method_entry0(const rb_method_entry_t *me)
 {
     const rb_method_entry_t *orig_me = me->def->body.alias.original_me;
     const rb_callable_method_entry_t *cme;
 
-    if (orig_me->defined_class == 0) {
+    if (orig_me->defined_class != 0) {
+        VM_ASSERT(callable_method_entry_p(orig_me));
+        return orig_me;
+    }
+    else {
 	VALUE defined_class = find_defined_class_by_owner(me->defined_class, orig_me->owner);
 	VM_ASSERT(RB_TYPE_P(orig_me->owner, T_MODULE));
 	cme = rb_method_entry_complement_defined_class(orig_me, me->called_id, defined_class);
-
-	if (me->def->alias_count + me->def->complemented_count == 0) {
-	    RB_OBJ_WRITE(me, &me->def->body.alias.original_me, cme);
-	}
-	else {
-	    const rb_method_definition_t *def =
-                rb_method_definition_create(VM_METHOD_TYPE_ALIAS, me->def->original_id, cme);
-            rb_method_definition_set((rb_method_entry_t *)me, def);
-	}
+        rb_method_entry_t *ret =
+            rb_method_entry_create(
+                me->called_id,
+                me->owner,
+                me->defined_class,
+                rb_method_definition_create(
+                    VM_METHOD_TYPE_ALIAS,
+                    me->def->original_id,
+                    cme));
+        METHOD_ENTRY_FLAGS_COPY(ret, (const void*)me);
+        rb_method_entry_spoof(ret);
+        return ret;
     }
-    else {
-	cme = (const rb_callable_method_entry_t *)orig_me;
-    }
+}
 
-    VM_ASSERT(callable_method_entry_p(cme));
-    return cme;
+static const rb_callable_method_entry_t*
+aliased_callable_method_entry(const rb_callable_method_entry_t *me)
+{
+    return aliased_callable_method_entry0((const void*)me);
 }
 
 static const rb_callable_method_entry_t *
