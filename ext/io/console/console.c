@@ -831,7 +831,7 @@ mode_in_range(VALUE val, int high, const char *modename)
 
 #if defined _WIN32
 static VALUE
-console_goto(VALUE io, VALUE x, VALUE y)
+console_goto(VALUE io, VALUE y, VALUE x)
 {
     rb_io_t *fptr;
     int fd;
@@ -859,11 +859,11 @@ console_cursor_pos(VALUE io)
     if (!GetConsoleScreenBufferInfo((HANDLE)rb_w32_get_osfhandle(fd), &ws)) {
 	rb_syserr_fail(LAST_ERROR, 0);
     }
-    return rb_assoc_new(UINT2NUM(ws.dwCursorPosition.X), UINT2NUM(ws.dwCursorPosition.Y));
+    return rb_assoc_new(UINT2NUM(ws.dwCursorPosition.Y), UINT2NUM(ws.dwCursorPosition.X));
 }
 
 static VALUE
-console_move(VALUE io, int x, int y)
+console_move(VALUE io, int y, int x)
 {
     rb_io_t *fptr;
     HANDLE h;
@@ -1116,20 +1116,18 @@ console_cursor_pos(VALUE io)
     row = RARRAY_AREF(resp, 0);
     column = RARRAY_AREF(resp, 1);
     rb_ary_resize(resp, 2);
-    RARRAY_ASET(resp, 0, column);
-    RARRAY_ASET(resp, 1, row);
     return resp;
 }
 
 static VALUE
-console_goto(VALUE io, VALUE x, VALUE y)
+console_goto(VALUE io, VALUE y, VALUE x)
 {
     rb_io_write(io, rb_sprintf("\x1b[%d;%dH", NUM2UINT(y), NUM2UINT(x)));
     return io;
 }
 
 static VALUE
-console_move(VALUE io, int x, int y)
+console_move(VALUE io, int y, int x)
 {
     if (x || y) {
 	VALUE s = rb_str_new_cstr("");
@@ -1188,25 +1186,25 @@ console_cursor_set(VALUE io, VALUE cpos)
 static VALUE
 console_cursor_up(VALUE io, VALUE val)
 {
-    return console_move(io, 0, -NUM2INT(val));
+    return console_move(io, -NUM2INT(val), 0);
 }
 
 static VALUE
 console_cursor_down(VALUE io, VALUE val)
 {
-    return console_move(io, 0, +NUM2INT(val));
+    return console_move(io, +NUM2INT(val), 0);
 }
 
 static VALUE
 console_cursor_left(VALUE io, VALUE val)
 {
-    return console_move(io, -NUM2INT(val), 0);
+    return console_move(io, 0, -NUM2INT(val));
 }
 
 static VALUE
 console_cursor_right(VALUE io, VALUE val)
 {
-    return console_move(io, +NUM2INT(val), 0);
+    return console_move(io, 0, +NUM2INT(val));
 }
 
 static VALUE
