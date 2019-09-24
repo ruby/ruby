@@ -282,6 +282,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   end
 
   def test_cursor_position
+    skip if /solaris/ =~ RUBY_PLATFORM
     run_pty("#{<<~"begin;"}\n#{<<~'end;'}") do |r, w, _|
       begin;
         con = IO.console
