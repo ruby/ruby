@@ -69,9 +69,6 @@ class Gem::Requirement
     end
   end
 
-  ##
-  # A default "version requirement" can surely _only_ be '>= 0'.
-
   def self.default
     new '>= 0'
   end
