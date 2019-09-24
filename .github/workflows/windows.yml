@@ -54,6 +54,9 @@ jobs:
           set YACC=win_bison
           nmake up
           nmake
+      - name: 'create dummy files'
+        run: |
+          .\ruby -e "%w[a b foo bar test zzz].each{|basename|File.write(%(#{basename}.rb), %[raise %(do not load #{basename}.rb)])}"
       - name: nmake test
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"

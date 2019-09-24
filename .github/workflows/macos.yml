@@ -41,6 +41,9 @@ jobs:
       - name: configure
         run: ./configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
       - run: make $JOBS
+      - name: 'create dummy files'
+        run: |
+          ./ruby -e '%w[a b foo bar test zzz].each{|basename|File.write("#{basename}.rb", "raise %(do not load #{basename}.rb)")}'
       - name: Tests
         run: make -s ${{ matrix.test_task }} TESTOPTS="$JOBS -q --tty=no"
         env:
