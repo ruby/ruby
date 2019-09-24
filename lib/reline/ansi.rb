@@ -24,14 +24,7 @@ class Reline::ANSI
     unless @@buf.empty?
       return @@buf.shift
     end
-    c = nil
-    loop do
-      result = select([@@input], [], [], 0.001)
-      next if result.nil?
-      c = @@input.read(1)
-      break
-    end
-    c&.ord
+    @@input.getbyte
   end
 
   def self.ungetc(c)
