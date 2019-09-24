@@ -32,9 +32,14 @@ class Gem::Requirement
   PATTERN = /\A#{PATTERN_RAW}\z/.freeze
 
   ##
-  # The default requirement matches any version
+  # The default requirement matches any non-prerelease version
 
   DefaultRequirement = [">=", Gem::Version.new(0)].freeze
+
+  ##
+  # The default requirement matches any version
+
+  DefaultPrereleaseRequirement = [">=", Gem::Version.new("0.a")].freeze
 
   ##
   # Raised when a bad requirement is encountered
@@ -73,6 +78,10 @@ class Gem::Requirement
     new '>= 0'
   end
 
+  def self.default_prerelease
+    new '>= 0.a'
+  end
+
   ###
   # A source set requirement, used for Gemfiles and lockfiles
 
@@ -101,6 +110,8 @@ class Gem::Requirement
 
     if $1 == ">=" && $2 == "0"
       DefaultRequirement
+    elsif $1 == ">=" && $2 == "0.a"
+      DefaultPrereleaseRequirement
     else
       [$1 || "=", Gem::Version.new($2)]
     end

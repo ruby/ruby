@@ -776,7 +776,7 @@ class Gem::Installer
 
 require 'rubygems'
 
-version = "#{Gem::Requirement.default}.a"
+version = "#{Gem::Requirement.default_prerelease}"
 
 str = ARGV.first
 if str
