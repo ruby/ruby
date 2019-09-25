@@ -1106,7 +1106,7 @@ console_vt_response(int argc, VALUE *argv, VALUE io)
 static VALUE
 console_cursor_pos(VALUE io)
 {
-    VALUE query = rb_str_new_cstr("\e[6n");
+    VALUE query = rb_str_new_cstr("\033[6n");
     VALUE resp = console_vt_response(1, &query, io);
     VALUE row, column, term;
     unsigned int r, c;
