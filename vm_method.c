@@ -478,9 +478,11 @@ method_definition_addref_complement(rb_method_definition_t *def)
 }
 
 static rb_method_entry_t *
-rb_method_entry_alloc(ID called_id, VALUE owner, VALUE defined_class, const rb_method_definition_t *def)
+rb_method_entry_alloc(VALUE flags, ID called_id, VALUE owner, VALUE defined_class, const rb_method_definition_t *def)
 {
+    rb_method_entry_t tmp = { flags, };
     rb_method_entry_t *me = (rb_method_entry_t *)rb_imemo_new(imemo_ment, (VALUE)def, (VALUE)called_id, owner, defined_class);
+    METHOD_ENTRY_FLAGS_COPY(me, &tmp);
     return me;
 }
 
@@ -501,8 +503,15 @@ filter_defined_class(VALUE klass)
 MJIT_FUNC_EXPORTED rb_method_entry_t *
 rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, const rb_method_definition_t *def)
 {
-    rb_method_entry_t *me = rb_method_entry_alloc(called_id, klass, filter_defined_class(klass), def);
-    METHOD_ENTRY_FLAGS_SET(me, visi, ruby_running ? FALSE : TRUE);
+    rb_method_entry_t tmp = { 0, };
+    METHOD_ENTRY_FLAGS_SET(&tmp, visi, !ruby_running);
+    rb_method_entry_t *me =
+        rb_method_entry_alloc(
+            tmp.flags,
+            called_id,
+            klass,
+            filter_defined_class(klass),
+            def);
     if (def != NULL) method_definition_reset(me);
     return me;
 }
@@ -510,10 +519,12 @@ rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, c
 const rb_method_entry_t *
 rb_method_entry_clone(const rb_method_entry_t *src_me)
 {
-    rb_method_entry_t *me = rb_method_entry_alloc(src_me->called_id, src_me->owner, src_me->defined_class,
-						  method_definition_addref(src_me->def));
-    METHOD_ENTRY_FLAGS_COPY(me, src_me);
-    return me;
+    return rb_method_entry_alloc(
+        src_me->flags,
+        src_me->called_id,
+        src_me->owner,
+        src_me->defined_class,
+        method_definition_addref(src_me->def));
 }
 
 MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
@@ -538,8 +549,12 @@ rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID cal
     else {
 	def = method_definition_addref_complement((rb_method_definition_t *)def);
     }
-    me = rb_method_entry_alloc(called_id, src_me->owner, defined_class, def);
-    METHOD_ENTRY_FLAGS_COPY(me, src_me);
+    me = rb_method_entry_alloc(
+        src_me->flags,
+        called_id,
+        src_me->owner,
+        defined_class,
+        def);
 
     VM_ASSERT(RB_TYPE_P(me->owner, T_MODULE));
 
@@ -555,11 +570,13 @@ make_method_entry_refined(VALUE owner, rb_method_entry_t *me)
     else {
 	rb_vm_check_redefinition_opt_method(me, me->owner);
         rb_method_entry_t *orig_me =
-	    rb_method_entry_alloc(me->called_id, me->owner,
-				  me->defined_class ?
-				  me->defined_class : owner,
-				  method_definition_addref(me->def));
-        METHOD_ENTRY_FLAGS_COPY(orig_me, me);
+            rb_method_entry_alloc(
+                me->flags,
+                me->called_id,
+                me->owner,
+                me->defined_class ?
+                me->defined_class : owner,
+                method_definition_addref(me->def));
         const rb_method_definition_t *def =
             rb_method_definition_create(
                 VM_METHOD_TYPE_REFINED,
@@ -570,12 +587,12 @@ make_method_entry_refined(VALUE owner, rb_method_entry_t *me)
                 }
             );
         rb_method_entry_t *new_me =
-            rb_method_entry_create(
+            rb_method_entry_alloc(
+                me->flags,
                 me->called_id,
                 me->owner,
                 me->defined_class,
                 def);
-        METHOD_ENTRY_FLAGS_COPY(new_me, me);
         METHOD_ENTRY_VISI_SET(new_me, METHOD_VISI_PUBLIC);
         return new_me;
     }
