@@ -168,7 +168,6 @@ struct local_vars {
 };
 
 enum {
-    IMPLICIT_PARAM = -2,
     ORDINAL_PARAM = -1,
     NO_PARAM = 0,
     NUMPARAM_MAX = 9,
@@ -8494,37 +8493,19 @@ parser_numbered_param(struct parser_params *p, int n)
     if (n < 0) return false;
 
     if (DVARS_TERMINAL_P(p->lvtbl->args) || DVARS_TERMINAL_P(p->lvtbl->args->prev)) {
-	compile_error(p, "implicit parameter outside block");
+	compile_error(p, "numbered parameter outside block");
 	return false;
     }
-    if (p->max_numparam < NO_PARAM) {
-	if (p->max_numparam == ORDINAL_PARAM) {
-	    compile_error(p, "ordinary parameter is defined");
-	    return false;
-	}
-	else if (n > 0) {
-	    compile_error(p, "implicit parameter is used");
-	    return false;
-	}
-    }
-    else if (p->max_numparam > NO_PARAM) {
-	if (n == 0) {
-	    compile_error(p, "numbered parameter is used");
-	    return false;
-	}
+    if (p->max_numparam == ORDINAL_PARAM) {
+	compile_error(p, "ordinary parameter is defined");
+	return false;
     }
     struct vtable *args = p->lvtbl->args;
-    if (n == 0) {
-	p->max_numparam = IMPLICIT_PARAM;
-	vtable_add(args, idNUMPARAM_0);
+    if (p->max_numparam < n) {
+	p->max_numparam = n;
     }
-    else {
-	if (p->max_numparam < n) {
-	    p->max_numparam = n;
-	}
-	while (n > args->pos) {
-	    vtable_add(args, NUMPARAM_IDX_TO_ID(args->pos+1));
-	}
+    while (n > args->pos) {
+	vtable_add(args, NUMPARAM_IDX_TO_ID(args->pos+1));
     }
     return true;
 }
@@ -9825,9 +9806,8 @@ numparam_nested_p(struct parser_params *p)
     NODE *inner = p->numparam.inner;
     if (outer || inner) {
 	NODE *used = outer ? outer : inner;
-	compile_error(p, "%s parameter is already used in\n"
+	compile_error(p, "numbered parameter is already used in\n"
 		      "%s:%d: %s block here",
-		      used->nd_vid == idNUMPARAM_0 ? "implicit" : "numbered",
 		      p->ruby_sourcefile, nd_line(used),
 		      outer ? "outer" : "inner");
 	parser_show_error_line(p, &used->nd_loc);
@@ -11277,15 +11257,9 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
 static NODE *
 args_with_numbered(struct parser_params *p, NODE *args, int max_numparam)
 {
-    if (max_numparam > NO_PARAM || max_numparam == IMPLICIT_PARAM) {
+    if (max_numparam > NO_PARAM) {
 	if (!args) args = new_args_tail(p, 0, 0, 0, 0);
-	if (max_numparam == IMPLICIT_PARAM) {
-	    args->nd_ainfo->pre_args_num = 1;
-	}
-	else {
-	    args->nd_ainfo->pre_args_num = max_numparam;
-	    args->nd_ainfo->rest_arg = NODE_SPECIAL_EXCESSIVE_COMMA;
-	}
+	args->nd_ainfo->pre_args_num = max_numparam;
     }
     return args;
 }
@@ -11827,7 +11801,7 @@ numparam_pop(struct parser_params *p, NODE *prev_inner)
 	/* current and inner are exclusive */
 	p->numparam.inner = p->numparam.current;
     }
-    if (p->max_numparam > NO_PARAM || p->max_numparam == IMPLICIT_PARAM) {
+    if (p->max_numparam > NO_PARAM) {
 	/* current and outer are exclusive */
 	p->numparam.current = p->numparam.outer;
 	p->numparam.outer = 0;
