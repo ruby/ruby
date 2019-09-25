@@ -1076,7 +1076,7 @@ path_empty_p(VALUE self)
 }
 
 static VALUE
-s_glob_i(RB_BLOCK_CALL_FUNC_ARGLIST(elt, klass))
+s_glob_i(RB_BLOCK_CALL_KW_FUNC_ARGLIST(elt, klass))
 {
     return rb_yield(rb_class_new_instance(1, &elt, klass));
 }
@@ -1114,7 +1114,7 @@ path_s_glob(int argc, VALUE *argv, VALUE klass)
 }
 
 static VALUE
-glob_i(RB_BLOCK_CALL_FUNC_ARGLIST(elt, self))
+glob_i(RB_BLOCK_CALL_KW_FUNC_ARGLIST(elt, self))
 {
     elt = rb_funcall(self, '+', 1, elt);
     return rb_yield(elt);
