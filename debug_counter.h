@@ -206,6 +206,7 @@ RB_DEBUG_COUNTER(obj_str_fstr)
 RB_DEBUG_COUNTER(obj_ary_embed)
 RB_DEBUG_COUNTER(obj_ary_transient)
 RB_DEBUG_COUNTER(obj_ary_ptr)
+RB_DEBUG_COUNTER(obj_ary_extracapa)
 /*
   ary_shared_create: shared ary by Array#dup and so on.
   ary_shared: finished in shard.

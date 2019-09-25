@@ -786,6 +786,8 @@ void
 rb_ary_free(VALUE ary)
 {
     if (ARY_OWNS_HEAP_P(ary)) {
+        (void)RB_DEBUG_COUNTER_INC_IF(obj_ary_extracapa, ARY_HEAP_CAPA(ary) > RARRAY_LEN(ary));
+
         if (RARRAY_TRANSIENT_P(ary)) {
             RB_DEBUG_COUNTER_INC(obj_ary_transient);
         }
