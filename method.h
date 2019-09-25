@@ -185,15 +185,14 @@ STATIC_ASSERT(sizeof_method_def, offsetof(rb_method_definition_t, body)==8);
     ((def)->type == VM_METHOD_TYPE_REFINED && \
      UNDEFINED_METHOD_ENTRY_P((def)->body.refined.orig_me))
 
-const rb_method_definition_t *rb_method_definition_create(rb_method_type_t which, ID what, const void *how);
-
 void rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_visibility_t visi);
 void rb_add_method_iseq(VALUE klass, ID mid, const rb_iseq_t *iseq, rb_cref_t *cref, rb_method_visibility_t visi);
 void rb_add_refined_method_entry(VALUE refined_class, ID mid);
 void rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *option, rb_method_visibility_t visi);
 
 rb_method_entry_t *rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *, rb_method_visibility_t noex);
-rb_method_entry_t *rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, const rb_method_definition_t *def);
+const rb_method_entry_t *rb_method_entry_from_template(const rb_method_entry_t *template, const void *opts);
+const rb_method_entry_t *rb_method_entry_for_missing(ID mid, VALUE klass);
 
 const rb_method_entry_t *rb_method_entry_at(VALUE obj, ID id);
 

@@ -967,18 +967,11 @@ inject_refined_method(ID *key, VALUE *value, void *data, int _)
     const tuple             *ptr     = data;
     const rb_method_entry_t *me      = *(rb_method_entry_t **) value;
     const rb_method_entry_t *orig_me = me->def->body.refined.orig_me;
-    rb_method_entry_t       *new_me  =
-        rb_method_entry_create(
-            me->called_id,
-            me->owner,
-            me->defined_class,
-            rb_method_definition_create(
-                me->def->type,
-                me->def->original_id,
-                &(rb_method_refined_t) {
-                    .orig_me = NULL,
-                    .owner   = me->def->body.refined.owner, }));
-    METHOD_ENTRY_FLAGS_COPY(new_me, me);
+    const rb_method_entry_t *new_me  =
+        rb_method_entry_from_template(
+            me, &(rb_method_refined_t) {
+                .orig_me = NULL,
+                .owner   = me->def->body.refined.owner, });
     rb_id_table_insert(RCLASS_M_TBL(ptr->klass), *key, (VALUE)new_me);
     RB_OBJ_WRITTEN(ptr->klass, Qundef, new_me);
     *value = (VALUE)rb_method_entry_clone(orig_me);
