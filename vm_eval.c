@@ -1777,7 +1777,7 @@ rb_eval_string_wrap(const char *str, int *pstate)
 }
 
 VALUE
-rb_eval_cmd(VALUE cmd, VALUE arg, int _level)
+rb_eval_cmd_kw(VALUE cmd, VALUE arg, int kw_splat)
 {
     enum ruby_tag_type state;
     volatile VALUE val = Qnil;		/* OK */
@@ -1786,8 +1786,8 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int _level)
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	if (!RB_TYPE_P(cmd, T_STRING)) {
-	    val = rb_funcallv(cmd, idCall, RARRAY_LENINT(arg),
-			      RARRAY_CONST_PTR(arg));
+            val = rb_funcallv_kw(cmd, idCall, RARRAY_LENINT(arg),
+                              RARRAY_CONST_PTR(arg), kw_splat);
 	}
 	else {
 	    val = eval_string_with_cref(rb_vm_top_self(), cmd, NULL, 0, 0);
@@ -1797,6 +1797,13 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int _level)
 
     if (state) EC_JUMP_TAG(ec, state);
     return val;
+}
+
+VALUE
+rb_eval_cmd(VALUE cmd, VALUE arg, int _level)
+{
+    rb_warn("rb_eval_cmd will be removed in Ruby 3.0");
+    return rb_eval_cmd_kw(cmd, arg, RB_NO_KEYWORDS);
 }
 
 /* block eval under the class/module context */
