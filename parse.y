@@ -9311,15 +9311,9 @@ parser_yylex(struct parser_params *p)
 
       case '{':
 	++p->lex.brace_nest;
-	if (lambda_beginning_p()) {
-	    SET_LEX_STATE(EXPR_BEG);
-	    COND_PUSH(0);
-	    CMDARG_PUSH(0);
-	    p->lex.paren_nest++;
-	    return tLAMBEG;
-	}
-	p->lex.paren_nest++;
-	if (IS_lex_state(EXPR_LABELED))
+	if (lambda_beginning_p())
+	    c = tLAMBEG;
+	else if (IS_lex_state(EXPR_LABELED))
 	    c = tLBRACE;      /* hash */
 	else if (IS_lex_state(EXPR_ARG_ANY | EXPR_END | EXPR_ENDFN))
 	    c = '{';          /* block (primary) */
@@ -9327,10 +9321,16 @@ parser_yylex(struct parser_params *p)
 	    c = tLBRACE_ARG;  /* block (expr) */
 	else
 	    c = tLBRACE;      /* hash */
+	if (c != tLBRACE) {
+	    p->command_start = TRUE;
+	    SET_LEX_STATE(EXPR_BEG);
+	}
+	else {
+	    SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
+	}
+	++p->lex.paren_nest;  /* after lambda_beginning_p() */
 	COND_PUSH(0);
 	CMDARG_PUSH(0);
-	SET_LEX_STATE(c != tLBRACE ? EXPR_BEG : EXPR_BEG|EXPR_LABEL);
-	if (c != tLBRACE) p->command_start = TRUE;
 	return c;
 
       case '\\':
