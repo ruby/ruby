@@ -269,57 +269,62 @@ rb_id_table_delete(struct rb_id_table *tbl, ID id)
 void
 rb_id_table_foreach_with_replace(struct rb_id_table *tbl, rb_id_table_foreach_func_t *func, rb_id_table_update_callback_func_t *replace, void *data)
 {
-    int i, capa = tbl->capa;
-
-    for (i=0; i<capa; i++) {
-        if (ITEM_KEY_ISSET(tbl, i)) {
-            const id_key_t key = ITEM_GET_KEY(tbl, i);
-            enum rb_id_table_iterator_result ret = (*func)(Qundef, tbl->items[i].val, data);
-            assert(key != 0);
-
-            if (ret == ID_TABLE_REPLACE) {
-                VALUE val = tbl->items[i].val;
-                ret = (*replace)(NULL, &val, data, TRUE);
-                tbl->items[i].val = val;
-            }
-            else if (ret == ID_TABLE_STOP)
-                return;
-        }
-    }
+    rb_id_table_foreach_with_replace_with_key(tbl, func, replace, data, false);
 }
 
 void
 rb_id_table_foreach(struct rb_id_table *tbl, rb_id_table_foreach_func_t *func, void *data)
 {
-    int i, capa = tbl->capa;
+    rb_id_table_foreach_with_replace_with_key(tbl, func, 0, data, true);
+}
 
-    for (i=0; i<capa; i++) {
-	if (ITEM_KEY_ISSET(tbl, i)) {
-	    const id_key_t key = ITEM_GET_KEY(tbl, i);
-	    enum rb_id_table_iterator_result ret = (*func)(key2id(key), tbl->items[i].val, data);
-	    assert(key != 0);
+typedef struct tuple {
+    rb_id_table_foreach_values_func_t *const func;
+    void *const data;
+} tuple;
 
-	    if (ret == ID_TABLE_DELETE)
-		hash_delete_index(tbl, i);
-	    else if (ret == ID_TABLE_STOP)
-		return;
-	}
-    }
+static enum rb_id_table_iterator_result
+cdr(ID car, VALUE cdr, void *data)
+{
+    const tuple *ptr = data;
+    return ptr->func(cdr, ptr->data);
 }
 
 void
 rb_id_table_foreach_values(struct rb_id_table *tbl, rb_id_table_foreach_values_func_t *func, void *data)
 {
-    int i, capa = tbl->capa;
+    rb_id_table_foreach_with_replace(
+        tbl, cdr, 0, &(tuple) { func, data, });
+}
 
-    for (i=0; i<capa; i++) {
-	if (ITEM_KEY_ISSET(tbl, i)) {
-	    enum rb_id_table_iterator_result ret = (*func)(tbl->items[i].val, data);
-
-	    if (ret == ID_TABLE_DELETE)
-		hash_delete_index(tbl, i);
-	    else if (ret == ID_TABLE_STOP)
-		return;
-	}
+void
+rb_id_table_foreach_with_replace_with_key(
+    struct rb_id_table *tbl,
+    rb_id_table_foreach_func_t *func,
+    rb_id_table_update_callback_func_t *replace,
+    void *data,
+    bool needkey)
+{
+    for (int i = 0; i < tbl->capa; i++) {
+        if (ITEM_KEY_ISSET(tbl, i)) {
+            const id_key_t key = ITEM_GET_KEY(tbl, i);
+            assert(key != 0);
+            ID k = needkey ? key2id(key) : 0;
+            VALUE v = tbl->items[i].val;
+            switch (func(k, v, data)) {
+              case ID_TABLE_DELETE:
+                hash_delete_index(tbl, i);
+                /* FALLTHROUGH */
+              case ID_TABLE_CONTINUE:
+                continue;
+              case ID_TABLE_STOP:
+                return;
+              case ID_TABLE_REPLACE:
+                if (replace) {
+                    replace(&k, &v, data, true);
+                    tbl->items[i].val = v;
+                }
+            }
+        }
     }
 }
