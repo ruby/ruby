@@ -754,7 +754,11 @@ class Gem::Installer
       raise Gem::InstallError, "#{spec} has an invalid specification_version"
     end
 
-    if spec.dependencies.any? {|dep| dep.type =~ /\R/ || dep.name =~ /\R/ }
+    if spec.dependencies.any? {|dep| dep.type != :runtime && dep.type != :development }
+      raise Gem::InstallError, "#{spec} has an invalid dependencies"
+    end
+
+    if spec.dependencies.any? {|dep| dep.name =~ /(?:\R|[<>])/ }
       raise Gem::InstallError, "#{spec} has an invalid dependencies"
     end
   end
