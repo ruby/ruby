@@ -147,16 +147,6 @@ class Set
     super
   end
 
-  def taint     # :nodoc:
-    @hash.taint
-    super
-  end
-
-  def untaint   # :nodoc:
-    @hash.untaint
-    super
-  end
-
   # Returns the number of elements.
   def size
     @hash.size

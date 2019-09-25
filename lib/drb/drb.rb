@@ -233,7 +233,7 @@ require_relative 'eq'
 #       def get_logger(name)
 #           if !@loggers.has_key? name
 #               # make the filename safe, then declare it to be so
-#               fname = name.gsub(/[.\/\\\:]/, "_").untaint
+#               fname = name.gsub(/[.\/\\\:]/, "_")
 #               @loggers[name] = Logger.new(name, @basedir + "/" + fname)
 #           end
 #           return @loggers[name]
@@ -594,16 +594,9 @@ module DRb
       raise(DRbConnError, 'premature marshal format(can\'t read)') if str.size < sz
       DRb.mutex.synchronize do
         begin
-          save = Thread.current[:drb_untaint]
-          Thread.current[:drb_untaint] = []
           Marshal::load(str)
         rescue NameError, ArgumentError
           DRbUnknown.new($!, str)
-        ensure
-          Thread.current[:drb_untaint].each do |x|
-            x.untaint
-          end
-          Thread.current[:drb_untaint] = save
         end
       end
     end
@@ -843,8 +836,6 @@ module DRb
     # URI protocols.
     def self.open(uri, config)
       host, port, = parse_uri(uri)
-      host.untaint
-      port.untaint
       soc = TCPSocket.open(host, port)
       self.new(uri, soc, config)
     end
@@ -1061,9 +1052,6 @@ module DRb
 
       if DRb.here?(uri)
         obj = DRb.to_obj(ref)
-        if ((! obj.tainted?) && Thread.current[:drb_untaint])
-          Thread.current[:drb_untaint].push(obj)
-        end
         return obj
       end
 

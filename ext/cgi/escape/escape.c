@@ -30,8 +30,6 @@ static inline void
 preserve_original_state(VALUE orig, VALUE dest)
 {
     rb_enc_associate(dest, rb_enc_get(orig));
-
-    RB_OBJ_INFECT_RAW(dest, orig);
 }
 
 static VALUE

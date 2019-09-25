@@ -220,35 +220,12 @@ class Delegator < BasicObject
   private :initialize_clone, :initialize_dup
 
   ##
-  # :method: trust
-  # Trust both the object returned by \_\_getobj\_\_ and self.
-  #
-
-  ##
-  # :method: untrust
-  # Untrust both the object returned by \_\_getobj\_\_ and self.
-  #
-
-  ##
-  # :method: taint
-  # Taint both the object returned by \_\_getobj\_\_ and self.
-  #
-
-  ##
-  # :method: untaint
-  # Untaint both the object returned by \_\_getobj\_\_ and self.
-  #
-
-  ##
   # :method: freeze
   # Freeze both the object returned by \_\_getobj\_\_ and self.
   #
-
-  [:trust, :untrust, :taint, :untaint, :freeze].each do |method|
-    define_method method do
-      __getobj__.send(method)
-      super()
-    end
+  def freeze
+    __getobj__.freeze
+    super()
   end
 
   @delegator_api = self.public_instance_methods

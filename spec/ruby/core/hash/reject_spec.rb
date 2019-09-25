@@ -32,9 +32,11 @@ describe "Hash#reject" do
       HashSpecs::MyHash[1 => 2, 3 => 4].reject { true }.should be_kind_of(Hash)
     end
 
-    it "does not taint the resulting hash" do
-      h = { a: 1 }.taint
-      h.reject {false}.tainted?.should == false
+    ruby_version_is ''...'2.7' do
+      it "does not taint the resulting hash" do
+        h = { a: 1 }.taint
+        h.reject {false}.tainted?.should == false
+      end
     end
   end
 

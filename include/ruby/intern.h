@@ -308,10 +308,8 @@ void rb_check_trusted(VALUE);
 	    rb_error_frozen_object(frozen_obj); \
 	} \
     } while (0)
-#define rb_check_trusted_internal(obj) ((void) 0)
 #ifdef __GNUC__
 #define rb_check_frozen(obj) __extension__({rb_check_frozen_internal(obj);})
-#define rb_check_trusted(obj) __extension__({rb_check_trusted_internal(obj);})
 #else
 static inline void
 rb_check_frozen_inline(VALUE obj)
@@ -322,7 +320,7 @@ rb_check_frozen_inline(VALUE obj)
 static inline void
 rb_check_trusted_inline(VALUE obj)
 {
-    rb_check_trusted_internal(obj);
+    rb_check_trusted(obj);
 }
 #define rb_check_trusted(obj) rb_check_trusted_inline(obj)
 #endif

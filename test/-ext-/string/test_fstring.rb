@@ -12,36 +12,6 @@ class Test_String_Fstring < Test::Unit::TestCase
     yield fstr
   end
 
-  def test_taint_shared_string
-    str = __method__.to_s.dup
-    str.taint
-    assert_fstring(str) {|s| assert_predicate(s, :tainted?)}
-  end
-
-  def test_taint_normal_string
-    str = __method__.to_s * 3
-    str.taint
-    assert_fstring(str) {|s| assert_predicate(s, :tainted?)}
-  end
-
-  def test_taint_registered_tainted
-    str = __method__.to_s * 3
-    str.taint
-    assert_fstring(str) {|s| assert_predicate(s, :tainted?)}
-
-    str = __method__.to_s * 3
-    assert_fstring(str) {|s| assert_not_predicate(s, :tainted?)}
-  end
-
-  def test_taint_registered_untainted
-    str = __method__.to_s * 3
-    assert_fstring(str) {|s| assert_not_predicate(s, :tainted?)}
-
-    str = __method__.to_s * 3
-    str.taint
-    assert_fstring(str) {|s| assert_predicate(s, :tainted?)}
-  end
-
   def test_instance_variable
     str = __method__.to_s * 3
     str.instance_variable_set(:@test, 42)

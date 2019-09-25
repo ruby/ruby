@@ -215,7 +215,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     int width, prec, flags = FNONE;
     int nextarg = 1;
     int posarg = 0;
-    int tainted = 0;
     VALUE nextvalue;
     VALUE tmp;
     VALUE orig;
@@ -239,7 +238,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 
     ++argc;
     --argv;
-    if (OBJ_TAINTED(fmt)) tainted = 1;
     StringValue(fmt);
     enc = rb_enc_get(fmt);
     orig = fmt;
@@ -479,7 +477,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		else {
 		    str = rb_obj_as_string(arg);
 		}
-		if (OBJ_TAINTED(str)) tainted = 1;
 		len = RSTRING_LEN(str);
 		rb_str_set_len(result, blen);
 		if (coderange != ENC_CODERANGE_BROKEN && scanned < blen) {
@@ -931,7 +928,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     }
     rb_str_resize(result, blen);
 
-    if (tainted) OBJ_TAINT(result);
     return result;
 }
 
@@ -1142,7 +1138,6 @@ ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int s
     StringValueCStr(value);
     RSTRING_GETMEM(value, cp, *sz);
     ((rb_printf_buffer_extra *)fp)->value = value;
-    OBJ_INFECT(result, value);
     return cp;
 }
 

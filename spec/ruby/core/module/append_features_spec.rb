@@ -47,16 +47,18 @@ describe "Module#append_features" do
 
   end
 
-  it "copies own tainted status to the given module" do
-    other = Module.new
-    Module.new.taint.send :append_features, other
-    other.tainted?.should be_true
-  end
+  ruby_version_is ''...'2.7' do
+    it "copies own tainted status to the given module" do
+      other = Module.new
+      Module.new.taint.send :append_features, other
+      other.tainted?.should be_true
+    end
 
-  it "copies own untrusted status to the given module" do
-    other = Module.new
-    Module.new.untrust.send :append_features, other
-    other.untrusted?.should be_true
+    it "copies own untrusted status to the given module" do
+      other = Module.new
+      Module.new.untrust.send :append_features, other
+      other.untrusted?.should be_true
+    end
   end
 
   describe "when other is frozen" do

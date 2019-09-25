@@ -99,13 +99,6 @@ class CGIUtilTest < Test::Unit::TestCase
     end
   end
 
-  def test_cgi_escape_html_preserve_tainted
-    assert_not_predicate CGI.escapeHTML("'&\"><"),           :tainted?
-    assert_predicate     CGI.escapeHTML("'&\"><".dup.taint), :tainted?
-    assert_not_predicate CGI.escapeHTML("Ruby"),             :tainted?
-    assert_predicate     CGI.escapeHTML("Ruby".dup.taint),   :tainted?
-  end
-
   def test_cgi_escape_html_dont_freeze
     assert_not_predicate CGI.escapeHTML("'&\"><".dup),    :frozen?
     assert_not_predicate CGI.escapeHTML("'&\"><".freeze), :frozen?

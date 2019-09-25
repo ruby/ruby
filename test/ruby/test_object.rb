@@ -96,17 +96,6 @@ class TestObject < Test::Unit::TestCase
     assert_raise(TypeError) { 1.kind_of?(1) }
   end
 
-  def test_taint_frozen_obj
-    o = Object.new
-    o.freeze
-    assert_raise(FrozenError) { o.taint }
-
-    o = Object.new
-    o.taint
-    o.freeze
-    assert_raise(FrozenError) { o.untaint }
-  end
-
   def test_freeze_immediate
     assert_equal(true, 1.frozen?)
     1.freeze
@@ -794,36 +783,7 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
-  def test_untrusted
-    verbose = $VERBOSE
-    $VERBOSE = false
-    begin
-      obj = Object.new
-      assert_equal(false, obj.untrusted?)
-      assert_equal(false, obj.tainted?)
-      obj.untrust
-      assert_equal(true, obj.untrusted?)
-      assert_equal(true, obj.tainted?)
-      obj.trust
-      assert_equal(false, obj.untrusted?)
-      assert_equal(false, obj.tainted?)
-      obj.taint
-      assert_equal(true, obj.untrusted?)
-      assert_equal(true, obj.tainted?)
-      obj.untaint
-      assert_equal(false, obj.untrusted?)
-      assert_equal(false, obj.tainted?)
-    ensure
-      $VERBOSE = verbose
-    end
-  end
-
   def test_to_s
-    x = Object.new
-    x.taint
-    s = x.to_s
-    assert_equal(true, s.tainted?)
-
     x = eval(<<-EOS)
       class ToS\u{3042}
         new.to_s
@@ -832,14 +792,10 @@ class TestObject < Test::Unit::TestCase
     assert_match(/\bToS\u{3042}:/, x)
 
     name = "X".freeze
-    x = Object.new.taint
+    x = Object.new
     class<<x;self;end.class_eval {define_method(:to_s) {name}}
     assert_same(name, x.to_s)
-    assert_not_predicate(name, :tainted?)
-    assert_raise(FrozenError) {name.taint}
     assert_equal("X", [x].join(""))
-    assert_not_predicate(name, :tainted?)
-    assert_not_predicate(eval('"X".freeze'), :tainted?)
   end
 
   def test_inspect
@@ -953,7 +909,7 @@ class TestObject < Test::Unit::TestCase
     assert_nothing_raised("copy") {a.instance_eval {initialize_copy(b)}}
     c = a.dup.freeze
     assert_raise(FrozenError, "frozen") {c.instance_eval {initialize_copy(b)}}
-    d = a.dup.trust
+    d = a.dup
     [a, b, c, d]
   end
 

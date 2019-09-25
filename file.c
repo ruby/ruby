@@ -160,8 +160,6 @@ VALUE rb_cFile;
 VALUE rb_mFileTest;
 VALUE rb_cStat;
 
-#define insecure_obj_p(obj, level) ((level) > 0 && OBJ_TAINTED(obj))
-
 static VALUE
 file_path_convert(VALUE name)
 {
@@ -1074,7 +1072,6 @@ rb_stat_inspect(VALUE self)
 	}
     }
     rb_str_buf_cat2(str, ">");
-    OBJ_INFECT(str, self);
 
     return str;
 }
@@ -3651,18 +3648,15 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     const char *s, *b, *fend;
     char *buf, *p, *pend, *root;
     size_t buflen, bdiff;
-    int tainted;
     rb_encoding *enc, *fsenc = rb_filesystem_encoding();
 
     s = StringValuePtr(fname);
     fend = s + RSTRING_LEN(fname);
     enc = rb_enc_get(fname);
     BUFINIT();
-    tainted = OBJ_TAINTED(fname);
 
     if (s[0] == '~' && abs_mode == 0) {      /* execute only if NOT absolute_path() */
 	long userlen = 0;
-	tainted = 1;
 	if (isdirsep(s[1]) || s[1] == '\0') {
 	    buf = 0;
 	    b = 0;
@@ -3720,7 +3714,6 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    }
 	    if (!same) {
 		char *e = append_fspath(result, fname, getcwdofdrv(*s), &enc, fsenc);
-		tainted = 1;
 		BUFINIT();
 		p = e;
 	    }
@@ -3742,7 +3735,6 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	}
 	else {
 	    char *e = append_fspath(result, fname, ruby_getcwd(), &enc, fsenc);
-	    tainted = 1;
 	    BUFINIT();
 	    p = e;
 	}
@@ -3993,7 +3985,6 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     }
 #endif
 
-    if (tainted) OBJ_TAINT(result);
     rb_str_set_len(result, p - buf);
     rb_enc_check(fname, result);
     ENC_CODERANGE_CLEAR(result);
@@ -4340,7 +4331,6 @@ rb_check_realpath_emulate(VALUE basedir, VALUE path, enum rb_realpath_mode mode)
 	}
     }
 
-    rb_obj_taint(resolved);
     RB_GC_GUARD(unresolved_path);
     RB_GC_GUARD(curdir);
     return resolved;
@@ -4409,7 +4399,6 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode
         }
     }
 
-    rb_obj_taint(resolved);
     RB_GC_GUARD(unresolved_path);
     return resolved;
 #else
@@ -4631,7 +4620,6 @@ rb_file_s_basename(int argc, VALUE *argv, VALUE _)
 
     basename = rb_str_new(p, f);
     rb_enc_copy(basename, fname);
-    OBJ_INFECT(basename, fname);
     return basename;
 }
 
@@ -4693,7 +4681,6 @@ rb_file_dirname(VALUE fname)
 	rb_str_cat(dirname, ".", 1);
 #endif
     rb_enc_copy(dirname, fname);
-    OBJ_INFECT(dirname, fname);
     return dirname;
 }
 
@@ -4802,7 +4789,6 @@ rb_file_s_extname(VALUE klass, VALUE fname)
     if (len < 1)
 	return rb_str_new(0, 0);
     extname = rb_str_subseq(fname, e - name, len); /* keep the dot, too! */
-    OBJ_INFECT(extname, fname);
     return extname;
 }
 
@@ -4873,7 +4859,6 @@ rb_file_join(VALUE ary)
     len += RARRAY_LEN(ary) - 1;
     result = rb_str_buf_new(len);
     RBASIC_CLEAR_CLASS(result);
-    OBJ_INFECT(result, ary);
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	tmp = RARRAY_AREF(ary, i);
 	switch (OBJ_BUILTIN_TYPE(tmp)) {
@@ -6333,7 +6318,6 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
 		*filep = copy_path_class(tmp, *filep);
 		return (int)(j+1);
 	    }
-	    FL_UNSET(tmp, FL_TAINT);
 	}
 	rb_str_set_len(fname, fnlen);
     }

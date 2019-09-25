@@ -32,12 +32,14 @@ describe :string_times, shared: true do
     @object.call(MyString.new("cool"), 2).should be_an_instance_of(MyString)
   end
 
-  it "always taints the result when self is tainted" do
-    ["", "OK", MyString.new(""), MyString.new("OK")].each do |str|
-      str.taint
+  ruby_version_is ''...'2.7' do
+    it "always taints the result when self is tainted" do
+      ["", "OK", MyString.new(""), MyString.new("OK")].each do |str|
+        str.taint
 
-      [0, 1, 2].each do |arg|
-        @object.call(str, arg).tainted?.should == true
+        [0, 1, 2].each do |arg|
+          @object.call(str, arg).tainted?.should == true
+        end
       end
     end
   end

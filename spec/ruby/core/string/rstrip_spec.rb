@@ -14,10 +14,12 @@ describe "String#rstrip" do
     "\x00 \x00hello\x00 \x00".rstrip.should == "\x00 \x00hello"
   end
 
-  it "taints the result when self is tainted" do
-    "".taint.rstrip.tainted?.should == true
-    "ok".taint.rstrip.tainted?.should == true
-    "ok    ".taint.rstrip.tainted?.should == true
+  ruby_version_is ''...'2.7' do
+    it "taints the result when self is tainted" do
+      "".taint.rstrip.tainted?.should == true
+      "ok".taint.rstrip.tainted?.should == true
+      "ok    ".taint.rstrip.tainted?.should == true
+    end
   end
 end
 

@@ -607,18 +607,14 @@ CODE
   end
 
   def test_clone
-    for taint in [ false, true ]
-      for frozen in [ false, true ]
-        a = S("Cool")
-        a.taint  if taint
-        a.freeze if frozen
-        b = a.clone
+    for frozen in [ false, true ]
+      a = S("Cool")
+      a.freeze if frozen
+      b = a.clone
 
-        assert_equal(a, b)
-        assert_not_same(a, b)
-        assert_equal(a.frozen?, b.frozen?)
-        assert_equal(a.tainted?, b.tainted?)
-      end
+      assert_equal(a, b)
+      assert_not_same(a, b)
+      assert_equal(a.frozen?, b.frozen?)
     end
 
     assert_equal("", File.read(IO::NULL).clone, '[ruby-dev:32819] reported by Kazuhiro NISHIYAMA')
@@ -851,18 +847,14 @@ CODE
   end
 
   def test_dup
-    for taint in [ false, true ]
-      for frozen in [ false, true ]
-        a = S("hello")
-        a.taint  if taint
-        a.freeze if frozen
-        b = a.dup
+    for frozen in [ false, true ]
+      a = S("hello")
+      a.freeze if frozen
+      b = a.dup
 
-        assert_equal(a, b)
-        assert_not_same(a, b)
-        assert_not_predicate(b, :frozen?)
-        assert_equal(a.tainted?, b.tainted?)
-      end
+      assert_equal(a, b)
+      assert_not_same(a, b)
+      assert_not_predicate(b, :frozen?)
     end
   end
 
@@ -1005,7 +997,6 @@ CODE
     ].each do |g|
       assert_equal [g], g.each_grapheme_cluster.to_a
       assert_equal 1, g.each_grapheme_cluster.size
-      assert_predicate g.dup.taint.each_grapheme_cluster.to_a[0], :tainted?
     end
 
     [
@@ -1015,9 +1006,6 @@ CODE
     ].each do |str, grapheme_clusters|
       assert_equal grapheme_clusters, str.each_grapheme_cluster.to_a
       assert_equal grapheme_clusters.size, str.each_grapheme_cluster.size
-      str.dup.taint.each_grapheme_cluster do |g|
-        assert_predicate g, :tainted?
-      end
     end
 
     s = ("x"+"\u{10ABCD}"*250000)
@@ -1039,7 +1027,6 @@ CODE
     ].product([Encoding::UTF_8, *WIDE_ENCODINGS]) do |g, enc|
       g = g.encode(enc)
       assert_equal [g], g.grapheme_clusters
-      assert_predicate g.taint.grapheme_clusters[0], :tainted?
     end
 
     [
@@ -1057,14 +1044,13 @@ CODE
         assert_equal ["A", "B", "C"], "ABC".grapheme_clusters {}
       }
     else
-      s = "ABC".b.taint
+      s = "ABC".b
       res = []
       assert_same s, s.grapheme_clusters {|x| res << x }
       assert_equal(3, res.size)
       assert_equal("A", res[0])
       assert_equal("B", res[1])
       assert_equal("C", res[2])
-      res.each {|g| assert_predicate(g, :tainted?)}
     end
   end
 
@@ -1213,10 +1199,6 @@ CODE
                  S("hello").gsub(/(hell)(.)/) { |s| $1.upcase + S('-') + $2 })
     assert_equal(S("<>h<>e<>l<>l<>o<>"), S("hello").gsub(S(''), S('<\0>')))
 
-    a = S("hello")
-    a.taint
-    assert_predicate(a.gsub(/./, S('X')), :tainted?)
-
     assert_equal("z", "abc".gsub(/./, "a" => "z"), "moved from btest/knownbug")
 
     assert_raise(ArgumentError) { "foo".gsub }
@@ -1260,11 +1242,6 @@ CODE
     a = S("hello")
     a.gsub!(/(hell)(.)/) { |s| $1.upcase + S('-') + $2 }
     assert_equal(S("HELL-o"), a)
-
-    r = S('X')
-    r.taint
-    a.gsub!(/./, r)
-    assert_predicate(a, :tainted?)
 
     a = S("hello")
     assert_nil(a.sub!(S('X'), S('Y')))
@@ -1457,10 +1434,8 @@ CODE
     assert_equal(S("foobar"), a.replace(S("foobar")))
 
     a = S("foo")
-    a.taint
     b = a.replace(S("xyz"))
     assert_equal(S("xyz"), b)
-    assert_predicate(b, :tainted?)
 
     s = "foo" * 100
     s2 = ("bar" * 100).dup
@@ -1555,12 +1530,6 @@ CODE
     a.scan(/(...)/) { |w| res << w }
     assert_equal([[S("cru")], [S("el ")], [S("wor")]],res)
 
-    a = S("hello")
-    a.taint
-    res = []
-    a.scan(/./) { |w| res << w }
-    assert_predicate(res[0], :tainted?, '[ruby-core:33338] #4087')
-
     /h/ =~ a
     a.scan(/x/)
     assert_nil($~)
@@ -1568,8 +1537,6 @@ CODE
     /h/ =~ a
     a.scan('x')
     assert_nil($~)
-
-    assert_equal(3, S("hello hello hello").scan("hello".taint).count(&:tainted?))
 
     assert_equal(%w[1 2 3], S("a1 a2 a3").scan(/a\K./))
   end
@@ -1954,11 +1921,6 @@ CODE
     assert_equal(S("a\\&aba"), S("ababa").sub(/b/, '\\\\&'))
     assert_equal(S("a\\baba"), S("ababa").sub(/b/, '\\\\\&'))
 
-    a = S("hello")
-    a.taint
-    x = a.sub(/./, S('X'))
-    assert_predicate(x, :tainted?)
-
     o = Object.new
     def o.to_str; "bar"; end
     assert_equal("fooBARbaz", "foobarbaz".sub(o, "BAR"))
@@ -2005,11 +1967,6 @@ CODE
 
     a=S("hello")
     assert_nil(a.sub!(/X/, S('Y')))
-
-    r = S('X')
-    r.taint
-    a.sub!(/./, r)
-    assert_predicate(a, :tainted?)
 
     bug16105 = '[Bug #16105] heap-use-after-free'
     a = S("ABCDEFGHIJKLMNOPQRSTUVWXYZ012345678")
@@ -3201,10 +3158,8 @@ CODE
     assert_equal(1, str.instance_variable_get(:@iv))
 
     str = @cls.new("foo")
-    str.taint
     assert_instance_of(@cls, -str)
     assert_equal(false, str.frozen?)
-    assert_predicate(str, :tainted?)
   end
 
   def test_ord

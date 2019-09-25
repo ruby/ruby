@@ -1325,7 +1325,6 @@ range_to_s(VALUE range)
     str = rb_str_dup(str);
     rb_str_cat(str, "...", EXCL(range) ? 3 : 2);
     rb_str_append(str, str2);
-    OBJ_INFECT(str, range);
 
     return str;
 }
@@ -1349,7 +1348,6 @@ inspect_range(VALUE range, VALUE dummy, int recur)
         str2 = rb_inspect(RANGE_END(range));
     }
     if (str2 != Qundef) rb_str_append(str, str2);
-    OBJ_INFECT(str, range);
 
     return str;
 }

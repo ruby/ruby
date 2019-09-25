@@ -47,12 +47,14 @@ describe "String#center with length, padding" do
     "radiology".center(8, '-').should == "radiology"
   end
 
-  it "taints result when self or padstr is tainted" do
-    "x".taint.center(4).tainted?.should == true
-    "x".taint.center(0).tainted?.should == true
-    "".taint.center(0).tainted?.should == true
-    "x".taint.center(4, "*").tainted?.should == true
-    "x".center(4, "*".taint).tainted?.should == true
+  ruby_version_is ''...'2.7' do
+    it "taints result when self or padstr is tainted" do
+      "x".taint.center(4).tainted?.should == true
+      "x".taint.center(0).tainted?.should == true
+      "".taint.center(0).tainted?.should == true
+      "x".taint.center(4, "*").tainted?.should == true
+      "x".center(4, "*".taint).tainted?.should == true
+    end
   end
 
   it "calls #to_int to convert length to an integer" do
@@ -98,10 +100,12 @@ describe "String#center with length, padding" do
     "foo".center(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
   end
 
-  it "when padding is tainted and self is untainted returns a tainted string if and only if length is longer than self" do
-    "hello".center(4, 'X'.taint).tainted?.should be_false
-    "hello".center(5, 'X'.taint).tainted?.should be_false
-    "hello".center(6, 'X'.taint).tainted?.should be_true
+  ruby_version_is ''...'2.7' do
+    it "when padding is tainted and self is untainted returns a tainted string if and only if length is longer than self" do
+      "hello".center(4, 'X'.taint).tainted?.should be_false
+      "hello".center(5, 'X'.taint).tainted?.should be_false
+      "hello".center(6, 'X'.taint).tainted?.should be_true
+    end
   end
 
   describe "with width" do

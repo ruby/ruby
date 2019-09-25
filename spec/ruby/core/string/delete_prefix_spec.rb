@@ -22,9 +22,11 @@ ruby_version_is '2.5' do
       r.should == s
     end
 
-    it "taints resulting strings when other is tainted" do
-      'hello'.taint.delete_prefix('hell').tainted?.should == true
-      'hello'.taint.delete_prefix('').tainted?.should == true
+    ruby_version_is ''...'2.7' do
+      it "taints resulting strings when other is tainted" do
+        'hello'.taint.delete_prefix('hell').tainted?.should == true
+        'hello'.taint.delete_prefix('').tainted?.should == true
+      end
     end
 
     it "doesn't set $~" do

@@ -20,24 +20,28 @@ describe "Array#clear" do
     a.size.should == 0
   end
 
-  it "keeps tainted status" do
-    a = [1]
-    a.taint
-    a.tainted?.should be_true
-    a.clear
-    a.tainted?.should be_true
+  ruby_version_is ''...'2.7' do
+    it "keeps tainted status" do
+      a = [1]
+      a.taint
+      a.tainted?.should be_true
+      a.clear
+      a.tainted?.should be_true
+    end
   end
 
   it "does not accept any arguments" do
     -> { [1].clear(true) }.should raise_error(ArgumentError)
   end
 
-  it "keeps untrusted status" do
-    a = [1]
-    a.untrust
-    a.untrusted?.should be_true
-    a.clear
-    a.untrusted?.should be_true
+  ruby_version_is ''...'2.7' do
+    it "keeps untrusted status" do
+      a = [1]
+      a.untrust
+      a.untrusted?.should be_true
+      a.clear
+      a.untrusted?.should be_true
+    end
   end
 
   it "raises a #{frozen_error_class} on a frozen array" do

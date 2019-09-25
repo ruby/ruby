@@ -320,17 +320,6 @@ class TestHash < Test::Unit::TestCase
     assert_same "ABC".freeze, c.keys[0]
   end
 
-  def test_tainted_string_key
-    str = 'str'.taint
-    h = {}
-    h[str] = nil
-    key = h.keys.first
-    assert_predicate str, :tainted?
-    assert_not_predicate str, :frozen?
-    assert_predicate key, :tainted?
-    assert_predicate key, :frozen?
-  end
-
   def test_EQUAL # '=='
     h1 = @cls[ "a" => 1, "c" => 2 ]
     h2 = @cls[ "a" => 1, "c" => 2, 7 => 35 ]
@@ -353,18 +342,14 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_clone
-    for taint in [ false, true ]
-      for frozen in [ false, true ]
-        a = @h.clone
-        a.taint  if taint
-        a.freeze if frozen
-        b = a.clone
+    for frozen in [ false, true ]
+      a = @h.clone
+      a.freeze if frozen
+      b = a.clone
 
-        assert_equal(a, b)
-        assert_not_same(a, b)
-        assert_equal(a.frozen?, b.frozen?)
-        assert_equal(a.tainted?, b.tainted?)
-      end
+      assert_equal(a, b)
+      assert_not_same(a, b)
+      assert_equal(a.frozen?, b.frozen?)
     end
   end
 
@@ -451,18 +436,14 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_dup
-    for taint in [ false, true ]
-      for frozen in [ false, true ]
-        a = @h.dup
-        a.taint  if taint
-        a.freeze if frozen
-        b = a.dup
+    for frozen in [ false, true ]
+      a = @h.dup
+      a.freeze if frozen
+      b = a.dup
 
-        assert_equal(a, b)
-        assert_not_same(a, b)
-        assert_equal(false, b.frozen?)
-        assert_equal(a.tainted?, b.tainted?)
-      end
+      assert_equal(a, b)
+      assert_not_same(a, b)
+      assert_equal(false, b.frozen?)
     end
   end
 
@@ -712,10 +693,8 @@ class TestHash < Test::Unit::TestCase
 
     h.instance_variable_set(:@foo, :foo)
     h.default = 42
-    h.taint
     h = EnvUtil.suppress_warning {h.reject {false}}
     assert_instance_of(Hash, h)
-    assert_not_predicate(h, :tainted?)
     assert_nil(h.default)
     assert_not_send([h, :instance_variable_defined?, :@foo])
   end
@@ -840,11 +819,6 @@ class TestHash < Test::Unit::TestCase
     assert_equal([3,4], a.delete([3,4]))
     assert_equal([5,6], a.delete([5,6]))
     assert_equal(0, a.length)
-
-    h = @cls[ 1=>2, 3=>4, 5=>6 ]
-    h.taint
-    a = h.to_a
-    assert_equal(true, a.tainted?)
   end
 
   def test_to_hash
@@ -1037,10 +1011,8 @@ class TestHash < Test::Unit::TestCase
 
     h.instance_variable_set(:@foo, :foo)
     h.default = 42
-    h.taint
     h = h.select {true}
     assert_instance_of(Hash, h)
-    assert_not_predicate(h, :tainted?)
     assert_nil(h.default)
     assert_not_send([h, :instance_variable_defined?, :@foo])
   end
@@ -1083,10 +1055,8 @@ class TestHash < Test::Unit::TestCase
 
     h.instance_variable_set(:@foo, :foo)
     h.default = 42
-    h.taint
     h = h.filter {true}
     assert_instance_of(Hash, h)
-    assert_not_predicate(h, :tainted?)
     assert_nil(h.default)
     assert_not_send([h, :instance_variable_defined?, :@foo])
   end

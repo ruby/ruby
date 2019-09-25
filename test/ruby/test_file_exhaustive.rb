@@ -187,24 +187,6 @@ class TestFileExhaustive < Test::Unit::TestCase
     end
   end
 
-  def test_path_taint
-    [regular_file, utf8_file].each do |file|
-      file.untaint
-      assert_equal(false, File.open(file) {|f| f.path}.tainted?)
-      assert_equal(true, File.open(file.dup.taint) {|f| f.path}.tainted?)
-      o = Object.new
-      class << o; self; end.class_eval do
-        define_method(:to_path) { file }
-      end
-      assert_equal(false, File.open(o) {|f| f.path}.tainted?)
-      class << o; self; end.class_eval do
-        remove_method(:to_path)
-        define_method(:to_path) { file.dup.taint }
-      end
-      assert_equal(true, File.open(o) {|f| f.path}.tainted?)
-    end
-  end
-
   def assert_integer(n)
     assert_kind_of(Integer, n)
   end
@@ -1075,32 +1057,6 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_expand_path_converts_a_pathname_which_starts_with_a_slash_using_a_current_drive
     assert_match(%r"\A#{DRIVE}/foo\z"i, File.expand_path('/foo'))
-  end
-
-  def test_expand_path_returns_tainted_strings_or_not
-    assert_equal(true, File.expand_path('foo').tainted?)
-    assert_equal(true, File.expand_path('foo'.taint).tainted?)
-    assert_equal(true, File.expand_path('/foo'.taint).tainted?)
-    assert_equal(true, File.expand_path('foo', 'bar').tainted?)
-    assert_equal(true, File.expand_path('foo', '/bar'.taint).tainted?)
-    assert_equal(true, File.expand_path('foo'.taint, '/bar').tainted?)
-    assert_equal(true, File.expand_path('~').tainted?) if ENV["HOME"]
-
-    if DRIVE
-      assert_equal(true, File.expand_path('/foo').tainted?)
-      assert_equal(false, File.expand_path('//foo').tainted?)
-      assert_equal(true, File.expand_path('C:/foo'.taint).tainted?)
-      assert_equal(false, File.expand_path('C:/foo').tainted?)
-      assert_equal(true, File.expand_path('foo', '/bar').tainted?)
-      assert_equal(true, File.expand_path('foo', 'C:/bar'.taint).tainted?)
-      assert_equal(true, File.expand_path('foo'.taint, 'C:/bar').tainted?)
-      assert_equal(false, File.expand_path('foo', 'C:/bar').tainted?)
-      assert_equal(false, File.expand_path('C:/foo/../bar').tainted?)
-      assert_equal(false, File.expand_path('foo', '//bar').tainted?)
-    else
-      assert_equal(false, File.expand_path('/foo').tainted?)
-      assert_equal(false, File.expand_path('foo', '/bar').tainted?)
-    end
   end
 
   def test_expand_path_converts_a_pathname_to_an_absolute_pathname_using_home_as_base

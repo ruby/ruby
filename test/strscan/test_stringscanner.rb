@@ -16,20 +16,12 @@ class TestStringScanner < Test::Unit::TestCase
     s = create_string_scanner('test string')
     assert_instance_of StringScanner, s
     assert_equal false, s.eos?
-    assert_equal false, s.tainted?
 
     str = 'test string'.dup
-    str.taint
     s = create_string_scanner(str, false)
     assert_instance_of StringScanner, s
     assert_equal false, s.eos?
     assert_same str, s.string
-    assert_equal true, s.string.tainted?
-
-    str = 'test string'.dup
-    str.taint
-    s = create_string_scanner(str)
-    assert_equal true, s.string.tainted?
   end
 
   UNINIT_ERROR = ArgumentError
@@ -101,14 +93,12 @@ class TestStringScanner < Test::Unit::TestCase
 
   def test_inspect
     str = 'test string'.dup
-    str.taint
     s = create_string_scanner(str, false)
     assert_instance_of String, s.inspect
     assert_equal s.inspect, s.inspect
     assert_equal '#<StringScanner 0/11 @ "test ...">', s.inspect.sub(/StringScanner_C/, 'StringScanner')
     s.get_byte
     assert_equal '#<StringScanner 1/11 "t" @ "est s...">', s.inspect.sub(/StringScanner_C/, 'StringScanner')
-    assert_equal true, s.inspect.tainted?
 
     s = create_string_scanner("\n")
     assert_equal '#<StringScanner 0/1 @ "\n">', s.inspect
@@ -233,40 +223,33 @@ class TestStringScanner < Test::Unit::TestCase
     s = create_string_scanner('stra strb strc', true)
     tmp = s.scan(/\w+/)
     assert_equal 'stra', tmp
-    assert_equal false, tmp.tainted?
 
     tmp = s.scan(/\s+/)
     assert_equal ' ', tmp
-    assert_equal false, tmp.tainted?
 
     assert_equal 'strb', s.scan(/\w+/)
     assert_equal ' ',    s.scan(/\s+/)
 
     tmp = s.scan(/\w+/)
     assert_equal 'strc', tmp
-    assert_equal false, tmp.tainted?
 
     assert_nil           s.scan(/\w+/)
     assert_nil           s.scan(/\w+/)
 
 
     str = 'stra strb strc'.dup
-    str.taint
     s = create_string_scanner(str, false)
     tmp = s.scan(/\w+/)
     assert_equal 'stra', tmp
-    assert_equal true, tmp.tainted?
 
     tmp = s.scan(/\s+/)
     assert_equal ' ', tmp
-    assert_equal true, tmp.tainted?
 
     assert_equal 'strb', s.scan(/\w+/)
     assert_equal ' ',    s.scan(/\s+/)
 
     tmp = s.scan(/\w+/)
     assert_equal 'strc', tmp
-    assert_equal true, tmp.tainted?
 
     assert_nil           s.scan(/\w+/)
     assert_nil           s.scan(/\w+/)
@@ -291,15 +274,12 @@ class TestStringScanner < Test::Unit::TestCase
     assert_equal 'str', s.scan('str')
     assert_equal 'str', s[0]
     assert_equal 3, s.pos
-    assert_equal false, s.tainted?
     assert_equal 'a ', s.scan('a ')
 
     str = 'stra strb strc'.dup
-    str.taint
     s = create_string_scanner(str, false)
     matched = s.scan('str')
     assert_equal 'str', matched
-    assert_equal true, matched.tainted?
   end
 
   def test_skip
@@ -346,14 +326,6 @@ class TestStringScanner < Test::Unit::TestCase
     assert_equal 'e', s.getch
     assert_nil        s.getch
 
-    str = 'abc'.dup
-    str.taint
-    s = create_string_scanner(str)
-    assert_equal true, s.getch.tainted?
-    assert_equal true, s.getch.tainted?
-    assert_equal true, s.getch.tainted?
-    assert_nil s.getch
-
     s = create_string_scanner("\244\242".dup.force_encoding("euc-jp"))
     assert_equal "\244\242".dup.force_encoding("euc-jp"), s.getch
     assert_nil s.getch
@@ -374,14 +346,6 @@ class TestStringScanner < Test::Unit::TestCase
     assert_nil        s.get_byte
     assert_nil        s.get_byte
 
-    str = 'abc'.dup
-    str.taint
-    s = create_string_scanner(str)
-    assert_equal true, s.get_byte.tainted?
-    assert_equal true, s.get_byte.tainted?
-    assert_equal true, s.get_byte.tainted?
-    assert_nil s.get_byte
-
     s = create_string_scanner("\244\242".dup.force_encoding("euc-jp"))
     assert_equal "\244".dup.force_encoding("euc-jp"), s.get_byte
     assert_equal "\242".dup.force_encoding("euc-jp"), s.get_byte
@@ -397,7 +361,6 @@ class TestStringScanner < Test::Unit::TestCase
     s = create_string_scanner('stra strb strc')
     s.scan(/\w+/)
     assert_equal 'stra', s.matched
-    assert_equal false, s.matched.tainted?
     s.scan(/\s+/)
     assert_equal ' ', s.matched
     s.scan('st')
@@ -416,18 +379,9 @@ class TestStringScanner < Test::Unit::TestCase
     s = create_string_scanner('stra strb strc')
     s.getch
     assert_equal 's', s.matched
-    assert_equal false, s.matched.tainted?
     s.get_byte
     assert_equal 't', s.matched
     assert_equal 't', s.matched
-    assert_equal false, s.matched.tainted?
-
-    str = 'test'.dup
-    str.taint
-    s = create_string_scanner(str)
-    s.scan(/\w+/)
-    assert_equal true, s.matched.tainted?
-    assert_equal true, s.matched.tainted?
   end
 
   def test_AREF
@@ -440,9 +394,6 @@ class TestStringScanner < Test::Unit::TestCase
     assert_nil           s[1]
     assert_raise(IndexError) { s[:c] }
     assert_raise(IndexError) { s['c'] }
-
-    assert_equal false,  s[-1].tainted?
-    assert_equal false,  s[0].tainted?
 
     s.skip(/\s+/)
     assert_nil           s[-2]
@@ -486,16 +437,6 @@ class TestStringScanner < Test::Unit::TestCase
     s.getch
     assert_equal "\244\242".dup.force_encoding("euc-jp"), s[0]
 
-    str = 'test'.dup
-    str.taint
-    s = create_string_scanner(str)
-    s.scan(/(t)(e)(s)(t)/)
-    assert_equal true, s[0].tainted?
-    assert_equal true, s[1].tainted?
-    assert_equal true, s[2].tainted?
-    assert_equal true, s[3].tainted?
-    assert_equal true, s[4].tainted?
-
     s = create_string_scanner("foo bar baz")
     s.scan(/(?<a>\w+) (?<b>\w+) (\w+)/)
     assert_equal 'foo', s[1]
@@ -514,10 +455,8 @@ class TestStringScanner < Test::Unit::TestCase
     s = create_string_scanner('a b c d e')
     s.scan(/\w/)
     assert_equal '', s.pre_match
-    assert_equal false, s.pre_match.tainted?
     s.skip(/\s/)
     assert_equal 'a', s.pre_match
-    assert_equal false, s.pre_match.tainted?
     s.scan('b')
     assert_equal 'a ', s.pre_match
     s.scan_until(/c/)
@@ -530,16 +469,6 @@ class TestStringScanner < Test::Unit::TestCase
     assert_equal 'a b c d', s.pre_match
     s.scan(/never match/)
     assert_nil s.pre_match
-
-    str = 'test string'.dup
-    str.taint
-    s = create_string_scanner(str)
-    s.scan(/\w+/)
-    assert_equal true, s.pre_match.tainted?
-    s.scan(/\s+/)
-    assert_equal true, s.pre_match.tainted?
-    s.scan(/\w+/)
-    assert_equal true, s.pre_match.tainted?
   end
 
   def test_post_match
@@ -564,16 +493,6 @@ class TestStringScanner < Test::Unit::TestCase
     assert_equal '', s.post_match
     s.scan(/./)
     assert_nil s.post_match
-
-    str = 'test string'.dup
-    str.taint
-    s = create_string_scanner(str)
-    s.scan(/\w+/)
-    assert_equal true, s.post_match.tainted?
-    s.scan(/\s+/)
-    assert_equal true, s.post_match.tainted?
-    s.scan(/\w+/)
-    assert_equal true, s.post_match.tainted?
   end
 
   def test_terminate

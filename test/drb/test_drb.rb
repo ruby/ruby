@@ -103,15 +103,6 @@ module DRbYield
     @there.xarray_each {|x| assert_kind_of(XArray, x)}
     @there.xarray_each {|*x| assert_kind_of(XArray, x[0])}
   end
-
-  def test_06_taint
-    x = proc {}
-    assert_not_predicate(x, :tainted?)
-    @there.echo_yield(x) {|o|
-      assert_equal(x, o)
-      assert_not_predicate(x, :tainted?)
-    }
-  end
 end
 
 class TestDRbYield < Test::Unit::TestCase

@@ -262,7 +262,7 @@ const struct st_hash_type rb_fstring_hash_type = {
     rb_str_hash,
 };
 
-#define BARE_STRING_P(str) (!FL_ANY_RAW(str, FL_TAINT|FL_EXIVAR) && RBASIC_CLASS(str) == rb_cString)
+#define BARE_STRING_P(str) (!FL_ANY_RAW(str, FL_EXIVAR) && RBASIC_CLASS(str) == rb_cString)
 
 static int
 fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
@@ -359,7 +359,6 @@ register_fstring(VALUE str)
     assert(OBJ_FROZEN(ret));
     assert(!FL_TEST_RAW(ret, STR_FAKESTR));
     assert(!FL_TEST_RAW(ret, FL_EXIVAR));
-    assert(!FL_TEST_RAW(ret, FL_TAINT));
     assert(RBASIC_CLASS(ret) == rb_cString);
     return ret;
 }
@@ -896,28 +895,22 @@ rb_enc_str_new_static(const char *ptr, long len, rb_encoding *enc)
 VALUE
 rb_tainted_str_new(const char *ptr, long len)
 {
-    VALUE str = rb_str_new(ptr, len);
-
-    OBJ_TAINT(str);
-    return str;
+    rb_warning("rb_tainted_str_new is deprecated and will be removed in Ruby 3.2.");
+    return rb_str_new(ptr, len);
 }
 
 static VALUE
 rb_tainted_str_new_with_enc(const char *ptr, long len, rb_encoding *enc)
 {
-    VALUE str = rb_enc_str_new(ptr, len, enc);
-
-    OBJ_TAINT(str);
-    return str;
+    rb_warning("rb_tainted_str_new_with_enc is deprecated and will be removed in Ruby 3.2.");
+    return rb_enc_str_new(ptr, len, enc);
 }
 
 VALUE
 rb_tainted_str_new_cstr(const char *ptr)
 {
-    VALUE str = rb_str_new_cstr(ptr);
-
-    OBJ_TAINT(str);
-    return str;
+    rb_warning("rb_tainted_str_new_cstr is deprecated and will be removed in Ruby 3.2.");
+    return rb_str_new_cstr(ptr);
 }
 
 static VALUE str_cat_conv_enc_opts(VALUE newstr, long ofs, const char *ptr, long len,
@@ -950,7 +943,6 @@ rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags,
 	/* some error, return original */
 	return str;
     }
-    OBJ_INFECT(newstr, str);
     return newstr;
 }
 
@@ -1055,28 +1047,28 @@ rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *eenc)
     const int eidx = rb_enc_to_index(eenc);
 
     if (!ptr) {
-	return rb_tainted_str_new_with_enc(ptr, len, eenc);
+        return rb_enc_str_new(ptr, len, eenc);
     }
 
     /* ASCII-8BIT case, no conversion */
     if ((eidx == rb_ascii8bit_encindex()) ||
 	(eidx == rb_usascii_encindex() && search_nonascii(ptr, ptr + len))) {
-	return rb_tainted_str_new(ptr, len);
+        return rb_str_new(ptr, len);
     }
     /* no default_internal or same encoding, no conversion */
     ienc = rb_default_internal_encoding();
     if (!ienc || eenc == ienc) {
-	return rb_tainted_str_new_with_enc(ptr, len, eenc);
+        return rb_enc_str_new(ptr, len, eenc);
     }
     /* ASCII compatible, and ASCII only string, no conversion in
      * default_internal */
     if ((eidx == rb_ascii8bit_encindex()) ||
 	(eidx == rb_usascii_encindex()) ||
 	(rb_enc_asciicompat(eenc) && !search_nonascii(ptr, ptr + len))) {
-	return rb_tainted_str_new_with_enc(ptr, len, ienc);
+        return rb_enc_str_new(ptr, len, ienc);
     }
     /* convert from the given encoding to default_internal */
-    str = rb_tainted_str_new_with_enc(NULL, 0, ienc);
+    str = rb_enc_str_new(NULL, 0, ienc);
     /* when the conversion failed for some reason, just ignore the
      * default_internal and result in the given encoding as-is. */
     if (NIL_P(rb_str_cat_conv_enc_opts(str, 0, ptr, len, eenc, 0, Qnil))) {
@@ -1211,35 +1203,21 @@ str_new_shared(VALUE klass, VALUE str)
 VALUE
 rb_str_new_shared(VALUE str)
 {
-    VALUE str2 = str_new_shared(rb_obj_class(str), str);
-
-    OBJ_INFECT(str2, str);
-    return str2;
+    return str_new_shared(rb_obj_class(str), str);
 }
 
 VALUE
 rb_str_new_frozen(VALUE orig)
 {
-    VALUE str;
-
     if (OBJ_FROZEN(orig)) return orig;
-
-    str = str_new_frozen(rb_obj_class(orig), orig);
-    OBJ_INFECT(str, orig);
-    return str;
+    return str_new_frozen(rb_obj_class(orig), orig);
 }
 
 VALUE
 rb_str_tmp_frozen_acquire(VALUE orig)
 {
-    VALUE tmp;
-
     if (OBJ_FROZEN_RAW(orig)) return orig;
-
-    tmp = str_new_frozen(0, orig);
-    OBJ_INFECT(tmp, orig);
-
-    return tmp;
+    return str_new_frozen(0, orig);
 }
 
 void
@@ -1286,7 +1264,6 @@ str_new_frozen(VALUE klass, VALUE orig)
 
 	    if ((ofs > 0) || (rest > 0) ||
 		(klass != RBASIC(shared)->klass) ||
-		((RBASIC(shared)->flags ^ RBASIC(orig)->flags) & FL_TAINT) ||
 		ENCODING_GET(shared) != ENCODING_GET(orig)) {
 		str = str_new_shared(klass, shared);
 		RSTRING(str)->as.heap.ptr += ofs;
@@ -1335,7 +1312,6 @@ str_new_empty(VALUE str)
 {
     VALUE v = rb_str_new_with_class(str, 0, 0);
     rb_enc_copy(v, str);
-    OBJ_INFECT(v, str);
     return v;
 }
 
@@ -1435,7 +1411,6 @@ str_shared_replace(VALUE str, VALUE str2)
     enc = STR_ENC_GET(str2);
     cr = ENC_CODERANGE(str2);
     str_discard(str);
-    OBJ_INFECT(str, str2);
     termlen = rb_enc_mbminlen(enc);
 
     if (STR_EMBEDDABLE_P(RSTRING_LEN(str2), termlen)) {
@@ -1485,9 +1460,6 @@ rb_obj_as_string_result(VALUE str, VALUE obj)
 {
     if (!RB_TYPE_P(str, T_STRING))
 	return rb_any_to_s(obj);
-    if (!FL_TEST_RAW(str, RSTRING_FSTR) && FL_ABLE(obj))
-	/* fstring must not be tainted, at least */
-	OBJ_INFECT_RAW(str, obj);
     return str;
 }
 
@@ -1510,7 +1482,6 @@ str_replace(VALUE str, VALUE str2)
 	str_replace_shared(str, str2);
     }
 
-    OBJ_INFECT(str, str2);
     return str;
 }
 
@@ -1521,7 +1492,7 @@ str_duplicate(VALUE klass, VALUE str)
     const VALUE flag_mask =
 	RSTRING_NOEMBED | RSTRING_EMBED_LEN_MASK |
 	ENC_CODERANGE_MASK | ENCODING_MASK |
-	FL_TAINT | FL_FREEZE
+        FL_FREEZE
 	;
     VALUE flags = FL_TEST_RAW(str, flag_mask);
     VALUE dup = str_alloc(klass);
@@ -1533,7 +1504,6 @@ str_duplicate(VALUE klass, VALUE str)
         }
         else if (UNLIKELY(!(flags & FL_FREEZE))) {
             str = str_new_frozen(klass, str);
-            FL_SET_RAW(str, flags & FL_TAINT);
             flags = FL_TEST_RAW(str, flag_mask);
 	}
 	if (flags & STR_NOEMBED) {
@@ -1950,7 +1920,6 @@ rb_str_plus(VALUE str1, VALUE str2)
     memcpy(ptr3+len1, ptr2, len2);
     TERM_FILL(&ptr3[len1+len2], termlen);
 
-    FL_SET_RAW(str3, OBJ_TAINTED_RAW(str1) | OBJ_TAINTED_RAW(str2));
     ENCODING_CODERANGE_SET(str3, rb_enc_to_index(enc),
 			   ENC_CODERANGE_AND(ENC_CODERANGE(str1), ENC_CODERANGE(str2)));
     RB_GC_GUARD(str1);
@@ -2014,7 +1983,6 @@ rb_str_times(VALUE str, VALUE times)
     if (times == INT2FIX(0)) {
 	str2 = str_alloc(rb_obj_class(str));
 	rb_enc_copy(str2, str);
-	OBJ_INFECT(str2, str);
 	return str2;
     }
     len = NUM2LONG(times);
@@ -2030,7 +1998,6 @@ rb_str_times(VALUE str, VALUE times)
        }
        STR_SET_LEN(str2, len);
        rb_enc_copy(str2, str);
-       OBJ_INFECT(str2, str);
        return str2;
     }
     if (len && LONG_MAX/len <  RSTRING_LEN(str)) {
@@ -2052,7 +2019,6 @@ rb_str_times(VALUE str, VALUE times)
     }
     STR_SET_LEN(str2, len);
     TERM_FILL(&ptr2[len], termlen);
-    OBJ_INFECT(str2, str);
     rb_enc_cr_str_copy_for_substr(str2, str);
 
     return str2;
@@ -2530,7 +2496,6 @@ rb_str_subseq(VALUE str, long beg, long len)
     }
 
     rb_enc_cr_str_copy_for_substr(str2, str);
-    OBJ_INFECT(str2, str);
 
     return str2;
 }
@@ -2647,7 +2612,6 @@ str_substr(VALUE str, long beg, long len, int empty)
     else {
 	if (!len && !empty) return Qnil;
 	str2 = rb_str_new_with_class(str, p, len);
-	OBJ_INFECT(str2, str);
 	RB_GC_GUARD(str);
     }
     rb_enc_cr_str_copy_for_substr(str2, str);
@@ -2689,8 +2653,8 @@ str_uplus(VALUE str)
  *
  * Returns a frozen, possibly pre-existing copy of the string.
  *
- * The string will be deduplicated as long as it is not tainted,
- * or has any instance variables set on it.
+ * The string will be deduplicated as long as it does not have
+ * any instance variables set on it.
  */
 static VALUE
 str_uminus(VALUE str)
@@ -2999,7 +2963,6 @@ rb_str_buf_append(VALUE str, VALUE str2)
     rb_enc_cr_str_buf_cat(str, RSTRING_PTR(str2), RSTRING_LEN(str2),
         ENCODING_GET(str2), str2_cr, &str2_cr);
 
-    OBJ_INFECT(str, str2);
     ENC_CODERANGE_SET(str2, str2_cr);
 
     return str;
@@ -3041,7 +3004,6 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
 
 	rb_enc_cr_str_buf_cat(str, RSTRING_PTR(v), RSTRING_LEN(v),
 			      encidx, ENC_CODERANGE(v), NULL);
-	OBJ_INFECT_RAW(str, v);
 	if (encidx != ENCINDEX_US_ASCII) {
 	    if (ENCODING_GET_INLINED(str) == ENCINDEX_US_ASCII)
 		rb_enc_set_index(str, encidx);
@@ -4137,7 +4099,6 @@ rb_str_succ(VALUE orig)
     VALUE str;
     str = rb_str_new_with_class(orig, RSTRING_PTR(orig), RSTRING_LEN(orig));
     rb_enc_cr_str_copy_for_substr(str, orig);
-    OBJ_INFECT(str, orig);
     return str_succ(str);
 }
 
@@ -4652,7 +4613,6 @@ rb_str_splice_0(VALUE str, long beg, long len, VALUE val)
 
     if (beg == 0 && vlen == 0) {
 	rb_str_drop_bytes(str, len);
-	OBJ_INFECT(str, val);
 	return;
     }
 
@@ -4683,7 +4643,6 @@ rb_str_splice_0(VALUE str, long beg, long len, VALUE val)
     slen += vlen - len;
     STR_SET_LEN(str, slen);
     TERM_FILL(&sptr[slen], TERM_LEN(str));
-    OBJ_INFECT(str, val);
     ENC_CODERANGE_SET(str, cr);
 }
 
@@ -4989,7 +4948,6 @@ rb_pat_search(VALUE pat, VALUE str, long pos, int set_backref_str)
 		str = rb_str_new_frozen(str);
 		rb_backref_set_string(str, pos, RSTRING_LEN(pat));
 		match = rb_backref_get();
-		OBJ_INFECT(match, pat);
 	    }
 	    else {
 		rb_backref_set(Qnil);
@@ -5019,7 +4977,6 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 {
     VALUE pat, repl, hash = Qnil;
     int iter = 0;
-    int tainted = 0;
     long plen;
     int min_arity = rb_block_given_p() ? 1 : 2;
     long beg;
@@ -5034,7 +4991,6 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	if (NIL_P(hash)) {
 	    StringValue(repl);
 	}
-	tainted = OBJ_TAINTED_RAW(repl);
     }
 
     pat = get_pat_quoted(argv[0], 1);
@@ -5094,7 +5050,6 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
         }
 	rb_str_modify(str);
 	rb_enc_associate(str, enc);
-	tainted |= OBJ_TAINTED_RAW(repl);
 	if (ENC_CODERANGE_UNKNOWN < cr && cr < ENC_CODERANGE_BROKEN) {
 	    int cr2 = ENC_CODERANGE(repl);
             if (cr2 == ENC_CODERANGE_BROKEN ||
@@ -5119,7 +5074,6 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	STR_SET_LEN(str, len);
 	TERM_FILL(&RSTRING_PTR(str)[len], TERM_LEN(str));
 	ENC_CODERANGE_SET(str, cr);
-	FL_SET_RAW(str, tainted);
 
 	return str;
     }
@@ -5162,9 +5116,6 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
  *  The value returned by the block will be substituted for the match on each
  *  call.
  *
- *  The result inherits any tainting in the original string or any supplied
- *  replacement string.
- *
  *     "hello".sub(/[aeiou]/, '*')                  #=> "h*llo"
  *     "hello".sub(/([aeiou])/, '<\1>')             #=> "h<e>llo"
  *     "hello".sub(/./) {|s| s.ord.to_s + ' ' }     #=> "104 ello"
@@ -5203,7 +5154,6 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     long offset, blen, slen, len, last;
     enum {STR, ITER, MAP} mode = STR;
     char *sp, *cp;
-    int tainted = 0;
     int need_backref = -1;
     rb_encoding *str_enc;
 
@@ -5221,7 +5171,6 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	else {
 	    mode = MAP;
 	}
-	tainted = OBJ_TAINTED_RAW(repl);
 	break;
       default:
         rb_error_arity(argc, 1, 2);
@@ -5281,8 +5230,6 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	    val = repl;
 	}
 
-	tainted |= OBJ_TAINTED_RAW(val);
-
 	len = beg0 - offset;	/* copy pre-match substr */
         if (len) {
             rb_enc_str_buf_cat(dest, cp, len, str_enc);
@@ -5315,11 +5262,9 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     }
     else {
 	RBASIC_SET_CLASS(dest, rb_obj_class(str));
-	tainted |= OBJ_TAINTED_RAW(str);
 	str = dest;
     }
 
-    FL_SET_RAW(str, tainted);
     return str;
 }
 
@@ -5382,9 +5327,6 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
  *  The value returned by the block will be substituted for the match on each
  *  call.
  *
- *  The result inherits any tainting in the original string or any supplied
- *  replacement string.
- *
  *  When neither a block nor a second argument is supplied, an
  *  Enumerator is returned.
  *
@@ -5419,7 +5361,7 @@ rb_str_gsub(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *     str.replace(other_str)   -> str
  *
- *  Replaces the contents and taintedness of <i>str</i> with the corresponding
+ *  Replaces the contents of <i>str</i> with the corresponding
  *  values in <i>other_str</i>.
  *
  *     s = "hello"         #=> "hello"
@@ -5609,8 +5551,6 @@ str_byte_substr(VALUE str, long beg, long len, int empty)
 	}
     }
 
-    OBJ_INFECT_RAW(str2, str);
-
     return str2;
 }
 
@@ -5727,7 +5667,6 @@ rb_str_reverse(VALUE str)
 	}
     }
     STR_SET_LEN(rev, RSTRING_LEN(str));
-    OBJ_INFECT_RAW(rev, str);
     str_enc_copy(rev, str);
     ENC_CODERANGE_SET(rev, cr);
 
@@ -5981,7 +5920,6 @@ rb_str_escape(VALUE str)
     if (p > prev) str_buf_cat(result, prev, p - prev);
     ENCODING_CODERANGE_SET(result, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
 
-    OBJ_INFECT_RAW(result, str);
     return result;
 }
 
@@ -6088,7 +6026,6 @@ rb_str_inspect(VALUE str)
     if (p > prev) str_buf_cat(result, prev, p - prev);
     str_buf_cat2(result, "\"");
 
-    OBJ_INFECT_RAW(result, str);
     return result;
 }
 
@@ -6251,7 +6188,6 @@ rb_str_dump(VALUE str)
 	snprintf(q, qend-q, nonascii_suffix, enc->name);
 	encidx = rb_ascii8bit_encindex();
     }
-    OBJ_INFECT_RAW(result, str);
     /* result from dump is ASCII */
     rb_enc_associate_index(result, encidx);
     ENC_CODERANGE_SET(result, ENC_CODERANGE_7BIT);
@@ -6486,7 +6422,6 @@ str_undump(VALUE str)
 	}
     }
 
-    OBJ_INFECT(undumped, str);
     return undumped;
 invalid_format:
     rb_raise(rb_eRuntimeError, "invalid dumped string; not wrapped with '\"' nor '\"...\".force_encoding(\"...\")' form");
@@ -6656,7 +6591,6 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
     mapping_buffer_free(current_buffer);
 
     /* TODO: check about string terminator character */
-    OBJ_INFECT_RAW(target, source);
     str_enc_copy(target, source);
     /*ENC_CODERANGE_SET(mapped, cr);*/
 
@@ -6696,7 +6630,6 @@ rb_str_ascii_casemap(VALUE source, VALUE target, OnigCaseFoldType *flags, rb_enc
 		 "; old_length=%ld, new_length=%d\n", old_length, length_or_invalid);
     }
 
-    OBJ_INFECT_RAW(target, source);
     str_enc_copy(target, source);
 
     return target;
@@ -6778,7 +6711,6 @@ rb_str_upcase(int argc, VALUE *argv, VALUE str)
     enc = str_true_enc(str);
     if (case_option_single_p(flags, enc, str)) {
         ret = rb_str_new_with_class(str, RSTRING_PTR(str), RSTRING_LEN(str));
-        OBJ_INFECT_RAW(ret, str);
         str_enc_copy(ret, str);
         upcase_single(ret);
     }
@@ -6907,7 +6839,6 @@ rb_str_downcase(int argc, VALUE *argv, VALUE str)
     enc = str_true_enc(str);
     if (case_option_single_p(flags, enc, str)) {
         ret = rb_str_new_with_class(str, RSTRING_PTR(str), RSTRING_LEN(str));
-        OBJ_INFECT_RAW(ret, str);
         str_enc_copy(ret, str);
         downcase_single(ret);
     }
@@ -9348,7 +9279,6 @@ scan_once(VALUE str, VALUE pat, long *start, int set_backref_str)
 	}
 	if (!regs || regs->num_regs == 1) {
 	    result = rb_str_subseq(str, pos, end - pos);
-	    OBJ_INFECT(result, pat);
 	    return result;
 	}
 	result = rb_ary_new2(regs->num_regs);
@@ -9356,7 +9286,6 @@ scan_once(VALUE str, VALUE pat, long *start, int set_backref_str)
 	    VALUE s = Qnil;
 	    if (BEG(i) >= 0) {
 		s = rb_str_subseq(str, BEG(i), END(i)-BEG(i));
-		OBJ_INFECT(s, pat);
 	    }
 	    rb_ary_push(result, s);
 	}
@@ -9590,7 +9519,6 @@ rb_str_crypt(VALUE str, VALUE salt)
     }
     result = rb_str_new_cstr(res);
     CRYPT_END();
-    FL_SET_RAW(result, OBJ_TAINTED_RAW(str) | OBJ_TAINTED_RAW(salt));
     return result;
 }
 
@@ -9758,8 +9686,6 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
     }
     TERM_FILL(p, termlen);
     STR_SET_LEN(res, p-RSTRING_PTR(res));
-    OBJ_INFECT_RAW(res, str);
-    if (!NIL_P(pad)) OBJ_INFECT_RAW(res, pad);
     rb_enc_associate(res, enc);
     if (argc == 2)
 	cr = ENC_CODERANGE_AND(cr, ENC_CODERANGE(pad));
@@ -10209,7 +10135,6 @@ rb_str_b(VALUE str)
 {
     VALUE str2 = str_alloc(rb_cString);
     str_replace_shared_without_enc(str2, str);
-    OBJ_INFECT_RAW(str2, str);
     ENC_CODERANGE_CLEAR(str2);
     return str2;
 }
@@ -10354,7 +10279,6 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
     VALUE buf = Qnil;
     const char *rep, *p, *e, *p1, *sp;
     long replen = -1;
-    int tainted = 0;
     long slen;
 
     if (rb_block_given_p()) {
@@ -10368,7 +10292,6 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
 
     if (!NIL_P(repl)) {
 	repl = str_compat_and_valid(repl, enc);
-	tainted = OBJ_TAINTED_RAW(repl);
     }
 
     if (rb_enc_dummy_p(enc)) {
@@ -10454,7 +10377,6 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
 		    repl = rb_yield(rb_enc_str_new(p, clen, enc));
                     str_mod_check(str, sp, slen);
 		    repl = str_compat_and_valid(repl, enc);
-		    tainted |= OBJ_TAINTED_RAW(repl);
 		    rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
 		    if (ENC_CODERANGE(repl) == ENC_CODERANGE_VALID)
 			cr = ENC_CODERANGE_VALID;
@@ -10490,7 +10412,6 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
 		repl = rb_yield(rb_enc_str_new(p, e-p, enc));
                 str_mod_check(str, sp, slen);
 		repl = str_compat_and_valid(repl, enc);
-		tainted |= OBJ_TAINTED_RAW(repl);
 		rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
 		if (ENC_CODERANGE(repl) == ENC_CODERANGE_VALID)
 		    cr = ENC_CODERANGE_VALID;
@@ -10557,7 +10478,6 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
 		    repl = rb_yield(rb_enc_str_new(p, clen, enc));
                     str_mod_check(str, sp, slen);
 		    repl = str_compat_and_valid(repl, enc);
-		    tainted |= OBJ_TAINTED_RAW(repl);
 		    rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
 		}
 		p += clen;
@@ -10585,13 +10505,11 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
 		repl = rb_yield(rb_enc_str_new(p, e-p, enc));
                 str_mod_check(str, sp, slen);
 		repl = str_compat_and_valid(repl, enc);
-		tainted |= OBJ_TAINTED_RAW(repl);
 		rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
 	    }
 	}
 	cr = ENC_CODERANGE_VALID;
     }
-    FL_SET_RAW(buf, tainted|OBJ_TAINTED_RAW(str));
     ENCODING_CODERANGE_SET(buf, rb_enc_to_index(enc), cr);
     return buf;
 }

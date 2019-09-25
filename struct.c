@@ -250,7 +250,6 @@ static void
 rb_struct_modify(VALUE s)
 {
     rb_check_frozen(s);
-    rb_check_trusted(s);
 }
 
 static VALUE
@@ -872,7 +871,6 @@ inspect_struct(VALUE s, VALUE dummy, int recur)
 	rb_str_append(str, rb_inspect(RSTRUCT_GET(s, i)));
     }
     rb_str_cat2(str, ">");
-    OBJ_INFECT(str, s);
 
     return str;
 }

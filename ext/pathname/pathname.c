@@ -110,7 +110,6 @@ path_initialize(VALUE self, VALUE arg)
     str = rb_obj_dup(str);
 
     set_strpath(self, str);
-    OBJ_INFECT(self, str);
     return self;
 }
 
@@ -134,15 +133,12 @@ path_freeze(VALUE self)
  * call-seq:
  *   pathname.taint -> obj
  *
- * Taints this Pathname.
- *
- * See Object.taint.
+ * Returns pathname.  This method is deprecated and will be removed in Ruby 3.2.
  */
 static VALUE
 path_taint(VALUE self)
 {
-    rb_call_super(0, 0);
-    rb_obj_taint(get_strpath(self));
+    rb_warning("Pathname#taint is deprecated and will be removed in Ruby 3.2.");
     return self;
 }
 
@@ -150,15 +146,12 @@ path_taint(VALUE self)
  * call-seq:
  *   pathname.untaint -> obj
  *
- * Untaints this Pathname.
- *
- * See Object.untaint.
+ * Returns pathname.  This method is deprecated and will be removed in Ruby 3.2.
  */
 static VALUE
 path_untaint(VALUE self)
 {
-    rb_call_super(0, 0);
-    rb_obj_untaint(get_strpath(self));
+    rb_warning("Pathname#untaint is deprecated and will be removed in Ruby 3.2.");
     return self;
 }
 
@@ -308,7 +301,6 @@ path_sub_ext(VALUE self, VALUE repl)
     }
     str2 = rb_str_subseq(str, 0, ext-p);
     rb_str_append(str2, repl);
-    OBJ_INFECT(str2, str);
     return rb_class_new_instance(1, &str2, rb_obj_class(self));
 }
 

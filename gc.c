@@ -3288,9 +3288,6 @@ static VALUE
 run_single_final(VALUE final, VALUE objid)
 {
     const VALUE cmd = RARRAY_AREF(final, 1);
-    const int level = OBJ_TAINTED(cmd) ?
-	RUBY_SAFE_LEVEL_MAX : FIX2INT(RARRAY_AREF(final, 0));
-
     return rb_check_funcall(cmd, idCall, 1, &objid);
 }
 
@@ -10486,8 +10483,6 @@ wmap_inspect_i(st_data_t key, st_data_t val, st_data_t arg)
     rb_str_cat2(str, " => ");
     v = SPECIAL_CONST_P(v) ? rb_inspect(v) : rb_any_to_s(v);
     rb_str_append(str, v);
-    OBJ_INFECT(str, k);
-    OBJ_INFECT(str, v);
 
     return ST_CONTINUE;
 }

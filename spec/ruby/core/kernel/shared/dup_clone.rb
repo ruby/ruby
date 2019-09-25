@@ -52,14 +52,16 @@ describe :kernel_dup_clone, shared: true do
     o2.original.should equal(o)
   end
 
-  it "preserves tainted state from the original" do
-    o = ObjectSpecDupInitCopy.new
-    o2 = o.send(@method)
-    o.taint
-    o3 = o.send(@method)
+  ruby_version_is ''...'2.7' do
+    it "preserves tainted state from the original" do
+      o = ObjectSpecDupInitCopy.new
+      o2 = o.send(@method)
+      o.taint
+      o3 = o.send(@method)
 
-    o2.tainted?.should == false
-    o3.tainted?.should == true
+      o2.tainted?.should == false
+      o3.tainted?.should == true
+    end
   end
 
   it "does not preserve the object_id" do
@@ -69,14 +71,16 @@ describe :kernel_dup_clone, shared: true do
     o2.object_id.should_not == old_object_id
   end
 
-  it "preserves untrusted state from the original" do
-    o = ObjectSpecDupInitCopy.new
-    o2 = o.send(@method)
-    o.untrust
-    o3 = o.send(@method)
+  ruby_version_is ''...'2.7' do
+    it "preserves untrusted state from the original" do
+      o = ObjectSpecDupInitCopy.new
+      o2 = o.send(@method)
+      o.untrust
+      o3 = o.send(@method)
 
-    o2.untrusted?.should == false
-    o3.untrusted?.should == true
+      o2.untrusted?.should == false
+      o3.untrusted?.should == true
+    end
   end
 
   it "returns nil for NilClass" do

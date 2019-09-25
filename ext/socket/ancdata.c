@@ -1631,10 +1631,9 @@ bsock_recvmsg_internal(VALUE sock,
     }
 
     if (NIL_P(dat_str))
-        dat_str = rb_tainted_str_new(datbuf, ss);
+        dat_str = rb_str_new(datbuf, ss);
     else {
         rb_str_resize(dat_str, ss);
-        OBJ_TAINT(dat_str);
 	rb_obj_reveal(dat_str, rb_cString);
     }
 
@@ -1660,7 +1659,7 @@ bsock_recvmsg_internal(VALUE sock,
             }
             ctl_end = (char*)cmh + cmh->cmsg_len;
 	    clen = (ctl_end <= msg_end ? ctl_end : msg_end) - (char*)CMSG_DATA(cmh);
-            ctl = ancdata_new(family, cmh->cmsg_level, cmh->cmsg_type, rb_tainted_str_new((char*)CMSG_DATA(cmh), clen));
+            ctl = ancdata_new(family, cmh->cmsg_level, cmh->cmsg_type, rb_str_new((char*)CMSG_DATA(cmh), clen));
             if (request_scm_rights)
                 make_io_for_unix_rights(ctl, cmh, msg_end);
             else

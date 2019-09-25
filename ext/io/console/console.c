@@ -1483,6 +1483,7 @@ prompt(int argc, VALUE *argv, VALUE io)
     if (argc > 0 && !NIL_P(argv[0])) {
 	VALUE str = argv[0];
 	StringValueCStr(str);
+	rb_check_safe_obj(str);
 	rb_io_write(io, str);
     }
 }

@@ -346,7 +346,7 @@ init_copy(VALUE dest, VALUE obj)
         rb_raise(rb_eTypeError, "[bug] frozen object (%s) allocated", rb_obj_classname(dest));
     }
     RBASIC(dest)->flags &= ~(T_MASK|FL_EXIVAR);
-    RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR|FL_TAINT);
+    RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR);
     rb_copy_wb_protected_attribute(dest, obj);
     rb_copy_generic_ivar(dest, obj);
     rb_gc_copy_finalizer(dest, obj);
@@ -383,7 +383,7 @@ special_object_p(VALUE obj)
  *  Produces a shallow copy of <i>obj</i>---the instance variables of
  *  <i>obj</i> are copied, but not the objects they reference.
  *  #clone copies the frozen (unless +:freeze+ keyword argument is
- *  given with a false value) and tainted state of <i>obj</i>.  See
+ *  given with a false value) state of <i>obj</i>.  See
  *  also the discussion under Object#dup.
  *
  *     class Klass
@@ -491,7 +491,6 @@ rb_obj_clone(VALUE obj)
  *
  *  Produces a shallow copy of <i>obj</i>---the instance variables of
  *  <i>obj</i> are copied, but not the objects they reference.
- *  #dup copies the tainted state of <i>obj</i>.
  *
  *  This method may have class-specific behavior.  If so, that
  *  behavior will be documented under the #+initialize_copy+ method of
@@ -616,7 +615,6 @@ rb_obj_init_copy(VALUE obj, VALUE orig)
 {
     if (obj == orig) return obj;
     rb_check_frozen(obj);
-    rb_check_trusted(obj);
     if (TYPE(obj) != TYPE(orig) || rb_obj_class(obj) != rb_obj_class(orig)) {
 	rb_raise(rb_eTypeError, "initialize_copy should take same class object");
     }
@@ -659,7 +657,6 @@ rb_any_to_s(VALUE obj)
     VALUE cname = rb_class_name(CLASS_OF(obj));
 
     str = rb_sprintf("#<%"PRIsVALUE":%p>", cname, (void*)obj);
-    OBJ_INFECT(str, obj);
 
     return str;
 }
@@ -728,7 +725,6 @@ inspect_obj(VALUE obj, VALUE str, int recur)
     }
     rb_str_cat2(str, ">");
     RSTRING_PTR(str)[0] = '#';
-    OBJ_INFECT(str, obj);
 
     return str;
 }
@@ -1164,26 +1160,15 @@ rb_obj_dummy1(VALUE _x, VALUE _y)
 
 /**
  *  call-seq:
- *     obj.tainted?    -> true or false
+ *     obj.tainted?    -> false
  *
- *  Returns true if the object is tainted.
- *
- *  See #taint for more information.
- *--
- * Determines if \a obj is tainted. Equivalent to \c Object\#tainted? in Ruby.
- * \param[in] obj  the object to be determined
- * \retval Qtrue if the object is tainted
- * \retval Qfalse if the object is not tainted
- * \sa rb_obj_taint
- * \sa rb_obj_untaint
- *++
+ *  Returns false.  This method is deprecated and will be removed in Ruby 3.2.
  */
 
 VALUE
 rb_obj_tainted(VALUE obj)
 {
-    if (OBJ_TAINTED(obj))
-	return Qtrue;
+    rb_warning("Object#tainted? is deprecated and will be removed in Ruby 3.2.");
     return Qfalse;
 }
 
@@ -1191,33 +1176,13 @@ rb_obj_tainted(VALUE obj)
  *  call-seq:
  *     obj.taint -> obj
  *
- *  Mark the object as tainted.
- *
- *  Objects that are marked as tainted will be restricted from various built-in
- *  methods. This is to prevent insecure data, such as command-line arguments
- *  or strings read from Kernel#gets, from inadvertently compromising the user's
- *  system.
- *
- *  To check whether an object is tainted, use #tainted?.
- *
- *  You should only untaint a tainted object if your code has inspected it and
- *  determined that it is safe. To do so use #untaint.
- *--
- * Marks the object as tainted. Equivalent to \c Object\#taint in Ruby
- * \param[in] obj  the object to be tainted
- * \return the object itself
- * \sa rb_obj_untaint
- * \sa rb_obj_tainted
- *++
+ *  Returns object. This method is deprecated and will be removed in Ruby 3.2.
  */
 
 VALUE
 rb_obj_taint(VALUE obj)
 {
-    if (!OBJ_TAINTED(obj) && OBJ_TAINTABLE(obj)) {
-	rb_check_frozen(obj);
-	OBJ_TAINT(obj);
-    }
+    rb_warning("Object#taint is deprecated and will be removed in Ruby 3.2.");
     return obj;
 }
 
@@ -1226,74 +1191,42 @@ rb_obj_taint(VALUE obj)
  *  call-seq:
  *     obj.untaint    -> obj
  *
- *  Removes the tainted mark from the object.
- *
- *  See #taint for more information.
- *--
- * Removes the tainted mark from the object.
- * Equivalent to \c Object\#untaint in Ruby.
- *
- * \param[in] obj  the object to be tainted
- * \return the object itself
- * \sa rb_obj_taint
- * \sa rb_obj_tainted
- *++
+ *  Returns object. This method is deprecated and will be removed in Ruby 3.2.
  */
 
 VALUE
 rb_obj_untaint(VALUE obj)
 {
-    if (OBJ_TAINTED(obj)) {
-	rb_check_frozen(obj);
-	FL_UNSET(obj, FL_TAINT);
-    }
+    rb_warning("Object#untaint is deprecated and will be removed in Ruby 3.2.");
     return obj;
 }
 
 /**
  *  call-seq:
- *     obj.untrusted?    -> true or false
+ *     obj.untrusted?    -> false
  *
- *  Deprecated method that is equivalent to #tainted?.
- *--
- * \deprecated Use rb_obj_tainted.
- *
- * Trustiness used to have independent semantics from taintedness.
- * But now trustiness of objects is obsolete and this function behaves
- * the same as rb_obj_tainted.
- *
- * \sa rb_obj_tainted
- *++
+ *  Returns false.  This method is deprecated and will be removed in Ruby 3.2.
  */
 
 VALUE
 rb_obj_untrusted(VALUE obj)
 {
-    rb_warning("untrusted? is deprecated and its behavior is same as tainted?");
-    return rb_obj_tainted(obj);
+    rb_warning("Object#untrusted? is deprecated and will be removed in Ruby 3.2.");
+    return Qfalse;
 }
 
 /**
  *  call-seq:
  *     obj.untrust -> obj
  *
- *  Deprecated method that is equivalent to #taint.
- *--
- * \deprecated Use rb_obj_taint(obj)
- *
- * Trustiness used to have independent semantics from taintedness.
- * But now trustiness of objects is obsolete and this function behaves
- * the same as rb_obj_taint.
- *
- * \sa rb_obj_taint
- *++
+ *  Returns object. This method is deprecated and will be removed in Ruby 3.2.
  */
 
 VALUE
 rb_obj_untrust(VALUE obj)
 {
-    rb_warning("untrust is deprecated and its behavior is same as taint");
-    return rb_obj_taint(obj);
+    rb_warning("Object#untrust is deprecated and will be removed in Ruby 3.2.");
+    return obj;
 }
 
 
@@ -1301,37 +1234,24 @@ rb_obj_untrust(VALUE obj)
  *  call-seq:
  *     obj.trust    -> obj
  *
- *  Deprecated method that is equivalent to #untaint.
- *--
- * \deprecated Use rb_obj_untaint(obj)
- *
- * Trustiness used to have independent semantics from taintedness.
- * But now trustiness of objects is obsolete and this function behaves
- * the same as rb_obj_untaint.
- *
- * \sa rb_obj_untaint
- *++
+ *  Returns object. This method is deprecated and will be removed in Ruby 3.2.
  */
 
 VALUE
 rb_obj_trust(VALUE obj)
 {
-    rb_warning("trust is deprecated and its behavior is same as untaint");
-    return rb_obj_untaint(obj);
+    rb_warning("Object#trust is deprecated and will be removed in Ruby 3.2.");
+    return obj;
 }
 
 /**
- * Convenient function to infect \a victim with the taintedness of \a carrier.
- *
- * It just keeps the taintedness of \a victim if \a carrier is not tainted.
- * \param[in,out] victim the object being infected with the taintness of \a carrier
- * \param[in] carrier a possibly tainted object
+ * Does nothing. This method is deprecated and will be removed in Ruby 3.2.
  */
 
 void
 rb_obj_infect(VALUE victim, VALUE carrier)
 {
-    OBJ_INFECT(victim, carrier);
+    rb_warning("rb_obj_infect is deprecated and will be removed in Ruby 3.2.");
 }
 
 /**

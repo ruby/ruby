@@ -2768,13 +2768,6 @@ class TestIO < Test::Unit::TestCase
     }
   end if /freebsd|linux/ =~ RUBY_PLATFORM and defined? File::NOFOLLOW
 
-  def test_tainted
-    make_tempfile {|t|
-      assert_predicate(File.read(t.path, 4), :tainted?, '[ruby-dev:38826]')
-      assert_predicate(File.open(t.path) {|f| f.read(4)}, :tainted?, '[ruby-dev:38826]')
-    }
-  end
-
   def test_binmode_after_closed
     make_tempfile {|t|
       assert_raise(IOError) {t.binmode}

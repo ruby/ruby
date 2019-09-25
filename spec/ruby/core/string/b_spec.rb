@@ -13,10 +13,12 @@ describe "String#b" do
     str.should == "こんちには"
   end
 
-  it "copies own tainted/untrusted status to the returning value" do
-    utf_8 = "こんちには".taint.untrust
-    ret = utf_8.b
-    ret.tainted?.should be_true
-    ret.untrusted?.should be_true
+  ruby_version_is ''...'2.7' do
+    it "copies own tainted/untrusted status to the returning value" do
+      utf_8 = "こんちには".taint.untrust
+      ret = utf_8.b
+      ret.tainted?.should be_true
+      ret.untrusted?.should be_true
+    end
   end
 end

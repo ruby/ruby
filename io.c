@@ -2525,7 +2525,6 @@ remain_size(rb_io_t *fptr)
 static VALUE
 io_enc_str(VALUE str, rb_io_t *fptr)
 {
-    OBJ_TAINT(str);
     rb_enc_associate(str, io_read_encoding(fptr));
     return str;
 }
@@ -2655,7 +2654,6 @@ io_shift_cbuf(rb_io_t *fptr, int len, VALUE *strp)
 	else {
 	    rb_str_cat(str, fptr->cbuf.ptr+fptr->cbuf.off, len);
 	}
-	OBJ_TAINT(str);
 	rb_enc_associate(str, fptr->encs.enc);
     }
     fptr->cbuf.off += len;
@@ -2820,7 +2818,6 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
     }
 
     shrinkable = io_setstrbuf(&str, len);
-    OBJ_TAINT(str);
 
     GetOpenFile(io, fptr);
     rb_io_check_byte_readable(fptr);
@@ -2963,7 +2960,6 @@ io_read_nonblock(rb_execution_context_t *ec, VALUE io, VALUE length, VALUE str, 
     }
 
     shrinkable = io_setstrbuf(&str, len);
-    OBJ_TAINT(str);
     rb_bool_expected(ex, "exception");
 
     GetOpenFile(io, fptr);
@@ -3150,7 +3146,6 @@ io_read(int argc, VALUE *argv, VALUE io)
     }
 #endif
     if (n == 0) return Qnil;
-    OBJ_TAINT(str);
 
     return str;
 }
@@ -5185,7 +5180,6 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     if (n == 0 && ilen > 0) {
 	rb_eof_error();
     }
-    OBJ_TAINT(str);
 
     return str;
 }
@@ -5269,7 +5263,6 @@ rb_io_pread(int argc, VALUE *argv, VALUE io)
     if (n == 0 && arg.count > 0) {
 	rb_eof_error();
     }
-    OBJ_TAINT(str);
 
     return str;
 }
@@ -7088,7 +7081,6 @@ check_pipe_command(VALUE filename_or_command)
 
     if (rb_enc_ascget(s, e, &chlen, rb_enc_get(filename_or_command)) == '|') {
         VALUE cmd = rb_str_new(s+chlen, l-chlen);
-        OBJ_INFECT(cmd, filename_or_command);
         return cmd;
     }
     return Qnil;

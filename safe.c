@@ -9,11 +9,6 @@
 
 **********************************************************************/
 
-/* safe-level:
-   0 - strings from streams/environment/ARGV are tainted (default)
-   1 - no dangerous operation by tainted value
-*/
-
 #define SAFE_LEVEL_MAX RUBY_SAFE_LEVEL_MAX
 
 #include "ruby/ruby.h"
@@ -141,9 +136,6 @@ void
 rb_check_safe_obj(VALUE x)
 {
     rb_warn("rb_check_safe_obj will be removed in Ruby 3.0");
-    if (rb_safe_level() > 0 && OBJ_TAINTED(x)) {
-	rb_insecure_operation();
-    }
 }
 
 void

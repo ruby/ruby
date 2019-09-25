@@ -39,44 +39,76 @@ describe "Array#uniq" do
     [x, y].uniq.should == [x, y]
   end
 
-  it "compares elements with matching hash codes with #eql?" do
-    a = Array.new(2) do
-      obj = mock('0')
-      obj.should_receive(:hash).at_least(1).and_return(0)
+  ruby_version_is '2.7' do
+    it "compares elements with matching hash codes with #eql?" do
+      a = Array.new(2) do
+        obj = mock('0')
+        obj.should_receive(:hash).at_least(1).and_return(0)
 
-      def obj.eql?(o)
-        # It's undefined whether the impl does a[0].eql?(a[1]) or
-        # a[1].eql?(a[0]) so we taint both.
-        taint
-        o.taint
-        false
+        def obj.eql?(o)
+          false
+        end
+
+        obj
       end
 
-      obj
-    end
+      a.uniq.should == a
 
-    a.uniq.should == a
-    a[0].tainted?.should == true
-    a[1].tainted?.should == true
+      a = Array.new(2) do
+        obj = mock('0')
+        obj.should_receive(:hash).at_least(1).and_return(0)
 
-    a = Array.new(2) do
-      obj = mock('0')
-      obj.should_receive(:hash).at_least(1).and_return(0)
+        def obj.eql?(o)
+          true
+        end
 
-      def obj.eql?(o)
-        # It's undefined whether the impl does a[0].eql?(a[1]) or
-        # a[1].eql?(a[0]) so we taint both.
-        taint
-        o.taint
-        true
+        obj
       end
 
-      obj
+      a.uniq.size.should == 1
     end
+  end
 
-    a.uniq.size.should == 1
-    a[0].tainted?.should == true
-    a[1].tainted?.should == true
+  ruby_version_is ''...'2.7' do
+    it "compares elements with matching hash codes with #eql?" do
+      a = Array.new(2) do
+        obj = mock('0')
+        obj.should_receive(:hash).at_least(1).and_return(0)
+
+        def obj.eql?(o)
+          # It's undefined whether the impl does a[0].eql?(a[1]) or
+          # a[1].eql?(a[0]) so we taint both.
+          taint
+          o.taint
+          false
+        end
+
+        obj
+      end
+
+      a.uniq.should == a
+      a[0].tainted?.should == true
+      a[1].tainted?.should == true
+
+      a = Array.new(2) do
+        obj = mock('0')
+        obj.should_receive(:hash).at_least(1).and_return(0)
+
+        def obj.eql?(o)
+          # It's undefined whether the impl does a[0].eql?(a[1]) or
+          # a[1].eql?(a[0]) so we taint both.
+          taint
+          o.taint
+          true
+        end
+
+        obj
+      end
+
+      a.uniq.size.should == 1
+      a[0].tainted?.should == true
+      a[1].tainted?.should == true
+    end
   end
 
   it "compares elements based on the value returned from the block" do

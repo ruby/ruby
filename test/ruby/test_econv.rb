@@ -685,7 +685,6 @@ class TestEncodingConverter < Test::Unit::TestCase
     ec = Encoding::Converter.new("utf-8", "euc-jp")
     assert_raise(Encoding::InvalidByteSequenceError) { ec.convert("a\x80") }
     assert_raise(Encoding::UndefinedConversionError) { ec.convert("\ufffd") }
-    assert_predicate(ec.convert("abc".taint), :tainted?)
     ret = ec.primitive_convert(nil, "", nil, nil)
     assert_equal(:finished, ret)
     assert_raise(ArgumentError) { ec.convert("a") }

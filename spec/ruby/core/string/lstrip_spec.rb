@@ -14,10 +14,12 @@ describe "String#lstrip" do
    "\x00hello".lstrip.should == "\x00hello"
   end
 
-  it "taints the result when self is tainted" do
-    "".taint.lstrip.tainted?.should == true
-    "ok".taint.lstrip.tainted?.should == true
-    "   ok".taint.lstrip.tainted?.should == true
+  ruby_version_is ''...'2.7' do
+    it "taints the result when self is tainted" do
+      "".taint.lstrip.tainted?.should == true
+      "ok".taint.lstrip.tainted?.should == true
+      "   ok".taint.lstrip.tainted?.should == true
+    end
   end
 end
 

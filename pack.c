@@ -296,7 +296,6 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 		StringValue(from);
 		ptr = RSTRING_PTR(from);
 		plen = RSTRING_LEN(from);
-		OBJ_INFECT(res, from);
 	    }
 
 	    if (p[-1] == '*')
@@ -657,7 +656,6 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 	    StringValue(from);
 	    ptr = RSTRING_PTR(from);
 	    plen = RSTRING_LEN(from);
-            OBJ_INFECT(res, from);
 
 	    if (len == 0 && type == 'm') {
 		encodes(res, ptr, plen, type, 0);
@@ -685,7 +683,6 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 
 	  case 'M':		/* quoted-printable encoded string */
 	    from = rb_obj_as_string(NEXTFROM);
-            OBJ_INFECT(res, from);
 	    if (len <= 1)
 		len = 72;
 	    qpencode(res, from, len);
@@ -711,8 +708,6 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 		}
 		else {
 		    t = StringValuePtr(from);
-                    OBJ_INFECT(res, from);
-		    rb_obj_taint(from);
 		}
 		if (!associates) {
 		    associates = rb_ary_new();
@@ -764,7 +759,6 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
     if (associates) {
 	str_associate(res, associates);
     }
-    OBJ_INFECT(res, fmt);
     switch (enc_info) {
       case 1:
 	ENCODING_CODERANGE_SET(res, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
@@ -923,15 +917,6 @@ hex2num(char c)
 # define AVOID_CC_BUG
 #endif
 
-static VALUE
-infected_str_new(const char *ptr, long len, VALUE str)
-{
-    VALUE s = rb_str_new(ptr, len);
-
-    OBJ_INFECT(s, str);
-    return s;
-}
-
 /* unpack mode */
 #define UNPACK_ARRAY 0
 #define UNPACK_BLOCK 1
@@ -1052,7 +1037,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 		    if (*t != ' ' && *t != '\0') break;
 		    t--; len--;
 		}
-		UNPACK_PUSH(infected_str_new(s, len, str));
+                UNPACK_PUSH(rb_str_new(s, len));
 		s += end;
 	    }
 	    break;
@@ -1063,7 +1048,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 
 		if (len > send-s) len = send-s;
 		while (t < s+len && *t) t++;
-		UNPACK_PUSH(infected_str_new(s, t-s, str));
+                UNPACK_PUSH(rb_str_new(s, t-s));
 		if (t < send) t++;
 		s = star ? t : s+len;
 	    }
@@ -1071,7 +1056,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 
 	  case 'a':
 	    if (len > send - s) len = send - s;
-	    UNPACK_PUSH(infected_str_new(s, len, str));
+            UNPACK_PUSH(rb_str_new(s, len));
 	    s += len;
 	    break;
 
@@ -1086,7 +1071,6 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 		    len = (send - s) * 8;
 		bits = 0;
 		bitstr = rb_usascii_str_new(0, len);
-                OBJ_INFECT(bitstr, str);
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 7) bits >>= 1;
@@ -1108,7 +1092,6 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 		    len = (send - s) * 8;
 		bits = 0;
 		bitstr = rb_usascii_str_new(0, len);
-                OBJ_INFECT(bitstr, str);
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 7) bits <<= 1;
@@ -1130,7 +1113,6 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 		    len = (send - s) * 2;
 		bits = 0;
 		bitstr = rb_usascii_str_new(0, len);
-                OBJ_INFECT(bitstr, str);
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 1)
@@ -1154,7 +1136,6 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 		    len = (send - s) * 2;
 		bits = 0;
 		bitstr = rb_usascii_str_new(0, len);
-                OBJ_INFECT(bitstr, str);
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 1)
@@ -1366,7 +1347,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 
 	  case 'u':
 	    {
-		VALUE buf = infected_str_new(0, (send - s)*3/4, str);
+                VALUE buf = rb_str_new(0, (send - s)*3/4);
 		char *ptr = RSTRING_PTR(buf);
 		long total = 0;
 
@@ -1421,7 +1402,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 
 	  case 'm':
 	    {
-		VALUE buf = infected_str_new(0, (send - s + 3)*3/4, str); /* +3 is for skipping paddings */
+                VALUE buf = rb_str_new(0, (send - s + 3)*3/4); /* +3 is for skipping paddings */
 		char *ptr = RSTRING_PTR(buf);
 		int a = -1,b = -1,c = 0,d = 0;
 		static signed char b64_xtable[256];
@@ -1502,7 +1483,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 
 	  case 'M':
 	    {
-		VALUE buf = infected_str_new(0, send - s, str);
+                VALUE buf = rb_str_new(0, send - s);
 		char *ptr = RSTRING_PTR(buf), *ss = s;
 		int csum = 0;
 		int c1, c2;
@@ -1571,7 +1552,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 		    while (p < pend) {
 			if (RB_TYPE_P(*p, T_STRING) && RSTRING_PTR(*p) == t) {
 			    if (len < RSTRING_LEN(*p)) {
-				tmp = rb_tainted_str_new(t, len);
+                                tmp = rb_str_new(t, len);
 				str_associate(tmp, a);
 			    }
 			    else {
