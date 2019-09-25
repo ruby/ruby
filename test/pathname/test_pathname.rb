@@ -745,6 +745,14 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_readlines_opts
+    with_tmpchdir('rubytest-pathname') {|dir|
+      open("a", "w") {|f| f.puts 1, 2 }
+      a = Pathname("a").readlines 1, chomp: true
+      assert_equal(["1", "", "2", ""], a)
+    }
+  end
+
   def test_read
     with_tmpchdir('rubytest-pathname') {|dir|
       open("a", "w") {|f| f.puts 1, 2 }
@@ -769,10 +777,26 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_write_opts
+    with_tmpchdir('rubytest-pathname') {|dir|
+      path = Pathname("a")
+      path.write "abc", mode: "w"
+      assert_equal("abc", path.read)
+    }
+  end
+
   def test_binwrite
     with_tmpchdir('rubytest-pathname') {|dir|
       path = Pathname("a")
       path.binwrite "abc\x80"
+      assert_equal("abc\x80".b, path.binread)
+    }
+  end
+
+  def test_binwrite_opts
+    with_tmpchdir('rubytest-pathname') {|dir|
+      path = Pathname("a")
+      path.binwrite "abc\x80", mode: 'w'
       assert_equal("abc\x80".b, path.binread)
     }
   end
@@ -929,6 +953,10 @@ class TestPathname < Test::Unit::TestCase
         assert_equal("abc", f.read)
       }
 
+      path.open(mode: "r") {|f|
+        assert_equal("abc", f.read)
+      }
+
       Pathname("b").open("w", 0444) {|f| f.write "def" }
       assert_equal(0444 & ~File.umask, File.stat("b").mode & 0777)
       assert_equal("def", File.read("b"))
@@ -938,6 +966,10 @@ class TestPathname < Test::Unit::TestCase
       assert_equal("ghi", File.read("c"))
 
       g = path.open
+      assert_equal("abc", g.read)
+      g.close
+
+      g = path.open(mode: "r")
       assert_equal("abc", g.read)
       g.close
     }
