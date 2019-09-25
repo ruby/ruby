@@ -7022,7 +7022,7 @@ rb_open_file(int argc, const VALUE *argv, VALUE io)
 static VALUE
 rb_io_s_open(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE io = rb_class_new_instance(argc, argv, klass);
+    VALUE io = rb_class_new_instance_kw(argc, argv, klass, RB_PASS_CALLED_KEYWORDS);
 
     if (rb_block_given_p()) {
 	return rb_ensure(rb_yield, io, io_close, io);
@@ -7209,7 +7209,7 @@ rb_f_open(int argc, VALUE *argv, VALUE _)
 	}
     }
     if (redirect) {
-	VALUE io = rb_funcallv(argv[0], to_open, argc-1, argv+1);
+        VALUE io = rb_funcallv_kw(argv[0], to_open, argc-1, argv+1, RB_PASS_CALLED_KEYWORDS);
 
 	if (rb_block_given_p()) {
 	    return rb_ensure(rb_yield, io, io_close, io);
@@ -8390,7 +8390,7 @@ rb_io_s_new(int argc, VALUE *argv, VALUE klass)
 	rb_warn("%"PRIsVALUE"::new() does not take block; use %"PRIsVALUE"::open() instead",
 		cname, cname);
     }
-    return rb_class_new_instance(argc, argv, klass);
+    return rb_class_new_instance_kw(argc, argv, klass, RB_PASS_CALLED_KEYWORDS);
 }
 
 
@@ -10373,7 +10373,7 @@ open_key_args(VALUE klass, int argc, VALUE *argv, VALUE opt, struct foreach_arg 
 	v = rb_to_array_type(v);
 	n = RARRAY_LENINT(v);
 	rb_check_arity(n, 0, 3); /* rb_io_open */
-	rb_scan_args(n, RARRAY_CONST_PTR(v), "02:", &vmode, &vperm, &opt);
+        rb_scan_args_kw(RB_SCAN_ARGS_LAST_HASH_KEYWORDS, n, RARRAY_CONST_PTR(v), "02:", &vmode, &vperm, &opt);
     }
     arg->io = rb_io_open(klass, path, vmode, vperm, opt);
 }

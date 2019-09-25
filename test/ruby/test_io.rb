@@ -423,7 +423,7 @@ class TestIO < Test::Unit::TestCase
     path = t.path
     t.close!
     assert_raise(Errno::ENOENT, "[ruby-dev:33072]") do
-      File.read(path, nil, nil, {})
+      File.read(path, nil, nil, **{})
     end
   end
 
@@ -2489,15 +2489,15 @@ class TestIO < Test::Unit::TestCase
       assert_equal(["foo\n", "bar\n", "baz\n"], a)
 
       a = []
-      IO.foreach(t.path, {:mode => "r" }) {|x| a << x }
+      IO.foreach(t.path, :mode => "r") {|x| a << x }
       assert_equal(["foo\n", "bar\n", "baz\n"], a)
 
       a = []
-      IO.foreach(t.path, {:open_args => [] }) {|x| a << x }
+      IO.foreach(t.path, :open_args => []) {|x| a << x }
       assert_equal(["foo\n", "bar\n", "baz\n"], a)
 
       a = []
-      IO.foreach(t.path, {:open_args => ["r"] }) {|x| a << x }
+      IO.foreach(t.path, :open_args => ["r"]) {|x| a << x }
       assert_equal(["foo\n", "bar\n", "baz\n"], a)
 
       a = []
@@ -3119,7 +3119,9 @@ __END__
       assert_equal(1, File.write(path, "f", 0, encoding: "UTF-8"))
       assert_equal("ff", File.read(path))
       assert_raise(TypeError) {
-        File.write(path, "foo", Object.new => Object.new)
+        assert_warn(/The last argument is split into positional and keyword parameters/) do
+          File.write(path, "foo", Object.new => Object.new)
+        end
       }
     end
   end

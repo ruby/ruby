@@ -230,7 +230,8 @@ class TestNumeric < Test::Unit::TestCase
   end
 
   def assert_step(expected, (from, *args), inf: false)
-    enum = from.step(*args)
+    kw = args.last.is_a?(Hash) ? args.pop : {}
+    enum = from.step(*args, **kw)
     size = enum.size
     xsize = expected.size
 
@@ -239,7 +240,7 @@ class TestNumeric < Test::Unit::TestCase
       assert_send [size, :>, 0], "step size: +infinity"
 
       a = []
-      from.step(*args) { |x| a << x; break if a.size == xsize }
+      from.step(*args, **kw) { |x| a << x; break if a.size == xsize }
       assert_equal expected, a, "step"
 
       a = []
@@ -249,7 +250,7 @@ class TestNumeric < Test::Unit::TestCase
       assert_equal expected.size, size, "step size"
 
       a = []
-      from.step(*args) { |x| a << x }
+      from.step(*args, **kw) { |x| a << x }
       assert_equal expected, a, "step"
 
       a = []

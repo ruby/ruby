@@ -933,7 +933,7 @@ class TestPathname < Test::Unit::TestCase
       assert_equal(0444 & ~File.umask, File.stat("b").mode & 0777)
       assert_equal("def", File.read("b"))
 
-      Pathname("c").open("w", 0444, {}) {|f| f.write "ghi" }
+      Pathname("c").open("w", 0444, **{}) {|f| f.write "ghi" }
       assert_equal(0444 & ~File.umask, File.stat("c").mode & 0777)
       assert_equal("ghi", File.read("c"))
 

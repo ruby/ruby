@@ -393,7 +393,7 @@ path_read(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcallv(rb_cFile, id_read, 1+n, args);
+    return rb_funcallv_kw(rb_cFile, id_read, 1+n, args, RB_PASS_CALLED_KEYWORDS);
 }
 
 /*
@@ -1097,12 +1097,12 @@ path_s_glob(int argc, VALUE *argv, VALUE klass)
 
     n = rb_scan_args(argc, argv, "12", &args[0], &args[1], &args[2]);
     if (rb_block_given_p()) {
-        return rb_block_call(rb_cDir, id_glob, n, args, s_glob_i, klass);
+        return rb_block_call_kw(rb_cDir, id_glob, n, args, s_glob_i, klass, RB_PASS_CALLED_KEYWORDS);
     }
     else {
         VALUE ary;
         long i;
-        ary = rb_funcallv(rb_cDir, id_glob, n, args);
+        ary = rb_funcallv_kw(rb_cDir, id_glob, n, args, RB_PASS_CALLED_KEYWORDS);
         ary = rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
         for (i = 0; i < RARRAY_LEN(ary); i++) {
             VALUE elt = RARRAY_AREF(ary, i);
@@ -1145,12 +1145,12 @@ path_glob(int argc, VALUE *argv, VALUE self)
     n = 3;
 
     if (rb_block_given_p()) {
-        return rb_block_call(rb_cDir, id_glob, n, args, glob_i, self);
+        return rb_block_call_kw(rb_cDir, id_glob, n, args, glob_i, self, RB_PASS_KEYWORDS);
     }
     else {
         VALUE ary;
         long i;
-        ary = rb_funcallv(rb_cDir, id_glob, n, args);
+        ary = rb_funcallv_kw(rb_cDir, id_glob, n, args, RB_PASS_KEYWORDS);
         ary = rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
         for (i = 0; i < RARRAY_LEN(ary); i++) {
             VALUE elt = RARRAY_AREF(ary, i);

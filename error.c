@@ -341,7 +341,7 @@ rb_warn_m(int argc, VALUE *argv, VALUE exc)
     VALUE opts, location = Qnil;
 
     if (!NIL_P(ruby_verbose) && argc > 0 &&
-	    (argc = rb_scan_args(argc, argv, "*:", NULL, &opts)) > 0) {
+            (argc = rb_scan_args(argc, argv, "*:", NULL, &opts)) > 0) {
 	VALUE str = argv[0], uplevel = Qnil;
 	if (!NIL_P(opts)) {
 	    static ID kwds[1];
@@ -1595,7 +1595,7 @@ nometh_err_initialize(int argc, VALUE *argv, VALUE self)
     priv = (argc > 3) && (--argc, RTEST(argv[argc]));
     args = (argc > 2) ? argv[--argc] : Qnil;
     if (!NIL_P(options)) argv[argc++] = options;
-    rb_call_super(argc, argv);
+    rb_call_super_kw(argc, argv, RB_PASS_CALLED_KEYWORDS);
     return nometh_err_init_attr(self, args, priv);
 }
 
