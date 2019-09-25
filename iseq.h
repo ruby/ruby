@@ -90,7 +90,6 @@ ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
 struct iseq_compile_data {
     /* GC is needed */
     const VALUE err_info;
-    VALUE mark_ary;
     const VALUE catch_table_ary;	/* Array */
 
     /* GC is not needed */

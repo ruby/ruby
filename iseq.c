@@ -339,9 +339,6 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 
         rb_iseq_mark_insn_storage(compile_data->insn.storage_head);
 
-        if (RTEST(compile_data->mark_ary)) {
-            rb_gc_mark(compile_data->mark_ary);
-        }
         RUBY_MARK_UNLESS_NULL(compile_data->err_info);
         if (RTEST(compile_data->catch_table_ary)) {
             rb_gc_mark(compile_data->catch_table_ary);
@@ -559,7 +556,6 @@ prepare_iseq_build(rb_iseq_t *iseq,
 
     ISEQ_COMPILE_DATA_ALLOC(iseq);
     RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->err_info, err_info);
-    RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->mark_ary, rb_ary_tmp_new(3));
     RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->catch_table_ary, Qnil);
 
     ISEQ_COMPILE_DATA(iseq)->node.storage_head = ISEQ_COMPILE_DATA(iseq)->node.storage_current = new_arena();
