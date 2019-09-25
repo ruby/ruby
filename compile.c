@@ -587,9 +587,7 @@ iseq_add_mark_object_compile_time(const rb_iseq_t *iseq, VALUE v)
 static inline VALUE
 freeze_literal(rb_iseq_t *iseq, VALUE lit)
 {
-    lit = rb_fstring(lit);
-    rb_ary_push(ISEQ_COMPILE_DATA(iseq)->mark_ary, lit);
-    return lit;
+    return rb_fstring(lit);
 }
 
 static int
@@ -3657,6 +3655,7 @@ compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cons
 	}
 	lit = freeze_literal(iseq, lit);
 	ADD_INSN1(ret, nd_line(node), putobject, lit);
+        iseq_add_mark_object_compile_time(iseq, lit);
 	if (RSTRING_LEN(lit) == 0) first_lit = LAST_ELEMENT(ret);
     }
 
@@ -3665,6 +3664,7 @@ compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cons
 	if (nd_type(head) == NODE_STR) {
 	    lit = freeze_literal(iseq, head->nd_lit);
 	    ADD_INSN1(ret, nd_line(head), putobject, lit);
+            iseq_add_mark_object_compile_time(iseq, lit);
 	    lit = Qnil;
 	}
 	else {
@@ -4283,6 +4283,7 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
 	    debugp_param("nd_lit", val->nd_lit);
 	    lit = freeze_literal(iseq, val->nd_lit);
 	    ADD_INSN1(cond_seq, nd_line(val), putobject, lit);
+            iseq_add_mark_object_compile_time(iseq, lit);
 	}
 	else {
 	    if (!COMPILE(cond_seq, "when cond", val)) return -1;
@@ -6665,6 +6666,7 @@ compile_call_precheck_freeze(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
                       new_callinfo(iseq, idFreeze, 0, 0, NULL, FALSE),
                       Qundef /* CALL_CACHE */);
         }
+        iseq_add_mark_object_compile_time(iseq, str);
         if (popped) {
             ADD_INSN(ret, line, pop);
         }
@@ -6684,6 +6686,7 @@ compile_call_precheck_freeze(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
         ADD_INSN3(ret, line, opt_aref_with, str,
                   new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE),
                   NULL/* CALL_CACHE */);
+        iseq_add_mark_object_compile_time(iseq, str);
         if (popped) {
             ADD_INSN(ret, line, pop);
         }
@@ -7760,6 +7763,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    if (!ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal) {
 		lit = freeze_literal(iseq, lit);
 		ADD_INSN1(ret, line, putstring, lit);
+                iseq_add_mark_object_compile_time(iseq, lit);
 	    }
 	    else {
 		if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
@@ -7799,7 +7803,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       }
       case NODE_XSTR:{
 	ADD_CALL_RECEIVER(ret, line);
-	ADD_INSN1(ret, line, putobject, freeze_literal(iseq, node->nd_lit));
+        VALUE str = freeze_literal(iseq, node->nd_lit);
+	ADD_INSN1(ret, line, putobject, str);
+        iseq_add_mark_object_compile_time(iseq, str);
 	ADD_CALL(ret, line, idBackquote, INT2FIX(1));
 
 	if (popped) {
@@ -8249,6 +8255,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    ADD_INSN3(ret, line, opt_aset_with, str,
 		      new_callinfo(iseq, idASET, 2, 0, NULL, FALSE),
 		      NULL/* CALL_CACHE */);
+            iseq_add_mark_object_compile_time(iseq, str);
 	    ADD_INSN(ret, line, pop);
 	    break;
 	}
