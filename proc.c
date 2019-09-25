@@ -1474,16 +1474,9 @@ mnew_missing(VALUE klass, VALUE obj, ID id, VALUE mclass)
 {
     struct METHOD *data;
     VALUE method = TypedData_Make_Struct(mclass, struct METHOD, &method_data_type, data);
-    rb_method_entry_t *me;
-    const rb_method_definition_t *def;
-
     RB_OBJ_WRITE(method, &data->recv, obj);
     RB_OBJ_WRITE(method, &data->klass, klass);
-
-    def = rb_method_definition_create(VM_METHOD_TYPE_MISSING, id, NULL);
-    me = rb_method_entry_create(id, klass, METHOD_VISI_UNDEF, def);
-
-    RB_OBJ_WRITE(method, &data->me, me);
+    RB_OBJ_WRITE(method, &data->me, rb_method_entry_for_missing(id, klass));
 
     OBJ_INFECT(method, klass);
 

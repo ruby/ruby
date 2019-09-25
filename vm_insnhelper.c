@@ -2587,16 +2587,8 @@ aliased_callable_method_entry0(const rb_method_entry_t *me)
 	VALUE defined_class = find_defined_class_by_owner(me->defined_class, orig_me->owner);
 	VM_ASSERT(RB_TYPE_P(orig_me->owner, T_MODULE));
 	cme = rb_method_entry_complement_defined_class(orig_me, me->called_id, defined_class);
-        rb_method_entry_t *ret =
-            rb_method_entry_create(
-                me->called_id,
-                me->owner,
-                me->defined_class,
-                rb_method_definition_create(
-                    VM_METHOD_TYPE_ALIAS,
-                    me->def->original_id,
-                    cme));
-        METHOD_ENTRY_FLAGS_COPY(ret, (const void*)me);
+        const rb_method_entry_t *ret =
+            rb_method_entry_from_template((const rb_method_entry_t*)me, cme);
         rb_method_entry_spoof(ret);
         return ret;
     }

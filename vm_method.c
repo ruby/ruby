@@ -452,7 +452,7 @@ rb_method_entry_spoof(const rb_method_entry_t *me)
     rb_clear_method_cache_by_class(o);
 }
 
-MJIT_FUNC_EXPORTED const rb_method_definition_t *
+static const rb_method_definition_t *
 rb_method_definition_create(rb_method_type_t type, ID mid, const void *opts)
 {
     rb_method_definition_t template = rb_method_definition_new(type, mid, opts);
@@ -483,6 +483,9 @@ rb_method_entry_alloc(VALUE flags, ID called_id, VALUE owner, VALUE defined_clas
     rb_method_entry_t tmp = { flags, };
     rb_method_entry_t *me = (rb_method_entry_t *)rb_imemo_new(imemo_ment, (VALUE)def, (VALUE)called_id, owner, defined_class);
     METHOD_ENTRY_FLAGS_COPY(me, &tmp);
+    if (def) {
+        method_definition_reset(me);
+    }
     return me;
 }
 
@@ -500,20 +503,42 @@ filter_defined_class(VALUE klass)
     rb_bug("filter_defined_class: %s", rb_obj_info(klass));
 }
 
-MJIT_FUNC_EXPORTED rb_method_entry_t *
-rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, const rb_method_definition_t *def)
+static inline VALUE
+method_entry_flags(rb_method_visibility_t visi)
 {
     rb_method_entry_t tmp = { 0, };
     METHOD_ENTRY_FLAGS_SET(&tmp, visi, !ruby_running);
-    rb_method_entry_t *me =
-        rb_method_entry_alloc(
-            tmp.flags,
-            called_id,
-            klass,
-            filter_defined_class(klass),
-            def);
-    if (def != NULL) method_definition_reset(me);
-    return me;
+    return tmp.flags;
+}
+
+MJIT_FUNC_EXPORTED const rb_method_entry_t *
+rb_method_entry_from_template(
+    const rb_method_entry_t *me,
+    const void *body)
+{
+    return rb_method_entry_alloc(
+        me->flags,
+        me->called_id,
+        me->owner,
+        me->defined_class,
+        rb_method_definition_create(
+            me->def->type,
+            me->def->original_id,
+            body));
+}
+
+const rb_method_entry_t *
+rb_method_entry_for_missing(ID mid, VALUE klass)
+{
+    return rb_method_entry_alloc(
+        method_entry_flags(METHOD_VISI_UNDEF),
+        mid,
+        klass,
+        filter_defined_class(klass),
+        rb_method_definition_create(
+            VM_METHOD_TYPE_MISSING,
+            mid,
+            NULL));
 }
 
 const rb_method_entry_t *
@@ -569,32 +594,26 @@ make_method_entry_refined(VALUE owner, rb_method_entry_t *me)
     }
     else {
 	rb_vm_check_redefinition_opt_method(me, me->owner);
-        rb_method_entry_t *orig_me =
-            rb_method_entry_alloc(
-                me->flags,
-                me->called_id,
-                me->owner,
-                me->defined_class ?
-                me->defined_class : owner,
-                method_definition_addref(me->def));
-        const rb_method_definition_t *def =
+        /* :FIXME: can rb_method_entry_from_template be tweaked to also be
+         * applicable here? */
+        return rb_method_entry_alloc(
+            method_entry_flags(METHOD_VISI_PUBLIC),
+            me->called_id,
+            me->owner,
+            me->defined_class,
             rb_method_definition_create(
                 VM_METHOD_TYPE_REFINED,
                 me->called_id,
                 &(rb_method_refined_t) {
-                    .orig_me = orig_me,
                     .owner   = owner,
-                }
-            );
-        rb_method_entry_t *new_me =
-            rb_method_entry_alloc(
-                me->flags,
-                me->called_id,
-                me->owner,
-                me->defined_class,
-                def);
-        METHOD_ENTRY_VISI_SET(new_me, METHOD_VISI_PUBLIC);
-        return new_me;
+                    .orig_me =
+                        rb_method_entry_alloc(
+                            me->flags,
+                            me->called_id,
+                            me->owner,
+                            me->defined_class ?
+                            me->defined_class : owner,
+                            method_definition_addref(me->def))}));
     }
 }
 
@@ -718,7 +737,12 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     if (!def) {
         def = rb_method_definition_create(type, original_id, opts);
     }
-    me = rb_method_entry_create(mid, defined_class, visi, def);
+    me = rb_method_entry_alloc(
+        method_entry_flags(visi),
+        mid,
+        defined_class,
+        filter_defined_class(defined_class),
+        def);
 
     rb_clear_method_cache_by_class(klass);
 
