@@ -19,7 +19,6 @@
 #include "ruby/config.h"
 #include "debug_counter.h"
 
-extern const rb_method_definition_t *rb_method_definition_create(rb_method_type_t type, ID mid, const void *opts);
 extern void rb_method_entry_spoof(const rb_method_entry_t *me);
 extern int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
 extern VALUE rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj,

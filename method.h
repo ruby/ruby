@@ -185,6 +185,8 @@ STATIC_ASSERT(sizeof_method_def, offsetof(rb_method_definition_t, body)==8);
     ((def)->type == VM_METHOD_TYPE_REFINED && \
      UNDEFINED_METHOD_ENTRY_P((def)->body.refined.orig_me))
 
+const rb_method_definition_t *rb_method_definition_create(rb_method_type_t which, ID what, const void *how);
+
 void rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_visibility_t visi);
 void rb_add_method_iseq(VALUE klass, ID mid, const rb_iseq_t *iseq, rb_cref_t *cref, rb_method_visibility_t visi);
 void rb_add_refined_method_entry(VALUE refined_class, ID mid);
@@ -221,7 +223,6 @@ void rb_sweep_method_entry(void *vm);
 
 const rb_method_entry_t *rb_method_entry_clone(const rb_method_entry_t *me);
 const rb_callable_method_entry_t *rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID called_id, VALUE defined_class);
-void rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src);
 
 void rb_scope_visibility_set(rb_method_visibility_t);
 
