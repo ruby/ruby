@@ -2279,6 +2279,19 @@ class TestIO < Test::Unit::TestCase
     assert_equal(o, o2)
   end
 
+  def test_open_redirect_keyword
+    o = Object.new
+    def o.to_open(**kw); kw; end
+    assert_equal({:a=>1}, open(o, a: 1))
+    assert_warn(/The last argument is used as the keyword parameter.*for `to_open'/m) do
+      assert_equal({:a=>1}, open(o, {a: 1}))
+    end
+
+    def o.to_open(kw); kw; end
+    assert_equal({:a=>1}, open(o, a: 1))
+    assert_equal({:a=>1}, open(o, {a: 1}))
+  end
+
   def test_open_pipe
     open("|" + EnvUtil.rubybin, "r+") do |f|
       f.puts "puts 'foo'"
