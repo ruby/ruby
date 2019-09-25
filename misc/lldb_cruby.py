@@ -202,8 +202,7 @@ def lldb_inspect(debugger, target, result, val):
         elif flType == RUBY_T_REGEXP:
             tRRegex = target.FindFirstType("struct RRegexp").GetPointerType()
             val = val.Cast(tRRegex)
-            print("(Regex)", file=result)
-            print("->src {", file=result)
+            print("(Regex) ->src {", file=result)
             lldb_inspect(debugger, target, result, val.GetValueForExpressionPath("->src"))
             print("}", file=result)
         elif flType == RUBY_T_DATA:
@@ -247,7 +246,7 @@ def count_objects(debugger, command, ctx, result, internal_dict):
             counts[obj_type] += 1
         total += num_slots
 
-    print("\rTOTAL: %d, FREE: %d" % (total, counts[0x00]), end="")
+    print("\rTOTAL: %d, FREE: %d" % (total, counts[0x00]))
     for sym in value_types:
         print("%s: %d" % (sym, counts[globals()[sym]]))
 
