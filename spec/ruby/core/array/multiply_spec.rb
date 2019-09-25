@@ -88,42 +88,44 @@ describe "Array#* with an integer" do
     end
   end
 
-  it "copies the taint status of the original array even if the passed count is 0" do
-    ary = [1, 2, 3]
-    ary.taint
-    (ary * 0).tainted?.should == true
-  end
+  ruby_version_is ''...'2.7' do
+    it "copies the taint status of the original array even if the passed count is 0" do
+      ary = [1, 2, 3]
+      ary.taint
+      (ary * 0).tainted?.should == true
+    end
 
-  it "copies the taint status of the original array even if the array is empty" do
-    ary = []
-    ary.taint
-    (ary * 3).tainted?.should == true
-  end
+    it "copies the taint status of the original array even if the array is empty" do
+      ary = []
+      ary.taint
+      (ary * 3).tainted?.should == true
+    end
 
-  it "copies the taint status of the original array if the passed count is not 0" do
-    ary = [1, 2, 3]
-    ary.taint
-    (ary * 1).tainted?.should == true
-    (ary * 2).tainted?.should == true
-  end
+    it "copies the taint status of the original array if the passed count is not 0" do
+      ary = [1, 2, 3]
+      ary.taint
+      (ary * 1).tainted?.should == true
+      (ary * 2).tainted?.should == true
+    end
 
-  it "copies the untrusted status of the original array even if the passed count is 0" do
-    ary = [1, 2, 3]
-    ary.untrust
-    (ary * 0).untrusted?.should == true
-  end
+    it "copies the untrusted status of the original array even if the passed count is 0" do
+      ary = [1, 2, 3]
+      ary.untrust
+      (ary * 0).untrusted?.should == true
+    end
 
-  it "copies the untrusted status of the original array even if the array is empty" do
-    ary = []
-    ary.untrust
-    (ary * 3).untrusted?.should == true
-  end
+    it "copies the untrusted status of the original array even if the array is empty" do
+      ary = []
+      ary.untrust
+      (ary * 3).untrusted?.should == true
+    end
 
-  it "copies the untrusted status of the original array if the passed count is not 0" do
-    ary = [1, 2, 3]
-    ary.untrust
-    (ary * 1).untrusted?.should == true
-    (ary * 2).untrusted?.should == true
+    it "copies the untrusted status of the original array if the passed count is not 0" do
+      ary = [1, 2, 3]
+      ary.untrust
+      (ary * 1).untrusted?.should == true
+      (ary * 2).untrusted?.should == true
+    end
   end
 end
 

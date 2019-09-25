@@ -34,12 +34,14 @@ describe "String#prepend" do
     a.should == "hello world"
   end
 
-  it "taints self if other is tainted" do
-    x = "x"
-    x.prepend("".taint).tainted?.should be_true
+  ruby_version_is ''...'2.7' do
+    it "taints self if other is tainted" do
+      x = "x"
+      x.prepend("".taint).tainted?.should be_true
 
-    x = "x"
-    x.prepend("y".taint).tainted?.should be_true
+      x = "x"
+      x.prepend("y".taint).tainted?.should be_true
+    end
   end
 
   it "takes multiple arguments" do

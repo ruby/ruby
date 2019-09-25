@@ -456,9 +456,6 @@ class TestMethod < Test::Unit::TestCase
     c3.class_eval { alias bar foo }
     m3 = c3.new.method(:bar)
     assert_equal("#<Method: #{c3.inspect}(#{c.inspect})#bar(foo) #{__FILE__}:#{line_no}>", m3.inspect, bug7806)
-
-    m.taint
-    assert_predicate(m.inspect, :tainted?, "inspect result should be infected")
   end
 
   def test_callee_top_level

@@ -80,13 +80,15 @@ describe :string_slice_index_length, shared: true do
     "hello there".send(@method, -3,2).should == "er"
   end
 
-  it "always taints resulting strings when self is tainted" do
-    str = "hello world"
-    str.taint
+  ruby_version_is ''...'2.7' do
+    it "always taints resulting strings when self is tainted" do
+      str = "hello world"
+      str.taint
 
-    str.send(@method, 0,0).tainted?.should == true
-    str.send(@method, 0,1).tainted?.should == true
-    str.send(@method, 2,1).tainted?.should == true
+      str.send(@method, 0,0).tainted?.should == true
+      str.send(@method, 0,1).tainted?.should == true
+      str.send(@method, 2,1).tainted?.should == true
+    end
   end
 
   it "returns a string with the same encoding" do
@@ -234,16 +236,18 @@ describe :string_slice_range, shared: true do
     "x".send(@method, 1...-1).should == ""
   end
 
-  it "always taints resulting strings when self is tainted" do
-    str = "hello world"
-    str.taint
+  ruby_version_is ''...'2.7' do
+    it "always taints resulting strings when self is tainted" do
+      str = "hello world"
+      str.taint
 
-    str.send(@method, 0..0).tainted?.should == true
-    str.send(@method, 0...0).tainted?.should == true
-    str.send(@method, 0..1).tainted?.should == true
-    str.send(@method, 0...1).tainted?.should == true
-    str.send(@method, 2..3).tainted?.should == true
-    str.send(@method, 2..0).tainted?.should == true
+      str.send(@method, 0..0).tainted?.should == true
+      str.send(@method, 0...0).tainted?.should == true
+      str.send(@method, 0..1).tainted?.should == true
+      str.send(@method, 0...1).tainted?.should == true
+      str.send(@method, 2..3).tainted?.should == true
+      str.send(@method, 2..0).tainted?.should == true
+    end
   end
 
   it "returns subclass instances" do
@@ -302,23 +306,25 @@ describe :string_slice_regexp, shared: true do
   end
 
   not_supported_on :opal do
-    it "always taints resulting strings when self or regexp is tainted" do
-      strs = ["hello world"]
-      strs += strs.map { |s| s.dup.taint }
+    ruby_version_is ''...'2.7' do
+      it "always taints resulting strings when self or regexp is tainted" do
+        strs = ["hello world"]
+        strs += strs.map { |s| s.dup.taint }
 
-      strs.each do |str|
-        str.send(@method, //).tainted?.should == str.tainted?
-        str.send(@method, /hello/).tainted?.should == str.tainted?
+        strs.each do |str|
+          str.send(@method, //).tainted?.should == str.tainted?
+          str.send(@method, /hello/).tainted?.should == str.tainted?
 
-        tainted_re = /./
-        tainted_re.taint
+          tainted_re = /./
+          tainted_re.taint
 
-        str.send(@method, tainted_re).tainted?.should == true
+          str.send(@method, tainted_re).tainted?.should == true
+        end
       end
-    end
 
-    it "returns an untrusted string if the regexp is untrusted" do
-      "hello".send(@method, /./.untrust).untrusted?.should be_true
+      it "returns an untrusted string if the regexp is untrusted" do
+        "hello".send(@method, /./.untrust).untrusted?.should be_true
+      end
     end
   end
 
@@ -352,31 +358,33 @@ describe :string_slice_regexp_index, shared: true do
     "har".send(@method, /(.)(.)(.)/, -3).should == "h"
   end
 
-  it "always taints resulting strings when self or regexp is tainted" do
-    strs = ["hello world"]
-    strs += strs.map { |s| s.dup.taint }
+  ruby_version_is ''...'2.7' do
+    it "always taints resulting strings when self or regexp is tainted" do
+      strs = ["hello world"]
+      strs += strs.map { |s| s.dup.taint }
 
-    strs.each do |str|
-      str.send(@method, //, 0).tainted?.should == str.tainted?
-      str.send(@method, /hello/, 0).tainted?.should == str.tainted?
+      strs.each do |str|
+        str.send(@method, //, 0).tainted?.should == str.tainted?
+        str.send(@method, /hello/, 0).tainted?.should == str.tainted?
 
-      str.send(@method, /(.)(.)(.)/, 0).tainted?.should == str.tainted?
-      str.send(@method, /(.)(.)(.)/, 1).tainted?.should == str.tainted?
-      str.send(@method, /(.)(.)(.)/, -1).tainted?.should == str.tainted?
-      str.send(@method, /(.)(.)(.)/, -2).tainted?.should == str.tainted?
+        str.send(@method, /(.)(.)(.)/, 0).tainted?.should == str.tainted?
+        str.send(@method, /(.)(.)(.)/, 1).tainted?.should == str.tainted?
+        str.send(@method, /(.)(.)(.)/, -1).tainted?.should == str.tainted?
+        str.send(@method, /(.)(.)(.)/, -2).tainted?.should == str.tainted?
 
-      tainted_re = /(.)(.)(.)/
-      tainted_re.taint
+        tainted_re = /(.)(.)(.)/
+        tainted_re.taint
 
-      str.send(@method, tainted_re, 0).tainted?.should == true
-      str.send(@method, tainted_re, 1).tainted?.should == true
-      str.send(@method, tainted_re, -1).tainted?.should == true
+        str.send(@method, tainted_re, 0).tainted?.should == true
+        str.send(@method, tainted_re, 1).tainted?.should == true
+        str.send(@method, tainted_re, -1).tainted?.should == true
+      end
     end
-  end
 
-  not_supported_on :opal do
-    it "returns an untrusted string if the regexp is untrusted" do
-      "hello".send(@method, /(.)/.untrust, 1).untrusted?.should be_true
+    not_supported_on :opal do
+      it "returns an untrusted string if the regexp is untrusted" do
+        "hello".send(@method, /(.)/.untrust, 1).untrusted?.should be_true
+      end
     end
   end
 
@@ -432,15 +440,17 @@ describe :string_slice_string, shared: true do
     "hello there".send(@method, s).should == s
   end
 
-  it "taints resulting strings when other is tainted" do
-    strs = ["", "hello world", "hello"]
-    strs += strs.map { |s| s.dup.taint }
+  ruby_version_is ''...'2.7' do
+    it "taints resulting strings when other is tainted" do
+      strs = ["", "hello world", "hello"]
+      strs += strs.map { |s| s.dup.taint }
 
-    strs.each do |str|
-      strs.each do |other|
-        r = str.send(@method, other)
+      strs.each do |str|
+        strs.each do |other|
+          r = str.send(@method, other)
 
-        r.tainted?.should == !r.nil? & other.tainted?
+          r.tainted?.should == !r.nil? & other.tainted?
+        end
       end
     end
   end
@@ -493,25 +503,27 @@ describe :string_slice_regexp_group, shared: true do
       "hello there".send(@method, /(?<g>h(?<g>.))/, 'g').should == "e"
     end
 
-    it "always taints resulting strings when self or regexp is tainted" do
-      strs = ["hello world"]
-      strs += strs.map { |s| s.dup.taint }
+    ruby_version_is ''...'2.7' do
+      it "always taints resulting strings when self or regexp is tainted" do
+        strs = ["hello world"]
+        strs += strs.map { |s| s.dup.taint }
 
-      strs.each do |str|
-        str.send(@method, /(?<hi>hello)/, 'hi').tainted?.should == str.tainted?
+        strs.each do |str|
+          str.send(@method, /(?<hi>hello)/, 'hi').tainted?.should == str.tainted?
 
-        str.send(@method, /(?<g>(.)(.)(.))/, 'g').tainted?.should == str.tainted?
-        str.send(@method, /(?<h>.)(.)(.)/, 'h').tainted?.should == str.tainted?
-        str.send(@method, /(.)(?<a>.)(.)/, 'a').tainted?.should == str.tainted?
-        str.send(@method, /(.)(.)(?<r>.)/, 'r').tainted?.should == str.tainted?
-        str.send(@method, /(?<h>.)(?<a>.)(?<r>.)/, 'r').tainted?.should == str.tainted?
+          str.send(@method, /(?<g>(.)(.)(.))/, 'g').tainted?.should == str.tainted?
+          str.send(@method, /(?<h>.)(.)(.)/, 'h').tainted?.should == str.tainted?
+          str.send(@method, /(.)(?<a>.)(.)/, 'a').tainted?.should == str.tainted?
+          str.send(@method, /(.)(.)(?<r>.)/, 'r').tainted?.should == str.tainted?
+          str.send(@method, /(?<h>.)(?<a>.)(?<r>.)/, 'r').tainted?.should == str.tainted?
 
-        tainted_re = /(?<a>.)(?<b>.)(?<c>.)/
-        tainted_re.taint
+          tainted_re = /(?<a>.)(?<b>.)(?<c>.)/
+          tainted_re.taint
 
-        str.send(@method, tainted_re, 'a').tainted?.should be_true
-        str.send(@method, tainted_re, 'b').tainted?.should be_true
-        str.send(@method, tainted_re, 'c').tainted?.should be_true
+          str.send(@method, tainted_re, 'a').tainted?.should be_true
+          str.send(@method, tainted_re, 'b').tainted?.should be_true
+          str.send(@method, tainted_re, 'c').tainted?.should be_true
+        end
       end
     end
 

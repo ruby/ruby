@@ -65,10 +65,12 @@ describe "String#upcase" do
     -> { "abc".upcase(:invalid_option) }.should raise_error(ArgumentError)
   end
 
-  it "taints result when self is tainted" do
-    "".taint.upcase.tainted?.should == true
-    "X".taint.upcase.tainted?.should == true
-    "x".taint.upcase.tainted?.should == true
+  ruby_version_is ''...'2.7' do
+    it "taints result when self is tainted" do
+      "".taint.upcase.tainted?.should == true
+      "X".taint.upcase.tainted?.should == true
+      "x".taint.upcase.tainted?.should == true
+    end
   end
 
   it "returns a subclass instance for subclasses" do

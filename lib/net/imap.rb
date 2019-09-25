@@ -3238,7 +3238,7 @@ module Net
             if atom
               atom
             else
-              symbol = flag.capitalize.untaint.intern
+              symbol = flag.capitalize.intern
               @flag_symbols[symbol] = true
               if @flag_symbols.length > IMAP.max_flag_count
                 raise FlagCountError, "number of flag symbols exceeded"

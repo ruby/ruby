@@ -13,10 +13,12 @@ describe "String#strip" do
     " \x00 goodbye \x00 ".strip.should == "\x00 goodbye"
   end
 
-  it "taints the result when self is tainted" do
-    "".taint.strip.tainted?.should == true
-    "ok".taint.strip.tainted?.should == true
-    "  ok  ".taint.strip.tainted?.should == true
+  ruby_version_is ''...'2.7' do
+    it "taints the result when self is tainted" do
+      "".taint.strip.tainted?.should == true
+      "ok".taint.strip.tainted?.should == true
+      "  ok  ".taint.strip.tainted?.should == true
+    end
   end
 end
 

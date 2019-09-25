@@ -10,9 +10,11 @@ describe "String#reverse" do
     "".reverse.should == ""
   end
 
-  it "taints the result if self is tainted" do
-    "".taint.reverse.tainted?.should == true
-    "m".taint.reverse.tainted?.should == true
+  ruby_version_is ''...'2.7' do
+    it "taints the result if self is tainted" do
+      "".taint.reverse.tainted?.should == true
+      "m".taint.reverse.tainted?.should == true
+    end
   end
 
   it "reverses a string with multi byte characters" do

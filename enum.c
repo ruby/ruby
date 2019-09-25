@@ -647,7 +647,6 @@ enum_to_a(int argc, VALUE *argv, VALUE obj)
     VALUE ary = rb_ary_new();
 
     rb_block_call(obj, id_each, argc, argv, collect_all, ary);
-    OBJ_INFECT(ary, obj);
 
     return ary;
 }
@@ -657,7 +656,6 @@ enum_hashify(VALUE obj, int argc, const VALUE *argv, rb_block_call_func *iter)
 {
     VALUE hash = rb_hash_new();
     rb_block_call(obj, id_each, argc, argv, iter, hash);
-    OBJ_INFECT(hash, obj);
     return hash;
 }
 
@@ -1245,7 +1243,6 @@ enum_sort_by(VALUE obj)
     buf = rb_ary_tmp_new(SORT_BY_BUFSIZE*2);
     rb_ary_store(buf, SORT_BY_BUFSIZE*2-1, Qnil);
     memo = MEMO_NEW(0, 0, 0);
-    OBJ_INFECT(memo, obj);
     data = (struct sort_by_data *)&memo->v1;
     RB_OBJ_WRITE(memo, &data->ary, ary);
     RB_OBJ_WRITE(memo, &data->buf, buf);
@@ -1270,7 +1267,6 @@ enum_sort_by(VALUE obj)
     }
     rb_ary_resize(ary, RARRAY_LEN(ary)/2);
     RBASIC_SET_CLASS_RAW(ary, rb_cArray);
-    OBJ_INFECT(ary, memo);
 
     return ary;
 }

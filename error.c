@@ -2018,7 +2018,6 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
 
 	if (!NIL_P(func)) rb_str_catf(errmsg, " @ %"PRIsVALUE, func);
 	rb_str_catf(errmsg, " - %"PRIsVALUE, str);
-	OBJ_INFECT(errmsg, mesg);
     }
     mesg = errmsg;
 
@@ -2319,19 +2318,7 @@ syserr_eqq(VALUE self, VALUE exc)
 /*
  *  Document-class: SecurityError
  *
- *  Raised when attempting a potential unsafe operation, typically when
- *  the $SAFE level is raised above 0.
- *
- *     foo = "bar"
- *     proc = Proc.new do
- *       $SAFE = 3
- *       foo.untaint
- *     end
- *     proc.call
- *
- *  <em>raises the exception:</em>
- *
- *     SecurityError: Insecure: Insecure operation `untaint' at level 3
+ *  No longer used by internal code.
  */
 
 /*
@@ -2971,12 +2958,14 @@ rb_check_frozen(VALUE obj)
 void
 rb_error_untrusted(VALUE obj)
 {
+    rb_warning("rb_error_untrusted is deprecated and will be removed in Ruby 3.2.");
 }
 
 #undef rb_check_trusted
 void
 rb_check_trusted(VALUE obj)
 {
+    rb_warning("rb_check_trusted is deprecated and will be removed in Ruby 3.2.");
 }
 
 void

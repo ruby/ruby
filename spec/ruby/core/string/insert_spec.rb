@@ -41,14 +41,16 @@ describe "String#insert with index, other" do
     "abcd".insert(-3, other).should == "abXYZcd"
   end
 
-  it "taints self if string to insert is tainted" do
-    str = "abcd"
-    str.insert(0, "T".taint).tainted?.should == true
+  ruby_version_is ''...'2.7' do
+    it "taints self if string to insert is tainted" do
+      str = "abcd"
+      str.insert(0, "T".taint).tainted?.should == true
 
-    str = "abcd"
-    other = mock('T')
-    def other.to_str() "T".taint end
-    str.insert(0, other).tainted?.should == true
+      str = "abcd"
+      other = mock('T')
+      def other.to_str() "T".taint end
+      str.insert(0, other).tainted?.should == true
+    end
   end
 
   it "raises a TypeError if other can't be converted to string" do

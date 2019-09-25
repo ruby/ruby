@@ -1195,7 +1195,7 @@ trap_handler(VALUE *cmd, int sig)
 	if (!NIL_P(command)) {
 	    const char *cptr;
 	    long len;
-	    SafeStringValue(command);	/* taint check */
+            StringValue(command);
 	    *cmd = command;
 	    RSTRING_GETMEM(command, cptr, len);
 	    switch (len) {
@@ -1391,10 +1391,6 @@ sig_trap(int argc, VALUE *argv, VALUE _)
     else {
 	cmd = argv[1];
 	func = trap_handler(&cmd, sig);
-    }
-
-    if (OBJ_TAINTED(cmd)) {
-	rb_raise(rb_eSecurityError, "Insecure: tainted signal trap");
     }
 
     return trap(sig, func, cmd);

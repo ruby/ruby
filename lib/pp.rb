@@ -106,17 +106,17 @@ class PP < PrettyPrint
     # and preserves the previous set of objects being printed.
     def guard_inspect_key
       if Thread.current[:__recursive_key__] == nil
-        Thread.current[:__recursive_key__] = {}.compare_by_identity.taint
+        Thread.current[:__recursive_key__] = {}.compare_by_identity
       end
 
       if Thread.current[:__recursive_key__][:inspect] == nil
-        Thread.current[:__recursive_key__][:inspect] = {}.compare_by_identity.taint
+        Thread.current[:__recursive_key__][:inspect] = {}.compare_by_identity
       end
 
       save = Thread.current[:__recursive_key__][:inspect]
 
       begin
-        Thread.current[:__recursive_key__][:inspect] = {}.compare_by_identity.taint
+        Thread.current[:__recursive_key__][:inspect] = {}.compare_by_identity
         yield
       ensure
         Thread.current[:__recursive_key__][:inspect] = save

@@ -108,9 +108,15 @@ describe "Kernel#clone" do
     cloned.bar.should == ['a']
   end
 
-  it 'copies frozen? and tainted?' do
-    o = ''.taint.freeze.clone
+  it 'copies frozen?' do
+    o = ''.freeze.clone
     o.frozen?.should be_true
-    o.tainted?.should be_true
+  end
+
+  ruby_version_is ''...'2.7' do
+    it 'copies tainted?' do
+      o = ''.taint.clone
+      o.tainted?.should be_true
+    end
   end
 end

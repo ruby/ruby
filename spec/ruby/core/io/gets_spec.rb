@@ -38,9 +38,11 @@ describe "IO#gets" do
       IOSpecs.lines.each { |line| line.should == @io.gets }
     end
 
-    it "returns tainted strings" do
-      while line = @io.gets
-        line.tainted?.should == true
+    ruby_version_is ''...'2.7' do
+      it "returns tainted strings" do
+        while line = @io.gets
+          line.tainted?.should == true
+        end
       end
     end
 
@@ -62,9 +64,11 @@ describe "IO#gets" do
       @io.gets(nil).should == IOSpecs.lines.join("")
     end
 
-    it "returns tainted strings" do
-      while line = @io.gets(nil)
-        line.tainted?.should == true
+    ruby_version_is ''...'2.7' do
+      it "returns tainted strings" do
+        while line = @io.gets(nil)
+          line.tainted?.should == true
+        end
       end
     end
 
@@ -96,9 +100,11 @@ describe "IO#gets" do
       @io.gets.should == IOSpecs.lines[4]
     end
 
-    it "returns tainted strings" do
-      while line = @io.gets("")
-        line.tainted?.should == true
+    ruby_version_is ''...'2.7' do
+      it "returns tainted strings" do
+        while line = @io.gets("")
+          line.tainted?.should == true
+        end
       end
     end
 
@@ -120,9 +126,11 @@ describe "IO#gets" do
       @io.gets("la linea").should == "Voici la ligne une.\nQui \303\250 la linea"
     end
 
-    it "returns tainted strings" do
-      while line = @io.gets("la")
-        line.tainted?.should == true
+    ruby_version_is ''...'2.7' do
+      it "returns tainted strings" do
+        while line = @io.gets("la")
+          line.tainted?.should == true
+        end
       end
     end
 

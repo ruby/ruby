@@ -167,8 +167,10 @@ describe "C-API String function" do
       @s.rb_str_new("hello", 3).should == "hel"
     end
 
-    it "returns a non-tainted string" do
-      @s.rb_str_new("hello", 5).tainted?.should == false
+    ruby_version_is ''...'2.7' do
+      it "returns a non-tainted string" do
+        @s.rb_str_new("hello", 5).tainted?.should == false
+      end
     end
 
     it "returns an empty string if len is 0" do
@@ -305,19 +307,21 @@ describe "C-API String function" do
     end
   end
 
-  describe "rb_tainted_str_new" do
-    it "creates a new tainted String" do
-      newstring = @s.rb_tainted_str_new("test", 4)
-      newstring.should == "test"
-      newstring.tainted?.should be_true
+  ruby_version_is ''...'2.7' do
+    describe "rb_tainted_str_new" do
+      it "creates a new tainted String" do
+        newstring = @s.rb_tainted_str_new("test", 4)
+        newstring.should == "test"
+        newstring.tainted?.should be_true
+      end
     end
-  end
 
-  describe "rb_tainted_str_new2" do
-    it "creates a new tainted String" do
-      newstring = @s.rb_tainted_str_new2("test")
-      newstring.should == "test"
-      newstring.tainted?.should be_true
+    describe "rb_tainted_str_new2" do
+      it "creates a new tainted String" do
+        newstring = @s.rb_tainted_str_new2("test")
+        newstring.should == "test"
+        newstring.tainted?.should be_true
+      end
     end
   end
 
@@ -684,8 +688,10 @@ describe :rb_external_str_new, shared: true do
     @s.send(@method, "#{x80}abc").encoding.should == Encoding::BINARY
   end
 
-  it "returns a tainted String" do
-    @s.send(@method, "abc").tainted?.should be_true
+  ruby_version_is ''...'2.7' do
+    it "returns a tainted String" do
+      @s.send(@method, "abc").tainted?.should be_true
+    end
   end
 end
 
@@ -767,9 +773,11 @@ describe "C-API String function" do
       s.encoding.should equal(Encoding::EUC_JP)
     end
 
-    it "returns a tainted String" do
-      s = @s.rb_external_str_new_with_enc("abc", 3, Encoding::US_ASCII)
-      s.tainted?.should be_true
+    ruby_version_is ''...'2.7' do
+      it "returns a tainted String" do
+        s = @s.rb_external_str_new_with_enc("abc", 3, Encoding::US_ASCII)
+        s.tainted?.should be_true
+      end
     end
   end
 

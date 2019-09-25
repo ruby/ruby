@@ -379,31 +379,6 @@ class TestRequire < Test::Unit::TestCase
     end
   end
 
-  def test_tainted_loadpath
-    Tempfile.create(["test_ruby_test_require", ".rb"]) {|t|
-      abs_dir, file = File.split(t.path)
-      abs_dir = File.expand_path(abs_dir).untaint
-
-      assert_separately([], <<-INPUT)
-        abs_dir = "#{ abs_dir }"
-        $: << abs_dir
-        assert_nothing_raised {require "#{ file }"}
-      INPUT
-
-      assert_separately([], <<-INPUT)
-        abs_dir = "#{ abs_dir }"
-        $: << abs_dir.taint
-        assert_nothing_raised {require "#{ file }"}
-      INPUT
-
-      assert_separately([], <<-INPUT)
-        abs_dir = "#{ abs_dir }"
-        $: << abs_dir << 'elsewhere'.taint
-        assert_nothing_raised {require "#{ file }"}
-      INPUT
-    }
-  end
-
   def test_relative
     load_path = $:.dup
     $:.delete(".")

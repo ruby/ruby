@@ -68,11 +68,13 @@ describe "String#delete" do
     -> { "hello".delete("^h-e") }.should raise_error(ArgumentError)
   end
 
-  it "taints result when self is tainted" do
-    "hello".taint.delete("e").tainted?.should == true
-    "hello".taint.delete("a-z").tainted?.should == true
+  ruby_version_is ''...'2.7' do
+    it "taints result when self is tainted" do
+      "hello".taint.delete("e").tainted?.should == true
+      "hello".taint.delete("a-z").tainted?.should == true
 
-    "hello".delete("e".taint).tainted?.should == false
+      "hello".delete("e".taint).tainted?.should == false
+    end
   end
 
   it "tries to convert each set arg to a string using to_str" do

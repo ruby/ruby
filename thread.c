@@ -3185,7 +3185,6 @@ rb_thread_to_s(VALUE thread)
         rb_gc_force_recycle(loc);
     }
     rb_str_catf(str, " %s>", status);
-    OBJ_INFECT(str, thread);
 
     return str;
 }

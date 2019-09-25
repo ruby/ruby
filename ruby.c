@@ -2227,7 +2227,6 @@ external_str_new_cstr(const char *p)
 #if UTF8_PATH
     VALUE str = rb_utf8_str_new_cstr(p);
     str = str_conv_enc(str, NULL, rb_default_external_encoding());
-    OBJ_TAINT_RAW(str);
     return str;
 #else
     return rb_external_str_new_cstr(p);

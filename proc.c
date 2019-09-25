@@ -1377,7 +1377,6 @@ rb_block_to_s(VALUE self, const struct rb_block *block, const char *additional_i
 
     if (additional_info) rb_str_cat_cstr(str, additional_info);
     rb_str_cat_cstr(str, ">");
-    OBJ_INFECT_RAW(str, self);
     return str;
 }
 
@@ -1490,8 +1489,6 @@ mnew_missing(VALUE klass, VALUE obj, ID id, VALUE mclass)
 
     RB_OBJ_WRITE(method, &data->me, me);
 
-    OBJ_INFECT(method, klass);
-
     return method;
 }
 
@@ -1548,7 +1545,6 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
     RB_OBJ_WRITE(method, &data->iclass, iclass);
     RB_OBJ_WRITE(method, &data->me, me);
 
-    OBJ_INFECT(method, klass);
     return method;
 }
 
@@ -1691,7 +1687,6 @@ method_unbind(VALUE obj)
     RB_OBJ_WRITE(method, &data->recv, Qundef);
     RB_OBJ_WRITE(method, &data->klass, orig->klass);
     RB_OBJ_WRITE(method, &data->me, rb_method_entry_clone(orig->me));
-    OBJ_INFECT(method, obj);
 
     return method;
 }
@@ -2775,7 +2770,6 @@ method_inspect(VALUE method)
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     str = rb_sprintf("#<% "PRIsVALUE": ", rb_obj_class(method));
-    OBJ_INFECT_RAW(str, method);
 
     mklass = data->klass;
 

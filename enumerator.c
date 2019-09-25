@@ -1077,7 +1077,6 @@ inspect_enumerator(VALUE obj, VALUE dummy, int recur)
 
     if (recur) {
 	str = rb_sprintf("#<%"PRIsVALUE": ...>", rb_class_path(cname));
-	OBJ_TAINT(str);
 	return str;
     }
 
@@ -1172,7 +1171,6 @@ append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
 
 		rb_str_append(str, rb_inspect(arg));
 		rb_str_buf_cat2(str, ", ");
-		OBJ_INFECT(str, arg);
 	    }
 	    if (!NIL_P(kwds)) {
 		rb_hash_foreach(kwds, kwd_append, str);
@@ -3609,7 +3607,6 @@ arith_seq_inspect(VALUE self)
 
                 rb_str_append(str, rb_inspect(arg));
                 rb_str_buf_cat2(str, ", ");
-                OBJ_INFECT(str, arg);
             }
             if (!NIL_P(kwds)) {
                 rb_hash_foreach(kwds, kwd_append, str);

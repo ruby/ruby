@@ -2064,7 +2064,6 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_tostring
     assert_equal("ok", ToString.new.string)
-    assert_predicate(ToString.new.taint.string, :tainted?)
   end
 
   class ToSymbol

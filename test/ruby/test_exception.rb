@@ -550,28 +550,6 @@ end.join
     end
   end
 
-  def test_to_s_taintness_propagation
-    for exc in [Exception, NameError]
-      m = "abcdefg"
-      e = exc.new(m)
-      e.taint
-      s = e.to_s
-      assert_equal(false, m.tainted?,
-                   "#{exc}#to_s should not propagate taintness")
-      assert_equal(false, s.tainted?,
-                   "#{exc}#to_s should not propagate taintness")
-    end
-
-    o = Object.new
-    def o.to_str
-      "foo"
-    end
-    o.taint
-    e = NameError.new(o)
-    s = e.to_s
-    assert_equal(false, s.tainted?)
-  end
-
   def m
     m(&->{return 0})
     42

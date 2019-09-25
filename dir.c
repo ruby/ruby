@@ -1129,9 +1129,8 @@ rb_dir_getwd_ospath(void)
     DATA_PTR(path_guard) = path;
 #ifdef __APPLE__
     cwd = rb_str_normalize_ospath(path, strlen(path));
-    OBJ_TAINT(cwd);
 #else
-    cwd = rb_tainted_str_new2(path);
+    cwd = rb_str_new2(path);
 #endif
     DATA_PTR(path_guard) = 0;
 
@@ -2564,7 +2563,6 @@ push_pattern(const char *path, VALUE ary, void *enc)
 #if defined _WIN32 || defined __APPLE__
     VALUE name = rb_utf8_str_new_cstr(path);
     rb_encoding *eenc = rb_default_internal_encoding();
-    OBJ_TAINT(name);
     name = rb_str_conv_enc(name, NULL, eenc ? eenc : enc);
 #else
     VALUE name = rb_external_str_new_with_enc(path, strlen(path), enc);

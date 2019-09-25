@@ -165,16 +165,18 @@ describe "String#split with String" do
     s.split(':').first.should == 'silly'
   end
 
-  it "taints the resulting strings if self is tainted" do
-    ["", "x.y.z.", "  x  y  "].each do |str|
-      ["", ".", " "].each do |pat|
-        [-1, 0, 1, 2].each do |limit|
-          str.dup.taint.split(pat).each do |x|
-            x.tainted?.should == true
-          end
+  ruby_version_is ''...'2.7' do
+    it "taints the resulting strings if self is tainted" do
+      ["", "x.y.z.", "  x  y  "].each do |str|
+        ["", ".", " "].each do |pat|
+          [-1, 0, 1, 2].each do |limit|
+            str.dup.taint.split(pat).each do |x|
+              x.tainted?.should == true
+            end
 
-          str.split(pat.dup.taint).each do |x|
-            x.tainted?.should == false
+            str.split(pat.dup.taint).each do |x|
+              x.tainted?.should == false
+            end
           end
         end
       end
@@ -355,29 +357,31 @@ describe "String#split with Regexp" do
     s.split(/:/).first.should == 'silly'
   end
 
-  it "taints the resulting strings if self is tainted" do
-    ["", "x:y:z:", "  x  y  "].each do |str|
-      [//, /:/, /\s+/].each do |pat|
-        [-1, 0, 1, 2].each do |limit|
-          str.dup.taint.split(pat, limit).each do |x|
-            # See the spec below for why the conditional is here
-            x.tainted?.should be_true unless x.empty?
+  ruby_version_is ''...'2.7' do
+    it "taints the resulting strings if self is tainted" do
+      ["", "x:y:z:", "  x  y  "].each do |str|
+        [//, /:/, /\s+/].each do |pat|
+          [-1, 0, 1, 2].each do |limit|
+            str.dup.taint.split(pat, limit).each do |x|
+              # See the spec below for why the conditional is here
+              x.tainted?.should be_true unless x.empty?
+            end
           end
         end
       end
     end
-  end
 
-  it "taints an empty string if self is tainted" do
-    ":".taint.split(//, -1).last.tainted?.should be_true
-  end
+    it "taints an empty string if self is tainted" do
+      ":".taint.split(//, -1).last.tainted?.should be_true
+    end
 
-  it "doesn't taints the resulting strings if the Regexp is tainted" do
-    ["", "x:y:z:", "  x  y  "].each do |str|
-      [//, /:/, /\s+/].each do |pat|
-        [-1, 0, 1, 2].each do |limit|
-          str.split(pat.dup.taint, limit).each do |x|
-            x.tainted?.should be_false
+    it "doesn't taints the resulting strings if the Regexp is tainted" do
+      ["", "x:y:z:", "  x  y  "].each do |str|
+        [//, /:/, /\s+/].each do |pat|
+          [-1, 0, 1, 2].each do |limit|
+            str.split(pat.dup.taint, limit).each do |x|
+              x.tainted?.should be_false
+            end
           end
         end
       end

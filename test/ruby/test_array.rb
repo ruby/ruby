@@ -556,18 +556,14 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_clone
-    for taint in [ false, true ]
-      for frozen in [ false, true ]
-        a = @cls[*(0..99).to_a]
-        a.taint  if taint
-        a.freeze if frozen
-        b = a.clone
+    for frozen in [ false, true ]
+      a = @cls[*(0..99).to_a]
+      a.freeze if frozen
+      b = a.clone
 
-        assert_equal(a, b)
-        assert_not_equal(a.__id__, b.__id__)
-        assert_equal(a.frozen?, b.frozen?)
-        assert_equal(a.tainted?, b.tainted?)
-      end
+      assert_equal(a, b)
+      assert_not_equal(a.__id__, b.__id__)
+      assert_equal(a.frozen?, b.frozen?)
     end
   end
 
@@ -754,18 +750,14 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_dup
-    for taint in [ false, true ]
-      for frozen in [ false, true ]
-        a = @cls[*(0..99).to_a]
-        a.taint  if taint
-        a.freeze if frozen
-        b = a.dup
+    for frozen in [ false, true ]
+      a = @cls[*(0..99).to_a]
+      a.freeze if frozen
+      b = a.dup
 
-        assert_equal(a, b)
-        assert_not_equal(a.__id__, b.__id__)
-        assert_equal(false, b.frozen?)
-        assert_equal(a.tainted?, b.tainted?)
-      end
+      assert_equal(a, b)
+      assert_not_equal(a.__id__, b.__id__)
+      assert_equal(false, b.frozen?)
     end
   end
 
@@ -863,13 +855,6 @@ class TestArray < Test::Unit::TestCase
 
   def test_flatten_wrong_argument
     assert_raise(TypeError, "[ruby-dev:31197]") { [[]].flatten("") }
-  end
-
-  def test_flatten_taint
-    a6 = @cls[[1, 2], 3]
-    a6.taint
-    a7 = a6.flatten
-    assert_equal(true, a7.tainted?)
   end
 
   def test_flatten_level0
@@ -1132,20 +1117,6 @@ class TestArray < Test::Unit::TestCase
     assert_equal("1,2,3", a.join(','))
 
     $, = ""
-    a = @cls[1, 2, 3]
-    a.taint
-    s = a.join
-    assert_equal(true, s.tainted?)
-
-    bug5902 = '[ruby-core:42161]'
-    sep = ":".taint
-
-    s = @cls[].join(sep)
-    assert_equal(false, s.tainted?, bug5902)
-    s = @cls[1].join(sep)
-    assert_equal(false, s.tainted?, bug5902)
-    s = @cls[1, 2].join(sep)
-    assert_equal(true, s.tainted?, bug5902)
 
     e = ''.force_encoding('EUC-JP')
     u = ''.force_encoding('UTF-8')
@@ -2897,13 +2868,6 @@ class TestArray < Test::Unit::TestCase
     assert_equal(Array2, Array2[1,2,3].uniq.class, "[ruby-dev:34581]")
     assert_equal(Array2, Array2[1,2][0,1].class) # embedded
     assert_equal(Array2, Array2[*(1..100)][1..99].class) #not embedded
-  end
-
-  def test_inspect
-    a = @cls[1, 2, 3]
-    a.taint
-    s = a.inspect
-    assert_equal(true, s.tainted?)
   end
 
   def test_initialize2

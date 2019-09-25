@@ -137,24 +137,26 @@ describe "String#sub with pattern, replacement" do
     "hello".sub(/./, 'hah\\').should == 'hah\\ello'
   end
 
-  it "taints the result if the original string or replacement is tainted" do
-    hello = "hello"
-    hello_t = "hello"
-    a = "a"
-    a_t = "a"
-    empty = ""
-    empty_t = ""
+  ruby_version_is ''...'2.7' do
+    it "taints the result if the original string or replacement is tainted" do
+      hello = "hello"
+      hello_t = "hello"
+      a = "a"
+      a_t = "a"
+      empty = ""
+      empty_t = ""
 
-    hello_t.taint; a_t.taint; empty_t.taint
+      hello_t.taint; a_t.taint; empty_t.taint
 
-    hello_t.sub(/./, a).tainted?.should == true
-    hello_t.sub(/./, empty).tainted?.should == true
+      hello_t.sub(/./, a).tainted?.should == true
+      hello_t.sub(/./, empty).tainted?.should == true
 
-    hello.sub(/./, a_t).tainted?.should == true
-    hello.sub(/./, empty_t).tainted?.should == true
-    hello.sub(//, empty_t).tainted?.should == true
+      hello.sub(/./, a_t).tainted?.should == true
+      hello.sub(/./, empty_t).tainted?.should == true
+      hello.sub(//, empty_t).tainted?.should == true
 
-    hello.sub(//.taint, "foo").tainted?.should == false
+      hello.sub(//.taint, "foo").tainted?.should == false
+    end
   end
 
   it "tries to convert pattern to a string using to_str" do
@@ -285,24 +287,26 @@ describe "String#sub with pattern and block" do
     "hello".sub(/.+/) { obj }.should == "ok"
   end
 
-  it "taints the result if the original string or replacement is tainted" do
-    hello = "hello"
-    hello_t = "hello"
-    a = "a"
-    a_t = "a"
-    empty = ""
-    empty_t = ""
+  ruby_version_is ''...'2.7' do
+    it "taints the result if the original string or replacement is tainted" do
+      hello = "hello"
+      hello_t = "hello"
+      a = "a"
+      a_t = "a"
+      empty = ""
+      empty_t = ""
 
-    hello_t.taint; a_t.taint; empty_t.taint
+      hello_t.taint; a_t.taint; empty_t.taint
 
-    hello_t.sub(/./) { a }.tainted?.should == true
-    hello_t.sub(/./) { empty }.tainted?.should == true
+      hello_t.sub(/./) { a }.tainted?.should == true
+      hello_t.sub(/./) { empty }.tainted?.should == true
 
-    hello.sub(/./) { a_t }.tainted?.should == true
-    hello.sub(/./) { empty_t }.tainted?.should == true
-    hello.sub(//) { empty_t }.tainted?.should == true
+      hello.sub(/./) { a_t }.tainted?.should == true
+      hello.sub(/./) { empty_t }.tainted?.should == true
+      hello.sub(//) { empty_t }.tainted?.should == true
 
-    hello.sub(//.taint) { "foo" }.tainted?.should == false
+      hello.sub(//.taint) { "foo" }.tainted?.should == false
+    end
   end
 end
 
@@ -313,10 +317,12 @@ describe "String#sub! with pattern, replacement" do
     a.should == "h*llo"
   end
 
-  it "taints self if replacement is tainted" do
-    a = "hello"
-    a.sub!(/./.taint, "foo").tainted?.should == false
-    a.sub!(/./, "foo".taint).tainted?.should == true
+  ruby_version_is ''...'2.7' do
+    it "taints self if replacement is tainted" do
+      a = "hello"
+      a.sub!(/./.taint, "foo").tainted?.should == false
+      a.sub!(/./, "foo".taint).tainted?.should == true
+    end
   end
 
   it "returns nil if no modifications were made" do
@@ -361,10 +367,12 @@ describe "String#sub! with pattern and block" do
     offsets.should == [[1, 2]]
   end
 
-  it "taints self if block's result is tainted" do
-    a = "hello"
-    a.sub!(/./.taint) { "foo" }.tainted?.should == false
-    a.sub!(/./) { "foo".taint }.tainted?.should == true
+  ruby_version_is ''...'2.7' do
+    it "taints self if block's result is tainted" do
+      a = "hello"
+      a.sub!(/./.taint) { "foo" }.tainted?.should == false
+      a.sub!(/./) { "foo".taint }.tainted?.should == true
+    end
   end
 
   it "returns nil if no modifications were made" do
@@ -452,24 +460,26 @@ describe "String#sub with pattern and Hash" do
     "hello".sub(/(.+)/, 'hello' => repl ).should == repl
   end
 
-  it "untrusts the result if the original string is untrusted" do
-    str = "Ghana".untrust
-    str.sub(/[Aa]na/, 'ana' => '').untrusted?.should be_true
-  end
+  ruby_version_is ''...'2.7' do
+    it "untrusts the result if the original string is untrusted" do
+      str = "Ghana".untrust
+      str.sub(/[Aa]na/, 'ana' => '').untrusted?.should be_true
+    end
 
-  it "untrusts the result if a hash value is untrusted" do
-    str = "Ghana"
-    str.sub(/a$/, 'a' => 'di'.untrust).untrusted?.should be_true
-  end
+    it "untrusts the result if a hash value is untrusted" do
+      str = "Ghana"
+      str.sub(/a$/, 'a' => 'di'.untrust).untrusted?.should be_true
+    end
 
-  it "taints the result if the original string is tainted" do
-    str = "Ghana".taint
-    str.sub(/[Aa]na/, 'ana' => '').tainted?.should be_true
-  end
+    it "taints the result if the original string is tainted" do
+      str = "Ghana".taint
+      str.sub(/[Aa]na/, 'ana' => '').tainted?.should be_true
+    end
 
-  it "taints the result if a hash value is tainted" do
-    str = "Ghana"
-    str.sub(/a$/, 'a' => 'di'.taint).tainted?.should be_true
+    it "taints the result if a hash value is tainted" do
+      str = "Ghana"
+      str.sub(/a$/, 'a' => 'di'.taint).tainted?.should be_true
+    end
   end
 
 end
@@ -537,24 +547,26 @@ describe "String#sub! with pattern and Hash" do
     "hello".sub!(/(.+)/, 'hello' => repl ).should == repl
   end
 
-  it "keeps untrusted state" do
-    str = "Ghana".untrust
-    str.sub!(/[Aa]na/, 'ana' => '').untrusted?.should be_true
-  end
+  ruby_version_is ''...'2.7' do
+    it "keeps untrusted state" do
+      str = "Ghana".untrust
+      str.sub!(/[Aa]na/, 'ana' => '').untrusted?.should be_true
+    end
 
-  it "untrusts self if a hash value is untrusted" do
-    str = "Ghana"
-    str.sub!(/a$/, 'a' => 'di'.untrust).untrusted?.should be_true
-  end
+    it "untrusts self if a hash value is untrusted" do
+      str = "Ghana"
+      str.sub!(/a$/, 'a' => 'di'.untrust).untrusted?.should be_true
+    end
 
-  it "keeps tainted state" do
-    str = "Ghana".taint
-    str.sub!(/[Aa]na/, 'ana' => '').tainted?.should be_true
-  end
+    it "keeps tainted state" do
+      str = "Ghana".taint
+      str.sub!(/[Aa]na/, 'ana' => '').tainted?.should be_true
+    end
 
-  it "taints self if a hash value is tainted" do
-    str = "Ghana"
-    str.sub!(/a$/, 'a' => 'di'.taint).tainted?.should be_true
+    it "taints self if a hash value is tainted" do
+      str = "Ghana"
+      str.sub!(/a$/, 'a' => 'di'.taint).tainted?.should be_true
+    end
   end
 end
 

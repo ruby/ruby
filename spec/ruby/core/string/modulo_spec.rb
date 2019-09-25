@@ -297,24 +297,26 @@ describe "String#%" do
     end
   end
 
-  it "always taints the result when the format string is tainted" do
-    universal = mock('0')
-    def universal.to_int() 0 end
-    def universal.to_str() "0" end
-    def universal.to_f() 0.0 end
+  ruby_version_is ''...'2.7' do
+    it "always taints the result when the format string is tainted" do
+      universal = mock('0')
+      def universal.to_int() 0 end
+      def universal.to_str() "0" end
+      def universal.to_f() 0.0 end
 
-    [
-      "", "foo",
-      "%b", "%B", "%c", "%d", "%e", "%E",
-      "%f", "%g", "%G", "%i", "%o", "%p",
-      "%s", "%u", "%x", "%X"
-    ].each do |format|
-      subcls_format = StringSpecs::MyString.new(format)
-      subcls_format.taint
-      format.taint
+      [
+        "", "foo",
+        "%b", "%B", "%c", "%d", "%e", "%E",
+        "%f", "%g", "%G", "%i", "%o", "%p",
+        "%s", "%u", "%x", "%X"
+      ].each do |format|
+        subcls_format = StringSpecs::MyString.new(format)
+        subcls_format.taint
+        format.taint
 
-      (format % universal).tainted?.should == true
-      (subcls_format % universal).tainted?.should == true
+        (format % universal).tainted?.should == true
+        (subcls_format % universal).tainted?.should == true
+      end
     end
   end
 
@@ -571,16 +573,18 @@ describe "String#%" do
     # ("%p" % obj).should == "obj"
   end
 
-  it "taints result for %p when argument.inspect is tainted" do
-    obj = mock('x')
-    def obj.inspect() "x".taint end
+  ruby_version_is ''...'2.7' do
+    it "taints result for %p when argument.inspect is tainted" do
+      obj = mock('x')
+      def obj.inspect() "x".taint end
 
-    ("%p" % obj).tainted?.should == true
+      ("%p" % obj).tainted?.should == true
 
-    obj = mock('x'); obj.taint
-    def obj.inspect() "x" end
+      obj = mock('x'); obj.taint
+      def obj.inspect() "x" end
 
-    ("%p" % obj).tainted?.should == false
+      ("%p" % obj).tainted?.should == false
+    end
   end
 
   it "supports string formats using %s" do
@@ -611,9 +615,11 @@ describe "String#%" do
     # ("%s" % obj).should == "obj"
   end
 
-  it "taints result for %s when argument is tainted" do
-    ("%s" % "x".taint).tainted?.should == true
-    ("%s" % mock('x').taint).tainted?.should == true
+  ruby_version_is ''...'2.7' do
+    it "taints result for %s when argument is tainted" do
+      ("%s" % "x".taint).tainted?.should == true
+      ("%s" % mock('x').taint).tainted?.should == true
+    end
   end
 
   # MRI crashes on this one.
@@ -776,8 +782,10 @@ describe "String#%" do
       (format % "0xA").should == (format % 0xA)
     end
 
-    it "doesn't taint the result for #{format} when argument is tainted" do
-      (format % "5".taint).tainted?.should == false
+    ruby_version_is ''...'2.7' do
+      it "doesn't taint the result for #{format} when argument is tainted" do
+        (format % "5".taint).tainted?.should == false
+      end
     end
   end
 

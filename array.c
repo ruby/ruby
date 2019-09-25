@@ -2285,7 +2285,6 @@ ary_join_0(VALUE ary, VALUE sep, long max, VALUE result)
 	if (i > 0 && !NIL_P(sep))
 	    rb_str_buf_append(result, sep);
 	rb_str_buf_append(result, val);
-	if (OBJ_TAINTED(val)) OBJ_TAINT(result);
     }
 }
 
@@ -2346,11 +2345,9 @@ VALUE
 rb_ary_join(VALUE ary, VALUE sep)
 {
     long len = 1, i;
-    int taint = FALSE;
     VALUE val, tmp, result;
 
     if (RARRAY_LEN(ary) == 0) return rb_usascii_str_new(0, 0);
-    if (OBJ_TAINTED(ary)) taint = TRUE;
 
     if (!NIL_P(sep)) {
 	StringValue(sep);
@@ -2364,7 +2361,6 @@ rb_ary_join(VALUE ary, VALUE sep)
 	    int first;
 	    result = rb_str_buf_new(len + (RARRAY_LEN(ary)-i)*10);
 	    rb_enc_associate(result, rb_usascii_encoding());
-	    if (taint) OBJ_TAINT(result);
 	    ary_join_0(ary, sep, i, result);
 	    first = i == 0;
 	    ary_join_1(ary, ary, sep, i, result, &first);
@@ -2377,7 +2373,6 @@ rb_ary_join(VALUE ary, VALUE sep)
     result = rb_str_new(0, len);
     rb_str_set_len(result, 0);
 
-    if (taint) OBJ_TAINT(result);
     ary_join_0(ary, sep, RARRAY_LEN(ary), result);
 
     return result;
@@ -2419,7 +2414,6 @@ rb_ary_join_m(int argc, VALUE *argv, VALUE ary)
 static VALUE
 inspect_ary(VALUE ary, VALUE dummy, int recur)
 {
-    int tainted = OBJ_TAINTED(ary);
     long i;
     VALUE s, str;
 
@@ -2427,13 +2421,11 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
     str = rb_str_buf_new2("[");
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	s = rb_inspect(RARRAY_AREF(ary, i));
-	if (OBJ_TAINTED(s)) tainted = TRUE;
 	if (i > 0) rb_str_buf_cat2(str, ", ");
 	else rb_enc_copy(str, s);
 	rb_str_buf_append(str, s);
     }
     rb_str_buf_cat2(str, "]");
-    if (tainted) OBJ_TAINT(str);
     return str;
 }
 
@@ -4135,8 +4127,6 @@ rb_ary_times(VALUE ary, VALUE times)
         }
     }
   out:
-    OBJ_INFECT(ary2, ary);
-
     return ary2;
 }
 
@@ -5315,7 +5305,6 @@ rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
     if (result == ary) {
         result = ary_make_shared_copy(ary);
     }
-    OBJ_INFECT(result, ary);
 
     return result;
 }

@@ -150,16 +150,12 @@ rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE),
     st_insert(compat_allocator_table(), (st_data_t)allocator, (st_data_t)compat);
 }
 
-#define MARSHAL_INFECTION FL_TAINT
-STATIC_ASSERT(marshal_infection_is_int, MARSHAL_INFECTION == (int)MARSHAL_INFECTION);
-
 struct dump_arg {
     VALUE str, dest;
     st_table *symbols;
     st_table *data;
     st_table *compat_tbl;
     st_table *encodings;
-    int infection;
 };
 
 struct dump_call_arg {
@@ -268,7 +264,6 @@ w_nbyte(const char *s, long n, struct dump_arg *arg)
 {
     VALUE buf = arg->str;
     rb_str_buf_cat(buf, s, n);
-    RBASIC(buf)->flags |= arg->infection;
     if (arg->dest && RSTRING_LEN(buf) >= BUFSIZ) {
 	rb_io_write(arg->dest, buf);
 	rb_str_resize(buf, 0);
@@ -770,8 +765,6 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 		     rb_builtin_type_name(BUILTIN_TYPE(obj)));
 	}
 
-	arg->infection |= (int)FL_TEST(obj, MARSHAL_INFECTION);
-
 	if (rb_obj_respond_to(obj, s_mdump, TRUE)) {
 	    st_add_direct(arg->data, obj, arg->data->num_entries);
 
@@ -1077,7 +1070,6 @@ rb_marshal_dump_limited(VALUE obj, VALUE port, int limit)
     arg->dest = 0;
     arg->symbols = st_init_numtable();
     arg->data    = rb_init_identtable();
-    arg->infection = 0;
     arg->compat_tbl = 0;
     arg->encodings = 0;
     arg->str = rb_str_buf_new(0);
@@ -1116,7 +1108,6 @@ struct load_arg {
     st_table *data;
     VALUE proc;
     st_table *compat_tbl;
-    int infection;
 };
 
 static VALUE
@@ -1195,7 +1186,6 @@ r_byte1_buffered(struct load_arg *arg)
 	str = load_funcall(arg, arg->src, s_read, 1, &n);
 	if (NIL_P(str)) too_short();
 	StringValue(str);
-	arg->infection |= (int)FL_TEST(str, MARSHAL_INFECTION);
 	memcpy(arg->buf, RSTRING_PTR(str), RSTRING_LEN(str));
 	arg->offset = 0;
 	arg->buflen = RSTRING_LEN(str);
@@ -1294,7 +1284,6 @@ r_bytes1(long len, struct load_arg *arg)
     if (NIL_P(str)) too_short();
     StringValue(str);
     if (RSTRING_LEN(str) != len) too_short();
-    arg->infection |= (int)FL_TEST(str, MARSHAL_INFECTION);
 
     return str;
 }
@@ -1325,7 +1314,6 @@ r_bytes1_buffered(long len, struct load_arg *arg)
 	tmp_len = RSTRING_LEN(tmp);
 
 	if (tmp_len < need_len) too_short();
-	arg->infection |= (int)FL_TEST(tmp, MARSHAL_INFECTION);
 
 	str = rb_str_new(arg->buf+arg->offset, buflen);
 	rb_str_cat(str, RSTRING_PTR(tmp), need_len);
@@ -1471,12 +1459,6 @@ r_entry0(VALUE v, st_index_t num, struct load_arg *arg)
     }
     else {
         st_insert(arg->data, num, (st_data_t)v);
-    }
-    if (arg->infection &&
-	!RB_TYPE_P(v, T_CLASS) && !RB_TYPE_P(v, T_MODULE)) {
-	OBJ_TAINT(v);
-	if ((VALUE)real_obj != Qundef)
-	    OBJ_TAINT((VALUE)real_obj);
     }
     return v;
 }
@@ -2117,25 +2099,22 @@ marshal_load(int argc, VALUE *argv, VALUE _)
 VALUE
 rb_marshal_load_with_proc(VALUE port, VALUE proc)
 {
-    int major, minor, infection = 0;
+    int major, minor;
     VALUE v;
     VALUE wrapper; /* used to avoid memory leak in case of exception */
     struct load_arg *arg;
 
     v = rb_check_string_type(port);
     if (!NIL_P(v)) {
-	infection = (int)FL_TEST(port, MARSHAL_INFECTION); /* original taintedness */
 	port = v;
     }
     else if (rb_respond_to(port, s_getbyte) && rb_respond_to(port, s_read)) {
 	rb_check_funcall(port, s_binmode, 0, 0);
-	infection = (int)FL_TAINT;
     }
     else {
 	io_needed();
     }
     wrapper = TypedData_Make_Struct(0, struct load_arg, &load_arg_data, arg);
-    arg->infection = infection;
     arg->src = port;
     arg->offset = 0;
     arg->symbols = st_init_numtable();

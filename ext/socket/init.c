@@ -143,7 +143,7 @@ rsock_strbuf(VALUE str, long buflen)
 {
     long len;
 
-    if (NIL_P(str)) return rb_tainted_str_new(0, buflen);
+    if (NIL_P(str)) return rb_str_new(0, buflen);
 
     StringValue(str);
     len = RSTRING_LEN(str);
@@ -201,7 +201,6 @@ rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
     if (slen != RSTRING_LEN(str)) {
 	rb_str_set_len(str, slen);
     }
-    rb_obj_taint(str);
     switch (from) {
       case RECV_RECV:
 	return str;
@@ -282,7 +281,6 @@ rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
     if (slen != RSTRING_LEN(str)) {
 	rb_str_set_len(str, slen);
     }
-    rb_obj_taint(str);
     switch (from) {
       case RECV_RECV:
         return str;
@@ -329,7 +327,6 @@ rsock_read_nonblock(VALUE sock, VALUE length, VALUE buf, VALUE ex)
     VALUE str = rsock_strbuf(buf, len);
     char *ptr;
 
-    OBJ_TAINT(str);
     GetOpenFile(sock, fptr);
 
     if (len == 0) {

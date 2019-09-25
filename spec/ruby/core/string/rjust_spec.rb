@@ -31,12 +31,14 @@ describe "String#rjust with length, padding" do
     "radiology".rjust(8, '-').should == "radiology"
   end
 
-  it "taints result when self or padstr is tainted" do
-    "x".taint.rjust(4).tainted?.should == true
-    "x".taint.rjust(0).tainted?.should == true
-    "".taint.rjust(0).tainted?.should == true
-    "x".taint.rjust(4, "*").tainted?.should == true
-    "x".rjust(4, "*".taint).tainted?.should == true
+  ruby_version_is ''...'2.7' do
+    it "taints result when self or padstr is tainted" do
+      "x".taint.rjust(4).tainted?.should == true
+      "x".taint.rjust(0).tainted?.should == true
+      "".taint.rjust(0).tainted?.should == true
+      "x".taint.rjust(4, "*").tainted?.should == true
+      "x".rjust(4, "*".taint).tainted?.should == true
+    end
   end
 
   it "tries to convert length to an integer using to_int" do
@@ -81,10 +83,12 @@ describe "String#rjust with length, padding" do
     "foo".rjust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
   end
 
-  it "when padding is tainted and self is untainted returns a tainted string if and only if length is longer than self" do
-    "hello".rjust(4, 'X'.taint).tainted?.should be_false
-    "hello".rjust(5, 'X'.taint).tainted?.should be_false
-    "hello".rjust(6, 'X'.taint).tainted?.should be_true
+  ruby_version_is ''...'2.7' do
+    it "when padding is tainted and self is untainted returns a tainted string if and only if length is longer than self" do
+      "hello".rjust(4, 'X'.taint).tainted?.should be_false
+      "hello".rjust(5, 'X'.taint).tainted?.should be_false
+      "hello".rjust(6, 'X'.taint).tainted?.should be_true
+    end
   end
 
   describe "with width" do

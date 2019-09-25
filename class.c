@@ -205,7 +205,6 @@ rb_class_boot(VALUE super)
     RCLASS_SET_SUPER(klass, super);
     RCLASS_M_TBL_INIT(klass);
 
-    OBJ_INFECT(klass, super);
     return (VALUE)klass;
 }
 
@@ -510,8 +509,6 @@ make_metaclass(VALUE klass)
     super = RCLASS_SUPER(klass);
     while (RB_TYPE_P(super, T_ICLASS)) super = RCLASS_SUPER(super);
     RCLASS_SET_SUPER(metaclass, super ? ENSURE_EIGENCLASS(super) : rb_cClass);
-
-    OBJ_INFECT(metaclass, RCLASS_SUPER(metaclass));
 
     return metaclass;
 }
@@ -851,8 +848,6 @@ rb_include_class_new(VALUE module, VALUE super)
     else {
 	RBASIC_SET_CLASS(klass, module);
     }
-    OBJ_INFECT(klass, module);
-    OBJ_INFECT(klass, super);
 
     return (VALUE)klass;
 }
@@ -867,7 +862,6 @@ ensure_includable(VALUE klass, VALUE module)
     if (!NIL_P(rb_refinement_module_get_refined_class(module))) {
 	rb_raise(rb_eArgError, "refinement module is not allowed");
     }
-    OBJ_INFECT(klass, module);
 }
 
 void
@@ -1660,12 +1654,6 @@ singleton_class_of(VALUE obj)
 	RCLASS_SERIAL(klass) = serial;
     }
 
-    if (OBJ_TAINTED(obj)) {
-	OBJ_TAINT(klass);
-    }
-    else {
-	FL_UNSET(klass, FL_TAINT);
-    }
     RB_FL_SET_RAW(klass, RB_OBJ_FROZEN_RAW(obj));
 
     return klass;

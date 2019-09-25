@@ -40,7 +40,7 @@
 
 #define HAS_EXTRA_STATES(hash, klass) ( \
     ((klass = has_extra_methods(rb_obj_class(hash))) != 0) || \
-    FL_TEST((hash), FL_EXIVAR|FL_TAINT|RHASH_PROC_DEFAULT) || \
+    FL_TEST((hash), FL_EXIVAR|RHASH_PROC_DEFAULT) || \
     !NIL_P(RHASH_IFNONE(hash)))
 
 #define SET_DEFAULT(hash, ifnone) ( \
@@ -1554,7 +1554,7 @@ rb_hash_dup(VALUE hash)
 {
     const VALUE flags = RBASIC(hash)->flags;
     VALUE ret = hash_dup(hash, rb_obj_class(hash),
-                         flags & (FL_EXIVAR|FL_TAINT|RHASH_PROC_DEFAULT));
+                         flags & (FL_EXIVAR|RHASH_PROC_DEFAULT));
     if (flags & FL_EXIVAR)
         rb_copy_generic_ivar(ret, hash);
     return ret;
@@ -2744,7 +2744,7 @@ hash_aset(st_data_t *key, st_data_t *val, struct update_arg *arg, int existing)
 VALUE
 rb_hash_key_str(VALUE key)
 {
-    if (!RB_FL_ANY_RAW(key, FL_TAINT|FL_EXIVAR) && RBASIC_CLASS(key) == rb_cString) {
+    if (!RB_FL_ANY_RAW(key, FL_EXIVAR) && RBASIC_CLASS(key) == rb_cString) {
         return rb_fstring(key);
     }
     else {
@@ -3200,7 +3200,6 @@ rb_hash_to_a(VALUE hash)
 
     ary = rb_ary_new_capa(RHASH_SIZE(hash));
     rb_hash_foreach(hash, to_a_i, ary);
-    OBJ_INFECT(ary, hash);
 
     return ary;
 }
@@ -3218,11 +3217,9 @@ inspect_i(VALUE key, VALUE value, VALUE str)
 	rb_enc_copy(str, str2);
     }
     rb_str_buf_append(str, str2);
-    OBJ_INFECT(str, str2);
     rb_str_buf_cat_ascii(str, "=>");
     str2 = rb_inspect(value);
     rb_str_buf_append(str, str2);
-    OBJ_INFECT(str, str2);
 
     return ST_CONTINUE;
 }
@@ -3236,7 +3233,6 @@ inspect_hash(VALUE hash, VALUE dummy, int recur)
     str = rb_str_buf_new2("{");
     rb_hash_foreach(hash, inspect_i, str);
     rb_str_buf_cat2(str, "}");
-    OBJ_INFECT(str, hash);
 
     return str;
 }
@@ -3303,7 +3299,6 @@ rb_hash_to_h_block(VALUE hash)
 {
     VALUE h = rb_hash_new_with_size(RHASH_SIZE(hash));
     rb_hash_foreach(hash, to_h_i, h);
-    OBJ_INFECT(h, hash);
     return h;
 }
 
@@ -4556,8 +4551,6 @@ rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash)
     }
 }
 
-static int path_tainted = -1;
-
 static char **origenviron;
 #ifdef _WIN32
 #define GET_ENVIRON(e) ((e) = rb_w32_get_environ())
@@ -4615,7 +4608,6 @@ env_enc_str_new(const char *ptr, long len, rb_encoding *enc)
     VALUE str = rb_external_str_new_with_enc(ptr, len, enc);
 #endif
 
-    OBJ_TAINT(str);
     rb_obj_freeze(str);
     return str;
 }
@@ -4639,15 +4631,13 @@ env_str_new2(const char *ptr)
     return env_str_new(ptr, strlen(ptr));
 }
 
-static int env_path_tainted(const char *);
-
 static const char TZ_ENV[] = "TZ";
 extern bool ruby_tz_uptodate_p;
 
 static rb_encoding *
 env_encoding_for(const char *name, const char *ptr)
 {
-    if (ENVMATCH(name, PATH_ENV) && !env_path_tainted(ptr)) {
+    if (ENVMATCH(name, PATH_ENV)) {
 	return rb_filesystem_encoding();
     }
     else {
@@ -4725,7 +4715,6 @@ env_delete(VALUE name)
 	ruby_setenv(nam, 0);
 	if (ENVMATCH(nam, PATH_ENV)) {
 	    RB_GC_GUARD(name);
-	    path_tainted = 0;
 	}
 	else if (ENVMATCH(nam, TZ_ENV)) {
 	    ruby_tz_uptodate_p = FALSE;
@@ -4842,28 +4831,11 @@ env_fetch(int argc, VALUE *argv, VALUE _)
     return env_name_new(nam, env);
 }
 
-static void
-path_tainted_p(const char *path)
-{
-    path_tainted = rb_path_check(path)?0:1;
-}
-
-static int
-env_path_tainted(const char *path)
-{
-    if (path_tainted < 0) {
-	path_tainted_p(path);
-    }
-    return path_tainted;
-}
-
 int
 rb_env_path_tainted(void)
 {
-    if (path_tainted < 0) {
-	path_tainted_p(getenv(PATH_ENV));
-    }
-    return path_tainted;
+    rb_warning("rb_env_path_tainted is deprecated and will be removed in Ruby 3.2.");
+    return 0;
 }
 
 #if defined(_WIN32) || (defined(HAVE_SETENV) && defined(HAVE_UNSETENV))
@@ -5133,14 +5105,6 @@ env_aset(VALUE nm, VALUE val)
     ruby_setenv(name, value);
     if (ENVMATCH(name, PATH_ENV)) {
 	RB_GC_GUARD(nm);
-	if (OBJ_TAINTED(val)) {
-	    /* already tainted, no check */
-	    path_tainted = 1;
-	    return val;
-	}
-	else {
-	    path_tainted_p(value);
-	}
     }
     else if (ENVMATCH(name, TZ_ENV)) {
 	ruby_tz_uptodate_p = FALSE;
@@ -5342,7 +5306,6 @@ env_reject_bang(VALUE ehash)
 	VALUE val = rb_f_getenv(Qnil, RARRAY_AREF(keys, i));
 	if (!NIL_P(val)) {
 	    if (RTEST(rb_yield_values(2, RARRAY_AREF(keys, i), val))) {
-		FL_UNSET(RARRAY_AREF(keys, i), FL_TAINT);
                 env_delete(RARRAY_AREF(keys, i));
 		del++;
 	    }
@@ -5452,7 +5415,6 @@ env_select_bang(VALUE ehash)
 	VALUE val = rb_f_getenv(Qnil, RARRAY_AREF(keys, i));
 	if (!NIL_P(val)) {
 	    if (!RTEST(rb_yield_values(2, RARRAY_AREF(keys, i), val))) {
-		FL_UNSET(RARRAY_AREF(keys, i), FL_TAINT);
                 env_delete(RARRAY_AREF(keys, i));
 		del++;
 	    }
@@ -5581,7 +5543,6 @@ env_inspect(VALUE _)
     }
     FREE_ENVIRON(environ);
     rb_str_buf_cat2(str, "}");
-    OBJ_TAINT(str);
 
     return str;
 }
@@ -5755,7 +5716,7 @@ env_rassoc(VALUE dmy, VALUE obj)
 	if (s++) {
 	    long len = strlen(s);
 	    if (RSTRING_LEN(obj) == len && strncmp(s, RSTRING_PTR(obj), len) == 0) {
-		VALUE result = rb_assoc_new(rb_tainted_str_new(*env, s-*env-1), obj);
+                VALUE result = rb_assoc_new(rb_str_new(*env, s-*env-1), obj);
 		FREE_ENVIRON(environ);
 		return result;
 	    }

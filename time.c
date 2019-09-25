@@ -1818,7 +1818,6 @@ static void
 time_modify(VALUE time)
 {
     rb_check_frozen(time);
-    rb_check_trusted(time);
 }
 
 static wideval_t

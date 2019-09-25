@@ -1043,13 +1043,6 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err([IO::NULL], success: true)
   end
 
-  def test_argv_tainted
-    assert_separately(%w[- arg], "#{<<~"begin;"}\n#{<<~'end;'}")
-    begin;
-      assert_predicate(ARGV[0], :tainted?, '[ruby-dev:50596] [Bug #14941]')
-    end;
-  end
-
   private
 
   def mjit_force_enabled?

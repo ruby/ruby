@@ -543,9 +543,6 @@ rb_f_trace_var(int argc, const VALUE *argv)
 	return rb_f_untrace_var(argc, argv);
     }
     entry = rb_global_entry(rb_to_id(var));
-    if (OBJ_TAINTED(cmd)) {
-	rb_raise(rb_eSecurityError, "Insecure: tainted variable trace");
-    }
     trace = ALLOC(struct trace_var);
     trace->next = entry->var->trace;
     trace->func = rb_trace_eval;
@@ -1968,10 +1965,6 @@ rb_autoload_str(VALUE mod, ID id, VALUE file)
 	DATA_PTR(av) = tbl = st_init_numtable();
     }
 
-    if (OBJ_TAINTED(file)) {
-	file = rb_str_dup(file);
-	FL_UNSET(file, FL_TAINT);
-    }
     file = rb_fstring(file);
     if (!autoload_featuremap) {
         autoload_featuremap = rb_ident_hash_new();
