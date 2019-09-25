@@ -8,6 +8,7 @@ end
 
 class TestIO_Console < Test::Unit::TestCase
   PATHS = $LOADED_FEATURES.grep(%r"/io/console(?:\.#{RbConfig::CONFIG['DLEXT']}|/\w+\.rb)\z") {$`}
+  PATHS.uniq!
 
   # FreeBSD seems to hang on TTOU when running parallel tests
   # tested on FreeBSD 11.x
