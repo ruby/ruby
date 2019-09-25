@@ -954,6 +954,22 @@ proc_to_block_handler(VALUE procval)
     return NIL_P(procval) ? VM_BLOCK_HANDLER_NONE : procval;
 }
 
+extern VALUE rb_adjust_argv_kw_splat(int *argc, const VALUE **argv, int *kw_splat);
+
+VALUE
+rb_proc_call_with_block_kw(VALUE self, int argc, const VALUE *argv, VALUE passed_procval, int kw_splat)
+{
+    rb_execution_context_t *ec = GET_EC();
+    VALUE vret;
+    rb_proc_t *proc;
+    VALUE v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
+    GetProcPtr(self, proc);
+    vret = rb_vm_invoke_proc(ec, proc, argc, argv, kw_splat, proc_to_block_handler(passed_procval));
+    rb_free_tmp_buffer(&v);
+    RB_GC_GUARD(self);
+    return vret;
+}
+
 VALUE
 rb_proc_call_with_block(VALUE self, int argc, const VALUE *argv, VALUE passed_procval)
 {
@@ -3215,9 +3231,9 @@ compose(RB_BLOCK_CALL_FUNC_ARGLIST(_, args))
     g = RARRAY_AREF(args, 1);
 
     if (rb_obj_is_proc(g))
-        fargs = rb_proc_call_with_block(g, argc, argv, blockarg);
+        fargs = rb_proc_call_with_block_kw(g, argc, argv, blockarg, RB_PASS_CALLED_KEYWORDS);
     else
-        fargs = rb_funcall_with_block(g, idCall, argc, argv, blockarg);
+        fargs = rb_funcall_with_block_kw(g, idCall, argc, argv, blockarg, RB_PASS_CALLED_KEYWORDS);
 
     if (rb_obj_is_proc(f))
         return rb_proc_call(f, rb_ary_new3(1, fargs));
