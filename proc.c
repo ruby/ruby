@@ -15,8 +15,6 @@
 #include "vm_core.h"
 #include "iseq.h"
 
-extern const rb_method_definition_t *rb_method_definition_create(rb_method_type_t type, ID mid, const void *opts);
-
 /* Proc.new with no block will raise an exception in the future
  * versions */
 #define PROC_NEW_REQUIRES_BLOCK 0

@@ -546,17 +546,6 @@ rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID cal
     return (rb_callable_method_entry_t *)me;
 }
 
-void
-rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src)
-{
-    *(rb_method_definition_t **)&dst->def = method_definition_addref(src->def);
-    method_definition_reset(dst);
-    dst->called_id = src->called_id;
-    RB_OBJ_WRITE((VALUE)dst, &dst->owner, src->owner);
-    RB_OBJ_WRITE((VALUE)dst, &dst->defined_class, src->defined_class);
-    METHOD_ENTRY_FLAGS_COPY(dst, src);
-}
-
 static rb_method_entry_t*
 make_method_entry_refined(VALUE owner, rb_method_entry_t *me)
 {
