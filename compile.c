@@ -579,7 +579,7 @@ static int
 iseq_add_mark_object_compile_time(const rb_iseq_t *iseq, VALUE v)
 {
     if (!SPECIAL_CONST_P(v)) {
-	rb_ary_push(ISEQ_COMPILE_DATA(iseq)->mark_ary, v);
+        RB_OBJ_WRITTEN(iseq, Qundef, v);
     }
     return COMPILE_OK;
 }
