@@ -35,7 +35,7 @@ class TestDir_M17N < Test::Unit::TestCase
           when ents.include?(expected_filename)
             filename = expected_filename
           else
-            ents = Dir.entries(".", {:encoding => Encoding.find("filesystem")})
+            ents = Dir.entries(".", :encoding => Encoding.find("filesystem"))
             filename = expected_filename
           end
         end
@@ -217,7 +217,7 @@ class TestDir_M17N < Test::Unit::TestCase
             filename = filename.encode("utf-8", "euc-jp").b
           when /mswin|mingw/
             if ents.include?(win_expected_filename.b)
-              ents = Dir.entries(".", {:encoding => Encoding.find("filesystem")})
+              ents = Dir.entries(".", :encoding => Encoding.find("filesystem"))
               filename = win_expected_filename
             end
           end
