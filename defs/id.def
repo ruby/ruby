@@ -60,7 +60,6 @@ firstline, predefined = __LINE__+1, %[\
   _                                                     UScore
 
   # MUST be successive
-  _0  NUMPARAM_0
   _1  NUMPARAM_1
   _2  NUMPARAM_2
   _3  NUMPARAM_3

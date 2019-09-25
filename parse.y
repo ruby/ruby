@@ -173,9 +173,16 @@ enum {
     NUMPARAM_MAX = 9,
 };
 
-#define NUMPARAM_ID_P(id) (is_local_id(id) && NUMPARAM_ID_TO_IDX(id) <= NUMPARAM_MAX)
-#define NUMPARAM_ID_TO_IDX(id) (unsigned int)(((id) >> ID_SCOPE_SHIFT) - tNUMPARAM_0)
-#define NUMPARAM_IDX_TO_ID(idx) TOKEN2LOCALID((tNUMPARAM_0 + (idx)))
+#define NUMPARAM_ID_P(id) numparam_id_p(id)
+#define NUMPARAM_ID_TO_IDX(id) (unsigned int)(((id) >> ID_SCOPE_SHIFT) - tNUMPARAM_1 + 1)
+#define NUMPARAM_IDX_TO_ID(idx) TOKEN2LOCALID((tNUMPARAM_1 + (idx) - 1))
+static int
+numparam_id_p(ID id)
+{
+    if (!is_local_id(id)) return 0;
+    unsigned int idx = NUMPARAM_ID_TO_IDX(id);
+    return idx > 0 && idx <= NUMPARAM_MAX;
+}
 
 #define DVARS_INHERIT ((void*)1)
 #define DVARS_TOPSCOPE NULL

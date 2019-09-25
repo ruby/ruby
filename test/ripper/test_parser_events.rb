@@ -60,7 +60,6 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal '[ref(true)]', parse('true')
     assert_equal '[vcall(_0)]', parse('_0')
     assert_equal '[vcall(_1)]', parse('_1')
-    assert_include parse('proc{_0}'), '[ref(_0)]'
     assert_include parse('proc{_1}'), '[ref(_1)]'
   end
 
