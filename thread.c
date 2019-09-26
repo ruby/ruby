@@ -662,8 +662,6 @@ rb_vm_proc_local_ep(VALUE proc)
     }
 }
 
-extern VALUE rb_adjust_argv_kw_splat(int *argc, const VALUE **argv, int *kw_splat);
-
 static void
 thread_do_start(rb_thread_t *th)
 {

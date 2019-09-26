@@ -1779,7 +1779,6 @@ rb_fiber_new(rb_block_call_func_t func, VALUE obj)
 static void rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt);
 
 #define PASS_KW_SPLAT (rb_empty_keyword_given_p() ? RB_PASS_EMPTY_KEYWORDS : rb_keyword_given_p())
-extern VALUE rb_adjust_argv_kw_splat(int *argc, const VALUE **argv, int *kw_splat);
 
 void
 rb_fiber_start(void)

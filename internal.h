@@ -2294,6 +2294,7 @@ void rb_print_backtrace(void);
 
 /* vm_eval.c */
 void Init_vm_eval(void);
+VALUE rb_adjust_argv_kw_splat(int *, const VALUE **, int *);
 VALUE rb_current_realfilepath(void);
 VALUE rb_check_block_call(VALUE, ID, int, const VALUE *, rb_block_call_func_t, VALUE);
 typedef void rb_check_funcall_hook(int, VALUE, ID, int, const VALUE *, VALUE);
