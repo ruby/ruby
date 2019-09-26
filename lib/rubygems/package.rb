@@ -534,11 +534,7 @@ EOM
     when 'metadata' then
       @spec = Gem::Specification.from_yaml entry.read
     when 'metadata.gz' then
-      opts = {}
-      opts[:external_encoding] = Encoding::UTF_8 if
-        Zlib::GzipReader.method(:wrap).arity != 1
-
-      Zlib::GzipReader.wrap(entry, **opts) do |gzio|
+      Zlib::GzipReader.wrap(entry, external_encoding: Encoding::UTF_8) do |gzio|
         @spec = Gem::Specification.from_yaml gzio.read
       end
     end
