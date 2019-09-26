@@ -2,9 +2,7 @@
 #   RUBYOPT=-Ibenchmark/lib benchmark-driver -e 'ruby --jit' benchmark/mjit_exec_vm2vm.yml
 type: mjit_exec # benchmark/lib/benchmark_driver/runner/mjit_exec.rb
 num_methods: [1]
-#num_methods: [1, 10, 20, 30, 40, 50, 100, 200, 500, 1000]
-#num_methods: (1..100)
-#num_methods: (1..10).map { |i| i * 10 }
-loop_count: 10000000
+#num_methods: (1..100).to_a + [200, 300, 400, 500, 600, 700, 800, 900, 1000]
+loop_count: 50000000
 from_jit: false
 to_jit: false

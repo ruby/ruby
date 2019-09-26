@@ -140,13 +140,13 @@ class BenchmarkDriver::Runner::MjitExec
         def vm
           t = Process.clock_gettime(Process::CLOCK_MONOTONIC)
           i = 0
-          while i < 10000
-        % (loop_count / 10000).times do |i|
+          while i < <%= loop_count / 1000 %>
+        % 1000.times do |i|
             a<%= i % num_methods %>
         % end
             i += 1
           end
-        % (loop_count % 10000).times do |i|
+        % (loop_count % 1000).times do |i|
           a<%= i % num_methods %>
         % end
           Process.clock_gettime(Process::CLOCK_MONOTONIC) - t
@@ -177,13 +177,13 @@ class BenchmarkDriver::Runner::MjitExec
         def vm
           t = Process.clock_gettime(Process::CLOCK_MONOTONIC)
           i = 0
-          while i < 10000
-        % (loop_count / 10000).times do |i|
+          while i < <%= loop_count / 1000 %>
+        % 1000.times do |i|
             a<%= i % num_methods %>
         % end
             i += 1
           end
-        % (loop_count % 10000).times do |i|
+        % (loop_count % 1000).times do |i|
           a<%= i % num_methods %>
         % end
           Process.clock_gettime(Process::CLOCK_MONOTONIC) - t
@@ -214,13 +214,13 @@ class BenchmarkDriver::Runner::MjitExec
         def jit
           t = Process.clock_gettime(Process::CLOCK_MONOTONIC)
           i = 0
-          while i < 10000
-        % (loop_count / 10000).times do |i|
+          while i < <%= loop_count / 1000 %>
+        % 1000.times do |i|
             a<%= i % num_methods %>
         % end
             i += 1
           end
-        % (loop_count % 10000).times do |i|
+        % (loop_count % 1000).times do |i|
           a<%= i % num_methods %>
         % end
           Process.clock_gettime(Process::CLOCK_MONOTONIC) - t
