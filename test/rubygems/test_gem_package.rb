@@ -1122,7 +1122,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_gem_attr
     package = Gem::Package.new(@gem)
-    assert_equal(package.gem.path, @gem)
+    assert_equal(@gem, package.gem.path)
   end
 
   def test_spec_from_io
