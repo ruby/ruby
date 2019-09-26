@@ -2589,7 +2589,7 @@ rb_scan_args_set(int argc, const VALUE *argv,
             rb_warn("The keyword argument is passed as the last hash parameter");
         }
     }
-    if (f_hash && n_mand == argc+1 && empty_keyword_given) {
+    if (f_hash && n_mand > 0 && n_mand == argc+1 && empty_keyword_given) {
         VALUE *ptr = (VALUE *)rb_alloc_tmp_buffer2(&tmp_buffer, argc+1, sizeof(VALUE));
         memcpy(ptr, argv, sizeof(VALUE)*argc);
         ptr[argc] = rb_hash_new();
