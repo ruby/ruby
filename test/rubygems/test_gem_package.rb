@@ -1120,10 +1120,10 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_equal @spec, package.spec
   end
 
- def test_gem_attr
-   package = Gem::Package.new(@gem)
-   assert_equal(package.gem.path, @gem)
- end
+  def test_gem_attr
+    package = Gem::Package.new(@gem)
+    assert_equal(package.gem.path, @gem)
+  end
 
   def test_spec_from_io
     # This functionality is used by rubygems.org to extract spec data from an
