@@ -2423,6 +2423,7 @@ class Gem::Specification < Gem::BasicSpecification
   # still have their default values are omitted.
 
   def to_ruby
+    require 'openssl'
     mark_version
     result = []
     result << "# -*- encoding: utf-8 -*-"
