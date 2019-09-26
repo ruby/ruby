@@ -40,6 +40,10 @@ VALUE rb_cNilClass; /*!< NilClass class */
 VALUE rb_cTrueClass; /*!< TrueClass class */
 VALUE rb_cFalseClass; /*!< FalseClass class */
 
+static VALUE rb_cNilClass_to_s;
+static VALUE rb_cTrueClass_to_s;
+static VALUE rb_cFalseClass_to_s;
+
 /*! \cond INTERNAL_MACRO */
 
 #define id_eq               idEq
@@ -1442,7 +1446,7 @@ nil_to_f(VALUE obj)
 static VALUE
 nil_to_s(VALUE obj)
 {
-    return rb_usascii_str_new(0, 0);
+    return rb_cNilClass_to_s;
 }
 
 /*
@@ -1525,7 +1529,7 @@ nil_match(VALUE obj1, VALUE obj2)
 static VALUE
 true_to_s(VALUE obj)
 {
-    return rb_usascii_str_new2("true");
+    return rb_cTrueClass_to_s;
 }
 
 
@@ -1602,7 +1606,7 @@ true_xor(VALUE obj, VALUE obj2)
 static VALUE
 false_to_s(VALUE obj)
 {
-    return rb_usascii_str_new2("false");
+    return rb_cFalseClass_to_s;
 }
 
 /*
@@ -4609,6 +4613,8 @@ InitVM_Object(void)
     rb_define_global_function("Hash", rb_f_hash, 1);
 
     rb_cNilClass = rb_define_class("NilClass", rb_cObject);
+    rb_cNilClass_to_s = rb_fstring_enc_lit("", rb_usascii_encoding());
+    rb_gc_register_mark_object(rb_cNilClass_to_s);
     rb_define_method(rb_cNilClass, "to_i", nil_to_i, 0);
     rb_define_method(rb_cNilClass, "to_f", nil_to_f, 0);
     rb_define_method(rb_cNilClass, "to_s", nil_to_s, 0);
@@ -4703,6 +4709,8 @@ InitVM_Object(void)
     rb_deprecate_constant(rb_cObject, "Data");
 
     rb_cTrueClass = rb_define_class("TrueClass", rb_cObject);
+    rb_cTrueClass_to_s = rb_fstring_enc_lit("true", rb_usascii_encoding());
+    rb_gc_register_mark_object(rb_cTrueClass_to_s);
     rb_define_method(rb_cTrueClass, "to_s", true_to_s, 0);
     rb_define_alias(rb_cTrueClass, "inspect", "to_s");
     rb_define_method(rb_cTrueClass, "&", true_and, 1);
@@ -4718,6 +4726,8 @@ InitVM_Object(void)
     rb_deprecate_constant(rb_cObject, "TRUE");
 
     rb_cFalseClass = rb_define_class("FalseClass", rb_cObject);
+    rb_cFalseClass_to_s = rb_fstring_enc_lit("false", rb_usascii_encoding());
+    rb_gc_register_mark_object(rb_cFalseClass_to_s);
     rb_define_method(rb_cFalseClass, "to_s", false_to_s, 0);
     rb_define_alias(rb_cFalseClass, "inspect", "to_s");
     rb_define_method(rb_cFalseClass, "&", false_and, 1);
