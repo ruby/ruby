@@ -520,7 +520,7 @@ class TestGemRequire < Gem::TestCase
     def test_no_other_behavioral_changes_with_kernel_warn
       lib = File.realpath("../../../lib", __FILE__)
       Dir.mktmpdir("warn_test") do |dir|
-        File.write(dir + "/main.rb", "warn({x:1}, {y:2}, {})\n")
+        File.write(dir + "/main.rb", "warn({x:1}, {y:2}, [])\n")
         _, err = capture_subprocess_io do
           system(@@ruby, "-w", "-rpp", "--disable=gems", "-I", lib, "-C", dir, "-I.", "main.rb")
         end
