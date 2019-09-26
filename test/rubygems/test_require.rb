@@ -524,11 +524,11 @@ class TestGemRequire < Gem::TestCase
         _, err = capture_subprocess_io do
           system(@@ruby, "-w", "-rpp", "--disable=gems", "-I", lib, "-C", dir, "-I.", "main.rb")
         end
-        assert_match /main.rb:1: warning: The last argument is used as the keyword parameter/, err
+        assert_match(/main.rb:1: warning: The last argument is used as the keyword parameter/, err)
         _, err = capture_subprocess_io do
           system(@@ruby, "-w", "-rpp", "--enable=gems", "-I", lib, "-C", dir, "-I.", "main.rb")
         end
-        assert_match /main.rb:1: warning: The last argument is used as the keyword parameter/, err
+        assert_match(/main.rb:1: warning: The last argument is used as the keyword parameter/, err)
       end
     end
   end
