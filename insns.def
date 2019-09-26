@@ -911,7 +911,7 @@ invokeblock
 // attr rb_snum_t sp_inc = sp_inc_of_invokeblock(ci);
 {
     static struct rb_call_cache cc = {
-        0, 0, NULL, NULL, vm_invokeblock_i,
+        0, 0, NULL, vm_invokeblock_i,
     };
 
     VALUE bh = VM_BLOCK_HANDLER_NONE;
