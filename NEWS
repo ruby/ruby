@@ -355,8 +355,8 @@ profile.rb, Profiler__::
 
 === C API updates
 
-  * C API declarations with `ANYARGS` are changed not to use `ANYARGS`
-    https://github.com/ruby/ruby/pull/2404
+* C API declarations with +ANYARGS+ are changed not to use +ANYARGS+
+  https://github.com/ruby/ruby/pull/2404
 
 === Implementation improvements
 
