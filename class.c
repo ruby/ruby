@@ -965,7 +965,7 @@ static enum rb_id_table_iterator_result
 inject_refined_method(ID *key, VALUE *value, void *data, int _)
 {
     const tuple             *ptr     = data;
-    const rb_method_entry_t *me      = *(rb_method_entry_t **) value;
+    const rb_method_entry_t *me      = *(const rb_method_entry_t **) value;
     const rb_method_entry_t *orig_me = me->def->body.refined.orig_me;
     const rb_method_entry_t *new_me  =
         rb_method_entry_from_template(
@@ -982,8 +982,8 @@ inject_refined_method(ID *key, VALUE *value, void *data, int _)
 static enum rb_id_table_iterator_result
 move_refined_method(ID key, VALUE value, void *data)
 {
-    const tuple       *ptr = data;
-    rb_method_entry_t *me = (rb_method_entry_t *) value;
+    const tuple             *ptr = data;
+    const rb_method_entry_t *me  = (const rb_method_entry_t *) value;
 
     if (me->def->type == VM_METHOD_TYPE_REFINED) {
 	if (me->def->body.refined.orig_me) {

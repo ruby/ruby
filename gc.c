@@ -7829,7 +7829,7 @@ void rb_update_st_references(struct st_table *ht)
 }
 
 static void
-gc_ref_update_method_entry(rb_objspace_t *objspace, rb_method_entry_t *me)
+gc_ref_update_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
 {
     const rb_method_definition_t *def = me->def;
 

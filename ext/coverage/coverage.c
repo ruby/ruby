@@ -123,7 +123,7 @@ method_coverage_i(void *vstart, void *vend, size_t stride, void *data)
 
     for (v = (VALUE)vstart; v != (VALUE)vend; v += stride) {
 	if (RB_TYPE_P(v, T_IMEMO) && imemo_type(v) == imemo_ment) {
-	    const rb_method_entry_t *me = (rb_method_entry_t *) v;
+            const rb_method_entry_t *me = (const rb_method_entry_t *) v;
 	    VALUE path, first_lineno, first_column, last_lineno, last_column;
 	    VALUE data[5], ncoverage, methods;
 	    VALUE methods_id = ID2SYM(rb_intern("methods"));

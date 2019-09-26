@@ -1595,7 +1595,7 @@ static enum rb_id_table_iterator_result
 check_redefined_method(ID mid, VALUE value, void *data)
 {
     VALUE klass = (VALUE)data;
-    const rb_method_entry_t *me = (rb_method_entry_t *)value;
+    const rb_method_entry_t *me = (const rb_method_entry_t *)value;
     const rb_method_entry_t *newme = rb_method_entry(klass, mid);
 
     if (newme != me) rb_vm_check_redefinition_opt_method(me, me->owner);

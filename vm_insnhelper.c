@@ -578,8 +578,8 @@ vm_getspecial(const rb_execution_context_t *ec, const VALUE *lep, rb_num_t key, 
     return val;
 }
 
-PUREFUNC(static rb_callable_method_entry_t *check_method_entry(VALUE obj, int can_be_svar));
-static rb_callable_method_entry_t *
+PUREFUNC(static const rb_callable_method_entry_t *check_method_entry(VALUE obj, int can_be_svar));
+static const rb_callable_method_entry_t *
 check_method_entry(VALUE obj, int can_be_svar)
 {
     if (obj == Qfalse) return NULL;
@@ -590,7 +590,7 @@ check_method_entry(VALUE obj, int can_be_svar)
 
     switch (imemo_type(obj)) {
       case imemo_ment:
-	return (rb_callable_method_entry_t *)obj;
+        return (const rb_callable_method_entry_t *)obj;
       case imemo_cref:
 	return NULL;
       case imemo_svar:
@@ -609,7 +609,7 @@ MJIT_STATIC const rb_callable_method_entry_t *
 rb_vm_frame_method_entry(const rb_control_frame_t *cfp)
 {
     const VALUE *ep = cfp->ep;
-    rb_callable_method_entry_t *me;
+    const rb_callable_method_entry_t *me;
 
     while (!VM_ENV_LOCAL_P(ep)) {
 	if ((me = check_method_entry(ep[VM_ENV_DATA_INDEX_ME_CREF], FALSE)) != NULL) return me;
@@ -620,7 +620,7 @@ rb_vm_frame_method_entry(const rb_control_frame_t *cfp)
 }
 
 static rb_cref_t *
-method_entry_cref(rb_callable_method_entry_t *me)
+method_entry_cref(const rb_callable_method_entry_t *me)
 {
     switch (me->def->type) {
       case VM_METHOD_TYPE_ISEQ:
@@ -644,7 +644,7 @@ check_cref(VALUE obj, int can_be_svar)
 
     switch (imemo_type(obj)) {
       case imemo_ment:
-	return method_entry_cref((rb_callable_method_entry_t *)obj);
+        return method_entry_cref((const rb_callable_method_entry_t *)obj);
       case imemo_cref:
 	return (rb_cref_t *)obj;
       case imemo_svar:
