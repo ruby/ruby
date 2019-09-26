@@ -179,6 +179,7 @@ struct fiber_pool {
 typedef struct rb_context_struct {
     enum context_type type;
     int argc;
+    int kw_splat;
     VALUE self;
     VALUE value;
 
@@ -1777,6 +1778,9 @@ rb_fiber_new(rb_block_call_func_t func, VALUE obj)
 
 static void rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt);
 
+#define PASS_KW_SPLAT (rb_empty_keyword_given_p() ? RB_PASS_EMPTY_KEYWORDS : rb_keyword_given_p())
+extern VALUE rb_adjust_argv_kw_splat(int *argc, const VALUE **argv, int *kw_splat);
+
 void
 rb_fiber_start(void)
 {
@@ -1794,6 +1798,7 @@ rb_fiber_start(void)
         rb_context_t *cont = &VAR_FROM_MEMORY(fiber)->cont;
         int argc;
         const VALUE *argv, args = cont->value;
+        int kw_splat = cont->kw_splat;
         GetProcPtr(fiber->first_proc, proc);
         argv = (argc = cont->argc) > 1 ? RARRAY_CONST_PTR(args) : &args;
         cont->value = Qnil;
@@ -1802,7 +1807,8 @@ rb_fiber_start(void)
         th->ec->root_svar = Qfalse;
 
         EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, 0, Qnil);
-        cont->value = rb_vm_invoke_proc(th->ec, proc, argc, argv, VM_NO_KEYWORDS, VM_BLOCK_HANDLER_NONE);
+        rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
+        cont->value = rb_vm_invoke_proc(th->ec, proc, argc, argv, kw_splat, VM_BLOCK_HANDLER_NONE);
     }
     EC_POP_TAG();
 
@@ -1965,7 +1971,7 @@ fiber_store(rb_fiber_t *next_fiber, rb_thread_t *th)
 }
 
 static inline VALUE
-fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int is_resume)
+fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int is_resume, int kw_splat)
 {
     VALUE value;
     rb_context_t *cont = &fiber->cont;
@@ -2017,6 +2023,7 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int is_resume)
     VM_ASSERT(FIBER_RUNNABLE_P(fiber));
 
     cont->argc = argc;
+    cont->kw_splat = kw_splat;
     cont->value = make_passing_arg(argc, argv);
 
     value = fiber_store(fiber, th);
@@ -2035,7 +2042,7 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int is_resume)
 VALUE
 rb_fiber_transfer(VALUE fiber_value, int argc, const VALUE *argv)
 {
-    return fiber_switch(fiber_ptr(fiber_value), argc, argv, 0);
+    return fiber_switch(fiber_ptr(fiber_value), argc, argv, 0, RB_NO_KEYWORDS);
 }
 
 void
@@ -2060,11 +2067,11 @@ rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt)
 
     next_fiber = return_fiber();
     if (need_interrupt) RUBY_VM_SET_INTERRUPT(&next_fiber->cont.saved_ec);
-    fiber_switch(next_fiber, 1, &value, 0);
+    fiber_switch(next_fiber, 1, &value, 0, RB_NO_KEYWORDS);
 }
 
 VALUE
-rb_fiber_resume(VALUE fiber_value, int argc, const VALUE *argv)
+rb_fiber_resume_kw(VALUE fiber_value, int argc, const VALUE *argv, int kw_splat)
 {
     rb_fiber_t *fiber = fiber_ptr(fiber_value);
 
@@ -2080,13 +2087,25 @@ rb_fiber_resume(VALUE fiber_value, int argc, const VALUE *argv)
         rb_raise(rb_eFiberError, "cannot resume transferred Fiber");
     }
 
-    return fiber_switch(fiber, argc, argv, 1);
+    return fiber_switch(fiber, argc, argv, 1, kw_splat);
+}
+
+VALUE
+rb_fiber_resume(VALUE fiber_value, int argc, const VALUE *argv)
+{
+    return rb_fiber_resume_kw(fiber_value, argc, argv, RB_NO_KEYWORDS);
+}
+
+VALUE
+rb_fiber_yield_kw(int argc, const VALUE *argv, int kw_splat)
+{
+    return fiber_switch(return_fiber(), argc, argv, 0, kw_splat);
 }
 
 VALUE
 rb_fiber_yield(int argc, const VALUE *argv)
 {
-    return fiber_switch(return_fiber(), argc, argv, 0);
+    return fiber_switch(return_fiber(), argc, argv, 0, RB_NO_KEYWORDS);
 }
 
 void
@@ -2130,7 +2149,7 @@ rb_fiber_alive_p(VALUE fiber_value)
 static VALUE
 rb_fiber_m_resume(int argc, VALUE *argv, VALUE fiber)
 {
-    return rb_fiber_resume(fiber, argc, argv);
+    return rb_fiber_resume_kw(fiber, argc, argv, PASS_KW_SPLAT);
 }
 
 /*
@@ -2156,7 +2175,7 @@ static VALUE
 rb_fiber_raise(int argc, VALUE *argv, VALUE fiber)
 {
     VALUE exc = rb_make_exception(argc, argv);
-    return rb_fiber_resume(fiber, -1, &exc);
+    return rb_fiber_resume_kw(fiber, -1, &exc, RB_NO_KEYWORDS);
 }
 
 /*
@@ -2209,7 +2228,7 @@ rb_fiber_m_transfer(int argc, VALUE *argv, VALUE fiber_value)
 {
     rb_fiber_t *fiber = fiber_ptr(fiber_value);
     fiber->transferred = 1;
-    return fiber_switch(fiber, argc, argv, 0);
+    return fiber_switch(fiber, argc, argv, 0, PASS_KW_SPLAT);
 }
 
 /*
@@ -2225,7 +2244,7 @@ rb_fiber_m_transfer(int argc, VALUE *argv, VALUE fiber_value)
 static VALUE
 rb_fiber_s_yield(int argc, VALUE *argv, VALUE klass)
 {
-    return rb_fiber_yield(argc, argv);
+    return rb_fiber_yield_kw(argc, argv, PASS_KW_SPLAT);
 }
 
 /*
