@@ -575,12 +575,6 @@ APPEND_ELEM(ISEQ_ARG_DECLARE LINK_ANCHOR *const anchor, LINK_ELEMENT *before, LI
 
 #define ISEQ_LAST_LINE(iseq) (ISEQ_COMPILE_DATA(iseq)->last_line)
 
-static inline VALUE
-freeze_literal(rb_iseq_t *iseq, VALUE lit)
-{
-    return rb_fstring(lit);
-}
-
 static int
 validate_label(st_data_t name, st_data_t label, st_data_t arg)
 {
@@ -3644,7 +3638,7 @@ compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cons
 			  rb_builtin_type_name(TYPE(lit)));
 	    return COMPILE_NG;
 	}
-	lit = freeze_literal(iseq, lit);
+	lit = rb_fstring(lit);
 	ADD_INSN1(ret, nd_line(node), putobject, lit);
         RB_OBJ_WRITTEN(iseq, Qundef, lit);
 	if (RSTRING_LEN(lit) == 0) first_lit = LAST_ELEMENT(ret);
@@ -3653,7 +3647,7 @@ compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cons
     while (list) {
 	const NODE *const head = list->nd_head;
 	if (nd_type(head) == NODE_STR) {
-	    lit = freeze_literal(iseq, head->nd_lit);
+	    lit = rb_fstring(head->nd_lit);
 	    ADD_INSN1(ret, nd_line(head), putobject, lit);
             RB_OBJ_WRITTEN(iseq, Qundef, lit);
 	    lit = Qnil;
@@ -4272,7 +4266,7 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
 
 	if (nd_type(val) == NODE_STR) {
 	    debugp_param("nd_lit", val->nd_lit);
-	    lit = freeze_literal(iseq, val->nd_lit);
+	    lit = rb_fstring(val->nd_lit);
 	    ADD_INSN1(cond_seq, nd_line(val), putobject, lit);
             RB_OBJ_WRITTEN(iseq, Qundef, lit);
 	}
@@ -6646,7 +6640,7 @@ compile_call_precheck_freeze(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
         node->nd_args == NULL &&
         ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
         ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-        VALUE str = freeze_literal(iseq, node->nd_recv->nd_lit);
+        VALUE str = rb_fstring(node->nd_recv->nd_lit);
         if (node->nd_mid == idUMinus) {
             ADD_INSN3(ret, line, opt_str_uminus, str,
                       new_callinfo(iseq, idUMinus, 0, 0, NULL, FALSE),
@@ -6672,7 +6666,7 @@ compile_call_precheck_freeze(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
         ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
         !ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal &&
         ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-        VALUE str = freeze_literal(iseq, node->nd_args->nd_head->nd_lit);
+        VALUE str = rb_fstring(node->nd_args->nd_head->nd_lit);
         CHECK(COMPILE(ret, "recv", node->nd_recv));
         ADD_INSN3(ret, line, opt_aref_with, str,
                   new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE),
@@ -7752,7 +7746,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	if (!popped) {
 	    VALUE lit = node->nd_lit;
 	    if (!ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal) {
-		lit = freeze_literal(iseq, lit);
+		lit = rb_fstring(lit);
 		ADD_INSN1(ret, line, putstring, lit);
                 RB_OBJ_WRITTEN(iseq, Qundef, lit);
 	    }
@@ -7794,7 +7788,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       }
       case NODE_XSTR:{
 	ADD_CALL_RECEIVER(ret, line);
-        VALUE str = freeze_literal(iseq, node->nd_lit);
+        VALUE str = rb_fstring(node->nd_lit);
 	ADD_INSN1(ret, line, putobject, str);
         RB_OBJ_WRITTEN(iseq, Qundef, str);
 	ADD_CALL(ret, line, idBackquote, INT2FIX(1));
@@ -8236,7 +8230,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
             !ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal &&
 	    ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction)
 	{
-	    VALUE str = freeze_literal(iseq, node->nd_args->nd_head->nd_lit);
+	    VALUE str = rb_fstring(node->nd_args->nd_head->nd_lit);
 	    CHECK(COMPILE(ret, "recv", node->nd_recv));
 	    CHECK(COMPILE(ret, "value", node->nd_args->nd_next->nd_head));
 	    if (!popped) {
