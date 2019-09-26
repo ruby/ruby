@@ -577,6 +577,115 @@ console_echo_p(VALUE io)
     return echo_p(&t) ? Qtrue : Qfalse;
 }
 
+static const rb_data_type_t conmode_type = {
+    "console-mode",
+    {0, RUBY_TYPED_DEFAULT_FREE,},
+    0, 0,
+    RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+};
+static VALUE cConmode;
+
+static VALUE
+conmode_alloc(VALUE klass)
+{
+    return rb_data_typed_object_zalloc(klass, sizeof(conmode), &conmode_type);
+}
+
+static VALUE
+conmode_new(VALUE klass, const conmode *t)
+{
+    VALUE obj = conmode_alloc(klass);
+    *(conmode *)DATA_PTR(obj) = *t;
+    return obj;
+}
+
+static VALUE
+conmode_init_copy(VALUE obj, VALUE obj2)
+{
+    conmode *t = rb_check_typeddata(obj, &conmode_type);
+    conmode *t2 = rb_check_typeddata(obj2, &conmode_type);
+    *t = *t2;
+    return obj;
+}
+
+static VALUE
+conmode_set_echo(VALUE obj, VALUE f)
+{
+    conmode *t = rb_check_typeddata(obj, &conmode_type);
+    if (RTEST(f))
+	set_echo(t, NULL);
+    else
+	set_noecho(t, NULL);
+    return obj;
+}
+
+static VALUE
+conmode_set_raw(int argc, VALUE *argv, VALUE obj)
+{
+    conmode *t = rb_check_typeddata(obj, &conmode_type);
+    rawmode_arg_t opts, *optp = rawmode_opt(&argc, argv, 0, 0, &opts);
+
+    set_rawmode(t, optp);
+    return obj;
+}
+
+static VALUE
+conmode_raw_new(int argc, VALUE *argv, VALUE obj)
+{
+    conmode *r = rb_check_typeddata(obj, &conmode_type);
+    conmode t = *r;
+    rawmode_arg_t opts, *optp = rawmode_opt(&argc, argv, 0, 0, &opts);
+
+    set_rawmode(&t, optp);
+    return conmode_new(rb_obj_class(obj), &t);
+}
+
+/*
+ * call-seq:
+ *   io.console_mode       -> mode
+ *
+ * Returns a data represents the current console mode.
+ *
+ * You must require 'io/console' to use this method.
+ */
+static VALUE
+console_conmode_get(VALUE io)
+{
+    conmode t;
+    rb_io_t *fptr;
+    int fd;
+
+    GetOpenFile(io, fptr);
+    fd = GetReadFD(fptr);
+    if (!getattr(fd, &t)) rb_sys_fail(0);
+
+    return conmode_new(cConmode, &t);
+}
+
+/*
+ * call-seq:
+ *   io.console_mode = mode
+ *
+ * Sets the console mode to +mode+.
+ *
+ * You must require 'io/console' to use this method.
+ */
+static VALUE
+console_conmode_set(VALUE io, VALUE mode)
+{
+    conmode *t, r;
+    rb_io_t *fptr;
+    int fd;
+
+    TypedData_Get_Struct(mode, conmode, &conmode_type, t);
+    r = *t;
+    GetOpenFile(io, fptr);
+    fd = GetReadFD(fptr);
+    if (!setattr(fd, &r)) rb_sys_fail(0);
+
+    return mode;
+}
+
 #if defined TIOCGWINSZ
 typedef struct winsize rb_console_size_t;
 #define getwinsize(fd, buf) (ioctl((fd), TIOCGWINSZ, (buf)) == 0)
@@ -1447,6 +1556,8 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "getch", console_getch, -1);
     rb_define_method(rb_cIO, "echo=", console_set_echo, 1);
     rb_define_method(rb_cIO, "echo?", console_echo_p, 0);
+    rb_define_method(rb_cIO, "console_mode", console_conmode_get, 0);
+    rb_define_method(rb_cIO, "console_mode=", console_conmode_set, 1);
     rb_define_method(rb_cIO, "noecho", console_noecho, 0);
     rb_define_method(rb_cIO, "winsize", console_winsize, 0);
     rb_define_method(rb_cIO, "winsize=", console_set_winsize, 1);
@@ -1479,5 +1590,16 @@ InitVM_console(void)
 #if ENABLE_IO_GETPASS
 	rb_define_method(mReadable, "getpass", io_getpass, -1);
 #endif
+    }
+    {
+	/* :stopdoc: */
+        cConmode = rb_define_class_under(rb_cIO, "ConsoleMode", rb_cObject);
+        rb_define_alloc_func(cConmode, conmode_alloc);
+        rb_undef_method(cConmode, "initialize");
+        rb_define_method(cConmode, "initialize_copy", conmode_init_copy, 1);
+        rb_define_method(cConmode, "echo=", conmode_set_echo, 1);
+        rb_define_method(cConmode, "raw!", conmode_set_raw, -1);
+        rb_define_method(cConmode, "raw", conmode_raw_new, -1);
+	/* :startdoc: */
     }
 }
