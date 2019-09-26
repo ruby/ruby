@@ -662,6 +662,8 @@ rb_vm_proc_local_ep(VALUE proc)
     }
 }
 
+extern VALUE rb_adjust_argv_kw_splat(int *argc, const VALUE **argv, int *kw_splat);
+
 static void
 thread_do_start(rb_thread_t *th)
 {
@@ -669,7 +671,8 @@ thread_do_start(rb_thread_t *th)
 
     if (th->invoke_type == thread_invoke_type_proc) {
         VALUE args = th->invoke_arg.proc.args;
-        long args_len = RARRAY_LEN(args);
+        int args_len = RARRAY_LEN(args);
+        int kw_splat = th->invoke_arg.proc.kw_splat;
         const VALUE *args_ptr;
         VALUE procval = th->invoke_arg.proc.proc;
 	rb_proc_t *proc;
@@ -691,9 +694,10 @@ thread_do_start(rb_thread_t *th)
             args_ptr = RARRAY_CONST_PTR(args);
         }
 
+        rb_adjust_argv_kw_splat(&args_len, &args_ptr, &kw_splat);
         th->value = rb_vm_invoke_proc(th->ec, proc,
-                                      (int)args_len, args_ptr,
-                                      VM_NO_KEYWORDS, VM_BLOCK_HANDLER_NONE);
+                                      args_len, args_ptr,
+                                      kw_splat, VM_BLOCK_HANDLER_NONE);
 
         EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
     }
@@ -841,6 +845,9 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(void *))
         th->invoke_type = thread_invoke_type_proc;
         th->invoke_arg.proc.proc = rb_block_proc();
         th->invoke_arg.proc.args = args;
+        th->invoke_arg.proc.kw_splat = rb_empty_keyword_given_p() ?
+                                            RB_PASS_EMPTY_KEYWORDS :
+                                            rb_keyword_given_p();
     }
 
     th->priority = current_th->priority;
