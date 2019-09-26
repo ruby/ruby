@@ -842,6 +842,7 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(void *))
         th->invoke_arg.func.arg = (void *)args;
     }
     else {
+        (void)RARRAY_LENINT(args);
         th->invoke_type = thread_invoke_type_proc;
         th->invoke_arg.proc.proc = rb_block_proc();
         th->invoke_arg.proc.args = args;
