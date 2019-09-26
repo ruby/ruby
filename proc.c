@@ -935,6 +935,24 @@ check_argc(long argc)
 #endif
 
 VALUE
+rb_proc_call_kw(VALUE self, VALUE args, int kw_splat)
+{
+    VALUE vret;
+    rb_proc_t *proc;
+    VALUE v;
+    int argc = check_argc(RARRAY_LEN(args));
+    const VALUE *argv = RARRAY_CONST_PTR(args);
+    GetProcPtr(self, proc);
+    v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
+    vret = rb_vm_invoke_proc(GET_EC(), proc, argc, argv,
+                             kw_splat, VM_BLOCK_HANDLER_NONE);
+    rb_free_tmp_buffer(&v);
+    RB_GC_GUARD(self);
+    RB_GC_GUARD(args);
+    return vret;
+}
+
+VALUE
 rb_proc_call(VALUE self, VALUE args)
 {
     VALUE vret;

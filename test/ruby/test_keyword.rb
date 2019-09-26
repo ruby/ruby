@@ -841,6 +841,83 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h3], t.new(&f).resume(a: 1, **h2))
   end
 
+  def test_Enumerator_Generator_each_kwsplat
+    kw = {}
+    h = {:a=>1}
+    h2 = {'a'=>1}
+    h3 = {'a'=>1, :a=>1}
+
+    g = Enumerator::Generator
+    f = ->(_) { true }
+    assert_equal(true, g.new(&f).each(**{}))
+    assert_equal(true, g.new(&f).each(**kw))
+    assert_raise(ArgumentError) { g.new(&f).each(**h) }
+    assert_raise(ArgumentError) { g.new(&f).each(a: 1) }
+    assert_raise(ArgumentError) { g.new(&f).each(**h2) }
+    assert_raise(ArgumentError) { g.new(&f).each(**h3) }
+
+    f = ->(_, a) { a }
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal(kw, g.new(&f).each(**{}))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/m) do
+      assert_equal(kw, g.new(&f).each(**kw))
+    end
+    assert_equal(h, g.new(&f).each(**h))
+    assert_equal(h, g.new(&f).each(a: 1))
+    assert_equal(h2, g.new(&f).each(**h2))
+    assert_equal(h3, g.new(&f).each(**h3))
+    assert_equal(h3, g.new(&f).each(a: 1, **h2))
+
+    f = ->(_, **x) { x }
+    assert_equal(kw, g.new(&f).each(**{}))
+    assert_equal(kw, g.new(&f).each(**kw))
+    assert_equal(h, g.new(&f).each(**h))
+    assert_equal(h, g.new(&f).each(a: 1))
+    assert_equal(h2, g.new(&f).each(**h2))
+    assert_equal(h3, g.new(&f).each(**h3))
+    assert_equal(h3, g.new(&f).each(a: 1, **h2))
+    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+      assert_equal(h, g.new(&f).each(h))
+    end
+    assert_raise(ArgumentError) { g.new(&f).each(h2) }
+    assert_warn(/The last argument is split into positional and keyword parameters.*for method/m) do
+      assert_raise(ArgumentError) { g.new(&f).each(h3) }
+    end
+
+    f = ->(_, a, **x) { [a,x] }
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([{}, {}], g.new(&f).each(**{}))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([{}, {}], g.new(&f).each(**kw))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h, {}], g.new(&f).each(**h))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h, {}], g.new(&f).each(a: 1))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h2, {}], g.new(&f).each(**h2))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h3, {}], g.new(&f).each(**h3))
+    end
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h3, {}], g.new(&f).each(a: 1, **h2))
+    end
+
+    f = ->(_, a=1, **x) { [a, x] }
+    assert_equal([1, kw], g.new(&f).each(**{}))
+    assert_equal([1, kw], g.new(&f).each(**kw))
+    assert_equal([1, h], g.new(&f).each(**h))
+    assert_equal([1, h], g.new(&f).each(a: 1))
+    assert_equal([1, h2], g.new(&f).each(**h2))
+    assert_equal([1, h3], g.new(&f).each(**h3))
+    assert_equal([1, h3], g.new(&f).each(a: 1, **h2))
+  end
+
   def test_Class_new_kwsplat_call
     kw = {}
     h = {:a=>1}
