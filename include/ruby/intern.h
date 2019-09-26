@@ -454,6 +454,7 @@ VALUE rb_block_lambda(void);
 VALUE rb_proc_new(rb_block_call_func_t, VALUE);
 VALUE rb_obj_is_proc(VALUE);
 VALUE rb_proc_call(VALUE, VALUE);
+VALUE rb_proc_call_kw(VALUE, VALUE, int);
 VALUE rb_proc_call_with_block(VALUE, int argc, const VALUE *argv, VALUE);
 VALUE rb_proc_call_with_block_kw(VALUE, int argc, const VALUE *argv, VALUE, int);
 int rb_proc_arity(VALUE);

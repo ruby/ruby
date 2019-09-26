@@ -1506,7 +1506,7 @@ generator_each(int argc, VALUE *argv, VALUE obj)
 	rb_ary_cat(args, argv, argc);
     }
 
-    return rb_proc_call(ptr->proc, args);
+    return rb_proc_call_kw(ptr->proc, args, RB_PASS_CALLED_KEYWORDS);
 }
 
 /* Lazy Enumerator methods */
