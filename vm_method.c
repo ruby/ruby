@@ -142,9 +142,11 @@ rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_me
     }
 }
 
-static void
-rb_method_definition_release(rb_method_definition_t *def, int complemented)
+void
+rb_free_method_entry(const rb_method_entry_t *me)
 {
+    rb_method_definition_t *def = me->def;
+
     if (def != NULL) {
 	const int alias_count = def->alias_count;
 	const int complemented_count = def->complemented_count;
@@ -158,19 +160,13 @@ rb_method_definition_release(rb_method_definition_t *def, int complemented)
 	    xfree(def);
 	}
 	else {
-	    if (complemented) def->complemented_count--;
+            if (def->complemented_count > 0) def->complemented_count--;
 	    else if (def->alias_count > 0) def->alias_count--;
 
 	    if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d->%d,%d->%d (dec)\n", (void *)def, rb_id2name(def->original_id),
 				      alias_count, def->alias_count, complemented_count, def->complemented_count);
 	}
     }
-}
-
-void
-rb_free_method_entry(const rb_method_entry_t *me)
-{
-    rb_method_definition_release(me->def, METHOD_ENTRY_COMPLEMENTED(me));
 }
 
 static inline rb_method_entry_t *search_method(VALUE klass, ID id, VALUE *defined_class_ptr);
@@ -431,7 +427,6 @@ rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID cal
     }
     me = rb_method_entry_alloc(called_id, src_me->owner, defined_class, def);
     METHOD_ENTRY_FLAGS_COPY(me, src_me);
-    METHOD_ENTRY_COMPLEMENTED_SET(me);
     if (!def) {
 	def = rb_method_definition_create(VM_METHOD_TYPE_REFINED, called_id);
 	rb_method_definition_set(me, def, &refined);
