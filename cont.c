@@ -293,7 +293,7 @@ fiber_pool_stack_alloca(struct fiber_pool_stack * stack, size_t offset)
 {
     STACK_GROW_DIR_DETECTION;
 
-    if (DEBUG) fprintf(stderr, "fiber_pool_stack_alloca(%p): %"PRIuSIZE"/%"PRIuSIZE"\n", stack, offset, stack->available);
+    if (DEBUG) fprintf(stderr, "fiber_pool_stack_alloca(%p): %"PRIuSIZE"/%"PRIuSIZE"\n", (void*)stack, offset, stack->available);
     VM_ASSERT(stack->available >= offset);
 
     // The pointer to the memory being allocated:
@@ -464,7 +464,7 @@ fiber_pool_expand(struct fiber_pool * fiber_pool, size_t count)
 
     if (DEBUG) {
         fprintf(stderr, "fiber_pool_expand(%"PRIuSIZE"): %p, %"PRIuSIZE"/%"PRIuSIZE" x [%"PRIuSIZE":%"PRIuSIZE"]\n",
-                count, fiber_pool, fiber_pool->used, fiber_pool->count, size, fiber_pool->vm_stack_size);
+                count, (void*)fiber_pool, fiber_pool->used, fiber_pool->count, size, fiber_pool->vm_stack_size);
     }
 
     // Iterate over all stacks, initializing the vacancy list:
@@ -585,7 +585,7 @@ static struct fiber_pool_stack
 fiber_pool_stack_acquire(struct fiber_pool * fiber_pool) {
     struct fiber_pool_vacancy * vacancy = fiber_pool_vacancy_pop(fiber_pool);
 
-    if (DEBUG) fprintf(stderr, "fiber_pool_stack_acquire: %p used=%"PRIuSIZE"\n", fiber_pool->vacancies, fiber_pool->used);
+    if (DEBUG) fprintf(stderr, "fiber_pool_stack_acquire: %p used=%"PRIuSIZE"\n", (void*)fiber_pool->vacancies, fiber_pool->used);
 
     if (!vacancy) {
         const size_t maximum = FIBER_POOL_ALLOCATION_MAXIMUM_SIZE;
@@ -733,7 +733,7 @@ fiber_stack_release(rb_fiber_t * fiber)
 {
     rb_execution_context_t *ec = &fiber->cont.saved_ec;
 
-    if (DEBUG) fprintf(stderr, "fiber_stack_release: %p, stack.base=%p\n", fiber, fiber->stack.base);
+    if (DEBUG) fprintf(stderr, "fiber_stack_release: %p, stack.base=%p\n", (void*)fiber, fiber->stack.base);
 
     // Return the stack back to the fiber pool if it wasn't already:
     if (fiber->stack.base) {
