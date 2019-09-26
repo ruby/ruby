@@ -951,6 +951,7 @@ typedef struct rb_thread_struct {
         struct {
             VALUE proc;
             VALUE args;
+            int kw_splat;
         } proc;
         struct {
             VALUE (*func)(void *);
