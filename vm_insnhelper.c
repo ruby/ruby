@@ -1386,9 +1386,6 @@ calccall(const struct rb_call_info *ci, const struct rb_call_cache *cc, const rb
     else if (LIKELY(cc->me != me)) {
         return vm_call_general; /* normal cases */
     }
-    else if (UNLIKELY(cc->def != me->def)) {
-        return vm_call_general;  /* cc->me was refined elsewhere */
-    }
     /* "Calling a formerly-public method, which is now privatised, with an
      * explicit receiver" is the only situation we have to check here.  A
      * formerly-private method now publicised is an absolutely safe thing.
@@ -1411,7 +1408,6 @@ rb_vm_search_method_slowpath(const struct rb_call_info *ci, struct rb_call_cache
         GET_GLOBAL_METHOD_STATE(),
         RCLASS_SERIAL(klass),
         me,
-        me ? me->def : NULL,
         calccall(ci, cc, me),
     };
     VM_ASSERT(callable_method_entry_p(cc->me));
