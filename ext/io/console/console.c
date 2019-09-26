@@ -1151,8 +1151,13 @@ console_key_pressed_p(VALUE io, VALUE k)
     return GetKeyState(vk) & 0x80 ? Qtrue : Qfalse;
 }
 #else
+struct query_args {
+    const char *qstr;
+    int opt;
+};
+
 static int
-direct_query(VALUE io, VALUE query)
+direct_query(VALUE io, const struct query_args *query)
 {
     if (RB_TYPE_P(io, T_FILE)) {
 	rb_io_t *fptr;
@@ -1160,15 +1165,16 @@ direct_query(VALUE io, VALUE query)
 	GetOpenFile(io, fptr);
 	wio = fptr->tied_io_for_writing;
 	if (wio) {
-	    rb_io_write(wio, query);
+	    VALUE s = rb_str_new_cstr(query->qstr);
+	    rb_io_write(wio, s);
 	    rb_io_flush(wio);
 	    return 1;
 	}
-	if (write(fptr->fd, RSTRING_PTR(query), RSTRING_LEN(query)) != -1) {
+	if (write(fptr->fd, query->qstr, strlen(query->qstr)) != -1) {
 	    return 1;
 	}
 	if (fptr->fd == 0 &&
-	    write(1, RSTRING_PTR(query), RSTRING_LEN(query)) != -1) {
+	    write(1, query->qstr, strlen(query->qstr)) != -1) {
 	    return 1;
 	}
     }
@@ -1178,9 +1184,14 @@ direct_query(VALUE io, VALUE query)
 static VALUE
 read_vt_response(VALUE io, VALUE query)
 {
+    struct query_args *qargs = (struct query_args *)query;
     VALUE result, b;
+    int opt = 0;
     int num = 0;
-    if (!NIL_P(query) && !direct_query(io, query)) return Qnil;
+    if (qargs) {
+	opt = qargs->opt;
+	if (!direct_query(io, qargs)) return Qnil;
+    }
     if (rb_io_getbyte(io) != INT2FIX(0x1b)) return Qnil;
     if (rb_io_getbyte(io) != INT2FIX('[')) return Qnil;
     result = rb_ary_new();
@@ -1193,6 +1204,9 @@ read_vt_response(VALUE io, VALUE query)
 	else if (ISDIGIT(c)) {
 	    num = num * 10 + c - '0';
 	}
+	else if (opt && c == opt) {
+	    opt = 0;
+	}
 	else {
 	    char last = (char)c;
 	    rb_ary_push(result, INT2NUM(num));
@@ -1204,10 +1218,10 @@ read_vt_response(VALUE io, VALUE query)
 }
 
 static VALUE
-console_vt_response(int argc, VALUE *argv, VALUE io)
+console_vt_response(int argc, VALUE *argv, VALUE io, const struct query_args *qargs)
 {
     rawmode_arg_t opts, *optp = rawmode_opt(&argc, argv, 0, 1, &opts);
-    VALUE query = argc ? argv[0] : Qnil;
+    VALUE query = (VALUE)qargs;
     VALUE ret = ttymode_with_io(io, read_vt_response, query, set_rawmode, optp);
     return ret;
 }
@@ -1215,8 +1229,8 @@ console_vt_response(int argc, VALUE *argv, VALUE io)
 static VALUE
 console_cursor_pos(VALUE io)
 {
-    VALUE query = rb_str_new_cstr("\033[6n");
-    VALUE resp = console_vt_response(1, &query, io);
+    static const struct query_args query = {"\033[6n", 0};
+    VALUE resp = console_vt_response(0, 0, io, &query);
     VALUE row, column, term;
     unsigned int r, c;
     if (!RB_TYPE_P(resp, T_ARRAY) || RARRAY_LEN(resp) != 3) return Qnil;
