@@ -140,12 +140,12 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     end_time = Time.now.utc.to_i
 
-    assert package.build_time.is_a?(Time)
+    assert_kind_of Time, package.build_time
 
     build_time = package.build_time.to_i
 
-    assert(start_time <= build_time)
-    assert(build_time <= end_time)
+    assert_operator(start_time, :<=, build_time)
+    assert_operator(build_time, :<=, end_time)
   ensure
     ENV["SOURCE_DATE_EPOCH"] = epoch
   end
