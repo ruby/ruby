@@ -2283,13 +2283,24 @@ class TestIO < Test::Unit::TestCase
     o = Object.new
     def o.to_open(**kw); kw; end
     assert_equal({:a=>1}, open(o, a: 1))
-    assert_warn(/The last argument is used as the keyword parameter.*for `to_open'/m) do
+
+    w = /The last argument is used as the keyword parameter.*for `(to_)?open'/m
+    redefined = nil
+    w.singleton_class.define_method(:===) do |s|
+      match = super(s)
+      redefined = !$1
+      match
+    end
+
+    assert_warn(w) do
       assert_equal({:a=>1}, open(o, {a: 1}))
     end
 
     def o.to_open(kw); kw; end
     assert_equal({:a=>1}, open(o, a: 1))
-    assert_equal({:a=>1}, open(o, {a: 1}))
+    unless redefined
+      assert_equal({:a=>1}, open(o, {a: 1}))
+    end
   end
 
   def test_open_pipe
