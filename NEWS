@@ -163,6 +163,14 @@ Integer::
          0b01001100[2...6] #=> 0b0011
              ^^^^
 
+NilClass / TrueClass / FalseClass::
+
+  Modified method::
+
+    * NilClass#to_s, TrueClass#to_s and FalseClass#to_s now always returns a
+      frozen String. The returned String is always the same for each of these
+      values. This change is experimental. [Feature #16150]
+
 Module::
 
   New method::
