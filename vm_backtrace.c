@@ -1349,7 +1349,7 @@ frame2iseq(VALUE frame)
 	    return (const rb_iseq_t *)frame;
 	  case imemo_ment:
 	    {
-		const rb_callable_method_entry_t *cme = (rb_callable_method_entry_t *)frame;
+                const rb_callable_method_entry_t *cme = (const rb_callable_method_entry_t *)frame;
 		switch (cme->def->type) {
 		  case VM_METHOD_TYPE_ISEQ:
 		    return cme->def->body.iseq.iseqptr;
@@ -1405,7 +1405,7 @@ frame2klass(VALUE frame)
     if (frame == Qnil) return Qnil;
 
     if (RB_TYPE_P(frame, T_IMEMO)) {
-	const rb_callable_method_entry_t *cme = (rb_callable_method_entry_t *)frame;
+        const rb_callable_method_entry_t *cme = (const rb_callable_method_entry_t *)frame;
 
 	if (imemo_type(frame) == imemo_ment) {
 	    return cme->defined_class;

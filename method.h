@@ -49,52 +49,23 @@ typedef struct rb_cref_struct {
 /* method data type */
 
 typedef struct rb_method_entry_struct {
-    VALUE flags;
-    VALUE defined_class;
+    const VALUE flags;
+    const VALUE defined_class;
     struct rb_method_definition_struct * const def;
-    ID called_id;
-    VALUE owner;
+    const ID called_id;
+    const VALUE owner;
 } rb_method_entry_t;
 
 typedef struct rb_callable_method_entry_struct { /* same fields with rb_method_entry_t */
-    VALUE flags;
+    const VALUE flags;
     const VALUE defined_class;
     struct rb_method_definition_struct * const def;
-    ID called_id;
+    const ID called_id;
     const VALUE owner;
 } rb_callable_method_entry_t;
 
 #define METHOD_ENTRY_VISI(me)  (rb_method_visibility_t)(((me)->flags & (IMEMO_FL_USER0 | IMEMO_FL_USER1)) >> (IMEMO_FL_USHIFT+0))
 #define METHOD_ENTRY_BASIC(me) (int)                   (((me)->flags & (IMEMO_FL_USER2                 )) >> (IMEMO_FL_USHIFT+2))
-
-static inline void
-METHOD_ENTRY_VISI_SET(rb_method_entry_t *me, rb_method_visibility_t visi)
-{
-    VM_ASSERT((int)visi >= 0 && visi <= 3);
-    me->flags = (me->flags & ~(IMEMO_FL_USER0 | IMEMO_FL_USER1)) | (visi << (IMEMO_FL_USHIFT+0));
-}
-static inline void
-METHOD_ENTRY_BASIC_SET(rb_method_entry_t *me, unsigned int basic)
-{
-    VM_ASSERT(basic <= 1);
-    me->flags = (me->flags & ~(IMEMO_FL_USER2                 )) | (basic << (IMEMO_FL_USHIFT+2));
-}
-static inline void
-METHOD_ENTRY_FLAGS_SET(rb_method_entry_t *me, rb_method_visibility_t visi, unsigned int basic)
-{
-    VM_ASSERT((int)visi >= 0 && visi <= 3);
-    VM_ASSERT(basic <= 1);
-    me->flags =
-      (me->flags & ~(IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2)) |
-	((visi << (IMEMO_FL_USHIFT+0)) | (basic << (IMEMO_FL_USHIFT+2)));
-}
-static inline void
-METHOD_ENTRY_FLAGS_COPY(rb_method_entry_t *dst, const rb_method_entry_t *src)
-{
-    dst->flags =
-      (dst->flags & ~(IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2)) |
-	(src->flags & (IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2));
-}
 
 typedef enum {
     VM_METHOD_TYPE_ISEQ,      /*!< Ruby method */
@@ -190,7 +161,7 @@ void rb_add_method_iseq(VALUE klass, ID mid, const rb_iseq_t *iseq, rb_cref_t *c
 void rb_add_refined_method_entry(VALUE refined_class, ID mid);
 void rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *option, rb_method_visibility_t visi);
 
-rb_method_entry_t *rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *, rb_method_visibility_t noex);
+const rb_method_entry_t *rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *, rb_method_visibility_t noex);
 const rb_method_entry_t *rb_method_entry_from_template(const rb_method_entry_t *template, const void *opts);
 const rb_method_entry_t *rb_method_entry_for_missing(ID mid, VALUE klass);
 
