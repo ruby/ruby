@@ -563,6 +563,10 @@ class TestModule < Test::Unit::TestCase
     assert_equal("Integer", Integer.name)
     assert_equal("TestModule::Mixin",  Mixin.name)
     assert_equal("TestModule::User",   User.name)
+
+    assert_predicate Integer.name, :frozen?
+    assert_predicate Mixin.name, :frozen?
+    assert_predicate User.name, :frozen?
   end
 
   def test_accidental_singleton_naming_with_module
