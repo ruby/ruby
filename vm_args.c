@@ -14,7 +14,6 @@ NORETURN(static void argument_kw_error(rb_execution_context_t *ec, const rb_iseq
 VALUE rb_keyword_error_new(const char *error, VALUE keys); /* class.c */
 static VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv,
                             enum method_missing_reason call_status, int kw_splat);
-extern VALUE rb_adjust_argv_kw_splat(int *argc, const VALUE **argv, int *kw_splat);
 
 struct args_info {
     /* basic args info */

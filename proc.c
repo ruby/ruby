@@ -954,8 +954,6 @@ proc_to_block_handler(VALUE procval)
     return NIL_P(procval) ? VM_BLOCK_HANDLER_NONE : procval;
 }
 
-extern VALUE rb_adjust_argv_kw_splat(int *argc, const VALUE **argv, int *kw_splat);
-
 VALUE
 rb_proc_call_with_block_kw(VALUE self, int argc, const VALUE *argv, VALUE passed_procval, int kw_splat)
 {
