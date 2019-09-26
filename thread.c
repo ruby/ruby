@@ -671,7 +671,7 @@ thread_do_start(rb_thread_t *th)
 
     if (th->invoke_type == thread_invoke_type_proc) {
         VALUE args = th->invoke_arg.proc.args;
-        int args_len = RARRAY_LEN(args);
+        int args_len = (int)RARRAY_LEN(args);
         int kw_splat = th->invoke_arg.proc.kw_splat;
         const VALUE *args_ptr;
         VALUE procval = th->invoke_arg.proc.proc;
