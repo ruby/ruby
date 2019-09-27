@@ -1079,6 +1079,7 @@ new_label_body(rb_iseq_t *iseq, long line)
     labelobj->link.next = 0;
 
     labelobj->label_no = ISEQ_COMPILE_DATA(iseq)->label_no++;
+    labelobj->position = 0;
     labelobj->sc_state = 0;
     labelobj->sp = -1;
     labelobj->refcnt = 0;
