@@ -311,7 +311,7 @@ fill_random_bytes_urandom(void *seed, size_t size)
 		return -1;
 	    }
 	    offset += (size_t)ret;
-	} while(offset < size);
+	} while (offset < size);
     }
     close(fd);
     return 0;
@@ -421,7 +421,7 @@ fill_random_bytes_syscall(void *seed, size_t size, int need_secure)
 		return -1;
 	    }
 	    offset += (size_t)ret;
-	} while(offset < size);
+	} while (offset < size);
 	return 0;
     }
     return -1;

@@ -1648,8 +1648,8 @@ rb_mod_s_used_modules(VALUE _)
     const rb_cref_t *cref = rb_vm_cref();
     VALUE ary = rb_ary_new();
 
-    while(cref) {
-	if(!NIL_P(CREF_REFINEMENTS(cref))) {
+    while (cref) {
+	if (!NIL_P(CREF_REFINEMENTS(cref))) {
 	    rb_hash_foreach(CREF_REFINEMENTS(cref), used_modules_i, ary);
 	}
 	cref = CREF_NEXT(cref);

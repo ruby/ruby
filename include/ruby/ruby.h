@@ -2661,11 +2661,11 @@ rb_scan_args_set(int argc, const VALUE *argv,
 
     if (argi < argc) {
       argc_error:
-        if(tmp_buffer) rb_free_tmp_buffer(&tmp_buffer);
+        if (tmp_buffer) rb_free_tmp_buffer(&tmp_buffer);
         rb_error_arity(argc, n_mand, f_var ? UNLIMITED_ARGUMENTS : n_mand + n_opt);
     }
 
-    if(tmp_buffer) rb_free_tmp_buffer(&tmp_buffer);
+    if (tmp_buffer) rb_free_tmp_buffer(&tmp_buffer);
     return argc;
 }
 #endif

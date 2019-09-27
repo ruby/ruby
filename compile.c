@@ -3988,7 +3988,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
         if (static_literal_node_p(node, iseq)) {
             /* count the elements that are optimizable */
             const NODE *node_tmp = node->nd_next;
-            for(; node_tmp && static_literal_node_p(node_tmp, iseq); node_tmp = node_tmp->nd_next)
+            for (; node_tmp && static_literal_node_p(node_tmp, iseq); node_tmp = node_tmp->nd_next)
                 count++;
 
             if ((first_chunk && stack_len == 0 && !node_tmp) || count >= min_tmp_ary_len) {
@@ -4117,7 +4117,7 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popp
         if (static_literal_node_pair_p(node, iseq)) {
             /* count the elements that are optimizable */
             const NODE *node_tmp = node->nd_next->nd_next;
-            for(; node_tmp && static_literal_node_pair_p(node_tmp, iseq); node_tmp = node_tmp->nd_next->nd_next)
+            for (; node_tmp && static_literal_node_pair_p(node_tmp, iseq); node_tmp = node_tmp->nd_next->nd_next)
                 count++;
 
             if ((first_chunk && stack_len == 0 && !node_tmp) || count >= min_tmp_hash_len) {
@@ -8968,7 +8968,8 @@ rb_iseq_mark_insn_storage(struct iseq_compile_data_storage *storage)
         if (offset > storage->size || offset > storage->pos) {
             pos = 0;
             storage = storage->next;
-        } else {
+        }
+        else {
 #ifdef STRICT_ALIGNMENT
             pos += (int)padding;
 #endif /* STRICT_ALIGNMENT */
@@ -8979,12 +8980,12 @@ rb_iseq_mark_insn_storage(struct iseq_compile_data_storage *storage)
                 int j;
                 const char *types = insn_op_types(iobj->insn_id);
 
-                for(j = 0; types[j]; j++) {
+                for (j = 0; types[j]; j++) {
                     char type = types[j];
-                    switch(type) {
-                        case TS_CDHASH:
-                        case TS_ISEQ:
-                        case TS_VALUE:
+                    switch (type) {
+                      case TS_CDHASH:
+                      case TS_ISEQ:
+                      case TS_VALUE:
                         {
                             VALUE op = OPERAND_AT(iobj, j);
                             if (!SPECIAL_CONST_P(op)) {
@@ -8992,8 +8993,8 @@ rb_iseq_mark_insn_storage(struct iseq_compile_data_storage *storage)
                             }
                             break;
                         }
-                        default:
-                            break;
+                      default:
+                        break;
                     }
                 }
             }

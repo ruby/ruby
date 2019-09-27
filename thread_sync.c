@@ -292,7 +292,8 @@ do_mutex_lock(VALUE self, int interruptible_p)
                     mutex->th = th;
                     mutex_locked(th, self);
                 }
-            } else {
+            }
+            else {
                 if (mutex->th == th) mutex_locked(th, self);
             }
 	}

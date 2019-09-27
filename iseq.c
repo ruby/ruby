@@ -262,7 +262,7 @@ rb_iseq_update_references(rb_iseq_t *iseq)
         if (body->catch_table) {
             struct iseq_catch_table *table = body->catch_table;
             unsigned int i;
-            for(i = 0; i < table->size; i++) {
+            for (i = 0; i < table->size; i++) {
                 struct iseq_catch_table_entry *entry;
                 entry = UNALIGNED_MEMBER_PTR(table, entries[i]);
                 if (entry->iseq) {
@@ -321,7 +321,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 	if (body->catch_table) {
 	    const struct iseq_catch_table *table = body->catch_table;
 	    unsigned int i;
-	    for(i = 0; i < table->size; i++) {
+	    for (i = 0; i < table->size; i++) {
 		const struct iseq_catch_table_entry *entry;
 		entry = UNALIGNED_MEMBER_PTR(table, entries[i]);
 		if (entry->iseq) {

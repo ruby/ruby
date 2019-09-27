@@ -1974,9 +1974,9 @@ rb_scan_args_parse(int kw_flag, int argc, const VALUE *argv, const char *fmt, st
     arg->last_idx = -1;
     arg->hash = Qnil;
 
-    switch(kw_flag) {
+    switch (kw_flag) {
       case RB_SCAN_ARGS_PASS_CALLED_KEYWORDS:
-        if(!(keyword_given = rb_keyword_given_p())) {
+        if (!(keyword_given = rb_keyword_given_p())) {
             empty_keyword_given = rb_empty_keyword_given_p();
         }
         break;

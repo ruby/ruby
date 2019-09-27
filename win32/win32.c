@@ -351,7 +351,7 @@ flock_winnt(uintptr_t self, int argc, uintptr_t* argv)
 
     memset(&o, 0, sizeof(o));
 
-    switch(oper) {
+    switch (oper) {
       case LOCK_SH:		/* shared lock */
 	LK_ERR(LockFileEx(fh, 0, 0, LK_LEN, LK_LEN, &o), i);
 	break;

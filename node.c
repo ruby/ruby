@@ -1194,20 +1194,20 @@ rb_ast_newnode(rb_ast_t *ast, enum node_type type)
 {
     node_buffer_t *nb = ast->node_buffer;
     switch (type) {
-        case NODE_MATCH:
-        case NODE_LIT:
-        case NODE_STR:
-        case NODE_XSTR:
-        case NODE_DSTR:
-        case NODE_DXSTR:
-        case NODE_DREGX:
-        case NODE_DSYM:
-        case NODE_ARGS:
-        case NODE_SCOPE:
-        case NODE_ARYPTN:
-            return ast_newnode_in_bucket(&nb->markable);
-        default:
-            return ast_newnode_in_bucket(&nb->unmarkable);
+      case NODE_MATCH:
+      case NODE_LIT:
+      case NODE_STR:
+      case NODE_XSTR:
+      case NODE_DSTR:
+      case NODE_DXSTR:
+      case NODE_DREGX:
+      case NODE_DSYM:
+      case NODE_ARGS:
+      case NODE_SCOPE:
+      case NODE_ARYPTN:
+        return ast_newnode_in_bucket(&nb->markable);
+      default:
+        return ast_newnode_in_bucket(&nb->unmarkable);
     }
 }
 
@@ -1257,7 +1257,7 @@ static void
 mark_ast_value(void *ctx, NODE * node)
 {
     switch (nd_type(node)) {
-        case NODE_SCOPE:
+      case NODE_SCOPE:
         {
             ID *buf = node->nd_tbl;
             if (buf) {
@@ -1266,30 +1266,30 @@ mark_ast_value(void *ctx, NODE * node)
             }
             break;
         }
-        case NODE_ARYPTN:
+      case NODE_ARYPTN:
         {
             struct rb_ary_pattern_info *apinfo = node->nd_apinfo;
             rb_gc_mark_movable(apinfo->imemo);
             break;
         }
-        case NODE_ARGS:
+      case NODE_ARGS:
         {
             struct rb_args_info *args = node->nd_ainfo;
             rb_gc_mark_movable(args->imemo);
             break;
         }
-        case NODE_MATCH:
-        case NODE_LIT:
-        case NODE_STR:
-        case NODE_XSTR:
-        case NODE_DSTR:
-        case NODE_DXSTR:
-        case NODE_DREGX:
-        case NODE_DSYM:
-            rb_gc_mark_movable(node->nd_lit);
-            break;
-        default:
-            rb_bug("unreachable node %s", ruby_node_name(nd_type(node)));
+      case NODE_MATCH:
+      case NODE_LIT:
+      case NODE_STR:
+      case NODE_XSTR:
+      case NODE_DSTR:
+      case NODE_DXSTR:
+      case NODE_DREGX:
+      case NODE_DSYM:
+        rb_gc_mark_movable(node->nd_lit);
+        break;
+      default:
+        rb_bug("unreachable node %s", ruby_node_name(nd_type(node)));
     }
 }
 
@@ -1297,7 +1297,7 @@ static void
 update_ast_value(void *ctx, NODE * node)
 {
     switch (nd_type(node)) {
-        case NODE_SCOPE:
+      case NODE_SCOPE:
         {
             ID *buf = node->nd_tbl;
             if (buf) {
@@ -1306,29 +1306,29 @@ update_ast_value(void *ctx, NODE * node)
             }
             break;
         }
-        case NODE_ARYPTN:
+      case NODE_ARYPTN:
         {
             struct rb_ary_pattern_info *apinfo = node->nd_apinfo;
             apinfo->imemo = rb_gc_location(apinfo->imemo);
             break;
         }
-        case NODE_ARGS:
+      case NODE_ARGS:
         {
             struct rb_args_info *args = node->nd_ainfo;
             args->imemo = rb_gc_location(args->imemo);
             break;
         }
-        case NODE_LIT:
-        case NODE_STR:
-        case NODE_XSTR:
-        case NODE_DSTR:
-        case NODE_DXSTR:
-        case NODE_DREGX:
-        case NODE_DSYM:
-            node->nd_lit = rb_gc_location(node->nd_lit);
-            break;
-        default:
-            rb_bug("unreachable");
+      case NODE_LIT:
+      case NODE_STR:
+      case NODE_XSTR:
+      case NODE_DSTR:
+      case NODE_DXSTR:
+      case NODE_DREGX:
+      case NODE_DSYM:
+        node->nd_lit = rb_gc_location(node->nd_lit);
+        break;
+      default:
+        rb_bug("unreachable");
     }
 }
 

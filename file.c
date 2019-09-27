@@ -4365,7 +4365,7 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode
     }
     unresolved_path = TO_OSPATH(unresolved_path);
 
-    if((resolved_ptr = realpath(RSTRING_PTR(unresolved_path), NULL)) == NULL) {
+    if ((resolved_ptr = realpath(RSTRING_PTR(unresolved_path), NULL)) == NULL) {
         /* glibc realpath(3) does not allow /path/to/file.rb/../other_file.rb,
            returning ENOTDIR in that case.
            glibc realpath(3) can also return ENOENT for paths that exist,
@@ -4398,9 +4398,9 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode
         rb_enc_associate(resolved, origenc);
     }
 
-    if(rb_enc_str_coderange(resolved) == ENC_CODERANGE_BROKEN) {
+    if (rb_enc_str_coderange(resolved) == ENC_CODERANGE_BROKEN) {
         rb_enc_associate(resolved, rb_filesystem_encoding());
-        if(rb_enc_str_coderange(resolved) == ENC_CODERANGE_BROKEN) {
+        if (rb_enc_str_coderange(resolved) == ENC_CODERANGE_BROKEN) {
             rb_enc_associate(resolved, rb_ascii8bit_encoding());
         }
     }

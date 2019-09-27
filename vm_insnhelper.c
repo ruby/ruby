@@ -4384,13 +4384,16 @@ vm_opt_nil_p(CALL_INFO ci, CALL_CACHE cc, VALUE recv)
     if (recv == Qnil) {
         if (BASIC_OP_UNREDEFINED_P(BOP_NIL_P, NIL_REDEFINED_OP_FLAG)) {
             return Qtrue;
-        } else {
+        }
+        else {
             return Qundef;
         }
-    } else {
+    }
+    else {
         if (vm_method_cfunc_is(ci, cc, recv, rb_false)) {
             return Qfalse;
-        } else {
+        }
+        else {
             return Qundef;
         }
     }

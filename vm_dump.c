@@ -1011,7 +1011,8 @@ rb_vm_bugreport(const void *ctx)
             if (map.is_submap) {
                 // We only look at main addresses
                 depth++;
-            } else {
+            }
+            else {
                 fprintf(stderr, "%lx-%lx %s%s%s", addr, (addr+size),
                         ((map.protection & VM_PROT_READ) != 0 ? "r" : "-"),
                         ((map.protection & VM_PROT_WRITE) != 0 ? "w" : "-"),
