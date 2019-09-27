@@ -153,4 +153,8 @@ class TestProfileFrames < Test::Unit::TestCase
       a
     end;
   end
+
+  def test_start
+    assert_equal Bug::Debug.profile_frames(0, 10).tap(&:shift), Bug::Debug.profile_frames(1, 9)
+  end
 end

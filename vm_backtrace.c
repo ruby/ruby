@@ -1551,7 +1551,7 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
     const rb_control_frame_t *cfp = ec->cfp, *end_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
     const rb_callable_method_entry_t *cme;
 
-    for (i=0; i<limit && cfp != end_cfp;) {
+    for (i=0; i<limit && cfp != end_cfp; cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
         if (VM_FRAME_RUBYFRAME_P(cfp)) {
 	    if (start > 0) {
 		start--;
@@ -1574,12 +1574,15 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
         else {
 	    cme = rb_vm_frame_method_entry(cfp);
 	    if (cme && cme->def->type == VM_METHOD_TYPE_CFUNC) {
+                if (start > 0) {
+                    start--;
+                    continue;
+                }
 		buff[i] = (VALUE)cme;
                 if (lines) lines[i] = 0;
                 i++;
             }
         }
-	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
 
     return i;
