@@ -52,15 +52,13 @@ module Test
         args = Array(args).dup
         args.insert((Hash === args[0] ? 1 : 0), '--disable=gems')
         stdout, stderr, status = EnvUtil.invoke_ruby(args, test_stdin, true, true, **opt)
-        if signo = status.termsig
-          EnvUtil.diagnostic_reports(Signal.signame(signo), status.pid, Time.now)
-        end
+        desc = FailDesc[status, message, stderr]
         if block_given?
           raise "test_stdout ignored, use block only or without block" if test_stdout != []
           raise "test_stderr ignored, use block only or without block" if test_stderr != []
           yield(stdout.lines.map {|l| l.chomp }, stderr.lines.map {|l| l.chomp }, status)
         else
-          all_assertions(message) do |a|
+          all_assertions(desc) do |a|
             [["stdout", test_stdout, stdout], ["stderr", test_stderr, stderr]].each do |key, exp, act|
               a.for(key) do
                 if exp.is_a?(Regexp)
