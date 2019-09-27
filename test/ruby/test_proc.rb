@@ -1552,9 +1552,7 @@ class TestProcKeywords < Test::Unit::TestCase
     assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
       assert_equal(1, (f << g).call(a: 3)[:a])
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
-      assert_equal(2, (f >> g).call(a: 3)[:a])
-    end
+    assert_equal(2, (f >> g).call(a: 3)[:a])
     assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
       assert_equal(1, (f << g).call({a: 3})[:a])
     end
@@ -1574,9 +1572,7 @@ class TestProcKeywords < Test::Unit::TestCase
     assert_warn(/The keyword argument is passed as the last hash parameter.*The last argument is used as the keyword parameter.*for method/m) do
       assert_equal(1, (f << g).call(**{})[:a])
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
-      assert_equal(2, (f >> g).call(**{})[:a])
-    end
+    assert_equal(2, (f >> g).call(**{})[:a])
   end
 
   def test_compose_keywords_non_proc
@@ -1632,9 +1628,7 @@ class TestProcKeywords < Test::Unit::TestCase
     assert_warn(/The last argument is used as the keyword parameter.*for `call'/m) do
       assert_equal(2, (g << f).call(a: 3)[:a])
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for `call'/m) do
-      assert_equal(1, (g >> f).call(a: 3)[:a])
-    end
+    assert_equal(1, (g >> f).call(a: 3)[:a])
     assert_warn(/The last argument is used as the keyword parameter.*for `call'/m) do
       assert_equal(2, (g << f).call({a: 3})[:a])
     end

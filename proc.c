@@ -2895,7 +2895,7 @@ mlambda(VALUE method)
 static VALUE
 bmcall(RB_BLOCK_CALL_FUNC_ARGLIST(args, method))
 {
-    return rb_method_call_with_block(argc, argv, method, blockarg);
+    return rb_method_call_with_block_kw(argc, argv, method, blockarg, RB_PASS_CALLED_KEYWORDS);
 }
 
 VALUE
