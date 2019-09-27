@@ -132,6 +132,27 @@ class TestObject < Test::Unit::TestCase
     assert_equal(0.0, nil.to_f)
   end
 
+  def test_nil_to_s
+    str = nil.to_s
+    assert_equal("", str)
+    assert_predicate(str, :frozen?)
+    assert_same(str, nil.to_s)
+  end
+
+  def test_true_to_s
+    str = true.to_s
+    assert_equal("true", str)
+    assert_predicate(str, :frozen?)
+    assert_same(str, true.to_s)
+  end
+
+  def test_false_to_s
+    str = false.to_s
+    assert_equal("false", str)
+    assert_predicate(str, :frozen?)
+    assert_same(str, false.to_s)
+  end
+
   def test_not
     assert_equal(false, Object.new.send(:!))
     assert_equal(true, nil.send(:!))
