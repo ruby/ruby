@@ -233,14 +233,14 @@ keyword_hash_p(VALUE *kw_hash_ptr, VALUE *rest_hash_ptr, int check_only_symbol)
 
     if (!NIL_P(*rest_hash_ptr)) {
 	if (check_only_symbol) {
-	    switch(keyword_hash_symbol_other(*rest_hash_ptr)) {
-	    case KW_HASH_HAS_NO_KEYS:
-	    case KW_HASH_HAS_SYMBOL_KEY:
+	    switch (keyword_hash_symbol_other(*rest_hash_ptr)) {
+              case KW_HASH_HAS_NO_KEYS:
+              case KW_HASH_HAS_SYMBOL_KEY:
 		break;
-	    case KW_HASH_HAS_OTHER_KEY:
+              case KW_HASH_HAS_OTHER_KEY:
 		*kw_hash_ptr = Qnil;
 		return FALSE;
-	    case KW_HASH_HAS_BOTH_KEYS:
+              case KW_HASH_HAS_BOTH_KEYS:
                 *rest_hash_ptr = rb_hash_dup(*rest_hash_ptr);
 		keyword_hash_split(kw_hash_ptr, rest_hash_ptr);
 		return TRUE;
@@ -738,7 +738,8 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
             if (RB_TYPE_P(rest_last, T_HASH) &&
                 (((struct RHash *)rest_last)->basic.flags & RHASH_PASS_AS_KEYWORDS)) {
                 kw_flag |= VM_CALL_KW_SPLAT;
-            } else {
+            }
+            else {
                 rest_last = 0;
             }
         }

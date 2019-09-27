@@ -2945,13 +2945,13 @@ vm_yield_with_cfunc(rb_execution_context_t *ec,
     blockarg = rb_vm_bh_to_procval(ec, block_handler);
 
     frame_flag = VM_FRAME_MAGIC_IFUNC | VM_FRAME_FLAG_CFRAME | (me ? VM_FRAME_FLAG_BMETHOD : 0);
-    switch(kw_splat) {
-        case 1:
-            frame_flag |= VM_FRAME_FLAG_CFRAME_KW;
-            break;
-        case 2:
-            frame_flag |= VM_FRAME_FLAG_CFRAME_EMPTY_KW;
-            break;
+    switch (kw_splat) {
+      case 1:
+        frame_flag |= VM_FRAME_FLAG_CFRAME_KW;
+        break;
+      case 2:
+        frame_flag |= VM_FRAME_FLAG_CFRAME_EMPTY_KW;
+        break;
     }
 
     vm_push_frame(ec, (const rb_iseq_t *)captured->code.ifunc,

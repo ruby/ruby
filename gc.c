@@ -7838,33 +7838,33 @@ gc_ref_update_method_entry(rb_objspace_t *objspace, rb_method_entry_t *me)
 
     if (def) {
         switch (def->type) {
-            case VM_METHOD_TYPE_ISEQ:
-                if (def->body.iseq.iseqptr) {
-                    TYPED_UPDATE_IF_MOVED(objspace, rb_iseq_t *, def->body.iseq.iseqptr);
-                }
-                TYPED_UPDATE_IF_MOVED(objspace, rb_cref_t *, def->body.iseq.cref);
-                break;
-            case VM_METHOD_TYPE_ATTRSET:
-            case VM_METHOD_TYPE_IVAR:
-                UPDATE_IF_MOVED(objspace, def->body.attr.location);
-                break;
-            case VM_METHOD_TYPE_BMETHOD:
-                UPDATE_IF_MOVED(objspace, def->body.bmethod.proc);
-                break;
-            case VM_METHOD_TYPE_ALIAS:
-                TYPED_UPDATE_IF_MOVED(objspace, struct rb_method_entry_struct *, def->body.alias.original_me);
-                return;
-            case VM_METHOD_TYPE_REFINED:
-                TYPED_UPDATE_IF_MOVED(objspace, struct rb_method_entry_struct *, def->body.refined.orig_me);
-                UPDATE_IF_MOVED(objspace, def->body.refined.owner);
-                break;
-            case VM_METHOD_TYPE_CFUNC:
-            case VM_METHOD_TYPE_ZSUPER:
-            case VM_METHOD_TYPE_MISSING:
-            case VM_METHOD_TYPE_OPTIMIZED:
-            case VM_METHOD_TYPE_UNDEF:
-            case VM_METHOD_TYPE_NOTIMPLEMENTED:
-                break;
+          case VM_METHOD_TYPE_ISEQ:
+            if (def->body.iseq.iseqptr) {
+                TYPED_UPDATE_IF_MOVED(objspace, rb_iseq_t *, def->body.iseq.iseqptr);
+            }
+            TYPED_UPDATE_IF_MOVED(objspace, rb_cref_t *, def->body.iseq.cref);
+            break;
+          case VM_METHOD_TYPE_ATTRSET:
+          case VM_METHOD_TYPE_IVAR:
+            UPDATE_IF_MOVED(objspace, def->body.attr.location);
+            break;
+          case VM_METHOD_TYPE_BMETHOD:
+            UPDATE_IF_MOVED(objspace, def->body.bmethod.proc);
+            break;
+          case VM_METHOD_TYPE_ALIAS:
+            TYPED_UPDATE_IF_MOVED(objspace, struct rb_method_entry_struct *, def->body.alias.original_me);
+            return;
+          case VM_METHOD_TYPE_REFINED:
+            TYPED_UPDATE_IF_MOVED(objspace, struct rb_method_entry_struct *, def->body.refined.orig_me);
+            UPDATE_IF_MOVED(objspace, def->body.refined.owner);
+            break;
+          case VM_METHOD_TYPE_CFUNC:
+          case VM_METHOD_TYPE_ZSUPER:
+          case VM_METHOD_TYPE_MISSING:
+          case VM_METHOD_TYPE_OPTIMIZED:
+          case VM_METHOD_TYPE_UNDEF:
+          case VM_METHOD_TYPE_NOTIMPLEMENTED:
+            break;
         }
     }
 }
