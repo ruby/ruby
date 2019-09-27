@@ -158,6 +158,19 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([b, [:b]], f12(**h, &b))
   end
 
+  def f13(a, **nil)
+    a
+  end
+
+  def test_f13
+    assert_equal(1, f13(1))
+    assert_equal(1, f13(1, **{}))
+    assert_raise(ArgumentError) { f13(a: 1) }
+    assert_raise(ArgumentError) { f13(1, a: 1) }
+    assert_raise(ArgumentError) { f13(**{a: 1}) }
+    assert_raise(ArgumentError) { f13(1, **{a: 1}) }
+  end
+
   def test_method_parameters
     assert_equal([[:key, :str], [:key, :num]], method(:f1).parameters);
     assert_equal([[:req, :x], [:key, :str], [:key, :num]], method(:f2).parameters);

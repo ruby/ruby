@@ -1743,6 +1743,7 @@ rb_simple_iseq_p(const rb_iseq_t *iseq)
 	   iseq->body->param.flags.has_post == FALSE &&
 	   iseq->body->param.flags.has_kw == FALSE &&
 	   iseq->body->param.flags.has_kwrest == FALSE &&
+           iseq->body->param.flags.accepts_no_kwarg == FALSE &&
 	   iseq->body->param.flags.has_block == FALSE;
 }
 
@@ -1754,6 +1755,7 @@ rb_iseq_only_optparam_p(const rb_iseq_t *iseq)
            iseq->body->param.flags.has_post == FALSE &&
            iseq->body->param.flags.has_kw == FALSE &&
            iseq->body->param.flags.has_kwrest == FALSE &&
+           iseq->body->param.flags.accepts_no_kwarg == FALSE &&
            iseq->body->param.flags.has_block == FALSE;
 }
 
