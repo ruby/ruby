@@ -5118,6 +5118,8 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
     LABEL *then_label, *else_label, *end_label;
     VALUE branches = Qfalse;
     int ci_size, ci_kw_size;
+    VALUE catch_table = ISEQ_COMPILE_DATA(iseq)->catch_table_ary;
+    long catch_table_size = NIL_P(catch_table) ? 0 : RARRAY_LEN(catch_table);
 
     INIT_ANCHOR(cond_seq);
     INIT_ANCHOR(then_seq);
@@ -5132,17 +5134,27 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
     ci_size = body->ci_size;
     ci_kw_size = body->ci_kw_size;
     CHECK(COMPILE_(then_seq, "then", node_body, popped));
+    catch_table = ISEQ_COMPILE_DATA(iseq)->catch_table_ary;
     if (!then_label->refcnt) {
         body->ci_size = ci_size;
         body->ci_kw_size = ci_kw_size;
+        if (!NIL_P(catch_table)) rb_ary_set_len(catch_table, catch_table_size);
+    }
+    else {
+        if (!NIL_P(catch_table)) catch_table_size = RARRAY_LEN(catch_table);
     }
 
     ci_size = body->ci_size;
     ci_kw_size = body->ci_kw_size;
     CHECK(COMPILE_(else_seq, "else", node_else, popped));
+    catch_table = ISEQ_COMPILE_DATA(iseq)->catch_table_ary;
     if (!else_label->refcnt) {
         body->ci_size = ci_size;
         body->ci_kw_size = ci_kw_size;
+        if (!NIL_P(catch_table)) rb_ary_set_len(catch_table, catch_table_size);
+    }
+    else {
+        if (!NIL_P(catch_table)) catch_table_size = RARRAY_LEN(catch_table);
     }
 
     ADD_SEQ(ret, cond_seq);
