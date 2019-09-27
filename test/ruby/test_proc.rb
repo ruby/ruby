@@ -784,6 +784,33 @@ class TestProc < Test::Unit::TestCase
     assert_equal [[1, 2], Proc, :x], (pr.call(1, 2){|x| x})
   end
 
+  def test_proc_args_only_rest
+    pr = proc {|*c| c }
+    assert_equal [], pr.call()
+    assert_equal [1], pr.call(1)
+    assert_equal [[1]], pr.call([1])
+    assert_equal [1, 2], pr.call(1,2)
+    assert_equal [[1, 2]], pr.call([1,2])
+  end
+
+  def test_proc_args_rest_kw
+    pr = proc {|*c, a: 1| [c, a] }
+    assert_equal [[], 1], pr.call()
+    assert_equal [[1], 1], pr.call(1)
+    assert_equal [[[1]], 1], pr.call([1])
+    assert_equal [[1, 2], 1], pr.call(1,2)
+    assert_equal [[[1, 2]], 1], pr.call([1,2])
+  end
+
+  def test_proc_args_rest_kwsplat
+    pr = proc {|*c, **kw| [c, kw] }
+    assert_equal [[], {}], pr.call()
+    assert_equal [[1], {}], pr.call(1)
+    assert_equal [[[1]], {}], pr.call([1])
+    assert_equal [[1, 2], {}], pr.call(1,2)
+    assert_equal [[[1, 2]], {}], pr.call([1,2])
+  end
+
   def test_proc_args_pos_rest_post_block
     pr = proc {|a,b,*c,d,e,&f|
       [a, b, c, d, e, f.class, f&&f.call(:x)]

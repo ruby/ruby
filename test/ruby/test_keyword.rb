@@ -3284,15 +3284,20 @@ class TestKeywordArguments < Test::Unit::TestCase
     bug7665 = '[ruby-core:51278]'
     bug8463 = '[ruby-core:55203] [Bug #8463]'
     a = [*%w[foo bar], {zzz: 42}]
-    expect = a + [{}]
-    assert_equal(expect, rest_keyrest(*a), bug7665)
+    splat_expect = a + [{}]
+    nonsplat_expect = [a, {}]
+    assert_equal(splat_expect, rest_keyrest(*a), bug7665)
+    assert_equal(nonsplat_expect, rest_keyrest(a), bug7665)
+
     pr = proc {|*args, **opt| next *args, opt}
-    assert_equal(expect, pr.call(*a), bug7665)
-    assert_equal(expect, pr.call(a), bug8463)
+    assert_equal(splat_expect, pr.call(*a), bug7665)
+    assert_equal(nonsplat_expect, pr.call(a), bug8463)
+
     pr = proc {|a, *b, **opt| next a, *b, opt}
-    assert_equal(expect, pr.call(a), bug8463)
+    assert_equal(splat_expect, pr.call(a), bug8463)
+
     pr = proc {|a, **opt| next a, opt}
-    assert_equal(expect.values_at(0, -1), pr.call(expect), bug8463)
+    assert_equal(splat_expect.values_at(0, -1), pr.call(splat_expect), bug8463)
   end
 
   def req_plus_keyword(x, **h)
@@ -3662,7 +3667,7 @@ class TestKeywordArguments < Test::Unit::TestCase
 
   def test_nonsymbol_key
     result = m(["a" => 10]) { |a = nil, **b| [a, b] }
-    assert_equal([{"a" => 10}, {}], result)
+    assert_equal([[{"a" => 10}], {}], result)
   end
 
   def method_for_test_to_hash_call_during_setup_complex_parameters k1:, k2:, **rest_kw

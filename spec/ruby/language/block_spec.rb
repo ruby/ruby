@@ -76,18 +76,18 @@ describe "A block yielded a single" do
         result.should == [1, 2, [3], {x: 9}, 2, {}]
       end
 
-      it "does not treat final Hash as keyword arguments" do
+      it "does not treat final Hash as keyword arguments and does not autosplat" do
         result = m(["a" => 1, a: 10]) { |a=nil, **b| [a, b] }
-        result.should == [{"a" => 1, a: 10}, {}]
+        result.should == [[{"a" => 1, a: 10}], {}]
       end
 
-      it "does not call #to_hash on final argument to get keyword arguments" do
+      it "does not call #to_hash on final argument to get keyword arguments and does not autosplat" do
         suppress_keyword_warning do
           obj = mock("coerce block keyword arguments")
           obj.should_not_receive(:to_hash)
 
           result = m([obj]) { |a=nil, **b| [a, b] }
-          result.should == [obj, {}]
+          result.should == [[obj], {}]
         end
       end
     end
@@ -113,12 +113,12 @@ describe "A block yielded a single" do
     end
 
     ruby_version_is "2.8" do
-      it "does not call #to_hash on the argument when optional argument and keyword argument accepted" do
+      it "does not call #to_hash on the argument when optional argument and keyword argument accepted and does not autosplat" do
         obj = mock("coerce block keyword arguments")
         obj.should_not_receive(:to_hash)
 
         result = m([obj]) { |a=nil, **b| [a, b] }
-        result.should == [obj, {}]
+        result.should == [[obj], {}]
       end
     end
 
@@ -132,18 +132,27 @@ describe "A block yielded a single" do
         end
       end
       ruby_version_is "2.8" do
-        it "does not separates non-symbol keys and symbol keys" do
+        it "does not separate non-symbol keys and symbol keys and does not autosplat" do
           suppress_keyword_warning do
             result = m(["a" => 10, b: 2]) { |a=nil, **b| [a, b] }
-            result.should == [{"a" => 10, b: 2}, {}]
+            result.should == [[{"a" => 10, b: 2}], {}]
           end
         end
       end
     end
 
-    it "does not treat hashes with string keys as keyword arguments" do
-      result = m(["a" => 10]) { |a = nil, **b| [a, b] }
-      result.should == [{"a" => 10}, {}]
+    ruby_version_is ""..."2.8" do
+      it "does not treat hashes with string keys as keyword arguments" do
+        result = m(["a" => 10]) { |a = nil, **b| [a, b] }
+        result.should == [{"a" => 10}, {}]
+      end
+    end
+
+    ruby_version_is "2.8" do
+      it "does not treat hashes with string keys as keyword arguments and does not autosplat" do
+        result = m(["a" => 10]) { |a = nil, **b| [a, b] }
+        result.should == [[{"a" => 10}], {}]
+      end
     end
 
     ruby_version_is ''...'2.8' do

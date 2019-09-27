@@ -568,14 +568,14 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 	rb_raise(rb_eArgError, "no keywords accepted");
     }
 
+
     switch (arg_setup_type) {
       case arg_setup_method:
 	break; /* do nothing special */
       case arg_setup_block:
         if (given_argc == (keyword_hash == Qnil ? 1 : 2) &&
             allow_autosplat &&
-	    (min_argc > 0 || iseq->body->param.opt_num > 1 ||
-	     iseq->body->param.flags.has_kw || iseq->body->param.flags.has_kwrest) &&
+            (min_argc > 0 || iseq->body->param.opt_num > 1) &&
 	    !iseq->body->param.flags.ambiguous_param0 &&
 	    args_check_block_arg0(args)) {
 	    given_argc = RARRAY_LENINT(args->rest);
