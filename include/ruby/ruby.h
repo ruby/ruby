@@ -1970,8 +1970,9 @@ VALUE rb_each(VALUE);
 VALUE rb_yield(VALUE);
 VALUE rb_yield_values(int n, ...);
 VALUE rb_yield_values2(int n, const VALUE *argv);
+VALUE rb_yield_values_kw(int n, const VALUE *argv, int kw_splat);
 VALUE rb_yield_splat(VALUE);
-VALUE rb_yield_block(VALUE, VALUE, int, const VALUE *, VALUE); /* rb_block_call_func */
+VALUE rb_yield_block(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg)); /* rb_block_call_func */
 #define RB_NO_KEYWORDS 0
 #define RB_PASS_KEYWORDS 1
 #define RB_PASS_EMPTY_KEYWORDS 2

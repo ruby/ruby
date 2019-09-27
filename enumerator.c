@@ -1320,7 +1320,7 @@ yielder_yield(VALUE obj, VALUE args)
 {
     struct yielder *ptr = yielder_ptr(obj);
 
-    return rb_proc_call(ptr->proc, args);
+    return rb_proc_call_kw(ptr->proc, args, RB_PASS_CALLED_KEYWORDS);
 }
 
 /* :nodoc: */
@@ -1357,7 +1357,7 @@ yielder_to_proc(VALUE obj)
 static VALUE
 yielder_yield_i(RB_BLOCK_CALL_FUNC_ARGLIST(obj, memo))
 {
-    return rb_yield_values2(argc, argv);
+    return rb_yield_values_kw(argc, argv, RB_PASS_CALLED_KEYWORDS);
 }
 
 static VALUE

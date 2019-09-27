@@ -16,9 +16,9 @@ struct local_var_list {
 };
 
 static inline VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missing_reason call_status, int kw_splat);
-static inline VALUE vm_yield_with_cref(rb_execution_context_t *ec, int argc, const VALUE *argv, const rb_cref_t *cref, int is_lambda);
-static inline VALUE vm_yield(rb_execution_context_t *ec, int argc, const VALUE *argv);
-static inline VALUE vm_yield_with_block(rb_execution_context_t *ec, int argc, const VALUE *argv, VALUE block_handler);
+static inline VALUE vm_yield_with_cref(rb_execution_context_t *ec, int argc, const VALUE *argv, int kw_splat, const rb_cref_t *cref, int is_lambda);
+static inline VALUE vm_yield(rb_execution_context_t *ec, int argc, const VALUE *argv, int kw_splat);
+static inline VALUE vm_yield_with_block(rb_execution_context_t *ec, int argc, const VALUE *argv, VALUE block_handler, int kw_splat);
 static inline VALUE vm_yield_force_blockarg(rb_execution_context_t *ec, VALUE args);
 VALUE vm_exec(rb_execution_context_t *ec, int mjit_enable_p);
 static void vm_set_eval_stack(rb_execution_context_t * th, const rb_iseq_t *iseq, const rb_cref_t *cref, const struct rb_block *base_block);
@@ -1199,9 +1199,18 @@ rb_f_public_send(int argc, VALUE *argv, VALUE recv)
 /* yield */
 
 static inline VALUE
+rb_yield_0_kw(int argc, const VALUE * argv, int kw_splat)
+{
+    VALUE v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
+    VALUE ret = vm_yield(GET_EC(), argc, argv, kw_splat);
+    rb_free_tmp_buffer(&v);
+    return ret;
+}
+
+static inline VALUE
 rb_yield_0(int argc, const VALUE * argv)
 {
-    return vm_yield(GET_EC(), argc, argv);
+    return vm_yield(GET_EC(), argc, argv, RB_NO_KEYWORDS);
 }
 
 VALUE
@@ -1251,6 +1260,12 @@ rb_yield_values2(int argc, const VALUE *argv)
 }
 
 VALUE
+rb_yield_values_kw(int argc, const VALUE *argv, int kw_splat)
+{
+    return rb_yield_0_kw(argc, argv, kw_splat);
+}
+
+VALUE
 rb_yield_splat(VALUE values)
 {
     VALUE tmp = rb_check_array_type(values);
@@ -1270,10 +1285,15 @@ rb_yield_force_blockarg(VALUE values)
 }
 
 VALUE
-rb_yield_block(VALUE val, VALUE arg, int argc, const VALUE *argv, VALUE blockarg)
+rb_yield_block(RB_BLOCK_CALL_FUNC_ARGLIST(val, arg))
 {
-    return vm_yield_with_block(GET_EC(), argc, argv,
-			       NIL_P(blockarg) ? VM_BLOCK_HANDLER_NONE : blockarg);
+    int kw_splat = RB_PASS_CALLED_KEYWORDS;
+    VALUE v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
+    VALUE ret = vm_yield_with_block(GET_EC(), argc, argv,
+                                    NIL_P(blockarg) ? VM_BLOCK_HANDLER_NONE : blockarg,
+                                    kw_splat);
+    rb_free_tmp_buffer(&v);
+    return ret;
 }
 
 static VALUE
@@ -1772,6 +1792,10 @@ yield_under(VALUE under, VALUE self, int argc, const VALUE *argv)
     const VALUE *ep = NULL;
     rb_cref_t *cref;
     int is_lambda = FALSE;
+    VALUE v = 0, ret;
+    int kw_splat = RB_PASS_CALLED_KEYWORDS;
+
+    v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
 
     if (block_handler != VM_BLOCK_HANDLER_NONE) {
       again:
@@ -1791,8 +1815,10 @@ yield_under(VALUE under, VALUE self, int argc, const VALUE *argv)
 	    block_handler = vm_proc_to_block_handler(VM_BH_TO_PROC(block_handler));
 	    goto again;
 	  case block_handler_type_symbol:
-	    return rb_sym_proc_call(SYM2ID(VM_BH_TO_SYMBOL(block_handler)),
-                                    argc, argv, VM_NO_KEYWORDS, VM_BLOCK_HANDLER_NONE);
+            ret = rb_sym_proc_call(SYM2ID(VM_BH_TO_SYMBOL(block_handler)),
+                                   argc, argv, kw_splat, VM_BLOCK_HANDLER_NONE);
+            rb_free_tmp_buffer(&v);
+            return ret;
 	}
 
 	new_captured.self = self;
@@ -1802,7 +1828,9 @@ yield_under(VALUE under, VALUE self, int argc, const VALUE *argv)
     }
 
     cref = vm_cref_push(ec, under, ep, TRUE);
-    return vm_yield_with_cref(ec, argc, argv, cref, is_lambda);
+    ret = vm_yield_with_cref(ec, argc, argv, kw_splat, cref, is_lambda);
+    rb_free_tmp_buffer(&v);
+    return ret;
 }
 
 VALUE
@@ -1823,7 +1851,7 @@ rb_yield_refine_block(VALUE refinement, VALUE refinements)
 	CREF_REFINEMENTS_SET(cref, refinements);
 	VM_FORCE_WRITE_SPECIAL_CONST(&VM_CF_LEP(ec->cfp)[VM_ENV_DATA_INDEX_SPECVAL], new_block_handler);
 	new_captured.self = refinement;
-	return vm_yield_with_cref(ec, 0, NULL, cref, FALSE);
+        return vm_yield_with_cref(ec, 0, NULL, RB_NO_KEYWORDS, cref, FALSE);
     }
 }
 
