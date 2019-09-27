@@ -19,25 +19,72 @@ sufficient information, see the ChangeLog file or Redmine
 * Method reference operator, <code>.:</code> is introduced as an
   experimental feature.  [Feature #12125] [Feature #13581]
 
-* Preparations for the redesign of keyword arguments towards
-  Ruby 3.  [Feature #14183]
+* Automatic conversion of keyword arguments and positional arguments is
+  deprecated, and conversion will be removed in Ruby 3.  [Feature #14183]
 
-  * Automatic conversion from a Hash to keyword arguments is deprecated:
-    when a method call passes a Hash at the last argument, and when the
-    called method accepts keywords, it is warned.
-    Please add a double splat operator.
+  * When a method call passes a Hash at the last argument, and when it
+    passes no keywords, and when the called method accepts keywords, a
+    warning is emitted.  To continue treating as keywords, add a double
+    splat operator to avoid the warning and ensure correct behavior in
+    Ruby 3.
 
      def foo(key: 42); end; foo({key: 42})   # warned
      def foo(**kw);    end; foo({key: 42})   # warned
      def foo(key: 42); end; foo(**{key: 42}) # OK
+     def foo(**kw);    end; foo(**{key: 42}) # OK
+
+  * When a method call passes keywords to a method that accepts keywords,
+    but it does not pass enough required positional arguments, the
+    keywords are treated as a final required positional argument, and a
+    warning is emitted.  Pass the argument as a hash instead of keywords
+    to avoid the warning and ensure correct behavior in Ruby 3.
+
+     def foo(h, **kw); end; foo(key: 42)      # warned
+     def foo(h, key: 42); end; foo(key: 42)   # warned
+     def foo(h, **kw); end; foo({key: 42})    # OK
+     def foo(h, key: 42); end; foo({key: 42}) # OK
+
+  * When a method accepts specific keywords but not a keyword splat, and
+    a hash or keywords splat is passed to the method that includes both
+    Symbol and non-Symbol keys, the hash will continue to be split, and
+    a warning will be emitted.  You will need to update the calling code
+    to pass separate hashes to ensure correct behavior in Ruby 3.
+
+     def foo(h={}, key: 42); end; foo("key" => 43, key: 42)   # warned
+     def foo(h={}, key: 42); end; foo({"key" => 43, key: 42}) # warned
+     def foo(h={}, key: 42); end; foo({"key" => 43}, key: 42) # OK
+     def foo(h={}, key: 42); end; foo({"key" => 43}, key: 42) # OK
+
+  * If a method does not accept keywords, and is called with keywords,
+    the keywords are still treated as a positional hash, with no warning.
+    This behavior will continue to work in Ruby 3.
+
      def foo(opt={});  end; foo( key: 42 )   # OK
 
-  * Non-symbol keys are allowed as a keyword argument.
+* Non-symbols are allowed as a keyword argument keys if method accepts
+  arbitrary keywords. [Feature #14183]
 
-     def foo(**kw); p kw; end; foo("str" => 1) #=> {"str"=>1}
+   def foo(**kw); p kw; end; foo("str" => 1) #=> {"str"=>1}
 
-* Automatic conversion of keyword arguments and positional ones is
-  warned.  [Feature #14183]
+* **nil is allowed in method definitions to explicitly mark that the
+  method accepts no keywords.  Calling such a method with keywords will
+  result in an ArgumentError. [Feature #14183]
+
+   def foo(h, **nil); end; foo(key: 1)       # ArgumentError
+   def foo(h, **nil); end; foo(**{key: 1})   # ArgumentError
+   def foo(h, **nil); end; foo("str" => 1)   # ArgumentError
+   def foo(h, **nil); end; foo({key: 1})     # OK
+   def foo(h, **nil); end; foo({"str" => 1}) # OK
+
+* Passing an empty keyword splat to a method that does not accept keywords
+  no longer passes an empty hash, unless the empty hash is necessary for
+  a required parameter, in which case a warning will be emitted.  Remove
+  the double splat to continue passing a positional hash.  [Feature #14183]
+
+    h = {}; def foo(*a) a end; foo(**h) # []
+    h = {}; def foo(a) a end; foo(**h)  # {} and warning
+    h = {}; def foo(*a) a end; foo(h)   # [{}]
+    h = {}; def foo(a) a end; foo(h)    # {}
 
 * Proc.new and proc with no block in a method called with a block is warned
   now.
