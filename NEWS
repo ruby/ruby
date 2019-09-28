@@ -66,9 +66,9 @@ sufficient information, see the ChangeLog file or Redmine
 
    def foo(**kw); p kw; end; foo("str" => 1) #=> {"str"=>1}
 
-* **nil is allowed in method definitions to explicitly mark that the
-  method accepts no keywords.  Calling such a method with keywords will
-  result in an ArgumentError. [Feature #14183]
+* <code>**nil</code> is allowed in method definitions to explicitly mark
+  that the method accepts no keywords. Calling such a method with keywords
+  will result in an ArgumentError. [Feature #14183]
 
    def foo(h, **nil); end; foo(key: 1)       # ArgumentError
    def foo(h, **nil); end; foo(**{key: 1})   # ArgumentError
