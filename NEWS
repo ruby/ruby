@@ -86,10 +86,10 @@ sufficient information, see the ChangeLog file or Redmine
     h = {}; def foo(*a) a end; foo(h)   # [{}]
     h = {}; def foo(a) a end; foo(h)    # {}
 
-* Proc.new and proc with no block in a method called with a block is warned
-  now.
+* Proc.new and Kernel#proc with no block in a method called with a block is
+  warned now.
 
-* lambda with no block in a method called with a block errs.
+* Kernel#lambda with no block in a method called with a block errs.
 
 * Non-Symbol keys in a keyword arguments hash were prohibited in 2.6.0,
   but are now allowed again.  [Bug #15658]
