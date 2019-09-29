@@ -536,15 +536,7 @@ cont.$(OBJEXT): $(COROUTINE_H)
 TEST_BUNDLED_GEMS_ALLOW_FAILURES =
 
 test-bundled-gems-run:
-	$(Q) fail=0 keep=; case "$(MFLAGS)" in *k*) keep=1;; esac; \
-	while read gem _; do \
-	  echo testing $$gem gem; \
-	  [ $$keep ] || echo $(TEST_BUNDLED_GEMS_ALLOW_FAILURES) | grep -q $$gem || set -e; \
-	  $(XRUBY) -C $(srcdir)/gems/src/$$gem -Ilib ../../../.bundle/bin/rake; \
-	  [ $$? = 0 ] || fail=1; \
-	  set +e; \
-	done < $(srcdir)/gems/bundled_gems; \
-	exit $$fail
+	$(Q) $(XRUBY) $(srcdir)/tool/test-bundled-gems.rb
 
 update-src::
 	@$(CHDIR) "$(srcdir)" && LC_TIME=C exec $(VCSUP)
