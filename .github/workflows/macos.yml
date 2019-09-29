@@ -48,8 +48,7 @@ jobs:
         if: matrix.test_task != 'test-bundled-gems' && !contains(github.event.head_commit.message, '[ci skip]')
       - name: Tests (test-bundled-gems)
         # Remove minitest from TEST_BUNDLED_GEMS_ALLOW_FAILURES if https://github.com/seattlerb/minitest/pull/798 is resolved
-        # Remove test-unit from TEST_BUNDLED_GEMS_ALLOW_FAILURES if https://github.com/test-unit/test-unit/issues/165 is resolved
-        run: make -s ${{ matrix.test_task }} TEST_BUNDLED_GEMS_ALLOW_FAILURES=minitest,test-unit
+        run: make -s ${{ matrix.test_task }} TEST_BUNDLED_GEMS_ALLOW_FAILURES=minitest
         env:
           RUBY_TESTOPTS: "-q --tty=no"
         if: matrix.test_task == 'test-bundled-gems' && !contains(github.event.head_commit.message, '[ci skip]')
