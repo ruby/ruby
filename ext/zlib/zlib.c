@@ -27,6 +27,10 @@
 
 #define RUBY_ZLIB_VERSION "1.0.0"
 
+#ifndef RB_PASS_CALLED_KEYWORDS
+# define rb_class_new_instance_kw(argc, argv, klass, kw_splat) rb_class_new_instance(argc, argv, klass)
+#endif
+
 #ifndef GZIP_SUPPORT
 #define GZIP_SUPPORT  1
 #endif
@@ -1061,9 +1065,14 @@ zstream_run(struct zstream *z, Bytef *src, long len, int flush)
     }
 
 loop:
+#ifndef RB_NOGVL_UBF_ASYNC_SAFE
+    err = (int)(VALUE)rb_thread_call_without_gvl(zstream_run_func, (void *)&args,
+						 zstream_unblock_func, (void *)&args);
+#else
     err = (int)(VALUE)rb_nogvl(zstream_run_func, (void *)&args,
                                zstream_unblock_func, (void *)&args,
                                RB_NOGVL_UBF_ASYNC_SAFE);
+#endif
 
     if (flush != Z_FINISH && err == Z_BUF_ERROR
 	    && z->stream.avail_out > 0) {
