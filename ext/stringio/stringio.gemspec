@@ -5,7 +5,7 @@ source_version = ["", "ext/stringio/"].find do |dir|
   begin
     break File.open(File.join(__dir__, "#{dir}stringio.c")) {|f|
       f.gets("\n#define STRINGIO_VERSION ")
-      f.gets[/\s*(".+")/, 1].undump
+      f.gets[/\s*"(.+)"/, 1]
     }
   rescue Errno::ENOENT
   end
