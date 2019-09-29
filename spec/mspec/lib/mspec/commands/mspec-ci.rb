@@ -24,6 +24,7 @@ class MSpecCI < MSpecScript
     options.configure { |f| load f }
     options.pretend
     options.interrupt
+    options.timeout
 
     options.doc "\n How to modify the guard behavior"
     options.unguarded

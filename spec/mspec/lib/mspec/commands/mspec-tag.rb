@@ -33,6 +33,7 @@ class MSpecTag < MSpecScript
     options.pretend
     options.unguarded
     options.interrupt
+    options.timeout
 
     options.doc "\n How to display their output"
     options.formatters

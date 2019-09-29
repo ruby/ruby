@@ -78,8 +78,12 @@ end
 
 # Creates an IO instance for a temporary file name. The file
 # must be deleted.
-def new_io(name, mode="w:utf-8")
-  IO.new new_fd(name, mode), mode
+def new_io(name, mode = "w:utf-8")
+  if Hash === mode # Avoid kwargs warnings on Ruby 2.7+
+    File.new(name, **mode)
+  else
+    File.new(name, mode)
+  end
 end
 
 def find_unused_fd

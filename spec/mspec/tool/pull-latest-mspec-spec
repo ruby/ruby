@@ -15,5 +15,8 @@ rm -rf spec/ruby
 git clone --depth 1 https://github.com/ruby/spec.git spec/ruby
 commit=$(git -C spec/ruby log -n 1 --format='%h')
 rm -rf spec/ruby/.git
+rm -f spec/ruby/appveyor.yml
+rm -f spec/ruby/.travis.yml
+rm -rf spec/ruby/.github
 git add spec/ruby
 git commit -m "Update to ruby/spec@${commit}"

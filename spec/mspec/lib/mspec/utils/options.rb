@@ -419,6 +419,14 @@ class MSpecOptions
     end
   end
 
+  def timeout
+    on("--timeout", "TIMEOUT", "Abort if a spec takes longer than TIMEOUT seconds") do |timeout|
+      require 'mspec/runner/actions/timeout'
+      timeout = Float(timeout)
+      TimeoutAction.new(timeout).register
+    end
+  end
+
   def verify
     on("--report-on", "GUARD", "Report specs guarded by GUARD") do |g|
       MSpec.register_mode :report_on

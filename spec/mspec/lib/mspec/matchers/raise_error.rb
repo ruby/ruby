@@ -52,19 +52,13 @@ class RaiseErrorMatcher
     exception_class_and_message(exception.class, exception.message)
   end
 
-  def format_result(result)
-    result.pretty_inspect.chomp
-  rescue => e
-    "#pretty_inspect raised #{e.class}; A #<#{result.class}>"
-  end
-
   def failure_message
     message = ["Expected #{format_expected_exception}"]
 
     if @actual
       message << "but got #{format_exception(@actual)}"
     else
-      message << "but no exception was raised (#{format_result(@result)} was returned)"
+      message << "but no exception was raised (#{MSpec.format(@result)} was returned)"
     end
 
     message
