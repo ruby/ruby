@@ -331,14 +331,14 @@ describe :dir_glob, shared: true do
 
       it "returns [] if specified path does not exist" do
         path = File.join(@mock_dir, "fake-name")
-        File.exist?(path).should == false
+        File.should_not.exist?(path)
 
         Dir.send(@method, "*", base: path).should == []
       end
 
       it "returns [] if specified path is a file" do
         path = File.join(@mock_dir, "a/b/x")
-        File.exist?(path).should == true
+        File.should.exist?(path)
 
         Dir.send(@method, "*", base: path).should == []
       end

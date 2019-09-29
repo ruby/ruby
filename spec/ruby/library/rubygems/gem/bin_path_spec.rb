@@ -20,16 +20,13 @@ describe "Gem.bin_path" do
       default_specifications_dir = Gem::Specification.default_specifications_dir
     end
 
-    if Dir.exist?(default_specifications_dir)
-      Gem::Specification.each_spec([default_specifications_dir]) do |spec|
-        spec.executables.each do |exe|
-          path = Gem.bin_path(spec.name, exe)
-          File.should.exist?(path)
-        end
+    skip "Could not find the default gemspecs" unless Dir.exist?(default_specifications_dir)
+
+    Gem::Specification.each_spec([default_specifications_dir]) do |spec|
+      spec.executables.each do |exe|
+        path = Gem.bin_path(spec.name, exe)
+        File.should.exist?(path)
       end
-    else
-      # non-installed MRI, there are no default gemspecs
-      1.should == 1
     end
   end
 end

@@ -39,7 +39,7 @@ describe "Dir.mktmpdir when passed a block" do
     Dir.mktmpdir do |path|
       @tmpdir = path
       called = true
-      path.start_with?(@real_tmp_root).should be_true
+      path.should.start_with?(@real_tmp_root)
     end
     called.should be_true
   end

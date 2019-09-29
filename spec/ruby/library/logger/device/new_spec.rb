@@ -31,7 +31,7 @@ describe "Logger::LogDevice#new" do
     l.write("Test message")
     l.close
 
-    File.exist?(path).should be_true
+    File.should.exist?(path)
     File.open(path) do |f|
       f.readlines.should_not be_empty
     end

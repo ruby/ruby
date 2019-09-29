@@ -24,9 +24,9 @@ describe :io_binwrite, shared: true do
   it "creates a file if missing" do
     fn = @filename + "xxx"
     begin
-      File.exist?(fn).should be_false
+      File.should_not.exist?(fn)
       IO.send(@method, fn, "test")
-      File.exist?(fn).should be_true
+      File.should.exist?(fn)
     ensure
       rm_r fn
     end
@@ -35,9 +35,9 @@ describe :io_binwrite, shared: true do
   it "creates file if missing even if offset given" do
     fn = @filename + "xxx"
     begin
-      File.exist?(fn).should be_false
+      File.should_not.exist?(fn)
       IO.send(@method, fn, "test", 0)
-      File.exist?(fn).should be_true
+      File.should.exist?(fn)
     ensure
       rm_r fn
     end
