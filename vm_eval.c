@@ -267,7 +267,7 @@ rb_adjust_argv_kw_splat(int *argc, const VALUE **argv, int *kw_splat)
 VALUE
 rb_vm_call(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me)
 {
-    return rb_vm_call0(ec, recv, id, argc, argv, me, VM_NO_KEYWORDS);
+    return rb_vm_call0(ec, recv, id, argc, argv, me, RB_NO_KEYWORDS);
 }
 
 MJIT_FUNC_EXPORTED VALUE
@@ -371,7 +371,7 @@ rb_call0(rb_execution_context_t *ec,
     const rb_callable_method_entry_t *me;
     enum method_missing_reason call_status;
     call_type scope = call_scope;
-    int kw_splat = VM_NO_KEYWORDS;
+    int kw_splat = RB_NO_KEYWORDS;
 
     switch(scope) {
       case(CALL_PUBLIC_KW):
@@ -1012,7 +1012,7 @@ rb_funcallv_with_cc(struct rb_call_cache_and_mid *cc, VALUE recv, ID mid, int ar
                     Qundef,
                     recv,
                     argc,
-                    VM_NO_KEYWORDS,
+                    RB_NO_KEYWORDS,
                 },
                 &ci,
                 &cc->cc,

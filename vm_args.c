@@ -1064,7 +1064,7 @@ vm_to_proc(VALUE proc)
 	    rb_callable_method_entry_with_refinements(CLASS_OF(proc), idTo_proc, NULL);
 
 	if (me) {
-            b = rb_vm_call0(GET_EC(), proc, idTo_proc, 0, NULL, me, VM_NO_KEYWORDS);
+            b = rb_vm_call0(GET_EC(), proc, idTo_proc, 0, NULL, me, RB_NO_KEYWORDS);
 	}
 	else {
 	    /* NOTE: calling method_missing */

@@ -1281,7 +1281,6 @@ VM_FRAME_RUBYFRAME_P(const rb_control_frame_t *cfp)
 
 #define VM_GUARDED_PREV_EP(ep)         GC_GUARDED_PTR(ep)
 #define VM_BLOCK_HANDLER_NONE 0
-#define VM_NO_KEYWORDS 0
 
 static inline int
 VM_ENV_LOCAL_P(const VALUE *ep)

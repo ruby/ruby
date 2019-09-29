@@ -960,7 +960,7 @@ rb_proc_call(VALUE self, VALUE args)
     GetProcPtr(self, proc);
     vret = rb_vm_invoke_proc(GET_EC(), proc,
 			     check_argc(RARRAY_LEN(args)), RARRAY_CONST_PTR(args),
-                             VM_NO_KEYWORDS, VM_BLOCK_HANDLER_NONE);
+                             RB_NO_KEYWORDS, VM_BLOCK_HANDLER_NONE);
     RB_GC_GUARD(self);
     RB_GC_GUARD(args);
     return vret;
@@ -993,7 +993,7 @@ rb_proc_call_with_block(VALUE self, int argc, const VALUE *argv, VALUE passed_pr
     VALUE vret;
     rb_proc_t *proc;
     GetProcPtr(self, proc);
-    vret = rb_vm_invoke_proc(ec, proc, argc, argv, VM_NO_KEYWORDS, proc_to_block_handler(passed_procval));
+    vret = rb_vm_invoke_proc(ec, proc, argc, argv, RB_NO_KEYWORDS, proc_to_block_handler(passed_procval));
     RB_GC_GUARD(self);
     return vret;
 }
