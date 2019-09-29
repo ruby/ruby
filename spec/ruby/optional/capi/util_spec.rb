@@ -11,6 +11,7 @@ describe "C-API Util function" do
     before :each do
       @prc = -> { 1 }
       @acc = []
+      @keyword_prefix = 'k' if RUBY_VERSION >= '2.7'
       ScratchPad.record @acc
     end
 
@@ -99,13 +100,13 @@ describe "C-API Util function" do
 
     it "assigns Hash arguments" do
       h = {a: 1, b: 2}
-      @o.rb_scan_args([h], "0:", 1, @acc).should == 0
+      @o.rb_scan_args([h], "#{@keyword_prefix}0:", 1, @acc).should == 0
       ScratchPad.recorded.should == [h]
     end
 
     it "assigns required and Hash arguments" do
       h = {a: 1, b: 2}
-      @o.rb_scan_args([1, h], "1:", 2, @acc).should == 1
+      @o.rb_scan_args([1, h], "#{@keyword_prefix}1:", 2, @acc).should == 1
       ScratchPad.recorded.should == [1, h]
     end
 
@@ -115,7 +116,9 @@ describe "C-API Util function" do
     end
 
     it "assigns required and Hash arguments with nil Hash" do
-      @o.rb_scan_args([1, nil], "1:", 2, @acc).should == 1
+      suppress_warning do
+        @o.rb_scan_args([1, nil], "1:", 2, @acc).should == 1
+      end
       ScratchPad.recorded.should == [1, nil]
     end
 
@@ -126,7 +129,7 @@ describe "C-API Util function" do
 
     it "assigns required, optional, splat, post-splat, Hash and block arguments" do
       h = {a: 1, b: 2}
-      @o.rb_scan_args([1, 2, 3, 4, 5, h], "11*1:&", 6, @acc, &@prc).should == 5
+      @o.rb_scan_args([1, 2, 3, 4, 5, h], "#{@keyword_prefix}11*1:&", 6, @acc, &@prc).should == 5
       ScratchPad.recorded.should == [1, 2, [3, 4], 5, h, @prc]
     end
 
@@ -134,7 +137,9 @@ describe "C-API Util function" do
     it "rejects non-keyword arguments" do
       h = {1 => 2, 3 => 4}
       -> {
-        @o.rb_scan_args([h], "0:", 1, @acc)
+        suppress_warning do
+          @o.rb_scan_args([h], "#{@keyword_prefix}0:", 1, @acc)
+        end
       }.should raise_error(ArgumentError)
       ScratchPad.recorded.should == []
     end
@@ -142,14 +147,18 @@ describe "C-API Util function" do
     it "rejects required and non-keyword arguments" do
       h = {1 => 2, 3 => 4}
       -> {
-        @o.rb_scan_args([1, h], "1:", 2, @acc)
+        suppress_warning do
+          @o.rb_scan_args([1, h], "#{@keyword_prefix}1:", 2, @acc)
+        end
       }.should raise_error(ArgumentError)
       ScratchPad.recorded.should == []
     end
 
     it "considers the hash as a post argument when there is a splat" do
       h = {1 => 2, 3 => 4}
-      @o.rb_scan_args([1, 2, 3, 4, 5, h], "11*1:&", 6, @acc, &@prc).should == 6
+      suppress_warning do
+        @o.rb_scan_args([1, 2, 3, 4, 5, h], "#{@keyword_prefix}11*1:&", 6, @acc, &@prc).should == 6
+      end
       ScratchPad.recorded.should == [1, 2, [3, 4, 5], h, nil, @prc]
     end
   end
