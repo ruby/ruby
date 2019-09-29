@@ -99,9 +99,9 @@ describe Object, "#new_io" do
     rm_r @name
   end
 
-  it "returns an IO instance" do
+  it "returns a File instance" do
     @io = new_io @name
-    @io.should be_an_instance_of(IO)
+    @io.should be_an_instance_of(File)
   end
 
   it "opens the IO for reading if passed 'r'" do

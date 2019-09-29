@@ -1,3 +1,5 @@
+require 'mspec/guards/version'
+
 def suppress_warning
   verbose = $VERBOSE
   $VERBOSE = nil

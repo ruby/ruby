@@ -7,6 +7,9 @@ class SpecExpectationNotFoundError < StandardError
   end
 end
 
+class SkippedSpecError < StandardError
+end
+
 class SpecExpectation
   def self.fail_with(expected, actual)
     expected_to_s = expected.to_s
