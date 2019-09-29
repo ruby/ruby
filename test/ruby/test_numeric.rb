@@ -292,6 +292,14 @@ class TestNumeric < Test::Unit::TestCase
     assert_raise(ArgumentError, bug9811) { 1.step(10, 1, by: 11) {} }
     assert_raise(ArgumentError, bug9811) { 1.step(10, 1, by: 11).size }
 
+
+    e = assert_warn(/The last argument is used as the keyword parameter/) {
+      1.step(10, {by: "1"})
+    }
+    assert_warn('') {
+      assert_raise(ArgumentError) {e.size}
+    }
+
     assert_equal(bignum*2+1, (-bignum).step(bignum, 1).size)
     assert_equal(bignum*2, (-bignum).step(bignum-1, 1).size)
 
