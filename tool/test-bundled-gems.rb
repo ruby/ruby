@@ -9,7 +9,7 @@ File.foreach('gems/bundled_gems') do |line|
   puts "\nTesting the #{gem} gem"
 
   gem_src_dir = File.expand_path("../../gems/src/#{gem}", __FILE__ )
-  test_command = "#{RbConfig.ruby} -C #{gem_src_dir} -Ilib ../../../.bundle/bin/rake"
+  test_command = "#{ARGV.join(' ')} -C #{gem_src_dir} -Ilib ../../../.bundle/bin/rake"
   puts test_command
   system test_command
 
