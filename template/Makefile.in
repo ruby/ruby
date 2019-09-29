@@ -536,7 +536,7 @@ cont.$(OBJEXT): $(COROUTINE_H)
 TEST_BUNDLED_GEMS_ALLOW_FAILURES =
 
 test-bundled-gems-run:
-	$(Q) $(XRUBY) $(srcdir)/tool/test-bundled-gems.rb
+	$(Q) $(XRUBY) $(srcdir)/tool/test-bundled-gems.rb $(XRUBY)
 
 update-src::
 	@$(CHDIR) "$(srcdir)" && LC_TIME=C exec $(VCSUP)
