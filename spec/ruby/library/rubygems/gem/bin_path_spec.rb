@@ -11,21 +11,23 @@ describe "Gem.bin_path" do
     ENV['BUNDLE_GEMFILE'] = @bundle_gemfile
   end
 
-  it "finds executables of default gems, which are the only files shipped for default gems" do
-    # For instance, Gem.bin_path("bundler", "bundle") is used by rails new
+  guard_not -> { platform_is :windows and ruby_version_is "2.5"..."2.6" } do
+    it "finds executables of default gems, which are the only files shipped for default gems" do
+      # For instance, Gem.bin_path("bundler", "bundle") is used by rails new
 
-    if Gem.respond_to? :default_specifications_dir
-      default_specifications_dir = Gem.default_specifications_dir
-    else
-      default_specifications_dir = Gem::Specification.default_specifications_dir
-    end
+      if Gem.respond_to? :default_specifications_dir
+        default_specifications_dir = Gem.default_specifications_dir
+      else
+        default_specifications_dir = Gem::Specification.default_specifications_dir
+      end
 
-    skip "Could not find the default gemspecs" unless Dir.exist?(default_specifications_dir)
+      skip "Could not find the default gemspecs" unless Dir.exist?(default_specifications_dir)
 
-    Gem::Specification.each_spec([default_specifications_dir]) do |spec|
-      spec.executables.each do |exe|
-        path = Gem.bin_path(spec.name, exe)
-        File.should.exist?(path)
+      Gem::Specification.each_spec([default_specifications_dir]) do |spec|
+        spec.executables.each do |exe|
+          path = Gem.bin_path(spec.name, exe)
+          File.should.exist?(path)
+        end
       end
     end
   end
