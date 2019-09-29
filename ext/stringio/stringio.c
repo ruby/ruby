@@ -26,6 +26,11 @@
 # define RB_INTEGER_TYPE_P(c) (FIXNUM_P(c) || RB_TYPE_P(c, T_BIGNUM))
 #endif
 
+#ifndef RB_PASS_CALLED_KEYWORDS
+# define rb_funcallv_kw(recv, mid, arg, argv, kw_splat) rb_funcallv(recv, mid, arg, argv)
+# define rb_class_new_instance_kw(argc, argv, klass, kw_splat) rb_class_new_instance(argc, argv, klass)
+#endif
+
 #ifndef HAVE_RB_IO_EXTRACT_MODEENC
 #define rb_io_extract_modeenc strio_extract_modeenc
 static void
@@ -1309,7 +1314,7 @@ strio_gets(int argc, VALUE *argv, VALUE self)
 static VALUE
 strio_readline(int argc, VALUE *argv, VALUE self)
 {
-    VALUE line = rb_funcallv(self, rb_intern("gets"), argc, argv);
+    VALUE line = rb_funcallv_kw(self, rb_intern("gets"), argc, argv, RB_PASS_CALLED_KEYWORDS);
     if (NIL_P(line)) rb_eof_error();
     return line;
 }
@@ -1589,7 +1594,7 @@ strio_read(int argc, VALUE *argv, VALUE self)
 static VALUE
 strio_sysread(int argc, VALUE *argv, VALUE self)
 {
-    VALUE val = rb_funcallv(self, rb_intern("read"), argc, argv);
+    VALUE val = rb_funcallv_kw(self, rb_intern("read"), argc, argv, RB_PASS_CALLED_KEYWORDS);
     if (NIL_P(val)) {
 	rb_eof_error();
     }
