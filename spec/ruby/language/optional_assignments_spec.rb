@@ -42,6 +42,18 @@ describe 'Optional variable assignments' do
 
         a.should == 10
       end
+
+      it 'returns the new value if set to false' do
+        a = false
+
+        (a ||= 20).should == 20
+      end
+
+      it 'returns the original value if truthy' do
+        a = 10
+
+        (a ||= 20).should == 10
+      end
     end
 
     describe 'using a accessor' do
@@ -89,6 +101,49 @@ describe 'Optional variable assignments' do
 
         @a.b.should == 10
       end
+
+      it 'returns the new value if set to false' do
+        def @a.b=(x)
+          :v
+        end
+
+        @a.b = false
+        (@a.b ||= 20).should == 20
+      end
+
+      it 'returns the original value if truthy' do
+        def @a.b=(x)
+          @b = x
+          :v
+        end
+
+        @a.b = 10
+        (@a.b ||= 20).should == 10
+      end
+
+      it 'works when writer is private' do
+        klass = Class.new do
+          def t
+            self.b = false
+            (self.b ||= 10).should == 10
+            (self.b ||= 20).should == 10
+          end
+
+          def b
+            @b
+          end
+
+          def b=(x)
+            @b = x
+            :v
+          end
+
+          private :b=
+        end
+
+        klass.new.t
+      end
+
     end
   end
 

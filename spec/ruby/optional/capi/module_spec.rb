@@ -322,6 +322,11 @@ describe "CApiModule" do
       @class.should_not have_instance_method(:ruby_test_method)
     end
 
+    it "undefines private methods also" do
+      @m.rb_undef_method @class, "initialize_copy"
+      -> { @class.new.dup }.should raise_error(NoMethodError)
+    end
+
     it "does not raise exceptions when passed a missing name" do
       -> { @m.rb_undef_method @class, "not_exist" }.should_not raise_error
     end
