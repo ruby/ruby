@@ -569,7 +569,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     setup_struct(st, rest);
     rb_ivar_set(st, id_keyword_init, keyword_init);
     if (rb_block_given_p()) {
-        rb_funcall_passing_block(st, rb_intern("module_eval"), 0, 0);
+        rb_mod_module_eval(0, 0, st);
     }
 
     return st;

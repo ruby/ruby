@@ -1781,7 +1781,7 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
 /* block eval under the class/module context */
 
 static VALUE
-yield_under(VALUE under, VALUE self, int argc, const VALUE *argv)
+yield_under(VALUE under, VALUE self, int argc, const VALUE *argv, int kw_splat)
 {
     rb_execution_context_t *ec = GET_EC();
     rb_control_frame_t *cfp = ec->cfp;
@@ -1793,7 +1793,6 @@ yield_under(VALUE under, VALUE self, int argc, const VALUE *argv)
     rb_cref_t *cref;
     int is_lambda = FALSE;
     VALUE v = 0, ret;
-    int kw_splat = RB_PASS_CALLED_KEYWORDS;
 
     v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
 
@@ -1865,11 +1864,11 @@ eval_under(VALUE under, VALUE self, VALUE src, VALUE file, int line)
 }
 
 static VALUE
-specific_eval(int argc, const VALUE *argv, VALUE klass, VALUE self)
+specific_eval(int argc, const VALUE *argv, VALUE klass, VALUE self, int kw_splat)
 {
     if (rb_block_given_p()) {
 	rb_check_arity(argc, 0, 0);
-	return yield_under(klass, self, 1, &self);
+        return yield_under(klass, self, 1, &self, kw_splat);
     }
     else {
 	VALUE file = Qundef;
@@ -1938,11 +1937,18 @@ singleton_class_for_eval(VALUE self)
  *     k.instance_eval {|obj| obj == self } #=> true
  */
 
+static VALUE
+rb_obj_instance_eval_internal(int argc, const VALUE *argv, VALUE self)
+{
+    VALUE klass = singleton_class_for_eval(self);
+    return specific_eval(argc, argv, klass, self, RB_PASS_CALLED_KEYWORDS);
+}
+
 VALUE
 rb_obj_instance_eval(int argc, const VALUE *argv, VALUE self)
 {
     VALUE klass = singleton_class_for_eval(self);
-    return specific_eval(argc, argv, klass, self);
+    return specific_eval(argc, argv, klass, self, RB_NO_KEYWORDS);
 }
 
 /*
@@ -1963,11 +1969,18 @@ rb_obj_instance_eval(int argc, const VALUE *argv, VALUE self)
  *     k.instance_exec(5) {|x| @secret+x }   #=> 104
  */
 
+static VALUE
+rb_obj_instance_exec_internal(int argc, const VALUE *argv, VALUE self)
+{
+    VALUE klass = singleton_class_for_eval(self);
+    return yield_under(klass, self, argc, argv, RB_PASS_CALLED_KEYWORDS);
+}
+
 VALUE
 rb_obj_instance_exec(int argc, const VALUE *argv, VALUE self)
 {
     VALUE klass = singleton_class_for_eval(self);
-    return yield_under(klass, self, argc, argv);
+    return yield_under(klass, self, argc, argv, RB_NO_KEYWORDS);
 }
 
 /*
@@ -1997,10 +2010,16 @@ rb_obj_instance_exec(int argc, const VALUE *argv, VALUE self)
  *         or method `code' for Thing:Class
  */
 
+static VALUE
+rb_mod_module_eval_internal(int argc, const VALUE *argv, VALUE mod)
+{
+    return specific_eval(argc, argv, mod, mod, RB_PASS_CALLED_KEYWORDS);
+}
+
 VALUE
 rb_mod_module_eval(int argc, const VALUE *argv, VALUE mod)
 {
-    return specific_eval(argc, argv, mod, mod);
+    return specific_eval(argc, argv, mod, mod, RB_NO_KEYWORDS);
 }
 
 /*
@@ -2025,10 +2044,16 @@ rb_mod_module_eval(int argc, const VALUE *argv, VALUE mod)
  *     Hello there!
  */
 
+static VALUE
+rb_mod_module_exec_internal(int argc, const VALUE *argv, VALUE mod)
+{
+    return yield_under(mod, mod, argc, argv, RB_PASS_CALLED_KEYWORDS);
+}
+
 VALUE
 rb_mod_module_exec(int argc, const VALUE *argv, VALUE mod)
 {
-    return yield_under(mod, mod, argc, argv);
+    return yield_under(mod, mod, argc, argv, RB_NO_KEYWORDS);
 }
 
 /*
@@ -2407,8 +2432,8 @@ Init_vm_eval(void)
 
     rb_define_global_function("loop", rb_f_loop, 0);
 
-    rb_define_method(rb_cBasicObject, "instance_eval", rb_obj_instance_eval, -1);
-    rb_define_method(rb_cBasicObject, "instance_exec", rb_obj_instance_exec, -1);
+    rb_define_method(rb_cBasicObject, "instance_eval", rb_obj_instance_eval_internal, -1);
+    rb_define_method(rb_cBasicObject, "instance_exec", rb_obj_instance_exec_internal, -1);
     rb_define_private_method(rb_cBasicObject, "method_missing", rb_method_missing, -1);
 
 #if 1
@@ -2422,10 +2447,10 @@ Init_vm_eval(void)
 #endif
     rb_define_method(rb_mKernel, "public_send", rb_f_public_send, -1);
 
-    rb_define_method(rb_cModule, "module_exec", rb_mod_module_exec, -1);
-    rb_define_method(rb_cModule, "class_exec", rb_mod_module_exec, -1);
-    rb_define_method(rb_cModule, "module_eval", rb_mod_module_eval, -1);
-    rb_define_method(rb_cModule, "class_eval", rb_mod_module_eval, -1);
+    rb_define_method(rb_cModule, "module_exec", rb_mod_module_exec_internal, -1);
+    rb_define_method(rb_cModule, "class_exec", rb_mod_module_exec_internal, -1);
+    rb_define_method(rb_cModule, "module_eval", rb_mod_module_eval_internal, -1);
+    rb_define_method(rb_cModule, "class_eval", rb_mod_module_eval_internal, -1);
 
     rb_eUncaughtThrow = rb_define_class("UncaughtThrowError", rb_eArgError);
     rb_define_method(rb_eUncaughtThrow, "initialize", uncaught_throw_init, -1);
