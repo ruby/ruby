@@ -2442,7 +2442,8 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
  *     ary.inspect  -> string
  *     ary.to_s     -> string
  *
- *  Creates a string representation of +self+.
+ *  Creates a string representation of +self+, by calling #inspect
+ *  method on each elements.
  *
  *     [ "a", "b", "c" ].to_s     #=> "[\"a\", \"b\", \"c\"]"
  */
