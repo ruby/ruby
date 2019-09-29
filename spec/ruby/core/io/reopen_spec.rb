@@ -230,7 +230,7 @@ describe "IO#reopen with an IO" do
     end
 
     @io = new_io @name
-    @other_io = new_io @other_name, "r"
+    @other_io = IO.new(new_fd(@other_name, "r"), "r")
   end
 
   after :each do

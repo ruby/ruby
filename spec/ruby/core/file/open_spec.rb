@@ -566,7 +566,7 @@ describe "File.open" do
     options = mock("file open options")
     options.should_receive(:to_hash).and_return({ mode: "r" })
 
-    @fh = File.open(@file, options)
+    @fh = File.open(@file, **options)
   end
 
   it "accepts extra flags as a keyword argument and combine with a string mode" do

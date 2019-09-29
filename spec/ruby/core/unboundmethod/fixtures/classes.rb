@@ -34,6 +34,7 @@ module UnboundMethodSpecs
     def with_block(&block); end
 
     alias bar foo
+    alias baz bar
     alias alias_1 foo
     alias alias_2 foo
 

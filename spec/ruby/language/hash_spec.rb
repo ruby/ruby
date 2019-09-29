@@ -128,7 +128,7 @@ describe "Hash literal" do
     {a: 1, **obj, c: 3}.should == {a:1, b: 2, c: 3, d: 4}
   end
 
-  ruby_version_is "0"..."2.7" do
+  ruby_version_is ""..."2.7" do
     it "raises a TypeError if any splatted elements keys are not symbols" do
       h = {1 => 2, b: 3}
       -> { {a: 1, **h} }.should raise_error(TypeError)

@@ -85,7 +85,7 @@ describe "Encoding::Converter#primitive_convert" do
   end
 
   it "accepts an options hash" do
-    @ec.primitive_convert("","",nil,nil, {after_output: true}).should == :finished
+    @ec.primitive_convert("","",nil,nil, after_output: true).should == :finished
   end
 
   it "sets the destination buffer's encoding to the destination encoding if the conversion succeeded" do

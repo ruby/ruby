@@ -480,15 +480,6 @@ describe "A method" do
   end
 
   context "assigns local variables from method parameters" do
-
-    suppress_keyword_warning = ->(&block) do
-      if RUBY_VERSION >= '2.7'
-        suppress_warning(&block)
-      else
-        block.call
-      end
-    end
-
     evaluate <<-ruby do
         def m(a) a end
       ruby
@@ -555,7 +546,7 @@ describe "A method" do
 
       -> { m() }.should raise_error(ArgumentError)
       m(a: 1).should == 1
-      suppress_keyword_warning.call do
+      suppress_keyword_warning do
         -> { m("a" => 1, a: 1) }.should raise_error(ArgumentError)
       end
     end
@@ -717,7 +708,7 @@ describe "A method" do
       ruby
 
       m(1, b: 2).should == [1, 2]
-      suppress_keyword_warning.call do
+      suppress_keyword_warning do
         -> { m("a" => 1, b: 2) }.should raise_error(ArgumentError)
       end
     end
@@ -728,7 +719,7 @@ describe "A method" do
 
       m(2).should == [2, 1]
       m(1, b: 2).should == [1, 2]
-      suppress_keyword_warning.call do
+      suppress_keyword_warning do
         m("a" => 1, b: 2).should == [{"a" => 1, b: 2}, 1]
       end
     end
@@ -739,7 +730,7 @@ describe "A method" do
 
       m(1).should == 1
       m(1, a: 2, b: 3).should == 1
-      suppress_keyword_warning.call do
+      suppress_keyword_warning do
         m("a" => 1, b: 2).should == {"a" => 1, b: 2}
       end
     end
@@ -750,7 +741,7 @@ describe "A method" do
 
       m(1).should == [1, {}]
       m(1, a: 2, b: 3).should == [1, {a: 2, b: 3}]
-      suppress_keyword_warning.call do
+      suppress_keyword_warning do
         m("a" => 1, b: 2).should == [{"a" => 1, b: 2}, {}]
       end
     end
@@ -869,7 +860,7 @@ describe "A method" do
 
       m(b: 2).should == [1, 2]
       m(2, b: 1).should == [2, 1]
-      suppress_keyword_warning.call do
+      suppress_keyword_warning do
         m("a" => 1, b: 2).should == [{"a" => 1}, 2]
       end
     end
@@ -881,12 +872,12 @@ describe "A method" do
       m().should == [1, 2]
       m(2).should == [2, 2]
       m(b: 3).should == [1, 3]
-      suppress_keyword_warning.call do
+      suppress_keyword_warning do
         m("a" => 1, b: 2).should == [{"a" => 1}, 2]
       end
     end
 
-    ruby_version_is "0"..."2.7" do
+    ruby_version_is ""..."2.7" do
       evaluate <<-ruby do
           def m(a=1, **) a end
         ruby
@@ -951,7 +942,7 @@ describe "A method" do
 
       m(a: 1).should == 1
       m(1, 2, a: 3).should == 3
-      suppress_keyword_warning.call do
+      suppress_keyword_warning do
         m("a" => 1, a: 2).should == 2
       end
     end
@@ -962,7 +953,7 @@ describe "A method" do
 
       m(b: 1).should == [[], 1]
       m(1, 2, b: 3).should == [[1, 2], 3]
-      suppress_keyword_warning.call do
+      suppress_keyword_warning do
         m("a" => 1, b: 2).should == [[{"a" => 1}], 2]
       end
     end
@@ -975,7 +966,7 @@ describe "A method" do
       m(1, 2).should == 1
       m(a: 2).should == 2
       m(1, a: 2).should == 2
-      suppress_keyword_warning.call do
+      suppress_keyword_warning do
         m("a" => 1, a: 2).should == 2
       end
     end
@@ -986,7 +977,7 @@ describe "A method" do
 
       m().should == [[], 1]
       m(1, 2, 3, b: 4).should == [[1, 2, 3], 4]
-      suppress_keyword_warning.call do
+      suppress_keyword_warning do
         m("a" => 1, b: 2).should == [[{"a" => 1}], 2]
       end
 
@@ -1005,7 +996,7 @@ describe "A method" do
 
       h = mock("keyword splat")
       h.should_receive(:to_hash).and_return({a: 1})
-      suppress_keyword_warning.call do
+      suppress_keyword_warning do
         m(h).should be_nil
       end
 
@@ -1015,7 +1006,7 @@ describe "A method" do
       -> { m(h) }.should raise_error(error)
     end
 
-    ruby_version_is "0"..."2.7" do
+    ruby_version_is ""..."2.7" do
       evaluate <<-ruby do
           def m(*a, **) a end
         ruby
@@ -1218,7 +1209,7 @@ describe "A method" do
       ruby
 
       m(a: 1, b: 2).should == [1, 2]
-      suppress_keyword_warning.call do
+      suppress_keyword_warning do
         -> { m("a" => 1, a: 1, b: 2) }.should raise_error(ArgumentError)
       end
     end
@@ -1229,12 +1220,12 @@ describe "A method" do
 
       m(a: 1).should == [1, 1]
       m(a: 1, b: 2).should == [1, 2]
-      suppress_keyword_warning.call do
+      suppress_keyword_warning do
         -> { m("a" => 1, a: 1, b: 2) }.should raise_error(ArgumentError)
       end
     end
 
-    ruby_version_is '0'...'2.7' do
+    ruby_version_is ''...'2.7' do
       evaluate <<-ruby do
           def m(a:, **) a end
         ruby

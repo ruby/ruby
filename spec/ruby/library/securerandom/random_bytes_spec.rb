@@ -1,8 +1,12 @@
 require_relative '../../spec_helper'
+require_relative '../../core/random/shared/bytes'
 
 require 'securerandom'
 
 describe "SecureRandom.random_bytes" do
+  it_behaves_like :random_bytes, :random_bytes, SecureRandom
+  it_behaves_like :random_bytes, :bytes, SecureRandom
+
   it "generates a random binary string of length 16 if no argument is provided" do
     bytes = SecureRandom.random_bytes
     bytes.should be_kind_of(String)

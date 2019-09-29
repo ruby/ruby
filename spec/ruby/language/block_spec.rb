@@ -6,14 +6,6 @@ describe "A block yielded a single" do
     def m(a) yield a end
   end
 
-  def supress_keyword_warning(&block)
-    if RUBY_VERSION > '2.7'
-      suppress_warning(&block)
-    else
-      yield
-    end
-  end
-
   context "Array" do
     it "assigns the Array to a single argument" do
       m([1, 2]) { |a| a }.should == [1, 2]
@@ -53,21 +45,21 @@ describe "A block yielded a single" do
     end
 
     it "assigns elements to mixed argument types" do
-      supress_keyword_warning do
+      suppress_keyword_warning do
         result = m([1, 2, 3, {x: 9}]) { |a, b=5, *c, d, e: 2, **k| [a, b, c, d, e, k] }
         result.should == [1, 2, [], 3, 2, {x: 9}]
       end
     end
 
     it "assigns symbol keys from a Hash to keyword arguments" do
-      supress_keyword_warning do
+      suppress_keyword_warning do
         result = m(["a" => 1, a: 10]) { |a=nil, **b| [a, b] }
         result.should == [{"a" => 1}, a: 10]
       end
     end
 
     it "assigns symbol keys from a Hash returned by #to_hash to keyword arguments" do
-      supress_keyword_warning do
+      suppress_keyword_warning do
         obj = mock("coerce block keyword arguments")
         obj.should_receive(:to_hash).and_return({"a" => 1, b: 2})
 
@@ -76,7 +68,7 @@ describe "A block yielded a single" do
       end
     end
 
-    ruby_version_is "0"..."2.7" do
+    ruby_version_is ""..."2.7" do
       it "calls #to_hash on the argument and uses resulting hash as first argument when optional argument and keyword argument accepted" do
         obj = mock("coerce block keyword arguments")
         obj.should_receive(:to_hash).and_return({"a" => 1, "b" => 2})
@@ -98,7 +90,7 @@ describe "A block yielded a single" do
 
     describe "when non-symbol keys are in a keyword arguments Hash" do
       it "separates non-symbol keys and symbol keys" do
-        supress_keyword_warning do
+        suppress_keyword_warning do
           result = m(["a" => 10, b: 2]) { |a=nil, **b| [a, b] }
           result.should == [{"a" => 10}, {b: 2}]
         end
@@ -111,7 +103,7 @@ describe "A block yielded a single" do
     end
 
     it "calls #to_hash on the last element if keyword arguments are present" do
-      supress_keyword_warning do
+      suppress_keyword_warning do
         obj = mock("destructure block keyword arguments")
         obj.should_receive(:to_hash).and_return({x: 9})
 
@@ -121,7 +113,7 @@ describe "A block yielded a single" do
     end
 
     it "assigns the last element to a non-keyword argument if #to_hash returns nil" do
-      supress_keyword_warning do
+      suppress_keyword_warning do
         obj = mock("destructure block keyword arguments")
         obj.should_receive(:to_hash).and_return(nil)
 
@@ -131,7 +123,7 @@ describe "A block yielded a single" do
     end
 
     it "calls #to_hash on the last element when there are more arguments than parameters" do
-      supress_keyword_warning do
+      suppress_keyword_warning do
         x = mock("destructure matching block keyword argument")
         x.should_receive(:to_hash).and_return({x: 9})
 

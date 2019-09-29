@@ -496,13 +496,12 @@ describe "The return keyword" do
 
         ruby_version_is "2.7" do
           it "warns but does not affect exit status" do
-            ruby_exe(<<-END_OF_CODE).should == "-e: warning: argument of top-level return is ignored\n"
-              $stderr.reopen($stdout)
-              system(ENV['RUBY_EXE'], '-e', 'return 10')
-              exit($?.exitstatus)
+            err = ruby_exe(<<-END_OF_CODE, args: "2>&1")
+              return 10
             END_OF_CODE
-
             $?.exitstatus.should == 0
+
+            err.should =~ /warning: argument of top-level return is ignored/
           end
         end
       end

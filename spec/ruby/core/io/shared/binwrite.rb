@@ -56,7 +56,7 @@ describe :io_binwrite, shared: true do
   end
 
   it "doesn't truncate and writes at the given offset after passing empty opts" do
-    IO.send(@method, @filename, "hello world!", 1, {})
+    IO.send(@method, @filename, "hello world!", 1, **{})
     File.read(@filename).should == "0hello world!34567890123456789"
   end
 
@@ -72,7 +72,7 @@ describe :io_binwrite, shared: true do
   end
 
   it "truncates if empty :opts provided and offset skipped" do
-    IO.send(@method, @filename, "hello, world!", {})
+    IO.send(@method, @filename, "hello, world!", **{})
     File.read(@filename).should == "hello, world!"
   end
 end

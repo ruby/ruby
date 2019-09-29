@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 describe "IO#initialize" do
   before :each do
     @name = tmp("io_initialize.txt")
-    @io = new_io @name
+    @io = IO.new(new_fd(@name))
     @fd = @io.fileno
   end
 

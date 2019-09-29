@@ -40,8 +40,8 @@ describe "Logger::LogDevice#new" do
   end
 
   it "receives options via a hash as second argument" do
-    -> { Logger::LogDevice.new(STDERR,
-                               shift_age: 8, shift_size: 10
-                              )}.should_not raise_error
+    -> {
+      Logger::LogDevice.new(STDERR, shift_age: 8, shift_size: 10)
+    }.should_not raise_error
   end
 end

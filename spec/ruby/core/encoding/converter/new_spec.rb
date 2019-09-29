@@ -50,7 +50,7 @@ describe "Encoding::Converter.new" do
   it "calls #to_hash to convert the options argument to a Hash if not a Fixnum" do
     opts = mock("encoding converter options")
     opts.should_receive(:to_hash).and_return({ replace: "fubar" })
-    conv = Encoding::Converter.new("us-ascii", "utf-8", opts)
+    conv = Encoding::Converter.new("us-ascii", "utf-8", **opts)
     conv.replacement.should == "fubar"
   end
 

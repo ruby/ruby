@@ -15,10 +15,10 @@ describe "Encoding::Converter#convpath" do
   end
 
   it "indicates if crlf_newline conversion would occur" do
-    ec = Encoding::Converter.new("ISo-8859-1", "EUC-JP", {crlf_newline: true})
+    ec = Encoding::Converter.new("ISo-8859-1", "EUC-JP", crlf_newline: true)
     ec.convpath.last.should == "crlf_newline"
 
-    ec = Encoding::Converter.new("ASCII", "UTF-8", {crlf_newline: false})
+    ec = Encoding::Converter.new("ASCII", "UTF-8", crlf_newline: false)
     ec.convpath.last.should_not == "crlf_newline"
   end
 end
