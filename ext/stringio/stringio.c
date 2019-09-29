@@ -1002,7 +1002,7 @@ strio_unget_bytes(struct StringIO *ptr, const char *cp, long cl)
 static VALUE
 strio_readchar(VALUE self)
 {
-    VALUE c = rb_funcall2(self, rb_intern("getc"), 0, 0);
+    VALUE c = rb_funcallv(self, rb_intern("getc"), 0, 0);
     if (NIL_P(c)) rb_eof_error();
     return c;
 }
@@ -1016,7 +1016,7 @@ strio_readchar(VALUE self)
 static VALUE
 strio_readbyte(VALUE self)
 {
-    VALUE c = rb_funcall2(self, rb_intern("getbyte"), 0, 0);
+    VALUE c = rb_funcallv(self, rb_intern("getbyte"), 0, 0);
     if (NIL_P(c)) rb_eof_error();
     return c;
 }
@@ -1309,7 +1309,7 @@ strio_gets(int argc, VALUE *argv, VALUE self)
 static VALUE
 strio_readline(int argc, VALUE *argv, VALUE self)
 {
-    VALUE line = rb_funcall2(self, rb_intern("gets"), argc, argv);
+    VALUE line = rb_funcallv(self, rb_intern("gets"), argc, argv);
     if (NIL_P(line)) rb_eof_error();
     return line;
 }
@@ -1589,7 +1589,7 @@ strio_read(int argc, VALUE *argv, VALUE self)
 static VALUE
 strio_sysread(int argc, VALUE *argv, VALUE self)
 {
-    VALUE val = rb_funcall2(self, rb_intern("read"), argc, argv);
+    VALUE val = rb_funcallv(self, rb_intern("read"), argc, argv);
     if (NIL_P(val)) {
 	rb_eof_error();
     }
