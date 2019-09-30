@@ -18,8 +18,19 @@ class LeakChecker
       check_encodings(test_name),
       check_safe(test_name),
       check_verbose(test_name),
+      check_require_arity(test_name),
     ]
     GC.start if leaks.any?
+  end
+
+  # to debug
+  def check_require_arity test_name
+    begin
+      require 'enumerator' # to check require's arity
+    rescue ArgumentError => e
+      STDERR.puts "#{e.message} on #{test_name}"
+      raise
+    end
   end
 
   def check_safe test_name
