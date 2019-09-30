@@ -3,7 +3,7 @@
 static VALUE
 enumerator_kw(int argc, VALUE *argv, VALUE self)
 {
-    VALUE obj, opt, enum_args[4];
+    VALUE opt, enum_args[4];
     enum_args[0] = Qnil;
     enum_args[1] = Qnil;
     rb_scan_args(argc, argv, "01*:", enum_args, enum_args+1, &opt);
