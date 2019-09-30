@@ -73,7 +73,7 @@ class Test_String_Fstring < Test::Unit::TestCase
   end
 
   def test_shared_string_safety
-    -('a' * 30).force_encoding(Encoding::ASCII)
+    _unused = -('a' * 30).force_encoding(Encoding::ASCII)
     str = ('a' * 30).force_encoding(Encoding::ASCII).taint
     frozen_str = Bug::String.rb_str_new_frozen(str)
     assert_fstring(frozen_str) {|s| assert_equal(str, s)}
