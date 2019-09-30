@@ -9276,7 +9276,7 @@ typedef unsigned int ibf_offset_t;
 
 #define IBF_MAJOR_VERSION ISEQ_MAJOR_VERSION
 #if RUBY_DEVEL
-#define IBF_DEVEL_VERSION 1
+#define IBF_DEVEL_VERSION 2
 #define IBF_MINOR_VERSION (ISEQ_MINOR_VERSION * 10000 + IBF_DEVEL_VERSION)
 #else
 #define IBF_MINOR_VERSION ISEQ_MINOR_VERSION
@@ -10129,7 +10129,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_offset_t body_offset = ibf_dump_pos(dump);
 
     /* dump the constant body */
-    unsigned char param_flags =
+    unsigned int param_flags =
         (body->param.flags.has_lead         << 0) |
         (body->param.flags.has_opt          << 1) |
         (body->param.flags.has_rest         << 2) |
@@ -10137,7 +10137,8 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
         (body->param.flags.has_kw           << 4) |
         (body->param.flags.has_kwrest       << 5) |
         (body->param.flags.has_block        << 6) |
-        (body->param.flags.ambiguous_param0 << 7);
+        (body->param.flags.ambiguous_param0 << 7) |
+        (body->param.flags.accepts_no_kwarg << 8);
 
 #if IBF_ISEQ_ENABLE_LOCAL_BUFFER
 #  define IBF_BODY_OFFSET(x) (x)
@@ -10149,7 +10150,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, body->iseq_size);
     ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(bytecode_offset));
     ibf_dump_write_small_value(dump, bytecode_size);
-    ibf_dump_write_byte(dump, param_flags);
+    ibf_dump_write_small_value(dump, param_flags);
     ibf_dump_write_small_value(dump, body->param.size);
     ibf_dump_write_small_value(dump, body->param.lead_num);
     ibf_dump_write_small_value(dump, body->param.opt_num);
@@ -10254,7 +10255,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     const unsigned int iseq_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
     const ibf_offset_t bytecode_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
     const ibf_offset_t bytecode_size = (ibf_offset_t)ibf_load_small_value(load, &reading_pos);
-    const unsigned char param_flags = (unsigned char)ibf_load_byte(load, &reading_pos);
+    const unsigned int param_flags = (unsigned int)ibf_load_small_value(load, &reading_pos);
     const unsigned int param_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
     const int param_lead_num = (int)ibf_load_small_value(load, &reading_pos);
     const int param_opt_num = (int)ibf_load_small_value(load, &reading_pos);
@@ -10302,6 +10303,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->param.flags.has_kwrest = (param_flags >> 5) & 1;
     load_body->param.flags.has_block = (param_flags >> 6) & 1;
     load_body->param.flags.ambiguous_param0 = (param_flags >> 7) & 1;
+    load_body->param.flags.accepts_no_kwarg = (param_flags >> 8) & 1;
     load_body->param.size = param_size;
     load_body->param.lead_num = param_lead_num;
     load_body->param.opt_num = param_opt_num;
