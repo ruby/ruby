@@ -2576,7 +2576,7 @@ aliased_callable_method_entry0(const rb_method_entry_t *me)
     const rb_callable_method_entry_t *cme;
 
     if (orig_me->defined_class != 0) {
-        VM_ASSERT(callable_method_entry_p(orig_me));
+        VM_ASSERT(callable_class_p(orig_me->defined_class));
         return orig_me;
     }
     else {
