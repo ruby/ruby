@@ -285,10 +285,10 @@ the_location(void)
     int line;
 
     if (!cfp) {
-        return Qnil;
+        return Qfalse;
     }
     else if (! (line = rb_vm_get_sourceline(cfp))) {
-        return Qnil;
+        return Qfalse;
     }
     else {
         VALUE loc = rb_ary_new3(2, rb_iseq_path(cfp->iseq), INT2FIX(line));
