@@ -1183,6 +1183,7 @@ class TestMethod < Test::Unit::TestCase
       nummodule += 1
       mc = mod.kind_of?(Class) ? "class" : "module"
       puts_line = "#{mc} #{mod.name} #{(mod.ancestors - [mod]).inspect}"
+      puts_line = puts_line # prevent unused var warning
       mod.singleton_methods(false).sort.each {|methname|
         nummethod += 1
         meth = mod.method(methname)
