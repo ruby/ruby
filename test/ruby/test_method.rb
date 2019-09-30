@@ -1207,7 +1207,7 @@ class TestMethod < Test::Unit::TestCase
     }
     # puts "#{nummodule} modules, #{nummethod} methods"
 
-    assert nummodule > 0
-    assert nummethod > 0
+    assert_operator nummodule, :>, 0
+    assert_operator nummethod, :>, 0
   end
 end
