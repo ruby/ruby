@@ -513,7 +513,7 @@ rb_enumeratorize(VALUE obj, VALUE meth, int argc, const VALUE *argv)
 }
 
 static VALUE
-lazy_to_enum_i(VALUE self, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn);
+lazy_to_enum_i(VALUE self, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, int kw_splat);
 
 VALUE
 rb_enumeratorize_with_size(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn)
@@ -521,10 +521,22 @@ rb_enumeratorize_with_size(VALUE obj, VALUE meth, int argc, const VALUE *argv, r
     /* Similar effect as calling obj.to_enum, i.e. dispatching to either
        Kernel#to_enum vs Lazy#to_enum */
     if (RTEST(rb_obj_is_kind_of(obj, rb_cLazy)))
-	return lazy_to_enum_i(obj, meth, argc, argv, size_fn);
+        return lazy_to_enum_i(obj, meth, argc, argv, size_fn, PASS_KW_SPLAT);
     else
 	return enumerator_init(enumerator_allocate(rb_cEnumerator),
                                obj, meth, argc, argv, size_fn, Qnil, PASS_KW_SPLAT);
+}
+
+VALUE
+rb_enumeratorize_with_size_kw(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, int kw_splat)
+{
+    /* Similar effect as calling obj.to_enum, i.e. dispatching to either
+       Kernel#to_enum vs Lazy#to_enum */
+    if (RTEST(rb_obj_is_kind_of(obj, rb_cLazy)))
+        return lazy_to_enum_i(obj, meth, argc, argv, size_fn, kw_splat);
+    else
+        return enumerator_init(enumerator_allocate(rb_cEnumerator),
+                               obj, meth, argc, argv, size_fn, Qnil, kw_splat);
 }
 
 static VALUE
@@ -1868,17 +1880,17 @@ lazy_add_method(VALUE obj, int argc, VALUE *argv, VALUE args, VALUE memo,
 static VALUE
 enumerable_lazy(VALUE obj)
 {
-    VALUE result = lazy_to_enum_i(obj, sym_each, 0, 0, lazyenum_size);
+    VALUE result = lazy_to_enum_i(obj, sym_each, 0, 0, lazyenum_size, PASS_KW_SPLAT);
     /* Qfalse indicates that the Enumerator::Lazy has no method name */
     rb_ivar_set(result, id_method, Qfalse);
     return result;
 }
 
 static VALUE
-lazy_to_enum_i(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn)
+lazy_to_enum_i(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, int kw_splat)
 {
     return enumerator_init(enumerator_allocate(rb_cLazy),
-                           obj, meth, argc, argv, size_fn, Qnil, PASS_KW_SPLAT);
+                           obj, meth, argc, argv, size_fn, Qnil, kw_splat);
 }
 
 /*
@@ -1916,7 +1928,7 @@ lazy_to_enum(int argc, VALUE *argv, VALUE self)
     if (RTEST((super_meth = rb_hash_aref(lazy_use_super_method, meth)))) {
         meth = super_meth;
     }
-    lazy = lazy_to_enum_i(self, meth, argc, argv, 0);
+    lazy = lazy_to_enum_i(self, meth, argc, argv, 0, PASS_KW_SPLAT);
     if (rb_block_given_p()) {
 	enumerator_ptr(lazy)->size = rb_block_proc();
     }
@@ -2919,7 +2931,7 @@ enumerator_s_produce(int argc, VALUE *argv, VALUE klass)
 
     producer = producer_init(producer_allocate(rb_cEnumProducer), init, rb_block_proc());
 
-    return rb_enumeratorize_with_size(producer, sym_each, 0, 0, producer_size);
+    return rb_enumeratorize_with_size_kw(producer, sym_each, 0, 0, producer_size, RB_NO_KEYWORDS);
 }
 
 /*
