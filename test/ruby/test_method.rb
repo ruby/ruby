@@ -1174,7 +1174,7 @@ class TestMethod < Test::Unit::TestCase
     # chkbuild lists all methods.
     # The following code emulate this listing.
 
-    use_symbol = Object.instance_methods[0].is_a?(Symbol)
+    # use_symbol = Object.instance_methods[0].is_a?(Symbol)
     nummodule = nummethod = 0
     mods = []
     ObjectSpace.each_object(Module) {|m| mods << m if m.name }
@@ -1191,7 +1191,7 @@ class TestMethod < Test::Unit::TestCase
         # puts line
       }
       ms = mod.instance_methods(false)
-      if use_symbol
+      if true or use_symbol
         ms << :initialize if mod.private_instance_methods(false).include? :initialize
       else
         ms << "initialize" if mod.private_instance_methods(false).include? "initialize"
