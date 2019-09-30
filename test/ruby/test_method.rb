@@ -1169,4 +1169,45 @@ class TestMethod < Test::Unit::TestCase
     plus = Integer.instance_method(:+)
     assert_equal(3, plus.bind_call(1, 2))
   end
+
+  def test_method_list
+    # chkbuild lists all methods.
+    # The following code emulate this listing.
+
+    use_symbol = Object.instance_methods[0].is_a?(Symbol)
+    nummodule = nummethod = 0
+    mods = []
+    ObjectSpace.each_object(Module) {|m| mods << m if m.name }
+    mods = mods.sort_by {|m| m.name }
+    mods.each {|mod|
+      nummodule += 1
+      mc = mod.kind_of?(Class) ? "class" : "module"
+      puts_line = "#{mc} #{mod.name} #{(mod.ancestors - [mod]).inspect}"
+      mod.singleton_methods(false).sort.each {|methname|
+        nummethod += 1
+        meth = mod.method(methname)
+        line = "#{mod.name}.#{methname} #{meth.arity}"
+        line << " not-implemented" if !mod.respond_to?(methname)
+        # puts line
+      }
+      ms = mod.instance_methods(false)
+      if use_symbol
+        ms << :initialize if mod.private_instance_methods(false).include? :initialize
+      else
+        ms << "initialize" if mod.private_instance_methods(false).include? "initialize"
+      end
+
+      ms.sort.each {|methname|
+        nummethod += 1
+        meth = mod.instance_method(methname)
+        line = "#{mod.name}\##{methname} #{meth.arity}"
+        line << " not-implemented" if /\(not-implemented\)/ =~ meth.inspect
+        # puts line
+      }
+    }
+    # puts "#{nummodule} modules, #{nummethod} methods"
+
+    assert nummodule > 0
+    assert nummethod > 0
+  end
 end
