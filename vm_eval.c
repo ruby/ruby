@@ -989,6 +989,15 @@ rb_funcallv_public(VALUE recv, ID mid, int argc, const VALUE *argv)
     return rb_call(recv, mid, argc, argv, CALL_PUBLIC);
 }
 
+VALUE
+rb_funcallv_public_kw(VALUE recv, ID mid, int argc, const VALUE *argv, int kw_splat)
+{
+    VALUE v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
+    VALUE ret = rb_call(recv, mid, argc, argv, kw_splat ? CALL_PUBLIC_KW : CALL_PUBLIC);
+    rb_free_tmp_buffer(&v);
+    return ret;
+}
+
 /*!
  * Calls a method
  * \private
@@ -1030,6 +1039,17 @@ rb_funcall_passing_block(VALUE recv, ID mid, int argc, const VALUE *argv)
 {
     PASS_PASSED_BLOCK_HANDLER();
     return rb_call(recv, mid, argc, argv, CALL_PUBLIC);
+}
+
+VALUE
+rb_funcall_passing_block_kw(VALUE recv, ID mid, int argc, const VALUE *argv, int kw_splat)
+{
+    VALUE v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
+    VALUE ret;
+    PASS_PASSED_BLOCK_HANDLER();
+    ret = rb_call(recv, mid, argc, argv, kw_splat ? CALL_PUBLIC_KW : CALL_PUBLIC);
+    rb_free_tmp_buffer(&v);
+    return ret;
 }
 
 VALUE
@@ -1274,6 +1294,19 @@ rb_yield_splat(VALUE values)
         rb_raise(rb_eArgError, "not an array");
     }
     v = rb_yield_0(RARRAY_LENINT(tmp), RARRAY_CONST_PTR(tmp));
+    RB_GC_GUARD(tmp);
+    return v;
+}
+
+VALUE
+rb_yield_splat_kw(VALUE values, int kw_splat)
+{
+    VALUE tmp = rb_check_array_type(values);
+    VALUE v;
+    if (NIL_P(tmp)) {
+        rb_raise(rb_eArgError, "not an array");
+    }
+    v = rb_yield_0_kw(RARRAY_LENINT(tmp), RARRAY_CONST_PTR(tmp), kw_splat);
     RB_GC_GUARD(tmp);
     return v;
 }
