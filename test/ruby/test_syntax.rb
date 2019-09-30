@@ -1272,6 +1272,10 @@ eom
     assert_warn(/argument of top-level return is ignored/) {eval("return 1")}
   end
 
+  def test_return_in_proc_in_class
+    assert_in_out_err(['-e', 'class TestSyntax; proc{ return }.call; end'], "", [], /^-e:1:.*unexpected return \(LocalJumpError\)/)
+  end
+
   def test_syntax_error_in_rescue
     bug12613 = '[ruby-core:76531] [Bug #12613]'
     assert_syntax_error("#{<<-"begin;"}\n#{<<-"end;"}", /Invalid retry/, bug12613)

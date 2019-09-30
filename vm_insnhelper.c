@@ -1258,7 +1258,10 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
 		    switch (escape_cfp->iseq->body->type) {
 		      case ISEQ_TYPE_TOP:
 		      case ISEQ_TYPE_MAIN:
-			if (toplevel) goto valid_return;
+                        if (toplevel) {
+                            if (in_class_frame) goto unexpected_return;
+                            goto valid_return;
+                        }
 			break;
 		      case ISEQ_TYPE_EVAL:
 		      case ISEQ_TYPE_CLASS:
@@ -1276,6 +1279,7 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
 
 	    escape_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(escape_cfp);
 	}
+      unexpected_return:;
 	rb_vm_localjump_error("unexpected return", throwobj, TAG_RETURN);
 
       valid_return:;
