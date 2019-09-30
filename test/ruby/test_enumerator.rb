@@ -831,6 +831,14 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal [1, 2, 3], enum.take(3)
     assert_equal [1, 2], passed_args
 
+    # With initial keyword arguments
+    passed_args = []
+    enum = Enumerator.produce(a: 1, b: 1) { |obj| passed_args << obj; obj.shift if obj.respond_to?(:shift)}
+    assert_instance_of(Enumerator, enum)
+    assert_equal Float::INFINITY, enum.size
+    assert_equal [{b: 1}, [1], :a, nil], enum.take(4)
+    assert_equal [{b: 1}, [1], :a], passed_args
+
     # Raising StopIteration
     words = "The quick brown fox jumps over the lazy dog.".scan(/\w+/)
     enum = Enumerator.produce { words.shift or raise StopIteration }
