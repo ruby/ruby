@@ -256,7 +256,7 @@ rb_adjust_argv_kw_splat(int *argc, const VALUE **argv, int *kw_splat)
         }
     }
 
-    if (*kw_splat && *argc > 0 && !RB_TYPE_P((*argv)[(*argc)-1], T_HASH)) {
+    if (*kw_splat && (*argc == 0 || !RB_TYPE_P((*argv)[(*argc)-1], T_HASH))) {
         rb_warn("Keyword flag passed calling internal method, but last entry is not a hash, unsetting keyword flag");
         *kw_splat = 0;
     }
