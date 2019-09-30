@@ -2296,6 +2296,9 @@ class TestIO < Test::Unit::TestCase
       assert_equal({:a=>1}, open(o, {a: 1}))
     end
 
+    class << o
+      remove_method(:to_open)
+    end
     def o.to_open(kw); kw; end
     assert_equal({:a=>1}, open(o, a: 1))
     unless redefined
