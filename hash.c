@@ -4766,12 +4766,26 @@ env_delete(VALUE name)
 
 /*
  * call-seq:
- *   ENV.delete(name)                  -> value
- *   ENV.delete(name) { |name| block } -> value
+ *   ENV.delete(name)                          -> value
+ *   ENV.delete(name) { |name| block }         -> value
+ *   ENV.delete(missing_name)                  -> nil
+ *   ENV.delete(missing_name) { |name| block } -> nil
  *
- * Deletes the environment variable with +name+ and returns the value of the
- * variable.  If a block is given it will be called when the named environment
- * does not exist.
+ * Deletes the environment variable for +name+ if it exists (ignoring
+ * the block, if given); returns the old value:
+ *   ENV.delete('LINES') # => '300'
+ *   ENV.delete('COLUMNS') { |name| fail 'boo' } # => '120'
+ *
+ * Returns +nil+ if the environment variable does not exist and block
+ * not given:
+ *   ENV.delete('NOSUCH') # => nil
+ *
+ * Calls the block and returns +nil+ if the environment variable does
+ * not exist and block given:
+ *   ENV.delete('NOSUCH') { |name| } # => nil
+ *
+ * Raises TypeError if +name+ is not a +String+:
+ *   ENV.delete(1) # => TypeError raised
  */
 static VALUE
 env_delete_m(VALUE obj, VALUE name)
