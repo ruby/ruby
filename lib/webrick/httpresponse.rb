@@ -367,7 +367,8 @@ module WEBrick
     private
 
     def check_header(header_value)
-      if header_value =~ /\r\n/
+      header_value = header_value.to_s
+      if /[\r\n]/ =~ header_value
         raise InvalidHeader
       else
         header_value
