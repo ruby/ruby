@@ -129,4 +129,10 @@ class TestFnmatch < Test::Unit::TestCase
     assert_file.fnmatch("[a-\u3042]*", "\u3042")
     assert_file.not_fnmatch("[a-\u3042]*", "\u3043")
   end
+
+  def test_nullchar
+    assert_raise(ArgumentError) {
+      File.fnmatch("a\0z", "a")
+    }
+  end
 end
