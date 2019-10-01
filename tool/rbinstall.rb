@@ -877,7 +877,7 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     :ignore_dependencies => true,
     :dir_mode => $dir_mode,
     :data_mode => $data_mode,
-    :prog_mode => $prog_mode,
+    :prog_mode => $script_mode,
     :wrappers => true,
     :format_executable => true,
   }
