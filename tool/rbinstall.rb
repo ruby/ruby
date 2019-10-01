@@ -706,29 +706,34 @@ module RbInstall
     end
   end
 
-  class UnpackedInstaller < Gem::Installer
-    module DirPackage
-      def extract_files(destination_dir, pattern = "*")
-        path = File.dirname(@gem.path)
-        return if path == destination_dir
-        File.chmod(0700, destination_dir)
-        mode = pattern == "bin/*" ? $script_mode : $data_mode
-        spec.files.each do |f|
-          src = File.join(path, f)
-          dest = File.join(without_destdir(destination_dir), f)
-          makedirs(dest[/.*(?=\/)/m])
-          install src, dest, :mode => mode
-        end
-        File.chmod($dir_mode, destination_dir)
+  class DirPackage
+    attr_reader :spec
+
+    attr_accessor :dir_mode
+    attr_accessor :prog_mode
+    attr_accessor :data_mode
+
+    def initialize(spec)
+      @spec = spec
+      @src_dir = File.dirname(@spec.loaded_from)
+    end
+
+    def extract_files(destination_dir, pattern = "*")
+      path = @src_dir
+      return if path == destination_dir
+      File.chmod(0700, destination_dir)
+      mode = pattern == "bin/*" ? $script_mode : $data_mode
+      spec.files.each do |f|
+        src = File.join(path, f)
+        dest = File.join(without_destdir(destination_dir), f)
+        makedirs(dest[/.*(?=\/)/m])
+        install src, dest, :mode => mode
       end
+      File.chmod($dir_mode, destination_dir)
     end
+  end
 
-    def initialize(spec, *options)
-      package = Gem::Package.new(spec.loaded_from)
-      super(package, *options)
-      @package.extend(DirPackage).spec = spec
-    end
-
+  class UnpackedInstaller < Gem::Installer
     def write_cache_file
     end
 
@@ -890,7 +895,8 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     if File.directory?(ext = "#{gem_ext_dir}/#{spec.full_name}")
       spec.extensions[0] ||= "-"
     end
-    ins = RbInstall::UnpackedInstaller.new(spec, options)
+    package = RbInstall::DirPackage.new spec
+    ins = RbInstall::UnpackedInstaller.new(package, options)
     puts "#{INDENT}#{spec.name} #{spec.version}"
     ins.install
     File.chmod($data_mode, File.join(install_dir, "specifications", "#{spec.full_name}.gemspec"))
