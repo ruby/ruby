@@ -5538,8 +5538,10 @@ env_delete(VALUE name)
 
 /*
  * call-seq:
- *   ENV.delete(name)                  -> value
- *   ENV.delete(name) { |name| block } -> value
+ *   ENV.delete(name)                           -> value
+ *   ENV.delete(name) { |name| block }          -> value
+ *   ENV.delete(missing_name)                   -> nil
+ *   ENV.delete(missing_name) { |name| block }  -> block_value
  *
  * Deletes the environment variable with +name+ if it exists and returns its value:
  *   ENV['foo'] = '0'
@@ -5547,9 +5549,8 @@ env_delete(VALUE name)
  * Returns +nil+ if the named environment variable does not exist:
  *   ENV.delete('foo') # => nil
  * If a block given and the environment variable does not exist,
- * yields +name+ to the block and returns +nil+:
- *   ENV.delete('foo') { |name| puts name } # => nil
- *   foo
+ * yields +name+ to the block and returns the value of the block:
+ *   ENV.delete('foo') { |name| name * 2 } # => "foofoo"
  * If a block given and the environment variable exists,
  * deletes the environment variable and returns its value (ignoring the block):
  *   ENV['foo'] = '0'
@@ -5563,7 +5564,7 @@ env_delete_m(VALUE obj, VALUE name)
     VALUE val;
 
     val = env_delete(name);
-    if (NIL_P(val) && rb_block_given_p()) rb_yield(name);
+    if (NIL_P(val) && rb_block_given_p()) val = rb_yield(name);
     return val;
 }
 
