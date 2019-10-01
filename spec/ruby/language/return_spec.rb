@@ -443,21 +443,6 @@ describe "The return keyword" do
       end
 
       describe "within a block within a class" do
-        ruby_version_is ""..."2.7" do
-          it "is allowed" do
-            File.write(@filename, <<-END_OF_CODE)
-              class ReturnSpecs::A
-                ScratchPad << "before return"
-                1.times { return }
-                ScratchPad << "after return"
-              end
-            END_OF_CODE
-
-            load @filename
-            ScratchPad.recorded.should == ["before return"]
-          end
-        end
-
         ruby_version_is "2.7" do
           it "is not allowed" do
             File.write(@filename, <<-END_OF_CODE)
