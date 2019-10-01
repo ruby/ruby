@@ -107,6 +107,7 @@ class TestEnv < Test::Unit::TestCase
     assert_invalid_env {|v| ENV.delete(v)}
     assert_nil(ENV.delete("TEST"))
     assert_nothing_raised { ENV.delete(PATH_ENV) }
+    assert_equal("NO TEST", ENV.delete("TEST") {|name| "NO "+name})
   end
 
   def test_getenv
