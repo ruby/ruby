@@ -66,4 +66,22 @@ class TestShell::CommandProcessor < Test::Unit::TestCase
     Process.waitall
     Dir.rmdir(path)
   end
+
+  def test_test
+    name = "foo#{exeext}"
+    path = File.join(@tmpdir, name)
+    open(path, "w", 0644) {}
+
+    assert_equal(true, @shell[?e, path])
+    assert_equal(true, @shell[:e, path])
+    assert_equal(true, @shell["e", path])
+    assert_equal(true, @shell[:exist?, path])
+    assert_equal(true, @shell["exist?", path])
+    assert_raise_with_message(RuntimeError, /unsupported command/) do
+      assert_equal(true, @shell[:instance_eval, path])
+    end
+  ensure
+    Process.waitall
+    File.unlink(path)
+  end
 end

@@ -180,6 +180,9 @@ class Shell
             top_level_test(command, file1)
           end
         else
+          unless FileTest.methods(false).include?(command.to_sym)
+            raise "unsupported command: #{ command }"
+          end
           if file2
             FileTest.send(command, file1, file2)
           else
