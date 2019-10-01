@@ -1386,12 +1386,15 @@ static inline vm_call_handler
 calccall(const struct rb_call_info *ci, const struct rb_call_cache *cc, const rb_callable_method_entry_t *me)
 {
     if (UNLIKELY(!me)) {
+        RB_DEBUG_COUNTER_INC(mc_miss_by_nome);
         return vm_call_general; /* vm_call_method_nome() situation */
     }
     else if (LIKELY(cc->me != me)) {
+        RB_DEBUG_COUNTER_INC(mc_miss_by_distinct);
         return vm_call_general; /* normal cases */
     }
     else if (UNLIKELY(cc->def != me->def)) {
+        RB_DEBUG_COUNTER_INC(mc_miss_by_refine);
         return vm_call_general;  /* cc->me was refined elsewhere */
     }
     /* "Calling a formerly-public method, which is now privatised, with an
@@ -1400,9 +1403,11 @@ calccall(const struct rb_call_info *ci, const struct rb_call_cache *cc, const rb
      * Calling a private method without specifying a receiver is also safe. */
     else if ((METHOD_ENTRY_VISI(cc->me) != METHOD_VISI_PUBLIC) &&
              !(ci->flag & VM_CALL_FCALL)) {
+        RB_DEBUG_COUNTER_INC(mc_miss_by_visi);
         return vm_call_general;
     }
     else {
+        RB_DEBUG_COUNTER_INC(mc_miss_spurious);
         return cc->call;
     }
 }
