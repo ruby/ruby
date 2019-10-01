@@ -445,7 +445,7 @@ class TestEnv < Test::Unit::TestCase
     ENV.clear
     ENV["foo"] = "bar"
     ENV["baz"] = "qux"
-    ENV.update({"baz"=>"quux","a"=>"b"}) {|k, v1, v2| v1 ? k + "_" + v1 + "_" + v2 : v2 }
+    ENV.update({"baz"=>"quux","a"=>"b"}) {|k, v1, v2| k + "_" + v1 + "_" + v2 }
     check(ENV.to_hash.to_a, [%w(foo bar), %w(baz baz_qux_quux), %w(a b)])
   end
 

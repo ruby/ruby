@@ -5931,8 +5931,16 @@ env_replace(VALUE env, VALUE hash)
 static int
 env_update_i(VALUE key, VALUE val, VALUE _)
 {
-    if (rb_block_given_p()) {
-	val = rb_yield_values(3, key, rb_f_getenv(Qnil, key), val);
+    env_aset(key, val);
+    return ST_CONTINUE;
+}
+
+static int
+env_update_block_i(VALUE key, VALUE val, VALUE _)
+{
+    VALUE oldval = rb_f_getenv(Qnil, key);
+    if (!NIL_P(oldval)) {
+	val = rb_yield_values(3, key, oldval, val);
     }
     env_aset(key, val);
     return ST_CONTINUE;
@@ -5955,7 +5963,9 @@ env_update(VALUE env, VALUE hash)
 {
     if (env == hash) return env;
     hash = to_hash(hash);
-    rb_hash_foreach(hash, env_update_i, 0);
+    rb_foreach_func *func = rb_block_given_p() ?
+        env_update_block_i : env_update_i;
+    rb_hash_foreach(hash, func, 0);
     return env;
 }
 
