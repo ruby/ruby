@@ -1160,6 +1160,30 @@ class TestFileUtils < Test::Unit::TestCase
     }
   end
 
+  def test_install_mode_option
+    File.open('tmp/a', 'w') {|f| f.puts 'aaa' }
+    install 'tmp/a', 'tmp/b', :mode => "u=wrx,g=rx,o=x"
+    assert_filemode 0751, 'tmp/b'
+    install 'tmp/b', 'tmp/c', :mode => "g+w-x"
+    assert_filemode 0761, 'tmp/c'
+    install 'tmp/c', 'tmp/d', :mode => "o+r,g=o+w,o-r,u-o" # 761 => 763 => 773 => 771 => 671
+    assert_filemode 0671, 'tmp/d'
+    install 'tmp/d', 'tmp/e', :mode => "go=u"
+    assert_filemode 0666, 'tmp/e'
+    install 'tmp/e', 'tmp/f', :mode => "u=wrx,g=,o="
+    assert_filemode 0700, 'tmp/f'
+    install 'tmp/f', 'tmp/g', :mode => "u=rx,go="
+    assert_filemode 0500, 'tmp/g'
+    install 'tmp/g', 'tmp/h', :mode => "+wrx"
+    assert_filemode 0777, 'tmp/h'
+    install 'tmp/h', 'tmp/i', :mode => "u+s,o=s"
+    assert_filemode 04770, 'tmp/i'
+    install 'tmp/i', 'tmp/j', :mode => "u-w,go-wrx"
+    assert_filemode 04500, 'tmp/j'
+    install 'tmp/j', 'tmp/k', :mode => "+s"
+    assert_filemode 06500, 'tmp/k'
+  end if have_file_perm?
+
   def test_chmod
     check_singleton :chmod
 
