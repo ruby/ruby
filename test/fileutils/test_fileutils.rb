@@ -1193,6 +1193,8 @@ class TestFileUtils < Test::Unit::TestCase
     assert_filemode 04500, 'tmp/j'
     install 'tmp/j', 'tmp/k', :mode => "+s"
     assert_filemode 06500, 'tmp/k'
+    install 'tmp/a', 'tmp/l', :mode => "o+X"
+    assert_equal_filemode 'tmp/a', 'tmp/l'
   end if have_file_perm?
 
   def test_chmod
