@@ -39,7 +39,11 @@ class RubyVM::InstructionSequence
   end
 
   opt = ENV['RUBY_ISEQ_DUMP_DEBUG']
-  puts "RUBY_ISEQ_DUMP_DEBUG = #{opt}" if opt
+
+  if opt && caller.any?{|e| /test\/runner\.rb/ =~ e}
+    puts "RUBY_ISEQ_DUMP_DEBUG = #{opt}" if opt
+  end
+
   CHECK_TO_A      = 'to_a'      == opt
   CHECK_TO_BINARY = 'to_binary' == opt
 

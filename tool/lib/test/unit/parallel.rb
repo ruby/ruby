@@ -2,6 +2,11 @@
 $LOAD_PATH.unshift "#{File.dirname(__FILE__)}/../.."
 require 'test/unit'
 
+require "profile_test_all" if ENV.key?('RUBY_TEST_ALL_PROFILE')
+require "tracepointchecker"
+require "zombie_hunter"
+require "iseq_loader_checker"
+
 module Test
   module Unit
     class Worker < Runner # :nodoc:
