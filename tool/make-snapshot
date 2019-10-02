@@ -478,7 +478,7 @@ touch-unicode-files:
         return
       end
       unless system(make, "clean-cache", *args)
-        puts $colorize.fail("prepare-package failed")
+        puts $colorize.fail("clean-cache failed")
         return
       end
       print "prerequisites"
