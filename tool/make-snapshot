@@ -351,7 +351,10 @@ def package(vcs, rev, destdir, tmp = nil)
   File.directory?(n) or File.rename v, n
   v = n
 
-  system(*%W"patch -d #{v} -p0 -i #{$patch_file}") if $patch_file
+  if $patch_file && !system(*%W"patch -d #{v} -p0 -i #{$patch_file}")
+    puts $colorize.fail("patching failed")
+    return
+  end
   def (clean = []).add(n) push(n); n end
   Dir.chdir(v) do
     unless File.exist?("ChangeLog")
@@ -451,7 +454,10 @@ touch-unicode-files:
       ENV["CACHE_SAVE"] = "no"
       make = ENV["MAKE"] || ENV["make"] || "make"
       args = args.map {|arg| arg.join("=")}
-      system(make, "update-download", *args)
+      unless system(make, "update-download", *args)
+        puts $colorize.fail("update-download failed")
+        return
+      end
       clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk", "ext/ripper/y.output", ".revision.time")
       Dir.glob("**/*") do |dest|
         next unless File.symlink?(dest)
@@ -467,7 +473,10 @@ touch-unicode-files:
         end
         modified = new_time
       end
-      system(make, "prepare-package", "clean-cache", *args)
+      unless system(make, "prepare-package", "clean-cache", *args)
+        puts $colorize.fail("prepare-package failed")
+        return
+      end
       print "prerequisites"
     else
       system(*%W"#{YACC} -o parse.c parse.y")
