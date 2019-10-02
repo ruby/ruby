@@ -6,8 +6,6 @@ rescue LoadError
   # for make mjit-headers
 end
 
-require_relative "fileutils/version"
-
 #
 # = fileutils.rb
 #
@@ -104,6 +102,7 @@ require_relative "fileutils/version"
 # <tt>:verbose</tt> flags to methods in FileUtils.
 #
 module FileUtils
+  VERSION = "1.3.0"
 
   def self.private_module_function(name)   #:nodoc:
     module_function name
