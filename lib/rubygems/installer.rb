@@ -201,8 +201,8 @@ class Gem::Installer
   #
   # If +@force+ is set +filename+ is overwritten.
   #
-  # If +filename+ exists and is a RubyGems wrapper for different gem the user
-  # is consulted.
+  # If +filename+ exists and it is a RubyGems wrapper for a different gem, then
+  # the user is consulted.
   #
   # If +filename+ exists and +@bin_dir+ is Gem.default_bindir (/usr/local) the
   # user is consulted.
