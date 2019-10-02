@@ -991,6 +991,36 @@ class TestMethod < Test::Unit::TestCase
     assert_nil(m.super_method)
   end
 
+  def test_super_method_bind_unbind_clone
+    bug15629_m1 = Module.new do
+      def foo; end
+    end
+
+    bug15629_m2 = Module.new do
+      def foo; end
+    end
+
+    bug15629_c = Class.new do
+      include bug15629_m1
+      include bug15629_m2
+    end
+
+    o  = bug15629_c.new
+    m = o.method(:foo)
+    sm = m.super_method
+    im = bug15629_c.instance_method(:foo)
+    sim = im.super_method
+
+    assert_equal(sm, m.clone.super_method)
+    assert_equal(sim, m.unbind.super_method)
+    assert_equal(sim, m.unbind.clone.super_method)
+    assert_equal(sim, im.clone.super_method)
+    assert_equal(sm, m.unbind.bind(o).super_method)
+    assert_equal(sm, m.unbind.clone.bind(o).super_method)
+    assert_equal(sm, im.bind(o).super_method)
+    assert_equal(sm, im.clone.bind(o).super_method)
+  end
+
   def test_super_method_removed
     c1 = Class.new {private def foo; end}
     c2 = Class.new(c1) {public :foo}

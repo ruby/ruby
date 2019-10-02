@@ -1686,6 +1686,7 @@ method_unbind(VALUE obj)
 				   &method_data_type, data);
     RB_OBJ_WRITE(method, &data->recv, Qundef);
     RB_OBJ_WRITE(method, &data->klass, orig->klass);
+    RB_OBJ_WRITE(method, &data->iclass, orig->iclass);
     RB_OBJ_WRITE(method, &data->me, rb_method_entry_clone(orig->me));
 
     return method;
@@ -2198,6 +2199,7 @@ method_clone(VALUE self)
     CLONESETUP(clone, self);
     RB_OBJ_WRITE(clone, &data->recv, orig->recv);
     RB_OBJ_WRITE(clone, &data->klass, orig->klass);
+    RB_OBJ_WRITE(clone, &data->iclass, orig->iclass);
     RB_OBJ_WRITE(clone, &data->me, rb_method_entry_clone(orig->me));
     return clone;
 }
@@ -2345,13 +2347,14 @@ rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE passe
  */
 
 static void
-convert_umethod_to_method_components(VALUE method, VALUE recv, VALUE *methclass_out, VALUE *klass_out, const rb_method_entry_t **me_out)
+convert_umethod_to_method_components(VALUE method, VALUE recv, VALUE *methclass_out, VALUE *klass_out, VALUE *iclass_out, const rb_method_entry_t **me_out)
 {
     struct METHOD *data;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
 
     VALUE methclass = data->me->owner;
+    VALUE iclass = data->me->defined_class;
     VALUE klass = CLASS_OF(recv);
 
     if (!RB_TYPE_P(methclass, T_MODULE) &&
@@ -2372,6 +2375,7 @@ convert_umethod_to_method_components(VALUE method, VALUE recv, VALUE *methclass_
 	VALUE ic = rb_class_search_ancestor(klass, me->owner);
 	if (ic) {
 	    klass = ic;
+            iclass = ic;
 	}
 	else {
 	    klass = rb_include_class_new(methclass, klass);
@@ -2381,6 +2385,7 @@ convert_umethod_to_method_components(VALUE method, VALUE recv, VALUE *methclass_
 
     *methclass_out = methclass;
     *klass_out = klass;
+    *iclass_out = iclass;
     *me_out = me;
 }
 
@@ -2422,14 +2427,15 @@ convert_umethod_to_method_components(VALUE method, VALUE recv, VALUE *methclass_
 static VALUE
 umethod_bind(VALUE method, VALUE recv)
 {
-    VALUE methclass, klass;
+    VALUE methclass, klass, iclass;
     const rb_method_entry_t *me;
-    convert_umethod_to_method_components(method, recv, &methclass, &klass, &me);
+    convert_umethod_to_method_components(method, recv, &methclass, &klass, &iclass, &me);
 
     struct METHOD *bound;
     method = TypedData_Make_Struct(rb_cMethod, struct METHOD, &method_data_type, bound);
     RB_OBJ_WRITE(method, &bound->recv, recv);
     RB_OBJ_WRITE(method, &bound->klass, klass);
+    RB_OBJ_WRITE(method, &bound->iclass, iclass);
     RB_OBJ_WRITE(method, &bound->me, me);
 
     return method;
@@ -2451,9 +2457,9 @@ umethod_bind_call(int argc, VALUE *argv, VALUE method)
     argc--;
     argv++;
 
-    VALUE methclass, klass;
+    VALUE methclass, klass, iclass;
     const rb_method_entry_t *me;
-    convert_umethod_to_method_components(method, recv, &methclass, &klass, &me);
+    convert_umethod_to_method_components(method, recv, &methclass, &klass, &iclass, &me);
     struct METHOD bound = { recv, klass, 0, me };
 
     VALUE passed_procval = rb_block_given_p() ? rb_block_proc() : Qnil;
