@@ -10,167 +10,167 @@ class Reline::Test < Reline::TestCase
   end
 
   def test_completion_append_character
-    assert_equal(Reline.completion_append_character, nil)
+    assert_equal(nil, Reline.completion_append_character)
 
     Reline.completion_append_character = ""
-    assert_equal(Reline.completion_append_character, nil)
+    assert_equal(nil, Reline.completion_append_character)
 
     Reline.completion_append_character = "a".encode(Encoding::ASCII)
-    assert_equal(Reline.completion_append_character, "a")
-    assert_equal(Reline.completion_append_character.encoding, Encoding::default_external)
+    assert_equal("a", Reline.completion_append_character)
+    assert_equal(Encoding::default_external, Reline.completion_append_character.encoding)
 
     Reline.completion_append_character = "ba".encode(Encoding::ASCII)
-    assert_equal(Reline.completion_append_character, "b")
-    assert_equal(Reline.completion_append_character.encoding, Encoding::default_external)
+    assert_equal("b", Reline.completion_append_character)
+    assert_equal(Encoding::default_external, Reline.completion_append_character.encoding)
 
     Reline.completion_append_character = "cba".encode(Encoding::ASCII)
-    assert_equal(Reline.completion_append_character, "c")
-    assert_equal(Reline.completion_append_character.encoding, Encoding::default_external)
+    assert_equal("c", Reline.completion_append_character)
+    assert_equal(Encoding::default_external, Reline.completion_append_character.encoding)
 
     Reline.completion_append_character = nil
-    assert_equal(Reline.completion_append_character, nil)
+    assert_equal(nil, Reline.completion_append_character)
   end
 
   def test_basic_word_break_characters
-    assert_equal(Reline.basic_word_break_characters, " \t\n`><=;|&{(")
+    assert_equal(" \t\n`><=;|&{(", Reline.basic_word_break_characters)
 
     Reline.basic_word_break_characters = "[".encode(Encoding::ASCII)
-    assert_equal(Reline.basic_word_break_characters, "[")
-    assert_equal(Reline.basic_word_break_characters.encoding, Encoding::default_external)
+    assert_equal("[", Reline.basic_word_break_characters)
+    assert_equal(Encoding::default_external, Reline.basic_word_break_characters.encoding)
   end
 
   def test_completer_word_break_characters
-    assert_equal(Reline.completer_word_break_characters, " \t\n`><=;|&{(")
+    assert_equal(" \t\n`><=;|&{(", Reline.completer_word_break_characters)
 
     Reline.completer_word_break_characters = "[".encode(Encoding::ASCII)
-    assert_equal(Reline.completer_word_break_characters, "[")
-    assert_equal(Reline.completer_word_break_characters.encoding, Encoding::default_external)
+    assert_equal("[", Reline.completer_word_break_characters)
+    assert_equal(Encoding::default_external, Reline.completer_word_break_characters.encoding)
   end
 
   def test_basic_quote_characters
-    assert_equal(Reline.basic_quote_characters, '"\'')
+    assert_equal('"\'', Reline.basic_quote_characters)
 
     Reline.basic_quote_characters = "`".encode(Encoding::ASCII)
-    assert_equal(Reline.basic_quote_characters, "`")
-    assert_equal(Reline.basic_quote_characters.encoding, Encoding::default_external)
+    assert_equal("`", Reline.basic_quote_characters)
+    assert_equal(Encoding::default_external, Reline.basic_quote_characters.encoding)
   end
 
   def test_completer_quote_characters
-    assert_equal(Reline.completer_quote_characters, '"\'')
+    assert_equal('"\'', Reline.completer_quote_characters)
 
     Reline.completer_quote_characters = "`".encode(Encoding::ASCII)
-    assert_equal(Reline.completer_quote_characters, "`")
-    assert_equal(Reline.completer_quote_characters.encoding, Encoding::default_external)
+    assert_equal("`", Reline.completer_quote_characters)
+    assert_equal(Encoding::default_external, Reline.completer_quote_characters.encoding)
   end
 
   def test_filename_quote_characters
-    assert_equal(Reline.filename_quote_characters, '')
+    assert_equal('', Reline.filename_quote_characters)
 
     Reline.filename_quote_characters = "\'".encode(Encoding::ASCII)
-    assert_equal(Reline.filename_quote_characters, "\'")
-    assert_equal(Reline.filename_quote_characters.encoding, Encoding::default_external)
+    assert_equal("\'", Reline.filename_quote_characters)
+    assert_equal(Encoding::default_external, Reline.filename_quote_characters.encoding)
   end
 
   def test_special_prefixes
-    assert_equal(Reline.special_prefixes, '')
+    assert_equal('', Reline.special_prefixes)
 
     Reline.special_prefixes = "\'".encode(Encoding::ASCII)
-    assert_equal(Reline.special_prefixes, "\'")
-    assert_equal(Reline.special_prefixes.encoding, Encoding::default_external)
+    assert_equal("\'", Reline.special_prefixes)
+    assert_equal(Encoding::default_external, Reline.special_prefixes.encoding)
   end
 
   def test_completion_case_fold
-    assert_equal(Reline.completion_case_fold, nil)
+    assert_equal(nil, Reline.completion_case_fold)
 
     Reline.completion_case_fold = true
-    assert_equal(Reline.completion_case_fold, true)
+    assert_equal(true, Reline.completion_case_fold)
 
     Reline.completion_case_fold = "hoge".encode(Encoding::ASCII)
-    assert_equal(Reline.completion_case_fold, "hoge")
+    assert_equal("hoge", Reline.completion_case_fold)
   end
 
   def test_completion_proc
-    assert_equal(Reline.completion_proc, nil)
+    assert_equal(nil, Reline.completion_proc)
 
     p = proc {}
     Reline.completion_proc = p
-    assert_equal(Reline.completion_proc, p)
+    assert_equal(p, Reline.completion_proc)
 
     l = lambda {}
     Reline.completion_proc = l
-    assert_equal(Reline.completion_proc, l)
+    assert_equal(l, Reline.completion_proc)
 
     assert_raise(ArgumentError) { Reline.completion_proc = 42 }
     assert_raise(ArgumentError) { Reline.completion_proc = "hoge" }
   end
 
   def test_output_modifier_proc
-    assert_equal(Reline.output_modifier_proc, nil)
+    assert_equal(nil, Reline.output_modifier_proc)
 
     p = proc {}
     Reline.output_modifier_proc = p
-    assert_equal(Reline.output_modifier_proc, p)
+    assert_equal(p, Reline.output_modifier_proc)
 
     l = lambda {}
     Reline.output_modifier_proc = l
-    assert_equal(Reline.output_modifier_proc, l)
+    assert_equal(l, Reline.output_modifier_proc)
 
     assert_raise(ArgumentError) { Reline.output_modifier_proc = 42 }
     assert_raise(ArgumentError) { Reline.output_modifier_proc = "hoge" }
   end
 
   def test_prompt_proc
-    assert_equal(Reline.prompt_proc, nil)
+    assert_equal(nil, Reline.prompt_proc)
 
     p = proc {}
     Reline.prompt_proc = p
-    assert_equal(Reline.prompt_proc, p)
+    assert_equal(p, Reline.prompt_proc)
 
     l = lambda {}
     Reline.prompt_proc = l
-    assert_equal(Reline.prompt_proc, l)
+    assert_equal(l, Reline.prompt_proc)
 
     assert_raise(ArgumentError) { Reline.prompt_proc = 42 }
     assert_raise(ArgumentError) { Reline.prompt_proc = "hoge" }
   end
 
   def test_auto_indent_proc
-    assert_equal(Reline.auto_indent_proc, nil)
+    assert_equal(nil, Reline.auto_indent_proc)
 
     p = proc {}
     Reline.auto_indent_proc = p
-    assert_equal(Reline.auto_indent_proc, p)
+    assert_equal(p, Reline.auto_indent_proc)
 
     l = lambda {}
     Reline.auto_indent_proc = l
-    assert_equal(Reline.auto_indent_proc, l)
+    assert_equal(l, Reline.auto_indent_proc)
 
     assert_raise(ArgumentError) { Reline.auto_indent_proc = 42 }
     assert_raise(ArgumentError) { Reline.auto_indent_proc = "hoge" }
   end
 
   def test_pre_input_hook
-    assert_equal(Reline.pre_input_hook, nil)
+    assert_equal(nil, Reline.pre_input_hook)
 
     p = proc {}
     Reline.pre_input_hook = p
-    assert_equal(Reline.pre_input_hook, p)
+    assert_equal(p, Reline.pre_input_hook)
 
     l = lambda {}
     Reline.pre_input_hook = l
-    assert_equal(Reline.pre_input_hook, l)
+    assert_equal(l, Reline.pre_input_hook)
   end
 
   def test_dig_perfect_match_proc
-    assert_equal(Reline.dig_perfect_match_proc, nil)
+    assert_equal(nil, Reline.dig_perfect_match_proc)
 
     p = proc {}
     Reline.dig_perfect_match_proc = p
-    assert_equal(Reline.dig_perfect_match_proc, p)
+    assert_equal(p, Reline.dig_perfect_match_proc)
 
     l = lambda {}
     Reline.dig_perfect_match_proc = l
-    assert_equal(Reline.dig_perfect_match_proc, l)
+    assert_equal(l, Reline.dig_perfect_match_proc)
 
     assert_raise(ArgumentError) { Reline.dig_perfect_match_proc = 42 }
     assert_raise(ArgumentError) { Reline.dig_perfect_match_proc = "hoge" }
@@ -204,12 +204,12 @@ class Reline::Test < Reline::TestCase
 
   def test_vi_editing_mode
     Reline.vi_editing_mode
-    assert_equal(Reline.send(:core).config.editing_mode.class, Reline::KeyActor::ViInsert)
+    assert_equal(Reline::KeyActor::ViInsert, Reline.send(:core).config.editing_mode.class)
   end
 
   def test_emacs_editing_mode
     Reline.emacs_editing_mode
-    assert_equal(Reline.send(:core).config.editing_mode.class, Reline::KeyActor::Emacs)
+    assert_equal(Reline::KeyActor::Emacs, Reline.send(:core).config.editing_mode.class)
   end
 
   def test_editing_mode
