@@ -437,8 +437,8 @@ def package(vcs, rev, destdir, tmp = nil)
       mk << commonmk.gsub(/\{\$([^(){}]*)[^{}]*\}/, "").sub(/^revision\.tmp::$/, '\& Makefile')
       mk << <<-'APPEND'
 
-update-download:: touch-unicode-files after-update
-prepare-package: prereq
+update-download:: touch-unicode-files
+prepare-package: prereq after-update
 clean-cache: $(CLEAN_CACHE)
 after-update:: extract-gems
 extract-gems: update-gems
@@ -473,7 +473,11 @@ touch-unicode-files:
         end
         modified = new_time
       end
-      unless system(make, "prepare-package", "clean-cache", *args)
+      unless system(make, "prepare-package", *args)
+        puts $colorize.fail("prepare-package failed")
+        return
+      end
+      unless system(make, "clean-cache", *args)
         puts $colorize.fail("prepare-package failed")
         return
       end
