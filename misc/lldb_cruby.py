@@ -151,7 +151,7 @@ def lldb_inspect(debugger, target, result, val):
                 result.write(" (embed)")
             elif flags & RUBY_FL_USER2:
                 shared = val.GetValueForExpressionPath("->as.heap.aux.shared").GetValueAsUnsigned()
-                result.write(" (shared) shared=%016x")
+                result.write(" (shared) shared=%016x" % shared)
             else:
                 capa = val.GetValueForExpressionPath("->as.heap.aux.capa").GetValueAsSigned()
                 result.write(" (ownership) capa=%d" % capa)
