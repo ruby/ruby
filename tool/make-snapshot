@@ -483,6 +483,8 @@ touch-unicode-files:
         FileUtils.cp_r(orig, dest)
       end
       File.utime(modified, modified, *Dir.glob(["tool/config.{guess,sub}", "gems/*.gem", "tool"]))
+      return unless make.run("prepare-package")
+      return unless make.run("clean-cache")
       if modified
         new_time = modified + 2
         touch_all(new_time, "**/*", File::FNM_DOTMATCH) do |name, stat|
@@ -490,8 +492,6 @@ touch-unicode-files:
         end
         modified = new_time
       end
-      return unless make.run("prepare-package")
-      return unless make.run("clean-cache")
       print "prerequisites"
     else
       system(*%W"#{YACC} -o parse.c parse.y")
