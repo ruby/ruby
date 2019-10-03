@@ -270,7 +270,6 @@ struct parser_params {
     unsigned int debug: 1;
     unsigned int has_shebang: 1;
     unsigned int in_defined: 1;
-    unsigned int in_main: 1;
     unsigned int in_kwarg: 1;
     unsigned int in_def: 1;
     unsigned int in_class: 1;
@@ -330,7 +329,7 @@ static int parser_yyerror(struct parser_params*, const YYLTYPE *yylloc, const ch
 #ifdef RIPPER
 #define compile_for_eval	(0)
 #else
-#define compile_for_eval	(p->base_block != 0 && !p->in_main)
+#define compile_for_eval	(p->base_block != 0)
 #endif
 
 #define token_column		((int)(p->lex.ptok - p->lex.pbeg))
@@ -11649,7 +11648,7 @@ static void
 local_push(struct parser_params *p, int toplevel_scope)
 {
     struct local_vars *local;
-    int inherits_dvars = toplevel_scope && (compile_for_eval || p->in_main /* is p->in_main really needed? */);
+    int inherits_dvars = toplevel_scope && compile_for_eval;
     int warn_unused_vars = RTEST(ruby_verbose);
 
     local = ALLOC(struct local_vars);
@@ -12309,7 +12308,6 @@ rb_parser_set_context(VALUE vparser, const struct rb_block *base, int main)
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
     p->error_buffer = main ? Qfalse : Qnil;
     p->base_block = base;
-    p->in_main = main;
     return vparser;
 }
 #endif
