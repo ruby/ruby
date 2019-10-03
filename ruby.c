@@ -1562,8 +1562,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     const char *s;
     char fbuf[MAXPATHLEN];
     int i = (int)proc_options(argc, argv, opt, 0);
-    rb_binding_t *toplevel_binding;
-    const struct rb_block *base_block;
     unsigned int dump = opt->dump & dump_exit_bits;
 
     if (opt->dump & (DUMP_BIT(usage)|DUMP_BIT(help))) {
@@ -1760,13 +1758,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     ruby_set_argv(argc, argv);
     process_sflag(&opt->sflag);
 
-    GetBindingPtr(rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING")),
-		  toplevel_binding);
-    /* need to acquire env from toplevel_binding each time, since it
-     * may update after eval() */
-
-    base_block = toplevel_context(toplevel_binding);
-    rb_parser_set_context(parser, base_block, TRUE);
+    rb_parser_set_context(parser, 0, TRUE);
 
     if (opt->e_script) {
 	VALUE progname = rb_progname;
@@ -1867,7 +1859,11 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 		rb_enc_copy(path, opt->script_name);
 	    }
 	}
-	base_block = toplevel_context(toplevel_binding);
+
+        rb_binding_t *toplevel_binding;
+        GetBindingPtr(rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING")),
+                      toplevel_binding);
+        const struct rb_block *base_block = toplevel_context(toplevel_binding);
 	iseq = rb_iseq_new_main(&ast->body, opt->script_name, path, vm_block_iseq(base_block));
 	rb_ast_dispose(ast);
     }
