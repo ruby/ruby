@@ -994,7 +994,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, c
     }
     {
 	const VALUE parser = rb_parser_new();
-	rb_parser_set_context(parser, base_block, FALSE);
+	rb_parser_set_context(parser, parent, FALSE);
 	ast = (*parse)(parser, file, src, ln);
     }
 

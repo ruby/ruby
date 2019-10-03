@@ -294,7 +294,7 @@ struct parser_params {
     NODE *eval_tree;
     VALUE error_buffer;
     VALUE debug_lines;
-    const struct rb_block *base_block;
+    const rb_iseq_t *parent_iseq;
 
     struct {
 	NODE *outer, *inner, *current;
@@ -329,7 +329,7 @@ static int parser_yyerror(struct parser_params*, const YYLTYPE *yylloc, const ch
 #ifdef RIPPER
 #define compile_for_eval	(0)
 #else
-#define compile_for_eval	(p->base_block != 0)
+#define compile_for_eval	(p->parent_iseq != 0)
 #endif
 
 #define token_column		((int)(p->lex.ptok - p->lex.pbeg))
@@ -11777,7 +11777,7 @@ local_id_ref(struct parser_params *p, ID id, ID **vidrefp)
     }
 
     if (vars && vars->prev == DVARS_INHERIT) {
-	return rb_local_defined(id, p->base_block);
+	return rb_local_defined(id, p->parent_iseq);
     }
     else if (vtable_included(args, id)) {
 	return 1;
@@ -11920,7 +11920,7 @@ dvar_defined_ref(struct parser_params *p, ID id, ID **vidrefp)
     }
 
     if (vars == DVARS_INHERIT) {
-        return rb_dvar_defined(id, p->base_block);
+        return rb_dvar_defined(id, p->parent_iseq);
     }
 
     return 0;
@@ -12301,13 +12301,13 @@ rb_parser_new(void)
 }
 
 VALUE
-rb_parser_set_context(VALUE vparser, const struct rb_block *base, int main)
+rb_parser_set_context(VALUE vparser, const rb_iseq_t *base, int main)
 {
     struct parser_params *p;
 
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
     p->error_buffer = main ? Qfalse : Qnil;
-    p->base_block = base;
+    p->parent_iseq = base;
     return vparser;
 }
 #endif

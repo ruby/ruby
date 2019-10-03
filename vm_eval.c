@@ -1579,7 +1579,7 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
         fname = rb_fstring_lit("(eval)");
     }
 
-    rb_parser_set_context(parser, base_block, FALSE);
+    rb_parser_set_context(parser, parent, FALSE);
     ast = rb_parser_compile_string_path(parser, fname, src, line);
     if (ast->body.root) {
 	iseq = rb_iseq_new_with_opt(&ast->body,
