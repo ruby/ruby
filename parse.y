@@ -294,7 +294,7 @@ struct parser_params {
     NODE *eval_tree;
     VALUE error_buffer;
     VALUE debug_lines;
-    const rb_iseq_t *parent_iseq;
+    const struct rb_iseq_struct *parent_iseq;
 
     struct {
 	NODE *outer, *inner, *current;
@@ -12301,7 +12301,7 @@ rb_parser_new(void)
 }
 
 VALUE
-rb_parser_set_context(VALUE vparser, const rb_iseq_t *base, int main)
+rb_parser_set_context(VALUE vparser, const struct rb_iseq_struct *base, int main)
 {
     struct parser_params *p;
 
