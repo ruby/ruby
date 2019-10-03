@@ -27,9 +27,9 @@ steps:
       - /usr/bin/sudo -H -u test -- make test-spec
       # make test-all
       - /usr/bin/sudo -H -u test -- make test-all
-# trigger:
-#   branch:
-#     - master
+trigger:
+  branch:
+    - master
 
 ---
 kind: pipeline
@@ -60,6 +60,6 @@ steps:
       - /usr/bin/sudo -H -u test -- make test-spec
       # make test-all
       - /usr/bin/sudo -H -u test -- make test-all
-# trigger:
-#   branch:
-#     - master
+trigger:
+  branch:
+    - master
