@@ -994,7 +994,14 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, c
     }
     {
 	const VALUE parser = rb_parser_new();
-	rb_parser_set_context(parser, parent, FALSE);
+        const rb_iseq_t *outer_scope = parent;
+        if (!outer_scope) {
+            VALUE name = rb_fstring_lit("<compiled>");
+            outer_scope = rb_iseq_new(NULL, name, name, Qnil, 0, ISEQ_TYPE_TOP);
+        }
+        VALUE outer_scope_v = (VALUE)outer_scope;
+        rb_parser_set_context(parser, outer_scope, FALSE);
+        RB_GC_GUARD(outer_scope_v);
 	ast = (*parse)(parser, file, src, ln);
     }
 
