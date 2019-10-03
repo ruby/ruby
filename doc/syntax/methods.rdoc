@@ -17,8 +17,8 @@ on calling methods}[rdoc-ref:syntax/calling_methods.rdoc].
 == Method Names
 
 Method names may be one of the operators or must start a letter or a character
-with the eight bit set. It may contain letters, numbers, an <code>_</code>
-(underscore or low line) or a character with the eight bit set. The convention
+with the eighth bit set. It may contain letters, numbers, an <code>_</code>
+(underscore or low line) or a character with the eighth bit set. The convention
 is to use underscores to separate words in a multiword method name:
 
   def method_name
@@ -26,7 +26,7 @@ is to use underscores to separate words in a multiword method name:
   end
 
 Ruby programs must be written in a US-ASCII-compatible character set such as
-UTF-8, ISO-8859-1 etc. In such character sets if the eight bit is set it
+UTF-8, ISO-8859-1 etc. In such character sets if the eighth bit is set it
 indicates an extended character. Ruby allows method names and other identifiers
 to contain such characters. Ruby programs cannot contain some characters like
 ASCII NUL (<code>\x00</code>).
@@ -62,9 +62,7 @@ Methods that end with a question mark by convention return boolean, but they
 may not always return just +true+ or +false+.  Often, they will return an
 object to indicate a true value (or "truthy" value).
 
-Methods that end with an equals sign indicate an assignment method.  For
-assignment methods, the return value is ignored and the arguments are returned
-instead.
+Methods that end with an equals sign indicate an assignment method.
 
 These are method names for the various Ruby operators.  Each of these
 operators accepts only one argument.  Following the operator is the typical
@@ -94,8 +92,8 @@ operators.
 <code>></code>   :: greater-than
 <code>>=</code>  :: greater-than or equal
 
-To define unary methods minus, plus, tilde and not (<code>!</code>) follow the
-operator with an <code>@</code> as in <code>+@</code> or <code>!@</code>:
+To define unary methods minus and plus, follow the operator with an
+<code>@</code> as in <code>+@</code>:
 
   class C
     def -@
@@ -106,6 +104,13 @@ operator with an <code>@</code> as in <code>+@</code> or <code>!@</code>:
   obj = C.new
 
   -obj # prints "you inverted this object"
+
+The <code>@</code> is needed to differentiate unary minus and plus
+operators from binary minus and plus operators.
+
+You can also follow tilde and not (<code>!</code>) unary methods with
+<code>@</code>, but it is not required as there are no binary tilde
+and not operators.
 
 Unary methods accept zero arguments.
 
@@ -414,8 +419,8 @@ Arbitrary keyword arguments will be accepted with <code>**</code>:
   # prints 1 then {:second=>2, :third=>3}
 
 When calling a method with keyword arguments the arguments may appear in any
-order.  If an unknown keyword argument is sent by the caller an ArgumentError
-is raised.
+order.  If an unknown keyword argument is sent by the caller, and the method
+does not accept arbitrary keyword arguments, an ArgumentError is raised.
 
 To require a specific keyword argument, do not include a default value
 for the keyword argument:
