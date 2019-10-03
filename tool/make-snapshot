@@ -216,6 +216,32 @@ else
   true
 end
 
+class MAKE < Struct.new(:prog, :args)
+  def initialize(vars)
+    vars = vars.map {|arg| arg.join("=")}
+    super(ENV["MAKE"] || ENV["make"] || "make", vars)
+  end
+
+  def run(target)
+    err = IO.pipe do |r, w|
+      begin
+        pid = Process.spawn(self.prog, *self.args, target, {:err => w, r => :close})
+        w.close
+        r.read
+      ensure
+        Process.wait(pid)
+      end
+    end
+    if $?.success?
+      true
+    else
+      STDERR.puts err
+      $colorize.fail("#{target} failed")
+      false
+    end
+  end
+end
+
 def package(vcs, rev, destdir, tmp = nil)
   pwd = Dir.pwd
   patchlevel = false
@@ -447,12 +473,8 @@ touch-unicode-files:
       File.open(clean.add("revision.tmp"), "w") {}
       File.open(clean.add(".revision.time"), "w") {}
       ENV["CACHE_SAVE"] = "no"
-      make = ENV["MAKE"] || ENV["make"] || "make"
-      args = args.map {|arg| arg.join("=")}
-      unless system(make, "update-download", *args)
-        puts $colorize.fail("update-download failed")
-        return
-      end
+      make = MAKE.new(args)
+      return unless make.run("update-download")
       clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk", "ext/ripper/y.output", ".revision.time")
       Dir.glob("**/*") do |dest|
         next unless File.symlink?(dest)
@@ -468,14 +490,8 @@ touch-unicode-files:
         end
         modified = new_time
       end
-      unless system(make, "prepare-package", *args)
-        puts $colorize.fail("prepare-package failed")
-        return
-      end
-      unless system(make, "clean-cache", *args)
-        puts $colorize.fail("clean-cache failed")
-        return
-      end
+      return unless make.run("prepare-package")
+      return unless make.run("clean-cache")
       print "prerequisites"
     else
       system(*%W"#{YACC} -o parse.c parse.y")
