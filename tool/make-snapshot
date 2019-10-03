@@ -289,13 +289,8 @@ def package(vcs, rev, destdir, tmp = nil)
       dest = exported + file[$srcdir.size..-1]
       FileUtils.mkpath(File.dirname(dest))
       begin
-        FileUtils.ln(file, dest, force: true)
-        next unless File.symlink?(dest)
-        File.unlink(dest)
-      rescue SystemCallError
-      end
-      begin
         FileUtils.cp_r(file, dest)
+        FileUtils.chmod_R("u=rwX,go=rX", dest)
       rescue SystemCallError
       end
     end
