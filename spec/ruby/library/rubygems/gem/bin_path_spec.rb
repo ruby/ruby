@@ -11,7 +11,7 @@ describe "Gem.bin_path" do
     ENV['BUNDLE_GEMFILE'] = @bundle_gemfile
   end
 
-  guard_not -> { platform_is :windows and ruby_version_is "2.5"..."2.6" } do
+  guard_not -> { platform_is :windows } do
     it "finds executables of default gems, which are the only files shipped for default gems" do
       # For instance, Gem.bin_path("bundler", "bundle") is used by rails new
 
