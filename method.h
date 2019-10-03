@@ -88,14 +88,14 @@ METHOD_ENTRY_FLAGS_SET(rb_method_entry_t *me, rb_method_visibility_t visi, unsig
     VM_ASSERT(basic <= 1);
     me->flags =
       (me->flags & ~(IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2)) |
-	((visi << (IMEMO_FL_USHIFT+0)) | (basic << (IMEMO_FL_USHIFT+2)));
+        ((visi << (IMEMO_FL_USHIFT+0)) | (basic << (IMEMO_FL_USHIFT+2)));
 }
 static inline void
 METHOD_ENTRY_FLAGS_COPY(rb_method_entry_t *dst, const rb_method_entry_t *src)
 {
     dst->flags =
       (dst->flags & ~(IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2)) |
-	(src->flags & (IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2));
+        (src->flags & (IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2));
 }
 
 typedef enum {
@@ -166,11 +166,11 @@ struct rb_method_definition_struct {
     int complemented_count : 28;
 
     union {
-	rb_method_iseq_t iseq;
-	rb_method_cfunc_t cfunc;
-	rb_method_attr_t attr;
-	rb_method_alias_t alias;
-	rb_method_refined_t refined;
+        rb_method_iseq_t iseq;
+        rb_method_cfunc_t cfunc;
+        rb_method_attr_t attr;
+        rb_method_alias_t alias;
+        rb_method_refined_t refined;
         rb_method_bmethod_t bmethod;
 
         enum method_optimized_type optimize_type;
