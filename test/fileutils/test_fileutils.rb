@@ -462,7 +462,7 @@ class TestFileUtils < Test::Unit::TestCase
   rescue LoadError
   else
     def test_cp_r_socket
-      skip "Skipping socket test on JRuby" if RUBY_ENGINE == 'jruby'
+      pend "Skipping socket test on JRuby" if RUBY_ENGINE == 'jruby'
       Dir.mkdir('tmp/cpr_src')
       UNIXServer.new('tmp/cpr_src/socket').close
       cp_r 'tmp/cpr_src', 'tmp/cpr_dest'
@@ -1052,7 +1052,7 @@ class TestFileUtils < Test::Unit::TestCase
       else
         tmpdir = Dir.pwd
       end
-      skip "No drive letter" unless /\A[a-z]:/i =~ tmpdir
+      pend "No drive letter" unless /\A[a-z]:/i =~ tmpdir
       drive = "./#{$&}"
       assert_file_not_exist drive
       mkdir_p "#{tmpdir}/none/dir"
