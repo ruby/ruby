@@ -436,6 +436,99 @@ for the keyword argument:
 When mixing keyword arguments and positional arguments, all positional
 arguments must appear before any keyword arguments.
 
+Also, note that <code>**</code> can be used to ignore keyword arguments:
+
+  def ignore_keywords(**)
+  end
+
+To mark a method as accepting keywords, but not actually accepting
+keywords, you can use the <code>**nil</code>:
+
+  def no_keywords(**nil)
+  end
+
+Calling such a method with keywords or a non-empty keyword splat will
+result in an ArgumentError. This syntax is supported so that keywords
+can be added to the method later without affected backwards compatibility.
+
+=== Keyword and Positional Argument Separation
+
+Between Ruby 2.0 and 2.6, keyword and positional arguments were not
+separated, and a keyword argument could be used as a positional argument
+and vice-versa.  In Ruby 3.0, keyword and positional arguments will
+be separated if the method definition includes keyword arguments.
+In Ruby 3.0, if the method definition does not include keyword arguments,
+keyword arguments provided when calling the method will continue to be
+treated as a final positional hash argument.
+
+Currently, the keyword and positional arguments are not separated,
+but cases where behavior will change in Ruby 3.0 will result in a
+warning being emitted.
+
+There are a few different types of keyword argument separation issues.
+
+==== Conversion of Hash to Keywords
+
+If a method is called with the hash, the hash could be treated as
+keywords:
+
+  def my_method(**keywords)
+    keywords
+  end
+  my_method({a: 1}) # {:a => 1}
+
+This occurs even if the hash could be an optional positional argument
+or an element of a rest argument:
+
+  def my_method(hash=nil, **keywords)
+    [hash, keywords]
+  end
+  my_method({a: 1}) # [nil, {:a => 1}]
+
+  def my_method(*args, **keywords)
+    [args, keywords]
+  end
+  my_method({a: 1}) # [[], {:a => 1}]
+
+However, if the hash is needed for a mandatory positional argument,
+it would not be treated as keywords:
+
+  def my_method(hash, **keywords)
+    [hash, keywords]
+  end
+  my_method({a: 1}) # [{:a => 1}, {}]
+
+==== Conversion of Keywords to Positional Arguments
+
+If a method is called with keywords, but it is missing one
+mandatory positional argument, the keywords are converted to
+a hash and the hash used as the mandtory positional argument:
+
+  def my_method(hash, **keywords)
+    [hash, keywords]
+  end
+  my_method(a: 1) # [{:a => 1}, {}]
+
+This is also true for empty keyword splats:
+
+  kw = {}
+  my_method(**kw) # [{}, {}]
+
+==== Splitting of Positional Hashes or Keywords
+
+If a method definition accepts specific keywords and not arbitrary keywords,
+keywords or a positional hash may be split if the hash includes both Symbol
+keys and non-Symbol keys and the keywords or positional hash are not needed
+as a mandatory positional argument.  In this case, the non-Symbol keys are
+separated into a positional argument hash, and the Symbol keys are used
+as the keyword arguments:
+
+  def my_method(hash=3, a: 4)
+    [hash, a]
+  end
+  my_method(a: 1, 'a' => 2)   # [{"a"=>2}, 1]
+  my_method({a: 1, 'a' => 2}) # [{"a"=>2}, 1]
+
 == Block Argument
 
 The block argument is indicated by <code>&</code> and must come last:

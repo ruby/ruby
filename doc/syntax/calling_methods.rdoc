@@ -279,6 +279,9 @@ hash at the end of the array into keyword arguments:
   arguments = [1, 2, { c: 4 }]
   my_method(*arguments)
 
+Note that this behavior is currently deprecated and will emit a warning.
+This behavior will be removed in Ruby 3.0.
+
 You may also use the <code>**</code> (described next) to convert a Hash into
 keyword arguments.
 
@@ -325,7 +328,7 @@ by <code>*</code>:
 
 Prints:
 
-  {:arguments=>[1, 2, {"3"=>4}], :keywords=>{:five=>6}}
+  {:arguments=>[1, 2], :keywords=>{'3'=>4, :five=>6}}
 
 === Proc to Block Conversion
 
