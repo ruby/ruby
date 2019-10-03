@@ -30,7 +30,8 @@ module Test
         include MiniTest::Assertions
       else
         module MiniTest
-          class Skip; end
+          class Assertion < Exception; end
+          class Skip < Assertion; end
         end
 
         require 'pp'
