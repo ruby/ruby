@@ -1457,8 +1457,9 @@ VALUE rb_invcmp(VALUE, VALUE);
 
 /* compile.c */
 struct rb_block;
-int rb_dvar_defined(ID, const struct rb_block *);
-int rb_local_defined(ID, const struct rb_block *);
+struct rb_iseq_struct;
+int rb_dvar_defined(ID, const struct rb_iseq_struct *);
+int rb_local_defined(ID, const struct rb_iseq_struct *);
 const char * rb_insns_name(int i);
 VALUE rb_insns_name_array(void);
 int rb_vm_insn_addr2insn(const void *);
@@ -1954,7 +1955,7 @@ struct RBasicRaw {
 VALUE rb_parser_get_yydebug(VALUE);
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
 RUBY_SYMBOL_EXPORT_BEGIN
-VALUE rb_parser_set_context(VALUE, const struct rb_block *, int);
+VALUE rb_parser_set_context(VALUE, const struct rb_iseq_struct *, int);
 RUBY_SYMBOL_EXPORT_END
 void *rb_parser_load_file(VALUE parser, VALUE name);
 int rb_is_const_name(VALUE name);

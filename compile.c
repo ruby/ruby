@@ -9123,11 +9123,9 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 /* for parser */
 
 int
-rb_dvar_defined(ID id, const struct rb_block *base_block)
+rb_dvar_defined(ID id, const rb_iseq_t *iseq)
 {
-    const rb_iseq_t *iseq;
-
-    if (base_block && (iseq = vm_block_iseq(base_block)) != NULL) {
+    if (iseq) {
 	const struct rb_iseq_constant_body *body = iseq->body;
 	while (body->type == ISEQ_TYPE_BLOCK ||
 	       body->type == ISEQ_TYPE_RESCUE ||
@@ -9150,11 +9148,9 @@ rb_dvar_defined(ID id, const struct rb_block *base_block)
 }
 
 int
-rb_local_defined(ID id, const struct rb_block *base_block)
+rb_local_defined(ID id, const rb_iseq_t *iseq)
 {
-    const rb_iseq_t *iseq;
-
-    if (base_block && (iseq = vm_block_iseq(base_block)) != NULL) {
+    if (iseq) {
 	unsigned int i;
 	const struct rb_iseq_constant_body *const body = iseq->body->local_iseq->body;
 
