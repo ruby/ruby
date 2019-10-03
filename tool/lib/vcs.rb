@@ -590,13 +590,15 @@ class VCS
     def branch_beginning(url)
       cmd_read(%W[ #{COMMAND} log -n1 --format=format:%H
                    --author=matz --committer=matz --grep=has\ started
-                   -- version.h include/ruby/version.h])
+                   #{url.to_str} -- version.h include/ruby/version.h])
     end
 
     def export_changelog(url, from, to, path)
+      svn = nil
       from, to = [from, to].map do |rev|
         rev or next
         if Integer === rev
+          svn = true
           rev = cmd_read({'LANG' => 'C', 'LC_ALL' => 'C'},
                          %W"#{COMMAND} log -n1 --format=format:%H" <<
                          "--grep=^ *git-svn-id: .*@#{rev} ")
@@ -607,17 +609,21 @@ class VCS
         warn "no starting commit found", uplevel: 1
         from = nil
       end
-      unless system(*%W"#{COMMAND} fetch origin refs/notes/commits:refs/notes/commits",
-                    chdir: @srcdir, exception: false)
+      unless svn or system(*%W"#{COMMAND} fetch origin refs/notes/commits:refs/notes/commits",
+                           chdir: @srcdir, exception: false)
         abort "Could not fetch notes/commits tree"
       end
-      to ||= 'HEAD'
+      to ||= url.to_str
       if from
         arg = ["#{from}^..#{to}"]
       else
         arg = ["--since=25 Dec 00:00:00", to]
       end
-      format_changelog(path, arg)
+      if svn
+        format_changelog_as_svn(path, arg)
+      else
+        format_changelog(path, arg)
+      end
     end
 
     def format_changelog(path, arg)
@@ -630,6 +636,27 @@ class VCS
       cmd << date
       cmd.concat(arg)
       system(env, *cmd, chdir: @srcdir, out: path)
+    end
+
+    def format_changelog_as_svn(path, arg)
+      cmd = %W"#{COMMAND} log --topo-order --no-notes -z --format=%an%n%at%n%B"
+      cmd.concat(arg)
+      open(path, 'w') do |w|
+        sep = "-"*72 + "\n"
+        w.print sep
+        cmd_pipe(cmd) do |r|
+          while s = r.gets("\0")
+            s.chomp!("\0")
+            author, time, s = s.split("\n", 3)
+            s.sub!(/\n\ngit-svn-id: .*@(\d+) .*\n\Z/, '')
+            rev = $1
+            time = Time.at(time.to_i).getlocal("+09:00").strftime("%F %T %z (%a, %d %b %Y)")
+            lines = s.count("\n") + 1
+            lines = "#{lines} line#{lines == 1 ? '' : 's'}"
+            w.print "r#{rev} | #{author} | #{time} | #{lines}\n\n", s, "\n", sep
+          end
+        end
+      end
     end
 
     def upstream
@@ -666,27 +693,6 @@ class VCS
   class GITSVN < GIT
     def self.revision_name(rev)
       SVN.revision_name(rev)
-    end
-
-    def format_changelog(path, arg)
-      cmd = %W"#{COMMAND} log --topo-order --no-notes -z --format=%an%n%at%n%B"
-      cmd.concat(arg)
-      open(path, 'w') do |w|
-        sep = "-"*72
-        w.puts sep
-        cmd_pipe(cmd) do |r|
-          while s = r.gets("\0")
-            s.chomp!("\0")
-            author, time, s = s.split("\n", 3)
-            s.sub!(/\n\ngit-svn-id: .*@(\d+) .*\n\Z/, '')
-            rev = $1
-            time = Time.at(time.to_i).getlocal("+09:00").strftime("%F %T %z (%a, %d %b %Y)")
-            lines = s.count("\n")
-            lines = "#{lines} line#{lines == 1 ? '' : 's'}"
-            w.puts "r#{rev} | #{author} | #{time} | #{lines}\n\n", s, sep
-          end
-        end
-      end
     end
 
     def last_changed_revision
