@@ -49,23 +49,54 @@ typedef struct rb_cref_struct {
 /* method data type */
 
 typedef struct rb_method_entry_struct {
-    const VALUE flags;
-    const VALUE defined_class;
+    VALUE flags;
+    VALUE defined_class;
     struct rb_method_definition_struct * const def;
-    const ID called_id;
-    const VALUE owner;
+    ID called_id;
+    VALUE owner;
 } rb_method_entry_t;
 
 typedef struct rb_callable_method_entry_struct { /* same fields with rb_method_entry_t */
-    const VALUE flags;
+    VALUE flags;
     const VALUE defined_class;
     struct rb_method_definition_struct * const def;
-    const ID called_id;
+    ID called_id;
     const VALUE owner;
 } rb_callable_method_entry_t;
 
 #define METHOD_ENTRY_VISI(me)  (rb_method_visibility_t)(((me)->flags & (IMEMO_FL_USER0 | IMEMO_FL_USER1)) >> (IMEMO_FL_USHIFT+0))
 #define METHOD_ENTRY_BASIC(me) (int)                   (((me)->flags & (IMEMO_FL_USER2                 )) >> (IMEMO_FL_USHIFT+2))
+#define METHOD_ENTRY_COMPLEMENTED(me)     ((me)->flags & IMEMO_FL_USER3)
+#define METHOD_ENTRY_COMPLEMENTED_SET(me) ((me)->flags = (me)->flags | IMEMO_FL_USER3)
+
+static inline void
+METHOD_ENTRY_VISI_SET(rb_method_entry_t *me, rb_method_visibility_t visi)
+{
+    VM_ASSERT((int)visi >= 0 && visi <= 3);
+    me->flags = (me->flags & ~(IMEMO_FL_USER0 | IMEMO_FL_USER1)) | (visi << (IMEMO_FL_USHIFT+0));
+}
+static inline void
+METHOD_ENTRY_BASIC_SET(rb_method_entry_t *me, unsigned int basic)
+{
+    VM_ASSERT(basic <= 1);
+    me->flags = (me->flags & ~(IMEMO_FL_USER2                 )) | (basic << (IMEMO_FL_USHIFT+2));
+}
+static inline void
+METHOD_ENTRY_FLAGS_SET(rb_method_entry_t *me, rb_method_visibility_t visi, unsigned int basic)
+{
+    VM_ASSERT((int)visi >= 0 && visi <= 3);
+    VM_ASSERT(basic <= 1);
+    me->flags =
+      (me->flags & ~(IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2)) |
+	((visi << (IMEMO_FL_USHIFT+0)) | (basic << (IMEMO_FL_USHIFT+2)));
+}
+static inline void
+METHOD_ENTRY_FLAGS_COPY(rb_method_entry_t *dst, const rb_method_entry_t *src)
+{
+    dst->flags =
+      (dst->flags & ~(IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2)) |
+	(src->flags & (IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2));
+}
 
 typedef enum {
     VM_METHOD_TYPE_ISEQ,      /*!< Ruby method */
@@ -93,32 +124,32 @@ typedef struct rb_iseq_struct rb_iseq_t;
 #endif
 
 typedef struct rb_method_iseq_struct {
-    const rb_iseq_t *const iseqptr; /*!< iseq pointer, should be separated from iseqval */
-    rb_cref_t *const cref;          /*!< class reference, should be marked */
-} rb_method_iseq_t;
+    rb_iseq_t * iseqptr; /*!< iseq pointer, should be separated from iseqval */
+    rb_cref_t * cref;          /*!< class reference, should be marked */
+} rb_method_iseq_t; /* check rb_add_method_iseq() when modify the fields */
 
 typedef struct rb_method_cfunc_struct {
-    VALUE (*const func)(ANYARGS);
-    VALUE (*const invoker)(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS));
-    const int argc;
+    VALUE (*func)(ANYARGS);
+    VALUE (*invoker)(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS));
+    int argc;
 } rb_method_cfunc_t;
 
 typedef struct rb_method_attr_struct {
-    const ID id;
-    const VALUE location; /* should be marked */
+    ID id;
+    VALUE location; /* should be marked */
 } rb_method_attr_t;
 
 typedef struct rb_method_alias_struct {
-    const struct rb_method_entry_struct *const original_me; /* original_me->klass is original owner */
+    struct rb_method_entry_struct * original_me; /* original_me->klass is original owner */
 } rb_method_alias_t;
 
 typedef struct rb_method_refined_struct {
-    const struct rb_method_entry_struct *const orig_me;
-    const VALUE owner;
+    struct rb_method_entry_struct * orig_me;
+    VALUE owner;
 } rb_method_refined_t;
 
 typedef struct rb_method_bmethod_struct {
-    const VALUE proc; /* should be marked */
+    VALUE proc; /* should be marked */
     struct rb_hook_list_struct *hooks;
 } rb_method_bmethod_t;
 
@@ -130,22 +161,22 @@ enum method_optimized_type {
 };
 
 struct rb_method_definition_struct {
-    BITFIELD(rb_method_type_t, const type, VM_METHOD_TYPE_MINIMUM_BITS);
+    BITFIELD(rb_method_type_t, type, VM_METHOD_TYPE_MINIMUM_BITS);
     int alias_count : 28;
     int complemented_count : 28;
 
     union {
-        const rb_method_iseq_t iseq;
-        const rb_method_cfunc_t cfunc;
-        const rb_method_attr_t attr;
-        const rb_method_alias_t alias;
-        const rb_method_refined_t refined;
+	rb_method_iseq_t iseq;
+	rb_method_cfunc_t cfunc;
+	rb_method_attr_t attr;
+	rb_method_alias_t alias;
+	rb_method_refined_t refined;
         rb_method_bmethod_t bmethod;
 
-        const enum method_optimized_type optimize_type;
+        enum method_optimized_type optimize_type;
     } body;
 
-    const ID original_id;
+    ID original_id;
 };
 
 typedef struct rb_method_definition_struct rb_method_definition_t;
@@ -161,9 +192,8 @@ void rb_add_method_iseq(VALUE klass, ID mid, const rb_iseq_t *iseq, rb_cref_t *c
 void rb_add_refined_method_entry(VALUE refined_class, ID mid);
 void rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *option, rb_method_visibility_t visi);
 
-const rb_method_entry_t *rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *, rb_method_visibility_t noex);
-const rb_method_entry_t *rb_method_entry_from_template(const rb_method_entry_t *template, const void *opts);
-const rb_method_entry_t *rb_method_entry_for_missing(ID mid, VALUE klass);
+rb_method_entry_t *rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *, rb_method_visibility_t noex);
+rb_method_entry_t *rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, const rb_method_definition_t *def);
 
 const rb_method_entry_t *rb_method_entry_at(VALUE obj, ID id);
 
@@ -193,6 +223,7 @@ void rb_sweep_method_entry(void *vm);
 
 const rb_method_entry_t *rb_method_entry_clone(const rb_method_entry_t *me);
 const rb_callable_method_entry_t *rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID called_id, VALUE defined_class);
+void rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src);
 
 void rb_scope_visibility_set(rb_method_visibility_t);
 

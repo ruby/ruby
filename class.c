@@ -956,41 +956,25 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
     return method_changed;
 }
 
-typedef struct tuple {
-    struct RClass *klass;
-    struct RClass *origin;
-} tuple;
-
-static enum rb_id_table_iterator_result
-inject_refined_method(ID *key, VALUE *value, void *data, int _)
-{
-    const tuple             *ptr     = data;
-    const rb_method_entry_t *me      = *(const rb_method_entry_t **) value;
-    const rb_method_entry_t *orig_me = me->def->body.refined.orig_me;
-    const rb_method_entry_t *new_me  =
-        rb_method_entry_from_template(
-            me, &(rb_method_refined_t) {
-                .orig_me = NULL,
-                .owner   = me->def->body.refined.owner, });
-    rb_id_table_insert(RCLASS_M_TBL(ptr->klass), *key, (VALUE)new_me);
-    RB_OBJ_WRITTEN(ptr->klass, Qundef, new_me);
-    *value = (VALUE)rb_method_entry_clone(orig_me);
-    RB_OBJ_WRITTEN(ptr->origin, Qundef, orig_me);
-    return ID_TABLE_CONTINUE;
-}
-
 static enum rb_id_table_iterator_result
 move_refined_method(ID key, VALUE value, void *data)
 {
-    const tuple             *ptr = data;
-    const rb_method_entry_t *me  = (const rb_method_entry_t *) value;
+    rb_method_entry_t *me = (rb_method_entry_t *) value;
+    VALUE klass = (VALUE)data;
+    struct rb_id_table *tbl = RCLASS_M_TBL(klass);
 
     if (me->def->type == VM_METHOD_TYPE_REFINED) {
 	if (me->def->body.refined.orig_me) {
-            return ID_TABLE_REPLACE;
+	    const rb_method_entry_t *orig_me = me->def->body.refined.orig_me, *new_me;
+	    RB_OBJ_WRITE(me, &me->def->body.refined.orig_me, NULL);
+	    new_me = rb_method_entry_clone(me);
+	    rb_id_table_insert(tbl, key, (VALUE)new_me);
+	    RB_OBJ_WRITTEN(klass, Qundef, new_me);
+	    rb_method_entry_copy(me, orig_me);
+	    return ID_TABLE_CONTINUE;
 	}
 	else {
-            rb_id_table_insert(RCLASS_M_TBL(ptr->klass), key, (VALUE)me);
+	    rb_id_table_insert(tbl, key, (VALUE)me);
 	    return ID_TABLE_DELETE;
 	}
     }
@@ -1016,12 +1000,7 @@ rb_prepend_module(VALUE klass, VALUE module)
 	RCLASS_SET_ORIGIN(klass, origin);
 	RCLASS_M_TBL(origin) = RCLASS_M_TBL(klass);
 	RCLASS_M_TBL_INIT(klass);
-        rb_id_table_foreach_with_replace_with_key(
-            RCLASS_M_TBL(origin),
-            move_refined_method,
-            inject_refined_method,
-            &(tuple) { RCLASS(klass), RCLASS(origin), },
-            true);
+	rb_id_table_foreach(RCLASS_M_TBL(origin), move_refined_method, (void *)klass);
     }
     changed = include_modules_at(klass, klass, module, FALSE);
     if (changed < 0)

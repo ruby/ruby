@@ -19,7 +19,8 @@
 #include "ruby/config.h"
 #include "debug_counter.h"
 
-extern void rb_method_entry_spoof(const rb_method_entry_t *me);
+extern rb_method_definition_t *rb_method_definition_create(rb_method_type_t type, ID mid);
+extern void rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, void *opts);
 extern int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
 extern VALUE rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
                                          int argc, const VALUE *argv, int priv);
@@ -578,8 +579,8 @@ vm_getspecial(const rb_execution_context_t *ec, const VALUE *lep, rb_num_t key, 
     return val;
 }
 
-PUREFUNC(static const rb_callable_method_entry_t *check_method_entry(VALUE obj, int can_be_svar));
-static const rb_callable_method_entry_t *
+PUREFUNC(static rb_callable_method_entry_t *check_method_entry(VALUE obj, int can_be_svar));
+static rb_callable_method_entry_t *
 check_method_entry(VALUE obj, int can_be_svar)
 {
     if (obj == Qfalse) return NULL;
@@ -590,7 +591,7 @@ check_method_entry(VALUE obj, int can_be_svar)
 
     switch (imemo_type(obj)) {
       case imemo_ment:
-        return (const rb_callable_method_entry_t *)obj;
+	return (rb_callable_method_entry_t *)obj;
       case imemo_cref:
 	return NULL;
       case imemo_svar:
@@ -609,7 +610,7 @@ MJIT_STATIC const rb_callable_method_entry_t *
 rb_vm_frame_method_entry(const rb_control_frame_t *cfp)
 {
     const VALUE *ep = cfp->ep;
-    const rb_callable_method_entry_t *me;
+    rb_callable_method_entry_t *me;
 
     while (!VM_ENV_LOCAL_P(ep)) {
 	if ((me = check_method_entry(ep[VM_ENV_DATA_INDEX_ME_CREF], FALSE)) != NULL) return me;
@@ -620,7 +621,7 @@ rb_vm_frame_method_entry(const rb_control_frame_t *cfp)
 }
 
 static rb_cref_t *
-method_entry_cref(const rb_callable_method_entry_t *me)
+method_entry_cref(rb_callable_method_entry_t *me)
 {
     switch (me->def->type) {
       case VM_METHOD_TYPE_ISEQ:
@@ -644,7 +645,7 @@ check_cref(VALUE obj, int can_be_svar)
 
     switch (imemo_type(obj)) {
       case imemo_ment:
-        return method_entry_cref((const rb_callable_method_entry_t *)obj);
+	return method_entry_cref((rb_callable_method_entry_t *)obj);
       case imemo_cref:
 	return (rb_cref_t *)obj;
       case imemo_svar:
@@ -1390,6 +1391,9 @@ calccall(const struct rb_call_info *ci, const struct rb_call_cache *cc, const rb
     else if (LIKELY(cc->me != me)) {
         return vm_call_general; /* normal cases */
     }
+    else if (UNLIKELY(cc->def != me->def)) {
+        return vm_call_general;  /* cc->me was refined elsewhere */
+    }
     /* "Calling a formerly-public method, which is now privatised, with an
      * explicit receiver" is the only situation we have to check here.  A
      * formerly-private method now publicised is an absolutely safe thing.
@@ -1412,6 +1416,7 @@ rb_vm_search_method_slowpath(const struct rb_call_info *ci, struct rb_call_cache
         GET_GLOBAL_METHOD_STATE(),
         RCLASS_SERIAL(klass),
         me,
+        me ? me->def : NULL,
         calccall(ci, cc, me),
     };
     VM_ASSERT(callable_method_entry_p(cc->me));
@@ -2573,31 +2578,32 @@ find_defined_class_by_owner(VALUE current_class, VALUE target_owner)
     return current_class; /* maybe module function */
 }
 
-static const void*
-aliased_callable_method_entry0(const rb_method_entry_t *me)
+static const rb_callable_method_entry_t *
+aliased_callable_method_entry(const rb_callable_method_entry_t *me)
 {
     const rb_method_entry_t *orig_me = me->def->body.alias.original_me;
     const rb_callable_method_entry_t *cme;
 
-    if (orig_me->defined_class != 0) {
-        VM_ASSERT(callable_class_p(orig_me->defined_class));
-        return orig_me;
-    }
-    else {
+    if (orig_me->defined_class == 0) {
 	VALUE defined_class = find_defined_class_by_owner(me->defined_class, orig_me->owner);
 	VM_ASSERT(RB_TYPE_P(orig_me->owner, T_MODULE));
 	cme = rb_method_entry_complement_defined_class(orig_me, me->called_id, defined_class);
-        const rb_method_entry_t *ret =
-            rb_method_entry_from_template((const rb_method_entry_t*)me, cme);
-        rb_method_entry_spoof(ret);
-        return ret;
-    }
-}
 
-static const rb_callable_method_entry_t*
-aliased_callable_method_entry(const rb_callable_method_entry_t *me)
-{
-    return aliased_callable_method_entry0((const void*)me);
+	if (me->def->alias_count + me->def->complemented_count == 0) {
+	    RB_OBJ_WRITE(me, &me->def->body.alias.original_me, cme);
+	}
+	else {
+	    rb_method_definition_t *def =
+		rb_method_definition_create(VM_METHOD_TYPE_ALIAS, me->def->original_id);
+	    rb_method_definition_set((rb_method_entry_t *)me, def, (void *)cme);
+	}
+    }
+    else {
+	cme = (const rb_callable_method_entry_t *)orig_me;
+    }
+
+    VM_ASSERT(callable_method_entry_p(cme));
+    return cme;
 }
 
 static const rb_callable_method_entry_t *

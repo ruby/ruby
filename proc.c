@@ -1426,7 +1426,7 @@ bm_compact(void *ptr)
     UPDATE_REFERENCE(data->recv);
     UPDATE_REFERENCE(data->klass);
     UPDATE_REFERENCE(data->iclass);
-    UPDATE_TYPED_REFERENCE(const rb_method_entry_t *, data->me);
+    UPDATE_TYPED_REFERENCE(rb_method_entry_t *, data->me);
 }
 
 static size_t
@@ -1474,9 +1474,19 @@ mnew_missing(VALUE klass, VALUE obj, ID id, VALUE mclass)
 {
     struct METHOD *data;
     VALUE method = TypedData_Make_Struct(mclass, struct METHOD, &method_data_type, data);
+    rb_method_entry_t *me;
+    rb_method_definition_t *def;
+
     RB_OBJ_WRITE(method, &data->recv, obj);
     RB_OBJ_WRITE(method, &data->klass, klass);
-    RB_OBJ_WRITE(method, &data->me, rb_method_entry_for_missing(id, klass));
+
+    def = ZALLOC(rb_method_definition_t);
+    def->type = VM_METHOD_TYPE_MISSING;
+    def->original_id = id;
+
+    me = rb_method_entry_create(id, klass, METHOD_VISI_UNDEF, def);
+
+    RB_OBJ_WRITE(method, &data->me, me);
 
     OBJ_INFECT(method, klass);
 
@@ -1519,7 +1529,7 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
 	if (me->defined_class) {
 	    VALUE klass = RCLASS_SUPER(RCLASS_ORIGIN(me->defined_class));
 	    id = me->def->original_id;
-            me = (const rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
+            me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
 	}
 	else {
 	    VALUE klass = RCLASS_SUPER(me->owner);
@@ -1557,7 +1567,7 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
         me = rb_method_entry_with_refinements(klass, id, &iclass);
     }
     else {
-        me = (const rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
+        me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
     }
     return mnew_from_me(me, klass, iclass, obj, id, mclass, scope);
 }
@@ -2947,7 +2957,7 @@ method_super_method(VALUE method)
     super_class = RCLASS_SUPER(RCLASS_ORIGIN(iclass));
     mid = data->me->called_id;
     if (!super_class) return Qnil;
-    me = (const rb_method_entry_t *)rb_callable_method_entry_with_refinements(super_class, mid, &iclass);
+    me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(super_class, mid, &iclass);
     if (!me) return Qnil;
     return mnew_internal(me, me->owner, iclass, data->recv, mid, rb_obj_class(method), FALSE, FALSE);
 }

@@ -298,6 +298,17 @@ rb_vm_cref_new_toplevel(void)
     return vm_cref_new_toplevel(GET_EC());
 }
 
+static void
+vm_cref_dump(const char *mesg, const rb_cref_t *cref)
+{
+    fprintf(stderr, "vm_cref_dump: %s (%p)\n", mesg, (void *)cref);
+
+    while (cref) {
+	fprintf(stderr, "= cref| klass: %s\n", RSTRING_PTR(rb_class_path(CREF_CLASS(cref))));
+	cref = CREF_NEXT(cref);
+    }
+}
+
 void
 rb_vm_block_ep_update(VALUE obj, const struct rb_block *dst, const VALUE *ep)
 {
@@ -1595,7 +1606,7 @@ static enum rb_id_table_iterator_result
 check_redefined_method(ID mid, VALUE value, void *data)
 {
     VALUE klass = (VALUE)data;
-    const rb_method_entry_t *me = (const rb_method_entry_t *)value;
+    const rb_method_entry_t *me = (rb_method_entry_t *)value;
     const rb_method_entry_t *newme = rb_method_entry(klass, mid);
 
     if (newme != me) rb_vm_check_redefinition_opt_method(me, me->owner);
