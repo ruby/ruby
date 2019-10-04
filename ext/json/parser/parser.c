@@ -28,7 +28,7 @@ enc_raise(rb_encoding *enc, VALUE exc, const char *fmt, ...)
 
 /* unicode */
 
-static const char digit_values[256] = {
+static const signed char digit_values[256] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1,
@@ -47,7 +47,7 @@ static const char digit_values[256] = {
 
 static UTF32 unescape_unicode(const unsigned char *p)
 {
-    char b;
+    signed char b;
     UTF32 result = 0;
     b = digit_values[p[0]];
     if (b < 0) return UNI_REPLACEMENT_CHAR;
