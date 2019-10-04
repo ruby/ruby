@@ -532,8 +532,11 @@ rb_sigaltstack_size(void)
     int size = 16*1024;
 
 #ifdef MINSIGSTKSZ
-    if (size < MINSIGSTKSZ)
-	size = MINSIGSTKSZ;
+    {
+        int minsigstksz = (int)MINSIGSTKSZ;
+        if (size < minsigstksz)
+            size = minsigstksz;
+    }
 #endif
 #if defined(HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
     {
