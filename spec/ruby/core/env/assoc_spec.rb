@@ -1,4 +1,4 @@
-require_relative '../../spec_helper'
+require_relative 'env_spec_helper'
 
 describe "ENV.assoc" do
   before :each do
