@@ -1159,11 +1159,11 @@ typedef rb_control_frame_t *
 
 enum {
     /* Frame/Environment flag bits:
-     *   MMMM MMMM MMMM MMMM ____ FFFF FFFF EEEX (LSB)
+     *   MMMM MMMM MMMM MMMM ____ _FFF FFFF EEEX (LSB)
      *
      * X   : tag for GC marking (It seems as Fixnum)
      * EEE : 3 bits Env flags
-     * FF..: 8 bits Frame flags
+     * FF..: 7 bits Frame flags
      * MM..: 15 bits frame magic (to check frame corruption)
      */
 
@@ -1188,7 +1188,6 @@ enum {
     VM_FRAME_FLAG_LAMBDA    = 0x0100,
     VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM = 0x0200,
     VM_FRAME_FLAG_CFRAME_KW = 0x0400,
-    VM_FRAME_FLAG_CFRAME_EMPTY_KW = 0x0800, /* -- Remove In 3.0 -- */
 
     /* env flag */
     VM_ENV_FLAG_LOCAL       = 0x0002,
@@ -1247,13 +1246,6 @@ static inline int
 VM_FRAME_CFRAME_KW_P(const rb_control_frame_t *cfp)
 {
     return VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_CFRAME_KW) != 0;
-}
-
-/* -- Remove In 3.0 -- */
-static inline int
-VM_FRAME_CFRAME_EMPTY_KW_P(const rb_control_frame_t *cfp)
-{
-    return VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_CFRAME_EMPTY_KW) != 0;
 }
 
 static inline int

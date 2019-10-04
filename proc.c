@@ -955,14 +955,11 @@ rb_proc_call_kw(VALUE self, VALUE args, int kw_splat)
 {
     VALUE vret;
     rb_proc_t *proc;
-    VALUE v;
     int argc = check_argc(RARRAY_LEN(args));
     const VALUE *argv = RARRAY_CONST_PTR(args);
     GetProcPtr(self, proc);
-    v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
     vret = rb_vm_invoke_proc(GET_EC(), proc, argc, argv,
                              kw_splat, VM_BLOCK_HANDLER_NONE);
-    rb_free_tmp_buffer(&v);
     RB_GC_GUARD(self);
     RB_GC_GUARD(args);
     return vret;
@@ -994,10 +991,8 @@ rb_proc_call_with_block_kw(VALUE self, int argc, const VALUE *argv, VALUE passed
     rb_execution_context_t *ec = GET_EC();
     VALUE vret;
     rb_proc_t *proc;
-    VALUE v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
     GetProcPtr(self, proc);
     vret = rb_vm_invoke_proc(ec, proc, argc, argv, kw_splat, proc_to_block_handler(passed_procval));
-    rb_free_tmp_buffer(&v);
     RB_GC_GUARD(self);
     return vret;
 }

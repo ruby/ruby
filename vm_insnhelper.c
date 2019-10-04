@@ -2486,9 +2486,8 @@ vm_method_cfunc_entry(const rb_callable_method_entry_t *me)
     return UNALIGNED_MEMBER_PTR(me->def, body.cfunc);
 }
 
-/* -- Remove empty_kw_splat In 3.0 -- */
 static VALUE
-vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, struct rb_call_data *cd, int empty_kw_splat)
+vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
 {
     const struct rb_call_info *ci = &cd->ci;
     const struct rb_call_cache *cc = &cd->cc;
@@ -2505,9 +2504,6 @@ vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
 
     if (UNLIKELY(calling->kw_splat)) {
         frame_type |= VM_FRAME_FLAG_CFRAME_KW;
-    }
-    else if (UNLIKELY(empty_kw_splat)) {
-        frame_type |= VM_FRAME_FLAG_CFRAME_EMPTY_KW;
     }
 
     RUBY_DTRACE_CMETHOD_ENTRY_HOOK(ec, me->owner, me->def->original_id);
@@ -2536,16 +2532,11 @@ static VALUE
 vm_call_cfunc(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
 {
     const struct rb_call_info *ci = &cd->ci;
-    int empty_kw_splat;
     RB_DEBUG_COUNTER_INC(ccf_cfunc);
 
     CALLER_SETUP_ARG(reg_cfp, calling, ci);
-    empty_kw_splat = calling->kw_splat;
     CALLER_REMOVE_EMPTY_KW_SPLAT(reg_cfp, calling, ci);
-    if (empty_kw_splat && calling->kw_splat) {
-        empty_kw_splat = 0;
-    }
-    return vm_call_cfunc_with_frame(ec, reg_cfp, calling, cd, empty_kw_splat);
+    return vm_call_cfunc_with_frame(ec, reg_cfp, calling, cd);
 }
 
 static VALUE
@@ -2935,12 +2926,7 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
 
       case VM_METHOD_TYPE_ATTRSET:
         CALLER_SETUP_ARG(cfp, calling, ci);
-        if (calling->argc == 1 && calling->kw_splat && RHASH_EMPTY_P(cfp->sp[-1])) {
-            rb_warn_keyword_to_last_hash(ec, calling, ci, NULL);
-        }
-        else {
-            CALLER_REMOVE_EMPTY_KW_SPLAT(cfp, calling, ci);
-        }
+        CALLER_REMOVE_EMPTY_KW_SPLAT(cfp, calling, ci);
 
 	rb_check_arity(calling->argc, 1, 1);
 	cc->aux.index = 0;
@@ -3211,13 +3197,8 @@ vm_yield_with_cfunc(rb_execution_context_t *ec,
     blockarg = rb_vm_bh_to_procval(ec, block_handler);
 
     frame_flag = VM_FRAME_MAGIC_IFUNC | VM_FRAME_FLAG_CFRAME | (me ? VM_FRAME_FLAG_BMETHOD : 0);
-    switch (kw_splat) {
-      case 1:
-        frame_flag |= VM_FRAME_FLAG_CFRAME_KW;
-        break;
-      case 2:
-        frame_flag |= VM_FRAME_FLAG_CFRAME_EMPTY_KW;
-        break;
+    if (kw_splat) {
+      frame_flag |= VM_FRAME_FLAG_CFRAME_KW;
     }
 
     vm_push_frame(ec, (const rb_iseq_t *)captured->code.ifunc,
@@ -3274,12 +3255,7 @@ vm_callee_setup_block_arg(rb_execution_context_t *ec, struct rb_calling_info *ca
 	VALUE arg0;
 
         CALLER_SETUP_ARG(cfp, calling, ci);
-        if (calling->kw_splat && calling->argc == iseq->body->param.lead_num + iseq->body->param.post_num && RHASH_EMPTY_P(cfp->sp[-1])) {
-            rb_warn_keyword_to_last_hash(ec, calling, ci, iseq);
-        }
-        else {
-            CALLER_REMOVE_EMPTY_KW_SPLAT(cfp, calling, ci);
-        }
+        CALLER_REMOVE_EMPTY_KW_SPLAT(cfp, calling, ci);
 
 	if (arg_setup_type == arg_setup_block &&
 	    calling->argc == 1 &&
@@ -3377,17 +3353,10 @@ vm_invoke_ifunc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 {
     VALUE val;
     int argc;
-    int kw_splat = calling->kw_splat;
     CALLER_SETUP_ARG(ec->cfp, calling, ci);
     CALLER_REMOVE_EMPTY_KW_SPLAT(ec->cfp, calling, ci);
-    if (kw_splat && !calling->kw_splat) {
-        kw_splat = 2;
-    }
-    else {
-        kw_splat = calling->kw_splat;
-    }
     argc = calling->argc;
-    val = vm_yield_with_cfunc(ec, captured, captured->self, argc, STACK_ADDR_FROM_TOP(argc), kw_splat, calling->block_handler, NULL);
+    val = vm_yield_with_cfunc(ec, captured, captured->self, argc, STACK_ADDR_FROM_TOP(argc), calling->kw_splat, calling->block_handler, NULL);
     POPN(argc); /* TODO: should put before C/yield? */
     return val;
 }

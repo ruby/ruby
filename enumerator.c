@@ -384,8 +384,6 @@ enumerator_allocate(VALUE klass)
     return enum_obj;
 }
 
-#define PASS_KW_SPLAT (rb_empty_keyword_given_p() ? RB_PASS_EMPTY_KEYWORDS : rb_keyword_given_p())
-
 static VALUE
 enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, VALUE size, int kw_splat)
 {
@@ -480,7 +478,7 @@ enumerator_initialize(int argc, VALUE *argv, VALUE obj)
 	    meth = *argv++;
 	    --argc;
 	}
-        kw_splat = PASS_KW_SPLAT;
+        kw_splat = rb_keyword_given_p();
     }
 
     return enumerator_init(obj, recv, meth, argc, argv, 0, size, kw_splat);
@@ -535,10 +533,10 @@ rb_enumeratorize_with_size(VALUE obj, VALUE meth, int argc, const VALUE *argv, r
     /* Similar effect as calling obj.to_enum, i.e. dispatching to either
        Kernel#to_enum vs Lazy#to_enum */
     if (RTEST(rb_obj_is_kind_of(obj, rb_cLazy)))
-        return lazy_to_enum_i(obj, meth, argc, argv, size_fn, PASS_KW_SPLAT);
+        return lazy_to_enum_i(obj, meth, argc, argv, size_fn, rb_keyword_given_p());
     else
 	return enumerator_init(enumerator_allocate(rb_cEnumerator),
-                               obj, meth, argc, argv, size_fn, Qnil, PASS_KW_SPLAT);
+                               obj, meth, argc, argv, size_fn, Qnil, rb_keyword_given_p());
 }
 
 VALUE
@@ -1892,7 +1890,7 @@ lazy_add_method(VALUE obj, int argc, VALUE *argv, VALUE args, VALUE memo,
 static VALUE
 enumerable_lazy(VALUE obj)
 {
-    VALUE result = lazy_to_enum_i(obj, sym_each, 0, 0, lazyenum_size, PASS_KW_SPLAT);
+    VALUE result = lazy_to_enum_i(obj, sym_each, 0, 0, lazyenum_size, rb_keyword_given_p());
     /* Qfalse indicates that the Enumerator::Lazy has no method name */
     rb_ivar_set(result, id_method, Qfalse);
     return result;
@@ -1940,7 +1938,7 @@ lazy_to_enum(int argc, VALUE *argv, VALUE self)
     if (RTEST((super_meth = rb_hash_aref(lazy_use_super_method, meth)))) {
         meth = super_meth;
     }
-    lazy = lazy_to_enum_i(self, meth, argc, argv, 0, PASS_KW_SPLAT);
+    lazy = lazy_to_enum_i(self, meth, argc, argv, 0, rb_keyword_given_p());
     if (rb_block_given_p()) {
 	enumerator_ptr(lazy)->size = rb_block_proc();
     }
@@ -3318,7 +3316,7 @@ rb_arith_seq_new(VALUE obj, VALUE meth, int argc, VALUE const *argv,
                  VALUE beg, VALUE end, VALUE step, int excl)
 {
     VALUE aseq = enumerator_init(enumerator_allocate(rb_cArithSeq),
-                                 obj, meth, argc, argv, size_fn, Qnil, PASS_KW_SPLAT);
+                                 obj, meth, argc, argv, size_fn, Qnil, rb_keyword_given_p());
     rb_ivar_set(aseq, id_begin, beg);
     rb_ivar_set(aseq, id_end, end);
     rb_ivar_set(aseq, id_step, step);

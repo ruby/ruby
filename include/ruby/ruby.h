@@ -1901,7 +1901,6 @@ VALUE rb_funcall_with_block_kw(VALUE, ID, int, const VALUE*, VALUE, int);
 int rb_scan_args(int, const VALUE*, const char*, ...);
 #define RB_SCAN_ARGS_PASS_CALLED_KEYWORDS 0
 #define RB_SCAN_ARGS_KEYWORDS 1
-#define RB_SCAN_ARGS_EMPTY_KEYWORDS 2 /* Will be removed in 3.0 */
 #define RB_SCAN_ARGS_LAST_HASH_KEYWORDS 3
 int rb_scan_args_kw(int, int, const VALUE*, const char*, ...);
 VALUE rb_call_super(int, const VALUE*);
@@ -1976,8 +1975,7 @@ VALUE rb_yield_splat_kw(VALUE, int);
 VALUE rb_yield_block(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg)); /* rb_block_call_func */
 #define RB_NO_KEYWORDS 0
 #define RB_PASS_KEYWORDS 1
-#define RB_PASS_EMPTY_KEYWORDS 2 /* Will be removed in 3.0 */
-#define RB_PASS_CALLED_KEYWORDS 3
+#define RB_PASS_CALLED_KEYWORDS rb_keyword_given_p()
 int rb_keyword_given_p(void);
 int rb_block_given_p(void);
 void rb_need_block(void);
@@ -2331,9 +2329,6 @@ unsigned long ruby_strtoul(const char *str, char **endptr, int base);
 PRINTF_ARGS(int ruby_snprintf(char *str, size_t n, char const *fmt, ...), 3, 4);
 int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 
-/* -- Remove In 3.0, Only public for rb_scan_args optimized version -- */
-int rb_empty_keyword_given_p(void);
-
 #if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P) && defined(HAVE_VA_ARGS_MACRO) && defined(__OPTIMIZE__)
 # define rb_scan_args(argc,argvp,fmt,...) \
     __builtin_choose_expr(__builtin_constant_p(fmt), \
@@ -2525,77 +2520,12 @@ rb_scan_args_set(int argc, const VALUE *argv,
     int i, argi = 0, vari = 0, last_idx = -1;
     VALUE *var, hash = Qnil, last_hash = 0;
     const int n_mand = n_lead + n_trail;
-    int keyword_given = rb_keyword_given_p();
-    int empty_keyword_given = 0;
     VALUE tmp_buffer = 0;
 
-    if (!keyword_given) {
-        empty_keyword_given = rb_empty_keyword_given_p();
+    if (f_hash && argc > 0 && rb_keyword_given_p()) {
+        hash = rb_hash_dup(argv[argc - 1]);
+        argc--;
     }
-
-    /* capture an option hash - phase 1: pop */
-    /* Ignore final positional hash if empty keywords given */
-    if (argc > 0 && !(f_hash && empty_keyword_given)) {
-        VALUE last = argv[argc - 1];
-
-        if (f_hash && n_mand < argc) {
-            if (keyword_given) {
-                if (!RB_TYPE_P(last, T_HASH)) {
-                    rb_warn("Keyword flag set when calling rb_scan_args, but last entry is not a hash");
-                }
-                else {
-                    hash = last;
-                }
-            }
-            else if (NIL_P(last)) {
-                /* For backwards compatibility, nil is taken as an empty
-                   option hash only if it is not ambiguous; i.e. '*' is
-                   not specified and arguments are given more than sufficient.
-                   This will be removed in Ruby 3. */
-                if (!f_var && n_mand + n_opt < argc) {
-                    rb_warn("The last argument is nil, treating as empty keywords");
-                    argc--;
-                }
-            }
-            else {
-                hash = rb_check_hash_type(last);
-            }
-
-            /* Ruby 3: Remove if branch, as it will not attempt to split hashes */
-            if (!NIL_P(hash)) {
-                VALUE opts = rb_extract_keywords(&hash);
-
-                if (!(last_hash = hash)) {
-                    if (!keyword_given) {
-                        /* Warn if treating positional as keyword, as in Ruby 3,
-                           this will be an error */
-                        rb_warn("Using the last argument as keyword parameters is deprecated");
-                    }
-                    argc--;
-                }
-                else {
-                    /* Warn if splitting either positional hash to keywords or keywords
-                       to positional hash, as in Ruby 3, no splitting will be done */
-                    rb_warn("The last argument is split into positional and keyword parameters");
-                    last_idx = argc - 1;
-                }
-                hash = opts ? opts : Qnil;
-            }
-        }
-        else if (f_hash && keyword_given && n_mand == argc) {
-            /* Warn if treating keywords as positional, as in Ruby 3, this will be an error */
-            rb_warn("Passing the keyword argument as the last hash parameter is deprecated");
-        }
-    }
-    if (f_hash && n_mand > 0 && n_mand == argc+1 && empty_keyword_given) {
-        VALUE *ptr = (VALUE *)rb_alloc_tmp_buffer2(&tmp_buffer, argc+1, sizeof(VALUE));
-        memcpy(ptr, argv, sizeof(VALUE)*argc);
-        ptr[argc] = rb_hash_new();
-        argc++;
-        *(&argv) = ptr;
-        rb_warn("Passing the keyword argument as the last hash parameter is deprecated");
-    }
-
 
     if (argc < n_mand) {
         goto argc_error;

@@ -69,7 +69,6 @@ vm_call0_cfunc_with_frame(rb_execution_context_t* ec, struct rb_calling_info *ca
 
     if (calling->kw_splat) {
         if (argc > 0 && RB_TYPE_P(argv[argc-1], T_HASH) && RHASH_EMPTY_P(argv[argc-1])) {
-            frame_flags |= VM_FRAME_FLAG_CFRAME_EMPTY_KW;
             argc--;
         }
         else {
@@ -144,12 +143,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, struc
                 calling->argc > 0 &&
                 RB_TYPE_P(argv[calling->argc-1], T_HASH) &&
                 RHASH_EMPTY_P(argv[calling->argc-1])) {
-            if (calling->argc == 1) {
-                rb_warn("Passing the keyword argument as the last hash parameter is deprecated");
-            }
-            else {
-                calling->argc--;
-            }
+            calling->argc--;
         }
 
 	rb_check_arity(calling->argc, 1, 1);
@@ -232,42 +226,10 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, struc
     return ret;
 }
 
-/* Caller should keep the reference to the return value until argv becomes useless. */
-MJIT_FUNC_EXPORTED VALUE
-rb_adjust_argv_kw_splat(int *argc, const VALUE **argv, int *kw_splat)
-{
-    if (*kw_splat == RB_PASS_CALLED_KEYWORDS || *kw_splat == RB_PASS_EMPTY_KEYWORDS) {
-        if (*kw_splat == RB_PASS_EMPTY_KEYWORDS || rb_empty_keyword_given_p()) {
-            int n = *argc;
-            VALUE v;
-            VALUE *ptr = rb_alloc_tmp_buffer2(&v, n+1, sizeof(VALUE));
-            if (n) memcpy(ptr, *argv, sizeof(VALUE)*n);
-            ptr[n] = rb_hash_new();
-            *argc = ++n;
-            *argv = ptr;
-            *kw_splat = 1;
-            return v;
-        }
-        else {
-            *kw_splat = rb_keyword_given_p();
-        }
-    }
-
-    if (*kw_splat && (*argc == 0 || !RB_TYPE_P((*argv)[(*argc)-1], T_HASH))) {
-        rb_warn("Keyword flag passed calling internal method, but last entry is not a hash, unsetting keyword flag");
-        *kw_splat = 0;
-    }
-
-    return 0;
-}
-
 MJIT_FUNC_EXPORTED VALUE
 rb_vm_call_kw(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me, int kw_splat)
 {
-    VALUE v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
-    VALUE ret = rb_vm_call0(ec, recv, id, argc, argv, me, kw_splat);
-    rb_free_tmp_buffer(&v);
-    return ret;
+    return rb_vm_call0(ec, recv, id, argc, argv, me, kw_splat);
 }
 
 static inline VALUE
@@ -961,10 +923,7 @@ rb_funcallv(VALUE recv, ID mid, int argc, const VALUE *argv)
 VALUE
 rb_funcallv_kw(VALUE recv, ID mid, int argc, const VALUE *argv, int kw_splat)
 {
-    VALUE v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
-    VALUE ret = rb_call(recv, mid, argc, argv, kw_splat ? CALL_FCALL_KW : CALL_FCALL);
-    rb_free_tmp_buffer(&v);
-    return ret;
+    return rb_call(recv, mid, argc, argv, kw_splat ? CALL_FCALL_KW : CALL_FCALL);
 }
 
 /*!
@@ -985,10 +944,7 @@ rb_funcallv_public(VALUE recv, ID mid, int argc, const VALUE *argv)
 VALUE
 rb_funcallv_public_kw(VALUE recv, ID mid, int argc, const VALUE *argv, int kw_splat)
 {
-    VALUE v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
-    VALUE ret = rb_call(recv, mid, argc, argv, kw_splat ? CALL_PUBLIC_KW : CALL_PUBLIC);
-    rb_free_tmp_buffer(&v);
-    return ret;
+    return rb_call(recv, mid, argc, argv, kw_splat ? CALL_PUBLIC_KW : CALL_PUBLIC);
 }
 
 /*!
@@ -1038,12 +994,8 @@ rb_funcall_passing_block(VALUE recv, ID mid, int argc, const VALUE *argv)
 VALUE
 rb_funcall_passing_block_kw(VALUE recv, ID mid, int argc, const VALUE *argv, int kw_splat)
 {
-    VALUE v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
-    VALUE ret;
     PASS_PASSED_BLOCK_HANDLER();
-    ret = rb_call(recv, mid, argc, argv, kw_splat ? CALL_PUBLIC_KW : CALL_PUBLIC);
-    rb_free_tmp_buffer(&v);
-    return ret;
+    return rb_call(recv, mid, argc, argv, kw_splat ? CALL_PUBLIC_KW : CALL_PUBLIC);
 }
 
 VALUE
@@ -1063,10 +1015,7 @@ rb_funcall_with_block_kw(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE 
         vm_passed_block_handler_set(GET_EC(), passed_procval);
     }
 
-    VALUE v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
-    VALUE ret = rb_call(recv, mid, argc, argv, kw_splat ? CALL_PUBLIC_KW : CALL_PUBLIC);
-    rb_free_tmp_buffer(&v);
-    return ret;
+    return rb_call(recv, mid, argc, argv, kw_splat ? CALL_PUBLIC_KW : CALL_PUBLIC);
 }
 
 static VALUE *
@@ -1140,10 +1089,7 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
 static VALUE
 send_internal_kw(int argc, const VALUE *argv, VALUE recv, call_type scope)
 {
-    VALUE v=0, ret;
-    int kw_splat = RB_PASS_CALLED_KEYWORDS;
-    v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
-    if (kw_splat) {
+    if (rb_keyword_given_p()) {
         switch (scope) {
           case CALL_PUBLIC:
             scope = CALL_PUBLIC_KW;
@@ -1155,9 +1101,7 @@ send_internal_kw(int argc, const VALUE *argv, VALUE recv, call_type scope)
             break;
         }
     }
-    ret = send_internal(argc, argv, recv, scope);
-    rb_free_tmp_buffer(&v);
-    return ret;
+    return send_internal(argc, argv, recv, scope);
 }
 
 /*
@@ -1215,10 +1159,7 @@ rb_f_public_send(int argc, VALUE *argv, VALUE recv)
 static inline VALUE
 rb_yield_0_kw(int argc, const VALUE * argv, int kw_splat)
 {
-    VALUE v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
-    VALUE ret = vm_yield(GET_EC(), argc, argv, kw_splat);
-    rb_free_tmp_buffer(&v);
-    return ret;
+    return vm_yield(GET_EC(), argc, argv, kw_splat);
 }
 
 static inline VALUE
@@ -1314,13 +1255,9 @@ rb_yield_force_blockarg(VALUE values)
 VALUE
 rb_yield_block(RB_BLOCK_CALL_FUNC_ARGLIST(val, arg))
 {
-    int kw_splat = RB_PASS_CALLED_KEYWORDS;
-    VALUE v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
-    VALUE ret = vm_yield_with_block(GET_EC(), argc, argv,
-                                    NIL_P(blockarg) ? VM_BLOCK_HANDLER_NONE : blockarg,
-                                    kw_splat);
-    rb_free_tmp_buffer(&v);
-    return ret;
+    return vm_yield_with_block(GET_EC(), argc, argv,
+                               NIL_P(blockarg) ? VM_BLOCK_HANDLER_NONE : blockarg,
+                               rb_keyword_given_p());
 }
 
 static VALUE
@@ -1486,15 +1423,12 @@ rb_block_call_kw(VALUE obj, ID mid, int argc, const VALUE * argv,
 {
     struct iter_method_arg arg;
 
-    VALUE v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
     arg.obj = obj;
     arg.mid = mid;
     arg.argc = argc;
     arg.argv = argv;
     arg.kw_splat = kw_splat;
-    VALUE ret = rb_iterate(iterate_method, (VALUE)&arg, bl_proc, data2);
-    rb_free_tmp_buffer(&v);
-    return ret;
+    return rb_iterate(iterate_method, (VALUE)&arg, bl_proc, data2);
 }
 
 VALUE
@@ -1839,9 +1773,6 @@ yield_under(VALUE under, VALUE self, int argc, const VALUE *argv, int kw_splat)
     const VALUE *ep = NULL;
     rb_cref_t *cref;
     int is_lambda = FALSE;
-    VALUE v = 0, ret;
-
-    v = rb_adjust_argv_kw_splat(&argc, &argv, &kw_splat);
 
     if (block_handler != VM_BLOCK_HANDLER_NONE) {
       again:
@@ -1861,10 +1792,9 @@ yield_under(VALUE under, VALUE self, int argc, const VALUE *argv, int kw_splat)
 	    block_handler = vm_proc_to_block_handler(VM_BH_TO_PROC(block_handler));
 	    goto again;
 	  case block_handler_type_symbol:
-            ret = rb_sym_proc_call(SYM2ID(VM_BH_TO_SYMBOL(block_handler)),
-                                   argc, argv, kw_splat, VM_BLOCK_HANDLER_NONE);
-            rb_free_tmp_buffer(&v);
-            return ret;
+            return rb_sym_proc_call(SYM2ID(VM_BH_TO_SYMBOL(block_handler)),
+                                    argc, argv, kw_splat,
+                                    VM_BLOCK_HANDLER_NONE);
 	}
 
 	new_captured.self = self;
@@ -1874,9 +1804,7 @@ yield_under(VALUE under, VALUE self, int argc, const VALUE *argv, int kw_splat)
     }
 
     cref = vm_cref_push(ec, under, ep, TRUE);
-    ret = vm_yield_with_cref(ec, argc, argv, kw_splat, cref, is_lambda);
-    rb_free_tmp_buffer(&v);
-    return ret;
+    return vm_yield_with_cref(ec, argc, argv, kw_splat, cref, is_lambda);
 }
 
 VALUE
