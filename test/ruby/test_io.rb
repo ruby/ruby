@@ -2284,26 +2284,14 @@ class TestIO < Test::Unit::TestCase
     def o.to_open(**kw); kw; end
     assert_equal({:a=>1}, open(o, a: 1))
 
-    w = /Using the last argument as keyword parameters is deprecated.*The called method `(to_)?open'/m
-    redefined = nil
-    w.singleton_class.define_method(:===) do |s|
-      match = super(s)
-      redefined = !$1
-      match
-    end
-
-    assert_warn(w) do
-      assert_equal({:a=>1}, open(o, {a: 1}))
-    end
+    assert_raise(ArgumentError) { open(o, {a: 1}) }
 
     class << o
       remove_method(:to_open)
     end
     def o.to_open(kw); kw; end
     assert_equal({:a=>1}, open(o, a: 1))
-    unless redefined
-      assert_equal({:a=>1}, open(o, {a: 1}))
-    end
+    assert_equal({:a=>1}, open(o, {a: 1}))
   end
 
   def test_open_pipe
@@ -3138,11 +3126,8 @@ __END__
       assert_equal("\00f", File.read(path))
       assert_equal(1, File.write(path, "f", 0, encoding: "UTF-8"))
       assert_equal("ff", File.read(path))
-      assert_raise(TypeError) {
-        assert_warn(/The last argument is split into positional and keyword parameters/) do
-          File.write(path, "foo", Object.new => Object.new)
-        end
-      }
+      File.write(path, "foo", Object.new => Object.new)
+      assert_equal("foo", File.read(path))
     end
   end
 

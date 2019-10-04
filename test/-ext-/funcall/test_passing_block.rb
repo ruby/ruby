@@ -24,14 +24,10 @@ class TestFuncall < Test::Unit::TestCase
   def test_with_funcall_passing_block_kw
     block = ->(*a, **kw) { [a, kw] }
     assert_equal([[1], {}], Relay.with_funcall_passing_block_kw(0, 1, &block))
+    assert_equal([[{a: 1}], {}], Relay.with_funcall_passing_block_kw(0, a: 1, &block))
     assert_equal([[], {a: 1}], Relay.with_funcall_passing_block_kw(1, a: 1, &block))
     assert_equal([[1], {a: 1}], Relay.with_funcall_passing_block_kw(1, 1, a: 1, &block))
-    assert_equal([[{}], {}], Relay.with_funcall_passing_block_kw(2, {}, **{}, &block))
     assert_equal([[], {a: 1}], Relay.with_funcall_passing_block_kw(3, a: 1, &block))
-    assert_equal([[{a: 1}], {}], Relay.with_funcall_passing_block_kw(3, {a: 1}, **{}, &block))
-    assert_warn(/warning: Passing the keyword argument as the last hash parameter is deprecated.*The called method is defined here/m) do
-      assert_equal({}, Relay.with_funcall_passing_block_kw(3, **{}, &->(a){a}))
-    end
   end
 
   def test_with_funcallv_public_kw
@@ -47,29 +43,18 @@ class TestFuncall < Test::Unit::TestCase
       arg
     end
     assert_equal([[1], {}], Relay.with_funcallv_public_kw(o, :foo, 0, 1))
+    assert_equal([[{a: 1}], {}], Relay.with_funcallv_public_kw(o, :foo, 0, a: 1))
     assert_equal([[], {a: 1}], Relay.with_funcallv_public_kw(o, :foo, 1, a: 1))
     assert_equal([[1], {a: 1}], Relay.with_funcallv_public_kw(o, :foo, 1, 1, a: 1))
-    assert_equal([[{}], {}], Relay.with_funcallv_public_kw(o, :foo, 2, {}, **{}))
     assert_equal([[], {a: 1}], Relay.with_funcallv_public_kw(o, :foo, 3, a: 1))
-    assert_equal([[{a: 1}], {}], Relay.with_funcallv_public_kw(o, :foo, 3, {a: 1}, **{}))
-    assert_raise(NoMethodError) { Relay.with_funcallv_public_kw(o, :bar, 3, {a: 1}, **{}) }
-    assert_warn(/warning: Passing the keyword argument as the last hash parameter is deprecated.*The called method `baz'/m) do
-      assert_equal({}, Relay.with_funcallv_public_kw(o, :baz, 3, **{}))
-    end
   end
 
   def test_with_yield_splat_kw
     block = ->(*a, **kw) { [a, kw] }
     assert_equal([[1], {}], Relay.with_yield_splat_kw(0, [1], &block))
+    assert_equal([[{a: 1}], {}], Relay.with_yield_splat_kw(0, [{a: 1}], &block))
     assert_equal([[], {a: 1}], Relay.with_yield_splat_kw(1, [{a: 1}], &block))
     assert_equal([[1], {a: 1}], Relay.with_yield_splat_kw(1, [1, {a: 1}], &block))
-    assert_equal([[{}], {}], Relay.with_yield_splat_kw(2, [{}], **{}, &block))
-    assert_warn(/warning: Using the last argument as keyword parameters is deprecated.*The called method is defined here/m) do
-      assert_equal([[], {a: 1}], Relay.with_yield_splat_kw(3, [{a: 1}], &block))
-    end
-    assert_equal([[{a: 1}], {}], Relay.with_yield_splat_kw(3, [{a: 1}], **{}, &block))
-    assert_warn(/warning: Passing the keyword argument as the last hash parameter is deprecated/) do
-      assert_equal({}, Relay.with_yield_splat_kw(3, [], **{}, &->(a){a}))
-    end
+    assert_equal([[], {a: 1}], Relay.with_yield_splat_kw(3, [{a: 1}], &block))
   end
 end

@@ -631,15 +631,16 @@ class TestMarshal < Test::Unit::TestCase
 
   def test_no_internal_ids
     opt = %w[--disable=gems]
-    args = [opt, 'Marshal.dump("",STDOUT)', true, true, encoding: Encoding::ASCII_8BIT]
-    out, err, status = EnvUtil.invoke_ruby(*args)
+    args = [opt, 'Marshal.dump("",STDOUT)', true, true]
+    kw = {encoding: Encoding::ASCII_8BIT}
+    out, err, status = EnvUtil.invoke_ruby(*args, **kw)
     assert_empty(err)
     assert_predicate(status, :success?)
     expected = out
 
     opt << "--enable=frozen-string-literal"
     opt << "--debug=frozen-string-literal"
-    out, err, status = EnvUtil.invoke_ruby(*args)
+    out, err, status = EnvUtil.invoke_ruby(*args, **kw)
     assert_empty(err)
     assert_predicate(status, :success?)
     assert_equal(expected, out)
