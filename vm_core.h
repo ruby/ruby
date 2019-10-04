@@ -1021,8 +1021,7 @@ rb_iseq_t *rb_iseq_new_with_callback(const struct rb_iseq_new_with_callback_call
 
 /* src -> iseq */
 rb_iseq_t *rb_iseq_compile(VALUE src, VALUE file, VALUE line);
-rb_iseq_t *rb_iseq_compile_on_base(VALUE src, VALUE file, VALUE line, const struct rb_block *base_block);
-rb_iseq_t *rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, const struct rb_block *base_block, VALUE opt);
+rb_iseq_t *rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, VALUE opt);
 
 VALUE rb_iseq_disasm(const rb_iseq_t *iseq);
 int rb_iseq_disasm_insn(VALUE str, const VALUE *iseqval, size_t pos, const rb_iseq_t *iseq, VALUE child);

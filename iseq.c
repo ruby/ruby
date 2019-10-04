@@ -966,12 +966,10 @@ rb_iseq_load(VALUE data, VALUE parent, VALUE opt)
 }
 
 rb_iseq_t *
-rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, const struct rb_block *base_block, VALUE opt)
+rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, VALUE opt)
 {
     rb_iseq_t *iseq = NULL;
-    const rb_iseq_t *const parent = base_block ? vm_block_iseq(base_block) : NULL;
     rb_compile_option_t option;
-    const enum iseq_type type = parent ? ISEQ_TYPE_EVAL : ISEQ_TYPE_TOP;
 #if !defined(__GNUC__) || (__GNUC__ == 4 && __GNUC_MINOR__ == 8)
 # define INITIALIZED volatile /* suppress warnings by gcc 4.8 */
 #else
@@ -994,11 +992,8 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, c
     }
     {
 	const VALUE parser = rb_parser_new();
-        const rb_iseq_t *outer_scope = parent;
-        if (!outer_scope) {
-            VALUE name = rb_fstring_lit("<compiled>");
-            outer_scope = rb_iseq_new(NULL, name, name, Qnil, 0, ISEQ_TYPE_TOP);
-        }
+        VALUE name = rb_fstring_lit("<compiled>");
+        const rb_iseq_t *outer_scope = rb_iseq_new(NULL, name, name, Qnil, 0, ISEQ_TYPE_TOP);
         VALUE outer_scope_v = (VALUE)outer_scope;
         rb_parser_set_context(parser, outer_scope, FALSE);
         RB_GC_GUARD(outer_scope_v);
@@ -1010,11 +1005,9 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, c
 	rb_exc_raise(GET_EC()->errinfo);
     }
     else {
-	INITIALIZED VALUE label = parent ?
-	    parent->body->location.label :
-	    rb_fstring_lit("<compiled>");
+	INITIALIZED VALUE label = rb_fstring_lit("<compiled>");
 	iseq = rb_iseq_new_with_opt(&ast->body, label, file, realpath, line,
-				    parent, type, &option);
+				    0, ISEQ_TYPE_TOP, &option);
 	rb_ast_dispose(ast);
     }
 
@@ -1024,13 +1017,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, c
 rb_iseq_t *
 rb_iseq_compile(VALUE src, VALUE file, VALUE line)
 {
-    return rb_iseq_compile_with_option(src, file, Qnil, line, 0, Qnil);
-}
-
-rb_iseq_t *
-rb_iseq_compile_on_base(VALUE src, VALUE file, VALUE line, const struct rb_block *base_block)
-{
-    return rb_iseq_compile_with_option(src, file, Qnil, line, base_block, Qnil);
+    return rb_iseq_compile_with_option(src, file, Qnil, line, Qnil);
 }
 
 VALUE
@@ -1214,7 +1201,7 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
     Check_Type(path, T_STRING);
     Check_Type(file, T_STRING);
 
-    return iseqw_new(rb_iseq_compile_with_option(src, file, path, line, 0, opt));
+    return iseqw_new(rb_iseq_compile_with_option(src, file, path, line, opt));
 }
 
 /*
