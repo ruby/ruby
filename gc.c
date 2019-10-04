@@ -8068,7 +8068,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
 
       case T_IMEMO:
         gc_ref_update_imemo(objspace, obj);
-        break;
+        return;
 
       case T_NIL:
       case T_FIXNUM:
