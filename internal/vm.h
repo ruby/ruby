@@ -138,7 +138,6 @@ VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
 
 MJIT_SYMBOL_EXPORT_BEGIN
 VALUE rb_vm_call0(struct rb_execution_context_struct *ec, VALUE recv, ID id, int argc, const VALUE *argv, const struct rb_callable_method_entry_struct *me, int kw_splat);
-VALUE rb_adjust_argv_kw_splat(int *argc, const VALUE **argv, int *kw_splat);
 VALUE rb_vm_call_kw(struct rb_execution_context_struct *ec, VALUE recv, VALUE id, int argc, const VALUE *argv, const struct rb_callable_method_entry_struct *me, int kw_splat);
 VALUE rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj, int argc, const VALUE *argv, int priv);
 MJIT_SYMBOL_EXPORT_END

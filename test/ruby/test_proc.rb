@@ -1087,6 +1087,16 @@ class TestProc < Test::Unit::TestCase
     assert_equal([1,2,[3],4,5], r, "[ruby-core:19485]")
   end
 
+  def test_proc_single_arg_with_keywords_accepted_and_yielded
+    def self.a
+      yield [], **{a: 1}
+    end
+    res = a do |arg, **opts|
+      [arg, opts]
+    end
+    assert_equal([[], {a: 1}], res)
+  end
+
   def test_parameters
     assert_equal([], proc {}.parameters)
     assert_equal([], proc {||}.parameters)
