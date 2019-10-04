@@ -240,7 +240,7 @@ rb_ary_ptr_use_end(VALUE ary)
 }
 
 void
-rb_mem_clear(register VALUE *mem, register long size)
+rb_mem_clear(VALUE *mem, long size)
 {
     while (size--) {
 	*mem++ = Qnil;

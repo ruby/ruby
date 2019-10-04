@@ -53,7 +53,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 #define UNLIMITED_ARGUMENTS (-1)
 
 /* array.c */
-void rb_mem_clear(register VALUE*, register long);
+void rb_mem_clear(VALUE*, long);
 VALUE rb_assoc_new(VALUE, VALUE);
 VALUE rb_check_array_type(VALUE);
 VALUE rb_ary_new(void);
