@@ -293,12 +293,9 @@ class TestNumeric < Test::Unit::TestCase
     assert_raise(ArgumentError, bug9811) { 1.step(10, 1, by: 11).size }
 
 
-    e = assert_warn(/Using the last argument as keyword parameters is deprecated/) {
-      1.step(10, {by: "1"})
-    }
-    assert_warn('') {
-      assert_raise(ArgumentError) {e.size}
-    }
+    e = 1.step(10, {by: "1"})
+    assert_raise(TypeError) {e.next}
+    assert_raise(TypeError) {e.size}
 
     assert_equal(bignum*2+1, (-bignum).step(bignum, 1).size)
     assert_equal(bignum*2, (-bignum).step(bignum-1, 1).size)

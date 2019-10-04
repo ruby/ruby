@@ -182,9 +182,7 @@ class TestSyntax < Test::Unit::TestCase
     h = {k3: 31}
     assert_raise(ArgumentError) {o.kw(**h)}
     h = {"k1"=>11, k2: 12}
-    assert_warn(/Splitting the last argument into positional and keyword parameters is deprecated.*The called method `kw'/m) do
-      assert_raise(ArgumentError) {o.kw(**h)}
-    end
+    assert_raise(ArgumentError) {o.kw(**h)}
   end
 
   def test_keyword_duplicated
@@ -199,7 +197,7 @@ class TestSyntax < Test::Unit::TestCase
     assert_equal([1, 2], a, bug10315)
     a.clear
     r = nil
-    assert_warn(/duplicated/) {r = eval("a.f({k: a.add(1), k: a.add(2)})")}
+    assert_warn(/duplicated/) {r = eval("a.f(**{k: a.add(1), k: a.add(2)})")}
     assert_equal(2, r)
     assert_equal([1, 2], a, bug10315)
   end
@@ -1523,12 +1521,12 @@ eom
       assert_warning('') {
         assert_equal([[1, 2, 3], {k1: 4, k2: 5}], obj.foo(1, 2, 3, k1: 4, k2: 5))
       }
-      warning = "warning: Using the last argument as keyword parameters is deprecated"
-      assert_warning(/\A\z|:(?!#{__LINE__+1})\d+: #{warning}/o) {
-        assert_equal([[], {}], obj.foo({}) {|*x| x})
+      array = obj == obj3 ? [] : [{}]
+      assert_warning('') {
+        assert_equal([array, {}], obj.foo({}) {|*x| x})
       }
-      assert_warning(/\A\z|:(?!#{__LINE__+1})\d+: #{warning}/o) {
-        assert_equal([[], {}], obj.foo({}))
+      assert_warning('') {
+        assert_equal([array, {}], obj.foo({}))
       }
       assert_equal(-1, obj.method(:foo).arity)
       parameters = obj.method(:foo).parameters

@@ -1501,29 +1501,15 @@ class TestProcKeywords < Test::Unit::TestCase
     g = ->(kw) { kw.merge(:a=>2) }
 
     assert_equal(2, (f >> g).call(a: 3)[:a])
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method is defined here/m) do
-      assert_equal(1, (f << g).call(a: 3)[:a])
-    end
+    assert_raise(ArgumentError) { (f << g).call(a: 3)[:a] }
     assert_equal(2, (f >> g).call(a: 3)[:a])
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method is defined here/m) do
-      assert_equal(1, (f << g).call({a: 3})[:a])
-    end
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method is defined here/m) do
-      assert_equal(2, (f >> g).call({a: 3})[:a])
-    end
+    assert_raise(ArgumentError) { (f << g).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (f >> g).call({a: 3})[:a] }
     assert_equal(2, (g << f).call(a: 3)[:a])
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method is defined here/m) do
-      assert_equal(1, (g >> f).call(a: 3)[:a])
-    end
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method is defined here/m) do
-      assert_equal(2, (g << f).call({a: 3})[:a])
-    end
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method is defined here/m) do
-      assert_equal(1, (g >> f).call({a: 3})[:a])
-    end
-    assert_warn(/Passing the keyword argument as the last hash parameter is deprecated.*Using the last argument as keyword parameters is deprecated.*The called method is defined here/m) do
-      assert_equal(1, (f << g).call(**{})[:a])
-    end
+    assert_raise(ArgumentError) { (g >> f).call(a: 3)[:a] }
+    assert_raise(ArgumentError) { (g << f).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (g >> f).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (f << g).call(**{})[:a] }
     assert_equal(2, (f >> g).call(**{})[:a])
   end
 
@@ -1531,29 +1517,15 @@ class TestProcKeywords < Test::Unit::TestCase
     f = ->(**kw) { kw.merge(:a=>1) }.method(:call)
     g = ->(kw) { kw.merge(:a=>2) }.method(:call)
 
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method is defined here/m) do
-      assert_equal(1, (f << g).call(a: 3)[:a])
-    end
+    assert_raise(ArgumentError) { (f << g).call(a: 3)[:a] }
     assert_equal(2, (f >> g).call(a: 3)[:a])
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method is defined here/m) do
-      assert_equal(1, (f << g).call({a: 3})[:a])
-    end
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method is defined here/m) do
-      assert_equal(2, (f >> g).call({a: 3})[:a])
-    end
+    assert_raise(ArgumentError) { (f << g).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (f >> g).call({a: 3})[:a] }
     assert_equal(2, (g << f).call(a: 3)[:a])
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method is defined here/m) do
-      assert_equal(1, (g >> f).call(a: 3)[:a])
-    end
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method is defined here/m) do
-      assert_equal(2, (g << f).call({a: 3})[:a])
-    end
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method is defined here/m) do
-      assert_equal(1, (g >> f).call({a: 3})[:a])
-    end
-    assert_warn(/Passing the keyword argument as the last hash parameter is deprecated.*Using the last argument as keyword parameters is deprecated.*The called method is defined here/m) do
-      assert_equal(1, (f << g).call(**{})[:a])
-    end
+    assert_raise(ArgumentError) { (g >> f).call(a: 3)[:a] }
+    assert_raise(ArgumentError) { (g << f).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (g >> f).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (f << g).call(**{})[:a] }
     assert_equal(2, (f >> g).call(**{})[:a])
   end
 
@@ -1565,29 +1537,15 @@ class TestProcKeywords < Test::Unit::TestCase
     def g.<<(f) to_proc << f end
     def g.>>(f) to_proc >> f end
 
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method is defined here/m) do
-      assert_equal(1, (f << g).call(a: 3)[:a])
-    end
+    assert_raise(ArgumentError) { (f << g).call(a: 3)[:a] }
     assert_equal(2, (f >> g).call(a: 3)[:a])
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method is defined here/m) do
-      assert_equal(1, (f << g).call({a: 3})[:a])
-    end
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method is defined here/m) do
-      assert_equal(2, (f >> g).call({a: 3})[:a])
-    end
+    assert_raise(ArgumentError) { (f << g).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (f >> g).call({a: 3})[:a] }
     assert_equal(2, (g << f).call(a: 3)[:a])
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method is defined here/m) do
-      assert_equal(1, (g >> f).call(a: 3)[:a])
-    end
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method is defined here/m) do
-      assert_equal(2, (g << f).call({a: 3})[:a])
-    end
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method is defined here/m) do
-      assert_equal(1, (g >> f).call({a: 3})[:a])
-    end
-    assert_warn(/Passing the keyword argument as the last hash parameter is deprecated.*The called method `call'/m) do
-      assert_equal(1, (f << g).call(**{})[:a])
-    end
+    assert_raise(ArgumentError) { (g >> f).call(a: 3)[:a] }
+    assert_raise(ArgumentError) { (g << f).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (g >> f).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (f << g).call(**{})[:a] }
     assert_equal(2, (f >> g).call(**{})[:a])
 
     f = ->(kw) { kw.merge(:a=>1) }
@@ -1598,29 +1556,15 @@ class TestProcKeywords < Test::Unit::TestCase
     def g.>>(f) to_proc >> f end
 
     assert_equal(1, (f << g).call(a: 3)[:a])
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method `call'/m) do
-      assert_equal(2, (f >> g).call(a: 3)[:a])
-    end
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method `call'/m) do
-      assert_equal(1, (f << g).call({a: 3})[:a])
-    end
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method `call'/m) do
-      assert_equal(2, (f >> g).call({a: 3})[:a])
-    end
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method `call'/m) do
-      assert_equal(2, (g << f).call(a: 3)[:a])
-    end
+    assert_raise(ArgumentError) { (f >> g).call(a: 3)[:a] }
+    assert_raise(ArgumentError) { (f << g).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (f >> g).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (g << f).call(a: 3)[:a] }
     assert_equal(1, (g >> f).call(a: 3)[:a])
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method `call'/m) do
-      assert_equal(2, (g << f).call({a: 3})[:a])
-    end
-    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method `call'/m) do
-      assert_equal(1, (g >> f).call({a: 3})[:a])
-    end
+    assert_raise(ArgumentError) { (g << f).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (g >> f).call({a: 3})[:a] }
     assert_equal(1, (f << g).call(**{})[:a])
-    assert_warn(/Passing the keyword argument as the last hash parameter is deprecated.*Using the last argument as keyword parameters is deprecated.*The called method `call'/m) do
-      assert_equal(2, (f >> g).call(**{})[:a])
-    end
+    assert_raise(ArgumentError) { (f >> g).call(**{})[:a] }
   end
 end
 
