@@ -481,7 +481,7 @@ static NODE *symbol_append(struct parser_params *p, NODE *symbols, NODE *symbol)
 
 static NODE *match_op(struct parser_params*,NODE*,NODE*,const YYLTYPE*,const YYLTYPE*);
 
-static ID  *local_tbl(struct parser_params*, VALUE *tmp);
+static ID  *local_tbl(struct parser_params*);
 
 static VALUE reg_compile(struct parser_params*, VALUE, int);
 static void reg_fragment_setenc(struct parser_params*, VALUE, int);
@@ -779,9 +779,9 @@ new_array_pattern_tail(struct parser_params *p, VALUE pre_args, VALUE has_rest, 
 	rest_arg = Qnil;
     }
 
+    VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer();
     apinfo = ZALLOC(struct rb_ary_pattern_info);
-    /* VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer(apinfo); */
-    VALUE tmpbuf = rb_imemo_new(imemo_tmpbuf, (VALUE)apinfo, 0, 0, 0);
+    rb_imemo_tmpbuf_set_ptr(tmpbuf, apinfo);
     apinfo->imemo = rb_ary_new_from_args(4, pre_args, rest_arg, post_args, tmpbuf);
 
     t = rb_node_newnode(NODE_ARYPTN, Qnil, Qnil, (VALUE)apinfo, &NULL_LOC);
@@ -2830,8 +2830,9 @@ primary		: literal
 			ID id = internal_id(p);
 			NODE *m = NEW_ARGS_AUX(0, 0, &NULL_LOC);
 			NODE *args, *scope, *internal_var = NEW_DVAR(id, &@2);
+			VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer();
 			ID *tbl = ALLOC_N(ID, 3);
-			VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer(tbl);
+			rb_imemo_tmpbuf_set_ptr(tmpbuf, tbl);
 			tbl[0] = 1 /* length of local var table */; tbl[1] = id /* internal id */;
                         tbl[2] = tmpbuf;
 
@@ -11215,11 +11216,10 @@ static NODE*
 new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, const YYLTYPE *loc)
 {
     int saved_line = p->ruby_sourceline;
-    struct rb_args_info *args;
     NODE *node;
-
-    args = ZALLOC(struct rb_args_info);
-    VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer(args);
+    VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer();
+    struct rb_args_info *args = ZALLOC(struct rb_args_info);
+    rb_imemo_tmpbuf_set_ptr(tmpbuf, args);
     args->imemo = tmpbuf;
     node = NEW_NODE(NODE_ARGS, 0, 0, args, &NULL_LOC);
     RB_OBJ_WRITTEN(p->ast, Qnil, tmpbuf);
@@ -11309,11 +11309,10 @@ static NODE*
 new_array_pattern_tail(struct parser_params *p, NODE *pre_args, int has_rest, ID rest_arg, NODE *post_args, const YYLTYPE *loc)
 {
     int saved_line = p->ruby_sourceline;
-    struct rb_ary_pattern_info *apinfo;
     NODE *node;
-
-    apinfo = ZALLOC(struct rb_ary_pattern_info);
-    VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer(apinfo);
+    VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer();
+    struct rb_ary_pattern_info *apinfo = ZALLOC(struct rb_ary_pattern_info);
+    rb_imemo_tmpbuf_set_ptr(tmpbuf, apinfo);
     node = NEW_NODE(NODE_ARYPTN, 0, 0, apinfo, loc);
     apinfo->imemo = tmpbuf;
     RB_OBJ_WRITTEN(p->ast, Qnil, tmpbuf);
@@ -11699,16 +11698,19 @@ local_pop(struct parser_params *p)
 
 #ifndef RIPPER
 static ID*
-local_tbl(struct parser_params *p, VALUE *tmp)
+local_tbl(struct parser_params *p)
 {
     int cnt_args = vtable_size(p->lvtbl->args);
     int cnt_vars = vtable_size(p->lvtbl->vars);
     int cnt = cnt_args + cnt_vars;
     int i, j;
     ID *buf;
+    VALUE tbl = 0;
 
     if (cnt <= 0) return 0;
+    tbl = rb_imemo_tmpbuf_auto_free_pointer();
     buf = ALLOC_N(ID, cnt + 2);
+    rb_imemo_tmpbuf_set_ptr(tbl, buf);
     MEMCPY(buf+1, p->lvtbl->args->tbl, ID, cnt_args);
     /* remove IDs duplicated to warn shadowing */
     for (i = 0, j = cnt_args+1; i < cnt_vars; ++i) {
@@ -11717,12 +11719,13 @@ local_tbl(struct parser_params *p, VALUE *tmp)
 	    buf[j++] = id;
 	}
     }
-    if (--j < cnt) REALLOC_N(buf, ID, (cnt = j) + 2);
+    if (--j < cnt) {
+	REALLOC_N(buf, ID, (cnt = j) + 2);
+	rb_imemo_tmpbuf_set_ptr(tbl, buf);
+    }
     buf[0] = cnt;
-
-    VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer(buf);
-    *tmp = tmpbuf;
-    buf[cnt + 1] = (ID)tmpbuf;
+    buf[cnt + 1] = (ID)tbl;
+    RB_OBJ_WRITTEN(p->ast, Qnil, tbl);
 
     return buf;
 }
@@ -11732,11 +11735,9 @@ node_newnode_with_locals(struct parser_params *p, enum node_type type, VALUE a1,
 {
     ID *a0;
     NODE *n;
-    VALUE tbl = 0;
 
-    a0 = local_tbl(p, &tbl);
+    a0 = local_tbl(p);
     n = NEW_NODE(type, a0, a1, a2, loc);
-    if (tbl) RB_OBJ_WRITTEN(p->ast, Qnil, tbl);
     return n;
 }
 

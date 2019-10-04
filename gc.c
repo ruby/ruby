@@ -2133,12 +2133,6 @@ rb_imemo_tmpbuf_new(VALUE v1, VALUE v2, VALUE v3, VALUE v0)
 }
 
 VALUE
-rb_imemo_tmpbuf_auto_free_pointer(void *buf)
-{
-    return rb_imemo_new(imemo_tmpbuf, (VALUE)buf, 0, 0, 0);
-}
-
-VALUE
 rb_imemo_tmpbuf_auto_free_maybe_mark_buffer(void *buf, size_t cnt)
 {
     return rb_imemo_tmpbuf_new((VALUE)buf, 0, (VALUE)cnt, 0);
