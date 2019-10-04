@@ -190,16 +190,6 @@ rb_str_new_literal(const char *ptr) ::
 
   Creates a new Ruby string from a C string literal.
 
-rb_tainted_str_new(const char *ptr, long len) ::
-
-  Creates a new tainted Ruby string.  Strings from external data
-  sources should be tainted.
-
-rb_tainted_str_new2(const char *ptr) ::
-rb_tainted_str_new_cstr(const char *ptr) ::
-
-  Creates a new tainted Ruby string from a C string.
-
 rb_sprintf(const char *format, ...) ::
 rb_vsprintf(const char *format, va_list ap) ::
 
@@ -1209,10 +1199,6 @@ RB_FLOAT_TYPE_P(value) ::
 void Check_Type(VALUE value, int type) ::
 
   Ensures +value+ is of the given internal +type+ or raises a TypeError
-
-SafeStringValue(value) ::
-
-  Checks that +value+ is a String and is not tainted
 
 === Data Type Conversion
 
