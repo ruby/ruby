@@ -730,7 +730,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
     } else {
         json->max_nesting = 100;
         json->allow_nan = 0;
-        json->create_additions = 1;
+        json->create_additions = 0;
         json->create_id = rb_funcall(mJSON, i_create_id, 0);
         json->object_class = Qnil;
         json->array_class = Qnil;
@@ -851,14 +851,21 @@ void Init_parser(void)
     cParser = rb_define_class_under(mExt, "Parser", rb_cObject);
     eParserError = rb_path2class("JSON::ParserError");
     eNestingError = rb_path2class("JSON::NestingError");
+    rb_gc_register_mark_object(eParserError);
+    rb_gc_register_mark_object(eNestingError);
     rb_define_alloc_func(cParser, cJSON_parser_s_allocate);
     rb_define_method(cParser, "initialize", cParser_initialize, -1);
     rb_define_method(cParser, "parse", cParser_parse, 0);
     rb_define_method(cParser, "source", cParser_source, 0);
 
     CNaN = rb_const_get(mJSON, rb_intern("NaN"));
+    rb_gc_register_mark_object(CNaN);
+
     CInfinity = rb_const_get(mJSON, rb_intern("Infinity"));
+    rb_gc_register_mark_object(CInfinity);
+
     CMinusInfinity = rb_const_get(mJSON, rb_intern("MinusInfinity"));
+    rb_gc_register_mark_object(CMinusInfinity);
 
     i_json_creatable_p = rb_intern("json_creatable?");
     i_json_create = rb_intern("json_create");
