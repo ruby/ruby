@@ -212,6 +212,7 @@ module Reline
       end
       line_editor.output = output
       line_editor.completion_proc = completion_proc
+      line_editor.completion_append_character = completion_append_character
       line_editor.output_modifier_proc = output_modifier_proc
       line_editor.prompt_proc = prompt_proc
       line_editor.auto_indent_proc = auto_indent_proc

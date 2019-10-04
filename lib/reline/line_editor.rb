@@ -10,6 +10,7 @@ class Reline::LineEditor
   attr_reader :byte_pointer
   attr_accessor :confirm_multiline_termination_proc
   attr_accessor :completion_proc
+  attr_accessor :completion_append_character
   attr_accessor :output_modifier_proc
   attr_accessor :prompt_proc
   attr_accessor :auto_indent_proc
@@ -58,6 +59,7 @@ class Reline::LineEditor
 
   def initialize(config)
     @config = config
+    @completion_append_character = ''
     reset_variables
   end
 
@@ -620,8 +622,8 @@ class Reline::LineEditor
         @completion_state = CompletionState::MENU
       end
       if target < completed
-        @line = preposing + completed + postposing
-        line_to_pointer = preposing + completed
+        @line = preposing + completed + completion_append_character.to_s + postposing
+        line_to_pointer = preposing + completed + completion_append_character.to_s
         @cursor_max = calculate_width(@line)
         @cursor = calculate_width(line_to_pointer)
         @byte_pointer = line_to_pointer.bytesize
