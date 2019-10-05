@@ -11,41 +11,45 @@ class Reline::Windows
     [224, 79] => :ed_move_to_end,  # End
   }.each_key(&:freeze).freeze
 
-  class Win32API
-    DLL = {}
-    TYPEMAP = {"0" => Fiddle::TYPE_VOID, "S" => Fiddle::TYPE_VOIDP, "I" => Fiddle::TYPE_LONG}
-    POINTER_TYPE = Fiddle::SIZEOF_VOIDP == Fiddle::SIZEOF_LONG_LONG ? 'q*' : 'l!*'
+  if defined? JRUBY_VERSION
+    require 'win32api'
+  else
+    class Win32API
+      DLL = {}
+      TYPEMAP = {"0" => Fiddle::TYPE_VOID, "S" => Fiddle::TYPE_VOIDP, "I" => Fiddle::TYPE_LONG}
+      POINTER_TYPE = Fiddle::SIZEOF_VOIDP == Fiddle::SIZEOF_LONG_LONG ? 'q*' : 'l!*'
 
-    WIN32_TYPES = "VPpNnLlIi"
-    DL_TYPES = "0SSI"
+      WIN32_TYPES = "VPpNnLlIi"
+      DL_TYPES = "0SSI"
 
-    def initialize(dllname, func, import, export = "0", calltype = :stdcall)
-      @proto = [import].join.tr(WIN32_TYPES, DL_TYPES).sub(/^(.)0*$/, '\1')
-      import = @proto.chars.map {|win_type| TYPEMAP[win_type.tr(WIN32_TYPES, DL_TYPES)]}
-      export = TYPEMAP[export.tr(WIN32_TYPES, DL_TYPES)]
-      calltype = Fiddle::Importer.const_get(:CALL_TYPE_TO_ABI)[calltype]
+      def initialize(dllname, func, import, export = "0", calltype = :stdcall)
+        @proto = [import].join.tr(WIN32_TYPES, DL_TYPES).sub(/^(.)0*$/, '\1')
+        import = @proto.chars.map {|win_type| TYPEMAP[win_type.tr(WIN32_TYPES, DL_TYPES)]}
+        export = TYPEMAP[export.tr(WIN32_TYPES, DL_TYPES)]
+        calltype = Fiddle::Importer.const_get(:CALL_TYPE_TO_ABI)[calltype]
 
-      handle = DLL[dllname] ||=
-               begin
-                 Fiddle.dlopen(dllname)
-               rescue Fiddle::DLError
-                 raise unless File.extname(dllname).empty?
-                 Fiddle.dlopen(dllname + ".dll")
-               end
+        handle = DLL[dllname] ||=
+                 begin
+                   Fiddle.dlopen(dllname)
+                 rescue Fiddle::DLError
+                   raise unless File.extname(dllname).empty?
+                   Fiddle.dlopen(dllname + ".dll")
+                 end
 
-      @func = Fiddle::Function.new(handle[func], import, export, calltype)
-    rescue Fiddle::DLError => e
-      raise LoadError, e.message, e.backtrace
-    end
-
-    def call(*args)
-      import = @proto.split("")
-      args.each_with_index do |x, i|
-        args[i], = [x == 0 ? nil : x].pack("p").unpack(POINTER_TYPE) if import[i] == "S"
-        args[i], = [x].pack("I").unpack("i") if import[i] == "I"
+        @func = Fiddle::Function.new(handle[func], import, export, calltype)
+      rescue Fiddle::DLError => e
+        raise LoadError, e.message, e.backtrace
       end
-      ret, = @func.call(*args)
-      return ret || 0
+
+      def call(*args)
+        import = @proto.split("")
+        args.each_with_index do |x, i|
+          args[i], = [x == 0 ? nil : x].pack("p").unpack(POINTER_TYPE) if import[i] == "S"
+          args[i], = [x].pack("I").unpack("i") if import[i] == "I"
+        end
+        ret, = @func.call(*args)
+        return ret || 0
+      end
     end
   end
 
