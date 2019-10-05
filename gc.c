@@ -2133,12 +2133,6 @@ rb_imemo_tmpbuf_new(VALUE v1, VALUE v2, VALUE v3, VALUE v0)
 }
 
 VALUE
-rb_imemo_tmpbuf_auto_free_pointer(void *buf)
-{
-    return rb_imemo_new(imemo_tmpbuf, (VALUE)buf, 0, 0, 0);
-}
-
-VALUE
 rb_imemo_tmpbuf_auto_free_maybe_mark_buffer(void *buf, size_t cnt)
 {
     return rb_imemo_tmpbuf_new((VALUE)buf, 0, (VALUE)cnt, 0);
@@ -8074,7 +8068,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
 
       case T_IMEMO:
         gc_ref_update_imemo(objspace, obj);
-        break;
+        return;
 
       case T_NIL:
       case T_FIXNUM:
@@ -8285,7 +8279,7 @@ gc_compact_stats(rb_objspace_t *objspace)
 
 static void gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_double_pages, int use_verifier);
 
-static VALUE
+static void
 gc_compact(rb_objspace_t *objspace, int use_toward_empty, int use_double_pages, int use_verifier)
 {
 
@@ -8297,7 +8291,6 @@ gc_compact(rb_objspace_t *objspace, int use_toward_empty, int use_double_pages, 
         gc_compact_after_gc(objspace, use_toward_empty, use_double_pages, TRUE);
     }
     objspace->flags.during_compacting = FALSE;
-    return gc_compact_stats(objspace);
 }
 
 static VALUE
@@ -8306,7 +8299,8 @@ rb_gc_compact(VALUE mod)
     rb_objspace_t *objspace = &rb_objspace;
     if (dont_gc) return Qnil;
 
-    return gc_compact(objspace, FALSE, FALSE, FALSE);
+    gc_compact(objspace, FALSE, FALSE, FALSE);
+    return gc_compact_stats(objspace);
 }
 
 static void
@@ -8471,7 +8465,8 @@ gc_verify_compaction_references(int argc, VALUE *argv, VALUE mod)
         }
     }
 
-    return gc_compact(objspace, use_toward_empty, use_double_pages, TRUE);
+    gc_compact(objspace, use_toward_empty, use_double_pages, TRUE);
+    return gc_compact_stats(objspace);
 }
 
 VALUE

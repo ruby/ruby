@@ -1134,6 +1134,8 @@ imemo_type_p(VALUE imemo, enum imemo_type imemo_type)
     }
 }
 
+VALUE rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0);
+
 /* FL_USER0 to FL_USER3 is for type */
 #define IMEMO_FL_USHIFT (FL_USHIFT + 4)
 #define IMEMO_FL_USER0 FL_USER4
@@ -1203,12 +1205,18 @@ typedef struct rb_imemo_tmpbuf_struct {
     size_t cnt; /* buffer size in VALUE */
 } rb_imemo_tmpbuf_t;
 
-VALUE rb_imemo_tmpbuf_auto_free_pointer(void *buf);
+#define rb_imemo_tmpbuf_auto_free_pointer() rb_imemo_new(imemo_tmpbuf, 0, 0, 0, 0)
 VALUE rb_imemo_tmpbuf_auto_free_maybe_mark_buffer(void *buf, size_t cnt);
 rb_imemo_tmpbuf_t *rb_imemo_tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt);
 
 #define RB_IMEMO_TMPBUF_PTR(v) \
     ((void *)(((const struct rb_imemo_tmpbuf_struct *)(v))->ptr))
+
+static inline void *
+rb_imemo_tmpbuf_set_ptr(VALUE v, void *ptr)
+{
+    return ((rb_imemo_tmpbuf_t *)v)->ptr = ptr;
+}
 
 static inline VALUE
 rb_imemo_tmpbuf_auto_free_pointer_new_from_an_RString(VALUE str)
@@ -1221,7 +1229,7 @@ rb_imemo_tmpbuf_auto_free_pointer_new_from_an_RString(VALUE str)
 
     SafeStringValue(str);
     /* create tmpbuf to keep the pointer before xmalloc */
-    imemo = rb_imemo_tmpbuf_auto_free_pointer(NULL);
+    imemo = rb_imemo_tmpbuf_auto_free_pointer();
     tmpbuf = (rb_imemo_tmpbuf_t *)imemo;
     len = RSTRING_LEN(str);
     src = RSTRING_PTR(str);

@@ -334,4 +334,18 @@ class Gem::Dependency
     matches.first
   end
 
+  def identity
+    if prerelease?
+      if specific?
+        :complete
+      else
+        :abs_latest
+      end
+    elsif latest_version?
+      :latest
+    else
+      :released
+    end
+  end
+
 end
