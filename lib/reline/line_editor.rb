@@ -305,6 +305,7 @@ class Reline::LineEditor
       @menu_info.list.each do |item|
         Reline::IOGate.move_cursor_column(0)
         @output.print item
+        @output.flush
         scroll_down(1)
       end
       scroll_down(@highest_in_all - 1)
@@ -540,6 +541,7 @@ class Reline::LineEditor
         next
       end
       @output.print line
+      @output.flush
       if @first_prompt
         @first_prompt = false
         @pre_input_hook&.call
