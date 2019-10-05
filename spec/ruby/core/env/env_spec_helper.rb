@@ -20,4 +20,4 @@ def mock_to_str(s)
   mock_object
 end
 
-require '../../spec_helper'
+require_relative '../../spec_helper'
