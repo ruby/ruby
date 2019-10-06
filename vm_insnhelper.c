@@ -1872,30 +1872,6 @@ vm_call_iseq_setup_normal_opt_start(rb_execution_context_t *ec, rb_control_frame
     return vm_call_iseq_setup_normal(ec, cfp, calling, cc->me, opt_pc, param - delta, local);
 }
 
-static VALUE
-vm_call_iseq_setup_tailcall_opt_start(rb_execution_context_t *ec, rb_control_frame_t *cfp,
-                                      struct rb_calling_info *calling,
-                                      const struct rb_call_info *ci, struct rb_call_cache *cc)
-{
-    const rb_iseq_t *iseq = def_iseq_ptr(cc->me->def);
-    const int lead_num = iseq->body->param.lead_num;
-    const int opt = calling->argc - lead_num;
-    const int opt_pc = (int)iseq->body->param.opt_table[opt];
-
-    RB_DEBUG_COUNTER_INC(ccf_iseq_opt);
-
-#if USE_OPT_HIST
-    if (opt_pc < OPT_HIST_MAX) {
-        opt_hist[opt]++;
-    }
-    else {
-        opt_hist[OPT_HIST_MAX]++;
-    }
-#endif
-
-    return vm_call_iseq_setup_tailcall(ec, cfp, calling, ci, cc, opt_pc);
-}
-
 static void
 args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *const iseq,
                          VALUE *const passed_values, const int passed_keyword_len, const VALUE *const passed_keywords,
@@ -1982,16 +1958,9 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                 argument_arity_error(ec, iseq, argc, lead_num, lead_num + opt_num);
             }
 
-            if (LIKELY(!(ci->flag & VM_CALL_TAILCALL))) {
-                CC_SET_FASTPATH(cc, vm_call_iseq_setup_normal_opt_start,
-                                !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
-                                !(METHOD_ENTRY_VISI(cc->me) == METHOD_VISI_PROTECTED));
-            }
-            else {
-                CC_SET_FASTPATH(cc, vm_call_iseq_setup_tailcall_opt_start,
-                                !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
-                                !(METHOD_ENTRY_VISI(cc->me) == METHOD_VISI_PROTECTED));
-            }
+            CC_SET_FASTPATH(cc, vm_call_iseq_setup_normal_opt_start,
+                            !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
+                            !(METHOD_ENTRY_VISI(cc->me) == METHOD_VISI_PROTECTED));
 
             /* initialize opt vars for self-references */
             VM_ASSERT((int)iseq->body->param.size == lead_num + opt_num);

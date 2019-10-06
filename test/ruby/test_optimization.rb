@@ -451,19 +451,6 @@ class TestRubyOptimization < Test::Unit::TestCase
     }
   end
 
-  def test_tailcall_not_to_grow_stack
-    bug16161 = '[ruby-core:94881]'
-
-    tailcall("#{<<-"begin;"}\n#{<<~"end;"}")
-    begin;
-      def sum(n, s = 0)
-        return s if n < 1
-        sum(n - 1, n + s)
-      end
-    end;
-    assert_equal(0, sum(1_000_000).to_s.size, message(bug16161) {disasm(:fact_helper)})
-  end
-
   class Bug10557
     def [](_)
       block_given?
