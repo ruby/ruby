@@ -1695,8 +1695,9 @@ dependencies: []
 
   def test_date
     today = Gem::Specification::TODAY
-    tomorrow = today + 86401    # +1 for leap second
-    assert_operator (today..tomorrow), :cover?, @a1.date
+    a1_date = @a1.date
+    now = Time.now
+    assert_operator (today..now), :cover?, a1_date
   end
 
   def test_date_equals_date
