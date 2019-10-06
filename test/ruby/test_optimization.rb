@@ -451,6 +451,21 @@ class TestRubyOptimization < Test::Unit::TestCase
     }
   end
 
+  def test_tailcall_not_to_grow_stack
+    bug16161 = '[ruby-core:94881]'
+
+    tailcall("#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
+      def foo(n)
+        return :ok if n < 1
+        foo(n - 1)
+      end
+    end;
+    assert_nothing_raised(SystemStackError, bug16161) do
+      assert_equal(:ok, foo(1_000_000), bug16161)
+    end
+  end
+
   class Bug10557
     def [](_)
       block_given?
