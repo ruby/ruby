@@ -1141,7 +1141,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([4, 8, 12, 16], @obj.filter_map { |i| i * 2 if i.even? })
     assert_equal([2, 4, 6, 8, 10, 12, 14, 16], @obj.filter_map { |i| i * 2 })
     assert_equal([0, 0, 0, 0, 0, 0, 0, 0], @obj.filter_map { 0 })
-    assert_equal([], @obj.filter_map { false })
+    assert_equal([false, true, false, true, false, true, false, true], @obj.filter_map { |i| i.even? })
     assert_equal([], @obj.filter_map { nil })
     assert_instance_of(Enumerator, @obj.filter_map)
   end

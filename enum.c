@@ -456,7 +456,7 @@ filter_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
     i = rb_yield_values2(argc, argv);
 
-    if (RTEST(i)) {
+    if (!NIL_P(i)) {
         rb_ary_push(ary, i);
     }
 

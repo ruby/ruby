@@ -15,7 +15,7 @@ ruby_version_is '2.7' do
       @numerous.filter_map { |i| i * 2 if i.even? }.should == [4, 8, 12, 16]
       @numerous.filter_map { |i| i * 2 }.should == [2, 4, 6, 8, 10, 12, 14, 16]
       @numerous.filter_map { 0 }.should == [0, 0, 0, 0, 0, 0, 0, 0]
-      @numerous.filter_map { false }.should == []
+      @numerous.filter_map { |i| i.even? }.should == [false, true, false, true, false, true, false, true]
       @numerous.filter_map { nil }.should == []
     end
 
