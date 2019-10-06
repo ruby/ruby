@@ -197,11 +197,21 @@ describe :io_new, shared: true do
     @io.internal_encoding.to_s.should == 'IBM866'
   end
 
-  it "accepts nil options" do
-    @io = suppress_keyword_warning do
-      IO.send(@method, @fd, 'w', nil)
+  ruby_version_is ''...'2.8' do
+    it "accepts nil options" do
+      @io = suppress_keyword_warning do
+        IO.send(@method, @fd, 'w', nil)
+      end
+      @io.write("foo").should == 3
     end
-    @io.write("foo").should == 3
+  end
+
+  ruby_version_is '2.8' do
+    it "raises ArgumentError for nil options" do
+      -> {
+        IO.send(@method, @fd, 'w', nil)
+      }.should raise_error(ArgumentError)
+    end
   end
 
   it "coerces mode with #to_str" do
@@ -372,11 +382,21 @@ describe :io_new_errors, shared: true do
     }.should raise_error(ArgumentError)
   end
 
-  it "raises TypeError if passed a hash for mode and nil for options" do
-    -> {
-      suppress_keyword_warning do
+  ruby_version_is ''...'2.8' do
+    it "raises TypeError if passed a hash for mode and nil for options" do
+      -> {
+        suppress_keyword_warning do
+          @io = IO.send(@method, @fd, {mode: 'w'}, nil)
+        end
+      }.should raise_error(TypeError)
+    end
+  end
+
+  ruby_version_is '2.8' do
+    it "raises ArgumentError if passed a hash for mode and nil for options" do
+      -> {
         @io = IO.send(@method, @fd, {mode: 'w'}, nil)
-      end
-    }.should raise_error(TypeError)
+      }.should raise_error(ArgumentError)
+    end
   end
 end
