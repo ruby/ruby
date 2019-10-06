@@ -303,7 +303,7 @@ v2w(VALUE v)
 {
     if (RB_TYPE_P(v, T_RATIONAL)) {
         if (RRATIONAL(v)->den != LONG2FIX(1))
-            return v;
+            return WIDEVAL_WRAP(v);
         v = RRATIONAL(v)->num;
     }
 #if WIDEVALUE_IS_WIDER
@@ -2193,7 +2193,7 @@ extract_vtm(VALUE time, struct vtm *vtm, VALUE subsecx)
         *vtm = tobj->vtm;
         t = rb_time_unmagnify(tobj->timew);
         if (TZMODE_FIXOFF_P(tobj) && vtm->utc_offset != INT2FIX(0))
-            t = wadd(t, vtm->utc_offset);
+            t = wadd(t, v2w(vtm->utc_offset));
     }
     else if (RB_TYPE_P(time, T_STRUCT)) {
 #define AREF(x) rb_struct_aref(time, ID2SYM(id_##x))
@@ -4103,7 +4103,7 @@ time_inspect(VALUE time)
 
     GetTimeval(time, tobj);
     str = strftimev("%Y-%m-%d %H:%M:%S", time, rb_usascii_encoding());
-    subsec = wmod(tobj->timew, WINT2FIXWV(TIME_SCALE));
+    subsec = w2v(wmod(tobj->timew, WINT2FIXWV(TIME_SCALE)));
     if (FIXNUM_P(subsec) && FIX2LONG(subsec) == 0) {
     }
     else if (FIXNUM_P(subsec) && FIX2LONG(subsec) < TIME_SCALE) {
@@ -4115,7 +4115,7 @@ time_inspect(VALUE time)
     }
     else {
         rb_str_cat_cstr(str, " ");
-        subsec = quov(w2v(subsec), INT2FIX(TIME_SCALE));
+        subsec = quov(subsec, INT2FIX(TIME_SCALE));
         rb_str_concat(str, rb_obj_as_string(subsec));
     }
     if (TZMODE_UTC_P(tobj)) {
