@@ -17,7 +17,6 @@ $keep_temp ||= nil
 $patch_file ||= nil
 $packages ||= nil
 $digests ||= nil
-$s3 ||= nil
 $tooldir = File.expand_path("..", __FILE__)
 $unicode_version = nil if ($unicode_version ||= nil) == ""
 $colorize = Colorize.new
@@ -35,7 +34,6 @@ options:
   -unicode_version=VER  Unicode version to generate encodings
   -svn[=URL]            make snapshot from SVN repository
                         (#{SVNURL})
-  -s3=PATH              s3 bucket path(default=tmp)
   -help, --help         show this message
 version:
   master, trunk, stable, branches/*, tags/*, X.Y, X.Y.Z, X.Y.Z-pL
@@ -601,11 +599,6 @@ revisions.collect {|rev| package(vcs, rev, destdir, tmp)}.flatten.each do |name|
     next
   end
   str = open(name, "rb") {|f| f.read}
-  if $s3
-    %x[aws s3 cp #{name} s3://ftp.r-l.o/pub/#{$s3}/#{Pathname(name).basename}]
-    FileUtils.rm_f name
-    name = "https://s3.amazonaws.com/ftp.r-l.o/pub/#{$s3}/#{Pathname(name).basename}"
-  end
   puts "* #{$colorize.pass(name)}"
   puts "      SIZE:   #{str.bytesize} bytes"
   $digests.each do |alg|
