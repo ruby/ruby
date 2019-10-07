@@ -440,6 +440,9 @@ Init_TransientHeap(void)
     theap->promoted_objects_index = 0;
     /* should not use ALLOC_N to be free from GC */
     theap->promoted_objects = malloc(sizeof(VALUE) * theap->promoted_objects_size);
+    STATIC_ASSERT(
+        integer_overflow,
+        sizeof(VALUE) <= SIZE_MAX / TRANSIENT_HEAP_PROMOTED_DEFAULT_SIZE);
     if (theap->promoted_objects == NULL) rb_bug("Init_TransientHeap: malloc failed.");
 }
 
@@ -618,7 +621,13 @@ transient_heap_promote_add(struct transient_heap* theap, VALUE obj)
     if (theap->promoted_objects_size <= theap->promoted_objects_index) {
         theap->promoted_objects_size *= 2;
         if (TRANSIENT_HEAP_DEBUG >= 1) fprintf(stderr, "rb_transient_heap_promote: expand table to %d\n", theap->promoted_objects_size);
-        theap->promoted_objects = realloc(theap->promoted_objects, theap->promoted_objects_size * sizeof(VALUE));
+        if (UNLIKELY((size_t)theap->promoted_objects_size > SIZE_MAX / sizeof(VALUE))) {
+            /* realloc failure due to integer overflow */
+            theap->promoted_objects = NULL;
+        }
+        else {
+            theap->promoted_objects = realloc(theap->promoted_objects, theap->promoted_objects_size * sizeof(VALUE));
+        }
         if (theap->promoted_objects == NULL) rb_bug("rb_transient_heap_promote: realloc failed");
     }
     theap->promoted_objects[theap->promoted_objects_index++] = obj;

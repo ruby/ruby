@@ -26,7 +26,9 @@ extern const ID rb_iseq_shared_exc_local_tbl[];
 static inline size_t
 rb_call_info_kw_arg_bytes(int keyword_len)
 {
-    return sizeof(struct rb_call_info_kw_arg) + sizeof(VALUE) * (keyword_len - 1);
+    return rb_size_mul_add_or_raise(
+        keyword_len - 1, sizeof(VALUE), sizeof(struct rb_call_info_kw_arg),
+        rb_eRuntimeError);
 }
 
 #define ISEQ_COVERAGE(iseq)           iseq->body->variable.coverage
@@ -67,7 +69,7 @@ static inline VALUE *
 ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
 {
     return iseq->body->variable.original_iseq =
-        ruby_xmalloc2(size, sizeof(VALUE));
+        ALLOC_N(VALUE, size);
 }
 
 #define ISEQ_TRACE_EVENTS (RUBY_EVENT_LINE  | \

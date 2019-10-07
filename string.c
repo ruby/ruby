@@ -2175,7 +2175,7 @@ rb_str_modify_expand(VALUE str, long expand)
     if (expand < 0) {
 	rb_raise(rb_eArgError, "negative expanding string size");
     }
-    if (expand > LONG_MAX - len) {
+    if (expand >= LONG_MAX - len) {
 	rb_raise(rb_eArgError, "string size too big");
     }
 
