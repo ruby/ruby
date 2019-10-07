@@ -8401,20 +8401,23 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
         gc_verify_internal_consistency(objspace);
     }
 
-#if __has_feature(address_sanitizer)
     while (moved_list) {
-        VALUE current = moved_list;
-        moved_list = RANY(moved_list)->as.moved.next;
-        asan_poison_object(current);
+        VALUE next_moved;
+        struct heap_page *page;
+
+        page = GET_HEAP_PAGE(moved_list);
+        next_moved = RMOVED(moved_list)->next;
+
+        RMOVED(moved_list)->flags = 0;
+        RMOVED(moved_list)->destination = 0;
+        RMOVED(moved_list)->next = 0;
+        page->free_slots++;
+        heap_page_add_freeobj(objspace, page, moved_list);
+        objspace->profile.total_freed_objects++;
+        moved_list = next_moved;
     }
-#else
-    (void)moved_list;
-#endif
 
     mjit_gc_exit_hook(); // unlock MJIT here, because `rb_gc()` calls `mjit_gc_start_hook()` again.
-
-    /* GC after compaction to eliminate T_MOVED */
-    garbage_collect(objspace, GPR_DEFAULT_REASON);
 }
 
 /*
