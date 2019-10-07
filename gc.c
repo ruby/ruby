@@ -8397,10 +8397,6 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
     heap_eden->free_pages = NULL;
     heap_eden->using_page = NULL;
 
-    if (use_verifier) {
-        gc_verify_internal_consistency(objspace);
-    }
-
     while (moved_list) {
         VALUE next_moved;
         struct heap_page *page;
@@ -8413,8 +8409,17 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
         RMOVED(moved_list)->next = 0;
         page->free_slots++;
         heap_page_add_freeobj(objspace, page, moved_list);
+        if (page->free_slots == page->total_slots) {
+            heap_pages_freeable_pages--;
+	    heap_unlink_page(objspace, heap_eden, page);
+	    heap_add_page(objspace, heap_tomb, page);
+        }
         objspace->profile.total_freed_objects++;
         moved_list = next_moved;
+    }
+
+    if (use_verifier) {
+        gc_verify_internal_consistency(objspace);
     }
 
     mjit_gc_exit_hook(); // unlock MJIT here, because `rb_gc()` calls `mjit_gc_start_hook()` again.
