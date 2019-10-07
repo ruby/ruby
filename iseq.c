@@ -3391,7 +3391,10 @@ succ_index_table_create(int max_pos, int *data, int size)
 {
     const int imm_size = (max_pos < IMMEDIATE_TABLE_SIZE ? max_pos + 8 : IMMEDIATE_TABLE_SIZE) / 9;
     const int succ_size = (max_pos < IMMEDIATE_TABLE_SIZE ? 0 : (max_pos - IMMEDIATE_TABLE_SIZE + 511)) / 512;
-    struct succ_index_table *sd = ruby_xcalloc(imm_size * sizeof(uint64_t) + succ_size * sizeof(struct succ_dict_block), 1); /* zero cleared */
+    struct succ_index_table *sd =
+        rb_xcalloc_mul_add_mul(
+            imm_size, sizeof(uint64_t),
+            succ_size, sizeof(struct succ_dict_block));
     int i, j, k, r;
 
     r = 0;
@@ -3426,7 +3429,7 @@ succ_index_table_invert(int max_pos, struct succ_index_table *sd, int size)
 {
     const int imm_size = (max_pos < IMMEDIATE_TABLE_SIZE ? max_pos + 8 : IMMEDIATE_TABLE_SIZE) / 9;
     const int succ_size = (max_pos < IMMEDIATE_TABLE_SIZE ? 0 : (max_pos - IMMEDIATE_TABLE_SIZE + 511)) / 512;
-    unsigned int *positions = ruby_xmalloc(sizeof(unsigned int) * size), *p;
+    unsigned int *positions = ALLOC_N(unsigned int, size), *p;
     int i, j, k, r = -1;
     p = positions;
     for (j = 0; j < imm_size; j++) {

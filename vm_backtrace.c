@@ -526,7 +526,7 @@ bt_init(void *ptr, size_t size)
     struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
     arg->btobj = backtrace_alloc(rb_cBacktrace);
     GetCoreDataFromValue(arg->btobj, rb_backtrace_t, arg->bt);
-    arg->bt->backtrace_base = arg->bt->backtrace = ruby_xmalloc(sizeof(rb_backtrace_location_t) * size);
+    arg->bt->backtrace_base = arg->bt->backtrace = ALLOC_N(rb_backtrace_location_t, size);
     arg->bt->backtrace_size = 0;
 }
 

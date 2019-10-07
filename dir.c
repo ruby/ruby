@@ -1343,8 +1343,20 @@ sys_enc_warning_in(const char *func, const char *mesg, rb_encoding *enc)
 #define sys_warning(val, enc) \
     ((flags & GLOB_VERBOSE) ? sys_enc_warning_in(RUBY_FUNCTION_NAME_STRING, (val), (enc)) :(void)0)
 
+static inline void *
+glob_alloc_n(size_t x, size_t y)
+{
+    size_t z;
+    if (rb_mul_size_overflow(x, y, SSIZE_MAX, &z)) {
+        rb_memerror();          /* or...? */
+    }
+    else {
+        return malloc(z);
+    }
+}
+
 #define GLOB_ALLOC(type) ((type *)malloc(sizeof(type)))
-#define GLOB_ALLOC_N(type, n) ((type *)malloc(sizeof(type) * (n)))
+#define GLOB_ALLOC_N(type, n) ((type *)glob_alloc_n(sizeof(type), n))
 #define GLOB_REALLOC(ptr, size) realloc((ptr), (size))
 #define GLOB_FREE(ptr) free(ptr)
 #define GLOB_JUMP_TAG(status) (((status) == -1) ? rb_memerror() : rb_jump_tag(status))

@@ -869,6 +869,13 @@ compile_data_alloc(rb_iseq_t *iseq, size_t size)
     return compile_data_alloc_with_arena(arena, size);
 }
 
+static inline void *
+compile_data_alloc2(rb_iseq_t *iseq, size_t x, size_t y)
+{
+    size_t size = rb_size_mul_or_raise(x, y, rb_eRuntimeError);
+    return compile_data_alloc(iseq, size);
+}
+
 static INSN *
 compile_data_alloc_insn(rb_iseq_t *iseq)
 {
@@ -1127,7 +1134,7 @@ new_insn_body(rb_iseq_t *iseq, int line_no, enum ruby_vminsn_type insn_id, int a
     if (argc > 0) {
 	int i;
 	va_init_list(argv, argc);
-	operands = (VALUE *)compile_data_alloc(iseq, sizeof(VALUE) * argc);
+        operands = compile_data_alloc2(iseq, sizeof(VALUE), argc);
 	for (i = 0; i < argc; i++) {
 	    VALUE v = va_arg(argv, VALUE);
 	    operands[i] = v;
@@ -1168,7 +1175,7 @@ new_callinfo(rb_iseq_t *iseq, ID mid, int argc, unsigned int flag, struct rb_cal
 static INSN *
 new_insn_send(rb_iseq_t *iseq, int line_no, ID id, VALUE argc, const rb_iseq_t *blockiseq, VALUE flag, struct rb_call_info_kw_arg *keywords)
 {
-    VALUE *operands = (VALUE *)compile_data_alloc(iseq, sizeof(VALUE) * 3);
+    VALUE *operands = compile_data_alloc2(iseq, sizeof(VALUE), 3);
     operands[0] = (VALUE)new_callinfo(iseq, id, FIX2INT(argc), FIX2INT(flag), keywords, blockiseq != NULL);
     operands[1] = Qfalse; /* cache */
     operands[2] = (VALUE)blockiseq;
@@ -2080,8 +2087,10 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     insns_info = ALLOC_N(struct iseq_insn_info_entry, insn_num);
     positions = ALLOC_N(unsigned int, insn_num);
     body->is_entries = ZALLOC_N(union iseq_inline_storage_entry, body->is_size);
-    body->ci_entries = (struct rb_call_info *)ruby_xmalloc(sizeof(struct rb_call_info) * body->ci_size +
-								 sizeof(struct rb_call_info_with_kwarg) * body->ci_kw_size);
+    body->ci_entries =
+        rb_xmalloc_mul_add_mul(
+            sizeof(struct rb_call_info), body->ci_size,
+            sizeof(struct rb_call_info_with_kwarg), body->ci_kw_size);
     MEMZERO(body->ci_entries + body->ci_size, struct rb_call_info_with_kwarg,  body->ci_kw_size); /* need to clear ci_kw entries */
     body->cc_entries = ZALLOC_N(struct rb_call_cache, body->ci_size + body->ci_kw_size);
 
@@ -3197,7 +3206,7 @@ insn_set_specialized_instruction(rb_iseq_t *iseq, INSN *iobj, int insn_id)
     if (insn_id == BIN(opt_neq)) {
 	VALUE *old_operands = iobj->operands;
 	iobj->operand_size = 4;
-	iobj->operands = (VALUE *)compile_data_alloc(iseq, iobj->operand_size * sizeof(VALUE));
+        iobj->operands = compile_data_alloc2(iseq, iobj->operand_size, sizeof(VALUE));
 	iobj->operands[0] = (VALUE)new_callinfo(iseq, idEq, 1, 0, NULL, FALSE);
 	iobj->operands[1] = Qfalse; /* CALL_CACHE */
 	iobj->operands[2] = old_operands[0];
@@ -3367,7 +3376,7 @@ new_unified_insn(rb_iseq_t *iseq,
 
     if (argc > 0) {
 	ptr = operands =
-	    (VALUE *)compile_data_alloc(iseq, sizeof(VALUE) * argc);
+            compile_data_alloc2(iseq, sizeof(VALUE), argc);
     }
 
     /* copy operands */
@@ -3823,7 +3832,8 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	node = root_node->nd_head;
 	{
 	    int len = (int)node->nd_alen / 2;
-	    struct rb_call_info_kw_arg *kw_arg  = (struct rb_call_info_kw_arg *)ruby_xmalloc(sizeof(struct rb_call_info_kw_arg) + sizeof(VALUE) * (len - 1));
+            struct rb_call_info_kw_arg *kw_arg =
+                rb_xmalloc_mul_add(len - 1, sizeof(VALUE), sizeof(struct rb_call_info_kw_arg));
 	    VALUE *keywords = kw_arg->keywords;
 	    int i = 0;
 	    kw_arg->keyword_len = len;
@@ -8776,7 +8786,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 	    }
 
 	    if (argc > 0) {
-		argv = compile_data_alloc(iseq, sizeof(VALUE) * argc);
+                argv = compile_data_alloc2(iseq, sizeof(VALUE), argc);
 		for (j=0; j<argc; j++) {
 		    VALUE op = rb_ary_entry(obj, j+1);
 		    switch (insn_op_type((VALUE)insn_id, j)) {
@@ -9381,9 +9391,10 @@ ibf_dump_overwrite(struct ibf_dump *dump, void *buff, unsigned int size, long of
 }
 
 static void *
-ibf_load_alloc(const struct ibf_load *load, ibf_offset_t offset, int size)
+ibf_load_alloc(const struct ibf_load *load, ibf_offset_t offset, size_t x, size_t y)
 {
-    void *buff = ruby_xmalloc(size);
+    void *buff = ruby_xmalloc2(x, y);
+    size_t size = x * y;
     memcpy(buff, load->current_buffer->buff + offset, size);
     return buff;
 }
@@ -9393,7 +9404,7 @@ ibf_load_alloc(const struct ibf_load *load, ibf_offset_t offset, int size)
 #define IBF_W(b, type, n) (IBF_W_ALIGN(type), (type *)(VALUE)IBF_WP(b, type, n))
 #define IBF_WV(variable)   ibf_dump_write(dump, &(variable), sizeof(variable))
 #define IBF_WP(b, type, n) ibf_dump_write(dump, (b), sizeof(type) * (n))
-#define IBF_R(val, type, n) (type *)ibf_load_alloc(load, IBF_OFFSET(val), sizeof(type) * (n))
+#define IBF_R(val, type, n) (type *)ibf_load_alloc(load, IBF_OFFSET(val), sizeof(type), (n))
 #define IBF_ZERO(variable) memset(&(variable), 0, sizeof(variable))
 
 static int
@@ -9667,7 +9678,7 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, ibf_offset_t b
 {
     unsigned int code_index;
     ibf_offset_t reading_pos = bytecode_offset;
-    VALUE *code = ruby_xmalloc(sizeof(VALUE) * iseq_size);
+    VALUE *code = ALLOC_N(VALUE, iseq_size);
 
     struct rb_iseq_constant_body *load_body = iseq->body;
     struct rb_call_info *ci_entries = load_body->ci_entries;
@@ -9884,7 +9895,7 @@ static unsigned int *
 ibf_load_insns_info_positions(const struct ibf_load *load, ibf_offset_t positions_offset, unsigned int size)
 {
     ibf_offset_t reading_pos = positions_offset;
-    unsigned int *positions = ruby_xmalloc(sizeof(unsigned int) * size);
+    unsigned int *positions = ALLOC_N(unsigned int, size);
 
     unsigned int last = 0;
     unsigned int i;
@@ -10039,8 +10050,10 @@ ibf_load_ci_entries(const struct ibf_load *load,
 
     unsigned int i;
 
-    struct rb_call_info *ci_entries = ruby_xmalloc(sizeof(struct rb_call_info) * ci_size +
-                                                   sizeof(struct rb_call_info_with_kwarg) * ci_kw_size);
+    struct rb_call_info *ci_entries =
+        rb_xmalloc_mul_add_mul(
+            sizeof(struct rb_call_info), ci_size,
+            sizeof(struct rb_call_info_with_kwarg), ci_kw_size);
     struct rb_call_info_with_kwarg *ci_kw_entries = (struct rb_call_info_with_kwarg *)&ci_entries[ci_size];
 
     for (i = 0; i < ci_size; i++) {
@@ -10060,7 +10073,8 @@ ibf_load_ci_entries(const struct ibf_load *load,
 
         int keyword_len = (int)ibf_load_small_value(load, &reading_pos);
 
-        ci_kw_entries[i].kw_arg = ruby_xmalloc(sizeof(struct rb_call_info_kw_arg) + sizeof(VALUE) * (keyword_len - 1));
+        ci_kw_entries[i].kw_arg =
+            rb_xmalloc_mul_add(keyword_len - 1, sizeof(VALUE), sizeof(struct rb_call_info_kw_arg));
 
         ci_kw_entries[i].kw_arg->keyword_len = keyword_len;
 

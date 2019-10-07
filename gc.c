@@ -80,6 +80,157 @@
 #define rb_setjmp(env) RUBY_SETJMP(env)
 #define rb_jmp_buf rb_jmpbuf_t
 
+#if defined(_MSC_VER) && defined(_WIN64)
+#include <intrin.h>
+#pragma intrinsic(_umul128)
+#endif
+
+/* Expecting this struct to be elminated by function inlinings */
+struct optional {
+    bool left;
+    size_t right;
+};
+
+static inline struct optional
+size_mul_overflow(size_t x, size_t y)
+{
+    bool p;
+    size_t z;
+#if 0
+
+#elif defined(HAVE_BUILTIN___BUILTIN_MUL_OVERFLOW)
+    p = __builtin_mul_overflow(x, y, &z);
+
+#elif defined(DSIZE_T)
+    RB_GNUC_EXTENSION DSIZE_T dx = x;
+    RB_GNUC_EXTENSION DSIZE_T dy = y;
+    RB_GNUC_EXTENSION DSIZE_T dz = dx * dy;
+    p = dz > SIZE_MAX;
+    z = (size_t)dz;
+
+#elif defined(_MSC_VER) && defined(_WIN64)
+    unsigned __int64 dp;
+    unsigned __int64 dz = _umul128(x, y, &dp);
+    p = (bool)dp;
+    z = (size_t)dz;
+
+#else
+    /* https://wiki.sei.cmu.edu/confluence/display/c/INT30-C.+Ensure+that+unsigned+integer+operations+do+not+wrap */
+    p = (y != 0) && (x > SIZE_MAX / y);
+    z = x * y;
+
+#endif
+    return (struct optional) { p, z, };
+}
+
+static inline struct optional
+size_add_overflow(size_t x, size_t y)
+{
+    size_t z;
+    bool p;
+#if 0
+
+#elif defined(HAVE_BUILTIN___BUILTIN_ADD_OVERFLOW)
+    p = __builtin_add_overflow(x, y, &z);
+
+#elif defined(DSIZE_T)
+    RB_GNUC_EXTENSION DSIZE_T dx = x;
+    RB_GNUC_EXTENSION DSIZE_T dy = x;
+    RB_GNUC_EXTENSION DSIZE_T dz = dx + dy;
+    p = dz > SIZE_MAX;
+    z = (size_t)dz;
+
+#else
+    z = x + y;
+    p = z < y;
+
+#endif
+    return (struct optional) { p, z, };
+}
+
+static inline struct optional
+size_mul_add_overflow(size_t x, size_t y, size_t z) /* x * y + z */
+{
+    struct optional t = size_mul_overflow(x, y);
+    struct optional u = size_add_overflow(t.right, z);
+    return (struct optional) { t.left || u.left, u.right };
+}
+
+static inline struct optional
+size_mul_add_mul_overflow(size_t x, size_t y, size_t z, size_t w) /* x * y + z * w */
+{
+    struct optional t = size_mul_overflow(x, y);
+    struct optional u = size_mul_overflow(z, w);
+    struct optional v = size_add_overflow(t.right, u.right);
+    return (struct optional) { t.left || u.left || v.left, v.right };
+}
+
+static inline size_t
+size_mul_or_raise(size_t x, size_t y, VALUE exc)
+{
+    struct optional t = size_mul_overflow(x, y);
+    if (LIKELY(!t.left)) {
+        return t.right;
+    }
+    else {
+        rb_raise(
+            exc,
+            "integer overflow: %"PRIuSIZE
+            " * %"PRIuSIZE
+            " > %"PRIuSIZE,
+            x, y, SIZE_MAX);
+    }
+}
+
+size_t
+rb_size_mul_or_raise(size_t x, size_t y, VALUE exc)
+{
+    return size_mul_or_raise(x, y, exc);
+}
+
+static inline size_t
+size_mul_add_or_raise(size_t x, size_t y, size_t z, VALUE exc)
+{
+    struct optional t = size_mul_add_overflow(x, y, z);
+    if (LIKELY(!t.left)) {
+        return t.right;
+    }
+    else {
+        rb_raise(
+            exc,
+            "integer overflow: %"PRIuSIZE
+            " * %"PRIuSIZE
+            " + %"PRIuSIZE
+            " > %"PRIuSIZE,
+            x, y, z, SIZE_MAX);
+    }
+}
+
+size_t
+rb_size_mul_add_or_raise(size_t x, size_t y, size_t z, VALUE exc)
+{
+    return size_mul_add_or_raise(x, y, z, exc);
+}
+
+static inline size_t
+size_mul_add_mul_or_raise(size_t x, size_t y, size_t z, size_t w, VALUE exc)
+{
+    struct optional t = size_mul_add_mul_overflow(x, y, z, w);
+    if (LIKELY(!t.left)) {
+        return t.right;
+    }
+    else {
+        rb_raise(
+            exc,
+            "integer overflow: %"PRIdSIZE
+            " * %"PRIdSIZE
+            " + %"PRIdSIZE
+            " * %"PRIdSIZE
+            " > %"PRIdSIZE,
+            x, y, z, w, SIZE_MAX);
+    }
+}
+
 #if defined(HAVE_RB_GC_GUARDED_PTR_VAL) && HAVE_RB_GC_GUARDED_PTR_VAL
 /* trick the compiler into thinking a external signal handler uses this */
 volatile VALUE rb_gc_guarded_val;
@@ -1410,10 +1561,16 @@ RVALUE_WHITE_P(VALUE obj)
   --------------------------- ObjectSpace -----------------------------
 */
 
+static inline void *
+calloc1(size_t n)
+{
+    return calloc(1, n);
+}
+
 rb_objspace_t *
 rb_objspace_alloc(void)
 {
-    rb_objspace_t *objspace = calloc(1, sizeof(rb_objspace_t));
+    rb_objspace_t *objspace = calloc1(sizeof(rb_objspace_t));
     malloc_limit = gc_params.malloc_limit_min;
     list_head_init(&objspace->eden_heap.pages);
     list_head_init(&objspace->tomb_heap.pages);
@@ -1466,7 +1623,7 @@ static void
 heap_pages_expand_sorted_to(rb_objspace_t *objspace, size_t next_length)
 {
     struct heap_page **sorted;
-    size_t size = next_length * sizeof(struct heap_page *);
+    size_t size = size_mul_or_raise(next_length, sizeof(struct heap_page *), rb_eRuntimeError);
 
     gc_report(3, objspace, "heap_pages_expand_sorted: next_length: %d, size: %d\n", (int)next_length, (int)size);
 
@@ -1626,7 +1783,7 @@ heap_page_allocate(rb_objspace_t *objspace)
     }
 
     /* assign heap_page entry */
-    page = (struct heap_page *)calloc(1, sizeof(struct heap_page));
+    page = calloc1(sizeof(struct heap_page));
     if (page == 0) {
         rb_aligned_free(page_body);
 	rb_memerror();
@@ -7595,7 +7752,8 @@ static struct heap_page **
 allocate_page_list(rb_objspace_t *objspace, page_compare_func_t *comparator)
 {
     size_t total_pages = heap_eden->total_pages;
-    struct heap_page *page = 0, **page_list = malloc(total_pages * sizeof(struct heap_page *));
+    size_t size = size_mul_or_raise(total_pages, sizeof(struct heap_page *), rb_eRuntimeError);
+    struct heap_page *page = 0, **page_list = malloc(size);
     int i = 0;
 
     list_for_each(&heap_eden->pages, page, page_node) {
@@ -9753,11 +9911,7 @@ objspace_xmalloc0(rb_objspace_t *objspace, size_t size)
 static inline size_t
 xmalloc2_size(const size_t count, const size_t elsize)
 {
-    size_t ret;
-    if (rb_mul_size_overflow(count, elsize, SSIZE_MAX, &ret)) {
-	ruby_malloc_size_overflow(count, elsize);
-    }
-    return ret;
+    return size_mul_or_raise(count, elsize, rb_eArgError);
 }
 
 static void *
@@ -9897,7 +10051,7 @@ objspace_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
                 /* hit */
             }
             else {
-                data = malloc(sizeof(size_t) * 2);
+                data = malloc(xmalloc2_size(2, sizeof(size_t)));
                 if (data == NULL) rb_bug("objspace_xfree: can not allocate memory");
                 data[0] = data[1] = 0;
                 st_insert(malloc_info_file_table, key, (st_data_t)data);
@@ -9961,7 +10115,7 @@ objspace_xcalloc(rb_objspace_t *objspace, size_t size)
     void *mem;
 
     size = objspace_malloc_prepare(objspace, size);
-    TRY_WITH_GC(mem = calloc(1, size));
+    TRY_WITH_GC(mem = calloc1(size));
     return objspace_malloc_fixup(objspace, mem, size);
 }
 
@@ -9996,10 +10150,7 @@ ruby_xrealloc_body(void *ptr, size_t new_size)
 void *
 ruby_sized_xrealloc2(void *ptr, size_t n, size_t size, size_t old_n)
 {
-    size_t len = size * n;
-    if (n != 0 && size != len / n) {
-	rb_raise(rb_eArgError, "realloc: possible integer overflow");
-    }
+    size_t len = xmalloc2_size(n, size);
     return objspace_xrealloc(&rb_objspace, ptr, len, old_n * size);
 }
 
@@ -10024,6 +10175,34 @@ void
 ruby_xfree(void *x)
 {
     ruby_sized_xfree(x, 0);
+}
+
+void *
+rb_xmalloc_mul_add(size_t x, size_t y, size_t z) /* x * y + z */
+{
+    size_t w = size_mul_add_or_raise(x, y, z, rb_eArgError);
+    return ruby_xmalloc(w);
+}
+
+void *
+rb_xrealloc_mul_add(const void *p, size_t x, size_t y, size_t z) /* x * y + z */
+{
+    size_t w = size_mul_add_or_raise(x, y, z, rb_eArgError);
+    return ruby_xrealloc((void *)p, w);
+}
+
+void *
+rb_xmalloc_mul_add_mul(size_t x, size_t y, size_t z, size_t w) /* x * y + z * w */
+{
+    size_t u = size_mul_add_mul_or_raise(x, y, z, w, rb_eArgError);
+    return ruby_xmalloc(u);
+}
+
+void *
+rb_xcalloc_mul_add_mul(size_t x, size_t y, size_t z, size_t w) /* x * y + z * w */
+{
+    size_t u = size_mul_add_mul_or_raise(x, y, z, w, rb_eArgError);
+    return ruby_xcalloc(u, 1);
 }
 
 /* Mimic ruby_xmalloc, but need not rb_objspace.
@@ -10276,7 +10455,7 @@ wmap_final_func(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 	return ST_DELETE;
     }
     if (j < i) {
-	ptr = ruby_sized_xrealloc2(ptr, j + 1, sizeof(VALUE), i);
+        SIZED_REALLOC_N(ptr, VALUE, j + 1, i);
 	ptr[0] = j;
 	*value = (st_data_t)ptr;
     }
@@ -10491,7 +10670,7 @@ wmap_aset_update(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
     if (existing) {
 	size = (ptr = optr = (VALUE *)*val)[0];
 	++size;
-	ptr = ruby_sized_xrealloc2(ptr, size + 1, sizeof(VALUE), size);
+        SIZED_REALLOC_N(ptr, VALUE, size + 1, size);
     }
     else {
 	optr = 0;
@@ -10636,12 +10815,12 @@ gc_prof_setup_new_record(rb_objspace_t *objspace, int reason)
 
 	if (!objspace->profile.records) {
 	    objspace->profile.size = GC_PROFILE_RECORD_DEFAULT_SIZE;
-	    objspace->profile.records = malloc(sizeof(gc_profile_record) * objspace->profile.size);
+	    objspace->profile.records = malloc(xmalloc2_size(sizeof(gc_profile_record), objspace->profile.size));
 	}
 	if (index >= objspace->profile.size) {
 	    void *ptr;
 	    objspace->profile.size += 1000;
-	    ptr = realloc(objspace->profile.records, sizeof(gc_profile_record) * objspace->profile.size);
+	    ptr = realloc(objspace->profile.records, xmalloc2_size(sizeof(gc_profile_record), objspace->profile.size));
 	    if (!ptr) rb_memerror();
 	    objspace->profile.records = ptr;
 	}

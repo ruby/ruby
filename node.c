@@ -1145,8 +1145,13 @@ init_node_buffer_list(node_buffer_list_t * nb, node_buffer_elem_t *head)
 static node_buffer_t *
 rb_node_buffer_new(void)
 {
-    size_t bucket_size = offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_LEN * sizeof(NODE);
-    node_buffer_t *nb = xmalloc(sizeof(node_buffer_t) + (bucket_size * 2));
+    const size_t bucket_size = offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_LEN * sizeof(NODE);
+    const size_t alloc_size = sizeof(node_buffer_t) + (bucket_size * 2);
+    STATIC_ASSERT(
+        integer_overflow,
+        offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_LEN * sizeof(NODE)
+        > sizeof(node_buffer_t) + 2 * sizeof(node_buffer_elem_t));
+    node_buffer_t *nb = ruby_xmalloc(alloc_size);
     init_node_buffer_list(&nb->unmarkable, (node_buffer_elem_t*)&nb[1]);
     init_node_buffer_list(&nb->markable, (node_buffer_elem_t*)((size_t)nb->unmarkable.head + bucket_size));
     nb->mark_ary = Qnil;
@@ -1179,7 +1184,7 @@ ast_newnode_in_bucket(node_buffer_list_t *nb)
     if (nb->idx >= nb->len) {
 	long n = nb->len * 2;
 	node_buffer_elem_t *nbe;
-	nbe = xmalloc(offsetof(node_buffer_elem_t, buf) + n * sizeof(NODE));
+        nbe = rb_xmalloc_mul_add(n, sizeof(NODE), offsetof(node_buffer_elem_t, buf));
         nbe->len = n;
 	nb->idx = 0;
 	nb->len = n;
