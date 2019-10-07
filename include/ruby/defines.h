@@ -221,9 +221,18 @@ RUBY_SYMBOL_EXPORT_BEGIN
 # define RUBY_ATTR_ALLOC_SIZE(params)
 #endif
 
-void *ruby_xmalloc(size_t) RUBY_ATTR_ALLOC_SIZE((1));
-void *ruby_xmalloc2(size_t,size_t) RUBY_ATTR_ALLOC_SIZE((1,2));
-void *ruby_xcalloc(size_t,size_t) RUBY_ATTR_ALLOC_SIZE((1,2));
+#ifdef __has_attribute
+# if __has_attribute(malloc)
+#  define RUBY_ATTR_MALLOC __attribute__((__malloc__))
+# endif
+#endif
+#ifndef RUBY_ATTR_MALLOC
+# define RUBY_ATTR_MALLOC
+#endif
+
+void *ruby_xmalloc(size_t) RUBY_ATTR_MALLOC RUBY_ATTR_ALLOC_SIZE((1));
+void *ruby_xmalloc2(size_t,size_t) RUBY_ATTR_MALLOC RUBY_ATTR_ALLOC_SIZE((1,2));
+void *ruby_xcalloc(size_t,size_t) RUBY_ATTR_MALLOC RUBY_ATTR_ALLOC_SIZE((1,2));
 void *ruby_xrealloc(void*,size_t) RUBY_ATTR_ALLOC_SIZE((2));
 void *ruby_xrealloc2(void*,size_t,size_t) RUBY_ATTR_ALLOC_SIZE((2,3));
 void ruby_xfree(void*);
