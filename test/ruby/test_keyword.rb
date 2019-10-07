@@ -2637,6 +2637,10 @@ class TestKeywordArguments < Test::Unit::TestCase
         send(meth, *args)
       end
 
+      ruby2_keywords(define_method(:bfoo) do |meth, *args|
+        send(meth, *args)
+      end)
+
       ruby2_keywords def foo_bar(*args)
         bar(*args)
       end
@@ -2743,6 +2747,8 @@ class TestKeywordArguments < Test::Unit::TestCase
 
     assert_equal([[1], h1], o.foo(:bar, 1, :a=>1))
     assert_equal([1, h1], o.foo(:baz, 1, :a=>1))
+    assert_equal([[1], h1], o.bfoo(:bar, 1, :a=>1))
+    assert_equal([1, h1], o.bfoo(:baz, 1, :a=>1))
     assert_equal([[1], h1], o.store_foo(:bar, 1, :a=>1))
     assert_equal([1, h1], o.store_foo(:baz, 1, :a=>1))
     assert_equal([[1], h1], o.foo_bar(1, :a=>1))
@@ -2750,6 +2756,8 @@ class TestKeywordArguments < Test::Unit::TestCase
 
     assert_equal([[1], h1], o.foo(:bar, 1, **h1))
     assert_equal([1, h1], o.foo(:baz, 1, **h1))
+    assert_equal([[1], h1], o.bfoo(:bar, 1, **h1))
+    assert_equal([1, h1], o.bfoo(:baz, 1, **h1))
     assert_equal([[1], h1], o.store_foo(:bar, 1, **h1))
     assert_equal([1, h1], o.store_foo(:baz, 1, **h1))
     assert_equal([[1], h1], o.foo_bar(1, **h1))
@@ -2757,6 +2765,8 @@ class TestKeywordArguments < Test::Unit::TestCase
 
     assert_equal([[h1], {}], o.foo(:bar, h1, **{}))
     assert_equal([h1], o.foo(:baz, h1, **{}))
+    assert_equal([[h1], {}], o.bfoo(:bar, h1, **{}))
+    assert_equal([h1], o.bfoo(:baz, h1, **{}))
     assert_equal([[h1], {}], o.store_foo(:bar, h1, **{}))
     assert_equal([h1], o.store_foo(:baz, h1, **{}))
     assert_equal([[h1], {}], o.foo_bar(h1, **{}))
@@ -2766,6 +2776,10 @@ class TestKeywordArguments < Test::Unit::TestCase
       assert_equal([[1], h1], o.foo(:bar, 1, h1))
     end
     assert_equal([1, h1], o.foo(:baz, 1, h1))
+    assert_warn(/The last argument is used as the keyword parameter.* for `bar'/m) do
+      assert_equal([[1], h1], o.bfoo(:bar, 1, h1))
+    end
+    assert_equal([1, h1], o.bfoo(:baz, 1, h1))
     assert_warn(/The last argument is used as the keyword parameter.* for `bar'/m) do
       assert_equal([[1], h1], o.store_foo(:bar, 1, h1))
     end
@@ -2797,6 +2811,8 @@ class TestKeywordArguments < Test::Unit::TestCase
 
     assert_equal([[1], h1], o.foo(:dbar, 1, :a=>1))
     assert_equal([1, h1], o.foo(:dbaz, 1, :a=>1))
+    assert_equal([[1], h1], o.bfoo(:dbar, 1, :a=>1))
+    assert_equal([1, h1], o.bfoo(:dbaz, 1, :a=>1))
     assert_equal([[1], h1], o.store_foo(:dbar, 1, :a=>1))
     assert_equal([1, h1], o.store_foo(:dbaz, 1, :a=>1))
     assert_equal([[1], h1], o.foo_dbar(1, :a=>1))
@@ -2804,6 +2820,8 @@ class TestKeywordArguments < Test::Unit::TestCase
 
     assert_equal([[1], h1], o.foo(:dbar, 1, **h1))
     assert_equal([1, h1], o.foo(:dbaz, 1, **h1))
+    assert_equal([[1], h1], o.bfoo(:dbar, 1, **h1))
+    assert_equal([1, h1], o.bfoo(:dbaz, 1, **h1))
     assert_equal([[1], h1], o.store_foo(:dbar, 1, **h1))
     assert_equal([1, h1], o.store_foo(:dbaz, 1, **h1))
     assert_equal([[1], h1], o.foo_dbar(1, **h1))
@@ -2811,6 +2829,8 @@ class TestKeywordArguments < Test::Unit::TestCase
 
     assert_equal([[h1], {}], o.foo(:dbar, h1, **{}))
     assert_equal([h1], o.foo(:dbaz, h1, **{}))
+    assert_equal([[h1], {}], o.bfoo(:dbar, h1, **{}))
+    assert_equal([h1], o.bfoo(:dbaz, h1, **{}))
     assert_equal([[h1], {}], o.store_foo(:dbar, h1, **{}))
     assert_equal([h1], o.store_foo(:dbaz, h1, **{}))
     assert_equal([[h1], {}], o.foo_dbar(h1, **{}))
@@ -2820,6 +2840,10 @@ class TestKeywordArguments < Test::Unit::TestCase
       assert_equal([[1], h1], o.foo(:dbar, 1, h1))
     end
     assert_equal([1, h1], o.foo(:dbaz, 1, h1))
+    assert_warn(/The last argument is used as the keyword parameter.* for method/m) do
+      assert_equal([[1], h1], o.bfoo(:dbar, 1, h1))
+    end
+    assert_equal([1, h1], o.bfoo(:dbaz, 1, h1))
     assert_warn(/The last argument is used as the keyword parameter.* for method/m) do
       assert_equal([[1], h1], o.store_foo(:dbar, 1, h1))
     end
@@ -2883,10 +2907,17 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h1], o.baz(1, h1))
     assert_equal([h1], o.baz(h1, **{}))
 
-    assert_warn(/Skipping set of ruby2_keywords flag for bar \(method not defined in Ruby, method accepts keywords, or method does not accept argument splat\)/) do
+    assert_warn(/Skipping set of ruby2_keywords flag for bar \(method accepts keywords or method does not accept argument splat\)/) do
       assert_nil(c.send(:ruby2_keywords, :bar))
     end
 
+    o = Object.new
+    class << o
+      alias bar p
+    end
+    assert_warn(/Skipping set of ruby2_keywords flag for bar \(method not defined in Ruby\)/) do
+      assert_nil(o.singleton_class.send(:ruby2_keywords, :bar))
+    end
     sc = Class.new(c)
     assert_warn(/Skipping set of ruby2_keywords flag for bar \(can only set in method defining module\)/) do
       sc.send(:ruby2_keywords, :bar)
