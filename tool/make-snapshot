@@ -630,9 +630,9 @@ end
 
 yaml = info.values.to_yaml
 json = info.values.to_json
-puts "#{$colorize.pass('JSON:')}"
-puts yaml
 puts "#{$colorize.pass('YAML:')}"
+puts yaml
+puts "#{$colorize.pass('JSON:')}"
 puts json
 infodir = Pathname(destdir) + 'info'
 infodir.mkpath
