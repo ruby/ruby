@@ -628,8 +628,16 @@ revisions.collect {|rev| package(vcs, rev, destdir, tmp)}.flatten.each do |name|
   end
 end
 
-File.write('info.yml', info.values.to_yaml)
-File.write('info.json', info.values.to_json)
+yaml = info.values.to_yaml
+json = info.values.to_json
+puts "#{$colorize.pass('JSON:')}"
+puts yaml
+puts "#{$colorize.pass('YAML:')}"
+puts json
+infodir = Pathname(destdir) + 'info'
+infodir.mkpath
+(infodir+'info.yml').write(yaml)
+(infodir+'info.json').write(json)
 
 exit false if !success
 
