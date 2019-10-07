@@ -21,7 +21,7 @@ grammar = %r'
     (?<keyword>  typedef | extern | static | auto | register |
                  struct  | union  | enum                           ){0}
     (?<C>        (?: \g<block> | [^{}]+ )*                         ){0}
-    (?<block>    \{ \g<ws>* ^ \g<C> $ \g<ws>* \}                   ){0}
+    (?<block>    \{ \g<ws>*   \g<C>   \g<ws>* \}                   ){0}
     (?<ws>       \g<comment> | \s                                  ){0}
     (?<ident>    [_a-zA-Z] [0-9_a-zA-Z]*                           ){0}
     (?<type>     (?: \g<keyword> \g<ws>+ )* \g<ident>              ){0}

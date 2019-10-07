@@ -2357,10 +2357,32 @@ struct rb_execution_context_struct;
 struct rb_control_frame_struct;
 struct rb_calling_info;
 struct rb_call_data;
+/* I have several reasons to chose 64 here:
+ *
+ * - A cache line must be a power-of-two size.
+ * - Setting this to anything less than or equal to 32 boosts nothing.
+ * - I have never seen an architecture that has 128 byte L1 cache line.
+ * - I know Intel Core and Sparc T4 at least uses 64.
+ * - I know jemalloc internally has this exact same `#define CACHE_LINE 64`.
+ *   https://github.com/jemalloc/jemalloc/blob/dev/include/jemalloc/internal/jemalloc_internal_types.h
+ */
+#define CACHELINE 64
 struct rb_call_cache {
     /* inline cache: keys */
     rb_serial_t method_state;
-    rb_serial_t class_serial;
+    rb_serial_t class_serial[
+        (CACHELINE
+         - sizeof(rb_serial_t)                                   /* method_state */
+         - sizeof(struct rb_callable_method_entry_struct *)      /* me */
+         - sizeof(struct rb_callable_method_definition_struct *) /* def */
+         - sizeof(enum method_missing_reason)                    /* aux */
+         - sizeof(VALUE (*)(                                     /* call */
+               struct rb_execution_context_struct *e,
+               struct rb_control_frame_struct *,
+               struct rb_calling_info *,
+               const struct rb_call_data *)))
+        / sizeof(rb_serial_t)
+    ];
 
     /* inline cache: values */
     const struct rb_callable_method_entry_struct *me;
@@ -2377,6 +2399,7 @@ struct rb_call_cache {
         int inc_sp; /* used by cfunc */
     } aux;
 };
+STATIC_ASSERT(cachelined, sizeof(struct rb_call_cache) <= CACHELINE);
 struct rb_call_info {
     /* fixed at compile time */
     ID mid;

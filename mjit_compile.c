@@ -87,7 +87,7 @@ has_valid_method_type(CALL_CACHE cc)
 {
     extern bool mjit_valid_class_serial_p(rb_serial_t class_serial);
     return GET_GLOBAL_METHOD_STATE() == cc->method_state
-        && mjit_valid_class_serial_p(cc->class_serial) && cc->me;
+        && mjit_valid_class_serial_p(cc->class_serial[0]) && cc->me;
 }
 
 // Returns true if iseq can use fastpath for setup, otherwise NULL. This becomes true in the same condition
