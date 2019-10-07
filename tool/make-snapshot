@@ -7,6 +7,8 @@ require 'fileutils'
 require 'shellwords'
 require 'tmpdir'
 require 'pathname'
+require 'yaml'
+require 'json'
 require File.expand_path("../lib/vcs", __FILE__)
 require File.expand_path("../lib/colorize", __FILE__)
 STDOUT.sync = true
@@ -592,6 +594,9 @@ else
   end
 end
 
+release_date = Time.now.getutc
+info = {}
+
 success = true
 revisions.collect {|rev| package(vcs, rev, destdir, tmp)}.flatten.each do |name|
   if !name
@@ -599,12 +604,32 @@ revisions.collect {|rev| package(vcs, rev, destdir, tmp)}.flatten.each do |name|
     next
   end
   str = open(name, "rb") {|f| f.read}
+  pathname = Pathname(name)
+  basename = pathname.basename.to_s
+  extname = pathname.extname.sub(/\A\./, '')
+  version = basename[/\Aruby-(.*)\.(?:tar|zip)/, 1]
+  key = basename[/\A(.*)\.(?:tar|zip)/, 1]
+  info[key] ||= Hash.new{|h,k|h[k]={}}
+  info[key]['version'] = version if version
+  info[key]['date'] = release_date.strftime('%Y-%m-%d')
+  if version
+    info[key]['post'] = "/en/news/#{release_date.strftime('%Y/%m/%d')}/ruby-#{version.tr('.', '-')}-released/"
+    info[key]['url'][extname] = "https://cache.ruby-lang.org/pub/ruby/#{version[/\A\d+\.\d+/]}/#{basename}"
+  else
+    info[key]['filename'][extname] = basename
+  end
+  info[key]['size'][extname] = str.bytesize
   puts "* #{$colorize.pass(name)}"
   puts "      SIZE:   #{str.bytesize} bytes"
   $digests.each do |alg|
-    printf "      %-8s%s\n", "#{alg}:", Digest.const_get(alg).hexdigest(str)
+    digest = Digest(alg).hexdigest(str)
+    info[key][alg.downcase][extname] = digest
+    printf "      %-8s%s\n", "#{alg}:", digest
   end
 end
+
+File.write('info.yml', info.values.to_yaml)
+File.write('info.json', info.values.to_json)
 
 exit false if !success
 
