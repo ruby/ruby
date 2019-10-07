@@ -1903,7 +1903,7 @@ VALUE rb_funcall_with_block_kw(VALUE, ID, int, const VALUE*, VALUE, int);
 int rb_scan_args(int, const VALUE*, const char*, ...);
 #define RB_SCAN_ARGS_PASS_CALLED_KEYWORDS 0
 #define RB_SCAN_ARGS_KEYWORDS 1
-#define RB_SCAN_ARGS_EMPTY_KEYWORDS 2
+#define RB_SCAN_ARGS_EMPTY_KEYWORDS 2 /* Will be removed in 3.0 */
 #define RB_SCAN_ARGS_LAST_HASH_KEYWORDS 3
 int rb_scan_args_kw(int, int, const VALUE*, const char*, ...);
 VALUE rb_call_super(int, const VALUE*);
@@ -1978,7 +1978,7 @@ VALUE rb_yield_splat_kw(VALUE, int);
 VALUE rb_yield_block(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg)); /* rb_block_call_func */
 #define RB_NO_KEYWORDS 0
 #define RB_PASS_KEYWORDS 1
-#define RB_PASS_EMPTY_KEYWORDS 2
+#define RB_PASS_EMPTY_KEYWORDS 2 /* Will be removed in 3.0 */
 #define RB_PASS_CALLED_KEYWORDS 3
 int rb_keyword_given_p(void);
 int rb_block_given_p(void);

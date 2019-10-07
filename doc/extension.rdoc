@@ -468,6 +468,7 @@ To specify whether keyword arguments are passed when calling super:
 RB_NO_KEYWORDS :: Do not pass keywords
 RB_PASS_KEYWORDS :: Pass keywords, final argument should be a hash of keywords
 RB_PASS_EMPTY_KEYWORDS :: Pass empty keywords (not included in arguments)
+                          (this will be removed in Ruby 3.0)
 RB_PASS_CALLED_KEYWORDS :: Pass keywords if current method was called with
                            keywords, useful for argument delegation
 
@@ -1483,6 +1484,7 @@ rb_scan_args_kw(int kw_splat, int argc, VALUE *argv, const char *fmt, ...) ::
   RB_SCAN_ARGS_KEYWORDS :: The final argument should be a hash treated as
                            keywords.
   RB_SCAN_ARGS_EMPTY_KEYWORDS :: Don't treat a final hash as keywords.
+                                 (this will be removed in Ruby 3.0)
   RB_SCAN_ARGS_LAST_HASH_KEYWORDS :: Treat a final argument as keywords if it
                                      is a hash, and not as keywords otherwise.
 
