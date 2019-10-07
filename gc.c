@@ -8409,10 +8409,12 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
         RMOVED(moved_list)->next = 0;
         page->free_slots++;
         heap_page_add_freeobj(objspace, page, moved_list);
-        if (page->free_slots == page->total_slots) {
+        if (page->free_slots == page->total_slots && heap_pages_freeable_pages > 0) {
             heap_pages_freeable_pages--;
 	    heap_unlink_page(objspace, heap_eden, page);
 	    heap_add_page(objspace, heap_tomb, page);
+        } else if (page->free_slots == page->total_slots) {
+            page->free_next = NULL;
         }
         objspace->profile.total_freed_objects++;
         moved_list = next_moved;
