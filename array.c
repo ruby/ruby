@@ -4668,6 +4668,36 @@ rb_ary_and(VALUE ary1, VALUE ary2)
     return ary3;
 }
 
+/*
+ *  call-seq:
+ *     ary.intersection(other_ary1, other_ary2, ...)      -> new_ary
+ *
+ *  Set Intersection --- Returns a new array containing unique elements common
+ *  to +self+ and <code>other_ary</code>s. Order is preserved from the original
+ *  array.
+ *
+ *  It compares elements using their #hash and #eql? methods for efficiency.
+ *
+ *     [ 1, 1, 3, 5 ].intersection([ 3, 2, 1 ])                    # => [ 1, 3 ]
+ *     [ "a", "b", "z" ].intersection([ "a", "b", "c" ], [ "b" ])  # => [ "b" ]
+ *     [ "a" ].intersection #=> [ "a" ]
+ *
+ *  See also Array#&.
+ */
+
+static VALUE
+rb_ary_intersection_multi(int argc, VALUE *argv, VALUE ary)
+{
+    VALUE result = rb_ary_dup(ary);
+    int i;
+
+    for (i = 0; i < argc; i++) {
+        result = rb_ary_and(result, argv[i]);
+    }
+
+    return result;
+}
+
 static int
 ary_hash_orset(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 {
@@ -6928,6 +6958,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "concat", rb_ary_concat_multi, -1);
     rb_define_method(rb_cArray, "union", rb_ary_union_multi, -1);
     rb_define_method(rb_cArray, "difference", rb_ary_difference_multi, -1);
+    rb_define_method(rb_cArray, "intersection", rb_ary_intersection_multi, -1);
     rb_define_method(rb_cArray, "<<", rb_ary_push, 1);
     rb_define_method(rb_cArray, "push", rb_ary_push_m, -1);
     rb_define_alias(rb_cArray,  "append", "push");
