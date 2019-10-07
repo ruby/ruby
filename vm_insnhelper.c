@@ -1422,14 +1422,56 @@ rb_vm_search_method_slowpath(struct rb_call_data *cd, VALUE klass)
     struct rb_call_cache *cc = &cd->cc;
     const rb_callable_method_entry_t *me =
         rb_callable_method_entry(klass, ci->mid);
-    *cc = (struct rb_call_cache) {
+    struct rb_call_cache buf = {
         GET_GLOBAL_METHOD_STATE(),
-        RCLASS_SERIAL(klass),
+        { RCLASS_SERIAL(klass) },
         me,
         me ? me->def : NULL,
         calccall(cd, me),
     };
+    if (buf.call != vm_call_general) {
+        for (int i = 0; i < numberof(cc->class_serial) - 1; i++) {
+            buf.class_serial[i + 1] = cc->class_serial[i];
+        }
+    }
+    MEMCPY(cc, &buf, struct rb_call_cache, 1);
     VM_ASSERT(callable_method_entry_p(cc->me));
+}
+
+static inline bool
+vm_cache_check_for_class_serial(struct rb_call_cache *cc, rb_serial_t class_serial)
+{
+    int i;
+    rb_serial_t j;
+
+    for (i = 0; i < numberof(cc->class_serial); i++) {
+        j = cc->class_serial[i];
+
+        if (! j) {
+            break;
+        }
+        else if (j != class_serial) {
+            continue;
+        }
+        else if (! i) {
+            return true;
+        }
+        else {
+            goto hit;
+        }
+    }
+
+    RB_DEBUG_COUNTER_INC(mc_class_serial_miss);
+    return false;
+
+  hit:
+    for (; i > 0; i--) {
+        cc->class_serial[i] = cc->class_serial[i - 1];
+    }
+
+    cc->class_serial[0] = j;
+    MEMZERO(&cc->aux, cc->aux, 1); /* cc->call is valid, but cc->aux might not. */
+    return true;
 }
 
 static void
@@ -1440,8 +1482,7 @@ vm_search_method_fastpath(struct rb_call_data *cd, VALUE klass)
 #if OPT_INLINE_METHOD_CACHE
     if (LIKELY(RB_DEBUG_COUNTER_INC_UNLESS(mc_global_state_miss,
 					   GET_GLOBAL_METHOD_STATE() == cc->method_state) &&
-	       RB_DEBUG_COUNTER_INC_UNLESS(mc_class_serial_miss,
-					   RCLASS_SERIAL(klass) == cc->class_serial))) {
+               vm_cache_check_for_class_serial(cc, RCLASS_SERIAL(klass)))) {
 	/* cache hit! */
 	VM_ASSERT(cc->call != NULL);
 	RB_DEBUG_COUNTER_INC(mc_inline_hit);
@@ -1605,24 +1646,16 @@ opt_eql_func(VALUE recv, VALUE obj, CALL_DATA cd)
 VALUE
 rb_equal_opt(VALUE obj1, VALUE obj2)
 {
-    struct rb_call_data cd;
+    struct rb_call_data cd = { .ci = { .mid = idEq, }, };
 
-    cd.ci.mid = idEq;
-    cd.cc.method_state = 0;
-    cd.cc.class_serial = 0;
-    cd.cc.me = NULL;
     return opt_eq_func(obj1, obj2, &cd);
 }
 
 VALUE
 rb_eql_opt(VALUE obj1, VALUE obj2)
 {
-    struct rb_call_data cd;
+    struct rb_call_data cd = { .ci = { .mid = idEqlP, }, };
 
-    cd.ci.mid = idEqlP;
-    cd.cc.method_state = 0;
-    cd.cc.class_serial = 0;
-    cd.cc.me = NULL;
     return opt_eql_func(obj1, obj2, &cd);
 }
 
