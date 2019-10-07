@@ -1,5 +1,7 @@
 # frozen_string_literal: false
-#
+
+require 'bigdecimal'
+
 # require 'bigdecimal/jacobian'
 #
 # Provides methods to compute the Jacobian matrix of a set of equations at a
@@ -21,9 +23,6 @@
 #
 # fx is f.values(x).
 #
-
-require 'bigdecimal'
-
 module Jacobian
   module_function
 
