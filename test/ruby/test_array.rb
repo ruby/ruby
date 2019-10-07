@@ -241,6 +241,23 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[],     @cls[ 1, 2, 3 ]*64 & @cls[ 4, 5, 6 ]*64)
   end
 
+  def test_intersection
+    assert_equal(@cls[1, 2], @cls[1, 2, 3].intersection(@cls[1, 2]))
+    assert_equal(@cls[ ], @cls[1].intersection(@cls[ ]))
+    assert_equal(@cls[ ], @cls[ ].intersection(@cls[1]))
+    assert_equal(@cls[1], @cls[1, 2, 3].intersection(@cls[1, 2], @cls[1]))
+    assert_equal(@cls[ ], @cls[1, 2, 3].intersection(@cls[1, 2], @cls[3]))
+    assert_equal(@cls[ ], @cls[1, 2, 3].intersection(@cls[4, 5, 6]))
+  end
+
+  def test_intersection_big_array
+    assert_equal(@cls[1, 2], (@cls[1, 2, 3] * 64).intersection(@cls[1, 2] * 64))
+    assert_equal(@cls[ ], (@cls[1] * 64).intersection(@cls[ ]))
+    assert_equal(@cls[ ], @cls[ ].intersection(@cls[1] * 64))
+    assert_equal(@cls[1], (@cls[1, 2, 3] * 64).intersection((@cls[1, 2] * 64), (@cls[1] * 64)))
+    assert_equal(@cls[ ], (@cls[1, 2, 3] * 64).intersection(@cls[4, 5, 6] * 64))
+  end
+
   def test_MUL # '*'
     assert_equal(@cls[], @cls[]*3)
     assert_equal(@cls[1, 1, 1], @cls[1]*3)

@@ -129,6 +129,12 @@ sufficient information, see the ChangeLog file or Redmine
 
 === Core classes updates (outstanding ones only)
 
+Array::
+
+  New method::
+
+    * Added Array#intersection. [Feature #16155]
+
 Complex::
 
   New method::
