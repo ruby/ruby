@@ -2099,6 +2099,12 @@ iseq_inspect(const rb_iseq_t *iseq)
     }
 }
 
+static const rb_data_type_t tmp_set = {
+    "tmpset",
+    {(void (*)(void *))rb_mark_set, (void (*)(void *))st_free_table, 0, 0,},
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
 static VALUE
 rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
 {
@@ -2112,6 +2118,7 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
     size_t n;
     enum {header_minlen = 72};
     st_table *done_iseq = 0;
+    VALUE done_iseq_wrapper = Qnil;
     const char *indent_str;
     long indent_len;
 
@@ -2151,7 +2158,10 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
 			(int)entry->end, (int)entry->sp, (int)entry->cont);
 	    if (entry->iseq && !(done_iseq && st_is_member(done_iseq, (st_data_t)entry->iseq))) {
 		rb_str_concat(str, rb_iseq_disasm_recursive(rb_iseq_check(entry->iseq), indent));
-		if (!done_iseq) done_iseq = st_init_numtable();
+		if (!done_iseq) {
+                    done_iseq = st_init_numtable();
+                    done_iseq_wrapper = TypedData_Wrap_Struct(0, &tmp_set, done_iseq);
+                }
 		st_insert(done_iseq, (st_data_t)entry->iseq, (st_data_t)0);
 		indent_str = RSTRING_PTR(indent);
 	    }
@@ -2231,7 +2241,7 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
 	rb_str_concat(str, rb_iseq_disasm_recursive(rb_iseq_check((rb_iseq_t *)isv), indent));
 	indent_str = RSTRING_PTR(indent);
     }
-    if (done_iseq) st_free_table(done_iseq);
+    RB_GC_GUARD(done_iseq_wrapper);
 
     return str;
 }
@@ -2544,6 +2554,12 @@ cdhash_each(VALUE key, VALUE value, VALUE ary)
     return ST_CONTINUE;
 }
 
+static const rb_data_type_t label_wrapper = {
+    "label_wrapper",
+    {(void (*)(void *))rb_mark_tbl, (void (*)(void *))st_free_table, 0, 0,},
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
 static VALUE
 iseq_data_to_ary(const rb_iseq_t *iseq)
 {
@@ -2566,6 +2582,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 
     static ID insn_syms[VM_INSTRUCTION_SIZE/2]; /* w/o-trace only */
     struct st_table *labels_table = st_init_numtable();
+    VALUE labels_wrapper = TypedData_Wrap_Struct(0, &label_wrapper, labels_table);
 
     DECL_SYMBOL(top);
     DECL_SYMBOL(method);
@@ -2841,8 +2858,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 	pos += RARRAY_LENINT(ary); /* reject too huge data */
     }
     RB_GC_GUARD(nbody);
-
-    st_free_table(labels_table);
+    RB_GC_GUARD(labels_wrapper);
 
     rb_hash_aset(misc, ID2SYM(rb_intern("arg_size")), INT2FIX(iseq_body->param.size));
     rb_hash_aset(misc, ID2SYM(rb_intern("local_size")), INT2FIX(iseq_body->local_table_size));
