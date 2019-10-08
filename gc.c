@@ -4710,7 +4710,7 @@ static int
 mark_key(st_data_t key, st_data_t value, st_data_t data)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)data;
-    gc_mark(objspace, (VALUE)key);
+    gc_mark_and_pin(objspace, (VALUE)key);
     return ST_CONTINUE;
 }
 
@@ -4741,6 +4741,16 @@ mark_keyvalue(st_data_t key, st_data_t value, st_data_t data)
 
     gc_mark(objspace, (VALUE)key);
     gc_mark(objspace, (VALUE)value);
+    return ST_CONTINUE;
+}
+
+static int
+pin_key_pin_value(st_data_t key, st_data_t value, st_data_t data)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)data;
+
+    gc_mark_and_pin(objspace, (VALUE)key);
+    gc_mark_and_pin(objspace, (VALUE)value);
     return ST_CONTINUE;
 }
 
@@ -4779,7 +4789,7 @@ static void
 mark_st(rb_objspace_t *objspace, st_table *tbl)
 {
     if (!tbl) return;
-    st_foreach(tbl, mark_keyvalue, (st_data_t)objspace);
+    st_foreach(tbl, pin_key_pin_value, (st_data_t)objspace);
 }
 
 void
