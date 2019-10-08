@@ -1756,11 +1756,14 @@ BigDecimal_fix(VALUE self)
  * round(n, mode)
  *
  * Round to the nearest integer (by default), returning the result as a
- * BigDecimal.
+ * BigDecimal if n is specified, or as an Integer if it isn't.
  *
  *	BigDecimal('3.14159').round #=> 3
  *	BigDecimal('8.7').round #=> 9
  *	BigDecimal('-9.9').round #=> -10
+ *
+ *	BigDecimal('3.14159').round(2).class.name #=> "BigDecimal"
+ *	BigDecimal('3.14159').round.class.name #=> "Integer"
  *
  * If n is specified and positive, the fractional part of the result has no
  * more than that many digits.
@@ -2585,7 +2588,7 @@ opts_exception_p(VALUE opts)
 #endif
 
 static Real *
-BigDecimal_new(int argc, VALUE *argv)
+VpNewVarArg(int argc, VALUE *argv)
 {
     size_t mf;
     VALUE  opts = Qnil;
@@ -2726,13 +2729,27 @@ f_BigDecimal(int argc, VALUE *argv, VALUE self)
         if (argc == 1 || (argc == 2 && RB_TYPE_P(argv[1], T_HASH))) return argv[0];
     }
     obj = TypedData_Wrap_Struct(rb_cBigDecimal, &BigDecimal_data_type, 0);
-    pv = BigDecimal_new(argc, argv);
+    pv = VpNewVarArg(argc, argv);
     if (pv == NULL) return Qnil;
     SAVE(pv);
     if (ToValue(pv)) pv = VpCopy(NULL, pv);
     RTYPEDDATA_DATA(obj) = pv;
     RB_OBJ_FREEZE(obj);
     return pv->obj = obj;
+}
+
+static VALUE
+BigDecimal_s_interpret_loosely(VALUE klass, VALUE str)
+{
+    ENTER(1);
+    char const *c_str;
+    Real *pv;
+
+    c_str = StringValueCStr(str);
+    GUARD_OBJ(pv, VpAlloc(0, c_str, 0, 1));
+    pv->obj = TypedData_Wrap_Struct(klass, &BigDecimal_data_type, pv);
+    RB_OBJ_FREEZE(pv->obj);
+    return pv->obj;
 }
 
  /* call-seq:
@@ -2954,6 +2971,10 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
     n = prec + rmpd_double_figures();
     negative = BIGDECIMAL_NEGATIVE_P(vx);
     if (negative) {
+        VALUE x_zero = INT2NUM(1);
+        VALUE x_copy = f_BigDecimal(1, &x_zero, klass);
+        x = BigDecimal_initialize_copy(x_copy, x);
+        vx = DATA_PTR(x);
 	VpSetSign(vx, 1);
     }
 
@@ -3155,20 +3176,6 @@ get_vp_value:
     return y;
 }
 
-VALUE
-rmpd_util_str_to_d(VALUE str)
-{
-  ENTER(1);
-  char const *c_str;
-  Real *pv;
-
-  c_str = StringValueCStr(str);
-  GUARD_OBJ(pv, VpAlloc(0, c_str, 0, 1));
-  pv->obj = TypedData_Wrap_Struct(rb_cBigDecimal, &BigDecimal_data_type, pv);
-  RB_OBJ_FREEZE(pv->obj);
-  return pv->obj;
-}
-
 /* Document-class: BigDecimal
  * BigDecimal provides arbitrary-precision floating point decimal arithmetic.
  *
@@ -3315,6 +3322,7 @@ Init_bigdecimal(void)
     /* Class methods */
     rb_undef_method(CLASS_OF(rb_cBigDecimal), "allocate");
     rb_undef_method(CLASS_OF(rb_cBigDecimal), "new");
+    rb_define_singleton_method(rb_cBigDecimal, "interpret_loosely", BigDecimal_s_interpret_loosely, 1);
     rb_define_singleton_method(rb_cBigDecimal, "mode", BigDecimal_mode, -1);
     rb_define_singleton_method(rb_cBigDecimal, "limit", BigDecimal_limit, -1);
     rb_define_singleton_method(rb_cBigDecimal, "double_fig", BigDecimal_double_fig, 0);
@@ -4296,7 +4304,7 @@ VpAlloc(size_t mx, const char *szVal, int strict_p, int exc)
 
     psz[i] = '\0';
 
-    if (((ni == 0 || dot_seen) && nf == 0) || (exp_seen && ne == 0)) {
+    if (strict_p && (((ni == 0 || dot_seen) && nf == 0) || (exp_seen && ne == 0))) {
         VALUE str;
       invalid_value:
         if (!strict_p) {
