@@ -4778,7 +4778,7 @@ env_delete(VALUE name)
  * yields +name+ to the block and returns +nil+:
  *   ENV.delete('foo') { |name| puts name } # => nil
  *   foo
- * If no block given and the environment variable exists,
+ * If a block given and the environment variable exists,
  * deletes the environment variable and returns its value (ignoring the block):
  *   ENV['foo'] = '0'
  *   ENV.delete('foo') { |name| fail 'ignored' } # => "0"
