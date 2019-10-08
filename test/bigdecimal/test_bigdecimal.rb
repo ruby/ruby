@@ -1884,10 +1884,12 @@ class TestBigDecimal < Test::Unit::TestCase
     EOS
   end
 
-  def test_no_initialize_copy
-    assert_equal(false, BigDecimal(1).respond_to?(:initialize_copy, true))
-    assert_equal(false, BigDecimal(1).respond_to?(:initialize_dup, true))
-    assert_equal(false, BigDecimal(1).respond_to?(:initialize_clone, true))
+  def test_initialize_copy_dup_clone_frozen_error
+    bd = BigDecimal(1)
+    bd2 = BigDecimal(2)
+    assert_raise(FrozenError) { bd.send(:initialize_copy, bd2) }
+    assert_raise(FrozenError) { bd.send(:initialize_clone, bd2) }
+    assert_raise(FrozenError) { bd.send(:initialize_dup, bd2) }
   end
 
   def assert_no_memory_leak(code, *rest, **opt)
