@@ -648,7 +648,7 @@ EOS
   if enable_config("socks", ENV["SOCKS_SERVER"])
     if have_library("socks5", "SOCKSinit")
       $defs << "-DSOCKS5" << "-DSOCKS"
-    elsif have_library("socks", "Rconnect") || have_library("socksd", "Rconnect")
+    elsif have_library("socksd", "Rconnect") || have_library("socks", "Rconnect")
       $defs << "-DSOCKS"
     end
   end
