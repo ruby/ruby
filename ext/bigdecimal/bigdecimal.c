@@ -3451,7 +3451,9 @@ Init_bigdecimal(void)
 
 
     /* instance methods */
-    rb_define_method(rb_cBigDecimal, "initialize_copy", BigDecimal_initialize_copy, 1);
+    rb_undef_method(rb_cBigDecimal, "initialize_copy");
+    rb_undef_method(rb_cBigDecimal, "initialize_clone");
+    rb_undef_method(rb_cBigDecimal, "initialize_dup");
     rb_define_method(rb_cBigDecimal, "precs", BigDecimal_prec, 0);
 
     rb_define_method(rb_cBigDecimal, "add", BigDecimal_add2, 2);

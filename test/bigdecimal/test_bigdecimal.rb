@@ -1876,6 +1876,12 @@ class TestBigDecimal < Test::Unit::TestCase
     EOS
   end
 
+  def test_no_initialize_copy
+    assert_equal(false, BigDecimal(1).respond_to?(:initialize_copy, true))
+    assert_equal(false, BigDecimal(1).respond_to?(:initialize_dup, true))
+    assert_equal(false, BigDecimal(1).respond_to?(:initialize_clone, true))
+  end
+
   def assert_no_memory_leak(code, *rest, **opt)
     code = "8.times {20_000.times {begin #{code}; rescue NoMemoryError; end}; GC.start}"
     super(["-rbigdecimal"],
