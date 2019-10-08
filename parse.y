@@ -302,9 +302,11 @@ struct parser_params {
 #else
     /* Ripper only */
 
-    VALUE delayed;
-    int delayed_line;
-    int delayed_col;
+    struct {
+	VALUE token;
+	int line;
+	int col;
+    } delayed;
 
     VALUE value;
     VALUE result;
@@ -5432,16 +5434,16 @@ ripper_dispatch_delayed_token(struct parser_params *p, enum yytokentype t)
     int saved_line = p->ruby_sourceline;
     const char *saved_tokp = p->lex.ptok;
 
-    if (NIL_P(p->delayed)) return;
-    p->ruby_sourceline = p->delayed_line;
-    p->lex.ptok = p->lex.pbeg + p->delayed_col;
-    add_mark_object(p, yylval_rval = ripper_dispatch1(p, ripper_token2eventid(t), p->delayed));
-    p->delayed = Qnil;
+    if (NIL_P(p->delayed.token)) return;
+    p->ruby_sourceline = p->delayed.line;
+    p->lex.ptok = p->lex.pbeg + p->delayed.col;
+    add_mark_object(p, yylval_rval = ripper_dispatch1(p, ripper_token2eventid(t), p->delayed.token));
+    p->delayed.token = Qnil;
     p->ruby_sourceline = saved_line;
     p->lex.ptok = saved_tokp;
 }
 #define dispatch_delayed_token(p, t) ripper_dispatch_delayed_token(p, t)
-#define has_delayed_token(p) (!NIL_P(p->delayed))
+#define has_delayed_token(p) (!NIL_P(p->delayed.token))
 #endif /* RIPPER */
 
 #include "ruby/regex.h"
@@ -6110,12 +6112,12 @@ add_delayed_token(struct parser_params *p, const char *tok, const char *end)
 {
     if (tok < end) {
 	if (!has_delayed_token(p)) {
-	    p->delayed = rb_str_buf_new(1024);
-	    rb_enc_associate(p->delayed, p->enc);
-	    p->delayed_line = p->ruby_sourceline;
-	    p->delayed_col = (int)(tok - p->lex.pbeg);
+	    p->delayed.token = rb_str_buf_new(end - tok);
+	    rb_enc_associate(p->delayed.token, p->enc);
+	    p->delayed.line = p->ruby_sourceline;
+	    p->delayed.col = rb_long2int(tok - p->lex.pbeg);
 	}
-	rb_str_buf_cat(p->delayed, tok, end - tok);
+	rb_str_buf_cat(p->delayed.token, tok, end - tok);
 	p->lex.ptok = end;
     }
 }
@@ -6861,7 +6863,7 @@ flush_string_content(struct parser_params *p, rb_encoding *enc)
     if (has_delayed_token(p)) {
 	ptrdiff_t len = p->lex.pcur - p->lex.ptok;
 	if (len > 0) {
-	    rb_enc_str_buf_cat(p->delayed, p->lex.ptok, len, enc);
+	    rb_enc_str_buf_cat(p->delayed.token, p->lex.ptok, len, enc);
 	}
 	dispatch_delayed_token(p, tSTRING_CONTENT);
 	p->lex.ptok = p->lex.pcur;
@@ -7389,7 +7391,7 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
 			enc = rb_ascii8bit_encoding();
 		    }
 		}
-		rb_enc_str_buf_cat(p->delayed, p->lex.ptok, len, enc);
+		rb_enc_str_buf_cat(p->delayed.token, p->lex.ptok, len, enc);
 	    }
 	    dispatch_delayed_token(p, tSTRING_CONTENT);
 	}
@@ -12183,7 +12185,7 @@ parser_initialize(struct parser_params *p)
     p->lex.lpar_beg = -1; /* make lambda_beginning_p() == FALSE at first */
     p->node_id = 0;
 #ifdef RIPPER
-    p->delayed = Qnil;
+    p->delayed.token = Qnil;
     p->result = Qnil;
     p->parsing_thread = Qnil;
 #else
@@ -12217,7 +12219,7 @@ parser_mark(void *ptr)
     rb_gc_mark(p->compile_option);
     rb_gc_mark(p->error_buffer);
 #else
-    rb_gc_mark(p->delayed);
+    rb_gc_mark(p->delayed.token);
     rb_gc_mark(p->value);
     rb_gc_mark(p->result);
     rb_gc_mark(p->parsing_thread);
