@@ -768,11 +768,7 @@ rb_module_new(void)
 VALUE
 rb_define_module_id(ID id)
 {
-    VALUE mdl;
-
-    mdl = rb_module_new();
-
-    return mdl;
+    return rb_module_new();
 }
 
 VALUE
