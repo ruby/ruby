@@ -20,6 +20,7 @@ jobs:
             vs: 2017
       fail-fast: false
     runs-on: ${{ matrix.os }}
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
       - name: Install libraries with vcpkg
         run: |
