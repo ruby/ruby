@@ -599,7 +599,7 @@ rb_bug(const char *fmt, ...)
 }
 
 void
-rb_bug_for_fatal_signal(RETSIGTYPE (*default_sighandler)(int), int sig, const void *ctx, const char *fmt, ...)
+rb_bug_for_fatal_signal(ruby_sighandler_t default_sighandler, int sig, const void *ctx, const char *fmt, ...)
 {
     const char *file = NULL;
     int line = 0;

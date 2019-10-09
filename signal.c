@@ -507,13 +507,8 @@ static struct {
 volatile unsigned int ruby_nocldwait;
 #endif
 
-#ifdef __dietlibc__
-#define sighandler_t sh_t
-#else
 #define sighandler_t ruby_sighandler_t
-#endif
 
-typedef RETSIGTYPE (*sighandler_t)(int);
 #ifdef USE_SIGALTSTACK
 typedef void ruby_sigaction_t(int, siginfo_t*, void*);
 #define SIGINFO_ARG , siginfo_t *info, void *ctx
