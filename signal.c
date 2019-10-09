@@ -933,7 +933,7 @@ sigbus(int sig SIGINFO_ARG)
 #if defined __APPLE__ || defined __linux__
     CHECK_STACK_OVERFLOW();
 #endif
-    rb_bug_context(SIGINFO_CTX, "Bus Error" MESSAGE_FAULT_ADDRESS);
+    rb_bug_for_fatal_signal(SIGINFO_CTX, "Bus Error" MESSAGE_FAULT_ADDRESS);
 }
 #endif
 
@@ -946,7 +946,7 @@ sigsegv(int sig SIGINFO_ARG)
 {
     check_reserved_signal("SEGV");
     CHECK_STACK_OVERFLOW();
-    rb_bug_context(SIGINFO_CTX, "Segmentation fault" MESSAGE_FAULT_ADDRESS);
+    rb_bug_for_fatal_signal(SIGINFO_CTX, "Segmentation fault" MESSAGE_FAULT_ADDRESS);
 }
 #endif
 
@@ -961,7 +961,7 @@ sigill(int sig SIGINFO_ARG)
 #if defined __APPLE__
     CHECK_STACK_OVERFLOW();
 #endif
-    rb_bug_context(SIGINFO_CTX, "Illegal instruction" MESSAGE_FAULT_ADDRESS);
+    rb_bug_for_fatal_signal(SIGINFO_CTX, "Illegal instruction" MESSAGE_FAULT_ADDRESS);
 }
 #endif
 

@@ -599,7 +599,7 @@ rb_bug(const char *fmt, ...)
 }
 
 void
-rb_bug_context(const void *ctx, const char *fmt, ...)
+rb_bug_for_fatal_signal(const void *ctx, const char *fmt, ...)
 {
     const char *file = NULL;
     int line = 0;
