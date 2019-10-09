@@ -2629,6 +2629,7 @@ VpNewVarArg(int argc, VALUE *argv)
         }
     }
 
+  retry:
     switch (TYPE(iniValue)) {
       case T_DATA:
 	if (is_kind_of_BigDecimal(iniValue)) {
@@ -2665,6 +2666,18 @@ VpNewVarArg(int argc, VALUE *argv)
 		     RB_OBJ_CLASSNAME(iniValue));
 	}
 	return GetVpValueWithPrec(iniValue, mf, 1);
+
+      case T_COMPLEX:
+        {
+            VALUE im;
+            im = rb_complex_imag(iniValue);
+            if (!is_zero(im)) {
+                rb_raise(rb_eArgError,
+                         "Unable to make a BigDecimal from non-zero imaginary number");
+            }
+            iniValue = rb_complex_real(iniValue);
+            goto retry;
+        }
 
       case T_STRING:
 	/* fall through */

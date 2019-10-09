@@ -137,6 +137,14 @@ class TestBigDecimal < Test::Unit::TestCase
     end
   end
 
+  def test_BigDecimal_with_complex
+    assert_equal(BigDecimal("1"), BigDecimal(Complex(1, 0)))
+    assert_equal(BigDecimal("0.333333333333333333333"), BigDecimal(Complex(1.quo(3), 0), 21))
+    assert_equal(BigDecimal("0.1235"), BigDecimal(Complex(0.1234567, 0), 4))
+
+    assert_raise_with_message(ArgumentError, "Unable to make a BigDecimal from non-zero imaginary number") { BigDecimal(Complex(1, 1)) }
+  end
+
   def test_BigDecimal_with_big_decimal
     assert_equal(BigDecimal(1), BigDecimal(BigDecimal(1)))
     assert_equal(BigDecimal('+0'), BigDecimal(BigDecimal('+0')))
