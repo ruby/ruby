@@ -33,6 +33,8 @@ def lldb_init(debugger):
 
 def string2cstr(rstring):
     """Returns the pointer to the C-string in the given String object"""
+    if rstring.TypeIsPointerType():
+        rstring = rstring.Dereference()
     flags = rstring.GetValueForExpressionPath(".basic->flags").unsigned
     if flags & RUBY_T_MASK != RUBY_T_STRING:
         raise TypeError("not a string")
@@ -40,7 +42,7 @@ def string2cstr(rstring):
         cptr = int(rstring.GetValueForExpressionPath(".as.heap.ptr").value, 0)
         clen = int(rstring.GetValueForExpressionPath(".as.heap.len").value, 0)
     else:
-        cptr = int(rstring.GetValueForExpressionPath(".as.ary").value, 0)
+        cptr = int(rstring.GetValueForExpressionPath(".as.ary").location, 0)
         clen = (flags & RSTRING_EMBED_LEN_MASK) >> RSTRING_EMBED_LEN_SHIFT
     return cptr, clen
 
