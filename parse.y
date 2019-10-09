@@ -1540,6 +1540,7 @@ expr		: command_call
 		    }
 		| arg keyword_in
 		    {
+			value_expr($1);
 			SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
 			p->command_start = FALSE;
 			$<num>$ = p->in_kwarg;
