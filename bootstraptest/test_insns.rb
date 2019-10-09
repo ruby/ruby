@@ -427,7 +427,6 @@ tests.compact.each do |(insn, expr, *a)|
   end
 end
 
-
 # with trace
 tests.compact.each {|(insn, expr, *a)|
   progn = "set_trace_func(proc{})\n" + expr

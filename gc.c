@@ -135,7 +135,7 @@ size_add_overflow(size_t x, size_t y)
 
 #elif defined(DSIZE_T)
     RB_GNUC_EXTENSION DSIZE_T dx = x;
-    RB_GNUC_EXTENSION DSIZE_T dy = x;
+    RB_GNUC_EXTENSION DSIZE_T dy = y;
     RB_GNUC_EXTENSION DSIZE_T dz = dx + dy;
     p = dz > SIZE_MAX;
     z = (size_t)dz;
