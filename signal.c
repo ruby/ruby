@@ -937,24 +937,6 @@ sigbus(int sig SIGINFO_ARG)
 }
 #endif
 
-#ifndef __sun
-NORETURN(static void ruby_abort(void));
-#endif
-
-static void
-ruby_abort(void)
-{
-#ifdef __sun
-    /* Solaris's abort() is async signal unsafe. Of course, it is not
-     *  POSIX compliant.
-     */
-    raise(SIGABRT);
-#else
-    abort();
-#endif
-
-}
-
 #ifdef SIGSEGV
 
 NORETURN(static ruby_sigaction_t sigsegv);
@@ -982,6 +964,23 @@ sigill(int sig SIGINFO_ARG)
     rb_bug_context(SIGINFO_CTX, "Illegal instruction" MESSAGE_FAULT_ADDRESS);
 }
 #endif
+
+#ifndef __sun
+NORETURN(static void ruby_abort(void));
+#endif
+
+static void
+ruby_abort(void)
+{
+#ifdef __sun
+    /* Solaris's abort() is async signal unsafe. Of course, it is not
+     *  POSIX compliant.
+     */
+    raise(SIGABRT);
+#else
+    abort();
+#endif
+}
 
 static void
 check_reserved_signal_(const char *name, size_t name_len)
