@@ -244,7 +244,7 @@ rb_adjust_argv_kw_splat(int *argc, const VALUE **argv, int *kw_splat)
             int n = *argc;
             VALUE v;
             VALUE *ptr = rb_alloc_tmp_buffer2(&v, n+1, sizeof(VALUE));
-            memcpy(ptr, *argv, sizeof(VALUE)*n);
+            if (n) memcpy(ptr, *argv, sizeof(VALUE)*n);
             ptr[n] = rb_hash_new();
             *argc = ++n;
             *argv = ptr;
