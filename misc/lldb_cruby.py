@@ -130,11 +130,8 @@ def lldb_inspect(debugger, target, result, val):
             print('T_%s: %s' % ('CLASS' if flType == RUBY_T_CLASS else 'MODULE' if flType == RUBY_T_MODULE else 'ICLASS', val.Dereference()), file=result)
         elif flType == RUBY_T_STRING:
             tRString = target.FindFirstType("struct RString").GetPointerType()
-            val = val.Cast(tRString)
-            if flags & RSTRING_NOEMBED:
-                print(val.GetValueForExpressionPath("->as.heap"), file=result)
-            else:
-                print(val.GetValueForExpressionPath("->as.ary"), file=result)
+            ptr, len = string2cstr(val.Cast(tRString))
+            append_command_output(debugger, "print *(const char (*)[%d])%0#x" % (len, ptr), result)
         elif flType == RUBY_T_SYMBOL:
             tRSymbol = target.FindFirstType("struct RSymbol").GetPointerType()
             print(val.Cast(tRSymbol).Dereference(), file=result)
