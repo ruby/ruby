@@ -30,7 +30,7 @@ Gem::Specification.new do |s|
     sample/pi.rb
   ]
 
-  s.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
+  s.required_ruby_version = Gem::Requirement.new(">= 2.4.0")
 
   s.add_development_dependency "rake", ">= 12.3.3"
   s.add_development_dependency "rake-compiler", ">= 0.9"
