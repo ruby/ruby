@@ -466,6 +466,11 @@ class IPAddr
                    af, _to_string(@addr), _to_string(@mask_addr))
   end
 
+  # Returns the netmask in string format e.g. 255.255.0.0
+  def netmask
+    _to_string(@mask_addr)
+  end
+
   protected
 
   # Set +@addr+, the internal stored ip address, to given +addr+. The
