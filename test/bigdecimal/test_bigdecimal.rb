@@ -1887,9 +1887,10 @@ class TestBigDecimal < Test::Unit::TestCase
   def test_initialize_copy_dup_clone_frozen_error
     bd = BigDecimal(1)
     bd2 = BigDecimal(2)
-    assert_raise(FrozenError) { bd.send(:initialize_copy, bd2) }
-    assert_raise(FrozenError) { bd.send(:initialize_clone, bd2) }
-    assert_raise(FrozenError) { bd.send(:initialize_dup, bd2) }
+    err = RUBY_VERSION >= '2.5' ? FrozenError : TypeError
+    assert_raise(err) { bd.send(:initialize_copy, bd2) }
+    assert_raise(err) { bd.send(:initialize_clone, bd2) }
+    assert_raise(err) { bd.send(:initialize_dup, bd2) }
   end
 
   def assert_no_memory_leak(code, *rest, **opt)
