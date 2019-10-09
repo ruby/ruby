@@ -6620,12 +6620,12 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
          * See http://link.springer.com/article/10.1007/s00607-005-0139-x
          */
         double f, c;
+        double x, t;
 
         f = NUM2DBL(v);
         c = 0.0;
         goto has_float_value;
         for (; i < RARRAY_LEN(ary); i++) {
-            double x, t;
             e = RARRAY_AREF(ary, i);
             if (block_given)
                 e = rb_yield(e);
