@@ -918,6 +918,7 @@ NOINLINE(static void check_reserved_signal_(const char *name, size_t name_len));
 
 #ifdef SIGBUS
 
+static sighandler_t default_sigbus_handler;
 NORETURN(static ruby_sigaction_t sigbus);
 
 static RETSIGTYPE
@@ -933,12 +934,13 @@ sigbus(int sig SIGINFO_ARG)
 #if defined __APPLE__ || defined __linux__
     CHECK_STACK_OVERFLOW();
 #endif
-    rb_bug_for_fatal_signal(SIGINFO_CTX, "Bus Error" MESSAGE_FAULT_ADDRESS);
+    rb_bug_for_fatal_signal(default_sigbus_handler, sig, SIGINFO_CTX, "Bus Error" MESSAGE_FAULT_ADDRESS);
 }
 #endif
 
 #ifdef SIGSEGV
 
+static sighandler_t default_sigsegv_handler;
 NORETURN(static ruby_sigaction_t sigsegv);
 
 static RETSIGTYPE
@@ -946,12 +948,13 @@ sigsegv(int sig SIGINFO_ARG)
 {
     check_reserved_signal("SEGV");
     CHECK_STACK_OVERFLOW();
-    rb_bug_for_fatal_signal(SIGINFO_CTX, "Segmentation fault" MESSAGE_FAULT_ADDRESS);
+    rb_bug_for_fatal_signal(default_sigsegv_handler, sig, SIGINFO_CTX, "Segmentation fault" MESSAGE_FAULT_ADDRESS);
 }
 #endif
 
 #ifdef SIGILL
 
+static sighandler_t default_sigill_handler;
 NORETURN(static ruby_sigaction_t sigill);
 
 static RETSIGTYPE
@@ -961,7 +964,7 @@ sigill(int sig SIGINFO_ARG)
 #if defined __APPLE__
     CHECK_STACK_OVERFLOW();
 #endif
-    rb_bug_for_fatal_signal(SIGINFO_CTX, "Illegal instruction" MESSAGE_FAULT_ADDRESS);
+    rb_bug_for_fatal_signal(default_sigill_handler, sig, SIGINFO_CTX, "Illegal instruction" MESSAGE_FAULT_ADDRESS);
 }
 #endif
 
@@ -1432,21 +1435,28 @@ sig_list(VALUE _)
 	perror(failed); \
     } while (0)
 static int
-install_sighandler(int signum, sighandler_t handler)
+install_sighandler_core(int signum, sighandler_t handler, sighandler_t *old_handler)
 {
     sighandler_t old;
 
     old = ruby_signal(signum, handler);
     if (old == SIG_ERR) return -1;
-    /* signal handler should be inherited during exec. */
-    if (old != SIG_DFL) {
-	ruby_signal(signum, old);
+    if (old_handler) {
+        *old_handler = (old == SIG_DFL || old == SIG_IGN) ? 0 : old;
+    }
+    else {
+        /* signal handler should be inherited during exec. */
+        if (old != SIG_DFL) {
+            ruby_signal(signum, old);
+        }
     }
     return 0;
 }
 
 #  define install_sighandler(signum, handler) \
-    INSTALL_SIGHANDLER(install_sighandler(signum, handler), #signum, signum)
+    INSTALL_SIGHANDLER(install_sighandler_core(signum, handler, NULL), #signum, signum)
+#  define force_install_sighandler(signum, handler, old_handler) \
+    INSTALL_SIGHANDLER(install_sighandler_core(signum, handler, old_handler), #signum, signum)
 
 #if RUBY_SIGCHLD
 static int
@@ -1558,14 +1568,14 @@ Init_signal(void)
 
     if (!ruby_enable_coredump) {
 #ifdef SIGBUS
-	install_sighandler(SIGBUS, (sighandler_t)sigbus);
+	force_install_sighandler(SIGBUS, (sighandler_t)sigbus, &default_sigbus_handler);
 #endif
 #ifdef SIGILL
-	install_sighandler(SIGILL, (sighandler_t)sigill);
+	force_install_sighandler(SIGILL, (sighandler_t)sigill, &default_sigill_handler);
 #endif
 #ifdef SIGSEGV
 	RB_ALTSTACK_INIT(GET_VM()->main_altstack);
-	install_sighandler(SIGSEGV, (sighandler_t)sigsegv);
+	force_install_sighandler(SIGSEGV, (sighandler_t)sigsegv, &default_sigsegv_handler);
 #endif
     }
 #ifdef SIGPIPE

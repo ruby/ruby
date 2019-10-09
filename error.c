@@ -599,7 +599,7 @@ rb_bug(const char *fmt, ...)
 }
 
 void
-rb_bug_for_fatal_signal(const void *ctx, const char *fmt, ...)
+rb_bug_for_fatal_signal(RETSIGTYPE (*default_sighandler)(int), int sig, const void *ctx, const char *fmt, ...)
 {
     const char *file = NULL;
     int line = 0;
@@ -609,6 +609,8 @@ rb_bug_for_fatal_signal(const void *ctx, const char *fmt, ...)
     }
 
     report_bug(file, line, fmt, ctx);
+
+    if (default_sighandler) default_sighandler(sig);
 
     die();
 }
