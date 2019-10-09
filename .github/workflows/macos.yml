@@ -13,6 +13,7 @@ jobs:
       matrix:
         test_task: [ "check", "test-bundler", "test-bundled-gems" ]
       fail-fast: false
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
       - name: Disable Firewall
         run: |
