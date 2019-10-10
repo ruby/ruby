@@ -2668,6 +2668,14 @@ rb_fatal(const char *fmt, ...)
     va_list args;
     VALUE mesg;
 
+    if (! ruby_thread_has_gvl_p()) {
+        /* The thread has no GVL.  Object allocation impossible (cant run GC),
+         * thus no message can be printed out. */
+        fprintf(stderr, "[FATAL] rb_fatal() outside of GVL\n");
+        rb_print_backtrace();
+        die();
+    }
+
     va_start(args, fmt);
     mesg = rb_vsprintf(fmt, args);
     va_end(args);
