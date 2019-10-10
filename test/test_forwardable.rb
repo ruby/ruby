@@ -230,7 +230,7 @@ class TestForwardable < Test::Unit::TestCase
   def test_obj_single_delegators_send_id
     %i[def_delegators def_single_delegators].each do |m|
       obj = single_forwardable_object do
-        singleton_class.attr_reader :receiver
+        singleton_class.__send__ :attr_reader, :receiver
         __send__ m, :@receiver, :__send__, :__id__
       end
 
