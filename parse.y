@@ -165,6 +165,11 @@ struct local_vars {
     struct vtable *past;
 # endif
     struct local_vars *prev;
+# ifndef RIPPER
+    struct {
+	NODE *outer, *inner, *current;
+    } numparam;
+# endif
 };
 
 enum {
@@ -295,10 +300,6 @@ struct parser_params {
     VALUE error_buffer;
     VALUE debug_lines;
     const struct rb_iseq_struct *parent_iseq;
-
-    struct {
-	NODE *outer, *inner, *current;
-    } numparam;
 #else
     /* Ripper only */
 
@@ -9828,8 +9829,9 @@ past_dvar_p(struct parser_params *p, ID id)
 static int
 numparam_nested_p(struct parser_params *p)
 {
-    NODE *outer = p->numparam.outer;
-    NODE *inner = p->numparam.inner;
+    struct local_vars *local = p->lvtbl;
+    NODE *outer = local->numparam.outer;
+    NODE *inner = local->numparam.inner;
     if (outer || inner) {
 	NODE *used = outer ? outer : inner;
 	compile_error(p, "numbered parameter is already used in\n"
@@ -9906,7 +9908,8 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
 	    parser_numbered_param(p, NUMPARAM_ID_TO_IDX(id))) {
 	    if (numparam_nested_p(p)) return 0;
 	    node = NEW_DVAR(id, loc);
-	    if (!p->numparam.current) p->numparam.current = node;
+	    struct local_vars *local = p->lvtbl;
+	    if (!local->numparam.current) local->numparam.current = node;
 	    return node;
 	}
 # if WARN_PAST_SCOPE
@@ -11660,6 +11663,9 @@ local_push(struct parser_params *p, int toplevel_scope)
 #ifndef RIPPER
     if (toplevel_scope && compile_for_eval) warn_unused_vars = 0;
     if (toplevel_scope && e_option_supplied(p)) warn_unused_vars = 0;
+    local->numparam.outer = 0;
+    local->numparam.inner = 0;
+    local->numparam.current = 0;
 #endif
     local->used = warn_unused_vars ? vtable_alloc(0) : 0;
 
@@ -11692,11 +11698,6 @@ local_pop(struct parser_params *p)
     COND_POP();
     ruby_sized_xfree(p->lvtbl, sizeof(*p->lvtbl));
     p->lvtbl = local;
-# ifndef RIPPER
-    p->numparam.outer = 0;
-    p->numparam.inner = 0;
-    p->numparam.current = 0;
-# endif
 }
 
 #ifndef RIPPER
@@ -11803,12 +11804,13 @@ static NODE *
 numparam_push(struct parser_params *p)
 {
 #ifndef RIPPER
-    NODE *inner = p->numparam.inner;
-    if (!p->numparam.outer) {
-	p->numparam.outer = p->numparam.current;
+    struct local_vars *local = p->lvtbl;
+    NODE *inner = local->numparam.inner;
+    if (!local->numparam.outer) {
+	local->numparam.outer = local->numparam.current;
     }
-    p->numparam.inner = 0;
-    p->numparam.current = 0;
+    local->numparam.inner = 0;
+    local->numparam.current = 0;
     return inner;
 #else
     return 0;
@@ -11819,22 +11821,23 @@ static void
 numparam_pop(struct parser_params *p, NODE *prev_inner)
 {
 #ifndef RIPPER
+    struct local_vars *local = p->lvtbl;
     if (prev_inner) {
 	/* prefer first one */
-	p->numparam.inner = prev_inner;
+	local->numparam.inner = prev_inner;
     }
-    else if (p->numparam.current) {
+    else if (local->numparam.current) {
 	/* current and inner are exclusive */
-	p->numparam.inner = p->numparam.current;
+	local->numparam.inner = local->numparam.current;
     }
     if (p->max_numparam > NO_PARAM) {
 	/* current and outer are exclusive */
-	p->numparam.current = p->numparam.outer;
-	p->numparam.outer = 0;
+	local->numparam.current = local->numparam.outer;
+	local->numparam.outer = 0;
     }
     else {
 	/* no numbered parameter */
-	p->numparam.current = 0;
+	local->numparam.current = 0;
     }
 #endif
 }
