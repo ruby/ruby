@@ -11,7 +11,6 @@
 
 #include "ruby/encoding.h"
 #include "ruby/st.h"
-#include "ruby/thread.h"
 #include "internal.h"
 #include "ruby_assert.h"
 #include "vm_core.h"
