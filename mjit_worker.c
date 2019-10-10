@@ -289,6 +289,9 @@ static const char *const CC_LIBS[] = {
 # endif
     "-lgcc", // mingw, cygwin, and GCC platforms using `-nodefaultlibs -nostdlib`
 #endif
+#if defined __ANDROID__
+    "-lm", // to avoid 'cannot locate symbol "modf" referenced by .../_ruby_mjit_XXX.so"'
+#endif
     NULL
 };
 
