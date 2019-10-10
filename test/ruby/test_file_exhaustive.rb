@@ -70,7 +70,7 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def notownedfile
     return @notownedfile if defined? @notownedfile
-    if Process.euid != 0
+    if Process.euid != File.stat("/").uid
       @notownedfile = '/'
     else
       @notownedfile = nil
