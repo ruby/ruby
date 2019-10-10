@@ -2640,6 +2640,7 @@ rb_raise(VALUE exc, const char *fmt, ...)
     }
     else {
         /* Not in a ruby thread */
+        fprintf(stderr, "%s", "[FATAL] ");
         vfprintf(stderr, fmt, args);
         abort();
     }
