@@ -636,6 +636,7 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
   end
 
   def test_gc_stress
+    skip "very time consuming test"
     assert_ruby_status(['--disable-gems', '-eGC.stress=true', '-erequire "openssl.so"'])
   end
 
