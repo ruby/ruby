@@ -635,6 +635,11 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     assert_equal data, seq.entries
   end
 
+  def test_gc_stress
+    skip "very time consuming test"
+    assert_ruby_status([{"RUBY_DEBUG"=>"gc_stress"}, "--disable-gems", "-ropenssl", "-eexit"], timeout: 20)
+  end
+
   private
 
   def B(ary)
