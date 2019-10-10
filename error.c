@@ -2605,20 +2605,10 @@ rb_enc_raise(rb_encoding *enc, VALUE exc, const char *fmt, ...)
     rb_exc_raise(rb_exc_new3(exc, mesg));
 }
 
-struct rb_raise_tag {
-    VALUE exc;
-    const char *fmt;
-    va_list *args;
-};
-
-static void *
-rb_vraise(void *ptr)
+void
+rb_vraise(VALUE exc, const char *fmt, va_list ap)
 {
-    struct rb_raise_tag *argv = ptr;
-    VALUE msg = rb_vsprintf(argv->fmt, *argv->args);
-    VALUE exc = rb_exc_new3(argv->exc, msg);
-    rb_exc_raise(exc);
-    UNREACHABLE_RETURN(NULL);
+    rb_exc_raise(rb_exc_new3(exc, rb_vsprintf(fmt, ap)));
 }
 
 void
@@ -2626,25 +2616,7 @@ rb_raise(VALUE exc, const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    struct rb_raise_tag argv = {
-        exc, fmt, &args,
-    };
-
-    if (ruby_thread_has_gvl_p()) {
-        rb_vraise(&argv);
-        UNREACHABLE;
-    }
-    else if (ruby_native_thread_p()) {
-        rb_thread_call_with_gvl(rb_vraise, &argv);
-        UNREACHABLE;
-    }
-    else {
-        /* Not in a ruby thread */
-        fprintf(stderr, "%s", "[FATAL] ");
-        vfprintf(stderr, fmt, args);
-        abort();
-    }
-
+    rb_vraise(exc, fmt, args);
     va_end(args);
 }
 

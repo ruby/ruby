@@ -165,6 +165,8 @@ size_mul_add_mul_overflow(size_t x, size_t y, size_t z, size_t w) /* x * y + z *
     return (struct optional) { t.left || u.left || v.left, v.right };
 }
 
+PRINTF_ARGS(NORETURN(static void gc_raise(VALUE, const char*, ...)), 2, 3);
+
 static inline size_t
 size_mul_or_raise(size_t x, size_t y, VALUE exc)
 {
@@ -176,7 +178,7 @@ size_mul_or_raise(size_t x, size_t y, VALUE exc)
         rb_memerror();          /* or...? */
     }
     else {
-        rb_raise(
+        gc_raise(
             exc,
             "integer overflow: %"PRIuSIZE
             " * %"PRIuSIZE
@@ -202,7 +204,7 @@ size_mul_add_or_raise(size_t x, size_t y, size_t z, VALUE exc)
         rb_memerror();          /* or...? */
     }
     else {
-        rb_raise(
+        gc_raise(
             exc,
             "integer overflow: %"PRIuSIZE
             " * %"PRIuSIZE
@@ -229,7 +231,7 @@ size_mul_add_mul_or_raise(size_t x, size_t y, size_t z, size_t w, VALUE exc)
         rb_memerror();          /* or...? */
     }
     else {
-        rb_raise(
+        gc_raise(
             exc,
             "integer overflow: %"PRIdSIZE
             " * %"PRIdSIZE
@@ -9597,12 +9599,53 @@ objspace_reachable_objects_from_root(rb_objspace_t *objspace, void (func)(const 
   ------------------------ Extended allocator ------------------------
 */
 
+struct gc_raise_tag {
+    VALUE exc;
+    const char *fmt;
+    va_list *ap;
+};
+
+static void *
+gc_vraise(void *ptr)
+{
+    struct gc_raise_tag *argv = ptr;
+    rb_vraise(argv->exc, argv->fmt, *argv->ap);
+    UNREACHABLE_RETURN(NULL);
+}
+
+static void
+gc_raise(VALUE exc, const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    struct gc_raise_tag argv = {
+        exc, fmt, &ap,
+    };
+
+    if (ruby_thread_has_gvl_p()) {
+        gc_vraise(&argv);
+        UNREACHABLE;
+    }
+    else if (ruby_native_thread_p()) {
+        rb_thread_call_with_gvl(gc_vraise, &argv);
+        UNREACHABLE;
+    }
+    else {
+        /* Not in a ruby thread */
+        fprintf(stderr, "%s", "[FATAL] ");
+        vfprintf(stderr, fmt, ap);
+        abort();
+    }
+
+    va_end(ap);
+}
+
 static void objspace_xfree(rb_objspace_t *objspace, void *ptr, size_t size);
 
 static void
 negative_size_allocation_error(const char *msg)
 {
-    rb_raise(rb_eNoMemError, "%s", msg);
+    gc_raise(rb_eNoMemError, "%s", msg);
 }
 
 static void *

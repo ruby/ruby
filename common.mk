@@ -1942,7 +1942,6 @@ error.$(OBJEXT): $(CCAN_DIR)/list/list.h
 error.$(OBJEXT): $(CCAN_DIR)/str/str.h
 error.$(OBJEXT): $(hdrdir)/ruby.h
 error.$(OBJEXT): $(hdrdir)/ruby/ruby.h
-error.$(OBJEXT): $(hdrdir)/ruby/thread.h
 error.$(OBJEXT): {$(VPATH)}assert.h
 error.$(OBJEXT): {$(VPATH)}config.h
 error.$(OBJEXT): {$(VPATH)}defines.h
@@ -1962,7 +1961,6 @@ error.$(OBJEXT): {$(VPATH)}ruby_assert.h
 error.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 error.$(OBJEXT): {$(VPATH)}st.h
 error.$(OBJEXT): {$(VPATH)}subst.h
-error.$(OBJEXT): {$(VPATH)}thread.h
 error.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 error.$(OBJEXT): {$(VPATH)}thread_native.h
 error.$(OBJEXT): {$(VPATH)}vm_core.h
