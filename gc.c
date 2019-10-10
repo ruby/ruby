@@ -172,6 +172,9 @@ size_mul_or_raise(size_t x, size_t y, VALUE exc)
     if (LIKELY(!t.left)) {
         return t.right;
     }
+    else if (rb_during_gc()) {
+        rb_memerror();          /* or...? */
+    }
     else {
         rb_raise(
             exc,
@@ -194,6 +197,9 @@ size_mul_add_or_raise(size_t x, size_t y, size_t z, VALUE exc)
     struct optional t = size_mul_add_overflow(x, y, z);
     if (LIKELY(!t.left)) {
         return t.right;
+    }
+    else if (rb_during_gc()) {
+        rb_memerror();          /* or...? */
     }
     else {
         rb_raise(
@@ -218,6 +224,9 @@ size_mul_add_mul_or_raise(size_t x, size_t y, size_t z, size_t w, VALUE exc)
     struct optional t = size_mul_add_mul_overflow(x, y, z, w);
     if (LIKELY(!t.left)) {
         return t.right;
+    }
+    else if (rb_during_gc()) {
+        rb_memerror();          /* or...? */
     }
     else {
         rb_raise(
@@ -9590,28 +9599,10 @@ objspace_reachable_objects_from_root(rb_objspace_t *objspace, void (func)(const 
 
 static void objspace_xfree(rb_objspace_t *objspace, void *ptr, size_t size);
 
-static void *
-negative_size_allocation_error_with_gvl(void *ptr)
-{
-    rb_raise(rb_eNoMemError, "%s", (const char *)ptr);
-    return 0; /* should not be reached */
-}
-
 static void
 negative_size_allocation_error(const char *msg)
 {
-    if (ruby_thread_has_gvl_p()) {
-	rb_raise(rb_eNoMemError, "%s", msg);
-    }
-    else {
-	if (ruby_native_thread_p()) {
-	    rb_thread_call_with_gvl(negative_size_allocation_error_with_gvl, (void *)msg);
-	}
-	else {
-	    fprintf(stderr, "[FATAL] %s\n", msg);
-	    exit(EXIT_FAILURE);
-	}
-    }
+    rb_raise(rb_eNoMemError, "%s", msg);
 }
 
 static void *
