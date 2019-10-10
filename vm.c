@@ -2242,6 +2242,7 @@ rb_vm_update_references(void *ptr)
         rb_vm_t *vm = ptr;
         rb_gc_update_tbl_refs(vm->frozen_strings);
     }
+    rb_vm_update_global_method_cache_references();
 }
 
 void

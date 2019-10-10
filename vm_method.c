@@ -43,6 +43,7 @@ struct cache_entry {
     ID mid;
     rb_method_entry_t* me;
     VALUE defined_class;
+    VALUE klass;
 };
 
 #if OPT_GLOBAL_METHOD_CACHE
@@ -54,6 +55,59 @@ static struct {
     GLOBAL_METHOD_CACHE_SIZE,
     GLOBAL_METHOD_CACHE_MASK,
 };
+
+static void
+rb_vm_update_global_method_cache_references(void)
+{
+    struct cache_entry *old = NULL;
+    unsigned int i;
+
+    old = (struct cache_entry *)calloc(global_method_cache.size, sizeof(struct cache_entry));
+    memcpy(old, global_method_cache.entries, global_method_cache.size * sizeof(struct cache_entry));
+    memset(global_method_cache.entries, 0, global_method_cache.size * sizeof(struct cache_entry));
+
+    for (i = 0; i < global_method_cache.size; i++) {
+        struct cache_entry * current = old + i;
+
+        if (current->klass && BUILTIN_TYPE(current->klass)) {
+            /* If the global method state changed, don't bother to copy the
+             * cache as it will be a miss anyway. */
+            if (GET_GLOBAL_METHOD_STATE() == current->method_state) {
+                VALUE klass = rb_gc_location(current->klass);
+
+                /* If the class serial changed, again don't bother. */
+                /* Also, if the class was collected, but a different object
+                 * allocated in it's slot, then the cache could point at an
+                 * object that doesn't make sense.  So, check that the `klass`
+                 * is actually of type T_CLASS. */
+                if (RB_TYPE_P(klass, T_CLASS) && RCLASS_SERIAL(klass) == current->class_serial) {
+                    struct cache_entry *ent = GLOBAL_METHOD_CACHE(klass, current->mid);
+
+                    memcpy(ent, current, sizeof(struct cache_entry));
+
+                    ent->klass = klass;
+
+                    if (current->defined_class) {
+                        ent->defined_class = rb_gc_location(current->defined_class);
+                    }
+
+                    if (current->me) {
+                        ent->me = (rb_method_entry_t *)rb_gc_location((VALUE)current->me);
+                    }
+                }
+            }
+        }
+    }
+    free(old);
+}
+
+#else
+
+static void
+rb_vm_update_global_method_cache_references(void)
+{
+}
+
 #endif
 
 #define ruby_running (GET_VM()->running)
@@ -778,6 +832,7 @@ method_entry_get_without_cache(VALUE klass, ID id,
 	    ent->class_serial = RCLASS_SERIAL(klass);
 	    ent->method_state = GET_GLOBAL_METHOD_STATE();
 	    ent->defined_class = defined_class;
+	    ent->klass = klass;
 	    ent->mid = id;
 
 	    if (UNDEFINED_METHOD_ENTRY_P(me)) {
