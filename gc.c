@@ -1004,7 +1004,7 @@ void rb_gcdebug_print_obj_condition(VALUE obj);
 
 static VALUE define_final0(VALUE obj, VALUE block);
 
-static void negative_size_allocation_error(const char *);
+NORETURN(static void negative_size_allocation_error(const char *));
 
 static void init_mark_stack(mark_stack_t *stack);
 
