@@ -700,7 +700,7 @@ module RbInstall
           base = "#{prefix}#{relative_base}"
         when "lib"
           base = @base_dir
-          prefix = base.sub(/lib\/.*?\z/, "") + "lib/"
+          prefix = base.sub(/lib\/.*?\z/, "")
         else
           # other/something.gemspec ->
           #   [other/something.rb, other/something/foo.rb, ...]
@@ -763,7 +763,13 @@ module RbInstall
       mode = pattern == File.join(spec.bindir, '*') ? prog_mode : data_mode
       destdir = without_destdir(destination_dir)
       spec.files.each do |f|
+        next unless File.fnmatch(pattern, f)
         src = File.join(@src_dir, f)
+        # The `src` is fine for bundled gems. However, default gems have their
+        # binaries in `libexec`.
+        unless File.exist?(src)
+          src = File.join(@src_dir, 'libexec', File.basename(f))
+        end
         dest = File.join(destdir, f)
         makedirs(dest[/.*(?=\/)/m])
         install src, dest, :mode => mode
@@ -871,10 +877,10 @@ end
 # :startdoc:
 
 install?(:ext, :comm, :gem, :'default-gems', :'default-gems-comm') do
-  install_default_gem('lib', srcdir)
+  install_default_gem('lib', srcdir, bindir)
 end
 install?(:ext, :arch, :gem, :'default-gems', :'default-gems-arch') do
-  install_default_gem('ext', srcdir)
+  install_default_gem('ext', srcdir, bindir)
 end
 
 def load_gemspec(file, expanded = false)
@@ -902,12 +908,23 @@ def load_gemspec(file, expanded = false)
   spec
 end
 
-def install_default_gem(dir, srcdir)
+def install_default_gem(dir, srcdir, bindir)
   gem_dir = Gem.default_dir
   install_dir = with_destdir(gem_dir)
   prepare "default gems from #{dir}", gem_dir
   makedirs(Gem.ensure_default_gem_subdirectories(install_dir, $dir_mode).map {|d| File.join(gem_dir, d)})
 
+  options = {
+    :install_dir => with_destdir(gem_dir),
+    :bin_dir => with_destdir(bindir),
+    :ignore_dependencies => true,
+    :dir_mode => $dir_mode,
+    :data_mode => $data_mode,
+    :prog_mode => $script_mode,
+    :wrappers => true,
+    :format_executable => true,
+    :install_as_default => true,
+  }
   default_spec_dir = Gem.default_specifications_dir
 
   gems = Dir.glob("#{srcdir}/#{dir}/**/*.gemspec").map {|src|
@@ -926,25 +943,12 @@ def install_default_gem(dir, srcdir)
 
     full_name = "#{gemspec.name}-#{gemspec.version}"
 
+    gemspec.loaded_from = File.join srcdir, gemspec.spec_name
+
+    package = RbInstall::DirPackage.new gemspec
+    ins = RbInstall::UnpackedInstaller.new(package, options)
     puts "#{INDENT}#{gemspec.name} #{gemspec.version}"
-    gemspec_path = File.join(default_spec_dir, "#{full_name}.gemspec")
-    open_for_install(gemspec_path, $data_mode) do
-      gemspec.to_ruby.gsub(/.*\0.*\n/, '')
-    end
-
-    specific_gem_dir = File.join(gem_dir, 'gems', full_name)
-
-    makedirs(specific_gem_dir)
-
-    unless gemspec.executables.empty? then
-      bin_dir = File.join(specific_gem_dir, gemspec.bindir)
-      makedirs(bin_dir)
-
-      gemspec.executables.map {|exec|
-        install File.join(srcdir, 'libexec', exec),
-                File.join(bin_dir, exec)
-      }
-    end
+    ins.install
   end
 end
 
