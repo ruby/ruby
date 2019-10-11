@@ -9565,7 +9565,7 @@ rb_f_select(int argc, VALUE *argv, VALUE obj)
 # define NUM2IOCTLREQ(num) NUM2ULONG(num)
 #else
  typedef int ioctl_req_t;
-# define NUM2IOCTLREQ(num) NUM2INT(num)
+# define NUM2IOCTLREQ(num) ((int)NUM2LONG(num))
 #endif
 
 #ifdef HAVE_IOCTL
