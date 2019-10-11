@@ -1,8 +1,14 @@
 # frozen_string_literal: true
 
 class CSV
+  # Note: Don't use this class directly. This is an internal class.
   class FieldsConverter
     include Enumerable
+    #
+    # A CSV::FieldsConverter is a data structure for storing the
+    # fields converter properties to be passed as a parameter
+    # when parsing a new file (e.g. CSV::Parser.new(@io, parser_options))
+    #
 
     def initialize(options={})
       @converters = []

@@ -6,7 +6,7 @@ require_relative "../helper"
 class TestCSVParseRewind < Test::Unit::TestCase
   extend DifferentOFS
 
-  def parse(data, options={})
+  def parse(data, **options)
     csv = CSV.new(data, **options)
     records = csv.to_a
     csv.rewind
