@@ -401,6 +401,11 @@ Reline::
   * New stdlib that is compatible with readline stdlib by pure Ruby and also
     has a multiline mode.
 
+REXML::
+
+  * Upgrade to 3.2.3.
+    See https://github.com/ruby/rexml/blob/master/NEWS.md.
+
 RSS::
 
   * Upgrade to RSS 0.2.8.
