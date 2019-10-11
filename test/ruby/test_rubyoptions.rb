@@ -287,7 +287,7 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(--encoding test_ruby_test_rubyoptions_foobarbazqux), "", [],
                       /unknown encoding name - test_ruby_test_rubyoptions_foobarbazqux \(RuntimeError\)/)
 
-    if /mswin|mingw|aix/ =~ RUBY_PLATFORM &&
+    if /mswin|mingw|aix|android/ =~ RUBY_PLATFORM &&
       (str = "\u3042".force_encoding(Encoding.find("locale"))).valid_encoding?
       # This result depends on locale because LANG=C doesn't affect locale
       # on Windows.
