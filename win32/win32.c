@@ -689,7 +689,6 @@ rtc_error_handler(int e, const char *src, int line, const char *exe, const char 
 #endif
 
 static CRITICAL_SECTION select_mutex;
-#define NtSocketsInitialized 1
 static st_table *socklist = NULL;
 static st_table *conlist = NULL;
 #define conlist_disabled ((st_table *)-1)
@@ -728,10 +727,8 @@ constat_delete(HANDLE h)
 static void
 exit_handler(void)
 {
-    if (NtSocketsInitialized) {
-	WSACleanup();
-	DeleteCriticalSection(&select_mutex);
-    }
+    WSACleanup();
+    DeleteCriticalSection(&select_mutex);
     if (uenvarea) {
 	free(uenvarea);
 	uenvarea = NULL;
@@ -3054,9 +3051,6 @@ do_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	    rb_w32_sleep(INFINITE);
     }
     else {
-	if (!NtSocketsInitialized)
-	    StartSockets();
-
 	RUBY_CRITICAL {
 	    EnterCriticalSection(&select_mutex);
 	    r = select(nfds, rd, wr, ex, timeout);
@@ -3282,9 +3276,6 @@ rb_w32_accept(int s, struct sockaddr *addr, int *addrlen)
     SOCKET r;
     int fd;
 
-    if (!NtSocketsInitialized) {
-	StartSockets();
-    }
     RUBY_CRITICAL {
 	r = accept(TO_SOCKET(s), addr, addrlen);
 	if (r != INVALID_SOCKET) {
@@ -3311,9 +3302,6 @@ rb_w32_bind(int s, const struct sockaddr *addr, int addrlen)
 {
     int r;
 
-    if (!NtSocketsInitialized) {
-	StartSockets();
-    }
     RUBY_CRITICAL {
 	r = bind(TO_SOCKET(s), addr, addrlen);
 	if (r == SOCKET_ERROR)
@@ -3329,9 +3317,6 @@ int WSAAPI
 rb_w32_connect(int s, const struct sockaddr *addr, int addrlen)
 {
     int r;
-    if (!NtSocketsInitialized) {
-	StartSockets();
-    }
     RUBY_CRITICAL {
 	r = connect(TO_SOCKET(s), addr, addrlen);
 	if (r == SOCKET_ERROR) {
@@ -3353,9 +3338,6 @@ int WSAAPI
 rb_w32_getpeername(int s, struct sockaddr *addr, int *addrlen)
 {
     int r;
-    if (!NtSocketsInitialized) {
-	StartSockets();
-    }
     RUBY_CRITICAL {
 	r = getpeername(TO_SOCKET(s), addr, addrlen);
 	if (r == SOCKET_ERROR)
@@ -3372,9 +3354,6 @@ rb_w32_getsockname(int fd, struct sockaddr *addr, int *addrlen)
 {
     int sock;
     int r;
-    if (!NtSocketsInitialized) {
-	StartSockets();
-    }
     RUBY_CRITICAL {
 	sock = TO_SOCKET(fd);
 	r = getsockname(sock, addr, addrlen);
@@ -3404,9 +3383,6 @@ int WSAAPI
 rb_w32_getsockopt(int s, int level, int optname, char *optval, int *optlen)
 {
     int r;
-    if (!NtSocketsInitialized) {
-	StartSockets();
-    }
     RUBY_CRITICAL {
 	r = getsockopt(TO_SOCKET(s), level, optname, optval, optlen);
 	if (r == SOCKET_ERROR)
@@ -3422,9 +3398,6 @@ int WSAAPI
 rb_w32_ioctlsocket(int s, long cmd, u_long *argp)
 {
     int r;
-    if (!NtSocketsInitialized) {
-	StartSockets();
-    }
     RUBY_CRITICAL {
 	r = ioctlsocket(TO_SOCKET(s), cmd, argp);
 	if (r == SOCKET_ERROR)
@@ -3440,9 +3413,6 @@ int WSAAPI
 rb_w32_listen(int s, int backlog)
 {
     int r;
-    if (!NtSocketsInitialized) {
-	StartSockets();
-    }
     RUBY_CRITICAL {
 	r = listen(TO_SOCKET(s), backlog);
 	if (r == SOCKET_ERROR)
@@ -3520,9 +3490,6 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
     WSAOVERLAPPED wol;
     WSABUF wbuf;
     SOCKET s;
-
-    if (!NtSocketsInitialized)
-	StartSockets();
 
     s = TO_SOCKET(fd);
     socklist_lookup(s, &mode);
@@ -3661,9 +3628,6 @@ recvmsg(int fd, struct msghdr *msg, int flags)
     DWORD len;
     int ret;
 
-    if (!NtSocketsInitialized)
-	StartSockets();
-
     s = TO_SOCKET(fd);
 
     if (!pWSARecvMsg) {
@@ -3719,9 +3683,6 @@ sendmsg(int fd, const struct msghdr *msg, int flags)
     DWORD len;
     int ret;
 
-    if (!NtSocketsInitialized)
-	StartSockets();
-
     s = TO_SOCKET(fd);
 
     if (!pWSASendMsg) {
@@ -3764,9 +3725,6 @@ int WSAAPI
 rb_w32_setsockopt(int s, int level, int optname, const char *optval, int optlen)
 {
     int r;
-    if (!NtSocketsInitialized) {
-	StartSockets();
-    }
     RUBY_CRITICAL {
 	r = setsockopt(TO_SOCKET(s), level, optname, optval, optlen);
 	if (r == SOCKET_ERROR)
@@ -3782,9 +3740,6 @@ int WSAAPI
 rb_w32_shutdown(int s, int how)
 {
     int r;
-    if (!NtSocketsInitialized) {
-	StartSockets();
-    }
     RUBY_CRITICAL {
 	r = shutdown(TO_SOCKET(s), how);
 	if (r == SOCKET_ERROR)
@@ -3852,9 +3807,6 @@ rb_w32_socket(int af, int type, int protocol)
     SOCKET s;
     int fd;
 
-    if (!NtSocketsInitialized) {
-	StartSockets();
-    }
     RUBY_CRITICAL {
 	s = open_ifs_socket(af, type, protocol);
 	if (s == INVALID_SOCKET) {
@@ -3879,9 +3831,6 @@ struct hostent * WSAAPI
 rb_w32_gethostbyaddr(const char *addr, int len, int type)
 {
     struct hostent *r;
-    if (!NtSocketsInitialized) {
-	StartSockets();
-    }
     RUBY_CRITICAL {
 	r = gethostbyaddr(addr, len, type);
 	if (r == NULL)
@@ -3897,9 +3846,6 @@ struct hostent * WSAAPI
 rb_w32_gethostbyname(const char *name)
 {
     struct hostent *r;
-    if (!NtSocketsInitialized) {
-	StartSockets();
-    }
     RUBY_CRITICAL {
 	r = gethostbyname(name);
 	if (r == NULL)
@@ -3915,9 +3861,6 @@ int WSAAPI
 rb_w32_gethostname(char *name, int len)
 {
     int r;
-    if (!NtSocketsInitialized) {
-	StartSockets();
-    }
     RUBY_CRITICAL {
 	r = gethostname(name, len);
 	if (r == SOCKET_ERROR)
@@ -3933,9 +3876,6 @@ struct protoent * WSAAPI
 rb_w32_getprotobyname(const char *name)
 {
     struct protoent *r;
-    if (!NtSocketsInitialized) {
-	StartSockets();
-    }
     RUBY_CRITICAL {
 	r = getprotobyname(name);
 	if (r == NULL)
@@ -3951,9 +3891,6 @@ struct protoent * WSAAPI
 rb_w32_getprotobynumber(int num)
 {
     struct protoent *r;
-    if (!NtSocketsInitialized) {
-	StartSockets();
-    }
     RUBY_CRITICAL {
 	r = getprotobynumber(num);
 	if (r == NULL)
@@ -3969,9 +3906,6 @@ struct servent * WSAAPI
 rb_w32_getservbyname(const char *name, const char *proto)
 {
     struct servent *r;
-    if (!NtSocketsInitialized) {
-	StartSockets();
-    }
     RUBY_CRITICAL {
 	r = getservbyname(name, proto);
 	if (r == NULL)
@@ -3987,9 +3921,6 @@ struct servent * WSAAPI
 rb_w32_getservbyport(int port, const char *proto)
 {
     struct servent *r;
-    if (!NtSocketsInitialized) {
-	StartSockets();
-    }
     RUBY_CRITICAL {
 	r = getservbyport(port, proto);
 	if (r == NULL)
@@ -4010,10 +3941,6 @@ socketpair_internal(int af, int type, int protocol, SOCKET *sv)
     struct sockaddr *addr;
     int ret = -1;
     int len;
-
-    if (!NtSocketsInitialized) {
-	StartSockets();
-    }
 
     switch (af) {
       case AF_INET:
