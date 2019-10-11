@@ -719,12 +719,11 @@ module RbInstall
     end
 
     def extract_files(destination_dir, pattern = "*")
-      path = @src_dir
-      return if path == destination_dir
+      return if @src_dir == destination_dir
       File.chmod(0700, destination_dir)
       mode = pattern == "bin/*" ? prog_mode : data_mode
       spec.files.each do |f|
-        src = File.join(path, f)
+        src = File.join(@src_dir, f)
         dest = File.join(without_destdir(destination_dir), f)
         makedirs(dest[/.*(?=\/)/m])
         install src, dest, :mode => mode
