@@ -143,6 +143,8 @@ class TestSyslog < Test::Unit::TestCase
       # LOG_PERROR is not implemented on Cygwin or Solaris.  Only test
       # these on systems that define it.
       return unless Syslog.const_defined?(:LOG_PERROR)
+      # LOG_PERROR is defined but not supported yet on Android.
+      return if RUBY_PLATFORM =~ /android/
 
       2.times {
         re = syslog_line_regex("syslog_test", "test1 - hello, world!")
