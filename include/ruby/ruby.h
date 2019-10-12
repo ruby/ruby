@@ -2353,10 +2353,6 @@ ERRORFUNC(("variable argument length doesn't match"), void rb_scan_args_length_m
 
 # define rb_scan_args_isdigit(c) ((unsigned char)((c)-'0')<10)
 
-#if !defined(__has_attribute)
-#define __has_attribute(x) 0
-#endif
-
 #  define rb_scan_args_count_end(fmt, ofs, vari) \
      (fmt[ofs] ? -1 : (vari))
 

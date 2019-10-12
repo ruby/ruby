@@ -21,6 +21,10 @@ extern "C" {
 #endif
 #endif
 
+#if !defined(__has_attribute)
+#define __has_attribute(x) 0
+#endif
+
 #include "ruby/defines.h"
 #ifdef RUBY_EXTCONF_H
 #include RUBY_EXTCONF_H
