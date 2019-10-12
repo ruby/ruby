@@ -1333,7 +1333,8 @@ match_set_string(VALUE m, VALUE string, long pos, long len)
 
     match->str = string;
     match->regexp = Qnil;
-    onig_region_resize(&rmatch->regs, 1);
+    int err = onig_region_resize(&rmatch->regs, 1);
+    if (err) rb_memerror();
     rmatch->regs.beg[0] = pos;
     rmatch->regs.end[0] = pos + len;
     OBJ_INFECT(match, string);
