@@ -72,6 +72,8 @@ class TestFile < Test::Unit::TestCase
 
   def assert_bom_after_rewinding(name)
     Tempfile.create(name.to_s, encoding: "utf-#{name[/\d+\w*\z/]}:utf-8") do |f|
+      path = f.path
+      enc = [f.external_encoding, f.internal_encoding].compact.join(":")
       f.write("\uFEFF" "abc")
       f.close
       File.open(f.path, 'r:bom|utf-8:utf-8') do |f|
@@ -80,6 +82,12 @@ class TestFile < Test::Unit::TestCase
         assert_equal("abc", s = f.read, "after pos=0: #{s.dump}")
         f.rewind
         assert_equal("abc", s = f.read, "after rewind: #{s.dump}")
+      end
+      pos = File.size(path)
+      File.open(path, "a", encoding: enc) {|f| f.write("\uFEFF" "efg")}
+      File.open(f.path, 'r:bom|utf-8:utf-8') do |f|
+        f.pos = pos
+        assert_equal("\uFEFF" "efg", s = f.read, "after pos=#{pos}: #{s.dump}")
       end
     end
   end
