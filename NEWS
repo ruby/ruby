@@ -343,7 +343,7 @@ CGI::
 
 CSV::
 
-  * Upgrade to 3.0.9.
+  * Upgrade to 3.1.2.
     See https://github.com/ruby/csv/blob/master/NEWS.md.
 
 Date::

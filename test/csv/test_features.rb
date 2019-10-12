@@ -52,6 +52,20 @@ line,4,jkl
     assert_equal([",,,", nil], CSV.parse_line(",,,;", col_sep: ";"))
   end
 
+  def test_col_sep_nil
+    assert_raise_with_message(ArgumentError,
+                              ":col_sep must be 1 or more characters: nil") do
+      CSV.parse(@sample_data, col_sep: nil)
+    end
+  end
+
+  def test_col_sep_empty
+    assert_raise_with_message(ArgumentError,
+                              ":col_sep must be 1 or more characters: \"\"") do
+      CSV.parse(@sample_data, col_sep: "")
+    end
+  end
+
   def test_row_sep
     error = assert_raise(CSV::MalformedCSVError) do
       CSV.parse_line("1,2,3\n,4,5\r\n", row_sep: "\r\n")
@@ -110,10 +124,10 @@ line,4,jkl
 
   def test_line
     lines = [
-      %Q(abc,def\n),
-      %Q(abc,"d\nef"\n),
-      %Q(abc,"d\r\nef"\n),
-      %Q(abc,"d\ref")
+      %Q(\u{3000}abc,def\n),
+      %Q(\u{3000}abc,"d\nef"\n),
+      %Q(\u{3000}abc,"d\r\nef"\n),
+      %Q(\u{3000}abc,"d\ref")
     ]
     csv = CSV.new(lines.join(''))
     lines.each do |line|

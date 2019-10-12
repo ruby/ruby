@@ -205,6 +205,32 @@ module TestCSVWriteGeneral
     assert_equal(%Q[あ,い,う#{$INPUT_RECORD_SEPARATOR}].encode("EUC-JP"),
                  generate_line(row))
   end
+
+  def test_encoding_with_default_internal
+    with_default_internal(Encoding::UTF_8) do
+      row = ["あ", "い", "う"].collect {|field| field.encode("EUC-JP")}
+      assert_equal(%Q[あ,い,う#{$INPUT_RECORD_SEPARATOR}].encode("EUC-JP"),
+                   generate_line(row, encoding: Encoding::EUC_JP))
+    end
+  end
+
+  def test_with_default_internal
+    with_default_internal(Encoding::UTF_8) do
+      row = ["あ", "い", "う"].collect {|field| field.encode("EUC-JP")}
+      assert_equal(%Q[あ,い,う#{$INPUT_RECORD_SEPARATOR}].encode("EUC-JP"),
+                   generate_line(row))
+    end
+  end
+
+  def with_default_internal(encoding)
+    original = Encoding.default_internal
+    begin
+      Encoding.default_internal = encoding
+      yield
+    ensure
+      Encoding.default_internal = original
+    end
+  end
 end
 
 class TestCSVWriteGeneralGenerateLine < Test::Unit::TestCase

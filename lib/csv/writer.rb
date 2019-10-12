@@ -6,7 +6,12 @@ require_relative "row"
 using CSV::MatchP if CSV.const_defined?(:MatchP)
 
 class CSV
+  # Note: Don't use this class directly. This is an internal class.
   class Writer
+    #
+    # A CSV::Writer receives an output, prepares the header, format and output.
+    # It allows us to write new rows in the object and rewind it.
+    #
     attr_reader :lineno
     attr_reader :headers
 
@@ -22,6 +27,9 @@ class CSV
       @fields_converter = @options[:fields_converter]
     end
 
+    #
+    # Adds a new row
+    #
     def <<(row)
       case row
       when Row
@@ -47,6 +55,9 @@ class CSV
       self
     end
 
+    #
+    # Winds back to the beginning
+    #
     def rewind
       @lineno = 0
       @headers = nil if @options[:headers].nil?
