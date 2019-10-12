@@ -189,6 +189,7 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
     volatile VALUE errs[2] = { Qundef, Qundef };
     int nerr;
     rb_thread_t *th = rb_ec_thread_ptr(ec);
+    rb_thread_t *const volatile th0 = th;
     volatile int sysex = EXIT_SUCCESS;
     volatile int step = 0;
 
@@ -196,9 +197,11 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
     rb_threadptr_check_signal(th);
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+        th = th0;
         SAVE_ROOT_JMPBUF(th, { RUBY_VM_CHECK_INTS(ec); });
 
       step_0: step++;
+        th = th0;
         errs[1] = ec->errinfo;
         if (THROW_DATA_P(ec->errinfo)) ec->errinfo = Qnil;
 	rb_set_safe_level_force(0);
@@ -207,6 +210,7 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
         SAVE_ROOT_JMPBUF(th, rb_ec_teardown(ec));
 
       step_1: step++;
+        th = th0;
 	/* protect from Thread#raise */
 	th->status = THREAD_KILLED;
 
@@ -220,6 +224,7 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
 	}
 	if (ex == 0) ex = state;
     }
+    th = th0;
     ec->errinfo = errs[1];
     sysex = error_handle(ec, ex);
 
@@ -548,10 +553,10 @@ static void
 setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE cause)
 {
     VALUE e;
-    const char *file = 0;
     int line;
+    const char *file = rb_source_location_cstr(&line);
+    const char *const volatile file0 = file;
 
-    file = rb_source_location_cstr(&line);
     if ((file && !NIL_P(mesg)) || (cause != Qundef))  {
 	volatile int state = 0;
 
@@ -574,6 +579,7 @@ setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE 
 	    rb_ec_reset_raised(ec);
 	}
 	EC_POP_TAG();
+        file = file0;
 	if (state) goto fatal;
     }
 
