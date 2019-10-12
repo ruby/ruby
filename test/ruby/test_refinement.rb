@@ -2322,6 +2322,34 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal(:ok, RefineInUsing.test)
   end
 
+  class Bug16242
+    module OtherM
+    end
+
+    module M
+      prepend OtherM
+
+      refine M do
+        def refine_method
+          "refine_method"
+        end
+      end
+      using M
+
+      def hoge
+        refine_method
+      end
+    end
+
+    class X
+      include M
+    end
+  end
+
+  def test_refine_prepended_module
+    assert_equal("refine_method", Bug16242::X.new.hoge)
+  end
+
   private
 
   def eval_using(mod, s)

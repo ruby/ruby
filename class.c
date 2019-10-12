@@ -825,9 +825,19 @@ VALUE
 rb_include_class_new(VALUE module, VALUE super)
 {
     VALUE klass = class_alloc(T_ICLASS, rb_cClass);
+    RCLASS_SET_ORIGIN(klass, klass);
+
+    RCLASS_M_TBL(OBJ_WB_UNPROTECT(klass)) =
+      RCLASS_M_TBL(OBJ_WB_UNPROTECT(module)); /* TODO: unprotected? */
 
     if (BUILTIN_TYPE(module) == T_ICLASS) {
+        if (module != RCLASS_ORIGIN(module)) {
+            RCLASS_SET_ORIGIN(klass, RCLASS_ORIGIN(module));
+        }
 	module = RBASIC(module)->klass;
+    }
+    else if (module != RCLASS_ORIGIN(module)) {
+        RCLASS_SET_ORIGIN(klass, RCLASS_ORIGIN(module));
     }
     if (!RCLASS_IV_TBL(module)) {
 	RCLASS_IV_TBL(module) = st_init_numtable();
@@ -837,9 +847,6 @@ rb_include_class_new(VALUE module, VALUE super)
     }
     RCLASS_IV_TBL(klass) = RCLASS_IV_TBL(module);
     RCLASS_CONST_TBL(klass) = RCLASS_CONST_TBL(module);
-
-    RCLASS_M_TBL(OBJ_WB_UNPROTECT(klass)) =
-      RCLASS_M_TBL(OBJ_WB_UNPROTECT(RCLASS_ORIGIN(module))); /* TODO: unprotected? */
 
     RCLASS_SET_SUPER(klass, super);
     if (RB_TYPE_P(module, T_ICLASS)) {
@@ -894,8 +901,6 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
 	int superclass_seen = FALSE;
 	struct rb_id_table *tbl;
 
-	if (RCLASS_ORIGIN(module) != module)
-	    goto skip;
 	if (klass_m_tbl && klass_m_tbl == RCLASS_M_TBL(module))
 	    return -1;
 	/* ignore if the module included already in superclasses */
@@ -1091,10 +1096,11 @@ rb_mod_ancestors(VALUE mod)
     VALUE p, ary = rb_ary_new();
 
     for (p = mod; p; p = RCLASS_SUPER(p)) {
+        if (p != RCLASS_ORIGIN(p)) continue;
 	if (BUILTIN_TYPE(p) == T_ICLASS) {
 	    rb_ary_push(ary, RBASIC(p)->klass);
 	}
-	else if (p == RCLASS_ORIGIN(p)) {
+        else {
 	    rb_ary_push(ary, p);
 	}
     }
