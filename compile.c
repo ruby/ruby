@@ -2190,6 +2190,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
                         /* fall through */
 		      case TS_IC: /* inline cache */
+		      case TS_IVC: /* inline ivar cache */
 			{
 			    unsigned int ic_index = FIX2UINT(operands[j]);
 			    IC ic = (IC)&body->is_entries[ic_index];
@@ -8648,6 +8649,7 @@ insn_data_to_s_detail(INSN *iobj)
 		    break;
 		}
 	      case TS_IC:	/* inline cache */
+	      case TS_IVC:	/* inline ivar cache */
 	      case TS_ISE:	/* inline storage entry */
 		rb_str_catf(str, "<ic:%d>", FIX2INT(OPERAND_AT(iobj, j)));
 		break;
@@ -9035,6 +9037,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 			FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
                         /* fall through */
 		      case TS_IC:
+                      case TS_IVC:  /* inline ivar cache */
 			argv[j] = op;
 			if (NUM2UINT(op) >= iseq->body->is_size) {
 			    iseq->body->is_size = NUM2INT(op) + 1;
@@ -9883,6 +9886,7 @@ ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
                 wv = (VALUE)ibf_dump_iseq(dump, (const rb_iseq_t *)op);
                 break;
               case TS_IC:
+              case TS_IVC:
               case TS_ISE:
                 {
                     unsigned int i;
@@ -9974,6 +9978,7 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, ibf_offset_t b
                 FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
                 /* fall through */
               case TS_IC:
+              case TS_IVC:
                 {
                     VALUE op = ibf_load_small_value(load, &reading_pos);
                     code[code_index] = (VALUE)&is_entries[op];

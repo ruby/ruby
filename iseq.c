@@ -1917,6 +1917,7 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 	break;
 
       case TS_IC:
+      case TS_IVC:
       case TS_ISE:
 	ret = rb_sprintf("<is:%"PRIdPTRDIFF">", (union iseq_inline_storage_entry *)op - iseq->body->is_entries);
 	break;
@@ -2741,6 +2742,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 		}
 		break;
 	      case TS_IC:
+              case TS_IVC:
 	      case TS_ISE:
 		{
 		    union iseq_inline_storage_entry *is = (union iseq_inline_storage_entry *)*seq;
