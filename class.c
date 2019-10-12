@@ -890,12 +890,18 @@ add_refined_method_entry_i(ID key, VALUE value, void *data)
     return ID_TABLE_CONTINUE;
 }
 
+static void ensure_origin(VALUE klass);
+
 static int
 include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
 {
     VALUE p, iclass;
     int method_changed = 0, constant_changed = 0;
     struct rb_id_table *const klass_m_tbl = RCLASS_M_TBL(RCLASS_ORIGIN(klass));
+
+    if (FL_TEST(module, RCLASS_REFINED_BY_ANY)) {
+        ensure_origin(module);
+    }
 
     while (module) {
 	int superclass_seen = FALSE;
@@ -978,15 +984,10 @@ move_refined_method(ID key, VALUE value, void *data)
     }
 }
 
-void
-rb_prepend_module(VALUE klass, VALUE module)
+static void
+ensure_origin(VALUE klass)
 {
-    VALUE origin;
-    int changed = 0;
-
-    ensure_includable(klass, module);
-
-    origin = RCLASS_ORIGIN(klass);
+    VALUE origin = RCLASS_ORIGIN(klass);
     if (origin == klass) {
 	origin = class_alloc(T_ICLASS, klass);
 	OBJ_WB_UNPROTECT(origin); /* TODO: conservative shading. Need more survey. */
@@ -997,6 +998,16 @@ rb_prepend_module(VALUE klass, VALUE module)
 	RCLASS_M_TBL_INIT(klass);
 	rb_id_table_foreach(RCLASS_M_TBL(origin), move_refined_method, (void *)klass);
     }
+}
+
+void
+rb_prepend_module(VALUE klass, VALUE module)
+{
+    VALUE origin;
+    int changed = 0;
+
+    ensure_includable(klass, module);
+    ensure_origin(klass);
     changed = include_modules_at(klass, klass, module, FALSE);
     if (changed < 0)
 	rb_raise(rb_eArgError, "cyclic prepend detected");

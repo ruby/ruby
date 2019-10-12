@@ -1081,6 +1081,7 @@ int rb_singleton_class_internal_p(VALUE sklass);
 
 #define RCLASS_CLONED     FL_USER6
 #define RICLASS_IS_ORIGIN FL_USER5
+#define RCLASS_REFINED_BY_ANY FL_USER7
 
 static inline void
 RCLASS_SET_ORIGIN(VALUE klass, VALUE origin)

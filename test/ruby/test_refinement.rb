@@ -2350,6 +2350,38 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal("refine_method", Bug16242::X.new.hoge)
   end
 
+  module Bug13446
+    module Enumerable
+      def sum(*args)
+        i = 0
+        args.each { |arg| i += a }
+        i
+      end
+    end
+
+    using Module.new {
+      refine Enumerable do
+        alias :orig_sum :sum
+      end
+    }
+
+    module Enumerable
+      def sum(*args)
+        orig_sum(*args)
+      end
+    end
+
+    class GenericEnumerable
+      include Enumerable
+    end
+
+    Enumerable.prepend(Module.new)
+  end
+
+  def test_prepend_refined_module
+    assert_equal(0, Bug13446::GenericEnumerable.new.sum)
+  end
+
   private
 
   def eval_using(mod, s)

@@ -1542,6 +1542,9 @@ rb_mod_refine(VALUE module, VALUE klass)
     }
 
     ensure_class_or_module(klass);
+    if (RB_TYPE_P(klass, T_MODULE)) {
+        FL_SET(klass, RCLASS_REFINED_BY_ANY);
+    }
     CONST_ID(id_refinements, "__refinements__");
     refinements = rb_attr_get(module, id_refinements);
     if (NIL_P(refinements)) {
