@@ -207,7 +207,7 @@ setspecial
 /* Get value of instance variable id of self. */
 DEFINE_INSN
 getinstancevariable
-(ID id, IC ic)
+(ID id, IVC ic)
 ()
 (VALUE val)
 /* "instance variable not initialized" warning can be hooked. */
@@ -219,7 +219,7 @@ getinstancevariable
 /* Set value of instance variable id of self to val. */
 DEFINE_INSN
 setinstancevariable
-(ID id, IC ic)
+(ID id, IVC ic)
 (VALUE val)
 ()
 // attr bool leaf = false; /* has rb_check_frozen_internal() */
@@ -1040,7 +1040,7 @@ opt_getinlinecache
 (VALUE val)
 {
     if (vm_ic_hit_p(ic, GET_EP())) {
-	val = ic->ic_value.value;
+	val = ic->value;
 	JUMP(dst);
     }
     else {

@@ -1008,9 +1008,9 @@ vm_search_const_defined_class(const VALUE cbase, ID id)
     return 0;
 }
 
-ALWAYS_INLINE(static VALUE vm_getivar(VALUE, ID, IC, struct rb_call_cache *, int));
+ALWAYS_INLINE(static VALUE vm_getivar(VALUE, ID, IVC, struct rb_call_cache *, int));
 static inline VALUE
-vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
+vm_getivar(VALUE obj, ID id, IVC ic, struct rb_call_cache *cc, int is_attr)
 {
 #if OPT_IC_FOR_IVAR
     VALUE val = Qundef;
@@ -1022,7 +1022,7 @@ vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
                     RB_DEBUG_COUNTER_INC_UNLESS(ivar_get_ic_miss_unset, cc->aux.index > 0) :
                     RB_DEBUG_COUNTER_INC_UNLESS(ivar_get_ic_miss_serial,
                                                 ic->ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass)))) {
-        st_index_t index = !is_attr ? ic->ic_value.index : (cc->aux.index - 1);
+        st_index_t index = !is_attr ? ic->index : (cc->aux.index - 1);
 
         RB_DEBUG_COUNTER_INC(ivar_get_ic_hit);
 
@@ -1056,7 +1056,7 @@ vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
 	    if (iv_index_tbl) {
 		if (st_lookup(iv_index_tbl, id, &index)) {
                     if (!is_attr) {
-                        ic->ic_value.index = index;
+                        ic->index = index;
                         ic->ic_serial = RCLASS_SERIAL(RBASIC(obj)->klass);
                     }
                     else { /* call_info */
@@ -1108,7 +1108,7 @@ vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
 }
 
 static inline VALUE
-vm_setivar(VALUE obj, ID id, VALUE val, IC ic, struct rb_call_cache *cc, int is_attr)
+vm_setivar(VALUE obj, ID id, VALUE val, IVC ic, struct rb_call_cache *cc, int is_attr)
 {
 #if OPT_IC_FOR_IVAR
     rb_check_frozen_internal(obj);
@@ -1121,7 +1121,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic, struct rb_call_cache *cc, int is_
 	    (!is_attr && RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_serial, ic->ic_serial == RCLASS_SERIAL(klass))) ||
 	    ( is_attr && RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_unset, cc->aux.index > 0)))) {
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
-	    index = !is_attr ? ic->ic_value.index : cc->aux.index-1;
+	    index = !is_attr ? ic->index : cc->aux.index-1;
 
 	    if (RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_oorange, index < ROBJECT_NUMIV(obj))) {
 		RB_OBJ_WRITE(obj, &ptr[index], val);
@@ -1134,7 +1134,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic, struct rb_call_cache *cc, int is_
 
 	    if (iv_index_tbl && st_lookup(iv_index_tbl, (st_data_t)id, &index)) {
                 if (!is_attr) {
-                    ic->ic_value.index = index;
+                    ic->index = index;
                     ic->ic_serial = RCLASS_SERIAL(klass);
                 }
 		else if (index >= INT_MAX) {
@@ -1156,13 +1156,13 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic, struct rb_call_cache *cc, int is_
 }
 
 static inline VALUE
-vm_getinstancevariable(VALUE obj, ID id, IC ic)
+vm_getinstancevariable(VALUE obj, ID id, IVC ic)
 {
     return vm_getivar(obj, id, ic, NULL, FALSE);
 }
 
 static inline void
-vm_setinstancevariable(VALUE obj, ID id, VALUE val, IC ic)
+vm_setinstancevariable(VALUE obj, ID id, VALUE val, IVC ic)
 {
     vm_setivar(obj, id, val, ic, 0, 0);
 }
@@ -4134,8 +4134,8 @@ vm_ic_hit_p(IC ic, const VALUE *reg_ep)
 static void
 vm_ic_update(IC ic, VALUE val, const VALUE *reg_ep)
 {
-    VM_ASSERT(ic->ic_value.value != Qundef);
-    ic->ic_value.value = val;
+    VM_ASSERT(ic->value != Qundef);
+    ic->value = val;
     ic->ic_serial = GET_GLOBAL_CONSTANT_STATE() - ruby_vm_const_missing_count;
     ic->ic_cref = vm_get_const_key_cref(reg_ep);
     ruby_vm_const_missing_count = 0;

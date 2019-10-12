@@ -220,10 +220,12 @@ typedef struct rb_compile_option_struct rb_compile_option_t;
 struct iseq_inline_cache_entry {
     rb_serial_t ic_serial;
     const rb_cref_t *ic_cref;
-    union {
-	size_t index;
-	VALUE value;
-    } ic_value;
+    VALUE value;
+};
+
+struct iseq_inline_iv_cache_entry {
+    rb_serial_t ic_serial;
+    size_t index;
 };
 
 union iseq_inline_storage_entry {
@@ -232,6 +234,7 @@ union iseq_inline_storage_entry {
 	VALUE value;
     } once;
     struct iseq_inline_cache_entry cache;
+    struct iseq_inline_iv_cache_entry iv_cache;
 };
 
 struct rb_call_info_kw_arg {
@@ -1122,6 +1125,7 @@ enum vm_svar_index {
 
 /* inline cache */
 typedef struct iseq_inline_cache_entry *IC;
+typedef struct iseq_inline_iv_cache_entry *IVC;
 typedef union iseq_inline_storage_entry *ISE;
 typedef struct rb_call_info *CALL_INFO;
 typedef struct rb_call_cache *CALL_CACHE;
