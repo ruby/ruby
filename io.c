@@ -201,7 +201,7 @@ rb_update_max_fd(int fd)
     rb_atomic_t max_fd = max_file_descriptor;
     int err;
 
-    if (afd <= max_fd)
+    if (fd < 0 || afd <= max_fd)
         return;
 
 #if defined(HAVE_FCNTL) && defined(F_GETFL)
