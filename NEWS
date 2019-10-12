@@ -416,6 +416,11 @@ RubyGems::
   * Upgrade to RubyGems 3.1.0.pre1
     Bundled from https://github.com/rubygems/rubygems/commit/97b264f0fa248c864b6ee9a23d3ff1cdd217dddb
 
+StringScanner::
+
+  * Upgrade to 1.0.3.
+    See https://github.com/ruby/strscan/blob/master/NEWS.md.
+
 === Compatibility issues (excluding feature bug fixes)
 
 * Removed unmaintained libraries.
