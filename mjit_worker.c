@@ -210,8 +210,6 @@ static bool in_jit;
 static bool stop_worker_p;
 // Set to true if worker is stopped.
 static bool worker_stopped;
-// Set to true only when worker is being stopped for `RubyVM::MJIT.pause(wait: true)`.
-static bool mjit_pause_wait_p;
 
 // Path of "/tmp", which can be changed to $TMP in MinGW.
 static char *tmp_dir;
@@ -1229,12 +1227,6 @@ mjit_worker(void)
             // JIT compile
             mjit_func_t func = convert_unit_to_func(unit);
             (void)RB_DEBUG_COUNTER_INC_IF(mjit_compile_failures, func == (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC);
-
-            // Checking `stop_worker_p` here because `mjit_copy_cache_from_main_thread` in `mjit_compile` may wait
-            // for a long time and worker may be stopped during the compilation.
-            // However, we do not want to stop here when the `stop_worker()` is from `MJIT.pause(wait: true)`.
-            if (stop_worker_p && !mjit_pause_wait_p)
-                break;
 
             CRITICAL_SECTION_START(3, "in jit func replace");
             while (in_gc) { // Make sure we're not GC-ing when touching ISeq

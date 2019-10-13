@@ -802,9 +802,7 @@ mjit_pause(bool wait_p)
         }
     }
 
-    mjit_pause_wait_p = wait_p; // Avoid cancelling the last compilation after the unit fetch if wait_p.
     stop_worker();
-    mjit_pause_wait_p = false;
     return Qtrue;
 }
 
