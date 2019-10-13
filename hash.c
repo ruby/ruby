@@ -4769,9 +4769,21 @@ env_delete(VALUE name)
  *   ENV.delete(name)                  -> value
  *   ENV.delete(name) { |name| block } -> value
  *
- * Deletes the environment variable with +name+ and returns the value of the
- * variable.  If a block is given it will be called when the named environment
- * does not exist.
+ * Deletes the environment variable with +name+ if it exists and returns its value:
+ *   ENV['foo'] = '0'
+ *   ENV.delete('foo') # => '0'
+ * Returns +nil+ if the named environment variable does not exist:
+ *   ENV.delete('foo') # => nil
+ * If a block given and the environment variable does not exist,
+ * yields +name+ to the block and returns +nil+:
+ *   ENV.delete('foo') { |name| puts name } # => nil
+ *   foo
+ * If a block given and the environment variable exists,
+ * deletes the environment variable and returns its value (ignoring the block):
+ *   ENV['foo'] = '0'
+ *   ENV.delete('foo') { |name| fail 'ignored' } # => "0"
+ * Raises TypeError if +name+ is not a String and cannot be coerced with \#to_str:
+ *   ENV.delete(Object.new) # => TypeError raised
  */
 static VALUE
 env_delete_m(VALUE obj, VALUE name)
