@@ -22,7 +22,7 @@ extern size_t onig_region_memsize(const struct re_registers *regs);
 
 #include <stdbool.h>
 
-#define STRSCAN_VERSION "1.0.3"
+#define STRSCAN_VERSION "1.0.4"
 
 /* =======================================================================
                          Data Type Definitions
