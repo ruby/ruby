@@ -1038,7 +1038,6 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         fclose(f);
         if (!mjit_opts.save_temps)
             remove_file(c_file);
-        free_unit(unit);
         in_jit = false; // just being explicit for return
     }
     else {
@@ -1236,6 +1235,9 @@ mjit_worker(void)
             if (unit->iseq) { // Check whether GCed or not
                 // Usage of jit_code might be not in a critical section.
                 MJIT_ATOMIC_SET(unit->iseq->body->jit_func, func);
+            }
+            else {
+                free_unit(unit);
             }
             CRITICAL_SECTION_FINISH(3, "in jit func replace");
 
