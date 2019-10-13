@@ -355,21 +355,25 @@ module DRb
 
   # Class responsible for converting between an object and its id.
   #
-  # This, the default implementation, uses an object's local ObjectSpace
+  # This, the default implementation, uses an object's runtime-assigned
   # __id__ as its id.  This means that an object's identification over
   # drb remains valid only while that object instance remains alive
   # within the server runtime.
   #
   # For alternative mechanisms, see DRb::TimerIdConv in drb/timeridconv.rb
   # and DRbNameIdConv in sample/name.rb in the full drb distribution.
+  #
   class DRbIdConv
+    def initialize
+      @id2ref = ObjectSpace::WeakMap.new
+    end
 
     # Convert an object reference id to an object.
     #
     # This implementation looks up the reference id in the local object
     # space and returns the object it refers to.
     def to_obj(ref)
-      ObjectSpace._id2ref(ref)
+      @id2ref[ref]
     end
 
     # Convert an object into a reference id.
@@ -377,7 +381,14 @@ module DRb
     # This implementation returns the object's __id__ in the local
     # object space.
     def to_id(obj)
-      obj.nil? ? nil : obj.__id__
+      if obj.nil?
+        return nil
+      end
+      
+      id = obj.__id__
+      @id2ref[id] = obj
+
+      id
     end
   end
 
