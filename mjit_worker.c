@@ -1107,11 +1107,8 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         remove_so_file(so_file, unit);
 
     if ((uintptr_t)func > (uintptr_t)LAST_JIT_ISEQ_FUNC) {
-        CRITICAL_SECTION_START(3, "end of jit");
-        add_to_list(unit, &active_units);
         verbose(1, "JIT success (%.1fms): %s@%s:%ld -> %s",
                 end_time - start_time, iseq_label, iseq_path, iseq_lineno, c_file);
-        CRITICAL_SECTION_FINISH(3, "end of jit");
     }
     return (mjit_func_t)func;
 }
@@ -1233,6 +1230,9 @@ mjit_worker(void)
                 rb_native_cond_wait(&mjit_gc_wakeup, &mjit_engine_mutex);
             }
             if (unit->iseq) { // Check whether GCed or not
+                if ((uintptr_t)func > (uintptr_t)LAST_JIT_ISEQ_FUNC) {
+                    add_to_list(unit, &active_units);
+                }
                 // Usage of jit_code might be not in a critical section.
                 MJIT_ATOMIC_SET(unit->iseq->body->jit_func, func);
             }
