@@ -327,6 +327,20 @@ class TestBug4409 < Test::Unit::TestCase
   end
 end
 
+class TestDRbAnyToS < Test::Unit::TestCase
+  class BO < BasicObject
+  end
+
+  def test_any_to_s
+    server = DRb::DRbServer.new('druby://:0')
+    server.singleton_class.send(:public, :any_to_s)
+    assert_equal("foo:String", server.any_to_s("foo"))
+    assert_match(/\A#<DRbTests::TestDRbAnyToS::BO:0x[0-9a-f]+>\z/, server.any_to_s(BO.new))
+    server.stop_service
+    server.thread.join
+  end
+end
+
 class TestDRbTCP < Test::Unit::TestCase
   def test_immediate_close
     server = DRb::DRbServer.new('druby://:0')
