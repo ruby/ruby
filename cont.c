@@ -847,6 +847,9 @@ cont_compact(void *ptr)
 {
     rb_context_t *cont = ptr;
 
+    if (cont->self) {
+        cont->self = rb_gc_location(cont->self);
+    }
     cont->value = rb_gc_location(cont->value);
     rb_execution_context_update(&cont->saved_ec);
 }
@@ -857,6 +860,9 @@ cont_mark(void *ptr)
     rb_context_t *cont = ptr;
 
     RUBY_MARK_ENTER("cont");
+    if (cont->self) {
+        rb_gc_mark_movable(cont->self);
+    }
     rb_gc_mark_movable(cont->value);
 
     rb_execution_context_mark(&cont->saved_ec);
