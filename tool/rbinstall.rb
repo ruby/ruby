@@ -721,7 +721,7 @@ module RbInstall
     def extract_files(destination_dir, pattern = "*")
       return if @src_dir == destination_dir
       File.chmod(0700, destination_dir)
-      mode = pattern == "bin/*" ? prog_mode : data_mode
+      mode = pattern == File.join(spec.bindir, '*') ? prog_mode : data_mode
       spec.files.each do |f|
         src = File.join(@src_dir, f)
         dest = File.join(without_destdir(destination_dir), f)
