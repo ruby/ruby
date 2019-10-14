@@ -499,13 +499,17 @@ match_target(struct strscanner *p)
 static inline void
 set_registers(struct strscanner *p, size_t length)
 {
-    onig_region_clear(&(p->regs));
+    const int at = 0;
+    OnigRegion *regs = &(p->regs);
+    onig_region_clear(regs);
+    if (onig_region_set(regs, at, 0, 0)) return;
     if (p->fixed_anchor_p) {
-        onig_region_set(&(p->regs), 0, p->curr, p->curr + length);
+        regs->beg[at] = p->curr;
+        regs->end[at] = p->curr + length;
     }
     else
     {
-        onig_region_set(&(p->regs), 0, 0, length);
+        regs->end[at] = length;
     }
 }
 
