@@ -70,16 +70,30 @@ module IRB # :nodoc:
         $stdout.tty? && supported? && (/mswin|mingw/ =~ RUBY_PLATFORM || (ENV.key?('TERM') && ENV['TERM'] != 'dumb'))
       end
 
-      def inspect_colorable?(obj)
+      def inspect_colorable?(obj, seen = {})
         case obj
         when String, Symbol, Regexp, Integer, Float, FalseClass, TrueClass, NilClass
           true
         when Hash
-          obj.all? { |k, v| inspect_colorable?(k) && inspect_colorable?(v) }
+          if seen.has_key?(obj.object_id)
+            false
+          else
+            seen[obj.object_id] = true
+            colorable = obj.all? { |k, v| inspect_colorable?(k, seen) && inspect_colorable?(v, seen) }
+            seen.delete(obj.object_id)
+            colorable
+          end
         when Array
-          obj.all? { |o| inspect_colorable?(o) }
+          if seen.has_key?(obj.object_id)
+            false
+          else
+            seen[obj.object_id] = true
+            colorable = obj.all? { |o| inspect_colorable?(o, seen) }
+            seen.delete(obj.object_id)
+            colorable
+          end
         when Range
-          inspect_colorable?(obj.begin) && inspect_colorable?(obj.end)
+          inspect_colorable?(obj.begin, seen) && inspect_colorable?(obj.end, seen)
         when Module
           !obj.name.nil?
         else

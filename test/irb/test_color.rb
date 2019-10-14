@@ -125,6 +125,8 @@ module TestIRB
         1 => true,
         2.3 => true,
         ['foo', :bar] => true,
+        (a = []; a << a; a) => false,
+        (h = {}; h[h] = h; h) => false,
         { a: 4 } => true,
         /reg/ => true,
         (1..3) => true,
