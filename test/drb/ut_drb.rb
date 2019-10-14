@@ -63,6 +63,15 @@ class DRbEx
     FooBar.new
   end
 
+  class BO < ::BasicObject
+    def foo; 1 end
+    protected def prot; 2; end
+    private def priv; 3; end
+  end
+  def basic_object
+    BO.new
+  end
+
   def unknown_class
     Unknown2.new
   end

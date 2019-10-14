@@ -158,6 +158,14 @@ module DRbCore
     end
   end
 
+  def test_02_basic_object
+    obj = @there.basic_object
+    assert_kind_of(DRb::DRbObject, obj)
+    assert_equal(1, obj.foo)
+    assert_raise(NoMethodError){obj.prot}
+    assert_raise(NoMethodError){obj.priv}
+  end
+
   def test_02_unknown
     obj = @there.unknown_class
     assert_kind_of(DRb::DRbUnknown, obj)

@@ -377,7 +377,12 @@ module DRb
     # This implementation returns the object's __id__ in the local
     # object space.
     def to_id(obj)
-      obj.nil? ? nil : obj.__id__
+      case obj
+      when Object
+        obj.nil? ? nil : obj.__id__
+      when BasicObject
+        obj.__id__
+      end
     end
   end
 
@@ -560,7 +565,14 @@ module DRb
     end
 
     def dump(obj, error=false)  # :nodoc:
-      obj = make_proxy(obj, error) if obj.kind_of? DRbUndumped
+      case obj
+      when DRbUndumped
+        obj = make_proxy(obj, error)
+      when Object
+        # nothing
+      else
+        obj = make_proxy(obj, error)
+      end
       begin
         str = Marshal::dump(obj)
       rescue
@@ -1092,7 +1104,14 @@ module DRb
     def initialize(obj, uri=nil)
       @uri = nil
       @ref = nil
-      if obj.nil?
+      case obj
+      when Object
+        is_nil = obj.nil?
+      when BasicObject
+        is_nil = false
+      end
+
+      if is_nil
         return if uri.nil?
         @uri, option = DRbProtocol.uri_option(uri, DRb.config)
         @ref = DRbURIOption.new(option) unless option.nil?
@@ -1209,15 +1228,20 @@ module DRb
     def self.open(remote_uri)  # :nodoc:
       begin
         conn = nil
+        pid = $$
 
         @mutex.synchronize do
           #FIXME
           new_pool = []
           @pool.each do |c|
-            if conn.nil? and c.uri == remote_uri
-              conn = c if c.alive?
+            if c.pid == pid
+              if conn.nil? and c.uri == remote_uri
+                conn = c if c.alive?
+              else
+                new_pool.push c
+              end
             else
-              new_pool.push c
+              c.close
             end
           end
           @pool = new_pool
@@ -1243,9 +1267,11 @@ module DRb
 
     def initialize(remote_uri)  # :nodoc:
       @uri = remote_uri
+      @pid = $$
       @protocol = DRbProtocol.open(remote_uri, DRb.config)
     end
     attr_reader :uri  # :nodoc:
+    attr_reader :pid  # :nodoc:
 
     def send_message(ref, msg_id, arg, block)  # :nodoc:
       @protocol.send_request(ref, msg_id, arg, block)
@@ -1527,7 +1553,13 @@ module DRb
     def any_to_s(obj)
       obj.to_s + ":#{obj.class}"
     rescue
-      sprintf("#<%s:0x%lx>", obj.class, obj.__id__)
+      case obj
+      when Object
+        klass = obj.class
+      else
+        klass = Kernel.instance_method(:class).bind(obj).call
+      end
+      sprintf("#<%s:0x%dx>", klass, obj.__id__)
     end
 
     # Check that a method is callable via dRuby.
@@ -1543,14 +1575,27 @@ module DRb
       raise(ArgumentError, "#{any_to_s(msg_id)} is not a symbol") unless Symbol == msg_id.class
       raise(SecurityError, "insecure method `#{msg_id}'") if insecure_method?(msg_id)
 
-      if obj.private_methods.include?(msg_id)
-        desc = any_to_s(obj)
-        raise NoMethodError, "private method `#{msg_id}' called for #{desc}"
-      elsif obj.protected_methods.include?(msg_id)
-        desc = any_to_s(obj)
-        raise NoMethodError, "protected method `#{msg_id}' called for #{desc}"
+      case obj
+      when Object
+        if obj.private_methods.include?(msg_id)
+          desc = any_to_s(obj)
+          raise NoMethodError, "private method `#{msg_id}' called for #{desc}"
+        elsif obj.protected_methods.include?(msg_id)
+          desc = any_to_s(obj)
+          raise NoMethodError, "protected method `#{msg_id}' called for #{desc}"
+        else
+          true
+        end
       else
-        true
+        if Kernel.instance_method(:private_methods).bind(obj).call.include?(msg_id)
+          desc = any_to_s(obj)
+          raise NoMethodError, "private method `#{msg_id}' called for #{desc}"
+        elsif Kernel.instance_method(:protected_methods).bind(obj).call.include?(msg_id)
+          desc = any_to_s(obj)
+          raise NoMethodError, "protected method `#{msg_id}' called for #{desc}"
+        else
+          true
+        end
       end
     end
     public :check_insecure_method
@@ -1596,8 +1641,11 @@ module DRb
           end
         end
         @succ = true
-        if @msg_id == :to_ary && @result.class == Array
-          @result = DRbArray.new(@result)
+        case @result
+        when Array
+          if @msg_id == :to_ary
+            @result = DRbArray.new(@result)
+          end
         end
         return @succ, @result
       rescue StandardError, ScriptError, Interrupt
@@ -1678,7 +1726,9 @@ module DRb
             invoke_method = InvokeMethod.new(self, client)
             succ, result = invoke_method.perform
             error_print(result) if !succ && verbose
-            client.send_reply(succ, result)
+            unless DRbConnError === result && result.message == 'connection closed'
+              client.send_reply(succ, result)
+            end
           rescue Exception => e
             error_print(e) if verbose
           ensure
