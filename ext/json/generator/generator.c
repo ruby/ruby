@@ -806,11 +806,20 @@ static void generate_json_array(FBuffer *buffer, VALUE Vstate, JSON_Generator_St
     fbuffer_append_char(buffer, ']');
 }
 
+#ifdef HAVE_RUBY_ENCODING_H
+static int enc_utf8_compatible_p(rb_encoding *enc)
+{
+    if (enc == rb_usascii_encoding()) return 1;
+    if (enc == rb_utf8_encoding()) return 1;
+    return 0;
+}
+#endif
+
 static void generate_json_string(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
     fbuffer_append_char(buffer, '"');
 #ifdef HAVE_RUBY_ENCODING_H
-    if (!rb_enc_str_asciicompat_p(obj)) {
+    if (!enc_utf8_compatible_p(rb_enc_get(obj))) {
         obj = rb_str_encode(obj, CEncoding_UTF_8, 0, Qnil);
     }
 #endif
