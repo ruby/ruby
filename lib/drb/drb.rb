@@ -1606,15 +1606,9 @@ module DRb
     # Coerce an object to a string, providing our own representation if
     # to_s is not defined for the object.
     def any_to_s(obj)
-      obj.to_s + ":#{obj.class}"
+      "#{obj}:#{obj.class}"
     rescue
-      case obj
-      when Object
-        klass = obj.class
-      else
-        klass = Kernel.instance_method(:class).bind(obj).call
-      end
-      sprintf("#<%s:0x%dx>", klass, obj.__id__)
+      Kernel.instance_method(:to_s).bind_call(obj)
     end
 
     # Check that a method is callable via dRuby.
