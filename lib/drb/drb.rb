@@ -48,6 +48,7 @@
 
 require 'socket'
 require 'io/wait'
+require 'monitor'
 require_relative 'eq'
 
 #
