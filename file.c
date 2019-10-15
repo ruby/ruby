@@ -1803,6 +1803,9 @@ rb_file_exists_p(VALUE obj, VALUE fname)
  *
  * Returns <code>true</code> if the named file is readable by the effective
  * user and group id of this process. See eaccess(3).
+ *
+ * Note that some OS-level security features may cause this to return true
+ * even though the file is not readable by the effective user/group.
  */
 
 static VALUE
@@ -1818,6 +1821,9 @@ rb_file_readable_p(VALUE obj, VALUE fname)
  *
  * Returns <code>true</code> if the named file is readable by the real
  * user and group id of this process. See access(3).
+ *
+ * Note that some OS-level security features may cause this to return true
+ * even though the file is not readable by the real user/group.
  */
 
 static VALUE
@@ -1871,6 +1877,9 @@ rb_file_world_readable_p(VALUE obj, VALUE fname)
  *
  * Returns <code>true</code> if the named file is writable by the effective
  * user and group id of this process. See eaccess(3).
+ *
+ * Note that some OS-level security features may cause this to return true
+ * even though the file is not writable by the effective user/group.
  */
 
 static VALUE
@@ -1885,7 +1894,10 @@ rb_file_writable_p(VALUE obj, VALUE fname)
  *    File.writable_real?(file_name)   -> true or false
  *
  * Returns <code>true</code> if the named file is writable by the real
- * user and group id of this process. See access(3)
+ * user and group id of this process. See access(3).
+ *
+ * Note that some OS-level security features may cause this to return true
+ * even though the file is not writable by the real user/group.
  */
 
 static VALUE
@@ -1935,6 +1947,9 @@ rb_file_world_writable_p(VALUE obj, VALUE fname)
  * Windows does not support execute permissions separately from read
  * permissions. On Windows, a file is only considered executable if it ends in
  * .bat, .cmd, .com, or .exe.
+ *
+ * Note that some OS-level security features may cause this to return true
+ * even though the file is not executable by the effective user/group.
  */
 
 static VALUE
@@ -1954,6 +1969,9 @@ rb_file_executable_p(VALUE obj, VALUE fname)
  * Windows does not support execute permissions separately from read
  * permissions. On Windows, a file is only considered executable if it ends in
  * .bat, .cmd, .com, or .exe.
+ *
+ * Note that some OS-level security features may cause this to return true
+ * even though the file is not executable by the real user/group.
  */
 
 static VALUE
