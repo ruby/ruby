@@ -2472,7 +2472,7 @@ Gem::Specification.new do |s|
   s.email = "example@example.com".freeze
   s.files = ["lib/code.rb".freeze]
   s.homepage = "http://example.com".freeze
-  s.rubygems_version = "3.1.0.pre1".freeze
+  s.rubygems_version = "3.1.0.pre2".freeze
   s.summary = "this is a summary".freeze
 end
     SPEC
