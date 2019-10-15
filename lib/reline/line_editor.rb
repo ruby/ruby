@@ -1223,7 +1223,7 @@ class Reline::LineEditor
         @cursor = @byte_pointer = 0
       else
         chr = key.is_a?(String) ? key : key.chr(Encoding::ASCII_8BIT)
-        if chr.match?(/[[:print:]]/)
+        if chr.match?(/[[:print:]]/) or key == "\C-h".ord or key == 127
           searcher.resume(key)
         else
           if @history_pointer
