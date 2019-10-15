@@ -722,9 +722,10 @@ module RbInstall
       return if @src_dir == destination_dir
       File.chmod(0700, destination_dir)
       mode = pattern == File.join(spec.bindir, '*') ? prog_mode : data_mode
+      destdir = without_destdir(destination_dir)
       spec.files.each do |f|
         src = File.join(@src_dir, f)
-        dest = File.join(without_destdir(destination_dir), f)
+        dest = File.join(destdir, f)
         makedirs(dest[/.*(?=\/)/m])
         install src, dest, :mode => mode
       end
