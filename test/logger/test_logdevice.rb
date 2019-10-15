@@ -275,8 +275,12 @@ class TestLogDevice < Test::Unit::TestCase
     logger.close
   end
 
+  def test_invalid_shifting_age
+    assert_raise(ArgumentError) { Logger.new(@filename, 'invalid') }
+    assert_raise(ArgumentError) { Logger::Period.previous_period_end(Time.now, 'invalid') }
+  end
+
   def test_shifting_age
-    # shift_age other than 'daily', 'weekly', and 'monthly' means 'everytime'
     yyyymmdd = Time.now.strftime("%Y%m%d")
     filename1 = @filename + ".#{yyyymmdd}"
     filename2 = @filename + ".#{yyyymmdd}.1"
@@ -311,7 +315,6 @@ class TestLogDevice < Test::Unit::TestCase
   end
 
   def test_shifting_period_suffix
-    # shift_age other than 'daily', 'weekly', and 'monthly' means 'everytime'
     ['%Y%m%d', '%Y-%m-%d', '%Y'].each do |format|
       if format == '%Y%m%d' # default
         logger = Logger.new(@filename, 'now', 1048576)
