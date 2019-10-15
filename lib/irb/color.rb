@@ -141,7 +141,7 @@ module IRB # :nodoc:
         seen[obj] = true
         block.call
       ensure
-        seen.delete(obj.object_id)
+        seen.delete(obj)
       end
 
       # Ripper::Lexer::Elem#state is supported on Ruby 2.5+
