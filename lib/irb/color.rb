@@ -70,7 +70,7 @@ module IRB # :nodoc:
         $stdout.tty? && supported? && (/mswin|mingw/ =~ RUBY_PLATFORM || (ENV.key?('TERM') && ENV['TERM'] != 'dumb'))
       end
 
-      def inspect_colorable?(obj, seen: {})
+      def inspect_colorable?(obj, seen: {}.compare_by_identity)
         case obj
         when String, Symbol, Regexp, Integer, Float, FalseClass, TrueClass, NilClass
           true
@@ -137,8 +137,8 @@ module IRB # :nodoc:
       private
 
       def without_circular_ref(obj, seen:, &block)
-        return false if seen.key?(obj.object_id)
-        seen[obj.object_id] = true
+        return false if seen.key?(obj)
+        seen[obj] = true
         block.call
       ensure
         seen.delete(obj.object_id)
