@@ -2269,7 +2269,9 @@ EOS
     th = nil
     x = with_tmpchdir {|d|
       prog = "#{d}/notexist"
-      th = Thread.start {system(prog);sleep}
+      q = Thread::Queue.new
+      th = Thread.start {system(prog);q.push(nil);sleep}
+      q.pop
       th.kill
       th.join(0.1)
     }
