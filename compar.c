@@ -154,9 +154,9 @@ cmp_le(VALUE x, VALUE y)
  *  call-seq:
  *     obj.between?(min, max)    -> true or false
  *
- *  Returns <code>false</code> if <i>obj</i> <code><=></code>
- *  <i>min</i> is less than zero or if <i>anObject</i> <code><=></code>
- *  <i>max</i> is greater than zero, <code>true</code> otherwise.
+ *  Returns <code>false</code> if _obj_ <code><=></code> _min_ is less
+ *  than zero or if _obj_ <code><=></code> _max_ is greater than zero,
+ *  <code>true</code> otherwise.
  *
  *     3.between?(1, 5)               #=> true
  *     6.between?(1, 5)               #=> false
@@ -177,9 +177,9 @@ cmp_between(VALUE x, VALUE min, VALUE max)
  *  call-seq:
  *     obj.clamp(min, max) ->  obj
  *
- * Returns <i>min</i> if <i>obj</i> <code><=></code> <i>min</i> is less
- * than zero, <i>max</i> if <i>obj</i> <code><=></code> <i>max</i> is
- * greater than zero and <i>obj</i> otherwise.
+ * Returns _min_ if _obj_ <code><=></code> _min_ is less than zero,
+ * _max_ if _obj_ <code><=></code> _max_ is greater than zero and
+ * _obj_ otherwise.
  *
  *     12.clamp(0, 100)         #=> 12
  *     523.clamp(0, 100)        #=> 100
