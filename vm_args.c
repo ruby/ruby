@@ -737,6 +737,8 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         if (!kw_flag && len > 0) {
             if (RB_TYPE_P(rest_last, T_HASH) &&
                 (((struct RHash *)rest_last)->basic.flags & RHASH_PASS_AS_KEYWORDS)) {
+                rest_last = rb_hash_dup(rest_last);
+                RARRAY_ASET(args->rest, len - 1, rest_last);
                 kw_flag |= VM_CALL_KW_SPLAT;
             }
             else {
