@@ -414,42 +414,6 @@ static RETSIGTYPE sighandler(int sig);
 static int signal_ignored(int sig);
 static void signal_enque(int sig);
 
-/*
- *  call-seq:
- *     Process.kill(signal, pid, ...)    -> integer
- *
- *  Sends the given signal to the specified process id(s) if _pid_ is positive.
- *  If _pid_ is zero, _signal_ is sent to all processes whose group ID is equal
- *  to the group ID of the process. If _pid_ is negative, results are dependent
- *  on the operating system. _signal_ may be an integer signal number or
- *  a POSIX signal name (either with or without a +SIG+ prefix). If _signal_ is
- *  negative (or starts with a minus sign), kills process groups instead of
- *  processes. Not all signals are available on all platforms.
- *  The keys and values of Signal.list are known signal names and numbers,
- *  respectively.
- *
- *     pid = fork do
- *        Signal.trap("HUP") { puts "Ouch!"; exit }
- *        # ... do some work ...
- *     end
- *     # ...
- *     Process.kill("HUP", pid)
- *     Process.wait
- *
- *  <em>produces:</em>
- *
- *     Ouch!
- *
- *  If _signal_ is an integer but wrong for signal, Errno::EINVAL or
- *  RangeError will be raised.  Otherwise unless _signal_ is a String
- *  or a Symbol, and a known signal name, ArgumentError will be
- *  raised.
- *
- *  Also, Errno::ESRCH or RangeError for invalid _pid_, Errno::EPERM
- *  when failed because of no privilege, will be raised.  In these
- *  cases, signals may have been sent to preceding processes.
- */
-
 VALUE
 rb_f_kill(int argc, const VALUE *argv)
 {
@@ -543,13 +507,8 @@ static struct {
 volatile unsigned int ruby_nocldwait;
 #endif
 
-#ifdef __dietlibc__
-#define sighandler_t sh_t
-#else
 #define sighandler_t ruby_sighandler_t
-#endif
 
-typedef RETSIGTYPE (*sighandler_t)(int);
 #ifdef USE_SIGALTSTACK
 typedef void ruby_sigaction_t(int, siginfo_t*, void*);
 #define SIGINFO_ARG , siginfo_t *info, void *ctx
@@ -568,8 +527,11 @@ rb_sigaltstack_size(void)
     int size = 16*1024;
 
 #ifdef MINSIGSTKSZ
-    if (size < MINSIGSTKSZ)
-	size = MINSIGSTKSZ;
+    {
+        int minsigstksz = (int)MINSIGSTKSZ;
+        if (size < minsigstksz)
+            size = minsigstksz;
+    }
 #endif
 #if defined(HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
     {
@@ -951,6 +913,7 @@ NOINLINE(static void check_reserved_signal_(const char *name, size_t name_len));
 
 #ifdef SIGBUS
 
+static sighandler_t default_sigbus_handler;
 NORETURN(static ruby_sigaction_t sigbus);
 
 static RETSIGTYPE
@@ -966,11 +929,43 @@ sigbus(int sig SIGINFO_ARG)
 #if defined __APPLE__ || defined __linux__
     CHECK_STACK_OVERFLOW();
 #endif
-    rb_bug_context(SIGINFO_CTX, "Bus Error" MESSAGE_FAULT_ADDRESS);
+    rb_bug_for_fatal_signal(default_sigbus_handler, sig, SIGINFO_CTX, "Bus Error" MESSAGE_FAULT_ADDRESS);
 }
 #endif
 
+#ifdef SIGSEGV
+
+static sighandler_t default_sigsegv_handler;
+NORETURN(static ruby_sigaction_t sigsegv);
+
+static RETSIGTYPE
+sigsegv(int sig SIGINFO_ARG)
+{
+    check_reserved_signal("SEGV");
+    CHECK_STACK_OVERFLOW();
+    rb_bug_for_fatal_signal(default_sigsegv_handler, sig, SIGINFO_CTX, "Segmentation fault" MESSAGE_FAULT_ADDRESS);
+}
+#endif
+
+#ifdef SIGILL
+
+static sighandler_t default_sigill_handler;
+NORETURN(static ruby_sigaction_t sigill);
+
+static RETSIGTYPE
+sigill(int sig SIGINFO_ARG)
+{
+    check_reserved_signal("ILL");
+#if defined __APPLE__
+    CHECK_STACK_OVERFLOW();
+#endif
+    rb_bug_for_fatal_signal(default_sigill_handler, sig, SIGINFO_CTX, "Illegal instruction" MESSAGE_FAULT_ADDRESS);
+}
+#endif
+
+#ifndef __sun
 NORETURN(static void ruby_abort(void));
+#endif
 
 static void
 ruby_abort(void)
@@ -983,36 +978,7 @@ ruby_abort(void)
 #else
     abort();
 #endif
-
 }
-
-#ifdef SIGSEGV
-
-NORETURN(static ruby_sigaction_t sigsegv);
-
-static RETSIGTYPE
-sigsegv(int sig SIGINFO_ARG)
-{
-    check_reserved_signal("SEGV");
-    CHECK_STACK_OVERFLOW();
-    rb_bug_context(SIGINFO_CTX, "Segmentation fault" MESSAGE_FAULT_ADDRESS);
-}
-#endif
-
-#ifdef SIGILL
-
-NORETURN(static ruby_sigaction_t sigill);
-
-static RETSIGTYPE
-sigill(int sig SIGINFO_ARG)
-{
-    check_reserved_signal("ILL");
-#if defined __APPLE__
-    CHECK_STACK_OVERFLOW();
-#endif
-    rb_bug_context(SIGINFO_CTX, "Illegal instruction" MESSAGE_FAULT_ADDRESS);
-}
-#endif
 
 static void
 check_reserved_signal_(const char *name, size_t name_len)
@@ -1403,7 +1369,7 @@ reserved_signal_p(int signo)
  *     Terminating: 27460
  */
 static VALUE
-sig_trap(int argc, VALUE *argv)
+sig_trap(int argc, VALUE *argv, VALUE _)
 {
     int sig;
     sighandler_t func;
@@ -1446,7 +1412,7 @@ sig_trap(int argc, VALUE *argv)
  *   Signal.list   #=> {"EXIT"=>0, "HUP"=>1, "INT"=>2, "QUIT"=>3, "ILL"=>4, "TRAP"=>5, "IOT"=>6, "ABRT"=>6, "FPE"=>8, "KILL"=>9, "BUS"=>7, "SEGV"=>11, "SYS"=>31, "PIPE"=>13, "ALRM"=>14, "TERM"=>15, "URG"=>23, "STOP"=>19, "TSTP"=>20, "CONT"=>18, "CHLD"=>17, "CLD"=>17, "TTIN"=>21, "TTOU"=>22, "IO"=>29, "XCPU"=>24, "XFSZ"=>25, "VTALRM"=>26, "PROF"=>27, "WINCH"=>28, "USR1"=>10, "USR2"=>12, "PWR"=>30, "POLL"=>29}
  */
 static VALUE
-sig_list(void)
+sig_list(VALUE _)
 {
     VALUE h = rb_hash_new();
     const struct signals *sigs;
@@ -1464,21 +1430,28 @@ sig_list(void)
 	perror(failed); \
     } while (0)
 static int
-install_sighandler(int signum, sighandler_t handler)
+install_sighandler_core(int signum, sighandler_t handler, sighandler_t *old_handler)
 {
     sighandler_t old;
 
     old = ruby_signal(signum, handler);
     if (old == SIG_ERR) return -1;
-    /* signal handler should be inherited during exec. */
-    if (old != SIG_DFL) {
-	ruby_signal(signum, old);
+    if (old_handler) {
+        *old_handler = (old == SIG_DFL || old == SIG_IGN) ? 0 : old;
+    }
+    else {
+        /* signal handler should be inherited during exec. */
+        if (old != SIG_DFL) {
+            ruby_signal(signum, old);
+        }
     }
     return 0;
 }
 
 #  define install_sighandler(signum, handler) \
-    INSTALL_SIGHANDLER(install_sighandler(signum, handler), #signum, signum)
+    INSTALL_SIGHANDLER(install_sighandler_core(signum, handler, NULL), #signum, signum)
+#  define force_install_sighandler(signum, handler, old_handler) \
+    INSTALL_SIGHANDLER(install_sighandler_core(signum, handler, old_handler), #signum, signum)
 
 #if RUBY_SIGCHLD
 static int
@@ -1590,14 +1563,14 @@ Init_signal(void)
 
     if (!ruby_enable_coredump) {
 #ifdef SIGBUS
-	install_sighandler(SIGBUS, (sighandler_t)sigbus);
+	force_install_sighandler(SIGBUS, (sighandler_t)sigbus, &default_sigbus_handler);
 #endif
 #ifdef SIGILL
-	install_sighandler(SIGILL, (sighandler_t)sigill);
+	force_install_sighandler(SIGILL, (sighandler_t)sigill, &default_sigill_handler);
 #endif
 #ifdef SIGSEGV
 	RB_ALTSTACK_INIT(GET_VM()->main_altstack);
-	install_sighandler(SIGSEGV, (sighandler_t)sigsegv);
+	force_install_sighandler(SIGSEGV, (sighandler_t)sigsegv, &default_sigsegv_handler);
 #endif
     }
 #ifdef SIGPIPE

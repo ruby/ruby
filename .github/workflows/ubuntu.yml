@@ -13,7 +13,34 @@ jobs:
       matrix:
         test_task: [ "check", "test-bundler", "test-bundled-gems" ]
       fail-fast: false
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
+      - run: env | sort
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+      - name: Dump job context
+        env:
+          JOB_CONTEXT: ${{ toJson(job) }}
+        run: echo "$JOB_CONTEXT"
+      - name: Dump steps context
+        env:
+          STEPS_CONTEXT: ${{ toJson(steps) }}
+        run: echo "$STEPS_CONTEXT"
+      - name: Dump runner context
+        env:
+          RUNNER_CONTEXT: ${{ toJson(runner) }}
+        run: echo "$RUNNER_CONTEXT"
+      - name: Dump strategy context
+        env:
+          STRATEGY_CONTEXT: ${{ toJson(strategy) }}
+        run: echo "$STRATEGY_CONTEXT"
+      - name: Dump matrix context
+        env:
+          MATRIX_CONTEXT: ${{ toJson(matrix) }}
+        run: echo "$MATRIX_CONTEXT"
+
       - name: Install libraries
         run: |
           set -x
@@ -24,8 +51,6 @@ jobs:
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
       - name: Checkout ruby/ruby
         run: git clone --depth=50 https://github.com/ruby/ruby . && git reset --hard "$GITHUB_SHA"
-        env:
-          GITHUB_SHA: ${{ github.sha }}
         if: github.event_name == 'push'
       - name: Checkout a pull request
         run: git clone --depth=50 "--branch=$GITHUB_BRANCH" "https://github.com/${GITHUB_REPO}" . && git reset --hard "$GITHUB_REV"
@@ -34,28 +59,46 @@ jobs:
           GITHUB_BRANCH: ${{ github.event.pull_request.head.ref }}
           GITHUB_REPO: ${{ github.event.pull_request.head.repo.full_name }}
         if: github.event_name == 'pull_request'
-      - name: Set ENV
-        run: |
-          export JOBS=-j$((1 + $(nproc --all)))
       - name: Fixed world writable dirs
         run: |
           chmod go-w $HOME
           sudo chmod -R go-w /usr/share
+      - name: Set ENV
+        run: |
+          echo '##[set-env name=JOBS]'-j$((1 + $(nproc --all)))
       - run: autoconf
       - name: configure
         run: ./configure -C --disable-install-doc
       - run: make $JOBS
-      # TODO: Remove `continue-on-error` once they become stable and also we have a notification for their failure.
-      - name: make check
-        run: make -s ${{ matrix.test_task }}
+      - name: Tests
+        run: make -s ${{ matrix.test_task }} TESTOPTS="$JOBS -q --tty=no"
         env:
-          TESTOPTS: "$JOBS -q --tty=no"
           MSPECOPT: "-ff" # not using `-j` because sometimes `mspec -j` silently dies
-        if: matrix.test_task == 'check'
-        continue-on-error: true
-      - name: make test-bundler/test-bundled-gems
-        run: make -s ${{ matrix.test_task }}
-        if: matrix.test_task != 'check'
-        continue-on-error: true
+        if: matrix.test_task != 'test-bundled-gems'
+      - name: Tests (test-bundled-gems)
+        # Remove minitest from TEST_BUNDLED_GEMS_ALLOW_FAILURES if https://github.com/seattlerb/minitest/pull/798 is resolved
+        run: make -s ${{ matrix.test_task }} TEST_BUNDLED_GEMS_ALLOW_FAILURES=minitest
+        env:
+          RUBY_TESTOPTS: "-q --tty=no"
+        if: matrix.test_task == 'test-bundled-gems'
       - name: Leaked Globals
         run: make -s leaked-globals
+      - name: Debug GitHub context
+        run: echo "$GITHUB_CONTEXT"
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        if: failure() && github.event_name == 'push'
+      - uses: k0kubun/action-slack@v2.0.0
+        with:
+          payload: |
+            {
+              "attachments": [{
+                "text": "${{ job.status}}: <https://github.com/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ github.workflow }} / ${{ matrix.test_task }}> " +
+                        "(<https://github.com/${{ github.repository }}/commit/${{ github.sha }}|" + "${{ github.sha }}".substring(0, 10) + ">) " +
+                        "of ${{ github.repository }}@" + "${{ github.ref }}".split('/').reverse()[0] + " by ${{ github.event.head_commit.committer.name }}",
+                "color": "danger"
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: failure() && github.event_name == 'push'

@@ -398,7 +398,7 @@ class TestRubyOptimization < Test::Unit::TestCase
         foo
       end;1
     end;
-    status, _err = EnvUtil.invoke_ruby([], "", true, true, {}) {
+    status, _err = EnvUtil.invoke_ruby([], "", true, true, **{}) {
       |in_p, out_p, err_p, pid|
       in_p.write(script)
       in_p.close
@@ -823,6 +823,21 @@ class TestRubyOptimization < Test::Unit::TestCase
       assert_raise(RuntimeError) {
         begin raise ensure nil if nil end
       }
+    end;
+  end
+
+  def test_optimized_rescue
+    assert_in_out_err("", "#{<<~"begin;"}\n#{<<~'end;'}", [], /END \(RuntimeError\)/)
+    begin;
+      if false
+        begin
+          require "some_mad_stuff"
+        rescue LoadError
+          puts "no mad stuff loaded"
+        end
+      end
+
+      raise  "END"
     end;
   end
 end

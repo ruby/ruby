@@ -70,16 +70,20 @@ module IRB # :nodoc:
         $stdout.tty? && supported? && (/mswin|mingw/ =~ RUBY_PLATFORM || (ENV.key?('TERM') && ENV['TERM'] != 'dumb'))
       end
 
-      def inspect_colorable?(obj)
+      def inspect_colorable?(obj, seen: {})
         case obj
         when String, Symbol, Regexp, Integer, Float, FalseClass, TrueClass, NilClass
           true
         when Hash
-          obj.all? { |k, v| inspect_colorable?(k) && inspect_colorable?(v) }
+          without_circular_ref(obj, seen: seen) do
+            obj.all? { |k, v| inspect_colorable?(k, seen: seen) && inspect_colorable?(v, seen: seen) }
+          end
         when Array
-          obj.all? { |o| inspect_colorable?(o) }
+          without_circular_ref(obj, seen: seen) do
+            obj.all? { |o| inspect_colorable?(o, seen: seen) }
+          end
         when Range
-          inspect_colorable?(obj.begin) && inspect_colorable?(obj.end)
+          inspect_colorable?(obj.begin, seen: seen) && inspect_colorable?(obj.end, seen: seen)
         when Module
           !obj.name.nil?
         else
@@ -131,6 +135,14 @@ module IRB # :nodoc:
       end
 
       private
+
+      def without_circular_ref(obj, seen:, &block)
+        return false if seen.key?(obj.object_id)
+        seen[obj.object_id] = true
+        block.call
+      ensure
+        seen.delete(obj.object_id)
+      end
 
       # Ripper::Lexer::Elem#state is supported on Ruby 2.5+
       def supported?

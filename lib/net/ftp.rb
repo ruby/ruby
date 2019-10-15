@@ -1298,6 +1298,41 @@ module Net
     end
 
     #
+    # Issues a FEAT command
+    #
+    # Returns an array of supported optional features
+    #
+    def features
+      resp = sendcmd("FEAT")
+      if !resp.start_with?("211")
+        raise FTPReplyError, resp
+      end
+
+      feats = []
+      resp.split("\n").each do |line|
+        next if !line.start_with?(' ') # skip status lines
+
+        feats << line.strip
+      end
+
+      return feats
+    end
+
+    #
+    # Issues an OPTS command
+    # - name Should be the name of the option to set
+    # - params is any optional parameters to supply with the option
+    #
+    # example: option('UTF8', 'ON') => 'OPTS UTF8 ON'
+    #
+    def option(name, params = nil)
+      cmd = "OPTS #{name}"
+      cmd += " #{params}" if params
+
+      voidcmd(cmd)
+    end
+
+    #
     # Closes the connection.  Further operations are impossible until you open
     # a new connection with #connect.
     #
@@ -1456,7 +1491,7 @@ module Net
 
     if defined?(OpenSSL::SSL::SSLSocket)
       class BufferedSSLSocket <  BufferedSocket
-        def initialize(*args)
+        def initialize(*args, **options)
           super
           @is_shutdown = false
         end

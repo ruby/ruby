@@ -1010,8 +1010,9 @@ struct chdir_data {
 };
 
 static VALUE
-chdir_yield(struct chdir_data *args)
+chdir_yield(VALUE v)
 {
+    struct chdir_data *args = (void *)v;
     dir_chdir(args->new_path);
     args->done = TRUE;
     chdir_blocking++;
@@ -1021,8 +1022,9 @@ chdir_yield(struct chdir_data *args)
 }
 
 static VALUE
-chdir_restore(struct chdir_data *args)
+chdir_restore(VALUE v)
 {
+    struct chdir_data *args = (void *)v;
     if (args->done) {
 	chdir_blocking--;
 	if (chdir_blocking == 0)
@@ -1341,8 +1343,20 @@ sys_enc_warning_in(const char *func, const char *mesg, rb_encoding *enc)
 #define sys_warning(val, enc) \
     ((flags & GLOB_VERBOSE) ? sys_enc_warning_in(RUBY_FUNCTION_NAME_STRING, (val), (enc)) :(void)0)
 
+static inline void *
+glob_alloc_n(size_t x, size_t y)
+{
+    size_t z;
+    if (rb_mul_size_overflow(x, y, SSIZE_MAX, &z)) {
+        rb_memerror();          /* or...? */
+    }
+    else {
+        return malloc(z);
+    }
+}
+
 #define GLOB_ALLOC(type) ((type *)malloc(sizeof(type)))
-#define GLOB_ALLOC_N(type, n) ((type *)malloc(sizeof(type) * (n)))
+#define GLOB_ALLOC_N(type, n) ((type *)glob_alloc_n(sizeof(type), n))
 #define GLOB_REALLOC(ptr, size) realloc((ptr), (size))
 #define GLOB_FREE(ptr) free(ptr)
 #define GLOB_JUMP_TAG(status) (((status) == -1) ? rb_memerror() : rb_jump_tag(status))
@@ -2058,8 +2072,10 @@ join_path_from_pattern(struct glob_pattern **beg)
 	if (!path) {
 	    path_len = strlen(str);
 	    path = GLOB_ALLOC_N(char, path_len + 1);
-	    memcpy(path, str, path_len);
-	    path[path_len] = '\0';
+            if (path) {
+                memcpy(path, str, path_len);
+                path[path_len] = '\0';
+            }
         }
         else {
 	    size_t len = strlen(str);
@@ -2692,14 +2708,15 @@ push_glob(VALUE ary, VALUE str, VALUE base, int flags)
 static VALUE
 rb_push_glob(VALUE str, VALUE base, int flags) /* '\0' is delimiter */
 {
-    long offset = 0;
-    long len;
     VALUE ary;
-    int warned = FALSE;
+    int status;
 
     /* can contain null bytes as separators */
-    if (!RB_TYPE_P((str), T_STRING)) {
+    if (!RB_TYPE_P(str, T_STRING)) {
 	FilePathValue(str);
+    }
+    else if (!rb_str_to_cstr(str)) {
+        rb_raise(rb_eArgError, "nul-separated glob pattern is deprecated");
     }
     else {
 	rb_check_safe_obj(str);
@@ -2707,26 +2724,8 @@ rb_push_glob(VALUE str, VALUE base, int flags) /* '\0' is delimiter */
     }
     ary = rb_ary_new();
 
-    while (offset < (len = RSTRING_LEN(str))) {
-	int status;
-        long rest = len - offset;
-        const char *pbeg = RSTRING_PTR(str), *p = pbeg + offset;
-        const char *pend = memchr(p, '\0', rest);
-        if (pend) {
-            if (!warned) {
-                rb_warn("use glob patterns list instead of nul-separated patterns");
-                warned = TRUE;
-            }
-            rest = ++pend - p;
-            offset = pend - pbeg;
-        }
-        else {
-            offset = len;
-        }
-	status = push_glob(ary, rb_str_subseq(str, p-pbeg, rest),
-			   base, flags);
-	if (status) GLOB_JUMP_TAG(status);
-    }
+    status = push_glob(ary, str, base, flags);
+    if (status) GLOB_JUMP_TAG(status);
 
     return ary;
 }
@@ -2915,7 +2914,7 @@ dir_s_glob(int argc, VALUE *argv, VALUE obj)
 static VALUE
 dir_open_dir(int argc, VALUE *argv)
 {
-    VALUE dir = rb_funcallv(rb_cDir, rb_intern("open"), argc, argv);
+    VALUE dir = rb_funcallv_kw(rb_cDir, rb_intern("open"), argc, argv, RB_PASS_CALLED_KEYWORDS);
 
     rb_check_typeddata(dir, &dir_data_type);
     return dir;
@@ -3226,7 +3225,7 @@ file_s_fnmatch(int argc, VALUE *argv, VALUE obj)
     else
 	flags = 0;
 
-    StringValue(pattern);
+    StringValueCStr(pattern);
     FilePathStringValue(path);
 
     if (flags & FNM_EXTGLOB) {

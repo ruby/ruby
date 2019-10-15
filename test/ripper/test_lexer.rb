@@ -102,15 +102,15 @@ class TestRipper::Lexer < Test::Unit::TestCase
   def test_state_after_ivar
     assert_equal [[1,0],:on_ivar,"@a",state(:EXPR_END)], Ripper.lex("@a").last
     assert_equal [[1,1],:on_ivar,"@a",state(:EXPR_ENDFN)], Ripper.lex(":@a").last
-    assert_equal [[1,0],:on_ivar,"@1",state(:EXPR_END)], Ripper.lex("@1").last
-    assert_equal [[1,1],:on_ivar,"@1",state(:EXPR_ENDFN)], Ripper.lex(":@1").last
+    assert_equal [[1,1],:on_int,"1",state(:EXPR_END)], Ripper.lex("@1").last
+    assert_equal [[1,2],:on_int,"1",state(:EXPR_END)], Ripper.lex(":@1").last
   end
 
   def test_state_after_cvar
     assert_equal [[1,0],:on_cvar,"@@a",state(:EXPR_END)], Ripper.lex("@@a").last
     assert_equal [[1,1],:on_cvar,"@@a",state(:EXPR_ENDFN)], Ripper.lex(":@@a").last
-    assert_equal [[1,0],:on_cvar,"@@1",state(:EXPR_END)], Ripper.lex("@@1").last
-    assert_equal [[1,1],:on_cvar,"@@1",state(:EXPR_ENDFN)], Ripper.lex(":@@1").last
+    assert_equal [[1,2],:on_int,"1",state(:EXPR_END)], Ripper.lex("@@1").last
+    assert_equal [[1,3],:on_int,"1",state(:EXPR_END)], Ripper.lex(":@@1").last
   end
 
   def test_token_aftr_error_heredoc

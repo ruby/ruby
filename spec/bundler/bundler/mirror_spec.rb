@@ -304,7 +304,7 @@ RSpec.describe Bundler::Settings::TCPSocketProbe do
       server.close unless server.closed?
     end
 
-    it "probes the server correctly", :ruby_repo do
+    it "probes the server correctly" do
       with_server_and_mirror do |server, mirror|
         expect(server.closed?).to be_falsey
         expect(probe.replies?(mirror)).to be_truthy

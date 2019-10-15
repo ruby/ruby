@@ -66,7 +66,7 @@ module Kernel
 
     if spec = Gem.find_unresolved_default_spec(path)
       begin
-        Kernel.send(:gem, spec.name, "#{Gem::Requirement.default}.a")
+        Kernel.send(:gem, spec.name, Gem::Requirement.default_prerelease)
       rescue Exception
         RUBYGEMS_ACTIVATION_MONITOR.exit
         raise

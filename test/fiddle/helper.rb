@@ -10,6 +10,13 @@ case RUBY_PLATFORM
 when /cygwin/
   libc_so = "cygwin1.dll"
   libm_so = "cygwin1.dll"
+when /android/
+  libdir = '/system/lib'
+  if [0].pack('L!').size == 8
+    libdir = '/system/lib64'
+  end
+  libc_so = File.join(libdir, "libc.so")
+  libm_so = File.join(libdir, "libm.so")
 when /linux/
   libdir = '/lib'
   case [0].pack('L!').size

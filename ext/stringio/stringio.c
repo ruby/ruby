@@ -11,7 +11,7 @@
 
 **********************************************************************/
 
-#define STRINGIO_VERSION "0.0.2"
+#define STRINGIO_VERSION "0.0.3"
 
 #include "ruby.h"
 #include "ruby/io.h"
@@ -24,6 +24,11 @@
 
 #ifndef RB_INTEGER_TYPE_P
 # define RB_INTEGER_TYPE_P(c) (FIXNUM_P(c) || RB_TYPE_P(c, T_BIGNUM))
+#endif
+
+#ifndef RB_PASS_CALLED_KEYWORDS
+# define rb_funcallv_kw(recv, mid, arg, argv, kw_splat) rb_funcallv(recv, mid, arg, argv)
+# define rb_class_new_instance_kw(argc, argv, klass, kw_splat) rb_class_new_instance(argc, argv, klass)
 #endif
 
 #ifndef HAVE_RB_IO_EXTRACT_MODEENC
@@ -303,7 +308,7 @@ detect_bom(VALUE str, int *bomlen)
 
       case 0:
 	if (len < 4) break;
-	if ((unsigned char)p[1] == 0 && (unsigned char)p[2] == 0xFE & (unsigned char)p[3] == 0xFF) {
+	if ((unsigned char)p[1] == 0 && (unsigned char)p[2] == 0xFE && (unsigned char)p[3] == 0xFF) {
 	    *bomlen = 4;
 	    return rb_enc_find_index("UTF-32BE");
 	}
@@ -385,7 +390,7 @@ strio_finalize(VALUE self)
 static VALUE
 strio_s_open(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE obj = rb_class_new_instance(argc, argv, klass);
+    VALUE obj = rb_class_new_instance_kw(argc, argv, klass, RB_PASS_CALLED_KEYWORDS);
     if (!rb_block_given_p()) return obj;
     return rb_ensure(rb_yield, obj, strio_finalize, obj);
 }
@@ -400,7 +405,7 @@ strio_s_new(int argc, VALUE *argv, VALUE klass)
 	rb_warn("%"PRIsVALUE"::new() does not take block; use %"PRIsVALUE"::open() instead",
 		cname, cname);
     }
-    return rb_class_new_instance(argc, argv, klass);
+    return rb_class_new_instance_kw(argc, argv, klass, RB_PASS_CALLED_KEYWORDS);
 }
 
 /*
@@ -1002,7 +1007,7 @@ strio_unget_bytes(struct StringIO *ptr, const char *cp, long cl)
 static VALUE
 strio_readchar(VALUE self)
 {
-    VALUE c = rb_funcall2(self, rb_intern("getc"), 0, 0);
+    VALUE c = rb_funcallv(self, rb_intern("getc"), 0, 0);
     if (NIL_P(c)) rb_eof_error();
     return c;
 }
@@ -1016,7 +1021,7 @@ strio_readchar(VALUE self)
 static VALUE
 strio_readbyte(VALUE self)
 {
-    VALUE c = rb_funcall2(self, rb_intern("getbyte"), 0, 0);
+    VALUE c = rb_funcallv(self, rb_intern("getbyte"), 0, 0);
     if (NIL_P(c)) rb_eof_error();
     return c;
 }
@@ -1309,7 +1314,7 @@ strio_gets(int argc, VALUE *argv, VALUE self)
 static VALUE
 strio_readline(int argc, VALUE *argv, VALUE self)
 {
-    VALUE line = rb_funcall2(self, rb_intern("gets"), argc, argv);
+    VALUE line = rb_funcallv_kw(self, rb_intern("gets"), argc, argv, RB_PASS_CALLED_KEYWORDS);
     if (NIL_P(line)) rb_eof_error();
     return line;
 }
@@ -1589,7 +1594,7 @@ strio_read(int argc, VALUE *argv, VALUE self)
 static VALUE
 strio_sysread(int argc, VALUE *argv, VALUE self)
 {
-    VALUE val = rb_funcall2(self, rb_intern("read"), argc, argv);
+    VALUE val = rb_funcallv_kw(self, rb_intern("read"), argc, argv, RB_PASS_CALLED_KEYWORDS);
     if (NIL_P(val)) {
 	rb_eof_error();
     }

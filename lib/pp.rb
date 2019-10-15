@@ -89,7 +89,7 @@ class PP < PrettyPrint
 
   # :stopdoc:
   def PP.mcall(obj, mod, meth, *args, &block)
-    mod.instance_method(meth).bind(obj).call(*args, &block)
+    mod.instance_method(meth).bind_call(obj, *args, &block)
   end
   # :startdoc:
 
@@ -174,7 +174,7 @@ class PP < PrettyPrint
     # A convenience method, like object_group, but also reformats the Object's
     # object_id.
     def object_address_group(obj, &block)
-      str = Kernel.instance_method(:to_s).bind(obj).call
+      str = Kernel.instance_method(:to_s).bind_call(obj)
       str.chomp!('>')
       group(1, str, '>', &block)
     end
@@ -279,9 +279,9 @@ class PP < PrettyPrint
     # This module provides predefined #pretty_print methods for some of
     # the most commonly used built-in classes for convenience.
     def pretty_print(q)
-      method_method = Object.instance_method(:method).bind(self)
+      umethod_method = Object.instance_method(:method)
       begin
-        inspect_method = method_method.call(:inspect)
+        inspect_method = umethod_method.bind_call(self, :inspect)
       rescue NameError
       end
       if inspect_method && inspect_method.owner != Kernel
@@ -318,7 +318,7 @@ class PP < PrettyPrint
     # However, doing this requires that every class that #inspect is called on
     # implement #pretty_print, or a RuntimeError will be raised.
     def pretty_print_inspect
-      if Object.instance_method(:method).bind(self).call(:pretty_print).owner == PP::ObjectMixin
+      if Object.instance_method(:method).bind_call(self, :pretty_print).owner == PP::ObjectMixin
         raise "pretty_print is not overridden for #{self.class}"
       end
       PP.singleline_pp(self, ''.dup)

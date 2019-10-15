@@ -266,7 +266,7 @@ enc_table_expand(int newsize)
 
     if (enc_table.size >= newsize) return newsize;
     newsize = (newsize + 7) / 8 * 8;
-    ent = xrealloc(enc_table.list, sizeof(*enc_table.list) * newsize);
+    ent = REALLOC_N(enc_table.list, struct rb_encoding_entry, newsize);
     memset(ent + enc_table.size, 0, sizeof(*ent)*(newsize - enc_table.size));
     enc_table.list = ent;
     enc_table.size = newsize;

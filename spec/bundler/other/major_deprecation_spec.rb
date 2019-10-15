@@ -95,6 +95,28 @@ RSpec.describe "major deprecations" do
     end
   end
 
+  context "bundle check --path" do
+    before do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      G
+
+      bundle "check --path vendor/bundle"
+    end
+
+    it "should print a deprecation warning", :bundler => "2" do
+      expect(deprecations).to include(
+        "The `--path` flag is deprecated because it relies on being " \
+        "remembered across bundler invokations, which bundler will no " \
+        "longer do in future versions. Instead please use `bundle config set " \
+        "path 'vendor/bundle'`, and stop using this flag"
+      )
+    end
+
+    pending "should fail with a helpful error", :bundler => "3"
+  end
+
   describe "bundle config" do
     describe "old list interface" do
       before do
@@ -290,7 +312,7 @@ RSpec.describe "major deprecations" do
             "The `#{flag_name}` flag is deprecated because it relies on " \
             "being remembered across bundler invokations, which bundler " \
             "will no longer do in future versions. Instead please use " \
-            "`bundle config #{name} '#{value}'`, and stop using this flag"
+            "`bundle config set #{name} '#{value}'`, and stop using this flag"
           )
         end
 

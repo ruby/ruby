@@ -40,6 +40,10 @@ VALUE rb_cNilClass; /*!< NilClass class */
 VALUE rb_cTrueClass; /*!< TrueClass class */
 VALUE rb_cFalseClass; /*!< FalseClass class */
 
+static VALUE rb_cNilClass_to_s;
+static VALUE rb_cTrueClass_to_s;
+static VALUE rb_cFalseClass_to_s;
+
 /*! \cond INTERNAL_MACRO */
 
 #define id_eq               idEq
@@ -209,25 +213,6 @@ rb_obj_equal(VALUE obj1, VALUE obj2)
     return Qfalse;
 }
 
-/**
- * call-seq:
- *    obj.hash    -> integer
- *
- * Generates an Integer hash value for this object.  This function must have the
- * property that <code>a.eql?(b)</code> implies <code>a.hash == b.hash</code>.
- *
- * The hash value is used along with #eql? by the Hash class to determine if
- * two objects reference the same hash key.  Any hash value that exceeds the
- * capacity of an Integer will be truncated before being used.
- *
- * The hash value for an object may not be identical across invocations or
- * implementations of Ruby.  If you need a stable identifier across Ruby
- * invocations and implementations you will need to generate one with a custom
- * method.
- *--
- * \private
- *++
- */
 VALUE rb_obj_hash(VALUE obj);
 
 /**
@@ -591,23 +576,23 @@ rb_obj_size(VALUE self, VALUE args, VALUE obj)
  *     3.next.then {|x| x**x }.to_s             #=> "256"
  *     "my string".yield_self {|s| s.upcase }   #=> "MY STRING"
  *
- *  Good usage for +yield_self+ is value piping in method chains:
+ *  Good usage for +then+ is value piping in method chains:
  *
  *     require 'open-uri'
  *     require 'json'
  *
  *     construct_url(arguments).
- *       yield_self {|url| open(url).read }.
- *       yield_self {|response| JSON.parse(response) }
+ *       then {|url| open(url).read }.
+ *       then {|response| JSON.parse(response) }
  *
  *  When called without block, the method returns +Enumerator+,
  *  which can be used, for example, for conditional
  *  circuit-breaking:
  *
  *     # meets condition, no-op
- *     1.yield_self.detect(&:odd?)            # => 1
+ *     1.then.detect(&:odd?)            # => 1
  *     # does not meet condition, drop value
- *     2.yield_self.detect(&:odd?)            # => nil
+ *     2.then.detect(&:odd?)            # => nil
  *
  */
 
@@ -1160,9 +1145,21 @@ rb_obj_tap(VALUE obj)
  */
 
 static VALUE
-rb_obj_dummy(void)
+rb_obj_dummy()
 {
     return Qnil;
+}
+
+static VALUE
+rb_obj_dummy0(VALUE _)
+{
+    return rb_obj_dummy();
+}
+
+static VALUE
+rb_obj_dummy1(VALUE _x, VALUE _y)
+{
+    return rb_obj_dummy();
 }
 
 /**
@@ -1449,7 +1446,7 @@ nil_to_f(VALUE obj)
 static VALUE
 nil_to_s(VALUE obj)
 {
-    return rb_usascii_str_new(0, 0);
+    return rb_cNilClass_to_s;
 }
 
 /*
@@ -1532,7 +1529,7 @@ nil_match(VALUE obj1, VALUE obj2)
 static VALUE
 true_to_s(VALUE obj)
 {
-    return rb_usascii_str_new2("true");
+    return rb_cTrueClass_to_s;
 }
 
 
@@ -1609,7 +1606,7 @@ true_xor(VALUE obj, VALUE obj2)
 static VALUE
 false_to_s(VALUE obj)
 {
-    return rb_usascii_str_new2("false");
+    return rb_cFalseClass_to_s;
 }
 
 /*
@@ -2203,7 +2200,19 @@ rb_class_s_new(int argc, const VALUE *argv, VALUE klass)
     VALUE obj;
 
     obj = rb_class_alloc(klass);
-    rb_obj_call_init(obj, argc, argv);
+    rb_obj_call_init_kw(obj, argc, argv, RB_PASS_CALLED_KEYWORDS);
+
+    return obj;
+}
+
+VALUE
+rb_class_new_instance_kw(int argc, const VALUE *argv, VALUE klass, int kw_splat)
+{
+    VALUE obj;
+    Check_Type(klass, T_CLASS);
+
+    obj = rb_class_alloc(klass);
+    rb_obj_call_init_kw(obj, argc, argv, kw_splat);
 
     return obj;
 }
@@ -2223,8 +2232,13 @@ rb_class_s_new(int argc, const VALUE *argv, VALUE klass)
 VALUE
 rb_class_new_instance(int argc, const VALUE *argv, VALUE klass)
 {
+    VALUE obj;
     Check_Type(klass, T_CLASS);
-    return rb_class_s_new(argc, argv, klass);
+
+    obj = rb_class_alloc(klass);
+    rb_obj_call_init_kw(obj, argc, argv, RB_NO_KEYWORDS);
+
+    return obj;
 }
 
 /**
@@ -4061,10 +4075,280 @@ rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
 		break;
 	    }
 	}
-	return rb_check_funcall_with_hook(obj, id_dig, argc, argv,
-					  no_dig_method, obj);
+        return rb_check_funcall_with_hook_kw(obj, id_dig, argc, argv,
+                                          no_dig_method, obj,
+                                          rb_empty_keyword_given_p() ?
+                                            RB_PASS_EMPTY_KEYWORDS :
+                                            RB_NO_KEYWORDS);
     }
     return obj;
+}
+
+/*
+ *  call-seq:
+ *     format(format_string [, arguments...] )   -> string
+ *     sprintf(format_string [, arguments...] )  -> string
+ *
+ *  Returns the string resulting from applying <i>format_string</i> to
+ *  any additional arguments.  Within the format string, any characters
+ *  other than format sequences are copied to the result.
+ *
+ *  The syntax of a format sequence is as follows.
+ *
+ *    %[flags][width][.precision]type
+ *
+ *  A format
+ *  sequence consists of a percent sign, followed by optional flags,
+ *  width, and precision indicators, then terminated with a field type
+ *  character.  The field type controls how the corresponding
+ *  <code>sprintf</code> argument is to be interpreted, while the flags
+ *  modify that interpretation.
+ *
+ *  The field type characters are:
+ *
+ *      Field |  Integer Format
+ *      ------+--------------------------------------------------------------
+ *        b   | Convert argument as a binary number.
+ *            | Negative numbers will be displayed as a two's complement
+ *            | prefixed with `..1'.
+ *        B   | Equivalent to `b', but uses an uppercase 0B for prefix
+ *            | in the alternative format by #.
+ *        d   | Convert argument as a decimal number.
+ *        i   | Identical to `d'.
+ *        o   | Convert argument as an octal number.
+ *            | Negative numbers will be displayed as a two's complement
+ *            | prefixed with `..7'.
+ *        u   | Identical to `d'.
+ *        x   | Convert argument as a hexadecimal number.
+ *            | Negative numbers will be displayed as a two's complement
+ *            | prefixed with `..f' (representing an infinite string of
+ *            | leading 'ff's).
+ *        X   | Equivalent to `x', but uses uppercase letters.
+ *
+ *      Field |  Float Format
+ *      ------+--------------------------------------------------------------
+ *        e   | Convert floating point argument into exponential notation
+ *            | with one digit before the decimal point as [-]d.dddddde[+-]dd.
+ *            | The precision specifies the number of digits after the decimal
+ *            | point (defaulting to six).
+ *        E   | Equivalent to `e', but uses an uppercase E to indicate
+ *            | the exponent.
+ *        f   | Convert floating point argument as [-]ddd.dddddd,
+ *            | where the precision specifies the number of digits after
+ *            | the decimal point.
+ *        g   | Convert a floating point number using exponential form
+ *            | if the exponent is less than -4 or greater than or
+ *            | equal to the precision, or in dd.dddd form otherwise.
+ *            | The precision specifies the number of significant digits.
+ *        G   | Equivalent to `g', but use an uppercase `E' in exponent form.
+ *        a   | Convert floating point argument as [-]0xh.hhhhp[+-]dd,
+ *            | which is consisted from optional sign, "0x", fraction part
+ *            | as hexadecimal, "p", and exponential part as decimal.
+ *        A   | Equivalent to `a', but use uppercase `X' and `P'.
+ *
+ *      Field |  Other Format
+ *      ------+--------------------------------------------------------------
+ *        c   | Argument is the numeric code for a single character or
+ *            | a single character string itself.
+ *        p   | The valuing of argument.inspect.
+ *        s   | Argument is a string to be substituted.  If the format
+ *            | sequence contains a precision, at most that many characters
+ *            | will be copied.
+ *        %   | A percent sign itself will be displayed.  No argument taken.
+ *
+ *  The flags modifies the behavior of the formats.
+ *  The flag characters are:
+ *
+ *    Flag     | Applies to    | Meaning
+ *    ---------+---------------+-----------------------------------------
+ *    space    | bBdiouxX      | Leave a space at the start of
+ *             | aAeEfgG       | non-negative numbers.
+ *             | (numeric fmt) | For `o', `x', `X', `b' and `B', use
+ *             |               | a minus sign with absolute value for
+ *             |               | negative values.
+ *    ---------+---------------+-----------------------------------------
+ *    (digit)$ | all           | Specifies the absolute argument number
+ *             |               | for this field.  Absolute and relative
+ *             |               | argument numbers cannot be mixed in a
+ *             |               | sprintf string.
+ *    ---------+---------------+-----------------------------------------
+ *     #       | bBoxX         | Use an alternative format.
+ *             | aAeEfgG       | For the conversions `o', increase the precision
+ *             |               | until the first digit will be `0' if
+ *             |               | it is not formatted as complements.
+ *             |               | For the conversions `x', `X', `b' and `B'
+ *             |               | on non-zero, prefix the result with ``0x'',
+ *             |               | ``0X'', ``0b'' and ``0B'', respectively.
+ *             |               | For `a', `A', `e', `E', `f', `g', and 'G',
+ *             |               | force a decimal point to be added,
+ *             |               | even if no digits follow.
+ *             |               | For `g' and 'G', do not remove trailing zeros.
+ *    ---------+---------------+-----------------------------------------
+ *    +        | bBdiouxX      | Add a leading plus sign to non-negative
+ *             | aAeEfgG       | numbers.
+ *             | (numeric fmt) | For `o', `x', `X', `b' and `B', use
+ *             |               | a minus sign with absolute value for
+ *             |               | negative values.
+ *    ---------+---------------+-----------------------------------------
+ *    -        | all           | Left-justify the result of this conversion.
+ *    ---------+---------------+-----------------------------------------
+ *    0 (zero) | bBdiouxX      | Pad with zeros, not spaces.
+ *             | aAeEfgG       | For `o', `x', `X', `b' and `B', radix-1
+ *             | (numeric fmt) | is used for negative numbers formatted as
+ *             |               | complements.
+ *    ---------+---------------+-----------------------------------------
+ *    *        | all           | Use the next argument as the field width.
+ *             |               | If negative, left-justify the result. If the
+ *             |               | asterisk is followed by a number and a dollar
+ *             |               | sign, use the indicated argument as the width.
+ *
+ *  Examples of flags:
+ *
+ *   # `+' and space flag specifies the sign of non-negative numbers.
+ *   sprintf("%d", 123)  #=> "123"
+ *   sprintf("%+d", 123) #=> "+123"
+ *   sprintf("% d", 123) #=> " 123"
+ *
+ *   # `#' flag for `o' increases number of digits to show `0'.
+ *   # `+' and space flag changes format of negative numbers.
+ *   sprintf("%o", 123)   #=> "173"
+ *   sprintf("%#o", 123)  #=> "0173"
+ *   sprintf("%+o", -123) #=> "-173"
+ *   sprintf("%o", -123)  #=> "..7605"
+ *   sprintf("%#o", -123) #=> "..7605"
+ *
+ *   # `#' flag for `x' add a prefix `0x' for non-zero numbers.
+ *   # `+' and space flag disables complements for negative numbers.
+ *   sprintf("%x", 123)   #=> "7b"
+ *   sprintf("%#x", 123)  #=> "0x7b"
+ *   sprintf("%+x", -123) #=> "-7b"
+ *   sprintf("%x", -123)  #=> "..f85"
+ *   sprintf("%#x", -123) #=> "0x..f85"
+ *   sprintf("%#x", 0)    #=> "0"
+ *
+ *   # `#' for `X' uses the prefix `0X'.
+ *   sprintf("%X", 123)  #=> "7B"
+ *   sprintf("%#X", 123) #=> "0X7B"
+ *
+ *   # `#' flag for `b' add a prefix `0b' for non-zero numbers.
+ *   # `+' and space flag disables complements for negative numbers.
+ *   sprintf("%b", 123)   #=> "1111011"
+ *   sprintf("%#b", 123)  #=> "0b1111011"
+ *   sprintf("%+b", -123) #=> "-1111011"
+ *   sprintf("%b", -123)  #=> "..10000101"
+ *   sprintf("%#b", -123) #=> "0b..10000101"
+ *   sprintf("%#b", 0)    #=> "0"
+ *
+ *   # `#' for `B' uses the prefix `0B'.
+ *   sprintf("%B", 123)  #=> "1111011"
+ *   sprintf("%#B", 123) #=> "0B1111011"
+ *
+ *   # `#' for `e' forces to show the decimal point.
+ *   sprintf("%.0e", 1)  #=> "1e+00"
+ *   sprintf("%#.0e", 1) #=> "1.e+00"
+ *
+ *   # `#' for `f' forces to show the decimal point.
+ *   sprintf("%.0f", 1234)  #=> "1234"
+ *   sprintf("%#.0f", 1234) #=> "1234."
+ *
+ *   # `#' for `g' forces to show the decimal point.
+ *   # It also disables stripping lowest zeros.
+ *   sprintf("%g", 123.4)   #=> "123.4"
+ *   sprintf("%#g", 123.4)  #=> "123.400"
+ *   sprintf("%g", 123456)  #=> "123456"
+ *   sprintf("%#g", 123456) #=> "123456."
+ *
+ *  The field width is an optional integer, followed optionally by a
+ *  period and a precision.  The width specifies the minimum number of
+ *  characters that will be written to the result for this field.
+ *
+ *  Examples of width:
+ *
+ *   # padding is done by spaces,       width=20
+ *   # 0 or radix-1.             <------------------>
+ *   sprintf("%20d", 123)   #=> "                 123"
+ *   sprintf("%+20d", 123)  #=> "                +123"
+ *   sprintf("%020d", 123)  #=> "00000000000000000123"
+ *   sprintf("%+020d", 123) #=> "+0000000000000000123"
+ *   sprintf("% 020d", 123) #=> " 0000000000000000123"
+ *   sprintf("%-20d", 123)  #=> "123                 "
+ *   sprintf("%-+20d", 123) #=> "+123                "
+ *   sprintf("%- 20d", 123) #=> " 123                "
+ *   sprintf("%020x", -123) #=> "..ffffffffffffffff85"
+ *
+ *  For
+ *  numeric fields, the precision controls the number of decimal places
+ *  displayed.  For string fields, the precision determines the maximum
+ *  number of characters to be copied from the string.  (Thus, the format
+ *  sequence <code>%10.10s</code> will always contribute exactly ten
+ *  characters to the result.)
+ *
+ *  Examples of precisions:
+ *
+ *   # precision for `d', 'o', 'x' and 'b' is
+ *   # minimum number of digits               <------>
+ *   sprintf("%20.8d", 123)  #=> "            00000123"
+ *   sprintf("%20.8o", 123)  #=> "            00000173"
+ *   sprintf("%20.8x", 123)  #=> "            0000007b"
+ *   sprintf("%20.8b", 123)  #=> "            01111011"
+ *   sprintf("%20.8d", -123) #=> "           -00000123"
+ *   sprintf("%20.8o", -123) #=> "            ..777605"
+ *   sprintf("%20.8x", -123) #=> "            ..ffff85"
+ *   sprintf("%20.8b", -11)  #=> "            ..110101"
+ *
+ *   # "0x" and "0b" for `#x' and `#b' is not counted for
+ *   # precision but "0" for `#o' is counted.  <------>
+ *   sprintf("%#20.8d", 123)  #=> "            00000123"
+ *   sprintf("%#20.8o", 123)  #=> "            00000173"
+ *   sprintf("%#20.8x", 123)  #=> "          0x0000007b"
+ *   sprintf("%#20.8b", 123)  #=> "          0b01111011"
+ *   sprintf("%#20.8d", -123) #=> "           -00000123"
+ *   sprintf("%#20.8o", -123) #=> "            ..777605"
+ *   sprintf("%#20.8x", -123) #=> "          0x..ffff85"
+ *   sprintf("%#20.8b", -11)  #=> "          0b..110101"
+ *
+ *   # precision for `e' is number of
+ *   # digits after the decimal point           <------>
+ *   sprintf("%20.8e", 1234.56789) #=> "      1.23456789e+03"
+ *
+ *   # precision for `f' is number of
+ *   # digits after the decimal point               <------>
+ *   sprintf("%20.8f", 1234.56789) #=> "       1234.56789000"
+ *
+ *   # precision for `g' is number of
+ *   # significant digits                          <------->
+ *   sprintf("%20.8g", 1234.56789) #=> "           1234.5679"
+ *
+ *   #                                         <------->
+ *   sprintf("%20.8g", 123456789)  #=> "       1.2345679e+08"
+ *
+ *   # precision for `s' is
+ *   # maximum number of characters                    <------>
+ *   sprintf("%20.8s", "string test") #=> "            string t"
+ *
+ *  Examples:
+ *
+ *     sprintf("%d %04x", 123, 123)               #=> "123 007b"
+ *     sprintf("%08b '%4s'", 123, 123)            #=> "01111011 ' 123'"
+ *     sprintf("%1$*2$s %2$d %1$s", "hello", 8)   #=> "   hello 8 hello"
+ *     sprintf("%1$*2$s %2$d", "hello", -8)       #=> "hello    -8"
+ *     sprintf("%+g:% g:%-g", 1.23, 1.23, 1.23)   #=> "+1.23: 1.23:1.23"
+ *     sprintf("%u", -123)                        #=> "-123"
+ *
+ *  For more complex formatting, Ruby supports a reference by name.
+ *  %<name>s style uses format style, but %{name} style doesn't.
+ *
+ *  Examples:
+ *    sprintf("%<foo>d : %<bar>f", { :foo => 1, :bar => 2 })
+ *      #=> 1 : 2.000000
+ *    sprintf("%{foo}f", { :foo => 1 })
+ *      # => "1f"
+ */
+
+static VALUE
+f_sprintf(int c, const VALUE *v, VALUE _)
+{
+    return rb_f_sprintf(c, v);
 }
 
 /*
@@ -4238,16 +4522,16 @@ InitVM_Object(void)
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
 
-    rb_define_private_method(rb_cBasicObject, "initialize", rb_obj_dummy, 0);
+    rb_define_private_method(rb_cBasicObject, "initialize", rb_obj_dummy0, 0);
     rb_define_alloc_func(rb_cBasicObject, rb_class_allocate_instance);
     rb_define_method(rb_cBasicObject, "==", rb_obj_equal, 1);
     rb_define_method(rb_cBasicObject, "equal?", rb_obj_equal, 1);
     rb_define_method(rb_cBasicObject, "!", rb_obj_not, 0);
     rb_define_method(rb_cBasicObject, "!=", rb_obj_not_equal, 1);
 
-    rb_define_private_method(rb_cBasicObject, "singleton_method_added", rb_obj_dummy, 1);
-    rb_define_private_method(rb_cBasicObject, "singleton_method_removed", rb_obj_dummy, 1);
-    rb_define_private_method(rb_cBasicObject, "singleton_method_undefined", rb_obj_dummy, 1);
+    rb_define_private_method(rb_cBasicObject, "singleton_method_added", rb_obj_dummy1, 1);
+    rb_define_private_method(rb_cBasicObject, "singleton_method_removed", rb_obj_dummy1, 1);
+    rb_define_private_method(rb_cBasicObject, "singleton_method_undefined", rb_obj_dummy1, 1);
 
     /* Document-module: Kernel
      *
@@ -4263,20 +4547,20 @@ InitVM_Object(void)
      */
     rb_mKernel = rb_define_module("Kernel");
     rb_include_module(rb_cObject, rb_mKernel);
-    rb_define_private_method(rb_cClass, "inherited", rb_obj_dummy, 1);
-    rb_define_private_method(rb_cModule, "included", rb_obj_dummy, 1);
-    rb_define_private_method(rb_cModule, "extended", rb_obj_dummy, 1);
-    rb_define_private_method(rb_cModule, "prepended", rb_obj_dummy, 1);
-    rb_define_private_method(rb_cModule, "method_added", rb_obj_dummy, 1);
-    rb_define_private_method(rb_cModule, "method_removed", rb_obj_dummy, 1);
-    rb_define_private_method(rb_cModule, "method_undefined", rb_obj_dummy, 1);
+    rb_define_private_method(rb_cClass, "inherited", rb_obj_dummy1, 1);
+    rb_define_private_method(rb_cModule, "included", rb_obj_dummy1, 1);
+    rb_define_private_method(rb_cModule, "extended", rb_obj_dummy1, 1);
+    rb_define_private_method(rb_cModule, "prepended", rb_obj_dummy1, 1);
+    rb_define_private_method(rb_cModule, "method_added", rb_obj_dummy1, 1);
+    rb_define_private_method(rb_cModule, "method_removed", rb_obj_dummy1, 1);
+    rb_define_private_method(rb_cModule, "method_undefined", rb_obj_dummy1, 1);
 
     rb_define_method(rb_mKernel, "nil?", rb_false, 0);
     rb_define_method(rb_mKernel, "===", rb_equal, 1);
     rb_define_method(rb_mKernel, "=~", rb_obj_match, 1);
     rb_define_method(rb_mKernel, "!~", rb_obj_not_match, 1);
     rb_define_method(rb_mKernel, "eql?", rb_obj_equal, 1);
-    rb_define_method(rb_mKernel, "hash", rb_obj_hash, 0);
+    rb_define_method(rb_mKernel, "hash", rb_obj_hash, 0); /* in hash.c */
     rb_define_method(rb_mKernel, "<=>", rb_obj_cmp, 1);
 
     rb_define_method(rb_mKernel, "class", rb_obj_class, 0);
@@ -4318,8 +4602,8 @@ InitVM_Object(void)
     rb_define_method(rb_mKernel, "is_a?", rb_obj_is_kind_of, 1);
     rb_define_method(rb_mKernel, "tap", rb_obj_tap, 0);
 
-    rb_define_global_function("sprintf", rb_f_sprintf, -1); /* in sprintf.c */
-    rb_define_global_function("format", rb_f_sprintf, -1);  /* in sprintf.c */
+    rb_define_global_function("sprintf", f_sprintf, -1);
+    rb_define_global_function("format", f_sprintf, -1);
 
     rb_define_global_function("Integer", rb_f_integer, -1);
     rb_define_global_function("Float", rb_f_float, -1);
@@ -4329,6 +4613,8 @@ InitVM_Object(void)
     rb_define_global_function("Hash", rb_f_hash, 1);
 
     rb_cNilClass = rb_define_class("NilClass", rb_cObject);
+    rb_cNilClass_to_s = rb_fstring_enc_lit("", rb_usascii_encoding());
+    rb_gc_register_mark_object(rb_cNilClass_to_s);
     rb_define_method(rb_cNilClass, "to_i", nil_to_i, 0);
     rb_define_method(rb_cNilClass, "to_f", nil_to_f, 0);
     rb_define_method(rb_cNilClass, "to_s", nil_to_s, 0);
@@ -4423,6 +4709,8 @@ InitVM_Object(void)
     rb_deprecate_constant(rb_cObject, "Data");
 
     rb_cTrueClass = rb_define_class("TrueClass", rb_cObject);
+    rb_cTrueClass_to_s = rb_fstring_enc_lit("true", rb_usascii_encoding());
+    rb_gc_register_mark_object(rb_cTrueClass_to_s);
     rb_define_method(rb_cTrueClass, "to_s", true_to_s, 0);
     rb_define_alias(rb_cTrueClass, "inspect", "to_s");
     rb_define_method(rb_cTrueClass, "&", true_and, 1);
@@ -4438,6 +4726,8 @@ InitVM_Object(void)
     rb_deprecate_constant(rb_cObject, "TRUE");
 
     rb_cFalseClass = rb_define_class("FalseClass", rb_cObject);
+    rb_cFalseClass_to_s = rb_fstring_enc_lit("false", rb_usascii_encoding());
+    rb_gc_register_mark_object(rb_cFalseClass_to_s);
     rb_define_method(rb_cFalseClass, "to_s", false_to_s, 0);
     rb_define_alias(rb_cFalseClass, "inspect", "to_s");
     rb_define_method(rb_cFalseClass, "&", false_and, 1);

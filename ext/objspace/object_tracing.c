@@ -138,14 +138,14 @@ freeobj_i(VALUE tpval, void *data)
 }
 
 static int
-free_keys_i(st_data_t key, st_data_t value, void *data)
+free_keys_i(st_data_t key, st_data_t value, st_data_t data)
 {
     ruby_xfree((void *)key);
     return ST_CONTINUE;
 }
 
 static int
-free_values_i(st_data_t key, st_data_t value, void *data)
+free_values_i(st_data_t key, st_data_t value, st_data_t data)
 {
     ruby_xfree((void *)value);
     return ST_CONTINUE;

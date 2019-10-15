@@ -30,6 +30,7 @@ class TestMethod < Test::Unit::TestCase
   def mk5(a, b = nil, **o) nil && o end
   def mk6(a, b = nil, c, **o) nil && o end
   def mk7(a, b = nil, *c, d, **o) nil && o end
+  def mnk(**nil) end
 
   class Base
     def foo() :base end
@@ -529,6 +530,7 @@ class TestMethod < Test::Unit::TestCase
   define_method(:pmk5) {|a, b = nil, **o|}
   define_method(:pmk6) {|a, b = nil, c, **o|}
   define_method(:pmk7) {|a, b = nil, *c, d, **o|}
+  define_method(:pmnk) {|**nil|}
 
   def test_bound_parameters
     assert_equal([], method(:m0).parameters)
@@ -549,6 +551,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:keyrest, :o]], method(:mk5).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], method(:mk6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], method(:mk7).parameters)
+    assert_equal([[:nokey]], method(:mnk).parameters)
   end
 
   def test_unbound_parameters
@@ -570,6 +573,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:keyrest, :o]], self.class.instance_method(:mk5).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], self.class.instance_method(:mk6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], self.class.instance_method(:mk7).parameters)
+    assert_equal([[:nokey]], self.class.instance_method(:mnk).parameters)
   end
 
   def test_bmethod_bound_parameters
@@ -591,6 +595,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:keyrest, :o]], method(:pmk5).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], method(:pmk6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], method(:pmk7).parameters)
+    assert_equal([[:nokey]], method(:pmnk).parameters)
   end
 
   def test_bmethod_unbound_parameters
@@ -613,6 +618,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:keyrest, :o]], self.class.instance_method(:pmk5).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], self.class.instance_method(:pmk6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], self.class.instance_method(:pmk7).parameters)
+    assert_equal([[:nokey]], self.class.instance_method(:pmnk).parameters)
   end
 
   def test_hidden_parameters
@@ -667,7 +673,8 @@ class TestMethod < Test::Unit::TestCase
     assert_nothing_raised { mv3 }
 
     assert_nothing_raised { self.mv1 }
-    assert_raise(NoMethodError) { self.mv2 }
+    assert_nothing_raised { self.mv2 }
+    assert_raise(NoMethodError) { (self).mv2 }
     assert_nothing_raised { self.mv3 }
 
     v = Visibility.new
@@ -1120,20 +1127,88 @@ class TestMethod < Test::Unit::TestCase
 
   def test_method_reference_operator
     m = 1.:succ
+    assert_predicate(m, :frozen?)
     assert_equal(1.method(:succ), m)
     assert_equal(2, m.())
     m = 1.:+
+    assert_predicate(m, :frozen?)
     assert_equal(1.method(:+), m)
     assert_equal(42, m.(41))
     m = 1.:-@
+    assert_predicate(m, :frozen?)
     assert_equal(1.method(:-@), m)
     assert_equal(-1, m.())
     o = Object.new
     def o.foo; 42; end
+    assert_predicate(o.:foo, :frozen?)
     m = o.method(:foo)
     assert_equal(m, o.:foo)
     def o.method(m); nil; end
     assert_equal(m, o.:foo)
     assert_nil(o.method(:foo))
+  end
+
+  def test_method_reference_freeze_state
+    m = 1.:succ
+    assert_predicate(m, :frozen?, "dot-symbol method reference should be frozen")
+    m = 1.method(:succ)
+    assert_not_predicate(m, :frozen?, "#method method reference should not be frozen")
+    o = Object.new
+    def o.foo; 42; end
+    m = o.:foo
+    assert_predicate(m, :frozen?, "dot-symbol method reference should be frozen")
+    m = o.method(:foo)
+    assert_not_predicate(m, :frozen?, "#method method reference should not be frozen")
+  end
+
+  def test_umethod_bind_call
+    foo = Base.instance_method(:foo)
+    assert_equal(:base, foo.bind_call(Base.new))
+    assert_equal(:base, foo.bind_call(Derived.new))
+
+    plus = Integer.instance_method(:+)
+    assert_equal(3, plus.bind_call(1, 2))
+  end
+
+  def test_method_list
+    # chkbuild lists all methods.
+    # The following code emulate this listing.
+
+    # use_symbol = Object.instance_methods[0].is_a?(Symbol)
+    nummodule = nummethod = 0
+    mods = []
+    ObjectSpace.each_object(Module) {|m| mods << m if m.name }
+    mods = mods.sort_by {|m| m.name }
+    mods.each {|mod|
+      nummodule += 1
+      mc = mod.kind_of?(Class) ? "class" : "module"
+      puts_line = "#{mc} #{mod.name} #{(mod.ancestors - [mod]).inspect}"
+      puts_line = puts_line # prevent unused var warning
+      mod.singleton_methods(false).sort.each {|methname|
+        nummethod += 1
+        meth = mod.method(methname)
+        line = "#{mod.name}.#{methname} #{meth.arity}"
+        line << " not-implemented" if !mod.respond_to?(methname)
+        # puts line
+      }
+      ms = mod.instance_methods(false)
+      if true or use_symbol
+        ms << :initialize if mod.private_instance_methods(false).include? :initialize
+      else
+        ms << "initialize" if mod.private_instance_methods(false).include? "initialize"
+      end
+
+      ms.sort.each {|methname|
+        nummethod += 1
+        meth = mod.instance_method(methname)
+        line = "#{mod.name}\##{methname} #{meth.arity}"
+        line << " not-implemented" if /\(not-implemented\)/ =~ meth.inspect
+        # puts line
+      }
+    }
+    # puts "#{nummodule} modules, #{nummethod} methods"
+
+    assert_operator nummodule, :>, 0
+    assert_operator nummethod, :>, 0
   end
 end

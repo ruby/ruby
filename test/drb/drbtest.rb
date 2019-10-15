@@ -35,7 +35,7 @@ class DRbService
   attr_reader :server
 
   def ext_service(name)
-    Timeout.timeout(100, RuntimeError) do
+    EnvUtil.timeout(100, RuntimeError) do
       manager.service(name)
     end
   end
@@ -115,7 +115,7 @@ module DRbBase
         end
       }
     end
-    @drb_service&.finish
+    @drb_service.finish
   end
 end
 
@@ -156,6 +156,14 @@ module DRbCore
       ary = @there.to_a
       assert_kind_of(DRb::DRbObject, ary)
     end
+  end
+
+  def test_02_basic_object
+    obj = @there.basic_object
+    assert_kind_of(DRb::DRbObject, obj)
+    assert_equal(1, obj.foo)
+    assert_raise(NoMethodError){obj.prot}
+    assert_raise(NoMethodError){obj.priv}
   end
 
   def test_02_unknown
@@ -207,12 +215,15 @@ module DRbCore
 
   def test_06_timeout
     skip if RUBY_PLATFORM.include?("armv7l-linux")
-    ten = Onecky.new(10)
-    assert_raise(Timeout::Error) do
-      @there.do_timeout(ten)
-    end
-    assert_raise(Timeout::Error) do
-      @there.do_timeout(ten)
+    skip if RUBY_PLATFORM.include?("sparc-solaris2.10")
+    Timeout.timeout(60) do
+      ten = Onecky.new(10)
+      assert_raise(Timeout::Error) do
+        @there.do_timeout(ten)
+      end
+      assert_raise(Timeout::Error) do
+        @there.do_timeout(ten)
+      end
     end
   end
 

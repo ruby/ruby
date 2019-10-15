@@ -24,46 +24,56 @@ require_relative "fileutils/version"
 #
 #   require 'fileutils'
 #
-#   FileUtils.cd(dir, options)
-#   FileUtils.cd(dir, options) {|dir| block }
+#   FileUtils.cd(dir, **options)
+#   FileUtils.cd(dir, **options) {|dir| block }
 #   FileUtils.pwd()
-#   FileUtils.mkdir(dir, options)
-#   FileUtils.mkdir(list, options)
-#   FileUtils.mkdir_p(dir, options)
-#   FileUtils.mkdir_p(list, options)
-#   FileUtils.rmdir(dir, options)
-#   FileUtils.rmdir(list, options)
-#   FileUtils.ln(target, link, options)
-#   FileUtils.ln(targets, dir, options)
-#   FileUtils.ln_s(target, link, options)
-#   FileUtils.ln_s(targets, dir, options)
-#   FileUtils.ln_sf(target, link, options)
-#   FileUtils.cp(src, dest, options)
-#   FileUtils.cp(list, dir, options)
-#   FileUtils.cp_r(src, dest, options)
-#   FileUtils.cp_r(list, dir, options)
-#   FileUtils.mv(src, dest, options)
-#   FileUtils.mv(list, dir, options)
-#   FileUtils.rm(list, options)
-#   FileUtils.rm_r(list, options)
-#   FileUtils.rm_rf(list, options)
-#   FileUtils.install(src, dest, options)
-#   FileUtils.chmod(mode, list, options)
-#   FileUtils.chmod_R(mode, list, options)
-#   FileUtils.chown(user, group, list, options)
-#   FileUtils.chown_R(user, group, list, options)
-#   FileUtils.touch(list, options)
+#   FileUtils.mkdir(dir, **options)
+#   FileUtils.mkdir(list, **options)
+#   FileUtils.mkdir_p(dir, **options)
+#   FileUtils.mkdir_p(list, **options)
+#   FileUtils.rmdir(dir, **options)
+#   FileUtils.rmdir(list, **options)
+#   FileUtils.ln(target, link, **options)
+#   FileUtils.ln(targets, dir, **options)
+#   FileUtils.ln_s(target, link, **options)
+#   FileUtils.ln_s(targets, dir, **options)
+#   FileUtils.ln_sf(target, link, **options)
+#   FileUtils.cp(src, dest, **options)
+#   FileUtils.cp(list, dir, **options)
+#   FileUtils.cp_r(src, dest, **options)
+#   FileUtils.cp_r(list, dir, **options)
+#   FileUtils.mv(src, dest, **options)
+#   FileUtils.mv(list, dir, **options)
+#   FileUtils.rm(list, **options)
+#   FileUtils.rm_r(list, **options)
+#   FileUtils.rm_rf(list, **options)
+#   FileUtils.install(src, dest, **options)
+#   FileUtils.chmod(mode, list, **options)
+#   FileUtils.chmod_R(mode, list, **options)
+#   FileUtils.chown(user, group, list, **options)
+#   FileUtils.chown_R(user, group, list, **options)
+#   FileUtils.touch(list, **options)
 #
-# The <tt>options</tt> parameter is a hash of options, taken from the list
-# <tt>:force</tt>, <tt>:noop</tt>, <tt>:preserve</tt>, and <tt>:verbose</tt>.
-# <tt>:noop</tt> means that no changes are made.  The other three are obvious.
-# Each method documents the options that it honours.
+# Possible <tt>options</tt> are:
+#
+# <tt>:force</tt> :: forced operation (rewrite files if exist, remove
+#                    directories if not empty, etc.);
+# <tt>:verbose</tt> :: print command to be run, in bash syntax, before
+#                      performing it;
+# <tt>:preserve</tt> :: preserve object's group, user and modification
+#                       time on copying;
+# <tt>:noop</tt> :: no changes are made (usable in combination with
+#                   <tt>:verbose</tt> which will print the command to run)
+#
+# Each method documents the options that it honours. See also ::commands,
+# ::options and ::options_of methods to introspect which command have which
+# options.
 #
 # All methods that have the concept of a "source" file or directory can take
 # either one file or a list of files in that argument.  See the method
 # documentation for examples.
 #
-# There are some `low level' methods, which do not accept any option:
+# There are some `low level' methods, which do not accept keyword arguments:
 #
 #   FileUtils.copy_entry(src, dest, preserve = false, dereference_root = false, remove_destination = false)
 #   FileUtils.copy_file(src, dest, preserve = false, dereference = true)
@@ -119,7 +129,7 @@ module FileUtils
   #
   #   FileUtils.cd('/')  # change directory
   #
-  #   FileUtils.cd('/', :verbose => true)   # change directory and report it
+  #   FileUtils.cd('/', verbose: true)   # change directory and report it
   #
   #   FileUtils.cd('/') do  # change directory
   #     # ...               # do something
@@ -164,9 +174,9 @@ module FileUtils
   # Creates one or more directories.
   #
   #   FileUtils.mkdir 'test'
-  #   FileUtils.mkdir %w( tmp data )
-  #   FileUtils.mkdir 'notexist', :noop => true  # Does not really create.
-  #   FileUtils.mkdir 'tmp', :mode => 0700
+  #   FileUtils.mkdir %w(tmp data)
+  #   FileUtils.mkdir 'notexist', noop: true  # Does not really create.
+  #   FileUtils.mkdir 'tmp', mode: 0700
   #
   def mkdir(list, mode: nil, noop: nil, verbose: nil)
     list = fu_list(list)
@@ -185,7 +195,7 @@ module FileUtils
   #
   #   FileUtils.mkdir_p '/usr/local/lib/ruby'
   #
-  # causes to make following directories, if it does not exist.
+  # causes to make following directories, if they do not exist.
   #
   # * /usr
   # * /usr/local
@@ -249,7 +259,7 @@ module FileUtils
   #   FileUtils.rmdir 'somedir'
   #   FileUtils.rmdir %w(somedir anydir otherdir)
   #   # Does not really remove directory; outputs message.
-  #   FileUtils.rmdir 'somedir', :verbose => true, :noop => true
+  #   FileUtils.rmdir 'somedir', verbose: true, noop: true
   #
   def rmdir(list, parents: nil, noop: nil, verbose: nil)
     list = fu_list(list)
@@ -278,7 +288,7 @@ module FileUtils
   #
   # In the first form, creates a hard link +link+ which points to +target+.
   # If +link+ already exists, raises Errno::EEXIST.
-  # But if the :force option is set, overwrites +link+.
+  # But if the +force+ option is set, overwrites +link+.
   #
   #   FileUtils.ln 'gcc', 'cc', verbose: true
   #   FileUtils.ln '/usr/bin/emacs21', '/usr/bin/emacs'
@@ -305,22 +315,22 @@ module FileUtils
   module_function :link
 
   #
-  # :call-seq:
-  #   FileUtils.cp_lr(src, dest, noop: nil, verbose: nil, dereference_root: true, remove_destination: false)
-  #
   # Hard link +src+ to +dest+. If +src+ is a directory, this method links
   # all its contents recursively. If +dest+ is a directory, links
   # +src+ to +dest/src+.
   #
   # +src+ can be a list of files.
   #
-  #   # Installing the library "mylib" under the site_ruby directory.
-  #   FileUtils.rm_r site_ruby + '/mylib', :force => true
+  # If +dereference_root+ is true, this method dereference tree root.
+  #
+  # If +remove_destination+ is true, this method removes each destination file before copy.
+  #
+  #   FileUtils.rm_r site_ruby + '/mylib', force: true
   #   FileUtils.cp_lr 'lib/', site_ruby + '/mylib'
   #
   #   # Examples of linking several files to target directory.
   #   FileUtils.cp_lr %w(mail.rb field.rb debug/), site_ruby + '/tmail'
-  #   FileUtils.cp_lr Dir.glob('*.rb'), '/home/aamine/lib/ruby', :noop => true, :verbose => true
+  #   FileUtils.cp_lr Dir.glob('*.rb'), '/home/aamine/lib/ruby', noop: true, verbose: true
   #
   #   # If you want to link all contents of a directory instead of the
   #   # directory itself, c.f. src/x -> dest/x, src/y -> dest/y,
@@ -345,7 +355,7 @@ module FileUtils
   #
   # In the first form, creates a symbolic link +link+ which points to +target+.
   # If +link+ already exists, raises Errno::EEXIST.
-  # But if the :force option is set, overwrites +link+.
+  # But if the <tt>force</tt> option is set, overwrites +link+.
   #
   #   FileUtils.ln_s '/usr/bin/ruby', '/usr/local/bin/ruby'
   #   FileUtils.ln_s 'verylongsourcefilename.c', 'c', force: true
@@ -411,7 +421,7 @@ module FileUtils
   #
   #   FileUtils.cp 'eval.c', 'eval.c.org'
   #   FileUtils.cp %w(cgi.rb complex.rb date.rb), '/usr/lib/ruby/1.6'
-  #   FileUtils.cp %w(cgi.rb complex.rb date.rb), '/usr/lib/ruby/1.6', :verbose => true
+  #   FileUtils.cp %w(cgi.rb complex.rb date.rb), '/usr/lib/ruby/1.6', verbose: true
   #   FileUtils.cp 'symlink', 'dest'   # copy content, "dest" is not a symlink
   #
   def cp(src, dest, preserve: nil, noop: nil, verbose: nil)
@@ -433,13 +443,17 @@ module FileUtils
   #
   # +src+ can be a list of files.
   #
+  # If +dereference_root+ is true, this method dereference tree root.
+  #
+  # If +remove_destination+ is true, this method removes each destination file before copy.
+  #
   #   # Installing Ruby library "mylib" under the site_ruby
-  #   FileUtils.rm_r site_ruby + '/mylib', :force
+  #   FileUtils.rm_r site_ruby + '/mylib', force: true
   #   FileUtils.cp_r 'lib/', site_ruby + '/mylib'
   #
   #   # Examples of copying several files to target directory.
   #   FileUtils.cp_r %w(mail.rb field.rb debug/), site_ruby + '/tmail'
-  #   FileUtils.cp_r Dir.glob('*.rb'), '/home/foo/lib/ruby', :noop => true, :verbose => true
+  #   FileUtils.cp_r Dir.glob('*.rb'), '/home/foo/lib/ruby', noop: true, verbose: true
   #
   #   # If you want to copy all contents of a directory instead of the
   #   # directory itself, c.f. src/x -> dest/x, src/y -> dest/y,
@@ -474,7 +488,11 @@ module FileUtils
   # If +remove_destination+ is true, this method removes each destination file before copy.
   #
   def copy_entry(src, dest, preserve = false, dereference_root = false, remove_destination = false)
-    Entry_.new(src, nil, dereference_root).wrap_traverse(proc do |ent|
+    if dereference_root
+      src = File.realpath(src)
+    end
+
+    Entry_.new(src, nil, false).wrap_traverse(proc do |ent|
       destent = Entry_.new(dest, ent.rel, false)
       File.unlink destent.path if remove_destination && (File.file?(destent.path) || File.symlink?(destent.path))
       ent.copy destent.path
@@ -511,10 +529,10 @@ module FileUtils
   # disk partition, the file is copied then the original file is removed.
   #
   #   FileUtils.mv 'badname.rb', 'goodname.rb'
-  #   FileUtils.mv 'stuff.rb', '/notexist/lib/ruby', :force => true  # no error
+  #   FileUtils.mv 'stuff.rb', '/notexist/lib/ruby', force: true  # no error
   #
   #   FileUtils.mv %w(junk.txt dust.txt), '/home/foo/.trash/'
-  #   FileUtils.mv Dir.glob('test*.rb'), 'test', :noop => true, :verbose => true
+  #   FileUtils.mv Dir.glob('test*.rb'), 'test', noop: true, verbose: true
   #
   def mv(src, dest, force: nil, noop: nil, verbose: nil, secure: nil)
     fu_output_message "mv#{force ? ' -f' : ''} #{[src,dest].flatten.join ' '}" if verbose
@@ -554,7 +572,7 @@ module FileUtils
   #
   #   FileUtils.rm %w( junk.txt dust.txt )
   #   FileUtils.rm Dir.glob('*.so')
-  #   FileUtils.rm 'NotExistFile', :force => true   # never raises exception
+  #   FileUtils.rm 'NotExistFile', force: true   # never raises exception
   #
   def rm(list, force: nil, noop: nil, verbose: nil)
     list = fu_list(list)
@@ -573,7 +591,7 @@ module FileUtils
   #
   # Equivalent to
   #
-  #   FileUtils.rm(list, :force => true)
+  #   FileUtils.rm(list, force: true)
   #
   def rm_f(list, noop: nil, verbose: nil)
     rm list, force: true, noop: noop, verbose: verbose
@@ -589,18 +607,18 @@ module FileUtils
   # StandardError when :force option is set.
   #
   #   FileUtils.rm_r Dir.glob('/tmp/*')
-  #   FileUtils.rm_r 'some_dir', :force => true
+  #   FileUtils.rm_r 'some_dir', force: true
   #
   # WARNING: This method causes local vulnerability
   # if one of parent directories or removing directory tree are world
   # writable (including /tmp, whose permission is 1777), and the current
   # process has strong privilege such as Unix super user (root), and the
   # system has symbolic link.  For secure removing, read the documentation
-  # of #remove_entry_secure carefully, and set :secure option to true.
-  # Default is :secure=>false.
+  # of remove_entry_secure carefully, and set :secure option to true.
+  # Default is <tt>secure: false</tt>.
   #
-  # NOTE: This method calls #remove_entry_secure if :secure option is set.
-  # See also #remove_entry_secure.
+  # NOTE: This method calls remove_entry_secure if :secure option is set.
+  # See also remove_entry_secure.
   #
   def rm_r(list, force: nil, noop: nil, verbose: nil, secure: nil)
     list = fu_list(list)
@@ -619,10 +637,10 @@ module FileUtils
   #
   # Equivalent to
   #
-  #   FileUtils.rm_r(list, :force => true)
+  #   FileUtils.rm_r(list, force: true)
   #
   # WARNING: This method causes local vulnerability.
-  # Read the documentation of #rm_r first.
+  # Read the documentation of rm_r first.
   #
   def rm_rf(list, noop: nil, verbose: nil, secure: nil)
     rm_r list, force: true, noop: noop, verbose: verbose, secure: secure
@@ -636,7 +654,7 @@ module FileUtils
   # This method removes a file system entry +path+.  +path+ shall be a
   # regular file, a directory, or something.  If +path+ is a directory,
   # remove it recursively.  This method is required to avoid TOCTTOU
-  # (time-of-check-to-time-of-use) local security vulnerability of #rm_r.
+  # (time-of-check-to-time-of-use) local security vulnerability of rm_r.
   # #rm_r causes security hole when:
   #
   # * Parent directory is world writable (including /tmp).
@@ -755,7 +773,7 @@ module FileUtils
   # +path+ might be a regular file, a directory, or something.
   # If +path+ is a directory, remove it recursively.
   #
-  # See also #remove_entry_secure.
+  # See also remove_entry_secure.
   #
   def remove_entry(path, force = false)
     Entry_.new(path).postorder_traverse do |ent|
@@ -839,8 +857,8 @@ module FileUtils
   # mode to +mode+.  If +dest+ is a directory, destination is +dest+/+src+.
   # This method removes destination before copy.
   #
-  #   FileUtils.install 'ruby', '/usr/local/bin/ruby', :mode => 0755, :verbose => true
-  #   FileUtils.install 'lib.rb', '/usr/local/lib/ruby/site_ruby', :verbose => true
+  #   FileUtils.install 'ruby', '/usr/local/bin/ruby', mode: 0755, verbose: true
+  #   FileUtils.install 'lib.rb', '/usr/local/lib/ruby/site_ruby', verbose: true
   #
   def install(src, dest, mode: nil, owner: nil, group: nil, preserve: nil,
               noop: nil, verbose: nil)
@@ -970,12 +988,12 @@ module FileUtils
   # Absolute mode is
   #   FileUtils.chmod 0755, 'somecommand'
   #   FileUtils.chmod 0644, %w(my.rb your.rb his.rb her.rb)
-  #   FileUtils.chmod 0755, '/usr/bin/ruby', :verbose => true
+  #   FileUtils.chmod 0755, '/usr/bin/ruby', verbose: true
   #
   # Symbolic mode is
   #   FileUtils.chmod "u=wrx,go=rx", 'somecommand'
   #   FileUtils.chmod "u=wr,go=rr", %w(my.rb your.rb his.rb her.rb)
-  #   FileUtils.chmod "u=wrx,go=rx", '/usr/bin/ruby', :verbose => true
+  #   FileUtils.chmod "u=wrx,go=rx", '/usr/bin/ruby', verbose: true
   #
   # "a" :: is user, group, other mask.
   # "u" :: is user's mask.
@@ -1035,7 +1053,7 @@ module FileUtils
   # the attribute.
   #
   #   FileUtils.chown 'root', 'staff', '/usr/local/bin/ruby'
-  #   FileUtils.chown nil, 'bin', Dir.glob('/usr/bin/*'), :verbose => true
+  #   FileUtils.chown nil, 'bin', Dir.glob('/usr/bin/*'), verbose: true
   #
   def chown(user, group, list, noop: nil, verbose: nil)
     list = fu_list(list)
@@ -1059,7 +1077,7 @@ module FileUtils
   # method does not change the attribute.
   #
   #   FileUtils.chown_R 'www', 'www', '/var/www/htdocs'
-  #   FileUtils.chown_R 'cvs', 'cvs', '/var/cvs', :verbose => true
+  #   FileUtils.chown_R 'cvs', 'cvs', '/var/cvs', verbose: true
   #
   def chown_R(user, group, list, noop: nil, verbose: nil, force: nil)
     list = fu_list(list)
@@ -1276,9 +1294,9 @@ module FileUtils
       opts[:encoding] = ::Encoding::UTF_8 if fu_windows?
 
       files = if Dir.respond_to?(:children)
-        Dir.children(path, opts)
+        Dir.children(path, **opts)
       else
-        Dir.entries(path(), opts)
+        Dir.entries(path(), **opts)
            .reject {|n| n == '.' or n == '..' }
       end
 
@@ -1369,18 +1387,21 @@ module FileUtils
         end
       when symlink?
         File.symlink File.readlink(path()), dest
-      when chardev?
-        raise "cannot handle device file" unless File.respond_to?(:mknod)
-        mknod dest, ?c, 0666, lstat().rdev
-      when blockdev?
-        raise "cannot handle device file" unless File.respond_to?(:mknod)
-        mknod dest, ?b, 0666, lstat().rdev
+      when chardev?, blockdev?
+        raise "cannot handle device file"
       when socket?
-        raise "cannot handle socket" unless File.respond_to?(:mknod)
-        mknod dest, nil, lstat().mode, 0
+        begin
+          require 'socket'
+        rescue LoadError
+          raise "cannot handle socket"
+        else
+          raise "cannot handle socket" unless defined?(UNIXServer)
+        end
+        UNIXServer.new(dest).close
+        File.chmod lstat().mode, dest
       when pipe?
         raise "cannot handle FIFO" unless File.respond_to?(:mkfifo)
-        mkfifo dest, 0666
+        File.mkfifo dest, lstat().mode
       when door?
         raise "cannot handle door: #{path()}"
       else
@@ -1499,14 +1520,14 @@ module FileUtils
 
     private
 
-    $fileutils_rb_have_lchmod = nil
+    @@fileutils_rb_have_lchmod = nil
 
     def have_lchmod?
       # This is not MT-safe, but it does not matter.
-      if $fileutils_rb_have_lchmod == nil
-        $fileutils_rb_have_lchmod = check_have_lchmod?
+      if @@fileutils_rb_have_lchmod == nil
+        @@fileutils_rb_have_lchmod = check_have_lchmod?
       end
-      $fileutils_rb_have_lchmod
+      @@fileutils_rb_have_lchmod
     end
 
     def check_have_lchmod?
@@ -1517,14 +1538,14 @@ module FileUtils
       return false
     end
 
-    $fileutils_rb_have_lchown = nil
+    @@fileutils_rb_have_lchown = nil
 
     def have_lchown?
       # This is not MT-safe, but it does not matter.
-      if $fileutils_rb_have_lchown == nil
-        $fileutils_rb_have_lchown = check_have_lchown?
+      if @@fileutils_rb_have_lchown == nil
+        @@fileutils_rb_have_lchown = check_have_lchown?
       end
-      $fileutils_rb_have_lchown
+      @@fileutils_rb_have_lchown
     end
 
     def check_have_lchown?
@@ -1591,13 +1612,13 @@ module FileUtils
   end
   private_module_function :fu_same?
 
-  @fileutils_output = $stderr
-  @fileutils_label  = ''
-
   def fu_output_message(msg)   #:nodoc:
-    @fileutils_output ||= $stderr
-    @fileutils_label  ||= ''
-    @fileutils_output.puts @fileutils_label + msg
+    output = @fileutils_output if defined?(@fileutils_output)
+    output ||= $stderr
+    if defined?(@fileutils_label)
+      msg = @fileutils_label + msg
+    end
+    output.puts msg
   end
   private_module_function :fu_output_message
 
@@ -1608,8 +1629,11 @@ module FileUtils
     tbl
   }
 
+  public
+
   #
-  # Returns an Array of method names which have any options.
+  # Returns an Array of names of high-level methods that accept any keyword
+  # arguments.
   #
   #   p FileUtils.commands  #=> ["chmod", "cp", "cp_r", "install", ...]
   #
@@ -1648,7 +1672,7 @@ module FileUtils
   end
 
   #
-  # Returns an Array of method names which have the option +opt+.
+  # Returns an Array of methods names which have the option +opt+.
   #
   #   p FileUtils.collect_method(:preserve) #=> ["cp", "cp_r", "copy", "install"]
   #
@@ -1656,14 +1680,16 @@ module FileUtils
     OPT_TABLE.keys.select {|m| OPT_TABLE[m].include?(opt) }
   end
 
-  LOW_METHODS = singleton_methods(false) - collect_method(:noop).map(&:intern)
-  module LowMethods
+  private
+
+  LOW_METHODS = singleton_methods(false) - collect_method(:noop).map(&:intern) # :nodoc:
+  module LowMethods # :nodoc: internal use only
     private
     def _do_nothing(*)end
     ::FileUtils::LOW_METHODS.map {|name| alias_method name, :_do_nothing}
   end
 
-  METHODS = singleton_methods() - [:private_module_function,
+  METHODS = singleton_methods() - [:private_module_function,                  # :nodoc:
       :commands, :options, :have_option?, :options_of, :collect_method]
 
   #
@@ -1673,8 +1699,6 @@ module FileUtils
   #
   module Verbose
     include FileUtils
-    @fileutils_output  = $stderr
-    @fileutils_label   = ''
     names = ::FileUtils.collect_method(:verbose)
     names.each do |name|
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)
@@ -1698,8 +1722,6 @@ module FileUtils
   module NoWrite
     include FileUtils
     include LowMethods
-    @fileutils_output  = $stderr
-    @fileutils_label   = ''
     names = ::FileUtils.collect_method(:noop)
     names.each do |name|
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)
@@ -1724,8 +1746,6 @@ module FileUtils
   module DryRun
     include FileUtils
     include LowMethods
-    @fileutils_output  = $stderr
-    @fileutils_label   = ''
     names = ::FileUtils.collect_method(:noop)
     names.each do |name|
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)

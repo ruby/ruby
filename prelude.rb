@@ -8,7 +8,7 @@ class << Thread
   def exclusive(&block) end if false
   mutex = Mutex.new # :nodoc:
   define_method(:exclusive) do |&block|
-    warn "Thread.exclusive is deprecated, use Thread::Mutex", caller
+    warn "Thread.exclusive is deprecated, use Thread::Mutex", uplevel: 1
     mutex.synchronize(&block)
   end
 end

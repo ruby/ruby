@@ -155,6 +155,21 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_sysread_nonblock_and_syswrite_nonblock_keywords
+    start_server(ignore_listener_error: true) do |port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock)
+
+      assert_warn ("") do
+        ssl.send(:syswrite_nonblock, "1", exception: false)
+        ssl.send(:sysread_nonblock, 1, exception: false) rescue nil
+        ssl.send(:sysread_nonblock, 1, String.new, exception: false) rescue nil
+      end
+    ensure
+      sock&.close
+    end
+  end
+
   def test_sync_close
     start_server { |port|
       begin

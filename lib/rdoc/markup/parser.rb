@@ -423,7 +423,6 @@ class RDoc::Markup::Parser
     end
 
     def scan(re)
-      prev_pos = @s.pos
       ret = @s.scan(re)
       @column += ret.length if ret
       ret

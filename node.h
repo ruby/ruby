@@ -64,8 +64,8 @@ enum node_type {
     NODE_QCALL,
     NODE_SUPER,
     NODE_ZSUPER,
-    NODE_ARRAY,
-    NODE_ZARRAY,
+    NODE_LIST,
+    NODE_ZLIST,
     NODE_VALUES,
     NODE_HASH,
     NODE_RETURN,
@@ -281,10 +281,11 @@ typedef struct RNode {
 #define nd_apinfo u3.apinfo
 
 #define NEW_NODE(t,a0,a1,a2,loc) rb_node_newnode((t),(VALUE)(a0),(VALUE)(a1),(VALUE)(a2),loc)
+#define NEW_NODE_WITH_LOCALS(t,a1,a2,loc) node_newnode_with_locals(p, (t),(VALUE)(a1),(VALUE)(a2),loc)
 
 #define NEW_DEFN(i,a,d,loc) NEW_NODE(NODE_DEFN,0,i,NEW_SCOPE(a,d,loc),loc)
 #define NEW_DEFS(r,i,a,d,loc) NEW_NODE(NODE_DEFS,r,i,NEW_SCOPE(a,d,loc),loc)
-#define NEW_SCOPE(a,b,loc) NEW_NODE(NODE_SCOPE,local_tbl(p),b,a,loc)
+#define NEW_SCOPE(a,b,loc) NEW_NODE_WITH_LOCALS(NODE_SCOPE,b,a,loc)
 #define NEW_BLOCK(a,loc) NEW_NODE(NODE_BLOCK,a,0,0,loc)
 #define NEW_IF(c,t,e,loc) NEW_NODE(NODE_IF,c,t,e,loc)
 #define NEW_UNLESS(c,t,e,loc) NEW_NODE(NODE_UNLESS,c,t,e,loc)
@@ -309,9 +310,8 @@ typedef struct RNode {
 #define NEW_ENSURE(b,en,loc) NEW_NODE(NODE_ENSURE,b,0,en,loc)
 #define NEW_RETURN(s,loc) NEW_NODE(NODE_RETURN,s,0,0,loc)
 #define NEW_YIELD(a,loc) NEW_NODE(NODE_YIELD,a,0,0,loc)
-#define NEW_LIST(a,loc)  NEW_ARRAY(a,loc)
-#define NEW_ARRAY(a,loc) NEW_NODE(NODE_ARRAY,a,1,0,loc)
-#define NEW_ZARRAY(loc) NEW_NODE(NODE_ZARRAY,0,0,0,loc)
+#define NEW_LIST(a,loc) NEW_NODE(NODE_LIST,a,1,0,loc)
+#define NEW_ZLIST(loc) NEW_NODE(NODE_ZLIST,0,0,0,loc)
 #define NEW_HASH(a,loc)  NEW_NODE(NODE_HASH,a,0,0,loc)
 #define NEW_MASGN(l,r,loc)   NEW_NODE(NODE_MASGN,l,0,r,loc)
 #define NEW_GASGN(v,val,loc) NEW_NODE(NODE_GASGN,v,val,rb_global_entry(v),loc)
@@ -369,7 +369,7 @@ typedef struct RNode {
 #define NEW_COLON3(i,loc) NEW_NODE(NODE_COLON3,0,i,0,loc)
 #define NEW_DOT2(b,e,loc) NEW_NODE(NODE_DOT2,b,e,0,loc)
 #define NEW_DOT3(b,e,loc) NEW_NODE(NODE_DOT3,b,e,0,loc)
-#define NEW_SELF(loc) NEW_NODE(NODE_SELF,0,0,0,loc)
+#define NEW_SELF(loc) NEW_NODE(NODE_SELF,0,0,1,loc)
 #define NEW_NIL(loc) NEW_NODE(NODE_NIL,0,0,0,loc)
 #define NEW_TRUE(loc) NEW_NODE(NODE_TRUE,0,0,0,loc)
 #define NEW_FALSE(loc) NEW_NODE(NODE_FALSE,0,0,0,loc)
@@ -385,6 +385,7 @@ typedef struct RNode {
 #define NODE_SPECIAL_NO_NAME_REST     ((NODE *)-1)
 #define NODE_NAMED_REST_P(node) ((node) != NODE_SPECIAL_NO_NAME_REST)
 #define NODE_SPECIAL_EXCESSIVE_COMMA   ((ID)1)
+#define NODE_SPECIAL_NO_REST_KEYWORD   ((NODE *)-1)
 
 VALUE rb_node_case_when_optimizable_literal(const NODE *const node);
 
@@ -404,11 +405,12 @@ typedef struct rb_ast_struct {
 } rb_ast_t;
 rb_ast_t *rb_ast_new(void);
 void rb_ast_mark(rb_ast_t*);
+void rb_ast_update_references(rb_ast_t*);
 void rb_ast_dispose(rb_ast_t*);
 void rb_ast_free(rb_ast_t*);
 size_t rb_ast_memsize(const rb_ast_t*);
 void rb_ast_add_mark_object(rb_ast_t*, VALUE);
-NODE *rb_ast_newnode(rb_ast_t*);
+NODE *rb_ast_newnode(rb_ast_t*, enum node_type type);
 void rb_ast_delete_node(rb_ast_t*, NODE *n);
 
 VALUE rb_parser_new(void);
@@ -431,6 +433,7 @@ rb_ast_t *rb_compile_string(const char*, VALUE, int);
 rb_ast_t *rb_compile_file(const char*, VALUE, int);
 
 void rb_node_init(NODE *n, enum node_type type, VALUE a0, VALUE a1, VALUE a2);
+const char *ruby_node_name(int node);
 
 const struct kwtable *rb_reserved_word(const char *, unsigned int);
 
@@ -450,12 +453,15 @@ struct rb_args_info {
     NODE *kw_rest_arg;
 
     NODE *opt_args;
+    int no_kwarg;
+    VALUE imemo;
 };
 
 struct rb_ary_pattern_info {
     NODE *pre_args;
     NODE *rest_arg;
     NODE *post_args;
+    VALUE imemo;
 };
 
 struct parser_params;

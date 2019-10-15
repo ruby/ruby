@@ -25,6 +25,8 @@ TEST_TARGETS := $(patsubst test-short,btest-ruby test-knownbug test-basic,$(TEST
 TEST_DEPENDS := $(filter-out test-short $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_DEPENDS += $(if $(filter great exam love check,$(MAKECMDGOALS)),all exts)
 
+in-srcdir := $(if $(filter-out .,$(srcdir)),$(CHDIR) $(srcdir) &&)
+
 ifneq ($(filter -O0 -Od,$(optflags)),)
 override XCFLAGS := $(filter-out -D_FORTIFY_SOURCE=%,$(XCFLAGS))
 endif
@@ -88,20 +90,15 @@ sudo-precheck: test yes-test-testframework no-test-testframework
 install-prereq: sudo-precheck
 yes-test-all no-test-all: install
 endif
-ifneq ($(filter love install reinstall,$(MAKECMDGOALS)),)
 # Cross referece needs to parse all files at once
-RDOCFLAGS = --force-update
-endif
-ifneq ($(filter great,$(MAKECMDGOALS)),)
-love: test-rubyspec
-endif
+love install reinstall: RDOCFLAGS = --force-update
 
 $(srcdir)/missing/des_tables.c: $(srcdir)/missing/crypt.c
 ifeq ($(if $(filter yes,$(CROSS_COMPILING)),,$(CC)),)
 	touch $@
 else
 	@$(ECHO) building make_des_table
-	$(CC) $(CPPFLAGS) -DDUMP $(LDFLAGS) $(XLDFLAGS) $(LIBS) -omake_des_table $(srcdir)/missing/crypt.c
+	$(CC) $(INCFLAGS) $(CPPFLAGS) -DDUMP $(LDFLAGS) $(XLDFLAGS) $(LIBS) -omake_des_table $(srcdir)/missing/crypt.c
 	@[ -x ./make_des_table ]
 	@$(ECHO) generating $@
 	$(Q) $(MAKEDIRS) $(@D)
@@ -148,7 +145,7 @@ commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS
 	@$(BASERUBY) -C "$(srcdir)" -I./tool/lib -rvcs -e 'VCS.detect(".").commit'
 	+$(Q) \
 	{ \
-	  $(CHDIR) "$(srcdir)"; \
+	  $(in-srcdir) \
 	  exec sed -f tool/prereq.status defs/gmake.mk template/Makefile.in common.mk; \
 	} | \
 	$(MAKE) $(mflags) Q=$(Q) ECHO=$(ECHO) srcdir="$(srcdir)" srcs_vpath="" CHDIR="$(CHDIR)" \
@@ -232,7 +229,7 @@ fetch-github-%:
 
 .PHONY: checkout-github-%
 checkout-github-%: fetch-github-%
-	git -C "$(srcdir)" checkout "gh-$(1)"
+	git -C "$(srcdir)" checkout "gh-$*"
 
 .PHONY: pr-% pull-github-%
 pr-% pull-github-%: fetch-github-%
@@ -305,6 +302,12 @@ spec/bundler/%: PHONY
 
 spec/%: programs exts PHONY
 	+$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec-run -B $(srcdir)/spec/default.mspec $(SPECOPTS) $(patsubst %,$(srcdir)/%,$@)
+
+benchmark/%: miniruby$(EXEEXT) update-benchmark-driver PHONY
+	$(Q)$(BASERUBY) -rrubygems -I$(srcdir)/benchmark/lib $(srcdir)/benchmark/benchmark-driver/exe/benchmark-driver \
+	            --executables="compare-ruby::$(COMPARE_RUBY) -I$(EXTOUT)/common --disable-gem" \
+	            --executables="built-ruby::$(BENCH_RUBY) --disable-gem" \
+	            $(srcdir)/$@ $(OPTS)
 
 clean-srcs-ext::
 	$(Q)$(RM) $(patsubst $(srcdir)/%,%,$(EXT_SRCS))

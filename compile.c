@@ -352,7 +352,7 @@ static void iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line,
 #define COMPILE_RECV(anchor, desc, node) \
     (private_recv_p(node) ? \
      (ADD_INSN(anchor, nd_line(node), putself), VM_CALL_FCALL) : \
-     (COMPILE(anchor, desc, node->nd_recv), 0))
+     COMPILE(anchor, desc, node->nd_recv) ? 0 : -1)
 
 #define OPERAND_AT(insn, idx) \
   (((INSN*)(insn))->operands[(idx)])
@@ -576,23 +576,6 @@ APPEND_ELEM(ISEQ_ARG_DECLARE LINK_ANCHOR *const anchor, LINK_ELEMENT *before, LI
 #define ISEQ_LAST_LINE(iseq) (ISEQ_COMPILE_DATA(iseq)->last_line)
 
 static int
-iseq_add_mark_object_compile_time(const rb_iseq_t *iseq, VALUE v)
-{
-    if (!SPECIAL_CONST_P(v)) {
-	rb_ary_push(ISEQ_COMPILE_DATA(iseq)->mark_ary, v);
-    }
-    return COMPILE_OK;
-}
-
-static inline VALUE
-freeze_literal(rb_iseq_t *iseq, VALUE lit)
-{
-    lit = rb_fstring(lit);
-    rb_ary_push(ISEQ_COMPILE_DATA(iseq)->mark_ary, lit);
-    return lit;
-}
-
-static int
 validate_label(st_data_t name, st_data_t label, st_data_t arg)
 {
     rb_iseq_t *iseq = (rb_iseq_t *)arg;
@@ -615,7 +598,7 @@ validate_labels(rb_iseq_t *iseq, st_table *labels_table)
 }
 
 VALUE
-rb_iseq_compile_ifunc(rb_iseq_t *iseq, const struct vm_ifunc *ifunc)
+rb_iseq_compile_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_callback_callback_func * ifunc)
 {
     DECL_ANCHOR(ret);
     INIT_ANCHOR(ret);
@@ -732,7 +715,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 	ADD_INSN(ret, ISEQ_COMPILE_DATA(iseq)->last_line, leave);
     }
 
-#if SUPPORT_JOKE
+#if OPT_SUPPORT_JOKE
     if (ISEQ_COMPILE_DATA(iseq)->labels_table) {
 	st_table *labels_table = ISEQ_COMPILE_DATA(iseq)->labels_table;
 	ISEQ_COMPILE_DATA(iseq)->labels_table = 0;
@@ -841,11 +824,10 @@ calc_padding(void *ptr, size_t size)
 #endif /* STRICT_ALIGNMENT */
 
 static void *
-compile_data_alloc(rb_iseq_t *iseq, size_t size)
+compile_data_alloc_with_arena(struct iseq_compile_data_storage **arena, size_t size)
 {
     void *ptr = 0;
-    struct iseq_compile_data_storage *storage =
-	ISEQ_COMPILE_DATA(iseq)->storage_current;
+    struct iseq_compile_data_storage *storage = *arena;
 #ifdef STRICT_ALIGNMENT
     size_t padding = calc_padding((void *)&storage->buff[storage->pos], size);
 #else
@@ -862,7 +844,7 @@ compile_data_alloc(rb_iseq_t *iseq, size_t size)
 	}
 	storage->next = (void *)ALLOC_N(char, alloc_size +
 					offsetof(struct iseq_compile_data_storage, buff));
-	storage = ISEQ_COMPILE_DATA(iseq)->storage_current = storage->next;
+	storage = *arena = storage->next;
 	storage->next = 0;
 	storage->pos = 0;
 	storage->size = alloc_size;
@@ -880,10 +862,25 @@ compile_data_alloc(rb_iseq_t *iseq, size_t size)
     return ptr;
 }
 
+static void *
+compile_data_alloc(rb_iseq_t *iseq, size_t size)
+{
+    struct iseq_compile_data_storage ** arena = &ISEQ_COMPILE_DATA(iseq)->node.storage_current;
+    return compile_data_alloc_with_arena(arena, size);
+}
+
+static inline void *
+compile_data_alloc2(rb_iseq_t *iseq, size_t x, size_t y)
+{
+    size_t size = rb_size_mul_or_raise(x, y, rb_eRuntimeError);
+    return compile_data_alloc(iseq, size);
+}
+
 static INSN *
 compile_data_alloc_insn(rb_iseq_t *iseq)
 {
-    return (INSN *)compile_data_alloc(iseq, sizeof(INSN));
+    struct iseq_compile_data_storage ** arena = &ISEQ_COMPILE_DATA(iseq)->insn.storage_current;
+    return (INSN *)compile_data_alloc_with_arena(arena, sizeof(INSN));
 }
 
 static LABEL *
@@ -1137,7 +1134,7 @@ new_insn_body(rb_iseq_t *iseq, int line_no, enum ruby_vminsn_type insn_id, int a
     if (argc > 0) {
 	int i;
 	va_init_list(argv, argc);
-	operands = (VALUE *)compile_data_alloc(iseq, sizeof(VALUE) * argc);
+        operands = compile_data_alloc2(iseq, sizeof(VALUE), argc);
 	for (i = 0; i < argc; i++) {
 	    VALUE v = va_arg(argv, VALUE);
 	    operands[i] = v;
@@ -1178,7 +1175,7 @@ new_callinfo(rb_iseq_t *iseq, ID mid, int argc, unsigned int flag, struct rb_cal
 static INSN *
 new_insn_send(rb_iseq_t *iseq, int line_no, ID id, VALUE argc, const rb_iseq_t *blockiseq, VALUE flag, struct rb_call_info_kw_arg *keywords)
 {
-    VALUE *operands = (VALUE *)compile_data_alloc(iseq, sizeof(VALUE) * 3);
+    VALUE *operands = compile_data_alloc2(iseq, sizeof(VALUE), 3);
     operands[0] = (VALUE)new_callinfo(iseq, id, FIX2INT(argc), FIX2INT(flag), keywords, blockiseq != NULL);
     operands[1] = Qfalse; /* cache */
     operands[2] = (VALUE)blockiseq;
@@ -1201,22 +1198,20 @@ new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
 				    rb_iseq_path(iseq), rb_iseq_realpath(iseq),
 				    INT2FIX(line_no), parent, type, ISEQ_COMPILE_DATA(iseq)->option);
     debugs("[new_child_iseq]< ---------------------------------------\n");
-    iseq_add_mark_object_compile_time(iseq, (VALUE)ret_iseq);
     return ret_iseq;
 }
 
 static rb_iseq_t *
-new_child_iseq_ifunc(rb_iseq_t *iseq, const struct vm_ifunc *ifunc,
+new_child_iseq_with_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_callback_callback_func *ifunc,
 		     VALUE name, const rb_iseq_t *parent, enum iseq_type type, int line_no)
 {
     rb_iseq_t *ret_iseq;
 
-    debugs("[new_child_iseq_ifunc]> ---------------------------------------\n");
-    ret_iseq = rb_iseq_new_ifunc(ifunc, name,
+    debugs("[new_child_iseq_with_callback]> ---------------------------------------\n");
+    ret_iseq = rb_iseq_new_with_callback(ifunc, name,
 				 rb_iseq_path(iseq), rb_iseq_realpath(iseq),
 				 INT2FIX(line_no), parent, type, ISEQ_COMPILE_DATA(iseq)->option);
-    debugs("[new_child_iseq_ifunc]< ---------------------------------------\n");
-    iseq_add_mark_object_compile_time(iseq, (VALUE)ret_iseq);
+    debugs("[new_child_iseq_with_callback]< ---------------------------------------\n");
     return ret_iseq;
 }
 
@@ -1564,7 +1559,6 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
 	    switch (nd_type(val_node)) {
 	      case NODE_LIT:
 		dv = val_node->nd_lit;
-		iseq_add_mark_object_compile_time(iseq, dv);
 		break;
 	      case NODE_NIL:
 		dv = Qnil;
@@ -1700,6 +1694,9 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 	    body->param.keyword = keyword;
 	    body->param.flags.has_kwrest = TRUE;
 	}
+	else if (args->no_kwarg) {
+	    body->param.flags.accepts_no_kwarg = TRUE;
+	}
 
 	if (block_id) {
 	    body->param.block_start = arg_size++;
@@ -1827,7 +1824,7 @@ struct cdhash_set_label_struct {
 };
 
 static int
-cdhash_set_label_i(VALUE key, VALUE val, void *ptr)
+cdhash_set_label_i(VALUE key, VALUE val, VALUE ptr)
 {
     struct cdhash_set_label_struct *data = (struct cdhash_set_label_struct *)ptr;
     LABEL *lobj = (LABEL *)(val & ~1);
@@ -2090,8 +2087,10 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     insns_info = ALLOC_N(struct iseq_insn_info_entry, insn_num);
     positions = ALLOC_N(unsigned int, insn_num);
     body->is_entries = ZALLOC_N(union iseq_inline_storage_entry, body->is_size);
-    body->ci_entries = (struct rb_call_info *)ruby_xmalloc(sizeof(struct rb_call_info) * body->ci_size +
-								 sizeof(struct rb_call_info_with_kwarg) * body->ci_kw_size);
+    body->ci_entries =
+        rb_xmalloc_mul_add_mul(
+            sizeof(struct rb_call_info), body->ci_size,
+            sizeof(struct rb_call_info_with_kwarg), body->ci_kw_size);
     MEMZERO(body->ci_entries + body->ci_size, struct rb_call_info_with_kwarg,  body->ci_kw_size); /* need to clear ci_kw entries */
     body->cc_entries = ZALLOC_N(struct rb_call_cache, body->ci_size + body->ci_kw_size);
 
@@ -2816,11 +2815,11 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    int excl = FIX2INT(OPERAND_AT(range, 0));
 	    VALUE lit_range = rb_range_new(str_beg, str_end, excl);
 
-	    iseq_add_mark_object_compile_time(iseq, lit_range);
 	    ELEM_REMOVE(&beg->link);
 	    ELEM_REMOVE(&end->link);
 	    range->insn_id = BIN(putobject);
 	    OPERAND_AT(range, 0) = lit_range;
+	    RB_OBJ_WRITTEN(iseq, Qundef, lit_range);
 	}
     }
 
@@ -3207,7 +3206,7 @@ insn_set_specialized_instruction(rb_iseq_t *iseq, INSN *iobj, int insn_id)
     if (insn_id == BIN(opt_neq)) {
 	VALUE *old_operands = iobj->operands;
 	iobj->operand_size = 4;
-	iobj->operands = (VALUE *)compile_data_alloc(iseq, iobj->operand_size * sizeof(VALUE));
+        iobj->operands = compile_data_alloc2(iseq, iobj->operand_size, sizeof(VALUE));
 	iobj->operands[0] = (VALUE)new_callinfo(iseq, idEq, 1, 0, NULL, FALSE);
 	iobj->operands[1] = Qfalse; /* CALL_CACHE */
 	iobj->operands[2] = old_operands[0];
@@ -3269,6 +3268,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 		  case idMOD:	 SP_INSN(mod);	  return COMPILE_OK;
 		  case idEq:	 SP_INSN(eq);	  return COMPILE_OK;
 		  case idNeq:	 SP_INSN(neq);	  return COMPILE_OK;
+		  case idEqTilde:SP_INSN(regexpmatch2);return COMPILE_OK;
 		  case idLT:	 SP_INSN(lt);	  return COMPILE_OK;
 		  case idLE:	 SP_INSN(le);	  return COMPILE_OK;
 		  case idGT:	 SP_INSN(gt);	  return COMPILE_OK;
@@ -3376,7 +3376,7 @@ new_unified_insn(rb_iseq_t *iseq,
 
     if (argc > 0) {
 	ptr = operands =
-	    (VALUE *)compile_data_alloc(iseq, sizeof(VALUE) * argc);
+            compile_data_alloc2(iseq, sizeof(VALUE), argc);
     }
 
     /* copy operands */
@@ -3647,16 +3647,18 @@ compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cons
 			  rb_builtin_type_name(TYPE(lit)));
 	    return COMPILE_NG;
 	}
-	lit = freeze_literal(iseq, lit);
+	lit = rb_fstring(lit);
 	ADD_INSN1(ret, nd_line(node), putobject, lit);
+        RB_OBJ_WRITTEN(iseq, Qundef, lit);
 	if (RSTRING_LEN(lit) == 0) first_lit = LAST_ELEMENT(ret);
     }
 
     while (list) {
 	const NODE *const head = list->nd_head;
 	if (nd_type(head) == NODE_STR) {
-	    lit = freeze_literal(iseq, head->nd_lit);
+	    lit = rb_fstring(head->nd_lit);
 	    ADD_INSN1(ret, nd_line(head), putobject, lit);
+            RB_OBJ_WRITTEN(iseq, Qundef, lit);
 	    lit = Qnil;
 	}
 	else {
@@ -3754,7 +3756,7 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
       case NODE_LIT:		/* NODE_LIT is always true */
       case NODE_TRUE:
       case NODE_STR:
-      case NODE_ZARRAY:
+      case NODE_ZLIST:
       case NODE_LAMBDA:
 	/* printf("useless condition eliminate (%s)\n",  ruby_node_name(nd_type(cond))); */
 	ADD_INSNL(ret, nd_line(cond), jump, then_label);
@@ -3764,7 +3766,7 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
 	/* printf("useless condition eliminate (%s)\n", ruby_node_name(nd_type(cond))); */
 	ADD_INSNL(ret, nd_line(cond), jump, else_label);
 	break;
-      case NODE_ARRAY:
+      case NODE_LIST:
       case NODE_ARGSCAT:
       case NODE_DREGX:
       case NODE_DSTR:
@@ -3791,6 +3793,12 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
 }
 
 static int
+keyword_node_p(const NODE *const node)
+{
+    return nd_type(node) == NODE_HASH && node->nd_brace == FALSE;
+}
+
+static int
 compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 			  const NODE *const root_node,
 			  struct rb_call_info_kw_arg **const kw_arg_ptr,
@@ -3798,21 +3806,22 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 {
     if (kw_arg_ptr == NULL) return FALSE;
 
-    if (nd_type(root_node) == NODE_HASH && root_node->nd_head && nd_type(root_node->nd_head) == NODE_ARRAY) {
+    if (keyword_node_p(root_node) && root_node->nd_head && nd_type(root_node->nd_head) == NODE_LIST) {
 	const NODE *node = root_node->nd_head;
 
 	while (node) {
 	    const NODE *key_node = node->nd_head;
 
-	    assert(nd_type(node) == NODE_ARRAY);
+	    assert(nd_type(node) == NODE_LIST);
 	    if (!key_node) {
-                if (flag && !root_node->nd_brace) *flag |= VM_CALL_KW_SPLAT;
+		if (flag) *flag |= VM_CALL_KW_SPLAT;
 		return FALSE;
 	    }
 	    else if (nd_type(key_node) == NODE_LIT && RB_TYPE_P(key_node->nd_lit, T_SYMBOL)) {
 		/* can be keywords */
 	    }
 	    else {
+		if (flag) *flag |= VM_CALL_KW_SPLAT;
 		return FALSE;
 	    }
 	    node = node->nd_next; /* skip value node */
@@ -3823,7 +3832,8 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	node = root_node->nd_head;
 	{
 	    int len = (int)node->nd_alen / 2;
-	    struct rb_call_info_kw_arg *kw_arg  = (struct rb_call_info_kw_arg *)ruby_xmalloc(sizeof(struct rb_call_info_kw_arg) + sizeof(VALUE) * (len - 1));
+            struct rb_call_info_kw_arg *kw_arg =
+                rb_xmalloc_mul_add(len - 1, sizeof(VALUE), sizeof(struct rb_call_info_kw_arg));
 	    VALUE *keywords = kw_arg->keywords;
 	    int i = 0;
 	    kw_arg->keyword_len = len;
@@ -3844,15 +3854,14 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 }
 
 static int
-compile_args(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_root,
+compile_args(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node,
                    struct rb_call_info_kw_arg **keywords_ptr, unsigned int *flag)
 {
-    const NODE *node = node_root;
     int len = 0;
 
     for (; node; len++, node = node->nd_next) {
         if (CPDEBUG > 0) {
-            EXPECT_NODE("compile_args", node, NODE_ARRAY, -1);
+            EXPECT_NODE("compile_args", node, NODE_LIST, -1);
         }
 
         if (node->nd_next == NULL /* last node */ &&
@@ -3866,11 +3875,6 @@ compile_args(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_roo
 
     return len;
 }
-
-enum compile_array_type_t {
-    COMPILE_ARRAY_TYPE_ARRAY,
-    COMPILE_ARRAY_TYPE_HASH,
-};
 
 static inline int
 static_literal_node_p(const NODE *node, const rb_iseq_t *iseq)
@@ -3917,166 +3921,312 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
 }
 
 static int
-compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_root,
-              enum compile_array_type_t type, int popped)
+compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped)
 {
-    const NODE *node = node_root;
     int line = (int)nd_line(node);
-    int len = 0;
 
-    if (nd_type(node) == NODE_ZARRAY) {
+    if (nd_type(node) == NODE_ZLIST) {
 	if (!popped) {
-	    switch (type) {
-	      case COMPILE_ARRAY_TYPE_ARRAY: ADD_INSN1(ret, line, newarray, INT2FIX(0)); break;
-	      case COMPILE_ARRAY_TYPE_HASH: ADD_INSN1(ret, line, newhash, INT2FIX(0)); break;
-	    }
+	    ADD_INSN1(ret, line, newarray, INT2FIX(0));
 	}
+        return 0;
     }
-    else {
-	int opt_p = 1;
-	int first = 1, i;
 
-	while (node) {
-	    const NODE *start_node = node, *end_node;
-	    const NODE *kw = 0;
-	    const int max = 0x100;
-	    DECL_ANCHOR(anchor);
-	    INIT_ANCHOR(anchor);
+    EXPECT_NODE("compile_array", node, NODE_LIST, -1);
 
-	    for (i=0; i<max && node; i++, len++, node = node->nd_next) {
-		if (CPDEBUG > 0) {
-		    EXPECT_NODE("compile_array", node, NODE_ARRAY, -1);
-		}
+    if (popped) {
+        for (; node; node = node->nd_next) {
+            NO_CHECK(COMPILE_(ret, "array element", node->nd_head, popped));
+        }
+        return 1;
+    }
 
-                if (type == COMPILE_ARRAY_TYPE_HASH && !node->nd_head) {
-		    kw = node->nd_next;
-		    node = 0;
-		    if (kw) {
-			opt_p = 0;
-			node = kw->nd_next;
-			kw = kw->nd_head;
-		    }
-		    break;
-		}
-                if (opt_p && !static_literal_node_p(node, iseq)) {
-		    opt_p = 0;
-		}
+    /* Compilation of an array literal.
+     * The following code is essentially the same as:
+     *
+     *     for (int count = 0; node; count++; node->nd_next) {
+     *         compile(node->nd_head);
+     *     }
+     *     ADD_INSN(newarray, count);
+     *
+     * However, there are three points.
+     *
+     * - The code above causes stack overflow for a big string literal.
+     *   The following limits the stack length up to max_stack_len.
+     *
+     *   [x1,x2,...,x10000] =>
+     *     push x1  ; push x2  ; ...; push x256; newarray 256;
+     *     push x257; push x258; ...; push x512; newarray 256; concatarray;
+     *     push x513; push x514; ...; push x768; newarray 256; concatarray;
+     *     ...
+     *
+     * - Long subarray can be optimized by pre-allocating a hidden array.
+     *
+     *   [1,2,3,...,100] =>
+     *     duparray [1,2,3,...,100]
+     *
+     *   [x, 1,2,3,...,100, z] =>
+     *     push x; newarray 1;
+     *     putobject [1,2,3,...,100] (<- hidden array); concatarray;
+     *     push z; newarray 1; concatarray
+     *
+     * - If the last element is a keyword, newarraykwsplat should be emitted
+     *   to check and remove empty keyword arguments hash from array.
+     *   (Note: a keyword is NODE_HASH which is not static_literal_node_p.)
+     *
+     *   [1,2,3,**kw] =>
+     *     putobject 1; putobject 2; putobject 3; push kw; newarraykwsplat
+     */
 
-                NO_CHECK(COMPILE_(anchor, "array element", node->nd_head, popped));
-	    }
+    const int max_stack_len = 0x100;
+    const int min_tmp_ary_len = 0x40;
+    int stack_len = 0;
+    int first_chunk = 1;
 
-            if (opt_p) {
-		if (!popped) {
-		    VALUE ary = rb_ary_tmp_new(i);
+    /* Convert pushed elements to an array, and concatarray if needed */
+#define FLUSH_CHUNK(newarrayinsn)                               \
+    if (stack_len) {                                            \
+        ADD_INSN1(ret, line, newarrayinsn, INT2FIX(stack_len)); \
+        if (!first_chunk) ADD_INSN(ret, line, concatarray);     \
+        first_chunk = stack_len = 0;                            \
+    }
 
-		    end_node = node;
-		    node = start_node;
+    while (node) {
+        int count = 1;
 
-		    while (node != end_node) {
-                        rb_ary_push(ary, static_literal_value(node, iseq));
-			node = node->nd_next;
-		    }
-		    while (node && node->nd_next &&
-                           static_literal_node_p(node, iseq) &&
-                           static_literal_node_p(node->nd_next, iseq)) {
-			VALUE elem[2];
-                        elem[0] = static_literal_value(node, iseq);
-                        elem[1] = static_literal_value(node->nd_next, iseq);
-			rb_ary_cat(ary, elem, 2);
-			node = node->nd_next->nd_next;
-			len++;
-		    }
+        /* pre-allocation check (this branch can be omittable) */
+        if (static_literal_node_p(node, iseq)) {
+            /* count the elements that are optimizable */
+            const NODE *node_tmp = node->nd_next;
+            for (; node_tmp && static_literal_node_p(node_tmp, iseq); node_tmp = node_tmp->nd_next)
+                count++;
 
-		    OBJ_FREEZE(ary);
+            if ((first_chunk && stack_len == 0 && !node_tmp) || count >= min_tmp_ary_len) {
+                /* The literal contains only optimizable elements, or the subarray is long enough */
+                VALUE ary = rb_ary_tmp_new(count);
 
-		    iseq_add_mark_object_compile_time(iseq, ary);
+                /* Create a hidden array */
+                for (; count; count--, node = node->nd_next)
+                    rb_ary_push(ary, static_literal_value(node, iseq));
+                OBJ_FREEZE(ary);
 
-		    if (first) {
-			first = 0;
-			if (type == COMPILE_ARRAY_TYPE_ARRAY) {
-			    ADD_INSN1(ret, line, duparray, ary);
-			}
-			else { /* COMPILE_ARRAY_TYPE_HASH */
-                            VALUE hash;
+                /* Emit optimized code */
+                FLUSH_CHUNK(newarray);
+                if (first_chunk) {
+                    ADD_INSN1(ret, line, duparray, ary);
+                    first_chunk = 0;
+                }
+                else {
+                    ADD_INSN1(ret, line, putobject, ary);
+                    ADD_INSN(ret, line, concatarray);
+                }
+                RB_OBJ_WRITTEN(iseq, Qundef, ary);
+            }
+        }
 
-                            hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
-                            rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR_TRANSIENT(ary), hash);
-                            iseq_add_mark_object_compile_time(iseq, rb_obj_hide(hash));
-                            ADD_INSN1(ret, line, duphash, hash);
-			}
-		    }
-		    else {
-			if (type == COMPILE_ARRAY_TYPE_ARRAY) {
-			    ADD_INSN1(ret, line, putobject, ary);
-			    ADD_INSN(ret, line, concatarray);
-			}
-			else {
-			    COMPILE_ERROR(ERROR_ARGS "core#hash_merge_ary");
-			    return -1;
-			}
-		    }
-		}
-	    }
-	    else {
-		if (!popped || kw) {
-		    switch (type) {
-		      case COMPILE_ARRAY_TYPE_ARRAY:
-			ADD_INSN1(anchor, line, newarray, INT2FIX(i));
+        /* Base case: Compile "count" elements */
+        for (; count; count--, node = node->nd_next) {
+            if (CPDEBUG > 0) {
+                EXPECT_NODE("compile_array", node, NODE_LIST, -1);
+            }
 
-			if (first) {
-			    first = 0;
-			}
-			else {
-			    ADD_INSN(anchor, line, concatarray);
-			}
+            NO_CHECK(COMPILE_(ret, "array element", node->nd_head, 0));
+            stack_len++;
 
-			APPEND_LIST(ret, anchor);
-			break;
-		      case COMPILE_ARRAY_TYPE_HASH:
-			if (i > 0) {
-			    if (first) {
-				if (!popped) {
-				    ADD_INSN1(anchor, line, newhash, INT2FIX(i));
-				}
-				APPEND_LIST(ret, anchor);
-			    }
-			    else {
-				if (!popped) {
-				    ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-				    ADD_INSN(ret, line, swap);
-				}
-				APPEND_LIST(ret, anchor);
-				if (!popped) {
-				    ADD_SEND(ret, line, id_core_hash_merge_ptr, INT2FIX(i + 1));
-				}
-			    }
-			}
-			if (kw) {
-			    if (!popped) {
-				ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-				if (i > 0 || !first) ADD_INSN(ret, line, swap);
-				else ADD_INSN1(ret, line, newhash, INT2FIX(0));
-			    }
-                            NO_CHECK(COMPILE(ret, "keyword splat", kw));
-			    if (popped) {
-				ADD_INSN(ret, line, pop);
-			    }
-			    else {
-				ADD_SEND(ret, line, id_core_hash_merge_kwd, INT2FIX(2));
-			    }
-			}
-			first = 0;
-			break;
-		    }
-		}
-		else {
-		    /* popped */
-		    APPEND_LIST(ret, anchor);
-		}
-	    }
+            if (!node->nd_next && keyword_node_p(node->nd_head)) {
+                /* Reached the end, and the last element is a keyword */
+                FLUSH_CHUNK(newarraykwsplat);
+                return 1;
+            }
+
+            /* If there are many pushed elements, flush them to avoid stack overflow */
+            if (stack_len >= max_stack_len) FLUSH_CHUNK(newarray);
+        }
+    }
+
+    FLUSH_CHUNK(newarray);
+#undef FLUSH_CHUNK
+    return 1;
+}
+
+static inline int
+static_literal_node_pair_p(const NODE *node, const rb_iseq_t *iseq)
+{
+    return node->nd_head && static_literal_node_p(node, iseq) && static_literal_node_p(node->nd_next, iseq);
+}
+
+static int
+compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped)
+{
+    int line = (int)nd_line(node);
+
+    node = node->nd_head;
+
+    if (!node || nd_type(node) == NODE_ZLIST) {
+	if (!popped) {
+	    ADD_INSN1(ret, line, newhash, INT2FIX(0));
 	}
+        return 0;
     }
-    return len;
+
+    EXPECT_NODE("compile_hash", node, NODE_LIST, -1);
+
+    if (popped) {
+        for (; node; node = node->nd_next) {
+            NO_CHECK(COMPILE_(ret, "hash element", node->nd_head, popped));
+        }
+        return 1;
+    }
+
+    /* Compilation of a hash literal (or keyword arguments).
+     * This is very similar to compile_array, but there are some differences:
+     *
+     * - It contains key-value pairs.  So we need to take every two elements.
+     *   We can assume that the length is always even.
+     *
+     * - Merging is done by a method call (id_core_hash_merge_ptr).
+     *   Sometimes we need to insert the receiver, so "anchor" is needed.
+     *   In addition, a method call is much slower than concatarray.
+     *   So it pays only when the subsequence is really long.
+     *   (min_tmp_hash_len must be much larger than min_tmp_ary_len.)
+     *
+     * - We need to handle keyword splat: **kw.
+     *   For **kw, the key part (node->nd_head) is NULL, and the value part
+     *   (node->nd_next->nd_head) is "kw".
+     *   The code is a bit difficult to avoid hash allocation for **{}.
+     */
+
+    const int max_stack_len = 0x100;
+    const int min_tmp_hash_len = 0x800;
+    int stack_len = 0;
+    int first_chunk = 1;
+    DECL_ANCHOR(anchor);
+    INIT_ANCHOR(anchor);
+
+    /* Convert pushed elements to a hash, and merge if needed */
+#define FLUSH_CHUNK()                                                                   \
+    if (stack_len) {                                                                    \
+        if (first_chunk) {                                                              \
+            APPEND_LIST(ret, anchor);                                                   \
+            ADD_INSN1(ret, line, newhash, INT2FIX(stack_len));                          \
+        }                                                                               \
+        else {                                                                          \
+            ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));  \
+            ADD_INSN(ret, line, swap);                                                  \
+            APPEND_LIST(ret, anchor);                                                   \
+            ADD_SEND(ret, line, id_core_hash_merge_ptr, INT2FIX(stack_len + 1));        \
+        }                                                                               \
+        INIT_ANCHOR(anchor);                                                            \
+        first_chunk = stack_len = 0;                                                    \
+    }
+
+    while (node) {
+        int count = 1;
+
+        /* pre-allocation check (this branch can be omittable) */
+        if (static_literal_node_pair_p(node, iseq)) {
+            /* count the elements that are optimizable */
+            const NODE *node_tmp = node->nd_next->nd_next;
+            for (; node_tmp && static_literal_node_pair_p(node_tmp, iseq); node_tmp = node_tmp->nd_next->nd_next)
+                count++;
+
+            if ((first_chunk && stack_len == 0 && !node_tmp) || count >= min_tmp_hash_len) {
+                /* The literal contains only optimizable elements, or the subsequence is long enough */
+                VALUE ary = rb_ary_tmp_new(count);
+
+                /* Create a hidden hash */
+                for (; count; count--, node = node->nd_next->nd_next) {
+                    VALUE elem[2];
+                    elem[0] = static_literal_value(node, iseq);
+                    elem[1] = static_literal_value(node->nd_next, iseq);
+                    rb_ary_cat(ary, elem, 2);
+                }
+                VALUE hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
+                rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR_TRANSIENT(ary), hash);
+                hash = rb_obj_hide(hash);
+                OBJ_FREEZE(hash);
+
+                /* Emit optimized code */
+                FLUSH_CHUNK();
+                if (first_chunk) {
+                    ADD_INSN1(ret, line, duphash, hash);
+                    first_chunk = 0;
+                }
+                else {
+                    ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                    ADD_INSN(ret, line, swap);
+
+                    ADD_INSN1(ret, line, putobject, hash);
+
+                    ADD_SEND(ret, line, id_core_hash_merge_kwd, INT2FIX(2));
+                }
+                RB_OBJ_WRITTEN(iseq, Qundef, hash);
+            }
+        }
+
+        /* Base case: Compile "count" elements */
+        for (; count; count--, node = node->nd_next->nd_next) {
+
+            if (CPDEBUG > 0) {
+                EXPECT_NODE("compile_hash", node, NODE_LIST, -1);
+            }
+
+            if (node->nd_head) {
+                /* Normal key-value pair */
+                NO_CHECK(COMPILE_(anchor, "hash key element", node->nd_head, 0));
+                NO_CHECK(COMPILE_(anchor, "hash value element", node->nd_next->nd_head, 0));
+                stack_len += 2;
+
+                /* If there are many pushed elements, flush them to avoid stack overflow */
+                if (stack_len >= max_stack_len) FLUSH_CHUNK();
+            }
+            else {
+                /* kwsplat case: foo(..., **kw, ...) */
+                FLUSH_CHUNK();
+
+                const NODE *kw = node->nd_next->nd_head;
+                int empty_kw = nd_type(kw) == NODE_LIT;       /* foo(  ..., **{}, ...) */
+                int first_kw = first_chunk && stack_len == 0; /* foo(1,2,3, **kw, ...) */
+                int last_kw = !node->nd_next->nd_next;        /* foo(  ..., **kw) */
+                int only_kw = last_kw && first_kw;            /* foo(1,2,3, **kw) */
+
+                if (empty_kw) {
+                    if (only_kw) {
+                        /* **{} appears at the last, so it won't be modified.
+                         * kw is a special NODE_LIT that contains a special empty hash,
+                         * so this emits: putobject {}
+                         */
+                        NO_CHECK(COMPILE(ret, "keyword splat", kw));
+                    }
+                    else if (first_kw) {
+                        /* **{} appears at the first, so it may be modified.
+                         * We need to create a fresh hash object.
+                         */
+                        ADD_INSN1(ret, line, newhash, INT2FIX(0));
+                    }
+                }
+                else {
+                    /* This is not empty hash: **{k:1}.
+                     * We need to clone the hash (if first), or merge the hash to
+                     * the accumulated hash (if not first).
+                     */
+                    ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                    if (first_kw) ADD_INSN1(ret, line, newhash, INT2FIX(0));
+                    else ADD_INSN(ret, line, swap);
+
+                    NO_CHECK(COMPILE(ret, "keyword splat", kw));
+
+                    ADD_SEND(ret, line, id_core_hash_merge_kwd, INT2FIX(2));
+                }
+
+                first_chunk = 0;
+            }
+        }
+    }
+
+    FLUSH_CHUNK();
+#undef FLUSH_CHUNK
+    return 1;
 }
 
 VALUE
@@ -4126,8 +4276,9 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
 
 	if (nd_type(val) == NODE_STR) {
 	    debugp_param("nd_lit", val->nd_lit);
-	    lit = freeze_literal(iseq, val->nd_lit);
+	    lit = rb_fstring(val->nd_lit);
 	    ADD_INSN1(cond_seq, nd_line(val), putobject, lit);
+            RB_OBJ_WRITTEN(iseq, Qundef, lit);
 	}
 	else {
 	    if (!COMPILE(cond_seq, "when cond", val)) return -1;
@@ -4147,7 +4298,7 @@ when_splat_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
     const int line = nd_line(vals);
 
     switch (nd_type(vals)) {
-      case NODE_ARRAY:
+      case NODE_LIST:
         if (when_vals(iseq, cond_seq, vals, l1, only_special_literals, literals) < 0)
             return COMPILE_NG;
         break;
@@ -4257,7 +4408,7 @@ compile_massign_opt(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
     mem[memindex++] = (v); \
 }
 
-    if (rhsn == 0 || nd_type(rhsn) != NODE_ARRAY) {
+    if (rhsn == 0 || nd_type(rhsn) != NODE_LIST) {
 	return 0;
     }
 
@@ -4448,7 +4599,16 @@ compile_cpath(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const NODE *cpath)
     }
 }
 
-#define private_recv_p(node) (nd_type((node)->nd_recv) == NODE_SELF)
+static inline int
+private_recv_p(const NODE *node)
+{
+    if (nd_type(node->nd_recv) == NODE_SELF) {
+        NODE *self = node->nd_recv;
+        return self->nd_state != 0;
+    }
+    return 0;
+}
+
 static void
 defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	     const NODE *const node, LABEL **lfinish, VALUE needstr);
@@ -4477,7 +4637,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	expr_type = DEFINED_FALSE;
 	break;
 
-      case NODE_ARRAY:{
+      case NODE_LIST:{
 	const NODE *vals = node;
 
 	do {
@@ -4492,7 +4652,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         /* fall through */
       case NODE_STR:
       case NODE_LIT:
-      case NODE_ZARRAY:
+      case NODE_ZLIST:
       case NODE_AND:
       case NODE_OR:
       default:
@@ -4629,12 +4789,11 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
     }
 }
 
-static VALUE
-build_defined_rescue_iseq(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *unused)
+static void
+build_defined_rescue_iseq(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const void *unused)
 {
     ADD_INSN(ret, 0, putnil);
     iseq_set_exception_local_table(iseq);
-    return Qnil;
 }
 
 static void
@@ -4648,7 +4807,9 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	LABEL *lstart = NEW_LABEL(line);
 	LABEL *lend = NEW_LABEL(line);
 	const rb_iseq_t *rescue;
-	rescue = new_child_iseq_ifunc(iseq, IFUNC_NEW(build_defined_rescue_iseq, 0, 0),
+        struct rb_iseq_new_with_callback_callback_func *ifunc =
+            rb_iseq_new_with_callback_new_callback(build_defined_rescue_iseq, NULL);
+        rescue = new_child_iseq_with_callback(iseq, ifunc,
 				      rb_str_concat(rb_str_new2("defined guard in "),
 						    iseq->body->location.label),
 				      iseq, ISEQ_TYPE_RESCUE, 0);
@@ -4777,15 +4938,14 @@ check_keyword(const NODE *node)
 {
     /* This check is essentially a code clone of compile_keyword_arg. */
 
-    if (nd_type(node) == NODE_ARRAY) {
+    if (nd_type(node) == NODE_LIST) {
         while (node->nd_next) {
             node = node->nd_next;
         }
         node = node->nd_head;
     }
 
-    if (nd_type(node) == NODE_HASH && !node->nd_brace) return TRUE;
-    return FALSE;
+    return keyword_node_p(node);
 }
 
 static VALUE
@@ -4802,7 +4962,7 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
           }
           case NODE_ARGSCAT:
           case NODE_ARGSPUSH: {
-            int next_is_array = (nd_type(argn->nd_head) == NODE_ARRAY);
+            int next_is_list = (nd_type(argn->nd_head) == NODE_LIST);
             VALUE argc = setup_args_core(iseq, args, argn->nd_head, 1, NULL, NULL);
             NO_CHECK(COMPILE(args, "args (cat: splat)", argn->nd_body));
             if (flag) {
@@ -4813,7 +4973,7 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
                     *flag |= VM_CALL_KW_SPLAT;
             }
             if (nd_type(argn) == NODE_ARGSCAT) {
-                if (next_is_array) {
+                if (next_is_list) {
                     ADD_INSN1(args, nd_line(argn), splatarray, Qtrue);
                     return INT2FIX(FIX2INT(argc) + 1);
                 }
@@ -4829,7 +4989,7 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
                 return argc;
             }
           }
-          case NODE_ARRAY: {
+          case NODE_LIST: {
             int len = compile_args(iseq, args, argn, keywords, flag);
             return INT2FIX(len);
           }
@@ -4871,17 +5031,18 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
     return ret;
 }
 
-static VALUE
-build_postexe_iseq(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *body)
+static void
+build_postexe_iseq(rb_iseq_t *iseq, LINK_ANCHOR *ret, const void *ptr)
 {
+    const NODE *body = ptr;
     int line = nd_line(body);
     VALUE argc = INT2FIX(0);
     const rb_iseq_t *block = NEW_CHILD_ISEQ(body, make_name_for_block(iseq->body->parent_iseq), ISEQ_TYPE_BLOCK, line);
 
     ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
     ADD_CALL_WITH_BLOCK(ret, line, id_core_set_postexe, argc, block);
+    RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)block);
     iseq_set_local_table(iseq, 0);
-    return Qnil;
 }
 
 static void
@@ -4967,6 +5128,8 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
     LABEL *then_label, *else_label, *end_label;
     VALUE branches = Qfalse;
     int ci_size, ci_kw_size;
+    VALUE catch_table = ISEQ_COMPILE_DATA(iseq)->catch_table_ary;
+    long catch_table_size = NIL_P(catch_table) ? 0 : RARRAY_LEN(catch_table);
 
     INIT_ANCHOR(cond_seq);
     INIT_ANCHOR(then_seq);
@@ -4981,17 +5144,27 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
     ci_size = body->ci_size;
     ci_kw_size = body->ci_kw_size;
     CHECK(COMPILE_(then_seq, "then", node_body, popped));
+    catch_table = ISEQ_COMPILE_DATA(iseq)->catch_table_ary;
     if (!then_label->refcnt) {
         body->ci_size = ci_size;
         body->ci_kw_size = ci_kw_size;
+        if (!NIL_P(catch_table)) rb_ary_set_len(catch_table, catch_table_size);
+    }
+    else {
+        if (!NIL_P(catch_table)) catch_table_size = RARRAY_LEN(catch_table);
     }
 
     ci_size = body->ci_size;
     ci_kw_size = body->ci_kw_size;
     CHECK(COMPILE_(else_seq, "else", node_else, popped));
+    catch_table = ISEQ_COMPILE_DATA(iseq)->catch_table_ary;
     if (!else_label->refcnt) {
         body->ci_size = ci_size;
         body->ci_kw_size = ci_kw_size;
+        if (!NIL_P(catch_table)) rb_ary_set_len(catch_table, catch_table_size);
+    }
+    else {
+        if (!NIL_P(catch_table)) catch_table_size = RARRAY_LEN(catch_table);
     }
 
     ADD_SEQ(ret, cond_seq);
@@ -5098,7 +5271,7 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
 	vals = node->nd_head;
 	if (vals) {
 	    switch (nd_type(vals)) {
-	      case NODE_ARRAY:
+	      case NODE_LIST:
 		only_special_literals = when_vals(iseq, cond_seq, vals, l1, only_special_literals, literals);
 		if (only_special_literals < 0) return COMPILE_NG;
 		break;
@@ -5113,7 +5286,7 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
 	    }
 	}
 	else {
-	    EXPECT_NODE_NONULL("NODE_CASE", node, NODE_ARRAY, COMPILE_NG);
+	    EXPECT_NODE_NONULL("NODE_CASE", node, NODE_LIST, COMPILE_NG);
 	}
 
 	node = node->nd_next;
@@ -5147,10 +5320,9 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
     }
 
     if (only_special_literals && ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-	iseq_add_mark_object_compile_time(iseq, literals);
-
 	ADD_INSN(ret, nd_line(orig_node), dup);
 	ADD_INSN2(ret, nd_line(orig_node), opt_case_dispatch, literals, elselabel);
+        RB_OBJ_WRITTEN(iseq, Qundef, literals);
 	LABEL_REF(elselabel);
     }
 
@@ -5196,11 +5368,10 @@ compile_case2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
 
 	vals = node->nd_head;
 	if (!vals) {
-	    COMPILE_ERROR(ERROR_ARGS "NODE_WHEN: must be NODE_ARRAY, but 0");
-	    return COMPILE_NG;
+            EXPECT_NODE_NONULL("NODE_WHEN", node, NODE_LIST, COMPILE_NG);
 	}
 	switch (nd_type(vals)) {
-	  case NODE_ARRAY:
+	  case NODE_LIST:
 	    while (vals) {
 		LABEL *lnext;
 		val = vals->nd_head;
@@ -5462,7 +5633,15 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
          *     end
          *   end
          *   if pattern.has_kw_rest_arg_node?
-         *     pattern.kw_rest_arg_node.match?(d)
+         *     if pattern.no_rest_keyword?
+         *       unless d.empty?
+         *         goto match_failed
+         *       end
+         *     else
+         *       unless pattern.kw_rest_arg_node.match?(d)
+         *         goto match_failed
+         *       end
+         *     end
          *   end
          *   true
          *   goto fin
@@ -5482,7 +5661,6 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         if (node->nd_pkwargs && !node->nd_pkwrestarg) {
             const NODE *kw_args = node->nd_pkwargs->nd_head;
             keys = rb_ary_new_capa(kw_args ? kw_args->nd_alen/2 : 0);
-            iseq_add_mark_object_compile_time(iseq, rb_obj_hide(keys));
             while (kw_args) {
                 rb_ary_push(keys, kw_args->nd_head->nd_lit);
                 kw_args = kw_args->nd_next->nd_next;
@@ -5506,6 +5684,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         }
         else {
             ADD_INSN1(ret, line, duparray, keys);
+            RB_OBJ_WRITTEN(iseq, Qundef, rb_obj_hide(keys));
         }
         ADD_SEND(ret, line, rb_intern("deconstruct_keys"), INT2FIX(1));
 
@@ -5558,9 +5737,16 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         }
 
         if (node->nd_pkwrestarg) {
-            ADD_INSN(ret, line, dup);
-            iseq_compile_pattern_each(iseq, ret, node->nd_pkwrestarg, in_alt_pattern);
-            ADD_INSNL(ret, line, branchunless, match_failed);
+            if (node->nd_pkwrestarg == NODE_SPECIAL_NO_REST_KEYWORD) {
+                ADD_INSN(ret, line, dup);
+                ADD_SEND(ret, line, idEmptyP, INT2FIX(0));
+                ADD_INSNL(ret, line, branchunless, match_failed);
+            }
+            else {
+                ADD_INSN(ret, line, dup);
+                iseq_compile_pattern_each(iseq, ret, node->nd_pkwrestarg, in_alt_pattern);
+                ADD_INSNL(ret, line, branchunless, match_failed);
+            }
         }
 
         ADD_INSN(ret, line, pop);
@@ -5586,8 +5772,8 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
       case NODE_DSTR:
       case NODE_DSYM:
       case NODE_DREGX:
-      case NODE_ARRAY:
-      case NODE_ZARRAY:
+      case NODE_LIST:
+      case NODE_ZLIST:
       case NODE_LAMBDA:
       case NODE_DOT2:
       case NODE_DOT3:
@@ -5676,7 +5862,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         fin = NEW_LABEL(line);
 
         n = node->nd_head;
-        if (! (nd_type(n) == NODE_ARRAY && n->nd_alen == 2)) {
+        if (! (nd_type(n) == NODE_LIST && n->nd_alen == 2)) {
             COMPILE_ERROR(ERROR_ARGS "unexpected node");
             return COMPILE_NG;
         }
@@ -6269,7 +6455,7 @@ compile_resbody(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node,
 	narg = resq->nd_args;
 	if (narg) {
 	    switch (nd_type(narg)) {
-	      case NODE_ARRAY:
+	      case NODE_LIST:
 		while (narg) {
 		    ADD_GETLOCAL(ret, line, LVAR_ERRINFO, 0);
 		    CHECK(COMPILE(ret, "rescue arg", narg->nd_head));
@@ -6476,7 +6662,7 @@ compile_call_precheck_freeze(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
         node->nd_args == NULL &&
         ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
         ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-        VALUE str = freeze_literal(iseq, node->nd_recv->nd_lit);
+        VALUE str = rb_fstring(node->nd_recv->nd_lit);
         if (node->nd_mid == idUMinus) {
             ADD_INSN3(ret, line, opt_str_uminus, str,
                       new_callinfo(iseq, idUMinus, 0, 0, NULL, FALSE),
@@ -6487,6 +6673,7 @@ compile_call_precheck_freeze(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
                       new_callinfo(iseq, idFreeze, 0, 0, NULL, FALSE),
                       Qundef /* CALL_CACHE */);
         }
+        RB_OBJ_WRITTEN(iseq, Qundef, str);
         if (popped) {
             ADD_INSN(ret, line, pop);
         }
@@ -6496,16 +6683,17 @@ compile_call_precheck_freeze(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
      *   obj["literal"] -> opt_aref_with(obj, "literal")
      */
     if (node->nd_mid == idAREF && !private_recv_p(node) && node->nd_args &&
-        nd_type(node->nd_args) == NODE_ARRAY && node->nd_args->nd_alen == 1 &&
+        nd_type(node->nd_args) == NODE_LIST && node->nd_args->nd_alen == 1 &&
         nd_type(node->nd_args->nd_head) == NODE_STR &&
         ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
         !ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal &&
         ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-        VALUE str = freeze_literal(iseq, node->nd_args->nd_head->nd_lit);
+        VALUE str = rb_fstring(node->nd_args->nd_head->nd_lit);
         CHECK(COMPILE(ret, "recv", node->nd_recv));
         ADD_INSN3(ret, line, opt_aref_with, str,
                   new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE),
                   NULL/* CALL_CACHE */);
+        RB_OBJ_WRITTEN(iseq, Qundef, str);
         if (popped) {
             ADD_INSN(ret, line, pop);
         }
@@ -6535,7 +6723,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 
     INIT_ANCHOR(recv);
     INIT_ANCHOR(args);
-#if SUPPORT_JOKE
+#if OPT_SUPPORT_JOKE
     if (nd_type(node) == NODE_VCALL) {
         ID id_bitblt;
         ID id_answer;
@@ -6586,9 +6774,8 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
             }
             else {
                 COMPILE_ERROR(ERROR_ARGS "invalid goto/label format");
-                goto ng;
+                return COMPILE_NG;
             }
-
 
             if (mid == goto_id) {
                 ADD_INSNL(ret, line, jump, label);
@@ -6608,6 +6795,10 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
             nd_type(node->nd_recv) == NODE_LVAR &&
             iseq_block_param_id_p(iseq, node->nd_recv->nd_vid, &idx, &level)) {
             ADD_INSN2(recv, nd_line(node->nd_recv), getblockparamproxy, INT2FIX(idx + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
+        }
+        else if (private_recv_p(node)) {
+            ADD_INSN(recv, nd_line(node), putself);
+            flag |= VM_CALL_FCALL;
         }
         else {
             CHECK(COMPILE(recv, "recv", node->nd_recv));
@@ -6890,10 +7081,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	break;
       }
       case NODE_OP_ASGN1: {
-	DECL_ANCHOR(args);
 	VALUE argc;
 	unsigned int flag = 0;
-	unsigned int asgnflag = 0;
+	int asgnflag = 0;
 	ID id = node->nd_mid;
 	int boff = 0;
 
@@ -6924,22 +7114,21 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    ADD_INSN(ret, line, putnil);
 	}
 	asgnflag = COMPILE_RECV(ret, "NODE_OP_ASGN1 recv", node);
+        CHECK(asgnflag != -1);
 	switch (nd_type(node->nd_args->nd_head)) {
-	  case NODE_ZARRAY:
+	  case NODE_ZLIST:
 	    argc = INT2FIX(0);
 	    break;
 	  case NODE_BLOCK_PASS:
 	    boff = 1;
             /* fall through */
 	  default:
-	    INIT_ANCHOR(args);
-	    argc = setup_args(iseq, args, node->nd_args->nd_head, &flag, NULL);
+	    argc = setup_args(iseq, ret, node->nd_args->nd_head, &flag, NULL);
 	    CHECK(!NIL_P(argc));
-	    ADD_SEQ(ret, args);
 	}
 	ADD_INSN1(ret, line, dupn, FIXNUM_INC(argc, 1 + boff));
+        flag |= asgnflag;
 	ADD_SEND_WITH_FLAG(ret, line, idAREF, argc, INT2FIX(flag));
-	flag |= asgnflag;
 
 	if (id == idOROP || id == idANDOP) {
 	    /* a[x] ||= y  or  a[x] &&= y
@@ -7029,7 +7218,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       case NODE_OP_ASGN2:{
 	ID atype = node->nd_next->nd_mid;
 	ID vid = node->nd_next->nd_vid, aid = rb_id_attrset(vid);
-	VALUE asgnflag;
+        int asgnflag;
 	LABEL *lfin = NEW_LABEL(line);
 	LABEL *lcfin = NEW_LABEL(line);
 	LABEL *lskip = 0;
@@ -7076,13 +7265,14 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	*/
 
 	asgnflag = COMPILE_RECV(ret, "NODE_OP_ASGN2#recv", node);
+        CHECK(asgnflag != -1);
 	if (node->nd_next->nd_aid) {
 	    lskip = NEW_LABEL(line);
 	    ADD_INSN(ret, line, dup);
 	    ADD_INSNL(ret, line, branchnil, lskip);
 	}
 	ADD_INSN(ret, line, dup);
-	ADD_SEND(ret, line, vid, INT2FIX(0));
+        ADD_SEND_WITH_FLAG(ret, line, vid, INT2FIX(0), INT2FIX(asgnflag));
 
 	if (atype == idOROP || atype == idANDOP) {
 	    ADD_INSN(ret, line, dup);
@@ -7246,7 +7436,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       case NODE_QCALL: /* obj&.foo */
       case NODE_FCALL: /* foo() */
       case NODE_VCALL: /* foo (variable or call) */
-        compile_call(iseq, ret, node, type, line, popped);
+        if (compile_call(iseq, ret, node, type, line, popped) == COMPILE_NG) {
+            goto ng;
+        }
         break;
       case NODE_SUPER:
       case NODE_ZSUPER:{
@@ -7350,6 +7542,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 		    ADD_INSN (args, line, concatarray);
 		    --argc;
 		}
+		flag |= VM_CALL_KW_SPLAT;
 	    }
 	    else if (local_body->param.flags.has_kwrest) {
 		int idx = local_body->local_table_size - local_kwd->rest_start;
@@ -7363,6 +7556,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 		else {
 		    argc++;
 		}
+		flag |= VM_CALL_KW_SPLAT;
 	    }
 	}
 
@@ -7378,11 +7572,11 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	}
 	break;
       }
-      case NODE_ARRAY:{
-        CHECK(compile_array(iseq, ret, node, COMPILE_ARRAY_TYPE_ARRAY, popped) >= 0);
+      case NODE_LIST:{
+        CHECK(compile_array(iseq, ret, node, popped) >= 0);
 	break;
       }
-      case NODE_ZARRAY:{
+      case NODE_ZLIST:{
 	if (!popped) {
 	    ADD_INSN1(ret, line, newarray, INT2FIX(0));
 	}
@@ -7400,29 +7594,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	ADD_INSN1(ret, line, newarray, INT2FIX(node->nd_alen));
 	break;
       }
-      case NODE_HASH:{
-	DECL_ANCHOR(list);
-	enum node_type type = node->nd_head ? nd_type(node->nd_head) : NODE_ZARRAY;
-
-	INIT_ANCHOR(list);
-	switch (type) {
-	  case NODE_ARRAY:
-            CHECK(compile_array(iseq, list, node->nd_head, COMPILE_ARRAY_TYPE_HASH, popped) >= 0);
-	    ADD_SEQ(ret, list);
-	    break;
-
-	  case NODE_ZARRAY:
-	    if (popped) break;
-	    ADD_INSN1(ret, line, newhash, INT2FIX(0));
-	    break;
-
-	  default:
-	    COMPILE_ERROR(ERROR_ARGS_AT(node->nd_head) "can't make hash with this node: %s",
-			  ruby_node_name(type));
-	    goto ng;
-	}
-	break;
-      }
+      case NODE_HASH:
+        CHECK(compile_hash(iseq, ret, node, popped) >= 0);
+        break;
       case NODE_RETURN:
 	CHECK(compile_return(iseq, ret, node, popped));
 	break;
@@ -7569,26 +7743,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    break;
 	}
 
-	if (ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-	    /* TODO: detect by node */
-	    if (recv->last == recv->anchor.next &&
-		INSN_OF(recv->last) == BIN(putobject) &&
-		nd_type(node) == NODE_MATCH2) {
-		ADD_SEQ(ret, val);
-		ADD_INSN1(ret, line, opt_regexpmatch1,
-			  OPERAND_AT(recv->last, 0));
-	    }
-	    else {
-		ADD_SEQ(ret, recv);
-		ADD_SEQ(ret, val);
-		ADD_INSN2(ret, line, opt_regexpmatch2, new_callinfo(iseq, idEqTilde, 1, 0, NULL, FALSE), Qnil);
-	    }
-	}
-	else {
-	    ADD_SEQ(ret, recv);
-	    ADD_SEQ(ret, val);
-	    ADD_SEND(ret, line, idEqTilde, INT2FIX(1));
-	}
+        ADD_SEQ(ret, recv);
+        ADD_SEQ(ret, val);
+        ADD_SEND(ret, line, idEqTilde, INT2FIX(1));
 
 	if (node->nd_args) {
 	    compile_named_capture_assign(iseq, ret, node->nd_args);
@@ -7611,8 +7768,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	if (!popped) {
 	    VALUE lit = node->nd_lit;
 	    if (!ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal) {
-		lit = freeze_literal(iseq, lit);
+		lit = rb_fstring(lit);
 		ADD_INSN1(ret, line, putstring, lit);
+                RB_OBJ_WRITTEN(iseq, Qundef, lit);
 	    }
 	    else {
 		if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
@@ -7625,7 +7783,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 		    lit = rb_fstring(lit);
 		}
 		ADD_INSN1(ret, line, putobject, lit);
-		iseq_add_mark_object_compile_time(iseq, lit);
+                RB_OBJ_WRITTEN(iseq, Qundef, lit);
 	    }
 	}
 	break;
@@ -7641,16 +7799,20 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 		VALUE debug_info = Qnil;
 		if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
 		    debug_info = rb_ary_new_from_args(2, rb_iseq_path(iseq), INT2FIX(line));
-		    iseq_add_mark_object_compile_time(iseq, rb_obj_freeze(debug_info));
 		}
 		ADD_INSN1(ret, line, freezestring, debug_info);
+                if (!NIL_P(debug_info)) {
+                    RB_OBJ_WRITTEN(iseq, Qundef, rb_obj_freeze(debug_info));
+                }
 	    }
 	}
 	break;
       }
       case NODE_XSTR:{
 	ADD_CALL_RECEIVER(ret, line);
-	ADD_INSN1(ret, line, putobject, freeze_literal(iseq, node->nd_lit));
+        VALUE str = rb_fstring(node->nd_lit);
+	ADD_INSN1(ret, line, putobject, str);
+        RB_OBJ_WRITTEN(iseq, Qundef, str);
 	ADD_CALL(ret, line, idBackquote, INT2FIX(1));
 
 	if (popped) {
@@ -7685,6 +7847,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	block_iseq = NEW_CHILD_ISEQ(node->nd_body, make_name_for_block(iseq), ISEQ_TYPE_PLAIN, line);
 
 	ADD_INSN2(ret, line, once, block_iseq, INT2FIX(ic_index));
+        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)block_iseq);
 
 	if (popped) {
 	    ADD_INSN(ret, line, pop);
@@ -7739,6 +7902,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 
 	debugp_param("defn/iseq", rb_iseqw_new(method_iseq));
         ADD_INSN2(ret, line, definemethod, ID2SYM(mid), method_iseq);
+        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)method_iseq);
 
         if (!popped) {
             ADD_INSN1(ret, line, putobject, ID2SYM(mid));
@@ -7755,6 +7919,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
         debugp_param("defs/iseq", rb_iseqw_new(singleton_method_iseq));
         CHECK(COMPILE(ret, "defs: recv", node->nd_recv));
         ADD_INSN2(ret, line, definesmethod, ID2SYM(mid), singleton_method_iseq);
+        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)singleton_method_iseq);
 
         if (!popped) {
             ADD_INSN1(ret, line, putobject, ID2SYM(mid));
@@ -7805,6 +7970,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 
 	CHECK(COMPILE(ret, "super", node->nd_super));
 	ADD_INSN3(ret, line, defineclass, ID2SYM(node->nd_cpath->nd_mid), class_iseq, INT2FIX(flags));
+        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)class_iseq);
 
 	if (popped) {
 	    ADD_INSN(ret, line, pop);
@@ -7820,6 +7986,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 
 	ADD_INSN (ret, line, putnil); /* dummy */
 	ADD_INSN3(ret, line, defineclass, ID2SYM(node->nd_cpath->nd_mid), module_iseq, INT2FIX(flags));
+        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)module_iseq);
 
 	if (popped) {
 	    ADD_INSN(ret, line, pop);
@@ -7837,6 +8004,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	ADD_INSN3(ret, line, defineclass,
 		  ID2SYM(singletonclass), singleton_class,
 		  INT2FIX(VM_DEFINECLASS_TYPE_SINGLETON_CLASS));
+        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)singleton_class);
 
 	if (popped) {
 	    ADD_INSN(ret, line, pop);
@@ -7921,8 +8089,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	if (number_literal_p(b) && number_literal_p(e)) {
 	    if (!popped) {
 		VALUE val = rb_range_new(b->nd_lit, e->nd_lit, excl);
-		iseq_add_mark_object_compile_time(iseq, val);
 		ADD_INSN1(ret, line, putobject, val);
+                RB_OBJ_WRITTEN(iseq, Qundef, val);
 	    }
 	}
 	else {
@@ -8008,11 +8176,14 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	 *   ONCE{ rb_mRubyVMFrozenCore::core#set_postexe{ ... } }
 	 */
 	int is_index = body->is_size++;
+        struct rb_iseq_new_with_callback_callback_func *ifunc =
+            rb_iseq_new_with_callback_new_callback(build_postexe_iseq, node->nd_body);
 	const rb_iseq_t *once_iseq =
-	    new_child_iseq_ifunc(iseq, IFUNC_NEW(build_postexe_iseq, node->nd_body, 0),
+            new_child_iseq_with_callback(iseq, ifunc,
 				 rb_fstring(make_name_for_block(iseq)), iseq, ISEQ_TYPE_BLOCK, line);
 
 	ADD_INSN2(ret, line, once, once_iseq, INT2FIX(is_index));
+        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)once_iseq);
 
 	if (popped) {
 	    ADD_INSN(ret, line, pop);
@@ -8075,13 +8246,13 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	 *   obj["literal"] = value -> opt_aset_with(obj, "literal", value)
 	 */
 	if (mid == idASET && !private_recv_p(node) && node->nd_args &&
-	    nd_type(node->nd_args) == NODE_ARRAY && node->nd_args->nd_alen == 2 &&
+	    nd_type(node->nd_args) == NODE_LIST && node->nd_args->nd_alen == 2 &&
 	    nd_type(node->nd_args->nd_head) == NODE_STR &&
 	    ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
             !ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal &&
 	    ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction)
 	{
-	    VALUE str = freeze_literal(iseq, node->nd_args->nd_head->nd_lit);
+	    VALUE str = rb_fstring(node->nd_args->nd_head->nd_lit);
 	    CHECK(COMPILE(ret, "recv", node->nd_recv));
 	    CHECK(COMPILE(ret, "value", node->nd_args->nd_next->nd_head));
 	    if (!popped) {
@@ -8091,6 +8262,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    ADD_INSN3(ret, line, opt_aset_with, str,
 		      new_callinfo(iseq, idASET, 2, 0, NULL, FALSE),
 		      NULL/* CALL_CACHE */);
+            RB_OBJ_WRITTEN(iseq, Qundef, str);
 	    ADD_INSN(ret, line, pop);
 	    break;
 	}
@@ -8100,7 +8272,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	argc = setup_args(iseq, args, node->nd_args, &flag, NULL);
 	CHECK(!NIL_P(argc));
 
-	flag |= COMPILE_RECV(recv, "recv", node);
+        int asgnflag = COMPILE_RECV(recv, "recv", node);
+        CHECK(asgnflag != -1);
+        flag |= (unsigned int)asgnflag;
 
 	debugp_param("argc", argc);
 	debugp_param("nd_mid", ID2SYM(mid));
@@ -8119,7 +8293,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 		ADD_INSN1(ret, line, topn, INT2FIX(1));
 		if (flag & VM_CALL_ARGS_SPLAT) {
 		    ADD_INSN1(ret, line, putobject, INT2FIX(-1));
-		    ADD_SEND(ret, line, idAREF, INT2FIX(1));
+                    ADD_SEND_WITH_FLAG(ret, line, idAREF, INT2FIX(1), INT2FIX(asgnflag));
 		}
 		ADD_INSN1(ret, line, setn, FIXNUM_INC(argc, 3));
 		ADD_INSN (ret, line, pop);
@@ -8127,7 +8301,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    else if (flag & VM_CALL_ARGS_SPLAT) {
 		ADD_INSN(ret, line, dup);
 		ADD_INSN1(ret, line, putobject, INT2FIX(-1));
-		ADD_SEND(ret, line, idAREF, INT2FIX(1));
+                ADD_SEND_WITH_FLAG(ret, line, idAREF, INT2FIX(1), INT2FIX(asgnflag));
 		ADD_INSN1(ret, line, setn, FIXNUM_INC(argc, 2));
 		ADD_INSN (ret, line, pop);
 	    }
@@ -8152,6 +8326,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 	ADD_CALL_WITH_BLOCK(ret, line, idLambda, argc, block);
+        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)block);
 
 	if (popped) {
 	    ADD_INSN(ret, line, pop);
@@ -8281,7 +8456,7 @@ insn_data_to_s_detail(INSN *iobj)
 		break;
 	      case TS_FUNCPTR:
 		{
-		    const void *func = (const void *)OPERAND_AT(iobj, j);
+		    void *func = (void *)OPERAND_AT(iobj, j);
 #ifdef HAVE_DLADDR
 		    Dl_info info;
 		    if (dladdr(func, &info) && info.dli_sname) {
@@ -8472,7 +8647,7 @@ insn_make_insn_table(void)
 {
     struct st_table *table;
     int i;
-    table = st_init_numtable();
+    table = st_init_numtable_with_size(VM_INSTRUCTION_SIZE);
 
     for (i=0; i<VM_INSTRUCTION_SIZE; i++) {
 	st_insert(table, ID2SYM(rb_intern(insn_name(i))), i);
@@ -8611,7 +8786,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 	    }
 
 	    if (argc > 0) {
-		argv = compile_data_alloc(iseq, sizeof(VALUE) * argc);
+                argv = compile_data_alloc2(iseq, sizeof(VALUE), argc);
 		for (j=0; j<argc; j++) {
 		    VALUE op = rb_ary_entry(obj, j+1);
 		    switch (insn_op_type((VALUE)insn_id, j)) {
@@ -8627,14 +8802,14 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 			break;
 		      case TS_VALUE:
 			argv[j] = op;
-			iseq_add_mark_object_compile_time(iseq, op);
+			RB_OBJ_WRITTEN(iseq, Qundef, op);
 			break;
 		      case TS_ISEQ:
 			{
 			    if (op != Qnil) {
 				VALUE v = (VALUE)iseq_build_load_iseq(iseq, op);
 				argv[j] = v;
-				iseq_add_mark_object_compile_time(iseq, v);
+				RB_OBJ_WRITTEN(iseq, Qundef, v);
 			    }
 			    else {
 				argv[j] = 0;
@@ -8679,7 +8854,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 			    }
 			    RB_GC_GUARD(op);
 			    argv[j] = map;
-			    iseq_add_mark_object_compile_time(iseq, map);
+			    RB_OBJ_WRITTEN(iseq, Qundef, map);
 			}
 			break;
 		      case TS_FUNCPTR:
@@ -8799,6 +8974,58 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
 }
 
 void
+rb_iseq_mark_insn_storage(struct iseq_compile_data_storage *storage)
+{
+    INSN *iobj = 0;
+    size_t size = sizeof(INSN);
+    unsigned int pos = 0;
+
+    while (storage) {
+#ifdef STRICT_ALIGNMENT
+        size_t padding = calc_padding((void *)&storage->buff[pos], size);
+#else
+        const size_t padding = 0; /* expected to be optimized by compiler */
+#endif /* STRICT_ALIGNMENT */
+        size_t offset = pos + size + padding;
+        if (offset > storage->size || offset > storage->pos) {
+            pos = 0;
+            storage = storage->next;
+        }
+        else {
+#ifdef STRICT_ALIGNMENT
+            pos += (int)padding;
+#endif /* STRICT_ALIGNMENT */
+
+            iobj = (INSN *)&storage->buff[pos];
+
+            if (iobj->operands) {
+                int j;
+                const char *types = insn_op_types(iobj->insn_id);
+
+                for (j = 0; types[j]; j++) {
+                    char type = types[j];
+                    switch (type) {
+                      case TS_CDHASH:
+                      case TS_ISEQ:
+                      case TS_VALUE:
+                        {
+                            VALUE op = OPERAND_AT(iobj, j);
+                            if (!SPECIAL_CONST_P(op)) {
+                                rb_gc_mark(op);
+                            }
+                            break;
+                        }
+                      default:
+                        break;
+                    }
+                }
+            }
+            pos += (int)size;
+        }
+    }
+}
+
+void
 rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 			 VALUE exception, VALUE body)
 {
@@ -8906,11 +9133,9 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 /* for parser */
 
 int
-rb_dvar_defined(ID id, const struct rb_block *base_block)
+rb_dvar_defined(ID id, const rb_iseq_t *iseq)
 {
-    const rb_iseq_t *iseq;
-
-    if (base_block && (iseq = vm_block_iseq(base_block)) != NULL) {
+    if (iseq) {
 	const struct rb_iseq_constant_body *body = iseq->body;
 	while (body->type == ISEQ_TYPE_BLOCK ||
 	       body->type == ISEQ_TYPE_RESCUE ||
@@ -8933,11 +9158,9 @@ rb_dvar_defined(ID id, const struct rb_block *base_block)
 }
 
 int
-rb_local_defined(ID id, const struct rb_block *base_block)
+rb_local_defined(ID id, const rb_iseq_t *iseq)
 {
-    const rb_iseq_t *iseq;
-
-    if (base_block && (iseq = vm_block_iseq(base_block)) != NULL) {
+    if (iseq) {
 	unsigned int i;
 	const struct rb_iseq_constant_body *const body = iseq->body->local_iseq->body;
 
@@ -8978,7 +9201,7 @@ typedef struct {
 
 static const rb_iseq_t *
 method_for_self(VALUE name, VALUE arg, rb_insn_func_t func,
-		VALUE (*build)(rb_iseq_t *, LINK_ANCHOR *const, VALUE))
+                void (*build)(rb_iseq_t *, LINK_ANCHOR *, const void *))
 {
     VALUE path, realpath;
     accessor_args acc;
@@ -8986,13 +9209,15 @@ method_for_self(VALUE name, VALUE arg, rb_insn_func_t func,
     acc.arg = arg;
     acc.func = func;
     acc.line = caller_location(&path, &realpath);
-    return rb_iseq_new_ifunc(IFUNC_NEW(build, (VALUE)&acc, 0),
+    struct rb_iseq_new_with_callback_callback_func *ifunc =
+        rb_iseq_new_with_callback_new_callback(build, &acc);
+    return rb_iseq_new_with_callback(ifunc,
 			     rb_sym2str(name), path, realpath,
 			     INT2FIX(acc.line), 0, ISEQ_TYPE_METHOD, 0);
 }
 
-static VALUE
-for_self_aref(rb_iseq_t *iseq, LINK_ANCHOR *const ret, VALUE a)
+static void
+for_self_aref(rb_iseq_t *iseq, LINK_ANCHOR *ret, const void *a)
 {
     const accessor_args *const args = (void *)a;
     const int line = args->line;
@@ -9004,11 +9229,10 @@ for_self_aref(rb_iseq_t *iseq, LINK_ANCHOR *const ret, VALUE a)
 
     ADD_INSN1(ret, line, putobject, args->arg);
     ADD_INSN1(ret, line, opt_call_c_function, (VALUE)args->func);
-    return Qnil;
 }
 
-static VALUE
-for_self_aset(rb_iseq_t *iseq, LINK_ANCHOR *const ret, VALUE a)
+static void
+for_self_aset(rb_iseq_t *iseq, LINK_ANCHOR *ret, const void *a)
 {
     const accessor_args *const args = (void *)a;
     const int line = args->line;
@@ -9023,7 +9247,6 @@ for_self_aset(rb_iseq_t *iseq, LINK_ANCHOR *const ret, VALUE a)
     ADD_INSN1(ret, line, putobject, args->arg);
     ADD_INSN1(ret, line, opt_call_c_function, (VALUE)args->func);
     ADD_INSN(ret, line, pop);
-    return Qnil;
 }
 
 /*
@@ -9050,8 +9273,20 @@ rb_method_for_self_aset(VALUE name, VALUE arg, rb_insn_func_t func)
 #define IBF_ISEQ_DEBUG 0
 #endif
 
+#ifndef IBF_ISEQ_ENABLE_LOCAL_BUFFER
+#define IBF_ISEQ_ENABLE_LOCAL_BUFFER 0
+#endif
+
 typedef unsigned int ibf_offset_t;
 #define IBF_OFFSET(ptr) ((ibf_offset_t)(VALUE)(ptr))
+
+#define IBF_MAJOR_VERSION ISEQ_MAJOR_VERSION
+#if RUBY_DEVEL
+#define IBF_DEVEL_VERSION 2
+#define IBF_MINOR_VERSION (ISEQ_MINOR_VERSION * 10000 + IBF_DEVEL_VERSION)
+#else
+#define IBF_MINOR_VERSION ISEQ_MINOR_VERSION
+#endif
 
 struct ibf_header {
     char magic[4]; /* YARB */
@@ -9061,39 +9296,48 @@ struct ibf_header {
     unsigned int extra_size;
 
     unsigned int iseq_list_size;
-    unsigned int id_list_size;
-    unsigned int object_list_size;
-
+    unsigned int global_object_list_size;
     ibf_offset_t iseq_list_offset;
-    ibf_offset_t id_list_offset;
-    ibf_offset_t object_list_offset;
+    ibf_offset_t global_object_list_offset;
+};
+
+struct ibf_dump_buffer {
+    VALUE str;
+    VALUE obj_list;     /* [objs] */
 };
 
 struct ibf_dump {
-    VALUE str;
-    VALUE iseq_list;      /* [iseq0 offset, ...] */
-    VALUE obj_list;       /* [objs] */
+    VALUE iseq_list;      /* [iseqs] */
     st_table *iseq_table; /* iseq -> iseq number */
-    st_table *id_table;   /* id -> id number */
+    struct ibf_dump_buffer global_buffer;
+    struct ibf_dump_buffer *current_buffer;
 };
 
 rb_iseq_t * iseq_alloc(void);
 
+struct ibf_load_buffer {
+    const char *buff;
+    ibf_offset_t size;
+
+    VALUE obj_list; /* [obj0, ...] */
+    unsigned int obj_list_size;
+    ibf_offset_t obj_list_offset;
+};
+
 struct ibf_load {
-    const RUBY_ALIGNAS(SIZEOF_VALUE) char *buff;
     const struct ibf_header *header;
-    ID *id_list;     /* [id0, ...] */
-    VALUE iseq_list; /* [iseq0, ...] */
-    VALUE obj_list;  /* [obj0, ...] */
+    VALUE iseq_list;       /* [iseq0, ...] */
+    struct ibf_load_buffer global_buffer;
     VALUE loader_obj;
-    VALUE str;
     rb_iseq_t *iseq;
+    VALUE str;
+    struct ibf_load_buffer *current_buffer;
 };
 
 static ibf_offset_t
 ibf_dump_pos(struct ibf_dump *dump)
 {
-    long pos = RSTRING_LEN(dump->str);
+    long pos = RSTRING_LEN(dump->current_buffer->str);
 #if SIZEOF_LONG > SIZEOF_INT
     if (pos >= UINT_MAX) {
         rb_raise(rb_eRuntimeError, "dump size exceeds");
@@ -9115,9 +9359,9 @@ ibf_dump_align(struct ibf_dump *dump, size_t align)
         }
 #endif
         for (; size > sizeof(padding); size -= sizeof(padding)) {
-            rb_str_cat(dump->str, padding, sizeof(padding));
+            rb_str_cat(dump->current_buffer->str, padding, sizeof(padding));
         }
-        rb_str_cat(dump->str, padding, size);
+        rb_str_cat(dump->current_buffer->str, padding, size);
     }
 }
 
@@ -9125,26 +9369,33 @@ static ibf_offset_t
 ibf_dump_write(struct ibf_dump *dump, const void *buff, unsigned long size)
 {
     ibf_offset_t pos = ibf_dump_pos(dump);
-    rb_str_cat(dump->str, (const char *)buff, size);
+    rb_str_cat(dump->current_buffer->str, (const char *)buff, size);
     /* TODO: overflow check */
     return pos;
+}
+
+static ibf_offset_t
+ibf_dump_write_byte(struct ibf_dump *dump, unsigned char byte)
+{
+    return ibf_dump_write(dump, &byte, sizeof(unsigned char));
 }
 
 static void
 ibf_dump_overwrite(struct ibf_dump *dump, void *buff, unsigned int size, long offset)
 {
-    VALUE str = dump->str;
+    VALUE str = dump->current_buffer->str;
     char *ptr = RSTRING_PTR(str);
     if ((unsigned long)(size + offset) > (unsigned long)RSTRING_LEN(str))
-	rb_bug("ibf_dump_overwrite: overflow");
+        rb_bug("ibf_dump_overwrite: overflow");
     memcpy(ptr + offset, buff, size);
 }
 
 static void *
-ibf_load_alloc(const struct ibf_load *load, ibf_offset_t offset, int size)
+ibf_load_alloc(const struct ibf_load *load, ibf_offset_t offset, size_t x, size_t y)
 {
-    void *buff = ruby_xmalloc(size);
-    memcpy(buff, load->buff + offset, size);
+    void *buff = ruby_xmalloc2(x, y);
+    size_t size = x * y;
+    memcpy(buff, load->current_buffer->buff + offset, size);
     return buff;
 }
 
@@ -9153,7 +9404,7 @@ ibf_load_alloc(const struct ibf_load *load, ibf_offset_t offset, int size)
 #define IBF_W(b, type, n) (IBF_W_ALIGN(type), (type *)(VALUE)IBF_WP(b, type, n))
 #define IBF_WV(variable)   ibf_dump_write(dump, &(variable), sizeof(variable))
 #define IBF_WP(b, type, n) ibf_dump_write(dump, (b), sizeof(type) * (n))
-#define IBF_R(val, type, n) (type *)ibf_load_alloc(load, IBF_OFFSET(val), sizeof(type) * (n))
+#define IBF_R(val, type, n) (type *)ibf_load_alloc(load, IBF_OFFSET(val), sizeof(type), (n))
 #define IBF_ZERO(variable) memset(&(variable), 0, sizeof(variable))
 
 static int
@@ -9162,10 +9413,10 @@ ibf_table_lookup(struct st_table *table, st_data_t key)
     st_data_t val;
 
     if (st_lookup(table, key, &val)) {
-	return (int)val;
+        return (int)val;
     }
     else {
-	return -1;
+        return -1;
     }
 }
 
@@ -9175,8 +9426,8 @@ ibf_table_index(struct st_table *table, st_data_t key)
     int index = ibf_table_lookup(table, key);
 
     if (index < 0) { /* not found */
-	index = (int)table->num_entries;
-	st_insert(table, key, (st_data_t)index);
+        index = (int)table->num_entries;
+        st_insert(table, key, (st_data_t)index);
     }
 
     return index;
@@ -9184,47 +9435,50 @@ ibf_table_index(struct st_table *table, st_data_t key)
 
 /* dump/load generic */
 
+static void ibf_dump_object_list(struct ibf_dump *dump, ibf_offset_t *obj_list_offset, unsigned int *obj_list_size);
+
 static VALUE ibf_load_object(const struct ibf_load *load, VALUE object_index);
 static rb_iseq_t *ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq);
 
 static VALUE
+ibf_dump_object_list_new(void)
+{
+    VALUE obj_list = rb_ary_tmp_new(1);
+    rb_ary_push(obj_list, Qnil); /* 0th is nil */
+
+    return obj_list;
+}
+
+static VALUE
 ibf_dump_object(struct ibf_dump *dump, VALUE obj)
 {
-    long index = RARRAY_LEN(dump->obj_list);
+    VALUE obj_list = dump->current_buffer->obj_list;
+    long index = RARRAY_LEN(obj_list);
     long i;
     for (i=0; i<index; i++) {
-	if (RARRAY_AREF(dump->obj_list, i) == obj) return (VALUE)i; /* dedup */
+        if (RARRAY_AREF(obj_list, i) == obj) return (VALUE)i; /* dedup */
     }
-    rb_ary_push(dump->obj_list, obj);
+    rb_ary_push(obj_list, obj);
     return (VALUE)index;
 }
 
 static VALUE
 ibf_dump_id(struct ibf_dump *dump, ID id)
 {
-    return (VALUE)ibf_table_index(dump->id_table, (st_data_t)id);
+    if (id == 0 || rb_id2name(id) == NULL) {
+        return 0;
+    }
+    return ibf_dump_object(dump, rb_id2sym(id));
 }
 
 static ID
 ibf_load_id(const struct ibf_load *load, const ID id_index)
 {
-    ID id;
-
     if (id_index == 0) {
-	id = 0;
+        return 0;
     }
-    else {
-	id = load->id_list[(long)id_index];
-
-	if (id == 0) {
-	    long *indices = (long *)(load->buff + load->header->id_list_offset);
-	    VALUE str = ibf_load_object(load, indices[id_index]);
-	    id = NIL_P(str) ? 0 : rb_intern_str(str); /* str == nil -> internal junk id */
-	    load->id_list[(long)id_index] = id;
-	}
-    }
-
-    return id;
+    VALUE sym = ibf_load_object(load, id_index);
+    return rb_sym2id(sym);
 }
 
 /* dump/load: code */
@@ -9237,19 +9491,19 @@ ibf_dump_callinfo(struct ibf_dump *dump, const struct rb_call_info *ci)
 
 static ibf_offset_t ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq);
 
-static rb_iseq_t *
+static int
 ibf_dump_iseq(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
     if (iseq == NULL) {
-	return (rb_iseq_t *)-1;
+        return -1;
     }
     else {
-	int iseq_index = ibf_table_lookup(dump->iseq_table, (st_data_t)iseq);
-	if (iseq_index < 0) {
-	    iseq_index = ibf_table_index(dump->iseq_table, (st_data_t)iseq);
-	    rb_ary_store(dump->iseq_list, iseq_index, LONG2NUM(ibf_dump_iseq_each(dump, rb_iseq_check(iseq))));
-	}
-	return (rb_iseq_t *)(VALUE)iseq_index;
+        int iseq_index = ibf_table_lookup(dump->iseq_table, (st_data_t)iseq);
+        if (iseq_index < 0) {
+            iseq_index = ibf_table_index(dump->iseq_table, (st_data_t)iseq);
+            rb_ary_push(dump->iseq_list, (VALUE)iseq);
+        }
+        return iseq_index;
     }
 }
 
@@ -9266,78 +9520,165 @@ ibf_load_gentry(const struct ibf_load *load, const struct rb_global_entry *entry
     return (VALUE)rb_global_entry(gid);
 }
 
-static VALUE *
+static unsigned char
+ibf_load_byte(const struct ibf_load *load, ibf_offset_t *offset)
+{
+    if (*offset >= load->current_buffer->size) { rb_raise(rb_eRuntimeError, "invalid bytecode"); }
+    return (unsigned char)load->current_buffer->buff[(*offset)++];
+}
+
+/*
+ * Small uint serialization
+ * 0x00000000_00000000 - 0x00000000_0000007f: 1byte | XXXX XXX1 |
+ * 0x00000000_00000080 - 0x00000000_00003fff: 2byte | XXXX XX10 | XXXX XXXX |
+ * 0x00000000_00004000 - 0x00000000_001fffff: 3byte | XXXX X100 | XXXX XXXX | XXXX XXXX |
+ * 0x00000000_00020000 - 0x00000000_0fffffff: 4byte | XXXX 1000 | XXXX XXXX | XXXX XXXX | XXXX XXXX |
+ * ...
+ * 0x00010000_00000000 - 0x00ffffff_ffffffff: 8byte | 1000 0000 | XXXX XXXX | XXXX XXXX | XXXX XXXX | XXXX XXXX | XXXX XXXX | XXXX XXXX | XXXX XXXX |
+ * 0x01000000_00000000 - 0xffffffff_ffffffff: 9byte | 0000 0000 | XXXX XXXX | XXXX XXXX | XXXX XXXX | XXXX XXXX | XXXX XXXX | XXXX XXXX | XXXX XXXX | XXXX XXXX |
+ */
+static void
+ibf_dump_write_small_value(struct ibf_dump *dump, VALUE x)
+{
+    if (sizeof(VALUE) > 8 || CHAR_BIT != 8) {
+        ibf_dump_write(dump, &x, sizeof(VALUE));
+    }
+
+    enum { max_byte_length = sizeof(VALUE) + 1 };
+
+    unsigned char bytes[max_byte_length];
+    ibf_offset_t n;
+
+    for (n = 0; n < sizeof(VALUE) && (x >> (7 - n)); n++, x >>= 8) {
+        bytes[max_byte_length - 1 - n] = (unsigned char)x;
+    }
+
+    x <<= 1;
+    x |= 1;
+    x <<= n;
+    bytes[max_byte_length - 1 - n] = (unsigned char)x;
+    n++;
+
+    ibf_dump_write(dump, bytes + max_byte_length - n, n);
+}
+
+static VALUE
+ibf_load_small_value(const struct ibf_load *load, ibf_offset_t *offset)
+{
+    if (sizeof(VALUE) > 8 || CHAR_BIT != 8) {
+        union { char s[sizeof(VALUE)]; VALUE v; } x;
+
+        memcpy(x.s, load->current_buffer->buff + *offset, sizeof(VALUE));
+        *offset += sizeof(VALUE);
+
+        return x.v;
+    }
+
+    enum { max_byte_length = sizeof(VALUE) + 1 };
+
+    const unsigned char *buffer = (const unsigned char *)load->current_buffer->buff;
+    const unsigned char c = buffer[*offset];
+
+    ibf_offset_t n =
+        c & 1 ? 1 :
+        c == 0 ? 9 : ntz_int32(c) + 1;
+    VALUE x = (VALUE)c >> n;
+
+    if (*offset + n > load->current_buffer->size) {
+        rb_raise(rb_eRuntimeError, "invalid byte sequence");
+    }
+
+    ibf_offset_t i;
+    for (i = 1; i < n; i++) {
+        x <<= 8;
+        x |= (VALUE)buffer[*offset + i];
+    }
+
+    *offset += n;
+    return x;
+}
+
+static ibf_offset_t
 ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
     const struct rb_iseq_constant_body *const body = iseq->body;
     const int iseq_size = body->iseq_size;
     int code_index;
-    VALUE *code;
     const VALUE *orig_code = rb_iseq_original_iseq(iseq);
 
-    code = ALLOCA_N(VALUE, iseq_size);
+    ibf_offset_t offset = ibf_dump_pos(dump);
 
     for (code_index=0; code_index<iseq_size;) {
-	const VALUE insn = orig_code[code_index];
-	const char *types = insn_op_types(insn);
-	int op_index;
+        const VALUE insn = orig_code[code_index++];
+        const char *types = insn_op_types(insn);
+        int op_index;
 
-	code[code_index++] = (VALUE)insn;
+        /* opcode */
+        if (insn >= 0x100) { rb_raise(rb_eRuntimeError, "invalid instruction"); }
+        ibf_dump_write_small_value(dump, insn);
 
-	for (op_index=0; types[op_index]; op_index++, code_index++) {
-	    VALUE op = orig_code[code_index];
-	    switch (types[op_index]) {
-	      case TS_CDHASH:
-	      case TS_VALUE:
-		code[code_index] = ibf_dump_object(dump, op);
-		break;
-	      case TS_ISEQ:
-		code[code_index] = (VALUE)ibf_dump_iseq(dump, (const rb_iseq_t *)op);
-		break;
-	      case TS_IC:
-	      case TS_ISE:
-		{
-		    unsigned int i;
-		    for (i=0; i<body->is_size; i++) {
-			if (op == (VALUE)&body->is_entries[i]) {
-			    break;
-			}
-		    }
-		    code[code_index] = i;
-		}
-		break;
-	      case TS_CALLINFO:
-		code[code_index] = ibf_dump_callinfo(dump, (const struct rb_call_info *)op);
-		break;
-	      case TS_CALLCACHE:
-		code[code_index] = 0;
-		break;
-	      case TS_ID:
-		code[code_index] = ibf_dump_id(dump, (ID)op);
-		break;
-	      case TS_GENTRY:
-		code[code_index] = ibf_dump_gentry(dump, (const struct rb_global_entry *)op);
-		break;
-	      case TS_FUNCPTR:
-		rb_raise(rb_eRuntimeError, "TS_FUNCPTR is not supported");
-		break;
-	      default:
-		code[code_index] = op;
-		break;
-	    }
-	}
-	assert(insn_len(insn) == op_index+1);
+        /* operands */
+        for (op_index=0; types[op_index]; op_index++, code_index++) {
+            VALUE op = orig_code[code_index];
+            switch (types[op_index]) {
+              case TS_CDHASH:
+              case TS_VALUE:
+                ibf_dump_write_small_value(dump, ibf_dump_object(dump, op));
+                break;
+              case TS_ISEQ:
+                {
+                    VALUE index = (VALUE)ibf_dump_iseq(dump, (const rb_iseq_t *)op);
+                    ibf_dump_write_small_value(dump, index);
+                }
+                break;
+              case TS_IC:
+              case TS_ISE:
+                {
+                    unsigned int i;
+                    for (i=0; i<body->is_size; i++) {
+                        if (op == (VALUE)&body->is_entries[i]) {
+                            break;
+                        }
+                    }
+                    ibf_dump_write_small_value(dump, (VALUE)i);
+                }
+                break;
+              case TS_CALLINFO:
+                {
+                    VALUE callinfo = ibf_dump_callinfo(dump, (const struct rb_call_info *)op);
+                    /* ibf_dump_callinfo() always returns either Qtrue or Qfalse */
+                    ibf_dump_write_byte(dump, callinfo == Qtrue);
+                }
+                break;
+              case TS_CALLCACHE:
+                /* do nothing */
+                break;
+              case TS_ID:
+                ibf_dump_write_small_value(dump, ibf_dump_id(dump, (ID)op));
+                break;
+              case TS_GENTRY:
+                ibf_dump_write_small_value(dump, ibf_dump_gentry(dump, (const struct rb_global_entry *)op));
+                break;
+              case TS_FUNCPTR:
+                rb_raise(rb_eRuntimeError, "TS_FUNCPTR is not supported");
+                break;
+              default:
+                ibf_dump_write_small_value(dump, op);
+                break;
+            }
+        }
+        assert(insn_len(insn) == op_index+1);
     }
 
-    return IBF_W(code, VALUE, iseq_size);
+    return offset;
 }
 
 static VALUE *
-ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, const struct rb_iseq_constant_body *body)
+ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, ibf_offset_t bytecode_offset, ibf_offset_t bytecode_size, unsigned int iseq_size)
 {
-    const int iseq_size = body->iseq_size;
-    int code_index;
-    VALUE *code = IBF_R(body->iseq_encoded, VALUE, iseq_size);
+    unsigned int code_index;
+    ibf_offset_t reading_pos = bytecode_offset;
+    VALUE *code = ALLOC_N(VALUE, iseq_size);
 
     struct rb_iseq_constant_body *load_body = iseq->body;
     struct rb_call_info *ci_entries = load_body->ci_entries;
@@ -9345,30 +9686,30 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, const struct r
     struct rb_call_cache *cc_entries = load_body->cc_entries;
     union iseq_inline_storage_entry *is_entries = load_body->is_entries;
 
-    load_body->iseq_encoded = code;
-    load_body->iseq_size = 0;
     for (code_index=0; code_index<iseq_size;) {
-	const VALUE insn = code[code_index++];
-	const char *types = insn_op_types(insn);
+        /* opcode */
+        const VALUE insn = code[code_index++] = ibf_load_small_value(load, &reading_pos);
+        const char *types = insn_op_types(insn);
         int op_index;
 
-	for (op_index=0; types[op_index]; op_index++, code_index++) {
-	    VALUE op = code[code_index];
-
-	    switch (types[op_index]) {
-	      case TS_CDHASH:
-	      case TS_VALUE:
-	        {
-		    VALUE v = ibf_load_object(load, op);
-		    code[code_index] = v;
-		    if (!SPECIAL_CONST_P(v)) {
-			RB_OBJ_WRITTEN(iseq, Qundef, v);
-			FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
-		    }
-		    break;
-		}
-	      case TS_ISEQ:
+        /* operands */
+        for (op_index=0; types[op_index]; op_index++, code_index++) {
+            switch (types[op_index]) {
+              case TS_CDHASH:
+              case TS_VALUE:
                 {
+                    VALUE op = ibf_load_small_value(load, &reading_pos);
+                    VALUE v = ibf_load_object(load, op);
+                    code[code_index] = v;
+                    if (!SPECIAL_CONST_P(v)) {
+                        RB_OBJ_WRITTEN(iseq, Qundef, v);
+                        FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
+                    }
+                    break;
+                }
+              case TS_ISEQ:
+                {
+                    VALUE op = (VALUE)ibf_load_small_value(load, &reading_pos);
                     VALUE v = (VALUE)ibf_load_iseq(load, (const rb_iseq_t *)op);
                     code[code_index] = v;
                     if (!SPECIAL_CONST_P(v)) {
@@ -9377,145 +9718,196 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, const struct r
                     }
                     break;
                 }
-	      case TS_ISE:
-		FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
+              case TS_ISE:
+                FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
                 /* fall through */
-	      case TS_IC:
-		code[code_index] = (VALUE)&is_entries[(int)op];
-		break;
-	      case TS_CALLINFO:
-		code[code_index] = op ? (VALUE)ci_kw_entries++ : (VALUE)ci_entries++; /* op is Qtrue (kw) or Qfalse (!kw) */
-		break;
-	      case TS_CALLCACHE:
-		code[code_index] = (VALUE)cc_entries++;
-		break;
-	      case TS_ID:
-		code[code_index] = ibf_load_id(load, (ID)op);
-		break;
-	      case TS_GENTRY:
-		code[code_index] = ibf_load_gentry(load, (const struct rb_global_entry *)op);
-		break;
-	      case TS_FUNCPTR:
-		rb_raise(rb_eRuntimeError, "TS_FUNCPTR is not supported");
-		break;
-	      default:
-		/* code[code_index] = op; */
-		continue;
-	    }
-	}
-	if (insn_len(insn) != op_index+1) {
-	    rb_raise(rb_eRuntimeError, "operand size mismatch");
-	}
+              case TS_IC:
+                {
+                    VALUE op = ibf_load_small_value(load, &reading_pos);
+                    code[code_index] = (VALUE)&is_entries[op];
+                }
+                break;
+              case TS_CALLINFO:
+                {
+                    unsigned char op = ibf_load_byte(load, &reading_pos);
+                    code[code_index] = op ? (VALUE)ci_kw_entries++ : (VALUE)ci_entries++; /* op is 1 (kw) or 0 (!kw) */
+                }
+                break;
+              case TS_CALLCACHE:
+                code[code_index] = (VALUE)cc_entries++;
+                break;
+              case TS_ID:
+                {
+                    VALUE op = ibf_load_small_value(load, &reading_pos);
+                    code[code_index] = ibf_load_id(load, (ID)(VALUE)op);
+                }
+                break;
+              case TS_GENTRY:
+                {
+                    VALUE op = ibf_load_small_value(load, &reading_pos);
+                    code[code_index] = ibf_load_gentry(load, (const struct rb_global_entry *)(VALUE)op);
+                }
+                break;
+              case TS_FUNCPTR:
+                rb_raise(rb_eRuntimeError, "TS_FUNCPTR is not supported");
+                break;
+              default:
+                code[code_index] = ibf_load_small_value(load, &reading_pos);
+                continue;
+            }
+        }
+        if (insn_len(insn) != op_index+1) {
+            rb_raise(rb_eRuntimeError, "operand size mismatch");
+        }
     }
+    load_body->iseq_encoded = code;
     load_body->iseq_size = code_index;
 
+    assert(code_index == iseq_size);
+    assert(reading_pos == bytecode_offset + bytecode_size);
     return code;
 }
 
-static VALUE *
+static ibf_offset_t
 ibf_dump_param_opt_table(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
     int opt_num = iseq->body->param.opt_num;
 
     if (opt_num > 0) {
-	return IBF_W(iseq->body->param.opt_table, VALUE, opt_num + 1);
+        IBF_W_ALIGN(VALUE);
+        return ibf_dump_write(dump, iseq->body->param.opt_table, sizeof(VALUE) * (opt_num + 1));
     }
     else {
-	return NULL;
+        return ibf_dump_pos(dump);
     }
 }
 
 static VALUE *
-ibf_load_param_opt_table(const struct ibf_load *load, const struct rb_iseq_constant_body *body)
+ibf_load_param_opt_table(const struct ibf_load *load, ibf_offset_t opt_table_offset, int opt_num)
 {
-    int opt_num = body->param.opt_num;
-
     if (opt_num > 0) {
-	ibf_offset_t offset = IBF_OFFSET(body->param.opt_table);
-	VALUE *table = ALLOC_N(VALUE, opt_num+1);
-	MEMCPY(table, load->buff + offset, VALUE, opt_num+1);
-	return table;
+        VALUE *table = ALLOC_N(VALUE, opt_num+1);
+        MEMCPY(table, load->current_buffer->buff + opt_table_offset, VALUE, opt_num+1);
+        return table;
     }
     else {
-	return NULL;
+        return NULL;
     }
 }
 
-static struct rb_iseq_param_keyword *
+static ibf_offset_t
 ibf_dump_param_keyword(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
     const struct rb_iseq_param_keyword *kw = iseq->body->param.keyword;
 
     if (kw) {
-	struct rb_iseq_param_keyword dump_kw = *kw;
-	int dv_num = kw->num - kw->required_num;
-	ID *ids = kw->num > 0 ? ALLOCA_N(ID, kw->num) : NULL;
-	VALUE *dvs = dv_num > 0 ? ALLOCA_N(VALUE, dv_num) : NULL;
-	int i;
+        struct rb_iseq_param_keyword dump_kw = *kw;
+        int dv_num = kw->num - kw->required_num;
+        ID *ids = kw->num > 0 ? ALLOCA_N(ID, kw->num) : NULL;
+        VALUE *dvs = dv_num > 0 ? ALLOCA_N(VALUE, dv_num) : NULL;
+        int i;
 
-	for (i=0; i<kw->num; i++) ids[i] = (ID)ibf_dump_id(dump, kw->table[i]);
-	for (i=0; i<dv_num; i++) dvs[i] = (VALUE)ibf_dump_object(dump, kw->default_values[i]);
+        for (i=0; i<kw->num; i++) ids[i] = (ID)ibf_dump_id(dump, kw->table[i]);
+        for (i=0; i<dv_num; i++) dvs[i] = (VALUE)ibf_dump_object(dump, kw->default_values[i]);
 
-	dump_kw.table = IBF_W(ids, ID, kw->num);
-	dump_kw.default_values = IBF_W(dvs, VALUE, dv_num);
-	return IBF_W(&dump_kw, struct rb_iseq_param_keyword, 1);
+        dump_kw.table = IBF_W(ids, ID, kw->num);
+        dump_kw.default_values = IBF_W(dvs, VALUE, dv_num);
+        IBF_W_ALIGN(struct rb_iseq_param_keyword);
+        return ibf_dump_write(dump, &dump_kw, sizeof(struct rb_iseq_param_keyword) * 1);
     }
     else {
-	return NULL;
+        return 0;
     }
 }
 
 static const struct rb_iseq_param_keyword *
-ibf_load_param_keyword(const struct ibf_load *load, const struct rb_iseq_constant_body *body)
+ibf_load_param_keyword(const struct ibf_load *load, ibf_offset_t param_keyword_offset)
 {
-    if (body->param.keyword) {
-	struct rb_iseq_param_keyword *kw = IBF_R(body->param.keyword, struct rb_iseq_param_keyword, 1);
-	ID *ids = IBF_R(kw->table, ID, kw->num);
-	int dv_num = kw->num - kw->required_num;
-	VALUE *dvs = IBF_R(kw->default_values, VALUE, dv_num);
-	int i;
+    if (param_keyword_offset) {
+        struct rb_iseq_param_keyword *kw = IBF_R(param_keyword_offset, struct rb_iseq_param_keyword, 1);
+        ID *ids = IBF_R(kw->table, ID, kw->num);
+        int dv_num = kw->num - kw->required_num;
+        VALUE *dvs = IBF_R(kw->default_values, VALUE, dv_num);
+        int i;
 
-	for (i=0; i<kw->num; i++) {
-	    ids[i] = ibf_load_id(load, ids[i]);
-	}
-	for (i=0; i<dv_num; i++) {
-	    dvs[i] = ibf_load_object(load, dvs[i]);
-	}
+        for (i=0; i<kw->num; i++) {
+            ids[i] = ibf_load_id(load, ids[i]);
+        }
+        for (i=0; i<dv_num; i++) {
+            dvs[i] = ibf_load_object(load, dvs[i]);
+        }
 
-	kw->table = ids;
-	kw->default_values = dvs;
-	return kw;
+        kw->table = ids;
+        kw->default_values = dvs;
+        return kw;
     }
     else {
-	return NULL;
+        return NULL;
     }
 }
 
-static struct iseq_insn_info_entry *
+static ibf_offset_t
 ibf_dump_insns_info_body(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
-    return IBF_W(iseq->body->insns_info.body, struct iseq_insn_info_entry, iseq->body->insns_info.size);
+    ibf_offset_t offset = ibf_dump_pos(dump);
+    const struct iseq_insn_info_entry *entries = iseq->body->insns_info.body;
+
+    unsigned int i;
+    for (i = 0; i < iseq->body->insns_info.size; i++) {
+        ibf_dump_write_small_value(dump, entries[i].line_no);
+        ibf_dump_write_small_value(dump, entries[i].events);
+    }
+
+    return offset;
 }
 
 static struct iseq_insn_info_entry *
-ibf_load_insns_info_body(const struct ibf_load *load, const struct rb_iseq_constant_body *body)
+ibf_load_insns_info_body(const struct ibf_load *load, ibf_offset_t body_offset, unsigned int size)
 {
-    return IBF_R(body->insns_info.body, struct iseq_insn_info_entry, body->insns_info.size);
+    ibf_offset_t reading_pos = body_offset;
+    struct iseq_insn_info_entry *entries = ALLOC_N(struct iseq_insn_info_entry, size);
+
+    unsigned int i;
+    for (i = 0; i < size; i++) {
+        entries[i].line_no = (int)ibf_load_small_value(load, &reading_pos);
+        entries[i].events = (rb_event_flag_t)ibf_load_small_value(load, &reading_pos);
+    }
+
+    return entries;
+}
+
+static ibf_offset_t
+ibf_dump_insns_info_positions(struct ibf_dump *dump, const unsigned int *positions, unsigned int size)
+{
+    ibf_offset_t offset = ibf_dump_pos(dump);
+
+    unsigned int last = 0;
+    unsigned int i;
+    for (i = 0; i < size; i++) {
+        ibf_dump_write_small_value(dump, positions[i] - last);
+        last = positions[i];
+    }
+
+    return offset;
 }
 
 static unsigned int *
-ibf_dump_insns_info_positions(struct ibf_dump *dump, const struct rb_iseq_constant_body *body)
+ibf_load_insns_info_positions(const struct ibf_load *load, ibf_offset_t positions_offset, unsigned int size)
 {
-    return IBF_W(body->insns_info.positions, unsigned int, body->insns_info.size);
+    ibf_offset_t reading_pos = positions_offset;
+    unsigned int *positions = ALLOC_N(unsigned int, size);
+
+    unsigned int last = 0;
+    unsigned int i;
+    for (i = 0; i < size; i++) {
+        positions[i] = last + (unsigned int)ibf_load_small_value(load, &reading_pos);
+        last = positions[i];
+    }
+
+    return positions;
 }
 
-static unsigned int *
-ibf_load_insns_info_positions(const struct ibf_load *load, const struct rb_iseq_constant_body *body)
-{
-    return IBF_R(body->insns_info.positions, unsigned int, body->insns_info.size);
-}
-
-static ID *
+static ibf_offset_t
 ibf_dump_local_table(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
     const struct rb_iseq_constant_body *const body = iseq->body;
@@ -9524,132 +9916,174 @@ ibf_dump_local_table(struct ibf_dump *dump, const rb_iseq_t *iseq)
     int i;
 
     for (i=0; i<size; i++) {
-	table[i] = ibf_dump_id(dump, body->local_table[i]);
+        table[i] = ibf_dump_id(dump, body->local_table[i]);
     }
 
-    return IBF_W(table, ID, size);
+    IBF_W_ALIGN(ID);
+    return ibf_dump_write(dump, table, sizeof(ID) * size);
 }
 
 static ID *
-ibf_load_local_table(const struct ibf_load *load, const struct rb_iseq_constant_body *body)
+ibf_load_local_table(const struct ibf_load *load, ibf_offset_t local_table_offset, int size)
 {
-    const int size = body->local_table_size;
-
     if (size > 0) {
-	ID *table = IBF_R(body->local_table, ID, size);
-	int i;
+        ID *table = IBF_R(local_table_offset, ID, size);
+        int i;
 
-	for (i=0; i<size; i++) {
-	    table[i] = ibf_load_id(load, table[i]);
-	}
-	return table;
+        for (i=0; i<size; i++) {
+            table[i] = ibf_load_id(load, table[i]);
+        }
+        return table;
     }
     else {
-	return NULL;
+        return NULL;
     }
 }
 
-static struct iseq_catch_table *
+static ibf_offset_t
 ibf_dump_catch_table(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
     const struct iseq_catch_table *table = iseq->body->catch_table;
 
     if (table) {
-	int byte_size = iseq_catch_table_bytes(iseq->body->catch_table->size);
-	struct iseq_catch_table *dump_table = (struct iseq_catch_table *)ALLOCA_N(char, byte_size);
-	unsigned int i;
-	dump_table->size = table->size;
-	for (i=0; i<table->size; i++) {
-	    dump_table->entries[i] = table->entries[i];
-	    dump_table->entries[i].iseq = ibf_dump_iseq(dump, table->entries[i].iseq);
-	}
-	return (struct iseq_catch_table *)(VALUE)ibf_dump_write(dump, dump_table, byte_size);
+        int *iseq_indices = ALLOCA_N(int, table->size);
+        unsigned int i;
+
+        for (i=0; i<table->size; i++) {
+            iseq_indices[i] = ibf_dump_iseq(dump, table->entries[i].iseq);
+        }
+
+        const ibf_offset_t offset = ibf_dump_pos(dump);
+
+        for (i=0; i<table->size; i++) {
+            ibf_dump_write_small_value(dump, iseq_indices[i]);
+            ibf_dump_write_small_value(dump, table->entries[i].type);
+            ibf_dump_write_small_value(dump, table->entries[i].start);
+            ibf_dump_write_small_value(dump, table->entries[i].end);
+            ibf_dump_write_small_value(dump, table->entries[i].cont);
+            ibf_dump_write_small_value(dump, table->entries[i].sp);
+        }
+        return offset;
     }
     else {
-	return NULL;
+        return ibf_dump_pos(dump);
     }
 }
 
 static struct iseq_catch_table *
-ibf_load_catch_table(const struct ibf_load *load, const struct rb_iseq_constant_body *body)
+ibf_load_catch_table(const struct ibf_load *load, ibf_offset_t catch_table_offset, unsigned int size)
 {
-    if (body->catch_table) {
-	struct iseq_catch_table *table;
-	unsigned int i;
-	unsigned int size;
-	size = *(unsigned int *)(load->buff + IBF_OFFSET(body->catch_table));
-	table = ibf_load_alloc(load, IBF_OFFSET(body->catch_table), iseq_catch_table_bytes(size));
-	for (i=0; i<size; i++) {
-	    table->entries[i].iseq = ibf_load_iseq(load, table->entries[i].iseq);
-	}
-	return table;
+    if (size) {
+        struct iseq_catch_table *table = ruby_xmalloc(iseq_catch_table_bytes(size));
+        table->size = size;
+
+        ibf_offset_t reading_pos = catch_table_offset;
+
+        unsigned int i;
+        for (i=0; i<table->size; i++) {
+            int iseq_index = (int)ibf_load_small_value(load, &reading_pos);
+            table->entries[i].type = (enum catch_type)ibf_load_small_value(load, &reading_pos);
+            table->entries[i].start = (unsigned int)ibf_load_small_value(load, &reading_pos);
+            table->entries[i].end = (unsigned int)ibf_load_small_value(load, &reading_pos);
+            table->entries[i].cont = (unsigned int)ibf_load_small_value(load, &reading_pos);
+            table->entries[i].sp = (unsigned int)ibf_load_small_value(load, &reading_pos);
+
+            table->entries[i].iseq = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)iseq_index);
+        }
+        return table;
     }
     else {
-	return NULL;
+        return NULL;
     }
 }
 
-static struct rb_call_info *
+static ibf_offset_t
 ibf_dump_ci_entries(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
     const struct rb_iseq_constant_body *const body = iseq->body;
     const unsigned int ci_size = body->ci_size;
     const unsigned int ci_kw_size = body->ci_kw_size;
     const struct rb_call_info *ci_entries = body->ci_entries;
-    struct rb_call_info *dump_ci_entries;
-    struct rb_call_info_with_kwarg *dump_ci_kw_entries;
-    int byte_size = ci_size * sizeof(struct rb_call_info) +
-                    ci_kw_size * sizeof(struct rb_call_info_with_kwarg);
+    const struct rb_call_info_with_kwarg *ci_kw_entries = (const struct rb_call_info_with_kwarg *)&body->ci_entries[ci_size];
+
+    ibf_offset_t offset = ibf_dump_pos(dump);
+
     unsigned int i;
 
-    dump_ci_entries = (struct rb_call_info *)ALLOCA_N(char, byte_size);
-    dump_ci_kw_entries = (struct rb_call_info_with_kwarg *)&dump_ci_entries[ci_size];
-    memcpy(dump_ci_entries, ci_entries, byte_size);
+    for (i = 0; i < ci_size; i++) {
+        VALUE mid = ibf_dump_id(dump, ci_entries[i].mid);
 
-    for (i=0; i<ci_size; i++) { /* conver ID for each ci */
-	dump_ci_entries[i].mid = ibf_dump_id(dump, dump_ci_entries[i].mid);
+        ibf_dump_write_small_value(dump, mid);
+        ibf_dump_write_small_value(dump, ci_entries[i].flag);
+        ibf_dump_write_small_value(dump, ci_entries[i].orig_argc);
     }
-    for (i=0; i<ci_kw_size; i++) {
-	const struct rb_call_info_kw_arg *kw_arg = dump_ci_kw_entries[i].kw_arg;
-	int j;
-	VALUE *keywords = ALLOCA_N(VALUE, kw_arg->keyword_len);
-	for (j=0; j<kw_arg->keyword_len; j++) {
-	    keywords[j] = (VALUE)ibf_dump_object(dump, kw_arg->keywords[j]); /* kw_arg->keywords[n] is Symbol */
-	}
-	dump_ci_kw_entries[i].kw_arg = (struct rb_call_info_kw_arg *)(VALUE)ibf_dump_write(dump, &kw_arg->keyword_len, sizeof(int));
-	ibf_dump_write(dump, keywords, sizeof(VALUE) * kw_arg->keyword_len);
 
-	dump_ci_kw_entries[i].ci.mid = ibf_dump_id(dump, dump_ci_kw_entries[i].ci.mid);
+    for (i = 0; i < ci_kw_size; i++) {
+        const struct rb_call_info_kw_arg *kw_arg = ci_kw_entries[i].kw_arg;
+
+        VALUE mid = ibf_dump_id(dump, ci_kw_entries[i].ci.mid);
+
+        ibf_dump_write_small_value(dump, mid);
+        ibf_dump_write_small_value(dump, ci_kw_entries[i].ci.flag);
+        ibf_dump_write_small_value(dump, ci_kw_entries[i].ci.orig_argc);
+
+        ibf_dump_write_small_value(dump, kw_arg->keyword_len);
+
+        int j;
+        for (j = 0; j < ci_kw_entries[i].kw_arg->keyword_len; j++) {
+            VALUE keyword = ibf_dump_object(dump, kw_arg->keywords[j]); /* kw_arg->keywords[n] is Symbol */
+
+            ibf_dump_write_small_value(dump, keyword);
+        }
     }
-    return (struct rb_call_info *)(VALUE)ibf_dump_write(dump, dump_ci_entries, byte_size);
+
+    return offset;
 }
 
 static struct rb_call_info *
-ibf_load_ci_entries(const struct ibf_load *load, const struct rb_iseq_constant_body *body)
+ibf_load_ci_entries(const struct ibf_load *load,
+                    ibf_offset_t ci_entries_offset,
+                    unsigned int ci_size,
+                    unsigned int ci_kw_size)
 {
+    ibf_offset_t reading_pos = ci_entries_offset;
+
     unsigned int i;
-    const unsigned int ci_size = body->ci_size;
-    const unsigned int ci_kw_size = body->ci_kw_size;
-    struct rb_call_info *ci_entries = ibf_load_alloc(load, IBF_OFFSET(body->ci_entries),
-						     sizeof(struct rb_call_info) * body->ci_size +
-						     sizeof(struct rb_call_info_with_kwarg) * body->ci_kw_size);
+
+    struct rb_call_info *ci_entries =
+        rb_xmalloc_mul_add_mul(
+            sizeof(struct rb_call_info), ci_size,
+            sizeof(struct rb_call_info_with_kwarg), ci_kw_size);
     struct rb_call_info_with_kwarg *ci_kw_entries = (struct rb_call_info_with_kwarg *)&ci_entries[ci_size];
 
-    for (i=0; i<ci_size; i++) {
-	ci_entries[i].mid = ibf_load_id(load, ci_entries[i].mid);
+    for (i = 0; i < ci_size; i++) {
+        VALUE mid_index = ibf_load_small_value(load, &reading_pos);
+
+        ci_entries[i].mid = ibf_load_id(load, mid_index);
+        ci_entries[i].flag = (unsigned int)ibf_load_small_value(load, &reading_pos);
+        ci_entries[i].orig_argc = (int)ibf_load_small_value(load, &reading_pos);
     }
-    for (i=0; i<ci_kw_size; i++) {
-	int j;
-	ibf_offset_t kw_arg_offset = IBF_OFFSET(ci_kw_entries[i].kw_arg);
-	const int keyword_len = *(int *)(load->buff + kw_arg_offset);
-	const VALUE *keywords = (VALUE *)(load->buff + kw_arg_offset + sizeof(int));
-	struct rb_call_info_kw_arg *kw_arg = ruby_xmalloc(sizeof(struct rb_call_info_kw_arg) + sizeof(VALUE) * (keyword_len - 1));
-	kw_arg->keyword_len = keyword_len;
-	for (j=0; j<kw_arg->keyword_len; j++) {
-	    kw_arg->keywords[j] = (VALUE)ibf_load_object(load, keywords[j]);
-	}
-	ci_kw_entries[i].kw_arg = kw_arg;
-	ci_kw_entries[i].ci.mid = ibf_load_id(load, ci_kw_entries[i].ci.mid);
+
+    for (i = 0; i < ci_kw_size; i++) {
+        VALUE mid_index = ibf_load_small_value(load, &reading_pos);
+
+        ci_kw_entries[i].ci.mid = ibf_load_id(load, mid_index);
+        ci_kw_entries[i].ci.flag = (unsigned int)ibf_load_small_value(load, &reading_pos);
+        ci_kw_entries[i].ci.orig_argc = (int)ibf_load_small_value(load, &reading_pos);
+
+        int keyword_len = (int)ibf_load_small_value(load, &reading_pos);
+
+        ci_kw_entries[i].kw_arg =
+            rb_xmalloc_mul_add(keyword_len - 1, sizeof(VALUE), sizeof(struct rb_call_info_kw_arg));
+
+        ci_kw_entries[i].kw_arg->keyword_len = keyword_len;
+
+        int j;
+        for (j = 0; j < ci_kw_entries[i].kw_arg->keyword_len; j++) {
+            VALUE keyword = ibf_load_small_value(load, &reading_pos);
+
+            ci_kw_entries[i].kw_arg->keywords[j] = ibf_load_object(load, keyword);
+        }
     }
 
     return ci_entries;
@@ -9658,41 +10092,130 @@ ibf_load_ci_entries(const struct ibf_load *load, const struct rb_iseq_constant_b
 static ibf_offset_t
 ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
-    struct rb_iseq_constant_body dump_body;
-#if VM_INSN_INFO_TABLE_IMPL == 2
+    assert(dump->current_buffer == &dump->global_buffer);
+
     unsigned int *positions;
-#endif
-    dump_body = *iseq->body;
 
-    dump_body.location.pathobj = ibf_dump_object(dump, dump_body.location.pathobj); /* TODO: freeze */
-    dump_body.location.base_label = ibf_dump_object(dump, dump_body.location.base_label);
-    dump_body.location.label = ibf_dump_object(dump, dump_body.location.label);
+    const struct rb_iseq_constant_body *body = iseq->body;
 
-    dump_body.iseq_encoded =         ibf_dump_code(dump, iseq);
-    dump_body.param.opt_table =      ibf_dump_param_opt_table(dump, iseq);
-    dump_body.param.keyword =        ibf_dump_param_keyword(dump, iseq);
-    dump_body.insns_info.body =      ibf_dump_insns_info_body(dump, iseq);
-#if VM_INSN_INFO_TABLE_IMPL == 2
-    positions = rb_iseq_insns_info_decode_positions(&dump_body);
-    dump_body.insns_info.positions = positions;
-    dump_body.insns_info.succ_index_table = 0;
+    const VALUE location_pathobj_index = ibf_dump_object(dump, body->location.pathobj); /* TODO: freeze */
+    const VALUE location_base_label_index = ibf_dump_object(dump, body->location.base_label);
+    const VALUE location_label_index = ibf_dump_object(dump, body->location.label);
+
+#if IBF_ISEQ_ENABLE_LOCAL_BUFFER
+    ibf_offset_t iseq_start = ibf_dump_pos(dump);
+
+    struct ibf_dump_buffer *saved_buffer = dump->current_buffer;
+    struct ibf_dump_buffer buffer;
+    buffer.str = rb_str_new(0, 0);
+    buffer.obj_list = ibf_dump_object_list_new();
+    dump->current_buffer = &buffer;
 #endif
-    dump_body.insns_info.positions = ibf_dump_insns_info_positions(dump, &dump_body);
-#if VM_INSN_INFO_TABLE_IMPL == 2
+
+    const ibf_offset_t bytecode_offset =        ibf_dump_code(dump, iseq);
+    const ibf_offset_t bytecode_size =          ibf_dump_pos(dump) - bytecode_offset;
+    const ibf_offset_t param_opt_table_offset = ibf_dump_param_opt_table(dump, iseq);
+    const ibf_offset_t param_keyword_offset =   ibf_dump_param_keyword(dump, iseq);
+    const ibf_offset_t insns_info_body_offset = ibf_dump_insns_info_body(dump, iseq);
+
+    positions = rb_iseq_insns_info_decode_positions(iseq->body);
+    const ibf_offset_t insns_info_positions_offset = ibf_dump_insns_info_positions(dump, positions, body->insns_info.size);
     ruby_xfree(positions);
-#endif
-    dump_body.local_table =          ibf_dump_local_table(dump, iseq);
-    dump_body.catch_table =          ibf_dump_catch_table(dump, iseq);
-    dump_body.parent_iseq =          ibf_dump_iseq(dump, iseq->body->parent_iseq);
-    dump_body.local_iseq =           ibf_dump_iseq(dump, iseq->body->local_iseq);
-    dump_body.is_entries =           NULL;
-    dump_body.ci_entries =           ibf_dump_ci_entries(dump, iseq);
-    dump_body.cc_entries =           NULL;
-    dump_body.variable.coverage      = Qnil;
-    dump_body.variable.original_iseq = NULL;
 
-    IBF_W_ALIGN(struct rb_iseq_constant_body);
-    return IBF_WV(dump_body);
+    const ibf_offset_t local_table_offset = ibf_dump_local_table(dump, iseq);
+    const unsigned int catch_table_size =   body->catch_table ? body->catch_table->size : 0;
+    const ibf_offset_t catch_table_offset = ibf_dump_catch_table(dump, iseq);
+    const int parent_iseq_index =           ibf_dump_iseq(dump, iseq->body->parent_iseq);
+    const int local_iseq_index =            ibf_dump_iseq(dump, iseq->body->local_iseq);
+    const ibf_offset_t ci_entries_offset =  ibf_dump_ci_entries(dump, iseq);
+
+#if IBF_ISEQ_ENABLE_LOCAL_BUFFER
+    ibf_offset_t local_obj_list_offset;
+    unsigned int local_obj_list_size;
+
+    ibf_dump_object_list(dump, &local_obj_list_offset, &local_obj_list_size);
+#endif
+
+    ibf_offset_t body_offset = ibf_dump_pos(dump);
+
+    /* dump the constant body */
+    unsigned int param_flags =
+        (body->param.flags.has_lead         << 0) |
+        (body->param.flags.has_opt          << 1) |
+        (body->param.flags.has_rest         << 2) |
+        (body->param.flags.has_post         << 3) |
+        (body->param.flags.has_kw           << 4) |
+        (body->param.flags.has_kwrest       << 5) |
+        (body->param.flags.has_block        << 6) |
+        (body->param.flags.ambiguous_param0 << 7) |
+        (body->param.flags.accepts_no_kwarg << 8);
+
+#if IBF_ISEQ_ENABLE_LOCAL_BUFFER
+#  define IBF_BODY_OFFSET(x) (x)
+#else
+#  define IBF_BODY_OFFSET(x) (body_offset - (x))
+#endif
+
+    ibf_dump_write_small_value(dump, body->type);
+    ibf_dump_write_small_value(dump, body->iseq_size);
+    ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(bytecode_offset));
+    ibf_dump_write_small_value(dump, bytecode_size);
+    ibf_dump_write_small_value(dump, param_flags);
+    ibf_dump_write_small_value(dump, body->param.size);
+    ibf_dump_write_small_value(dump, body->param.lead_num);
+    ibf_dump_write_small_value(dump, body->param.opt_num);
+    ibf_dump_write_small_value(dump, body->param.rest_start);
+    ibf_dump_write_small_value(dump, body->param.post_start);
+    ibf_dump_write_small_value(dump, body->param.post_num);
+    ibf_dump_write_small_value(dump, body->param.block_start);
+    ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(param_opt_table_offset));
+    ibf_dump_write_small_value(dump, param_keyword_offset);
+    ibf_dump_write_small_value(dump, location_pathobj_index);
+    ibf_dump_write_small_value(dump, location_base_label_index);
+    ibf_dump_write_small_value(dump, location_label_index);
+    ibf_dump_write_small_value(dump, body->location.first_lineno);
+    ibf_dump_write_small_value(dump, body->location.node_id);
+    ibf_dump_write_small_value(dump, body->location.code_location.beg_pos.lineno);
+    ibf_dump_write_small_value(dump, body->location.code_location.beg_pos.column);
+    ibf_dump_write_small_value(dump, body->location.code_location.end_pos.lineno);
+    ibf_dump_write_small_value(dump, body->location.code_location.end_pos.column);
+    ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(insns_info_body_offset));
+    ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(insns_info_positions_offset));
+    ibf_dump_write_small_value(dump, body->insns_info.size);
+    ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(local_table_offset));
+    ibf_dump_write_small_value(dump, catch_table_size);
+    ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(catch_table_offset));
+    ibf_dump_write_small_value(dump, parent_iseq_index);
+    ibf_dump_write_small_value(dump, local_iseq_index);
+    ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(ci_entries_offset));
+    ibf_dump_write_small_value(dump, body->variable.flip_count);
+    ibf_dump_write_small_value(dump, body->local_table_size);
+    ibf_dump_write_small_value(dump, body->is_size);
+    ibf_dump_write_small_value(dump, body->ci_size);
+    ibf_dump_write_small_value(dump, body->ci_kw_size);
+    ibf_dump_write_small_value(dump, body->stack_max);
+    ibf_dump_write_small_value(dump, body->catch_except_p);
+
+#undef IBF_BODY_OFFSET
+
+#if IBF_ISEQ_ENABLE_LOCAL_BUFFER
+    ibf_offset_t iseq_length_bytes = ibf_dump_pos(dump);
+
+    dump->current_buffer = saved_buffer;
+    ibf_dump_write(dump, RSTRING_PTR(buffer.str), iseq_length_bytes);
+
+    ibf_offset_t offset = ibf_dump_pos(dump);
+    ibf_dump_write_small_value(dump, iseq_start);
+    ibf_dump_write_small_value(dump, iseq_length_bytes);
+    ibf_dump_write_small_value(dump, body_offset);
+
+    ibf_dump_write_small_value(dump, local_obj_list_offset);
+    ibf_dump_write_small_value(dump, local_obj_list_size);
+
+    return offset;
+#else
+    return body_offset;
+#endif
 }
 
 static VALUE
@@ -9700,143 +10223,202 @@ ibf_load_location_str(const struct ibf_load *load, VALUE str_index)
 {
     VALUE str = ibf_load_object(load, str_index);
     if (str != Qnil) {
-	str = rb_fstring(str);
+        str = rb_fstring(str);
     }
     return str;
 }
 
 static void
-ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
+ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
 {
     struct rb_iseq_constant_body *load_body = iseq->body = ZALLOC(struct rb_iseq_constant_body);
-    const struct rb_iseq_constant_body *body = (struct rb_iseq_constant_body *)(load->buff + offset);
 
-    /* memcpy(load_body, load->buff + offset, sizeof(*load_body)); */
-    load_body->type = body->type;
-    load_body->stack_max = body->stack_max;
-    load_body->param = body->param;
+    ibf_offset_t reading_pos = offset;
+
+#if IBF_ISEQ_ENABLE_LOCAL_BUFFER
+    struct ibf_load_buffer *saved_buffer = load->current_buffer;
+    load->current_buffer = &load->global_buffer;
+
+    const ibf_offset_t iseq_start = ibf_load_small_value(load, &reading_pos);
+    const ibf_offset_t iseq_length_bytes = ibf_load_small_value(load, &reading_pos);
+    const ibf_offset_t body_offset = ibf_load_small_value(load, &reading_pos);
+
+    struct ibf_load_buffer buffer;
+    buffer.buff = load->global_buffer.buff + iseq_start;
+    buffer.size = iseq_length_bytes;
+    buffer.obj_list_offset = ibf_load_small_value(load, &reading_pos);
+    buffer.obj_list_size = ibf_load_small_value(load, &reading_pos);
+    buffer.obj_list = rb_ary_tmp_new(buffer.obj_list_size);
+    rb_ary_resize(buffer.obj_list, buffer.obj_list_size);
+
+    load->current_buffer = &buffer;
+    reading_pos = body_offset;
+#endif
+
+#if IBF_ISEQ_ENABLE_LOCAL_BUFFER
+#  define IBF_BODY_OFFSET(x) (x)
+#else
+#  define IBF_BODY_OFFSET(x) (offset - (x))
+#endif
+
+    const unsigned int type = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const unsigned int iseq_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const ibf_offset_t bytecode_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
+    const ibf_offset_t bytecode_size = (ibf_offset_t)ibf_load_small_value(load, &reading_pos);
+    const unsigned int param_flags = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const unsigned int param_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const int param_lead_num = (int)ibf_load_small_value(load, &reading_pos);
+    const int param_opt_num = (int)ibf_load_small_value(load, &reading_pos);
+    const int param_rest_start = (int)ibf_load_small_value(load, &reading_pos);
+    const int param_post_start = (int)ibf_load_small_value(load, &reading_pos);
+    const int param_post_num = (int)ibf_load_small_value(load, &reading_pos);
+    const int param_block_start = (int)ibf_load_small_value(load, &reading_pos);
+    const ibf_offset_t param_opt_table_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
+    const ibf_offset_t param_keyword_offset = (ibf_offset_t)ibf_load_small_value(load, &reading_pos);
+    const VALUE location_pathobj_index = ibf_load_small_value(load, &reading_pos);
+    const VALUE location_base_label_index = ibf_load_small_value(load, &reading_pos);
+    const VALUE location_label_index = ibf_load_small_value(load, &reading_pos);
+    const VALUE location_first_lineno = ibf_load_small_value(load, &reading_pos);
+    const int location_node_id = (int)ibf_load_small_value(load, &reading_pos);
+    const int location_code_location_beg_pos_lineno = (int)ibf_load_small_value(load, &reading_pos);
+    const int location_code_location_beg_pos_column = (int)ibf_load_small_value(load, &reading_pos);
+    const int location_code_location_end_pos_lineno = (int)ibf_load_small_value(load, &reading_pos);
+    const int location_code_location_end_pos_column = (int)ibf_load_small_value(load, &reading_pos);
+    const ibf_offset_t insns_info_body_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
+    const ibf_offset_t insns_info_positions_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
+    const unsigned int insns_info_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const ibf_offset_t local_table_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
+    const unsigned int catch_table_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const ibf_offset_t catch_table_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
+    const int parent_iseq_index = (int)ibf_load_small_value(load, &reading_pos);
+    const int local_iseq_index = (int)ibf_load_small_value(load, &reading_pos);
+    const ibf_offset_t ci_entries_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
+    const rb_snum_t variable_flip_count = (rb_snum_t)ibf_load_small_value(load, &reading_pos);
+    const unsigned int local_table_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const unsigned int is_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const unsigned int ci_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const unsigned int ci_kw_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const unsigned int stack_max = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const char catch_except_p = (char)ibf_load_small_value(load, &reading_pos);
+
+#undef IBF_BODY_OFFSET
+
+    load_body->type = type;
+    load_body->stack_max = stack_max;
+    load_body->param.flags.has_lead = (param_flags >> 0) & 1;
+    load_body->param.flags.has_opt = (param_flags >> 1) & 1;
+    load_body->param.flags.has_rest = (param_flags >> 2) & 1;
+    load_body->param.flags.has_post = (param_flags >> 3) & 1;
     load_body->param.flags.has_kw = FALSE;
-    load_body->local_table_size = body->local_table_size;
-    load_body->is_size = body->is_size;
-    load_body->ci_size = body->ci_size;
-    load_body->ci_kw_size = body->ci_kw_size;
-    load_body->insns_info.size = body->insns_info.size;
+    load_body->param.flags.has_kwrest = (param_flags >> 5) & 1;
+    load_body->param.flags.has_block = (param_flags >> 6) & 1;
+    load_body->param.flags.ambiguous_param0 = (param_flags >> 7) & 1;
+    load_body->param.flags.accepts_no_kwarg = (param_flags >> 8) & 1;
+    load_body->param.size = param_size;
+    load_body->param.lead_num = param_lead_num;
+    load_body->param.opt_num = param_opt_num;
+    load_body->param.rest_start = param_rest_start;
+    load_body->param.post_start = param_post_start;
+    load_body->param.post_num = param_post_num;
+    load_body->param.block_start = param_block_start;
+    load_body->local_table_size = local_table_size;
+    load_body->is_size = is_size;
+    load_body->ci_size = ci_size;
+    load_body->ci_kw_size = ci_kw_size;
+    load_body->insns_info.size = insns_info_size;
 
     ISEQ_COVERAGE_SET(iseq, Qnil);
     ISEQ_ORIGINAL_ISEQ_CLEAR(iseq);
-    iseq->body->variable.flip_count = body->variable.flip_count;
+    iseq->body->variable.flip_count = variable_flip_count;
 
-    {
-	VALUE realpath = Qnil, path = ibf_load_object(load, body->location.pathobj);
-	if (RB_TYPE_P(path, T_STRING)) {
-	    realpath = path = rb_fstring(path);
-	}
-	else if (RB_TYPE_P(path, T_ARRAY)) {
-	    VALUE pathobj = path;
-	    if (RARRAY_LEN(pathobj) != 2) {
-		rb_raise(rb_eRuntimeError, "path object size mismatch");
-	    }
-	    path = rb_fstring(RARRAY_AREF(pathobj, 0));
-	    realpath = RARRAY_AREF(pathobj, 1);
-	    if (!NIL_P(realpath)) {
-		if (!RB_TYPE_P(realpath, T_STRING)) {
-		    rb_raise(rb_eArgError, "unexpected realpath %"PRIxVALUE
-			     "(%x), path=%+"PRIsVALUE,
-			     realpath, TYPE(realpath), path);
-		}
-		realpath = rb_fstring(realpath);
-	    }
-	}
-	else {
-	    rb_raise(rb_eRuntimeError, "unexpected path object");
-	}
-	rb_iseq_pathobj_set(iseq, path, realpath);
-    }
+    load_body->location.first_lineno = location_first_lineno;
+    load_body->location.node_id = location_node_id;
+    load_body->location.code_location.beg_pos.lineno = location_code_location_beg_pos_lineno;
+    load_body->location.code_location.beg_pos.column = location_code_location_beg_pos_column;
+    load_body->location.code_location.end_pos.lineno = location_code_location_end_pos_lineno;
+    load_body->location.code_location.end_pos.column = location_code_location_end_pos_column;
+    load_body->catch_except_p = catch_except_p;
 
-    RB_OBJ_WRITE(iseq, &load_body->location.base_label,    ibf_load_location_str(load, body->location.base_label));
-    RB_OBJ_WRITE(iseq, &load_body->location.label,         ibf_load_location_str(load, body->location.label));
-    load_body->location.first_lineno = body->location.first_lineno;
-    load_body->location.node_id = body->location.node_id;
-    load_body->location.code_location = body->location.code_location;
-    load_body->catch_except_p = body->catch_except_p;
+    load_body->is_entries           = ZALLOC_N(union iseq_inline_storage_entry, is_size);
+    load_body->ci_entries           = ibf_load_ci_entries(load, ci_entries_offset, ci_size, ci_kw_size);
+    load_body->cc_entries           = ZALLOC_N(struct rb_call_cache, ci_size + ci_kw_size);
+    load_body->param.opt_table      = ibf_load_param_opt_table(load, param_opt_table_offset, param_opt_num);
+    load_body->param.keyword        = ibf_load_param_keyword(load, param_keyword_offset);
+    load_body->param.flags.has_kw   = (param_flags >> 4) & 1;
+    load_body->insns_info.body      = ibf_load_insns_info_body(load, insns_info_body_offset, insns_info_size);
+    load_body->insns_info.positions = ibf_load_insns_info_positions(load, insns_info_positions_offset, insns_info_size);
+    load_body->local_table          = ibf_load_local_table(load, local_table_offset, local_table_size);
+    load_body->catch_table          = ibf_load_catch_table(load, catch_table_offset, catch_table_size);
+    load_body->parent_iseq          = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)parent_iseq_index);
+    load_body->local_iseq           = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)local_iseq_index);
 
-    load_body->is_entries           = ZALLOC_N(union iseq_inline_storage_entry, body->is_size);
-    load_body->ci_entries           = ibf_load_ci_entries(load, body);
-    load_body->cc_entries           = ZALLOC_N(struct rb_call_cache, body->ci_size + body->ci_kw_size);
-    load_body->param.opt_table      = ibf_load_param_opt_table(load, body);
-    load_body->param.keyword        = ibf_load_param_keyword(load, body);
-    load_body->param.flags.has_kw   = body->param.flags.has_kw;
-    load_body->insns_info.body      = ibf_load_insns_info_body(load, body);
-    load_body->insns_info.positions = ibf_load_insns_info_positions(load, body);
-    load_body->local_table          = ibf_load_local_table(load, body);
-    load_body->catch_table          = ibf_load_catch_table(load, body);
-    load_body->parent_iseq          = ibf_load_iseq(load, body->parent_iseq);
-    load_body->local_iseq           = ibf_load_iseq(load, body->local_iseq);
-
-    ibf_load_code(load, iseq, body);
+    ibf_load_code(load, iseq, bytecode_offset, bytecode_size, iseq_size);
 #if VM_INSN_INFO_TABLE_IMPL == 2
     rb_iseq_insns_info_encode_positions(iseq);
 #endif
 
     rb_iseq_translate_threaded_code(iseq);
-}
 
+#if IBF_ISEQ_ENABLE_LOCAL_BUFFER
+    load->current_buffer = &load->global_buffer;
+#endif
+
+    {
+        VALUE realpath = Qnil, path = ibf_load_object(load, location_pathobj_index);
+        if (RB_TYPE_P(path, T_STRING)) {
+            realpath = path = rb_fstring(path);
+        }
+        else if (RB_TYPE_P(path, T_ARRAY)) {
+            VALUE pathobj = path;
+            if (RARRAY_LEN(pathobj) != 2) {
+                rb_raise(rb_eRuntimeError, "path object size mismatch");
+            }
+            path = rb_fstring(RARRAY_AREF(pathobj, 0));
+            realpath = RARRAY_AREF(pathobj, 1);
+            if (!NIL_P(realpath)) {
+                if (!RB_TYPE_P(realpath, T_STRING)) {
+                    rb_raise(rb_eArgError, "unexpected realpath %"PRIxVALUE
+                             "(%x), path=%+"PRIsVALUE,
+                             realpath, TYPE(realpath), path);
+                }
+                realpath = rb_fstring(realpath);
+            }
+        }
+        else {
+            rb_raise(rb_eRuntimeError, "unexpected path object");
+        }
+        rb_iseq_pathobj_set(iseq, path, realpath);
+    }
+
+    RB_OBJ_WRITE(iseq, &load_body->location.base_label,    ibf_load_location_str(load, location_base_label_index));
+    RB_OBJ_WRITE(iseq, &load_body->location.label,         ibf_load_location_str(load, location_label_index));
+
+#if IBF_ISEQ_ENABLE_LOCAL_BUFFER
+    load->current_buffer = saved_buffer;
+#endif
+}
 
 static void
 ibf_dump_iseq_list(struct ibf_dump *dump, struct ibf_header *header)
 {
-    const long size = RARRAY_LEN(dump->iseq_list);
-    ibf_offset_t *list = ALLOCA_N(ibf_offset_t, size);
+    VALUE list = rb_ary_tmp_new(RARRAY_LEN(dump->iseq_list));
     long i;
 
-    for (i=0; i<size; i++) {
-	list[i] = (ibf_offset_t)NUM2LONG(rb_ary_entry(dump->iseq_list, i));
+    for (i = 0; i < RARRAY_LEN(dump->iseq_list); i++) {
+        ibf_offset_t offset = ibf_dump_iseq_each(dump, (rb_iseq_t *)RARRAY_AREF(dump->iseq_list, i));
+        rb_ary_push(list, UINT2NUM(offset));
+    }
+
+    long size = RARRAY_LEN(dump->iseq_list);
+    ibf_offset_t *offsets = ALLOCA_N(ibf_offset_t, size);
+
+    for (i = 0; i < size; i++) {
+        offsets[i] = NUM2UINT(RARRAY_AREF(list, i));
     }
 
     ibf_dump_align(dump, sizeof(ibf_offset_t));
-    header->iseq_list_offset = ibf_dump_write(dump, list, sizeof(ibf_offset_t) * size);
+    header->iseq_list_offset = ibf_dump_write(dump, offsets, sizeof(ibf_offset_t) * size);
     header->iseq_list_size = (unsigned int)size;
-}
-
-struct ibf_dump_id_list_i_arg {
-    struct ibf_dump *dump;
-    long *list;
-    int current_i;
-};
-
-static int
-ibf_dump_id_list_i(st_data_t key, st_data_t val, st_data_t ptr)
-{
-    struct ibf_dump_id_list_i_arg *arg = (struct ibf_dump_id_list_i_arg *)ptr;
-    int i = (int)val;
-    ID id = (ID)key;
-    assert(arg->current_i == i);
-    arg->current_i++;
-
-    if (rb_id2name(id)) {
-	arg->list[i] = (long)ibf_dump_object(arg->dump, rb_id2str(id));
-    }
-    else {
-	arg->list[i] = 0;
-    }
-
-    return ST_CONTINUE;
-}
-
-static void
-ibf_dump_id_list(struct ibf_dump *dump, struct ibf_header *header)
-{
-    const long size = dump->id_table->num_entries;
-    struct ibf_dump_id_list_i_arg arg;
-    arg.list = ALLOCA_N(long, size);
-    arg.dump = dump;
-    arg.current_i = 0;
-
-    st_foreach(dump->id_table, ibf_dump_id_list_i, (st_data_t)&arg);
-
-    ibf_dump_align(dump, sizeof(long));
-    header->id_list_offset = ibf_dump_write(dump, arg.list, sizeof(long) * size);
-    header->id_list_size = (unsigned int)size;
 }
 
 #define IBF_OBJECT_INTERNAL FL_PROMOTED0
@@ -9853,8 +10435,6 @@ struct ibf_object_header {
     unsigned int frozen: 1;
     unsigned int internal: 1;
 };
-static const size_t ibf_object_header_align =
-    RUBY_ALIGNOF(struct ibf_object_header);
 
 enum ibf_object_class_index {
     IBF_OBJECT_CLASS_OBJECT,
@@ -9864,20 +10444,9 @@ enum ibf_object_class_index {
     IBF_OBJECT_CLASS_TYPE_ERROR,
 };
 
-struct ibf_object_string {
-    long encindex;
-    long len;
-    char ptr[FLEX_ARY_LEN];
-};
-
 struct ibf_object_regexp {
     long srcstr;
     char option;
-};
-
-struct ibf_object_array {
-    long len;
-    long ary[FLEX_ARY_LEN];
 };
 
 struct ibf_object_hash {
@@ -9912,18 +10481,16 @@ struct ibf_object_symbol {
 
 #define IBF_ALIGNED_OFFSET(align, offset) /* offset > 0 */ \
     ((((offset) - 1) / (align) + 1) * (align))
-#define IBF_OBJHEADER(offset)     (const struct ibf_object_header *)\
-    ibf_load_check_offset(load, IBF_ALIGNED_OFFSET(ibf_object_header_align, offset))
 #define IBF_OBJBODY(type, offset) (const type *)\
     ibf_load_check_offset(load, IBF_ALIGNED_OFFSET(RUBY_ALIGNOF(type), offset))
 
 static const void *
 ibf_load_check_offset(const struct ibf_load *load, size_t offset)
 {
-    if (offset >= (size_t)RSTRING_LEN(load->str)) {
+    if (offset >= load->current_buffer->size) {
 	rb_raise(rb_eIndexError, "object offset out of range: %"PRIdSIZE, offset);
     }
-    return load->buff + offset;
+    return load->current_buffer->buff + offset;
 }
 
 NORETURN(static void ibf_dump_object_unsupported(struct ibf_dump *dump, VALUE obj));
@@ -9948,13 +10515,13 @@ ibf_dump_object_class(struct ibf_dump *dump, VALUE obj)
 {
     enum ibf_object_class_index cindex;
     if (obj == rb_cObject) {
-	cindex = IBF_OBJECT_CLASS_OBJECT;
+        cindex = IBF_OBJECT_CLASS_OBJECT;
     }
     else if (obj == rb_cArray) {
-	cindex = IBF_OBJECT_CLASS_ARRAY;
+        cindex = IBF_OBJECT_CLASS_ARRAY;
     }
     else if (obj == rb_eStandardError) {
-	cindex = IBF_OBJECT_CLASS_STANDARD_ERROR;
+        cindex = IBF_OBJECT_CLASS_STANDARD_ERROR;
     }
     else if (obj == rb_eNoMatchingPatternError) {
         cindex = IBF_OBJECT_CLASS_NO_MATCHING_PATTERN_ERROR;
@@ -9963,18 +10530,17 @@ ibf_dump_object_class(struct ibf_dump *dump, VALUE obj)
         cindex = IBF_OBJECT_CLASS_TYPE_ERROR;
     }
     else {
-	rb_obj_info_dump(obj);
-	rb_p(obj);
-	rb_bug("unsupported class");
+        rb_obj_info_dump(obj);
+        rb_p(obj);
+        rb_bug("unsupported class");
     }
-    ibf_dump_write(dump, &cindex, sizeof(cindex));
+    ibf_dump_write_small_value(dump, (VALUE)cindex);
 }
 
 static VALUE
 ibf_load_object_class(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
 {
-    const enum ibf_object_class_index *cindexp = IBF_OBJBODY(enum ibf_object_class_index, offset);
-    enum ibf_object_class_index cindex = *cindexp;
+    enum ibf_object_class_index cindex = (enum ibf_object_class_index)ibf_load_small_value(load, &offset);
 
     switch (cindex) {
       case IBF_OBJECT_CLASS_OBJECT:
@@ -10013,30 +10579,32 @@ ibf_dump_object_string(struct ibf_dump *dump, VALUE obj)
     long encindex = (long)rb_enc_get_index(obj);
     long len = RSTRING_LEN(obj);
     const char *ptr = RSTRING_PTR(obj);
-    long buff[2];
 
     if (encindex > RUBY_ENCINDEX_BUILTIN_MAX) {
-	rb_encoding *enc = rb_enc_from_index((int)encindex);
-	const char *enc_name = rb_enc_name(enc);
-	encindex = RUBY_ENCINDEX_BUILTIN_MAX + ibf_dump_object(dump, rb_str_new2(enc_name));
+        rb_encoding *enc = rb_enc_from_index((int)encindex);
+        const char *enc_name = rb_enc_name(enc);
+        encindex = RUBY_ENCINDEX_BUILTIN_MAX + ibf_dump_object(dump, rb_str_new2(enc_name));
     }
 
-    buff[0] = encindex;
-    buff[1] = len;
-    (void)IBF_W(buff, long, 2);
+    ibf_dump_write_small_value(dump, encindex);
+    ibf_dump_write_small_value(dump, len);
     IBF_WP(ptr, char, len);
 }
 
 static VALUE
 ibf_load_object_string(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
 {
-    const struct ibf_object_string *string = IBF_OBJBODY(struct ibf_object_string, offset);
-    VALUE str = rb_str_new(string->ptr, string->len);
-    int encindex = (int)string->encindex;
+    ibf_offset_t reading_pos = offset;
+
+    int encindex = (int)ibf_load_small_value(load, &reading_pos);
+    const long len = (long)ibf_load_small_value(load, &reading_pos);
+    const char *ptr = load->current_buffer->buff + reading_pos;
+
+    VALUE str = rb_str_new(ptr, len);
 
     if (encindex > RUBY_ENCINDEX_BUILTIN_MAX) {
-	VALUE enc_name_str = ibf_load_object(load, encindex - RUBY_ENCINDEX_BUILTIN_MAX);
-	encindex = rb_enc_find_index(RSTRING_PTR(enc_name_str));
+        VALUE enc_name_str = ibf_load_object(load, encindex - RUBY_ENCINDEX_BUILTIN_MAX);
+        encindex = rb_enc_find_index(RSTRING_PTR(enc_name_str));
     }
     rb_enc_associate_index(str, encindex);
 
@@ -10049,20 +10617,24 @@ ibf_load_object_string(const struct ibf_load *load, const struct ibf_object_head
 static void
 ibf_dump_object_regexp(struct ibf_dump *dump, VALUE obj)
 {
-    struct ibf_object_regexp regexp;
     VALUE srcstr = RREGEXP_SRC(obj);
-    IBF_ZERO(regexp);
+    struct ibf_object_regexp regexp;
     regexp.option = (char)rb_reg_options(obj);
     regexp.srcstr = (long)ibf_dump_object(dump, srcstr);
-    (void)IBF_W(&regexp, struct ibf_object_regexp, 1);
+
+    ibf_dump_write_byte(dump, (unsigned char)regexp.option);
+    ibf_dump_write_small_value(dump, regexp.srcstr);
 }
 
 static VALUE
 ibf_load_object_regexp(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
 {
-    const struct ibf_object_regexp *regexp = IBF_OBJBODY(struct ibf_object_regexp, offset);
-    VALUE srcstr = ibf_load_object(load, regexp->srcstr);
-    VALUE reg = rb_reg_compile(srcstr, (int)regexp->option, NULL, 0);
+    struct ibf_object_regexp regexp;
+    regexp.option = ibf_load_byte(load, &offset);
+    regexp.srcstr = ibf_load_small_value(load, &offset);
+
+    VALUE srcstr = ibf_load_object(load, regexp.srcstr);
+    VALUE reg = rb_reg_compile(srcstr, (int)regexp.option, NULL, 0);
 
     if (header->internal) rb_obj_hide(reg);
     if (header->frozen)   rb_obj_freeze(reg);
@@ -10073,23 +10645,27 @@ ibf_load_object_regexp(const struct ibf_load *load, const struct ibf_object_head
 static void
 ibf_dump_object_array(struct ibf_dump *dump, VALUE obj)
 {
-    long i, len = (int)RARRAY_LEN(obj);
-    (void)IBF_W(&len, long, 1);
+    long i, len = RARRAY_LEN(obj);
+    ibf_dump_write_small_value(dump, len);
     for (i=0; i<len; i++) {
-	long index = (long)ibf_dump_object(dump, RARRAY_AREF(obj, i));
-	IBF_WV(index);
+        long index = (long)ibf_dump_object(dump, RARRAY_AREF(obj, i));
+        ibf_dump_write_small_value(dump, index);
     }
 }
 
 static VALUE
 ibf_load_object_array(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
 {
-    const struct ibf_object_array *array = IBF_OBJBODY(struct ibf_object_array, offset);
-    VALUE ary = rb_ary_new_capa(array->len);
+    ibf_offset_t reading_pos = offset;
+
+    const long len = (long)ibf_load_small_value(load, &reading_pos);
+
+    VALUE ary = rb_ary_new_capa(len);
     int i;
 
-    for (i=0; i<array->len; i++) {
-	rb_ary_push(ary, ibf_load_object(load, array->ary[i]));
+    for (i=0; i<len; i++) {
+        const VALUE index = ibf_load_small_value(load, &reading_pos);
+        rb_ary_push(ary, ibf_load_object(load, index));
     }
 
     if (header->internal) rb_obj_hide(ary);
@@ -10102,10 +10678,12 @@ static int
 ibf_dump_object_hash_i(st_data_t key, st_data_t val, st_data_t ptr)
 {
     struct ibf_dump *dump = (struct ibf_dump *)ptr;
-    long keyval[2];
-    keyval[0] = (long)ibf_dump_object(dump, (VALUE)key);
-    keyval[1] = (long)ibf_dump_object(dump, (VALUE)val);
-    (void)IBF_W(keyval, long, 2);
+
+    VALUE key_index = ibf_dump_object(dump, (VALUE)key);
+    VALUE val_index = ibf_dump_object(dump, (VALUE)val);
+
+    ibf_dump_write_small_value(dump, key_index);
+    ibf_dump_write_small_value(dump, val_index);
     return ST_CONTINUE;
 }
 
@@ -10113,21 +10691,25 @@ static void
 ibf_dump_object_hash(struct ibf_dump *dump, VALUE obj)
 {
     long len = RHASH_SIZE(obj);
-    (void)IBF_W(&len, long, 1);
+    ibf_dump_write_small_value(dump, (VALUE)len);
+
     if (len > 0) rb_hash_foreach(obj, ibf_dump_object_hash_i, (VALUE)dump);
 }
 
 static VALUE
 ibf_load_object_hash(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
 {
-    const struct ibf_object_hash *hash = IBF_OBJBODY(struct ibf_object_hash, offset);
-    VALUE obj = rb_hash_new_with_size(hash->len);
+    long len = (long)ibf_load_small_value(load, &offset);
+    VALUE obj = rb_hash_new_with_size(len);
     int i;
 
-    for (i=0; i<hash->len; i++) {
-	VALUE key = ibf_load_object(load, hash->keyval[i*2  ]);
-	VALUE val = ibf_load_object(load, hash->keyval[i*2+1]);
-	rb_hash_aset(obj, key, val);
+    for (i = 0; i < len; i++) {
+        VALUE key_index = ibf_load_small_value(load, &offset);
+        VALUE val_index = ibf_load_small_value(load, &offset);
+
+        VALUE key = ibf_load_object(load, key_index);
+        VALUE val = ibf_load_object(load, val_index);
+        rb_hash_aset(obj, key, val);
     }
     rb_hash_rehash(obj);
 
@@ -10141,18 +10723,18 @@ static void
 ibf_dump_object_struct(struct ibf_dump *dump, VALUE obj)
 {
     if (rb_obj_is_kind_of(obj, rb_cRange)) {
-	struct ibf_object_struct_range range;
-	VALUE beg, end;
-	IBF_ZERO(range);
-	range.len = 3;
-	range.class_index = 0;
+        struct ibf_object_struct_range range;
+        VALUE beg, end;
+        IBF_ZERO(range);
+        range.len = 3;
+        range.class_index = 0;
 
-	rb_range_values(obj, &beg, &end, &range.excl);
-	range.beg = (long)ibf_dump_object(dump, beg);
-	range.end = (long)ibf_dump_object(dump, end);
+        rb_range_values(obj, &beg, &end, &range.excl);
+        range.beg = (long)ibf_dump_object(dump, beg);
+        range.end = (long)ibf_dump_object(dump, end);
 
-	IBF_W_ALIGN(struct ibf_object_struct_range);
-	IBF_WV(range);
+        IBF_W_ALIGN(struct ibf_object_struct_range);
+        IBF_WV(range);
     }
     else {
         rb_raise(rb_eNotImpError, "ibf_dump_object_struct: unsupported class %"PRIsVALUE,
@@ -10200,17 +10782,17 @@ static void
 ibf_dump_object_data(struct ibf_dump *dump, VALUE obj)
 {
     if (rb_data_is_encoding(obj)) {
-	rb_encoding *enc = rb_to_encoding(obj);
-	const char *name = rb_enc_name(enc);
-	long len = strlen(name) + 1;
-	long data[2];
-	data[0] = IBF_OBJECT_DATA_ENCODING;
-	data[1] = len;
-	(void)IBF_W(data, long, 2);
-	IBF_WP(name, char, len);
+        rb_encoding *enc = rb_to_encoding(obj);
+        const char *name = rb_enc_name(enc);
+        long len = strlen(name) + 1;
+        long data[2];
+        data[0] = IBF_OBJECT_DATA_ENCODING;
+        data[1] = len;
+        (void)IBF_W(data, long, 2);
+        IBF_WP(name, char, len);
     }
     else {
-	ibf_dump_object_unsupported(dump, obj);
+        ibf_dump_object_unsupported(dump, obj);
     }
 }
 
@@ -10224,10 +10806,10 @@ ibf_load_object_data(const struct ibf_load *load, const struct ibf_object_header
 
     switch (type) {
       case IBF_OBJECT_DATA_ENCODING:
-	{
-	    VALUE encobj = rb_enc_from_encoding(rb_enc_find(data));
-	    return encobj;
-	}
+        {
+            VALUE encobj = rb_enc_from_encoding(rb_enc_find(data));
+            return encobj;
+        }
     }
 
     return ibf_load_object_unsupported(load, header, offset);
@@ -10261,16 +10843,16 @@ static void
 ibf_dump_object_symbol(struct ibf_dump *dump, VALUE obj)
 {
     VALUE str = rb_sym2str(obj);
-    long str_index = (long)ibf_dump_object(dump, str);
-    (void)IBF_W(&str_index, long, 1);
+    VALUE str_index = ibf_dump_object(dump, str);
+
+    ibf_dump_write_small_value(dump, str_index);
 }
 
 static VALUE
 ibf_load_object_symbol(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
 {
-    /* const struct ibf_object_header *header = IBF_OBJHEADER(offset); */
-    const struct ibf_object_symbol *symbol = IBF_OBJBODY(struct ibf_object_symbol, offset);
-    VALUE str = ibf_load_object(load, symbol->str);
+    VALUE str_index = ibf_load_small_value(load, &offset);
+    VALUE str = ibf_load_object(load, str_index);
     ID id = rb_intern_str(str);
     return ID2SYM(id);
 }
@@ -10311,8 +10893,34 @@ static ibf_dump_object_function dump_object_functions[RUBY_T_MASK+1] = {
     ibf_dump_object_unsupported, /* 0x1f */
 };
 
+static void
+ibf_dump_object_object_header(struct ibf_dump *dump, const struct ibf_object_header header)
+{
+    unsigned char byte =
+        (header.type          << 0) |
+        (header.special_const << 5) |
+        (header.frozen        << 6) |
+        (header.internal      << 7);
+
+    IBF_WV(byte);
+}
+
+static struct ibf_object_header
+ibf_load_object_object_header(const struct ibf_load *load, ibf_offset_t *offset)
+{
+    unsigned char byte = ibf_load_byte(load, offset);
+
+    struct ibf_object_header header;
+    header.type          = (byte >> 0) & 0x1f;
+    header.special_const = (byte >> 5) & 0x01;
+    header.frozen        = (byte >> 6) & 0x01;
+    header.internal      = (byte >> 7) & 0x01;
+
+    return header;
+}
+
 static ibf_offset_t
-ibf_dump_object_object(struct ibf_dump *dump, VALUE obj)
+ibf_dump_object_object(struct ibf_dump *dump, VALUE obj_list, VALUE obj)
 {
     struct ibf_object_header obj_header;
     ibf_offset_t current_offset;
@@ -10323,30 +10931,30 @@ ibf_dump_object_object(struct ibf_dump *dump, VALUE obj)
     current_offset = ibf_dump_pos(dump);
 
     if (SPECIAL_CONST_P(obj)) {
-	if (RB_TYPE_P(obj, T_SYMBOL) ||
-	    RB_TYPE_P(obj, T_FLOAT)) {
-	    obj_header.internal = FALSE;
-	    goto dump_object;
-	}
-	obj_header.special_const = TRUE;
-	obj_header.frozen = TRUE;
-	obj_header.internal = TRUE;
-	IBF_WV(obj_header);
-	(void)IBF_W(&obj, VALUE, 1);
+        if (RB_TYPE_P(obj, T_SYMBOL) ||
+            RB_TYPE_P(obj, T_FLOAT)) {
+            obj_header.internal = FALSE;
+            goto dump_object;
+        }
+        obj_header.special_const = TRUE;
+        obj_header.frozen = TRUE;
+        obj_header.internal = TRUE;
+        ibf_dump_object_object_header(dump, obj_header);
+        ibf_dump_write_small_value(dump, obj);
     }
     else {
-	obj_header.internal = (RBASIC_CLASS(obj) == 0) ? TRUE : FALSE;
+        obj_header.internal = (RBASIC_CLASS(obj) == 0) ? TRUE : FALSE;
       dump_object:
-	obj_header.special_const = FALSE;
-	obj_header.frozen = FL_TEST(obj, FL_FREEZE) ? TRUE : FALSE;
-	IBF_WV(obj_header);
-	(*dump_object_functions[obj_header.type])(dump, obj);
+        obj_header.special_const = FALSE;
+        obj_header.frozen = FL_TEST(obj, FL_FREEZE) ? TRUE : FALSE;
+        ibf_dump_object_object_header(dump, obj_header);
+        (*dump_object_functions[obj_header.type])(dump, obj);
     }
 
     return current_offset;
 }
 
-typedef VALUE (*ibf_load_object_function)(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t);
+typedef VALUE (*ibf_load_object_function)(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset);
 static ibf_load_object_function load_object_functions[RUBY_T_MASK+1] = {
     ibf_load_object_unsupported, /* T_NONE */
     ibf_load_object_unsupported, /* T_OBJECT */
@@ -10386,82 +10994,78 @@ static VALUE
 ibf_load_object(const struct ibf_load *load, VALUE object_index)
 {
     if (object_index == 0) {
-	return Qnil;
+        return Qnil;
     }
-    else if (object_index >= load->header->object_list_size) {
-	rb_raise(rb_eIndexError, "object index out of range: %"PRIdVALUE, object_index);
+    else if (object_index >= (VALUE)RARRAY_LEN(load->current_buffer->obj_list)) {
+        rb_raise(rb_eIndexError, "object index out of range: %"PRIdVALUE, object_index);
     }
     else {
-	VALUE obj = rb_ary_entry(load->obj_list, (long)object_index);
-	if (obj == Qnil) { /* TODO: avoid multiple Qnil load */
-	    ibf_offset_t *offsets = (ibf_offset_t *)(load->header->object_list_offset + load->buff);
-	    ibf_offset_t offset = offsets[object_index];
-	    const struct ibf_object_header *header = IBF_OBJHEADER(offset);
-	    size_t value_offset;
+        VALUE obj = rb_ary_entry(load->current_buffer->obj_list, (long)object_index);
+        if (obj == Qnil) { /* TODO: avoid multiple Qnil load */
+            ibf_offset_t *offsets = (ibf_offset_t *)(load->current_buffer->obj_list_offset + load->current_buffer->buff);
+            ibf_offset_t offset = offsets[object_index];
+            const struct ibf_object_header header = ibf_load_object_object_header(load, &offset);
 
 #if IBF_ISEQ_DEBUG
-	    fprintf(stderr, "ibf_load_object: list=%#x offsets=%p offset=%#x\n",
-	            load->header->object_list_offset, offsets, offset);
-	    fprintf(stderr, "ibf_load_object: type=%#x special=%d frozen=%d internal=%d\n",
-	            header->type, header->special_const, header->frozen, header->internal);
+            fprintf(stderr, "ibf_load_object: list=%#x offsets=%p offset=%#x\n",
+                    load->current_buffer->obj_list_offset, offsets, offset);
+            fprintf(stderr, "ibf_load_object: type=%#x special=%d frozen=%d internal=%d\n",
+                    header.type, header.special_const, header.frozen, header.internal);
 #endif
-	    value_offset = (const char *)(header + 1) - load->buff;
-	    if (value_offset >= (size_t)RSTRING_LEN(load->str)) {
-		rb_raise(rb_eIndexError, "object offset out of range: %"PRIdSIZE, value_offset);
-	    }
-	    offset = (ibf_offset_t)value_offset;
+            if (offset >= load->current_buffer->size) {
+                rb_raise(rb_eIndexError, "object offset out of range: %u", offset);
+            }
 
-	    if (header->special_const) {
-		const VALUE *vp = IBF_OBJBODY(VALUE, offset);
-#if IBF_ISEQ_DEBUG
-		fprintf(stderr, "ibf_load_object: vp=%p\n", vp);
-#endif
-		obj = *vp;
-	    }
-	    else {
-		obj = (*load_object_functions[header->type])(load, header, offset);
-	    }
+            if (header.special_const) {
+                ibf_offset_t reading_pos = offset;
 
-	    rb_ary_store(load->obj_list, (long)object_index, obj);
-	}
+                obj = ibf_load_small_value(load, &reading_pos);
+            }
+            else {
+                obj = (*load_object_functions[header.type])(load, &header, offset);
+            }
+
+            rb_ary_store(load->current_buffer->obj_list, (long)object_index, obj);
+        }
 #if IBF_ISEQ_DEBUG
-	fprintf(stderr, "ibf_load_object: index=%#"PRIxVALUE" obj=%#"PRIxVALUE"\n",
-	        object_index, obj);
+        fprintf(stderr, "ibf_load_object: index=%#"PRIxVALUE" obj=%#"PRIxVALUE"\n",
+                object_index, obj);
 #endif
-	return obj;
+        return obj;
     }
 }
 
 static void
-ibf_dump_object_list(struct ibf_dump *dump, struct ibf_header *header)
+ibf_dump_object_list(struct ibf_dump *dump, ibf_offset_t *obj_list_offset, unsigned int *obj_list_size)
 {
-    VALUE list = rb_ary_tmp_new(RARRAY_LEN(dump->obj_list));
+    VALUE obj_list = dump->current_buffer->obj_list;
+    VALUE list = rb_ary_tmp_new(RARRAY_LEN(obj_list));
     int i, size;
 
-    for (i=0; i<RARRAY_LEN(dump->obj_list); i++) {
-	VALUE obj = RARRAY_AREF(dump->obj_list, i);
-	ibf_offset_t offset = ibf_dump_object_object(dump, obj);
-	rb_ary_push(list, UINT2NUM(offset));
+    for (i=0; i<RARRAY_LEN(obj_list); i++) {
+        VALUE obj = RARRAY_AREF(obj_list, i);
+        ibf_offset_t offset = ibf_dump_object_object(dump, obj_list, obj);
+        rb_ary_push(list, UINT2NUM(offset));
     }
     size = i;
     IBF_W_ALIGN(ibf_offset_t);
-    header->object_list_offset = ibf_dump_pos(dump);
+    *obj_list_offset = ibf_dump_pos(dump);
 
     for (i=0; i<size; i++) {
-	ibf_offset_t offset = NUM2UINT(RARRAY_AREF(list, i));
-	IBF_WV(offset);
+        ibf_offset_t offset = NUM2UINT(RARRAY_AREF(list, i));
+        IBF_WV(offset);
     }
 
-    header->object_list_size = size;
+    *obj_list_size = size;
 }
 
 static void
 ibf_dump_mark(void *ptr)
 {
     struct ibf_dump *dump = (struct ibf_dump *)ptr;
-    rb_gc_mark(dump->str);
+    rb_gc_mark(dump->global_buffer.str);
+    rb_gc_mark(dump->global_buffer.obj_list);
     rb_gc_mark(dump->iseq_list);
-    rb_gc_mark(dump->obj_list);
 }
 
 static void
@@ -10469,12 +11073,8 @@ ibf_dump_free(void *ptr)
 {
     struct ibf_dump *dump = (struct ibf_dump *)ptr;
     if (dump->iseq_table) {
-	st_free_table(dump->iseq_table);
-	dump->iseq_table = 0;
-    }
-    if (dump->id_table) {
-	st_free_table(dump->id_table);
-	dump->id_table = 0;
+        st_free_table(dump->iseq_table);
+        dump->iseq_table = 0;
     }
     ruby_xfree(dump);
 }
@@ -10485,7 +11085,6 @@ ibf_dump_memsize(const void *ptr)
     struct ibf_dump *dump = (struct ibf_dump *)ptr;
     size_t size = sizeof(*dump);
     if (dump->iseq_table) size += st_memsize(dump->iseq_table);
-    if (dump->id_table) size += st_memsize(dump->id_table);
     return size;
 }
 
@@ -10498,14 +11097,12 @@ static const rb_data_type_t ibf_dump_type = {
 static void
 ibf_dump_setup(struct ibf_dump *dump, VALUE dumper_obj)
 {
-    RB_OBJ_WRITE(dumper_obj, &dump->str, rb_str_new(0, 0));
     RB_OBJ_WRITE(dumper_obj, &dump->iseq_list, rb_ary_tmp_new(0));
-    RB_OBJ_WRITE(dumper_obj, &dump->obj_list, rb_ary_tmp_new(1));
-    rb_ary_push(dump->obj_list, Qnil); /* 0th is nil */
+    RB_OBJ_WRITE(dumper_obj, &dump->global_buffer.obj_list, ibf_dump_object_list_new());
+    RB_OBJ_WRITE(dumper_obj, &dump->global_buffer.str, rb_str_new(0, 0));
     dump->iseq_table = st_init_numtable(); /* need free */
-    dump->id_table = st_init_numtable();   /* need free */
 
-    ibf_table_index(dump->id_table, 0); /* id_index:0 is 0 */
+    dump->current_buffer = &dump->global_buffer;
 }
 
 VALUE
@@ -10517,11 +11114,11 @@ rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
     VALUE str;
 
     if (iseq->body->parent_iseq != NULL ||
-	iseq->body->local_iseq != iseq) {
-	rb_raise(rb_eRuntimeError, "should be top of iseq");
+        iseq->body->local_iseq != iseq) {
+        rb_raise(rb_eRuntimeError, "should be top of iseq");
     }
     if (RTEST(ISEQ_COVERAGE(iseq))) {
-	rb_raise(rb_eRuntimeError, "should not compile with coverage");
+        rb_raise(rb_eRuntimeError, "should not compile with coverage");
     }
 
     dump_obj = TypedData_Make_Struct(0, struct ibf_dump, &ibf_dump_type, dump);
@@ -10535,26 +11132,25 @@ rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
     header.magic[1] = 'A';
     header.magic[2] = 'R';
     header.magic[3] = 'B';
-    header.major_version = ISEQ_MAJOR_VERSION;
-    header.minor_version = ISEQ_MINOR_VERSION;
+    header.major_version = IBF_MAJOR_VERSION;
+    header.minor_version = IBF_MINOR_VERSION;
     ibf_dump_iseq_list(dump, &header);
-    ibf_dump_id_list(dump, &header);
-    ibf_dump_object_list(dump, &header);
+    ibf_dump_object_list(dump, &header.global_object_list_offset, &header.global_object_list_size);
     header.size = ibf_dump_pos(dump);
 
     if (RTEST(opt)) {
-	VALUE opt_str = opt;
-	const char *ptr = StringValuePtr(opt_str);
-	header.extra_size = RSTRING_LENINT(opt_str);
-	ibf_dump_write(dump, ptr, header.extra_size);
+        VALUE opt_str = opt;
+        const char *ptr = StringValuePtr(opt_str);
+        header.extra_size = RSTRING_LENINT(opt_str);
+        ibf_dump_write(dump, ptr, header.extra_size);
     }
     else {
-	header.extra_size = 0;
+        header.extra_size = 0;
     }
 
     ibf_dump_overwrite(dump, &header, sizeof(header), 0);
 
-    str = dump->str;
+    str = dump->global_buffer.str;
     ibf_dump_free(dump);
     DATA_PTR(dump_obj) = NULL;
     RB_GC_GUARD(dump_obj);
@@ -10564,7 +11160,7 @@ rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
 static const ibf_offset_t *
 ibf_iseq_list(const struct ibf_load *load)
 {
-    return (ibf_offset_t *)(load->buff + load->header->iseq_list_offset);
+    return (const ibf_offset_t *)(load->global_buffer.buff + load->header->iseq_list_offset);
 }
 
 void
@@ -10572,17 +11168,13 @@ rb_ibf_load_iseq_complete(rb_iseq_t *iseq)
 {
     struct ibf_load *load = RTYPEDDATA_DATA(iseq->aux.loader.obj);
     rb_iseq_t *prev_src_iseq = load->iseq;
-    const ibf_offset_t offset = ibf_iseq_list(load)[iseq->aux.loader.index];
+    ibf_offset_t offset = ibf_iseq_list(load)[iseq->aux.loader.index];
     load->iseq = iseq;
 #if IBF_ISEQ_DEBUG
     fprintf(stderr, "rb_ibf_load_iseq_complete: index=%#x offset=%#x size=%#x\n",
 	    iseq->aux.loader.index, offset,
 	    load->header->size);
 #endif
-    if (offset % sizeof(VALUE)) {
-        rb_raise(rb_eArgError, "unaligned iseq offset: %#x @ %u",
-                 offset, iseq->aux.loader.index);
-    }
     ibf_load_iseq_each(load, iseq, offset);
     ISEQ_COMPILE_DATA_CLEAR(iseq);
     FL_UNSET(iseq, ISEQ_NOT_LOADED_YET);
@@ -10656,16 +11248,26 @@ ibf_load_setup(struct ibf_load *load, VALUE loader_obj, VALUE str)
     rb_check_safe_obj(str);
 
     if (RSTRING_LENINT(str) < (int)sizeof(struct ibf_header)) {
-	rb_raise(rb_eRuntimeError, "broken binary format");
+        rb_raise(rb_eRuntimeError, "broken binary format");
     }
+
+#if USE_LAZY_LOAD
+    str = rb_str_new(RSTRING_PTR(str), RSTRING_LEN(str));
+#endif
+
     RB_OBJ_WRITE(loader_obj, &load->str, str);
     load->loader_obj = loader_obj;
-    load->buff = StringValuePtr(str);
-    load->header = (struct ibf_header *)load->buff;
+    load->global_buffer.buff = StringValuePtr(str);
+    load->header = (struct ibf_header *)load->global_buffer.buff;
+    load->global_buffer.size = load->header->size;
+    load->global_buffer.obj_list_offset = load->header->global_object_list_offset;
+    load->global_buffer.obj_list_size = load->header->global_object_list_size;
     RB_OBJ_WRITE(loader_obj, &load->iseq_list, rb_ary_tmp_new(0));
-    RB_OBJ_WRITE(loader_obj, &load->obj_list, rb_ary_tmp_new(0));
-    load->id_list = ZALLOC_N(ID, load->header->id_list_size);
+    RB_OBJ_WRITE(loader_obj, &load->global_buffer.obj_list, rb_ary_tmp_new(load->global_buffer.obj_list_size));
+    rb_ary_resize(load->global_buffer.obj_list, load->global_buffer.obj_list_size);
     load->iseq = NULL;
+
+    load->current_buffer = &load->global_buffer;
 
     if (RSTRING_LENINT(str) < (int)load->header->size) {
 	rb_raise(rb_eRuntimeError, "broken binary format");
@@ -10673,25 +11275,21 @@ ibf_load_setup(struct ibf_load *load, VALUE loader_obj, VALUE str)
     if (strncmp(load->header->magic, "YARB", 4) != 0) {
 	rb_raise(rb_eRuntimeError, "unknown binary format");
     }
-    if (load->header->major_version != ISEQ_MAJOR_VERSION ||
-	load->header->minor_version != ISEQ_MINOR_VERSION) {
+    if (load->header->major_version != IBF_MAJOR_VERSION ||
+	load->header->minor_version != IBF_MINOR_VERSION) {
 	rb_raise(rb_eRuntimeError, "unmatched version file (%u.%u for %u.%u)",
-		 load->header->major_version, load->header->minor_version, ISEQ_MAJOR_VERSION, ISEQ_MINOR_VERSION);
+		 load->header->major_version, load->header->minor_version, IBF_MAJOR_VERSION, IBF_MINOR_VERSION);
     }
-    if (strcmp(load->buff + sizeof(struct ibf_header), RUBY_PLATFORM) != 0) {
+    if (strcmp(load->global_buffer.buff + sizeof(struct ibf_header), RUBY_PLATFORM) != 0) {
 	rb_raise(rb_eRuntimeError, "unmatched platform");
     }
     if (load->header->iseq_list_offset % RUBY_ALIGNOF(ibf_offset_t)) {
         rb_raise(rb_eArgError, "unaligned iseq list offset: %u",
                  load->header->iseq_list_offset);
     }
-    if (load->header->id_list_offset % RUBY_ALIGNOF(long)) {
-        rb_raise(rb_eArgError, "unaligned ID list offset: %u",
-                 load->header->id_list_offset);
-    }
-    if (load->header->object_list_offset % RUBY_ALIGNOF(ibf_offset_t)) {
+    if (load->global_buffer.obj_list_offset % RUBY_ALIGNOF(ibf_offset_t)) {
         rb_raise(rb_eArgError, "unaligned object list offset: %u",
-                 load->header->object_list_offset);
+                 load->global_buffer.obj_list_offset);
     }
 }
 
@@ -10701,22 +11299,20 @@ ibf_loader_mark(void *ptr)
     struct ibf_load *load = (struct ibf_load *)ptr;
     rb_gc_mark(load->str);
     rb_gc_mark(load->iseq_list);
-    rb_gc_mark(load->obj_list);
+    rb_gc_mark(load->global_buffer.obj_list);
 }
 
 static void
 ibf_loader_free(void *ptr)
 {
     struct ibf_load *load = (struct ibf_load *)ptr;
-    ruby_xfree(load->id_list);
     ruby_xfree(load);
 }
 
 static size_t
 ibf_loader_memsize(const void *ptr)
 {
-    struct ibf_load *load = (struct ibf_load *)ptr;
-    return sizeof(struct ibf_load) + load->header->id_list_size * sizeof(ID);
+    return sizeof(struct ibf_load);
 }
 
 static const rb_data_type_t ibf_load_type = {
@@ -10747,7 +11343,7 @@ rb_iseq_ibf_load_extra_data(VALUE str)
     VALUE extra_str;
 
     ibf_load_setup(load, loader_obj, str);
-    extra_str = rb_str_new(load->buff + load->header->size, load->header->extra_size);
+    extra_str = rb_str_new(load->global_buffer.buff + load->header->size, load->header->extra_size);
     RB_GC_GUARD(loader_obj);
     return extra_str;
 }

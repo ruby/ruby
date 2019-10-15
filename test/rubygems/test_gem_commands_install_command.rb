@@ -670,7 +670,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     @cmd.options[:args] = [a2.name]
 
-    gemdir     = File.join @gemhome, 'specifications'
+    gemdir = File.join @gemhome, 'specifications'
 
     a2_gemspec = File.join(gemdir, "a-2.gemspec")
     a1_gemspec = File.join(gemdir, "a-1.gemspec")

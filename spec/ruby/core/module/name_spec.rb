@@ -102,13 +102,27 @@ describe "Module#name" do
     m::N.name.should == "ModuleSpecs::Anonymous::E::N"
   end
 
-  it "returns a mutable string" do
-    ModuleSpecs.name.frozen?.should be_false
+  ruby_version_is ""..."2.7" do
+    it "returns a mutable string" do
+      ModuleSpecs.name.frozen?.should be_false
+    end
+
+    it "returns a mutable string that when mutated does not modify the original module name" do
+      ModuleSpecs.name << "foo"
+
+      ModuleSpecs.name.should == "ModuleSpecs"
+    end
   end
 
-  it "returns a mutable string that when mutated does not modify the original module name" do
-    ModuleSpecs.name << "foo"
+  ruby_version_is "2.7" do
+    it "returns a frozen String" do
+      ModuleSpecs.name.frozen?.should == true
+    end
 
-    ModuleSpecs.name.should == "ModuleSpecs"
+    it "always returns the same String for a given Module" do
+      s1 = ModuleSpecs.name
+      s2 = ModuleSpecs.name
+      s1.should equal(s2)
+    end
   end
 end

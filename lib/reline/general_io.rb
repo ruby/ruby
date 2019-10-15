@@ -56,6 +56,9 @@ class Reline::GeneralIO
   def self.set_screen_size(rows, columns)
   end
 
+  def self.set_winch_handler(&handler)
+  end
+
   def self.prep
   end
 

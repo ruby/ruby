@@ -206,8 +206,8 @@ class Gem::BasicSpecification
 
   def internal_init # :nodoc:
     @extension_dir = nil
-    @full_gem_path         = nil
-    @gem_dir               = nil
+    @full_gem_path = nil
+    @gem_dir = nil
     @ignored = nil
   end
 

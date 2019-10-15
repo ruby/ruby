@@ -20,15 +20,11 @@ class TestJIT < Test::Unit::TestCase
     # not supported yet
     :defineclass,
     :opt_call_c_function,
-
-    # joke
-    :bitblt,
-    :answer,
-
-    # TODO: write tests for them
-    :reput,
-    :tracecoverage,
-  ]
+  ].each do |insn|
+    if !RubyVM::INSTRUCTION_NAMES.include?(insn.to_s)
+      warn "instruction #{insn.inspect} is not defined but included in TestJIT::TEST_PENDING_INSNS"
+    end
+  end
 
   def self.untested_insns
     @untested_insns ||= (RubyVM::INSTRUCTION_NAMES.map(&:to_sym) - TEST_PENDING_INSNS)
@@ -112,13 +108,10 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_setspecial
-    verbose_bak, $VERBOSE = $VERBOSE, nil
     assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: 'true', insns: %i[setspecial])
     begin;
       true if nil.nil?..nil.nil?
     end;
-  ensure
-    $VERBOSE = verbose_bak
   end
 
   def test_compile_insn_instancevariable
@@ -249,6 +242,10 @@ class TestJIT < Test::Unit::TestCase
       a, b, c = 1, 2, 3
       [a, b, c]
     end;
+  end
+
+  def test_compile_insn_newarraykwsplat
+    assert_compile_once('[**{ x: 1 }]', result_inspect: '[{:x=>1}]', insns: %i[newarraykwsplat])
   end
 
   def test_compile_insn_intern_duparray
@@ -594,11 +591,8 @@ class TestJIT < Test::Unit::TestCase
     assert_compile_once('!!true', result_inspect: 'true', insns: %i[opt_not])
   end
 
-  def test_compile_insn_opt_regexpmatch1
-    assert_compile_once("/true/ =~ 'true'", result_inspect: '0', insns: %i[opt_regexpmatch1])
-  end
-
   def test_compile_insn_opt_regexpmatch2
+    assert_compile_once("/true/ =~ 'true'", result_inspect: '0', insns: %i[opt_regexpmatch2])
     assert_compile_once("'true' =~ /true/", result_inspect: '0', insns: %i[opt_regexpmatch2])
   end
 
@@ -742,6 +736,28 @@ class TestJIT < Test::Unit::TestCase
       print(Foo.new.bar)
       print(Foo.new.bar)
       $VERBOSE = verbose
+    end;
+  end
+
+  def test_inlined_setivar_frozen
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "FrozenError\n", success_count: 2, min_calls: 3)
+    begin;
+      class A
+        def a
+          @a = 1
+        end
+      end
+
+      a = A.new
+      a.a
+      a.a
+      a.a
+      a.freeze
+      begin
+        a.a
+      rescue FrozenError => e
+        p e.class
+      end
     end;
   end
 

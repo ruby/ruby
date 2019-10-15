@@ -303,7 +303,7 @@ v2w(VALUE v)
 {
     if (RB_TYPE_P(v, T_RATIONAL)) {
         if (RRATIONAL(v)->den != LONG2FIX(1))
-            return v;
+            return WIDEVAL_WRAP(v);
         v = RRATIONAL(v)->num;
     }
 #if WIDEVALUE_IS_WIDER
@@ -2193,7 +2193,7 @@ extract_vtm(VALUE time, struct vtm *vtm, VALUE subsecx)
         *vtm = tobj->vtm;
         t = rb_time_unmagnify(tobj->timew);
         if (TZMODE_FIXOFF_P(tobj) && vtm->utc_offset != INT2FIX(0))
-            t = wadd(t, vtm->utc_offset);
+            t = wadd(t, v2w(vtm->utc_offset));
     }
     else if (RB_TYPE_P(time, T_STRUCT)) {
 #define AREF(x) rb_struct_aref(time, ID2SYM(id_##x))
@@ -2696,6 +2696,12 @@ rb_time_timespec(VALUE time)
 	return t;
     }
     return time_timespec(time, FALSE);
+}
+
+struct timespec
+rb_time_timespec_interval(VALUE num)
+{
+    return time_timespec(num, TRUE);
 }
 
 enum {
@@ -4050,7 +4056,6 @@ time_asctime(VALUE time)
 
 /*
  *  call-seq:
- *     time.inspect -> string
  *     time.to_s    -> string
  *
  *  Returns a string representing _time_. Equivalent to calling
@@ -4074,6 +4079,52 @@ time_to_s(VALUE time)
         return strftimev("%Y-%m-%d %H:%M:%S UTC", time, rb_usascii_encoding());
     else
         return strftimev("%Y-%m-%d %H:%M:%S %z", time, rb_usascii_encoding());
+}
+
+/*
+ *  call-seq:
+ *     time.inspect -> string
+ *
+ *  Returns a detailed string representing _time_.
+ *
+ *     t = Time.now
+ *     t.to_s                              #=> "2012-11-10 18:16:12 +0100"
+ *     t.strftime "%Y-%m-%d %H:%M:%S %z"   #=> "2012-11-10 18:16:12 +0100"
+ *
+ *     t.utc.to_s                          #=> "2012-11-10 17:16:12 UTC"
+ *     t.strftime "%Y-%m-%d %H:%M:%S UTC"  #=> "2012-11-10 17:16:12 UTC"
+ */
+
+static VALUE
+time_inspect(VALUE time)
+{
+    struct time_object *tobj;
+    VALUE str, subsec;
+
+    GetTimeval(time, tobj);
+    str = strftimev("%Y-%m-%d %H:%M:%S", time, rb_usascii_encoding());
+    subsec = w2v(wmod(tobj->timew, WINT2FIXWV(TIME_SCALE)));
+    if (FIXNUM_P(subsec) && FIX2LONG(subsec) == 0) {
+    }
+    else if (FIXNUM_P(subsec) && FIX2LONG(subsec) < TIME_SCALE) {
+        long len;
+        str = rb_enc_sprintf(rb_usascii_encoding(), "%"PRIsVALUE".%09ld", str, FIX2LONG(subsec));
+        for (len=RSTRING_LEN(str); RSTRING_PTR(str)[len-1] == '0' && len > 0; len--)
+            ;
+        rb_str_resize(str, len);
+    }
+    else {
+        rb_str_cat_cstr(str, " ");
+        subsec = quov(subsec, INT2FIX(TIME_SCALE));
+        rb_str_concat(str, rb_obj_as_string(subsec));
+    }
+    if (TZMODE_UTC_P(tobj)) {
+        rb_str_cat_cstr(str, " UTC");
+    }
+    else {
+        rb_str_concat(str, strftimev(" %z", time, rb_usascii_encoding()));
+    }
+    return str;
 }
 
 static VALUE
@@ -5204,7 +5255,7 @@ mload_zone(VALUE time, VALUE zone)
     VALUE z, args[2];
     args[0] = time;
     args[1] = zone;
-    z = rb_rescue(mload_findzone, (VALUE)args, (VALUE (*)(ANYARGS))NULL, Qnil);
+    z = rb_rescue(mload_findzone, (VALUE)args, 0, Qnil);
     if (NIL_P(z)) return rb_fstring(zone);
     if (RB_TYPE_P(z, T_STRING)) return rb_fstring(z);
     return z;
@@ -5554,7 +5605,7 @@ Init_tm(VALUE outer, const char *name)
     rb_define_method(tm, "utc?", time_utc_p, 0);
     rb_define_method(tm, "gmt?", time_utc_p, 0);
     rb_define_method(tm, "to_s", time_to_s, 0);
-    rb_define_method(tm, "inspect", time_to_s, 0);
+    rb_define_method(tm, "inspect", time_inspect, 0);
     rb_define_method(tm, "to_a", time_to_a, 0);
     rb_define_method(tm, "tv_sec", time_to_i, 0);
     rb_define_method(tm, "tv_usec", time_usec, 0);
@@ -5805,7 +5856,7 @@ Init_Time(void)
     rb_define_method(rb_cTime, "ctime", time_asctime, 0);
     rb_define_method(rb_cTime, "asctime", time_asctime, 0);
     rb_define_method(rb_cTime, "to_s", time_to_s, 0);
-    rb_define_method(rb_cTime, "inspect", time_to_s, 0);
+    rb_define_method(rb_cTime, "inspect", time_inspect, 0);
     rb_define_method(rb_cTime, "to_a", time_to_a, 0);
 
     rb_define_method(rb_cTime, "+", time_plus, 1);

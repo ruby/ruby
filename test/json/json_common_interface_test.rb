@@ -56,7 +56,7 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
   end
 
   def test_parse_bang
-    assert_equal [ 1, NaN, 3, ], JSON.parse!('[ 1, NaN, 3 ]')
+    assert_equal [ 1, Infinity, 3, ], JSON.parse!('[ 1, Infinity, 3 ]')
   end
 
   def test_generate

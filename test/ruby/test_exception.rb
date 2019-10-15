@@ -488,20 +488,15 @@ end.join
   end
 
   def test_exception_in_name_error_to_str
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     bug5575 = '[ruby-core:41612]'
-    Tempfile.create(["test_exception_in_name_error_to_str", ".rb"]) do |t|
-      t.puts <<-EOC
+    begin;
       begin
         BasicObject.new.inspect
       rescue
-        $!.inspect
+        assert_nothing_raised(NameError, bug5575) {$!.inspect}
       end
-    EOC
-      t.close
-      assert_nothing_raised(NameError, bug5575) do
-        load(t.path)
-      end
-    end
+    end;
   end
 
   def test_equal
@@ -511,19 +506,28 @@ end.join
   end
 
   def test_exception_in_exception_equal
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     bug5865 = '[ruby-core:41979]'
-    Tempfile.create(["test_exception_in_exception_equal", ".rb"]) do |t|
-      t.puts <<-EOC
+    begin;
       o = Object.new
       def o.exception(arg)
       end
-      _ = RuntimeError.new("a") == o
-      EOC
-      t.close
       assert_nothing_raised(ArgumentError, bug5865) do
-        load(t.path)
+        RuntimeError.new("a") == o
       end
+    end;
+  end
+
+  def test_backtrace_by_exception
+    begin
+      line = __LINE__; raise "foo"
+    rescue => e
     end
+    e2 = e.exception("bar")
+    assert_not_equal(e.message, e2.message)
+    assert_equal(e.backtrace, e2.backtrace)
+    loc = e2.backtrace_locations[0]
+    assert_equal([__FILE__, line], [loc.path, loc.lineno])
   end
 
   Bug4438 = '[ruby-core:35364]'
@@ -1219,6 +1223,14 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     assert_equal("#{__FILE__}:#{__LINE__-1}: warning: test warning\n", warning[0])
     assert_raise(ArgumentError) {warn("test warning", uplevel: -1)}
     assert_in_out_err(["-e", "warn 'ok', uplevel: 1"], '', [], /warning:/)
+    warning = capture_warning_warn {warn("test warning", {uplevel: 0})}
+    assert_equal("#{__FILE__}:#{__LINE__-1}: warning: The last argument is used as the keyword parameter\n", warning[0])
+    assert_match(/warning: for method defined here|warning: test warning/, warning[1])
+    warning = capture_warning_warn {warn("test warning", **{uplevel: 0})}
+    assert_equal("#{__FILE__}:#{__LINE__-1}: warning: test warning\n", warning[0])
+    warning = capture_warning_warn {warn("test warning", {uplevel: 0}, **{})}
+    assert_equal("test warning\n{:uplevel=>0}\n", warning[0])
+    assert_raise(ArgumentError) {warn("test warning", foo: 1)}
   end
 
   def test_warning_warn_invalid_argument

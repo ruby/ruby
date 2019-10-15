@@ -29,7 +29,7 @@
 % # JIT: cache hit path of vm_getivar, or cancel JIT.
 % if insn.name == 'setinstancevariable'
         fprintf(f, "    VALUE val = stack[%d];\n", b->stack_size - 1);
-        fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj))) {\n");
+        fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && !RB_OBJ_FROZEN(obj))) {\n");
         fprintf(f, "        VALUE *ptr = ROBJECT_IVPTR(obj);\n");
         fprintf(f, "        RB_OBJ_WRITE(obj, &ptr[index], val);\n");
         fprintf(f, "    }\n");

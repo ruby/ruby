@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#include "ruby/config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,7 +8,6 @@
 #include <sys/stat.h>
 
 #include "ruby-runner.h"
-#include "ruby/config.h"
 
 #ifdef MAKE_MJIT_BUILD_DIR
 const char MJIT_HEADER[] = BUILDDIR "/" MJIT_MIN_HEADER;

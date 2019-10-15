@@ -214,7 +214,7 @@ class ContextState
               if example
                 passed = protect nil, example
                 MSpec.actions :example, state, example
-                protect nil, @expectation_missing unless MSpec.expectation? or !passed
+                protect nil, @expectation_missing if !MSpec.expectation? and passed
               end
             end
             protect "after :each", post(:each)

@@ -1504,7 +1504,13 @@ module Net   #:nodoc:
       begin
         begin_transport req
         res = catch(:response) {
-          req.exec @socket, @curr_http_version, edit_path(req.path)
+          begin
+            req.exec @socket, @curr_http_version, edit_path(req.path)
+          rescue Errno::EPIPE
+            # Failure when writing full request, but we can probably
+            # still read the received response.
+          end
+
           begin
             res = HTTPResponse.read_new(@socket)
             res.decode_content = req.decode_content

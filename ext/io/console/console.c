@@ -74,7 +74,7 @@ getattr(int fd, conmode *t)
 #define SET_LAST_ERROR (0)
 #endif
 
-static ID id_getc, id_console, id_close, id_min, id_time;
+static ID id_getc, id_console, id_close, id_min, id_time, id_intr;
 #if ENABLE_IO_GETPASS
 static ID id_gets;
 #endif
@@ -101,20 +101,33 @@ rb_f_send(int argc, VALUE *argv, VALUE recv)
 typedef struct {
     int vmin;
     int vtime;
+    int intr;
 } rawmode_arg_t;
 
 static rawmode_arg_t *
-rawmode_opt(int argc, VALUE *argv, rawmode_arg_t *opts)
+rawmode_opt(int *argcp, VALUE *argv, int min_argc, int max_argc, rawmode_arg_t *opts)
 {
+    int argc = *argcp;
     rawmode_arg_t *optp = NULL;
-    VALUE vopts;
-    rb_scan_args(argc, argv, "0:", &vopts);
+    VALUE vopts = Qnil;
+    if (argc > min_argc)  {
+	vopts = rb_check_hash_type(argv[argc-1]);
+	if (!NIL_P(vopts)) {
+	    argv[argc-1] = vopts;
+	    vopts = rb_extract_keywords(&argv[argc-1]);
+	    if (!argv[argc-1]) *argcp = --argc;
+	    if (!vopts) vopts = Qnil;
+	}
+    }
+    rb_check_arity(argc, min_argc, max_argc);
     if (!NIL_P(vopts)) {
 	VALUE vmin = rb_hash_aref(vopts, ID2SYM(id_min));
 	VALUE vtime = rb_hash_aref(vopts, ID2SYM(id_time));
+	VALUE intr = rb_hash_aref(vopts, ID2SYM(id_intr));
 	/* default values by `stty raw` */
 	opts->vmin = 1;
 	opts->vtime = 0;
+	opts->intr = 0;
 	if (!NIL_P(vmin)) {
 	    opts->vmin = NUM2INT(vmin);
 	    optp = opts;
@@ -124,6 +137,21 @@ rawmode_opt(int argc, VALUE *argv, rawmode_arg_t *opts)
 	    vtime = rb_funcall3(vtime, '*', 1, &v10);
 	    opts->vtime = NUM2INT(vtime);
 	    optp = opts;
+	}
+	switch (intr) {
+	  case Qtrue:
+	    opts->intr = 1;
+	    optp = opts;
+	    break;
+	  case Qfalse:
+	    opts->intr = 0;
+	    optp = opts;
+	    break;
+	  case Qnil:
+	    break;
+	  default:
+	    rb_raise(rb_eArgError, "true or false expected as intr: %"PRIsVALUE,
+		     intr);
 	}
     }
     return optp;
@@ -152,6 +180,10 @@ set_rawmode(conmode *t, void *arg)
 	const rawmode_arg_t *r = arg;
 	if (r->vmin >= 0) t->c_cc[VMIN] = r->vmin;
 	if (r->vtime >= 0) t->c_cc[VTIME] = r->vtime;
+	if (r->intr) {
+	    t->c_iflag |= BRKINT|IXON;
+	    t->c_lflag |= ISIG|IEXTEN;
+	}
     }
 #endif
 }
@@ -233,7 +265,7 @@ get_write_fd(const rb_io_t *fptr)
 #define FD_PER_IO 2
 
 static VALUE
-ttymode(VALUE io, VALUE (*func)(VALUE), void (*setter)(conmode *, void *), void *arg)
+ttymode(VALUE io, VALUE (*func)(VALUE), VALUE farg, void (*setter)(conmode *, void *), void *arg)
 {
     rb_io_t *fptr;
     int status = -1;
@@ -264,7 +296,7 @@ ttymode(VALUE io, VALUE (*func)(VALUE), void (*setter)(conmode *, void *), void 
 	}
     }
     if (status == 0) {
-	result = rb_protect(func, io, &status);
+	result = rb_protect(func, farg, &status);
     }
     GetOpenFile(io, fptr);
     if (fd[0] != -1 && fd[0] == GetReadFD(fptr)) {
@@ -287,6 +319,31 @@ ttymode(VALUE io, VALUE (*func)(VALUE), void (*setter)(conmode *, void *), void 
     }
     return result;
 }
+
+#if !defined _WIN32
+struct ttymode_callback_args {
+    VALUE (*func)(VALUE, VALUE);
+    VALUE io;
+    VALUE farg;
+};
+
+static VALUE
+ttymode_callback(VALUE args)
+{
+    struct ttymode_callback_args *argp = (struct ttymode_callback_args *)args;
+    return argp->func(argp->io, argp->farg);
+}
+
+static VALUE
+ttymode_with_io(VALUE io, VALUE (*func)(VALUE, VALUE), VALUE farg, void (*setter)(conmode *, void *), void *arg)
+{
+    struct ttymode_callback_args cargs;
+    cargs.func = func;
+    cargs.io = io;
+    cargs.farg = farg;
+    return ttymode(io, ttymode_callback, (VALUE)&cargs, setter, arg);
+}
+#endif
 
 /*
  * call-seq:
@@ -311,8 +368,8 @@ ttymode(VALUE io, VALUE (*func)(VALUE), void (*setter)(conmode *, void *), void 
 static VALUE
 console_raw(int argc, VALUE *argv, VALUE io)
 {
-    rawmode_arg_t opts, *optp = rawmode_opt(argc, argv, &opts);
-    return ttymode(io, rb_yield, set_rawmode, optp);
+    rawmode_arg_t opts, *optp = rawmode_opt(&argc, argv, 0, 0, &opts);
+    return ttymode(io, rb_yield, io, set_rawmode, optp);
 }
 
 /*
@@ -333,7 +390,7 @@ console_set_raw(int argc, VALUE *argv, VALUE io)
     conmode t;
     rb_io_t *fptr;
     int fd;
-    rawmode_arg_t opts, *optp = rawmode_opt(argc, argv, &opts);
+    rawmode_arg_t opts, *optp = rawmode_opt(&argc, argv, 0, 0, &opts);
 
     GetOpenFile(io, fptr);
     fd = GetReadFD(fptr);
@@ -358,7 +415,7 @@ console_set_raw(int argc, VALUE *argv, VALUE io)
 static VALUE
 console_cooked(VALUE io)
 {
-    return ttymode(io, rb_yield, set_cookedmode, NULL);
+    return ttymode(io, rb_yield, io, set_cookedmode, NULL);
 }
 
 /*
@@ -407,9 +464,9 @@ getc_call(VALUE io)
 static VALUE
 console_getch(int argc, VALUE *argv, VALUE io)
 {
-    rawmode_arg_t opts, *optp = rawmode_opt(argc, argv, &opts);
+    rawmode_arg_t opts, *optp = rawmode_opt(&argc, argv, 0, 0, &opts);
 #ifndef _WIN32
-    return ttymode(io, getc_call, set_rawmode, optp);
+    return ttymode(io, getc_call, io, set_rawmode, optp);
 #else
     rb_io_t *fptr;
     VALUE str;
@@ -468,7 +525,7 @@ console_getch(int argc, VALUE *argv, VALUE io)
 static VALUE
 console_noecho(VALUE io)
 {
-    return ttymode(io, rb_yield, set_noecho, NULL);
+    return ttymode(io, rb_yield, io, set_noecho, NULL);
 }
 
 /*
@@ -518,6 +575,115 @@ console_echo_p(VALUE io)
     fd = GetReadFD(fptr);
     if (!getattr(fd, &t)) rb_sys_fail(0);
     return echo_p(&t) ? Qtrue : Qfalse;
+}
+
+static const rb_data_type_t conmode_type = {
+    "console-mode",
+    {0, RUBY_TYPED_DEFAULT_FREE,},
+    0, 0,
+    RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+};
+static VALUE cConmode;
+
+static VALUE
+conmode_alloc(VALUE klass)
+{
+    return rb_data_typed_object_zalloc(klass, sizeof(conmode), &conmode_type);
+}
+
+static VALUE
+conmode_new(VALUE klass, const conmode *t)
+{
+    VALUE obj = conmode_alloc(klass);
+    *(conmode *)DATA_PTR(obj) = *t;
+    return obj;
+}
+
+static VALUE
+conmode_init_copy(VALUE obj, VALUE obj2)
+{
+    conmode *t = rb_check_typeddata(obj, &conmode_type);
+    conmode *t2 = rb_check_typeddata(obj2, &conmode_type);
+    *t = *t2;
+    return obj;
+}
+
+static VALUE
+conmode_set_echo(VALUE obj, VALUE f)
+{
+    conmode *t = rb_check_typeddata(obj, &conmode_type);
+    if (RTEST(f))
+	set_echo(t, NULL);
+    else
+	set_noecho(t, NULL);
+    return obj;
+}
+
+static VALUE
+conmode_set_raw(int argc, VALUE *argv, VALUE obj)
+{
+    conmode *t = rb_check_typeddata(obj, &conmode_type);
+    rawmode_arg_t opts, *optp = rawmode_opt(&argc, argv, 0, 0, &opts);
+
+    set_rawmode(t, optp);
+    return obj;
+}
+
+static VALUE
+conmode_raw_new(int argc, VALUE *argv, VALUE obj)
+{
+    conmode *r = rb_check_typeddata(obj, &conmode_type);
+    conmode t = *r;
+    rawmode_arg_t opts, *optp = rawmode_opt(&argc, argv, 0, 0, &opts);
+
+    set_rawmode(&t, optp);
+    return conmode_new(rb_obj_class(obj), &t);
+}
+
+/*
+ * call-seq:
+ *   io.console_mode       -> mode
+ *
+ * Returns a data represents the current console mode.
+ *
+ * You must require 'io/console' to use this method.
+ */
+static VALUE
+console_conmode_get(VALUE io)
+{
+    conmode t;
+    rb_io_t *fptr;
+    int fd;
+
+    GetOpenFile(io, fptr);
+    fd = GetReadFD(fptr);
+    if (!getattr(fd, &t)) rb_sys_fail(0);
+
+    return conmode_new(cConmode, &t);
+}
+
+/*
+ * call-seq:
+ *   io.console_mode = mode
+ *
+ * Sets the console mode to +mode+.
+ *
+ * You must require 'io/console' to use this method.
+ */
+static VALUE
+console_conmode_set(VALUE io, VALUE mode)
+{
+    conmode *t, r;
+    rb_io_t *fptr;
+    int fd;
+
+    TypedData_Get_Struct(mode, conmode, &conmode_type, t);
+    r = *t;
+    GetOpenFile(io, fptr);
+    fd = GetReadFD(fptr);
+    if (!setattr(fd, &r)) rb_sys_fail(0);
+
+    return mode;
 }
 
 #if defined TIOCGWINSZ
@@ -638,6 +804,30 @@ console_set_winsize(VALUE io, VALUE size)
 }
 #endif
 
+#ifdef _WIN32
+static VALUE
+console_check_winsize_changed(VALUE io)
+{
+    rb_io_t *fptr;
+    HANDLE h;
+    DWORD num;
+
+    GetOpenFile(io, fptr);
+    h = (HANDLE)rb_w32_get_osfhandle(GetReadFD(fptr));
+    while (GetNumberOfConsoleInputEvents(h, &num) && num > 0) {
+	INPUT_RECORD rec;
+	if (ReadConsoleInput(h, &rec, 1, &num)) {
+	    if (rec.EventType == WINDOW_BUFFER_SIZE_EVENT) {
+		rb_yield(Qnil);
+	    }
+	}
+    }
+    return io;
+}
+#else
+#define console_check_winsize_changed rb_f_notimplement
+#endif
+
 /*
  * call-seq:
  *   io.iflush
@@ -733,9 +923,24 @@ console_beep(VALUE io)
     return io;
 }
 
+static int
+mode_in_range(VALUE val, int high, const char *modename)
+{
+    int mode;
+    if (NIL_P(val)) return 0;
+    if (!RB_INTEGER_TYPE_P(val)) {
+      wrong_value:
+	rb_raise(rb_eArgError, "wrong %s mode: %"PRIsVALUE, modename, val);
+    }
+    if ((mode = NUM2INT(val)) < 0 || mode > high) {
+	goto wrong_value;
+    }
+    return mode;
+}
+
 #if defined _WIN32
 static VALUE
-console_goto(VALUE io, VALUE x, VALUE y)
+console_goto(VALUE io, VALUE y, VALUE x)
 {
     rb_io_t *fptr;
     int fd;
@@ -763,15 +968,159 @@ console_cursor_pos(VALUE io)
     if (!GetConsoleScreenBufferInfo((HANDLE)rb_w32_get_osfhandle(fd), &ws)) {
 	rb_syserr_fail(LAST_ERROR, 0);
     }
-    return rb_assoc_new(UINT2NUM(ws.dwCursorPosition.X), UINT2NUM(ws.dwCursorPosition.Y));
+    return rb_assoc_new(UINT2NUM(ws.dwCursorPosition.Y), UINT2NUM(ws.dwCursorPosition.X));
 }
 
 static VALUE
-console_cursor_set(VALUE io, VALUE cpos)
+console_move(VALUE io, int y, int x)
 {
-    cpos = rb_convert_type(cpos, T_ARRAY, "Array", "to_ary");
-    if (RARRAY_LEN(cpos) != 2) rb_raise(rb_eArgError, "expected 2D coordinate");
-    return console_goto(io, RARRAY_AREF(cpos, 0), RARRAY_AREF(cpos, 1));
+    rb_io_t *fptr;
+    HANDLE h;
+    rb_console_size_t ws;
+    COORD *pos = &ws.dwCursorPosition;
+
+    GetOpenFile(io, fptr);
+    h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(fptr));
+    if (!GetConsoleScreenBufferInfo(h, &ws)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+    pos->X += x;
+    pos->Y += y;
+    if (!SetConsoleCursorPosition(h, *pos)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+    return io;
+}
+
+static VALUE
+console_goto_column(VALUE io, VALUE val)
+{
+    rb_io_t *fptr;
+    HANDLE h;
+    rb_console_size_t ws;
+    COORD *pos = &ws.dwCursorPosition;
+
+    GetOpenFile(io, fptr);
+    h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(fptr));
+    if (!GetConsoleScreenBufferInfo(h, &ws)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+    pos->X = NUM2INT(val);
+    if (!SetConsoleCursorPosition(h, *pos)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+    return io;
+}
+
+static void
+constat_clear(HANDLE handle, WORD attr, DWORD len, COORD pos)
+{
+    DWORD written;
+
+    FillConsoleOutputAttribute(handle, attr, len, pos, &written);
+    FillConsoleOutputCharacterW(handle, L' ', len, pos, &written);
+}
+
+static VALUE
+console_erase_line(VALUE io, VALUE val)
+{
+    rb_io_t *fptr;
+    HANDLE h;
+    rb_console_size_t ws;
+    COORD *pos = &ws.dwCursorPosition;
+    DWORD w;
+    int mode = mode_in_range(val, 2, "line erase");
+
+    GetOpenFile(io, fptr);
+    h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(fptr));
+    if (!GetConsoleScreenBufferInfo(h, &ws)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+    w = winsize_col(&ws);
+    switch (mode) {
+      case 0:			/* after cursor */
+	w -= pos->X;
+	break;
+      case 1:			/* before *and* cursor */
+	w = pos->X + 1;
+	pos->X = 0;
+	break;
+      case 2:			/* entire line */
+	pos->X = 0;
+	break;
+    }
+    constat_clear(h, ws.wAttributes, w, *pos);
+    return io;
+}
+
+static VALUE
+console_erase_screen(VALUE io, VALUE val)
+{
+    rb_io_t *fptr;
+    HANDLE h;
+    rb_console_size_t ws;
+    COORD *pos = &ws.dwCursorPosition;
+    DWORD w;
+    int mode = mode_in_range(val, 3, "screen erase");
+
+    GetOpenFile(io, fptr);
+    h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(fptr));
+    if (!GetConsoleScreenBufferInfo(h, &ws)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+    w = winsize_col(&ws);
+    switch (mode) {
+      case 0:	/* erase after cursor */
+	w = (w * (ws.srWindow.Bottom - pos->Y + 1) - pos->X);
+	break;
+      case 1:	/* erase before *and* cursor */
+	w = (w * (pos->Y - ws.srWindow.Top) + pos->X + 1);
+	pos->X = 0;
+	pos->Y = ws.srWindow.Top;
+	break;
+      case 2:	/* erase entire screen */
+	w = (w * winsize_row(&ws));
+	pos->X = 0;
+	pos->Y = ws.srWindow.Top;
+	break;
+      case 3:	/* erase entire screen */
+	w = (w * ws.dwSize.Y);
+	pos->X = 0;
+	pos->Y = 0;
+	break;
+    }
+    constat_clear(h, ws.wAttributes, w, *pos);
+    return io;
+}
+
+static VALUE
+console_scroll(VALUE io, int line)
+{
+    rb_io_t *fptr;
+    HANDLE h;
+    rb_console_size_t ws;
+
+    GetOpenFile(io, fptr);
+    h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(fptr));
+    if (!GetConsoleScreenBufferInfo(h, &ws)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+    if (line) {
+	SMALL_RECT scroll;
+	COORD destination;
+	CHAR_INFO fill;
+	scroll.Left = 0;
+	scroll.Top = line > 0 ? line : 0;
+	scroll.Right = winsize_col(&ws) - 1;
+	scroll.Bottom = winsize_row(&ws) - 1 + (line < 0 ? line : 0);
+	destination.X = 0;
+	destination.Y = line < 0 ? -line : 0;
+	fill.Char.UnicodeChar = L' ';
+	fill.Attributes = ws.wAttributes;
+
+	ScrollConsoleScreenBuffer(h, &scroll, NULL, destination, &fill);
+    }
+    return io;
 }
 
 #include "win32_vk.inc"
@@ -802,11 +1151,209 @@ console_key_pressed_p(VALUE io, VALUE k)
     return GetKeyState(vk) & 0x80 ? Qtrue : Qfalse;
 }
 #else
-# define console_goto rb_f_notimplement
-# define console_cursor_pos rb_f_notimplement
-# define console_cursor_set rb_f_notimplement
+struct query_args {
+    const char *qstr;
+    int opt;
+};
+
+static int
+direct_query(VALUE io, const struct query_args *query)
+{
+    if (RB_TYPE_P(io, T_FILE)) {
+	rb_io_t *fptr;
+	VALUE wio;
+	GetOpenFile(io, fptr);
+	wio = fptr->tied_io_for_writing;
+	if (wio) {
+	    VALUE s = rb_str_new_cstr(query->qstr);
+	    rb_io_write(wio, s);
+	    rb_io_flush(wio);
+	    return 1;
+	}
+	if (write(fptr->fd, query->qstr, strlen(query->qstr)) != -1) {
+	    return 1;
+	}
+	if (fptr->fd == 0 &&
+	    write(1, query->qstr, strlen(query->qstr)) != -1) {
+	    return 1;
+	}
+    }
+    return 0;
+}
+
+static VALUE
+read_vt_response(VALUE io, VALUE query)
+{
+    struct query_args *qargs = (struct query_args *)query;
+    VALUE result, b;
+    int opt = 0;
+    int num = 0;
+    if (qargs) {
+	opt = qargs->opt;
+	if (!direct_query(io, qargs)) return Qnil;
+    }
+    if (rb_io_getbyte(io) != INT2FIX(0x1b)) return Qnil;
+    if (rb_io_getbyte(io) != INT2FIX('[')) return Qnil;
+    result = rb_ary_new();
+    while (!NIL_P(b = rb_io_getbyte(io))) {
+	int c = NUM2UINT(b);
+	if (c == ';') {
+	    rb_ary_push(result, INT2NUM(num));
+	    num = 0;
+	}
+	else if (ISDIGIT(c)) {
+	    num = num * 10 + c - '0';
+	}
+	else if (opt && c == opt) {
+	    opt = 0;
+	}
+	else {
+	    char last = (char)c;
+	    rb_ary_push(result, INT2NUM(num));
+	    b = rb_str_new(&last, 1);
+	    break;
+	}
+    }
+    return rb_ary_push(result, b);
+}
+
+static VALUE
+console_vt_response(int argc, VALUE *argv, VALUE io, const struct query_args *qargs)
+{
+    rawmode_arg_t opts, *optp = rawmode_opt(&argc, argv, 0, 1, &opts);
+    VALUE query = (VALUE)qargs;
+    VALUE ret = ttymode_with_io(io, read_vt_response, query, set_rawmode, optp);
+    return ret;
+}
+
+static VALUE
+console_cursor_pos(VALUE io)
+{
+    static const struct query_args query = {"\033[6n", 0};
+    VALUE resp = console_vt_response(0, 0, io, &query);
+    VALUE row, column, term;
+    unsigned int r, c;
+    if (!RB_TYPE_P(resp, T_ARRAY) || RARRAY_LEN(resp) != 3) return Qnil;
+    term = RARRAY_AREF(resp, 2);
+    if (!RB_TYPE_P(term, T_STRING) || RSTRING_LEN(term) != 1) return Qnil;
+    if (RSTRING_PTR(term)[0] != 'R') return Qnil;
+    row = RARRAY_AREF(resp, 0);
+    column = RARRAY_AREF(resp, 1);
+    rb_ary_resize(resp, 2);
+    r = NUM2UINT(row) - 1;
+    c = NUM2UINT(column) - 1;
+    RARRAY_ASET(resp, 0, INT2NUM(r));
+    RARRAY_ASET(resp, 1, INT2NUM(c));
+    return resp;
+}
+
+static VALUE
+console_goto(VALUE io, VALUE y, VALUE x)
+{
+    rb_io_write(io, rb_sprintf("\x1b[%d;%dH", NUM2UINT(y)+1, NUM2UINT(x)+1));
+    return io;
+}
+
+static VALUE
+console_move(VALUE io, int y, int x)
+{
+    if (x || y) {
+	VALUE s = rb_str_new_cstr("");
+	if (y) rb_str_catf(s, "\x1b[%d%c", y < 0 ? -y : y, y < 0 ? 'A' : 'B');
+	if (x) rb_str_catf(s, "\x1b[%d%c", x < 0 ? -x : x, x < 0 ? 'D' : 'C');
+	rb_io_write(io, s);
+	rb_io_flush(io);
+    }
+    return io;
+}
+
+static VALUE
+console_goto_column(VALUE io, VALUE val)
+{
+    rb_io_write(io, rb_sprintf("\x1b[%dG", NUM2UINT(val)+1));
+    return io;
+}
+
+static VALUE
+console_erase_line(VALUE io, VALUE val)
+{
+    int mode = mode_in_range(val, 2, "line erase");
+    rb_io_write(io, rb_sprintf("\x1b[%dK", mode));
+    return io;
+}
+
+static VALUE
+console_erase_screen(VALUE io, VALUE val)
+{
+    int mode = mode_in_range(val, 3, "screen erase");
+    rb_io_write(io, rb_sprintf("\x1b[%dJ", mode));
+    return io;
+}
+
+static VALUE
+console_scroll(VALUE io, int line)
+{
+    if (line) {
+	VALUE s = rb_sprintf("\x1b[%d%c", line < 0 ? -line : line,
+			     line < 0 ? 'T' : 'S');
+	rb_io_write(io, s);
+    }
+    return io;
+}
 # define console_key_pressed_p rb_f_notimplement
 #endif
+
+static VALUE
+console_cursor_set(VALUE io, VALUE cpos)
+{
+    cpos = rb_convert_type(cpos, T_ARRAY, "Array", "to_ary");
+    if (RARRAY_LEN(cpos) != 2) rb_raise(rb_eArgError, "expected 2D coordinate");
+    return console_goto(io, RARRAY_AREF(cpos, 0), RARRAY_AREF(cpos, 1));
+}
+
+static VALUE
+console_cursor_up(VALUE io, VALUE val)
+{
+    return console_move(io, -NUM2INT(val), 0);
+}
+
+static VALUE
+console_cursor_down(VALUE io, VALUE val)
+{
+    return console_move(io, +NUM2INT(val), 0);
+}
+
+static VALUE
+console_cursor_left(VALUE io, VALUE val)
+{
+    return console_move(io, 0, -NUM2INT(val));
+}
+
+static VALUE
+console_cursor_right(VALUE io, VALUE val)
+{
+    return console_move(io, 0, +NUM2INT(val));
+}
+
+static VALUE
+console_scroll_forward(VALUE io, VALUE val)
+{
+    return console_scroll(io, +NUM2INT(val));
+}
+
+static VALUE
+console_scroll_backward(VALUE io, VALUE val)
+{
+    return console_scroll(io, -NUM2INT(val));
+}
+
+static VALUE
+console_clear_screen(VALUE io)
+{
+    console_erase_screen(io, INT2FIX(2));
+    console_goto(io, INT2FIX(0), INT2FIX(0));
+    return io;
+}
 
 /*
  * call-seq:
@@ -927,7 +1474,7 @@ puts_call(VALUE io)
 static VALUE
 getpass_call(VALUE io)
 {
-    return ttymode(io, rb_io_gets, set_noecho, NULL);
+    return ttymode(io, rb_io_gets, io, set_noecho, NULL);
 }
 
 static void
@@ -1006,6 +1553,7 @@ Init_console(void)
     id_close = rb_intern("close");
     id_min = rb_intern("min");
     id_time = rb_intern("time");
+    id_intr = rb_intern("intr");
 #ifndef HAVE_RB_F_SEND
     id___send__ = rb_intern("__send__");
 #endif
@@ -1022,6 +1570,8 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "getch", console_getch, -1);
     rb_define_method(rb_cIO, "echo=", console_set_echo, 1);
     rb_define_method(rb_cIO, "echo?", console_echo_p, 0);
+    rb_define_method(rb_cIO, "console_mode", console_conmode_get, 0);
+    rb_define_method(rb_cIO, "console_mode=", console_conmode_set, 1);
     rb_define_method(rb_cIO, "noecho", console_noecho, 0);
     rb_define_method(rb_cIO, "winsize", console_winsize, 0);
     rb_define_method(rb_cIO, "winsize=", console_set_winsize, 1);
@@ -1032,7 +1582,18 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "goto", console_goto, 2);
     rb_define_method(rb_cIO, "cursor", console_cursor_pos, 0);
     rb_define_method(rb_cIO, "cursor=", console_cursor_set, 1);
+    rb_define_method(rb_cIO, "cursor_up", console_cursor_up, 1);
+    rb_define_method(rb_cIO, "cursor_down", console_cursor_down, 1);
+    rb_define_method(rb_cIO, "cursor_left", console_cursor_left, 1);
+    rb_define_method(rb_cIO, "cursor_right", console_cursor_right, 1);
+    rb_define_method(rb_cIO, "goto_column", console_goto_column, 1);
+    rb_define_method(rb_cIO, "erase_line", console_erase_line, 1);
+    rb_define_method(rb_cIO, "erase_screen", console_erase_screen, 1);
+    rb_define_method(rb_cIO, "scroll_forward", console_scroll_forward, 1);
+    rb_define_method(rb_cIO, "scroll_backward", console_scroll_backward, 1);
+    rb_define_method(rb_cIO, "clear_screen", console_clear_screen, 0);
     rb_define_method(rb_cIO, "pressed?", console_key_pressed_p, 1);
+    rb_define_method(rb_cIO, "check_winsize_changed", console_check_winsize_changed, 0);
 #if ENABLE_IO_GETPASS
     rb_define_method(rb_cIO, "getpass", console_getpass, -1);
 #endif
@@ -1043,5 +1604,16 @@ InitVM_console(void)
 #if ENABLE_IO_GETPASS
 	rb_define_method(mReadable, "getpass", io_getpass, -1);
 #endif
+    }
+    {
+	/* :stopdoc: */
+        cConmode = rb_define_class_under(rb_cIO, "ConsoleMode", rb_cObject);
+        rb_define_alloc_func(cConmode, conmode_alloc);
+        rb_undef_method(cConmode, "initialize");
+        rb_define_method(cConmode, "initialize_copy", conmode_init_copy, 1);
+        rb_define_method(cConmode, "echo=", conmode_set_echo, 1);
+        rb_define_method(cConmode, "raw!", conmode_set_raw, -1);
+        rb_define_method(cConmode, "raw", conmode_raw_new, -1);
+	/* :startdoc: */
     }
 }

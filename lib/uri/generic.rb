@@ -836,6 +836,7 @@ module URI
       v.encode!(Encoding::UTF_8) rescue nil
       v.delete!("\t\r\n")
       v.force_encoding(Encoding::ASCII_8BIT)
+      raise InvalidURIError, "invalid percent escape: #{$1}" if /(%\H\H)/n.match(v)
       v.gsub!(/(?!%\h\h|[!$-&(-;=?-_a-~])./n.freeze){'%%%02X' % $&.ord}
       v.force_encoding(Encoding::US_ASCII)
       @query = v

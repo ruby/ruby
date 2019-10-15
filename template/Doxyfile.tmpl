@@ -21,7 +21,7 @@ have_dot = dot.empty? ? "NO" : "YES"
 PROJECT_NAME           = Ruby
 PROJECT_NUMBER         = <%=RUBY_VERSION%><%= RUBY_PATCHLEVEL < 0 ? 'dev' : "p#{RUBY_PATCHLEVEL}" %> (<%=RUBY_RELEASE_DATE%> revision <%=RUBY_REVISION%>)
 STRIP_FROM_PATH        = <%=srcdir%>
-FILE_VERSION_FILTER    = "<%=miniruby%> <%=srcdir%>/tool/file2lastrev.rb -q"
+FILE_VERSION_FILTER    = "<%=miniruby%> <%=srcdir%>/tool/file2lastrev.rb -q --srcdir=<%=srcdir%>"
 INPUT                  = <%=srcdir%> .
 INPUT_FILTER           = "<%=miniruby%> <%=srcdir%>/tool/strip-rdoc.rb"
 
@@ -102,11 +102,11 @@ WARN_LOGFILE           =
 # configuration options related to the input files
 #---------------------------------------------------------------------------
 INPUT_ENCODING         = UTF-8
-FILE_PATTERNS          = *.c *.h *.y *.def
+FILE_PATTERNS          = *.c *.h *.hpp *.y *.def
 RECURSIVE              = YES
 EXCLUDE                = <%=srcdir%>/ext/dl/callback <%=srcdir%>/ccan <%=srcdir%>/ext/psych/yaml
 EXCLUDE_SYMLINKS       = YES
-EXCLUDE_PATTERNS       = *.src doc enc build */ext/-test-/* tmp test yarvtest lib bootstraptest spec .ext .git .svn extconf.h *prelude.c encdb.h transdb.h insns.def
+EXCLUDE_PATTERNS       = *.src doc enc build */ext/-test-/* tmp test yarvtest lib bootstraptest spec .ext .git .svn extconf.h *prelude.c encdb.h transdb.h insns.def rb_mjit_header.h
 EXCLUDE_SYMBOLS        =
 EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       =

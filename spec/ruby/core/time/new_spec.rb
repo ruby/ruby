@@ -265,7 +265,7 @@ ruby_version_is "2.6" do
 
     context "#name method" do
       it "uses the optional #name method for marshaling" do
-        zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo", offset: (5*3600+30*60))
+        zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo")
         time = Time.new(2000, 1, 1, 12, 0, 0, zone)
         time_loaded = Marshal.load(Marshal.dump(time))
 
@@ -284,7 +284,7 @@ ruby_version_is "2.6" do
     end
 
     it "the #abbr method is used by '%Z' in #strftime" do
-      zone = TimeSpecs::TimezoneWithAbbr.new(abbr: "MMT", offset: (5*3600+30*60))
+      zone = TimeSpecs::TimezoneWithAbbr.new(name: "Asia/Colombo")
       time = Time.new(2000, 1, 1, 12, 0, 0, zone)
 
       time.strftime("%Z").should == "MMT"
@@ -296,7 +296,7 @@ ruby_version_is "2.6" do
     # the necessary methods mentioned above.
     context "subject's class implements .find_timezone method" do
       it "calls .find_timezone to build a time object at loading marshaled data" do
-        zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo", offset: (5*3600+30*60))
+        zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo")
         time = TimeSpecs::TimeWithFindTimezone.new(2000, 1, 1, 12, 0, 0, zone)
         time_loaded = Marshal.load(Marshal.dump(time))
 

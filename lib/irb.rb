@@ -850,6 +850,8 @@ class Binding
     IRB.setup(source_location[0], argv: [])
     workspace = IRB::WorkSpace.new(self)
     STDOUT.print(workspace.code_around_binding)
-    IRB::Irb.new(workspace).run(IRB.conf)
+    binding_irb = IRB::Irb.new(workspace)
+    binding_irb.context.irb_path = File.expand_path(source_location[0])
+    binding_irb.run(IRB.conf)
   end
 end

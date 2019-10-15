@@ -516,7 +516,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
 static VALUE
 rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE name, rest, keyword_init;
+    VALUE name, rest, keyword_init = Qfalse;
     long i;
     VALUE st;
     st_table *tbl;
@@ -532,18 +532,16 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     }
 
     if (RB_TYPE_P(argv[argc-1], T_HASH)) {
-	VALUE kwargs[1];
 	static ID keyword_ids[1];
 
 	if (!keyword_ids[0]) {
 	    keyword_ids[0] = rb_intern("keyword_init");
 	}
-	rb_get_kwargs(argv[argc-1], keyword_ids, 0, 1, kwargs);
+        rb_get_kwargs(argv[argc-1], keyword_ids, 0, 1, &keyword_init);
+        if (keyword_init == Qundef) {
+            keyword_init = Qfalse;
+        }
 	--argc;
-	keyword_init = kwargs[0];
-    }
-    else {
-	keyword_init = Qfalse;
     }
 
     rest = rb_ident_hash_new();
@@ -551,6 +549,9 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     tbl = RHASH_TBL(rest);
     for (i=0; i<argc; i++) {
 	VALUE mem = rb_to_symbol(argv[i]);
+        if (rb_is_attrset_sym(mem)) {
+            rb_raise(rb_eArgError, "invalid struct member: %"PRIsVALUE, mem);
+        }
 	if (st_insert(tbl, mem, Qtrue)) {
 	    rb_raise(rb_eArgError, "duplicate member: %"PRIsVALUE, mem);
 	}
@@ -568,7 +569,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     setup_struct(st, rest);
     rb_ivar_set(st, id_keyword_init, keyword_init);
     if (rb_block_given_p()) {
-	rb_mod_module_eval(0, 0, st);
+        rb_mod_module_eval(0, 0, st);
     }
 
     return st;

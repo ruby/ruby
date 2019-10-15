@@ -739,7 +739,8 @@ rb_str_intern(VALUE str)
 	enc = ascii;
     }
     else {
-	str = rb_str_new_frozen(str);
+        str = rb_str_dup(str);
+        OBJ_FREEZE(str);
     }
     str = rb_fstring(str);
     type = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
@@ -842,22 +843,6 @@ symbols_i(st_data_t key, st_data_t value, st_data_t arg)
     }
 
 }
-
-/*
- *  call-seq:
- *     Symbol.all_symbols    => array
- *
- *  Returns an array of all the symbols currently in Ruby's symbol
- *  table.
- *
- *     Symbol.all_symbols.size    #=> 903
- *     Symbol.all_symbols[1,20]   #=> [:floor, :ARGV, :Binding, :symlink,
- *                                     :chown, :EOFError, :$;, :String,
- *                                     :LOCK_SH, :"setuid?", :$<,
- *                                     :default_proc, :compact, :extend,
- *                                     :Tms, :getwd, :$=, :ThreadGroup,
- *                                     :wait2, :$>]
- */
 
 VALUE
 rb_sym_all_symbols(void)

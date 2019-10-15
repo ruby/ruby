@@ -441,6 +441,26 @@ newarray
     val = rb_ary_new4(num, STACK_ADDR_FROM_TOP(num));
 }
 
+/* put new array initialized with num values on the stack. There
+   should be at least one element on the stack, and the top element
+   should be a hash.  If the top element is empty, it is not
+   included in the array.
+ */
+DEFINE_INSN
+newarraykwsplat
+(rb_num_t num)
+(...)
+(VALUE val)
+// attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
+{
+    if (RHASH_EMPTY_P(*STACK_ADDR_FROM_TOP(1))) {
+        val = rb_ary_new4(num-1, STACK_ADDR_FROM_TOP(num));
+    }
+    else {
+        val = rb_ary_new4(num, STACK_ADDR_FROM_TOP(num));
+    }
+}
+
 /* dup array */
 DEFINE_INSN
 duparray
@@ -604,7 +624,7 @@ reverse
 }
 
 /* for stack caching. */
-DEFINE_INSN
+DEFINE_INSN_IF(STACK_CACHING)
 reput
 ()
 (..., VALUE val)
@@ -699,7 +719,7 @@ checktype
     ret = (TYPE(val) == (int)type) ? Qtrue : Qfalse;
 }
 
-/* get method reference. */
+/* get frozen method reference. */
 DEFINE_INSN
 methodref
 (ID id)
@@ -707,6 +727,7 @@ methodref
 (VALUE ret)
 {
     ret = rb_obj_method(val, ID2SYM(id));
+    RB_OBJ_FREEZE_RAW(ret);
 }
 
 /**********************************************************/
@@ -890,7 +911,7 @@ invokeblock
 // attr rb_snum_t sp_inc = sp_inc_of_invokeblock(ci);
 {
     static struct rb_call_cache cc = {
-        0, 0, NULL, vm_invokeblock_i,
+        0, 0, NULL, NULL, vm_invokeblock_i,
     };
 
     VALUE bh = VM_BLOCK_HANDLER_NONE;
@@ -1427,17 +1448,6 @@ opt_not
     }
 }
 
-/* optimized regexp match */
-DEFINE_INSN
-opt_regexpmatch1
-(VALUE recv)
-(VALUE obj)
-(VALUE val)
-// attr bool leaf = false; /* rb_reg_prepare_enc() may rb_raise() that calls rb_funcallv() */
-{
-    val = vm_opt_regexpmatch1(recv, obj);
-}
-
 /* optimized regexp match 2 */
 DEFINE_INSN
 opt_regexpmatch2
@@ -1475,7 +1485,7 @@ opt_call_c_function
 }
 
 /* BLT */
-DEFINE_INSN
+DEFINE_INSN_IF(SUPPORT_JOKE)
 bitblt
 ()
 ()
@@ -1485,7 +1495,7 @@ bitblt
 }
 
 /* The Answer to Life, the Universe, and Everything */
-DEFINE_INSN
+DEFINE_INSN_IF(SUPPORT_JOKE)
 answer
 ()
 ()

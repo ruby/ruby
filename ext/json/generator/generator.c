@@ -237,6 +237,7 @@ static void convert_UTF8_to_JSON(FBuffer *buffer, VALUE string)
     int escape_len;
     unsigned char c;
     char buf[6] = { '\\', 'u' };
+    int ascii_only = rb_enc_str_asciionly_p(string);
 
     for (start = 0, end = 0; end < len;) {
         p = ptr + end;
@@ -281,14 +282,17 @@ static void convert_UTF8_to_JSON(FBuffer *buffer, VALUE string)
                     break;
                 default:
                     {
-                        unsigned short clen = trailingBytesForUTF8[c] + 1;
-                        if (end + clen > len) {
-                            rb_raise(rb_path2class("JSON::GeneratorError"),
-                                    "partial character in source, but hit end");
-                        }
-                        if (!isLegalUTF8((UTF8 *) p, clen)) {
-                            rb_raise(rb_path2class("JSON::GeneratorError"),
-                                    "source sequence is illegal/malformed utf-8");
+                        unsigned short clen = 1;
+                        if (!ascii_only) {
+                            clen += trailingBytesForUTF8[c];
+                            if (end + clen > len) {
+                                rb_raise(rb_path2class("JSON::GeneratorError"),
+                                        "partial character in source, but hit end");
+                            }
+                            if (!isLegalUTF8((UTF8 *) p, clen)) {
+                                rb_raise(rb_path2class("JSON::GeneratorError"),
+                                        "source sequence is illegal/malformed utf-8");
+                            }
                         }
                         end += clen;
                     }
@@ -715,6 +719,60 @@ static VALUE cState_aset(VALUE self, VALUE name, VALUE value)
     return Qnil;
 }
 
+struct hash_foreach_arg {
+    FBuffer *buffer;
+    JSON_Generator_State *state;
+    VALUE Vstate;
+    int iter;
+};
+
+static int
+json_object_i(VALUE key, VALUE val, VALUE _arg)
+{
+    struct hash_foreach_arg *arg = (struct hash_foreach_arg *)_arg;
+    FBuffer *buffer = arg->buffer;
+    JSON_Generator_State *state = arg->state;
+    VALUE Vstate = arg->Vstate;
+
+    char *object_nl = state->object_nl;
+    long object_nl_len = state->object_nl_len;
+    char *indent = state->indent;
+    long indent_len = state->indent_len;
+    char *delim = FBUFFER_PTR(state->object_delim);
+    long delim_len = FBUFFER_LEN(state->object_delim);
+    char *delim2 = FBUFFER_PTR(state->object_delim2);
+    long delim2_len = FBUFFER_LEN(state->object_delim2);
+    long depth = state->depth;
+    int j;
+    VALUE klass, key_to_s;
+
+    if (arg->iter > 0) fbuffer_append(buffer, delim, delim_len);
+    if (object_nl) {
+        fbuffer_append(buffer, object_nl, object_nl_len);
+    }
+    if (indent) {
+        for (j = 0; j < depth; j++) {
+            fbuffer_append(buffer, indent, indent_len);
+        }
+    }
+
+    klass = CLASS_OF(key);
+    if (klass == rb_cString) {
+        key_to_s = key;
+    } else if (klass == rb_cSymbol) {
+        key_to_s = rb_id2str(SYM2ID(key));
+    } else {
+        key_to_s = rb_funcall(key, i_to_s, 0);
+    }
+    Check_Type(key_to_s, T_STRING);
+    generate_json(buffer, Vstate, state, key_to_s);
+    fbuffer_append(buffer, delim2, delim2_len);
+    generate_json(buffer, Vstate, state, val);
+
+    arg->iter++;
+    return ST_CONTINUE;
+}
+
 static void generate_json_object(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
     char *object_nl = state->object_nl;
@@ -722,36 +780,22 @@ static void generate_json_object(FBuffer *buffer, VALUE Vstate, JSON_Generator_S
     char *indent = state->indent;
     long indent_len = state->indent_len;
     long max_nesting = state->max_nesting;
-    char *delim = FBUFFER_PTR(state->object_delim);
-    long delim_len = FBUFFER_LEN(state->object_delim);
-    char *delim2 = FBUFFER_PTR(state->object_delim2);
-    long delim2_len = FBUFFER_LEN(state->object_delim2);
     long depth = ++state->depth;
-    int i, j;
-    VALUE key, key_to_s, keys;
+    int j;
+    struct hash_foreach_arg arg;
+
     if (max_nesting != 0 && depth > max_nesting) {
         fbuffer_free(buffer);
         rb_raise(eNestingError, "nesting of %ld is too deep", --state->depth);
     }
     fbuffer_append_char(buffer, '{');
-    keys = rb_funcall(obj, i_keys, 0);
-    for(i = 0; i < RARRAY_LEN(keys); i++) {
-        if (i > 0) fbuffer_append(buffer, delim, delim_len);
-        if (object_nl) {
-            fbuffer_append(buffer, object_nl, object_nl_len);
-        }
-        if (indent) {
-            for (j = 0; j < depth; j++) {
-                fbuffer_append(buffer, indent, indent_len);
-            }
-        }
-        key = rb_ary_entry(keys, i);
-        key_to_s = rb_funcall(key, i_to_s, 0);
-        Check_Type(key_to_s, T_STRING);
-        generate_json(buffer, Vstate, state, key_to_s);
-        fbuffer_append(buffer, delim2, delim2_len);
-        generate_json(buffer, Vstate, state, rb_hash_aref(obj, key));
-    }
+
+    arg.buffer = buffer;
+    arg.state = state;
+    arg.Vstate = Vstate;
+    arg.iter = 0;
+    rb_hash_foreach(obj, json_object_i, (VALUE)&arg);
+
     depth = --state->depth;
     if (object_nl) {
         fbuffer_append(buffer, object_nl, object_nl_len);
@@ -802,11 +846,22 @@ static void generate_json_array(FBuffer *buffer, VALUE Vstate, JSON_Generator_St
     fbuffer_append_char(buffer, ']');
 }
 
+#ifdef HAVE_RUBY_ENCODING_H
+static int enc_utf8_compatible_p(rb_encoding *enc)
+{
+    if (enc == rb_usascii_encoding()) return 1;
+    if (enc == rb_utf8_encoding()) return 1;
+    return 0;
+}
+#endif
+
 static void generate_json_string(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
     fbuffer_append_char(buffer, '"');
 #ifdef HAVE_RUBY_ENCODING_H
-    obj = rb_funcall(obj, i_encode, 1, CEncoding_UTF_8);
+    if (!enc_utf8_compatible_p(rb_enc_get(obj))) {
+        obj = rb_str_encode(obj, CEncoding_UTF_8, 0, Qnil);
+    }
 #endif
     if (state->ascii_only) {
         convert_UTF8_to_JSON_ASCII(buffer, obj);
@@ -970,6 +1025,8 @@ static VALUE cState_generate(VALUE self, VALUE obj)
  * * *allow_nan*: true if NaN, Infinity, and -Infinity should be
  *   generated, otherwise an exception is thrown, if these values are
  *   encountered. This options defaults to false.
+ * * *ascii_only*: true if only ASCII characters should be generated. This
+ *   ontions defaults to false.
  * * *buffer_initial_length*: sets the initial length of the generator's
  *   internal buffer.
  */

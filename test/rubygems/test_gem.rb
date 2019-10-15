@@ -375,6 +375,40 @@ class TestGem < Gem::TestCase
     assert_equal %w(bundler-2.0.0), loaded_spec_names
   end
 
+  def test_activate_bin_path_respects_underscore_selection_if_given
+    bundler_latest = util_spec 'bundler', '2.0.1' do |s|
+      s.executables = ['bundle']
+    end
+
+    bundler_previous = util_spec 'bundler', '1.17.3' do |s|
+      s.executables = ['bundle']
+    end
+
+    install_specs bundler_latest, bundler_previous
+
+    File.open("Gemfile.lock", "w") do |f|
+      f.write <<-L.gsub(/ {8}/, "")
+        GEM
+          remote: https://rubygems.org/
+          specs:
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+
+        BUNDLED WITH
+          2.0.1
+      L
+    end
+
+    File.open("Gemfile", "w") { |f| f.puts('source "https://rubygems.org"') }
+
+    load Gem.activate_bin_path("bundler", "bundle", "= 1.17.3")
+
+    assert_equal %w(bundler-1.17.3), loaded_spec_names
+  end
+
   def test_self_bin_path_no_exec_name
     e = assert_raises ArgumentError do
       Gem.bin_path 'a'

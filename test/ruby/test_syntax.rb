@@ -100,6 +100,40 @@ class TestSyntax < Test::Unit::TestCase
     EOS
   end
 
+  def test_array_kwsplat_hash
+    kw = {}
+    h = {a: 1}
+    assert_equal([], [**{}])
+    assert_equal([], [**kw])
+    assert_equal([h], [**h])
+    assert_equal([{}], [{}])
+    assert_equal([kw], [kw])
+    assert_equal([h], [h])
+
+    assert_equal([1], [1, **{}])
+    assert_equal([1], [1, **kw])
+    assert_equal([1, h], [1, **h])
+    assert_equal([1, {}], [1, {}])
+    assert_equal([1, kw], [1, kw])
+    assert_equal([1, h], [1, h])
+
+    assert_equal([], [**kw, **kw])
+    assert_equal([], [**kw, **{}, **kw])
+    assert_equal([1], [1, **kw, **{}, **kw])
+
+    assert_equal([{}], [{}, **kw, **kw])
+    assert_equal([kw], [kw, **kw, **kw])
+    assert_equal([h], [h, **kw, **kw])
+    assert_equal([h, h], [h, **kw, **kw, **h])
+
+    assert_equal([h, {:a=>2}], [h, **{}, **h, a: 2])
+    assert_equal([h, h], [h, **{}, a: 2, **h])
+    assert_equal([h, h], [h, a: 2, **{}, **h])
+    assert_equal([h, h], [h, a: 2, **h, **{}])
+    assert_equal([h, {:a=>2}], [h, **h, a: 2, **{}])
+    assert_equal([h, {:a=>2}], [h, **h, **{}, a: 2])
+  end
+
   def test_normal_argument
     assert_valid_syntax('def foo(x) end')
     assert_syntax_error('def foo(X) end', /constant/)
@@ -155,7 +189,9 @@ class TestSyntax < Test::Unit::TestCase
     h = {k3: 31}
     assert_raise(ArgumentError) {o.kw(**h)}
     h = {"k1"=>11, k2: 12}
-    assert_raise(TypeError) {o.kw(**h)}
+    assert_warn(/The last argument is split into positional and keyword parameters.* for `kw'/m) do
+      assert_raise(ArgumentError) {o.kw(**h)}
+    end
   end
 
   def test_keyword_duplicated
@@ -247,6 +283,22 @@ class TestSyntax < Test::Unit::TestCase
     assert_syntax_error('def o.foo(FOO: a) end', /constant/, bug10545)
     assert_syntax_error('def o.foo(@foo: a) end', /instance variable/)
     assert_syntax_error('def o.foo(@@foo: a) end', /class variable/)
+  end
+
+  def test_keywords_specified_and_not_accepted
+    assert_syntax_error('def o.foo(a:, **nil) end', /unexpected/)
+    assert_syntax_error('def o.foo(a:, **nil, &b) end', /unexpected/)
+    assert_syntax_error('def o.foo(**a, **nil) end', /unexpected/)
+    assert_syntax_error('def o.foo(**a, **nil, &b) end', /unexpected/)
+    assert_syntax_error('def o.foo(**nil, **a) end', /unexpected/)
+    assert_syntax_error('def o.foo(**nil, **a, &b) end', /unexpected/)
+
+    assert_syntax_error('proc do |a:, **nil| end', /unexpected/)
+    assert_syntax_error('proc do |a:, **nil, &b| end', /unexpected/)
+    assert_syntax_error('proc do |**a, **nil| end', /unexpected/)
+    assert_syntax_error('proc do |**a, **nil, &b| end', /unexpected/)
+    assert_syntax_error('proc do |**nil, **a| end', /unexpected/)
+    assert_syntax_error('proc do |**nil, **a, &b| end', /unexpected/)
   end
 
   def test_optional_self_reference
@@ -981,6 +1033,9 @@ eom
     assert_valid_syntax("a\n.foo")
     assert_valid_syntax("a\n&.foo")
     assert_valid_syntax("a\n.:foo")
+    assert_valid_syntax("a #\n#\n.foo\n")
+    assert_valid_syntax("a #\n#\n&.foo\n")
+    assert_valid_syntax("a #\n#\n.:foo\n")
   end
 
   def test_safe_call_in_massign_lhs
@@ -1006,9 +1061,6 @@ eom
     end
     assert_warn(/literal in condition/) do
       eval('1 if //')
-    end
-    assert_warn(/literal in condition/) do
-      eval('1 if true..false')
     end
     assert_warning(/literal in condition/) do
       eval('1 if 1')
@@ -1037,6 +1089,27 @@ eom
     end
     assert_warning('') do
       eval('1 if !:"#{"foo".upcase}"')
+    end
+  end
+
+  def test_warning_literal_in_flip_flop
+    assert_warn(/literal in flip-flop/) do
+      eval('1 if ""..false')
+    end
+    assert_warning(/literal in flip-flop/) do
+      eval('1 if :foo..false')
+    end
+    assert_warning(/literal in flip-flop/) do
+      eval('1 if :"#{"foo".upcase}"..false')
+    end
+    assert_warn(/literal in flip-flop/) do
+      eval('1 if ""...false')
+    end
+    assert_warning(/literal in flip-flop/) do
+      eval('1 if :foo...false')
+    end
+    assert_warning(/literal in flip-flop/) do
+      eval('1 if :"#{"foo".upcase}"...false')
     end
   end
 
@@ -1197,6 +1270,10 @@ eom
 
   def test_return_toplevel_with_argument
     assert_warn(/argument of top-level return is ignored/) {eval("return 1")}
+  end
+
+  def test_return_in_proc_in_class
+    assert_in_out_err(['-e', 'class TestSyntax; proc{ return }.call; end'], "", [], /^-e:1:.*unexpected return \(LocalJumpError\)/)
   end
 
   def test_syntax_error_in_rescue
@@ -1366,35 +1443,32 @@ eom
   end
 
   def test_numbered_parameter
-    assert_valid_syntax('proc {@1}')
-    assert_equal(3, eval('[1,2].then {@1+@2}'))
-    assert_equal("12", eval('[1,2].then {"#@1#@2"}'))
-    assert_equal(3, eval('->{@1+@2}.call(1,2)'))
-    assert_equal(4, eval('->(a=->{@1}){a}.call.call(4)'))
-    assert_equal(5, eval('-> a: ->{@1} {a}.call.call(5)'))
-    assert_syntax_error('proc {|| @1}', /ordinary parameter is defined/)
-    assert_syntax_error('proc {|;a| @1}', /ordinary parameter is defined/)
-    assert_syntax_error("proc {|\n| @1}", /ordinary parameter is defined/)
-    assert_syntax_error('proc {|x| @1}', /ordinary parameter is defined/)
-    assert_syntax_error('->(){@1}', /ordinary parameter is defined/)
-    assert_syntax_error('->(x){@1}', /ordinary parameter is defined/)
-    assert_syntax_error('->x{@1}', /ordinary parameter is defined/)
-    assert_syntax_error('->x:@2{}', /ordinary parameter is defined/)
-    assert_syntax_error('->x=@1{}', /ordinary parameter is defined/)
-    assert_syntax_error('proc {@1 = nil}', /Can't assign to numbered parameter @1/)
-    assert_syntax_error('proc {@01}', /leading zero/)
-    assert_syntax_error('proc {@1_}', /unexpected/)
-    assert_syntax_error('proc {@9999999999999999}', /too large/)
-    assert_syntax_error('@1', /outside block/)
-  end
-
-  def test_pipeline_operator
-    assert_valid_syntax('x |> y')
-    x = nil
-    assert_equal("121", eval('x = 12 |> pow(2) |> to_s 11'))
-    assert_equal(12, x)
-    assert_equal([2, 4, 6], eval("1.. |> take 3\n|> map do @1 * 2 end"))
-    assert_syntax_error('a|>-b', /unexpected '-'/)
+    assert_valid_syntax('proc {_1}')
+    assert_equal(3, eval('[1,2].then {_1+_2}'))
+    assert_equal("12", eval('[1,2].then {"#{_1}#{_2}"}'))
+    assert_equal([1, 2], eval('[1,2].then {_1}'))
+    assert_equal(3, eval('->{_1+_2}.call(1,2)'))
+    assert_equal(4, eval('->(a=->{_1}){a}.call.call(4)'))
+    assert_equal(5, eval('-> a: ->{_1} {a}.call.call(5)'))
+    assert_syntax_error('proc {|| _1}', /ordinary parameter is defined/)
+    assert_syntax_error('proc {|;a| _1}', /ordinary parameter is defined/)
+    assert_syntax_error("proc {|\n| _1}", /ordinary parameter is defined/)
+    assert_syntax_error('proc {|x| _1}', /ordinary parameter is defined/)
+    assert_syntax_error('proc {_1; proc {_2}}', /numbered parameter is already used/)
+    assert_syntax_error('proc {proc {_1}; _2}', /numbered parameter is already used/)
+    assert_syntax_error('->(){_1}', /ordinary parameter is defined/)
+    assert_syntax_error('->(x){_1}', /ordinary parameter is defined/)
+    assert_syntax_error('->x{_1}', /ordinary parameter is defined/)
+    assert_syntax_error('->x:_2{}', /ordinary parameter is defined/)
+    assert_syntax_error('->x=_1{}', /ordinary parameter is defined/)
+    assert_syntax_error('-> {_1; -> {_2}}', /numbered parameter is already used/)
+    assert_syntax_error('-> {-> {_1}; _2}', /numbered parameter is already used/)
+    assert_warn(/`_1' is used as numbered parameter/) {eval('proc {_1 = nil}')}
+    assert_warn(/`_2' is used as numbered parameter/) {eval('_2=1')}
+    ['class C', 'class << C', 'module M', 'def m', 'def o.m'].each do |c|
+      assert_valid_syntax("->{#{c};->{_1};end;_1}\n")
+      assert_valid_syntax("->{_1;#{c};->{_1};end}\n")
+    end
   end
 
   def test_value_expr_in_condition

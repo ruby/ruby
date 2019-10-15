@@ -241,6 +241,23 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[],     @cls[ 1, 2, 3 ]*64 & @cls[ 4, 5, 6 ]*64)
   end
 
+  def test_intersection
+    assert_equal(@cls[1, 2], @cls[1, 2, 3].intersection(@cls[1, 2]))
+    assert_equal(@cls[ ], @cls[1].intersection(@cls[ ]))
+    assert_equal(@cls[ ], @cls[ ].intersection(@cls[1]))
+    assert_equal(@cls[1], @cls[1, 2, 3].intersection(@cls[1, 2], @cls[1]))
+    assert_equal(@cls[ ], @cls[1, 2, 3].intersection(@cls[1, 2], @cls[3]))
+    assert_equal(@cls[ ], @cls[1, 2, 3].intersection(@cls[4, 5, 6]))
+  end
+
+  def test_intersection_big_array
+    assert_equal(@cls[1, 2], (@cls[1, 2, 3] * 64).intersection(@cls[1, 2] * 64))
+    assert_equal(@cls[ ], (@cls[1] * 64).intersection(@cls[ ]))
+    assert_equal(@cls[ ], @cls[ ].intersection(@cls[1] * 64))
+    assert_equal(@cls[1], (@cls[1, 2, 3] * 64).intersection((@cls[1, 2] * 64), (@cls[1] * 64)))
+    assert_equal(@cls[ ], (@cls[1, 2, 3] * 64).intersection(@cls[4, 5, 6] * 64))
+  end
+
   def test_MUL # '*'
     assert_equal(@cls[], @cls[]*3)
     assert_equal(@cls[1, 1, 1], @cls[1]*3)
@@ -1855,6 +1872,31 @@ class TestArray < Test::Unit::TestCase
     ary = [bug9340, bug9340.dup, bug9340.dup]
     assert_equal 1, ary.uniq.size
     assert_same bug9340, ary.uniq[0]
+
+    sc = Class.new(@cls)
+    a = sc[]
+    b = a.dup
+    assert_instance_of(sc, a.uniq)
+    assert_equal(sc[], a.uniq)
+    assert_equal(b, a)
+
+    a = sc[1]
+    b = a.dup
+    assert_instance_of(sc, a.uniq)
+    assert_equal(sc[1], a.uniq)
+    assert_equal(b, a)
+
+    a = sc[1, 1]
+    b = a.dup
+    assert_instance_of(sc, a.uniq)
+    assert_equal(sc[1], a.uniq)
+    assert_equal(b, a)
+
+    a = sc[1, 1]
+    b = a.dup
+    assert_instance_of(sc, a.uniq{|x| x})
+    assert_equal(sc[1], a.uniq{|x| x})
+    assert_equal(b, a)
   end
 
   def test_uniq_with_block
@@ -3186,6 +3228,14 @@ class TestArray < Test::Unit::TestCase
 
     assert_raise(TypeError) {[0].sum("")}
     assert_raise(TypeError) {[1].sum("")}
+  end
+
+  def test_big_array_literal_with_kwsplat
+    lit = "["
+    10000.times { lit << "{}," }
+    lit << "**{}]"
+
+    assert_equal(10000, eval(lit).size)
   end
 
   private

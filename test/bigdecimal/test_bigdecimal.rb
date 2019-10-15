@@ -54,6 +54,11 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(111, BigDecimal("1_1_1_"))
     assert_equal(10**(-1), BigDecimal("1E-1"), '#4825')
     assert_equal(1234, BigDecimal(" \t\n\r \r1234 \t\n\r \r"))
+    bd = BigDecimal("1.12", 1)
+    assert_same(bd, BigDecimal(bd))
+    assert_same(bd, BigDecimal(bd, exception: false))
+    assert_not_same(bd, BigDecimal(bd, 1))
+    assert_not_same(bd, BigDecimal(bd, 1, exception: false))
 
     assert_raise(ArgumentError) { BigDecimal("1", -1) }
     assert_raise_with_message(ArgumentError, /"1__1_1"/) { BigDecimal("1__1_1") }
@@ -70,6 +75,14 @@ class TestBigDecimal < Test::Unit::TestCase
       assert_nan(BigDecimal("NaN"))
       assert_nan(BigDecimal(" \t\n\r \rNaN \t\n\r \r"))
     end
+  end
+
+  def test_BigDecimal_bug7522
+    bd = BigDecimal("1.12", 1)
+    assert_same(bd, BigDecimal(bd))
+    assert_same(bd, BigDecimal(bd, exception: false))
+    assert_not_same(bd, BigDecimal(bd, 1))
+    assert_not_same(bd, BigDecimal(bd, 1, exception: false))
   end
 
   def test_BigDecimal_with_invalid_string
@@ -217,16 +230,30 @@ class TestBigDecimal < Test::Unit::TestCase
   end
 
   def test_s_new
-    # TODO: BigDecimal.new will be removed on 1.5
-    # assert_raise_with_message(NoMethodError, /undefined method `new'/) { BigDecimal.new("1") }
-    verbose, $VERBOSE = $VERBOSE, nil
-    assert_equal(BigDecimal(1), BigDecimal.new(1))
-    assert_raise(ArgumentError) { BigDecimal.new(',', exception: true) }
-    assert_nothing_raised { assert_equal(nil, BigDecimal.new(',', exception: false)) }
-    assert_raise(TypeError) { BigDecimal.new(nil, exception: true) }
-    assert_nothing_raised { assert_equal(nil, BigDecimal.new(nil, exception: false)) }
-  ensure
-    $VERBOSE = verbose
+    assert_raise_with_message(NoMethodError, /undefined method `new'/) { BigDecimal.new("1") }
+  end
+
+  def test_s_interpret_loosely
+    assert_equal(BigDecimal('1'), BigDecimal.interpret_loosely("1__1_1"))
+    assert_equal(BigDecimal('2.5'), BigDecimal.interpret_loosely("2.5"))
+    assert_equal(BigDecimal('2.5'), BigDecimal.interpret_loosely("2.5 degrees"))
+    assert_equal(BigDecimal('2.5e1'), BigDecimal.interpret_loosely("2.5e1 degrees"))
+    assert_equal(BigDecimal('0'), BigDecimal.interpret_loosely("degrees 100.0"))
+    assert_equal(BigDecimal('0.125'), BigDecimal.interpret_loosely("0.1_2_5"))
+    assert_equal(BigDecimal('0.125'), BigDecimal.interpret_loosely("0.1_2_5__"))
+    assert_equal(BigDecimal('1'), BigDecimal.interpret_loosely("1_.125"))
+    assert_equal(BigDecimal('1'), BigDecimal.interpret_loosely("1._125"))
+    assert_equal(BigDecimal('0.1'), BigDecimal.interpret_loosely("0.1__2_5"))
+    assert_equal(BigDecimal('0.1'), BigDecimal.interpret_loosely("0.1_e10"))
+    assert_equal(BigDecimal('0.1'), BigDecimal.interpret_loosely("0.1e_10"))
+    assert_equal(BigDecimal('1'), BigDecimal.interpret_loosely("0.1e1__0"))
+    assert_equal(BigDecimal('1.2'), BigDecimal.interpret_loosely("1.2.3"))
+    assert_equal(BigDecimal('1'), BigDecimal.interpret_loosely("1."))
+    assert_equal(BigDecimal('1'), BigDecimal.interpret_loosely("1e"))
+
+    assert_equal(BigDecimal('0.0'), BigDecimal.interpret_loosely("invalid"))
+
+    assert(BigDecimal.interpret_loosely("2.5").frozen?)
   end
 
   def _test_mode(type)
@@ -1592,6 +1619,13 @@ class TestBigDecimal < Test::Unit::TestCase
     end
   end
 
+  def test_exp_with_negative
+    x = BigDecimal(-1)
+    y = BigMath.exp(x, 20)
+    assert_equal(y, BigMath.exp(-1, 20))
+    assert_equal(BigDecimal(-1), x)
+  end
+
   def test_exp_with_negative_infinite
     BigDecimal.save_exception_mode do
       BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
@@ -1828,18 +1862,9 @@ class TestBigDecimal < Test::Unit::TestCase
     end
   end
 
-  def test_dup_subclass
+  def test_new_subclass
     c = Class.new(BigDecimal)
-    # TODO: BigDecimal.new will be removed on 1.5
-    # assert_raise_with_message(NoMethodError, /undefined method `new'/) { c.new(1) }
-    verbose, $VERBOSE = $VERBOSE, nil
-    assert_equal(BigDecimal(1), c.new(1))
-    assert_raise(ArgumentError) { c.new(',', exception: true) }
-    assert_nothing_raised { assert_equal(nil, c.new(',', exception: false)) }
-    assert_raise(TypeError) { c.new(nil, exception: true) }
-    assert_nothing_raised { assert_equal(nil, c.new(nil, exception: false)) }
-  ensure
-    $VERBOSE = verbose
+    assert_raise_with_message(NoMethodError, /undefined method `new'/) { c.new(1) }
   end
 
   def test_to_d

@@ -88,19 +88,8 @@ class Gem::SpecFetcher
 
     rejected_specs = {}
 
-    if dependency.prerelease?
-      if dependency.specific?
-        type = :complete
-      else
-        type = :abs_latest
-      end
-    elsif dependency.latest_version?
-      type = :latest
-    else
-      type = :released
-    end
+    list, errors = available_specs(dependency.identity)
 
-    list, errors = available_specs(type)
     list.each do |source, specs|
       if dependency.name.is_a?(String) && specs.respond_to?(:bsearch)
         start_index = (0 ... specs.length).bsearch{ |i| specs[i].name >= dependency.name }

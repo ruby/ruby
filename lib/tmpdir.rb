@@ -82,9 +82,9 @@ class Dir
   #    FileUtils.remove_entry dir
   #  end
   #
-  def self.mktmpdir(prefix_suffix=nil, *rest)
+  def self.mktmpdir(prefix_suffix=nil, *rest, **options)
     base = nil
-    path = Tmpname.create(prefix_suffix || "d", *rest) {|path, _, _, d|
+    path = Tmpname.create(prefix_suffix || "d", *rest, **options) {|path, _, _, d|
       base = d
       mkdir(path, 0700)
     }

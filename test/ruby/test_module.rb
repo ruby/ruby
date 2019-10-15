@@ -563,6 +563,10 @@ class TestModule < Test::Unit::TestCase
     assert_equal("Integer", Integer.name)
     assert_equal("TestModule::Mixin",  Mixin.name)
     assert_equal("TestModule::User",   User.name)
+
+    assert_predicate Integer.name, :frozen?
+    assert_predicate Mixin.name, :frozen?
+    assert_predicate User.name, :frozen?
   end
 
   def test_accidental_singleton_naming_with_module
@@ -2383,15 +2387,17 @@ class TestModule < Test::Unit::TestCase
 
   def test_redefinition_mismatch
     m = Module.new
-    m.module_eval "A = 1"
-    assert_raise_with_message(TypeError, /is not a module/) {
+    m.module_eval "A = 1", __FILE__, line = __LINE__
+    e = assert_raise_with_message(TypeError, /is not a module/) {
       m.module_eval "module A; end"
     }
+    assert_include(e.message, "#{__FILE__}:#{line}: previous definition")
     n = "M\u{1f5ff}"
-    m.module_eval "#{n} = 42"
-    assert_raise_with_message(TypeError, "#{n} is not a module") {
+    m.module_eval "#{n} = 42", __FILE__, line = __LINE__
+    e = assert_raise_with_message(TypeError, /#{n} is not a module/) {
       m.module_eval "module #{n}; end"
     }
+    assert_include(e.message, "#{__FILE__}:#{line}: previous definition")
 
     assert_separately([], <<-"end;")
       Etc = (class C\u{1f5ff}; self; end).new
@@ -2477,7 +2483,8 @@ class TestModule < Test::Unit::TestCase
       assert_include(methods, :#{method}, ":#{method} should be private")
 
       assert_raise_with_message(NoMethodError, "private method `#{method}' called for main:Object") {
-        self.#{method}
+        recv = self
+        recv.#{method}
       }
     }
   end

@@ -88,14 +88,14 @@ class Gem::DependencyInstaller
     @wrappers            = options[:wrappers]
     @build_args          = options[:build_args]
     @build_docs_in_background = options[:build_docs_in_background]
-    @install_as_default  = options[:install_as_default]
-    @dir_mode            = options[:dir_mode]
-    @data_mode           = options[:data_mode]
-    @prog_mode           = options[:prog_mode]
+    @install_as_default = options[:install_as_default]
+    @dir_mode = options[:dir_mode]
+    @data_mode = options[:data_mode]
+    @prog_mode = options[:prog_mode]
 
     # Indicates that we should not try to update any deps unless
     # we absolutely must.
-    @minimal_deps        = options[:minimal_deps]
+    @minimal_deps = options[:minimal_deps]
 
     @available      = nil
     @installed_gems = []

@@ -95,8 +95,8 @@ describe "Dir.chdir" do
   it "raises an Errno::ENOENT if the original directory no longer exists" do
     dir1 = tmp('/testdir1')
     dir2 = tmp('/testdir2')
-    File.exist?(dir1).should == false
-    File.exist?(dir2).should == false
+    File.should_not.exist?(dir1)
+    File.should_not.exist?(dir2)
     Dir.mkdir dir1
     Dir.mkdir dir2
     begin

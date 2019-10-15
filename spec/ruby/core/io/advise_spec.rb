@@ -82,8 +82,7 @@ describe "IO#advise" do
                 `uname -r`.chomp
               end
       if (uname.split('.').map(&:to_i) <=> [3,6]) < 0
-        # [ruby-core:65355] tmpfs is not supported
-        1.should == 1
+        skip "[ruby-core:65355] tmpfs is not supported"
       else
         @io.advise(:willneed).should be_nil
       end

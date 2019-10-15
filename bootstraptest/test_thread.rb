@@ -19,9 +19,6 @@ assert_equal %q{ok}, %q{
     :ok
   }.value
 }
-assert_equal %q{[]}, %q{
-  Thread.new{sleep}.backtrace
-}
 assert_equal %q{ok}, %q{
 begin
   v = 0

@@ -48,53 +48,6 @@ module Test
         assert yield, *msgs
       end
 
-      # :call-seq:
-      #   assert_raise( *args, &block )
-      #
-      #Tests if the given block raises an exception. Acceptable exception
-      #types may be given as optional arguments. If the last argument is a
-      #String, it will be used as the error message.
-      #
-      #    assert_raise do #Fails, no Exceptions are raised
-      #    end
-      #
-      #    assert_raise NameError do
-      #      puts x  #Raises NameError, so assertion succeeds
-      #    end
-      def assert_raise(*exp, &b)
-        case exp.last
-        when String, Proc
-          msg = exp.pop
-        end
-
-        begin
-          yield
-        rescue MiniTest::Skip => e
-          return e if exp.include? MiniTest::Skip
-          raise e
-        rescue Exception => e
-          expected = exp.any? { |ex|
-            if ex.instance_of? Module then
-              e.kind_of? ex
-            else
-              e.instance_of? ex
-            end
-          }
-
-          assert expected, proc {
-            exception_details(e, message(msg) {"#{mu_pp(exp)} exception expected, not"}.call)
-          }
-
-          return e
-        ensure
-          unless e
-            exp = exp.first if exp.size == 1
-
-            flunk(message(msg) {"#{mu_pp(exp)} expected but nothing was raised"})
-          end
-        end
-      end
-
       def assert_raises(*exp, &b)
         raise NoMethodError, "use assert_raise", caller
       end
@@ -611,38 +564,6 @@ EOT
         end
       end
 
-      # threads should respond to shift method.
-      # Array can be used.
-      def assert_join_threads(threads, message = nil)
-        errs = []
-        values = []
-        while th = threads.shift
-          begin
-            values << th.value
-          rescue Exception
-            errs << [th, $!]
-            th = nil
-          end
-        end
-        values
-      ensure
-        if th&.alive?
-          th.raise(Timeout::Error.new)
-          th.join rescue errs << [th, $!]
-        end
-        if !errs.empty?
-          msg = "exceptions on #{errs.length} threads:\n" +
-            errs.map {|t, err|
-            "#{t.inspect}:\n" +
-              err.full_message(highlight: false, order: :top)
-          }.join("\n---\n")
-          if message
-            msg = "#{message}\n#{msg}"
-          end
-          raise MiniTest::Assertion, msg
-        end
-      end
-
       def assert_all_assertions_foreach(msg = nil, *keys, &block)
         all = AllFailures.new
         all.foreach(*keys, &block)
@@ -654,24 +575,6 @@ EOT
       def build_message(head, template=nil, *arguments) #:nodoc:
         template &&= template.chomp
         template.gsub(/\G((?:[^\\]|\\.)*?)(\\)?\?/) { $1 + ($2 ? "?" : mu_pp(arguments.shift)) }
-      end
-
-      def message(msg = nil, *args, &default) # :nodoc:
-        if Proc === msg
-          super(nil, *args) do
-            ary = [msg.call, (default.call if default)].compact.reject(&:empty?)
-            if 1 < ary.length
-              ary[0...-1] = ary[0...-1].map {|str| str.sub(/(?<!\.)\z/, '.') }
-            end
-            begin
-              ary.join("\n")
-            rescue Encoding::CompatibilityError
-              ary.map(&:b).join("\n")
-            end
-          end
-        else
-          super
-        end
       end
     end
   end

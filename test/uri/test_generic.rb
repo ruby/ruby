@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require 'envutil'
 require 'uri'
 
 class URI::TestGeneric < Test::Unit::TestCase
@@ -765,7 +766,7 @@ class URI::TestGeneric < Test::Unit::TestCase
     e = assert_raise(URI::InvalidComponentError) do
       uri.password = password
     end
-    refute_match password, e.message
+    refute_match Regexp.new(password), e.message
   end
 
   def test_set_scheme

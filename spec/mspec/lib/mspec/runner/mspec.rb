@@ -105,6 +105,8 @@ module MSpec
       return true
     rescue SystemExit => e
       raise e
+    rescue SkippedSpecError => e
+      return false
     rescue Exception => exc
       register_exit 1
       actions :exception, ExceptionState.new(current && current.state, location, exc)

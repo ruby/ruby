@@ -563,6 +563,9 @@ nucomp_f_complex(int argc, VALUE *argv, VALUE klass)
     if (!NIL_P(opts)) {
         raise = rb_opts_exception_p(opts, raise);
     }
+    if (argc > 0 && CLASS_OF(a1) == rb_cComplex && a2 == Qundef) {
+        return a1;
+    }
     return nucomp_convert(rb_cComplex, a1, a2, raise);
 }
 

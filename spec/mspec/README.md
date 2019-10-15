@@ -58,7 +58,7 @@ ruby -S bundle install
 ## Running Specs
 
 Use RSpec to run the MSpec specs. There are no plans currently to make the
-MSpec specs runnable by MSpec.
+MSpec specs runnable by MSpec: https://github.com/ruby/mspec/issues/19.
 
 After installing the gem dependencies, the specs can be run as follows:
 

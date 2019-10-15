@@ -300,7 +300,7 @@ warning_write(int argc, VALUE *argv, VALUE buf)
 
 /*
  * call-seq:
- *    warn(msg, ...)   -> nil
+ *    warn(*msgs, uplevel: nil)   -> nil
  *
  * If warnings have been disabled (for example with the
  * <code>-W0</code> flag), does nothing.  Otherwise,
@@ -341,7 +341,7 @@ rb_warn_m(int argc, VALUE *argv, VALUE exc)
     VALUE opts, location = Qnil;
 
     if (!NIL_P(ruby_verbose) && argc > 0 &&
-	    (argc = rb_scan_args(argc, argv, "*:", NULL, &opts)) > 0) {
+            (argc = rb_scan_args(argc, argv, "*:", NULL, &opts)) > 0) {
 	VALUE str = argv[0], uplevel = Qnil;
 	if (!NIL_P(opts)) {
 	    static ID kwds[1];
@@ -524,7 +524,7 @@ bug_report_begin_valist(FILE *out, const char *fmt, va_list args)
 #if RUBY_DEVEL
     const char *cmd = getenv("RUBY_ON_BUG");
     if (cmd) {
-        snprintf(buf, sizeof(buf), "%s %d", cmd, getpid());
+        snprintf(buf, sizeof(buf), "%s %"PRI_PIDT_PREFIX"d", cmd, getpid());
         int r = system(buf);
         if (r == -1) {
             snprintf(buf, sizeof(buf), "Launching RUBY_ON_BUG command failed.");
@@ -599,7 +599,7 @@ rb_bug(const char *fmt, ...)
 }
 
 void
-rb_bug_context(const void *ctx, const char *fmt, ...)
+rb_bug_for_fatal_signal(ruby_sighandler_t default_sighandler, int sig, const void *ctx, const char *fmt, ...)
 {
     const char *file = NULL;
     int line = 0;
@@ -609,6 +609,8 @@ rb_bug_context(const void *ctx, const char *fmt, ...)
     }
 
     report_bug(file, line, fmt, ctx);
+
+    if (default_sighandler) default_sighandler(sig);
 
     die();
 }
@@ -970,11 +972,11 @@ exc_exception(int argc, VALUE *argv, VALUE self)
 {
     VALUE exc;
 
+    argc = rb_check_arity(argc, 0, 1);
     if (argc == 0) return self;
     if (argc == 1 && self == argv[0]) return self;
     exc = rb_obj_clone(self);
-    exc_initialize(argc, argv, exc);
-
+    rb_ivar_set(exc, id_mesg, argv[0]);
     return exc;
 }
 
@@ -1595,7 +1597,7 @@ nometh_err_initialize(int argc, VALUE *argv, VALUE self)
     priv = (argc > 3) && (--argc, RTEST(argv[argc]));
     args = (argc > 2) ? argv[--argc] : Qnil;
     if (!NIL_P(options)) argv[argc++] = options;
-    rb_call_super(argc, argv);
+    rb_call_super_kw(argc, argv, RB_PASS_CALLED_KEYWORDS);
     return nometh_err_init_attr(self, args, priv);
 }
 
@@ -2387,32 +2389,46 @@ syserr_eqq(VALUE self, VALUE exc)
  */
 
 /*
- *  Descendants of class Exception are used to communicate between
+ *  \Class Exception and its subclasses are used to communicate between
  *  Kernel#raise and +rescue+ statements in <code>begin ... end</code> blocks.
- *  Exception objects carry information about the exception -- its type (the
- *  exception's class name), an optional descriptive string, and optional
- *  traceback information.  Exception subclasses may add additional
- *  information like NameError#name.
  *
- *  Programs may make subclasses of Exception, typically of StandardError or
- *  RuntimeError, to provide custom classes and add additional information.
- *  See the subclass list below for defaults for +raise+ and +rescue+.
+ *  An Exception object carries information about an exception:
+ *  - Its type (the exception's class).
+ *  - An optional descriptive message.
+ *  - Optional backtrace information.
+ *
+ *  Some built-in subclasses of Exception have additional methods: e.g., NameError#name.
+ *
+ *  == Defaults
+ *
+ *  Two Ruby statements have default exception classes:
+ *  - +raise+: defaults to RuntimeError.
+ *  - +rescue+: defaults to StandardError.
+ *
+ *  == Global Variables
  *
  *  When an exception has been raised but not yet handled (in +rescue+,
- *  +ensure+, +at_exit+ and +END+ blocks) the global variable <code>$!</code>
- *  will contain the current exception and <code>$@</code> contains the
- *  current exception's backtrace.
+ *  +ensure+, +at_exit+ and +END+ blocks), two global variables are set:
+ *  - <code>$!</code> contains the current exception.
+ *  - <code>$@</code> contains its backtrace.
  *
- *  It is recommended that a library should have one subclass of StandardError
- *  or RuntimeError and have specific exception types inherit from it.  This
- *  allows the user to rescue a generic exception type to catch all exceptions
+ *  == Custom Exceptions
+ *
+ *  To provide additional or alternate information,
+ *  a program may create custom exception classes
+ *  that derive from the built-in exception classes.
+ *
+ *  A good practice is for a library to create a single "generic" exception class
+ *  (typically a subclass of StandardError or RuntimeError)
+ *  and have its other exception classes derive from that class.
+ *  This allows the user to rescue the generic exception, thus catching all exceptions
  *  the library may raise even if future versions of the library add new
  *  exception subclasses.
  *
  *  For example:
  *
  *    class MyLibrary
- *      class Error < RuntimeError
+ *      class Error < ::StandardError
  *      end
  *
  *      class WidgetError < Error
@@ -2423,8 +2439,10 @@ syserr_eqq(VALUE self, VALUE exc)
  *
  *    end
  *
- *  To handle both WidgetError and FrobError the library user can rescue
- *  MyLibrary::Error.
+ *  To handle both MyLibrary::WidgetError and MyLibrary::FrobError the library
+ *  user can rescue MyLibrary::Error.
+ *
+ *  == Built-In Exception Classes
  *
  *  The built-in subclasses of Exception are:
  *
@@ -2436,7 +2454,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *  * SecurityError
  *  * SignalException
  *    * Interrupt
- *  * StandardError -- default for +rescue+
+ *  * StandardError
  *    * ArgumentError
  *      * UncaughtThrowError
  *    * EncodingError
@@ -2446,13 +2464,14 @@ syserr_eqq(VALUE self, VALUE exc)
  *    * IndexError
  *      * KeyError
  *      * StopIteration
+ *        * ClosedQueueError
  *    * LocalJumpError
  *    * NameError
  *      * NoMethodError
  *    * RangeError
  *      * FloatDomainError
  *    * RegexpError
- *    * RuntimeError -- default for +raise+
+ *    * RuntimeError
  *      * FrozenError
  *    * SystemCallError
  *      * Errno::*
@@ -2461,7 +2480,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *    * ZeroDivisionError
  *  * SystemExit
  *  * SystemStackError
- *  * fatal -- impossible to rescue
+ *  * fatal
  */
 
 void
@@ -2586,15 +2605,18 @@ rb_enc_raise(rb_encoding *enc, VALUE exc, const char *fmt, ...)
 }
 
 void
+rb_vraise(VALUE exc, const char *fmt, va_list ap)
+{
+    rb_exc_raise(rb_exc_new3(exc, rb_vsprintf(fmt, ap)));
+}
+
+void
 rb_raise(VALUE exc, const char *fmt, ...)
 {
     va_list args;
-    VALUE mesg;
-
     va_start(args, fmt);
-    mesg = rb_vsprintf(fmt, args);
+    rb_vraise(exc, fmt, args);
     va_end(args);
-    rb_exc_raise(rb_exc_new3(exc, mesg));
 }
 
 NORETURN(static void raise_loaderror(VALUE path, VALUE mesg));
@@ -2644,6 +2666,14 @@ rb_fatal(const char *fmt, ...)
 {
     va_list args;
     VALUE mesg;
+
+    if (! ruby_thread_has_gvl_p()) {
+        /* The thread has no GVL.  Object allocation impossible (cant run GC),
+         * thus no message can be printed out. */
+        fprintf(stderr, "[FATAL] rb_fatal() outside of GVL\n");
+        rb_print_backtrace();
+        die();
+    }
 
     va_start(args, fmt);
     mesg = rb_vsprintf(fmt, args);

@@ -144,7 +144,7 @@ expression.
 == Modifier +if+ and +unless+
 
 +if+ and +unless+ can also be used to modify an expression.  When used as a
-modifier the left-hand side is the "then" expression and the right-hand side
+modifier the left-hand side is the "then" statement and the right-hand side
 is the "test" expression:
 
   a = 0
@@ -164,7 +164,7 @@ This will print 1.
 This will print 0.
 
 While the modifier and standard versions have both a "test" expression and a
-"then" expression, they are not exact transformations of each other due to
+"then" statement, they are not exact transformations of each other due to
 parse order.  Here is an example that shows the difference:
 
   p a if a = 0.zero?
@@ -438,6 +438,64 @@ In Ruby 1.8, you could also use +retry+ where you used +redo+.  This is no
 longer true, now you will receive a SyntaxError when you use +retry+ outside
 of a +rescue+ block.  See {Exceptions}[rdoc-ref:syntax/exceptions.rdoc]
 for proper usage of +retry+.
+
+== Modifier Statements
+
+Ruby's grammar differentiates between statements and expressions.  All
+expressions are statements (an expression is a type of statement), but
+not all statements are expressions.  Some parts of the grammar accept
+expressions and not other types of statements, which causes code that
+looks similar to be parsed differently.
+
+For example, when not used as a modifier, +if+, +else+, +while+, +until+,
+and +begin+ are expressions (and also statements).  However, when
+used as a modifier, +if+, +else+, +while+, +until+ and +rescue+
+are statements but not expressions.
+
+  if true; 1 end # expression (and therefore statement)
+  1 if true      # statement (not expression)
+
+Statements that are not expressions cannot be used in contexts where an
+expression is expected, such as method arguments.
+
+  puts( 1 if true )      #=> SyntaxError
+
+You can wrap a statement in parentheses to create an expression.
+
+  puts((1 if true))      #=> 1
+
+If you put a space between the method name and opening parenthesis, you
+do not need two sets of parentheses.
+
+  puts (1 if true)       #=> 1, because of optional parentheses for method
+
+This is because this is parsed similar to a method call without
+parentheses.  It is equivalent to the following code, without the creation
+of a local variable:
+
+  x = (1 if true)
+  p x
+
+In a modifier statement, the left-hand side must be a statement and the
+right-hand side must be an expression.
+
+So in <code>a if b rescue c</code>, because <code>b rescue c</code> is a
+statement that is not an expression, and therefore is not allowed as the
+right-hand side of the +if+ modifier statement, the code is necessarily
+parsed as <code>(a if b) rescue c</code>.
+
+This interacts with operator precedence in such a way that:
+
+  stmt if v = expr rescue x
+  stmt if v = expr unless x
+
+are parsed as:
+
+  stmt if v = (expr rescue x)
+  (stmt if v = expr) unless x
+
+This is because modifier +rescue+ has higher precedence than <code>=</code>,
+and modifier +if+ has lower precedence than <code>=</code>.
 
 == Flip-Flop
 

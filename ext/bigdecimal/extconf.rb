@@ -1,6 +1,21 @@
 # frozen_string_literal: false
 require 'mkmf'
 
+def check_bigdecimal_version(gemspec_path)
+  message "checking RUBY_BIGDECIMAL_VERSION... "
+
+  bigdecimal_version =
+    IO.readlines(gemspec_path)
+      .grep(/\Abigdecimal_version\s+=\s+/)[0][/\'([^\']+)\'/, 1]
+
+  version_components = bigdecimal_version.split('.')
+  bigdecimal_version = version_components[0, 3].join('.')
+  bigdecimal_version << "-#{version_components[3]}" if version_components[3]
+  $defs << %Q[-DRUBY_BIGDECIMAL_VERSION=\\"#{bigdecimal_version}\\"]
+
+  message "#{bigdecimal_version}\n"
+end
+
 gemspec_name = gemspec_path = nil
 unless ['', '../../'].any? {|dir|
          gemspec_name = "#{dir}bigdecimal.gemspec"
@@ -11,11 +26,7 @@ unless ['', '../../'].any? {|dir|
   abort
 end
 
-bigdecimal_version =
-  IO.readlines(gemspec_path)
-    .grep(/\Abigdecimal_version\s+=\s+/)[0][/\'([\d\.]+)\'/, 1]
-
-$defs << %Q[-DRUBY_BIGDECIMAL_VERSION=\\"#{bigdecimal_version}\\"]
+check_bigdecimal_version(gemspec_path)
 
 have_func("labs", "stdlib.h")
 have_func("llabs", "stdlib.h")

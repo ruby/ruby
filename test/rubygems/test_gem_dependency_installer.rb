@@ -32,7 +32,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     @a1_pre, @a1_pre_gem = util_gem 'a', '1.a'
 
-    @b1, @b1_gem         = util_gem 'b', '1' do |s|
+    @b1, @b1_gem = util_gem 'b', '1' do |s|
       s.add_dependency 'a'
       s.add_development_dependency 'aa'
     end

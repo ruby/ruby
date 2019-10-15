@@ -189,8 +189,11 @@ At least one uppercase character ('H'), at least one lowercase character
 Repetition is <i>greedy</i> by default: as many occurrences as possible
 are matched while still allowing the overall match to succeed. By
 contrast, <i>lazy</i> matching makes the minimal amount of matches
-necessary for overall success. A greedy metacharacter can be made lazy by
-following it with <tt>?</tt>.
+necessary for overall success. Most greedy metacharacters can be made lazy
+by following them with <tt>?</tt>. For the <tt>{n}</tt> pattern, because
+it specifies an exact number of characters to match and not a variable
+number of characters, the <tt>?</tt> metacharacter instead makes the
+repeated pattern optional.
 
 Both patterns below match the string. The first uses a greedy quantifier so
 '.+' matches '<a><b>'; the second uses a lazy quantifier so '.+?' matches

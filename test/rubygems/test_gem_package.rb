@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require 'rubygems/package/tar_test_case'
+require 'digest'
 
 class TestGemPackage < Gem::Package::TarTestCase
 
@@ -119,6 +120,32 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new spec.file_name
 
     assert_equal Time.at(ENV["SOURCE_DATE_EPOCH"].to_i).utc, package.build_time
+  ensure
+    ENV["SOURCE_DATE_EPOCH"] = epoch
+  end
+
+  def test_build_time_source_date_epoch_automatically_set
+    epoch = ENV["SOURCE_DATE_EPOCH"]
+    ENV["SOURCE_DATE_EPOCH"] = nil
+
+    start_time = Time.now.utc.to_i
+
+    spec = Gem::Specification.new 'build', '1'
+    spec.summary = 'build'
+    spec.authors = 'build'
+    spec.files = ['lib/code.rb']
+    spec.rubygems_version = Gem::Version.new '0'
+
+    package = Gem::Package.new spec.file_name
+
+    end_time = Time.now.utc.to_i
+
+    assert_kind_of Time, package.build_time
+
+    build_time = package.build_time.to_i
+
+    assert_operator(start_time, :<=, build_time)
+    assert_operator(build_time, :<=, end_time)
   ensure
     ENV["SOURCE_DATE_EPOCH"] = epoch
   end
@@ -1091,6 +1118,11 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
 
     assert_equal @spec, package.spec
+  end
+
+  def test_gem_attr
+    package = Gem::Package.new(@gem)
+    assert_equal(@gem, package.gem.path)
   end
 
   def test_spec_from_io

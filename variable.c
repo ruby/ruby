@@ -107,10 +107,7 @@ VALUE
 rb_mod_name(VALUE mod)
 {
     int permanent;
-    VALUE path = classname(mod, &permanent);
-
-    if (!NIL_P(path)) return rb_str_dup(path);
-    return path;
+    return classname(mod, &permanent);
 }
 
 static VALUE
@@ -309,7 +306,7 @@ struct trace_var {
 struct rb_global_variable {
     int counter;
     int block_trace;
-    void *data;
+    VALUE *data;
     rb_gvar_getter_t *getter;
     rb_gvar_setter_t *setter;
     rb_gvar_marker_t *marker;
@@ -354,7 +351,7 @@ rb_global_entry(ID id)
 }
 
 VALUE
-rb_gvar_undef_getter(ID id, void *data, struct rb_global_variable *var)
+rb_gvar_undef_getter(ID id, VALUE *_)
 {
     rb_warning("global variable `%"PRIsVALUE"' not initialized", QUOTE_ID(id));
 
@@ -362,8 +359,9 @@ rb_gvar_undef_getter(ID id, void *data, struct rb_global_variable *var)
 }
 
 void
-rb_gvar_undef_setter(VALUE val, ID id, void *d, struct rb_global_variable *var)
+rb_gvar_undef_setter(VALUE val, ID id, VALUE *_)
 {
+    struct rb_global_variable *var = rb_global_entry(id)->var;
     var->getter = rb_gvar_val_getter;
     var->setter = rb_gvar_val_setter;
     var->marker = rb_gvar_val_marker;
@@ -377,14 +375,15 @@ rb_gvar_undef_marker(VALUE *var)
 }
 
 VALUE
-rb_gvar_val_getter(ID id, void *data, struct rb_global_variable *var)
+rb_gvar_val_getter(ID id, VALUE *data)
 {
     return (VALUE)data;
 }
 
 void
-rb_gvar_val_setter(VALUE val, ID id, void *data, struct rb_global_variable *var)
+rb_gvar_val_setter(VALUE val, ID id, VALUE *_)
 {
+    struct rb_global_variable *var = rb_global_entry(id)->var;
     var->data = (void*)val;
 }
 
@@ -396,17 +395,16 @@ rb_gvar_val_marker(VALUE *var)
 }
 
 VALUE
-rb_gvar_var_getter(ID id, void *data, struct rb_global_variable *gvar)
+rb_gvar_var_getter(ID id, VALUE *var)
 {
-    VALUE *var = data;
     if (!var) return Qnil;
     return *var;
 }
 
 void
-rb_gvar_var_setter(VALUE val, ID id, void *data, struct rb_global_variable *g)
+rb_gvar_var_setter(VALUE val, ID id, VALUE *data)
 {
-    *(VALUE *)data = val;
+    *data = val;
 }
 
 void
@@ -416,7 +414,7 @@ rb_gvar_var_marker(VALUE *var)
 }
 
 void
-rb_gvar_readonly_setter(VALUE v, ID id, void *d, struct rb_global_variable *g)
+rb_gvar_readonly_setter(VALUE v, ID id, VALUE *_)
 {
     rb_name_error(id, "%"PRIsVALUE" is a read-only variable", QUOTE_ID(id));
 }
@@ -487,8 +485,8 @@ void
 rb_define_hooked_variable(
     const char *name,
     VALUE *var,
-    VALUE (*getter)(ANYARGS),
-    void  (*setter)(ANYARGS))
+    rb_gvar_getter_t *getter,
+    rb_gvar_setter_t *setter)
 {
     volatile VALUE tmp = var ? *var : Qnil;
     ID id = global_id(name);
@@ -517,8 +515,8 @@ rb_define_readonly_variable(const char *name, const VALUE *var)
 void
 rb_define_virtual_variable(
     const char *name,
-    VALUE (*getter)(ANYARGS),
-    void  (*setter)(ANYARGS))
+    rb_gvar_getter_t *getter,
+    rb_gvar_setter_t *setter)
 {
     if (!getter) getter = rb_gvar_val_getter;
     if (!setter) setter = rb_gvar_readonly_setter;
@@ -530,29 +528,6 @@ rb_trace_eval(VALUE cmd, VALUE val)
 {
     rb_eval_cmd(cmd, rb_ary_new3(1, val), 0);
 }
-
-/*
- *  call-seq:
- *     trace_var(symbol, cmd )             -> nil
- *     trace_var(symbol) {|val| block }    -> nil
- *
- *  Controls tracing of assignments to global variables. The parameter
- *  +symbol+ identifies the variable (as either a string name or a
- *  symbol identifier). _cmd_ (which may be a string or a
- *  +Proc+ object) or block is executed whenever the variable
- *  is assigned. The block or +Proc+ object receives the
- *  variable's new value as a parameter. Also see
- *  Kernel::untrace_var.
- *
- *     trace_var :$_, proc {|v| puts "$_ is now '#{v}'" }
- *     $_ = "hello"
- *     $_ = ' there'
- *
- *  <em>produces:</em>
- *
- *     $_ is now 'hello'
- *     $_ is now ' there'
- */
 
 VALUE
 rb_f_trace_var(int argc, const VALUE *argv)
@@ -603,16 +578,6 @@ remove_trace(struct rb_global_variable *var)
     var->trace = t.next;
 }
 
-/*
- *  call-seq:
- *     untrace_var(symbol [, cmd] )   -> array or nil
- *
- *  Removes tracing for the specified command on the given global
- *  variable and returns +nil+. If no command is specified,
- *  removes all tracing for that variable and returns an array
- *  containing the commands actually removed.
- */
-
 VALUE
 rb_f_untrace_var(int argc, const VALUE *argv)
 {
@@ -662,7 +627,7 @@ MJIT_FUNC_EXPORTED VALUE
 rb_gvar_get(struct rb_global_entry *entry)
 {
     struct rb_global_variable *var = entry->var;
-    return (*var->getter)(entry->id, var->data, var);
+    return (*var->getter)(entry->id, var->data);
 }
 
 struct trace_data {
@@ -671,8 +636,9 @@ struct trace_data {
 };
 
 static VALUE
-trace_ev(struct trace_data *data)
+trace_ev(VALUE v)
 {
+    struct trace_data *data = (void *)v;
     struct trace_var *trace = data->trace;
 
     while (trace) {
@@ -684,8 +650,9 @@ trace_ev(struct trace_data *data)
 }
 
 static VALUE
-trace_en(struct rb_global_variable *var)
+trace_en(VALUE v)
 {
+    struct rb_global_variable *var = (void *)v;
     var->block_trace = 0;
     remove_trace(var);
     return Qnil;		/* not reached */
@@ -697,7 +664,7 @@ rb_gvar_set(struct rb_global_entry *entry, VALUE val)
     struct trace_data trace;
     struct rb_global_variable *var = entry->var;
 
-    (*var->setter)(val, entry->id, var->data, var);
+    (*var->setter)(val, entry->id, var->data);
 
     if (var->trace && !var->block_trace) {
 	var->block_trace = 1;
@@ -764,15 +731,6 @@ gvar_i(ID key, VALUE val, void *a)
     rb_ary_push(ary, ID2SYM(key));
     return ID_TABLE_CONTINUE;
 }
-
-/*
- *  call-seq:
- *     global_variables    -> array
- *
- *  Returns an array of the names of global variables.
- *
- *     global_variables.grep /std/   #=> [:$stdin, :$stdout, :$stderr]
- */
 
 VALUE
 rb_f_global_variables(void)
@@ -1377,7 +1335,7 @@ rb_ivar_defined(VALUE obj, ID id)
 	break;
       case T_CLASS:
       case T_MODULE:
-	if (RCLASS_IV_TBL(obj) && st_lookup(RCLASS_IV_TBL(obj), (st_data_t)id, 0))
+	if (RCLASS_IV_TBL(obj) && st_is_member(RCLASS_IV_TBL(obj), (st_data_t)id))
 	    return Qtrue;
 	break;
       default:
@@ -1388,9 +1346,11 @@ rb_ivar_defined(VALUE obj, ID id)
     return Qfalse;
 }
 
+typedef int rb_ivar_foreach_callback_func(ID key, VALUE val, st_data_t arg);
+
 struct obj_ivar_tag {
     VALUE obj;
-    int (*func)(ID key, VALUE val, st_data_t arg);
+    rb_ivar_foreach_callback_func *func;
     st_data_t arg;
 };
 
@@ -1408,7 +1368,7 @@ obj_ivar_i(st_data_t key, st_data_t index, st_data_t arg)
 }
 
 static void
-obj_ivar_each(VALUE obj, int (*func)(ANYARGS), st_data_t arg)
+obj_ivar_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg)
 {
     st_table *tbl;
     struct obj_ivar_tag data;
@@ -1426,7 +1386,7 @@ obj_ivar_each(VALUE obj, int (*func)(ANYARGS), st_data_t arg)
 
 struct gen_ivar_tag {
     struct gen_ivtbl *ivtbl;
-    int (*func)(ID key, VALUE val, st_data_t arg);
+    rb_ivar_foreach_callback_func *func;
     st_data_t arg;
 };
 
@@ -1445,7 +1405,7 @@ gen_ivar_each_i(st_data_t key, st_data_t index, st_data_t data)
 }
 
 static void
-gen_ivar_each(VALUE obj, int (*func)(ANYARGS), st_data_t arg)
+gen_ivar_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg)
 {
     struct gen_ivar_tag data;
     st_table *iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
@@ -1528,7 +1488,7 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
 }
 
 void
-rb_ivar_foreach(VALUE obj, int (*func)(ANYARGS), st_data_t arg)
+rb_ivar_foreach(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg)
 {
     if (SPECIAL_CONST_P(obj)) return;
     switch (BUILTIN_TYPE(obj)) {
@@ -2528,7 +2488,7 @@ rb_const_source_location(VALUE klass, ID id)
     return rb_const_location(klass, id, FALSE, TRUE, FALSE);
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_const_source_location_at(VALUE klass, ID id)
 {
     return rb_const_location(klass, id, TRUE, FALSE, FALSE);
@@ -3246,6 +3206,12 @@ static void*
 mod_cvar_of(VALUE mod, void *data)
 {
     VALUE tmp = mod;
+    if (FL_TEST(mod, FL_SINGLETON)) {
+        if (rb_namespace_p(rb_ivar_get(mod, id__attached__))) {
+            data = mod_cvar_at(tmp, data);
+            tmp = cvar_front_klass(tmp);
+        }
+    }
     for (;;) {
 	data = mod_cvar_at(tmp, data);
 	tmp = RCLASS_SUPER(tmp);
@@ -3391,12 +3357,13 @@ tbl_copy_i(st_data_t key, st_data_t value, st_data_t data)
     return ST_CONTINUE;
 }
 
-st_table *
-rb_st_copy(VALUE obj, struct st_table *orig_tbl)
+void
+rb_iv_tbl_copy(VALUE dst, VALUE src)
 {
+    st_table *orig_tbl = RCLASS_IV_TBL(src);
     st_table *new_tbl = st_copy(orig_tbl);
-    st_foreach(new_tbl, tbl_copy_i, (st_data_t)obj);
-    return new_tbl;
+    st_foreach(new_tbl, tbl_copy_i, (st_data_t)dst);
+    RCLASS_IV_TBL(dst) = new_tbl;
 }
 
 MJIT_FUNC_EXPORTED rb_const_entry_t *

@@ -128,9 +128,9 @@ class Tempfile < DelegateClass(File)
 
     @unlinked = false
     @mode = mode|File::RDWR|File::CREAT|File::EXCL
-    ::Dir::Tmpname.create(basename, tmpdir, options) do |tmpname, n, opts|
+    ::Dir::Tmpname.create(basename, tmpdir, **options) do |tmpname, n, opts|
       opts[:perm] = 0600
-      @tmpfile = File.open(tmpname, @mode, opts)
+      @tmpfile = File.open(tmpname, @mode, **opts)
       @opts = opts.freeze
     end
     ObjectSpace.define_finalizer(self, Remover.new(@tmpfile))
@@ -142,7 +142,7 @@ class Tempfile < DelegateClass(File)
   def open
     _close
     mode = @mode & ~(File::CREAT|File::EXCL)
-    @tmpfile = File.open(@tmpfile.path, mode, @opts)
+    @tmpfile = File.open(@tmpfile.path, mode, **@opts)
     __setobj__(@tmpfile)
   end
 
@@ -287,8 +287,8 @@ class Tempfile < DelegateClass(File)
     #   ensure
     #      f.close
     #   end
-    def open(*args)
-      tempfile = new(*args)
+    def open(*args, **kw)
+      tempfile = new(*args, **kw)
 
       if block_given?
         begin
@@ -326,10 +326,10 @@ end
 #
 def Tempfile.create(basename="", tmpdir=nil, mode: 0, **options)
   tmpfile = nil
-  Dir::Tmpname.create(basename, tmpdir, options) do |tmpname, n, opts|
+  Dir::Tmpname.create(basename, tmpdir, **options) do |tmpname, n, opts|
     mode |= File::RDWR|File::CREAT|File::EXCL
     opts[:perm] = 0600
-    tmpfile = File.open(tmpname, mode, opts)
+    tmpfile = File.open(tmpname, mode, **opts)
   end
   if block_given?
     begin

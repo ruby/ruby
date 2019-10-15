@@ -6,6 +6,7 @@ require 'etc'
 require_relative 'fileasserts'
 require 'pathname'
 require 'tmpdir'
+require 'stringio'
 require 'test/unit'
 
 class TestFileUtils < Test::Unit::TestCase
@@ -439,6 +440,35 @@ class TestFileUtils < Test::Unit::TestCase
       cp_r 'tmp/cross', 'tmp/cross2', :preserve => true
     }
   end if have_symlink? and !no_broken_symlink?
+
+  def test_cp_r_fifo
+    Dir.mkdir('tmp/cpr_src')
+    File.mkfifo 'tmp/cpr_src/fifo', 0600
+    cp_r 'tmp/cpr_src', 'tmp/cpr_dest'
+    assert_equal(true, File.pipe?('tmp/cpr_dest/fifo'))
+  end if File.respond_to?(:mkfifo)
+
+  def test_cp_r_dev
+    devs = Dir['/dev/*']
+    chardev = devs.find{|f| File.chardev?(f)}
+    blockdev = devs.find{|f| File.blockdev?(f)}
+    Dir.mkdir('tmp/cpr_dest')
+    assert_raise(RuntimeError) { cp_r chardev, 'tmp/cpr_dest/cd' } if chardev
+    assert_raise(RuntimeError) { cp_r blockdev, 'tmp/cpr_dest/bd' } if blockdev
+  end
+
+  begin
+    require 'socket'
+  rescue LoadError
+  else
+    def test_cp_r_socket
+      pend "Skipping socket test on JRuby" if RUBY_ENGINE == 'jruby'
+      Dir.mkdir('tmp/cpr_src')
+      UNIXServer.new('tmp/cpr_src/socket').close
+      cp_r 'tmp/cpr_src', 'tmp/cpr_dest'
+      assert_equal(true, File.socket?('tmp/cpr_dest/socket'))
+    end if defined?(UNIXServer)
+  end
 
   def test_cp_r_pathname
     # pathname
@@ -1022,7 +1052,7 @@ class TestFileUtils < Test::Unit::TestCase
       else
         tmpdir = Dir.pwd
       end
-      skip "No drive letter" unless /\A[a-z]:/i =~ tmpdir
+      pend "No drive letter" unless /\A[a-z]:/i =~ tmpdir
       drive = "./#{$&}"
       assert_file_not_exist drive
       mkdir_p "#{tmpdir}/none/dir"
@@ -1642,6 +1672,29 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_chdir
     check_singleton :chdir
+  end
+
+  def test_chdir_verbose
+    assert_output_lines(["cd .", "cd -"], FileUtils) do
+      FileUtils.chdir('.', verbose: true){}
+    end
+  end
+
+  def test_chdir_verbose_frozen
+    o = Object.new
+    o.extend(FileUtils)
+    o.singleton_class.send(:public, :chdir)
+    o.freeze
+    orig_stderr = $stderr
+    $stderr = StringIO.new
+    o.chdir('.', verbose: true){}
+    $stderr.rewind
+    assert_equal(<<-END, $stderr.read)
+cd .
+cd -
+    END
+  ensure
+    $stderr = orig_stderr if orig_stderr
   end
 
   def test_getwd

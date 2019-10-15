@@ -9,6 +9,9 @@
 #
 #
 #
+
+require "delegate"
+
 module IRB # :nodoc:
   class WorkSpace
     # Creates a new workspace.
@@ -49,17 +52,21 @@ EOF
           @binding = BINDING_QUEUE.pop
 
         when 3	# binding in function on TOPLEVEL_BINDING(default)
-          @binding = eval("self.class.send(:remove_method, :irb_binding) if defined?(irb_binding); def irb_binding; private; binding; end; irb_binding",
+          @binding = eval("self.class.send(:remove_method, :irb_binding) if defined?(irb_binding); private; def irb_binding; binding; end; irb_binding",
                           TOPLEVEL_BINDING,
                           __FILE__,
                           __LINE__ - 3)
         end
       end
+
       if main.empty?
         @main = eval("self", @binding)
       else
         @main = main[0]
-        IRB.conf[:__MAIN__] = @main
+      end
+      IRB.conf[:__MAIN__] = @main
+
+      unless main.empty?
         case @main
         when Module
           @binding = eval("IRB.conf[:__MAIN__].module_eval('binding', __FILE__, __LINE__)", @binding, __FILE__, __LINE__)
@@ -71,6 +78,28 @@ EOF
           end
         end
       end
+
+      case @main
+      when Object
+        use_delegator = @main.frozen?
+      else
+        use_delegator = true
+      end
+
+      if use_delegator
+        @main = SimpleDelegator.new(@main)
+        IRB.conf[:__MAIN__] = @main
+        @main.singleton_class.class_eval do
+          private
+          define_method(:exit) do |*a, &b|
+            # Do nothing, will be overridden
+          end
+          define_method(:binding, Kernel.instance_method(:binding))
+          define_method(:local_variables, Kernel.instance_method(:local_variables))
+        end
+        @binding = eval("IRB.conf[:__MAIN__].instance_eval('binding', __FILE__, __LINE__)", @binding, *@binding.source_location)
+      end
+
       @binding.local_variable_set(:_, nil)
     end
 

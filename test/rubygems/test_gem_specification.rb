@@ -74,6 +74,12 @@ end
     end
   end
 
+  def assert_date(date)
+    assert_kind_of Time, date
+    assert_equal [0, 0, 0], [date.hour, date.min, date.sec]
+    assert_operator (Gem::Specification::TODAY..Time.now), :cover?, date
+  end
+
   def setup
     super
 
@@ -1035,7 +1041,7 @@ dependencies: []
     end
     assert_equal 'keyedlist', spec.name
     assert_equal '0.4.0', spec.version.to_s
-    assert_equal Gem::Specification::TODAY, spec.date
+    assert_kind_of Time, spec.date
     assert spec.required_ruby_version.satisfied_by?(Gem::Version.new('1'))
     assert_equal false, spec.has_unit_tests?
   end
@@ -1694,7 +1700,7 @@ dependencies: []
   end
 
   def test_date
-    assert_equal Gem::Specification::TODAY, @a1.date
+    assert_date @a1.date
   end
 
   def test_date_equals_date
@@ -2418,7 +2424,7 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = Gem::Requirement.new(\"> 0\".freeze) if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib".freeze, "other".freeze]
   s.authors = ["A User".freeze]
-  s.date = "#{Gem::Specification::TODAY.strftime "%Y-%m-%d"}"
+  s.date = "#{@a2.date.strftime("%Y-%m-%d")}"
   s.description = "This is a test description".freeze
   s.email = "example@example.com".freeze
   s.files = ["lib/code.rb".freeze]
@@ -2445,6 +2451,35 @@ end
     assert_equal @a2, same_spec
   end
 
+  def test_to_ruby_with_rsa_key
+    rsa_key = OpenSSL::PKey::RSA.new(2048)
+    @a2.signing_key = rsa_key
+    ruby_code = @a2.to_ruby
+
+    expected = <<-SPEC
+# -*- encoding: utf-8 -*-
+# stub: a 2 ruby lib
+
+Gem::Specification.new do |s|
+  s.name = "a".freeze
+  s.version = "2"
+
+  s.required_rubygems_version = Gem::Requirement.new(">= 0".freeze) if s.respond_to? :required_rubygems_version=
+  s.require_paths = ["lib".freeze]
+  s.authors = ["A User".freeze]
+  s.date = "#{@a2.date.strftime("%Y-%m-%d")}"
+  s.description = "This is a test description".freeze
+  s.email = "example@example.com".freeze
+  s.files = ["lib/code.rb".freeze]
+  s.homepage = "http://example.com".freeze
+  s.rubygems_version = "3.1.0.pre1".freeze
+  s.summary = "this is a summary".freeze
+end
+    SPEC
+
+    assert_equal expected, ruby_code
+  end
+
   def test_to_ruby_for_cache
     @a2.add_runtime_dependency 'b', '1'
     @a2.dependencies.first.instance_variable_set :@type, nil
@@ -2465,7 +2500,7 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = Gem::Requirement.new(\"> 0\".freeze) if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib".freeze]
   s.authors = ["A User".freeze]
-  s.date = "#{Gem::Specification::TODAY.strftime "%Y-%m-%d"}"
+  s.date = "#{@a2.date.strftime("%Y-%m-%d")}"
   s.description = "This is a test description".freeze
   s.email = "example@example.com".freeze
   s.homepage = "http://example.com".freeze
@@ -2520,7 +2555,7 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = Gem::Requirement.new(\">= 0\".freeze) if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib".freeze]
   s.authors = ["A User".freeze]
-  s.date = "#{Gem::Specification::TODAY.strftime "%Y-%m-%d"}"
+  s.date = "#{@c1.date.strftime("%Y-%m-%d")}"
   s.description = "This is a test description".freeze
   s.email = "example@example.com".freeze
   s.executables = ["exec".freeze]
@@ -3592,6 +3627,11 @@ Did you mean 'Ruby'?
   end
 
   def test_metadata_specs
+    @m1 = quick_gem 'm', '1' do |s|
+      s.files = %w[lib/code.rb]
+      s.metadata = { 'one' => "two", 'two' => "three" }
+    end
+
     valid_ruby_spec = <<-EOF
 # -*- encoding: utf-8 -*-
 # stub: m 1 ruby lib
@@ -3604,7 +3644,7 @@ Gem::Specification.new do |s|
   s.metadata = { "one" => "two", "two" => "three" } if s.respond_to? :metadata=
   s.require_paths = ["lib".freeze]
   s.authors = ["A User".freeze]
-  s.date = "#{Gem::Specification::TODAY.strftime("%Y-%m-%d")}"
+  s.date = "#{@m1.date.strftime("%Y-%m-%d")}"
   s.description = "This is a test description".freeze
   s.email = "example@example.com".freeze
   s.files = ["lib/code.rb".freeze]
@@ -3613,11 +3653,6 @@ Gem::Specification.new do |s|
   s.summary = "this is a summary".freeze
 end
     EOF
-
-    @m1 = quick_gem 'm', '1' do |s|
-      s.files = %w[lib/code.rb]
-      s.metadata = { 'one' => "two", 'two' => "three" }
-    end
 
     assert_equal @m1.to_ruby, valid_ruby_spec
   end

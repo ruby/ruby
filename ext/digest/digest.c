@@ -554,9 +554,21 @@ get_digest_base_metadata(VALUE klass)
     if (NIL_P(p))
         rb_raise(rb_eRuntimeError, "Digest::Base cannot be directly inherited in Ruby");
 
+    if (!RB_TYPE_P(obj, T_DATA) || RTYPEDDATA_P(obj)) {
+      wrong:
+        if (p == klass)
+            rb_raise(rb_eTypeError, "%"PRIsVALUE"::metadata is not initialized properly",
+                     klass);
+        else
+            rb_raise(rb_eTypeError, "%"PRIsVALUE"(%"PRIsVALUE")::metadata is not initialized properly",
+                     klass, p);
+    }
+
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
     Data_Get_Struct(obj, rb_digest_metadata_t, algo);
+
+    if (!algo) goto wrong;
 
     switch (algo->api_version) {
       case 3:
@@ -571,6 +583,12 @@ get_digest_base_metadata(VALUE klass)
     }
 
     return algo;
+}
+
+static rb_digest_metadata_t *
+get_digest_obj_metadata(VALUE obj)
+{
+    return get_digest_base_metadata(rb_obj_class(obj));
 }
 
 static const rb_data_type_t digest_type = {
@@ -619,8 +637,8 @@ rb_digest_base_copy(VALUE copy, VALUE obj)
 
     rb_check_frozen(copy);
 
-    algo = get_digest_base_metadata(rb_obj_class(copy));
-    if (algo != get_digest_base_metadata(rb_obj_class(obj)))
+    algo = get_digest_obj_metadata(copy);
+    if (algo != get_digest_obj_metadata(obj))
 	rb_raise(rb_eTypeError, "different algorithms");
 
     TypedData_Get_Struct(obj, void, &digest_type, pctx1);
@@ -641,7 +659,7 @@ rb_digest_base_reset(VALUE self)
     rb_digest_metadata_t *algo;
     void *pctx;
 
-    algo = get_digest_base_metadata(rb_obj_class(self));
+    algo = get_digest_obj_metadata(self);
 
     TypedData_Get_Struct(self, void, &digest_type, pctx);
 
@@ -663,7 +681,7 @@ rb_digest_base_update(VALUE self, VALUE str)
     rb_digest_metadata_t *algo;
     void *pctx;
 
-    algo = get_digest_base_metadata(rb_obj_class(self));
+    algo = get_digest_obj_metadata(self);
 
     TypedData_Get_Struct(self, void, &digest_type, pctx);
 
@@ -682,7 +700,7 @@ rb_digest_base_finish(VALUE self)
     void *pctx;
     VALUE str;
 
-    algo = get_digest_base_metadata(rb_obj_class(self));
+    algo = get_digest_obj_metadata(self);
 
     TypedData_Get_Struct(self, void, &digest_type, pctx);
 
@@ -705,7 +723,7 @@ rb_digest_base_digest_length(VALUE self)
 {
     rb_digest_metadata_t *algo;
 
-    algo = get_digest_base_metadata(rb_obj_class(self));
+    algo = get_digest_obj_metadata(self);
 
     return INT2NUM(algo->digest_len);
 }
@@ -720,7 +738,7 @@ rb_digest_base_block_length(VALUE self)
 {
     rb_digest_metadata_t *algo;
 
-    algo = get_digest_base_metadata(rb_obj_class(self));
+    algo = get_digest_obj_metadata(self);
 
     return INT2NUM(algo->block_len);
 }
@@ -735,7 +753,13 @@ Init_digest(void)
     id_digest          = rb_intern("digest");
     id_hexdigest       = rb_intern("hexdigest");
     id_digest_length   = rb_intern("digest_length");
+    id_metadata        = rb_id_metadata();
+    InitVM(digest);
+}
 
+void
+InitVM_digest(void)
+{
     /*
      * module Digest
      */
@@ -781,8 +805,6 @@ Init_digest(void)
     /* class methods */
     rb_define_singleton_method(rb_cDigest_Class, "digest", rb_digest_class_s_digest, -1);
     rb_define_singleton_method(rb_cDigest_Class, "hexdigest", rb_digest_class_s_hexdigest, -1);
-
-    id_metadata = rb_intern("metadata");
 
     /* class Digest::Base < Digest::Class */
     rb_cDigest_Base = rb_define_class_under(rb_mDigest, "Base", rb_cDigest_Class);

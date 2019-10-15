@@ -222,7 +222,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     lib_bundler           = File.join lib, 'bundler'
     lib_rubygems_defaults = File.join lib_rubygems, 'defaults'
 
-    securerandom_rb    = File.join lib, 'securerandom.rb'
+    securerandom_rb = File.join lib, 'securerandom.rb'
 
     engine_defaults_rb = File.join lib_rubygems_defaults, 'jruby.rb'
     os_defaults_rb     = File.join lib_rubygems_defaults, 'operating_system.rb'

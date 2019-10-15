@@ -96,6 +96,19 @@ VM_CF_BLOCK_HANDLER(const rb_control_frame_t * const cfp)
     return VM_ENV_BLOCK_HANDLER(ep);
 }
 
+int
+rb_vm_cframe_keyword_p(const rb_control_frame_t *cfp)
+{
+    return VM_FRAME_CFRAME_KW_P(cfp);
+}
+
+/* -- Remove In 3.0 -- */
+int
+rb_vm_cframe_empty_keyword_p(const rb_control_frame_t *cfp)
+{
+    return VM_FRAME_CFRAME_EMPTY_KW_P(cfp);
+}
+
 VALUE
 rb_vm_frame_block_handler(const rb_control_frame_t *cfp)
 {
@@ -319,9 +332,9 @@ static void vm_collect_usage_register(int reg, int isset);
 
 static VALUE vm_make_env_object(const rb_execution_context_t *ec, rb_control_frame_t *cfp);
 extern VALUE rb_vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
-                                  int argc, const VALUE *argv, VALUE block_handler,
+                                  int argc, const VALUE *argv, int kw_splat, VALUE block_handler,
                                   const rb_callable_method_entry_t *me);
-static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, VALUE block_handler);
+static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, int kw_splat, VALUE block_handler);
 
 #include "mjit.h"
 #include "vm_insnhelper.h"
@@ -1070,12 +1083,12 @@ invoke_bmethod(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, co
 
 ALWAYS_INLINE(static VALUE
               invoke_iseq_block_from_c(rb_execution_context_t *ec, const struct rb_captured_block *captured,
-                                       VALUE self, int argc, const VALUE *argv, VALUE passed_block_handler,
+                                       VALUE self, int argc, const VALUE *argv, int kw_splat, VALUE passed_block_handler,
                                        const rb_cref_t *cref, int is_lambda, const rb_callable_method_entry_t *me));
 
 static inline VALUE
 invoke_iseq_block_from_c(rb_execution_context_t *ec, const struct rb_captured_block *captured,
-			 VALUE self, int argc, const VALUE *argv, VALUE passed_block_handler,
+			 VALUE self, int argc, const VALUE *argv, int kw_splat, VALUE passed_block_handler,
                          const rb_cref_t *cref, int is_lambda, const rb_callable_method_entry_t *me)
 {
     const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
@@ -1093,7 +1106,7 @@ invoke_iseq_block_from_c(rb_execution_context_t *ec, const struct rb_captured_bl
 	sp[i] = argv[i];
     }
 
-    opt_pc = vm_yield_setup_args(ec, iseq, argc, sp, passed_block_handler,
+    opt_pc = vm_yield_setup_args(ec, iseq, argc, sp, kw_splat, passed_block_handler,
 				 (is_lambda ? arg_setup_method : arg_setup_block));
     cfp->sp = sp;
 
@@ -1108,7 +1121,7 @@ invoke_iseq_block_from_c(rb_execution_context_t *ec, const struct rb_captured_bl
 static inline VALUE
 invoke_block_from_c_bh(rb_execution_context_t *ec, VALUE block_handler,
 		       int argc, const VALUE *argv,
-		       VALUE passed_block_handler, const rb_cref_t *cref,
+		       int kw_splat, VALUE passed_block_handler, const rb_cref_t *cref,
 		       int is_lambda, int force_blockarg)
 {
   again:
@@ -1117,16 +1130,16 @@ invoke_block_from_c_bh(rb_execution_context_t *ec, VALUE block_handler,
 	{
 	    const struct rb_captured_block *captured = VM_BH_TO_ISEQ_BLOCK(block_handler);
 	    return invoke_iseq_block_from_c(ec, captured, captured->self,
-					    argc, argv, passed_block_handler,
+					    argc, argv, kw_splat, passed_block_handler,
                                             cref, is_lambda, NULL);
 	}
       case block_handler_type_ifunc:
 	return vm_yield_with_cfunc(ec, VM_BH_TO_IFUNC_BLOCK(block_handler),
 				   VM_BH_TO_IFUNC_BLOCK(block_handler)->self,
-                                   argc, argv, passed_block_handler, NULL);
+                                   argc, argv, kw_splat, passed_block_handler, NULL);
       case block_handler_type_symbol:
 	return vm_yield_with_symbol(ec, VM_BH_TO_SYMBOL(block_handler),
-				    argc, argv, passed_block_handler);
+				    argc, argv, kw_splat, passed_block_handler);
       case block_handler_type_proc:
 	if (force_blockarg == FALSE) {
 	    is_lambda = block_proc_is_lambda(VM_BH_TO_PROC(block_handler));
@@ -1151,26 +1164,26 @@ check_block_handler(rb_execution_context_t *ec)
 }
 
 static VALUE
-vm_yield_with_cref(rb_execution_context_t *ec, int argc, const VALUE *argv, const rb_cref_t *cref, int is_lambda)
+vm_yield_with_cref(rb_execution_context_t *ec, int argc, const VALUE *argv, int kw_splat, const rb_cref_t *cref, int is_lambda)
 {
     return invoke_block_from_c_bh(ec, check_block_handler(ec),
-				  argc, argv, VM_BLOCK_HANDLER_NONE,
+                                  argc, argv, kw_splat, VM_BLOCK_HANDLER_NONE,
 				  cref, is_lambda, FALSE);
 }
 
 static VALUE
-vm_yield(rb_execution_context_t *ec, int argc, const VALUE *argv)
+vm_yield(rb_execution_context_t *ec, int argc, const VALUE *argv, int kw_splat)
 {
     return invoke_block_from_c_bh(ec, check_block_handler(ec),
-				  argc, argv, VM_BLOCK_HANDLER_NONE,
+                                  argc, argv, kw_splat, VM_BLOCK_HANDLER_NONE,
 				  NULL, FALSE, FALSE);
 }
 
 static VALUE
-vm_yield_with_block(rb_execution_context_t *ec, int argc, const VALUE *argv, VALUE block_handler)
+vm_yield_with_block(rb_execution_context_t *ec, int argc, const VALUE *argv, VALUE block_handler, int kw_splat)
 {
     return invoke_block_from_c_bh(ec, check_block_handler(ec),
-				  argc, argv, block_handler,
+                                  argc, argv, kw_splat, block_handler,
 				  NULL, FALSE, FALSE);
 }
 
@@ -1178,19 +1191,19 @@ static VALUE
 vm_yield_force_blockarg(rb_execution_context_t *ec, VALUE args)
 {
     return invoke_block_from_c_bh(ec, check_block_handler(ec), 1, &args,
-				  VM_BLOCK_HANDLER_NONE, NULL, FALSE, TRUE);
+                                  RB_NO_KEYWORDS, VM_BLOCK_HANDLER_NONE, NULL, FALSE, TRUE);
 }
 
 ALWAYS_INLINE(static VALUE
               invoke_block_from_c_proc(rb_execution_context_t *ec, const rb_proc_t *proc,
                                        VALUE self, int argc, const VALUE *argv,
-                                       VALUE passed_block_handler, int is_lambda,
+                                       int kw_splat, VALUE passed_block_handler, int is_lambda,
                                        const rb_callable_method_entry_t *me));
 
 static inline VALUE
 invoke_block_from_c_proc(rb_execution_context_t *ec, const rb_proc_t *proc,
 			 VALUE self, int argc, const VALUE *argv,
-                         VALUE passed_block_handler, int is_lambda,
+                         int kw_splat, VALUE passed_block_handler, int is_lambda,
                          const rb_callable_method_entry_t *me)
 {
     const struct rb_block *block = &proc->block;
@@ -1198,11 +1211,15 @@ invoke_block_from_c_proc(rb_execution_context_t *ec, const rb_proc_t *proc,
   again:
     switch (vm_block_type(block)) {
       case block_type_iseq:
-        return invoke_iseq_block_from_c(ec, &block->as.captured, self, argc, argv, passed_block_handler, NULL, is_lambda, me);
+        return invoke_iseq_block_from_c(ec, &block->as.captured, self, argc, argv, kw_splat, passed_block_handler, NULL, is_lambda, me);
       case block_type_ifunc:
-        return vm_yield_with_cfunc(ec, &block->as.captured, self, argc, argv, passed_block_handler, me);
+        if (kw_splat == 1 && RHASH_EMPTY_P(argv[argc-1])) {
+            argc--;
+            kw_splat = 2;
+        }
+        return vm_yield_with_cfunc(ec, &block->as.captured, self, argc, argv, kw_splat, passed_block_handler, me);
       case block_type_symbol:
-	return vm_yield_with_symbol(ec, block->as.symbol, argc, argv, passed_block_handler);
+	return vm_yield_with_symbol(ec, block->as.symbol, argc, argv, kw_splat, passed_block_handler);
       case block_type_proc:
 	is_lambda = block_proc_is_lambda(block->as.proc);
 	block = vm_proc_block(block->as.proc);
@@ -1214,30 +1231,30 @@ invoke_block_from_c_proc(rb_execution_context_t *ec, const rb_proc_t *proc,
 
 static VALUE
 vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
-	       int argc, const VALUE *argv, VALUE passed_block_handler)
+	       int argc, const VALUE *argv, int kw_splat, VALUE passed_block_handler)
 {
-    return invoke_block_from_c_proc(ec, proc, self, argc, argv, passed_block_handler, proc->is_lambda, NULL);
+    return invoke_block_from_c_proc(ec, proc, self, argc, argv, kw_splat, passed_block_handler, proc->is_lambda, NULL);
 }
 
 MJIT_FUNC_EXPORTED VALUE
 rb_vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
-                     int argc, const VALUE *argv, VALUE block_handler, const rb_callable_method_entry_t *me)
+                     int argc, const VALUE *argv, int kw_splat, VALUE block_handler, const rb_callable_method_entry_t *me)
 {
-    return invoke_block_from_c_proc(ec, proc, self, argc, argv, block_handler, TRUE, me);
+    return invoke_block_from_c_proc(ec, proc, self, argc, argv, kw_splat, block_handler, TRUE, me);
 }
 
 MJIT_FUNC_EXPORTED VALUE
 rb_vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc,
-		  int argc, const VALUE *argv, VALUE passed_block_handler)
+		  int argc, const VALUE *argv, int kw_splat, VALUE passed_block_handler)
 {
     VALUE self = vm_block_self(&proc->block);
     vm_block_handler_verify(passed_block_handler);
 
     if (proc->is_from_method) {
-        return rb_vm_invoke_bmethod(ec, proc, self, argc, argv, passed_block_handler, NULL);
+        return rb_vm_invoke_bmethod(ec, proc, self, argc, argv, kw_splat, passed_block_handler, NULL);
     }
     else {
-	return vm_invoke_proc(ec, proc, self, argc, argv, passed_block_handler);
+	return vm_invoke_proc(ec, proc, self, argc, argv, kw_splat, passed_block_handler);
     }
 }
 
@@ -2503,7 +2520,7 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 	rb_gc_mark_machine_stack(ec);
 	rb_gc_mark_locations((VALUE *)&ec->machine.regs,
 			     (VALUE *)(&ec->machine.regs) +
-			     sizeof(ec->machine.regs) / sizeof(VALUE));
+			     sizeof(ec->machine.regs) / (sizeof(VALUE)));
     }
 
     RUBY_MARK_UNLESS_NULL(ec->errinfo);
@@ -2714,7 +2731,6 @@ ruby_thread_init(VALUE self)
 
     th->vm = vm;
     th_init(th, self);
-    rb_ivar_set(self, rb_intern("locals"), rb_hash_new());
 
     th->top_wrapper = 0;
     th->top_self = rb_vm_top_self();
@@ -2790,23 +2806,14 @@ m_core_hash_merge_ptr(int argc, VALUE *argv, VALUE recv)
 {
     VALUE hash = argv[0];
 
-    REWIND_CFP(core_hash_merge(hash, argc-1, argv+1));
+    REWIND_CFP(hash = core_hash_merge(hash, argc-1, argv+1));
 
     return hash;
 }
 
-static void
-kw_check_symbol(VALUE key)
-{
-    if (!SYMBOL_P(key)) {
-	rb_raise(rb_eTypeError, "hash key %+"PRIsVALUE" is not a Symbol",
-		 key);
-    }
-}
 static int
 kwmerge_i(VALUE key, VALUE value, VALUE hash)
 {
-    kw_check_symbol(key);
     rb_hash_aset(hash, key, value);
     return ST_CONTINUE;
 }
@@ -2827,7 +2834,7 @@ core_hash_merge_kwd(VALUE hash, VALUE kw)
 
 /* Returns true if JIT is enabled */
 static VALUE
-mjit_enabled_p(void)
+mjit_enabled_p(VALUE _)
 {
     return mjit_enabled ? Qtrue : Qfalse;
 }
@@ -2847,6 +2854,12 @@ mjit_pause_m(int argc, VALUE *argv, RB_UNUSED_VAR(VALUE self))
     }
 
     return mjit_pause(RTEST(wait));
+}
+
+static VALUE
+mjit_resume_m(VALUE _)
+{
+    return mjit_resume();
 }
 
 extern VALUE *rb_gc_stack_start;
@@ -2902,6 +2915,24 @@ static VALUE usage_analysis_operand_clear(VALUE self);
 static VALUE usage_analysis_register_clear(VALUE self);
 #endif
 
+static VALUE
+f_raise(int c, VALUE *v, VALUE _)
+{
+    return rb_f_raise(c, v);
+}
+
+static VALUE
+f_proc(VALUE _)
+{
+    return rb_block_proc();
+}
+
+static VALUE
+f_lambda(VALUE _)
+{
+    return rb_block_lambda();
+}
+
 void
 Init_VM(void)
 {
@@ -2913,9 +2944,13 @@ Init_VM(void)
     /*
      * Document-class: RubyVM
      *
-     * The RubyVM module provides some access to Ruby internals.
+     * The RubyVM module only exists on MRI. +RubyVM+ is not defined in
+     * other Ruby implementations such as JRuby and TruffleRuby.
+     *
+     * The RubyVM module provides some access to MRI internals.
      * This module is for very limited purposes, such as debugging,
      * prototyping, and research.  Normal users must not use it.
+     * This module is not portable between Ruby implementations.
      */
     rb_cRubyVM = rb_define_class("RubyVM", rb_cObject);
     rb_undef_alloc_func(rb_cRubyVM);
@@ -2936,20 +2971,23 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_set_postexe, m_core_set_postexe, 0);
     rb_define_method_id(klass, id_core_hash_merge_ptr, m_core_hash_merge_ptr, -1);
     rb_define_method_id(klass, id_core_hash_merge_kwd, m_core_hash_merge_kwd, 2);
-    rb_define_method_id(klass, id_core_raise, rb_f_raise, -1);
-    rb_define_method_id(klass, idProc, rb_block_proc, 0);
-    rb_define_method_id(klass, idLambda, rb_block_lambda, 0);
+    rb_define_method_id(klass, id_core_raise, f_raise, -1);
+    rb_define_method_id(klass, idProc, f_proc, 0);
+    rb_define_method_id(klass, idLambda, f_lambda, 0);
     rb_obj_freeze(fcore);
     RBASIC_CLEAR_CLASS(klass);
     rb_obj_freeze(klass);
     rb_gc_register_mark_object(fcore);
     rb_mRubyVMFrozenCore = fcore;
 
-    /* RubyVM::MJIT */
+    /* ::RubyVM::MJIT
+     * Provides access to the Method JIT compiler of MRI.
+     * Of course, this module is MRI specific.
+     */
     mjit = rb_define_module_under(rb_cRubyVM, "MJIT");
     rb_define_singleton_method(mjit, "enabled?", mjit_enabled_p, 0);
     rb_define_singleton_method(mjit, "pause", mjit_pause_m, -1);
-    rb_define_singleton_method(mjit, "resume", mjit_resume, 0);
+    rb_define_singleton_method(mjit, "resume", mjit_resume_m, 0);
 
     /*
      * Document-class: Thread
@@ -3134,7 +3172,10 @@ Init_VM(void)
     rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_REGISTER_CLEAR", usage_analysis_register_clear, 0);
 #endif
 
-    /* ::RubyVM::OPTS, which shows vm build options */
+    /* ::RubyVM::OPTS
+     * An Array of VM build options.
+     * This constant is MRI specific.
+     */
     rb_define_const(rb_cRubyVM, "OPTS", opts = rb_ary_new());
 
 #if   OPT_DIRECT_THREADED_CODE
@@ -3161,11 +3202,14 @@ Init_VM(void)
     rb_ary_push(opts, rb_str_new2("block inlining"));
 #endif
 
-    /* ::RubyVM::INSTRUCTION_NAMES */
+    /* ::RubyVM::INSTRUCTION_NAMES
+     * A list of bytecode instruction names in MRI.
+     * This constant is MRI specific.
+     */
     rb_define_const(rb_cRubyVM, "INSTRUCTION_NAMES", rb_insns_name_array());
 
     /* ::RubyVM::DEFAULT_PARAMS
-     * This constant variable shows VM's default parameters.
+     * This constant exposes the VM's default parameters.
      * Note that changing these values does not affect VM execution.
      * Specification is not stable and you should not depend on this value.
      * Of course, this constant is MRI specific.
@@ -3187,14 +3231,12 @@ Init_VM(void)
 	rb_thread_t *th = GET_THREAD();
 	VALUE filename = rb_fstring_lit("<main>");
 	const rb_iseq_t *iseq = rb_iseq_new(0, filename, filename, Qnil, 0, ISEQ_TYPE_TOP);
-        volatile VALUE th_self;
 
 	/* create vm object */
 	vm->self = TypedData_Wrap_Struct(rb_cRubyVM, &vm_data_type, vm);
 
 	/* create main thread */
-	th_self = th->self = TypedData_Wrap_Struct(rb_cThread, &thread_data_type, th);
-	rb_iv_set(th_self, "locals", rb_hash_new());
+        th->self = TypedData_Wrap_Struct(rb_cThread, &thread_data_type, th);
 	vm->main_thread = th;
 	vm->running_thread = th;
 	th->vm = vm;

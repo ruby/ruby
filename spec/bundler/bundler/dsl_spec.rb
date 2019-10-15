@@ -275,7 +275,7 @@ RSpec.describe Bundler::Dsl do
     end
   end
 
-  describe "Runtime errors", :unless => Bundler.current_ruby.on_18? do
+  describe "Runtime errors" do
     it "will raise a Bundler::GemfileError" do
       gemfile "raise RuntimeError, 'foo'"
       expect { Bundler::Dsl.evaluate(bundled_app("Gemfile"), nil, true) }.

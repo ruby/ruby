@@ -815,6 +815,7 @@ struct RComplex {
 #define RCOMPLEX_SET_IMAG(cmp, i) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->imag,(i))
 
 enum ruby_rhash_flags {
+    RHASH_PASS_AS_KEYWORDS = FL_USER1,                                   /* FL 1 */
     RHASH_PROC_DEFAULT = FL_USER2,                                       /* FL 2 */
     RHASH_ST_TABLE_FLAG = FL_USER3,                                      /* FL 3 */
 #define RHASH_AR_TABLE_MAX_SIZE SIZEOF_VALUE
@@ -1133,6 +1134,8 @@ imemo_type_p(VALUE imemo, enum imemo_type imemo_type)
     }
 }
 
+VALUE rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0);
+
 /* FL_USER0 to FL_USER3 is for type */
 #define IMEMO_FL_USHIFT (FL_USHIFT + 4)
 #define IMEMO_FL_USER0 FL_USER4
@@ -1181,15 +1184,15 @@ struct vm_ifunc_argc {
 struct vm_ifunc {
     VALUE flags;
     VALUE reserved;
-    VALUE (*func)(ANYARGS);
+    rb_block_call_func_t func;
     const void *data;
     struct vm_ifunc_argc argc;
 };
 
 #define IFUNC_NEW(a, b, c) ((struct vm_ifunc *)rb_imemo_new(imemo_ifunc, (VALUE)(a), (VALUE)(b), (VALUE)(c), 0))
-struct vm_ifunc *rb_vm_ifunc_new(VALUE (*func)(ANYARGS), const void *data, int min_argc, int max_argc);
+struct vm_ifunc *rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int max_argc);
 static inline struct vm_ifunc *
-rb_vm_ifunc_proc_new(VALUE (*func)(ANYARGS), const void *data)
+rb_vm_ifunc_proc_new(rb_block_call_func_t func, const void *data)
 {
     return rb_vm_ifunc_new(func, data, 0, UNLIMITED_ARGUMENTS);
 }
@@ -1202,12 +1205,18 @@ typedef struct rb_imemo_tmpbuf_struct {
     size_t cnt; /* buffer size in VALUE */
 } rb_imemo_tmpbuf_t;
 
-VALUE rb_imemo_tmpbuf_auto_free_pointer(void *buf);
+#define rb_imemo_tmpbuf_auto_free_pointer() rb_imemo_new(imemo_tmpbuf, 0, 0, 0, 0)
 VALUE rb_imemo_tmpbuf_auto_free_maybe_mark_buffer(void *buf, size_t cnt);
 rb_imemo_tmpbuf_t *rb_imemo_tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt);
 
 #define RB_IMEMO_TMPBUF_PTR(v) \
     ((void *)(((const struct rb_imemo_tmpbuf_struct *)(v))->ptr))
+
+static inline void *
+rb_imemo_tmpbuf_set_ptr(VALUE v, void *ptr)
+{
+    return ((rb_imemo_tmpbuf_t *)v)->ptr = ptr;
+}
 
 static inline VALUE
 rb_imemo_tmpbuf_auto_free_pointer_new_from_an_RString(VALUE str)
@@ -1220,7 +1229,7 @@ rb_imemo_tmpbuf_auto_free_pointer_new_from_an_RString(VALUE str)
 
     SafeStringValue(str);
     /* create tmpbuf to keep the pointer before xmalloc */
-    imemo = rb_imemo_tmpbuf_auto_free_pointer(NULL);
+    imemo = rb_imemo_tmpbuf_auto_free_pointer();
     tmpbuf = (rb_imemo_tmpbuf_t *)imemo;
     len = RSTRING_LEN(str);
     src = RSTRING_PTR(str);
@@ -1245,7 +1254,7 @@ struct MEMO {
 	long cnt;
 	long state;
         const VALUE value;
-	VALUE (*func)(ANYARGS);
+        void (*func)(void);
     } u3;
 };
 
@@ -1390,10 +1399,12 @@ rb_ary_entry_internal(VALUE ary, long offset)
 
 /* MRI debug support */
 void rb_obj_info_dump(VALUE obj);
-void  ruby_debug_breakpoint(void);
+void rb_obj_info_dump_loc(VALUE obj, const char *file, int line, const char *func);
+void ruby_debug_breakpoint(void);
 
 // show obj data structure without any side-effect
-#define rp(obj) rb_obj_info_dump((VALUE)obj);
+#define rp(obj) rb_obj_info_dump_loc((VALUE)(obj), __FILE__, __LINE__, __func__)
+
 // same as rp, but add message header
 #define rp_m(msg, obj) do { \
     fprintf(stderr, "%s", (msg)); \
@@ -1454,8 +1465,9 @@ VALUE rb_invcmp(VALUE, VALUE);
 
 /* compile.c */
 struct rb_block;
-int rb_dvar_defined(ID, const struct rb_block *);
-int rb_local_defined(ID, const struct rb_block *);
+struct rb_iseq_struct;
+int rb_dvar_defined(ID, const struct rb_iseq_struct *);
+int rb_local_defined(ID, const struct rb_iseq_struct *);
 const char * rb_insns_name(int i);
 VALUE rb_insns_name_array(void);
 int rb_vm_insn_addr2insn(const void *);
@@ -1467,7 +1479,7 @@ struct rb_thread_struct;
 /* cont.c */
 VALUE rb_obj_is_fiber(VALUE);
 void rb_fiber_reset_root_local_storage(struct rb_thread_struct *);
-void ruby_register_rollback_func_for_ensure(VALUE (*ensure_func)(ANYARGS), VALUE (*rollback_func)(ANYARGS));
+void ruby_register_rollback_func_for_ensure(VALUE (*ensure_func)(VALUE), VALUE (*rollback_func)(VALUE));
 
 /* debug.c */
 PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
@@ -1541,6 +1553,7 @@ NORETURN(void ruby_deprecated_internal_feature(const char *));
     (ruby_deprecated_internal_feature(func), UNREACHABLE)
 VALUE rb_warning_warn(VALUE mod, VALUE str);
 PRINTF_ARGS(VALUE rb_warning_string(const char *fmt, ...), 1, 2);
+NORETURN(void rb_vraise(VALUE, const char *, va_list));
 
 /* eval.c */
 VALUE rb_refinement_module_get_refined_class(VALUE module);
@@ -1606,7 +1619,7 @@ void rb_copy_wb_protected_attribute(VALUE dest, VALUE obj);
 
 #if defined(HAVE_MALLOC_USABLE_SIZE) || defined(HAVE_MALLOC_SIZE) || defined(_WIN32)
 #define ruby_sized_xrealloc(ptr, new_size, old_size) ruby_xrealloc(ptr, new_size)
-#define ruby_sized_xrealloc2(ptr, new_count, element_size, old_count) ruby_xrealloc(ptr, new_count, element_size)
+#define ruby_sized_xrealloc2(ptr, new_count, element_size, old_count) ruby_xrealloc2(ptr, new_count, element_size)
 #define ruby_sized_xfree(ptr, size) ruby_xfree(ptr)
 #define SIZED_REALLOC_N(var,type,n,old_n) REALLOC_N(var, type, n)
 #else
@@ -1615,7 +1628,7 @@ void *ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR
 void *ruby_sized_xrealloc2(void *ptr, size_t new_count, size_t element_size, size_t old_count) RUBY_ATTR_ALLOC_SIZE((2, 3));
 void ruby_sized_xfree(void *x, size_t size);
 RUBY_SYMBOL_EXPORT_END
-#define SIZED_REALLOC_N(var,type,n,old_n) ((var)=(type*)ruby_sized_xrealloc((char*)(var), (n) * sizeof(type), (old_n) * sizeof(type)))
+#define SIZED_REALLOC_N(var,type,n,old_n) ((var)=(type*)ruby_sized_xrealloc2((void*)(var), (n), sizeof(type), (old_n)))
 #endif
 
 /* optimized version of NEWOBJ() */
@@ -1627,8 +1640,20 @@ RUBY_SYMBOL_EXPORT_END
 			rb_wb_unprotected_newobj_of(klass, flags))
 #define NEWOBJ_OF(obj,type,klass,flags) RB_NEWOBJ_OF(obj,type,klass,flags)
 
-void *rb_aligned_malloc(size_t, size_t);
+#ifdef __has_attribute
+#if __has_attribute(alloc_align)
+__attribute__((__alloc_align__(1)))
+#endif
+#endif
+void *rb_aligned_malloc(size_t, size_t) RUBY_ATTR_MALLOC RUBY_ATTR_ALLOC_SIZE((2));
 void rb_aligned_free(void *);
+
+size_t rb_size_mul_or_raise(size_t, size_t, VALUE); /* used in compile.c */
+size_t rb_size_mul_add_or_raise(size_t, size_t, size_t, VALUE); /* used in iseq.h */
+void *rb_xmalloc_mul_add(size_t, size_t, size_t) RUBY_ATTR_MALLOC;
+void *rb_xrealloc_mul_add(const void *, size_t, size_t, size_t);
+void *rb_xmalloc_mul_add_mul(size_t, size_t, size_t, size_t) RUBY_ATTR_MALLOC;
+void *rb_xcalloc_mul_add_mul(size_t, size_t, size_t, size_t) RUBY_ATTR_MALLOC;
 
 /* hash.c */
 #if RHASH_CONVERT_TABLE_DEBUG
@@ -1659,8 +1684,10 @@ VALUE rb_hash_set_pair(VALUE hash, VALUE pair);
 
 int rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval);
 int rb_hash_stlike_delete(VALUE hash, st_data_t *pkey, st_data_t *pval);
-int rb_hash_stlike_foreach(VALUE hash, int (*func)(ANYARGS), st_data_t arg);
-int rb_hash_stlike_foreach_with_replace(VALUE hash, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg);
+RUBY_SYMBOL_EXPORT_BEGIN
+int rb_hash_stlike_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t arg);
+RUBY_SYMBOL_EXPORT_END
+int rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg);
 int rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func func, st_data_t arg);
 
 /* inits.c */
@@ -1949,7 +1976,7 @@ struct RBasicRaw {
 VALUE rb_parser_get_yydebug(VALUE);
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
 RUBY_SYMBOL_EXPORT_BEGIN
-VALUE rb_parser_set_context(VALUE, const struct rb_block *, int);
+VALUE rb_parser_set_context(VALUE, const struct rb_iseq_struct *, int);
 RUBY_SYMBOL_EXPORT_END
 void *rb_parser_load_file(VALUE parser, VALUE name);
 int rb_is_const_name(VALUE name);
@@ -2136,7 +2163,7 @@ VALUE rb_str_initialize(VALUE str, const char *ptr, long len, rb_encoding *enc);
 #define is_ascii_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT)
 #define is_broken_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN)
 size_t rb_str_memsize(VALUE);
-VALUE rb_sym_proc_call(ID mid, int argc, const VALUE *argv, VALUE passed_proc);
+VALUE rb_sym_proc_call(ID mid, int argc, const VALUE *argv, int kw_splat, VALUE passed_proc);
 VALUE rb_sym_to_proc(VALUE sym);
 char *rb_str_to_cstr(VALUE str);
 VALUE rb_str_eql(VALUE str1, VALUE str2);
@@ -2213,7 +2240,7 @@ VALUE rb_thread_shield_release(VALUE self);
 VALUE rb_thread_shield_destroy(VALUE self);
 int rb_thread_to_be_killed(VALUE thread);
 void rb_mutex_allow_trap(VALUE self, int val);
-VALUE rb_uninterruptible(VALUE (*b_proc)(ANYARGS), VALUE data);
+VALUE rb_uninterruptible(VALUE (*b_proc)(VALUE), VALUE data);
 VALUE rb_mutex_owned_p(VALUE self);
 
 /* transcode.c */
@@ -2289,13 +2316,17 @@ void rb_print_backtrace(void);
 
 /* vm_eval.c */
 void Init_vm_eval(void);
+VALUE rb_adjust_argv_kw_splat(int *, const VALUE **, int *);
 VALUE rb_current_realfilepath(void);
 VALUE rb_check_block_call(VALUE, ID, int, const VALUE *, rb_block_call_func_t, VALUE);
 typedef void rb_check_funcall_hook(int, VALUE, ID, int, const VALUE *, VALUE);
 VALUE rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
 				 rb_check_funcall_hook *hook, VALUE arg);
+VALUE rb_check_funcall_with_hook_kw(VALUE recv, ID mid, int argc, const VALUE *argv,
+                                 rb_check_funcall_hook *hook, VALUE arg, int kw_splat);
 const char *rb_type_str(enum ruby_value_type type);
 VALUE rb_check_funcall_default(VALUE, ID, int, const VALUE *, VALUE);
+VALUE rb_check_funcall_default_kw(VALUE, ID, int, const VALUE *, VALUE, int);
 VALUE rb_yield_1(VALUE val);
 VALUE rb_yield_force_blockarg(VALUE values);
 VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
@@ -2309,7 +2340,60 @@ void Init_vm_stack_canary(void);
 
 /* vm_method.c */
 void Init_eval_method(void);
-int rb_method_defined_by(VALUE obj, ID mid, VALUE (*cfunc)(ANYARGS));
+
+enum method_missing_reason {
+    MISSING_NOENTRY   = 0x00,
+    MISSING_PRIVATE   = 0x01,
+    MISSING_PROTECTED = 0x02,
+    MISSING_FCALL     = 0x04,
+    MISSING_VCALL     = 0x08,
+    MISSING_SUPER     = 0x10,
+    MISSING_MISSING   = 0x20,
+    MISSING_NONE      = 0x40
+};
+struct rb_callable_method_entry_struct;
+struct rb_method_definition_struct;
+struct rb_execution_context_struct;
+struct rb_control_frame_struct;
+struct rb_calling_info;
+struct rb_call_info;
+struct rb_call_cache {
+    /* inline cache: keys */
+    rb_serial_t method_state;
+    rb_serial_t class_serial;
+
+    /* inline cache: values */
+    const struct rb_callable_method_entry_struct *me;
+    const struct rb_method_definition_struct *def;
+
+    VALUE (*call)(struct rb_execution_context_struct *ec,
+                  struct rb_control_frame_struct *cfp,
+                  struct rb_calling_info *calling,
+                  const struct rb_call_info *ci,
+                  struct rb_call_cache *cc);
+
+    union {
+        unsigned int index; /* used by ivar */
+        enum method_missing_reason method_missing_reason; /* used by method_missing */
+        int inc_sp; /* used by cfunc */
+    } aux;
+};
+struct rb_call_cache_and_mid {
+    struct rb_call_cache cc;
+    ID mid;
+};
+VALUE rb_funcallv_with_cc(struct rb_call_cache_and_mid*, VALUE, ID, int, const VALUE*)
+#if GCC_VERSION_SINCE(3, 3, 0) && defined(__OPTIMIZE__)
+__attribute__((__visibility__("default"), __nonnull__(1)))
+# define rb_funcallv(recv, mid, argc, argv) \
+    __extension__({ \
+        static struct rb_call_cache_and_mid \
+            rb_funcallv_opaque_cc = { {0, }, 0, }; \
+        rb_funcallv_with_cc(&rb_funcallv_opaque_cc, \
+            recv, mid, argc,argv); \
+    })
+#endif
+    ;
 
 /* miniprelude.c, prelude.c */
 void Init_prelude(void);
@@ -2456,7 +2540,7 @@ void rb_mark_generic_ivar(VALUE);
 void rb_mv_generic_ivar(VALUE src, VALUE dst);
 VALUE rb_const_missing(VALUE klass, VALUE name);
 int rb_class_ivar_set(VALUE klass, ID vid, VALUE value);
-st_table *rb_st_copy(VALUE obj, struct st_table *orig_tbl);
+void rb_iv_tbl_copy(VALUE dst, VALUE src);
 
 /* gc.c (export) */
 VALUE rb_wb_protected_newobj_of(VALUE, VALUE);
@@ -2550,8 +2634,8 @@ rb_obj_builtin_type(VALUE obj)
 # define COMPILER_WARNING_IGNORED(flag) \
     COMPILER_WARNING_PRAGMA(COMPILER_WARNING_SPECIFIER(ignored, flag))
 
-#elif GCC_VERSION_SINCE(4, 2, 0)
-/* https://gcc.gnu.org/onlinedocs/gcc-4.2.0/gcc/Diagnostic-Pragmas.html */
+#elif GCC_VERSION_SINCE(4, 6, 0)
+/* https://gcc.gnu.org/onlinedocs/gcc-4.6.4/gcc/Diagnostic-Pragmas.html */
 # define COMPILER_WARNING_PUSH          _Pragma("GCC diagnostic push")
 # define COMPILER_WARNING_POP           _Pragma("GCC diagnostic pop")
 # define COMPILER_WARNING_SPECIFIER(kind, msg) \

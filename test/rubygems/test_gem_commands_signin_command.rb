@@ -87,7 +87,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     fetcher.data[data_key]     = response
     Gem::RemoteFetcher.fetcher = fetcher
 
-    sign_in_ui                 = ui_stub || Gem::MockGemUi.new("#{email}\n#{password}\n")
+    sign_in_ui = ui_stub || Gem::MockGemUi.new("#{email}\n#{password}\n")
 
     use_ui sign_in_ui do
       yield

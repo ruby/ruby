@@ -24,18 +24,20 @@ class Reline::ANSI
     unless @@buf.empty?
       return @@buf.shift
     end
-    c = nil
-    loop do
-      result = select([@@input], [], [], 0.1)
-      next if result.nil?
-      c = @@input.read(1)
-      break
-    end
-    c&.ord
+    @@input.getbyte
   end
 
   def self.ungetc(c)
     @@buf.unshift(c)
+  end
+
+  def self.retrieve_keybuffer
+      result = select([@@input], [], [], 0.001)
+      return if result.nil?
+      str = @@input.read_nonblock(1024)
+      str.bytes.each do |c|
+        @@buf.push(c)
+      end
   end
 
   def self.get_screen_size
@@ -106,12 +108,22 @@ class Reline::ANSI
     print "\e[1;1H"
   end
 
+  @@old_winch_handler = nil
+  def self.set_winch_handler(&handler)
+    @@old_winch_handler = Signal.trap('WINCH', &handler)
+  end
+
   def self.prep
+    retrieve_keybuffer
     int_handle = Signal.trap('INT', 'IGNORE')
     otio = `stty -g`.chomp
     setting = ' -echo -icrnl cbreak'
-    if /-parenb\b/ =~ `stty -a`
+    stty = `stty -a`
+    if /-parenb\b/ =~ stty
       setting << ' pass8'
+    end
+    if /\bdsusp *=/ =~ stty
+      setting << ' dsusp undef'
     end
     setting << ' -ixoff'
     `stty #{setting}`
@@ -123,5 +135,6 @@ class Reline::ANSI
     int_handle = Signal.trap('INT', 'IGNORE')
     `stty #{otio}`
     Signal.trap('INT', int_handle)
+    Signal.trap('WINCH', @@old_winch_handler) if @@old_winch_handler
   end
 end

@@ -890,6 +890,17 @@ class TestNetHTTP_v1_2 < Test::Unit::TestCase
     Net::HTTP.version_1_2
     super
   end
+
+  def test_send_large_POST_request
+    start {|http|
+      data = ' '*6000000
+      res = http.send_request('POST', '/', data, 'content-type' => 'application/x-www-form-urlencoded')
+      assert_kind_of Net::HTTPResponse, res
+      assert_kind_of String, res.body
+      assert_equal data.size, res.body.size
+      assert_equal data, res.body
+    }
+  end
 end
 
 class TestNetHTTP_v1_2_chunked < Test::Unit::TestCase

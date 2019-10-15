@@ -698,7 +698,7 @@ class Gem::Installer
     @development         = options[:development]
     @build_root          = options[:build_root]
 
-    @build_args          = options[:build_args] || Gem::Command.build_args
+    @build_args = options[:build_args] || Gem::Command.build_args
 
     unless @build_root.nil?
       require 'pathname'
@@ -754,7 +754,11 @@ class Gem::Installer
       raise Gem::InstallError, "#{spec} has an invalid specification_version"
     end
 
-    if spec.dependencies.any? {|dep| dep.type =~ /\R/ || dep.name =~ /\R/ }
+    if spec.dependencies.any? {|dep| dep.type != :runtime && dep.type != :development }
+      raise Gem::InstallError, "#{spec} has an invalid dependencies"
+    end
+
+    if spec.dependencies.any? {|dep| dep.name =~ /(?:\R|[<>])/ }
       raise Gem::InstallError, "#{spec} has an invalid dependencies"
     end
   end
@@ -776,7 +780,7 @@ class Gem::Installer
 
 require 'rubygems'
 
-version = "#{Gem::Requirement.default}.a"
+version = "#{Gem::Requirement.default_prerelease}"
 
 str = ARGV.first
 if str

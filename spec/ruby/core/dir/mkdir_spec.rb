@@ -14,9 +14,9 @@ describe "Dir.mkdir" do
     DirSpecs.clear_dirs
 
     begin
-      File.exist?('nonexisting').should == false
+      File.should_not.exist?('nonexisting')
       Dir.mkdir 'nonexisting'
-      File.exist?('nonexisting').should == true
+      File.should.exist?('nonexisting')
       platform_is_not :windows do
         Dir.mkdir 'default_perms'
         a = File.stat('default_perms').mode

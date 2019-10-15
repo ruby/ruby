@@ -14,7 +14,7 @@ describe "Process.groups" do
 end
 
 describe "Process.groups=" do
-  platform_is_not :windows do
+  platform_is_not :windows, :android do
     as_superuser do
       it "sets the list of gids of groups in the supplemental group access list" do
         groups = Process.groups

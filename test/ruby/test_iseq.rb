@@ -434,13 +434,24 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_to_binary_pattern_matching
-    code = "case foo in []; end"
+    code = "case foo; in []; end"
     iseq = compile(code)
     assert_include(iseq.disasm, "TypeError")
     assert_include(iseq.disasm, "NoMatchingPatternError")
     EnvUtil.suppress_warning do
       assert_iseq_to_binary(code, "[Feature #14912]")
     end
+  end
+
+  def test_to_binary_dumps_nokey
+    iseq = assert_iseq_to_binary(<<-RUBY)
+      o = Object.new
+      class << o
+        def foo(**nil); end
+      end
+      o
+    RUBY
+    assert_equal([[:nokey]], iseq.eval.singleton_method(:foo).parameters)
   end
 
   def test_to_binary_line_info

@@ -469,7 +469,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     subdirs.each do |name|
       subdir = File.join dir, name
       next if File.exist? subdir
-      FileUtils.mkdir_p subdir, options rescue nil
+      FileUtils.mkdir_p subdir, **options rescue nil
     end
   ensure
     File.umask old_umask
@@ -1240,6 +1240,23 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     extend Gem::Deprecate
     deprecate :detect_gemdeps, "Gem.use_gemdeps", 2018, 12
 
+  end
+
+  ##
+  # The SOURCE_DATE_EPOCH environment variable (or, if that's not set, the current time), converted to Time object.
+  # This is used throughout RubyGems for enabling reproducible builds.
+  #
+  # If it is not set as an environment variable already, this also sets it.
+  #
+  # Details on SOURCE_DATE_EPOCH:
+  # https://reproducible-builds.org/specs/source-date-epoch/
+
+  def self.source_date_epoch
+    if ENV["SOURCE_DATE_EPOCH"].nil? || ENV["SOURCE_DATE_EPOCH"].empty?
+      ENV["SOURCE_DATE_EPOCH"] = Time.now.to_i.to_s
+    end
+
+    Time.at(ENV["SOURCE_DATE_EPOCH"].to_i).utc.freeze
   end
 
   # FIX: Almost everywhere else we use the `def self.` way of defining class

@@ -6,7 +6,6 @@
 #++
 
 require 'bigdecimal'
-require 'bigdecimal/util.so'
 
 class Integer < Numeric
   # call-seq:
@@ -66,6 +65,9 @@ class String
   #
   # See also BigDecimal::new.
   #
+  def to_d
+    BigDecimal.interpret_loosely(self)
+  end
 end
 
 

@@ -72,7 +72,10 @@ VALUE rb_cSymbol;
  * 1:     RSTRING_NOEMBED
  * 2:     STR_SHARED (== ELTS_SHARED)
  * 2-6:   RSTRING_EMBED_LEN (5 bits == 32)
- * 6:     STR_IS_SHARED_M (shared, when RSTRING_NOEMBED==1 && klass==0)
+ * 5:     STR_SHARED_ROOT (RSTRING_NOEMBED==1 && STR_SHARED == 0, there may be
+ *                         other strings that rely on this string's buffer)
+ * 6:     STR_BORROWED (when RSTRING_NOEMBED==1 && klass==0, unsafe to recycle
+ *                      early, specific to rb_str_tmp_frozen_{acquire,release})
  * 7:     STR_TMPLOCK
  * 8-9:   ENC_CODERANGE (2 bits)
  * 10-16: ENCODING (7 bits == 128)
@@ -82,7 +85,8 @@ VALUE rb_cSymbol;
  */
 
 #define RUBY_MAX_CHAR_LEN 16
-#define STR_IS_SHARED_M FL_USER6
+#define STR_SHARED_ROOT FL_USER5
+#define STR_BORROWED FL_USER6
 #define STR_TMPLOCK FL_USER7
 #define STR_NOFREE FL_USER18
 #define STR_FAKESTR FL_USER19
@@ -155,8 +159,9 @@ VALUE rb_cSymbol;
     if (!FL_TEST(str, STR_FAKESTR)) { \
 	RB_OBJ_WRITE((str), &RSTRING(str)->as.heap.aux.shared, (shared_str)); \
 	FL_SET((str), STR_SHARED); \
+        FL_SET((shared_str), STR_SHARED_ROOT); \
 	if (RBASIC_CLASS((shared_str)) == 0) /* for CoW-friendliness */ \
-	    FL_SET_RAW((shared_str), STR_IS_SHARED_M); \
+	    FL_SET_RAW((shared_str), STR_BORROWED); \
     } \
 } while (0)
 
@@ -316,9 +321,15 @@ rb_fstring(VALUE str)
 	return str;
 
     bare = BARE_STRING_P(str);
-    if (STR_EMBED_P(str) && !bare) {
-	OBJ_FREEZE_RAW(str);
-	return str;
+    if (!bare) {
+        if (STR_EMBED_P(str)) {
+            OBJ_FREEZE_RAW(str);
+            return str;
+        }
+        if (FL_TEST_RAW(str, STR_NOEMBED|STR_SHARED_ROOT|STR_SHARED) == (STR_NOEMBED|STR_SHARED_ROOT)) {
+            assert(OBJ_FROZEN(str));
+            return str;
+        }
     }
 
     if (!OBJ_FROZEN(str))
@@ -1174,7 +1185,9 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
             RSTRING_GETMEM(root, ptr, len);
         }
         if (!STR_EMBED_P(str2) && !FL_TEST_RAW(str2, STR_SHARED|STR_NOFREE)) {
-            /* TODO: check if str2 is a shared root */
+            if (FL_TEST_RAW(str2, STR_SHARED_ROOT)) {
+                rb_fatal("about to free a possible shared root");
+            }
             char *ptr2 = STR_HEAP_PTR(str2);
             if (ptr2 != ptr) {
                 ruby_sized_xfree(ptr2, STR_HEAP_SIZE(str2));
@@ -1250,7 +1263,7 @@ rb_str_tmp_frozen_release(VALUE orig, VALUE tmp)
 	    !FL_TEST_RAW(orig, STR_TMPLOCK|RUBY_FL_FREEZE)) {
 	VALUE shared = RSTRING(orig)->as.heap.aux.shared;
 
-	if (shared == tmp && !FL_TEST_RAW(tmp, STR_IS_SHARED_M)) {
+	if (shared == tmp && !FL_TEST_RAW(tmp, STR_BORROWED)) {
 	    FL_UNSET_RAW(orig, STR_SHARED);
 	    assert(RSTRING(orig)->as.heap.ptr == RSTRING(tmp)->as.heap.ptr);
 	    assert(RSTRING(orig)->as.heap.len == RSTRING(tmp)->as.heap.len);
@@ -1288,7 +1301,7 @@ str_new_frozen(VALUE klass, VALUE orig)
 	    }
 	    else {
 		if (RBASIC_CLASS(shared) == 0)
-		    FL_SET_RAW(shared, STR_IS_SHARED_M);
+		    FL_SET_RAW(shared, STR_BORROWED);
 		return shared;
 	    }
 	}
@@ -1309,7 +1322,7 @@ str_new_frozen(VALUE klass, VALUE orig)
 	    RBASIC(orig)->flags &= ~STR_NOFREE;
 	    STR_SET_SHARED(orig, str);
 	    if (klass == 0)
-		FL_UNSET_RAW(str, STR_IS_SHARED_M);
+		FL_UNSET_RAW(str, STR_BORROWED);
 	}
     }
 
@@ -1333,7 +1346,7 @@ str_new_empty(VALUE str)
     return v;
 }
 
-#define STR_BUF_MIN_SIZE 127
+#define STR_BUF_MIN_SIZE 63
 STATIC_ASSERT(STR_BUF_MIN_SIZE, STR_BUF_MIN_SIZE > RSTRING_EMBED_LEN_MAX);
 
 VALUE
@@ -2162,7 +2175,7 @@ rb_str_modify_expand(VALUE str, long expand)
     if (expand < 0) {
 	rb_raise(rb_eArgError, "negative expanding string size");
     }
-    if (expand > LONG_MAX - len) {
+    if (expand >= LONG_MAX - len) {
 	rb_raise(rb_eArgError, "string size too big");
     }
 
@@ -10856,7 +10869,8 @@ sym_inspect(VALUE sym)
  *     sym.id2name   -> string
  *     sym.to_s      -> string
  *
- *  Returns the name or string corresponding to <i>sym</i>.
+ *  Returns a frozen string corresponding to <i>sym</i>.
+ *  The returned String is always the same String instance for a given Symbol.
  *
  *     :fred.id2name   #=> "fred"
  *     :ginger.to_s    #=> "ginger"
@@ -10866,7 +10880,7 @@ sym_inspect(VALUE sym)
 VALUE
 rb_sym_to_s(VALUE sym)
 {
-    return str_new_shared(rb_cString, rb_sym2str(sym));
+    return rb_sym2str(sym);
 }
 
 
@@ -10887,7 +10901,7 @@ sym_to_sym(VALUE sym)
 }
 
 MJIT_FUNC_EXPORTED VALUE
-rb_sym_proc_call(ID mid, int argc, const VALUE *argv, VALUE passed_proc)
+rb_sym_proc_call(ID mid, int argc, const VALUE *argv, int kw_splat, VALUE passed_proc)
 {
     VALUE obj;
 
@@ -10895,7 +10909,7 @@ rb_sym_proc_call(ID mid, int argc, const VALUE *argv, VALUE passed_proc)
 	rb_raise(rb_eArgError, "no receiver given");
     }
     obj = argv[0];
-    return rb_funcall_with_block(obj, mid, argc - 1, argv + 1, passed_proc);
+    return rb_funcall_with_block_kw(obj, mid, argc - 1, argv + 1, passed_proc, kw_splat);
 }
 
 #if 0
@@ -11197,6 +11211,28 @@ rb_to_symbol(VALUE name)
 }
 
 /*
+ *  call-seq:
+ *     Symbol.all_symbols    => array
+ *
+ *  Returns an array of all the symbols currently in Ruby's symbol
+ *  table.
+ *
+ *     Symbol.all_symbols.size    #=> 903
+ *     Symbol.all_symbols[1,20]   #=> [:floor, :ARGV, :Binding, :symlink,
+ *                                     :chown, :EOFError, :$;, :String,
+ *                                     :LOCK_SH, :"setuid?", :$<,
+ *                                     :default_proc, :compact, :extend,
+ *                                     :Tms, :getwd, :$=, :ThreadGroup,
+ *                                     :wait2, :$>]
+ */
+
+static VALUE
+sym_all_symbols(VALUE _)
+{
+    return rb_sym_all_symbols();
+}
+
+/*
  *  A String object holds and manipulates an arbitrary sequence of
  *  bytes, typically representing characters. String objects may be created
  *  using String::new or as literals.
@@ -11382,7 +11418,7 @@ Init_String(void)
     rb_include_module(rb_cSymbol, rb_mComparable);
     rb_undef_alloc_func(rb_cSymbol);
     rb_undef_method(CLASS_OF(rb_cSymbol), "new");
-    rb_define_singleton_method(rb_cSymbol, "all_symbols", rb_sym_all_symbols, 0); /* in symbol.c */
+    rb_define_singleton_method(rb_cSymbol, "all_symbols", sym_all_symbols, 0);
 
     rb_define_method(rb_cSymbol, "==", sym_equal, 1);
     rb_define_method(rb_cSymbol, "===", sym_equal, 1);

@@ -27,6 +27,4 @@ Gem::Specification.new do |s|
       "source_code_uri" => "https://github.com/ruby/fileutils"
     }
   end
-
-  s.add_development_dependency 'rake'
 end

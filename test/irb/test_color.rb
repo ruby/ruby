@@ -67,8 +67,6 @@ module TestIRB
           "4.5.6" => "#{MAGENTA}#{BOLD}4.5#{CLEAR}#{RED}#{REVERSE}.6#{CLEAR}",
           "\e[0m\n" => "#{RED}#{REVERSE}^[#{CLEAR}[#{BLUE}#{BOLD}0#{CLEAR}#{RED}#{REVERSE}m#{CLEAR}\n",
           "<<EOS\nhere\nEOS" => "#{RED}<<EOS#{CLEAR}\n#{RED}here#{CLEAR}\n#{RED}EOS#{CLEAR}",
-          ":@1" => "#{YELLOW}:#{CLEAR}#{RED}#{REVERSE}@1#{CLEAR}",
-          "@@1" => "#{RED}#{REVERSE}@@1#{CLEAR}",
         })
       end
 
@@ -127,6 +125,8 @@ module TestIRB
         1 => true,
         2.3 => true,
         ['foo', :bar] => true,
+        (a = []; a << a; a) => false,
+        (h = {}; h[h] = h; h) => false,
         { a: 4 } => true,
         /reg/ => true,
         (1..3) => true,

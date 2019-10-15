@@ -77,7 +77,7 @@ module Spec
     def run(cmd, *args)
       opts = args.last.is_a?(Hash) ? args.pop : {}
       groups = args.map(&:inspect).join(", ")
-      setup = "require 'bundler' ; Bundler.setup(#{groups})\n"
+      setup = "require '#{lib}/bundler' ; Bundler.setup(#{groups})\n"
       ruby(setup + cmd, opts)
     end
     bang :run
@@ -592,14 +592,6 @@ module Spec
         false
       end
       port
-    end
-
-    def bundler_fileutils
-      if RUBY_VERSION >= "2.4"
-        ::Bundler::FileUtils
-      else
-        ::FileUtils
-      end
     end
   end
 end

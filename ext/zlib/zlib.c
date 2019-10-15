@@ -27,6 +27,10 @@
 
 #define RUBY_ZLIB_VERSION "1.0.0"
 
+#ifndef RB_PASS_CALLED_KEYWORDS
+# define rb_class_new_instance_kw(argc, argv, klass, kw_splat) rb_class_new_instance(argc, argv, klass)
+#endif
+
 #ifndef GZIP_SUPPORT
 #define GZIP_SUPPORT  1
 #endif
@@ -85,6 +89,7 @@ static void zstream_passthrough_input(struct zstream*);
 static VALUE zstream_detach_input(struct zstream*);
 static void zstream_reset(struct zstream*);
 static VALUE zstream_end(struct zstream*);
+static VALUE zstream_ensure_end(VALUE v);
 static void zstream_run(struct zstream*, Bytef*, long, int);
 static VALUE zstream_sync(struct zstream*, Bytef*, long);
 static void zstream_mark(void*);
@@ -140,7 +145,7 @@ static void gzfile_reset(struct gzfile*);
 static void gzfile_close(struct gzfile*, int);
 static void gzfile_write_raw(struct gzfile*);
 static VALUE gzfile_read_raw_partial(VALUE);
-static VALUE gzfile_read_raw_rescue(VALUE);
+static VALUE gzfile_read_raw_rescue(VALUE,VALUE);
 static VALUE gzfile_read_raw(struct gzfile*, VALUE outbuf);
 static int gzfile_read_raw_ensure(struct gzfile*, long, VALUE outbuf);
 static char *gzfile_read_raw_until_zero(struct gzfile*, long);
@@ -955,6 +960,12 @@ zstream_end(struct zstream *z)
     return Qnil;
 }
 
+static VALUE
+zstream_ensure_end(VALUE v)
+{
+    return zstream_end((struct zstream *)v);
+}
+
 static void *
 zstream_run_func(void *ptr)
 {
@@ -1054,9 +1065,14 @@ zstream_run(struct zstream *z, Bytef *src, long len, int flush)
     }
 
 loop:
+#ifndef RB_NOGVL_UBF_ASYNC_SAFE
+    err = (int)(VALUE)rb_thread_call_without_gvl(zstream_run_func, (void *)&args,
+						 zstream_unblock_func, (void *)&args);
+#else
     err = (int)(VALUE)rb_nogvl(zstream_run_func, (void *)&args,
                                zstream_unblock_func, (void *)&args,
                                RB_NOGVL_UBF_ASYNC_SAFE);
+#endif
 
     if (flush != Z_FINISH && err == Z_BUF_ERROR
 	    && z->stream.avail_out > 0) {
@@ -1640,7 +1656,7 @@ rb_deflate_s_deflate(int argc, VALUE *argv, VALUE klass)
 
     args[0] = (VALUE)&z;
     args[1] = src;
-    dst = rb_ensure(deflate_run, (VALUE)args, zstream_end, (VALUE)&z);
+    dst = rb_ensure(deflate_run, (VALUE)args, zstream_ensure_end, (VALUE)&z);
 
     OBJ_INFECT(dst, src);
     return dst;
@@ -1955,7 +1971,7 @@ rb_inflate_s_inflate(VALUE obj, VALUE src)
 
     args[0] = (VALUE)&z;
     args[1] = src;
-    dst = rb_ensure(inflate_run, (VALUE)args, zstream_end, (VALUE)&z);
+    dst = rb_ensure(inflate_run, (VALUE)args, zstream_ensure_end, (VALUE)&z);
 
     OBJ_INFECT(dst, src);
     return dst;
@@ -2385,7 +2401,7 @@ gzfile_read_raw_partial(VALUE arg)
 }
 
 static VALUE
-gzfile_read_raw_rescue(VALUE arg)
+gzfile_read_raw_rescue(VALUE arg, VALUE _)
 {
     struct read_raw_arg *ra = (struct read_raw_arg *)arg;
     VALUE str = Qnil;
@@ -2919,7 +2935,7 @@ gzfile_writer_end(struct gzfile *gz)
     if (ZSTREAM_IS_CLOSING(&gz->z)) return;
     gz->z.flags |= ZSTREAM_FLAG_CLOSING;
 
-    rb_ensure(gzfile_writer_end_run, (VALUE)gz, zstream_end, (VALUE)&gz->z);
+    rb_ensure(gzfile_writer_end_run, (VALUE)gz, zstream_ensure_end, (VALUE)&gz->z);
 }
 
 static VALUE
@@ -2941,7 +2957,7 @@ gzfile_reader_end(struct gzfile *gz)
     if (ZSTREAM_IS_CLOSING(&gz->z)) return;
     gz->z.flags |= ZSTREAM_FLAG_CLOSING;
 
-    rb_ensure(gzfile_reader_end_run, (VALUE)gz, zstream_end, (VALUE)&gz->z);
+    rb_ensure(gzfile_reader_end_run, (VALUE)gz, zstream_ensure_end, (VALUE)&gz->z);
 }
 
 static void
@@ -3038,7 +3054,7 @@ static VALUE
 new_wrap(VALUE tmp)
 {
     new_wrap_arg_t *arg = (new_wrap_arg_t *)tmp;
-    return rb_class_new_instance(arg->argc, arg->argv, arg->klass);
+    return rb_class_new_instance_kw(arg->argc, arg->argv, arg->klass, RB_PASS_CALLED_KEYWORDS);
 }
 
 static VALUE
@@ -3071,7 +3087,7 @@ gzfile_wrap(int argc, VALUE *argv, VALUE klass, int close_io_on_error)
 	}
     }
     else {
-	obj = rb_class_new_instance(argc, argv, klass);
+	obj = rb_class_new_instance_kw(argc, argv, klass, RB_PASS_CALLED_KEYWORDS);
     }
 
     if (rb_block_given_p()) {
@@ -4888,5 +4904,3 @@ Init_zlib(void)
  * Raised when the data length recorded in the gzip file footer is not equivalent
  * to the length of the actual uncompressed data.
  */
-
-

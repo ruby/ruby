@@ -2156,7 +2156,7 @@ timer_pthread_fn(void *p)
 #endif /* UBF_TIMER_PTHREAD */
 
 static VALUE
-ubf_caller(const void *ignore)
+ubf_caller(void *ignore)
 {
     rb_thread_sleep_forever();
 

@@ -6,8 +6,8 @@ class Reline::WithinPipeTest < Reline::TestCase
     @reader, @writer = IO.pipe((RELINE_TEST_ENCODING rescue Encoding.default_external))
     Reline.input = @reader
     @output = Reline.output = File.open(IO::NULL, 'w')
-    @config = Reline.class_variable_get(:@@config)
-    @line_editor = Reline.class_variable_get(:@@line_editor)
+    @config = Reline.send(:core).config
+    @line_editor = Reline.send(:core).line_editor
   end
 
   def teardown

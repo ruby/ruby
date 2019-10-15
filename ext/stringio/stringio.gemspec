@@ -5,7 +5,7 @@ source_version = ["", "ext/stringio/"].find do |dir|
   begin
     break File.open(File.join(__dir__, "#{dir}stringio.c")) {|f|
       f.gets("\n#define STRINGIO_VERSION ")
-      f.gets[/\s*(".+")/, 1].undump
+      f.gets[/\s*"(.+)"/, 1]
     }
   rescue Errno::ENOENT
   end
@@ -23,7 +23,7 @@ Gem::Specification.new do |s|
   s.files = ["README.md", "ext/stringio/extconf.rb", "ext/stringio/stringio.c"]
   s.homepage = "https://github.com/ruby/stringio"
   s.licenses = ["BSD-2-Clause"]
-  s.required_ruby_version = Gem::Requirement.new(">= 2.2")
+  s.required_ruby_version = ">= 2.4"
   s.rubygems_version = "2.6.11"
   s.summary = "Pseudo IO on String"
 

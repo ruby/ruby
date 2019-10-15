@@ -337,7 +337,7 @@ dump_array(rb_ast_t *ast, NODE *node)
     VALUE ary = rb_ary_new();
     rb_ary_push(ary, NEW_CHILD(ast, node->nd_head));
 
-    while (node->nd_next && nd_type(node->nd_next) == NODE_ARRAY) {
+    while (node->nd_next && nd_type(node->nd_next) == NODE_LIST) {
         node = node->nd_next;
         rb_ary_push(ary, NEW_CHILD(ast, node->nd_head));
     }
@@ -491,12 +491,12 @@ node_children(rb_ast_t *ast, NODE *node)
         return rb_ary_new_from_node_args(ast, 1, node->nd_args);
       case NODE_ZSUPER:
         return rb_ary_new_from_node_args(ast, 0);
-      case NODE_ARRAY:
+      case NODE_LIST:
         goto ary;
       case NODE_VALUES:
       ary:
         return dump_array(ast, node);
-      case NODE_ZARRAY:
+      case NODE_ZLIST:
         return rb_ary_new_from_node_args(ast, 0);
       case NODE_HASH:
         return rb_ary_new_from_node_args(ast, 1, node->nd_head);
@@ -625,8 +625,8 @@ node_children(rb_ast_t *ast, NODE *node)
                                         INT2NUM(ainfo->post_args_num),
                                         NEW_CHILD(ast, ainfo->post_init),
                                         var_name(ainfo->rest_arg),
-                                        NEW_CHILD(ast, ainfo->kw_args),
-                                        NEW_CHILD(ast, ainfo->kw_rest_arg),
+                                        (ainfo->no_kwarg ? Qfalse : NEW_CHILD(ast, ainfo->kw_args)),
+                                        (ainfo->no_kwarg ? Qfalse : NEW_CHILD(ast, ainfo->kw_rest_arg)),
                                         var_name(ainfo->block_arg));
         }
       case NODE_SCOPE:
@@ -652,10 +652,13 @@ node_children(rb_ast_t *ast, NODE *node)
         }
       case NODE_HSHPTN:
         {
+            VALUE kwrest = node->nd_pkwrestarg == NODE_SPECIAL_NO_REST_KEYWORD ? ID2SYM(rb_intern("NODE_SPECIAL_NO_REST_KEYWORD")) :
+                                                                                 NEW_CHILD(ast, node->nd_pkwrestarg);
+
             return rb_ary_new_from_args(3,
                                         NEW_CHILD(ast, node->nd_pconst),
                                         NEW_CHILD(ast, node->nd_pkwargs),
-                                        NEW_CHILD(ast, node->nd_pkwrestarg));
+                                        kwrest);
         }
       case NODE_ARGS_AUX:
       case NODE_LAST:
@@ -776,11 +779,16 @@ Init_ast(void)
      * AbstractSyntaxTree provides methods to parse Ruby code into
      * abstract syntax trees. The nodes in the tree
      * are instances of RubyVM::AbstractSyntaxTree::Node.
+     *
+     * This class is MRI specific as it exposes implementation details
+     * of the MRI abstract syntax tree.
      */
     rb_mAST = rb_define_module_under(rb_cRubyVM, "AbstractSyntaxTree");
     /*
      * RubyVM::AbstractSyntaxTree::Node instances are created by parse methods in
      * RubyVM::AbstractSyntaxTree.
+     *
+     * This class is MRI specific.
      */
     rb_cNode = rb_define_class_under(rb_mAST, "Node", rb_cObject);
 

@@ -60,6 +60,10 @@ module TestStruct
     assert_equal(1, o.a)
   end
 
+  def test_attrset_id
+    assert_raise(ArgumentError) { Struct.new(:x=) }
+  end
+
   def test_members
     klass = @Struct.new(:a)
     o = klass.new(1)
@@ -92,6 +96,10 @@ module TestStruct
     assert_equal([:utime, :stime, :cutime, :cstime], Process.times.members)
   end
 
+  def test_struct_new_with_empty_hash
+    assert_equal({:a=>1}, Struct.new(:a, {}).new({:a=>1}).a)
+  end
+
   def test_struct_new_with_keyword_init
     @Struct.new("KeywordInitTrue", :a, :b, keyword_init: true)
     @Struct.new("KeywordInitFalse", :a, :b, keyword_init: false)
@@ -109,6 +117,16 @@ module TestStruct
       remove_const(:KeywordInitTrue)
       remove_const(:KeywordInitFalse)
     end
+  end
+
+  def test_struct_new_with_keyword_init_and_block
+    struct = @Struct.new(:a, :b, keyword_init: true) do
+      def c
+        a + b
+      end
+    end
+
+    assert_equal(3, struct.new(a: 1, b: 2).c)
   end
 
   def test_initialize

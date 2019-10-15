@@ -240,7 +240,7 @@ rb_ary_ptr_use_end(VALUE ary)
 }
 
 void
-rb_mem_clear(register VALUE *mem, register long size)
+rb_mem_clear(VALUE *mem, long size)
 {
     while (size--) {
 	*mem++ = Qnil;
@@ -786,6 +786,12 @@ void
 rb_ary_free(VALUE ary)
 {
     if (ARY_OWNS_HEAP_P(ary)) {
+        if (USE_DEBUG_COUNTER &&
+            !ARY_SHARED_ROOT_P(ary) &&
+            ARY_HEAP_CAPA(ary) > RARRAY_LEN(ary)) {
+            RB_DEBUG_COUNTER_INC(obj_ary_extracapa);
+        }
+
         if (RARRAY_TRANSIENT_P(ary)) {
             RB_DEBUG_COUNTER_INC(obj_ary_transient);
         }
@@ -2436,7 +2442,8 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
  *     ary.inspect  -> string
  *     ary.to_s     -> string
  *
- *  Creates a string representation of +self+.
+ *  Creates a string representation of +self+, by calling #inspect
+ *  on each element.
  *
  *     [ "a", "b", "c" ].to_s     #=> "[\"a\", \"b\", \"c\"]"
  */
@@ -4500,7 +4507,7 @@ ary_recycle_hash(VALUE hash)
  *  Array Difference
  *
  *  Returns a new array that is a copy of the original array, removing all
- *  occurences of any item that also appear in +other_ary+. The order is
+ *  occurrences of any item that also appear in +other_ary+. The order is
  *  preserved from the original array.
  *
  *  It compares elements using their #hash and #eql? methods for efficiency.
@@ -4508,7 +4515,7 @@ ary_recycle_hash(VALUE hash)
  *     [ 1, 1, 2, 2, 3, 3, 4, 5 ] - [ 1, 2, 4 ]  #=>  [ 3, 3, 5 ]
  *
  *  Note that while 1 and 2 were only present once in the array argument, and
- *  were present twice in the receiver array, all occurences of each Integer are
+ *  were present twice in the receiver array, all occurrences of each Integer are
  *  removed in the returned array.
  *
  *  If you need set-like behavior, see the library class Set.
@@ -4551,7 +4558,7 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *  Array Difference
  *
  *  Returns a new array that is a copy of the original array, removing all
- *  occurences of any item that also appear in +other_ary+. The order is
+ *  occurrences of any item that also appear in +other_ary+. The order is
  *  preserved from the original array.
  *
  *  It compares elements using their #hash and #eql? methods for efficiency.
@@ -4559,10 +4566,10 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *     [ 1, 1, 2, 2, 3, 3, 4, 5 ].difference([ 1, 2, 4 ])     #=> [ 3, 3, 5 ]
  *
  *  Note that while 1 and 2 were only present once in the array argument, and
- *  were present twice in the receiver array, all occurences of each Integer are
+ *  were present twice in the receiver array, all occurrences of each Integer are
  *  removed in the returned array.
  *
- *  Multiple array arguments can be supplied and all occurences of any element
+ *  Multiple array arguments can be supplied and all occurrences of any element
  *  in those supplied arrays that match the receiver will be removed from the
  *  returned array.
  *
@@ -4659,6 +4666,36 @@ rb_ary_and(VALUE ary1, VALUE ary2)
     ary_recycle_hash(hash);
 
     return ary3;
+}
+
+/*
+ *  call-seq:
+ *     ary.intersection(other_ary1, other_ary2, ...)      -> new_ary
+ *
+ *  Set Intersection --- Returns a new array containing unique elements common
+ *  to +self+ and <code>other_ary</code>s. Order is preserved from the original
+ *  array.
+ *
+ *  It compares elements using their #hash and #eql? methods for efficiency.
+ *
+ *     [ 1, 1, 3, 5 ].intersection([ 3, 2, 1 ])                    # => [ 1, 3 ]
+ *     [ "a", "b", "z" ].intersection([ "a", "b", "c" ], [ "b" ])  # => [ "b" ]
+ *     [ "a" ].intersection #=> [ "a" ]
+ *
+ *  See also Array#&.
+ */
+
+static VALUE
+rb_ary_intersection_multi(int argc, VALUE *argv, VALUE ary)
+{
+    VALUE result = rb_ary_dup(ary);
+    int i;
+
+    for (i = 0; i < argc; i++) {
+        result = rb_ary_and(result, argv[i]);
+    }
+
+    return result;
 }
 
 static int
@@ -4991,9 +5028,11 @@ rb_ary_uniq(VALUE ary)
 {
     VALUE hash, uniq;
 
-    if (RARRAY_LEN(ary) <= 1)
-        return rb_ary_dup(ary);
-    if (rb_block_given_p()) {
+    if (RARRAY_LEN(ary) <= 1) {
+        hash = 0;
+        uniq = rb_ary_dup(ary);
+    }
+    else if (rb_block_given_p()) {
 	hash = ary_make_hash_by(ary);
 	uniq = rb_hash_values(hash);
     }
@@ -5002,7 +5041,9 @@ rb_ary_uniq(VALUE ary)
 	uniq = rb_hash_values(hash);
     }
     RBASIC_SET_CLASS(uniq, rb_obj_class(ary));
-    ary_recycle_hash(hash);
+    if (hash) {
+        ary_recycle_hash(hash);
+    }
 
     return uniq;
 }
@@ -5112,18 +5153,43 @@ rb_ary_count(int argc, VALUE *argv, VALUE ary)
 }
 
 static VALUE
-flatten(VALUE ary, int level, int *modified)
+flatten(VALUE ary, int level)
 {
-    long i = 0;
-    VALUE stack, result, tmp, elt;
+    long i;
+    VALUE stack, result, tmp, elt, vmemo;
     st_table *memo;
     st_data_t id;
 
-    stack = ary_new(0, ARY_DEFAULT_SIZE);
+    for (i = 0; i < RARRAY_LEN(ary); i++) {
+        elt = RARRAY_AREF(ary, i);
+        tmp = rb_check_array_type(elt);
+        if (!NIL_P(tmp)) {
+            break;
+        }
+    }
+    if (i == RARRAY_LEN(ary)) {
+        return ary;
+    } else if (tmp == ary) {
+        rb_raise(rb_eArgError, "tried to flatten recursive array");
+    }
+
     result = ary_new(0, RARRAY_LEN(ary));
+    ary_memcpy(result, 0, i, RARRAY_CONST_PTR_TRANSIENT(ary));
+    ARY_SET_LEN(result, i);
+
+    stack = ary_new(0, ARY_DEFAULT_SIZE);
+    rb_ary_push(stack, ary);
+    rb_ary_push(stack, LONG2NUM(i + 1));
+
+    vmemo = rb_hash_new();
+    RBASIC_CLEAR_CLASS(vmemo);
     memo = st_init_numtable();
+    rb_hash_st_table_set(vmemo, memo);
     st_insert(memo, (st_data_t)ary, (st_data_t)Qtrue);
-    *modified = 0;
+    st_insert(memo, (st_data_t)tmp, (st_data_t)Qtrue);
+
+    ary = tmp;
+    i = 0;
 
     while (1) {
 	while (i < RARRAY_LEN(ary)) {
@@ -5134,16 +5200,17 @@ flatten(VALUE ary, int level, int *modified)
 	    }
 	    tmp = rb_check_array_type(elt);
 	    if (RBASIC(result)->klass) {
+                RB_GC_GUARD(vmemo);
+                st_clear(memo);
 		rb_raise(rb_eRuntimeError, "flatten reentered");
 	    }
 	    if (NIL_P(tmp)) {
 		rb_ary_push(result, elt);
 	    }
 	    else {
-		*modified = 1;
 		id = (st_data_t)tmp;
-		if (st_lookup(memo, id, 0)) {
-		    st_free_table(memo);
+		if (st_is_member(memo, id)) {
+                    st_clear(memo);
 		    rb_raise(rb_eArgError, "tried to flatten recursive array");
 		}
 		st_insert(memo, id, (st_data_t)Qtrue);
@@ -5163,7 +5230,7 @@ flatten(VALUE ary, int level, int *modified)
 	ary = rb_ary_pop(stack);
     }
 
-    st_free_table(memo);
+    st_clear(memo);
 
     RBASIC_SET_CLASS(result, rb_obj_class(ary));
     return result;
@@ -5200,9 +5267,8 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
     if (!NIL_P(lv)) level = NUM2INT(lv);
     if (level == 0) return Qnil;
 
-    result = flatten(ary, level, &mod);
-    if (mod == 0) {
-	ary_discard(result);
+    result = flatten(ary, level);
+    if (result == ary) {
 	return Qnil;
     }
     if (!(mod = ARY_EMBED_P(result))) rb_obj_freeze(result);
@@ -5237,7 +5303,7 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
 {
-    int mod = 0, level = -1;
+    int level = -1;
     VALUE result;
 
     if (rb_check_arity(argc, 0, 1) && !NIL_P(argv[0])) {
@@ -5245,7 +5311,10 @@ rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
         if (level == 0) return ary_make_shared_copy(ary);
     }
 
-    result = flatten(ary, level, &mod);
+    result = flatten(ary, level);
+    if (result == ary) {
+        result = ary_make_shared_copy(ary);
+    }
     OBJ_INFECT(result, ary);
 
     return result;
@@ -6551,12 +6620,12 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
          * See http://link.springer.com/article/10.1007/s00607-005-0139-x
          */
         double f, c;
+        double x, t;
 
         f = NUM2DBL(v);
         c = 0.0;
         goto has_float_value;
         for (; i < RARRAY_LEN(ary); i++) {
-            double x, t;
             e = RARRAY_AREF(ary, i);
             if (block_given)
                 e = rb_yield(e);
@@ -6889,6 +6958,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "concat", rb_ary_concat_multi, -1);
     rb_define_method(rb_cArray, "union", rb_ary_union_multi, -1);
     rb_define_method(rb_cArray, "difference", rb_ary_difference_multi, -1);
+    rb_define_method(rb_cArray, "intersection", rb_ary_intersection_multi, -1);
     rb_define_method(rb_cArray, "<<", rb_ary_push, 1);
     rb_define_method(rb_cArray, "push", rb_ary_push_m, -1);
     rb_define_alias(rb_cArray,  "append", "push");

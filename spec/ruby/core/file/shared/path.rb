@@ -68,8 +68,7 @@ describe :file_path, shared: true do
               -> { f.send(@method) }.should raise_error(IOError)
             end
           rescue Errno::EOPNOTSUPP, Errno::EINVAL, Errno::EISDIR
-            # EOPNOTSUPP: no support from the filesystem
-            1.should == 1
+            skip "no support from the filesystem"
           end
         end
       end

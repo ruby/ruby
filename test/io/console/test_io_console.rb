@@ -7,6 +7,9 @@ rescue LoadError
 end
 
 class TestIO_Console < Test::Unit::TestCase
+  PATHS = $LOADED_FEATURES.grep(%r"/io/console(?:\.#{RbConfig::CONFIG['DLEXT']}|/\w+\.rb)\z") {$`}
+  PATHS.uniq!
+
   # FreeBSD seems to hang on TTOU when running parallel tests
   # tested on FreeBSD 11.x
   def set_winsize_setup
@@ -281,6 +284,26 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
     set_winsize_teardown
   end
 
+  def test_cursor_position
+    run_pty("#{<<~"begin;"}\n#{<<~'end;'}") do |r, w, _|
+      begin;
+        con = IO.console
+        p con.cursor
+        con.cursor_down(3); con.puts
+        con.cursor_right(4); con.puts
+        con.cursor_left(2); con.puts
+        con.cursor_up(1); con.puts
+      end;
+      assert_equal("\e[6n", r.readpartial(5))
+      w.print("\e[12;34R"); w.flush
+      assert_equal([11, 33], eval(r.gets))
+      assert_equal("\e[3B", r.gets.chomp)
+      assert_equal("\e[4C", r.gets.chomp)
+      assert_equal("\e[2D", r.gets.chomp)
+      assert_equal("\e[1A", r.gets.chomp)
+    end
+  end
+
   unless IO.console
     def test_close
       assert_equal(["true"], run_pty("IO.console.close; p IO.console.fileno >= 0"))
@@ -305,7 +328,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   end
 
   def run_pty(src, n = 1)
-    r, w, pid = PTY.spawn(EnvUtil.rubybin, "-rio/console", "-e", src)
+    r, w, pid = PTY.spawn(EnvUtil.rubybin, "-I#{TestIO_Console::PATHS.join(File::PATH_SEPARATOR)}", "-rio/console", "-e", src)
   rescue RuntimeError
     skip $!
   else

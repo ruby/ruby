@@ -1,9 +1,16 @@
 # coding: utf-8
 # frozen_string_literal: true
-source_version = File.open(File.join(__dir__, "zlib.c")) {|f|
-  f.gets("\n#define RUBY_ZLIB_VERSION ")
-  f.gets[/\s*(".+")/, 1].undump
-}
+
+source_version = ["", "ext/zlib/"].find do |dir|
+  begin
+    break File.open(File.join(__dir__, "#{dir}zlib.c")) {|f|
+      f.gets("\n#define RUBY_ZLIB_VERSION ")
+      f.gets[/\s*"(.+)"/, 1]
+    }
+  rescue Errno::ENOENT
+  end
+end
+
 Gem::Specification.new do |spec|
   spec.name          = "zlib"
   spec.version       = source_version

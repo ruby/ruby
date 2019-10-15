@@ -17,8 +17,8 @@ class TestString < Test::Unit::TestCase
     super
   end
 
-  def S(*args)
-    @cls.new(*args)
+  def S(*args, **kw)
+    @cls.new(*args, **kw)
   end
 
   def test_s_new

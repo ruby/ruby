@@ -280,6 +280,25 @@ objid_hash(VALUE obj)
 #endif
 }
 
+/**
+ * call-seq:
+ *    obj.hash    -> integer
+ *
+ * Generates an Integer hash value for this object.  This function must have the
+ * property that <code>a.eql?(b)</code> implies <code>a.hash == b.hash</code>.
+ *
+ * The hash value is used along with #eql? by the Hash class to determine if
+ * two objects reference the same hash key.  Any hash value that exceeds the
+ * capacity of an Integer will be truncated before being used.
+ *
+ * The hash value for an object may not be identical across invocations or
+ * implementations of Ruby.  If you need a stable identifier across Ruby
+ * invocations and implementations you will need to generate one with a custom
+ * method.
+ *--
+ * \private
+ *++
+ */
 VALUE
 rb_obj_hash(VALUE obj)
 {
@@ -849,7 +868,7 @@ ar_add_direct_with_hash(VALUE hash, st_data_t key, st_data_t val, st_hash_t hash
 }
 
 static int
-ar_general_foreach(VALUE hash, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg)
+ar_general_foreach(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg)
 {
     if (RHASH_AR_TABLE_SIZE(hash) > 0) {
         unsigned i, bound = RHASH_AR_TABLE_BOUND(hash);
@@ -890,19 +909,32 @@ ar_general_foreach(VALUE hash, int (*func)(ANYARGS), st_update_callback_func *re
 }
 
 static int
-ar_foreach_with_replace(VALUE hash, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg)
+ar_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg)
 {
     return ar_general_foreach(hash, func, replace, arg);
 }
 
+struct functor {
+    st_foreach_callback_func *func;
+    st_data_t arg;
+};
+
 static int
-ar_foreach(VALUE hash, int (*func)(ANYARGS), st_data_t arg)
+apply_functor(st_data_t k, st_data_t v, st_data_t d, int _)
 {
-    return ar_general_foreach(hash, func, NULL, arg);
+    const struct functor *f = (void *)d;
+    return f->func(k, v, f->arg);
 }
 
 static int
-ar_foreach_check(VALUE hash, int (*func)(ANYARGS), st_data_t arg,
+ar_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t arg)
+{
+    const struct functor f = { func, arg };
+    return ar_general_foreach(hash, apply_functor, NULL, (st_data_t)&f);
+}
+
+static int
+ar_foreach_check(VALUE hash, st_foreach_check_callback_func *func, st_data_t arg,
                      st_data_t never)
 {
     if (RHASH_AR_TABLE_SIZE(hash) > 0) {
@@ -1248,7 +1280,7 @@ foreach_safe_i(st_data_t key, st_data_t value, st_data_t args, int error)
 }
 
 void
-st_foreach_safe(st_table *table, int (*func)(ANYARGS), st_data_t a)
+st_foreach_safe(st_table *table, st_foreach_func *func, st_data_t a)
 {
     struct foreach_safe_arg arg;
 
@@ -1396,7 +1428,7 @@ hash_foreach_ensure(VALUE hash)
 }
 
 int
-rb_hash_stlike_foreach(VALUE hash, int (*func)(ANYARGS), st_data_t arg)
+rb_hash_stlike_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t arg)
 {
     if (RHASH_AR_TABLE_P(hash)) {
         return ar_foreach(hash, func, arg);
@@ -1407,7 +1439,7 @@ rb_hash_stlike_foreach(VALUE hash, int (*func)(ANYARGS), st_data_t arg)
 }
 
 int
-rb_hash_stlike_foreach_with_replace(VALUE hash, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg)
+rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg)
 {
     if (RHASH_AR_TABLE_P(hash)) {
         return ar_foreach_with_replace(hash, func, replace, arg);
@@ -1437,7 +1469,7 @@ hash_foreach_call(VALUE arg)
 }
 
 void
-rb_hash_foreach(VALUE hash, int (*func)(ANYARGS), VALUE farg)
+rb_hash_foreach(VALUE hash, rb_foreach_func *func, VALUE farg)
 {
     struct hash_foreach_arg arg;
 
@@ -2904,7 +2936,7 @@ rb_hash_empty_p(VALUE hash)
 }
 
 static int
-each_value_i(VALUE key, VALUE value)
+each_value_i(VALUE key, VALUE value, VALUE _)
 {
     rb_yield(value);
     return ST_CONTINUE;
@@ -2938,7 +2970,7 @@ rb_hash_each_value(VALUE hash)
 }
 
 static int
-each_key_i(VALUE key, VALUE value)
+each_key_i(VALUE key, VALUE value, VALUE _)
 {
     rb_yield(key);
     return ST_CONTINUE;
@@ -2971,14 +3003,14 @@ rb_hash_each_key(VALUE hash)
 }
 
 static int
-each_pair_i(VALUE key, VALUE value)
+each_pair_i(VALUE key, VALUE value, VALUE _)
 {
     rb_yield(rb_assoc_new(key, value));
     return ST_CONTINUE;
 }
 
 static int
-each_pair_i_fast(VALUE key, VALUE value)
+each_pair_i_fast(VALUE key, VALUE value, VALUE _)
 {
     VALUE argv[2];
     argv[0] = key;
@@ -3097,10 +3129,16 @@ rb_hash_transform_keys_bang(VALUE hash)
 }
 
 static int
-transform_values_i(VALUE key, VALUE value, VALUE result)
+transform_values_foreach_func(st_data_t key, st_data_t value, st_data_t argp, int error)
 {
-    VALUE new_value = rb_yield(value);
-    rb_hash_aset(result, key, new_value);
+    return ST_REPLACE;
+}
+
+static int
+transform_values_foreach_replace(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
+{
+    VALUE new_value = rb_yield((VALUE)*value);
+    *value = new_value;
     return ST_CONTINUE;
 }
 
@@ -3127,9 +3165,10 @@ rb_hash_transform_values(VALUE hash)
     VALUE result;
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
-    result = rb_hash_new_with_size(RHASH_SIZE(hash));
+    result = hash_dup(hash, rb_cHash, 0);
+
     if (!RHASH_EMPTY_P(hash)) {
-        rb_hash_foreach(hash, transform_values_i, result);
+        rb_hash_stlike_foreach_with_replace(result, transform_values_foreach_func, transform_values_foreach_replace, 0);
     }
 
     return result;
@@ -3157,8 +3196,11 @@ rb_hash_transform_values_bang(VALUE hash)
 {
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     rb_hash_modify_check(hash);
-    if (!RHASH_TABLE_EMPTY_P(hash))
-        rb_hash_foreach(hash, transform_values_i, hash);
+
+    if (!RHASH_TABLE_EMPTY_P(hash)) {
+        rb_hash_stlike_foreach_with_replace(hash, transform_values_foreach_func, transform_values_foreach_replace, 0);
+    }
+
     return hash;
 }
 
@@ -4429,7 +4471,7 @@ rb_hash_gt(VALUE hash, VALUE other)
 }
 
 static VALUE
-hash_proc_call(VALUE key, VALUE hash, int argc, const VALUE *argv, VALUE passed_proc)
+hash_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(key, hash))
 {
     rb_check_arity(argc, 1, 1);
     return rb_hash_aref(hash, *argv);
@@ -4727,9 +4769,21 @@ env_delete(VALUE name)
  *   ENV.delete(name)                  -> value
  *   ENV.delete(name) { |name| block } -> value
  *
- * Deletes the environment variable with +name+ and returns the value of the
- * variable.  If a block is given it will be called when the named environment
- * does not exist.
+ * Deletes the environment variable with +name+ if it exists and returns its value:
+ *   ENV['foo'] = '0'
+ *   ENV.delete('foo') # => '0'
+ * Returns +nil+ if the named environment variable does not exist:
+ *   ENV.delete('foo') # => nil
+ * If a block given and the environment variable does not exist,
+ * yields +name+ to the block and returns +nil+:
+ *   ENV.delete('foo') { |name| puts name } # => nil
+ *   foo
+ * If a block given and the environment variable exists,
+ * deletes the environment variable and returns its value (ignoring the block):
+ *   ENV['foo'] = '0'
+ *   ENV.delete('foo') { |name| fail 'ignored' } # => "0"
+ * Raises TypeError if +name+ is not a String and cannot be coerced with \#to_str:
+ *   ENV.delete(Object.new) # => TypeError raised
  */
 static VALUE
 env_delete_m(VALUE obj, VALUE name)
@@ -4776,7 +4830,7 @@ rb_f_getenv(VALUE obj, VALUE name)
  * be returned when no block is given.
  */
 static VALUE
-env_fetch(int argc, VALUE *argv)
+env_fetch(int argc, VALUE *argv, VALUE _)
 {
     VALUE key;
     long block_given;
@@ -5106,12 +5160,6 @@ env_aset(VALUE nm, VALUE val)
     return val;
 }
 
-/*
- * call-seq:
- *   ENV.keys -> Array
- *
- * Returns every environment variable name in an Array
- */
 static VALUE
 env_keys(void)
 {
@@ -5129,6 +5177,19 @@ env_keys(void)
     }
     FREE_ENVIRON(environ);
     return ary;
+}
+
+/*
+ * call-seq:
+ *   ENV.keys -> Array
+ *
+ * Returns every environment variable name in an Array
+ */
+
+static VALUE
+env_f_keys(VALUE _)
+{
+    return env_keys();
 }
 
 static VALUE
@@ -5170,12 +5231,6 @@ env_each_key(VALUE ehash)
     return ehash;
 }
 
-/*
- * call-seq:
- *   ENV.values -> Array
- *
- * Returns every environment variable value as an Array
- */
 static VALUE
 env_values(void)
 {
@@ -5193,6 +5248,19 @@ env_values(void)
     }
     FREE_ENVIRON(environ);
     return ary;
+}
+
+/*
+ * call-seq:
+ *   ENV.values -> Array
+ *
+ * Returns every environment variable value as an Array
+ */
+
+static VALUE
+env_f_values(VALUE _)
+{
+    return env_values();
 }
 
 /*
@@ -5220,9 +5288,9 @@ env_each_value(VALUE ehash)
 
 /*
  * call-seq:
- *   ENV.each      { |name, value| block } -> Hash
+ *   ENV.each      { |name, value| block } -> ENV
  *   ENV.each                              -> Enumerator
- *   ENV.each_pair { |name, value| block } -> Hash
+ *   ENV.each_pair { |name, value| block } -> ENV
  *   ENV.each_pair                         -> Enumerator
  *
  * Yields each environment variable +name+ and +value+.
@@ -5322,7 +5390,7 @@ env_delete_if(VALUE ehash)
  * the given names.  See also ENV.select.
  */
 static VALUE
-env_values_at(int argc, VALUE *argv)
+env_values_at(int argc, VALUE *argv, VALUE _)
 {
     VALUE result;
     long i;
@@ -5433,7 +5501,7 @@ env_keep_if(VALUE ehash)
  *     ENV.slice("TERM","HOME")  #=> {"TERM"=>"xterm-256color", "HOME"=>"/Users/rhc"}
  */
 static VALUE
-env_slice(int argc, VALUE *argv)
+env_slice(int argc, VALUE *argv, VALUE _)
 {
     int i;
     VALUE key, value, result;
@@ -5453,12 +5521,6 @@ env_slice(int argc, VALUE *argv)
     return result;
 }
 
-/*
- * call-seq:
- *   ENV.clear
- *
- * Removes every environment variable.
- */
 VALUE
 rb_env_clear(void)
 {
@@ -5478,12 +5540,24 @@ rb_env_clear(void)
 
 /*
  * call-seq:
+ *   ENV.clear
+ *
+ * Removes every environment variable.
+ */
+static VALUE
+env_clear(VALUE _)
+{
+    return rb_env_clear();
+}
+
+/*
+ * call-seq:
  *   ENV.to_s -> "ENV"
  *
  * Returns "ENV"
  */
 static VALUE
-env_to_s(void)
+env_to_s(VALUE _)
 {
     return rb_usascii_str_new2("ENV");
 }
@@ -5495,7 +5569,7 @@ env_to_s(void)
  * Returns the contents of the environment as a String.
  */
 static VALUE
-env_inspect(void)
+env_inspect(VALUE _)
 {
     char **env;
     VALUE str, i;
@@ -5534,7 +5608,7 @@ env_inspect(void)
  *
  */
 static VALUE
-env_to_a(void)
+env_to_a(VALUE _)
 {
     char **env;
     VALUE ary;
@@ -5561,7 +5635,7 @@ env_to_a(void)
  * compatibility with Hash.
  */
 static VALUE
-env_none(void)
+env_none(VALUE _)
 {
     return Qnil;
 }
@@ -5574,7 +5648,7 @@ env_none(void)
  * Returns the number of environment variables.
  */
 static VALUE
-env_size(void)
+env_size(VALUE _)
 {
     int i;
     char **env;
@@ -5593,7 +5667,7 @@ env_size(void)
  * Returns true when there are no environment variables
  */
 static VALUE
-env_empty_p(void)
+env_empty_p(VALUE _)
 {
     char **env;
 
@@ -5750,13 +5824,6 @@ env_index(VALUE dmy, VALUE value)
     return env_key(dmy, value);
 }
 
-/*
- * call-seq:
- *   ENV.to_hash -> hash
- *
- * Creates a hash with a copy of the environment variables.
- *
- */
 static VALUE
 env_to_hash(void)
 {
@@ -5779,6 +5846,20 @@ env_to_hash(void)
 
 /*
  * call-seq:
+ *   ENV.to_hash -> hash
+ *
+ * Creates a hash with a copy of the environment variables.
+ *
+ */
+
+static VALUE
+env_f_to_hash(VALUE _)
+{
+    return env_to_hash();
+}
+
+/*
+ * call-seq:
  *   ENV.to_h                        -> hash
  *   ENV.to_h {|name, value| block } -> hash
  *
@@ -5786,7 +5867,7 @@ env_to_hash(void)
  *
  */
 static VALUE
-env_to_h(void)
+env_to_h(VALUE _)
 {
     VALUE hash = env_to_hash();
     if (rb_block_given_p()) {
@@ -5804,7 +5885,7 @@ env_to_h(void)
  * environment.
  */
 static VALUE
-env_reject(void)
+env_reject(VALUE _)
 {
     return rb_hash_delete_if(env_to_hash());
 }
@@ -5831,7 +5912,7 @@ env_freeze(VALUE self)
  * an Array.  Returns +nil+ if when the environment is empty.
  */
 static VALUE
-env_shift(void)
+env_shift(VALUE _)
 {
     char **env;
     VALUE result = Qnil;
@@ -5858,7 +5939,7 @@ env_shift(void)
  * and values as names.
  */
 static VALUE
-env_invert(void)
+env_invert(VALUE _)
 {
     return rb_hash_invert(env_to_hash());
 }
@@ -5899,7 +5980,7 @@ env_replace(VALUE env, VALUE hash)
 }
 
 static int
-env_update_i(VALUE key, VALUE val)
+env_update_i(VALUE key, VALUE val, VALUE _)
 {
     if (rb_block_given_p()) {
 	val = rb_yield_values(3, key, rb_f_getenv(Qnil, key), val);
@@ -6171,7 +6252,7 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "delete_if", env_delete_if, 0);
     rb_define_singleton_method(envtbl, "keep_if", env_keep_if, 0);
     rb_define_singleton_method(envtbl, "slice", env_slice, -1);
-    rb_define_singleton_method(envtbl, "clear", rb_env_clear, 0);
+    rb_define_singleton_method(envtbl, "clear", env_clear, 0);
     rb_define_singleton_method(envtbl, "reject", env_reject, 0);
     rb_define_singleton_method(envtbl, "reject!", env_reject_bang, 0);
     rb_define_singleton_method(envtbl, "select", env_select, 0);
@@ -6193,8 +6274,8 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "size", env_size, 0);
     rb_define_singleton_method(envtbl, "length", env_size, 0);
     rb_define_singleton_method(envtbl, "empty?", env_empty_p, 0);
-    rb_define_singleton_method(envtbl, "keys", env_keys, 0);
-    rb_define_singleton_method(envtbl, "values", env_values, 0);
+    rb_define_singleton_method(envtbl, "keys", env_f_keys, 0);
+    rb_define_singleton_method(envtbl, "values", env_f_values, 0);
     rb_define_singleton_method(envtbl, "values_at", env_values_at, -1);
     rb_define_singleton_method(envtbl, "include?", env_has_key, 1);
     rb_define_singleton_method(envtbl, "member?", env_has_key, 1);
@@ -6202,7 +6283,7 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "has_value?", env_has_value, 1);
     rb_define_singleton_method(envtbl, "key?", env_has_key, 1);
     rb_define_singleton_method(envtbl, "value?", env_has_value, 1);
-    rb_define_singleton_method(envtbl, "to_hash", env_to_hash, 0);
+    rb_define_singleton_method(envtbl, "to_hash", env_f_to_hash, 0);
     rb_define_singleton_method(envtbl, "to_h", env_to_h, 0);
     rb_define_singleton_method(envtbl, "assoc", env_assoc, 1);
     rb_define_singleton_method(envtbl, "rassoc", env_rassoc, 1);

@@ -526,7 +526,7 @@ bt_init(void *ptr, size_t size)
     struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
     arg->btobj = backtrace_alloc(rb_cBacktrace);
     GetCoreDataFromValue(arg->btobj, rb_backtrace_t, arg->bt);
-    arg->bt->backtrace_base = arg->bt->backtrace = ruby_xmalloc(sizeof(rb_backtrace_location_t) * size);
+    arg->bt->backtrace_base = arg->bt->backtrace = ALLOC_N(rb_backtrace_location_t, size);
     arg->bt->backtrace_size = 0;
 }
 
@@ -1007,7 +1007,7 @@ rb_vm_thread_backtrace_locations(int argc, const VALUE *argv, VALUE thval)
  */
 
 static VALUE
-rb_f_caller(int argc, VALUE *argv)
+rb_f_caller(int argc, VALUE *argv, VALUE _)
 {
     return ec_backtrace_to_ary(GET_EC(), argc, argv, 1, 1, 1);
 }
@@ -1035,7 +1035,7 @@ rb_f_caller(int argc, VALUE *argv)
  *  entries within the specified range.
  */
 static VALUE
-rb_f_caller_locations(int argc, VALUE *argv)
+rb_f_caller_locations(int argc, VALUE *argv, VALUE _)
 {
     return ec_backtrace_to_ary(GET_EC(), argc, argv, 1, 1, 0);
 }

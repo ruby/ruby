@@ -2,6 +2,9 @@
 [![wercker status](https://app.wercker.com/status/e5e7e1704f62b76525022aa424aef6ef/s/master "wercker status")](https://app.wercker.com/project/byKey/e5e7e1704f62b76525022aa424aef6ef)
 [![Build status](https://ci.appveyor.com/api/projects/status/0sy8rrxut4o0k960/branch/master?svg=true)](https://ci.appveyor.com/project/ruby/ruby/branch/master)
 [![Build Status](https://dev.azure.com/rubylang/ruby/_apis/build/status/ruby.ruby?branchName=master)](https://dev.azure.com/rubylang/ruby/_build/latest?definitionId=3&branchName=master)
+![](https://github.com/ruby/ruby/workflows/macos/badge.svg)
+![](https://github.com/ruby/ruby/workflows/ubuntu/badge.svg)
+![](https://github.com/ruby/ruby/workflows/windows/badge.svg)
 
 
 # Rubyとは

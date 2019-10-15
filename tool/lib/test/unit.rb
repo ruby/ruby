@@ -938,7 +938,7 @@ module Test
             define_method(:run) do |runner|
               begin
                 gc_stress, GC.stress = GC.stress, true
-                oldrun.bind(self).call(runner)
+                oldrun.bind_call(self, runner)
               ensure
                 GC.stress = gc_stress
               end

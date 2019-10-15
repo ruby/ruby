@@ -804,7 +804,8 @@ class SortedSet < Set
 
   def initialize(*args, &block) # :nodoc:
     SortedSet.setup
-    initialize(*args, &block)
+    @keys = nil
+    super
   end
 end
 

@@ -62,6 +62,7 @@ module Bundler
       end
 
       def eql?(other)
+        return unless other.is_a?(SpecGroup)
         name.eql?(other.name) &&
           version.eql?(other.version) &&
           source.eql?(other.source)

@@ -410,7 +410,7 @@ NORETURN(static void coerce_failed(VALUE x, VALUE y));
 static void
 coerce_failed(VALUE x, VALUE y)
 {
-    if (SPECIAL_CONST_P(y) || BUILTIN_TYPE(y) == T_FLOAT) {
+    if (SPECIAL_CONST_P(y) || SYMBOL_P(y) || RB_FLOAT_TYPE_P(y)) {
 	y = rb_inspect(y);
     }
     else {
@@ -2768,7 +2768,7 @@ num_step(int argc, VALUE *argv, VALUE from)
                                     num_step_size, from, to, step, FALSE);
         }
 
-        RETURN_SIZED_ENUMERATOR(from, argc, argv, num_step_size);
+        return SIZED_ENUMERATOR(from, 2, ((VALUE [2]){to, step}), num_step_size);
     }
 
     desc = num_step_scan_args(argc, argv, &to, &step, TRUE, FALSE);

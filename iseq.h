@@ -26,7 +26,9 @@ extern const ID rb_iseq_shared_exc_local_tbl[];
 static inline size_t
 rb_call_info_kw_arg_bytes(int keyword_len)
 {
-    return sizeof(struct rb_call_info_kw_arg) + sizeof(VALUE) * (keyword_len - 1);
+    return rb_size_mul_add_or_raise(
+        keyword_len - 1, sizeof(VALUE), sizeof(struct rb_call_info_kw_arg),
+        rb_eRuntimeError);
 }
 
 #define ISEQ_COVERAGE(iseq)           iseq->body->variable.coverage
@@ -67,7 +69,7 @@ static inline VALUE *
 ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
 {
     return iseq->body->variable.original_iseq =
-        ruby_xmalloc2(size, sizeof(VALUE));
+        ALLOC_N(VALUE, size);
 }
 
 #define ISEQ_TRACE_EVENTS (RUBY_EVENT_LINE  | \
@@ -90,7 +92,6 @@ ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
 struct iseq_compile_data {
     /* GC is needed */
     const VALUE err_info;
-    VALUE mark_ary;
     const VALUE catch_table_ary;	/* Array */
 
     /* GC is not needed */
@@ -99,8 +100,14 @@ struct iseq_compile_data {
     struct iseq_label_data *redo_label;
     const rb_iseq_t *current_block;
     struct iseq_compile_data_ensure_node_stack *ensure_node_stack;
-    struct iseq_compile_data_storage *storage_head;
-    struct iseq_compile_data_storage *storage_current;
+    struct {
+      struct iseq_compile_data_storage *storage_head;
+      struct iseq_compile_data_storage *storage_current;
+    } node;
+    struct {
+      struct iseq_compile_data_storage *storage_head;
+      struct iseq_compile_data_storage *storage_current;
+    } insn;
     int loopval_popped;	/* used by NODE_BREAK */
     int last_line;
     int label_no;
@@ -109,7 +116,7 @@ struct iseq_compile_data {
     unsigned int ci_kw_index;
     const rb_compile_option_t *option;
     struct rb_id_table *ivar_cache_table;
-#if SUPPORT_JOKE
+#if OPT_SUPPORT_JOKE
     st_table *labels_table;
 #endif
 };
@@ -162,12 +169,13 @@ RUBY_SYMBOL_EXPORT_BEGIN
 
 /* compile.c */
 VALUE rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node);
-VALUE rb_iseq_compile_ifunc(rb_iseq_t *iseq, const struct vm_ifunc *ifunc);
+VALUE rb_iseq_compile_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_callback_callback_func * ifunc);
 int rb_iseq_translate_threaded_code(rb_iseq_t *iseq);
 VALUE *rb_iseq_original_iseq(const rb_iseq_t *iseq);
 void rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc,
 			    VALUE locals, VALUE args,
 			    VALUE exception, VALUE body);
+void rb_iseq_mark_insn_storage(struct iseq_compile_data_storage *arena);
 
 /* iseq.c */
 VALUE rb_iseq_load(VALUE data, VALUE parent, VALUE opt);

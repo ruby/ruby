@@ -75,14 +75,14 @@ class Delegator < BasicObject
   #
   # Handles the magic of delegation through \_\_getobj\_\_.
   #
-  def method_missing(m, *args, &block)
+  ruby2_keywords def method_missing(m, *args, &block)
     r = true
     target = self.__getobj__ {r = false}
 
-    if r && target.respond_to?(m)
+    if r && target_respond_to?(target, m, false)
       target.__send__(m, *args, &block)
     elsif ::Kernel.method_defined?(m) || ::Kernel.private_method_defined?(m)
-      ::Kernel.instance_method(m).bind(self).(*args, &block)
+      ::Kernel.instance_method(m).bind_call(self, *args, &block)
     else
       super(m, *args, &block)
     end
@@ -95,12 +95,22 @@ class Delegator < BasicObject
   def respond_to_missing?(m, include_private)
     r = true
     target = self.__getobj__ {r = false}
-    r &&= target.respond_to?(m, include_private)
-    if r && include_private && !target.respond_to?(m, false)
+    r &&= target_respond_to?(target, m, include_private)
+    if r && include_private && !target_respond_to?(target, m, false)
       warn "delegator does not forward private method \##{m}", uplevel: 3
       return false
     end
     r
+  end
+
+  # Handle BasicObject instances
+  private def target_respond_to?(target, m, include_private)
+    case target
+    when Object
+      target.respond_to?(m, include_private)
+    else
+      ::Kernel.instance_method(:respond_to?).bind_call(target, m, include_private)
+    end
   end
 
   #

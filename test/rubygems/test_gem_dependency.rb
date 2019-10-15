@@ -385,4 +385,11 @@ class TestGemDependency < Gem::TestCase
     assert_match "Could not find 'b' (= 2.0) among 1 total gem(s)", e.message
   end
 
+  def test_identity
+    assert_equal dep("a", "= 1").identity, :released
+    assert_equal dep("a", "= 1.a").identity, :complete
+    assert_equal dep("a", " >= 1.a").identity, :abs_latest
+    assert_equal dep("a").identity, :latest
+  end
+
 end

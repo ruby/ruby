@@ -19,8 +19,6 @@
 # * https://github.com/ruby/date
 # * https://github.com/ruby/zlib
 # * https://github.com/ruby/fcntl
-# * https://github.com/ruby/scanf
-# * https://github.com/ruby/cmath
 # * https://github.com/ruby/strscan
 # * https://github.com/ruby/ipaddr
 # * https://github.com/ruby/logger
@@ -30,11 +28,8 @@
 # * https://github.com/ruby/rexml
 # * https://github.com/ruby/rss
 # * https://github.com/ruby/irb
-# * https://github.com/ruby/sync
 # * https://github.com/ruby/tracer
-# * https://github.com/ruby/shell
 # * https://github.com/ruby/forwardable
-# * https://github.com/ruby/thwait
 # * https://github.com/ruby/e2mmap
 # * https://github.com/ruby/mutex_m
 # * https://github.com/ruby/racc
@@ -63,8 +58,6 @@ $repositories = {
   date: 'ruby/date',
   zlib: 'ruby/zlib',
   fcntl: 'ruby/fcntl',
-  scanf: 'ruby/scanf',
-  cmath: 'ruby/cmath',
   strscan: 'ruby/strscan',
   ipaddr: 'ruby/ipaddr',
   logger: 'ruby/logger',
@@ -76,9 +69,7 @@ $repositories = {
   irb: 'ruby/irb',
   sync: 'ruby/sync',
   tracer: 'ruby/tracer',
-  shell: 'ruby/shell',
   forwardable: "ruby/forwardable",
-  thwait: "ruby/thwait",
   e2mmap: "ruby/e2mmap",
   mutex_m: "ruby/mutex_m",
   racc: "ruby/racc"
@@ -114,7 +105,7 @@ def sync_default_gems(gem)
   when "reline"
     rm_rf(%w[lib/reline* test/reline])
     cp_r(Dir.glob("#{upstream}/lib/reline*"), "lib")
-    cp_r("#{upstream}/test", "test/reline")
+    cp_r("#{upstream}/test/reline", "test")
     cp_r("#{upstream}/reline.gemspec", "lib/reline")
   when "json"
     rm_rf(%w[ext/json test/json])
@@ -200,10 +191,6 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/ext/fcntl", "ext")
     cp_r("#{upstream}/fcntl.gemspec", "ext/fcntl")
     `git checkout ext/fcntl/depend`
-  when "thwait"
-    rm_rf(%w[lib/thwait*])
-    cp_r(Dir.glob("#{upstream}/lib/*"), "lib")
-    cp_r("#{upstream}/thwait.gemspec", "lib/thwait")
   when "e2mmap"
     rm_rf(%w[lib/e2mmap*])
     cp_r(Dir.glob("#{upstream}/lib/*"), "lib")
@@ -222,7 +209,7 @@ def sync_default_gems(gem)
     cp_r(Dir.glob("#{upstream}/ext/racc/cparse/*"), "ext/racc/cparse")
     cp_r("#{upstream}/test", "test/racc")
     `git checkout ext/racc/cparse/README`
-  when "rexml", "rss", "matrix", "irb", "csv", "shell", "logger", "ostruct", "scanf", "webrick", "fileutils", "forwardable", "prime", "tracer", "ipaddr", "cmath", "mutex_m", "sync"
+  when "rexml", "rss", "matrix", "irb", "csv", "logger", "ostruct", "webrick", "fileutils", "forwardable", "prime", "tracer", "ipaddr", "mutex_m"
     sync_lib gem
   else
   end
@@ -240,17 +227,14 @@ def sync_default_gems_with_commits(gem, range)
   end
   `git fetch --no-tags #{gem}`
 
-  commits = []
-
-  IO.popen(%W"git log --format=%H,%s #{range}") do |f|
-    commits = f.read.split("\n").reverse.map{|commit| commit.split(',')}
+  commits = IO.popen(%W"git log --format=%H,%s #{range}") do |f|
+    f.read.split("\n").reverse.map{|commit| commit.split(',', 2)}
   end
 
   # Ignore Merge commit and insufficiency commit for ruby core repository.
   commits.delete_if do |sha, subject|
-    files = []
-    IO.popen(%W"git diff-tree --no-commit-id --name-only -r #{sha}") do |f|
-      files = f.read.split("\n")
+    files = IO.popen(%W"git diff-tree --no-commit-id --name-only -r #{sha}") do |f|
+      f.readlines
     end
     subject =~ /^Merge/ || subject =~ /^Auto Merge/ || files.all?{|file| file =~ IGNORE_FILE_PATTERN}
   end
@@ -327,13 +311,13 @@ def update_default_gems(gem)
   Dir.chdir("../../#{author}/#{repository}") do
     unless `git remote`.match(/ruby\-core/)
       `git remote add ruby-core git@github.com:ruby/ruby.git`
-      `git fetch ruby-core`
-      `git co ruby-core/trunk`
+      `git fetch ruby-core --no-tags`
+      `git co ruby-core/master`
       `git branch ruby-core`
     end
     `git co ruby-core`
-    `git fetch ruby-core trunk`
-    `git rebase ruby-core/trunk`
+    `git fetch ruby-core master --no-tags`
+    `git rebase ruby-core/master`
     `git co master`
     `git stash`
     `git pull --rebase`

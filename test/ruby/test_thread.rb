@@ -961,7 +961,7 @@ _eom
     cmd = 'Signal.trap(:INT, "DEFAULT"); pipe=IO.pipe; Thread.start {Thread.pass until Thread.main.stop?; puts; STDOUT.flush}; pipe[0].read'
     opt = {}
     opt[:new_pgroup] = true if /mswin|mingw/ =~ RUBY_PLATFORM
-    s, t, _err = EnvUtil.invoke_ruby(['-e', cmd], "", true, true, opt) do |in_p, out_p, err_p, cpid|
+    s, t, _err = EnvUtil.invoke_ruby(['-e', cmd], "", true, true, **opt) do |in_p, out_p, err_p, cpid|
       assert IO.select([out_p], nil, nil, 10), 'subprocess not ready'
       out_p.gets
       pid = cpid
@@ -1337,7 +1337,7 @@ q.pop
     # prevent SIGABRT from slow shutdown with MJIT
     opts[:reprieve] = 3 if RubyVM::MJIT.enabled?
 
-    assert_normal_exit(<<-_end, '[Bug #8996]', opts)
+    assert_normal_exit(<<-_end, '[Bug #8996]', **opts)
       Thread.report_on_exception = false
       trap(:TERM){exit}
       while true

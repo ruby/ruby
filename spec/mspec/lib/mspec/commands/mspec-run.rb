@@ -36,6 +36,7 @@ class MSpecRun < MSpecScript
     options.repeat
     options.pretend
     options.interrupt
+    options.timeout
 
     options.doc "\n How to modify the guard behavior"
     options.unguarded

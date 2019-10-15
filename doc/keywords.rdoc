@@ -76,7 +76,7 @@ for::
   expressions}[rdoc-ref:syntax/control_expressions.rdoc]
 
 if::
-  Used for +if+ and modifier +if+ expressions.  See {control
+  Used for +if+ and modifier +if+ statements.  See {control
   expressions}[rdoc-ref:syntax/control_expressions.rdoc]
 
 in::
@@ -137,7 +137,7 @@ undef::
   See {modules and classes}[rdoc-ref:syntax/modules_and_classes.rdoc]
 
 unless::
-  Used for +unless+ and modifier +unless+ expressions.  See {control
+  Used for +unless+ and modifier +unless+ statements.  See {control
   expressions}[rdoc-ref:syntax/control_expressions.rdoc]
 
 until::
