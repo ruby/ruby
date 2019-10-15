@@ -289,6 +289,37 @@ env:
           zlib1g-dev:i386 \
           zlib1g:i386
 
+  - &arm32-linux
+    name: arm32-linux
+    arch: arm64
+    # https://packages.ubuntu.com/xenial/crossbuild-essential-armhf
+    compiler: arm-linux-gnueabihf-gcc
+    env:
+      - debugflags=-g0
+      - SETARCH='setarch linux32 --verbose --32bit'
+    before_install:
+      - sudo dpkg --add-architecture armhf
+      - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
+      - |-
+        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
+          ccache \
+          crossbuild-essential-armhf \
+          libstdc++-5-dev:armhf \
+          libffi-dev:armhf \
+          libffi6:armhf \
+          libgdbm-dev:armhf \
+          libgdbm3:armhf \
+          libncurses5-dev:armhf \
+          libncurses5:armhf \
+          libncursesw5-dev:armhf \
+          libreadline6-dev:armhf \
+          libreadline6:armhf \
+          libssl-dev:armhf \
+          libssl1.0.0:armhf \
+          linux-libc-dev:armhf \
+          zlib1g-dev:armhf \
+          zlib1g:armhf
+
   - &pedanticism
     name: -std=c99 -pedantic
     compiler: clang
@@ -380,6 +411,7 @@ matrix:
     - <<: *x86_64-linux
     - <<: *arm64-linux
     - <<: *i686-linux
+    - <<: *arm32-linux
     - <<: *pedanticism
     - <<: *assertions
     - <<: *baseruby
@@ -400,6 +432,7 @@ matrix:
     - <<: *CALL_THREADED_CODE
     - <<: *NO_THREADED_CODE
   allow_failures:
+    - name: arm32-linux
     - name: -fsanitize=address
     - name: -fsanitize=memory
     - name: -fsanitize=undefined
@@ -407,6 +440,9 @@ matrix:
 
 before_script:
   - date # Debugging "Permission defined" failure on darwin like https://travis-ci.org/ruby/ruby/jobs/508683759
+  - dpkg --print-architecture
+  - dpkg --print-foreign-architectures
+  - setarch --list
   - echo JOBS=${JOBS} SETARCH=${SETARCH}
   - $SETARCH uname -a
   - $SETARCH uname -r
