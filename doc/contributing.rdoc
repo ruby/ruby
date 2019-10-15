@@ -250,7 +250,7 @@ need to be able to run the test suite.
 CRuby uses git for source control, the {git homepage}[https://git-scm.com/]
 has installation instructions with links to documentation for learning more
 about git. There is a mirror of the repository on {github}[https://github.com/ruby/ruby].
-. For other resources see the {ruby-core documentation on
+For other resources see the {ruby-core documentation on
 ruby-lang.org}[https://www.ruby-lang.org/en/community/ruby-core/].
 
 Install the prerequisite dependencies for building the CRuby interpreter to
