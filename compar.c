@@ -11,6 +11,7 @@
 
 #include "ruby/ruby.h"
 #include "id.h"
+#include "internal.h"
 
 VALUE rb_mComparable;
 
@@ -176,24 +177,46 @@ cmp_between(VALUE x, VALUE min, VALUE max)
 /*
  *  call-seq:
  *     obj.clamp(min, max) ->  obj
+ *     obj.clamp(range)    ->  obj
  *
- * Returns _min_ if _obj_ <code><=></code> _min_ is less than zero,
- * _max_ if _obj_ <code><=></code> _max_ is greater than zero and
- * _obj_ otherwise.
+ * In the first form, returns _min_ if _obj_ <code><=></code> _min_ is
+ * less than zero, _max_ if _obj_ <code><=></code> _max_ is greater
+ * than zero and _obj_ otherwise.  In the second form, clamps by
+ * _range.min_ and _range.max_.  If _range_ is an exclusive range,
+ * raises an ArgumentError.
  *
  *     12.clamp(0, 100)         #=> 12
  *     523.clamp(0, 100)        #=> 100
  *     -3.123.clamp(0, 100)     #=> 0
+ *     12.clamp(0..100)         #=> 12
+ *     523.clamp(0..100)        #=> 100
+ *     -3.123.clamp(0..100)     #=> 0
  *
  *     'd'.clamp('a', 'f')      #=> 'd'
  *     'z'.clamp('a', 'f')      #=> 'f'
+ *     'd'.clamp('a'..'f')      #=> 'd'
+ *     'z'.clamp('a'..'f')      #=> 'f'
+ *
+ *     12.clamp(0...100)        #=> ArgumentError
  */
 
 static VALUE
-cmp_clamp(VALUE x, VALUE min, VALUE max)
+cmp_clamp(int argc, VALUE *argv, VALUE x)
 {
+    VALUE min, max;
     int c;
 
+    if (rb_scan_args(argc, argv, "11", &min, &max) == 1) {
+        VALUE range = min;
+        int excl;
+        if (!rb_range_values(range, &min, &max, &excl)) {
+            rb_raise(rb_eTypeError, "wrong argument type %s (expected Range)",
+                     rb_builtin_class_name(range));
+        }
+        if (excl || NIL_P(min) || NIL_P(max)) {
+            rb_raise(rb_eArgError, "cannot clamp with an exclusive range");
+        }
+    }
     if (cmpint(min, max) > 0) {
 	rb_raise(rb_eArgError, "min argument must be smaller than max argument");
     }
@@ -259,5 +282,5 @@ Init_Comparable(void)
     rb_define_method(rb_mComparable, "<", cmp_lt, 1);
     rb_define_method(rb_mComparable, "<=", cmp_le, 1);
     rb_define_method(rb_mComparable, "between?", cmp_between, 2);
-    rb_define_method(rb_mComparable, "clamp", cmp_clamp, 2);
+    rb_define_method(rb_mComparable, "clamp", cmp_clamp, -1);
 }
