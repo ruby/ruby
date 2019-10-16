@@ -4797,7 +4797,7 @@ env_delete_m(VALUE obj, VALUE name)
 
 /*
  * call-seq:
- *   ENV[name] -> values
+ *   ENV[name] -> value
  *
  * Returns the value for the environment variable +name+ if it exists:
  *   ENV['foo'] = 'bar'
