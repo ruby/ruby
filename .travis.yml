@@ -59,10 +59,6 @@ env:
   - &make-test-only
     script:
       - $SETARCH make -s test TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
-      - |- # allow extra test-all if specified
-        if [ -n $TEST_ALL_TESTS ]; then
-          $SETARCH make -s test-all -o exts TESTOPTS="${TESTOPTS} ${TEST_ALL_OPTS}" TESTS="$TEST_ALL_TESTS" RUBYOPT="-w"
-        fi
 
   - &gcc-8
     compiler: gcc-8
@@ -146,8 +142,6 @@ env:
     <<: *make-test-only
     env:
       - GEMS_FOR_TEST=
-      - TEST_MJIT_SYMBOLS=1
-      - TEST_ALL_TESTS=../test/ruby/test_jit.rb
       - cppflags='-DRUBY_DEBUG -DVM_CHECK_MODE=1 -DTRANSIENT_HEAP_CHECK_MODE -DRGENGC_CHECK_MODE -DENC_DEBUG'
 
   - &VM_CHECK_MODE
