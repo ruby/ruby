@@ -375,7 +375,6 @@ matrix:
   include:
     # Build every commit:
     - <<: *x86_64-linux
-    - <<: *arm64-linux
     - <<: *i686-linux
     - <<: *pedanticism
     - <<: *assertions
@@ -383,6 +382,7 @@ matrix:
     - <<: *rubyspec
     - <<: *dependency
     # Build every commit (Allowed Failures):
+    - <<: *arm64-linux
     - <<: *ASAN
     - <<: *MSAN
     - <<: *UBSAN
