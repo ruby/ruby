@@ -275,7 +275,6 @@ eom
         end
         ex
       end
-      alias assert_raise_message assert_raise_with_message
 
       def assert_warning(pat, msg = nil)
         result = nil
