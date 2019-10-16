@@ -73,6 +73,7 @@ env:
       - |-
         ${BEFORE_INSTALL}
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
+          ccache \
           gcc-8 \
           g++-8 \
           libffi-dev \
@@ -123,6 +124,13 @@ env:
     <<: *gcc-8
     env:
       - TEST_MJIT_SYMBOLS=1 # detect exports missing for MJIT
+
+  - &arm64-linux
+    name: arm64-linux
+    arch: arm64
+    <<: *gcc-8
+    env:
+      - TEST_MJIT_SYMBOLS=1
 
   - &jemalloc
     name: --with-jemalloc
@@ -366,6 +374,7 @@ matrix:
   include:
     # Build every commit:
     - <<: *x86_64-linux
+    - <<: *arm64-linux
     - <<: *i686-linux
     - <<: *pedanticism
     - <<: *assertions
@@ -386,6 +395,7 @@ matrix:
     - <<: *CALL_THREADED_CODE
     - <<: *NO_THREADED_CODE
   allow_failures:
+    - name: arm64-linux
     - name: -fsanitize=address
     - name: -fsanitize=memory
     - name: -fsanitize=undefined
