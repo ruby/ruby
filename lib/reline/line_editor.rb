@@ -60,6 +60,18 @@ class Reline::LineEditor
     reset_variables
   end
 
+  private def check_multiline_prompt(buffer, prompt, special_prompt)
+    if @prompt_proc
+      prompt_list = @prompt_proc.(buffer)
+      prompt_list[@line_index] = special_prompt if special_prompt
+      prompt = prompt_list[@line_index]
+      prompt_width = calculate_width(prompt, true)
+      [prompt, prompt_list]
+    else
+      [prompt, nil]
+    end
+  end
+
   def reset(prompt = '', encoding = Encoding.default_external)
     @rest_height = (Reline::IOGate.get_screen_size.first - 1) - Reline::IOGate.cursor_pos.y
     @screen_size = Reline::IOGate.get_screen_size
@@ -91,13 +103,7 @@ class Reline::LineEditor
         end
         back = 0
         new_buffer = whole_lines
-        prompt_list = nil
-        if @prompt_proc
-          prompt_list = @prompt_proc.(new_buffer)
-          prompt_list[@line_index] = special_prompt if special_prompt
-          prompt = prompt_list[@line_index]
-          prompt_width = calculate_width(prompt, true)
-        end
+        prompt, prompt_list = check_multiline_prompt(new_buffer, prompt, special_prompt)
         new_buffer.each_with_index do |line, index|
           prompt_width = calculate_width(prompt_list[index], true) if @prompt_proc
           width = prompt_width + calculate_width(line)
@@ -329,13 +335,7 @@ class Reline::LineEditor
       Reline::IOGate.clear_screen
       @cleared = false
       back = 0
-      prompt_list = nil
-      if @prompt_proc
-        prompt_list = @prompt_proc.(whole_lines)
-        prompt_list[@line_index] = special_prompt if special_prompt
-        prompt = prompt_list[@line_index]
-        prompt_width = calculate_width(prompt, true)
-      end
+      prompt, prompt_list = check_multiline_prompt(whole_lines, prompt, special_prompt)
       modify_lines(whole_lines).each_with_index do |line, index|
         if @prompt_proc
           pr = prompt_list[index]
@@ -361,13 +361,7 @@ class Reline::LineEditor
       else
         new_lines = whole_lines
       end
-      prompt_list = nil
-      if @prompt_proc
-        prompt_list = @prompt_proc.(new_lines)
-        prompt_list[@line_index] = special_prompt if special_prompt
-        prompt = prompt_list[@line_index]
-        prompt_width = calculate_width(prompt, true)
-      end
+      prompt, prompt_list = check_multiline_prompt(new_lines, prompt, special_prompt)
       all_height = new_lines.inject(0) { |result, line|
         result + calculate_height_by_width(prompt_width + calculate_width(line)) # TODO prompt_list
       }
@@ -431,13 +425,7 @@ class Reline::LineEditor
       Reline::IOGate.move_cursor_column(0)
       back = 0
       new_buffer = whole_lines
-      prompt_list = nil
-      if @prompt_proc
-        prompt_list = @prompt_proc.(new_buffer)
-        prompt_list[@line_index] = special_prompt if special_prompt
-        prompt = prompt_list[@line_index]
-        prompt_width = calculate_width(prompt, true)
-      end
+      prompt, prompt_list = check_multiline_prompt(new_buffer, prompt, special_prompt)
       new_buffer.each_with_index do |line, index|
         prompt_width = calculate_width(prompt_list[index], true) if @prompt_proc
         width = prompt_width + calculate_width(line)
@@ -489,13 +477,7 @@ class Reline::LineEditor
     end
     line = modify_lines(whole_lines)[@line_index]
     if @is_multiline
-      prompt_list = nil
-      if @prompt_proc
-        prompt_list = @prompt_proc.(whole_lines)
-        prompt_list[@line_index] = special_prompt if special_prompt
-        prompt = prompt_list[@line_index]
-        prompt_width = calculate_width(prompt, true)
-      end
+      prompt, prompt_list = check_multiline_prompt(whole_lines, prompt, special_prompt)
       if finished?
         # Always rerender on finish because output_modifier_proc may return a different output.
         render_partial(prompt, prompt_width, line)
