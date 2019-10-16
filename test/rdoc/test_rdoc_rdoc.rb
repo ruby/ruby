@@ -152,8 +152,6 @@ class TestRDocRDoc < RDoc::TestCase
   end
 
   def test_normalized_file_list_not_modified
-    files = [__FILE__]
-
     @rdoc.last_modified[__FILE__] = File.stat(__FILE__).mtime
 
     files = @rdoc.normalized_file_list [__FILE__]
