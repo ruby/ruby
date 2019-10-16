@@ -222,13 +222,27 @@ module TestCSVWriteGeneral
     end
   end
 
+  def with_verbose(verbose)
+    original = $VERBOSE
+    begin
+      $VERBOSE = verbose
+      yield
+    ensure
+      $VERBOSE = original
+    end
+  end
+
   def with_default_internal(encoding)
     original = Encoding.default_internal
     begin
-      Encoding.default_internal = encoding
+      with_verbose(false) do
+        Encoding.default_internal = encoding
+      end
       yield
     ensure
-      Encoding.default_internal = original
+      with_verbose(false) do
+        Encoding.default_internal = original
+      end
     end
   end
 end
