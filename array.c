@@ -4616,88 +4616,6 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
     return ary_diff;
 }
 
-
-/*
- *  call-seq:
- *     ary & other_ary      -> new_ary
- *
- *  Set Intersection --- Returns a new array containing unique elements common to the
- *  two arrays. The order is preserved from the original array.
- *
- *  It compares elements using their #hash and #eql? methods for efficiency.
- *
- *     [ 1, 1, 3, 5 ] & [ 3, 2, 1 ]                 #=> [ 1, 3 ]
- *     [ 'a', 'b', 'b', 'z' ] & [ 'a', 'b', 'c' ]   #=> [ 'a', 'b' ]
- *
- *  See also Array#uniq.
- */
-
-
-static VALUE
-rb_ary_and(VALUE ary1, VALUE ary2)
-{
-    VALUE hash, ary3, v;
-    st_data_t vv;
-    long i;
-
-    ary2 = to_ary(ary2);
-    ary3 = rb_ary_new();
-    if (RARRAY_LEN(ary1) == 0 || RARRAY_LEN(ary2) == 0) return ary3;
-
-    if (RARRAY_LEN(ary1) <= SMALL_ARRAY_LEN && RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
-	for (i=0; i<RARRAY_LEN(ary1); i++) {
-	    v = RARRAY_AREF(ary1, i);
-	    if (!rb_ary_includes_by_eql(ary2, v)) continue;
-	    if (rb_ary_includes_by_eql(ary3, v)) continue;
-	    rb_ary_push(ary3, v);
-	}
-	return ary3;
-    }
-
-    hash = ary_make_hash(ary2);
-
-    for (i=0; i<RARRAY_LEN(ary1); i++) {
-	v = RARRAY_AREF(ary1, i);
-	vv = (st_data_t)v;
-        if (rb_hash_stlike_delete(hash, &vv, 0)) {
-	    rb_ary_push(ary3, v);
-	}
-    }
-    ary_recycle_hash(hash);
-
-    return ary3;
-}
-
-/*
- *  call-seq:
- *     ary.intersection(other_ary1, other_ary2, ...)      -> new_ary
- *
- *  Set Intersection --- Returns a new array containing unique elements common
- *  to +self+ and <code>other_ary</code>s. Order is preserved from the original
- *  array.
- *
- *  It compares elements using their #hash and #eql? methods for efficiency.
- *
- *     [ 1, 1, 3, 5 ].intersection([ 3, 2, 1 ])                    # => [ 1, 3 ]
- *     [ "a", "b", "z" ].intersection([ "a", "b", "c" ], [ "b" ])  # => [ "b" ]
- *     [ "a" ].intersection #=> [ "a" ]
- *
- *  See also Array#&.
- */
-
-static VALUE
-rb_ary_intersection_multi(int argc, VALUE *argv, VALUE ary)
-{
-    VALUE result = rb_ary_dup(ary);
-    int i;
-
-    for (i = 0; i < argc; i++) {
-        result = rb_ary_and(result, argv[i]);
-    }
-
-    return result;
-}
-
 static int
 ary_hash_orset(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 {
@@ -5099,6 +5017,85 @@ rb_ary_compact(VALUE ary)
     ary = rb_ary_dup(ary);
     rb_ary_compact_bang(ary);
     return ary;
+}
+
+/*
+ *  call-seq:
+ *     ary.intersection(other_ary1, other_ary2, ...)      -> new_ary
+ *
+ *  Set Intersection --- Returns a new array containing unique elements common
+ *  to +self+ and <code>other_ary</code>s. Order is preserved from the original
+ *  array.
+ *
+ *  It compares elements using their #hash and #eql? methods for efficiency.
+ *
+ *     [ 1, 1, 3, 5 ].intersection([ 3, 2, 1 ])                    # => [ 1, 3 ]
+ *     [ "a", "b", "z" ].intersection([ "a", "b", "c" ], [ "b" ])  # => [ "b" ]
+ *     [ "a" ].intersection #=> [ "a" ]
+ *
+ *  See also Array#&.
+ */
+
+static VALUE
+rb_ary_intersection_multi(int argc, VALUE *argv, VALUE ary)
+{
+    VALUE hash, v, result, current;
+    st_data_t vv;
+    long i, j;
+
+    // Create a new array so that the result is an Array and not a subclass
+    result = rb_ary_concat(rb_ary_new(), to_ary(ary));
+    result = rb_ary_uniq(result);
+
+    for (i = 0; i < argc; i++) {
+        if (RARRAY_LEN(result) == 0) break;
+
+        current = to_ary(argv[i]);
+        if (RARRAY_LEN(result) <= SMALL_ARRAY_LEN && RARRAY_LEN(current) <= SMALL_ARRAY_LEN) {
+            for (j = 0; j < RARRAY_LEN(result); j++) {
+                v = RARRAY_AREF(result, j);
+                if (rb_ary_includes_by_eql(current, v)) continue;
+                rb_ary_delete_at(result, j--);
+            }
+            continue;
+        }
+
+
+        hash = ary_make_hash(current);
+        for (j = 0; j < RARRAY_LEN(result); j++) {
+            v = RARRAY_AREF(result, j);
+            vv = (st_data_t)v;
+            if (rb_hash_stlike_delete(hash, &vv, 0)) continue;
+            rb_ary_delete_at(result, j--);
+        }
+        ary_recycle_hash(hash);
+    }
+
+    return result;
+}
+
+/*
+ *  call-seq:
+ *     ary & other_ary      -> new_ary
+ *
+ *  Set Intersection --- Returns a new array containing unique elements common to the
+ *  two arrays. The order is preserved from the original array.
+ *
+ *  It compares elements using their #hash and #eql? methods for efficiency.
+ *
+ *     [ 1, 1, 3, 5 ] & [ 3, 2, 1 ]                 #=> [ 1, 3 ]
+ *     [ 'a', 'b', 'b', 'z' ] & [ 'a', 'b', 'c' ]   #=> [ 'a', 'b' ]
+ *
+ *  See also Array#uniq.
+ */
+
+
+static VALUE
+rb_ary_and(VALUE ary1, VALUE ary2)
+{
+    VALUE arg[1];
+    arg[0] = ary2;
+    return rb_ary_intersection_multi(1, arg, ary1);
 }
 
 /*

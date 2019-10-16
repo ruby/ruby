@@ -248,6 +248,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[1], @cls[1, 2, 3].intersection(@cls[1, 2], @cls[1]))
     assert_equal(@cls[ ], @cls[1, 2, 3].intersection(@cls[1, 2], @cls[3]))
     assert_equal(@cls[ ], @cls[1, 2, 3].intersection(@cls[4, 5, 6]))
+    assert_equal(@cls[1], @cls[1, 1].intersection)
   end
 
   def test_intersection_big_array
