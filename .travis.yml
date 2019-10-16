@@ -147,7 +147,7 @@ env:
     env:
       - GEMS_FOR_TEST=
       - TEST_MJIT_SYMBOLS=1
-      - TEST_ALL_TESTS=test/ruby/test_jit.rb
+      - TEST_ALL_TESTS=../test/ruby/test_jit.rb
       - cppflags='-DRUBY_DEBUG -DVM_CHECK_MODE=1 -DTRANSIENT_HEAP_CHECK_MODE -DRGENGC_CHECK_MODE -DENC_DEBUG'
 
   - &VM_CHECK_MODE
