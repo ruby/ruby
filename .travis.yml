@@ -73,7 +73,6 @@ env:
       - |-
         ${BEFORE_INSTALL}
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
-          ccache \
           gcc-8 \
           g++-8 \
           libffi-dev \
@@ -127,6 +126,12 @@ env:
     name: arm64-linux
     arch: arm64
     <<: *gcc-8
+    # arm64 build always fails with cache
+    cache:
+      ccache: false
+      directories: []
+    env:
+      - DISABLE_CCACHE=true
 
   - &jemalloc
     name: --with-jemalloc
@@ -425,12 +430,14 @@ before_script:
   - chmod -R a-w .
   - chmod -R u+w build config_1st config_2nd
   - cd build
-  - ccache --show-stats
   - |-
-    case "$CC" in
-    gcc*)   CC="ccache $CC${GCC_FLAGS:+ }$GCC_FLAGS -fno-diagnostics-color";;
-    clang*) CC="ccache $CC${GCC_FLAGS:+ }$GCC_FLAGS -fno-color-diagnostics";;
-    esac
+    if [ "$DISABLE_CCACHE" != true ]; then
+      ccache --show-stats
+      case "$CC" in
+      gcc*)   CC="ccache $CC${GCC_FLAGS:+ }$GCC_FLAGS -fno-diagnostics-color";;
+      clang*) CC="ccache $CC${GCC_FLAGS:+ }$GCC_FLAGS -fno-color-diagnostics";;
+      esac
+    fi
   - |-
     [ ! -f config.cache ] ||
     [ "$CC" = "`sed -n s/^ac_cv_prog_CC=//p config.cache`" ] ||
@@ -458,7 +465,8 @@ before_script:
         exit 1
       fi
     fi
-  - ccache --show-stats
+  - |-
+    [ "$DISABLE_CCACHE" = true ] || ccache --show-stats
   - |-
     [ -z "${GEMS_FOR_TEST}" ] ||
     $RUBY_PREFIX/bin/gem install --no-document $GEMS_FOR_TEST
