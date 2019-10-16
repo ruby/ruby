@@ -296,6 +296,20 @@ rdoc_include:
                  e.message
   end
 
+  def test_parse_force_update
+    @options.parse %w[--force-update]
+
+    assert @options.force_update
+
+    @options.parse %w[--no-force-update]
+
+    assert !@options.force_update
+
+    @options.parse %w[-U]
+
+    assert @options.force_update
+  end
+
   def test_parse_formatter_ri
     e = assert_raise OptionParser::InvalidOption do
       @options.parse %w[--format darkfish --ri]
