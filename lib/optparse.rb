@@ -866,6 +866,10 @@ class OptionParser
       __send__(id).complete(opt, icase, *pat, &block)
     end
 
+    def get_candidates(id)
+      yield __send__(id).keys
+    end
+
     #
     # Iterates over each option, passing the option to the +block+.
     #
@@ -1766,7 +1770,17 @@ XXX
     end
     raise AmbiguousOption, catch(:ambiguous) {
       visit(:complete, typ, opt, icase, *pat) {|o, *sw| return sw}
-      raise InvalidOption, opt
+      if defined? DidYouMean::SpellChecker
+        all_candidates = []
+        visit(:get_candidates, typ) do |candidates|
+          all_candidates.concat(candidates)
+        end
+        all_candidates.select! {|cand| cand.is_a?(String) }
+        suggestions = DidYouMean::SpellChecker.new(dictionary: all_candidates).correct(opt)
+        raise InvalidOption.new(opt, "\nDid you mean?  #{suggestions.join("\n               ")}")
+      else
+        raise InvalidOption, opt
+      end
     }
   end
   private :complete
@@ -2048,7 +2062,7 @@ XXX
     # Default stringizing method to emit standard error message.
     #
     def message
-      reason + ': ' + args.join(' ')
+      reason + ': ' + args.join(" ").gsub(/\s+$/, "")
     end
 
     alias to_s message
