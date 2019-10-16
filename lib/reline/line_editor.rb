@@ -1191,11 +1191,25 @@ class Reline::LineEditor
           end
         end
         if hit
-          @searching_prompt = "(reverse-i-search)`%s': %s" % [search_word, hit]
-          @line = hit
+          if @is_multiline
+            @buffer_of_lines = hit.split("\n")
+            @buffer_of_lines = [String.new(encoding: @encoding)] if @buffer_of_lines.empty?
+            @line_index = @buffer_of_lines.size - 1
+            @line = @buffer_of_lines.last
+            @rerender_all = true
+            @searching_prompt = "(reverse-i-search)`%s'" % [search_word]
+          else
+            @line = hit
+            @searching_prompt = "(reverse-i-search)`%s': %s" % [search_word, hit]
+          end
           last_hit = hit
         else
-          @searching_prompt = "(failed reverse-i-search)`%s': %s" % [search_word, last_hit]
+          if @is_multiline
+            @rerender_all = true
+            @searching_prompt = "(failed reverse-i-search)`%s'" % [search_word]
+          else
+            @searching_prompt = "(failed reverse-i-search)`%s': %s" % [search_word, last_hit]
+          end
         end
       end
     end
