@@ -4792,7 +4792,7 @@ ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
  *     File.extname("test.rb")         #=> ".rb"
  *     File.extname("a/b/d/test.rb")   #=> ".rb"
  *     File.extname(".a/b/d/test.rb")  #=> ".rb"
- *     File.extname("foo.")            #=> ""
+ *     File.extname("foo.")            #=> "."
  *     File.extname("test")            #=> ""
  *     File.extname(".profile")        #=> ""
  *     File.extname(".profile.sh")     #=> ".sh"
@@ -4810,7 +4810,7 @@ rb_file_s_extname(VALUE klass, VALUE fname)
     name = StringValueCStr(fname);
     len = RSTRING_LEN(fname);
     e = ruby_enc_find_extname(name, &len, rb_enc_get(fname));
-    if (len <= 1)
+    if (len < 1)
 	return rb_str_new(0, 0);
     extname = rb_str_subseq(fname, e - name, len); /* keep the dot, too! */
     OBJ_INFECT(extname, fname);

@@ -191,6 +191,14 @@ Fiber::
     * Added Fiber#raise that behaves like Fiber#resume but raises an
       exception on the resumed fiber.  [Feature #10344]
 
+File::
+  Modified method::
+
+    * File.extname now returns a dot string at a name ending with a
+      dot.  [Bug #15267]
+
+          File.extname("foo.") #=> "."
+
 FrozenError::
 
   New method::

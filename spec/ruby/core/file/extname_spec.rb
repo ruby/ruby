@@ -20,8 +20,14 @@ describe "File.extname" do
     File.extname("..").should ==  ""
     File.extname("...").should ==  ""
     File.extname("....").should ==  ""
-    File.extname(".foo.").should ==  ""
-    File.extname("foo.").should ==  ""
+    guard -> { platform_is :windows or ruby_version_is ""..."2.7" } do
+      File.extname(".foo.").should == ""
+      File.extname("foo.").should == ""
+    end
+    guard -> { platform_is_not :windows and ruby_version_is "2.7" } do
+      File.extname(".foo.").should == "."
+      File.extname("foo.").should == "."
+    end
   end
 
   it "returns only the last extension of a file with several dots" do
