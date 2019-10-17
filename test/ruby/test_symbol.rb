@@ -367,6 +367,7 @@ class TestSymbol < Test::Unit::TestCase
 
   def test_match_method
     assert_equal("bar", :"foobarbaz".match(/bar/).to_s)
+    assert_raise(TypeError) { :"".match(nil) }
 
     o = Regexp.new('foo')
     def o.match(x, y, z); x + y + z; end
@@ -418,6 +419,10 @@ class TestSymbol < Test::Unit::TestCase
     assert_equal(false, 'Ruby'.match?('R...', 1))
     assert_equal(false, 'Ruby'.match?('P...'))
     assert_equal('backref', $&)
+  end
+
+  def test_match_p_nil
+    assert_raise(TypeError) { :''.match?(nil) }
   end
 
   def test_symbol_popped
