@@ -10,6 +10,13 @@ class Reline::Windows
     [224, 71] => :ed_move_to_beg,  # Home
     [224, 79] => :ed_move_to_end,  # End
     [  0, 41] => :ed_unassigned,   # input method on/off
+    [  0, 72] => :ed_prev_history, # ↑
+    [  0, 80] => :ed_next_history, # ↓
+    [  0, 77] => :ed_next_char,    # →
+    [  0, 75] => :ed_prev_char,    # ←
+    [  0, 83] => :key_delete,      # Del
+    [  0, 71] => :ed_move_to_beg,  # Home
+    [  0, 79] => :ed_move_to_end  # End
   }
 
   if defined? JRUBY_VERSION
