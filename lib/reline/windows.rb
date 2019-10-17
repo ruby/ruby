@@ -90,6 +90,12 @@ class Reline::Windows
     end
     until @@kbhit.call == 0
       ret = @@getwch.call
+      if ret == 0 or ret == 0xE0
+        @@input_buf << ret
+        ret = @@getwch.call
+        @@input_buf << ret
+        return @@input_buf.shift
+      end
       begin
         bytes = ret.chr(Encoding::UTF_8).encode(Encoding.default_external).bytes
         @@input_buf.push(*bytes)
