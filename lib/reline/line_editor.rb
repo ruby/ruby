@@ -61,7 +61,6 @@ class Reline::LineEditor
   end
 
   private def check_multiline_prompt(buffer, prompt)
-    special_prompt = nil
     if @vi_arg
       prompt = "(arg: #{@vi_arg}) "
       @rerender_all = true
