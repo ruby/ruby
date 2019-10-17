@@ -4789,10 +4789,13 @@ ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
  *  An empty string will also be returned when the period is the last character
  *  in +path+.
  *
+ *  On Windows, trailing dots are truncated.
+ *
  *     File.extname("test.rb")         #=> ".rb"
  *     File.extname("a/b/d/test.rb")   #=> ".rb"
  *     File.extname(".a/b/d/test.rb")  #=> ".rb"
- *     File.extname("foo.")            #=> "."
+ *     File.extname("foo.")            #=> "" on Windows
+ *     File.extname("foo.")            #=> "." on non-Windows
  *     File.extname("test")            #=> ""
  *     File.extname(".profile")        #=> ""
  *     File.extname(".profile.sh")     #=> ".sh"
