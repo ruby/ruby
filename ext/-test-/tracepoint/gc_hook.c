@@ -4,7 +4,7 @@
 static int invoking; /* TODO: should not be global variable */
 
 static VALUE
-invoke_proc_ensure(void *dmy)
+invoke_proc_ensure(VALUE _)
 {
     invoking = 0;
     return Qnil;

@@ -1,9 +1,10 @@
+# frozen_string_literal: false
 =begin
  external service
         Copyright (c) 2000,2002 Masatoshi SEKI
 =end
 
-require 'drb/drb'
+require_relative 'drb'
 require 'monitor'
 
 module DRb

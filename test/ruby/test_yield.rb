@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'stringio'
 
@@ -244,7 +245,7 @@ class TestRubyYieldGen < Test::Unit::TestCase
           throw :emuerror, ArgumentError
         end
       else
-        if args.length != params.length and !(args.length == 1 and Array === args[0] and args[0].length == params.length)
+        if args.length != params.length
           throw :emuerror, ArgumentError
         end
       end
@@ -356,16 +357,12 @@ class TestRubyYieldGen < Test::Unit::TestCase
   end
 
   def assert_all_sentences(syntax, *args)
-    fails = []
     syntax = Sentence.expand_syntax(syntax)
-    Sentence.each(syntax, *args) {|t|
-      begin
-        yield t
-      rescue MiniTest::Assertion => e
-        fails << e.message
-      end
-    }
-    assert(fails.empty?, proc {fails.join("\n--------\n")})
+    all_assertions do |a|
+      Sentence.each(syntax, *args) {|t|
+        a.for(t) {yield t}
+      }
+    end
   end
 
   def test_yield

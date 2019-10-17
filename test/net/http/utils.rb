@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'webrick'
 begin
   require "webrick/https"
@@ -35,6 +36,7 @@ module TestNetHTTPUtils
     if @server
       @server.shutdown
       @server_thread.join
+      WEBrick::Utils::TimeoutHandler.terminate
     end
     @log_tester.call(@log) if @log_tester
     # resume global state
@@ -59,7 +61,7 @@ module TestNetHTTPUtils
         :SSLEnable      => true,
         :SSLCertificate => config('ssl_certificate'),
         :SSLPrivateKey  => config('ssl_private_key'),
-        :SSLTmpDhCallback => proc { OpenSSL::TestUtils::TEST_KEY_DH1024 },
+        :SSLTmpDhCallback => config('ssl_tmp_dh_callback'),
       })
     end
     @server = WEBrick::HTTPServer.new(server_config)

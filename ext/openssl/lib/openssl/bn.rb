@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #--
 #
 # = Ruby-space definitions that completes C-space funcs for BN
@@ -26,8 +27,9 @@ module OpenSSL
 end # OpenSSL
 
 ##
+#--
 # Add double dispatch to Integer
-#
+#++
 class Integer
   # Casts an Integer as an OpenSSL::BN
   #

@@ -1,8 +1,14 @@
+# frozen_string_literal: false
 require "webrick"
 require "stringio"
 require "test/unit"
 
 class TestWEBrickHTTPRequest < Test::Unit::TestCase
+  def teardown
+    WEBrick::Utils::TimeoutHandler.terminate
+    super
+  end
+
   def test_simple_request
     msg = <<-_end_of_message_
 GET /
@@ -231,6 +237,7 @@ GET /
 
   def test_chunked
     crlf = "\x0d\x0a"
+    expect = File.binread(__FILE__).freeze
     msg = <<-_end_of_message_
       POST /path HTTP/1.1
       Host: test.ruby-lang.org:8080
@@ -247,7 +254,14 @@ GET /
     msg << "0" << crlf
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
     req.parse(StringIO.new(msg))
-    assert_equal(File.read(__FILE__), req.body)
+    assert_equal(expect, req.body)
+
+    # chunked req.body_reader
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg))
+    dst = StringIO.new
+    IO.copy_stream(req.body_reader, dst)
+    assert_equal(expect, dst.string)
   end
 
   def test_forwarded
@@ -295,7 +309,7 @@ GET /
       GET /foo HTTP/1.1
       Host: localhost:10080
       Client-IP: 234.234.234.234
-      X-Forwarded-Proto: https
+      X-Forwarded-Proto: https, http
       X-Forwarded-For: 192.168.1.10, 10.0.0.1, 123.123.123.123
       X-Forwarded-Host: forward.example.com
       X-Forwarded-Server: server.example.com
@@ -406,6 +420,13 @@ GET /
       req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
       req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
       req.body
+    }
+  end
+
+  def test_eof_raised_when_line_is_nil
+    assert_raise(WEBrick::HTTPStatus::EOFError) {
+      req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+      req.parse(StringIO.new(""))
     }
   end
 end

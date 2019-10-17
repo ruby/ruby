@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
+# frozen_string_literal: false
 require 'test/unit'
 require 'erb'
 
-class TestERB < Test::Unit::TestCase
+class TestERBEncoding < Test::Unit::TestCase
   def test_result_encoding
     erb = ERB.new("hello")
     assert_equal __ENCODING__, erb.result.encoding

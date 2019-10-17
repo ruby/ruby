@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/dependency'
 
@@ -330,11 +331,39 @@ class TestGemDependency < Gem::TestCase
 
     dep = Gem::Dependency.new "a", "= 2.0"
 
-    e = assert_raises Gem::LoadError do
+    e = assert_raises Gem::MissingSpecVersionError do
       dep.to_specs
     end
 
     assert_match "Could not find 'a' (= 2.0) - did find: [a-1.0]", e.message
+  end
+
+  def test_to_specs_respects_bundler_version
+    b = util_spec 'bundler', '2.0.0.pre.1'
+    b_1 = util_spec 'bundler', '1'
+    install_specs b, b_1
+
+    b_file = File.join b.gem_dir, 'lib', 'bundler', 'setup.rb'
+
+    write_file b_file do |io|
+      io.puts '# setup.rb'
+    end
+
+    dep = Gem::Dependency.new "bundler", ">= 0.a"
+
+    assert_equal [b, b_1], dep.to_specs
+
+    Gem::BundlerVersionFinder.stub(:bundler_version_with_reason, ["3.5", "reason"]) do
+      e = assert_raises Gem::MissingSpecVersionError do
+        dep.to_specs
+      end
+
+      assert_match "Could not find 'bundler' (3.5) required by reason.\nTo update to the latest version installed on your system, run `bundle update --bundler`.\nTo install the missing version, run `gem install bundler:3.5`\n", e.message
+    end
+
+    Gem::BundlerVersionFinder.stub(:bundler_version_with_reason, ["2.0.0.pre.1", "reason"]) do
+      assert_equal [b], dep.to_specs
+    end
   end
 
   def test_to_specs_indicates_total_gem_set_size
@@ -349,13 +378,18 @@ class TestGemDependency < Gem::TestCase
 
     dep = Gem::Dependency.new "b", "= 2.0"
 
-    e = assert_raises Gem::LoadError do
+    e = assert_raises Gem::MissingSpecError do
       dep.to_specs
     end
 
     assert_match "Could not find 'b' (= 2.0) among 1 total gem(s)", e.message
   end
 
+  def test_identity
+    assert_equal dep("a", "= 1").identity, :released
+    assert_equal dep("a", "= 1.a").identity, :complete
+    assert_equal dep("a", " >= 1.a").identity, :abs_latest
+    assert_equal dep("a").identity, :latest
+  end
 
 end
-

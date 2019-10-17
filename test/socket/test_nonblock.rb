@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 begin
   require "socket"
   require "io/nonblock"
@@ -129,7 +131,7 @@ class TestSocketNonblock < Test::Unit::TestCase
     mesg = u1.recv_nonblock(100)
     assert_equal("", mesg)
 
-    buf = "short"
+    buf = "short".dup
     out = "hello world" * 4
     out.freeze
     u2.send(out, 0, u1.getsockname)
@@ -183,11 +185,11 @@ class TestSocketNonblock < Test::Unit::TestCase
   def udp_pair
     s1 = UDPSocket.new
     s1.bind('127.0.0.1', 0)
-    af, port1, host, addr1 = s1.addr
+    _, port1, _, addr1 = s1.addr
 
     s2 = UDPSocket.new
     s2.bind('127.0.0.1', 0)
-    af, port2, host, addr2 = s2.addr
+    _, port2, _, addr2 = s2.addr
 
     s1.connect(addr2, port2)
     s2.connect(addr1, port1)

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/commands/which_command'
 
@@ -32,7 +33,7 @@ class TestGemCommandsWhichCommand < Gem::TestCase
     end
 
     assert_equal '', @ui.output
-    assert_match %r%Can.t find ruby library file or shared library directory\n%,
+    assert_match %r%Can.t find Ruby library file or shared library directory\n%,
                  @ui.error
   end
 
@@ -50,7 +51,7 @@ class TestGemCommandsWhichCommand < Gem::TestCase
     end
 
     assert_equal "#{@foo_bar.full_gem_path}/lib/foo_bar.rb\n", @ui.output
-    assert_match %r%Can.t find ruby library file or shared library missinglib\n%,
+    assert_match %r%Can.t find Ruby library file or shared library missinglib\n%,
                  @ui.error
   end
 
@@ -64,7 +65,7 @@ class TestGemCommandsWhichCommand < Gem::TestCase
     end
 
     assert_equal '', @ui.output
-    assert_match %r%Can.t find ruby library file or shared library missinglib\n%,
+    assert_match %r%Can.t find Ruby library file or shared library missinglib\n%,
                  @ui.error
   end
 
@@ -83,4 +84,3 @@ class TestGemCommandsWhichCommand < Gem::TestCase
   end
 
 end
-

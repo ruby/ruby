@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/indexer'
 require 'rubygems/commands/generate_index_command'
@@ -47,4 +48,3 @@ class TestGemCommandsGenerateIndexCommand < Gem::TestCase
   end
 
 end if ''.respond_to? :to_xs
-

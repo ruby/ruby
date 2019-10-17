@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   xmp.rb - irb version of gotoken xmp
 #   	$Release Version: 0.9$
@@ -10,7 +11,7 @@
 #
 
 require "irb"
-require "irb/frame"
+require_relative "frame"
 
 # An example printer for irb.
 #

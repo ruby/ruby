@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/request_set'
 require 'rubygems/request_set/lockfile'
@@ -5,6 +6,7 @@ require 'rubygems/request_set/lockfile/tokenizer'
 require 'rubygems/request_set/lockfile/parser'
 
 class TestGemRequestSetLockfileParser < Gem::TestCase
+
   def setup
     super
     @gem_deps_file = 'gem.deps.rb'
@@ -64,7 +66,6 @@ class TestGemRequestSetLockfileParser < Gem::TestCase
     assert_equal 0, e.column
     assert_equal File.expand_path("#{@gem_deps_file}.lock"), e.path
   end
-
 
   def test_parse
     write_lockfile <<-LOCKFILE.strip
@@ -245,10 +246,10 @@ DEPENDENCIES
 
     assert lockfile_set, 'found a LockSet'
 
-    assert_equal %w[a-2 a-2], lockfile_set.specs.map { |s| s.full_name }
+    assert_equal %w[a-2], lockfile_set.specs.map { |s| s.full_name }
 
     assert_equal %w[https://gems.example/ https://other.example/],
-                 lockfile_set.specs.map { |s| s.source.uri.to_s }
+                 lockfile_set.specs.flat_map { |s| s.sources.map{ |src| src.uri.to_s } }
   end
 
   def test_parse_GIT
@@ -529,15 +530,16 @@ DEPENDENCIES
     refute lockfile_set
   end
 
-  def write_lockfile lockfile
-    open @lock_file, 'w' do |io|
+  def write_lockfile(lockfile)
+    File.open @lock_file, 'w' do |io|
       io.write lockfile
     end
   end
 
-  def parse_lockfile set, platforms
+  def parse_lockfile(set, platforms)
     tokenizer = Gem::RequestSet::Lockfile::Tokenizer.from_file @lock_file
     parser = tokenizer.make_parser set, platforms
     parser.parse
   end
+
 end

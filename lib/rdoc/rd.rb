@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # RDoc::RD implements the RD format from the rdtool gem.
 #

@@ -1,4 +1,4 @@
-# coding: utf-8
+# frozen_string_literal: true
 
 ##
 # For RDoc::Text#to_html
@@ -6,17 +6,11 @@
 require 'strscan'
 
 ##
-# For RDoc::Text#snippet
-
-begin
-  gem 'json'
-rescue Gem::LoadError
-end
-
-##
 # Methods for manipulating comment text
 
 module RDoc::Text
+
+  attr_accessor :language
 
   ##
   # Maps markup formats to classes that can parse them.  If the format is
@@ -49,7 +43,7 @@ module RDoc::Text
       :open_squote  => encode_fallback('‘', encoding, '\''),
       :trademark    => encode_fallback('®', encoding, '(r)'),
     }
-  end if Object.const_defined? :Encoding
+  end
 
   ##
   # Transcodes +character+ to +encoding+ with a +fallback+ character.
@@ -68,7 +62,7 @@ module RDoc::Text
     text.each_line do |line|
       nil while line.gsub!(/(?:\G|\r)((?:.{8})*?)([^\t\r\n]{0,7})\t/) do
         r = "#{$1}#{$2}#{' ' * (8 - $2.size)}"
-        r.force_encoding text.encoding if Object.const_defined? :Encoding
+        r = RDoc::Encoding.change_encoding r, text.encoding
         r
       end
 
@@ -90,7 +84,7 @@ module RDoc::Text
     end
 
     empty = ''
-    empty.force_encoding text.encoding if Object.const_defined? :Encoding
+    empty = RDoc::Encoding.change_encoding empty, text.encoding
 
     text.gsub(/^ {0,#{indent}}/, empty)
   end
@@ -119,8 +113,12 @@ module RDoc::Text
   def normalize_comment text
     return text if text.empty?
 
-    text = strip_stars    text
-    text = strip_hashes   text
+    case language
+    when :ruby
+      text = strip_hashes text
+    when :c
+      text = strip_stars text
+    end
     text = expand_tabs    text
     text = flush_left     text
     text = strip_newlines text
@@ -157,7 +155,7 @@ module RDoc::Text
     return text if text =~ /^(?>\s*)[^\#]/
 
     empty = ''
-    empty.force_encoding text.encoding if Object.const_defined? :Encoding
+    empty = RDoc::Encoding.change_encoding empty, text.encoding
 
     text.gsub(/^\s*(#+)/) { $1.tr '#', ' ' }.gsub(/^\s+$/, empty)
   end
@@ -175,19 +173,19 @@ module RDoc::Text
   def strip_stars text
     return text unless text =~ %r%/\*.*\*/%m
 
-    encoding = text.encoding if Object.const_defined? :Encoding
+    encoding = text.encoding
 
-    text = text.gsub %r%Document-method:\s+[\w:.#=!?]+%, ''
+    text = text.gsub %r%Document-method:\s+[\w:.#=!?|^&<>~+\-/*\%@`\[\]]+%, ''
 
     space = ' '
-    space.force_encoding encoding if encoding
+    space = RDoc::Encoding.change_encoding space, encoding if encoding
 
     text.sub!  %r%/\*+%       do space * $&.length end
     text.sub!  %r%\*+/%       do space * $&.length end
     text.gsub! %r%^[ \t]*\*%m do space * $&.length end
 
     empty = ''
-    empty.force_encoding encoding if encoding
+    empty = RDoc::Encoding.change_encoding empty, encoding if encoding
     text.gsub(/^\s+$/, empty)
   end
 
@@ -196,24 +194,9 @@ module RDoc::Text
   # trademark symbols in +text+ to properly encoded characters.
 
   def to_html text
-    if Object.const_defined? :Encoding then
-      html = ''.encode text.encoding
+    html = (''.encode text.encoding).dup
 
-      encoded = RDoc::Text::TO_HTML_CHARACTERS[text.encoding]
-    else
-      html = ''
-      encoded = {
-        :close_dquote => '”',
-        :close_squote => '’',
-        :copyright    => '©',
-        :ellipsis     => '…',
-        :em_dash      => '—',
-        :en_dash      => '–',
-        :open_dquote  => '“',
-        :open_squote  => '‘',
-        :trademark    => '®',
-      }
-    end
+    encoded = RDoc::Text::TO_HTML_CHARACTERS[text.encoding]
 
     s = StringScanner.new text
     insquotes = false

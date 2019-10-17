@@ -1,0 +1,27 @@
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+
+describe "IO#<<" do
+  it "writes an object to the IO stream" do
+    -> {
+      $stderr << "Oh noes, an error!"
+    }.should output_to_fd("Oh noes, an error!", $stderr)
+  end
+
+  it "calls #to_s on the object to print it" do
+    -> {
+      $stderr << 1337
+    }.should output_to_fd("1337", $stderr)
+  end
+
+  it "raises an error if the stream is closed" do
+    io = IOSpecs.closed_io
+    -> { io << "test" }.should raise_error(IOError)
+  end
+
+  it "returns self" do
+    -> {
+      ($stderr << "to_stderr").should == $stderr
+    }.should output(nil, "to_stderr")
+  end
+end

@@ -35,6 +35,7 @@
 #include "ruby.h"
 #include "ruby/util.h"
 #define compat_init_setproctitle ruby_init_setproctitle
+RUBY_FUNC_EXPORTED void ruby_init_setproctitle(int argc, char *argv[]);
 
 #ifndef HAVE_SETPROCTITLE
 
@@ -151,10 +152,9 @@ setproctitle(const char *fmt, ...)
 		return;
 #endif
 
+	/* fmt must be non-NULL */
 	va_start(ap, fmt);
-	if (fmt != NULL) {
-		vsnprintf(ptitle, sizeof(ptitle) , fmt, ap);
-	}
+	vsnprintf(ptitle, sizeof(ptitle), fmt, ap);
 	va_end(ap);
 
 #if SPT_TYPE == SPT_PSTAT

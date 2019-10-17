@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # This file created by olegen.rb as following.
 #    ruby olegen.rb 'Microsoft XML, version 2.0' > xml.rb

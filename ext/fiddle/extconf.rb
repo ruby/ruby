@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'mkmf'
 
 # :stopdoc:
@@ -17,6 +18,16 @@ if ! bundle
   end and (have_library('ffi') || have_library('libffi'))
 end or
 begin
+  # for https://github.com/ruby/fiddle
+  if bundle && File.exist?("../../bin/extlibs.rb")
+    require "fileutils"
+    require_relative "../../bin/extlibs"
+    extlibs = ExtLibs.new
+    cache_dir = File.expand_path("../../tmp/.download_cache", $srcdir)
+    ext_dir = File.expand_path("../../ext", $srcdir)
+    Dir.glob("#{$srcdir}/libffi-*/").each{|dir| FileUtils.rm_rf(dir)}
+    extlibs.run(["--cache=#{cache_dir}", ext_dir])
+  end
   ver = bundle != false &&
         Dir.glob("#{$srcdir}/libffi-*/")
         .map {|n| File.basename(n)}
@@ -40,12 +51,12 @@ begin
   libffi.lib = "#{libffi.builddir}/.libs"
   libffi.a = "#{libffi.lib}/libffi_convenience.#{$LIBEXT}"
   nowarn = CONFIG.merge("warnflags"=>"")
-  libffi.cflags = RbConfig.expand("$(CFLAGS)", nowarn)
+  libffi.cflags = RbConfig.expand("$(CFLAGS)".dup, nowarn)
   ver = ver[/libffi-(.*)/, 1]
 
   FileUtils.mkdir_p(libffi.dir)
   libffi.opt = CONFIG['configure_args'][/'(-C)'/, 1]
-  libffi.ldflags = RbConfig.expand("$(LDFLAGS) #{libpathflag([relative_from($topdir, "..")])} #{$LIBRUBYARG}")
+  libffi.ldflags = RbConfig.expand("$(LDFLAGS) #{libpathflag([relative_from($topdir, "..")])} #{$LIBRUBYARG}".dup)
   libffi.arch = RbConfig::CONFIG['host']
   if $mswin
     unless find_executable(as = /x64/ =~ libffi.arch ? "ml64" : "ml")
@@ -76,7 +87,7 @@ begin
   args << libffi.opt if libffi.opt
   args.concat %W[
       CC=#{cc} CFLAGS=#{libffi.cflags}
-      CXX=#{cxx} CXXFLAGS=#{RbConfig.expand("$(CXXFLAGS)", nowarn)}
+      CXX=#{cxx} CXXFLAGS=#{RbConfig.expand("$(CXXFLAGS)".dup, nowarn)}
       LD=#{ld} LDFLAGS=#{libffi.ldflags}
   ]
 
@@ -143,13 +154,14 @@ if libffi
   $LOCAL_LIBS.prepend("./#{libffi.a} ").strip! # to exts.mk
   $INCFLAGS.gsub!(/-I#{libffi.dir}/, '-I$(LIBFFI_DIR)')
 end
+$INCFLAGS << " -I$(top_srcdir)"
 create_makefile 'fiddle' do |conf|
   if !libffi
     next conf << "LIBFFI_CLEAN = none\n"
   elsif $gnumake && !$nmake
-    submake = "$(MAKE) -C $(LIBFFI_DIR)\n"
+    submake_arg = "-C $(LIBFFI_DIR)\n"
   else
-    submake = "cd $(LIBFFI_DIR) && \\\n\t\t" << "#{config_string("exec")} $(MAKE)".strip
+    submake_pre = "cd $(LIBFFI_DIR) && #{config_string("exec")}".strip
   end
   if $nmake
     cmd = "$(RUBY) -C $(LIBFFI_DIR) #{libffi_config} --srcdir=$(LIBFFI_SRCDIR)"
@@ -168,7 +180,8 @@ create_makefile 'fiddle' do |conf|
    LIBFFI_CFLAGS = #{libffi.cflags}
    LIBFFI_LDFLAGS = #{libffi.ldflags}
    FFI_H = $(LIBFFI_DIR)/include/ffi.h
-   SUBMAKE_LIBFFI = #{submake}
+   SUBMAKE_PRE = #{submake_pre}
+   SUBMAKE_ARG = #{submake_arg}
    LIBFFI_CLEAN = libffi
   MK
 end

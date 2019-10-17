@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/config_file'
 
@@ -43,6 +44,7 @@ class TestGemConfigFile < Gem::TestCase
     assert_equal Gem::ConfigFile::DEFAULT_BULK_THRESHOLD, @cfg.bulk_threshold
     assert_equal true, @cfg.verbose
     assert_equal [@gem_repo], Gem.sources
+    assert_equal 365, @cfg.cert_expiration_length_days
 
     File.open @temp_conf, 'w' do |fp|
       fp.puts ":backtrace: true"
@@ -57,20 +59,21 @@ class TestGemConfigFile < Gem::TestCase
       fp.puts "- /var/ruby/1.8/gem_home"
       fp.puts ":ssl_verify_mode: 0"
       fp.puts ":ssl_ca_cert: /etc/ssl/certs"
+      fp.puts ":cert_expiration_length_days: 28"
     end
 
     util_config_file
-
     assert_equal true, @cfg.backtrace
     assert_equal 10, @cfg.bulk_threshold
     assert_equal false, @cfg.verbose
     assert_equal false, @cfg.update_sources
-    assert_equal %w[http://more-gems.example.com], Gem.sources
+    assert_equal %w[http://more-gems.example.com], @cfg.sources
     assert_equal '--wrappers', @cfg[:install]
     assert_equal(['/usr/ruby/1.8/lib/ruby/gems/1.8', '/var/ruby/1.8/gem_home'],
                  @cfg.path)
     assert_equal 0, @cfg.ssl_verify_mode
     assert_equal '/etc/ssl/certs', @cfg.ssl_ca_cert
+    assert_equal 28, @cfg.cert_expiration_length_days
   end
 
   def test_initialize_handle_arguments_config_file
@@ -154,14 +157,20 @@ class TestGemConfigFile < Gem::TestCase
     File.open conf3, 'w' do |fp|
       fp.puts ':verbose: :loud'
     end
-
-    ENV['GEMRC'] = conf1 + ':' + conf2 + ';' + conf3
+    ps = File::PATH_SEPARATOR
+    ENV['GEMRC'] = conf1 + ps + conf2 + ps + conf3
 
     util_config_file
 
     assert_equal true, @cfg.backtrace
     assert_equal :loud, @cfg.verbose
     assert_equal 2048, @cfg.bulk_threshold
+  end
+
+  def test_set_config_file_name_from_environment_variable
+    ENV['GEMRC'] = "/tmp/.gemrc"
+    cfg = Gem::ConfigFile.new([])
+    assert_equal cfg.config_file_name, "/tmp/.gemrc"
   end
 
   def test_api_keys
@@ -269,6 +278,29 @@ if you believe they were disclosed to a third party.
     assert_equal true, @cfg.backtrace
   end
 
+  def test_handle_arguments_norc
+    assert_equal @temp_conf, @cfg.config_file_name
+
+    File.open @temp_conf, 'w' do |fp|
+      fp.puts ":backtrace: true"
+      fp.puts ":update_sources: false"
+      fp.puts ":bulk_threshold: 10"
+      fp.puts ":verbose: false"
+      fp.puts ":sources:"
+      fp.puts "  - http://more-gems.example.com"
+    end
+
+    args = %W[--norc]
+
+    util_config_file args
+
+    assert_equal false, @cfg.backtrace
+    assert_equal true, @cfg.update_sources
+    assert_equal Gem::ConfigFile::DEFAULT_BULK_THRESHOLD, @cfg.bulk_threshold
+    assert_equal true, @cfg.verbose
+    assert_equal [@gem_repo], Gem.sources
+  end
+
   def test_load_api_keys
     temp_cred = File.join Gem.user_home, '.gem', 'credentials'
     FileUtils.mkdir File.dirname(temp_cred)
@@ -318,7 +350,7 @@ if you believe they were disclosed to a third party.
 
     assert_equal expected, YAML.load_file(@cfg.credentials_path)
 
-    unless win_platform? then
+    unless win_platform?
       stat = File.stat @cfg.credentials_path
 
       assert_equal 0600, stat.mode & 0600
@@ -416,7 +448,7 @@ if you believe they were disclosed to a third party.
 
   def test_ignore_invalid_config_file
     File.open @temp_conf, 'w' do |fp|
-      fp.puts "some-non-yaml-hash-string"
+      fp.puts "invalid: yaml:"
     end
 
     begin
@@ -463,5 +495,5 @@ if you believe they were disclosed to a third party.
     util_config_file
     assert_equal(true, @cfg.disable_default_gem_server)
   end
-end
 
+end

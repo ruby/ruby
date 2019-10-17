@@ -143,20 +143,22 @@ union bytesequence4_or_float {
 };
 #endif
 
-#ifdef INFINITY
-# define HAVE_INFINITY
-#else
+#ifndef INFINITY
 /** @internal */
 RUBY_EXTERN const union bytesequence4_or_float rb_infinity;
 # define INFINITY (rb_infinity.float_value)
+# define USE_RB_INFINITY 1
 #endif
 
-#ifdef NAN
-# define HAVE_NAN
-#else
+#ifndef NAN
 /** @internal */
 RUBY_EXTERN const union bytesequence4_or_float rb_nan;
 # define NAN (rb_nan.float_value)
+# define USE_RB_NAN 1
+#endif
+
+#ifndef HUGE_VAL
+# define HUGE_VAL ((double)INFINITY)
 #endif
 
 #ifndef isinf
@@ -166,6 +168,8 @@ RUBY_EXTERN const union bytesequence4_or_float rb_nan;
 #    include <ieeefp.h>
 #    endif
 #  define isinf(x) (!finite(x) && !isnan(x))
+#  elif defined(__cplusplus) && __cplusplus >= 201103L
+#    include <cmath> // it must include constexpr bool isinf(double);
 #  else
 RUBY_EXTERN int isinf(double);
 #  endif
@@ -174,8 +178,23 @@ RUBY_EXTERN int isinf(double);
 
 #ifndef isnan
 # ifndef HAVE_ISNAN
+#  if defined(__cplusplus) && __cplusplus >= 201103L
+#    include <cmath> // it must include constexpr bool isnan(double);
+#  else
 RUBY_EXTERN int isnan(double);
+#  endif
 # endif
+#endif
+
+#ifndef isfinite
+# ifndef HAVE_ISFINITE
+#   define HAVE_ISFINITE 1
+#   define isfinite(x) finite(x)
+# endif
+#endif
+
+#ifndef HAVE_NAN
+RUBY_EXTERN double nan(const char *);
 #endif
 
 #ifndef HAVE_NEXTAFTER
@@ -211,12 +230,6 @@ RUBY_EXTERN char *strerror(int);
 RUBY_EXTERN char *strstr(const char *, const char *);
 #endif
 
-/*
-#ifndef HAVE_STRTOL
-RUBY_EXTERN long strtol(const char *, char **, int);
-#endif
-*/
-
 #ifndef HAVE_STRLCPY
 RUBY_EXTERN size_t strlcpy(char *, const char*, size_t);
 #endif
@@ -244,6 +257,13 @@ RUBY_EXTERN int ruby_close(int);
 
 #ifndef HAVE_SETPROCTITLE
 RUBY_EXTERN void setproctitle(const char *fmt, ...);
+#endif
+
+#ifndef HAVE_EXPLICIT_BZERO
+RUBY_EXTERN void explicit_bzero(void *b, size_t len);
+# if defined SecureZeroMemory
+#   define explicit_bzero(b, len) SecureZeroMemory(b, len)
+# endif
 #endif
 
 RUBY_SYMBOL_EXPORT_END

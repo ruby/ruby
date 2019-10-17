@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/user_interaction'
 require 'timeout'
@@ -113,4 +114,5 @@ class TestGemSilentUI < Gem::TestCase
     assert_empty out, 'No output'
     assert_empty err, 'No output'
   end
+
 end

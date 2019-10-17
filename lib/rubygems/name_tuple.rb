@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 #
 # Represents a gem of name +name+ at +version+ of +platform+. These
@@ -6,6 +7,7 @@
 require 'rubygems/platform'
 
 class Gem::NameTuple
+
   def initialize(name, version, platform="ruby")
     @name = name
     @version = version
@@ -23,7 +25,7 @@ class Gem::NameTuple
   # Turn an array of [name, version, platform] into an array of
   # NameTuple objects.
 
-  def self.from_list list
+  def self.from_list(list)
     list.map { |t| new(*t) }
   end
 
@@ -31,7 +33,7 @@ class Gem::NameTuple
   # Turn an array of NameTuple objects back into an array of
   # [name, version, platform] tuples.
 
-  def self.to_basic list
+  def self.to_basic(list)
     list.map { |t| t.to_a }
   end
 
@@ -53,7 +55,7 @@ class Gem::NameTuple
       "#{@name}-#{@version}"
     else
       "#{@name}-#{@version}-#{@platform}"
-    end.untaint
+    end.dup.untaint
   end
 
   ##
@@ -89,7 +91,7 @@ class Gem::NameTuple
 
   alias to_s inspect # :nodoc:
 
-  def <=> other
+  def <=>(other)
     [@name, @version, @platform == Gem::Platform::RUBY ? -1 : 1] <=>
       [other.name, other.version,
        other.platform == Gem::Platform::RUBY ? -1 : 1]
@@ -101,7 +103,7 @@ class Gem::NameTuple
   # Compare with +other+. Supports another NameTuple or an Array
   # in the [name, version, platform] format.
 
-  def == other
+  def ==(other)
     case other
     when self.class
       @name == other.name and

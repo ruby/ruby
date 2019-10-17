@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'mkmf'
 
 AF_INET6_SOCKET_CREATION_TEST = <<EOF
@@ -432,22 +433,18 @@ end
 case RUBY_PLATFORM
 when /mswin(32|64)|mingw/
   test_func = "WSACleanup"
+  have_library("iphlpapi")
   have_library("ws2_32", "WSACleanup", headers)
 when /cygwin/
   test_func = "socket(0,0,0)"
-when /beos/
-  test_func = "socket(0,0,0)"
-  have_library("net", "socket(0,0,0)", headers)
 when /haiku/
   test_func = "socket(0,0,0)"
   have_library("network", "socket(0,0,0)", headers)
-when /i386-os2_emx/
-  test_func = "socket(0,0,0)"
-  have_library("socket", "socket(0,0,0)", headers)
 else
   test_func = "socket(0,0,0)"
   have_library("nsl", 't_open("", 0, (struct t_info *)NULL)', headers) # SunOS
   have_library("socket", "socket(0,0,0)", headers) # SunOS
+  have_library("anl", 'getaddrinfo_a', headers)
 end
 
 if have_func(test_func, headers)
@@ -481,6 +478,7 @@ EOF
     have_func('inet_aton("", (struct in_addr *)0)', headers)
   have_func('getservbyport(0, "")', headers)
   have_func("getifaddrs((struct ifaddrs **)NULL)", headers)
+  have_struct_member("struct if_data", "ifi_vhid", headers) # FreeBSD
 
   have_func("getpeereid", headers)
 
@@ -508,9 +506,10 @@ EOF
   unless have_func("gethostname((char *)0, 0)", headers)
     have_func("uname((struct utsname *)NULL)", headers)
   end
+  have_func("getaddrinfo_a", headers)
 
   ipv6 = false
-  default_ipv6 = /beos|haiku/ !~ RUBY_PLATFORM
+  default_ipv6 = /haiku/ !~ RUBY_PLATFORM
   if enable_config("ipv6", default_ipv6)
     if checking_for("ipv6") {try_link(AF_INET6_SOCKET_CREATION_TEST)}
       $defs << "-DENABLE_IPV6" << "-DINET6"
@@ -571,6 +570,7 @@ EOS
     getaddr_info_ok = (:wide if getaddr_info_ok.nil?)
     if have_func("getnameinfo", headers) and have_func("getaddrinfo", headers)
       if CROSS_COMPILING ||
+         $mingw || $mswin ||
          checking_for("system getaddrinfo working") {
            try_run(cpp_include(headers) + GETADDRINFO_GETNAMEINFO_TEST)
          }
@@ -658,7 +658,7 @@ EOS
 #include <netinet/in.h>
 int t(struct in6_addr *addr) {return IN6_IS_ADDR_UNSPECIFIED(addr);}
 SRC
-    print "fixing apple's netinet6/in6.rb ..."; $stdout.flush
+    print "fixing apple's netinet6/in6.h ..."; $stdout.flush
     in6 = File.read("/usr/include/#{hdr}")
     if in6.gsub!(/\*\(const\s+__uint32_t\s+\*\)\(const\s+void\s+\*\)\(&(\(\w+\))->s6_addr\[(\d+)\]\)/) do
         i, r = $2.to_i.divmod(4)

@@ -36,11 +36,14 @@ Init_enc_set_filesystem_encoding(void)
     return rb_enc_to_index(rb_default_external_encoding());
 }
 
+void rb_encdb_declare(const char *name);
+int rb_encdb_alias(const char *alias, const char *orig);
 void
 Init_enc(void)
 {
-    void rb_encdb_declare(const char *name);
     rb_encdb_declare("ASCII-8BIT");
     rb_encdb_declare("US-ASCII");
     rb_encdb_declare("UTF-8");
+    rb_encdb_alias("BINARY", "ASCII-8BIT");
+    rb_encdb_alias("ASCII", "US-ASCII");
 }

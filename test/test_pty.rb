@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'shellwords'
 require 'tmpdir'
@@ -17,8 +18,8 @@ class TestPTY < Test::Unit::TestCase
   else
     assert_equal("a\r\n", r.gets)
   ensure
-    r.close if r
-    w.close if w
+    r&.close
+    w&.close
     Process.wait pid if pid
   end
 
@@ -195,7 +196,6 @@ class TestPTY < Test::Unit::TestCase
   rescue RuntimeError
     skip $!
   else
-    assert_equal(pid, st1.pid) if st1
     assert_nil(st1)
     assert_equal(pid, st2.pid)
   end
@@ -214,7 +214,6 @@ class TestPTY < Test::Unit::TestCase
   rescue RuntimeError
     skip $!
   else
-    assert_equal(pid, st1.pid) if st1
     assert_nil(st1)
     assert_equal(pid, st2.pid)
   end
@@ -238,4 +237,3 @@ class TestPTY < Test::Unit::TestCase
     skip $!
   end
 end if defined? PTY
-

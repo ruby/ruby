@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'syslog'
 require 'logger'
 
@@ -111,7 +112,7 @@ class Syslog::Logger
       end
 
       def #{meth}?
-        @level <= #{level}
+        level <= #{level}
       end
     EOM
   end
@@ -201,7 +202,7 @@ class Syslog::Logger
 
   def add severity, message = nil, progname = nil, &block
     severity ||= ::Logger::UNKNOWN
-    @level <= severity and
+    level <= severity and
       @@syslog.log( (LEVEL_MAP[severity] | @facility), '%s', formatter.call(severity, Time.now, progname, (message || block.call)) )
     true
   end

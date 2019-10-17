@@ -28,6 +28,7 @@
  */
 
 #include "regenc.h"
+#include "iso_8859.h"
 
 #define ENC_ISO_8859_3_TO_LOWER_CASE(c) EncISO_8859_3_ToLowerCaseTable[c]
 #define ENC_IS_ISO_8859_3_CTYPE(code,ctype) \
@@ -55,7 +56,7 @@ static const UChar EncISO_8859_3_ToLowerCaseTable[256] = {
   '\220', '\221', '\222', '\223', '\224', '\225', '\226', '\227',
   '\230', '\231', '\232', '\233', '\234', '\235', '\236', '\237',
   '\240', '\261', '\242', '\243', '\244', '\245', '\266', '\247',
-  '\250', '\271', '\272', '\273', '\274', '\255', '\256', '\277',
+  '\250', '\151', '\272', '\273', '\274', '\255', '\256', '\277',
   '\260', '\261', '\262', '\263', '\264', '\265', '\266', '\267',
   '\270', '\271', '\272', '\273', '\274', '\275', '\276', '\277',
   '\340', '\341', '\342', '\303', '\344', '\345', '\346', '\347',
@@ -110,7 +111,7 @@ mbc_case_fold(OnigCaseFoldType flag,
 {
   const UChar* p = *pp;
 
-  if (*p == 0xdf && (flag & INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR) != 0) {
+  if (*p == SHARP_s && (flag & INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR) != 0) {
     *lower++ = 's';
     *lower   = 's';
     (*pp)++;
@@ -129,7 +130,7 @@ is_mbc_ambiguous(OnigCaseFoldType flag, const UChar** pp, const UChar* end)
   int v;
   const UChar* p = *pp;
 
-  if (*p == 0xdf && (flag & INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR) != 0) {
+  if (*p == SHARP_s && (flag & INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR) != 0) {
     (*pp)++;
     return TRUE;
   }
@@ -160,7 +161,7 @@ is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc ARG_UNUSE
 static const OnigPairCaseFoldCodes CaseFoldMap[] = {
  { 0xa1, 0xb1 },
  { 0xa6, 0xb6 },
- { 0xa9, 0xb9 },
+ /*{ 0xa9, 0xb9 }, exclude dotless i/I with dot; not a case pair */
  { 0xaa, 0xba },
  { 0xab, 0xbb },
  { 0xac, 0xbc },
@@ -219,6 +220,63 @@ get_case_fold_codes_by_str(OnigCaseFoldType flag,
 	     flag, p, end, items);
 }
 
+#define DOTLESS_i        (0xB9)
+#define I_WITH_DOT_ABOVE (0xA9)
+static int
+case_map(OnigCaseFoldType* flagP, const OnigUChar** pp,
+	 const OnigUChar* end, OnigUChar* to, OnigUChar* to_end,
+	 const struct OnigEncodingTypeST* enc)
+{
+  OnigCodePoint code;
+  OnigUChar *to_start = to;
+  OnigCaseFoldType flags = *flagP;
+
+  while (*pp < end && to < to_end) {
+    code = *(*pp)++;
+    if (code == SHARP_s) {
+      if (flags & ONIGENC_CASE_UPCASE) {
+	flags |= ONIGENC_CASE_MODIFIED;
+	*to++ = 'S';
+	code = (flags & ONIGENC_CASE_TITLECASE) ? 's' : 'S';
+      }
+      else if (flags & ONIGENC_CASE_FOLD) {
+	flags |= ONIGENC_CASE_MODIFIED;
+	*to++ = 's';
+	code = 's';
+      }
+    }
+    else if (code == 0xB5)
+      ;
+    else if ((EncISO_8859_3_CtypeTable[code] & BIT_CTYPE_UPPER)
+	     && (flags & (ONIGENC_CASE_DOWNCASE | ONIGENC_CASE_FOLD))) {
+      flags |= ONIGENC_CASE_MODIFIED;
+      if (code == 'I')
+        code = flags & ONIGENC_CASE_FOLD_TURKISH_AZERI ? DOTLESS_i : 'i';
+      else
+	code = ENC_ISO_8859_3_TO_LOWER_CASE(code);
+    }
+    else if ((EncISO_8859_3_CtypeTable[code]&BIT_CTYPE_LOWER)
+	     && (flags & ONIGENC_CASE_UPCASE)) {
+      flags |= ONIGENC_CASE_MODIFIED;
+      if (code == 'i')
+        code = flags & ONIGENC_CASE_FOLD_TURKISH_AZERI ? I_WITH_DOT_ABOVE : 'I';
+      else if (code == DOTLESS_i)
+        code = 'I';
+      else if (code >= 0xB0 && code <= 0xBF) {
+	code -= 0x10;
+      }
+      else {
+	code -= 0x20;
+      }
+    }
+    *to++ = code;
+    if (flags & ONIGENC_CASE_TITLECASE)  /* switch from titlecase to lowercase for capitalize */
+      flags ^= (ONIGENC_CASE_UPCASE | ONIGENC_CASE_DOWNCASE | ONIGENC_CASE_TITLECASE);
+  }
+  *flagP = flags;
+  return (int )(to - to_start);
+}
+
 OnigEncodingDefine(iso_8859_3, ISO_8859_3) = {
   onigenc_single_byte_mbc_enc_len,
   "ISO-8859-3",  /* name */
@@ -236,6 +294,7 @@ OnigEncodingDefine(iso_8859_3, ISO_8859_3) = {
   onigenc_not_support_get_ctype_code_range,
   onigenc_single_byte_left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match,
+  case_map,
   0,
   ONIGENC_FLAG_NONE,
 };

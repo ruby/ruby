@@ -15,7 +15,7 @@
 #endif
 #define SHA1_DIGEST_LENGTH	SHA_DIGEST_LENGTH
 
-static DEFINE_FINISH_FUNC_FROM_FINAL(SHA1);
+static DEFINE_FINISH_FUNC_FROM_FINAL(SHA1)
 #undef SHA1_Finish
 #define SHA1_Finish rb_digest_SHA1_finish
 

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #--
 # httpstatus.rb -- HTTPStatus Class
 #
@@ -8,7 +9,7 @@
 #
 # $IPR: httpstatus.rb,v 1.11 2003/03/24 20:18:55 gotoyuzo Exp $
 
-require 'webrick/accesslog'
+require_relative 'accesslog'
 
 module WEBrick
 
@@ -22,10 +23,6 @@ module WEBrick
     ##
     # Root of the HTTP status class hierarchy
     class Status < StandardError
-      def initialize(*args) # :nodoc:
-        args[0] = AccessLog.escape(args[0]) unless args.empty?
-        super(*args)
-      end
       class << self
         attr_reader :code, :reason_phrase # :nodoc:
       end
@@ -98,6 +95,7 @@ module WEBrick
       428 => 'Precondition Required',
       429 => 'Too Many Requests',
       431 => 'Request Header Fields Too Large',
+      451 => 'Unavailable For Legal Reasons',
       500 => 'Internal Server Error',
       501 => 'Not Implemented',
       502 => 'Bad Gateway',

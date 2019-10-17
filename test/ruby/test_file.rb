@@ -1,6 +1,7 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'tempfile'
-require "thread"
+require "-test-/file"
 require_relative 'ut_eof'
 
 class TestFile < Test::Unit::TestCase
@@ -86,7 +87,7 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_bom_32le
-    assert_bom(["\xFF\xFE\0", "\0"], __method__)
+    assert_bom(["\xFF", "\xFE\0\0"], __method__)
   end
 
   def test_truncate_wbuf
@@ -120,8 +121,8 @@ class TestFile < Test::Unit::TestCase
 
   def test_truncate_size
     Tempfile.create("test-truncate") do |f|
-      q1 = Queue.new
-      q2 = Queue.new
+      q1 = Thread::Queue.new
+      q2 = Thread::Queue.new
 
       th = Thread.new do
         data = ''
@@ -146,8 +147,8 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_read_all_extended_file
-    [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      Tempfile.create("test-extended-file", mode) {|f|
+    [{}, {:textmode=>true}, {:binmode=>true}].each do |mode|
+      Tempfile.create("test-extended-file", **mode) {|f|
         assert_nil(f.getc)
         f.print "a"
         f.rewind
@@ -157,8 +158,8 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_gets_extended_file
-    [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      Tempfile.create("test-extended-file", mode) {|f|
+    [{}, {:textmode=>true}, {:binmode=>true}].each do |mode|
+      Tempfile.create("test-extended-file", **mode) {|f|
         assert_nil(f.getc)
         f.print "a"
         f.rewind
@@ -168,8 +169,8 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_gets_para_extended_file
-    [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      Tempfile.create("test-extended-file", mode) {|f|
+    [{}, {:textmode=>true}, {:binmode=>true}].each do |mode|
+      Tempfile.create("test-extended-file", **mode) {|f|
         assert_nil(f.getc)
         f.print "\na"
         f.rewind
@@ -179,8 +180,8 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_each_char_extended_file
-    [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      Tempfile.create("test-extended-file", mode) {|f|
+    [{}, {:textmode=>true}, {:binmode=>true}].each do |mode|
+      Tempfile.create("test-extended-file", **mode) {|f|
         assert_nil(f.getc)
         f.print "a"
         f.rewind
@@ -192,8 +193,8 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_each_byte_extended_file
-    [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      Tempfile.create("test-extended-file", mode) {|f|
+    [{}, {:textmode=>true}, {:binmode=>true}].each do |mode|
+      Tempfile.create("test-extended-file", **mode) {|f|
         assert_nil(f.getc)
         f.print "a"
         f.rewind
@@ -205,8 +206,8 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_getc_extended_file
-    [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      Tempfile.create("test-extended-file", mode) {|f|
+    [{}, {:textmode=>true}, {:binmode=>true}].each do |mode|
+      Tempfile.create("test-extended-file", **mode) {|f|
         assert_nil(f.getc)
         f.print "a"
         f.rewind
@@ -216,8 +217,8 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_getbyte_extended_file
-    [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      Tempfile.create("test-extended-file", mode) {|f|
+    [{}, {:textmode=>true}, {:binmode=>true}].each do |mode|
+      Tempfile.create("test-extended-file", **mode) {|f|
         assert_nil(f.getc)
         f.print "a"
         f.rewind
@@ -266,8 +267,12 @@ class TestFile < Test::Unit::TestCase
     Dir.mktmpdir('rubytest-realpath') {|tmpdir|
       realdir = File.realpath(tmpdir)
       open(File.join(tmpdir, tst), "w") {}
-      a = File.join(tmpdir, "a")
-      File.symlink(tst, a)
+      a = File.join(tmpdir, "x")
+      begin
+        File.symlink(tst, a)
+      rescue Errno::EACCES, Errno::EPERM
+        skip "need privilege"
+      end
       assert_equal(File.join(realdir, tst), File.realpath(a))
       File.unlink(a)
 
@@ -276,6 +281,34 @@ class TestFile < Test::Unit::TestCase
       File.symlink(tst, a)
       assert_equal(File.join(realdir, tst), File.realpath(a.encode("UTF-8")))
     }
+  end
+
+  def test_realpath_taintedness
+    Dir.mktmpdir('rubytest-realpath') {|tmpdir|
+      dir = File.realpath(tmpdir).untaint
+      File.write(File.join(dir, base = "test.file"), '')
+      base.taint
+      dir.taint
+      assert_predicate(File.realpath(base, dir), :tainted?)
+      base.untaint
+      dir.taint
+      assert_predicate(File.realpath(base, dir), :tainted?)
+      base.taint
+      dir.untaint
+      assert_predicate(File.realpath(base, dir), :tainted?)
+      base.untaint
+      dir.untaint
+      assert_predicate(File.realpath(base, dir), :tainted?)
+      assert_predicate(Dir.chdir(dir) {File.realpath(base)}, :tainted?)
+    }
+  end
+
+  def test_realpath_special_symlink
+    IO.pipe do |r, w|
+      if File.pipe?(path = "/dev/fd/#{r.fileno}")
+        assert_file.identical?(File.realpath(path), path)
+      end
+    end
   end
 
   def test_realdirpath
@@ -353,6 +386,7 @@ class TestFile < Test::Unit::TestCase
       sleep 2
       File.write(path, "bar")
       sleep 2
+      File.read(path)
       File.chmod(0644, path)
       sleep 2
       File.read(path)
@@ -364,7 +398,7 @@ class TestFile < Test::Unit::TestCase
       if stat.birthtime != stat.ctime
         assert_in_delta t0+4, stat.ctime.to_f, delta
       end
-      unless /mswin|mingw/ =~ RUBY_PLATFORM
+      if /mswin|mingw/ !~ RUBY_PLATFORM && !Bug::File::Fs.noatime?(path)
         # Windows delays updating atime
         assert_in_delta t0+6, stat.atime.to_f, delta
       end
@@ -439,6 +473,8 @@ class TestFile < Test::Unit::TestCase
     (0..1).each do |level|
       assert_nothing_raised(SecurityError, bug5374) {in_safe[level]}
     end
+  ensure
+    $SAFE = 0
   end
 
   if /(bcc|ms|cyg)win|mingw|emx/ =~ RUBY_PLATFORM
@@ -459,6 +495,46 @@ class TestFile < Test::Unit::TestCase
         open(path + "\0bar", "w") {}
       end
       assert_file.not_exist?(path)
+    end
+  end
+
+  def test_open_tempfile_path
+    Dir.mktmpdir(__method__.to_s) do |tmpdir|
+      begin
+        io = File.open(tmpdir, File::RDWR | File::TMPFILE)
+      rescue Errno::EINVAL
+        skip 'O_TMPFILE not supported (EINVAL)'
+      rescue Errno::EISDIR
+        skip 'O_TMPFILE not supported (EISDIR)'
+      rescue Errno::EOPNOTSUPP
+        skip 'O_TMPFILE not supported (EOPNOTSUPP)'
+      end
+
+      io.write "foo"
+      io.flush
+      assert_equal 3, io.size
+      assert_raise(IOError) { io.path }
+    ensure
+      io&.close
+    end
+  end if File::Constants.const_defined?(:TMPFILE)
+
+  def test_absolute_path?
+    assert_file.absolute_path?(File.absolute_path(__FILE__))
+    assert_file.absolute_path?("//foo/bar\\baz")
+    assert_file.not_absolute_path?(File.basename(__FILE__))
+    assert_file.not_absolute_path?("C:foo\\bar")
+    assert_file.not_absolute_path?("~")
+    assert_file.not_absolute_path?("~user")
+
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      assert_file.absolute_path?("C:\\foo\\bar")
+      assert_file.absolute_path?("C:/foo/bar")
+      assert_file.not_absolute_path?("/foo/bar\\baz")
+    else
+      assert_file.not_absolute_path?("C:\\foo\\bar")
+      assert_file.not_absolute_path?("C:/foo/bar")
+      assert_file.absolute_path?("/foo/bar\\baz")
     end
   end
 end

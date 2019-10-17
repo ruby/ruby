@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'net/http'
 require 'test/unit'
 require 'stringio'
@@ -8,8 +9,8 @@ class HTTPRequestTest < Test::Unit::TestCase
     req = Net::HTTP::Get.new '/'
 
     assert_equal 'GET', req.method
-    refute req.request_body_permitted?
-    assert req.response_body_permitted?
+    assert_not_predicate req, :request_body_permitted?
+    assert_predicate req, :response_body_permitted?
 
     expected = {
       'accept'     => %w[*/*],
@@ -26,8 +27,8 @@ class HTTPRequestTest < Test::Unit::TestCase
     req = Net::HTTP::Get.new '/', 'Range' => 'bytes=0-9'
 
     assert_equal 'GET', req.method
-    refute req.request_body_permitted?
-    assert req.response_body_permitted?
+    assert_not_predicate req, :request_body_permitted?
+    assert_predicate req, :response_body_permitted?
 
     expected = {
       'accept'     => %w[*/*],
@@ -42,8 +43,8 @@ class HTTPRequestTest < Test::Unit::TestCase
     req = Net::HTTP::Head.new '/'
 
     assert_equal 'HEAD', req.method
-    refute req.request_body_permitted?
-    refute req.response_body_permitted?
+    assert_not_predicate req, :request_body_permitted?
+    assert_not_predicate req, :response_body_permitted?
 
     expected = {
       'accept'     => %w[*/*],
@@ -60,9 +61,22 @@ class HTTPRequestTest < Test::Unit::TestCase
 
     req2 = Net::HTTP::Get.new '/', 'accept-encoding' => 'identity'
 
-    refute req2.decode_content,
-           'Bug #7381 - do not decode content if the user overrides'
+    assert_not_predicate req2, :decode_content,
+                         'Bug #7381 - do not decode content if the user overrides'
   end if Net::HTTP::HAVE_ZLIB
+
+  def test_initialize_GET_uri
+    req = Net::HTTP::Get.new(URI("http://example.com/foo"))
+    assert_equal "/foo", req.path
+    assert_equal "example.com", req['Host']
+
+    req = Net::HTTP::Get.new(URI("https://example.com/foo"))
+    assert_equal "/foo", req.path
+    assert_equal "example.com", req['Host']
+
+    assert_raise(ArgumentError){ Net::HTTP::Get.new(URI("urn:ietf:rfc:7231")) }
+    assert_raise(ArgumentError){ Net::HTTP::Get.new(URI("http://")) }
+  end
 
   def test_header_set
     req = Net::HTTP::Get.new '/'
@@ -71,8 +85,8 @@ class HTTPRequestTest < Test::Unit::TestCase
 
     req['accept-encoding'] = 'identity'
 
-    refute req.decode_content,
-           'Bug #7831 - do not decode content if the user overrides'
+    assert_not_predicate req, :decode_content,
+                         'Bug #7831 - do not decode content if the user overrides'
   end if Net::HTTP::HAVE_ZLIB
 
 end

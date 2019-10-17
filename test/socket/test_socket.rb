@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 begin
   require "socket"
   require "tmpdir"
@@ -103,6 +105,8 @@ class TestSocket < Test::Unit::TestCase
 
   def test_getnameinfo
     assert_raise(SocketError) { Socket.getnameinfo(["AF_UNIX", 80, "0.0.0.0"]) }
+    assert_raise(ArgumentError) {Socket.getnameinfo(["AF_INET", "http\0", "example.net"])}
+    assert_raise(ArgumentError) {Socket.getnameinfo(["AF_INET", "http", "example.net\0"])}
   end
 
   def test_ip_address_list
@@ -238,9 +242,12 @@ class TestSocket < Test::Unit::TestCase
           unix_server = Socket.unix_server_socket("#{tmpdir}/sock")
           tcp_servers.each {|s|
             addr = s.connect_address
-            assert_nothing_raised("connect to #{addr.inspect}") {
+            begin
               clients << addr.connect
-            }
+            rescue
+              # allow failure if the address is IPv6
+              raise unless addr.ipv6?
+            end
           }
           addr = unix_server.connect_address
           assert_nothing_raised("connect to #{addr.inspect}") {
@@ -373,11 +380,10 @@ class TestSocket < Test::Unit::TestCase
             in6_ifreq = [ifr_name,ai.to_sockaddr].pack('a16A*')
             s.ioctl(ulSIOCGIFFLAGS, in6_ifreq)
             next true if in6_ifreq.unpack('A16L1').last & ulIFF_POINTOPOINT != 0
-          else
-            ifconfig ||= `/sbin/ifconfig`
-            next true if ifconfig.scan(/^(\w+):(.*(?:\n\t.*)*)/).find do|ifname, value|
-              value.include?(ai.ip_address) && value.include?('POINTOPOINT')
-            end
+          end
+          ifconfig ||= `/sbin/ifconfig`
+          next true if ifconfig.scan(/^(\w+):(.*(?:\n\t.*)*)/).find do |_ifname, value|
+            value.include?(ai.ip_address) && value.include?('POINTOPOINT')
           end
         end
         false
@@ -449,25 +455,47 @@ class TestSocket < Test::Unit::TestCase
     }
   end
 
+  def timestamp_retry_rw(s1, s2, t1, type)
+    IO.pipe do |r,w|
+      # UDP may not be reliable, keep sending until recvmsg returns:
+      th = Thread.new do
+        n = 0
+        begin
+          s2.send("a", 0, s1.local_address)
+          n += 1
+        end while IO.select([r], nil, nil, 0.1).nil?
+        n
+      end
+      timeout = (RubyVM::MJIT.enabled? ? 120 : 30) # for --jit-wait
+      assert_equal([[s1],[],[]], IO.select([s1], nil, nil, timeout))
+      msg, _, _, stamp = s1.recvmsg
+      assert_equal("a", msg)
+      assert(stamp.cmsg_is?(:SOCKET, type))
+      w.close # stop th
+      n = th.value
+      n > 1 and
+        warn "UDP packet loss for #{type} over loopback, #{n} tries needed"
+      t2 = Time.now.strftime("%Y-%m-%d")
+      pat = Regexp.union([t1, t2].uniq)
+      assert_match(pat, stamp.inspect)
+      t = stamp.timestamp
+      assert_match(pat, t.strftime("%Y-%m-%d"))
+      stamp
+    end
+  end
+
   def test_timestamp
     return if /linux|freebsd|netbsd|openbsd|solaris|darwin/ !~ RUBY_PLATFORM
-    return if !defined?(Socket::AncillaryData)
+    return if !defined?(Socket::AncillaryData) || !defined?(Socket::SO_TIMESTAMP)
     t1 = Time.now.strftime("%Y-%m-%d")
     stamp = nil
     Addrinfo.udp("127.0.0.1", 0).bind {|s1|
       Addrinfo.udp("127.0.0.1", 0).bind {|s2|
         s1.setsockopt(:SOCKET, :TIMESTAMP, true)
-        s2.send "a", 0, s1.local_address
-        msg, _, _, stamp = s1.recvmsg
-        assert_equal("a", msg)
-        assert(stamp.cmsg_is?(:SOCKET, :TIMESTAMP))
+        stamp = timestamp_retry_rw(s1, s2, t1, :TIMESTAMP)
       }
     }
-    t2 = Time.now.strftime("%Y-%m-%d")
-    pat = Regexp.union([t1, t2].uniq)
-    assert_match(pat, stamp.inspect)
     t = stamp.timestamp
-    assert_match(pat, t.strftime("%Y-%m-%d"))
     pat = /\.#{"%06d" % t.usec}/
     assert_match(pat, stamp.inspect)
   end
@@ -484,17 +512,10 @@ class TestSocket < Test::Unit::TestCase
           # SO_TIMESTAMPNS is available since Linux 2.6.22
           return
         end
-        s2.send "a", 0, s1.local_address
-        msg, _, _, stamp = s1.recvmsg
-        assert_equal("a", msg)
-        assert(stamp.cmsg_is?(:SOCKET, :TIMESTAMPNS))
+        stamp = timestamp_retry_rw(s1, s2, t1, :TIMESTAMPNS)
       }
     }
-    t2 = Time.now.strftime("%Y-%m-%d")
-    pat = Regexp.union([t1, t2].uniq)
-    assert_match(pat, stamp.inspect)
     t = stamp.timestamp
-    assert_match(pat, t.strftime("%Y-%m-%d"))
     pat = /\.#{"%09d" % t.nsec}/
     assert_match(pat, stamp.inspect)
   end
@@ -529,13 +550,15 @@ class TestSocket < Test::Unit::TestCase
     begin sleep(0.1) end until serv_thread.stop?
     sock = TCPSocket.new("localhost", server.addr[1])
     client_thread = Thread.new do
-      sock.readline
+      assert_raise(IOError, bug4390) {
+        sock.readline
+      }
     end
     begin sleep(0.1) end until client_thread.stop?
     Timeout.timeout(1) do
       sock.close
       sock = nil
-      assert_raise(IOError, bug4390) {client_thread.join}
+      client_thread.join
     end
   ensure
     serv_thread.value.close
@@ -649,6 +672,74 @@ class TestSocket < Test::Unit::TestCase
         s.close if !s.closed?
       }
     end
+  end
+
+  def test_recvmsg_udp_no_arg
+    n = 4097
+    s1 = Addrinfo.udp("127.0.0.1", 0).bind
+    s2 = s1.connect_address.connect
+    s2.send("a" * n, 0)
+    ret = s1.recvmsg
+    assert_equal n, ret[0].bytesize, '[ruby-core:71517] [Bug #11701]'
+
+    s2.send("a" * n, 0)
+    IO.select([s1])
+    ret = s1.recvmsg_nonblock
+    assert_equal n, ret[0].bytesize, 'non-blocking should also grow'
+  ensure
+    s1.close
+    s2.close
+  end
+
+  def test_udp_read_truncation
+    s1 = Addrinfo.udp("127.0.0.1", 0).bind
+    s2 = s1.connect_address.connect
+    s2.send("a" * 100, 0)
+    ret = s1.read(10)
+    assert_equal "a" * 10, ret
+    s2.send("b" * 100, 0)
+    ret = s1.read(10)
+    assert_equal "b" * 10, ret
+  ensure
+    s1.close
+    s2.close
+  end
+
+  def test_udp_recv_truncation
+    s1 = Addrinfo.udp("127.0.0.1", 0).bind
+    s2 = s1.connect_address.connect
+    s2.send("a" * 100, 0)
+    ret = s1.recv(10, Socket::MSG_PEEK)
+    assert_equal "a" * 10, ret
+    ret = s1.recv(10, 0)
+    assert_equal "a" * 10, ret
+    s2.send("b" * 100, 0)
+    ret = s1.recv(10, 0)
+    assert_equal "b" * 10, ret
+  ensure
+    s1.close
+    s2.close
+  end
+
+  def test_udp_recvmsg_truncation
+    s1 = Addrinfo.udp("127.0.0.1", 0).bind
+    s2 = s1.connect_address.connect
+    s2.send("a" * 100, 0)
+    ret, addr, rflags = s1.recvmsg(10, Socket::MSG_PEEK)
+    assert_equal "a" * 10, ret
+    # AIX does not set MSG_TRUNC for a message partially read with MSG_PEEK.
+    assert_equal Socket::MSG_TRUNC, rflags & Socket::MSG_TRUNC if !rflags.nil? && /aix/ !~ RUBY_PLATFORM
+    ret, addr, rflags = s1.recvmsg(10, 0)
+    assert_equal "a" * 10, ret
+    assert_equal Socket::MSG_TRUNC, rflags & Socket::MSG_TRUNC if !rflags.nil?
+    s2.send("b" * 100, 0)
+    ret, addr, rflags = s1.recvmsg(10, 0)
+    assert_equal "b" * 10, ret
+    assert_equal Socket::MSG_TRUNC, rflags & Socket::MSG_TRUNC if !rflags.nil?
+    addr
+  ensure
+    s1.close
+    s2.close
   end
 
 end if defined?(Socket)

@@ -1,9 +1,15 @@
+# frozen_string_literal: false
 require "test/unit"
 require_relative "utils.rb"
 require "webrick"
 require "stringio"
 
 class WEBrick::TestFileHandler < Test::Unit::TestCase
+  def teardown
+    WEBrick::Utils::TimeoutHandler.terminate
+    super
+  end
+
   def default_file_handler(filename)
     klass = WEBrick::HTTPServlet::DefaultFileHandler
     klass.new(WEBrick::Config::HTTP, filename)
@@ -14,16 +20,10 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
   end
 
   def get_res_body(res)
-    body = res.body
-    if defined? body.read
-      begin
-        body.read
-      ensure
-        body.close
-      end
-    else
-      body
-    end
+    sio = StringIO.new
+    sio.binmode
+    res.send_body(sio)
+    sio.string
   end
 
   def make_range_request(range_spec)
@@ -75,13 +75,30 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
 
     res = make_range_response(filename, "bytes=0-0, -2")
     assert_match(%r{^multipart/byteranges}, res["content-type"])
+    body = get_res_body(res)
+    boundary = /; boundary=(.+)/.match(res['content-type'])[1]
+    off = filesize - 2
+    last = filesize - 1
+
+    exp = "--#{boundary}\r\n" \
+          "Content-Type: text/plain\r\n" \
+          "Content-Range: bytes 0-0/#{filesize}\r\n" \
+          "\r\n" \
+          "#{IO.read(__FILE__, 1)}\r\n" \
+          "--#{boundary}\r\n" \
+          "Content-Type: text/plain\r\n" \
+          "Content-Range: bytes #{off}-#{last}/#{filesize}\r\n" \
+          "\r\n" \
+          "#{IO.read(__FILE__, 2, off)}\r\n" \
+          "--#{boundary}--\r\n"
+    assert_equal exp, body
   end
 
   def test_filehandler
     config = { :DocumentRoot => File.dirname(__FILE__), }
     this_file = File.basename(__FILE__)
     filesize = File.size(__FILE__)
-    this_data = File.open(__FILE__, "rb") {|f| f.read}
+    this_data = File.binread(__FILE__)
     range = nil
     bug2593 = '[ruby-dev:40030]'
 
@@ -97,7 +114,7 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
       http.request(req){|res|
         assert_equal("200", res.code, log.call)
         assert_equal("text/plain", res.content_type, log.call)
-        assert_equal(File.read(__FILE__), res.body, log.call)
+        assert_equal(this_data, res.body, log.call)
       }
 
       req = Net::HTTP::Get.new("/#{this_file}", "range"=>"bytes=#{filesize-100}-")
@@ -290,6 +307,8 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
     }
     TestWEBrick.start_httpserver(config, log_tester) do |server, addr, port, log|
       http = Net::HTTP.new(addr, port)
+      http.read_timeout = EnvUtil.apply_timeout_scale(60)
+      http.write_timeout = EnvUtil.apply_timeout_scale(60)
 
       req = Net::HTTP::Get.new("/webrick.cgi/test")
       http.request(req) do |res|
@@ -313,6 +332,22 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
       resok &&= File.exist?(__FILE__+"::$DATA")
       req = Net::HTTP::Get.new("/webrick.cgi::$DATA/test")
       http.request(req, &response_assertion)
+    end
+  end
+
+  def test_erbhandler
+    config = { :DocumentRoot => File.dirname(__FILE__) }
+    log_tester = lambda {|log, access_log|
+      log = log.reject {|s| /ERROR `.*\' not found\./ =~ s }
+      assert_equal([], log)
+    }
+    TestWEBrick.start_httpserver(config, log_tester) do |server, addr, port, log|
+      http = Net::HTTP.new(addr, port)
+      req = Net::HTTP::Get.new("/webrick.rhtml")
+      http.request(req) do |res|
+        assert_equal("200", res.code, log.call)
+        assert_match %r!\Areq to http://[^/]+/webrick\.rhtml {}\n!, res.body
+      end
     end
   end
 end

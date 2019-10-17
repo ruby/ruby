@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class Complex_Test2 < Test::Unit::TestCase

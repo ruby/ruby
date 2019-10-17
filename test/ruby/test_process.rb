@@ -1,3 +1,5 @@
+# coding: utf-8
+# frozen_string_literal: false
 require 'test/unit'
 require 'tempfile'
 require 'timeout'
@@ -179,7 +181,11 @@ class TestProcess < Test::Unit::TestCase
     io.close
 
     assert_raise(ArgumentError) { system(*TRUECOMMAND, :pgroup=>-1) }
-    assert_raise(Errno::EPERM) { Process.wait spawn(*TRUECOMMAND, :pgroup=>2) }
+    IO.popen([RUBY, '-egets'], 'w') do |f|
+      assert_raise(Errno::EPERM) {
+        Process.wait spawn(*TRUECOMMAND, :pgroup=>f.pid)
+      }
+    end
 
     io1 = IO.popen([RUBY, "-e", "print Process.getpgrp", :pgroup=>true])
     io2 = IO.popen([RUBY, "-e", "print Process.getpgrp", :pgroup=>io1.pid])
@@ -236,9 +242,26 @@ class TestProcess < Test::Unit::TestCase
       :rlimit_core=>n, :rlimit_cpu=>3600]) {|io|
       assert_equal("[#{n}, #{n}]\n[3600, 3600]", io.read.chomp)
     }
+
+    assert_raise(ArgumentError) do
+      system(RUBY, '-e', 'exit',  'rlimit_bogus'.to_sym => 123)
+    end
+    assert_separately([],"#{<<~"begin;"}\n#{<<~'end;'}", 'rlimit_cpu'.to_sym => 3600)
+    BUG = "[ruby-core:82033] [Bug #13744]"
+    begin;
+      assert_equal([3600,3600], Process.getrlimit(:CPU), BUG)
+    end;
+
+    assert_raise_with_message(ArgumentError, /bogus/) do
+      system(RUBY, '-e', 'exit', :rlimit_bogus => 123)
+    end
+
+    assert_raise_with_message(ArgumentError, /rlimit_cpu/) {
+      system(RUBY, '-e', 'exit', "rlimit_cpu\0".to_sym => 3600)
+    }
   end
 
-  MANDATORY_ENVS = %w[RUBYLIB]
+  MANDATORY_ENVS = %w[RUBYLIB MJIT_SEARCH_BUILD_DIR]
   case RbConfig::CONFIG['target_os']
   when /linux/
     MANDATORY_ENVS << 'LD_PRELOAD'
@@ -248,6 +271,9 @@ class TestProcess < Test::Unit::TestCase
     MANDATORY_ENVS.concat(ENV.keys.grep(/\A__CF_/))
   end
   if e = RbConfig::CONFIG['LIBPATHENV']
+    MANDATORY_ENVS << e
+  end
+  if e = RbConfig::CONFIG['PRELOADENV'] and !e.empty?
     MANDATORY_ENVS << e
   end
   PREENVARG = ['-e', "%w[#{MANDATORY_ENVS.join(' ')}].each{|e|ENV.delete(e)}"]
@@ -311,6 +337,16 @@ class TestProcess < Test::Unit::TestCase
       IO.popen([{"hmm"=>nil}, *ENVCOMMAND]) {|io| assert_not_match(/^hmm=/, io.read) }
     ensure
       ENV["hmm"] = old
+    end
+  end
+
+  def test_execopt_env_path
+    bug8004 = '[ruby-core:53103] [Bug #8004]'
+    Dir.mktmpdir do |d|
+      open("#{d}/tmp_script.cmd", "w") {|f| f.puts ": ;"; f.chmod(0755)}
+      assert_not_nil(pid = Process.spawn({"PATH" => d}, "tmp_script.cmd"), bug8004)
+      wpid, st = Process.waitpid2(pid)
+      assert_equal([pid, true], [wpid, st.success?], bug8004)
     end
   end
 
@@ -423,6 +459,17 @@ class TestProcess < Test::Unit::TestCase
       assert_equal("#{d}/foo", File.read("open_chdir_test").chomp)
     }
   end
+
+  def test_execopts_open_chdir_m17n_path
+    with_tmpchdir {|d|
+      Dir.mkdir "テスト"
+      (pwd = PWD.dup).insert(1, '-EUTF-8:UTF-8')
+      system(*pwd, :chdir => "テスト", :out => "open_chdir_テスト")
+      assert_file.exist?("open_chdir_テスト")
+      assert_file.not_exist?("テスト/open_chdir_テスト")
+      assert_equal("#{d}/テスト", File.read("open_chdir_テスト", encoding: "UTF-8").chomp)
+    }
+  end if windows? || Encoding.find('locale') == Encoding::UTF_8
 
   def test_execopts_open_failure
     with_tmpchdir {|d|
@@ -587,7 +634,7 @@ class TestProcess < Test::Unit::TestCase
       rescue NotImplementedError
         return
       end
-      assert(FileTest.pipe?("fifo"), "should be pipe")
+      assert_file.pipe?("fifo")
       t1 = Thread.new {
         system(*ECHO["output to fifo"], :out=>"fifo")
       }
@@ -610,11 +657,14 @@ class TestProcess < Test::Unit::TestCase
         class E < StandardError; end
         trap(:USR1) { raise E }
         begin
+          puts "start"
+          STDOUT.flush
           system("cat", :in => "fifo")
         rescue E
           puts "ok"
         end
       EOS
+        assert_equal("start\n", io.gets)
         sleep 0.5
         Process.kill(:USR1, io.pid)
         assert_equal("ok\n", io.read)
@@ -630,14 +680,17 @@ class TestProcess < Test::Unit::TestCase
         return
       end
       IO.popen([RUBY, '-e', <<-'EOS']) {|io|
+        STDOUT.sync = true
         trap(:USR1) { print "trap\n" }
+        puts "start"
         system("cat", :in => "fifo")
       EOS
-        sleep 0.5
+        assert_equal("start\n", io.gets)
+        sleep 0.2 # wait for the child to stop at opening "fifo"
         Process.kill(:USR1, io.pid)
-        sleep 0.1
+        assert_equal("trap\n", io.readpartial(8))
         File.write("fifo", "ok\n")
-        assert_equal("trap\nok\n", io.read)
+        assert_equal("ok\n", io.read)
       }
     }
   end unless windows? # does not support fifo
@@ -710,6 +763,15 @@ class TestProcess < Test::Unit::TestCase
           Process.wait pid
         end
       }
+
+      # ensure standard FDs we redirect to are blocking for compatibility
+      with_pipes(3) do |pipes|
+        src = 'p [STDIN,STDOUT,STDERR].map(&:nonblock?)'
+        rdr = { 0 => pipes[0][0], 1 => pipes[1][1], 2 => pipes[2][1] }
+        pid = spawn(RUBY, '-rio/nonblock', '-e', src, rdr)
+        assert_equal("[false, false, false]\n", pipes[1][0].gets)
+        Process.wait pid
+      end
     end
   end
 
@@ -956,6 +1018,15 @@ class TestProcess < Test::Unit::TestCase
 
     }
   end
+
+  def test_close_others_default_false
+    IO.pipe do |r,w|
+      w.close_on_exec = false
+      src = "IO.new(#{w.fileno}).puts(:hi)"
+      assert_equal true, system(*%W(#{RUBY} --disable=gems -e #{src}))
+      assert_equal "hi\n", r.gets
+    end
+  end unless windows? # passing non-stdio fds is not supported on Windows
 
   def test_execopts_redirect_self
     begin
@@ -1327,6 +1398,14 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_argv0_keep_alive
+    assert_in_out_err([], <<~REPRO, ['-'], [], "[Bug #15887]")
+      $0 = "diverge"
+      4.times { GC.start }
+      puts Process.argv0
+    REPRO
+  end
+
   def test_status
     with_tmpchdir do
       s = run_in_child("exit 1")
@@ -1364,7 +1443,7 @@ class TestProcess < Test::Unit::TestCase
     return unless Signal.list.include?("QUIT")
 
     with_tmpchdir do
-      s = assert_in_out_err([], "Process.kill(:SIGQUIT, $$);sleep 30", //, //)
+      s = assert_in_out_err([], "Signal.trap(:QUIT,'DEFAULT'); Process.kill(:SIGQUIT, $$);sleep 30", //, //, rlimit_core: 0)
       assert_equal([false, true, false, nil],
                    [s.exited?, s.signaled?, s.stopped?, s.success?],
                    "[s.exited?, s.signaled?, s.stopped?, s.success?]")
@@ -1404,7 +1483,9 @@ class TestProcess < Test::Unit::TestCase
   def test_wait_exception
     bug11340 = '[ruby-dev:49176] [Bug #11340]'
     t0 = t1 = nil
-    IO.popen([RUBY, '-e', 'puts;STDOUT.flush;Thread.start{gets;exit};sleep(3)'], 'r+') do |f|
+    sec = 3
+    code = "puts;STDOUT.flush;Thread.start{gets;exit};sleep(#{sec})"
+    IO.popen([RUBY, '-e', code], 'r+') do |f|
       pid = f.pid
       f.gets
       t0 = Time.now
@@ -1418,10 +1499,11 @@ class TestProcess < Test::Unit::TestCase
         th.kill.join
       end
       t1 = Time.now
+      diff = t1 - t0
+      assert_operator(diff, :<, sec,
+                  ->{"#{bug11340}: #{diff} seconds to interrupt Process.wait"})
       f.puts
     end
-    assert_operator(t1 - t0, :<, 3,
-                    ->{"#{bug11340}: #{t1-t0} seconds to interrupt Process.wait"})
   end
 
   def test_abort
@@ -1433,6 +1515,9 @@ class TestProcess < Test::Unit::TestCase
 
   def test_sleep
     assert_raise(ArgumentError) { sleep(1, 1) }
+    [-1, -1.0, -1r].each do |sec|
+      assert_raise_with_message(ArgumentError, /not.*negative/) { sleep(sec) }
+    end
   end
 
   def test_getpgid
@@ -1466,8 +1551,16 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_maxgroups
-    assert_kind_of(Integer, Process.maxgroups)
+    max = Process.maxgroups
   rescue NotImplementedError
+  else
+    assert_kind_of(Integer, max)
+    assert_predicate(max, :positive?)
+    skip "not limited to NGROUPS_MAX" if /darwin/ =~ RUBY_PLATFORM
+    gs = Process.groups
+    assert_operator(gs.size, :<=, max)
+    gs[0] ||= 0
+    assert_raise(ArgumentError) {Process.groups = gs * (max / gs.size + 1)}
   end
 
   def test_geteuid
@@ -1480,7 +1573,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_seteuid_name
-    user = ENV["USER"] or return
+    user = (Etc.getpwuid(Process.euid).name rescue ENV["USER"]) or return
     assert_nothing_raised(TypeError) {Process.euid = user}
   rescue NotImplementedError
   end
@@ -1490,6 +1583,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_setegid
+    skip "root can use Process.egid on Android platform" if RUBY_PLATFORM =~ /android/
     assert_nothing_raised(TypeError) {Process.egid += 0}
   rescue NotImplementedError
   end
@@ -1525,19 +1619,28 @@ class TestProcess < Test::Unit::TestCase
       skip "this fails on FreeBSD and OpenBSD on multithreaded environment"
     end
     signal_received = []
-    Signal.trap(:CHLD)  { signal_received << true }
-    pid = nil
-    IO.pipe do |r, w|
-      pid = fork { r.read(1); exit }
-      Thread.start { raise }
-      w.puts
+    IO.pipe do |sig_r, sig_w|
+      Signal.trap(:CHLD) do
+        signal_received << true
+        sig_w.write('?')
+      end
+      pid = nil
+      IO.pipe do |r, w|
+        pid = fork { r.read(1); exit }
+        Thread.start {
+          Thread.current.report_on_exception = false
+          raise
+        }
+        w.puts
+      end
+      Process.wait pid
+      assert_send [sig_r, :wait_readable, 5], 'self-pipe not readable'
     end
-    Process.wait pid
-    10.times do
-      break unless signal_received.empty?
-      sleep 0.01
+    if RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE. It may trigger extra SIGCHLD.
+      assert_equal [true], signal_received.uniq, "[ruby-core:19744]"
+    else
+      assert_equal [true], signal_received, "[ruby-core:19744]"
     end
-    assert_equal [true], signal_received, " [ruby-core:19744]"
   rescue NotImplementedError, ArgumentError
   ensure
     begin
@@ -1586,7 +1689,10 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_aspawn_too_long_path
-    bug4315 = '[ruby-core:34833]'
+    if /solaris/i =~ RUBY_PLATFORM && !defined?(Process::RLIMIT_NPROC)
+      skip "Too exhaustive test on platforms without Process::RLIMIT_NPROC such as Solaris 10"
+    end
+    bug4315 = '[ruby-core:34833] #7904 [ruby-core:52628] #11613'
     assert_fail_too_long_path(%w"echo |", bug4315)
   end
 
@@ -1596,11 +1702,13 @@ class TestProcess < Test::Unit::TestCase
     cmds = Array.new(min, cmd)
     exs = [Errno::ENOENT]
     exs << Errno::E2BIG if defined?(Errno::E2BIG)
+    opts = {[STDOUT, STDERR]=>File::NULL}
+    opts[:rlimit_nproc] = 128 if defined?(Process::RLIMIT_NPROC)
     EnvUtil.suppress_warning do
       assert_raise(*exs, mesg) do
         begin
           loop do
-            Process.spawn(cmds.join(sep), [STDOUT, STDERR]=>File::NULL)
+            Process.spawn(cmds.join(sep), opts)
             min = [cmds.size, min].max
             cmds *= 100
           end
@@ -1623,7 +1731,7 @@ class TestProcess < Test::Unit::TestCase
 
     with_tmpchdir do
       assert_nothing_raised('[ruby-dev:12261]') do
-        Timeout.timeout(3) do
+        EnvUtil.timeout(3) do
           pid = spawn('yes | ls')
           Process.waitpid pid
         end
@@ -1690,12 +1798,12 @@ class TestProcess < Test::Unit::TestCase
           puts Dir.entries("/proc/self/task") - %W[. ..]
         end
         bug4920 = '[ruby-dev:43873]'
-        assert_equal(2, data.size, bug4920)
+        assert_include(1..2, data.size, bug4920)
         assert_not_include(data.map(&:to_i), pid)
       end
     else # darwin
       def test_daemon_no_threads
-        data = Timeout.timeout(3) do
+        data = EnvUtil.timeout(3) do
           IO.popen("-") do |f|
             break f.readlines.map(&:chomp) if f
             th = Thread.start {sleep 3}
@@ -1744,6 +1852,16 @@ class TestProcess < Test::Unit::TestCase
     end
   end
 
+  def test_popen_reopen
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      io = File.open(IO::NULL)
+      io2 = io.dup
+      IO.popen("echo") {|f| io.reopen(f)}
+      io.reopen(io2)
+    end;
+  end
+
   def test_execopts_new_pgroup
     return unless windows?
 
@@ -1754,22 +1872,23 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_execopts_uid
+    skip "root can use uid option of Kernel#system on Android platform" if RUBY_PLATFORM =~ /android/
     feature6975 = '[ruby-core:47414]'
 
     [30000, [Process.uid, ENV["USER"]]].each do |uid, user|
       if user
         assert_nothing_raised(feature6975) do
           begin
-            system(*TRUECOMMAND, uid: user)
-          rescue Errno::EPERM, NotImplementedError
+            system(*TRUECOMMAND, uid: user, exception: true)
+          rescue Errno::EPERM, Errno::EACCES, NotImplementedError
           end
         end
       end
 
       assert_nothing_raised(feature6975) do
         begin
-          system(*TRUECOMMAND, uid: uid)
-        rescue Errno::EPERM, NotImplementedError
+          system(*TRUECOMMAND, uid: uid, exception: true)
+        rescue Errno::EPERM, Errno::EACCES, NotImplementedError
         end
       end
 
@@ -1777,7 +1896,7 @@ class TestProcess < Test::Unit::TestCase
         begin
           u = IO.popen([RUBY, "-e", "print Process.uid", uid: user||uid], &:read)
           assert_equal(uid.to_s, u, feature6975)
-        rescue Errno::EPERM, NotImplementedError
+        rescue Errno::EPERM, Errno::EACCES, NotImplementedError
         end
       end
     end
@@ -1785,9 +1904,15 @@ class TestProcess < Test::Unit::TestCase
 
   def test_execopts_gid
     skip "Process.groups not implemented on Windows platform" if windows?
+    skip "root can use Process.groups on Android platform" if RUBY_PLATFORM =~ /android/
     feature6975 = '[ruby-core:47414]'
 
-    [30000, *Process.groups.map {|g| g = Etc.getgrgid(g); [g.name, g.gid]}].each do |group, gid|
+    groups = Process.groups.map do |g|
+      g = Etc.getgrgid(g) rescue next
+      [g.name, g.gid]
+    end
+    groups.compact!
+    [30000, *groups].each do |group, gid|
       assert_nothing_raised(feature6975) do
         begin
           system(*TRUECOMMAND, gid: group)
@@ -1799,7 +1924,15 @@ class TestProcess < Test::Unit::TestCase
       assert_nothing_raised(feature6975) do
         begin
           g = IO.popen([RUBY, "-e", "print Process.gid", gid: group], &:read)
-          assert_equal(gid, g, feature6975)
+          # AIX allows a non-root process to setgid to its supplementary group,
+          # while other UNIXes do not. (This might be AIX's violation of the POSIX standard.)
+          # However, Ruby does not allow a setgid'ed Ruby process to use the -e option.
+          # As a result, the Ruby process invoked by "IO.popen([RUBY, "-e", ..." above fails
+          # with a message like "no -e allowed while running setgid (SecurityError)" to stderr,
+          # the exis status is set to 1, and the variable "g" is set to an empty string.
+          # To conclude, on AIX, if the "gid" variable is a supplementary group,
+          # the assert_equal next can fail, so skip it.
+          assert_equal(gid, g, feature6975) unless $?.exitstatus == 1 && /aix/ =~ RUBY_PLATFORM && gid != Process.gid
         rescue Errno::EPERM, NotImplementedError
         end
       end
@@ -1888,6 +2021,27 @@ EOS
     end
   end if windows?
 
+  def test_exec_nonascii
+    bug12841 = '[ruby-dev:49838] [Bug #12841]'
+
+    [
+      "\u{7d05 7389}",
+      "zuf\u{00E4}llige_\u{017E}lu\u{0165}ou\u{010D}k\u{00FD}_\u{10D2 10D0 10DB 10D4 10DD 10E0 10D4 10D1}_\u{0440 0430 0437 043B 043E 0433 0430}_\u{548C 65B0 52A0 5761 4EE5 53CA 4E1C}",
+      "c\u{1EE7}a",
+    ].each do |arg|
+      begin
+        arg = arg.encode(Encoding.find("locale"))
+      rescue
+      else
+        assert_in_out_err([], "#{<<-"begin;"}\n#{<<-"end;"}", [arg], [], bug12841)
+        begin;
+          arg = "#{arg.b}".force_encoding("#{arg.encoding.name}")
+          exec(ENV["COMSPEC"]||"cmd.exe", "/c", "echo", arg)
+        end;
+      end
+    end
+  end if windows?
+
   def test_clock_gettime
     t1 = Process.clock_gettime(Process::CLOCK_REALTIME, :nanosecond)
     t2 = Time.now; t2 = t2.tv_sec * 1000000000 + t2.tv_nsec
@@ -1934,7 +2088,11 @@ EOS
 
   def test_clock_gettime_GETTIMEOFDAY_BASED_CLOCK_REALTIME
     n = :GETTIMEOFDAY_BASED_CLOCK_REALTIME
-    t = Process.clock_gettime(n)
+    begin
+      t = Process.clock_gettime(n)
+    rescue Errno::EINVAL
+      return
+    end
     assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
   end
 
@@ -2012,7 +2170,11 @@ EOS
 
   def test_clock_getres_GETTIMEOFDAY_BASED_CLOCK_REALTIME
     n = :GETTIMEOFDAY_BASED_CLOCK_REALTIME
-    t = Process.clock_getres(n)
+    begin
+      t = Process.clock_getres(n)
+    rescue Errno::EINVAL
+      return
+    end
     assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
     assert_equal(1000, Process.clock_getres(n, :nanosecond))
   end
@@ -2078,7 +2240,7 @@ EOS
   end
 
   def test_deadlock_by_signal_at_forking
-    assert_separately(["-", RUBY], <<-INPUT, timeout: 60)
+    assert_separately(%W(--disable=gems - #{RUBY}), <<-INPUT, timeout: 100)
       ruby = ARGV.shift
       GC.start # reduce garbage
       GC.disable # avoid triggering CoW after forks
@@ -2086,7 +2248,7 @@ EOS
       parent = $$
       100.times do |i|
         pid = fork {Process.kill(:QUIT, parent)}
-        IO.popen(ruby, 'r+'){}
+        IO.popen([ruby, -'--disable=gems'], -'r+'){}
         Process.wait(pid)
         $stdout.puts
         $stdout.flush
@@ -2099,7 +2261,7 @@ EOS
     th = Process.detach(pid)
     assert_equal pid, th.pid
     status = th.value
-    assert status.success?, status.inspect
+    assert_predicate status, :success?
   end if defined?(fork)
 
   def test_kill_at_spawn_failure
@@ -2107,7 +2269,9 @@ EOS
     th = nil
     x = with_tmpchdir {|d|
       prog = "#{d}/notexist"
-      th = Thread.start {system(prog);sleep}
+      q = Thread::Queue.new
+      th = Thread.start {system(prog);q.push(nil);sleep}
+      q.pop
       th.kill
       th.join(0.1)
     }
@@ -2158,7 +2322,7 @@ EOS
   def test_signals_work_after_exec_fail
     r, w = IO.pipe
     pid = status = nil
-    Timeout.timeout(30) do
+    EnvUtil.timeout(30) do
       pid = fork do
         r.close
         begin
@@ -2192,7 +2356,7 @@ EOS
   def test_threading_works_after_exec_fail
     r, w = IO.pipe
     pid = status = nil
-    Timeout.timeout(30) do
+    EnvUtil.timeout(90) do
       pid = fork do
         r.close
         begin
@@ -2200,11 +2364,11 @@ EOS
         rescue SystemCallError
           w.syswrite("exec failed\n")
         end
-        run = true
-        th1 = Thread.new { i = 0; i += 1 while run; i }
-        th2 = Thread.new { j = 0; j += 1 while run && Thread.pass.nil?; j }
+        q = Queue.new
+        th1 = Thread.new { i = 0; i += 1 while q.empty?; i }
+        th2 = Thread.new { j = 0; j += 1 while q.empty? && Thread.pass.nil?; j }
         sleep 0.5
-        run = false
+        q << true
         w.syswrite "#{th1.value} #{th2.value}\n"
       end
       w.close
@@ -2233,5 +2397,46 @@ EOS
       GC.stress = true
       system(bin, "--disable=gems", "-w", "-e", "puts ARGV", *args)
     end;
+  end
+
+  def test_to_hash_on_arguments
+    all_assertions do |a|
+      %w[Array String].each do |type|
+        a.for(type) do
+          assert_separately(['-', EnvUtil.rubybin], <<~"END;")
+          class #{type}
+            def to_hash
+              raise "[Bug-12355]: #{type}#to_hash is called"
+            end
+          end
+          ex = ARGV[0]
+          assert_equal(true, system([ex, ex], "-e", ""))
+          END;
+        end
+      end
+    end
+  end
+
+  def test_forked_child_handles_signal
+    skip "fork not supported" unless Process.respond_to?(:fork)
+    assert_normal_exit(<<-"end;", '[ruby-core:82883] [Bug #13916]')
+      require 'timeout'
+      pid = fork { sleep }
+      Process.kill(:TERM, pid)
+      assert_equal pid, Timeout.timeout(30) { Process.wait(pid) }
+    end;
+  end
+
+  if Process.respond_to?(:initgroups)
+    def test_initgroups
+      assert_raise(ArgumentError) do
+        Process.initgroups("\0", 0)
+      end
+    end
+  end
+
+  def test_last_status
+    Process.wait spawn(RUBY, "-e", "exit 13")
+    assert_same(Process.last_status, $?)
   end
 end

@@ -5,9 +5,12 @@
 
 # Process all the C source files
 *.c
+*.y
 
 # prelude
 prelude.rb
+
+rbconfig.rb
 
 # the lib/ directory (which has its own .document file)
 lib
@@ -16,11 +19,18 @@ lib
 ext
 
 # rdoc files
-ChangeLog
-
 NEWS
 
 README.md
 README.ja.md
+
+COPYING
+COPYING.ja
+CONTRIBUTING.md
+
+LEGAL
+
+# win32/README.win32 linked from README.md
+win32
 
 doc

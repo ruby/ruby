@@ -1,8 +1,8 @@
+#frozen_string_literal: false
 unless defined?(::JSON::JSON_LOADED) and ::JSON::JSON_LOADED
   require 'json'
 end
 
-# Regexp serialization/deserialization
 class Regexp
 
   # Deserializes JSON string by constructing new Regexp object with source
@@ -24,7 +24,7 @@ class Regexp
 
   # Stores class name (Regexp) with options <tt>o</tt> and source <tt>s</tt>
   # (Regexp or String) as JSON string
-  def to_json(*)
-    as_json.to_json
+  def to_json(*args)
+    as_json.to_json(*args)
   end
 end

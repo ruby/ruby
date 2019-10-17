@@ -1,4 +1,5 @@
 # coding: US-ASCII
+# frozen_string_literal: false
 require 'test/unit'
 require 'tmpdir'
 require 'tempfile'
@@ -22,7 +23,8 @@ class TestIO_M17N < Test::Unit::TestCase
 
   def pipe(*args, wp, rp)
     re, we = nil, nil
-    r, w = IO.pipe(*args)
+    kw = args.last.is_a?(Hash) ? args.pop : {}
+    r, w = IO.pipe(*args, **kw)
     rt = Thread.new do
       begin
         rp.call(r)
@@ -1607,6 +1609,44 @@ EOT
     }
   end
 
+
+  def test_binmode_decode_universal_newline
+    with_tmpdir {
+      generate_file("t.txt", "a\n")
+      assert_raise(ArgumentError) {
+        open("t.txt", "rb", newline: :universal) {}
+      }
+    }
+  end
+
+  def test_default_mode_decode_universal_newline_gets
+    with_tmpdir {
+      generate_file("t.crlf", "a\r\nb\r\nc\r\n")
+      open("t.crlf", "r", newline: :universal) {|f|
+        assert_equal("a\n", f.gets)
+        assert_equal("b\n", f.gets)
+        assert_equal("c\n", f.gets)
+        assert_equal(nil, f.gets)
+      }
+
+      generate_file("t.cr", "a\rb\rc\r")
+      open("t.cr", "r", newline: :universal) {|f|
+        assert_equal("a\n", f.gets)
+        assert_equal("b\n", f.gets)
+        assert_equal("c\n", f.gets)
+        assert_equal(nil, f.gets)
+      }
+
+      generate_file("t.lf", "a\nb\nc\n")
+      open("t.lf", "r", newline: :universal) {|f|
+        assert_equal("a\n", f.gets)
+        assert_equal("b\n", f.gets)
+        assert_equal("c\n", f.gets)
+        assert_equal(nil, f.gets)
+      }
+    }
+  end
+
   def test_read_newline_conversion_with_encoding_conversion
     with_tmpdir {
       generate_file("t.utf8.crlf", "a\r\nb\r\n")
@@ -1711,8 +1751,7 @@ EOT
         args.each {|arg| f.print arg }
       }
       content = File.read("t", :mode=>"rb:ascii-8bit")
-      assert_equal(expected.dup.force_encoding("ascii-8bit"),
-                   content.force_encoding("ascii-8bit"))
+      assert_equal(expected.b, content.b)
     }
   end
 
@@ -1892,7 +1931,7 @@ EOT
     with_tmpdir {
       src = "\u3042\r\n"
       generate_file("t.txt", src)
-      srcbin = src.dup.force_encoding("ascii-8bit")
+      srcbin = src.b
       open("t.txt", "rt:utf-8:euc-jp") {|f|
         f.binmode
         result = f.read
@@ -2042,26 +2081,46 @@ EOT
     }
   end
 
-  def test_strip_bom
-    with_tmpdir {
-      text = "\uFEFFa"
-      stripped = "a"
-      %w/UTF-8 UTF-16BE UTF-16LE UTF-32BE UTF-32LE/.each do |name|
-        path = '%s-bom.txt' % name
+  %w/UTF-8 UTF-16BE UTF-16LE UTF-32BE UTF-32LE/.each do |name|
+    define_method("test_strip_bom:#{name}") do
+      path = "#{name}-bom.txt"
+      with_tmpdir {
+        text = "\uFEFF\u0100a"
+        stripped = "\u0100a"
         content = text.encode(name)
         generate_file(path, content)
         result = File.read(path, mode: 'rb:BOM|UTF-8')
-        assert_equal(content[1].force_encoding("ascii-8bit"),
-                     result.force_encoding("ascii-8bit"))
-        result = File.read(path, mode: 'rb:BOM|UTF-8:UTF-8')
-        assert_equal(Encoding::UTF_8, result.encoding)
-        assert_equal(stripped, result)
-      end
+        assert_equal(Encoding.find(name), result.encoding, name)
+        assert_equal(content[1..-1].b, result.b, name)
+        %w[rb rt r].each do |mode|
+          message = "#{name}, mode: #{mode.dump}"
+          result = File.read(path, mode: "#{mode}:BOM|UTF-8:UTF-8")
+          assert_equal(Encoding::UTF_8, result.encoding, message)
+          assert_equal(stripped, result, message)
+        end
+
+        File.open(path, "rb") {|f|
+          assert_equal(Encoding.find(name), f.set_encoding_by_bom)
+        }
+      }
+    end
+  end
+
+  def test_strip_bom_no_conv
+    with_tmpdir {
+      path = 'UTF-8-bom.txt'
+      generate_file(path, "\uFEFFa")
 
       bug3407 = '[ruby-core:30641]'
-      path = 'UTF-8-bom.txt'
       result = File.read(path, encoding: 'BOM|UTF-8')
-      assert_equal("a", result.force_encoding("ascii-8bit"), bug3407)
+      assert_equal("a", result.b, bug3407)
+    }
+  end
+
+  def test_strip_bom_invalid
+    with_tmpdir {
+      path = 'UTF-8-bom.txt'
+      generate_file(path, "\uFEFFa")
 
       bug8323 = '[ruby-core:54563] [Bug #8323]'
       expected = "a\xff".force_encoding("utf-8")
@@ -2072,13 +2131,87 @@ EOT
       result = File.read(path, encoding: 'BOM|UTF-8:UTF-8')
       assert_not_predicate(result, :valid_encoding?, bug8323)
       assert_equal(expected, result, bug8323)
+    }
+  end
 
+  def test_strip_bom_no_bom
+    with_tmpdir {
+      bug8323 = '[ruby-core:54563] [Bug #8323]'
       path = 'ascii.txt'
+      stripped = "a"
       generate_file(path, stripped)
       result = File.read(path, encoding: 'BOM|UTF-8')
       assert_equal(stripped, result, bug8323)
       result = File.read(path, encoding: 'BOM|UTF-8:UTF-8')
       assert_equal(stripped, result, bug8323)
+
+      File.open(path, "rb") {|f|
+        assert_nil(f.set_encoding_by_bom)
+      }
+    }
+  end
+
+  def test_bom_too_long_utfname
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_warn(/Unsupported encoding/) {
+        open(IO::NULL, "r:bom|utf-" + "x" * 10000) {}
+      }
+    end;
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_warn(/Unsupported encoding/) {
+        open(IO::NULL, encoding: "bom|utf-" + "x" * 10000) {}
+      }
+    end;
+  end
+
+  def test_bom_non_utf
+    enc = nil
+
+    assert_warn(/BOM/) {
+      open(__FILE__, "r:bom|us-ascii") {|f| enc = f.external_encoding}
+    }
+    assert_equal(Encoding::US_ASCII, enc)
+
+    enc = nil
+    assert_warn(/BOM/) {
+      open(__FILE__, "r", encoding: "bom|us-ascii") {|f| enc = f.external_encoding}
+    }
+    assert_equal(Encoding::US_ASCII, enc)
+
+    enc = nil
+    assert_warn(/BOM/) {
+      open(IO::NULL, "w:bom|us-ascii") {|f| enc = f.external_encoding}
+    }
+    assert_equal(Encoding::US_ASCII, enc)
+
+    enc = nil
+    assert_warn(/BOM/) {
+      open(IO::NULL, "w", encoding: "bom|us-ascii") {|f| enc = f.external_encoding}
+    }
+    assert_equal(Encoding::US_ASCII, enc)
+
+    tlhInganHol = "\u{f8e4 f8d9 f8d7 f8dc f8d0 f8db} \u{f8d6 f8dd f8d9}"
+    assert_warn(/#{tlhInganHol}/) {
+      EnvUtil.with_default_internal(nil) {
+        open(IO::NULL, "w:bom|#{tlhInganHol}") {|f| enc = f.external_encoding}
+      }
+    }
+    assert_nil(enc)
+  end
+
+  def test_bom_non_reading
+    with_tmpdir {
+      enc = nil
+      assert_nothing_raised(IOError) {
+        open("test", "w:bom|utf-8") {|f|
+          enc = f.external_encoding
+          f.print("abc")
+        }
+      }
+      assert_equal(Encoding::UTF_8, enc)
+      assert_equal("abc", File.binread("test"))
     }
   end
 
@@ -2189,7 +2322,7 @@ EOT
            w.binmode
            w.puts(0x010a.chr(Encoding::UTF_32BE))
            w.puts(0x010a.chr(Encoding::UTF_16BE))
-           w.puts(0x0a010000.chr(Encoding::UTF_32LE))
+           w.puts(0x0a01.chr(Encoding::UTF_32LE))
            w.puts(0x0a01.chr(Encoding::UTF_16LE))
            w.close
          end,
@@ -2197,7 +2330,7 @@ EOT
            r.binmode
            assert_equal("\x00\x00\x01\x0a\n", r.read(5), bug)
            assert_equal("\x01\x0a\n", r.read(3), bug)
-           assert_equal("\x00\x00\x01\x0a\n", r.read(5), bug)
+           assert_equal("\x01\x0a\x00\x00\n", r.read(5), bug)
            assert_equal("\x01\x0a\n", r.read(3), bug)
            assert_equal("", r.read, bug)
            r.close
@@ -2591,7 +2724,7 @@ EOT
         begin
           assert_in_out_err(args, "", out, err,
                             "#{bug11444}: #{test} in #{mode} mode",
-                            timeout: 1)
+                            timeout: 10)
         rescue Exception => e
           failure << e
         end

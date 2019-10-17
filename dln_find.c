@@ -48,13 +48,6 @@ char *dln_argv0;
 #   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #endif
 
-#ifdef HAVE_SYS_PARAM_H
-# include <sys/param.h>
-#endif
-#ifndef MAXPATHLEN
-# define MAXPATHLEN 1024
-#endif
-
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
@@ -276,7 +269,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 	    }
 	    goto next;
 	}
-#endif /* _WIN32 or __EMX__ */
+#endif
 
 #ifndef S_ISREG
 # define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)

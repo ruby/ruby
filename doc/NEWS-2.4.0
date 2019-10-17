@@ -1,0 +1,397 @@
+# -*- rdoc -*-
+
+= NEWS for Ruby 2.4.0
+
+This document is a list of user visible feature changes made between
+releases except for bug fixes.
+
+Note that each entry is kept so brief that no reason behind or
+reference information is supplied with.  For a full list of changes
+with all sufficient information, see the ChangeLog file or Redmine
+(e.g. <tt>https://bugs.ruby-lang.org/issues/$FEATURE_OR_BUG_NUMBER</tt>)
+
+== Changes since the 2.3.0 release
+
+=== Language changes
+
+* Multiple assignment in conditional expression is now allowed.
+  [Feature #10617]
+
+* Refinements is enabled at method by Symbol#to_proc.  [Feature #9451]
+
+* Refinements is enabled with Kernel#send and BasicObject#__send__.
+  [Feature #11476]
+
+* Rescue modifier now applicable to method arguments.
+  [Feature #12686]
+
+* Toplevel return is now allowed.  [Feature #4840]
+
+=== Core classes updates (outstanding ones only)
+
+* Array
+
+  * Array#concat [Feature #12333]
+    Now takes multiple arguments.
+
+  * Array#max and Array#min.  [Feature #12172]
+    This may cause a tiny incompatibility: if you redefine
+    Enumerable#max and call max to an Array, your redefinition will be
+    now ignored.  You should also redefine Array#max.
+
+  * Array#pack [Feature #12754]
+    Now takes optional argument `buffer:' to reuse already allocated buffer.
+
+  * Array#sum  [Feature #12217]
+    This is different from Enumerable#sum in that Array#sum doesn't depend on
+    the definition of each method.
+
+* Comparable
+
+  * Comparable#clamp.  [Feature #10594]
+
+* Dir
+
+  * Dir.empty?.  [Feature #10121]
+
+* Enumerable
+
+  * Enumerable#chunk called without a block now return an Enumerator
+    [Feature #2172]
+  * Enumerable#sum  [Feature #12217]
+  * Enumerable#uniq  [Feature #11090]
+
+* Enumerator::Lazy
+
+  * Enumerator::Lazy#chunk_while  [GH-1186]
+  * Enumerator::Lazy#uniq  [Feature #11090]
+
+* File
+
+  * File.empty?.  [Feature #9969]
+
+* Float
+
+  * Float#ceil, Float#floor, and Float#truncate now take an optional
+    digits, as well as Float#round.  [Feature #12245]
+
+  * Float#round now takes an optional keyword argument, half option, and
+    the default behavior is round-up.  [Bug #12548] [Bug #12958]
+    half option can be one of :even, :up, and :down.  [Feature #12953]
+
+* Hash
+
+  * Hash#compact and Hash#compact!  [Feature #11818]
+  * Hash#transform_values and Hash#transform_values!  [Feature #12512]
+
+* Integer
+
+  * Fixnum and Bignum are unified into Integer  [Feature #12005]
+
+  * Integer#ceil, Integer#floor, and Integer#truncate now take an optional
+    digits, as well as Integer#round.  [Feature #12245]
+
+  * Integer#digits for extracting columns of place-value notation [Feature #12447]
+
+  * Integer#round now takes an optional keyword argument, half option, and the
+    default behavior is round-up now.  [Bug #12548] [Bug #12958]
+    half option can be one of :even, :up, and :down.  [Feature #12953]
+
+* IO
+
+  * IO#gets, IO#readline, IO#each_line, IO#readlines, IO.foreach now takes
+    an optional keyword argument, chomp flag.  [Feature #12553]
+
+* Kernel
+
+  * Kernel#clone now takes an optional keyword argument, freeze flag.
+    [Feature #12300]
+
+* MatchData
+
+  * MatchData#named_captures [Feature #11999]
+  * MatchData#values_at supports named captures [Feature #9179]
+
+* Module
+
+  * Module#refine accepts a module as the argument now. [Feature #12534]
+  * Module.used_modules [Feature #7418]
+
+* Numeric
+
+  * Numeric#finite?, Numeric#infinite? [Feature #12039]
+
+* Process
+
+  * Support CLOCK_MONOTONIC_RAW_APPROX, CLOCK_UPTIME_RAW, and
+    CLOCK_UPTIME_RAW_APPROX which are introduced by macOS 10.12.
+
+* Rational
+
+  * Rational#round now takes an optional keyword argument, half option, and
+    the default behavior is round-up now.  [Bug #12548] [Bug #12958]
+    half option can be one of :even, :up, and :down.  [Feature #12953]
+
+* Regexp
+
+  * meta character \X matches Unicode 9.0 characters with some workarounds
+    for UTR #51 Unicode Emoji, Version 4.0 emoji zwj sequences.
+
+  * Regexp#match? [Feature #8110]
+    This returns bool and doesn't save backref.
+
+  * Update to Onigmo 6.0.0.
+
+* Regexp/String: Update Unicode version from 8.0.0 to 9.0.0 [Feature #12513]
+
+* RubyVM::Env
+
+  * RubyVM::Env was removed.
+
+* String
+
+  * String#casecmp? [Feature #12786]
+
+  * String#concat, String#prepend [Feature #12333]
+    Now takes multiple arguments.
+
+  * String#each_line, String#lines now takes an optional keyword argument,
+    chomp flag.  [Feature #12553]
+
+  * String#match? [Feature #12898]
+
+  * String#unpack1 [Feature #12752]
+
+  * String#upcase, String#downcase, String#capitalize, String#swapcase and
+    their bang variants work for all of Unicode, and are no longer limited
+    to ASCII. Supported encodings are UTF-8, UTF-16BE/LE, UTF-32BE/LE, and
+    ISO-8859-1~16. Variations are available with options. See the documentation
+    of String#downcase for details. [Feature #10085]
+
+  * String.new(capacity: size) [Feature #12024]
+
+* StringIO
+
+  * StringIO#gets, StringIO#readline, StringIO#each_line, StringIO#readlines now takes
+    an optional keyword argument, chomp flag.  [Feature #12553]
+
+* Symbol
+
+  * Symbol#casecmp? [Feature #12786]
+
+  * Symbol#match now returns MatchData.  [Bug #11991]
+
+  * Symbol#match? [Feature #12898]
+
+  * Symbol#upcase, Symbol#downcase, Symbol#capitalize, and Symbol#swapcase now
+    work for all of Unicode. See the documentation of String#downcase
+    for details. [Feature #10085]
+
+* Thread
+
+  * Thread#report_on_exception and Thread.report_on_exception
+    [Feature #6647]
+
+* TracePoint
+
+  * TracePoint#callee_id [Feature #12747]
+
+* Warning
+
+  * New module named Warning is introduced.  By default it has only
+    one singleton method, named warn.  This makes it possible for
+    3rd-party libraries to control the way warnings are handled.
+    [Feature #12299]
+
+=== Stdlib updates (outstanding ones only)
+
+* CGI
+
+  * Don't allow , as a separator [Bug #12791]
+
+* CSV
+
+  * Add a liberal_parsing option. [Feature #11839]
+
+* IPAddr
+
+  * IPAddr#== and IPAddr#<=> no longer raise an exception if coercion fails.
+    [Bug #12799]
+
+* IRB
+
+  * Binding#irb: Start a REPL session like `binding.pry` at r56624.
+
+* Logger
+
+  * Allow specifying logger parameters in constructor such
+    as level, progname, datetime_format, formatter. [Feature #12224]
+  * Add shift_period_suffix option. [Feature #10772]
+
+* Net::HTTP
+
+  * New method: Net::HTTP.post [Feature #12375]
+
+* Net::FTP
+
+  * Support TLS (RFC 4217).
+  * Support hash style options for Net::FTP.new.
+  * Add a new optional argument pathname to Net::FTP#status.
+    Contributed by soleboxy. [GH-1478] [Feature #12965]
+
+* OpenSSL
+
+  * Includes Ruby/OpenSSL 2.0. OpenSSL has been extracted as a Gem and is
+    maintained at a separate repository now: https://github.com/ruby/openssl.
+    It still remains as a 'default gem'.  [Feature #9612]
+    Refer to ext/openssl/History.md for the full release note.
+
+* optparse
+
+  * Add an into option. [Feature #11191]
+
+* pathname
+
+  * New method: Pathname#empty? [Feature #12596]
+
+* Readline
+
+  * Readline.quoting_detection_proc and Readline.quoting_detection_proc=
+    [Feature #12659]
+
+* REXML
+
+  * REXML::Element#[]: If String or Symbol is specified, attribute
+    value is returned. Otherwise, Nth child is returned. This is
+    backward compatible change.
+
+* set
+
+  * New methods: Set#compare_by_identity and Set#compare_by_identity?.
+    [Feature #12210]
+
+* WEBrick
+
+  * Don't allow , as a separator [Bug #12791]
+
+=== Compatibility issues (excluding feature bug fixes)
+
+* Array#sum and Enumerable#sum are implemented.  [Feature #12217]
+  Ruby itself has no compatibility problem because Ruby didn't have sum method
+  for arrays before Ruby 2.4.
+  However many third party gems, activesupport, facets, simple_stats, etc,
+  defines sum method.  These implementations are mostly compatible but
+  there are subtle differences.
+  Ruby's sum method should be mostly compatible but it is impossible to
+  be perfectly compatible with all of them.
+
+* Fixnum and Bignum are unified into Integer  [Feature #12005]
+  Fixnum class and Bignum class is removed.
+  Integer class is changed from abstract class to concrete class.
+  For example, 0 is an instance of Integer: 0.class returns Integer.
+  The constants Fixnum and Bignum is bound to Integer.
+  So obj.kind_of?(Fixnum) works as obj.kind_of?(Integer).
+  At C-level, Fixnum object and Bignum object should be distinguished by
+  FIXNUM_P(obj) and RB_TYPE_P(obj, T_BIGNUM).
+  RUBY_INTEGER_UNIFICATION can be used to detect this feature at C-level.
+  0.class == Integer can be used to detect this feature at Ruby-level.
+  The C-level constants, rb_cFixnum and rb_cBignum, are removed.
+  They can cause compilation failure.
+
+* String/Symbol#upcase/downcase/swapcase/capitalize(!) now work for all of
+  Unicode, not only for ASCII. [Feature #10085]
+  No change is needed if the data is in ASCII anyway or if the limitation
+  to ASCII was only tolerated while waiting for a more extensive implementation.
+  A change (using the :ascii option) is needed in cases where Unicode data
+  is processed, but the operation has to be limited to ASCII only.
+  A good example of this are internationalized domain names.
+
+* TRUE / FALSE / NIL
+  These constants are now obsoleted. [Feature #12574]
+  Use true / false / nil resp. instead.
+
+=== Stdlib compatibility issues (excluding feature bug fixes)
+
+* DateTime
+
+  * DateTime#to_time now preserves timezone.  [Bug #12189]
+
+* Psych
+
+  * Update to Psych 2.2.2
+
+* RDoc
+
+  * Update to RDoc 5.0.0
+
+* RubyGems
+
+  * Update to RubyGems 2.6.8
+
+* shellwords
+
+  * Shellwords.shellwords (shellsplit) treats the backslash as escape
+    character only when followed by one of the following characters:
+    $ ` " \ <newline>
+    [Bug #10055]
+
+* Time
+
+  * Time#to_time now preserves timezone.  [Bug #12271]
+
+* thread
+
+  * the extension library is removed.  Till 2.0 it was a pure ruby script
+    "thread.rb", which has precedence over "thread.so", and has been provided
+    in $LOADED_FEATURES since 2.1.
+
+* Tk
+
+  * Tk is removed from stdlib.  [Feature #8539]
+    https://github.com/ruby/tk is the new upstream.
+
+* XMLRPC
+
+  * XMLRPC is removed from stdlib, and bundled as gem. [Feature #12160][ruby-core:74239]
+    https://github.com/ruby/xmlrpc is the new upstream.
+
+* Zlib
+
+  * Zlib.gzip and Zlib.gunzip [Feature #13020]
+
+=== C API updates
+
+* ruby_show_version() will no longer exits the process, if
+  RUBY_SHOW_COPYRIGHT_TO_DIE is set to 0.  This will be the default in
+  the future.
+
+* rb_gc_adjust_memory_usage() [Feature #12690]
+
+=== Supported platform changes
+
+* FreeBSD < 4 is no longer supported
+
+=== Implementation improvements
+
+* In some condition, `[x, y].max` and `[x, y].min` are optimized
+  so that a temporal array is not created.  The concrete condition is
+  an implementation detail: currently, the array literal must have no
+  splat, must have at least one expression but literal, the length must
+  be <= 0x100, and Array#max and min must not be redefined.  It will work
+  in most casual and real-life use case where it is written with intent
+  to `Math.max(x, y)`.
+
+* Thread deadlock detection now shows their backtrace and dependency. [Feature #8214]
+
+* st_table (st.c) internal data structure is improved. [Feature #12142]
+
+* Rational is extensively optimized. [Feature #12484]
+
+=== Miscellaneous changes
+
+* ChangeLog is removed from the repository.
+  It is generated from commit messages in Subversion by `make dist`.
+  Also note that now people should follow Git style commit message.
+  The template is written at
+  [Short (50 chars or less) summary of changes](https://git-scm.com/book/ch5-2.html).
+  [Feature #12283]

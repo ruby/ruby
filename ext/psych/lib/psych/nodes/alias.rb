@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module Psych
   module Nodes
     ###
@@ -13,6 +14,8 @@ module Psych
       def initialize anchor
         @anchor = anchor
       end
+
+      def alias?; true; end
     end
   end
 end

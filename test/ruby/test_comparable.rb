@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestComparable < Test::Unit::TestCase
@@ -73,6 +74,43 @@ class TestComparable < Test::Unit::TestCase
     assert_equal(false, @o.between?(-2, -1))
     assert_equal(true, @o.between?(-1, 1))
     assert_equal(true, @o.between?(0, 0))
+  end
+
+  def test_clamp
+    cmp->(x) do 0 <=> x end
+    assert_equal(1, @o.clamp(1, 2))
+    assert_equal(-1, @o.clamp(-2, -1))
+    assert_equal(@o, @o.clamp(-1, 3))
+
+    assert_equal(1, @o.clamp(1, 1))
+    assert_equal(@o, @o.clamp(0, 0))
+
+    assert_raise_with_message(ArgumentError, 'min argument must be smaller than max argument') {
+      @o.clamp(2, 1)
+    }
+  end
+
+  def test_clamp_with_range
+    cmp->(x) do 0 <=> x end
+    assert_equal(1, @o.clamp(1..2))
+    assert_equal(-1, @o.clamp(-2..-1))
+    assert_equal(@o, @o.clamp(-1..3))
+
+    assert_equal(1, @o.clamp(1..1))
+    assert_equal(@o, @o.clamp(0..0))
+
+    assert_raise_with_message(ArgumentError, 'cannot clamp with an exclusive range') {
+      @o.clamp(1...2)
+    }
+    assert_raise_with_message(ArgumentError, 'cannot clamp with an exclusive range') {
+      @o.clamp(1...)
+    }
+    assert_raise_with_message(ArgumentError, 'cannot clamp with an exclusive range') {
+      @o.clamp(...2)
+    }
+    assert_raise_with_message(ArgumentError, 'min argument must be smaller than max argument') {
+      @o.clamp(2..1)
+    }
   end
 
   def test_err

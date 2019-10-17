@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # fallback to console window size
 def IO.default_console_size
   [
@@ -9,7 +10,7 @@ end
 begin
   require 'io/console'
 rescue LoadError
-  class IO
+  class << IO
     alias console_size default_console_size
   end
 else

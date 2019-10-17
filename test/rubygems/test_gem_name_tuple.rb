@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/name_tuple'
 
@@ -41,4 +42,3 @@ class TestGemNameTuple < Gem::TestCase
   end
 
 end
-

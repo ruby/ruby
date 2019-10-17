@@ -1,7 +1,11 @@
+# frozen_string_literal: false
 require_relative 'utils'
 
-class OpenSSL::TestConfig < Test::Unit::TestCase
+if defined?(OpenSSL)
+
+class OpenSSL::TestConfig < OpenSSL::TestCase
   def setup
+    super
     file = Tempfile.open("openssl.cnf")
     file << <<__EOD__
 HOME = .
@@ -17,13 +21,14 @@ __EOD__
   end
 
   def teardown
+    super
     @tmpfile.close!
   end
 
   def test_constants
     assert(defined?(OpenSSL::Config::DEFAULT_CONFIG_FILE))
     config_file = OpenSSL::Config::DEFAULT_CONFIG_FILE
-    skip "DEFAULT_CONFIG_FILE may return a wrong path on your platforms. [Bug #6830]" unless File.readable?(config_file)
+    pend "DEFAULT_CONFIG_FILE may return a wrong path on your platforms. [Bug #6830]" unless File.readable?(config_file)
     assert_nothing_raised do
       OpenSSL::Config.load(config_file)
     end
@@ -167,8 +172,8 @@ __EOC__
   end
 
   def test_value
-    # supress deprecation warnings
-    OpenSSL::TestUtils.silent do
+    # suppress deprecation warnings
+    EnvUtil.suppress_warning do
       assert_equal('CA_default', @it.value('ca', 'default_ca'))
       assert_equal(nil, @it.value('ca', 'no such key'))
       assert_equal(nil, @it.value('no such section', 'no such key'))
@@ -181,7 +186,7 @@ __EOC__
   end
 
   def test_value_ENV
-    OpenSSL::TestUtils.silent do
+    EnvUtil.suppress_warning do
       key = ENV.keys.first
       assert_not_nil(key) # make sure we have at least one ENV var.
       assert_equal(ENV[key], @it.value('ENV', key))
@@ -196,7 +201,7 @@ __EOC__
   end
 
   def test_section
-    OpenSSL::TestUtils.silent do
+    EnvUtil.suppress_warning do
       assert_equal({'HOME' => '.'}, @it.section('default'))
       assert_equal({'dir' => './demoCA', 'certs' => './certs'}, @it.section('CA_default'))
       assert_equal({}, @it.section('no_such_section'))
@@ -294,4 +299,6 @@ __EOC__
     @it['newsection'] = {'a' => 'b'}
     assert_not_equal(@it.sections.sort, c.sections.sort)
   end
-end if defined?(OpenSSL::TestUtils)
+end
+
+end

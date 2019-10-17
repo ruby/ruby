@@ -1,5 +1,6 @@
-require "rexml/validation/validation"
-require "rexml/parsers/baseparser"
+# frozen_string_literal: false
+require_relative "validation"
+require_relative "../parsers/baseparser"
 
 module REXML
   module Validation

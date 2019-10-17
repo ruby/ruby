@@ -12,9 +12,6 @@
 #define RFLOAT_VALUE(val) (RFLOAT(val)->value)
 #endif
 
-#ifndef RARRAY_PTR
-#define RARRAY_PTR(ARRAY) RARRAY(ARRAY)->ptr
-#endif
 #ifndef RARRAY_LEN
 #define RARRAY_LEN(ARRAY) RARRAY(ARRAY)->len
 #endif

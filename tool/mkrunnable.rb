@@ -1,6 +1,9 @@
 #!./miniruby
 # -*- coding: us-ascii -*-
 
+# Used by "make runnable" target, to make symbolic links from a build
+# directory.
+
 require './rbconfig'
 require 'fileutils'
 
@@ -29,15 +32,24 @@ module Mswin
   end
 end
 
+def clean_link(src, dest)
+  begin
+    link = File.readlink(dest)
+  rescue
+  else
+    return if link == src
+    File.unlink(dest)
+  end
+  yield src, dest
+end
+
 def ln_safe(src, dest)
-  link = File.readlink(dest) rescue nil
-  return if link == src
   ln_sf(src, dest)
 end
 
 alias ln_dir_safe ln_safe
 
-if /mingw|mswin/ =~ (CROSS_COMPILING || RUBY_PLATFORM)
+if !File.respond_to?(:symlink) && /mingw|mswin/ =~ (CROSS_COMPILING || RUBY_PLATFORM)
   extend Mswin
 end
 
@@ -68,14 +80,14 @@ def ln_relative(src, dest)
   return if File.identical?(src, dest)
   parent = File.dirname(dest)
   File.directory?(parent) or mkdir_p(parent)
-  ln_safe(relative_path_from(src, parent), dest)
+  clean_link(relative_path_from(src, parent), dest) {|s, d| ln_safe(s, d)}
 end
 
 def ln_dir_relative(src, dest)
   return if File.identical?(src, dest)
   parent = File.dirname(dest)
   File.directory?(parent) or mkdir_p(parent)
-  ln_dir_safe(relative_path_from(src, parent), dest)
+  clean_link(relative_path_from(src, parent), dest) {|s, d| ln_dir_safe(s, d)}
 end
 
 config = RbConfig::MAKEFILE_CONFIG.merge("prefix" => ".", "exec_prefix" => ".")
@@ -83,7 +95,6 @@ config.each_value {|s| RbConfig.expand(s, config)}
 srcdir = config["srcdir"] ||= File.dirname(__FILE__)
 top_srcdir = config["top_srcdir"] ||= File.dirname(srcdir)
 extout = ARGV[0] || config["EXTOUT"]
-version = config["ruby_version"]
 arch = config["arch"]
 bindir = config["bindir"]
 libdirname = config["libdirname"]
@@ -92,7 +103,6 @@ vendordir = config["vendordir"]
 rubylibdir = config["rubylibdir"]
 rubyarchdir = config["rubyarchdir"]
 archdir = "#{extout}/#{arch}"
-rubylibs = [vendordir, rubylibdir, rubyarchdir]
 [bindir, libdir, archdir].uniq.each do |dir|
   File.directory?(dir) or mkdir_p(dir)
 end
@@ -103,8 +113,8 @@ rubyw_install_name = config["rubyw_install_name"]
 goruby_install_name = "go" + ruby_install_name
 [ruby_install_name, rubyw_install_name, goruby_install_name].map do |ruby|
   ruby += exeext
-  if ruby and !ruby.empty?
-    ln_relative(ruby, "#{bindir}/#{ruby}")
+  if ruby and !ruby.empty? and !File.file?(target = "#{bindir}/#{ruby}")
+    ln_relative(ruby, target)
   end
 end
 so = config["LIBRUBY_SO"]

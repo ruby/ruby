@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'win32/importer'
 
 module Win32
@@ -332,11 +333,11 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       end
 
       def DeleteValue(hkey, name)
-        check RegDeleteValue.call(hkey, make_wstr(name))
+        check RegDeleteValueW.call(hkey, make_wstr(name))
       end
 
       def DeleteKey(hkey, name)
-        check RegDeleteKey.call(hkey, make_wstr(name))
+        check RegDeleteKeyW.call(hkey, make_wstr(name))
       end
 
       def FlushKey(hkey)
@@ -574,9 +575,9 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         begin
           type, data = read(subkey)
         rescue Error
-          next
+        else
+          yield subkey, type, data
         end
-        yield subkey, type, data
         index += 1
       end
       index
@@ -634,7 +635,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     #    Array of String
     # :REG_DWORD, REG_DWORD_BIG_ENDIAN, REG_QWORD
     #    Integer
-    # :REG_BINARY
+    # :REG_BINARY, REG_NONE
     #    String (contains binary data)
     #
     # When rtype is specified, the value type must be included by
@@ -642,14 +643,16 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     def read(name, *rtype)
       type, data = API.QueryValue(@hkey, name)
       unless rtype.empty? or rtype.include?(type)
-        raise TypeError, "Type mismatch (expect #{rtype.inspect} but #{type} present)"
+        raise TypeError, "Type mismatch (expect [#{
+          rtype.map{|t|Registry.type2name(t)}.join(', ')}] but #{
+          Registry.type2name(type)} present)"
       end
       case type
       when REG_SZ, REG_EXPAND_SZ
         [ type, data.encode(name.encoding, WCHAR).chop ]
       when REG_MULTI_SZ
         [ type, data.encode(name.encoding, WCHAR).split(/\0/) ]
-      when REG_BINARY
+      when REG_BINARY, REG_NONE
         [ type, data ]
       when REG_DWORD
         [ type, API.unpackdw(data) ]
@@ -658,7 +661,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       when REG_QWORD
         [ type, API.unpackqw(data) ]
       else
-        raise TypeError, "Type #{type} is not supported."
+        raise TypeError, "Type #{Registry.type2name(type)} is not supported."
       end
     end
 
@@ -681,7 +684,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       when REG_EXPAND_SZ
         Registry.expand_environ(data)
       else
-        raise TypeError, "Type #{type} is not supported."
+        raise TypeError, "Type #{Registry.type2name(type)} is not supported."
       end
     end
 
@@ -745,7 +748,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       when REG_MULTI_SZ
         data = data.to_a.map {|s| s.encode(WCHAR)}.join(WCHAR_NUL) << WCHAR_NUL
         termsize = WCHAR_SIZE
-      when REG_BINARY
+      when REG_BINARY, REG_NONE
         data = data.to_s
       when REG_DWORD
         data = API.packdw(data.to_i)
@@ -754,7 +757,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       when REG_QWORD
         data = API.packqw(data.to_i)
       else
-        raise TypeError, "Unsupported type #{type}"
+        raise TypeError, "Unsupported type #{Registry.type2name(type)}"
       end
       API.SetValue(@hkey, name, type, data, data.bytesize + termsize)
     end

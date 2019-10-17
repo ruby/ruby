@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 # $Id$
 
 require 'fileutils'
@@ -7,7 +8,7 @@ require_relative 'visibility_tests'
 class TestFileUtilsDryRun < Test::Unit::TestCase
 
   include FileUtils::DryRun
-  include TestFileUtils::Visibility
+  include TestFileUtilsInc::Visibility
 
   def setup
     super

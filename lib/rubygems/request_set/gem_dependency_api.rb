@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # A semi-compatible DSL for the Bundler Gemfile and Isolate gem dependencies
 # files.
@@ -42,12 +43,13 @@ class Gem::RequestSet::GemDependencyAPI
     :mri_20       => %w[ruby],
     :mri_21       => %w[ruby],
     :rbx          => %w[rbx],
-    :ruby         => %w[ruby rbx maglev],
-    :ruby_18      => %w[ruby rbx maglev],
-    :ruby_19      => %w[ruby rbx maglev],
-    :ruby_20      => %w[ruby rbx maglev],
-    :ruby_21      => %w[ruby rbx maglev],
-  }
+    :truffleruby  => %w[truffleruby],
+    :ruby         => %w[ruby rbx maglev truffleruby],
+    :ruby_18      => %w[ruby rbx maglev truffleruby],
+    :ruby_19      => %w[ruby rbx maglev truffleruby],
+    :ruby_20      => %w[ruby rbx maglev truffleruby],
+    :ruby_21      => %w[ruby rbx maglev truffleruby],
+  }.freeze
 
   mswin     = Gem::Platform.new 'x86-mswin32'
   mswin64   = Gem::Platform.new 'x64-mswin64'
@@ -84,10 +86,11 @@ class Gem::RequestSet::GemDependencyAPI
     :ruby_19      => Gem::Platform::RUBY,
     :ruby_20      => Gem::Platform::RUBY,
     :ruby_21      => Gem::Platform::RUBY,
+    :truffleruby  => Gem::Platform::RUBY,
     :x64_mingw    => x64_mingw,
     :x64_mingw_20 => x64_mingw,
     :x64_mingw_21 => x64_mingw
-  }
+  }.freeze
 
   gt_eq_0        = Gem::Requirement.new '>= 0'
   tilde_gt_1_8_0 = Gem::Requirement.new '~> 1.8.0'
@@ -125,10 +128,11 @@ class Gem::RequestSet::GemDependencyAPI
     :ruby_19      => tilde_gt_1_9_0,
     :ruby_20      => tilde_gt_2_0_0,
     :ruby_21      => tilde_gt_2_1_0,
+    :truffleruby  => gt_eq_0,
     :x64_mingw    => gt_eq_0,
     :x64_mingw_20 => tilde_gt_2_0_0,
     :x64_mingw_21 => tilde_gt_2_1_0,
-  }
+  }.freeze
 
   WINDOWS = { # :nodoc:
     :mingw        => :only,
@@ -159,7 +163,7 @@ class Gem::RequestSet::GemDependencyAPI
     :x64_mingw    => :only,
     :x64_mingw_20 => :only,
     :x64_mingw_21 => :only,
-  }
+  }.freeze
 
   ##
   # The gems required by #gem statements in the gem.deps.rb file
@@ -190,7 +194,7 @@ class Gem::RequestSet::GemDependencyAPI
   # Creates a new GemDependencyAPI that will add dependencies to the
   # Gem::RequestSet +set+ based on the dependency API description in +path+.
 
-  def initialize set, path
+  def initialize(set, path)
     @set = set
     @path = path
 
@@ -204,6 +208,7 @@ class Gem::RequestSet::GemDependencyAPI
     @installing         = false
     @requires           = Hash.new { |h, name| h[name] = [] }
     @vendor_set         = @set.vendor_set
+    @source_set         = @set.source_set
     @gem_sources        = {}
     @without_groups     = []
 
@@ -226,7 +231,7 @@ class Gem::RequestSet::GemDependencyAPI
   # Adds +dependencies+ to the request set if any of the +groups+ are allowed.
   # This is used for gemspec dependencies.
 
-  def add_dependencies groups, dependencies # :nodoc:
+  def add_dependencies(groups, dependencies) # :nodoc:
     return unless (groups & @without_groups).empty?
 
     dependencies.each do |dep|
@@ -239,7 +244,7 @@ class Gem::RequestSet::GemDependencyAPI
   ##
   # Finds a gemspec with the given +name+ that lives at +path+.
 
-  def find_gemspec name, path # :nodoc:
+  def find_gemspec(name, path) # :nodoc:
     glob = File.join path, "#{name}.gemspec"
 
     spec_files = Dir[glob]
@@ -267,7 +272,7 @@ class Gem::RequestSet::GemDependencyAPI
   # In installing mode certain restrictions are ignored such as ruby version
   # mismatch checks.
 
-  def installing= installing # :nodoc:
+  def installing=(installing) # :nodoc:
     @installing = installing
   end
 
@@ -351,7 +356,7 @@ class Gem::RequestSet::GemDependencyAPI
   # tag: ::
   #   Use the given tag for git:, gist: and github: dependencies.
 
-  def gem name, *requirements
+  def gem(name, *requirements)
     options = requirements.pop if requirements.last.kind_of?(Hash)
     options ||= {}
 
@@ -362,13 +367,14 @@ class Gem::RequestSet::GemDependencyAPI
     source_set ||= gem_path       name, options
     source_set ||= gem_git        name, options
     source_set ||= gem_git_source name, options
+    source_set ||= gem_source     name, options
 
     duplicate = @dependencies.include? name
 
     @dependencies[name] =
-      if requirements.empty? and not source_set then
+      if requirements.empty? and not source_set
         Gem::Requirement.default
-      elsif source_set then
+      elsif source_set
         Gem::Requirement.source_set
       else
         Gem::Requirement.create requirements
@@ -384,7 +390,7 @@ class Gem::RequestSet::GemDependencyAPI
 
     gem_requires name, options
 
-    if duplicate then
+    if duplicate
       warn <<-WARNING
 Gem dependencies file #{@path} requires #{name} more than once.
       WARNING
@@ -398,8 +404,8 @@ Gem dependencies file #{@path} requires #{name} more than once.
   #
   # Returns +true+ if the gist or git option was handled.
 
-  def gem_git name, options # :nodoc:
-    if gist = options.delete(:gist) then
+  def gem_git(name, options) # :nodoc:
+    if gist = options.delete(:gist)
       options[:git] = "https://gist.github.com/#{gist}.git"
     end
 
@@ -407,17 +413,43 @@ Gem dependencies file #{@path} requires #{name} more than once.
 
     pin_gem_source name, :git, repository
 
-    reference = nil
-    reference ||= options.delete :ref
-    reference ||= options.delete :branch
-    reference ||= options.delete :tag
-    reference ||= 'master'
+    reference = gem_git_reference options
 
     submodules = options.delete :submodules
 
     @git_set.add_git_gem name, repository, reference, submodules
 
     true
+  end
+
+  ##
+  # Handles the git options from +options+ for git gem.
+  #
+  # Returns reference for the git gem.
+
+  def gem_git_reference(options) # :nodoc:
+    ref    = options.delete :ref
+    branch = options.delete :branch
+    tag    = options.delete :tag
+
+    reference = nil
+    reference ||= ref
+    reference ||= branch
+    reference ||= tag
+    reference ||= 'master'
+
+    if ref && branch
+      warn <<-WARNING
+Gem dependencies file #{@path} includes git reference for both ref and branch but only ref is used.
+      WARNING
+    end
+    if (ref || branch) && tag
+      warn <<-WARNING
+Gem dependencies file #{@path} includes git reference for both ref/branch and tag but only ref/branch is used.
+      WARNING
+    end
+
+    reference
   end
 
   private :gem_git
@@ -428,7 +460,7 @@ Gem dependencies file #{@path} requires #{name} more than once.
   #
   # Returns +true+ if the custom source option was handled.
 
-  def gem_git_source name, options # :nodoc:
+  def gem_git_source(name, options) # :nodoc:
     return unless git_source = (@git_sources.keys & options.keys).last
 
     source_callback = @git_sources[git_source]
@@ -449,9 +481,9 @@ Gem dependencies file #{@path} requires #{name} more than once.
   # Handles the :group and :groups +options+ for the gem with the given
   # +name+.
 
-  def gem_group name, options # :nodoc:
+  def gem_group(name, options) # :nodoc:
     g = options.delete :group
-    all_groups  = g ? Array(g) : []
+    all_groups = g ? Array(g) : []
 
     groups = options.delete :groups
     all_groups |= groups if groups
@@ -468,7 +500,7 @@ Gem dependencies file #{@path} requires #{name} more than once.
   #
   # Returns +true+ if the path option was handled.
 
-  def gem_path name, options # :nodoc:
+  def gem_path(name, options) # :nodoc:
     return unless directory = options.delete(:path)
 
     pin_gem_source name, :path, directory
@@ -481,10 +513,27 @@ Gem dependencies file #{@path} requires #{name} more than once.
   private :gem_path
 
   ##
+  # Handles the source: option from +options+ for gem +name+.
+  #
+  # Returns +true+ if the source option was handled.
+
+  def gem_source(name, options) # :nodoc:
+    return unless source = options.delete(:source)
+
+    pin_gem_source name, :source, source
+
+    @source_set.add_source_gem name, source
+
+    true
+  end
+
+  private :gem_source
+
+  ##
   # Handles the platforms: option from +options+.  Returns true if the
   # platform matches the current platform.
 
-  def gem_platforms options # :nodoc:
+  def gem_platforms(options) # :nodoc:
     platform_names = Array(options.delete :platform)
     platform_names.concat Array(options.delete :platforms)
     platform_names.concat @current_platforms if @current_platforms
@@ -497,7 +546,7 @@ Gem dependencies file #{@path} requires #{name} more than once.
 
       next false unless Gem::Platform.match platform
 
-      if engines = ENGINE_MAP[platform_name] then
+      if engines = ENGINE_MAP[platform_name]
         next false unless engines.include? Gem.ruby_engine
       end
 
@@ -518,14 +567,15 @@ Gem dependencies file #{@path} requires #{name} more than once.
   # Records the require: option from +options+ and adds those files, or the
   # default file to the require list for +name+.
 
-  def gem_requires name, options # :nodoc:
-    if options.include? :require then
-      if requires = options.delete(:require) then
+  def gem_requires(name, options) # :nodoc:
+    if options.include? :require
+      if requires = options.delete(:require)
         @requires[name].concat Array requires
       end
     else
       @requires[name] << name
     end
+    raise ArgumentError, "Unhandled gem options #{options.inspect}" unless options.empty?
   end
 
   private :gem_requires
@@ -540,7 +590,7 @@ Gem dependencies file #{@path} requires #{name} more than once.
   #     gem 'activerecord'
   #   end
 
-  def git repository
+  def git(repository)
     @current_repository = repository
 
     yield
@@ -554,7 +604,7 @@ Gem dependencies file #{@path} requires #{name} more than once.
   # for use in gems built from git repositories.  You must provide a block
   # that accepts a git repository name for expansion.
 
-  def git_source name, &callback
+  def git_source(name, &callback)
     @git_sources[name] = callback
   end
 
@@ -587,7 +637,7 @@ Gem dependencies file #{@path} requires #{name} more than once.
   #   The group to add development dependencies to.  By default this is
   #   :development.  Only one group may be specified.
 
-  def gemspec options = {}
+  def gemspec(options = {})
     name              = options.delete(:name) || '{,*}'
     path              = options.delete(:path) || '.'
     development_group = options.delete(:development_group) || :development
@@ -611,6 +661,7 @@ Gem dependencies file #{@path} requires #{name} more than once.
 
     add_dependencies groups, spec.development_dependencies
 
+    @vendor_set.add_vendor_gem spec.name, path
     gem_requires spec.name, options
   end
 
@@ -631,7 +682,7 @@ Gem dependencies file #{@path} requires #{name} more than once.
   # development`.  See `gem help install` and `gem help gem_dependencies` for
   # further details.
 
-  def group *groups
+  def group(*groups)
     @current_groups = groups
 
     yield
@@ -644,12 +695,13 @@ Gem dependencies file #{@path} requires #{name} more than once.
   # Pins the gem +name+ to the given +source+.  Adding a gem with the same
   # name from a different +source+ will raise an exception.
 
-  def pin_gem_source name, type = :default, source = nil
+  def pin_gem_source(name, type = :default, source = nil)
     source_description =
       case type
       when :default then '(default)'
       when :path    then "path: #{source}"
       when :git     then "git: #{source}"
+      when :source  then "source: #{source}"
       else               '(unknown)'
       end
 
@@ -705,7 +757,7 @@ Gem dependencies file #{@path} requires #{name} more than once.
   # NOTE:  There is inconsistency in what environment a platform matches.  You
   # may need to read the source to know the exact details.
 
-  def platform *platforms
+  def platform(*platforms)
     @current_platforms = platforms
 
     yield
@@ -730,38 +782,36 @@ Gem dependencies file #{@path} requires #{name} more than once.
   # You may also provide +engine:+ and +engine_version:+ options to restrict
   # this gem dependencies file to a particular ruby engine and its engine
   # version.  This matching is performed by using the RUBY_ENGINE and
-  # engine_specific VERSION constants.  (For JRuby, JRUBY_VERSION).
+  # RUBY_ENGINE_VERSION constants.
 
-  def ruby version, options = {}
+  def ruby(version, options = {})
     engine         = options[:engine]
     engine_version = options[:engine_version]
 
     raise ArgumentError,
-          'you must specify engine_version along with the ruby engine' if
+          'You must specify engine_version along with the Ruby engine' if
             engine and not engine_version
 
     return true if @installing
 
-    unless RUBY_VERSION == version then
+    unless RUBY_VERSION == version
       message = "Your Ruby version is #{RUBY_VERSION}, " +
                 "but your #{gem_deps_file} requires #{version}"
 
       raise Gem::RubyVersionMismatch, message
     end
 
-    if engine and engine != Gem.ruby_engine then
-      message = "Your ruby engine is #{Gem.ruby_engine}, " +
+    if engine and engine != Gem.ruby_engine
+      message = "Your Ruby engine is #{Gem.ruby_engine}, " +
                 "but your #{gem_deps_file} requires #{engine}"
 
       raise Gem::RubyVersionMismatch, message
     end
 
-    if engine_version then
-      my_engine_version = Object.const_get "#{Gem.ruby_engine.upcase}_VERSION"
-
-      if engine_version != my_engine_version then
+    if engine_version
+      if engine_version != RUBY_ENGINE_VERSION
         message =
-          "Your ruby engine version is #{Gem.ruby_engine} #{my_engine_version}, " +
+          "Your Ruby engine version is #{Gem.ruby_engine} #{RUBY_ENGINE_VERSION}, " +
           "but your #{gem_deps_file} requires #{engine} #{engine_version}"
 
         raise Gem::RubyVersionMismatch, message
@@ -785,7 +835,7 @@ Gem dependencies file #{@path} requires #{name} more than once.
   # * The +prepend:+ option is not supported.  If you wish to order sources
   #   then list them in your preferred order.
 
-  def source url
+  def source(url)
     Gem.sources.clear if @default_sources
 
     @default_sources = false
@@ -793,9 +843,4 @@ Gem dependencies file #{@path} requires #{name} more than once.
     Gem.sources << url
   end
 
-  # TODO: remove this typo name at RubyGems 3.0
-
-  Gem::RequestSet::GemDepedencyAPI = self # :nodoc:
-
 end
-

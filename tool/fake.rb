@@ -1,3 +1,6 @@
+# Used by Makefile and configure for building Ruby.
+# See common.mk and Makefile.in for details.
+
 class File
   sep = ("\\" if RUBY_PLATFORM =~ /mswin|bccwin|mingw/)
   if sep != ALT_SEPARATOR
@@ -9,21 +12,9 @@ end
 static = !!(defined?($static) && $static)
 $:.unshift(builddir)
 posthook = proc do
-  config = RbConfig::CONFIG
-  mkconfig = RbConfig::MAKEFILE_CONFIG
-  extout = File.expand_path(mkconfig["EXTOUT"], builddir)
-  [
-    ["top_srcdir", $top_srcdir],
-    ["topdir", $topdir],
-  ].each do |var, val|
-    next unless val
-    mkconfig[var] = config[var] = val
-    t = /\A#{Regexp.quote(val)}(?=\/)/
-    $hdrdir.sub!(t) {"$(#{var})"}
-    mkconfig.keys.grep(/dir\z/) do |k|
-      mkconfig[k] = "$(#{var})#$'" if t =~ mkconfig[k]
-    end
-  end
+  RbConfig.fire_update!("top_srcdir", $top_srcdir)
+  RbConfig.fire_update!("topdir", $topdir)
+  $hdrdir.sub!(/\A#{Regexp.quote($top_srcdir)}(?=\/)/, "$(top_srcdir)")
   if $extmk
     $ruby = "$(topdir)/miniruby -I'$(topdir)' -I'$(top_srcdir)/lib' -I'$(extout)/$(arch)' -I'$(extout)/common'"
   else
@@ -41,22 +32,25 @@ prehook = proc do |extmk|
       dir.shift
       pwd.shift
     end
-    builddir = File.join([".."]*pwd.size + dir)
+    builddir = File.join((pwd.empty? ? ["."] : [".."]*pwd.size) + dir)
     builddir = "." if builddir.empty?
   end
   join = proc {|*args| File.join(*args).sub!(/\A(?:\.\/)*/, '')}
   $topdir ||= builddir
-  $top_srcdir ||= join[$topdir, srcdir]
+  $top_srcdir ||= (File.identical?(top_srcdir, dir = join[$topdir, srcdir]) ?
+                     dir : top_srcdir)
   $extout = '$(topdir)/.ext'
   $extout_prefix = '$(extout)$(target_prefix)/'
   config = RbConfig::CONFIG
   mkconfig = RbConfig::MAKEFILE_CONFIG
-  mkconfig["builddir"] = config["builddir"] = builddir
-  mkconfig["top_srcdir"] = $top_srcdir if $top_srcdir
-  config["top_srcdir"] = File.expand_path($top_srcdir ||= top_srcdir)
-  config["rubyhdrdir"] = join[$top_srcdir, "include"]
-  config["rubyarchhdrdir"] = join[builddir, config["EXTOUT"], "include", config["arch"]]
-  mkconfig["libdirname"] = "builddir"
+  RbConfig.fire_update!("builddir", builddir)
+  RbConfig.fire_update!("buildlibdir", builddir)
+  RbConfig.fire_update!("libdir", builddir)
+  RbConfig.fire_update!("top_srcdir", $top_srcdir ||= top_srcdir)
+  RbConfig.fire_update!("extout", $extout)
+  RbConfig.fire_update!("rubyhdrdir", "$(top_srcdir)/include")
+  RbConfig.fire_update!("rubyarchhdrdir", "$(extout)/include/$(arch)")
+  RbConfig.fire_update!("libdirname", "buildlibdir")
   trace_var(:$ruby, posthook)
   untrace_var(:$extmk, prehook)
 end

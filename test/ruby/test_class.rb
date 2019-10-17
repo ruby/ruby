@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestClass < Test::Unit::TestCase
@@ -45,9 +46,9 @@ class TestClass < Test::Unit::TestCase
     assert_same(Class, c.class)
     assert_same(Object, c.superclass)
 
-    c = Class.new(Fixnum)
+    c = Class.new(Integer)
     assert_same(Class, c.class)
-    assert_same(Fixnum, c.superclass)
+    assert_same(Integer, c.superclass)
   end
 
   def test_00_new_basic
@@ -88,7 +89,7 @@ class TestClass < Test::Unit::TestCase
     end
   end
 
-  def test_instanciate_singleton_class
+  def test_instantiate_singleton_class
     c = class << Object.new; self; end
     assert_raise(TypeError) { c.new }
   end
@@ -128,6 +129,48 @@ class TestClass < Test::Unit::TestCase
   def test_module_specific_methods
     assert_empty(Class.private_instance_methods(true) &
       [:module_function, :extend_object, :append_features, :prepend_features])
+  end
+
+  def test_visibility_inside_method
+    assert_warn(/calling private without arguments inside a method may not have the intended effect/, '[ruby-core:79751]') do
+      Class.new do
+        def self.foo
+          private
+        end
+        foo
+      end
+    end
+
+    assert_warn(/calling protected without arguments inside a method may not have the intended effect/, '[ruby-core:79751]') do
+      Class.new do
+        def self.foo
+          protected
+        end
+        foo
+      end
+    end
+
+    assert_warn(/calling public without arguments inside a method may not have the intended effect/, '[ruby-core:79751]') do
+      Class.new do
+        def self.foo
+          public
+        end
+        foo
+      end
+    end
+
+    assert_warn(/calling private without arguments inside a method may not have the intended effect/, '[ruby-core:79751]') do
+      Class.new do
+        class << self
+          alias priv private
+        end
+
+        def self.foo
+          priv
+        end
+        foo
+      end
+    end
   end
 
   def test_method_redefinition
@@ -240,13 +283,30 @@ class TestClass < Test::Unit::TestCase
     assert_equal("TestClass::C\u{df}", c.name, '[ruby-core:24600]')
   end
 
-  def test_invalid_jump_from_class_definition
-    assert_raise(SyntaxError) { eval("class C; next; end") }
-    assert_raise(SyntaxError) { eval("class C; break; end") }
-    assert_raise(SyntaxError) { eval("class C; redo; end") }
-    assert_raise(SyntaxError) { eval("class C; retry; end") }
-    assert_raise(SyntaxError) { eval("class C; return; end") }
-    assert_raise(SyntaxError) { eval("class C; yield; end") }
+  def test_invalid_next_from_class_definition
+    assert_syntax_error("class C; next; end", /Invalid next/)
+  end
+
+  def test_invalid_break_from_class_definition
+    assert_syntax_error("class C; break; end", /Invalid break/)
+  end
+
+  def test_invalid_redo_from_class_definition
+    assert_syntax_error("class C; redo; end", /Invalid redo/)
+  end
+
+  def test_invalid_retry_from_class_definition
+    assert_syntax_error("class C; retry; end", /Invalid retry/)
+  end
+
+  def test_invalid_return_from_class_definition
+    assert_syntax_error("class C; return; end", /Invalid return/)
+  end
+
+  def test_invalid_yield_from_class_definition
+    assert_raise(LocalJumpError) {
+      EnvUtil.suppress_warning {eval("class C; yield; end")}
+    }
   end
 
   def test_clone
@@ -296,7 +356,8 @@ class TestClass < Test::Unit::TestCase
   end
 
   def test_cannot_reinitialize_class_with_initialize_copy # [ruby-core:50869]
-    assert_in_out_err([], <<-'end;', ["Object"], [])
+    assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", ["Object"], [])
+    begin;
       class Class
         def initialize_copy(*); super; end
       end
@@ -310,18 +371,22 @@ class TestClass < Test::Unit::TestCase
     end;
   end
 
-  module M
-    C = 1
-
-    def self.m
-      C
-    end
+  class CloneTest
+    def foo; TEST; end
   end
 
-  def test_constant_access_from_method_in_cloned_module # [ruby-core:47834]
-    m = M.dup
-    assert_equal 1, m::C
-    assert_equal 1, m.m
+  CloneTest1 = CloneTest.clone
+  CloneTest2 = CloneTest.clone
+  class CloneTest1
+    TEST = :C1
+  end
+  class CloneTest2
+    TEST = :C2
+  end
+
+  def test_constant_access_from_method_in_cloned_class
+    assert_equal :C1, CloneTest1.new.foo, '[Bug #15877]'
+    assert_equal :C2, CloneTest2.new.foo, '[Bug #15877]'
   end
 
   def test_invalid_superclass
@@ -370,8 +435,30 @@ class TestClass < Test::Unit::TestCase
       end;
     }
     assert_raise_with_message(TypeError, /#{n}/) {
+      Class.new(c)
+    }
+    assert_raise_with_message(TypeError, /#{n}/) {
       m.module_eval "class #{n} < Class.new; end"
     }
+  end
+
+  define_method :test_invalid_reset_superclass do
+    class A; end
+    class SuperclassCannotBeReset < A
+    end
+    assert_equal A, SuperclassCannotBeReset.superclass
+
+    assert_raise_with_message(TypeError, /superclass mismatch/) {
+      class SuperclassCannotBeReset < String
+      end
+    }
+
+    assert_raise_with_message(TypeError, /superclass mismatch/, "[ruby-core:75446]") {
+      class SuperclassCannotBeReset < Object
+      end
+    }
+
+    assert_equal A, SuperclassCannotBeReset.superclass
   end
 
   def test_cloned_singleton_method_added
@@ -404,14 +491,14 @@ class TestClass < Test::Unit::TestCase
     obj = Object.new
     c = obj.singleton_class
     obj.freeze
-    assert_raise_with_message(RuntimeError, /frozen object/) {
+    assert_raise_with_message(FrozenError, /frozen object/) {
       c.class_eval {def f; end}
     }
   end
 
   def test_singleton_class_message
     c = Class.new.freeze
-    assert_raise_with_message(RuntimeError, /frozen Class/) {
+    assert_raise_with_message(FrozenError, /frozen Class/) {
       def c.f; end
     }
   end
@@ -536,16 +623,56 @@ class TestClass < Test::Unit::TestCase
     }
   end
 
+  def test_namescope_error_message
+    m = Module.new
+    o = m.module_eval "class A\u{3042}; self; end.new"
+    assert_raise_with_message(TypeError, /A\u{3042}/) {
+      o::Foo
+    }
+  end
+
   def test_redefinition_mismatch
     m = Module.new
-    m.module_eval "A = 1"
-    assert_raise_with_message(TypeError, /is not a class/) {
+    m.module_eval "A = 1", __FILE__, line = __LINE__
+    e = assert_raise_with_message(TypeError, /is not a class/) {
       m.module_eval "class A; end"
     }
+    assert_include(e.message, "#{__FILE__}:#{line}: previous definition")
     n = "M\u{1f5ff}"
-    m.module_eval "#{n} = 42"
-    assert_raise_with_message(TypeError, "#{n} is not a class") {
+    m.module_eval "#{n} = 42", __FILE__, line = __LINE__
+    e = assert_raise_with_message(TypeError, /#{n} is not a class/) {
       m.module_eval "class #{n}; end"
     }
+    assert_include(e.message, "#{__FILE__}:#{line}: previous definition")
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
+    begin;
+      Date = (class C\u{1f5ff}; self; end).new
+      assert_raise_with_message(TypeError, /C\u{1f5ff}/) {
+        require 'date'
+      }
+    end;
+  end
+
+  def test_should_not_expose_singleton_class_without_metaclass
+    assert_normal_exit "#{<<~"begin;"}\n#{<<~'end;'}", '[Bug #11740]'
+    begin;
+      klass = Class.new(Array)
+      # The metaclass of +klass+ should handle #bla since it should inherit methods from meta:meta:Array
+      def (Array.singleton_class).bla; :bla; end
+      hidden = ObjectSpace.each_object(Class).find { |c| klass.is_a? c and c.inspect.include? klass.inspect }
+      raise unless hidden.nil?
+    end;
+
+    assert_normal_exit "#{<<~"begin;"}\n#{<<~'end;'}", '[Bug #11740]'
+    begin;
+      klass = Class.new(Array)
+      klass.singleton_class
+      # The metaclass of +klass+ should handle #bla since it should inherit methods from meta:meta:Array
+      def (Array.singleton_class).bla; :bla; end
+      hidden = ObjectSpace.each_object(Class).find { |c| klass.is_a? c and c.inspect.include? klass.inspect }
+      raise if hidden.nil?
+    end;
+
   end
 end

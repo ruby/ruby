@@ -5,15 +5,15 @@ ECHO = 0x00000008
 TIOCGETP = 0x40067408
 TIOCSETP = 0x80067409
 
-def cbreak ()
+def cbreak
   set_cbreak(true)
 end
 
-def cooked ()
+def cooked
   set_cbreak(false)
 end
 
-def set_cbreak (on)
+def set_cbreak(on)
   tty = "\0" * 256
   STDIN.ioctl(TIOCGETP, tty)
   ttys = tty.unpack("C4 S")
@@ -30,7 +30,7 @@ end
 cbreak();
 
 print("this is no-echo line: ");
-readline().print
+readline().display
 cooked();
 print("this is echo line: ");
 readline()

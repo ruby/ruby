@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require File.expand_path '../xref_test_case', __FILE__
 
 class TestRDocContext < XrefTestCase
@@ -7,19 +8,16 @@ class TestRDocContext < XrefTestCase
 
     @context = RDoc::Context.new
     @context.store = @store
-
-    @enumerator = # 1.8 vs 1.9
-      Object.const_defined?(:Enumerator) ? Enumerator : Enumerable::Enumerator
   end
 
   def test_initialize
     assert_empty @context.in_files
     assert_equal 'unknown', @context.name
     assert_equal '', @context.comment
-    assert_equal nil, @context.parent
+    assert_nil   @context.parent
     assert_equal :public, @context.visibility
     assert_equal 1, @context.sections.length
-    assert_equal nil, @context.temporary_section
+    assert_nil   @context.temporary_section
 
     assert_empty @context.classes_hash
     assert_empty @context.modules_hash
@@ -117,8 +115,6 @@ class TestRDocContext < XrefTestCase
   end
 
   def test_add_class_basic_object
-    skip 'BasicObject is 1.9 only' unless defined?(BasicObject)
-
     @xref_data.add_class RDoc::NormalClass, 'BasicObject'
 
     basic = @xref_data.find_module_named 'BasicObject'
@@ -133,13 +129,11 @@ class TestRDocContext < XrefTestCase
   end
 
   def test_add_class_object
-    root_class = defined?(BasicObject) ? 'BasicObject' : nil
-
     @xref_data.add_class RDoc::NormalClass, 'Object'
 
     object = @xref_data.find_module_named 'Object'
 
-    assert_equal root_class, object.superclass
+    assert_equal 'BasicObject', object.superclass
 
     @c1.add_class RDoc::NormalClass, 'Object'
 
@@ -238,7 +232,7 @@ class TestRDocContext < XrefTestCase
     meth2.record_location @store.add_file 'second.rb'
     meth2.comment = comment 'second'
 
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       @context.add_method meth2
     end
 
@@ -266,7 +260,7 @@ class TestRDocContext < XrefTestCase
     meth2.record_location @store.add_file 'second.rb'
     meth2.comment = comment 'second'
 
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       @context.add_method meth2
     end
 
@@ -286,7 +280,8 @@ class TestRDocContext < XrefTestCase
   def test_add_module_alias
     tl = @store.add_file 'file.rb'
 
-    c3_c4 = @c2.add_module_alias @c2_c3, 'C4', tl
+    c4 = RDoc::Constant.new 'C4', '', ''
+    c3_c4 = @c2.add_module_alias @c2_c3, @c2_c3.name, c4, tl
 
     alias_constant = @c2.constants.first
 
@@ -304,7 +299,8 @@ class TestRDocContext < XrefTestCase
 
     object = top_level.add_class RDoc::NormalClass, 'Object'
 
-    top_level.add_module_alias klass, 'A', top_level
+    a = RDoc::Constant.new 'A', '', ''
+    top_level.add_module_alias klass, klass.name, a, top_level
 
     refute_empty object.constants
 
@@ -416,7 +412,7 @@ class TestRDocContext < XrefTestCase
   def bench_add_include
     cm = RDoc::ClassModule.new 'Klass'
 
-    assert_performance_linear 0.9 do |count|
+    assert_performance_linear 0.5 do |count|
       count.times do |i|
         cm.add_include RDoc::Include.new("N::M#{i}", nil)
       end
@@ -456,7 +452,7 @@ class TestRDocContext < XrefTestCase
   end
 
   def test_each_method_enumerator
-    assert_kind_of @enumerator, @c1.each_method
+    assert_kind_of Enumerator, @c1.each_method
   end
 
   def test_each_section
@@ -487,12 +483,38 @@ class TestRDocContext < XrefTestCase
     assert_equal expected_attrs, attrs
   end
 
+  def test_each_section_only_display
+    sects  = []
+    consts = []
+    attrs  = []
+
+    @c7.each_section do |section, constants, attributes|
+      sects  << section
+      consts << constants
+      attrs  << attributes
+    end
+
+    assert_equal [nil], sects.map { |section| section.title }
+
+    expected_consts = [
+      @c7.constants.select(&:display?).sort
+    ]
+
+    assert_equal expected_consts, consts
+
+    expected_attrs = [
+      @c7.attributes.select(&:display?).sort
+    ]
+
+    assert_equal expected_attrs, attrs
+  end
+
   def test_each_section_enumerator
-    assert_kind_of @enumerator, @c1.each_section
+    assert_kind_of Enumerator, @c1.each_section
   end
 
   def test_find_attribute_named
-    assert_equal nil,  @c1.find_attribute_named('none')
+    assert_nil         @c1.find_attribute_named('none')
     assert_equal 'R',  @c1.find_attribute_named('attr').rw
     assert_equal 'R',  @c1.find_attribute_named('attr_reader').rw
     assert_equal 'W',  @c1.find_attribute_named('attr_writer').rw
@@ -500,7 +522,7 @@ class TestRDocContext < XrefTestCase
   end
 
   def test_find_class_method_named
-    assert_equal nil, @c1.find_class_method_named('none')
+    assert_nil @c1.find_class_method_named('none')
 
     m = @c1.find_class_method_named('m')
     assert_instance_of RDoc::AnyMethod, m
@@ -508,23 +530,23 @@ class TestRDocContext < XrefTestCase
   end
 
   def test_find_constant_named
-    assert_equal nil,      @c1.find_constant_named('NONE')
+    assert_nil             @c1.find_constant_named('NONE')
     assert_equal ':const', @c1.find_constant_named('CONST').value
   end
 
   def test_find_enclosing_module_named
-    assert_equal nil, @c2_c3.find_enclosing_module_named('NONE')
+    assert_nil        @c2_c3.find_enclosing_module_named('NONE')
     assert_equal @c1, @c2_c3.find_enclosing_module_named('C1')
     assert_equal @c2, @c2_c3.find_enclosing_module_named('C2')
   end
 
   def test_find_file_named
-    assert_equal nil,        @c1.find_file_named('nonexistent.rb')
+    assert_nil               @c1.find_file_named('nonexistent.rb')
     assert_equal @xref_data, @c1.find_file_named(@file_name)
   end
 
   def test_find_instance_method_named
-    assert_equal nil, @c1.find_instance_method_named('none')
+    assert_nil @c1.find_instance_method_named('none')
 
     m = @c1.find_instance_method_named('m')
     assert_instance_of RDoc::AnyMethod, m
@@ -537,6 +559,14 @@ class TestRDocContext < XrefTestCase
     assert_equal 'R',        @c1.find_local_symbol('attr').rw
     assert_equal @xref_data, @c1.find_local_symbol(@file_name)
     assert_equal @c2_c3,     @c2.find_local_symbol('C3')
+  end
+
+  def test_find_method
+    loaded_c2 = Marshal.load Marshal.dump @c2
+    assert_equal @c2_a, loaded_c2.find_method('a', false)
+    assert_equal @c2_b, loaded_c2.find_method('b', false)
+    assert_equal @c2_a, loaded_c2.find_method('a', nil)
+    assert_equal @c2_b, loaded_c2.find_method('b', nil)
   end
 
   def test_find_method_named
@@ -630,7 +660,7 @@ class TestRDocContext < XrefTestCase
       'instance' => {
         :private   => [],
         :protected => [],
-        :public    => [@c1_m],
+        :public    => [@c1_plus, @c1_m],
       },
       'class' => {
         :private   => [],
@@ -699,6 +729,7 @@ class TestRDocContext < XrefTestCase
 
     assert_equal [@pub, @prot, @priv], @vis.method_list
     assert_equal [@apub, @aprot, @apriv], @vis.attributes
+    assert_equal [@cpub, @cpriv], @vis.constants
   end
 
   def test_remove_invisible_nodoc
@@ -708,6 +739,7 @@ class TestRDocContext < XrefTestCase
 
     assert_equal [@pub, @prot, @priv], @vis.method_list
     assert_equal [@apub, @aprot, @apriv], @vis.attributes
+    assert_equal [@cpub, @cpriv], @vis.constants
   end
 
   def test_remove_invisible_protected
@@ -717,6 +749,7 @@ class TestRDocContext < XrefTestCase
 
     assert_equal [@pub, @prot], @vis.method_list
     assert_equal [@apub, @aprot], @vis.attributes
+    assert_equal [@cpub], @vis.constants
   end
 
   def test_remove_invisible_public
@@ -726,6 +759,7 @@ class TestRDocContext < XrefTestCase
 
     assert_equal [@pub], @vis.method_list
     assert_equal [@apub], @vis.attributes
+    assert_equal [@cpub], @vis.constants
   end
 
   def test_remove_invisible_public_force
@@ -735,11 +769,13 @@ class TestRDocContext < XrefTestCase
     @prot.force_documentation = true
     @apriv.force_documentation = true
     @aprot.force_documentation = true
+    @cpriv.force_documentation = true
 
     @vis.remove_invisible :public
 
     assert_equal [@pub, @prot, @priv], @vis.method_list
     assert_equal [@apub, @aprot, @apriv], @vis.attributes
+    assert_equal [@cpub, @cpriv], @vis.constants
   end
 
   def test_remove_invisible_in_protected
@@ -872,6 +908,27 @@ class TestRDocContext < XrefTestCase
     assert_equal [nil, 'Public', 'Internal'], titles
   end
 
+  def test_visibility_def
+    assert_equal :private, @c6.find_method_named('priv1').visibility
+    assert_equal :protected, @c6.find_method_named('prot1').visibility
+    assert_equal :public, @c6.find_method_named('pub1').visibility
+    assert_equal :private, @c6.find_method_named('priv2').visibility
+    assert_equal :protected, @c6.find_method_named('prot2').visibility
+    assert_equal :public, @c6.find_method_named('pub2').visibility
+    assert_equal :private, @c6.find_method_named('priv3').visibility
+    assert_equal :protected, @c6.find_method_named('prot3').visibility
+    assert_equal :public, @c6.find_method_named('pub3').visibility
+    assert_equal :private, @c6.find_method_named('priv4').visibility
+    assert_equal :protected, @c6.find_method_named('prot4').visibility
+    assert_equal :public, @c6.find_method_named('pub4').visibility
+    assert_equal :private, @c6.find_method_named('priv5').visibility
+    assert_equal :protected, @c6.find_method_named('prot5').visibility
+    assert_equal :public, @c6.find_method_named('pub5').visibility
+    assert_equal :private, @c6.find_method_named('priv6').visibility
+    assert_equal :protected, @c6.find_method_named('prot6').visibility
+    assert_equal :public, @c6.find_method_named('pub6').visibility
+  end
+
   def util_visibilities
     @pub  = RDoc::AnyMethod.new nil, 'pub'
     @prot = RDoc::AnyMethod.new nil, 'prot'
@@ -880,6 +937,9 @@ class TestRDocContext < XrefTestCase
     @apub  = RDoc::Attr.new nil, 'pub',  'RW', nil
     @aprot = RDoc::Attr.new nil, 'prot', 'RW', nil
     @apriv = RDoc::Attr.new nil, 'priv', 'RW', nil
+
+    @cpub  = RDoc::Constant.new 'CONST_PUBLIC', nil, nil
+    @cpriv = RDoc::Constant.new 'CONST_PRIVATE', nil, nil
 
     @vis = RDoc::NormalClass.new 'Vis'
     @vis.add_method @pub
@@ -890,12 +950,16 @@ class TestRDocContext < XrefTestCase
     @vis.add_attribute @aprot
     @vis.add_attribute @apriv
 
+    @vis.add_constant @cpub
+    @vis.add_constant @cpriv
+
     @prot.visibility = :protected
     @priv.visibility = :private
 
     @aprot.visibility = :protected
     @apriv.visibility = :private
+
+    @cpriv.visibility = :private
   end
 
 end
-

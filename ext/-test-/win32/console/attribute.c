@@ -2,29 +2,37 @@
 
 static VALUE rb_cConsoleScreenBufferInfo;
 
-static VALUE
-console_info(VALUE io)
+static HANDLE
+io_handle(VALUE io)
 {
     int fd = NUM2INT(rb_funcallv(io, rb_intern("fileno"), 0, 0));
     HANDLE h = (HANDLE)rb_w32_get_osfhandle(fd);
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
 
     if (h == (HANDLE)-1) rb_raise(rb_eIOError, "invalid io");
+    return h;
+}
+
+static VALUE
+console_info(VALUE io)
+{
+    HANDLE h = io_handle(io);
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+
     if (!GetConsoleScreenBufferInfo(h, &csbi))
 	rb_syserr_fail(rb_w32_map_errno(GetLastError()), "not console");
     return rb_struct_new(rb_cConsoleScreenBufferInfo,
-			 INT2FIX(csbi.dwSize.X), INT2FIX(csbi.dwSize.Y),
-			 INT2FIX(csbi.dwCursorPosition.X), INT2FIX(csbi.dwCursorPosition.Y),
+			 INT2FIX(csbi.dwSize.X),
+			 INT2FIX(csbi.dwSize.Y),
+			 INT2FIX(csbi.dwCursorPosition.X),
+			 INT2FIX(csbi.dwCursorPosition.Y),
 			 INT2FIX(csbi.wAttributes));
 }
 
 static VALUE
 console_set_attribute(VALUE io, VALUE attr)
 {
-    int fd = NUM2INT(rb_funcallv(io, rb_intern("fileno"), 0, 0));
-    HANDLE h = (HANDLE)rb_w32_get_osfhandle(fd);
+    HANDLE h = io_handle(io);
 
-    if (h == (HANDLE)-1) rb_raise(rb_eIOError, "invalid io");
     SetConsoleTextAttribute(h, (WORD)NUM2INT(attr));
     return Qnil;
 }
@@ -53,4 +61,9 @@ Init_attribute(VALUE m)
     rb_define_const(m, "BACKGROUND_GREEN", INT2FIX(BACKGROUND_GREEN));
     rb_define_const(m, "BACKGROUND_RED", INT2FIX(BACKGROUND_RED));
     rb_define_const(m, "BACKGROUND_INTENSITY", INT2FIX(BACKGROUND_INTENSITY));
+
+#ifndef COMMON_LVB_REVERSE_VIDEO
+#define COMMON_LVB_REVERSE_VIDEO 0x4000
+#endif
+    rb_define_const(m, "REVERSE_VIDEO", INT2FIX(COMMON_LVB_REVERSE_VIDEO));
 }

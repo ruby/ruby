@@ -30,6 +30,29 @@ NoMethodError.
 You may also use <code>::</code> to designate a receiver, but this is rarely
 used due to the potential for confusion with <code>::</code> for namespaces.
 
+=== Safe navigation operator
+
+<code>&.</code>, called "safe navigation operator", allows to skip method call
+when receiver is +nil+. It returns +nil+ and doesn't evaluate method's arguments
+if the call is skipped.
+
+  REGEX = /(ruby) is (\w+)/i
+  "Ruby is awesome!".match(REGEX).values_at(1, 2)
+  # => ["Ruby", "awesome"]
+  "Python is fascinating!".match(REGEX).values_at(1, 2)
+  # NoMethodError: undefined method `values_at' for nil:NilClass
+  "Python is fascinating!".match(REGEX)&.values_at(1, 2)
+  # => nil
+
+This allows to easily chain methods which could return empty value. Note that
+<code>&.</code> skips only one next call, so for a longer chain it is necessary
+to add operator on each level:
+
+  "Python is fascinating!".match(REGEX)&.values_at(1, 2).join(' - ')
+  # NoMethodError: undefined method `join' for nil:NilClass
+  "Python is fascinating!".match(REGEX)&.values_at(1, 2)&.join(' - ')
+  # => nil
+
 == Arguments
 
 There are three types of arguments when sending a message, the positional
@@ -62,7 +85,7 @@ The positional arguments for the message follow the method name:
 
   my_method(argument1, argument2)
 
-In many cases parenthesis are not necessary when sending a message:
+In many cases, parenthesis are not necessary when sending a message:
 
   my_method argument1, argument2
 
@@ -75,7 +98,7 @@ to:
 If the method definition has a <code>*argument</code> extra positional
 arguments will be assigned to +argument+ in the method as an Array.
 
-If the method definition doesn't include keyword arguments the keyword or
+If the method definition doesn't include keyword arguments, the keyword or
 hash-type arguments are assigned as a single hash to the last argument:
 
   def my_method(options)
@@ -84,7 +107,7 @@ hash-type arguments are assigned as a single hash to the last argument:
 
   my_method('a' => 1, b: 2) # prints: {'a'=>1, :b=>2}
 
-If too many positional arguments are given an ArgumentError is raised.
+If too many positional arguments are given, an ArgumentError is raised.
 
 === Default Positional Arguments
 
@@ -149,7 +172,8 @@ like positional arguments:
   my_method(positional1, keyword1: value1, keyword2: value2)
 
 Any keyword arguments not given will use the default value from the method
-definition.  If a keyword argument is given that the method did not list an
+definition.  If a keyword argument is given that the method did not list,
+and the method definition does not accept arbitrary keyword arguments, an
 ArgumentError will be raised.
 
 === Block Argument
@@ -246,8 +270,8 @@ Both are equivalent to:
 
   my_method(1, 2, 3)
 
-If the method accepts keyword arguments the splat operator will convert a hash
-at the end of the array into keyword arguments:
+If the method accepts keyword arguments, the splat operator will convert a
+hash at the end of the array into keyword arguments:
 
   def my_method(a, b, c: 3)
   end
@@ -255,14 +279,20 @@ at the end of the array into keyword arguments:
   arguments = [1, 2, { c: 4 }]
   my_method(*arguments)
 
+Note that this behavior is currently deprecated and will emit a warning.
+This behavior will be removed in Ruby 3.0.
+
 You may also use the <code>**</code> (described next) to convert a Hash into
 keyword arguments.
 
 If the number of objects in the Array do not match the number of arguments for
-the method an ArgumentError will be raised.
+the method, an ArgumentError will be raised.
 
 If the splat operator comes first in the call, parentheses must be used to
-avoid a warning.
+avoid a warning:
+
+  my_method *arguments  # warning
+  my_method(*arguments) # no warning
 
 === Hash to Keyword Arguments Conversion
 
@@ -271,7 +301,8 @@ Given the following method:
   def my_method(first: 1, second: 2, third: 3)
   end
 
-You can turn a Hash into keyword arguments with the <code>**</code> operator:
+You can turn a Hash into keyword arguments with the <code>**</code>
+(keyword splat) operator:
 
   arguments = { first: 3, second: 4, third: 5 }
   my_method(**arguments)
@@ -285,8 +316,9 @@ Both are equivalent to:
 
   my_method(first: 3, second: 4, third: 5)
 
-If the method definition uses <code>**</code> to gather arbitrary keyword
-arguments they will not be gathered by <code>*</code>:
+If the method definition uses the keyword splat operator to
+gather arbitrary keyword arguments, they will not be gathered
+by <code>*</code>:
 
   def my_method(*a, **kw)
     p arguments: a, keywords: kw
@@ -296,10 +328,7 @@ arguments they will not be gathered by <code>*</code>:
 
 Prints:
 
-  {:arguments=>[1, 2, {"3"=>4}], :keywords=>{:five=>6}}
-
-Unlike the splat operator described above the <code>**</code> operator has no
-commonly recognized name.
+  {:arguments=>[1, 2], :keywords=>{'3'=>4, :five=>6}}
 
 === Proc to Block Conversion
 
@@ -310,21 +339,21 @@ Given a method that use a block:
   end
 
 You can convert a proc or lambda to a block argument with the <code>&</code>
-operator:
+(block conversion) operator:
 
   argument = proc { |a| puts "#{a.inspect} was yielded" }
 
   my_method(&argument)
 
-If the splat operator comes first in the call, parenthesis must be used to
-avoid a warning.
+If the block conversion operator comes first in the call, parenthesis must be
+used to avoid a warning:
 
-Unlike the splat operator described above the <code>&</code> operator has no
-commonly recognized name.
+  my_method &argument  # warning
+  my_method(&argument) # no warning
 
 == Method Lookup
 
-When you send a message Ruby looks up the method that matches the name of the
+When you send a message, Ruby looks up the method that matches the name of the
 message for the receiver.  Methods are stored in classes and modules so method
 lookup walks these, not the objects themselves.
 
@@ -343,7 +372,6 @@ If no match is found this repeats from the beginning, but looking for
 +method_missing+.  The default +method_missing+ is BasicObject#method_missing
 which raises a NameError when invoked.
 
-If refinements (an experimental feature) are active the method lookup changes.
+If refinements (an experimental feature) are active, the method lookup changes.
 See the {refinements documentation}[rdoc-ref:syntax/refinements.rdoc] for
 details.
-

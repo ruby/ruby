@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # Timeout long-running blocks
 #
 # == Synopsis
@@ -14,7 +15,7 @@
 #
 # Previous versions didn't use a module for namespacing, however
 # #timeout is provided for backwards compatibility.  You
-# should prefer Timeout#timeout instead.
+# should prefer Timeout.timeout instead.
 #
 # == Copyright
 #
@@ -22,7 +23,7 @@
 # Copyright:: (C) 2000  Information-technology Promotion Agency, Japan
 
 module Timeout
-  # Raised by Timeout#timeout when the block times out.
+  # Raised by Timeout.timeout when the block times out.
   class Error < RuntimeError
     attr_reader :thread
 
@@ -59,24 +60,30 @@ module Timeout
   #         value of 0 or +nil+ will execute the block without any timeout.
   # +klass+:: Exception Class to raise if the block fails to terminate
   #           in +sec+ seconds.  Omitting will use the default, Timeout::Error
+  # +message+:: Error message to raise with Exception Class.
+  #             Omitting will use the default, "execution expired"
   #
   # Returns the result of the block *if* the block completed before
   # +sec+ seconds, otherwise throws an exception, based on the value of +klass+.
   #
   # The exception thrown to terminate the given block cannot be rescued inside
-  # the block unless +klass+ is given explicitly.
+  # the block unless +klass+ is given explicitly. However, the block can use
+  # ensure to prevent the handling of the exception.  For that reason, this
+  # method cannot be relied on to enforce timeouts for untrusted blocks.
   #
   # Note that this is both a method of module Timeout, so you can <tt>include
   # Timeout</tt> into your classes so they have a #timeout method, as well as
   # a module method, so you can call it directly as Timeout.timeout().
-  def timeout(sec, klass = nil)   #:yield: +sec+
+  def timeout(sec, klass = nil, message = nil)   #:yield: +sec+
     return yield(sec) if sec == nil or sec.zero?
-    message = "execution expired".freeze
+    message ||= "execution expired".freeze
+    from = "from #{caller_locations(1, 1)[0]}" if $DEBUG
     e = Error
     bl = proc do |exception|
       begin
         x = Thread.current
         y = Thread.start {
+          Thread.current.name = from
           begin
             sleep sec
           rescue => e
@@ -113,7 +120,7 @@ module Timeout
 end
 
 def timeout(*args, &block)
-  warn "#{caller_locations(1, 1)[0]}: Object##{__method__} is deprecated, use Timeout.timeout instead."
+  warn "Object##{__method__} is deprecated, use Timeout.timeout instead.", uplevel: 1
   Timeout.timeout(*args, &block)
 end
 

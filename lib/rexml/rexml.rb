@@ -1,4 +1,5 @@
-# -*- encoding: utf-8 -*-
+# -*- coding: utf-8 -*-
+# frozen_string_literal: false
 # REXML is an XML toolkit for Ruby[http://www.ruby-lang.org], in Ruby.
 #
 # REXML is a _pure_ Ruby, XML 1.0 conforming,
@@ -23,8 +24,8 @@
 module REXML
   COPYRIGHT = "Copyright © 2001-2008 Sean Russell <ser@germane-software.com>"
   DATE = "2008/019"
-  VERSION = "3.1.7.3"
-  REVISION = %w$Revision$[1] || ''
+  VERSION = "3.2.3"
+  REVISION = ""
 
   Copyright = COPYRIGHT
   Version = VERSION

@@ -13,18 +13,22 @@
 /*
  * ASN1_DATE conversions
  */
-VALUE asn1time_to_time(ASN1_TIME *);
-time_t time_to_time_t(VALUE);
+VALUE asn1time_to_time(const ASN1_TIME *);
+/* Splits VALUE to seconds and offset days. VALUE is typically a Time or an
+ * Integer. This is used when updating ASN1_*TIME with ASN1_TIME_adj() or
+ * X509_time_adj_ex(). We can't use ASN1_TIME_set() and X509_time_adj() because
+ * they have the Year 2038 issue on sizeof(time_t) == 4 environment */
+void ossl_time_split(VALUE, time_t *, int *);
 
 /*
  * ASN1_STRING conversions
  */
-VALUE asn1str_to_str(ASN1_STRING *);
+VALUE asn1str_to_str(const ASN1_STRING *);
 
 /*
  * ASN1_INTEGER conversions
  */
-VALUE asn1integer_to_num(ASN1_INTEGER *);
+VALUE asn1integer_to_num(const ASN1_INTEGER *);
 ASN1_INTEGER *num_to_asn1integer(VALUE, ASN1_INTEGER *);
 
 /*

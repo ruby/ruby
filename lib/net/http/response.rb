@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # HTTP response class.
 #
 # This class wraps together the response header and the response body (the
@@ -116,7 +117,9 @@ class Net::HTTPResponse
   end
 
   def error!   #:nodoc:
-    raise error_type().new(@code + ' ' + @message.dump, self)
+    message = @code
+    message += ' ' + @message.dump if @message
+    raise error_type().new(message, self)
   end
 
   def error_type   #:nodoc:
@@ -137,17 +140,17 @@ class Net::HTTPResponse
   #
 
   def response   #:nodoc:
-    warn "#{caller(1)[0]}: warning: Net::HTTPResponse#response is obsolete" if $VERBOSE
+    warn "Net::HTTPResponse#response is obsolete", uplevel: 1 if $VERBOSE
     self
   end
 
   def header   #:nodoc:
-    warn "#{caller(1)[0]}: warning: Net::HTTPResponse#header is obsolete" if $VERBOSE
+    warn "Net::HTTPResponse#header is obsolete", uplevel: 1 if $VERBOSE
     self
   end
 
   def read_header   #:nodoc:
-    warn "#{caller(1)[0]}: warning: Net::HTTPResponse#read_header is obsolete" if $VERBOSE
+    warn "Net::HTTPResponse#read_header is obsolete", uplevel: 1 if $VERBOSE
     self
   end
 
@@ -239,10 +242,10 @@ class Net::HTTPResponse
   ##
   # Checks for a supported Content-Encoding header and yields an Inflate
   # wrapper for this response's socket when zlib is present.  If the
-  # Content-Encoding is unsupported or zlib is missing the plain socket is
+  # Content-Encoding is not supported or zlib is missing, the plain socket is
   # yielded.
   #
-  # If a Content-Range header is present a plain socket is yielded as the
+  # If a Content-Range header is present, a plain socket is yielded as the
   # bytes in the range may not be a complete deflate block.
 
   def inflater # :nodoc:
@@ -251,7 +254,7 @@ class Net::HTTPResponse
     return yield @socket if self['content-range']
 
     v = self['content-encoding']
-    case v && v.downcase
+    case v&.downcase
     when 'deflate', 'gzip', 'x-gzip' then
       self.delete 'content-encoding'
 
@@ -377,6 +380,7 @@ class Net::HTTPResponse
       end
       block = proc do |compressed_chunk|
         @inflate.inflate(compressed_chunk) do |chunk|
+          compressed_chunk.clear
           dest << chunk
         end
       end

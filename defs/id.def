@@ -1,6 +1,9 @@
 # -*- mode: ruby; coding: us-ascii -*-
 firstline, predefined = __LINE__+1, %[\
+  max
+  min
   freeze
+  nil?
   inspect
   intern
   object_id
@@ -36,13 +39,37 @@ firstline, predefined = __LINE__+1, %[\
   to_a
   to_s
   to_i
+  to_f
+  to_r
   bt
   bt_locations
   call
   mesg
   exception
+  locals
+  not                                                   NOT
+  and                                                   AND
+  or                                                    OR
+  div
+  divmod
+  fdiv
+  quo
+  name
+  nil
 
   _                                                     UScore
+
+  # MUST be successive
+  _1  NUMPARAM_1
+  _2  NUMPARAM_2
+  _3  NUMPARAM_3
+  _4  NUMPARAM_4
+  _5  NUMPARAM_5
+  _6  NUMPARAM_6
+  _7  NUMPARAM_7
+  _8  NUMPARAM_8
+  _9  NUMPARAM_9
+
   "/*NULL*/"                                            NULL
   empty?
   eql?
@@ -56,10 +83,54 @@ firstline, predefined = __LINE__+1, %[\
   core#define_method
   core#define_singleton_method
   core#set_postexe
-  core#hash_from_ary
-  core#hash_merge_ary
   core#hash_merge_ptr
   core#hash_merge_kwd
+  core#raise
+
+  -                                                     debug#created_info
+
+  $_                                                    LASTLINE
+  $~                                                    BACKREF
+  $!                                                    ERROR_INFO
+]
+
+# VM ID         OP      Parser Token
+token_ops = %[\
+  Dot2          ..      DOT2
+  Dot3          ...     DOT3
+  BDot2         ..      BDOT2
+  BDot3         ...     BDOT3
+  UPlus         +@      UPLUS
+  UMinus        -@      UMINUS
+  Pow           **      POW
+  Cmp           <=>     CMP
+  PLUS          +
+  MINUS         -
+  MULT          *
+  DIV           /
+  MOD           %
+  LTLT          <<      LSHFT
+  GTGT          >>      RSHFT
+  LT            <
+  LE            <=      LEQ
+  GT            >
+  GE            >=      GEQ
+  Eq            ==      EQ
+  Eqq           ===     EQQ
+  Neq           !=      NEQ
+  Not           !
+  And           &
+  Or            |
+  Backquote     `
+  EqTilde       =~      MATCH
+  NeqTilde      !~      NMATCH
+  AREF          []
+  ASET          []=
+  COLON2        ::
+  ANDOP         &&
+  OROP          ||
+  ANDDOT        &.
+  METHREF       .:
 ]
 
 class KeywordError < RuntimeError
@@ -76,6 +147,7 @@ global_ids = []
 const_ids = []
 class_ids = []
 attrset_ids = []
+token_op_ids = []
 names = {}
 predefined.split(/^/).each_with_index do |line, num|
   next if /^#/ =~ line
@@ -92,6 +164,10 @@ predefined.split(/^/).each_with_index do |line, num|
     token.sub!(/\A@/, "_I_")
     token.gsub!(/\W+/, "")
   end
+  if name == '-'
+    preserved_ids << token
+    next
+  end
   if prev = names[name]
     KeywordError.raise("#{name} is already registered at line #{prev+firstline}", firstline+num)
   end
@@ -102,13 +178,21 @@ predefined.split(/^/).each_with_index do |line, num|
   case name
   when /\A[A-Z]\w*\z/; const_ids
   when /\A(?!\d)\w+\z/; local_ids
-  when /\A\$(?:\d+|(?!\d)\w+)\z/; global_ids
+  when /\A\$(?:\d+|(?!\d)\w+|\W)\z/; global_ids
   when /\A@@(?!\d)\w+\z/; class_ids
   when /\A@(?!\d)\w+\z/; instance_ids
   when /\A((?!\d)\w+)=\z/; attrset_ids
   else preserved_ids
   end << token
   predefined_ids[token] = name
+end
+token_ops.split(/^/).each do |line|
+  next if /^#/ =~ line
+  line.sub!(/\s+#.*/, '')
+  id, op, token = line.split
+  next unless id and op
+  token ||= (id unless /\A\W\z/ =~ op)
+  token_op_ids << [id, op, token]
 end
 {
   "LOCAL" => local_ids,
@@ -119,4 +203,5 @@ end
   "ATTRSET" => attrset_ids,
   :preserved => preserved_ids,
   :predefined => predefined_ids,
+  :token_op => token_op_ids,
 }

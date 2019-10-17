@@ -48,7 +48,7 @@ downcase(char *s, size_t i)
 /* strftime --- produce formatted time */
 
 static size_t
-date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
+date_strftime_with_tmx(char *s, const size_t maxsize, const char *format,
 		       const struct tmx *tmx)
 {
     char *endp = s + maxsize;
@@ -575,7 +575,12 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	  case '5': case '6':  case '7': case '8': case '9':
 	    {
 		char *e;
-		precision = (int)strtoul(format, &e, 10);
+		unsigned long prec = strtoul(format, &e, 10);
+		if (prec > INT_MAX || prec > maxsize) {
+		    errno = ERANGE;
+		    return 0;
+		}
+		precision = (int)prec;
 		format = e - 1;
 		goto again;
 	    }

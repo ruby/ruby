@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 
 class TestGemResolverAPISet < Gem::TestCase
@@ -205,4 +206,3 @@ class TestGemResolverAPISet < Gem::TestCase
   end
 
 end
-

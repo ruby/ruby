@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'optparse'
 
@@ -8,7 +9,7 @@ class TestOptionParser < Test::Unit::TestCase
   end
 
   class DummyOutput < String
-    alias write <<
+    alias write concat
   end
   def assert_no_error(*args)
     $stderr, stderr = DummyOutput.new, $stderr
@@ -62,5 +63,16 @@ class TestOptionParser < Test::Unit::TestCase
     assert_equal(/foo/i, @reopt)
     assert_equal(%w"", no_error {@opt.parse!(%w"--regexp=/foo/n")})
     assert_equal(/foo/n, @reopt)
+  end
+
+  def test_into
+    @opt.def_option "-h", "--host=HOST", "hostname"
+    @opt.def_option "-p", "--port=PORT", "port", Integer
+    @opt.def_option "-v", "--verbose" do @verbose = true end
+    @opt.def_option "-q", "--quiet" do @quiet = true end
+    result = {}
+    @opt.parse %w(--host localhost --port 8000 -v), into: result
+    assert_equal({host: "localhost", port: 8000, verbose: true}, result)
+    assert_equal(true, @verbose)
   end
 end

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'fiddle'
 require 'fiddle/struct'
 require 'fiddle/cparser'
@@ -62,6 +63,9 @@ module Fiddle
     include CParser
     extend Importer
 
+    attr_reader :type_alias
+    private :type_alias
+
     # Creates an array of handlers for the given +libs+, can be an instance of
     # Fiddle::Handle, Fiddle::Importer, or will create a new instance of
     # Fiddle::Handle using Fiddle.dlopen
@@ -101,7 +105,7 @@ module Fiddle
     def sizeof(ty)
       case ty
       when String
-        ty = parse_ctype(ty, @type_alias).abs()
+        ty = parse_ctype(ty, type_alias).abs()
         case ty
         when TYPE_CHAR
           return SIZEOF_CHAR
@@ -111,8 +115,6 @@ module Fiddle
           return SIZEOF_INT
         when TYPE_LONG
           return SIZEOF_LONG
-        when TYPE_LONG_LONG
-          return SIZEOF_LONG_LONG
         when TYPE_FLOAT
           return SIZEOF_FLOAT
         when TYPE_DOUBLE
@@ -120,7 +122,12 @@ module Fiddle
         when TYPE_VOIDP
           return SIZEOF_VOIDP
         else
-          raise(DLError, "unknown type: #{ty}")
+          if defined?(TYPE_LONG_LONG) and
+            ty == TYPE_LONG_LONG
+            return SIZEOF_LONG_LONG
+          else
+            raise(DLError, "unknown type: #{ty}")
+          end
         end
       when Class
         if( ty.instance_methods().include?(:to_ptr) )
@@ -150,7 +157,8 @@ module Fiddle
     # :stopdoc:
     CALL_TYPE_TO_ABI = Hash.new { |h, k|
       raise RuntimeError, "unsupported call type: #{k}"
-    }.merge({ :stdcall => (Function::STDCALL rescue Function::DEFAULT),
+    }.merge({ :stdcall => Function.const_defined?(:STDCALL) ? Function::STDCALL :
+                          Function::DEFAULT,
               :cdecl   => Function::DEFAULT,
               nil      => Function::DEFAULT
             }).freeze
@@ -159,7 +167,7 @@ module Fiddle
 
     # Creates a global method from the given C +signature+.
     def extern(signature, *opts)
-      symname, ctype, argtype = parse_signature(signature, @type_alias)
+      symname, ctype, argtype = parse_signature(signature, type_alias)
       opt = parse_bind_options(opts)
       f = import_function(symname, ctype, argtype, opt[:call_type])
       name = symname.gsub(/@.+/,'')
@@ -183,7 +191,7 @@ module Fiddle
     # Creates a global method from the given C +signature+ using the given
     # +opts+ as bind parameters with the given block.
     def bind(signature, *opts, &blk)
-      name, ctype, argtype = parse_signature(signature, @type_alias)
+      name, ctype, argtype = parse_signature(signature, type_alias)
       h = parse_bind_options(opts)
       case h[:callback_type]
       when :bind, nil
@@ -212,7 +220,7 @@ module Fiddle
     #
     #   MyStruct = struct ['int i', 'char c']
     def struct(signature)
-      tys, mems = parse_struct_signature(signature, @type_alias)
+      tys, mems = parse_struct_signature(signature, type_alias)
       Fiddle::CStructBuilder.create(CStruct, tys, mems)
     end
 
@@ -220,7 +228,7 @@ module Fiddle
     #
     #   MyUnion = union ['int i', 'char c']
     def union(signature)
-      tys, mems = parse_struct_signature(signature, @type_alias)
+      tys, mems = parse_struct_signature(signature, type_alias)
       Fiddle::CStructBuilder.create(CUnion, tys, mems)
     end
 
@@ -256,7 +264,7 @@ module Fiddle
     #
     # Will raise an error if no handlers are open.
     def handler
-      @handler or raise "call dlload before importing symbols and functions"
+      (@handler ||= nil) or raise "call dlload before importing symbols and functions"
     end
 
     # Returns a new Fiddle::Pointer instance at the memory address of the given

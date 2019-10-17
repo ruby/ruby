@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #--
 # Copyright (c) 2003, 2004 Jim Weirich, 2009 Eric Hodel
 #
@@ -21,7 +22,6 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #++
 
-require 'rubygems'
 begin
   gem 'rdoc'
 rescue Gem::LoadError
@@ -128,7 +128,7 @@ class RDoc::Task < Rake::TaskLib
   attr_accessor :template
 
   ##
-  # Name of format generator (<tt>--format<tt>) used by rdoc. (defaults to
+  # Name of format generator (<tt>--format</tt>) used by rdoc. (defaults to
   # rdoc's default)
 
   attr_accessor :generator
@@ -327,4 +327,3 @@ module Rake
 
 end
 # :startdoc:
-

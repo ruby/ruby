@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   irb/help.rb - print usage module
 #   	$Release Version: 0.9.6$
@@ -9,7 +10,7 @@
 #
 #
 
-require 'irb/magic-file'
+require_relative 'magic-file'
 
 module IRB
   # Outputs the irb help message, see IRB@Command+line+options.

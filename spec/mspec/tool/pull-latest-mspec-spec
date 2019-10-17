@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# Assumes all commits have been synchronized to https://github.com/ruby/spec
+# See spec/mspec/tool/sync/sync-rubyspec.rb
+
+function sync {
+  dir="$1"
+  repo="$2"
+  short_repo_name="ruby/$(basename "$repo" .git)"
+
+  rm -rf "$dir"
+  git clone --depth 1 "$repo" "$dir"
+  commit=$(git -C "$dir" log -n 1 --format='%h')
+  rm -rf "$dir/.git"
+
+  # Remove CI files to avoid confusion
+  rm -f "$dir/appveyor.yml"
+  rm -f "$dir/.travis.yml"
+  rm -rf "$dir/.github"
+
+  git add "$dir"
+  git commit -m "Update to ${short_repo_name}@${commit}"
+}
+
+sync spec/mspec https://github.com/ruby/mspec.git
+sync spec/ruby https://github.com/ruby/spec.git

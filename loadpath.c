@@ -89,4 +89,3 @@ const char ruby_initial_load_paths[] =
     RUBY_ARCH_LIB_FOR(RUBY_ARCH) "\0"
 #endif
     "";
-

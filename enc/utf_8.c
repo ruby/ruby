@@ -28,17 +28,20 @@
  */
 
 #include "regenc.h"
-#include "encindex.h"
+#ifdef RUBY
+# include "encindex.h"
+#endif
+
 #ifndef ENCINDEX_UTF_8
-#define ENCINDEX_UTF_8 0
+# define ENCINDEX_UTF_8 0
 #endif
 
 #define USE_INVALID_CODE_SCHEME
 
 #ifdef USE_INVALID_CODE_SCHEME
 /* virtual codepoint values for invalid encoding byte 0xfe and 0xff */
-#define INVALID_CODE_FE   0xfffffffe
-#define INVALID_CODE_FF   0xffffffff
+# define INVALID_CODE_FE  0xfffffffe
+# define INVALID_CODE_FF  0xffffffff
 #endif
 #define VALID_CODE_LIMIT  0x0010ffff
 
@@ -414,7 +417,7 @@ get_case_fold_codes_by_str(OnigCaseFoldType flag,
 OnigEncodingDefine(utf_8, UTF_8) = {
   mbc_enc_len,
   "UTF-8",     /* name */
-  6,           /* max byte length */
+  4,           /* max byte length */
   1,           /* min byte length */
   is_mbc_newline,
   mbc_to_code,
@@ -428,6 +431,7 @@ OnigEncodingDefine(utf_8, UTF_8) = {
   get_ctype_code_range,
   left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match,
+  onigenc_unicode_case_map,
   ENCINDEX_UTF_8,
   ONIGENC_FLAG_UNICODE,
 };
@@ -443,4 +447,3 @@ ENC_ALIAS("CP65001", "UTF-8")
 ENC_REPLICATE("UTF8-MAC", "UTF-8")
 ENC_ALIAS("UTF-8-MAC", "UTF8-MAC")
 ENC_ALIAS("UTF-8-HFS", "UTF8-MAC") /* Emacs 23.2 */
-

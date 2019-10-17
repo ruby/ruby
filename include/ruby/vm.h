@@ -24,8 +24,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 /* Place holder.
  *
  * We will prepare VM creation/control APIs on 1.9.2 or later.
- * If you have an interest about it, please see mvm branch.
- * http://svn.ruby-lang.org/cgi-bin/viewvc.cgi/branches/mvm/
+ *
  */
 
 /* VM type declaration */

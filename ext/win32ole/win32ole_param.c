@@ -149,7 +149,7 @@ foleparam_initialize(VALUE self, VALUE olemethod, VALUE n)
     if (!rb_obj_is_kind_of(olemethod, cWIN32OLE_METHOD)) {
         rb_raise(rb_eTypeError, "1st parameter must be WIN32OLE_METHOD object");
     }
-    idx = FIX2INT(n);
+    idx = RB_FIX2INT(n);
     return oleparam_ole_param(self, olemethod, idx);
 }
 

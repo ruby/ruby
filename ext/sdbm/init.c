@@ -71,6 +71,8 @@ struct dbmdata {
     DBM *di_dbm;
 };
 
+NORETURN(static void closed_sdbm(void));
+
 static void
 closed_sdbm(void)
 {
@@ -79,7 +81,6 @@ closed_sdbm(void)
 
 #define GetDBM(obj, dbmp) do {\
     TypedData_Get_Struct((obj), struct dbmdata, &sdbm_type, (dbmp));\
-    if ((dbmp) == 0) closed_sdbm();\
     if ((dbmp)->di_dbm == 0) closed_sdbm();\
 } while (0)
 
@@ -100,12 +101,10 @@ free_sdbm(void *ptr)
 static size_t
 memsize_dbm(const void *ptr)
 {
-    size_t size = 0;
     const struct dbmdata *dbmp = ptr;
-    if (dbmp) {
-	size += sizeof(*dbmp);
-	if (dbmp->di_dbm) size += sizeof(DBM);
-    }
+    size_t size = sizeof(*dbmp);
+    if (dbmp->di_dbm)
+	size += sizeof(DBM);
     return size;
 }
 
@@ -148,8 +147,6 @@ fsdbm_closed(VALUE obj)
     struct dbmdata *dbmp;
 
     TypedData_Get_Struct(obj, struct dbmdata, &sdbm_type, dbmp);
-    if (dbmp == 0)
-	return Qtrue;
     if (dbmp->di_dbm == 0)
 	return Qtrue;
 
@@ -159,7 +156,9 @@ fsdbm_closed(VALUE obj)
 static VALUE
 fsdbm_alloc(VALUE klass)
 {
-    return TypedData_Wrap_Struct(klass, &sdbm_type, 0);
+    struct dbmdata *dbmp;
+
+    return TypedData_Make_Struct(klass, struct dbmdata, &sdbm_type, dbmp);
 }
 /*
  * call-seq:
@@ -179,12 +178,12 @@ fsdbm_alloc(VALUE klass)
 static VALUE
 fsdbm_initialize(int argc, VALUE *argv, VALUE obj)
 {
-    volatile VALUE file;
-    VALUE vmode;
+    VALUE file, vmode;
     DBM *dbm;
     struct dbmdata *dbmp;
     int mode;
 
+    TypedData_Get_Struct(obj, struct dbmdata, &sdbm_type, dbmp);
     if (rb_scan_args(argc, argv, "11", &file, &vmode) == 1) {
 	mode = 0666;		/* default value */
     }
@@ -209,8 +208,8 @@ fsdbm_initialize(int argc, VALUE *argv, VALUE obj)
 	rb_sys_fail_str(file);
     }
 
-    dbmp = ALLOC(struct dbmdata);
-    DATA_PTR(obj) = dbmp;
+    if (dbmp->di_dbm)
+	sdbm_close(dbmp->di_dbm);
     dbmp->di_dbm = dbm;
     dbmp->di_size = -1;
 
@@ -512,7 +511,8 @@ fsdbm_delete_if(VALUE obj)
     DBM *dbm;
     VALUE keystr, valstr;
     VALUE ret, ary = rb_ary_new();
-    int i, status = 0, n;
+    long i;
+    int status = 0, n;
 
     fdbm_modify(obj);
     GetDBM2(obj, dbmp, dbm);
@@ -529,7 +529,7 @@ fsdbm_delete_if(VALUE obj)
     }
 
     for (i = 0; i < RARRAY_LEN(ary); i++) {
-	keystr = RARRAY_PTR(ary)[i];
+	keystr = RARRAY_AREF(ary, i);
 	ExportStringValue(keystr);
 	key.dptr = RSTRING_PTR(keystr);
 	key.dsize = RSTRING_LENINT(keystr);
@@ -654,11 +654,13 @@ fsdbm_store(VALUE obj, VALUE keystr, VALUE valstr)
 static VALUE
 update_i(RB_BLOCK_CALL_FUNC_ARGLIST(pair, dbm))
 {
+    const VALUE *ptr;
     Check_Type(pair, T_ARRAY);
     if (RARRAY_LEN(pair) < 2) {
 	rb_raise(rb_eArgError, "pair must be [key, value]");
     }
-    fsdbm_store(dbm, RARRAY_PTR(pair)[0], RARRAY_PTR(pair)[1]);
+    ptr = RARRAY_CONST_PTR(pair);
+    fsdbm_store(dbm, ptr[0], ptr[1]);
     return Qnil;
 }
 

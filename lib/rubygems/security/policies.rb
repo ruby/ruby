@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module Gem::Security
 
   ##
@@ -109,7 +110,6 @@ module Gem::Security
     'MediumSecurity'   => MediumSecurity,
     'HighSecurity'     => HighSecurity,
     # SigningPolicy is not intended for use by `gem -P` so do not list it
-  }
+  }.freeze
 
 end
-

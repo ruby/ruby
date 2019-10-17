@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require "test/unit"
 require "rexml/document"
 require "rexml/parsers/treeparser"
@@ -11,7 +12,7 @@ class TestTreeParser < Test::Unit::TestCase
         parse(xml)
       end
       assert_equal(<<-MESSAGE, exception.to_s)
-Missing end tag for 'root' (got "not-root")
+Missing end tag for 'root' (got 'not-root')
 Line: 1
 Position: #{xml.bytesize}
 Last 80 unconsumed characters:

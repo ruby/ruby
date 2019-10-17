@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #
 # = net/imap.rb
 #
@@ -17,6 +18,7 @@ require "socket"
 require "monitor"
 require "digest/md5"
 require "strscan"
+require_relative 'protocol'
 begin
   require "openssl"
 rescue LoadError
@@ -198,7 +200,7 @@ module Net
   #    Goldsmith, D. and Davis, M., "UTF-7: A Mail-Safe Transformation Format of
   #    Unicode", RFC 2152, May 1997.
   #
-  class IMAP
+  class IMAP < Protocol
     include MonitorMixin
     if defined?(OpenSSL::SSL)
       include OpenSSL
@@ -219,6 +221,11 @@ module Net
 
     # Returns all response handlers.
     attr_reader :response_handlers
+
+    # Seconds to wait until a connection is opened.
+    # If the IMAP object cannot open a connection within this time,
+    # it raises a Net::OpenTimeout exception. The default value is 30 seconds.
+    attr_reader :open_timeout
 
     # The thread to receive exceptions.
     attr_accessor :client_thread
@@ -313,6 +320,7 @@ module Net
 
     # Disconnects from the server.
     def disconnect
+      return if disconnected?
       begin
         begin
           # try to call SSL::SSLSocket#io.
@@ -328,9 +336,7 @@ module Net
       end
       @receiver_thread.join
       synchronize do
-        unless @sock.closed?
-          @sock.close
-        end
+        @sock.close
       end
       raise e if e
     end
@@ -418,7 +424,7 @@ module Net
       send_command("AUTHENTICATE", auth_type) do |resp|
         if resp.instance_of?(ContinuationRequest)
           data = authenticator.process(resp.data.text.unpack("m")[0])
-          s = [data].pack("m").gsub(/\n/, "")
+          s = [data].pack("m0")
           send_string_data(s)
           put_string(CRLF)
         end
@@ -778,7 +784,7 @@ module Net
     #
     # The +set+ parameter is a number or a range between two numbers,
     # or an array of those.  The number is a message sequence number,
-    # where -1 repesents a '*' for use in range notation like 100..-1
+    # where -1 represents a '*' for use in range notation like 100..-1
     # being interpreted as '100:*'.  Beware that the +exclude_end?+
     # property of a Range object is ignored, and the contents of a
     # range are independent of the order of the range endpoints as per
@@ -808,13 +814,13 @@ module Net
     #   #=> "12-Oct-2000 22:40:59 +0900"
     #   p data.attr["UID"]
     #   #=> 98
-    def fetch(set, attr)
-      return fetch_internal("FETCH", set, attr)
+    def fetch(set, attr, mod = nil)
+      return fetch_internal("FETCH", set, attr, mod)
     end
 
     # Similar to #fetch(), but +set+ contains unique identifiers.
-    def uid_fetch(set, attr)
-      return fetch_internal("UID FETCH", set, attr)
+    def uid_fetch(set, attr, mod = nil)
+      return fetch_internal("UID FETCH", set, attr, mod)
     end
 
     # Sends a STORE command to alter data associated with messages
@@ -933,7 +939,17 @@ module Net
     # messages.  Yields responses from the server during the IDLE.
     #
     # Use #idle_done() to leave IDLE.
-    def idle(&response_handler)
+    #
+    # If +timeout+ is given, this method returns after +timeout+ seconds passed.
+    # +timeout+ can be used for keep-alive.  For example, the following code
+    # checks the connection for each 60 seconds.
+    #
+    #   loop do
+    #     imap.idle(60) do |res|
+    #       ...
+    #     end
+    #   end
+    def idle(timeout = nil, &response_handler)
       raise LocalJumpError, "no block given" unless response_handler
 
       response = nil
@@ -945,10 +961,10 @@ module Net
         begin
           add_response_handler(response_handler)
           @idle_done_cond = new_cond
-          @idle_done_cond.wait
+          @idle_done_cond.wait(timeout)
           @idle_done_cond = nil
           if @receiver_thread_terminating
-            raise Net::IMAP::Error, "connection closed"
+            raise @exception || Net::IMAP::Error.new("connection closed")
           end
         ensure
           unless @receiver_thread_terminating
@@ -983,7 +999,7 @@ module Net
     def self.decode_utf7(s)
       return s.gsub(/&([^-]+)?-/n) {
         if $1
-          ($1.tr(",", "/") + "===").unpack("m")[0].encode(Encoding::UTF_8, Encoding::UTF_16BE)
+          ($1.tr(",", "/") + "===").unpack1("m").encode(Encoding::UTF_8, Encoding::UTF_16BE)
         else
           "&"
         end
@@ -996,8 +1012,8 @@ module Net
         if $1
           "&-"
         else
-          base64 = [$&.encode(Encoding::UTF_16BE)].pack("m")
-          "&" + base64.delete("=\n").tr("/", ",") + "-"
+          base64 = [$&.encode(Encoding::UTF_16BE)].pack("m0")
+          "&" + base64.delete("=").tr("/", ",") + "-"
         end
       }.force_encoding("ASCII-8BIT")
     end
@@ -1039,6 +1055,7 @@ module Net
     #         be installed.
     #         If options[:ssl] is a hash, it's passed to
     #         OpenSSL::SSL::SSLContext#set_params as parameters.
+    # open_timeout:: Seconds to wait until a connection is opened
     #
     # The most common errors are:
     #
@@ -1067,8 +1084,9 @@ module Net
       @port = options[:port] || (options[:ssl] ? SSL_PORT : PORT)
       @tag_prefix = "RUBY"
       @tagno = 0
+      @open_timeout = options[:open_timeout] || 30
       @parser = ResponseParser.new
-      @sock = TCPSocket.open(@host, @port)
+      @sock = tcp_socket(@host, @port)
       begin
         if options[:ssl]
           start_tls_session(options[:ssl])
@@ -1080,7 +1098,9 @@ module Net
         @tagged_responses = {}
         @response_handlers = []
         @tagged_response_arrival = new_cond
+        @continued_command_tag = nil
         @continuation_request_arrival = new_cond
+        @continuation_request_exception = nil
         @idle_done_cond = nil
         @logout_command_tag = nil
         @debug_output_bol = true
@@ -1106,6 +1126,15 @@ module Net
         @sock.close
         raise
       end
+    end
+
+    def tcp_socket(host, port)
+      s = Socket.tcp(host, port, :connect_timeout => @open_timeout)
+      s.setsockopt(:SOL_SOCKET, :SO_KEEPALIVE, true)
+      s
+    rescue Errno::ETIMEDOUT
+      raise Net::OpenTimeout, "Timeout to open TCP connection to " +
+        "#{host}:#{port} (exceeds #{@open_timeout} seconds)"
     end
 
     def receive_responses
@@ -1135,8 +1164,13 @@ module Net
             when TaggedResponse
               @tagged_responses[resp.tag] = resp
               @tagged_response_arrival.broadcast
-              if resp.tag == @logout_command_tag
+              case resp.tag
+              when @logout_command_tag
                 return
+              when @continued_command_tag
+                @continuation_request_exception =
+                  RESPONSE_ERRORS[resp.name].new(resp)
+                @continuation_request_arrival.signal
               end
             when UntaggedResponse
               record_response(resp.name, resp.data)
@@ -1191,7 +1225,7 @@ module Net
     end
 
     def get_response
-      buff = ""
+      buff = String.new
       while true
         s = @sock.gets(CRLF)
         break unless s
@@ -1226,7 +1260,7 @@ module Net
         put_string(tag + " " + cmd)
         args.each do |i|
           put_string(" ")
-          send_data(i)
+          send_data(i, tag)
         end
         put_string(CRLF)
         if cmd == "LOGOUT"
@@ -1272,8 +1306,12 @@ module Net
       when Integer
         NumValidator.ensure_number(data)
       when Array
-        data.each do |i|
-          validate_data(i)
+        if data[0] == 'CHANGEDSINCE'
+          NumValidator.ensure_mod_sequence_value(data[1])
+        else
+          data.each do |i|
+            validate_data(i)
+          end
         end
       when Time
       when Symbol
@@ -1282,32 +1320,32 @@ module Net
       end
     end
 
-    def send_data(data)
+    def send_data(data, tag = nil)
       case data
       when nil
         put_string("NIL")
       when String
-        send_string_data(data)
+        send_string_data(data, tag)
       when Integer
         send_number_data(data)
       when Array
-        send_list_data(data)
+        send_list_data(data, tag)
       when Time
         send_time_data(data)
       when Symbol
         send_symbol_data(data)
       else
-        data.send_data(self)
+        data.send_data(self, tag)
       end
     end
 
-    def send_string_data(str)
+    def send_string_data(str, tag = nil)
       case str
       when ""
         put_string('""')
       when /[\x80-\xff\r\n]/n
         # literal
-        send_literal(str)
+        send_literal(str, tag)
       when /[(){ \x00-\x1f\x7f%*"\\]/n
         # quoted string
         send_quoted_string(str)
@@ -1320,18 +1358,28 @@ module Net
       put_string('"' + str.gsub(/["\\]/n, "\\\\\\&") + '"')
     end
 
-    def send_literal(str)
-      put_string("{" + str.bytesize.to_s + "}" + CRLF)
-      @continuation_request_arrival.wait
-      raise @exception if @exception
-      put_string(str)
+    def send_literal(str, tag = nil)
+      synchronize do
+        put_string("{" + str.bytesize.to_s + "}" + CRLF)
+        @continued_command_tag = tag
+        @continuation_request_exception = nil
+        begin
+          @continuation_request_arrival.wait
+          e = @continuation_request_exception || @exception
+          raise e if e
+          put_string(str)
+        ensure
+          @continued_command_tag = nil
+          @continuation_request_exception = nil
+        end
+      end
     end
 
     def send_number_data(num)
       put_string(num.to_s)
     end
 
-    def send_list_data(list)
+    def send_list_data(list, tag = nil)
       put_string("(")
       first = true
       list.each do |i|
@@ -1340,7 +1388,7 @@ module Net
         else
           put_string(" ")
         end
-        send_data(i)
+        send_data(i, tag)
       end
       put_string(")")
     end
@@ -1375,7 +1423,7 @@ module Net
       end
     end
 
-    def fetch_internal(cmd, set, attr)
+    def fetch_internal(cmd, set, attr, mod = nil)
       case attr
       when String then
         attr = RawData.new(attr)
@@ -1387,7 +1435,11 @@ module Net
 
       synchronize do
         @responses.delete("FETCH")
-        send_command(cmd, MessageSet.new(set), attr)
+        if mod
+          send_command(cmd, MessageSet.new(set), attr, mod)
+        else
+          send_command(cmd, MessageSet.new(set), attr)
+        end
         return @responses.delete("FETCH")
       end
     end
@@ -1478,14 +1530,15 @@ module Net
       end
       @sock = SSLSocket.new(@sock, context)
       @sock.sync_close = true
-      @sock.connect
+      @sock.hostname = @host if @sock.respond_to? :hostname=
+      ssl_socket_connect(@sock, @open_timeout)
       if context.verify_mode != VERIFY_NONE
         @sock.post_connection_check(@host)
       end
     end
 
     class RawData # :nodoc:
-      def send_data(imap)
+      def send_data(imap, tag)
         imap.send(:put_string, @data)
       end
 
@@ -1500,7 +1553,7 @@ module Net
     end
 
     class Atom # :nodoc:
-      def send_data(imap)
+      def send_data(imap, tag)
         imap.send(:put_string, @data)
       end
 
@@ -1515,7 +1568,7 @@ module Net
     end
 
     class QuotedString # :nodoc:
-      def send_data(imap)
+      def send_data(imap, tag)
         imap.send(:send_quoted_string, @data)
       end
 
@@ -1530,8 +1583,8 @@ module Net
     end
 
     class Literal # :nodoc:
-      def send_data(imap)
-        imap.send(:send_literal, @data)
+      def send_data(imap, tag)
+        imap.send(:send_literal, @data, tag)
       end
 
       def validate
@@ -1545,7 +1598,7 @@ module Net
     end
 
     class MessageSet # :nodoc:
-      def send_data(imap)
+      def send_data(imap, tag)
         imap.send(:put_string, format_internal(@data))
       end
 
@@ -1621,6 +1674,15 @@ module Net
           num != 0 && valid_number?(num)
         end
 
+        # Check is passed argument valid 'mod_sequence_value' in RFC 4551 terminology
+        def valid_mod_sequence_value?(num)
+          # mod-sequence-value  = 1*DIGIT
+          #                        ; Positive unsigned 64-bit integer
+          #                        ; (mod-sequence)
+          #                        ; (1 <= n < 18,446,744,073,709,551,615)
+          num >= 1 && num < 18446744073709551615
+        end
+
         # Ensure argument is 'number' or raise DataFormatError
         def ensure_number(num)
           return if valid_number?(num)
@@ -1634,6 +1696,14 @@ module Net
           return if valid_nz_number?(num)
 
           msg = "nz_number must be non-zero unsigned 32-bit integer: #{num}"
+          raise DataFormatError, msg
+        end
+
+        # Ensure argument is 'mod_sequence_value' or raise DataFormatError
+        def ensure_mod_sequence_value(num)
+          return if valid_mod_sequence_value?(num)
+
+          msg = "mod_sequence_value must be unsigned 64-bit integer: #{num}"
           raise DataFormatError, msg
         end
       end
@@ -1965,8 +2035,7 @@ module Net
       # generate a warning message to +stderr+, then return
       # the value of +subtype+.
       def media_subtype
-        $stderr.printf("warning: media_subtype is obsolete.\n")
-        $stderr.printf("         use subtype instead.\n")
+        warn("media_subtype is obsolete, use subtype instead.\n", uplevel: 1)
         return subtype
       end
     end
@@ -1993,8 +2062,7 @@ module Net
       # generate a warning message to +stderr+, then return
       # the value of +subtype+.
       def media_subtype
-        $stderr.printf("warning: media_subtype is obsolete.\n")
-        $stderr.printf("         use subtype instead.\n")
+        warn("media_subtype is obsolete, use subtype instead.\n", uplevel: 1)
         return subtype
       end
     end
@@ -2023,8 +2091,7 @@ module Net
       # generate a warning message to +stderr+, then return
       # the value of +subtype+.
       def media_subtype
-        $stderr.printf("warning: media_subtype is obsolete.\n")
-        $stderr.printf("         use subtype instead.\n")
+        warn("media_subtype is obsolete, use subtype instead.\n", uplevel: 1)
         return subtype
       end
     end
@@ -2084,8 +2151,7 @@ module Net
       # generate a warning message to +stderr+, then return
       # the value of +subtype+.
       def media_subtype
-        $stderr.printf("warning: media_subtype is obsolete.\n")
-        $stderr.printf("         use subtype instead.\n")
+        warn("media_subtype is obsolete, use subtype instead.\n", uplevel: 1)
         return subtype
       end
     end
@@ -2190,6 +2256,10 @@ module Net
         else
           result = response_tagged
         end
+        while lookahead.symbol == T_SPACE
+          # Ignore trailing space for Microsoft Exchange Server
+          shift_token
+        end
         match(T_CRLF)
         match(T_EOF)
         return result
@@ -2197,8 +2267,13 @@ module Net
 
       def continue_req
         match(T_PLUS)
-        match(T_SPACE)
-        return ContinuationRequest.new(resp_text, @str)
+        token = lookahead
+        if token.symbol == T_SPACE
+          shift_token
+          return ContinuationRequest.new(resp_text, @str)
+        else
+          return ContinuationRequest.new(ResponseText.new(nil, ""), @str)
+        end
       end
 
       def response_untagged
@@ -2297,6 +2372,8 @@ module Net
             name, val = body_data
           when /\A(?:UID)\z/ni
             name, val = uid_data
+          when /\A(?:MODSEQ)\z/ni
+            name, val = modseq_data
           else
             parse_error("unknown attribute `%s' for {%d}", token.value, n)
           end
@@ -2729,7 +2806,7 @@ module Net
       end
 
       def section
-        str = ""
+        str = String.new
         token = match(T_LBRA)
         str.concat(token.value)
         token = match(T_ATOM, T_NUMBER, T_RBRA)
@@ -2784,6 +2861,16 @@ module Net
         name = token.value.upcase
         match(T_SPACE)
         return name, number
+      end
+
+      def modseq_data
+        token = match(T_ATOM)
+        name = token.value.upcase
+        match(T_SPACE)
+        match(T_LPAR)
+        modseq = number
+        match(T_RPAR)
+        return name, modseq
       end
 
       def text_response
@@ -3210,7 +3297,7 @@ module Net
       end
 
       def atom
-        result = ""
+        result = String.new
         while true
           token = lookahead
           if atom_token?(token)
@@ -3628,6 +3715,10 @@ module Net
     # out due to inactivity.
     class ByeResponseError < ResponseError
     end
+
+    RESPONSE_ERRORS = Hash.new(ResponseError)
+    RESPONSE_ERRORS["NO"] = NoResponseError
+    RESPONSE_ERRORS["BAD"] = BadResponseError
 
     # Error raised when too many flags are interned to symbols.
     class FlagCountError < Error

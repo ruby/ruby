@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 
 class TestGemResolverComposedSet < Gem::TestCase
@@ -42,4 +43,3 @@ class TestGemResolverComposedSet < Gem::TestCase
   end
 
 end
-

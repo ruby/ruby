@@ -41,11 +41,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #ifndef _WIN32
-#if defined(__BEOS__) && !defined(__HAIKU__) && !defined(BONE)
-# include <net/socket.h>
-#else
-# include <sys/socket.h>
-#endif
+#include <sys/socket.h>
 #include <netinet/in.h>
 #if defined(HAVE_ARPA_INET_H)
 #include <arpa/inet.h>
@@ -80,6 +76,7 @@ typedef int socklen_t;
 
 #include "addrinfo.h"
 #include "sockport.h"
+#include "rubysocket.h"
 
 #define SUCCESS 0
 #define ANY 0
@@ -120,24 +117,6 @@ static struct afd {
 #define ENI_SYSTEM	4
 #define ENI_FAMILY	5
 #define ENI_SALEN	6
-
-#ifndef HAVE_INET_NTOP
-static const char *
-inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
-{
-#ifdef HAVE_INET_NTOA
-	struct in_addr in;
-	memcpy(&in.s_addr, addr, sizeof(in.s_addr));
-	snprintf(numaddr, numaddr_len, "%s", inet_ntoa(in));
-#else
-	unsigned long x = ntohl(*(unsigned long*)addr);
-	snprintf(numaddr, numaddr_len, "%d.%d.%d.%d",
-		 (int) (x>>24) & 0xff, (int) (x>>16) & 0xff,
-		 (int) (x>> 8) & 0xff, (int) (x>> 0) & 0xff);
-#endif
-	return numaddr;
-}
-#endif
 
 int
 getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, socklen_t hostlen, char *serv, socklen_t servlen, int flags)

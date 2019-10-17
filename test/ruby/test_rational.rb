@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class RationalSub < Rational; end
@@ -34,14 +35,16 @@ class Rational_Test < Test::Unit::TestCase
     c2 = Rational(0)
     c3 = Rational(1)
 
-    assert_equal(true, c.eql?(c2))
-    assert_equal(false, c.eql?(c3))
+    assert_operator(c, :eql?, c2)
+    assert_not_operator(c, :eql?, c3)
 
-    assert_equal(false, c.eql?(0))
+    assert_not_operator(c, :eql?, 0)
   end
 
   def test_hash
-    assert_instance_of(Fixnum, Rational(1,2).hash)
+    h = Rational(1,2).hash
+    assert_kind_of(Integer, h)
+    assert_nothing_raised {h.to_s}
 
     h = {}
     h[Rational(0)] = 0
@@ -58,8 +61,7 @@ class Rational_Test < Test::Unit::TestCase
 
   def test_freeze
     c = Rational(1)
-    c.freeze
-    assert_equal(true, c.frozen?)
+    assert_predicate(c, :frozen?)
     assert_instance_of(String, c.to_s)
   end
 
@@ -108,14 +110,45 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(Rational(3),Rational('3'))
     assert_equal(Rational(1),Rational('3.0','3.0'))
     assert_equal(Rational(1),Rational('3/3','3/3'))
+    assert_equal(Rational(111, 1), Rational('1.11e+2'))
+    assert_equal(Rational(111, 10), Rational('1.11e+1'))
+    assert_equal(Rational(111, 10), Rational('1.11e1'))
+    assert_equal(Rational(111, 100), Rational('1.11e0'))
+    assert_equal(Rational(111, 1000), Rational('1.11e-1'))
     assert_raise(TypeError){Rational(nil)}
     assert_raise(ArgumentError){Rational('')}
     assert_raise_with_message(ArgumentError, /\u{221a 2668}/) {
-      EnvUtil.with_default_external(Encoding::UTF_8) {
-        Rational("\u{221a 2668}")
-      }
+      Rational("\u{221a 2668}")
     }
+    assert_warning('') {
+      assert_predicate(Rational('1e-99999999999999999999'), :zero?)
+    }
+
     assert_raise(TypeError){Rational(Object.new)}
+    assert_raise(TypeError){Rational(Object.new, Object.new)}
+    assert_raise(TypeError){Rational(1, Object.new)}
+
+    o = Object.new
+    def o.to_r; 1/42r; end
+    assert_equal(1/42r, Rational(o))
+    assert_equal(1/84r, Rational(o, 2))
+    assert_equal(42, Rational(1, o))
+    assert_equal(1, Rational(o, o))
+
+    o = Object.new
+    def o.to_r; nil; end
+    assert_raise(TypeError) { Rational(o) }
+    assert_raise(TypeError) { Rational(o, 2) }
+    assert_raise(TypeError) { Rational(1, o) }
+    assert_raise(TypeError) { Rational(o, o) }
+
+    o = Object.new
+    def o.to_r; raise; end
+    assert_raise(RuntimeError) { Rational(o) }
+    assert_raise(RuntimeError) { Rational(o, 2) }
+    assert_raise(RuntimeError) { Rational(1, o) }
+    assert_raise(RuntimeError) { Rational(o, o) }
+
     assert_raise(ArgumentError){Rational()}
     assert_raise(ArgumentError){Rational(1,2,3)}
 
@@ -162,15 +195,15 @@ class Rational_Test < Test::Unit::TestCase
   def test_attr2
     c = Rational(1)
 
-    assert_equal(false, c.integer?)
-    assert_equal(true, c.real?)
+    assert_not_predicate(c, :integer?)
+    assert_predicate(c, :real?)
 
-    assert_equal(true, Rational(0).zero?)
-    assert_equal(true, Rational(0,1).zero?)
-    assert_equal(false, Rational(1,1).zero?)
+    assert_predicate(Rational(0), :zero?)
+    assert_predicate(Rational(0,1), :zero?)
+    assert_not_predicate(Rational(1,1), :zero?)
 
-    assert_equal(nil, Rational(0).nonzero?)
-    assert_equal(nil, Rational(0,1).nonzero?)
+    assert_nil(Rational(0).nonzero?)
+    assert_nil(Rational(0,1).nonzero?)
     assert_equal(Rational(1,1), Rational(1,1).nonzero?)
   end
 
@@ -538,23 +571,23 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(-1, Rational(b-1) <=> Rational(b))
     assert_equal(+1, Rational(b) <=> Rational(b-1))
 
-    assert_equal(false, Rational(0) < Rational(0))
-    assert_equal(true, Rational(0) <= Rational(0))
-    assert_equal(true, Rational(0) >= Rational(0))
-    assert_equal(false, Rational(0) > Rational(0))
+    assert_not_operator(Rational(0), :<, Rational(0))
+    assert_operator(Rational(0), :<=, Rational(0))
+    assert_operator(Rational(0), :>=, Rational(0))
+    assert_not_operator(Rational(0), :>, Rational(0))
 
-    assert_equal(nil, Rational(0) <=> nil)
-    assert_equal(nil, Rational(0) <=> 'foo')
+    assert_nil(Rational(0) <=> nil)
+    assert_nil(Rational(0) <=> 'foo')
   end
 
   def test_eqeq
     assert_equal(Rational(1,1), Rational(1))
     assert_equal(Rational(-1,1), Rational(-1))
 
-    assert_equal(false, Rational(2,1) == Rational(1))
-    assert_equal(true, Rational(2,1) != Rational(1))
-    assert_equal(false, Rational(1) == nil)
-    assert_equal(false, Rational(1) == '')
+    assert_not_operator(Rational(2,1), :==, Rational(1))
+    assert_operator(Rational(2,1), :!=, Rational(1))
+    assert_not_operator(Rational(1), :==, nil)
+    assert_not_operator(Rational(1), :==, '')
   end
 
   def test_coerce
@@ -562,13 +595,13 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal([Rational(2.2),Rational(1)], Rational(1).coerce(2.2))
     assert_equal([Rational(2),Rational(1)], Rational(1).coerce(Rational(2)))
 
-    assert_nothing_raised(TypeError, '[Bug #5020] [ruby-devl:44088]') do
+    assert_nothing_raised(TypeError, '[Bug #5020] [ruby-dev:44088]') do
       Rational(1,2).coerce(Complex(1,1))
     end
   end
 
   class ObjectX
-    def + (x) Rational(1) end
+    def +(x) Rational(1) end
     alias - +
     alias * +
     alias / +
@@ -598,17 +631,21 @@ class Rational_Test < Test::Unit::TestCase
   end
 
   def test_trunc
-    [[Rational(13, 5),  [ 2,  3,  2,  3]], #  2.6
-     [Rational(5, 2),   [ 2,  3,  2,  3]], #  2.5
-     [Rational(12, 5),  [ 2,  3,  2,  2]], #  2.4
-     [Rational(-12,5),  [-3, -2, -2, -2]], # -2.4
-     [Rational(-5, 2),  [-3, -2, -2, -3]], # -2.5
-     [Rational(-13, 5), [-3, -2, -2, -3]], # -2.6
+    [[Rational(13, 5),  [ 2,  3,  2,  3,  3,  3,  3]], #  2.6
+     [Rational(5, 2),   [ 2,  3,  2,  3,  2,  3,  2]], #  2.5
+     [Rational(12, 5),  [ 2,  3,  2,  2,  2,  2,  2]], #  2.4
+     [Rational(-12,5),  [-3, -2, -2, -2, -2, -2, -2]], # -2.4
+     [Rational(-5, 2),  [-3, -2, -2, -3, -2, -3, -2]], # -2.5
+     [Rational(-13, 5), [-3, -2, -2, -3, -3, -3, -3]], # -2.6
     ].each do |i, a|
-      assert_equal(a[0], i.floor)
-      assert_equal(a[1], i.ceil)
-      assert_equal(a[2], i.truncate)
-      assert_equal(a[3], i.round)
+      s = proc {i.inspect}
+      assert_equal(a[0], i.floor, s)
+      assert_equal(a[1], i.ceil, s)
+      assert_equal(a[2], i.truncate, s)
+      assert_equal(a[3], i.round, s)
+      assert_equal(a[4], i.round(half: :even), s)
+      assert_equal(a[5], i.round(half: :up), s)
+      assert_equal(a[6], i.round(half: :down), s)
     end
   end
 
@@ -636,13 +673,15 @@ class Rational_Test < Test::Unit::TestCase
 
   def test_marshal
     c = Rational(1,2)
-    c.instance_eval{@ivar = 9}
 
     s = Marshal.dump(c)
     c2 = Marshal.load(s)
     assert_equal(c, c2)
-    assert_equal(9, c2.instance_variable_get(:@ivar))
     assert_instance_of(Rational, c2)
+
+    assert_raise(TypeError){
+      Marshal.load("\x04\bU:\rRational[\ai\x060")
+    }
 
     assert_raise(ZeroDivisionError){
       Marshal.load("\x04\bU:\rRational[\ai\x06i\x05")
@@ -650,7 +689,6 @@ class Rational_Test < Test::Unit::TestCase
 
     bug3656 = '[ruby-core:31622]'
     c = Rational(1,2)
-    c.freeze
     assert_predicate(c, :frozen?)
     result = c.marshal_load([2,3]) rescue :fail
     assert_equal(:fail, result, bug3656)
@@ -662,102 +700,148 @@ class Rational_Test < Test::Unit::TestCase
     assert_nothing_raised(bug6625) do
       assert_equal(Rational(1, 2), Marshal.load(dump), bug6625)
     end
+    dump = "\x04\x08o:\x0dRational\x07:\x11@denominatori\x07:\x0f@numerator0"
+    assert_raise(TypeError) do
+      Marshal.load(dump)
+    end
+  end
+
+  def assert_valid_rational(n, d, r)
+    x = Rational(n, d)
+    assert_equal(x, r.to_r, "#{r.dump}.to_r")
+    assert_equal(x, Rational(r), "Rational(#{r.dump})")
+  end
+
+  def assert_invalid_rational(n, d, r)
+    x = Rational(n, d)
+    assert_equal(x, r.to_r, "#{r.dump}.to_r")
+    assert_raise(ArgumentError, "Rational(#{r.dump})") {Rational(r)}
   end
 
   def test_parse
-    assert_equal(Rational(5), '5'.to_r)
-    assert_equal(Rational(-5), '-5'.to_r)
-    assert_equal(Rational(5,3), '5/3'.to_r)
-    assert_equal(Rational(-5,3), '-5/3'.to_r)
+    ok = method(:assert_valid_rational)
+    ng = method(:assert_invalid_rational)
 
-    assert_equal(Rational(5), '5.0'.to_r)
-    assert_equal(Rational(-5), '-5.0'.to_r)
-    assert_equal(Rational(5,3), '5.0/3'.to_r)
-    assert_equal(Rational(-5,3), '-5.0/3'.to_r)
+    ok[ 5, 1, '5']
+    ok[-5, 1, '-5']
+    ok[ 5, 3, '5/3']
+    ok[-5, 3, '-5/3']
+    ok[ 5, 3, '5_5/33']
+    ok[ 5,33, '5/3_3']
+    ng[ 5, 1, '5__5/33']
+    ng[ 5, 3, '5/3__3']
 
-    assert_equal(Rational(5), '5e0'.to_r)
-    assert_equal(Rational(-5), '-5e0'.to_r)
-    assert_equal(Rational(5,3), '5e0/3'.to_r)
-    assert_equal(Rational(-5,3), '-5e0/3'.to_r)
+    ok[ 5, 1, '5.0']
+    ok[-5, 1, '-5.0']
+    ok[ 5, 3, '5.0/3']
+    ok[-5, 3, '-5.0/3']
+    ok[ 501,100, '5.0_1']
+    ok[ 501,300, '5.0_1/3']
+    ok[ 5,33, '5.0/3_3']
+    ng[ 5, 1, '5.0__1/3']
+    ng[ 5, 3, '5.0/3__3']
 
-    assert_equal(Rational(5e1), '5e1'.to_r)
-    assert_equal(Rational(-5e2), '-5e2'.to_r)
-    assert_equal(Rational(5e3,3), '5e003/3'.to_r)
-    assert_equal(Rational(-5e4,3), '-5e004/3'.to_r)
+    ok[ 5, 1, '5e0']
+    ok[-5, 1, '-5e0']
+    ok[ 5, 3, '5e0/3']
+    ok[-5, 3, '-5e0/3']
+    ok[550, 1, '5_5e1']
+    ng[ 5, 1, '5_e1']
 
-    assert_equal(Rational(33,100), '.33'.to_r)
-    assert_equal(Rational(33,100), '0.33'.to_r)
-    assert_equal(Rational(-33,100), '-.33'.to_r)
-    assert_equal(Rational(-33,100), '-0.33'.to_r)
-    assert_equal(Rational(-33,100), '-0.3_3'.to_r)
+    ok[ 5e1, 1, '5e1']
+    ok[-5e2, 1, '-5e2']
+    ok[ 5e3, 3, '5e003/3']
+    ok[-5e4, 3, '-5e004/3']
+    ok[ 5e3, 1, '5e0_3']
+    ok[ 5e1,33, '5e1/3_3']
+    ng[ 5e0, 1, '5e0__3/3']
+    ng[ 5e1, 3, '5e1/3__3']
 
-    assert_equal(Rational(1,2), '5e-1'.to_r)
-    assert_equal(Rational(50), '5e+1'.to_r)
-    assert_equal(Rational(1,2), '5.0e-1'.to_r)
-    assert_equal(Rational(50), '5.0e+1'.to_r)
-    assert_equal(Rational(50), '5e1'.to_r)
-    assert_equal(Rational(50), '5E1'.to_r)
-    assert_equal(Rational(500), '5e2'.to_r)
-    assert_equal(Rational(5000), '5e3'.to_r)
-    assert_equal(Rational(500000000000), '5e1_1'.to_r)
+    ok[ 33, 100, '.33']
+    ok[ 33, 100, '0.33']
+    ok[-33, 100, '-.33']
+    ok[-33, 100, '-0.33']
+    ok[-33, 100, '-0.3_3']
+    ng[ -3,  10, '-0.3__3']
 
-    assert_equal(Rational(5), Rational('5'))
-    assert_equal(Rational(-5), Rational('-5'))
-    assert_equal(Rational(5,3), Rational('5/3'))
-    assert_equal(Rational(-5,3), Rational('-5/3'))
+    ok[ 1, 2, '5e-1']
+    ok[50, 1, '5e+1']
+    ok[ 1, 2, '5.0e-1']
+    ok[50, 1, '5.0e+1']
+    ok[50, 1, '5e1']
+    ok[50, 1, '5E1']
+    ok[500, 1, '5e2']
+    ok[5000, 1, '5e3']
+    ok[500000000000, 1, '5e1_1']
+    ng[ 5, 1, '5e']
+    ng[ 5, 1, '5e_']
+    ng[ 5, 1, '5e_1']
+    ng[50, 1, '5e1_']
 
-    assert_equal(Rational(5), Rational('5.0'))
-    assert_equal(Rational(-5), Rational('-5.0'))
-    assert_equal(Rational(5,3), Rational('5.0/3'))
-    assert_equal(Rational(-5,3), Rational('-5.0/3'))
+    ok[ 50, 33, '5/3.3']
+    ok[  5,  3, '5/3e0']
+    ok[  5, 30, '5/3e1']
+    ng[  5,  3, '5/3._3']
+    ng[ 50, 33, '5/3.3_']
+    ok[500,333, '5/3.3_3']
+    ng[  5,  3, '5/3e']
+    ng[  5,  3, '5/3_e']
+    ng[  5,  3, '5/3e_']
+    ng[  5,  3, '5/3e_1']
+    ng[  5, 30, '5/3e1_']
+    ok[  5, 300000000000, '5/3e1_1']
 
-    assert_equal(Rational(5), Rational('5e0'))
-    assert_equal(Rational(-5), Rational('-5e0'))
-    assert_equal(Rational(5,3), Rational('5e0/3'))
-    assert_equal(Rational(-5,3), Rational('-5e0/3'))
+    ng[0, 1, '']
+    ng[0, 1, ' ']
+    ng[5, 1, "\f\n\r\t\v5\0"]
+    ng[0, 1, '_']
+    ng[0, 1, '_5']
+    ng[5, 1, '5_']
+    ng[5, 1, '5x']
+    ng[5, 1, '5/_3']
+    ng[5, 3, '5/3_']
+    ng[5, 3, '5/3x']
+  end
 
-    assert_equal(Rational(5e1), Rational('5e1'))
-    assert_equal(Rational(-5e2), Rational('-5e2'))
-    assert_equal(Rational(5e3,3), Rational('5e003/3'))
-    assert_equal(Rational(-5e4,3), Rational('-5e004/3'))
+  def test_parse_zero_denominator
+    assert_raise(ZeroDivisionError) {"1/0".to_r}
+    assert_raise(ZeroDivisionError) {Rational("1/0")}
+  end
 
-    assert_equal(Rational(33,100), Rational('.33'))
-    assert_equal(Rational(33,100), Rational('0.33'))
-    assert_equal(Rational(-33,100), Rational('-.33'))
-    assert_equal(Rational(-33,100), Rational('-0.33'))
-    assert_equal(Rational(-33,100), Rational('-0.3_3'))
+  def test_Rational_with_invalid_exception
+    assert_raise(ArgumentError) {
+      Rational("1/1", exception: 1)
+    }
+  end
 
-    assert_equal(Rational(1,2), Rational('5e-1'))
-    assert_equal(Rational(50), Rational('5e+1'))
-    assert_equal(Rational(1,2), Rational('5.0e-1'))
-    assert_equal(Rational(50), Rational('5.0e+1'))
-    assert_equal(Rational(50), Rational('5e1'))
-    assert_equal(Rational(50), Rational('5E1'))
-    assert_equal(Rational(500), Rational('5e2'))
-    assert_equal(Rational(5000), Rational('5e3'))
-    assert_equal(Rational(500000000000), Rational('5e1_1'))
+  def test_Rational_without_exception
+    assert_nothing_raised(ArgumentError) {
+      assert_equal(nil, Rational("5/3x", exception: false))
+    }
+    assert_nothing_raised(ZeroDivisionError) {
+      assert_equal(nil, Rational("1/0", exception: false))
+    }
+    assert_nothing_raised(TypeError) {
+      assert_equal(nil, Rational(nil, exception: false))
+    }
+    assert_nothing_raised(TypeError) {
+      assert_equal(nil, Rational(Object.new, exception: false))
+    }
+    assert_nothing_raised(TypeError) {
+      assert_equal(nil, Rational(1, nil, exception: false))
+    }
+    assert_nothing_raised(TypeError) {
+      assert_equal(nil, Rational(1, Object.new, exception: false))
+    }
 
-    assert_equal(Rational(0), ''.to_r)
-    assert_equal(Rational(0), ' '.to_r)
-    assert_equal(Rational(5), "\f\n\r\t\v5\0".to_r)
-    assert_equal(Rational(0), '_'.to_r)
-    assert_equal(Rational(0), '_5'.to_r)
-    assert_equal(Rational(5), '5_'.to_r)
-    assert_equal(Rational(5), '5x'.to_r)
-    assert_equal(Rational(5), '5/_3'.to_r)
-    assert_equal(Rational(5,3), '5/3_'.to_r)
-    assert_equal(Rational(5,3), '5/3.3'.to_r)
-    assert_equal(Rational(5,3), '5/3x'.to_r)
-    assert_raise(ArgumentError){ Rational('')}
-    assert_raise(ArgumentError){ Rational('_')}
-    assert_raise(ArgumentError){ Rational("\f\n\r\t\v5\0")}
-    assert_raise(ArgumentError){ Rational('_5')}
-    assert_raise(ArgumentError){ Rational('5_')}
-    assert_raise(ArgumentError){ Rational('5x')}
-    assert_raise(ArgumentError){ Rational('5/_3')}
-    assert_raise(ArgumentError){ Rational('5/3_')}
-    assert_raise(ArgumentError){ Rational('5/3.3')}
-    assert_raise(ArgumentError){ Rational('5/3x')}
+    o = Object.new;
+    def o.to_r; raise; end
+    assert_nothing_raised(RuntimeError) {
+      assert_equal(nil, Rational(o, exception: false))
+    }
+    assert_nothing_raised(TypeError) {
+      assert_equal(nil, Rational(1, o, exception: false))
+    }
   end
 
   def test_to_i
@@ -768,6 +852,7 @@ class Rational_Test < Test::Unit::TestCase
   def test_to_f
     assert_equal(1.5, Rational(3,2).to_f)
     assert_equal(1.5, Float(Rational(3,2)))
+    assert_equal(1e-23, Rational(1, 10**23).to_f, "Bug #14637")
   end
 
   def test_to_c
@@ -869,9 +954,19 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(1152921470247108503, 1073741789.lcm(1073741827))
   end
 
+  def test_gcd_no_memory_leak
+    assert_no_memory_leak([], "#{<<-"begin;"}", "#{<<-"end;"}", limit: 1.2, rss: true)
+    x = (1<<121) + 1
+    y = (1<<99) + 1
+    1000.times{x.gcd(y)}
+    begin;
+      100.times {1000.times{x.gcd(y)}}
+    end;
+  end
+
   def test_supp
-    assert_equal(true, 1.real?)
-    assert_equal(true, 1.1.real?)
+    assert_predicate(1, :real?)
+    assert_predicate(1.1, :real?)
 
     assert_equal(1, 1.numerator)
     assert_equal(9, 9.numerator)
@@ -894,6 +989,13 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(5000000000.0, 10000000000.fdiv(2))
     assert_equal(0.5, 1.0.fdiv(2))
     assert_equal(0.25, Rational(1,2).fdiv(2))
+
+    a = 0xa42fcabf_c51ce400_00001000_00000000_00000000_00000000_00000000_00000000
+    b = 1<<1074
+    assert_equal(Rational(a, b).to_f, a.fdiv(b))
+    a = 3
+    b = 0x20_0000_0000_0001
+    assert_equal(Rational(a, b).to_f, a.fdiv(b))
   end
 
   def test_ruby19
@@ -903,7 +1005,8 @@ class Rational_Test < Test::Unit::TestCase
 
   def test_fixed_bug
     n = Float::MAX.to_i * 2
-    assert_equal(1.0, Rational(n + 2, n + 1).to_f, '[ruby-dev:33852]')
+    x = EnvUtil.suppress_warning {Rational(n + 2, n + 1).to_f}
+    assert_equal(1.0, x, '[ruby-dev:33852]')
   end
 
   def test_power_of_1_and_minus_1
@@ -912,7 +1015,7 @@ class Rational_Test < Test::Unit::TestCase
     one = Rational( 1, 1)
     assert_eql  one,   one  ** -big     , bug5715
     assert_eql  one, (-one) ** -big     , bug5715
-    assert_eql -one, (-one) ** -(big+1) , bug5715
+    assert_eql (-one), (-one) ** -(big+1) , bug5715
     assert_equal Complex, ((-one) ** Rational(1,3)).class
   end
 
@@ -924,6 +1027,14 @@ class Rational_Test < Test::Unit::TestCase
     assert_eql zero, zero ** Rational(2, 3)
     assert_raise(ZeroDivisionError, bug5713) { Rational(0, 1) ** -big }
     assert_raise(ZeroDivisionError, bug5713) { Rational(0, 1) ** Rational(-2,3) }
+  end
+
+  def test_power_overflow
+    bug = '[ruby-core:79686] [Bug #13242]: Infinity due to overflow'
+    x = EnvUtil.suppress_warning {4r**40000000}
+    assert_predicate x, :infinite?, bug
+    x = EnvUtil.suppress_warning {(1/4r)**40000000}
+    assert_equal 0, x, bug
   end
 
   def test_positive_p
@@ -939,4 +1050,13 @@ class Rational_Test < Test::Unit::TestCase
   def test_known_bug
   end
 
+  def test_finite_p
+    assert_predicate(1/2r, :finite?)
+    assert_predicate(-1/2r, :finite?)
+  end
+
+  def test_infinite_p
+    assert_nil((1/2r).infinite?)
+    assert_nil((-1/2r).infinite?)
+  end
 end

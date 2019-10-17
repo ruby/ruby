@@ -1,31 +1,10 @@
+# frozen_string_literal: false
 require_relative 'utils'
 
-if defined?(OpenSSL::TestUtils)
+if defined?(OpenSSL) && defined?(OpenSSL::PKey::DH)
 
-class OpenSSL::TestPKeyDH < Test::Unit::TestCase
-
+class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
   NEW_KEYLEN = 256
-
-  def test_DEFAULT_512
-    params = <<-eop
------BEGIN DH PARAMETERS-----
-MEYCQQD0zXHljRg/mJ9PYLACLv58Cd8VxBxxY7oEuCeURMiTqEhMym16rhhKgZG2
-zk2O9uUIBIxSj+NKMURHGaFKyIvLAgEC
------END DH PARAMETERS-----
-    eop
-    assert_equal params, OpenSSL::PKey::DH::DEFAULT_512.to_s
-  end
-
-  def test_DEFAULT_1024
-    params = <<-eop
------BEGIN DH PARAMETERS-----
-MIGHAoGBAJ0lOVy0VIr/JebWn0zDwY2h+rqITFOpdNr6ugsgvkDXuucdcChhYExJ
-AV/ZD2AWPbrTqV76mGRgJg4EddgT1zG0jq3rnFdMj2XzkBYx3BVvfR0Arnby0RHR
-T4h7KZ/2zmjvV+eF8kBUHBJAojUlzxKj4QeO2x20FP9X5xmNUXeDAgEC
------END DH PARAMETERS-----
-    eop
-    assert_equal params, OpenSSL::PKey::DH::DEFAULT_1024.to_s
-  end
 
   def test_new
     dh = OpenSSL::PKey::DH.new(NEW_KEYLEN)
@@ -39,24 +18,31 @@ T4h7KZ/2zmjvV+eF8kBUHBJAojUlzxKj4QeO2x20FP9X5xmNUXeDAgEC
     end
   end
 
-  def test_to_der
-    dh = OpenSSL::TestUtils::TEST_KEY_DH1024
-    der = dh.to_der
-    dh2 = OpenSSL::PKey::DH.new(der)
-    assert_equal_params(dh, dh2)
-    assert_no_key(dh2)
-  end
+  def test_DHparams
+    dh1024 = Fixtures.pkey("dh1024")
+    asn1 = OpenSSL::ASN1::Sequence([
+      OpenSSL::ASN1::Integer(dh1024.p),
+      OpenSSL::ASN1::Integer(dh1024.g)
+    ])
+    key = OpenSSL::PKey::DH.new(asn1.to_der)
+    assert_same_dh dup_public(dh1024), key
 
-  def test_to_pem
-    dh = OpenSSL::TestUtils::TEST_KEY_DH1024
-    pem = dh.to_pem
-    dh2 = OpenSSL::PKey::DH.new(pem)
-    assert_equal_params(dh, dh2)
-    assert_no_key(dh2)
+    pem = <<~EOF
+    -----BEGIN DH PARAMETERS-----
+    MIGHAoGBAKnKQ8MNK6nYZzLrrcuTsLxuiJGXoOO5gT+tljOTbHBuiktdMTITzIY0
+    pFxIvjG05D7HoBZQfrR0c92NGWPkAiCkhQKB8JCbPVzwNLDy6DZ0pmofDKrEsYHG
+    AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
+    -----END DH PARAMETERS-----
+    EOF
+    key = OpenSSL::PKey::DH.new(pem)
+    assert_same_dh dup_public(dh1024), key
+
+    assert_equal asn1.to_der, dh1024.to_der
+    assert_equal pem, dh1024.export
   end
 
   def test_public_key
-    dh = OpenSSL::TestUtils::TEST_KEY_DH1024
+    dh = Fixtures.pkey("dh1024")
     public_key = dh.public_key
     assert_no_key(public_key) #implies public_key.public? is false!
     assert_equal(dh.to_der, public_key.to_der)
@@ -64,18 +50,28 @@ T4h7KZ/2zmjvV+eF8kBUHBJAojUlzxKj4QeO2x20FP9X5xmNUXeDAgEC
   end
 
   def test_generate_key
-    dh = OpenSSL::TestUtils::TEST_KEY_DH512_PUB.public_key # creates a copy
+    dh = Fixtures.pkey("dh1024").public_key # creates a copy
     assert_no_key(dh)
     dh.generate_key!
     assert_key(dh)
   end
 
   def test_key_exchange
-    dh = OpenSSL::TestUtils::TEST_KEY_DH512_PUB
+    dh = Fixtures.pkey("dh1024")
     dh2 = dh.public_key
     dh.generate_key!
     dh2.generate_key!
     assert_equal(dh.compute_key(dh2.pub_key), dh2.compute_key(dh.pub_key))
+  end
+
+  def test_dup
+    dh = OpenSSL::PKey::DH.new(NEW_KEYLEN)
+    dh2 = dh.dup
+    assert_equal dh.to_der, dh2.to_der # params
+    assert_equal_params dh, dh2 # keys
+    dh2.set_pqg(dh2.p + 1, nil, dh2.g)
+    assert_not_equal dh2.p, dh.p
+    assert_equal dh2.g, dh.g
   end
 
   private
@@ -97,6 +93,10 @@ T4h7KZ/2zmjvV+eF8kBUHBJAojUlzxKj4QeO2x20FP9X5xmNUXeDAgEC
     assert(dh.private?)
     assert(dh.pub_key)
     assert(dh.priv_key)
+  end
+
+  def assert_same_dh(expected, key)
+    check_component(expected, key, [:p, :q, :g, :pub_key, :priv_key])
   end
 end
 

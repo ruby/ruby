@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #--
 # version.rb -- version and release date
 #
@@ -13,5 +14,5 @@ module WEBrick
   ##
   # The WEBrick version
 
-  VERSION      = "1.3.1"
+  VERSION      = "1.4.2"
 end

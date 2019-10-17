@@ -3,7 +3,6 @@
 # The code demonstrates how a multi-protocol daemon should be written.
 
 require "socket"
-require "thread"
 
 port = 8888
 res = Socket.getaddrinfo(nil, port, nil, Socket::SOCK_STREAM, nil, Socket::AI_PASSIVE)

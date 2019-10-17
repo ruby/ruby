@@ -1,4 +1,5 @@
 # coding: binary
+# frozen_string_literal: false
 #--
 #= Info
 #  'OpenSSL for Ruby 2' project
@@ -62,7 +63,7 @@ module OpenSSL::Buffering
   end
 
   ##
-  # Consumes +size+ bytes from the buffer
+  # Consumes _size_ bytes from the buffer
 
   def consume_rbuff(size=nil)
     if @rbuffer.empty?
@@ -78,7 +79,7 @@ module OpenSSL::Buffering
   public
 
   ##
-  # Reads +size+ bytes from the stream.  If +buf+ is provided it must
+  # Reads _size_ bytes from the stream.  If _buf_ is provided it must
   # reference a string which will receive the data.
   #
   # See IO#read for full details.
@@ -105,7 +106,7 @@ module OpenSSL::Buffering
   end
 
   ##
-  # Reads at most +maxlen+ bytes from the stream.  If +buf+ is provided it
+  # Reads at most _maxlen_ bytes from the stream.  If _buf_ is provided it
   # must reference a string which will receive the data.
   #
   # See IO#readpartial for full details.
@@ -131,12 +132,11 @@ module OpenSSL::Buffering
       buf.replace(ret)
       ret = buf
     end
-    raise EOFError if ret.empty?
     ret
   end
 
   ##
-  # Reads at most +maxlen+ bytes in the non-blocking manner.
+  # Reads at most _maxlen_ bytes in the non-blocking manner.
   #
   # When no data can be read without blocking it raises
   # OpenSSL::SSL::SSLError extended by IO::WaitReadable or IO::WaitWritable.
@@ -163,6 +163,11 @@ module OpenSSL::Buffering
   # Note that one reason that read_nonblock writes to the underlying IO is
   # when the peer requests a new TLS/SSL handshake.  See openssl the FAQ for
   # more details.  http://www.openssl.org/support/faq.html
+  #
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
+  # that read_nonblock should not raise an IO::Wait*able exception, but
+  # return the symbol +:wait_writable+ or +:wait_readable+ instead. At EOF,
+  # it will return +nil+ instead of raising EOFError.
 
   def read_nonblock(maxlen, buf=nil, exception: true)
     if maxlen == 0
@@ -181,16 +186,15 @@ module OpenSSL::Buffering
       buf.replace(ret)
       ret = buf
     end
-    raise EOFError if ret.empty?
     ret
   end
 
   ##
-  # Reads the next "line+ from the stream.  Lines are separated by +eol+.  If
-  # +limit+ is provided the result will not be longer than the given number of
+  # Reads the next "line" from the stream.  Lines are separated by _eol_.  If
+  # _limit_ is provided the result will not be longer than the given number of
   # bytes.
   #
-  # +eol+ may be a String or Regexp.
+  # _eol_ may be a String or Regexp.
   #
   # Unlike IO#gets the line read will not be assigned to +$_+.
   #
@@ -216,7 +220,7 @@ module OpenSSL::Buffering
 
   ##
   # Executes the block for every line in the stream where lines are separated
-  # by +eol+.
+  # by _eol_.
   #
   # See also #gets
 
@@ -228,7 +232,7 @@ module OpenSSL::Buffering
   alias each_line each
 
   ##
-  # Reads lines from the stream which are separated by +eol+.
+  # Reads lines from the stream which are separated by _eol_.
   #
   # See also #gets
 
@@ -241,7 +245,7 @@ module OpenSSL::Buffering
   end
 
   ##
-  # Reads a line from the stream which is separated by +eol+.
+  # Reads a line from the stream which is separated by _eol_.
   #
   # Raises EOFError if at end of file.
 
@@ -277,7 +281,7 @@ module OpenSSL::Buffering
   end
 
   ##
-  # Pushes character +c+ back onto the stream such that a subsequent buffered
+  # Pushes character _c_ back onto the stream such that a subsequent buffered
   # character read will return it.
   #
   # Unlike IO#getc multiple bytes may be pushed back onto the stream.
@@ -304,7 +308,7 @@ module OpenSSL::Buffering
   private
 
   ##
-  # Writes +s+ to the buffer.  When the buffer is full or #sync is true the
+  # Writes _s_ to the buffer.  When the buffer is full or #sync is true the
   # buffer is flushed to the underlying socket.
 
   def do_write(s)
@@ -312,36 +316,33 @@ module OpenSSL::Buffering
     @wbuffer << s
     @wbuffer.force_encoding(Encoding::BINARY)
     @sync ||= false
-    if @sync or @wbuffer.size > BLOCK_SIZE or idx = @wbuffer.rindex($/)
-      remain = idx ? idx + $/.size : @wbuffer.length
-      nwritten = 0
-      while remain > 0
-        str = @wbuffer[nwritten,remain]
+    if @sync or @wbuffer.size > BLOCK_SIZE
+      until @wbuffer.empty?
         begin
-          nwrote = syswrite(str)
+          nwrote = syswrite(@wbuffer)
         rescue Errno::EAGAIN
           retry
         end
-        remain -= nwrote
-        nwritten += nwrote
+        @wbuffer[0, nwrote] = ""
       end
-      @wbuffer[0,nwritten] = ""
     end
   end
 
   public
 
   ##
-  # Writes +s+ to the stream.  If the argument is not a string it will be
-  # converted using String#to_s.  Returns the number of bytes written.
+  # Writes _s_ to the stream.  If the argument is not a String it will be
+  # converted using +.to_s+ method.  Returns the number of bytes written.
 
-  def write(s)
-    do_write(s)
-    s.bytesize
+  def write(*s)
+    s.inject(0) do |written, str|
+      do_write(str)
+      written + str.bytesize
+    end
   end
 
   ##
-  # Writes +str+ in the non-blocking manner.
+  # Writes _s_ in the non-blocking manner.
   #
   # If there is buffered data, it is flushed first.  This may block.
   #
@@ -372,6 +373,10 @@ module OpenSSL::Buffering
   # Note that one reason that write_nonblock reads from the underlying IO
   # is when the peer requests a new TLS/SSL handshake.  See the openssl FAQ
   # for more details.  http://www.openssl.org/support/faq.html
+  #
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
+  # that write_nonblock should not raise an IO::Wait*able exception, but
+  # return the symbol +:wait_writable+ or +:wait_readable+ instead.
 
   def write_nonblock(s, exception: true)
     flush
@@ -379,16 +384,16 @@ module OpenSSL::Buffering
   end
 
   ##
-  # Writes +s+ to the stream.  +s+ will be converted to a String using
-  # String#to_s.
+  # Writes _s_ to the stream.  _s_ will be converted to a String using
+  # +.to_s+ method.
 
-  def << (s)
+  def <<(s)
     do_write(s)
     self
   end
 
   ##
-  # Writes +args+ to the stream along with a record separator.
+  # Writes _args_ to the stream along with a record separator.
   #
   # See IO#puts for full details.
 
@@ -399,16 +404,14 @@ module OpenSSL::Buffering
     end
     args.each{|arg|
       s << arg.to_s
-      if $/ && /\n\z/ !~ s
-        s << "\n"
-      end
+      s.sub!(/(?<!\n)\z/, "\n")
     }
     do_write(s)
     nil
   end
 
   ##
-  # Writes +args+ to the stream.
+  # Writes _args_ to the stream.
   #
   # See IO#print for full details.
 

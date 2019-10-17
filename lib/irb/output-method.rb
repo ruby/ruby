@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   output-method.rb - output methods used by irb
 #   	$Release Version: 0.9.6$
@@ -81,7 +82,7 @@ module IRB
   end
 
   # A standard output printer
-  class StdioOutputMethod<OutputMethod
+  class StdioOutputMethod < OutputMethod
     # Prints the given +opts+ to standard output, see IO#print for more
     # information.
     def print(*opts)

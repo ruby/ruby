@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 begin
   require "socket"
 rescue LoadError
@@ -27,6 +29,22 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     assert_equal(Socket::PF_INET, ai.pfamily)
     assert_equal(0, ai.socktype)
     assert_equal(0, ai.protocol)
+
+    ai = Addrinfo.ip("<any>")
+    assert_equal([0, "0.0.0.0"], Socket.unpack_sockaddr_in(ai))
+
+    ai = Addrinfo.ip("<broadcast>")
+    assert_equal([0, "255.255.255.255"], Socket.unpack_sockaddr_in(ai))
+
+    ai = assert_nothing_raised(SocketError) do
+      base_str = "127.0.0.1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      addr = base_str[0, 9]
+      Addrinfo.ip(addr)
+    end
+    assert_equal([0, "127.0.0.1"], Socket.unpack_sockaddr_in(ai))
+    assert_raise(ArgumentError) do
+      Addrinfo.ip("127.0.0.1\000x")
+    end
   end
 
   def test_addrinfo_tcp
@@ -36,6 +54,14 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     assert_equal(Socket::PF_INET, ai.pfamily)
     assert_equal(Socket::SOCK_STREAM, ai.socktype)
     assert_include([0, Socket::IPPROTO_TCP], ai.protocol)
+
+    ai = assert_nothing_raised(SocketError) do
+      Addrinfo.tcp("127.0.0.1", "0000000000000000000000080x".chop)
+    end
+    assert_equal([80, "127.0.0.1"], Socket.unpack_sockaddr_in(ai))
+    assert_raise(ArgumentError) do
+      Addrinfo.ip("127.0.0.1", "80\000x")
+    end
   end
 
   def test_addrinfo_udp
@@ -74,6 +100,14 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     assert(ipv4_ai.ipv4?)
     assert(!ipv4_ai.ipv6?)
     assert(!ipv4_ai.unix?)
+  end
+
+  def test_error_message
+    e = assert_raise_with_message(SocketError, /getaddrinfo:/) do
+      Addrinfo.ip("...")
+    end
+    m = e.message
+    assert_not_equal([false, Encoding::ASCII_8BIT], [m.ascii_only?, m.encoding], proc {m.inspect})
   end
 
   def test_ipv4_address_predicates
@@ -542,7 +576,14 @@ class TestSocketAddrinfo < Test::Unit::TestCase
 	    # MacOS X returns IPv4 address for ::ffff:1.2.3.4 and ::1.2.3.4.
             # Solaris returns IPv4 address for ::ffff:1.2.3.4.
 	    ai = ipv6(addr)
-	    assert(ai.ipv4? || ai.send(meth), "ai=#{addr_exp}; ai.ipv4? || .#{meth}")
+            begin
+	      assert(ai.ipv4? || ai.send(meth), "ai=#{addr_exp}; ai.ipv4? || .#{meth}")
+            rescue Minitest::Assertion
+              if /aix/ =~ RUBY_PLATFORM
+                skip "Known bug in IN6_IS_ADDR_V4COMPAT and IN6_IS_ADDR_V4MAPPED on AIX"
+              end
+              raise $!
+            end
 	  else
 	    assert(ipv6(addr).send(meth), "#{addr_exp}.#{meth}")
             assert_equal(addr, ipv6(addr).ip_address)
@@ -647,5 +688,9 @@ class TestSocketAddrinfo < Test::Unit::TestCase
       assert_equal(ai1.canonname, ai2.canonname)
     end
 
+    def test_addrinfo_timeout
+      ai = Addrinfo.getaddrinfo("localhost", "ssh", Socket::PF_INET, Socket::SOCK_STREAM, timeout: 1).fetch(0)
+      assert_equal(22, ai.ip_port)
+    end
   end
 end

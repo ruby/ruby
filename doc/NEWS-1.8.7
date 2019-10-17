@@ -417,7 +417,7 @@ with all sufficient information, see the ChangeLog file.
     * FTP
       * URI('ftp://example.com/foo').path #=> 'foo'
       * URI('ftp://example.com/%2Ffoo').path #=> '/foo'
-      * URI::FTP.build([nil, 'example.com', nil, '/foo', 'i').to_s #=> 'ftp://example.com/%2Ffoo;type=i'
+      * URI::FTP.build([nil, 'example.com', nil, '/foo', 'i']).to_s #=> 'ftp://example.com/%2Ffoo;type=i'
     * URI merge
       * URI('http://a/b/c/d;p?q').merge('?y') == URI('http://a/b/c/d;p?y')
       * URI('http://a/b/c/d;p?q').merge('/./g') == URI('http://a/g')
@@ -518,7 +518,7 @@ with all sufficient information, see the ChangeLog file.
     New method to set the entity expansion limit. By default the limit is
     set to 10000.  See the following URL for details.
 
-    http://www.ruby-lang.org/en/news/2008/08/23/dos-vulnerability-in-rexml/
+    https://www.ruby-lang.org/en/news/2008/08/23/dos-vulnerability-in-rexml/
 
 * stringio
 

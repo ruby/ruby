@@ -1,4 +1,5 @@
-require 'drb/drb'
+# frozen_string_literal: false
+require_relative 'drb'
 require 'monitor'
 
 module DRb

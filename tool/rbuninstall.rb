@@ -1,4 +1,8 @@
 #! /usr/bin/ruby -nl
+
+# Used by the "make uninstall" target to uninstall Ruby.
+# See common.mk for more details.
+
 BEGIN {
   $dryrun = false
   $tty = STDOUT.tty?

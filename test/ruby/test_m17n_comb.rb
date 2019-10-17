@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'etc'
 require_relative 'allpairs'
@@ -743,6 +744,10 @@ class TestM17NComb < Test::Unit::TestCase
     }
   end
 
+  def crypt_supports_des_crypt?
+    /openbsd/ !~ RUBY_PLATFORM
+  end
+
   # glibc 2.16 or later denies salt contained other than [0-9A-Za-z./] #7312
   # we use this check to test strict and non-strict behavior separately #11045
   strict_crypt = if defined? Etc::CS_GNU_LIBC_VERSION
@@ -759,7 +764,7 @@ class TestM17NComb < Test::Unit::TestCase
     }
   end
 
-  if !strict_crypt
+  if !strict_crypt && /openbsd/ !~ RUBY_PLATFORM
     def test_str_crypt_nonstrict
       combination(STRINGS, STRINGS) {|str, salt|
         # only test input other than [0-9A-Za-z./] to confirm non-strict behavior
@@ -771,9 +776,14 @@ class TestM17NComb < Test::Unit::TestCase
   end
 
   private def confirm_crypt_result(str, salt)
-    if b(salt).length < 2
-      assert_raise(ArgumentError) { str.crypt(salt) }
-      return
+    if crypt_supports_des_crypt?
+      if b(salt).length < 2
+        assert_raise(ArgumentError) { str.crypt(salt) }
+        return
+      end
+    else
+      return if b(salt).length < 2
+      salt = "$2a$04$0WVaz0pV3jzfZ5G5tpmH#{salt}"
     end
     t = str.crypt(salt)
     assert_equal(b(str).crypt(b(salt)), t, "#{encdump(str)}.crypt(#{encdump(salt)})")
@@ -807,7 +817,7 @@ class TestM17NComb < Test::Unit::TestCase
   def test_str_downcase
     STRINGS.each {|s|
       if !s.valid_encoding?
-        assert_raise(ArgumentError) { s.downcase }
+        assert_raise(ArgumentError, "Offending string: #{s.inspect}, encoding: #{s.encoding}") { s.downcase }
         next
       end
       t = s.downcase
@@ -1575,8 +1585,8 @@ class TestM17NComb < Test::Unit::TestCase
         assert_raise(Encoding::CompatibilityError, desc) { s1.start_with?(s2) }
         next
       end
-      s1 = s1.dup.force_encoding("ASCII-8BIT")
-      s2 = s2.dup.force_encoding("ASCII-8BIT")
+      s1 = s1.b
+      s2 = s2.b
       if s1.length < s2.length
         assert_equal(false, enccall(s1, :start_with?, s2), desc)
         next
@@ -1635,4 +1645,9 @@ class TestM17NComb < Test::Unit::TestCase
     }
   end
 
+  def test_bug11486
+    bug11486 = '[Bug #11486]'
+    assert_nil ("\u3042"*19+"\r"*19+"\u3042"*20+"\r"*20).encode(Encoding::EUC_JP).gsub!(/xxx/i, ""), bug11486
+    assert_match Regexp.new("ABC\uff41".encode(Encoding::EUC_JP), Regexp::IGNORECASE), "abc\uFF21".encode(Encoding::EUC_JP), bug11486
+  end
 end

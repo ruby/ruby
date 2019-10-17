@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/commands/query_command'
 
@@ -8,14 +9,17 @@ module TestGemCommandsQueryCommandSetup
     @cmd = Gem::Commands::QueryCommand.new
 
     @specs = add_gems_to_fetcher
+    @stub_ui = Gem::MockGemUi.new
+    @stub_fetcher = Gem::FakeFetcher.new
 
-    @fetcher.data["#{@gem_repo}Marshal.#{Gem.marshal_version}"] = proc do
+    @stub_fetcher.data["#{@gem_repo}Marshal.#{Gem.marshal_version}"] = proc do
       raise Gem::RemoteFetcher::FetchError
     end
   end
 end
 
 class TestGemCommandsQueryCommandWithInstalledGems < Gem::TestCase
+
   include TestGemCommandsQueryCommandSetup
 
   def test_execute
@@ -25,7 +29,7 @@ class TestGemCommandsQueryCommandWithInstalledGems < Gem::TestCase
 
     @cmd.handle_options %w[-r]
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
@@ -37,8 +41,8 @@ a (2)
 pl (1 i386-linux)
     EOF
 
-    assert_equal expected, @ui.output
-    assert_equal '', @ui.error
+    assert_equal expected, @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_execute_all
@@ -48,7 +52,7 @@ pl (1 i386-linux)
 
     @cmd.handle_options %w[-r --all]
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
@@ -60,8 +64,8 @@ a (2, 1)
 pl (1 i386-linux)
     EOF
 
-    assert_equal expected, @ui.output
-    assert_equal '', @ui.error
+    assert_equal expected, @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_execute_all_prerelease
@@ -71,7 +75,7 @@ pl (1 i386-linux)
 
     @cmd.handle_options %w[-r --all --prerelease]
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
@@ -83,8 +87,8 @@ a (3.a, 2, 1)
 pl (1 i386-linux)
     EOF
 
-    assert_equal expected, @ui.output
-    assert_equal '', @ui.error
+    assert_equal expected, @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_execute_details
@@ -100,7 +104,7 @@ pl (1 i386-linux)
 
     @cmd.handle_options %w[-r -d]
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
@@ -123,34 +127,114 @@ pl (1)
     this is a summary
     EOF
 
-    assert_equal expected, @ui.output
-    assert_equal '', @ui.error
+    assert_equal expected, @stub_ui.output
+    assert_equal '', @stub_ui.error
+  end
+
+  def test_execute_details_cleans_text
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 2 do |s|
+        s.summary = 'This is a lot of text. ' * 4
+        s.authors = ["Abraham Lincoln \x01", "\x02 Hirohito"]
+        s.homepage = "http://a.example.com/\x03"
+      end
+
+      fetcher.legacy_platform
+    end
+
+    @cmd.handle_options %w[-r -d]
+
+    use_ui @stub_ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+
+*** REMOTE GEMS ***
+
+a (2)
+    Authors: Abraham Lincoln ., . Hirohito
+    Homepage: http://a.example.com/.
+
+    This is a lot of text. This is a lot of text. This is a lot of text.
+    This is a lot of text.
+
+pl (1)
+    Platform: i386-linux
+    Author: A User
+    Homepage: http://example.com
+
+    this is a summary
+    EOF
+
+    assert_equal expected, @stub_ui.output
+    assert_equal '', @stub_ui.error
+  end
+
+  def test_execute_details_truncates_summary
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 2 do |s|
+        s.summary = 'This is a lot of text. ' * 10_000
+        s.authors = ["Abraham Lincoln \x01", "\x02 Hirohito"]
+        s.homepage = "http://a.example.com/\x03"
+      end
+
+      fetcher.legacy_platform
+    end
+
+    @cmd.handle_options %w[-r -d]
+
+    use_ui @stub_ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+
+*** REMOTE GEMS ***
+
+a (2)
+    Authors: Abraham Lincoln ., . Hirohito
+    Homepage: http://a.example.com/.
+
+    Truncating the summary for a-2 to 100,000 characters:
+#{"    This is a lot of text. This is a lot of text. This is a lot of text.\n" * 1449}    This is a lot of te
+
+pl (1)
+    Platform: i386-linux
+    Author: A User
+    Homepage: http://example.com
+
+    this is a summary
+    EOF
+
+    assert_equal expected, @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_execute_installed
     @cmd.handle_options %w[-n a --installed]
 
     assert_raises Gem::MockGemUi::SystemExitException do
-      use_ui @ui do
+      use_ui @stub_ui do
         @cmd.execute
       end
     end
 
-    assert_equal "true\n", @ui.output
-    assert_equal '', @ui.error
+    assert_equal "true\n", @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_execute_installed_inverse
     @cmd.handle_options %w[-n a --no-installed]
 
     e = assert_raises Gem::MockGemUi::TermError do
-      use_ui @ui do
+      use_ui @stub_ui do
         @cmd.execute
       end
     end
 
-    assert_equal "false\n", @ui.output
-    assert_equal '', @ui.error
+    assert_equal "false\n", @stub_ui.output
+    assert_equal '', @stub_ui.error
 
     assert_equal 1, e.exit_code
   end
@@ -159,26 +243,26 @@ pl (1)
     @cmd.handle_options %w[-n not_installed --no-installed]
 
     assert_raises Gem::MockGemUi::SystemExitException do
-      use_ui @ui do
+      use_ui @stub_ui do
         @cmd.execute
       end
     end
 
-    assert_equal "true\n", @ui.output
-    assert_equal '', @ui.error
+    assert_equal "true\n", @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_execute_installed_no_name
     @cmd.handle_options %w[--installed]
 
     e = assert_raises Gem::MockGemUi::TermError do
-      use_ui @ui do
+      use_ui @stub_ui do
         @cmd.execute
       end
     end
 
-    assert_equal '', @ui.output
-    assert_equal "ERROR:  You must specify a gem name\n", @ui.error
+    assert_equal '', @stub_ui.output
+    assert_equal "ERROR:  You must specify a gem name\n", @stub_ui.error
 
     assert_equal 4, e.exit_code
   end
@@ -187,13 +271,13 @@ pl (1)
     @cmd.handle_options %w[-n not_installed --installed]
 
     e = assert_raises Gem::MockGemUi::TermError do
-      use_ui @ui do
+      use_ui @stub_ui do
         @cmd.execute
       end
     end
 
-    assert_equal "false\n", @ui.output
-    assert_equal '', @ui.error
+    assert_equal "false\n", @stub_ui.output
+    assert_equal '', @stub_ui.error
 
     assert_equal 1, e.exit_code
   end
@@ -202,26 +286,26 @@ pl (1)
     @cmd.handle_options %w[-n a --installed --version 2]
 
     assert_raises Gem::MockGemUi::SystemExitException do
-      use_ui @ui do
+      use_ui @stub_ui do
         @cmd.execute
       end
     end
 
-    assert_equal "true\n", @ui.output
-    assert_equal '', @ui.error
+    assert_equal "true\n", @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_execute_installed_version_not_installed
     @cmd.handle_options %w[-n c --installed --version 2]
 
     e = assert_raises Gem::MockGemUi::TermError do
-      use_ui @ui do
+      use_ui @stub_ui do
         @cmd.execute
       end
     end
 
-    assert_equal "false\n", @ui.output
-    assert_equal '', @ui.error
+    assert_equal "false\n", @stub_ui.output
+    assert_equal '', @stub_ui.error
 
     assert_equal 1, e.exit_code
   end
@@ -233,7 +317,7 @@ pl (1)
 
     @cmd.options[:domain] = :local
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
@@ -245,8 +329,8 @@ a (3.a, 2, 1)
 pl (1 i386-linux)
     EOF
 
-    assert_equal expected, @ui.output
-    assert_equal '', @ui.error
+    assert_equal expected, @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_execute_local_notty
@@ -256,9 +340,9 @@ pl (1 i386-linux)
 
     @cmd.handle_options %w[]
 
-    @ui.outs.tty = false
+    @stub_ui.outs.tty = false
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
@@ -267,8 +351,8 @@ a (3.a, 2, 1)
 pl (1 i386-linux)
     EOF
 
-    assert_equal expected, @ui.output
-    assert_equal '', @ui.error
+    assert_equal expected, @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_execute_local_quiet
@@ -279,7 +363,7 @@ pl (1 i386-linux)
     @cmd.options[:domain] = :local
     Gem.configuration.verbose = false
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
@@ -288,8 +372,8 @@ a (3.a, 2, 1)
 pl (1 i386-linux)
     EOF
 
-    assert_equal expected, @ui.output
-    assert_equal '', @ui.error
+    assert_equal expected, @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_execute_no_versions
@@ -299,7 +383,7 @@ pl (1 i386-linux)
 
     @cmd.handle_options %w[-r --no-versions]
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
@@ -311,8 +395,8 @@ a
 pl
     EOF
 
-    assert_equal expected, @ui.output
-    assert_equal '', @ui.error
+    assert_equal expected, @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_execute_notty
@@ -322,9 +406,9 @@ pl
 
     @cmd.handle_options %w[-r]
 
-    @ui.outs.tty = false
+    @stub_ui.outs.tty = false
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
@@ -333,14 +417,14 @@ a (2)
 pl (1 i386-linux)
     EOF
 
-    assert_equal expected, @ui.output
-    assert_equal '', @ui.error
+    assert_equal expected, @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_execute_prerelease
     @cmd.handle_options %w[-r --prerelease]
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
@@ -351,8 +435,8 @@ pl (1 i386-linux)
 a (3.a)
     EOF
 
-    assert_equal expected, @ui.output
-    assert_equal '', @ui.error
+    assert_equal expected, @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_execute_prerelease_local
@@ -362,7 +446,7 @@ a (3.a)
 
     @cmd.handle_options %w[-l --prerelease]
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
@@ -374,8 +458,29 @@ a (3.a, 2, 1)
 pl (1 i386-linux)
     EOF
 
-    assert_equal expected, @ui.output
-    assert_equal "WARNING:  prereleases are always shown locally\n", @ui.error
+    assert_equal expected, @stub_ui.output
+  end
+
+  def test_execute_no_prerelease_local
+    spec_fetcher do |fetcher|
+      fetcher.legacy_platform
+    end
+
+    @cmd.handle_options %w[-l --no-prerelease]
+
+    use_ui @stub_ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+
+*** LOCAL GEMS ***
+
+a (2, 1)
+pl (1 i386-linux)
+    EOF
+
+    assert_equal expected, @stub_ui.output
   end
 
   def test_execute_remote
@@ -385,7 +490,7 @@ pl (1 i386-linux)
 
     @cmd.options[:domain] = :remote
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
@@ -397,8 +502,8 @@ a (2)
 pl (1 i386-linux)
     EOF
 
-    assert_equal expected, @ui.output
-    assert_equal '', @ui.error
+    assert_equal expected, @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_execute_remote_notty
@@ -408,9 +513,9 @@ pl (1 i386-linux)
 
     @cmd.handle_options %w[]
 
-    @ui.outs.tty = false
+    @stub_ui.outs.tty = false
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
@@ -419,8 +524,8 @@ a (3.a, 2, 1)
 pl (1 i386-linux)
     EOF
 
-    assert_equal expected, @ui.output
-    assert_equal '', @ui.error
+    assert_equal expected, @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_execute_remote_quiet
@@ -431,7 +536,7 @@ pl (1 i386-linux)
     @cmd.options[:domain] = :remote
     Gem.configuration.verbose = false
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
@@ -440,14 +545,14 @@ a (2)
 pl (1 i386-linux)
     EOF
 
-    assert_equal expected, @ui.output
-    assert_equal '', @ui.error
+    assert_equal expected, @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_make_entry
     a_2_name = @specs['a-2'].original_name
 
-    @fetcher.data.delete \
+    @stub_fetcher.data.delete \
       "#{@gem_repo}quick/Marshal.#{Gem.marshal_version}/#{a_2_name}.gemspec.rz"
 
     a2 = @specs['a-2']
@@ -471,26 +576,26 @@ pl (1 i386-linux)
 
     @cmd.handle_options %w[a pl]
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
-    assert_match %r%^a %, @ui.output
-    assert_match %r%^pl %, @ui.output
-    assert_equal '', @ui.error
+    assert_match %r%^a %, @stub_ui.output
+    assert_match %r%^pl %, @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_show_gems
     @cmd.options[:name] = //
     @cmd.options[:domain] = :remote
 
-    use_ui @ui do
-      @cmd.send :show_gems, /a/i, false
+    use_ui @stub_ui do
+      @cmd.send :show_gems, /a/i
     end
 
-    assert_match %r%^a %,  @ui.output
-    refute_match %r%^pl %, @ui.output
-    assert_empty @ui.error
+    assert_match %r%^a %,  @stub_ui.output
+    refute_match %r%^pl %, @stub_ui.output
+    assert_empty @stub_ui.error
   end
 
   private
@@ -502,9 +607,11 @@ pl (1 i386-linux)
       fetcher.spec 'a', '3.a'
     end
   end
+
 end
 
 class TestGemCommandsQueryCommandWithoutInstalledGems < Gem::TestCase
+
   include TestGemCommandsQueryCommandSetup
 
   def test_execute_platform
@@ -521,7 +628,7 @@ class TestGemCommandsQueryCommandWithoutInstalledGems < Gem::TestCase
 
     @cmd.handle_options %w[-r -a]
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
@@ -532,8 +639,47 @@ class TestGemCommandsQueryCommandWithoutInstalledGems < Gem::TestCase
 a (2 universal-darwin, 1 ruby x86-linux)
     EOF
 
-    assert_equal expected, @ui.output
-    assert_equal '', @ui.error
+    assert_equal expected, @stub_ui.output
+    assert_equal '', @stub_ui.error
+  end
+
+  def test_execute_show_default_gems
+    spec_fetcher { |fetcher| fetcher.spec 'a', 2 }
+
+    a1 = new_default_spec 'a', 1
+    install_default_specs a1
+
+    use_ui @stub_ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+
+*** LOCAL GEMS ***
+
+a (2, default: 1)
+EOF
+
+    assert_equal expected, @stub_ui.output
+  end
+
+  def test_execute_show_default_gems_with_platform
+    a1 = new_default_spec 'a', 1
+    a1.platform = 'java'
+    install_default_specs a1
+
+    use_ui @stub_ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+
+*** LOCAL GEMS ***
+
+a (default: 1 java)
+EOF
+
+    assert_equal expected, @stub_ui.output
   end
 
   def test_execute_default_details
@@ -546,7 +692,7 @@ a (2 universal-darwin, 1 ruby x86-linux)
 
     @cmd.handle_options %w[-l -d]
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
@@ -563,7 +709,7 @@ a (2, 1)
     this is a summary
     EOF
 
-    assert_equal expected, @ui.output
+    assert_equal expected, @stub_ui.output
   end
 
   def test_execute_local_details
@@ -584,11 +730,11 @@ a (2, 1)
 
     @cmd.handle_options %w[-l -d]
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
-    str = @ui.output
+    str = @stub_ui.output
 
     str.gsub!(/\(\d\): [^\n]*/, "-")
     str.gsub!(/at: [^\n]*/, "at: -")
@@ -618,7 +764,84 @@ pl (1)
     this is a summary
     EOF
 
-    assert_equal expected, @ui.output
+    assert_equal expected, @stub_ui.output
+  end
+
+  def test_execute_exact_remote
+    spec_fetcher do |fetcher|
+      fetcher.spec 'coolgem-omg', 3
+      fetcher.spec 'coolgem', '4.2.1'
+      fetcher.spec 'wow_coolgem', 1
+    end
+
+    @cmd.handle_options %w[--remote --exact coolgem]
+
+    use_ui @stub_ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+
+*** REMOTE GEMS ***
+
+coolgem (4.2.1)
+    EOF
+
+    assert_equal expected, @stub_ui.output
+  end
+
+  def test_execute_exact_local
+    spec_fetcher do |fetcher|
+      fetcher.spec 'coolgem-omg', 3
+      fetcher.spec 'coolgem', '4.2.1'
+      fetcher.spec 'wow_coolgem', 1
+    end
+
+    @cmd.handle_options %w[--exact coolgem]
+
+    use_ui @stub_ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+
+*** LOCAL GEMS ***
+
+coolgem (4.2.1)
+    EOF
+
+    assert_equal expected, @stub_ui.output
+  end
+
+  def test_execute_exact_multiple
+    spec_fetcher do |fetcher|
+      fetcher.spec 'coolgem-omg', 3
+      fetcher.spec 'coolgem', '4.2.1'
+      fetcher.spec 'wow_coolgem', 1
+
+      fetcher.spec 'othergem-omg', 3
+      fetcher.spec 'othergem', '1.2.3'
+      fetcher.spec 'wow_othergem', 1
+    end
+
+    @cmd.handle_options %w[--exact coolgem othergem]
+
+    use_ui @stub_ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+
+*** LOCAL GEMS ***
+
+coolgem (4.2.1)
+
+*** LOCAL GEMS ***
+
+othergem (1.2.3)
+    EOF
+
+    assert_equal expected, @stub_ui.output
   end
 
   private
@@ -630,4 +853,5 @@ pl (1)
       fetcher.download 'a', '3.a'
     end
   end
+
 end

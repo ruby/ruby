@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 module IRB
   class << (MagicFile = Object.new)
     # see parser_magic_comment in parse.y
@@ -9,7 +10,7 @@ module IRB
       line = io.gets if line[0,2] == "#!"
       encoding = detect_encoding(line)
       internal_encoding = encoding
-      encoding ||= default_src_encoding
+      encoding ||= IRB.default_src_encoding
       io.rewind
       io.set_encoding(encoding, internal_encoding)
 

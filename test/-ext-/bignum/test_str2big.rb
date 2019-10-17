@@ -1,11 +1,12 @@
+# frozen_string_literal: false
 require 'test/unit'
 require "-test-/bignum"
 
-class TestBignum < Test::Unit::TestCase
+class Test_Bignum < Test::Unit::TestCase
   class TestStr2big < Test::Unit::TestCase
 
-    SIZEOF_BDIGIT = Bignum::SIZEOF_BDIGIT
-    BITSPERDIG = Bignum::BITSPERDIG
+    SIZEOF_BDIGIT = Integer::SIZEOF_BDIGIT
+    BITSPERDIG = Integer::BITSPERDIG
     BDIGMAX = (1 << BITSPERDIG) - 1
 
     def test_str2big_poweroftwo

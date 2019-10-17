@@ -1,9 +1,9 @@
+# frozen_string_literal: false
 require_relative 'utils'
-require 'base64'
 
-if defined?(OpenSSL::TestUtils)
+if defined?(OpenSSL) && defined?(OpenSSL::PKey::DSA)
 
-class OpenSSL::TestPKeyDSA < Test::Unit::TestCase
+class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
   def test_private
     key = OpenSSL::PKey::DSA.new(256)
     assert(key.private?)
@@ -19,7 +19,11 @@ class OpenSSL::TestPKeyDSA < Test::Unit::TestCase
     key = OpenSSL::PKey::DSA.new 256
     pem  = key.public_key.to_pem
     OpenSSL::PKey::DSA.new pem
-    assert_equal([], OpenSSL.errors)
+    if $0 == __FILE__
+      assert_nothing_raised {
+        key = OpenSSL::PKey::DSA.new 2048
+      }
+    end
   end
 
   def test_new_break
@@ -29,64 +33,133 @@ class OpenSSL::TestPKeyDSA < Test::Unit::TestCase
     end
   end
 
+  def test_sign_verify
+    dsa512 = Fixtures.pkey("dsa512")
+    data = "Sign me!"
+    if defined?(OpenSSL::Digest::DSS1)
+      signature = dsa512.sign(OpenSSL::Digest::DSS1.new, data)
+      assert_equal true, dsa512.verify(OpenSSL::Digest::DSS1.new, signature, data)
+    end
+
+    signature = dsa512.sign("SHA1", data)
+    assert_equal true, dsa512.verify("SHA1", signature, data)
+
+    signature0 = (<<~'end;').unpack("m")[0]
+      MCwCFH5h40plgU5Fh0Z4wvEEpz0eE9SnAhRPbkRB8ggsN/vsSEYMXvJwjGg/
+      6g==
+    end;
+    assert_equal true, dsa512.verify("SHA256", signature0, data)
+    signature1 = signature0.succ
+    assert_equal false, dsa512.verify("SHA256", signature1, data)
+  end
+
   def test_sys_sign_verify
-    key = OpenSSL::TestUtils::TEST_KEY_DSA256
+    key = Fixtures.pkey("dsa256")
     data = 'Sign me!'
     digest = OpenSSL::Digest::SHA1.digest(data)
     sig = key.syssign(digest)
     assert(key.sysverify(digest, sig))
   end
 
-  def test_sign_verify
-    check_sign_verify(OpenSSL::Digest::DSS1.new)
+  def test_DSAPrivateKey
+    # OpenSSL DSAPrivateKey format; similar to RSAPrivateKey
+    dsa512 = Fixtures.pkey("dsa512")
+    asn1 = OpenSSL::ASN1::Sequence([
+      OpenSSL::ASN1::Integer(0),
+      OpenSSL::ASN1::Integer(dsa512.p),
+      OpenSSL::ASN1::Integer(dsa512.q),
+      OpenSSL::ASN1::Integer(dsa512.g),
+      OpenSSL::ASN1::Integer(dsa512.pub_key),
+      OpenSSL::ASN1::Integer(dsa512.priv_key)
+    ])
+    key = OpenSSL::PKey::DSA.new(asn1.to_der)
+    assert_predicate key, :private?
+    assert_same_dsa dsa512, key
+
+    pem = <<~EOF
+    -----BEGIN DSA PRIVATE KEY-----
+    MIH4AgEAAkEA5lB4GvEwjrsMlGDqGsxrbqeFRh6o9OWt6FgTYiEEHaOYhkIxv0Ok
+    RZPDNwOG997mDjBnvDJ1i56OmS3MbTnovwIVAJgub/aDrSDB4DZGH7UyarcaGy6D
+    AkB9HdFw/3td8K4l1FZHv7TCZeJ3ZLb7dF3TWoGUP003RCqoji3/lHdKoVdTQNuR
+    S/m6DlCwhjRjiQ/lBRgCLCcaAkEAjN891JBjzpMj4bWgsACmMggFf57DS0Ti+5++
+    Q1VB8qkJN7rA7/2HrCR3gTsWNb1YhAsnFsoeRscC+LxXoXi9OAIUBG98h4tilg6S
+    55jreJD3Se3slps=
+    -----END DSA PRIVATE KEY-----
+    EOF
+    key = OpenSSL::PKey::DSA.new(pem)
+    assert_same_dsa dsa512, key
+
+    assert_equal asn1.to_der, dsa512.to_der
+    assert_equal pem, dsa512.export
   end
 
-if (OpenSSL::OPENSSL_VERSION_NUMBER > 0x10000000)
-  def test_sign_verify_sha1
-    check_sign_verify(OpenSSL::Digest::SHA1.new)
+  def test_DSAPrivateKey_encrypted
+    # key = abcdef
+    dsa512 = Fixtures.pkey("dsa512")
+    pem = <<~EOF
+    -----BEGIN DSA PRIVATE KEY-----
+    Proc-Type: 4,ENCRYPTED
+    DEK-Info: AES-128-CBC,F8BB7BFC7EAB9118AC2E3DA16C8DB1D9
+
+    D2sIzsM9MLXBtlF4RW42u2GB9gX3HQ3prtVIjWPLaKBYoToRUiv8WKsjptfZuLSB
+    74ZPdMS7VITM+W1HIxo/tjS80348Cwc9ou8H/E6WGat8ZUk/igLOUEII+coQS6qw
+    QpuLMcCIavevX0gjdjEIkojBB81TYDofA1Bp1z1zDI/2Zhw822xapI79ZF7Rmywt
+    OSyWzFaGipgDpdFsGzvT6//z0jMr0AuJVcZ0VJ5lyPGQZAeVBlbYEI4T72cC5Cz7
+    XvLiaUtum6/sASD2PQqdDNpgx/WA6Vs1Po2kIUQIM5TIwyJI0GdykZcYm6xIK/ta
+    Wgx6c8K+qBAIVrilw3EWxw==
+    -----END DSA PRIVATE KEY-----
+    EOF
+    key = OpenSSL::PKey::DSA.new(pem, "abcdef")
+    assert_same_dsa dsa512, key
+    key = OpenSSL::PKey::DSA.new(pem) { "abcdef" }
+    assert_same_dsa dsa512, key
+
+    cipher = OpenSSL::Cipher.new("aes-128-cbc")
+    exported = dsa512.to_pem(cipher, "abcdef\0\1")
+    assert_same_dsa dsa512, OpenSSL::PKey::DSA.new(exported, "abcdef\0\1")
+    assert_raise(OpenSSL::PKey::DSAError) {
+      OpenSSL::PKey::DSA.new(exported, "abcdef")
+    }
   end
 
-  def test_sign_verify_sha256
-    check_sign_verify(OpenSSL::Digest::SHA256.new)
-  end
-end
+  def test_PUBKEY
+    dsa512 = Fixtures.pkey("dsa512")
+    asn1 = OpenSSL::ASN1::Sequence([
+      OpenSSL::ASN1::Sequence([
+        OpenSSL::ASN1::ObjectId("DSA"),
+        OpenSSL::ASN1::Sequence([
+          OpenSSL::ASN1::Integer(dsa512.p),
+          OpenSSL::ASN1::Integer(dsa512.q),
+          OpenSSL::ASN1::Integer(dsa512.g)
+        ])
+      ]),
+      OpenSSL::ASN1::BitString(
+        OpenSSL::ASN1::Integer(dsa512.pub_key).to_der
+      )
+    ])
+    key = OpenSSL::PKey::DSA.new(asn1.to_der)
+    assert_not_predicate key, :private?
+    assert_same_dsa dup_public(dsa512), key
 
-  def test_digest_state_irrelevant_verify
-    key = OpenSSL::TestUtils::TEST_KEY_DSA256
-    digest1 = OpenSSL::Digest::DSS1.new
-    digest2 = OpenSSL::Digest::DSS1.new
-    data = 'Sign me!'
-    sig = key.sign(digest1, data)
-    digest1.reset
-    digest1 << 'Change state of digest1'
-    assert(key.verify(digest1, sig, data))
-    assert(key.verify(digest2, sig, data))
-  end
+    pem = <<~EOF
+    -----BEGIN PUBLIC KEY-----
+    MIHxMIGoBgcqhkjOOAQBMIGcAkEA5lB4GvEwjrsMlGDqGsxrbqeFRh6o9OWt6FgT
+    YiEEHaOYhkIxv0OkRZPDNwOG997mDjBnvDJ1i56OmS3MbTnovwIVAJgub/aDrSDB
+    4DZGH7UyarcaGy6DAkB9HdFw/3td8K4l1FZHv7TCZeJ3ZLb7dF3TWoGUP003RCqo
+    ji3/lHdKoVdTQNuRS/m6DlCwhjRjiQ/lBRgCLCcaA0QAAkEAjN891JBjzpMj4bWg
+    sACmMggFf57DS0Ti+5++Q1VB8qkJN7rA7/2HrCR3gTsWNb1YhAsnFsoeRscC+LxX
+    oXi9OA==
+    -----END PUBLIC KEY-----
+    EOF
+    key = OpenSSL::PKey::DSA.new(pem)
+    assert_same_dsa dup_public(dsa512), key
 
-  def test_read_DSA_PUBKEY
-    p = 7188211954100152441468596248707152960171255279130004340103875772401008316444412091945435731597638374542374929457672178957081124632837356913990200866056699
-    q = 957032439192465935099784319494405376402293318491
-    g = 122928973717064636255205666162891733518376475981809749897454444301389338825906076467196186192907631719698166056821519884939865041993585844526937010746285
-    y = 1235756183583465414789073313502727057075641172514181938731172021825149551960029708596057102104063395063907739571546165975727369183495540798749742124846271
-    algo = OpenSSL::ASN1::ObjectId.new('DSA')
-    params = OpenSSL::ASN1::Sequence.new([OpenSSL::ASN1::Integer.new(p),
-                                          OpenSSL::ASN1::Integer.new(q),
-                                          OpenSSL::ASN1::Integer.new(g)])
-    algo_id = OpenSSL::ASN1::Sequence.new ([algo, params])
-    pub_key = OpenSSL::ASN1::Integer.new(y)
-    seq = OpenSSL::ASN1::Sequence.new([algo_id, OpenSSL::ASN1::BitString.new(pub_key.to_der)])
-    key = OpenSSL::PKey::DSA.new(seq.to_der)
-    assert(key.public?)
-    assert(!key.private?)
-    assert_equal(p, key.p)
-    assert_equal(q, key.q)
-    assert_equal(g, key.g)
-    assert_equal(y, key.pub_key)
-    assert_equal(nil, key.priv_key)
-    assert_equal([], OpenSSL.errors)
+    assert_equal asn1.to_der, dup_public(dsa512).to_der
+    assert_equal pem, dup_public(dsa512).export
   end
 
   def test_read_DSAPublicKey_pem
+    # TODO: where is the standard? PKey::DSA.new can read only PEM
     p = 12260055936871293565827712385212529106400444521449663325576634579961635627321079536132296996623400607469624537382977152381984332395192110731059176842635699
     q = 979494906553787301107832405790107343409973851677
     g = 3731695366899846297271147240305742456317979984190506040697507048095553842519347835107669437969086119948785140453492839427038591924536131566350847469993845
@@ -108,132 +181,19 @@ fWLOqqkzFeRrYMDzUpl36XktY6Yq8EJYlW9pCMmBVNy/dQ==
     assert_equal(g, key.g)
     assert_equal(y, key.pub_key)
     assert_equal(nil, key.priv_key)
-    assert_equal([], OpenSSL.errors)
   end
 
-  def test_read_DSA_PUBKEY_pem
-    p = 12260055936871293565827712385212529106400444521449663325576634579961635627321079536132296996623400607469624537382977152381984332395192110731059176842635699
-    q = 979494906553787301107832405790107343409973851677
-    g = 3731695366899846297271147240305742456317979984190506040697507048095553842519347835107669437969086119948785140453492839427038591924536131566350847469993845
-    y = 10505239074982761504240823422422813362721498896040719759460296306305851824586095328615844661273887569281276387605297130014564808567159023649684010036304695
-    pem = <<-EOF
------BEGIN PUBLIC KEY-----
-MIHxMIGoBgcqhkjOOAQBMIGcAkEA6hXntfQXEo78+s1r8yShbOQIpX+HOESnTNsV
-2yJzD6EiMntLpJ38WUOWjz0dBnYW69YnrAYszWPTSvf34XapswIVAKuSEhdIb6Kz
-fuHPUhoF4S52MHYdAkBHQCWhq8G+2yeDyhuyMtvsQqcH6lJ4ev8F0hDdUft9Ys6q
-qTMV5GtgwPNSmXfpeS1jpirwQliVb2kIyYFU3L91A0QAAkEAyJSJ+g+P/knVcgDw
-wTzC7Pwg/pWs2EMd/r+lYlXhNfzg0biuXRul8VR4VUC/phySExY0PdcqItkR/xYA
-YNMbNw==
------END PUBLIC KEY-----
-    EOF
-    key = OpenSSL::PKey::DSA.new(pem)
-    assert(key.public?)
-    assert(!key.private?)
-    assert_equal(p, key.p)
-    assert_equal(q, key.q)
-    assert_equal(g, key.g)
-    assert_equal(y, key.pub_key)
-    assert_equal(nil, key.priv_key)
-    assert_equal([], OpenSSL.errors)
-  end
-
-  def test_export_format_is_DSA_PUBKEY_pem
-    key = OpenSSL::TestUtils::TEST_KEY_DSA256
-    pem = key.public_key.to_pem
-    pem.gsub!(/^-+(\w|\s)+-+$/, "") # eliminate --------BEGIN...-------
-    asn1 = OpenSSL::ASN1.decode(Base64.decode64(pem))
-    assert_equal(OpenSSL::ASN1::SEQUENCE, asn1.tag)
-    assert_equal(2, asn1.value.size)
-    seq = asn1.value
-    assert_equal(OpenSSL::ASN1::SEQUENCE, seq[0].tag)
-    assert_equal(2, seq[0].value.size)
-    algo_id = seq[0].value
-    assert_equal(OpenSSL::ASN1::OBJECT, algo_id[0].tag)
-    assert_equal('DSA', algo_id[0].value)
-    assert_equal(OpenSSL::ASN1::SEQUENCE, algo_id[1].tag)
-    assert_equal(3, algo_id[1].value.size)
-    params = algo_id[1].value
-    assert_equal(OpenSSL::ASN1::INTEGER, params[0].tag)
-    assert_equal(key.p, params[0].value)
-    assert_equal(OpenSSL::ASN1::INTEGER, params[1].tag)
-    assert_equal(key.q, params[1].value)
-    assert_equal(OpenSSL::ASN1::INTEGER, params[2].tag)
-    assert_equal(key.g, params[2].value)
-    assert_equal(OpenSSL::ASN1::BIT_STRING, seq[1].tag)
-    assert_equal(0, seq[1].unused_bits)
-    pub_key = OpenSSL::ASN1.decode(seq[1].value)
-    assert_equal(OpenSSL::ASN1::INTEGER, pub_key.tag)
-    assert_equal(key.pub_key, pub_key.value)
-    assert_equal([], OpenSSL.errors)
-  end
-
-  def test_read_private_key_der
-    key = OpenSSL::TestUtils::TEST_KEY_DSA256
-    der = key.to_der
-    key2 = OpenSSL::PKey.read(der)
-    assert(key2.private?)
-    assert_equal(der, key2.to_der)
-    assert_equal([], OpenSSL.errors)
-  end
-
-  def test_read_private_key_pem
-    key = OpenSSL::TestUtils::TEST_KEY_DSA256
-    pem = key.to_pem
-    key2 = OpenSSL::PKey.read(pem)
-    assert(key2.private?)
-    assert_equal(pem, key2.to_pem)
-    assert_equal([], OpenSSL.errors)
-  end
-
-  def test_read_public_key_der
-    key = OpenSSL::TestUtils::TEST_KEY_DSA256.public_key
-    der = key.to_der
-    key2 = OpenSSL::PKey.read(der)
-    assert(!key2.private?)
-    assert_equal(der, key2.to_der)
-    assert_equal([], OpenSSL.errors)
-  end
-
-  def test_read_public_key_pem
-    key = OpenSSL::TestUtils::TEST_KEY_DSA256.public_key
-    pem = key.to_pem
-    key2 = OpenSSL::PKey.read(pem)
-    assert(!key2.private?)
-    assert_equal(pem, key2.to_pem)
-    assert_equal([], OpenSSL.errors)
-  end
-
-  def test_read_private_key_pem_pw
-    key = OpenSSL::TestUtils::TEST_KEY_DSA256
-    pem = key.to_pem(OpenSSL::Cipher.new('AES-128-CBC'), 'secret')
-    #callback form for password
-    key2 = OpenSSL::PKey.read(pem) do
-      'secret'
-    end
-    assert(key2.private?)
-    # pass password directly
-    key2 = OpenSSL::PKey.read(pem, 'secret')
-    assert(key2.private?)
-    #omit pem equality check, will be different due to cipher iv
-    assert_equal([], OpenSSL.errors)
-  end
-
-  def test_export_password_length
-    key = OpenSSL::TestUtils::TEST_KEY_DSA256
-    assert_raise(OpenSSL::OpenSSLError) do
-      key.export(OpenSSL::Cipher.new('AES-128-CBC'), 'sec')
-    end
-    pem = key.export(OpenSSL::Cipher.new('AES-128-CBC'), 'secr')
-    assert(pem)
+  def test_dup
+    key = OpenSSL::PKey::DSA.new(256)
+    key2 = key.dup
+    assert_equal key.params, key2.params
+    key2.set_pqg(key2.p + 1, key2.q, key2.g)
+    assert_not_equal key.params, key2.params
   end
 
   private
-
-  def check_sign_verify(digest)
-    key = OpenSSL::TestUtils::TEST_KEY_DSA256
-    data = 'Sign me!'
-    sig = key.sign(digest, data)
-    assert(key.verify(digest, sig, data))
+  def assert_same_dsa(expected, key)
+    check_component(expected, key, [:p, :q, :g, :pub_key, :priv_key])
   end
 end
 

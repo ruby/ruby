@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/package/tar_test_case'
 require 'rubygems/package'
 
@@ -86,4 +87,3 @@ class TestGemPackageTarReader < Gem::Package::TarTestCase
   end
 
 end
-

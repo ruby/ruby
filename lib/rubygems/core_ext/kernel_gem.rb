@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # RubyGems adds the #gem method to allow activation of specific gem versions
 # and overrides the #require method on Kernel to make gems appear as if they
@@ -5,9 +6,6 @@
 # for further detail.
 
 module Kernel
-
-  # REFACTOR: This should be pulled out into some kind of hacks file.
-  remove_method :gem if 'method' == defined? gem # from gem_prelude.rb on 1.9
 
   ##
   # Use Kernel#gem to activate a specific version of +gem_name+.
@@ -63,9 +61,9 @@ module Kernel
 
     spec = dep.to_spec
 
-    Gem::LOADED_SPECS_MUTEX.synchronize {
+    Gem::LOADED_SPECS_MUTEX.synchronize do
       spec.activate
-    } if spec
+    end if spec
   end
 
   private :gem

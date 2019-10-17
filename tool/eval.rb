@@ -1,3 +1,4 @@
+# VM checking and benchmarking code
 
 require './rbconfig'
 require 'fileutils'
@@ -106,7 +107,6 @@ def calc_each data
 end
 
 def calc_stat stats
-  stat = []
   stats[0].each_with_index{|e, idx|
     bm = e[0]
     vals = stats.map{|st|
@@ -133,8 +133,7 @@ def stat
   }
   # pp total
   total[0].each_with_index{|e, idx|
-    bm = e[0]
-    # print "#{bm}\t"
+    # print "#{e[0]}\t"
     total.each{|st|
       print st[idx][1], "\t"
     }

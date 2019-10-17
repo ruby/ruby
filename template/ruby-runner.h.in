@@ -1,0 +1,9 @@
+#define ABS_SRCDIR "@abs_srcdir@"
+#define BUILDDIR   "@abs_top_builddir@"
+#define LIBPATHENV "@LIBPATHENV@"
+#define PRELOADENV "@PRELOADENV@"
+#define PATH_SEPARATOR "@PATH_SEPARATOR@"
+#define PATH_SEP   '@PATH_SEPARATOR@'
+#define EXTOUT     "@EXTOUT@"
+#define ARCH       "@arch@"
+#define SOEXT      "@SOEXT@"

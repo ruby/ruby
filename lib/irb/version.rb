@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   irb/version.rb - irb version definition file
 #   	$Release Version: 0.9.6$
@@ -10,6 +11,7 @@
 #
 
 module IRB # :nodoc:
-  @RELEASE_VERSION = "0.9.6"
-  @LAST_UPDATE_DATE = "09/06/30"
+  VERSION = "1.1.0.pre.3"
+  @RELEASE_VERSION = VERSION
+  @LAST_UPDATE_DATE = "2019-09-01"
 end

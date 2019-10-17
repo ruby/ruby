@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require "#{File.dirname(File.expand_path(__FILE__))}/ut_drb"
 
 if __FILE__ == $0

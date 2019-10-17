@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # = monitor.rb
 #
 # Copyright (C) 2001  Shugo Maeda <shugo@ruby-lang.org>
@@ -5,8 +6,6 @@
 # This library is distributed under the terms of the Ruby license.
 # You can freely distribute/modify this library.
 #
-
-require 'thread'
 
 #
 # In concurrent programming, a monitor is an object or module intended to be
@@ -88,6 +87,9 @@ require 'thread'
 # MonitorMixin module.
 #
 module MonitorMixin
+  EXCEPTION_NEVER = {Exception => :never}.freeze
+  EXCEPTION_IMMEDIATE = {Exception => :immediate}.freeze
+
   #
   # FIXME: This isn't documented in Nutshell.
   #
@@ -104,13 +106,17 @@ module MonitorMixin
     # even if no other thread doesn't signal.
     #
     def wait(timeout = nil)
-      @monitor.__send__(:mon_check_owner)
-      count = @monitor.__send__(:mon_exit_for_cond)
-      begin
-        @cond.wait(@monitor.instance_variable_get(:@mon_mutex), timeout)
-        return true
-      ensure
-        @monitor.__send__(:mon_enter_for_cond, count)
+      Thread.handle_interrupt(EXCEPTION_NEVER) do
+        @monitor.__send__(:mon_check_owner)
+        count = @monitor.__send__(:mon_exit_for_cond)
+        begin
+          Thread.handle_interrupt(EXCEPTION_IMMEDIATE) do
+            @cond.wait(@monitor.instance_variable_get(:@mon_mutex), timeout)
+          end
+          return true
+        ensure
+          @monitor.__send__(:mon_enter_for_cond, count)
+        end
       end
     end
 
@@ -152,7 +158,7 @@ module MonitorMixin
 
     def initialize(monitor)
       @monitor = monitor
-      @cond = ::ConditionVariable.new
+      @cond = Thread::ConditionVariable.new
     end
   end
 
@@ -203,16 +209,32 @@ module MonitorMixin
   end
 
   #
+  # Returns true if this monitor is locked by any thread
+  #
+  def mon_locked?
+    @mon_mutex.locked?
+  end
+
+  #
+  # Returns true if this monitor is locked by current thread.
+  #
+  def mon_owned?
+    @mon_mutex.locked? && @mon_owner == Thread.current
+  end
+
+  #
   # Enters exclusive section and executes the block.  Leaves the exclusive
   # section automatically when the block exits.  See example under
   # +MonitorMixin+.
   #
   def mon_synchronize
-    mon_enter
+    # Prevent interrupt on handling interrupts; for example timeout errors
+    # it may break locking state.
+    Thread.handle_interrupt(EXCEPTION_NEVER){ mon_enter }
     begin
       yield
     ensure
-      mon_exit
+      Thread.handle_interrupt(EXCEPTION_NEVER){ mon_exit }
     end
   end
   alias synchronize mon_synchronize
@@ -238,9 +260,13 @@ module MonitorMixin
   # Initializes the MonitorMixin after being included in a class or when an
   # object has been extended with the MonitorMixin
   def mon_initialize
+    if defined?(@mon_mutex) && @mon_mutex_owner_object_id == object_id
+      raise ThreadError, "already initialized"
+    end
+    @mon_mutex = Thread::Mutex.new
+    @mon_mutex_owner_object_id = object_id
     @mon_owner = nil
     @mon_count = 0
-    @mon_mutex = Mutex.new
   end
 
   def mon_check_owner
@@ -295,8 +321,3 @@ end
 #    directly in the RDoc output.
 #  - in short, it may be worth changing the code layout in this file to make the
 #    documentation easier
-
-# Local variables:
-# mode: Ruby
-# tab-width: 8
-# End:

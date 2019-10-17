@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'resolv'
 
@@ -17,5 +18,9 @@ class TestResolvResource < Test::Unit::TestCase
   def test_hash
     bug10857 = '[ruby-core:68128] [Bug #10857]'
     assert_equal(@name1.hash, @name2.hash, bug10857)
+  end
+
+  def test_coord
+    Resolv::LOC::Coord.create('1 2 1.1 N')
   end
 end

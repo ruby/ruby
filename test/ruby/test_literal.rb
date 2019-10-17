@@ -1,4 +1,5 @@
 # -*- coding: us-ascii -*-
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestRubyLiteral < Test::Unit::TestCase
@@ -13,20 +14,20 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal ':sym', :sym.inspect
     assert_instance_of Symbol, :sym
     assert_equal '1234', 1234.inspect
-    assert_instance_of Fixnum, 1234
+    assert_instance_of Integer, 1234
     assert_equal '1234', 1_2_3_4.inspect
-    assert_instance_of Fixnum, 1_2_3_4
+    assert_instance_of Integer, 1_2_3_4
     assert_equal '18', 0x12.inspect
-    assert_instance_of Fixnum, 0x12
+    assert_instance_of Integer, 0x12
     assert_raise(SyntaxError) { eval("0x") }
     assert_equal '15', 0o17.inspect
-    assert_instance_of Fixnum, 0o17
+    assert_instance_of Integer, 0o17
     assert_raise(SyntaxError) { eval("0o") }
     assert_equal '5', 0b101.inspect
-    assert_instance_of Fixnum, 0b101
+    assert_instance_of Integer, 0b101
     assert_raise(SyntaxError) { eval("0b") }
     assert_equal '123456789012345678901234567890', 123456789012345678901234567890.inspect
-    assert_instance_of Bignum, 123456789012345678901234567890
+    assert_instance_of Integer, 123456789012345678901234567890
     assert_instance_of Float, 1.3
     assert_equal '2', eval("0x00+2").inspect
   end
@@ -44,6 +45,7 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal "A", ?A
     assert_instance_of String, ?\n
     assert_equal "\n", ?\n
+    assert_equal " ", ?\s
     assert_equal " ", ?\   # space
     assert_equal '', ''
     assert_equal 'string', 'string'
@@ -89,6 +91,9 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal "\u201c", eval(%[?\\\u{201c}]), bug6069
     assert_equal "\u201c".encode("euc-jp"), eval(%[?\\\u{201c}].encode("euc-jp")), bug6069
     assert_equal "\u201c".encode("iso-8859-13"), eval(%[?\\\u{201c}].encode("iso-8859-13")), bug6069
+
+    assert_equal "ab", eval("?a 'b'")
+    assert_equal "a\nb", eval("<<A 'b'\na\nA")
   end
 
   def test_dstring
@@ -115,10 +120,93 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal :a3c, :"a#{1+2}c"
   end
 
+  def test_dsymbol_redefined_intern
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+      class String
+        alias _intern intern
+        def intern
+          "<#{upcase}>"
+        end
+      end
+      mesg = "literal symbol should not be affected by method redefinition"
+      str = "foo"
+      assert_equal(:foo, :"#{str}", mesg)
+    end;
+  end
+
   def test_xstring
     assert_equal "foo\n", `echo foo`
     s = 'foo'
     assert_equal "foo\n", `echo #{s}`
+  end
+
+  def test_frozen_string
+    all_assertions do |a|
+      a.for("false with indicator") do
+        str = eval("# -*- frozen-string-literal: false -*-\n""'foo'")
+        assert_not_predicate(str, :frozen?)
+      end
+      a.for("true with indicator") do
+        str = eval("# -*- frozen-string-literal: true -*-\n""'foo'")
+        assert_predicate(str, :frozen?)
+      end
+      a.for("false without indicator") do
+        str = eval("# frozen-string-literal: false\n""'foo'")
+        assert_not_predicate(str, :frozen?)
+      end
+      a.for("true without indicator") do
+        str = eval("# frozen-string-literal: true\n""'foo'")
+        assert_predicate(str, :frozen?)
+      end
+      a.for("false with preceding garbage") do
+        str = eval("# x frozen-string-literal: false\n""'foo'")
+        assert_not_predicate(str, :frozen?)
+      end
+      a.for("true with preceding garbage") do
+        str = eval("# x frozen-string-literal: true\n""'foo'")
+        assert_not_predicate(str, :frozen?)
+      end
+      a.for("false with succeeding garbage") do
+        str = eval("# frozen-string-literal: false x\n""'foo'")
+        assert_not_predicate(str, :frozen?)
+      end
+      a.for("true with succeeding garbage") do
+        str = eval("# frozen-string-literal: true x\n""'foo'")
+        assert_not_predicate(str, :frozen?)
+      end
+    end
+  end
+
+  def test_frozen_string_in_array_literal
+    list = eval("# frozen-string-literal: true\n""['foo', 'bar']")
+    assert_equal 2, list.length
+    list.each { |str| assert_predicate str, :frozen? }
+  end
+
+  if defined?(RubyVM::InstructionSequence.compile_option) and
+    RubyVM::InstructionSequence.compile_option.key?(:debug_frozen_string_literal)
+    def test_debug_frozen_string
+      src = 'n = 1; _="foo#{n ? "-#{n}" : ""}"'; f = "test.rb"; n = 1
+      opt = {frozen_string_literal: true, debug_frozen_string_literal: true}
+      str = RubyVM::InstructionSequence.compile(src, f, f, n, **opt).eval
+      assert_equal("foo-1", str)
+      assert_predicate(str, :frozen?)
+      assert_raise_with_message(FrozenError, /created at #{Regexp.quote(f)}:#{n}/) {
+        str << "x"
+      }
+    end
+
+    def test_debug_frozen_string_in_array_literal
+      src = '["foo"]'; f = "test.rb"; n = 1
+      opt = {frozen_string_literal: true, debug_frozen_string_literal: true}
+      ary = RubyVM::InstructionSequence.compile(src, f, f, n, **opt).eval
+      assert_equal("foo", ary.first)
+      assert_predicate(ary.first, :frozen?)
+      assert_raise_with_message(FrozenError, /created at #{Regexp.quote(f)}:#{n}/) {
+        ary.first << "x"
+      } unless ENV['RUBY_ISEQ_DUMP_DEBUG']
+    end
   end
 
   def test_regexp
@@ -194,6 +282,24 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal 2, h.size
     assert_equal h, h
     assert_equal "literal", h["string"]
+  end
+
+  def test_hash_literal_frozen
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      def frozen_hash_literal_arg
+        {0=>1,1=>4,2=>17}
+      end
+
+      ObjectSpace.each_object(Hash) do |a|
+        if a.class == Hash and !a.default_proc and a.size == 3 &&
+           a[0] == 1 && a[1] == 4 && a[2] == 17
+          # should not be found.
+          raise
+        end
+      end
+      assert_not_include frozen_hash_literal_arg, 3
+    end;
   end
 
   def test_big_array_and_hash_literal
@@ -353,6 +459,35 @@ class TestRubyLiteral < Test::Unit::TestCase
     end;
   end
 
+  def test_hash_duplicated_key
+    h = EnvUtil.suppress_warning do
+      eval <<~end
+        # This is a syntax that renders warning at very early stage.
+        # eval used to delay warning, to be suppressible by EnvUtil.
+        {"a" => 100, "b" => 200, "a" => 300, "a" => 400}
+      end
+    end
+    assert_equal(2, h.size)
+    assert_equal(400, h['a'])
+    assert_equal(200, h['b'])
+    assert_nil(h['c'])
+    assert_equal(nil, h.key('300'))
+  end
+
+  def test_hash_frozen_key_id
+    key = "a".freeze
+    h = {key => 100}
+    assert_equal(100, h['a'])
+    assert_same(key, *h.keys)
+  end
+
+  def test_hash_key_tampering
+    key = "a"
+    h = {key => 100}
+    key.upcase!
+    assert_equal(100, h['a'])
+  end
+
   def test_range
     assert_instance_of Range, (1..2)
     assert_equal(1..2, 1..2)
@@ -389,7 +524,7 @@ class TestRubyLiteral < Test::Unit::TestCase
   end
 
   def test__LINE__
-    assert_instance_of Fixnum, __LINE__
+    assert_instance_of Integer, __LINE__
     assert_equal __LINE__, __LINE__
   end
 
@@ -417,15 +552,12 @@ class TestRubyLiteral < Test::Unit::TestCase
       }
     }
     bug2407 = '[ruby-dev:39798]'
-    head.each {|h|
-      if /^0/ =~ h
-        begin
-          eval("#{h}_")
-        rescue SyntaxError => e
-          assert_match(/numeric literal without digits\Z/, e.message, bug2407)
-        end
+    head.grep_v(/^0/) do |s|
+      head.grep(/^0/) do |h|
+        h = "#{s}#{h}_"
+        assert_syntax_error(h, /numeric literal without digits\Z/, "#{bug2407}: #{h.inspect}")
       end
-    }
+    end
   end
 
   def test_float
@@ -455,6 +587,7 @@ class TestRubyLiteral < Test::Unit::TestCase
         }
       }
     }
+    assert_equal(100.0, 0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100e100)
   end
 
   def test_symbol_list

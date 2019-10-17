@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require "mkmf"
 
 readline = Struct.new(:headers, :extra_check).new(["stdio.h"])
@@ -37,6 +38,7 @@ have_library("ncurses", "tgetnum") ||
 case enable_libedit
 when true
   # --enable-libedit
+  dir_config("libedit")
   unless (readline.have_header("editline/readline.h") ||
           readline.have_header("readline/readline.h")) &&
           have_library("edit", "readline")
@@ -57,7 +59,7 @@ else
             have_library("edit", "readline"))) ||
             (readline.have_header("editline/readline.h") &&
              have_library("edit", "readline"))
-    raise "readline nor libedit not found"
+    raise "Neither readline nor libedit was found"
   end
 end
 
@@ -69,6 +71,7 @@ readline.have_func("rl_completion_matches")
 readline.have_func("rl_refresh_line")
 readline.have_var("rl_deprep_term_function")
 readline.have_var("rl_completion_append_character")
+readline.have_var("rl_completion_quote_character")
 readline.have_var("rl_basic_word_break_characters")
 readline.have_var("rl_completer_word_break_characters")
 readline.have_var("rl_basic_quote_characters")
@@ -79,10 +82,11 @@ readline.have_var("rl_library_version")
 readline.have_var("rl_editing_mode")
 readline.have_var("rl_line_buffer")
 readline.have_var("rl_point")
+readline.have_var("rl_char_is_quoted_p")
 # workaround for native windows.
-/mswin|bccwin|mingw/ !~ RUBY_PLATFORM && readline.have_var("rl_event_hook")
-/mswin|bccwin|mingw/ !~ RUBY_PLATFORM && readline.have_var("rl_catch_sigwinch")
-/mswin|bccwin|mingw/ !~ RUBY_PLATFORM && readline.have_var("rl_catch_signals")
+/mswin|bccwin/ !~ RUBY_PLATFORM && readline.have_var("rl_event_hook")
+/mswin|bccwin/ !~ RUBY_PLATFORM && readline.have_var("rl_catch_sigwinch")
+/mswin|bccwin/ !~ RUBY_PLATFORM && readline.have_var("rl_catch_signals")
 readline.have_var("rl_pre_input_hook")
 readline.have_var("rl_special_prefixes")
 readline.have_func("rl_cleanup_after_signal")

@@ -1,6 +1,7 @@
 /*
  *  (c) 1995 Microsoft Corporation. All rights reserved.
- *  Developed by ActiveWare Internet Corp., http://www.ActiveWare.com
+ *  Developed by ActiveWare Internet Corp., now known as
+ *  ActiveState Tool Corp., http://www.ActiveState.com
  *
  *  Other modifications Copyright (c) 1997, 1998 by Gurusamy Sarathy
  *  <gsar@umich.edu> and Jan Dubois <jan.dubois@ibm.net>
@@ -26,7 +27,7 @@
 const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 0xC0, 0x4F, 0x8F, 0x5D, 0x9A}};
 #endif
 
-#define WIN32OLE_VERSION "1.8.4"
+#define WIN32OLE_VERSION "1.8.8"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -36,13 +37,13 @@ typedef HWND (WINAPI FNHTMLHELP)(HWND hwndCaller, LPCSTR pszFile,
 typedef BOOL (FNENUMSYSEMCODEPAGES) (CODEPAGE_ENUMPROC, DWORD);
 VALUE cWIN32OLE;
 
-#if defined(RB_THREAD_SPECIFIC) && (defined(__CYGWIN__) || defined(__MINGW32__))
+#if defined(RB_THREAD_SPECIFIC) && (defined(__CYGWIN__))
 static RB_THREAD_SPECIFIC BOOL g_ole_initialized;
 # define g_ole_initialized_init() ((void)0)
 # define g_ole_initialized_set(val) (g_ole_initialized = (val))
 #else
 static volatile DWORD g_ole_initialized_key = TLS_OUT_OF_INDEXES;
-# define g_ole_initialized (BOOL)TlsGetValue(g_ole_initialized_key)
+# define g_ole_initialized (TlsGetValue(g_ole_initialized_key)!=0)
 # define g_ole_initialized_init() (g_ole_initialized_key = TlsAlloc())
 # define g_ole_initialized_set(val) TlsSetValue(g_ole_initialized_key, (void*)(val))
 #endif
@@ -50,6 +51,7 @@ static volatile DWORD g_ole_initialized_key = TLS_OUT_OF_INDEXES;
 static BOOL g_uninitialize_hooked = FALSE;
 static BOOL g_cp_installed = FALSE;
 static BOOL g_lcid_installed = FALSE;
+static BOOL g_running_nano = FALSE;
 static HINSTANCE ghhctrl = NULL;
 static HINSTANCE gole32 = NULL;
 static FNCOCREATEINSTANCEEX *gCoCreateInstanceEx = NULL;
@@ -169,6 +171,7 @@ static VALUE fole_activex_initialize(VALUE self);
 static void com_hash_free(void *ptr);
 static void com_hash_mark(void *ptr);
 static size_t com_hash_size(const void *ptr);
+static void check_nano_server(void);
 
 static const rb_data_type_t ole_datatype = {
     "win32ole",
@@ -383,7 +386,7 @@ static /* [local] */ HRESULT ( STDMETHODCALLTYPE Invoke )(
             mid = rb_intern("value");
         }
     }
-    v = rb_funcall2(p->obj, mid, args, parg);
+    v = rb_funcallv(p->obj, mid, args, parg);
     ole_val2variant(v, pVarResult);
     return S_OK;
 }
@@ -421,12 +424,12 @@ rbtime2vtdate(VALUE tmobj)
     double t;
     double nsec;
 
-    st.wYear = FIX2INT(rb_funcall(tmobj, rb_intern("year"), 0));
-    st.wMonth = FIX2INT(rb_funcall(tmobj, rb_intern("month"), 0));
-    st.wDay = FIX2INT(rb_funcall(tmobj, rb_intern("mday"), 0));
-    st.wHour = FIX2INT(rb_funcall(tmobj, rb_intern("hour"), 0));
-    st.wMinute = FIX2INT(rb_funcall(tmobj, rb_intern("min"), 0));
-    st.wSecond = FIX2INT(rb_funcall(tmobj, rb_intern("sec"), 0));
+    st.wYear = RB_FIX2INT(rb_funcall(tmobj, rb_intern("year"), 0));
+    st.wMonth = RB_FIX2INT(rb_funcall(tmobj, rb_intern("month"), 0));
+    st.wDay = RB_FIX2INT(rb_funcall(tmobj, rb_intern("mday"), 0));
+    st.wHour = RB_FIX2INT(rb_funcall(tmobj, rb_intern("hour"), 0));
+    st.wMinute = RB_FIX2INT(rb_funcall(tmobj, rb_intern("min"), 0));
+    st.wSecond = RB_FIX2INT(rb_funcall(tmobj, rb_intern("sec"), 0));
     st.wMilliseconds = 0;
     SystemTimeToVariantTime(&st, &t);
 
@@ -435,7 +438,7 @@ rbtime2vtdate(VALUE tmobj)
      * wMilliseconds of SYSTEMTIME struct.
      * So, we need to calculate milliseconds by ourselves.
      */
-    nsec =  FIX2INT(rb_funcall(tmobj, rb_intern("nsec"), 0));
+    nsec =  RB_FIX2INT(rb_funcall(tmobj, rb_intern("nsec"), 0));
     nsec /= 1000000.0;
     nsec /= (24.0 * 3600.0);
     nsec /= 1000;
@@ -451,18 +454,18 @@ vtdate2rbtime(double date)
     double sec;
     VariantTimeToSystemTime(date, &st);
     v = rb_funcall(rb_cTime, rb_intern("new"), 6,
-		      INT2FIX(st.wYear),
-		      INT2FIX(st.wMonth),
-		      INT2FIX(st.wDay),
-		      INT2FIX(st.wHour),
-		      INT2FIX(st.wMinute),
-		      INT2FIX(st.wSecond));
-    st.wYear = FIX2INT(rb_funcall(v, rb_intern("year"), 0));
-    st.wMonth = FIX2INT(rb_funcall(v, rb_intern("month"), 0));
-    st.wDay = FIX2INT(rb_funcall(v, rb_intern("mday"), 0));
-    st.wHour = FIX2INT(rb_funcall(v, rb_intern("hour"), 0));
-    st.wMinute = FIX2INT(rb_funcall(v, rb_intern("min"), 0));
-    st.wSecond = FIX2INT(rb_funcall(v, rb_intern("sec"), 0));
+		      RB_INT2FIX(st.wYear),
+		      RB_INT2FIX(st.wMonth),
+		      RB_INT2FIX(st.wDay),
+		      RB_INT2FIX(st.wHour),
+		      RB_INT2FIX(st.wMinute),
+		      RB_INT2FIX(st.wSecond));
+    st.wYear = RB_FIX2INT(rb_funcall(v, rb_intern("year"), 0));
+    st.wMonth = RB_FIX2INT(rb_funcall(v, rb_intern("month"), 0));
+    st.wDay = RB_FIX2INT(rb_funcall(v, rb_intern("mday"), 0));
+    st.wHour = RB_FIX2INT(rb_funcall(v, rb_intern("hour"), 0));
+    st.wMinute = RB_FIX2INT(rb_funcall(v, rb_intern("min"), 0));
+    st.wSecond = RB_FIX2INT(rb_funcall(v, rb_intern("sec"), 0));
     st.wMilliseconds = 0;
     SystemTimeToVariantTime(&st, &sec);
     /*
@@ -817,16 +820,22 @@ ole_initialize(void)
     }
 
     if(g_ole_initialized == FALSE) {
-        hr = OleInitialize(NULL);
+        if(g_running_nano) {
+            hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+        } else {
+            hr = OleInitialize(NULL);
+        }
         if(FAILED(hr)) {
             ole_raise(hr, rb_eRuntimeError, "fail: OLE initialize");
         }
         g_ole_initialized_set(TRUE);
 
-        hr = CoRegisterMessageFilter(&imessage_filter, &previous_filter);
-        if(FAILED(hr)) {
-            previous_filter = NULL;
-            ole_raise(hr, rb_eRuntimeError, "fail: install OLE MessageFilter");
+        if (g_running_nano == FALSE) {
+            hr = CoRegisterMessageFilter(&imessage_filter, &previous_filter);
+            if(FAILED(hr)) {
+                previous_filter = NULL;
+                ole_raise(hr, rb_eRuntimeError, "fail: install OLE MessageFilter");
+            }
         }
     }
 }
@@ -860,10 +869,18 @@ ole_vstr2wc(VALUE vstr)
     LPWSTR pw;
     st_data_t data;
     struct st_table *tbl = DATA_PTR(enc2cp_hash);
+
+    /* do not type-conversion here to prevent from other arguments
+     * changing (if exist) */
+    Check_Type(vstr, T_STRING);
+    if (RSTRING_LEN(vstr) == 0) {
+        return NULL;
+    }
+
     enc = rb_enc_get(vstr);
 
     if (st_lookup(tbl, (VALUE)enc | FIXNUM_FLAG, &data)) {
-        cp = FIX2INT((VALUE)data);
+        cp = RB_FIX2INT((VALUE)data);
     } else {
         cp = ole_encoding2cp(enc);
         if (code_page_installed(cp) ||
@@ -875,7 +892,7 @@ ole_vstr2wc(VALUE vstr)
             cp == CP_UTF7 ||
             cp == CP_UTF8 ||
             cp == 51932) {
-            st_insert(tbl, (VALUE)enc | FIXNUM_FLAG, INT2FIX(cp));
+            st_insert(tbl, (VALUE)enc | FIXNUM_FLAG, RB_INT2FIX(cp));
         } else {
             rb_raise(eWIN32OLERuntimeError, "not installed Windows codepage(%d) according to `%s'", cp, rb_enc_name(enc));
         }
@@ -1262,7 +1279,16 @@ ole_val2variant(VALUE val, VARIANT *var)
         break;
     case T_FIXNUM:
         V_VT(var) = VT_I4;
-        V_I4(var) = NUM2INT(val);
+        {
+            long v = RB_NUM2LONG(val);
+            V_I4(var) = (LONG)v;
+#if SIZEOF_LONG > 4
+            if (V_I4(var) != v) {
+                V_I8(var) = v;
+                V_VT(var) = VT_I8;
+            }
+#endif
+        }
         break;
     case T_BIGNUM:
         V_VT(var) = VT_R8;
@@ -1469,58 +1495,58 @@ ole_variant2val(VARIANT *pvar)
         break;
     case VT_I1:
         if(V_ISBYREF(pvar))
-            obj = INT2NUM((long)*V_I1REF(pvar));
+            obj = RB_INT2NUM((long)*V_I1REF(pvar));
         else
-            obj = INT2NUM((long)V_I1(pvar));
+            obj = RB_INT2NUM((long)V_I1(pvar));
         break;
 
     case VT_UI1:
         if(V_ISBYREF(pvar))
-            obj = INT2NUM((long)*V_UI1REF(pvar));
+            obj = RB_INT2NUM((long)*V_UI1REF(pvar));
         else
-            obj = INT2NUM((long)V_UI1(pvar));
+            obj = RB_INT2NUM((long)V_UI1(pvar));
         break;
 
     case VT_I2:
         if(V_ISBYREF(pvar))
-            obj = INT2NUM((long)*V_I2REF(pvar));
+            obj = RB_INT2NUM((long)*V_I2REF(pvar));
         else
-            obj = INT2NUM((long)V_I2(pvar));
+            obj = RB_INT2NUM((long)V_I2(pvar));
         break;
 
     case VT_UI2:
         if(V_ISBYREF(pvar))
-            obj = INT2NUM((long)*V_UI2REF(pvar));
+            obj = RB_INT2NUM((long)*V_UI2REF(pvar));
         else
-            obj = INT2NUM((long)V_UI2(pvar));
+            obj = RB_INT2NUM((long)V_UI2(pvar));
         break;
 
     case VT_I4:
         if(V_ISBYREF(pvar))
-            obj = INT2NUM((long)*V_I4REF(pvar));
+            obj = RB_INT2NUM((long)*V_I4REF(pvar));
         else
-            obj = INT2NUM((long)V_I4(pvar));
+            obj = RB_INT2NUM((long)V_I4(pvar));
         break;
 
     case VT_UI4:
         if(V_ISBYREF(pvar))
-            obj = INT2NUM((long)*V_UI4REF(pvar));
+            obj = RB_INT2NUM((long)*V_UI4REF(pvar));
         else
-            obj = INT2NUM((long)V_UI4(pvar));
+            obj = RB_INT2NUM((long)V_UI4(pvar));
         break;
 
     case VT_INT:
         if(V_ISBYREF(pvar))
-            obj = INT2NUM((long)*V_INTREF(pvar));
+            obj = RB_INT2NUM((long)*V_INTREF(pvar));
         else
-            obj = INT2NUM((long)V_INT(pvar));
+            obj = RB_INT2NUM((long)V_INT(pvar));
         break;
 
     case VT_UINT:
         if(V_ISBYREF(pvar))
-            obj = INT2NUM((long)*V_UINTREF(pvar));
+            obj = RB_INT2NUM((long)*V_UINTREF(pvar));
         else
-            obj = INT2NUM((long)V_UINT(pvar));
+            obj = RB_INT2NUM((long)V_UINT(pvar));
         break;
 
 #if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
@@ -1566,18 +1592,22 @@ ole_variant2val(VARIANT *pvar)
 
     case VT_BSTR:
     {
+        BSTR bstr;
         if(V_ISBYREF(pvar))
-            obj = ole_wc2vstr(*V_BSTRREF(pvar), FALSE);
+            bstr = *V_BSTRREF(pvar);
         else
-            obj = ole_wc2vstr(V_BSTR(pvar), FALSE);
+            bstr = V_BSTR(pvar);
+        obj = (SysStringLen(bstr) == 0)
+            ? rb_str_new2("")
+            : ole_wc2vstr(bstr, FALSE);
         break;
     }
 
     case VT_ERROR:
         if(V_ISBYREF(pvar))
-            obj = INT2NUM(*V_ERRORREF(pvar));
+            obj = RB_INT2NUM(*V_ERRORREF(pvar));
         else
-            obj = INT2NUM(V_ERROR(pvar));
+            obj = RB_INT2NUM(V_ERROR(pvar));
         break;
 
     case VT_BOOL:
@@ -1780,7 +1810,9 @@ ole_const_load(ITypeLib *pTypeLib, VALUE klass, VALUE self)
                 *pName = toupper((int)*pName);
                 id = rb_intern(pName);
                 if (rb_is_const_id(id)) {
-                    rb_define_const(klass, pName, val);
+                    if(!rb_const_defined_at(klass, id)) {
+                        rb_define_const(klass, pName, val);
+                    }
                 }
                 else {
                     rb_hash_aset(constant, rb_str_new2(pName), val);
@@ -2042,12 +2074,12 @@ fole_s_const_load(int argc, VALUE *argv, VALUE self)
         hr = pole->pDispatch->lpVtbl->GetTypeInfo(pole->pDispatch,
                                                   0, lcid, &pTypeInfo);
         if(FAILED(hr)) {
-            ole_raise(hr, rb_eRuntimeError, "failed to GetTypeInfo");
+            ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetTypeInfo");
         }
         hr = pTypeInfo->lpVtbl->GetContainingTypeLib(pTypeInfo, &pTypeLib, &index);
         if(FAILED(hr)) {
             OLE_RELEASE(pTypeInfo);
-            ole_raise(hr, rb_eRuntimeError, "failed to GetContainingTypeLib");
+            ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetContainingTypeLib");
         }
         OLE_RELEASE(pTypeInfo);
         if(!RB_TYPE_P(klass, T_NIL)) {
@@ -2106,7 +2138,7 @@ fole_s_reference_count(VALUE self, VALUE obj)
 {
     struct oledata * pole = NULL;
     pole = oledata_get_struct(obj);
-    return INT2NUM(reference_count(pole));
+    return RB_INT2NUM(reference_count(pole));
 }
 
 /*
@@ -2129,7 +2161,7 @@ fole_s_free(VALUE self, VALUE obj)
             n = OLE_RELEASE(pole->pDispatch);
         }
     }
-    return INT2NUM(n);
+    return RB_INT2NUM(n);
 }
 
 static HWND
@@ -2146,10 +2178,10 @@ ole_show_help(VALUE helpfile, VALUE helpcontext)
     if (!pfnHtmlHelp)
         return hwnd;
     hwnd = pfnHtmlHelp(GetDesktopWindow(), StringValuePtr(helpfile),
-                    0x0f, NUM2INT(helpcontext));
+                    0x0f, RB_NUM2INT(helpcontext));
     if (hwnd == 0)
         hwnd = pfnHtmlHelp(GetDesktopWindow(), StringValuePtr(helpfile),
-                 0,  NUM2INT(helpcontext));
+                 0,  RB_NUM2INT(helpcontext));
     return hwnd;
 }
 
@@ -2206,7 +2238,7 @@ fole_s_show_help(int argc, VALUE *argv, VALUE self)
 static VALUE
 fole_s_get_code_page(VALUE self)
 {
-    return INT2FIX(cWIN32OLE_cp);
+    return RB_INT2FIX(cWIN32OLE_cp);
 }
 
 static BOOL CALLBACK
@@ -2243,7 +2275,7 @@ code_page_installed(UINT cp)
 static VALUE
 fole_s_set_code_page(VALUE self, VALUE vcp)
 {
-    UINT cp = FIX2INT(vcp);
+    UINT cp = RB_FIX2INT(vcp);
     set_ole_codepage(cp);
     /*
      * Should this method return old codepage?
@@ -2263,7 +2295,7 @@ fole_s_set_code_page(VALUE self, VALUE vcp)
 static VALUE
 fole_s_get_locale(VALUE self)
 {
-    return INT2FIX(cWIN32OLE_lcid);
+    return RB_INT2FIX(cWIN32OLE_lcid);
 }
 
 static BOOL
@@ -2298,7 +2330,7 @@ lcid_installed(LCID lcid)
 static VALUE
 fole_s_set_locale(VALUE self, VALUE vlcid)
 {
-    LCID lcid = FIX2INT(vlcid);
+    LCID lcid = RB_FIX2INT(vlcid);
     if (lcid_installed(lcid)) {
         cWIN32OLE_lcid = lcid;
     } else {
@@ -2411,12 +2443,16 @@ fole_s_ole_uninitialize(VALUE self)
 /*
  *  call-seq:
  *     WIN32OLE.new(server, [host]) -> WIN32OLE object
+ *     WIN32OLE.new(server, license: 'key') -> WIN32OLE object
  *
  *  Returns a new WIN32OLE object(OLE Automation object).
  *  The first argument server specifies OLE Automation server.
  *  The first argument should be CLSID or PROGID.
  *  If second argument host specified, then returns OLE Automation
  *  object on host.
+ *  If :license keyword argument is provided,
+ *  IClassFactory2::CreateInstanceLic is used to create instance of
+ *  licensed server.
  *
  *      WIN32OLE.new('Excel.Application') # => Excel OLE Automation WIN32OLE object.
  *      WIN32OLE.new('{00024500-0000-0000-C000-000000000046}') # => Excel OLE Automation WIN32OLE object.
@@ -2427,13 +2463,19 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
     VALUE svr_name;
     VALUE host;
     VALUE others;
+    VALUE opts;
     HRESULT hr;
     CLSID   clsid;
     OLECHAR *pBuf;
+    OLECHAR *key_buf;
     IDispatch *pDispatch;
+    IClassFactory2 * pIClassFactory2;
     void *p;
+    static ID keyword_ids[1];
+    VALUE kwargs[1];
+
     rb_call_super(0, 0);
-    rb_scan_args(argc, argv, "11*", &svr_name, &host, &others);
+    rb_scan_args(argc, argv, "11*:", &svr_name, &host, &others, &opts);
 
     StringValue(svr_name);
     if (rb_safe_level() > 0 && OBJ_TAINTED(svr_name)) {
@@ -2462,9 +2504,35 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
                   StringValuePtr(svr_name));
     }
 
-    /* get IDispatch interface */
-    hr = CoCreateInstance(&clsid, NULL, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER,
-                          &IID_IDispatch, &p);
+    if (!keyword_ids[0]) {
+        keyword_ids[0] = rb_intern_const("license");
+    }
+    rb_get_kwargs(opts, keyword_ids, 0, 1, kwargs);
+
+    if (kwargs[0] == Qundef) {
+        /* get IDispatch interface */
+        hr = CoCreateInstance(
+            &clsid,
+            NULL,
+            CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER,
+            &IID_IDispatch,
+            &p
+        );
+    } else {
+        hr = CoGetClassObject(
+            &clsid,
+            CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER,
+            NULL,
+            &IID_IClassFactory2,
+            (LPVOID)&pIClassFactory2
+        );
+        if (hr == S_OK) {
+            key_buf = ole_vstr2wc(kwargs[0]);
+            hr = pIClassFactory2->lpVtbl->CreateInstanceLic(pIClassFactory2, NULL, NULL, &IID_IDispatch, key_buf, &p);
+            SysFreeString(key_buf);
+            OLE_RELEASE(pIClassFactory2);
+        }
+    }
     pDispatch = p;
     if(FAILED(hr)) {
         ole_raise(hr, eWIN32OLERuntimeError,
@@ -2581,9 +2649,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
                 &wcmdname, 1, lcid, &DispID);
         SysFreeString(wcmdname);
         if(FAILED(hr)) {
-            ole_raise(hr, rb_eNoMethodError,
-                    "unknown property or method: `%s'",
-                    StringValuePtr(cmd));
+            return rb_eNoMethodError;
         }
     }
 
@@ -2785,7 +2851,11 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
 static VALUE
 fole_invoke(int argc, VALUE *argv, VALUE self)
 {
-    return ole_invoke(argc, argv, self, DISPATCH_METHOD|DISPATCH_PROPERTYGET, FALSE);
+    VALUE v = ole_invoke(argc, argv, self, DISPATCH_METHOD|DISPATCH_PROPERTYGET, FALSE);
+    if (v == rb_eNoMethodError) {
+        return rb_call_super(argc, argv);
+    }
+    return v;
 }
 
 static VALUE
@@ -2798,8 +2868,7 @@ ole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types, USHORT dispkind)
     VARIANT result;
     DISPPARAMS dispParams;
     VARIANTARG* realargs = NULL;
-    int i, j;
-    VALUE obj = Qnil;
+    int i, j; VALUE obj = Qnil;
     VALUE tp, param;
     VALUE v;
     VARTYPE vt;
@@ -2820,7 +2889,7 @@ ole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types, USHORT dispkind)
         VariantInit(&realargs[i]);
         VariantInit(&dispParams.rgvarg[i]);
         tp = rb_ary_entry(types, j);
-        vt = (VARTYPE)FIX2INT(tp);
+        vt = (VARTYPE)RB_FIX2INT(tp);
         V_VT(&dispParams.rgvarg[i]) = vt;
         param = rb_ary_entry(args, j);
         if (param == Qnil)
@@ -2955,7 +3024,7 @@ ole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types, USHORT dispkind)
         dispParams.rgdispidNamedArgs[0] = DISPID_PROPERTYPUT;
     }
 
-    hr = pole->pDispatch->lpVtbl->Invoke(pole->pDispatch, NUM2INT(dispid),
+    hr = pole->pDispatch->lpVtbl->Invoke(pole->pDispatch, RB_NUM2INT(dispid),
                                          &IID_NULL, cWIN32OLE_lcid,
                                          dispkind,
                                          &dispParams, &result,
@@ -2964,7 +3033,7 @@ ole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types, USHORT dispkind)
     if (FAILED(hr)) {
         v = ole_excepinfo2msg(&excepinfo);
         ole_raise(hr, eWIN32OLERuntimeError, "(in OLE method `<dispatch id:%d>': )%s",
-                  NUM2INT(dispid),
+                  RB_NUM2INT(dispid),
                   StringValuePtr(v));
     }
 
@@ -3053,7 +3122,11 @@ fole_setproperty2(VALUE self, VALUE dispid, VALUE args, VALUE types)
 static VALUE
 fole_setproperty_with_bracket(int argc, VALUE *argv, VALUE self)
 {
-    return ole_invoke(argc, argv, self, DISPATCH_PROPERTYPUT, TRUE);
+    VALUE v = ole_invoke(argc, argv, self, DISPATCH_PROPERTYPUT, TRUE);
+    if (v == rb_eNoMethodError) {
+        return rb_call_super(argc, argv);
+    }
+    return v;
 }
 
 /*
@@ -3072,7 +3145,11 @@ fole_setproperty_with_bracket(int argc, VALUE *argv, VALUE self)
 static VALUE
 fole_setproperty(int argc, VALUE *argv, VALUE self)
 {
-    return ole_invoke(argc, argv, self, DISPATCH_PROPERTYPUT, FALSE);
+    VALUE v = ole_invoke(argc, argv, self, DISPATCH_PROPERTYPUT, FALSE);
+    if (v == rb_eNoMethodError) {
+        return rb_call_super(argc, argv);
+    }
+    return v;
 }
 
 /*
@@ -3094,7 +3171,11 @@ fole_setproperty(int argc, VALUE *argv, VALUE self)
 static VALUE
 fole_getproperty_with_bracket(int argc, VALUE *argv, VALUE self)
 {
-    return ole_invoke(argc, argv, self, DISPATCH_PROPERTYGET, TRUE);
+    VALUE v = ole_invoke(argc, argv, self, DISPATCH_PROPERTYGET, TRUE);
+    if (v == rb_eNoMethodError) {
+        return rb_call_super(argc, argv);
+    }
+    return v;
 }
 
 static VALUE
@@ -3244,7 +3325,7 @@ fole_each(VALUE self)
 
     if (FAILED(hr)) {
         VariantClear(&result);
-        ole_raise(hr, eWIN32OLERuntimeError, "failed to get IEnum Interface");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to get IEnum Interface");
     }
 
     if (V_VT(&result) == VT_UNKNOWN) {
@@ -3260,7 +3341,7 @@ fole_each(VALUE self)
     }
     if (FAILED(hr) || !pEnum) {
         VariantClear(&result);
-        ole_raise(hr, rb_eRuntimeError, "failed to get IEnum Interface");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to get IEnum Interface");
     }
 
     VariantClear(&result);
@@ -3277,11 +3358,11 @@ fole_each(VALUE self)
 static VALUE
 fole_missing(int argc, VALUE *argv, VALUE self)
 {
-    VALUE mid, sym;
+    VALUE mid, org_mid, sym, v;
     const char* mname;
     long n;
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
-    mid = argv[0];
+    mid = org_mid = argv[0];
     sym = rb_check_symbol(&mid);
     if (!NIL_P(sym)) mid = rb_sym2str(sym);
     mname = StringValueCStr(mid);
@@ -3289,20 +3370,20 @@ fole_missing(int argc, VALUE *argv, VALUE self)
         rb_raise(rb_eRuntimeError, "fail: unknown method or property");
     }
     n = RSTRING_LEN(mid);
-#if SIZEOF_SIZE_T > SIZEOF_LONG
-    if (n >= LONG_MAX) {
-	rb_raise(rb_eRuntimeError, "too long method or property name");
-    }
-#endif
     if(mname[n-1] == '=') {
         rb_check_arity(argc, 2, 2);
-        argv[0] = rb_enc_str_new(mname, (n-1), cWIN32OLE_enc);
+        argv[0] = rb_enc_associate(rb_str_subseq(mid, 0, n-1), cWIN32OLE_enc);
 
         return ole_propertyput(self, argv[0], argv[1]);
     }
     else {
-        argv[0] = rb_enc_str_new(mname, n, cWIN32OLE_enc);
-        return ole_invoke(argc, argv, self, DISPATCH_METHOD|DISPATCH_PROPERTYGET, FALSE);
+        argv[0] = rb_enc_associate(rb_str_dup(mid), cWIN32OLE_enc);
+        v = ole_invoke(argc, argv, self, DISPATCH_METHOD|DISPATCH_PROPERTYGET, FALSE);
+        if (v == rb_eNoMethodError) {
+            argv[0] = org_mid;
+            return rb_call_super(argc, argv);
+        }
+        return v;
     }
 }
 
@@ -3319,7 +3400,7 @@ typeinfo_from_ole(struct oledata *pole, ITypeInfo **ppti)
     HRESULT hr = pole->pDispatch->lpVtbl->GetTypeInfo(pole->pDispatch,
                                                       0, lcid, &pTypeInfo);
     if(FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "failed to GetTypeInfo");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetTypeInfo");
     }
     hr = pTypeInfo->lpVtbl->GetDocumentation(pTypeInfo,
                                              -1,
@@ -3329,7 +3410,7 @@ typeinfo_from_ole(struct oledata *pole, ITypeInfo **ppti)
     hr = pTypeInfo->lpVtbl->GetContainingTypeLib(pTypeInfo, &pTypeLib, &i);
     OLE_RELEASE(pTypeInfo);
     if (FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "failed to GetContainingTypeLib");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetContainingTypeLib");
     }
     count = pTypeLib->lpVtbl->GetTypeInfoCount(pTypeLib);
     for (i = 0; i < count; i++) {
@@ -3454,7 +3535,7 @@ fole_type(VALUE self)
 
     hr = pole->pDispatch->lpVtbl->GetTypeInfo( pole->pDispatch, 0, lcid, &pTypeInfo );
     if(FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "failed to GetTypeInfo");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetTypeInfo");
     }
     type = ole_type_from_itypeinfo(pTypeInfo);
     OLE_RELEASE(pTypeInfo);
@@ -3488,7 +3569,7 @@ fole_typelib(VALUE self)
     hr = pole->pDispatch->lpVtbl->GetTypeInfo(pole->pDispatch,
                                               0, lcid, &pTypeInfo);
     if(FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "failed to GetTypeInfo");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetTypeInfo");
     }
     vtlib = ole_typelib_from_itypeinfo(pTypeInfo);
     OLE_RELEASE(pTypeInfo);
@@ -3535,7 +3616,7 @@ fole_query_interface(VALUE self, VALUE str_iid)
     hr = pole->pDispatch->lpVtbl->QueryInterface(pole->pDispatch, &iid,
                                                  &p);
     if(FAILED(hr)) {
-        ole_raise(hr, eWIN32OLERuntimeError,
+        ole_raise(hr, eWIN32OLEQueryInterfaceError,
                   "failed to get interface `%s'",
                   StringValuePtr(str_iid));
     }
@@ -3745,7 +3826,7 @@ ole_typedesc2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails)
         break;
     default:
         typestr = rb_str_new2("Unknown Type ");
-        rb_str_concat(typestr, rb_fix2str(INT2FIX(pTypeDesc->vt), 10));
+        rb_str_concat(typestr, rb_fix2str(RB_INT2FIX(pTypeDesc->vt), 10));
         break;
     }
     if (typedetails != Qnil)
@@ -3776,7 +3857,7 @@ fole_method_help(VALUE self, VALUE cmdname)
     pole = oledata_get_struct(self);
     hr = typeinfo_from_ole(pole, &pTypeInfo);
     if(FAILED(hr))
-        ole_raise(hr, rb_eRuntimeError, "failed to get ITypeInfo");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to get ITypeInfo");
 
     obj = create_win32ole_method(pTypeInfo, cmdname);
 
@@ -3872,14 +3953,34 @@ static size_t
 com_hash_size(const void *ptr)
 {
     const st_table *tbl = ptr;
-    return tbl ? st_memsize(tbl) : 0;
+    return st_memsize(tbl);
 }
+
+static void
+check_nano_server(void)
+{
+    HKEY hsubkey;
+    LONG err;
+    const char * subkey = "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Server\\ServerLevels";
+    const char * regval = "NanoServer";
+
+    err = RegOpenKeyEx(HKEY_LOCAL_MACHINE, subkey, 0, KEY_READ, &hsubkey);
+    if (err == ERROR_SUCCESS) {
+        err = RegQueryValueEx(hsubkey, regval, NULL, NULL, NULL, NULL);
+        if (err == ERROR_SUCCESS) {
+            g_running_nano = TRUE;
+        }
+        RegCloseKey(hsubkey);
+    }
+}
+
 
 void
 Init_win32ole(void)
 {
     cWIN32OLE_lcid = LOCALE_SYSTEM_DEFAULT;
     g_ole_initialized_init();
+    check_nano_server();
 
     com_vtbl.QueryInterface = QueryInterface;
     com_vtbl.AddRef = AddRef;
@@ -3896,11 +3997,11 @@ Init_win32ole(void)
     message_filter.RetryRejectedCall = mf_RetryRejectedCall;
     message_filter.MessagePending = mf_MessagePending;
 
-    enc2cp_hash = TypedData_Wrap_Struct(rb_cData, &win32ole_hash_datatype, 0);
+    enc2cp_hash = TypedData_Wrap_Struct(0, &win32ole_hash_datatype, 0);
     RTYPEDDATA_DATA(enc2cp_hash) = st_init_numtable();
     rb_gc_register_mark_object(enc2cp_hash);
 
-    com_hash = TypedData_Wrap_Struct(rb_cData, &win32ole_hash_datatype, 0);
+    com_hash = TypedData_Wrap_Struct(0, &win32ole_hash_datatype, 0);
     RTYPEDDATA_DATA(com_hash) = st_init_numtable();
     rb_gc_register_mark_object(com_hash);
 
@@ -3991,50 +4092,50 @@ Init_win32ole(void)
     /*
      * 0: ANSI code page. See WIN32OLE.codepage and WIN32OLE.codepage=.
      */
-    rb_define_const(cWIN32OLE, "CP_ACP", INT2FIX(CP_ACP));
+    rb_define_const(cWIN32OLE, "CP_ACP", RB_INT2FIX(CP_ACP));
 
     /*
      * 1: OEM code page. See WIN32OLE.codepage and WIN32OLE.codepage=.
      */
-    rb_define_const(cWIN32OLE, "CP_OEMCP", INT2FIX(CP_OEMCP));
+    rb_define_const(cWIN32OLE, "CP_OEMCP", RB_INT2FIX(CP_OEMCP));
 
     /*
      * 2
      */
-    rb_define_const(cWIN32OLE, "CP_MACCP", INT2FIX(CP_MACCP));
+    rb_define_const(cWIN32OLE, "CP_MACCP", RB_INT2FIX(CP_MACCP));
 
     /*
      * 3: current thread ANSI code page. See WIN32OLE.codepage and
      * WIN32OLE.codepage=.
      */
-    rb_define_const(cWIN32OLE, "CP_THREAD_ACP", INT2FIX(CP_THREAD_ACP));
+    rb_define_const(cWIN32OLE, "CP_THREAD_ACP", RB_INT2FIX(CP_THREAD_ACP));
 
     /*
      * 42: symbol code page. See WIN32OLE.codepage and WIN32OLE.codepage=.
      */
-    rb_define_const(cWIN32OLE, "CP_SYMBOL", INT2FIX(CP_SYMBOL));
+    rb_define_const(cWIN32OLE, "CP_SYMBOL", RB_INT2FIX(CP_SYMBOL));
 
     /*
      * 65000: UTF-7 code page. See WIN32OLE.codepage and WIN32OLE.codepage=.
      */
-    rb_define_const(cWIN32OLE, "CP_UTF7", INT2FIX(CP_UTF7));
+    rb_define_const(cWIN32OLE, "CP_UTF7", RB_INT2FIX(CP_UTF7));
 
     /*
      * 65001: UTF-8 code page. See WIN32OLE.codepage and WIN32OLE.codepage=.
      */
-    rb_define_const(cWIN32OLE, "CP_UTF8", INT2FIX(CP_UTF8));
+    rb_define_const(cWIN32OLE, "CP_UTF8", RB_INT2FIX(CP_UTF8));
 
     /*
      * 0x0800: default locale for the operating system. See WIN32OLE.locale
      * and WIN32OLE.locale=.
      */
-    rb_define_const(cWIN32OLE, "LOCALE_SYSTEM_DEFAULT", INT2FIX(LOCALE_SYSTEM_DEFAULT));
+    rb_define_const(cWIN32OLE, "LOCALE_SYSTEM_DEFAULT", RB_INT2FIX(LOCALE_SYSTEM_DEFAULT));
 
     /*
      * 0x0400: default locale for the user or process. See WIN32OLE.locale
      * and WIN32OLE.locale=.
      */
-    rb_define_const(cWIN32OLE, "LOCALE_USER_DEFAULT", INT2FIX(LOCALE_USER_DEFAULT));
+    rb_define_const(cWIN32OLE, "LOCALE_USER_DEFAULT", RB_INT2FIX(LOCALE_USER_DEFAULT));
 
     Init_win32ole_variant_m();
     Init_win32ole_typelib();

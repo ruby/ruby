@@ -1,18 +1,23 @@
-class CGI; module Util; end; extend Util; end
+# frozen_string_literal: true
+class CGI
+  module Util; end
+  include Util
+  extend Util
+end
 module CGI::Util
   @@accept_charset="UTF-8" unless defined?(@@accept_charset)
   # URL-encode a string.
-  #   url_encoded_string = CGI::escape("'Stop!' said Fred")
+  #   url_encoded_string = CGI.escape("'Stop!' said Fred")
   #      # => "%27Stop%21%27+said+Fred"
   def escape(string)
     encoding = string.encoding
-    string.b.gsub(/([^ a-zA-Z0-9_.-]+)/) do |m|
+    string.b.gsub(/([^ a-zA-Z0-9_.\-~]+)/) do |m|
       '%' + m.unpack('H2' * m.bytesize).join('%').upcase
     end.tr(' ', '+').force_encoding(encoding)
   end
 
   # URL-decode a string with encoding(optional).
-  #   string = CGI::unescape("%27Stop%21%27+said+Fred")
+  #   string = CGI.unescape("%27Stop%21%27+said+Fred")
   #      # => "'Stop!' said Fred"
   def unescape(string,encoding=@@accept_charset)
     str=string.tr('+', ' ').b.gsub(/((?:%[0-9a-fA-F]{2})+)/) do |m|
@@ -30,21 +35,42 @@ module CGI::Util
     '>' => '&gt;',
   }
 
-  # Escape special characters in HTML, namely &\"<>
-  #   CGI::escapeHTML('Usage: foo "bar" <baz>')
+  # Escape special characters in HTML, namely '&\"<>
+  #   CGI.escapeHTML('Usage: foo "bar" <baz>')
   #      # => "Usage: foo &quot;bar&quot; &lt;baz&gt;"
   def escapeHTML(string)
+    enc = string.encoding
+    unless enc.ascii_compatible?
+      if enc.dummy?
+        origenc = enc
+        enc = Encoding::Converter.asciicompat_encoding(enc)
+        string = enc ? string.encode(enc) : string.b
+      end
+      table = Hash[TABLE_FOR_ESCAPE_HTML__.map {|pair|pair.map {|s|s.encode(enc)}}]
+      string = string.gsub(/#{"['&\"<>]".encode(enc)}/, table)
+      string.encode!(origenc) if origenc
+      return string
+    end
     string.gsub(/['&\"<>]/, TABLE_FOR_ESCAPE_HTML__)
   end
 
+  begin
+    require 'cgi/escape'
+  rescue LoadError
+  end
+
   # Unescape a string that has been HTML-escaped
-  #   CGI::unescapeHTML("Usage: foo &quot;bar&quot; &lt;baz&gt;")
+  #   CGI.unescapeHTML("Usage: foo &quot;bar&quot; &lt;baz&gt;")
   #      # => "Usage: foo \"bar\" <baz>"
   def unescapeHTML(string)
-    return string unless string.include? '&'
     enc = string.encoding
-    if enc != Encoding::UTF_8 && [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE].include?(enc)
-      return string.gsub(Regexp.new('&(apos|amp|quot|gt|lt|#[0-9]+|#x[0-9A-Fa-f]+);'.encode(enc))) do
+    unless enc.ascii_compatible?
+      if enc.dummy?
+        origenc = enc
+        enc = Encoding::Converter.asciicompat_encoding(enc)
+        string = enc ? string.encode(enc) : string.b
+      end
+      string = string.gsub(Regexp.new('&(apos|amp|quot|gt|lt|#[0-9]+|#x[0-9A-Fa-f]+);'.encode(enc))) do
         case $1.encode(Encoding::US_ASCII)
         when 'apos'                then "'".encode(enc)
         when 'amp'                 then '&'.encode(enc)
@@ -55,8 +81,15 @@ module CGI::Util
         when /\A#x([0-9a-f]+)\z/i  then $1.hex.chr(enc)
         end
       end
+      string.encode!(origenc) if origenc
+      return string
     end
-    asciicompat = Encoding.compatible?(string, "a")
+    return string unless string.include? '&'
+    charlimit = case enc
+                when Encoding::UTF_8; 0x10ffff
+                when Encoding::ISO_8859_1; 256
+                else 128
+                end
     string.gsub(/&(apos|amp|quot|gt|lt|\#[0-9]+|\#[xX][0-9A-Fa-f]+);/) do
       match = $1.dup
       case match
@@ -67,18 +100,14 @@ module CGI::Util
       when 'lt'                  then '<'
       when /\A#0*(\d+)\z/
         n = $1.to_i
-        if enc == Encoding::UTF_8 or
-          enc == Encoding::ISO_8859_1 && n < 256 or
-          asciicompat && n < 128
+        if n < charlimit
           n.chr(enc)
         else
           "&##{$1};"
         end
       when /\A#x([0-9a-f]+)\z/i
         n = $1.hex
-        if enc == Encoding::UTF_8 or
-          enc == Encoding::ISO_8859_1 && n < 256 or
-          asciicompat && n < 128
+        if n < charlimit
           n.chr(enc)
         else
           "&#x#{$1};"
@@ -89,10 +118,10 @@ module CGI::Util
     end
   end
 
-  # Synonym for CGI::escapeHTML(str)
+  # Synonym for CGI.escapeHTML(str)
   alias escape_html escapeHTML
 
-  # Synonym for CGI::unescapeHTML(str)
+  # Synonym for CGI.unescapeHTML(str)
   alias unescape_html unescapeHTML
 
   # Escape only the tags of certain HTML elements in +string+.
@@ -103,30 +132,30 @@ module CGI::Util
   # The attribute list of the open tag will also be escaped (for
   # instance, the double-quotes surrounding attribute values).
   #
-  #   print CGI::escapeElement('<BR><A HREF="url"></A>', "A", "IMG")
+  #   print CGI.escapeElement('<BR><A HREF="url"></A>', "A", "IMG")
   #     # "<BR>&lt;A HREF=&quot;url&quot;&gt;&lt;/A&gt"
   #
-  #   print CGI::escapeElement('<BR><A HREF="url"></A>', ["A", "IMG"])
+  #   print CGI.escapeElement('<BR><A HREF="url"></A>', ["A", "IMG"])
   #     # "<BR>&lt;A HREF=&quot;url&quot;&gt;&lt;/A&gt"
   def escapeElement(string, *elements)
     elements = elements[0] if elements[0].kind_of?(Array)
     unless elements.empty?
       string.gsub(/<\/?(?:#{elements.join("|")})(?!\w)(?:.|\n)*?>/i) do
-        CGI::escapeHTML($&)
+        CGI.escapeHTML($&)
       end
     else
       string
     end
   end
 
-  # Undo escaping such as that done by CGI::escapeElement()
+  # Undo escaping such as that done by CGI.escapeElement()
   #
-  #   print CGI::unescapeElement(
-  #           CGI::escapeHTML('<BR><A HREF="url"></A>'), "A", "IMG")
+  #   print CGI.unescapeElement(
+  #           CGI.escapeHTML('<BR><A HREF="url"></A>'), "A", "IMG")
   #     # "&lt;BR&gt;<A HREF="url"></A>"
   #
-  #   print CGI::unescapeElement(
-  #           CGI::escapeHTML('<BR><A HREF="url"></A>'), ["A", "IMG"])
+  #   print CGI.unescapeElement(
+  #           CGI.escapeHTML('<BR><A HREF="url"></A>'), ["A", "IMG"])
   #     # "&lt;BR&gt;<A HREF="url"></A>"
   def unescapeElement(string, *elements)
     elements = elements[0] if elements[0].kind_of?(Array)
@@ -139,10 +168,10 @@ module CGI::Util
     end
   end
 
-  # Synonym for CGI::escapeElement(str)
+  # Synonym for CGI.escapeElement(str)
   alias escape_element escapeElement
 
-  # Synonym for CGI::unescapeElement(str)
+  # Synonym for CGI.unescapeElement(str)
   alias unescape_element unescapeElement
 
   # Abbreviated day-of-week names specified by RFC 822
@@ -153,7 +182,7 @@ module CGI::Util
 
   # Format a +Time+ object as a String using the format specified by RFC 1123.
   #
-  #   CGI::rfc1123_date(Time.now)
+  #   CGI.rfc1123_date(Time.now)
   #     # Sat, 01 Jan 2000 00:00:00 GMT
   def rfc1123_date(time)
     t = time.clone.gmtime
@@ -167,13 +196,13 @@ module CGI::Util
   # +string+ is the HTML string to indent.  +shift+ is the indentation
   # unit to use; it defaults to two spaces.
   #
-  #   print CGI::pretty("<HTML><BODY></BODY></HTML>")
+  #   print CGI.pretty("<HTML><BODY></BODY></HTML>")
   #     # <HTML>
   #     #   <BODY>
   #     #   </BODY>
   #     # </HTML>
   #
-  #   print CGI::pretty("<HTML><BODY></BODY></HTML>", "\t")
+  #   print CGI.pretty("<HTML><BODY></BODY></HTML>", "\t")
   #     # <HTML>
   #     #         <BODY>
   #     #         </BODY>

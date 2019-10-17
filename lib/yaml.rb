@@ -1,12 +1,11 @@
-##
-# The YAML module is an alias of Psych, the YAML engine for Ruby.
+# frozen_string_literal: false
 
 begin
   require 'psych'
 rescue LoadError
-  warn "#{caller[0]}:"
-  warn "It seems your ruby installation is missing psych (for YAML output)."
-  warn "To eliminate this warning, please install libyaml and reinstall your ruby."
+  warn "It seems your ruby installation is missing psych (for YAML output).\n" \
+    "To eliminate this warning, please install libyaml and reinstall your ruby.\n",
+    uplevel: 1
   raise
 end
 
@@ -16,7 +15,7 @@ YAML = Psych # :nodoc:
 #
 # This module provides a Ruby interface for data serialization in YAML format.
 #
-# The underlying implementation is the libyaml wrapper Psych.
+# The YAML module is an alias of Psych, the YAML engine for Ruby.
 #
 # == Usage
 #
@@ -29,6 +28,9 @@ YAML = Psych # :nodoc:
 #     # Emit some YAML
 #     YAML.dump("foo")     # => "--- foo\n...\n"
 #     { :a => 'b'}.to_yaml  # => "---\n:a: b\n"
+#
+# As the implementation is provided by the Psych library, detailed documentation
+# can be found in that library's docs (also part of standard library).
 #
 # == Security
 #
@@ -52,8 +54,8 @@ YAML = Psych # :nodoc:
 # For more advanced details on the implementation see Psych, and also check out
 # http://yaml.org for spec details and other helpful information.
 #
-# Psych is maintained by Aaron Patterson on github: https://github.com/tenderlove/psych
+# Psych is maintained by Aaron Patterson on github: https://github.com/ruby/psych
 #
-# Syck can also be found on github: https://github.com/tenderlove/syck
+# Syck can also be found on github: https://github.com/ruby/syck
 module YAML
 end

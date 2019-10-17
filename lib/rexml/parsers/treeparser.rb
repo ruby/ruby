@@ -1,5 +1,6 @@
-require 'rexml/validation/validationexception'
-require 'rexml/undefinednamespaceexception'
+# frozen_string_literal: false
+require_relative '../validation/validationexception'
+require_relative '../undefinednamespaceexception'
 
 module REXML
   module Parsers

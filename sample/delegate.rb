@@ -1,6 +1,6 @@
 require 'delegate'
 
-class ExtArray<DelegateClass(Array)
+class ExtArray < DelegateClass(Array)
   def initialize()
     super([])
   end

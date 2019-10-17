@@ -1,17 +1,23 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/request'
 require 'ostruct'
 require 'base64'
 
+unless defined?(OpenSSL::SSL)
+  warn 'Skipping Gem::Request tests.  openssl not found.'
+end
+
 class TestGemRequest < Gem::TestCase
 
   CA_CERT_FILE     = cert_path 'ca'
   CHILD_CERT       = load_cert 'child'
+  EXPIRED_CERT     = load_cert 'expired'
   PUBLIC_CERT      = load_cert 'public'
   PUBLIC_CERT_FILE = cert_path 'public'
   SSL_CERT         = load_cert 'ssl'
 
-  def make_request uri, request_class, last_modified, proxy
+  def make_request(uri, request_class, last_modified, proxy)
     Gem::Request.create_with_proxy uri, request_class, last_modified, proxy
   end
 
@@ -73,14 +79,25 @@ class TestGemRequest < Gem::TestCase
     assert_equal URI(@proxy_uri), proxy
   end
 
+  def test_proxy_ENV
+    ENV['http_proxy'] = "http://proxy"
+    ENV['https_proxy'] = ""
+
+    request = make_request URI('https://example'), nil, nil, nil
+
+    proxy = request.proxy_uri
+
+    assert_nil proxy
+  end
+
   def test_configure_connection_for_https
     connection = Net::HTTP.new 'localhost', 443
 
-    request = Class.new(Gem::Request) {
+    request = Class.new(Gem::Request) do
       def self.get_cert_files
         [TestGemRequest::PUBLIC_CERT_FILE]
       end
-    }.create_with_proxy URI('https://example'), nil, nil, nil
+    end.create_with_proxy URI('https://example'), nil, nil, nil
 
     Gem::Request.configure_connection_for_https connection, request.cert_files
 
@@ -95,11 +112,11 @@ class TestGemRequest < Gem::TestCase
 
     connection = Net::HTTP.new 'localhost', 443
 
-    request = Class.new(Gem::Request) {
+    request = Class.new(Gem::Request) do
       def self.get_cert_files
         [TestGemRequest::PUBLIC_CERT_FILE]
       end
-    }.create_with_proxy URI('https://example'), nil, nil, nil
+    end.create_with_proxy URI('https://example'), nil, nil, nil
 
     Gem::Request.configure_connection_for_https connection, request.cert_files
 
@@ -244,7 +261,7 @@ class TestGemRequest < Gem::TestCase
   def test_user_agent_engine
     util_save_version
 
-    Object.send :remove_const, :RUBY_ENGINE if defined?(RUBY_ENGINE)
+    Object.send :remove_const, :RUBY_ENGINE
     Object.send :const_set,    :RUBY_ENGINE, 'vroom'
 
     ua = make_request(@uri, nil, nil, nil).user_agent
@@ -257,7 +274,7 @@ class TestGemRequest < Gem::TestCase
   def test_user_agent_engine_ruby
     util_save_version
 
-    Object.send :remove_const, :RUBY_ENGINE if defined?(RUBY_ENGINE)
+    Object.send :remove_const, :RUBY_ENGINE
     Object.send :const_set,    :RUBY_ENGINE, 'ruby'
 
     ua = make_request(@uri, nil, nil, nil).user_agent
@@ -310,8 +327,140 @@ class TestGemRequest < Gem::TestCase
     util_restore_version
   end
 
+  def test_verify_certificate
+    skip if Gem.java_platform?
+    store = OpenSSL::X509::Store.new
+    context = OpenSSL::X509::StoreContext.new store
+    context.error = OpenSSL::X509::V_ERR_OUT_OF_MEM
+
+    use_ui @ui do
+      Gem::Request.verify_certificate context
+    end
+
+    assert_equal "ERROR:  SSL verification error at depth 0: out of memory (17)\n",
+                 @ui.error
+  end
+
+  def test_verify_certificate_extra_message
+    skip if Gem.java_platform?
+    store = OpenSSL::X509::Store.new
+    context = OpenSSL::X509::StoreContext.new store
+    context.error = OpenSSL::X509::V_ERR_INVALID_CA
+
+    use_ui @ui do
+      Gem::Request.verify_certificate context
+    end
+
+    expected = <<-ERROR
+ERROR:  SSL verification error at depth 0: invalid CA certificate (24)
+ERROR:  Certificate  is an invalid CA certificate
+    ERROR
+
+    assert_equal expected, @ui.error
+  end
+
+  def test_verify_certificate_message_CERT_HAS_EXPIRED
+    error_number = OpenSSL::X509::V_ERR_CERT_HAS_EXPIRED
+
+    message =
+      Gem::Request.verify_certificate_message error_number, EXPIRED_CERT
+
+    assert_equal "Certificate #{EXPIRED_CERT.subject} expired at #{EXPIRED_CERT.not_before.iso8601}",
+                 message
+  end
+
+  def test_verify_certificate_message_CERT_NOT_YET_VALID
+    error_number = OpenSSL::X509::V_ERR_CERT_NOT_YET_VALID
+
+    message =
+      Gem::Request.verify_certificate_message error_number, EXPIRED_CERT
+
+    assert_equal "Certificate #{EXPIRED_CERT.subject} not valid until #{EXPIRED_CERT.not_before.iso8601}",
+                 message
+  end
+
+  def test_verify_certificate_message_CERT_REJECTED
+    error_number = OpenSSL::X509::V_ERR_CERT_REJECTED
+
+    message =
+      Gem::Request.verify_certificate_message error_number, CHILD_CERT
+
+    assert_equal "Certificate #{CHILD_CERT.subject} is rejected",
+                 message
+  end
+
+  def test_verify_certificate_message_CERT_UNTRUSTED
+    error_number = OpenSSL::X509::V_ERR_CERT_UNTRUSTED
+
+    message =
+      Gem::Request.verify_certificate_message error_number, CHILD_CERT
+
+    assert_equal "Certificate #{CHILD_CERT.subject} is not trusted",
+                 message
+  end
+
+  def test_verify_certificate_message_DEPTH_ZERO_SELF_SIGNED_CERT
+    error_number = OpenSSL::X509::V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
+
+    message =
+      Gem::Request.verify_certificate_message error_number, CHILD_CERT
+
+    assert_equal "Certificate #{CHILD_CERT.issuer} is not trusted",
+                 message
+  end
+
+  def test_verify_certificate_message_INVALID_CA
+    error_number = OpenSSL::X509::V_ERR_INVALID_CA
+
+    message =
+      Gem::Request.verify_certificate_message error_number, CHILD_CERT
+
+    assert_equal "Certificate #{CHILD_CERT.subject} is an invalid CA certificate",
+                 message
+  end
+
+  def test_verify_certificate_message_INVALID_PURPOSE
+    error_number = OpenSSL::X509::V_ERR_INVALID_PURPOSE
+
+    message =
+      Gem::Request.verify_certificate_message error_number, CHILD_CERT
+
+    assert_equal "Certificate #{CHILD_CERT.subject} has an invalid purpose",
+                 message
+  end
+
+  def test_verify_certificate_message_SELF_SIGNED_CERT_IN_CHAIN
+    error_number = OpenSSL::X509::V_ERR_SELF_SIGNED_CERT_IN_CHAIN
+
+    message =
+      Gem::Request.verify_certificate_message error_number, EXPIRED_CERT
+
+    assert_equal "Root certificate is not trusted (#{EXPIRED_CERT.subject})",
+                 message
+  end
+
+  def test_verify_certificate_message_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
+    error_number = OpenSSL::X509::V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
+
+    message =
+      Gem::Request.verify_certificate_message error_number, EXPIRED_CERT
+
+    assert_equal "You must add #{EXPIRED_CERT.issuer} to your local trusted store",
+                 message
+  end
+
+  def test_verify_certificate_message_UNABLE_TO_VERIFY_LEAF_SIGNATURE
+    error_number = OpenSSL::X509::V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE
+
+    message =
+      Gem::Request.verify_certificate_message error_number, EXPIRED_CERT
+
+    assert_equal "Cannot verify certificate issued by #{EXPIRED_CERT.issuer}",
+                 message
+  end
+
   def util_restore_version
-    Object.send :remove_const, :RUBY_ENGINE if defined?(RUBY_ENGINE)
+    Object.send :remove_const, :RUBY_ENGINE
     Object.send :const_set,    :RUBY_ENGINE, @orig_RUBY_ENGINE if
       defined?(@orig_RUBY_ENGINE)
 
@@ -324,12 +473,12 @@ class TestGemRequest < Gem::TestCase
   end
 
   def util_save_version
-    @orig_RUBY_ENGINE     = RUBY_ENGINE if defined? RUBY_ENGINE
+    @orig_RUBY_ENGINE     = RUBY_ENGINE
     @orig_RUBY_PATCHLEVEL = RUBY_PATCHLEVEL
     @orig_RUBY_REVISION   = RUBY_REVISION if defined? RUBY_REVISION
   end
 
-  def util_stub_net_http hash
+  def util_stub_net_http(hash)
     old_client = Gem::Request::ConnectionPools.client
     conn = Conn.new OpenStruct.new(hash)
     Gem::Request::ConnectionPools.client = conn
@@ -339,10 +488,12 @@ class TestGemRequest < Gem::TestCase
   end
 
   class Conn
+
     attr_accessor :payload
 
-    def new *args; self; end
+    def new(*args); self; end
     def use_ssl=(bool); end
+    def verify_callback=(setting); end
     def verify_mode=(setting); end
     def cert_store=(setting); end
     def start; end
@@ -356,7 +507,7 @@ class TestGemRequest < Gem::TestCase
       self.payload = req
       @response
     end
+
   end
 
-end
-
+end if defined?(OpenSSL::SSL)

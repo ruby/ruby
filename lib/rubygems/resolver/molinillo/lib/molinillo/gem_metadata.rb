@@ -1,3 +1,5 @@
+# frozen_string_literal: true
 module Gem::Resolver::Molinillo
-  VERSION = '0.3.0'
+  # The version of Gem::Resolver::Molinillo.
+  VERSION = '0.5.7'.freeze
 end

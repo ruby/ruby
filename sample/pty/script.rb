@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'pty'
 
 if ARGV.size == 0 then
@@ -34,4 +35,3 @@ PTY.spawn("/bin/csh") do |r_pty,w_pty,pid|
 end
 
 system "stty echo -raw lnext ^v"
-

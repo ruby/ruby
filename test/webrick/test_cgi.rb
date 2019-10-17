@@ -1,10 +1,16 @@
 # coding: US-ASCII
+# frozen_string_literal: false
 require_relative "utils"
 require "webrick"
 require "test/unit"
 
 class TestWEBrickCGI < Test::Unit::TestCase
   CRLF = "\r\n"
+
+  def teardown
+    WEBrick::Utils::TimeoutHandler.terminate
+    super
+  end
 
   def start_cgi_server(log_tester=TestWEBrick::DefaultLogTester, &block)
     config = {
@@ -37,11 +43,10 @@ class TestWEBrickCGI < Test::Unit::TestCase
       http.request(req){|res| assert_equal("/path/info", res.body, log.call)}
       req = Net::HTTP::Get.new("/webrick.cgi/%3F%3F%3F?foo=bar")
       http.request(req){|res| assert_equal("/???", res.body, log.call)}
-      req = Net::HTTP::Get.new("/webrick.cgi/%A4%DB%A4%B2/%A4%DB%A4%B2")
-      # Path info of res.body is passed via ENV.
-      # ENV[] returns different value on Windows depending on locale.
-      unless RUBY_PLATFORM =~ /mswin|mingw|cygwin|bccwin32/ &&
-             Encoding.find("locale") != Encoding.find("filesystem")
+      unless RUBY_PLATFORM =~ /mswin|mingw|cygwin|bccwin32/
+        # Path info of res.body is passed via ENV.
+        # ENV[] returns different value on Windows depending on locale.
+        req = Net::HTTP::Get.new("/webrick.cgi/%A4%DB%A4%B2/%A4%DB%A4%B2")
         http.request(req){|res|
           assert_equal("/\xA4\xDB\xA4\xB2/\xA4\xDB\xA4\xB2", res.body, log.call)}
       end
@@ -107,6 +112,20 @@ class TestWEBrickCGI < Test::Unit::TestCase
         sock.close
       end
     }
+  end
+
+  def test_cgi_env
+    start_cgi_server do |server, addr, port, log|
+      http = Net::HTTP.new(addr, port)
+      req = Net::HTTP::Get.new("/webrick.cgi/dumpenv")
+      req['proxy'] = 'http://example.com/'
+      req['hello'] = 'world'
+      http.request(req) do |res|
+        env = Marshal.load(res.body)
+        assert_equal 'world', env['HTTP_HELLO']
+        assert_not_operator env, :include?, 'HTTP_PROXY'
+      end
+    end
   end
 
   CtrlSeq = [0x7f, *(1..31)].pack("C*").gsub(/\s+/, '')

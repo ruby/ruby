@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'minitest/autorun'
 require 'stringio'
 require 'tempfile'
@@ -49,10 +50,10 @@ module Psych
     def assert_to_yaml( obj, yaml )
       assert_equal( obj, Psych::load( yaml ) )
       assert_equal( obj, Psych::parse( yaml ).transform )
-      assert_equal( obj, Psych::load( obj.psych_to_yaml ) )
-      assert_equal( obj, Psych::parse( obj.psych_to_yaml ).transform )
+      assert_equal( obj, Psych::load( obj.to_yaml ) )
+      assert_equal( obj, Psych::parse( obj.to_yaml ).transform )
       assert_equal( obj, Psych::load(
-        obj.psych_to_yaml(
+        obj.to_yaml(
           :UseVersion => true, :UseHeader => true, :SortKeys => true
         )
       ))
@@ -69,9 +70,15 @@ module Psych
     def assert_cycle( obj )
       v = Visitors::YAMLTree.create
       v << obj
-      assert_equal(obj, Psych.load(v.tree.yaml))
-      assert_equal( obj, Psych::load(Psych.dump(obj)))
-      assert_equal( obj, Psych::load( obj.psych_to_yaml ) )
+      if obj.nil?
+        assert_nil Psych.load(v.tree.yaml)
+        assert_nil Psych::load(Psych.dump(obj))
+        assert_nil Psych::load(obj.to_yaml)
+      else
+        assert_equal(obj, Psych.load(v.tree.yaml))
+        assert_equal(obj, Psych::load(Psych.dump(obj)))
+        assert_equal(obj, Psych::load(obj.to_yaml))
+      end
     end
 
     #
@@ -91,7 +98,7 @@ module Psych
   end
 end
 
-# backport so that tests will run on 1.9 and 2.0.0
+# backport so that tests will run on 2.0.0
 unless Tempfile.respond_to? :create
   def Tempfile.create(basename, *rest)
     tmpfile = nil

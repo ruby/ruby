@@ -1,7 +1,6 @@
 require 'webrick'
 require 'drb/drb'
-require 'drb/http0'
-require 'thread'
+require_relative 'http0'
 
 module DRb
   module HTTP0
@@ -18,7 +17,7 @@ module DRb
       def initialize(config, drb)
         @config = config
         @drb = drb
-        @queue = Queue.new
+        @queue = Thread::Queue.new
       end
 
       def do_POST(req, res)
@@ -46,7 +45,7 @@ module DRb
       def initialize(uri, config)
         @uri = uri
         @config = config
-        @queue = Queue.new
+        @queue = Thread::Queue.new
         setup_webrick(uri)
       end
       attr_reader :uri
@@ -62,7 +61,7 @@ module DRb
 
       def accept
         client = @queue.pop
-        ServerSide.new(client, @config)
+        ServerSide.new(uri, client, @config)
       end
 
       def setup_webrick(uri)
@@ -80,12 +79,14 @@ module DRb
     end
 
     class ServerSide
-      def initialize(callback, config)
+      def initialize(uri, callback, config)
+        @uri = uri
         @callback = callback
         @config = config
         @msg = DRbMessage.new(@config)
         @req_stream = StrStream.new(@callback.req_body)
       end
+      attr_reader :uri
 
       def close
         @callback.close if @callback

@@ -1,4 +1,5 @@
-require 'drb/drb'
+# frozen_string_literal: false
+require_relative 'drb'
 require 'monitor'
 
 module DRb
@@ -17,72 +18,67 @@ module DRb
 
       class InvalidIndexError < RuntimeError; end
 
-      def initialize(timeout=600)
+      def initialize(keeping=600)
         super()
         @sentinel = Object.new
         @gc = {}
-        @curr = {}
         @renew = {}
-        @timeout = timeout
-        @keeper = keeper
+        @keeping = keeping
+        @expires = nil
       end
 
       def add(obj)
         synchronize do
+          rotate
           key = obj.__id__
-          @curr[key] = obj
+          @renew[key] = obj
+          invoke_keeper
           return key
         end
       end
 
-      def fetch(key, dv=@sentinel)
+      def fetch(key)
         synchronize do
+          rotate
           obj = peek(key)
-          if obj == @sentinel
-            return dv unless dv == @sentinel
-            raise InvalidIndexError
-          end
+          raise InvalidIndexError if obj == @sentinel
           @renew[key] = obj # KeepIt
           return obj
         end
       end
 
-      def include?(key)
-        synchronize do
-          obj = peek(key)
-          return false if obj == @sentinel
-          true
-        end
-      end
-
-      def peek(key)
-        synchronize do
-          return @curr.fetch(key, @renew.fetch(key, @gc.fetch(key, @sentinel)))
-        end
-      end
-
       private
-      def alternate
-        synchronize do
-          @gc = @curr       # GCed
-          @curr = @renew
-          @renew = {}
-        end
+      def peek(key)
+        return @renew.fetch(key) { @gc.fetch(key, @sentinel) }
       end
 
-      def keeper
-        Thread.new do
-          loop do
-            alternate
-            sleep(@timeout)
+      def invoke_keeper
+        return if @expires
+        @expires = Time.now + @keeping
+        on_gc
+      end
+
+      def on_gc
+        return unless Thread.main.alive?
+        return if @expires.nil?
+        Thread.new { rotate } if @expires < Time.now
+        ObjectSpace.define_finalizer(Object.new) {on_gc}
+      end
+
+      def rotate
+        synchronize do
+          if @expires &.< Time.now
+            @gc = @renew      # GCed
+            @renew = {}
+            @expires = @gc.empty? ? nil : Time.now + @keeping
           end
         end
       end
     end
 
-    # Creates a new TimerIdConv which will hold objects for +timeout+ seconds.
-    def initialize(timeout=600)
-      @holder = TimerHolder2.new(timeout)
+    # Creates a new TimerIdConv which will hold objects for +keeping+ seconds.
+    def initialize(keeping=600)
+      @holder = TimerHolder2.new(keeping)
     end
 
     def to_obj(ref) # :nodoc:

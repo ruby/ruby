@@ -10,16 +10,16 @@ most frequently used with <code>ruby -e</code>.
 
 == Indentation
 
-Ruby does not require any indentation.  Typically ruby programs are indented
+Ruby does not require any indentation.  Typically, ruby programs are indented
 two spaces.
 
-If you run ruby with warnings enabled and have an indentation mis-match you
+If you run ruby with warnings enabled and have an indentation mis-match, you
 will receive a warning.
 
 == +alias+
 
 The +alias+ keyword is most frequently used to alias methods.  When aliasing a
-method you can use either its name or a symbol:
+method, you can use either its name or a symbol:
 
   alias new_name old_name
   alias :new_name :old_name
@@ -61,7 +61,7 @@ You may use +undef+ in any scope.  See also Module#undef_method
   p defined?(RUBY_VERSION)       # prints "constant"
   p defined?(1 + 1)              # prints "method"
 
-You don't need to use parenthesis with +defined?+ but they are recommended due
+You don't need to use parenthesis with +defined?+, but they are recommended due
 to the {low precedence}[rdoc-ref:syntax/precedence.rdoc] of +defined?+.
 
 For example, if you wish to check if an instance variable exists and that the
@@ -69,7 +69,7 @@ instance variable is zero:
 
   defined? @instance_variable && @instance_variable.zero?
 
-This returns <code>"expression"</code> which is not what you want if the
+This returns <code>"expression"</code>, which is not what you want if the
 instance variable is not defined.
 
   @instance_variable = 1
@@ -104,4 +104,3 @@ Here is an example one-liner that adds numbers from standard input or any files
 in the argument list:
 
   ruby -ne 'BEGIN { count = 0 }; END { puts count }; count += gets.to_i'
-

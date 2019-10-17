@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/command'
 require 'rubygems/commands/query_command'
 
@@ -37,4 +38,3 @@ To list local gems use the list command.
   end
 
 end
-

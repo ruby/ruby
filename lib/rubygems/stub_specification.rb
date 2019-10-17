@@ -1,45 +1,84 @@
+# frozen_string_literal: true
 ##
 # Gem::StubSpecification reads the stub: line from the gemspec.  This prevents
 # us having to eval the entire gemspec in order to find out certain
 # information.
 
 class Gem::StubSpecification < Gem::BasicSpecification
-  # :nodoc:
-  PREFIX = "# stub: "
 
-  OPEN_MODE = # :nodoc:
-    if Object.const_defined? :Encoding then
-      'r:UTF-8:-'
-    else
-      'r'
-    end
+  # :nodoc:
+  PREFIX = "# stub: ".freeze
+
+  # :nodoc:
+  OPEN_MODE = 'r:UTF-8:-'.freeze
 
   class StubLine # :nodoc: all
-    attr_reader :name, :version, :platform, :require_paths
 
-    def initialize(data)
-      parts          = data[PREFIX.length..-1].split(" ")
-      @name          = parts[0]
-      @version       = Gem::Version.new parts[1]
+    attr_reader :name, :version, :platform, :require_paths, :extensions,
+                :full_name
+
+    NO_EXTENSIONS = [].freeze
+
+    # These are common require paths.
+    REQUIRE_PATHS = { # :nodoc:
+      'lib'  => 'lib'.freeze,
+      'test' => 'test'.freeze,
+      'ext'  => 'ext'.freeze,
+    }.freeze
+
+    # These are common require path lists.  This hash is used to optimize
+    # and consolidate require_path objects.  Most specs just specify "lib"
+    # in their require paths, so lets take advantage of that by pre-allocating
+    # a require path list for that case.
+    REQUIRE_PATH_LIST = { # :nodoc:
+      'lib' => ['lib'].freeze
+    }.freeze
+
+    def initialize(data, extensions)
+      parts          = data[PREFIX.length..-1].split(" ".freeze, 4)
+      @name          = parts[0].freeze
+      @version       = if Gem::Version.correct?(parts[1])
+                         Gem::Version.new(parts[1])
+                       else
+                         Gem::Version.new(0)
+                       end
+
       @platform      = Gem::Platform.new parts[2]
-      @require_paths = parts.drop(3).join(" ").split("\0")
+      @extensions    = extensions
+      @full_name     = if platform == Gem::Platform::RUBY
+                         "#{name}-#{version}"
+                       else
+                         "#{name}-#{version}-#{platform}"
+                       end
+
+      path_list = parts.last
+      @require_paths = REQUIRE_PATH_LIST[path_list] || path_list.split("\0".freeze).map! do |x|
+        REQUIRE_PATHS[x] || x
+      end
     end
+
   end
 
-  def self.default_gemspec_stub filename
-    new filename, true
+  def self.default_gemspec_stub(filename, base_dir, gems_dir)
+    new filename, base_dir, gems_dir, true
   end
 
-  def self.gemspec_stub filename
-    new filename, false
+  def self.gemspec_stub(filename, base_dir, gems_dir)
+    new filename, base_dir, gems_dir, false
   end
 
-  def initialize filename, default_gem
+  attr_reader :base_dir, :gems_dir
+
+  def initialize(filename, base_dir, gems_dir, default_gem)
+    super()
+    filename.untaint
+
     self.loaded_from = filename
     @data            = nil
-    @extensions      = nil
     @name            = nil
     @spec            = nil
+    @base_dir        = base_dir
+    @gems_dir        = gems_dir
     @default_gem     = default_gem
   end
 
@@ -71,19 +110,21 @@ class Gem::StubSpecification < Gem::BasicSpecification
 
   def data
     unless @data
-      @extensions = []
-
       begin
         saved_lineno = $.
-        open loaded_from, OPEN_MODE do |file|
+
+        File.open loaded_from, OPEN_MODE do |file|
           begin
             file.readline # discard encoding line
             stubline = file.readline.chomp
-            if stubline.start_with?(PREFIX) then
-              @data = StubLine.new stubline
+            if stubline.start_with?(PREFIX)
+              extensions = if /\A#{PREFIX}/ =~ file.readline.chomp
+                             $'.split "\0"
+                           else
+                             StubLine::NO_EXTENSIONS
+                           end
 
-              @extensions = $'.split "\0" if
-                /\A#{PREFIX}/ =~ file.readline.chomp
+              @data = StubLine.new stubline, extensions
             end
           rescue EOFError
           end
@@ -98,41 +139,14 @@ class Gem::StubSpecification < Gem::BasicSpecification
 
   private :data
 
-  ##
-  # Extensions for this gem
-
-  def extensions
-    return @extensions if @extensions
-
-    data # load
-
-    @extensions
-  end
-
-  ##
-  # If a gem has a stub specification it doesn't need to bother with
-  # compatibility with original_name gems.  It was installed with the
-  # normalized name.
-
-  def find_full_gem_path # :nodoc:
-    path = File.expand_path File.join gems_dir, full_name
-    path.untaint
-    path
-  end
-
-  ##
-  # Full paths in the gem to add to <code>$LOAD_PATH</code> when this gem is
-  # activated.
-
-  def full_require_paths
-    @require_paths ||= data.require_paths
-
-    super
+  def raw_require_paths # :nodoc:
+    data.require_paths
   end
 
   def missing_extensions?
     return false if default_gem?
     return false if extensions.empty?
+    return false if File.exist? gem_build_complete_path
 
     to_spec.missing_extensions?
   end
@@ -152,26 +166,34 @@ class Gem::StubSpecification < Gem::BasicSpecification
   end
 
   ##
-  # Require paths of the gem
+  # Extensions for this gem
 
-  def require_paths
-    @require_paths ||= data.require_paths
+  def extensions
+    data.extensions
+  end
 
-    super
+  ##
+  # Version of the gem
+
+  def version
+    data.version
+  end
+
+  def full_name
+    data.full_name
   end
 
   ##
   # The full Gem::Specification for this gem, loaded from evalling its gemspec
 
   def to_spec
-    @spec ||= if @data then
-                Gem.loaded_specs.values.find { |spec|
-                  spec.name == name and spec.version == version
-                }
+    @spec ||= if @data
+                loaded = Gem.loaded_specs[name]
+                loaded if loaded && loaded.version == version
               end
 
     @spec ||= Gem::Specification.load(loaded_from)
-    @spec.ignored = @ignored if instance_variable_defined? :@ignored
+    @spec.ignored = @ignored if @spec
 
     @spec
   end
@@ -185,13 +207,6 @@ class Gem::StubSpecification < Gem::BasicSpecification
   end
 
   ##
-  # Version of the gem
-
-  def version
-    @version ||= data.version
-  end
-
-  ##
   # Is there a stub line present for this StubSpecification?
 
   def stubbed?
@@ -199,4 +214,3 @@ class Gem::StubSpecification < Gem::BasicSpecification
   end
 
 end
-

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestGc < Test::Unit::TestCase
@@ -12,10 +13,11 @@ class TestGc < Test::Unit::TestCase
     GC.stress = false
 
     assert_nothing_raised do
+      tmp = nil
       1.upto(10000) {
         tmp = [0,1,2,3,4,5,6,7,8,9]
       }
-      tmp = nil
+      tmp
     end
     l=nil
     100000.times {
@@ -125,7 +127,7 @@ class TestGc < Test::Unit::TestCase
   def test_latest_gc_info
     assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom'
     GC.start
-    count = GC.stat(:heap_free_slots) + GC.stat(:heap_allocatable_pages) * GC::INTERNAL_CONSTANTS[:HEAP_OBJ_LIMIT]
+    count = GC.stat(:heap_free_slots) + GC.stat(:heap_allocatable_pages) * GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT]
     count.times{ "a" + "b" }
     assert_equal :newobj, GC.latest_gc_info[:gc_by]
     eom
@@ -252,6 +254,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_profiler_clear
+    skip "for now"
     assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom', timeout: 30
     GC::Profiler.enable
 
@@ -289,7 +292,10 @@ class TestGc < Test::Unit::TestCase
     base_length = GC.stat[:heap_eden_pages]
     (base_length * 500).times{ 'a' }
     GC.start
-    assert_in_delta base_length, (v = GC.stat[:heap_eden_pages]), 1,
+    base_length = GC.stat[:heap_eden_pages]
+    (base_length * 500).times{ 'a' }
+    GC.start
+    assert_in_epsilon base_length, (v = GC.stat[:heap_eden_pages]), 1/8r,
            "invalid heap expanding (base_length: #{base_length}, GC.stat[:heap_eden_pages]: #{v})"
 
     a = []
@@ -300,14 +306,14 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_internals
-    assert_not_nil GC::INTERNAL_CONSTANTS[:HEAP_OBJ_LIMIT]
+    assert_not_nil GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT]
     assert_not_nil GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
   end
 
   def test_sweep_in_finalizer
     bug9205 = '[ruby-core:58833] [Bug #9205]'
     2.times do
-      assert_ruby_status([], <<-'end;', bug9205, timeout: 60)
+      assert_ruby_status([], <<-'end;', bug9205, timeout: 120)
         raise_proc = proc do |id|
           GC.start
         end
@@ -334,6 +340,7 @@ class TestGc < Test::Unit::TestCase
   def test_interrupt_in_finalizer
     bug10595 = '[ruby-core:66825] [Bug #10595]'
     src = <<-'end;'
+      Signal.trap(:INT, 'DEFAULT')
       pid = $$
       Thread.start do
         10.times {
@@ -376,5 +383,73 @@ class TestGc < Test::Unit::TestCase
       GC.stress = true
       C.new
     end;
+  end
+
+  def test_gc_stress_at_startup
+    assert_in_out_err([{"RUBY_DEBUG"=>"gc_stress"}], '', [], [], '[Bug #15784]', success: true, timeout: 60)
+  end
+
+  def test_gc_disabled_start
+    begin
+      disabled = GC.disable
+      c = GC.count
+      GC.start
+      assert_equal 1, GC.count - c
+    ensure
+      GC.enable unless disabled
+    end
+  end
+
+  def test_vm_object
+    assert_normal_exit <<-'end', '[Bug #12583]'
+      ObjectSpace.each_object{|o| o.singleton_class rescue 0}
+      ObjectSpace.each_object{|o| case o when Module then o.instance_methods end}
+    end
+  end
+
+  def test_exception_in_finalizer_procs
+    result = []
+    c1 = proc do
+      result << :c1
+      raise
+    end
+    c2 = proc do
+      result << :c2
+      raise
+    end
+    tap {
+      tap {
+        obj = Object.new
+        ObjectSpace.define_finalizer(obj, c1)
+        ObjectSpace.define_finalizer(obj, c2)
+        obj = nil
+      }
+    }
+    GC.start
+    skip "finalizers did not get run" if result.empty?
+    assert_equal([:c1, :c2], result)
+  end
+
+  def test_exception_in_finalizer_method
+    @result = []
+    def self.c1(x)
+      @result << :c1
+      raise
+    end
+    def self.c2(x)
+      @result << :c2
+      raise
+    end
+    tap {
+      tap {
+        obj = Object.new
+        ObjectSpace.define_finalizer(obj, method(:c1))
+        ObjectSpace.define_finalizer(obj, method(:c2))
+        obj = nil
+      }
+    }
+    GC.start
+    skip "finalizers did not get run" if @result.empty?
+    assert_equal([:c1, :c2], @result)
   end
 end

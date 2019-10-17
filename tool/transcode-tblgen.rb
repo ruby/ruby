@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'optparse'
 require 'erb'
 require 'fileutils'
@@ -53,7 +55,7 @@ class ArrayCode
     @type = type
     @name = name
     @len = 0;
-    @content = ''
+    @content = ''.dup
   end
 
   def length
@@ -61,7 +63,7 @@ class ArrayCode
   end
 
   def insert_at_last(num, str)
-    newnum = self.length + num
+    # newnum = self.length + num
     @content << str
     @len += num
   end
@@ -143,7 +145,7 @@ class ActionMap
                 else
                   b = $1.to_i(16)
                   e = $2.to_i(16)
-                  b.upto(e) {|c| set[c] = true }
+                  b.upto(e) {|_| set[_] = true }
                 end
               }
               i = nil
@@ -233,7 +235,7 @@ class ActionMap
     all_rects = []
 
     rects1.each {|rect|
-      min, max, action = rect
+      _, _, action = rect
       rect[2] = actions.length
       actions << action
       all_rects << rect
@@ -242,7 +244,7 @@ class ActionMap
     boundary = actions.length
 
     rects2.each {|rect|
-      min, max, action = rect
+      _, _, action = rect
       rect[2] = actions.length
       actions << action
       all_rects << rect
@@ -271,7 +273,7 @@ class ActionMap
     singleton_rects = []
     region_rects = []
     rects.each {|rect|
-      min, max, action = rect
+      min, max, = rect
       if min == max
         singleton_rects << rect
       else
@@ -291,14 +293,14 @@ class ActionMap
     if region_rects.empty? ? s_rect[0].length == prefix.length : region_rects[0][0].empty?
       h = TMPHASH
       while (s_rect = @singleton_rects.last) && s_rect[0].start_with?(prefix)
-        min, max, action = @singleton_rects.pop
+        min, _, action = @singleton_rects.pop
         raise ArgumentError, "ambiguous pattern: #{prefix}" if min.length != prefix.length
         h[action] = true
       end
-      region_rects.each {|min, max, action|
+      for min, _, action in region_rects
         raise ArgumentError, "ambiguous pattern: #{prefix}" if !min.empty?
         h[action] = true
-      }
+      end
       tree = Action.new(block.call(prefix, h.keys))
       h.clear
     else
@@ -517,7 +519,7 @@ class ActionMap
     infos = infos.map {|info| generate_info(info) }
     maxlen = infos.map {|info| info.length }.max
     columns = maxlen <= 16 ? 4 : 2
-    code = ""
+    code = "".dup
     0.step(infos.length-1, columns) {|i|
       code << "    "
       is = infos[i,columns]
@@ -723,13 +725,13 @@ def citrus_decode_mapsrc(ces, csid, mapsrcs)
     path << ".src"
     path[path.rindex('/')] = '%'
     STDERR.puts 'load mapsrc %s' % path if VERBOSE_MODE
-    open(path) do |f|
+    open(path, 'rb') do |f|
       f.each_line do |l|
         break if /^BEGIN_MAP/ =~ l
       end
       f.each_line do |l|
         next if /^\s*(?:#|$)/ =~ l
-          break if /^END_MAP/ =~ l
+        break if /^END_MAP/ =~ l
         case mode
         when :from_ucs
           case l
@@ -738,14 +740,14 @@ def citrus_decode_mapsrc(ces, csid, mapsrcs)
           when /(0x\w+)\s*=\s*(0x\w+)/
             table.push << [plane | $1.hex, citrus_cstomb(ces, csid, $2.hex)]
           else
-            raise "unknown notation '%s'"% l
+            raise "unknown notation '%s'"% l.chomp
           end
         when :to_ucs
           case l
           when /(0x\w+)\s*=\s*(0x\w+)/
             table.push << [citrus_cstomb(ces, csid, $1.hex), plane | $2.hex]
           else
-            raise "unknown notation '%s'"% l
+            raise "unknown notation '%s'"% l.chomp
           end
         end
       end
@@ -817,7 +819,7 @@ def transcode_compile_tree(name, from, map, valid_encoding)
 end
 
 TRANSCODERS = []
-TRANSCODE_GENERATED_TRANSCODER_CODE = ''
+TRANSCODE_GENERATED_TRANSCODER_CODE = ''.dup
 
 def transcode_tbl_only(from, to, map, valid_encoding=UnspecifiedValidEncoding)
   if VERBOSE_MODE
@@ -840,7 +842,45 @@ def transcode_tbl_only(from, to, map, valid_encoding=UnspecifiedValidEncoding)
   return map, tree_name, real_tree_name, max_input
 end
 
-def transcode_tblgen(from, to, map, valid_encoding=UnspecifiedValidEncoding)
+#
+# call-seq:
+#   transcode_tblgen(from_name, to_name, map [, valid_encoding_check [, ascii_compatibility]]) -> ''
+#
+# Returns an empty string just in case the result is used somewhere.
+# Stores the actual product for later output with transcode_generated_code and
+# transcode_register_code.
+#
+# The first argument is a string that will be used for the source (from) encoding.
+# The second argument is a string that will be used for the target (to) encoding.
+#
+# The third argument is the actual data, a map represented as an array of two-element
+# arrays. Each element of the array stands for one character being converted. The
+# first element of each subarray is the code of the character in the source encoding,
+# the second element of each subarray is the code of the character in the target encoding.
+#
+# Each code (i.e. byte sequence) is represented as a string of hexadecimal characters
+# of even length. Codes can also be represented as integers (usually in the form Ox...),
+# in which case they are interpreted as Unicode codepoints encoded in UTF-8. So as
+# an example, 0x677E is the same as "E69DBE" (but somewhat easier to produce and check).
+#
+# In addition, the following symbols can also be used instead of actual codes in the
+# second element of a subarray:
+# :nomap (no mapping, just copy input to output), :nomap0 (same as :nomap, but low priority),
+# :undef (input code undefined in the destination encoding),
+# :invalid (input code is an invalid byte sequence in the source encoding),
+# :func_ii, :func_si, :func_io, :func_so (conversion by function with specific call
+# convention).
+#
+# The forth argument specifies the overall structure of the encoding. For examples,
+# see ValidEncoding below. This is used to cross-check the data in the third argument
+# and to automatically add :undef and :invalid mappings where necessary.
+#
+# The fifth argument gives the ascii-compatibility of the transcoding. See
+# rb_transcoder_asciicompat_type_t in transcode_data.h for details. In most
+# cases, this argument can be left out.
+#
+def transcode_tblgen(from, to, map, valid_encoding=UnspecifiedValidEncoding,
+                     ascii_compatibility='asciicompat_converter')
   map, tree_name, real_tree_name, max_input = transcode_tbl_only(from, to, map, valid_encoding)
   transcoder_name = "rb_#{tree_name}"
   TRANSCODERS << transcoder_name
@@ -854,7 +894,7 @@ static const rb_transcoder
     #{input_unit_length}, /* input_unit_length */
     #{max_input}, /* max_input */
     #{max_output}, /* max_output */
-    asciicompat_converter, /* asciicompat_type */
+    #{ascii_compatibility}, /* asciicompat_type */
     0, NULL, NULL, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, NULL,
     NULL, NULL, NULL
@@ -866,7 +906,7 @@ end
 
 def transcode_generate_node(am, name_hint=nil)
   STDERR.puts "converter for #{name_hint}" if VERBOSE_MODE
-  name = am.gennode(TRANSCODE_GENERATED_BYTES_CODE, TRANSCODE_GENERATED_WORDS_CODE, name_hint)
+  am.gennode(TRANSCODE_GENERATED_BYTES_CODE, TRANSCODE_GENERATED_WORDS_CODE, name_hint)
   ''
 end
 
@@ -881,7 +921,7 @@ def transcode_generated_code
 end
 
 def transcode_register_code
-  code = ''
+  code = ''.dup
   TRANSCODERS.each {|transcoder_name|
     code << "    rb_register_transcoder(&#{transcoder_name});\n"
   }
@@ -991,7 +1031,7 @@ if __FILE__ == $0
   VERBOSE_MODE = verbose_mode
 
   OUTPUT_FILENAME = output_filename
-  OUTPUT_PREFIX = output_filename ? File.basename(output_filename)[/\A[A-Za-z0-9_]*/] : ""
+  OUTPUT_PREFIX = output_filename ? File.basename(output_filename)[/\A[A-Za-z0-9_]*/] : "".dup
   OUTPUT_PREFIX.sub!(/\A_+/, '')
   OUTPUT_PREFIX.sub!(/_*\z/, '_')
 
@@ -1006,7 +1046,7 @@ if __FILE__ == $0
   this_script = File.read(__FILE__)
   this_script.force_encoding("ascii-8bit") if this_script.respond_to? :force_encoding
 
-  base_signature = "/* autogenerated. */\n"
+  base_signature = "/* autogenerated. */\n".dup
   base_signature << "/* #{make_signature(File.basename(__FILE__), this_script)} */\n"
   base_signature << "/* #{make_signature(File.basename(arg), src)} */\n"
 
@@ -1038,13 +1078,17 @@ if __FILE__ == $0
   end
 
   libs1 = $".dup
-  erb = ERB.new(src, nil, '%')
+  if ERB.instance_method(:initialize).parameters.assoc(:key) # Ruby 2.6+
+    erb = ERB.new(src, trim_mode: '%')
+  else
+    erb = ERB.new(src, nil, '%')
+  end
   erb.filename = arg
   erb_result = erb.result(binding)
   libs2 = $".dup
 
   libs = libs2 - libs1
-  lib_sigs = ''
+  lib_sigs = ''.dup
   libs.each {|lib|
     lib = File.basename(lib)
     path = File.join($srcdir, lib)
@@ -1053,7 +1097,7 @@ if __FILE__ == $0
     end
   }
 
-  result = ''
+  result = ''.dup
   result << base_signature
   result << lib_sigs
   result << "\n"

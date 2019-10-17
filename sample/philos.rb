@@ -1,14 +1,13 @@
 #
 # The Dining Philosophers - thread example
 #
-require "thread"
 
 srand
 #srand
 N=9				# number of philosophers
 $forks = []
 for i in 0..N-1
-  $forks[i] = Mutex.new
+  $forks[i] = Thread::Mutex.new
 end
 $state = "-o"*N
 

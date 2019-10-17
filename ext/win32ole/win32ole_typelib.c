@@ -399,9 +399,7 @@ foletypelib_initialize(VALUE self, VALUE args)
     HRESULT hr = S_OK;
 
     len = RARRAY_LEN(args);
-    if (len < 1 || len > 3) {
-        rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..3)", len);
-    }
+    rb_check_arity(len, 1, 3);
 
     typelib = rb_ary_entry(args, 0);
 
@@ -541,7 +539,7 @@ foletypelib_major_version(VALUE self)
     pTypeLib = itypelib(self);
     oletypelib_get_libattr(pTypeLib, &pTLibAttr);
 
-    major =  INT2NUM(pTLibAttr->wMajorVerNum);
+    major =  RB_INT2NUM(pTLibAttr->wMajorVerNum);
     pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
     return major;
 }
@@ -563,7 +561,7 @@ foletypelib_minor_version(VALUE self)
     ITypeLib *pTypeLib;
     pTypeLib = itypelib(self);
     oletypelib_get_libattr(pTypeLib, &pTLibAttr);
-    minor =  INT2NUM(pTLibAttr->wMinorVerNum);
+    minor =  RB_INT2NUM(pTLibAttr->wMinorVerNum);
     pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
     return minor;
 }

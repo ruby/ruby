@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/installer_test_case'
 require 'rubygems/uninstaller'
 
@@ -5,6 +6,8 @@ class TestGemUninstaller < Gem::InstallerTestCase
 
   def setup
     super
+    @installer = setup_base_installer
+    @user_installer = setup_base_user_installer
     common_installer_setup
 
     build_rake_in do
@@ -21,9 +24,10 @@ class TestGemUninstaller < Gem::InstallerTestCase
   end
 
   def test_initialize_expand_path
-    uninstaller = Gem::Uninstaller.new nil, :install_dir => '/foo//bar'
+    FileUtils.mkdir_p 'foo/bar'
+    uninstaller = Gem::Uninstaller.new nil, :install_dir => 'foo//bar'
 
-    assert_match %r|/foo/bar$|, uninstaller.instance_variable_get(:@gem_home)
+    assert_match %r|foo/bar$|, uninstaller.instance_variable_get(:@gem_home)
   end
 
   def test_ask_if_ok
@@ -132,6 +136,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
   end
 
   def test_remove_not_in_home
+    Dir.mkdir "#{@gemhome}2"
     uninstaller = Gem::Uninstaller.new nil, :install_dir => "#{@gemhome}2"
 
     e = assert_raises Gem::GemNotInHomeException do
@@ -146,6 +151,22 @@ class TestGemUninstaller < Gem::InstallerTestCase
     assert_equal expected, e.message
 
     assert_path_exists @spec.gem_dir
+  end
+
+  def test_remove_symlinked_gem_home
+    Dir.mktmpdir("gem_home") do |dir|
+      symlinked_gem_home = "#{dir}/#{File.basename(@gemhome)}"
+
+      FileUtils.ln_s(@gemhome, dir)
+
+      uninstaller = Gem::Uninstaller.new nil, :install_dir => symlinked_gem_home
+
+      use_ui ui do
+        uninstaller.remove @spec
+      end
+
+      refute_path_exists @spec.gem_dir
+    end
   end
 
   def test_path_ok_eh
@@ -176,10 +197,12 @@ class TestGemUninstaller < Gem::InstallerTestCase
     gem_dir = File.join @gemhome, 'gems', @spec.full_name
 
     Gem.pre_uninstall do
+      sleep(0.1) if win_platform?
       assert File.exist?(gem_dir), 'gem_dir should exist'
     end
 
     Gem.post_uninstall do
+      sleep(0.1) if win_platform?
       refute File.exist?(gem_dir), 'gem_dir should not exist'
     end
 
@@ -198,20 +221,20 @@ class TestGemUninstaller < Gem::InstallerTestCase
 
     uninstaller = Gem::Uninstaller.new spec.name, :executables => true
 
-    e = assert_raises Gem::InstallError do
+    use_ui @ui do
       uninstaller.uninstall
     end
 
-    assert_equal 'gem "default" cannot be uninstalled ' +
-                 'because it is a default gem',
-                 e.message
+    lines = @ui.output.split("\n")
+
+    assert_equal 'Gem default-2 cannot be uninstalled because it is a default gem', lines.shift
   end
 
   def test_uninstall_default_gem_with_same_version
     default_spec = new_default_spec 'default', '2'
     install_default_gems default_spec
 
-    spec = new_spec 'default', '2'
+    spec = util_spec 'default', '2'
     install_gem spec
 
     Gem::Specification.reset
@@ -310,6 +333,7 @@ create_makefile '#{@spec.name}'
   end
 
   def test_uninstall_wrong_repo
+    Dir.mkdir "#{@gemhome}2"
     Gem.use_paths "#{@gemhome}2", [@gemhome]
 
     uninstaller = Gem::Uninstaller.new @spec.name, :executables => true
@@ -365,7 +389,10 @@ create_makefile '#{@spec.name}'
   end
 
   def test_uninstall_prompts_about_broken_deps
-    quick_gem 'r', '1' do |s| s.add_dependency 'q', '= 1' end
+    quick_gem 'r', '1' do |s|
+      s.add_dependency 'q', '= 1'
+    end
+
     quick_gem 'q', '1'
 
     un = Gem::Uninstaller.new('q')
@@ -387,8 +414,14 @@ create_makefile '#{@spec.name}'
   end
 
   def test_uninstall_only_lists_unsatisfied_deps
-    quick_gem 'r', '1' do |s| s.add_dependency 'q', '~> 1.0' end
-    quick_gem 'x', '1' do |s| s.add_dependency 'q', '= 1.0'  end
+    quick_gem 'r', '1' do |s|
+      s.add_dependency 'q', '~> 1.0'
+    end
+
+    quick_gem 'x', '1' do |s|
+      s.add_dependency 'q', '= 1.0'
+    end
+
     quick_gem 'q', '1.0'
     quick_gem 'q', '1.1'
 
@@ -411,7 +444,10 @@ create_makefile '#{@spec.name}'
   end
 
   def test_uninstall_doesnt_prompt_when_other_gem_satisfies_requirement
-    quick_gem 'r', '1' do |s| s.add_dependency 'q', '~> 1.0' end
+    quick_gem 'r', '1' do |s|
+      s.add_dependency 'q', '~> 1.0'
+    end
+
     quick_gem 'q', '1.0'
     quick_gem 'q', '1.1'
 
@@ -428,7 +464,10 @@ create_makefile '#{@spec.name}'
   end
 
   def test_uninstall_doesnt_prompt_when_removing_a_dev_dep
-    quick_gem 'r', '1' do |s| s.add_development_dependency 'q', '= 1.0' end
+    quick_gem 'r', '1' do |s|
+      s.add_development_dependency 'q', '= 1.0'
+    end
+
     quick_gem 'q', '1.0'
 
     un = Gem::Uninstaller.new('q', :version => "1.0")
@@ -444,7 +483,10 @@ create_makefile '#{@spec.name}'
   end
 
   def test_uninstall_doesnt_prompt_and_raises_when_abort_on_dependent_set
-    quick_gem 'r', '1' do |s| s.add_dependency 'q', '= 1' end
+    quick_gem 'r', '1' do |s|
+      s.add_dependency 'q', '= 1'
+    end
+
     quick_gem 'q', '1'
 
     un = Gem::Uninstaller.new('q', :abort_on_dependent => true)
@@ -481,4 +523,23 @@ create_makefile '#{@spec.name}'
     assert_match %r!r-1 depends on q \(= 1, development\)!, lines.shift
     assert_match %r!Successfully uninstalled q-1!, lines.last
   end
+
+  def test_uninstall_no_permission
+    uninstaller = Gem::Uninstaller.new @spec.name, :executables => true
+
+    stub_rm_r = lambda do |*args|
+      _path = args.shift
+      options = args.shift || Hash.new
+      # Uninstaller calls a method in RDoc which also calls FileUtils.rm_rf which
+      # is an alias for FileUtils#rm_r, so skip if we're using the force option
+      raise Errno::EPERM unless options[:force]
+    end
+
+    FileUtils.stub :rm_r, stub_rm_r do
+      assert_raises Gem::UninstallError do
+        uninstaller.uninstall
+      end
+    end
+  end
+
 end

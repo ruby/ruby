@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # Abstract class representing either a method or an attribute.
 
@@ -187,7 +188,7 @@ class RDoc::MethodAttr < RDoc::CodeObject
       next if String === ancestor
       next if parent == ancestor
 
-      other = ancestor.find_method_named('#' << name) ||
+      other = ancestor.find_method_named('#' + name) ||
               ancestor.find_attribute_named(name)
 
       return other if other

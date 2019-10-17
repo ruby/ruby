@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'test/unit'
 require 'find'
 require 'tmpdir'
@@ -8,6 +9,17 @@ class TestFind < Test::Unit::TestCase
       a = []
       Find.find(d) {|f| a << f }
       assert_equal([d], a)
+    }
+  end
+
+  def test_nonexistence
+    bug12087 = '[ruby-dev:49497] [Bug #12087]'
+    Dir.mktmpdir {|d|
+      path = "#{d}/a"
+      re = /#{Regexp.quote(path)}\z/
+      assert_raise_with_message(Errno::ENOENT, re, bug12087) {
+        Find.find(path) {}
+      }
     }
   end
 
@@ -92,6 +104,8 @@ class TestFind < Test::Unit::TestCase
 
   def test_unreadable_dir
     skip "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
+    skip "because root can read anything" if Process.uid == 0
+
     Dir.mktmpdir {|d|
       Dir.mkdir(dir = "#{d}/dir")
       File.open("#{dir}/foo", "w"){}
@@ -145,6 +159,8 @@ class TestFind < Test::Unit::TestCase
         assert_equal([d, dir, file], a)
 
         skip "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
+        skip "skipped because root can read anything" if Process.uid == 0
+
         a = []
         assert_raise_with_message(Errno::EACCES, /#{Regexp.quote(file)}/) do
           Find.find(d, ignore_error: false) {|f| a << f }
@@ -282,6 +298,23 @@ class TestFind < Test::Unit::TestCase
         Find.find("#{d}".encode(utf_8)) {|f| a << [f, f.encoding] }
         assert_equal([[d, utf_8], ["#{d}/a", utf_8], ["#{d}/b", utf_8], ["#{d}/\u{2660}", utf_8]], a)
       end
+    }
+  end
+
+  def test_to_path
+    c = Class.new {
+      def initialize(path)
+        @path = path
+      end
+
+      def to_path
+        @path
+      end
+    }
+    Dir.mktmpdir {|d|
+      a = []
+      Find.find(c.new(d)) {|f| a << f }
+      assert_equal([d], a)
     }
   end
 

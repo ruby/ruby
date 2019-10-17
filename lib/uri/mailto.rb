@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # = uri/mailto.rb
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
@@ -7,20 +8,20 @@
 # See URI for general documentation
 #
 
-require 'uri/generic'
+require_relative 'generic'
 
 module URI
 
   #
-  # RFC6068, The mailto URL scheme
+  # RFC6068, the mailto URL scheme.
   #
   class MailTo < Generic
     include REGEXP
 
-    # A Default port of nil for URI::MailTo
+    # A Default port of nil for URI::MailTo.
     DEFAULT_PORT = nil
 
-    # An Array of the available components for URI::MailTo
+    # An Array of the available components for URI::MailTo.
     COMPONENT = [ :scheme, :to, :headers ].freeze
 
     # :stopdoc:
@@ -51,7 +52,7 @@ module URI
     # pct-encoded  = "%" HEXDIG HEXDIG
     HEADER_REGEXP  = /\A(?<hfield>(?:%\h\h|[!$'-.0-;@-Z_a-z~])*=(?:%\h\h|[!$'-.0-;@-Z_a-z~])*)(?:&\g<hfield>)*\z/
     # practical regexp for email address
-    # http://www.whatwg.org/specs/web-apps/current-work/multipage/states-of-the-type-attribute.html#valid-e-mail-address
+    # https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
     EMAIL_REGEXP = /\A[a-zA-Z0-9.!\#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\z/
     # :startdoc:
 
@@ -61,29 +62,29 @@ module URI
     # Creates a new URI::MailTo object from components, with syntax checking.
     #
     # Components can be provided as an Array or Hash. If an Array is used,
-    # the components must be supplied as [to, headers].
+    # the components must be supplied as <code>[to, headers]</code>.
     #
     # If a Hash is used, the keys are the component names preceded by colons.
     #
     # The headers can be supplied as a pre-encoded string, such as
-    # "subject=subscribe&cc=address", or as an Array of Arrays like
-    # [['subject', 'subscribe'], ['cc', 'address']]
+    # <code>"subject=subscribe&cc=address"</code>, or as an Array of Arrays
+    # like <code>[['subject', 'subscribe'], ['cc', 'address']]</code>.
     #
     # Examples:
     #
     #    require 'uri'
     #
     #    m1 = URI::MailTo.build(['joe@example.com', 'subject=Ruby'])
-    #    puts m1.to_s  ->  mailto:joe@example.com?subject=Ruby
+    #    m1.to_s  # => "mailto:joe@example.com?subject=Ruby"
     #
     #    m2 = URI::MailTo.build(['john@example.com', [['Subject', 'Ruby'], ['Cc', 'jack@example.com']]])
-    #    puts m2.to_s  ->  mailto:john@example.com?Subject=Ruby&Cc=jack@example.com
+    #    m2.to_s  # => "mailto:john@example.com?Subject=Ruby&Cc=jack@example.com"
     #
     #    m3 = URI::MailTo.build({:to => 'listman@example.com', :headers => [['subject', 'subscribe']]})
-    #    puts m3.to_s  ->  mailto:listman@example.com?subject=subscribe
+    #    m3.to_s  # => "mailto:listman@example.com?subject=subscribe"
     #
     def self.build(args)
-      tmp = Util::make_components_hash(self, args)
+      tmp = Util.make_components_hash(self, args)
 
       case tmp[:to]
       when Array
@@ -117,7 +118,7 @@ module URI
         end
       end
 
-      return super(tmp)
+      super(tmp)
     end
 
     #
@@ -134,6 +135,9 @@ module URI
 
       @to = nil
       @headers = []
+
+      # The RFC3986 parser does not normally populate opaque
+      @opaque = "?#{@query}" if @query && !@opaque
 
       unless @opaque
         raise InvalidComponentError,
@@ -156,13 +160,13 @@ module URI
       end
     end
 
-    # The primary e-mail address of the URL, as a String
+    # The primary e-mail address of the URL, as a String.
     attr_reader :to
 
-    # E-mail headers set by the URL, as an Array of Arrays
+    # E-mail headers set by the URL, as an Array of Arrays.
     attr_reader :headers
 
-    # check the to +v+ component
+    # Checks the to +v+ component.
     def check_to(v)
       return true unless v
       return true if v.size == 0
@@ -183,24 +187,24 @@ module URI
         end
       end
 
-      return true
+      true
     end
     private :check_to
 
-    # private setter for to +v+
+    # Private setter for to +v+.
     def set_to(v)
       @to = v
     end
     protected :set_to
 
-    # setter for to +v+
+    # Setter for to +v+.
     def to=(v)
       check_to(v)
       set_to(v)
       v
     end
 
-    # check the headers +v+ component against either
+    # Checks the headers +v+ component against either
     # * HEADER_REGEXP
     def check_headers(v)
       return true unless v
@@ -210,11 +214,11 @@ module URI
           "bad component(expected opaque component): #{v}"
       end
 
-      return true
+      true
     end
     private :check_headers
 
-    # private setter for headers +v+
+    # Private setter for headers +v+.
     def set_headers(v)
       @headers = []
       if v
@@ -225,14 +229,14 @@ module URI
     end
     protected :set_headers
 
-    # setter for headers +v+
+    # Setter for headers +v+.
     def headers=(v)
       check_headers(v)
       set_headers(v)
       v
     end
 
-    # Constructs String from URI
+    # Constructs String from URI.
     def to_s
       @scheme + ':' +
         if @to
@@ -263,22 +267,22 @@ module URI
     #   # => "To: ruby-list@ruby-lang.org\nSubject: subscribe\nCc: myaddr\n\n\n"
     #
     def to_mailtext
-      to = parser.unescape(@to)
+      to = URI.decode_www_form_component(@to)
       head = ''
       body = ''
       @headers.each do |x|
         case x[0]
         when 'body'
-          body = parser.unescape(x[1])
+          body = URI.decode_www_form_component(x[1])
         when 'to'
-          to << ', ' + parser.unescape(x[1])
+          to << ', ' + URI.decode_www_form_component(x[1])
         else
-          head << parser.unescape(x[0]).capitalize + ': ' +
-            parser.unescape(x[1])  + "\n"
+          head << URI.decode_www_form_component(x[0]).capitalize + ': ' +
+            URI.decode_www_form_component(x[1])  + "\n"
         end
       end
 
-      return "To: #{to}
+      "To: #{to}
 #{head}
 #{body}
 "

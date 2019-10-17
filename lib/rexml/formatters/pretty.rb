@@ -1,4 +1,5 @@
-require 'rexml/formatters/default'
+# frozen_string_literal: false
+require_relative 'default'
 
 module REXML
   module Formatters

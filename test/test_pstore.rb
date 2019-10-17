@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'test/unit'
 require 'pstore'
 require 'tmpdir'
@@ -74,34 +75,39 @@ class PStoreTest < Test::Unit::TestCase
   end
 
   def test_thread_safe
+    q1 = Queue.new
     assert_raise(PStore::Error) do
-      flag = false
       th = Thread.new do
         @pstore.transaction do
           @pstore[:foo] = "bar"
-          flag = true
-          sleep 1
+          q1.push true
+          sleep
         end
       end
       begin
-        sleep 0.1 until flag
+        q1.pop
         @pstore.transaction {}
       ensure
+        th.kill
         th.join
       end
     end
+    q2 = Queue.new
     begin
       pstore = PStore.new(second_file, true)
-      flag = false
+      cur = Thread.current
       th = Thread.new do
         pstore.transaction do
           pstore[:foo] = "bar"
-          flag = true
-          sleep 1
+          q1.push true
+          q2.pop
+          # wait for cur to enter a transaction
+          sleep 0.1 until cur.stop?
         end
       end
       begin
-        sleep 0.1 until flag
+        q1.pop
+        q2.push true
         assert_equal("bar", pstore.transaction { pstore[:foo] })
       ensure
         th.join
@@ -127,7 +133,7 @@ class PStoreTest < Test::Unit::TestCase
   def test_pstore_files_are_accessed_as_binary_files
     bug5311 = '[ruby-core:39503]'
     n = 128
-    assert_in_out_err(["-Eutf-8:utf-8", "-rpstore", "-", @pstore_file], <<-SRC, [bug5311], [], bug5311, timeout: 15)
+    assert_in_out_err(["-Eutf-8:utf-8", "-rpstore", "-", @pstore_file], <<-SRC, [bug5311], [], bug5311, timeout: 30)
       @pstore = PStore.new(ARGV[0])
       (1..#{n}).each do |i|
         @pstore.transaction {@pstore["Key\#{i}"] = "value \#{i}"}

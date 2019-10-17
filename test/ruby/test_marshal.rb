@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'tempfile'
 require_relative 'marshaltestlib'
@@ -567,7 +568,7 @@ class TestMarshal < Test::Unit::TestCase
     s.instance_variable_set(:@t, 42)
     t = Bug8276.new(s)
     s = Marshal.dump(t)
-    assert_raise(RuntimeError) {Marshal.load(s)}
+    assert_raise(FrozenError) {Marshal.load(s)}
   end
 
   def test_marshal_load_ivar
@@ -621,8 +622,7 @@ class TestMarshal < Test::Unit::TestCase
 
   def test_untainted_numeric
     bug8945 = '[ruby-core:57346] [Bug #8945] Numerics never be tainted'
-    b = 1 << 32
-    b *= b until Bignum === b
+    b = RbConfig::LIMITS['FIXNUM_MAX'] + 1
     tainted = [0, 1.0, 1.72723e-77, b].select do |x|
       Marshal.load(Marshal.dump(x).taint).tainted?
     end
@@ -644,6 +644,9 @@ class TestMarshal < Test::Unit::TestCase
     c = Bug9523.new
     assert_raise_with_message(RuntimeError, /Marshal\.dump reentered at marshal_dump/) do
       Marshal.dump(c)
+      GC.start
+      1000.times {"x"*1000}
+      GC.start
       c.cc.call
     end
   end
@@ -694,5 +697,130 @@ class TestMarshal < Test::Unit::TestCase
     assert_raise_with_message(TypeError, /UsrMarshal\u{23F0 23F3}/) {
       Marshal.load(d)
     }
+  end
+
+  def test_no_internal_ids
+    opt = %w[--disable=gems]
+    args = [opt, 'Marshal.dump("",STDOUT)', true, true, encoding: Encoding::ASCII_8BIT]
+    out, err, status = EnvUtil.invoke_ruby(*args)
+    assert_empty(err)
+    assert_predicate(status, :success?)
+    expected = out
+
+    opt << "--enable=frozen-string-literal"
+    opt << "--debug=frozen-string-literal"
+    out, err, status = EnvUtil.invoke_ruby(*args)
+    assert_empty(err)
+    assert_predicate(status, :success?)
+    assert_equal(expected, out)
+  end
+
+  def test_marshal_honor_post_proc_value_for_link
+    str = 'x' # for link
+    obj = [str, str]
+    assert_equal(['X', 'X'], Marshal.load(Marshal.dump(obj), ->(v) { v == str ? v.upcase : v }))
+  end
+
+  def test_marshal_load_extended_class_crash
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      assert_raise_with_message(ArgumentError, /undefined/) do
+        Marshal.load("\x04\be:\x0F\x00omparableo:\vObject\x00")
+      end
+    end;
+  end
+
+  def test_marshal_load_r_prepare_reference_crash
+    crash = "\x04\bI/\x05\x00\x06:\x06E{\x06@\x05T"
+
+    opt = %w[--disable=gems]
+    assert_separately(opt, <<-RUBY)
+      assert_raise_with_message(ArgumentError, /bad link/) do
+        Marshal.load(#{crash.dump})
+      end
+    RUBY
+  end
+
+  MethodMissingWithoutRespondTo = Struct.new(:wrapped_object) do
+    undef respond_to?
+    def method_missing(*args, &block)
+      wrapped_object.public_send(*args, &block)
+    end
+    def respond_to_missing?(name, private = false)
+      wrapped_object.respond_to?(name, false)
+    end
+  end
+
+  def test_method_missing_without_respond_to
+    bug12353 = "[ruby-core:75377] [Bug #12353]: try method_missing if" \
+               " respond_to? is undefined"
+    obj = MethodMissingWithoutRespondTo.new("foo")
+    dump = assert_nothing_raised(NoMethodError, bug12353) do
+      Marshal.dump(obj)
+    end
+    assert_equal(obj, Marshal.load(dump))
+  end
+
+  class Bug12974
+    def marshal_dump
+      dup
+    end
+  end
+
+  def test_marshal_dump_recursion
+    assert_raise_with_message(RuntimeError, /same class instance/) do
+      Marshal.dump(Bug12974.new)
+    end
+  end
+
+  Bug14314 = Struct.new(:foo, keyword_init: true)
+
+  def test_marshal_keyword_init_struct
+    obj = Bug14314.new(foo: 42)
+    assert_equal obj, Marshal.load(Marshal.dump(obj))
+  end
+
+  class Bug15968
+    attr_accessor :bar, :baz
+
+    def initialize
+      self.bar = Bar.new(self)
+    end
+
+    class Bar
+      attr_accessor :foo
+
+      def initialize(foo)
+        self.foo = foo
+      end
+
+      def marshal_dump
+        if self.foo.baz
+          self.foo.remove_instance_variable(:@baz)
+        else
+          self.foo.baz = :problem
+        end
+        {foo: self.foo}
+      end
+
+      def marshal_load(data)
+        self.foo = data[:foo]
+      end
+    end
+  end
+
+  def test_marshal_dump_adding_instance_variable
+    obj = Bug15968.new
+    assert_raise_with_message(RuntimeError, /instance variable added/) do
+      Marshal.dump(obj)
+    end
+  end
+
+  def test_marshal_dump_removing_instance_variable
+    obj = Bug15968.new
+    obj.baz = :Bug15968
+    assert_raise_with_message(RuntimeError, /instance variable removed/) do
+      Marshal.dump(obj)
+    end
   end
 end

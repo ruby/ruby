@@ -1,16 +1,18 @@
-require 'rexml/encoding'
-require 'rexml/source'
+# frozen_string_literal: false
+
+require_relative 'encoding'
+require_relative 'source'
 
 module REXML
   # NEEDS DOCUMENTATION
   class XMLDecl < Child
     include Encoding
 
-    DEFAULT_VERSION = "1.0";
-    DEFAULT_ENCODING = "UTF-8";
-    DEFAULT_STANDALONE = "no";
-    START = '<\?xml';
-    STOP = '\?>';
+    DEFAULT_VERSION = "1.0"
+    DEFAULT_ENCODING = "UTF-8"
+    DEFAULT_STANDALONE = "no"
+    START = "<?xml"
+    STOP = "?>"
 
     attr_accessor :version, :standalone
     attr_reader :writeencoding, :writethis
@@ -24,6 +26,7 @@ module REXML
         self.encoding = version.encoding
         @writeencoding = version.writeencoding
         @standalone = version.standalone
+        @writethis = version.writethis
       else
         super()
         @version = version
@@ -45,9 +48,9 @@ module REXML
     #   Ignored
     def write(writer, indent=-1, transitive=false, ie_hack=false)
       return nil unless @writethis or writer.kind_of? Output
-      writer << START.sub(/\\/u, '')
+      writer << START
       writer << " #{content encoding}"
-      writer << STOP.sub(/\\/u, '')
+      writer << STOP
     end
 
     def ==( other )
@@ -101,14 +104,26 @@ module REXML
     end
 
     def inspect
-      START.sub(/\\/u, '') + " ... " + STOP.sub(/\\/u, '')
+      "#{START} ... #{STOP}"
     end
 
     private
     def content(enc)
-      rv = "version='#@version'"
-      rv << " encoding='#{enc}'" if @writeencoding || enc !~ /\Autf-8\z/i
-      rv << " standalone='#@standalone'" if @standalone
+      context = nil
+      context = parent.context if parent
+      if context and context[:prologue_quote] == :quote
+        quote = "\""
+      else
+        quote = "'"
+      end
+
+      rv = "version=#{quote}#{@version}#{quote}"
+      if @writeencoding or enc !~ /\Autf-8\z/i
+        rv << " encoding=#{quote}#{enc}#{quote}"
+      end
+      if @standalone
+        rv << " standalone=#{quote}#{@standalone}#{quote}"
+      end
       rv
     end
   end

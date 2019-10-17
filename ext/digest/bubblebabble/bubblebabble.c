@@ -11,8 +11,8 @@
 
 ************************************************/
 
-#include "ruby.h"
-#include "digest.h"
+#include <ruby/ruby.h>
+#include "../digest.h"
 
 static ID id_digest;
 
@@ -101,7 +101,7 @@ rb_digest_s_bubblebabble(VALUE klass, VALUE str)
 static VALUE
 rb_digest_class_s_bubblebabble(int argc, VALUE *argv, VALUE klass)
 {
-    return bubblebabble_str_new(rb_funcall2(klass, id_digest, argc, argv));
+    return bubblebabble_str_new(rb_funcallv(klass, id_digest, argc, argv));
 }
 
 /* Document-method: Digest::Instance#bubblebabble
@@ -124,6 +124,7 @@ rb_digest_instance_bubblebabble(VALUE self)
 void
 Init_bubblebabble(void)
 {
+#undef rb_intern
     VALUE rb_mDigest, rb_mDigest_Instance, rb_cDigest_Class;
 
     rb_require("digest");

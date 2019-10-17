@@ -1,0 +1,30 @@
+prelude: |
+  f = File
+  pwd = Dir.pwd
+  Dir.mkdir('b') unless f.directory?('b')
+  f.write('b/a', '') unless f.file?('b/a')
+
+  relative = 'b/a'
+  absolute = File.join(pwd, relative)
+  dir = 'b'
+  file = 'a'
+
+  relative_dir = 'b/c'
+  absolute_dir = File.join(pwd, relative_dir)
+  file_dir = 'c'
+benchmark:
+  relative_nil: "f.realpath(relative, nil)"
+  absolute_nil: "f.realpath(absolute, nil)"
+  relative_relative: "f.realpath(file, dir)"
+  absolute_relative: "f.realpath(absolute, dir)"
+  relative_absolute: "f.realpath(relative, pwd)"
+  relative_nil_dir: "f.realdirpath(relative_dir, nil)"
+  absolute_nil_dir: "f.realdirpath(absolute_dir, nil)"
+  relative_relative_dir: "f.realdirpath(file_dir, dir)"
+  absolute_relative_dir: "f.realdirpath(absolute_dir, dir)"
+  relative_absolute_dir: "f.realdirpath(relative_dir, pwd)"
+  relative_nil_notexist: "f.realpath(relative_dir, nil) rescue nil"
+  absolute_nil_notexist: "f.realpath(absolute_dir, nil) rescue nil"
+  relative_relative_notexist: "f.realpath(file_dir, dir) rescue nil"
+  absolute_relative_notexist: "f.realpath(absolute_dir, dir) rescue nil"
+  relative_absolute_notexist: "f.realpath(relative_dir, pwd) rescue nil"

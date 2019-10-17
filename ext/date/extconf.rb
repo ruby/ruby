@@ -1,3 +1,9 @@
+# frozen_string_literal: true
 require 'mkmf'
-append_cflags("-std=iso9899:1999")
+
+config_string("strict_warnflags") {|w| $warnflags += " #{w}"}
+
+have_var("timezone", "time.h")
+have_var("altzone", "time.h")
+
 create_makefile('date_core')

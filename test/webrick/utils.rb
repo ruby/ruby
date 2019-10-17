@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require "webrick"
 begin
   require "webrick/https"
@@ -14,6 +15,7 @@ module TestWEBrick
 
   class WEBrick::HTTPServlet::CGIHandler
     remove_const :Ruby
+    require "envutil" unless defined?(EnvUtil)
     Ruby = EnvUtil.rubybin
     remove_const :CGIRunner
     CGIRunner = "\"#{Ruby}\" \"#{WEBrick::Config::LIBDIR}/httpservlet/cgi_runner.rb\"" # :nodoc:
@@ -25,6 +27,7 @@ module TestWEBrick
   RubyBin << " \"-I#{File.dirname(EnvUtil.rubybin)}/.ext/common\""
   RubyBin << " \"-I#{File.dirname(EnvUtil.rubybin)}/.ext/#{RUBY_PLATFORM}\""
 
+  require "test/unit" unless defined?(Test::Unit)
   include Test::Unit::Assertions
   extend Test::Unit::Assertions
 
@@ -36,12 +39,13 @@ module TestWEBrick
     log_ary = []
     access_log_ary = []
     log = proc { "webrick log start:\n" + (log_ary+access_log_ary).join.gsub(/^/, "  ").chomp + "\nwebrick log end" }
-    server = klass.new({
+    config = ({
       :BindAddress => "127.0.0.1", :Port => 0,
       :ServerType => Thread,
       :Logger => WEBrick::Log.new(log_ary, WEBrick::BasicLog::WARN),
       :AccessLog => [[access_log_ary, ""]]
     }.update(config))
+    server = capture_output {break klass.new(config)}
     server_thread = server.start
     server_thread2 = Thread.new {
       server_thread.join

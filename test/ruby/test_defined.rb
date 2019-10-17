@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestDefined < Test::Unit::TestCase
@@ -96,6 +97,10 @@ class TestDefined < Test::Unit::TestCase
       assert_equal("nil", eval("defined? #{expr}"), "#{bug8224} defined? #{expr}")
       assert_equal("nil", eval("defined?(#{expr})"), "#{bug8224} defined?(#{expr})")
     end
+  end
+
+  def test_defined_empty_paren_arg
+    assert_nil(defined?(p () + 1))
   end
 
   def test_defined_impl_specific
@@ -247,5 +252,9 @@ class TestDefined < Test::Unit::TestCase
     assert_equal(false, obj.called, bug_11212)
     assert_equal(nil, obj.func_defined_non_existing_func, bug_11212)
     assert_equal(true, obj.called, bug_11212)
+  end
+
+  def test_top_level_constant_not_defined
+    assert_nil(defined?(TestDefined::Object))
   end
 end

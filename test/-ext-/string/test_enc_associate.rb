@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require "-test-/string"
 
@@ -6,8 +7,8 @@ class Test_StrEncAssociate < Test::Unit::TestCase
     s = Bug::String.new("abc")
     s.force_encoding(Encoding::US_ASCII)
     s.freeze
-    assert_raise(RuntimeError) {s.associate_encoding!(Encoding::US_ASCII)}
-    assert_raise(RuntimeError) {s.associate_encoding!(Encoding::UTF_8)}
+    assert_raise(FrozenError) {s.associate_encoding!(Encoding::US_ASCII)}
+    assert_raise(FrozenError) {s.associate_encoding!(Encoding::UTF_8)}
   end
 
   Encoding.list.select(&:dummy?).each do |enc|

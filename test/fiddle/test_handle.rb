@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 begin
   require_relative 'helper'
 rescue LoadError
@@ -7,7 +8,28 @@ module Fiddle
   class TestHandle < TestCase
     include Fiddle
 
-    include Test::Unit::Assertions
+    def test_safe_handle_open
+      Thread.new do
+        $SAFE = 1
+        assert_raise(SecurityError) {
+          Fiddle::Handle.new(LIBC_SO.dup.taint)
+        }
+      end.join
+    ensure
+      $SAFE = 0
+    end
+
+    def test_safe_function_lookup
+      Thread.new do
+        h = Fiddle::Handle.new(LIBC_SO)
+        $SAFE = 1
+        assert_raise(SecurityError) {
+          h["qsort".dup.taint]
+        }
+      end.join
+    ensure
+      $SAFE = 0
+    end
 
     def test_to_i
       handle = Fiddle::Handle.new(LIBC_SO)
@@ -15,8 +37,8 @@ module Fiddle
     end
 
     def test_static_sym_unknown
-      assert_raises(DLError) { Fiddle::Handle.sym('fooo') }
-      assert_raises(DLError) { Fiddle::Handle['fooo'] }
+      assert_raise(DLError) { Fiddle::Handle.sym('fooo') }
+      assert_raise(DLError) { Fiddle::Handle['fooo'] }
     end
 
     def test_static_sym
@@ -41,20 +63,20 @@ module Fiddle
     def test_sym_closed_handle
       handle = Fiddle::Handle.new(LIBC_SO)
       handle.close
-      assert_raises(DLError) { handle.sym("calloc") }
-      assert_raises(DLError) { handle["calloc"] }
+      assert_raise(DLError) { handle.sym("calloc") }
+      assert_raise(DLError) { handle["calloc"] }
     end
 
     def test_sym_unknown
       handle = Fiddle::Handle.new(LIBC_SO)
-      assert_raises(DLError) { handle.sym('fooo') }
-      assert_raises(DLError) { handle['fooo'] }
+      assert_raise(DLError) { handle.sym('fooo') }
+      assert_raise(DLError) { handle['fooo'] }
     end
 
     def test_sym_with_bad_args
       handle = Handle.new(LIBC_SO)
-      assert_raises(TypeError) { handle.sym(nil) }
-      assert_raises(TypeError) { handle[nil] }
+      assert_raise(TypeError) { handle.sym(nil) }
+      assert_raise(TypeError) { handle[nil] }
     end
 
     def test_sym
@@ -71,7 +93,7 @@ module Fiddle
     def test_handle_close_twice
       handle = Handle.new(LIBC_SO)
       handle.close
-      assert_raises(DLError) do
+      assert_raise(DLError) do
         handle.close
       end
     end
@@ -163,6 +185,14 @@ module Fiddle
 
     def test_no_memory_leak
       assert_no_memory_leak(%w[-W0 -rfiddle.so], '', '100_000.times {Fiddle::Handle.allocate}; GC.start', rss: true)
+    end
+
+    if /cygwin|mingw|mswin/ =~ RUBY_PLATFORM
+      def test_fallback_to_ansi
+        k = Fiddle::Handle.new("kernel32.dll")
+        ansi = k["GetFileAttributesA"]
+        assert_equal(ansi, k["GetFileAttributes"], "should fallback to ANSI version")
+      end
     end
   end
 end if defined?(Fiddle)

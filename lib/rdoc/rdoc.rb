@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rdoc'
 
 require 'find'
@@ -23,7 +24,7 @@ require 'time'
 #   rdoc.document argv
 #
 # Where +argv+ is an array of strings, each corresponding to an argument you'd
-# give rdoc on the command line.  See <tt>rdoc --help<tt> for details.
+# give rdoc on the command line.  See <tt>rdoc --help</tt> for details.
 
 class RDoc::RDoc
 
@@ -33,11 +34,6 @@ class RDoc::RDoc
   # This is the list of supported output generators
 
   GENERATORS = {}
-
-  ##
-  # File pattern to exclude
-
-  attr_accessor :exclude
 
   ##
   # Generator instance used for creating output
@@ -92,7 +88,6 @@ class RDoc::RDoc
 
   def initialize
     @current       = nil
-    @exclude       = nil
     @generator     = nil
     @last_modified = {}
     @old_siginfo   = nil
@@ -115,7 +110,7 @@ class RDoc::RDoc
   def gather_files files
     files = ["."] if files.empty?
 
-    file_list = normalized_file_list files, true, @exclude
+    file_list = normalized_file_list files, true, @options.exclude
 
     file_list = file_list.uniq
 
@@ -160,15 +155,9 @@ class RDoc::RDoc
 
     RDoc.load_yaml
 
-    parse_error = if Object.const_defined? :Psych then
-                    Psych::SyntaxError
-                  else
-                    ArgumentError
-                  end
-
     begin
       options = YAML.load_file '.rdoc_options'
-    rescue *parse_error
+    rescue Psych::SyntaxError
     end
 
     raise RDoc::Error, "#{options_file} is not a valid rdoc options file" unless
@@ -193,7 +182,7 @@ class RDoc::RDoc
       error "#{dir} exists and is not a directory" unless File.directory? dir
 
       begin
-        open flag_file do |io|
+        File.open flag_file do |io|
           unless force then
             Time.parse io.gets
 
@@ -237,8 +226,11 @@ option)
 
   def update_output_dir(op_dir, time, last = {})
     return if @options.dry_run or not @options.update_output_dir
+    unless ENV['SOURCE_DATE_EPOCH'].nil?
+      time = Time.at(ENV['SOURCE_DATE_EPOCH'].to_i).gmtime
+    end
 
-    open output_flag_file(op_dir), "w" do |f|
+    File.open output_flag_file(op_dir), "w" do |f|
       f.puts time.rfc2822
       last.each do |n, t|
         f.puts "#{n}\t#{t.rfc2822}"
@@ -266,7 +258,7 @@ option)
 
     patterns.split.each do |patt|
       candidates = Dir.glob(File.join(in_dir, patt))
-      result.concat normalized_file_list(candidates)
+      result.concat normalized_file_list(candidates, false, @options.exclude)
     end
 
     result
@@ -339,10 +331,8 @@ option)
   # Parses +filename+ and returns an RDoc::TopLevel
 
   def parse_file filename
-    if Object.const_defined? :Encoding then
-      encoding = @options.encoding
-      filename = filename.encode encoding
-    end
+    encoding = @options.encoding
+    filename = filename.encode encoding
 
     @stats.add_file filename
 
@@ -365,7 +355,7 @@ option)
         relative_path.relative_path_from @options.page_dir
     end
 
-    top_level = @store.add_file filename, relative_path.to_s
+    top_level = @store.add_file filename, relative_name: relative_path.to_s
 
     parser = RDoc::Parser.for top_level, filename, content, @options, @stats
 
@@ -418,6 +408,7 @@ The internal error was:
 
     return [] if file_list.empty?
 
+    original_options = @options.dup
     @stats.begin_adding
 
     file_info = file_list.map do |filename|
@@ -426,6 +417,7 @@ The internal error was:
     end.compact
 
     @stats.done_adding
+    @options = original_options
 
     file_info
   end
@@ -436,7 +428,7 @@ The internal error was:
 
   def remove_unparseable files
     files.reject do |file|
-      file =~ /\.(?:class|eps|erb|scpt\.txt|ttf|yml)$/i or
+      file =~ /\.(?:class|eps|erb|scpt\.txt|svg|ttf|yml)$/i or
         (file =~ /tags$/i and
          open(file, 'rb') { |io|
            io.read(100) =~ /\A(\f\n[^,]+,\d+$|!_TAG_)/
@@ -474,13 +466,11 @@ The internal error was:
       exit
     end
 
-    @exclude = @options.exclude
-
     unless @options.coverage_report then
       @last_modified = setup_output_dir @options.op_dir, @options.force_update
     end
 
-    @store.encoding = @options.encoding if @options.respond_to? :encoding
+    @store.encoding = @options.encoding
     @store.dry_run  = @options.dry_run
     @store.main     = @options.main_page
     @store.title    = @options.title
@@ -526,13 +516,18 @@ The internal error was:
   # by the RDoc options
 
   def generate
-    Dir.chdir @options.op_dir do
-      unless @options.quiet then
-        $stderr.puts "\nGenerating #{@generator.class.name.sub(/^.*::/, '')} format into #{Dir.pwd}..."
-      end
-
+    if @options.dry_run then
+      # do nothing
       @generator.generate
-      update_output_dir '.', @start_time, @last_modified
+    else
+      Dir.chdir @options.op_dir do
+        unless @options.quiet then
+          $stderr.puts "\nGenerating #{@generator.class.name.sub(/^.*::/, '')} format into #{Dir.pwd}..."
+        end
+
+        @generator.generate
+        update_output_dir '.', @start_time, @last_modified
+      end
     end
   end
 
@@ -552,16 +547,14 @@ end
 begin
   require 'rubygems'
 
-  if Gem.respond_to? :find_files then
-    rdoc_extensions = Gem.find_files 'rdoc/discover'
+  rdoc_extensions = Gem.find_files 'rdoc/discover'
 
-    rdoc_extensions.each do |extension|
-      begin
-        load extension
-      rescue => e
-        warn "error loading #{extension.inspect}: #{e.message} (#{e.class})"
-        warn "\t#{e.backtrace.join "\n\t"}" if $DEBUG
-      end
+  rdoc_extensions.each do |extension|
+    begin
+      load extension
+    rescue => e
+      warn "error loading #{extension.inspect}: #{e.message} (#{e.class})"
+      warn "\t#{e.backtrace.join "\n\t"}" if $DEBUG
     end
   end
 rescue LoadError
@@ -571,4 +564,3 @@ end
 require 'rdoc/generator/darkfish'
 require 'rdoc/generator/ri'
 require 'rdoc/generator/pot'
-

@@ -1,0 +1,8 @@
+prelude: |
+  def m &b
+    b.call
+  end
+benchmark:
+  vm1_blockparam_call: |
+    m{}
+loop_count: 30000000

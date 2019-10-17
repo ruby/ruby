@@ -1,0 +1,13 @@
+benchmark:
+  vm2_case: |
+    case :foo
+    when :bar
+      raise
+    when :baz
+      raise
+    when :boo
+      raise
+    when :foo
+      # noop
+    end
+loop_count: 6000000

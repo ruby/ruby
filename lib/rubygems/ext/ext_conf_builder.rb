@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -6,18 +7,27 @@
 
 require 'fileutils'
 require 'tempfile'
+require 'shellwords'
 
 class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
+
   FileEntry = FileUtils::Entry_ # :nodoc:
 
-  def self.build(extension, directory, dest_path, results, args=[], lib_dir=nil)
-    # relative path required as some versions of mktmpdir return an absolute
-    # path which breaks make if it includes a space in the name
-    tmp_dest = get_relative_path(Dir.mktmpdir(".gem.", "."))
+  def self.build(extension, dest_path, results, args=[], lib_dir=nil)
+    tmp_dest = Dir.mktmpdir(".gem.", ".")
 
-    t = nil
+    # Some versions of `mktmpdir` return absolute paths, which will break make
+    # if the paths contain spaces. However, on Ruby 1.9.x on Windows, relative
+    # paths cause all C extension builds to fail.
+    #
+    # As such, we convert to a relative path unless we are using Ruby 1.9.x on
+    # Windows. This means that when using Ruby 1.9.x on Windows, paths with
+    # spaces do not work.
+    #
+    # Details: https://github.com/rubygems/rubygems/issues/977#issuecomment-171544940
+    tmp_dest = get_relative_path(tmp_dest)
+
     Tempfile.open %w"siteconf .rb", "." do |siteconf|
-      t = siteconf
       siteconf.puts "require 'rbconfig'"
       siteconf.puts "dest_path = #{tmp_dest.dump}"
       %w[sitearchdir sitelibdir].each do |dir|
@@ -25,21 +35,25 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
         siteconf.puts "RbConfig::CONFIG['#{dir}'] = dest_path"
       end
 
-      siteconf.flush
+      siteconf.close
 
       destdir = ENV["DESTDIR"]
 
       begin
-        cmd = [Gem.ruby, "-r", get_relative_path(siteconf.path), File.basename(extension), *args].join ' '
+        cmd = Gem.ruby.shellsplit << "-I" << File.expand_path("../../..", __FILE__) <<
+              "-r" << get_relative_path(siteconf.path) << File.basename(extension)
+        cmd.push(*args)
 
         begin
-          run cmd, results
-        ensure
-          if File.exist? 'mkmf.log'
-            results << "To see why this extension failed to compile, please check" \
-              " the mkmf.log which can be found here:\n"
-            results << "  " + File.join(dest_path, 'mkmf.log') + "\n"
-            FileUtils.mv 'mkmf.log', dest_path
+          run(cmd, results) do |s, r|
+            if File.exist? 'mkmf.log'
+              unless s.success?
+                r << "To see why this extension failed to compile, please check" \
+                  " the mkmf.log which can be found here:\n"
+                r << "  " + File.join(dest_path, 'mkmf.log') + "\n"
+              end
+              FileUtils.mv 'mkmf.log', dest_path
+            end
           end
           siteconf.unlink
         end
@@ -50,7 +64,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
         if tmp_dest
           # TODO remove in RubyGems 3
-          if Gem.install_extension_in_lib and lib_dir then
+          if Gem.install_extension_in_lib and lib_dir
             FileUtils.mkdir_p lib_dir
             entries = Dir.entries(tmp_dest) - %w[. ..]
             entries = entries.map { |entry| File.join tmp_dest, entry }
@@ -64,9 +78,9 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
         end
       ensure
         ENV["DESTDIR"] = destdir
+        siteconf.close!
       end
     end
-    t.unlink if t and t.path
 
     results
   ensure
@@ -74,10 +88,10 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
   end
 
   private
+
   def self.get_relative_path(path)
-    path[0..Dir.pwd.length-1] = '.' if path.start_with?(Dir.pwd)
+    path[0..Dir.pwd.length - 1] = '.' if path.start_with?(Dir.pwd)
     path
   end
 
 end
-

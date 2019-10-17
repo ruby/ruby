@@ -9,6 +9,7 @@
 
 **********************************************************************/
 
+#include "ruby/encoding.h"
 #include "internal.h"
 #include "transcode_data.h"
 #include <ctype.h>
@@ -16,9 +17,9 @@
 #define ENABLE_ECONV_NEWLINE_OPTION 1
 
 /* VALUE rb_cEncoding = rb_define_class("Encoding", rb_cObject); */
-VALUE rb_eUndefinedConversionError;
-VALUE rb_eInvalidByteSequenceError;
-VALUE rb_eConverterNotFoundError;
+static VALUE rb_eUndefinedConversionError;
+static VALUE rb_eInvalidByteSequenceError;
+static VALUE rb_eConverterNotFoundError;
 
 VALUE rb_cEncodingConverter;
 
@@ -154,7 +155,7 @@ struct rb_econv_t {
 typedef struct {
     const char *sname;
     const char *dname;
-    const char *lib; /* null means means no need to load a library */
+    const char *lib; /* null means no need to load a library */
     const rb_transcoder *transcoder;
 } transcoder_entry_t;
 
@@ -368,14 +369,13 @@ load_transcoder_entry(transcoder_entry_t *entry)
         const size_t total_len = sizeof(transcoder_lib_prefix) - 1 + len;
         const VALUE fn = rb_str_new(0, total_len);
         char *const path = RSTRING_PTR(fn);
-	const int safe = rb_safe_level();
 
         memcpy(path, transcoder_lib_prefix, sizeof(transcoder_lib_prefix) - 1);
         memcpy(path + sizeof(transcoder_lib_prefix) - 1, lib, len);
         rb_str_set_len(fn, total_len);
         FL_UNSET(fn, FL_TAINT);
         OBJ_FREEZE(fn);
-        rb_require_safe(fn, safe > 3 ? 3 : safe);
+        rb_require_safe(fn, rb_safe_level());
     }
 
     if (entry->transcoder)
@@ -974,21 +974,10 @@ rb_econv_open0(const char *sname, const char *dname, int ecflags)
     int num_trans;
     rb_econv_t *ec;
 
-    int sidx, didx;
-
-    if (*sname) {
-        sidx = rb_enc_find_index(sname);
-        if (0 <= sidx) {
-            rb_enc_from_index(sidx);
-        }
-    }
-
-    if (*dname) {
-        didx = rb_enc_find_index(dname);
-        if (0 <= didx) {
-            rb_enc_from_index(didx);
-        }
-    }
+    /* Just check if sname and dname are defined */
+    /* (This check is needed?) */
+    if (*sname) rb_enc_find_index(sname);
+    if (*dname) rb_enc_find_index(dname);
 
     if (*sname == '\0' && *dname == '\0') {
         num_trans = 0;
@@ -1194,7 +1183,6 @@ rb_trans_conv(rb_econv_t *ec,
     if (ec->elems[0].last_result == econv_after_output)
         ec->elems[0].last_result = econv_source_buffer_empty;
 
-    needreport_index = -1;
     for (i = ec->num_trans-1; 0 <= i; i--) {
         switch (ec->elems[i].last_result) {
           case econv_invalid_byte_sequence:
@@ -1203,7 +1191,6 @@ rb_trans_conv(rb_econv_t *ec,
           case econv_after_output:
           case econv_finished:
             sweep_start = i+1;
-            needreport_index = i;
             goto found_needreport;
 
           case econv_destination_buffer_full:
@@ -1854,6 +1841,7 @@ rb_econv_substr_append(rb_econv_t *ec, VALUE src, long off, long len, VALUE dst,
     src = rb_str_new_frozen(src);
     dst = rb_econv_append(ec, RSTRING_PTR(src) + off, len, dst, flags);
     RB_GC_GUARD(src);
+    OBJ_INFECT_RAW(dst, src);
     return dst;
 }
 
@@ -2606,7 +2594,7 @@ rb_econv_open_opts(const char *source_encoding, const char *destination_encoding
 }
 
 static int
-enc_arg(volatile VALUE *arg, const char **name_p, rb_encoding **enc_p)
+enc_arg(VALUE *arg, const char **name_p, rb_encoding **enc_p)
 {
     rb_encoding *enc;
     const char *n;
@@ -2630,7 +2618,7 @@ enc_arg(volatile VALUE *arg, const char **name_p, rb_encoding **enc_p)
 }
 
 static int
-str_transcode_enc_args(VALUE str, volatile VALUE *arg1, volatile VALUE *arg2,
+str_transcode_enc_args(VALUE str, VALUE *arg1, VALUE *arg2,
         const char **sname_p, rb_encoding **senc_p,
         const char **dname_p, rb_encoding **denc_p)
 {
@@ -2661,7 +2649,7 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
 {
     VALUE dest;
     VALUE str = *self;
-    volatile VALUE arg1, arg2;
+    VALUE arg1, arg2;
     long blen, slen;
     unsigned char *buf, *bp, *sp;
     const unsigned char *fromp;
@@ -2699,7 +2687,7 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
 		if (!NIL_P(ecopts)) {
 		    rep = rb_hash_aref(ecopts, sym_replace);
 		}
-		dest = rb_str_scrub(str, rep);
+		dest = rb_enc_str_scrub(senc, str, rep);
 		if (NIL_P(dest)) dest = str;
 		*self = dest;
 		return dencidx;
@@ -2739,6 +2727,8 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
     /* set encoding */
     if (!denc) {
 	dencidx = rb_define_dummy_encoding(dname);
+	RB_GC_GUARD(arg1);
+	RB_GC_GUARD(arg2);
     }
     *self = dest;
 
@@ -2902,6 +2892,11 @@ encoded_dup(VALUE newstr, VALUE str, int encidx)
     return str_encode_associate(newstr, encidx);
 }
 
+/*
+ * Document-class: Encoding::Converter
+ *
+ * Encoding conversion class.
+ */
 static void
 econv_free(void *ptr)
 {
@@ -2912,7 +2907,7 @@ econv_free(void *ptr)
 static size_t
 econv_memsize(const void *ptr)
 {
-    return ptr ? sizeof(rb_econv_t) : 0;
+    return sizeof(rb_econv_t);
 }
 
 static const rb_data_type_t econv_data_type = {
@@ -2991,7 +2986,7 @@ econv_s_asciicompat_encoding(VALUE klass, VALUE arg)
 
 static void
 econv_args(int argc, VALUE *argv,
-    volatile VALUE *snamev_p, volatile VALUE *dnamev_p,
+    VALUE *snamev_p, VALUE *dnamev_p,
     const char **sname_p, const char **dname_p,
     rb_encoding **senc_p, rb_encoding **denc_p,
     int *ecflags_p,
@@ -3135,7 +3130,7 @@ search_convpath_i(const char *sname, const char *dname, int depth, void *arg)
 static VALUE
 econv_s_search_convpath(int argc, VALUE *argv, VALUE klass)
 {
-    volatile VALUE snamev, dnamev;
+    VALUE snamev, dnamev;
     const char *sname, *dname;
     rb_encoding *senc, *denc;
     int ecflags;
@@ -3147,11 +3142,19 @@ econv_s_search_convpath(int argc, VALUE *argv, VALUE klass)
     convpath = Qnil;
     transcode_search_path(sname, dname, search_convpath_i, &convpath);
 
-    if (NIL_P(convpath))
-        rb_exc_raise(rb_econv_open_exc(sname, dname, ecflags));
+    if (NIL_P(convpath)) {
+        VALUE exc = rb_econv_open_exc(sname, dname, ecflags);
+        RB_GC_GUARD(snamev);
+        RB_GC_GUARD(dnamev);
+        rb_exc_raise(exc);
+    }
 
-    if (decorate_convpath(convpath, ecflags) == -1)
-        rb_exc_raise(rb_econv_open_exc(sname, dname, ecflags));
+    if (decorate_convpath(convpath, ecflags) == -1) {
+	VALUE exc = rb_econv_open_exc(sname, dname, ecflags);
+	RB_GC_GUARD(snamev);
+	RB_GC_GUARD(dnamev);
+	rb_exc_raise(exc);
+    }
 
     return convpath;
 }
@@ -3207,7 +3210,7 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
     DATA_PTR(self) = ec;
 
     for (i = 0; i < RARRAY_LEN(convpath); i++) {
-        volatile VALUE snamev, dnamev;
+        VALUE snamev, dnamev;
         VALUE pair;
         elt = rb_ary_entry(convpath, i);
         if (!NIL_P(pair = rb_check_array_type(elt))) {
@@ -3224,8 +3227,12 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
         }
         if (DECORATOR_P(sname, dname)) {
             ret = rb_econv_add_converter(ec, sname, dname, ec->num_trans);
-            if (ret == -1)
-                rb_raise(rb_eArgError, "decoration failed: %s", dname);
+	    if (ret == -1) {
+		VALUE msg = rb_sprintf("decoration failed: %s", dname);
+		RB_GC_GUARD(snamev);
+		RB_GC_GUARD(dnamev);
+		rb_exc_raise(rb_exc_new_str(rb_eArgError, msg));
+	    }
         }
         else {
             int j = ec->num_trans;
@@ -3234,8 +3241,12 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
             arg.index = ec->num_trans;
             arg.ret = 0;
             ret = transcode_search_path(sname, dname, rb_econv_init_by_convpath_i, &arg);
-            if (ret == -1 || arg.ret == -1)
-                rb_raise(rb_eArgError, "adding conversion failed: %s to %s", sname, dname);
+	    if (ret == -1 || arg.ret == -1) {
+		VALUE msg = rb_sprintf("adding conversion failed: %s to %s", sname, dname);
+		RB_GC_GUARD(snamev);
+		RB_GC_GUARD(dnamev);
+                rb_exc_raise(rb_exc_new_str(rb_eArgError, msg));
+	    }
             if (first) {
                 first = 0;
                 *senc_p = senc;
@@ -3329,7 +3340,7 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
  *   Convert LF to CR.
  * [:xml => :text]
  *   Escape as XML CharData.
- *   This form can be used as a HTML 4.0 #PCDATA.
+ *   This form can be used as an HTML 4.0 #PCDATA.
  *   - '&' -> '&amp;'
  *   - '<' -> '&lt;'
  *   - '>' -> '&gt;'
@@ -3337,7 +3348,7 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
  * [:xml => :attr]
  *   Escape as XML AttValue.
  *   The converted result is quoted as "...".
- *   This form can be used as a HTML 4.0 attribute value.
+ *   This form can be used as an HTML 4.0 attribute value.
  *   - '&' -> '&amp;'
  *   - '<' -> '&lt;'
  *   - '>' -> '&gt;'
@@ -3369,7 +3380,7 @@ static VALUE
 econv_init(int argc, VALUE *argv, VALUE self)
 {
     VALUE ecopts;
-    volatile VALUE snamev, dnamev;
+    VALUE snamev, dnamev;
     const char *sname, *dname;
     rb_encoding *senc, *denc;
     rb_econv_t *ec;
@@ -3768,8 +3779,10 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
 
     res = rb_econv_convert(ec, &ip, is, &op, os, flags);
     rb_str_set_len(output, op-(unsigned char *)RSTRING_PTR(output));
-    if (!NIL_P(input))
+    if (!NIL_P(input)) {
+        OBJ_INFECT_RAW(output, input);
         rb_str_drop_bytes(input, ip - (unsigned char *)RSTRING_PTR(input));
+    }
 
     if (NIL_P(output_bytesize_v) && res == econv_destination_buffer_full) {
         if (LONG_MAX / 2 < output_bytesize)
@@ -4058,7 +4071,7 @@ econv_insert_output(VALUE self, VALUE string)
 }
 
 /*
- * call-seq
+ * call-seq:
  *   ec.putback                    -> string
  *   ec.putback(max_numbytes)      -> string
  *
@@ -4089,10 +4102,9 @@ econv_putback(int argc, VALUE *argv, VALUE self)
     int putbackable;
     VALUE str, max;
 
-    rb_scan_args(argc, argv, "01", &max);
-
-    if (NIL_P(max))
+    if (!rb_check_arity(argc, 0, 1) || NIL_P(max = argv[0])) {
         n = rb_econv_putbackable(ec);
+    }
     else {
         n = NUM2INT(max);
         putbackable = rb_econv_putbackable(ec);

@@ -52,6 +52,8 @@ char *getenv();
 #endif
 char *getlogin();
 
+#define RUBY_ETC_VERSION "1.0.1"
+
 #include "constdefs.h"
 
 /* call-seq:
@@ -215,9 +217,10 @@ etc_getpwnam(VALUE obj, VALUE nam)
 {
 #ifdef HAVE_GETPWENT
     struct passwd *pwd;
+    const char *p = StringValueCStr(nam);
 
-    SafeStringValue(nam);
-    pwd = getpwnam(RSTRING_PTR(nam));
+    rb_check_safe_obj(nam);
+    pwd = getpwnam(p);
     if (pwd == 0) rb_raise(rb_eArgError, "can't find user for %"PRIsVALUE, nam);
     return setup_passwd(pwd);
 #else
@@ -228,7 +231,7 @@ etc_getpwnam(VALUE obj, VALUE nam)
 #ifdef HAVE_GETPWENT
 static int passwd_blocking = 0;
 static VALUE
-passwd_ensure(void)
+passwd_ensure(VALUE _)
 {
     endpwent();
     passwd_blocking = (int)Qfalse;
@@ -236,7 +239,7 @@ passwd_ensure(void)
 }
 
 static VALUE
-passwd_iterate(void)
+passwd_iterate(VALUE _)
 {
     struct passwd *pw;
 
@@ -458,9 +461,10 @@ etc_getgrnam(VALUE obj, VALUE nam)
 {
 #ifdef HAVE_GETGRENT
     struct group *grp;
+    const char *p = StringValueCStr(nam);
 
-    SafeStringValue(nam);
-    grp = getgrnam(RSTRING_PTR(nam));
+    rb_check_safe_obj(nam);
+    grp = getgrnam(p);
     if (grp == 0) rb_raise(rb_eArgError, "can't find group for %"PRIsVALUE, nam);
     return setup_group(grp);
 #else
@@ -471,7 +475,7 @@ etc_getgrnam(VALUE obj, VALUE nam)
 #ifdef HAVE_GETGRENT
 static int group_blocking = 0;
 static VALUE
-group_ensure(void)
+group_ensure(VALUE _)
 {
     endgrent();
     group_blocking = (int)Qfalse;
@@ -480,7 +484,7 @@ group_ensure(void)
 
 
 static VALUE
-group_iterate(void)
+group_iterate(VALUE _)
 {
     struct group *pw;
 
@@ -625,8 +629,9 @@ VALUE rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc);
  * Returns system configuration directory.
  *
  * This is typically "/etc", but is modified by the prefix used when Ruby was
- * compiled. For example, if Ruby is built and installed in /usr/local, returns
- * "/usr/local/etc".
+ * compiled. For example, if Ruby is built and installed in /usr/local,
+ * returns "/usr/local/etc" on other platforms than Windows.
+ * On Windows, this always returns the directory provided by the system.
  */
 static VALUE
 etc_sysconfdir(VALUE obj)
@@ -642,7 +647,7 @@ etc_sysconfdir(VALUE obj)
  * Returns system temporary directory; typically "/tmp".
  */
 static VALUE
-etc_systmpdir(void)
+etc_systmpdir(VALUE _)
 {
     VALUE tmpdir;
 #ifdef _WIN32
@@ -664,9 +669,15 @@ etc_systmpdir(void)
     if (len > 0) {
 	tmpstr = path;
 	tmplen = len - 1;
+	if (len > sizeof(path)) tmpstr = 0;
     }
 # endif
     tmpdir = rb_filesystem_str_new(tmpstr, tmplen);
+# if defined _CS_DARWIN_USER_TEMP_DIR
+    if (!tmpstr) {
+	confstr(_CS_DARWIN_USER_TEMP_DIR, RSTRING_PTR(tmpdir), len);
+    }
+# endif
 #endif
     FL_UNSET(tmpdir, FL_TAINT);
     return tmpdir;
@@ -745,9 +756,6 @@ etc_uname(VALUE obj)
 # ifndef PROCESSOR_ARCHITECTURE_AMD64
 #   define PROCESSOR_ARCHITECTURE_AMD64 9
 # endif
-# ifndef PROCESSOR_ARCHITECTURE_IA64
-#   define PROCESSOR_ARCHITECTURE_IA64 6
-# endif
 # ifndef PROCESSOR_ARCHITECTURE_INTEL
 #   define PROCESSOR_ARCHITECTURE_INTEL 0
 # endif
@@ -758,9 +766,6 @@ etc_uname(VALUE obj)
 	break;
       case PROCESSOR_ARCHITECTURE_ARM:
 	mach = "ARM";
-	break;
-      case PROCESSOR_ARCHITECTURE_IA64:
-	mach = "IA64";
 	break;
       case PROCESSOR_ARCHITECTURE_INTEL:
 	mach = "x86";
@@ -1006,7 +1011,7 @@ etc_nprocessors(VALUE obj)
 
     ncpus = etc_nprocessors_affin();
     if (ncpus != -1) {
-       return INT2NUM(ncpus);
+	return INT2NUM(ncpus);
     }
     /* fallback to _SC_NPROCESSORS_ONLN */
 #endif
@@ -1059,6 +1064,7 @@ Init_etc(void)
     VALUE mEtc;
 
     mEtc = rb_define_module("Etc");
+    rb_define_const(mEtc, "VERSION", rb_str_new_cstr(RUBY_ETC_VERSION));
     init_constants(mEtc);
 
     rb_define_module_function(mEtc, "getlogin", etc_getlogin, 0);

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 begin
   require "socket"
 rescue LoadError
@@ -7,7 +9,6 @@ require "test/unit"
 require "tempfile"
 require "timeout"
 require "tmpdir"
-require "thread"
 require "io/nonblock"
 
 class TestSocket_UNIXSocket < Test::Unit::TestCase
@@ -32,6 +33,26 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       w.close
       r1.close
       r2.close if r2 && !r2.closed?
+    end
+  end
+
+  def test_fd_passing_class_mode
+    UNIXSocket.pair do |s1, s2|
+      s1.send_io(s1.fileno)
+      r = s2.recv_io(nil)
+      assert_kind_of Integer, r, 'recv_io with klass=nil returns integer FD'
+      assert_not_equal s1.fileno, r
+      r = IO.for_fd(r)
+      assert_equal s1.stat.ino, r.stat.ino
+      r.close
+
+      s1.send_io(s1)
+      # klass = UNIXSocket FIXME: [ruby-core:71860] [Bug #11778]
+      klass = IO
+      r = s2.recv_io(klass, 'r+')
+      assert_instance_of klass, r, 'recv_io with proper klass'
+      assert_not_equal s1.fileno, r.fileno
+      r.close
     end
   end
 
@@ -120,7 +141,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     r1, w = IO.pipe
     s1, s2 = UNIXSocket.pair
     s1.nonblock = s2.nonblock = true
-    lock = Mutex.new
+    lock = Thread::Mutex.new
     nr = 0
     x = 2
     y = 1000
@@ -263,6 +284,16 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     File.unlink path if path && File.socket?(path)
   end
 
+  def test_open_nul_byte
+    tmpfile = Tempfile.new("s")
+    path = tmpfile.path
+    tmpfile.close(true)
+    assert_raise(ArgumentError) {UNIXServer.open(path+"\0")}
+    assert_raise(ArgumentError) {UNIXSocket.open(path+"\0")}
+  ensure
+    File.unlink path if path && File.socket?(path)
+  end
+
   def test_addr
     bound_unix_socket(UNIXServer) {|serv, path|
       UNIXSocket.open(path) {|c|
@@ -386,7 +417,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     assert_equal("", s1.recv(10))
     assert_raise(IO::EAGAINWaitReadable) { s1.recv_nonblock(10) }
 
-    buf = ""
+    buf = "".dup
     s2.send("BBBBBB", 0)
     IO.select([s1])
     rv = s1.recv(100, 0, buf)

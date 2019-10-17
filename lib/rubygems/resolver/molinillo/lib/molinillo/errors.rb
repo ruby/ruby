@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module Gem::Resolver::Molinillo
   # An error that occurred during the resolution process
   class ResolverError < StandardError; end
@@ -11,6 +12,7 @@ module Gem::Resolver::Molinillo
     # @return [Array<Object>] the specifications that depended upon {#dependency}
     attr_accessor :required_by
 
+    # Initializes a new error with the given missing dependency.
     # @param [Object] dependency @see {#dependency}
     # @param [Array<Object>] required_by @see {#required_by}
     def initialize(dependency, required_by = [])
@@ -19,10 +21,12 @@ module Gem::Resolver::Molinillo
       super()
     end
 
+    # The error message for the missing dependency, including the specifications
+    # that had this dependency.
     def message
       sources = required_by.map { |r| "`#{r}`" }.join(' and ')
       message = "Unable to find a specification for `#{dependency}`"
-      message << " depended upon by #{sources}" unless sources.empty?
+      message += " depended upon by #{sources}" unless sources.empty?
       message
     end
   end
@@ -36,6 +40,7 @@ module Gem::Resolver::Molinillo
     # [Set<Object>] the dependencies responsible for causing the error
     attr_reader :dependencies
 
+    # Initializes a new error with the given circular vertices.
     # @param [Array<DependencyGraph::Vertex>] nodes the nodes in the dependency
     #   that caused the error
     def initialize(nodes)
@@ -50,6 +55,7 @@ module Gem::Resolver::Molinillo
     #   resolution to fail
     attr_reader :conflicts
 
+    # Initializes a new error with the given version conflicts.
     # @param [{String => Resolution::Conflict}] conflicts see {#conflicts}
     def initialize(conflicts)
       pairs = []

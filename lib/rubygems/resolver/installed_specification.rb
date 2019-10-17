@@ -1,10 +1,11 @@
+# frozen_string_literal: true
 ##
 # An InstalledSpecification represents a gem that is already installed
 # locally.
 
 class Gem::Resolver::InstalledSpecification < Gem::Resolver::SpecSpecification
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     self.class === other and
       @set  == other.set and
       @spec == other.spec
@@ -14,7 +15,7 @@ class Gem::Resolver::InstalledSpecification < Gem::Resolver::SpecSpecification
   # This is a null install as this specification is already installed.
   # +options+ are ignored.
 
-  def install options = {}
+  def install(options = {})
     yield nil
   end
 
@@ -29,7 +30,7 @@ class Gem::Resolver::InstalledSpecification < Gem::Resolver::SpecSpecification
     super
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, '[InstalledSpecification', ']' do
       q.breakable
       q.text "name: #{name}"
@@ -55,4 +56,3 @@ class Gem::Resolver::InstalledSpecification < Gem::Resolver::SpecSpecification
   end
 
 end
-

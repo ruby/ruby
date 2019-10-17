@@ -1,7 +1,6 @@
 .\"Ruby is copyrighted by Yukihiro Matsumoto <matz@netlab.jp>.
-.Dd December 15, 2014
-.Dt RUBY(1) "" "Ruby Programmers Reference Guide"
-.\".Dt RUBY 1
+.Dd April 14, 2018
+.Dt RUBY \&1 "Ruby Programmer's Reference Guide"
 .Os UNIX
 .Sh NAME
 .Nm ruby
@@ -14,16 +13,16 @@
 .Op Fl 0 Ns Op Ar octal
 .Op Fl C Ar directory
 .Op Fl E Ar external Ns Op : Ns Ar internal
-.Op Fl F Ar pattern
+.Op Fl F Ns Op Ar pattern
 .Op Fl I Ar directory
-.Op Fl K Ar c
+.Op Fl K Ns Op Ar c
 .Op Fl T Ns Op Ar level
 .Op Fl W Ns Op Ar level
 .Op Fl e Ar command
 .Op Fl i Ns Op Ar extension
 .Op Fl r Ar library
 .Op Fl x Ns Op Ar directory
-.Op - Ns Bro Cm enable Ns | Ns Cm disable Brc Ns - Ns Ar FEATURE
+.Op Fl - Ns Bro Cm enable Ns | Ns Cm disable Brc Ns - Ns Ar FEATURE
 .Op Fl -dump Ns = Ns Ar target
 .Op Fl -verbose
 .Op Fl -
@@ -120,24 +119,36 @@ On most
 systems, you can load object files into the Ruby interpreter
 on-the-fly.
 .It Sy "Rich libraries"
-Libraries called "builtin libraries" and "standard libraries" are bundled with Ruby.
-And you can obtain more libraries via the package management system called `RubyGems'.
-.Pp
-Moreover there are thousands of Ruby projects on GitHub
-.Aq Pa https://github.com/languages/Ruby .
+In addition to the
+.Dq builtin libraries
+and
+.Dq standard libraries
+that are bundled with Ruby, a vast amount of third-party libraries
+.Pq Dq gems
+are available via the package management system called
+.Sq RubyGems ,
+namely the
+.Xr gem 1
+command.  Visit RubyGems.org
+.Pq Lk https://rubygems.org/
+to find the gems you need, and explore GitHub
+.Pq Lk https://github.com/
+to see how they are being developed and used.
 .El
 .Pp
 .Sh OPTIONS
-Ruby interpreter accepts following command-line options (switches).
+The Ruby interpreter accepts the following command-line options (switches).
 They are quite similar to those of
 .Xr perl 1 .
 .Bl -tag -width "1234567890123" -compact
 .Pp
 .It Fl -copyright
-Prints the copyright notice.
+Prints the copyright notice, and quits immediately without running any
+script.
 .Pp
 .It Fl -version
-Prints the version of Ruby interpreter.
+Prints the version of the Ruby interpreter, and quits immediately without
+running any script.
 .Pp
 .It Fl 0 Ns Op Ar octal
 (The digit
@@ -207,6 +218,18 @@ on machines that don't support it, in the following manner:
 # This line makes the next one a comment in Ruby \e
   exec /usr/local/bin/ruby -S $0 $*
 .Ed
+.Pp
+On some systems
+.Li "$0"
+does not always contain the full pathname, so you need the
+.Fl S
+switch to tell Ruby to search for the script if necessary (to handle embedded
+spaces and such).  A better construct than
+.Li "$*"
+would be
+.Li ${1+"$@"} ,
+but it does not work if the script is being interpreted by
+.Xr csh 1 .
 .Pp
 .It Fl T Ns Op Ar level=1
 Turns on taint checks at the specified level (default 1).
@@ -333,18 +356,6 @@ and set the corresponding variable in the script.  For example:
 print "true\en" if $xyz
 .Ed
 .Pp
-On some systems
-.Li "$0"
-does not always contain the full pathname, so you need the
-.Fl S
-switch to tell Ruby to search for the script if necessary (to handle embedded
-spaces and such).  A better construct than
-.Li "$*"
-would be
-.Li ${1+"$@"} ,
-but it does not work if the script is being interpreted by
-.Xr csh 1 .
-.Pp
 .It Fl v
 Enables verbose mode.  Ruby will print its version at the beginning
 and set the variable
@@ -386,8 +397,7 @@ debug the Ruby interpreter.
 .It Fl -disable- Ns Ar FEATURE
 .It Fl -enable- Ns Ar FEATURE
 Disables (or enables) the specified
-.Ar FEATURE Ns
-\&.
+.Ar FEATURE .
 .Bl -tag -width "--disable-rubyopt" -compact
 .It Fl -disable-gems
 .It Fl -enable-gems
@@ -409,26 +419,49 @@ Disables (or enables) all features.
 .El
 .Pp
 .It Fl -dump Ns = Ns Ar target
-DO NOT USE.
+Dump some informations.
 .Pp
 Prints the specified target.
 .Ar target
 can be one of;
 .Bl -hang -offset indent
+.It Sy version
+version description same as
+.Fl -version
+.It Sy usage
+brief usage message same as
+.Fl h
+.It Sy help
+Show long help message same as
+.Fl -help
+.It Sy syntax
+check of syntax same as
+.Fl c
+.Fl -yydebug
+.It Sy yydebug
+compiler debug mode, same as
+.Fl -yydebug
+.Pp
+Only specify this switch if you are going to debug the Ruby interpreter.
+.It Sy parsetree
+.It Sy parsetree_with_comment
+AST nodes tree
+.Pp
+Only specify this switch if you are going to debug the Ruby interpreter.
 .It Sy insns
 disassembled instructions
 .Pp
-.El
-.Pp
 Only specify this switch if you are going to debug the Ruby interpreter.
+.El
 .Pp
 .It Fl -verbose
 Enables verbose mode without printing version message at the
 beginning.  It sets the
 .Li "$VERBOSE"
 variable to true.
-If this switch is given, and no other switches are present, Ruby quits
-after printing its version.
+If this switch is given, and no script arguments (script file or
+.Fl e
+options) are present, Ruby quits immediately.
 .El
 .Pp
 .Sh ENVIRONMENT
@@ -484,14 +517,14 @@ as below.
 .Pp
 .Sh GC ENVIRONMENT
 The Ruby garbage collector (GC) tracks objects in fixed-sized slots,
-but each object may have auxillary memory allocations handled by the
+but each object may have auxiliary memory allocations handled by the
 malloc family of C standard library calls (
 .Xr malloc 3 ,
 .Xr calloc 3 ,
 and
 .Xr realloc 3 ) .
 In this documentatation, the "heap" refers to the Ruby object heap
-of fixed-sized slots, while "malloc" refers to auxillary
+of fixed-sized slots, while "malloc" refers to auxiliary
 allocations commonly referred to as the "process heap".
 Thus there are at least two possible ways to trigger GC:
 .Bl -hang -offset indent
@@ -512,7 +545,7 @@ Reaching the old malloc limit.
 .El
 .Pp
 There are currently 4 possible areas where the GC may be tuned by
-the the following 11 environment variables:
+the following 11 environment variables:
 .Bl -hang -compact -width "RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR"
 .It Ev RUBY_GC_HEAP_INIT_SLOTS
 Initial allocation slots.  Introduced in Ruby 2.1, default: 10000.
@@ -601,29 +634,31 @@ default: 262144 or 524288
 .Pp
 .El
 .Sh SEE ALSO
-.Bl -hang -compact -width "http://www.ruby-lang.org/123"
-.It https://www.ruby-lang.org/
+.Bl -hang -compact -width "https://www.ruby-toolbox.com/"
+.It Lk https://www.ruby-lang.org/
 The official web site.
-.It https://www.ruby-toolbox.com/
+.It Lk https://www.ruby-toolbox.com/
 Comprehensive catalog of Ruby libraries.
 .El
 .Pp
 .Sh REPORTING BUGS
 .Bl -bullet
-.Li Security vulnerabilities should be reported via an email to
-.Aq security@ruby-lang.org Ns
-.Li .
-Reported problems will be published after they've been fixed.
+.It
+Security vulnerabilities should be reported via an email to
+.Mt security@ruby-lang.org .
+Reported problems will be published after being fixed.
 .Pp
-.Li And you can report other bugs and feature requests via the
-Ruby Issue Tracking System (https://bugs.ruby-lang.org/).
+.It
+Other bugs and feature requests can be reported via the
+Ruby Issue Tracking System
+.Pq Lk https://bugs.ruby-lang.org/ .
 Do not report security vulnerabilities
-via the system because it publishes the vulnerabilities immediately.
+via this system because it publishes the vulnerabilities immediately.
 .El
 .Sh AUTHORS
 Ruby is designed and implemented by
 .An Yukihiro Matsumoto Aq matz@netlab.jp .
 .Pp
 See
-.Aq Pa https://bugs.ruby-lang.org/projects/ruby/wiki/Contributors
+.Aq Lk https://bugs.ruby-lang.org/projects/ruby/wiki/Contributors
 for contributors to Ruby.

@@ -1,14 +1,15 @@
+#frozen_string_literal: false
 require 'json/version'
 require 'json/generic_object'
 
 module JSON
   class << self
-    # If _object_ is string-like, parse the string and return the parsed result
-    # as a Ruby data structure. Otherwise generate a JSON text from the Ruby
-    # data structure object and return it.
+    # If _object_ is string-like, parse the string and return the parsed
+    # result as a Ruby data structure. Otherwise generate a JSON text from the
+    # Ruby data structure object and return it.
     #
-    # The _opts_ argument is passed through to generate/parse respectively. See
-    # generate and parse for their documentation.
+    # The _opts_ argument is passed through to generate/parse respectively.
+    # See generate and parse for their documentation.
     def [](object, opts = {})
       if object.respond_to? :to_str
         JSON.parse(object.to_str, opts)
@@ -24,7 +25,7 @@ module JSON
     # Set the JSON parser class _parser_ to be used by JSON.
     def parser=(parser) # :nodoc:
       @parser = parser
-      remove_const :Parser if JSON.const_defined_in?(self, :Parser)
+      remove_const :Parser if const_defined?(:Parser, false)
       const_set :Parser, parser
     end
 
@@ -35,8 +36,8 @@ module JSON
     def deep_const_get(path) # :nodoc:
       path.to_s.split(/::/).inject(Object) do |p, c|
         case
-        when c.empty?                     then p
-        when JSON.const_defined_in?(p, c) then p.const_get(c)
+        when c.empty?                  then p
+        when p.const_defined?(c, true) then p.const_get(c)
         else
           begin
             p.const_missing(c)
@@ -138,10 +139,10 @@ module JSON
   # _opts_ can have the following
   # keys:
   # * *max_nesting*: The maximum depth of nesting allowed in the parsed data
-  #   structures. Disable depth checking with :max_nesting => false. It defaults
-  #   to 100.
+  #   structures. Disable depth checking with :max_nesting => false. It
+  #   defaults to 100.
   # * *allow_nan*: If set to true, allow NaN, Infinity and -Infinity in
-  #   defiance of RFC 4627 to be parsed by the Parser. This option defaults
+  #   defiance of RFC 7159 to be parsed by the Parser. This option defaults
   #   to false.
   # * *symbolize_names*: If set to true, returns symbols for the names
   #   (keys) in a JSON object. Otherwise strings are returned. Strings are
@@ -152,7 +153,7 @@ module JSON
   # * *object_class*: Defaults to Hash
   # * *array_class*: Defaults to Array
   def parse(source, opts = {})
-    Parser.new(source, opts).parse
+    Parser.new(source, **(opts||{})).parse
   end
 
   # Parse the JSON document _source_ into a Ruby data structure and return it.
@@ -161,11 +162,11 @@ module JSON
   #
   # _opts_ can have the following keys:
   # * *max_nesting*: The maximum depth of nesting allowed in the parsed data
-  #   structures. Enable depth checking with :max_nesting => anInteger. The parse!
-  #   methods defaults to not doing max depth checking: This can be dangerous
-  #   if someone wants to fill up your stack.
+  #   structures. Enable depth checking with :max_nesting => anInteger. The
+  #   parse! methods defaults to not doing max depth checking: This can be
+  #   dangerous if someone wants to fill up your stack.
   # * *allow_nan*: If set to true, allow NaN, Infinity, and -Infinity in
-  #   defiance of RFC 4627 to be parsed by the Parser. This option defaults
+  #   defiance of RFC 7159 to be parsed by the Parser. This option defaults
   #   to true.
   # * *create_additions*: If set to false, the Parser doesn't create
   #   additions even if a matching class and create_id was found. This option
@@ -174,8 +175,8 @@ module JSON
     opts = {
       :max_nesting  => false,
       :allow_nan    => true
-    }.update(opts)
-    Parser.new(source, opts).parse
+    }.merge(opts)
+    Parser.new(source, **(opts||{})).parse
   end
 
   # Generate a JSON document from the Ruby data structure _obj_ and return
@@ -295,13 +296,13 @@ module JSON
     # The global default options for the JSON.load method:
     #  :max_nesting: false
     #  :allow_nan:   true
-    #  :quirks_mode: true
+    #  :allow_blank:  true
     attr_accessor :load_default_options
   end
   self.load_default_options = {
     :max_nesting      => false,
     :allow_nan        => true,
-    :quirks_mode      => true,
+    :allow_blank       => true,
     :create_additions => true,
   }
 
@@ -328,7 +329,7 @@ module JSON
     elsif source.respond_to?(:read)
       source = source.read
     end
-    if opts[:quirks_mode] && (source.nil? || source.empty?)
+    if opts[:allow_blank] && (source.nil? || source.empty?)
       source = 'null'
     end
     result = parse(source, opts)
@@ -357,13 +358,12 @@ module JSON
     # The global default options for the JSON.dump method:
     #  :max_nesting: false
     #  :allow_nan:   true
-    #  :quirks_mode: true
+    #  :allow_blank: true
     attr_accessor :dump_default_options
   end
   self.dump_default_options = {
     :max_nesting => false,
     :allow_nan   => true,
-    :quirks_mode => true,
   }
 
   # Dumps _obj_ as a JSON string, i.e. calls generate on the object and returns
@@ -402,37 +402,9 @@ module JSON
     raise ArgumentError, "exceed depth limit"
   end
 
-  # Swap consecutive bytes of _string_ in place.
-  def self.swap!(string) # :nodoc:
-    0.upto(string.size / 2) do |i|
-      break unless string[2 * i + 1]
-      string[2 * i], string[2 * i + 1] = string[2 * i + 1], string[2 * i]
-    end
-    string
-  end
-
-  # Shortcut for iconv.
-  if ::String.method_defined?(:encode)
-    # Encodes string using Ruby's _String.encode_
-    def self.iconv(to, from, string)
-      string.encode(to, from)
-    end
-  else
-    require 'iconv'
-    # Encodes string using _iconv_ library
-    def self.iconv(to, from, string)
-      Iconv.conv(to, from, string)
-    end
-  end
-
-  if ::Object.method(:const_defined?).arity == 1
-    def self.const_defined_in?(modul, constant)
-      modul.const_defined?(constant)
-    end
-  else
-    def self.const_defined_in?(modul, constant)
-      modul.const_defined?(constant, false)
-    end
+  # Encodes string using Ruby's _String.encode_
+  def self.iconv(to, from, string)
+    string.encode(to, from)
   end
 end
 

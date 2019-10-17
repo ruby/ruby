@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestAssignment < Test::Unit::TestCase
@@ -91,6 +92,11 @@ class TestAssignment < Test::Unit::TestCase
     a,b,*c = *[*[1,2]]; assert_equal([1,2,[]], [a,b,c])
   end
 
+  def test_assign_rescue
+    a = raise rescue 2; assert_equal(2, a)
+    a, b = raise rescue [3,4]; assert_equal([3, 4], [a, b])
+  end
+
   def test_assign_abbreviated
     bug2050 = '[ruby-core:25629]'
     a = Hash.new {[]}
@@ -113,32 +119,32 @@ class TestAssignment < Test::Unit::TestCase
       def []=(i, a); 42; end
     end
 
-    assert_raise(NoMethodError) {
+    assert_raise(NoMethodError, bug11096) {
       o.instance_eval {o.foo = 1}
     }
-    assert_nothing_raised(NoMethodError) {
+    assert_nothing_raised(NoMethodError, bug11096) {
       assert_equal(1, o.instance_eval {self.foo = 1})
     }
 
-    assert_raise(NoMethodError) {
+    assert_raise(NoMethodError, bug11096) {
       o.instance_eval {o[0] = 1}
     }
-    assert_nothing_raised(NoMethodError) {
+    assert_nothing_raised(NoMethodError, bug11096) {
       assert_equal(1, o.instance_eval {self[0] = 1})
     }
 
-    assert_raise(NoMethodError, bug11096) {
-      assert_equal(43, o.instance_eval {self.foo += 1})
+    assert_nothing_raised(NoMethodError, bug11096) {
+      o.instance_eval {self.foo += 1}
     }
-    assert_raise(NoMethodError, bug11096) {
-      assert_equal(1, o.instance_eval {self.foo &&= 1})
+    assert_nothing_raised(NoMethodError, bug11096) {
+      o.instance_eval {self.foo &&= 1}
     }
 
-    assert_raise(NoMethodError, bug11096) {
-      assert_equal(43, o.instance_eval {self[0] += 1})
+    assert_nothing_raised(NoMethodError, bug11096) {
+      o.instance_eval {self[0] += 1}
     }
-    assert_raise(NoMethodError, bug11096) {
-      assert_equal(1, o.instance_eval {self[0] &&= 1})
+    assert_nothing_raised(NoMethodError, bug11096) {
+      o.instance_eval {self[0] &&= 1}
     }
   end
 
@@ -479,11 +485,10 @@ class TestAssignment < Test::Unit::TestCase
     assert_equal 1, a
     assert_equal [2, 3], b
 
-    # not supported yet
-    #a, *b, c = 1, 2, 3, 4
-    #assert_equal 1, a
-    #assert_equal [2,3], b
-    #assert_equal 4, c
+    a, *b, c = 1, 2, 3, 4
+    assert_equal 1, a
+    assert_equal [2,3], b
+    assert_equal 4, c
 
     a = 1, 2
     assert_equal [1, 2], a
@@ -550,6 +555,11 @@ class TestAssignment < Test::Unit::TestCase
     assert_equal [1,2], [X,Y]
     a, b = Base::A, Base::B
     assert_equal [3,4], [a,b]
+  end
+
+  def test_massign_in_cond
+    result = eval("if (a, b = MyObj.new); [a, b]; end", nil, __FILE__, __LINE__)
+    assert_equal [[1,2],[3,4]], result
   end
 end
 
@@ -756,5 +766,23 @@ class TestAssignmentGen < Test::Unit::TestCase
     end
     o = bug9448.new
     assert_equal("ok", o['current'] = "ok")
+  end
+
+  def test_massign_aref_lhs_splat
+    bug11970 = '[ruby-core:72777] [Bug #11970]'
+    h = {}
+    k = [:key]
+    h[*k], = ["ok", "ng"]
+    assert_equal("ok", h[:key], bug11970)
+  end
+
+  def test_chainged_assign_command
+    all_assertions do |a|
+      asgn = %w'= +='
+      asgn.product(asgn) do |a1, a2|
+        stmt = "a #{a1} b #{a2} raise 'x'"
+        a.for(stmt) {assert_valid_syntax(stmt)}
+      end
+    end
   end
 end

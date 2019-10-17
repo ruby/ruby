@@ -1,5 +1,8 @@
 #!ruby
 
+# Filter for preventing Doxygen from processing RDoc comments.
+# Used by the Doxygen template.
+
 ARGF.binmode
 source = ARGF.read
 source = source.gsub(%r{/\*([!*])((?!\*/).+?)\*/}m) do |comment|

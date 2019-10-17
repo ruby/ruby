@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'psych/scalar_scanner'
 require 'psych/class_loader'
 require 'psych/exception'
@@ -69,11 +70,11 @@ module Psych
             o.value
           end
         when '!ruby/object:BigDecimal'
-          require 'bigdecimal'
+          require 'bigdecimal' unless defined? BigDecimal
           class_loader.big_decimal._load o.value
         when "!ruby/object:DateTime"
           class_loader.date_time
-          require 'date'
+          require 'date' unless defined? DateTime
           @ss.parse_time(o.value).to_datetime
         when '!ruby/encoding'
           ::Encoding.find o.value
@@ -251,6 +252,8 @@ module Psych
 
           e = build_exception((resolve_class($1) || class_loader.exception),
                               h.delete('message'))
+
+          e.set_backtrace h.delete('backtrace') if h.key? 'backtrace'
           init_with(e, h, o)
 
         when '!set', 'tag:yaml.org,2002:set'
@@ -330,12 +333,13 @@ module Psych
         list
       end
 
+      SHOVEL = '<<'
       def revive_hash hash, o
         o.children.each_slice(2) { |k,v|
-          key = accept(k)
+          key = deduplicate(accept(k))
           val = accept(v)
 
-          if key == '<<' && k.tag != "tag:yaml.org,2002:str"
+          if key == SHOVEL && k.tag != "tag:yaml.org,2002:str"
             case v
             when Nodes::Alias, Nodes::Mapping
               begin
@@ -364,6 +368,28 @@ module Psych
         hash
       end
 
+      if String.method_defined?(:-@)
+        def deduplicate key
+          if key.is_a?(String)
+            # It is important to untaint the string, otherwise it won't
+            # be deduplicated into and fstring, but simply frozen.
+            -(key.untaint)
+          else
+            key
+          end
+        end
+      else
+        def deduplicate key
+          if key.is_a?(String)
+            # Deduplication is not supported by this implementation,
+            # but we emulate it's side effects
+            key.untaint.freeze
+          else
+            key
+          end
+        end
+      end
+
       def merge_key hash, key, val
       end
 
@@ -378,11 +404,6 @@ module Psych
 
         if o.respond_to?(:init_with)
           o.init_with c
-        elsif o.respond_to?(:yaml_initialize)
-          if $VERBOSE
-            warn "Implementing #{o.class}#yaml_initialize is deprecated, please implement \"init_with(coder)\""
-          end
-          o.yaml_initialize c.tag, c.map
         else
           h.each { |k,v| o.instance_variable_set(:"@#{k}", v) }
         end

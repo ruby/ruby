@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 
 class TestGemUnsatisfiableDependencyError < Gem::TestCase
@@ -29,4 +30,3 @@ class TestGemUnsatisfiableDependencyError < Gem::TestCase
   end
 
 end
-

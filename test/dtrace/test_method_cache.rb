@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require_relative 'helper'
 
 module DTrace
@@ -8,9 +9,9 @@ module DTrace
         class String; def abc() end end
         class Object; def abc() end end
       code
-        assert_not_includes lines, "String #{rbfile} 1\n"
-        assert_includes     lines, "String #{rbfile} 2\n"
-        assert_includes     lines, "global #{rbfile} 3\n"
+        assert_not_include lines, "String #{rbfile} 1\n"
+        assert_include     lines, "String #{rbfile} 2\n"
+        assert_include     lines, "global #{rbfile} 3\n"
       end
     end
 
@@ -18,7 +19,7 @@ module DTrace
     def probe
       <<-eoprobe
 ruby$target:::method-cache-clear
-/arg1/
+/arg1 && arg2/
 {
   printf("%s %s %d\\n", copyinstr(arg0), copyinstr(arg1), arg2);
 }

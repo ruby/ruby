@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # OptionParser internal utility
 
 class << OptionParser

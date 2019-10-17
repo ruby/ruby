@@ -40,19 +40,28 @@ encdirs.each do |encdir|
     files[fn] = true
     open(File.join(encdir,fn)) do |f|
       name = nil
+      skip_ifndef_ruby = false
+      encoding_def = false
       f.each_line do |line|
-        if (/^OnigEncodingDefine/ =~ line)..(/"(.*?)"/ =~ line)
-          if $1
-            if name
-              lines << %[ENC_SET_BASE("#$1", "#{name}");]
-            else
-              name = $1
-            end
-            check_duplication(defs, $1, fn, $.)
-            next if BUILTIN_ENCODINGS[name]
-            encodings << $1
-            count += 1
+        case line
+        when /^#ifndef RUBY/
+          skip_ifndef_ruby = true
+        when /^#endif/
+          skip_ifndef_ruby = false
+        end
+        next if skip_ifndef_ruby
+        encoding_def = true if /^OnigEncodingDefine/ =~ line
+        if encoding_def && /"(.*?)"/ =~ line
+          encoding_def = false
+          if name
+            lines << %[ENC_SET_BASE("#$1", "#{name}");]
+          else
+            name = $1
           end
+          check_duplication(defs, $1, fn, $.)
+          next if BUILTIN_ENCODINGS[name]
+          encodings << $1
+          count += 1
         else
           case line
           when /^\s*rb_enc_register\(\s*"([^"]+)"/

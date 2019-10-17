@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module Psych
   module Nodes
     ###
@@ -51,6 +52,8 @@ module Psych
         @implicit = implicit
         @style    = style
       end
+
+      def mapping?; true; end
     end
   end
 end

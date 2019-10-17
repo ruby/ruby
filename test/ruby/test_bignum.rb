@@ -1,12 +1,44 @@
+# frozen_string_literal: false
 require 'test/unit'
+begin
+  require '-test-/integer'
+rescue LoadError
+else
 
 class TestBignum < Test::Unit::TestCase
+  FIXNUM_MIN = RbConfig::LIMITS['FIXNUM_MIN']
+  FIXNUM_MAX = RbConfig::LIMITS['FIXNUM_MAX']
+
+  BIGNUM_MIN = FIXNUM_MAX + 1
+
+  f = BIGNUM_MIN
+  n = 0
+  until f == 0
+    f >>= 1
+    n += 1
+  end
+  BIGNUM_MIN_BITS = n
+
+  T_ZERO = 0.to_bignum
+  T_ONE  = 1.to_bignum
+  T_MONE = (-1).to_bignum
+  T31  = (2**31).to_bignum   # 2147483648
+  T31P = (T31 - 1).to_bignum # 2147483647
+  T32  = (2**32).to_bignum   # 4294967296
+  T32P = (T32 - 1).to_bignum # 4294967295
+  T64  = (2**64).to_bignum   # 18446744073709551616
+  T64P = (T64 - 1).to_bignum # 18446744073709551615
+  T128  = (2**128).to_bignum
+  T128P = (T128 - 1).to_bignum
+  T1024  = (2**1024).to_bignum
+  T1024P = (T1024 - 1).to_bignum
+
   def setup
     @verbose = $VERBOSE
     $VERBOSE = nil
     @fmax = Float::MAX.to_i
     @fmax2 = @fmax * 2
-    @big = (1 << 63) - 1
+    @big = (1 << BIGNUM_MIN_BITS) - 1
   end
 
   def teardown
@@ -23,6 +55,21 @@ class TestBignum < Test::Unit::TestCase
     return f
   end
 
+  def test_prepare
+    assert_bignum(@big)
+    assert_bignum(T_ZERO)
+    assert_bignum(T_ONE)
+    assert_bignum(T_MONE)
+    assert_bignum(T31)
+    assert_bignum(T31P)
+    assert_bignum(T32)
+    assert_bignum(T32P)
+    assert_bignum(T64)
+    assert_bignum(T64P)
+    assert_bignum(T1024)
+    assert_bignum(T1024P)
+  end
+
   def test_bignum
     $x = fact(40)
     assert_equal($x, $x)
@@ -35,8 +82,10 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(335367096786357081410764800000, $x/fact(20))
     $x = -$x
     assert_equal(-815915283247897734345611269596115894272000000000, $x)
-    assert_equal(2-(2**32), -(2**32-2))
-    assert_equal(2**32 - 5, (2**32-3)-2)
+
+    b = 2*BIGNUM_MIN
+    assert_equal(2-b, -(b-2))
+    assert_equal(b - 5, (b-3)-2)
 
     for i in 1000..1014
       assert_equal(2 ** i, 1 << i)
@@ -108,41 +157,6 @@ class TestBignum < Test::Unit::TestCase
     assert_equal("-1777777777777777777777" ,-18446744073709551615.to_s(8))
     assert_match(/\A10{99}1\z/, (10**100+1).to_s)
     assert_match(/\A10{900}9{100}\z/, (10**1000+(10**100-1)).to_s)
-  end
-
-  b = 2**64
-  b *= b until Bignum === b
-
-  T_ZERO = b.coerce(0).first
-  T_ONE  = b.coerce(1).first
-  T_MONE = b.coerce(-1).first
-  T31  = b.coerce(2**31).first   # 2147483648
-  T31P = b.coerce(T31 - 1).first # 2147483647
-  T32  = b.coerce(2**32).first   # 4294967296
-  T32P = b.coerce(T32 - 1).first # 4294967295
-  T64  = b.coerce(2**64).first   # 18446744073709551616
-  T64P = b.coerce(T64 - 1).first # 18446744073709551615
-  T1024  = b.coerce(2**1024).first
-  T1024P = b.coerce(T1024 - 1).first
-
-  f = b
-  while Bignum === f-1
-    f = f >> 1
-  end
-  FIXNUM_MAX = f-1
-
-  def test_prepare
-    assert_instance_of(Bignum, T_ZERO)
-    assert_instance_of(Bignum, T_ONE)
-    assert_instance_of(Bignum, T_MONE)
-    assert_instance_of(Bignum, T31)
-    assert_instance_of(Bignum, T31P)
-    assert_instance_of(Bignum, T32)
-    assert_instance_of(Bignum, T32P)
-    assert_instance_of(Bignum, T64)
-    assert_instance_of(Bignum, T64P)
-    assert_instance_of(Bignum, T1024)
-    assert_instance_of(Bignum, T1024P)
   end
 
   def test_big_2comp
@@ -460,7 +474,7 @@ class TestBignum < Test::Unit::TestCase
     assert_raise(TypeError, ArgumentError) { T32**"foo" }
 
     feature3429 = '[ruby-core:30735]'
-    assert_instance_of(Bignum, (2 ** 7830457), feature3429)
+    assert_kind_of(Integer, (2 ** 7830457), feature3429)
   end
 
   def test_and
@@ -527,24 +541,26 @@ class TestBignum < Test::Unit::TestCase
   end
 
   def test_shift2
-    assert_equal(2**33, (2**32) <<  1)
-    assert_equal(2**31, (2**32) << -1)
-    assert_equal(2**33, (2**32) <<  1.0)
-    assert_equal(2**31, (2**32) << -1.0)
-    assert_equal(2**33, (2**32) << T_ONE)
-    assert_equal(2**31, (2**32) << T_MONE)
-    assert_equal(2**31, (2**32) >>  1)
-    assert_equal(2**33, (2**32) >> -1)
-    assert_equal(2**31, (2**32) >>  1.0)
-    assert_equal(2**33, (2**32) >> -1.0)
-    assert_equal(2**31, (2**32) >> T_ONE)
-    assert_equal(2**33, (2**32) >> T_MONE)
-    assert_equal( 0,  (2**32) >> (2**32))
-    assert_equal(-1, -(2**32) >> (2**32))
-    assert_equal( 0,  (2**32) >> 128)
-    assert_equal(-1, -(2**32) >> 128)
-    assert_equal( 0,  (2**31) >> 32)
-    assert_equal(-1, -(2**31) >> 32)
+    b = BIGNUM_MIN_BITS
+    n = BIGNUM_MIN << 1
+    assert_equal(2**(b+1), n <<  1)
+    assert_equal(2**(b-1), n << -1)
+    assert_equal(2**(b+1), n <<  1.0)
+    assert_equal(2**(b-1), n << -1.0)
+    assert_equal(2**(b+1), n << T_ONE)
+    assert_equal(2**(b-1), n << T_MONE)
+    assert_equal(2**(b-1), n >>  1)
+    assert_equal(2**(b+1), n >> -1)
+    assert_equal(2**(b-1), n >>  1.0)
+    assert_equal(2**(b+1), n >> -1.0)
+    assert_equal(2**(b-1), n >> T_ONE)
+    assert_equal(2**(b+1), n >> T_MONE)
+    assert_equal( 0,  n >> n)
+    assert_equal(-1, -n >> n)
+    assert_equal( 0,  n >> (b*4))
+    assert_equal(-1, -n >> (b*4))
+    assert_equal( 0,  (n/2) >> b)
+    assert_equal(-1, -(n/2) >> b)
   end
 
   def test_shift_bigshift
@@ -553,12 +569,12 @@ class TestBignum < Test::Unit::TestCase
   end
 
   def test_aref
-    assert_equal(0, (2**32)[0])
-    assert_equal(0, (2**32)[2**32])
-    assert_equal(0, (2**32)[-(2**32)])
-    assert_equal(0, (2**32)[T_ZERO])
-    assert_equal(0, (-(2**64))[0])
-    assert_equal(1, (-2**256)[256])
+    assert_equal(0, BIGNUM_MIN[0])
+    assert_equal(0, BIGNUM_MIN[BIGNUM_MIN])
+    assert_equal(0, BIGNUM_MIN[-BIGNUM_MIN])
+    assert_equal(0, BIGNUM_MIN[T_ZERO])
+    assert_equal(0, (-(BIGNUM_MIN*BIGNUM_MIN))[0])
+    assert_equal(1, (-2**(BIGNUM_MIN_BITS*4))[BIGNUM_MIN_BITS*4])
   end
 
   def test_hash
@@ -568,6 +584,8 @@ class TestBignum < Test::Unit::TestCase
   def test_coerce
     assert_equal([T64P, T31P], T31P.coerce(T64P))
     assert_raise(TypeError) { T31P.coerce(nil) }
+    obj = eval("class C\u{1f5ff}; self; end").new
+    assert_raise_with_message(TypeError, /C\u{1f5ff}/) { T31P.coerce(obj) }
   end
 
   def test_abs
@@ -579,38 +597,40 @@ class TestBignum < Test::Unit::TestCase
   end
 
   def test_odd
-    assert_equal(true, (2**32+1).odd?)
-    assert_equal(false, (2**32).odd?)
+    assert_equal(true, (BIGNUM_MIN+1).odd?)
+    assert_equal(false, BIGNUM_MIN.odd?)
   end
 
   def test_even
-    assert_equal(false, (2**32+1).even?)
-    assert_equal(true, (2**32).even?)
+    assert_equal(false, (BIGNUM_MIN+1).even?)
+    assert_equal(true, BIGNUM_MIN.even?)
   end
 
   def test_interrupt_during_to_s
-    if defined?(Bignum::GMP_VERSION)
+    if defined?(Integer::GMP_VERSION)
       return # GMP doesn't support interrupt during an operation.
     end
     time = Time.now
-    start_flag = false
     end_flag = false
     num = (65536 ** 65536)
+    q = Queue.new
     thread = Thread.new do
-      start_flag = true
-      num.to_s
-      end_flag = true
+      assert_raise(RuntimeError) {
+        q << true
+        num.to_s
+        end_flag = true
+      }
     end
-    sleep 0.001 until start_flag
+    q.pop # sync
     thread.raise
-    thread.join rescue nil
+    thread.join
     time = Time.now - time
     skip "too fast cpu" if end_flag
     assert_operator(time, :<, 10)
   end
 
   def test_interrupt_during_bigdivrem
-    if defined?(Bignum::GMP_VERSION)
+    if defined?(Integer::GMP_VERSION)
       return # GMP doesn't support interrupt during an operation.
     end
     return unless Process.respond_to?(:kill)
@@ -643,7 +663,7 @@ class TestBignum < Test::Unit::TestCase
   end
 
   def test_too_big_to_s
-    if (big = 2**31-1).is_a?(Fixnum)
+    if (big = 2**31-1).fixnum?
       return
     end
     assert_raise_with_message(RangeError, /too big to convert/) {(1 << big).to_s}
@@ -674,6 +694,10 @@ class TestBignum < Test::Unit::TestCase
     o = Object.new
     def o.coerce(x); [x, 2**100]; end
     assert_equal((2**200).to_f, (2**300).fdiv(o))
+    o = Object.new
+    def o.coerce(x); [self, x]; end
+    def o.fdiv(x); 1; end
+    assert_equal(1.0, (2**300).fdiv(o))
   end
 
   def test_singleton_method
@@ -720,4 +744,54 @@ class TestBignum < Test::Unit::TestCase
     end
     assert_equal(T1024 ^ 10, T1024 ^ obj)
   end
+
+  def test_digits
+    assert_equal([90, 78, 56, 34, 12], 1234567890.to_bignum.digits(100))
+    assert_equal([7215, 2413, 6242], T1024P.digits(10_000).first(3))
+    assert_equal([11], 11.digits(T1024P))
+    assert_equal([T1024P - 1, 1], (T1024P + T1024P - 1).digits(T1024P))
+  end
+
+  def test_digits_for_negative_numbers
+    assert_raise(Math::DomainError) { -11.digits(T1024P) }
+    assert_raise(Math::DomainError) { (-T1024P).digits }
+    assert_raise(Math::DomainError) { (-T1024P).digits(T1024P) }
+  end
+
+  def test_digits_for_invalid_base_numbers
+    assert_raise(ArgumentError) { T1024P.to_bignum.digits(0) }
+    assert_raise(ArgumentError) { T1024P.to_bignum.digits(-1) }
+    assert_raise(ArgumentError) { T1024P.to_bignum.digits(0.to_bignum) }
+    assert_raise(ArgumentError) { T1024P.to_bignum.digits(1.to_bignum) }
+    assert_raise(ArgumentError) { T1024P.to_bignum.digits(-T1024P) }
+    assert_raise(ArgumentError) { 10.digits(0.to_bignum) }
+    assert_raise(ArgumentError) { 10.digits(1.to_bignum) }
+  end
+
+  def test_digits_for_non_integral_base_numbers
+    assert_equal([11], 11.digits(T128P.to_r))
+    assert_equal([11], 11.digits(T128P.to_f))
+
+    t1024p_digits_in_t32 = [T32P]*32
+    assert_equal(t1024p_digits_in_t32, T1024P.digits(T32.to_r))
+    assert_equal(t1024p_digits_in_t32, T1024P.digits(T32.to_f))
+
+    assert_raise(RangeError) { T128P.digits(10+1i) }
+  end
+
+  def test_digits_for_non_numeric_base_argument
+    assert_raise(TypeError) { T1024P.digits("10") }
+    assert_raise(TypeError) { T1024P.digits("a") }
+  end
+
+  def test_finite_p
+    assert_predicate(T1024P, :finite?)
+    assert_predicate(-T1024P, :finite?)
+  end
+
+  def test_infinite_p
+    assert_nil(T1024P.infinite?)
+    assert_nil((-T1024P).infinite?)
+  end
+end
 end

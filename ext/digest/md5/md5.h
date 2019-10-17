@@ -46,7 +46,7 @@
 #ifndef MD5_INCLUDED
 #  define MD5_INCLUDED
 
-#include "defs.h"
+#include "../defs.h"
 
 /*
  * This code has some adaptations for the Ghostscript environment, but it

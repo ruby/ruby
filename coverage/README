@@ -4,7 +4,7 @@ The make task `update-coverage' retrieves simplecov for coverage report.
 
 COVERAGE=1 make test-all TESTS=test/cgi
 
-it generate test coverage to coverage directory.
+it generates test coverage to coverage directory.
 
 Limitation
 

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'cgi'
 
 ##
@@ -98,6 +99,11 @@ class RDoc::Context < RDoc::CodeObject
   attr_accessor :visibility
 
   ##
+  # Current visibility of this line
+
+  attr_writer :current_line_visibility
+
+  ##
   # Hash of registered methods. Attributes are also registered here,
   # twice if they are RW.
 
@@ -147,6 +153,7 @@ class RDoc::Context < RDoc::CodeObject
     @extends     = []
     @constants   = []
     @external_aliases = []
+    @current_line_visibility = nil
 
     # This Hash maps a method name to a list of unmatched aliases (aliases of
     # a method not yet encountered).
@@ -232,7 +239,7 @@ class RDoc::Context < RDoc::CodeObject
 
       if known then
         known.comment = attribute.comment if known.comment.empty?
-      elsif registered = @methods_hash[attribute.pretty_name << '='] and
+      elsif registered = @methods_hash[attribute.pretty_name + '='] and
             RDoc::Attr === registered then
         registered.rw = 'RW'
       else
@@ -242,7 +249,7 @@ class RDoc::Context < RDoc::CodeObject
     end
 
     if attribute.rw.index 'W' then
-      key = attribute.pretty_name << '='
+      key = attribute.pretty_name + '='
       known = @methods_hash[key]
 
       if known then
@@ -326,7 +333,7 @@ class RDoc::Context < RDoc::CodeObject
     if full_name == 'BasicObject' then
       superclass = nil
     elsif full_name == 'Object' then
-      superclass = defined?(::BasicObject) ? '::BasicObject' : nil
+      superclass = '::BasicObject'
     end
 
     # find the superclass full name
@@ -400,6 +407,7 @@ class RDoc::Context < RDoc::CodeObject
     mod.section = current_section # TODO declaring context? something is
                                   # wrong here...
     mod.parent = self
+    mod.full_name = nil
     mod.store = @store
 
     unless @done_documenting then
@@ -407,6 +415,10 @@ class RDoc::Context < RDoc::CodeObject
       # this must be done AFTER adding mod to its parent, so that the full
       # name is correct:
       all_hash[mod.full_name] = mod
+      if @store.unmatched_constant_alias[mod.full_name] then
+        to, file = @store.unmatched_constant_alias[mod.full_name]
+        add_module_alias mod, mod.name, to, file
+      end
     end
 
     mod
@@ -477,7 +489,11 @@ class RDoc::Context < RDoc::CodeObject
       end
     else
       @methods_hash[key] = method
-      method.visibility = @visibility
+      if @current_line_visibility
+        method.visibility, @current_line_visibility = @current_line_visibility, nil
+      else
+        method.visibility = @visibility
+      end
       add_to @method_list, method
       resolve_aliases method
     end
@@ -500,40 +516,52 @@ class RDoc::Context < RDoc::CodeObject
   end
 
   ##
+  # Adds a module by +RDoc::NormalModule+ instance. See also #add_module.
+
+  def add_module_by_normal_module(mod)
+    add_class_or_module mod, @modules, @store.modules_hash
+  end
+
+  ##
   # Adds an alias from +from+ (a class or module) to +name+ which was defined
   # in +file+.
 
-  def add_module_alias from, name, file
+  def add_module_alias from, from_name, to, file
     return from if @done_documenting
 
-    to_name = child_name name
+    to_full_name = child_name to.name
 
     # if we already know this name, don't register an alias:
     # see the metaprogramming in lib/active_support/basic_object.rb,
     # where we already know BasicObject is a class when we find
     # BasicObject = BlankSlate
-    return from if @store.find_class_or_module to_name
+    return from if @store.find_class_or_module to_full_name
 
-    to = from.dup
-    to.name = name
-    to.full_name = nil
+    unless from
+      @store.unmatched_constant_alias[child_name(from_name)] = [to, file]
+      return to
+    end
 
-    if to.module? then
-      @store.modules_hash[to_name] = to
-      @modules[name] = to
+    new_to = from.dup
+    new_to.name = to.name
+    new_to.full_name = nil
+
+    if new_to.module? then
+      @store.modules_hash[to_full_name] = new_to
+      @modules[to.name] = new_to
     else
-      @store.classes_hash[to_name] = to
-      @classes[name] = to
+      @store.classes_hash[to_full_name] = new_to
+      @classes[to.name] = new_to
     end
 
     # Registers a constant for this alias.  The constant value and comment
     # will be updated later, when the Ruby parser adds the constant
-    const = RDoc::Constant.new name, nil, to.comment
+    const = RDoc::Constant.new to.name, nil, new_to.comment
     const.record_location file
     const.is_alias_for = from
     add_constant const
 
-    to
+    new_to
   end
 
   ##
@@ -751,7 +779,7 @@ class RDoc::Context < RDoc::CodeObject
     attributes.default = []
 
     sort_sections.each do |section|
-      yield section, constants[section].sort, attributes[section].sort
+      yield section, constants[section].select(&:display?).sort, attributes[section].select(&:display?).sort
     end
   end
 
@@ -788,7 +816,9 @@ class RDoc::Context < RDoc::CodeObject
   # Finds a constant with +name+ in this context
 
   def find_constant_named(name)
-    @constants.find {|m| m.name == name}
+    @constants.find do |m|
+      m.name == name || m.full_name == name
+    end
   end
 
   ##
@@ -850,7 +880,13 @@ class RDoc::Context < RDoc::CodeObject
   # Finds a method named +name+ with singleton value +singleton+.
 
   def find_method(name, singleton)
-    @method_list.find { |m| m.name == name && m.singleton == singleton }
+    @method_list.find { |m|
+      if m.singleton
+        m.name == name && m.singleton == singleton
+      else
+        m.name == name && !m.singleton && !singleton
+      end
+    }
   end
 
   ##
@@ -1066,6 +1102,7 @@ class RDoc::Context < RDoc::CodeObject
     return if [:private, :nodoc].include? min_visibility
     remove_invisible_in @method_list, min_visibility
     remove_invisible_in @attributes, min_visibility
+    remove_invisible_in @constants, min_visibility
   end
 
   ##
@@ -1153,6 +1190,17 @@ class RDoc::Context < RDoc::CodeObject
   end
 
   ##
+  # Given an array +names+ of constants, set the visibility of each constant to
+  # +visibility+
+
+  def set_constant_visibility_for(names, visibility)
+    names.each do |name|
+      constant = @constants_hash[name] or next
+      constant.visibility = visibility
+    end
+  end
+
+  ##
   # Sorts sections alphabetically (default) or in TomDoc fashion (none,
   # Public, Internal, Deprecated)
 
@@ -1208,4 +1256,3 @@ class RDoc::Context < RDoc::CodeObject
   autoload :Section, 'rdoc/context/section'
 
 end
-

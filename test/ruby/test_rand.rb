@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestRand < Test::Unit::TestCase
@@ -346,10 +347,15 @@ END
   end
 
   def assert_random_bytes(r)
+    srand(0)
     assert_equal("", r.bytes(0))
-    assert_equal("\xAC".force_encoding("ASCII-8BIT"), r.bytes(1))
-    assert_equal("/\xAA\xC4\x97u\xA6\x16\xB7\xC0\xCC".force_encoding("ASCII-8BIT"),
-                 r.bytes(10))
+    assert_equal("", Random.bytes(0))
+    x = "\xAC".force_encoding("ASCII-8BIT")
+    assert_equal(x, r.bytes(1))
+    assert_equal(x, Random.bytes(1))
+    x = "/\xAA\xC4\x97u\xA6\x16\xB7\xC0\xCC".force_encoding("ASCII-8BIT")
+    assert_equal(x, r.bytes(10))
+    assert_equal(x, Random.bytes(10))
   end
 
   def test_random_range
@@ -393,6 +399,7 @@ END
 
     assert_raise(Errno::EDOM, Errno::ERANGE) { r.rand(1.0 / 0.0) }
     assert_raise(Errno::EDOM, Errno::ERANGE) { r.rand(0.0 / 0.0) }
+    assert_raise(Errno::EDOM) {r.rand(1..)}
 
     r = Random.new(0)
     assert_in_delta(1.5488135039273248, r.rand(1.0...2.0), 0.0001, '[ruby-core:24655]')
@@ -428,9 +435,20 @@ END
   def assert_fork_status(n, mesg, &block)
     IO.pipe do |r, w|
       (1..n).map do
-        p1 = fork {w.puts(block.call.to_s)}
-        _, st = Process.waitpid2(p1)
-        assert_send([st, :success?], mesg)
+        st = desc = nil
+        IO.pipe do |re, we|
+          p1 = fork {
+            re.close
+            STDERR.reopen(we)
+            w.puts(block.call.to_s)
+          }
+          we.close
+          err = Thread.start {re.read}
+          _, st = Process.waitpid2(p1)
+          desc = FailDesc[st, mesg, err.value]
+        end
+        assert(!st.signaled?, desc)
+        assert(st.success?, mesg)
         r.gets.strip
       end
     end
@@ -452,6 +470,10 @@ END
     assert_fork_status(1, bug5661) {stable.rand(4)}
     r1, r2 = *assert_fork_status(2, bug5661) {stable.rand}
     assert_equal(r1, r2, bug5661)
+
+    assert_fork_status(1, '[ruby-core:82100] [Bug #13753]') do
+      Random::DEFAULT.rand(4)
+    end
   rescue NotImplementedError
   end
 
@@ -491,7 +513,7 @@ END
   def test_initialize_frozen
     r = Random.new(0)
     r.freeze
-    assert_raise(RuntimeError, '[Bug #6540]') do
+    assert_raise(FrozenError, '[Bug #6540]') do
       r.__send__(:initialize, r)
     end
   end
@@ -500,7 +522,7 @@ END
     r = Random.new(0)
     d = r.__send__(:marshal_dump)
     r.freeze
-    assert_raise(RuntimeError, '[Bug #6540]') do
+    assert_raise(FrozenError, '[Bug #6540]') do
       r.__send__(:marshal_load, d)
     end
   end
@@ -523,5 +545,49 @@ END
     end
     [1, 2].sample(1, random: gen)
     assert_equal(2, gen.limit, bug7935)
+  end
+
+  def test_random_ulong_limited_no_rand
+    c = Class.new do
+      undef rand
+      def bytes(n)
+        "\0"*n
+      end
+    end
+    gen = c.new.extend(Random::Formatter)
+    assert_equal(1, [1, 2].sample(random: gen))
+  end
+
+  def test_default_seed
+    assert_separately([], <<-End)
+      seed = Random::DEFAULT::seed
+      rand1 = Random::DEFAULT::rand
+      rand2 = Random.new(seed).rand
+      assert_equal(rand1, rand2)
+
+      srand seed
+      rand3 = rand
+      assert_equal(rand1, rand3)
+    End
+  end
+
+  def test_urandom
+    [0, 1, 100].each do |size|
+      v = Random.urandom(size)
+      assert_kind_of(String, v)
+      assert_equal(size, v.bytesize)
+    end
+  end
+
+  def test_new_seed
+    size = 0
+    n = 8
+    n.times do
+      v = Random.new_seed
+      assert_kind_of(Integer, v)
+      size += v.size
+    end
+    # probability of failure <= 1/256**8
+    assert_operator(size.fdiv(n), :>, 15)
   end
 end

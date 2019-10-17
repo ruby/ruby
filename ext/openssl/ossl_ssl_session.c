@@ -28,12 +28,12 @@ static VALUE ossl_ssl_session_alloc(VALUE klass)
 
 /*
  * call-seq:
- *    Session.new(SSLSocket | string) => session
+ *   Session.new(ssl_socket) -> Session
+ *   Session.new(string) -> Session
  *
- * === Parameters
- * +SSLSocket+ is an OpenSSL::SSL::SSLSocket
- * +string+ must be a DER or PEM encoded Session.
-*/
+ * Creates a new Session object from an instance of SSLSocket or DER/PEM encoded
+ * String.
+ */
 static VALUE ossl_ssl_session_initialize(VALUE self, VALUE arg1)
 {
 	SSL_SESSION *ctx = NULL;
@@ -46,10 +46,10 @@ static VALUE ossl_ssl_session_initialize(VALUE self, VALUE arg1)
 
 		GetSSL(arg1, ssl);
 
-		if (!ssl || (ctx = SSL_get1_session(ssl)) == NULL)
+		if ((ctx = SSL_get1_session(ssl)) == NULL)
 			ossl_raise(eSSLSession, "no session available");
 	} else {
-		BIO *in = ossl_obj2bio(arg1);
+		BIO *in = ossl_obj2bio(&arg1);
 
 		ctx = PEM_read_bio_SSL_SESSION(in, NULL, NULL, NULL);
 
@@ -73,33 +73,56 @@ static VALUE ossl_ssl_session_initialize(VALUE self, VALUE arg1)
 	return self;
 }
 
-#if HAVE_SSL_SESSION_CMP == 0
-int SSL_SESSION_cmp(const SSL_SESSION *a,const SSL_SESSION *b)
+static VALUE
+ossl_ssl_session_initialize_copy(VALUE self, VALUE other)
 {
-    if (a->ssl_version != b->ssl_version ||
-	a->session_id_length != b->session_id_length)
-	return 1;
-#if defined(_WIN32)
-    return memcmp(a->session_id, b->session_id, a->session_id_length);
-#else
-    return CRYPTO_memcmp(a->session_id, b->session_id, a->session_id_length);
-#endif
+    SSL_SESSION *sess, *sess_other, *sess_new;
+
+    rb_check_frozen(self);
+    sess = RTYPEDDATA_DATA(self); /* XXX */
+    GetSSLSession(other, sess_other);
+
+    sess_new = ASN1_dup((i2d_of_void *)i2d_SSL_SESSION, (d2i_of_void *)d2i_SSL_SESSION,
+			(char *)sess_other);
+    if (!sess_new)
+	ossl_raise(eSSLSession, "ASN1_dup");
+
+    RTYPEDDATA_DATA(self) = sess_new;
+    SSL_SESSION_free(sess);
+
+    return self;
 }
-#endif
+
+static int
+ossl_SSL_SESSION_cmp(const SSL_SESSION *a, const SSL_SESSION *b)
+{
+    unsigned int a_len;
+    const unsigned char *a_sid = SSL_SESSION_get_id(a, &a_len);
+    unsigned int b_len;
+    const unsigned char *b_sid = SSL_SESSION_get_id(b, &b_len);
+
+    if (SSL_SESSION_get_protocol_version(a) != SSL_SESSION_get_protocol_version(b))
+	return 1;
+    if (a_len != b_len)
+	return 1;
+
+    return CRYPTO_memcmp(a_sid, b_sid, a_len);
+}
 
 /*
  * call-seq:
- *    session1 == session2 -> boolean
+ *   session1 == session2 -> boolean
  *
-*/
+ * Returns +true+ if the two Session is the same, +false+ if not.
+ */
 static VALUE ossl_ssl_session_eq(VALUE val1, VALUE val2)
 {
 	SSL_SESSION *ctx1, *ctx2;
 
 	GetSSLSession(val1, ctx1);
-	SafeGetSSLSession(val2, ctx2);
+	GetSSLSession(val2, ctx2);
 
-	switch (SSL_SESSION_cmp(ctx1, ctx2)) {
+	switch (ossl_SSL_SESSION_cmp(ctx1, ctx2)) {
 	case 0:		return Qtrue;
 	default:	return Qfalse;
 	}
@@ -109,51 +132,50 @@ static VALUE ossl_ssl_session_eq(VALUE val1, VALUE val2)
  * call-seq:
  *    session.time -> Time
  *
- * Gets start time of the session.
- *
-*/
-static VALUE ossl_ssl_session_get_time(VALUE self)
+ * Returns the time at which the session was established.
+ */
+static VALUE
+ossl_ssl_session_get_time(VALUE self)
 {
-	SSL_SESSION *ctx;
-	time_t t;
+    SSL_SESSION *ctx;
+    long t;
 
-	GetSSLSession(self, ctx);
+    GetSSLSession(self, ctx);
+    t = SSL_SESSION_get_time(ctx);
+    if (t == 0)
+	return Qnil;
 
-	t = SSL_SESSION_get_time(ctx);
-
-	if (t == 0)
-		return Qnil;
-
-	return rb_funcall(rb_cTime, rb_intern("at"), 1, TIMET2NUM(t));
+    return rb_funcall(rb_cTime, rb_intern("at"), 1, LONG2NUM(t));
 }
 
 /*
  * call-seq:
- *    session.timeout -> integer
+ *    session.timeout -> Integer
  *
- * Gets how long until the session expires in seconds.
+ * Returns the timeout value set for the session, in seconds from the
+ * established time.
  *
-*/
-static VALUE ossl_ssl_session_get_timeout(VALUE self)
+ */
+static VALUE
+ossl_ssl_session_get_timeout(VALUE self)
 {
-	SSL_SESSION *ctx;
-	time_t t;
+    SSL_SESSION *ctx;
+    long t;
 
-	GetSSLSession(self, ctx);
+    GetSSLSession(self, ctx);
+    t = SSL_SESSION_get_timeout(ctx);
 
-	t = SSL_SESSION_get_timeout(ctx);
-
-	return TIMET2NUM(t);
+    return LONG2NUM(t);
 }
 
 /*
  * call-seq:
- *    session.time=(Time) -> Time
- *    session.time=(integer) -> Time
+ *    session.time = time
+ *    session.time = integer
  *
  * Sets start time of the session. Time resolution is in seconds.
  *
-*/
+ */
 static VALUE ossl_ssl_session_set_time(VALUE self, VALUE time_v)
 {
 	SSL_SESSION *ctx;
@@ -170,11 +192,10 @@ static VALUE ossl_ssl_session_set_time(VALUE self, VALUE time_v)
 
 /*
  * call-seq:
- *    session.timeout=(integer) -> integer
+ *    session.timeout = integer
  *
  * Sets how long until the session expires in seconds.
- *
-*/
+ */
 static VALUE ossl_ssl_session_set_timeout(VALUE self, VALUE time_v)
 {
 	SSL_SESSION *ctx;
@@ -186,10 +207,9 @@ static VALUE ossl_ssl_session_set_timeout(VALUE self, VALUE time_v)
 	return ossl_ssl_session_get_timeout(self);
 }
 
-#ifdef HAVE_SSL_SESSION_GET_ID
 /*
  * call-seq:
- *    session.id -> aString
+ *    session.id -> String
  *
  * Returns the Session ID.
 */
@@ -205,14 +225,13 @@ static VALUE ossl_ssl_session_get_id(VALUE self)
 
 	return rb_str_new((const char *) p, i);
 }
-#endif
 
 /*
  * call-seq:
- *    session.to_der -> aString
+ *    session.to_der -> String
  *
  * Returns an ASN1 encoded String that contains the Session object.
-*/
+ */
 static VALUE ossl_ssl_session_to_der(VALUE self)
 {
 	SSL_SESSION *ctx;
@@ -238,14 +257,11 @@ static VALUE ossl_ssl_session_to_der(VALUE self)
  *    session.to_pem -> String
  *
  * Returns a PEM encoded String that contains the Session object.
-*/
+ */
 static VALUE ossl_ssl_session_to_pem(VALUE self)
 {
 	SSL_SESSION *ctx;
 	BIO *out;
-	BUF_MEM *buf;
-	VALUE str;
-	int i;
 
 	GetSSLSession(self, ctx);
 
@@ -253,16 +269,13 @@ static VALUE ossl_ssl_session_to_pem(VALUE self)
 		ossl_raise(eSSLSession, "BIO_s_mem()");
 	}
 
-	if (!(i=PEM_write_bio_SSL_SESSION(out, ctx))) {
+	if (!PEM_write_bio_SSL_SESSION(out, ctx)) {
 		BIO_free(out);
 		ossl_raise(eSSLSession, "SSL_SESSION_print()");
 	}
 
-	BIO_get_mem_ptr(out, &buf);
-	str = rb_str_new(buf->data, buf->length);
-	BIO_free(out);
 
-	return str;
+	return ossl_membio2str(out);
 }
 
 
@@ -270,14 +283,12 @@ static VALUE ossl_ssl_session_to_pem(VALUE self)
  * call-seq:
  *    session.to_text -> String
  *
- * Shows everything in the Session object.
-*/
+ * Shows everything in the Session object. This is for diagnostic purposes.
+ */
 static VALUE ossl_ssl_session_to_text(VALUE self)
 {
 	SSL_SESSION *ctx;
 	BIO *out;
-	BUF_MEM *buf;
-	VALUE str;
 
 	GetSSLSession(self, ctx);
 
@@ -290,25 +301,23 @@ static VALUE ossl_ssl_session_to_text(VALUE self)
 		ossl_raise(eSSLSession, "SSL_SESSION_print()");
 	}
 
-	BIO_get_mem_ptr(out, &buf);
-	str = rb_str_new(buf->data, buf->length);
-	BIO_free(out);
-
-	return str;
+	return ossl_membio2str(out);
 }
 
 
 void Init_ossl_ssl_session(void)
 {
 #if 0
-	mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
-	mSSL = rb_define_module_under(mOSSL, "SSL");
+    mOSSL = rb_define_module("OpenSSL");
+    mSSL = rb_define_module_under(mOSSL, "SSL");
+    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
 #endif
 	cSSLSession = rb_define_class_under(mSSL, "Session", rb_cObject);
 	eSSLSession = rb_define_class_under(cSSLSession, "SessionError", eOSSLError);
 
 	rb_define_alloc_func(cSSLSession, ossl_ssl_session_alloc);
 	rb_define_method(cSSLSession, "initialize", ossl_ssl_session_initialize, 1);
+	rb_define_method(cSSLSession, "initialize_copy", ossl_ssl_session_initialize_copy, 1);
 
 	rb_define_method(cSSLSession, "==", ossl_ssl_session_eq, 1);
 
@@ -316,12 +325,7 @@ void Init_ossl_ssl_session(void)
 	rb_define_method(cSSLSession, "time=", ossl_ssl_session_set_time, 1);
 	rb_define_method(cSSLSession, "timeout", ossl_ssl_session_get_timeout, 0);
 	rb_define_method(cSSLSession, "timeout=", ossl_ssl_session_set_timeout, 1);
-
-#ifdef HAVE_SSL_SESSION_GET_ID
 	rb_define_method(cSSLSession, "id", ossl_ssl_session_get_id, 0);
-#else
-	rb_undef_method(cSSLSession, "id");
-#endif
 	rb_define_method(cSSLSession, "to_der", ossl_ssl_session_to_der, 0);
 	rb_define_method(cSSLSession, "to_pem", ossl_ssl_session_to_pem, 0);
 	rb_define_method(cSSLSession, "to_text", ossl_ssl_session_to_text, 0);

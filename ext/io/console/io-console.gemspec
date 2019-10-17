@@ -1,5 +1,5 @@
 # -*- ruby -*-
-_VERSION = "0.4.3"
+_VERSION = "0.4.9"
 date = %w$Date::                           $[1]
 
 Gem::Specification.new do |s|
@@ -9,13 +9,19 @@ Gem::Specification.new do |s|
   s.summary = "Console interface"
   s.email = "nobu@ruby-lang.org"
   s.description = "add console capabilities to IO instances."
-  s.required_ruby_version = ">= 2.0.0"
-  s.homepage = "http://www.ruby-lang.org"
+  s.required_ruby_version = ">= 2.2.0"
+  s.homepage = "https://github.com/ruby/io-console"
+  s.metadata["source_code_url"] = s.homepage
   s.authors = ["Nobu Nakada"]
   s.require_path = %[lib]
-  s.files = %w[console.c extconf.rb lib/console/size.rb]
-  s.extensions = %w[extconf.rb]
-  s.licenses = "ruby"
-  s.cert_chain  = %w[certs/nobu.pem]
-  s.signing_key = File.expand_path("~/.ssh/gem-private_key.pem") if $0 =~ /gem\z/
+  s.files = %w[
+    LICENSE.txt
+    README.md
+    ext/io/console/console.c
+    ext/io/console/extconf.rb
+    ext/io/console/win32_vk.inc
+    lib/io/console/size.rb
+  ]
+  s.extensions = %w[ext/io/console/extconf.rb]
+  s.license = "BSD-2-Clause"
 end

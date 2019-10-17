@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'net/http'
 require 'test/unit'
 
@@ -13,6 +14,26 @@ class HTTPHeaderTest < Test::Unit::TestCase
 
   def setup
     @c = C.new
+  end
+
+  def test_initialize
+    @c.initialize_http_header("foo"=>"abc")
+    assert_equal "abc", @c["foo"]
+    @c.initialize_http_header("foo"=>"abc", "bar"=>"xyz")
+    assert_equal "xyz", @c["bar"]
+    @c.initialize_http_header([["foo", "abc"]])
+    assert_equal "abc", @c["foo"]
+    @c.initialize_http_header([["foo", "abc"], ["bar","xyz"]])
+    assert_equal "xyz", @c["bar"]
+    assert_raise(NoMethodError){ @c.initialize_http_header("foo"=>[]) }
+    assert_raise(ArgumentError){ @c.initialize_http_header("foo"=>"a\nb") }
+    assert_raise(ArgumentError){ @c.initialize_http_header("foo"=>"a\rb") }
+    assert_raise(ArgumentError){ @c.initialize_http_header("foo"=>"a\xff") }
+  end
+
+  def test_initialize_with_symbol
+    @c.initialize_http_header(foo: "abc")
+    assert_equal "abc", @c["foo"]
   end
 
   def test_size
@@ -39,6 +60,16 @@ class HTTPHeaderTest < Test::Unit::TestCase
     @c['aaA'] = 'aaa'
     @c['AAa'] = 'aaa'
     assert_equal 2, @c.length
+
+    @c['aaa'] = ['aaa', ['bbb', [3]]]
+    assert_equal 2, @c.length
+    assert_equal ['aaa', 'bbb', '3'], @c.get_fields('aaa')
+
+    @c['aaa'] = "aaa\xff"
+    assert_equal 2, @c.length
+
+    assert_raise(ArgumentError){ @c['foo'] = "a\nb" }
+    assert_raise(ArgumentError){ @c['foo'] = ["a\nb"] }
   end
 
   def test_AREF
@@ -64,6 +95,10 @@ class HTTPHeaderTest < Test::Unit::TestCase
     @c.add_field 'My-Header', 'd, d'
     assert_equal 'a, b, c, d, d', @c['My-Header']
     assert_equal ['a', 'b', 'c', 'd, d'], @c.get_fields('My-Header')
+    assert_raise(ArgumentError){ @c.add_field 'My-Header', "d\nd" }
+    @c.add_field 'My-Header', ['e', ["\xff", 7]]
+    assert_equal "a, b, c, d, d, e, \xff, 7", @c['My-Header']
+    assert_equal ['a', 'b', 'c', 'd, d', 'e', "\xff", '7'], @c.get_fields('My-Header')
   end
 
   def test_get_fields
@@ -79,6 +114,24 @@ class HTTPHeaderTest < Test::Unit::TestCase
     assert_equal ['test string'], @c.get_fields('my-header')
     @c.get_fields('my-header').clear
     assert_equal ['test string'], @c.get_fields('my-header')
+  end
+
+  class D; include Net::HTTPHeader; end
+
+  def test_nil_variable_header
+    assert_nothing_raised do
+      assert_warning("#{__FILE__}:#{__LINE__+1}: warning: net/http: nil HTTP header: Authorization\n") do
+        D.new.initialize_http_header({Authorization: nil})
+      end
+    end
+  end
+
+  def test_duplicated_variable_header
+    assert_nothing_raised do
+      assert_warning("#{__FILE__}:#{__LINE__+1}: warning: net/http: duplicated HTTP header: Authorization\n") do
+        D.new.initialize_http_header({"AUTHORIZATION": "yes", "Authorization": "no"})
+      end
+    end
   end
 
   def test_delete
@@ -104,6 +157,12 @@ class HTTPHeaderTest < Test::Unit::TestCase
       assert_equal 'my-header', k
       assert_equal 'test', v
     end
+    e = @c.each
+    assert_equal 1, e.size
+    e.each do |k, v|
+      assert_equal 'my-header', k
+      assert_equal 'test', v
+    end
   end
 
   def test_each_key
@@ -113,6 +172,26 @@ class HTTPHeaderTest < Test::Unit::TestCase
     end
     @c.each_key do |k|
       assert_equal 'my-header', k
+    end
+    e = @c.each_key
+    assert_equal 1, e.size
+    e.each do |k|
+      assert_equal 'my-header', k
+    end
+  end
+
+  def test_each_capitalized_name
+    @c['my-header'] = 'test'
+    @c.each_capitalized_name do |k|
+      assert_equal 'My-Header', k
+    end
+    @c.each_capitalized_name do |k|
+      assert_equal 'My-Header', k
+    end
+    e = @c.each_capitalized_name
+    assert_equal 1, e.size
+    e.each do |k|
+      assert_equal 'My-Header', k
     end
   end
 
@@ -124,11 +203,22 @@ class HTTPHeaderTest < Test::Unit::TestCase
     @c.each_value do |v|
       assert_equal 'test', v
     end
+    e = @c.each_value
+    assert_equal 1, e.size
+    e.each do |v|
+      assert_equal 'test', v
+    end
   end
 
   def test_canonical_each
     @c['my-header'] = ['a', 'b']
     @c.canonical_each do |k,v|
+      assert_equal 'My-Header', k
+      assert_equal 'a, b', v
+    end
+    e = @c.canonical_each
+    assert_equal 1, e.size
+    e.each do |k,v|
       assert_equal 'My-Header', k
       assert_equal 'a, b', v
     end
@@ -140,12 +230,24 @@ class HTTPHeaderTest < Test::Unit::TestCase
       assert_equal 'My-Header', k
       assert_equal 'a, b', v
     end
+    e = @c.each_capitalized
+    assert_equal 1, e.size
+    e.each do |k,v|
+      assert_equal 'My-Header', k
+      assert_equal 'a, b', v
+    end
   end
 
   def test_each_capitalized_with_symbol
     @c[:my_header] = ['a', 'b']
     @c.each_capitalized do |k,v|
       assert_equal "My_header", k
+      assert_equal 'a, b', v
+    end
+    e = @c.each_capitalized
+    assert_equal 1, e.size
+    e.each do |k,v|
+      assert_equal 'My_header', k
       assert_equal 'a, b', v
     end
   end

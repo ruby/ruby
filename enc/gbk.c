@@ -211,6 +211,7 @@ OnigEncodingDefine(gbk, GBK) = {
   onigenc_not_support_get_ctype_code_range,
   gbk_left_adjust_char_head,
   gbk_is_allowed_reverse_match,
+  onigenc_ascii_only_case_map,
   0,
   ONIGENC_FLAG_NONE,
 };

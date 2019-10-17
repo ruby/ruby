@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 # = PStore -- Transactional File Storage for Ruby Objects
 #
 # pstore.rb -
@@ -7,7 +8,7 @@
 #
 # See PStore for documentation.
 
-require "digest/md5"
+require "digest"
 
 #
 # PStore implements a file based persistence mechanism based on a Hash.  User
@@ -127,7 +128,7 @@ class PStore
     @abort = false
     @ultra_safe = false
     @thread_safe = thread_safe
-    @lock = Mutex.new
+    @lock = Thread::Mutex.new
   end
 
   # Raises PStore::Error if the calling code is not in a PStore#transaction.
@@ -189,7 +190,7 @@ class PStore
   #  store.transaction do  # begin transaction
   #    # load some data into the store...
   #    store[:single_object] = "My data..."
-  #    store[:obj_heirarchy] = { "Kev Jackson" => ["rational.rb", "pstore.rb"],
+  #    store[:obj_hierarchy] = { "Kev Jackson" => ["rational.rb", "pstore.rb"],
   #                              "James Gray"  => ["erb.rb", "pstore.rb"] }
   #  end                   # commit changes to data store file
   #
@@ -334,7 +335,7 @@ class PStore
             save_data(checksum, original_data_size, file)
           end
         ensure
-          file.close if !file.closed?
+          file.close
         end
       else
         # This can only occur if read_only == true.
@@ -351,9 +352,15 @@ class PStore
 
   private
   # Constant for relieving Ruby's garbage collector.
+  CHECKSUM_ALGO = %w[SHA512 SHA384 SHA256 SHA1 RMD160 MD5].each do |algo|
+    begin
+      break Digest(algo)
+    rescue LoadError
+    end
+  end
   EMPTY_STRING = ""
   EMPTY_MARSHAL_DATA = Marshal.dump({})
-  EMPTY_MARSHAL_CHECKSUM = Digest::MD5.digest(EMPTY_MARSHAL_DATA)
+  EMPTY_MARSHAL_CHECKSUM = CHECKSUM_ALGO.digest(EMPTY_MARSHAL_DATA)
 
   #
   # Open the specified filename (either in read-only mode or in
@@ -367,7 +374,7 @@ class PStore
   def open_and_lock_file(filename, read_only)
     if read_only
       begin
-        file = File.new(filename, RD_ACCESS)
+        file = File.new(filename, **RD_ACCESS)
         begin
           file.flock(File::LOCK_SH)
           return file
@@ -379,7 +386,7 @@ class PStore
         return nil
       end
     else
-      file = File.new(filename, RDWR_ACCESS)
+      file = File.new(filename, **RDWR_ACCESS)
       file.flock(File::LOCK_EX)
       return file
     end
@@ -388,7 +395,7 @@ class PStore
   # Load the given PStore file.
   # If +read_only+ is true, the unmarshalled Hash will be returned.
   # If +read_only+ is false, a 3-tuple will be returned: the unmarshalled
-  # Hash, an MD5 checksum of the data, and the size of the data.
+  # Hash, a checksum of the data, and the size of the data.
   def load_data(file, read_only)
     if read_only
       begin
@@ -408,7 +415,7 @@ class PStore
         size = empty_marshal_data.bytesize
       else
         table = load(data)
-        checksum = Digest::MD5.digest(data)
+        checksum = CHECKSUM_ALGO.digest(data)
         size = data.bytesize
         raise Error, "PStore file seems to be corrupted." unless table.is_a?(Hash)
       end
@@ -428,7 +435,7 @@ class PStore
   def save_data(original_checksum, original_file_size, file)
     new_data = dump(@table)
 
-    if new_data.bytesize != original_file_size || Digest::MD5.digest(new_data) != original_checksum
+    if new_data.bytesize != original_file_size || CHECKSUM_ALGO.digest(new_data) != original_checksum
       if @ultra_safe && !on_windows?
         # Windows doesn't support atomic file renames.
         save_data_with_atomic_file_rename_strategy(new_data, file)
@@ -442,7 +449,7 @@ class PStore
 
   def save_data_with_atomic_file_rename_strategy(data, file)
     temp_filename = "#{@filename}.tmp.#{Process.pid}.#{rand 1000000}"
-    temp_file = File.new(temp_filename, WR_ACCESS)
+    temp_file = File.new(temp_filename, **WR_ACCESS)
     begin
       temp_file.flock(File::LOCK_EX)
       temp_file.write(data)

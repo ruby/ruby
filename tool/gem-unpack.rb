@@ -1,11 +1,11 @@
 require 'rubygems'
 require 'rubygems/package'
 
+# This library is used by "make extract-gems" to
+# unpack bundled gem files.
+
 def Gem.unpack(file, dir = nil)
-  policy = Gem::Security::LowSecurity
-  (policy = policy.dup).ui = Gem::SilentUI.new
   pkg = Gem::Package.new(file)
-  pkg.security_policy = policy
   spec = pkg.spec
   target = spec.full_name
   target = File.join(dir, target) if dir

@@ -1,4 +1,5 @@
-require 'rdoc/test_case'
+# frozen_string_literal: true
+require_relative 'helper'
 
 class TestRDocAttr < RDoc::TestCase
 
@@ -138,7 +139,7 @@ class TestRDocAttr < RDoc::TestCase
     assert_equal cm,           loaded.parent
     assert_equal section,      loaded.section
 
-    assert loaded.display?
+    assert                     loaded.display?
   end
 
   def test_marshal_load_version_2
@@ -187,4 +188,3 @@ class TestRDocAttr < RDoc::TestCase
   end
 
 end
-

@@ -1,9 +1,10 @@
+# frozen_string_literal: false
 require 'win32ole'
 
 #application = WIN32OLE.new('Excel.Application.5')
 application = WIN32OLE.new('Excel.Application')
 
-application.visible = TRUE
+application.visible = true
 workbook = application.Workbooks.Add();
 sheet = workbook.Worksheets(1);
 sheetS = workbook.Worksheets

@@ -1,7 +1,9 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/commands/mirror_command'
 
 class TestGemCommandsMirrorCommand < Gem::TestCase
+
   def setup
     super
 

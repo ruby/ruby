@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # MetaMethod represents a meta-programmed method
 

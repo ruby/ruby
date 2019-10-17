@@ -57,7 +57,7 @@ struct list_head
  * Example:
  *	static struct list_head my_list = LIST_HEAD_INIT(my_list);
  */
-#define LIST_HEAD_INIT(name) { { &name.n, &name.n } }
+#define LIST_HEAD_INIT(name) { { &(name).n, &(name).n } }
 
 /**
  * LIST_HEAD - define and initialize an empty list_head
@@ -236,6 +236,21 @@ static inline int list_empty_nodebug(const struct list_head *h)
 	return h->n.next == &h->n;
 }
 #endif
+
+/**
+ * list_empty_nocheck - is a list empty?
+ * @h: the list_head
+ *
+ * If the list is empty, returns true. This doesn't perform any
+ * debug check for list consistency, so it can be called without
+ * locks, racing with the list being modified. This is ok for
+ * checks where an incorrect result is not an issue (optimized
+ * bail out path for example).
+ */
+static inline bool list_empty_nocheck(const struct list_head *h)
+{
+	return h->n.next == &h->n;
+}
 
 /**
  * list_del - delete an entry from an (unknown) linked list.
@@ -639,7 +654,7 @@ static inline void list_prepend_list_(struct list_head *to,
 /**
  * list_for_each_off - iterate through a list of memory regions.
  * @h: the list_head
- * @i: the pointer to a memory region wich contains list node data.
+ * @i: the pointer to a memory region which contains list node data.
  * @off: offset(relative to @i) at which list node data resides.
  *
  * This is a low-level wrapper to iterate @i over the entire list, used to
@@ -647,12 +662,12 @@ static inline void list_prepend_list_(struct list_head *to,
  * so you can break and continue as normal.
  *
  * WARNING! Being the low-level macro that it is, this wrapper doesn't know
- * nor care about the type of @i. The only assumtion made is that @i points
+ * nor care about the type of @i. The only assumption made is that @i points
  * to a chunk of memory that at some @offset, relative to @i, contains a
- * properly filled `struct node_list' which in turn contains pointers to
- * memory chunks and it's turtles all the way down. Whith all that in mind
+ * properly filled `struct list_node' which in turn contains pointers to
+ * memory chunks and it's turtles all the way down. With all that in mind
  * remember that given the wrong pointer/offset couple this macro will
- * happilly churn all you memory untill SEGFAULT stops it, in other words
+ * happily churn all you memory until SEGFAULT stops it, in other words
  * caveat emptor.
  *
  * It is worth mentioning that one of legitimate use-cases for that wrapper
@@ -671,7 +686,7 @@ static inline void list_prepend_list_(struct list_head *to,
 /**
  * list_for_each_rev_off - iterate through a list of memory regions backwards
  * @h: the list_head
- * @i: the pointer to a memory region wich contains list node data.
+ * @i: the pointer to a memory region which contains list node data.
  * @off: offset(relative to @i) at which list node data resides.
  *
  * See list_for_each_off for details
@@ -683,7 +698,7 @@ static inline void list_prepend_list_(struct list_head *to,
  * list_for_each_safe_off - iterate through a list of memory regions, maybe
  * during deletion
  * @h: the list_head
- * @i: the pointer to a memory region wich contains list node data.
+ * @i: the pointer to a memory region which contains list node data.
  * @nxt: the structure containing the list_node
  * @off: offset(relative to @i) at which list node data resides.
  *
@@ -702,7 +717,7 @@ static inline void list_prepend_list_(struct list_head *to,
  * list_for_each_rev_safe_off - iterate backwards through a list of
  * memory regions, maybe during deletion
  * @h: the list_head
- * @i: the pointer to a memory region wich contains list node data.
+ * @i: the pointer to a memory region which contains list node data.
  * @nxt: the structure containing the list_node
  * @off: offset(relative to @i) at which list node data resides.
  *

@@ -1,15 +1,9 @@
-#!/usr/bin/env ruby -w
-# encoding: UTF-8
+# -*- coding: utf-8 -*-
+# frozen_string_literal: false
 
-# tc_row.rb
-#
-#  Created by James Edward Gray II on 2005-10-31.
-#  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
-#  under the terms of Ruby's license.
+require_relative "helper"
 
-require_relative "base"
-
-class TestCSV::Row < TestCSV
+class TestCSVRow < Test::Unit::TestCase
   extend DifferentOFS
 
   def setup
@@ -106,6 +100,19 @@ class TestCSV::Row < TestCSV
   def test_has_key?
     assert_equal(true, @row.has_key?('B'))
     assert_equal(false, @row.has_key?('foo'))
+
+    # aliases
+    assert_equal(true, @row.header?('B'))
+    assert_equal(false, @row.header?('foo'))
+
+    assert_equal(true, @row.include?('B'))
+    assert_equal(false, @row.include?('foo'))
+
+    assert_equal(true, @row.member?('B'))
+    assert_equal(false, @row.member?('foo'))
+
+    assert_equal(true, @row.key?('B'))
+    assert_equal(false, @row.key?('foo'))
   end
 
   def test_set_field
@@ -208,9 +215,20 @@ class TestCSV::Row < TestCSV
     # by header
     assert_equal(["C", 3], @row.delete("C"))
 
-    # using a block
+  end
+
+  def test_delete_if
     assert_equal(@row, @row.delete_if { |h, f| h == "A" and not f.nil? })
-    assert_equal([["A", nil]], @row.to_a)
+    assert_equal([["B", 2], ["C", 3], ["A", nil]], @row.to_a)
+  end
+
+  def test_delete_if_without_block
+    enum = @row.delete_if
+    assert_instance_of(Enumerator, enum)
+    assert_equal(@row.size, enum.size)
+
+    assert_equal(@row, enum.each { |h, f| h == "A" and not f.nil? })
+    assert_equal([["B", 2], ["C", 3], ["A", nil]], @row.to_a)
   end
 
   def test_fields
@@ -251,12 +269,6 @@ class TestCSV::Row < TestCSV
   end
 
   def test_queries
-    # headers
-    assert_send([@row, :header?, "A"])
-    assert_send([@row, :header?, "C"])
-    assert_not_send([@row, :header?, "Z"])
-    assert_send([@row, :include?, "A"])  # alias
-
     # fields
     assert(@row.field?(4))
     assert(@row.field?(nil))
@@ -280,6 +292,27 @@ class TestCSV::Row < TestCSV
 
     # verify that we can chain the call
     assert_equal(@row, @row.each { })
+
+    # without block
+    ary = @row.to_a
+    enum = @row.each
+    assert_instance_of(Enumerator, enum)
+    assert_equal(@row.size, enum.size)
+    enum.each do |pair|
+      assert_equal(ary.first.first, pair.first)
+      assert_equal(ary.shift.last, pair.last)
+    end
+  end
+
+  def test_each_pair
+    assert_equal([
+                   ["A", 1],
+                   ["B", 2],
+                   ["C", 3],
+                   ["A", 4],
+                   ["A", nil],
+                 ],
+                 @row.each_pair.to_a)
   end
 
   def test_enumerable
@@ -301,7 +334,7 @@ class TestCSV::Row < TestCSV
 
   def test_to_hash
     hash = @row.to_hash
-    assert_equal({"A" => nil, "B" => 2, "C" => 3}, hash)
+    assert_equal({"A" => @row["A"], "B" => @row["B"], "C" => @row["C"]}, hash)
     hash.keys.each_with_index do |string_key, h|
       assert_predicate(string_key, :frozen?)
       assert_same(string_key, @row.headers[h])
@@ -354,5 +387,46 @@ class TestCSV::Row < TestCSV
   def test_can_be_compared_when_not_a_row
     r = @row == []
     assert_equal false, r
+  end
+
+  def test_dig_by_index
+    assert_equal(2, @row.dig(1))
+
+    assert_nil(@row.dig(100))
+  end
+
+  def test_dig_by_header
+    assert_equal(2, @row.dig("B"))
+
+    assert_nil(@row.dig("Missing"))
+  end
+
+  def test_dig_cell
+    row = CSV::Row.new(%w{A}, [["foo", ["bar", ["baz"]]]])
+
+    assert_equal("foo", row.dig(0, 0))
+    assert_equal("bar", row.dig(0, 1, 0))
+
+    assert_equal("foo", row.dig("A", 0))
+    assert_equal("bar", row.dig("A", 1, 0))
+  end
+
+  def test_dig_cell_no_dig
+    row = CSV::Row.new(%w{A}, ["foo"])
+
+    assert_raise(TypeError) do
+      row.dig(0, 0)
+    end
+    assert_raise(TypeError) do
+      row.dig("A", 0)
+    end
+  end
+
+  def test_dup
+    row = CSV::Row.new(["A"], ["foo"])
+    dupped_row = row.dup
+    dupped_row.delete("A")
+    assert_equal(["foo", nil],
+                 [row["A"], dupped_row["A"]])
   end
 end

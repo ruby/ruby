@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # A VendorSpecification represents a gem that has been unpacked into a project
 # and is being loaded through a gem dependencies file through the +path:+
@@ -5,7 +6,7 @@
 
 class Gem::Resolver::VendorSpecification < Gem::Resolver::SpecSpecification
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     self.class === other and
       @set  == other.set and
       @spec == other.spec and
@@ -16,9 +17,8 @@ class Gem::Resolver::VendorSpecification < Gem::Resolver::SpecSpecification
   # This is a null install as this gem was unpacked into a directory.
   # +options+ are ignored.
 
-  def install options = {}
+  def install(options = {})
     yield nil
   end
 
 end
-

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 begin
   require "socket"
   require "test/unit"
@@ -6,10 +8,19 @@ end
 
 
 class TestSocket_TCPSocket < Test::Unit::TestCase
+  def test_inspect
+    TCPServer.open("localhost", 0) {|server|
+      assert_match(/AF_INET/, server.inspect)
+      TCPSocket.open("localhost", server.addr[1]) {|client|
+        assert_match(/AF_INET/, client.inspect)
+      }
+    }
+  end
+
   def test_initialize_failure
     # These addresses are chosen from TEST-NET-1, TEST-NET-2, and TEST-NET-3.
     # [RFC 5737]
-    # They are choosen because probably they are not used as a host address.
+    # They are chosen because probably they are not used as a host address.
     # Anyway the addresses are used for bind() and should be failed.
     # So no packets should be generated.
     test_ip_addresses = [

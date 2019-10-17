@@ -1,0 +1,17 @@
+%# -*- C -*-
+% extinits = ARGV.map {|n| [n[%r[[^/.]+(?=\.[^/]*)?\z]], n]}
+#include "ruby/ruby.h"
+
+#define init(func, name) {	\
+    extern void func(void);	\
+    ruby_init_ext(name".so", func); \
+}
+
+void ruby_init_ext(const char *name, void (*init)(void));
+
+void Init_ext(void)
+{
+% extinits.each do |f, n|
+    init(Init_<%=f%>, <%=n.dump%>);
+% end
+}

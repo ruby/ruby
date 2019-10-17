@@ -1,8 +1,8 @@
+#frozen_string_literal: false
 unless defined?(::JSON::JSON_LOADED) and ::JSON::JSON_LOADED
   require 'json'
 end
 
-# Struct serialization/deserialization
 class Struct
 
   # Deserializes JSON string by constructing new Struct object with values

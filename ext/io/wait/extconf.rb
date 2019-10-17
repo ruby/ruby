@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'mkmf'
 target = "io/wait"
 

@@ -1,3 +1,4 @@
+# frozen-string-literal: true
 ##
 # == Manipulates strings like the UNIX Bourne shell
 #
@@ -5,7 +6,8 @@
 # of the UNIX Bourne shell.
 #
 # The shellwords() function was originally a port of shellwords.pl,
-# but modified to conform to POSIX / SUSv3 (IEEE Std 1003.1-2001 [1]).
+# but modified to conform to the Shell & Utilities volume of the IEEE
+# Std 1003.1-2008, 2016 Edition [1].
 #
 # === Usage
 #
@@ -54,7 +56,7 @@
 #
 # === Resources
 #
-# 1: {IEEE Std 1003.1-2004}[http://pubs.opengroup.org/onlinepubs/009695399/toc.htm]
+# 1: {IEEE Std 1003.1-2008, 2016 Edition, the Shell & Utilities volume}[http://pubs.opengroup.org/onlinepubs/9699919799/utilities/contents.html]
 
 module Shellwords
   # Splits a string into an array of tokens in the same way the UNIX
@@ -63,20 +65,34 @@ module Shellwords
   #   argv = Shellwords.split('here are "two words"')
   #   argv #=> ["here", "are", "two words"]
   #
+  # Note, however, that this is not a command line parser.  Shell
+  # metacharacters except for the single and double quotes and
+  # backslash are not treated as such.
+  #
+  #   argv = Shellwords.split('ruby my_prog.rb | less')
+  #   argv #=> ["ruby", "my_prog.rb", "|", "less"]
+  #
   # String#shellsplit is a shortcut for this function.
   #
   #   argv = 'here are "two words"'.shellsplit
   #   argv #=> ["here", "are", "two words"]
   def shellsplit(line)
     words = []
-    field = ''
+    field = String.new
     line.scan(/\G\s*(?>([^\s\\\'\"]+)|'([^\']*)'|"((?:[^\"\\]|\\.)*)"|(\\.?)|(\S))(\s|\z)?/m) do
       |word, sq, dq, esc, garbage, sep|
       raise ArgumentError, "Unmatched double quote: #{line.inspect}" if garbage
-      field << (word || sq || (dq || esc).gsub(/\\(.)/, '\\1'))
+      # 2.2.3 Double-Quotes:
+      #
+      #   The <backslash> shall retain its special meaning as an
+      #   escape character only when followed by one of the following
+      #   characters when considered special:
+      #
+      #   $ ` " \ <newline>
+      field << (word || sq || (dq && dq.gsub(/\\([$`"\\\n])/, '\\1')) || esc.gsub(/\\(.)/, '\\1'))
       if sep
         words << field
-        field = ''
+        field = String.new
       end
     end
     words
@@ -124,14 +140,14 @@ module Shellwords
     str = str.to_s
 
     # An empty argument will be skipped, so return empty quotes.
-    return "''" if str.empty?
+    return "''".dup if str.empty?
 
     str = str.dup
 
     # Treat multibyte characters as is.  It is the caller's responsibility
     # to encode the string in the right encoding for the shell
     # environment.
-    str.gsub!(/([^A-Za-z0-9_\-.,:\/@\n])/, "\\\\\\1")
+    str.gsub!(/[^A-Za-z0-9_\-.,:+\/@\n]/, "\\\\\\&")
 
     # A LF cannot be escaped with a backslash because a backslash + LF
     # combo is regarded as a line continuation and simply ignored.

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 
 class TestGemResolverBestSet < Gem::TestCase
@@ -134,4 +135,3 @@ class TestGemResolverBestSet < Gem::TestCase
   end
 
 end
-

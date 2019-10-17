@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 =begin
 = Info
   'OpenSSL for Ruby 2' project
@@ -18,3 +19,4 @@ require 'openssl/config'
 require 'openssl/digest'
 require 'openssl/x509'
 require 'openssl/ssl'
+require 'openssl/pkcs5'

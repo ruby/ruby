@@ -1,7 +1,6 @@
 #ifndef _GENERATOR_H_
 #define _GENERATOR_H_
 
-#include <string.h>
 #include <math.h>
 #include <ctype.h>
 
@@ -73,7 +72,6 @@ typedef struct JSON_Generator_StateStruct {
     long max_nesting;
     char allow_nan;
     char ascii_only;
-    char quirks_mode;
     long depth;
     long buffer_initial_length;
 } JSON_Generator_State;
@@ -99,8 +97,12 @@ typedef struct JSON_Generator_StateStruct {
 
 static VALUE mHash_to_json(int argc, VALUE *argv, VALUE self);
 static VALUE mArray_to_json(int argc, VALUE *argv, VALUE self);
+#ifdef RUBY_INTEGER_UNIFICATION
+static VALUE mInteger_to_json(int argc, VALUE *argv, VALUE self);
+#else
 static VALUE mFixnum_to_json(int argc, VALUE *argv, VALUE self);
 static VALUE mBignum_to_json(int argc, VALUE *argv, VALUE self);
+#endif
 static VALUE mFloat_to_json(int argc, VALUE *argv, VALUE self);
 static VALUE mString_included_s(VALUE self, VALUE modul);
 static VALUE mString_to_json(int argc, VALUE *argv, VALUE self);
@@ -122,6 +124,9 @@ static void generate_json_string(FBuffer *buffer, VALUE Vstate, JSON_Generator_S
 static void generate_json_null(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
 static void generate_json_false(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
 static void generate_json_true(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
+#ifdef RUBY_INTEGER_UNIFICATION
+static void generate_json_integer(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
+#endif
 static void generate_json_fixnum(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
 static void generate_json_bignum(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
 static void generate_json_float(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);

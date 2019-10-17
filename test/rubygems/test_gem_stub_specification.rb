@@ -1,15 +1,19 @@
+# frozen_string_literal: true
 require "rubygems/test_case"
 require "rubygems/stub_specification"
 
 class TestStubSpecification < Gem::TestCase
+
   SPECIFICATIONS = File.expand_path(File.join("..", "specifications"), __FILE__)
-  FOO = File.join SPECIFICATIONS, "foo-0.0.1.gemspec"
+  FOO = File.join SPECIFICATIONS, "foo-0.0.1-x86-mswin32.gemspec"
   BAR = File.join SPECIFICATIONS, "bar-0.0.2.gemspec"
 
   def setup
     super
 
-    @foo = Gem::StubSpecification.gemspec_stub FOO
+    @base_dir = File.dirname(SPECIFICATIONS)
+    @gems_dir = File.join File.dirname(SPECIFICATIONS), 'gem'
+    @foo = Gem::StubSpecification.gemspec_stub FOO, @base_dir, @gems_dir
   end
 
   def test_initialize
@@ -30,8 +34,22 @@ class TestStubSpecification < Gem::TestCase
     assert_equal %w[ext/stub_e/extconf.rb],   stub.extensions
   end
 
+  def test_initialize_version
+    stub = stub_with_version
+
+    assert_equal 'stub_v',                    stub.name
+    assert_equal v(2),                        stub.version
+  end
+
+  def test_initialize_with_empty_version
+    stub = stub_without_version
+
+    assert_equal 'stub_v',                    stub.name
+    assert_equal v(0),                        stub.version
+  end
+
   def test_initialize_missing_stubline
-    stub = Gem::StubSpecification.gemspec_stub(BAR)
+    stub = Gem::StubSpecification.gemspec_stub(BAR, @base_dir, @gems_dir)
     assert_equal "bar", stub.name
     assert_equal Gem::Version.new("0.0.2"), stub.version
     assert_equal Gem::Platform.new("ruby"), stub.platform
@@ -49,12 +67,13 @@ class TestStubSpecification < Gem::TestCase
   end
 
   def test_contains_requirable_file_eh_extension
+    skip "I guess making the stub match the running platform should work" if Gem.java_platform?
     stub_with_extension do |stub|
       _, err = capture_io do
         refute stub.contains_requirable_file? 'nonexistent'
       end
 
-      expected = "Ignoring stub_e-2 because its extensions are not built.  " +
+      expected = "Ignoring stub_e-2 because its extensions are not built. " +
                  "Try: gem pristine stub_e --version 2\n"
 
       assert_equal expected, err
@@ -78,6 +97,12 @@ class TestStubSpecification < Gem::TestCase
     assert_equal File.join(stub.full_gem_path, 'lib'), stub.lib_dirs_glob
   end
 
+  def test_lib_dirs_glob_with_extension
+    stub = stub_with_extension
+
+    assert_equal File.join(stub.full_gem_path, 'lib'), stub.lib_dirs_glob
+  end
+
   def test_matches_for_glob
     stub = stub_without_extension
     code_rb = File.join stub.gem_dir, 'lib', 'code.rb'
@@ -87,14 +112,26 @@ class TestStubSpecification < Gem::TestCase
     assert_equal code_rb, stub.matches_for_glob('code*').first
   end
 
+  def test_matches_for_glob_with_bundler_inline
+    stub = stub_with_extension
+    code_rb = File.join stub.gem_dir, 'lib', 'code.rb'
+    FileUtils.mkdir_p File.dirname code_rb
+    FileUtils.touch code_rb
+
+    stub.stub(:raw_require_paths, nil) do
+      assert_equal code_rb, stub.matches_for_glob('code*').first
+    end
+  end
+
   def test_missing_extensions_eh
+    skip "I guess making the stub match the running platform should work" if Gem.java_platform?
     stub = stub_with_extension do |s|
       extconf_rb = File.join s.gem_dir, s.extensions.first
       FileUtils.mkdir_p File.dirname extconf_rb
 
-      open extconf_rb, 'w' do |f|
+      File.open extconf_rb, 'w' do |f|
         f.write <<-'RUBY'
-        open 'Makefile', 'w' do |f|
+        File.open 'Makefile', 'w' do |f|
           f.puts "clean:\n\techo clean"
           f.puts "default:\n\techo built"
           f.puts "install:\n\techo installed"
@@ -114,11 +151,11 @@ class TestStubSpecification < Gem::TestCase
     spec = new_default_spec 'default', 1
     spec.extensions << 'extconf.rb'
 
-    open spec.loaded_from, 'w' do |io|
+    File.open spec.loaded_from, 'w' do |io|
       io.write spec.to_ruby_for_cache
     end
 
-    default_spec = Gem::StubSpecification.gemspec_stub spec.loaded_from
+    default_spec = Gem::StubSpecification.gemspec_stub spec.loaded_from, spec.base_dir, spec.gems_dir
 
     refute default_spec.missing_extensions?
   end
@@ -140,7 +177,7 @@ class TestStubSpecification < Gem::TestCase
   def test_to_spec_with_other_specs_loaded_does_not_warn
     real_foo = util_spec @foo.name, @foo.version
     real_foo.activate
-    bar = Gem::StubSpecification.gemspec_stub BAR
+    bar = Gem::StubSpecification.gemspec_stub BAR, real_foo.base_dir, real_foo.gems_dir
     refute_predicate Gem.loaded_specs, :empty?
     assert bar.to_spec
   end
@@ -148,7 +185,7 @@ class TestStubSpecification < Gem::TestCase
   def test_to_spec_activated
     assert @foo.to_spec.is_a?(Gem::Specification)
     assert_equal "foo", @foo.to_spec.name
-    refute @foo.to_spec.instance_variable_defined? :@ignored
+    refute @foo.to_spec.instance_variable_get :@ignored
   end
 
   def test_to_spec_missing_extensions
@@ -161,9 +198,55 @@ class TestStubSpecification < Gem::TestCase
     assert stub.to_spec.instance_variable_get :@ignored
   end
 
+  def stub_with_version
+    spec = File.join @gemhome, 'specifications', 'stub_e-2.gemspec'
+    File.open spec, 'w' do |io|
+      io.write <<-STUB
+# -*- encoding: utf-8 -*-
+# stub: stub_v 2 ruby lib
+
+Gem::Specification.new do |s|
+  s.name = 'stub_v'
+  s.version = Gem::Version.new '2'
+end
+      STUB
+
+      io.flush
+
+      stub = Gem::StubSpecification.gemspec_stub io.path, @gemhome, File.join(@gemhome, 'gems')
+
+      yield stub if block_given?
+
+      return stub
+    end
+  end
+
+  def stub_without_version
+    spec = File.join @gemhome, 'specifications', 'stub-2.gemspec'
+    File.open spec, 'w' do |io|
+      io.write <<-STUB
+# -*- encoding: utf-8 -*-
+# stub: stub_v ruby lib
+
+Gem::Specification.new do |s|
+  s.name = 'stub_v'
+  s.version = ""
+end
+      STUB
+
+      io.flush
+
+      stub = Gem::StubSpecification.gemspec_stub io.path, @gemhome, File.join(@gemhome, 'gems')
+
+      yield stub if block_given?
+
+      return stub
+    end
+  end
+
   def stub_with_extension
     spec = File.join @gemhome, 'specifications', 'stub_e-2.gemspec'
-    open spec, 'w' do |io|
+    File.open spec, 'w' do |io|
       io.write <<-STUB
 # -*- encoding: utf-8 -*-
 # stub: stub_e 2 ruby lib
@@ -179,7 +262,7 @@ end
 
       io.flush
 
-      stub = Gem::StubSpecification.gemspec_stub io.path
+      stub = Gem::StubSpecification.gemspec_stub io.path, @gemhome, File.join(@gemhome, 'gems')
 
       yield stub if block_given?
 
@@ -189,7 +272,7 @@ end
 
   def stub_without_extension
     spec = File.join @gemhome, 'specifications', 'stub-2.gemspec'
-    open spec, 'w' do |io|
+    File.open spec, 'w' do |io|
       io.write <<-STUB
 # -*- encoding: utf-8 -*-
 # stub: stub 2 ruby lib
@@ -202,7 +285,7 @@ end
 
       io.flush
 
-      stub = Gem::StubSpecification.gemspec_stub io.path
+      stub = Gem::StubSpecification.gemspec_stub io.path, @gemhome, File.join(@gemhome, 'gems')
 
       yield stub if block_given?
 
@@ -211,4 +294,3 @@ end
   end
 
 end
-

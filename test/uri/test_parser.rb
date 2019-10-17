@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'uri'
 
@@ -39,9 +40,22 @@ class URI::TestParser < Test::Unit::TestCase
 		 uri_to_ary(u1))
   end
 
+  def test_parse_query_pct_encoded
+    assert_equal('q=%32!$&-/?.09;=:@AZ_az~', URI.parse('https://www.example.com/search?q=%32!$&-/?.09;=:@AZ_az~').query)
+    assert_raise(URI::InvalidURIError) { URI.parse('https://www.example.com/search?q=%XX') }
+  end
+
   def test_raise_bad_uri_for_integer
     assert_raise(URI::InvalidURIError) do
       URI.parse(1)
     end
+  end
+
+  def test_unescape
+    p1 = URI::Parser.new
+    assert_equal("\xe3\x83\x90", p1.unescape("\xe3\x83\x90"))
+    assert_equal("\xe3\x83\x90", p1.unescape('%e3%83%90'))
+    assert_equal("\u3042", p1.unescape('%e3%81%82'.force_encoding(Encoding::US_ASCII)))
+    assert_equal("\xe3\x83\x90\xe3\x83\x90", p1.unescape("\xe3\x83\x90%e3%83%90"))
   end
 end

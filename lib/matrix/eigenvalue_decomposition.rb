@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 class Matrix
   # Adapted from JAMA: http://math.nist.gov/javanumerics/jama/
 
@@ -42,7 +43,7 @@ class Matrix
     def eigenvector_matrix
       Matrix.send(:new, build_eigenvectors.transpose)
     end
-    alias v eigenvector_matrix
+    alias_method :v, :eigenvector_matrix
 
     # Returns the inverse of the eigenvector matrix +V+
     #
@@ -51,7 +52,7 @@ class Matrix
       r = r.transpose.inverse unless @symmetric
       r
     end
-    alias v_inv eigenvector_matrix_inv
+    alias_method :v_inv, :eigenvector_matrix_inv
 
     # Returns the eigenvalues in an array
     #
@@ -72,7 +73,7 @@ class Matrix
     def eigenvalue_matrix
       Matrix.diagonal(*eigenvalues)
     end
-    alias d eigenvalue_matrix
+    alias_method :d, :eigenvalue_matrix
 
     # Returns [eigenvector_matrix, eigenvalue_matrix, eigenvector_matrix_inv]
     #
@@ -81,8 +82,8 @@ class Matrix
     end
     alias_method :to_a, :to_ary
 
-  private
-    def build_eigenvectors
+
+    private def build_eigenvectors
       # JAMA stores complex eigenvectors in a strange way
       # See http://web.archive.org/web/20111016032731/http://cio.nist.gov/esd/emaildir/lists/jama/msg01021.html
       @e.each_with_index.map do |imag, i|
@@ -95,9 +96,10 @@ class Matrix
         end
       end
     end
+
     # Complex scalar division.
 
-    def cdiv(xr, xi, yr, yi)
+    private def cdiv(xr, xi, yr, yi)
       if (yr.abs > yi.abs)
         r = yi/yr
         d = yr + r*yi
@@ -112,125 +114,125 @@ class Matrix
 
     # Symmetric Householder reduction to tridiagonal form.
 
-    def tridiagonalize
+    private def tridiagonalize
 
       #  This is derived from the Algol procedures tred2 by
       #  Bowdler, Martin, Reinsch, and Wilkinson, Handbook for
       #  Auto. Comp., Vol.ii-Linear Algebra, and the corresponding
       #  Fortran subroutine in EISPACK.
 
-        @size.times do |j|
-          @d[j] = @v[@size-1][j]
-        end
-
-        # Householder reduction to tridiagonal form.
-
-        (@size-1).downto(0+1) do |i|
-
-          # Scale to avoid under/overflow.
-
-          scale = 0.0
-          h = 0.0
-          i.times do |k|
-            scale = scale + @d[k].abs
-          end
-          if (scale == 0.0)
-            @e[i] = @d[i-1]
-            i.times do |j|
-              @d[j] = @v[i-1][j]
-              @v[i][j] = 0.0
-              @v[j][i] = 0.0
-            end
-          else
-
-            # Generate Householder vector.
-
-            i.times do |k|
-              @d[k] /= scale
-              h += @d[k] * @d[k]
-            end
-            f = @d[i-1]
-            g = Math.sqrt(h)
-            if (f > 0)
-              g = -g
-            end
-            @e[i] = scale * g
-            h -= f * g
-            @d[i-1] = f - g
-            i.times do |j|
-              @e[j] = 0.0
-            end
-
-            # Apply similarity transformation to remaining columns.
-
-            i.times do |j|
-              f = @d[j]
-              @v[j][i] = f
-              g = @e[j] + @v[j][j] * f
-              (j+1).upto(i-1) do |k|
-                g += @v[k][j] * @d[k]
-                @e[k] += @v[k][j] * f
-              end
-              @e[j] = g
-            end
-            f = 0.0
-            i.times do |j|
-              @e[j] /= h
-              f += @e[j] * @d[j]
-            end
-            hh = f / (h + h)
-            i.times do |j|
-              @e[j] -= hh * @d[j]
-            end
-            i.times do |j|
-              f = @d[j]
-              g = @e[j]
-              j.upto(i-1) do |k|
-                @v[k][j] -= (f * @e[k] + g * @d[k])
-              end
-              @d[j] = @v[i-1][j]
-              @v[i][j] = 0.0
-            end
-          end
-          @d[i] = h
-        end
-
-        # Accumulate transformations.
-
-        0.upto(@size-1-1) do |i|
-          @v[@size-1][i] = @v[i][i]
-          @v[i][i] = 1.0
-          h = @d[i+1]
-          if (h != 0.0)
-            0.upto(i) do |k|
-              @d[k] = @v[k][i+1] / h
-            end
-            0.upto(i) do |j|
-              g = 0.0
-              0.upto(i) do |k|
-                g += @v[k][i+1] * @v[k][j]
-              end
-              0.upto(i) do |k|
-                @v[k][j] -= g * @d[k]
-              end
-            end
-          end
-          0.upto(i) do |k|
-            @v[k][i+1] = 0.0
-          end
-        end
-        @size.times do |j|
-          @d[j] = @v[@size-1][j]
-          @v[@size-1][j] = 0.0
-        end
-        @v[@size-1][@size-1] = 1.0
-        @e[0] = 0.0
+      @size.times do |j|
+        @d[j] = @v[@size-1][j]
       end
+
+      # Householder reduction to tridiagonal form.
+
+      (@size-1).downto(0+1) do |i|
+
+        # Scale to avoid under/overflow.
+
+        scale = 0.0
+        h = 0.0
+        i.times do |k|
+          scale = scale + @d[k].abs
+        end
+        if (scale == 0.0)
+          @e[i] = @d[i-1]
+          i.times do |j|
+            @d[j] = @v[i-1][j]
+            @v[i][j] = 0.0
+            @v[j][i] = 0.0
+          end
+        else
+
+          # Generate Householder vector.
+
+          i.times do |k|
+            @d[k] /= scale
+            h += @d[k] * @d[k]
+          end
+          f = @d[i-1]
+          g = Math.sqrt(h)
+          if (f > 0)
+            g = -g
+          end
+          @e[i] = scale * g
+          h -= f * g
+          @d[i-1] = f - g
+          i.times do |j|
+            @e[j] = 0.0
+          end
+
+          # Apply similarity transformation to remaining columns.
+
+          i.times do |j|
+            f = @d[j]
+            @v[j][i] = f
+            g = @e[j] + @v[j][j] * f
+            (j+1).upto(i-1) do |k|
+              g += @v[k][j] * @d[k]
+              @e[k] += @v[k][j] * f
+            end
+            @e[j] = g
+          end
+          f = 0.0
+          i.times do |j|
+            @e[j] /= h
+            f += @e[j] * @d[j]
+          end
+          hh = f / (h + h)
+          i.times do |j|
+            @e[j] -= hh * @d[j]
+          end
+          i.times do |j|
+            f = @d[j]
+            g = @e[j]
+            j.upto(i-1) do |k|
+              @v[k][j] -= (f * @e[k] + g * @d[k])
+            end
+            @d[j] = @v[i-1][j]
+            @v[i][j] = 0.0
+          end
+        end
+        @d[i] = h
+      end
+
+      # Accumulate transformations.
+
+      0.upto(@size-1-1) do |i|
+        @v[@size-1][i] = @v[i][i]
+        @v[i][i] = 1.0
+        h = @d[i+1]
+        if (h != 0.0)
+          0.upto(i) do |k|
+            @d[k] = @v[k][i+1] / h
+          end
+          0.upto(i) do |j|
+            g = 0.0
+            0.upto(i) do |k|
+              g += @v[k][i+1] * @v[k][j]
+            end
+            0.upto(i) do |k|
+              @v[k][j] -= g * @d[k]
+            end
+          end
+        end
+        0.upto(i) do |k|
+          @v[k][i+1] = 0.0
+        end
+      end
+      @size.times do |j|
+        @d[j] = @v[@size-1][j]
+        @v[@size-1][j] = 0.0
+      end
+      @v[@size-1][@size-1] = 1.0
+      @e[0] = 0.0
+    end
 
 
     # Symmetric tridiagonal QL algorithm.
 
-    def diagonalize
+    private def diagonalize
       #  This is derived from the Algol procedures tql2, by
       #  Bowdler, Martin, Reinsch, and Wilkinson, Handbook for
       #  Auto. Comp., Vol.ii-Linear Algebra, and the corresponding
@@ -349,7 +351,7 @@ class Matrix
 
     # Nonsymmetric reduction to Hessenberg form.
 
-    def reduce_to_hessenberg
+    private def reduce_to_hessenberg
       #  This is derived from the Algol procedures orthes and ortran,
       #  by Martin and Wilkinson, Handbook for Auto. Comp.,
       #  Vol.ii-Linear Algebra, and the corresponding
@@ -439,11 +441,9 @@ class Matrix
       end
     end
 
-
-
     # Nonsymmetric reduction from Hessenberg to real Schur form.
 
-    def hessenberg_to_real_schur
+    private def hessenberg_to_real_schur
 
       #  This is derived from the Algol procedure hqr2,
       #  by Martin and Wilkinson, Handbook for Auto. Comp.,
@@ -727,20 +727,20 @@ class Matrix
         return
       end
 
-      (nn-1).downto(0) do |n|
-        p = @d[n]
-        q = @e[n]
+      (nn-1).downto(0) do |k|
+        p = @d[k]
+        q = @e[k]
 
         # Real vector
 
         if (q == 0)
-          l = n
-          @h[n][n] = 1.0
-          (n-1).downto(0) do |i|
+          l = k
+          @h[k][k] = 1.0
+          (k-1).downto(0) do |i|
             w = @h[i][i] - p
             r = 0.0
-            l.upto(n) do |j|
-              r += @h[i][j] * @h[j][n]
+            l.upto(k) do |j|
+              r += @h[i][j] * @h[j][k]
             end
             if (@e[i] < 0.0)
               z = w
@@ -749,9 +749,9 @@ class Matrix
               l = i
               if (@e[i] == 0.0)
                 if (w != 0.0)
-                  @h[i][n] = -r / w
+                  @h[i][k] = -r / w
                 else
-                  @h[i][n] = -r / (eps * norm)
+                  @h[i][k] = -r / (eps * norm)
                 end
 
               # Solve real equations
@@ -761,20 +761,20 @@ class Matrix
                 y = @h[i+1][i]
                 q = (@d[i] - p) * (@d[i] - p) + @e[i] * @e[i]
                 t = (x * s - z * r) / q
-                @h[i][n] = t
+                @h[i][k] = t
                 if (x.abs > z.abs)
-                  @h[i+1][n] = (-r - w * t) / x
+                  @h[i+1][k] = (-r - w * t) / x
                 else
-                  @h[i+1][n] = (-s - y * t) / z
+                  @h[i+1][k] = (-s - y * t) / z
                 end
               end
 
               # Overflow control
 
-              t = @h[i][n].abs
+              t = @h[i][k].abs
               if ((eps * t) * t > 1)
-                i.upto(n) do |j|
-                  @h[j][n] = @h[j][n] / t
+                i.upto(k) do |j|
+                  @h[j][k] = @h[j][k] / t
                 end
               end
             end

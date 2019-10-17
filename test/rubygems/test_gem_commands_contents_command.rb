@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/commands/contents_command'
 
@@ -9,7 +10,7 @@ class TestGemCommandsContentsCommand < Gem::TestCase
     @cmd = Gem::Commands::ContentsCommand.new
   end
 
-  def gem name, version = 2
+  def gem(name, version = 2)
     spec = quick_gem name, version do |gem|
       gem.files = %W[lib/#{name}.rb Rakefile]
     end
@@ -236,4 +237,3 @@ lib/foo.rb
   end
 
 end
-

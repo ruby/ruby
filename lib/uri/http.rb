@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # = uri/http.rb
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
@@ -7,7 +8,7 @@
 # See URI for general documentation
 #
 
-require 'uri/generic'
+require_relative 'generic'
 
 module URI
 
@@ -20,68 +21,45 @@ module URI
   # update. See <URL:http://support.microsoft.com/kb/834489>.
   #
   class HTTP < Generic
-    # A Default port of 80 for URI::HTTP
+    # A Default port of 80 for URI::HTTP.
     DEFAULT_PORT = 80
 
-    # An Array of the available components for URI::HTTP
-    COMPONENT = [
-      :scheme,
-      :userinfo, :host, :port,
-      :path,
-      :query,
-      :fragment
+    # An Array of the available components for URI::HTTP.
+    COMPONENT = %i[
+      scheme
+      userinfo host port
+      path
+      query
+      fragment
     ].freeze
 
     #
     # == Description
     #
-    # Create a new URI::HTTP object from components, with syntax checking.
+    # Creates a new URI::HTTP object from components, with syntax checking.
     #
-    # The components accepted are userinfo, host, port, path, query and
+    # The components accepted are userinfo, host, port, path, query, and
     # fragment.
     #
     # The components should be provided either as an Array, or as a Hash
     # with keys formed by preceding the component names with a colon.
     #
-    # If an Array is used, the components must be passed in the order
-    # [userinfo, host, port, path, query, fragment].
+    # If an Array is used, the components must be passed in the
+    # order <code>[userinfo, host, port, path, query, fragment]</code>.
     #
     # Example:
     #
-    #     newuri = URI::HTTP.build({:host => 'www.example.com',
-    #       :path => '/foo/bar'})
+    #     uri = URI::HTTP.build(host: 'www.example.com', path: '/foo/bar')
     #
-    #     newuri = URI::HTTP.build([nil, "www.example.com", nil, "/path",
+    #     uri = URI::HTTP.build([nil, "www.example.com", nil, "/path",
     #       "query", 'fragment'])
     #
     # Currently, if passed userinfo components this method generates
     # invalid HTTP URIs as per RFC 1738.
     #
     def self.build(args)
-      tmp = Util::make_components_hash(self, args)
-      return super(tmp)
-    end
-
-    #
-    # == Description
-    #
-    # Create a new URI::HTTP object from generic URI components as per
-    # RFC 2396. No HTTP-specific syntax checking (as per RFC 1738) is
-    # performed.
-    #
-    # Arguments are +scheme+, +userinfo+, +host+, +port+, +registry+, +path+,
-    # +opaque+, +query+ and +fragment+, in that order.
-    #
-    # Example:
-    #
-    #     uri = URI::HTTP.new('http', nil, "www.example.com", nil, "/path",
-    #       "query", 'fragment')
-    #
-    #
-    # See also URI::Generic.new
-    #
-    def initialize(*arg)
-      super(*arg)
+      tmp = Util.make_components_hash(self, args)
+      super(tmp)
     end
 
     #
@@ -92,15 +70,19 @@ module URI
     # If the URI contains a query, the full path is URI#path + '?' + URI#query.
     # Otherwise, the path is simply URI#path.
     #
+    # Example:
+    #
+    #     uri = URI::HTTP.build(path: '/foo/bar', query: 'test=true')
+    #     uri.request_uri #  => "/foo/bar?test=true"
+    #
     def request_uri
-      return nil unless @path
-      if @path.start_with?(?/.freeze)
-        @query ? "#@path?#@query" : @path.dup
-      else
-        @query ? "/#@path?#@query" : "/#@path"
-      end
+      return unless @path
+
+      url = @query ? "#@path?#@query" : @path.dup
+      url.start_with?(?/.freeze) ? url : ?/ + url
     end
   end
 
   @@schemes['HTTP'] = HTTP
+
 end

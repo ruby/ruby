@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 require 'drb/drb'
@@ -16,14 +17,34 @@ class MockClock
     def keeper_thread
       nil
     end
+
+    def stop_keeper
+      if @keeper
+        @keeper.kill
+        @keeper.join
+        @keeper = nil
+      end
+    end
   end
 
   def initialize
     @now = 2
     @reso = 1
+    @ts = nil
+    @inf = 2**31 - 1
+  end
+
+  def start_keeper
+    @now = 2
+    @reso = 1
+    @ts&.stop_keeper
     @ts = MyTS.new
     @ts.write([2, :now])
     @inf = 2**31 - 1
+  end
+
+  def stop_keeper
+    @ts.stop_keeper
   end
 
   def now
@@ -99,6 +120,14 @@ class TupleSpace
 end
 
 module TupleSpaceTestModule
+  def setup
+    MockClock.instance.start_keeper
+  end
+
+  def teardown
+    MockClock.instance.stop_keeper
+  end
+
   def sleep(n)
     if Thread.current == Thread.main
       Time.forward(n)
@@ -240,17 +269,21 @@ module TupleSpaceTestModule
   end
 
   def test_ruby_talk_264062
-    th = Thread.new { @ts.take([:empty], 1) }
+    th = Thread.new {
+      assert_raise(Rinda::RequestExpiredError) do
+        @ts.take([:empty], 1)
+      end
+    }
     sleep(10)
-    assert_raise(Rinda::RequestExpiredError) do
-      thread_join(th)
-    end
+    thread_join(th)
 
-    th = Thread.new { @ts.read([:empty], 1) }
+    th = Thread.new {
+      assert_raise(Rinda::RequestExpiredError) do
+        @ts.read([:empty], 1)
+      end
+    }
     sleep(10)
-    assert_raise(Rinda::RequestExpiredError) do
-      thread_join(th)
-    end
+    thread_join(th)
   end
 
   def test_symbol_tuple
@@ -347,19 +380,18 @@ module TupleSpaceTestModule
 
     template = nil
     taker = Thread.new do
-      @ts.take([:take, nil], 10) do |t|
-        template = t
-	Thread.new do
-	  template.cancel
-	end
+      assert_raise(Rinda::RequestCanceledError) do
+        @ts.take([:take, nil], 10) do |t|
+          template = t
+          Thread.new do
+            template.cancel
+          end
+        end
       end
     end
 
     sleep(2)
-
-    assert_raise(Rinda::RequestCanceledError) do
-      assert_nil(thread_join(taker))
-    end
+    thread_join(taker)
 
     assert(template.canceled?)
 
@@ -376,19 +408,18 @@ module TupleSpaceTestModule
 
     template = nil
     reader = Thread.new do
-      @ts.read([:take, nil], 10) do |t|
-        template = t
-	Thread.new do
-	  template.cancel
-	end
+      assert_raise(Rinda::RequestCanceledError) do
+        @ts.read([:take, nil], 10) do |t|
+          template = t
+          Thread.new do
+            template.cancel
+          end
+        end
       end
     end
 
     sleep(2)
-
-    assert_raise(Rinda::RequestCanceledError) do
-      assert_nil(thread_join(reader))
-    end
+    thread_join(reader)
 
     assert(template.canceled?)
 
@@ -443,6 +474,7 @@ class TupleSpaceTest < Test::Unit::TestCase
   include TupleSpaceTestModule
 
   def setup
+    super
     ThreadGroup.new.add(Thread.current)
     @ts = Rinda::TupleSpace.new(1)
   end
@@ -454,6 +486,7 @@ class TupleSpaceTest < Test::Unit::TestCase
         th.join
       end
     }
+    super
   end
 end
 
@@ -461,9 +494,11 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   include TupleSpaceTestModule
 
   def setup
+    super
     ThreadGroup.new.add(Thread.current)
     @ts_base = Rinda::TupleSpace.new(1)
     @ts = Rinda::TupleSpaceProxy.new(@ts_base)
+    @server = DRb.start_service("druby://localhost:0")
   end
   def teardown
     # implementation-dependent
@@ -473,6 +508,8 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
         th.join
       end
     }
+    @server.stop_service
+    super
   end
 
   def test_remote_array_and_hash
@@ -488,6 +525,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   end
 
   def test_take_bug_8215
+    skip "this test randomly fails on mswin" if /mswin/ =~ RUBY_PLATFORM
     service = DRb.start_service("druby://localhost:0", @ts_base)
 
     uri = service.uri
@@ -501,6 +539,8 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
       ts = Rinda::TupleSpaceProxy.new(ro)
       th = Thread.new do
         ts.take([:test_take, nil])
+      rescue Interrupt
+        # Expected
       end
       Kernel.sleep(0.1)
       th.raise(Interrupt) # causes loss of the taken tuple
@@ -530,8 +570,6 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
     Process.wait(write) if write && status.nil?
     Process.wait(take)  if take
   end
-
-  @server = DRb.primary_server || DRb.start_service("druby://localhost:0")
 end
 
 module RingIPv6
@@ -551,6 +589,28 @@ module RingIPv6
     end
     skip 'IPv6 not available'
   end
+
+  def ipv6_mc(rf, hops = nil)
+    ifaddr = prepare_ipv6(rf)
+    rf.multicast_hops = hops if hops
+    begin
+      v6mc = rf.make_socket("ff02::1")
+    rescue Errno::EINVAL
+      # somehow Debian 6.0.7 needs ifname
+      v6mc = rf.make_socket("ff02::1%#{ifaddr.name}")
+    rescue Errno::EADDRNOTAVAIL
+      return # IPv6 address for multicast not available
+    rescue Errno::ENETDOWN
+      return # Network is down
+    rescue Errno::EHOSTUNREACH
+      return # Unreachable for some reason
+    end
+    begin
+      yield v6mc
+    ensure
+      v6mc.close
+    end
+  end
 end
 
 class TestRingServer < Test::Unit::TestCase
@@ -560,8 +620,10 @@ class TestRingServer < Test::Unit::TestCase
 
     @ts = Rinda::TupleSpace.new
     @rs = Rinda::RingServer.new(@ts, [], @port)
+    @server = DRb.start_service("druby://localhost:0")
   end
   def teardown
+    @rs.shutdown
     # implementation-dependent
     @ts.instance_eval{
       if th = @keeper
@@ -569,7 +631,7 @@ class TestRingServer < Test::Unit::TestCase
         th.join
       end
     }
-    @rs.shutdown
+    @server.stop_service
   end
 
   def test_do_reply
@@ -595,6 +657,7 @@ class TestRingServer < Test::Unit::TestCase
   end
 
   def test_do_reply_local
+    skip 'timeout-based test becomes unstable with --jit-wait' if RubyVM::MJIT.enabled?
     with_timeout(10) {_test_do_reply_local}
   end
 
@@ -622,12 +685,23 @@ class TestRingServer < Test::Unit::TestCase
   end
 
   def test_make_socket_ipv4_multicast
-    v4mc = @rs.make_socket('239.0.0.1')
+    begin
+      v4mc = @rs.make_socket('239.0.0.1')
+    rescue Errno::ENOBUFS => e
+      skip "Missing multicast support in OS: #{e.message}"
+    end
 
-    if Socket.const_defined?(:SO_REUSEPORT) then
-      assert(v4mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool)
-    else
-      assert(v4mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool)
+    begin
+      if Socket.const_defined?(:SO_REUSEPORT) then
+        assert(v4mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool)
+      else
+        assert(v4mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool)
+      end
+    rescue TypeError
+      if /aix/ =~ RUBY_PLATFORM
+        skip "Known bug in getsockopt(2) on AIX"
+      end
+      raise $!
     end
 
     assert_equal('0.0.0.0', v4mc.local_address.ip_address)
@@ -642,6 +716,8 @@ class TestRingServer < Test::Unit::TestCase
       v6mc = @rs.make_socket('ff02::1')
     rescue Errno::EADDRNOTAVAIL
       return # IPv6 address for multicast not available
+    rescue Errno::ENOBUFS => e
+      skip "Missing multicast support in OS: #{e.message}"
     end
 
     if Socket.const_defined?(:SO_REUSEPORT) then
@@ -656,13 +732,25 @@ class TestRingServer < Test::Unit::TestCase
 
   def test_ring_server_ipv4_multicast
     @rs.shutdown
-    @rs = Rinda::RingServer.new(@ts, [['239.0.0.1', '0.0.0.0']], @port)
+    begin
+      @rs = Rinda::RingServer.new(@ts, [['239.0.0.1', '0.0.0.0']], @port)
+    rescue Errno::ENOBUFS => e
+      skip "Missing multicast support in OS: #{e.message}"
+    end
+
     v4mc = @rs.instance_variable_get('@sockets').first
 
-    if Socket.const_defined?(:SO_REUSEPORT) then
-      assert(v4mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool)
-    else
-      assert(v4mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool)
+    begin
+      if Socket.const_defined?(:SO_REUSEPORT) then
+        assert(v4mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool)
+      else
+        assert(v4mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool)
+      end
+    rescue TypeError
+      if /aix/ =~ RUBY_PLATFORM
+        skip "Known bug in getsockopt(2) on AIX"
+      end
+      raise $!
     end
 
     assert_equal('0.0.0.0', v4mc.local_address.ip_address)
@@ -711,7 +799,10 @@ class TestRingServer < Test::Unit::TestCase
       mth.raise(Timeout::Error)
     end
     tl0 << th
+    yield
   rescue Timeout::Error => e
+    $stderr.puts "TestRingServer#with_timeout: timeout in #{n}s:"
+    $stderr.puts caller
     if tl
       bt = e.backtrace
       tl.each do |t|
@@ -754,6 +845,11 @@ class TestRingFinger < Test::Unit::TestCase
     v4 = @rf.make_socket('127.0.0.1')
 
     assert(v4.getsockopt(:SOL_SOCKET, :SO_BROADCAST).bool)
+  rescue TypeError
+    if /aix/ =~ RUBY_PLATFORM
+      skip "Known bug in getsockopt(2) on AIX"
+    end
+    raise $!
   ensure
     v4.close if v4
   end
@@ -768,18 +864,10 @@ class TestRingFinger < Test::Unit::TestCase
   end
 
   def test_make_socket_ipv6_multicast
-    ifaddr = prepare_ipv6(@rf)
-    begin
-      v6mc = @rf.make_socket("ff02::1")
-    rescue Errno::EINVAL
-      # somehow Debian 6.0.7 needs ifname
-      v6mc = @rf.make_socket("ff02::1%#{ifaddr.name}")
+    ipv6_mc(@rf) do |v6mc|
+      assert_equal(1, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_LOOP).int)
+      assert_equal(1, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS).int)
     end
-
-    assert_equal(1, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_LOOP).int)
-    assert_equal(1, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS).int)
-  ensure
-    v6mc.close if v6mc
   end
 
   def test_make_socket_ipv4_multicast_hops
@@ -791,20 +879,11 @@ class TestRingFinger < Test::Unit::TestCase
   end
 
   def test_make_socket_ipv6_multicast_hops
-    ifaddr = prepare_ipv6(@rf)
-    @rf.multicast_hops = 2
-    begin
-      v6mc = @rf.make_socket("ff02::1")
-    rescue Errno::EINVAL
-      # somehow Debian 6.0.7 needs ifname
-      v6mc = @rf.make_socket("ff02::1%#{ifaddr.name}")
+    ipv6_mc(@rf, 2) do |v6mc|
+      assert_equal(2, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS).int)
     end
-    assert_equal(2, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS).int)
-  ensure
-    v6mc.close if v6mc
   end
 
 end
 
 end
-

@@ -1,0 +1,8 @@
+prelude: |
+  def m
+    nil
+  end
+benchmark:
+  vm2_method: |
+    m; m; m; m; m; m; m; m;
+loop_count: 6000000

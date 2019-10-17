@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'win32ole'
 
 #   -4100 is the value for the Excel constant xl3DColumn.
@@ -7,7 +8,7 @@ ChartTypeVal = -4100;
 excel = WIN32OLE.new("excel.application")
 
 # Create and rotate the chart
-excel.visible = TRUE;
+excel.visible = true;
 excel.Workbooks.Add();
 excel.Range("a1").value = 3;
 excel.Range("a2").value = 2;

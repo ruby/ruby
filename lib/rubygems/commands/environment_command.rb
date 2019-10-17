@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/command'
 
 class Gem::Commands::EnvironmentCommand < Gem::Command
@@ -8,7 +9,6 @@ class Gem::Commands::EnvironmentCommand < Gem::Command
 
   def arguments # :nodoc:
     args = <<-EOF
-          packageversion  display the package version
           gemdir          display the path where gems are installed
           gempath         display path used to search for gems
           version         display the gem format version
@@ -71,12 +71,10 @@ lib/rubygems/defaults/operating_system.rb
   end
 
   def execute
-    out = ''
+    out = String.new
     arg = options[:args][0]
     out <<
       case arg
-      when /^packageversion/ then
-        Gem::RubyGemsPackageVersion
       when /^version/ then
         Gem::VERSION
       when /^gemdir/, /^gemhome/, /^home/, /^GEM_HOME/ then
@@ -96,14 +94,14 @@ lib/rubygems/defaults/operating_system.rb
     true
   end
 
-  def add_path out, path
+  def add_path(out, path)
     path.each do |component|
       out << "     - #{component}\n"
     end
   end
 
   def show_environment # :nodoc:
-    out = "RubyGems Environment:\n"
+    out = "RubyGems Environment:\n".dup
 
     out << "  - RUBYGEMS VERSION: #{Gem::VERSION}\n"
 
@@ -113,9 +111,13 @@ lib/rubygems/defaults/operating_system.rb
 
     out << "  - INSTALLATION DIRECTORY: #{Gem.dir}\n"
 
+    out << "  - USER INSTALLATION DIRECTORY: #{Gem.user_dir}\n"
+
     out << "  - RUBYGEMS PREFIX: #{Gem.prefix}\n" unless Gem.prefix.nil?
 
     out << "  - RUBY EXECUTABLE: #{Gem.ruby}\n"
+
+    out << "  - GIT EXECUTABLE: #{git_path}\n"
 
     out << "  - EXECUTABLE DIRECTORY: #{Gem.bindir}\n"
 
@@ -154,5 +156,21 @@ lib/rubygems/defaults/operating_system.rb
     out
   end
 
-end
+  private
 
+  ##
+  # Git binary path
+
+  def git_path
+    exts = ENV["PATHEXT"] ? ENV["PATHEXT"].split(";") : [""]
+    ENV["PATH"].split(File::PATH_SEPARATOR).each do |path|
+      exts.each do |ext|
+        exe = File.join(path, "git#{ext}")
+        return exe if File.executable?(exe) && !File.directory?(exe)
+      end
+    end
+
+    return nil
+  end
+
+end

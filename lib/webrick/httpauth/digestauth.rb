@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # httpauth/digestauth.rb -- HTTP digest access authentication
 #
@@ -11,9 +12,9 @@
 #
 # $IPR: digestauth.rb,v 1.5 2003/02/20 07:15:47 gotoyuzo Exp $
 
-require 'webrick/config'
-require 'webrick/httpstatus'
-require 'webrick/httpauth/authenticator'
+require_relative '../config'
+require_relative '../httpstatus'
+require_relative 'authenticator'
 require 'digest/md5'
 require 'digest/sha1'
 
@@ -110,7 +111,7 @@ module WEBrick
         @instance_key = hexdigest(self.__id__, Time.now.to_i, Process.pid)
         @opaques = {}
         @last_nonce_expire = Time.now
-        @mutex = Mutex.new
+        @mutex = Thread::Mutex.new
       end
 
       ##
@@ -128,8 +129,7 @@ module WEBrick
       end
 
       ##
-      # Returns a challenge response which asks for for authentication
-      # information
+      # Returns a challenge response which asks for authentication information
 
       def challenge(req, res, stale=false)
         nonce = generate_next_nonce(req)
@@ -235,9 +235,11 @@ module WEBrick
           ha2 = hexdigest(req.request_method, auth_req['uri'])
           ha2_res = hexdigest("", auth_req['uri'])
         elsif auth_req['qop'] == "auth-int"
-          ha2 = hexdigest(req.request_method, auth_req['uri'],
-                          hexdigest(req.body))
-          ha2_res = hexdigest("", auth_req['uri'], hexdigest(res.body))
+          body_digest = @h.new
+          req.body { |chunk| body_digest.update(chunk) }
+          body_digest = body_digest.hexdigest
+          ha2 = hexdigest(req.request_method, auth_req['uri'], body_digest)
+          ha2_res = hexdigest("", auth_req['uri'], body_digest)
         end
 
         if auth_req['qop'] == "auth" || auth_req['qop'] == "auth-int"
@@ -288,23 +290,8 @@ module WEBrick
 
       def split_param_value(string)
         ret = {}
-        while string.bytesize != 0
-          case string
-          when /^\s*([\w\-\.\*\%\!]+)=\s*\"((\\.|[^\"])*)\"\s*,?/
-            key = $1
-            matched = $2
-            string = $'
-            ret[key] = matched.gsub(/\\(.)/, "\\1")
-          when /^\s*([\w\-\.\*\%\!]+)=\s*([^,\"]*),?/
-            key = $1
-            matched = $2
-            string = $'
-            ret[key] = matched.clone
-          when /^s*^,/
-            string = $'
-          else
-            break
-          end
+        string.scan(/\G\s*([\w\-.*%!]+)=\s*(?:\"((?>\\.|[^\"])*)\"|([^,\"]*))\s*,?/) do
+          ret[$1] = $3 || $2.gsub(/\\(.)/, "\\1")
         end
         ret
       end
@@ -312,7 +299,7 @@ module WEBrick
       def generate_next_nonce(req)
         now = "%012d" % req.request_time.to_i
         pk  = hexdigest(now, @instance_key)[0,32]
-        nonce = [now + ":" + pk].pack("m*").chop # it has 60 length of chars.
+        nonce = [now + ":" + pk].pack("m0") # it has 60 length of chars.
         nonce
       end
 

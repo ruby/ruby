@@ -28,7 +28,7 @@
  * SUCH DAMAGE.
  */
 
-#include "regint.h"
+#include "regenc.h"
 
 #define eucjp_islead(c)    ((UChar )((c) - 0xa1) > 0xfe - 0xa1)
 
@@ -381,8 +381,10 @@ mbc_case_fold(OnigCaseFoldType flag,
     OnigCodePoint code;
     int len;
 
+    len = mbc_enc_len(p, end, enc);
     code = get_lower_case(mbc_to_code(p, end, enc));
     len = code_to_mbc(code, lower, enc);
+    if (len == ONIGERR_INVALID_CODE_POINT_VALUE) len = 1;
     (*pp) += len;
     return len; /* return byte length of converted char to lower */
   }
@@ -574,6 +576,7 @@ OnigEncodingDefine(euc_jp, EUC_JP) = {
   get_ctype_code_range,
   left_adjust_char_head,
   is_allowed_reverse_match,
+  onigenc_ascii_only_case_map,
   0,
   ONIGENC_FLAG_NONE,
 };

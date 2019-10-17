@@ -11,17 +11,13 @@
 
 #include "ossl.h"
 
-#define MakeHMAC(obj, klass, ctx) \
-    (obj) = TypedData_Make_Struct((klass), HMAC_CTX, &ossl_hmac_type, (ctx))
+#define NewHMAC(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_hmac_type, 0)
 #define GetHMAC(obj, ctx) do { \
     TypedData_Get_Struct((obj), HMAC_CTX, &ossl_hmac_type, (ctx)); \
     if (!(ctx)) { \
 	ossl_raise(rb_eRuntimeError, "HMAC wasn't initialized"); \
     } \
-} while (0)
-#define SafeGetHMAC(obj, ctx) do { \
-    OSSL_Check_Kind((obj), cHMAC); \
-    GetHMAC((obj), (ctx)); \
 } while (0)
 
 /*
@@ -40,8 +36,7 @@ VALUE eHMACError;
 static void
 ossl_hmac_free(void *ctx)
 {
-    HMAC_CTX_cleanup(ctx);
-    ruby_xfree(ctx);
+    HMAC_CTX_free(ctx);
 }
 
 static const rb_data_type_t ossl_hmac_type = {
@@ -55,11 +50,14 @@ static const rb_data_type_t ossl_hmac_type = {
 static VALUE
 ossl_hmac_alloc(VALUE klass)
 {
-    HMAC_CTX *ctx;
     VALUE obj;
+    HMAC_CTX *ctx;
 
-    MakeHMAC(obj, klass, ctx);
-    HMAC_CTX_init(ctx);
+    obj = NewHMAC(klass);
+    ctx = HMAC_CTX_new();
+    if (!ctx)
+	ossl_raise(eHMACError, NULL);
+    RTYPEDDATA_DATA(obj) = ctx;
 
     return obj;
 }
@@ -107,8 +105,8 @@ ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)
 
     StringValue(key);
     GetHMAC(self, ctx);
-    HMAC_Init(ctx, RSTRING_PTR(key), RSTRING_LENINT(key),
-		 GetDigestPtr(digest));
+    HMAC_Init_ex(ctx, RSTRING_PTR(key), RSTRING_LENINT(key),
+		 ossl_evp_get_digestbyname(digest), NULL);
 
     return self;
 }
@@ -122,9 +120,10 @@ ossl_hmac_copy(VALUE self, VALUE other)
     if (self == other) return self;
 
     GetHMAC(self, ctx1);
-    SafeGetHMAC(other, ctx2);
+    GetHMAC(other, ctx2);
 
-    HMAC_CTX_copy(ctx1, ctx2);
+    if (!HMAC_CTX_copy(ctx1, ctx2))
+	ossl_raise(eHMACError, "HMAC_CTX_copy");
     return self;
 }
 
@@ -132,7 +131,7 @@ ossl_hmac_copy(VALUE self, VALUE other)
  *  call-seq:
  *     hmac.update(string) -> self
  *
- * Returns +self+ updated with the message to be authenticated.
+ * Returns _hmac_ updated with the message to be authenticated.
  * Can be called repeatedly with chunks of the message.
  *
  * === Example
@@ -159,18 +158,21 @@ ossl_hmac_update(VALUE self, VALUE data)
 }
 
 static void
-hmac_final(HMAC_CTX *ctx, unsigned char **buf, unsigned int *buf_len)
+hmac_final(HMAC_CTX *ctx, unsigned char *buf, unsigned int *buf_len)
 {
-    HMAC_CTX final;
+    HMAC_CTX *final;
 
-    HMAC_CTX_copy(&final, ctx);
-    if (!(*buf = OPENSSL_malloc(HMAC_size(&final)))) {
-	HMAC_CTX_cleanup(&final);
-	OSSL_Debug("Allocating %d mem", HMAC_size(&final));
-	ossl_raise(eHMACError, "Cannot allocate memory for hmac");
+    final = HMAC_CTX_new();
+    if (!final)
+	ossl_raise(eHMACError, "HMAC_CTX_new");
+
+    if (!HMAC_CTX_copy(final, ctx)) {
+	HMAC_CTX_free(final);
+	ossl_raise(eHMACError, "HMAC_CTX_copy");
     }
-    HMAC_Final(&final, *buf, buf_len);
-    HMAC_CTX_cleanup(&final);
+
+    HMAC_Final(final, buf, buf_len);
+    HMAC_CTX_free(final);
 }
 
 /*
@@ -180,26 +182,25 @@ hmac_final(HMAC_CTX *ctx, unsigned char **buf, unsigned int *buf_len)
  * Returns the authentication code an instance represents as a binary string.
  *
  * === Example
- *
- *	instance = OpenSSL::HMAC.new('key', OpenSSL::Digest.new('sha1'))
- * 	#=> f42bb0eeb018ebbd4597ae7213711ec60760843f
- * 	instance.digest
- * 	#=> "\xF4+\xB0\xEE\xB0\x18\xEB\xBDE\x97\xAEr\x13q\x1E\xC6\a`\x84?"
- *
+ *  instance = OpenSSL::HMAC.new('key', OpenSSL::Digest.new('sha1'))
+ *  #=> f42bb0eeb018ebbd4597ae7213711ec60760843f
+ *  instance.digest
+ *  #=> "\xF4+\xB0\xEE\xB0\x18\xEB\xBDE\x97\xAEr\x13q\x1E\xC6\a`\x84?"
  */
 static VALUE
 ossl_hmac_digest(VALUE self)
 {
     HMAC_CTX *ctx;
-    unsigned char *buf;
     unsigned int buf_len;
-    VALUE digest;
+    VALUE ret;
 
     GetHMAC(self, ctx);
-    hmac_final(ctx, &buf, &buf_len);
-    digest = ossl_buf2str((char *)buf, buf_len);
+    ret = rb_str_new(NULL, EVP_MAX_MD_SIZE);
+    hmac_final(ctx, (unsigned char *)RSTRING_PTR(ret), &buf_len);
+    assert(buf_len <= EVP_MAX_MD_SIZE);
+    rb_str_set_len(ret, buf_len);
 
-    return digest;
+    return ret;
 }
 
 /*
@@ -208,34 +209,28 @@ ossl_hmac_digest(VALUE self)
  *
  * Returns the authentication code an instance represents as a hex-encoded
  * string.
- *
  */
 static VALUE
 ossl_hmac_hexdigest(VALUE self)
 {
     HMAC_CTX *ctx;
-    unsigned char *buf;
-    char *hexbuf;
+    unsigned char buf[EVP_MAX_MD_SIZE];
     unsigned int buf_len;
-    VALUE hexdigest;
+    VALUE ret;
 
     GetHMAC(self, ctx);
-    hmac_final(ctx, &buf, &buf_len);
-    if (string2hex(buf, buf_len, &hexbuf, NULL) != 2 * (int)buf_len) {
-	OPENSSL_free(buf);
-	ossl_raise(eHMACError, "Memory alloc error");
-    }
-    OPENSSL_free(buf);
-    hexdigest = ossl_buf2str(hexbuf, 2 * buf_len);
+    hmac_final(ctx, buf, &buf_len);
+    ret = rb_str_new(NULL, buf_len * 2);
+    ossl_bin2hex(buf, RSTRING_PTR(ret), buf_len);
 
-    return hexdigest;
+    return ret;
 }
 
 /*
  *  call-seq:
  *     hmac.reset -> self
  *
- * Returns +self+ as it was when it was first initialized, with all processed
+ * Returns _hmac_ as it was when it was first initialized, with all processed
  * data cleared from it.
  *
  * === Example
@@ -256,7 +251,7 @@ ossl_hmac_reset(VALUE self)
     HMAC_CTX *ctx;
 
     GetHMAC(self, ctx);
-    HMAC_Init(ctx, NULL, 0, NULL);
+    HMAC_Init_ex(ctx, NULL, 0, NULL, NULL);
 
     return self;
 }
@@ -265,16 +260,16 @@ ossl_hmac_reset(VALUE self)
  *  call-seq:
  *     HMAC.digest(digest, key, data) -> aString
  *
- * Returns the authentication code as a binary string. The +digest+ parameter
- * must be an instance of OpenSSL::Digest.
+ * Returns the authentication code as a binary string. The _digest_ parameter
+ * specifies the digest algorithm to use. This may be a String representing
+ * the algorithm name or an instance of OpenSSL::Digest.
  *
  * === Example
  *
  *	key = 'key'
  * 	data = 'The quick brown fox jumps over the lazy dog'
- * 	digest = OpenSSL::Digest.new('sha1')
  *
- * 	hmac = OpenSSL::HMAC.digest(digest, key, data)
+ * 	hmac = OpenSSL::HMAC.digest('sha1', key, data)
  * 	#=> "\xDE|\x9B\x85\xB8\xB7\x8A\xA6\xBC\x8Az6\xF7\n\x90p\x1C\x9D\xB4\xD9"
  *
  */
@@ -286,8 +281,9 @@ ossl_hmac_s_digest(VALUE klass, VALUE digest, VALUE key, VALUE data)
 
     StringValue(key);
     StringValue(data);
-    buf = HMAC(GetDigestPtr(digest), RSTRING_PTR(key), RSTRING_LENINT(key),
-	       (unsigned char *)RSTRING_PTR(data), RSTRING_LEN(data), NULL, &buf_len);
+    buf = HMAC(ossl_evp_get_digestbyname(digest), RSTRING_PTR(key),
+	       RSTRING_LENINT(key), (unsigned char *)RSTRING_PTR(data),
+	       RSTRING_LEN(data), NULL, &buf_len);
 
     return rb_str_new((const char *)buf, buf_len);
 }
@@ -296,38 +292,38 @@ ossl_hmac_s_digest(VALUE klass, VALUE digest, VALUE key, VALUE data)
  *  call-seq:
  *     HMAC.hexdigest(digest, key, data) -> aString
  *
- * Returns the authentication code as a hex-encoded string. The +digest+
- * parameter must be an instance of OpenSSL::Digest.
+ * Returns the authentication code as a hex-encoded string. The _digest_
+ * parameter specifies the digest algorithm to use. This may be a String
+ * representing the algorithm name or an instance of OpenSSL::Digest.
  *
  * === Example
  *
  *	key = 'key'
  * 	data = 'The quick brown fox jumps over the lazy dog'
- * 	digest = OpenSSL::Digest.new('sha1')
  *
- * 	hmac = OpenSSL::HMAC.hexdigest(digest, key, data)
+ * 	hmac = OpenSSL::HMAC.hexdigest('sha1', key, data)
  * 	#=> "de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9"
  *
  */
 static VALUE
 ossl_hmac_s_hexdigest(VALUE klass, VALUE digest, VALUE key, VALUE data)
 {
-    unsigned char *buf;
-    char *hexbuf;
+    unsigned char buf[EVP_MAX_MD_SIZE];
     unsigned int buf_len;
-    VALUE hexdigest;
+    VALUE ret;
 
     StringValue(key);
     StringValue(data);
 
-    buf = HMAC(GetDigestPtr(digest), RSTRING_PTR(key), RSTRING_LENINT(key),
-	       (unsigned char *)RSTRING_PTR(data), RSTRING_LEN(data), NULL, &buf_len);
-    if (string2hex(buf, buf_len, &hexbuf, NULL) != 2 * (int)buf_len) {
-	ossl_raise(eHMACError, "Cannot convert buf to hexbuf");
-    }
-    hexdigest = ossl_buf2str(hexbuf, 2 * buf_len);
+    if (!HMAC(ossl_evp_get_digestbyname(digest), RSTRING_PTR(key),
+	      RSTRING_LENINT(key), (unsigned char *)RSTRING_PTR(data),
+	      RSTRING_LEN(data), buf, &buf_len))
+	ossl_raise(eHMACError, "HMAC");
 
-    return hexdigest;
+    ret = rb_str_new(NULL, buf_len * 2);
+    ossl_bin2hex(buf, RSTRING_PTR(ret), buf_len);
+
+    return ret;
 }
 
 /*
@@ -337,10 +333,38 @@ void
 Init_ossl_hmac(void)
 {
 #if 0
-    /* :nodoc: */
-    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
+    mOSSL = rb_define_module("OpenSSL");
+    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
 #endif
 
+    /*
+     * Document-class: OpenSSL::HMAC
+     *
+     * OpenSSL::HMAC allows computing Hash-based Message Authentication Code
+     * (HMAC). It is a type of message authentication code (MAC) involving a
+     * hash function in combination with a key. HMAC can be used to verify the
+     * integrity of a message as well as the authenticity.
+     *
+     * OpenSSL::HMAC has a similar interface to OpenSSL::Digest.
+     *
+     * === HMAC-SHA256 using one-shot interface
+     *
+     *   key = "key"
+     *   data = "message-to-be-authenticated"
+     *   mac = OpenSSL::HMAC.hexdigest("SHA256", key, data)
+     *   #=> "cddb0db23f469c8bf072b21fd837149bd6ace9ab771cceef14c9e517cc93282e"
+     *
+     * === HMAC-SHA256 using incremental interface
+     *
+     *   data1 = File.read("file1")
+     *   data2 = File.read("file2")
+     *   key = "key"
+     *   digest = OpenSSL::Digest::SHA256.new
+     *   hmac = OpenSSL::HMAC.new(key, digest)
+     *   hmac << data1
+     *   hmac << data2
+     *   mac = hmac.digest
+     */
     eHMACError = rb_define_class_under(mOSSL, "HMACError", eOSSLError);
 
     cHMAC = rb_define_class_under(mOSSL, "HMAC", rb_cObject);
@@ -350,7 +374,7 @@ Init_ossl_hmac(void)
     rb_define_singleton_method(cHMAC, "hexdigest", ossl_hmac_s_hexdigest, 3);
 
     rb_define_method(cHMAC, "initialize", ossl_hmac_initialize, 2);
-    rb_define_copy_func(cHMAC, ossl_hmac_copy);
+    rb_define_method(cHMAC, "initialize_copy", ossl_hmac_copy, 1);
 
     rb_define_method(cHMAC, "reset", ossl_hmac_reset, 0);
     rb_define_method(cHMAC, "update", ossl_hmac_update, 1);

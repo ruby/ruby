@@ -7,6 +7,9 @@
 #include "ruby/re.h"
 #include <ctype.h>
 
+RUBY_EXTERN VALUE rb_int_positive_pow(long x, unsigned long y);
+RUBY_EXTERN unsigned long ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *overflow);
+
 /* #define TIGHT_PARSER */
 
 #define sizeof_array(o) (sizeof o / sizeof o[0])
@@ -37,19 +40,19 @@
 #define f_sub_bang(s,r,x) rb_funcall(s, rb_intern("sub!"), 2, r, x)
 #define f_gsub_bang(s,r,x) rb_funcall(s, rb_intern("gsub!"), 2, r, x)
 
-#define set_hash(k,v) rb_hash_aset(hash, ID2SYM(rb_intern(k)), v)
-#define ref_hash(k) rb_hash_aref(hash, ID2SYM(rb_intern(k)))
-#define del_hash(k) rb_hash_delete(hash, ID2SYM(rb_intern(k)))
+#define set_hash(k,v) rb_hash_aset(hash, ID2SYM(rb_intern(k"")), v)
+#define ref_hash(k) rb_hash_aref(hash, ID2SYM(rb_intern(k"")))
+#define del_hash(k) rb_hash_delete(hash, ID2SYM(rb_intern(k"")))
 
 #define cstr2num(s) rb_cstr_to_inum(s, 10, 0)
 #define str2num(s) rb_str_to_inum(s, 10, 0)
 
-static const char *abbr_days[] = {
+static const char abbr_days[][4] = {
     "sun", "mon", "tue", "wed",
     "thu", "fri", "sat"
 };
 
-static const char *abbr_months[] = {
+static const char abbr_months[][4] = {
     "jan", "feb", "mar", "apr", "may", "jun",
     "jul", "aug", "sep", "oct", "nov", "dec"
 };
@@ -63,7 +66,13 @@ static const char *abbr_months[] = {
 #define asubt_string() rb_str_new("\024", 1)
 #endif
 
-#define DECDIGIT "0123456789"
+static size_t
+digit_span(const char *s, const char *e)
+{
+    size_t i = 0;
+    while (s + i < e && isdigit(s[i])) i++;
+    return i;
+}
 
 static void
 s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
@@ -89,7 +98,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	    y = d;
 	    d = Qnil;
 	}
-	if (!NIL_P(d) && *RSTRING_PTR(d) == '\'') {
+	if (!NIL_P(d) && RSTRING_LEN(d) > 0 && *RSTRING_PTR(d) == '\'') {
 	    y = d;
 	    d = Qnil;
 	}
@@ -100,17 +109,20 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	size_t l;
 
 	s = RSTRING_PTR(y);
-	while (!issign((unsigned char)*s) && !isdigit((unsigned char)*s))
+	ep = RSTRING_END(y);
+	while (s < ep && !issign(*s) && !isdigit(*s))
 	    s++;
+	if (s >= ep) goto no_date;
 	bp = s;
 	if (issign((unsigned char)*s))
 	    s++;
-	l = strspn(s, DECDIGIT);
+	l = digit_span(s, ep);
 	ep = s + l;
 	if (*ep) {
 	    y = d;
 	    d = rb_str_new(bp, ep - bp);
 	}
+      no_date:;
     }
 
     if (!NIL_P(m)) {
@@ -149,8 +161,10 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	VALUE iy;
 
 	s = RSTRING_PTR(y);
-	while (!issign((unsigned char)*s) && !isdigit((unsigned char)*s))
+	ep = RSTRING_END(y);
+	while (s < ep && !issign(*s) && !isdigit(*s))
 	    s++;
+	if (s >= ep) goto no_year;
 	bp = s;
 	if (issign(*s)) {
 	    s++;
@@ -158,7 +172,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	}
 	if (sign)
 	    c = Qfalse;
-	l = strspn(s, DECDIGIT);
+	l = digit_span(s, ep);
 	ep = s + l;
 	if (l > 2)
 	    c = Qfalse;
@@ -172,6 +186,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	    ALLOCV_END(vbuf);
 	}
 	set_hash("year", iy);
+      no_year:;
     }
 
     if (bc)
@@ -183,10 +198,12 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	VALUE im;
 
 	s = RSTRING_PTR(m);
-	while (!isdigit((unsigned char)*s))
+	ep = RSTRING_END(m);
+	while (s < ep && !isdigit(*s))
 	    s++;
+	if (s >= ep) goto no_month;
 	bp = s;
-	l = strspn(s, DECDIGIT);
+	l = digit_span(s, ep);
 	ep = s + l;
 	{
 	    char *buf;
@@ -198,6 +215,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	    ALLOCV_END(vbuf);
 	}
 	set_hash("mon", im);
+      no_month:;
     }
 
     if (!NIL_P(d)) {
@@ -206,10 +224,12 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	VALUE id;
 
 	s = RSTRING_PTR(d);
-	while (!isdigit((unsigned char)*s))
+	ep = RSTRING_END(d);
+	while (s < ep && !isdigit(*s))
 	    s++;
+	if (s >= ep) goto no_mday;
 	bp = s;
-	l = strspn(s, DECDIGIT);
+	l = digit_span(s, ep);
 	ep = s + l;
 	{
 	    char *buf;
@@ -221,6 +241,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	    ALLOCV_END(vbuf);
 	}
 	set_hash("mday", id);
+      no_mday:;
     }
 
     if (!NIL_P(c))
@@ -260,18 +281,18 @@ regcomp(const char *source, long len, int opt)
 }
 
 #define REGCOMP(pat,opt) \
-{ \
+do { \
     if (NIL_P(pat)) \
 	pat = regcomp(pat##_source, sizeof pat##_source - 1, opt); \
-}
+} while (0)
 
 #define REGCOMP_0(pat) REGCOMP(pat, 0)
 #define REGCOMP_I(pat) REGCOMP(pat, ONIG_OPTION_IGNORECASE)
 
 #define MATCH(s,p,c) \
-{ \
+do { \
     return match(s, p, hash, c); \
-}
+} while (0)
 
 static int
 match(VALUE str, VALUE pat, VALUE hash, int (*cb)(VALUE, VALUE))
@@ -311,302 +332,183 @@ subx(VALUE str, VALUE rep, VALUE pat, VALUE hash, int (*cb)(VALUE, VALUE))
 }
 
 #define SUBS(s,p,c) \
-{ \
+do { \
     return subx(s, asp_string(), p, hash, c); \
-}
+} while (0)
 
 #ifdef TIGHT_PARSER
 #define SUBA(s,p,c) \
-{ \
+do { \
     return subx(s, asuba_string(), p, hash, c); \
-}
+} while (0)
 
 #define SUBB(s,p,c) \
-{ \
+do { \
     return subx(s, asubb_string(), p, hash, c); \
-}
+} while (0)
 
 #define SUBW(s,p,c) \
-{ \
+do { \
     return subx(s, asubw_string(), p, hash, c); \
-}
+} while (0)
 
 #define SUBT(s,p,c) \
-{ \
+do { \
     return subx(s, asubt_string(), p, hash, c); \
-}
+} while (0)
 #endif
 
-struct zone {
-    const char *name;
-    int offset;
-};
+#include "zonetab.h"
 
-static struct zone zones_source[] = {
-    {"ut",   0*3600}, {"gmt",  0*3600}, {"est", -5*3600}, {"edt", -4*3600},
-    {"cst", -6*3600}, {"cdt", -5*3600}, {"mst", -7*3600}, {"mdt", -6*3600},
-    {"pst", -8*3600}, {"pdt", -7*3600},
-    {"a",    1*3600}, {"b",    2*3600}, {"c",    3*3600}, {"d",    4*3600},
-    {"e",    5*3600}, {"f",    6*3600}, {"g",    7*3600}, {"h",    8*3600},
-    {"i",    9*3600}, {"k",   10*3600}, {"l",   11*3600}, {"m",   12*3600},
-    {"n",   -1*3600}, {"o",   -2*3600}, {"p",   -3*3600}, {"q",   -4*3600},
-    {"r",   -5*3600}, {"s",   -6*3600}, {"t",   -7*3600}, {"u",   -8*3600},
-    {"v",   -9*3600}, {"w",  -10*3600}, {"x",  -11*3600}, {"y",  -12*3600},
-    {"z",    0*3600},
+static int
+str_end_with_word(const char *s, long l, const char *w)
+{
+    int n = (int)strlen(w);
+    if (l <= n || !isspace(s[l - n - 1])) return 0;
+    if (strncasecmp(&s[l - n], w, n)) return 0;
+    do ++n; while (l > n && isspace(s[l - n - 1]));
+    return n;
+}
 
-    {"utc",  0*3600}, {"wet",  0*3600},
-    {"at",  -2*3600}, {"brst",-2*3600}, {"ndt", -(2*3600+1800)},
-    {"art", -3*3600}, {"adt", -3*3600}, {"brt", -3*3600}, {"clst",-3*3600},
-    {"nst", -(3*3600+1800)},
-    {"ast", -4*3600}, {"clt", -4*3600},
-    {"akdt",-8*3600}, {"ydt", -8*3600},
-    {"akst",-9*3600}, {"hadt",-9*3600}, {"hdt", -9*3600}, {"yst", -9*3600},
-    {"ahst",-10*3600},{"cat",-10*3600}, {"hast",-10*3600},{"hst",-10*3600},
-    {"nt",  -11*3600},
-    {"idlw",-12*3600},
-    {"bst",  1*3600}, {"cet",  1*3600}, {"fwt",  1*3600}, {"met",  1*3600},
-    {"mewt", 1*3600}, {"mez",  1*3600}, {"swt",  1*3600}, {"wat",  1*3600},
-    {"west", 1*3600},
-    {"cest", 2*3600}, {"eet",  2*3600}, {"fst",  2*3600}, {"mest", 2*3600},
-    {"mesz", 2*3600}, {"sast", 2*3600}, {"sst",  2*3600},
-    {"bt",   3*3600}, {"eat",  3*3600}, {"eest", 3*3600}, {"msk",  3*3600},
-    {"msd",  4*3600}, {"zp4",  4*3600},
-    {"zp5",  5*3600}, {"ist",  (5*3600+1800)},
-    {"zp6",  6*3600},
-    {"wast", 7*3600},
-    {"cct",  8*3600}, {"sgt",  8*3600}, {"wadt", 8*3600},
-    {"jst",  9*3600}, {"kst",  9*3600},
-    {"east",10*3600}, {"gst", 10*3600},
-    {"eadt",11*3600},
-    {"idle",12*3600}, {"nzst",12*3600}, {"nzt", 12*3600},
-    {"nzdt",13*3600},
+static long
+shrunk_size(const char *s, long l)
+{
+    long i, ni;
+    int sp = 0;
+    for (i = ni = 0; i < l; ++i) {
+	if (!isspace(s[i])) {
+	    if (sp) ni++;
+	    sp = 0;
+	    ni++;
+	}
+	else {
+	    sp = 1;
+	}
+    }
+    return ni < l ? ni : 0;
+}
 
-    {"afghanistan",             16200}, {"alaskan",                -32400},
-    {"arab",                    10800}, {"arabian",                 14400},
-    {"arabic",                  10800}, {"atlantic",               -14400},
-    {"aus central",             34200}, {"aus eastern",             36000},
-    {"azores",                  -3600}, {"canada central",         -21600},
-    {"cape verde",              -3600}, {"caucasus",                14400},
-    {"cen. australia",          34200}, {"central america",        -21600},
-    {"central asia",            21600}, {"central europe",           3600},
-    {"central european",         3600}, {"central pacific",         39600},
-    {"central",                -21600}, {"china",                   28800},
-    {"dateline",               -43200}, {"e. africa",               10800},
-    {"e. australia",            36000}, {"e. europe",                7200},
-    {"e. south america",       -10800}, {"eastern",                -18000},
-    {"egypt",                    7200}, {"ekaterinburg",            18000},
-    {"fiji",                    43200}, {"fle",                      7200},
-    {"greenland",              -10800}, {"greenwich",                   0},
-    {"gtb",                      7200}, {"hawaiian",               -36000},
-    {"india",                   19800}, {"iran",                    12600},
-    {"jerusalem",                7200}, {"korea",                   32400},
-    {"mexico",                 -21600}, {"mid-atlantic",            -7200},
-    {"mountain",               -25200}, {"myanmar",                 23400},
-    {"n. central asia",         21600}, {"nepal",                   20700},
-    {"new zealand",             43200}, {"newfoundland",           -12600},
-    {"north asia east",         28800}, {"north asia",              25200},
-    {"pacific sa",             -14400}, {"pacific",                -28800},
-    {"romance",                  3600}, {"russian",                 10800},
-    {"sa eastern",             -10800}, {"sa pacific",             -18000},
-    {"sa western",             -14400}, {"samoa",                  -39600},
-    {"se asia",                 25200}, {"malay peninsula",         28800},
-    {"south africa",             7200}, {"sri lanka",               21600},
-    {"taipei",                  28800}, {"tasmania",                36000},
-    {"tokyo",                   32400}, {"tonga",                   46800},
-    {"us eastern",             -18000}, {"us mountain",            -25200},
-    {"vladivostok",             36000}, {"w. australia",            28800},
-    {"w. central africa",        3600}, {"w. europe",                3600},
-    {"west asia",               18000}, {"west pacific",            36000},
-    {"yakutsk",                 32400}
-};
+static long
+shrink_space(char *d, const char *s, long l)
+{
+    long i, ni;
+    int sp = 0;
+    for (i = ni = 0; i < l; ++i) {
+	if (!isspace(s[i])) {
+	    if (sp) d[ni++] = ' ';
+	    sp = 0;
+	    d[ni++] = s[i];
+	}
+	else {
+	    sp = 1;
+	}
+    }
+    return ni;
+}
 
 VALUE
 date_zone_to_diff(VALUE str)
 {
     VALUE offset = Qnil;
     VALUE vbuf = 0;
+    long l = RSTRING_LEN(str);
+    const char *s = RSTRING_PTR(str);
 
-    long l, i;
-    char *s, *dest, *d;
-    int sp = 1;
-
-    l = RSTRING_LEN(str);
-    s = RSTRING_PTR(str);
-
-    dest = d = ALLOCV_N(char, vbuf, l + 1);
-
-    for (i = 0; i < l; i++) {
-	if (isspace((unsigned char)s[i]) || s[i] == '\0') {
-	    if (!sp)
-		*d++ = ' ';
-	    sp = 1;
-	}
-	else {
-	    if (isalpha((unsigned char)s[i]))
-		*d++ = tolower((unsigned char)s[i]);
-	    else
-		*d++ = s[i];
-	    sp = 0;
-	}
-    }
-    if (d > dest) {
-	if (*(d - 1) == ' ')
-	    --d;
-	*d = '\0';
-    }
-    str = rb_str_new2(dest);
     {
-#define STD " standard time"
-#define DST " daylight time"
-	char *ss, *ds;
-	long sl, dl;
 	int dst = 0;
+	int w;
 
-	sl = RSTRING_LEN(str) - (sizeof STD - 1);
-	ss = RSTRING_PTR(str) + sl;
-	dl = RSTRING_LEN(str) - (sizeof DST - 1);
-	ds = RSTRING_PTR(str) + dl;
-
-	if (sl >= 0 && strcmp(ss, STD) == 0) {
-	    str = rb_str_new(RSTRING_PTR(str), sl);
-	}
-	else if (dl >= 0 && strcmp(ds, DST) == 0) {
-	    str = rb_str_new(RSTRING_PTR(str), dl);
-	    dst = 1;
-	}
-#undef STD
-#undef DST
-	else {
-#define DST " dst"
-	    char *ds;
-	    long dl;
-
-	    dl = RSTRING_LEN(str) - (sizeof DST - 1);
-	    ds = RSTRING_PTR(str) + dl;
-
-	    if (dl >= 0 && strcmp(ds, DST) == 0) {
-		str = rb_str_new(RSTRING_PTR(str), dl);
+	if ((w = str_end_with_word(s, l, "time")) > 0) {
+	    int wtime = w;
+	    l -= w;
+	    if ((w = str_end_with_word(s, l, "standard")) > 0) {
+		l -= w;
+	    }
+	    else if ((w = str_end_with_word(s, l, "daylight")) > 0) {
+		l -= w;
 		dst = 1;
 	    }
-#undef DST
+	    else {
+		l += wtime;
+	    }
+	}
+	else if ((w = str_end_with_word(s, l, "dst")) > 0) {
+	    l -= w;
+	    dst = 1;
 	}
 	{
-	    static VALUE zones = Qnil;
-
-	    if (NIL_P(zones)) {
-		int i;
-
-		zones = rb_hash_new();
-		rb_gc_register_mark_object(zones);
-		for (i = 0; i < (int)sizeof_array(zones_source); i++) {
-		    VALUE name = rb_str_new2(zones_source[i].name);
-		    VALUE offset = INT2FIX(zones_source[i].offset);
-		    rb_hash_aset(zones, name, offset);
-		}
+	    long sl = shrunk_size(s, l);
+	    if (sl > 0 && sl <= MAX_WORD_LENGTH) {
+		char *d = ALLOCV_N(char, vbuf, sl);
+		l = shrink_space(d, s, l);
+		s = d;
 	    }
-
-	    offset = f_aref(zones, str);
-	    if (!NIL_P(offset)) {
+	}
+	if (l > 0 && l <= MAX_WORD_LENGTH) {
+	    const struct zone *z = zonetab(s, (unsigned int)l);
+	    if (z) {
+		int d = z->offset;
 		if (dst)
-		    offset = f_add(offset, INT2FIX(3600));
+		    d += 3600;
+		offset = INT2FIX(d);
 		goto ok;
 	    }
 	}
 	{
-	    char *s, *p;
-	    VALUE sign;
-	    VALUE hour = Qnil, min = Qnil, sec = Qnil;
-	    VALUE str_orig;
+	    char *p;
+	    int sign = 0;
+	    long hour = 0, min = 0, sec = 0;
 
-	    s = RSTRING_PTR(str);
-	    str_orig = str;
-
-	    if (strncmp(s, "gmt", 3) == 0 ||
-		strncmp(s, "utc", 3) == 0)
+	    if (l > 3 &&
+		(strncasecmp(s, "gmt", 3) == 0 ||
+		 strncasecmp(s, "utc", 3) == 0)) {
 		s += 3;
+		l -= 3;
+	    }
 	    if (issign(*s)) {
-		sign = rb_str_new(s, 1);
+		sign = *s == '-';
 		s++;
+		l--;
 
-		str = rb_str_new2(s);
-
-		if (p = strchr(s, ':')) {
-		    hour = rb_str_new(s, p - s);
+		hour = STRTOUL(s, &p, 10);
+		if (*p == ':') {
 		    s = ++p;
-		    if (p = strchr(s, ':')) {
-			min = rb_str_new(s, p - s);
+		    min = STRTOUL(s, &p, 10);
+		    if (*p == ':') {
 			s = ++p;
-			if (p = strchr(s, ':')) {
-			    sec = rb_str_new(s, p - s);
-			}
-			else
-			    sec = rb_str_new2(s);
+			sec = STRTOUL(s, &p, 10);
 		    }
-		    else
-			min = rb_str_new2(s);
-		    RB_GC_GUARD(str_orig);
 		    goto num;
 		}
-		if (strpbrk(RSTRING_PTR(str), ",.")) {
-		    VALUE astr = 0;
-		    char *a, *b;
-
-		    a = ALLOCV_N(char, astr, RSTRING_LEN(str) + 1);
-		    strcpy(a, RSTRING_PTR(str));
-		    b = strpbrk(a, ",.");
-		    *b = '\0';
-		    b++;
-
-		    hour = cstr2num(a);
-		    min = f_mul(rb_rational_new2
-				(cstr2num(b),
-				 f_expt(INT2FIX(10),
-					LONG2NUM((long)strlen(b)))),
-				INT2FIX(60));
-		    ALLOCV_END(astr);
-		    goto num;
+		if (*p == ',' || *p == '.') {
+		    char *e = 0;
+		    p++;
+		    min = STRTOUL(p, &e, 10) * 3600;
+		    if (sign) {
+			hour = -hour;
+			min = -min;
+		    }
+		    offset = rb_rational_new(INT2FIX(min),
+					     rb_int_positive_pow(10, (int)(e - p)));
+		    offset = f_add(INT2FIX(hour * 3600), offset);
+		    goto ok;
 		}
-		{
-		    const char *cs = RSTRING_PTR(str);
-		    long cl = RSTRING_LEN(str);
+		else if (l > 2) {
+		    size_t n;
+		    int ov;
 
-		    if (cl % 2) {
-			if (cl >= 1)
-			    hour = rb_str_new(&cs[0], 1);
-			if (cl >= 3)
-			    min  = rb_str_new(&cs[1], 2);
-			if (cl >= 5)
-			    sec  = rb_str_new(&cs[3], 2);
-		    }
-		    else {
-			if (cl >= 2)
-			    hour = rb_str_new(&cs[0], 2);
-			if (cl >= 4)
-			    min  = rb_str_new(&cs[2], 2);
-			if (cl >= 6)
-			    sec  = rb_str_new(&cs[4], 2);
-		    }
+		    if (l >= 1)
+			hour = ruby_scan_digits(&s[0], 2 - l % 2, 10, &n, &ov);
+		    if (l >= 3)
+			min  = ruby_scan_digits(&s[2 - l % 2], 2, 10, &n, &ov);
+		    if (l >= 5)
+			sec  = ruby_scan_digits(&s[4 - l % 2], 2, 10, &n, &ov);
 		    goto num;
 		}
 	      num:
-		if (NIL_P(hour))
-		    offset = INT2FIX(0);
-		else {
-		    if (RB_TYPE_P(hour, T_STRING))
-			hour = str2num(hour);
-		    offset = f_mul(hour, INT2FIX(3600));
-		}
-		if (!NIL_P(min)) {
-		    if (RB_TYPE_P(min, T_STRING))
-			min = str2num(min);
-		    offset = f_add(offset, f_mul(min, INT2FIX(60)));
-		}
-		if (!NIL_P(sec))
-		    offset = f_add(offset, str2num(sec));
-		if (!NIL_P(sign) &&
-		    RSTRING_LEN(sign) == 1 &&
-		    *RSTRING_PTR(sign) == '-')
-		    offset = f_negate(offset);
+		sec += min * 60 + hour * 3600;
+		if (sign) sec = -sec;
+		offset = INT2FIX(sec);
 	    }
 	}
     }
@@ -846,16 +748,14 @@ parse_era(VALUE str, VALUE hash)
 static int
 check_year_width(VALUE y)
 {
-    char *s;
-    size_t l;
+    const char *s;
+    long l;
 
+    l = RSTRING_LEN(y);
+    if (l < 2) return 0;
     s = RSTRING_PTR(y);
-    l = strcspn(s, DECDIGIT);
-    s += l;
-    l = strspn(s, DECDIGIT);
-    if (l != 2)
-	return 0;
-    return 1;
+    if (!isdigit(s[1])) return 0;
+    return (l == 2 || !isdigit(s[2]));
 }
 
 static int
@@ -1336,6 +1236,9 @@ parse_iso2(VALUE str, VALUE hash)
     return 1;
 }
 
+#define JISX0301_ERA_INITIALS "mtshr"
+#define JISX0301_DEFAULT_ERA 'H' /* obsolete */
+
 static int
 gengo(int c)
 {
@@ -1346,6 +1249,7 @@ gengo(int c)
       case 'T': case 't': e = 1911; break;
       case 'S': case 's': e = 1925; break;
       case 'H': case 'h': e = 1988; break;
+      case 'R': case 'r': e = 2018; break;
       default:  e = 0; break;
     }
     return e;
@@ -1376,11 +1280,11 @@ parse_jis(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 #ifndef TIGHT_PARSER
-	"\\b([mtsh])(\\d+)\\.(\\d+)\\.(\\d+)"
+        "\\b([" JISX0301_ERA_INITIALS "])(\\d+)\\.(\\d+)\\.(\\d+)"
 #else
 	BOS
 	FPW_COM FPT_COM
-	"([mtsh])(\\d+)\\.(\\d+)\\.(\\d+)"
+        "([" JISX0301_ERA_INITIALS "])(\\d+)\\.(\\d+)\\.(\\d+)"
 	TEE_FPT COM_FPW
 	EOS
 #endif
@@ -1983,30 +1887,26 @@ parse_ddd_cb(VALUE m, VALUE hash)
 	set_hash("zone", s5);
 
 	if (*cs5 == '[') {
-	    VALUE vbuf = 0;
-	    char *buf = ALLOCV_N(char, vbuf, l5 + 1);
-	    char *s1, *s2, *s3;
+            const char *s1, *s2;
 	    VALUE zone;
 
-	    memcpy(buf, cs5, l5);
-	    buf[l5 - 1] = '\0';
-
-	    s1 = buf + 1;
-	    s2 = strchr(buf, ':');
+            l5 -= 2;
+            s1 = cs5 + 1;
+            s2 = memchr(s1, ':', l5);
 	    if (s2) {
-		*s2 = '\0';
 		s2++;
+                zone = rb_str_subseq(s5, s2 - cs5, l5 - (s2 - s1));
+                s5 = rb_str_subseq(s5, 1, s2 - s1);
 	    }
-	    if (s2)
-		s3 = s2;
-	    else
-		s3 = s1;
-	    zone = rb_str_new2(s3);
+            else {
+                zone = rb_str_subseq(s5, 1, l5);
+                if (isdigit((unsigned char)*s1))
+                    s5 = rb_str_append(rb_str_new_cstr("+"), zone);
+                else
+                    s5 = zone;
+            }
 	    set_hash("zone", zone);
-	    if (isdigit((unsigned char)*s1))
-		*--s1 = '+';
-	    set_hash("offset", date_zone_to_diff(rb_str_new2(s1)));
-	    ALLOCV_END(vbuf);
+            set_hash("offset", date_zone_to_diff(s5));
 	}
 	RB_GC_GUARD(s5);
     }
@@ -2299,7 +2199,7 @@ date__parse(VALUE str, VALUE comp)
 #endif
 
     {
-	if (RTEST(ref_hash("_bc"))) {
+        if (RTEST(del_hash("_bc"))) {
 	    VALUE y;
 
 	    y = ref_hash("cwyear");
@@ -2314,7 +2214,7 @@ date__parse(VALUE str, VALUE comp)
 	    }
 	}
 
-	if (RTEST(ref_hash("_comp"))) {
+        if (RTEST(del_hash("_comp"))) {
 	    VALUE y;
 
 	    y = ref_hash("cwyear");
@@ -2336,9 +2236,6 @@ date__parse(VALUE str, VALUE comp)
 	}
 
     }
-
-    del_hash("_bc");
-    del_hash("_comp");
 
     {
 	VALUE zone = ref_hash("zone");
@@ -2389,8 +2286,8 @@ iso8601_ext_datetime_cb(VALUE m, VALUE hash)
 	    s[i] = rb_reg_nth_match(i, m);
     }
 
-    if (!NIL_P(s[3])) {
-	set_hash("mday", str2num(s[3]));
+    if (!NIL_P(s[1])) {
+	if (!NIL_P(s[3])) set_hash("mday", str2num(s[3]));
 	if (strcmp(RSTRING_PTR(s[1]), "-") != 0) {
 	    y = str2num(s[1]);
 	    if (RSTRING_LEN(s[1]) < 4)
@@ -2447,7 +2344,7 @@ static int
 iso8601_ext_datetime(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
-	"\\A\\s*(?:([-+]?\\d{2,}|-)-(\\d{2})?-(\\d{2})|"
+	"\\A\\s*(?:([-+]?\\d{2,}|-)-(\\d{2})?(?:-(\\d{2}))?|"
 		"([-+]?\\d{2,})?-(\\d{3})|"
 		"(\\d{4}|\\d{2})?-w(\\d{2})-(\\d)|"
 		"-w-(\\d))"
@@ -3078,7 +2975,7 @@ jisx0301_cb(VALUE m, VALUE hash)
 	    s[i] = rb_reg_nth_match(i, m);
     }
 
-    ep = gengo(NIL_P(s[1]) ? 'h' : *RSTRING_PTR(s[1]));
+    ep = gengo(NIL_P(s[1]) ? JISX0301_DEFAULT_ERA : *RSTRING_PTR(s[1]));
     set_hash("year", f_add(str2num(s[2]), INT2FIX(ep)));
     set_hash("mon", str2num(s[3]));
     set_hash("mday", str2num(s[4]));
@@ -3103,7 +3000,7 @@ static int
 jisx0301(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
-	"\\A\\s*([mtsh])?(\\d{2})\\.(\\d{2})\\.(\\d{2})"
+        "\\A\\s*([" JISX0301_ERA_INITIALS "])?(\\d{2})\\.(\\d{2})\\.(\\d{2})"
 	"(?:t"
 	"(?:(\\d{2}):(\\d{2})(?::(\\d{2})(?:[,.](\\d*))?)?"
 	"(z|[-+]\\d{2}(?::?\\d{2})?)?)?)?\\s*\\z";

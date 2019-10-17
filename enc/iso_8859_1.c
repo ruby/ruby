@@ -28,6 +28,7 @@
  */
 
 #include "regenc.h"
+#include "iso_8859.h"
 
 #define ENC_IS_ISO_8859_1_CTYPE(code,ctype) \
   ((EncISO_8859_1_CtypeTable[code] & CTYPE_TO_BIT(ctype)) != 0)
@@ -125,7 +126,7 @@ get_case_fold_codes_by_str(OnigCaseFoldType flag,
 	&& (*(p+1) == 0x53 || *(p+1) == 0x73)) { /* SS */
       items[1].byte_len = 2;
       items[1].code_len = 1;
-      items[1].code[0] = (OnigCodePoint )0xdf;
+      items[1].code[0] = (OnigCodePoint )SHARP_s;
       return 2;
     }
     else
@@ -139,7 +140,7 @@ get_case_fold_codes_by_str(OnigCaseFoldType flag,
 	&& (*(p+1) == 0x73 || *(p+1) == 0x53)) { /* ss */
       items[1].byte_len = 2;
       items[1].code_len = 1;
-      items[1].code[0] = (OnigCodePoint )0xdf;
+      items[1].code[0] = (OnigCodePoint )SHARP_s;
       return 2;
     }
     else
@@ -152,7 +153,7 @@ get_case_fold_codes_by_str(OnigCaseFoldType flag,
     return 1;
   }
   else if (0xd0 <= *p && *p <= 0xdf) {
-    if (*p == 0xdf) {
+    if (*p == SHARP_s) {
       items[0].byte_len = 1;
       items[0].code_len = 2;
       items[0].code[0] = (OnigCodePoint )'s';
@@ -206,7 +207,7 @@ mbc_case_fold(OnigCaseFoldType flag, const UChar** pp, const UChar* end ARG_UNUS
 {
   const UChar* p = *pp;
 
-  if (*p == 0xdf && (flag & INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR) != 0) {
+  if (*p == SHARP_s && (flag & INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR) != 0) {
     *lower++ = 's';
     *lower   = 's';
     (*pp)++;
@@ -226,7 +227,7 @@ is_mbc_ambiguous(OnigCaseFoldType flag,
   int v;
   const UChar* p = *pp;
 
-  if (*p == 0xdf && (flag & INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR) != 0) {
+  if (*p == SHARP_s && (flag & INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR) != 0) {
     (*pp)++;
     return TRUE;
   }
@@ -254,6 +255,49 @@ is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc ARG_UNUSE
     return FALSE;
 }
 
+static int
+case_map(OnigCaseFoldType* flagP, const OnigUChar** pp,
+	 const OnigUChar* end, OnigUChar* to, OnigUChar* to_end,
+	 const struct OnigEncodingTypeST* enc)
+{
+  OnigCodePoint code;
+  OnigUChar *to_start = to;
+  OnigCaseFoldType flags = *flagP;
+
+  while (*pp < end && to < to_end) {
+    code = *(*pp)++;
+    if (code == SHARP_s) {
+      if (flags & ONIGENC_CASE_UPCASE) {
+	flags |= ONIGENC_CASE_MODIFIED;
+	*to++ = 'S';
+	code = (flags & ONIGENC_CASE_TITLECASE) ? 's' : 'S';
+      }
+      else if (flags & ONIGENC_CASE_FOLD) {
+	flags |= ONIGENC_CASE_MODIFIED;
+	*to++ = 's';
+	code = 's';
+      }
+    }
+    else if ((EncISO_8859_1_CtypeTable[code] & BIT_CTYPE_UPPER)
+	     && (flags & (ONIGENC_CASE_DOWNCASE | ONIGENC_CASE_FOLD))) {
+      flags |= ONIGENC_CASE_MODIFIED;
+      code += 0x20;
+    }
+    else if (code == 0xAA || code == 0xBA || code == 0xB5 || code == 0xFF)
+      ;
+    else if ((EncISO_8859_1_CtypeTable[code] & BIT_CTYPE_LOWER)
+	     && (flags & ONIGENC_CASE_UPCASE)) {
+      flags |= ONIGENC_CASE_MODIFIED;
+      code -= 0x20;
+    }
+    *to++ = code;
+    if (flags & ONIGENC_CASE_TITLECASE)  /* switch from titlecase to lowercase for capitalize */
+      flags ^= (ONIGENC_CASE_UPCASE | ONIGENC_CASE_DOWNCASE | ONIGENC_CASE_TITLECASE);
+  }
+  *flagP = flags;
+  return (int )(to - to_start);
+}
+
 OnigEncodingDefine(iso_8859_1, ISO_8859_1) = {
   onigenc_single_byte_mbc_enc_len,
   "ISO-8859-1",  /* name */
@@ -271,17 +315,8 @@ OnigEncodingDefine(iso_8859_1, ISO_8859_1) = {
   onigenc_not_support_get_ctype_code_range,
   onigenc_single_byte_left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match,
+  case_map,
   0,
   ONIGENC_FLAG_NONE,
 };
 ENC_ALIAS("ISO8859-1", "ISO-8859-1")
-
-/*
- * Name: windows-1252
- * MIBenum: 2252
- * Link: http://www.iana.org/assignments/character-sets
- * Link: http://www.microsoft.com/globaldev/reference/sbcs/1252.mspx
- * Link: http://en.wikipedia.org/wiki/Windows-1252
- */
-ENC_REPLICATE("Windows-1252", "ISO-8859-1")
-ENC_ALIAS("CP1252", "Windows-1252")

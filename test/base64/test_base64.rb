@@ -1,4 +1,5 @@
 # coding: US-ASCII
+# frozen_string_literal: true
 require "test/unit"
 require "base64"
 

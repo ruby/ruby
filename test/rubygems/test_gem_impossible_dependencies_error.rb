@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 
 class TestGemImpossibleDependenciesError < Gem::TestCase
@@ -58,4 +59,3 @@ rye-0.9.8 requires net-ssh (>= 2.0.13) but it conflicted:
   end
 
 end
-

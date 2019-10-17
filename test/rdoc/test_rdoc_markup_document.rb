@@ -1,4 +1,5 @@
-require 'rdoc/test_case'
+# frozen_string_literal: true
+require_relative 'helper'
 
 class TestRDocMarkupDocument < RDoc::TestCase
 
@@ -33,7 +34,7 @@ class TestRDocMarkupDocument < RDoc::TestCase
 
     assert_empty @d
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       @d << 'hi'
     end
   end

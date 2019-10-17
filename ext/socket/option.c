@@ -27,6 +27,12 @@ VALUE rb_cSockOpt;
 # define USE_INSPECT_BYTE 1
 #endif
 
+#define check_size(len, size) \
+    ((len) == (size) ? \
+     (void)0 : \
+     rb_raise(rb_eTypeError, "size differ.  expected as "#size"=%d but %ld", \
+	      (int)size, (long)(len)))
+
 static VALUE
 sockopt_pack_byte(VALUE value)
 {
@@ -211,12 +217,9 @@ sockopt_s_byte(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE voptname, VALUE v
 static VALUE
 sockopt_byte(VALUE self)
 {
-    unsigned char i;
     VALUE data = sockopt_data(self);
     StringValue(data);
-    if (RSTRING_LEN(data) != sizeof(i))
-        rb_raise(rb_eTypeError, "size differ.  expected as sizeof(int)=%d but %ld",
-                 (int)sizeof(i), (long)RSTRING_LEN(data));
+    check_size(RSTRING_LEN(data), sizeof(char));
     return CHR2FIX(*RSTRING_PTR(data));
 }
 
@@ -257,9 +260,7 @@ sockopt_int(VALUE self)
     int i;
     VALUE data = sockopt_data(self);
     StringValue(data);
-    if (RSTRING_LEN(data) != sizeof(int))
-        rb_raise(rb_eTypeError, "size differ.  expected as sizeof(int)=%d but %ld",
-                 (int)sizeof(int), (long)RSTRING_LEN(data));
+    check_size(RSTRING_LEN(data), sizeof(int));
     memcpy((char*)&i, RSTRING_PTR(data), sizeof(int));
     return INT2NUM(i);
 }
@@ -270,6 +271,8 @@ sockopt_int(VALUE self)
  *
  * Creates a new Socket::Option object which contains boolean as data.
  * Actually 0 or 1 as int is used.
+ *
+ *   require 'socket'
  *
  *   p Socket::Option.bool(:INET, :SOCKET, :KEEPALIVE, true)
  *   #=> #<Socket::Option: INET SOCKET KEEPALIVE 1>
@@ -301,12 +304,15 @@ static VALUE
 sockopt_bool(VALUE self)
 {
     int i;
+    long len;
     VALUE data = sockopt_data(self);
     StringValue(data);
-    if (RSTRING_LEN(data) != sizeof(int))
-        rb_raise(rb_eTypeError, "size differ.  expected as sizeof(int)=%d but %ld",
-                 (int)sizeof(int), (long)RSTRING_LEN(data));
-    memcpy((char*)&i, RSTRING_PTR(data), sizeof(int));
+    len = RSTRING_LEN(data);
+    if (len == 1) {
+	return *RSTRING_PTR(data) == 0 ? Qfalse : Qtrue;
+    }
+    check_size(len, sizeof(int));
+    memcpy((char*)&i, RSTRING_PTR(data), len);
     return i == 0 ? Qfalse : Qtrue;
 }
 
@@ -358,9 +364,7 @@ sockopt_linger(VALUE self)
 
     if (level != SOL_SOCKET || optname != SO_LINGER)
         rb_raise(rb_eTypeError, "linger socket option expected");
-    if (RSTRING_LEN(data) != sizeof(l))
-        rb_raise(rb_eTypeError, "size differ.  expected as sizeof(struct linger)=%d but %ld",
-                 (int)sizeof(struct linger), (long)RSTRING_LEN(data));
+    check_size(RSTRING_LEN(data), sizeof(struct linger));
     memcpy((char*)&l, RSTRING_PTR(data), sizeof(struct linger));
     switch (l.l_onoff) {
       case 0: vonoff = Qfalse; break;
@@ -402,7 +406,7 @@ sockopt_s_ipv4_multicast_loop(VALUE klass, VALUE value)
  * call-seq:
  *   sockopt.ipv4_multicast_loop => integer
  *
- * Returns the ipv4_multicast_loop data in _sockopt_ as a integer.
+ * Returns the ipv4_multicast_loop data in _sockopt_ as an integer.
  *
  *   sockopt = Socket::Option.ipv4_multicast_loop(10)
  *   p sockopt.ipv4_multicast_loop => 10
@@ -420,7 +424,7 @@ sockopt_ipv4_multicast_loop(VALUE self)
     }
 #endif
     rb_raise(rb_eTypeError, "ipv4_multicast_loop socket option expected");
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 #define inspect_ipv4_multicast_loop(a,b,c,d) \
@@ -453,7 +457,7 @@ sockopt_s_ipv4_multicast_ttl(VALUE klass, VALUE value)
  * call-seq:
  *   sockopt.ipv4_multicast_ttl => integer
  *
- * Returns the ipv4_multicast_ttl data in _sockopt_ as a integer.
+ * Returns the ipv4_multicast_ttl data in _sockopt_ as an integer.
  *
  *   sockopt = Socket::Option.ipv4_multicast_ttl(10)
  *   p sockopt.ipv4_multicast_ttl => 10
@@ -471,7 +475,7 @@ sockopt_ipv4_multicast_ttl(VALUE self)
     }
 #endif
     rb_raise(rb_eTypeError, "ipv4_multicast_ttl socket option expected");
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 #define inspect_ipv4_multicast_ttl(a,b,c,d) \
@@ -643,7 +647,7 @@ inspect_timeval_as_interval(int level, int optname, VALUE data, VALUE ret)
  */
 
 #if !defined HAVE_INET_NTOP && ! defined _WIN32
-static const char *
+const char *
 inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 {
 #ifdef HAVE_INET_NTOA
@@ -658,10 +662,6 @@ inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 #endif
     return numaddr;
 }
-#elif defined __MINGW32__
-# define inet_ntop(f,a,n,l)      rb_w32_inet_ntop(f,a,n,l)
-#elif defined _MSC_VER && RUBY_MSVCRT_VERSION < 90
-const char *WSAAPI inet_ntop(int, const void *, char *, size_t);
 #endif
 
 /* Although the buffer size needed depends on the prefixes, "%u" may generate "4294967295".  */
@@ -928,7 +928,12 @@ inspect_tcpi_usec(VALUE ret, const char *prefix, uint32_t t)
     rb_str_catf(ret, "%s%u.%06us", prefix, t / 1000000, t % 1000000);
 }
 
-#if defined(__linux__) || defined(__sun)
+#if !defined __FreeBSD__ && ( \
+    defined HAVE_STRUCT_TCP_INFO_TCPI_LAST_DATA_SENT || \
+    defined HAVE_STRUCT_TCP_INFO_TCPI_LAST_DATA_RECV || \
+    defined HAVE_STRUCT_TCP_INFO_TCPI_LAST_ACK_SENT  || \
+    defined HAVE_STRUCT_TCP_INFO_TCPI_LAST_ACK_RECV  || \
+    0)
 static void
 inspect_tcpi_msec(VALUE ret, const char *prefix, uint32_t t)
 {
@@ -1470,4 +1475,3 @@ rsock_init_sockopt(void)
 
     rb_define_method(rb_cSockOpt, "to_s", sockopt_data, 0); /* compatibility for ruby before 1.9.2 */
 }
-

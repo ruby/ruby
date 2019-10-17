@@ -1,12 +1,13 @@
+# frozen_string_literal: true
 module Gem::Resolver::Molinillo
   # A state that a {Resolution} can be in
-  # @attr [String] name
-  # @attr [Array<Object>] requirements
-  # @attr [DependencyGraph] activated
-  # @attr [Object] requirement
-  # @attr [Object] possibility
-  # @attr [Integer] depth
-  # @attr [Set<Object>] conflicts
+  # @attr [String] name the name of the current requirement
+  # @attr [Array<Object>] requirements currently unsatisfied requirements
+  # @attr [DependencyGraph] activated the graph of activated dependencies
+  # @attr [Object] requirement the current requirement
+  # @attr [Object] possibilities the possibilities to satisfy the current requirement
+  # @attr [Integer] depth the depth of the resolution
+  # @attr [Set<Object>] conflicts unresolved conflicts
   ResolutionState = Struct.new(
     :name,
     :requirements,
@@ -35,12 +36,14 @@ module Gem::Resolver::Molinillo
       PossibilityState.new(
         name,
         requirements.dup,
-        activated.dup,
+        activated,
         requirement,
         [possibilities.pop],
         depth + 1,
         conflicts.dup
-      )
+      ).tap do |state|
+        state.activated.tag(state)
+      end
     end
   end
 

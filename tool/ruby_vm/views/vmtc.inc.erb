@@ -1,0 +1,21 @@
+/* -*- C -*- */
+
+%# Copyright (c) 2017 Urabe, Shyouhei.  All rights reserved.
+%#
+%# This file is a part of  the programming language Ruby.  Permission is hereby
+%# granted, to either  redistribute and/or modify this file,  provided that the
+%# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+%# details.
+<%= render 'copyright' -%>
+<%= render 'notice', locals: {
+    this_file: 'is for threaded code',
+    edit: __FILE__,
+} -%>
+
+static const void *const insns_address_table[] = {
+% RubyVM::Instructions.each do |i|
+    LABEL_PTR(<%= i.name %>),
+% end
+};
+
+ASSERT_VM_INSTRUCTION_SIZE(insns_address_table);

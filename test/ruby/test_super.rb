@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestSuper < Test::Unit::TestCase
@@ -101,11 +102,11 @@ class TestSuper < Test::Unit::TestCase
   def test_optional2
     assert_raise(ArgumentError) do
       # call Base#optional with 2 arguments; the 2nd arg is supplied
-      assert_equal(9, Optional2.new.optional(9))
+      Optional2.new.optional(9)
     end
     assert_raise(ArgumentError) do
       # call Base#optional with 2 arguments
-      assert_equal(9, Optional2.new.optional(9, 2))
+      Optional2.new.optional(9, 2)
     end
   end
   def test_optional3
@@ -403,6 +404,13 @@ class TestSuper < Test::Unit::TestCase
     assert_equal([1, 2, 3, false, 5], y.foo(1, 2, 3, false, 5))
   end
 
+  def test_missing_super
+    o = Class.new {def foo; super; end}.new
+    e = assert_raise(NoMethodError) {o.foo}
+    assert_same(o, e.receiver)
+    assert_equal(:foo, e.name)
+  end
+
   def test_missing_super_in_method_module
     bug9315 = '[ruby-core:59358] [Bug #9315]'
     a = Module.new do
@@ -477,8 +485,8 @@ class TestSuper < Test::Unit::TestCase
     bug9740 = '[ruby-core:62017] [Bug #9740]'
 
     b.module_eval do
-      define_method(:foo) do |result|
-        um.bind(self).call(result)
+      define_method(:foo) do |res|
+        um.bind(self).call(res)
       end
     end
 
@@ -521,5 +529,35 @@ class TestSuper < Test::Unit::TestCase
     end
 
     assert_equal "b", b.new.foo{"c"}
+  end
+
+  def test_public_zsuper_with_prepend
+    bug12876 = '[ruby-core:77784] [Bug #12876]'
+    m = EnvUtil.labeled_module("M")
+    c = EnvUtil.labeled_class("C") {prepend m; public :initialize}
+    o = assert_nothing_raised(Timeout::Error, bug12876) {
+      Timeout.timeout(3) {c.new}
+    }
+    assert_instance_of(c, o)
+    m.module_eval {def initialize; raise "exception in M"; end}
+    assert_raise_with_message(RuntimeError, "exception in M") {
+      c.new
+    }
+  end
+
+  class TestFor_super_with_modified_rest_parameter_base
+    def foo *args
+      args
+    end
+  end
+
+  class TestFor_super_with_modified_rest_parameter < TestFor_super_with_modified_rest_parameter_base
+    def foo *args
+      args = 13
+      super
+    end
+  end
+  def test_super_with_modified_rest_parameter
+    assert_equal [13], TestFor_super_with_modified_rest_parameter.new.foo
   end
 end

@@ -10,7 +10,7 @@
 
 #include "rubysocket.h"
 
-static VALUE sym_exception, sym_wait_writable;
+static VALUE sym_wait_writable;
 
 static VALUE sock_s_unpack_sockaddr_in(VALUE, VALUE);
 
@@ -175,16 +175,17 @@ rsock_socketpair0(int domain, int type, int protocol, int sv[2])
 {
     int ret;
     static int cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
+    static const int default_flags = SOCK_CLOEXEC|RSOCK_NONBLOCK_DEFAULT;
 
     if (cloexec_state > 0) { /* common path, if SOCK_CLOEXEC is defined */
-        ret = socketpair(domain, type|SOCK_CLOEXEC, protocol, sv);
+        ret = socketpair(domain, type|default_flags, protocol, sv);
         if (ret == 0 && (sv[0] <= 2 || sv[1] <= 2)) {
             goto fix_cloexec; /* highly unlikely */
         }
         goto update_max_fd;
     }
     else if (cloexec_state < 0) { /* usually runs once only for detection */
-        ret = socketpair(domain, type|SOCK_CLOEXEC, protocol, sv);
+        ret = socketpair(domain, type|default_flags, protocol, sv);
         if (ret == 0) {
             cloexec_state = rsock_detect_cloexec(sv[0]);
             if ((cloexec_state == 0) || (sv[0] <= 2 || sv[1] <= 2))
@@ -213,6 +214,10 @@ rsock_socketpair0(int domain, int type, int protocol, int sv[2])
 fix_cloexec:
     rb_maygvl_fd_fix_cloexec(sv[0]);
     rb_maygvl_fd_fix_cloexec(sv[1]);
+    if (RSOCK_NONBLOCK_DEFAULT) {
+        rsock_make_fd_nonblock(sv[0]);
+        rsock_make_fd_nonblock(sv[1]);
+    }
 
 update_max_fd:
     rb_update_max_fd(sv[0]);
@@ -231,6 +236,10 @@ rsock_socketpair0(int domain, int type, int protocol, int sv[2])
 
     rb_fd_fix_cloexec(sv[0]);
     rb_fd_fix_cloexec(sv[1]);
+    if (RSOCK_NONBLOCK_DEFAULT) {
+        rsock_make_fd_nonblock(sv[0]);
+        rsock_make_fd_nonblock(sv[1]);
+    }
     return ret;
 }
 #endif /* !SOCK_CLOEXEC */
@@ -241,8 +250,7 @@ rsock_socketpair(int domain, int type, int protocol, int sv[2])
     int ret;
 
     ret = rsock_socketpair0(domain, type, protocol, sv);
-    if (ret < 0 && (errno == EMFILE || errno == ENFILE)) {
-        rb_gc();
+    if (ret < 0 && rb_gc_for_fd(errno)) {
         ret = rsock_socketpair0(domain, type, protocol, sv);
     }
 
@@ -439,80 +447,33 @@ sock_connect(VALUE sock, VALUE addr)
     return INT2FIX(n);
 }
 
-/*
- * call-seq:
- *   socket.connect_nonblock(remote_sockaddr, [options]) => 0
- *
- * Requests a connection to be made on the given +remote_sockaddr+ after
- * O_NONBLOCK is set for the underlying file descriptor.
- * Returns 0 if successful, otherwise an exception is raised.
- *
- * === Parameter
- * * +remote_sockaddr+ - the +struct+ sockaddr contained in a string or Addrinfo object
- *
- * === Example:
- *   # Pull down Google's web page
- *   require 'socket'
- *   include Socket::Constants
- *   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
- *   sockaddr = Socket.sockaddr_in(80, 'www.google.com')
- *   begin # emulate blocking connect
- *     socket.connect_nonblock(sockaddr)
- *   rescue IO::WaitWritable
- *     IO.select(nil, [socket]) # wait 3-way handshake completion
- *     begin
- *       socket.connect_nonblock(sockaddr) # check connection failure
- *     rescue Errno::EISCONN
- *     end
- *   end
- *   socket.write("GET / HTTP/1.0\r\n\r\n")
- *   results = socket.read
- *
- * Refer to Socket#connect for the exceptions that may be thrown if the call
- * to _connect_nonblock_ fails.
- *
- * Socket#connect_nonblock may raise any error corresponding to connect(2) failure,
- * including Errno::EINPROGRESS.
- *
- * If the exception is Errno::EINPROGRESS,
- * it is extended by IO::WaitWritable.
- * So IO::WaitWritable can be used to rescue the exceptions for retrying connect_nonblock.
- *
- * By specifying `exception: false`, the options hash allows you to indicate
- * that connect_nonblock should not raise an IO::WaitWritable exception, but
- * return the symbol :wait_writable instead.
- *
- * === See
- * * Socket#connect
- */
+/* :nodoc: */
 static VALUE
-sock_connect_nonblock(int argc, VALUE *argv, VALUE sock)
+sock_connect_nonblock(VALUE sock, VALUE addr, VALUE ex)
 {
-    VALUE addr;
-    VALUE opts = Qnil;
     VALUE rai;
     rb_io_t *fptr;
     int n;
 
-    rb_scan_args(argc, argv, "1:", &addr, &opts);
     SockAddrStringValueWithAddrinfo(addr, rai);
     addr = rb_str_new4(addr);
     GetOpenFile(sock, fptr);
     rb_io_set_nonblock(fptr);
     n = connect(fptr->fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr));
     if (n < 0) {
-        if (errno == EINPROGRESS) {
-           if (rsock_opt_false_p(opts, sym_exception)) {
+	int e = errno;
+	if (e == EINPROGRESS) {
+            if (ex == Qfalse) {
                 return sym_wait_writable;
             }
-            rb_readwrite_sys_fail(RB_IO_WAIT_WRITABLE, "connect(2) would block");
+            rb_readwrite_syserr_fail(RB_IO_WAIT_WRITABLE, e, "connect(2) would block");
 	}
-	if (errno == EISCONN) {
-           if (rsock_opt_false_p(opts, sym_exception)) {
+	if (e == EISCONN) {
+            if (ex == Qfalse) {
                 return INT2FIX(0);
             }
 	}
-	rsock_sys_fail_raddrinfo_or_sockaddr("connect(2)", addr, rai);
+	rsock_syserr_fail_raddrinfo_or_sockaddr(e, "connect(2)", addr, rai);
     }
 
     return INT2FIX(n);
@@ -813,72 +774,11 @@ sock_recvfrom(int argc, VALUE *argv, VALUE sock)
     return rsock_s_recvfrom(sock, argc, argv, RECV_SOCKET);
 }
 
-/*
- * call-seq:
- *   socket.recvfrom_nonblock(maxlen) => [mesg, sender_addrinfo]
- *   socket.recvfrom_nonblock(maxlen, flags) => [mesg, sender_addrinfo]
- *
- * Receives up to _maxlen_ bytes from +socket+ using recvfrom(2) after
- * O_NONBLOCK is set for the underlying file descriptor.
- * _flags_ is zero or more of the +MSG_+ options.
- * The first element of the results, _mesg_, is the data received.
- * The second element, _sender_addrinfo_, contains protocol-specific address
- * information of the sender.
- *
- * When recvfrom(2) returns 0, Socket#recvfrom_nonblock returns
- * an empty string as data.
- * The meaning depends on the socket: EOF on TCP, empty packet on UDP, etc.
- *
- * === Parameters
- * * +maxlen+ - the maximum number of bytes to receive from the socket
- * * +flags+ - zero or more of the +MSG_+ options
- *
- * === Example
- *   # In one file, start this first
- *   require 'socket'
- *   include Socket::Constants
- *   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
- *   sockaddr = Socket.sockaddr_in(2200, 'localhost')
- *   socket.bind(sockaddr)
- *   socket.listen(5)
- *   client, client_addrinfo = socket.accept
- *   begin # emulate blocking recvfrom
- *     pair = client.recvfrom_nonblock(20)
- *   rescue IO::WaitReadable
- *     IO.select([client])
- *     retry
- *   end
- *   data = pair[0].chomp
- *   puts "I only received 20 bytes '#{data}'"
- *   sleep 1
- *   socket.close
- *
- *   # In another file, start this second
- *   require 'socket'
- *   include Socket::Constants
- *   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
- *   sockaddr = Socket.sockaddr_in(2200, 'localhost')
- *   socket.connect(sockaddr)
- *   socket.puts "Watch this get cut short!"
- *   socket.close
- *
- * Refer to Socket#recvfrom for the exceptions that may be thrown if the call
- * to _recvfrom_nonblock_ fails.
- *
- * Socket#recvfrom_nonblock may raise any error corresponding to recvfrom(2) failure,
- * including Errno::EWOULDBLOCK.
- *
- * If the exception is Errno::EWOULDBLOCK or Errno::EAGAIN,
- * it is extended by IO::WaitReadable.
- * So IO::WaitReadable can be used to rescue the exceptions for retrying recvfrom_nonblock.
- *
- * === See
- * * Socket#recvfrom
- */
+/* :nodoc: */
 static VALUE
-sock_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
+sock_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str, VALUE ex)
 {
-    return rsock_s_recvfrom_nonblock(sock, argc, argv, RECV_SOCKET);
+    return rsock_s_recvfrom_nonblock(sock, len, flg, str, ex, RECV_SOCKET);
 }
 
 /*
@@ -909,63 +809,9 @@ sock_accept(VALUE sock)
     return rb_assoc_new(sock2, rsock_io_socket_addrinfo(sock2, &buf.addr, len));
 }
 
-/*
- * call-seq:
- *   socket.accept_nonblock([options]) => [client_socket, client_addrinfo]
- *
- * Accepts an incoming connection using accept(2) after
- * O_NONBLOCK is set for the underlying file descriptor.
- * It returns an array containing the accepted socket
- * for the incoming connection, _client_socket_,
- * and an Addrinfo, _client_addrinfo_.
- *
- * === Example
- *   # In one script, start this first
- *   require 'socket'
- *   include Socket::Constants
- *   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
- *   sockaddr = Socket.sockaddr_in(2200, 'localhost')
- *   socket.bind(sockaddr)
- *   socket.listen(5)
- *   begin # emulate blocking accept
- *     client_socket, client_addrinfo = socket.accept_nonblock
- *   rescue IO::WaitReadable, Errno::EINTR
- *     IO.select([socket])
- *     retry
- *   end
- *   puts "The client said, '#{client_socket.readline.chomp}'"
- *   client_socket.puts "Hello from script one!"
- *   socket.close
- *
- *   # In another script, start this second
- *   require 'socket'
- *   include Socket::Constants
- *   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
- *   sockaddr = Socket.sockaddr_in(2200, 'localhost')
- *   socket.connect(sockaddr)
- *   socket.puts "Hello from script 2."
- *   puts "The server said, '#{socket.readline.chomp}'"
- *   socket.close
- *
- * Refer to Socket#accept for the exceptions that may be thrown if the call
- * to _accept_nonblock_ fails.
- *
- * Socket#accept_nonblock may raise any error corresponding to accept(2) failure,
- * including Errno::EWOULDBLOCK.
- *
- * If the exception is Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::ECONNABORTED or Errno::EPROTO,
- * it is extended by IO::WaitReadable.
- * So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
- *
- * By specifying `exception: false`, the options hash allows you to indicate
- * that accept_nonblock should not raise an IO::WaitReadable exception, but
- * return the symbol :wait_readable instead.
- *
- * === See
- * * Socket#accept
- */
+/* :nodoc: */
 static VALUE
-sock_accept_nonblock(int argc, VALUE *argv, VALUE sock)
+sock_accept_nonblock(VALUE sock, VALUE ex)
 {
     rb_io_t *fptr;
     VALUE sock2;
@@ -974,7 +820,7 @@ sock_accept_nonblock(int argc, VALUE *argv, VALUE sock)
     socklen_t len = (socklen_t)sizeof buf;
 
     GetOpenFile(sock, fptr);
-    sock2 = rsock_s_accept_nonblock(argc, argv, rb_cSocket, fptr, addr, &len);
+    sock2 = rsock_s_accept_nonblock(rb_cSocket, ex, fptr, addr, &len);
 
     if (SYMBOL_P(sock2)) /* :wait_readable */
 	return sock2;
@@ -1056,13 +902,27 @@ sock_gethostname(VALUE obj)
 #  define RUBY_MAX_HOST_NAME_LEN 1024
 #endif
 
-    char buf[RUBY_MAX_HOST_NAME_LEN+1];
+    long len = RUBY_MAX_HOST_NAME_LEN;
+    VALUE name;
 
-    if (gethostname(buf, (int)sizeof buf - 1) < 0)
-	rb_sys_fail("gethostname(3)");
-
-    buf[sizeof buf - 1] = '\0';
-    return rb_str_new2(buf);
+    name = rb_str_new(0, len);
+    while (gethostname(RSTRING_PTR(name), len) < 0) {
+	int e = errno;
+	switch (e) {
+	  case ENAMETOOLONG:
+#ifdef __linux__
+	  case EINVAL:
+	    /* glibc before version 2.1 uses EINVAL instead of ENAMETOOLONG */
+#endif
+	    break;
+	  default:
+	    rb_syserr_fail(e, "gethostname(3)");
+	}
+	rb_str_modify_expand(name, len);
+	len += len;
+    }
+    rb_str_resize(name, strlen(RSTRING_PTR(name)));
+    return name;
 }
 #else
 #ifdef HAVE_UNAME
@@ -1095,7 +955,7 @@ make_addrinfo(struct rb_addrinfo *res0, int norevlookup)
     for (res = res0->ai; res; res = res->ai_next) {
 	ary = rsock_ipaddr(res->ai_addr, res->ai_addrlen, norevlookup);
 	if (res->ai_canonname) {
-	    RARRAY_PTR(ary)[2] = rb_str_new2(res->ai_canonname);
+	    RARRAY_ASET(ary, 2, rb_str_new2(res->ai_canonname));
 	}
 	rb_ary_push(ary, INT2FIX(res->ai_family));
 	rb_ary_push(ary, INT2FIX(res->ai_socktype));
@@ -1132,7 +992,18 @@ sock_sockaddr(struct sockaddr *addr, socklen_t len)
  * call-seq:
  *   Socket.gethostbyname(hostname) => [official_hostname, alias_hostnames, address_family, *address_list]
  *
- * Obtains the host information for _hostname_.
+ * Use Addrinfo.getaddrinfo instead.
+ * This method is deprecated for the following reasons:
+ *
+ * - The 3rd element of the result is the address family of the first address.
+ *   The address families of the rest of the addresses are not returned.
+ * - Uncommon address representation:
+ *   4/16-bytes binary string to represent IPv4/IPv6 address.
+ * - gethostbyname() may take a long time and it may block other threads.
+ *   (GVL cannot be released since gethostbyname() is not thread safe.)
+ * - This method uses gethostbyname() function already removed from POSIX.
+ *
+ * This method obtains the host information for _hostname_.
  *
  *   p Socket.gethostbyname("hal") #=> ["localhost", ["hal"], 2, "\x7F\x00\x00\x01"]
  *
@@ -1140,20 +1011,38 @@ sock_sockaddr(struct sockaddr *addr, socklen_t len)
 static VALUE
 sock_s_gethostbyname(VALUE obj, VALUE host)
 {
-    return rsock_make_hostent(host, rsock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME), sock_sockaddr);
+    struct rb_addrinfo *res =
+	rsock_addrinfo(host, Qnil, AF_UNSPEC, SOCK_STREAM, AI_CANONNAME);
+    return rsock_make_hostent(host, res, sock_sockaddr);
 }
 
 /*
  * call-seq:
  *   Socket.gethostbyaddr(address_string [, address_family]) => hostent
  *
- * Obtains the host information for _address_.
+ * Use Addrinfo#getnameinfo instead.
+ * This method is deprecated for the following reasons:
+ *
+ * - Uncommon address representation:
+ *   4/16-bytes binary string to represent IPv4/IPv6 address.
+ * - gethostbyaddr() may take a long time and it may block other threads.
+ *   (GVL cannot be released since gethostbyname() is not thread safe.)
+ * - This method uses gethostbyname() function already removed from POSIX.
+ *
+ * This method obtains the host information for _address_.
  *
  *   p Socket.gethostbyaddr([221,186,184,68].pack("CCCC"))
  *   #=> ["carbon.ruby-lang.org", [], 2, "\xDD\xBA\xB8D"]
+ *
+ *   p Socket.gethostbyaddr([127,0,0,1].pack("CCCC"))
+ *   ["localhost", [], 2, "\x7F\x00\x00\x01"]
+ *   p Socket.gethostbyaddr(([0]*15+[1]).pack("C"*16))
+ *   #=> ["localhost", ["ip6-localhost", "ip6-loopback"], 10,
+ *        "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01"]
+ *
  */
 static VALUE
-sock_s_gethostbyaddr(int argc, VALUE *argv)
+sock_s_gethostbyaddr(int argc, VALUE *argv, VALUE _)
 {
     VALUE addr, family;
     struct hostent *h;
@@ -1215,7 +1104,7 @@ sock_s_gethostbyaddr(int argc, VALUE *argv)
  *   Socket.getservbyname("syslog", "udp") #=> 514
  */
 static VALUE
-sock_s_getservbyname(int argc, VALUE *argv)
+sock_s_getservbyname(int argc, VALUE *argv, VALUE _)
 {
     VALUE service, proto;
     struct servent *sp;
@@ -1256,7 +1145,7 @@ sock_s_getservbyname(int argc, VALUE *argv)
  *
  */
 static VALUE
-sock_s_getservbyport(int argc, VALUE *argv)
+sock_s_getservbyport(int argc, VALUE *argv, VALUE _)
 {
     VALUE port, proto;
     struct servent *sp;
@@ -1284,7 +1173,10 @@ sock_s_getservbyport(int argc, VALUE *argv)
  *
  * Obtains address information for _nodename_:_servname_.
  *
- * _family_ should be an address family such as: :INET, :INET6, :UNIX, etc.
+ * Note that Addrinfo.getaddrinfo provides the same functionality in
+ * an object oriented style.
+ *
+ * _family_ should be an address family such as: :INET, :INET6, etc.
  *
  * _socktype_ should be a socket type such as: :STREAM, :DGRAM, :RAW, etc.
  *
@@ -1311,7 +1203,7 @@ sock_s_getservbyport(int argc, VALUE *argv)
  * If Addrinfo object is preferred, use Addrinfo.getaddrinfo.
  */
 static VALUE
-sock_s_getaddrinfo(int argc, VALUE *argv)
+sock_s_getaddrinfo(int argc, VALUE *argv, VALUE _)
 {
     VALUE host, port, family, socktype, protocol, flags, ret, revlookup;
     struct addrinfo hints;
@@ -1365,7 +1257,7 @@ sock_s_getaddrinfo(int argc, VALUE *argv)
  * If Addrinfo object is preferred, use Addrinfo#getnameinfo.
  */
 static VALUE
-sock_s_getnameinfo(int argc, VALUE *argv)
+sock_s_getnameinfo(int argc, VALUE *argv, VALUE _)
 {
     VALUE sa, af = Qnil, host = Qnil, port = Qnil, flags, tmp;
     char *hptr, *pptr;
@@ -1404,16 +1296,16 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 	sa = tmp;
 	MEMZERO(&hints, struct addrinfo, 1);
 	if (RARRAY_LEN(sa) == 3) {
-	    af = RARRAY_PTR(sa)[0];
-	    port = RARRAY_PTR(sa)[1];
-	    host = RARRAY_PTR(sa)[2];
+	    af = RARRAY_AREF(sa, 0);
+	    port = RARRAY_AREF(sa, 1);
+	    host = RARRAY_AREF(sa, 2);
 	}
 	else if (RARRAY_LEN(sa) >= 4) {
-	    af = RARRAY_PTR(sa)[0];
-	    port = RARRAY_PTR(sa)[1];
-	    host = RARRAY_PTR(sa)[3];
+	    af = RARRAY_AREF(sa, 0);
+	    port = RARRAY_AREF(sa, 1);
+	    host = RARRAY_AREF(sa, 3);
 	    if (NIL_P(host)) {
-		host = RARRAY_PTR(sa)[2];
+		host = RARRAY_AREF(sa, 2);
 	    }
 	    else {
 		/*
@@ -1434,7 +1326,7 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 	    hptr = NULL;
 	}
 	else {
-	    strncpy(hbuf, StringValuePtr(host), sizeof(hbuf));
+	    strncpy(hbuf, StringValueCStr(host), sizeof(hbuf));
 	    hbuf[sizeof(hbuf) - 1] = '\0';
 	    hptr = hbuf;
 	}
@@ -1448,7 +1340,7 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 	    pptr = pbuf;
 	}
 	else {
-	    strncpy(pbuf, StringValuePtr(port), sizeof(pbuf));
+	    strncpy(pbuf, StringValueCStr(port), sizeof(pbuf));
 	    pbuf[sizeof(pbuf) - 1] = '\0';
 	    pptr = pbuf;
 	}
@@ -1498,7 +1390,7 @@ sock_s_getnameinfo(int argc, VALUE *argv)
     errno = saved_errno;
     rsock_raise_socket_error("getnameinfo", error);
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 /*
@@ -1518,7 +1410,7 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 static VALUE
 sock_s_pack_sockaddr_in(VALUE self, VALUE port, VALUE host)
 {
-    struct rb_addrinfo *res = rsock_addrinfo(host, port, 0, 0);
+    struct rb_addrinfo *res = rsock_addrinfo(host, port, AF_UNSPEC, 0, 0);
     VALUE addr = rb_str_new((char*)res->ai->ai_addr, res->ai->ai_addrlen);
 
     rb_freeaddrinfo(res);
@@ -2102,6 +1994,8 @@ Init_socket(void)
      *
      * Let's create an internet socket using the IPv4 protocol in a C-like manner:
      *
+     *   require 'socket'
+     *
      *   s = Socket.new Socket::AF_INET, Socket::SOCK_STREAM
      *   s.connect Socket.pack_sockaddr_in(80, 'example.com')
      *
@@ -2172,15 +2066,26 @@ Init_socket(void)
 
     rb_define_method(rb_cSocket, "initialize", sock_initialize, -1);
     rb_define_method(rb_cSocket, "connect", sock_connect, 1);
-    rb_define_method(rb_cSocket, "connect_nonblock", sock_connect_nonblock, -1);
+
+    /* for ext/socket/lib/socket.rb use only: */
+    rb_define_private_method(rb_cSocket,
+			     "__connect_nonblock", sock_connect_nonblock, 2);
+
     rb_define_method(rb_cSocket, "bind", sock_bind, 1);
     rb_define_method(rb_cSocket, "listen", rsock_sock_listen, 1);
     rb_define_method(rb_cSocket, "accept", sock_accept, 0);
-    rb_define_method(rb_cSocket, "accept_nonblock", sock_accept_nonblock, -1);
+
+    /* for ext/socket/lib/socket.rb use only: */
+    rb_define_private_method(rb_cSocket,
+			     "__accept_nonblock", sock_accept_nonblock, 1);
+
     rb_define_method(rb_cSocket, "sysaccept", sock_sysaccept, 0);
 
     rb_define_method(rb_cSocket, "recvfrom", sock_recvfrom, -1);
-    rb_define_method(rb_cSocket, "recvfrom_nonblock", sock_recvfrom_nonblock, -1);
+
+    /* for ext/socket/lib/socket.rb use only: */
+    rb_define_private_method(rb_cSocket,
+			     "__recvfrom_nonblock", sock_recvfrom_nonblock, 4);
 
     rb_define_singleton_method(rb_cSocket, "socketpair", rsock_sock_s_socketpair, -1);
     rb_define_singleton_method(rb_cSocket, "pair", rsock_sock_s_socketpair, -1);
@@ -2203,6 +2108,5 @@ Init_socket(void)
     rb_define_singleton_method(rb_cSocket, "ip_address_list", socket_s_ip_address_list, 0);
 
 #undef rb_intern
-    sym_exception = ID2SYM(rb_intern("exception"));
     sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
 }

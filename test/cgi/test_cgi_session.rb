@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'test/unit'
 require 'cgi'
 require 'cgi/session'
@@ -29,7 +30,7 @@ class CGISessionTest < Test::Unit::TestCase
       'SERVER_PROTOCOL' => 'HTTP/1.1',
     )
     value1="value1"
-    value2="\x8F\xBC\x8D]"
+    value2="\x8F\xBC\x8D]".dup
     value2.force_encoding("SJIS") if defined?(::Encoding)
     cgi = CGI.new
     session = CGI::Session.new(cgi,"tmpdir"=>@session_dir)
@@ -65,7 +66,7 @@ class CGISessionTest < Test::Unit::TestCase
       'SERVER_PROTOCOL' => 'HTTP/1.1',
     )
     value1="value1"
-    value2="\x8F\xBC\x8D]"
+    value2="\x8F\xBC\x8D]".dup
     value2.force_encoding("SJIS") if defined?(::Encoding)
     cgi = CGI.new
     session = CGI::Session.new(cgi,"tmpdir"=>@session_dir,"database_manager"=>CGI::Session::PStore)
@@ -100,7 +101,7 @@ class CGISessionTest < Test::Unit::TestCase
       'SERVER_PROTOCOL' => 'HTTP/1.1',
     )
     value1="value1"
-    value2="\x8F\xBC\x8D]"
+    value2="\x8F\xBC\x8D]".dup
     value2.force_encoding("SJIS") if defined?(::Encoding)
     cgi = CGI.new
     session = CGI::Session.new(cgi,"tmpdir"=>@session_dir,"session_id"=>"foo")
@@ -138,7 +139,7 @@ class CGISessionTest < Test::Unit::TestCase
       'SERVER_PROTOCOL' => 'HTTP/1.1',
     )
     value1="value1"
-    value2="\x8F\xBC\x8D]"
+    value2="\x8F\xBC\x8D]".dup
     value2.force_encoding("SJIS") if defined?(::Encoding)
     cgi = CGI.new
     session = CGI::Session.new(cgi,"tmpdir"=>@session_dir,"session_key"=>"bar")

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'fiddle/import'
 
 module Win32

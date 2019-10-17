@@ -13,6 +13,19 @@
 #include "addr2line.h"
 #include "vm_core.h"
 #include "iseq.h"
+#ifdef HAVE_UCONTEXT_H
+#include <ucontext.h>
+#endif
+#ifdef __APPLE__
+#ifdef HAVE_LIBPROC_H
+#include <libproc.h>
+#endif
+#include <mach/vm_map.h>
+#include <mach/mach_init.h>
+#ifdef __LP64__
+#define vm_region_recurse vm_region_recurse_64
+#endif
+#endif
 
 /* see vm_insnhelper.h for the values */
 #ifndef VMDEBUG
@@ -21,14 +34,15 @@
 
 #define MAX_POSBUF 128
 
-#define VM_CFP_CNT(th, cfp) \
-  ((rb_control_frame_t *)((th)->stack + (th)->stack_size) - (rb_control_frame_t *)(cfp))
+#define VM_CFP_CNT(ec, cfp) \
+  ((rb_control_frame_t *)((ec)->vm_stack + (ec)->vm_stack_size) - \
+   (rb_control_frame_t *)(cfp))
 
 static void
-control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
+control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
     ptrdiff_t pc = -1;
-    ptrdiff_t ep = cfp->ep - th->stack;
+    ptrdiff_t ep = cfp->ep - ec->vm_stack;
     char ep_in_heap = ' ';
     char posbuf[MAX_POSBUF+1];
     int line = 0;
@@ -38,11 +52,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 
     const rb_callable_method_entry_t *me;
 
-    if (cfp->block_iseq != 0 && !RUBY_VM_IFUNC_P(cfp->block_iseq)) {
-	biseq_name = "";	/* RSTRING(cfp->block_iseq->body->location.label)->ptr; */
-    }
-
-    if (ep < 0 || (size_t)ep > th->stack_size) {
+    if (ep < 0 || (size_t)ep > ec->vm_stack_size) {
 	ep = (ptrdiff_t)cfp->ep;
 	ep_in_heap = 'p';
     }
@@ -62,12 +72,6 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	break;
       case VM_FRAME_MAGIC_CFUNC:
 	magic = "CFUNC";
-	break;
-      case VM_FRAME_MAGIC_PROC:
-	magic = "PROC";
-	break;
-      case VM_FRAME_MAGIC_LAMBDA:
-	magic = "LAMBDA";
 	break;
       case VM_FRAME_MAGIC_IFUNC:
 	magic = "IFUNC";
@@ -95,15 +99,22 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
     }
 
     if (cfp->iseq != 0) {
+#define RUBY_VM_IFUNC_P(ptr) imemo_type_p((VALUE)ptr, imemo_ifunc)
 	if (RUBY_VM_IFUNC_P(cfp->iseq)) {
 	    iseq_name = "<ifunc>";
+	}
+	else if (SYMBOL_P(cfp->iseq)) {
+	    tmp = rb_sym2str((VALUE)cfp->iseq);
+	    iseq_name = RSTRING_PTR(tmp);
+	    snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);
+	    line = -1;
 	}
 	else {
 	    pc = cfp->pc - cfp->iseq->body->iseq_encoded;
 	    iseq_name = RSTRING_PTR(cfp->iseq->body->location.label);
 	    line = rb_vm_get_sourceline(cfp);
 	    if (line) {
-		snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(cfp->iseq->body->location.path), line);
+		snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(rb_iseq_path(cfp->iseq)), line);
 	    }
 	}
     }
@@ -114,20 +125,20 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
     }
 
     fprintf(stderr, "c:%04"PRIdPTRDIFF" ",
-	    ((rb_control_frame_t *)(th->stack + th->stack_size) - cfp));
+	    ((rb_control_frame_t *)(ec->vm_stack + ec->vm_stack_size) - cfp));
     if (pc == -1) {
 	fprintf(stderr, "p:---- ");
     }
     else {
 	fprintf(stderr, "p:%04"PRIdPTRDIFF" ", pc);
     }
-    fprintf(stderr, "s:%04"PRIdPTRDIFF" ", cfp->sp - th->stack);
+    fprintf(stderr, "s:%04"PRIdPTRDIFF" ", cfp->sp - ec->vm_stack);
     fprintf(stderr, ep_in_heap == ' ' ? "e:%06"PRIdPTRDIFF" " : "E:%06"PRIxPTRDIFF" ", ep % 10000);
     fprintf(stderr, "%-6s", magic);
     if (line) {
 	fprintf(stderr, " %s", posbuf);
     }
-    if (VM_FRAME_TYPE_FINISH_P(cfp)) {
+    if (VM_FRAME_FINISHED_P(cfp)) {
 	fprintf(stderr, " [FINISH]");
     }
     if (0) {
@@ -140,19 +151,20 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 }
 
 void
-rb_vmdebug_stack_dump_raw(rb_thread_t *th, rb_control_frame_t *cfp)
+rb_vmdebug_stack_dump_raw(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
 #if 0
-    VALUE *sp = cfp->sp, *ep = cfp->ep;
+    VALUE *sp = cfp->sp;
+    const VALUE *ep = cfp->ep;
     VALUE *p, *st, *t;
 
     fprintf(stderr, "-- stack frame ------------\n");
-    for (p = st = th->stack; p < sp; p++) {
+    for (p = st = ec->vm_stack; p < sp; p++) {
 	fprintf(stderr, "%04ld (%p): %08"PRIxVALUE, (long)(p - st), p, *p);
 
 	t = (VALUE *)*p;
-	if (th->stack <= t && t < sp) {
-	    fprintf(stderr, " (= %ld)", (long)((VALUE *)GC_GUARDED_PTR_REF(t) - th->stack));
+	if (ec->vm_stack <= t && t < sp) {
+	    fprintf(stderr, " (= %ld)", (long)((VALUE *)GC_GUARDED_PTR_REF((VALUE)t) - ec->vm_stack));
 	}
 
 	if (p == ep)
@@ -164,8 +176,8 @@ rb_vmdebug_stack_dump_raw(rb_thread_t *th, rb_control_frame_t *cfp)
 
     fprintf(stderr, "-- Control frame information "
 	    "-----------------------------------------------\n");
-    while ((void *)cfp < (void *)(th->stack + th->stack_size)) {
-	control_frame_dump(th, cfp);
+    while ((void *)cfp < (void *)(ec->vm_stack + ec->vm_stack_size)) {
+	control_frame_dump(ec, cfp);
 	cfp++;
     }
     fprintf(stderr, "\n");
@@ -174,19 +186,17 @@ rb_vmdebug_stack_dump_raw(rb_thread_t *th, rb_control_frame_t *cfp)
 void
 rb_vmdebug_stack_dump_raw_current(void)
 {
-    rb_thread_t *th = GET_THREAD();
-    rb_vmdebug_stack_dump_raw(th, th->cfp);
+    const rb_execution_context_t *ec = GET_EC();
+    rb_vmdebug_stack_dump_raw(ec, ec->cfp);
 }
 
 void
-rb_vmdebug_env_dump_raw(rb_env_t *env, VALUE *ep)
+rb_vmdebug_env_dump_raw(const rb_env_t *env, const VALUE *ep)
 {
-    int i;
+    unsigned int i;
     fprintf(stderr, "-- env --------------------\n");
 
     while (env) {
-	VALUE prev_envval;
-
 	fprintf(stderr, "--\n");
 	for (i = 0; i < env->env_size; i++) {
 	    fprintf(stderr, "%04d: %08"PRIxVALUE" (%p)", i, env->env[i], (void *)&env->env[i]);
@@ -194,12 +204,7 @@ rb_vmdebug_env_dump_raw(rb_env_t *env, VALUE *ep)
 	    fprintf(stderr, "\n");
 	}
 
-	if ((prev_envval = rb_vm_env_prev_envval(env)) != Qfalse) {
-	    GetEnvPtr(prev_envval, env);
-	}
-	else {
-	    env = NULL;
-	}
+	env = rb_vm_env_prev_env(env);
     }
     fprintf(stderr, "---------------------------\n");
 }
@@ -207,33 +212,32 @@ rb_vmdebug_env_dump_raw(rb_env_t *env, VALUE *ep)
 void
 rb_vmdebug_proc_dump_raw(rb_proc_t *proc)
 {
-    rb_env_t *env;
+    const rb_env_t *env;
     char *selfstr;
-    VALUE val = rb_inspect(proc->block.self);
+    VALUE val = rb_inspect(vm_block_self(&proc->block));
     selfstr = StringValueCStr(val);
 
     fprintf(stderr, "-- proc -------------------\n");
     fprintf(stderr, "self: %s\n", selfstr);
-    GetEnvPtr(rb_vm_proc_envval(proc), env);
-    rb_vmdebug_env_dump_raw(env, proc->block.ep);
+    env = VM_ENV_ENVVAL_PTR(vm_block_ep(&proc->block));
+    rb_vmdebug_env_dump_raw(env, vm_block_ep(&proc->block));
 }
 
 void
 rb_vmdebug_stack_dump_th(VALUE thval)
 {
-    rb_thread_t *th;
-    GetThreadPtr(thval, th);
-    rb_vmdebug_stack_dump_raw(th, th->cfp);
+    rb_thread_t *target_th = rb_thread_ptr(thval);
+    rb_vmdebug_stack_dump_raw(target_th->ec, target_th->ec->cfp);
 }
 
 #if VMDEBUG > 2
 
 /* copy from vm.c */
-static VALUE *
-vm_base_ptr(rb_control_frame_t *cfp)
+static const VALUE *
+vm_base_ptr(const rb_control_frame_t *cfp)
 {
-    rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-    VALUE *bp = prev_cfp->sp + cfp->iseq->body->local_size + 1;
+    const rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    const VALUE *bp = prev_cfp->sp + cfp->iseq->body->local_table_size + VM_ENV_DATA_SIZE;
 
     if (cfp->iseq->body->type == ISEQ_TYPE_METHOD) {
 	bp += 1;
@@ -242,33 +246,17 @@ vm_base_ptr(rb_control_frame_t *cfp)
 }
 
 static void
-vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
+vm_stack_dump_each(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
-    int i;
-
+    int i, argc = 0, local_table_size = 0;
     VALUE rstr;
     VALUE *sp = cfp->sp;
-    VALUE *ep = cfp->ep;
+    const VALUE *ep = cfp->ep;
 
-    int argc = 0, local_size = 0;
-    const char *name;
-    rb_iseq_t *iseq = cfp->iseq;
-
-    if (iseq == 0) {
-	if (RUBYVM_CFUNC_FRAME_P(cfp)) {
-	    name = rb_id2name(cfp->me->called_id);
-	}
-	else {
-	    name = "?";
-	}
-    }
-    else if (RUBY_VM_IFUNC_P(iseq)) {
-	name = "<ifunc>";
-    }
-    else {
+    if (VM_FRAME_RUBYFRAME_P(cfp)) {
+	const rb_iseq_t *iseq = cfp->iseq;
 	argc = iseq->body->param.lead_num;
-	local_size = iseq->body->local_size;
-	name = RSTRING_PTR(iseq->body->location.label);
+	local_table_size = iseq->body->local_table_size;
     }
 
     /* stack trace header */
@@ -277,24 +265,21 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_TOP   ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_BLOCK ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_CLASS ||
-	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_PROC  ||
-	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_LAMBDA||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_CFUNC ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_IFUNC ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_EVAL  ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_RESCUE)
-      {
+    {
+	const VALUE *ptr = ep - local_table_size;
 
-	VALUE *ptr = ep - local_size;
-
-	control_frame_dump(th, cfp);
+	control_frame_dump(ec, cfp);
 
 	for (i = 0; i < argc; i++) {
 	    rstr = rb_inspect(*ptr);
 	    fprintf(stderr, "  arg   %2d: %8s (%p)\n", i, StringValueCStr(rstr),
 		   (void *)ptr++);
 	}
-	for (; i < local_size - 1; i++) {
+	for (; i < local_table_size - 1; i++) {
 	    rstr = rb_inspect(*ptr);
 	    fprintf(stderr, "  local %2d: %8s (%p)\n", i, StringValueCStr(rstr),
 		   (void *)ptr++);
@@ -302,19 +287,24 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 
 	ptr = vm_base_ptr(cfp);
 	for (; ptr < sp; ptr++, i++) {
-	    if (*ptr == Qundef) {
+	    switch (TYPE(*ptr)) {
+	      case T_UNDEF:
 		rstr = rb_str_new2("undef");
-	    }
-	    else {
+		break;
+	      case T_IMEMO:
+		rstr = rb_str_new2("imemo"); /* TODO: can put mode detail information */
+		break;
+	      default:
 		rstr = rb_inspect(*ptr);
+		break;
 	    }
 	    fprintf(stderr, "  stack %2d: %8s (%"PRIdPTRDIFF")\n", i, StringValueCStr(rstr),
-		    (ptr - th->stack));
+		    (ptr - ec->vm_stack));
 	}
     }
-    else if (VM_FRAME_TYPE_FINISH_P(cfp)) {
-	if ((th)->stack + (th)->stack_size > (VALUE *)(cfp + 1)) {
-	    vm_stack_dump_each(th, cfp + 1);
+    else if (VM_FRAME_FINISHED_P(cfp)) {
+	if (ec->vm_stack + ec->vm_stack_size > (VALUE *)(cfp + 1)) {
+	    vm_stack_dump_each(ec, cfp + 1);
 	}
 	else {
 	    /* SDR(); */
@@ -327,36 +317,34 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 #endif
 
 void
-rb_vmdebug_debug_print_register(rb_thread_t *th)
+rb_vmdebug_debug_print_register(const rb_execution_context_t *ec)
 {
-    rb_control_frame_t *cfp = th->cfp;
+    rb_control_frame_t *cfp = ec->cfp;
     ptrdiff_t pc = -1;
-    ptrdiff_t ep = cfp->ep - th->stack;
+    ptrdiff_t ep = cfp->ep - ec->vm_stack;
     ptrdiff_t cfpi;
 
-    if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
+    if (VM_FRAME_RUBYFRAME_P(cfp)) {
 	pc = cfp->pc - cfp->iseq->body->iseq_encoded;
     }
 
-    if (ep < 0 || (size_t)ep > th->stack_size) {
+    if (ep < 0 || (size_t)ep > ec->vm_stack_size) {
 	ep = -1;
     }
 
-    cfpi = ((rb_control_frame_t *)(th->stack + th->stack_size)) - cfp;
+    cfpi = ((rb_control_frame_t *)(ec->vm_stack + ec->vm_stack_size)) - cfp;
     fprintf(stderr, "  [PC] %04"PRIdPTRDIFF", [SP] %04"PRIdPTRDIFF", [EP] %04"PRIdPTRDIFF", [CFP] %04"PRIdPTRDIFF"\n",
-	    pc, (cfp->sp - th->stack), ep, cfpi);
+	    pc, (cfp->sp - ec->vm_stack), ep, cfpi);
 }
 
 void
 rb_vmdebug_thread_dump_regs(VALUE thval)
 {
-    rb_thread_t *th;
-    GetThreadPtr(thval, th);
-    rb_vmdebug_debug_print_register(th);
+    rb_vmdebug_debug_print_register(rb_thread_ptr(thval)->ec);
 }
 
 void
-rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp,VALUE *_pc)
+rb_vmdebug_debug_print_pre(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, const VALUE *_pc)
 {
     const rb_iseq_t *iseq = cfp->iseq;
 
@@ -364,13 +352,13 @@ rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp,VALUE *_pc)
 	ptrdiff_t pc = _pc - iseq->body->iseq_encoded;
 	int i;
 
-	for (i=0; i<(int)VM_CFP_CNT(th, cfp); i++) {
+	for (i=0; i<(int)VM_CFP_CNT(ec, cfp); i++) {
 	    printf(" ");
 	}
 	printf("| ");
-	if(0)printf("[%03ld] ", (long)(cfp->sp - th->stack));
+	if(0)printf("[%03ld] ", (long)(cfp->sp - ec->vm_stack));
 
-	/* printf("%3"PRIdPTRDIFF" ", VM_CFP_CNT(th, cfp)); */
+	/* printf("%3"PRIdPTRDIFF" ", VM_CFP_CNT(ec, cfp)); */
 	if (pc >= 0) {
 	    const VALUE *iseq_original = rb_iseq_original_iseq((rb_iseq_t *)iseq);
 
@@ -380,12 +368,12 @@ rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp,VALUE *_pc)
 
 #if VMDEBUG > 3
     fprintf(stderr, "        (1)");
-    rb_vmdebug_debug_print_register(th);
+    rb_vmdebug_debug_print_register(ec);
 #endif
 }
 
 void
-rb_vmdebug_debug_print_post(rb_thread_t *th, rb_control_frame_t *cfp
+rb_vmdebug_debug_print_post(const rb_execution_context_t *ec, const rb_control_frame_t *cfp
 #if OPT_STACK_CACHING
 		 , VALUE reg_a, VALUE reg_b
 #endif
@@ -397,13 +385,13 @@ rb_vmdebug_debug_print_post(rb_thread_t *th, rb_control_frame_t *cfp
 
 #if VMDEBUG > 3
     fprintf(stderr, "        (2)");
-    rb_vmdebug_debug_print_register(th);
+    rb_vmdebug_debug_print_register(ec);
 #endif
-    /* stack_dump_raw(th, cfp); */
+    /* stack_dump_raw(ec, cfp); */
 
 #if VMDEBUG > 2
-    /* stack_dump_thobj(th); */
-    vm_stack_dump_each(th, th->cfp);
+    /* stack_dump_thobj(ec); */
+    vm_stack_dump_each(ec, ec->cfp);
 
 #if OPT_STACK_CACHING
     {
@@ -422,10 +410,8 @@ rb_vmdebug_debug_print_post(rb_thread_t *th, rb_control_frame_t *cfp
 VALUE
 rb_vmdebug_thread_dump_state(VALUE self)
 {
-    rb_thread_t *th;
-    rb_control_frame_t *cfp;
-    GetThreadPtr(self, th);
-    cfp = th->cfp;
+    rb_thread_t *th = rb_thread_ptr(self);
+    rb_control_frame_t *cfp = th->ec->cfp;
 
     fprintf(stderr, "Thread state dump:\n");
     fprintf(stderr, "pc : %p, sp : %p\n", (void *)cfp->pc, (void *)cfp->sp);
@@ -434,13 +420,22 @@ rb_vmdebug_thread_dump_state(VALUE self)
     return Qnil;
 }
 
+#if defined __APPLE__
+# if __DARWIN_UNIX03
+#   define MCTX_SS_REG(reg) __ss.__##reg
+# else
+#   define MCTX_SS_REG(reg) ss.reg
+# endif
+#endif
+
 #if defined(HAVE_BACKTRACE)
 # ifdef HAVE_LIBUNWIND
 #  undef backtrace
 #  define backtrace unw_backtrace
-# elif defined(__APPLE__) && defined(__x86_64__)
+# elif defined(__APPLE__) && defined(__x86_64__) && defined(HAVE_LIBUNWIND_H)
 #  define UNW_LOCAL_ONLY
 #  include <libunwind.h>
+#  include <sys/mman.h>
 #  undef backtrace
 int
 backtrace(void **trace, int size)
@@ -467,32 +462,67 @@ darwin_sigtramp:
     /* darwin's bundled libunwind doesn't support signal trampoline */
     {
 	ucontext_t *uctx;
-	/* get _sigtramp's ucontext_t and set values to cursor
+	char vec[1];
+	int r;
+	/* get previous frame information from %rbx at _sigtramp and set values to cursor
 	 * http://www.opensource.apple.com/source/Libc/Libc-825.25/i386/sys/_sigtramp.s
 	 * http://www.opensource.apple.com/source/libunwind/libunwind-35.1/src/unw_getcontext.s
 	 */
 	unw_get_reg(&cursor, UNW_X86_64_RBX, &ip);
 	uctx = (ucontext_t *)ip;
-	unw_set_reg(&cursor, UNW_X86_64_RAX, uctx->uc_mcontext->__ss.__rax);
-	unw_set_reg(&cursor, UNW_X86_64_RBX, uctx->uc_mcontext->__ss.__rbx);
-	unw_set_reg(&cursor, UNW_X86_64_RCX, uctx->uc_mcontext->__ss.__rcx);
-	unw_set_reg(&cursor, UNW_X86_64_RDX, uctx->uc_mcontext->__ss.__rdx);
-	unw_set_reg(&cursor, UNW_X86_64_RDI, uctx->uc_mcontext->__ss.__rdi);
-	unw_set_reg(&cursor, UNW_X86_64_RSI, uctx->uc_mcontext->__ss.__rsi);
-	unw_set_reg(&cursor, UNW_X86_64_RBP, uctx->uc_mcontext->__ss.__rbp);
-	unw_set_reg(&cursor, UNW_X86_64_RSP, 8+(uctx->uc_mcontext->__ss.__rsp));
-	unw_set_reg(&cursor, UNW_X86_64_R8,  uctx->uc_mcontext->__ss.__r8);
-	unw_set_reg(&cursor, UNW_X86_64_R9,  uctx->uc_mcontext->__ss.__r9);
-	unw_set_reg(&cursor, UNW_X86_64_R10, uctx->uc_mcontext->__ss.__r10);
-	unw_set_reg(&cursor, UNW_X86_64_R11, uctx->uc_mcontext->__ss.__r11);
-	unw_set_reg(&cursor, UNW_X86_64_R12, uctx->uc_mcontext->__ss.__r12);
-	unw_set_reg(&cursor, UNW_X86_64_R13, uctx->uc_mcontext->__ss.__r13);
-	unw_set_reg(&cursor, UNW_X86_64_R14, uctx->uc_mcontext->__ss.__r14);
-	unw_set_reg(&cursor, UNW_X86_64_R15, uctx->uc_mcontext->__ss.__r15);
-	ip = *(unw_word_t*)uctx->uc_mcontext->__ss.__rsp;
-	unw_set_reg(&cursor, UNW_REG_IP, ip);
-	trace[n++] = (void *)uctx->uc_mcontext->__ss.__rip;
+	unw_set_reg(&cursor, UNW_X86_64_RAX, uctx->uc_mcontext->MCTX_SS_REG(rax));
+	unw_set_reg(&cursor, UNW_X86_64_RBX, uctx->uc_mcontext->MCTX_SS_REG(rbx));
+	unw_set_reg(&cursor, UNW_X86_64_RCX, uctx->uc_mcontext->MCTX_SS_REG(rcx));
+	unw_set_reg(&cursor, UNW_X86_64_RDX, uctx->uc_mcontext->MCTX_SS_REG(rdx));
+	unw_set_reg(&cursor, UNW_X86_64_RDI, uctx->uc_mcontext->MCTX_SS_REG(rdi));
+	unw_set_reg(&cursor, UNW_X86_64_RSI, uctx->uc_mcontext->MCTX_SS_REG(rsi));
+	unw_set_reg(&cursor, UNW_X86_64_RBP, uctx->uc_mcontext->MCTX_SS_REG(rbp));
+	unw_set_reg(&cursor, UNW_X86_64_RSP, 8+(uctx->uc_mcontext->MCTX_SS_REG(rsp)));
+	unw_set_reg(&cursor, UNW_X86_64_R8,  uctx->uc_mcontext->MCTX_SS_REG(r8));
+	unw_set_reg(&cursor, UNW_X86_64_R9,  uctx->uc_mcontext->MCTX_SS_REG(r9));
+	unw_set_reg(&cursor, UNW_X86_64_R10, uctx->uc_mcontext->MCTX_SS_REG(r10));
+	unw_set_reg(&cursor, UNW_X86_64_R11, uctx->uc_mcontext->MCTX_SS_REG(r11));
+	unw_set_reg(&cursor, UNW_X86_64_R12, uctx->uc_mcontext->MCTX_SS_REG(r12));
+	unw_set_reg(&cursor, UNW_X86_64_R13, uctx->uc_mcontext->MCTX_SS_REG(r13));
+	unw_set_reg(&cursor, UNW_X86_64_R14, uctx->uc_mcontext->MCTX_SS_REG(r14));
+	unw_set_reg(&cursor, UNW_X86_64_R15, uctx->uc_mcontext->MCTX_SS_REG(r15));
+	ip = uctx->uc_mcontext->MCTX_SS_REG(rip);
+
+	/* There are 4 cases for SEGV:
+	 * (1) called invalid address
+	 * (2) read or write invalid address
+	 * (3) received signal
+	 *
+	 * Detail:
+	 * (1) called invalid address
+	 * In this case, saved ip is invalid address.
+	 * It needs to just save the address for the information,
+	 * skip the frame, and restore the frame calling the
+	 * invalid address from %rsp.
+	 * The problem is how to check whether the ip is valid or not.
+	 * This code uses mincore(2) and assume the address's page is
+	 * incore/referenced or not reflects the problem.
+	 * Note that High Sierra's mincore(2) may return -128.
+	 * (2) read or write invalid address
+	 * saved ip is valid. just restart backtracing.
+	 * (3) received signal in user space
+	 * Same as (2).
+	 * (4) received signal in kernel
+	 * In this case saved ip points just after syscall, but registers are
+	 * already overwritten by kernel. To fix register consistency,
+	 * skip libc's kernel wrapper.
+	 * To detect this case, just previous two bytes of ip is "\x0f\x05",
+	 * syscall instruction of x86_64.
+	 */
+	r = mincore((const void *)ip, 1, vec);
+	if (r || vec[0] <= 0 || memcmp((const char *)ip-2, "\x0f\x05", 2) == 0) {
+	    /* if segv is caused by invalid call or signal received in syscall */
+	    /* the frame is invalid; skip */
+	    trace[n++] = (void *)ip;
+	    ip = *(unw_word_t*)uctx->uc_mcontext->MCTX_SS_REG(rsp);
+	}
 	trace[n++] = (void *)ip;
+	unw_set_reg(&cursor, UNW_REG_IP, ip);
     }
     while (unw_step(&cursor) > 0) {
 	unw_get_reg(&cursor, UNW_REG_IP, &ip);
@@ -629,14 +659,6 @@ dump_thread(void *arg)
 		    frame.AddrFrame.Offset = context.Rbp;
 		    frame.AddrStack.Mode = AddrModeFlat;
 		    frame.AddrStack.Offset = context.Rsp;
-#elif defined(_M_IA64) || defined(__ia64__)
-		    mac = IMAGE_FILE_MACHINE_IA64;
-		    frame.AddrPC.Mode = AddrModeFlat;
-		    frame.AddrPC.Offset = context.StIIP;
-		    frame.AddrBStore.Mode = AddrModeFlat;
-		    frame.AddrBStore.Offset = context.RsBSP;
-		    frame.AddrStack.Mode = AddrModeFlat;
-		    frame.AddrStack.Offset = context.IntSp;
 #else	/* i386 */
 		    mac = IMAGE_FILE_MACHINE_I386;
 		    frame.AddrPC.Mode = AddrModeFlat;
@@ -693,7 +715,7 @@ rb_print_backtrace(void)
 #define MAX_NATIVE_TRACE 1024
     static void *trace[MAX_NATIVE_TRACE];
     int n = (int)backtrace(trace, MAX_NATIVE_TRACE);
-#if defined(USE_ELF) && defined(HAVE_DLADDR)
+#if (defined(USE_ELF) || defined(HAVE_MACH_O_LOADER_H)) && defined(HAVE_DLADDR) && !defined(__sparc)
     rb_dump_backtrace_with_lines(n, trace);
 #else
     char **syms = backtrace_symbols(trace, n);
@@ -714,91 +736,7 @@ rb_print_backtrace(void)
 }
 
 #ifdef HAVE_LIBPROCSTAT
-#include <sys/user.h>
-#include <sys/sysctl.h>
-#include <sys/param.h>
-#include <libprocstat.h>
-# ifndef KVME_TYPE_MGTDEVICE
-# define KVME_TYPE_MGTDEVICE     8
-# endif
-void
-procstat_vm(struct procstat *procstat, struct kinfo_proc *kipp)
-{
-	struct kinfo_vmentry *freep, *kve;
-	int ptrwidth;
-	unsigned int i, cnt;
-	const char *str;
-#ifdef __x86_64__
-	ptrwidth = 14;
-#else
-	ptrwidth = 2*sizeof(void *) + 2;
-#endif
-	fprintf(stderr, "%*s %*s %3s %4s %4s %3s %3s %4s %-2s %-s\n",
-		ptrwidth, "START", ptrwidth, "END", "PRT", "RES",
-		"PRES", "REF", "SHD", "FL", "TP", "PATH");
-
-#ifdef HAVE_PROCSTAT_GETVMMAP
-	freep = procstat_getvmmap(procstat, kipp, &cnt);
-#else
-	freep = kinfo_getvmmap(kipp->ki_pid, &cnt);
-#endif
-	if (freep == NULL)
-		return;
-	for (i = 0; i < cnt; i++) {
-		kve = &freep[i];
-		fprintf(stderr, "%#*jx ", ptrwidth, (uintmax_t)kve->kve_start);
-		fprintf(stderr, "%#*jx ", ptrwidth, (uintmax_t)kve->kve_end);
-		fprintf(stderr, "%s", kve->kve_protection & KVME_PROT_READ ? "r" : "-");
-		fprintf(stderr, "%s", kve->kve_protection & KVME_PROT_WRITE ? "w" : "-");
-		fprintf(stderr, "%s ", kve->kve_protection & KVME_PROT_EXEC ? "x" : "-");
-		fprintf(stderr, "%4d ", kve->kve_resident);
-		fprintf(stderr, "%4d ", kve->kve_private_resident);
-		fprintf(stderr, "%3d ", kve->kve_ref_count);
-		fprintf(stderr, "%3d ", kve->kve_shadow_count);
-		fprintf(stderr, "%-1s", kve->kve_flags & KVME_FLAG_COW ? "C" : "-");
-		fprintf(stderr, "%-1s", kve->kve_flags & KVME_FLAG_NEEDS_COPY ? "N" :
-		    "-");
-		fprintf(stderr, "%-1s", kve->kve_flags & KVME_FLAG_SUPER ? "S" : "-");
-		fprintf(stderr, "%-1s ", kve->kve_flags & KVME_FLAG_GROWS_UP ? "U" :
-		    kve->kve_flags & KVME_FLAG_GROWS_DOWN ? "D" : "-");
-		switch (kve->kve_type) {
-		case KVME_TYPE_NONE:
-			str = "--";
-			break;
-		case KVME_TYPE_DEFAULT:
-			str = "df";
-			break;
-		case KVME_TYPE_VNODE:
-			str = "vn";
-			break;
-		case KVME_TYPE_SWAP:
-			str = "sw";
-			break;
-		case KVME_TYPE_DEVICE:
-			str = "dv";
-			break;
-		case KVME_TYPE_PHYS:
-			str = "ph";
-			break;
-		case KVME_TYPE_DEAD:
-			str = "dd";
-			break;
-		case KVME_TYPE_SG:
-			str = "sg";
-			break;
-		case KVME_TYPE_MGTDEVICE:
-			str = "md";
-			break;
-		case KVME_TYPE_UNKNOWN:
-		default:
-			str = "??";
-			break;
-		}
-		fprintf(stderr, "%-2s ", str);
-		fprintf(stderr, "%-s\n", kve->kve_path);
-	}
-	free(freep);
-}
+#include "missing/procstat_vm.c"
 #endif
 
 #if defined __linux__
@@ -819,9 +757,9 @@ print_machine_register(size_t reg, const char *reg_name, int col_count, int max_
     char buf[64];
 
 #ifdef __LP64__
-    ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%016zx", reg_name, reg);
+    ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%016" PRIxSIZE, reg_name, reg);
 #else
-    ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%08zx", reg_name, reg);
+    ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%08" PRIxSIZE, reg_name, reg);
 #endif
     if (col_count + ret > max_col) {
 	fputs("\n", stderr);
@@ -834,7 +772,7 @@ print_machine_register(size_t reg, const char *reg_name, int col_count, int max_
 # ifdef __linux__
 #   define dump_machine_register(reg) (col_count = print_machine_register(mctx->gregs[REG_##reg], #reg, col_count, 80))
 # elif defined __APPLE__
-#   define dump_machine_register(reg) (col_count = print_machine_register(mctx->__ss.__##reg, #reg, col_count, 80))
+#   define dump_machine_register(reg) (col_count = print_machine_register(mctx->MCTX_SS_REG(reg), #reg, col_count, 80))
 # endif
 
 static void
@@ -938,43 +876,6 @@ rb_dump_machine_register(const ucontext_t *ctx)
 # define rb_dump_machine_register(ctx) ((void)0)
 #endif /* HAVE_PRINT_MACHINE_REGISTERS */
 
-static void
-preface_dump(void)
-{
-#if defined __APPLE__
-    static const char msg[] = ""
-	"-- Crash Report log information "
-	"--------------------------------------------\n"
-	"   See Crash Report log file under the one of following:\n"
-	"     * ~/Library/Logs/CrashReporter\n"
-	"     * /Library/Logs/CrashReporter\n"
-	"     * ~/Library/Logs/DiagnosticReports\n"
-	"     * /Library/Logs/DiagnosticReports\n"
-	"   for more details.\n"
-	"Don't forget to include the above Crash Report log file in bug reports.\n"
-	"\n";
-    const char *const endmsg = msg + sizeof(msg) - 1;
-    const char *p = msg;
-#define RED "\033[;31;1;7m"
-#define GREEN "\033[;32;7m"
-#define RESET "\033[m"
-
-    if (isatty(fileno(stderr))) {
-	const char *e = strchr(p, '\n');
-	const int w = (int)(e - p);
-	do {
-	    int i = (int)(e - p);
-	    fputs(*p == ' ' ? GREEN : RED, stderr);
-	    fwrite(p, 1, e - p, stderr);
-	    for (; i < w; ++i) fputc(' ', stderr);
-	    fputs(RESET, stderr);
-	    fputc('\n', stderr);
-	} while ((p = e + 1) < endmsg && (e = strchr(p, '\n')) != 0 && e > p + 1);
-    }
-    fwrite(p, 1, endmsg - p, stderr);
-#endif
-}
-
 void
 rb_vm_bugreport(const void *ctx)
 {
@@ -987,8 +888,6 @@ rb_vm_bugreport(const void *ctx)
     enum {other_runtime_info = 0};
 #endif
     const rb_vm_t *const vm = GET_VM();
-
-    preface_dump();
 
     if (vm) {
 	SDR();
@@ -1095,5 +994,63 @@ rb_vm_bugreport(const void *ctx)
 	    fprintf(stderr, "\n");
 	}
 #endif /* __FreeBSD__ */
+#ifdef __APPLE__
+        vm_address_t addr = 0;
+        vm_size_t size = 0;
+        struct vm_region_submap_info map;
+        mach_msg_type_number_t count = VM_REGION_SUBMAP_INFO_COUNT;
+        natural_t depth = 0;
+
+        fprintf(stderr, "* Process memory map:\n\n");
+        while (1) {
+            if (vm_region_recurse(mach_task_self(), &addr, &size, &depth,
+                        (vm_region_recurse_info_t)&map, &count) != KERN_SUCCESS) {
+                break;
+            }
+
+            if (map.is_submap) {
+                // We only look at main addresses
+                depth++;
+            }
+            else {
+                fprintf(stderr, "%lx-%lx %s%s%s", addr, (addr+size),
+                        ((map.protection & VM_PROT_READ) != 0 ? "r" : "-"),
+                        ((map.protection & VM_PROT_WRITE) != 0 ? "w" : "-"),
+                    ((map.protection & VM_PROT_EXECUTE) != 0 ? "x" : "-"));
+#ifdef HAVE_LIBPROC_H
+                char buff[PATH_MAX];
+                if (proc_regionfilename(getpid(), addr, buff, sizeof(buff)) > 0) {
+                    fprintf(stderr, " %s", buff);
+                }
+#endif
+                fprintf(stderr, "\n");
+            }
+
+            addr += size;
+            size = 0;
+        }
+#endif
+    }
+}
+
+#ifdef NON_SCALAR_THREAD_ID
+const char *ruby_fill_thread_id_string(rb_nativethread_id_t thid, rb_thread_id_string_t buf);
+#endif
+
+void
+rb_vmdebug_stack_dump_all_threads(void)
+{
+    rb_vm_t *vm = GET_VM();
+    rb_thread_t *th = NULL;
+
+    list_for_each(&vm->living_threads, th, vmlt_node) {
+#ifdef NON_SCALAR_THREAD_ID
+	rb_thread_id_string_t buf;
+	ruby_fill_thread_id_string(th->thread_id, buf);
+	fprintf(stderr, "th: %p, native_id: %s\n", th, buf);
+#else
+        fprintf(stderr, "th: %p, native_id: %p\n", (void *)th, (void *)(uintptr_t)th->thread_id);
+#endif
+	rb_vmdebug_stack_dump_raw(th->ec, th->ec->cfp);
     }
 }

@@ -1,13 +1,6 @@
 #ifndef RUBY_WIN32_DIR_H
 #define RUBY_WIN32_DIR_H
 
-#ifdef __BORLANDC__
-#  ifndef WIN32_DIR_H_
-#    define WIN32_DIR_H_
-#    include <sys/types.h>
-#  endif
-#endif
-
 #define DT_UNKNOWN 0
 #define DT_DIR (S_IFDIR>>12)
 #define DT_REG (S_IFREG>>12)
@@ -40,6 +33,7 @@ long           rb_w32_telldir(DIR *);
 void           rb_w32_seekdir(DIR *, long);
 void           rb_w32_rewinddir(DIR *);
 void           rb_w32_closedir(DIR *);
+char          *rb_w32_ugetcwd(char *, int);
 
 #define opendir(s)   rb_w32_opendir((s))
 #define readdir(d)   rb_w32_readdir((d), 0)

@@ -1,8 +1,7 @@
 V = 0
 Q1 = $(V:1=)
 Q = $(Q1:0=@)
-n=$(NULLCMD)
-ECHO1 = $(V:1=@$n)
+ECHO1 = $(V:1=@@NULLCMD@)
 ECHO = $(ECHO1:0=@echo)
 
 encsrcdir = @srcdir@
@@ -21,6 +20,9 @@ TRANSSODIR = $(ENCSODIR)/trans
 DLEXT = @DLEXT@
 OBJEXT = @OBJEXT@
 LIBEXT = @LIBEXT@
+TIMESTAMPDIR  = $(EXTOUT)/.timestamp
+ENC_TRANS_D   = $(TIMESTAMPDIR)/.enc-trans.time
+ENC_TRANS_SO_D = $(TIMESTAMPDIR)/.enc-trans.so.time
 
 BUILTIN_ENCS	= enc/ascii.c enc/us_ascii.c\
 		  enc/unicode.c enc/utf_8.c
@@ -70,7 +72,7 @@ MAKEDIRS = @MAKEDIRS@
 
 .SUFFIXES: .trans
 
-all: make-workdir
+all:
 
 make-workdir:
 	$(Q)$(MAKEDIRS) $(WORKDIRS)

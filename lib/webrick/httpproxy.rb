@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # httpproxy.rb -- HTTPProxy Class
 #
@@ -9,7 +10,7 @@
 # $IPR: httpproxy.rb,v 1.18 2003/03/08 18:58:10 gotoyuzo Exp $
 # $kNotwork: straw.rb,v 1.3 2002/02/12 15:13:07 gotoken Exp $
 
-require "webrick/httpserver"
+require_relative "httpserver"
 require "net/http"
 
 module WEBrick
@@ -142,7 +143,7 @@ module WEBrick
       if proxy = proxy_uri(req, res)
         proxy_request_line = "CONNECT #{host}:#{port} HTTP/1.0"
         if proxy.userinfo
-          credentials = "Basic " + [proxy.userinfo].pack("m").delete("\n")
+          credentials = "Basic " + [proxy.userinfo].pack("m0")
         end
         host, port = proxy.host, proxy.port
       end
@@ -192,13 +193,13 @@ module WEBrick
       begin
         while fds = IO::select([ua, os])
           if fds[0].member?(ua)
-            buf = ua.sysread(1024);
+            buf = ua.readpartial(1024);
             @logger.debug("CONNECT: #{buf.bytesize} byte from User-Agent")
-            os.syswrite(buf)
+            os.write(buf)
           elsif fds[0].member?(os)
-            buf = os.sysread(1024);
+            buf = os.readpartial(1024);
             @logger.debug("CONNECT: #{buf.bytesize} byte from #{host}:#{port}")
-            ua.syswrite(buf)
+            ua.write(buf)
           end
         end
       rescue
@@ -210,21 +211,15 @@ module WEBrick
     end
 
     def do_GET(req, res)
-      perform_proxy_request(req, res) do |http, path, header|
-        http.get(path, header)
-      end
+      perform_proxy_request(req, res, Net::HTTP::Get)
     end
 
     def do_HEAD(req, res)
-      perform_proxy_request(req, res) do |http, path, header|
-        http.head(path, header)
-      end
+      perform_proxy_request(req, res, Net::HTTP::Head)
     end
 
     def do_POST(req, res)
-      perform_proxy_request(req, res) do |http, path, header|
-        http.post(path, req.body || "", header)
-      end
+      perform_proxy_request(req, res, Net::HTTP::Post, req.body_reader)
     end
 
     def do_OPTIONS(req, res)
@@ -293,45 +288,63 @@ module WEBrick
       if upstream = proxy_uri(req, res)
         if upstream.userinfo
           header['proxy-authorization'] =
-            "Basic " + [upstream.userinfo].pack("m").delete("\n")
+            "Basic " + [upstream.userinfo].pack("m0")
         end
         return upstream
       end
       return FakeProxyURI
     end
 
-    def perform_proxy_request(req, res)
+    def perform_proxy_request(req, res, req_class, body_stream = nil)
       uri = req.request_uri
       path = uri.path.dup
       path << "?" << uri.query if uri.query
       header = setup_proxy_header(req, res)
       upstream = setup_upstream_proxy_authentication(req, res, header)
-      response = nil
 
+      body_tmp = []
       http = Net::HTTP.new(uri.host, uri.port, upstream.host, upstream.port)
-      http.start do
-        if @config[:ProxyTimeout]
-          ##################################   these issues are
-          http.open_timeout = 30   # secs  #   necessary (maybe because
-          http.read_timeout = 60   # secs  #   Ruby's bug, but why?)
-          ##################################
+      req_fib = Fiber.new do
+        http.start do
+          if @config[:ProxyTimeout]
+            ##################################   these issues are
+            http.open_timeout = 30   # secs  #   necessary (maybe because
+            http.read_timeout = 60   # secs  #   Ruby's bug, but why?)
+            ##################################
+          end
+          if body_stream && req['transfer-encoding'] =~ /\bchunked\b/i
+            header['Transfer-Encoding'] = 'chunked'
+          end
+          http_req = req_class.new(path, header)
+          http_req.body_stream = body_stream if body_stream
+          http.request(http_req) do |response|
+            # Persistent connection requirements are mysterious for me.
+            # So I will close the connection in every response.
+            res['proxy-connection'] = "close"
+            res['connection'] = "close"
+
+            # stream Net::HTTP::HTTPResponse to WEBrick::HTTPResponse
+            res.status = response.code.to_i
+            res.chunked = response.chunked?
+            choose_header(response, res)
+            set_cookie(response, res)
+            set_via(res)
+            response.read_body do |buf|
+              body_tmp << buf
+              Fiber.yield # wait for res.body Proc#call
+            end
+          end # http.request
         end
-        response = yield(http, path, header)
       end
-
-      # Persistent connection requirements are mysterious for me.
-      # So I will close the connection in every response.
-      res['proxy-connection'] = "close"
-      res['connection'] = "close"
-
-      # Convert Net::HTTP::HTTPResponse to WEBrick::HTTPResponse
-      res.status = response.code.to_i
-      choose_header(response, res)
-      set_cookie(response, res)
-      set_via(res)
-      res.body = response.body
+      req_fib.resume # read HTTP response headers and first chunk of the body
+      res.body = ->(socket) do
+        while buf = body_tmp.shift
+          socket.write(buf)
+          buf.clear
+          req_fib.resume # continue response.read_body
+        end
+      end
     end
-
     # :stopdoc:
   end
 end

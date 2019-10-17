@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestMath < Test::Unit::TestCase
@@ -110,6 +111,8 @@ class TestMath < Test::Unit::TestCase
     check(Math.sinh(0) / Math.cosh(0), Math.tanh(0))
     check(Math.sinh(1) / Math.cosh(1), Math.tanh(1))
     check(Math.sinh(2) / Math.cosh(2), Math.tanh(2))
+    check(+1.0, Math.tanh(+1000.0))
+    check(-1.0, Math.tanh(-1000.0))
   end
 
   def test_acosh
@@ -199,6 +202,7 @@ class TestMath < Test::Unit::TestCase
     check(3, Math.cbrt(27))
     check(-0.1, Math.cbrt(-0.001))
     assert_nothing_raised { assert_infinity(Math.cbrt(1.0/0)) }
+    assert_operator(Math.cbrt(1.0 - Float::EPSILON), :<=, 1.0)
   end
 
   def test_frexp
@@ -254,6 +258,10 @@ class TestMath < Test::Unit::TestCase
     end
 
     assert_raise(Math::DomainError) { Math.gamma(-Float::INFINITY) }
+    x = Math.gamma(-0.0)
+    mesg = "Math.gamma(-0.0) should be -INF"
+    assert_infinity(x, mesg)
+    assert_predicate(x, :negative?, mesg)
   end
 
   def test_lgamma
@@ -270,14 +278,19 @@ class TestMath < Test::Unit::TestCase
     assert_float_and_int([Math.log(6),                1], Math.lgamma(4))
 
     assert_raise(Math::DomainError) { Math.lgamma(-Float::INFINITY) }
+    x, sign = Math.lgamma(-0.0)
+    mesg = "Math.lgamma(-0.0) should be [INF, -1]"
+    assert_infinity(x, mesg)
+    assert_predicate(x, :positive?, mesg)
+    assert_equal(-1, sign, mesg)
   end
 
   def test_fixnum_to_f
     check(12.0, Math.sqrt(144))
   end
 
-  def test_override_fixnum_to_f
-    Fixnum.class_eval do
+  def test_override_integer_to_f
+    Integer.class_eval do
       alias _to_f to_f
       def to_f
         (self + 1)._to_f
@@ -287,8 +300,8 @@ class TestMath < Test::Unit::TestCase
     check(Math.cos((0 + 1)._to_f), Math.cos(0))
     check(Math.exp((0 + 1)._to_f), Math.exp(0))
     check(Math.log((0 + 1)._to_f), Math.log(0))
-
-    Fixnum.class_eval { alias to_f _to_f }
+  ensure
+    Integer.class_eval { undef to_f; alias to_f _to_f; undef _to_f }
   end
 
   def test_bignum_to_f
@@ -296,17 +309,17 @@ class TestMath < Test::Unit::TestCase
   end
 
   def test_override_bignum_to_f
-    Bignum.class_eval do
+    Integer.class_eval do
       alias _to_f to_f
       def to_f
         (self << 1)._to_f
       end
     end
 
-    check(Math.cos((1 << 62 << 1)._to_f),  Math.cos(1 << 62))
-    check(Math.log((1 << 62 << 1)._to_f),  Math.log(1 << 62))
-
-    Bignum.class_eval { alias to_f _to_f }
+    check(Math.cos((1 << 64 << 1)._to_f),  Math.cos(1 << 64))
+    check(Math.log((1 << 64 << 1)._to_f),  Math.log(1 << 64))
+  ensure
+    Integer.class_eval { undef to_f; alias to_f _to_f; undef _to_f }
   end
 
   def test_rational_to_f
@@ -324,7 +337,7 @@ class TestMath < Test::Unit::TestCase
     check(Math.cos((0r + 1)._to_f), Math.cos(0r))
     check(Math.exp((0r + 1)._to_f), Math.exp(0r))
     check(Math.log((0r + 1)._to_f), Math.log(0r))
-
-    Rational.class_eval { alias to_f _to_f }
+  ensure
+    Rational.class_eval { undef to_f; alias to_f _to_f; undef _to_f }
   end
 end

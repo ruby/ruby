@@ -1,13 +1,15 @@
+# frozen_string_literal: false
 require_relative "utils"
 
-if defined?(OpenSSL::TestUtils)
+if defined?(OpenSSL)
 
-class OpenSSL::TestX509Request < Test::Unit::TestCase
+class OpenSSL::TestX509Request < OpenSSL::TestCase
   def setup
-    @rsa1024 = OpenSSL::TestUtils::TEST_KEY_RSA1024
-    @rsa2048 = OpenSSL::TestUtils::TEST_KEY_RSA2048
-    @dsa256  = OpenSSL::TestUtils::TEST_KEY_DSA256
-    @dsa512  = OpenSSL::TestUtils::TEST_KEY_DSA512
+    super
+    @rsa1024 = Fixtures.pkey("rsa1024")
+    @rsa2048 = Fixtures.pkey("rsa2048")
+    @dsa256  = Fixtures.pkey("dsa256")
+    @dsa512  = Fixtures.pkey("dsa512")
     @dn = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=GOTOU Yuuzou")
   end
 
@@ -26,7 +28,7 @@ class OpenSSL::TestX509Request < Test::Unit::TestCase
     req = OpenSSL::X509::Request.new(req.to_der)
     assert_equal(@rsa1024.public_key.to_der, req.public_key.to_der)
 
-    req = issue_csr(0, @dn, @dsa512, OpenSSL::TestUtils::DSA_SIGNATURE_DIGEST.new)
+    req = issue_csr(0, @dn, @dsa512, OpenSSL::Digest::SHA1.new)
     assert_equal(@dsa512.public_key.to_der, req.public_key.to_der)
     req = OpenSSL::X509::Request.new(req.to_der)
     assert_equal(@dsa512.public_key.to_der, req.public_key.to_der)
@@ -120,7 +122,7 @@ class OpenSSL::TestX509Request < Test::Unit::TestCase
   end
 
   def test_sign_and_verify_dsa
-    req = issue_csr(0, @dn, @dsa512, OpenSSL::TestUtils::DSA_SIGNATURE_DIGEST.new)
+    req = issue_csr(0, @dn, @dsa512, OpenSSL::Digest::SHA1.new)
     assert_equal(false, request_error_returns_false { req.verify(@rsa1024) })
     assert_equal(false, request_error_returns_false { req.verify(@rsa2048) })
     assert_equal(false, req.verify(@dsa256))
@@ -129,21 +131,24 @@ class OpenSSL::TestX509Request < Test::Unit::TestCase
     assert_equal(false, req.verify(@dsa512))
   end
 
-  def test_sign_and_verify_rsa_dss1
-    req = issue_csr(0, @dn, @rsa1024, OpenSSL::Digest::DSS1.new)
-    assert_equal(true,  req.verify(@rsa1024))
-    assert_equal(false, req.verify(@rsa2048))
-    assert_equal(false, request_error_returns_false { req.verify(@dsa256) })
-    assert_equal(false, request_error_returns_false { req.verify(@dsa512) })
-    req.version = 1
-    assert_equal(false, req.verify(@rsa1024))
-  rescue OpenSSL::X509::RequestError
-    skip
-  end
-
   def test_sign_and_verify_dsa_md5
     assert_raise(OpenSSL::X509::RequestError){
       issue_csr(0, @dn, @dsa512, OpenSSL::Digest::MD5.new) }
+  end
+
+  def test_dup
+    req = issue_csr(0, @dn, @rsa1024, OpenSSL::Digest::SHA1.new)
+    assert_equal(req.to_der, req.dup.to_der)
+  end
+
+  def test_eq
+    req1 = issue_csr(0, @dn, @rsa1024, "sha1")
+    req2 = issue_csr(0, @dn, @rsa1024, "sha1")
+    req3 = issue_csr(0, @dn, @rsa1024, "sha256")
+
+    assert_equal false, req1 == 12345
+    assert_equal true, req1 == req2
+    assert_equal false, req1 == req3
   end
 
   private

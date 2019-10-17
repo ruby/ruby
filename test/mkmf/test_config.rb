@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 $extmk = true
 
 require 'test/unit'

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'cgi'
 require 'uri'
 
@@ -18,7 +19,7 @@ class Gem::UriFormatter
   ##
   # Creates a new URI formatter for +uri+.
 
-  def initialize uri
+  def initialize(uri)
     @uri = uri
   end
 
@@ -46,4 +47,3 @@ class Gem::UriFormatter
   end
 
 end
-

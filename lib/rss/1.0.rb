@@ -1,4 +1,5 @@
-require "rss/parser"
+# frozen_string_literal: false
+require_relative "parser"
 
 module RSS
 

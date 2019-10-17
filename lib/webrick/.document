@@ -1,0 +1,6 @@
+# Add files to this as they become documented
+
+*.rb
+
+httpauth
+httpservlet

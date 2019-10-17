@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 =begin
 = Info
   'OpenSSL for Ruby 2' project
@@ -11,72 +12,83 @@
 
 require "openssl/buffering"
 require "io/nonblock"
+require "ipaddr"
 
 module OpenSSL
   module SSL
     class SSLContext
-      DEFAULT_PARAMS = {
-        :ssl_version => "SSLv23",
+      DEFAULT_PARAMS = { # :nodoc:
+        :min_version => OpenSSL::SSL::TLS1_VERSION,
         :verify_mode => OpenSSL::SSL::VERIFY_PEER,
-        :ciphers => %w{
-          ECDHE-ECDSA-AES128-GCM-SHA256
-          ECDHE-RSA-AES128-GCM-SHA256
-          ECDHE-ECDSA-AES256-GCM-SHA384
-          ECDHE-RSA-AES256-GCM-SHA384
-          DHE-RSA-AES128-GCM-SHA256
-          DHE-DSS-AES128-GCM-SHA256
-          DHE-RSA-AES256-GCM-SHA384
-          DHE-DSS-AES256-GCM-SHA384
-          ECDHE-ECDSA-AES128-SHA256
-          ECDHE-RSA-AES128-SHA256
-          ECDHE-ECDSA-AES128-SHA
-          ECDHE-RSA-AES128-SHA
-          ECDHE-ECDSA-AES256-SHA384
-          ECDHE-RSA-AES256-SHA384
-          ECDHE-ECDSA-AES256-SHA
-          ECDHE-RSA-AES256-SHA
-          DHE-RSA-AES128-SHA256
-          DHE-RSA-AES256-SHA256
-          DHE-RSA-AES128-SHA
-          DHE-RSA-AES256-SHA
-          DHE-DSS-AES128-SHA256
-          DHE-DSS-AES256-SHA256
-          DHE-DSS-AES128-SHA
-          DHE-DSS-AES256-SHA
-          AES128-GCM-SHA256
-          AES256-GCM-SHA384
-          AES128-SHA256
-          AES256-SHA256
-          AES128-SHA
-          AES256-SHA
-          ECDHE-ECDSA-RC4-SHA
-          ECDHE-RSA-RC4-SHA
-          RC4-SHA
-        }.join(":"),
+        :verify_hostname => true,
         :options => -> {
           opts = OpenSSL::SSL::OP_ALL
-          opts &= ~OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS if defined?(OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS)
-          opts |= OpenSSL::SSL::OP_NO_COMPRESSION if defined?(OpenSSL::SSL::OP_NO_COMPRESSION)
-          opts |= OpenSSL::SSL::OP_NO_SSLv2 if defined?(OpenSSL::SSL::OP_NO_SSLv2)
-          opts |= OpenSSL::SSL::OP_NO_SSLv3 if defined?(OpenSSL::SSL::OP_NO_SSLv3)
+          opts &= ~OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS
+          opts |= OpenSSL::SSL::OP_NO_COMPRESSION
           opts
         }.call
       }
 
-      DEFAULT_CERT_STORE = OpenSSL::X509::Store.new
-      DEFAULT_CERT_STORE.set_default_paths
-      if defined?(OpenSSL::X509::V_FLAG_CRL_CHECK_ALL)
-        DEFAULT_CERT_STORE.flags = OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
+      if defined?(OpenSSL::PKey::DH)
+        DEFAULT_2048 = OpenSSL::PKey::DH.new <<-_end_of_pem_
+-----BEGIN DH PARAMETERS-----
+MIIBCAKCAQEA7E6kBrYiyvmKAMzQ7i8WvwVk9Y/+f8S7sCTN712KkK3cqd1jhJDY
+JbrYeNV3kUIKhPxWHhObHKpD1R84UpL+s2b55+iMd6GmL7OYmNIT/FccKhTcveab
+VBmZT86BZKYyf45hUF9FOuUM9xPzuK3Vd8oJQvfYMCd7LPC0taAEljQLR4Edf8E6
+YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
+1bNveX5wInh5GDx1FGhKBZ+s1H+aedudCm7sCgRwv8lKWYGiHzObSma8A86KG+MD
+7Lo5JquQ3DlBodj3IDyPrxIv96lvRPFtAwIBAg==
+-----END DH PARAMETERS-----
+        _end_of_pem_
+        private_constant :DEFAULT_2048
+
+        DEFAULT_TMP_DH_CALLBACK = lambda { |ctx, is_export, keylen| # :nodoc:
+          warn "using default DH parameters." if $VERBOSE
+          DEFAULT_2048
+        }
       end
 
-      INIT_VARS = ["cert", "key", "client_ca", "ca_file", "ca_path",
-        "timeout", "verify_mode", "verify_depth", "renegotiation_cb",
-        "verify_callback", "cert_store", "extra_chain_cert",
-        "client_cert_cb", "session_id_context", "tmp_dh_callback",
-        "session_get_cb", "session_new_cb", "session_remove_cb",
-        "tmp_ecdh_callback", "servername_cb", "npn_protocols",
-        "alpn_protocols", "alpn_select_cb",
-        "npn_select_cb"].map { |x| "@#{x}" }
+      if !(OpenSSL::OPENSSL_VERSION.start_with?("OpenSSL") &&
+           OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10100000)
+        DEFAULT_PARAMS.merge!(
+          ciphers: %w{
+            ECDHE-ECDSA-AES128-GCM-SHA256
+            ECDHE-RSA-AES128-GCM-SHA256
+            ECDHE-ECDSA-AES256-GCM-SHA384
+            ECDHE-RSA-AES256-GCM-SHA384
+            DHE-RSA-AES128-GCM-SHA256
+            DHE-DSS-AES128-GCM-SHA256
+            DHE-RSA-AES256-GCM-SHA384
+            DHE-DSS-AES256-GCM-SHA384
+            ECDHE-ECDSA-AES128-SHA256
+            ECDHE-RSA-AES128-SHA256
+            ECDHE-ECDSA-AES128-SHA
+            ECDHE-RSA-AES128-SHA
+            ECDHE-ECDSA-AES256-SHA384
+            ECDHE-RSA-AES256-SHA384
+            ECDHE-ECDSA-AES256-SHA
+            ECDHE-RSA-AES256-SHA
+            DHE-RSA-AES128-SHA256
+            DHE-RSA-AES256-SHA256
+            DHE-RSA-AES128-SHA
+            DHE-RSA-AES256-SHA
+            DHE-DSS-AES128-SHA256
+            DHE-DSS-AES256-SHA256
+            DHE-DSS-AES128-SHA
+            DHE-DSS-AES256-SHA
+            AES128-GCM-SHA256
+            AES256-GCM-SHA384
+            AES128-SHA256
+            AES256-SHA256
+            AES128-SHA
+            AES256-SHA
+          }.join(":"),
+        )
+      end
+
+      DEFAULT_CERT_STORE = OpenSSL::X509::Store.new # :nodoc:
+      DEFAULT_CERT_STORE.set_default_paths
+      DEFAULT_CERT_STORE.flags = OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
 
       # A callback invoked when DH parameters are required.
       #
@@ -89,38 +101,43 @@ module OpenSSL
 
       attr_accessor :tmp_dh_callback
 
-      if ExtConfig::HAVE_TLSEXT_HOST_NAME
-        # A callback invoked at connect time to distinguish between multiple
-        # server names.
-        #
-        # The callback is invoked with an SSLSocket and a server name.  The
-        # callback must return an SSLContext for the server name or nil.
-        attr_accessor :servername_cb
-      end
+      # A callback invoked at connect time to distinguish between multiple
+      # server names.
+      #
+      # The callback is invoked with an SSLSocket and a server name.  The
+      # callback must return an SSLContext for the server name or nil.
+      attr_accessor :servername_cb
 
       # call-seq:
-      #    SSLContext.new => ctx
-      #    SSLContext.new(:TLSv1) => ctx
-      #    SSLContext.new("SSLv23_client") => ctx
+      #    SSLContext.new           -> ctx
+      #    SSLContext.new(:TLSv1)   -> ctx
+      #    SSLContext.new("SSLv23") -> ctx
       #
-      # You can get a list of valid methods with OpenSSL::SSL::SSLContext::METHODS
+      # Creates a new SSL context.
+      #
+      # If an argument is given, #ssl_version= is called with the value. Note
+      # that this form is deprecated. New applications should use #min_version=
+      # and #max_version= as necessary.
       def initialize(version = nil)
-        INIT_VARS.each { |v| instance_variable_set v, nil }
-        self.options = self.options | OpenSSL::SSL::OP_ALL
-        return unless version
-        self.ssl_version = version
+        self.options |= OpenSSL::SSL::OP_ALL
+        self.ssl_version = version if version
       end
 
       ##
-      # Sets the parameters for this SSL context to the values in +params+.
-      # The keys in +params+ must be assignment methods on SSLContext.
+      # call-seq:
+      #   ctx.set_params(params = {}) -> params
+      #
+      # Sets saner defaults optimized for the use with HTTP-like protocols.
+      #
+      # If a Hash _params_ is given, the parameters are overridden with it.
+      # The keys in _params_ must be assignment methods on SSLContext.
       #
       # If the verify_mode is not VERIFY_NONE and ca_file, ca_path and
       # cert_store are not set then the system default certificate store is
       # used.
-
       def set_params(params={})
         params = DEFAULT_PARAMS.merge(params)
+        self.options = params.delete(:options) # set before min_version/max_version
         params.each{|name, value| self.__send__("#{name}=", value) }
         if self.verify_mode != OpenSSL::SSL::VERIFY_NONE
           unless self.ca_file or self.ca_path or self.cert_store
@@ -129,6 +146,88 @@ module OpenSSL
         end
         return params
       end
+
+      # call-seq:
+      #    ctx.min_version = OpenSSL::SSL::TLS1_2_VERSION
+      #    ctx.min_version = :TLS1_2
+      #    ctx.min_version = nil
+      #
+      # Sets the lower bound on the supported SSL/TLS protocol version. The
+      # version may be specified by an integer constant named
+      # OpenSSL::SSL::*_VERSION, a Symbol, or +nil+ which means "any version".
+      #
+      # Be careful that you don't overwrite OpenSSL::SSL::OP_NO_{SSL,TLS}v*
+      # options by #options= once you have called #min_version= or
+      # #max_version=.
+      #
+      # === Example
+      #   ctx = OpenSSL::SSL::SSLContext.new
+      #   ctx.min_version = OpenSSL::SSL::TLS1_1_VERSION
+      #   ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+      #
+      #   sock = OpenSSL::SSL::SSLSocket.new(tcp_sock, ctx)
+      #   sock.connect # Initiates a connection using either TLS 1.1 or TLS 1.2
+      def min_version=(version)
+        set_minmax_proto_version(version, @max_proto_version ||= nil)
+        @min_proto_version = version
+      end
+
+      # call-seq:
+      #    ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+      #    ctx.max_version = :TLS1_2
+      #    ctx.max_version = nil
+      #
+      # Sets the upper bound of the supported SSL/TLS protocol version. See
+      # #min_version= for the possible values.
+      def max_version=(version)
+        set_minmax_proto_version(@min_proto_version ||= nil, version)
+        @max_proto_version = version
+      end
+
+      # call-seq:
+      #    ctx.ssl_version = :TLSv1
+      #    ctx.ssl_version = "SSLv23"
+      #
+      # Sets the SSL/TLS protocol version for the context. This forces
+      # connections to use only the specified protocol version. This is
+      # deprecated and only provided for backwards compatibility. Use
+      # #min_version= and #max_version= instead.
+      #
+      # === History
+      # As the name hints, this used to call the SSL_CTX_set_ssl_version()
+      # function which sets the SSL method used for connections created from
+      # the context. As of Ruby/OpenSSL 2.1, this accessor method is
+      # implemented to call #min_version= and #max_version= instead.
+      def ssl_version=(meth)
+        meth = meth.to_s if meth.is_a?(Symbol)
+        if /(?<type>_client|_server)\z/ =~ meth
+          meth = $`
+          if $VERBOSE
+            warn "#{caller(1, 1)[0]}: method type #{type.inspect} is ignored"
+          end
+        end
+        version = METHODS_MAP[meth.intern] or
+          raise ArgumentError, "unknown SSL method `%s'" % meth
+        set_minmax_proto_version(version, version)
+        @min_proto_version = @max_proto_version = version
+      end
+
+      METHODS_MAP = {
+        SSLv23: 0,
+        SSLv2: OpenSSL::SSL::SSL2_VERSION,
+        SSLv3: OpenSSL::SSL::SSL3_VERSION,
+        TLSv1: OpenSSL::SSL::TLS1_VERSION,
+        TLSv1_1: OpenSSL::SSL::TLS1_1_VERSION,
+        TLSv1_2: OpenSSL::SSL::TLS1_2_VERSION,
+      }.freeze
+      private_constant :METHODS_MAP
+
+      # The list of available SSL/TLS methods. This constant is only provided
+      # for backwards compatibility.
+      METHODS = METHODS_MAP.flat_map { |name,|
+        [name, :"#{name}_client", :"#{name}_server"]
+      }.freeze
+      deprecate_constant :METHODS
     end
 
     module SocketForwarder
@@ -174,11 +273,11 @@ module OpenSSL
             return true if verify_hostname(hostname, san.value)
           when 7 # iPAddress in GeneralName (RFC5280)
             should_verify_common_name = false
-            # follows GENERAL_NAME_print() in x509v3/v3_alt.c
-            if san.value.size == 4
-              return true if san.value.unpack('C*').join('.') == hostname
-            elsif san.value.size == 16
-              return true if san.value.unpack('n*').map { |e| sprintf("%X", e) }.join(':') == hostname
+            if san.value.size == 4 || san.value.size == 16
+              begin
+                return true if san.value == IPAddr.new(hostname).hton
+              rescue IPAddr::InvalidAddressError
+              end
             end
           end
         }
@@ -249,55 +348,36 @@ module OpenSSL
       include Buffering
       include SocketForwarder
 
-      if ExtConfig::OPENSSL_NO_SOCK
-        def initialize(io, ctx = nil); raise NotImplmentedError; end
-      else
-        if ExtConfig::HAVE_TLSEXT_HOST_NAME
-          attr_accessor :hostname
-        end
+      attr_reader :hostname
 
-        attr_reader :io, :context
-        attr_accessor :sync_close
-        alias :to_io :io
+      # The underlying IO object.
+      attr_reader :io
+      alias :to_io :io
 
-        # call-seq:
-        #    SSLSocket.new(io) => aSSLSocket
-        #    SSLSocket.new(io, ctx) => aSSLSocket
-        #
-        # Creates a new SSL socket from +io+ which must be a real ruby object (not an
-        # IO-like object that responds to read/write).
-        #
-        # If +ctx+ is provided the SSL Sockets initial params will be taken from
-        # the context.
-        #
-        # The OpenSSL::Buffering module provides additional IO methods.
-        #
-        # This method will freeze the SSLContext if one is provided;
-        # however, session management is still allowed in the frozen SSLContext.
+      # The SSLContext object used in this connection.
+      attr_reader :context
 
-        def initialize(io, context = OpenSSL::SSL::SSLContext.new)
-          @io         = io
-          @context    = context
-          @sync_close = false
-          @hostname   = nil
-          @io.nonblock = true if @io.respond_to?(:nonblock=)
-          context.setup
-          super()
-        end
-      end
+      # Whether to close the underlying socket as well, when the SSL/TLS
+      # connection is shut down. This defaults to +false+.
+      attr_accessor :sync_close
 
       # call-seq:
       #    ssl.sysclose => nil
       #
-      # Shuts down the SSL connection and prepares it for another connection.
+      # Sends "close notify" to the peer and tries to shut down the SSL
+      # connection gracefully.
+      #
+      # If sync_close is set to +true+, the underlying IO is also closed.
       def sysclose
         return if closed?
         stop
         io.close if sync_close
       end
 
-      ##
-      # Perform hostname verification after an SSL connection is established
+      # call-seq:
+      #   ssl.post_connection_check(hostname) -> true
+      #
+      # Perform hostname verification following RFC 6125.
       #
       # This method MUST be called after calling #connect to ensure that the
       # hostname of a remote peer has been verified.
@@ -305,7 +385,8 @@ module OpenSSL
         if peer_cert.nil?
           msg = "Peer verification enabled, but no certificate received."
           if using_anon_cipher?
-            msg += " Anonymous cipher suite #{cipher[0]} was negotiated. Anonymous suites must be disabled to use peer verification."
+            msg += " Anonymous cipher suite #{cipher[0]} was negotiated. " \
+                   "Anonymous suites must be disabled to use peer verification."
           end
           raise SSLError, msg
         end
@@ -316,6 +397,11 @@ module OpenSSL
         return true
       end
 
+      # call-seq:
+      #   ssl.session -> aSession
+      #
+      # Returns the SSLSession object currently used, or nil if the session is
+      # not established.
       def session
         SSL::Session.new(self)
       rescue SSL::Session::SessionError
@@ -335,7 +421,7 @@ module OpenSSL
       end
 
       def tmp_dh_callback
-        @context.tmp_dh_callback || OpenSSL::PKey::DEFAULT_TMP_DH_CALLBACK
+        @context.tmp_dh_callback || OpenSSL::SSL::SSLContext::DEFAULT_TMP_DH_CALLBACK
       end
 
       def tmp_ecdh_callback
@@ -359,8 +445,8 @@ module OpenSSL
       attr_accessor :start_immediately
 
       # Creates a new instance of SSLServer.
-      # * +srv+ is an instance of TCPServer.
-      # * +ctx+ is an instance of OpenSSL::SSL::SSLContext.
+      # * _srv_ is an instance of TCPServer.
+      # * _ctx_ is an instance of OpenSSL::SSL::SSLContext.
       def initialize(svr, ctx)
         @svr = svr
         @ctx = ctx

@@ -1,6 +1,7 @@
-require 'rexml/parsers/streamparser'
-require 'rexml/parsers/baseparser'
-require 'rexml/light/node'
+# frozen_string_literal: false
+require_relative 'streamparser'
+require_relative 'baseparser'
+require_relative '../light/node'
 
 module REXML
   module Parsers

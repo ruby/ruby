@@ -1,7 +1,7 @@
 #!/bin/sh
 # usage:
 #   edit $(srcdir)/test.rb
-#   git bisect start `git svn find-rev <rBADREV>` `git svn find-rev <rGOODREV>`
+#   git bisect start <bad> <good>
 #   cd <builddir>
 #   make bisect (or bisect-ruby for full ruby)
 
@@ -11,32 +11,40 @@ fi
 
 case $1 in
   miniruby | ruby ) # (miniruby|ruby) <srcdir>
-    srcdir=$2
+    srcdir="$2"
     builddir=`pwd` # assume pwd is builddir
-    path=$builddir/_bisect.sh
+    path="$builddir/_bisect.sh"
     echo "path: $path"
-    cp $0 $path
-    cd $srcdir
-    echo "git bisect run $path run-$1"
-    git bisect run $path run-$1
+    cp "$0" "$path"
+    cd "$srcdir"
+    set -x
+    exec git bisect run "$path" "run-$1"
     ;;
   run-miniruby )
-    cd ${0%/*} # assume a copy of this script is in builddir
-    $MAKE Makefile
-    $MAKE mini || exit 125
-    $MAKE run || exit 1
+    prep=mini
+    run=run
     ;;
   run-ruby )
-    cd ${0%/*} # assume a copy of this script is in builddir
-    $MAKE Makefile
-    $MAKE program || exit 125
-    $MAKE runruby || exit 1
+    prep=program
+    run=runruby
     ;;
   "" )
-    echo foo bar
+    echo missing command 1>&2
+    exit 1
     ;;
   * )
-    echo unknown command "'$cmd'"
+    echo unknown command "'$1'" 1>&2
+    exit 1
     ;;
 esac
-exit 0
+
+case "$0" in
+*/*)
+    # assume a copy of this script is in builddir
+    cd `echo "$0" | sed 's:\(.*\)/.*:\1:'` || exit 125
+    ;;
+esac
+for target in srcs Makefile $prep; do
+    $MAKE $target || exit 125
+done
+exec $MAKE $run

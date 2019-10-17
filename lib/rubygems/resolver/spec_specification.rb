@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # The Resolver::SpecSpecification contains common functionality for
 # Resolver specifications that are backed by a Gem::Specification.
@@ -9,7 +10,7 @@ class Gem::Resolver::SpecSpecification < Gem::Resolver::Specification
   # +spec+.  The +source+ is either where the +spec+ came from, or should be
   # loaded from.
 
-  def initialize set, spec, source = nil
+  def initialize(set, spec, source = nil)
     @set    = set
     @source = source
     @spec   = spec
@@ -53,4 +54,3 @@ class Gem::Resolver::SpecSpecification < Gem::Resolver::Specification
   end
 
 end
-

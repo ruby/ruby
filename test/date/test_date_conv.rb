@@ -1,7 +1,17 @@
+# frozen_string_literal: true
 require 'test/unit'
 require 'date'
 
 class TestDateConv < Test::Unit::TestCase
+  def with_tz(tz)
+    old = ENV["TZ"]
+    begin
+      ENV["TZ"] = tz
+      yield
+    ensure
+      ENV["TZ"] = old
+    end
+  end
 
   def test_to_class
     [Time.now, Date.today, DateTime.now].each do |o|
@@ -21,6 +31,14 @@ class TestDateConv < Test::Unit::TestCase
     t2 = t.to_time.utc
     assert_equal([2004, 9, 19, 1, 2, 3, 456789],
 		 [t2.year, t2.mon, t2.mday, t2.hour, t2.min, t2.sec, t2.usec])
+
+    t = Time.new(2004, 9, 19, 1, 2, 3, '+03:00')
+    with_tz('Asia/Tokyo') do
+      t2 = t.to_time
+      assert_equal([2004, 9, 19, 1, 2, 3],
+       [t2.year, t2.mon, t2.mday, t2.hour, t2.min, t2.sec])
+      assert_equal(3 * 60 * 60, t2.gmt_offset)
+    end
   end
 
   def test_to_time__from_date
@@ -31,12 +49,10 @@ class TestDateConv < Test::Unit::TestCase
   end
 
   def test_to_time__from_datetime
-    d = DateTime.new(2004, 9, 19, 1, 2, 3, 9.to_r/24) + 456789.to_r/86400000000
+    d = DateTime.new(2004, 9, 19, 1, 2, 3, 8.to_r/24) + 456789.to_r/86400000000
     t = d.to_time
-    if t.utc_offset == 9*60*60
-      assert_equal([2004, 9, 19, 1, 2, 3, 456789],
-		   [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.usec])
-    end
+    assert_equal([2004, 9, 19, 1, 2, 3, 456789, 8*60*60],
+     [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.usec, t.utc_offset])
 
     d = DateTime.new(2004, 9, 19, 1, 2, 3, 0) + 456789.to_r/86400000000
     t = d.to_time.utc

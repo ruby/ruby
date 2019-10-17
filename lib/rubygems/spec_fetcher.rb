@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/remote_fetcher'
 require 'rubygems/user_interaction'
 require 'rubygems/errors'
@@ -53,7 +54,7 @@ class Gem::SpecFetcher
   # If you need to retrieve specifications from a different +source+, you can
   # send it as an argument.
 
-  def initialize sources = nil
+  def initialize(sources = nil)
     @sources = sources || Gem.sources
 
     @update_cache =
@@ -87,19 +88,8 @@ class Gem::SpecFetcher
 
     rejected_specs = {}
 
-    if dependency.prerelease?
-      if dependency.specific?
-        type = :complete
-      else
-        type = :abs_latest
-      end
-    elsif dependency.latest_version?
-      type = :latest
-    else
-      type = :released
-    end
+    list, errors = available_specs(dependency.identity)
 
-    list, errors = available_specs(type)
     list.each do |source, specs|
       if dependency.name.is_a?(String) && specs.respond_to?(:bsearch)
         start_index = (0 ... specs.length).bsearch{ |i| specs[i].name >= dependency.name }
@@ -137,7 +127,6 @@ class Gem::SpecFetcher
     return [tuples, errors]
   end
 
-
   ##
   # Return all gem name tuples who's names match +obj+
 
@@ -155,7 +144,6 @@ class Gem::SpecFetcher
 
     tuples
   end
-
 
   ##
   # Find and fetch specs that match +dependency+.
@@ -183,12 +171,12 @@ class Gem::SpecFetcher
   # Suggests gems based on the supplied +gem_name+. Returns an array of
   # alternative gem names.
 
-  def suggest_gems_from_name gem_name
+  def suggest_gems_from_name(gem_name, type = :latest)
     gem_name        = gem_name.downcase.tr('_-', '')
     max             = gem_name.size / 2
-    names           = available_specs(:latest).first.values.flatten(1)
+    names           = available_specs(type).first.values.flatten(1)
 
-    matches = names.map { |n|
+    matches = names.map do |n|
       next unless n.match_platform?
 
       distance = levenshtein_distance gem_name, n.name.downcase.tr('_-', '')
@@ -198,9 +186,13 @@ class Gem::SpecFetcher
       return [n.name] if distance == 0
 
       [n.name, distance]
-    }.compact
+    end.compact
 
-    matches = matches.uniq.sort_by { |name, dist| dist }
+    matches = if matches.empty? && type != :prerelease
+                suggest_gems_from_name gem_name, :prerelease
+              else
+                matches.uniq.sort_by { |name, dist| dist }
+              end
 
     matches.first(5).map { |name, dist| name }
   end
@@ -266,4 +258,3 @@ class Gem::SpecFetcher
   end
 
 end
-

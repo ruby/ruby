@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require "test/unit/testcase"
 require "rexml/document"
 require 'rexml/streamlistener'
@@ -14,8 +15,8 @@ module REXMLTests
     def test_listener
       data = %Q{<session1 user="han" password="rootWeiler" />\n<session2 user="han" password="rootWeiler" />}
 
-      b = RequestReader.new( data )
-      b = RequestReader.new( data )
+      RequestReader.new( data )
+      RequestReader.new( data )
     end
 
     def test_ticket_49

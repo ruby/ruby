@@ -29,9 +29,12 @@
  */
 
 #include "regenc.h"
-#include "encindex.h"
+#ifdef RUBY
+# include "encindex.h"
+#endif
+
 #ifndef ENCINDEX_ASCII
-#define ENCINDEX_ASCII 0
+# define ENCINDEX_ASCII 0
 #endif
 
 OnigEncodingDefine(ascii, ASCII) = {
@@ -51,6 +54,7 @@ OnigEncodingDefine(ascii, ASCII) = {
   onigenc_not_support_get_ctype_code_range,
   onigenc_single_byte_left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match,
+  onigenc_single_byte_ascii_only_case_map,
   ENCINDEX_ASCII,
   ONIGENC_FLAG_NONE,
 };

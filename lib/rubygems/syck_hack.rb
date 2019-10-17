@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 # :stopdoc:
 
 # Hack to handle syck's DefaultKey bug
@@ -39,11 +40,13 @@ module YAML # :nodoc:
   # should.
   module Syck
     class DefaultKey
+
       remove_method :to_s rescue nil
 
       def to_s
         '='
       end
+
     end
   end
 

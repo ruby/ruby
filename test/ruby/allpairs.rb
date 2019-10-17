@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 module AllPairs
   module_function
 

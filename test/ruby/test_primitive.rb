@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestRubyPrimitive < Test::Unit::TestCase
@@ -81,7 +82,7 @@ class TestRubyPrimitive < Test::Unit::TestCase
   end
   i = 0
   while i < 3
-    r = A3::B3::C   # cache
+    r = r = A3::B3::C   # cache
     class A3::B3
       remove_const :C
     end

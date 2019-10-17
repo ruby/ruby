@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 
 class TestKernel < Gem::TestCase
@@ -63,6 +64,13 @@ class TestKernel < Gem::TestCase
     assert gem('d', '>= 1.a'), 'prerelease requirement may load prerelease'
   end
 
+  def test_gem_env_req
+    ENV["GEM_REQUIREMENT_A"] = '~> 2.0'
+    assert_raises(Gem::MissingSpecVersionError) { gem('a', '= 1') }
+    assert gem('a', '> 1')
+    assert_equal @a2, Gem.loaded_specs['a']
+  end
+
   def test_gem_conflicting
     assert gem('a', '= 1'), "Should load"
 
@@ -82,4 +90,35 @@ class TestKernel < Gem::TestCase
     assert gem('a', '= 1'), "Should load"
     refute $:.any? { |p| %r{a-1/bin} =~ p }
   end
+
+  def test_gem_bundler
+    quick_gem 'bundler', '1'
+    quick_gem 'bundler', '2.a'
+
+    assert gem('bundler')
+    assert $:.any? { |p| %r{bundler-1/lib} =~ p }
+  end
+
+  def test_gem_bundler_missing_bundler_version
+    Gem::BundlerVersionFinder.stub(:bundler_version_with_reason, ["55", "reason"]) do
+      quick_gem 'bundler', '1'
+      quick_gem 'bundler', '2.a'
+
+      e = assert_raises Gem::MissingSpecVersionError do
+        gem('bundler')
+      end
+      assert_match "Could not find 'bundler' (55) required by reason.", e.message
+    end
+  end
+
+  def test_gem_bundler_inferred_bundler_version
+    Gem::BundlerVersionFinder.stub(:bundler_version_with_reason, ["1", "reason"]) do
+      quick_gem 'bundler', '1'
+      quick_gem 'bundler', '2.a'
+
+      assert gem('bundler', '>= 0.a')
+      assert $:.any? { |p| %r{bundler-1/lib} =~ p }
+    end
+  end
+
 end

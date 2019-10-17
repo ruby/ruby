@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require_relative 'base'
 
 class TestMkmf
@@ -40,7 +41,7 @@ class TestMkmf
     end
 
     def test_try_cflag_invalid_opt
-      assert_separately([], <<-'end;') #do
+      assert_separately([], <<-'end;', timeout: 30) #do
         assert(!try_cflags("nosuch.c"), TestMkmf::MKMFLOG)
         assert(have_devel?, TestMkmf::MKMFLOG)
       end;

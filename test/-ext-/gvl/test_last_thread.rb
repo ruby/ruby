@@ -1,8 +1,8 @@
+# frozen_string_literal: false
 class TestLastThread < Test::Unit::TestCase
 
   # [Bug #11237]
   def test_last_thread
-
     assert_separately([], <<-"end;") #do
       require '-test-/gvl/call_without_gvl'
 

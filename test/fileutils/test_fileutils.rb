@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 # $Id$
 
 require 'fileutils'
@@ -5,20 +6,23 @@ require 'etc'
 require_relative 'fileasserts'
 require 'pathname'
 require 'tmpdir'
+require 'stringio'
 require 'test/unit'
 
 class TestFileUtils < Test::Unit::TestCase
-  TMPROOT = "#{Dir.tmpdir}/fileutils.rb.#{$$}"
   include Test::Unit::FileAssertions
 
   def assert_output_lines(expected, fu = self, message=nil)
-    old = fu.instance_variable_get(:@fileutils_output)
+    old = fu.instance_variables.include?(:@fileutils_output) && fu.instance_variable_get(:@fileutils_output)
     IO.pipe {|read, write|
       fu.instance_variable_set(:@fileutils_output, write)
       th = Thread.new { read.read }
       th2 = Thread.new {
-        yield
-        write.close
+        begin
+          yield
+        ensure
+          write.close
+        end
       }
       th_value, _ = assert_join_threads([th, th2])
       lines = th_value.lines.map {|l| l.chomp }
@@ -71,7 +75,20 @@ class TestFileUtils < Test::Unit::TestCase
       return true
     end
 
+    @@no_broken_symlink = false
+    if /cygwin/ =~ RUBY_PLATFORM and /\bwinsymlinks:native(?:strict)?\b/ =~ ENV["CYGWIN"]
+      @@no_broken_symlink = true
+    end
+
+    def no_broken_symlink?
+      @@no_broken_symlink
+    end
+
     def root_in_posix?
+      if /cygwin/ =~ RUBY_PLATFORM
+        # FIXME: privilege if groups include root user?
+        return Process.groups.include?(0)
+      end
       if Process.respond_to?('uid')
         return Process.uid == 0
       else
@@ -95,8 +112,7 @@ class TestFileUtils < Test::Unit::TestCase
     end
 
     begin
-      tmproot = TMPROOT
-      Dir.mkdir tmproot unless File.directory?(tmproot)
+      tmproot = Dir.mktmpdir "fileutils"
       Dir.chdir tmproot do
         Dir.mkdir("\n")
         Dir.rmdir("\n")
@@ -109,11 +125,18 @@ class TestFileUtils < Test::Unit::TestCase
         false
       end
     ensure
-      Dir.rmdir tmproot
+      begin
+        Dir.rmdir tmproot
+      rescue
+        STDERR.puts $!.inspect
+        STDERR.puts Dir.entries(tmproot).inspect
+      end
     end
   end
   include m
   extend m
+
+  UID_1, UID_2 = distinct_uids(2)
 
   include FileUtils
 
@@ -138,9 +161,8 @@ class TestFileUtils < Test::Unit::TestCase
 
   def setup
     @prevdir = Dir.pwd
-    @groups = Process.groups if have_file_perm?
-    tmproot = TMPROOT
-    mymkdir tmproot unless File.directory?(tmproot)
+    @groups = [Process.gid] | Process.groups if have_file_perm?
+    tmproot = @tmproot = Dir.mktmpdir "fileutils"
     Dir.chdir tmproot
     my_rm_rf 'data'; mymkdir 'data'
     my_rm_rf 'tmp';  mymkdir 'tmp'
@@ -149,7 +171,7 @@ class TestFileUtils < Test::Unit::TestCase
 
   def teardown
     Dir.chdir @prevdir
-    my_rm_rf TMPROOT
+    my_rm_rf @tmproot
   end
 
 
@@ -209,6 +231,17 @@ class TestFileUtils < Test::Unit::TestCase
   #
   # Test Cases
   #
+
+  def test_assert_output_lines
+    assert_raise(MiniTest::Assertion) {
+      Timeout.timeout(0.5) {
+        assert_output_lines([]) {
+          Thread.current.report_on_exception = false
+          raise "ok"
+        }
+      }
+    }
+  end
 
   def test_pwd
     check_singleton :pwd
@@ -277,7 +310,8 @@ class TestFileUtils < Test::Unit::TestCase
     touch 'tmp/cptmp'
     chmod 0755, 'tmp/cptmp'
     cp 'tmp/cptmp', 'tmp/cptmp2'
-    assert_equal_filemode('tmp/cptmp', 'tmp/cptmp2', bug4507)
+
+    assert_equal_filemode('tmp/cptmp', 'tmp/cptmp2', bug4507, mask: ~File.umask)
   end
 
   def test_cp_preserve_permissions_dir
@@ -302,6 +336,7 @@ class TestFileUtils < Test::Unit::TestCase
     assert_raise(ArgumentError) {
       cp 'tmp/cptmp_symlink', 'tmp/cptmp'
     }
+    return if no_broken_symlink?
     # src==dest (3) looped symlink
     File.symlink 'symlink', 'tmp/symlink'
     assert_raise(Errno::ELOOP) {
@@ -347,6 +382,16 @@ class TestFileUtils < Test::Unit::TestCase
     assert_same_file 'tmp/cpr_src/b', 'tmp/cpr_dest/b'
     assert_same_file 'tmp/cpr_src/c', 'tmp/cpr_dest/c'
     assert_directory 'tmp/cpr_dest/d'
+    assert_raise(ArgumentError) do
+      cp_r 'tmp/cpr_src', './tmp/cpr_src'
+    end
+    assert_raise(ArgumentError) do
+      cp_r './tmp/cpr_src', 'tmp/cpr_src'
+    end
+    assert_raise(ArgumentError) do
+      cp_r './tmp/cpr_src', File.expand_path('tmp/cpr_src')
+    end
+
     my_rm_rf 'tmp/cpr_src'
     my_rm_rf 'tmp/cpr_dest'
 
@@ -358,11 +403,17 @@ class TestFileUtils < Test::Unit::TestCase
     assert_raise(ArgumentError, bug3588) do
       cp_r 'tmp2', 'tmp2/new_tmp2'
     end
+
+    bug12892 = '[ruby-core:77885] [Bug #12892]'
+    assert_raise(Errno::ENOENT, bug12892) do
+      cp_r 'non/existent', 'tmp'
+    end
   end
 
   def test_cp_r_symlink
     # symlink in a directory
     mkdir 'tmp/cpr_src'
+    touch 'tmp/cpr_src/SLdest'
     ln_s 'SLdest', 'tmp/cpr_src/symlink'
     cp_r 'tmp/cpr_src', 'tmp/cpr_dest'
     assert_symlink 'tmp/cpr_dest/symlink'
@@ -388,7 +439,36 @@ class TestFileUtils < Test::Unit::TestCase
     assert_nothing_raised {
       cp_r 'tmp/cross', 'tmp/cross2', :preserve => true
     }
-  end if have_symlink?
+  end if have_symlink? and !no_broken_symlink?
+
+  def test_cp_r_fifo
+    Dir.mkdir('tmp/cpr_src')
+    File.mkfifo 'tmp/cpr_src/fifo', 0600
+    cp_r 'tmp/cpr_src', 'tmp/cpr_dest'
+    assert_equal(true, File.pipe?('tmp/cpr_dest/fifo'))
+  end if File.respond_to?(:mkfifo)
+
+  def test_cp_r_dev
+    devs = Dir['/dev/*']
+    chardev = devs.find{|f| File.chardev?(f)}
+    blockdev = devs.find{|f| File.blockdev?(f)}
+    Dir.mkdir('tmp/cpr_dest')
+    assert_raise(RuntimeError) { cp_r chardev, 'tmp/cpr_dest/cd' } if chardev
+    assert_raise(RuntimeError) { cp_r blockdev, 'tmp/cpr_dest/bd' } if blockdev
+  end
+
+  begin
+    require 'socket'
+  rescue LoadError
+  else
+    def test_cp_r_socket
+      pend "Skipping socket test on JRuby" if RUBY_ENGINE == 'jruby'
+      Dir.mkdir('tmp/cpr_src')
+      UNIXServer.new('tmp/cpr_src/socket').close
+      cp_r 'tmp/cpr_src', 'tmp/cpr_dest'
+      assert_equal(true, File.socket?('tmp/cpr_dest/socket'))
+    end if defined?(UNIXServer)
+  end
 
   def test_cp_r_pathname
     # pathname
@@ -399,6 +479,54 @@ class TestFileUtils < Test::Unit::TestCase
       cp_r Pathname.new('tmp/cprtmp'), Pathname.new('tmp/tmpdest')
     }
   end
+
+  def test_cp_r_symlink_remove_destination
+    Dir.mkdir 'tmp/src'
+    Dir.mkdir 'tmp/dest'
+    Dir.mkdir 'tmp/src/dir'
+    File.symlink 'tmp/src/dir', 'tmp/src/a'
+    cp_r 'tmp/src', 'tmp/dest/', remove_destination: true
+    cp_r 'tmp/src', 'tmp/dest/', remove_destination: true
+  end if have_symlink?
+
+  def test_cp_lr
+    check_singleton :cp_lr
+
+    cp_lr 'data', 'tmp'
+    TARGETS.each do |fname|
+      assert_same_file fname, "tmp/#{fname}"
+    end
+
+    # a/* -> b/*
+    mkdir 'tmp/cpr_src'
+    mkdir 'tmp/cpr_dest'
+    File.open('tmp/cpr_src/a', 'w') {|f| f.puts 'a' }
+    File.open('tmp/cpr_src/b', 'w') {|f| f.puts 'b' }
+    File.open('tmp/cpr_src/c', 'w') {|f| f.puts 'c' }
+    mkdir 'tmp/cpr_src/d'
+    cp_lr 'tmp/cpr_src/.', 'tmp/cpr_dest'
+    assert_same_file 'tmp/cpr_src/a', 'tmp/cpr_dest/a'
+    assert_same_file 'tmp/cpr_src/b', 'tmp/cpr_dest/b'
+    assert_same_file 'tmp/cpr_src/c', 'tmp/cpr_dest/c'
+    assert_directory 'tmp/cpr_dest/d'
+    my_rm_rf 'tmp/cpr_src'
+    my_rm_rf 'tmp/cpr_dest'
+
+    bug3588 = '[ruby-core:31360]'
+    mkdir 'tmp2'
+    assert_nothing_raised(ArgumentError, bug3588) do
+      cp_lr 'tmp', 'tmp2'
+    end
+    assert_directory 'tmp2/tmp'
+    assert_raise(ArgumentError, bug3588) do
+      cp_lr 'tmp2', 'tmp2/new_tmp2'
+    end
+
+    bug12892 = '[ruby-core:77885] [Bug #12892]'
+    assert_raise(Errno::ENOENT, bug12892) do
+      cp_lr 'non/existent', 'tmp'
+    end
+  end if have_hardlink?
 
   def test_mv
     check_singleton :mv
@@ -444,6 +572,9 @@ class TestFileUtils < Test::Unit::TestCase
     assert_raise(ArgumentError) {
       mv 'tmp/cptmp_symlink', 'tmp/cptmp'
     }
+  end if have_symlink?
+
+  def test_mv_broken_symlink
     # src==dest (3) looped symlink
     File.symlink 'symlink', 'tmp/symlink'
     assert_raise(Errno::ELOOP) {
@@ -455,7 +586,7 @@ class TestFileUtils < Test::Unit::TestCase
       mv 'tmp/src', 'tmp/dest'
     }
     assert_equal true, File.symlink?('tmp/dest')
-  end if have_symlink?
+  end if have_symlink? and !no_broken_symlink?
 
   def test_mv_pathname
     # pathname
@@ -503,7 +634,7 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_rm_symlink
     File.open('tmp/lnf_symlink_src', 'w') {|f| f.puts 'dummy' }
-    File.symlink 'tmp/lnf_symlink_src', 'tmp/lnf_symlink_dest'
+    File.symlink 'lnf_symlink_src', 'tmp/lnf_symlink_dest'
     rm_f 'tmp/lnf_symlink_dest'
     assert_file_not_exist 'tmp/lnf_symlink_dest'
     assert_file_exist     'tmp/lnf_symlink_src'
@@ -649,6 +780,17 @@ class TestFileUtils < Test::Unit::TestCase
     remove_entry_secure 'tmp/tmpdir/c', true
     assert_file_not_exist 'tmp/tmpdir/a'
     assert_file_not_exist 'tmp/tmpdir/c'
+
+    unless root_in_posix?
+      File.chmod(01777, 'tmp/tmpdir')
+      if File.sticky?('tmp/tmpdir')
+        Dir.mkdir 'tmp/tmpdir/d', 0
+        assert_raise(Errno::EACCES) {remove_entry_secure 'tmp/tmpdir/d'}
+        File.chmod 0777, 'tmp/tmpdir/d'
+        Dir.rmdir 'tmp/tmpdir/d'
+      end
+    end
+
     Dir.rmdir 'tmp/tmpdir'
   end
 
@@ -717,6 +859,9 @@ class TestFileUtils < Test::Unit::TestCase
     assert_raise(Errno::EEXIST) {
       ln 'tmp/symlink', 'tmp/cptmp'   # symlink -> normal file
     }
+  end if have_symlink?
+
+  def test_ln_broken_symlink
     # src==dest (3) looped symlink
     File.symlink 'cptmp_symlink', 'tmp/cptmp_symlink'
     begin
@@ -724,7 +869,7 @@ class TestFileUtils < Test::Unit::TestCase
     rescue => err
       assert_kind_of SystemCallError, err
     end
-  end if have_symlink?
+  end if have_symlink? and !no_broken_symlink?
 
   def test_ln_pathname
     # pathname
@@ -740,16 +885,26 @@ class TestFileUtils < Test::Unit::TestCase
     check_singleton :ln_s
 
     TARGETS.each do |fname|
-      ln_s fname, 'tmp/lnsdest'
-      assert FileTest.symlink?('tmp/lnsdest'), 'not symlink'
-      assert_equal fname, File.readlink('tmp/lnsdest')
-      rm_f 'tmp/lnsdest'
+      begin
+        fname = "../#{fname}"
+        lnfname = 'tmp/lnsdest'
+        ln_s fname, lnfname
+        assert FileTest.symlink?(lnfname), 'not symlink'
+        assert_equal fname, File.readlink(lnfname)
+      ensure
+        rm_f lnfname
+      end
     end
+  end if have_symlink? and !no_broken_symlink?
+
+  def test_ln_s_broken_symlink
     assert_nothing_raised {
       ln_s 'symlink', 'tmp/symlink'
     }
     assert_symlink 'tmp/symlink'
+  end if have_symlink? and !no_broken_symlink?
 
+  def test_ln_s_pathname
     # pathname
     touch 'tmp/lnsdest'
     assert_nothing_raised {
@@ -763,16 +918,22 @@ class TestFileUtils < Test::Unit::TestCase
     check_singleton :ln_sf
 
     TARGETS.each do |fname|
+      fname = "../#{fname}"
       ln_sf fname, 'tmp/lnsdest'
       assert FileTest.symlink?('tmp/lnsdest'), 'not symlink'
       assert_equal fname, File.readlink('tmp/lnsdest')
       ln_sf fname, 'tmp/lnsdest'
       ln_sf fname, 'tmp/lnsdest'
     end
+  end if have_symlink?
+
+  def test_ln_sf_broken_symlink
     assert_nothing_raised {
       ln_sf 'symlink', 'tmp/symlink'
     }
+  end if have_symlink? and !no_broken_symlink?
 
+  def test_ln_sf_pathname
     # pathname
     touch 'tmp/lns_dest'
     assert_nothing_raised {
@@ -884,6 +1045,24 @@ class TestFileUtils < Test::Unit::TestCase
     mkdir_p '/'
   end
 
+  if /mswin|mingw|cygwin/ =~ RUBY_PLATFORM
+    def test_mkdir_p_root
+      if /cygwin/ =~ RUBY_PLATFORM
+        tmpdir = `cygpath -ma .`.chomp
+      else
+        tmpdir = Dir.pwd
+      end
+      pend "No drive letter" unless /\A[a-z]:/i =~ tmpdir
+      drive = "./#{$&}"
+      assert_file_not_exist drive
+      mkdir_p "#{tmpdir}/none/dir"
+      assert_directory "none/dir"
+      assert_file_not_exist drive
+    ensure
+      Dir.rmdir(drive) if drive and File.directory?(drive)
+    end
+  end
+
   def test_mkdir_p_file_perm
     mkdir_p 'tmp/tmp/tmp', :mode => 07777
     assert_directory 'tmp/tmp/tmp'
@@ -934,13 +1113,16 @@ class TestFileUtils < Test::Unit::TestCase
     assert_raise(ArgumentError) {
       install 'tmp/cptmp_symlink', 'tmp/cptmp'
     }
+  end if have_symlink?
+
+  def test_install_broken_symlink
     # src==dest (3) looped symlink
     File.symlink 'symlink', 'tmp/symlink'
     assert_raise(Errno::ELOOP) {
       # File#install invokes open(2), always ELOOP must be raised
       install 'tmp/symlink', 'tmp/symlink'
     }
-  end if have_symlink?
+  end if have_symlink? and !no_broken_symlink?
 
   def test_install_pathname
     # pathname
@@ -959,6 +1141,22 @@ class TestFileUtils < Test::Unit::TestCase
       my_rm_rf 'tmp/dest'
       mkdir 'tmp/dest'
       install [Pathname.new('tmp/a'), Pathname.new('tmp/b')], Pathname.new('tmp/dest')
+    }
+  end
+
+  def test_install_owner_option
+    File.open('tmp/aaa', 'w') {|f| f.puts 'aaa' }
+    File.open('tmp/bbb', 'w') {|f| f.puts 'bbb' }
+    assert_nothing_raised {
+      install 'tmp/aaa', 'tmp/bbb', :owner => "nobody", :noop => true
+    }
+  end
+
+  def test_install_group_option
+    File.open('tmp/aaa', 'w') {|f| f.puts 'aaa' }
+    File.open('tmp/bbb', 'w') {|f| f.puts 'bbb' }
+    assert_nothing_raised {
+      install 'tmp/aaa', 'tmp/bbb', :group => "nobody", :noop => true
     }
   end
 
@@ -1134,7 +1332,7 @@ class TestFileUtils < Test::Unit::TestCase
 
   if have_file_perm?
     def test_chown_error
-      uid, = distinct_uids(1)
+      uid = UID_1
       return unless uid
 
       touch 'tmp/a'
@@ -1246,14 +1444,11 @@ class TestFileUtils < Test::Unit::TestCase
 
     if root_in_posix?
       def test_chown_with_root
-        uid_1, uid_2 = distinct_uids(2)
-        return unless uid_1 and uid_2
-
         gid = @groups[0] # Most of the time, root only has one group
 
         files = ['tmp/a1', 'tmp/a2']
         files.each {|file| touch file}
-        [uid_1, uid_2].each {|uid|
+        [UID_1, UID_2].each {|uid|
           assert_output_lines(["chown #{uid}:#{gid} tmp/a1 tmp/a2"]) {
             chown uid, gid, files, verbose: true
             files.each {|file|
@@ -1265,69 +1460,57 @@ class TestFileUtils < Test::Unit::TestCase
       end
 
       def test_chown_dir_user_ownership_not_recursive_with_root
-        uid_1, uid_2 = distinct_uids(2)
-        return unless uid_1 and uid_2
-
         assert_output_lines([]) {
           mkdir 'tmp/dir'
           touch 'tmp/dir/a'
-          chown uid_1, nil, ['tmp/dir', 'tmp/dir/a']
-          assert_ownership_user uid_1, 'tmp/dir'
-          assert_ownership_user uid_1, 'tmp/dir/a'
-          chown uid_2, nil, 'tmp/dir'
-          assert_ownership_user uid_2, 'tmp/dir'
+          chown UID_1, nil, ['tmp/dir', 'tmp/dir/a']
+          assert_ownership_user UID_1, 'tmp/dir'
+          assert_ownership_user UID_1, 'tmp/dir/a'
+          chown UID_2, nil, 'tmp/dir'
+          assert_ownership_user UID_2, 'tmp/dir'
           # Make sure FileUtils.chown does not chown recursively
-          assert_ownership_user uid_1, 'tmp/dir/a'
+          assert_ownership_user UID_1, 'tmp/dir/a'
         }
       end
 
       def test_chown_R_with_root
-        uid_1, uid_2 = distinct_uids(2)
-        return unless uid_1 and uid_2
-
         assert_output_lines([]) {
           list = ['tmp/dir', 'tmp/dir/a', 'tmp/dir/a/b', 'tmp/dir/a/b/c']
           mkdir_p 'tmp/dir/a/b/c'
           touch 'tmp/d'
           # string input
-          chown_R uid_1, nil, 'tmp/dir'
+          chown_R UID_1, nil, 'tmp/dir'
           list.each {|dir|
-            assert_ownership_user uid_1, dir
+            assert_ownership_user UID_1, dir
           }
-          chown_R uid_1, nil, 'tmp/d'
-          assert_ownership_user uid_1, 'tmp/d'
+          chown_R UID_1, nil, 'tmp/d'
+          assert_ownership_user UID_1, 'tmp/d'
           # list input
-          chown_R uid_2, nil, ['tmp/dir', 'tmp/d']
+          chown_R UID_2, nil, ['tmp/dir', 'tmp/d']
           list += ['tmp/d']
           list.each {|dir|
-            assert_ownership_user uid_2, dir
+            assert_ownership_user UID_2, dir
           }
         }
       end
     else
       def test_chown_without_permission
-        uid_1, uid_2 = distinct_uids(2)
-        return unless uid_1 and uid_2
-
         touch 'tmp/a'
         assert_raise(Errno::EPERM) {
-          chown uid_1, nil, 'tmp/a'
-          chown uid_2, nil, 'tmp/a'
+          chown UID_1, nil, 'tmp/a'
+          chown UID_2, nil, 'tmp/a'
         }
       end
 
       def test_chown_R_without_permission
-        uid_1, uid_2 = distinct_uids(2)
-        return unless uid_1 and uid_2
-
         touch 'tmp/a'
-        exception = assert_raise(Errno::EPERM) {
-          chown_R uid_1, nil, 'tmp/a'
-          chown_R uid_2, nil, 'tmp/a'
+        assert_raise(Errno::EPERM) {
+          chown_R UID_1, nil, 'tmp/a'
+          chown_R UID_2, nil, 'tmp/a'
         }
       end
     end
-  end
+  end if UID_1 and UID_2
 
   def test_copy_entry
     check_singleton :copy_entry
@@ -1341,6 +1524,7 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_copy_entry_symlink
     # root is a symlink
+    touch 'tmp/somewhere'
     File.symlink 'somewhere', 'tmp/symsrc'
     copy_entry 'tmp/symsrc', 'tmp/symdest'
     assert_symlink 'tmp/symdest'
@@ -1348,12 +1532,21 @@ class TestFileUtils < Test::Unit::TestCase
 
     # content is a symlink
     mkdir 'tmp/dir'
+    touch 'tmp/dir/somewhere'
     File.symlink 'somewhere', 'tmp/dir/sym'
     copy_entry 'tmp/dir', 'tmp/dirdest'
     assert_directory 'tmp/dirdest'
     assert_not_symlink 'tmp/dirdest'
     assert_symlink 'tmp/dirdest/sym'
     assert_equal 'somewhere', File.readlink('tmp/dirdest/sym')
+  end if have_symlink?
+
+  def test_copy_entry_symlink_remove_destination
+    Dir.mkdir 'tmp/dir'
+    File.symlink 'tmp/dir', 'tmp/dest'
+    touch 'tmp/src'
+    copy_entry 'tmp/src', 'tmp/dest', false, false, true
+    assert_file_exist 'tmp/dest'
   end if have_symlink?
 
   def test_copy_file
@@ -1464,7 +1657,7 @@ class TestFileUtils < Test::Unit::TestCase
       uptodate? Pathname.new('tmp/a'), [Pathname.new('tmp/b'), Pathname.new('tmp/c')]
     }
     # [Bug #6708] [ruby-core:46256]
-    assert_raise_with_message(ArgumentError, "wrong number of arguments (3 for 2)") {
+    assert_raise_with_message(ArgumentError, /wrong number of arguments \(.*\b3\b.* 2\)/) {
       uptodate?('new',['old', 'oldest'], {})
     }
   end
@@ -1473,8 +1666,35 @@ class TestFileUtils < Test::Unit::TestCase
     check_singleton :cd
   end
 
+  def test_cd_result
+    assert_equal 42, cd('.') { 42 }
+  end
+
   def test_chdir
     check_singleton :chdir
+  end
+
+  def test_chdir_verbose
+    assert_output_lines(["cd .", "cd -"], FileUtils) do
+      FileUtils.chdir('.', verbose: true){}
+    end
+  end
+
+  def test_chdir_verbose_frozen
+    o = Object.new
+    o.extend(FileUtils)
+    o.singleton_class.send(:public, :chdir)
+    o.freeze
+    orig_stderr = $stderr
+    $stderr = StringIO.new
+    o.chdir('.', verbose: true){}
+    $stderr.rewind
+    assert_equal(<<-END, $stderr.read)
+cd .
+cd -
+    END
+  ensure
+    $stderr = orig_stderr if orig_stderr
   end
 
   def test_getwd
@@ -1530,6 +1750,21 @@ class TestFileUtils < Test::Unit::TestCase
 
     subdir = 'data/sub/dir'
     mkdir_p(subdir)
+    File.write("#{subdir}/file", '')
+    msg = "should fail to remove non-empty directory"
+    assert_raise(Errno::ENOTEMPTY, Errno::EEXIST, msg) {
+      rmdir(subdir)
+    }
+    assert_raise(Errno::ENOTEMPTY, Errno::EEXIST, msg) {
+      rmdir(subdir, parents: true)
+    }
+    File.unlink("#{subdir}/file")
+    assert_raise(Errno::ENOENT) {
+      rmdir("#{subdir}/nonexistent")
+    }
+    assert_raise(Errno::ENOENT) {
+      rmdir("#{subdir}/nonexistent", parents: true)
+    }
     assert_nothing_raised(Errno::ENOENT) {
       rmdir(subdir, parents: true)
     }

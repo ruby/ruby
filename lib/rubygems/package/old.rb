@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -18,7 +19,7 @@ class Gem::Package::Old < Gem::Package
   # Creates a new old-format package reader for +gem+.  Old-format packages
   # cannot be written.
 
-  def initialize gem, security_policy
+  def initialize(gem, security_policy)
     require 'fileutils'
     require 'zlib'
     Gem.load_yaml
@@ -48,7 +49,7 @@ class Gem::Package::Old < Gem::Package
   ##
   # Extracts the files in this package into +destination_dir+
 
-  def extract_files destination_dir
+  def extract_files(destination_dir)
     verify
 
     errstr = "Error reading files from gem"
@@ -63,7 +64,7 @@ class Gem::Package::Old < Gem::Package
 
         destination = install_location full_name, destination_dir
 
-        file_data = ''
+        file_data = String.new
 
         read_until_dashes io do |line|
           file_data << line
@@ -77,9 +78,9 @@ class Gem::Package::Old < Gem::Package
 
         FileUtils.rm_rf destination
 
-        FileUtils.mkdir_p File.dirname destination
+        FileUtils.mkdir_p File.dirname(destination), :mode => dir_mode && 0755
 
-        open destination, 'wb', entry['mode'] do |out|
+        File.open destination, 'wb', file_mode(entry['mode']) do |out|
           out.write file_data
         end
 
@@ -93,20 +94,20 @@ class Gem::Package::Old < Gem::Package
   ##
   # Reads the file list section from the old-format gem +io+
 
-  def file_list io # :nodoc:
-    header = ''
+  def file_list(io) # :nodoc:
+    header = String.new
 
     read_until_dashes io do |line|
       header << line
     end
 
-    YAML.load header
+    Gem::SafeYAML.safe_load header
   end
 
   ##
   # Reads lines until a "---" separator is found
 
-  def read_until_dashes io # :nodoc:
+  def read_until_dashes(io) # :nodoc:
     while (line = io.gets) && line.chomp.strip != "---" do
       yield line if block_given?
     end
@@ -115,7 +116,7 @@ class Gem::Package::Old < Gem::Package
   ##
   # Skips the Ruby self-install header in +io+.
 
-  def skip_ruby io # :nodoc:
+  def skip_ruby(io) # :nodoc:
     loop do
       line = io.gets
 
@@ -123,7 +124,7 @@ class Gem::Package::Old < Gem::Package
       break unless line
     end
 
-    raise Gem::Exception, "Failed to find end of ruby script while reading gem"
+    raise Gem::Exception, "Failed to find end of Ruby script while reading gem"
   end
 
   ##
@@ -134,7 +135,7 @@ class Gem::Package::Old < Gem::Package
 
     return @spec if @spec
 
-    yaml = ''
+    yaml = String.new
 
     @gem.with_read_io do |io|
       skip_ruby io
@@ -143,17 +144,9 @@ class Gem::Package::Old < Gem::Package
       end
     end
 
-    yaml_error = if RUBY_VERSION < '1.9' then
-                   YAML::ParseError
-                 elsif YAML.const_defined?(:ENGINE) && YAML::ENGINE.yamler == 'syck' then
-                   YAML::ParseError
-                 else
-                   YAML::SyntaxError
-                 end
-
     begin
       @spec = Gem::Specification.from_yaml yaml
-    rescue yaml_error
+    rescue YAML::SyntaxError
       raise Gem::Exception, "Failed to parse gem specification out of gem file"
     end
   rescue ArgumentError
@@ -175,4 +168,3 @@ class Gem::Package::Old < Gem::Package
   end
 
 end
-

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # = WEB server toolkit.
 #
@@ -8,7 +9,7 @@
 #
 # A WEBrick server can be composed of multiple WEBrick servers or servlets to
 # provide differing behavior on a per-host or per-path basis.  WEBrick
-# includes servlets for handling CGI scripts, ERb pages, Ruby blocks and
+# includes servlets for handling CGI scripts, ERB pages, Ruby blocks and
 # directory listings.
 #
 # WEBrick also includes tools for daemonizing a process and starting a process
@@ -211,7 +212,7 @@ require 'webrick/version.rb'
 require 'webrick/config.rb'
 require 'webrick/log.rb'
 require 'webrick/server.rb'
-require 'webrick/utils.rb'
+require_relative 'webrick/utils.rb'
 require 'webrick/accesslog'
 
 require 'webrick/htmlutils.rb'

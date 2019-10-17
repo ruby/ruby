@@ -7,7 +7,7 @@ bug_str_ellipsize(VALUE str, VALUE len)
 }
 
 void
-Init_ellipsize(VALUE klass)
+Init_string_ellipsize(VALUE klass)
 {
     rb_define_method(klass, "ellipsize", bug_str_ellipsize, 1);
 }

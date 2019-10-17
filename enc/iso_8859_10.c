@@ -28,6 +28,7 @@
  */
 
 #include "regenc.h"
+#include "iso_8859.h"
 
 #define ENC_ISO_8859_10_TO_LOWER_CASE(c) EncISO_8859_10_ToLowerCaseTable[c]
 #define ENC_IS_ISO_8859_10_CTYPE(code,ctype) \
@@ -110,7 +111,7 @@ mbc_case_fold(OnigCaseFoldType flag,
 {
   const UChar* p = *pp;
 
-  if (*p == 0xdf && (flag & INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR) != 0) {
+  if (*p == SHARP_s && (flag & INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR) != 0) {
     *lower++ = 's';
     *lower   = 's';
     (*pp)++;
@@ -129,7 +130,7 @@ is_mbc_ambiguous(OnigCaseFoldType flag, const UChar** pp, const UChar* end)
   int v;
   const UChar* p = *pp;
 
-  if (*p == 0xdf && (flag & INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR) != 0) {
+  if (*p == SHARP_s && (flag & INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR) != 0) {
     (*pp)++;
     return TRUE;
   }
@@ -214,13 +215,59 @@ apply_all_case_fold(OnigCaseFoldType flag,
 
 static int
 get_case_fold_codes_by_str(OnigCaseFoldType flag,
-				       const OnigUChar* p, const OnigUChar* end,
-				       OnigCaseFoldCodeItem items[],
-				       OnigEncoding enc ARG_UNUSED)
+			   const OnigUChar* p, const OnigUChar* end,
+			   OnigCaseFoldCodeItem items[],
+			   OnigEncoding enc ARG_UNUSED)
 {
   return onigenc_get_case_fold_codes_by_str_with_map(
 	     numberof(CaseFoldMap), CaseFoldMap, 1,
 	     flag, p, end, items);
+}
+
+static int
+case_map(OnigCaseFoldType* flagP, const OnigUChar** pp,
+	 const OnigUChar* end, OnigUChar* to, OnigUChar* to_end,
+	 const struct OnigEncodingTypeST* enc)
+{
+  OnigCodePoint code;
+  OnigUChar *to_start = to;
+  OnigCaseFoldType flags = *flagP;
+
+  while (*pp < end && to < to_end) {
+    code = *(*pp)++;
+    if (code == SHARP_s) {
+      if (flags & ONIGENC_CASE_UPCASE) {
+	flags |= ONIGENC_CASE_MODIFIED;
+	*to++ = 'S';
+	code = (flags & ONIGENC_CASE_TITLECASE) ? 's' : 'S';
+      }
+      else if (flags & ONIGENC_CASE_FOLD) {
+	flags |= ONIGENC_CASE_MODIFIED;
+	*to++ = 's';
+	code = 's';
+      }
+    }
+    else if (code == 0xBD || code == 0xFF)
+      ;
+    else if ((EncISO_8859_10_CtypeTable[code] & BIT_CTYPE_UPPER)
+	     && (flags & (ONIGENC_CASE_DOWNCASE | ONIGENC_CASE_FOLD))) {
+      flags |= ONIGENC_CASE_MODIFIED;
+      code = ENC_ISO_8859_10_TO_LOWER_CASE(code);
+    }
+    else if ((EncISO_8859_10_CtypeTable[code] & BIT_CTYPE_LOWER)
+	     && (flags & ONIGENC_CASE_UPCASE)) {
+      flags |= ONIGENC_CASE_MODIFIED;
+      if (code >= 0xA0 && code <= 0xBF)
+	code -= 0x10;
+      else
+	code -= 0x20;
+    }
+    *to++ = code;
+    if (flags & ONIGENC_CASE_TITLECASE)  /* switch from titlecase to lowercase for capitalize */
+      flags ^= (ONIGENC_CASE_UPCASE | ONIGENC_CASE_DOWNCASE | ONIGENC_CASE_TITLECASE);
+  }
+  *flagP = flags;
+  return (int )(to - to_start);
 }
 
 OnigEncodingDefine(iso_8859_10, ISO_8859_10) = {
@@ -240,6 +287,7 @@ OnigEncodingDefine(iso_8859_10, ISO_8859_10) = {
   onigenc_not_support_get_ctype_code_range,
   onigenc_single_byte_left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match,
+  case_map,
   0,
   ONIGENC_FLAG_NONE,
 };

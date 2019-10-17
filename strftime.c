@@ -50,6 +50,7 @@
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
 #include "timev.h"
+#include "internal.h"
 
 #ifndef GAWK
 #include <stdio.h>
@@ -156,16 +157,83 @@ max(int a, int b)
 
 /* strftime --- produce formatted time */
 
+enum {LEFT, CHCASE, LOWER, UPPER};
+#define BIT_OF(n) (1U<<(n))
+
+static char *
+resize_buffer(VALUE ftime, char *s, const char **start, const char **endp,
+	      ptrdiff_t n, size_t maxsize)
+{
+	size_t len = s - *start;
+	size_t nlen = len + n * 2;
+
+	if (nlen < len || nlen > maxsize) {
+		return 0;
+	}
+	rb_str_set_len(ftime, len);
+	rb_str_modify_expand(ftime, nlen-len);
+	s = RSTRING_PTR(ftime);
+	*endp = s + nlen;
+	*start = s;
+	return s += len;
+}
+
+static void
+buffer_size_check(const char *s,
+		  const char *format_end, size_t format_len,
+		  rb_encoding *enc)
+{
+	if (!s) {
+		const char *format = format_end-format_len;
+		VALUE fmt = rb_enc_str_new(format, format_len, enc);
+		rb_syserr_fail_str(ERANGE, fmt);
+	}
+}
+
+static char *
+case_conv(char *s, ptrdiff_t i, int flags)
+{
+	switch (flags & (BIT_OF(UPPER)|BIT_OF(LOWER))) {
+	case BIT_OF(UPPER):
+		do {
+			if (ISLOWER(*s)) *s = TOUPPER(*s);
+		} while (s++, --i);
+		break;
+	case BIT_OF(LOWER):
+		do {
+			if (ISUPPER(*s)) *s = TOLOWER(*s);
+		} while (s++, --i);
+		break;
+	default:
+		s += i;
+		break;
+	}
+	return s;
+}
+
+static VALUE
+format_value(VALUE val, int base)
+{
+	if (!RB_TYPE_P(val, T_BIGNUM))
+		val = rb_Integer(val);
+	return rb_big2str(val, base);
+}
+
 /*
  * enc is the encoding of the format. It is used as the encoding of resulted
  * string, but the name of the month and weekday are always US-ASCII. So it
  * is only used for the timezone name on Windows.
  */
-static size_t
-rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encoding *enc, const struct vtm *vtm, VALUE timev, struct timespec *ts, int gmt)
+static VALUE
+rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
+			  rb_encoding *enc, VALUE time, const struct vtm *vtm,
+			  VALUE timev, struct timespec *ts, int gmt, size_t maxsize)
 {
-	const char *const endp = s + maxsize;
-	const char *const start = s;
+	size_t len = RSTRING_LEN(ftime);
+	char *s = RSTRING_PTR(ftime);
+	const char *start = s;
+	const char *endp = start + rb_str_capacity(ftime);
+	const char *const format_end = format + format_len;
 	const char *sp, *tp;
 #define TBUFSIZE 100
 	auto char tbuf[TBUFSIZE];
@@ -175,11 +243,10 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
 	long y;
 	int precision, flags, colons;
 	char padding;
-	enum {LEFT, CHCASE, LOWER, UPPER};
-#define BIT_OF(n) (1U<<(n))
 #ifdef MAILHEADER_EXT
 	int sign;
 #endif
+	VALUE zone = Qnil;
 
 	/* various tables, useful in North America */
 	static const char days_l[][10] = {
@@ -193,27 +260,30 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
 	};
 	static const char ampm[][3] = { "AM", "PM", };
 
-	if (s == NULL || format == NULL || vtm == NULL || maxsize == 0)
-		return 0;
-
-	/* quick check if we even need to bother */
-	if (strchr(format, '%') == NULL && strlen(format) + 1 >= maxsize) {
+	if (format == NULL || format_len == 0 || vtm == NULL) {
 	err:
-		errno = ERANGE;
 		return 0;
 	}
 
-	if (enc && (enc == rb_usascii_encoding() ||
-	    enc == rb_ascii8bit_encoding() || enc == rb_locale_encoding())) {
-	    enc = NULL;
+	if (enc &&
+	    (enc == rb_usascii_encoding() ||
+	     enc == rb_ascii8bit_encoding() ||
+	     enc == rb_locale_encoding())) {
+		enc = NULL;
 	}
 
-	for (; *format && s < endp - 1; format++) {
+	s += len;
+	for (; format < format_end; format++) {
 #define FLAG_FOUND() do { \
 			if (precision > 0) \
 				goto unknown; \
 		} while (0)
-#define NEEDS(n) do if (s >= endp || (n) >= endp - s - 1) goto err; while (0)
+#define NEEDS(n) do { \
+			if (s >= endp || (n) >= endp - s - 1) { \
+				s = resize_buffer(ftime, s, &start, &endp, (n), maxsize); \
+				buffer_size_check(s, format_end, format_len, enc); \
+			} \
+		} while (0)
 #define FILL_PADDING(i) do { \
 	if (!(flags & BIT_OF(LEFT)) && precision > (i)) { \
 		NEEDS(precision); \
@@ -224,27 +294,43 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
 		NEEDS(i); \
 	} \
 } while (0);
+#define FMT_PADDING(fmt, def_pad) \
+		(&"%*"fmt"\0""%0*"fmt[\
+			(padding == '0' || (!padding && (def_pad) == '0')) ? \
+			rb_strlen_lit("%*"fmt)+1 : 0])
+#define FMT_PRECISION(def_prec) \
+		((flags & BIT_OF(LEFT)) ? (1) : \
+		 (precision <= 0) ? (def_prec) : (precision))
 #define FMT(def_pad, def_prec, fmt, val) \
 		do { \
-			int l; \
-			if (precision <= 0) precision = (def_prec); \
-			if (flags & BIT_OF(LEFT)) precision = 1; \
-			l = snprintf(s, endp - s, \
-				     ((padding == '0' || (!padding && (def_pad) == '0')) ? "%0*"fmt : "%*"fmt), \
-				     precision, (val)); \
-			if (l < 0) goto err; \
-			s += l; \
+			precision = FMT_PRECISION(def_prec); \
+			len = s - start; \
+			NEEDS(precision); \
+			rb_str_set_len(ftime, len); \
+			rb_str_catf(ftime, FMT_PADDING(fmt, def_pad), \
+				    precision, (val)); \
+			RSTRING_GETMEM(ftime, s, len); \
+			endp = (start = s) + rb_str_capacity(ftime); \
+			s += len; \
 		} while (0)
 #define STRFTIME(fmt) \
 		do { \
-			i = rb_strftime_with_timespec(s, endp - s, (fmt), enc, vtm, timev, ts, gmt); \
-			if (!i) return 0; \
+			len = s - start; \
+			rb_str_set_len(ftime, len); \
+			if (!rb_strftime_with_timespec(ftime, (fmt), rb_strlen_lit(fmt), \
+						       enc, time, vtm, timev, ts, gmt, maxsize)) \
+				return 0; \
+			s = RSTRING_PTR(ftime); \
+			i = RSTRING_LEN(ftime) - len; \
+			endp = (start = s) + rb_str_capacity(ftime); \
+			s += len; \
+			if (i > 0) case_conv(s, i, flags); \
 			if (precision > i) {\
 				NEEDS(precision); \
 				memmove(s + precision - i, s, i);\
 				memset(s, padding ? padding : ' ', precision - i); \
 				s += precision;	\
-	                }\
+			} \
 			else s += i; \
 		} while (0)
 #define FMTV(def_pad, def_prec, fmt, val) \
@@ -254,27 +340,30 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
                                 FMT((def_pad), (def_prec), "l"fmt, FIX2LONG(tmp)); \
                         } \
                         else { \
-                                VALUE args[2], result; \
-                                size_t l; \
-                                if (precision <= 0) precision = (def_prec); \
-                                if (flags & BIT_OF(LEFT)) precision = 1; \
-                                args[0] = INT2FIX(precision); \
-                                args[1] = (val); \
-                                if (padding == '0' || (!padding && (def_pad) == '0')) \
-                                        result = rb_str_format(2, args, rb_str_new2("%0*"fmt)); \
-                                else \
-                                        result = rb_str_format(2, args, rb_str_new2("%*"fmt)); \
-                                l = strlcpy(s, StringValueCStr(result), endp-s); \
-                                if ((size_t)(endp-s) <= l) \
-                                        goto err; \
-                                s += l; \
+				const int base = ((fmt[0] == 'x') ? 16 : \
+						  (fmt[0] == 'o') ? 8 : \
+						  10); \
+				precision = FMT_PRECISION(def_prec); \
+				if (!padding) padding = (def_pad); \
+				tmp = format_value(tmp, base); \
+				i = RSTRING_LEN(tmp); \
+				FILL_PADDING(i); \
+				rb_str_set_len(ftime, s-start); \
+				rb_str_append(ftime, tmp); \
+				RSTRING_GETMEM(ftime, s, len); \
+				endp = (start = s) + rb_str_capacity(ftime); \
+				s += len; \
                         } \
                 } while (0)
 
-		if (*format != '%') {
-			*s++ = *format;
-			continue;
-		}
+		tp = memchr(format, '%', format_end - format);
+		if (!tp) tp = format_end;
+		NEEDS(tp - format);
+		memcpy(s, format, tp - format);
+		s += tp - format;
+		format = tp;
+		if (format == format_end) break;
+
 		tp = tbuf;
 		sp = format;
 		precision = -1;
@@ -282,11 +371,8 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
 		padding = 0;
                 colons = 0;
 	again:
-		switch (*++format) {
-		case '\0':
-			format--;
-			goto unknown;
-
+		if (++format >= format_end) goto unknown;
+		switch (*format) {
 		case '%':
 			FILL_PADDING(1);
 			*s++ = '%';
@@ -458,7 +544,8 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
 			if (off < 0) {
 				off = -off;
 				sign = -1;
-			} else {
+			}
+			else {
 				sign = +1;
 			}
                         switch (colons) {
@@ -497,7 +584,7 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
 				goto unknown;
                         }
 			i = snprintf(s, endp - s, (padding == ' ' ? "%+*ld" : "%+.*ld"),
-				     precision + 1, sign * (off / 3600));
+				     precision + (padding == ' '), sign * (off / 3600));
 			if (i < 0) goto err;
 			if (sign < 0 && off < 3600) {
 				*(padding == ' ' ? s + i - 2 : s) = '-';
@@ -533,11 +620,14 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
 				tp = "UTC";
 				break;
 			}
-			if (vtm->zone == NULL) {
+			if (NIL_P(vtm->zone)) {
 			    i = 0;
 			}
 			else {
-                            tp = vtm->zone;
+			    if (NIL_P(zone)) {
+				zone = rb_time_zone_abbreviation(vtm->zone, time);
+			    }
+			    tp = RSTRING_PTR(zone);
 			    if (enc) {
 				for (i = 0; i < TBUFSIZE && tp[i]; i++) {
 				    if ((unsigned char)tp[i] > 0x7F) {
@@ -735,7 +825,8 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
                                         VALUE args[2], result;
                                         args[0] = INT2FIX(precision);
                                         args[1] = subsec;
-                                        result = rb_str_format(2, args, rb_str_new2("%0*d"));
+                                        result = rb_str_format(2, args,
+                                                      rb_fstring_lit("%0*d"));
                                         (void)strlcpy(s, StringValueCStr(result), endp-s);
                                         s += precision;
                                 }
@@ -768,12 +859,12 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
 			goto again;
 
 		case ':':
-			{
-				size_t l = strspn(format, ":");
-				if (l > 3 || format[l] != 'z') goto unknown;
-				colons = (int)l;
-				format += l - 1;
+			for (colons = 1; colons <= 3; ++colons) {
+				if (format+colons >= format_end) goto unknown;
+				if (format[colons] == 'z') break;
+				if (format[colons] != ':') goto unknown;
 			}
+			format += colons - 1;
 			goto again;
 
 		case '0':
@@ -781,9 +872,12 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
 		case '1':  case '2': case '3': case '4':
 		case '5': case '6':  case '7': case '8': case '9':
 			{
-				char *e;
-				precision = (int)strtoul(format, &e, 10);
-				format = e - 1;
+				size_t n;
+				int ov;
+				unsigned long u = ruby_scan_digits(format, format_end-format, 10, &n, &ov);
+				if (ov || u > INT_MAX) goto unknown;
+				precision = (int)u;
+				format += n - 1;
 				goto again;
 			}
 
@@ -800,44 +894,58 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
 		if (i) {
 			FILL_PADDING(i);
 			memcpy(s, tp, i);
-			switch (flags & (BIT_OF(UPPER)|BIT_OF(LOWER))) {
-			case BIT_OF(UPPER):
-				do {
-					if (ISLOWER(*s)) *s = TOUPPER(*s);
-				} while (s++, --i);
-				break;
-			case BIT_OF(LOWER):
-				do {
-					if (ISUPPER(*s)) *s = TOLOWER(*s);
-				} while (s++, --i);
-				break;
-			default:
-				s += i;
-				break;
-			}
+			s = case_conv(s, i, flags);
 		}
 	}
-	if (s >= endp) {
-		goto err;
-	}
-	if (*format == '\0') {
-		*s = '\0';
-		return (s - start);
-	} else
+	if (format != format_end) {
 		return 0;
+	}
+	len = s - start;
+	rb_str_set_len(ftime, len);
+	rb_str_resize(ftime, len);
+	return ftime;
 }
 
-size_t
-rb_strftime(char *s, size_t maxsize, const char *format, rb_encoding *enc, const struct vtm *vtm, VALUE timev, int gmt)
+static size_t
+strftime_size_limit(size_t format_len)
 {
-    return rb_strftime_with_timespec(s, maxsize, format, enc, vtm, timev, NULL, gmt);
+	size_t limit = format_len * (1*1024*1024);
+	if (limit < format_len) limit = format_len;
+	else if (limit < 1024) limit = 1024;
+	return limit;
 }
 
-size_t
-rb_strftime_timespec(char *s, size_t maxsize, const char *format, rb_encoding *enc, const struct vtm *vtm, struct timespec *ts, int gmt)
+VALUE
+rb_strftime(const char *format, size_t format_len, rb_encoding *enc,
+	    VALUE time, const struct vtm *vtm, VALUE timev, int gmt)
 {
-    return rb_strftime_with_timespec(s, maxsize, format, enc, vtm, Qnil, ts, gmt);
+	VALUE result = rb_enc_str_new(0, 0, enc);
+	return rb_strftime_with_timespec(result, format, format_len, enc,
+					 time, vtm, timev, NULL, gmt,
+					 strftime_size_limit(format_len));
 }
+
+VALUE
+rb_strftime_timespec(const char *format, size_t format_len, rb_encoding *enc,
+		     VALUE time, const struct vtm *vtm, struct timespec *ts, int gmt)
+{
+	VALUE result = rb_enc_str_new(0, 0, enc);
+	return rb_strftime_with_timespec(result, format, format_len, enc,
+					 time, vtm, Qnil, ts, gmt,
+					 strftime_size_limit(format_len));
+}
+
+#if 0
+VALUE
+rb_strftime_limit(const char *format, size_t format_len, rb_encoding *enc,
+		  VALUE time, const struct vtm *vtm, struct timespec *ts,
+		  int gmt, size_t maxsize)
+{
+	VALUE result = rb_enc_str_new(0, 0, enc);
+	return rb_strftime_with_timespec(result, format, format_len, enc,
+					 time, vtm, Qnil, ts, gmt, maxsize);
+}
+#endif
 
 /* isleap --- is a year a leap year? */
 

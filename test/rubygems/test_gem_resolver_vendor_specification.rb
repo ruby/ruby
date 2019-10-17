@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 
 class TestGemResolverVendorSpecification < Gem::TestCase
@@ -80,4 +81,3 @@ class TestGemResolverVendorSpecification < Gem::TestCase
   end
 
 end
-

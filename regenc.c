@@ -3,7 +3,7 @@
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011       K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2011-2016  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,11 +54,11 @@ onigenc_set_default_encoding(OnigEncoding enc)
 extern int
 onigenc_mbclen_approximate(const OnigUChar* p,const OnigUChar* e, OnigEncoding enc)
 {
-  int ret = ONIGENC_PRECISE_MBC_ENC_LEN(enc,p,e);
+  int ret = ONIGENC_PRECISE_MBC_ENC_LEN(enc, p, e);
   if (ONIGENC_MBCLEN_CHARFOUND_P(ret))
     return ONIGENC_MBCLEN_CHARFOUND_LEN(ret);
   else if (ONIGENC_MBCLEN_NEEDMORE_P(ret))
-    return (int)(e-p)+ONIGENC_MBCLEN_NEEDMORE_LEN(ret);
+    return (int )(e - p) + ONIGENC_MBCLEN_NEEDMORE_LEN(ret);
   return 1;
 }
 
@@ -364,12 +364,14 @@ const UChar OnigEncISO_8859_1_ToUpperCaseTable[256] = {
 };
 #endif
 
+#if 0
 extern void
 onigenc_set_default_caseconv_table(const UChar* table ARG_UNUSED)
 {
   /* nothing */
   /* obsoleted. */
 }
+#endif
 
 extern UChar*
 onigenc_get_left_adjust_char_head(OnigEncoding enc, const UChar* start, const UChar* s, const UChar* end)
@@ -631,8 +633,10 @@ onigenc_single_byte_code_to_mbclen(OnigCodePoint code ARG_UNUSED, OnigEncoding e
 extern int
 onigenc_single_byte_code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc ARG_UNUSED)
 {
+#ifdef RUBY
   if (code > 0xff)
     rb_raise(rb_eRangeError, "%u out of char range", code);
+#endif
   *buf = (UChar )(code & 0xff);
   return 1;
 }
@@ -892,6 +896,7 @@ onigenc_with_ascii_strnicmp(OnigEncoding enc, const UChar* p, const UChar* end,
   return 0;
 }
 
+#if 0
 /* Property management */
 static int
 resize_property_list(int new_size, const OnigCodePoint*** plist, int* psize)
@@ -902,12 +907,14 @@ resize_property_list(int new_size, const OnigCodePoint*** plist, int* psize)
   size = sizeof(OnigCodePoint*) * new_size;
   if (IS_NULL(list)) {
     list = (const OnigCodePoint** )xmalloc(size);
+    if (IS_NULL(list)) return ONIGERR_MEMORY;
   }
   else {
-    list = (const OnigCodePoint** )xrealloc((void* )list, size);
+    const OnigCodePoint **tmp;
+    tmp = (const OnigCodePoint** )xrealloc((void* )list, size);
+    if (IS_NULL(tmp)) return ONIGERR_MEMORY;
+    list = tmp;
   }
-
-  if (IS_NULL(list)) return ONIGERR_MEMORY;
 
   *plist = list;
   *psize = new_size;
@@ -942,16 +949,64 @@ onigenc_property_list_add_property(UChar* name, const OnigCodePoint* prop,
 			(hash_data_type )(*pnum + ONIGENC_MAX_STD_CTYPE));
   return 0;
 }
+#endif
 
 extern int
-onigenc_property_list_init(int (*f)(void))
+onigenc_ascii_only_case_map(OnigCaseFoldType* flagP, const OnigUChar** pp, const OnigUChar* end,
+			    OnigUChar* to, OnigUChar* to_end, const struct OnigEncodingTypeST* enc)
 {
-  int r;
+  OnigCodePoint code;
+  OnigUChar *to_start = to;
+  OnigCaseFoldType flags = *flagP;
+  int codepoint_length;
 
-  THREAD_ATOMIC_START;
+  while (*pp < end && to < to_end) {
+    codepoint_length = ONIGENC_PRECISE_MBC_ENC_LEN(enc, *pp, end);
+    if (codepoint_length < 0)
+      return codepoint_length; /* encoding invalid */
+    code = ONIGENC_MBC_TO_CODE(enc, *pp, end);
+    *pp += codepoint_length;
 
-  r = f();
+    if (code >= 'a' && code <= 'z' && (flags & ONIGENC_CASE_UPCASE)) {
+      flags |= ONIGENC_CASE_MODIFIED;
+      code += 'A' - 'a';
+    } else if (code >= 'A' && code <= 'Z' &&
+	(flags & (ONIGENC_CASE_DOWNCASE | ONIGENC_CASE_FOLD))) {
+      flags |= ONIGENC_CASE_MODIFIED;
+      code += 'a' - 'A';
+    }
+    to += ONIGENC_CODE_TO_MBC(enc, code, to);
+    if (flags & ONIGENC_CASE_TITLECASE)  /* switch from titlecase to lowercase for capitalize */
+      flags ^= (ONIGENC_CASE_UPCASE | ONIGENC_CASE_DOWNCASE | ONIGENC_CASE_TITLECASE);
+  }
+  *flagP = flags;
+  return (int )(to - to_start);
+}
 
-  THREAD_ATOMIC_END;
-  return r;
+extern int
+onigenc_single_byte_ascii_only_case_map(OnigCaseFoldType* flagP, const OnigUChar** pp,
+					const OnigUChar* end, OnigUChar* to, OnigUChar* to_end,
+					const struct OnigEncodingTypeST* enc)
+{
+  OnigCodePoint code;
+  OnigUChar *to_start = to;
+  OnigCaseFoldType flags = *flagP;
+
+  while (*pp < end && to < to_end) {
+    code = *(*pp)++;
+
+    if (code >= 'a' && code <= 'z' && (flags & ONIGENC_CASE_UPCASE)) {
+      flags |= ONIGENC_CASE_MODIFIED;
+      code += 'A' - 'a';
+    } else if (code >= 'A' && code <= 'Z' &&
+	(flags & (ONIGENC_CASE_DOWNCASE | ONIGENC_CASE_FOLD))) {
+      flags |= ONIGENC_CASE_MODIFIED;
+      code += 'a' - 'A';
+    }
+    *to++ = code;
+    if (flags & ONIGENC_CASE_TITLECASE)  /* switch from titlecase to lowercase for capitalize */
+      flags ^= (ONIGENC_CASE_UPCASE | ONIGENC_CASE_DOWNCASE | ONIGENC_CASE_TITLECASE);
+  }
+  *flagP = flags;
+  return (int )(to - to_start);
 }

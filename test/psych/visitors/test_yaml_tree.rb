@@ -1,8 +1,18 @@
+# frozen_string_literal: true
 require 'psych/helper'
 
 module Psych
   module Visitors
     class TestYAMLTree < TestCase
+      class TestDelegatorClass < Delegator
+        def initialize(obj); super; @obj = obj; end
+        def __setobj__(obj); @obj = obj; end
+        def __getobj__; @obj if defined?(@obj); end
+      end
+
+      class TestSimpleDelegatorClass < SimpleDelegator
+      end
+
       def setup
         super
         @v = Visitors::YAMLTree.create
@@ -27,7 +37,7 @@ module Psych
       end
 
       def test_binary_formatting
-        gif = "GIF89a\f\x00\f\x00\x84\x00\x00\xFF\xFF\xF7\xF5\xF5\xEE\xE9\xE9\xE5fff\x00\x00\x00\xE7\xE7\xE7^^^\xF3\xF3\xED\x8E\x8E\x8E\xE0\xE0\xE0\x9F\x9F\x9F\x93\x93\x93\xA7\xA7\xA7\x9E\x9E\x9Eiiiccc\xA3\xA3\xA3\x84\x84\x84\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9!\xFE\x0EMade with GIMP\x00,\x00\x00\x00\x00\f\x00\f\x00\x00\x05,  \x8E\x810\x9E\xE3@\x14\xE8i\x10\xC4\xD1\x8A\b\x1C\xCF\x80M$z\xEF\xFF0\x85p\xB8\xB01f\r\e\xCE\x01\xC3\x01\x1E\x10' \x82\n\x01\x00;"
+        gif = "GIF89a\f\x00\f\x00\x84\x00\x00\xFF\xFF\xF7\xF5\xF5\xEE\xE9\xE9\xE5fff\x00\x00\x00\xE7\xE7\xE7^^^\xF3\xF3\xED\x8E\x8E\x8E\xE0\xE0\xE0\x9F\x9F\x9F\x93\x93\x93\xA7\xA7\xA7\x9E\x9E\x9Eiiiccc\xA3\xA3\xA3\x84\x84\x84\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9\xFF\xFE\xF9!\xFE\x0EMade with GIMP\x00,\x00\x00\x00\x00\f\x00\f\x00\x00\x05,  \x8E\x810\x9E\xE3@\x14\xE8i\x10\xC4\xD1\x8A\b\x1C\xCF\x80M$z\xEF\xFF0\x85p\xB8\xB01f\r\e\xCE\x01\xC3\x01\x1E\x10' \x82\n\x01\x00;".b
         @v << gif
         scalar = @v.tree.children.first.children.first
         assert_equal Psych::Nodes::Scalar::LITERAL, scalar.style
@@ -155,18 +165,32 @@ module Psych
         assert_equal(-1, Psych.load(Psych.dump(-1 / 0.0)).infinite?)
       end
 
+      def test_string
+        assert_match(/'017'/, Psych.dump({'a' => '017'}))
+        assert_match(/'019'/, Psych.dump({'a' => '019'}))
+        assert_match(/'01818'/, Psych.dump({'a' => '01818'}))
+      end
+
       # http://yaml.org/type/null.html
       def test_nil
         assert_cycle nil
-        assert_equal nil, Psych.load('null')
-        assert_equal nil, Psych.load('Null')
-        assert_equal nil, Psych.load('NULL')
-        assert_equal nil, Psych.load('~')
+        assert_nil Psych.load('null')
+        assert_nil Psych.load('Null')
+        assert_nil Psych.load('NULL')
+        assert_nil Psych.load('~')
         assert_equal({'foo' => nil}, Psych.load('foo: '))
 
         assert_cycle 'null'
         assert_cycle 'nUll'
         assert_cycle '~'
+      end
+
+      def test_delegator
+        assert_cycle(TestDelegatorClass.new([1, 2, 3]))
+      end
+
+      def test_simple_delegator
+        assert_cycle(TestSimpleDelegatorClass.new([1, 2, 3]))
       end
     end
   end

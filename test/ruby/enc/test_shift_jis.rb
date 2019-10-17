@@ -1,4 +1,5 @@
 # vim: set fileencoding=shift_jis
+# frozen_string_literal: false
 
 require "test/unit"
 

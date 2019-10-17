@@ -35,6 +35,7 @@ static char sccsid[] = "@(#)crypt.c	8.1 (Berkeley) 6/4/93";
 #endif /* LIBC_SCCS and not lint */
 
 #include "ruby/missing.h"
+#include "crypt.h"
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -43,8 +44,13 @@ static char sccsid[] = "@(#)crypt.c	8.1 (Berkeley) 6/4/93";
 #include <pwd.h>
 #endif
 #include <stdio.h>
+#include <string.h>
 #ifndef _PASSWORD_EFMT1
 #define _PASSWORD_EFMT1 '_'
+#endif
+
+#ifndef numberof
+#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 #endif
 
 /*
@@ -80,177 +86,22 @@ static char sccsid[] = "@(#)crypt.c	8.1 (Berkeley) 6/4/93";
 #endif
 #endif
 
-/*
- * define "LONG_IS_32_BITS" only if sizeof(long)==4.
- * This avoids use of bit fields (your compiler may be sloppy with them).
- */
-#if !defined(cray)
-#define	LONG_IS_32_BITS
+#ifndef INIT_DES
+# if defined DUMP || defined NO_DES_TABLES
+#   define INIT_DES 1
+# else
+#   define INIT_DES 0
+# endif
 #endif
-
-/*
- * define "B64" to be the declaration for a 64 bit integer.
- * XXX this feature is currently unused, see "endian" comment below.
- */
-#if defined(cray)
-#define	B64	long
+#if !INIT_DES
+# include "des_tables.c"
+# ifdef HAVE_DES_TABLES
+#   define init_des() ((void)0)
+# else
+#   undef INIT_DES
+#   define INIT_DES 1
+# endif
 #endif
-#if defined(convex)
-#define	B64	long long
-#endif
-
-/*
- * define "LARGEDATA" to get faster permutations, by using about 72 kilobytes
- * of lookup tables.  This speeds up des_setkey() and des_cipher(), but has
- * little effect on crypt().
- */
-#if defined(notdef)
-#define	LARGEDATA
-#endif
-
-int des_setkey(), des_cipher();
-
-/* compile with "-DSTATIC=int" when profiling */
-#ifndef STATIC
-#define	STATIC	static
-#endif
-STATIC void init_des(), init_perm(), permute();
-#ifdef DEBUG
-STATIC void prtab();
-#endif
-
-/* ==================================== */
-
-/*
- * Cipher-block representation (Bob Baldwin):
- *
- * DES operates on groups of 64 bits, numbered 1..64 (sigh).  One
- * representation is to store one bit per byte in an array of bytes.  Bit N of
- * the NBS spec is stored as the LSB of the Nth byte (index N-1) in the array.
- * Another representation stores the 64 bits in 8 bytes, with bits 1..8 in the
- * first byte, 9..16 in the second, and so on.  The DES spec apparently has
- * bit 1 in the MSB of the first byte, but that is particularly noxious so we
- * bit-reverse each byte so that bit 1 is the LSB of the first byte, bit 8 is
- * the MSB of the first byte.  Specifically, the 64-bit input data and key are
- * converted to LSB format, and the output 64-bit block is converted back into
- * MSB format.
- *
- * DES operates internally on groups of 32 bits which are expanded to 48 bits
- * by permutation E and shrunk back to 32 bits by the S boxes.  To speed up
- * the computation, the expansion is applied only once, the expanded
- * representation is maintained during the encryption, and a compression
- * permutation is applied only at the end.  To speed up the S-box lookups,
- * the 48 bits are maintained as eight 6 bit groups, one per byte, which
- * directly feed the eight S-boxes.  Within each byte, the 6 bits are the
- * most significant ones.  The low two bits of each byte are zero.  (Thus,
- * bit 1 of the 48 bit E expansion is stored as the "4"-valued bit of the
- * first byte in the eight byte representation, bit 2 of the 48 bit value is
- * the "8"-valued bit, and so on.)  In fact, a combined "SPE"-box lookup is
- * used, in which the output is the 64 bit result of an S-box lookup which
- * has been permuted by P and expanded by E, and is ready for use in the next
- * iteration.  Two 32-bit wide tables, SPE[0] and SPE[1], are used for this
- * lookup.  Since each byte in the 48 bit path is a multiple of four, indexed
- * lookup of SPE[0] and SPE[1] is simple and fast.  The key schedule and
- * "salt" are also converted to this 8*(6+2) format.  The SPE table size is
- * 8*64*8 = 4K bytes.
- *
- * To speed up bit-parallel operations (such as XOR), the 8 byte
- * representation is "union"ed with 32 bit values "i0" and "i1", and, on
- * machines which support it, a 64 bit value "b64".  This data structure,
- * "C_block", has two problems.  First, alignment restrictions must be
- * honored.  Second, the byte-order (e.g. little-endian or big-endian) of
- * the architecture becomes visible.
- *
- * The byte-order problem is unfortunate, since on the one hand it is good
- * to have a machine-independent C_block representation (bits 1..8 in the
- * first byte, etc.), and on the other hand it is good for the LSB of the
- * first byte to be the LSB of i0.  We cannot have both these things, so we
- * currently use the "little-endian" representation and avoid any multi-byte
- * operations that depend on byte order.  This largely precludes use of the
- * 64-bit datatype since the relative order of i0 and i1 are unknown.  It
- * also inhibits grouping the SPE table to look up 12 bits at a time.  (The
- * 12 bits can be stored in a 16-bit field with 3 low-order zeroes and 1
- * high-order zero, providing fast indexing into a 64-bit wide SPE.)  On the
- * other hand, 64-bit datatypes are currently rare, and a 12-bit SPE lookup
- * requires a 128 kilobyte table, so perhaps this is not a big loss.
- *
- * Permutation representation (Jim Gillogly):
- *
- * A transformation is defined by its effect on each of the 8 bytes of the
- * 64-bit input.  For each byte we give a 64-bit output that has the bits in
- * the input distributed appropriately.  The transformation is then the OR
- * of the 8 sets of 64-bits.  This uses 8*256*8 = 16K bytes of storage for
- * each transformation.  Unless LARGEDATA is defined, however, a more compact
- * table is used which looks up 16 4-bit "chunks" rather than 8 8-bit chunks.
- * The smaller table uses 16*16*8 = 2K bytes for each transformation.  This
- * is slower but tolerable, particularly for password encryption in which
- * the SPE transformation is iterated many times.  The small tables total 9K
- * bytes, the large tables total 72K bytes.
- *
- * The transformations used are:
- * IE3264: MSB->LSB conversion, initial permutation, and expansion.
- *	This is done by collecting the 32 even-numbered bits and applying
- *	a 32->64 bit transformation, and then collecting the 32 odd-numbered
- *	bits and applying the same transformation.  Since there are only
- *	32 input bits, the IE3264 transformation table is half the size of
- *	the usual table.
- * CF6464: Compression, final permutation, and LSB->MSB conversion.
- *	This is done by two trivial 48->32 bit compressions to obtain
- *	a 64-bit block (the bit numbering is given in the "CIFP" table)
- *	followed by a 64->64 bit "cleanup" transformation.  (It would
- *	be possible to group the bits in the 64-bit block so that 2
- *	identical 32->32 bit transformations could be used instead,
- *	saving a factor of 4 in space and possibly 2 in time, but
- *	byte-ordering and other complications rear their ugly head.
- *	Similar opportunities/problems arise in the key schedule
- *	transforms.)
- * PC1ROT: MSB->LSB, PC1 permutation, rotate, and PC2 permutation.
- *	This admittedly baroque 64->64 bit transformation is used to
- *	produce the first code (in 8*(6+2) format) of the key schedule.
- * PC2ROT[0]: Inverse PC2 permutation, rotate, and PC2 permutation.
- *	It would be possible to define 15 more transformations, each
- *	with a different rotation, to generate the entire key schedule.
- *	To save space, however, we instead permute each code into the
- *	next by using a transformation that "undoes" the PC2 permutation,
- *	rotates the code, and then applies PC2.  Unfortunately, PC2
- *	transforms 56 bits into 48 bits, dropping 8 bits, so PC2 is not
- *	invertible.  We get around that problem by using a modified PC2
- *	which retains the 8 otherwise-lost bits in the unused low-order
- *	bits of each byte.  The low-order bits are cleared when the
- *	codes are stored into the key schedule.
- * PC2ROT[1]: Same as PC2ROT[0], but with two rotations.
- *	This is faster than applying PC2ROT[0] twice,
- *
- * The Bell Labs "salt" (Bob Baldwin):
- *
- * The salting is a simple permutation applied to the 48-bit result of E.
- * Specifically, if bit i (1 <= i <= 24) of the salt is set then bits i and
- * i+24 of the result are swapped.  The salt is thus a 24 bit number, with
- * 16777216 possible values.  (The original salt was 12 bits and could not
- * swap bits 13..24 with 36..48.)
- *
- * It is possible, but ugly, to warp the SPE table to account for the salt
- * permutation.  Fortunately, the conditional bit swapping requires only
- * about four machine instructions and can be done on-the-fly with about an
- * 8% performance penalty.
- */
-
-typedef union {
-	unsigned char b[8];
-	struct {
-#if defined(LONG_IS_32_BITS)
-		/* long is often faster than a 32-bit bit field */
-		long	i0;
-		long	i1;
-#else
-		long	i0: 32;
-		long	i1: 32;
-#endif
-	} b32;
-#if defined(B64)
-	B64	b64;
-#endif
-} C_block;
 
 /*
  * Convert twenty-four-bit long in host-order
@@ -277,8 +128,6 @@ typedef union {
 
 #if defined(LARGEDATA)
 	/* Waste memory like crazy.  Also, do permutations in line */
-#define	LGCHUNKBITS	3
-#define	CHUNKBITS	(1<<LGCHUNKBITS)
 #define	PERM6464(d,d0,d1,cpp,p)				\
 	LOAD((d),(d0),(d1),(p)[(0<<CHUNKBITS)+(cpp)[0]]);		\
 	OR ((d),(d0),(d1),(p)[(1<<CHUNKBITS)+(cpp)[1]]);		\
@@ -295,22 +144,16 @@ typedef union {
 	OR ((d),(d0),(d1),(p)[(3<<CHUNKBITS)+(cpp)[3]]);
 #else
 	/* "small data" */
-#define	LGCHUNKBITS	2
-#define	CHUNKBITS	(1<<LGCHUNKBITS)
 #define	PERM6464(d,d0,d1,cpp,p)				\
 	{ C_block tblk; permute((cpp),&tblk,(p),8); LOAD ((d),(d0),(d1),tblk); }
 #define	PERM3264(d,d0,d1,cpp,p)				\
 	{ C_block tblk; permute((cpp),&tblk,(p),4); LOAD ((d),(d0),(d1),tblk); }
 
 STATIC void
-permute(cp, out, p, chars_in)
-	unsigned char *cp;
-	C_block *out;
-	register C_block *p;
-	int chars_in;
+permute(const unsigned char *cp, C_block *out, register const C_block *p, int chars_in)
 {
 	register DCL_BLOCK(D,D0,D1);
-	register C_block *tp;
+	register const C_block *tp;
 	register int t;
 
 	ZERO(D,D0,D1);
@@ -323,10 +166,14 @@ permute(cp, out, p, chars_in)
 }
 #endif /* LARGEDATA */
 
+#ifdef DEBUG
+STATIC void prtab(const char *s, const unsigned char *t, int num_rows);
+#endif
 
+#if INIT_DES
 /* =====  (mostly) Standard DES Tables ==================== */
 
-static unsigned char IP[] = {		/* initial permutation */
+static const unsigned char IP[] = {	/* initial permutation */
 	58, 50, 42, 34, 26, 18, 10,  2,
 	60, 52, 44, 36, 28, 20, 12,  4,
 	62, 54, 46, 38, 30, 22, 14,  6,
@@ -339,7 +186,7 @@ static unsigned char IP[] = {		/* initial permutation */
 
 /* The final permutation is the inverse of IP - no table is necessary */
 
-static unsigned char ExpandTr[] = {	/* expansion operation */
+static const unsigned char ExpandTr[] = { /* expansion operation */
 	32,  1,  2,  3,  4,  5,
 	 4,  5,  6,  7,  8,  9,
 	 8,  9, 10, 11, 12, 13,
@@ -350,7 +197,7 @@ static unsigned char ExpandTr[] = {	/* expansion operation */
 	28, 29, 30, 31, 32,  1,
 };
 
-static unsigned char PC1[] = {		/* permuted choice table 1 */
+static const unsigned char PC1[] = {	/* permuted choice table 1 */
 	57, 49, 41, 33, 25, 17,  9,
 	 1, 58, 50, 42, 34, 26, 18,
 	10,  2, 59, 51, 43, 35, 27,
@@ -361,13 +208,15 @@ static unsigned char PC1[] = {		/* permuted choice table 1 */
 	14,  6, 61, 53, 45, 37, 29,
 	21, 13,  5, 28, 20, 12,  4,
 };
+#endif
 
-static unsigned char Rotates[] = {	/* PC1 rotation schedule */
+static const unsigned char Rotates[] = { /* PC1 rotation schedule */
 	1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1,
 };
 
+#if INIT_DES
 /* note: each "row" of PC2 is left-padded with bits that make it invertible */
-static unsigned char PC2[] = {		/* permuted choice table 2 */
+static const unsigned char PC2[] = {	/* permuted choice table 2 */
 	 9, 18,    14, 17, 11, 24,  1,  5,
 	22, 25,     3, 28, 15,  6, 21, 10,
 	35, 38,    23, 19, 12,  4, 26,  8,
@@ -379,7 +228,7 @@ static unsigned char PC2[] = {		/* permuted choice table 2 */
 	 0,  0,    46, 42, 50, 36, 29, 32,
 };
 
-static unsigned char S[8][64] = {	/* 48->32 bit substitution tables */
+static const unsigned char S[8][64] = { /* 48->32 bit substitution tables */
     {
 					/* S[1]			*/
 	14,  4, 13,  1,  2, 15, 11,  8,  3, 10,  6, 12,  5,  9,  0,  7,
@@ -438,7 +287,7 @@ static unsigned char S[8][64] = {	/* 48->32 bit substitution tables */
     },
 };
 
-static unsigned char P32Tr[] = {	/* 32-bit permutation function */
+static const unsigned char P32Tr[] = {	/* 32-bit permutation function */
 	16,  7, 20, 21,
 	29, 12, 28, 17,
 	 1, 15, 23, 26,
@@ -449,7 +298,7 @@ static unsigned char P32Tr[] = {	/* 32-bit permutation function */
 	22, 11,  4, 25,
 };
 
-static unsigned char CIFP[] = {		/* compressed/interleaved permutation */
+static const unsigned char CIFP[] = {	/* compressed/interleaved permutation */
 	 1,  2,  3,  4,   17, 18, 19, 20,
 	 5,  6,  7,  8,   21, 22, 23, 24,
 	 9, 10, 11, 12,   25, 26, 27, 28,
@@ -460,46 +309,91 @@ static unsigned char CIFP[] = {		/* compressed/interleaved permutation */
 	41, 42, 43, 44,   57, 58, 59, 60,
 	45, 46, 47, 48,   61, 62, 63, 64,
 };
+#endif
 
-static unsigned char itoa64[] =		/* 0..63 => ascii-64 */
+static const unsigned char itoa64[] =	/* 0..63 => ascii-64 */
 	"./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
+/* table that converts chars "./0-9A-Za-z"to integers 0-63. */
+static const unsigned char a64toi[256] = {
+#define A64TOI1(c) \
+	((c) == '.' ? 0 :						\
+	 (c) == '/' ? 1 :						\
+	 ('0' <= (c) && (c) <= '9') ? (c) - '0' + 2 :			\
+	 ('A' <= (c) && (c) <= 'Z') ? (c) - 'A' + 12 :			\
+	 ('a' <= (c) && (c) <= 'z') ? (c) - 'a' + 38 :			\
+	 0)
+#define A64TOI4(base) A64TOI1(base+0), A64TOI1(base+1), A64TOI1(base+2), A64TOI1(base+3)
+#define A64TOI16(base) A64TOI4(base+0), A64TOI4(base+4), A64TOI4(base+8), A64TOI4(base+12)
+#define A64TOI64(base) A64TOI16(base+0x00), A64TOI16(base+0x10), A64TOI16(base+0x20), A64TOI16(base+0x30)
+	A64TOI64(0x00), A64TOI64(0x40),
+	A64TOI64(0x00), A64TOI64(0x40),
+};
 
+#if INIT_DES
 /* =====  Tables that are initialized at run time  ==================== */
 
+typedef struct {
+	/* Initial key schedule permutation */
+	C_block	PC1ROT[64/CHUNKBITS][1<<CHUNKBITS];
 
-static unsigned char a64toi[128];	/* ascii-64 => 0..63 */
+	/* Subsequent key schedule rotation permutations */
+	C_block	PC2ROT[2][64/CHUNKBITS][1<<CHUNKBITS];
 
-/* Initial key schedule permutation */
-static C_block	PC1ROT[64/CHUNKBITS][1<<CHUNKBITS];
+	/* Initial permutation/expansion table */
+	C_block	IE3264[32/CHUNKBITS][1<<CHUNKBITS];
 
-/* Subsequent key schedule rotation permutations */
-static C_block	PC2ROT[2][64/CHUNKBITS][1<<CHUNKBITS];
+	/* Table that combines the S, P, and E operations.  */
+	unsigned long SPE[2][8][64];
 
-/* Initial permutation/expansion table */
-static C_block	IE3264[32/CHUNKBITS][1<<CHUNKBITS];
+	/* compressed/interleaved => final permutation table */
+	C_block CF6464[64/CHUNKBITS][1<<CHUNKBITS];
 
-/* Table that combines the S, P, and E operations.  */
-static long SPE[2][8][64];
+	int ready;
+} des_tables_t;
+static des_tables_t des_tables[1];
 
-/* compressed/interleaved => final permutation table */
-static C_block	CF6464[64/CHUNKBITS][1<<CHUNKBITS];
+#define des_tables	((const des_tables_t *)des_tables)
+#define PC1ROT		(des_tables->PC1ROT)
+#define PC2ROT		(des_tables->PC2ROT)
+#define IE3264		(des_tables->IE3264)
+#define SPE		(des_tables->SPE)
+#define CF6464		(des_tables->CF6464)
 
+STATIC void init_des(void);
+STATIC void init_perm(C_block perm[64/CHUNKBITS][1<<CHUNKBITS], unsigned char p[64], int chars_in, int chars_out);
+#endif
 
-/* ==================================== */
+static const C_block constdatablock = {{0}}; /* encryption constant */
 
+#define KS	(data->KS)
+#define cryptresult (data->cryptresult)
 
-static C_block	constdatablock;			/* encryption constant */
-static char	cryptresult[1+4+4+11+1];	/* encrypted result */
+static void des_setkey_r(const unsigned char *key, struct crypt_data *data);
+static void des_cipher_r(const unsigned char *in, unsigned char *out, long salt, int num_iter, struct crypt_data *data);
 
+#ifdef USE_NONREENTRANT_CRYPT
+static struct crypt_data default_crypt_data;
+#endif
+
+#ifdef USE_NONREENTRANT_CRYPT
 /*
  * Return a pointer to static data consisting of the "setting"
  * followed by an encryption produced by the "key" and "setting".
  */
 char *
-crypt(key, setting)
-	register const char *key;
-	register const char *setting;
+crypt(const char *key, const char *setting)
+{
+	return crypt_r(key, setting, &default_crypt_data);
+}
+#endif
+
+/*
+ * Return a pointer to data consisting of the "setting" followed by an
+ * encryption produced by the "key" and "setting".
+ */
+char *
+crypt_r(const char *key, const char *setting, struct crypt_data *data)
 {
 	register char *encp;
 	register long i;
@@ -513,8 +407,7 @@ crypt(key, setting)
 			key++;
 		keyblock.b[i] = t;
 	}
-	if (des_setkey((char *)keyblock.b))	/* also initializes "a64toi" */
-		return (NULL);
+	des_setkey_r(keyblock.b, data);	/* also initializes "a64toi" */
 
 	encp = &cryptresult[0];
 	switch (*setting) {
@@ -523,16 +416,13 @@ crypt(key, setting)
 		 * Involve the rest of the password 8 characters at a time.
 		 */
 		while (*key) {
-			if (des_cipher((char *)&keyblock,
-			    (char *)&keyblock, 0L, 1))
-				return (NULL);
+			des_cipher_r(keyblock.b, keyblock.b, 0L, 1, data);
 			for (i = 0; i < 8; i++) {
 				if ((t = 2*(unsigned char)(*key)) != 0)
 					key++;
 				keyblock.b[i] ^= t;
 			}
-			if (des_setkey((char *)keyblock.b))
-				return (NULL);
+			des_setkey_r(keyblock.b, data);
 		}
 
 		*encp++ = *setting++;
@@ -562,9 +452,7 @@ crypt(key, setting)
 		salt = (salt<<6) | a64toi[t];
 	}
 	encp += salt_size;
-	if (des_cipher((char *)&constdatablock, (char *)&rsltblock,
-	    salt, num_iter))
-		return (NULL);
+	des_cipher_r(constdatablock.b, rsltblock.b, salt, num_iter, data);
 
 	/*
 	 * Encode the 64 cipher bits as 11 ascii characters.
@@ -589,41 +477,29 @@ crypt(key, setting)
 	return (cryptresult);
 }
 
-
-/*
- * The Key Schedule, filled in by des_setkey() or setkey().
- */
-#define	KS_SIZE	16
-static C_block	KS[KS_SIZE];
-
 /*
  * Set up the key schedule from the key.
  */
-int
-des_setkey(key)
-	register const char *key;
+static void
+des_setkey_r(const unsigned char *key, struct crypt_data *data)
 {
 	register DCL_BLOCK(K, K0, K1);
-	register C_block *ptabp;
+	register const C_block *ptabp;
 	register int i;
-	static int des_ready = 0;
+	C_block *ksp;
 
-	if (!des_ready) {
-		init_des();
-		des_ready = 1;
-	}
+	init_des();
 
-	PERM6464(K,K0,K1,(unsigned char *)key,(C_block *)PC1ROT);
-	key = (char *)&KS[0];
-	STORE(K&~0x03030303L, K0&~0x03030303L, K1, *(C_block *)key);
-	for (i = 1; i < 16; i++) {
-		key += sizeof(C_block);
-		STORE(K,K0,K1,*(C_block *)key);
-		ptabp = (C_block *)PC2ROT[Rotates[i]-1];
-		PERM6464(K,K0,K1,(unsigned char *)key,ptabp);
-		STORE(K&~0x03030303L, K0&~0x03030303L, K1, *(C_block *)key);
+	PERM6464(K,K0,K1,key,PC1ROT[0]);
+	ksp = &KS[0];
+	STORE(K&~0x03030303L, K0&~0x03030303L, K1, *ksp);
+	for (i = 1; i < numberof(KS); i++) {
+		ksp++;
+		STORE(K,K0,K1,*ksp);
+		ptabp = PC2ROT[Rotates[i]-1][0];
+		PERM6464(K,K0,K1,ksp->b,ptabp);
+		STORE(K&~0x03030303L, K0&~0x03030303L, K1, *ksp);
 	}
-	return (0);
 }
 
 /*
@@ -634,19 +510,15 @@ des_setkey(key)
  * NOTE: the performance of this routine is critically dependent on your
  * compiler and machine architecture.
  */
-int
-des_cipher(in, out, salt, num_iter)
-	const char *in;
-	char *out;
-	long salt;
-	int num_iter;
+void
+des_cipher_r(const unsigned char *in, unsigned char *out, long salt, int num_iter, struct crypt_data *data)
 {
 	/* variables that we want in registers, most important first */
 #if defined(pdp11)
 	register int j;
 #endif
-	register long L0, L1, R0, R1, k;
-	register C_block *kp;
+	register unsigned long L0, L1, R0, R1, k;
+	register const C_block *kp;
 	register int ks_inc, loop_count;
 	C_block B;
 
@@ -675,26 +547,26 @@ des_cipher(in, out, salt, num_iter)
 	R1 = (R1 >> 1) & 0x55555555L;
 	L1 = R0 | R1;		/* L1 is the odd-numbered input bits */
 	STORE(L,L0,L1,B);
-	PERM3264(L,L0,L1,B.b,  (C_block *)IE3264);	/* even bits */
-	PERM3264(R,R0,R1,B.b+4,(C_block *)IE3264);	/* odd bits */
+	PERM3264(L,L0,L1,B.b,  IE3264[0]);	/* even bits */
+	PERM3264(R,R0,R1,B.b+4,IE3264[0]);	/* odd bits */
 
 	if (num_iter >= 0)
 	{		/* encryption */
 		kp = &KS[0];
-		ks_inc  = (int)sizeof(*kp);
+		ks_inc  = +1;
 	}
 	else
 	{		/* decryption */
 		num_iter = -num_iter;
 		kp = &KS[KS_SIZE-1];
-		ks_inc  = -(int)sizeof(*kp);
+		ks_inc  = -1;
 	}
 
 	while (--num_iter >= 0) {
 		loop_count = 8;
 		do {
 
-#define	SPTAB(t, i)	(*(long *)((unsigned char *)(t) + (i)*(sizeof(long)/4)))
+#define	SPTAB(t, i)	(*(const unsigned long *)((const unsigned char *)(t) + (i)*(sizeof(long)/4)))
 #if defined(gould)
 			/* use this if B.b[i] is evaluated just once ... */
 #define	DOXOR(x,y,i)	(x)^=SPTAB(SPE[0][(i)],B.b[(i)]); (y)^=SPTAB(SPE[1][(i)],B.b[(i)]);
@@ -712,7 +584,7 @@ des_cipher(in, out, salt, num_iter)
 			k = ((q0) ^ (q1)) & SALT;	\
 			B.b32.i0 = k ^ (q0) ^ kp->b32.i0;		\
 			B.b32.i1 = k ^ (q1) ^ kp->b32.i1;		\
-			kp = (C_block *)((char *)kp+ks_inc);	\
+			kp += ks_inc;			\
 							\
 			DOXOR((p0), (p1), 0);		\
 			DOXOR((p0), (p1), 1);		\
@@ -726,7 +598,7 @@ des_cipher(in, out, salt, num_iter)
 			CRUNCH(L0, L1, R0, R1);
 			CRUNCH(R0, R1, L0, L1);
 		} while (--loop_count != 0);
-		kp = (C_block *)((char *)kp-(ks_inc*KS_SIZE));
+		kp -= (ks_inc*KS_SIZE);
 
 
 		/* swap L and R */
@@ -739,7 +611,7 @@ des_cipher(in, out, salt, num_iter)
 	L0 = ((L0 >> 3) & 0x0f0f0f0fL) | ((L1 << 1) & 0xf0f0f0f0L);
 	L1 = ((R0 >> 3) & 0x0f0f0f0fL) | ((R1 << 1) & 0xf0f0f0f0L);
 	STORE(L,L0,L1,B);
-	PERM6464(L,L0,L1,B.b, (C_block *)CF6464);
+	PERM6464(L,L0,L1,B.b, CF6464[0]);
 #if defined(MUST_ALIGN)
 	STORE(L,L0,L1,B);
 	out[0] = B.b[0]; out[1] = B.b[1]; out[2] = B.b[2]; out[3] = B.b[3];
@@ -747,27 +619,26 @@ des_cipher(in, out, salt, num_iter)
 #else
 	STORE(L,L0,L1,*(C_block *)out);
 #endif
-	return (0);
 }
 
+#undef des_tables
+#undef KS
+#undef cryptresult
 
+#if INIT_DES
 /*
  * Initialize various tables.  This need only be done once.  It could even be
  * done at compile time, if the compiler were capable of that sort of thing.
  */
 STATIC void
-init_des()
+init_des(void)
 {
 	register int i, j;
 	register long k;
 	register int tableno;
-	static unsigned char perm[64], tmp32[32];	/* "static" for speed */
+	unsigned char perm[64], tmp32[32];
 
-	/*
-	 * table that converts chars "./0-9A-Za-z"to integers 0-63.
-	 */
-	for (i = 0; i < 64; i++)
-		a64toi[itoa64[i]] = i;
+	if (des_tables->ready) return;
 
 	/*
 	 * PC1ROT - bit reverse, then PC1, then Rotate, then PC2.
@@ -889,6 +760,8 @@ init_des()
 			TO_SIX_BIT(SPE[1][tableno][j], k);
 		}
 	}
+
+	des_tables->ready = 1;
 }
 
 /*
@@ -900,10 +773,8 @@ init_des()
  * "perm" must be all-zeroes on entry to this routine.
  */
 STATIC void
-init_perm(perm, p, chars_in, chars_out)
-	C_block perm[64/CHUNKBITS][1<<CHUNKBITS];
-	unsigned char p[64];
-	int chars_in, chars_out;
+init_perm(C_block perm[64/CHUNKBITS][1<<CHUNKBITS],
+	  unsigned char p[64], int chars_in, int chars_out)
 {
 	register int i, j, k, l;
 
@@ -919,13 +790,21 @@ init_perm(perm, p, chars_in, chars_out)
 		}
 	}
 }
+#endif
 
 /*
  * "setkey" routine (for backwards compatibility)
  */
-int
-setkey(key)
-	register const char *key;
+#ifdef USE_NONREENTRANT_CRYPT
+void
+setkey(const char *key)
+{
+	setkey_r(key, &default_crypt_data);
+}
+#endif
+
+void
+setkey_r(const char *key, struct crypt_data *data)
 {
 	register int i, j, k;
 	C_block keyblock;
@@ -938,16 +817,22 @@ setkey(key)
 		}
 		keyblock.b[i] = k;
 	}
-	return (des_setkey((char *)keyblock.b));
+	des_setkey_r(keyblock.b, data);
 }
 
 /*
  * "encrypt" routine (for backwards compatibility)
  */
-int
-encrypt(block, flag)
-	register char *block;
-	int flag;
+#ifdef USE_NONREENTRANT_CRYPT
+void
+encrypt(char *block, int flag)
+{
+	encrypt_r(block, flag, &default_crypt_data);
+}
+#endif
+
+void
+encrypt_r(char *block, int flag, struct crypt_data *data)
 {
 	register int i, j, k;
 	C_block cblock;
@@ -960,8 +845,7 @@ encrypt(block, flag)
 		}
 		cblock.b[i] = k;
 	}
-	if (des_cipher((char *)&cblock, (char *)&cblock, 0L, (flag ? -1: 1)))
-		return (1);
+	des_cipher_r(cblock.b, cblock.b, 0L, (flag ? -1: 1), data);
 	for (i = 7; i >= 0; i--) {
 		k = cblock.b[i];
 		for (j = 7; j >= 0; j--) {
@@ -969,15 +853,11 @@ encrypt(block, flag)
 			k >>= 1;
 		}
 	}
-	return (0);
 }
 
 #ifdef DEBUG
 STATIC void
-prtab(s, t, num_rows)
-	char *s;
-	unsigned char *t;
-	int num_rows;
+prtab(const char *s, const unsigned char *t, int num_rows)
 {
 	register int i, j;
 
@@ -989,5 +869,99 @@ prtab(s, t, num_rows)
 		(void)printf("\n");
 	}
 	(void)printf("\n");
+}
+#endif
+
+#ifdef DUMP
+void
+dump_block(const C_block *block)
+{
+	int i;
+	printf("{{");
+	for (i = 0; i < numberof(block->b); ++i) {
+		printf("%3d,", block->b[i]);
+	}
+	printf("}},\n");
+}
+
+int
+main(void)
+{
+	int i, j, k;
+	init_des();
+
+	printf("#ifndef HAVE_DES_TABLES\n\n");
+	printf("/* Initial key schedule permutation */\n");
+	printf("static const C_block	PC1ROT[64/CHUNKBITS][1<<CHUNKBITS] = {\n");
+	for (i = 0; i < numberof(PC1ROT); ++i) {
+		printf("\t{\n");
+		for (j = 0; j < numberof(PC1ROT[0]); ++j) {
+			printf("\t\t");
+			dump_block(&PC1ROT[i][j]);
+		}
+		printf("\t},\n");
+	}
+	printf("};\n\n");
+
+	printf("/* Subsequent key schedule rotation permutations */\n");
+	printf("static const C_block	PC2ROT[2][64/CHUNKBITS][1<<CHUNKBITS] = {\n");
+	for (i = 0; i < numberof(PC2ROT); ++i) {
+		printf("\t{\n");
+		for (j = 0; j < numberof(PC2ROT[0]); ++j) {
+			printf("\t\t{\n");
+			for (k = 0; k < numberof(PC2ROT[0][0]); ++k) {
+				printf("\t\t\t");
+				dump_block(&PC2ROT[i][j][k]);
+			}
+			printf("\t\t},\n");
+		}
+		printf("\t},\n");
+	}
+	printf("};\n\n");
+
+	printf("/* Initial permutation/expansion table */\n");
+	printf("static const C_block	IE3264[32/CHUNKBITS][1<<CHUNKBITS] = {\n");
+	for (i = 0; i < numberof(IE3264); ++i) {
+		printf("\t{\n");
+		for (j = 0; j < numberof(IE3264[0]); ++j) {
+			printf("\t\t");
+			dump_block(&IE3264[i][j]);
+		}
+		printf("\t},\n");
+	}
+	printf("};\n\n");
+
+	printf("/* Table that combines the S, P, and E operations.  */\n");
+	printf("static const unsigned long SPE[2][8][64] = {\n");
+	for (i = 0; i < numberof(SPE); ++i) {
+		printf("\t{\n");
+		for (j = 0; j < numberof(SPE[0]); ++j) {
+			int r = 0;
+			printf("\t\t{");
+			for (k = 0; k < numberof(SPE[0][0]); ++k) {
+				if (r == 0) printf("\n\t\t\t");
+				printf("%#10lx,", SPE[i][j][k]);
+				if (++r == 4) r = 0;
+			}
+			printf("\n\t\t},\n");
+		}
+		printf("\t},\n");
+	}
+	printf("};\n\n");
+
+	printf("/* compressed/interleaved => final permutation table */\n");
+	printf("static const C_block CF6464[64/CHUNKBITS][1<<CHUNKBITS] = {\n");
+	for (i = 0; i < numberof(CF6464); ++i) {
+		printf("\t{\n");
+		for (j = 0; j < numberof(CF6464[0]); ++j) {
+			printf("\t\t");
+			dump_block(&CF6464[i][j]);
+		}
+		printf("\t},\n");
+	}
+	printf("};\n\n");
+	printf("#define HAVE_DES_TABLES 1\n""#endif\n");
+
+	return 0;
 }
 #endif

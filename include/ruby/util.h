@@ -64,29 +64,16 @@ void ruby_qsort(void *, const size_t, const size_t,
 
 void ruby_setenv(const char *, const char *);
 void ruby_unsetenv(const char *);
-#undef setenv
-#undef unsetenv
-#define setenv(name,val) ruby_setenv((name),(val))
-#define unsetenv(name,val) ruby_unsetenv(name)
 
 char *ruby_strdup(const char *);
 #undef strdup
 #define strdup(s) ruby_strdup(s)
 
 char *ruby_getcwd(void);
-#define my_getcwd() ruby_getcwd()
 
 double ruby_strtod(const char *, char **);
 #undef strtod
 #define strtod(s,e) ruby_strtod((s),(e))
-
-#if defined _MSC_VER && _MSC_VER >= 1300
-#pragma warning(push)
-#pragma warning(disable:4723)
-#endif
-#if defined _MSC_VER && _MSC_VER >= 1300
-#pragma warning(pop)
-#endif
 
 void ruby_each_words(const char *, void (*)(const char*, int, void*), void *);
 

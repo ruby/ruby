@@ -85,13 +85,13 @@
 #ifdef HAVE_LONG_LONG
 #define I8_2_NUM LL2NUM
 #define UI8_2_NUM ULL2NUM
-#define NUM2I8  NUM2LL
-#define NUM2UI8 NUM2ULL
+#define NUM2I8  RB_NUM2LL
+#define NUM2UI8 RB_NUM2ULL
 #else
-#define I8_2_NUM INT2NUM
-#define UI8_2_NUM UINT2NUM
-#define NUM2I8  NUM2INT
-#define NUM2UI8 NUM2UINT
+#define I8_2_NUM RB_INT2NUM
+#define UI8_2_NUM RB_UINT2NUM
+#define NUM2I8  RB_NUM2INT
+#define NUM2UI8 RB_NUM2UINT
 #endif
 
 #define OLE_ADDREF(X) (X) ? ((X)->lpVtbl->AddRef(X)) : 0

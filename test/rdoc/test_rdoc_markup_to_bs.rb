@@ -1,4 +1,5 @@
-require 'rdoc/test_case'
+# frozen_string_literal: true
+require_relative 'helper'
 
 class TestRDocMarkupToBs < RDoc::Markup::TextFormatterTestCase
 
@@ -24,7 +25,6 @@ class TestRDocMarkupToBs < RDoc::Markup::TextFormatterTestCase
   end
 
   def accept_heading
-    skip "No String#chars, upgrade your ruby" unless ''.respond_to? :chars
     assert_equal "===== H\bHe\bel\bll\blo\bo\n", @to.res.join
   end
 
@@ -215,37 +215,30 @@ class TestRDocMarkupToBs < RDoc::Markup::TextFormatterTestCase
   end
 
   def accept_heading_1
-    skip "No String#chars, upgrade your ruby" unless ''.respond_to? :chars
     assert_equal "= H\bHe\bel\bll\blo\bo\n", @to.end_accepting
   end
 
   def accept_heading_2
-    skip "No String#chars, upgrade your ruby" unless ''.respond_to? :chars
     assert_equal "== H\bHe\bel\bll\blo\bo\n", @to.end_accepting
   end
 
   def accept_heading_3
-    skip "No String#chars, upgrade your ruby" unless ''.respond_to? :chars
     assert_equal "=== H\bHe\bel\bll\blo\bo\n", @to.end_accepting
   end
 
   def accept_heading_4
-    skip "No String#chars, upgrade your ruby" unless ''.respond_to? :chars
     assert_equal "==== H\bHe\bel\bll\blo\bo\n", @to.end_accepting
   end
 
   def accept_heading_indent
-    skip "No String#chars, upgrade your ruby" unless ''.respond_to? :chars
     assert_equal "   = H\bHe\bel\bll\blo\bo\n", @to.end_accepting
   end
 
   def accept_heading_b
-    skip "No String#chars, upgrade your ruby" unless ''.respond_to? :chars
     assert_equal "= H\bHe\bel\bll\blo\bo\n", @to.end_accepting
   end
 
   def accept_heading_suppressed_crossref
-    skip "No String#chars, upgrade your ruby" unless ''.respond_to? :chars
     assert_equal "= H\bHe\bel\bll\blo\bo\n", @to.end_accepting
   end
 
@@ -263,24 +256,20 @@ class TestRDocMarkupToBs < RDoc::Markup::TextFormatterTestCase
   end
 
   def accept_paragraph_b
-    skip "No String#chars, upgrade your ruby" unless ''.respond_to? :chars
     assert_equal "reg b\bbo\bol\bld\bd \b w\bwo\bor\brd\bds\bs reg\n",
                  @to.end_accepting
   end
 
   def accept_paragraph_br
-    skip "No String#chars, upgrade your ruby" unless ''.respond_to? :chars
     assert_equal "one\ntwo\n", @to.end_accepting
   end
 
   def accept_paragraph_break
-    skip "No String#chars, upgrade your ruby" unless ''.respond_to? :chars
     assert_equal "hello\nworld\n",
                  @to.end_accepting
   end
 
   def accept_paragraph_i
-    skip "No String#chars, upgrade your ruby" unless ''.respond_to? :chars
     assert_equal "reg _\bi_\bt_\ba_\bl_\bi_\bc_\b _\bw_\bo_\br_\bd_\bs reg\n",
                  @to.end_accepting
   end
@@ -300,12 +289,10 @@ class TestRDocMarkupToBs < RDoc::Markup::TextFormatterTestCase
   end
 
   def accept_paragraph_star
-    skip "No String#chars, upgrade your ruby" unless ''.respond_to? :chars
     assert_equal "reg b\bbo\bol\bld\bd reg\n", @to.end_accepting
   end
 
   def accept_paragraph_underscore
-    skip "No String#chars, upgrade your ruby" unless ''.respond_to? :chars
     assert_equal "reg _\bi_\bt_\ba_\bl_\bi_\bc reg\n", @to.end_accepting
   end
 
@@ -363,4 +350,3 @@ words words words words
   end
 
 end
-

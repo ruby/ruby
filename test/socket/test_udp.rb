@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 begin
   require "socket"
   require "test/unit"
@@ -11,6 +13,21 @@ class TestSocket_UDPSocket < Test::Unit::TestCase
     assert_nothing_raised { UDPSocket.open(Socket::AF_INET) {} }
     assert_nothing_raised { UDPSocket.open("AF_INET") {} }
     assert_nothing_raised { UDPSocket.open(:AF_INET) {} }
+  end
+
+  def test_inspect
+    UDPSocket.open() {|sock|
+      assert_match(/AF_INET\b/, sock.inspect)
+    }
+    if Socket.const_defined?(:AF_INET6)
+      begin
+        UDPSocket.open(Socket::AF_INET6) {|sock|
+          assert_match(/AF_INET6\b/, sock.inspect)
+        }
+      rescue Errno::EAFNOSUPPORT
+        skip 'AF_INET6 not supported by kernel'
+      end
+    end
   end
 
   def test_connect
@@ -68,5 +85,32 @@ class TestSocket_UDPSocket < Test::Unit::TestCase
     assert_match 'for "127.0.0.1" port 7', e.message
   ensure
     u.close if u
+  end
+
+  def test_bind_no_memory_leak
+    assert_no_memory_leak(["-rsocket"], <<-"end;", <<-"end;", rss: true)
+      s = UDPSocket.new
+      s.close
+    end;
+      100_000.times {begin s.bind("127.0.0.1", 1) rescue IOError; end}
+    end;
+  end
+
+  def test_connect_no_memory_leak
+    assert_no_memory_leak(["-rsocket"], <<-"end;", <<-"end;", rss: true)
+      s = UDPSocket.new
+      s.close
+    end;
+      100_000.times {begin s.connect("127.0.0.1", 1) rescue IOError; end}
+    end;
+  end
+
+  def test_send_no_memory_leak
+    assert_no_memory_leak(["-rsocket"], <<-"end;", <<-"end;", rss: true)
+      s = UDPSocket.new
+      s.close
+    end;
+      100_000.times {begin s.send("\0"*100, 0, "127.0.0.1", 1) rescue IOError; end}
+    end;
   end
 end if defined?(UDPSocket)

@@ -1,0 +1,8 @@
+prelude: |
+  a = 'abc'
+  b = [1, 2, 3]
+benchmark:
+  vm1_length: |
+    a.length
+    b.length
+loop_count: 30000000

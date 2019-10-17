@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/platform'
 require 'rbconfig'
@@ -75,6 +76,7 @@ class TestGemPlatform < Gem::TestCase
       'i386-solaris2.8'        => ['x86',       'solaris',   '2.8'],
       'mswin32'                => ['x86',       'mswin32',   nil],
       'x86_64-linux'           => ['x86_64',    'linux',     nil],
+      'x86_64-linux-musl'      => ['x86_64',    'linux',     'musl'],
       'x86_64-openbsd3.9'      => ['x86_64',    'openbsd',   '3.9'],
       'x86_64-openbsd4.0'      => ['x86_64',    'openbsd',   '4.0'],
       'x86_64-openbsd'         => ['x86_64',    'openbsd',   nil],
@@ -116,7 +118,7 @@ class TestGemPlatform < Gem::TestCase
 
     assert_equal expected, platform.to_a, 'i386-mswin32 VC6'
   ensure
-    if orig_RUBY_SO_NAME then
+    if orig_RUBY_SO_NAME
       RbConfig::CONFIG['RUBY_SO_NAME'] = orig_RUBY_SO_NAME
     else
       RbConfig::CONFIG.delete 'RUBY_SO_NAME'
@@ -144,7 +146,7 @@ class TestGemPlatform < Gem::TestCase
   end
 
   def test_to_s
-    if win_platform? then
+    if win_platform?
       assert_equal 'x86-mswin32-60', Gem::Platform.local.to_s
     else
       assert_equal 'x86-darwin-8', Gem::Platform.local.to_s
@@ -190,6 +192,17 @@ class TestGemPlatform < Gem::TestCase
     assert((x86_darwin8 === Gem::Platform.local), 'universal =~ x86')
   end
 
+  def test_nil_cpu_arch_is_treated_as_universal
+    with_nil_arch = Gem::Platform.new [nil, 'mingw32']
+    with_uni_arch = Gem::Platform.new ['universal', 'mingw32']
+    with_x86_arch = Gem::Platform.new ['x86', 'mingw32']
+
+    assert((with_nil_arch === with_uni_arch), 'nil =~ universal')
+    assert((with_uni_arch === with_nil_arch), 'universal =~ nil')
+    assert((with_nil_arch === with_x86_arch), 'nil =~ x86')
+    assert((with_x86_arch === with_nil_arch), 'x86 =~ nil')
+  end
+
   def test_equals3_cpu_arm
     arm   = Gem::Platform.new 'arm-linux'
     armv5 = Gem::Platform.new 'armv5-linux'
@@ -199,13 +212,13 @@ class TestGemPlatform < Gem::TestCase
     assert((arm   === Gem::Platform.local), 'arm   === armv5')
     assert((armv5 === Gem::Platform.local), 'armv5 === armv5')
     refute((armv7 === Gem::Platform.local), 'armv7 === armv5')
-    refute((Gem::Platform.local ===   arm), 'armv5 === arm')
+    refute((Gem::Platform.local === arm), 'armv5 === arm')
 
     util_set_arch 'armv7-linux'
     assert((arm   === Gem::Platform.local), 'arm   === armv7')
     refute((armv5 === Gem::Platform.local), 'armv5 === armv7')
     assert((armv7 === Gem::Platform.local), 'armv7 === armv7')
-    refute((Gem::Platform.local ===   arm), 'armv7 === arm')
+    refute((Gem::Platform.local === arm), 'armv7 === arm')
   end
 
   def test_equals3_version
@@ -285,12 +298,12 @@ class TestGemPlatform < Gem::TestCase
     assert_local_match 'sparc-solaris2.8-mq5.3'
   end
 
-  def assert_local_match name
+  def assert_local_match(name)
     assert_match Gem::Platform.local, name
   end
 
-  def refute_local_match name
+  def refute_local_match(name)
     refute_match Gem::Platform.local, name
   end
-end
 
+end

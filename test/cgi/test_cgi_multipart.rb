@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'test/unit'
 require 'cgi'
 require 'tempfile'
@@ -32,7 +33,7 @@ class MultiPart
 
   def initialize(boundary=nil)
     @boundary = boundary || create_boundary()
-    @buf = ''
+    @buf = ''.dup
     @buf.force_encoding(::Encoding::ASCII_8BIT) if defined?(::Encoding)
   end
   attr_reader :boundary
@@ -45,15 +46,14 @@ class MultiPart
     buf << "Content-Disposition: form-data: name=\"#{name}\"#{s}\r\n"
     buf << "Content-Type: #{content_type}\r\n" if content_type
     buf << "\r\n"
-    value = value.dup.force_encoding(::Encoding::ASCII_8BIT) if defined?(::Encoding)
-    buf << value
+    buf << value.b
     buf << "\r\n"
     return self
   end
 
   def close
     buf = @buf
-    @buf = ''
+    @buf = ''.dup
     return buf << "--#{boundary}--\r\n"
   end
 
@@ -202,7 +202,7 @@ class CGIMultipartTest < Test::Unit::TestCase
     @boundary = '----WebKitFormBoundaryAAfvAII+YL9102cX'
     @data = [
       {:name=>'hidden1', :value=>'foobar'},
-      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A"},
+      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A".dup},
       {:name=>'file1',   :value=>_read('file1.html'),
        :filename=>'file1.html', :content_type=>'text/html'},
       {:name=>'image1',  :value=>_read('small.png'),
@@ -218,7 +218,7 @@ class CGIMultipartTest < Test::Unit::TestCase
     @boundary = '----WebKitFormBoundaryAAfvAII+YL9102cX'
     @data = [
       {:name=>'hidden1', :value=>'foobar'},
-      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A"},
+      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A".dup},
       {:name=>'file1',   :value=>_read('file1.html'),
        :filename=>'file1.html', :content_type=>'text/html'},
       {:name=>'image1',  :value=>_read('large.png'),
@@ -323,7 +323,7 @@ class CGIMultipartTest < Test::Unit::TestCase
     @boundary = '(.|\n)*'
     @data = [
       {:name=>'hidden1', :value=>'foobar'},
-      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A"},
+      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A".dup},
       {:name=>'file1',   :value=>_read('file1.html'),
        :filename=>'file1.html', :content_type=>'text/html'},
       {:name=>'image1',  :value=>_read('small.png'),
@@ -355,7 +355,7 @@ class CGIMultipartTest < Test::Unit::TestCase
       require 'stringio'
       ENV['REQUEST_METHOD'] = 'POST'
       ENV['CONTENT_TYPE'] = 'multipart/form-data; boundary=foobar1234'
-      body = <<-BODY
+      body = <<-BODY.gsub(/\n/, "\r\n")
 --foobar1234
 Content-Disposition: form-data: name=\"name1\"
 
@@ -370,7 +370,6 @@ Content-Type: text/html
 
 --foobar1234--
 BODY
-      body.gsub!(/\n/, "\r\n")
       ENV['CONTENT_LENGTH'] = body.size.to_s
       $stdin = StringIO.new(body)
       CGI.new

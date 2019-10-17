@@ -1,10 +1,11 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 module Bug
   class Bug7802 < RuntimeError
   end
 
-  class TestException < Test::Unit::TestCase
+  class Test_ExceptionE < Test::Unit::TestCase
     def test_ensured
       assert_separately([], <<-'end;') # do
 

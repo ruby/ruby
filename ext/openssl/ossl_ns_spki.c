@@ -73,7 +73,7 @@ ossl_spki_alloc(VALUE klass)
  *    SPKI.new([request]) => spki
  *
  * === Parameters
- * * +request+ - optional raw request, either in PEM or DER format.
+ * * _request_ - optional raw request, either in PEM or DER format.
  */
 static VALUE
 ossl_spki_initialize(int argc, VALUE *argv, VALUE self)
@@ -86,15 +86,15 @@ ossl_spki_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
     }
     StringValue(buffer);
-    if (!(spki = NETSCAPE_SPKI_b64_decode(RSTRING_PTR(buffer), -1))) {
+    if (!(spki = NETSCAPE_SPKI_b64_decode(RSTRING_PTR(buffer), RSTRING_LENINT(buffer)))) {
+	ossl_clear_error();
 	p = (unsigned char *)RSTRING_PTR(buffer);
 	if (!(spki = d2i_NETSCAPE_SPKI(NULL, &p, RSTRING_LEN(buffer)))) {
 	    ossl_raise(eSPKIError, NULL);
 	}
     }
     NETSCAPE_SPKI_free(DATA_PTR(self));
-    DATA_PTR(self) = spki;
-    ERR_clear_error();
+    SetSPKI(self, spki);
 
     return self;
 }
@@ -159,8 +159,6 @@ ossl_spki_print(VALUE self)
 {
     NETSCAPE_SPKI *spki;
     BIO *out;
-    BUF_MEM *buf;
-    VALUE str;
 
     GetSPKI(self, spki);
     if (!(out = BIO_new(BIO_s_mem()))) {
@@ -170,11 +168,8 @@ ossl_spki_print(VALUE self)
 	BIO_free(out);
 	ossl_raise(eSPKIError, NULL);
     }
-    BIO_get_mem_ptr(out, &buf);
-    str = rb_str_new(buf->data, buf->length);
-    BIO_free(out);
 
-    return str;
+    return ossl_membio2str(out);
 }
 
 /*
@@ -203,7 +198,7 @@ ossl_spki_get_public_key(VALUE self)
  *    spki.public_key = pub => pkey
  *
  * === Parameters
- * * +pub+ - the public key to be set for this instance
+ * * _pub_ - the public key to be set for this instance
  *
  * Sets the public key to be associated with the SPKI, an instance of
  * OpenSSL::PKey. This should be the public key corresponding to the
@@ -213,12 +208,13 @@ static VALUE
 ossl_spki_set_public_key(VALUE self, VALUE key)
 {
     NETSCAPE_SPKI *spki;
+    EVP_PKEY *pkey;
 
     GetSPKI(self, spki);
-    if (!NETSCAPE_SPKI_set_pubkey(spki, GetPKeyPtr(key))) { /* NO NEED TO DUP */
-	ossl_raise(eSPKIError, NULL);
-    }
-
+    pkey = GetPKeyPtr(key);
+    ossl_pkey_check_public_key(pkey);
+    if (!NETSCAPE_SPKI_set_pubkey(spki, pkey))
+	ossl_raise(eSPKIError, "NETSCAPE_SPKI_set_pubkey");
     return key;
 }
 
@@ -248,7 +244,7 @@ ossl_spki_get_challenge(VALUE self)
  *    spki.challenge = str => string
  *
  * === Parameters
- * * +str+ - the challenge string to be set for this instance
+ * * _str_ - the challenge string to be set for this instance
  *
  * Sets the challenge to be associated with the SPKI. May be used by the
  * server, e.g. to prevent replay.
@@ -273,8 +269,8 @@ ossl_spki_set_challenge(VALUE self, VALUE str)
  *    spki.sign(key, digest) => spki
  *
  * === Parameters
- * * +key+ - the private key to be used for signing this instance
- * * +digest+ - the digest to be used for signing this instance
+ * * _key_ - the private key to be used for signing this instance
+ * * _digest_ - the digest to be used for signing this instance
  *
  * To sign an SPKI, the private key corresponding to the public key set
  * for this instance should be used, in addition to a digest algorithm in
@@ -289,7 +285,7 @@ ossl_spki_sign(VALUE self, VALUE key, VALUE digest)
     const EVP_MD *md;
 
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
-    md = GetDigestPtr(digest);
+    md = ossl_evp_get_digestbyname(digest);
     GetSPKI(self, spki);
     if (!NETSCAPE_SPKI_sign(spki, pkey, md)) {
 	ossl_raise(eSPKIError, NULL);
@@ -303,7 +299,7 @@ ossl_spki_sign(VALUE self, VALUE key, VALUE digest)
  *    spki.verify(key) => boolean
  *
  * === Parameters
- * * +key+ - the public key to be used for verifying the SPKI signature
+ * * _key_ - the public key to be used for verifying the SPKI signature
  *
  * Returns +true+ if the signature is valid, +false+ otherwise. To verify an
  * SPKI, the public key contained within the SPKI should be used.
@@ -312,22 +308,25 @@ static VALUE
 ossl_spki_verify(VALUE self, VALUE key)
 {
     NETSCAPE_SPKI *spki;
+    EVP_PKEY *pkey;
 
     GetSPKI(self, spki);
-    switch (NETSCAPE_SPKI_verify(spki, GetPKeyPtr(key))) { /* NO NEED TO DUP */
-    case 0:
+    pkey = GetPKeyPtr(key);
+    ossl_pkey_check_public_key(pkey);
+    switch (NETSCAPE_SPKI_verify(spki, pkey)) {
+      case 0:
+	ossl_clear_error();
 	return Qfalse;
-    case 1:
+      case 1:
 	return Qtrue;
-    default:
-	ossl_raise(eSPKIError, NULL);
+      default:
+	ossl_raise(eSPKIError, "NETSCAPE_SPKI_verify");
     }
-    return Qnil; /* dummy */
 }
 
 /* Document-class: OpenSSL::Netscape::SPKI
  *
- * A Simple Public Key Infrastructure implementation (pronounced "spookey").
+ * A Simple Public Key Infrastructure implementation (pronounced "spooky").
  * The structure is defined as
  *   PublicKeyAndChallenge ::= SEQUENCE {
  *     spki SubjectPublicKeyInfo,
@@ -353,7 +352,7 @@ ossl_spki_verify(VALUE self, VALUE key)
  *   spki.public_key = key.public_key
  *   spki.sign(key, OpenSSL::Digest::SHA256.new)
  *   #send a request containing this to a server generating a certificate
- * === Verifiying an SPKI request
+ * === Verifying an SPKI request
  *   request = #...
  *   spki = OpenSSL::Netscape::SPKI.new request
  *   unless spki.verify(spki.public_key)
@@ -380,7 +379,8 @@ void
 Init_ossl_ns_spki(void)
 {
 #if 0
-    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
+    mOSSL = rb_define_module("OpenSSL");
+    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
 #endif
 
     mNetscape = rb_define_module_under(mOSSL, "Netscape");

@@ -468,7 +468,7 @@ ole_type_major_version(ITypeInfo *pTypeInfo)
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr))
         ole_raise(hr, eWIN32OLERuntimeError, "failed to GetTypeAttr");
-    ver = INT2FIX(pTypeAttr->wMajorVerNum);
+    ver = RB_INT2FIX(pTypeAttr->wMajorVerNum);
     OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
     return ver;
 }
@@ -497,7 +497,7 @@ ole_type_minor_version(ITypeInfo *pTypeInfo)
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr))
         ole_raise(hr, eWIN32OLERuntimeError, "failed to GetTypeAttr");
-    ver = INT2FIX(pTypeAttr->wMinorVerNum);
+    ver = RB_INT2FIX(pTypeAttr->wMinorVerNum);
     OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
     return ver;
 }
@@ -526,7 +526,7 @@ ole_type_typekind(ITypeInfo *pTypeInfo)
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr))
         ole_raise(hr, eWIN32OLERuntimeError, "failed to GetTypeAttr");
-    typekind = INT2FIX(pTypeAttr->typekind);
+    typekind = RB_INT2FIX(pTypeAttr->typekind);
     OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
     return typekind;
 }
@@ -645,7 +645,7 @@ ole_type_helpcontext(ITypeInfo *pTypeInfo)
                                &helpcontext, NULL);
     if(FAILED(hr))
         return Qnil;
-    return INT2FIX(helpcontext);
+    return RB_INT2FIX(helpcontext);
 }
 
 /*

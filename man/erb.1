@@ -1,6 +1,6 @@
 .\"Ruby is copyrighted by Yukihiro Matsumoto <matz@netlab.jp>.
-.Dd November 15, 2012
-.Dt ERB(1) "" "Ruby Programmers Reference Guide"
+.Dd December 16, 2018
+.Dt ERB \&1 "Ruby Programmer's Reference Guide"
 .Os UNIX
 .Sh NAME
 .Nm erb
@@ -45,9 +45,8 @@ You can omit the one for internal encodings, then the value
 .Pf ( Li "Encoding.default_internal" ) will be nil.
 .Pp
 .It Fl P
-Evaluates lines starting with
-.Li "%"
-as Ruby code and removes the tailing EOLs.
+Disables ruby code evaluation for lines beginning with
+.Li "%" .
 .Pp
 .It Fl S Ar level
 Specifies the safe level in which eRuby script will run.
@@ -77,6 +76,8 @@ And leading whitespaces are removed if the erb directive starts with
 .Li "<%-" .
 .Pp
 .El
+.It Fl r
+Load a library
 .Pp
 .It Fl U
 can be one of
@@ -143,15 +144,17 @@ class.
 .Pp
 .Sh REPORTING BUGS
 .Bl -bullet
-.Li Security vulnerabilities should be reported via an email to
-.Aq security@ruby-lang.org Ns
-.Li .
+.It
+Security vulnerabilities should be reported via an email to
+.Mt security@ruby-lang.org .
 Reported problems will be published after being fixed.
 .Pp
-.Li And you can report other bugs and feature requests via the
-Ruby Issue Tracking System (http://bugs.ruby-lang.org).
+.It
+Other bugs and feature requests can be reported via the
+Ruby Issue Tracking System
+.Pq Lk https://bugs.ruby-lang.org/ .
 Do not report security vulnerabilities
-via the system because it publishes the vulnerabilities immediately.
+via this system because it publishes the vulnerabilities immediately.
 .El
 .Sh AUTHORS
 Written by Masatoshi SEKI.

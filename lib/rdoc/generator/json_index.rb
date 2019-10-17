@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'json'
 begin
   require 'zlib'
@@ -141,17 +142,20 @@ class RDoc::Generator::JsonIndex
     FileUtils.mkdir_p index_file.dirname, :verbose => $DEBUG_RDOC
 
     index_file.open 'w', 0644 do |io|
-      io.set_encoding Encoding::UTF_8 if Object.const_defined? :Encoding
+      io.set_encoding Encoding::UTF_8
       io.write 'var search_data = '
 
       JSON.dump data, io, 0
+    end
+    unless ENV['SOURCE_DATE_EPOCH'].nil?
+      index_file.utime index_file.atime, Time.at(ENV['SOURCE_DATE_EPOCH'].to_i).gmtime
     end
 
     Dir.chdir @template_dir do
       Dir['**/*.js'].each do |source|
         dest = File.join out_dir, source
 
-        FileUtils.install source, dest, :mode => 0644, :verbose => $DEBUG_RDOC
+        FileUtils.install source, dest, :mode => 0644, :preserve => true, :verbose => $DEBUG_RDOC
       end
     end
   end
@@ -160,7 +164,7 @@ class RDoc::Generator::JsonIndex
   # Compress the search_index.js file using gzip
 
   def generate_gzipped
-    return unless defined?(Zlib)
+    return if @options.dry_run or not defined?(Zlib)
 
     debug_msg "Compressing generated JSON index"
     out_dir = @base_dir + @options.op_dir
@@ -169,13 +173,13 @@ class RDoc::Generator::JsonIndex
     outfile           = out_dir + "#{search_index_file}.gz"
 
     debug_msg "Reading the JSON index file from %s" % search_index_file
-    search_index = search_index_file.read
+    search_index = search_index_file.read(mode: 'r:utf-8')
 
     debug_msg "Writing gzipped search index to %s" % outfile
 
     Zlib::GzipWriter.open(outfile) do |gz|
       gz.mtime = File.mtime(search_index_file)
-      gz.orig_name = search_index_file.to_s
+      gz.orig_name = search_index_file.basename.to_s
       gz.write search_index
       gz.close
     end
@@ -193,7 +197,7 @@ class RDoc::Generator::JsonIndex
 
         Zlib::GzipWriter.open(outfile) do |gz|
           gz.mtime = File.mtime(dest)
-          gz.orig_name = dest.to_s
+          gz.orig_name = dest.basename.to_s
           gz.write data
           gz.close
         end
@@ -294,4 +298,3 @@ class RDoc::Generator::JsonIndex
   end
 
 end
-

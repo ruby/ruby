@@ -1,9 +1,10 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/doctor'
 
 class TestGemDoctor < Gem::TestCase
 
-  def gem name
+  def gem(name)
     spec = quick_gem name do |gem|
       gem.files = %W[lib/#{name}.rb Rakefile]
     end
@@ -23,7 +24,7 @@ class TestGemDoctor < Gem::TestCase
 
     FileUtils.rm b.spec_file
 
-    open c.spec_file, 'w' do |io|
+    File.open c.spec_file, 'w' do |io|
       io.write 'this will raise an exception when evaluated.'
     end
 
@@ -76,7 +77,7 @@ Removed directory gems/c-2
 
     FileUtils.rm b.spec_file
 
-    open c.spec_file, 'w' do |io|
+    File.open c.spec_file, 'w' do |io|
       io.write 'this will raise an exception when evaluated.'
     end
 
@@ -165,4 +166,3 @@ This directory does not appear to be a RubyGems repository, skipping
   end
 
 end
-

@@ -1,7 +1,11 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'set'
 
 class TC_Set < Test::Unit::TestCase
+  class Set2 < Set
+  end
+
   def test_aref
     assert_nothing_raised {
       Set[]
@@ -196,6 +200,23 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(false, set.include?(true))
   end
 
+  def test_eqq
+    set = Set[1,2,3]
+
+    assert_equal(true, set === 1)
+    assert_equal(true, set === 2)
+    assert_equal(true, set === 3)
+    assert_equal(false, set === 0)
+    assert_equal(false, set === nil)
+
+    set = Set["1",nil,"2",nil,"0","1",false]
+    assert_equal(true, set === nil)
+    assert_equal(true, set === false)
+    assert_equal(true, set === "1")
+    assert_equal(false, set === 0)
+    assert_equal(false, set === true)
+  end
+
   def test_superset?
     set = Set[1,2,3]
 
@@ -211,16 +232,18 @@ class TC_Set < Test::Unit::TestCase
       set.superset?([2])
     }
 
-    assert_equal(true, set.superset?(Set[]))
-    assert_equal(true, set.superset?(Set[1,2]))
-    assert_equal(true, set.superset?(Set[1,2,3]))
-    assert_equal(false, set.superset?(Set[1,2,3,4]))
-    assert_equal(false, set.superset?(Set[1,4]))
+    [Set, Set2].each { |klass|
+      assert_equal(true, set.superset?(klass[]), klass.name)
+      assert_equal(true, set.superset?(klass[1,2]), klass.name)
+      assert_equal(true, set.superset?(klass[1,2,3]), klass.name)
+      assert_equal(false, set.superset?(klass[1,2,3,4]), klass.name)
+      assert_equal(false, set.superset?(klass[1,4]), klass.name)
 
-    assert_equal(true, set >= Set[1,2,3])
-    assert_equal(true, set >= Set[1,2])
+      assert_equal(true, set >= klass[1,2,3], klass.name)
+      assert_equal(true, set >= klass[1,2], klass.name)
 
-    assert_equal(true, Set[].superset?(Set[]))
+      assert_equal(true, Set[].superset?(klass[]), klass.name)
+    }
   end
 
   def test_proper_superset?
@@ -238,16 +261,18 @@ class TC_Set < Test::Unit::TestCase
       set.proper_superset?([2])
     }
 
-    assert_equal(true, set.proper_superset?(Set[]))
-    assert_equal(true, set.proper_superset?(Set[1,2]))
-    assert_equal(false, set.proper_superset?(Set[1,2,3]))
-    assert_equal(false, set.proper_superset?(Set[1,2,3,4]))
-    assert_equal(false, set.proper_superset?(Set[1,4]))
+    [Set, Set2].each { |klass|
+      assert_equal(true, set.proper_superset?(klass[]), klass.name)
+      assert_equal(true, set.proper_superset?(klass[1,2]), klass.name)
+      assert_equal(false, set.proper_superset?(klass[1,2,3]), klass.name)
+      assert_equal(false, set.proper_superset?(klass[1,2,3,4]), klass.name)
+      assert_equal(false, set.proper_superset?(klass[1,4]), klass.name)
 
-    assert_equal(false, set > Set[1,2,3])
-    assert_equal(true, set > Set[1,2])
+      assert_equal(false, set > klass[1,2,3], klass.name)
+      assert_equal(true, set > klass[1,2], klass.name)
 
-    assert_equal(false, Set[].proper_superset?(Set[]))
+      assert_equal(false, Set[].proper_superset?(klass[]), klass.name)
+    }
   end
 
   def test_subset?
@@ -265,16 +290,18 @@ class TC_Set < Test::Unit::TestCase
       set.subset?([2])
     }
 
-    assert_equal(true, set.subset?(Set[1,2,3,4]))
-    assert_equal(true, set.subset?(Set[1,2,3]))
-    assert_equal(false, set.subset?(Set[1,2]))
-    assert_equal(false, set.subset?(Set[]))
+    [Set, Set2].each { |klass|
+      assert_equal(true, set.subset?(klass[1,2,3,4]), klass.name)
+      assert_equal(true, set.subset?(klass[1,2,3]), klass.name)
+      assert_equal(false, set.subset?(klass[1,2]), klass.name)
+      assert_equal(false, set.subset?(klass[]), klass.name)
 
-    assert_equal(true, set <= Set[1,2,3])
-    assert_equal(true, set <= Set[1,2,3,4])
+      assert_equal(true, set <= klass[1,2,3], klass.name)
+      assert_equal(true, set <= klass[1,2,3,4], klass.name)
 
-    assert_equal(true, Set[].subset?(Set[1]))
-    assert_equal(true, Set[].subset?(Set[]))
+      assert_equal(true, Set[].subset?(klass[1]), klass.name)
+      assert_equal(true, Set[].subset?(klass[]), klass.name)
+    }
   end
 
   def test_proper_subset?
@@ -292,15 +319,17 @@ class TC_Set < Test::Unit::TestCase
       set.proper_subset?([2])
     }
 
-    assert_equal(true, set.proper_subset?(Set[1,2,3,4]))
-    assert_equal(false, set.proper_subset?(Set[1,2,3]))
-    assert_equal(false, set.proper_subset?(Set[1,2]))
-    assert_equal(false, set.proper_subset?(Set[]))
+    [Set, Set2].each { |klass|
+      assert_equal(true, set.proper_subset?(klass[1,2,3,4]), klass.name)
+      assert_equal(false, set.proper_subset?(klass[1,2,3]), klass.name)
+      assert_equal(false, set.proper_subset?(klass[1,2]), klass.name)
+      assert_equal(false, set.proper_subset?(klass[]), klass.name)
 
-    assert_equal(false, set < Set[1,2,3])
-    assert_equal(true, set < Set[1,2,3,4])
+      assert_equal(false, set < klass[1,2,3], klass.name)
+      assert_equal(true, set < klass[1,2,3,4], klass.name)
 
-    assert_equal(false, Set[].proper_subset?(Set[]))
+      assert_equal(false, Set[].proper_subset?(klass[]), klass.name)
+    }
   end
 
   def assert_intersect(expected, set, other)
@@ -420,6 +449,12 @@ class TC_Set < Test::Unit::TestCase
     ret = set.delete_if { |i| i % 3 == 0 }
     assert_same(set, ret)
     assert_equal(Set[1,2,4,5,7,8,10], set)
+
+    set = Set.new(1..10)
+    enum = set.delete_if
+    assert_equal(set.size, enum.size)
+    assert_same(set, enum.each { |i| i % 3 == 0 })
+    assert_equal(Set[1,2,4,5,7,8,10], set)
   end
 
   def test_keep_if
@@ -431,6 +466,12 @@ class TC_Set < Test::Unit::TestCase
     set = Set.new(1..10)
     ret = set.keep_if { |i| i % 3 != 0 }
     assert_same(set, ret)
+    assert_equal(Set[1,2,4,5,7,8,10], set)
+
+    set = Set.new(1..10)
+    enum = set.keep_if
+    assert_equal(set.size, enum.size)
+    assert_same(set, enum.each { |i| i % 3 != 0 })
     assert_equal(Set[1,2,4,5,7,8,10], set)
   end
 
@@ -450,6 +491,22 @@ class TC_Set < Test::Unit::TestCase
 
     assert_same(set, ret)
     assert_equal(Set[2,4,6,'A','B','C',nil], set)
+
+    set = Set[1,2,3,'a','b','c',-1..1,2..4]
+    enum = set.collect!
+
+    assert_equal(set.size, enum.size)
+    assert_same(set, enum.each  { |i|
+      case i
+      when Numeric
+        i * 2
+      when String
+        i.upcase
+      else
+        nil
+      end
+    })
+    assert_equal(Set[2,4,6,'A','B','C',nil], set)
   end
 
   def test_reject!
@@ -462,6 +519,48 @@ class TC_Set < Test::Unit::TestCase
     ret = set.reject! { |i| i % 3 == 0 }
     assert_same(set, ret)
     assert_equal(Set[1,2,4,5,7,8,10], set)
+
+    set = Set.new(1..10)
+    enum = set.reject!
+    assert_equal(set.size, enum.size)
+    assert_same(set, enum.each { |i| i % 3 == 0 })
+    assert_equal(Set[1,2,4,5,7,8,10], set)
+  end
+
+  def test_select!
+    set = Set.new(1..10)
+    ret = set.select! { |i| i <= 10 }
+    assert_equal(nil, ret)
+    assert_equal(Set.new(1..10), set)
+
+    set = Set.new(1..10)
+    ret = set.select! { |i| i % 3 != 0 }
+    assert_same(set, ret)
+    assert_equal(Set[1,2,4,5,7,8,10], set)
+
+    set = Set.new(1..10)
+    enum = set.select!
+    assert_equal(set.size, enum.size)
+    assert_equal(nil, enum.each { |i| i <= 10 })
+    assert_equal(Set.new(1..10), set)
+  end
+
+  def test_filter!
+    set = Set.new(1..10)
+    ret = set.filter! { |i| i <= 10 }
+    assert_equal(nil, ret)
+    assert_equal(Set.new(1..10), set)
+
+    set = Set.new(1..10)
+    ret = set.filter! { |i| i % 3 != 0 }
+    assert_same(set, ret)
+    assert_equal(Set[1,2,4,5,7,8,10], set)
+
+    set = Set.new(1..10)
+    enum = set.filter!
+    assert_equal(set.size, enum.size)
+    assert_equal(nil, enum.each { |i| i <= 10 })
+    assert_equal(Set.new(1..10), set)
   end
 
   def test_merge
@@ -539,6 +638,18 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(Set[3,6,9], ret[0])
     assert_equal(Set[1,4,7,10], ret[1])
     assert_equal(Set[2,5,8], ret[2])
+
+    set = Set.new(1..10)
+    enum = set.classify
+
+    assert_equal(set.size, enum.size)
+    ret = enum.each { |i| i % 3 }
+    assert_equal(3, ret.size)
+    assert_instance_of(Hash, ret)
+    ret.each_value { |value| assert_instance_of(Set, value) }
+    assert_equal(Set[3,6,9], ret[0])
+    assert_equal(Set[1,4,7,10], ret[1])
+    assert_equal(Set[2,5,8], ret[2])
   end
 
   def test_divide
@@ -572,6 +683,17 @@ class TC_Set < Test::Unit::TestCase
         raise "unexpected group: #{s.inspect}"
       end
     }
+
+    set = Set.new(1..10)
+    enum = set.divide
+    ret = enum.each { |i| i % 3 }
+
+    assert_equal(set.size, enum.size)
+    assert_equal(3, ret.size)
+    n = 0
+    ret.each { |s| n += s.size }
+    assert_equal(set.size, n)
+    assert_equal(set, ret.flatten)
   end
 
   def test_taintness
@@ -589,7 +711,7 @@ class TC_Set < Test::Unit::TestCase
     set << 4
     assert_same orig, set.freeze
     assert_equal true, set.frozen?
-    assert_raise(RuntimeError) {
+    assert_raise(FrozenError) {
       set << 5
     }
     assert_equal 4, set.size
@@ -612,21 +734,63 @@ class TC_Set < Test::Unit::TestCase
     set2 = set1.clone
 
     assert_predicate set2, :frozen?
-    assert_raise(RuntimeError) {
+    assert_raise(FrozenError) {
       set2.add 5
     }
   end
 
   def test_inspect
-    set1 = Set[1]
-
-    assert_equal('#<Set: {1}>', set1.inspect)
+    set1 = Set[1, 2]
+    assert_equal('#<Set: {1, 2}>', set1.inspect)
 
     set2 = Set[Set[0], 1, 2, set1]
-    assert_equal(false, set2.inspect.include?('#<Set: {...}>'))
+    assert_equal('#<Set: {#<Set: {0}>, 1, 2, #<Set: {1, 2}>}>', set2.inspect)
 
     set1.add(set2)
-    assert_equal(true, set1.inspect.include?('#<Set: {...}>'))
+    assert_equal('#<Set: {#<Set: {0}>, 1, 2, #<Set: {1, 2, #<Set: {...}>}>}>', set2.inspect)
+  end
+
+  def test_to_s
+    set1 = Set[1, 2]
+    assert_equal('#<Set: {1, 2}>', set1.to_s)
+
+    set2 = Set[Set[0], 1, 2, set1]
+    assert_equal('#<Set: {#<Set: {0}>, 1, 2, #<Set: {1, 2}>}>', set2.to_s)
+
+    set1.add(set2)
+    assert_equal('#<Set: {#<Set: {0}>, 1, 2, #<Set: {1, 2, #<Set: {...}>}>}>', set2.to_s)
+  end
+
+  def test_compare_by_identity
+    a1, a2 = "a", "a"
+    b1, b2 = "b", "b"
+    c = "c"
+    array = [a1, b1, c, a2, b2]
+
+    iset = Set.new.compare_by_identity
+    assert_send([iset, :compare_by_identity?])
+    iset.merge(array)
+    assert_equal(5, iset.size)
+    assert_equal(array.map(&:object_id).sort, iset.map(&:object_id).sort)
+
+    set = Set.new
+    assert_not_send([set, :compare_by_identity?])
+    set.merge(array)
+    assert_equal(3, set.size)
+    assert_equal(array.uniq.sort, set.sort)
+  end
+
+  def test_reset
+    [Set, Class.new(Set)].each { |klass|
+      a = [1, 2]
+      b = [1]
+      set = klass.new([a, b])
+
+      b << 2
+      set.reset
+
+      assert_equal(klass.new([a]), set, klass.name)
+    }
   end
 end
 
@@ -695,6 +859,45 @@ class TC_SortedSet < Test::Unit::TestCase
     assert_equal(6, e.size)
     set << 42
     assert_equal(7, e.size)
+  end
+
+  def test_freeze
+    orig = set = SortedSet[3,2,1]
+    assert_equal false, set.frozen?
+    set << 4
+    assert_same orig, set.freeze
+    assert_equal true, set.frozen?
+    assert_raise(FrozenError) {
+      set << 5
+    }
+    assert_equal 4, set.size
+
+    # https://bugs.ruby-lang.org/issues/12091
+    assert_nothing_raised {
+      assert_equal [1,2,3,4], set.to_a
+    }
+  end
+
+  def test_freeze_dup
+    set1 = SortedSet[1,2,3]
+    set1.freeze
+    set2 = set1.dup
+
+    assert_not_predicate set2, :frozen?
+    assert_nothing_raised {
+      set2.add 4
+    }
+  end
+
+  def test_freeze_clone
+    set1 = SortedSet[1,2,3]
+    set1.freeze
+    set2 = set1.clone
+
+    assert_predicate set2, :frozen?
+    assert_raise(FrozenError) {
+      set2.add 5
+    }
   end
 end
 

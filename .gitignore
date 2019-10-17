@@ -3,34 +3,50 @@
 *-*-*.lib
 *.a
 *.bak
+*.bc
+*.bundle
 *.dSYM
 *.dmyh
 *.dylib
 *.elc
+*.i
 *.inc
 *.log
 *.o
 *.obj
+*.old
 *.orig
+*.pch
 *.pdb
 *.rej
+*.s
 *.sav
+*.sl
+*.so
 *.swp
+*.yarb
 *~
 .*-*
 .*.list
 .*.time
 .DS_Store
+.bundle
 .ccmalloc
 .ext
 .pc
 .ppack
 .svn
+.time
 Makefile
-Makefile.old
+cygruby*.def
 extconf.h
 y.output
 y.tab.c
+*.gcda
+*.gcno
+*.gcov
+*.vscode
+lcov*.info
 
 # /
 /*-fake.rb
@@ -40,13 +56,11 @@ y.tab.c
 /*.pc
 /*.rc
 /*_prelude.c
+/build*/
 /COPYING.LIB
-/ChangeLog-*
-/ChangeLog.pre-alpha
-/ChangeLog.pre1_1
+/ChangeLog
 /Doxyfile
 /GNUmakefile
-/GNUmakefile.old
 /README.atheos
 /README.fat-patch
 /README.v6
@@ -54,6 +68,7 @@ y.tab.c
 /archive
 /autom4te*.cache
 /automake
+/benchmark/benchmark-driver
 /beos
 /bmlog-*
 /breakpoints.gdb
@@ -64,6 +79,8 @@ y.tab.c
 /config.status.lineno
 /configure
 /coverage/simplecov
+/coverage/simplecov-html
+/coverage/doclie
 /coverage/.last_run.json
 /coverage/.resultset.json*
 /coverage/assets
@@ -75,6 +92,9 @@ y.tab.c
 /goruby
 /id.[ch]
 /largefile.h
+/lcov-c-out
+/lcov-rb-out
+/lcov-out
 /lex.c
 /libruby*.*
 /miniprelude.c
@@ -90,6 +110,7 @@ y.tab.c
 /ppack
 /prelude.c
 /preview
+/probes.dmyh
 /probes.h
 /rbconfig.rb
 /rename2.h
@@ -98,9 +119,13 @@ y.tab.c
 /riscos
 /rubicon
 /ruby
+/ruby-runner
+/ruby-runner.h
 /ruby-man.rd.gz
+/run.gdb
 /sizes.c
 /test.rb
+/test-coverage.dat
 /tmp
 /transdb.h
 /uncommon.mk
@@ -109,7 +134,13 @@ y.tab.c
 /web
 /yasmdata.rb
 
+# /bin/
+
+/bin/*.exe
+/bin/*.dll
+
 # /benchmark/
+/benchmark/bm_require.data
 /benchmark/bmx_*.rb
 /benchmark/fasta.output.*
 /benchmark/wc.input
@@ -117,25 +148,31 @@ y.tab.c
 /enc/*.def
 /enc/*.exp
 /enc/*.lib
+/enc/jis/props.h
 /enc/unicode/data
+
+# /coroutine/
+!/coroutine/**/*.s
 
 # /enc/trans/
 /enc/trans/*.c
 /enc/trans/*.def
 /enc/trans/*.exp
 /enc/trans/*.lib
-/enc/trans/.time
+
+# /exe/
+/exe/goruby
+/exe/ruby
 
 # /ext/
 /ext/extinit.c
+/ext/configure-ext.mk
+/ext/*/exts.mk
 
 # /ext/-test-/win32/dln/
+/ext/-test-/win32/dln/dlntest.dll
 /ext/-test-/win32/dln/dlntest.exp
 /ext/-test-/win32/dln/dlntest.lib
-
-# /ext/dl/callback/
-/ext/dl/callback/callback-*.c
-/ext/dl/callback/callback.c
 
 # /ext/etc/
 /ext/etc/constdefs.h
@@ -145,6 +182,7 @@ y.tab.c
 
 # /ext/rbconfig/
 /ext/rbconfig/sizeof/sizes.c
+/ext/rbconfig/sizeof/limits.c
 
 # /ext/ripper/
 /ext/ripper/eventids1.c
@@ -158,15 +196,17 @@ y.tab.c
 /ext/socket/constdefs.h
 /ext/socket/constdefs.c
 
-# /ext/tk/
-/ext/tk/config_list
-
 # /gems
 /gems/*.gem
+/gems/src
+/gems/*-*
 
-# /spec/
-/spec/mspec
-/spec/rubyspec
+# /lib/
+/lib/ruby/[1-9]*.*
+/lib/ruby/vendor_ruby
+
+# /spec/bundler
+/.rspec_status
 
 # /tool/
 /tool/config.guess
@@ -174,4 +214,8 @@ y.tab.c
 
 # /win32/
 /win32/*.ico
-/win32/.time
+
+# MJIT
+/rb_mjit_header.h
+/mjit_config.h
+/include/ruby-*/*/rb_mjit_min_header-*.h

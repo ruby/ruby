@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module Psych
   module Visitors
     class DepthFirst < Psych::Visitors::Visitor

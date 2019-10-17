@@ -2,7 +2,7 @@
 #include "parser.h"
 
 #if defined HAVE_RUBY_ENCODING_H
-# define EXC_ENCODING UTF_8,
+# define EXC_ENCODING rb_utf8_encoding(),
 # ifndef HAVE_RB_ENC_RAISE
 static void
 enc_raise(rb_encoding *enc, VALUE exc, const char *fmt, ...)
@@ -25,7 +25,7 @@ enc_raise(rb_encoding *enc, VALUE exc, const char *fmt, ...)
 
 /* unicode */
 
-static const char digit_values[256] = {
+static const signed char digit_values[256] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1,
@@ -44,7 +44,7 @@ static const char digit_values[256] = {
 
 static UTF32 unescape_unicode(const unsigned char *p)
 {
-    char b;
+    signed char b;
     UTF32 result = 0;
     b = digit_values[p[0]];
     if (b < 0) return UNI_REPLACEMENT_CHAR;
@@ -87,19 +87,15 @@ static int convert_UTF32_to_UTF8(char *buf, UTF32 ch)
     return len;
 }
 
-#ifdef HAVE_RUBY_ENCODING_H
-static rb_encoding *UTF_8, *UTF_16BE, *UTF_16LE, *UTF_32BE, *UTF_32LE;
-#else
-static ID i_iconv;
-#endif
-
 static VALUE mJSON, mExt, cParser, eParserError, eNestingError;
 static VALUE CNaN, CInfinity, CMinusInfinity;
+static VALUE cBigDecimal = Qundef;
 
 static ID i_json_creatable_p, i_json_create, i_create_id, i_create_additions,
-          i_chr, i_max_nesting, i_allow_nan, i_symbolize_names, i_quirks_mode,
-          i_object_class, i_array_class, i_key_p, i_deep_const_get, i_match,
-          i_match_string, i_aset, i_aref, i_leftshift;
+          i_chr, i_max_nesting, i_allow_nan, i_symbolize_names,
+          i_object_class, i_array_class, i_decimal_class, i_key_p,
+          i_deep_const_get, i_match, i_match_string, i_aset, i_aref,
+          i_leftshift, i_new, i_BigDecimal;
 
 %%{
     machine JSON_common;
@@ -137,7 +133,7 @@ static ID i_json_creatable_p, i_json_create, i_create_id, i_create_additions,
 
     action parse_value {
         VALUE v = Qnil;
-        char *np = JSON_parse_value(json, fpc, pe, &v);
+        char *np = JSON_parse_value(json, fpc, pe, &v, current_nesting);
         if (np == NULL) {
             fhold; fbreak;
         } else {
@@ -170,14 +166,14 @@ static ID i_json_creatable_p, i_json_create, i_create_id, i_create_additions,
     ) @exit;
 }%%
 
-static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *result)
+static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting)
 {
     int cs = EVIL;
     VALUE last_name = Qnil;
     VALUE object_class = json->object_class;
 
-    if (json->max_nesting && json->current_nesting > json->max_nesting) {
-        rb_raise(eNestingError, "nesting of %d is too deep", json->current_nesting);
+    if (json->max_nesting && current_nesting > json->max_nesting) {
+        rb_raise(eNestingError, "nesting of %d is too deep", current_nesting);
     }
 
     *result = NIL_P(object_class) ? rb_hash_new() : rb_class_new_instance(0, 0, object_class);
@@ -243,7 +239,7 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
 
     action parse_number {
         char *np;
-        if(pe > fpc + 9 - json->quirks_mode && !strncmp(MinusInfinity, fpc, 9)) {
+        if(pe > fpc + 8 && !strncmp(MinusInfinity, fpc, 9)) {
             if (json->allow_nan) {
                 *result = CMinusInfinity;
                 fexec p + 10;
@@ -261,23 +257,19 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
 
     action parse_array {
         char *np;
-        json->current_nesting++;
-        np = JSON_parse_array(json, fpc, pe, result);
-        json->current_nesting--;
+        np = JSON_parse_array(json, fpc, pe, result, current_nesting + 1);
         if (np == NULL) { fhold; fbreak; } else fexec np;
     }
 
     action parse_object {
         char *np;
-        json->current_nesting++;
-        np =  JSON_parse_object(json, fpc, pe, result);
-        json->current_nesting--;
+        np =  JSON_parse_object(json, fpc, pe, result, current_nesting + 1);
         if (np == NULL) { fhold; fbreak; } else fexec np;
     }
 
     action exit { fhold; fbreak; }
 
-main := (
+main := ignore* (
               Vnull @parse_null |
               Vfalse @parse_false |
               Vtrue @parse_true |
@@ -287,10 +279,10 @@ main := (
               begin_string >parse_string |
               begin_array >parse_array |
               begin_object >parse_object
-        ) %*exit;
+        ) ignore* %*exit;
 }%%
 
-static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *result)
+static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting)
 {
     int cs = EVIL;
 
@@ -348,6 +340,19 @@ static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *res
              )  (^[0-9Ee.\-]? @exit );
 }%%
 
+static int is_bigdecimal_class(VALUE obj)
+{
+  if (cBigDecimal == Qundef) {
+    if (rb_const_defined(rb_cObject, i_BigDecimal)) {
+      cBigDecimal = rb_const_get_at(rb_cObject, i_BigDecimal);
+    }
+    else {
+      return 0;
+    }
+  }
+  return obj == cBigDecimal;
+}
+
 static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *result)
 {
     int cs = EVIL;
@@ -361,7 +366,17 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
         fbuffer_clear(json->fbuffer);
         fbuffer_append(json->fbuffer, json->memo, len);
         fbuffer_append_char(json->fbuffer, '\0');
-        *result = rb_float_new(rb_cstr_to_dbl(FBUFFER_PTR(json->fbuffer), 1));
+        if (NIL_P(json->decimal_class)) {
+          *result = rb_float_new(rb_cstr_to_dbl(FBUFFER_PTR(json->fbuffer), 1));
+        } else {
+          VALUE text;
+          text = rb_str_new2(FBUFFER_PTR(json->fbuffer));
+          if (is_bigdecimal_class(json->decimal_class)) {
+            *result = rb_funcall(Qnil, i_BigDecimal, 1, text);
+          } else {
+            *result = rb_funcall(json->decimal_class, i_new, 1, text);
+          }
+        }
         return p + 1;
     } else {
         return NULL;
@@ -377,7 +392,7 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
 
     action parse_value {
         VALUE v = Qnil;
-        char *np = JSON_parse_value(json, fpc, pe, &v);
+        char *np = JSON_parse_value(json, fpc, pe, &v, current_nesting);
         if (np == NULL) {
             fhold; fbreak;
         } else {
@@ -400,13 +415,13 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
           end_array @exit;
 }%%
 
-static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *result)
+static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting)
 {
     int cs = EVIL;
     VALUE array_class = json->array_class;
 
-    if (json->max_nesting && json->current_nesting > json->max_nesting) {
-        rb_raise(eNestingError, "nesting of %d is too deep", json->current_nesting);
+    if (json->max_nesting && current_nesting > json->max_nesting) {
+        rb_raise(eNestingError, "nesting of %d is too deep", current_nesting);
     }
     *result = NIL_P(array_class) ? rb_ary_new() : rb_class_new_instance(0, 0, array_class);
 
@@ -456,13 +471,21 @@ static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd)
                     break;
                 case 'u':
                     if (pe > stringEnd - 4) {
-                        return Qnil;
+                      rb_enc_raise(
+                        EXC_ENCODING eParserError,
+                        "%u: incomplete unicode character escape sequence at '%s'", __LINE__, p
+                      );
                     } else {
                         UTF32 ch = unescape_unicode((unsigned char *) ++pe);
                         pe += 3;
                         if (UNI_SUR_HIGH_START == (ch & 0xFC00)) {
                             pe++;
-                            if (pe > stringEnd - 6) return Qnil;
+                            if (pe > stringEnd - 6) {
+                              rb_enc_raise(
+                                EXC_ENCODING eParserError,
+                                "%u: incomplete surrogate pair at '%s'", __LINE__, p
+                                );
+                            }
                             if (pe[0] == '\\' && pe[1] == 'u') {
                                 UTF32 sur = unescape_unicode((unsigned char *) pe + 2);
                                 ch = (((ch & 0x3F) << 10) | ((((ch >> 6) & 0xF) + 1) << 16)
@@ -548,6 +571,8 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
 
     if (json->symbolize_names && json->parsing_name) {
       *result = rb_str_intern(*result);
+    } else if (RB_TYPE_P(*result, T_STRING)) {
+      rb_str_resize(*result, RSTRING_LEN(*result));
     }
     if (cs >= JSON_string_first_final) {
         return p + 1;
@@ -570,41 +595,16 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
 
 static VALUE convert_encoding(VALUE source)
 {
-    char *ptr = RSTRING_PTR(source);
-    long len = RSTRING_LEN(source);
-    if (len < 2) {
-        rb_raise(eParserError, "A JSON text must at least contain two octets!");
-    }
 #ifdef HAVE_RUBY_ENCODING_H
-    {
-        rb_encoding *enc = rb_enc_get(source);
-        if (enc == rb_ascii8bit_encoding()) {
-            if (len >= 4 &&  ptr[0] == 0 && ptr[1] == 0 && ptr[2] == 0) {
-                source = rb_str_conv_enc(source, UTF_32BE, rb_utf8_encoding());
-            } else if (len >= 4 && ptr[0] == 0 && ptr[2] == 0) {
-                source = rb_str_conv_enc(source, UTF_16BE, rb_utf8_encoding());
-            } else if (len >= 4 && ptr[1] == 0 && ptr[2] == 0 && ptr[3] == 0) {
-                source = rb_str_conv_enc(source, UTF_32LE, rb_utf8_encoding());
-            } else if (len >= 4 && ptr[1] == 0 && ptr[3] == 0) {
-                source = rb_str_conv_enc(source, UTF_16LE, rb_utf8_encoding());
-            } else {
-                source = rb_str_dup(source);
-                FORCE_UTF8(source);
-            }
-        } else {
-            source = rb_str_conv_enc(source, NULL, rb_utf8_encoding());
-        }
+  rb_encoding *enc = rb_enc_get(source);
+  if (enc == rb_ascii8bit_encoding()) {
+    if (OBJ_FROZEN(source)) {
+      source = rb_str_dup(source);
     }
-#else
-    if (len >= 4 &&  ptr[0] == 0 && ptr[1] == 0 && ptr[2] == 0) {
-      source = rb_funcall(mJSON, i_iconv, 3, rb_str_new2("utf-8"), rb_str_new2("utf-32be"), source);
-    } else if (len >= 4 && ptr[0] == 0 && ptr[2] == 0) {
-      source = rb_funcall(mJSON, i_iconv, 3, rb_str_new2("utf-8"), rb_str_new2("utf-16be"), source);
-    } else if (len >= 4 && ptr[1] == 0 && ptr[2] == 0 && ptr[3] == 0) {
-      source = rb_funcall(mJSON, i_iconv, 3, rb_str_new2("utf-8"), rb_str_new2("utf-32le"), source);
-    } else if (len >= 4 && ptr[1] == 0 && ptr[3] == 0) {
-      source = rb_funcall(mJSON, i_iconv, 3, rb_str_new2("utf-8"), rb_str_new2("utf-16le"), source);
-    }
+    FORCE_UTF8(source);
+  } else {
+    source = rb_str_conv_enc(source, rb_enc_get(source), rb_utf8_encoding());
+  }
 #endif
     return source;
 }
@@ -627,8 +627,9 @@ static VALUE convert_encoding(VALUE source)
  *   defiance of RFC 4627 to be parsed by the Parser. This option defaults to
  *   false.
  * * *symbolize_names*: If set to true, returns symbols for the names
- *   (keys) in a JSON object. Otherwise strings are returned, which is also
- *   the default.
+ *   (keys) in a JSON object. Otherwise strings are returned, which is
+ *   also the default. It's not possible to use this option in
+ *   conjunction with the *create_additions* option.
  * * *create_additions*: If set to false, the Parser doesn't create
  *   additions even if a matching class and create_id was found. This option
  *   defaults to false.
@@ -643,12 +644,18 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
     if (json->Vsource) {
         rb_raise(rb_eTypeError, "already initialized instance");
     }
+#ifdef HAVE_RB_SCAN_ARGS_OPTIONAL_HASH
+    rb_scan_args(argc, argv, "1:", &source, &opts);
+#else
     rb_scan_args(argc, argv, "11", &source, &opts);
+#endif
     if (!NIL_P(opts)) {
+#ifndef HAVE_RB_SCAN_ARGS_OPTIONAL_HASH
         opts = rb_convert_type(opts, T_HASH, "Hash", "to_hash");
         if (NIL_P(opts)) {
             rb_raise(rb_eArgError, "opts needs to be like a hash");
         } else {
+#endif
             VALUE tmp = ID2SYM(i_max_nesting);
             if (option_given_p(opts, tmp)) {
                 VALUE max_nesting = rb_hash_aref(opts, tmp);
@@ -673,18 +680,16 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
             } else {
                 json->symbolize_names = 0;
             }
-            tmp = ID2SYM(i_quirks_mode);
-            if (option_given_p(opts, tmp)) {
-                VALUE quirks_mode = rb_hash_aref(opts, tmp);
-                json->quirks_mode = RTEST(quirks_mode) ? 1 : 0;
-            } else {
-                json->quirks_mode = 0;
-            }
             tmp = ID2SYM(i_create_additions);
             if (option_given_p(opts, tmp)) {
                 json->create_additions = RTEST(rb_hash_aref(opts, tmp));
             } else {
                 json->create_additions = 0;
+            }
+            if (json->symbolize_names && json->create_additions) {
+              rb_raise(rb_eArgError,
+                "options :symbolize_names and :create_additions cannot be "
+                " used in conjunction");
             }
             tmp = ID2SYM(i_create_id);
             if (option_given_p(opts, tmp)) {
@@ -704,6 +709,12 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
             } else {
                 json->array_class = Qnil;
             }
+            tmp = ID2SYM(i_decimal_class);
+            if (option_given_p(opts, tmp)) {
+                json->decimal_class = rb_hash_aref(opts, tmp);
+            } else {
+                json->decimal_class = Qnil;
+            }
             tmp = ID2SYM(i_match_string);
             if (option_given_p(opts, tmp)) {
                 VALUE match_string = rb_hash_aref(opts, tmp);
@@ -711,20 +722,20 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
             } else {
                 json->match_string = Qnil;
             }
+#ifndef HAVE_RB_SCAN_ARGS_OPTIONAL_HASH
         }
+#endif
     } else {
         json->max_nesting = 100;
         json->allow_nan = 0;
-        json->create_additions = 1;
+        json->create_additions = 0;
         json->create_id = rb_funcall(mJSON, i_create_id, 0);
         json->object_class = Qnil;
         json->array_class = Qnil;
+        json->decimal_class = Qnil;
     }
+    source = convert_encoding(StringValue(source));
     StringValue(source);
-    if (!json->quirks_mode) {
-	source = convert_encoding(source);
-    }
-    json->current_nesting = 0;
     json->len = RSTRING_LEN(source);
     json->source = RSTRING_PTR(source);;
     json->Vsource = source;
@@ -738,56 +749,8 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
 
     include JSON_common;
 
-    action parse_object {
-        char *np;
-        json->current_nesting = 1;
-        np = JSON_parse_object(json, fpc, pe, &result);
-        if (np == NULL) { fhold; fbreak; } else fexec np;
-    }
-
-    action parse_array {
-        char *np;
-        json->current_nesting = 1;
-        np = JSON_parse_array(json, fpc, pe, &result);
-        if (np == NULL) { fhold; fbreak; } else fexec np;
-    }
-
-    main := ignore* (
-            begin_object >parse_object |
-            begin_array >parse_array
-            ) ignore*;
-}%%
-
-static VALUE cParser_parse_strict(VALUE self)
-{
-    char *p, *pe;
-    int cs = EVIL;
-    VALUE result = Qnil;
-    GET_PARSER;
-
-    %% write init;
-    p = json->source;
-    pe = p + json->len;
-    %% write exec;
-
-    if (cs >= JSON_first_final && p == pe) {
-        return result;
-    } else {
-        rb_enc_raise(EXC_ENCODING eParserError, "%u: unexpected token at '%s'", __LINE__, p);
-        return Qnil;
-    }
-}
-
-
-%%{
-    machine JSON_quirks_mode;
-
-    write data;
-
-    include JSON_common;
-
     action parse_value {
-        char *np = JSON_parse_value(json, fpc, pe, &result);
+        char *np = JSON_parse_value(json, fpc, pe, &result, 0);
         if (np == NULL) { fhold; fbreak; } else fexec np;
     }
 
@@ -795,26 +758,6 @@ static VALUE cParser_parse_strict(VALUE self)
             begin_value >parse_value
             ) ignore*;
 }%%
-
-static VALUE cParser_parse_quirks_mode(VALUE self)
-{
-    char *p, *pe;
-    int cs = EVIL;
-    VALUE result = Qnil;
-    GET_PARSER;
-
-    %% write init;
-    p = json->source;
-    pe = p + json->len;
-    %% write exec;
-
-    if (cs >= JSON_quirks_mode_first_final && p == pe) {
-        return result;
-    } else {
-        rb_enc_raise(EXC_ENCODING eParserError, "%u: unexpected token at '%s'", __LINE__, p);
-        return Qnil;
-    }
-}
 
 /*
  * call-seq: parse()
@@ -824,12 +767,21 @@ static VALUE cParser_parse_quirks_mode(VALUE self)
  */
 static VALUE cParser_parse(VALUE self)
 {
+  char *p, *pe;
+  int cs = EVIL;
+  VALUE result = Qnil;
   GET_PARSER;
 
-  if (json->quirks_mode) {
-    return cParser_parse_quirks_mode(self);
+  %% write init;
+  p = json->source;
+  pe = p + json->len;
+  %% write exec;
+
+  if (cs >= JSON_first_final && p == pe) {
+    return result;
   } else {
-    return cParser_parse_strict(self);
+    rb_enc_raise(EXC_ENCODING eParserError, "%u: unexpected token at '%s'", __LINE__, p);
+    return Qnil;
   }
 }
 
@@ -840,6 +792,7 @@ static void JSON_mark(void *ptr)
     rb_gc_mark_maybe(json->create_id);
     rb_gc_mark_maybe(json->object_class);
     rb_gc_mark_maybe(json->array_class);
+    rb_gc_mark_maybe(json->decimal_class);
     rb_gc_mark_maybe(json->match_string);
 }
 
@@ -887,35 +840,30 @@ static VALUE cParser_source(VALUE self)
     return rb_str_dup(json->Vsource);
 }
 
-/*
- * call-seq: quirks_mode?()
- *
- * Returns a true, if this parser is in quirks_mode, false otherwise.
- */
-static VALUE cParser_quirks_mode_p(VALUE self)
-{
-    GET_PARSER;
-    return json->quirks_mode ? Qtrue : Qfalse;
-}
-
-
 void Init_parser(void)
 {
+#undef rb_intern
     rb_require("json/common");
     mJSON = rb_define_module("JSON");
     mExt = rb_define_module_under(mJSON, "Ext");
     cParser = rb_define_class_under(mExt, "Parser", rb_cObject);
     eParserError = rb_path2class("JSON::ParserError");
     eNestingError = rb_path2class("JSON::NestingError");
+    rb_gc_register_mark_object(eParserError);
+    rb_gc_register_mark_object(eNestingError);
     rb_define_alloc_func(cParser, cJSON_parser_s_allocate);
     rb_define_method(cParser, "initialize", cParser_initialize, -1);
     rb_define_method(cParser, "parse", cParser_parse, 0);
     rb_define_method(cParser, "source", cParser_source, 0);
-    rb_define_method(cParser, "quirks_mode?", cParser_quirks_mode_p, 0);
 
     CNaN = rb_const_get(mJSON, rb_intern("NaN"));
+    rb_gc_register_mark_object(CNaN);
+
     CInfinity = rb_const_get(mJSON, rb_intern("Infinity"));
+    rb_gc_register_mark_object(CInfinity);
+
     CMinusInfinity = rb_const_get(mJSON, rb_intern("MinusInfinity"));
+    rb_gc_register_mark_object(CMinusInfinity);
 
     i_json_creatable_p = rb_intern("json_creatable?");
     i_json_create = rb_intern("json_create");
@@ -925,9 +873,9 @@ void Init_parser(void)
     i_max_nesting = rb_intern("max_nesting");
     i_allow_nan = rb_intern("allow_nan");
     i_symbolize_names = rb_intern("symbolize_names");
-    i_quirks_mode = rb_intern("quirks_mode");
     i_object_class = rb_intern("object_class");
     i_array_class = rb_intern("array_class");
+    i_decimal_class = rb_intern("decimal_class");
     i_match = rb_intern("match");
     i_match_string = rb_intern("match_string");
     i_key_p = rb_intern("key?");
@@ -935,15 +883,8 @@ void Init_parser(void)
     i_aset = rb_intern("[]=");
     i_aref = rb_intern("[]");
     i_leftshift = rb_intern("<<");
-#ifdef HAVE_RUBY_ENCODING_H
-    UTF_8 = rb_utf8_encoding();
-    UTF_16BE = rb_enc_find("utf-16be");
-    UTF_16LE = rb_enc_find("utf-16le");
-    UTF_32BE = rb_enc_find("utf-32be");
-    UTF_32LE = rb_enc_find("utf-32le");
-#else
-    i_iconv = rb_intern("iconv");
-#endif
+    i_new = rb_intern("new");
+    i_BigDecimal = rb_intern("BigDecimal");
 }
 
 /*

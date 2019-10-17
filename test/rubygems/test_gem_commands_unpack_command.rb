@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/commands/unpack_command'
 
@@ -133,6 +134,23 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
     assert File.exist?(File.join(@tempdir, 'b-2.gemspec'))
   end
 
+  def test_execute_spec_target
+    util_make_gems
+
+    @cmd.options[:args] = %w[a b]
+    @cmd.options[:target] = 'specs'
+    @cmd.options[:spec] = true
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    assert File.exist?(File.join(@tempdir, 'specs/a-3.a.gemspec'))
+    assert File.exist?(File.join(@tempdir, 'specs/b-2.gemspec'))
+  end
+
   def test_execute_sudo
     skip 'Cannot perform this test on windows (chmod)' if win_platform?
 
@@ -205,4 +223,3 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
   end
 
 end
-

@@ -1,4 +1,6 @@
+# frozen_string_literal: true
 require 'rdoc'
+require 'erb'
 require 'time'
 require 'json'
 require 'webrick'
@@ -100,9 +102,9 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
     res.body = File.read asset_path
 
     res.content_type = case req.path
-                       when /css$/ then 'text/css'
-                       when /js$/  then 'application/javascript'
-                       else             'application/octet-stream'
+                       when /\.css\z/ then 'text/css'
+                       when /\.js\z/  then 'application/javascript'
+                       else                'application/octet-stream'
                        end
   end
 
@@ -110,13 +112,13 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
   # GET request entry point.  Fills in +res+ for the path, etc. in +req+.
 
   def do_GET req, res
-    req.path.sub!(/^#{Regexp.escape @mount_path}/o, '') if @mount_path
+    req.path.sub!(/\A#{Regexp.escape @mount_path}/, '') if @mount_path
 
     case req.path
     when '/' then
       root req, res
-    when '/rdoc.css', '/js/darkfish.js', '/js/jquery.js', '/js/search.js',
-         %r%^/images/% then
+    when '/js/darkfish.js', '/js/jquery.js', '/js/search.js',
+         %r%^/css/%, %r%^/images/%, %r%^/fonts/% then
       asset :darkfish, req, res
     when '/js/navigation.js', '/js/searcher.js' then
       asset :json_index, req, res
@@ -143,11 +145,14 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
   # +generator+ is used to create the page.
 
   def documentation_page store, generator, path, req, res
-    name = path.sub(/.html$/, '').gsub '/', '::'
+    text_name = path.chomp '.html'
+    name = text_name.gsub '/', '::'
 
     if klass = store.find_class_or_module(name) then
       res.body = generator.generate_class klass
-    elsif page = store.find_text_page(name.sub(/_([^_]*)$/, '.\1')) then
+    elsif page = store.find_text_page(name.sub(/_([^_]*)\z/, '.\1')) then
+      res.body = generator.generate_page page
+    elsif page = store.find_text_page(text_name.sub(/_([^_]*)\z/, '.\1')) then
       res.body = generator.generate_page page
     else
       not_found generator, req, res
@@ -203,7 +208,7 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
 
 <title>Error - #{ERB::Util.html_escape exception.class}</title>
 
-<link type="text/css" media="screen" href="#{@mount_path}/rdoc.css" rel="stylesheet">
+<link type="text/css" media="screen" href="#{@mount_path}/css/rdoc.css" rel="stylesheet">
 </head>
 <body>
 <h1>Error</h1>
@@ -216,7 +221,7 @@ exception:
 <pre>#{ERB::Util.html_escape exception.message}</pre>
 
 <p>Please report this to the
-<a href="https://github.com/rdoc/rdoc/issues">RDoc issues tracker</a>.  Please
+<a href="https://github.com/ruby/rdoc/issues">RDoc issues tracker</a>.  Please
 include the RDoc version, the URI above and exception class, message and
 backtrace.  If you're viewing a gem's documentation, include the gem name and
 version.  If you're viewing Ruby's documentation, include the version of ruby.
@@ -414,7 +419,7 @@ version.  If you're viewing Ruby's documentation, include the version of ruby.
       RDoc::Store.new RDoc::RI::Paths.system_dir, :system
     when 'site' then
       RDoc::Store.new RDoc::RI::Paths.site_dir, :site
-    when /^extra-(\d+)$/ then
+    when /\Aextra-(\d+)\z/ then
       index = $1.to_i - 1
       ri_dir = installed_docs[index][4]
       RDoc::Store.new ri_dir, :extra
@@ -426,17 +431,16 @@ version.  If you're viewing Ruby's documentation, include the version of ruby.
       end
 
       raise WEBrick::HTTPStatus::NotFound,
-            "Could not find gem \"#{source_name}\". Are you sure you installed it?" unless ri_dir
+            "Could not find gem \"#{ERB::Util.html_escape(source_name)}\". Are you sure you installed it?" unless ri_dir
 
       store = RDoc::Store.new ri_dir, type
 
       return store if File.exist? store.cache_path
 
       raise WEBrick::HTTPStatus::NotFound,
-            "Could not find documentation for \"#{source_name}\". Please run `gem rdoc --ri gem_name`"
+            "Could not find documentation for \"#{ERB::Util.html_escape(source_name)}\". Please run `gem rdoc --ri gem_name`"
 
     end
   end
 
 end
-

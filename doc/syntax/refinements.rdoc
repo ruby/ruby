@@ -7,7 +7,7 @@ changes.  This can cause unintended side-effects or breakage of programs.
 
 Refinements are designed to reduce the impact of monkey patching on other
 users of the monkey-patched class.  Refinements provide a way to extend a
-class locally.
+class locally.  Refinements can modify both classes and modules.
 
 Here is a basic refinement:
 
@@ -26,8 +26,7 @@ Here is a basic refinement:
   end
 
 First, a class +C+ is defined.  Next a refinement for +C+ is created using
-Module#refine.  Refinements only modify classes, not modules so the argument
-must be a class.
+Module#refine.
 
 Module#refine creates an anonymous module that contains the changes or
 refinements to the class (+C+ in the example).  +self+ in the refine block is
@@ -43,15 +42,21 @@ Activate the refinement with #using:
 
 == Scope
 
-You may only activate refinements at top-level, not inside any class, module
-or method scope.  You may activate refinements in a string passed to
-Kernel#eval that is evaluated at top-level.  Refinements are active until the
-end of the file or the end of the eval string, respectively.
+You may activate refinements at top-level, and inside classes and modules.
+You may not activate refinements in method scope.  Refinements are activated
+until the end of the current class or module definition, or until the end of
+the current file if used at the top-level.
 
-Refinements are lexical in scope.  When control is transferred outside the
-scope the refinement is deactivated.  This means that if you require or load a
-file or call a method that is defined outside the current scope the refinement
-will be deactivated:
+You may activate refinements in a string passed to Kernel#eval. Refinements
+are active until the end of the eval string.
+
+Refinements are lexical in scope.  Refinements are only active within a scope
+after the call to +using+. Any code before the +using+ statement will not have the
+refinement activated.
+
+When control is transferred outside the scope, the refinement is deactivated.
+This means that if you require or load a file or call a method that is defined
+outside the current scope the refinement will be deactivated:
 
   class C
   end
@@ -74,7 +79,7 @@ will be deactivated:
   x.foo       # prints "C#foo in M"
   call_foo(x) #=> raises NoMethodError
 
-If a method is defined in a scope where a refinement is active the refinement
+If a method is defined in a scope where a refinement is active, the refinement
 will be active when the method is called.  This example spans multiple files:
 
 c.rb:
@@ -136,6 +141,26 @@ In a file:
   end
   # activated here
 
+In a class:
+
+  # not activated here
+  class Foo
+    # not activated here
+    def foo
+      # not activated here
+    end
+    using M
+    # activated here
+    def bar
+      # activated here
+    end
+    # activated here
+  end
+  # not activated here
+
+Note that the refinements in +M+ are *not* activated automatically if the class
++Foo+ is reopened later.
+
 In eval:
 
   # not activated here
@@ -154,9 +179,9 @@ When not evaluated:
   end
   # not activated here
 
-When defining multiple refinements in the same module, inside a refine block
-all refinements from the same module are active when a refined method is
-called:
+When defining multiple refinements in the same module inside multiple +refine+ blocks,
+all refinements from the same module are active when a refined method
+(any of the +to_json+ methods from the example below) is called:
 
   module ToJSON
     refine Integer do
@@ -182,24 +207,6 @@ called:
 
   p [{1=>2}, {3=>4}].to_json # prints "[{\"1\":2},{\"3\":4}]"
 
-You may also activate refinements in a class or module definition, in which
-case the refinements are activated from the point where using is called to
-the end of the class or module definition:
-
-  # not activated here
-  class Foo
-    # not activated here
-    using M
-    # activated here
-    def foo
-      # activated here
-    end
-    # activated here
-  end
-  # not activated here
-
-Note that the refinements in M are not activated automatically even if the class
-Foo is reopened later.
 
 == Method Lookup
 
@@ -217,12 +224,13 @@ If no method was found at any point this repeats with the superclass of +C+.
 
 Note that methods in a subclass have priority over refinements in a
 superclass.  For example, if the method <code>/</code> is defined in a
-refinement for Integer <code>1 / 2</code> invokes the original Fixnum#/
-because Fixnum is a subclass of Integer and is searched before the refinements
-for the superclass Integer.
+refinement for Numeric <code>1 / 2</code> invokes the original Integer#/
+because Integer is a subclass of Numeric and is searched before the refinements
+for the superclass Numeric. Since the method <code>/</code> is also present
+in child +Integer+, the method lookup does not move up to the superclass.
 
-If a method +foo+ is defined on Integer in a refinement, <code>1.foo</code>
-invokes that method since +foo+ does not exist on Fixnum.
+However, if a method +foo+ is defined on Numeric in a refinement, <code>1.foo</code>
+invokes that method since +foo+ does not exist on Integer.
 
 == +super+
 
@@ -239,23 +247,37 @@ Note that +super+ in a method of a refinement invokes the method in the
 refined class even if there is another refinement which has been activated in
 the same context.
 
-== Indirect Method Calls
+== Methods Introspection
 
-When using indirect method access such as Kernel#send, Kernel#method or
-Kernel#respond_to? refinements are not honored for the caller context during
-method lookup.
+When using introspection methods such as Kernel#method or Kernel#methods refinements are not honored.
 
 This behavior may be changed in the future.
 
-== Refinements and module inclusion
+== Refinement inheritance by Module#include
 
-Refinements are inherited by module inclusion.  That is, using activates all
-refinements in the ancestors of the specified module.  Refinements in a
-descendant have priority over refinements in an ancestor.
+When a module X is included into a module Y, Y inherits refinements from X.
+
+For example, C inherits refinements from A and B in the following code:
+
+  module A
+    refine X do ... end
+    refine Y do ... end
+  end
+  module B
+    refine Z do ... end
+  end
+  module C
+    include A
+    include B
+  end
+
+  using C
+  # Refinements in A and B are activated here.
+
+Refinements in descendants have higher precedence than those of ancestors.
 
 == Further Reading
 
-See http://bugs.ruby-lang.org/projects/ruby-trunk/wiki/RefinementsSpec for the
+See https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/RefinementsSpec for the
 current specification for implementing refinements.  The specification also
 contains more details.
-

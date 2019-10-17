@@ -1,6 +1,15 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestSyntax < Test::Unit::TestCase
+  using Module.new {
+    refine(Object) do
+      def `(s) #`
+        s
+      end
+    end
+  }
+
   def assert_syntax_files(test)
     srcdir = File.expand_path("../../..", __FILE__)
     srcdir = File.join(srcdir, test)
@@ -37,7 +46,7 @@ class TestSyntax < Test::Unit::TestCase
       assert_raise(ArgumentError, enc.name) {load(f.path)}
     end
   ensure
-    f.close! if f
+    f&.close!
   end
 
   def test_script_lines
@@ -54,7 +63,7 @@ class TestSyntax < Test::Unit::TestCase
       end
     end
   ensure
-    f.close! if f
+    f&.close!
   end
 
   def test_newline_in_block_parameters
@@ -84,6 +93,61 @@ class TestSyntax < Test::Unit::TestCase
     assert_valid_syntax("tap (proc do end)", __FILE__, bug9726)
   end
 
+  def test_methodref_literal
+    assert_separately [], <<-EOS
+      eval 'nil.:|;1'
+      1000.times{eval 'nil.:|;1'}
+    EOS
+  end
+
+  def test_array_kwsplat_hash
+    kw = {}
+    h = {a: 1}
+    assert_equal([], [**{}])
+    assert_equal([], [**kw])
+    assert_equal([h], [**h])
+    assert_equal([{}], [{}])
+    assert_equal([kw], [kw])
+    assert_equal([h], [h])
+
+    assert_equal([1], [1, **{}])
+    assert_equal([1], [1, **kw])
+    assert_equal([1, h], [1, **h])
+    assert_equal([1, {}], [1, {}])
+    assert_equal([1, kw], [1, kw])
+    assert_equal([1, h], [1, h])
+
+    assert_equal([], [**kw, **kw])
+    assert_equal([], [**kw, **{}, **kw])
+    assert_equal([1], [1, **kw, **{}, **kw])
+
+    assert_equal([{}], [{}, **kw, **kw])
+    assert_equal([kw], [kw, **kw, **kw])
+    assert_equal([h], [h, **kw, **kw])
+    assert_equal([h, h], [h, **kw, **kw, **h])
+
+    assert_equal([h, {:a=>2}], [h, **{}, **h, a: 2])
+    assert_equal([h, h], [h, **{}, a: 2, **h])
+    assert_equal([h, h], [h, a: 2, **{}, **h])
+    assert_equal([h, h], [h, a: 2, **h, **{}])
+    assert_equal([h, {:a=>2}], [h, **h, a: 2, **{}])
+    assert_equal([h, {:a=>2}], [h, **h, **{}, a: 2])
+  end
+
+  def test_normal_argument
+    assert_valid_syntax('def foo(x) end')
+    assert_syntax_error('def foo(X) end', /constant/)
+    assert_syntax_error('def foo(@x) end', /instance variable/)
+    assert_syntax_error('def foo(@@x) end', /class variable/)
+  end
+
+  def test_optional_argument
+    assert_valid_syntax('def foo(x=nil) end')
+    assert_syntax_error('def foo(X=nil) end', /constant/)
+    assert_syntax_error('def foo(@x=nil) end', /instance variable/)
+    assert_syntax_error('def foo(@@x=nil) end', /class variable/)
+  end
+
   def test_keyword_rest
     bug5989 = '[ruby-core:42455]'
     assert_valid_syntax("def kwrest_test(**a) a; end", __FILE__, bug5989)
@@ -102,24 +166,35 @@ class TestSyntax < Test::Unit::TestCase
     assert_nothing_raised(ArgumentError, bug7922) {o.bug7922(foo: 42)}
   end
 
+  class KW2
+    def kw(k1: 1, k2: 2) [k1, k2] end
+  end
+
   def test_keyword_splat
     assert_valid_syntax("foo(**h)", __FILE__)
-    o = Object.new
-    def o.kw(k1: 1, k2: 2) [k1, k2] end
+    o = KW2.new
     h = {k1: 11, k2: 12}
     assert_equal([11, 12], o.kw(**h))
     assert_equal([11, 12], o.kw(k2: 22, **h))
     assert_equal([11, 22], o.kw(**h, **{k2: 22}))
     assert_equal([11, 12], o.kw(**{k2: 22}, **h))
+  end
 
+  def test_keyword_duplicated_splat
     bug10315 = '[ruby-core:65368] [Bug #10315]'
+
+    o = KW2.new
     assert_equal([23, 2], o.kw(**{k1: 22}, **{k1: 23}), bug10315)
 
     h = {k3: 31}
     assert_raise(ArgumentError) {o.kw(**h)}
     h = {"k1"=>11, k2: 12}
-    assert_raise(TypeError) {o.kw(**h)}
+    assert_warn(/The last argument is split into positional and keyword parameters.* for `kw'/m) do
+      assert_raise(ArgumentError) {o.kw(**h)}
+    end
+  end
 
+  def test_keyword_duplicated
     bug10315 = '[ruby-core:65625] [Bug #10315]'
     a = []
     def a.add(x) push(x); x; end
@@ -137,9 +212,20 @@ class TestSyntax < Test::Unit::TestCase
   end
 
   def test_keyword_empty_splat
-    assert_separately([], <<-'end;')
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
       bug10719 = '[ruby-core:67446] [Bug #10719]'
       assert_valid_syntax("foo(a: 1, **{})", bug10719)
+    end;
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+      bug13756 = '[ruby-core:82113] [Bug #13756]'
+      assert_valid_syntax("defined? foo(**{})", bug13756)
+    end;
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      bug15271 = '[ruby-core:89648] [Bug #15271]'
+      assert_valid_syntax("a **{}", bug15271)
     end;
   end
 
@@ -182,6 +268,37 @@ class TestSyntax < Test::Unit::TestCase
     assert_warn("") do
       o.instance_eval("proc {|var: 1| var}")
     end
+  end
+
+  def test_keyword_invalid_name
+    bug11663 = '[ruby-core:71356] [Bug #11663]'
+
+    o = o = Object.new
+    assert_syntax_error('def o.foo(arg1?:) end', /arg1\?/, bug11663)
+    assert_syntax_error('def o.foo(arg1?:, arg2:) end', /arg1\?/, bug11663)
+    assert_syntax_error('proc {|arg1?:|}', /arg1\?/, bug11663)
+    assert_syntax_error('proc {|arg1?:, arg2:|}', /arg1\?/, bug11663)
+
+    bug10545 = '[ruby-dev:48742] [Bug #10545]'
+    assert_syntax_error('def o.foo(FOO: a) end', /constant/, bug10545)
+    assert_syntax_error('def o.foo(@foo: a) end', /instance variable/)
+    assert_syntax_error('def o.foo(@@foo: a) end', /class variable/)
+  end
+
+  def test_keywords_specified_and_not_accepted
+    assert_syntax_error('def o.foo(a:, **nil) end', /unexpected/)
+    assert_syntax_error('def o.foo(a:, **nil, &b) end', /unexpected/)
+    assert_syntax_error('def o.foo(**a, **nil) end', /unexpected/)
+    assert_syntax_error('def o.foo(**a, **nil, &b) end', /unexpected/)
+    assert_syntax_error('def o.foo(**nil, **a) end', /unexpected/)
+    assert_syntax_error('def o.foo(**nil, **a, &b) end', /unexpected/)
+
+    assert_syntax_error('proc do |a:, **nil| end', /unexpected/)
+    assert_syntax_error('proc do |a:, **nil, &b| end', /unexpected/)
+    assert_syntax_error('proc do |**a, **nil| end', /unexpected/)
+    assert_syntax_error('proc do |**a, **nil, &b| end', /unexpected/)
+    assert_syntax_error('proc do |**nil, **a| end', /unexpected/)
+    assert_syntax_error('proc do |**nil, **a, &b| end', /unexpected/)
   end
 
   def test_optional_self_reference
@@ -264,8 +381,14 @@ WARN
      [:/, "regexp literal"],
      [:%, "string literal"],
     ].each do |op, syn|
-      assert_warning(warning % [op, syn]) do
-        assert_valid_syntax("puts 1 #{op}0", "test", verbose: true)
+      all_assertions do |a|
+        ["puts 1 #{op}0", "puts :a #{op}0", "m = 1; puts m #{op}0"].each do |src|
+          a.for(src) do
+            assert_warning(warning % [op, syn], src) do
+              assert_valid_syntax(src, "test", verbose: true)
+            end
+          end
+        end
       end
     end
   end
@@ -316,24 +439,56 @@ WARN
     assert_valid_syntax("{foo: /=/}", bug11456)
   end
 
+  def test_percent_string_after_label
+    bug11812 = '[ruby-core:72084]'
+    assert_valid_syntax('{label:%w(*)}', bug11812)
+    assert_valid_syntax('{label: %w(*)}', bug11812)
+  end
+
+  def test_heredoc_after_label
+    bug11849 = '[ruby-core:72396] [Bug #11849]'
+    assert_valid_syntax("{label:<<DOC\n""DOC\n""}", bug11849)
+    assert_valid_syntax("{label:<<-DOC\n""DOC\n""}", bug11849)
+    assert_valid_syntax("{label:<<~DOC\n""DOC\n""}", bug11849)
+    assert_valid_syntax("{label: <<DOC\n""DOC\n""}", bug11849)
+    assert_valid_syntax("{label: <<-DOC\n""DOC\n""}", bug11849)
+    assert_valid_syntax("{label: <<~DOC\n""DOC\n""}", bug11849)
+  end
+
+  def test_cmdarg_kwarg_lvar_clashing_method
+    bug12073 = '[ruby-core:73816] [Bug#12073]'
+    a = a = 1
+    assert_valid_syntax("a b: 1")
+    assert_valid_syntax("a = 1; a b: 1", bug12073)
+  end
+
   def test_duplicated_arg
     assert_syntax_error("def foo(a, a) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_, _) end }
+    assert_valid_syntax("def foo(_, _) end")
+    (obj = Object.new).instance_eval("def foo(_, x, _) x end")
+    assert_equal(2, obj.foo(1, 2, 3))
   end
 
   def test_duplicated_rest
     assert_syntax_error("def foo(a, *a) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_, *_) end }
+    assert_valid_syntax("def foo(_, *_) end")
+    (obj = Object.new).instance_eval("def foo(_, x, *_) x end")
+    assert_equal(2, obj.foo(1, 2, 3))
   end
 
   def test_duplicated_opt
     assert_syntax_error("def foo(a, a=1) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_, _=1) end }
+    assert_valid_syntax("def foo(_, _=1) end")
+    (obj = Object.new).instance_eval("def foo(_, x, _=42) x end")
+    assert_equal(2, obj.foo(1, 2))
   end
 
   def test_duplicated_opt_rest
     assert_syntax_error("def foo(a=1, *a) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_=1, *_) end }
+    assert_valid_syntax("def foo(_=1, *_) end")
+    (obj = Object.new).instance_eval("def foo(_, x=42, *_) x end")
+    assert_equal(42, obj.foo(1))
+    assert_equal(2, obj.foo(1, 2))
   end
 
   def test_duplicated_rest_opt
@@ -342,46 +497,85 @@ WARN
 
   def test_duplicated_rest_post
     assert_syntax_error("def foo(*a, a) end", /duplicated argument name/)
+    assert_valid_syntax("def foo(*_, _) end")
+    (obj = Object.new).instance_eval("def foo(*_, x, _) x end")
+    assert_equal(2, obj.foo(1, 2, 3))
+    assert_equal(2, obj.foo(2, 3))
+    (obj = Object.new).instance_eval("def foo(*_, _, x) x end")
+    assert_equal(3, obj.foo(1, 2, 3))
+    assert_equal(3, obj.foo(2, 3))
   end
 
   def test_duplicated_opt_post
     assert_syntax_error("def foo(a=1, a) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_=1, _) end }
+    assert_valid_syntax("def foo(_=1, _) end")
+    (obj = Object.new).instance_eval("def foo(_=1, x, _) x end")
+    assert_equal(2, obj.foo(1, 2, 3))
+    assert_equal(2, obj.foo(2, 3))
+    (obj = Object.new).instance_eval("def foo(_=1, _, x) x end")
+    assert_equal(3, obj.foo(1, 2, 3))
+    assert_equal(3, obj.foo(2, 3))
   end
 
   def test_duplicated_kw
     assert_syntax_error("def foo(a, a: 1) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_, _: 1) end }
+    assert_valid_syntax("def foo(_, _: 1) end")
+    (obj = Object.new).instance_eval("def foo(_, x, _: 1) x end")
+    assert_equal(3, obj.foo(2, 3))
+    assert_equal(3, obj.foo(2, 3, _: 42))
+    (obj = Object.new).instance_eval("def foo(x, _, _: 1) x end")
+    assert_equal(2, obj.foo(2, 3))
+    assert_equal(2, obj.foo(2, 3, _: 42))
   end
 
   def test_duplicated_rest_kw
     assert_syntax_error("def foo(*a, a: 1) end", /duplicated argument name/)
     assert_nothing_raised {def foo(*_, _: 1) end}
+    (obj = Object.new).instance_eval("def foo(*_, x: 42, _: 1) x end")
+    assert_equal(42, obj.foo(42))
+    assert_equal(42, obj.foo(2, _: 0))
+    assert_equal(2, obj.foo(x: 2, _: 0))
   end
 
   def test_duplicated_opt_kw
     assert_syntax_error("def foo(a=1, a: 1) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_=1, _: 1) end }
+    assert_valid_syntax("def foo(_=1, _: 1) end")
+    (obj = Object.new).instance_eval("def foo(_=42, x, _: 1) x end")
+    assert_equal(0, obj.foo(0))
+    assert_equal(0, obj.foo(0, _: 3))
   end
 
   def test_duplicated_kw_kwrest
     assert_syntax_error("def foo(a: 1, **a) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_: 1, **_) end }
+    assert_valid_syntax("def foo(_: 1, **_) end")
+    (obj = Object.new).instance_eval("def foo(_: 1, x: 42, **_) x end")
+    assert_equal(42, obj.foo())
+    assert_equal(42, obj.foo(a: 0))
+    assert_equal(42, obj.foo(_: 0, a: 0))
+    assert_equal(1, obj.foo(_: 0, x: 1, a: 0))
   end
 
   def test_duplicated_rest_kwrest
     assert_syntax_error("def foo(*a, **a) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(*_, **_) end }
+    assert_valid_syntax("def foo(*_, **_) end")
+    (obj = Object.new).instance_eval("def foo(*_, x, **_) x end")
+    assert_equal(1, obj.foo(1))
+    assert_equal(1, obj.foo(1, a: 0))
+    assert_equal(2, obj.foo(1, 2, a: 0))
   end
 
   def test_duplicated_opt_kwrest
     assert_syntax_error("def foo(a=1, **a) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_=1, **_) end }
+    assert_valid_syntax("def foo(_=1, **_) end")
+    (obj = Object.new).instance_eval("def foo(_=42, x, **_) x end")
+    assert_equal(1, obj.foo(1))
+    assert_equal(1, obj.foo(1, a: 0))
+    assert_equal(1, obj.foo(0, 1, a: 0))
   end
 
   def test_duplicated_when
-    w = 'warning: duplicated when clause is ignored'
-    assert_warning(/3: #{w}.+4: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m){
+    w = 'warning: duplicated `when\' clause with line 3 is ignored'
+    assert_warning(/3: #{w}.+4: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m) {
       eval %q{
         case 1
         when 1, 1
@@ -390,8 +584,8 @@ WARN
         end
       }
     }
-    assert_warning(/#{w}/){#/3: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m){
-      a = 1
+    assert_warning(/#{w}/) {#/3: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m){
+      a = a = 1
       eval %q{
         case 1
         when 1, 1
@@ -402,8 +596,27 @@ WARN
     }
   end
 
+  def test_duplicated_when_check_option
+    w = /duplicated `when\' clause with line 3 is ignored/
+    assert_in_out_err(%[-wc], "#{<<~"begin;"}\n#{<<~'end;'}", ["Syntax OK"], w)
+    begin;
+      case 1
+      when 1
+      when 1
+      end
+    end;
+  end
+
+  def test_invalid_break
+    assert_syntax_error("def m; break; end", /Invalid break/)
+    assert_syntax_error('/#{break}/', /Invalid break/)
+    assert_syntax_error('/#{break}/o', /Invalid break/)
+  end
+
   def test_invalid_next
     assert_syntax_error("def m; next; end", /Invalid next/)
+    assert_syntax_error('/#{next}/', /Invalid next/)
+    assert_syntax_error('/#{next}/o', /Invalid next/)
   end
 
   def test_lambda_with_space
@@ -456,6 +669,153 @@ e"
     assert_equal(expected, actual, "#{Bug7559}: ")
   end
 
+  def assert_dedented_heredoc(expect, result, mesg = "")
+    all_assertions(mesg) do |a|
+      %w[eos "eos" 'eos' `eos`].each do |eos|
+        a.for(eos) do
+          assert_equal(eval("<<-#{eos}\n#{expect}eos\n"),
+                       eval("<<~#{eos}\n#{result}eos\n"))
+        end
+      end
+    end
+  end
+
+  def test_dedented_heredoc_without_indentation
+    result = " y\n" \
+             "z\n"
+    expect = result
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_indentation
+    result = "     a\n" \
+             "    b\n"
+    expect = " a\n" \
+             "b\n"
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_blank_less_indented_line
+    # the blank line has two leading spaces
+    result = "    a\n" \
+             "  \n" \
+             "    b\n"
+    expect = "a\n" \
+             "\n" \
+             "b\n"
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_blank_less_indented_line_escaped
+    result = "    a\n" \
+             "\\ \\ \n" \
+             "    b\n"
+    expect = result
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_blank_more_indented_line
+    # the blank line has six leading spaces
+    result = "    a\n" \
+             "      \n" \
+             "    b\n"
+    expect = "a\n" \
+             "  \n" \
+             "b\n"
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_blank_more_indented_line_escaped
+    result = "    a\n" \
+             "\\ \\ \\ \\ \\ \\ \n" \
+             "    b\n"
+    expect = result
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_empty_line
+    result = "      This would contain specially formatted text.\n" \
+             "\n" \
+             "      That might span many lines\n"
+    expect = 'This would contain specially formatted text.'"\n" \
+             ''"\n" \
+             'That might span many lines'"\n"
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_interpolated_expression
+    result = '  #{1}a'"\n" \
+             " zy\n"
+    expect = ' #{1}a'"\n" \
+             "zy\n"
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_interpolated_string
+    w = w = ""
+    result = " \#{mesg} a\n" \
+             "  zy\n"
+    expect = '#{mesg} a'"\n" \
+             ' zy'"\n"
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_newline
+    bug11989 = '[ruby-core:72855] [Bug #11989] after escaped newline should not be dedented'
+    result = '  x\n'"  y\n" \
+             "  z\n"
+    expect = 'x\n'"  y\n" \
+             "z\n"
+    assert_dedented_heredoc(expect, result, bug11989)
+  end
+
+  def test_dedented_heredoc_with_concatenation
+    bug11990 = '[ruby-core:72857] [Bug #11990] concatenated string should not be dedented'
+    %w[eos "eos" 'eos'].each do |eos|
+      assert_equal("x\n  y",
+                   eval("<<~#{eos} '  y'\n  x\neos\n"),
+                   "#{bug11990} with #{eos}")
+    end
+    %w[eos "eos" 'eos' `eos`].each do |eos|
+      _, expect = eval("[<<~#{eos}, '  x']\n""  y\n""eos\n")
+      assert_equal('  x', expect, bug11990)
+    end
+  end
+
+  def test_dedented_heredoc_expr_at_beginning
+    result = "  a\n" \
+             '#{1}'"\n"
+    expected = "  a\n" \
+             '#{1}'"\n"
+    assert_dedented_heredoc(expected, result)
+  end
+
+  def test_dedented_heredoc_expr_string
+    result = '  one#{"  two  "}'"\n"
+    expected = 'one#{"  two  "}'"\n"
+    assert_dedented_heredoc(expected, result)
+  end
+
+  def test_dedented_heredoc_continued_line
+    result = "  1\\\n" "  2\n"
+    expected = "1\\\n" "2\n"
+    assert_dedented_heredoc(expected, result)
+    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /can't find string "TEXT"/)
+    begin;
+      <<-TEXT
+      \
+      TEXT
+    end;
+    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /can't find string "TEXT"/)
+    begin;
+      <<~TEXT
+      \
+      TEXT
+    end;
+
+    assert_equal("  TEXT\n", eval("<<~eos\n" "  \\\n" "TEXT\n" "eos\n"))
+  end
+
   def test_lineno_after_heredoc
     bug7559 = '[ruby-dev:46737]'
     expected, _, actual = __LINE__, <<eom, __LINE__
@@ -465,6 +825,50 @@ e"
     d
 eom
     assert_equal(expected, actual, bug7559)
+  end
+
+  def test_dedented_heredoc_invalid_identifer
+    assert_syntax_error('<<~ "#{}"', /unexpected <</)
+  end
+
+  def test_dedented_heredoc_concatenation
+    assert_equal("\n0\n1", eval("<<~0 '1'\n \n0\#{}\n0"))
+  end
+
+  def test_heredoc_mixed_encoding
+    e = assert_syntax_error(<<-'HEREDOC', 'UTF-8 mixed within Windows-31J source')
+      #encoding: cp932
+      <<-TEXT
+      \xe9\x9d\u1234
+      TEXT
+    HEREDOC
+    assert_not_match(/end-of-input/, e.message)
+
+    e = assert_syntax_error(<<-'HEREDOC', 'UTF-8 mixed within Windows-31J source')
+      #encoding: cp932
+      <<-TEXT
+      \xe9\x9d
+      \u1234
+      TEXT
+    HEREDOC
+    assert_not_match(/end-of-input/, e.message)
+
+    e = assert_syntax_error(<<-'HEREDOC', 'UTF-8 mixed within Windows-31J source')
+      #encoding: cp932
+      <<-TEXT
+      \u1234\xe9\x9d
+      TEXT
+    HEREDOC
+    assert_not_match(/end-of-input/, e.message)
+
+    e = assert_syntax_error(<<-'HEREDOC', 'UTF-8 mixed within Windows-31J source')
+      #encoding: cp932
+      <<-TEXT
+      \u1234
+      \xe9\x9d
+      TEXT
+    HEREDOC
+    assert_not_match(/end-of-input/, e.message)
   end
 
   def test_lineno_operation_brace_block
@@ -556,6 +960,23 @@ eom
     assert_syntax_error("puts <<""EOS\n""ng\n""EOS\r""NO\n", /can't find string "EOS" anywhere before EOF/)
   end
 
+  def test_heredoc_no_terminator
+    assert_syntax_error("puts <<""A\n", /can't find string "A" anywhere before EOF/)
+    assert_syntax_error("puts <<""A + <<""B\n", /can't find string "A" anywhere before EOF/)
+    assert_syntax_error("puts <<""A + <<""B\n", /can't find string "B" anywhere before EOF/)
+  end
+
+  def test_unterminated_heredoc
+    assert_syntax_error("<<\"EOS\n\nEOS\n", /unterminated/)
+    assert_syntax_error("<<\"EOS\n\"\nEOS\n", /unterminated/)
+  end
+
+  def test_unterminated_heredoc_cr
+    %W[\r\n \n].each do |nl|
+      assert_syntax_error("<<\"\r\"#{nl}\r#{nl}", /unterminated/, nil, "CR with #{nl.inspect}")
+    end
+  end
+
   def test__END___cr
     assert_syntax_error("__END__\r<<<<<\n", /unexpected <</)
   end
@@ -582,18 +1003,12 @@ eom
     assert_syntax_error(code, /def n "\u{2208}"; end/, bug10114)
   end
 
-  def test_bad_kwarg
-    bug10545 = '[ruby-dev:48742] [Bug #10545]'
-    src = 'def foo(A: a) end'
-    assert_syntax_error(src, /formal argument/, bug10545)
-  end
-
   def test_null_range_cmdarg
     bug10957 = '[ruby-core:68477] [Bug #10957]'
     assert_ruby_status(['-c', '-e', 'p ()..0'], "", bug10957)
     assert_ruby_status(['-c', '-e', 'p ()...0'], "", bug10957)
-    assert_syntax_error('0..%w.', /unterminated string/, bug10957)
-    assert_syntax_error('0...%w.', /unterminated string/, bug10957)
+    assert_syntax_error('0..%q.', /unterminated string/, bug10957)
+    assert_syntax_error('0...%q.', /unterminated string/, bug10957)
   end
 
   def test_too_big_nth_ref
@@ -601,6 +1016,467 @@ eom
     assert_warn(/too big/, bug11192) do
       eval('$99999999999999999')
     end
+  end
+
+  def test_invalid_symbol_space
+    assert_syntax_error(": foo", /unexpected ':'/)
+    assert_syntax_error(": #\n foo", /unexpected ':'/)
+    assert_syntax_error(":#\n foo", /unexpected ':'/)
+  end
+
+  def test_invalid_literal_message
+    assert_syntax_error("def :foo", /unexpected symbol literal/)
+    assert_syntax_error("def 'foo'", /unexpected string literal/)
+  end
+
+  def test_fluent_dot
+    assert_valid_syntax("a\n.foo")
+    assert_valid_syntax("a\n&.foo")
+    assert_valid_syntax("a\n.:foo")
+    assert_valid_syntax("a #\n#\n.foo\n")
+    assert_valid_syntax("a #\n#\n&.foo\n")
+    assert_valid_syntax("a #\n#\n.:foo\n")
+  end
+
+  def test_safe_call_in_massign_lhs
+    assert_syntax_error("*a&.x=0", /multiple assignment destination/)
+    assert_syntax_error("a&.x,=0", /multiple assignment destination/)
+  end
+
+  def test_no_warning_logop_literal
+    assert_warning("") do
+      eval("true||raise;nil")
+    end
+    assert_warning("") do
+      eval("false&&raise;nil")
+    end
+    assert_warning("") do
+      eval("''||raise;nil")
+    end
+  end
+
+  def test_warning_literal_in_condition
+    assert_warn(/literal in condition/) do
+      eval('1 if ""')
+    end
+    assert_warn(/literal in condition/) do
+      eval('1 if //')
+    end
+    assert_warning(/literal in condition/) do
+      eval('1 if 1')
+    end
+    assert_warning(/literal in condition/) do
+      eval('1 if :foo')
+    end
+    assert_warning(/literal in condition/) do
+      eval('1 if :"#{"foo".upcase}"')
+    end
+
+    assert_warn('') do
+      eval('1 if !""')
+    end
+    assert_warn('') do
+      eval('1 if !//')
+    end
+    assert_warn('') do
+      eval('1 if !(true..false)')
+    end
+    assert_warning('') do
+      eval('1 if !1')
+    end
+    assert_warning('') do
+      eval('1 if !:foo')
+    end
+    assert_warning('') do
+      eval('1 if !:"#{"foo".upcase}"')
+    end
+  end
+
+  def test_warning_literal_in_flip_flop
+    assert_warn(/literal in flip-flop/) do
+      eval('1 if ""..false')
+    end
+    assert_warning(/literal in flip-flop/) do
+      eval('1 if :foo..false')
+    end
+    assert_warning(/literal in flip-flop/) do
+      eval('1 if :"#{"foo".upcase}"..false')
+    end
+    assert_warn(/literal in flip-flop/) do
+      eval('1 if ""...false')
+    end
+    assert_warning(/literal in flip-flop/) do
+      eval('1 if :foo...false')
+    end
+    assert_warning(/literal in flip-flop/) do
+      eval('1 if :"#{"foo".upcase}"...false')
+    end
+  end
+
+  def test_alias_symbol
+    bug8851 = '[ruby-dev:47681] [Bug #8851]'
+    formats = ['%s', ":'%s'", ':"%s"', '%%s(%s)']
+    all_assertions(bug8851) do |all|
+      formats.product(formats) do |form1, form2|
+        all.for(code = "alias #{form1 % 'a'} #{form2 % 'p'}") do
+          assert_valid_syntax(code)
+        end
+      end
+    end
+  end
+
+  def test_undef_symbol
+    bug8851 = '[ruby-dev:47681] [Bug #8851]'
+    formats = ['%s', ":'%s'", ':"%s"', '%%s(%s)']
+    all_assertions(bug8851) do |all|
+      formats.product(formats) do |form1, form2|
+        all.for(code = "undef #{form1 % 'a'}, #{form2 % 'p'}") do
+          assert_valid_syntax(code)
+        end
+      end
+    end
+  end
+
+  def test_parenthesised_statement_argument
+    assert_syntax_error("foo(bar rescue nil)", /unexpected `rescue' modifier/)
+    assert_valid_syntax("foo (bar rescue nil)")
+  end
+
+  def test_cmdarg_in_paren
+    bug11873 = '[ruby-core:72482] [Bug #11873]'
+    assert_valid_syntax %q{a b{c d}, :e do end}, bug11873
+    assert_valid_syntax %q{a b(c d), :e do end}, bug11873
+    assert_valid_syntax %q{a b{c(d)}, :e do end}, bug11873
+    assert_valid_syntax %q{a b(c(d)), :e do end}, bug11873
+    assert_valid_syntax %q{a b{c d}, 1 do end}, bug11873
+    assert_valid_syntax %q{a b(c d), 1 do end}, bug11873
+    assert_valid_syntax %q{a b{c(d)}, 1 do end}, bug11873
+    assert_valid_syntax %q{a b(c(d)), 1 do end}, bug11873
+    assert_valid_syntax %q{a b{c d}, "x" do end}, bug11873
+    assert_valid_syntax %q{a b(c d), "x" do end}, bug11873
+    assert_valid_syntax %q{a b{c(d)}, "x" do end}, bug11873
+    assert_valid_syntax %q{a b(c(d)), "x" do end}, bug11873
+  end
+
+  def test_block_after_cmdarg_in_paren
+    bug11873 = '[ruby-core:72482] [Bug #11873]'
+    def bug11873.p(*);end;
+
+    assert_raise(LocalJumpError, bug11873) do
+      bug11873.instance_eval do
+        p p{p p;p(p)}, tap do
+          raise SyntaxError, "should not be passed to tap"
+        end
+      end
+    end
+
+    assert_raise(LocalJumpError, bug11873) do
+      bug11873.instance_eval do
+        p p{p(p);p p}, tap do
+          raise SyntaxError, "should not be passed to tap"
+        end
+      end
+    end
+  end
+
+  def test_do_block_in_hash_brace
+    bug13073 = '[ruby-core:78837] [Bug #13073]'
+    assert_valid_syntax 'p :foo, {a: proc do end, b: proc do end}', bug13073
+    assert_valid_syntax 'p :foo, {:a => proc do end, b: proc do end}', bug13073
+    assert_valid_syntax 'p :foo, {"a": proc do end, b: proc do end}', bug13073
+    assert_valid_syntax 'p :foo, {** proc do end, b: proc do end}', bug13073
+    assert_valid_syntax 'p :foo, {proc do end => proc do end, b: proc do end}', bug13073
+  end
+
+  def test_do_after_local_variable
+    obj = Object.new
+    def obj.m; yield; end
+    result = assert_nothing_raised(SyntaxError) do
+      obj.instance_eval("m = 1; m do :ok end")
+    end
+    assert_equal(:ok, result)
+  end
+
+  def test_brace_after_local_variable
+    obj = Object.new
+    def obj.m; yield; end
+    result = assert_nothing_raised(SyntaxError) do
+      obj.instance_eval("m = 1; m {:ok}")
+    end
+    assert_equal(:ok, result)
+  end
+
+  def test_brace_after_literal_argument
+    bug = '[ruby-core:81037] [Bug #13547]'
+    error = /unexpected '{'/
+    assert_syntax_error('m "x" {}', error)
+    assert_syntax_error('m 1 {}', error, bug)
+    assert_syntax_error('m 1.0 {}', error, bug)
+    assert_syntax_error('m :m {}', error, bug)
+    assert_syntax_error('m :"#{m}" {}', error, bug)
+    assert_syntax_error('m ?x {}', error, bug)
+    assert_syntax_error('m %[] {}', error, bug)
+    assert_syntax_error('m 0..1 {}', error, bug)
+    assert_syntax_error('m [] {}', error, bug)
+  end
+
+  def test_return_toplevel
+    feature4840 = '[ruby-core:36785] [Feature #4840]'
+    line = __LINE__+2
+    code = "#{<<~"begin;"}#{<<~'end;'}"
+    begin;
+      return; raise
+      begin return; rescue SystemExit; exit false; end
+      begin return; ensure puts "ensured"; end #=> ensured
+      begin ensure return; end
+      begin raise; ensure; return; end
+      begin raise; rescue; return; end
+      return false; raise
+      return 1; raise
+      "#{return}"
+      raise((return; "should not raise"))
+      begin raise; ensure return; end; self
+      begin raise; ensure return; end and self
+      nil&defined?0--begin e=no_method_error(); return; 0;end
+      return puts('ignored') #=> ignored
+    end;
+      .split(/\n/).map {|s|[(line+=1), *s.split(/#=> /, 2)]}
+    failed = proc do |n, s|
+      RubyVM::InstructionSequence.compile(s, __FILE__, nil, n).disasm
+    end
+    Tempfile.create(%w"test_return_ .rb") do |lib|
+      lib.close
+      args = %W[-W0 -r#{lib.path}]
+      all_assertions_foreach(feature4840, *[:main, :lib].product([:class, :top], code)) do |main, klass, (n, s, *ex)|
+        if klass == :class
+          s = "class X; #{s}; end"
+          if main == :main
+            assert_in_out_err(%[-W0], s, [], /return/, proc {failed[n, s]}, success: false)
+          else
+            File.write(lib, s)
+            assert_in_out_err(args, "", [], /return/, proc {failed[n, s]}, success: false)
+          end
+        else
+          if main == :main
+            assert_in_out_err(%[-W0], s, ex, [], proc {failed[n, s]}, success: true)
+          else
+            File.write(lib, s)
+            assert_in_out_err(args, "", ex, [], proc {failed[n, s]}, success: true)
+          end
+        end
+      end
+    end
+  end
+
+  def test_return_toplevel_with_argument
+    assert_warn(/argument of top-level return is ignored/) {eval("return 1")}
+  end
+
+  def test_return_in_proc_in_class
+    assert_in_out_err(['-e', 'class TestSyntax; proc{ return }.call; end'], "", [], /^-e:1:.*unexpected return \(LocalJumpError\)/)
+  end
+
+  def test_syntax_error_in_rescue
+    bug12613 = '[ruby-core:76531] [Bug #12613]'
+    assert_syntax_error("#{<<-"begin;"}\n#{<<-"end;"}", /Invalid retry/, bug12613)
+    begin;
+      while true
+        begin
+          p
+        rescue
+          retry
+        else
+          retry
+        end
+        break
+      end
+    end;
+  end
+
+  def test_syntax_error_at_newline
+    expected = "\n        ^"
+    assert_syntax_error("%[abcdef", expected)
+    assert_syntax_error("%[abcdef\n", expected)
+  end
+
+  def test_invalid_jump
+    assert_in_out_err(%w[-e redo], "", [], /^-e:1: /)
+  end
+
+  def test_keyword_not_parens
+    assert_valid_syntax("not()")
+  end
+
+  def test_rescue_do_end_raised
+    result = []
+    assert_raise(RuntimeError) do
+      eval("#{<<-"begin;"}\n#{<<-"end;"}")
+      begin;
+        tap do
+          result << :begin
+          raise "An exception occurred!"
+        ensure
+          result << :ensure
+        end
+      end;
+    end
+    assert_equal([:begin, :ensure], result)
+  end
+
+  def test_rescue_do_end_rescued
+    result = []
+    assert_nothing_raised(RuntimeError) do
+      eval("#{<<-"begin;"}\n#{<<-"end;"}")
+      begin;
+        tap do
+          result << :begin
+          raise "An exception occurred!"
+        rescue
+          result << :rescue
+        else
+          result << :else
+        ensure
+          result << :ensure
+        end
+      end;
+    end
+    assert_equal([:begin, :rescue, :ensure], result)
+  end
+
+  def test_rescue_do_end_no_raise
+    result = []
+    assert_nothing_raised(RuntimeError) do
+      eval("#{<<-"begin;"}\n#{<<-"end;"}")
+      begin;
+        tap do
+          result << :begin
+        rescue
+          result << :rescue
+        else
+          result << :else
+        ensure
+          result << :ensure
+        end
+      end;
+    end
+    assert_equal([:begin, :else, :ensure], result)
+  end
+
+  def test_rescue_do_end_ensure_result
+    result = eval("#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      proc do
+        :begin
+      ensure
+        :ensure
+      end.call
+    end;
+    assert_equal(:begin, result)
+  end
+
+  def test_rescue_do_end_ensure_in_lambda
+    result = []
+    eval("#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      -> do
+        result << :begin
+        raise "An exception occurred!"
+      rescue
+        result << :rescue
+      else
+        result << :else
+      ensure
+        result << :ensure
+      end.call
+    end;
+    assert_equal([:begin, :rescue, :ensure], result)
+  end
+
+  def test_return_in_loop
+    obj = Object.new
+    def obj.test
+      x = nil
+      return until x unless x
+    end
+    assert_nil obj.test
+  end
+
+  def test_method_call_location
+    line = __LINE__+5
+    e = assert_raise(NoMethodError) do
+      1.upto(0) do
+      end
+        .
+        foo(
+          1,
+          2,
+        )
+    end
+    assert_equal(line, e.backtrace_locations[0].lineno)
+
+    line = __LINE__+5
+    e = assert_raise(NoMethodError) do
+      1.upto 0 do
+      end
+        .
+        foo(
+          1,
+          2,
+        )
+    end
+    assert_equal(line, e.backtrace_locations[0].lineno)
+  end
+
+  def test_methoddef_in_cond
+    assert_valid_syntax('while def foo; tap do end; end; break; end')
+    assert_valid_syntax('while def foo a = tap do end; end; break; end')
+  end
+
+  def test_classdef_in_cond
+    assert_valid_syntax('while class Foo; tap do end; end; break; end')
+    assert_valid_syntax('while class Foo a = tap do end; end; break; end')
+  end
+
+  def test_command_with_cmd_brace_block
+    assert_valid_syntax('obj.foo (1) {}')
+    assert_valid_syntax('obj::foo (1) {}')
+  end
+
+  def test_numbered_parameter
+    assert_valid_syntax('proc {_1}')
+    assert_equal(3, eval('[1,2].then {_1+_2}'))
+    assert_equal("12", eval('[1,2].then {"#{_1}#{_2}"}'))
+    assert_equal([1, 2], eval('[1,2].then {_1}'))
+    assert_equal(3, eval('->{_1+_2}.call(1,2)'))
+    assert_equal(4, eval('->(a=->{_1}){a}.call.call(4)'))
+    assert_equal(5, eval('-> a: ->{_1} {a}.call.call(5)'))
+    assert_syntax_error('proc {|| _1}', /ordinary parameter is defined/)
+    assert_syntax_error('proc {|;a| _1}', /ordinary parameter is defined/)
+    assert_syntax_error("proc {|\n| _1}", /ordinary parameter is defined/)
+    assert_syntax_error('proc {|x| _1}', /ordinary parameter is defined/)
+    assert_syntax_error('proc {_1; proc {_2}}', /numbered parameter is already used/)
+    assert_syntax_error('proc {proc {_1}; _2}', /numbered parameter is already used/)
+    assert_syntax_error('->(){_1}', /ordinary parameter is defined/)
+    assert_syntax_error('->(x){_1}', /ordinary parameter is defined/)
+    assert_syntax_error('->x{_1}', /ordinary parameter is defined/)
+    assert_syntax_error('->x:_2{}', /ordinary parameter is defined/)
+    assert_syntax_error('->x=_1{}', /ordinary parameter is defined/)
+    assert_syntax_error('-> {_1; -> {_2}}', /numbered parameter is already used/)
+    assert_syntax_error('-> {-> {_1}; _2}', /numbered parameter is already used/)
+    assert_warn(/`_1' is used as numbered parameter/) {eval('proc {_1 = nil}')}
+    assert_warn(/`_2' is used as numbered parameter/) {eval('_2=1')}
+    ['class C', 'class << C', 'module M', 'def m', 'def o.m'].each do |c|
+      assert_valid_syntax("->{#{c};->{_1};end;_1}\n")
+      assert_valid_syntax("->{_1;#{c};->{_1};end}\n")
+    end
+  end
+
+  def test_value_expr_in_condition
+    mesg = /void value expression/
+    assert_syntax_error("tap {a = (true ? next : break)}", mesg)
+    assert_valid_syntax("tap {a = (true ? true : break)}")
+    assert_valid_syntax("tap {a = (break if false)}")
+    assert_valid_syntax("tap {a = (break unless true)}")
   end
 
   private

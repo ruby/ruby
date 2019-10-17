@@ -71,6 +71,33 @@ Examples:
 All these numbers have the same decimal value, 170.  Like integers and floats
 you may use an underscore for readability.
 
+=== Rational numbers
+
+Numbers suffixed by +r+ are Rational numbers.
+
+  12r         #=> (12/1)
+  12.3r       #=> (123/10)
+
+Rational numbers are exact, whereas Float numbers are inexact.
+
+  0.1r + 0.2r #=> (3/10)
+  0.1 + 0.2   #=> 0.30000000000000004
+
+=== Complex numbers
+
+Numbers suffixed by +i+ are Complex (or imaginary) numbers.
+
+  1i          #=> (0+1i)
+  1i * 1i     #=> (-1+0i)
+
+Also Rational numbers may be imaginary numbers.
+
+  12.3ri      #=> (0+(123/10)*i)
+
++i+ must be placed after +r+, the opposite is not allowed.
+
+  12.3ir      #=> syntax error
+
 == Strings
 
 The most common way of writing strings is using <tt>"</tt>:
@@ -108,7 +135,7 @@ sequences are as follows:
   \c\M-x         same as above
   \c? or \C-?    delete, ASCII 7Fh (DEL)
 
-Any other character followed by a backslash is interpreted as the
+Any other character following a backslash is interpreted as the
 character itself.
 
 Double-quote strings allow interpolation of other values using
@@ -133,7 +160,7 @@ You may also create strings using <tt>%</tt>:
   %(1 + 1 is #{1 + 1}) #=> "1 + 1 is 2"
 
 There are two different types of <tt>%</tt> strings <tt>%q(...)</tt> behaves
-like a single-quote string (no interpolation or character escaping) while
+like a single-quote string (no interpolation or character escaping), while
 <tt>%Q</tt> behaves as a double-quote string.  See Percent Strings below for
 more discussion of the syntax of percent strings.
 
@@ -166,7 +193,7 @@ a single codepoint in the script encoding:
   ?\C-\M-a #=> "\x81", same as above
   ?あ      #=> "あ"
 
-=== Here Documents
+=== Here Documents (heredocs)
 
 If you are writing a large block of text you may use a "here document" or
 "heredoc":
@@ -196,6 +223,20 @@ Note that the while the closing identifier may be indented, the content is
 always treated as if it is flush left.  If you indent the content those spaces
 will appear in the output.
 
+To have indented content as well as an indented closing identifier, you can use
+a "squiggly" heredoc, which uses a "~" instead of a "-" after <tt><<</tt>:
+
+    expected_result = <<~SQUIGGLY_HEREDOC
+      This would contain specially formatted text.
+
+      That might span many lines
+    SQUIGGLY_HEREDOC
+
+The indentation of the least-indented line will be removed from each line of
+the content.  Note that empty lines and lines consisting solely of literal tabs
+and spaces will be ignored for the purposes of determining indentation, but
+escaped tabs and spaces are considered non-indentation characters.
+
 A heredoc allows interpolation and escaped characters.  You may disable
 interpolation and escaping by surrounding the opening identifier with single
 quotes:
@@ -213,6 +254,9 @@ behaves like Kernel#`:
   puts <<-`HEREDOC`
   cat #{__FILE__}
   HEREDOC
+
+When surrounding with quotes, any character but that quote and newline
+(CR and/or LF) can be used as the identifier.
 
 To call a method on a heredoc place it after the opening identifier:
 
@@ -245,7 +289,7 @@ Like strings, a single-quote may be used to disable interpolation:
 
   :'my_symbol#{1 + 1}' #=> :"my_symbol\#{1 + 1}"
 
-When creating a Hash there is a special syntax for referencing a Symbol as
+When creating a Hash, there is a special syntax for referencing a Symbol as
 well.
 
 == Arrays
@@ -292,6 +336,8 @@ its ending value.
 
   (1..2)  # includes its ending value
   (1...2) # excludes its ending value
+  (1..)   # endless range, representing infinite sequence from 1 to Infinity
+  (..1)   # beginless range, representing infinite sequence from -Infinity to 1
 
 You may create a range of any object.  See the Range documentation for details
 on the methods you need to implement.
@@ -330,7 +376,7 @@ This proc will add one to its argument.
 
 == Percent Strings
 
-Besides <tt>%(...)</tt> which creates a String, The <tt>%</tt> may create
+Besides <tt>%(...)</tt> which creates a String, the <tt>%</tt> may create
 other types of object.  As with strings, an uppercase letter allows
 interpolation and escaped characters while a lowercase letter disables them.
 

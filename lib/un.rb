@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # = un.rb
 #
@@ -46,7 +47,7 @@ def setup(options = "", *long_options)
     end
     long_options.each do |s|
       opt_name, arg_name = s.split(/(?=[\s=])/, 2)
-      opt_name.sub!(/\A--/, '')
+      opt_name.delete_prefix!('--')
       s = "--#{opt_name.gsub(/([A-Z]+|[a-z])([A-Z])/, '\1-\2').downcase}#{arg_name}"
       puts "#{opt_name}=>#{s}" if $DEBUG
       opt_name = opt_name.intern
@@ -87,7 +88,7 @@ def cp
     options[:preserve] = true if options.delete :p
     dest = argv.pop
     argv = argv[0] if argv.size == 1
-    FileUtils.send cmd, argv, dest, options
+    FileUtils.send cmd, argv, dest, **options
   end
 end
 
@@ -108,7 +109,7 @@ def ln
     options[:force] = true if options.delete :f
     dest = argv.pop
     argv = argv[0] if argv.size == 1
-    FileUtils.send cmd, argv, dest, options
+    FileUtils.send cmd, argv, dest, **options
   end
 end
 
@@ -124,7 +125,7 @@ def mv
   setup do |argv, options|
     dest = argv.pop
     argv = argv[0] if argv.size == 1
-    FileUtils.mv argv, dest, options
+    FileUtils.mv argv, dest, **options
   end
 end
 
@@ -143,7 +144,7 @@ def rm
     cmd = "rm"
     cmd += "_r" if options.delete :r
     options[:force] = true if options.delete :f
-    FileUtils.send cmd, argv, options
+    FileUtils.send cmd, argv, **options
   end
 end
 
@@ -160,7 +161,7 @@ def mkdir
   setup("p") do |argv, options|
     cmd = "mkdir"
     cmd += "_p" if options.delete :p
-    FileUtils.send cmd, argv, options
+    FileUtils.send cmd, argv, **options
   end
 end
 
@@ -176,7 +177,7 @@ end
 def rmdir
   setup("p") do |argv, options|
     options[:parents] = true if options.delete :p
-    FileUtils.rmdir argv, options
+    FileUtils.rmdir argv, **options
   end
 end
 
@@ -188,16 +189,20 @@ end
 #   -p          apply access/modification times of SOURCE files to
 #               corresponding destination files
 #   -m          set permission mode (as in chmod), instead of 0755
+#   -o          set owner user id, instead of the current owner
+#   -g          set owner group id, instead of the current group
 #   -v          verbose
 #
 
 def install
-  setup("pm:") do |argv, options|
-    options[:mode] = (mode = options.delete :m) ? mode.oct : 0755
+  setup("pm:o:g:") do |argv, options|
+    (mode = options.delete :m) and options[:mode] = /\A\d/ =~ mode ? mode.oct : mode
     options[:preserve] = true if options.delete :p
+    (owner = options.delete :o) and options[:owner] = owner
+    (group = options.delete :g) and options[:group] = group
     dest = argv.pop
     argv = argv[0] if argv.size == 1
-    FileUtils.install argv, dest, options
+    FileUtils.install argv, dest, **options
   end
 end
 
@@ -211,8 +216,9 @@ end
 
 def chmod
   setup do |argv, options|
-    mode = argv.shift.oct
-    FileUtils.chmod mode, argv, options
+    mode = argv.shift
+    mode = /\A\d/ =~ mode ? mode.oct : mode
+    FileUtils.chmod mode, argv, **options
   end
 end
 
@@ -226,7 +232,7 @@ end
 
 def touch
   setup do |argv, options|
-    FileUtils.touch argv, options
+    FileUtils.touch argv, **options
   end
 end
 
@@ -307,17 +313,32 @@ end
 #   --do-not-reverse-lookup     disable reverse lookup
 #   --request-timeout=SECOND    request timeout in seconds
 #   --http-version=VERSION      HTTP version
+#   --server-name=NAME          name of the server host
+#   --server-software=NAME      name and version of the server
+#   --ssl-certificate=CERT      The SSL certificate file for the server
+#   --ssl-private-key=KEY       The SSL private key file for the server certificate
 #   -v                          verbose
 #
 
 def httpd
   setup("", "BindAddress=ADDR", "Port=PORT", "MaxClients=NUM", "TempDir=DIR",
-        "DoNotReverseLookup", "RequestTimeout=SECOND", "HTTPVersion=VERSION") do
+        "DoNotReverseLookup", "RequestTimeout=SECOND", "HTTPVersion=VERSION",
+        "ServerName=NAME", "ServerSoftware=NAME",
+        "SSLCertificate=CERT", "SSLPrivateKey=KEY") do
     |argv, options|
     require 'webrick'
     opt = options[:RequestTimeout] and options[:RequestTimeout] = opt.to_i
     [:Port, :MaxClients].each do |name|
       opt = options[name] and (options[name] = Integer(opt)) rescue nil
+    end
+    if cert = options[:SSLCertificate]
+      key = options[:SSLPrivateKey] or
+        raise "--ssl-private-key option must also be given"
+      require 'webrick/https'
+      options[:SSLEnable] = true
+      options[:SSLCertificate] = OpenSSL::X509::Certificate.new(File.read(cert))
+      options[:SSLPrivateKey] = OpenSSL::PKey.read(File.read(key))
+      options[:Port] ||= 8443   # HTTPS Alternate
     end
     options[:Port] ||= 8080     # HTTP Alternate
     options[:DocumentRoot] = argv.shift || '.'
@@ -367,7 +388,7 @@ module UN # :nodoc:
       end
     end
     if messages
-      argv.each {|cmd| output << messages[cmd]}
+      argv.each {|arg| output << messages[arg]}
     end
   end
 end

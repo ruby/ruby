@@ -34,7 +34,7 @@
  * $Id$
  */
 
-#include "defs.h"
+#include "../defs.h"
 #include <string.h>	/* memcpy()/memset() or bcopy()/bzero() */
 #include <assert.h>	/* assert() */
 #include "sha2.h"

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require '-test-/debug'
 
@@ -54,5 +55,21 @@ class TestDebug < Test::Unit::TestCase
     bug7635 = '[ruby-core:51640]'
     binds = inspector_in_eval
     binds_check binds, bug7635
+  end
+
+  class MyRelation
+    include Enumerable
+
+    def each
+      yield :each_entry
+    end
+  end
+
+  def test_lazy_block
+    x = MyRelation.new.any? do
+      Bug::Debug.inspector
+      true
+    end
+    assert_equal true, x, '[Bug #15105]'
   end
 end

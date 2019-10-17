@@ -15,17 +15,17 @@ assert_equal 'sym',             ':sym'
 assert_equal ':sym',            ':sym.inspect'
 assert_equal 'Symbol',          ':sym.class'
 assert_equal '1234',            '1234'
-assert_equal 'Fixnum',          '1234.class'
+assert_equal 'Integer',         '1234.class'
 assert_equal '1234',            '1_2_3_4'
-assert_equal 'Fixnum',          '1_2_3_4.class'
+assert_equal 'Integer',         '1_2_3_4.class'
 assert_equal '18',              '0x12'
-assert_equal 'Fixnum',          '0x12.class'
+assert_equal 'Integer',         '0x12.class'
 assert_equal '15',              '0o17'
-assert_equal 'Fixnum',          '0o17.class'
+assert_equal 'Integer',         '0o17.class'
 assert_equal '5',               '0b101'
-assert_equal 'Fixnum',          '0b101.class'
+assert_equal 'Integer',         '0b101.class'
 assert_equal '123456789012345678901234567890', '123456789012345678901234567890'
-assert_equal 'Bignum',          '123456789012345678901234567890.class'
+assert_equal 'Integer',         '123456789012345678901234567890.class'
 assert_equal '2.0',             '2.0'
 assert_equal 'Float',           '1.3.class'
 
@@ -65,10 +65,8 @@ assert_equal ':a3c',            ':"a#{1+2}c".inspect'
 assert_equal 'Symbol',          ':"a#{1+2}c".class'
 
 # xstring
-unless nacl?
-  assert_equal "foo\n",           %q(`echo foo`)
-  assert_equal "foo\n",           %q(s = "foo"; `echo #{s}`)
-end
+assert_equal "foo\n",           %q(`echo foo`)
+assert_equal "foo\n",           %q(s = "foo"; `echo #{s}`)
 
 # regexp
 assert_equal '',                '//.source'
@@ -99,7 +97,7 @@ assert_equal '[3]',             '[3].inspect'
 assert_equal '3',               'a = [3]; a[0]'
 assert_equal 'Array',           '[1,2].class'
 assert_equal '2',               '[1,2].size'
-assert_equal '[1, 2]',           '[1,2].inspect'
+assert_equal '[1, 2]',          '[1,2].inspect'
 assert_equal 'Array',           '[1,2,3,4,5].class'
 assert_equal '5',               '[1,2,3,4,5].size'
 assert_equal '[1, 2, 3, 4, 5]', '[1,2,3,4,5].inspect'
@@ -169,7 +167,7 @@ assert_equal 'a',               'r = ("a".."c"); r.begin'
 assert_equal 'c',               'r = ("a".."c"); r.end'
 
 assert_equal 'String',          '__FILE__.class'
-assert_equal 'Fixnum',          '__LINE__.class'
+assert_equal 'Integer',         '__LINE__.class'
 
 ###
 
@@ -222,6 +220,24 @@ assert_equal 'ok', %q{ #  long hash literal
 
 assert_equal 'ok', %q{ #  long hash literal (optimized)
   eval "a = {#{(1..10_000).map{|n| "#{n} => #{n}"}.join(', ')}}"
+  :ok
+}
+
+assert_equal 'ok', %q{ #  Bug #15536
+  eval <<-END
+    {
+      **{
+        a0: nil, a1: nil, a2: nil, a3: nil, a4: nil, a5: nil, a6: nil, a7: nil, a8: nil,
+      },
+      a0: nil, a1: nil, a2: nil, a3: nil, a4: nil, a5: nil, a6: nil, a7: nil, a8: nil,
+      **{
+        c: nil
+      },
+      b0: nil, b1: nil, b2: nil, b3: nil, b4: nil, b5: nil, b6: nil, b7: nil, b8: nil,
+      b9: nil, b10: nil, b11: nil, b12: nil, b13: nil, b14: nil, b15: nil, b16: nil,
+      b17: nil, b18: nil, b19: nil, b20: nil, b21: nil,
+    }
+  END
   :ok
 }
 

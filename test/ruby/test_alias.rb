@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestAlias < Test::Unit::TestCase
@@ -121,7 +122,8 @@ class TestAlias < Test::Unit::TestCase
   end
 
   def test_alias_wb_miss
-    assert_normal_exit %q{
+    assert_normal_exit "#{<<-"begin;"}\n#{<<-'end;'}"
+    begin;
       require 'stringio'
       GC.verify_internal_consistency
       GC.start
@@ -129,7 +131,7 @@ class TestAlias < Test::Unit::TestCase
         alias_method :read_nonblock, :sysread
       end
       GC.verify_internal_consistency
-    }
+    end;
   end
 
   def test_cyclic_zsuper
@@ -182,7 +184,8 @@ class TestAlias < Test::Unit::TestCase
   def test_alias_in_module
     bug9663 = '[ruby-core:61635] [Bug #9663]'
 
-    assert_separately(['-', bug9663], <<-'end;')
+    assert_separately(['-', bug9663], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
       bug = ARGV[0]
 
       m = Module.new do
@@ -201,5 +204,33 @@ class TestAlias < Test::Unit::TestCase
     obj = C1.new
     assert_equal(obj.method(:bar), obj.method(:foo))
     assert_equal(obj.method(:foo), obj.method(:bar))
+  end
+
+  def test_alias_class_method_added
+    name = nil
+    k = Class.new {
+      def foo;end
+      def self.method_added(mid)
+        @name = instance_method(mid).original_name
+      end
+      alias bar foo
+      name = @name
+    }
+    assert_equal(:foo, k.instance_method(:bar).original_name)
+    assert_equal(:foo, name)
+  end
+
+  def test_alias_module_method_added
+    name = nil
+    k = Module.new {
+      def foo;end
+      def self.method_added(mid)
+        @name = instance_method(mid).original_name
+      end
+      alias bar foo
+      name = @name
+    }
+    assert_equal(:foo, k.instance_method(:bar).original_name)
+    assert_equal(:foo, name)
   end
 end

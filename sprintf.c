@@ -11,8 +11,9 @@
 
 **********************************************************************/
 
-#include "internal.h"
+#include "ruby/encoding.h"
 #include "ruby/re.h"
+#include "internal.h"
 #include "id.h"
 #include <math.h>
 #include <stdarg.h>
@@ -23,7 +24,8 @@
 
 #define BIT_DIGITS(N)   (((N)*146)/485 + 1)  /* log2(10) =~ 146/485 */
 
-static void fmt_setup(char*,size_t,int,int,int,int);
+static char *fmt_setup(char*,size_t,int,int,int,int);
+static char *ruby_ultoa(unsigned long val, char *endp, int base, int octzero);
 
 static char
 sign_bits(int base, const char *p)
@@ -55,8 +57,9 @@ sign_bits(int base, const char *p)
 
 #define CHECK(l) do {\
     int cr = ENC_CODERANGE(result);\
-    while (blen + (l) >= bsiz) {\
+    while ((l) >= bsiz - blen) {\
 	bsiz*=2;\
+	if (bsiz<0) rb_raise(rb_eArgError, "too big specifier");\
     }\
     rb_str_resize(result, bsiz);\
     ENC_CODERANGE_SET(result, cr);\
@@ -65,12 +68,21 @@ sign_bits(int base, const char *p)
 
 #define PUSH(s, l) do { \
     CHECK(l);\
+    PUSH_(s, l);\
+} while (0)
+
+#define PUSH_(s, l) do { \
     memcpy(&buf[blen], (s), (l));\
     blen += (l);\
 } while (0)
 
 #define FILL(c, l) do { \
+    if ((l) <= 0) break;\
     CHECK(l);\
+    FILL_(c, l);\
+} while (0)
+
+#define FILL_(c, l) do { \
     memset(&buf[blen], (c), (l));\
     blen += (l);\
 } while (0)
@@ -182,267 +194,6 @@ get_hash(volatile VALUE *hash, int argc, const VALUE *argv)
     return (*hash = tmp);
 }
 
-/*
- *  call-seq:
- *     format(format_string [, arguments...] )   -> string
- *     sprintf(format_string [, arguments...] )  -> string
- *
- *  Returns the string resulting from applying <i>format_string</i> to
- *  any additional arguments.  Within the format string, any characters
- *  other than format sequences are copied to the result.
- *
- *  The syntax of a format sequence is follows.
- *
- *    %[flags][width][.precision]type
- *
- *  A format
- *  sequence consists of a percent sign, followed by optional flags,
- *  width, and precision indicators, then terminated with a field type
- *  character.  The field type controls how the corresponding
- *  <code>sprintf</code> argument is to be interpreted, while the flags
- *  modify that interpretation.
- *
- *  The field type characters are:
- *
- *      Field |  Integer Format
- *      ------+--------------------------------------------------------------
- *        b   | Convert argument as a binary number.
- *            | Negative numbers will be displayed as a two's complement
- *            | prefixed with `..1'.
- *        B   | Equivalent to `b', but uses an uppercase 0B for prefix
- *            | in the alternative format by #.
- *        d   | Convert argument as a decimal number.
- *        i   | Identical to `d'.
- *        o   | Convert argument as an octal number.
- *            | Negative numbers will be displayed as a two's complement
- *            | prefixed with `..7'.
- *        u   | Identical to `d'.
- *        x   | Convert argument as a hexadecimal number.
- *            | Negative numbers will be displayed as a two's complement
- *            | prefixed with `..f' (representing an infinite string of
- *            | leading 'ff's).
- *        X   | Equivalent to `x', but uses uppercase letters.
- *
- *      Field |  Float Format
- *      ------+--------------------------------------------------------------
- *        e   | Convert floating point argument into exponential notation
- *            | with one digit before the decimal point as [-]d.dddddde[+-]dd.
- *            | The precision specifies the number of digits after the decimal
- *            | point (defaulting to six).
- *        E   | Equivalent to `e', but uses an uppercase E to indicate
- *            | the exponent.
- *        f   | Convert floating point argument as [-]ddd.dddddd,
- *            | where the precision specifies the number of digits after
- *            | the decimal point.
- *        g   | Convert a floating point number using exponential form
- *            | if the exponent is less than -4 or greater than or
- *            | equal to the precision, or in dd.dddd form otherwise.
- *            | The precision specifies the number of significant digits.
- *        G   | Equivalent to `g', but use an uppercase `E' in exponent form.
- *        a   | Convert floating point argument as [-]0xh.hhhhp[+-]dd,
- *            | which is consisted from optional sign, "0x", fraction part
- *            | as hexadecimal, "p", and exponential part as decimal.
- *        A   | Equivalent to `a', but use uppercase `X' and `P'.
- *
- *      Field |  Other Format
- *      ------+--------------------------------------------------------------
- *        c   | Argument is the numeric code for a single character or
- *            | a single character string itself.
- *        p   | The valuing of argument.inspect.
- *        s   | Argument is a string to be substituted.  If the format
- *            | sequence contains a precision, at most that many characters
- *            | will be copied.
- *        %   | A percent sign itself will be displayed.  No argument taken.
- *
- *  The flags modifies the behavior of the formats.
- *  The flag characters are:
- *
- *    Flag     | Applies to    | Meaning
- *    ---------+---------------+-----------------------------------------
- *    space    | bBdiouxX      | Leave a space at the start of
- *             | aAeEfgG       | non-negative numbers.
- *             | (numeric fmt) | For `o', `x', `X', `b' and `B', use
- *             |               | a minus sign with absolute value for
- *             |               | negative values.
- *    ---------+---------------+-----------------------------------------
- *    (digit)$ | all           | Specifies the absolute argument number
- *             |               | for this field.  Absolute and relative
- *             |               | argument numbers cannot be mixed in a
- *             |               | sprintf string.
- *    ---------+---------------+-----------------------------------------
- *     #       | bBoxX         | Use an alternative format.
- *             | aAeEfgG       | For the conversions `o', increase the precision
- *             |               | until the first digit will be `0' if
- *             |               | it is not formatted as complements.
- *             |               | For the conversions `x', `X', `b' and `B'
- *             |               | on non-zero, prefix the result with ``0x'',
- *             |               | ``0X'', ``0b'' and ``0B'', respectively.
- *             |               | For `a', `A', `e', `E', `f', `g', and 'G',
- *             |               | force a decimal point to be added,
- *             |               | even if no digits follow.
- *             |               | For `g' and 'G', do not remove trailing zeros.
- *    ---------+---------------+-----------------------------------------
- *    +        | bBdiouxX      | Add a leading plus sign to non-negative
- *             | aAeEfgG       | numbers.
- *             | (numeric fmt) | For `o', `x', `X', `b' and `B', use
- *             |               | a minus sign with absolute value for
- *             |               | negative values.
- *    ---------+---------------+-----------------------------------------
- *    -        | all           | Left-justify the result of this conversion.
- *    ---------+---------------+-----------------------------------------
- *    0 (zero) | bBdiouxX      | Pad with zeros, not spaces.
- *             | aAeEfgG       | For `o', `x', `X', `b' and `B', radix-1
- *             | (numeric fmt) | is used for negative numbers formatted as
- *             |               | complements.
- *    ---------+---------------+-----------------------------------------
- *    *        | all           | Use the next argument as the field width.
- *             |               | If negative, left-justify the result. If the
- *             |               | asterisk is followed by a number and a dollar
- *             |               | sign, use the indicated argument as the width.
- *
- *  Examples of flags:
- *
- *   # `+' and space flag specifies the sign of non-negative numbers.
- *   sprintf("%d", 123)  #=> "123"
- *   sprintf("%+d", 123) #=> "+123"
- *   sprintf("% d", 123) #=> " 123"
- *
- *   # `#' flag for `o' increases number of digits to show `0'.
- *   # `+' and space flag changes format of negative numbers.
- *   sprintf("%o", 123)   #=> "173"
- *   sprintf("%#o", 123)  #=> "0173"
- *   sprintf("%+o", -123) #=> "-173"
- *   sprintf("%o", -123)  #=> "..7605"
- *   sprintf("%#o", -123) #=> "..7605"
- *
- *   # `#' flag for `x' add a prefix `0x' for non-zero numbers.
- *   # `+' and space flag disables complements for negative numbers.
- *   sprintf("%x", 123)   #=> "7b"
- *   sprintf("%#x", 123)  #=> "0x7b"
- *   sprintf("%+x", -123) #=> "-7b"
- *   sprintf("%x", -123)  #=> "..f85"
- *   sprintf("%#x", -123) #=> "0x..f85"
- *   sprintf("%#x", 0)    #=> "0"
- *
- *   # `#' for `X' uses the prefix `0X'.
- *   sprintf("%X", 123)  #=> "7B"
- *   sprintf("%#X", 123) #=> "0X7B"
- *
- *   # `#' flag for `b' add a prefix `0b' for non-zero numbers.
- *   # `+' and space flag disables complements for negative numbers.
- *   sprintf("%b", 123)   #=> "1111011"
- *   sprintf("%#b", 123)  #=> "0b1111011"
- *   sprintf("%+b", -123) #=> "-1111011"
- *   sprintf("%b", -123)  #=> "..10000101"
- *   sprintf("%#b", -123) #=> "0b..10000101"
- *   sprintf("%#b", 0)    #=> "0"
- *
- *   # `#' for `B' uses the prefix `0B'.
- *   sprintf("%B", 123)  #=> "1111011"
- *   sprintf("%#B", 123) #=> "0B1111011"
- *
- *   # `#' for `e' forces to show the decimal point.
- *   sprintf("%.0e", 1)  #=> "1e+00"
- *   sprintf("%#.0e", 1) #=> "1.e+00"
- *
- *   # `#' for `f' forces to show the decimal point.
- *   sprintf("%.0f", 1234)  #=> "1234"
- *   sprintf("%#.0f", 1234) #=> "1234."
- *
- *   # `#' for `g' forces to show the decimal point.
- *   # It also disables stripping lowest zeros.
- *   sprintf("%g", 123.4)   #=> "123.4"
- *   sprintf("%#g", 123.4)  #=> "123.400"
- *   sprintf("%g", 123456)  #=> "123456"
- *   sprintf("%#g", 123456) #=> "123456."
- *
- *  The field width is an optional integer, followed optionally by a
- *  period and a precision.  The width specifies the minimum number of
- *  characters that will be written to the result for this field.
- *
- *  Examples of width:
- *
- *   # padding is done by spaces,       width=20
- *   # 0 or radix-1.             <------------------>
- *   sprintf("%20d", 123)   #=> "                 123"
- *   sprintf("%+20d", 123)  #=> "                +123"
- *   sprintf("%020d", 123)  #=> "00000000000000000123"
- *   sprintf("%+020d", 123) #=> "+0000000000000000123"
- *   sprintf("% 020d", 123) #=> " 0000000000000000123"
- *   sprintf("%-20d", 123)  #=> "123                 "
- *   sprintf("%-+20d", 123) #=> "+123                "
- *   sprintf("%- 20d", 123) #=> " 123                "
- *   sprintf("%020x", -123) #=> "..ffffffffffffffff85"
- *
- *  For
- *  numeric fields, the precision controls the number of decimal places
- *  displayed.  For string fields, the precision determines the maximum
- *  number of characters to be copied from the string.  (Thus, the format
- *  sequence <code>%10.10s</code> will always contribute exactly ten
- *  characters to the result.)
- *
- *  Examples of precisions:
- *
- *   # precision for `d', 'o', 'x' and 'b' is
- *   # minimum number of digits               <------>
- *   sprintf("%20.8d", 123)  #=> "            00000123"
- *   sprintf("%20.8o", 123)  #=> "            00000173"
- *   sprintf("%20.8x", 123)  #=> "            0000007b"
- *   sprintf("%20.8b", 123)  #=> "            01111011"
- *   sprintf("%20.8d", -123) #=> "           -00000123"
- *   sprintf("%20.8o", -123) #=> "            ..777605"
- *   sprintf("%20.8x", -123) #=> "            ..ffff85"
- *   sprintf("%20.8b", -11)  #=> "            ..110101"
- *
- *   # "0x" and "0b" for `#x' and `#b' is not counted for
- *   # precision but "0" for `#o' is counted.  <------>
- *   sprintf("%#20.8d", 123)  #=> "            00000123"
- *   sprintf("%#20.8o", 123)  #=> "            00000173"
- *   sprintf("%#20.8x", 123)  #=> "          0x0000007b"
- *   sprintf("%#20.8b", 123)  #=> "          0b01111011"
- *   sprintf("%#20.8d", -123) #=> "           -00000123"
- *   sprintf("%#20.8o", -123) #=> "            ..777605"
- *   sprintf("%#20.8x", -123) #=> "          0x..ffff85"
- *   sprintf("%#20.8b", -11)  #=> "          0b..110101"
- *
- *   # precision for `e' is number of
- *   # digits after the decimal point           <------>
- *   sprintf("%20.8e", 1234.56789) #=> "      1.23456789e+03"
- *
- *   # precision for `f' is number of
- *   # digits after the decimal point               <------>
- *   sprintf("%20.8f", 1234.56789) #=> "       1234.56789000"
- *
- *   # precision for `g' is number of
- *   # significant digits                          <------->
- *   sprintf("%20.8g", 1234.56789) #=> "           1234.5679"
- *
- *   #                                         <------->
- *   sprintf("%20.8g", 123456789)  #=> "       1.2345679e+08"
- *
- *   # precision for `s' is
- *   # maximum number of characters                    <------>
- *   sprintf("%20.8s", "string test") #=> "            string t"
- *
- *  Examples:
- *
- *     sprintf("%d %04x", 123, 123)               #=> "123 007b"
- *     sprintf("%08b '%4s'", 123, 123)            #=> "01111011 ' 123'"
- *     sprintf("%1$*2$s %2$d %1$s", "hello", 8)   #=> "   hello 8 hello"
- *     sprintf("%1$*2$s %2$d", "hello", -8)       #=> "hello    -8"
- *     sprintf("%+g:% g:%-g", 1.23, 1.23, 1.23)   #=> "+1.23: 1.23:1.23"
- *     sprintf("%u", -123)                        #=> "-123"
- *
- *  For more complex formatting, Ruby supports a reference by name.
- *  %<name>s style uses format style, but %{name} style doesn't.
- *
- *  Examples:
- *    sprintf("%<foo>d : %<bar>f", { :foo => 1, :bar => 2 })
- *      #=> 1 : 2.000000
- *    sprintf("%{foo}f", { :foo => 1 })
- *      # => "1f"
- */
-
 VALUE
 rb_f_sprintf(int argc, const VALUE *argv)
 {
@@ -467,6 +218,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     int tainted = 0;
     VALUE nextvalue;
     VALUE tmp;
+    VALUE orig;
     VALUE str;
     volatile VALUE hash = Qundef;
 
@@ -490,7 +242,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     if (OBJ_TAINTED(fmt)) tainted = 1;
     StringValue(fmt);
     enc = rb_enc_get(fmt);
-    fmt = rb_str_new4(fmt);
+    orig = fmt;
+    fmt = rb_str_tmp_frozen_acquire(fmt);
     p = RSTRING_PTR(fmt);
     end = p + RSTRING_LEN(fmt);
     blen = 0;
@@ -507,6 +260,9 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	VALUE sym = Qnil;
 
 	for (t = p; t < end && *t != '%'; t++) ;
+	if (t + 1 == end) {
+	    rb_raise(rb_eArgError, "incomplete format specifier; use %%%% (double %%) instead");
+	}
 	PUSH(p, t - p);
 	if (coderange != ENC_CODERANGE_BROKEN && scanned < blen) {
 	    scanned += rb_str_coderange_scan_restartable(buf+scanned, buf+blen, enc, &coderange);
@@ -594,7 +350,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    const int message_limit = 20;
 		    len = (int)(rb_enc_right_char_head(start, start + message_limit, p, enc) - start);
 		    rb_enc_raise(enc, rb_eArgError,
-				 "too long name (%"PRIdSIZE" bytes) - %.*s...%c",
+				 "too long name (%"PRIuSIZE" bytes) - %.*s...%c",
 				 (size_t)(p - start - 2), len, start, term);
 		}
 #endif
@@ -608,9 +364,17 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		sym = rb_check_symbol_cstr(start + 1,
 					   len - 2 /* without parenthesis */,
 					   enc);
-		if (sym != Qnil) nextvalue = rb_hash_lookup2(hash, sym, Qundef);
+		if (!NIL_P(sym)) nextvalue = rb_hash_lookup2(hash, sym, Qundef);
 		if (nextvalue == Qundef) {
-		    rb_enc_raise(enc, rb_eKeyError, "key%.*s not found", len, start);
+		    if (NIL_P(sym)) {
+			sym = rb_sym_intern(start + 1,
+					    len - 2 /* without parenthesis */,
+					    enc);
+		    }
+		    nextvalue = rb_hash_default_value(hash, sym);
+		    if (NIL_P(nextvalue)) {
+			rb_key_err_raise(rb_enc_sprintf(enc, "key%.*s not found", len, start), hash, sym);
+		    }
 		}
 		if (term == '}') goto format_s;
 		p++;
@@ -624,6 +388,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    if (width < 0) {
 		flags |= FMINUS;
 		width = -width;
+		if (width < 0) rb_raise(rb_eArgError, "width too big");
 	    }
 	    p++;
 	    goto retry;
@@ -651,6 +416,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	  case '\n':
 	  case '\0':
 	    p--;
+            /* fall through */
 	  case '%':
 	    if (flags != FNONE) {
 		rb_raise(rb_eArgError, "invalid format character - %%");
@@ -689,10 +455,10 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    CHECK(n);
 		    rb_enc_mbcput(c, &buf[blen], enc);
 		    blen += n;
-		    FILL(' ', width-1);
+		    if (width > 1) FILL(' ', width-1);
 		}
 		else {
-		    FILL(' ', width-1);
+		    if (width > 1) FILL(' ', width-1);
 		    CHECK(n);
 		    rb_enc_mbcput(c, &buf[blen], enc);
 		    blen += n;
@@ -739,20 +505,15 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    if ((flags&FWIDTH) && (width > slen)) {
 			width -= (int)slen;
 			if (!(flags&FMINUS)) {
-			    CHECK(width);
-			    while (width--) {
-				buf[blen++] = ' ';
-			    }
+			    FILL(' ', width);
+			    width = 0;
 			}
 			CHECK(len);
 			memcpy(&buf[blen], RSTRING_PTR(str), len);
 			RB_GC_GUARD(str);
 			blen += len;
 			if (flags&FMINUS) {
-			    CHECK(width);
-			    while (width--) {
-				buf[blen++] = ' ';
-			    }
+			    FILL(' ', width);
 			}
 			rb_enc_associate(result, enc);
 			break;
@@ -775,7 +536,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    {
 		volatile VALUE val = GETARG();
                 int valsign;
-		char nbuf[64], *s;
+		char nbuf[BIT_DIGITS(SIZEOF_LONG*CHAR_BIT)+2], *s;
 		const char *prefix = 0;
 		int sign = 0, dots = 0;
 		char sc = 0;
@@ -922,9 +683,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                         sc = ' ';
                         width--;
                     }
-                    snprintf(nbuf, sizeof(nbuf), "%ld", v);
-                    s = nbuf;
-		    len = (int)strlen(s);
+		    s = ruby_ultoa((unsigned long)v, nbuf + sizeof(nbuf), 10, 0);
+		    len = (int)(nbuf + sizeof(nbuf) - s);
 		}
 		else {
                     tmp = rb_big2str(val, 10);
@@ -990,35 +750,28 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    width -= prec;
 		}
 		if (!(flags&FMINUS)) {
-		    CHECK(width);
-		    while (width-- > 0) {
-			buf[blen++] = ' ';
-		    }
+		    FILL(' ', width);
+		    width = 0;
 		}
 		if (sc) PUSH(&sc, 1);
 		if (prefix) {
 		    int plen = (int)strlen(prefix);
 		    PUSH(prefix, plen);
 		}
-		CHECK(prec - len);
 		if (dots) PUSH("..", 2);
-		if (!sign && valsign < 0) {
-		    char c = sign_bits(base, p);
-		    while (len < prec--) {
-			buf[blen++] = c;
+		if (prec > len) {
+		    CHECK(prec - len);
+		    if (!sign && valsign < 0) {
+			char c = sign_bits(base, p);
+			FILL_(c, prec - len);
 		    }
-		}
-		else if ((flags & (FMINUS|FPREC)) != FMINUS) {
-		    while (len < prec--) {
-			buf[blen++] = '0';
+		    else if ((flags & (FMINUS|FPREC)) != FMINUS) {
+			FILL_('0', prec - len);
 		    }
 		}
 		PUSH(s, len);
 		RB_GC_GUARD(tmp);
-		CHECK(width);
-		while (width-- > 0) {
-		    buf[blen++] = ' ';
-		}
+		FILL(' ', width);
 	    }
 	    break;
 
@@ -1026,15 +779,20 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    {
 		VALUE val = GETARG(), num, den;
 		int sign = (flags&FPLUS) ? 1 : 0, zero = 0;
-		long len, done = 0;
-		int prefix = 0;
-		if (!RB_TYPE_P(val, T_RATIONAL)) {
+		long len, fill;
+		if (RB_INTEGER_TYPE_P(val)) {
+		    den = INT2FIX(1);
+		    num = val;
+		}
+		else if (RB_TYPE_P(val, T_RATIONAL)) {
+		    den = rb_rational_den(val);
+		    num = rb_rational_num(val);
+		}
+		else {
 		    nextvalue = val;
 		    goto float_value;
 		}
 		if (!(flags&FPREC)) prec = default_float_precision;
-		den = rb_rational_den(val);
-		num = rb_rational_num(val);
 		if (FIXNUM_P(num)) {
 		    if ((SIGNED_VALUE)num < 0) {
 			long n = -FIX2LONG(num);
@@ -1042,73 +800,57 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			sign = -1;
 		    }
 		}
-		else if (rb_num_negative_p(num)) {
+		else if (BIGNUM_NEGATIVE_P(num)) {
 		    sign = -1;
-		    num = rb_funcallv(num, idUMinus, 0, 0);
+		    num = rb_big_uminus(num);
 		}
-		if (den != INT2FIX(1) || prec > 1) {
-		    const ID idDiv = rb_intern("div");
-		    VALUE p10 = rb_int_positive_pow(10, prec);
-		    VALUE den_2 = rb_funcall(den, idDiv, 1, INT2FIX(2));
-		    num = rb_funcallv(num, '*', 1, &p10);
-		    num = rb_funcallv(num, '+', 1, &den_2);
-		    num = rb_funcallv(num, idDiv, 1, &den);
+		if (den != INT2FIX(1)) {
+		    num = rb_int_mul(num, rb_int_positive_pow(10, prec));
+		    num = rb_int_plus(num, rb_int_idiv(den, INT2FIX(2)));
+		    num = rb_int_idiv(num, den);
 		}
 		else if (prec >= 0) {
 		    zero = prec;
 		}
-		val = rb_obj_as_string(num);
+		val = rb_int2str(num, 10);
 		len = RSTRING_LEN(val) + zero;
-		if (prec >= len) ++len; /* integer part 0 */
+		if (prec >= len) len = prec + 1; /* integer part 0 */
 		if (sign || (flags&FSPACE)) ++len;
 		if (prec > 0) ++len; /* period */
-		CHECK(len > width ? len : width);
+		fill = width > len ? width - len : 0;
+		CHECK(fill + len);
+		if (fill && !(flags&(FMINUS|FZERO))) {
+		    FILL_(' ', fill);
+		}
 		if (sign || (flags&FSPACE)) {
 		    buf[blen++] = sign > 0 ? '+' : sign < 0 ? '-' : ' ';
-		    prefix++;
-		    done++;
+		}
+		if (fill && (flags&(FMINUS|FZERO)) == FZERO) {
+		    FILL_('0', fill);
 		}
 		len = RSTRING_LEN(val) + zero;
 		t = RSTRING_PTR(val);
 		if (len > prec) {
-		    memcpy(&buf[blen], t, len - prec);
-		    blen += len - prec;
-		    done += len - prec;
+		    PUSH_(t, len - prec);
 		}
 		else {
 		    buf[blen++] = '0';
-		    done++;
 		}
 		if (prec > 0) {
 		    buf[blen++] = '.';
-		    done++;
 		}
 		if (zero) {
-		    FILL('0', zero);
-		    done += zero;
+		    FILL_('0', zero);
 		}
 		else if (prec > len) {
-		    FILL('0', prec - len);
-		    memcpy(&buf[blen], t, len);
-		    blen += len;
-		    done += prec;
+		    FILL_('0', prec - len);
+		    PUSH_(t, len);
 		}
 		else if (prec > 0) {
-		    memcpy(&buf[blen], t + len - prec, prec);
-		    blen += prec;
-		    done += prec;
+		    PUSH_(t + len - prec, prec);
 		}
-		if ((flags & FWIDTH) && width > done) {
-		    if (!(flags&FMINUS)) {
-			long i, shifting = (flags&FZERO) ? done - prefix : done;
-			for (i = 1; i <= shifting; i++)
-			    buf[width - i] = buf[done - i];
-			blen -= shifting;
-			FILL((flags&FZERO) ? '0' : ' ', width - done);
-			blen += shifting;
-		    } else {
-			FILL(' ', width - done);
-		    }
+		if (fill && (flags&FMINUS)) {
+		    FILL_(' ', fill);
 		}
 		RB_GC_GUARD(val);
 		break;
@@ -1124,12 +866,13 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    {
 		VALUE val = GETARG();
 		double fval;
-		int i, need;
-		char fbuf[32];
 
 		fval = RFLOAT_VALUE(rb_Float(val));
 		if (isnan(fval) || isinf(fval)) {
 		    const char *expr;
+		    int need;
+		    int elen;
+		    char sign = '\0';
 
 		    if (isnan(fval)) {
 			expr = "NaN";
@@ -1138,52 +881,39 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			expr = "Inf";
 		    }
 		    need = (int)strlen(expr);
-		    if ((!isnan(fval) && fval < 0.0) || (flags & FPLUS))
-			need++;
+		    elen = need;
+		    if (!isnan(fval) && fval < 0.0)
+			sign = '-';
+		    else if (flags & (FPLUS|FSPACE))
+			sign = (flags & FPLUS) ? '+' : ' ';
+		    if (sign)
+			++need;
 		    if ((flags & FWIDTH) && need < width)
 			need = width;
 
-		    CHECK(need + 1);
-		    snprintf(&buf[blen], need + 1, "%*s", need, "");
+		    FILL(' ', need);
 		    if (flags & FMINUS) {
-			if (!isnan(fval) && fval < 0.0)
-			    buf[blen++] = '-';
-			else if (flags & FPLUS)
-			    buf[blen++] = '+';
-			else if (flags & FSPACE)
-			    blen++;
-			memcpy(&buf[blen], expr, strlen(expr));
+			if (sign)
+			    buf[blen - need--] = sign;
+			memcpy(&buf[blen - need], expr, elen);
 		    }
 		    else {
-			if (!isnan(fval) && fval < 0.0)
-			    buf[blen + need - strlen(expr) - 1] = '-';
-			else if (flags & FPLUS)
-			    buf[blen + need - strlen(expr) - 1] = '+';
-			else if ((flags & FSPACE) && need > width)
-			    blen++;
-			memcpy(&buf[blen + need - strlen(expr)], expr,
-			       strlen(expr));
+			if (sign)
+			    buf[blen - elen - 1] = sign;
+			memcpy(&buf[blen - elen], expr, elen);
 		    }
-		    blen += strlen(&buf[blen]);
 		    break;
 		}
-
-		fmt_setup(fbuf, sizeof(fbuf), *p, flags, width, prec);
-		need = 0;
-		if (*p != 'e' && *p != 'E') {
-		    i = INT_MIN;
-		    frexp(fval, &i);
-		    if (i > 0)
-			need = BIT_DIGITS(i);
+		else {
+		    int cr = ENC_CODERANGE(result);
+		    char fbuf[2*BIT_DIGITS(SIZEOF_INT*CHAR_BIT)+10];
+		    char *fmt = fmt_setup(fbuf, sizeof(fbuf), *p, flags, width, prec);
+		    rb_str_set_len(result, blen);
+		    rb_str_catf(result, fmt, fval);
+		    ENC_CODERANGE_SET(result, cr);
+		    bsiz = rb_str_capacity(result);
+		    RSTRING_GETMEM(result, buf, blen);
 		}
-		need += (flags&FPREC) ? prec : default_float_precision;
-		if ((flags&FWIDTH) && need < width)
-		    need = width;
-		need += 20;
-
-		CHECK(need);
-		snprintf(&buf[blen], need, fbuf, fval);
-		blen += strlen(&buf[blen]);
 	    }
 	    break;
 	}
@@ -1191,7 +921,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     }
 
   sprint_exit:
-    RB_GC_GUARD(fmt);
+    rb_str_tmp_frozen_release(orig, fmt);
     /* XXX - We cannot validate the number of arguments if (digit)$ style used.
      */
     if (posarg >= 0 && nextarg < argc) {
@@ -1205,29 +935,29 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     return result;
 }
 
-static void
+static char *
 fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 {
-    char *end = buf + size;
-    *buf++ = '%';
-    if (flags & FSHARP) *buf++ = '#';
-    if (flags & FPLUS)  *buf++ = '+';
-    if (flags & FMINUS) *buf++ = '-';
-    if (flags & FZERO)  *buf++ = '0';
-    if (flags & FSPACE) *buf++ = ' ';
-
-    if (flags & FWIDTH) {
-	snprintf(buf, end - buf, "%d", width);
-	buf += strlen(buf);
-    }
+    buf += size;
+    *--buf = '\0';
+    *--buf = c;
 
     if (flags & FPREC) {
-	snprintf(buf, end - buf, ".%d", prec);
-	buf += strlen(buf);
+	buf = ruby_ultoa(prec, buf, 10, 0);
+	*--buf = '.';
     }
 
-    *buf++ = c;
-    *buf = '\0';
+    if (flags & FWIDTH) {
+	buf = ruby_ultoa(width, buf, 10, 0);
+    }
+
+    if (flags & FSPACE) *--buf = ' ';
+    if (flags & FZERO)  *--buf = '0';
+    if (flags & FMINUS) *--buf = '-';
+    if (flags & FPLUS)  *--buf = '+';
+    if (flags & FSHARP) *--buf = '#';
+    *--buf = '%';
+    return buf;
 }
 
 #undef FILE
@@ -1258,24 +988,47 @@ fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 #endif
 #define lower_hexdigits (ruby_hexdigits+0)
 #define upper_hexdigits (ruby_hexdigits+16)
+#if defined RUBY_USE_SETJMPEX && RUBY_USE_SETJMPEX
+# undef MAYBE_UNUSED
+# define MAYBE_UNUSED(x) x = 0
+#endif
 #include "vsnprintf.c"
+
+static char *
+ruby_ultoa(unsigned long val, char *endp, int base, int flags)
+{
+    const char *xdigs = lower_hexdigits;
+    int octzero = flags & FSHARP;
+    return BSD__ultoa(val, endp, base, octzero, xdigs);
+}
+
+static int ruby_do_vsnprintf(char *str, size_t n, const char *fmt, va_list ap);
 
 int
 ruby_vsnprintf(char *str, size_t n, const char *fmt, va_list ap)
 {
-    int ret;
+    if (str && (ssize_t)n < 1)
+	return (EOF);
+    return ruby_do_vsnprintf(str, n, fmt, ap);
+}
+
+static int
+ruby_do_vsnprintf(char *str, size_t n, const char *fmt, va_list ap)
+{
+    ssize_t ret;
     rb_printf_buffer f;
 
-    if ((int)n < 1)
-	return (EOF);
     f._flags = __SWR | __SSTR;
     f._bf._base = f._p = (unsigned char *)str;
-    f._bf._size = f._w = n - 1;
+    f._bf._size = f._w = str ? (n - 1) : 0;
     f.vwrite = BSD__sfvwrite;
     f.vextra = 0;
-    ret = (int)BSD_vfprintf(&f, fmt, ap);
-    *f._p = 0;
-    return ret;
+    ret = BSD_vfprintf(&f, fmt, ap);
+    if (str) *f._p = 0;
+#if SIZEOF_SIZE_T > SIZEOF_INT
+    if (n > INT_MAX) return INT_MAX;
+#endif
+    return (int)ret;
 }
 
 int
@@ -1284,11 +1037,11 @@ ruby_snprintf(char *str, size_t n, char const *fmt, ...)
     int ret;
     va_list ap;
 
-    if ((int)n < 1)
+    if (str && (ssize_t)n < 1)
 	return (EOF);
 
     va_start(ap, fmt);
-    ret = ruby_vsnprintf(str, n, fmt, ap);
+    ret = ruby_do_vsnprintf(str, n, fmt, ap);
     va_end(ap);
     return ret;
 }
@@ -1304,14 +1057,19 @@ ruby__sfvwrite(register rb_printf_buffer *fp, register struct __suio *uio)
     struct __siov *iov;
     VALUE result = (VALUE)fp->_bf._base;
     char *buf = (char*)fp->_p;
-    size_t len, n;
-    size_t blen = buf - RSTRING_PTR(result), bsiz = fp->_w;
+    long len, n;
+    long blen = buf - RSTRING_PTR(result), bsiz = fp->_w;
 
     if (RBASIC(result)->klass) {
 	rb_raise(rb_eRuntimeError, "rb_vsprintf reentered");
     }
-    if ((len = uio->uio_resid) == 0)
+    if (uio->uio_resid == 0)
 	return 0;
+#if SIZE_MAX > LONG_MAX
+    if (uio->uio_resid >= LONG_MAX)
+	rb_raise(rb_eRuntimeError, "too big string");
+#endif
+    len = (long)uio->uio_resid;
     CHECK(len);
     buf += blen;
     fp->_w = bsiz;
@@ -1325,7 +1083,7 @@ ruby__sfvwrite(register rb_printf_buffer *fp, register struct __suio *uio)
     return 0;
 }
 
-static char *
+static const char *
 ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int sign)
 {
     VALUE value, result = (VALUE)fp->_bf._base;
@@ -1338,7 +1096,33 @@ ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int s
 	rb_raise(rb_eRuntimeError, "rb_vsprintf reentered");
     }
     if (sign == '+') {
+	if (RB_TYPE_P(value, T_CLASS)) {
+# define LITERAL(str) (*sz = rb_strlen_lit(str), str)
+
+	    if (value == rb_cNilClass) {
+		return LITERAL("nil");
+	    }
+	    else if (value == rb_cInteger) {
+		return LITERAL("Integer");
+	    }
+	    else if (value == rb_cSymbol) {
+		return LITERAL("Symbol");
+	    }
+	    else if (value == rb_cTrueClass) {
+		return LITERAL("true");
+	    }
+	    else if (value == rb_cFalseClass) {
+		return LITERAL("false");
+	    }
+# undef LITERAL
+	}
 	value = rb_inspect(value);
+    }
+    else if (SYMBOL_P(value)) {
+	value = rb_sym2str(value);
+	if (sign == ' ' && !rb_str_symname_p(value)) {
+	    value = rb_str_inspect(value);
+	}
     }
     else {
 	value = rb_obj_as_string(value);

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/commands/outdated_command'
 
@@ -28,5 +29,5 @@ class TestGemCommandsOutdatedCommand < Gem::TestCase
     assert_equal "foo (0.2 < 2.0)\n", @ui.output
     assert_equal "", @ui.error
   end
-end
 
+end
