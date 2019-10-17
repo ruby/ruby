@@ -15,7 +15,7 @@ static VALUE mJSON, mExt, mGenerator, cState, mGeneratorMethods, mObject,
 #endif
              mFloat, mString, mString_Extend,
              mTrueClass, mFalseClass, mNilClass, eGeneratorError,
-             eNestingError, CRegexp_MULTILINE,
+             eNestingError,
              i_SAFE_STATE_PROTOTYPE;
 
 static ID i_to_s, i_to_json, i_new, i_indent, i_space, i_space_before,
@@ -1466,7 +1466,6 @@ void Init_generator(void)
     mNilClass = rb_define_module_under(mGeneratorMethods, "NilClass");
     rb_define_method(mNilClass, "to_json", mNilClass_to_json, -1);
 
-    CRegexp_MULTILINE = rb_const_get(rb_cRegexp, rb_intern("MULTILINE"));
     i_to_s = rb_intern("to_s");
     i_to_json = rb_intern("to_json");
     i_new = rb_intern("new");
