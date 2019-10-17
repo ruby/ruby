@@ -92,7 +92,7 @@ describe "Regexp#match" do
       # set $~
       /./.match("a")
       $~.should be_kind_of(MatchData)
-  
+
       /1/.match(nil)
       $~.should be_nil
     end
