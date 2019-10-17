@@ -9,6 +9,7 @@ class Reline::Windows
     [224, 83] => :key_delete,      # Del
     [224, 71] => :ed_move_to_beg,  # Home
     [224, 79] => :ed_move_to_end,  # End
+    [  0, 41] => :ed_unassigned,   # input method on/off
   }.each_key(&:freeze).freeze
 
   if defined? JRUBY_VERSION
@@ -118,8 +119,8 @@ class Reline::Windows
     else
       case input
       when 0x00
-        getwch
         alt = false
+        @@output_buf.push(input)
         input = getwch
         @@output_buf.push(*input)
       when 0xE0
