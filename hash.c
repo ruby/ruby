@@ -330,7 +330,8 @@ rb_ident_hash(st_data_t n)
     return (st_index_t)st_index_hash((st_index_t)n);
 }
 
-static const struct st_hash_type identhash = {
+#define identhash rb_hashtype_ident
+const struct st_hash_type rb_hashtype_ident = {
     rb_ident_cmp,
     rb_ident_hash,
 };

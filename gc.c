@@ -10493,13 +10493,15 @@ static const rb_data_type_t weakmap_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
+extern const struct st_hash_type rb_hashtype_ident;
+
 static VALUE
 wmap_allocate(VALUE klass)
 {
     struct weakmap *w;
     VALUE obj = TypedData_Make_Struct(klass, struct weakmap, &weakmap_type, w);
-    w->obj2wmap = st_init_numtable();
-    w->wmap2obj = st_init_numtable();
+    w->obj2wmap = st_init_table(&rb_hashtype_ident);
+    w->wmap2obj = st_init_table(&rb_hashtype_ident);
     w->final = rb_obj_method(obj, ID2SYM(rb_intern("finalize")));
     return obj;
 }
