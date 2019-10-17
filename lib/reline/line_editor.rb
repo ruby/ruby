@@ -1122,7 +1122,11 @@ class Reline::LineEditor
   alias_method :end_of_line, :ed_move_to_end
 
   private def ed_search_prev_history(key)
-    @line_backup_in_history = @line
+    if @is_multiline
+      @line_backup_in_history = whole_buffer
+    else
+      @line_backup_in_history = @line
+    end
     searcher = Fiber.new do
       search_word = String.new(encoding: @encoding)
       multibyte_buf = String.new(encoding: 'ASCII-8BIT')
@@ -1207,9 +1211,20 @@ class Reline::LineEditor
           searcher.resume(key)
         else
           if @history_pointer
-            @line = Reline::HISTORY[@history_pointer]
+            line = Reline::HISTORY[@history_pointer]
           else
-            @line = @line_backup_in_history
+            line = @line_backup_in_history
+          end
+          if @is_multiline
+            @line_backup_in_history = whole_buffer
+            @buffer_of_lines = line.split("\n")
+            @buffer_of_lines = [String.new(encoding: @encoding)] if @buffer_of_lines.empty?
+            @line_index = @buffer_of_lines.size - 1
+            @line = @buffer_of_lines.last
+            @rerender_all = true
+          else
+            @line_backup_in_history = @line
+            @line = line
           end
           @searching_prompt = nil
           @waiting_proc = nil
