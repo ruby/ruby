@@ -1250,6 +1250,7 @@ class TestTime < Test::Unit::TestCase
     size = GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
     case size
     when 20 then expect = 50
+    when 24 then expect = 54
     when 40 then expect = 86
     when 48 then expect = 94
     else
