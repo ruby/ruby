@@ -1233,7 +1233,7 @@ rb_hash_delete_if(VALUE hash)
  *     hsh.reject! {| key, value | block }  -> hsh or nil
  *     hsh.reject!                          -> an_enumerator
  *
- *  Equivalent to <code>Hash#delete_if</code>, but returns
+ *  Equivalent to Hash#delete_if, but returns
  *  <code>nil</code> if no changes were made.
  */
 
