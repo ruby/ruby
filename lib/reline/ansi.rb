@@ -7,7 +7,7 @@ class Reline::ANSI
     [27, 91, 51, 126] => :key_delete,     # Del
     [27, 91, 49, 126] => :ed_move_to_beg, # Home
     [27, 91, 52, 126] => :ed_move_to_end, # End
-  }.each_key(&:freeze).freeze
+  }
 
   @@input = STDIN
   def self.input=(val)
