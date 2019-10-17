@@ -15,7 +15,7 @@ static VALUE mJSON, mExt, mGenerator, cState, mGeneratorMethods, mObject,
 #endif
              mFloat, mString, mString_Extend,
              mTrueClass, mFalseClass, mNilClass, eGeneratorError,
-             eNestingError, CRegexp_MULTILINE, CJSON_SAFE_STATE_PROTOTYPE,
+             eNestingError, CRegexp_MULTILINE,
              i_SAFE_STATE_PROTOTYPE;
 
 static ID i_to_s, i_to_json, i_new, i_indent, i_space, i_space_before,
@@ -1082,10 +1082,8 @@ static VALUE cState_from_state_s(VALUE self, VALUE opts)
     } else if (rb_obj_is_kind_of(opts, rb_cHash)) {
         return rb_funcall(self, i_new, 1, opts);
     } else {
-        if (NIL_P(CJSON_SAFE_STATE_PROTOTYPE)) {
-            CJSON_SAFE_STATE_PROTOTYPE = rb_const_get(mJSON, i_SAFE_STATE_PROTOTYPE);
-        }
-        return rb_funcall(CJSON_SAFE_STATE_PROTOTYPE, i_dup, 0);
+        VALUE prototype = rb_const_get(mJSON, i_SAFE_STATE_PROTOTYPE);
+        return rb_funcall(prototype, i_dup, 0);
     }
 }
 
@@ -1499,5 +1497,4 @@ void Init_generator(void)
     i_encode = rb_intern("encode");
 #endif
     i_SAFE_STATE_PROTOTYPE = rb_intern("SAFE_STATE_PROTOTYPE");
-    CJSON_SAFE_STATE_PROTOTYPE = Qnil;
 }

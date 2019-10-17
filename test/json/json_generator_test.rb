@@ -40,6 +40,43 @@ class JSONGeneratorTest < Test::Unit::TestCase
 EOT
   end
 
+  def silence
+    v = $VERBOSE
+    $VERBOSE = nil
+    yield
+  ensure
+    $VERBOSE = v
+  end
+
+  def test_remove_const_segv
+    stress = GC.stress
+    const = JSON::SAFE_STATE_PROTOTYPE.dup
+
+    bignum_too_long_to_embed_as_string = 1234567890123456789012345
+    expect = bignum_too_long_to_embed_as_string.to_s
+    GC.stress = true
+
+    10.times do |i|
+      tmp = bignum_too_long_to_embed_as_string.to_json
+      raise "'\#{expect}' is expected, but '\#{tmp}'" unless tmp == expect
+    end
+
+    silence do
+      JSON.const_set :SAFE_STATE_PROTOTYPE, nil
+    end
+
+    10.times do |i|
+      assert_raise TypeError do
+        bignum_too_long_to_embed_as_string.to_json
+      end
+    end
+  ensure
+    GC.stress = stress
+    silence do
+      JSON.const_set :SAFE_STATE_PROTOTYPE, const
+    end
+  end
+
   def test_generate
     json = generate(@hash)
     assert_equal(parse(@json2), parse(json))
