@@ -1777,7 +1777,7 @@ XXX
         end
         all_candidates.select! {|cand| cand.is_a?(String) }
         suggestions = DidYouMean::SpellChecker.new(dictionary: all_candidates).correct(opt)
-        raise InvalidOption.new(opt, "\nDid you mean?  #{suggestions.join("\n               ")}")
+        raise InvalidOption.new(opt, DidYouMean.formatter.message_for(suggestions))
       else
         raise InvalidOption, opt
       end
