@@ -405,18 +405,22 @@ OptionParser::
 
   * Now show "Did you mean?" for unknown option.  [Feature #16256]
 
-    require 'optparse'
-    OptionParser.new do |opts|
-      opts.on("-f", "--foo", "foo") {|v| }
-      opts.on("-b", "--bar", "bar") {|v| }
-      opts.on("-c", "--baz", "baz") {|v| }
-    end.parse!
+    test.rb:
 
-    $ ruby test.rb --baa
-    Traceback (most recent call last):
-    test.rb:7:in `<main>': invalid option: --baa (OptionParser::InvalidOption)
-    Did you mean?  baz
-                   bar
+      require 'optparse'
+      OptionParser.new do |opts|
+        opts.on("-f", "--foo", "foo") {|v| }
+        opts.on("-b", "--bar", "bar") {|v| }
+        opts.on("-c", "--baz", "baz") {|v| }
+      end.parse!
+
+    example:
+
+      $ ruby test.rb --baa
+      Traceback (most recent call last):
+      test.rb:7:in `<main>': invalid option: --baa (OptionParser::InvalidOption)
+      Did you mean?  baz
+                     bar
 
 Pathname::
 
