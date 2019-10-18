@@ -365,11 +365,7 @@ finalizer_warn(const char *msg)
 static VALUE
 rb_zlib_version(VALUE klass)
 {
-    VALUE str;
-
-    str = rb_str_new2(zlibVersion());
-    OBJ_TAINT(str);  /* for safe */
-    return str;
+    return rb_str_new2(zlibVersion());
 }
 
 #if SIZEOF_LONG > SIZEOF_INT
@@ -635,7 +631,6 @@ zstream_expand_buffer(struct zstream *z)
 	    VALUE self = (VALUE)z->stream.opaque;
 
 	    rb_obj_reveal(z->buf, rb_cString);
-	    OBJ_INFECT(z->buf, self);
 
 	    rb_protect(rb_yield, z->buf, &state);
 
@@ -759,8 +754,6 @@ zstream_detach_buffer(struct zstream *z)
 	dst = z->buf;
 	rb_obj_reveal(dst, rb_cString);
     }
-
-    OBJ_INFECT(dst, self);
 
     z->buf = Qnil;
     z->stream.next_out = 0;
@@ -1337,7 +1330,6 @@ rb_zstream_flush_next_in(VALUE obj)
 
     TypedData_Get_Struct(obj, struct zstream, &zstream_data_type, z);
     dst = zstream_detach_input(z);
-    OBJ_INFECT(dst, obj);
     return dst;
 }
 
@@ -1658,7 +1650,6 @@ rb_deflate_s_deflate(int argc, VALUE *argv, VALUE klass)
     args[1] = src;
     dst = rb_ensure(deflate_run, (VALUE)args, zstream_ensure_end, (VALUE)&z);
 
-    OBJ_INFECT(dst, src);
     return dst;
 }
 
@@ -1708,7 +1699,6 @@ rb_deflate_deflate(int argc, VALUE *argv, VALUE obj)
     VALUE src, flush;
 
     rb_scan_args(argc, argv, "11", &src, &flush);
-    OBJ_INFECT(obj, src);
     do_deflate(z, src, ARG_FLUSH(flush));
 
     return zstream_detach_buffer(z);
@@ -1726,7 +1716,6 @@ rb_deflate_deflate(int argc, VALUE *argv, VALUE obj)
 static VALUE
 rb_deflate_addstr(VALUE obj, VALUE src)
 {
-    OBJ_INFECT(obj, src);
     do_deflate(get_zstream(obj), src, Z_NO_FLUSH);
     return obj;
 }
@@ -1826,7 +1815,6 @@ rb_deflate_set_dictionary(VALUE obj, VALUE dic)
     VALUE src = dic;
     int err;
 
-    OBJ_INFECT(obj, dic);
     StringValue(src);
     err = deflateSetDictionary(&z->stream,
 			       (Bytef*)RSTRING_PTR(src), RSTRING_LENINT(src));
@@ -1973,7 +1961,6 @@ rb_inflate_s_inflate(VALUE obj, VALUE src)
     args[1] = src;
     dst = rb_ensure(inflate_run, (VALUE)args, zstream_ensure_end, (VALUE)&z);
 
-    OBJ_INFECT(dst, src);
     return dst;
 }
 
@@ -2053,8 +2040,6 @@ rb_inflate_inflate(VALUE obj, VALUE src)
     struct zstream *z = get_zstream(obj);
     VALUE dst;
 
-    OBJ_INFECT(obj, src);
-
     if (ZSTREAM_IS_FINISHED(z)) {
 	if (NIL_P(src)) {
 	    dst = zstream_detach_buffer(z);
@@ -2063,7 +2048,6 @@ rb_inflate_inflate(VALUE obj, VALUE src)
 	    StringValue(src);
 	    zstream_append_buffer2(z, src);
 	    dst = rb_str_new(0, 0);
-	    OBJ_INFECT(dst, obj);
 	}
     }
     else {
@@ -2088,8 +2072,6 @@ static VALUE
 rb_inflate_addstr(VALUE obj, VALUE src)
 {
     struct zstream *z = get_zstream(obj);
-
-    OBJ_INFECT(obj, src);
 
     if (ZSTREAM_IS_FINISHED(z)) {
 	if (!NIL_P(src)) {
@@ -2120,7 +2102,6 @@ rb_inflate_sync(VALUE obj, VALUE src)
 {
     struct zstream *z = get_zstream(obj);
 
-    OBJ_INFECT(obj, src);
     StringValue(src);
     return zstream_sync(z, (Bytef*)RSTRING_PTR(src), RSTRING_LEN(src));
 }
@@ -2162,7 +2143,6 @@ rb_inflate_set_dictionary(VALUE obj, VALUE dic)
     VALUE src = dic;
     int err;
 
-    OBJ_INFECT(obj, dic);
     StringValue(src);
     err = inflateSetDictionary(&z->stream,
 			       (Bytef*)RSTRING_PTR(src), RSTRING_LENINT(src));
@@ -2380,7 +2360,6 @@ gzfile_write_raw(struct gzfile *gz)
 
     if (ZSTREAM_BUF_FILLED(&gz->z) > 0) {
 	str = zstream_detach_buffer(&gz->z);
-	OBJ_TAINT(str);  /* for safe */
 	rb_funcall(gz->io, id_write, 1, str);
 	if ((gz->z.flags & GZFILE_FLAG_SYNC)
 	    && rb_respond_to(gz->io, id_flush))
@@ -2643,7 +2622,6 @@ gzfile_read_header(struct gzfile *gz, VALUE outbuf)
 	p = gzfile_read_raw_until_zero(gz, 0);
 	len = p - RSTRING_PTR(gz->z.input);
 	gz->orig_name = rb_str_new(RSTRING_PTR(gz->z.input), len);
-	OBJ_TAINT(gz->orig_name);  /* for safe */
 	zstream_discard_input(&gz->z, len + 1);
     }
     if (flags & GZ_FLAG_COMMENT) {
@@ -2653,7 +2631,6 @@ gzfile_read_header(struct gzfile *gz, VALUE outbuf)
 	p = gzfile_read_raw_until_zero(gz, 0);
 	len = p - RSTRING_PTR(gz->z.input);
 	gz->comment = rb_str_new(RSTRING_PTR(gz->z.input), len);
-	OBJ_TAINT(gz->comment);  /* for safe */
 	zstream_discard_input(&gz->z, len + 1);
     }
 
@@ -2744,13 +2721,11 @@ gzfile_newstr(struct gzfile *gz, VALUE str)
 {
     if (!gz->enc2) {
 	rb_enc_associate(str, gz->enc);
-	OBJ_TAINT(str);  /* for safe */
 	return str;
     }
     if (gz->ec && rb_enc_dummy_p(gz->enc2)) {
         str = rb_econv_str_convert(gz->ec, str, ECONV_PARTIAL_INPUT);
 	rb_enc_associate(str, gz->enc);
-	OBJ_TAINT(str);
 	return str;
     }
     return rb_str_conv_enc_opts(str, gz->enc2, gz->enc,
@@ -2797,9 +2772,6 @@ gzfile_readpartial(struct gzfile *gz, long len, VALUE outbuf)
     if (len < 0)
         rb_raise(rb_eArgError, "negative length %ld given", len);
 
-    if (!NIL_P(outbuf))
-	OBJ_TAINT(outbuf);
-
     if (len == 0) {
         if (NIL_P(outbuf))
             return rb_str_new(0, 0);
@@ -2830,7 +2802,6 @@ gzfile_readpartial(struct gzfile *gz, long len, VALUE outbuf)
 	rb_gc_force_recycle(dst);
 	dst = outbuf;
     }
-    OBJ_TAINT(dst);  /* for safe */
     return dst;
 }
 
@@ -2852,7 +2823,6 @@ gzfile_read_all(struct gzfile *gz)
     dst = zstream_detach_buffer(&gz->z);
     if (NIL_P(dst)) return dst;
     gzfile_calc_crc(gz, dst);
-    OBJ_TAINT(dst);
     return gzfile_newstr(gz, dst);
 }
 
@@ -2887,7 +2857,6 @@ gzfile_getc(struct gzfile *gz)
 	dst = zstream_shift_buffer(&gz->z, sp - ss);
 	gzfile_calc_crc(gz, dst);
 	rb_str_resize(cbuf, dp - ds);
-	OBJ_TAINT(cbuf);
 	return cbuf;
     }
     else {
@@ -2987,7 +2956,6 @@ gzfile_reader_get_unused(struct gzfile *gz)
     if (NIL_P(gz->z.input)) return Qnil;
 
     str = rb_str_resurrect(gz->z.input);
-    OBJ_TAINT(str);  /* for safe */
     return str;
 }
 
@@ -3204,7 +3172,6 @@ rb_gzfile_orig_name(VALUE obj)
     if (!NIL_P(str)) {
 	str = rb_str_dup(str);
     }
-    OBJ_TAINT(str);  /* for safe */
     return str;
 }
 
@@ -3221,7 +3188,6 @@ rb_gzfile_comment(VALUE obj)
     if (!NIL_P(str)) {
 	str = rb_str_dup(str);
     }
-    OBJ_TAINT(str);  /* for safe */
     return str;
 }
 
