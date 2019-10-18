@@ -1768,10 +1768,11 @@ XXX
     if pat.empty?
       search(typ, opt) {|sw| return [sw, opt]} # exact match or...
     end
-    raise AmbiguousOption, catch(:ambiguous) {
+    ambiguous = catch(:ambiguous) {
       visit(:complete, typ, opt, icase, *pat) {|o, *sw| return sw}
-      raise InvalidOption.new(opt, additional: self.:additional_message.curry[typ])
     }
+    exc = ambiguous ? AmbiguousOption : InvalidOption
+    raise exc.new(opt, additional: self.:additional_message.curry[typ])
   end
   private :complete
 

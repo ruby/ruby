@@ -39,4 +39,10 @@ class TestOptionParser::DidYouMean < TestOptionParser
       @opt.permute!(%w"--baa")
     end
   end
+
+  def test_ambiguos
+    assert_raise_with_message(OptionParser::AmbiguousOption, /ambiguous option: --ba\nDid you mean\?\s+baz\s+bar\Z/) do
+      @opt.permute!(%w"--ba")
+    end
+  end
 end
