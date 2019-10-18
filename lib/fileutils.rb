@@ -1300,7 +1300,8 @@ module FileUtils
            .reject {|n| n == '.' or n == '..' }
       end
 
-      files.map {|n| Entry_.new(prefix(), join(rel(), n.untaint)) }
+      untaint = RUBY_VERSION < '2.7'
+      files.map {|n| Entry_.new(prefix(), join(rel(), untaint ? n.untaint : n)) }
     end
 
     def stat
