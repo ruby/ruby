@@ -100,7 +100,7 @@ static VALUE
 safe_setup_str(const char *str)
 {
     if (str == 0) str = "";
-    return rb_tainted_str_new2(str);
+    return rb_str_new2(str);
 }
 
 static VALUE
@@ -219,7 +219,6 @@ etc_getpwnam(VALUE obj, VALUE nam)
     struct passwd *pwd;
     const char *p = StringValueCStr(nam);
 
-    rb_check_safe_obj(nam);
     pwd = getpwnam(p);
     if (pwd == 0) rb_raise(rb_eArgError, "can't find user for %"PRIsVALUE, nam);
     return setup_passwd(pwd);
@@ -463,7 +462,6 @@ etc_getgrnam(VALUE obj, VALUE nam)
     struct group *grp;
     const char *p = StringValueCStr(nam);
 
-    rb_check_safe_obj(nam);
     grp = getgrnam(p);
     if (grp == 0) rb_raise(rb_eArgError, "can't find group for %"PRIsVALUE, nam);
     return setup_group(grp);
@@ -679,7 +677,10 @@ etc_systmpdir(VALUE _)
     }
 # endif
 #endif
+#ifndef RB_PASS_KEYWORDS
+    /* untaint on Ruby < 2.7 */
     FL_UNSET(tmpdir, FL_TAINT);
+#endif
     return tmpdir;
 }
 
