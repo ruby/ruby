@@ -98,7 +98,9 @@ for:
     - SET PATH=%ruby_path%\bin;C:\msys64\%MSYSTEM%\bin;C:\msys64\usr\bin;%PATH%
     - ruby --version
   build_script:
-    - pacman -Sy --noconfirm --noprogressbar --needed mingw-w64-x86_64-toolchain
+    - pacman -Syd --noconfirm --noprogressbar --needed mingw-w64-x86_64-binutils mingw-w64-x86_64-isl mingw-w64-x86_64-libiconv mingw-w64-x86_64-mpc mingw-w64-x86_64-gcc-libs mingw-w64-x86_64-windows-default-manifest mingw-w64-x86_64-winpthreads mingw-w64-x86_64-gcc
+    # when fixed in MSYS2 / Mingw-w64, remove above and use normal code below
+    #- pacman -Sy --noconfirm --noprogressbar --needed mingw-w64-x86_64-toolchain
     - pacman -S  --noconfirm --noprogressbar --needed mingw-w64-x86_64-gdbm mingw-w64-x86_64-gmp mingw-w64-x86_64-libffi mingw-w64-x86_64-libyaml mingw-w64-x86_64-openssl mingw-w64-x86_64-ragel mingw-w64-x86_64-readline mingw-w64-x86_64-zlib
     - cd %APPVEYOR_BUILD_FOLDER%
     - set CFLAGS=-march=%MSYS2_ARCH:_=-% -mtune=generic -O3 -pipe
