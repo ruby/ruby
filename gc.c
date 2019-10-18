@@ -10494,6 +10494,7 @@ static const rb_data_type_t weakmap_type = {
 };
 
 extern const struct st_hash_type rb_hashtype_ident;
+static VALUE wmap_finalize(RB_BLOCK_CALL_FUNC_ARGLIST(objid, self));
 
 static VALUE
 wmap_allocate(VALUE klass)
@@ -10502,7 +10503,7 @@ wmap_allocate(VALUE klass)
     VALUE obj = TypedData_Make_Struct(klass, struct weakmap, &weakmap_type, w);
     w->obj2wmap = st_init_table(&rb_hashtype_ident);
     w->wmap2obj = st_init_table(&rb_hashtype_ident);
-    w->final = rb_obj_method(obj, ID2SYM(rb_intern("finalize")));
+    w->final = rb_func_lambda_new(wmap_finalize, obj, 1, 1);
     return obj;
 }
 
@@ -10540,7 +10541,7 @@ wmap_final_func(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 
 /* :nodoc: */
 static VALUE
-wmap_finalize(VALUE self, VALUE objid)
+wmap_finalize(RB_BLOCK_CALL_FUNC_ARGLIST(objid, self))
 {
     st_data_t orig, wmap, data;
     VALUE obj, *rids, i, size;
@@ -12003,7 +12004,6 @@ Init_GC(void)
 	rb_define_method(rb_cWeakMap, "values", wmap_values, 0);
 	rb_define_method(rb_cWeakMap, "size", wmap_size, 0);
 	rb_define_method(rb_cWeakMap, "length", wmap_size, 0);
-	rb_define_private_method(rb_cWeakMap, "finalize", wmap_finalize, 1);
 	rb_include_module(rb_cWeakMap, rb_mEnumerable);
     }
 
