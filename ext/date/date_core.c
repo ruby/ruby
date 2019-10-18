@@ -4244,12 +4244,10 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
 
 	if (!NIL_P(zone)) {
 	    rb_enc_copy(zone, vstr);
-	    OBJ_INFECT(zone, vstr);
 	    set_hash("zone", zone);
 	}
 	if (!NIL_P(left)) {
 	    rb_enc_copy(left, vstr);
-	    OBJ_INFECT(left, vstr);
 	    set_hash("leftover", left);
 	}
     }
@@ -4733,7 +4731,6 @@ d_lite_initialize(int argc, VALUE *argv, VALUE self)
     double sg;
 
     rb_check_frozen(self);
-    rb_check_trusted(self);
 
     rb_scan_args(argc, argv, "05", &vjd, &vdf, &vsf, &vof, &vsg);
 
@@ -4789,7 +4786,6 @@ static VALUE
 d_lite_initialize_copy(VALUE copy, VALUE date)
 {
     rb_check_frozen(copy);
-    rb_check_trusted(copy);
 
     if (copy == date)
 	return copy;
@@ -6762,7 +6758,6 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
 	    if (p > fmt) rb_str_cat(str, fmt, p - fmt);
 	}
 	rb_enc_copy(str, vfmt);
-	OBJ_INFECT(str, vfmt);
 	return str;
     }
     else
@@ -6771,7 +6766,6 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
     str = rb_str_new(buf, len);
     if (buf != buffer) xfree(buf);
     rb_enc_copy(str, vfmt);
-    OBJ_INFECT(str, vfmt);
     return str;
 }
 
@@ -7162,7 +7156,6 @@ d_lite_marshal_load(VALUE self, VALUE a)
     get_d1(self);
 
     rb_check_frozen(self);
-    rb_check_trusted(self);
 
     if (!RB_TYPE_P(a, T_ARRAY))
 	rb_raise(rb_eTypeError, "expected an array");

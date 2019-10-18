@@ -421,10 +421,9 @@ class TestDateParse < Test::Unit::TestCase
       l = format('<failed at line %d>', l)
       assert_equal(y, a, l)
       if y[6]
-        h = Date._parse(x[0].dup.taint, *x[1..-1])
+        h = Date._parse(x[0].dup, *x[1..-1])
         assert_equal(y[6], h[:zone], l)
         assert_equal(y[6].encoding, h[:zone].encoding, l)
-        assert_predicate(h[:zone], :tainted?, l)
       end
     end
   end
