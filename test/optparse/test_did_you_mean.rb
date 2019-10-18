@@ -15,6 +15,11 @@ class TestOptionParser::DidYouMean < TestOptionParser
     ::DidYouMean.formatter = @formatter
   end
 
+  def test_no_suggestion
+    assert_raise_with_message(OptionParser::InvalidOption, "invalid option: --cuz") do
+      @opt.permute!(%w"--cuz")
+    end
+  end
 
   def test_plain
     ::DidYouMean.formatter = ::DidYouMean::PlainFormatter.new
