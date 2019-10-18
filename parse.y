@@ -597,6 +597,10 @@ static void numparam_pop(struct parser_params *p, NODE *prev_inner);
 # define METHOD_NOT '!'
 #endif
 
+#define idFWD_REST   '*'
+#define idFWD_KWREST idPow /* Use simple "**", as tDSTAR is "**arg" */
+#define idFWD_BLOCK  '&'
+
 #define RE_OPTION_ONCE (1<<16)
 #define RE_OPTION_ENCODING_SHIFT 8
 #define RE_OPTION_ENCODING(e) (((e)&0xff)<<RE_OPTION_ENCODING_SHIFT)
@@ -1063,7 +1067,7 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
 %type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords relop dot_or_colon
 %type <id>   p_kwrest p_kwnorest
-%type <id>   f_no_kwarg
+%type <id>   f_no_kwarg args_forward
 %token END_OF_INPUT 0	"end-of-input"
 %token <id> '.'
 /* escaped chars, should be ignored otherwise */
@@ -2406,6 +2410,23 @@ paren_args	: '(' opt_call_args rparen
 		    /*% %*/
 		    /*% ripper: arg_paren!(escape_Qundef($2)) %*/
 		    }
+		| '(' args_forward rparen
+		    {
+			if (!local_id(p, idFWD_REST) || !local_id(p, idFWD_KWREST) || !local_id(p, idFWD_BLOCK)) {
+			    compile_error(p, "unexpected ...");
+			    $$ = Qnone;
+			}
+			else {
+			/*%%%*/
+			    NODE *splat = NEW_SPLAT(NEW_LVAR(idFWD_REST, &@2), &@2);
+			    NODE *kwrest = list_append(p, NEW_LIST(0, &@2), NEW_LVAR(idFWD_KWREST, &@2));
+			    NODE *block = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, &@2), &@2);
+			    $$ = arg_append(p, splat, new_hash(p, kwrest, &@2), &@2);
+			    $$ = arg_blk_pass($$, block);
+			/*% %*/
+			/*% ripper: arg_paren!($2) %*/
+			}
+		    }
 		;
 
 opt_paren_args	: none
@@ -3396,7 +3417,7 @@ block_param_def	: '|' opt_bv_decl '|'
 		    /*%%%*/
 			$$ = 0;
 		    /*% %*/
-		    /*% ripper: block_var!(params_new(Qnil,Qnil,Qnil,Qnil,Qnil,Qnil,Qnil), escape_Qundef($2)) %*/
+		    /*% ripper: block_var!(params!(Qnil,Qnil,Qnil,Qnil,Qnil,Qnil,Qnil), escape_Qundef($2)) %*/
 		    }
 		| tOROP
 		    {
@@ -3404,7 +3425,7 @@ block_param_def	: '|' opt_bv_decl '|'
 		    /*%%%*/
 			$$ = 0;
 		    /*% %*/
-		    /*% ripper: block_var!(params_new(Qnil,Qnil,Qnil,Qnil,Qnil,Qnil,Qnil), Qnil) %*/
+		    /*% ripper: block_var!(params!(Qnil,Qnil,Qnil,Qnil,Qnil,Qnil,Qnil), Qnil) %*/
 		    }
 		| '|' block_param opt_bv_decl '|'
 		    {
@@ -4862,10 +4883,30 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_args_tail
 		    {
 			$$ = new_args(p, Qnone, Qnone, Qnone, Qnone, $1, &@$);
 		    }
+		| args_forward
+		    {
+			arg_var(p, idFWD_REST);
+			arg_var(p, idFWD_KWREST);
+			arg_var(p, idFWD_BLOCK);
+		    /*%%%*/
+			$$ = new_args_tail(p, Qnone, idFWD_KWREST, idFWD_BLOCK, &@1);
+			$$ = new_args(p, Qnone, Qnone, idFWD_REST, Qnone, $$, &@$);
+		    /*% %*/
+		    /*% ripper: params_new(Qnone, Qnone, $1, Qnone, Qnone, Qnone, Qnone) %*/
+		    }
 		| /* none */
 		    {
 			$$ = new_args_tail(p, Qnone, Qnone, Qnone, &@0);
 			$$ = new_args(p, Qnone, Qnone, Qnone, Qnone, $$, &@0);
+		    }
+		;
+
+args_forward	: tBDOT3
+		    {
+		    /*%%%*/
+			$$ = idDot3;
+		    /*% %*/
+		    /*% ripper: args_forward! %*/
 		    }
 		;
 
