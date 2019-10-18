@@ -9,6 +9,11 @@ class TestOptionParser::DidYouMean < TestOptionParser
     @opt.def_option("--bar", Integer) { |v| @bar = v }
     @opt.def_option("--baz", Integer) { |v| @baz = v }
     @formatter = ::DidYouMean.formatter
+    case @formatter
+    when ::DidYouMean::PlainFormatter
+    else
+      ::DidYouMean.formatter = ::DidYouMean::PlainFormatter.new
+    end
   end
 
   def teardown
@@ -22,7 +27,6 @@ class TestOptionParser::DidYouMean < TestOptionParser
   end
 
   def test_plain
-    ::DidYouMean.formatter = ::DidYouMean::PlainFormatter.new
     assert_raise_with_message(OptionParser::InvalidOption, /invalid option: --baa\nDid you mean\?\s+baz\s+bar\Z/) do
       @opt.permute!(%w"--baa")
     end
