@@ -276,7 +276,6 @@ again:
 #ifdef ENABLE_NUMERIC_STRING
       case T_STRING:
 	StringValueCStr(v);
-	rb_check_safe_obj(v);
 	return VpCreateRbObject(RSTRING_LEN(v) + VpBaseFig() + 1,
 				RSTRING_PTR(v));
 #endif /* ENABLE_NUMERIC_STRING */
@@ -418,7 +417,6 @@ BigDecimal_load(VALUE self, VALUE str)
     unsigned long m=0;
 
     pch = (unsigned char *)StringValueCStr(str);
-    rb_check_safe_obj(str);
     /* First get max prec */
     while((*pch) != (unsigned char)'\0' && (ch = *pch++) != (unsigned char)':') {
         if(!ISDIGIT(ch)) {
@@ -2030,7 +2028,6 @@ BigDecimal_to_s(int argc, VALUE *argv, VALUE self)
     if (rb_scan_args(argc, argv, "01", &f) == 1) {
 	if (RB_TYPE_P(f, T_STRING)) {
 	    psz = StringValueCStr(f);
-	    rb_check_safe_obj(f);
 	    if (*psz == ' ') {
 		fPlus = 1;
 		psz++;
