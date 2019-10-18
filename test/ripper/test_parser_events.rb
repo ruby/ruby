@@ -131,6 +131,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal true, thru_args_new
   end
 
+  def test_args_forward
+    thru_args_forward = false
+    parse('def m(...) n(...) end', :on_args_forward) {thru_args_forward = true}
+    assert_equal true, thru_args_forward
+  end
+
   def test_arg_paren
     # FIXME
   end

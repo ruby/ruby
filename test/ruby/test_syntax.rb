@@ -1471,6 +1471,46 @@ eom
     assert_valid_syntax("tap {a = (break unless true)}")
   end
 
+  def test_argument_forwarding
+    assert_valid_syntax('def foo(...) bar(...) end')
+    assert_valid_syntax('def foo(...) end')
+    assert_syntax_error('iter do |...| end', /unexpected/)
+    assert_syntax_error('iter {|...|}', /unexpected/)
+    assert_syntax_error('def foo(x, y, z) bar(...); end', /unexpected/)
+    assert_syntax_error('def foo(x, y, z) super(...); end', /unexpected/)
+    assert_syntax_error('def foo(...) yield(...); end', /unexpected/)
+    assert_syntax_error('def foo(...) return(...); end', /unexpected/)
+    assert_syntax_error('def foo(...) a = (...); end', /unexpected/)
+    assert_syntax_error('def foo(...) [...]; end', /unexpected/)
+    assert_syntax_error('def foo(...) foo[...]; end', /unexpected/)
+    assert_syntax_error('def foo(...) foo[...] = x; end', /unexpected/)
+    assert_syntax_error('def foo(...) foo(...) { }; end', /both block arg and actual block given/)
+    assert_syntax_error('def foo(...) defined?(...); end', /unexpected/)
+
+    obj1 = Object.new
+    def obj1.bar(*args, **kws, &block)
+      block.call(args, kws)
+    end
+    obj1.instance_eval('def foo(...) bar(...) end')
+
+    klass = Class.new {
+      def foo(*args, **kws, &block)
+        block.call(args, kws)
+      end
+    }
+    obj2 = klass.new
+    obj2.instance_eval('def foo(...) super(...) end')
+
+    [obj1, obj2].each do |obj|
+      assert_equal([[1, 2, 3], {k1: 4, k2: 5}], obj.foo(1, 2, 3, k1: 4, k2: 5) {|*x| x})
+      assert_equal(-1, obj.:foo.arity)
+      parameters = obj.:foo.parameters
+      assert_equal(:rest, parameters.dig(0, 0))
+      assert_equal(:keyrest, parameters.dig(1, 0))
+      assert_equal(:block, parameters.dig(2, 0))
+    end
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
