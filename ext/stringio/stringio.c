@@ -623,7 +623,6 @@ strio_copy(VALUE copy, VALUE orig)
 	strio_free(DATA_PTR(copy));
     }
     DATA_PTR(copy) = ptr;
-    OBJ_INFECT(copy, orig);
     RBASIC(copy)->flags &= ~STRIO_READWRITE;
     RBASIC(copy)->flags |= RBASIC(orig)->flags & STRIO_READWRITE;
     ++ptr->count;
@@ -1443,7 +1442,6 @@ strio_write(VALUE self, VALUE str)
     if (ptr->pos == olen) {
 	if (enc == ascii8bit || enc2 == ascii8bit) {
 	    rb_enc_str_buf_cat(ptr->string, RSTRING_PTR(str), len, enc);
-	    OBJ_INFECT(ptr->string, str);
 	}
 	else {
 	    rb_str_buf_append(ptr->string, str);
@@ -1452,9 +1450,7 @@ strio_write(VALUE self, VALUE str)
     else {
 	strio_extend(ptr, ptr->pos, len);
 	memmove(RSTRING_PTR(ptr->string)+ptr->pos, RSTRING_PTR(str), len);
-	OBJ_INFECT(ptr->string, str);
     }
-    OBJ_INFECT(ptr->string, self);
     RB_GC_GUARD(str);
     ptr->pos += len;
     return len;
