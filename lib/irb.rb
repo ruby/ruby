@@ -536,7 +536,7 @@ module IRB
       @scanner.each_top_level_statement do |line, line_no|
         signal_status(:IN_EVAL) do
           begin
-            line.untaint
+            line.untaint if RUBY_VERSION < '2.7'
             @context.evaluate(line, line_no, exception: exc)
             output_value if @context.echo? && (@context.echo_on_assignment? || !assignment_expression?(line))
           rescue Interrupt => exc
