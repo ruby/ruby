@@ -864,7 +864,7 @@ new_hash_pattern_tail(struct parser_params *p, VALUE kw_args, VALUE kw_rest_arg,
 static VALUE heredoc_dedent(struct parser_params*,VALUE);
 
 #else
-#define ID2VAL(id) ((VALUE)(id))
+#define ID2VAL(id) (id)
 #define TOKEN2VAL(t) ID2VAL(t)
 #define KWD2EID(t, v) keyword_##t
 #endif /* RIPPER */
@@ -3298,7 +3298,7 @@ block_args_tail	: f_block_kwarg ',' f_kwrest opt_f_block_arg
 		    }
 		| f_no_kwarg opt_f_block_arg
 		    {
-			$$ = new_args_tail(p, Qnone, ID2SYM(idNil), $2, &@1);
+			$$ = new_args_tail(p, Qnone, ID2VAL(idNil), $2, &@1);
 		    }
 		| f_block_arg
 		    {
@@ -4014,11 +4014,11 @@ p_kwargs	: p_kwarg ',' p_kwrest
 		    }
 		| p_kwarg ',' p_kwnorest
 		    {
-			$$ =  new_hash_pattern_tail(p, new_unique_key_hash(p, $1, &@$), ID2SYM(idNil), &@$);
+			$$ =  new_hash_pattern_tail(p, new_unique_key_hash(p, $1, &@$), ID2VAL(idNil), &@$);
 		    }
 		| p_kwnorest
 		    {
-			$$ =  new_hash_pattern_tail(p, new_hash(p, Qnone, &@$), ID2SYM(idNil), &@$);
+			$$ =  new_hash_pattern_tail(p, new_hash(p, Qnone, &@$), ID2VAL(idNil), &@$);
 		    }
 		;
 
@@ -4788,7 +4788,7 @@ args_tail	: f_kwarg ',' f_kwrest opt_f_block_arg
 		    }
 		| f_no_kwarg opt_f_block_arg
 		    {
-			$$ = new_args_tail(p, Qnone, ID2SYM(idNil), $2, &@1);
+			$$ = new_args_tail(p, Qnone, ID2VAL(idNil), $2, &@1);
 		    }
 		| f_block_arg
 		    {
@@ -11273,7 +11273,7 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
 	args->kw_rest_arg = NEW_DVAR(kw_rest_arg, loc);
 	args->kw_rest_arg->nd_cflag = kw_bits;
     }
-    else if (kw_rest_arg == ID2SYM(idNil)) {
+    else if (kw_rest_arg == idNil) {
 	args->no_kwarg = 1;
     }
     else if (kw_rest_arg) {
@@ -11358,7 +11358,7 @@ new_hash_pattern_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, co
     int saved_line = p->ruby_sourceline;
     NODE *node, *kw_rest_arg_node;
 
-    if (kw_rest_arg == ID2SYM(idNil)) {
+    if (kw_rest_arg == idNil) {
 	kw_rest_arg_node = NODE_SPECIAL_NO_REST_KEYWORD;
     }
     else if (kw_rest_arg) {
@@ -13101,6 +13101,6 @@ InitVM_ripper(void)
 /*
  * Local variables:
  * mode: c
- * c-file-style: ruby
+ * c-file-style: "ruby"
  * End:
  */
