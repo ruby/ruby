@@ -368,11 +368,9 @@ module Psych
         hash
       end
 
-      if String.method_defined?(:-@)
+      if RUBY_VERSION < '2.7'
         def deduplicate key
           if key.is_a?(String)
-            # It is important to untaint the string, otherwise it won't
-            # be deduplicated into and fstring, but simply frozen.
             -(key.untaint)
           else
             key
@@ -381,9 +379,7 @@ module Psych
       else
         def deduplicate key
           if key.is_a?(String)
-            # Deduplication is not supported by this implementation,
-            # but we emulate it's side effects
-            key.untaint.freeze
+            -key
           else
             key
           end
