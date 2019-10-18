@@ -1828,7 +1828,6 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 	else
 	    rb_str_modify_expand(str, ilen - RSTRING_LEN(str));
     }
-    OBJ_TAINT(str);
     rb_str_set_len(str, 0);
     if (ilen == 0)
 	return str;
