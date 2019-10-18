@@ -1770,20 +1770,24 @@ XXX
     end
     raise AmbiguousOption, catch(:ambiguous) {
       visit(:complete, typ, opt, icase, *pat) {|o, *sw| return sw}
-      if defined? DidYouMean::SpellChecker
-        all_candidates = []
-        visit(:get_candidates, typ) do |candidates|
-          all_candidates.concat(candidates)
-        end
-        all_candidates.select! {|cand| cand.is_a?(String) }
-        suggestions = DidYouMean::SpellChecker.new(dictionary: all_candidates).correct(opt)
-        raise InvalidOption.new(opt, DidYouMean.formatter.message_for(suggestions))
-      else
-        raise InvalidOption, opt
-      end
+      raise InvalidOption.new(opt, additional: self.:additional_message.curry[typ])
     }
   end
   private :complete
+
+  #
+  # Returns additional info.
+  #
+  def additional_message(typ, opt)
+    return unless typ and opt and defined?(DidYouMean::SpellChecker)
+    all_candidates = []
+    visit(:get_candidates, typ) do |candidates|
+      all_candidates.concat(candidates)
+    end
+    all_candidates.select! {|cand| cand.is_a?(String) }
+    checker = DidYouMean::SpellChecker.new(dictionary: all_candidates)
+    DidYouMean.formatter.message_for(checker.correct(opt))
+  end
 
   def candidate(word)
     list = []
@@ -2011,13 +2015,16 @@ XXX
     # Reason which caused the error.
     Reason = 'parse error'
 
-    def initialize(*args)
+    def initialize(*args, additional: nil)
+      @additional = additional
+      @arg0, = args
       @args = args
       @reason = nil
     end
 
     attr_reader :args
     attr_writer :reason
+    attr_accessor :additional
 
     #
     # Pushes back erred argument(s) to +argv+.
@@ -2062,7 +2069,7 @@ XXX
     # Default stringizing method to emit standard error message.
     #
     def message
-      reason + ': ' + args.join(" ").gsub(/\s+$/, "")
+      "#{reason}: #{args.join(' ')}#{additional[@arg0] if additional}"
     end
 
     alias to_s message
