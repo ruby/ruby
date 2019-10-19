@@ -121,7 +121,7 @@ describe "C-API Thread function" do
       thr.value.should be_true
     end
 
-    it "runs a C function with the global lock unlocked amd unlocks IO with the generic RUBY_UBF_IO" do
+    it "runs a C function with the global lock unlocked and unlocks IO with the generic RUBY_UBF_IO" do
       thr = Thread.new do
         @t.rb_thread_call_without_gvl_with_ubf_io
       end
