@@ -184,15 +184,6 @@ function_call(int argc, VALUE argv[], VALUE self)
 
     TypedData_Get_Struct(self, ffi_cif, &function_data_type, args.cif);
 
-    if (rb_safe_level() >= 1) {
-	for (i = 0; i < argc; i++) {
-	    VALUE src = argv[i];
-	    if (OBJ_TAINTED(src)) {
-		rb_raise(rb_eSecurityError, "tainted parameter not allowed");
-	    }
-	}
-    }
-
     generic_args = ALLOCV(alloc_buffer,
 	(size_t)(argc + 1) * sizeof(void *) + (size_t)argc * sizeof(fiddle_generic));
     args.values = (void **)((char *)generic_args +
