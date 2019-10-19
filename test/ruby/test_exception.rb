@@ -995,15 +995,18 @@ end.join
     error = NoMethodError.new("Message", :foo)
     assert_raise(ArgumentError) {error.receiver}
 
+    msg = Object.const_defined?(:DidYouMean) ?
+      "Message\nDid you mean?  for" : "Message"
+
     error = NoMethodError.new("Message", :foo, receiver: receiver)
-    assert_equal(["Message", :foo, receiver],
+    assert_equal([msg, :foo, receiver],
                  [error.message, error.name, error.receiver])
 
     error = NoMethodError.new("Message", :foo, [1, 2])
     assert_raise(ArgumentError) {error.receiver}
 
     error = NoMethodError.new("Message", :foo, [1, 2], receiver: receiver)
-    assert_equal(["Message", :foo, [1, 2], receiver],
+    assert_equal([msg, :foo, [1, 2], receiver],
                  [error.message, error.name, error.args, error.receiver])
 
     error = NoMethodError.new("Message", :foo, [1, 2], true)
