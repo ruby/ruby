@@ -511,6 +511,9 @@ File::
   * File.realpath now uses realpath(3) on many platforms, which can
     significantly improve performance.
 
+Monitor::
+  * Monitor class is written in C-extension. [Feature #16255]
+
 Thread::
 
   * VM stack memory allocation is now combined with native thread stack,
