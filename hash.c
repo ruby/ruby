@@ -4766,8 +4766,14 @@ env_delete_m(VALUE obj, VALUE name)
  * call-seq:
  *   ENV[name] -> value
  *
- * Retrieves the +value+ for environment variable +name+ as a String.  Returns
- * +nil+ if the named variable does not exist.
+ * Returns the value for the environment variable +name+ if it exists:
+ *   ENV['foo'] = 'bar'
+ *   ENV['foo'] # => "bar"
+ * Returns nil if the named variable does not exist:
+ *   ENV.delete('foo')
+ *   ENV['foo'] # => nil
+ * Raises TypeError if +name+ is not a String and cannot be coerced with \#to_str:
+ *   ENV.delete(Object.new) # => TypeError raised
  */
 static VALUE
 rb_f_getenv(VALUE obj, VALUE name)
@@ -4783,18 +4789,29 @@ rb_f_getenv(VALUE obj, VALUE name)
 }
 
 /*
- * :yield: missing_name
  * call-seq:
- *   ENV.fetch(name)                          -> value
- *   ENV.fetch(name, default)                 -> value
- *   ENV.fetch(name) { |missing_name| block } -> value
+ *   ENV.fetch(name)                  -> value
+ *   ENV.fetch(name, default)         -> value
+ *   ENV.fetch(name) { |name| block } -> value
  *
- * Retrieves the environment variable +name+.
- *
- * If the given name does not exist and neither +default+ nor a block is
- * provided, a KeyError is raised.  If a block is given it is called with
- * the missing name to provide a value.  If a default value is given it will
- * be returned when no block is given.
+ * If +name+ is the name of an environment variable, returns its value:
+ *   ENV['foo'] = 'bar'
+ *   ENV.fetch('foo') # => "bar"
+ * Otherwise if a block is given (but not a default value),
+ * yields +name+ to the block and returns the block's return value:
+ *   ENV.fetch('foo') { |name| :need_not_return_a_string } # => :need_not_return_a_string
+ * Otherwise if a default value is given (but not a block), returns the default value:
+ *   ENV.delete('foo')
+ *   ENV.fetch('foo', :default_need_not_be_a_string) # => :default_need_not_be_a_string
+ * If the environment variable does not exist and both default and block are given,
+ * issues a warning (“warning: block supersedes default value argument”),
+ * yields +name+ to the block, and returns the block's return value:
+ *   ENV.fetch('foo', :default) { |name| :block_return } # => :block_return
+ * Raises TypeError if +name+ is not a String and cannot be coerced with \#to_str:
+ *   ENV.delete(Object.new) # => TypeError raised
+ * Raises KeyError if +name+ is a String, but is not found,
+ * and neither default value nor block is given:
+ *   ENV.fetch('foo') # => KeyError raised
  */
 static VALUE
 env_fetch(int argc, VALUE *argv, VALUE _)
