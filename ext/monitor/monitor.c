@@ -122,15 +122,6 @@ monitor_check_owner(VALUE monitor)
 }
 
 static VALUE
-monitor_enter_for_cond(VALUE monitor, VALUE count)
-{
-    struct rb_monitor *mc = monitor_ptr(monitor);
-    RB_OBJ_WRITE(monitor, &mc->owner, rb_thread_current());
-    mc->count = NUM2LONG(count);
-    return Qnil;
-}
-
-static VALUE
 monitor_exit_for_cond(VALUE monitor)
 {
     struct rb_monitor *mc = monitor_ptr(monitor);
@@ -140,11 +131,49 @@ monitor_exit_for_cond(VALUE monitor)
     return LONG2NUM(cnt);
 }
 
+struct wait_for_cond_data {
+    VALUE monitor;
+    VALUE cond;
+    VALUE timeout;
+    VALUE count;
+};
+
 static VALUE
-monitor_mutex_for_cond(VALUE monitor)
+monitor_wait_for_cond_body(VALUE v)
 {
-    struct rb_monitor *mc = monitor_ptr(monitor);
-    return mc->mutex;
+    struct wait_for_cond_data *data = (struct wait_for_cond_data *)v;
+    struct rb_monitor *mc = monitor_ptr(data->monitor);
+    // cond.wait(monitor.mutex, timeout)
+    rb_funcall(data->cond, rb_intern("wait"), 2, mc->mutex, data->timeout);
+    return Qtrue;
+}
+
+static VALUE
+monitor_enter_for_cond(VALUE v)
+{
+    // assert(rb_mutex_owned_p(mc->mutex) == Qtrue)
+    // but rb_mutex_owned_p is not exported...
+
+    struct wait_for_cond_data *data = (struct wait_for_cond_data *)v;
+    struct rb_monitor *mc = monitor_ptr(data->monitor);
+    RB_OBJ_WRITE(data->monitor, &mc->owner, rb_thread_current());
+    mc->count = NUM2LONG(data->count);
+    return Qnil;
+}
+
+static VALUE
+monitor_wait_for_cond(VALUE monitor, VALUE cond, VALUE timeout)
+{
+    VALUE count = monitor_exit_for_cond(monitor);
+    struct wait_for_cond_data data = {
+        monitor,
+        cond,
+        timeout,
+        count,
+    };
+
+    return rb_ensure(monitor_wait_for_cond_body, (VALUE)&data,
+                     monitor_enter_for_cond, (VALUE)&data);
 }
 
 static VALUE
@@ -183,7 +212,5 @@ Init_monitor(void)
     rb_define_method(rb_cMonitor, "mon_owned?", monitor_owned_p, 0);
 
     /* internal methods for MonitorMixin::ConditionalVariable */
-    rb_define_private_method(rb_cMonitor, "enter_for_cond", monitor_enter_for_cond, 1);
-    rb_define_private_method(rb_cMonitor, "exit_for_cond", monitor_exit_for_cond, 0);
-    rb_define_private_method(rb_cMonitor, "mutex_for_cond", monitor_mutex_for_cond, 0);
+    rb_define_method(rb_cMonitor, "wait_for_cond", monitor_wait_for_cond, 2);
 }
