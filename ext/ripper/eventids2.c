@@ -218,6 +218,8 @@ static const struct token_assoc {
     {tCVAR,			O(cvar)},
     {tDOT2,			O(op)},
     {tDOT3,			O(op)},
+    {tBDOT2,			O(op)},
+    {tBDOT3,			O(op)},
     {tEQ,			O(op)},
     {tEQQ,			O(op)},
     {tFID,			O(ident)},
