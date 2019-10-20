@@ -205,12 +205,7 @@ module MonitorMixin
   # +MonitorMixin+.
   #
   def mon_synchronize(&b)
-    @mon_data.enter
-    begin
-      yield
-    ensure
-      @mon_data.exit
-    end
+    @mon_data.synchronize(&b)
   end
   alias synchronize mon_synchronize
 
