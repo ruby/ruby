@@ -27,7 +27,7 @@ class TestOptionParser::DidYouMean < TestOptionParser
   end
 
   def test_plain
-    assert_raise_with_message(OptionParser::InvalidOption, /invalid option: --baa\nDid you mean\?\s+baz\s+bar\Z/) do
+    assert_raise_with_message(OptionParser::InvalidOption, /invalid option: --baa\nDid you mean\?\s+bar\s+baz\Z/) do
       @opt.permute!(%w"--baa")
     end
   end
@@ -35,13 +35,13 @@ class TestOptionParser::DidYouMean < TestOptionParser
   def test_verbose
     require 'did_you_mean/formatters/verbose_formatter'
     ::DidYouMean.formatter = ::DidYouMean::VerboseFormatter.new
-    assert_raise_with_message(OptionParser::InvalidOption, /invalid option: --baa\n\s+Did you mean\?\s+baz\s+bar\s*\Z/) do
+    assert_raise_with_message(OptionParser::InvalidOption, /invalid option: --baa\n\s+Did you mean\?\s+bar\s+baz\s*\Z/) do
       @opt.permute!(%w"--baa")
     end
   end
 
   def test_ambiguos
-    assert_raise_with_message(OptionParser::AmbiguousOption, /ambiguous option: --ba\nDid you mean\?\s+baz\s+bar\Z/) do
+    assert_raise_with_message(OptionParser::AmbiguousOption, /ambiguous option: --ba\nDid you mean\?\s+bar\s+baz\Z/) do
       @opt.permute!(%w"--ba")
     end
   end
