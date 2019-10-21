@@ -370,7 +370,7 @@ static void iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line,
 
 /* error */
 #if CPDEBUG > 0
-NORETURN(static void append_compile_error(rb_iseq_t *iseq, int line, const char *fmt, ...));
+NORETURN(static void append_compile_error(const rb_iseq_t *iseq, int line, const char *fmt, ...));
 #endif
 
 static void
