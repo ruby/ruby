@@ -546,8 +546,7 @@ verify_list(ISEQ_ARG_DECLARE const char *info, LINK_ANCHOR *const anchor)
 static void
 verify_call_cache(rb_iseq_t *iseq)
 {
-    return; /* comment out to enable */
-
+#if CPDEBUG
     VALUE *original = rb_iseq_original_iseq(iseq);
     size_t i = 0;
     while (i < iseq->body->iseq_size) {
@@ -566,6 +565,7 @@ verify_call_cache(rb_iseq_t *iseq)
         }
         i += insn_len(insn);
     }
+#endif
 }
 
 /*
