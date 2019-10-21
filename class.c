@@ -1229,7 +1229,7 @@ class_instance_method_list(int argc, const VALUE *argv, VALUE mod, int obj, int 
 	if (BUILTIN_TYPE(mod) == T_ICLASS && !prepended) continue;
 	if (!recur) break;
     }
-    ary = rb_ary_new();
+    ary = rb_ary_new2(me_arg.list->num_entries);
     st_foreach(me_arg.list, func, ary);
     st_free_table(me_arg.list);
 
@@ -1466,7 +1466,7 @@ rb_obj_singleton_methods(int argc, const VALUE *argv, VALUE obj)
 	    klass = RCLASS_SUPER(klass);
 	}
     }
-    ary = rb_ary_new();
+    ary = rb_ary_new2(me_arg.list->num_entries);
     st_foreach(me_arg.list, ins_methods_i, ary);
     st_free_table(me_arg.list);
 
