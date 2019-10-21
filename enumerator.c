@@ -4016,7 +4016,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "uniq", lazy_uniq, 0);
     rb_define_method(rb_cLazy, "with_index", lazy_with_index, -1);
 
-    lazy_use_super_method = rb_hash_new();
+    lazy_use_super_method = rb_hash_new_with_size(18);
     rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("map")), ID2SYM(rb_intern("_enumerable_map")));
     rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("collect")), ID2SYM(rb_intern("_enumerable_collect")));
     rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("flat_map")), ID2SYM(rb_intern("_enumerable_flat_map")));
