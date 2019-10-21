@@ -241,6 +241,14 @@ class CSV
     end
 
     #
+    # Returns a copy of the object with headers and fields that are copied from
+    # the source object. This allows the copy to receive changes without
+    # affecting the source.
+    def dup
+      self.class.new(headers, fields, header_row?)
+    end
+
+    #
     # This method accepts any number of arguments which can be headers, indices,
     # Ranges of either, or two-element Arrays containing a header and offset.
     # Each argument will be replaced with a field lookup as described in
