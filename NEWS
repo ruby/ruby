@@ -519,7 +519,8 @@ StringScanner::
 
 === Compatibility issues (excluding feature bug fixes)
 
-* Removed unmaintained libraries.
+* The following libraries are no longer bundled gems.
+  Install corresponding gems to use these features.
   * CMath
   * Scanf
   * Shell
