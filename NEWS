@@ -527,6 +527,9 @@ StringScanner::
   * Synchronizer
   * ThreadsWait
 
+Proc::
+  * Proc#to_s format was changed. [Feature #16101]
+
 === Stdlib compatibility issues (excluding feature bug fixes)
 
 pathname::
