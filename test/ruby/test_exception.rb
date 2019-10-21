@@ -995,7 +995,7 @@ end.join
     error = NoMethodError.new("Message", :foo)
     assert_raise(ArgumentError) {error.receiver}
 
-    msg = defined?(:DidYouMean.formatter) ?
+    msg = defined?(DidYouMean.formatter) ?
       "Message\nDid you mean?  for" : "Message"
 
     error = NoMethodError.new("Message", :foo, receiver: receiver)
