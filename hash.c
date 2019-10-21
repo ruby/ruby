@@ -2808,49 +2808,6 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
     return val;
 }
 
-static int
-replace_i(VALUE key, VALUE val, VALUE hash)
-{
-    rb_hash_aset(hash, key, val);
-
-    return ST_CONTINUE;
-}
-
-/* :nodoc: */
-static VALUE
-rb_hash_initialize_copy(VALUE hash, VALUE hash2)
-{
-    rb_hash_modify_check(hash);
-    hash2 = to_hash(hash2);
-
-    Check_Type(hash2, T_HASH);
-
-    if (hash == hash2) return hash;
-
-    if (RHASH_AR_TABLE_P(hash2)) {
-        if (RHASH_AR_TABLE_P(hash)) ar_free_and_clear_table(hash);
-        ar_copy(hash, hash2);
-        if (RHASH_AR_TABLE_SIZE(hash))
-	    rb_hash_rehash(hash);
-    }
-    else if (RHASH_ST_TABLE_P(hash2)) {
-        if (RHASH_ST_TABLE_P(hash)) st_free_table(RHASH_ST_TABLE(hash));
-        RHASH_ST_TABLE_SET(hash, st_copy(RHASH_ST_TABLE(hash2)));
-        if (RHASH_ST_TABLE(hash)->num_entries)
-            rb_hash_rehash(hash);
-    }
-    else if (RHASH_AR_TABLE_P(hash)) {
-        ar_clear(hash);
-    }
-    else if (RHASH_ST_TABLE_P(hash)) {
-        st_clear(RHASH_ST_TABLE(hash));
-    }
-
-    COPY_DEFAULT(hash, hash2);
-
-    return hash;
-}
-
 /*
  *  call-seq:
  *     hsh.replace(other_hash) -> hsh
@@ -2868,26 +2825,35 @@ rb_hash_replace(VALUE hash, VALUE hash2)
 {
     rb_hash_modify_check(hash);
     if (hash == hash2) return hash;
+    if (RHASH_ITER_LEV(hash) > 0) {
+        rb_raise(rb_eRuntimeError, "can't replace hash during iteration");
+    }
     hash2 = to_hash(hash2);
 
     COPY_DEFAULT(hash, hash2);
 
-    rb_hash_clear(hash);
-
     if (RHASH_AR_TABLE_P(hash)) {
-        if (RHASH_AR_TABLE_P(hash2)) {
-            ar_copy(hash, hash2);
-        }
-        else {
-            goto st_to_st;
-        }
+      if (RHASH_AR_TABLE_P(hash2)) {
+        ar_clear(hash);
+      }
+      else {
+        ar_free_and_clear_table(hash);
+        RHASH_ST_TABLE_SET(hash, st_init_table_with_size(RHASH_TYPE(hash2), RHASH_SIZE(hash2)));
+      }
     }
     else {
-        if (RHASH_AR_TABLE_P(hash2)) ar_force_convert_table(hash2, __FILE__, __LINE__);
-      st_to_st:
+      if (RHASH_AR_TABLE_P(hash2)) {
+        st_free_table(RHASH_ST_TABLE(hash));
+        RHASH_ST_CLEAR(hash);
+      }
+      else {
+        st_clear(RHASH_ST_TABLE(hash));
         RHASH_TBL_RAW(hash)->type = RHASH_ST_TABLE(hash2)->type;
-        rb_hash_foreach(hash2, replace_i, hash);
+      }
     }
+    rb_hash_foreach(hash2, rb_hash_rehash_i, (VALUE)hash);
+
+    rb_gc_writebarrier_remember(hash);
 
     return hash;
 }
@@ -6143,7 +6109,7 @@ Init_Hash(void)
     rb_define_singleton_method(rb_cHash, "[]", rb_hash_s_create, -1);
     rb_define_singleton_method(rb_cHash, "try_convert", rb_hash_s_try_convert, 1);
     rb_define_method(rb_cHash, "initialize", rb_hash_initialize, -1);
-    rb_define_method(rb_cHash, "initialize_copy", rb_hash_initialize_copy, 1);
+    rb_define_method(rb_cHash, "initialize_copy", rb_hash_replace, 1);
     rb_define_method(rb_cHash, "rehash", rb_hash_rehash, 0);
 
     rb_define_method(rb_cHash, "to_hash", rb_hash_to_hash, 0);
