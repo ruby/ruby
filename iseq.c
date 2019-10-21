@@ -720,7 +720,7 @@ make_compile_option(rb_compile_option_t *option, VALUE opt)
 static VALUE
 make_compile_option_value(rb_compile_option_t *option)
 {
-    VALUE opt = rb_hash_new();
+    VALUE opt = rb_hash_new_with_size(11);
 #define SET_COMPILE_OPTION(o, h, mem) \
   rb_hash_aset((h), ID2SYM(rb_intern(#mem)), (o)->mem ? Qtrue : Qfalse)
 #define SET_COMPILE_OPTION_NUM(o, h, mem) \
