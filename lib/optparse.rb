@@ -1787,7 +1787,7 @@ XXX
     end
     all_candidates.select! {|cand| cand.is_a?(String) }
     checker = DidYouMean::SpellChecker.new(dictionary: all_candidates)
-    DidYouMean.formatter.message_for(checker.correct(opt))
+    DidYouMean.formatter.message_for(all_candidates & checker.correct(opt))
   end
 
   def candidate(word)
