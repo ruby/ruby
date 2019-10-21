@@ -214,7 +214,7 @@ Dir::
 
   Modified method::
 
-    * Dir#glob and Dir#[] no longer allow NUL-separated glob pattern.
+    * Dir.glob and Dir.[] no longer allow NUL-separated glob pattern.
       Use Array instead.  [Feature #14643]
 
 Encoding::
