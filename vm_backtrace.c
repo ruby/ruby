@@ -578,7 +578,7 @@ backtrace_collect(rb_backtrace_t *bt, long lev, long n, VALUE (*func)(rb_backtra
 	rb_bug("backtrace_collect: unreachable");
     }
 
-    btary = rb_ary_new();
+    btary = rb_ary_new2(n);
 
     for (i=0; i+lev<bt->backtrace_size && i<n; i++) {
 	rb_backtrace_location_t *loc = &bt->backtrace[bt->backtrace_size - 1 - (lev+i)];
