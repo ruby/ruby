@@ -2259,6 +2259,8 @@ gem 'other', version
     assert_kind_of(String, installer.gem)
   end
 
+  private
+
   def util_execless
     @spec = util_spec 'z'
     util_build_gem @spec
