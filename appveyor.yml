@@ -13,16 +13,18 @@ environment:
     # to reduce time for finishing all jobs, run the slowest msys2 build first.
     - build: msys2
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      GEMS_FOR_TEST: "timezone tzinfo"
     - build: vs
       vs: 120
       ssl: OpenSSL
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
+      GEMS_FOR_TEST: ""
     - build: vs
       vs: 140
       ssl: OpenSSL-v111
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      GEMS_FOR_TEST: ""
   RELINE_TEST_ENCODING: "Windows-31J"
-  GEMS_FOR_TEST: "timezone tzinfo"
   UPDATE_UNICODE: "UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
 for:
 -
