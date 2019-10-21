@@ -511,6 +511,9 @@ File::
   * File.realpath now uses realpath(3) on many platforms, which can
     significantly improve performance.
 
+Hash::
+  * Change data structure of small Hash objects. [Feature #15602]
+
 Monitor::
   * Monitor class is written in C-extension. [Feature #16255]
 
