@@ -2373,7 +2373,7 @@ static VALUE
 vm_default_params(void)
 {
     rb_vm_t *vm = GET_VM();
-    VALUE result = rb_hash_new();
+    VALUE result = rb_hash_new_with_size(4);
 #define SET(name) rb_hash_aset(result, ID2SYM(rb_intern(#name)), SIZET2NUM(vm->default_params.name));
     SET(thread_vm_stack_size);
     SET(thread_machine_stack_size);
