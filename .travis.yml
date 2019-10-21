@@ -161,6 +161,14 @@ env:
     env:
       - BEFORE_INSTALL="sed vm_opts.h -e 's/OPT_SUPPORT_JOKE *0/OPT_SUPPORT_JOKE 1/' -i"
 
+  - &CPDEBUG
+    name: CPDEBUG
+    <<: *gcc-8
+    <<: *cron-only
+    <<: *make-test-only
+    env:
+      - DEFS="-DCPDEBUG"
+
   - &WITH_COROUTINE_UCONTEXT
     name: COROUTINE=ucontext
     <<: *gcc-8
@@ -385,6 +393,7 @@ matrix:
     - <<: *jemalloc
     - <<: *VM_CHECK_MODE
     - <<: *SUPPORT_JOKE
+    - <<: *CPDEBUG
     - <<: *WITH_COROUTINE_UCONTEXT
     - <<: *WITH_COROUTINE_COPY
     - <<: *TOKEN_THREADED_CODE
