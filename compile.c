@@ -273,7 +273,7 @@ const ID rb_iseq_shared_exc_local_tbl[] = {idERROR_INFO};
 	  ISEQ_BRANCH_COVERAGE(iseq) && \
 	  (first_line) > 0) { \
 	  VALUE structure = RARRAY_AREF(ISEQ_BRANCH_COVERAGE(iseq), 0); \
-	  branches = rb_ary_tmp_new(0); \
+	  branches = rb_ary_tmp_new(5); \
 	  rb_ary_push(structure, branches); \
 	  rb_ary_push(branches, ID2SYM(rb_intern(type))); \
 	  rb_ary_push(branches, INT2FIX(first_line)); \
