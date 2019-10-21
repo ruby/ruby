@@ -222,8 +222,8 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_resume_self
-    f = Fiber.new {f.resume}
-    assert_raise(FiberError, '[ruby-core:23651]') {f.transfer}
+    f = Fiber.new {f.resume 1}
+    assert_equal(1, f.transfer)
   end
 
   def test_fiber_transfer_segv
@@ -289,14 +289,12 @@ class TestFiber < Test::Unit::TestCase
     assert_raise(FiberError){
       g=nil
       f=Fiber.new{
-        g.resume
-        g.resume
+        g.transfer
       }
       g=Fiber.new{
         f.resume
-        f.resume
       }
-      f.transfer
+      f.resume
     }
   end
 
