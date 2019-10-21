@@ -44,6 +44,7 @@ jobs:
       - run: make $JOBS
       - name: Tests
         run: make -s ${{ matrix.test_task }} TESTOPTS="$JOBS -q --tty=no"
+        timeout-minutes: 50
         env:
           MSPECOPT: "-ff" # not using `-j` because sometimes `mspec -j` silently dies
         if: matrix.test_task != 'test-bundled-gems'
