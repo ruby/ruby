@@ -25,7 +25,7 @@ module IRB
     # +nil+::     uses stdin or Reidline or Readline
     # +String+::  uses a File
     # +other+::   uses this as InputMethod
-    def initialize(irb, workspace = nil, input_method = nil, output_method = nil)
+    def initialize(irb, workspace = nil, input_method = nil)
       @irb = irb
       if workspace
         @workspace = workspace
@@ -110,12 +110,6 @@ module IRB
         @io = input_method
       end
       self.save_history = IRB.conf[:SAVE_HISTORY] if IRB.conf[:SAVE_HISTORY]
-
-      if output_method
-        @output_method = output_method
-      else
-        @output_method = StdioOutputMethod.new
-      end
 
       @echo = IRB.conf[:ECHO]
       if @echo.nil?

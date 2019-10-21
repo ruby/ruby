@@ -441,8 +441,8 @@ module IRB
     # parsed as a :method_add_arg and the output won't be suppressed
 
     # Creates a new irb session
-    def initialize(workspace = nil, input_method = nil, output_method = nil)
-      @context = Context.new(self, workspace, input_method, output_method)
+    def initialize(workspace = nil, input_method = nil)
+      @context = Context.new(self, workspace, input_method)
       @context.main.extend ExtendCommandBundle
       @signal_status = :IN_IRB
       @scanner = RubyLex.new
