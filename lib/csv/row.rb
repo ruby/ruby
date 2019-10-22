@@ -50,7 +50,7 @@ class CSV
 
     def initialize_copy(other)
       super
-      @row = @row.dup
+      @row = @row.collect(&:dup)
     end
 
     # Returns +true+ if this is a header row.
