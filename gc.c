@@ -10154,6 +10154,24 @@ objspace_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
     objspace_malloc_increase(objspace, ptr, 0, old_size, MEMOP_TYPE_FREE);
 }
 
+static void
+objspace_aligned_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
+{
+    if (!ptr) {
+        /*
+         * ISO/IEC 9899 says "If ptr is a null pointer, no action occurs" since
+         * its first version.  We would better follow.
+         */
+        return;
+    }
+    old_size = objspace_malloc_size(objspace, ptr, old_size);
+
+    rb_aligned_free(ptr);
+    RB_DEBUG_COUNTER_INC(heap_xfree);
+
+    objspace_malloc_increase(objspace, ptr, 0, old_size, MEMOP_TYPE_FREE);
+}
+
 static void *
 ruby_xmalloc0(size_t size)
 {
@@ -10190,6 +10208,16 @@ objspace_xcalloc(rb_objspace_t *objspace, size_t size)
 
     size = objspace_malloc_prepare(objspace, size);
     TRY_WITH_GC(mem = calloc1(size));
+    return objspace_malloc_fixup(objspace, mem, size);
+}
+
+static void *
+objspace_aligned_malloc(rb_objspace_t *objspace, size_t alignment, size_t size)
+{
+    void *mem;
+
+    size = objspace_malloc_prepare(objspace, size);
+    TRY_WITH_GC(mem = rb_aligned_malloc(alignment, size));
     return objspace_malloc_fixup(objspace, mem, size);
 }
 
@@ -10249,6 +10277,12 @@ void
 ruby_xfree(void *x)
 {
     ruby_sized_xfree(x, 0);
+}
+
+void
+ruby_aligned_xfree(void *ptr)
+{
+    objspace_aligned_xfree(&rb_objspace, ptr, 0);
 }
 
 void *
@@ -12058,6 +12092,9 @@ Init_GC(void)
 #ifdef ruby_xrealloc2
 #undef ruby_xrealloc2
 #endif
+#ifdef ruby_aligned_xmalloc
+#undef ruby_aligned_xmalloc
+#endif
 
 void *
 ruby_xmalloc(size_t size)
@@ -12107,4 +12144,15 @@ ruby_xrealloc2(void *ptr, size_t n, size_t new_size)
     ruby_malloc_info_line = __LINE__;
 #endif
     return ruby_xrealloc2_body(ptr, n, new_size);
+}
+
+void *
+ruby_aligned_xmalloc(size_t alignment, size_t size)
+{
+    void *mem;
+#if USE_GC_MALLOC_OBJ_INFO_DETAILS
+    ruby_malloc_info_file = __FILE__;
+    ruby_malloc_info_line = __LINE__;
+#endif
+    return objspace_aligned_malloc(&rb_objspace, alignment, size);
 }

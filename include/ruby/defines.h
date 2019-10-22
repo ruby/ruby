@@ -213,12 +213,20 @@ RUBY_SYMBOL_EXPORT_BEGIN
 #define xcalloc ruby_xcalloc
 #define xrealloc ruby_xrealloc
 #define xrealloc2 ruby_xrealloc2
+#define aligned_xmalloc ruby_aligned_xmalloc
 #define xfree ruby_xfree
+#define aligned_xfree ruby_aligned_xfree
 
 #if GCC_VERSION_SINCE(4,3,0)
 # define RUBY_ATTR_ALLOC_SIZE(params) __attribute__ ((alloc_size params))
 #else
 # define RUBY_ATTR_ALLOC_SIZE(params)
+#endif
+
+#if GCC_VERSION_SINCE(4,9,0)
+# define RUBY_ATTR_ALLOC_ALIGN(params) __attribute__ ((alloc_align params))
+#else
+# define RUBY_ATTR_ALLOC_ALIGN(params)
 #endif
 
 #ifdef __has_attribute
@@ -235,7 +243,9 @@ void *ruby_xmalloc2(size_t,size_t) RUBY_ATTR_MALLOC RUBY_ATTR_ALLOC_SIZE((1,2));
 void *ruby_xcalloc(size_t,size_t) RUBY_ATTR_MALLOC RUBY_ATTR_ALLOC_SIZE((1,2));
 void *ruby_xrealloc(void*,size_t) RUBY_ATTR_ALLOC_SIZE((2));
 void *ruby_xrealloc2(void*,size_t,size_t) RUBY_ATTR_ALLOC_SIZE((2,3));
+void *ruby_aligned_xmalloc(size_t, size_t) RUBY_ATTR_ALLOC_ALIGN((1));
 void ruby_xfree(void*);
+void ruby_aligned_xfree(void*);
 
 #ifndef USE_GC_MALLOC_OBJ_INFO_DETAILS
 #define USE_GC_MALLOC_OBJ_INFO_DETAILS 0
