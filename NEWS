@@ -251,6 +251,15 @@ Enumerator::
     * Added Enumerator::Lazy#eager that generates a non-lazy enumerator
       from a lazy enumerator.  [Feature #15901]
 
+        a = %w(foo bar baz)
+        e = a.lazy
+             .map {|x| p [x, :upcase]; x.upcase }
+             .map {|x| p [x, :add_bang]; x + "!" }
+             .eager
+        p e.next #=> ["foo", :upcase], ["FOO", :add_bang], "FOO!"
+        p e.next #=> ["bar", :upcase], ["BAR", :add_bang], "BAR!"
+        p e.next #=> ["baz", :upcase], ["BAZ", :add_bang], "BAZ!"
+
     * Added Enumerator::Yielder#to_proc so that a Yielder object
       can be directly passed to another method as a block
       argument.  [Feature #15618]
