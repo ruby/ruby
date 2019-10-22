@@ -605,7 +605,7 @@ class VCS
         end
         rev unless rev.empty?
       end
-      unless /./.match(from) or /./.match(from = branch_beginning(url))
+      unless (from && /./.match(from)) or ((from = branch_beginning(url)) && /./.match(from))
         warn "no starting commit found", uplevel: 1
         from = nil
       end
