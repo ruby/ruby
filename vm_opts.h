@@ -61,7 +61,9 @@
 #define OPT_STACK_CACHING            0
 
 /* misc */
+#ifndef OPT_SUPPORT_JOKE
 #define OPT_SUPPORT_JOKE             0
+#endif
 
 #ifndef VM_COLLECT_USAGE_DETAILS
 #define VM_COLLECT_USAGE_DETAILS     0
