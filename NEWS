@@ -459,7 +459,8 @@ IRB::
 
 Net::FTP::
 
-  * Add features and options.  [Feature #15964]
+  * Add Net::FTP#features to check available features, and Net::FTP#option to
+    enable/disable each of them.  [Feature #15964]
 
 Net::IMAP::
 
