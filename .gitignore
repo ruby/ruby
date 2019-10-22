@@ -169,6 +169,9 @@ lcov*.info
 /ext/configure-ext.mk
 /ext/*/exts.mk
 
+# /ext/-test-/cxxanyargs
+/ext/-test-/cxxanyargs/failure.failed
+
 # /ext/-test-/win32/dln/
 /ext/-test-/win32/dln/dlntest.dll
 /ext/-test-/win32/dln/dlntest.exp
