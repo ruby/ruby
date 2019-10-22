@@ -391,7 +391,10 @@ append_compile_error(const rb_iseq_t *iseq, int line, const char *fmt, ...)
     else if (!err_info) {
 	RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->err_info, Qtrue);
     }
-    if (compile_debug) rb_exc_fatal(err);
+    if (compile_debug) {
+        if (SPECIAL_CONST_P(err)) err = rb_eSyntaxError;
+        rb_exc_fatal(err);
+    }
 }
 
 #if 0
