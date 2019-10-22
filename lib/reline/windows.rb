@@ -16,7 +16,7 @@ class Reline::Windows
     [  0, 75] => :ed_prev_char,    # ←
     [  0, 83] => :key_delete,      # Del
     [  0, 71] => :ed_move_to_beg,  # Home
-    [  0, 79] => :ed_move_to_end  # End
+    [  0, 79] => :ed_move_to_end   # End
   }
 
   if defined? JRUBY_VERSION
