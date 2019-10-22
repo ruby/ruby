@@ -190,7 +190,8 @@ assert_equal %q{[10, main]}, %q{
 }
 
 %w[break next redo].each do |keyword|
-  assert_match %r"Can't escape from eval with #{keyword}\z", %{
+  assert_match %r"Can't escape from eval with #{keyword}\b", %{
+    STDERR.reopen(STDOUT)
     begin
       eval "0 rescue #{keyword}"
     rescue SyntaxError => e
