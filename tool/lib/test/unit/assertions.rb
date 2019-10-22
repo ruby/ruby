@@ -359,6 +359,8 @@ EOT
           code = code.dup.force_encoding(Encoding::UTF_8)
           RubyVM::InstructionSequence.compile(code, fname, fname, line)
           :ok
+        ensure
+          raise if SyntaxError === $!
         end
       else
         def syntax_check(code, fname, line)
