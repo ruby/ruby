@@ -431,6 +431,7 @@ Bundler::
 CGI::
 
   * CGI.escapeHTML becomes 2~5x faster when there's at least one escaped character.
+    https://github.com/ruby/ruby/pull/2226
 
 CSV::
 
