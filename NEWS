@@ -582,8 +582,8 @@ Fiber::
   * Allow selecting different coroutine implementation by using
     `--with-coroutine=`, e.g.
 
-         ./confgure --with-coroutine=ucontext
-         ./confgure --with-coroutine=copy
+         ./configure --with-coroutine=ucontext
+         ./configure --with-coroutine=copy
 
   * Replace previous stack cache with fiber pool cache. The fiber pool
     allocates many stacks in a single memory region. Stack allocation
