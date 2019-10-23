@@ -2094,17 +2094,27 @@ RUBY_EXTERN VALUE rb_stdin, rb_stdout, rb_stderr;
 static inline VALUE
 rb_class_of(VALUE obj)
 {
-    if (RB_IMMEDIATE_P(obj)) {
-	if (RB_FIXNUM_P(obj)) return rb_cInteger;
-	if (RB_FLONUM_P(obj)) return rb_cFloat;
-	if (obj == RUBY_Qtrue)  return rb_cTrueClass;
-	if (RB_STATIC_SYM_P(obj)) return rb_cSymbol;
+    if (!RB_SPECIAL_CONST_P(obj)) {
+        return RBASIC_CLASS(obj);
     }
-    else if (!RB_TEST(obj)) {
-	if (obj == RUBY_Qnil)   return rb_cNilClass;
-	if (obj == RUBY_Qfalse) return rb_cFalseClass;
+    else if (obj == RUBY_Qfalse) {
+        return rb_cFalseClass;
     }
-    return RBASIC(obj)->klass;
+    else if (obj == RUBY_Qnil) {
+        return rb_cNilClass;
+    }
+    else if (obj == RUBY_Qtrue) {
+        return rb_cTrueClass;
+    }
+    else if (RB_FIXNUM_P(obj)) {
+        return rb_cInteger;
+    }
+    else if (RB_STATIC_SYM_P(obj)) {
+        return rb_cSymbol;
+    }
+    else {
+        return rb_cFloat;
+    }
 }
 
 static inline int
