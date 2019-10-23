@@ -10172,6 +10172,8 @@ objspace_aligned_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
          */
         return;
     }
+    old_size = objspace_calc_exact_malloc_size(ptr, old_size);
+
     old_size = objspace_malloc_size(objspace, ptr, old_size);
 
     rb_aligned_free(ptr);
