@@ -313,21 +313,27 @@ class Set
     end
   end
 
-  # Returns true if the set and the given set have at least one
+  # Returns true if the set and the given Enumerable have at least one
   # element in common.
   #
   #     Set[1, 2, 3].intersect? Set[4, 5]   #=> false
   #     Set[1, 2, 3].intersect? Set[3, 4]   #=> true
+  #     Set[1, 2, 3].intersect? [3, 4]      #=> true
   def intersect?(set)
-    set.is_a?(Set) or raise ArgumentError, "value must be a set"
-    if size < set.size
+    set.is_a?(Enumerable) or raise ArgumentError, "value must be an Enumerable"
+
+    if set.is_a?(Range) && set.infinite?
+      raise ArgumentError, "value cannot be an infinite sequence"
+    end
+
+    if set.is_a?(Set) && size < set.size
       any? { |o| set.include?(o) }
     else
       set.any? { |o| include?(o) }
     end
   end
 
-  # Returns true if the set and the given set have no element in
+  # Returns true if the set and the given Enumerable have no element in
   # common.  This method is the opposite of `intersect?`.
   #
   #     Set[1, 2, 3].disjoint? Set[3, 4]   #=> false

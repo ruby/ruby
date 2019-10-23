@@ -196,6 +196,11 @@ class TestRange < Test::Unit::TestCase
     assert_predicate(0..., :exclude_end?)
   end
 
+  def test_infinite
+    assert_not_predicate(0..10, :infinite?)
+    assert_predicate((0..), :infinite?)
+  end
+
   def test_eq
     r = (0..1)
     assert_equal(r, r)

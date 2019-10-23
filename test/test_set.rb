@@ -378,7 +378,7 @@ class TC_Set < Test::Unit::TestCase
     set = Set[3,4,5]
 
     assert_intersect(ArgumentError, set, 3)
-    assert_intersect(ArgumentError, set, [2,4,6])
+    assert_intersect(ArgumentError, set, 1..)
 
     assert_intersect(true, set, set)
     assert_intersect(true, set, Set[2,4])
@@ -389,6 +389,11 @@ class TC_Set < Test::Unit::TestCase
     assert_intersect(false, set, Set[0,2])
     assert_intersect(false, set, Set[0,2,6])
     assert_intersect(false, set, Set[0,2,6,8,10])
+
+    assert_send([set, :intersect?, [2,4,6]])
+    assert_not_send([set, :disjoint?, [2,4,6]])
+    assert_not_send([set, :intersect?, [0,2]])
+    assert_send([set, :disjoint?, [0,2]])
 
     # Make sure set hasn't changed
     assert_equal(Set[3,4,5], set)
