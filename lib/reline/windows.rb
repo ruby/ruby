@@ -62,6 +62,7 @@ class Reline::Windows
   end
 
   VK_MENU = 0x12
+  VK_LMENU = 0xA4
   VK_CONTROL = 0x11
   VK_SHIFT = 0x10
   STD_INPUT_HANDLE = -10
@@ -124,7 +125,7 @@ class Reline::Windows
       return @@output_buf.shift
     end
     input = getwch
-    alt = (@@GetKeyState.call(VK_MENU) & 0x80) != 0
+    meta = (@@GetKeyState.call(VK_LMENU) & 0x80) != 0
     control = (@@GetKeyState.call(VK_CONTROL) & 0x80) != 0
     shift = (@@GetKeyState.call(VK_SHIFT) & 0x80) != 0
     force_enter = !input.instance_of?(Array) && (control or shift) && input == 0x0D
@@ -149,7 +150,7 @@ class Reline::Windows
         @@output_buf.push(input)
       end
     end
-    if alt
+    if meta
       "\e".ord
     else
       @@output_buf.shift
