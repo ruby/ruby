@@ -2855,7 +2855,7 @@ RB_METHOD_DEFINITION_DECL(rb_define_global_function, (1,2), (const char *name), 
 
 #endif
 
-#if !defined(__cplusplus) || defined(RB_METHOD_DEFINITION_DECL)
+#if defined(RUBY_DEVEL) && RUBY_DEVEL && (!defined(__cplusplus) || defined(RB_METHOD_DEFINITION_DECL))
 # define RUBY_METHOD_FUNC(func) (func)
 #else
 # define RUBY_METHOD_FUNC(func) ((VALUE (*)(ANYARGS))(func))
