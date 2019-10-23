@@ -4804,7 +4804,7 @@ rb_f_getenv(VALUE obj, VALUE name)
  *   ENV.delete('foo')
  *   ENV.fetch('foo', :default_need_not_be_a_string) # => :default_need_not_be_a_string
  * If the environment variable does not exist and both default and block are given,
- * issues a warning (“warning: block supersedes default value argument”),
+ * issues a warning ("warning: block supersedes default value argument"),
  * yields +name+ to the block, and returns the block's return value:
  *   ENV.fetch('foo', :default) { |name| :block_return } # => :block_return
  * Raises TypeError if +name+ is not a String and cannot be coerced with \#to_str:
