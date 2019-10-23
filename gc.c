@@ -10080,16 +10080,9 @@ rb_malloc_info_show_results(void)
 }
 #endif
 
-static void
-objspace_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
+static size_t
+objspace_calc_exact_malloc_size(void *ptr, size_t old_size)
 {
-    if (!ptr) {
-        /*
-         * ISO/IEC 9899 says "If ptr is a null pointer, no action occurs" since
-         * its first version.  We would better follow.
-         */
-        return;
-    }
 #if CALC_EXACT_MALLOC_SIZE
     struct malloc_obj_info *info = (struct malloc_obj_info *)ptr - 1;
     ptr = info;
@@ -10146,6 +10139,21 @@ objspace_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
     }
 #endif
 #endif
+    return old_size;
+}
+
+static void
+objspace_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
+{
+    if (!ptr) {
+        /*
+         * ISO/IEC 9899 says "If ptr is a null pointer, no action occurs" since
+         * its first version.  We would better follow.
+         */
+        return;
+    }
+    old_size = objspace_calc_exact_malloc_size(ptr, old_size);
+
     old_size = objspace_malloc_size(objspace, ptr, old_size);
 
     free(ptr);
