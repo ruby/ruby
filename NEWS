@@ -539,11 +539,11 @@ StringScanner::
 
 * The following libraries are no longer bundled gems.
   Install corresponding gems to use these features.
-  * CMath
-  * Scanf
-  * Shell
-  * Synchronizer
-  * ThreadsWait
+  * CMath (cmath gem)
+  * Scanf (scanf gem)
+  * Shell (shell gem)
+  * Synchronizer (sync gem)
+  * ThreadsWait (thwait gem)
 
 Proc::
   * Proc#to_s format was changed. [Feature #16101]
