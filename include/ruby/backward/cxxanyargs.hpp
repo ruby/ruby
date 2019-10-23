@@ -227,8 +227,9 @@ rb_rescue2(type *q, VALUE w, type *e, VALUE r, ...)
     func2_t *y = reinterpret_cast<func2_t*>(e);
     va_list ap;
     va_start(ap, r);
-    return ::rb_vrescue2(t, w, y, r, ap);
+    VALUE ret = ::rb_vrescue2(t, w, y, r, ap);
     va_end(ap);
+    return ret;
 }
 
 RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprected")
