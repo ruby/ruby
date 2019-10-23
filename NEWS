@@ -228,7 +228,7 @@ Dir::
 
 Encoding::
 
-  New method::
+  New encoding::
 
     * Added new encoding CESU-8 [Feature #15931]
 
@@ -246,7 +246,7 @@ Enumerable::
 
 Enumerator::
 
-  New method::
+  New methods::
 
     * Added Enumerator::Lazy#eager that generates a non-lazy enumerator
       from a lazy enumerator.  [Feature #15901]
@@ -316,15 +316,15 @@ Integer::
 
 NilClass / TrueClass / FalseClass::
 
-  Modified method::
+  Modified methods::
 
-    * NilClass#to_s, TrueClass#to_s and FalseClass#to_s now always returns a
+    * NilClass#to_s, TrueClass#to_s and FalseClass#to_s now always return a
       frozen String. The returned String is always the same for each of these
       values. This change is experimental. [Feature #16150]
 
 Module::
 
-  New method::
+  New methods::
 
     * Added Module#const_source_location to retrieve the location where a
       constant is defined.  [Feature #10771]
@@ -334,12 +334,12 @@ Module::
       all arguments to another method in a way that can be backwards
       compatible with older Ruby versions.  [Bug #16154]
 
-  Modified method::
+  Modified methods::
 
     * Module#autoload? now takes an +inherit+ optional argument, like as
       Module#const_defined?.  [Feature #15777]
 
-    * Module#name now always return a frozen String. The returned String is
+    * Module#name now always returns a frozen String. The returned String is
       always the same for a given Module. This change is
       experimental. [Feature #16150]
 
