@@ -235,7 +235,7 @@ class TestRefinement < Test::Unit::TestCase
       meth.call(3)
     EOS
     assert_equal(:refine_pow, eval_using(MethodIntegerPowEx, "2.pow(3)"))
-    assert_equal(:refine_pow, eval_using(MethodIntegerPowEx, "2.:pow.(3)"))
+    assert_equal(:refine_pow, eval_using(MethodIntegerPowEx, "2.method(:pow).(3)"))
   end
 
   module InstanceMethodIntegerPowEx

@@ -186,9 +186,6 @@ sufficient information, see the ChangeLog file or Redmine
     # Previously parsed as: (a, b = raise) rescue [1, 2]
     # Now parsed as:         a, b = (raise rescue [1, 2])
 
-* Method reference operator, <code>.:</code> is introduced as an
-  experimental feature.  [Feature #12125] [Feature #13581]
-
 * +yield+ in singleton class syntax is warned and will be deprecated later [Feature #15575].
 
 * Argument forwarding by <code>(...)</code> is introduced. [Feature #16253]

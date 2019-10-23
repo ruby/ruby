@@ -1125,42 +1125,6 @@ class TestMethod < Test::Unit::TestCase
     }
   end
 
-  def test_method_reference_operator
-    m = 1.:succ
-    assert_predicate(m, :frozen?)
-    assert_equal(1.method(:succ), m)
-    assert_equal(2, m.())
-    m = 1.:+
-    assert_predicate(m, :frozen?)
-    assert_equal(1.method(:+), m)
-    assert_equal(42, m.(41))
-    m = 1.:-@
-    assert_predicate(m, :frozen?)
-    assert_equal(1.method(:-@), m)
-    assert_equal(-1, m.())
-    o = Object.new
-    def o.foo; 42; end
-    assert_predicate(o.:foo, :frozen?)
-    m = o.method(:foo)
-    assert_equal(m, o.:foo)
-    def o.method(m); nil; end
-    assert_equal(m, o.:foo)
-    assert_nil(o.method(:foo))
-  end
-
-  def test_method_reference_freeze_state
-    m = 1.:succ
-    assert_predicate(m, :frozen?, "dot-symbol method reference should be frozen")
-    m = 1.method(:succ)
-    assert_not_predicate(m, :frozen?, "#method method reference should not be frozen")
-    o = Object.new
-    def o.foo; 42; end
-    m = o.:foo
-    assert_predicate(m, :frozen?, "dot-symbol method reference should be frozen")
-    m = o.method(:foo)
-    assert_not_predicate(m, :frozen?, "#method method reference should not be frozen")
-  end
-
   def test_umethod_bind_call
     foo = Base.instance_method(:foo)
     assert_equal(:base, foo.bind_call(Base.new))

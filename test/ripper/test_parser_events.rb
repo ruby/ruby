@@ -443,13 +443,6 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal "[call(ref(self),&.,foo,[])]", tree
   end
 
-  def test_methref
-    thru_methref = false
-    tree = parse("obj.:foo", :on_methref) {thru_methref = true}
-    assert_equal true, thru_methref
-    assert_equal "[methref(vcall(obj),foo)]", tree
-  end
-
   def test_excessed_comma
     thru_excessed_comma = false
     parse("proc{|x,|}", :on_excessed_comma) {thru_excessed_comma = true}

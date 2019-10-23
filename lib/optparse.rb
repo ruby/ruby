@@ -1781,7 +1781,7 @@ XXX
       visit(:complete, typ, opt, icase, *pat) {|o, *sw| return sw}
     }
     exc = ambiguous ? AmbiguousOption : InvalidOption
-    raise exc.new(opt, additional: self.:additional_message.curry[typ])
+    raise exc.new(opt, additional: self.method(:additional_message).curry[typ])
   end
   private :complete
 

@@ -264,15 +264,6 @@ class TestAst < Test::Unit::TestCase
     assert_equal(:SCOPE, defn.type)
   end
 
-  def test_methref
-    node = RubyVM::AbstractSyntaxTree.parse("obj.:foo")
-    _, _, body = *node.children
-    assert_equal(:METHREF, body.type)
-    recv, mid = body.children
-    assert_equal(:VCALL, recv.type)
-    assert_equal(:foo, mid)
-  end
-
   def test_dstr
     node = parse('"foo#{1}bar"')
     _, _, body = *node.children
