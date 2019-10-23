@@ -1419,7 +1419,8 @@ $(UNICODE_SRC_DATA_DIR):
 $(UNICODE_HDR_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=name2ctype.h): \
 		$(srcdir)/tool/enc-unicode.rb \
 		$(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
-		$(UNICODE_PROPERTY_FILES)
+		$(UNICODE_PROPERTY_FILES) \
+		$(UNICODE_EMOJI_FILES)
 
 $(UNICODE_HDR_DIR)/name2ctype.h:
 	$(MAKEDIRS) $(@D)
