@@ -4804,7 +4804,7 @@ rb_f_getenv(VALUE obj, VALUE name)
  *   ENV.delete('foo')
  *   ENV.fetch('foo', :default_need_not_be_a_string) # => :default_need_not_be_a_string
  * If the environment variable does not exist and both default and block are given,
- * issues a warning ("warning: block supersedes default value argument"),
+ * issues a warning (“warning: block supersedes default value argument”),
  * yields +name+ to the block, and returns the block's return value:
  *   ENV.fetch('foo', :default) { |name| :block_return } # => :block_return
  * Raises TypeError if +name+ is not a String and cannot be coerced with \#to_str:
@@ -5194,7 +5194,7 @@ rb_env_size(VALUE ehash, VALUE args, VALUE eobj)
 
 /*
  * call-seq:
- *   ENV.each_key { |name| block } -> Hash
+ *   ENV.each_key { |name| block } -> ENV
  *   ENV.each_key                  -> Enumerator
  *
  * Yields each environment variable name.
@@ -5249,7 +5249,7 @@ env_f_values(VALUE _)
 
 /*
  * call-seq:
- *   ENV.each_value { |value| block } -> Hash
+ *   ENV.each_value { |value| block } -> ENV
  *   ENV.each_value                   -> Enumerator
  *
  * Yields each environment variable +value+.
@@ -5351,7 +5351,7 @@ env_reject_bang(VALUE ehash)
 
 /*
  * call-seq:
- *   ENV.delete_if { |name, value| block } -> Hash
+ *   ENV.delete_if { |name, value| block } -> ENV
  *   ENV.delete_if                         -> Enumerator
  *
  * Deletes every environment variable for which the block evaluates to +true+.
@@ -5461,7 +5461,7 @@ env_select_bang(VALUE ehash)
 
 /*
  * call-seq:
- *   ENV.keep_if { |name, value| block } -> Hash
+ *   ENV.keep_if { |name, value| block } -> ENV
  *   ENV.keep_if                         -> Enumerator
  *
  * Deletes every environment variable where the block evaluates to +false+.
@@ -5830,7 +5830,7 @@ env_to_hash(void)
 
 /*
  * call-seq:
- *   ENV.to_hash -> hash
+ *   ENV.to_hash -> Hash
  *
  * Creates a hash with a copy of the environment variables.
  *
@@ -5844,8 +5844,8 @@ env_f_to_hash(VALUE _)
 
 /*
  * call-seq:
- *   ENV.to_h                        -> hash
- *   ENV.to_h {|name, value| block } -> hash
+ *   ENV.to_h                        -> Hash
+ *   ENV.to_h {|name, value| block } -> Hash
  *
  * Creates a hash with a copy of the environment variables.
  *
@@ -5975,10 +5975,10 @@ env_update_i(VALUE key, VALUE val, VALUE _)
 
 /*
  * call-seq:
- *   ENV.update(hash)                                        -> Hash
- *   ENV.update(hash) { |name, old_value, new_value| block } -> Hash
- *   ENV.merge!(hash)                                        -> Hash
- *   ENV.merge!(hash) { |name, old_value, new_value| block } -> Hash
+ *   ENV.update(hash)                                        -> ENV
+ *   ENV.update(hash) { |name, old_value, new_value| block } -> ENV
+ *   ENV.merge!(hash)                                        -> ENV
+ *   ENV.merge!(hash) { |name, old_value, new_value| block } -> ENV
  *
  * Adds the contents of +hash+ to the environment variables.  If no block is
  * specified entries with duplicate keys are overwritten, otherwise the value
