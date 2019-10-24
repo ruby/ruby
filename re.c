@@ -1044,7 +1044,7 @@ static void
 match_check(VALUE match)
 {
     if (!RMATCH(match)->regexp) {
-	rb_raise(rb_eTypeError, "uninitialized Match");
+	rb_raise(rb_eTypeError, "uninitialized MatchData");
     }
 }
 
