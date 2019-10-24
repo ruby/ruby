@@ -30,10 +30,14 @@ jobs:
           choco install winflexbison3
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
       - name: Checkout ruby/ruby
-        run: git clone --depth=50 https://github.com/ruby/ruby . && git reset --hard ${{ github.sha }}
+        run: |
+          git clone --depth=50 https://github.com/ruby/ruby .
+          git reset --hard ${{ github.sha }}
         if: github.event_name == 'push'
       - name: Checkout a pull request
-        run: git clone --depth=50 --branch=${{ github.event.pull_request.head.ref }} https://github.com/${{ github.event.pull_request.head.repo.full_name }} . && git reset --hard ${{ github.event.pull_request.head.sha }}
+        run: |
+          git clone --depth=50 --branch=${{ github.event.pull_request.head.ref }} https://github.com/${{ github.event.pull_request.head.repo.full_name }} .
+          git reset --hard ${{ github.event.pull_request.head.sha }}
         if: github.event_name == 'pull_request'
       - name: configure
         run: |
