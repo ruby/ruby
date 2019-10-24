@@ -42,18 +42,9 @@ describe "Fiber#transfer" do
     fiber2.transfer.should == [:fiber2_start, :fiber1, :fiber2_end]
   end
 
-  ruby_version_is ''...'2.7' do
-    it "raises a FiberError when transferring to a Fiber which resumes itself" do
-      fiber = Fiber.new { fiber.resume }
-      -> { fiber.transfer }.should raise_error(FiberError)
-    end
-  end
-
-  ruby_version_is '2.7' do
-    it "allows transferring to a Fiber which resumes itself" do
-      fiber = Fiber.new { fiber.resume 1 }
-      fiber.transfer.should == 1
-    end
+  it "raises a FiberError when transferring to a Fiber which resumes itself" do
+    fiber = Fiber.new { fiber.resume }
+    -> { fiber.transfer }.should raise_error(FiberError)
   end
 
   it "works if Fibers in different Threads each transfer to a Fiber in the same Thread" do

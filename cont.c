@@ -2226,8 +2226,7 @@ static VALUE
 rb_fiber_m_transfer(int argc, VALUE *argv, VALUE fiber_value)
 {
     rb_fiber_t *fiber = fiber_ptr(fiber_value);
-    fiber_current()->transferred = 1;
-    fiber->transferred = 0;
+    fiber->transferred = 1;
     return fiber_switch(fiber, argc, argv, 0, PASS_KW_SPLAT);
 }
 
