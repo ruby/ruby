@@ -228,8 +228,8 @@ struct rb_fiber_struct {
     VALUE first_proc;
     struct rb_fiber_struct *prev;
     BITFIELD(enum fiber_status, status, 2);
-    /* If a fiber invokes "transfer",
-     * then this fiber can't "resume" any more after that.
+    /* If a fiber invokes by "transfer",
+     * then this fiber can't be invoked by "resume" any more after that.
      * You shouldn't mix "transfer" and "resume".
      */
     unsigned int transferred : 1;
@@ -2273,9 +2273,15 @@ fiber_to_s(VALUE fiber_value)
 {
     const rb_fiber_t *fiber = fiber_ptr(fiber_value);
     const rb_proc_t *proc;
-    char status_info[0x10];
+    char status_info[0x20];
 
-    snprintf(status_info, 0x10, " (%s)", fiber_status_name(fiber->status));
+    if (fiber->transferred) {
+        snprintf(status_info, 0x20, " (%s, transferred)", fiber_status_name(fiber->status));
+    }
+    else {
+        snprintf(status_info, 0x20, " (%s)", fiber_status_name(fiber->status));
+    }
+
     if (!rb_obj_is_proc(fiber->first_proc)) {
         VALUE str = rb_any_to_s(fiber_value);
         strlcat(status_info, ">", sizeof(status_info));
