@@ -295,7 +295,8 @@ proc_entry_ptr(VALUE proc_entry)
  *   obj.enum_for(method = :each, *args){|*args| block} -> enum
  *
  * Creates a new Enumerator which will enumerate by calling +method+ on
- * +obj+, passing +args+ if any.
+ * +obj+, passing +args+ if any. What was _yielded_ by method becomes
+ * values of enumerator.
  *
  * If a block is given, it will be used to calculate the size of
  * the enumerator without the need to iterate it (see Enumerator#size).
@@ -313,6 +314,11 @@ proc_entry_ptr(VALUE proc_entry)
  *   # protect an array from being modified by some_method
  *   a = [1, 2, 3]
  *   some_method(a.to_enum)
+ *
+ *   # String#split in block form is more memory-effective:
+ *   very_large_string.to_enum(:split, "|") { |chunk| return chunk if chunk.include?('DATE') }
+ *   # This could be rewritten more idiomatically with to_enum:
+ *   very_large_string.to_enum(:split, "|").lazy.grep(/DATE/).first
  *
  * It is typical to call to_enum when defining methods for
  * a generic Enumerable, in case no block is passed.
