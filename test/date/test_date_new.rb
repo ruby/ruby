@@ -165,6 +165,10 @@ class TestDateNew < Test::Unit::TestCase
     assert_equal([2001, 2, 3, 4, 5, 6, 0],
 		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec, d.offset])
     assert_equal(1.to_r/2, d.sec_fraction)
+
+    d = DateTime.civil(2001, 2)
+    assert_equal([2001, 2, 1, 0, 0, 0, 0],
+		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec, d.offset])
   end
 
   def test_civil__neg

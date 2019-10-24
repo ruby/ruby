@@ -3438,7 +3438,7 @@ date_initialize(int argc, VALUE *argv, VALUE self)
         check_numeric(vd, "day");
 	num2int_with_frac(d, positive_inf);
       case 2:
-        check_numeric(vd, "month");
+        check_numeric(vm, "month");
 	m = NUM2INT(vm);
       case 1:
         check_numeric(vy, "year");
