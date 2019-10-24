@@ -740,6 +740,9 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                 rest_last = rb_hash_dup(rest_last);
                 RARRAY_ASET(args->rest, len - 1, rest_last);
                 kw_flag |= VM_CALL_KW_SPLAT;
+                if (iseq->body->param.flags.ruby2_keywords) {
+                    remove_empty_keyword_hash = 0;
+                }
             }
             else {
                 rest_last = 0;
