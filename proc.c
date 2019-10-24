@@ -2819,6 +2819,14 @@ method_inspect(VALUE method)
 
     mklass = data->klass;
 
+    if (RB_TYPE_P(mklass, T_ICLASS)) {
+        /* TODO: I'm not sure why mklass is T_ICLASS.
+         * UnboundMethod#bind() can set it as T_ICLASS at convert_umethod_to_method_components()
+         * but not sure it is needed.
+         */
+        mklass = RBASIC_CLASS(mklass);
+    }
+
     if (data->me->def->type == VM_METHOD_TYPE_ALIAS) {
 	defined_class = data->me->def->body.alias.original_me->owner;
     }
