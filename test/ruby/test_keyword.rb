@@ -2692,6 +2692,10 @@ class TestKeywordArguments < Test::Unit::TestCase
         args
       end
 
+      def pass_cfunc(*args)
+        self.class.new(*args).init_args
+      end
+
       ruby2_keywords def block(*args)
         ->(*args, **kw){[args, kw]}.(*args)
       end
@@ -2913,6 +2917,10 @@ class TestKeywordArguments < Test::Unit::TestCase
 
     assert_warn(/The last argument is used as the keyword parameter.* for `bar'/m) do
       assert_equal([[1], h1], o.foo(:pass_bar, 1, :a=>1))
+    end
+
+    assert_warn(/The last argument is used as the keyword parameter.* for `initialize'/m) do
+      assert_equal([[1], h1], o.foo(:pass_cfunc, 1, :a=>1))
     end
 
     assert_warn(/Skipping set of ruby2_keywords flag for bar \(method accepts keywords or method does not accept argument splat\)/) do
