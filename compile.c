@@ -10147,7 +10147,8 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
         (body->param.flags.has_kwrest       << 5) |
         (body->param.flags.has_block        << 6) |
         (body->param.flags.ambiguous_param0 << 7) |
-        (body->param.flags.accepts_no_kwarg << 8);
+        (body->param.flags.accepts_no_kwarg << 8) |
+        (body->param.flags.ruby2_keywords   << 9);
 
 #if IBF_ISEQ_ENABLE_LOCAL_BUFFER
 #  define IBF_BODY_OFFSET(x) (x)
@@ -10313,6 +10314,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->param.flags.has_block = (param_flags >> 6) & 1;
     load_body->param.flags.ambiguous_param0 = (param_flags >> 7) & 1;
     load_body->param.flags.accepts_no_kwarg = (param_flags >> 8) & 1;
+    load_body->param.flags.ruby2_keywords = (param_flags >> 9) & 1;
     load_body->param.size = param_size;
     load_body->param.lead_num = param_lead_num;
     load_body->param.opt_num = param_opt_num;
