@@ -11,9 +11,11 @@ describe "Date#parse" do
     d.should == Date.commercial(d.cwyear, d.cweek, 5)
   end
 
-  it "parses a month name into a Date object" do
-    d = Date.parse("october")
-    d.should == Date.civil(Date.today.year, 10)
+  ruby_version_is ''...'2.7' do
+    it "parses a month name into a Date object" do
+      d = Date.parse("october")
+      d.should == Date.civil(Date.today.year, 10)
+    end
   end
 
   it "parses a month day into a Date object" do
