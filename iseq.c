@@ -182,6 +182,26 @@ iseq_extract_values(VALUE *code, size_t pos, iseq_value_itr_t * func, void *data
               }
             }
             break;
+          case TS_CALLINFO:
+            {
+              struct rb_call_info *ci = (struct rb_call_info *)code[pos + op_no + 1];
+
+              if (ci->flag & VM_CALL_KWARG) {
+                  struct rb_call_info_kw_arg *kw_args = ((struct rb_call_info_with_kwarg *)ci)->kw_arg;
+                  VALUE *const keywords = kw_args->keywords;
+                  const int kw_len = kw_args->keyword_len;
+                  for (int i = 0; i < kw_len; ++i) {
+                      const VALUE kw = keywords[i];
+                      if (!SPECIAL_CONST_P(kw)) {
+                          VALUE newkw = func(data, kw);
+                          if (newkw != kw) {
+                              keywords[i] = newkw;
+                          }
+                      }
+                  }
+              }
+            }
+            break;
           default:
             break;
 	}
