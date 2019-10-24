@@ -24,20 +24,12 @@ jobs:
     steps:
       - name: Install libraries with vcpkg
         run: |
-          vcpkg --triplet x64-windows install %dependencies% || (
-            sleep 4 && vcpkg --triplet x64-windows install %dependencies%
-          ) || (
-            sleep 25 && vcpkg --triplet x64-windows install %dependencies%
-          )
+          vcpkg --triplet x64-windows install %dependencies%
         env:
           dependencies: openssl readline zlib
       - name: Install libraries with chocolatey
         run: |
-          choco install winflexbison3 || (
-            sleep 4 && choco install winflexbison3
-          ) || (
-            sleep 25 && choco install winflexbison3
-          )
+          choco install winflexbison3
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
       - name: Checkout ruby/ruby
         run: git clone --depth=50 https://github.com/ruby/ruby . && git reset --hard ${{ github.sha }}
