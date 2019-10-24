@@ -598,7 +598,11 @@ static void numparam_pop(struct parser_params *p, NODE *prev_inner);
 #endif
 
 #define idFWD_REST   '*'
+#ifdef RUBY3_KEYWORDS
 #define idFWD_KWREST idPow /* Use simple "**", as tDSTAR is "**arg" */
+#else
+#define idFWD_KWREST 0
+#endif
 #define idFWD_BLOCK  '&'
 
 #define RE_OPTION_ONCE (1<<16)
@@ -2412,16 +2416,26 @@ paren_args	: '(' opt_call_args rparen
 		    }
 		| '(' args_forward rparen
 		    {
-			if (!local_id(p, idFWD_REST) || !local_id(p, idFWD_KWREST) || !local_id(p, idFWD_BLOCK)) {
+			if (!local_id(p, idFWD_REST) ||
+#if idFWD_KWREST
+			    !local_id(p, idFWD_KWREST) ||
+#endif
+			    !local_id(p, idFWD_BLOCK)) {
 			    compile_error(p, "unexpected ...");
 			    $$ = Qnone;
 			}
 			else {
 			/*%%%*/
 			    NODE *splat = NEW_SPLAT(NEW_LVAR(idFWD_REST, &@2), &@2);
+#if idFWD_KWREST
 			    NODE *kwrest = list_append(p, NEW_LIST(0, &@2), NEW_LVAR(idFWD_KWREST, &@2));
+#endif
 			    NODE *block = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, &@2), &@2);
+#if idFWD_KWREST
 			    $$ = arg_append(p, splat, new_hash(p, kwrest, &@2), &@2);
+#else
+			    $$ = splat;
+#endif
 			    $$ = arg_blk_pass($$, block);
 			/*% %*/
 			/*% ripper: arg_paren!($2) %*/
@@ -4784,7 +4798,9 @@ f_arglist	: '(' f_args rparen
 		| '(' args_forward rparen
 		    {
 			arg_var(p, idFWD_REST);
+#if idFWD_KWREST
 			arg_var(p, idFWD_KWREST);
+#endif
 			arg_var(p, idFWD_BLOCK);
 		    /*%%%*/
 			$$ = new_args_tail(p, Qnone, idFWD_KWREST, idFWD_BLOCK, &@2);
@@ -11256,6 +11272,8 @@ new_args(struct parser_params *p, NODE *pre_args, NODE *opt_args, ID rest_arg, N
     args->rest_arg       = rest_arg;
 
     args->opt_args       = opt_args;
+
+    args->ruby2_keywords = rest_arg == idFWD_REST;
 
     p->ruby_sourceline = saved_line;
     nd_set_loc(tail, loc);

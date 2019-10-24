@@ -453,7 +453,9 @@ struct rb_args_info {
     NODE *kw_rest_arg;
 
     NODE *opt_args;
-    int no_kwarg;
+    unsigned int no_kwarg: 1;
+    unsigned int ruby2_keywords: 1;
+
     VALUE imemo;
 };
 

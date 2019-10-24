@@ -1527,13 +1527,23 @@ eom
     obj3.instance_eval('def foo(...) bar(...) end', __FILE__, __LINE__)
 
     [obj1, obj2, obj3].each do |obj|
-      assert_equal([[1, 2, 3], {k1: 4, k2: 5}], obj.foo(1, 2, 3, k1: 4, k2: 5) {|*x| x})
-      assert_equal([[1, 2, 3], {k1: 4, k2: 5}], obj.foo(1, 2, 3, k1: 4, k2: 5))
+      assert_warning('') {
+        assert_equal([[1, 2, 3], {k1: 4, k2: 5}], obj.foo(1, 2, 3, k1: 4, k2: 5) {|*x| x})
+      }
+      assert_warning('') {
+        assert_equal([[1, 2, 3], {k1: 4, k2: 5}], obj.foo(1, 2, 3, k1: 4, k2: 5))
+      }
+      warning = "warning: The last argument is used as the keyword parameter"
+      assert_warning(/\A\z|:(?!#{__LINE__+1})\d+: #{warning}/o) {
+        assert_equal([[], {}], obj.foo({}) {|*x| x})
+      }
+      assert_warning(/\A\z|:(?!#{__LINE__+1})\d+: #{warning}/o) {
+        assert_equal([[], {}], obj.foo({}))
+      }
       assert_equal(-1, obj.:foo.arity)
       parameters = obj.:foo.parameters
       assert_equal(:rest, parameters.dig(0, 0))
-      assert_equal(:keyrest, parameters.dig(1, 0))
-      assert_equal(:block, parameters.dig(2, 0))
+      assert_equal(:block, parameters.dig(1, 0))
     end
   end
 
