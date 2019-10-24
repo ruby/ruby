@@ -115,7 +115,9 @@ retry::
   handling}[rdoc-ref:syntax/exceptions.rdoc]
 
 return::
-  Exits a method.  See {methods}[rdoc-ref:syntax/methods.rdoc]
+  Exits a method.  See {methods}[rdoc-ref:syntax/methods.rdoc].
+  If met in top-level scope, immediately stops interpretation of
+  the current file.
 
 self::
   The object the current method is attached to.  See

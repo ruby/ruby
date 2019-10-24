@@ -3291,6 +3291,8 @@ static VALUE rb_proc_compose_to_right(VALUE self, VALUE g);
  *     f = proc {|x| x * x }
  *     g = proc {|x| x + x }
  *     p (f << g).call(2) #=> 16
+ *
+ *  See Proc#>> for detailed explanations.
  */
 static VALUE
 proc_compose_to_left(VALUE self, VALUE g)
@@ -3330,6 +3332,20 @@ rb_proc_compose_to_left(VALUE self, VALUE g)
  *     f = proc {|x| x * x }
  *     g = proc {|x| x + x }
  *     p (f >> g).call(2) #=> 8
+ *
+ *  <i>g</i> could be other Proc, or Method, or any other object responding to
+ *  +call+ method:
+ *
+ *     class Parser
+ *       def self.call(text)
+ *          # ...some complicated parsing logic...
+ *       end
+ *     end
+ *
+ *     pipeline = File.method(:read) >> Parser >> proc { |data| puts "data size: #{data.count}" }
+ *     pipeline.call('data.json')
+ *
+ *  See also Method#>> and Method#<<.
  */
 static VALUE
 proc_compose_to_right(VALUE self, VALUE g)

@@ -1,0 +1,37 @@
+= Code Comments
+
+Ruby has two types of comments: inline and block.
+
+Inline comments start with the <code>#</code> character and continue until the
+end of the line:
+
+  # On a separate line
+  class Foo # or at the end of the line
+    # can be indented
+    def bar
+    end
+  end
+
+Block comments start with <code>=begin</code> and end with <code>=end</code>.
+Each should start on a separate line.
+
+  =begin
+  This is
+  commented out
+  =end
+
+  class Foo
+  end
+
+  =begin some_tag
+  this works, too
+  =end
+
+<code>=begin</code> and <code>=end</code> can not be indented, so this is a
+syntax error:
+
+  class Foo
+    =begin
+    Will not work
+    =end
+  end

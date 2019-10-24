@@ -416,7 +416,19 @@ parent_redirect_close(int fd)
 /*
  * Document-module: Process
  *
- * Module to handle processes.
+ * The module contains several groups of functionality for handling OS processes:
+ *
+ * * Low-level property introspection and management of current process, like
+ *   Process.argv0, Process.pid;
+ * * Low-level introspection of other processes, like Process.getpgid, Process.getpriority;
+ * * Management of the current process: Process.abort, Process.exit, Process.daemon etc.
+ *   (for convenience, most of those are also available as a global functions,
+ *   and module functions of Kernel);
+ * * Creation and management of child processes: Process.fork, Process.spawn and
+ *   related methods;
+ * * Management of low-level system clock: Process.times and Process.clock_gettime,
+ *   which could be important for proper benchmarking and other elapsed
+ *   time measurement tasks.
  */
 
 static VALUE
@@ -5127,7 +5139,7 @@ proc_getpriority(VALUE obj, VALUE which, VALUE who)
  *  call-seq:
  *     Process.setpriority(kind, integer, priority)   -> 0
  *
- *  See Process#getpriority.
+ *  See Process.getpriority.
  *
  *     Process.setpriority(Process::PRIO_USER, 0, 19)      #=> 0
  *     Process.setpriority(Process::PRIO_PROCESS, 0, 19)   #=> 0

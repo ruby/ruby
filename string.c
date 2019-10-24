@@ -8374,8 +8374,8 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
 
 /*
  *  call-seq:
- *     str.each_line(separator=$/ [, getline_args]) {|substr| block } -> str
- *     str.each_line(separator=$/ [, getline_args])                   -> an_enumerator
+ *     str.each_line(separator=$/, chomp: false) {|substr| block } -> str
+ *     str.each_line(separator=$/, chomp: false)                   -> an_enumerator
  *
  *  Splits <i>str</i> using the supplied parameter as the record
  *  separator (<code>$/</code> by default), passing each substring in
@@ -8383,30 +8383,40 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
  *  supplied, the string is split into paragraphs delimited by
  *  multiple successive newlines.
  *
- *  See IO.readlines for details about getline_args.
+ *  If +chomp+ is +true+, +separator+ will be removed from the end of each
+ *  line.
  *
  *  If no block is given, an enumerator is returned instead.
  *
- *     print "Example one\n"
  *     "hello\nworld".each_line {|s| p s}
- *     print "Example two\n"
+ *     # prints:
+ *     #   "hello\n"
+ *     #   "world"
+ *
  *     "hello\nworld".each_line('l') {|s| p s}
- *     print "Example three\n"
+ *     # prints:
+ *     #   "hel"
+ *     #   "l"
+ *     #   "o\nworl"
+ *     #   "d"
+ *
  *     "hello\n\n\nworld".each_line('') {|s| p s}
+ *     # prints
+ *     #   "hello\n\n"
+ *     #   "world"
  *
- *  <em>produces:</em>
+ *     "hello\nworld".each_line(chomp: true) {|s| p s}
+ *     # prints:
+ *     #   "hello"
+ *     #   "world"
  *
- *     Example one
- *     "hello\n"
- *     "world"
- *     Example two
- *     "hel"
- *     "l"
- *     "o\nworl"
- *     "d"
- *     Example three
- *     "hello\n\n"
- *     "world"
+ *     "hello\nworld".each_line('l', chomp: true) {|s| p s}
+ *     # prints:
+ *     #   "he"
+ *     #   ""
+ *     #   "o\nwor"
+ *     #   "d"
+ *
  */
 
 static VALUE
@@ -8418,13 +8428,14 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.lines(separator=$/ [, getline_args])  -> an_array
+ *     str.lines(separator=$/, chomp: false)  -> an_array
  *
  *  Returns an array of lines in <i>str</i> split using the supplied
  *  record separator (<code>$/</code> by default).  This is a
  *  shorthand for <code>str.each_line(separator, getline_args).to_a</code>.
  *
- *  See IO.readlines for details about getline_args.
+ *  If +chomp+ is +true+, +separator+ will be removed from the end of each
+ *  line.
  *
  *     "hello\nworld\n".lines              #=> ["hello\n", "world\n"]
  *     "hello  world".lines(' ')           #=> ["hello ", " ", "world"]
