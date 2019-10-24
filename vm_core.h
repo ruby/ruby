@@ -234,13 +234,6 @@ union iseq_inline_storage_entry {
     struct iseq_inline_cache_entry cache;
 };
 
-struct rb_call_info {
-    /* fixed at compile time */
-    ID mid;
-    unsigned int flag;
-    int orig_argc;
-};
-
 struct rb_call_info_kw_arg {
     int keyword_len;
     VALUE keywords[1];
@@ -258,18 +251,13 @@ struct rb_calling_info {
     int kw_splat;
 };
 
-struct rb_call_data {
-    struct rb_call_cache cc;
-    struct rb_call_info ci;
-};
-
 struct rb_kwarg_call_data {
     struct rb_call_cache cc;
     struct rb_call_info_with_kwarg ci_kw;
 };
 
 struct rb_execution_context_struct;
-typedef VALUE (*vm_call_handler)(struct rb_execution_context_struct *ec, struct rb_control_frame_struct *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc);
+typedef VALUE (*vm_call_handler)(struct rb_execution_context_struct *ec, struct rb_control_frame_struct *cfp, struct rb_calling_info *calling, struct rb_call_data *cd);
 
 #if 1
 #define CoreDataFromValue(obj, type) (type*)DATA_PTR(obj)

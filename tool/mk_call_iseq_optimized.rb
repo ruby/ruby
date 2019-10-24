@@ -21,10 +21,10 @@ P.each{|param|
   L.each{|local|
     puts <<EOS
 static VALUE
-#{fname(param, local)}(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc)
+#{fname(param, local)}(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, cc->me, 0, #{param}, #{local});
+    return vm_call_iseq_setup_normal(ec, cfp, calling, cd->cc.me, 0, #{param}, #{local});
 }
 
 EOS
@@ -61,7 +61,7 @@ vm_call_iseq_setup_func(const struct rb_call_info *ci, const int param_size, con
 
 
 static inline vm_call_handler
-vm_call_iseq_setup_func(const struct rb_call_info *ci, struct rb_call_cache *cc)
+vm_call_iseq_setup_func(const struct rb_call_info *ci, const int param_size, const int local_size)
 {
     if (UNLIKELY(ci->flag & VM_CALL_TAILCALL)) {
 	return &vm_call_iseq_setup_tailcall_0start;

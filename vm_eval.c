@@ -38,34 +38,28 @@ typedef enum call_type {
 } call_type;
 
 static VALUE send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope);
-static VALUE vm_call0_body(rb_execution_context_t* ec, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv);
+static VALUE vm_call0_body(rb_execution_context_t* ec, struct rb_calling_info *calling, struct rb_call_data *cd, const VALUE *argv);
 
 #ifndef MJIT_HEADER
 
 MJIT_FUNC_EXPORTED VALUE
 rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me, int kw_splat)
 {
-    struct rb_calling_info calling_entry, *calling;
-    struct rb_call_info ci_entry;
-    struct rb_call_cache cc_entry;
-
-    calling = &calling_entry;
-
-    ci_entry.flag = kw_splat ? VM_CALL_KW_SPLAT : 0;
-    ci_entry.mid = id;
-
-    cc_entry.me = me;
-
-    calling->recv = recv;
-    calling->argc = argc;
-    calling->kw_splat = kw_splat;
-
-    return vm_call0_body(ec, calling, &ci_entry, &cc_entry, argv);
+    return vm_call0_body(
+        ec,
+        &(struct rb_calling_info) {
+            Qundef, recv, argc, kw_splat, },
+        &(struct rb_call_data) {
+            { 0, 0, me, me->def, vm_call_general, { 0, }, },
+            { id, (kw_splat ? VM_CALL_KW_SPLAT : 0), argc, }, },
+        argv);
 }
 
 static VALUE
-vm_call0_cfunc_with_frame(rb_execution_context_t* ec, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv)
+vm_call0_cfunc_with_frame(rb_execution_context_t* ec, struct rb_calling_info *calling, struct rb_call_data *cd, const VALUE *argv)
 {
+    const struct rb_call_info *ci = &cd->ci;
+    const struct rb_call_cache *cc = &cd->cc;
     VALUE val;
     const rb_callable_method_entry_t *me = cc->me;
     const rb_method_cfunc_t *cfunc = UNALIGNED_MEMBER_PTR(me->def, body.cfunc);
@@ -109,15 +103,18 @@ vm_call0_cfunc_with_frame(rb_execution_context_t* ec, struct rb_calling_info *ca
 }
 
 static VALUE
-vm_call0_cfunc(rb_execution_context_t *ec, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv)
+vm_call0_cfunc(rb_execution_context_t *ec, struct rb_calling_info *calling, struct rb_call_data *cd, const VALUE *argv)
 {
-    return vm_call0_cfunc_with_frame(ec, calling, ci, cc, argv);
+    return vm_call0_cfunc_with_frame(ec, calling, cd, argv);
 }
 
 /* `ci' should point temporal value (on stack value) */
 static VALUE
-vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv)
+vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, struct rb_call_data *cd, const VALUE *argv)
 {
+    const struct rb_call_info *ci = &cd->ci;
+    struct rb_call_cache *cc = &cd->cc;
+
     VALUE ret;
 
     calling->block_handler = vm_passed_block_handler(ec);
@@ -137,13 +134,13 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
 		*reg_cfp->sp++ = argv[i];
 	    }
 
-	    vm_call_iseq_setup(ec, reg_cfp, calling, ci, cc);
+            vm_call_iseq_setup(ec, reg_cfp, calling, cd);
 	    VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);
 	    return vm_exec(ec, TRUE); /* CHECK_INTS in this function */
 	}
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
       case VM_METHOD_TYPE_CFUNC:
-	ret = vm_call0_cfunc(ec, calling, ci, cc, argv);
+        ret = vm_call0_cfunc(ec, calling, cd, argv);
 	goto success;
       case VM_METHOD_TYPE_ATTRSET:
         if (calling->kw_splat &&
@@ -173,7 +170,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
 	ret = rb_attr_get(calling->recv, cc->me->def->body.attr.id);
 	goto success;
       case VM_METHOD_TYPE_BMETHOD:
-	ret = vm_call_bmethod_body(ec, calling, ci, cc, argv);
+        ret = vm_call_bmethod_body(ec, calling, cd, argv);
 	goto success;
       case VM_METHOD_TYPE_ZSUPER:
       case VM_METHOD_TYPE_REFINED:
@@ -1001,20 +998,22 @@ rb_funcallv_public_kw(VALUE recv, ID mid, int argc, const VALUE *argv, int kw_sp
 /*!
  * Calls a method
  * \private
- * \param cc     opaque call cache
+ * \param cd     opaque call data
  * \param recv   receiver of the method
  * \param mid    an ID that represents the name of the method
  * \param argc   the number of arguments
  * \param argv   pointer to an array of method arguments
  */
 VALUE
-rb_funcallv_with_cc(struct rb_call_cache_and_mid *cc, VALUE recv, ID mid, int argc, const VALUE *argv)
+rb_funcallv_with_cc(struct rb_call_data *cd, VALUE recv, ID mid, int argc, const VALUE *argv)
 {
-    if (LIKELY(cc->mid == mid)) {
-        const struct rb_call_info ci = { mid, VM_CALL_ARGS_SIMPLE, argc, };
-        vm_search_method(&ci, &cc->cc, recv);
+    const struct rb_call_info *ci = &cd->ci;
+    struct rb_call_cache *cc = &cd->cc;
 
-        if (LIKELY(! UNDEFINED_METHOD_ENTRY_P(cc->cc.me))) {
+    if (LIKELY(ci->mid == mid)) {
+        vm_search_method(cd, recv);
+
+        if (LIKELY(! UNDEFINED_METHOD_ENTRY_P(cc->me))) {
             return vm_call0_body(
                 GET_EC(),
                 &(struct rb_calling_info) {
@@ -1023,14 +1022,13 @@ rb_funcallv_with_cc(struct rb_call_cache_and_mid *cc, VALUE recv, ID mid, int ar
                     argc,
                     RB_NO_KEYWORDS,
                 },
-                &ci,
-                &cc->cc,
+                cd,
                 argv
             );
         }
     }
 
-    *cc = (struct rb_call_cache_and_mid) /* reset */ { { 0, }, mid, };
+    *cd = (struct rb_call_data) /* reset */ { { 0, }, { mid, }, };
     return rb_funcallv(recv, mid, argc, argv);
 }
 

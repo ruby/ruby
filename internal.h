@@ -2356,7 +2356,7 @@ struct rb_method_definition_struct;
 struct rb_execution_context_struct;
 struct rb_control_frame_struct;
 struct rb_calling_info;
-struct rb_call_info;
+struct rb_call_data;
 struct rb_call_cache {
     /* inline cache: keys */
     rb_serial_t method_state;
@@ -2369,8 +2369,7 @@ struct rb_call_cache {
     VALUE (*call)(struct rb_execution_context_struct *ec,
                   struct rb_control_frame_struct *cfp,
                   struct rb_calling_info *calling,
-                  const struct rb_call_info *ci,
-                  struct rb_call_cache *cc);
+                  struct rb_call_data *cd);
 
     union {
         unsigned int index; /* used by ivar */
@@ -2378,19 +2377,23 @@ struct rb_call_cache {
         int inc_sp; /* used by cfunc */
     } aux;
 };
-struct rb_call_cache_and_mid {
-    struct rb_call_cache cc;
+struct rb_call_info {
+    /* fixed at compile time */
     ID mid;
+    unsigned int flag;
+    int orig_argc;
 };
-VALUE rb_funcallv_with_cc(struct rb_call_cache_and_mid*, VALUE, ID, int, const VALUE*)
+struct rb_call_data {
+    struct rb_call_cache cc;
+    struct rb_call_info ci;
+};
+VALUE rb_funcallv_with_cc(struct rb_call_data*, VALUE, ID, int, const VALUE*)
 #if GCC_VERSION_SINCE(3, 3, 0) && defined(__OPTIMIZE__)
 __attribute__((__visibility__("default"), __nonnull__(1)))
 # define rb_funcallv(recv, mid, argc, argv) \
     __extension__({ \
-        static struct rb_call_cache_and_mid \
-            rb_funcallv_opaque_cc = { {0, }, 0, }; \
-        rb_funcallv_with_cc(&rb_funcallv_opaque_cc, \
-            recv, mid, argc,argv); \
+        static struct rb_call_data rb_funcallv_data = { { 0, }, { 0, }, }; \
+        rb_funcallv_with_cc(&rb_funcallv_data, recv, mid, argc, argv); \
     })
 #endif
     ;
