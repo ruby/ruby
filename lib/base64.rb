@@ -3,8 +3,8 @@
 # = base64.rb: methods for base64-encoding and -decoding strings
 #
 
-# The Base64 module provides for the encoding (#encode64, #strict_encode64,
-# #urlsafe_encode64) and decoding (#decode64, #strict_decode64,
+# The Base64 module provides for the encoding ( #encode64, #strict_encode64,
+# #urlsafe_encode64) and decoding ( #decode64, #strict_decode64,
 # #urlsafe_decode64) of binary data using a Base64 representation.
 #
 # == Example
