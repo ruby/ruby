@@ -194,7 +194,7 @@ def sync_default_gems(gem)
   when "e2mmap"
     rm_rf(%w[lib/e2mmap*])
     cp_r(Dir.glob("#{upstream}/lib/*"), "lib")
-    cp_r("#{upstream}/e2mmap.gemspec", "lib")
+    cp_r("#{upstream}/e2mmap.gemspec", "lib/e2mmap")
   when "strscan"
     rm_rf(%w[ext/strscan test/strscan])
     cp_r("#{upstream}/ext/strscan", "ext")
