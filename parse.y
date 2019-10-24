@@ -4781,6 +4781,19 @@ f_arglist	: '(' f_args rparen
 			SET_LEX_STATE(EXPR_BEG);
 			p->command_start = TRUE;
 		    }
+		| '(' args_forward rparen
+		    {
+			arg_var(p, idFWD_REST);
+			arg_var(p, idFWD_KWREST);
+			arg_var(p, idFWD_BLOCK);
+		    /*%%%*/
+			$$ = new_args_tail(p, Qnone, idFWD_KWREST, idFWD_BLOCK, &@2);
+			$$ = new_args(p, Qnone, Qnone, idFWD_REST, Qnone, $$, &@2);
+		    /*% %*/
+		    /*% ripper: paren!(params_new(Qnone, Qnone, $2, Qnone, Qnone, Qnone, Qnone)) %*/
+			SET_LEX_STATE(EXPR_BEG);
+			p->command_start = TRUE;
+		    }
 		|   {
 			$<num>$ = p->in_kwarg;
 			p->in_kwarg = 1;
@@ -4882,17 +4895,6 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_args_tail
 		| args_tail
 		    {
 			$$ = new_args(p, Qnone, Qnone, Qnone, Qnone, $1, &@$);
-		    }
-		| args_forward
-		    {
-			arg_var(p, idFWD_REST);
-			arg_var(p, idFWD_KWREST);
-			arg_var(p, idFWD_BLOCK);
-		    /*%%%*/
-			$$ = new_args_tail(p, Qnone, idFWD_KWREST, idFWD_BLOCK, &@1);
-			$$ = new_args(p, Qnone, Qnone, idFWD_REST, Qnone, $$, &@$);
-		    /*% %*/
-		    /*% ripper: params_new(Qnone, Qnone, $1, Qnone, Qnone, Qnone, Qnone) %*/
 		    }
 		| /* none */
 		    {

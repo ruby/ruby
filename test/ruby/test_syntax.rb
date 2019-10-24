@@ -1476,6 +1476,8 @@ eom
     assert_valid_syntax('def foo(...) end')
     assert_syntax_error('iter do |...| end', /unexpected/)
     assert_syntax_error('iter {|...|}', /unexpected/)
+    assert_syntax_error('->... {}', /unexpected/)
+    assert_syntax_error('->(...) {}', /unexpected/)
     assert_syntax_error('def foo(x, y, z) bar(...); end', /unexpected/)
     assert_syntax_error('def foo(x, y, z) super(...); end', /unexpected/)
     assert_syntax_error('def foo(...) yield(...); end', /unexpected/)
