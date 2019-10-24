@@ -1511,7 +1511,22 @@ eom
     obj2 = klass.new
     obj2.instance_eval('def foo(...) super(...) end', __FILE__, __LINE__)
 
-    [obj1, obj2].each do |obj|
+    obj3 = Object.new
+    def obj3.bar(*args, &block)
+      if kws = Hash.try_convert(args.last)
+        args.pop
+      else
+        kws = {}
+      end
+      if block
+        block.call(args, kws)
+      else
+        [args, kws]
+      end
+    end
+    obj3.instance_eval('def foo(...) bar(...) end', __FILE__, __LINE__)
+
+    [obj1, obj2, obj3].each do |obj|
       assert_equal([[1, 2, 3], {k1: 4, k2: 5}], obj.foo(1, 2, 3, k1: 4, k2: 5) {|*x| x})
       assert_equal([[1, 2, 3], {k1: 4, k2: 5}], obj.foo(1, 2, 3, k1: 4, k2: 5))
       assert_equal(-1, obj.:foo.arity)
