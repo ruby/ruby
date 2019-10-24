@@ -1493,7 +1493,7 @@ eom
     def obj1.bar(*args, **kws, &block)
       block.call(args, kws)
     end
-    obj1.instance_eval('def foo(...) bar(...) end')
+    obj1.instance_eval('def foo(...) bar(...) end', __FILE__, __LINE__)
 
     klass = Class.new {
       def foo(*args, **kws, &block)
@@ -1501,7 +1501,7 @@ eom
       end
     }
     obj2 = klass.new
-    obj2.instance_eval('def foo(...) super(...) end')
+    obj2.instance_eval('def foo(...) super(...) end', __FILE__, __LINE__)
 
     [obj1, obj2].each do |obj|
       assert_equal([[1, 2, 3], {k1: 4, k2: 5}], obj.foo(1, 2, 3, k1: 4, k2: 5) {|*x| x})
