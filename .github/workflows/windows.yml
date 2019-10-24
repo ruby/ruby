@@ -24,10 +24,10 @@ jobs:
     steps:
       - name: Install libraries with vcpkg
         run: |
-          vcpkg --triplet x64-windows install openssl readline zlib
+          vcpkg --triplet x64-windows install readline zlib
       - name: Install libraries with chocolatey
         run: |
-          choco install winflexbison3
+          choco install openssl winflexbison3
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
       - name: Checkout ruby/ruby
         run: |
