@@ -2649,6 +2649,14 @@ class TestKeywordArguments < Test::Unit::TestCase
         baz(*args)
       end
 
+      ruby2_keywords def foo_foo_bar(meth, *args)
+        foo_bar(meth, *args)
+      end
+
+      ruby2_keywords def foo_foo_baz(meth, *args)
+        foo_baz(meth, *args)
+      end
+
       ruby2_keywords def foo_mod(meth, *args)
         args << 1
         send(meth, *args)
@@ -2761,6 +2769,12 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h1], o.store_foo(:baz, 1, :a=>1))
     assert_equal([[1], h1], o.foo_bar(1, :a=>1))
     assert_equal([1, h1], o.foo_baz(1, :a=>1))
+    assert_equal([[1], h1], o.foo(:foo, :bar, 1, :a=>1))
+    assert_equal([1, h1], o.foo(:foo, :baz, 1, :a=>1))
+    assert_equal([[1], h1], o.foo(:foo_bar, 1, :a=>1))
+    assert_equal([1, h1], o.foo(:foo_baz, 1, :a=>1))
+    assert_equal([[1], h1], o.foo_foo_bar(1, :a=>1))
+    assert_equal([1, h1], o.foo_foo_baz(1, :a=>1))
 
     assert_equal([[1], h1], o.foo(:bar, 1, **h1))
     assert_equal([1, h1], o.foo(:baz, 1, **h1))
@@ -2770,6 +2784,12 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h1], o.store_foo(:baz, 1, **h1))
     assert_equal([[1], h1], o.foo_bar(1, **h1))
     assert_equal([1, h1], o.foo_baz(1, **h1))
+    assert_equal([[1], h1], o.foo(:foo, :bar, 1, **h1))
+    assert_equal([1, h1], o.foo(:foo, :baz, 1, **h1))
+    assert_equal([[1], h1], o.foo(:foo_bar, 1, **h1))
+    assert_equal([1, h1], o.foo(:foo_baz, 1, **h1))
+    assert_equal([[1], h1], o.foo_foo_bar(1, **h1))
+    assert_equal([1, h1], o.foo_foo_baz(1, **h1))
 
     assert_equal([[h1], {}], o.foo(:bar, h1, **{}))
     assert_equal([h1], o.foo(:baz, h1, **{}))
@@ -2779,6 +2799,12 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([h1], o.store_foo(:baz, h1, **{}))
     assert_equal([[h1], {}], o.foo_bar(h1, **{}))
     assert_equal([h1], o.foo_baz(h1, **{}))
+    assert_equal([[h1], {}], o.foo(:foo, :bar, h1, **{}))
+    assert_equal([h1], o.foo(:foo, :baz, h1, **{}))
+    assert_equal([[h1], {}], o.foo(:foo_bar, h1, **{}))
+    assert_equal([h1], o.foo(:foo_baz, h1, **{}))
+    assert_equal([[h1], {}], o.foo_foo_bar(h1, **{}))
+    assert_equal([h1], o.foo_foo_baz(h1, **{}))
 
     assert_warn(/The last argument is used as the keyword parameter.* for `bar'/m) do
       assert_equal([[1], h1], o.foo(:bar, 1, h1))
