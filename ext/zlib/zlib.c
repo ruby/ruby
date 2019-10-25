@@ -2230,6 +2230,7 @@ struct gzfile {
 #define GZFILE_FLAG_SYNC             ZSTREAM_FLAG_UNUSED
 #define GZFILE_FLAG_HEADER_FINISHED  (ZSTREAM_FLAG_UNUSED << 1)
 #define GZFILE_FLAG_FOOTER_FINISHED  (ZSTREAM_FLAG_UNUSED << 2)
+#define GZFILE_FLAG_MTIME_IS_SET     (ZSTREAM_FLAG_UNUSED << 3)
 
 #define GZFILE_IS_FINISHED(gz) \
     (ZSTREAM_IS_FINISHED(&(gz)->z) && ZSTREAM_BUF_FILLED(&(gz)->z) == 0)
@@ -2516,7 +2517,7 @@ gzfile_make_header(struct gzfile *gz)
     if (!NIL_P(gz->comment)) {
 	flags |= GZ_FLAG_COMMENT;
     }
-    if (gz->mtime == 0) {
+    if (!(gz->z.flags & GZFILE_FLAG_MTIME_IS_SET)) {
 	gz->mtime = time(0);
     }
 
@@ -3246,6 +3247,7 @@ rb_gzfile_set_mtime(VALUE obj, VALUE mtime)
 
     val = rb_Integer(mtime);
     gz->mtime = NUM2UINT(val);
+    gz->z.flags |= GZFILE_FLAG_MTIME_IS_SET;
 
     return mtime;
 }
