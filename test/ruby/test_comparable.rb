@@ -99,14 +99,21 @@ class TestComparable < Test::Unit::TestCase
     assert_equal(1, @o.clamp(1..1))
     assert_equal(@o, @o.clamp(0..0))
 
+    assert_equal(1, @o.clamp(1...2))
+    assert_equal(1, @o.clamp(1..))
+    assert_equal(1, @o.clamp(1...))
+    assert_equal(@o, @o.clamp(0...2))
+    assert_equal(@o, @o.clamp(0..))
+    assert_equal(@o, @o.clamp(0...))
+    assert_equal(@o, @o.clamp(..2))
+    assert_equal(@o, @o.clamp(...2))
+    assert_equal(-1, @o.clamp(-2..-1))
+    assert_equal(@o, @o.clamp(-2..0))
+    assert_equal(@o, @o.clamp(-2..))
+    assert_equal(@o, @o.clamp(-2...))
+
     assert_raise_with_message(ArgumentError, 'cannot clamp with an exclusive range') {
-      @o.clamp(1...2)
-    }
-    assert_raise_with_message(ArgumentError, 'cannot clamp with an exclusive range') {
-      @o.clamp(1...)
-    }
-    assert_raise_with_message(ArgumentError, 'cannot clamp with an exclusive range') {
-      @o.clamp(...2)
+      @o.clamp(-1...0)
     }
     assert_raise_with_message(ArgumentError, 'min argument must be smaller than max argument') {
       @o.clamp(2..1)
