@@ -136,7 +136,7 @@ class Reline::Windows
     else
       case input
       when 0x00
-        alt = false
+        meta = false
         @@output_buf.push(input)
         input = getwch
         @@output_buf.push(*input)
