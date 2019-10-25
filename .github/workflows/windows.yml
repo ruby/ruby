@@ -19,8 +19,12 @@ jobs:
           - os: windows-2019
             vs: 2017
       fail-fast: false
+    env:
+      VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat
+      YACC: win_bison
+      MAKEFLAGS: l
     runs-on: ${{ matrix.os }}
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    if: "!contains(github.event.head_commit.message, '[ci-windows skip]')"
     steps:
       - name: Install libraries with vcpkg
         run: |
@@ -39,20 +43,19 @@ jobs:
           git clone --depth=50 --branch=${{ github.event.pull_request.head.ref }} https://github.com/${{ github.event.pull_request.head.repo.full_name }} .
           git reset --hard ${{ github.event.pull_request.head.sha }}
         if: github.event_name == 'pull_request'
+      - name: Prepare wrapper script
+        run: |
+          Write-Output "@call ""$env:VCVARS""`r`n@%*" | Out-File "run.cmd" -Encoding ascii
       - name: configure
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          win32/configure.bat --disable-install-doc --without-ext=+,dbm,gdbm --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows
+          ./run.cmd win32/configure.bat --disable-install-doc --without-ext=+,dbm,gdbm --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows
       - name: nmake
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          set YACC=win_bison
-          nmake up
-          nmake
+          ./run.cmd nmake up
+          ./run.cmd nmake
       - name: nmake test
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          nmake ${{ matrix.test_task }}
+          ./run.cmd nmake ${{ matrix.test_task }}
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |
