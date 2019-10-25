@@ -54,6 +54,7 @@ class TestGc < Test::Unit::TestCase
 
   def test_start_full_mark
     return unless use_rgengc?
+    skip 'stress' if GC.stress
 
     GC.start(full_mark: false)
     assert_nil GC.latest_gc_info(:major_by)
@@ -63,6 +64,8 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_start_immediate_sweep
+    skip 'stress' if GC.stress
+
     GC.start(immediate_sweep: false)
     assert_equal false, GC.latest_gc_info(:immediate_sweep)
 
@@ -106,12 +109,16 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_stat_single
+    skip 'stress' if GC.stress
+
     stat = GC.stat
     assert_equal stat[:count], GC.stat(:count)
     assert_raise(ArgumentError){ GC.stat(:invalid) }
   end
 
   def test_stat_constraints
+    skip 'stress' if GC.stress
+
     stat = GC.stat
     assert_equal stat[:total_allocated_pages], stat[:heap_allocated_pages] + stat[:total_freed_pages]
     assert_operator stat[:heap_sorted_length], :>=, stat[:heap_eden_pages] + stat[:heap_allocatable_pages], "stat is: " + stat.inspect
@@ -125,6 +132,8 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_latest_gc_info
+    skip 'stress' if GC.stress
+
     assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom'
     GC.start
     count = GC.stat(:heap_free_slots) + GC.stat(:heap_allocatable_pages) * GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT]
