@@ -28,7 +28,7 @@ class RDoc::CrossReference
   # have been suppressed, since the suppression characters are removed by the
   # code that is triggered.
 
-  CROSSREF_REGEXP = /(?:^|\s)
+  CROSSREF_REGEXP = /(?:^|[\s()])
                      (
                       (?:
                        # A::B::C.meth

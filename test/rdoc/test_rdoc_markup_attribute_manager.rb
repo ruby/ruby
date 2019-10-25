@@ -358,6 +358,8 @@ class TestRDocMarkupAttributeManager < RDoc::TestCase
                   @am.flow("#fred dogs'"))
 
     assert_equal(["cats' ", crossref("#fred")].flatten, @am.flow("cats' #fred"))
+
+    assert_equal(["(", crossref("#fred"), ")"].flatten, @am.flow("(#fred)"))
   end
 
   def test_tt_html
