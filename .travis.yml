@@ -159,7 +159,7 @@ env:
     <<: *cron-only
     <<: *make-test-only
     env:
-      - cppflags=-DOPT_SUPPORT_JOKE
+      - BEFORE_INSTALL="sed vm_opts.h -e 's/OPT_SUPPORT_JOKE *0/OPT_SUPPORT_JOKE 1/' -i"
 
   - &CPDEBUG
     name: CPDEBUG
