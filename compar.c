@@ -210,8 +210,8 @@ cmp_between(VALUE x, VALUE min, VALUE max)
  *     -20.clamp(0..)           #=> 0
  *     523.clamp(..100)         #=> 100
  *
- * When _range.end_ is excluded, and _obj_ is greater than or
- * equal to _range.end_, an exception is raised.
+ * When _range.end_ is excluded and not +nil+, an exception is
+ * raised.
  *
  *     100.clamp(0...100)       # ArgumentError
  */
@@ -220,7 +220,7 @@ static VALUE
 cmp_clamp(int argc, VALUE *argv, VALUE x)
 {
     VALUE min, max;
-    int c, excl = 0, allow_nil = 0;
+    int c, excl = 0;
 
     if (rb_scan_args(argc, argv, "11", &min, &max) == 1) {
         VALUE range = min;
@@ -228,9 +228,13 @@ cmp_clamp(int argc, VALUE *argv, VALUE x)
             rb_raise(rb_eTypeError, "wrong argument type %s (expected Range)",
                      rb_builtin_class_name(range));
         }
-        allow_nil = 1;
+        if (!NIL_P(max)) {
+            if (excl) rb_raise(rb_eArgError, "cannot clamp with an exclusive range");
+            if (!NIL_P(min) && cmpint(min, max) > 0) goto arg_error;
+        }
     }
-    if (!(allow_nil && (NIL_P(min) || NIL_P(max))) && cmpint(min, max) > 0) {
+    else if (cmpint(min, max) > 0) {
+      arg_error:
 	rb_raise(rb_eArgError, "min argument must be smaller than max argument");
     }
 
@@ -241,7 +245,6 @@ cmp_clamp(int argc, VALUE *argv, VALUE x)
     }
     if (!NIL_P(max)) {
         c = cmpint(x, max);
-        if (excl && c >= 0) rb_raise(rb_eArgError, "cannot clamp with an exclusive range");
         if (c > 0) return max;
     }
     return x;
