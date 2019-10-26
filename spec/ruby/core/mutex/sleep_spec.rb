@@ -24,12 +24,12 @@ describe "Mutex#sleep" do
   it "pauses execution for approximately the duration requested" do
     m = Mutex.new
     m.lock
-    duration = 0.1
+    duration = 0.001
     start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     m.sleep duration
     now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-    (now - start).should > 0
-    (now - start).should < 2.0
+    (now - start).should >= 0
+    (now - start).should < (duration + TIME_TOLERANCE)
   end
 
   it "unlocks the mutex while sleeping" do
@@ -46,7 +46,7 @@ describe "Mutex#sleep" do
   it "relocks the mutex when woken" do
     m = Mutex.new
     m.lock
-    m.sleep(0.01)
+    m.sleep(0.001)
     m.locked?.should be_true
   end
 
@@ -71,7 +71,7 @@ describe "Mutex#sleep" do
   it "returns the rounded number of seconds asleep" do
     m = Mutex.new
     m.lock
-    m.sleep(0.01).should be_kind_of(Integer)
+    m.sleep(0.001).should be_kind_of(Integer)
   end
 
   it "wakes up when requesting sleep times near or equal to zero" do

@@ -16,14 +16,15 @@ VALUE util_spec_rb_scan_args(VALUE self, VALUE argv, VALUE fmt, VALUE expected, 
     args[i] = rb_ary_entry(argv, i);
   }
 
-  if (*RSTRING_PTR(fmt) == 'k') {
 #ifdef RB_SCAN_ARGS_KEYWORDS
+  if (*RSTRING_PTR(fmt) == 'k') {
     result = rb_scan_args_kw(RB_SCAN_ARGS_KEYWORDS, argc, args, RSTRING_PTR(fmt)+1, &a1, &a2, &a3, &a4, &a5, &a6);
+  } else {
 #endif
-  }
-  else {
     result = rb_scan_args(argc, args, RSTRING_PTR(fmt), &a1, &a2, &a3, &a4, &a5, &a6);
+#ifdef RB_SCAN_ARGS_KEYWORDS
   }
+#endif
 
   switch(NUM2INT(expected)) {
   case 6:

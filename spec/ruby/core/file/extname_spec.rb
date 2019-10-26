@@ -2,7 +2,7 @@
 require_relative '../../spec_helper'
 
 describe "File.extname" do
-  it "returns the extension (the portion of file name in path after the period)." do
+  it "returns the extension (the portion of file name in path after the period)" do
     File.extname("foo.rb").should == ".rb"
     File.extname("/foo/bar.rb").should == ".rb"
     File.extname("/foo.rb/bar.c").should == ".c"
@@ -12,7 +12,7 @@ describe "File.extname" do
     File.extname(".app.conf").should == ".conf"
   end
 
-  it "returns the extension (the portion of file name in path after the period).(edge cases)" do
+  it "returns the extension for edge cases" do
     File.extname("").should ==  ""
     File.extname(".").should ==  ""
     File.extname("/").should ==  ""
@@ -20,13 +20,21 @@ describe "File.extname" do
     File.extname("..").should ==  ""
     File.extname("...").should ==  ""
     File.extname("....").should ==  ""
+  end
+
+  describe "for a filename ending with a dot" do
     guard -> { platform_is :windows or ruby_version_is ""..."2.7" } do
-      File.extname(".foo.").should == ""
-      File.extname("foo.").should == ""
+      it "returns ''" do
+        File.extname(".foo.").should == ""
+        File.extname("foo.").should == ""
+      end
     end
+
     guard -> { platform_is_not :windows and ruby_version_is "2.7" } do
-      File.extname(".foo.").should == "."
-      File.extname("foo.").should == "."
+      it "returns '.'" do
+        File.extname(".foo.").should == "."
+        File.extname("foo.").should == "."
+      end
     end
   end
 

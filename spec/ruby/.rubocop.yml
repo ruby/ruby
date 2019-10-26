@@ -77,6 +77,13 @@ Lint/NestedMethodDefinition:
     - language/def_spec.rb
     - language/fixtures/def.rb
 
+Lint/ShadowingOuterLocalVariable:
+  Exclude:
+    - 'core/binding/local_variables_spec.rb'
+    - 'core/kernel/local_variables_spec.rb'
+    - 'language/block_spec.rb'
+    - 'language/proc_spec.rb'
+
 Lint/UnreachableCode:
   Exclude:
     - 'core/enumerator/lazy/fixtures/classes.rb'

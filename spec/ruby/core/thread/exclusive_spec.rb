@@ -1,15 +1,13 @@
 require_relative '../../spec_helper'
 
 describe "Thread.exclusive" do
-  verbose = Object
-
   before :each do
     ScratchPad.clear
-    verbose, $VERBOSE = $VERBOSE, nil
+    $VERBOSE, @verbose = nil, $VERBOSE
   end
 
   after :each do
-    $VERBOSE = verbose
+    $VERBOSE = @verbose
   end
 
   it "yields to the block" do

@@ -4,7 +4,7 @@ describe "ENV.clear" do
   it "deletes all environment variables" do
     orig = ENV.to_hash
     begin
-      ENV.clear
+      ENV.clear.should equal(ENV)
 
       # This used 'env' the helper before. That shells out to 'env' which
       # itself sets up certain environment variables before it runs, because

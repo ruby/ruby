@@ -147,31 +147,31 @@ describe "Time.at" do
   ruby_version_is "2.5" do
     describe "passed [Time, Numeric, format]" do
       context ":nanosecond format" do
-        it "traits second argument as nanoseconds" do
+        it "treats second argument as nanoseconds" do
           Time.at(0, 123456789, :nanosecond).nsec.should == 123456789
         end
       end
 
       context ":nsec format" do
-        it "traits second argument as nanoseconds" do
+        it "treats second argument as nanoseconds" do
           Time.at(0, 123456789, :nsec).nsec.should == 123456789
         end
       end
 
       context ":microsecond format" do
-        it "traits second argument as microseconds" do
+        it "treats second argument as microseconds" do
           Time.at(0, 123456, :microsecond).nsec.should == 123456000
         end
       end
 
       context ":usec format" do
-        it "traits second argument as microseconds" do
+        it "treats second argument as microseconds" do
           Time.at(0, 123456, :usec).nsec.should == 123456000
         end
       end
 
       context ":millisecond format" do
-        it "traits second argument as milliseconds" do
+        it "treats second argument as milliseconds" do
           Time.at(0, 123, :millisecond).nsec.should == 123000000
         end
       end

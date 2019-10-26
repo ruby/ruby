@@ -97,7 +97,7 @@ VALUE kernel_spec_call_proc_with_catch_obj(RB_BLOCK_CALL_FUNC_ARGLIST(arg, data)
 }
 
 VALUE kernel_spec_rb_catch_obj(VALUE self, VALUE obj, VALUE main_proc) {
-  return rb_catch_obj(obj, kernel_spec_call_proc_with_catch, main_proc);
+  return rb_catch_obj(obj, kernel_spec_call_proc_with_catch_obj, main_proc);
 }
 
 VALUE kernel_spec_rb_eval_string(VALUE self, VALUE str) {

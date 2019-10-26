@@ -40,7 +40,7 @@ describe "TCPServer.new" do
   end
 
   it "binds to INADDR_ANY if the hostname is empty and the port is a string" do
-    @server = TCPServer.new('', 0)
+    @server = TCPServer.new('', '0')
     addr = @server.addr
     addr[0].should == 'AF_INET'
     addr[1].should be_kind_of(Integer)

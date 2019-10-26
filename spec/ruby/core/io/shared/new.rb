@@ -24,34 +24,34 @@ describe :io_new, shared: true do
   end
 
   it "creates an IO instance when STDOUT is closed" do
-    verbose, $VERBOSE = $VERBOSE, nil
-    stdout = STDOUT
-    stdout_file = tmp("stdout.txt")
+    suppress_warning do
+      stdout = STDOUT
+      stdout_file = tmp("stdout.txt")
 
-    begin
-      @io = IO.send(@method, @fd, "w")
-      @io.should be_an_instance_of(IO)
-    ensure
-      STDOUT = stdout
-      $VERBOSE = verbose
-      rm_r stdout_file
+      begin
+        @io = IO.send(@method, @fd, "w")
+        @io.should be_an_instance_of(IO)
+      ensure
+        STDOUT = stdout
+        rm_r stdout_file
+      end
     end
   end
 
   it "creates an IO instance when STDERR is closed" do
-    verbose, $VERBOSE = $VERBOSE, nil
-    stderr = STDERR
-    stderr_file = tmp("stderr.txt")
-    STDERR = new_io stderr_file
-    STDERR.close
+    suppress_warning do
+      stderr = STDERR
+      stderr_file = tmp("stderr.txt")
+      STDERR = new_io stderr_file
+      STDERR.close
 
-    begin
-      @io = IO.send(@method, @fd, "w")
-      @io.should be_an_instance_of(IO)
-    ensure
-      STDERR = stderr
-      $VERBOSE = verbose
-      rm_r stderr_file
+      begin
+        @io = IO.send(@method, @fd, "w")
+        @io.should be_an_instance_of(IO)
+      ensure
+        STDERR = stderr
+        rm_r stderr_file
+      end
     end
   end
 

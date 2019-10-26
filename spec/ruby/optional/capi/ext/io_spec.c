@@ -21,7 +21,7 @@ static int set_non_blocking(int fd) {
   int flags = 1;
   return ioctl(fd, FIOBIO, &flags);
 #else
-# define SET_NON_BLOCKING_FAILS_ALWAYS 1
+#define SET_NON_BLOCKING_FAILS_ALWAYS 1
   errno = ENOSYS;
   return -1;
 #endif
@@ -115,13 +115,13 @@ VALUE io_spec_rb_io_taint_check(VALUE self, VALUE io) {
 
 #define RB_IO_WAIT_READABLE_BUF 13
 
-#if SET_NON_BLOCKING_FAILS_ALWAYS
+#ifdef SET_NON_BLOCKING_FAILS_ALWAYS
 NORETURN(VALUE io_spec_rb_io_wait_readable(VALUE self, VALUE io, VALUE read_p));
 #endif
 
 VALUE io_spec_rb_io_wait_readable(VALUE self, VALUE io, VALUE read_p) {
   int fd = io_spec_get_fd(io);
-#if !SET_NON_BLOCKING_FAILS_ALWAYS
+#ifndef SET_NON_BLOCKING_FAILS_ALWAYS
   char buf[RB_IO_WAIT_READABLE_BUF];
   int ret, saved_errno;
 #endif
@@ -129,7 +129,7 @@ VALUE io_spec_rb_io_wait_readable(VALUE self, VALUE io, VALUE read_p) {
   if (set_non_blocking(fd) == -1)
     rb_sys_fail("set_non_blocking failed");
 
-#if !SET_NON_BLOCKING_FAILS_ALWAYS
+#ifndef SET_NON_BLOCKING_FAILS_ALWAYS
   if(RTEST(read_p)) {
     if (read(fd, buf, RB_IO_WAIT_READABLE_BUF) != -1) {
       return Qnil;

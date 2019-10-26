@@ -4,7 +4,6 @@ require_relative 'shared/rand'
 
 describe "Random.rand" do
   it_behaves_like :random_number, :rand, Random.new
-  it_behaves_like :random_number, :random_number, Random.new
   it_behaves_like :random_number, :rand, Random
 
   it "returns a Float >= 0 if no max argument is passed" do
@@ -216,11 +215,5 @@ describe "Random#rand with Range" do
     -> do
       Random.new.rand(68..Object.new)
     end.should raise_error(ArgumentError)
-  end
-end
-
-ruby_version_is "2.6" do
-  describe "Random.random_number" do
-    it_behaves_like :random_number, :random_number, Random
   end
 end
