@@ -76,7 +76,7 @@ class RDoc::CrossReference
   # Version of CROSSREF_REGEXP used when <tt>--hyperlink-all</tt> is specified.
 
   ALL_CROSSREF_REGEXP = /
-                     (?:^|\s)
+                     (?:^|[\s()])
                      (
                       (?:
                        # A::B::C.meth
