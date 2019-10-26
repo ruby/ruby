@@ -2923,6 +2923,21 @@ producer_size(VALUE obj, VALUE args, VALUE eobj)
  *
  *   ancestors = Enumerator.produce(node) { |prev| node = prev.parent or raise StopIteration }
  *   enclosing_section = ancestors.find { |n| n.type == :section }
+ *
+ * Using ::produce together with Enumerable methods like Enumerable#detect,
+ * Enumerable#slice, Enumerable#take_while can provide Enumerator-based alternative
+ * for +while+ and +until+ cycles:
+ *
+ *   # Find next Tuesday
+ *   require 'date'
+ *   Enumerator.produce(Date.today, &:succ).detect(&:tuesday?)
+ *
+ *   # Simple lexer:
+ *   require 'strscan'
+ *   scanner = StringScanner.new('7+38/6')
+ *   PATTERN = %r{\d+|[-/+*]}
+ *   p Enumerator.produce { scanner.scan(PATTERN) }.slice_after { scanner.eos? }.first
+ *   # => ["7", "+", "38", "/", "6"]
  */
 static VALUE
 enumerator_s_produce(int argc, VALUE *argv, VALUE klass)
