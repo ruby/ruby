@@ -51,8 +51,21 @@ module WEBrick
     attr_accessor :reason_phrase
 
     ##
-    # Body may be a String or IO-like object that responds to #read and
-    # #readpartial.
+    # Body may be:
+    # * a String;
+    # * an IO-like object that responds to +#read+ and +#readpartial+;
+    # * a Proc-like object that responds to +#call+.
+    #
+    # In the latter case, either #chunked= should be set to +true+,
+    # or <code>header['content-length']</code> explicitly provided.
+    # Example:
+    #
+    #   server.mount_proc '/' do |req, res|
+    #     res.chunked = true
+    #     # or
+    #     # res.header['content-length'] = 10
+    #     res.body = proc { |out| out.write(Time.now.to_s) }
+    #   end
 
     attr_accessor :body
 
