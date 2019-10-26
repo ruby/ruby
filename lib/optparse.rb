@@ -169,7 +169,7 @@
 # - Array -- Strings separated by ',' (e.g. 1,2,3)
 # - Regexp -- Regular expressions. Also includes options.
 #
-# We can also add our own coercions, which we will cover soon.
+# We can also add our own coercions, which we will cover below.
 #
 # ==== Using Built-in Conversions
 #
@@ -1548,7 +1548,10 @@ XXX
 
   #
   # Parses command line arguments +argv+ in order. When a block is given,
-  # each non-option argument is yielded.
+  # each non-option argument is yielded. When optional +into+ keyword
+  # argument is provided, the parsed option values are stored there via
+  # <code>[]=</code> method (so it can be Hash, or OpenStruct, or other
+  # similar object).
   #
   # Returns the rest of +argv+ left unparsed.
   #
@@ -1644,7 +1647,10 @@ XXX
 
   #
   # Parses command line arguments +argv+ in permutation mode and returns
-  # list of non-option arguments.
+  # list of non-option arguments. When optional +into+ keyword
+  # argument is provided, the parsed option values are stored there via
+  # <code>[]=</code> method (so it can be Hash, or OpenStruct, or other
+  # similar object).
   #
   def permute(*argv, into: nil)
     argv = argv[0].dup if argv.size == 1 and Array === argv[0]
@@ -1665,6 +1671,9 @@ XXX
   #
   # Parses command line arguments +argv+ in order when environment variable
   # POSIXLY_CORRECT is set, and in permutation mode otherwise.
+  # When optional +into+ keyword argument is provided, the parsed option
+  # values are stored there via <code>[]=</code> method (so it can be Hash,
+  # or OpenStruct, or other similar object).
   #
   def parse(*argv, into: nil)
     argv = argv[0].dup if argv.size == 1 and Array === argv[0]
