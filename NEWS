@@ -350,13 +350,11 @@ ObjectSpace::WeakMap::
     * ObjectSpace::WeakMap#[]= now accepts special objects as either key or
       values.  [Feature #16035]
 
-Regexp / String::
+Regexp::
 
-    * Update Unicode version and Emoji version from 11.0.0 to
-      12.0.0.  [Feature #15321]
+  Modified method::
 
-    * Update Unicode version to 12.1.0, adding support for
-      U+32FF SQUARE ERA NAME REIWA.  [Feature #15195]
+    * Regexp#match(nil) and Regexp#match?(nil) now raise TypeError.  [Feature #13083]
 
 RubyVM::
 
@@ -372,6 +370,20 @@ Symbol::
     * Symbol#to_s now always returns a frozen String. The returned String
       is always the same for a given Symbol.  This change is
       experimental.  [Feature #16150]
+
+String::
+
+  Unicode::
+
+    * Update Unicode version and Emoji version from 11.0.0 to
+      12.0.0.  [Feature #15321]
+
+    * Update Unicode version to 12.1.0, adding support for
+      U+32FF SQUARE ERA NAME REIWA.  [Feature #15195]
+
+  Modified method::
+
+    * String#match(nil) and String#match?(nil) now raise TypeError.  [Feature #13083]
 
 Time::
 
