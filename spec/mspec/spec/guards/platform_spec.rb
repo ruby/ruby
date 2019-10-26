@@ -165,11 +165,10 @@ describe PlatformGuard, ".implementation?" do
     PlatformGuard.implementation?(:ruby).should == true
   end
 
-  it "raises an error when passed an unrecognized name" do
-    stub_const 'RUBY_ENGINE', 'ruby'
-    lambda {
-      PlatformGuard.implementation?(:python)
-    }.should raise_error(/unknown implementation/)
+  it "works for an unrecognized name" do
+    stub_const 'RUBY_ENGINE', 'myrubyimplementation'
+    PlatformGuard.implementation?(:myrubyimplementation).should == true
+    PlatformGuard.implementation?(:other).should == false
   end
 end
 
