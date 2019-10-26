@@ -1236,7 +1236,8 @@ module Net
 
     #
     # Returns the status (STAT command).
-    # pathname - when stat is invoked with pathname as a parameter it acts like
+    #
+    # pathname:: when stat is invoked with pathname as a parameter it acts like
     #            list but alot faster and over the same tcp session.
     #
     def status(pathname = nil)
