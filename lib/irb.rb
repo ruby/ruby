@@ -124,13 +124,21 @@ require "irb/version"
 # === History
 #
 # By default, irb will store the last 1000 commands you used in
-# <code>~/.irb_history</code>.
+# <code>IRB.conf[:HISTORY_FILE]</code> (<code>~/.irb_history</code> by default).
 #
 # If you want to disable history, add the following to your +.irbrc+:
 #
 #     IRB.conf[:SAVE_HISTORY] = nil
 #
 # See IRB::Context#save_history= for more information.
+#
+# The history of _resuls_ of commands evaluated is not stored by default,
+# but can be turned on to be stored with this +.irbrc+ setting:
+#
+#     IRB.conf[:EVAL_HISTORY] = <number>
+#
+# See IRB::Context#eval_history= and History class. The history of command
+# results is not permanently saved in any file.
 #
 # == Customizing the IRB Prompt
 #
@@ -274,7 +282,9 @@ require "irb/version"
 # <code>_</code>::
 #   The value command executed, as a local variable
 # <code>__</code>::
-#   The history of evaluated commands
+#   The history of evaluated commands. Available only if
+#   <code>IRB.conf[:EVAL_HISTORY]</code> is not +nil+ (which is the default).
+#   See also IRB::Context#eval_history= and IRB::History.
 # <code>__[line_no]</code>::
 #   Returns the evaluation value at the given line number, +line_no+.
 #   If +line_no+ is a negative, the return value +line_no+ many lines before
