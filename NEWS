@@ -248,6 +248,13 @@ Enumerator::
 
   New methods::
 
+    * Added Enumerator.produce to generate Enumerator from any custom
+      data-transformation.  [Feature #14781]
+
+        require 'date'
+        dates = Enumerator.produce(Date.today, &:succ) #=> infinite sequence of dates
+        dates.detect(&:tuesday?) #=> next tuesday
+
     * Added Enumerator::Lazy#eager that generates a non-lazy enumerator
       from a lazy enumerator.  [Feature #15901]
 
