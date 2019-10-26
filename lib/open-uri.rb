@@ -30,11 +30,11 @@ module URI
   # If the first argument responds to the 'open' method, 'open' is called on
   # it with the rest of the arguments.
   #
-  # If the first argument is a string that begins with xxx://, it is parsed by
+  # If the first argument is a string that begins with <code>(protocol)://<code>, it is parsed by
   # URI.parse.  If the parsed object responds to the 'open' method,
   # 'open' is called on it with the rest of the arguments.
   #
-  # Otherwise, the original Kernel#open is called.
+  # Otherwise, Kernel#open is called.
   #
   # OpenURI::OpenRead#open provides URI::HTTP#open, URI::HTTPS#open and
   # URI::FTP#open, Kernel#open.
@@ -62,14 +62,14 @@ end
 #
 # It is possible to open an http, https or ftp URL as though it were a file:
 #
-#   open("http://www.ruby-lang.org/") {|f|
+#   URI.open("http://www.ruby-lang.org/") {|f|
 #     f.each_line {|line| p line}
 #   }
 #
 # The opened file has several getter methods for its meta-information, as
 # follows, since it is extended by OpenURI::Meta.
 #
-#   open("http://www.ruby-lang.org/en") {|f|
+#   URI.open("http://www.ruby-lang.org/en") {|f|
 #     f.each_line {|line| p line}
 #     p f.base_uri         # <URI::HTTP:0x40e6ef2 URL:http://www.ruby-lang.org/en/>
 #     p f.content_type     # "text/html"
@@ -80,7 +80,7 @@ end
 #
 # Additional header fields can be specified by an optional hash argument.
 #
-#   open("http://www.ruby-lang.org/en/",
+#   URI.open("http://www.ruby-lang.org/en/",
 #     "User-Agent" => "Ruby/#{RUBY_VERSION}",
 #     "From" => "foo@bar.invalid",
 #     "Referer" => "http://www.ruby-lang.org/") {|f|
@@ -90,11 +90,11 @@ end
 # The environment variables such as http_proxy, https_proxy and ftp_proxy
 # are in effect by default. Here we disable proxy:
 #
-#   open("http://www.ruby-lang.org/en/", :proxy => nil) {|f|
+#   URI.open("http://www.ruby-lang.org/en/", :proxy => nil) {|f|
 #     # ...
 #   }
 #
-# See OpenURI::OpenRead.open and Kernel#open for more on available options.
+# See OpenURI::OpenRead.open and URI.open for more on available options.
 #
 # URI objects can be opened in a similar way.
 #
