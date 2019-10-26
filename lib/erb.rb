@@ -248,15 +248,13 @@ require "cgi/util"
 #
 # == Notes
 #
-# There are a variety of templating solutions available in various Ruby projects:
-# * ERB's big brother, eRuby, works the same but is written in C for speed;
-# * Amrita (smart at producing HTML/XML);
-# * cs/Template (written in C for speed);
-# * RDoc, distributed with Ruby, uses its own template engine, which can be reused elsewhere;
-# * and others; search {RubyGems.org}[https://rubygems.org/] or
-#   {The Ruby Toolbox}[https://www.ruby-toolbox.com/].
+# There are a variety of templating solutions available in various Ruby projects.
+# For example, RDoc, distributed with Ruby, uses its own template engine, which
+# can be reused elsewhere.
 #
-# Rails, the web application framework, uses ERB to create views.
+# Other popular engines could be found in the corresponding
+# {Category}[https://www.ruby-toolbox.com/categories/template_engines] of
+# The Ruby Toolbox.
 #
 class ERB
   Revision = '$Date::                           $' # :nodoc: #'
@@ -861,6 +859,21 @@ class ERB
   # is run
   attr_accessor :lineno
 
+  #
+  # Sets optional filename and line number that will be used in ERB code
+  # evaluation and error reporting. See also #filename= and #lineno=
+  #
+  #   erb = ERB.new('<%= some_x %>')
+  #   erb.render
+  #   # undefined local variable or method `some_x'
+  #   #   from (erb):1
+  #
+  #   erb.location = ['file.erb', 3]
+  #   # All subsequent error reporting would use new location
+  #   erb.render
+  #   # undefined local variable or method `some_x'
+  #   #   from file.erb:4
+  #
   def location=((filename, lineno))
     @filename = filename
     @lineno = lineno if lineno
