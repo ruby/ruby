@@ -2191,15 +2191,18 @@ rb_fiber_raise(int argc, VALUE *argv, VALUE fiber)
  *  a resume call. Arguments passed to transfer are treated like those
  *  passed to resume.
  *
- *  You cannot resume a fiber that transferred control to another one.
- *  This will cause a double resume error. You need to transfer control
- *  back to this fiber before it can yield and resume.
+ *  You cannot call +resume+ on a fiber that has been transfered to.
+ *  If you call +transfer+ on a fiber, and later call +resume+ on the
+ *  the fiber, a +FiberError+ will be raised. Once you call +transfer+ on
+ *  a fiber, the only way to resume processing the fiber is to
+ *  call +transfer+ on it again.
  *
  *  Example:
  *
  *    fiber1 = Fiber.new do
  *      puts "In Fiber 1"
  *      Fiber.yield
+ *      puts "In Fiber 1 again"
  *    end
  *
  *    fiber2 = Fiber.new do
@@ -2214,12 +2217,16 @@ rb_fiber_raise(int argc, VALUE *argv, VALUE fiber)
  *
  *    fiber2.resume
  *    fiber3.resume
+ *    fiber1.resume rescue (p $!)
+ *    fiber1.transfer
  *
  *  <em>produces</em>
  *
- *    In fiber 2
- *    In fiber 1
- *    In fiber 3
+ *    In Fiber 2
+ *    In Fiber 1
+ *    In Fiber 3
+ *    #<FiberError: cannot resume transferred Fiber>
+ *    In Fiber 1 again
  *
  */
 static VALUE
