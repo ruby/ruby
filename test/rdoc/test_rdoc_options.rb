@@ -507,8 +507,14 @@ rdoc_include:
     assert_empty out
     assert_empty err
 
-    expected =
-      Pathname(Dir.tmpdir).expand_path.relative_path_from @options.root
+    expected = nil
+    begin
+      expected =
+        Pathname(Dir.tmpdir).expand_path.relative_path_from @options.root
+    rescue ArgumentError
+      # On Windows, sometimes crosses different drive letters.
+      expected = Pathname(Dir.tmpdir).expand_path
+    end
 
     assert_equal expected,     @options.page_dir
     assert_equal [Dir.tmpdir], @options.files
