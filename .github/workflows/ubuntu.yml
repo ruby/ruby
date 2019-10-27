@@ -8,11 +8,12 @@ on:
       - '*'
 jobs:
   latest:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
+        os: [ubuntu-latest, ubuntu-16.04]
         test_task: [ "check", "test-bundler", "test-bundled-gems" ]
       fail-fast: false
+    runs-on: ${{ matrix.os }}
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
       - run: env | sort
@@ -44,10 +45,8 @@ jobs:
       - name: Install libraries
         run: |
           set -x
-          sudo sed /etc/apt/sources.list -e "s/^# deb-src/deb-src/g" -i
-          sudo apt-get update
-          sudo apt-get install ruby2.5
-          sudo apt-get build-dep ruby2.5
+          sudo apt-get update -q
+          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev bison autoconf ruby
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
       - name: Checkout ruby/ruby
         run: git clone --depth=50 https://github.com/ruby/ruby . && git reset --hard "$GITHUB_SHA"
