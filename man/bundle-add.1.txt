@@ -1,16 +1,17 @@
 BUNDLE-ADD(1)							 BUNDLE-ADD(1)
 
 
+...................................................................
 
-NAME
+NAME :
        bundle-add - Add gem to the Gemfile and run bundle install
 
-SYNOPSIS
+SYNOPSIS : 
        bundle	  add	  GEM_NAME     [--group=GROUP]	   [--version=VERSION]
        [--source=SOURCE]   [--git=GIT]	 [--branch=BRANCH]    [--skip-install]
        [--strict] [--optimistic]
 
-DESCRIPTION
+DESCRIPTION : 
        Adds  the  named  gem  to  the  Gemfile	and run bundle install. bundle
        install can be avoided by using the flag --skip-install.
 
@@ -27,7 +28,7 @@ DESCRIPTION
 
        bundle add rails --group "development, test"
 
-OPTIONS
+OPTIONS : 
        --version, -v
 	      Specify version requirements(s) for the added gem.
 
@@ -54,5 +55,6 @@ OPTIONS
 
 
 
+.......................................................................................
 
 				September 2019			 BUNDLE-ADD(1)
