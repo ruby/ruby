@@ -778,7 +778,7 @@ class SortedSet < Set
 
             def to_a
               (@keys = @hash.keys).sort! unless @keys
-              @keys
+              @keys.dup
             end
 
             def freeze
