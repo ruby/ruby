@@ -800,6 +800,9 @@ class TC_SortedSet < Test::Unit::TestCase
   def test_sortedset
     s = SortedSet[4,5,3,1,2]
 
+    a = s.to_a
+    assert_equal([1,2,3,4,5], a)
+    a << -1
     assert_equal([1,2,3,4,5], s.to_a)
 
     prev = nil
