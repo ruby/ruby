@@ -319,7 +319,7 @@ module Reline
 
     private def may_req_ambiguous_char_width
       @ambiguous_width = 2 if Reline::IOGate == Reline::GeneralIO or STDOUT.is_a?(File)
-      return if @ambiguous_width
+      return if ambiguous_width
       Reline::IOGate.move_cursor_column(0)
       print "\u{25bd}"
       @ambiguous_width = Reline::IOGate.cursor_pos.x
