@@ -114,6 +114,7 @@ for:
       ../test/rubygems/test_bundled_ca.rb
       " test-all
     - nmake -l test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
+    - nmake -l distclean
 notifications:
   - provider: Webhook
     method: POST

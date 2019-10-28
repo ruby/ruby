@@ -210,6 +210,11 @@ script:
     fi
   - $SETARCH make -s test-spec MSPECOPT=-ff # not using `-j` because sometimes `mspec -j` silently dies
   - $SETARCH make -s -o showflags leaked-globals
+  - $SETARCH make -s distclean
+  - ls -ARl
+  - cd ..
+  - chmod +w .
+  - rmdir build
 
 # We enable Travis on the specific branches or forked repositories here.
 if: (repo = ruby/ruby AND (branch = master OR branch =~ /^ruby_\d_\d$/)) OR repo != ruby/ruby

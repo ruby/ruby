@@ -149,6 +149,15 @@ jobs:
           make ${{ StartsWith(matrix.test_task, 'spec/') && matrix.test_task || 'test-spec' }}
         if: ${{matrix.test_task == 'check' || matrix.test_task == 'test-spec' || StartsWith(matrix.test_task, 'spec/')}}
 
+      - name: cleaning
+        run: |
+          make -s distclean
+      - name: remove build directory
+        run: |
+          ls -ARl build
+          rmdir build
+        working-directory:
+
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |
