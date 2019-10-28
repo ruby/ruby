@@ -762,6 +762,8 @@ class Gem::Installer
 
 require 'rubygems'
 
+Gem.use_gemdeps
+
 version = "#{Gem::Requirement.default_prerelease}"
 
 str = ARGV.first
