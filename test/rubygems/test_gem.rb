@@ -540,7 +540,6 @@ class TestGem < Gem::TestCase
       s.executables = []
     end
     install_specs spec
-    # Should not find a-10's non-abin (bug)
     assert_equal @abin_path, Gem.bin_path('a', 'abin')
   end
 
