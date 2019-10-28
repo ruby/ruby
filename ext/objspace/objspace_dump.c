@@ -208,6 +208,7 @@ imemo_name(int imemo)
 	TYPE_STR(tmpbuf);
 	TYPE_STR(ast);
 	TYPE_STR(parser_strterm);
+	TYPE_STR(call_data);
       default:
 	return "unknown";
 #undef TYPE_STR

@@ -1109,7 +1109,8 @@ enum imemo_type {
     imemo_iseq           =  7,
     imemo_tmpbuf         =  8,
     imemo_ast            =  9,
-    imemo_parser_strterm = 10
+    imemo_parser_strterm = 10,
+    imemo_call_data      = 11
 };
 #define IMEMO_MASK   0x0f
 
@@ -2396,11 +2397,21 @@ RUBY_FUNC_NONNULL(1, bool rb_method_basic_definition_p_with_cc(struct rb_call_da
 # define rb_funcallv(recv, mid, argc, argv) \
     __extension__({ \
         static struct rb_call_data rb_funcallv_data; \
+        static VALUE wrapper = 0; \
+        if (!wrapper) { \
+            wrapper = rb_imemo_new(imemo_call_data, 0, 0, 0, (VALUE)&rb_funcallv_data); \
+            rb_gc_register_mark_object(wrapper); \
+        } \
         rb_funcallv_with_cc(&rb_funcallv_data, recv, mid, argc, argv); \
     })
 # define rb_method_basic_definition_p(klass, mid) \
     __extension__({ \
         static struct rb_call_data rb_mbdp; \
+        static VALUE wrapper = 0; \
+        if (!wrapper) { \
+            wrapper = rb_imemo_new(imemo_call_data, 0, 0, 0, (VALUE)&rb_mbdp); \
+            rb_gc_register_mark_object(wrapper); \
+        } \
         (klass == Qfalse) ? /* hidden object cannot be overridden */ true : \
             rb_method_basic_definition_p_with_cc(&rb_mbdp, klass, mid); \
     })
