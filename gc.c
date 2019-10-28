@@ -3370,7 +3370,12 @@ struct force_finalize_list {
 static int
 force_chain_object(st_data_t key, st_data_t val, st_data_t arg)
 {
-    rb_ary_push((VALUE)arg, rb_ary_new_from_args(2, (VALUE)key, (VALUE)val));
+    struct force_finalize_list **prev = (struct force_finalize_list **)arg;
+    struct force_finalize_list *curr = ALLOC(struct force_finalize_list);
+    curr->obj = key;
+    curr->table = val;
+    curr->next = *prev;
+    *prev = curr;
     return ST_CONTINUE;
 }
 
@@ -3397,18 +3402,16 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 
     /* force to run finalizer */
     while (finalizer_table->num_entries) {
-        long i;
-	VALUE list = rb_ary_new_capa(finalizer_table->num_entries);
-
-	st_foreach(finalizer_table, force_chain_object, (st_data_t)list);
-
-        for (i = 0; i < RARRAY_LEN(list); i++) {
-            VALUE tuple = RARRAY_AREF(list, i);
-            VALUE obj = RARRAY_AREF(tuple, 0);
-            VALUE table = RARRAY_AREF(tuple, 1);
-	    run_finalizer(objspace, obj, table);
+	struct force_finalize_list *list = 0;
+	st_foreach(finalizer_table, force_chain_object, (st_data_t)&list);
+	while (list) {
+	    struct force_finalize_list *curr = list;
+	    st_data_t obj = (st_data_t)curr->obj;
+	    run_finalizer(objspace, curr->obj, curr->table);
 	    st_delete(finalizer_table, &obj, 0);
-        }
+	    list = curr->next;
+	    xfree(curr);
+	}
     }
 
     /* prohibit GC because force T_DATA finalizers can break an object graph consistency */
