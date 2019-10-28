@@ -282,6 +282,7 @@ RB_DEBUG_COUNTER(obj_imemo_throw_data)
 RB_DEBUG_COUNTER(obj_imemo_ifunc)
 RB_DEBUG_COUNTER(obj_imemo_memo)
 RB_DEBUG_COUNTER(obj_imemo_parser_strterm)
+RB_DEBUG_COUNTER(obj_imemo_call_data)
 
 /* ar_table */
 RB_DEBUG_COUNTER(artable_hint_hit)

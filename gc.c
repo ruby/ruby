@@ -2387,6 +2387,7 @@ imemo_memsize(VALUE obj)
       case imemo_ifunc:
       case imemo_memo:
       case imemo_parser_strterm:
+      case imemo_call_data:
         break;
       default:
         /* unreachable */
@@ -2889,6 +2890,9 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             break;
           case imemo_parser_strterm:
             RB_DEBUG_COUNTER_INC(obj_imemo_parser_strterm);
+            break;
+          case imemo_call_data:
+            RB_DEBUG_COUNTER_INC(obj_imemo_call_data);
             break;
 	  default:
             /* unreachable */
@@ -5323,6 +5327,8 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
 	return;
       case imemo_parser_strterm:
 	rb_strterm_mark(obj);
+	return;
+      case imemo_call_data:
 	return;
 #if VM_CHECK_MODE > 0
       default:
@@ -8117,6 +8123,7 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
         break;
       case imemo_parser_strterm:
       case imemo_tmpbuf:
+      case imemo_call_data:
         break;
       default:
         rb_bug("not reachable %d", imemo_type(obj));
