@@ -249,9 +249,6 @@ module Gem
   # you to specify specific gem versions.
 
   def self.bin_path(name, exec_name = nil, *requirements)
-    # TODO: fails test_self_bin_path_bin_file_gone_in_latest
-    # Gem::Specification.find_by_name(name, *requirements).bin_file exec_name
-
     requirements = Gem::Requirement.default if
       requirements.empty?
 
