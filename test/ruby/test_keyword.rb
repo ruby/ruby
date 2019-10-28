@@ -4859,4 +4859,20 @@ class TestKeywordArgumentsSymProcRefinements < Test::Unit::TestCase
     assert_equal([1, h3], c.call(**h3, &:m2))
     assert_equal([1, h3], c.call(a: 1, **h2, &:m2))
   end
+
+  def test_protected_kwarg
+    mock = Class.new do
+      def foo
+        bar('x', y: 'z')
+      end
+      protected
+      def bar(x, y)
+        nil
+      end
+    end
+
+    assert_nothing_raised do
+      mock.new.foo
+    end
+  end
 end

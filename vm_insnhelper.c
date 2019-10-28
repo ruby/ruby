@@ -2879,8 +2879,15 @@ vm_call_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_ca
 		else {
 		    /* caching method info to dummy cc */
 		    VM_ASSERT(cc->me != NULL);
-                    struct rb_call_data cd_entry = *cd;
-                    return vm_call_method_each_type(ec, cfp, calling, &cd_entry);
+                    if (ci->flag & VM_CALL_KWARG) {
+                        struct rb_kwarg_call_data *kcd = (void *)cd;
+                        struct rb_kwarg_call_data cd_entry = *kcd;
+                        return vm_call_method_each_type(ec, cfp, calling, (void *)&cd_entry);
+                    }
+                    else {
+                        struct rb_call_data cd_entry = *cd;
+                        return vm_call_method_each_type(ec, cfp, calling, &cd_entry);
+                    }
 		}
 	    }
             return vm_call_method_each_type(ec, cfp, calling, cd);
