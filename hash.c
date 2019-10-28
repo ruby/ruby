@@ -5830,7 +5830,7 @@ env_to_hash(void)
 
 /*
  * call-seq:
- *   ENV.to_hash -> Hash
+ *   ENV.to_hash -> hash
  *
  * Creates a hash with a copy of the environment variables.
  *
@@ -5844,8 +5844,8 @@ env_f_to_hash(VALUE _)
 
 /*
  * call-seq:
- *   ENV.to_h                        -> Hash
- *   ENV.to_h {|name, value| block } -> Hash
+ *   ENV.to_h                        -> hash
+ *   ENV.to_h {|name, value| block } -> hash
  *
  * Creates a hash with a copy of the environment variables.
  *
