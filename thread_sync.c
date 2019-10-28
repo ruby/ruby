@@ -224,6 +224,17 @@ rb_mutex_trylock(VALUE self)
 static const rb_thread_t *patrol_thread = NULL;
 
 static VALUE
+mutex_owned_p(rb_thread_t *th, rb_mutex_t *mutex)
+{
+    if (mutex->th == th) {
+        return Qtrue;
+    }
+    else {
+        return Qfalse;
+    }
+}
+
+static VALUE
 do_mutex_lock(VALUE self, int interruptible_p)
 {
     rb_thread_t *th = GET_THREAD();
@@ -298,6 +309,10 @@ do_mutex_lock(VALUE self, int interruptible_p)
             }
 	}
     }
+
+    // assertion
+    if (mutex_owned_p(th, mutex) == Qfalse) rb_bug("do_mutex_lock: mutex is not owned.");
+
     return self;
 }
 
@@ -329,14 +344,10 @@ rb_mutex_lock(VALUE self)
 VALUE
 rb_mutex_owned_p(VALUE self)
 {
-    VALUE owned = Qfalse;
     rb_thread_t *th = GET_THREAD();
     rb_mutex_t *mutex = mutex_ptr(self);
 
-    if (mutex->th == th)
-	owned = Qtrue;
-
-    return owned;
+    return mutex_owned_p(th, mutex);
 }
 
 static const char *
