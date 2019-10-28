@@ -461,7 +461,7 @@ clean-local::
 	$(Q)$(RM) $(MJIT_HEADER_INSTALL_DIR)/rb_mjit_min_header-*.h
 	$(Q)$(RM) $(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time mjit_config.h
 	$(Q)$(RM) -r mjit_build_dir.*
-	-$(Q) $(RMDIRS) $(MJIT_HEADER_INSTALL_DIR) 2> $(NULL) || exit 0
+	-$(Q) $(RMDIRS) $(MJIT_HEADER_INSTALL_DIR) $(MJIT_HEADER_BUILD_DIR) $(TIMESTAMPDIR) 2> $(NULL) || exit 0
 
 # DTrace static library hacks described here:
 # http://mail.opensolaris.org/pipermail/dtrace-discuss/2005-August/000207.html
