@@ -21,10 +21,14 @@ jobs:
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
       - name: Checkout ruby/ruby
-        run: git clone --depth=50 https://github.com/ruby/ruby . && git reset --hard "$GITHUB_SHA"
+        run: |
+          git clone --depth=50 https://github.com/ruby/ruby src
+          git -C src reset --hard "$GITHUB_SHA"
         if: github.event_name == 'push'
       - name: Checkout a pull request
-        run: git clone --depth=50 "--branch=$GITHUB_BRANCH" "https://github.com/${GITHUB_REPO}" . && git reset --hard "$GITHUB_REV"
+        run: |
+          git clone --depth=50 "--branch=$GITHUB_BRANCH" "https://github.com/${GITHUB_REPO}" src
+          git -C src reset --hard "$GITHUB_REV"
         env:
           GITHUB_REV: ${{ github.event.pull_request.head.sha }}
           GITHUB_BRANCH: ${{ github.event.pull_request.head.ref }}
@@ -33,28 +37,36 @@ jobs:
       - name: Install libraries
         run: |
           export WAITS='5 60'
+          cd src
           tool/travis_retry.sh brew update
           tool/travis_retry.sh brew install gdbm gmp libffi openssl@1.1 zlib autoconf automake libtool readline
       - name: Set ENV
         run: |
           echo '##[set-env name=JOBS]'-j$((1 + $(sysctl -n hw.activecpu)))
-      - run: autoconf
-      - name: configure
-        run: ./configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
-      - run: make $JOBS
+      - name: Autoconf
+        run: |
+          cd src
+          autoconf
+      - name: Configure
+        run: |
+          mkdir build
+          cd build
+          ../src/configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
+      - name: Make
+        run: make -C build $JOBS
       - name: Tests
-        run: make -s ${{ matrix.test_task }} TESTOPTS="$JOBS -q --tty=no"
+        run: make -C build -s ${{ matrix.test_task }} TESTOPTS="$JOBS -q --tty=no"
         env:
           MSPECOPT: "-ff" # not using `-j` because sometimes `mspec -j` silently dies
         if: matrix.test_task != 'test-bundled-gems'
       - name: Tests (test-bundled-gems)
         # Remove minitest from TEST_BUNDLED_GEMS_ALLOW_FAILURES if https://github.com/seattlerb/minitest/pull/798 is resolved
-        run: make -s ${{ matrix.test_task }} TEST_BUNDLED_GEMS_ALLOW_FAILURES=minitest
+        run: make -C build -s ${{ matrix.test_task }} TEST_BUNDLED_GEMS_ALLOW_FAILURES=minitest
         env:
           RUBY_TESTOPTS: "-q --tty=no"
         if: matrix.test_task == 'test-bundled-gems'
       - name: Leaked Globals
-        run: make -s leaked-globals
+        run: make -C build -s leaked-globals
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |

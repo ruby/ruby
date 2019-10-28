@@ -31,29 +31,33 @@ jobs:
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
       - name: Checkout ruby/ruby
         run: |
-          git clone --depth=50 https://github.com/ruby/ruby .
-          git reset --hard ${{ github.sha }}
+          git clone --depth=50 https://github.com/ruby/ruby src
+          git -C src reset --hard ${{ github.sha }}
         if: github.event_name == 'push'
       - name: Checkout a pull request
         run: |
-          git clone --depth=50 --branch=${{ github.event.pull_request.head.ref }} https://github.com/${{ github.event.pull_request.head.repo.full_name }} .
-          git reset --hard ${{ github.event.pull_request.head.sha }}
+          git clone --depth=50 --branch=${{ github.event.pull_request.head.ref }} https://github.com/${{ github.event.pull_request.head.repo.full_name }} src
+          git -C src reset --hard ${{ github.event.pull_request.head.sha }}
         if: github.event_name == 'pull_request'
-      - name: configure
+      - name: Configure
         run: |
+          md build
+          cd build
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          win32/configure.bat --disable-install-doc --without-ext=+,dbm,gdbm --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows
+          ../src/win32/configure.bat --disable-install-doc --without-ext=+,dbm,gdbm --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows
         shell: cmd
       - name: nmake
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           set YACC=win_bison
+          cd build
           nmake up
           nmake
         shell: cmd
       - name: nmake test
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          cd build
           nmake ${{ matrix.test_task }}
         shell: cmd
       - uses: k0kubun/action-slack@v2.0.0

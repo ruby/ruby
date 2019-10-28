@@ -49,10 +49,14 @@ jobs:
           sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev bison autoconf ruby
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
       - name: Checkout ruby/ruby
-        run: git clone --depth=50 https://github.com/ruby/ruby . && git reset --hard "$GITHUB_SHA"
+        run: |
+          git clone --depth=50 https://github.com/ruby/ruby src
+          git -C src reset --hard "$GITHUB_SHA"
         if: github.event_name == 'push'
       - name: Checkout a pull request
-        run: git clone --depth=50 "--branch=$GITHUB_BRANCH" "https://github.com/${GITHUB_REPO}" . && git reset --hard "$GITHUB_REV"
+        run: |
+          git clone --depth=50 "--branch=$GITHUB_BRANCH" "https://github.com/${GITHUB_REPO}" src
+          git -C src reset --hard "$GITHUB_REV"
         env:
           GITHUB_REV: ${{ github.event.pull_request.head.sha }}
           GITHUB_BRANCH: ${{ github.event.pull_request.head.ref }}
@@ -65,23 +69,28 @@ jobs:
       - name: Set ENV
         run: |
           echo '##[set-env name=JOBS]'-j$((1 + $(nproc --all)))
-      - run: autoconf
+      - name: Autoconf
+        run: cd src && exec autoconf
       - name: configure
-        run: ./configure -C --disable-install-doc
-      - run: make $JOBS
+        run: |
+          mkdir build
+          cd build
+          ../src/configure -C --disable-install-doc
+      - name: Make
+        run: make -C build $JOBS
       - name: Tests
-        run: make -s ${{ matrix.test_task }} TESTOPTS="$JOBS -q --tty=no"
+        run: make -C build -s ${{ matrix.test_task }} TESTOPTS="$JOBS -q --tty=no"
         env:
           MSPECOPT: "-ff" # not using `-j` because sometimes `mspec -j` silently dies
         if: matrix.test_task != 'test-bundled-gems'
       - name: Tests (test-bundled-gems)
         # Remove minitest from TEST_BUNDLED_GEMS_ALLOW_FAILURES if https://github.com/seattlerb/minitest/pull/798 is resolved
-        run: make -s ${{ matrix.test_task }} TEST_BUNDLED_GEMS_ALLOW_FAILURES=minitest
+        run: make -C build -s ${{ matrix.test_task }} TEST_BUNDLED_GEMS_ALLOW_FAILURES=minitest
         env:
           RUBY_TESTOPTS: "-q --tty=no"
         if: matrix.test_task == 'test-bundled-gems'
       - name: Leaked Globals
-        run: make -s leaked-globals
+        run: make -C build -s leaked-globals
       - name: Debug GitHub context
         run: echo "$GITHUB_CONTEXT"
         env:
