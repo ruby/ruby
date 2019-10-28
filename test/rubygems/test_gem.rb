@@ -1730,10 +1730,18 @@ class TestGem < Gem::TestCase
     names
   end
 
-  def test_looks_for_gemdeps_files_automatically_on_start
+  def test_looks_for_gemdeps_files_automatically_from_binstubs
     pend "Requiring bundler messes things up" if Gem.java_platform?
 
-    a = util_spec "a", "1", nil, "lib/a.rb"
+    a = util_spec "a", "1" do |s|
+      s.executables = %w[foo]
+      s.bindir = "exe"
+    end
+
+    write_file File.join(@tempdir, 'exe', 'foo') do |fp|
+      fp.puts "puts Gem.loaded_specs.values.map(&:full_name).sort"
+    end
+
     b = util_spec "b", "1", nil, "lib/b.rb"
     c = util_spec "c", "1", nil, "lib/c.rb"
 
@@ -1747,29 +1755,41 @@ class TestGem < Gem::TestCase
     ENV['GEM_PATH'] = path
     ENV['RUBYGEMS_GEMDEPS'] = "-"
 
+    new_PATH = [File.join(path, "bin"), ENV["PATH"]].join(File::PATH_SEPARATOR)
+    new_RUBYOPT = "-I#{rubygems_path} -I#{BUNDLER_LIB_PATH}"
+
     path = File.join @tempdir, "gem.deps.rb"
-    cmd = [*ruby_with_rubygems_in_load_path,
-           "-I#{BUNDLER_LIB_PATH}"]
-    cmd << "-eputs Gem.loaded_specs.values.map(&:full_name).sort"
 
     File.open path, "w" do |f|
       f.puts "gem 'a'"
     end
-    out0 = IO.popen(cmd, &:read).split(/\n/)
+    out0 = with_path_and_rubyopt(new_PATH, new_RUBYOPT) do
+      IO.popen("foo", &:read).split(/\n/)
+    end
 
     File.open path, "a" do |f|
       f.puts "gem 'b'"
       f.puts "gem 'c'"
     end
-    out = IO.popen(cmd, &:read).split(/\n/)
+    out = with_path_and_rubyopt(new_PATH, new_RUBYOPT) do
+      IO.popen("foo", &:read).split(/\n/)
+    end
 
     assert_equal ["b-1", "c-1"], out - out0
   end
 
-  def test_looks_for_gemdeps_files_automatically_on_start_in_parent_dir
+  def test_looks_for_gemdeps_files_automatically_from_binstubs_in_parent_dir
     pend "Requiring bundler messes things up" if Gem.java_platform?
 
-    a = util_spec "a", "1", nil, "lib/a.rb"
+    a = util_spec "a", "1" do |s|
+      s.executables = %w[foo]
+      s.bindir = "exe"
+    end
+
+    write_file File.join(@tempdir, 'exe', 'foo') do |fp|
+      fp.puts "puts Gem.loaded_specs.values.map(&:full_name).sort"
+    end
+
     b = util_spec "b", "1", nil, "lib/b.rb"
     c = util_spec "c", "1", nil, "lib/c.rb"
 
@@ -1785,21 +1805,25 @@ class TestGem < Gem::TestCase
 
     Dir.mkdir "sub1"
 
+    new_PATH = [File.join(path, "bin"), ENV["PATH"]].join(File::PATH_SEPARATOR)
+    new_RUBYOPT = "-I#{rubygems_path} -I#{BUNDLER_LIB_PATH}"
+
     path = File.join @tempdir, "gem.deps.rb"
-    cmd = [*ruby_with_rubygems_in_load_path, "-Csub1",
-           "-I#{BUNDLER_LIB_PATH}"]
-    cmd << "-eputs Gem.loaded_specs.values.map(&:full_name).sort"
 
     File.open path, "w" do |f|
       f.puts "gem 'a'"
     end
-    out0 = IO.popen(cmd, &:read).split(/\n/)
+    out0 = with_path_and_rubyopt(new_PATH, new_RUBYOPT) do
+      IO.popen("foo", :chdir => "sub1", &:read).split(/\n/)
+    end
 
     File.open path, "a" do |f|
       f.puts "gem 'b'"
       f.puts "gem 'c'"
     end
-    out = IO.popen(cmd, &:read).split(/\n/)
+    out = with_path_and_rubyopt(new_PATH, new_RUBYOPT) do
+      IO.popen("foo", :chdir => "sub1", &:read).split(/\n/)
+    end
 
     Dir.rmdir "sub1"
 
@@ -2113,5 +2137,15 @@ You may need to `gem install -g` to install missing gems
 
   def util_cache_dir
     File.join Gem.dir, "cache"
+  end
+
+  def with_path_and_rubyopt(path_value, rubyopt_value)
+    path, ENV['PATH'] = ENV['PATH'], path_value
+    rubyopt, ENV['RUBYOPT'] = ENV['RUBYOPT'], rubyopt_value
+
+    yield
+  ensure
+    ENV['PATH'] = path
+    ENV['RUBYOPT'] = rubyopt
   end
 end
