@@ -1121,7 +1121,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       ensure
         Gem::DefaultUserInteraction.ui.close
       end
-      @gemdeps.requested_specs.map(&:to_spec).sort_by(&:name)
     end
 
   rescue => e
