@@ -61,7 +61,7 @@ jobs:
           payload: |
             {
               "attachments": [{
-                "text": "${{ job.status}}: <https://github.com/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ github.workflow }} / ${{ matrix.test_task }}> " +
+                "text": "${{ job.status}}: <https://github.com/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ matrix.os }} (vs${{ matrix.vs }}) / ${{ matrix.test_task }}> " +
                         "(<https://github.com/${{ github.repository }}/commit/${{ github.sha }}|" + "${{ github.sha }}".substring(0, 10) + ">) " +
                         "of ${{ github.repository }}@" + "${{ github.ref }}".split('/').reverse()[0] + " by ${{ github.event.head_commit.committer.name }}",
                 "color": "danger"
