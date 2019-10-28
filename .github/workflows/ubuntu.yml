@@ -91,6 +91,11 @@ jobs:
         if: matrix.test_task == 'test-bundled-gems'
       - name: Leaked Globals
         run: make -C build -s leaked-globals
+      - name: Cleaning
+        run: |
+          make -C build -s distclean
+          ls -ARl build
+          rmdir build
       - name: Debug GitHub context
         run: echo "$GITHUB_CONTEXT"
         env:

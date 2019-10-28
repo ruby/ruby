@@ -124,6 +124,10 @@ for:
     # separately execute tests without -j which may crash worker with -j.
     - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --timeout-scale=1.5 --excludes=../ruby/test/excludes/_appveyor" TESTS="../ruby/test/win32ole ../ruby/test/open-uri/test_open-uri.rb"
     - mingw32-make test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
+    - mingw32-make distclean
+    - dir /s
+    - cd ..
+    - rmdir build
 notifications:
   # Using "Webhook" with templated body to skip notification on Pull Request
   - provider: Webhook
