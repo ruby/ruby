@@ -1186,6 +1186,7 @@ END
   def test_modifier_in
     assert_equal true, (1 in a)
     assert_equal 1, a
+    assert_valid_syntax "p(({} in a:), a:\n 1)"
   end
 end
 END_of_GUARD

@@ -1557,7 +1557,7 @@ expr		: command_call
 		    }
 		  p_top_expr_body
 		    {
-			p->in_kwarg = !!$<num>2;
+			p->in_kwarg = !!$<num>3;
 		    /*%%%*/
 			$$ = NEW_CASE3($1, NEW_IN($4, NEW_TRUE(&@4), NEW_FALSE(&@4), &@4), &@$);
 			rb_warn0L(nd_line($$), "Pattern matching is experimental, and the behavior may change in future versions of Ruby!");
