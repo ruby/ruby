@@ -168,7 +168,7 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
     begin
       require 'zlib'
     rescue LoadError
-      skip "no zlib"
+      omit "no zlib"
     end
     @g.generate
     @g.generate_gzipped
