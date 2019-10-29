@@ -62,6 +62,7 @@ Bundler:: Manage your Ruby application's gem dependencies
 CGI:: Support for the Common Gateway Interface protocol
 CSV:: Provides an interface to read and write CSV files and data
 Delegator:: Provides three abilities to delegate method calls to an object
+DidYouMean:: "Did you mean?" experience in Ruby
 FileUtils:: Several file utility methods for copying, moving, removing, etc
 Forwardable:: Provides delegation of specified methods to a designated object
 GetoptLong:: Parse command line options similar to the GNU C getopt_long()
@@ -112,7 +113,6 @@ Zlib:: Ruby interface for the zlib compression/decompression library
 
 == Libraries
 
-DidYouMean:: "Did you mean?" experience in Ruby
 MiniTest:: A test suite with TDD, BDD, mocking and benchmarking
 Net::Telnet:: Telnet client library for Ruby
 PowerAssert:: Power Assert for Ruby.
