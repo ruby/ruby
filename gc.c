@@ -8554,6 +8554,7 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
     }
 
     VALUE moved_list;
+    VALUE disabled = rb_gc_disable();
 
     if (use_toward_empty) {
         moved_list = gc_compact_heap(objspace, compare_free_slots);
@@ -8563,7 +8564,6 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
     }
     heap_eden->freelist = NULL;
 
-    VALUE disabled = rb_gc_disable();
     gc_update_references(objspace);
     if (!RTEST(disabled)) rb_gc_enable();
 
