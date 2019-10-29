@@ -7,6 +7,10 @@ require 'pathname'
 require 'tmpdir'
 require 'rbconfig'
 
+if File.exist?(File.join(Dir.tmpdir, "Gemfile"))
+  raise "rubygems/bundler tests do not work correctly if there is #{ File.join(Dir.tmpdir, "Gemfile") }"
+end
+
 # TODO: push this up to test_case.rb once battle tested
 
 $LOAD_PATH.map! do |path|
