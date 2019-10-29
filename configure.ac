@@ -1495,11 +1495,6 @@ done
 AS_IF([test "$rb_cv_func_exported" != no], [
     AC_DEFINE_UNQUOTED(RUBY_FUNC_EXPORTED, [$rb_cv_func_exported extern])
 ])
-RUBY_DECL_ATTRIBUTE([__nonnull__(n)], [RUBY_FUNC_NONNULL(n,x)], [rb_cv_func_nonnull],
-                    [], [function], [
-@%:@define x int conftest_attribute_check(void *p)
-@%:@define n 1
-])
 
 RUBY_APPEND_OPTION(XCFLAGS, -DRUBY_EXPORT)
 
