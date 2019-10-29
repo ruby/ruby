@@ -124,22 +124,12 @@ EOF
 
     # error message manipulator
     def filter_backtrace(bt)
+      return nil if bt =~ /irb\/.*\.rb/
+      return nil if bt =~ /irb\.rb/
       case IRB.conf[:CONTEXT_MODE]
-      when 0
-        return nil if bt =~ /irb\/.*\.rb/
-        return nil if bt =~ /irb\.rb/
       when 1
-        if(bt =~ %r!/tmp/irb-binding! or
-            bt =~ %r!irb/.*\.rb! or
-            bt =~ /irb\.rb/)
-          return nil
-        end
-      when 2
-        return nil if bt =~ /irb\/.*\.rb/
-        return nil if bt =~ /irb\.rb/
+        return nil if bt =~ %r!/tmp/irb-binding!
       when 3
-        return nil if bt =~ /irb\/.*\.rb/
-        return nil if bt =~ /irb\.rb/
         bt = bt.sub(/:\s*in `irb_binding'/, '')
       end
       bt
