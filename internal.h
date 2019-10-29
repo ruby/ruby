@@ -2387,16 +2387,16 @@ struct rb_call_data {
     struct rb_call_cache cc;
     struct rb_call_info ci;
 };
-VALUE rb_funcallv_with_cc(struct rb_call_data*, VALUE, ID, int, const VALUE*)
-#if (defined(__clang__) || GCC_VERSION_SINCE(3, 3, 0)) && defined(__OPTIMIZE__)
-__attribute__((__visibility__("default"), __nonnull__(1)))
+RUBY_FUNC_EXPORTED
+RUBY_FUNC_NONNULL(1, VALUE rb_funcallv_with_cc(struct rb_call_data*, VALUE, ID, int, const VALUE*));
+
+#ifdef __GNUC__
 # define rb_funcallv(recv, mid, argc, argv) \
     __extension__({ \
         static struct rb_call_data rb_funcallv_data = { { 0, }, { 0, }, }; \
         rb_funcallv_with_cc(&rb_funcallv_data, recv, mid, argc, argv); \
     })
 #endif
-    ;
 
 /* miniprelude.c, prelude.c */
 void Init_prelude(void);
