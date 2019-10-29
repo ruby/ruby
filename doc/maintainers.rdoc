@@ -162,6 +162,9 @@ Zachary Scott (zzak)
   _unmaintained_
   https://github.com/ruby/delegate
   https://rubygems.org/gems/delegate
+[lib/did_you_mean.rb]
+  Yuki Nishijima (yuki24)
+  https://github.com/ruby/did_you_mean
 [lib/fileutils.rb]
   _unmaintained_
   https://github.com/ruby/fileutils
@@ -342,8 +345,6 @@ Zachary Scott (zzak)
 
 == Bundled gems upstream repositories
 
-[did_you_mean]
-  https://github.com/yuki24/did_you_mean
 [minitest]
   https://github.com/seattlerb/minitest
 [net-telnet]
