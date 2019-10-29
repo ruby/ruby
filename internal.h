@@ -2388,7 +2388,7 @@ struct rb_call_data {
     struct rb_call_info ci;
 };
 VALUE rb_funcallv_with_cc(struct rb_call_data*, VALUE, ID, int, const VALUE*)
-#if GCC_VERSION_SINCE(3, 3, 0) && defined(__OPTIMIZE__)
+#if (defined(__clang__) || GCC_VERSION_SINCE(3, 3, 0)) && defined(__OPTIMIZE__)
 __attribute__((__visibility__("default"), __nonnull__(1)))
 # define rb_funcallv(recv, mid, argc, argv) \
     __extension__({ \
