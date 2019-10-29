@@ -635,6 +635,7 @@ static VALUE convert_encoding(VALUE source)
  *   defaults to false.
  * * *object_class*: Defaults to Hash
  * * *array_class*: Defaults to Array
+ * * *decimal_class*: Defaults to Float, also supports BigDecimal as value
  */
 static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
 {
