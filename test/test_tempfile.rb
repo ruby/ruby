@@ -374,53 +374,43 @@ puts Tempfile.new('foo').path
     assert_file.not_exist?(path)
   end
 
-  TRAVERSAL_PATH = Array.new(Dir.pwd.split('/').count, '..').join('/') + Dir.pwd + '/'
-
   def test_open_traversal_dir
-    expect = Dir.glob(TRAVERSAL_PATH + '*').count
-    t = Tempfile.open([TRAVERSAL_PATH, 'foo'])
-    actual = Dir.glob(TRAVERSAL_PATH + '*').count
-    assert_equal expect, actual
-  rescue Errno::EINVAL
-    if /mswin|mingw/ =~ RUBY_PLATFORM
-      assert "ok"
-    else
-      raise $!
+    assert_mktmpdir_traversal do |traversal_path|
+      t = Tempfile.open([traversal_path, 'foo'])
+      t.path
+    ensure
+      t&.close!
     end
-  ensure
-    t&.close!
   end
 
   def test_new_traversal_dir
-    expect = Dir.glob(TRAVERSAL_PATH + '*').count
-    t = Tempfile.new(TRAVERSAL_PATH + 'foo')
-    actual = Dir.glob(TRAVERSAL_PATH + '*').count
-    assert_equal expect, actual
-  rescue Errno::EINVAL
-    if /mswin|mingw/ =~ RUBY_PLATFORM
-      assert "ok"
-    else
-      raise $!
+    assert_mktmpdir_traversal do |traversal_path|
+      t = Tempfile.new(traversal_path + 'foo')
+      t.path
+    ensure
+      t&.close!
     end
-  ensure
-    t&.close!
   end
 
   def test_create_traversal_dir
-    expect = Dir.glob(TRAVERSAL_PATH + '*').count
-    t = Tempfile.create(TRAVERSAL_PATH + 'foo')
-    actual = Dir.glob(TRAVERSAL_PATH + '*').count
-    assert_equal expect, actual
-  rescue Errno::EINVAL
-    if /mswin|mingw/ =~ RUBY_PLATFORM
-      assert "ok"
-    else
-      raise $!
+    assert_mktmpdir_traversal do |traversal_path|
+      t = Tempfile.create(traversal_path + 'foo')
+      t.path
+    ensure
+      if t
+        t.close
+        File.unlink(t.path)
+      end
     end
-  ensure
-    if t
-      t.close
-      File.unlink(t.path)
+  end
+
+  def assert_mktmpdir_traversal
+    Dir.mktmpdir do |target|
+      target = target.chomp('/') + '/'
+      traversal_path = target.sub(/\A\w:/, '') # for DOSISH
+      traversal_path = Array.new(target.count('/')-2, '..').join('/') + traversal_path
+      actual = yield traversal_path
+      assert_not_send([File.absolute_path(actual), :start_with?, target])
     end
   end
 end
