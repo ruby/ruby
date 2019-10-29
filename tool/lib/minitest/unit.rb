@@ -718,6 +718,8 @@ module MiniTest
       raise MiniTest::Skip, msg, bt
     end
 
+    alias omit skip
+
     ##
     # Was this testcase skipped? Meant for #teardown.
 
