@@ -1433,13 +1433,9 @@ rb_vm_search_method_slowpath(struct rb_call_data *cd, VALUE klass)
 }
 
 static void
-vm_search_method(struct rb_call_data *cd, VALUE recv)
+vm_search_method_fastpath(struct rb_call_data *cd, VALUE klass)
 {
     struct rb_call_cache *cc = &cd->cc;
-    VALUE klass = CLASS_OF(recv);
-
-    VM_ASSERT(klass != Qfalse);
-    VM_ASSERT(RBASIC_CLASS(klass) == 0 || rb_obj_is_kind_of(klass, rb_cClass));
 
 #if OPT_INLINE_METHOD_CACHE
     if (LIKELY(RB_DEBUG_COUNTER_INC_UNLESS(mc_global_state_miss,
@@ -1454,6 +1450,16 @@ vm_search_method(struct rb_call_data *cd, VALUE recv)
     RB_DEBUG_COUNTER_INC(mc_inline_miss);
 #endif
     rb_vm_search_method_slowpath(cd, klass);
+}
+
+static void
+vm_search_method(struct rb_call_data *cd, VALUE recv)
+{
+    VALUE klass = CLASS_OF(recv);
+
+    VM_ASSERT(klass != Qfalse);
+    VM_ASSERT(RBASIC_CLASS(klass) == 0 || rb_obj_is_kind_of(klass, rb_cClass));
+    vm_search_method_fastpath(cd, klass);
 }
 
 static inline int
