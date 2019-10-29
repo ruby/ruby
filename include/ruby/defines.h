@@ -464,6 +464,9 @@ void rb_sparc_flush_register_windows(void);
 #define RUBY_ALIAS_FUNCTION(prot, name, args) \
     RUBY_ALIAS_FUNCTION_TYPE(VALUE, prot, name, args)
 #endif
+#ifndef RUBY_FUNC_NONNULL
+#define RUBY_FUNC_NONNULL(n, x) x
+#endif
 
 #ifndef UNALIGNED_WORD_ACCESS
 # if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
