@@ -17,8 +17,8 @@ class TestRDocOptions < RDoc::TestCase
   end
 
   def test_check_files
-    omit "assumes UNIX permission model" if /mswin|mingw/ =~ RUBY_PLATFORM
-    omit "assumes that euid is not root" if Process.euid == 0
+    skip "assumes UNIX permission model" if /mswin|mingw/ =~ RUBY_PLATFORM
+    skip "assumes that euid is not root" if Process.euid == 0
 
     out, err = capture_output do
       temp_dir do

@@ -32,7 +32,7 @@ class TestRDocI18nLocale < RDoc::TestCase
     begin
       require 'gettext/po_parser'
     rescue LoadError
-      omit 'gettext gem is not found'
+      skip 'gettext gem is not found'
     end
 
     fr_locale_dir = File.join @locale_dir, 'fr'

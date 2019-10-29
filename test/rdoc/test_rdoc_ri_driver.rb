@@ -1029,7 +1029,7 @@ Foo::Bar#bother
   end
 
   def test_did_you_mean
-    omit 'skip test with did_you_men' unless defined? DidYouMean::SpellChecker
+    skip 'skip test with did_you_men' unless defined? DidYouMean::SpellChecker
 
     util_ancestors_store
 
@@ -1227,7 +1227,7 @@ Foo::Bar#bother
 
     with_dummy_pager do
       @driver.page do |io|
-        omit "couldn't find a standard pager" if io == $stdout
+        skip "couldn't find a standard pager" if io == $stdout
 
         assert @driver.paging?
       end
@@ -1406,7 +1406,7 @@ Foo::Bar#bother
 
     pager = with_dummy_pager do @driver.setup_pager end
 
-    omit "couldn't find a standard pager" unless pager
+    skip "couldn't find a standard pager" unless pager
 
     assert @driver.paging?
   ensure
