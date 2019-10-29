@@ -126,7 +126,8 @@ EOF
     def filter_backtrace(bt)
       case IRB.conf[:CONTEXT_MODE]
       when 0
-        return nil if bt =~ /\(irb_local_binding\)/
+        return nil if bt =~ /irb\/.*\.rb/
+        return nil if bt =~ /irb\.rb/
       when 1
         if(bt =~ %r!/tmp/irb-binding! or
             bt =~ %r!irb/.*\.rb! or
