@@ -33,6 +33,7 @@
 # * https://github.com/ruby/e2mmap
 # * https://github.com/ruby/mutex_m
 # * https://github.com/ruby/racc
+# * https://github.com/ruby/did_you_mean
 #
 
 require 'fileutils'
@@ -72,7 +73,8 @@ $repositories = {
   forwardable: "ruby/forwardable",
   e2mmap: "ruby/e2mmap",
   mutex_m: "ruby/mutex_m",
-  racc: "ruby/racc"
+  racc: "ruby/racc",
+  did_you_mean: "ruby/did_you_mean"
 }
 
 def sync_default_gems(gem)
@@ -210,6 +212,11 @@ def sync_default_gems(gem)
     rm_rf("test/racc/lib")
     rm_rf("lib/racc/cparse-jruby.jar")
     `git checkout ext/racc/cparse/README ext/racc/cparse/depend`
+  when "did_you_mean"
+    rm_rf(%w[lib/did_you_mean* test/did_you_mean])
+    cp_r(Dir.glob("#{upstream}/lib/did_you_mean*"), "lib")
+    cp_r("#{upstream}/did_you_mean.gemspec", "lib/did_you_mean")
+    cp_r("#{upstream}/test", "test/did_you_mean")
   when "rexml", "rss", "matrix", "irb", "csv", "logger", "ostruct", "webrick", "fileutils", "forwardable", "prime", "tracer", "ipaddr", "mutex_m"
     sync_lib gem
   else

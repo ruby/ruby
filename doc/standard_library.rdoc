@@ -73,6 +73,7 @@ WIN32OLE:: Provides an interface for OLE Automation in Ruby
 
 Bundler:: Manage your Ruby application's gem dependencies
 CSV:: Provides an interface to read and write CSV files and data
+DidYouMean:: "Did you mean?" experience in Ruby
 E2MM:: Module for defining custom exceptions with specific messages
 FileUtils:: Several file utility methods for copying, moving, removing, etc
 Forwardable:: Provides delegation of specified methods to a designated object
@@ -113,7 +114,6 @@ Zlib:: Ruby interface for the zlib compression/decompression library
 
 == Libraries
 
-DidYouMean:: "Did you mean?" experience in Ruby
 MiniTest:: A test suite with TDD, BDD, mocking and benchmarking
 Net::Telnet:: Telnet client library for Ruby
 PowerAssert:: Power Assert for Ruby.

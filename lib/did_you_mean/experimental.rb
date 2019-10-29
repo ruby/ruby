@@ -1,0 +1,2 @@
+require_relative 'experimental/initializer_name_correction'
+require_relative 'experimental/ivar_name_correction'

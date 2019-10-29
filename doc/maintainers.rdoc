@@ -176,6 +176,9 @@ Zachary Scott (zzak)
 [lib/csv.rb]
   Kenta Murata (mrkn), Kouhei Sutou (kou)
   https://github.com/ruby/csv
+[lib/did_you_mean.rb]
+  Yuki Nishijima (yuki24)
+  https://github.com/ruby/did_you_mean
 [lib/e2mmap.rb]
   Keiju ISHITSUKA (keiju)
 [lib/fileutils.rb]
@@ -283,8 +286,6 @@ Zachary Scott (zzak)
 
 == Bundled gems upstream repositories
 
-[did_you_mean]
-  https://github.com/yuki24/did_you_mean
 [minitest]
   https://github.com/seattlerb/minitest
 [net-telnet]
