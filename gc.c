@@ -8553,14 +8553,14 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
         heap_add_pages(objspace, heap_eden, heap_allocated_pages);
     }
 
-    VALUE moved_list;
+    VALUE moved_list_head;
     VALUE disabled = rb_gc_disable();
 
     if (use_toward_empty) {
-        moved_list = gc_compact_heap(objspace, compare_free_slots);
+        moved_list_head = gc_compact_heap(objspace, compare_free_slots);
     }
     else {
-        moved_list = gc_compact_heap(objspace, compare_pinned);
+        moved_list_head = gc_compact_heap(objspace, compare_pinned);
     }
     heap_eden->freelist = NULL;
 
@@ -8576,27 +8576,44 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
     heap_eden->free_pages = NULL;
     heap_eden->using_page = NULL;
 
-    while (moved_list) {
+    /* For each moved slot */
+    while (moved_list_head) {
         VALUE next_moved;
         struct heap_page *page;
 
-        page = GET_HEAP_PAGE(moved_list);
-        next_moved = RMOVED(moved_list)->next;
+        page = GET_HEAP_PAGE(moved_list_head);
+        next_moved = RMOVED(moved_list_head)->next;
 
-        RMOVED(moved_list)->flags = 0;
-        RMOVED(moved_list)->destination = 0;
-        RMOVED(moved_list)->next = 0;
+        /* clear the memory for that moved slot */
+        RMOVED(moved_list_head)->flags = 0;
+        RMOVED(moved_list_head)->destination = 0;
+        RMOVED(moved_list_head)->next = 0;
         page->free_slots++;
-        heap_page_add_freeobj(objspace, page, moved_list);
+        heap_page_add_freeobj(objspace, page, moved_list_head);
+
         if (page->free_slots == page->total_slots && heap_pages_freeable_pages > 0) {
             heap_pages_freeable_pages--;
 	    heap_unlink_page(objspace, heap_eden, page);
 	    heap_add_page(objspace, heap_tomb, page);
-        } else if (page->free_slots == page->total_slots) {
-            page->free_next = NULL;
         }
         objspace->profile.total_freed_objects++;
-        moved_list = next_moved;
+        moved_list_head = next_moved;
+    }
+
+    /* Add any eden pages with free slots back to the free pages list */
+    struct heap_page *page = NULL;
+    list_for_each(&heap_eden->pages, page, page_node) {
+        if (page->free_slots > 0) {
+            heap_add_freepage(objspace, heap_eden, page);
+        } else {
+            page->free_next = NULL;
+        }
+    }
+
+    /* Set up "using_page" if we have any pages with free slots */
+    if (heap_eden->free_pages) {
+        heap_eden->using_page = heap_eden->free_pages;
+        heap_eden->free_pages = heap_eden->free_pages->free_next;
     }
 
     if (use_verifier) {
