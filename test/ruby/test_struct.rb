@@ -105,6 +105,7 @@ module TestStruct
     @Struct.new("KeywordInitFalse", :a, :b, keyword_init: false)
 
     assert_raise(ArgumentError) { @Struct::KeywordInitTrue.new(1, 2) }
+    assert_raise(ArgumentError) { @Struct::KeywordInitTrue.new({a: 100}, 2) }
     assert_nothing_raised { @Struct::KeywordInitFalse.new(1, 2) }
     assert_nothing_raised { @Struct::KeywordInitTrue.new(a: 1, b: 2) }
     assert_raise(ArgumentError) { @Struct::KeywordInitTrue.new(1, b: 2) }
