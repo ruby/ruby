@@ -633,7 +633,7 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
     n = num_members(klass);
     if (argc > 0 && RTEST(rb_struct_s_keyword_init(klass))) {
 	struct struct_hash_set_arg arg;
-	if (argc > 2 || !RB_TYPE_P(argv[0], T_HASH)) {
+	if (argc > 1 || !RB_TYPE_P(argv[0], T_HASH)) {
 	    rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected 0)", argc);
 	}
 	rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), n);
