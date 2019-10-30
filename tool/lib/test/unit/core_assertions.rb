@@ -28,6 +28,9 @@ module Test
         require_relative '../../envutil'
         # for ruby core testing
         include MiniTest::Assertions
+
+        # Compatibility hack for assert_raise
+        Test::Unit::AssertionFailedError = MiniTest::Assertion
       else
         module MiniTest
           class Assertion < Exception; end
