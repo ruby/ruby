@@ -684,7 +684,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 47)
             #@nodes.last.children.insert(0, val[0])
             #puts val[0]
             @nodes.last.children += val[0]
-        
+
     result
   end
 .,.,
@@ -692,7 +692,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 47)
 module_eval(<<'.,.,', 'mediacloth.y', 57)
   def _reduce_2(val, _values, result)
                 result = val[0]
-        
+
     result
   end
 .,.,
@@ -700,7 +700,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 57)
 module_eval(<<'.,.,', 'mediacloth.y', 61)
   def _reduce_3(val, _values, result)
                 result = val[0]
-        
+
     result
   end
 .,.,
@@ -708,7 +708,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 61)
 module_eval(<<'.,.,', 'mediacloth.y', 65)
   def _reduce_4(val, _values, result)
                 result = val[0]
-        
+
     result
   end
 .,.,
@@ -719,7 +719,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 69)
             list.list_type = :Dictionary
             list.children = val[0]
             result = list
-        
+
     result
   end
 .,.,
@@ -727,7 +727,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 69)
 module_eval(<<'.,.,', 'mediacloth.y', 76)
   def _reduce_6(val, _values, result)
                 result = val[0]
-        
+
     result
   end
 .,.,
@@ -735,7 +735,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 76)
 module_eval(<<'.,.,', 'mediacloth.y', 80)
   def _reduce_7(val, _values, result)
                 result = val[0]
-        
+
     result
   end
 .,.,
@@ -743,7 +743,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 80)
 module_eval(<<'.,.,', 'mediacloth.y', 84)
   def _reduce_8(val, _values, result)
                 result = val[0]
-        
+
     result
   end
 .,.,
@@ -751,7 +751,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 84)
 module_eval(<<'.,.,', 'mediacloth.y', 88)
   def _reduce_9(val, _values, result)
                 result = val[0]
-        
+
     result
   end
 .,.,
@@ -761,7 +761,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 92)
                 k = KeywordAST.new(@ast_index, @ast_length)
             k.text = val[0]
             result = k
-        
+
     result
   end
 .,.,
@@ -771,7 +771,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 98)
                 p = ParagraphAST.new(@ast_index, @ast_length)
             p.children = val[1]
             result = p
-        
+
     result
   end
 .,.,
@@ -783,7 +783,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 104)
             l.url = val[1][0]
             l.children += val[1][1..-1] if val[1].length > 1
             result = l
-        
+
     result
   end
 .,.,
@@ -793,7 +793,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 112)
                 p = PasteAST.new(@ast_index, @ast_length)
             p.children = val[1]
             result = p
-        
+
     result
   end
 .,.,
@@ -805,7 +805,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 118)
             l.locator = val[3]
             l.children = val[4] unless val[4].nil? or val[4].empty?
             result = l
-        
+
     result
   end
 .,.,
@@ -816,7 +816,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 126)
             l.locator = val[1]
             l.children = val[2] unless val[2].nil? or val[2].empty?
             result = l
-        
+
     result
   end
 .,.,
@@ -827,7 +827,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 133)
             l.locator = val[2]
             l.sort_as = val[3]
             result = l
-        
+
     result
   end
 .,.,
@@ -838,7 +838,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 140)
             l.locator = val[3]
             l.children = val[4] unless val[4].nil? or val[4].empty?
             result = l
-        
+
     result
   end
 .,.,
@@ -848,7 +848,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 140)
 module_eval(<<'.,.,', 'mediacloth.y', 150)
   def _reduce_19(val, _values, result)
                 result = nil
-        
+
     result
   end
 .,.,
@@ -856,7 +856,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 150)
 module_eval(<<'.,.,', 'mediacloth.y', 154)
   def _reduce_20(val, _values, result)
                 result = val[0]
-        
+
     result
   end
 .,.,
@@ -870,7 +870,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 161)
             elem.name = val[0]
             elem.attributes = val[1]
             result = elem
-        
+
     result
   end
 .,.,
@@ -885,7 +885,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 171)
             elem.attributes = val[1]
             elem.children += val[2]
             result = elem
-        
+
     result
   end
 .,.,
@@ -893,7 +893,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 171)
 module_eval(<<'.,.,', 'mediacloth.y', 184)
   def _reduce_23(val, _values, result)
                 result = nil
-        
+
     result
   end
 .,.,
@@ -903,7 +903,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 188)
                 attr_map = val[2] ? val[2] : {}
             attr_map[val[0]] = true
             result = attr_map
-        
+
     result
   end
 .,.,
@@ -913,7 +913,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 194)
                 attr_map = val[2] ? val[2] : {}
             attr_map[val[0]] = val[1]
             result = attr_map
-        
+
     result
   end
 .,.,
@@ -921,7 +921,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 194)
 module_eval(<<'.,.,', 'mediacloth.y', 204)
   def _reduce_26(val, _values, result)
                 result = val
-        
+
     result
   end
 .,.,
@@ -930,7 +930,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 208)
   def _reduce_27(val, _values, result)
                 result = [val[0]]
             result += val[2]
-        
+
     result
   end
 .,.,
@@ -938,7 +938,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 208)
 module_eval(<<'.,.,', 'mediacloth.y', 217)
   def _reduce_28(val, _values, result)
                 result = val[0]
-        
+
     result
   end
 .,.,
@@ -947,7 +947,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 221)
   def _reduce_29(val, _values, result)
                 result = val[0]
             result += val[2] if val[2]
-        
+
     result
   end
 .,.,
@@ -955,7 +955,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 221)
 module_eval(<<'.,.,', 'mediacloth.y', 229)
   def _reduce_30(val, _values, result)
                 result = nil
-        
+
     result
   end
 .,.,
@@ -963,7 +963,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 229)
 module_eval(<<'.,.,', 'mediacloth.y', 233)
   def _reduce_31(val, _values, result)
                 result = val[1]
-        
+
     result
   end
 .,.,
@@ -971,7 +971,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 233)
 module_eval(<<'.,.,', 'mediacloth.y', 239)
   def _reduce_32(val, _values, result)
                 result = nil
-        
+
     result
   end
 .,.,
@@ -979,7 +979,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 239)
 module_eval(<<'.,.,', 'mediacloth.y', 243)
   def _reduce_33(val, _values, result)
                 result = val[1]
-        
+
     result
   end
 .,.,
@@ -987,7 +987,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 243)
 module_eval(<<'.,.,', 'mediacloth.y', 249)
   def _reduce_34(val, _values, result)
                 result = nil
-        
+
     result
   end
 .,.,
@@ -995,7 +995,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 249)
 module_eval(<<'.,.,', 'mediacloth.y', 253)
   def _reduce_35(val, _values, result)
                 result = val[1]
-        
+
     result
   end
 .,.,
@@ -1006,7 +1006,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 257)
             i.children = val[1]
             result = [i]
             result += val[2] if val[2]
-        
+
     result
   end
 .,.,
@@ -1015,7 +1015,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 266)
   def _reduce_37(val, _values, result)
                 result = []
             result << val[0]
-        
+
     result
   end
 .,.,
@@ -1025,7 +1025,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 271)
                 result = []
             result += val[0]
             result << val[1]
-        
+
     result
   end
 .,.,
@@ -1036,7 +1036,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 279)
             p.formatting = val[0][0]
             p.contents = val[0][1]
             result = p
-        
+
     result
   end
 .,.,
@@ -1044,7 +1044,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 279)
 module_eval(<<'.,.,', 'mediacloth.y', 286)
   def _reduce_40(val, _values, result)
                 result = val[0]
-        
+
     result
   end
 .,.,
@@ -1054,7 +1054,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 293)
                 table = TableAST.new(@ast_index, @ast_length)
             table.children = val[1] unless val[1].nil? or val[1].empty?
             result = table
-        
+
     result
   end
 .,.,
@@ -1065,7 +1065,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 299)
             table.options = val[1]
             table.children = val[2] unless val[2].nil? or val[2].empty?
             result = table
-        
+
     result
   end
 .,.,
@@ -1073,7 +1073,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 299)
 module_eval(<<'.,.,', 'mediacloth.y', 307)
   def _reduce_43(val, _values, result)
                 result = nil
-        
+
     result
   end
 .,.,
@@ -1084,7 +1084,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 311)
             row.children = val[1] unless val[1].nil? or val[1].empty?
             result = [row]
             result += val[3] unless val[3].nil? or val[3].empty?
-        
+
     result
   end
 .,.,
@@ -1096,7 +1096,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 318)
             row.options = val[1]
             result = [row]
             result += val[4] unless val[4].nil? or val[4].empty?
-        
+
     result
   end
 .,.,
@@ -1104,7 +1104,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 318)
 module_eval(<<'.,.,', 'mediacloth.y', 327)
   def _reduce_46(val, _values, result)
                 result = nil
-        
+
     result
   end
 .,.,
@@ -1115,7 +1115,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 331)
             cell.type = :head
             result = [cell]
             result += val[2] unless val[2].nil? or val[2].empty?
-        
+
     result
   end
 .,.,
@@ -1127,7 +1127,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 338)
             cell.type = :head
             result = [cell]
             result += val[3] unless val[3].nil? or val[3].empty?
-        
+
     result
   end
 .,.,
@@ -1138,7 +1138,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 346)
             cell.type = :body
             result = [cell]
             result += val[2] unless val[2].nil? or val[2].empty?
-        
+
     result
   end
 .,.,
@@ -1158,49 +1158,49 @@ module_eval(<<'.,.,', 'mediacloth.y', 353)
                 val[3].first.attributes = val[1]
             end
             result
-        
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mediacloth.y', 371)
   def _reduce_51(val, _values, result)
-     return [:None, val[0]] 
+     return [:None, val[0]]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mediacloth.y', 373)
   def _reduce_52(val, _values, result)
-     return [:HLine, val[0]] 
+     return [:HLine, val[0]]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mediacloth.y', 375)
   def _reduce_53(val, _values, result)
-     return [:CharacterEntity, val[0]] 
+     return [:CharacterEntity, val[0]]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mediacloth.y', 377)
   def _reduce_54(val, _values, result)
-     return [:SignatureDate, val[0]] 
+     return [:SignatureDate, val[0]]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mediacloth.y', 379)
   def _reduce_55(val, _values, result)
-     return [:SignatureName, val[0]] 
+     return [:SignatureName, val[0]]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mediacloth.y', 381)
   def _reduce_56(val, _values, result)
-     return [:SignatureFull, val[0]] 
+     return [:SignatureFull, val[0]]
     result
   end
 .,.,
@@ -1210,7 +1210,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 387)
                 result = FormattedAST.new(@ast_index, @ast_length)
             result.formatting = :Bold
             result
-        
+
     result
   end
 .,.,
@@ -1220,7 +1220,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 393)
                 result = FormattedAST.new(@ast_index, @ast_length)
             result.formatting = :Italic
             result
-        
+
     result
   end
 .,.,
@@ -1231,7 +1231,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 399)
             p.formatting = :Bold
             p.children += val[1]
             result = p
-        
+
     result
   end
 .,.,
@@ -1242,7 +1242,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 406)
             p.formatting = :Italic
             p.children += val[1]
             result = p
-        
+
     result
   end
 .,.,
@@ -1254,7 +1254,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 415)
             list.children << val[1]
             list.children += val[2]
             result = list
-        
+
     result
   end
 .,.,
@@ -1266,14 +1266,14 @@ module_eval(<<'.,.,', 'mediacloth.y', 425)
             list.children << val[1]
             list.children += val[2]
             result = list
-        
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mediacloth.y', 434)
   def _reduce_63(val, _values, result)
-     result = [] 
+     result = []
     result
   end
 .,.,
@@ -1282,14 +1282,14 @@ module_eval(<<'.,.,', 'mediacloth.y', 437)
   def _reduce_64(val, _values, result)
                 result << val[1]
             result += val[2]
-        
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mediacloth.y', 441)
   def _reduce_65(val, _values, result)
-     result = [] 
+     result = []
     result
   end
 .,.,
@@ -1297,7 +1297,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 441)
 module_eval(<<'.,.,', 'mediacloth.y', 447)
   def _reduce_66(val, _values, result)
                 result = ListItemAST.new(@ast_index, @ast_length)
-        
+
     result
   end
 .,.,
@@ -1307,7 +1307,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 451)
                 li = ListItemAST.new(@ast_index, @ast_length)
             li.children += val[1]
             result = li
-        
+
     result
   end
 .,.,
@@ -1316,7 +1316,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 460)
   def _reduce_68(val, _values, result)
                 result = [val[1]]
             result += val[2]
-        
+
     result
   end
 .,.,
@@ -1324,7 +1324,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 460)
 module_eval(<<'.,.,', 'mediacloth.y', 465)
   def _reduce_69(val, _values, result)
                 result = val[1]
-        
+
     result
   end
 .,.,
@@ -1332,7 +1332,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 465)
 module_eval(<<'.,.,', 'mediacloth.y', 472)
   def _reduce_70(val, _values, result)
                 result = ListTermAST.new(@ast_index, @ast_length)
-        
+
     result
   end
 .,.,
@@ -1342,7 +1342,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 476)
                 term = ListTermAST.new(@ast_index, @ast_length)
             term.children += val[1]
             result = term
-        
+
     result
   end
 .,.,
@@ -1351,7 +1351,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 484)
   def _reduce_72(val, _values, result)
                 result = [val[0]]
             result += val[1] if val[1]
-        
+
     result
   end
 .,.,
@@ -1359,7 +1359,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 484)
 module_eval(<<'.,.,', 'mediacloth.y', 489)
   def _reduce_73(val, _values, result)
                 result = []
-        
+
     result
   end
 .,.,
@@ -1367,7 +1367,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 489)
 module_eval(<<'.,.,', 'mediacloth.y', 495)
   def _reduce_74(val, _values, result)
                 result = ListDefinitionAST.new(@ast_index, @ast_length)
-        
+
     result
   end
 .,.,
@@ -1377,7 +1377,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 499)
                 term = ListDefinitionAST.new(@ast_index, @ast_length)
             term.children += val[1]
             result = term
-        
+
     result
   end
 .,.,
@@ -1387,7 +1387,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 506)
                 p = PreformattedAST.new(@ast_index, @ast_length)
             p.children += val[1]
             result = p
-        
+
     result
   end
 .,.,
@@ -1398,7 +1398,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 512)
             p.indented = true
             p.children += val[1]
             result = p
-        
+
     result
   end
 .,.,
@@ -1410,7 +1410,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 520)
             s.children = val[1]
             s.level = val[0].length
             result = s
-        
+
     result
   end
 .,.,
@@ -1421,7 +1421,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 530)
             t.template_name = val[1]
             t.children = val[2] unless val[2].nil? or val[2].empty?
             result = t
-        
+
     result
   end
 .,.,
@@ -1429,7 +1429,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 530)
 module_eval(<<'.,.,', 'mediacloth.y', 539)
   def _reduce_80(val, _values, result)
                 result = nil
-        
+
     result
   end
 .,.,
@@ -1440,7 +1440,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 543)
             p.parameter_value = val[1]
             result = [p]
             result += val[2] if val[2]
-        
+
     result
   end
 .,.,
@@ -1451,7 +1451,7 @@ module_eval(<<'.,.,', 'mediacloth.y', 550)
             p.children << val[1]
             result = [p]
             result += val[2] if val[2]
-        
+
     result
   end
 .,.,

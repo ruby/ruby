@@ -450,6 +450,7 @@ module Racc
             nest -= 1
             if nest == 0
               @in_block = nil
+              buf.sub!(/[ \t\f]+\z/, '')
               return buf
             end
             buf << (pre = ch)

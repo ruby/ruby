@@ -4,19 +4,19 @@ rule
 
   content: RecvH         received
     ;
-  
+
   datetime: day
     ;
-  
+
   msgid: '<' spec '>';
-  
+
   day:
     | ATOM ','
     ;
-  
+
   received: recvitem_list recvdatetime
     ;
-  
+
   recvitem_list:
     | recvitem_list recvitem
     ;
@@ -26,25 +26,25 @@ rule
   by:
     | BY domain
     ;
-  
+
   via:
     | VIA ATOM
     ;
-  
+
   with: WITH ATOM
     ;
-  
+
   for:
     | FOR addr
     ;
-  
+
   recvdatetime:
     | ';' datetime
     ;
-  
+
   addr: mbox | group ;
 
-  mboxes: mbox     
+  mboxes: mbox
     | mboxes ',' mbox
     ;
 
@@ -59,21 +59,21 @@ rule
   routeaddr: '<' route spec '>'
     | '<' spec '>'
     ;
-  
+
   route: at_domains ':' ;
-  
-  at_domains: '@' domain  
+
+  at_domains: '@' domain
     | at_domains ',' '@' domain
     ;
-  
+
   spec: local '@' domain
-    | local  
+    | local
     ;
-  
+
   local: word
     | local '.' word
     ;
-  
+
   domain: domword
     | domain '.' domword
     ;
@@ -86,12 +86,12 @@ rule
   phrase: word
     | phrase word
     ;
-  
+
   word: atom
     | QUOTED
     | DIGIT
     ;
 
   atom: ATOM | FROM | BY | VIA | WITH | ID | FOR ;
-  
+
 end

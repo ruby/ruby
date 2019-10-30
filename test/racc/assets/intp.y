@@ -27,7 +27,7 @@ rule
                   result.push val[1]
                 }
             | stmt_list EOL
-  
+
   stmt      : expr
             | assign
             | IDENT realprim
@@ -38,7 +38,7 @@ rule
             | if_stmt
             | while_stmt
             | defun
-  
+
   if_stmt   : IF stmt THEN EOL stmt_list else_stmt END
                 {
                   result = IfNode.new( @fname, val[0][0],
@@ -261,7 +261,7 @@ module Intp
 
   class Core
 
-    def initialize 
+    def initialize
       @ftab = {}
       @obj = Object.new
       @stack = []
@@ -318,7 +318,7 @@ module Intp
     def lvar?(name)
       @lvars.key? name
     end
-    
+
     def [](key)
       @lvars[key]
     end

@@ -866,14 +866,14 @@ Racc_debug_parser = false
 
 module_eval(<<'.,.,', 'csspool.y', 26)
   def _reduce_1(val, _values, result)
-     @handler.start_document 
+     @handler.start_document
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 28)
   def _reduce_2(val, _values, result)
-     @handler.end_document 
+     @handler.end_document
     result
   end
 .,.,
@@ -896,7 +896,7 @@ module_eval(<<'.,.,', 'csspool.y', 28)
 
 module_eval(<<'.,.,', 'csspool.y', 41)
   def _reduce_11(val, _values, result)
-     @handler.charset interpret_string(val[1]), {} 
+     @handler.charset interpret_string(val[1]), {}
     result
   end
 .,.,
@@ -904,7 +904,7 @@ module_eval(<<'.,.,', 'csspool.y', 41)
 module_eval(<<'.,.,', 'csspool.y', 45)
   def _reduce_12(val, _values, result)
             @handler.import_style val[2], val[1]
-      
+
     result
   end
 .,.,
@@ -912,7 +912,7 @@ module_eval(<<'.,.,', 'csspool.y', 45)
 module_eval(<<'.,.,', 'csspool.y', 48)
   def _reduce_13(val, _values, result)
             @handler.import_style [], val[1]
-      
+
     result
   end
 .,.,
@@ -921,14 +921,14 @@ module_eval(<<'.,.,', 'csspool.y', 48)
 
 module_eval(<<'.,.,', 'csspool.y', 53)
   def _reduce_15(val, _values, result)
-     result = Terms::String.new interpret_string val.first 
+     result = Terms::String.new interpret_string val.first
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 54)
   def _reduce_16(val, _values, result)
-     result = Terms::URI.new interpret_uri val.first 
+     result = Terms::URI.new interpret_uri val.first
     result
   end
 .,.,
@@ -936,7 +936,7 @@ module_eval(<<'.,.,', 'csspool.y', 54)
 module_eval(<<'.,.,', 'csspool.y', 58)
   def _reduce_17(val, _values, result)
             @handler.namespace val[1], val[2]
-      
+
     result
   end
 .,.,
@@ -944,7 +944,7 @@ module_eval(<<'.,.,', 'csspool.y', 58)
 module_eval(<<'.,.,', 'csspool.y', 61)
   def _reduce_18(val, _values, result)
             @handler.namespace nil, val[1]
-      
+
     result
   end
 .,.,
@@ -952,7 +952,7 @@ module_eval(<<'.,.,', 'csspool.y', 61)
 module_eval(<<'.,.,', 'csspool.y', 66)
   def _reduce_19(val, _values, result)
             result = val[0] << MediaType.new(val[2])
-      
+
     result
   end
 .,.,
@@ -960,112 +960,112 @@ module_eval(<<'.,.,', 'csspool.y', 66)
 module_eval(<<'.,.,', 'csspool.y', 69)
   def _reduce_20(val, _values, result)
             result = [MediaType.new(val[0])]
-      
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 73)
   def _reduce_21(val, _values, result)
-     result = MediaQueryList.new([ val[0] ]) 
+     result = MediaQueryList.new([ val[0] ])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 74)
   def _reduce_22(val, _values, result)
-     result = val[0] << val[2] 
+     result = val[0] << val[2]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 75)
   def _reduce_23(val, _values, result)
-     result = MediaQueryList.new 
+     result = MediaQueryList.new
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 78)
   def _reduce_24(val, _values, result)
-     result = MediaQuery.new(val[0], val[1], val[2]) 
+     result = MediaQuery.new(val[0], val[1], val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 79)
   def _reduce_25(val, _values, result)
-     result = MediaQuery.new(nil, val[0], val[1]) 
+     result = MediaQuery.new(nil, val[0], val[1])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 82)
   def _reduce_26(val, _values, result)
-     result = :only 
+     result = :only
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 83)
   def _reduce_27(val, _values, result)
-     result = :not 
+     result = :not
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 84)
   def _reduce_28(val, _values, result)
-     result = nil 
+     result = nil
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 87)
   def _reduce_29(val, _values, result)
-     result = MediaType.new(val[0]) 
+     result = MediaType.new(val[0])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 90)
   def _reduce_30(val, _values, result)
-     result = MediaType.new(val[2]) 
+     result = MediaType.new(val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 91)
   def _reduce_31(val, _values, result)
-     result = MediaFeature.new(val[2], val[6][0]) 
+     result = MediaFeature.new(val[2], val[6][0])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 94)
   def _reduce_32(val, _values, result)
-     result = val[0] 
+     result = val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 95)
   def _reduce_33(val, _values, result)
-     result = nil 
+     result = nil
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 98)
   def _reduce_34(val, _values, result)
-     result = val[0] << val[2] 
+     result = val[0] << val[2]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 99)
   def _reduce_35(val, _values, result)
-     result = [] 
+     result = []
     result
   end
 .,.,
@@ -1075,7 +1075,7 @@ module_eval(<<'.,.,', 'csspool.y', 103)
             unit = val.first.gsub(/[\s\d.]/, '')
         number = numeric(val.first)
         result = Terms::Resolution.new(number, unit)
-      
+
     result
   end
 .,.,
@@ -1108,7 +1108,7 @@ module_eval(<<'.,.,', 'csspool.y', 103)
 
 module_eval(<<'.,.,', 'csspool.y', 128)
   def _reduce_50(val, _values, result)
-     @handler.end_media val.first 
+     @handler.end_media val.first
     result
   end
 .,.,
@@ -1117,21 +1117,21 @@ module_eval(<<'.,.,', 'csspool.y', 132)
   def _reduce_51(val, _values, result)
             result = val[1]
         @handler.start_media result
-      
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 137)
   def _reduce_52(val, _values, result)
-     @handler.end_document_query(before_pos(val), after_pos(val)) 
+     @handler.end_document_query(before_pos(val), after_pos(val))
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 138)
   def _reduce_53(val, _values, result)
-     @handler.end_document_query(before_pos(val), after_pos(val)) 
+     @handler.end_document_query(before_pos(val), after_pos(val))
     result
   end
 .,.,
@@ -1139,7 +1139,7 @@ module_eval(<<'.,.,', 'csspool.y', 138)
 module_eval(<<'.,.,', 'csspool.y', 142)
   def _reduce_54(val, _values, result)
             @handler.start_document_query(val[1], after_pos(val))
-      
+
     result
   end
 .,.,
@@ -1147,7 +1147,7 @@ module_eval(<<'.,.,', 'csspool.y', 142)
 module_eval(<<'.,.,', 'csspool.y', 147)
   def _reduce_55(val, _values, result)
             @handler.node_start_pos = before_pos(val)
-      
+
     result
   end
 .,.,
@@ -1155,7 +1155,7 @@ module_eval(<<'.,.,', 'csspool.y', 147)
 module_eval(<<'.,.,', 'csspool.y', 152)
   def _reduce_56(val, _values, result)
             result = [val[0], val[2]].flatten
-      
+
     result
   end
 .,.,
@@ -1163,7 +1163,7 @@ module_eval(<<'.,.,', 'csspool.y', 152)
 module_eval(<<'.,.,', 'csspool.y', 155)
   def _reduce_57(val, _values, result)
             result = val
-      
+
     result
   end
 .,.,
@@ -1176,14 +1176,14 @@ module_eval(<<'.,.,', 'csspool.y', 155)
 
 module_eval(<<'.,.,', 'csspool.y', 164)
   def _reduce_61(val, _values, result)
-     @handler.end_supports 
+     @handler.end_supports
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 165)
   def _reduce_62(val, _values, result)
-     @handler.end_supports 
+     @handler.end_supports
     result
   end
 .,.,
@@ -1191,70 +1191,70 @@ module_eval(<<'.,.,', 'csspool.y', 165)
 module_eval(<<'.,.,', 'csspool.y', 169)
   def _reduce_63(val, _values, result)
             @handler.start_supports val[1]
-      
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 173)
   def _reduce_64(val, _values, result)
-     result = val.join('') 
+     result = val.join('')
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 174)
   def _reduce_65(val, _values, result)
-     result = val.join('') 
+     result = val.join('')
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 175)
   def _reduce_66(val, _values, result)
-     result = val.join('') 
+     result = val.join('')
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 178)
   def _reduce_67(val, _values, result)
-     result = val.join('') 
+     result = val.join('')
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 179)
   def _reduce_68(val, _values, result)
-     result = val.join('') 
+     result = val.join('')
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 180)
   def _reduce_69(val, _values, result)
-     result = val.join('') 
+     result = val.join('')
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 183)
   def _reduce_70(val, _values, result)
-     result = val.join('') 
+     result = val.join('')
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 184)
   def _reduce_71(val, _values, result)
-     result = val.join('') 
+     result = val.join('')
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 187)
   def _reduce_72(val, _values, result)
-     result = val.join('') 
+     result = val.join('')
     result
   end
 .,.,
@@ -1265,42 +1265,42 @@ module_eval(<<'.,.,', 'csspool.y', 187)
 
 module_eval(<<'.,.,', 'csspool.y', 194)
   def _reduce_75(val, _values, result)
-     result = val.join('') 
+     result = val.join('')
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 195)
   def _reduce_76(val, _values, result)
-     result = val.join('') 
+     result = val.join('')
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 198)
   def _reduce_77(val, _values, result)
-     result = val.join('') 
+     result = val.join('')
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 199)
   def _reduce_78(val, _values, result)
-     result = val.join('') 
+     result = val.join('')
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 202)
   def _reduce_79(val, _values, result)
-     result = val.join('') 
+     result = val.join('')
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 203)
   def _reduce_80(val, _values, result)
-     result = val.join('') 
+     result = val.join('')
     result
   end
 .,.,
@@ -1312,7 +1312,7 @@ module_eval(<<'.,.,', 'csspool.y', 203)
 module_eval(<<'.,.,', 'csspool.y', 211)
   def _reduce_83(val, _values, result)
             @handler.start_keyframes_rule val[1]
-      
+
     result
   end
 .,.,
@@ -1323,14 +1323,14 @@ module_eval(<<'.,.,', 'csspool.y', 211)
 
 module_eval(<<'.,.,', 'csspool.y', 219)
   def _reduce_86(val, _values, result)
-     @handler.end_keyframes_block 
+     @handler.end_keyframes_block
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 220)
   def _reduce_87(val, _values, result)
-     @handler.end_keyframes_block 
+     @handler.end_keyframes_block
     result
   end
 .,.,
@@ -1338,7 +1338,7 @@ module_eval(<<'.,.,', 'csspool.y', 220)
 module_eval(<<'.,.,', 'csspool.y', 224)
   def _reduce_88(val, _values, result)
             @handler.start_keyframes_block val[0]
-      
+
     result
   end
 .,.,
@@ -1348,7 +1348,7 @@ module_eval(<<'.,.,', 'csspool.y', 224)
 module_eval(<<'.,.,', 'csspool.y', 229)
   def _reduce_90(val, _values, result)
              result = val[0] + ', ' + val[2]
-      
+
     result
   end
 .,.,
@@ -1359,21 +1359,21 @@ module_eval(<<'.,.,', 'csspool.y', 229)
 
 module_eval(<<'.,.,', 'csspool.y', 235)
   def _reduce_93(val, _values, result)
-     result = val[0].strip 
+     result = val[0].strip
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 238)
   def _reduce_94(val, _values, result)
-     @handler.end_fontface_rule 
+     @handler.end_fontface_rule
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 239)
   def _reduce_95(val, _values, result)
-     @handler.end_fontface_rule 
+     @handler.end_fontface_rule
     result
   end
 .,.,
@@ -1381,7 +1381,7 @@ module_eval(<<'.,.,', 'csspool.y', 239)
 module_eval(<<'.,.,', 'csspool.y', 243)
   def _reduce_96(val, _values, result)
             @handler.start_fontface_rule
-      
+
     result
   end
 .,.,
@@ -1389,7 +1389,7 @@ module_eval(<<'.,.,', 'csspool.y', 243)
 module_eval(<<'.,.,', 'csspool.y', 248)
   def _reduce_97(val, _values, result)
             @handler.end_selector val.first
-      
+
     result
   end
 .,.,
@@ -1397,7 +1397,7 @@ module_eval(<<'.,.,', 'csspool.y', 248)
 module_eval(<<'.,.,', 'csspool.y', 251)
   def _reduce_98(val, _values, result)
             @handler.end_selector val.first
-      
+
     result
   end
 .,.,
@@ -1406,14 +1406,14 @@ module_eval(<<'.,.,', 'csspool.y', 256)
   def _reduce_99(val, _values, result)
             start = @handler.start_selector([])
         @handler.end_selector(start)
-      
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 261)
   def _reduce_100(val, _values, result)
-     result = val.last 
+     result = val.last
     result
   end
 .,.,
@@ -1421,7 +1421,7 @@ module_eval(<<'.,.,', 'csspool.y', 261)
 module_eval(<<'.,.,', 'csspool.y', 263)
   def _reduce_101(val, _values, result)
             @handler.start_selector val.first
-      
+
     result
   end
 .,.,
@@ -1430,7 +1430,7 @@ module_eval(<<'.,.,', 'csspool.y', 269)
   def _reduce_102(val, _values, result)
             sel = Selector.new(val.first, {})
         result = [sel].concat(val[2])
-      
+
     result
   end
 .,.,
@@ -1438,7 +1438,7 @@ module_eval(<<'.,.,', 'csspool.y', 269)
 module_eval(<<'.,.,', 'csspool.y', 274)
   def _reduce_103(val, _values, result)
             result = [Selector.new(val.first, {})]
-      
+
     result
   end
 .,.,
@@ -1448,7 +1448,7 @@ module_eval(<<'.,.,', 'csspool.y', 280)
             val.flatten!
         val[2].combinator = val.delete_at 1
         result = val
-      
+
     result
   end
 .,.,
@@ -1457,28 +1457,28 @@ module_eval(<<'.,.,', 'csspool.y', 280)
 
 module_eval(<<'.,.,', 'csspool.y', 287)
   def _reduce_106(val, _values, result)
-     result = :s 
+     result = :s
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 288)
   def _reduce_107(val, _values, result)
-     result = :> 
+     result = :>
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 289)
   def _reduce_108(val, _values, result)
-     result = :+ 
+     result = :+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 290)
   def _reduce_109(val, _values, result)
-     result = :~ 
+     result = :~
     result
   end
 .,.,
@@ -1488,14 +1488,14 @@ module_eval(<<'.,.,', 'csspool.y', 294)
             selector = val.first
         selector.additional_selectors = val.last
         result = [selector]
-      
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 298)
   def _reduce_111(val, _values, result)
-     result = val 
+     result = val
     result
   end
 .,.,
@@ -1505,14 +1505,14 @@ module_eval(<<'.,.,', 'csspool.y', 301)
             ss = Selectors::Simple.new nil, nil
         ss.additional_selectors = val.flatten
         result = [ss]
-      
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 307)
   def _reduce_113(val, _values, result)
-     result = [val[0], val[2]].flatten 
+     result = [val[0], val[2]].flatten
     result
   end
 .,.,
@@ -1521,119 +1521,119 @@ module_eval(<<'.,.,', 'csspool.y', 307)
 
 module_eval(<<'.,.,', 'csspool.y', 311)
   def _reduce_115(val, _values, result)
-     result = [interpret_identifier(val[0]), nil] 
+     result = [interpret_identifier(val[0]), nil]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 312)
   def _reduce_116(val, _values, result)
-     result = [interpret_identifier(val[2]), interpret_identifier(val[0])] 
+     result = [interpret_identifier(val[2]), interpret_identifier(val[0])]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 313)
   def _reduce_117(val, _values, result)
-     result = [interpret_identifier(val[1]), nil] 
+     result = [interpret_identifier(val[1]), nil]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 314)
   def _reduce_118(val, _values, result)
-     result = [interpret_identifier(val[2]), '*'] 
+     result = [interpret_identifier(val[2]), '*']
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 317)
   def _reduce_119(val, _values, result)
-     result = Selectors::Type.new val.first[0], nil, val.first[1] 
+     result = Selectors::Type.new val.first[0], nil, val.first[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 318)
   def _reduce_120(val, _values, result)
-     result = Selectors::Universal.new val.first 
+     result = Selectors::Universal.new val.first
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 319)
   def _reduce_121(val, _values, result)
-     result = Selectors::Universal.new val[1] 
+     result = Selectors::Universal.new val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 320)
   def _reduce_122(val, _values, result)
-     result = Selectors::Universal.new val[2], nil, val[0] 
+     result = Selectors::Universal.new val[2], nil, val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 321)
   def _reduce_123(val, _values, result)
-     result = Selectors::Universal.new val[2], nil, interpret_identifier(val[0]) 
+     result = Selectors::Universal.new val[2], nil, interpret_identifier(val[0])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 324)
   def _reduce_124(val, _values, result)
-     result = val 
+     result = val
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 325)
   def _reduce_125(val, _values, result)
-     result = val 
+     result = val
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 326)
   def _reduce_126(val, _values, result)
-     result = val 
+     result = val
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 327)
   def _reduce_127(val, _values, result)
-     result = val 
+     result = val
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 328)
   def _reduce_128(val, _values, result)
-     result = val.flatten 
+     result = val.flatten
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 329)
   def _reduce_129(val, _values, result)
-     result = val.flatten 
+     result = val.flatten
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 330)
   def _reduce_130(val, _values, result)
-     result = val.flatten 
+     result = val.flatten
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 331)
   def _reduce_131(val, _values, result)
-     result = val.flatten 
+     result = val.flatten
     result
   end
 .,.,
@@ -1641,7 +1641,7 @@ module_eval(<<'.,.,', 'csspool.y', 331)
 module_eval(<<'.,.,', 'csspool.y', 335)
   def _reduce_132(val, _values, result)
             result = Selectors::Id.new interpret_identifier val.first.sub(/^#/, '')
-      
+
     result
   end
 .,.,
@@ -1649,7 +1649,7 @@ module_eval(<<'.,.,', 'csspool.y', 335)
 module_eval(<<'.,.,', 'csspool.y', 339)
   def _reduce_133(val, _values, result)
             result = Selectors::Class.new interpret_identifier val.last
-      
+
     result
   end
 .,.,
@@ -1662,7 +1662,7 @@ module_eval(<<'.,.,', 'csspool.y', 344)
           Selectors::Attribute::EQUALS,
           val[1][1]
         )
-      
+
     result
   end
 .,.,
@@ -1675,7 +1675,7 @@ module_eval(<<'.,.,', 'csspool.y', 352)
           Selectors::Attribute::EQUALS,
           val[1][1]
         )
-      
+
     result
   end
 .,.,
@@ -1688,7 +1688,7 @@ module_eval(<<'.,.,', 'csspool.y', 360)
           Selectors::Attribute::INCLUDES,
           val[1][1]
         )
-      
+
     result
   end
 .,.,
@@ -1701,7 +1701,7 @@ module_eval(<<'.,.,', 'csspool.y', 368)
           Selectors::Attribute::INCLUDES,
           val[1][1]
         )
-      
+
     result
   end
 .,.,
@@ -1714,7 +1714,7 @@ module_eval(<<'.,.,', 'csspool.y', 376)
           Selectors::Attribute::DASHMATCH,
           val[1][1]
         )
-      
+
     result
   end
 .,.,
@@ -1727,7 +1727,7 @@ module_eval(<<'.,.,', 'csspool.y', 384)
           Selectors::Attribute::DASHMATCH,
           val[1][1]
         )
-      
+
     result
   end
 .,.,
@@ -1740,7 +1740,7 @@ module_eval(<<'.,.,', 'csspool.y', 392)
           Selectors::Attribute::PREFIXMATCH,
           val[1][1]
         )
-      
+
     result
   end
 .,.,
@@ -1753,7 +1753,7 @@ module_eval(<<'.,.,', 'csspool.y', 400)
           Selectors::Attribute::PREFIXMATCH,
           val[1][1]
         )
-      
+
     result
   end
 .,.,
@@ -1766,7 +1766,7 @@ module_eval(<<'.,.,', 'csspool.y', 408)
           Selectors::Attribute::SUFFIXMATCH,
           val[1][1]
         )
-      
+
     result
   end
 .,.,
@@ -1779,7 +1779,7 @@ module_eval(<<'.,.,', 'csspool.y', 416)
           Selectors::Attribute::SUFFIXMATCH,
           val[1][1]
         )
-      
+
     result
   end
 .,.,
@@ -1792,7 +1792,7 @@ module_eval(<<'.,.,', 'csspool.y', 424)
           Selectors::Attribute::SUBSTRINGMATCH,
           val[1][1]
         )
-      
+
     result
   end
 .,.,
@@ -1805,7 +1805,7 @@ module_eval(<<'.,.,', 'csspool.y', 432)
           Selectors::Attribute::SUBSTRINGMATCH,
           val[1][1]
         )
-      
+
     result
   end
 .,.,
@@ -1818,7 +1818,7 @@ module_eval(<<'.,.,', 'csspool.y', 440)
           Selectors::Attribute::SET,
           val[1][1]
         )
-      
+
     result
   end
 .,.,
@@ -1826,7 +1826,7 @@ module_eval(<<'.,.,', 'csspool.y', 440)
 module_eval(<<'.,.,', 'csspool.y', 450)
   def _reduce_147(val, _values, result)
             result = Selectors::pseudo interpret_identifier(val[1])
-      
+
     result
   end
 .,.,
@@ -1836,7 +1836,7 @@ module_eval(<<'.,.,', 'csspool.y', 453)
             result = Selectors::PseudoElement.new(
           interpret_identifier(val[2])
         )
-      
+
     result
   end
 .,.,
@@ -1847,7 +1847,7 @@ module_eval(<<'.,.,', 'csspool.y', 458)
           interpret_identifier(val[1].sub(/\($/, '')),
           ''
         )
-      
+
     result
   end
 .,.,
@@ -1858,7 +1858,7 @@ module_eval(<<'.,.,', 'csspool.y', 464)
           interpret_identifier(val[1].sub(/\($/, '')),
           interpret_identifier(val[2])
         )
-      
+
     result
   end
 .,.,
@@ -1869,7 +1869,7 @@ module_eval(<<'.,.,', 'csspool.y', 470)
           'not',
           val[2].first.to_s
         )
-      
+
     result
   end
 .,.,
@@ -1880,7 +1880,7 @@ module_eval(<<'.,.,', 'csspool.y', 476)
           interpret_identifier(val[1].sub(/\(.*/, '')),
           interpret_identifier(val[1].sub(/.*\(/, '').sub(/\).*/, ''))
         )
-      
+
     result
   end
 .,.,
@@ -1891,7 +1891,7 @@ module_eval(<<'.,.,', 'csspool.y', 482)
           val[1].split('(').first.strip,
           val[2].join(', ')
         )
-      
+
     result
   end
 .,.,
@@ -1901,7 +1901,7 @@ module_eval(<<'.,.,', 'csspool.y', 488)
             result = Selectors::PseudoElement.new(
           interpret_identifier(val[1].sub(/\($/, ''))
         )
-      
+
     result
   end
 .,.,
@@ -1911,7 +1911,7 @@ module_eval(<<'.,.,', 'csspool.y', 493)
             result = Selectors::PseudoElement.new(
           interpret_identifier(val[2].sub(/\($/, ''))
         )
-      
+
     result
   end
 .,.,
@@ -1940,70 +1940,70 @@ module_eval(<<'.,.,', 'csspool.y', 493)
 
 module_eval(<<'.,.,', 'csspool.y', 519)
   def _reduce_167(val, _values, result)
-     @handler.property val.first 
+     @handler.property val.first
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 523)
   def _reduce_168(val, _values, result)
-     result = Declaration.new(val.first, val[2], val[3]) 
+     result = Declaration.new(val.first, val[2], val[3])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 525)
   def _reduce_169(val, _values, result)
-     result = Declaration.new(val.first, val[3], val[4]) 
+     result = Declaration.new(val.first, val[3], val[4])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 527)
   def _reduce_170(val, _values, result)
-     result = Declaration.new(val.first, val[3], val[4]) 
+     result = Declaration.new(val.first, val[3], val[4])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 529)
   def _reduce_171(val, _values, result)
-     result = Declaration.new(val.first, val[4], val[5]) 
+     result = Declaration.new(val.first, val[4], val[5])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 532)
   def _reduce_172(val, _values, result)
-     result = true 
+     result = true
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 533)
   def _reduce_173(val, _values, result)
-     result = false 
+     result = false
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 536)
   def _reduce_174(val, _values, result)
-     result = interpret_identifier val[0] 
+     result = interpret_identifier val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 537)
   def _reduce_175(val, _values, result)
-     result = interpret_identifier val.join 
+     result = interpret_identifier val.join
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 538)
   def _reduce_176(val, _values, result)
-     result = interpret_identifier val[0] 
+     result = interpret_identifier val[0]
     result
   end
 .,.,
@@ -2018,21 +2018,21 @@ module_eval(<<'.,.,', 'csspool.y', 547)
   def _reduce_180(val, _values, result)
             result = [val.first, val.last].flatten
         val.last.first.operator = val[1]
-      
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 550)
   def _reduce_181(val, _values, result)
-     result = val.flatten 
+     result = val.flatten
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 551)
   def _reduce_182(val, _values, result)
-     result = val 
+     result = val
     result
   end
 .,.,
@@ -2061,7 +2061,7 @@ module_eval(<<'.,.,', 'csspool.y', 551)
 
 module_eval(<<'.,.,', 'csspool.y', 567)
   def _reduce_194(val, _values, result)
-     result = val.first 
+     result = val.first
     result
   end
 .,.,
@@ -2074,7 +2074,7 @@ module_eval(<<'.,.,', 'csspool.y', 569)
         else
           result = Terms::Function.new name, val[1]
         end
-      
+
     result
   end
 .,.,
@@ -2083,14 +2083,14 @@ module_eval(<<'.,.,', 'csspool.y', 577)
   def _reduce_196(val, _values, result)
             name = interpret_identifier val.first.sub(/\($/, '')
         result = Terms::Function.new name
-      
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 582)
   def _reduce_197(val, _values, result)
-     result = val.first 
+     result = val.first
     result
   end
 .,.,
@@ -2100,7 +2100,7 @@ module_eval(<<'.,.,', 'csspool.y', 584)
             parts = val.first.split('(')
         name = interpret_identifier parts.first
         result = Terms::Function.new(name, [Terms::String.new(interpret_string_no_quote(parts.last))])
-      
+
     result
   end
 .,.,
@@ -2112,7 +2112,7 @@ module_eval(<<'.,.,', 'csspool.y', 584)
 module_eval(<<'.,.,', 'csspool.y', 595)
   def _reduce_201(val, _values, result)
            result = Terms::Math.new(val.first.split('(').first, val[1])
-      
+
     result
   end
 .,.,
@@ -2121,14 +2121,14 @@ module_eval(<<'.,.,', 'csspool.y', 595)
 
 module_eval(<<'.,.,', 'csspool.y', 601)
   def _reduce_203(val, _values, result)
-     val.insert(1, ' '); result = val.join('') 
+     val.insert(1, ' '); result = val.join('')
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 602)
   def _reduce_204(val, _values, result)
-     val.insert(1, ' '); result = val.join('') 
+     val.insert(1, ' '); result = val.join('')
     result
   end
 .,.,
@@ -2137,77 +2137,77 @@ module_eval(<<'.,.,', 'csspool.y', 602)
 
 module_eval(<<'.,.,', 'csspool.y', 606)
   def _reduce_206(val, _values, result)
-     result = val.join('') 
+     result = val.join('')
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 607)
   def _reduce_207(val, _values, result)
-     result = val.join('') 
+     result = val.join('')
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 610)
   def _reduce_208(val, _values, result)
-     result = val.join('') 
+     result = val.join('')
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 611)
   def _reduce_209(val, _values, result)
-     result = val.join('') 
+     result = val.join('')
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 612)
   def _reduce_210(val, _values, result)
-     result = val.join('') 
+     result = val.join('')
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 615)
   def _reduce_211(val, _values, result)
-     result = val.first 
+     result = val.first
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 616)
   def _reduce_212(val, _values, result)
-     result = Terms::Hash.new val.first.sub(/^#/, '') 
+     result = Terms::Hash.new val.first.sub(/^#/, '')
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 619)
   def _reduce_213(val, _values, result)
-     result = val.first 
+     result = val.first
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 620)
   def _reduce_214(val, _values, result)
-     result = Terms::URI.new interpret_uri val.first 
+     result = Terms::URI.new interpret_uri val.first
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 623)
   def _reduce_215(val, _values, result)
-     result = val.first 
+     result = val.first
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 624)
   def _reduce_216(val, _values, result)
-     result = Terms::String.new interpret_string val.first 
+     result = Terms::String.new interpret_string val.first
     result
   end
 .,.,
@@ -2216,7 +2216,7 @@ module_eval(<<'.,.,', 'csspool.y', 628)
   def _reduce_217(val, _values, result)
             result = val[1]
         val[1].unary_operator = val.first
-      
+
     result
   end
 .,.,
@@ -2224,7 +2224,7 @@ module_eval(<<'.,.,', 'csspool.y', 628)
 module_eval(<<'.,.,', 'csspool.y', 632)
   def _reduce_218(val, _values, result)
             result = Terms::Number.new numeric val.first
-      
+
     result
   end
 .,.,
@@ -2232,7 +2232,7 @@ module_eval(<<'.,.,', 'csspool.y', 632)
 module_eval(<<'.,.,', 'csspool.y', 635)
   def _reduce_219(val, _values, result)
             result = Terms::Number.new numeric(val.first), nil, '%'
-      
+
     result
   end
 .,.,
@@ -2241,7 +2241,7 @@ module_eval(<<'.,.,', 'csspool.y', 638)
   def _reduce_220(val, _values, result)
             unit    = val.first.gsub(/[\s\d.]/, '')
         result = Terms::Number.new numeric(val.first), nil, unit
-      
+
     result
   end
 .,.,
@@ -2250,7 +2250,7 @@ module_eval(<<'.,.,', 'csspool.y', 642)
   def _reduce_221(val, _values, result)
             unit    = val.first.gsub(/[\s\d.]/, '')
         result = Terms::Number.new numeric(val.first), nil, unit
-      
+
     result
   end
 .,.,
@@ -2259,7 +2259,7 @@ module_eval(<<'.,.,', 'csspool.y', 646)
   def _reduce_222(val, _values, result)
             unit    = val.first.gsub(/[\s\d.]/, '')
         result = Terms::Number.new numeric(val.first), nil, unit
-      
+
     result
   end
 .,.,
@@ -2268,7 +2268,7 @@ module_eval(<<'.,.,', 'csspool.y', 650)
   def _reduce_223(val, _values, result)
             unit    = val.first.gsub(/[\s\d.]/, '')
         result = Terms::Number.new numeric(val.first), nil, unit
-      
+
     result
   end
 .,.,
@@ -2276,35 +2276,35 @@ module_eval(<<'.,.,', 'csspool.y', 650)
 module_eval(<<'.,.,', 'csspool.y', 656)
   def _reduce_224(val, _values, result)
             result = Terms::Ratio.new(val[0], val[1])
-      
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 660)
   def _reduce_225(val, _values, result)
-     result = :minus 
+     result = :minus
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 661)
   def _reduce_226(val, _values, result)
-     result = :plus 
+     result = :plus
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 664)
   def _reduce_227(val, _values, result)
-     result = val.first 
+     result = val.first
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'csspool.y', 665)
   def _reduce_228(val, _values, result)
-     result = Terms::Ident.new interpret_identifier val.first 
+     result = Terms::Ident.new interpret_identifier val.first
     result
   end
 .,.,

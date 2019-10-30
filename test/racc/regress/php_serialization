@@ -181,84 +181,84 @@ Racc_debug_parser = false
 
 module_eval(<<'.,.,', 'php_serialization.y', 6)
   def _reduce_1(val, _values, result)
-     @object = val[0] 
+     @object = val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'php_serialization.y', 7)
   def _reduce_2(val, _values, result)
-     @object = val[0] 
+     @object = val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'php_serialization.y', 8)
   def _reduce_3(val, _values, result)
-     @object = val[0] 
+     @object = val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'php_serialization.y', 9)
   def _reduce_4(val, _values, result)
-     @object = val[0] 
+     @object = val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'php_serialization.y', 10)
   def _reduce_5(val, _values, result)
-     @object = val[0] 
+     @object = val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'php_serialization.y', 11)
   def _reduce_6(val, _values, result)
-     @object = val[0] 
+     @object = val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'php_serialization.y', 12)
   def _reduce_7(val, _values, result)
-     @object = val[0] 
+     @object = val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'php_serialization.y', 15)
   def _reduce_8(val, _values, result)
-     result = nil 
+     result = nil
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'php_serialization.y', 18)
   def _reduce_9(val, _values, result)
-     result = Integer(val[2]) > 0 
+     result = Integer(val[2]) > 0
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'php_serialization.y', 21)
   def _reduce_10(val, _values, result)
-     result = Integer(val[2]) 
+     result = Integer(val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'php_serialization.y', 24)
   def _reduce_11(val, _values, result)
-     result = Float(val[2]) 
+     result = Float(val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'php_serialization.y', 27)
   def _reduce_12(val, _values, result)
-     result = val[4] 
+     result = val[4]
     result
   end
 .,.,
@@ -286,28 +286,28 @@ module_eval(<<'.,.,', 'php_serialization.y', 32)
                         result = Struct.new(klass_name, *attr_names).new(*values)
                         result.instance_variable_set("@_php_class", klass_name)
                       end
-                    
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'php_serialization.y', 56)
   def _reduce_14(val, _values, result)
-     result = val[0] << val[1] 
+     result = val[0] << val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'php_serialization.y', 57)
   def _reduce_15(val, _values, result)
-     result = [] 
+     result = []
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'php_serialization.y', 60)
   def _reduce_16(val, _values, result)
-     result = val 
+     result = val
     result
   end
 .,.,
@@ -323,7 +323,7 @@ module_eval(<<'.,.,', 'php_serialization.y', 65)
                       else
                         result = Hash[val[5]]
                       end
-                    
+
     result
   end
 .,.,

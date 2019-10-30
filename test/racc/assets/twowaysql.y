@@ -196,7 +196,7 @@ def parse( io )
 
   # @q.push [ false, nil ]
   @q.push [ false, [@s.pos, nil] ]
-    
+
   ## call racc's private parse method
   do_parse
 end

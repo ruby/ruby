@@ -2491,14 +2491,14 @@ module_eval(<<'.,.,', 'cast.y', 269)
 
 module_eval(<<'.,.,', 'cast.y', 273)
   def _reduce_135(val, _values, result)
-    result = add_type_quals(Pointer.new_at(val[0].pos), val[1][1])                                         
+    result = add_type_quals(Pointer.new_at(val[0].pos), val[1][1])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cast.y', 274)
   def _reduce_136(val, _values, result)
-    result =                Pointer.new_at(val[0].pos)                                                     
+    result =                Pointer.new_at(val[0].pos)
     result
   end
 .,.,
@@ -2604,7 +2604,7 @@ module_eval(<<'.,.,', 'cast.y', 307)
 
 module_eval(<<'.,.,', 'cast.y', 308)
   def _reduce_151(val, _values, result)
-    result             = make_direct_type(val[0][0], val[0][1])                 
+    result             = make_direct_type(val[0][0], val[0][1])
     result
   end
 .,.,
@@ -3356,7 +3356,7 @@ module_eval(<<'.,.,', 'cast.y', 507)
         result = Comma.new_at(val[0].pos, NodeArray[val[0], val[2]])
       end
     end
-  
+
     result
   end
 .,.,
@@ -3412,7 +3412,7 @@ module_eval(<<'.,.,', 'cast.y', 559)
 
 module_eval(<<'.,.,', 'cast.y', 560)
   def _reduce_264(val, _values, result)
-     result = val[0].val; result.pos = val[0].pos 
+     result = val[0].val; result.pos = val[0].pos
     result
   end
 .,.,
