@@ -208,7 +208,9 @@ def sync_default_gems(gem)
     mkdir_p("ext/racc/cparse")
     cp_r(Dir.glob("#{upstream}/ext/racc/cparse/*"), "ext/racc/cparse")
     cp_r("#{upstream}/test", "test/racc")
-    `git checkout ext/racc/cparse/README`
+    rm_rf("test/racc/lib")
+    rm_rf("lib/racc/cparse-jruby.jar")
+    `git checkout ext/racc/cparse/README ext/racc/cparse/depend`
   when "rexml", "rss", "matrix", "irb", "csv", "logger", "ostruct", "webrick", "fileutils", "forwardable", "prime", "tracer", "ipaddr", "mutex_m"
     sync_lib gem
   else
