@@ -87,7 +87,7 @@ module Racc
 
     def assert_output_unchanged(asset)
       # racc generates the difference results in GitHub Actions
-      omit if ENV['GITHUB_ACTION']
+      omit if RUBY_PLATFORM =~ /linux/
 
       file = File.basename(asset, '.y')
 
