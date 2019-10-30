@@ -45,8 +45,8 @@ require "irb/version"
 #     irb(main):006:1> end
 #     #=> nil
 #
-# The Readline extension module can be used with irb. Use of Readline is
-# default if it's installed.
+# The singleline editor module or multiline editor module can be used with irb.
+# Use of multiline editor is default if it's installed.
 #
 # == Command line options
 #
@@ -61,10 +61,10 @@ require "irb/version"
 #     -W[level=2]       Same as `ruby -W`
 #     --inspect         Use `inspect' for output (default except for bc mode)
 #     --noinspect       Don't use inspect for output
-#     --reidline        Use Reidline extension module
-#     --noreidline      Don't use Reidline extension module
-#     --readline        Use Readline extension module
-#     --noreadline      Don't use Readline extension module
+#     --multiline       Use multiline editor module
+#     --nomultiline     Don't use multiline editor module
+#     --singleline      Use singleline editor module
+#     --nosingleline    Don't use singleline editor module
 #     --colorize        Use colorization
 #     --nocolorize      Don't use colorization
 #     --prompt prompt-mode
@@ -72,7 +72,7 @@ require "irb/version"
 #                       Switch prompt mode. Pre-defined prompt modes are
 #                       `default', `simple', `xmp' and `inf-ruby'
 #     --inf-ruby-mode   Use prompt appropriate for inf-ruby-mode on emacs.
-#                       Suppresses --reidline and --readline.
+#                       Suppresses --multiline and --singleline.
 #     --simple-prompt   Simple prompt mode
 #     --noprompt        No prompt mode
 #     --tracer          Display trace for each execution of commands.
@@ -100,8 +100,8 @@ require "irb/version"
 #     IRB.conf[:IRB_RC] = nil
 #     IRB.conf[:BACK_TRACE_LIMIT]=16
 #     IRB.conf[:USE_LOADER] = false
-#     IRB.conf[:USE_REIDLINE] = nil
-#     IRB.conf[:USE_READLINE] = nil
+#     IRB.conf[:USE_MULTILINE] = nil
+#     IRB.conf[:USE_SINGLELINE] = nil
 #     IRB.conf[:USE_COLORIZE] = true
 #     IRB.conf[:USE_TRACER] = false
 #     IRB.conf[:IGNORE_SIGINT] = true

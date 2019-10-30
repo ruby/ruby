@@ -39,8 +39,20 @@ module IRB
       @rc = IRB.conf[:RC]
       @load_modules = IRB.conf[:LOAD_MODULES]
 
-      @use_readline = IRB.conf[:USE_READLINE]
-      @use_reidline = IRB.conf[:USE_REIDLINE]
+      if IRB.conf.has_key?(:USE_SINGLELINE)
+        @use_singleline = IRB.conf[:USE_SINGLELINE]
+      elsif IRB.conf.has_key?(:USE_READLINE) # backward compatibility
+        @use_singleline = IRB.conf[:USE_READLINE]
+      else
+        @use_singleline = nil
+      end
+      if IRB.conf.has_key?(:USE_MULTILINE)
+        @use_multiline = IRB.conf[:USE_MULTILINE]
+      elsif IRB.conf.has_key?(:USE_REIDLINE) # backward compatibility
+        @use_multiline = IRB.conf[:USE_REIDLINE]
+      else
+        @use_multiline = nil
+      end
       @use_colorize = IRB.conf[:USE_COLORIZE]
       @verbose = IRB.conf[:VERBOSE]
       @io = nil
@@ -67,9 +79,9 @@ module IRB
       case input_method
       when nil
         @io = nil
-        case use_reidline?
+        case use_multiline?
         when nil
-          if STDIN.tty? && IRB.conf[:PROMPT_MODE] != :INF_RUBY && !use_readline?
+          if STDIN.tty? && IRB.conf[:PROMPT_MODE] != :INF_RUBY && !use_singleline?
             @io = ReidlineInputMethod.new
           else
             @io = nil
@@ -80,7 +92,7 @@ module IRB
           @io = ReidlineInputMethod.new
         end
         unless @io
-          case use_readline?
+          case use_singleline?
           when nil
             if (defined?(ReadlineInputMethod) && STDIN.tty? &&
                 IRB.conf[:PROMPT_MODE] != :INF_RUBY)
@@ -155,18 +167,14 @@ module IRB
     # +input_method+ passed to Context.new
     attr_accessor :irb_path
 
-    # Whether +Reidline+ is enabled or not.
+    # Whether multiline editor mode is enabled or not.
     #
-    # A copy of the default <code>IRB.conf[:USE_REIDLINE]</code>
+    # A copy of the default <code>IRB.conf[:USE_MULTILINE]</code>
+    attr_reader :use_multiline
+    # Whether singleline editor mode is enabled or not.
     #
-    # See #use_reidline= for more information.
-    attr_reader :use_reidline
-    # Whether +Readline+ is enabled or not.
-    #
-    # A copy of the default <code>IRB.conf[:USE_READLINE]</code>
-    #
-    # See #use_readline= for more information.
-    attr_reader :use_readline
+    # A copy of the default <code>IRB.conf[:USE_SINGLELINE]</code>
+    attr_reader :use_singleline
     # Whether colorization is enabled or not.
     #
     # A copy of the default <code>IRB.conf[:USE_COLORIZE]</code>
@@ -258,10 +266,18 @@ module IRB
     # See IRB@Command+line+options for more command line options.
     attr_accessor :back_trace_limit
 
-    # Alias for #use_reidline
-    alias use_reidline? use_reidline
-    # Alias for #use_readline
-    alias use_readline? use_readline
+    # Alias for #use_multiline
+    alias use_multiline? use_multiline
+    # Alias for #use_singleline
+    alias use_singleline? use_singleline
+    # backward compatibility
+    alias use_reidline use_multiline
+    # backward compatibility
+    alias use_reidline? use_multiline
+    # backward compatibility
+    alias use_readline use_singleline
+    # backward compatibility
+    alias use_readline? use_singleline
     # Alias for #use_colorize
     alias use_colorize? use_colorize
     # Alias for #rc
@@ -390,17 +406,6 @@ module IRB
       end
       print "Switch to#{unless @inspect_mode; ' non';end} inspect mode.\n" if verbose?
       @inspect_mode
-    end
-
-    # Obsolete method.
-    #
-    # Can be set using the +--noreadline+ and +--readline+ command line
-    # options.
-    #
-    # See IRB@Command+line+options for more command line options.
-    def use_readline=(opt)
-      print "This method is obsolete."
-      print "Do nothing."
     end
 
     def evaluate(line, line_no, exception: nil) # :nodoc:

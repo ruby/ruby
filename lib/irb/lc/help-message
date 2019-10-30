@@ -22,17 +22,19 @@ Usage:  irb.rb [options] [programfile] [arguments]
                     when new workspace was created
   --echo            Show result(default)
   --noecho          Don't show result
-  --inspect	    Use `inspect' for output
-  --noinspect	    Don't use inspect for output
-  --readline        Use Readline extension module
-  --noreadline	    Don't use Readline extension module
+  --inspect         Use `inspect' for output
+  --noinspect       Don't use inspect for output
+  --multiline       Use multiline editor module
+  --nomultiline     Don't use multiline editor module
+  --singleline      Use singleline editor module
+  --nosingleline    Don't use singleline editor module
   --colorize        Use colorization
   --nocolorize      Don't use colorization
   --prompt prompt-mode/--prompt-mode prompt-mode
 		    Switch prompt mode. Pre-defined prompt modes are
 		    `default', `simple', `xmp' and `inf-ruby'
   --inf-ruby-mode   Use prompt appropriate for inf-ruby-mode on emacs.
-		    Suppresses --readline.
+                    Suppresses --multiline and --singleline.
   --sample-book-mode/--simple-prompt
                     Simple prompt mode
   --noprompt        No prompt mode

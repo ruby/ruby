@@ -43,7 +43,7 @@ module IRB # :nodoc:
     @CONF[:LOAD_MODULES] = []
     @CONF[:IRB_RC] = nil
 
-    @CONF[:USE_READLINE] = false unless defined?(ReadlineInputMethod)
+    @CONF[:USE_SINGLELINE] = false unless defined?(ReadlineInputMethod)
     @CONF[:USE_COLORIZE] = true
     @CONF[:INSPECT_MODE] = true
     @CONF[:USE_TRACER] = false
@@ -161,14 +161,14 @@ module IRB # :nodoc:
         end
       when "--noinspect"
         @CONF[:INSPECT_MODE] = false
-      when "--readline"
-        @CONF[:USE_READLINE] = true
-      when "--noreadline"
-        @CONF[:USE_READLINE] = false
-      when "--reidline"
-        @CONF[:USE_REIDLINE] = true
-      when "--noreidline"
-        @CONF[:USE_REIDLINE] = false
+      when "--singleline", "--readline"
+        @CONF[:USE_SINGLELINE] = true
+      when "--nosingleline", "--noreadline"
+        @CONF[:USE_SINGLELINE] = false
+      when "--multiline", "--reidline"
+        @CONF[:USE_MULTILINE] = true
+      when "--nomultiline", "--noreidline"
+        @CONF[:USE_MULTILINE] = false
       when "--echo"
         @CONF[:ECHO] = true
       when "--noecho"

@@ -34,7 +34,7 @@ module TestIRB
 
     def setup
       IRB.init_config(nil)
-      IRB.conf[:USE_READLINE] = false
+      IRB.conf[:USE_SINGLELINE] = false
       IRB.conf[:VERBOSE] = false
       workspace = IRB::WorkSpace.new(Object.new)
       @context = IRB::Context.new(nil, workspace, TestInputMethod.new)
