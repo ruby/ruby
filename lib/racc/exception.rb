@@ -1,5 +1,5 @@
 #
-# $Id: d5858363d1d4a4b5a2ca8d193b5153a49312188e $
+# $Id: ebb9798ad0b211e031670a12a1ab154678c1c8f3 $
 #
 # Copyright (c) 1999-2006 Minero Aoki
 #
