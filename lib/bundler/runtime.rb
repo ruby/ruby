@@ -41,12 +41,17 @@ module Bundler
       groups.map!(&:to_sym)
       groups = [:default] if groups.empty?
 
-      @definition.dependencies.each do |dep|
-        # Skip the dependency if it is not in any of the requested groups, or
-        # not for the current platform, or doesn't match the gem constraints.
-        next unless (dep.groups & groups).any? && dep.should_include?
+      dependencies = @definition.dependencies.select do |dep|
+        # Select the dependency if it is in any of the requested groups, and
+        # for the current platform, and matches the gem constraints.
+        (dep.groups & groups).any? && dep.should_include?
+      end
 
+      Plugin.hook(Plugin::Events::GEM_BEFORE_REQUIRE_ALL, dependencies)
+
+      dependencies.each do |dep|
         required_file = nil
+        Plugin.hook(Plugin::Events::GEM_BEFORE_REQUIRE, dep)
 
         begin
           # Loop through all the specified autorequires for the
@@ -76,7 +81,11 @@ module Bundler
             end
           end
         end
+
+        Plugin.hook(Plugin::Events::GEM_AFTER_REQUIRE, dep)
       end
+
+      Plugin.hook(Plugin::Events::GEM_AFTER_REQUIRE_ALL, dependencies)
     end
 
     def self.definition_method(meth)
