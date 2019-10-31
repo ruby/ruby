@@ -388,7 +388,9 @@ String::
     * Update Unicode version to 12.1.0, adding support for
       U+32FF SQUARE ERA NAME REIWA.  [Feature #15195]
 
-  Modified method::
+    * Update Unicode Emoji version to 12.1 [Feature #16272]
+
+  Modified methods::
 
     * String#match(nil) and String#match?(nil) now raise TypeError.  [Feature #13083]
 
