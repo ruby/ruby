@@ -202,7 +202,7 @@ describe "StringIO#reopen when passed [Object]" do
   end
 
   # NOTE: WEIRD!
-  ruby_version_is ""..."2.7"
+  ruby_version_is ""..."2.7" do
     it "taints self when the passed Object was tainted" do
       @io.reopen(StringIO.new("reopened").taint)
       @io.tainted?.should be_true
@@ -272,7 +272,7 @@ describe "StringIO#reopen" do
     str.should == ''
   end
 
-  ruby_version_is ""..."2.7"
+  ruby_version_is ""..."2.7" do
     it "taints self if the provided StringIO argument is tainted" do
       new_io = StringIO.new("tainted")
       new_io.taint
