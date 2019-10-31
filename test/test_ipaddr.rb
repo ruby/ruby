@@ -350,6 +350,8 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal(true, net1.include?(IPAddr.new("192.168.2.0")))
     assert_equal(true, net1.include?(IPAddr.new("192.168.2.255")))
     assert_equal(false, net1.include?(IPAddr.new("192.168.3.0")))
+    assert_equal(true, net1.include?(IPAddr.new("192.168.2.0/28")))
+    assert_equal(false, net1.include?(IPAddr.new("192.168.2.0/16")))
     # test with integer parameter
     int = (192 << 24) + (168 << 16) + (2 << 8) + 13
 

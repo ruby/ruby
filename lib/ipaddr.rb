@@ -167,34 +167,15 @@ class IPAddr
   #   net1 = IPAddr.new("192.168.2.0/24")
   #   net2 = IPAddr.new("192.168.2.100")
   #   net3 = IPAddr.new("192.168.3.0")
+  #   net4 = IPAddr.new("192.168.2.0/16")
   #   p net1.include?(net2)     #=> true
   #   p net1.include?(net3)     #=> false
+  #   p net1.include?(net4)     #=> false
+  #   p net4.include?(net1)     #=> true
   def include?(other)
-    other = coerce_other(other)
-    if ipv4_mapped?
-      if (@mask_addr >> 32) != 0xffffffffffffffffffffffff
-        return false
-      end
-      mask_addr = (@mask_addr & IN4MASK)
-      addr = (@addr & IN4MASK)
-      family = Socket::AF_INET
-    else
-      mask_addr = @mask_addr
-      addr = @addr
-      family = @family
-    end
-    if other.ipv4_mapped?
-      other_addr = (other.to_i & IN4MASK)
-      other_family = Socket::AF_INET
-    else
-      other_addr = other.to_i
-      other_family = other.family
-    end
-
-    if family != other_family
-      return false
-    end
-    return ((addr & mask_addr) == (other_addr & mask_addr))
+    range = to_range
+    other = coerce_other(other).to_range
+    range.begin <= other.begin && range.end >= other.end
   end
   alias === include?
 
