@@ -628,7 +628,6 @@ zstream_expand_buffer(struct zstream *z)
 	long buf_filled = ZSTREAM_BUF_FILLED(z);
 	if (buf_filled >= ZSTREAM_AVAIL_OUT_STEP_MAX) {
 	    int state = 0;
-	    VALUE self = (VALUE)z->stream.opaque;
 
 	    rb_obj_reveal(z->buf, rb_cString);
 
@@ -738,7 +737,7 @@ zstream_append_buffer(struct zstream *z, const Bytef *src, long len)
 static VALUE
 zstream_detach_buffer(struct zstream *z)
 {
-    VALUE dst, self = (VALUE)z->stream.opaque;
+    VALUE dst;
 
     if (!ZSTREAM_IS_FINISHED(z) && !ZSTREAM_IS_GZFILE(z) &&
 	    rb_block_given_p()) {
