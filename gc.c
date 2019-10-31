@@ -8553,14 +8553,14 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
         heap_add_pages(objspace, heap_eden, heap_allocated_pages);
     }
 
-    VALUE moved_list_head;
+    VALUE moved_list;
     VALUE disabled = rb_gc_disable();
 
     if (use_toward_empty) {
-        moved_list_head = gc_compact_heap(objspace, compare_free_slots);
+        moved_list = gc_compact_heap(objspace, compare_free_slots);
     }
     else {
-        moved_list_head = gc_compact_heap(objspace, compare_pinned);
+        moved_list = gc_compact_heap(objspace, compare_pinned);
     }
     heap_eden->freelist = NULL;
 
@@ -8573,45 +8573,31 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
 
     rb_clear_method_cache_by_class(rb_cObject);
     rb_clear_constant_cache();
+    heap_eden->free_pages = NULL;
+    heap_eden->using_page = NULL;
 
-    /* Clear RMOVED manual rather than rely on GC */
-    while (moved_list_head) {
+    while (moved_list) {
         VALUE next_moved;
         struct heap_page *page;
 
-        page = GET_HEAP_PAGE(moved_list_head);
-        next_moved = RMOVED(moved_list_head)->next;
+        page = GET_HEAP_PAGE(moved_list);
+        next_moved = RMOVED(moved_list)->next;
 
-        RMOVED(moved_list_head)->flags = 0;
-        RMOVED(moved_list_head)->destination = 0;
-        RMOVED(moved_list_head)->next = 0;
+        RMOVED(moved_list)->flags = 0;
+        RMOVED(moved_list)->destination = 0;
+        RMOVED(moved_list)->next = 0;
         page->free_slots++;
-        heap_page_add_freeobj(objspace, page, moved_list_head);
+        heap_page_add_freeobj(objspace, page, moved_list);
         if (page->free_slots == page->total_slots && heap_pages_freeable_pages > 0) {
             heap_pages_freeable_pages--;
 	    heap_unlink_page(objspace, heap_eden, page);
 	    heap_add_page(objspace, heap_tomb, page);
-        }
-        objspace->profile.total_freed_objects++;
-        moved_list_head = next_moved;
-    }
-
-    heap_eden->free_pages = NULL;
-
-    /* Rebuild free_pages linked list */
-    size_t i;
-    for (i = 0; i < heap_allocated_pages; ++i) {
-        struct heap_page *page = heap_pages_sorted[i];
-        if (page->free_slots > 0) {
-            page->free_next = heap_eden->free_pages;
-            heap_eden->free_pages = page;
-        } else {
+        } else if (page->free_slots == page->total_slots) {
             page->free_next = NULL;
         }
+        objspace->profile.total_freed_objects++;
+        moved_list = next_moved;
     }
-
-    heap_eden->using_page = heap_eden->free_pages;
-    heap_eden->free_pages = heap_eden->free_pages->free_next;
 
     if (use_verifier) {
         gc_verify_internal_consistency(objspace);
