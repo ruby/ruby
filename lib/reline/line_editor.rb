@@ -113,9 +113,7 @@ class Reline::LineEditor
           if @line_index.zero?
             0
           else
-            @buffer_of_lines[0..(@line_index - 1)].inject(0) { |result, line|
-              result + calculate_height_by_width(prompt_width + calculate_width(line)) # TODO prompt_list
-            }
+            calculate_height_by_lines(@buffer_of_lines[0..(@line_index - 1)], prompt_list)
           end
         if @prompt_proc
           prompt = prompt_list[@line_index]
@@ -186,6 +184,16 @@ class Reline::LineEditor
 
   def multiline_off
     @is_multiline = false
+  end
+
+  private def calculate_height_by_lines(lines, prompt_list)
+    result = 0
+    lines.each_with_index { |line, i|
+      prompt = ''
+      prompt = prompt_list[i] if prompt_list and prompt_list[i]
+      result += calculate_height_by_width(calculate_width(prompt + line))
+    }
+    result
   end
 
   private def insert_new_line(cursor_line, next_line)
@@ -346,9 +354,7 @@ class Reline::LineEditor
         new_lines = whole_lines
       end
       prompt, prompt_width, prompt_list = check_multiline_prompt(new_lines, prompt)
-      all_height = new_lines.inject(0) { |result, line|
-        result + calculate_height_by_width(prompt_width + calculate_width(line)) # TODO prompt_list
-      }
+      all_height = calculate_height_by_lines(new_lines, prompt_list)
       diff = all_height - @highest_in_all
       move_cursor_down(@highest_in_all - @first_line_started_from - @started_from - 1)
       if diff > 0
@@ -388,9 +394,7 @@ class Reline::LineEditor
         if @line_index.zero?
           0
         else
-          @buffer_of_lines[0..(@line_index - 1)].inject(0) { |result, line|
-            result + calculate_height_by_width(prompt_width + calculate_width(line)) # TODO prompt_list
-          }
+          calculate_height_by_lines(@buffer_of_lines[0..(@line_index - 1)], prompt_list)
         end
       if @prompt_proc
         prompt = prompt_list[@line_index]
@@ -449,9 +453,7 @@ class Reline::LineEditor
         if @line_index.zero?
           0
         else
-          new_buffer[0..(@line_index - 1)].inject(0) { |result, line|
-            result + calculate_height_by_width(prompt_width + calculate_width(line)) # TODO prompt_list
-          }
+          calculate_height_by_lines(new_buffer[0..(@line_index - 1)], prompt_list)
         end
       @started_from = calculate_height_by_width(prompt_width + @cursor) - 1
       move_cursor_down(@first_line_started_from + @started_from)
