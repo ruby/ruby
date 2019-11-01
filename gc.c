@@ -822,6 +822,9 @@ typedef struct rb_objspace {
 #if GC_DEBUG_STRESS_TO_CLASS
     VALUE stress_to_class;
 #endif
+#ifdef RB_GC_LOG_SHRINK_ON_UNCOLLECTIBLE
+    FILE *shrink_log;
+#endif
 } rb_objspace_t;
 
 
@@ -1438,7 +1441,7 @@ RVALUE_PAGE_OLD_UNCOLLECTIBLE_SET(rb_objspace_t *objspace, struct heap_page *pag
     objspace->rgengc.old_objects++;
     rb_transient_heap_promote(obj);
 
-    if (BUILTIN_TYPE(obj) == T_ARRAY) rb_postponed_job_register_one(0, rb_ary_shrink_capa, (void *)obj);
+    if (BUILTIN_TYPE(obj) == T_ARRAY) rb_postponed_job_register_one(0, rb_ary_shrink_on_uncollectible, (void *)obj);
 
 #if RGENGC_PROFILE >= 2
     objspace->profile.total_promoted_count++;
@@ -1587,9 +1590,27 @@ rb_objspace_alloc(void)
     malloc_limit = gc_params.malloc_limit_min;
     list_head_init(&objspace->eden_heap.pages);
     list_head_init(&objspace->tomb_heap.pages);
-
+#ifdef RB_GC_LOG_SHRINK_ON_UNCOLLECTIBLE
+    static char fname[20+sizeof(long)*3];
+    if (!objspace->shrink_log) {
+      objspace->shrink_log = fopen((snprintf(fname, sizeof(fname), "/tmp/rb_gc_shrink%ld", (long)getpid()), fname), "w");
+      if (objspace->shrink_log) {
+        fprintf(objspace->shrink_log, "type,size before,size after,shrunk by\n");
+      }
+    }
+#endif
     return objspace;
 }
+
+#ifdef RB_GC_LOG_SHRINK_ON_UNCOLLECTIBLE
+void rb_objspace_log_shrink_on_uncollectible(char *type, long old_capa, long capacity)
+{
+    rb_objspace_t *objspace = rb_objspace_of(GET_VM());
+    if (objspace->shrink_log) {
+      fprintf(objspace->shrink_log, "%s,%ld,%ld,%ld\n", type, old_capa, capacity, (old_capa - capacity) * sizeof(VALUE));
+    }
+}
+#endif
 
 static void free_stack_chunks(mark_stack_t *);
 static void heap_page_free(rb_objspace_t *objspace, struct heap_page *page);
@@ -1629,6 +1650,9 @@ rb_objspace_free(rb_objspace_t *objspace)
     st_free_table(objspace->id_to_obj_tbl);
     st_free_table(objspace->obj_to_id_tbl);
     free_stack_chunks(&objspace->mark_stack);
+#ifdef RB_GC_LOG_SHRINK_ON_UNCOLLECTIBLE
+    if (objspace->shrink_log) fclose(objspace->shrink_log);
+#endif
     free(objspace);
 }
 

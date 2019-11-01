@@ -219,6 +219,10 @@ asan_unpoison_object(VALUE obj, bool newobj_p)
 
 #endif
 
+#ifdef RB_GC_LOG_SHRINK_ON_UNCOLLECTIBLE
+void rb_objspace_log_shrink_on_uncollectible(char *type, long old_capa, long capacity);
+#endif
+
 /* Prevent compiler from reordering access */
 #define ACCESS_ONCE(type,x) (*((volatile type *)&(x)))
 
@@ -1358,7 +1362,7 @@ VALUE rb_gvar_defined(struct rb_global_entry *);
 #endif
 
 
-void rb_ary_shrink_capa(void *obj);
+void rb_ary_shrink_on_uncollectible(void *obj);
 VALUE rb_ary_last(int, const VALUE *, VALUE);
 void rb_ary_set_len(VALUE, long);
 void rb_ary_delete_same(VALUE, VALUE);

@@ -470,7 +470,7 @@ ary_shrink_capa(VALUE ary)
     ary_verify(ary);
 }
 
-void rb_ary_shrink_capa(void *obj)
+void rb_ary_shrink_on_uncollectible(void *obj)
 {
     long capacity, old_capa;
     VALUE ary = (VALUE)obj;
@@ -482,6 +482,9 @@ void rb_ary_shrink_capa(void *obj)
        if (old_capa > capacity) {
            ary_heap_realloc(ary, capacity);
            RARRAY(ary)->as.heap.aux.capa = capacity;
+#ifdef RB_GC_LOG_SHRINK_ON_UNCOLLECTIBLE
+           rb_objspace_log_shrink_on_uncollectible("T_ARRAY", old_capa, capacity);
+ #endif
        }
     }
 }
