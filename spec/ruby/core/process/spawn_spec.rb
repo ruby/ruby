@@ -331,9 +331,19 @@ describe "Process.spawn" do
 
     it "joins the specified process group if pgroup: pgid" do
       pgid = Process.getpgid(Process.pid)
-      -> do
-        Process.wait Process.spawn(ruby_cmd("print Process.getpgid(Process.pid)"), pgroup: pgid)
-      end.should output_to_fd(pgid.to_s)
+      # The process group is not available on all platforms.
+      # See "man proc" - /proc/[pid]/stat - (5) pgrp
+      # In Travis arm64 environment, the value is 0.
+      #
+      # $ cat /proc/[pid]/stat
+      # 19179 (ruby) S 19160 0 0 ...
+      unless pgid.zero?
+        -> do
+          Process.wait Process.spawn(ruby_cmd("print Process.getpgid(Process.pid)"), pgroup: pgid)
+        end.should output_to_fd(pgid.to_s)
+      else
+        skip "The process group is not available."
+      end
     end
 
     it "raises an ArgumentError if given a negative :pgroup option" do
