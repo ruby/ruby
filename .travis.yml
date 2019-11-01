@@ -126,6 +126,17 @@ env:
   - &arm64-linux
     name: arm64-linux
     arch: arm64
+    env:
+      # Stop setting jobs argument "make -jN" for Travis arm64.
+      # Because when following task in each ext/*/Makefile can be executed
+      # without an exclusive lock from exts.mk by "make -s -jN",
+      # .RUBYCOMMONDIR.time file can be newer than some .ext/common/*.rb files.
+      # It causes "Permission defined" error in "make install".
+      #
+      # $(TIMESTAMP_DIR)/.RUBYCOMMONDIR.time:
+      # $(Q) $(MAKEDIRS) $(@D) $(RUBYLIBDIR)
+      # $(Q) $(TOUCH) $@
+      - JOBS=
     <<: *gcc-8
 
   - &jemalloc
@@ -454,19 +465,10 @@ before_script:
   - mv ../config_2nd ~
   - chmod u-w ..
   - $SETARCH make -s $JOBS
-  - |-
-    date; : # Debugging "Permission defined" failure on darwin like https://travis-ci.org/ruby/ruby/jobs/508683759
-    if ! make install; then
-      if [ "$(uname)" = Darwin ]; then
-        # Debugging "Permission defined" failure on darwin like https://travis-ci.org/ruby/ruby/jobs/508683759
-        set -x
-        date
-        ./miniruby -e 'ARGV.map{|path|[path,File.stat(path)]}.sort_by{|path,st|st.mtime}.each{|path,st|p mtime:st.mtime.to_f, ctime:st.ctime.to_f, path:path}' .ext/.timestamp/.RUBYCOMMONDIR*time .ext/common/bigdecimal/*.rb ../ext/bigdecimal/lib/bigdecimal/*.rb . .. .ext .ext/common .ext/common/bigdecimal ext/bigdecimal ../ext ../ext/bigdecimal ../ext/bigdecimal/lib ../ext/bigdecimal/lib/bigdecimal
-        make COPY='cp -f' install
-      else
-        exit 1
-      fi
-    fi
+  # Check if the .RUBYCOMMONDIR.time file is older than .ext/common/*.rb files.
+  # Otherwise it causes "Permission defined" error in "make install".
+  - test "$(ls -rt .ext/.timestamp/.RUBYCOMMONDIR.time .ext/common/*.rb | head -1)" = ".ext/.timestamp/.RUBYCOMMONDIR.time"
+  - date; make install
   - ccache --show-stats
   - |-
     [ -z "${GEMS_FOR_TEST}" ] ||
