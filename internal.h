@@ -1606,7 +1606,7 @@ NORETURN(void rb_syserr_fail_path_in(const char *func_name, int err, VALUE path)
 extern VALUE *ruby_initial_gc_stress_ptr;
 extern int ruby_disable_gc;
 void Init_heap(void);
-void *ruby_mimmalloc(size_t size);
+void *ruby_mimmalloc(size_t size) RUBY_ATTR_MALLOC;
 void ruby_mimfree(void *ptr);
 void rb_objspace_set_event_hook(const rb_event_flag_t event);
 #if USE_RGENGC

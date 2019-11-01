@@ -1865,6 +1865,9 @@ void
 rb_threadptr_root_fiber_setup(rb_thread_t *th)
 {
     rb_fiber_t *fiber = ruby_mimmalloc(sizeof(rb_fiber_t));
+    if (!fiber) {
+        rb_bug("%s", strerror(errno)); /* ... is it possible to call rb_bug here? */
+    }
     MEMZERO(fiber, rb_fiber_t, 1);
     fiber->cont.type = FIBER_CONTEXT;
     fiber->cont.saved_ec.fiber_ptr = fiber;

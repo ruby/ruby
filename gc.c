@@ -10301,6 +10301,10 @@ ruby_mimmalloc(size_t size)
 #endif
     mem = malloc(size);
 #if CALC_EXACT_MALLOC_SIZE
+    if (!mem) {
+        return NULL;
+    }
+    else
     /* set 0 for consistency of allocated_size/allocations */
     {
         struct malloc_obj_info *info = mem;
