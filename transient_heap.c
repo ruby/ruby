@@ -294,6 +294,9 @@ transient_heap_block_alloc(struct transient_heap* theap)
 #else
     if (theap->arena == NULL) {
         theap->arena = rb_aligned_malloc(TRANSIENT_HEAP_BLOCK_SIZE, TRANSIENT_HEAP_TOTAL_SIZE);
+        if (theap->arena == NULL) {
+             rb_bug("transient_heap_block_alloc: failed\n");
+        }
     }
 
     TH_ASSERT(theap->arena_index < TRANSIENT_HEAP_BLOCK_NUM);
