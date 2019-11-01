@@ -87,7 +87,7 @@ describe "Regexp#match" do
     end
   end
 
-  ruby_version_is ""..."2.7" do
+  ruby_version_is ""..."3.0" do
     it "resets $~ if passed nil" do
       # set $~
       /./.match("a")
@@ -98,7 +98,13 @@ describe "Regexp#match" do
     end
   end
 
-  ruby_version_is "2.7" do
+  ruby_version_is "2.7"..."3.0" do
+    it "warns the deprecation when the given argument is nil" do
+      -> { /foo/.match(nil) }.should complain(/given argument is nil/)
+    end
+  end
+
+  ruby_version_is "3.0" do
     it "raises TypeError when the given argument is nil" do
       -> { /foo/.match(nil) }.should raise_error(TypeError)
     end
@@ -137,13 +143,19 @@ describe "Regexp#match?" do
     /str/i.match?('string', 1).should be_false
   end
 
-  ruby_version_is ""..."2.7" do
+  ruby_version_is ""..."3.0" do
     it "returns false when given nil" do
       /./.match?(nil).should be_false
     end
   end
 
-  ruby_version_is "2.7" do
+  ruby_version_is "2.7"..."3.0" do
+    it "warns the deprecation" do
+      -> { /./.match?(nil) }.should complain(/given argument is nil/)
+    end
+  end
+
+  ruby_version_is "3.0" do
     it "raises TypeError when given nil" do
       -> { /./.match?(nil) }.should raise_error(TypeError)
     end
