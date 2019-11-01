@@ -6,3 +6,7 @@
 	> $(@F)
 
 zonetab.h: zonetab.list
+
+.PHONY: update-zonetab
+update-zonetab:
+	$(RUBY) -C $(srcdir) update-abbr.rb

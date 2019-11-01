@@ -1,3 +1,4 @@
+# -*- mode: ruby -*-
 require 'nokogiri'
 require 'open-uri'
 
@@ -24,11 +25,11 @@ end
 
 h.delete_if{|_,v| !v}
 
-lines = File.readlines('ext/date/zonetab.list')
+lines = File.readlines('zonetab.list')
 lines.select{|l| l.include?(',')}.
   map{|l| l.split(',', 2)[0]}.
   each{|a| h.delete(a)}
 
 lines.insert(-2, h.sort.map{|k,v| "#{k},#{v}\n"})
 lines.flatten!
-File.write('ext/date/zonetab.list', lines.join)
+File.write('zonetab.list', lines.join)
