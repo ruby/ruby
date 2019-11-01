@@ -235,11 +235,20 @@ RUBY_SYMBOL_EXPORT_BEGIN
 # define RUBY_ATTR_MALLOC
 #endif
 
-void *ruby_xmalloc(size_t) RUBY_ATTR_MALLOC RUBY_ATTR_ALLOC_SIZE((1));
-void *ruby_xmalloc2(size_t,size_t) RUBY_ATTR_MALLOC RUBY_ATTR_ALLOC_SIZE((1,2));
-void *ruby_xcalloc(size_t,size_t) RUBY_ATTR_MALLOC RUBY_ATTR_ALLOC_SIZE((1,2));
-void *ruby_xrealloc(void*,size_t) RUBY_ATTR_ALLOC_SIZE((2));
-void *ruby_xrealloc2(void*,size_t,size_t) RUBY_ATTR_ALLOC_SIZE((2,3));
+#ifdef __has_attribute
+# if __has_attribute(returns_nonnull)
+#  define RUBY_ATTR_RETURNS_NONNULL __attribute__((__returns_nonnull__))
+# endif
+#endif
+#ifndef RUBY_ATTR_RETURNS_NONNULL
+# define RUBY_ATTR_RETURNS_NONNULL
+#endif
+
+void *ruby_xmalloc(size_t) RUBY_ATTR_MALLOC RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((1));
+void *ruby_xmalloc2(size_t,size_t) RUBY_ATTR_MALLOC RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((1,2));
+void *ruby_xcalloc(size_t,size_t) RUBY_ATTR_MALLOC RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((1,2));
+void *ruby_xrealloc(void*,size_t) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
+void *ruby_xrealloc2(void*,size_t,size_t) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2,3));
 void ruby_xfree(void*);
 
 #ifndef USE_GC_MALLOC_OBJ_INFO_DETAILS
@@ -248,11 +257,11 @@ void ruby_xfree(void*);
 
 #if USE_GC_MALLOC_OBJ_INFO_DETAILS
 
-void *ruby_xmalloc_body(size_t) RUBY_ATTR_ALLOC_SIZE((1));
-void *ruby_xmalloc2_body(size_t,size_t) RUBY_ATTR_ALLOC_SIZE((1,2));
-void *ruby_xcalloc_body(size_t,size_t) RUBY_ATTR_ALLOC_SIZE((1,2));
-void *ruby_xrealloc_body(void*,size_t) RUBY_ATTR_ALLOC_SIZE((2));
-void *ruby_xrealloc2_body(void*,size_t,size_t) RUBY_ATTR_ALLOC_SIZE((2,3));
+void *ruby_xmalloc_body(size_t) RUBY_ATTR_MALLOC RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((1));
+void *ruby_xmalloc2_body(size_t,size_t) RUBY_ATTR_MALLOC RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((1,2));
+void *ruby_xcalloc_body(size_t,size_t) RUBY_ATTR_MALLOC RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((1,2));
+void *ruby_xrealloc_body(void*,size_t) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
+void *ruby_xrealloc2_body(void*,size_t,size_t) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2,3));
 
 #define ruby_xmalloc(s1)            ruby_xmalloc_with_location(s1, __FILE__, __LINE__)
 #define ruby_xmalloc2(s1, s2)       ruby_xmalloc2_with_location(s1, s2, __FILE__, __LINE__)

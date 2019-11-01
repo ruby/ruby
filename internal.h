@@ -1624,8 +1624,8 @@ void rb_copy_wb_protected_attribute(VALUE dest, VALUE obj);
 #define SIZED_REALLOC_N(var,type,n,old_n) REALLOC_N(var, type, n)
 #else
 RUBY_SYMBOL_EXPORT_BEGIN
-void *ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_ALLOC_SIZE((2));
-void *ruby_sized_xrealloc2(void *ptr, size_t new_count, size_t element_size, size_t old_count) RUBY_ATTR_ALLOC_SIZE((2, 3));
+void *ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
+void *ruby_sized_xrealloc2(void *ptr, size_t new_count, size_t element_size, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
 void ruby_sized_xfree(void *x, size_t size);
 RUBY_SYMBOL_EXPORT_END
 #define SIZED_REALLOC_N(var,type,n,old_n) ((var)=(type*)ruby_sized_xrealloc2((void*)(var), (n), sizeof(type), (old_n)))
