@@ -200,6 +200,7 @@ SET_LC_MESSAGES = env LC_MESSAGES=C
 
 MAKEDIRS      = @MKDIR_P@
 CP            = cp
+TOUCH         = exit >
 MV            = mv
 RM            = rm -f
 RMDIR         = @RMDIR@

@@ -58,6 +58,7 @@ DOCLIE_GIT_REF = v1.3.2
 STATIC_RUBY   = static-ruby
 
 TIMESTAMPDIR  = $(EXTOUT)/.timestamp
+RUBYCOMMONDIR = $(EXTOUT)/common
 EXTCONF       = extconf.rb
 LIBRUBY_EXTS  = ./.libruby-with-ext.time
 REVISION_H    = ./.revision.time
@@ -289,7 +290,14 @@ ext/configure-ext.mk: $(PREP) all-incs $(MKFILES) $(RBCONFIG) $(LIBRUBY) \
 
 configure-ext: $(EXTS_MK)
 
-build-ext: $(EXTS_MK)
+$(TIMESTAMPDIR)/.RUBYCOMMONDIR.time:
+	$(Q) $(MAKEDIRS) $(RUBYCOMMONDIR)
+	$(Q) $(TOUCH) $@
+
+# Create `.RUBYCOMMONDIR.time` file here before it is created by building
+# extensions. The file can be touched more than 2 times by each extension's
+# `Makefile` `.RUBYCOMMONDIR.time` task in case of `make -jN`.
+build-ext: $(EXTS_MK) $(TIMESTAMPDIR)/.RUBYCOMMONDIR.time
 	$(Q)$(MAKE) -f $(EXTS_MK) $(mflags) libdir="$(libdir)" LIBRUBY_EXTS=$(LIBRUBY_EXTS) \
 	    EXTENCS="$(ENCOBJS)" UPDATE_LIBRARIES=no $(EXTSTATIC)
 	$(Q)$(MAKE) $(EXTS_NOTE)
