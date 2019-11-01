@@ -217,7 +217,12 @@ RUBY_SYMBOL_EXPORT_BEGIN
 
 #if GCC_VERSION_SINCE(4,3,0)
 # define RUBY_ATTR_ALLOC_SIZE(params) __attribute__ ((alloc_size params))
-#else
+#elif defined(__has_attribute)
+# if __has_attribute(alloc_size)
+#  define RUBY_ATTR_ALLOC_SIZE(params) __attribute__((__alloc_size__ params))
+# endif
+#endif
+#ifndef RUBY_ATTR_ALLOC_SIZE
 # define RUBY_ATTR_ALLOC_SIZE(params)
 #endif
 
