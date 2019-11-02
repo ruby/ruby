@@ -514,7 +514,7 @@ fdbm_delete_if(VALUE obj)
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
 	keystr = rb_str_new(key.dptr, key.dsize);
-	OBJ_FREEZE(keystr);
+	rb_str_freeze(keystr);
 	valstr = rb_str_new(val.dptr, val.dsize);
         ret = rb_protect(rb_yield, rb_assoc_new(rb_str_dup(keystr), valstr), &status);
         if (status != 0) break;

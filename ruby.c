@@ -692,7 +692,7 @@ require_libraries(VALUE *req_list)
 	VALUE feature = rb_ary_shift(list);
 	rb_enc_associate(feature, extenc);
 	RBASIC_SET_CLASS_RAW(feature, rb_cString);
-	OBJ_FREEZE(feature);
+	rb_str_freeze(feature);
 	rb_funcallv(self, require, 1, &feature);
     }
     *req_list = 0;
@@ -1654,7 +1654,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     Init_enc();
     lenc = rb_locale_encoding();
     rb_enc_associate(rb_progname, lenc);
-    rb_obj_freeze(rb_progname);
+    rb_str_freeze(rb_progname);
     parser = rb_parser_new();
     if (opt->dump & DUMP_BIT(yydebug)) {
 	rb_parser_set_yydebug(parser, Qtrue);
@@ -1693,7 +1693,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	opt->script = RSTRING_PTR(opt->script_name);
     }
 #endif
-    rb_obj_freeze(opt->script_name);
+    rb_str_freeze(opt->script_name);
     if (IF_UTF8_PATH(uenc != lenc, 1)) {
 	long i;
         rb_vm_t *vm = GET_VM();
@@ -2340,7 +2340,7 @@ ruby_set_argv(int argc, char **argv)
     for (i = 0; i < argc; i++) {
 	VALUE arg = external_str_new_cstr(argv[i]);
 
-	OBJ_FREEZE(arg);
+	rb_str_freeze(arg);
 	rb_ary_push(av, arg);
     }
 }

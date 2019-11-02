@@ -373,7 +373,7 @@ load_transcoder_entry(transcoder_entry_t *entry)
         memcpy(path, transcoder_lib_prefix, sizeof(transcoder_lib_prefix) - 1);
         memcpy(path + sizeof(transcoder_lib_prefix) - 1, lib, len);
         rb_str_set_len(fn, total_len);
-        OBJ_FREEZE(fn);
+        rb_str_freeze(fn);
         rb_require_string(fn);
     }
 

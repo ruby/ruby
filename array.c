@@ -647,6 +647,8 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
 VALUE
 rb_ary_freeze(VALUE ary)
 {
+    if (OBJ_FROZEN(ary)) return ary;
+    rb_ary_resize(ary, RARRAY_LEN(ary));
     return rb_obj_freeze(ary);
 }
 
@@ -867,7 +869,7 @@ ary_make_shared(VALUE ary)
 	FL_SET_SHARED(ary);
         RB_DEBUG_COUNTER_INC(obj_ary_shared_create);
 	ARY_SET_SHARED(ary, (VALUE)shared);
-	OBJ_FREEZE(shared);
+	rb_ary_freeze((VALUE)shared);
 
         ary_verify((VALUE)shared);
         ary_verify(ary);

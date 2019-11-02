@@ -970,7 +970,7 @@ init_addrinfo_getaddrinfo(rb_addrinfo_t *rai, VALUE node, VALUE service,
     canonname = Qnil;
     if (res->ai->ai_canonname) {
         canonname = rb_str_new_cstr(res->ai->ai_canonname);
-        OBJ_FREEZE(canonname);
+        rb_str_freeze(canonname);
     }
 
     init_addrinfo(rai, res->ai->ai_addr, res->ai->ai_addrlen,
@@ -1019,7 +1019,7 @@ make_inspectname(VALUE node, VALUE service, struct addrinfo *res)
             rb_str_catf(inspectname, ":%d", FIX2INT(service));
     }
     if (!NIL_P(inspectname)) {
-        OBJ_FREEZE(inspectname);
+        rb_str_freeze(inspectname);
     }
     return inspectname;
 }
@@ -1038,7 +1038,7 @@ addrinfo_firstonly_new(VALUE node, VALUE service, VALUE family, VALUE socktype, 
     canonname = Qnil;
     if (res->ai->ai_canonname) {
         canonname = rb_str_new_cstr(res->ai->ai_canonname);
-        OBJ_FREEZE(canonname);
+        rb_str_freeze(canonname);
     }
 
     ret = rsock_addrinfo_new(res->ai->ai_addr, res->ai->ai_addrlen,
@@ -1068,7 +1068,7 @@ addrinfo_list_new(VALUE node, VALUE service, VALUE family, VALUE socktype, VALUE
 
         if (r->ai_canonname) {
             canonname = rb_str_new_cstr(r->ai_canonname);
-            OBJ_FREEZE(canonname);
+            rb_str_freeze(canonname);
         }
 
         addr = rsock_addrinfo_new(r->ai_addr, r->ai_addrlen,

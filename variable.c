@@ -125,7 +125,7 @@ make_temporary_path(VALUE obj, VALUE klass)
 	path = rb_sprintf("#<%"PRIsVALUE":%p>", klass, (void*)obj);
 	break;
     }
-    OBJ_FREEZE(path);
+    rb_str_freeze(path);
     return path;
 }
 
@@ -189,7 +189,7 @@ build_const_pathname(VALUE head, VALUE tail)
     VALUE path = rb_str_dup(head);
     rb_str_cat2(path, "::");
     rb_str_append(path, tail);
-    OBJ_FREEZE(path);
+    rb_str_freeze(path);
     return path;
 }
 
@@ -223,7 +223,7 @@ void
 rb_set_class_path(VALUE klass, VALUE under, const char *name)
 {
     VALUE str = rb_str_new2(name);
-    OBJ_FREEZE(str);
+    rb_str_freeze(str);
     rb_set_class_path_string(klass, under, str);
 }
 

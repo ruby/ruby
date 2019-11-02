@@ -6518,7 +6518,7 @@ Init_File(void)
 
 #ifdef DOSISH
     /* platform specific alternative separator */
-    rb_define_const(rb_cFile, "ALT_SEPARATOR", rb_obj_freeze(rb_usascii_str_new2(file_alt_separator)));
+    rb_define_const(rb_cFile, "ALT_SEPARATOR", rb_str_freeze(rb_usascii_str_new2(file_alt_separator)));
 #else
     rb_define_const(rb_cFile, "ALT_SEPARATOR", Qnil);
 #endif

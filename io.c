@@ -1535,7 +1535,7 @@ io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
 #endif
     str = do_writeconv(str, fptr, &converted);
     if (converted)
-	OBJ_FREEZE(str);
+	rb_str_freeze(str);
 
     tmp = rb_str_tmp_frozen_acquire(str);
     RSTRING_GETMEM(tmp, ptr, len);
@@ -1700,7 +1700,7 @@ io_fwritev(int argc, VALUE *argv, rb_io_t *fptr)
 	converted = 0;
 	str = do_writeconv(str, fptr, &converted);
 	if (converted)
-	    OBJ_FREEZE(str);
+	    rb_str_freeze(str);
 
 	tmp = rb_str_tmp_frozen_acquire(str);
 	tmp_array[i] = tmp;
@@ -3474,7 +3474,7 @@ rb_io_getline_0(VALUE rs, long limit, int chomp, rb_io_t *fptr)
 		if (!rb_enc_asciicompat(enc)) {
 		    rs = rb_usascii_str_new(rsptr, rslen);
 		    rs = rb_str_encode(rs, rb_enc_from_encoding(enc), 0, Qnil);
-		    OBJ_FREEZE(rs);
+		    rb_str_freeze(rs);
 		    rsptr = RSTRING_PTR(rs);
 		    rslen = RSTRING_LEN(rs);
 		}
@@ -7994,7 +7994,7 @@ prep_io(int fd, int fmode, VALUE klass, const char *path)
 	setmode(fd, O_BINARY);
 #endif
     }
-    if (path) fp->pathv = rb_obj_freeze(rb_str_new_cstr(path));
+    if (path) fp->pathv = rb_str_freeze(rb_str_new_cstr(path));
     rb_update_max_fd(fd);
 
     return io;

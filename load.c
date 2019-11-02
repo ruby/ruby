@@ -83,7 +83,7 @@ rb_construct_expanded_load_path(enum expand_type type, int *has_relative, int *h
 	if (NIL_P(expanded_path)) expanded_path = as_str;
 	rb_ary_push(ary, rb_fstring(expanded_path));
     }
-    rb_obj_freeze(ary);
+    rb_ary_freeze(ary);
     vm->expanded_load_path = ary;
     rb_ary_replace(vm->load_path_snapshot, vm->load_path);
 }
@@ -863,8 +863,8 @@ search_required(VALUE fname, volatile VALUE *path, feature_func rb_feature_p)
 	    }
 	    tmp = rb_str_subseq(fname, 0, ext - RSTRING_PTR(fname));
 #ifdef DLEXT2
-	    OBJ_FREEZE(tmp);
-            if (rb_find_file_ext(&tmp, loadable_ext + 1)) {
+	    rb_str_freeze(tmp);
+	    if (rb_find_file_ext(&tmp, loadable_ext + 1)) {
 		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
 		if (!rb_feature_p(ftptr, ext, FALSE, TRUE, &loading) || loading)
 		    *path = tmp;
@@ -872,8 +872,8 @@ search_required(VALUE fname, volatile VALUE *path, feature_func rb_feature_p)
 	    }
 #else
 	    rb_str_cat2(tmp, DLEXT);
-	    OBJ_FREEZE(tmp);
-            if ((tmp = rb_find_file(tmp)) != 0) {
+	    rb_str_freeze(tmp);
+	    if ((tmp = rb_find_file(tmp)) != 0) {
 		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
 		if (!rb_feature_p(ftptr, ext, FALSE, TRUE, &loading) || loading)
 		    *path = tmp;

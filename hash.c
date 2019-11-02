@@ -4610,7 +4610,7 @@ env_enc_str_new(const char *ptr, long len, rb_encoding *enc)
     VALUE str = rb_external_str_new_with_enc(ptr, len, enc);
 #endif
 
-    rb_obj_freeze(str);
+    rb_str_freeze(str);
     return str;
 }
 

@@ -149,7 +149,7 @@ unix_path(VALUE sock)
 	if (getsockname(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
             rsock_sys_fail_path("getsockname(2)", fptr->pathv);
         if (len0 < len) len = len0;
-	fptr->pathv = rb_obj_freeze(rsock_unixpath_str(&addr, len));
+	fptr->pathv = rb_str_freeze(rsock_unixpath_str(&addr, len));
     }
     return rb_str_dup(fptr->pathv);
 }

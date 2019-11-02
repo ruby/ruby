@@ -622,7 +622,7 @@ fgdbm_delete_if(VALUE obj)
     for (keystr = rb_gdbm_firstkey(dbm); RTEST(keystr);
          keystr = rb_gdbm_nextkey(dbm, keystr)) {
 
-	OBJ_FREEZE(keystr);
+	rb_str_freeze(keystr);
         valstr = rb_gdbm_fetch2(dbm, keystr);
         ret = rb_protect(rb_yield, rb_assoc_new(rb_str_dup(keystr), valstr), &status);
         if (status != 0) break;

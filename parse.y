@@ -12911,7 +12911,7 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
     p->eofp = 0;
     if (NIL_P(fname)) {
         fname = STR_NEW2("(ripper)");
-	OBJ_FREEZE(fname);
+	rb_str_freeze(fname);
     }
     else {
 	StringValueCStr(fname);

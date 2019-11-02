@@ -899,7 +899,7 @@ rb_apply(VALUE recv, ID mid, VALUE args)
     if (argc >= 0x100) {
 	args = rb_ary_subseq(args, 0, argc);
 	RBASIC_CLEAR_CLASS(args);
-	OBJ_FREEZE(args);
+	rb_ary_freeze(args);
 	ret = rb_call(recv, mid, argc, RARRAY_CONST_PTR(args), CALL_FCALL);
 	RB_GC_GUARD(args);
 	return ret;

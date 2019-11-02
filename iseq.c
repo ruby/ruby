@@ -449,7 +449,7 @@ rb_iseq_pathobj_new(VALUE path, VALUE realpath)
     else {
 	if (!NIL_P(realpath)) realpath = rb_fstring(realpath);
 	pathobj = rb_ary_new_from_args(2, rb_fstring(path), realpath);
-	rb_obj_freeze(pathobj);
+	rb_ary_freeze(pathobj);
     }
     return pathobj;
 }
@@ -3049,7 +3049,7 @@ rb_iseq_defined_string(enum defined_type type)
     str = defs[type-1];
     if (!str) {
 	str = rb_str_new_cstr(estr);
-	OBJ_FREEZE(str);
+	rb_str_freeze(str);
 	defs[type-1] = str;
 	rb_gc_register_mark_object(str);
     }

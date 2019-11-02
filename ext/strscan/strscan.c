@@ -1582,10 +1582,10 @@ Init_strscan(void)
 	rb_const_set(rb_cObject, id_scanerr, ScanError);
     }
     tmp = rb_str_new2(STRSCAN_VERSION);
-    rb_obj_freeze(tmp);
+    rb_str_freeze(tmp);
     rb_const_set(StringScanner, rb_intern("Version"), tmp);
     tmp = rb_str_new2("$Id$");
-    rb_obj_freeze(tmp);
+    rb_str_freeze(tmp);
     rb_const_set(StringScanner, rb_intern("Id"), tmp);
 
     rb_define_alloc_func(StringScanner, strscan_s_allocate);

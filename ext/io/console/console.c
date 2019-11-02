@@ -1436,7 +1436,7 @@ console_dev(int argc, VALUE *argv, VALUE klass)
 	args[0] = INT2NUM(fd);
 	con = rb_class_new_instance(2, args, klass);
 	GetOpenFile(con, fptr);
-	fptr->pathv = rb_obj_freeze(rb_str_new2(CONSOLE_DEVICE));
+	fptr->pathv = rb_str_freeze(rb_str_new2(CONSOLE_DEVICE));
 #ifdef CONSOLE_DEVICE_FOR_WRITING
 	GetOpenFile(out, ofptr);
 	ofptr->pathv = fptr->pathv;

@@ -504,13 +504,13 @@ pty_open(VALUE klass)
     MakeOpenFile(master_io, master_fptr);
     master_fptr->mode = FMODE_READWRITE | FMODE_SYNC | FMODE_DUPLEX;
     master_fptr->fd = master_fd;
-    master_fptr->pathv = rb_obj_freeze(rb_sprintf("masterpty:%s", slavename));
+    master_fptr->pathv = rb_str_freeze(rb_sprintf("masterpty:%s", slavename));
 
     slave_file = rb_obj_alloc(rb_cFile);
     MakeOpenFile(slave_file, slave_fptr);
     slave_fptr->mode = FMODE_READWRITE | FMODE_SYNC | FMODE_DUPLEX | FMODE_TTY;
     slave_fptr->fd = slave_fd;
-    slave_fptr->pathv = rb_obj_freeze(rb_str_new_cstr(slavename));
+    slave_fptr->pathv = rb_str_freeze(rb_str_new_cstr(slavename));
 
     assoc = rb_assoc_new(master_io, slave_file);
     if (rb_block_given_p()) {
@@ -577,7 +577,7 @@ pty_getpty(int argc, VALUE *argv, VALUE self)
 
     rfptr->mode = rb_io_modestr_fmode("r");
     rfptr->fd = info.fd;
-    rfptr->pathv = rb_obj_freeze(rb_str_new_cstr(SlaveName));
+    rfptr->pathv = rb_str_freeze(rb_str_new_cstr(SlaveName));
 
     wfptr->mode = rb_io_modestr_fmode("w") | FMODE_SYNC;
     wfptr->fd = rb_cloexec_dup(info.fd);

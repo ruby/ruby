@@ -1258,7 +1258,7 @@ rb_unnamed_parameters(int arity)
     ID req, rest;
     CONST_ID(req, "req");
     a = rb_ary_new3(1, ID2SYM(req));
-    OBJ_FREEZE(a);
+    rb_ary_freeze(a);
     for (; n; --n) {
 	rb_ary_push(param, a);
     }

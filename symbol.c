@@ -462,7 +462,7 @@ register_static_symid_str(ID id, VALUE str)
     rb_id_serial_t num = rb_id_to_serial(id);
     VALUE sym = STATIC_ID2SYM(id);
 
-    OBJ_FREEZE(str);
+    rb_str_freeze(str);
     str = rb_fstring(str);
 
     RUBY_DTRACE_CREATE_HOOK(SYMBOL, RSTRING_PTR(str));
@@ -605,7 +605,7 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
     VALUE sym;
     struct RString fake_str;
     VALUE str = rb_setup_fake_str(&fake_str, name, len, enc);
-    OBJ_FREEZE(str);
+    rb_str_freeze(str);
 
     sym = lookup_str_sym(str);
     if (sym) return rb_sym2id(sym);
@@ -727,12 +727,12 @@ rb_str_intern(VALUE str)
     if (enc != ascii && sym_check_asciionly(str)) {
 	str = rb_str_dup(str);
 	rb_enc_associate(str, ascii);
-	OBJ_FREEZE(str);
+	rb_str_freeze(str);
 	enc = ascii;
     }
     else {
         str = rb_str_dup(str);
-        OBJ_FREEZE(str);
+        rb_str_freeze(str);
     }
     str = rb_fstring(str);
     type = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);

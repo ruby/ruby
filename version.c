@@ -20,7 +20,7 @@
 #endif
 
 #define PRINT(type) puts(ruby_##type)
-#define MKSTR(type) rb_obj_freeze(rb_usascii_str_new_static(ruby_##type, sizeof(ruby_##type)-1))
+#define MKSTR(type) rb_str_freeze(rb_usascii_str_new_static(ruby_##type, sizeof(ruby_##type)-1))
 #define MKINT(name) INT2FIX(ruby_##name)
 
 const int ruby_api_version[] = {
