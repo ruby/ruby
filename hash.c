@@ -6228,13 +6228,13 @@ Init_Hash(void)
      *   - A String.
      *   - An object that responds to #to_str by returning a String, which will be used as the name or value.
      * - A name may not:
-     *   - Contain character <code>=</code>.
+     *   - Contain character <code>=</code> or the NUL character (<code>"\0"</code>
      *   - Be the empty string.
 
      * === About Ordering
-     * The ordering of ENV content is OS-dependent.
-     * ENV presents its content in the order it finds
+     * ENV presents its content in the order found
      * in the operating system's environment variables.
+     * Therefore the ordering of ENV content is OS-dependent, and may be indeterminate.
      *
      * This will be seen in:
      * - A Hash returned by an ENV method.
