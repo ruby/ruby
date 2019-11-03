@@ -952,7 +952,12 @@ class TestRegexp < Test::Unit::TestCase
   def test_cclass_R
     assert_match(/\A\R\z/, "\r")
     assert_match(/\A\R\z/, "\n")
+    assert_match(/\A\R\z/, "\f")
+    assert_match(/\A\R\z/, "\v")
     assert_match(/\A\R\z/, "\r\n")
+    assert_match(/\A\R\z/, "\u0085")
+    assert_match(/\A\R\z/, "\u2028")
+    assert_match(/\A\R\z/, "\u2029")
   end
 
   def test_cclass_X
