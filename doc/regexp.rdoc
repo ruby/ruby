@@ -132,6 +132,9 @@ The following metacharacters also behave like character classes:
 * <tt>/\H/</tt> - A non-hexdigit character (<tt>[^0-9a-fA-F]</tt>)
 * <tt>/\s/</tt> - A whitespace character: <tt>/[ \t\r\n\f\v]/</tt>
 * <tt>/\S/</tt> - A non-whitespace character: <tt>/[^ \t\r\n\f\v]/</tt>
+* <tt>/\R/</tt> - A linebreak: <tt>\n</tt>, <tt>\v</tt>, <tt>\f</tt>, <tt>\r</tt>
+  <tt>\u0085</tt> (NEXT LINE), <tt>\u2028</tt> (LINE SEPARATOR), <tt>\u2029</tt> (PARAGRAPH SEPARATOR)
+  or <tt>\r\n</tt>.
 
 POSIX <i>bracket expressions</i> are also similar to character classes.
 They provide a portable alternative to the above, with the added benefit
