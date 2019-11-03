@@ -361,7 +361,8 @@ Regexp::
 
   Modified method::
 
-    * Regexp#match(nil) and Regexp#match?(nil) now raise TypeError.  [Feature #13083]
+    * Regexp#match and Regexp#match? with a +nil+ argument are deprecated
+      and will raise a TypeError in the next release.  [Feature #13083]
 
 RubyVM::
 
