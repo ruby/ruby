@@ -769,7 +769,7 @@ class CSV
     def skip_needless_lines
       return unless @skip_lines
 
-      while true
+      until @scanner.eos?
         @scanner.keep_start
         line = @scanner.scan_all(@not_line_end) || "".encode(@encoding)
         line << @row_separator if parse_row_end
