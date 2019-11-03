@@ -69,7 +69,8 @@ a backslash literally, backslash-escape it: <tt>\\\\</tt>.
     /a\\\\b/.match('a\\\\b')                    #=> #<MatchData "a\\b">
 
 Patterns behave like double-quoted strings so can contain the same
-backslash escapes.
+backslash escapes (the meaning of <tt>\s</tt> is different a little however,
+see bellow[#label-Character+Classes]).
 
     /\s\u{6771 4eac 90fd}/.match("Go to 東京都")
         #=> #<MatchData " 東京都">
