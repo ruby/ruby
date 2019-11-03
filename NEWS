@@ -390,10 +390,6 @@ String::
 
     * Update Unicode Emoji version to 12.1 [Feature #16272]
 
-  Modified methods::
-
-    * String#match(nil) and String#match?(nil) now raise TypeError.  [Feature #13083]
-
 Time::
 
   New methods::
