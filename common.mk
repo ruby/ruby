@@ -1295,7 +1295,7 @@ no-test-bundled-gems:
 # TEST_BUNDLED_GEMS_ALLOW_FAILURES =
 
 test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
-	$(Q) $(XRUBY) $(srcdir)/tool/test-bundled-gems.rb $(XRUBY)
+	$(Q) $(XRUBY) $(srcdir)/tool/test-bundled-gems.rb
 
 test-bundler-precheck: $(arch)-fake.rb programs
 
