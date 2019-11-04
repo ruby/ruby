@@ -6214,6 +6214,34 @@ Init_Hash(void)
     /* Document-class: ENV
      *
      * ENV is a hash-like accessor for environment variables.
+     *
+     * === Interaction with the Operating System
+     * The ENV object interacts with the operating system's environment variables:
+     * - When you get the value for a name in ENV, the value is retrieved from among the current environment variables.
+     * - When you create or set a name-value pair in ENV, the name and value are immediately set in the environment variables.
+     * - When you delete a name-value pair in ENV, it is immediately deleted from the environment variables.
+     * === Names and Values
+     * Generally speaking, each name or value is a String.
+     *
+     * Strictly speaking:
+     * - Each name or value must be one of the following:
+     *   - A String.
+     *   - An object that responds to #to_str by returning a String, which will be used as the name or value.
+     * - A name may not:
+     *   - Be the empty string.
+     *   - Contain character <code>=</code> or the NUL character (<code>"\0"</code>).
+     *   - Have an ASCII-incompatible encoding (e.g., UTF-16LE, ISO-2022-JP).
+
+     * === About Ordering
+     * ENV presents its content in the order found
+     * in the operating system's environment variables.
+     * Therefore the ordering of ENV content is OS-dependent, and may be indeterminate.
+     *
+     * This will be seen in:
+     * - A Hash returned by an ENV method.
+     * - An Enumerator returned by an ENV method.
+     * - An Array returned by ENV.keys, ENV.values, or ENV.to_a.
+     * - The String returned by ENV.inspect.
      */
 
     /*
