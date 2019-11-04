@@ -4277,11 +4277,17 @@ rb_gzreader_external_encoding(VALUE self)
 }
 
 static VALUE
-zlib_gzip_ensure(VALUE arg)
+zlib_gzip_end_rescue(VALUE arg)
 {
     struct gzfile *gz = (struct gzfile *)arg;
-    rb_rescue((VALUE(*)())gz->end, arg, NULL, Qnil);
+    gz->end(gz);
     return Qnil;
+}
+
+static VALUE
+zlib_gzip_ensure(VALUE arg)
+{
+    return rb_rescue(zlib_gzip_end_rescue, arg, NULL, Qnil);
 }
 
 static void
