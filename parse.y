@@ -395,12 +395,6 @@ set_line_body(NODE *body, int line)
 
 #define yyparse ruby_yyparse
 
-#define WARN_EOL(tok) \
-    (looking_at_eol_p(p) ? \
-     rb_warning0("`" tok "' at the end of line without an expression") : \
-     (void)0)
-static int looking_at_eol_p(struct parser_params *p);
-
 static NODE* cond(struct parser_params *p, NODE *node, const YYLTYPE *loc);
 static NODE* method_cond(struct parser_params *p, NODE *node, const YYLTYPE *loc);
 #define new_nil(loc) NEW_NIL(loc)
@@ -3076,7 +3070,6 @@ k_begin		: keyword_begin
 
 k_if		: keyword_if
 		    {
-			WARN_EOL("if");
 			token_info_push(p, "if", &@$);
 			if (p->token_info && p->token_info->nonspc &&
 			    p->token_info->next && !strcmp(p->token_info->next->token, "else")) {
@@ -3186,7 +3179,6 @@ k_else		: keyword_else
 
 k_elsif 	: keyword_elsif
 		    {
-			WARN_EOL("elisif");
 			token_info_warn(p, "elsif", p->token_info, 1, &@$);
 		    }
 		;
@@ -6279,20 +6271,6 @@ pushback(struct parser_params *p, int c)
 #define tokfix(p) ((p)->tokenbuf[(p)->tokidx]='\0')
 #define tok(p) (p)->tokenbuf
 #define toklen(p) (p)->tokidx
-
-static int
-looking_at_eol_p(struct parser_params *p)
-{
-    int c;
-    while ((c = nextc(p)) != -1) {
-	int eol = (c == '\n' || c == '#');
-	if (eol || !ISSPACE(c)) {
-	    pushback(p, c);
-	    return eol;
-	}
-    }
-    return TRUE;
-}
 
 static char*
 newtok(struct parser_params *p)
