@@ -79,16 +79,12 @@ jobs:
       - name: Make
         run: make -C build $JOBS
       - name: Tests
-        run: make -C build -s ${{ matrix.test_task }} TESTOPTS="$JOBS -q --tty=no"
+        run: make -C build -s ${{ matrix.test_task }}
         env:
           MSPECOPT: "-ff" # not using `-j` because sometimes `mspec -j` silently dies
-        if: matrix.test_task != 'test-bundled-gems'
-      - name: Tests (test-bundled-gems)
-        # Remove minitest from TEST_BUNDLED_GEMS_ALLOW_FAILURES if https://github.com/seattlerb/minitest/pull/798 is resolved
-        run: make -C build -s ${{ matrix.test_task }} TEST_BUNDLED_GEMS_ALLOW_FAILURES=minitest
-        env:
           RUBY_TESTOPTS: "-q --tty=no"
-        if: matrix.test_task == 'test-bundled-gems'
+          # Remove minitest from TEST_BUNDLED_GEMS_ALLOW_FAILURES if https://github.com/seattlerb/minitest/pull/798 is resolved
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: "minitest"
       - name: Leaked Globals
         run: make -C build -s leaked-globals
       - name: Debug GitHub context
