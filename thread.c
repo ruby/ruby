@@ -4880,20 +4880,20 @@ recursive_list_access(VALUE sym)
 	list = rb_hash_aref(hash, sym);
     }
     if (NIL_P(list) || !RB_TYPE_P(list, T_HASH)) {
-	list = rb_hash_new();
+	list = rb_ident_hash_new();
 	rb_hash_aset(hash, sym, list);
     }
     return list;
 }
 
 /*
- * Returns Qtrue iff obj_id (or the pair <obj, paired_obj>) is already
+ * Returns Qtrue iff obj (or the pair <obj, paired_obj>) is already
  * in the recursion list.
  * Assumes the recursion list is valid.
  */
 
 static VALUE
-recursive_check(VALUE list, VALUE obj_id, VALUE paired_obj_id)
+recursive_check(VALUE list, VALUE obj, VALUE paired_obj_id)
 {
 #if SIZEOF_LONG == SIZEOF_VOIDP
   #define OBJ_ID_EQL(obj_id, other) ((obj_id) == (other))
@@ -4902,7 +4902,7 @@ recursive_check(VALUE list, VALUE obj_id, VALUE paired_obj_id)
     rb_big_eql((obj_id), (other)) : ((obj_id) == (other)))
 #endif
 
-    VALUE pair_list = rb_hash_lookup2(list, obj_id, Qundef);
+    VALUE pair_list = rb_hash_lookup2(list, obj, Qundef);
     if (pair_list == Qundef)
 	return Qfalse;
     if (paired_obj_id) {
@@ -4919,10 +4919,10 @@ recursive_check(VALUE list, VALUE obj_id, VALUE paired_obj_id)
 }
 
 /*
- * Pushes obj_id (or the pair <obj_id, paired_obj_id>) in the recursion list.
- * For a single obj_id, it sets list[obj_id] to Qtrue.
- * For a pair, it sets list[obj_id] to paired_obj_id if possible,
- * otherwise list[obj_id] becomes a hash like:
+ * Pushes obj (or the pair <obj, paired_obj>) in the recursion list.
+ * For a single obj, it sets list[obj] to Qtrue.
+ * For a pair, it sets list[obj] to paired_obj_id if possible,
+ * otherwise list[obj] becomes a hash like:
  *   {paired_obj_id_1 => true, paired_obj_id_2 => true, ... }
  * Assumes the recursion list is valid.
  */
@@ -4950,10 +4950,10 @@ recursive_push(VALUE list, VALUE obj, VALUE paired_obj)
 }
 
 /*
- * Pops obj_id (or the pair <obj_id, paired_obj_id>) from the recursion list.
- * For a pair, if list[obj_id] is a hash, then paired_obj_id is
+ * Pops obj (or the pair <obj, paired_obj>) from the recursion list.
+ * For a pair, if list[obj] is a hash, then paired_obj_id is
  * removed from the hash and no attempt is made to simplify
- * list[obj_id] from {only_one_paired_id => true} to only_one_paired_id
+ * list[obj] from {only_one_paired_id => true} to only_one_paired_id
  * Assumes the recursion list is valid.
  */
 
@@ -4980,7 +4980,6 @@ struct exec_recursive_params {
     VALUE (*func) (VALUE, VALUE, int);
     VALUE list;
     VALUE obj;
-    VALUE objid;
     VALUE pairid;
     VALUE arg;
 };
@@ -5012,13 +5011,12 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
     struct exec_recursive_params p;
     int outermost;
     p.list = recursive_list_access(sym);
-    p.objid = rb_memory_id(obj);
     p.obj = obj;
     p.pairid = pairid;
     p.arg = arg;
     outermost = outer && !recursive_check(p.list, ID2SYM(recursive_key), 0);
 
-    if (recursive_check(p.list, p.objid, pairid)) {
+    if (recursive_check(p.list, p.obj, pairid)) {
 	if (outer && !outermost) {
 	    rb_throw_obj(p.list, p.list);
 	}
@@ -5031,9 +5029,9 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 
 	if (outermost) {
 	    recursive_push(p.list, ID2SYM(recursive_key), 0);
-	    recursive_push(p.list, p.objid, p.pairid);
+	    recursive_push(p.list, p.obj, p.pairid);
 	    result = rb_catch_protect(p.list, exec_recursive_i, (VALUE)&p, &state);
-	    if (!recursive_pop(p.list, p.objid, p.pairid)) goto invalid;
+	    if (!recursive_pop(p.list, p.obj, p.pairid)) goto invalid;
 	    if (!recursive_pop(p.list, ID2SYM(recursive_key), 0)) goto invalid;
 	    if (state != TAG_NONE) EC_JUMP_TAG(GET_EC(), state);
 	    if (result == p.list) {
@@ -5042,13 +5040,13 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 	}
 	else {
 	    volatile VALUE ret = Qundef;
-	    recursive_push(p.list, p.objid, p.pairid);
+	    recursive_push(p.list, p.obj, p.pairid);
 	    EC_PUSH_TAG(GET_EC());
 	    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 		ret = (*func)(obj, arg, FALSE);
 	    }
 	    EC_POP_TAG();
-	    if (!recursive_pop(p.list, p.objid, p.pairid)) {
+	    if (!recursive_pop(p.list, p.obj, p.pairid)) {
 	      invalid:
 		rb_raise(rb_eTypeError, "invalid inspect_tbl pair_list "
 			 "for %+"PRIsVALUE" in %+"PRIsVALUE,
