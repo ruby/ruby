@@ -2200,7 +2200,7 @@ rb_fiber_raise(int argc, VALUE *argv, VALUE fiber)
  *  a resume call. Arguments passed to transfer are treated like those
  *  passed to resume.
  *
- *  You cannot call +resume+ on a fiber that has been transfered to.
+ *  You cannot call +resume+ on a fiber that has been transferred to.
  *  If you call +transfer+ on a fiber, and later call +resume+ on the
  *  the fiber, a +FiberError+ will be raised. Once you call +transfer+ on
  *  a fiber, the only way to resume processing the fiber is to
