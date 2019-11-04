@@ -1220,13 +1220,6 @@ $(RCFILES): $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
 			-so_name=$(RUBY_SO_NAME) \
 			. $(icondirs) $(win_srcdir)
 
-test-bundled-gems-run:
-	$(Q) for /f %G in ($(srcdir)/gems/bundled_gems) do @( \
-	  echo testing %G gem & \
-	  $(XRUBY) -C $(srcdir)/gems/src/%G -Ilib ../../../.bundle/bin/rake || \
-	  exit /b %STATUS% \
-	)
-
 update-benchmark-driver:
 	$(GIT) clone https://github.com/benchmark-driver/benchmark-driver $(srcdir)/benchmark/benchmark-driver || \
 	  $(GIT) -C $(srcdir)/benchmark/benchmark-driver pull origin master

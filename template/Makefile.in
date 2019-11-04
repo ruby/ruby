@@ -532,12 +532,6 @@ enc/encinit.$(OBJEXT): enc/encinit.c $(SETUP)
 
 cont.$(OBJEXT): $(COROUTINE_H)
 
-# Override this to allow failure of specific gems on CI
-TEST_BUNDLED_GEMS_ALLOW_FAILURES =
-
-test-bundled-gems-run:
-	$(Q) $(XRUBY) $(srcdir)/tool/test-bundled-gems.rb $(XRUBY)
-
 update-src::
 	@$(CHDIR) "$(srcdir)" && LC_TIME=C exec $(VCSUP)
 

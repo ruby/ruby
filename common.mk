@@ -1290,7 +1290,12 @@ PREPARE_BUNDLED_GEMS = test-bundled-gems-prepare
 test-bundled-gems: $(TEST_RUNNABLE)-test-bundled-gems
 yes-test-bundled-gems: test-bundled-gems-run
 no-test-bundled-gems:
+
+# Override this to allow failure of specific gems on CI
+# TEST_BUNDLED_GEMS_ALLOW_FAILURES =
+
 test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
+	$(Q) $(XRUBY) $(srcdir)/tool/test-bundled-gems.rb $(XRUBY)
 
 test-bundler-precheck: $(arch)-fake.rb programs
 
