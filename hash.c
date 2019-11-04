@@ -6228,8 +6228,9 @@ Init_Hash(void)
      *   - A String.
      *   - An object that responds to #to_str by returning a String, which will be used as the name or value.
      * - A name may not:
-     *   - Contain character <code>=</code> or the NUL character (<code>"\0"</code>
      *   - Be the empty string.
+     *   - Contain character <code>=</code> or the NUL character (<code>"\0"</code>).
+     *   - Have an ASCII-incompatible encoding (e.g., UTF-16LE, ISO-2022-JP).
 
      * === About Ordering
      * ENV presents its content in the order found
