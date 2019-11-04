@@ -42,7 +42,7 @@ static inline void coroutine_initialize(
     *--context->stack_pointer = (void*)start;
 
     /* Windows Thread Information Block */
-    *--context->stack_pointer = 0; /* fs:[0] */
+    *--context->stack_pointer = (void*)0xFFFFFFFF; /* fs:[0] */
     *--context->stack_pointer = (void*)top; /* fs:[4] */
     *--context->stack_pointer = (void*)stack;  /* fs:[8] */
 
