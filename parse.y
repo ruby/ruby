@@ -955,7 +955,7 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 
 #define WARN_EOL(tok) \
     (looking_at_eol_p(p) ? \
-     rb_warning0("`" tok "' at the end of line without an expression") : \
+     (void)rb_warning0("`" tok "' at the end of line without an expression") : \
      (void)0)
 static int looking_at_eol_p(struct parser_params *p);
 %}
