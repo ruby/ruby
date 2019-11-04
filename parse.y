@@ -6283,11 +6283,11 @@ pushback(struct parser_params *p, int c)
 static int
 looking_at_eol_p(struct parser_params *p)
 {
-    int c;
-    while ((c = nextc(p)) != -1) {
+    const char *ptr = p->lex.pcur;
+    while (ptr < p->lex.pend) {
+	int c = (unsigned char)*ptr++;
 	int eol = (c == '\n' || c == '#');
 	if (eol || !ISSPACE(c)) {
-	    pushback(p, c);
 	    return eol;
 	}
     }
