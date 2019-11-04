@@ -952,6 +952,12 @@ static void token_info_setup(token_info *ptinfo, const char *ptr, const rb_code_
 static void token_info_push(struct parser_params*, const char *token, const rb_code_location_t *loc);
 static void token_info_pop(struct parser_params*, const char *token, const rb_code_location_t *loc);
 static void token_info_warn(struct parser_params *p, const char *token, token_info *ptinfo_beg, int same, const rb_code_location_t *loc);
+
+#define WARN_EOL(tok) \
+    (looking_at_eol_p(p) ? \
+     rb_warning0("`" tok "' at the end of line without an expression") : \
+     (void)0)
+static int looking_at_eol_p(struct parser_params *p);
 %}
 
 %expect 0
@@ -3070,6 +3076,7 @@ k_begin		: keyword_begin
 
 k_if		: keyword_if
 		    {
+			WARN_EOL("if");
 			token_info_push(p, "if", &@$);
 			if (p->token_info && p->token_info->nonspc &&
 			    p->token_info->next && !strcmp(p->token_info->next->token, "else")) {
@@ -3179,6 +3186,7 @@ k_else		: keyword_else
 
 k_elsif 	: keyword_elsif
 		    {
+			WARN_EOL("elisif");
 			token_info_warn(p, "elsif", p->token_info, 1, &@$);
 		    }
 		;
@@ -6271,6 +6279,20 @@ pushback(struct parser_params *p, int c)
 #define tokfix(p) ((p)->tokenbuf[(p)->tokidx]='\0')
 #define tok(p) (p)->tokenbuf
 #define toklen(p) (p)->tokidx
+
+static int
+looking_at_eol_p(struct parser_params *p)
+{
+    int c;
+    while ((c = nextc(p)) != -1) {
+	int eol = (c == '\n' || c == '#');
+	if (eol || !ISSPACE(c)) {
+	    pushback(p, c);
+	    return eol;
+	}
+    }
+    return TRUE;
+}
 
 static char*
 newtok(struct parser_params *p)
