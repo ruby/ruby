@@ -226,7 +226,7 @@ def sync_default_gems_with_commits(gem, range)
       `git remote add #{gem} git@github.com:#{$repositories[gem.to_sym]}.git`
     end
   end
-  `git fetch --no-tags #{gem}`
+  system(*%W"git fetch --no-tags #{gem}")
 
   commits = IO.popen(%W"git log --format=%H,%s #{range}") do |f|
     f.read.split("\n").reverse.map{|commit| commit.split(',', 2)}
