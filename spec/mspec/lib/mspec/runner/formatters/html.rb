@@ -50,7 +50,7 @@ EOH
     print %[#{outcome} - #{@count}</a>)</li>\n]
   end
 
-  def after(state)
+  def after(state = nil)
     print %[<li class="pass">- #{state.it}</li>\n] unless exception?
   end
 

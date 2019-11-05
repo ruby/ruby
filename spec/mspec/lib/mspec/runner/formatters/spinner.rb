@@ -105,7 +105,7 @@ class SpinnerFormatter < DottedFormatter
   end
 
   # Callback for the MSpec :after event. Updates the spinner.
-  def after(state)
+  def after(state = nil)
     print progress_line
   end
 
