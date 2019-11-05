@@ -102,16 +102,11 @@ class SpinnerFormatter < DottedFormatter
 
     clear_progress_line
     print_exception(exception, @count)
+    exceptions.clear
   end
 
   # Callback for the MSpec :after event. Updates the spinner.
   def after(state = nil)
     print progress_line
-  end
-
-  def finish(printed_exceptions = true)
-    # We already printed the exceptions
-    @exceptions = [] if printed_exceptions
-    super()
   end
 end
