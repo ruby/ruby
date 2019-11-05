@@ -14,9 +14,7 @@ class Test_StringCapacity < Test::Unit::TestCase
   end
 
   def test_capacity_shared
-    str = :abcdefghijklmnopqrstuvwxyz.to_s.dup
-    assert Bug::String.shared_string? str
-    assert_equal 0, capa(str)
+    assert_equal 0, capa(:abcdefghijklmnopqrstuvwxyz.to_s)
   end
 
   def test_capacity_normal

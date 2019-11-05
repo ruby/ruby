@@ -10880,8 +10880,7 @@ sym_inspect(VALUE sym)
  *     sym.id2name   -> string
  *     sym.to_s      -> string
  *
- *  Returns a frozen string corresponding to <i>sym</i>.
- *  The returned String is always the same String instance for a given Symbol.
+ *  Returns the name or string corresponding to <i>sym</i>.
  *
  *     :fred.id2name   #=> "fred"
  *     :ginger.to_s    #=> "ginger"
@@ -10891,7 +10890,7 @@ sym_inspect(VALUE sym)
 VALUE
 rb_sym_to_s(VALUE sym)
 {
-    return rb_sym2str(sym);
+    return str_new_shared(rb_cString, rb_sym2str(sym));
 }
 
 
