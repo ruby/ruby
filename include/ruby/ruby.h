@@ -557,16 +557,6 @@ static inline int rb_type(VALUE obj);
 	RB_FLONUM_P(obj) || \
 	(!RB_SPECIAL_CONST_P(obj) && RB_BUILTIN_TYPE(obj) == RUBY_T_FLOAT))
 
-#define RB_TYPE_P(obj, type) ( \
-	((type) == RUBY_T_FIXNUM) ? RB_FIXNUM_P(obj) : \
-	((type) == RUBY_T_TRUE) ? ((obj) == RUBY_Qtrue) : \
-	((type) == RUBY_T_FALSE) ? ((obj) == RUBY_Qfalse) : \
-	((type) == RUBY_T_NIL) ? ((obj) == RUBY_Qnil) : \
-	((type) == RUBY_T_UNDEF) ? ((obj) == RUBY_Qundef) : \
-	((type) == RUBY_T_SYMBOL) ? RB_SYMBOL_P(obj) : \
-	((type) == RUBY_T_FLOAT) ? RB_FLOAT_TYPE_P(obj) : \
-	(!RB_SPECIAL_CONST_P(obj) && RB_BUILTIN_TYPE(obj) == (type)))
-
 #ifdef __GNUC__
 #define RB_GC_GUARD(v) \
     (*__extension__ ({ \
@@ -1631,6 +1621,40 @@ rb_ulong2num_inline(unsigned long v)
 }
 #define RB_ULONG2NUM(x) rb_ulong2num_inline(x)
 
+static inline /* we don't #include <stdbool.h> here */ int /* bool */
+RB_TYPE_P(VALUE obj, enum ruby_value_type type)
+{
+    if (!RB_SPECIAL_CONST_P(obj)) {
+        return RB_BUILTIN_TYPE(obj) == (int)(type);
+    }
+    else if (type == RUBY_T_FALSE) {
+        return obj == RUBY_Qfalse;
+    }
+    else if (type == RUBY_T_NIL) {
+        return obj == RUBY_Qnil;
+    }
+    else if (type == RUBY_T_TRUE) {
+        return obj == RUBY_Qtrue;
+    }
+    else if (type == RUBY_T_UNDEF) {
+        return obj == RUBY_Qundef;
+    }
+    else if (type == RUBY_T_FIXNUM) {
+        return RB_FIXNUM_P(obj);
+    }
+    else if (type == RUBY_T_FLOAT) {
+        return RB_FLONUM_P(obj);
+    }
+    else if (type == RUBY_T_SYMBOL) {
+        return RB_STATIC_SYM_P(obj);
+    }
+    else {
+        return 0;
+    }
+}
+
+#define RB_TYPE_P(obj, type) (RB_TYPE_P)/* backward compat */((obj), (type))
+
 static inline char
 rb_num2char_inline(VALUE x)
 {
@@ -2124,13 +2148,7 @@ rb_type(VALUE obj)
     return RB_BUILTIN_TYPE(obj);
 }
 
-#ifdef __GNUC__
-#define rb_type_p(obj, type) \
-    __extension__ (__builtin_constant_p(type) ? RB_TYPE_P((obj), (type)) : \
-		   rb_type(obj) == (type))
-#else
-#define rb_type_p(obj, type) (rb_type(obj) == (type))
-#endif
+#define rb_type_p(obj, type) RB_TYPE_P((obj), (type))
 
 #ifdef __GNUC__
 #define rb_special_const_p(obj) \
