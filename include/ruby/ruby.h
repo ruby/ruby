@@ -2120,18 +2120,27 @@ rb_class_of(VALUE obj)
 static inline int
 rb_type(VALUE obj)
 {
-    if (RB_IMMEDIATE_P(obj)) {
-	if (RB_FIXNUM_P(obj)) return RUBY_T_FIXNUM;
-        if (RB_FLONUM_P(obj)) return RUBY_T_FLOAT;
-        if (obj == RUBY_Qtrue)  return RUBY_T_TRUE;
-	if (RB_STATIC_SYM_P(obj)) return RUBY_T_SYMBOL;
-	if (obj == RUBY_Qundef) return RUBY_T_UNDEF;
+    if (!RB_SPECIAL_CONST_P(obj)) {
+        return RB_BUILTIN_TYPE(obj);
     }
-    else if (!RB_TEST(obj)) {
-	if (obj == RUBY_Qnil)   return RUBY_T_NIL;
-	if (obj == RUBY_Qfalse) return RUBY_T_FALSE;
+    else if (obj == RUBY_Qfalse) {
+        return RUBY_T_FALSE;
     }
-    return RB_BUILTIN_TYPE(obj);
+    else if (obj == RUBY_Qnil) {
+        return RUBY_T_NIL;
+    }
+    else if (obj == RUBY_Qtrue) {
+        return RUBY_T_TRUE;
+    }
+    else if (RB_FIXNUM_P(obj)) {
+        return RUBY_T_FIXNUM;
+    }
+    else if (RB_STATIC_SYM_P(obj)) {
+        return RUBY_T_SYMBOL;
+    }
+    else {
+        return RUBY_T_FLOAT;
+    }
 }
 
 #ifdef __GNUC__
