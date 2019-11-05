@@ -3186,7 +3186,7 @@ k_else		: keyword_else
 
 k_elsif 	: keyword_elsif
 		    {
-			WARN_EOL("elisif");
+			WARN_EOL("elsif");
 			token_info_warn(p, "elsif", p->token_info, 1, &@$);
 		    }
 		;
