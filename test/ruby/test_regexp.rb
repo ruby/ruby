@@ -1002,6 +1002,8 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(TypeError) { Regexp.allocate.names }
     assert_raise(TypeError) { Regexp.allocate.named_captures }
 
+    assert_not_respond_to(MatchData, :allocate)
+=begin
     assert_raise(TypeError) { MatchData.allocate.hash }
     assert_raise(TypeError) { MatchData.allocate.regexp }
     assert_raise(TypeError) { MatchData.allocate.names }
@@ -1024,6 +1026,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(TypeError) { $` }
     assert_raise(TypeError) { $' }
     assert_raise(TypeError) { $+ }
+=end
   end
 
   def test_unicode
@@ -1093,7 +1096,9 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(a, b, '[ruby-core:24748]')
     h = {a => 42}
     assert_equal(42, h[b], '[ruby-core:24748]')
+=begin
     assert_match(/#<TestRegexp::MatchData_\u{3042}:/, MatchData_A.allocate.inspect)
+=end
 
     h = /^(?<@time>\d+): (?<body>.*)/.match("123456: hoge fuga")
     assert_equal("123456", h["@time"])

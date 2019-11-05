@@ -4110,6 +4110,7 @@ Init_Regexp(void)
     rb_cMatch  = rb_define_class("MatchData", rb_cObject);
     rb_define_alloc_func(rb_cMatch, match_alloc);
     rb_undef_method(CLASS_OF(rb_cMatch), "new");
+    rb_undef_method(CLASS_OF(rb_cMatch), "allocate");
 
     rb_define_method(rb_cMatch, "initialize_copy", match_init_copy, 1);
     rb_define_method(rb_cMatch, "regexp", match_regexp, 0);
