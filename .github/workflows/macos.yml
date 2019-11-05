@@ -55,7 +55,7 @@ jobs:
       - name: Make
         run: make -C build $JOBS
       - name: Tests
-        run: make -C build -s ${{ matrix.test_task }}
+        run: make -C build $JOBS -s ${{ matrix.test_task }}
         env:
           MSPECOPT: "-ff" # not using `-j` because sometimes `mspec -j` silently dies
           RUBY_TESTOPTS: "-q --tty=no"
