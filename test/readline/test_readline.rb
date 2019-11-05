@@ -36,7 +36,7 @@ module BasetestReadline
         Readline.readline("> ", true)
       }
       assert_equal("hello", line)
-      assert_equal(true, line.tainted?)
+      assert_equal(true, line.tainted?) if RUBY_VERSION < '2.7'
       stdout.rewind
       assert_equal("> ", stdout.read(2))
       assert_equal(1, Readline::HISTORY.length)
