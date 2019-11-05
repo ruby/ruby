@@ -5,7 +5,8 @@ module MultiFormatter
   end
 
   def multi_initialize
-    @counter = @tally = Tally.new
+    @tally = TallyAction.new
+    @counter = @tally.counter
     @timer = TimerAction.new
     @timer.start
   end
@@ -31,11 +32,11 @@ module MultiFormatter
 
       if d # The file might be empty if the child process died
         @exceptions += Array(d['exceptions'])
-        @tally.files!        d['files']
-        @tally.examples!     d['examples']
-        @tally.expectations! d['expectations']
-        @tally.errors!       d['errors']
-        @tally.failures!     d['failures']
+        @counter.files!        d['files']
+        @counter.examples!     d['examples']
+        @counter.expectations! d['expectations']
+        @counter.errors!       d['errors']
+        @counter.failures!     d['failures']
       end
     end
   end
