@@ -3797,8 +3797,8 @@ AS_IF([test "${universal_binary-no}" = yes ], [
     AC_SUBST(UNIVERSAL_ARCHNAMES, "${universal_archnames}")
     AC_SUBST(UNIVERSAL_INTS, "${ints}")
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM_OS, "${target_os}")
-    AC_DEFINE_UNQUOTED(RUBY_ARCH, "universal-"RUBY_PLATFORM_OS)
-    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "universal."RUBY_PLATFORM_CPU"-"RUBY_PLATFORM_OS)
+    AC_DEFINE_UNQUOTED(RUBY_ARCH, "universal-" RUBY_PLATFORM_OS)
+    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "universal." RUBY_PLATFORM_CPU "-" RUBY_PLATFORM_OS)
 ], [
     arch="${target_cpu}-${target_os}"
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "$arch")
