@@ -97,6 +97,16 @@ class DottedFormatter
     end
   end
 
+  # Callback for the MSpec :start event. Calls :after event.
+  def start
+    after
+  end
+
+  # Callback for the MSpec :unload event. Calls :after event.
+  def unload
+    after
+  end
+
   # Callback for the MSpec :finish event. Prints a description
   # and backtrace for every exception that occurred while
   # evaluating the examples.
