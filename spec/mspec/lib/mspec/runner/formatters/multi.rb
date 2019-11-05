@@ -1,11 +1,21 @@
-require 'mspec/runner/formatters/spinner'
+module MultiFormatter
+  def self.extend_object(obj)
+    super
+    obj.multi_initialize
+  end
 
-class MultiFormatter < SpinnerFormatter
-  def initialize(out=nil)
-    super(out)
+  def multi_initialize
     @counter = @tally = Tally.new
     @timer = TimerAction.new
     @timer.start
+  end
+
+  def register
+    super
+
+    MSpec.register :start, self
+    MSpec.register :unload, self
+    MSpec.unregister :before, self
   end
 
   def aggregate_results(files)

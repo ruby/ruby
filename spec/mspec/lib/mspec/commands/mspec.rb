@@ -90,8 +90,7 @@ class MSpecMain < MSpecScript
 
   def multi_exec(argv)
     require 'mspec/runner/formatters/multi'
-    formatter = MultiFormatter.new
-    warn "formatter options is ignored due to multi option" if config[:formatter]
+    formatter = config_formatter.extend(MultiFormatter)
 
     require 'mspec/runner/parallel'
     processes = cores(@files.size)
