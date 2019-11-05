@@ -6999,6 +6999,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "fill", rb_ary_fill, -1);
     rb_define_method(rb_cArray, "include?", rb_ary_includes, 1);
     rb_define_method(rb_cArray, "<=>", rb_ary_cmp, 1);
+    rb_define_method(rb_cArray, "freeze", rb_ary_freeze, 0);
 
     rb_define_method(rb_cArray, "slice", rb_ary_aref, -1);
     rb_define_method(rb_cArray, "slice!", rb_ary_slice_bang, -1);
