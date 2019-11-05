@@ -1547,6 +1547,11 @@ eom
     end
   end
 
+  def test_expected_tokens
+    ex = assert_syntax_error('class A', /unexpected end-of-input/)
+    assert_equal ["`class'", "`def'", "`module'", "`undef'"], ex.expected_tokens.sort
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end

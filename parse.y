@@ -262,6 +262,8 @@ struct parser_params {
     VALUE debug_buffer;
     VALUE debug_output;
 
+    VALUE expected_tokens;
+
     ID cur_arg;
 
     rb_ast_t *ast;
@@ -12282,6 +12284,7 @@ parser_initialize(struct parser_params *p)
 #endif
     p->debug_buffer = Qnil;
     p->debug_output = rb_stdout;
+    p->expected_tokens = Qfalse;
     p->enc = rb_utf8_encoding();
 }
 
@@ -12622,6 +12625,11 @@ parser_compile_error(struct parser_params *p, const char *fmt, ...)
 			       rb_long2int(p->lex.pcur - p->lex.pbeg),
 			       p->enc, fmt, ap);
     va_end(ap);
+    VALUE expected = p->expected_tokens;
+    p->expected_tokens = Qfalse;
+    if (expected && RTEST(p->error_buffer)) {
+	rb_ivar_set(p->error_buffer, rb_intern("expected_tokens"), expected);
+    }
 }
 
 static size_t
@@ -12641,6 +12649,7 @@ count_char(const char *str, int c)
 RUBY_FUNC_EXPORTED size_t
 rb_yytnamerr(struct parser_params *p, char *yyres, const char *yystr)
 {
+    VALUE expected_token;
     YYUSE(p);
     if (*yystr == '"') {
 	size_t yyn = 0, bquote = 0;
@@ -12692,13 +12701,35 @@ rb_yytnamerr(struct parser_params *p, char *yyres, const char *yystr)
 	      case '\0':
 		if (yyres)
 		    yyres[yyn] = '\0';
+		else {
+		    if (!p->expected_tokens) {
+			p->expected_tokens = rb_ary_new();
+		    }
+		    else {
+			expected_token = rb_str_new(0, yyn);
+			rb_yytnamerr(p, RSTRING_PTR(expected_token), yystr);
+			rb_str_freeze(expected_token);
+			rb_ary_push(p->expected_tokens, expected_token);
+		    }
+		}
 		return yyn;
 	    }
 	}
       do_not_strip_quotes: ;
     }
 
-    if (!yyres) return strlen(yystr);
+    if (!yyres) {
+	size_t yyn = strlen(yystr);
+	if (!p->expected_tokens) {
+	    p->expected_tokens = rb_ary_new();
+	}
+	else {
+	    expected_token = rb_str_new(yystr, yyn);
+	    rb_str_freeze(expected_token);
+	    rb_ary_push(p->expected_tokens, expected_token);
+	}
+	return yyn;
+    }
 
     return (YYSIZE_T)(yystpcpy(yyres, yystr) - yyres);
 }
@@ -13079,6 +13110,28 @@ ripper_token(VALUE self)
     return rb_str_subseq(p->lex.lastline, pos, len);
 }
 
+/*
+ *  call-seq:
+ *    ripper.expected_tokens   -> Array of String
+ *
+ *  Return the expected token strings at parse error, or +nil+ if no error.
+ */
+static VALUE
+ripper_expected_tokens(VALUE self)
+{
+    struct parser_params *p;
+
+    TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
+    if (!ripper_initialized_p(p)) {
+        rb_raise(rb_eArgError, "method called for uninitialized object");
+    }
+    if (NIL_P(p->parsing_thread)) return Qnil;
+    VALUE expected_tokens = p->expected_tokens;
+    p->expected_tokens = Qfalse;
+    if (!expected_tokens) return Qnil;
+    return rb_ary_freeze(expected_tokens);
+}
+
 #ifdef RIPPER_DEBUG
 /* :nodoc: */
 static VALUE
@@ -13149,6 +13202,7 @@ InitVM_ripper(void)
     rb_define_method(Ripper, "debug_output", rb_parser_get_debug_output, 0);
     rb_define_method(Ripper, "debug_output=", rb_parser_set_debug_output, 1);
     rb_define_method(Ripper, "error?", ripper_error_p, 0);
+    rb_define_method(Ripper, "expected_tokens", ripper_expected_tokens, 0);
 #ifdef RIPPER_DEBUG
     rb_define_method(Ripper, "assert_Qundef", ripper_assert_Qundef, 2);
     rb_define_method(Ripper, "rawVALUE", ripper_value, 1);

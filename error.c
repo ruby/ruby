@@ -1897,6 +1897,12 @@ syntax_error_initialize(int argc, VALUE *argv, VALUE self)
     return rb_call_super(argc, argv);
 }
 
+static VALUE
+syntax_error_expected_tokens(VALUE self)
+{
+    return rb_attr_get(self, rb_intern("expected_tokens"));
+}
+
 /*
  *  Document-module: Errno
  *
@@ -2523,6 +2529,7 @@ Init_Exception(void)
     rb_eScriptError = rb_define_class("ScriptError", rb_eException);
     rb_eSyntaxError = rb_define_class("SyntaxError", rb_eScriptError);
     rb_define_method(rb_eSyntaxError, "initialize", syntax_error_initialize, -1);
+    rb_define_method(rb_eSyntaxError, "expected_tokens", syntax_error_expected_tokens, 0);
 
     rb_eLoadError   = rb_define_class("LoadError", rb_eScriptError);
     /* the path failed to load */
