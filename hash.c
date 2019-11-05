@@ -4749,8 +4749,8 @@ env_delete(VALUE name)
  * deletes the environment variable and returns its value (ignoring the block):
  *   ENV['foo'] = '0'
  *   ENV.delete('foo') { |name| fail 'ignored' } # => "0"
- * Raises TypeError if +name+ is not a String and cannot be coerced with \#to_str:
- *   ENV.delete(Object.new) # => TypeError raised
+ * Raises an exception if +name+ is invalid.
+ * See {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values].
  */
 static VALUE
 env_delete_m(VALUE obj, VALUE name)
@@ -4767,13 +4767,13 @@ env_delete_m(VALUE obj, VALUE name)
  *   ENV[name] -> value
  *
  * Returns the value for the environment variable +name+ if it exists:
- *   ENV['foo'] = 'bar'
- *   ENV['foo'] # => "bar"
+ *   ENV['foo'] = '0'
+ *   ENV['foo'] # => "0"
  * Returns nil if the named variable does not exist:
- *   ENV.delete('foo')
+ *   ENV.clear
  *   ENV['foo'] # => nil
- * Raises TypeError if +name+ is not a String and cannot be coerced with \#to_str:
- *   ENV.delete(Object.new) # => TypeError raised
+ * Raises an exception if +name+ is invalid.
+ * See {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values].
  */
 static VALUE
 rb_f_getenv(VALUE obj, VALUE name)
@@ -4795,8 +4795,8 @@ rb_f_getenv(VALUE obj, VALUE name)
  *   ENV.fetch(name) { |name| block } -> value
  *
  * If +name+ is the name of an environment variable, returns its value:
- *   ENV['foo'] = 'bar'
- *   ENV.fetch('foo') # => "bar"
+ *   ENV['foo'] = '0'
+ *   ENV.fetch('foo') # => '0'
  * Otherwise if a block is given (but not a default value),
  * yields +name+ to the block and returns the block's return value:
  *   ENV.fetch('foo') { |name| :need_not_return_a_string } # => :need_not_return_a_string
@@ -4807,11 +4807,11 @@ rb_f_getenv(VALUE obj, VALUE name)
  * issues a warning ("warning: block supersedes default value argument"),
  * yields +name+ to the block, and returns the block's return value:
  *   ENV.fetch('foo', :default) { |name| :block_return } # => :block_return
- * Raises TypeError if +name+ is not a String and cannot be coerced with \#to_str:
- *   ENV.delete(Object.new) # => TypeError raised
- * Raises KeyError if +name+ is a String, but is not found,
+ * Raises KeyError if +name+ is valid, but not found,
  * and neither default value nor block is given:
- *   ENV.fetch('foo') # => KeyError raised
+ *   ENV.fetch('foo') # => KeyError (key not found: "foo")
+ * Raises an exception if +name+ is invalid.
+ * See {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values].
  */
 static VALUE
 env_fetch(int argc, VALUE *argv, VALUE _)
@@ -5097,15 +5097,61 @@ ruby_unsetenv(const char *name)
 /*
  * call-seq:
  *   ENV[name] = value
- *   ENV.store(name, value) -> value
  *
- * Sets the environment variable +name+ to +value+.  If the value given is
- * +nil+ the environment variable is deleted.
- * +name+ must be a string.
+ * Creates, updates, or deletes the named environment variable, returning the value.
+ * Both +name+ and +value+ may be instances of String.
+ * See {Valid Names and Values}[#class-ENV-label-Valid+Names+and+Values].
  *
+ * - If the named environment variable does not exist:
+ *   - If +value+ is not +nil+, creates the environment variable with +name+ and +value+:
+ *       ENV.clear
+ *       ENV['foo'] ='0' # => '0'
+ *   - If +value+ is +nil+, does nothing.
+ *       ENV.clear
+ *       ENV['foo'] = nil # => nil
+ * - If the named environment variable exists:
+ *   - If +value+ is not +nil+, updates the envirionment variable with value +value+:
+ *       ENV['foo'] = # => '1'
+ *   - If +value+ is +nil+, deletes the environment variable:
+ *       ENV['foo'] = nil # => nil
+ *
+ * Raises an exception if +name+ or +value+ is invalid.
+ * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
  */
 static VALUE
 env_aset_m(VALUE obj, VALUE nm, VALUE val)
+{
+    return env_aset(nm, val);
+}
+
+/*
+ * call-seq:
+ *   ENV.store(name, value) -> value
+ *
+ * ENV.store is an alias for ENV.[]=.
+ *
+ * Creates, updates, or deletes the named environment variable, returning the value.
+ * Both +name+ and +value+ may be instances of String.
+ * See details at {Valid Names and Values}[#class-ENV-label-Valid+Names+and+Values].
+ *
+ * - If the named environment variable does not exist:
+ *   - If +value+ is not +nil+, creates the environment variable with +name+ and +value+:
+ *       ENV.clear
+ *       ENV.store('foo', '0') # => '0'
+ *   - If +value+ is +nil+, does nothing.
+ *       ENV.clear
+ *       ENV.store('foo', nil) # => nil
+ * - If the named environment variable exists:
+ *   - If +value+ is not +nil+, updates the envirionment variable with value +value+:
+ *       ENV.store('foo', '1') # => '1'
+ *   - If +value+ is +nil+, deletes the environment variable:
+ *       ENV.store('foo', nil) # => nil
+ *
+ * Raises an exception if +name+ or +value+ is invalid.
+ * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
+ */
+static VALUE
+env_store(VALUE obj, VALUE nm, VALUE val)
 {
     return env_aset(nm, val);
 }
@@ -6216,24 +6262,60 @@ Init_Hash(void)
      * ENV is a hash-like accessor for environment variables.
      *
      * === Interaction with the Operating System
+     *
      * The ENV object interacts with the operating system's environment variables:
+     *
      * - When you get the value for a name in ENV, the value is retrieved from among the current environment variables.
      * - When you create or set a name-value pair in ENV, the name and value are immediately set in the environment variables.
      * - When you delete a name-value pair in ENV, it is immediately deleted from the environment variables.
      *
      * === Names and Values
-     * Generally speaking, each name or value is a String.
      *
-     * Strictly speaking:
-     * - Each name or value must be one of the following:
-     *   - A String.
-     *   - An object that responds to #to_str by returning a String, which will be used as the name or value.
-     * - A name may not:
-     *   - Be the empty string.
-     *   - Contain character <code>=</code> or the NUL character (<code>"\0"</code>).
-     *   - Have an ASCII-incompatible encoding (e.g., UTF-16LE, ISO-2022-JP).
+     * Generally, a name or value is a String.
+     *
+     * ==== Valid Names and Values
+     *
+     * Each name or value must be one of the following:
+     *
+     * - A String.
+     * - An object that responds to \#to_str by returning a String, in which case that String will be used as the name or value.
+     *
+     * ==== Invalid Names and Values
+     *
+     * A new name:
+     *
+     * - May not be a non-String that does not respond to \#to_str:
+     *     ENV[Object.new] = '0'
+     *     # => TypeError (no implicit conversion of Object into String) raised
+     *
+     * - May not be the empty string:
+     *     ENV[''] = '0'
+     *     # => Errno::EINVAL (Invalid argument - ruby_setenv()) raised
+     *
+     * - May not contain character <code>"="</code>:
+     *     ENV['='] = '0'
+     *     # => Errno::EINVAL (Invalid argument - ruby_setenv(=)) raised
+     *
+     * - May not contain the NUL character <code>"\0"</code>:
+     *     ENV["\0"] == '0'
+     *     # => ArgumentError (bad environment variable name: contains null byte) raised
+     *
+     * - May not have an ASCII-incompatible encoding such as UTF-16LE or ISO-2022-JP:
+     *
+     *     ENV["foo".force_encoding(Encoding::ISO_2022_JP)] = '0'
+     *     # => ArgumentError (bad environment variable name: ASCII incompatible encoding: ISO-2022-JP) raised
+     *     ENV["\xa1\xa1".force_encoding(Encoding::UTF_16LE)] = '0'
+     *     # => ArgumentError (bad environment variable name: ASCII incompatible encoding: UTF-16LE)  raised
+     *
+     * A new value:
+     *
+     * - May not be a non-String that does not respond to \#to_str:
+     *
+     *     ENV['foo'] = Object.new
+     *     # => TypeError (no implicit conversion of Object into String) raised
      *
      * === About Ordering
+     *
      * ENV presents its content in the order found
      * in the operating system's environment variables.
      * Therefore the ordering of ENV content is OS-dependent, and may be indeterminate.
@@ -6243,6 +6325,13 @@ Init_Hash(void)
      * - An Enumerator returned by an ENV method.
      * - An Array returned by ENV.keys, ENV.values, or ENV.to_a.
      * - The String returned by ENV.inspect.
+     *
+     * === About the Examples
+     * Some methods in ENV return ENV itself. Typically, there are many environment variables.
+     * It's not useful to display a large ENV in the examples here,
+     * so most example snippets begin by resetting the contents of ENV:
+     * - ENV.replace replaces ENV with a new collection of entries.
+     * - ENV.clear empties ENV.
      */
 
     /*
@@ -6256,7 +6345,7 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "[]", rb_f_getenv, 1);
     rb_define_singleton_method(envtbl, "fetch", env_fetch, -1);
     rb_define_singleton_method(envtbl, "[]=", env_aset_m, 2);
-    rb_define_singleton_method(envtbl, "store", env_aset_m, 2);
+    rb_define_singleton_method(envtbl, "store", env_store, 2);
     rb_define_singleton_method(envtbl, "each", env_each_pair, 0);
     rb_define_singleton_method(envtbl, "each_pair", env_each_pair, 0);
     rb_define_singleton_method(envtbl, "each_key", env_each_key, 0);
