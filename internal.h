@@ -2395,12 +2395,12 @@ RUBY_FUNC_NONNULL(1, bool rb_method_basic_definition_p_with_cc(struct rb_call_da
 #ifdef __GNUC__
 # define rb_funcallv(recv, mid, argc, argv) \
     __extension__({ \
-        static struct rb_call_data rb_funcallv_data = { { 0, }, { 0, }, }; \
+        static struct rb_call_data rb_funcallv_data; \
         rb_funcallv_with_cc(&rb_funcallv_data, recv, mid, argc, argv); \
     })
 # define rb_method_basic_definition_p(klass, mid) \
     __extension__({ \
-        static struct rb_call_data rb_mbdp = { { 0, }, { 0, }, }; \
+        static struct rb_call_data rb_mbdp; \
         (klass == Qfalse) ? /* hidden object cannot be overridden */ true : \
             rb_method_basic_definition_p_with_cc(&rb_mbdp, klass, mid); \
     })
