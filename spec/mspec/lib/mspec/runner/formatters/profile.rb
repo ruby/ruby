@@ -38,7 +38,7 @@ class ProfileFormatter < DottedFormatter
 
   # Callback for the MSpec :after event. Prints a
   # newline to finish the description string output.
-  def after(state)
+  def after(state = nil)
     @its << [@describe_name, @it_name, Time.now.to_f - @it_time]
     super
   end

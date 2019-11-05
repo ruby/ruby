@@ -60,7 +60,7 @@ class MethodFormatter < DottedFormatter
 
   # Callback for the MSpec :after event. Sets or adds to
   # tallies for the example block.
-  def after(state)
+  def after(state = nil)
     h = methods[@key]
     h[:examples]     += tally.counter.examples
     h[:expectations] += tally.counter.expectations

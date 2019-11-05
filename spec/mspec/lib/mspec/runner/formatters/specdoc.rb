@@ -35,7 +35,7 @@ class SpecdocFormatter < DottedFormatter
 
   # Callback for the MSpec :after event. Prints a
   # newline to finish the description string output.
-  def after(state)
+  def after(state = nil)
     print "\n"
   end
 end

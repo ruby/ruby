@@ -16,7 +16,7 @@ class YamlFormatter < DottedFormatter
     @out = @finish
   end
 
-  def after(state)
+  def after(state = nil)
   end
 
   def finish
