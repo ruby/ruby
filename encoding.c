@@ -1917,12 +1917,6 @@ rb_enc_aliases(VALUE klass)
  */
 
 void
-Init_encodings(void)
-{
-    rb_enc_init();
-}
-
-void
 Init_Encoding(void)
 {
 #undef rb_intern
@@ -1965,6 +1959,12 @@ Init_Encoding(void)
     }
 
     rb_marshal_define_compat(rb_cEncoding, Qnil, NULL, enc_m_loader);
+}
+
+void
+Init_encodings(void)
+{
+    rb_enc_init();
 }
 
 /* locale insensitive ctype functions */
