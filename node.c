@@ -1129,7 +1129,7 @@ typedef struct {
 struct node_buffer_struct {
     node_buffer_list_t unmarkable;
     node_buffer_list_t markable;
-    VALUE mark_ary;
+    VALUE mark_hash;
 };
 
 static void
@@ -1154,7 +1154,7 @@ rb_node_buffer_new(void)
     node_buffer_t *nb = ruby_xmalloc(alloc_size);
     init_node_buffer_list(&nb->unmarkable, (node_buffer_elem_t*)&nb[1]);
     init_node_buffer_list(&nb->markable, (node_buffer_elem_t*)((size_t)nb->unmarkable.head + bucket_size));
-    nb->mark_ary = Qnil;
+    nb->mark_hash = Qnil;
     return nb;
 }
 
@@ -1350,7 +1350,7 @@ rb_ast_update_references(rb_ast_t *ast)
 void
 rb_ast_mark(rb_ast_t *ast)
 {
-    if (ast->node_buffer) rb_gc_mark(ast->node_buffer->mark_ary);
+    if (ast->node_buffer) rb_gc_mark(ast->node_buffer->mark_hash);
     if (ast->body.compile_option) rb_gc_mark(ast->body.compile_option);
     if (ast->node_buffer) {
         node_buffer_t *nb = ast->node_buffer;
@@ -1403,8 +1403,8 @@ rb_ast_dispose(rb_ast_t *ast)
 void
 rb_ast_add_mark_object(rb_ast_t *ast, VALUE obj)
 {
-    if (NIL_P(ast->node_buffer->mark_ary)) {
-        RB_OBJ_WRITE(ast, &ast->node_buffer->mark_ary, rb_ary_tmp_new(0));
+    if (NIL_P(ast->node_buffer->mark_hash)) {
+        RB_OBJ_WRITE(ast, &ast->node_buffer->mark_hash, rb_ident_hash_new());
     }
-    rb_ary_push(ast->node_buffer->mark_ary, obj);
+    rb_hash_aset(ast->node_buffer->mark_hash, obj, Qtrue);
 }
