@@ -5213,7 +5213,15 @@ env_keys(void)
  * call-seq:
  *   ENV.keys -> Array
  *
- * Returns every environment variable name in an Array
+ * Returns all variable names in an Array:
+ *   ENV.replace('foo' => '0', 'bar' => '1')
+ *   ENV.keys # => ['bar', 'foo']
+ * The order of the names is OS-dependent.
+ * See {About Ordering}[#class-ENV-label-About+Ordering].
+ *
+ * Returns the empty Array if ENV is empty:
+ *   ENV.clear
+ *   ENV.keys # => []
  */
 
 static VALUE
@@ -5753,8 +5761,22 @@ env_has_key(VALUE env, VALUE key)
  * call-seq:
  *   ENV.assoc(name) -> Array or nil
  *
- * Returns an Array of the name and value of the environment variable with
- * +name+ or +nil+ if the name cannot be found.
+ * Returns a 2-element Array containing the name and value of the environment variable
+ * for +name+ if it exists:
+ *   ENV.replace('foo' => '0', 'bar' => '1')
+ *   ENV.assoc('foo') # => ['foo' '0']
+ * Returns +nil+ if +name+ is a valid String and there is no such environment variable:
+ *   ENV.assoc('baz') # => false
+ * Returns +nil+ if +name+ is the empty String or is a String containing character <code>'='</code>:
+ *   ENV.assoc('') # => false
+ *   ENV.assoc('=') # => false
+ * Raises an exception if +name+ is a String containing the NUL character <code>"\0"</code>:
+ *   ENV.assoc("\0") # Raises ArgumentError (bad environment variable name: contains null byte)
+ * Raises an exception if +name+ has an encoding that is not ASCII-compatible:
+ *   ENV.assoc("\xa1\xa1".force_encoding(Encoding::UTF_16LE))
+ *   # Raises ArgumentError (bad environment variable name: ASCII incompatible encoding: UTF-16LE)
+ * Raises an exception if +name+ is not a String:
+ *   ENV.assoc(Object.new) # TypeError (no implicit conversion of Object into String)
  */
 static VALUE
 env_assoc(VALUE env, VALUE key)
@@ -5832,10 +5854,18 @@ env_rassoc(VALUE dmy, VALUE obj)
 
 /*
  * call-seq:
- *   ENV.key(value) -> name
+ *   ENV.key(value) -> name or nil
  *
- * Returns the name of the environment variable with +value+.  If the value is
- * not found +nil+ is returned.
+ * Returns the name of the first environment variable with +value+ if it exists:
+ *   ENV.replace('foo' => '0', 'bar' => '1')
+ *   ENV.key('0') # =>'foo'
+ * The order in which environment variables are examined is OS-dependent.
+ * See {About Ordering}[#class-ENV-label-About+Ordering].
+ *
+ * Returns +nil+ if there is no such value:
+ *   ENV.key('2') # => nil
+ * Raises an exception if +value+ is not a String:
+ *   ENV.key(Object.new) # raises TypeError (no implicit conversion of Object into String)
  */
 static VALUE
 env_key(VALUE dmy, VALUE value)
@@ -6384,6 +6414,7 @@ Init_Hash(void)
      * - An Array returned by ENV.keys, ENV.values, or ENV.to_a.
      * - The String returned by ENV.inspect.
      * - The Array returned by ENV.shift.
+     * - The name returned by ENV.key.
      *
      * === About the Examples
      * Some methods in ENV return ENV itself. Typically, there are many environment variables.
