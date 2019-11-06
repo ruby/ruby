@@ -461,12 +461,4 @@ class TestGc < Test::Unit::TestCase
     skip "finalizers did not get run" if @result.empty?
     assert_equal([:c1, :c2], @result)
   end
-
-  def test_object_ids_never_repeat
-    GC.start
-    a = 1000.times.map { Object.new.object_id }
-    GC.start
-    b = 1000.times.map { Object.new.object_id }
-    assert_empty(a & b)
-  end
 end
