@@ -34,6 +34,7 @@
 # * https://github.com/ruby/mutex_m
 # * https://github.com/ruby/racc
 # * https://github.com/ruby/singleton
+# * https://github.com/ruby/open3
 #
 
 require 'fileutils'
@@ -74,7 +75,8 @@ $repositories = {
   e2mmap: "ruby/e2mmap",
   mutex_m: "ruby/mutex_m",
   racc: "ruby/racc",
-  singleton: "ruby/singleton"
+  singleton: "ruby/singleton",
+  open3: "ruby/open3",
 }
 
 def sync_default_gems(gem)

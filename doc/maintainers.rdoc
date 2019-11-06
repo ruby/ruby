@@ -80,8 +80,6 @@ Zachary Scott (zzak)
   _unmaintained_
 [lib/open-uri.rb]
   Tanaka Akira (akr)
-[lib/open3.rb]
-  _unmaintained_
 [lib/optparse.rb, lib/optparse/*]
   Nobuyuki Nakada (nobu)
 [lib/pp.rb]
@@ -207,6 +205,10 @@ Zachary Scott (zzak)
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/mutex_m
   https://rubygems.org/gems/mutex_m
+[lib/open3.rb]
+  _unmaintained_
+  https://github.com/ruby/open3
+  https://rubygems.org/gems/open3
 [lib/ostruct.rb]
   Marc-Andre Lafortune (marcandre)
   https://github.com/ruby/ostruct
