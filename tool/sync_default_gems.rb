@@ -212,9 +212,8 @@ def sync_default_gems(gem)
     rm_rf("test/racc/lib")
     rm_rf("lib/racc/cparse-jruby.jar")
     `git checkout ext/racc/cparse/README ext/racc/cparse/depend`
-  when "rexml", "rss", "matrix", "irb", "csv", "logger", "ostruct", "webrick", "fileutils", "forwardable", "prime", "tracer", "ipaddr", "mutex_m", "singleton"
-    sync_lib gem
   else
+    sync_lib gem
   end
 end
 
