@@ -35,6 +35,7 @@
 # * https://github.com/ruby/racc
 # * https://github.com/ruby/singleton
 # * https://github.com/ruby/open3
+# * https://github.com/ruby/getoptlong
 #
 
 require 'fileutils'
@@ -77,6 +78,7 @@ $repositories = {
   racc: "ruby/racc",
   singleton: "ruby/singleton",
   open3: "ruby/open3",
+  getoptlong: "ruby/getoptlong",
 }
 
 def sync_default_gems(gem)
@@ -295,7 +297,7 @@ def sync_lib(repo)
           else
             "test/test_#{repo}.rb"
           end
-  cp_r("../#{repo}/#{tests}", "test")
+  cp_r("../#{repo}/#{tests}", "test") if File.exist?("../#{repo}/#{tests}")
   gemspec = if File.directory?("lib/#{repo}")
               "lib/#{repo}/#{repo}.gemspec"
             else
