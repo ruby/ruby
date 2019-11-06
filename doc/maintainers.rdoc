@@ -171,116 +171,151 @@ Zachary Scott (zzak)
 [lib/bundler.rb, lib/bundler/*]
   Hiroshi SHIBATA (hsbt)
   https://github.com/bundler/bundler
+  https://rubygems.org/gems/bundler
 [lib/csv.rb]
   Kenta Murata (mrkn), Kouhei Sutou (kou)
   https://github.com/ruby/csv
+  https://rubygems.org/gems/csv
 [lib/e2mmap.rb]
   Keiju ISHITSUKA (keiju)
+  https://rubygems.org/gems/e2mmap
 [lib/fileutils.rb]
   _unmaintained_
   https://github.com/ruby/fileutils
+  https://rubygems.org/gems/fileutils
 [lib/forwardable.rb]
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/forwardable
+  https://rubygems.org/gems/forwardable
 [lib/ipaddr.rb]
   Akinori MUSHA (knu)
   https://github.com/ruby/ipaddr
+  https://rubygems.org/gems/ipaddr
 [lib/irb.rb, lib/irb/*]
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/irb
+  https://rubygems.org/gems/irb
 [lib/logger.rb]
   Naotoshi Seo (sonots)
   https://github.com/ruby/logger
+  https://rubygems.org/gems/logger
 [lib/matrix.rb]
   Marc-Andre Lafortune (marcandre)
   https://github.com/ruby/matrix
+  https://rubygems.org/gems/matrix
 [lib/mutex_m.rb]
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/mutex_m
+  https://rubygems.org/gems/mutex_m
 [lib/ostruct.rb]
   Marc-Andre Lafortune (marcandre)
   https://github.com/ruby/ostruct
+  https://rubygems.org/gems/ostruct
 [lib/prime.rb]
   Yuki Sonoda (yugui)
   https://github.com/ruby/prime
 [lib/racc.rb, lib/racc/*]
   Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/racc
+  https://rubygems.org/gems/racc
 [lib/rdoc.rb, lib/rdoc/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/rdoc
+  https://rubygems.org/gems/rdoc
 [lib/reline.rb, lib/reline/*]
   aycabta
   https://github.com/ruby/reline
+  https://rubygems.org/gems/reline
 [lib/rexml/*]
   Kouhei Sutou (kou)
   https://github.com/ruby/rexml
+  https://rubygems.org/gems/rexml
 [lib/rss.rb, lib/rss/*]
   Kouhei Sutou (kou)
   https://github.com/ruby/rss
+  https://rubygems.org/gems/rss
 [lib/singleton.rb]
   Yukihiro Matsumoto (matz)
   https://github.com/ruby/singleton
+  https://rubygems.org/gems/singleton
 [lib/thwait.rb]
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/thwait
+  https://rubygems.org/gems/thwait
 [lib/tracer.rb]
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/tracer
 [lib/webrick.rb, lib/webrick/*]
   Eric Wong (normalperson)
   https://bugs.ruby-lang.org/
+  https://rubygems.org/gems/webrick
 
 === Extensions
 
 [ext/bigdecimal]
   Kenta Murata (mrkn)
   https://github.com/ruby/bigdecimal
+  https://rubygems.org/gems/bigdecimal
 [ext/date]
   _unmaintained_
   https://github.com/ruby/date
+  https://rubygems.org/gems/date
 [ext/dbm]
   _unmaintained_
   https://github.com/ruby/dbm
+  https://rubygems.org/gems/dbm
 [ext/etc]
   Ruby core team
   https://github.com/ruby/etc
+  https://rubygems.org/gems/etc
 [ext/fcntl]
   Ruby core team
   https://github.com/ruby/fcntl
+  https://rubygems.org/gems/fcntl
 [ext/fiddle]
   Aaron Patterson (tenderlove)
   https://github.com/ruby/fiddle
+  https://rubygems.org/gems/fiddle
 [ext/gdbm]
   Yukihiro Matsumoto (matz)
   https://github.com/ruby/gdbm
+  https://rubygems.org/gems/gdbm
 [ext/io/console]
   Nobuyuki Nakada (nobu)
   https://github.com/ruby/io-console
+  https://rubygems.org/gems/io-console
 [ext/json]
   NARUSE, Yui (naruse), Hiroshi SHIBATA (hsbt)
   https://github.com/flori/json
+  https://rubygems.org/gems/json
 [ext/openssl]
   Kazuki Yamaguchi (rhe)
   https://github.com/ruby/openssl
+  https://rubygems.org/gems/openssl
 [ext/psych]
   Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/psych
+  https://rubygems.org/gems/psych
 [ext/racc]
   Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/racc
+  https://rubygems.org/gems/racc
 [ext/sdbm]
   Yukihiro Matsumoto (matz)
   https://github.com/ruby/sdbm
+  https://rubygems.org/gems/sdbm
 [ext/stringio]
   Nobuyuki Nakada (nobu)
   https://github.com/ruby/stringio
+  https://rubygems.org/gems/stringio
 [ext/strscan]
   Kouhei Sutou (kou)
   https://github.com/ruby/strscan
+  https://rubygems.org/gems/strscan
 [ext/zlib]
   NARUSE, Yui (naruse)
   https://github.com/ruby/zlib
+  https://rubygems.org/gems/zlib
 
 == Bundled gems upstream repositories
 
