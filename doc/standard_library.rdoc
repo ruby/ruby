@@ -18,7 +18,6 @@ DRb:: Distributed object system for Ruby
 English.rb:: Require 'English.rb' to reference global variables with less cryptic names
 ERB:: An easy to use but powerful templating system for Ruby
 Find:: This module supports top-down traversal of a set of file paths
-GetoptLong:: Parse command line options similar to the GNU C getopt_long()
 MakeMakefile:: Module used to generate a Makefile for C extensions
 Monitor:: Provides an object or module to use safely by more than one thread
 Net::FTP:: Support for the File Transfer Protocol
@@ -74,6 +73,7 @@ CSV:: Provides an interface to read and write CSV files and data
 E2MM:: Module for defining custom exceptions with specific messages
 FileUtils:: Several file utility methods for copying, moving, removing, etc
 Forwardable:: Provides delegation of specified methods to a designated object
+GetoptLong:: Parse command line options similar to the GNU C getopt_long()
 IPAddr:: Provides methods to manipulate IPv4 and IPv6 IP addresses
 IRB:: Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
 Logger:: Provides a simple logging utility for outputting messages

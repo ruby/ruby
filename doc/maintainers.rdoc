@@ -58,8 +58,6 @@ Zachary Scott (zzak)
   Masatoshi SEKI (seki), Takashi Kokubun (k0kubun)
 [lib/find.rb]
   Kazuki Tsujimoto (ktsj)
-[lib/getoptlong.rb]
-  _unmaintained_
 [lib/mkmf.rb]
   _unmaintained_
 [lib/monitor.rb]
@@ -185,6 +183,10 @@ Zachary Scott (zzak)
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/forwardable
   https://rubygems.org/gems/forwardable
+[lib/getoptlong.rb]
+  _unmaintained_
+  https://github.com/ruby/getoptlong
+  https://rubygems.org/gems/getoptlong
 [lib/ipaddr.rb]
   Akinori MUSHA (knu)
   https://github.com/ruby/ipaddr
