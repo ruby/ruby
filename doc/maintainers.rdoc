@@ -105,8 +105,6 @@ Zachary Scott (zzak)
   Tanaka Akira (akr)
 [lib/shellwords.rb]
   Akinori MUSHA (knu)
-[lib/singleton.rb]
-  Yukihiro Matsumoto (matz)
 [lib/tempfile.rb]
   _unmaintained_
 [lib/tmpdir.rb]
@@ -220,6 +218,9 @@ Zachary Scott (zzak)
 [lib/rss.rb, lib/rss/*]
   Kouhei Sutou (kou)
   https://github.com/ruby/rss
+[lib/singleton.rb]
+  Yukihiro Matsumoto (matz)
+  https://github.com/ruby/singleton
 [lib/thwait.rb]
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/thwait

@@ -33,6 +33,7 @@
 # * https://github.com/ruby/e2mmap
 # * https://github.com/ruby/mutex_m
 # * https://github.com/ruby/racc
+# * https://github.com/ruby/singleton
 #
 
 require 'fileutils'
@@ -72,7 +73,8 @@ $repositories = {
   forwardable: "ruby/forwardable",
   e2mmap: "ruby/e2mmap",
   mutex_m: "ruby/mutex_m",
-  racc: "ruby/racc"
+  racc: "ruby/racc",
+  singleton: "ruby/singleton"
 }
 
 def sync_default_gems(gem)
@@ -210,7 +212,7 @@ def sync_default_gems(gem)
     rm_rf("test/racc/lib")
     rm_rf("lib/racc/cparse-jruby.jar")
     `git checkout ext/racc/cparse/README ext/racc/cparse/depend`
-  when "rexml", "rss", "matrix", "irb", "csv", "logger", "ostruct", "webrick", "fileutils", "forwardable", "prime", "tracer", "ipaddr", "mutex_m"
+  when "rexml", "rss", "matrix", "irb", "csv", "logger", "ostruct", "webrick", "fileutils", "forwardable", "prime", "tracer", "ipaddr", "mutex_m", "singleton"
     sync_lib gem
   else
   end
