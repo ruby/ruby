@@ -4728,13 +4728,13 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 
         ADD_INSN3(ret, line, defined,
 		  (rb_is_const_id(node->nd_mid) ?
-		   INT2FIX(DEFINED_CONST) : INT2FIX(DEFINED_METHOD)),
+		   INT2FIX(DEFINED_CONST_FROM) : INT2FIX(DEFINED_METHOD)),
 		  ID2SYM(node->nd_mid), needstr);
         return;
       case NODE_COLON3:
         ADD_INSN1(ret, line, putobject, rb_cObject);
         ADD_INSN3(ret, line, defined,
-		  INT2FIX(DEFINED_CONST), ID2SYM(node->nd_mid), needstr);
+		  INT2FIX(DEFINED_CONST_FROM), ID2SYM(node->nd_mid), needstr);
         return;
 
 	/* method dispatch */
@@ -7493,7 +7493,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	if (node->nd_aid == idOROP) {
 	    lassign = NEW_LABEL(line);
 	    ADD_INSN(ret, line, dup); /* cref cref */
-	    ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_CONST),
+	    ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_CONST_FROM),
 		      ID2SYM(mid), Qfalse); /* cref bool */
 	    ADD_INSNL(ret, line, branchunless, lassign); /* cref */
 	}

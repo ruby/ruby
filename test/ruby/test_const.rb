@@ -50,8 +50,13 @@ class TestConst < Test::Unit::TestCase
 
   def test_const_access_from_nil
     assert_raise(TypeError) { eval("nil::Object") }
+    assert_nil eval("defined?(nil::Object)")
+
     assert_raise(TypeError) { eval("c = nil; c::Object") }
+    assert_nil eval("c = nil; defined?(c::Object)")
+
     assert_raise(TypeError) { eval("sc = Class.new; sc::C = nil; sc::C::Object") }
+    assert_nil eval("sc = Class.new; sc::C = nil; defined?(sc::C::Object)")
   end
 
   def test_redefinition
