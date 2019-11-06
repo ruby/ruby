@@ -4809,7 +4809,7 @@ rb_f_getenv(VALUE obj, VALUE name)
  *   ENV.fetch('foo', :default) { |name| :block_return } # => :block_return
  * Raises KeyError if +name+ is valid, but not found,
  * and neither default value nor block is given:
- *   ENV.fetch('foo') # => KeyError (key not found: "foo")
+ *   ENV.fetch('foo') # Raises KeyError (key not found: "foo")
  * Raises an exception if +name+ is invalid.
  * See {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values].
  */
@@ -5111,7 +5111,7 @@ ruby_unsetenv(const char *name)
  *       ENV['foo'] = nil # => nil
  * - If the named environment variable exists:
  *   - If +value+ is not +nil+, updates the envirionment variable with value +value+:
- *       ENV['foo'] = # => '1'
+ *       ENV['foo'] = '1' => # => '1'
  *   - If +value+ is +nil+, deletes the environment variable:
  *       ENV['foo'] = nil # => nil
  *
@@ -5986,10 +5986,26 @@ env_replace_i(VALUE key, VALUE val, VALUE keys)
 
 /*
  * call-seq:
- *   ENV.replace(hash) -> env
+ *   ENV.replace(hash) -> ENV
  *
- * Replaces the contents of the environment variables with the contents of
- * +hash+.
+ * Replaces the entire content of the environment variables
+ * with the name/value pairs in the given +hash+;
+ * returns ENV.
+ *
+ * Replaces the content of ENV with the given pairs:
+ *   ENV.replace('foo' => '0', 'bar' => '1') # => ENV
+ *   ENV.to_hash # => {"bar"=>"1", "foo"=>"0"}
+ *
+ * Raises an exception if a name or value is invalid.
+ * See {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values].
+ *
+ * Adds new environment variables up to the first error encountered:
+ *   ENV.replace('baz' => '2', Object.new => '3') # Raises exception
+ *   ENV.to_hash # => {"bar"=>"1", "baz"=>"2", "foo"=>"0"}
+
+ * Adds no new environment variable after the first error encountered:
+ *   ENV.replace(Object.new => '3', 'bat' => '4') # Raises exception
+ *   ENV.to_hash # => {"bar"=>"1", "baz"=>"2", "foo"=>"0"}
  */
 static VALUE
 env_replace(VALUE env, VALUE hash)
@@ -6286,33 +6302,45 @@ Init_Hash(void)
      *
      * - May not be a non-String that does not respond to \#to_str:
      *     ENV[Object.new] = '0'
-     *     # => TypeError (no implicit conversion of Object into String) raised
+     *     # Raises TypeError (no implicit conversion of Object into String)
      *
      * - May not be the empty string:
      *     ENV[''] = '0'
-     *     # => Errno::EINVAL (Invalid argument - ruby_setenv()) raised
+     *     # Raises Errno::EINVAL (Invalid argument - ruby_setenv())
      *
      * - May not contain character <code>"="</code>:
      *     ENV['='] = '0'
-     *     # => Errno::EINVAL (Invalid argument - ruby_setenv(=)) raised
+     *     # Raises Errno::EINVAL (Invalid argument - ruby_setenv(=))
      *
      * - May not contain the NUL character <code>"\0"</code>:
      *     ENV["\0"] == '0'
-     *     # => ArgumentError (bad environment variable name: contains null byte) raised
+     *     # Raises ArgumentError (bad environment variable name: contains null byte)
      *
      * - May not have an ASCII-incompatible encoding such as UTF-16LE or ISO-2022-JP:
      *
      *     ENV["foo".force_encoding(Encoding::ISO_2022_JP)] = '0'
-     *     # => ArgumentError (bad environment variable name: ASCII incompatible encoding: ISO-2022-JP) raised
+     *     # Raises ArgumentError (bad environment variable name: ASCII incompatible encoding: ISO-2022-JP)
      *     ENV["\xa1\xa1".force_encoding(Encoding::UTF_16LE)] = '0'
-     *     # => ArgumentError (bad environment variable name: ASCII incompatible encoding: UTF-16LE)  raised
+     *     # Raises ArgumentError (bad environment variable name: ASCII incompatible encoding: UTF-16LE)
      *
      * A new value:
      *
      * - May not be a non-String that does not respond to \#to_str:
      *
      *     ENV['foo'] = Object.new
-     *     # => TypeError (no implicit conversion of Object into String) raised
+     *     # Raises TypeError (no implicit conversion of Object into String)
+     *
+     * - May not contain the NUL character <code>"\0"</code>:
+     *
+     *     ENV['foo'] = "\0"
+     *     # Raises ArgumentError (bad environment variable value: contains null byte)
+     *
+     * - May not have an ASCII-incompatible encoding such as UTF-16LE or ISO-2022-JP:
+     *
+     *     ENV['foo'] = '0'.force_encoding(Encoding::ISO_2022_JP)
+     *     # Raises ArgumentError (bad environment variable name: ASCII incompatible encoding: ISO-2022-JP)
+     *     ENV['foo'] = "\xa1\xa1".force_encoding(Encoding::UTF_16LE)
+     *     # Raises ArgumentError (bad environment variable name: ASCII incompatible encoding: UTF-16LE)
      *
      * === About Ordering
      *
