@@ -1455,6 +1455,7 @@ eom
     assert_syntax_error('->x=_1{}', /ordinary parameter is defined/)
     assert_syntax_error('-> {_1; -> {_2}}', /numbered parameter is already used/)
     assert_syntax_error('-> {-> {_1}; _2}', /numbered parameter is already used/)
+    assert_syntax_error('proc {_1; _1 = nil}', /Can't assign to numbered parameter _1/)
     assert_warn(/`_1' is used as numbered parameter/) {eval('proc {_1 = nil}')}
     assert_warn(/`_2' is used as numbered parameter/) {eval('_2=1')}
     assert_raise_with_message(NameError, /undefined local variable or method `_1'/) {

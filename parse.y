@@ -9960,12 +9960,6 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
 
     }
     switch (id_type(id)) {
-      case ID_INTERNAL:
-	{
-	    int idx = vtable_included(p->lvtbl->args, id);
-	    if (idx) return NEW_DVAR(id, loc);
-	}
-	break;
       case ID_LOCAL:
 	if (dyna_in_block(p) && dvar_defined_ref(p, id, &vidp)) {
 	    if (NUMPARAM_ID_P(id) && numparam_nested_p(p)) return 0;
@@ -10195,8 +10189,6 @@ id_is_var(struct parser_params *p, ID id)
 	switch (id & ID_SCOPE_MASK) {
 	  case ID_GLOBAL: case ID_INSTANCE: case ID_CONST: case ID_CLASS:
 	    return 1;
-	  case ID_INTERNAL:
-	    return vtable_included(p->lvtbl->args, id);
 	  case ID_LOCAL:
 	    if (dyna_in_block(p)) {
 		if (NUMPARAM_ID_P(id) || dvar_defined(p, id)) return 1;
@@ -10452,6 +10444,11 @@ assignable0(struct parser_params *p, ID id, const char **err)
     switch (id_type(id)) {
       case ID_LOCAL:
 	if (dyna_in_block(p)) {
+	    if (p->max_numparam > NO_PARAM && NUMPARAM_ID_P(id)) {
+		compile_error(p, "Can't assign to numbered parameter _%d",
+			      NUMPARAM_ID_TO_IDX(id));
+		return -1;
+	    }
 	    if (dvar_curr(p, id)) return NODE_DASGN_CURR;
 	    if (dvar_defined(p, id)) return NODE_DASGN;
 	    if (local_id(p, id)) return NODE_LASGN;
@@ -10470,15 +10467,6 @@ assignable0(struct parser_params *p, ID id, const char **err)
 	*err = "dynamic constant assignment";
 	return -1;
       case ID_CLASS: return NODE_CVASGN;
-      case ID_INTERNAL:
-	{
-	    int idx = vtable_included(p->lvtbl->args, id);
-	    if (idx) {
-		compile_error(p, "Can't assign to numbered parameter @%d", idx);
-		break;
-	    }
-	}
-	/* fallthru */
       default:
 	compile_error(p, "identifier %"PRIsVALUE" is not valid to set", rb_id2str(id));
     }
