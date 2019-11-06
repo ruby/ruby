@@ -5570,9 +5570,13 @@ rb_env_clear(void)
 
 /*
  * call-seq:
- *   ENV.clear
+ *   ENV.clear -> ENV
  *
- * Removes every environment variable.
+ * Removes every environment variable; returns ENV:
+ *   ENV.replace('foo' => '0', 'bar' => '1')
+ *   ENV.size # => 2
+ *   ENV.clear # => ENV
+ *   ENV.size # => 0
  */
 static VALUE
 env_clear(VALUE _)
@@ -5936,10 +5940,20 @@ env_freeze(VALUE self)
 
 /*
  * call-seq:
- *   ENV.shift -> Array or nil
+ *   ENV.shift -> [name, value] or nil
  *
- * Removes an environment variable name-value pair from ENV and returns it as
- * an Array.  Returns +nil+ if when the environment is empty.
+ * Removes the first environment variable from ENV and returns
+ * a 2-element Array containing its name and value:
+ *   ENV.replace('foo' => '0', 'bar' => '1')
+ *   ENV.to_hash # => {'bar' => '1', 'foo' => '0'}
+ *   ENV.shift # => ['bar', '1']
+ *   ENV.to_hash # => {'foo' => '0'}
+ * Exactly which environment variable is "first" is OS-dependent.
+ * See {About Ordering}[#class-ENV-label-About+Ordering].
+ *
+ * Returns +nil+ if the environment is empty:
+ *   ENV.clear
+ *   ENV.shift # => nil
  */
 static VALUE
 env_shift(VALUE _)
@@ -6344,7 +6358,7 @@ Init_Hash(void)
      *
      * === About Ordering
      *
-     * ENV presents its content in the order found
+     * ENV enumerates its name/value pairs in the order found
      * in the operating system's environment variables.
      * Therefore the ordering of ENV content is OS-dependent, and may be indeterminate.
      *
@@ -6353,6 +6367,7 @@ Init_Hash(void)
      * - An Enumerator returned by an ENV method.
      * - An Array returned by ENV.keys, ENV.values, or ENV.to_a.
      * - The String returned by ENV.inspect.
+     * - The Array returned by ENV.shift.
      *
      * === About the Examples
      * Some methods in ENV return ENV itself. Typically, there are many environment variables.
