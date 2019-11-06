@@ -300,7 +300,8 @@ enum defined_type {
     DEFINED_EXPR,
     DEFINED_IVAR2,
     DEFINED_REF,
-    DEFINED_FUNC
+    DEFINED_FUNC,
+    DEFINED_CONST_FROM
 };
 
 VALUE rb_iseq_defined_string(enum defined_type type);

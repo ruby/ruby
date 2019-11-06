@@ -1830,13 +1830,20 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
       case TS_NUM:		/* ULONG */
 	if (insn == BIN(defined) && op_no == 0) {
 	    enum defined_type deftype = (enum defined_type)op;
-	    if (deftype == DEFINED_FUNC) {
-		ret = rb_fstring_lit("func"); break;
+	    switch (deftype) {
+	      case DEFINED_FUNC:
+		ret = rb_fstring_lit("func");
+		break;
+	      case DEFINED_REF:
+		ret = rb_fstring_lit("ref");
+		break;
+	      case DEFINED_CONST_FROM:
+		ret = rb_fstring_lit("constant-from");
+		break;
+	      default:
+		ret = rb_iseq_defined_string(deftype);
+		break;
 	    }
-	    if (deftype == DEFINED_REF) {
-		ret = rb_fstring_lit("ref"); break;
-	    }
-	    ret = rb_iseq_defined_string(deftype);
 	    if (ret) break;
 	}
 	else if (insn == BIN(checktype) && op_no == 0) {

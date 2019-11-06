@@ -3477,11 +3477,14 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
 	break;
       }
       case DEFINED_CONST:
+      case DEFINED_CONST_FROM: {
+	bool allow_nil = type == DEFINED_CONST;
 	klass = v;
-        if (vm_get_ev_const(ec, klass, SYM2ID(obj), 1, 1)) {
+        if (vm_get_ev_const(ec, klass, SYM2ID(obj), allow_nil, true)) {
 	    expr_type = DEFINED_CONST;
 	}
 	break;
+      }
       case DEFINED_FUNC:
 	klass = CLASS_OF(v);
 	if (rb_method_boundp(klass, SYM2ID(obj), 0)) {
