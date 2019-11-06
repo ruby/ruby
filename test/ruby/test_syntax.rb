@@ -1457,6 +1457,9 @@ eom
     assert_syntax_error('-> {-> {_1}; _2}', /numbered parameter is already used/)
     assert_warn(/`_1' is used as numbered parameter/) {eval('proc {_1 = nil}')}
     assert_warn(/`_2' is used as numbered parameter/) {eval('_2=1')}
+    assert_raise_with_message(NameError, /undefined local variable or method `_1'/) {
+      eval('_1')
+    }
     ['class C', 'class << C', 'module M', 'def m', 'def o.m'].each do |c|
       assert_valid_syntax("->{#{c};->{_1};end;_1}\n")
       assert_valid_syntax("->{_1;#{c};->{_1};end}\n")

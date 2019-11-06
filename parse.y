@@ -8601,7 +8601,6 @@ parser_numbered_param(struct parser_params *p, int n)
     if (n < 0) return false;
 
     if (DVARS_TERMINAL_P(p->lvtbl->args) || DVARS_TERMINAL_P(p->lvtbl->args->prev)) {
-	compile_error(p, "numbered parameter outside block");
 	return false;
     }
     if (p->max_numparam == ORDINAL_PARAM) {
