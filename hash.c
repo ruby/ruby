@@ -5716,12 +5716,28 @@ env_empty_p(VALUE _)
 
 /*
  * call-seq:
- *   ENV.key?(name)     -> true or false
  *   ENV.include?(name) -> true or false
  *   ENV.has_key?(name) -> true or false
  *   ENV.member?(name)  -> true or false
+ *   ENV.key?(name)     -> true or false
  *
- * Returns +true+ if there is an environment variable with the given +name+.
+ * ENV.has_key?, ENV.member?, and ENV.key? are aliases for ENV.include?.
+ *
+ * Returns +true+ if there is an environment variable with the given +name+:
+ *   ENV.replace('foo' => '0', 'bar' => '1')
+ *   ENV.include?('foo') # => true
+ * Returns +false+ if +name+ is a valid String and there is no such environment variable:
+ *   ENV.include?('baz') # => false
+ * Returns +false+ if +name+ is the empty String or is a String containing character <code>'='</code>:
+ *   ENV.include?('') # => false
+ *   ENV.include?('=') # => false
+ * Raises an exception if +name+ is a String containing the NUL character <code>"\0"</code>:
+ *   ENV.include?("\0") # Raises ArgumentError (bad environment variable name: contains null byte)
+ * Raises an exception if +name+ has an encoding that is not ASCII-compatible:
+ *   ENV.include?("\xa1\xa1".force_encoding(Encoding::UTF_16LE))
+ *   # Raises ArgumentError (bad environment variable name: ASCII incompatible encoding: UTF-16LE)
+ * Raises an exception if +name+ is not a String:
+ *   ENV.include?(Object.new) # TypeError (no implicit conversion of Object into String)
  */
 static VALUE
 env_has_key(VALUE env, VALUE key)
