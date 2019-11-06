@@ -2106,6 +2106,9 @@ rb_undefined_alloc(VALUE klass)
 	     klass);
 }
 
+static rb_alloc_func_t class_get_alloc_func(VALUE klass);
+static VALUE class_call_alloc_func(rb_alloc_func_t allocator, VALUE klass);
+
 /*
  *  call-seq:
  *     class.allocate()   ->   obj
@@ -2129,9 +2132,26 @@ rb_undefined_alloc(VALUE klass)
  */
 
 static VALUE
+rb_class_alloc_m(VALUE klass)
+{
+    rb_alloc_func_t allocator = class_get_alloc_func(klass);
+    if (!rb_obj_respond_to(klass, rb_intern("allocate"), 1)) {
+        rb_raise(rb_eTypeError, "calling %"PRIsVALUE".allocate is prohibited",
+                 klass);
+    }
+    return class_call_alloc_func(allocator, klass);
+}
+
+static VALUE
 rb_class_alloc(VALUE klass)
 {
-    VALUE obj;
+    rb_alloc_func_t allocator = class_get_alloc_func(klass);
+    return class_call_alloc_func(allocator, klass);
+}
+
+static rb_alloc_func_t
+class_get_alloc_func(VALUE klass)
+{
     rb_alloc_func_t allocator;
 
     if (RCLASS_SUPER(klass) == 0 && klass != rb_cBasicObject) {
@@ -2144,6 +2164,13 @@ rb_class_alloc(VALUE klass)
     if (!allocator) {
 	rb_undefined_alloc(klass);
     }
+    return allocator;
+}
+
+static VALUE
+class_call_alloc_func(rb_alloc_func_t allocator, VALUE klass)
+{
+    VALUE obj;
 
     RUBY_DTRACE_CREATE_HOOK(OBJECT, rb_class2name(klass));
 
@@ -4689,7 +4716,7 @@ InitVM_Object(void)
     rb_define_method(rb_cModule, "deprecate_constant", rb_mod_deprecate_constant, -1); /* in variable.c */
     rb_define_method(rb_cModule, "singleton_class?", rb_mod_singleton_p, 0);
 
-    rb_define_method(rb_cClass, "allocate", rb_class_alloc, 0);
+    rb_define_method(rb_cClass, "allocate", rb_class_alloc_m, 0);
     rb_define_method(rb_cClass, "new", rb_class_s_new, -1);
     rb_define_method(rb_cClass, "initialize", rb_class_initialize, -1);
     rb_define_method(rb_cClass, "superclass", rb_class_superclass, 0);

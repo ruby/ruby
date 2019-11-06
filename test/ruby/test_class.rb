@@ -274,6 +274,14 @@ class TestClass < Test::Unit::TestCase
     assert_raise(TypeError) { Class.allocate.superclass }
     bug6863 = '[ruby-core:47148]'
     assert_raise(TypeError, bug6863) { Class.new(Class.allocate) }
+
+    allocator = Class.instance_method(:allocate)
+    assert_raise_with_message(TypeError, /prohibited/) {
+      allocator.bind(Rational).call
+    }
+    assert_raise_with_message(TypeError, /prohibited/) {
+      allocator.bind_call(Rational)
+    }
   end
 
   def test_nonascii_name
