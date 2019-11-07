@@ -19,6 +19,8 @@
 #include "vm_debug.h"
 #include "iseq.h"
 #include "eval_intern.h"
+#include "builtin.h"
+
 #ifndef MJIT_HEADER
 #include "probes.h"
 #else

@@ -17,6 +17,7 @@
 #include "vm_core.h"
 #include "vm_exec.h"
 #include "mjit.h"
+#include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
 #include "vm_insnhelper.h"

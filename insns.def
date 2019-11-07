@@ -1488,6 +1488,54 @@ opt_call_c_function
     NEXT_INSN();
 }
 
+/* call specific function with args */
+DEFINE_INSN
+invokebuiltin
+(RB_BUILTIN bf)
+(...)
+(VALUE ret)
+// attr bool leaf = false; /* anything can happen inside */
+// attr rb_snum_t sp_inc = 1 - bf->argc;
+{
+    ret = vm_invoke_builtin(ec, reg_cfp, bf);
+}
+
+/* call specific function with args (same parameters) */
+DEFINE_INSN
+opt_invokebuiltin_delegate
+(RB_BUILTIN bf)
+()
+(VALUE ret)
+// attr bool leaf = false; /* anything can happen inside */
+{
+    ret = vm_invoke_builtin_delegate(ec, reg_cfp, bf);
+}
+
+/* call specific function with args (same parameters) and leave */
+DEFINE_INSN
+opt_invokebuiltin_delegate_leave
+(RB_BUILTIN bf)
+()
+(VALUE val)
+// attr bool leaf = false; /* anything can happen inside */
+{
+    val = vm_invoke_builtin_delegate(ec, reg_cfp, bf);
+
+    /* leave fastpath */
+    /* TracePoint/return should fallback this insn to invokecfuncwparam */
+    if (vm_pop_frame(ec, GET_CFP(), GET_EP())) {
+#if OPT_CALL_THREADED_CODE
+        rb_ec_thread_ptr(ec)->retval = val;
+        return 0;
+#else
+        return val;
+#endif
+    }
+    else {
+        RESTORE_REGS();
+    }
+}
+
 /* BLT */
 DEFINE_INSN_IF(SUPPORT_JOKE)
 bitblt
