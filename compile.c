@@ -18,6 +18,7 @@
 
 #include "vm_core.h"
 #include "vm_debug.h"
+#include "builtin.h"
 #include "iseq.h"
 #include "insns.inc"
 #include "insns_info.inc"
@@ -2237,6 +2238,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		      case TS_FUNCPTR:
 			generated_iseq[code_index + 1 + j] = operands[j];
 			break;
+                      case TS_BUILTIN:
+                        generated_iseq[code_index + 1 + j] = operands[j];
+                        break;
 		      default:
 			BADINSN_ERROR(iseq, iobj->insn_info.line_no,
 				      "unknown operand type: %c", type);
@@ -3212,6 +3216,14 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		ELEM_REMOVE(niobj);
 	    }
 	}
+    }
+
+    if (IS_INSN_ID(iobj, opt_invokebuiltin_delegate)) {
+        if (IS_TRACE(iobj->link.next)) {
+            if (IS_NEXT_INSN_ID(iobj->link.next, leave)) {
+                iobj->insn_id = BIN(opt_invokebuiltin_delegate_leave);
+            }
+        }
     }
 
     return COMPILE_OK;
@@ -6718,6 +6730,77 @@ compile_call_precheck_freeze(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
 }
 
 static int
+iseq_has_builtin_function_table(const rb_iseq_t *iseq)
+{
+    return ISEQ_COMPILE_DATA(iseq)->builtin_function_table != NULL;
+}
+
+static const struct rb_builtin_function *
+iseq_builtin_function_lookup(const rb_iseq_t *iseq, const char *name)
+{
+    int i;
+    const struct rb_builtin_function *table = ISEQ_COMPILE_DATA(iseq)->builtin_function_table;
+    for (i=0; table[i].name != NULL; i++) {
+        // fprintf(stderr, "table[%d].name:%s, name:%s\n", i, table[i].name, name);
+        if (strcmp(table[i].name, name) == 0) {
+            return &table[i];
+        }
+    }
+    return NULL;
+}
+
+static const char *
+iseq_builtin_function_name(ID mid)
+{
+    const char *name = rb_id2name(mid);
+    const char prefix[] = "__builtin_";
+    const int prefix_len = strlen(prefix);
+
+    if (UNLIKELY(strncmp("__builtin_", name, prefix_len) == 0)) {
+        return &name[prefix_len];
+    }
+    else {
+        return NULL;
+    }
+}
+
+static int
+delegate_call_p(const rb_iseq_t *iseq, unsigned int argc, const LINK_ANCHOR *args)
+{
+    if (argc == 0) {
+        return TRUE;
+    }
+    else if (argc == iseq->body->param.size) {
+        const LINK_ELEMENT *elem = FIRST_ELEMENT(args);
+
+        for (unsigned int i=0; i<argc; i++) {
+            if (elem->type == ISEQ_ELEMENT_INSN &&
+                INSN_OF(elem) == BIN(getlocal)) {
+                int local_index = FIX2INT(OPERAND_AT(elem, 0));
+                int local_level = FIX2INT(OPERAND_AT(elem, 1));
+                if (local_level == 0) {
+                    unsigned int index = iseq->body->local_table_size - (local_index - VM_ENV_DATA_SIZE + 1);
+#if 0
+                    ID param_id = iseq->body->local_table[i];
+                    fprintf(stderr, "param_id:%s (%d), id:%s (%d) local_index:%d, local_size:%d\n",
+                            rb_id2name(param_id), i,
+                            rb_id2name(iseq->body->local_table[index]), index,
+                            local_index, (int)iseq->body->local_table_size);
+#endif
+                    if (i == index) {
+                        elem = elem->next;
+                        continue; /* for */
+                    }
+                }
+            }
+            return FALSE;
+        }
+        return TRUE;
+    }
+    return FALSE;
+}
+
+static int
 compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int type, int line, int popped)
 {
     /* call:  obj.method(...)
@@ -6802,6 +6885,51 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
         }
     }
 #endif
+    const char *builtin_func;
+    if (UNLIKELY(iseq_has_builtin_function_table(iseq)) &&
+        (builtin_func = iseq_builtin_function_name(mid)) != NULL) {
+
+        if (parent_block != NULL) {
+            COMPILE_ERROR(iseq, line, "should not call builtins here.");
+            return COMPILE_NG;
+        }
+        else {
+            const struct rb_builtin_function *bf = iseq_builtin_function_lookup(iseq, builtin_func);
+
+            if (bf == NULL) {
+                if (1) {
+                    rb_bug("can't find builtin function:%s", builtin_func);
+                }
+                else {
+                    COMPILE_ERROR(ERROR_ARGS "can't find builtin function:%s", builtin_func);
+                }
+                return COMPILE_NG;
+            }
+
+            // fprintf(stderr, "func_name:%s -> %p\n", builtin_func, bf->func_ptr);
+
+            argc = setup_args(iseq, args, node->nd_args, &flag, &keywords);
+
+            if (FIX2INT(argc) != bf->argc) {
+                COMPILE_ERROR(ERROR_ARGS "argc is not match for builtin function:%s (expect %d but %d)",
+                              builtin_func, bf->argc, FIX2INT(argc));
+                return COMPILE_NG;
+            }
+
+            if (delegate_call_p(iseq, FIX2INT(argc), args)) {
+                ADD_INSN1(ret, line, opt_invokebuiltin_delegate, bf);
+            }
+            else {
+                ADD_SEQ(ret, args);
+                ADD_INSN1(ret,line, invokebuiltin, bf);
+            }
+
+            if (popped) ADD_INSN(ret, line, pop);
+            return COMPILE_OK;
+        }
+    }
+
+    
     /* receiver */
     if (type == NODE_CALL || type == NODE_OPCALL || type == NODE_QCALL) {
         int idx, level;
@@ -8475,6 +8603,9 @@ insn_data_to_s_detail(INSN *iobj)
 		    rb_str_catf(str, "<%p>", func);
 		}
 		break;
+              case TS_BUILTIN:
+                rb_bug("unsupported: TS_BUILTIN");
+                break;
 	      default:{
 		rb_raise(rb_eSyntaxError, "unknown operand type: %c", type);
 	      }
@@ -9395,6 +9526,14 @@ ibf_dump_overwrite(struct ibf_dump *dump, void *buff, unsigned int size, long of
     memcpy(ptr + offset, buff, size);
 }
 
+static const void *
+ibf_load_ptr(const struct ibf_load *load, ibf_offset_t *offset, int size)
+{
+    ibf_offset_t beg = *offset;
+    *offset += size;
+    return load->current_buffer->buff + beg;
+}
+
 static void *
 ibf_load_alloc(const struct ibf_load *load, ibf_offset_t offset, size_t x, size_t y)
 {
@@ -9603,6 +9742,42 @@ ibf_load_small_value(const struct ibf_load *load, ibf_offset_t *offset)
     return x;
 }
 
+static void
+ibf_dump_builtin(struct ibf_dump *dump, const struct rb_builtin_function *bf)
+{
+    // short: index
+    // short: name.length
+    // bytes: name
+    // // omit argc (only verify with name)
+    ibf_dump_write_small_value(dump, (VALUE)bf->index);
+
+    size_t len = strlen(bf->name);
+    ibf_dump_write_small_value(dump, (VALUE)len);
+    ibf_dump_write(dump, bf->name, len);
+}
+
+static const struct rb_builtin_function *
+ibf_load_builtin(const struct ibf_load *load, ibf_offset_t *offset)
+{
+    int i = (int)ibf_load_small_value(load, offset);
+    int len = (int)ibf_load_small_value(load, offset);
+    const char *name = (char *)ibf_load_ptr(load, offset, len);
+
+    if (0) {
+        for (int i=0; i<len; i++) fprintf(stderr, "%c", name[i]);
+        fprintf(stderr, "!!\n");
+    }
+
+    const struct rb_builtin_function *table = GET_VM()->builtin_function_table;
+    if (table == NULL) rb_bug(__func__);
+    if (strncmp(table[i].name, name, len) != 0) {
+        rb_bug("%s mistach", __func__);
+    }
+    // fprintf(stderr, "load-builtin: name:%s(%d)\n", table[i].name, table[i].argc);
+
+    return &table[i];
+}
+
 static ibf_offset_t
 ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
@@ -9625,16 +9800,15 @@ ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
         /* operands */
         for (op_index=0; types[op_index]; op_index++, code_index++) {
             VALUE op = orig_code[code_index];
+            VALUE wv;
+
             switch (types[op_index]) {
               case TS_CDHASH:
               case TS_VALUE:
-                ibf_dump_write_small_value(dump, ibf_dump_object(dump, op));
+                wv = ibf_dump_object(dump, op);
                 break;
               case TS_ISEQ:
-                {
-                    VALUE index = (VALUE)ibf_dump_iseq(dump, (const rb_iseq_t *)op);
-                    ibf_dump_write_small_value(dump, index);
-                }
+                wv = (VALUE)ibf_dump_iseq(dump, (const rb_iseq_t *)op);
                 break;
               case TS_IC:
               case TS_ISE:
@@ -9645,29 +9819,34 @@ ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
                             break;
                         }
                     }
-                    ibf_dump_write_small_value(dump, (VALUE)i);
+                    wv = (VALUE)i;
                 }
                 break;
               case TS_CALLDATA:
                 {
-                    VALUE callinfo = ibf_dump_calldata(dump, (const struct rb_call_data *)op);
                     /* ibf_dump_calldata() always returns either Qtrue or Qfalse */
-                    ibf_dump_write_byte(dump, callinfo == Qtrue);
+                    char c = ibf_dump_calldata(dump, (const struct rb_call_data *)op) == Qtrue; // 1 or 0
+                    ibf_dump_write_byte(dump, c);
+                    goto skip_wv;
                 }
-                break;
               case TS_ID:
-                ibf_dump_write_small_value(dump, ibf_dump_id(dump, (ID)op));
+                wv = ibf_dump_id(dump, (ID)op);
                 break;
               case TS_GENTRY:
-                ibf_dump_write_small_value(dump, ibf_dump_gentry(dump, (const struct rb_global_entry *)op));
+                wv = ibf_dump_gentry(dump, (const struct rb_global_entry *)op);
                 break;
               case TS_FUNCPTR:
                 rb_raise(rb_eRuntimeError, "TS_FUNCPTR is not supported");
-                break;
+                goto skip_wv;
+              case TS_BUILTIN:
+                ibf_dump_builtin(dump, (const struct rb_builtin_function *)op);
+                goto skip_wv;
               default:
-                ibf_dump_write_small_value(dump, op);
+                wv = op;
                 break;
             }
+            ibf_dump_write_small_value(dump, wv);
+          skip_wv:;
         }
         assert(insn_len(insn) == op_index+1);
     }
@@ -9748,6 +9927,9 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, ibf_offset_t b
                 break;
               case TS_FUNCPTR:
                 rb_raise(rb_eRuntimeError, "TS_FUNCPTR is not supported");
+                break;
+              case TS_BUILTIN:
+                code[code_index] = (VALUE)ibf_load_builtin(load, &reading_pos);
                 break;
               default:
                 code[code_index] = ibf_load_small_value(load, &reading_pos);
@@ -11244,21 +11426,10 @@ ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
 }
 
 static void
-ibf_load_setup(struct ibf_load *load, VALUE loader_obj, VALUE str)
+ibf_load_setup_cstr(struct ibf_load *load, VALUE loader_obj, const char *cstr, size_t size)
 {
-    rb_check_safe_obj(str);
-
-    if (RSTRING_LENINT(str) < (int)sizeof(struct ibf_header)) {
-        rb_raise(rb_eRuntimeError, "broken binary format");
-    }
-
-#if USE_LAZY_LOAD
-    str = rb_str_new(RSTRING_PTR(str), RSTRING_LEN(str));
-#endif
-
-    RB_OBJ_WRITE(loader_obj, &load->str, str);
     load->loader_obj = loader_obj;
-    load->global_buffer.buff = StringValuePtr(str);
+    load->global_buffer.buff = cstr;
     load->header = (struct ibf_header *)load->global_buffer.buff;
     load->global_buffer.size = load->header->size;
     load->global_buffer.obj_list_offset = load->header->global_object_list_offset;
@@ -11270,7 +11441,7 @@ ibf_load_setup(struct ibf_load *load, VALUE loader_obj, VALUE str)
 
     load->current_buffer = &load->global_buffer;
 
-    if (RSTRING_LENINT(str) < (int)load->header->size) {
+    if (size < load->header->size) {
 	rb_raise(rb_eRuntimeError, "broken binary format");
     }
     if (strncmp(load->header->magic, "YARB", 4) != 0) {
@@ -11292,6 +11463,23 @@ ibf_load_setup(struct ibf_load *load, VALUE loader_obj, VALUE str)
         rb_raise(rb_eArgError, "unaligned object list offset: %u",
                  load->global_buffer.obj_list_offset);
     }
+}
+
+static void
+ibf_load_setup(struct ibf_load *load, VALUE loader_obj, VALUE str)
+{
+    rb_check_safe_obj(str);
+
+    if (RSTRING_LENINT(str) < (int)sizeof(struct ibf_header)) {
+        rb_raise(rb_eRuntimeError, "broken binary format");
+    }
+
+#if USE_LAZY_LOAD
+    str = rb_str_new(RSTRING_PTR(str), RSTRING_LEN(str));
+#endif
+
+    ibf_load_setup_cstr(load, loader_obj, StringValuePtr(str), RSTRING_LEN(str));
+    RB_OBJ_WRITE(loader_obj, &load->str, str);
 }
 
 static void
@@ -11330,6 +11518,20 @@ rb_iseq_ibf_load(VALUE str)
     VALUE loader_obj = TypedData_Make_Struct(0, struct ibf_load, &ibf_load_type, load);
 
     ibf_load_setup(load, loader_obj, str);
+    iseq = ibf_load_iseq(load, 0);
+
+    RB_GC_GUARD(loader_obj);
+    return iseq;
+}
+
+const rb_iseq_t *
+rb_iseq_ibf_load_cstr(const char *cstr, size_t size)
+{
+    struct ibf_load *load;
+    rb_iseq_t *iseq;
+    VALUE loader_obj = TypedData_Make_Struct(0, struct ibf_load, &ibf_load_type, load);
+
+    ibf_load_setup_cstr(load, loader_obj, cstr, size);
     iseq = ibf_load_iseq(load, 0);
 
     RB_GC_GUARD(loader_obj);
