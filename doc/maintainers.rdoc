@@ -52,8 +52,6 @@ Zachary Scott (zzak)
   Masatoshi SEKI (seki)
 [lib/debug.rb]
   _unmaintained_
-[lib/delegate.rb]
-  _unmaintained_
 [lib/erb.rb]
   Masatoshi SEKI (seki), Takashi Kokubun (k0kubun)
 [lib/find.rb]
@@ -170,6 +168,10 @@ Zachary Scott (zzak)
   Kenta Murata (mrkn), Kouhei Sutou (kou)
   https://github.com/ruby/csv
   https://rubygems.org/gems/csv
+[lib/delegate.rb]
+  _unmaintained_
+  https://github.com/ruby/delegate
+  https://rubygems.org/gems/delegate
 [lib/e2mmap.rb]
   Keiju ISHITSUKA (keiju)
   https://rubygems.org/gems/e2mmap

@@ -37,6 +37,7 @@
 # * https://github.com/ruby/open3
 # * https://github.com/ruby/getoptlong
 # * https://github.com/ruby/pstore
+# * https://github.com/ruby/delegate
 #
 
 require 'fileutils'
@@ -81,6 +82,7 @@ $repositories = {
   open3: "ruby/open3",
   getoptlong: "ruby/getoptlong",
   pstore: "ruby/pstore",
+  delegate: "ruby/delegate",
 }
 
 def sync_default_gems(gem)
