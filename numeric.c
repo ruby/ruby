@@ -1461,7 +1461,7 @@ flo_cmp(VALUE x, VALUE y)
     if (RB_TYPE_P(y, T_FIXNUM) || RB_TYPE_P(y, T_BIGNUM)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
-            return INT2FIX(-FIX2INT(rel));
+            return LONG2FIX(-FIX2LONG(rel));
         return rel;
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
