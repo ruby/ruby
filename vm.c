@@ -2220,7 +2220,7 @@ rb_vm_update_references(void *ptr)
 {
     if (ptr) {
         rb_vm_t *vm = ptr;
-        rb_update_st_references(vm->frozen_strings);
+        rb_gc_update_tbl_refs(vm->frozen_strings);
     }
 }
 
