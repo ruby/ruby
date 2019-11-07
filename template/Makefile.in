@@ -581,7 +581,52 @@ INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 
 $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(srcdir)/defs/opt_operand.def $(srcdir)/defs/opt_insn_unif.def \
-	  $(srcdir)/tool/insns2vm.rb
+	  $(srcdir)/tool/insns2vm.rb \
+	  $(srcdir)/tool/ruby_vm/controllers/application_controller.rb \
+	  $(srcdir)/tool/ruby_vm/helpers/c_escape.rb \
+	  $(srcdir)/tool/ruby_vm/helpers/dumper.rb \
+	  $(srcdir)/tool/ruby_vm/helpers/scanner.rb \
+	  $(srcdir)/tool/ruby_vm/loaders/insns_def.rb \
+	  $(srcdir)/tool/ruby_vm/loaders/opt_insn_unif_def.rb \
+	  $(srcdir)/tool/ruby_vm/loaders/opt_operand_def.rb \
+	  $(srcdir)/tool/ruby_vm/loaders/vm_opts_h.rb \
+	  $(srcdir)/tool/ruby_vm/models/attribute.rb \
+	  $(srcdir)/tool/ruby_vm/models/bare_instructions.rb \
+	  $(srcdir)/tool/ruby_vm/models/c_expr.rb \
+	  $(srcdir)/tool/ruby_vm/models/instructions.rb \
+	  $(srcdir)/tool/ruby_vm/models/instructions_unifications.rb \
+	  $(srcdir)/tool/ruby_vm/models/operands_unifications.rb \
+	  $(srcdir)/tool/ruby_vm/models/trace_instructions.rb \
+	  $(srcdir)/tool/ruby_vm/models/typemap.rb \
+	  $(srcdir)/tool/ruby_vm/scripts/converter.rb \
+	  $(srcdir)/tool/ruby_vm/scripts/insns2vm.rb \
+	  $(srcdir)/tool/ruby_vm/views/_attributes.erb \
+	  $(srcdir)/tool/ruby_vm/views/_c_expr.erb \
+	  $(srcdir)/tool/ruby_vm/views/_comptime_insn_stack_increase.erb \
+	  $(srcdir)/tool/ruby_vm/views/_copyright.erb \
+	  $(srcdir)/tool/ruby_vm/views/_insn_entry.erb \
+	  $(srcdir)/tool/ruby_vm/views/_insn_len_info.erb \
+	  $(srcdir)/tool/ruby_vm/views/_insn_name_info.erb \
+	  $(srcdir)/tool/ruby_vm/views/_insn_operand_info.erb \
+	  $(srcdir)/tool/ruby_vm/views/_insn_sp_pc_dependency.erb \
+	  $(srcdir)/tool/ruby_vm/views/_insn_type_chars.erb \
+	  $(srcdir)/tool/ruby_vm/views/_leaf_helpers.erb \
+	  $(srcdir)/tool/ruby_vm/views/_mjit_compile_insn.erb \
+	  $(srcdir)/tool/ruby_vm/views/_mjit_compile_insn_body.erb \
+	  $(srcdir)/tool/ruby_vm/views/_mjit_compile_ivar.erb \
+	  $(srcdir)/tool/ruby_vm/views/_mjit_compile_pc_and_sp.erb \
+	  $(srcdir)/tool/ruby_vm/views/_mjit_compile_send.erb \
+	  $(srcdir)/tool/ruby_vm/views/_notice.erb \
+	  $(srcdir)/tool/ruby_vm/views/_sp_inc_helpers.erb \
+	  $(srcdir)/tool/ruby_vm/views/_trace_instruction.erb \
+	  $(srcdir)/tool/ruby_vm/views/insns.inc.erb \
+	  $(srcdir)/tool/ruby_vm/views/insns_info.inc.erb \
+	  $(srcdir)/tool/ruby_vm/views/mjit_compile.inc.erb \
+	  $(srcdir)/tool/ruby_vm/views/opt_sc.inc.erb \
+	  $(srcdir)/tool/ruby_vm/views/optinsn.inc.erb \
+	  $(srcdir)/tool/ruby_vm/views/optunifs.inc.erb \
+	  $(srcdir)/tool/ruby_vm/views/vm.inc.erb \
+	  $(srcdir)/tool/ruby_vm/views/vmtc.inc.erb
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) -Ku $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) $@
 
