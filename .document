@@ -9,8 +9,9 @@
 
 # prelude
 prelude.rb
-
 rbconfig.rb
+
+trace_point.rb
 
 # the lib/ directory (which has its own .document file)
 lib

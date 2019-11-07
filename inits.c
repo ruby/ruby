@@ -65,11 +65,12 @@ rb_call_inits(void)
     CALL(Rational);
     CALL(Complex);
     CALL(version);
-    CALL(vm_trace);
     CALL(vm_stack_canary);
     CALL(ast);
     CALL(gc_stress);
 
     CALL(builtin);
+
+    CALL(vm_trace);
 }
 #undef CALL
