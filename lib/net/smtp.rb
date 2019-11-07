@@ -17,7 +17,7 @@
 # See Net::SMTP for documentation.
 #
 
-require_relative 'protocol'
+require 'net/protocol'
 require 'digest/md5'
 require 'timeout'
 begin

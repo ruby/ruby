@@ -66,8 +66,6 @@ Zachary Scott (zzak)
   NARUSE, Yui (naruse)
 [lib/net/protocol.rb]
   _unmaintained_
-[lib/net/smtp.rb]
-  _unmaintained_
 [lib/observer.rb]
   _unmaintained_
 [lib/open-uri.rb]
@@ -211,6 +209,10 @@ Zachary Scott (zzak)
   _unmaintained_
   https://github.com/ruby/net-pop
   https://rubygems.org/gems/net-pop
+[lib/net/smtp.rb]
+  _unmaintained_
+  https://github.com/ruby/net-smtp
+  https://rubygems.org/gems/net-smtp
 [lib/open3.rb]
   _unmaintained_
   https://github.com/ruby/open3

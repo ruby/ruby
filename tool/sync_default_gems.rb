@@ -40,6 +40,7 @@
 # * https://github.com/ruby/delegate
 # * https://github.com/ruby/benchmark
 # * https://github.com/ruby/net-pop
+# * https://github.com/ruby/net-smtp
 #
 
 require 'fileutils'
@@ -87,6 +88,7 @@ $repositories = {
   delegate: "ruby/delegate",
   benchmark: "ruby/benchmark",
   netpop: "ruby/net-pop",
+  netsmtp: "ruby/net-smtp",
 }
 
 def sync_default_gems(gem)
@@ -227,6 +229,9 @@ def sync_default_gems(gem)
   when "netpop"
     sync_lib "net-pop"
     mv "lib/net-pop.gemspec", "lib/net/pop"
+  when "netsmtp"
+    sync_lib "net-smtp"
+    mv "lib/net-smtp.gemspec", "lib/net/smtp"
   else
     sync_lib gem
   end
