@@ -30,7 +30,6 @@ OpenURI:: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
 OptionParser:: Ruby-oriented class for command-line option analysis
 PP:: Provides a PrettyPrinter for Ruby objects
 PrettyPrinter:: Implements a pretty printing algorithm for readable structure
-PStore:: Implements a file based persistence mechanism based on a Hash
 RbConfig:: Information of your configure and build of Ruby
 resolv-replace.rb:: Replace Socket DNS with Resolv
 Resolv::  Thread-aware DNS resolver library in Ruby
@@ -82,6 +81,7 @@ Mutex_m:: Mixin to extend objects to be handled like a Mutex
 Open3:: Provides access to stdin, stdout and stderr when running other programs
 OpenStruct:: Class to build custom data structures, similar to a Hash
 Prime:: Prime numbers and factorization library
+PStore:: Implements a file based persistence mechanism based on a Hash
 Racc:: A LALR(1) parser generator written in Ruby.
 RDoc:: Produces HTML and command-line documentation for Ruby
 REXML:: An XML toolkit for Ruby

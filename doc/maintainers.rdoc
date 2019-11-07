@@ -84,8 +84,6 @@ Zachary Scott (zzak)
   Tanaka Akira (akr)
 [lib/prettyprint.rb]
   Tanaka Akira (akr)
-[lib/pstore.rb]
-  _unmaintained_
 [lib/resolv-replace.rb]
   Tanaka Akira (akr)
 [lib/resolv.rb]
@@ -218,6 +216,10 @@ Zachary Scott (zzak)
 [lib/prime.rb]
   Yuki Sonoda (yugui)
   https://github.com/ruby/prime
+[lib/pstore.rb]
+  _unmaintained_
+  https://github.com/ruby/pstore
+  https://rubygems.org/gems/pstore
 [lib/racc.rb, lib/racc/*]
   Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/racc

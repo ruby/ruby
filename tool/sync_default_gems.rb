@@ -36,6 +36,7 @@
 # * https://github.com/ruby/singleton
 # * https://github.com/ruby/open3
 # * https://github.com/ruby/getoptlong
+# * https://github.com/ruby/pstore
 #
 
 require 'fileutils'
@@ -79,6 +80,7 @@ $repositories = {
   singleton: "ruby/singleton",
   open3: "ruby/open3",
   getoptlong: "ruby/getoptlong",
+  pstore: "ruby/pstore",
 }
 
 def sync_default_gems(gem)
