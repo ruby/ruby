@@ -12,6 +12,7 @@ prelude.rb
 rbconfig.rb
 
 trace_point.rb
+ast.rb
 
 # the lib/ directory (which has its own .document file)
 lib

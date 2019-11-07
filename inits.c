@@ -66,11 +66,11 @@ rb_call_inits(void)
     CALL(Complex);
     CALL(version);
     CALL(vm_stack_canary);
-    CALL(ast);
     CALL(gc_stress);
 
     CALL(builtin);
 
+    CALL(ast);
     CALL(vm_trace);
 }
 #undef CALL

@@ -6,6 +6,7 @@
 #include "node.h"
 #include "vm_core.h"
 #include "iseq.h"
+#include "builtin.h"
 
 static VALUE rb_mAST;
 static VALUE rb_cNode;
@@ -80,20 +81,8 @@ ast_parse_done(rb_ast_t *ast)
     return ast_new_internal(ast, (NODE *)ast->body.root);
 }
 
-/*
- *  call-seq:
- *     RubyVM::AbstractSyntaxTree.parse(string) -> RubyVM::AbstractSyntaxTree::Node
- *
- *  Parses the given _string_ into an abstract syntax tree,
- *  returning the root node of that tree.
- *
- *  SyntaxError is raised if the given _string_ is invalid syntax.
- *
- *    RubyVM::AbstractSyntaxTree.parse("x = 1 + 2")
- *    # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-1:9>
- */
 static VALUE
-rb_ast_s_parse(VALUE module, VALUE str)
+ast_s_parse(rb_execution_context_t *ec, VALUE module, VALUE str)
 {
     return rb_ast_parse_str(str);
 }
@@ -108,21 +97,8 @@ rb_ast_parse_str(VALUE str)
     return ast_parse_done(ast);
 }
 
-/*
- *  call-seq:
- *     RubyVM::AbstractSyntaxTree.parse_file(pathname) -> RubyVM::AbstractSyntaxTree::Node
- *
- *   Reads the file from _pathname_, then parses it like ::parse,
- *   returning the root node of the abstract syntax tree.
- *
- *   SyntaxError is raised if _pathname_'s contents are not
- *   valid Ruby syntax.
- *
- *     RubyVM::AbstractSyntaxTree.parse_file("my-app/app.rb")
- *     # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-31:3>
- */
 static VALUE
-rb_ast_s_parse_file(VALUE module, VALUE path)
+ast_s_parse_file(rb_execution_context_t *ec, VALUE module, VALUE path)
 {
     return rb_ast_parse_file(path);
 }
@@ -207,25 +183,8 @@ script_lines(VALUE path)
     return lines;
 }
 
-/*
- *  call-seq:
- *     RubyVM::AbstractSyntaxTree.of(proc)   -> RubyVM::AbstractSyntaxTree::Node
- *     RubyVM::AbstractSyntaxTree.of(method) -> RubyVM::AbstractSyntaxTree::Node
- *
- *   Returns AST nodes of the given _proc_ or _method_.
- *
- *     RubyVM::AbstractSyntaxTree.of(proc {1 + 2})
- *     # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:35-1:42>
- *
- *     def hello
- *       puts "hello, world"
- *     end
- *
- *     RubyVM::AbstractSyntaxTree.of(method(:hello))
- *     # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-3:3>
- */
 static VALUE
-rb_ast_s_of(VALUE module, VALUE body)
+ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body)
 {
     VALUE path, node, lines;
     int node_id;
@@ -274,19 +233,8 @@ node_type_to_str(const NODE *node)
     return (ruby_node_name(nd_type(node)) + rb_strlen_lit("NODE_"));
 }
 
-/*
- *  call-seq:
- *     node.type -> symbol
- *
- *  Returns the type of this node as a symbol.
- *
- *    root = RubyVM::AbstractSyntaxTree.parse("x = 1 + 2")
- *    root.type # => :SCOPE
- *    call = root.children[2]
- *    call.type # => :OPCALL
- */
 static VALUE
-rb_ast_node_type(VALUE self)
+ast_node_type(rb_execution_context_t *ec, VALUE self)
 {
     struct ASTNodeData *data;
     TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
@@ -668,17 +616,8 @@ node_children(rb_ast_t *ast, NODE *node)
     rb_bug("node_children: unknown node: %s", ruby_node_name(type));
 }
 
-/*
- *  call-seq:
- *     node.children -> array
- *
- *  Returns AST nodes under this one.  Each kind of node
- *  has different children, depending on what kind of node it is.
- *
- *  The returned array may contain other nodes or <code>nil</code>.
- */
 static VALUE
-rb_ast_node_children(VALUE self)
+ast_node_children(rb_execution_context_t *ec, VALUE self)
 {
     struct ASTNodeData *data;
     TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
@@ -686,14 +625,8 @@ rb_ast_node_children(VALUE self)
     return node_children(data->ast, data->node);
 }
 
-/*
- *  call-seq:
- *     node.first_lineno -> integer
- *
- *  The line number in the source code where this AST's text began.
- */
 static VALUE
-rb_ast_node_first_lineno(VALUE self)
+ast_node_first_lineno(rb_execution_context_t *ec, VALUE self)
 {
     struct ASTNodeData *data;
     TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
@@ -701,14 +634,8 @@ rb_ast_node_first_lineno(VALUE self)
     return INT2NUM(nd_first_lineno(data->node));
 }
 
-/*
- *  call-seq:
- *     node.first_column -> integer
- *
- *  The column number in the source code where this AST's text began.
- */
 static VALUE
-rb_ast_node_first_column(VALUE self)
+ast_node_first_column(rb_execution_context_t *ec, VALUE self)
 {
     struct ASTNodeData *data;
     TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
@@ -716,14 +643,8 @@ rb_ast_node_first_column(VALUE self)
     return INT2NUM(nd_first_column(data->node));
 }
 
-/*
- *  call-seq:
- *     node.last_lineno -> integer
- *
- *  The line number in the source code where this AST's text ended.
- */
 static VALUE
-rb_ast_node_last_lineno(VALUE self)
+ast_node_last_lineno(rb_execution_context_t *ec, VALUE self)
 {
     struct ASTNodeData *data;
     TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
@@ -731,14 +652,8 @@ rb_ast_node_last_lineno(VALUE self)
     return INT2NUM(nd_last_lineno(data->node));
 }
 
-/*
- *  call-seq:
- *     node.last_column -> integer
- *
- *  The column number in the source code where this AST's text ended.
- */
 static VALUE
-rb_ast_node_last_column(VALUE self)
+ast_node_last_column(rb_execution_context_t *ec, VALUE self)
 {
     struct ASTNodeData *data;
     TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
@@ -746,14 +661,8 @@ rb_ast_node_last_column(VALUE self)
     return INT2NUM(nd_last_column(data->node));
 }
 
-/*
- *  call-seq:
- *     node.inspect -> string
- *
- *  Returns debugging information about this node as a string.
- */
 static VALUE
-rb_ast_node_inspect(VALUE self)
+ast_node_inspect(rb_execution_context_t *ec, VALUE self)
 {
     VALUE str;
     VALUE cname;
@@ -772,35 +681,14 @@ rb_ast_node_inspect(VALUE self)
     return str;
 }
 
+#include "load_ast.inc"
+
 void
 Init_ast(void)
 {
-    /*
-     * AbstractSyntaxTree provides methods to parse Ruby code into
-     * abstract syntax trees. The nodes in the tree
-     * are instances of RubyVM::AbstractSyntaxTree::Node.
-     *
-     * This class is MRI specific as it exposes implementation details
-     * of the MRI abstract syntax tree.
-     */
     rb_mAST = rb_define_module_under(rb_cRubyVM, "AbstractSyntaxTree");
-    /*
-     * RubyVM::AbstractSyntaxTree::Node instances are created by parse methods in
-     * RubyVM::AbstractSyntaxTree.
-     *
-     * This class is MRI specific.
-     */
     rb_cNode = rb_define_class_under(rb_mAST, "Node", rb_cObject);
-
     rb_undef_alloc_func(rb_cNode);
-    rb_define_singleton_method(rb_mAST, "parse", rb_ast_s_parse, 1);
-    rb_define_singleton_method(rb_mAST, "parse_file", rb_ast_s_parse_file, 1);
-    rb_define_singleton_method(rb_mAST, "of", rb_ast_s_of, 1);
-    rb_define_method(rb_cNode, "type", rb_ast_node_type, 0);
-    rb_define_method(rb_cNode, "first_lineno", rb_ast_node_first_lineno, 0);
-    rb_define_method(rb_cNode, "first_column", rb_ast_node_first_column, 0);
-    rb_define_method(rb_cNode, "last_lineno", rb_ast_node_last_lineno, 0);
-    rb_define_method(rb_cNode, "last_column", rb_ast_node_last_column, 0);
-    rb_define_method(rb_cNode, "children", rb_ast_node_children, 0);
-    rb_define_method(rb_cNode, "inspect", rb_ast_node_inspect, 0);
+
+    load_ast();
 }
