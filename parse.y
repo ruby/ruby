@@ -4023,6 +4023,7 @@ p_args_tail	: tSTAR tIDENTIFIER
 		    {
 			$$ = new_array_pattern_tail(p, Qnone, 1, 0, $3, &@$);
 		    }
+		;
 
 p_args_post	: p_arg
 		| p_args_post ',' p_arg
