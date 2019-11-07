@@ -54,4 +54,10 @@ class TestGCCompact < Test::Unit::TestCase
     assert GC.compact
     walk_ast ast
   end
+
+  def test_compact_count
+    count = GC.stat(:compact_count)
+    GC.compact
+    assert_equal count + 1, GC.stat(:compact_count)
+  end
 end

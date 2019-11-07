@@ -748,6 +748,7 @@ typedef struct rb_objspace {
 #if USE_RGENGC
 	size_t minor_gc_count;
 	size_t major_gc_count;
+	size_t compact_count;
 #if RGENGC_PROFILE > 0
 	size_t total_generated_normal_object_count;
 	size_t total_generated_shady_object_count;
@@ -8549,6 +8550,8 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
 
     mjit_gc_start_hook(); // prevent MJIT from running while moving pointers related to ISeq
 
+    objspace->profile.compact_count++;
+
     if (use_verifier) {
         gc_verify_internal_consistency(objspace);
     }
@@ -8890,6 +8893,7 @@ enum gc_stat_sym {
 #if USE_RGENGC
     gc_stat_sym_minor_gc_count,
     gc_stat_sym_major_gc_count,
+    gc_stat_sym_compact_count,
     gc_stat_sym_remembered_wb_unprotected_objects,
     gc_stat_sym_remembered_wb_unprotected_objects_limit,
     gc_stat_sym_old_objects,
@@ -8966,6 +8970,7 @@ setup_gc_stat_symbols(void)
 #if USE_RGENGC
 	S(minor_gc_count);
 	S(major_gc_count);
+	S(compact_count);
 	S(remembered_wb_unprotected_objects);
 	S(remembered_wb_unprotected_objects_limit);
 	S(old_objects);
@@ -9138,6 +9143,7 @@ gc_stat_internal(VALUE hash_or_sym)
 #if USE_RGENGC
     SET(minor_gc_count, objspace->profile.minor_gc_count);
     SET(major_gc_count, objspace->profile.major_gc_count);
+    SET(compact_count, objspace->profile.compact_count);
     SET(remembered_wb_unprotected_objects, objspace->rgengc.uncollectible_wb_unprotected_objects);
     SET(remembered_wb_unprotected_objects_limit, objspace->rgengc.uncollectible_wb_unprotected_objects_limit);
     SET(old_objects, objspace->rgengc.old_objects);
