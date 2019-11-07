@@ -64,8 +64,6 @@ Zachary Scott (zzak)
   Shugo Maeda (shugo)
 [lib/net/http.rb, lib/net/https.rb]
   NARUSE, Yui (naruse)
-[lib/net/pop.rb]
-  _unmaintained_
 [lib/net/protocol.rb]
   _unmaintained_
 [lib/net/smtp.rb]
@@ -209,6 +207,10 @@ Zachary Scott (zzak)
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/mutex_m
   https://rubygems.org/gems/mutex_m
+[lib/net/pop.rb]
+  _unmaintained_
+  https://github.com/ruby/net-pop
+  https://rubygems.org/gems/net-pop
 [lib/open3.rb]
   _unmaintained_
   https://github.com/ruby/open3

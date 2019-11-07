@@ -21,7 +21,7 @@
 # See Net::POP3 for documentation.
 #
 
-require_relative 'protocol'
+require 'net/protocol'
 require 'digest/md5'
 require 'timeout'
 

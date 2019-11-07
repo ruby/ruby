@@ -39,6 +39,7 @@
 # * https://github.com/ruby/pstore
 # * https://github.com/ruby/delegate
 # * https://github.com/ruby/benchmark
+# * https://github.com/ruby/net-pop
 #
 
 require 'fileutils'
@@ -85,6 +86,7 @@ $repositories = {
   pstore: "ruby/pstore",
   delegate: "ruby/delegate",
   benchmark: "ruby/benchmark",
+  netpop: "ruby/net-pop",
 }
 
 def sync_default_gems(gem)
@@ -222,6 +224,9 @@ def sync_default_gems(gem)
     rm_rf("test/racc/lib")
     rm_rf("lib/racc/cparse-jruby.jar")
     `git checkout ext/racc/cparse/README ext/racc/cparse/depend`
+  when "netpop"
+    sync_lib "net-pop"
+    mv "lib/net-pop.gemspec", "lib/net/pop"
   else
     sync_lib gem
   end
