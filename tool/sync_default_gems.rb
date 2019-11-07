@@ -41,6 +41,7 @@
 # * https://github.com/ruby/benchmark
 # * https://github.com/ruby/net-pop
 # * https://github.com/ruby/net-smtp
+# * https://github.com/ruby/cgi
 #
 
 require 'fileutils'
@@ -89,6 +90,7 @@ $repositories = {
   benchmark: "ruby/benchmark",
   netpop: "ruby/net-pop",
   netsmtp: "ruby/net-smtp",
+  cgi: "ruby/cgi",
 }
 
 def sync_default_gems(gem)
@@ -226,6 +228,13 @@ def sync_default_gems(gem)
     rm_rf("test/racc/lib")
     rm_rf("lib/racc/cparse-jruby.jar")
     `git checkout ext/racc/cparse/README ext/racc/cparse/depend`
+  when "cgi"
+    rm_rf(%w[lib/cgi.rb lib/cgi ext/cgi test/cgi])
+    cp_r("#{upstream}/ext/cgi", "ext")
+    cp_r("#{upstream}/lib", ".")
+    cp_r("#{upstream}/test/cgi", "test")
+    cp_r("#{upstream}/cgi.gemspec", "lib/cgi")
+    `git checkout ext/cgi/escape/depend`
   when "netpop"
     sync_lib "net-pop"
     mv "lib/net-pop.gemspec", "lib/net/pop"

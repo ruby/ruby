@@ -10,7 +10,6 @@ description.
 
 Abbrev:: Calculates a set of unique abbreviations for a given set of strings
 Base64:: Support for encoding and decoding binary data using a Base64 representation
-CGI:: Support for the Common Gateway Interface protocol
 DEBUGGER__:: Debugging functionality for Ruby
 DRb:: Distributed object system for Ruby
 English.rb:: Require 'English.rb' to reference global variables with less cryptic names
@@ -65,6 +64,7 @@ WIN32OLE:: Provides an interface for OLE Automation in Ruby
 
 Benchmark:: Provides methods to measure and report the time used to execute code
 Bundler:: Manage your Ruby application's gem dependencies
+CGI:: Support for the Common Gateway Interface protocol
 CSV:: Provides an interface to read and write CSV files and data
 Delegator:: Provides three abilities to delegate method calls to an object
 E2MM:: Module for defining custom exceptions with specific messages

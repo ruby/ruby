@@ -44,8 +44,6 @@ Zachary Scott (zzak)
   Akinori MUSHA (knu)
 [lib/base64.rb]
   Yusuke Endoh (mame)
-[lib/cgi.rb, lib/cgi/*]
-  Takeyuki Fujioka (xibbar)
 [lib/drb.rb, lib/drb/*]
   Masatoshi SEKI (seki)
 [lib/debug.rb]
@@ -114,8 +112,6 @@ Zachary Scott (zzak)
 
 === Extensions
 
-[ext/cgi]
-  Nobuyoshi Nakada (nobu)
 [ext/continuation]
   Koichi Sasada (ko1)
 [ext/coverage]
@@ -162,6 +158,10 @@ Zachary Scott (zzak)
   Hiroshi SHIBATA (hsbt)
   https://github.com/bundler/bundler
   https://rubygems.org/gems/bundler
+[lib/cgi.rb, lib/cgi/*]
+  Takeyuki Fujioka (xibbar)
+  https://github.com/ruby/cgi
+  https://rubygems.org/gems/cgi
 [lib/csv.rb]
   Kenta Murata (mrkn), Kouhei Sutou (kou)
   https://github.com/ruby/csv
@@ -270,6 +270,10 @@ Zachary Scott (zzak)
   Kenta Murata (mrkn)
   https://github.com/ruby/bigdecimal
   https://rubygems.org/gems/bigdecimal
+[ext/cgi]
+  Nobuyoshi Nakada (nobu)
+  https://github.com/ruby/cgi
+  https://rubygems.org/gems/cgi
 [ext/date]
   _unmaintained_
   https://github.com/ruby/date
