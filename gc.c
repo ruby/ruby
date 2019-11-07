@@ -7995,12 +7995,6 @@ gc_ref_update_hash(rb_objspace_t * objspace, VALUE v)
     rb_hash_stlike_foreach_with_replace(v, hash_foreach_replace, hash_replace_ref, (st_data_t)objspace);
 }
 
-void rb_update_st_references(struct st_table *ht)
-{
-    rb_objspace_t *objspace = &rb_objspace;
-    gc_update_table_refs(objspace, ht);
-}
-
 static void
 gc_ref_update_method_entry(rb_objspace_t *objspace, rb_method_entry_t *me)
 {
