@@ -38,6 +38,7 @@
 # * https://github.com/ruby/getoptlong
 # * https://github.com/ruby/pstore
 # * https://github.com/ruby/delegate
+# * https://github.com/ruby/benchmark
 #
 
 require 'fileutils'
@@ -83,6 +84,7 @@ $repositories = {
   getoptlong: "ruby/getoptlong",
   pstore: "ruby/pstore",
   delegate: "ruby/delegate",
+  benchmark: "ruby/benchmark",
 }
 
 def sync_default_gems(gem)

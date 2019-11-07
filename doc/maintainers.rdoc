@@ -44,8 +44,6 @@ Zachary Scott (zzak)
   Akinori MUSHA (knu)
 [lib/base64.rb]
   Yusuke Endoh (mame)
-[lib/benchmark.rb]
-  _unmaintained_
 [lib/cgi.rb, lib/cgi/*]
   Takeyuki Fujioka (xibbar)
 [lib/drb.rb, lib/drb/*]
@@ -160,6 +158,10 @@ Zachary Scott (zzak)
 
 === Libraries
 
+[lib/benchmark.rb]
+  _unmaintained_
+  https://github.com/bundler/benchmark
+  https://rubygems.org/gems/benchmark
 [lib/bundler.rb, lib/bundler/*]
   Hiroshi SHIBATA (hsbt)
   https://github.com/bundler/bundler
