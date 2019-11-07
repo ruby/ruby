@@ -2484,7 +2484,7 @@ static inline void
 make_zombie(rb_objspace_t *objspace, VALUE obj, void (*dfree)(void *), void *data)
 {
     struct RZombie *zombie = RZOMBIE(obj);
-    zombie->basic.flags = T_ZOMBIE;
+    zombie->basic.flags = T_ZOMBIE | (zombie->basic.flags & FL_SEEN_OBJ_ID);
     zombie->dfree = dfree;
     zombie->data = data;
     zombie->next = heap_pages_deferred_final;
@@ -2496,6 +2496,23 @@ make_io_zombie(rb_objspace_t *objspace, VALUE obj)
 {
     rb_io_t *fptr = RANY(obj)->as.file.fptr;
     make_zombie(objspace, obj, (void (*)(void*))rb_io_fptr_finalize, fptr);
+}
+
+static void
+obj_free_object_id(rb_objspace_t *objspace, VALUE obj)
+{
+    VALUE id;
+
+    GC_ASSERT(FL_TEST(obj, FL_SEEN_OBJ_ID));
+    FL_UNSET(obj, FL_SEEN_OBJ_ID);
+
+    if (st_delete(objspace->obj_to_id_tbl, (st_data_t *)&obj, &id)) {
+        GC_ASSERT(id);
+        st_delete(objspace->id_to_obj_tbl, (st_data_t *)&id, NULL);
+    }
+    else {
+        rb_bug("Object ID seen, but not in mapping table: %s\n", obj_info(obj));
+    }
 }
 
 static int
@@ -2519,18 +2536,8 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	FL_UNSET(obj, FL_EXIVAR);
     }
 
-    if (FL_TEST(obj, FL_SEEN_OBJ_ID)) {
-        VALUE id;
-
-        FL_UNSET(obj, FL_SEEN_OBJ_ID);
-
-        if (st_delete(objspace->obj_to_id_tbl, (st_data_t *)&obj, &id)) {
-            GC_ASSERT(id);
-            st_delete(objspace->id_to_obj_tbl, (st_data_t *)&id, NULL);
-        }
-        else {
-            rb_bug("Object ID see, but not in mapping table: %s\n", obj_info(obj));
-        }
+    if (FL_TEST(obj, FL_SEEN_OBJ_ID) && !FL_TEST(obj, FL_FINALIZE)) {
+        obj_free_object_id(objspace, obj);
     }
 
 #if USE_RGENGC
@@ -3308,7 +3315,7 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
 
     saved.safe = rb_safe_level();
     saved.errinfo = rb_errinfo();
-    saved.objid = nonspecial_obj_id(obj);
+    saved.objid = rb_obj_id(obj);
     saved.cfp = ec->cfp;
     saved.finished = 0;
 
@@ -3352,6 +3359,11 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
         page = GET_HEAP_PAGE(zombie);
 
 	run_final(objspace, zombie);
+
+        GC_ASSERT(BUILTIN_TYPE(zombie) == T_ZOMBIE);
+        if (FL_TEST(zombie, FL_SEEN_OBJ_ID)) {
+            obj_free_object_id(objspace, zombie);
+        }
 
 	RZOMBIE(zombie)->basic.flags = 0;
         if (LIKELY(heap_pages_final_slots)) heap_pages_final_slots--;
@@ -3595,7 +3607,7 @@ rb_objspace_garbage_object_p(VALUE obj)
  */
 
 static VALUE
-id2ref(VALUE obj, VALUE objid)
+id2ref(VALUE objid)
 {
 #if SIZEOF_LONG == SIZEOF_VOIDP
 #define NUM2PTR(x) NUM2ULONG(x)
@@ -3634,6 +3646,12 @@ id2ref(VALUE obj, VALUE objid)
     } else {
         rb_raise(rb_eRangeError, "%+"PRIsVALUE" is recycled object", rb_int2str(objid, 10));
     }
+}
+
+static VALUE
+os_id2ref(VALUE os, VALUE objid)
+{
+    return id2ref(objid);
 }
 
 static VALUE
@@ -5946,7 +5964,7 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride, v
 	}
 	else {
 	    if (BUILTIN_TYPE(obj) == T_ZOMBIE) {
-		GC_ASSERT(RBASIC(obj)->flags == T_ZOMBIE);
+		GC_ASSERT((RBASIC(obj)->flags & ~FL_SEEN_OBJ_ID) == T_ZOMBIE);
 		data->zombie_object_count++;
 	    }
 	}
@@ -10429,7 +10447,7 @@ wmap_finalize(RB_BLOCK_CALL_FUNC_ARGLIST(objid, self))
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
     /* Get reference from object id. */
-    obj = obj_id_to_ref(objid);
+    obj = id2ref(objid);
 
     /* obj is original referenced object and/or weak reference. */
     orig = (st_data_t)obj;
@@ -11840,7 +11858,7 @@ Init_GC(void)
     rb_define_module_function(rb_mObjSpace, "define_finalizer", define_final, -1);
     rb_define_module_function(rb_mObjSpace, "undefine_finalizer", undefine_final, 1);
 
-    rb_define_module_function(rb_mObjSpace, "_id2ref", id2ref, 1);
+    rb_define_module_function(rb_mObjSpace, "_id2ref", os_id2ref, 1);
 
     rb_vm_register_special_exception(ruby_error_nomemory, rb_eNoMemError, "failed to allocate memory");
 

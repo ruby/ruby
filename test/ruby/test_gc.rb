@@ -372,6 +372,14 @@ class TestGc < Test::Unit::TestCase
     assert_empty(out)
   end
 
+  def test_finalizer_passed_object_id
+    assert_in_out_err(%w[--disable-gems], <<-EOS, ["true"], [])
+      o = Object.new
+      obj_id = o.object_id
+      ObjectSpace.define_finalizer(o, ->(id){ p id == obj_id })
+    EOS
+  end
+
   def test_verify_internal_consistency
     assert_nil(GC.verify_internal_consistency)
   end
