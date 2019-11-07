@@ -250,6 +250,7 @@ struct parser_params {
     int heredoc_line_indent;
     char *tokenbuf;
     struct local_vars *lvtbl;
+    st_table *pvtbl;
     int line_count;
     int ruby_sourceline;	/* current line no. */
     const char *ruby_sourcefile; /* current source file */
@@ -495,6 +496,8 @@ static int literal_concat0(struct parser_params *p, VALUE head, VALUE tail);
 static NODE *heredoc_dedent(struct parser_params*,NODE*);
 
 static void check_literal_when(struct parser_params *p, NODE *args, const YYLTYPE *loc);
+
+static void error_duplicate_pattern_variable(struct parser_params *p, ID id, const YYLTYPE *loc);
 
 #define get_id(id) (id)
 #define get_value(val) (val)
@@ -974,6 +977,7 @@ static int looking_at_eol_p(struct parser_params *p);
     NODE *node;
     ID id;
     int num;
+    st_table *tbl;
     const struct vtable *vars;
     struct rb_strterm_struct *strterm;
 }
@@ -1561,14 +1565,22 @@ expr		: command_call
 			$<num>$ = p->in_kwarg;
 			p->in_kwarg = 1;
 		    }
+		    {
+			$<tbl>$ = p->pvtbl;
+			p->pvtbl = st_init_numtable();
+		    }
 		  p_top_expr_body
+		    {
+			st_free_table(p->pvtbl);
+			p->pvtbl = $<tbl>4;
+		    }
 		    {
 			p->in_kwarg = !!$<num>3;
 		    /*%%%*/
-			$$ = NEW_CASE3($1, NEW_IN($4, NEW_TRUE(&@4), NEW_FALSE(&@4), &@4), &@$);
+			$$ = NEW_CASE3($1, NEW_IN($5, NEW_TRUE(&@5), NEW_FALSE(&@5), &@5), &@$);
 			rb_warn0L(nd_line($$), "Pattern matching is experimental, and the behavior may change in future versions of Ruby!");
 		    /*% %*/
-		    /*% ripper: case!($1, in!($4, Qnil, Qnil)) %*/
+		    /*% ripper: case!($1, in!($5, Qnil, Qnil)) %*/
 		    }
 		| arg %prec tLBRACE_ARG
 		;
@@ -3800,7 +3812,15 @@ p_case_body	: keyword_in
 			$<num>$ = p->in_kwarg;
 			p->in_kwarg = 1;
 		    }
+		    {
+			$<tbl>$ = p->pvtbl;
+			p->pvtbl = st_init_numtable();
+		    }
 		  p_top_expr then
+		    {
+			st_free_table(p->pvtbl);
+			p->pvtbl = $<tbl>3;
+		    }
 		    {
 			p->in_kwarg = !!$<num>2;
 		    }
@@ -3808,9 +3828,9 @@ p_case_body	: keyword_in
 		  p_cases
 		    {
 		    /*%%%*/
-			$$ = NEW_IN($3, $6, $7, &@$);
+			$$ = NEW_IN($4, $8, $9, &@$);
 		    /*% %*/
-		    /*% ripper: in!($3, $6, escape_Qundef($7)) %*/
+		    /*% ripper: in!($4, $8, escape_Qundef($9)) %*/
 		    }
 		;
 
@@ -4089,6 +4109,7 @@ p_kw		: tLABEL p_expr
 			    yyerror1(&@1, "key must be valid as local variables");
 			}
 		    /*%%%*/
+			error_duplicate_pattern_variable(p, $1, &@1);
 			$$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), &@$), &@$), assignable(p, $1, 0, &@$));
 		    /*% %*/
 		    /*% ripper: rb_ary_new_from_args(1, rb_ary_new_from_args(2, get_value($1), Qnil)) %*/
@@ -4119,6 +4140,7 @@ p_kw		: tLABEL p_expr
 			    if (!is_local_id(id)) {
 				yyerror1(&loc, "key must be valid as local variables");
 			    }
+			    error_duplicate_pattern_variable(p, id, &loc);
 			    $$ = list_append(p, NEW_LIST(node, &loc), assignable(p, id, 0, &@$));
 			}
 			else {
@@ -4249,6 +4271,7 @@ p_primitive	: literal
 p_variable	: tIDENTIFIER
 		    {
 		    /*%%%*/
+			error_duplicate_pattern_variable(p, $1, &@1);
 			$$ = assignable(p, $1, 0, &@$);
 		    /*% %*/
 		    /*% ripper: assignable(p, var_field(p, $1)) %*/
@@ -11527,6 +11550,20 @@ new_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc)
 {
     if (hash) hash = remove_duplicate_keys(p, hash);
     return NEW_HASH(hash, loc);
+}
+
+static void
+error_duplicate_pattern_variable(struct parser_params *p, ID id, const YYLTYPE *loc)
+{
+    if (is_private_local_id(id)) {
+	return;
+    }
+    if (st_is_member(p->pvtbl, id)) {
+	yyerror1(loc, "duplicated variable name");
+    }
+    else {
+	st_insert(p->pvtbl, (st_data_t)id, 0);
+    }
 }
 
 static void

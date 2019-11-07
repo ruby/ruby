@@ -193,25 +193,25 @@ class TestPatternMatching < Test::Unit::TestCase
   def test_var_pattern
     # NODE_DASGN_CURR
     assert_block do
-      case [0, 1]
-      in a, a
-        a == 1
+      case 0
+      in a
+        a == 0
       end
     end
 
     # NODE_DASGN
     b = 0
     assert_block do
-      case [0, 1]
-      in b, b
+      case 1
+      in b
         b == 1
       end
     end
 
     # NODE_LASGN
-    case [0, 1]
-    in c, c
-      assert_equal(1, c)
+    case 0
+    in c
+      assert_equal(0, c)
     else
       flunk
     end
@@ -221,6 +221,57 @@ class TestPatternMatching < Test::Unit::TestCase
       in ^a
       end
     }, /no such local variable/)
+
+    assert_syntax_error(%q{
+      case 0
+      in a, a
+      end
+    }, /duplicated variable name/)
+
+    assert_block do
+      case [0, 1, 2, 3]
+      in _, _, _a, _a
+        true
+      end
+    end
+
+    assert_syntax_error(%q{
+      case 0
+      in a, {a:}
+      end
+    }, /duplicated variable name/)
+
+    assert_syntax_error(%q{
+      case 0
+      in a, {"a":}
+      end
+    }, /duplicated variable name/)
+
+    assert_block do
+      case [0, "1"]
+      in a, "#{case 1; in a; a; end}"
+        true
+      end
+    end
+
+    assert_syntax_error(%q{
+      case [0, "1"]
+      in a, "#{case 1; in a; a; end}", a
+      end
+    }, /duplicated variable name/)
+
+    assert_block do
+      case 0
+      in a
+        true
+      in a
+        flunk
+      end
+    end
+
+    assert_syntax_error(%q{
+      0 in [a, a]
+    }, /duplicated variable name/)
   end
 
   def test_literal_value_pattern
