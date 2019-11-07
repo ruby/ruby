@@ -24,6 +24,7 @@ RubyVM::Typemap = {
   "lindex_t"       => %w[L TS_LINDEX],
   "rb_insn_func_t" => %w[F TS_FUNCPTR],
   "rb_num_t"       => %w[N TS_NUM],
+  "RB_BUILTIN"     => %w[R TS_BUILTIN],
 }
 
 # :FIXME: should this method be here?

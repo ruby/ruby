@@ -564,6 +564,10 @@ typedef struct rb_hook_list_struct {
     unsigned int running;
 } rb_hook_list_t;
 
+
+// see builtin.h for definition
+typedef const struct rb_builtin_function *RB_BUILTIN;
+
 typedef struct rb_vm_struct {
     VALUE self;
 
@@ -646,6 +650,8 @@ typedef struct rb_vm_struct {
 
     VALUE *defined_strings;
     st_table *frozen_strings;
+
+    const struct rb_builtin_function *builtin_function_table;
 
     /* params */
     struct { /* size in byte */
@@ -879,6 +885,9 @@ typedef struct rb_execution_context_struct {
 	RUBY_ALIGNAS(SIZEOF_VALUE) jmp_buf regs;
     } machine;
 } rb_execution_context_t;
+
+// for builtin.h
+#define VM_CORE_H_EC_DEFINED 1
 
 // Set the vm_stack pointer in the execution context.
 void rb_ec_set_vm_stack(rb_execution_context_t *ec, VALUE *stack, size_t size);

@@ -12,6 +12,7 @@
 #include "internal.h"
 #include "ruby/util.h"
 #include "eval_intern.h"
+#include "builtin.h"
 
 #ifdef HAVE_DLADDR
 # include <dlfcn.h>
@@ -558,6 +559,8 @@ prepare_iseq_build(rb_iseq_t *iseq,
     ISEQ_COMPILE_DATA(iseq)->option = option;
 
     ISEQ_COMPILE_DATA(iseq)->ivar_cache_table = NULL;
+
+    ISEQ_COMPILE_DATA(iseq)->builtin_function_table = GET_VM()->builtin_function_table;
 
     if (option->coverage_enabled) {
 	VALUE coverages = rb_get_coverages();
@@ -1967,6 +1970,14 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 	    ret = rb_str_new2("<funcptr>");
 	}
 	break;
+
+      case TS_BUILTIN:
+        {
+            const struct rb_builtin_function *bf = (const struct rb_builtin_function *)op;
+            ret = rb_sprintf("<builtin!%s/%d>",
+                             bf->name, bf->argc);
+        }
+        break;
 
       default:
 	rb_bug("unknown operand type: %c", type);

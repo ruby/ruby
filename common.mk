@@ -156,7 +156,7 @@ EXPORTOBJS    = $(DLNOBJ) \
 		loadpath.$(OBJEXT) \
 		$(COMMONOBJS)
 
-OBJS          = $(EXPORTOBJS) prelude.$(OBJEXT)
+OBJS          = $(EXPORTOBJS) prelude.$(OBJEXT) builtin.$(OBJEXT)
 ALLOBJS       = $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(INITOBJS)
 
 GOLFOBJS      = goruby.$(OBJEXT) golf_prelude.$(OBJEXT)
@@ -1094,6 +1094,11 @@ preludes: {$(VPATH)}prelude.c
 preludes: {$(VPATH)}miniprelude.c
 preludes: {$(srcdir)}golf_prelude.c
 
+BUILTIN_RB_SRCS =
+
+builtin_binary.inc: $(PREP) $(BUILTIN_RB_SRCS) $(srcdir)/tool/mk_builtin_binary.rb
+	$(Q) $(MINIRUBY) $(srcdir)/tool/mk_builtin_binary.rb
+
 $(srcdir)/revision.h:
 	$(Q)$(gnumake:yes=#) $(RM) $(@F)
 	$(Q)$(gnumake:yes=#) exit > $@ || exit > $(@F)
@@ -1613,6 +1618,33 @@ bignum.$(OBJEXT): {$(VPATH)}st.h
 bignum.$(OBJEXT): {$(VPATH)}subst.h
 bignum.$(OBJEXT): {$(VPATH)}thread.h
 bignum.$(OBJEXT): {$(VPATH)}util.h
+builtin.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
+builtin.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
+builtin.$(OBJEXT): $(CCAN_DIR)/list/list.h
+builtin.$(OBJEXT): $(CCAN_DIR)/str/str.h
+builtin.$(OBJEXT): $(hdrdir)/ruby.h
+builtin.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+builtin.$(OBJEXT): {$(VPATH)}assert.h
+builtin.$(OBJEXT): {$(VPATH)}builtin.c
+builtin.$(OBJEXT): {$(VPATH)}builtin.h
+builtin.$(OBJEXT): {$(VPATH)}builtin_binary.inc
+builtin.$(OBJEXT): {$(VPATH)}config.h
+builtin.$(OBJEXT): {$(VPATH)}defines.h
+builtin.$(OBJEXT): {$(VPATH)}id.h
+builtin.$(OBJEXT): {$(VPATH)}intern.h
+builtin.$(OBJEXT): {$(VPATH)}internal.h
+builtin.$(OBJEXT): {$(VPATH)}iseq.h
+builtin.$(OBJEXT): {$(VPATH)}method.h
+builtin.$(OBJEXT): {$(VPATH)}missing.h
+builtin.$(OBJEXT): {$(VPATH)}node.h
+builtin.$(OBJEXT): {$(VPATH)}ruby_assert.h
+builtin.$(OBJEXT): {$(VPATH)}ruby_atomic.h
+builtin.$(OBJEXT): {$(VPATH)}st.h
+builtin.$(OBJEXT): {$(VPATH)}subst.h
+builtin.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+builtin.$(OBJEXT): {$(VPATH)}thread_native.h
+builtin.$(OBJEXT): {$(VPATH)}vm_core.h
+builtin.$(OBJEXT): {$(VPATH)}vm_opts.h
 class.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 class.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 class.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -1663,6 +1695,7 @@ compile.$(OBJEXT): $(CCAN_DIR)/str/str.h
 compile.$(OBJEXT): $(hdrdir)/ruby.h
 compile.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 compile.$(OBJEXT): {$(VPATH)}assert.h
+compile.$(OBJEXT): {$(VPATH)}builtin.h
 compile.$(OBJEXT): {$(VPATH)}compile.c
 compile.$(OBJEXT): {$(VPATH)}config.h
 compile.$(OBJEXT): {$(VPATH)}defines.h
@@ -2208,6 +2241,7 @@ iseq.$(OBJEXT): $(CCAN_DIR)/str/str.h
 iseq.$(OBJEXT): $(hdrdir)/ruby.h
 iseq.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 iseq.$(OBJEXT): {$(VPATH)}assert.h
+iseq.$(OBJEXT): {$(VPATH)}builtin.h
 iseq.$(OBJEXT): {$(VPATH)}config.h
 iseq.$(OBJEXT): {$(VPATH)}debug_counter.h
 iseq.$(OBJEXT): {$(VPATH)}defines.h
@@ -2350,18 +2384,36 @@ math.$(OBJEXT): {$(VPATH)}onigmo.h
 math.$(OBJEXT): {$(VPATH)}oniguruma.h
 math.$(OBJEXT): {$(VPATH)}st.h
 math.$(OBJEXT): {$(VPATH)}subst.h
+miniinit.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
+miniinit.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
+miniinit.$(OBJEXT): $(CCAN_DIR)/list/list.h
+miniinit.$(OBJEXT): $(CCAN_DIR)/str/str.h
+miniinit.$(OBJEXT): $(hdrdir)/ruby.h
 miniinit.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 miniinit.$(OBJEXT): {$(VPATH)}assert.h
+miniinit.$(OBJEXT): {$(VPATH)}builtin.h
 miniinit.$(OBJEXT): {$(VPATH)}config.h
 miniinit.$(OBJEXT): {$(VPATH)}defines.h
 miniinit.$(OBJEXT): {$(VPATH)}encoding.h
+miniinit.$(OBJEXT): {$(VPATH)}id.h
 miniinit.$(OBJEXT): {$(VPATH)}intern.h
+miniinit.$(OBJEXT): {$(VPATH)}internal.h
+miniinit.$(OBJEXT): {$(VPATH)}iseq.h
+miniinit.$(OBJEXT): {$(VPATH)}method.h
+miniinit.$(OBJEXT): {$(VPATH)}mini_builtin.c
 miniinit.$(OBJEXT): {$(VPATH)}miniinit.c
 miniinit.$(OBJEXT): {$(VPATH)}missing.h
+miniinit.$(OBJEXT): {$(VPATH)}node.h
 miniinit.$(OBJEXT): {$(VPATH)}onigmo.h
 miniinit.$(OBJEXT): {$(VPATH)}oniguruma.h
+miniinit.$(OBJEXT): {$(VPATH)}ruby_assert.h
+miniinit.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 miniinit.$(OBJEXT): {$(VPATH)}st.h
 miniinit.$(OBJEXT): {$(VPATH)}subst.h
+miniinit.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+miniinit.$(OBJEXT): {$(VPATH)}thread_native.h
+miniinit.$(OBJEXT): {$(VPATH)}vm_core.h
+miniinit.$(OBJEXT): {$(VPATH)}vm_opts.h
 miniprelude.$(OBJEXT): {$(VPATH)}iseq.h
 miniprelude.$(OBJEXT): {$(VPATH)}miniprelude.c
 mjit.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
@@ -2406,6 +2458,7 @@ mjit_compile.$(OBJEXT): $(CCAN_DIR)/str/str.h
 mjit_compile.$(OBJEXT): $(hdrdir)/ruby.h
 mjit_compile.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 mjit_compile.$(OBJEXT): {$(VPATH)}assert.h
+mjit_compile.$(OBJEXT): {$(VPATH)}builtin.h
 mjit_compile.$(OBJEXT): {$(VPATH)}config.h
 mjit_compile.$(OBJEXT): {$(VPATH)}debug_counter.h
 mjit_compile.$(OBJEXT): {$(VPATH)}defines.h
@@ -3217,6 +3270,7 @@ vm.$(OBJEXT): $(CCAN_DIR)/str/str.h
 vm.$(OBJEXT): $(hdrdir)/ruby.h
 vm.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 vm.$(OBJEXT): {$(VPATH)}assert.h
+vm.$(OBJEXT): {$(VPATH)}builtin.h
 vm.$(OBJEXT): {$(VPATH)}config.h
 vm.$(OBJEXT): {$(VPATH)}constant.h
 vm.$(OBJEXT): {$(VPATH)}debug_counter.h
