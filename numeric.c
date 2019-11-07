@@ -1507,7 +1507,7 @@ rb_float_gt(VALUE x, VALUE y)
     if (RB_TYPE_P(y, T_FIXNUM) || RB_TYPE_P(y, T_BIGNUM)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
-            return -FIX2INT(rel) > 0 ? Qtrue : Qfalse;
+            return -FIX2LONG(rel) > 0 ? Qtrue : Qfalse;
         return Qfalse;
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
@@ -1544,7 +1544,7 @@ flo_ge(VALUE x, VALUE y)
     if (RB_TYPE_P(y, T_FIXNUM) || RB_TYPE_P(y, T_BIGNUM)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
-            return -FIX2INT(rel) >= 0 ? Qtrue : Qfalse;
+            return -FIX2LONG(rel) >= 0 ? Qtrue : Qfalse;
         return Qfalse;
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
@@ -1581,7 +1581,7 @@ flo_lt(VALUE x, VALUE y)
     if (RB_TYPE_P(y, T_FIXNUM) || RB_TYPE_P(y, T_BIGNUM)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
-            return -FIX2INT(rel) < 0 ? Qtrue : Qfalse;
+            return -FIX2LONG(rel) < 0 ? Qtrue : Qfalse;
         return Qfalse;
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
@@ -1618,7 +1618,7 @@ flo_le(VALUE x, VALUE y)
     if (RB_TYPE_P(y, T_FIXNUM) || RB_TYPE_P(y, T_BIGNUM)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
-            return -FIX2INT(rel) <= 0 ? Qtrue : Qfalse;
+            return -FIX2LONG(rel) <= 0 ? Qtrue : Qfalse;
         return Qfalse;
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
