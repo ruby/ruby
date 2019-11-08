@@ -22,6 +22,25 @@
 #include <errno.h>
 #include "ruby_atomic.h"
 #include "ccan/list/list.h"
+
+/* non-Linux poll may not work on all FDs */
+#if defined(HAVE_POLL)
+#  if defined(__linux__)
+#    define USE_POLL 1
+#  endif
+#  if defined(__FreeBSD_version) && __FreeBSD_version >= 1100000
+#    define USE_POLL 1
+#  endif
+#endif
+
+#ifndef USE_POLL
+#  define USE_POLL 0
+#endif
+
+#if !USE_POLL
+#  include "vm_core.h"
+#endif
+
 #include "builtin.h"
 
 #undef free
@@ -10802,20 +10821,6 @@ maygvl_copy_stream_continue_p(int has_gvl, struct copy_stream_struct *stp)
     return FALSE;
 }
 
-/* non-Linux poll may not work on all FDs */
-#if defined(HAVE_POLL)
-#  if defined(__linux__)
-#    define USE_POLL 1
-#  endif
-#  if defined(__FreeBSD_version) && __FreeBSD_version >= 1100000
-#    define USE_POLL 1
-#  endif
-#endif
-
-#ifndef USE_POLL
-#  define USE_POLL 0
-#endif
-
 #if USE_POLL
 #  define IOWAIT_SYSCALL "poll"
 STATIC_ASSERT(pollin_expected, POLLIN == RB_WAITFD_IN);
@@ -10831,7 +10836,6 @@ nogvl_wait_for_single_fd(int fd, short events)
     return poll(&fds, 1, -1);
 }
 #else /* !USE_POLL */
-#  include "vm_core.h"
 #  define IOWAIT_SYSCALL "select"
 static int
 nogvl_wait_for_single_fd(int fd, short events)
