@@ -43,6 +43,7 @@
 # * https://github.com/ruby/net-smtp
 # * https://github.com/ruby/cgi
 # * https://github.com/ruby/readline
+# * https://github.com/ruby/readline-ext
 #
 
 require 'fileutils'
@@ -93,6 +94,7 @@ $repositories = {
   netsmtp: "ruby/net-smtp",
   cgi: "ruby/cgi",
   readline: "ruby/readline",
+  readlineext: "ruby/readline-ext"
 }
 
 def sync_default_gems(gem)
@@ -243,6 +245,9 @@ def sync_default_gems(gem)
   when "netsmtp"
     sync_lib "net-smtp"
     mv "lib/net-smtp.gemspec", "lib/net/smtp"
+  when "readlineext"
+    sync_lib "readline-ext"
+    mv "lib/readline-ext.gemspec", "ext/readline"
   else
     sync_lib gem
   end
