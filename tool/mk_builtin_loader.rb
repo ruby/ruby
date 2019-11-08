@@ -18,7 +18,7 @@ def collect_builtin iseq_ary, bs
       end
     else
       insn[1..-1].each{|op|
-        if op[0] == "YARVInstructionSequence/SimpleDataFormat"
+        if op.is_a?(Array) && op[0] == "YARVInstructionSequence/SimpleDataFormat"
           collect_builtin op, bs
         end
       }
