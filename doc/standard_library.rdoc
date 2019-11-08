@@ -51,7 +51,6 @@ NKF:: Ruby extension for Network Kanji Filter
 objspace:: Extends ObjectSpace module to add methods for internal statistics
 Pathname:: Representation of the name of a file or directory on the filesystem
 PTY:: Creates and manages pseudo terminals
-Readline:: Provides an interface for GNU Readline and Edit Line (libedit)
 Ripper:: Provides an interface for parsing Ruby programs into S-expressions
 Socket:: Access underlying OS socket implementations
 Syslog:: Ruby interface for the POSIX system logging facility
@@ -104,6 +103,7 @@ IO::console:: Console interface
 JSON:: Implements Javascript Object Notation for Ruby
 OpenSSL:: Provides SSL, TLS and general purpose cryptography for Ruby
 Psych:: A YAML parser and emitter for Ruby
+Readline:: Provides an interface for GNU Readline and Edit Line (libedit)
 SDBM:: Provides a simple file-based key-value store with String keys and values
 StringIO:: Pseudo I/O on String objects
 StringScanner:: Provides lexical scanning operations on a String
