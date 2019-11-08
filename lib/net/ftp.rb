@@ -94,7 +94,12 @@ module Net
     # When +true+, transfers are performed in binary mode.  Default: +true+.
     attr_reader :binary
 
-    # When +true+, the connection is in passive mode.  Default: +true+.
+    # When +true+, the connection uses passive mode when connecting to IPv4
+    # addresses and extended passive mode for other adresses.
+    # When +:PASV+ the connection always uses passive mode.
+    # When +:EPSV+ the connection always uses extended passive mode.
+    # When +false+, the connection uses active mode.
+    # Default: +true+.
     attr_accessor :passive
 
     # When +true+, all traffic to and from the server is written
@@ -195,8 +200,13 @@ module Net
     #             "anonymous@" is used as a password.
     # password::  Password for login.
     # account::   Account information for ACCT.
-    # passive::   When +true+, the connection is in passive mode. Default:
-    #             +true+.
+    # passive::   When +true+, the connection uses passive mode when
+    #             connecting to IPv4 addresses and extended passive mode for
+    #             other adresses.
+    #             When +:PASV+ the connection always uses passive mode.
+    #             When +:EPSV+ the connection always uses extended passive mode.
+    #             When +false+, the connection uses active mode.
+    #             Default: +true+.
     # open_timeout::  Number of seconds to wait for the connection to open.
     #                 See Net::FTP#open_timeout for details.  Default: +nil+.
     # read_timeout::  Number of seconds to wait for one block to be read.
@@ -527,7 +537,11 @@ module Net
 
     # sends the appropriate command to enable a passive connection
     def makepasv # :nodoc:
-      if @bare_sock.remote_address.ipv4?
+      if @passive == :EPSV
+        host, port = parse229(sendcmd("EPSV"))
+      elsif @passive == :PASV
+        host, port = parse227(sendcmd("PASV"))
+      elsif @bare_sock.remote_address.ipv4?
         host, port = parse227(sendcmd("PASV"))
       else
         host, port = parse229(sendcmd("EPSV"))
