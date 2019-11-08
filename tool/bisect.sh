@@ -16,7 +16,7 @@ case $1 in
     path="$builddir/_bisect.sh"
     echo "path: $path"
     cp "$0" "$path"
-    cd "$srcdir"
+    cd "$srcdir" || exit 125
     set -x
     exec git bisect run "$path" "run-$1"
     ;;
