@@ -6929,7 +6929,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
         }
     }
 
-    
+
     /* receiver */
     if (type == NODE_CALL || type == NODE_OPCALL || type == NODE_QCALL) {
         int idx, level;
