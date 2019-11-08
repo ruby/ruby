@@ -335,11 +335,11 @@ env:
       - echo "ruby/spec failed on Ruby 2.4. This is likely because of a missing ruby_version_is guard, please add it. See spec/README.md."
 
   - &baseruby
-    name: "BASERUBY: Ruby 1.9.3"
+    name: "BASERUBY: Ruby 2.2"
     <<: *gcc-8
     <<: *make-test-only
     language: ruby
-    rvm: 1.9.3
+    rvm: 2.2
 
   - &dependency
     name: Check dependencies in makefiles
