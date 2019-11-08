@@ -984,7 +984,12 @@ $(srcs_vpath)mjit_compile.inc: $(srcdir)/tool/ruby_vm/views/mjit_compile.inc.erb
   $(srcdir)/tool/ruby_vm/views/_mjit_compile_ivar.erb \
   $(srcdir)/tool/ruby_vm/views/_mjit_compile_insn_body.erb $(srcdir)/tool/ruby_vm/views/_mjit_compile_pc_and_sp.erb
 
+BUILTIN_RB_SRCS = $(srcs_vpath)trace_point.rb $(srcs_vpath)ast.rb $(srcs_vpath)io.rb \
+		  $(srcs_vpath)gc.rb
+BUILTIN_RB_INCS = $(BUILTIN_RB_SRCS:.rb=.rbinc)
+
 common-srcs: $(srcs_vpath)parse.c $(srcs_vpath)lex.c $(srcs_vpath)enc/trans/newline.c $(srcs_vpath)id.c \
+	     $(BUILTIN_RB_INCS) \
 	     srcs-lib srcs-ext incs
 
 missing-srcs: $(srcdir)/missing/des_tables.c
@@ -1094,10 +1099,8 @@ preludes: {$(VPATH)}prelude.c
 preludes: {$(VPATH)}miniprelude.c
 preludes: {$(srcdir)}golf_prelude.c
 
-BUILTIN_RB_SRCS = {$(VPATH)}trace_point.rb {$(VPATH)}ast.rb {$(VPATH)}io.rb
-BUILTIN_RB_INCS = $(BUILTIN_RB_SRCS:.rb=.rbinc)
-
 .rb.rbinc:
+	$(ECHO) making $@
 	$(Q) $(BASERUBY) $(srcdir)/tool/mk_builtin_loader.rb $<
 
 builtin_binary.inc: $(PREP) $(BUILTIN_RB_SRCS) $(srcdir)/tool/mk_builtin_binary.rb
