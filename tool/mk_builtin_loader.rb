@@ -36,6 +36,7 @@ def mk_builtin_header file
   collect_builtin(RubyVM::InstructionSequence.compile_file(file, false).to_a, bs = {})
 
   open(ofile, 'w'){|f|
+    f.puts "// -*- c -*-"
     f.puts "// DO NOT MODIFY THIS FILE DIRECTLY."
     f.puts "// auto-generated file"
     f.puts "//   by #{__FILE__}"

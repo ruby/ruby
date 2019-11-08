@@ -17,6 +17,13 @@ RubyVM::each_builtin{|feature, iseq|
 
 $stdout = open('builtin_binary.inc', 'wb')
 
+puts <<H
+// -*- c -*-
+// DO NOT MODIFY THIS FILE DIRECTLY.
+// auto-generated file by #{File.basename(__FILE__)}
+
+H
+
 ary.each{|feature, iseq|
   puts "static const unsigned char #{feature}_bin[] = {"
     dump_bin(iseq)
