@@ -1438,12 +1438,90 @@ rb_vm_search_method_slowpath(struct rb_call_data *cd, VALUE klass)
     VM_ASSERT(callable_method_entry_p(cc->me));
 }
 
+/* # Description of what `vm_cache_check_for_class_serial()` is doing #########
+ *
+ * - Let's assume a `struct rb_call_cache` has its `class_serial` as an array
+ *   of length 3 (typical situation for 64 bit environments):
+ *
+ *   ```C
+ *   struct rb_call_cache {
+ *       rb_serial_t method_state;
+ *       rb_serial_t class_serial[3];
+ *       rb_callable_method_entry_t *me;
+ *       rb_method_definition_struct *def;
+ *       vm_call_handler call;
+ *       union { ... snip ... } aux;
+ *   };
+ *   ```
+ *
+ * - Initially, the `cc->class_serial` array is filled with zeros.
+ *
+ * - If the cache mishits, and if that was due to mc_miss_spurious situation,
+ *   `rb_vm_search_method_slowpath()` pushes the newest class serial at the
+ *   leftmost position of the `cc->class_serial`.
+ *
+ *   ```
+ *   from:  +--------------+-----+-----+-----+----+-----+------+-----+
+ *          | method_state | (x) | (y) | (z) | me | def | call | aux |
+ *          +--------------+-----+-----+-----+----+-----+------+-----+
+ *                             \     \
+ *                              \     \
+ *                               \     \
+ *                                \     \
+ *                                 \     \
+ *                                  v     v
+ *   to:    +--------------+-----+-----+-----+----+-----+------+-----+
+ *          | method_state | NEW | (x) | (y) | me | def | call | aux |
+ *          +--------------+-----+-----+-----+----+-----+------+-----+
+ *                           ^^^
+ *                           fill RCLASS_SERIAL(klass)
+ *   ```
+ *
+ * - Eventually, the `cc->class_serial` is filled with a series of classes that
+ *   share the same method entry for the same call site.
+ *
+ * - `vm_cache_check_for_class_serial()` can say that the cache now hits if
+ *   _any_ of the class serials stored inside of `cc->class_serial` is equal to
+ *   the given `class_serial` value.
+ *
+ * - It scans the array from left to right, looking for the expected class
+ *   serial.  If it finds that at `cc->class_serial[0]` (this branch
+ *   probability is 98% according to @shyouhei's experiment), just returns
+ *   true.  If it reaches the end of the array without finding anytihng,
+ *   returns false.  This is done in the #1 loop below.
+ *
+ * - What needs to be complicated is when the class serial is found at either
+ *   `cc->class_serial[1]` or `cc->class_serial[2]`.  When that happens, its
+ *   return value is true because `cc->me` and `cc->call` are valid.  But
+ *   `cc->aux` might be invalid.  Also the found class serial is expected to
+ *   hit next time.  In this case we reorder the array and wipe out `cc->aux`.
+ *   This is done in the #2 loop below.
+ *
+ *   ```
+ *   from:  +--------------+-----+-----+-----+----+-----+------+-----+
+ *          | method_state | (x) | (y) | (z) | me | def | call | aux |
+ *          +--------------+-----+-----+-----+----+-----+------+-----+
+ *                             \     \    |
+ *                              \     \   |
+ *                            +- \ --- \ -+
+ *                            |   \     \
+ *                            |    \     \
+ *                            v     v     v
+ *   to:    +--------------+-----+-----+-----+----+-----+------+-----+
+ *          | method_state | (z) | (x) | (y) | me | def | call | 000 |
+ *          +--------------+-----+-----+-----+----+-----+------+-----+
+ *                                                               ^^^
+ *                                                            wipe out
+ *   ```
+ *
+ */
 static inline bool
 vm_cache_check_for_class_serial(struct rb_call_cache *cc, rb_serial_t class_serial)
 {
     int i;
     rb_serial_t j;
 
+    /* This is the loop #1 in above description. */
     for (i = 0; i < numberof(cc->class_serial); i++) {
         j = cc->class_serial[i];
 
@@ -1465,6 +1543,7 @@ vm_cache_check_for_class_serial(struct rb_call_cache *cc, rb_serial_t class_seri
     return false;
 
   hit:
+    /* This is the loop #2 in above description. */
     for (; i > 0; i--) {
         cc->class_serial[i] = cc->class_serial[i - 1];
     }
