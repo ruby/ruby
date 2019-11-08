@@ -64,8 +64,6 @@ Zachary Scott (zzak)
   NARUSE, Yui (naruse)
 [lib/net/protocol.rb]
   _unmaintained_
-[lib/observer.rb]
-  _unmaintained_
 [lib/open-uri.rb]
   Tanaka Akira (akr)
 [lib/optparse.rb, lib/optparse/*]
@@ -213,6 +211,9 @@ Zachary Scott (zzak)
   _unmaintained_
   https://github.com/ruby/net-smtp
   https://rubygems.org/gems/net-smtp
+[lib/observer.rb]
+  _unmaintained_
+  https://github.com/ruby/observer
 [lib/open3.rb]
   _unmaintained_
   https://github.com/ruby/open3

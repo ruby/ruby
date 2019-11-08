@@ -44,6 +44,7 @@
 # * https://github.com/ruby/cgi
 # * https://github.com/ruby/readline
 # * https://github.com/ruby/readline-ext
+# * https://github.com/ruby/observer
 #
 
 require 'fileutils'
@@ -94,7 +95,8 @@ $repositories = {
   netsmtp: "ruby/net-smtp",
   cgi: "ruby/cgi",
   readline: "ruby/readline",
-  readlineext: "ruby/readline-ext"
+  readlineext: "ruby/readline-ext",
+  observer: "ruby/observer",
 }
 
 def sync_default_gems(gem)
