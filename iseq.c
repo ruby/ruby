@@ -12,7 +12,6 @@
 #include "internal.h"
 #include "ruby/util.h"
 #include "eval_intern.h"
-#include "builtin.h"
 
 #ifdef HAVE_DLADDR
 # include <dlfcn.h>
@@ -24,6 +23,7 @@
 #include "vm_core.h"
 #include "iseq.h"
 #include "id_table.h"
+#include "builtin.h"
 
 #include "insns.inc"
 #include "insns_info.inc"
