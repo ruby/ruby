@@ -1094,7 +1094,7 @@ preludes: {$(VPATH)}prelude.c
 preludes: {$(VPATH)}miniprelude.c
 preludes: {$(srcdir)}golf_prelude.c
 
-BUILTIN_RB_SRCS = $(srcdir)/trace_point.rb $(srcdir)/ast.rb
+BUILTIN_RB_SRCS = $(srcdir)/trace_point.rb $(srcdir)/ast.rb $(srcdir)/io.rb
 
 builtin_binary.inc: $(PREP) $(BUILTIN_RB_SRCS) $(srcdir)/tool/mk_builtin_binary.rb
 	$(Q) $(MINIRUBY) $(srcdir)/tool/mk_builtin_binary.rb
@@ -1104,6 +1104,9 @@ load_trace_point.inc: $(srcdir)/trace_point.rb $(srcdir)/tool/mk_builtin_loader.
 
 load_ast.inc: $(srcdir)/ast.rb $(srcdir)/tool/mk_builtin_loader.rb
 	$(Q) $(BASERUBY) $(srcdir)/tool/mk_builtin_loader.rb $(srcdir)/ast.rb
+
+load_io.inc: $(srcdir)/io.rb $(srcdir)/tool/mk_builtin_loader.rb
+	$(Q) $(BASERUBY) $(srcdir)/tool/mk_builtin_loader.rb $(srcdir)/io.rb
 
 $(srcdir)/revision.h:
 	$(Q)$(gnumake:yes=#) $(RM) $(@F)
@@ -2217,6 +2220,7 @@ io.$(OBJEXT): $(CCAN_DIR)/str/str.h
 io.$(OBJEXT): $(hdrdir)/ruby.h
 io.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 io.$(OBJEXT): {$(VPATH)}assert.h
+io.$(OBJEXT): {$(VPATH)}builtin.h
 io.$(OBJEXT): {$(VPATH)}config.h
 io.$(OBJEXT): {$(VPATH)}defines.h
 io.$(OBJEXT): {$(VPATH)}dln.h
@@ -2227,6 +2231,7 @@ io.$(OBJEXT): {$(VPATH)}intern.h
 io.$(OBJEXT): {$(VPATH)}internal.h
 io.$(OBJEXT): {$(VPATH)}io.c
 io.$(OBJEXT): {$(VPATH)}io.h
+io.$(OBJEXT): {$(VPATH)}load_io.inc
 io.$(OBJEXT): {$(VPATH)}method.h
 io.$(OBJEXT): {$(VPATH)}missing.h
 io.$(OBJEXT): {$(VPATH)}node.h

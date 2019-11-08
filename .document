@@ -13,6 +13,7 @@ rbconfig.rb
 
 trace_point.rb
 ast.rb
+io.rb
 
 # the lib/ directory (which has its own .document file)
 lib

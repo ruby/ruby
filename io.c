@@ -22,6 +22,7 @@
 #include <errno.h>
 #include "ruby_atomic.h"
 #include "ccan/list/list.h"
+#include "builtin.h"
 
 #undef free
 #define free(x) xfree(x)
@@ -2941,7 +2942,7 @@ io_nonblock_eof(int no_exception)
 
 /* :nodoc: */
 static VALUE
-io_read_nonblock(VALUE io, VALUE length, VALUE str, VALUE ex)
+io_read_nonblock(rb_execution_context_t *ec, VALUE io, VALUE length, VALUE str, VALUE ex)
 {
     rb_io_t *fptr;
     long n, len;
@@ -2993,7 +2994,7 @@ io_read_nonblock(VALUE io, VALUE length, VALUE str, VALUE ex)
 
 /* :nodoc: */
 static VALUE
-io_write_nonblock(VALUE io, VALUE str, VALUE ex)
+io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
 {
     rb_io_t *fptr;
     long n;
@@ -13312,10 +13313,6 @@ Init_IO(void)
 
     rb_define_method(rb_cIO, "readlines",  rb_io_readlines, -1);
 
-    /* for prelude.rb use only: */
-    rb_define_private_method(rb_cIO, "__read_nonblock", io_read_nonblock, 3);
-    rb_define_private_method(rb_cIO, "__write_nonblock", io_write_nonblock, 2);
-
     rb_define_method(rb_cIO, "readpartial",  io_readpartial, -1);
     rb_define_method(rb_cIO, "read",  io_read, -1);
     rb_define_method(rb_cIO, "write", io_write_m, -1);
@@ -13524,4 +13521,12 @@ Init_IO(void)
 #endif
     sym_wait_readable = ID2SYM(rb_intern("wait_readable"));
     sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
+}
+
+#include "load_io.inc"
+
+void
+Init_IO_nonblock(void)
+{
+    load_io();
 }

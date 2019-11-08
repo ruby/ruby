@@ -70,6 +70,7 @@ rb_call_inits(void)
 
     CALL(builtin);
 
+    CALL(IO_nonblock);
     CALL(ast);
     CALL(vm_trace);
 }
