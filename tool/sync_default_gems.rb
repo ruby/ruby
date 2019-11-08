@@ -46,6 +46,7 @@
 # * https://github.com/ruby/readline-ext
 # * https://github.com/ruby/observer
 # * https://github.com/ruby/timeout
+# * https://github.com/ruby/yaml
 #
 
 require 'fileutils'
@@ -99,6 +100,7 @@ $repositories = {
   readlineext: "ruby/readline-ext",
   observer: "ruby/observer",
   timeout: "ruby/timeout",
+  yaml: "ruby/yaml",
 }
 
 def sync_default_gems(gem)

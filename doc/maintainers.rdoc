@@ -103,8 +103,6 @@ Zachary Scott (zzak)
   YAMADA, Akira (akira)
 [lib/weakref.rb]
   _unmaintained_
-[lib/yaml.rb, lib/yaml/*]
-  Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
 
 === Extensions
 
@@ -269,6 +267,9 @@ Zachary Scott (zzak)
   Eric Wong (normalperson)
   https://bugs.ruby-lang.org/
   https://rubygems.org/gems/webrick
+[lib/yaml.rb, lib/yaml/*]
+  Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
+  https://github.com/ruby/yaml
 
 === Extensions
 
