@@ -160,7 +160,7 @@ typedef VALUE iseq_value_itr_t(void *ctx, VALUE obj);
 typedef VALUE rb_vm_insns_translator_t(const void *addr);
 
 static int
-iseq_extract_values(VALUE *code, size_t pos, iseq_value_itr_t * func, void *data, rb_vm_insns_translator_t * translator)
+iseq_extract_values(VALUE *code, size_t pos, iseq_value_itr_t * func, void *data, rb_vm_insns_translator_t * translator, int with_cache)
 {
     VALUE insn = translator((void *)code[pos]);
     int len = insn_len(insn);
@@ -194,6 +194,19 @@ iseq_extract_values(VALUE *code, size_t pos, iseq_value_itr_t * func, void *data
               }
             }
             break;
+          case TS_CALLDATA:
+            if (with_cache) {
+                struct rb_call_data *cd = (struct rb_call_data *)code[pos + op_no + 1];
+
+                struct rb_callable_method_entry_struct *nv = func(data, (VALUE)cd->cc.me);
+
+                cd->cc.compact_count = rb_gc_compact_count();
+
+                if (nv != cd->cc.me) {
+                    cd->cc.me = nv;
+                    cd->cc.def = nv->def;
+                }
+            }
           default:
             break;
 	}
@@ -203,7 +216,7 @@ iseq_extract_values(VALUE *code, size_t pos, iseq_value_itr_t * func, void *data
 }
 
 static void
-rb_iseq_each_value(const rb_iseq_t *iseq, iseq_value_itr_t * func, void *data)
+rb_iseq_each_value(const rb_iseq_t *iseq, iseq_value_itr_t * func, void *data, int with_cache)
 {
     unsigned int size;
     VALUE *code;
@@ -219,7 +232,7 @@ rb_iseq_each_value(const rb_iseq_t *iseq, iseq_value_itr_t * func, void *data)
     code = body->iseq_encoded;
 
     for (n = 0; n < size;) {
-	n += iseq_extract_values(code, n, func, data, translator);
+	n += iseq_extract_values(code, n, func, data, translator, with_cache);
     }
 }
 
@@ -246,15 +259,14 @@ rb_iseq_update_references(rb_iseq_t *iseq)
         if (body->parent_iseq) {
             body->parent_iseq = (struct rb_iseq_struct *)rb_gc_location((VALUE)body->parent_iseq);
         }
-        if (FL_TEST(iseq, ISEQ_MARKABLE_ISEQ)) {
-            rb_iseq_each_value(iseq, update_each_insn_value, NULL);
-            VALUE *original_iseq = ISEQ_ORIGINAL_ISEQ(iseq);
-            if (original_iseq) {
-                size_t n = 0;
-                const unsigned int size = body->iseq_size;
-                while (n < size) {
-                    n += iseq_extract_values(original_iseq, n, update_each_insn_value, NULL, rb_vm_insn_null_translator);
-                }
+
+        rb_iseq_each_value(iseq, update_each_insn_value, NULL, 1);
+        VALUE *original_iseq = ISEQ_ORIGINAL_ISEQ(iseq);
+        if (original_iseq) {
+            size_t n = 0;
+            const unsigned int size = body->iseq_size;
+            while (n < size) {
+                n += iseq_extract_values(original_iseq, n, update_each_insn_value, NULL, rb_vm_insn_null_translator, 1);
             }
         }
 
@@ -306,7 +318,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 	const struct rb_iseq_constant_body *const body = iseq->body;
 
 	if (FL_TEST(iseq, ISEQ_MARKABLE_ISEQ)) {
-	    rb_iseq_each_value(iseq, each_insn_value, NULL);
+	    rb_iseq_each_value(iseq, each_insn_value, NULL, 0);
 	}
 
         rb_gc_mark_movable(body->variable.coverage);

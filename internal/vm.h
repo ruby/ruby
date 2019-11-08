@@ -65,7 +65,9 @@ struct rb_call_cache {
                struct rb_execution_context_struct *e,
                struct rb_control_frame_struct *,
                struct rb_calling_info *,
-               const struct rb_call_data *)))
+               const struct rb_call_data *))
+         - sizeof(size_t)                                        /* compact_count */
+        )
         / sizeof(rb_serial_t)
     ];
 
@@ -77,6 +79,8 @@ struct rb_call_cache {
                   struct rb_control_frame_struct *cfp,
                   struct rb_calling_info *calling,
                   struct rb_call_data *cd);
+
+    size_t compact_count;
 
     union {
         unsigned int index; /* used by ivar */

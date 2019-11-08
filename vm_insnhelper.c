@@ -1616,6 +1616,8 @@ vm_search_method_fastpath(struct rb_call_data *cd, VALUE klass)
 {
     struct rb_call_cache *cc = &cd->cc;
 
+    rb_gc_check_compact(cc->compact_count);
+
 #if OPT_INLINE_METHOD_CACHE
     if (LIKELY(RB_DEBUG_COUNTER_INC_UNLESS(mc_global_state_miss,
 					   GET_GLOBAL_METHOD_STATE() == cc->method_state) &&

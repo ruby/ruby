@@ -8136,6 +8136,21 @@ check_id_table_move(ID id, VALUE value, void *data)
     return ID_TABLE_CONTINUE;
 }
 
+size_t
+rb_gc_compact_count(void)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    return objspace->profile.compact_count;
+}
+
+void
+rb_gc_check_compact(size_t count)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+
+    assert(count == objspace->profile.compact_count);
+}
+
 /* Returns the new location of an object, if it moved.  Otherwise returns
  * the existing location. */
 VALUE

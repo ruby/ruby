@@ -81,6 +81,8 @@ RUBY_SYMBOL_EXPORT_BEGIN
 const char *rb_objspace_data_type_name(VALUE obj);
 VALUE rb_wb_protected_newobj_of(VALUE, VALUE);
 VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE);
+void rb_gc_check_compact(size_t count);
+size_t rb_gc_compact_count(void);
 size_t rb_obj_memsize_of(VALUE);
 void rb_gc_verify_internal_consistency(void);
 size_t rb_obj_gc_flags(VALUE, ID[], size_t);
