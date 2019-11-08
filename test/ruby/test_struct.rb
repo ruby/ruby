@@ -424,7 +424,7 @@ module TestStruct
     assert_nil(o.dig(:b, 0))
   end
 
-  def test_new_dupilicate
+  def test_new_duplicate
     bug12291 = '[ruby-core:74971] [Bug #12291]'
     assert_raise_with_message(ArgumentError, /duplicate member/, bug12291) {
       @Struct.new(:a, :a)
