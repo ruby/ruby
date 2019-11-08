@@ -6754,7 +6754,7 @@ iseq_builtin_function_name(ID mid)
 {
     const char *name = rb_id2name(mid);
     const char prefix[] = "__builtin_";
-    const int prefix_len = strlen(prefix);
+    const size_t prefix_len = strlen(prefix);
 
     if (UNLIKELY(strncmp("__builtin_", name, prefix_len) == 0)) {
         return &name[prefix_len];
