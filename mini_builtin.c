@@ -36,23 +36,12 @@ read_file(const char *fname, size_t *psize)
 }
 
 static struct st_table *loaded_builtin_table;
-static char srcdir[0x200];
-static const char fname[] = "mini_builtin.c";
-
-static const char *
-feature_path(const char *name)
-{
-    static char path[0x200];
-    snprintf(path, 0x200-1, "%s%s.rb", srcdir, name);
-    // fprintf(stderr, "srcdir:%s, path:%s, PATH_SEP_CHAR:%c\n", srcdir, path, PATH_SEP_CHAR);
-    return path;
-}
 
 void
-rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table)
+rb_load_with_builtin_functions(const char *feature_name, const char *fname, const struct rb_builtin_function *table)
 {
     size_t fsize;
-    const char *code = read_file(feature_path(feature_name), &fsize);
+    const char *code = read_file(fname, &fsize);
     VALUE code_str = rb_utf8_str_new_static(code, fsize);
     VALUE name_str = rb_sprintf("<internal:%s>", feature_name);
     rb_obj_hide(code_str);
@@ -97,15 +86,4 @@ Init_builtin(void)
 {
     rb_define_singleton_method(rb_cRubyVM, "each_builtin", each_builtin, 0);
     loaded_builtin_table = st_init_strtable();
-
-    // check srcdir
-    // assume __FILE__ encoding is ASCII compatible.
-    int pos = strlen(__FILE__) - strlen(fname);
-    if (pos < 0) rb_bug("strlen(%s) - strlen(%s) < 0", __FILE__, fname);
-
-    if (strcmp(__FILE__ + pos, fname) != 0) {
-        rb_bug("%s does not terminate with %s\n", __FILE__, fname);
-    }
-    strncpy(srcdir, __FILE__, 0x200-1);
-    srcdir[pos] = 0;
 }

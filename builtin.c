@@ -18,7 +18,7 @@ builtin_lookup(const char *feature, size_t *psize)
 }
 
 void
-rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table)
+rb_load_with_builtin_functions(const char *feature_name, const char *fname, const struct rb_builtin_function *table)
 {
     // search binary
     size_t size;

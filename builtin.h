@@ -12,7 +12,7 @@ struct rb_builtin_function {
 
 #define RB_BUILTIN_FUNCTION(_i, _name, _arity) { .name = #_name, .func_ptr = (void *)_name, .argc = _arity, .index = _i }
 
-void rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table);
+void rb_load_with_builtin_functions(const char *feature_name, const char *fname, const struct rb_builtin_function *table);
 
 #ifndef VM_CORE_H_EC_DEFINED
 typedef struct rb_execution_context_struct rb_execution_context_t;
