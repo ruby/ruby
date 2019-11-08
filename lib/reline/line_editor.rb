@@ -652,9 +652,9 @@ class Reline::LineEditor
         else
           old_waiting_proc = @waiting_proc
           old_waiting_operator_proc = @waiting_operator_proc
-          @waiting_proc = proc { |key|
+          @waiting_proc = proc { |k|
             old_cursor, old_byte_pointer = @cursor, @byte_pointer
-            old_waiting_proc.(key)
+            old_waiting_proc.(k)
             cursor_diff, byte_pointer_diff = @cursor - old_cursor, @byte_pointer - old_byte_pointer
             @cursor, @byte_pointer = old_cursor, old_byte_pointer
             @waiting_operator_proc.(cursor_diff, byte_pointer_diff)
@@ -996,8 +996,8 @@ class Reline::LineEditor
       end
       width
     else
-      str.encode(Encoding::UTF_8).grapheme_clusters.inject(0) { |width, gc|
-        width + Reline::Unicode.get_mbchar_width(gc)
+      str.encode(Encoding::UTF_8).grapheme_clusters.inject(0) { |w, gc|
+        w + Reline::Unicode.get_mbchar_width(gc)
       }
     end
   end
@@ -1187,8 +1187,8 @@ class Reline::LineEditor
     end
     searcher.resume
     @searching_prompt = "(reverse-i-search)`': "
-    @waiting_proc = ->(key) {
-      case key
+    @waiting_proc = ->(k) {
+      case k
       when "\C-j".ord, "\C-?".ord
         if @history_pointer
           @line = Reline::HISTORY[@history_pointer]
@@ -1208,9 +1208,9 @@ class Reline::LineEditor
         @cursor_max = calculate_width(@line)
         @cursor = @byte_pointer = 0
       else
-        chr = key.is_a?(String) ? key : key.chr(Encoding::ASCII_8BIT)
-        if chr.match?(/[[:print:]]/) or key == "\C-h".ord or key == 127
-          searcher.resume(key)
+        chr = k.is_a?(String) ? k : k.chr(Encoding::ASCII_8BIT)
+        if chr.match?(/[[:print:]]/) or k == "\C-h".ord or k == 127
+          searcher.resume(k)
         else
           if @history_pointer
             line = Reline::HISTORY[@history_pointer]
@@ -1863,13 +1863,13 @@ class Reline::LineEditor
   end
 
   private def vi_replace_char(key, arg: 1)
-    @waiting_proc = ->(key) {
+    @waiting_proc = ->(k) {
       if arg == 1
         byte_size = Reline::Unicode.get_next_mbchar_size(@line, @byte_pointer)
         before = @line.byteslice(0, @byte_pointer)
         remaining_point = @byte_pointer + byte_size
         after = @line.byteslice(remaining_point, @line.size - remaining_point)
-        @line = before + key.chr + after
+        @line = before + k.chr + after
         @cursor_max = calculate_width(@line)
         @waiting_proc = nil
       elsif arg > 1
@@ -1880,7 +1880,7 @@ class Reline::LineEditor
         before = @line.byteslice(0, @byte_pointer)
         remaining_point = @byte_pointer + byte_size
         after = @line.byteslice(remaining_point, @line.size - remaining_point)
-        replaced = key.chr * arg
+        replaced = k.chr * arg
         @line = before + replaced + after
         @byte_pointer += replaced.bytesize
         @cursor += calculate_width(replaced)

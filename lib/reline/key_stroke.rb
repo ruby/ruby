@@ -32,7 +32,7 @@ class Reline::KeyStroke
   end
 
   def expand(input)
-    lhs = key_mapping.keys.select { |lhs| input.start_with? lhs }.sort_by(&:size).reverse.first
+    lhs = key_mapping.keys.select { |item| input.start_with? item }.sort_by(&:size).reverse.first
     return input unless lhs
     rhs = key_mapping[lhs]
 

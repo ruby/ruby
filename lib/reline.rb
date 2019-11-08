@@ -260,7 +260,10 @@ module Reline
         result = key_stroke.match_status(buffer)
         case result
         when :matched
-          block.(key_stroke.expand(buffer).map{ |c| Reline::Key.new(c, c, false) })
+          expanded = key_stroke.expand(buffer).map{ |expanded_c|
+            Reline::Key.new(expanded_c, expanded_c, false)
+          }
+          block.(expanded)
           break
         when :matching
           if buffer.size == 1
@@ -289,7 +292,10 @@ module Reline
           if buffer.size == 1 and c == "\e".ord
             read_escaped_key(keyseq_timeout, c, block)
           else
-            block.(buffer.map{ |c| Reline::Key.new(c, c, false) })
+            expanded = buffer.map{ |expanded_c|
+              Reline::Key.new(expanded_c, expanded_c, false)
+            }
+            block.(expanded)
           end
           break
         end
