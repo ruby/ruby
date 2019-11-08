@@ -9,6 +9,14 @@ describe "CVE-2018-6914 is resisted by" do
     @dir = tmp("CVE-2018-6914")
     Dir.mkdir(@dir)
     ENV['TMPDIR'] = @dir
+
+    # Make sure that ENV["TMPDIR"] is used by Dir.tmpdir
+    # https://github.com/ruby/ruby/runs/294462511#step:10:134
+    10.times do
+      break if Dir.tmpdir == File.expand_path(@dir)
+      sleep 0.1
+    end
+
     @dir << '/'
 
     @tempfile = nil
