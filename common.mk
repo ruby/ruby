@@ -1108,6 +1108,9 @@ builtin_binary.inc: $(PREP) $(BUILTIN_RB_SRCS) $(srcdir)/tool/mk_builtin_binary.
 
 $(BUILTIN_RB_INCS): $(top_srcdir)/tool/mk_builtin_loader.rb
 
+load_pack.inc: $(srcdir)/pack.rb $(srcdir)/tool/mk_builtin_loader.rb
+	$(Q) $(BASERUBY) $(srcdir)/tool/mk_builtin_loader.rb $(srcdir)/pack.rb
+
 $(srcdir)/revision.h:
 	$(Q)$(gnumake:yes=#) $(RM) $(@F)
 	$(Q)$(gnumake:yes=#) exit > $@ || exit > $(@F)
@@ -2569,12 +2572,14 @@ object.$(OBJEXT): {$(VPATH)}util.h
 pack.$(OBJEXT): $(hdrdir)/ruby.h
 pack.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 pack.$(OBJEXT): {$(VPATH)}assert.h
+pack.$(OBJEXT): {$(VPATH)}builtin.h
 pack.$(OBJEXT): {$(VPATH)}config.h
 pack.$(OBJEXT): {$(VPATH)}defines.h
 pack.$(OBJEXT): {$(VPATH)}encoding.h
 pack.$(OBJEXT): {$(VPATH)}intern.h
 pack.$(OBJEXT): {$(VPATH)}internal.h
 pack.$(OBJEXT): {$(VPATH)}io.h
+pack.$(OBJEXT): {$(VPATH)}load_pack.inc
 pack.$(OBJEXT): {$(VPATH)}missing.h
 pack.$(OBJEXT): {$(VPATH)}onigmo.h
 pack.$(OBJEXT): {$(VPATH)}oniguruma.h

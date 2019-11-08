@@ -42,7 +42,6 @@ rb_call_inits(void)
     CALL(Hash);
     CALL(Struct);
     CALL(Regexp);
-    CALL(pack);
     CALL(transcode);
     CALL(marshal);
     CALL(Range);
@@ -73,5 +72,6 @@ rb_call_inits(void)
     CALL(IO_nonblock);
     CALL(ast);
     CALL(vm_trace);
+    CALL(pack);
 }
 #undef CALL
