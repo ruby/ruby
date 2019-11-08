@@ -26,12 +26,12 @@ def collect_builtin iseq_ary, bs
   }
 end
 # ruby mk_builtin_loader.rb TARGET_FILE.rb
-# #=> generate load_TARGET_FILE.inc
+# #=> generate TARGET_FILE.rbinc
 #
 
 def mk_builtin_header file
   base = File.basename(file, '.rb')
-  ofile = File.join("load_#{base}.inc")
+  ofile = "#{base}.rbinc"
 
   collect_builtin(RubyVM::InstructionSequence.compile_file(file, false).to_a, bs = {})
 

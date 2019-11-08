@@ -13523,7 +13523,7 @@ Init_IO(void)
     sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
 }
 
-#include "load_io.inc"
+#include "io.rbinc"
 
 void
 Init_IO_nonblock(void)

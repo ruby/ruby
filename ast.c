@@ -681,7 +681,7 @@ ast_node_inspect(rb_execution_context_t *ec, VALUE self)
     return str;
 }
 
-#include "load_ast.inc"
+#include "ast.rbinc"
 
 void
 Init_ast(void)

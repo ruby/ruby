@@ -4,7 +4,7 @@ bin: $(PROGRAM) $(WPROGRAM)
 lib: $(LIBRUBY)
 dll: $(LIBRUBY_SO)
 
-.SUFFIXES: .inc .h .c .y .i .$(ASMEXT) .$(DTRACE_EXT)
+.SUFFIXES: .rbinc .rb .inc .h .c .y .i .$(ASMEXT) .$(DTRACE_EXT)
 
 # V=0 quiet, V=1 verbose.  other values don't work.
 V = 0
@@ -614,7 +614,7 @@ clean-rubyspec: clean-spec
 
 distclean: distclean-ext distclean-enc distclean-golf distclean-docs distclean-extout distclean-local distclean-platform distclean-spec
 distclean-local:: clean-local
-	$(Q)$(RM) $(MKFILES) yasmdata.rb *.inc $(PRELUDES)
+	$(Q)$(RM) $(MKFILES) yasmdata.rb *.inc $(PRELUDES) *.rbinc
 	$(Q)$(RM) config.cache config.status config.status.lineno
 	$(Q)$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
 	-$(Q)$(RMALL) $(srcdir)/autom4te.cache
@@ -1094,22 +1094,16 @@ preludes: {$(VPATH)}prelude.c
 preludes: {$(VPATH)}miniprelude.c
 preludes: {$(srcdir)}golf_prelude.c
 
-BUILTIN_RB_SRCS = $(srcdir)/trace_point.rb $(srcdir)/ast.rb $(srcdir)/io.rb
+BUILTIN_RB_SRCS = {$(VPATH)}trace_point.rb {$(VPATH)}ast.rb {$(VPATH)}io.rb
+BUILTIN_RB_INCS = $(BUILTIN_RB_SRCS:.rb=.rbinc)
+
+.rb.rbinc:
+	$(Q) $(BASERUBY) $(srcdir)/tool/mk_builtin_loader.rb $<
 
 builtin_binary.inc: $(PREP) $(BUILTIN_RB_SRCS) $(srcdir)/tool/mk_builtin_binary.rb
 	$(Q) $(MINIRUBY) $(srcdir)/tool/mk_builtin_binary.rb
 
-load_trace_point.inc: $(srcdir)/trace_point.rb $(srcdir)/tool/mk_builtin_loader.rb
-	$(Q) $(BASERUBY) $(srcdir)/tool/mk_builtin_loader.rb $(srcdir)/trace_point.rb
-
-load_ast.inc: $(srcdir)/ast.rb $(srcdir)/tool/mk_builtin_loader.rb
-	$(Q) $(BASERUBY) $(srcdir)/tool/mk_builtin_loader.rb $(srcdir)/ast.rb
-
-load_io.inc: $(srcdir)/io.rb $(srcdir)/tool/mk_builtin_loader.rb
-	$(Q) $(BASERUBY) $(srcdir)/tool/mk_builtin_loader.rb $(srcdir)/io.rb
-
-load_gc.inc: $(srcdir)/gc.rb $(srcdir)/tool/mk_builtin_loader.rb
-	$(Q) $(BASERUBY) $(srcdir)/tool/mk_builtin_loader.rb $(srcdir)/gc.rb
+$(BUILTIN_RB_INCS): $(top_srcdir)/tool/mk_builtin_loader.rb
 
 $(srcdir)/revision.h:
 	$(Q)$(gnumake:yes=#) $(RM) $(@F)
@@ -1598,7 +1592,7 @@ ast.$(OBJEXT): {$(VPATH)}id.h
 ast.$(OBJEXT): {$(VPATH)}intern.h
 ast.$(OBJEXT): {$(VPATH)}internal.h
 ast.$(OBJEXT): {$(VPATH)}iseq.h
-ast.$(OBJEXT): {$(VPATH)}load_ast.inc
+ast.$(OBJEXT): {$(VPATH)}ast.rbinc
 ast.$(OBJEXT): {$(VPATH)}method.h
 ast.$(OBJEXT): {$(VPATH)}missing.h
 ast.$(OBJEXT): {$(VPATH)}node.h
@@ -2108,7 +2102,7 @@ gc.$(OBJEXT): {$(VPATH)}id_table.h
 gc.$(OBJEXT): {$(VPATH)}intern.h
 gc.$(OBJEXT): {$(VPATH)}internal.h
 gc.$(OBJEXT): {$(VPATH)}io.h
-gc.$(OBJEXT): {$(VPATH)}load_gc.inc
+gc.$(OBJEXT): {$(VPATH)}gc.rbinc
 gc.$(OBJEXT): {$(VPATH)}method.h
 gc.$(OBJEXT): {$(VPATH)}missing.h
 gc.$(OBJEXT): {$(VPATH)}mjit.h
@@ -2236,7 +2230,7 @@ io.$(OBJEXT): {$(VPATH)}intern.h
 io.$(OBJEXT): {$(VPATH)}internal.h
 io.$(OBJEXT): {$(VPATH)}io.c
 io.$(OBJEXT): {$(VPATH)}io.h
-io.$(OBJEXT): {$(VPATH)}load_io.inc
+io.$(OBJEXT): {$(VPATH)}io.rbinc
 io.$(OBJEXT): {$(VPATH)}method.h
 io.$(OBJEXT): {$(VPATH)}missing.h
 io.$(OBJEXT): {$(VPATH)}node.h
@@ -3419,7 +3413,7 @@ vm_trace.$(OBJEXT): {$(VPATH)}intern.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal.h
 vm_trace.$(OBJEXT): {$(VPATH)}io.h
 vm_trace.$(OBJEXT): {$(VPATH)}iseq.h
-vm_trace.$(OBJEXT): {$(VPATH)}load_trace_point.inc
+vm_trace.$(OBJEXT): {$(VPATH)}trace_point.rbinc
 vm_trace.$(OBJEXT): {$(VPATH)}method.h
 vm_trace.$(OBJEXT): {$(VPATH)}missing.h
 vm_trace.$(OBJEXT): {$(VPATH)}mjit.h

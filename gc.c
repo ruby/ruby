@@ -11801,7 +11801,7 @@ rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
  *  See also GC.count, GC.malloc_allocated_size and GC.malloc_allocations
  */
 
-#include "load_gc.inc"
+#include "gc.rbinc"
 
 void
 Init_GC(void)

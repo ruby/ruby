@@ -1511,7 +1511,7 @@ tracepoint_stat_s(rb_execution_context_t *ec, VALUE self)
     return stat;
 }
 
-#include "load_trace_point.inc"
+#include "trace_point.rbinc"
 
 /* This function is called from inits.c */
 void
