@@ -93,8 +93,6 @@ Zachary Scott (zzak)
   _unmaintained_
 [lib/time.rb]
   Tanaka Akira (akr)
-[lib/timeout.rb]
-  Yukihiro Matsumoto (matz)
 [lib/tsort.rb]
   Tanaka Akira (akr)
 [lib/un.rb]
@@ -257,6 +255,9 @@ Zachary Scott (zzak)
   Yukihiro Matsumoto (matz)
   https://github.com/ruby/singleton
   https://rubygems.org/gems/singleton
+[lib/timeout.rb]
+  Yukihiro Matsumoto (matz)
+  https://github.com/ruby/timeout
 [lib/thwait.rb]
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/thwait
