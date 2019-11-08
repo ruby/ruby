@@ -2581,7 +2581,7 @@ pack.$(OBJEXT): {$(VPATH)}encoding.h
 pack.$(OBJEXT): {$(VPATH)}intern.h
 pack.$(OBJEXT): {$(VPATH)}internal.h
 pack.$(OBJEXT): {$(VPATH)}io.h
-pack.$(OBJEXT): {$(VPATH)}load_pack.inc
+pack.$(OBJEXT): {$(VPATH)}pack.rbinc
 pack.$(OBJEXT): {$(VPATH)}missing.h
 pack.$(OBJEXT): {$(VPATH)}onigmo.h
 pack.$(OBJEXT): {$(VPATH)}oniguruma.h
