@@ -55,7 +55,6 @@ rb_call_inits(void)
     CALL(Proc);
     CALL(Binding);
     CALL(Math);
-    CALL(GC);
     CALL(Enumerator);
     CALL(VM);
     CALL(ISeq);
@@ -70,6 +69,7 @@ rb_call_inits(void)
 
     CALL(builtin);
 
+    CALL(GC);
     CALL(IO_nonblock);
     CALL(ast);
     CALL(vm_trace);

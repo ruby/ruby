@@ -24,6 +24,7 @@
 #include "internal.h"
 #include "eval_intern.h"
 #include "vm_core.h"
+#include "builtin.h"
 #include "gc.h"
 #include "constant.h"
 #include "ruby_atomic.h"
@@ -7459,61 +7460,18 @@ garbage_collect_with_gvl(rb_objspace_t *objspace, int reason)
     }
 }
 
-/*
- *  call-seq:
- *     GC.start                     -> nil
- *     ObjectSpace.garbage_collect  -> nil
- *     include GC; garbage_collect  -> nil
- *     GC.start(full_mark: true, immediate_sweep: true)           -> nil
- *     ObjectSpace.garbage_collect(full_mark: true, immediate_sweep: true) -> nil
- *     include GC; garbage_collect(full_mark: true, immediate_sweep: true) -> nil
- *
- *  Initiates garbage collection, even if manually disabled.
- *
- *  This method is defined with keyword arguments that default to true:
- *
- *     def GC.start(full_mark: true, immediate_sweep: true); end
- *
- *  Use full_mark: false to perform a minor GC.
- *  Use immediate_sweep: false to defer sweeping (use lazy sweep).
- *
- *  Note: These keyword arguments are implementation and version dependent. They
- *  are not guaranteed to be future-compatible, and may be ignored if the
- *  underlying implementation does not support them.
- */
-
 static VALUE
-gc_start_internal(int argc, VALUE *argv, VALUE self)
+gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE immediate_mark, VALUE immediate_sweep)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    int reason = GPR_FLAG_FULL_MARK | GPR_FLAG_IMMEDIATE_MARK |
-                GPR_FLAG_IMMEDIATE_SWEEP | GPR_FLAG_METHOD;
-    VALUE opt = Qnil;
-    static ID keyword_ids[3];
+    int reason = GPR_FLAG_FULL_MARK |
+                 GPR_FLAG_IMMEDIATE_MARK |
+                 GPR_FLAG_IMMEDIATE_SWEEP |
+                 GPR_FLAG_METHOD;
 
-    rb_scan_args(argc, argv, "0:", &opt);
-
-    if (!NIL_P(opt)) {
-	VALUE kwvals[3];
-
-	if (!keyword_ids[0]) {
-	    keyword_ids[0] = rb_intern("full_mark");
-	    keyword_ids[1] = rb_intern("immediate_mark");
-	    keyword_ids[2] = rb_intern("immediate_sweep");
-	}
-
-	rb_get_kwargs(opt, keyword_ids, 0, 3, kwvals);
-
-	if (kwvals[0] != Qundef && !RTEST(kwvals[0])) {
-            reason &= ~GPR_FLAG_FULL_MARK;
-        }
-	if (kwvals[1] != Qundef && !RTEST(kwvals[1])) {
-            reason &= ~GPR_FLAG_IMMEDIATE_MARK;
-        }
-	if (kwvals[2] != Qundef && !RTEST(kwvals[2])) {
-            reason &= ~GPR_FLAG_IMMEDIATE_SWEEP;
-        }
-    }
+    if (!RTEST(full_mark))       reason &= ~GPR_FLAG_FULL_MARK;
+    if (!RTEST(immediate_mark))  reason &= ~GPR_FLAG_IMMEDIATE_MARK;
+    if (!RTEST(immediate_sweep)) reason &= ~GPR_FLAG_IMMEDIATE_SWEEP;
 
     garbage_collect(objspace, reason);
     gc_finalize_deferred(objspace);
@@ -8479,7 +8437,7 @@ gc_compact(rb_objspace_t *objspace, int use_toward_empty, int use_double_pages, 
 }
 
 static VALUE
-rb_gc_compact(VALUE mod)
+rb_gc_compact(rb_execution_context_t *ec, VALUE self)
 {
     rb_objspace_t *objspace = &rb_objspace;
     if (dont_gc) return Qnil;
@@ -8728,18 +8686,8 @@ rb_gc_count(void)
     return rb_objspace.profile.count;
 }
 
-/*
- *  call-seq:
- *     GC.count -> Integer
- *
- *  The number of times GC occurred.
- *
- *  It returns the number of times GC occurred since the process started.
- *
- */
-
 static VALUE
-gc_count(VALUE self)
+gc_count(rb_execution_context_t *ec, VALUE self)
 {
     return SIZET2NUM(rb_gc_count());
 }
@@ -8844,29 +8792,16 @@ rb_gc_latest_gc_info(VALUE key)
     return gc_info_decode(objspace, key, 0);
 }
 
-/*
- *  call-seq:
- *     GC.latest_gc_info -> {:gc_by=>:newobj}
- *     GC.latest_gc_info(hash) -> hash
- *     GC.latest_gc_info(:major_by) -> :malloc
- *
- *  Returns information about the most recent garbage collection.
- */
-
 static VALUE
-gc_latest_gc_info(int argc, VALUE *argv, VALUE self)
+gc_latest_gc_info(rb_execution_context_t *ec, VALUE self, VALUE arg)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    VALUE arg = Qnil;
 
-    if (rb_check_arity(argc, 0, 1) == 1) {
-        arg = argv[0];
-        if (!SYMBOL_P(arg) && !RB_TYPE_P(arg, T_HASH)) {
-            rb_raise(rb_eTypeError, "non-hash or symbol given");
-        }
-    }
-    else {
+    if (NIL_P(arg)) {
         arg = rb_hash_new();
+    }
+    else if (!SYMBOL_P(arg) && !RB_TYPE_P(arg, T_HASH)) {
+        rb_raise(rb_eTypeError, "non-hash or symbol given");
     }
 
     return gc_info_decode(objspace, arg, 0);
@@ -9187,69 +9122,23 @@ gc_stat_internal(VALUE hash_or_sym)
     return 0;
 }
 
-/*
- *  call-seq:
- *     GC.stat -> Hash
- *     GC.stat(hash) -> hash
- *     GC.stat(:key) -> Numeric
- *
- *  Returns a Hash containing information about the GC.
- *
- *  The hash includes information about internal statistics about GC such as:
- *
- *      {
- *          :count=>0,
- *          :heap_allocated_pages=>24,
- *          :heap_sorted_length=>24,
- *          :heap_allocatable_pages=>0,
- *          :heap_available_slots=>9783,
- *          :heap_live_slots=>7713,
- *          :heap_free_slots=>2070,
- *          :heap_final_slots=>0,
- *          :heap_marked_slots=>0,
- *          :heap_eden_pages=>24,
- *          :heap_tomb_pages=>0,
- *          :total_allocated_pages=>24,
- *          :total_freed_pages=>0,
- *          :total_allocated_objects=>7796,
- *          :total_freed_objects=>83,
- *          :malloc_increase_bytes=>2389312,
- *          :malloc_increase_bytes_limit=>16777216,
- *          :minor_gc_count=>0,
- *          :major_gc_count=>0,
- *          :remembered_wb_unprotected_objects=>0,
- *          :remembered_wb_unprotected_objects_limit=>0,
- *          :old_objects=>0,
- *          :old_objects_limit=>0,
- *          :oldmalloc_increase_bytes=>2389760,
- *          :oldmalloc_increase_bytes_limit=>16777216
- *      }
- *
- *  The contents of the hash are implementation specific and may be changed in
- *  the future.
- *
- *  This method is only expected to work on C Ruby.
- *
- */
-
 static VALUE
-gc_stat(int argc, VALUE *argv, VALUE self)
+gc_stat(rb_execution_context_t *ec, VALUE self, VALUE arg) // arg is (nil || hash || symbol)
 {
-    VALUE arg = Qnil;
-
-    if (rb_check_arity(argc, 0, 1) == 1) {
-        arg = argv[0];
-	if (SYMBOL_P(arg)) {
-	    size_t value = gc_stat_internal(arg);
-	    return SIZET2NUM(value);
-	}
-	else if (!RB_TYPE_P(arg, T_HASH)) {
-	    rb_raise(rb_eTypeError, "non-hash or symbol given");
-	}
-    }
-    else {
+    if (NIL_P(arg)) {
         arg = rb_hash_new();
     }
+    else if (SYMBOL_P(arg)) {
+        size_t value = gc_stat_internal(arg);
+        return SIZET2NUM(value);
+    }
+    else if (RB_TYPE_P(arg, T_HASH)) {
+        // ok
+    }
+    else {
+        rb_raise(rb_eTypeError, "non-hash or symbol given");
+    }
+
     gc_stat_internal(arg);
     return arg;
 }
@@ -9267,15 +9156,8 @@ rb_gc_stat(VALUE key)
     }
 }
 
-/*
- *  call-seq:
- *    GC.stress	    -> integer, true or false
- *
- *  Returns current status of GC stress mode.
- */
-
 static VALUE
-gc_stress_get(VALUE self)
+gc_stress_get(rb_execution_context_t *ec, VALUE self)
 {
     rb_objspace_t *objspace = &rb_objspace;
     return ruby_gc_stress_mode;
@@ -9288,25 +9170,8 @@ gc_stress_set(rb_objspace_t *objspace, VALUE flag)
     objspace->gc_stress_mode = flag;
 }
 
-/*
- *  call-seq:
- *    GC.stress = flag          -> flag
- *
- *  Updates the GC stress mode.
- *
- *  When stress mode is enabled, the GC is invoked at every GC opportunity:
- *  all memory and object allocations.
- *
- *  Enabling stress mode will degrade performance, it is only for debugging.
- *
- *  flag can be true, false, or an integer bit-ORed following flags.
- *    0x01:: no major GC
- *    0x02:: no immediate sweep
- *    0x04:: full mark after malloc/calloc/realloc
- */
-
 static VALUE
-gc_stress_set_m(VALUE self, VALUE flag)
+gc_stress_set_m(rb_execution_context_t *ec, VALUE self, VALUE flag)
 {
     rb_objspace_t *objspace = &rb_objspace;
     gc_stress_set(objspace, flag);
@@ -9323,20 +9188,8 @@ rb_gc_enable(void)
     return old ? Qtrue : Qfalse;
 }
 
-/*
- *  call-seq:
- *     GC.enable    -> true or false
- *
- *  Enables garbage collection, returning +true+ if garbage
- *  collection was previously disabled.
- *
- *     GC.disable   #=> false
- *     GC.enable    #=> true
- *     GC.enable    #=> false
- *
- */
 static VALUE
-gc_enable(VALUE _)
+gc_enable(rb_execution_context_t *ec, VALUE _)
 {
     return rb_gc_enable();
 }
@@ -9359,20 +9212,8 @@ rb_gc_disable(void)
     return rb_gc_disable_no_rest();
 }
 
-/*
- *  call-seq:
- *     GC.disable    -> true or false
- *
- *  Disables garbage collection, returning +true+ if garbage
- *  collection was already disabled.
- *
- *     GC.disable   #=> false
- *     GC.disable   #=> true
- *
- */
-
 static VALUE
-gc_disable(VALUE _)
+gc_disable(rb_execution_context_t *ec, VALUE _)
 {
     return rb_gc_disable();
 }
@@ -11960,16 +11801,7 @@ rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
  *  See also GC.count, GC.malloc_allocated_size and GC.malloc_allocations
  */
 
-/*
- *  The GC module provides an interface to Ruby's mark and
- *  sweep garbage collection mechanism.
- *
- *  Some of the underlying methods are also available via the ObjectSpace
- *  module.
- *
- *  You may obtain information about the operation of the GC through
- *  GC::Profiler.
- */
+#include "load_gc.inc"
 
 void
 Init_GC(void)
@@ -11980,16 +11812,7 @@ Init_GC(void)
     VALUE gc_constants;
 
     rb_mGC = rb_define_module("GC");
-    rb_define_singleton_method(rb_mGC, "start", gc_start_internal, -1);
-    rb_define_singleton_method(rb_mGC, "enable", gc_enable, 0);
-    rb_define_singleton_method(rb_mGC, "disable", gc_disable, 0);
-    rb_define_singleton_method(rb_mGC, "stress", gc_stress_get, 0);
-    rb_define_singleton_method(rb_mGC, "stress=", gc_stress_set_m, 1);
-    rb_define_singleton_method(rb_mGC, "count", gc_count, 0);
-    rb_define_singleton_method(rb_mGC, "stat", gc_stat, -1);
-    rb_define_singleton_method(rb_mGC, "latest_gc_info", gc_latest_gc_info, -1);
-    rb_define_singleton_method(rb_mGC, "compact", rb_gc_compact, 0);
-    rb_define_method(rb_mGC, "garbage_collect", gc_start_internal, -1);
+    load_gc();
 
     gc_constants = rb_hash_new();
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_SIZE")), SIZET2NUM(sizeof(RVALUE)));
@@ -12011,8 +11834,8 @@ Init_GC(void)
     rb_define_singleton_method(rb_mProfiler, "total_time", gc_profile_total_time, 0);
 
     rb_mObjSpace = rb_define_module("ObjectSpace");
+
     rb_define_module_function(rb_mObjSpace, "each_object", os_each_obj, -1);
-    rb_define_module_function(rb_mObjSpace, "garbage_collect", gc_start_internal, -1);
 
     rb_define_module_function(rb_mObjSpace, "define_finalizer", define_final, -1);
     rb_define_module_function(rb_mObjSpace, "undefine_finalizer", undefine_final, 1);
