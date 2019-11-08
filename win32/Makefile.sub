@@ -1284,6 +1284,9 @@ $(ruby_pc): $(RBCONFIG)
 	$(ECHO) preprocessing $(<:\=/)
 	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P $(CSRCFLAG)$(<:\=/)
 
+{$(srcdir)}.rb.rbinc:
+	$(Q) $(BASERUBY) $(srcdir)/tool/mk_builtin_loader.rb $<
+
 .rc.res:
 	$(ECHO) compiling $(<:\=/)
 	$(Q) $(RC) $(RCFLAGS) -I. -I$(<D) $(iconinc) -I$(srcdir)/win32 $(RFLAGS) -fo$@ $(<:\=/)
