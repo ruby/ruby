@@ -56,9 +56,15 @@ def mk_builtin_header file
 
     f.puts
     f.puts "  // arity_check"
+    f.puts "COMPILER_WARNING_PUSH"
+    f.puts "#if GCC_VERSION_SINCE(5, 1, 0) || __clang__"
+    f.puts "COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)"
+    f.puts "#endif"
     bs.each{|func, argc|
       f.puts "  if (0) rb_builtin_function_check_arity#{argc}(#{func});"
     }
+    f.puts "COMPILER_WARNING_POP"
+
 
     path = File.expand_path(file)
     f.puts
