@@ -11426,10 +11426,10 @@ ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
 }
 
 static void
-ibf_load_setup_cstr(struct ibf_load *load, VALUE loader_obj, const char *cstr, size_t size)
+ibf_load_setup_bytes(struct ibf_load *load, VALUE loader_obj, const char *bytes, size_t size)
 {
     load->loader_obj = loader_obj;
-    load->global_buffer.buff = cstr;
+    load->global_buffer.buff = bytes;
     load->header = (struct ibf_header *)load->global_buffer.buff;
     load->global_buffer.size = load->header->size;
     load->global_buffer.obj_list_offset = load->header->global_object_list_offset;
@@ -11478,7 +11478,7 @@ ibf_load_setup(struct ibf_load *load, VALUE loader_obj, VALUE str)
     str = rb_str_new(RSTRING_PTR(str), RSTRING_LEN(str));
 #endif
 
-    ibf_load_setup_cstr(load, loader_obj, StringValuePtr(str), RSTRING_LEN(str));
+    ibf_load_setup_bytes(load, loader_obj, StringValuePtr(str), RSTRING_LEN(str));
     RB_OBJ_WRITE(loader_obj, &load->str, str);
 }
 
@@ -11525,13 +11525,13 @@ rb_iseq_ibf_load(VALUE str)
 }
 
 const rb_iseq_t *
-rb_iseq_ibf_load_cstr(const char *cstr, size_t size)
+rb_iseq_ibf_load_bytes(const char *bytes, size_t size)
 {
     struct ibf_load *load;
     rb_iseq_t *iseq;
     VALUE loader_obj = TypedData_Make_Struct(0, struct ibf_load, &ibf_load_type, load);
 
-    ibf_load_setup_cstr(load, loader_obj, cstr, size);
+    ibf_load_setup_bytes(load, loader_obj, bytes, size);
     iseq = ibf_load_iseq(load, 0);
 
     RB_GC_GUARD(loader_obj);

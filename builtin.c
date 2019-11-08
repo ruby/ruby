@@ -26,7 +26,7 @@ rb_load_with_builtin_functions(const char *feature_name, const char *fname, cons
 
     // load binary
     GET_VM()->builtin_function_table = table;
-    const rb_iseq_t *iseq = rb_iseq_ibf_load_cstr((const char *)bin, size);
+    const rb_iseq_t *iseq = rb_iseq_ibf_load_bytes((const char *)bin, size);
     GET_VM()->builtin_function_table = NULL;
 
     // exec

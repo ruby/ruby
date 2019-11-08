@@ -156,7 +156,7 @@ iseq_imemo_alloc(void)
 VALUE rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt);
 void rb_ibf_load_iseq_complete(rb_iseq_t *iseq);
 const rb_iseq_t *rb_iseq_ibf_load(VALUE str);
-const rb_iseq_t *rb_iseq_ibf_load_cstr(const char *cstr, size_t);
+const rb_iseq_t *rb_iseq_ibf_load_bytes(const char *cstr, size_t);
 VALUE rb_iseq_ibf_load_extra_data(VALUE str);
 void rb_iseq_init_trace(rb_iseq_t *iseq);
 int rb_iseq_add_local_tracepoint_recursively(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, VALUE tpval, unsigned int target_line);
