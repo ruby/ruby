@@ -431,6 +431,18 @@ module TestStruct
     }
   end
 
+  def test_deconstruct_keys
+    klass = @Struct.new(:a, :b)
+    o = klass.new(1, 2)
+    assert_equal({a: 1, b: 2}, o.deconstruct_keys(nil))
+    assert_equal({a: 1, b: 2}, o.deconstruct_keys([:b, :a]))
+    assert_equal({a: 1}, o.deconstruct_keys([:a]))
+    assert_equal({}, o.deconstruct_keys([:a, :c]))
+    assert_raise(TypeError) {
+      o.deconstruct_keys(0)
+    }
+  end
+
   class TopStruct < Test::Unit::TestCase
     include TestStruct
 

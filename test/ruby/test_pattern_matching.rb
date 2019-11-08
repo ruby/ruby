@@ -1230,6 +1230,30 @@ END
         true
       end
     end
+
+    s = Struct.new(:a, :b, keyword_init: true)
+    assert_block do
+      case s[a: 0, b: 1]
+      in **r
+        r == {a: 0, b: 1}
+      end
+    end
+    assert_block do
+      s = Struct.new(:a, :b, keyword_init: true)
+      case s[a: 0, b: 1]
+      in a:, b:
+        a == 0 && b == 1
+      end
+    end
+    assert_block do
+      s = Struct.new(:a, :b, keyword_init: true)
+      case s[a: 0, b: 1]
+      in a:, c:
+        flunk
+      in b:
+        b == 1
+      end
+    end
   end
 
   ################################################################
