@@ -2396,7 +2396,6 @@ struct rb_call_cache {
     union {
         unsigned int index; /* used by ivar */
         enum method_missing_reason method_missing_reason; /* used by method_missing */
-        int inc_sp; /* used by cfunc */
     } aux;
 };
 STATIC_ASSERT(cachelined, sizeof(struct rb_call_cache) <= CACHELINE);
