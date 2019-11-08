@@ -1,4 +1,4 @@
-﻿#include "internal.h"
+#include "internal.h"
 #include "vm_core.h"
 #include "iseq.h"
 #include "builtin.h"
