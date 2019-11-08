@@ -232,6 +232,10 @@ Zachary Scott (zzak)
   Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/racc
   https://rubygems.org/gems/racc
+[lib/readline.rb]
+  aycabta
+  https://github.com/ruby/readline
+  https://rubygems.org/gems/readline
 [lib/rdoc.rb, lib/rdoc/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/rdoc

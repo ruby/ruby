@@ -42,6 +42,7 @@
 # * https://github.com/ruby/net-pop
 # * https://github.com/ruby/net-smtp
 # * https://github.com/ruby/cgi
+# * https://github.com/ruby/readline
 #
 
 require 'fileutils'
@@ -91,6 +92,7 @@ $repositories = {
   netpop: "ruby/net-pop",
   netsmtp: "ruby/net-smtp",
   cgi: "ruby/cgi",
+  readline: "ruby/readline",
 }
 
 def sync_default_gems(gem)
