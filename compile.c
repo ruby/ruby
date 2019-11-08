@@ -9769,9 +9769,9 @@ ibf_load_builtin(const struct ibf_load *load, ibf_offset_t *offset)
     }
 
     const struct rb_builtin_function *table = GET_VM()->builtin_function_table;
-    if (table == NULL) rb_bug("ibf_load_builtin: table is not provided.");
+    if (table == NULL) rb_bug("%s: table is not provided.", RUBY_FUNCTION_NAME_STRING);
     if (strncmp(table[i].name, name, len) != 0) {
-        rb_bug("ibf_load_builtin: index (%d) mismatch (expect %s but %s).", i, name, table[i].name);
+        rb_bug("%s: index (%d) mismatch (expect %s but %s).", RUBY_FUNCTION_NAME_STRING, i, name, table[i].name);
     }
     // fprintf(stderr, "load-builtin: name:%s(%d)\n", table[i].name, table[i].argc);
 
