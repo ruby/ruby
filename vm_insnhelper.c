@@ -1422,14 +1422,15 @@ rb_vm_search_method_slowpath(struct rb_call_data *cd, VALUE klass)
     struct rb_call_cache *cc = &cd->cc;
     const rb_callable_method_entry_t *me =
         rb_callable_method_entry(klass, ci->mid);
+    const vm_call_handler call = calccall(cd, me);
     struct rb_call_cache buf = {
         GET_GLOBAL_METHOD_STATE(),
         { RCLASS_SERIAL(klass) },
         me,
         me ? me->def : NULL,
-        calccall(cd, me),
+        call,
     };
-    if (buf.call != vm_call_general) {
+    if (call != vm_call_general) {
         for (int i = 0; i < numberof(cc->class_serial) - 1; i++) {
             buf.class_serial[i + 1] = cc->class_serial[i];
         }
