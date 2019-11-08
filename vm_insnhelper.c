@@ -958,9 +958,13 @@ vm_get_ev_const_from_scope(rb_execution_context_t *ec, ID id, int is_defined)
 }
 
 static inline VALUE
-vm_get_ev_const_from(VALUE namespace, ID id) {
+vm_get_ev_const_from(VALUE namespace, ID id, bool only_public) {
     vm_check_if_namespace(namespace);
-    return rb_public_const_get_from(namespace, id);
+    if (only_public) {
+        return rb_public_const_get_from(namespace, id);
+    } else {
+        return rb_static_const_get_from(namespace, id);
+    }
 }
 
 static inline VALUE
@@ -3522,7 +3526,14 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
 	    expr_type = DEFINED_CONST;
 	}
 	break;
-      case DEFINED_CONST_FROM: {
+      case DEFINED_CONST_FROM_STATIC:
+	klass = v;
+	vm_check_if_namespace(klass);
+	if (rb_static_const_defined_from(klass, SYM2ID(obj))) {
+	    expr_type = DEFINED_CONST;
+	}
+	break;
+      case DEFINED_CONST_FROM_DYNAMIC: {
 	klass = v;
 	vm_check_if_namespace(klass);
 	if (rb_public_const_defined_from(klass, SYM2ID(obj))) {

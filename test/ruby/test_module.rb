@@ -1544,21 +1544,23 @@ class TestModule < Test::Unit::TestCase
     assert_equal(:FOO, c.const_missing_arg)
   end
 
-  class PrivateClass
+  module OtherNamespace
+    class PrivateClass
+    end
+    private_constant :PrivateClass
   end
-  private_constant :PrivateClass
 
   def test_define_module_under_private_constant
     assert_raise(NameError) do
-      eval %q{class TestModule::PrivateClass; end}
+      eval %q{class OtherNamespace::PrivateClass; end}
     end
     assert_raise(NameError) do
-      eval %q{module TestModule::PrivateClass::TestModule; end}
+      eval %q{module OtherNamespace::PrivateClass::TestModule; end}
     end
-    eval %q{class PrivateClass; end}
-    eval %q{module PrivateClass::TestModule; end}
-    assert_instance_of(Module, PrivateClass::TestModule)
-    PrivateClass.class_eval { remove_const(:TestModule) }
+    eval %q{module OtherNamespace; class PrivateClass; end; end}
+    eval %q{module OtherNamespace; module PrivateClass::TestModule; end; end}
+    assert_instance_of(Module, OtherNamespace.const_get(:PrivateClass)::TestModule)
+    OtherNamespace.const_get(:PrivateClass).class_eval { remove_const(:TestModule) }
   end
 
   def test_public_constant
@@ -1599,40 +1601,57 @@ class TestModule < Test::Unit::TestCase
     assert_not_include(::TestModule.constants(false), :PrivateClass)
   end
 
+  module AccessiblePrivateConstant
+  end
+  private_constant :AccessiblePrivateConstant
+
+  def test_absolute_reference_to_accessible_private_constant
+    assert_equal(AccessiblePrivateConstant, TestModule::AccessiblePrivateConstant)
+    assert_equal("constant", defined?(TestModule::AccessiblePrivateConstant))
+
+    assert_equal(AccessiblePrivateConstant, ::TestModule::AccessiblePrivateConstant)
+    assert_equal("constant", defined?(::TestModule::AccessiblePrivateConstant))
+  end
+
+  def test_dynamic_reference_to_private_constant
+    parent = self.class
+    assert_raise(NameError) { parent::AccessiblePrivateConstant }
+    assert_nil(defined?(parent::AccessiblePrivateConstant))
+  end
+
   def test_toplevel_private_constant
     src = <<-INPUT
       class Object
         private_constant :Object
       end
       p Object
-      begin
-        p ::Object
-      rescue
-        p :ok
+      p ::Object
+      class Object
+        public_constant :Object
       end
     INPUT
-    assert_in_out_err([], src, %w(Object :ok), [])
+    assert_in_out_err([], src, %w(Object Object), [])
   end
 
   def test_private_constants_clear_inlinecache
     bug5702 = '[ruby-dev:44929]'
     src = <<-INPUT
+    def get_C
+      A::C
+    end
     class A
       C = :Const
-      def self.get_C
-        A::C
-      end
       # fill cache
-      A.get_C
+      get_C
       private_constant :C, :D rescue nil
       begin
-        A.get_C
+        get_C
       rescue NameError
-        puts "A.get_C"
+        puts "get_C"
       end
     end
     INPUT
-    assert_in_out_err([], src, %w(A.get_C), [], bug5702)
+    assert_in_out_err([], src, %w(get_C), [], bug5702)
   end
 
   def test_constant_lookup_in_method_defined_by_class_eval

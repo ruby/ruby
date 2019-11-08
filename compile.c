@@ -4578,9 +4578,24 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node,
     return COMPILE_OK;
 }
 
+static bool dynamic_const_get_p(const NODE *node) {
+  while (true) {
+    switch (nd_type(node)) {
+      case NODE_CONST:
+      case NODE_COLON3:
+        return false;
+      case NODE_COLON2:
+        node = node->nd_head;
+        continue;
+      default:
+        return true;
+    }
+  }
+}
+
 static int
 compile_const_prefix(rb_iseq_t *iseq, const NODE *const node,
-		     LINK_ANCHOR *const pref, LINK_ANCHOR *const body)
+		     LINK_ANCHOR *const pref, LINK_ANCHOR *const body, bool only_public)
 {
     switch (nd_type(node)) {
       case NODE_CONST:
@@ -4590,12 +4605,12 @@ compile_const_prefix(rb_iseq_t *iseq, const NODE *const node,
       case NODE_COLON3:
 	debugi("compile_const_prefix - colon3", node->nd_mid);
 	ADD_INSN1(body, nd_line(node), putobject, rb_cObject);
-        ADD_INSN1(body, nd_line(node), getconstantfrom, ID2SYM(node->nd_mid));
+        ADD_INSN2(body, nd_line(node), getconstantfrom, ID2SYM(node->nd_mid), INT2FIX(only_public));
 	break;
       case NODE_COLON2:
-	CHECK(compile_const_prefix(iseq, node->nd_head, pref, body));
+	CHECK(compile_const_prefix(iseq, node->nd_head, pref, body, only_public));
 	debugi("compile_const_prefix - colon2", node->nd_mid);
-        ADD_INSN1(body, nd_line(node), getconstantfrom, ID2SYM(node->nd_mid));
+        ADD_INSN2(body, nd_line(node), getconstantfrom, ID2SYM(node->nd_mid), INT2FIX(only_public));
 	break;
       default:
 	CHECK(COMPILE(pref, "const colon2 prefix", node));
@@ -4722,15 +4737,17 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         ADD_INSNL(ret, line, branchunless, lfinish[1]);
         NO_CHECK(COMPILE(ret, "defined/colon2#nd_head", node->nd_head));
 
-        ADD_INSN3(ret, line, defined,
-		  (rb_is_const_id(node->nd_mid) ?
-		   INT2FIX(DEFINED_CONST_FROM) : INT2FIX(DEFINED_METHOD)),
-		  ID2SYM(node->nd_mid), needstr);
+        if (rb_is_const_id(node->nd_mid)) {
+          expr_type = dynamic_const_get_p(node->nd_head) ? DEFINED_CONST_FROM_DYNAMIC : DEFINED_CONST_FROM_STATIC;
+        } else {
+          expr_type = DEFINED_METHOD;
+        }
+        ADD_INSN3(ret, line, defined, INT2FIX(expr_type), ID2SYM(node->nd_mid), needstr);
         return;
       case NODE_COLON3:
         ADD_INSN1(ret, line, putobject, rb_cObject);
         ADD_INSN3(ret, line, defined,
-		  INT2FIX(DEFINED_CONST_FROM), ID2SYM(node->nd_mid), needstr);
+		  INT2FIX(DEFINED_CONST_FROM_STATIC), ID2SYM(node->nd_mid), needstr);
         return;
 
 	/* method dispatch */
@@ -7518,13 +7535,16 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	LABEL *lfin = 0;
 	LABEL *lassign = 0;
 	ID mid;
+	bool only_public;
 
 	switch (nd_type(node->nd_head)) {
 	  case NODE_COLON3:
 	    ADD_INSN1(ret, line, putobject, rb_cObject);
+	    only_public = FALSE;
 	    break;
 	  case NODE_COLON2:
 	    CHECK(COMPILE(ret, "NODE_OP_CDECL/colon2#nd_head", node->nd_head->nd_head));
+	    only_public = dynamic_const_get_p(node->nd_head);
 	    break;
 	  default:
 	    COMPILE_ERROR(ERROR_ARGS "%s: invalid node in NODE_OP_CDECL",
@@ -7534,14 +7554,15 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	mid = node->nd_head->nd_mid;
 	/* cref */
 	if (node->nd_aid == idOROP) {
+	    enum defined_type defined_type = only_public ? DEFINED_CONST_FROM_DYNAMIC : DEFINED_CONST_FROM_STATIC;
 	    lassign = NEW_LABEL(line);
 	    ADD_INSN(ret, line, dup); /* cref cref */
-	    ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_CONST_FROM),
+	    ADD_INSN3(ret, line, defined, INT2FIX(defined_type),
 		      ID2SYM(mid), Qfalse); /* cref bool */
 	    ADD_INSNL(ret, line, branchunless, lassign); /* cref */
 	}
 	ADD_INSN(ret, line, dup); /* cref cref */
-        ADD_INSN1(ret, line, getconstantfrom, ID2SYM(mid)); /* cref obj */
+        ADD_INSN2(ret, line, getconstantfrom, ID2SYM(mid), INT2FIX(only_public)); /* cref obj */
 
 	if (node->nd_aid == idOROP || node->nd_aid == idANDOP) {
 	    lfin = NEW_LABEL(line);
@@ -8212,7 +8233,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 
 	    INIT_ANCHOR(pref);
 	    INIT_ANCHOR(body);
-	    CHECK(compile_const_prefix(iseq, node, pref, body));
+	    CHECK(compile_const_prefix(iseq, node, pref, body, dynamic_const_get_p(node)));
 	    if (LIST_INSN_SIZE_ZERO(pref)) {
 		if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
                     ADD_INSN2(ret, line, opt_getinlinecache, lend, INT2FIX(ic_index));
@@ -8255,7 +8276,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	}
 
 	ADD_INSN1(ret, line, putobject, rb_cObject);
-	ADD_INSN1(ret, line, getconstantfrom, ID2SYM(node->nd_mid));
+	ADD_INSN2(ret, line, getconstantfrom, ID2SYM(node->nd_mid), INT2FIX(FALSE));
 
 	if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
             ADD_INSN1(ret, line, opt_setinlinecache, INT2FIX(ic_index));

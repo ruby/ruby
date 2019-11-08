@@ -298,7 +298,8 @@ enum defined_type {
     DEFINED_IVAR2,
     DEFINED_REF,
     DEFINED_FUNC,
-    DEFINED_CONST_FROM
+    DEFINED_CONST_FROM_STATIC,
+    DEFINED_CONST_FROM_DYNAMIC,
 };
 
 VALUE rb_iseq_defined_string(enum defined_type type);

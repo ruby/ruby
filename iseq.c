@@ -1837,8 +1837,11 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 	      case DEFINED_REF:
 		ret = rb_fstring_lit("ref");
 		break;
-	      case DEFINED_CONST_FROM:
-		ret = rb_fstring_lit("constant-from");
+	      case DEFINED_CONST_FROM_STATIC:
+		ret = rb_fstring_lit("constant-from-static");
+		break;
+	      case DEFINED_CONST_FROM_DYNAMIC:
+		ret = rb_fstring_lit("constant-from-dynamic");
 		break;
 	      default:
 		ret = rb_iseq_defined_string(deftype);

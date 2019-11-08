@@ -608,14 +608,26 @@ describe "Module#private_constant marked constants" do
   end
 
   describe "in Object" do
-    it "cannot be accessed using ::Const form" do
-      -> do
-        ::PRIVATE_CONSTANT_IN_OBJECT
-      end.should raise_error(NameError)
+    ruby_version_is ""..."2.7" do
+      it "cannot be accessed using ::Const form" do
+        -> do
+          ::PRIVATE_CONSTANT_IN_OBJECT
+        end.should raise_error(NameError)
+      end
+
+      it "is not defined? using ::Const form" do
+        defined?(::PRIVATE_CONSTANT_IN_OBJECT).should == nil
+      end
     end
 
-    it "is not defined? using ::Const form" do
-      defined?(::PRIVATE_CONSTANT_IN_OBJECT).should == nil
+    ruby_version_is "2.7" do
+      it "can be accessed using ::Const form" do
+        ::PRIVATE_CONSTANT_IN_OBJECT.should == true
+      end
+
+      it "is defined? using ::Const form" do
+        defined?(::PRIVATE_CONSTANT_IN_OBJECT).should == "constant"
+      end
     end
 
     it "can be accessed through the normal search" do

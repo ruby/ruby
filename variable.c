@@ -22,8 +22,15 @@
 #include "id_table.h"
 #include "debug_counter.h"
 #include "vm_core.h"
+#include "eval_intern.h"
 #include "transient_heap.h"
 #include "variable.h"
+
+typedef enum {
+    CONST_SEARCH_ANY = 0,
+    CONST_SEARCH_PUBLIC,
+    CONST_SEARCH_FROM_STATIC
+} const_search_visibility_t;
 
 static struct rb_id_table *rb_global_tbl;
 static ID autoload, classpath, tmp_classpath;
@@ -31,7 +38,7 @@ static VALUE autoload_featuremap; /* feature => autoload_i */
 
 static void check_before_mod_set(VALUE, ID, VALUE, const char *);
 static void setup_const_entry(rb_const_entry_t *, VALUE, VALUE, rb_const_flag_t);
-static VALUE rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility);
+static VALUE rb_const_search(VALUE klass, ID id, int exclude, int recurse, const_search_visibility_t visibility);
 static st_table *generic_iv_tbl;
 static st_table *generic_iv_tbl_compat;
 
@@ -252,7 +259,7 @@ rb_path_to_class(VALUE pathname)
 	    rb_raise(rb_eArgError, "undefined class/module % "PRIsVALUE,
 		     rb_str_subseq(pathname, 0, p-path));
 	}
-	c = rb_const_search(c, id, TRUE, FALSE, FALSE);
+	c = rb_const_search(c, id, TRUE, FALSE, CONST_SEARCH_ANY);
 	if (c == Qundef) goto undefined_class;
         if (!rb_namespace_p(c)) {
 	    rb_raise(rb_eTypeError, "%"PRIsVALUE" does not refer to class/module",
@@ -2305,15 +2312,25 @@ rb_const_warn_if_deprecated(const rb_const_entry_t *ce, VALUE klass, ID id)
 }
 
 static VALUE
-rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
+rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, const_search_visibility_t visibility)
 {
     VALUE c = rb_const_search(klass, id, exclude, recurse, visibility);
     if (c != Qundef) return c;
     return rb_const_missing(klass, ID2SYM(id));
 }
 
+static bool in_module_nesting(VALUE mod) {
+    for (rb_cref_t *cref = rb_vm_cref(); cref; cref = CREF_NEXT(cref)) {
+        if (CREF_PUSHED_BY_EVAL(cref)) continue;
+
+        if (mod == CREF_CLASS(cref))
+            return true;
+    }
+    return false;
+}
+
 static VALUE
-rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibility)
+rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, const_search_visibility_t visibility)
 {
     VALUE value, tmp;
 
@@ -2323,7 +2340,7 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
 	rb_const_entry_t *ce;
 
 	while ((ce = rb_const_lookup(tmp, id))) {
-	    if (visibility && RB_CONST_PRIVATE_P(ce)) {
+	    if (visibility && RB_CONST_PRIVATE_P(ce) && (visibility != CONST_SEARCH_FROM_STATIC || !in_module_nesting(tmp))) {
 		if (BUILTIN_TYPE(tmp) == T_ICLASS) tmp = RBASIC(tmp)->klass;
 		GET_EC()->private_const_reference = tmp;
 		return Qundef;
@@ -2354,7 +2371,7 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
 }
 
 static VALUE
-rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility)
+rb_const_search(VALUE klass, ID id, int exclude, int recurse, const_search_visibility_t visibility)
 {
     VALUE value;
 
@@ -2370,31 +2387,37 @@ rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility)
 VALUE
 rb_const_get_from(VALUE klass, ID id)
 {
-    return rb_const_get_0(klass, id, TRUE, TRUE, FALSE);
+    return rb_const_get_0(klass, id, TRUE, TRUE, CONST_SEARCH_ANY);
 }
 
 VALUE
 rb_const_get(VALUE klass, ID id)
 {
-    return rb_const_get_0(klass, id, FALSE, TRUE, FALSE);
+    return rb_const_get_0(klass, id, FALSE, TRUE, CONST_SEARCH_ANY);
 }
 
 VALUE
 rb_const_get_at(VALUE klass, ID id)
 {
-    return rb_const_get_0(klass, id, TRUE, FALSE, FALSE);
+    return rb_const_get_0(klass, id, TRUE, FALSE, CONST_SEARCH_ANY);
+}
+
+MJIT_FUNC_EXPORTED VALUE
+rb_static_const_get_from(VALUE klass, ID id)
+{
+    return rb_const_get_0(klass, id, TRUE, TRUE, CONST_SEARCH_FROM_STATIC);
 }
 
 MJIT_FUNC_EXPORTED VALUE
 rb_public_const_get_from(VALUE klass, ID id)
 {
-    return rb_const_get_0(klass, id, TRUE, TRUE, TRUE);
+    return rb_const_get_0(klass, id, TRUE, TRUE, CONST_SEARCH_PUBLIC);
 }
 
 MJIT_FUNC_EXPORTED VALUE
 rb_public_const_get_at(VALUE klass, ID id)
 {
-    return rb_const_get_0(klass, id, TRUE, FALSE, TRUE);
+    return rb_const_get_0(klass, id, TRUE, FALSE, CONST_SEARCH_PUBLIC);
 }
 
 NORETURN(static void undefined_constant(VALUE mod, VALUE name));
@@ -2628,7 +2651,7 @@ rb_mod_constants(int argc, const VALUE *argv, VALUE mod)
 }
 
 static int
-rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
+rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, const_search_visibility_t visibility)
 {
     VALUE tmp;
     int mod_retry = 0;
@@ -2638,7 +2661,7 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
   retry:
     while (tmp) {
 	if ((ce = rb_const_lookup(tmp, id))) {
-	    if (visibility && RB_CONST_PRIVATE_P(ce)) {
+	    if (visibility && RB_CONST_PRIVATE_P(ce) && (visibility != CONST_SEARCH_FROM_STATIC || !in_module_nesting(tmp))) {
 		return (int)Qfalse;
 	    }
 	    if (ce->value == Qundef && !check_autoload_required(tmp, id, 0) &&
@@ -2665,25 +2688,31 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 int
 rb_const_defined_from(VALUE klass, ID id)
 {
-    return rb_const_defined_0(klass, id, TRUE, TRUE, FALSE);
+    return rb_const_defined_0(klass, id, TRUE, TRUE, CONST_SEARCH_ANY);
 }
 
 int
 rb_const_defined(VALUE klass, ID id)
 {
-    return rb_const_defined_0(klass, id, FALSE, TRUE, FALSE);
+    return rb_const_defined_0(klass, id, FALSE, TRUE, CONST_SEARCH_ANY);
 }
 
 int
 rb_const_defined_at(VALUE klass, ID id)
 {
-    return rb_const_defined_0(klass, id, TRUE, FALSE, FALSE);
+    return rb_const_defined_0(klass, id, TRUE, FALSE, CONST_SEARCH_ANY);
+}
+
+MJIT_FUNC_EXPORTED int
+rb_static_const_defined_from(VALUE klass, ID id)
+{
+    return rb_const_defined_0(klass, id, TRUE, TRUE, CONST_SEARCH_FROM_STATIC);
 }
 
 MJIT_FUNC_EXPORTED int
 rb_public_const_defined_from(VALUE klass, ID id)
 {
-    return rb_const_defined_0(klass, id, TRUE, TRUE, TRUE);
+    return rb_const_defined_0(klass, id, TRUE, TRUE, CONST_SEARCH_PUBLIC);
 }
 
 static void

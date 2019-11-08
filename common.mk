@@ -3138,6 +3138,7 @@ variable.$(OBJEXT): {$(VPATH)}constant.h
 variable.$(OBJEXT): {$(VPATH)}debug_counter.h
 variable.$(OBJEXT): {$(VPATH)}defines.h
 variable.$(OBJEXT): {$(VPATH)}encoding.h
+variable.$(OBJEXT): {$(VPATH)}eval_intern.h
 variable.$(OBJEXT): {$(VPATH)}id.h
 variable.$(OBJEXT): {$(VPATH)}id_table.h
 variable.$(OBJEXT): {$(VPATH)}intern.h
