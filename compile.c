@@ -6753,10 +6753,10 @@ static const char *
 iseq_builtin_function_name(ID mid)
 {
     const char *name = rb_id2name(mid);
-    const char prefix[] = "__builtin_";
-    const size_t prefix_len = strlen(prefix);
+    static const char prefix[] = "__builtin_";
+    const size_t prefix_len = sizeof(prefix) - 1;
 
-    if (UNLIKELY(strncmp("__builtin_", name, prefix_len) == 0)) {
+    if (UNLIKELY(strncmp(prefix, name, prefix_len) == 0)) {
         return &name[prefix_len];
     }
     else {
