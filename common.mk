@@ -984,8 +984,13 @@ $(srcs_vpath)mjit_compile.inc: $(srcdir)/tool/ruby_vm/views/mjit_compile.inc.erb
   $(srcdir)/tool/ruby_vm/views/_mjit_compile_ivar.erb \
   $(srcdir)/tool/ruby_vm/views/_mjit_compile_insn_body.erb $(srcdir)/tool/ruby_vm/views/_mjit_compile_pc_and_sp.erb
 
-BUILTIN_RB_SRCS = $(srcs_vpath)trace_point.rb $(srcs_vpath)ast.rb $(srcs_vpath)io.rb \
-		  $(srcs_vpath)gc.rb
+BUILTIN_RB_SRCS = \
+		$(srcs_vpath)ast.rb \
+		$(srcs_vpath)gc.rb \
+		$(srcs_vpath)io.rb \
+		$(srcs_vpath)pack.rb \
+		$(srcs_vpath)trace_point.rb \
+		$(empty)
 BUILTIN_RB_INCS = $(BUILTIN_RB_SRCS:.rb=.rbinc)
 
 common-srcs: $(srcs_vpath)parse.c $(srcs_vpath)lex.c $(srcs_vpath)enc/trans/newline.c $(srcs_vpath)id.c \
@@ -1107,9 +1112,6 @@ builtin_binary.inc: $(PREP) $(BUILTIN_RB_SRCS) $(srcdir)/tool/mk_builtin_binary.
 	$(Q) $(MINIRUBY) $(srcdir)/tool/mk_builtin_binary.rb
 
 $(BUILTIN_RB_INCS): $(top_srcdir)/tool/mk_builtin_loader.rb
-
-load_pack.inc: $(srcdir)/pack.rb $(srcdir)/tool/mk_builtin_loader.rb
-	$(Q) $(BASERUBY) $(srcdir)/tool/mk_builtin_loader.rb $(srcdir)/pack.rb
 
 $(srcdir)/revision.h:
 	$(Q)$(gnumake:yes=#) $(RM) $(@F)
