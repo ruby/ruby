@@ -961,7 +961,7 @@ class TestJIT < Test::Unit::TestCase
 
         before_fork; before_fork # the child should not delete this .o file
         pid = Process.fork do # this child should not delete shared .pch file
-          sleep 0.5 # to prevent mixing outputs on Solaris
+          sleep 2.0 # to prevent mixing outputs on Solaris
           after_fork; after_fork # this child does not share JIT-ed after_fork with parent
         end
         after_fork; after_fork # this parent does not share JIT-ed after_fork with child
