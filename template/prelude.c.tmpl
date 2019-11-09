@@ -30,8 +30,8 @@ class Prelude
     "<internal:" + prelude_base(filename) + ">"
   end
 
-  def initialize(init_name, preludes, vpath)
-    @init_name = init_name
+  def initialize(output, preludes, vpath)
+    @output = output
     @have_sublib = false
     @vpath = vpath
     @preludes = {}
@@ -114,7 +114,7 @@ static const struct {
 %     size += line.size
 "<%=c_esc(line)%>"<%if comment%>/* <%=c_esc(comment)%> */<%end%>
 %   }
-#line <%=_erbout.count("\n")+2%> "<%=@init_name%>.c"
+#line <%=_erbout.count("\n")+2%> "<%=@output%>"
 };
 % }
 
@@ -201,8 +201,9 @@ prelude_require(VALUE self, VALUE nth)
 
 % end
 %end
+% init_name = @output && @output[/\w+(?=_prelude.c\b)/] || 'prelude'
 void
-Init_<%=@init_name%><%=%>(void)
+Init_<%=init_name%><%=%>(void)
 {
 %unless @preludes.empty?
 % if @have_sublib
