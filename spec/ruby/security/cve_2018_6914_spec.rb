@@ -26,7 +26,7 @@ describe "CVE-2018-6914 is resisted by" do
         tmpdir: @tmpdir,
         Dir_tmpdir: Dir.tmpdir,
         TMPDIR: ENV['TMPDIR'],
-        stat: File.stat(@tmpdir),
+        stat: File.stat(@dir),
       }, STDERR)
     }
 
