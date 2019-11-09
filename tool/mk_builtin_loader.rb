@@ -67,10 +67,9 @@ def mk_builtin_header file
     f.puts "COMPILER_WARNING_POP"
 
 
-    path = File.expand_path(file)
     f.puts
     f.puts "  // load"
-    f.puts "  rb_load_with_builtin_functions(\"#{base}\", \"#{file}\", #{table});"
+    f.puts "  rb_load_with_builtin_functions(#{base.dump}, #{table});"
 
     f.puts "}"
   }
@@ -78,6 +77,5 @@ end
 
 ARGV.each{|file|
   # feature.rb => load_feature.inc
-  path = File.expand_path(file)
-  mk_builtin_header path
+  mk_builtin_header file
 }

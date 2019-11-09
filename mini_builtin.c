@@ -10,7 +10,7 @@ static struct st_table *loaded_builtin_table;
 rb_ast_t *rb_builtin_ast(const char *feature_name, VALUE *name_str);
 
 void
-rb_load_with_builtin_functions(const char *feature_name, const char *fname, const struct rb_builtin_function *table)
+rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table)
 {
     VALUE name_str = 0;
     rb_ast_t *ast = rb_builtin_ast(feature_name, &name_str);
