@@ -1,12 +1,6 @@
-begin
-  require_relative "lib/yaml/version"
-rescue LoadError # Fallback to load version file in ruby core repository
-  require_relative "version"
-end
-
 Gem::Specification.new do |spec|
   spec.name          = "yaml"
-  spec.version       = YAML::VERSION
+  spec.version       = "0.1.0"
   spec.authors       = ["Aaron Patterson", "SHIBATA Hiroshi"]
   spec.email         = ["aaron@tenderlovemaking.com", "hsbt@ruby-lang.org"]
 
