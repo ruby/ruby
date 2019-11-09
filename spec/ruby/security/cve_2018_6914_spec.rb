@@ -7,7 +7,7 @@ describe "CVE-2018-6914 is resisted by" do
   before :each do
     @tmpdir = ENV['TMPDIR']
     @dir = tmp("CVE-2018-6914")
-    Dir.mkdir(@dir)
+    Dir.mkdir(@dir, 0700)
     ENV['TMPDIR'] = @dir
 
     # Make sure that ENV["TMPDIR"] is used by Dir.tmpdir
