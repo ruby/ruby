@@ -158,6 +158,8 @@ module Test
 
       def _report(res, *args) # :nodoc:
         @stdout.write(args.empty? ? "#{res}\n" : "#{res} #{args.pack("m0")}\n")
+      rescue TypeError => e
+        abort("#{e.inspect} in _report(#{res.inspect}, #{args.inspect})\n#{e.backtrace.join("\n")}")
       end
 
       def puke(klass, meth, e) # :nodoc:
