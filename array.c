@@ -648,7 +648,9 @@ VALUE
 rb_ary_freeze(VALUE ary)
 {
     if (OBJ_FROZEN(ary)) return ary;
-    if (!ARY_SHARED_P(ary)) ary_resize_capa(ary, RARRAY_LEN(ary));
+    if (!ARY_SHARED_P(ary) && !ARY_SHARED_ROOT_P(ary)) {
+        ary_resize_capa(ary, RARRAY_LEN(ary));
+    }
     return rb_obj_freeze(ary);
 }
 
