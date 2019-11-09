@@ -2073,9 +2073,12 @@ vm_call_iseq_setup_kwparm_nokwarg(rb_execution_context_t *ec, rb_control_frame_t
     VALUE * const argv = cfp->sp - calling->argc;
     VALUE * const klocals = argv + kw_param->bits_start - kw_param->num;
 
-    for (int i=0; i<kw_param->num; i++) {
+    int i;
+    for (i=0; i<kw_param->num; i++) {
         klocals[i] = kw_param->default_values[i];
     }
+    klocals[i] = INT2FIX(0); // kw specify flag
+
     /* NOTE: don't need to setup (clear) unspecified bits
              because no code check it.
              klocals[kw_param->num] = INT2FIX(0); */
