@@ -99,6 +99,8 @@ Zachary Scott (zzak)
   WATANABE Hirofumi (eban)
 [lib/unicode_normalize.rb, lib/unicode_normalize/*]
   Martin J. Dürst
+[lib/uri.rb, lib/uri/*]
+  YAMADA, Akira (akira)
 [lib/weakref.rb]
   _unmaintained_
 
@@ -261,9 +263,6 @@ Zachary Scott (zzak)
 [lib/tracer.rb]
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/tracer
-[lib/uri.rb, lib/uri/*]
-  YAMADA, Akira (akira)
-  https://github.com/ruby/uri
 [lib/webrick.rb, lib/webrick/*]
   Eric Wong (normalperson)
   https://bugs.ruby-lang.org/
