@@ -1072,7 +1072,7 @@ vm_call_iseq_optimized.inc: $(srcdir)/tool/mk_call_iseq_optimized.rb
 $(MINIPRELUDE_C): $(COMPILE_PRELUDE)
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb -I$(srcdir) -o $@ \
-		$(srcdir)/template/prelude.c.tmpl
+		$(srcdir)/template/prelude.c.tmpl $(BUILTIN_RB_SRCS)
 
 $(PRELUDE_C): $(COMPILE_PRELUDE) \
 	   $(PRELUDE_SCRIPTS)

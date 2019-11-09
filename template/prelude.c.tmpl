@@ -34,8 +34,17 @@ class Prelude
     @output = output
     @have_sublib = false
     @vpath = vpath
+    @prelude_count = 0
+    @builtin_count = 0
     @preludes = {}
-    @mains = preludes.map {|filename| translate(filename)[0]}
+    @mains = preludes.map do |filename|
+      if prelude = filename.end_with?("prelude.rb")
+        @prelude_count += 1
+      else
+        @builtin_count += 1
+      end
+      translate(filename, (filename unless prelude))[0]
+    end
     @preludes.delete_if {|_, (_, _, lines, sub)| sub && lines.empty?}
   end
 
@@ -134,11 +143,47 @@ prelude_prefix_path(VALUE self)
     struct prelude_env *ptr = DATA_PTR(self);
     return ptr->prefix_path;
 }
-% end
 
+% end
 % unless preludes.empty?
 #define PRELUDE_NAME(n) rb_usascii_str_new_static(prelude_name##n, sizeof(prelude_name##n)-1)
 #define PRELUDE_CODE(n) rb_utf8_str_new_static(prelude_code##n.L0, sizeof(prelude_code##n))
+
+static rb_ast_t *
+prelude_ast(VALUE name, VALUE code, int line)
+{
+    rb_ast_t *ast = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
+    if (!ast->body.root) {
+	rb_ast_dispose(ast);
+	rb_exc_raise(rb_errinfo());
+    }
+    return ast;
+}
+
+% end
+% if @builtin_count > 0
+#define PRELUDE_AST(n, name_str) \
+    (((sizeof(prelude_name<%='##'%><%=%>n) - prefix_len - 2) == namelen) && \
+     (strncmp(prelude_name<%='##'%><%=%>n + prefix_len, feature_name, namelen) == 0) ? \
+     prelude_ast((name_str) = PRELUDE_NAME(n), PRELUDE_CODE(n), 1) : 0)
+
+rb_ast_t *
+rb_builtin_ast(const char *feature_name, VALUE *name_str)
+{
+    const size_t prefix_len = rb_strlen_lit("<internal:");
+    size_t namelen = strlen(feature_name);
+    rb_ast_t *ast = 0;
+
+%   @preludes.each_value do |i, prelude, lines, sub|
+%     if sub and sub != true
+    if ((ast = PRELUDE_AST(<%=i%><%=%>, *name_str)) != 0) return ast;
+%     end
+%   end
+    return ast;
+}
+
+% end
+% if @prelude_count > 0
 COMPILER_WARNING_PUSH
 #if GCC_VERSION_SINCE(4, 2, 0)
 COMPILER_WARNING_ERROR(-Wmissing-field-initializers)
@@ -160,18 +205,14 @@ prelude_eval(VALUE code, VALUE name, int line)
 	0, /* int debug_level; */
     };
 
-    rb_ast_t *ast = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
-    if (!ast->body.root) {
-	rb_ast_dispose(ast);
-	rb_exc_raise(rb_errinfo());
-    }
+    rb_ast_t *ast = prelude_ast(name, code, line);
     rb_iseq_eval(rb_iseq_new_with_opt(&ast->body, name, name, Qnil, INT2FIX(line),
 				      NULL, ISEQ_TYPE_TOP, &optimization));
     rb_ast_dispose(ast);
 }
 COMPILER_WARNING_POP
-% end
 
+% end
 % if @have_sublib
 static VALUE
 prelude_require(VALUE self, VALUE nth)
@@ -185,7 +226,7 @@ prelude_require(VALUE self, VALUE nth)
     ptr->loaded[n] = 1;
     switch (n) {
 %   @preludes.each_value do |i, prelude, lines, sub|
-%     if sub
+%     if sub == true
       case <%=i%><%=%>:
 	code = PRELUDE_CODE(<%=i%><%=%>);
 	name = PRELUDE_NAME(<%=i%><%=%>);
@@ -205,7 +246,7 @@ prelude_require(VALUE self, VALUE nth)
 void
 Init_<%=init_name%><%=%>(void)
 {
-%unless @preludes.empty?
+%unless @prelude_count.zero?
 % if @have_sublib
     struct prelude_env memo;
     ID name = rb_intern("TMP_RUBY_PREFIX");
