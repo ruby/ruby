@@ -18,7 +18,7 @@ describe "CVE-2018-6914 is resisted by" do
     end
 
     @debug_print = ->(actual) {
-      STDERR.puts({
+      PP.pp({
         actual: actual,
         absolute: File.absolute_path(actual),
         dir: @dir,
@@ -26,7 +26,8 @@ describe "CVE-2018-6914 is resisted by" do
         tmpdir: @tmpdir,
         Dir_tmpdir: Dir.tmpdir,
         TMPDIR: ENV['TMPDIR'],
-      })
+        stat: File.stat(@tmpdir),
+      }, STDERR)
     }
 
     @dir << '/'
