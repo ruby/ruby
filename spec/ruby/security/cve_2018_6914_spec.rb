@@ -17,6 +17,18 @@ describe "CVE-2018-6914 is resisted by" do
       sleep 0.1
     end
 
+    @debug_print = ->(actual) {
+      STDERR.puts({
+        actual: actual,
+        absolute: File.absolute_path(actual),
+        dir: @dir,
+        pwd: Dir.pwd,
+        tmpdir: @tmpdir,
+        Dir_tmpdir: Dir.tmpdir,
+        TMPDIR: ENV['TMPDIR'],
+      })
+    }
+
     @dir << '/'
 
     @tempfile = nil
@@ -31,12 +43,14 @@ describe "CVE-2018-6914 is resisted by" do
   it "Tempfile.open by deleting separators" do
     @tempfile = Tempfile.open(['../', 'foo'])
     actual = @tempfile.path
+    @debug_print.call(actual)
     File.absolute_path(actual).should.start_with?(@dir)
   end
 
   it "Tempfile.new by deleting separators" do
     @tempfile = Tempfile.new('../foo')
     actual = @tempfile.path
+    @debug_print.call(actual)
     File.absolute_path(actual).should.start_with?(@dir)
   end
 
@@ -44,6 +58,7 @@ describe "CVE-2018-6914 is resisted by" do
     actual = Tempfile.create('../foo') do |t|
       t.path
     end
+    @debug_print.call(actual)
     File.absolute_path(actual).should.start_with?(@dir)
   end
 
@@ -51,6 +66,7 @@ describe "CVE-2018-6914 is resisted by" do
     actual = Dir.mktmpdir('../foo') do |path|
       path
     end
+    @debug_print.call(actual)
     File.absolute_path(actual).should.start_with?(@dir)
   end
 
@@ -58,6 +74,7 @@ describe "CVE-2018-6914 is resisted by" do
     actual = Dir.mktmpdir(['../', 'foo']) do |path|
       path
     end
+    @debug_print.call(actual)
     File.absolute_path(actual).should.start_with?(@dir)
   end
 end
