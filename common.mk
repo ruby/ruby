@@ -985,11 +985,11 @@ $(srcs_vpath)mjit_compile.inc: $(srcdir)/tool/ruby_vm/views/mjit_compile.inc.erb
   $(srcdir)/tool/ruby_vm/views/_mjit_compile_insn_body.erb $(srcdir)/tool/ruby_vm/views/_mjit_compile_pc_and_sp.erb
 
 BUILTIN_RB_SRCS = \
-		$(srcs_vpath)ast.rb \
-		$(srcs_vpath)gc.rb \
-		$(srcs_vpath)io.rb \
-		$(srcs_vpath)pack.rb \
-		$(srcs_vpath)trace_point.rb \
+		$(srcdir)/ast.rb \
+		$(srcdir)/gc.rb \
+		$(srcdir)/io.rb \
+		$(srcdir)/pack.rb \
+		$(srcdir)/trace_point.rb \
 		$(empty)
 BUILTIN_RB_INCS = $(BUILTIN_RB_SRCS:.rb=.rbinc)
 
@@ -1104,7 +1104,7 @@ preludes: {$(VPATH)}prelude.c
 preludes: {$(VPATH)}miniprelude.c
 preludes: {$(srcdir)}golf_prelude.c
 
-.rb.rbinc:
+{$(srcdir)}.rb.rbinc:
 	$(ECHO) making $@
 	$(Q) $(BASERUBY) $(srcdir)/tool/mk_builtin_loader.rb $<
 
