@@ -2078,10 +2078,9 @@ vm_call_iseq_setup_kwparm_nokwarg(rb_execution_context_t *ec, rb_control_frame_t
         klocals[i] = kw_param->default_values[i];
     }
     klocals[i] = INT2FIX(0); // kw specify flag
-
-    /* NOTE: don't need to setup (clear) unspecified bits
-             because no code check it.
-             klocals[kw_param->num] = INT2FIX(0); */
+    // NOTE:
+    //   nobody check this value, but it should be cleared because it can
+    //   points invalid VALUE (T_NONE objects, raw pointer and so on).
 
     int param = iseq->body->param.size;
     int local = iseq->body->local_table_size;
