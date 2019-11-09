@@ -1497,7 +1497,7 @@ invokebuiltin
 // attr bool leaf = false; /* anything can happen inside */
 // attr rb_snum_t sp_inc = 1 - bf->argc;
 {
-    ret = vm_invoke_builtin(ec, reg_cfp, bf);
+    ret = vm_invoke_builtin(ec, reg_cfp, bf, STACK_ADDR_FROM_TOP(bf->argc));
 }
 
 /* call specific function with args (same parameters) */

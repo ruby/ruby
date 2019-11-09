@@ -4981,9 +4981,8 @@ invoke_bf(rb_execution_context_t *ec, rb_control_frame_t *cfp, const struct rb_b
 }
 
 static VALUE
-vm_invoke_builtin(rb_execution_context_t *ec, rb_control_frame_t *cfp, const struct rb_builtin_function* bf)
+vm_invoke_builtin(rb_execution_context_t *ec, rb_control_frame_t *cfp, const struct rb_builtin_function* bf, const VALUE *argv)
 {
-    const VALUE *argv = cfp->sp - bf->argc;
     return invoke_bf(ec, cfp, bf, argv);
 }
 
