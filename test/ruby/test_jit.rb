@@ -20,6 +20,9 @@ class TestJIT < Test::Unit::TestCase
     # not supported yet
     :defineclass,
     :opt_call_c_function,
+
+    # never used
+    :opt_invokebuiltin_delegate,
   ].each do |insn|
     if !RubyVM::INSTRUCTION_NAMES.include?(insn.to_s)
       warn "instruction #{insn.inspect} is not defined but included in TestJIT::TEST_PENDING_INSNS"
@@ -604,6 +607,12 @@ class TestJIT < Test::Unit::TestCase
     insns = collect_insns(RubyVM::InstructionSequence.of([0].method(:pack)).to_a)
     mark_tested_insn(:invokebuiltin, used_insns: insns)
     assert_eval_with_jit('print [0].pack("c")', stdout: "\x00", success_count: 1)
+  end
+
+  def test_compile_insn_opt_invokebuiltin_delegate_leave
+    insns = collect_insns(RubyVM::InstructionSequence.of("\x00".method(:unpack)).to_a)
+    mark_tested_insn(:opt_invokebuiltin_delegate_leave, used_insns: insns)
+    assert_eval_with_jit('print "\x00".unpack("c")', stdout: '[0]', success_count: 1)
   end
 
   def test_jit_output
