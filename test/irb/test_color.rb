@@ -24,40 +24,40 @@ module TestIRB
         "2.3" => "#{MAGENTA}#{BOLD}2.3#{CLEAR}",
         "7r" => "#{BLUE}#{BOLD}7r#{CLEAR}",
         "8i" => "#{BLUE}#{BOLD}8i#{CLEAR}",
-        "['foo', :bar]" => "[#{RED}'#{CLEAR}#{RED}foo#{CLEAR}#{RED}'#{CLEAR}, #{YELLOW}:#{CLEAR}#{YELLOW}bar#{CLEAR}]",
+        "['foo', :bar]" => "[#{RED}#{BOLD}'#{CLEAR}#{RED}foo#{CLEAR}#{RED}#{BOLD}'#{CLEAR}, #{YELLOW}:#{CLEAR}#{YELLOW}bar#{CLEAR}]",
         "class A; end" => "#{GREEN}class#{CLEAR} #{BLUE}#{BOLD}#{UNDERLINE}A#{CLEAR}; #{GREEN}end#{CLEAR}",
         "def self.foo; bar; end" => "#{GREEN}def#{CLEAR} #{CYAN}#{BOLD}self#{CLEAR}.#{BLUE}#{BOLD}foo#{CLEAR}; bar; #{GREEN}end#{CLEAR}",
-        'erb = ERB.new("a#{nil}b", trim_mode: "-")' => "erb = #{BLUE}#{BOLD}#{UNDERLINE}ERB#{CLEAR}.new(#{RED}\"#{CLEAR}#{RED}a#{CLEAR}#{RED}\#{#{CLEAR}#{CYAN}#{BOLD}nil#{CLEAR}#{RED}}#{CLEAR}#{RED}b#{CLEAR}#{RED}\"#{CLEAR}, #{MAGENTA}trim_mode:#{CLEAR} #{RED}\"#{CLEAR}#{RED}-#{CLEAR}#{RED}\"#{CLEAR})",
+        'erb = ERB.new("a#{nil}b", trim_mode: "-")' => "erb = #{BLUE}#{BOLD}#{UNDERLINE}ERB#{CLEAR}.new(#{RED}#{BOLD}\"#{CLEAR}#{RED}a#{CLEAR}#{RED}\#{#{CLEAR}#{CYAN}#{BOLD}nil#{CLEAR}#{RED}}#{CLEAR}#{RED}b#{CLEAR}#{RED}#{BOLD}\"#{CLEAR}, #{MAGENTA}trim_mode:#{CLEAR} #{RED}#{BOLD}\"#{CLEAR}#{RED}-#{CLEAR}#{RED}#{BOLD}\"#{CLEAR})",
         "# comment" => "#{BLUE}#{BOLD}# comment#{CLEAR}",
         "yield(hello)" => "#{GREEN}yield#{CLEAR}(hello)",
-        '"##@var]"' => "#{RED}\"#{CLEAR}#{RED}##{CLEAR}#{RED}##{CLEAR}@var#{RED}]#{CLEAR}#{RED}\"#{CLEAR}",
-        '"foo#{a} #{b}"' => "#{RED}\"#{CLEAR}#{RED}foo#{CLEAR}#{RED}\#{#{CLEAR}a#{RED}}#{CLEAR}#{RED} #{CLEAR}#{RED}\#{#{CLEAR}b#{RED}}#{CLEAR}#{RED}\"#{CLEAR}",
+        '"##@var]"' => "#{RED}#{BOLD}\"#{CLEAR}#{RED}\##{CLEAR}#{RED}\##{CLEAR}@var#{RED}]#{CLEAR}#{RED}#{BOLD}\"#{CLEAR}",
+        '"foo#{a} #{b}"' => "#{RED}#{BOLD}\"#{CLEAR}#{RED}foo#{CLEAR}#{RED}\#{#{CLEAR}a#{RED}}#{CLEAR}#{RED} #{CLEAR}#{RED}\#{#{CLEAR}b#{RED}}#{CLEAR}#{RED}#{BOLD}\"#{CLEAR}",
         '/r#{e}g/' => "#{RED}#{BOLD}/#{CLEAR}#{RED}r#{CLEAR}#{RED}\#{#{CLEAR}e#{RED}}#{CLEAR}#{RED}g#{CLEAR}#{RED}#{BOLD}/#{CLEAR}",
-        "'a\nb'" => "#{RED}'#{CLEAR}#{RED}a#{CLEAR}\n#{RED}b#{CLEAR}#{RED}'#{CLEAR}",
+        "'a\nb'" => "#{RED}#{BOLD}'#{CLEAR}#{RED}a#{CLEAR}\n#{RED}b#{CLEAR}#{RED}#{BOLD}'#{CLEAR}",
         "[1]]]\u0013" => "[1]]]^S",
-        "%w[a b]" => "#{RED}%w[#{CLEAR}#{RED}a#{CLEAR} #{RED}b#{CLEAR}#{RED}]#{CLEAR}",
-        "%i[c d]" => "#{RED}%i[#{CLEAR}#{RED}c#{CLEAR} #{RED}d#{CLEAR}#{RED}]#{CLEAR}",
-        "{'a': 1}" => "{#{RED}'#{CLEAR}#{RED}a#{CLEAR}#{RED}':#{CLEAR} #{BLUE}#{BOLD}1#{CLEAR}}",
+        "%w[a b]" => "#{RED}#{BOLD}%w[#{CLEAR}#{RED}a#{CLEAR} #{RED}b#{CLEAR}#{RED}#{BOLD}]#{CLEAR}",
+        "%i[c d]" => "#{RED}#{BOLD}%i[#{CLEAR}#{RED}c#{CLEAR} #{RED}d#{CLEAR}#{RED}#{BOLD}]#{CLEAR}",
+        "{'a': 1}" => "{#{RED}#{BOLD}'#{CLEAR}#{RED}a#{CLEAR}#{RED}#{BOLD}':#{CLEAR} #{BLUE}#{BOLD}1#{CLEAR}}",
         ":Struct" => "#{YELLOW}:#{CLEAR}#{YELLOW}Struct#{CLEAR}",
-        '"#{}"' => "#{RED}\"#{CLEAR}#{RED}\#{#{CLEAR}#{RED}}#{CLEAR}#{RED}\"#{CLEAR}",
+        '"#{}"' => "#{RED}#{BOLD}\"#{CLEAR}#{RED}\#{#{CLEAR}#{RED}}#{CLEAR}#{RED}#{BOLD}\"#{CLEAR}",
         ':"a#{}b"' => "#{YELLOW}:\"#{CLEAR}#{YELLOW}a#{CLEAR}#{YELLOW}\#{#{CLEAR}#{YELLOW}}#{CLEAR}#{YELLOW}b#{CLEAR}#{YELLOW}\"#{CLEAR}",
-        ':"a#{ def b; end; \'c\' + "#{ :d }" }e"' => "#{YELLOW}:\"#{CLEAR}#{YELLOW}a#{CLEAR}#{YELLOW}\#{#{CLEAR} #{GREEN}def#{CLEAR} #{BLUE}#{BOLD}b#{CLEAR}; #{GREEN}end#{CLEAR}; #{RED}'#{CLEAR}#{RED}c#{CLEAR}#{RED}'#{CLEAR} + #{RED}\"#{CLEAR}#{RED}\#{#{CLEAR} #{YELLOW}:#{CLEAR}#{YELLOW}d#{CLEAR} #{RED}}#{CLEAR}#{RED}\"#{CLEAR} #{YELLOW}}#{CLEAR}#{YELLOW}e#{CLEAR}#{YELLOW}\"#{CLEAR}",
+        ':"a#{ def b; end; \'c\' + "#{ :d }" }e"' => "#{YELLOW}:\"#{CLEAR}#{YELLOW}a#{CLEAR}#{YELLOW}\#{#{CLEAR} #{GREEN}def#{CLEAR} #{BLUE}#{BOLD}b#{CLEAR}; #{GREEN}end#{CLEAR}; #{RED}#{BOLD}'#{CLEAR}#{RED}c#{CLEAR}#{RED}#{BOLD}'#{CLEAR} + #{RED}#{BOLD}\"#{CLEAR}#{RED}\#{#{CLEAR} #{YELLOW}:#{CLEAR}#{YELLOW}d#{CLEAR} #{RED}}#{CLEAR}#{RED}#{BOLD}\"#{CLEAR} #{YELLOW}}#{CLEAR}#{YELLOW}e#{CLEAR}#{YELLOW}\"#{CLEAR}",
         "[__FILE__, __LINE__]" => "[#{CYAN}#{BOLD}__FILE__#{CLEAR}, #{CYAN}#{BOLD}__LINE__#{CLEAR}]",
         ":self" => "#{YELLOW}:#{CLEAR}#{YELLOW}self#{CLEAR}",
         ":class" => "#{YELLOW}:#{CLEAR}#{YELLOW}class#{CLEAR}",
         "[:end, 2]" => "[#{YELLOW}:#{CLEAR}#{YELLOW}end#{CLEAR}, #{BLUE}#{BOLD}2#{CLEAR}]",
         "[:>, 3]" => "[#{YELLOW}:#{CLEAR}#{YELLOW}>#{CLEAR}, #{BLUE}#{BOLD}3#{CLEAR}]",
         ":Hello ? world : nil" => "#{YELLOW}:#{CLEAR}#{YELLOW}Hello#{CLEAR} ? world : #{CYAN}#{BOLD}nil#{CLEAR}",
-        'raise "foo#{bar}baz"' => "raise #{RED}\"#{CLEAR}#{RED}foo#{CLEAR}#{RED}\#{#{CLEAR}bar#{RED}}#{CLEAR}#{RED}baz#{CLEAR}#{RED}\"#{CLEAR}",
-        '["#{obj.inspect}"]' => "[#{RED}\"#{CLEAR}#{RED}\#{#{CLEAR}obj.inspect#{RED}}#{CLEAR}#{RED}\"#{CLEAR}]",
-        'URI.parse "#{}"' => "#{BLUE}#{BOLD}#{UNDERLINE}URI#{CLEAR}.parse #{RED}\"#{CLEAR}#{RED}\#{#{CLEAR}#{RED}}#{CLEAR}#{RED}\"#{CLEAR}",
+        'raise "foo#{bar}baz"' => "raise #{RED}#{BOLD}\"#{CLEAR}#{RED}foo#{CLEAR}#{RED}\#{#{CLEAR}bar#{RED}}#{CLEAR}#{RED}baz#{CLEAR}#{RED}#{BOLD}\"#{CLEAR}",
+        '["#{obj.inspect}"]' => "[#{RED}#{BOLD}\"#{CLEAR}#{RED}\#{#{CLEAR}obj.inspect#{RED}}#{CLEAR}#{RED}#{BOLD}\"#{CLEAR}]",
+        'URI.parse "#{}"' => "#{BLUE}#{BOLD}#{UNDERLINE}URI#{CLEAR}.parse #{RED}#{BOLD}\"#{CLEAR}#{RED}\#{#{CLEAR}#{RED}}#{CLEAR}#{RED}#{BOLD}\"#{CLEAR}",
         "begin\nrescue\nend" => "#{GREEN}begin#{CLEAR}\n#{GREEN}rescue#{CLEAR}\n#{GREEN}end#{CLEAR}",
-        "foo %w[bar]" => "foo #{RED}%w[#{CLEAR}#{RED}bar#{CLEAR}#{RED}]#{CLEAR}",
-        "foo %i[bar]" => "foo #{RED}%i[#{CLEAR}#{RED}bar#{CLEAR}#{RED}]#{CLEAR}",
+        "foo %w[bar]" => "foo #{RED}#{BOLD}%w[#{CLEAR}#{RED}bar#{CLEAR}#{RED}#{BOLD}]#{CLEAR}",
+        "foo %i[bar]" => "foo #{RED}#{BOLD}%i[#{CLEAR}#{RED}bar#{CLEAR}#{RED}#{BOLD}]#{CLEAR}",
         "foo :@bar, baz, :@@qux, :$quux" => "foo #{YELLOW}:#{CLEAR}#{YELLOW}@bar#{CLEAR}, baz, #{YELLOW}:#{CLEAR}#{YELLOW}@@qux#{CLEAR}, #{YELLOW}:#{CLEAR}#{YELLOW}$quux#{CLEAR}",
-        "`echo`" => "#{RED}`#{CLEAR}#{RED}echo#{CLEAR}#{RED}`#{CLEAR}",
+        "`echo`" => "#{RED}#{BOLD}`#{CLEAR}#{RED}echo#{CLEAR}#{RED}#{BOLD}`#{CLEAR}",
         "\t" => "\t", # not ^I
-        "foo(*%W(bar))" => "foo(*#{RED}%W(#{CLEAR}#{RED}bar#{CLEAR}#{RED})#{CLEAR})",
+        "foo(*%W(bar))" => "foo(*#{RED}#{BOLD}%W(#{CLEAR}#{RED}bar#{CLEAR}#{RED}#{BOLD})#{CLEAR})",
         "$stdout" => "#{GREEN}#{BOLD}$stdout#{CLEAR}",
       }
 
@@ -73,10 +73,10 @@ module TestIRB
       tests.each do |code, result|
         if colorize_code_supported?
           actual = with_term { IRB::Color.colorize_code(code, complete: true) }
-          assert_equal(result, actual, "Case: colorize_code(#{code.dump}, complete: true)\nResult: #{humanized_literal(actual)}")
+          assert_equal(result, actual, "Case: IRB::Color.colorize_code(#{code.dump}, complete: true)\nResult: #{humanized_literal(actual)}")
 
           actual = with_term { IRB::Color.colorize_code(code, complete: false) }
-          assert_equal(result, actual, "Case: colorize_code(#{code.dump}, complete: false)\nResult: #{humanized_literal(actual)}")
+          assert_equal(result, actual, "Case: IRB::Color.colorize_code(#{code.dump}, complete: false)\nResult: #{humanized_literal(actual)}")
         else
           actual = with_term { IRB::Color.colorize_code(code) }
           assert_equal(code, actual)
@@ -91,8 +91,8 @@ module TestIRB
 
       # `complete: true` behaviors. Warn end-of-file.
       {
-        "'foo' + 'bar" => "#{RED}'#{CLEAR}#{RED}foo#{CLEAR}#{RED}'#{CLEAR} + #{RED}'#{CLEAR}#{RED}#{REVERSE}bar#{CLEAR}",
-        "('foo" => "(#{RED}'#{CLEAR}#{RED}#{REVERSE}foo#{CLEAR}",
+        "'foo' + 'bar" => "#{RED}#{BOLD}'#{CLEAR}#{RED}foo#{CLEAR}#{RED}#{BOLD}'#{CLEAR} + #{RED}#{BOLD}'#{CLEAR}#{RED}#{REVERSE}bar#{CLEAR}",
+        "('foo" => "(#{RED}#{BOLD}'#{CLEAR}#{RED}#{REVERSE}foo#{CLEAR}",
       }.each do |code, result|
         actual = with_term { IRB::Color.colorize_code(code, complete: true) }
         assert_equal(result, actual, "Case: colorize_code(#{code.dump}, complete: true)\nResult: #{humanized_literal(actual)}")
@@ -102,8 +102,8 @@ module TestIRB
     def test_colorize_code_complete_false
       # `complete: false` behaviors. Do not warn end-of-file.
       {
-        "'foo' + 'bar" => "#{RED}'#{CLEAR}#{RED}foo#{CLEAR}#{RED}'#{CLEAR} + #{RED}'#{CLEAR}#{RED}bar#{CLEAR}",
-        "('foo" => "(#{RED}'#{CLEAR}#{RED}foo#{CLEAR}",
+        "'foo' + 'bar" => "#{RED}#{BOLD}'#{CLEAR}#{RED}foo#{CLEAR}#{RED}#{BOLD}'#{CLEAR} + #{RED}#{BOLD}'#{CLEAR}#{RED}bar#{CLEAR}",
+        "('foo" => "(#{RED}#{BOLD}'#{CLEAR}#{RED}foo#{CLEAR}",
       }.each do |code, result|
         if colorize_code_supported?
           actual = with_term { IRB::Color.colorize_code(code, complete: false) }
