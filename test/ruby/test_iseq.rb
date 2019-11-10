@@ -559,4 +559,11 @@ class TestISeq < Test::Unit::TestCase
       assert_equal iseq1.object_id, iseq2.object_id
     }
   end
+
+  def test_iseq_builtin_to_a
+    insns = RubyVM::InstructionSequence.of([].method(:pack)).to_a.last
+    invokebuiltin = insns.find { |insn| insn.is_a?(Array) && insn[0] == :invokebuiltin }
+    assert_not_nil(invokebuiltin)
+    assert_equal([:func_ptr, :argc, :index, :name], invokebuiltin[1].keys)
+  end
 end

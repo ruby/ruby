@@ -601,8 +601,8 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_invokebuiltin
-    # insns = collect_insns(RubyVM::InstructionSequence.of([0].method(:pack)).to_a)
-    # mark_tested_insn(:invokebuiltin, used_insns: insns)
+    insns = collect_insns(RubyVM::InstructionSequence.of([0].method(:pack)).to_a)
+    mark_tested_insn(:invokebuiltin, used_insns: insns)
     assert_eval_with_jit('print [0].pack("c")', stdout: "\x00", success_count: 1)
   end
 

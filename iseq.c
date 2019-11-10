@@ -2802,6 +2802,21 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 		    rb_ary_push(ary, val);
 		}
 		break;
+              case TS_BUILTIN:
+                {
+                    VALUE val = rb_hash_new();
+#if SIZEOF_VALUE <= SIZEOF_LONG
+                    VALUE func_ptr = LONG2NUM((SIGNED_VALUE)((RB_BUILTIN)*seq)->func_ptr);
+#else
+                    VALUE func_ptr = LL2NUM((SIGNED_VALUE)((RB_BUILTIN)*seq)->func_ptr);
+#endif
+                    rb_hash_aset(val, ID2SYM(rb_intern("func_ptr")), func_ptr);
+                    rb_hash_aset(val, ID2SYM(rb_intern("argc")), INT2NUM(((RB_BUILTIN)*seq)->argc));
+                    rb_hash_aset(val, ID2SYM(rb_intern("index")), INT2NUM(((RB_BUILTIN)*seq)->index));
+                    rb_hash_aset(val, ID2SYM(rb_intern("name")), rb_str_new_cstr(((RB_BUILTIN)*seq)->name));
+                    rb_ary_push(ary, val);
+                }
+                break;
 	      default:
 		rb_bug("unknown operand: %c", insn_op_type(insn, j));
 	    }
