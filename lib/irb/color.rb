@@ -52,6 +52,7 @@ module IRB # :nodoc:
         on_regexp_beg:      [[RED, BOLD],             ALL],
         on_regexp_end:      [[RED, BOLD],             ALL],
         on_symbeg:          [[YELLOW],                ALL],
+        on_symbols_beg:     [[RED, BOLD],             ALL],
         on_tstring_beg:     [[RED, BOLD],             ALL],
         on_tstring_content: [[RED],                   ALL],
         on_tstring_end:     [[RED, BOLD],             ALL],
