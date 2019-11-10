@@ -600,6 +600,12 @@ class TestJIT < Test::Unit::TestCase
     skip "support this in opt_call_c_function (low priority)"
   end
 
+  def test_compile_insn_invokebuiltin
+    # insns = collect_insns(RubyVM::InstructionSequence.of([0].method(:pack)).to_a)
+    # mark_tested_insn(:invokebuiltin, used_insns: insns)
+    assert_eval_with_jit('print [0].pack("c")', stdout: "\x00", success_count: 1)
+  end
+
   def test_jit_output
     out, err = eval_with_jit('5.times { puts "MJIT" }', verbose: 1, min_calls: 5)
     assert_equal("MJIT\n" * 5, out)
@@ -1005,11 +1011,7 @@ class TestJIT < Test::Unit::TestCase
     # Make sure that the script has insns expected to be tested
     used_insns = method_insns(script)
     insns.each do |insn|
-      unless used_insns.include?(insn)
-        $stderr.puts
-        warn "'#{insn}' insn is not included in the script. Actual insns are: #{used_insns.join(' ')}\n", uplevel: uplevel+2
-      end
-      TestJIT.untested_insns.delete(insn)
+      mark_tested_insn(insn, used_insns: used_insns)
     end
 
     assert_equal(
@@ -1028,6 +1030,14 @@ class TestJIT < Test::Unit::TestCase
     unless err_lines.empty?
       warn err_lines.join(''), uplevel: uplevel
     end
+  end
+
+  def mark_tested_insn(insn, used_insns:)
+    unless used_insns.include?(insn)
+      $stderr.puts
+      warn "'#{insn}' insn is not included in the script. Actual insns are: #{used_insns.join(' ')}\n", uplevel: uplevel+2
+    end
+    TestJIT.untested_insns.delete(insn)
   end
 
   # Collect block's insns or defined method's insns, which are expected to be JIT-ed.
