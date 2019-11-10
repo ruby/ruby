@@ -3,7 +3,7 @@
 #include "iseq.h"
 #include "builtin.h"
 
-// include from miniinits.c
+// included from miniinit.c
 
 static struct st_table *loaded_builtin_table;
 
