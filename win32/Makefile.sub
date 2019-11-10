@@ -4,7 +4,7 @@ SHELL = $(COMSPEC)
 ECHO1 = $(V:1=@:)
 RUNCMD = $(COMSPEC) /c
 MKFILES = Makefile verconf.mk
-NULLCMD = :
+NULLCMD = type nul
 NULL = nul
 CHDIR = cd
 PATH_SEPARATOR = ;
