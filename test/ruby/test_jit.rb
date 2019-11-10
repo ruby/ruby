@@ -1020,7 +1020,7 @@ class TestJIT < Test::Unit::TestCase
     # Make sure that the script has insns expected to be tested
     used_insns = method_insns(script)
     insns.each do |insn|
-      mark_tested_insn(insn, used_insns: used_insns)
+      mark_tested_insn(insn, used_insns: used_insns, uplevel: uplevel + 3)
     end
 
     assert_equal(
@@ -1041,10 +1041,10 @@ class TestJIT < Test::Unit::TestCase
     end
   end
 
-  def mark_tested_insn(insn, used_insns:)
+  def mark_tested_insn(insn, used_insns:, uplevel: 1)
     unless used_insns.include?(insn)
       $stderr.puts
-      warn "'#{insn}' insn is not included in the script. Actual insns are: #{used_insns.join(' ')}\n", uplevel: uplevel+2
+      warn "'#{insn}' insn is not included in the script. Actual insns are: #{used_insns.join(' ')}\n", uplevel: uplevel
     end
     TestJIT.untested_insns.delete(insn)
   end
