@@ -205,7 +205,7 @@ module IRB # :nodoc:
       def scan_token(token)
         prev_state = @stack.last
         case token
-        when :on_symbeg
+        when :on_symbeg, :on_symbols_beg, :on_qsymbols_beg
           @stack << true
         when :on_ident, :on_op, :on_const, :on_ivar, :on_cvar, :on_gvar, :on_kw
           if @stack.last # Pop only when it's Symbol
