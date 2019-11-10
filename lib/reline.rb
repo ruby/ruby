@@ -348,6 +348,7 @@ module Reline
   def_single_delegators :core, :vi_editing_mode, :emacs_editing_mode
   def_single_delegators :core, :readline
   def_instance_delegators self, :readline
+  private :readline
 
 
   #--------------------------------------------------------
@@ -375,6 +376,7 @@ module Reline
 
   def_single_delegators :core, :readmultiline
   def_instance_delegators self, :readmultiline
+  private :readmultiline
 
   def self.core
     @core ||= Core.new { |core|
