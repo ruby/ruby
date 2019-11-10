@@ -5111,7 +5111,7 @@ ruby_unsetenv(const char *name)
  *       ENV['foo'] = nil # => nil
  * - If the named environment variable exists:
  *   - If +value+ is not +nil+, updates the envirionment variable with value +value+:
- *       ENV['foo'] = # => '1'
+ *       ENV['foo'] = '1' # => '1'
  *   - If +value+ is +nil+, deletes the environment variable:
  *       ENV['foo'] = nil # => nil
  *
