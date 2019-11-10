@@ -275,7 +275,7 @@ $(PROGRAM):
 		$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(MAINLIBS) $(LIBS) $(EXTLIBS) $(OUTFLAG)$@
 		$(Q) $(POSTLINK)
 
-PRE_LIBRUBY_UPDATE = [ -n "$(LIBRUBY_SO_UPDATE)" ] || $(exec) $(RM) $(LIBRUBY_EXTS)
+PRE_LIBRUBY_UPDATE = [ -n "$(LIBRUBY_SO_UPDATE)" ] || $(gnumake:yes=exec) $(RM) $(LIBRUBY_EXTS)
 
 # We must `rm' the library each time this rule is invoked because "updating" a
 # MAB library on Apple/NeXT (see --enable-fat-binary in configure) is not
@@ -456,12 +456,14 @@ probes.$(OBJEXT): $(srcdir)/probes.d $(DTRACE_REBUILD:yes=probes.stamp)
 main: mjit-headers
 yes-mjit-headers: $(MJIT_MIN_HEADER)
 clean-local::
-	$(Q)$(RM) $(MJIT_HEADER) $(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX:%=*).h
-	$(Q)$(RM) $(MJIT_MIN_HEADER) $(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX:%=*).h
-	$(Q)$(RM) $(MJIT_HEADER_INSTALL_DIR)/rb_mjit_min_header-*.h
-	$(Q)$(RM) $(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time mjit_config.h
+	$(Q)$(RM) \
+	  $(MJIT_HEADER) $(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX:%=*).h \
+	  $(MJIT_MIN_HEADER) $(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX:%=*).h \
+	  $(MJIT_HEADER_INSTALL_DIR)/rb_mjit_min_header-*.h \
+	  $(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time mjit_config.h \
+	|| $(NULLCMD)
 	$(Q)$(RM) -r mjit_build_dir.*
-	-$(Q) $(RMDIRS) $(MJIT_HEADER_INSTALL_DIR) $(MJIT_HEADER_BUILD_DIR) $(TIMESTAMPDIR) 2> $(NULL) || exit 0
+	-$(Q) $(RMDIRS) $(MJIT_HEADER_INSTALL_DIR) $(MJIT_HEADER_BUILD_DIR) $(TIMESTAMPDIR) 2> $(NULL) || $(NULLCMD)
 
 # DTrace static library hacks described here:
 # http://mail.opensolaris.org/pipermail/dtrace-discuss/2005-August/000207.html
@@ -470,15 +472,18 @@ ruby-glommed.$(OBJEXT):
 	$(Q) $(LD) -r -o $@ $(OBJS)
 
 clean-local::
-	$(Q)$(RM) ext/extinit.c ext/extinit.$(OBJEXT) ext/ripper/y.output \
-		enc/encinit.c enc/encinit.$(OBJEXT)
-	-$(Q)$(RM) $(pkgconfig_DATA)
-	-$(Q)$(RMALL) exe/ ruby-runner.$(OBJEXT) ruby-runner.h *.dSYM
+	$(Q)$(RM) \
+	  ext/extinit.c ext/extinit.$(OBJEXT) ext/ripper/y.output \
+	  enc/encinit.c enc/encinit.$(OBJEXT) $(pkgconfig_DATA) \
+	  ruby-runner.$(OBJEXT) ruby-runner.h *.dSYM \
+	|| $(NULLCMD)
+	-$(Q)$(RMALL) exe/
 
 distclean-local::
-	$(Q)$(RM) ext/config.cache $(RBCONFIG) Doxyfile
-	-$(Q)$(RM) run.gdb
-	-$(Q)$(RM) $(INSTALLED_LIST) $(arch_hdrdir)/ruby/config.h verconf.h
+	$(Q)$(RM) \
+	  ext/config.cache $(RBCONFIG) Doxyfile run.gdb \
+	  $(INSTALLED_LIST) $(arch_hdrdir)/ruby/config.h verconf.h \
+	|| $(NULLCMD)
 	-$(Q)$(RMDIRS) $(arch_hdrdir)/ruby 2> /dev/null || true
 
 ext/clean.sub:: ext/clean.mk

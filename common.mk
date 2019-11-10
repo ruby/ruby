@@ -345,7 +345,7 @@ $(LIBRUBY_A):	$(LIBRUBY_A_OBJS) $(MAINOBJ) $(INITOBJS) $(ARCHFILE)
 $(LIBRUBY_SO):	$(OBJS) $(DLDOBJS) $(LIBRUBY_A) $(PREP) $(BUILTIN_ENCOBJS)
 
 $(LIBRUBY_EXTS):
-	@exit > $@
+	@$(NULLCMD) > $@
 
 $(STATIC_RUBY)$(EXEEXT): $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A)
 	$(Q)$(RM) $@
@@ -594,11 +594,14 @@ clean-local:: clean-runnable
 	$(Q)$(RM) y.tab.c y.output encdb.h transdb.h config.log rbconfig.rb $(ruby_pc) $(COROUTINE_H:/Context.h=/.time)
 	$(Q)$(RM) probes.h probes.$(OBJEXT) probes.stamp ruby-glommed.$(OBJEXT) ruby.imp
 	$(Q)$(RM) GNUmakefile.old Makefile.old $(arch)-fake.rb bisect.sh $(ENC_TRANS_D)
-	-$(Q) $(RMDIR) enc/jis enc/trans enc $(COROUTINE_H:/Context.h=) coroutine 2> $(NULL) || exit 0
-clean-runnable:: PHONY
-	$(Q)$(CHDIR) bin 2>$(NULL) && $(RM) $(PROGRAM) $(WPROGRAM) $(GORUBY)$(EXEEXT) bin/*.$(DLEXT) 2>$(NULL) || exit 0
-	$(Q)$(CHDIR) lib 2>$(NULL) && $(RM) $(LIBRUBY_A) $(LIBRUBY) $(LIBRUBY_ALIASES) $(RUBY_BASE_NAME)/$(RUBY_PROGRAM_VERSION) $(RUBY_BASE_NAME)/vendor_ruby 2>$(NULL) || exit 0
-	$(Q)$(RMDIR) lib/$(RUBY_BASE_NAME) lib bin 2>$(NULL) || exit 0
+	-$(Q) $(RMDIR) enc/jis enc/trans enc $(COROUTINE_H:/Context.h=) coroutine 2> $(NULL) || $(NULLCMD)
+
+bin/clean-runnable:: PHONY
+	$(Q)$(CHDIR) bin 2>$(NULL) && $(RM) $(PROGRAM) $(WPROGRAM) $(GORUBY)$(EXEEXT) bin/*.$(DLEXT) 2>$(NULL) || $(NULLCMD)
+lib/clean-runnable:: PHONY
+	$(Q)$(CHDIR) lib 2>$(NULL) && $(RM) $(LIBRUBY_A) $(LIBRUBY) $(LIBRUBY_ALIASES) $(RUBY_BASE_NAME)/$(RUBY_PROGRAM_VERSION) $(RUBY_BASE_NAME)/vendor_ruby 2>$(NULL) || $(NULLCMD)
+clean-runnable:: bin/clean-runnable lib/clean-runnable PHONY
+	$(Q)$(RMDIR) lib/$(RUBY_BASE_NAME) lib bin 2>$(NULL) || $(NULLCMD)
 clean-ext:: PHONY
 clean-golf: PHONY
 	$(Q)$(RM) $(GORUBY)$(EXEEXT) $(GOLFOBJS)
@@ -607,7 +610,7 @@ clean-html: PHONY
 clean-capi: PHONY
 clean-platform: PHONY
 clean-extout: PHONY
-	-$(Q)$(RMDIR) $(EXTOUT)/$(arch) $(EXTOUT) 2> $(NULL) || exit 0
+	-$(Q)$(RMDIR) $(EXTOUT)/$(arch) $(EXTOUT) 2> $(NULL) || $(NULLCMD)
 clean-docs: clean-rdoc clean-html clean-capi
 clean-spec: PHONY
 clean-rubyspec: clean-spec
@@ -643,9 +646,10 @@ clean-srcs-local::
 	$(Q)$(RM) $(MJIT_MIN_HEADER) $(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX:%=*).h
 
 realclean-srcs-local:: clean-srcs-local
-	$(Q)$(CHDIR) $(srcdir) && $(exec) $(RM) parse.c parse.h lex.c enc/trans/newline.c $(PRELUDES) revision.h
-	$(Q)$(CHDIR) $(srcdir) && $(exec) $(RM) id.c id.h probes.dmyh
-	$(Q)$(CHDIR) $(srcdir) && $(exec) $(RM) configure aclocal.m4 tool/config.guess tool/config.sub gems/*.gem
+	$(Q)$(CHDIR) $(srcdir) && $(RM) \
+	  parse.c parse.h lex.c enc/trans/newline.c $(PRELUDES) revision.h \
+	  id.c id.h probes.dmyh configure aclocal.m4 tool/config.guess tool/config.sub gems/*.gem \
+	|| $(NULLCMD)
 
 clean-srcs-ext::
 realclean-srcs-ext:: clean-srcs-ext
@@ -677,14 +681,14 @@ timestamp/realclean:: ext/realclean gems/realclean
 
 timestamp/clean timestamp/distclean timestamp/realclean::
 	$(Q)$(RM) $(TIMESTAMPDIR)/.*.time $(TIMESTAMPDIR)/$(arch)/.time
-	$(Q)$(RMDIRS) $(TIMESTAMPDIR)/$(arch) $(TIMESTAMPDIR) 2> $(NULL) || exit 0
+	$(Q)$(RMDIRS) $(TIMESTAMPDIR)/$(arch) $(TIMESTAMPDIR) 2> $(NULL) || $(NULLCMD)
 
 clean-ext::
 	-$(Q)$(RM) ext/extinit.$(OBJEXT)
 
 distclean-ext realclean-ext::
 	-$(Q)$(RM) $(EXTS_MK) ext/extinit.* ext/configure-ext.mk
-	-$(Q)$(RMDIR) ext 2> $(NULL) || exit 0
+	-$(Q)$(RMDIR) ext 2> $(NULL) || $(NULLCMD)
 
 clean-enc distclean-enc realclean-enc: PHONY
 
@@ -692,7 +696,7 @@ clean-enc: clean-enc.d
 
 clean-enc.d: PHONY
 	$(Q)$(RM) $(ENC_TRANS_D)
-	-$(Q) $(RMDIR) enc/jis enc/trans enc 2> $(NULL) || exit 0
+	-$(Q) $(RMDIR) enc/jis enc/trans enc 2> $(NULL) || $(NULLCMD)
 
 clean-rdoc distclean-rdoc realclean-rdoc:
 	@echo $(@:-rdoc=ing) rdoc
@@ -708,12 +712,12 @@ clean-capi distclean-capi realclean-capi:
 
 clean-platform:
 	$(Q) $(RM) $(PLATFORM_D)
-	-$(Q) $(RMDIR) $(PLATFORM_DIR) 2> $(NULL) || exit 0
+	-$(Q) $(RMDIR) $(PLATFORM_DIR) 2> $(NULL) || $(NULLCMD)
 
 RUBYSPEC_CAPIEXT = spec/ruby/optional/capi/ext
 clean-spec: PHONY
 	-$(Q) $(RM) $(RUBYSPEC_CAPIEXT)/*.$(OBJEXT) $(RUBYSPEC_CAPIEXT)/*.$(DLEXT)
-	-$(Q) $(RMDIRS) $(RUBYSPEC_CAPIEXT) 2> $(NULL) || exit 0
+	-$(Q) $(RMDIRS) $(RUBYSPEC_CAPIEXT) 2> $(NULL) || $(NULLCMD)
 
 check: main test test-tool test-all test-spec
 	$(ECHO) check succeeded
@@ -867,7 +871,7 @@ PHONY:
 
 $(PLATFORM_D):
 	$(Q) $(MAKEDIRS) $(PLATFORM_DIR) $(@D)
-	@exit > $@
+	@$(NULLCMD) > $@
 
 exe/$(PROGRAM): ruby-runner.c ruby-runner.h exe/.time miniruby$(EXEEXT) {$(VPATH)}config.h
 	$(Q) $(CC) $(CFLAGS) $(INCFLAGS) $(CPPFLAGS) -DRUBY_INSTALL_NAME=$(@F) $(COUTFLAG)ruby-runner.$(OBJEXT) -c $(CSRCFLAG)$(srcdir)/ruby-runner.c
@@ -884,17 +888,17 @@ exe/$(PROGRAM): ruby-runner.c ruby-runner.h exe/.time miniruby$(EXEEXT) {$(VPATH
 
 exe/.time:
 	$(Q) $(MAKEDIRS) $(@D)
-	@exit > $@
+	@$(NULLCMD) > $@
 
 $(BUILTIN_ENCOBJS) $(BUILTIN_TRANSOBJS): $(ENC_TRANS_D)
 
 $(ENC_TRANS_D):
 	$(Q) $(MAKEDIRS) enc/trans $(@D)
-	@exit > $@
+	@$(NULLCMD) > $@
 
 $(TIMESTAMPDIR)/$(arch)/.time:
 	$(Q)$(MAKEDIRS) $(@D) $(EXTOUT)/$(arch)
-	@exit > $@
+	@$(NULLCMD) > $@
 
 ###
 CCAN_DIR = {$(VPATH)}ccan
@@ -930,7 +934,7 @@ nt.$(OBJEXT): {$(VPATH)}nt.c
 	$(COROUTINE_H:/Context.h=/.time)
 $(COROUTINE_H:/Context.h=/.time):
 	$(Q) $(MAKEDIRS) $(@D)
-	@exit > $@
+	@$(NULLCMD) > $@
 
 ###
 
@@ -1115,10 +1119,10 @@ $(BUILTIN_RB_INCS): $(top_srcdir)/tool/mk_builtin_loader.rb
 
 $(srcdir)/revision.h:
 	$(Q)$(gnumake:yes=#) $(RM) $(@F)
-	$(Q)$(gnumake:yes=#) exit > $@ || exit > $(@F)
+	$(Q)$(gnumake:yes=#) $(NULLCMD) > $@ || $(NULLCMD) > $(@F)
 
 revision.tmp::
-	$(Q)exit > $@
+	$(Q) $(NULLCMD) > $@
 revision.$(HAVE_BASERUBY:yes=tmp):: $(srcdir)/version.h $(srcdir)/tool/file2lastrev.rb $(REVISION_FORCE)
 	$(Q) $(BASERUBY) $(srcdir)/tool/file2lastrev.rb -q --revision.h --srcdir="$(srcdir)" > $@
 
@@ -1440,7 +1444,7 @@ $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
 		$(UNICODE_DATA_DIR) lib/unicode_normalize
 
 $(UNICODE_SRC_DATA_DIR):
-	$(Q) $(exec) $(MAKEDIRS) $@ || exit && echo $(MAKE)
+	$(gnumake_recursive)$(Q) $(MAKEDIRS) $@
 
 $(UNICODE_HDR_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=name2ctype.h): \
 		$(srcdir)/tool/enc-unicode.rb \
