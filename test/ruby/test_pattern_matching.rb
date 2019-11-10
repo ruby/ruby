@@ -1261,7 +1261,13 @@ END
   def test_modifier_in
     assert_equal true, (1 in a)
     assert_equal 1, a
-    assert_valid_syntax "p(({} in a:), a:\n 1)"
+    assert_valid_syntax "p(({} in {a:}), a:\n 1)"
+    assert_syntax_error(%q{
+      1 in a, b
+    }, /unexpected/, '[ruby-core:95098]')
+    assert_syntax_error(%q{
+      1 in a:
+    }, /unexpected/, '[ruby-core:95098]')
   end
 end
 END_of_GUARD

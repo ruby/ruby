@@ -1569,7 +1569,7 @@ expr		: command_call
 			$<tbl>$ = p->pvtbl;
 			p->pvtbl = st_init_numtable();
 		    }
-		  p_top_expr_body
+		  p_expr
 		    {
 			st_free_table(p->pvtbl);
 			p->pvtbl = $<tbl>4;
