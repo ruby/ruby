@@ -41,10 +41,7 @@ module Kernel
     resolved_path = begin
       rp = nil
       $LOAD_PATH[0...Gem.load_path_insert_index || -1].each do |lp|
-        # TODO:
-        # for test_require.rb of ruby core test suite
-        # We should use Gem::UNTAINT after https://bugs.ruby-lang.org/issues/16131
-        safe_lp = lp.dup.untaint
+        safe_lp = lp.dup.tap(&Gem::UNTAINT)
         begin
           if File.symlink? safe_lp # for backword compatibility
             next
