@@ -62,12 +62,6 @@ class TestRequire < Test::Unit::TestCase
     assert_require_nonascii_path(encoding, bug8165)
   end
 
-  def test_require_insecure_path
-    assert_require_insecure_path("foo")
-    encoding = 'filesystem'
-    assert_require_insecure_path(nil, encoding)
-  end
-
   def test_require_nonascii_path_utf8
     bug8676 = '[ruby-core:56136] [Bug #8676]'
     encoding = Encoding::UTF_8
@@ -75,23 +69,11 @@ class TestRequire < Test::Unit::TestCase
     assert_require_nonascii_path(encoding, bug8676)
   end
 
-  def test_require_insecure_path_utf8
-    encoding = Encoding::UTF_8
-    return if Encoding.find('filesystem') == encoding
-    assert_require_insecure_path(nil, encoding)
-  end
-
   def test_require_nonascii_path_shift_jis
     bug8676 = '[ruby-core:56136] [Bug #8676]'
     encoding = Encoding::Shift_JIS
     return if Encoding.find('filesystem') == encoding
     assert_require_nonascii_path(encoding, bug8676)
-  end
-
-  def test_require_insecure_path_shift_jis
-    encoding = Encoding::Shift_JIS
-    return if Encoding.find('filesystem') == encoding
-    assert_require_insecure_path(nil, encoding)
   end
 
   case RUBY_PLATFORM
@@ -104,18 +86,6 @@ class TestRequire < Test::Unit::TestCase
       path.encoding
     end
   end
-
-  SECURITY_WARNING =
-    if /mswin|mingw/ =~ RUBY_PLATFORM
-      nil
-    else
-      proc do |require_path|
-        $SAFE = 1
-        require(require_path)
-      ensure
-        $SAFE = 0
-      end
-    end
 
   def prepare_require_path(dir, encoding)
     Dir.mktmpdir {|tmp|
@@ -150,31 +120,6 @@ class TestRequire < Test::Unit::TestCase
           assert(!require(require_path), bug)
         }
       end
-    }
-  end
-
-  def assert_require_insecure_path(dirname, encoding = nil)
-    return unless SECURITY_WARNING
-    dirname ||= "\u3042" * 5
-    encoding ||= dirname.encoding
-    prepare_require_path(dirname, encoding) {|require_path|
-      require_path.untaint
-      require(require_path)
-      $".pop
-      File.chmod(0777, File.dirname(require_path))
-      require_path.encode('filesystem') rescue
-        require_path.encode(self.class.ospath_encoding(require_path))
-      e = nil
-      stderr = EnvUtil.verbose_warning do
-        e = assert_raise(SecurityError) do
-          SECURITY_WARNING.call(require_path)
-        end
-      end
-      assert_include(e.message, "loading from unsafe path")
-      assert_include(stderr, "Insecure world writable dir")
-      require_path = require_path.encode(self.class.ospath_encoding(require_path))
-      assert_include(e.message, require_path)
-      assert_include(stderr, File.dirname(require_path))
     }
   end
 
