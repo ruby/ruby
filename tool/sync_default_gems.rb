@@ -47,6 +47,7 @@
 # * https://github.com/ruby/observer
 # * https://github.com/ruby/timeout
 # * https://github.com/ruby/yaml
+# * https://github.com/ruby/uri
 #
 
 require 'fileutils'
@@ -101,6 +102,7 @@ $repositories = {
   observer: "ruby/observer",
   timeout: "ruby/timeout",
   yaml: "ruby/yaml",
+  uri: "ruby/uri",
 }
 
 def sync_default_gems(gem)
