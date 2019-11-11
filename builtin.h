@@ -46,7 +46,7 @@ static inline void rb_builtin_function_check_arity15(VALUE (*f)(rb_execution_con
 VALUE rb_vm_lvar_exposed(rb_execution_context_t *ec, int index);
 
 // inline
-inline VALUE
+static inline VALUE
 rb_vm_lvar(rb_execution_context_t *ec, int index)
 {
 #if VM_CORE_H_EC_DEFINED
