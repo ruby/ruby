@@ -722,7 +722,7 @@ x = __ENCODING__
 
   def test_embedded_rd_warning
     [["\0", "\\0"], ["\C-d", "^D"], ["\C-z", "^Z"]].each do |eof, mesg|
-      mesg = /encountered #{Regexp.quote(mesg)}/
+      mesg = /encountered EOF char\(#{Regexp.quote(mesg)}\)/
       assert_warning(mesg) {eval("=begin\n#{eof}\n=end")}
       assert_warning(mesg) {eval("=begin#{eof}\n=end")}
       assert_warning(mesg) {eval("=begin\n=end#{eof}\n")}
