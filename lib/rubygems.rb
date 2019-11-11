@@ -1214,13 +1214,12 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     Gem::DefaultUserInteraction.use_ui(ui) do
       require "bundler"
       begin
-        @gemdeps = Bundler.setup
-      ensure
-        if Gem::DefaultUserInteraction.ui.is_a?(Gem::SilentUI)
-          Gem::DefaultUserInteraction.ui.close
+        Bundler.ui.silence do
+          @gemdeps = Bundler.setup
         end
+      ensure
+        Gem::DefaultUserInteraction.ui.close
       end
-      Bundler.ui = nil
       @gemdeps.requested_specs.map(&:to_spec).sort_by(&:name)
     end
 
