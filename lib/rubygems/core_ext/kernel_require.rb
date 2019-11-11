@@ -159,7 +159,7 @@ module Kernel
     raise load_error
   ensure
     if RUBYGEMS_ACTIVATION_MONITOR.mon_owned?
-      pp $!
+      STDERR.puts [$!, $!.backtrace].inspect
       raise "CRITICAL: RUBYGEMS_ACTIVATION_MONITOR is holding."
     end
   end
