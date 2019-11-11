@@ -6209,7 +6209,7 @@ lex_goto_eol(struct parser_params *p)
     for (; pcur < pend; pcur++) {
         const char *eof = eof_char(*pcur);
         if (eof) {
-            rb_warning1("encountered EOF char(%s) in comment, just ignored in this version", WARN_S(eof));
+            rb_warning1("encountered %s in comment, just ignored in this version", WARN_S(eof));
             break;
         }
     }

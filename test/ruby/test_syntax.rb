@@ -944,9 +944,9 @@ eom
   end
 
   def test_warning_for_eof_in_comment
-    assert_warning(/encountered EOF char\(\\0\)/) {eval("#\0")}
-    assert_warning(/encountered EOF char\(\^D\)/) {eval("#\C-d")}
-    assert_warning(/encountered EOF char\(\^Z\)/) {eval("#\C-z")}
+    assert_warning(/encountered \\0/) {eval("#\0")}
+    assert_warning(/encountered \^D/) {eval("#\C-d")}
+    assert_warning(/encountered \^Z/) {eval("#\C-z")}
   end
 
   def test_unexpected_fraction
