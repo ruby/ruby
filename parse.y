@@ -6191,7 +6191,30 @@ parser_str_new(const char *ptr, long len, rb_encoding *enc, int func, rb_encodin
     return str;
 }
 
-#define lex_goto_eol(p) ((p)->lex.pcur = (p)->lex.pend)
+static const char *
+eof_char(int c)
+{
+    switch (c) {
+      case '\0': return "\\0";
+      case '\004': return "^D";
+      case '\032': return "^Z";
+    }
+    return 0;
+}
+
+static void
+lex_goto_eol(struct parser_params *p)
+{
+    const char *pcur = p->lex.pcur, *pend = p->lex.pend;
+    for (; pcur < pend; pcur++) {
+        const char *eof = eof_char(*pcur);
+        if (eof) {
+            rb_warning1("encountered %s in comment, just ignored in this version", WARN_S(eof));
+            break;
+        }
+    }
+    p->lex.pcur = pend;		/* pcur */
+}
 #define lex_eol_p(p) ((p)->lex.pcur >= (p)->lex.pend)
 #define lex_eol_n_p(p,n) ((p)->lex.pcur+(n) >= (p)->lex.pend)
 #define peek(p,c) peek_n(p, (c), 0)
@@ -7398,9 +7421,7 @@ word_match_p(struct parser_params *p, const char *word, long len)
     if (p->lex.pcur + len == p->lex.pend) return 1;
     int c = (unsigned char)p->lex.pcur[len];
     if (ISSPACE(c)) return 1;
-    switch (c) {
-      case '\0': case '\004': case '\032': return 1;
-    }
+    if (eof_char(c)) return 1;
     return 0;
 }
 

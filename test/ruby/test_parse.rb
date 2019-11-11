@@ -720,6 +720,15 @@ x = __ENCODING__
     assert_syntax_error("=begin", error)
   end
 
+  def test_embedded_rd_warning
+    [["\0", "\\0"], ["\C-d", "^D"], ["\C-z", "^Z"]].each do |eof, mesg|
+      mesg = /encountered #{Regexp.quote(mesg)}/
+      assert_warning(mesg) {eval("=begin\n#{eof}\n=end")}
+      assert_warning(mesg) {eval("=begin#{eof}\n=end")}
+      assert_warning(mesg) {eval("=begin\n=end#{eof}\n")}
+    end
+  end
+
   def test_float
     assert_equal(1.0/0, eval("1e10000"))
     assert_syntax_error('1_E', /trailing `_'/)
