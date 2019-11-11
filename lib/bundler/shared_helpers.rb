@@ -13,13 +13,13 @@ module Bundler
     def root
       gemfile = find_gemfile
       raise GemfileNotFound, "Could not locate Gemfile" unless gemfile
-      Pathname.new(gemfile).untaint.expand_path.parent
+      Pathname.new(gemfile).tap{|x| x.untaint if RUBY_VERSION < "2.7" }.expand_path.parent
     end
 
     def default_gemfile
       gemfile = find_gemfile
       raise GemfileNotFound, "Could not locate Gemfile" unless gemfile
-      Pathname.new(gemfile).untaint.expand_path
+      Pathname.new(gemfile).tap{|x| x.untaint if RUBY_VERSION < "2.7" }.expand_path
     end
 
     def default_lockfile
@@ -28,7 +28,7 @@ module Bundler
       case gemfile.basename.to_s
       when "gems.rb" then Pathname.new(gemfile.sub(/.rb$/, ".locked"))
       else Pathname.new("#{gemfile}.lock")
-      end.untaint
+      end.tap{|x| x.untaint if RUBY_VERSION < "2.7" }
     end
 
     def default_bundle_dir
@@ -100,7 +100,7 @@ module Bundler
     #
     # @see {Bundler::PermissionError}
     def filesystem_access(path, action = :write, &block)
-      yield(path.dup.untaint)
+      yield(path.dup.tap{|x| x.untaint if RUBY_VERSION < "2.7" })
     rescue Errno::EACCES
       raise PermissionError.new(path, action)
     rescue Errno::EAGAIN
@@ -124,7 +124,12 @@ module Bundler
       namespace.const_get(constant_name)
     end
 
-    def major_deprecation(major_version, message)
+    def major_deprecation(major_version, message, print_caller_location: false)
+      if print_caller_location
+        caller_location = caller_locations(2, 2).first
+        message = "#{message} (called at #{caller_location.path}:#{caller_location.lineno})"
+      end
+
       bundler_major_version = Bundler.bundler_major_version
       if bundler_major_version > major_version
         require_relative "errors"
@@ -132,10 +137,7 @@ module Bundler
       end
 
       return unless bundler_major_version >= major_version && prints_major_deprecations?
-      @major_deprecation_ui ||= Bundler::UI::Shell.new("no-color" => true)
-      with_major_deprecation_ui do |ui|
-        ui.warn("[DEPRECATED] #{message}")
-      end
+      Bundler.ui.warn("[DEPRECATED] #{message}")
     end
 
     def print_major_deprecations!
@@ -212,21 +214,6 @@ module Bundler
 
   private
 
-    def with_major_deprecation_ui(&block)
-      ui = Bundler.ui
-
-      if ui.is_a?(@major_deprecation_ui.class)
-        yield ui
-      else
-        begin
-          Bundler.ui = @major_deprecation_ui
-          yield Bundler.ui
-        ensure
-          Bundler.ui = ui
-        end
-      end
-    end
-
     def validate_bundle_path
       path_separator = Bundler.rubygems.path_separator
       return unless Bundler.bundle_path.to_s.split(path_separator).size > 1
@@ -263,7 +250,7 @@ module Bundler
 
     def search_up(*names)
       previous = nil
-      current  = File.expand_path(SharedHelpers.pwd).untaint
+      current  = File.expand_path(SharedHelpers.pwd).tap{|x| x.untaint if RUBY_VERSION < "2.7" }
 
       until !File.directory?(current) || current == previous
         if ENV["BUNDLE_SPEC_RUN"]

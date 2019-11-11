@@ -2,7 +2,7 @@
 
 require "open3"
 require "shellwords"
-require "tempfile"
+
 module Bundler
   class Source
     class Git

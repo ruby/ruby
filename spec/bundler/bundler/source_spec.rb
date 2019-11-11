@@ -59,7 +59,6 @@ RSpec.describe Bundler::Source do
           context "with color", :no_color_tty do
             before do
               allow($stdout).to receive(:tty?).and_return(true)
-              Bundler.ui = Bundler::UI::Shell.new
             end
 
             it "should return a string with the spec name and version and locked spec version" do
@@ -68,7 +67,11 @@ RSpec.describe Bundler::Source do
           end
 
           context "without color" do
-            before { Bundler.ui = Bundler::UI::Shell.new("no-color" => true) }
+            around do |example|
+              with_ui(Bundler::UI::Shell.new("no-color" => true)) do
+                example.run
+              end
+            end
 
             it "should return a string with the spec name and version and locked spec version" do
               expect(subject.version_message(spec)).to eq("nokogiri >= 1.6 (was < 1.5)")
@@ -83,7 +86,6 @@ RSpec.describe Bundler::Source do
           context "with color", :no_color_tty do
             before do
               allow($stdout).to receive(:tty?).and_return(true)
-              Bundler.ui = Bundler::UI::Shell.new
             end
 
             it "should return a string with the locked spec version in yellow" do
@@ -92,7 +94,11 @@ RSpec.describe Bundler::Source do
           end
 
           context "without color" do
-            before { Bundler.ui = Bundler::UI::Shell.new("no-color" => true) }
+            around do |example|
+              with_ui(Bundler::UI::Shell.new("no-color" => true)) do
+                example.run
+              end
+            end
 
             it "should return a string with the locked spec version in yellow" do
               expect(subject.version_message(spec)).to eq("nokogiri 1.6.1 (was 1.7.0)")
@@ -107,7 +113,6 @@ RSpec.describe Bundler::Source do
           context "with color", :no_color_tty do
             before do
               allow($stdout).to receive(:tty?).and_return(true)
-              Bundler.ui = Bundler::UI::Shell.new
             end
 
             it "should return a string with the locked spec version in green" do
@@ -116,7 +121,11 @@ RSpec.describe Bundler::Source do
           end
 
           context "without color" do
-            before { Bundler.ui = Bundler::UI::Shell.new("no-color" => true) }
+            around do |example|
+              with_ui(Bundler::UI::Shell.new("no-color" => true)) do
+                example.run
+              end
+            end
 
             it "should return a string with the locked spec version in yellow" do
               expect(subject.version_message(spec)).to eq("nokogiri 1.7.1 (was 1.7.0)")
@@ -177,5 +186,15 @@ RSpec.describe Bundler::Source do
         expect(subject).to_not include(source)
       end
     end
+  end
+
+private
+
+  def with_ui(ui)
+    old_ui = Bundler.ui
+    Bundler.ui = ui
+    yield
+  ensure
+    Bundler.ui = old_ui
   end
 end

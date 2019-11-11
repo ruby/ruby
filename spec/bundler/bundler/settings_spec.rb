@@ -67,7 +67,7 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
       context "when $TMPDIR is not writable" do
         it "does not raise" do
           expect(Bundler.rubygems).to receive(:user_home).twice.and_return(nil)
-          expect(FileUtils).to receive(:mkpath).twice.with(File.join(Dir.tmpdir, "bundler", "home")).and_raise(Errno::EROFS, "Read-only file system @ dir_s_mkdir - /tmp/bundler")
+          expect(Bundler).to receive(:tmp).twice.and_raise(Errno::EROFS, "Read-only file system @ dir_s_mkdir - /tmp/bundler")
 
           expect(subject.send(:global_config_file)).to be_nil
         end

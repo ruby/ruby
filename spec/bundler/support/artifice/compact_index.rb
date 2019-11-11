@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require File.expand_path("../endpoint", __FILE__)
+require_relative "endpoint"
 
 $LOAD_PATH.unshift Dir[base_system_gems.join("gems/compact_index*/lib")].first.to_s
 require "compact_index"

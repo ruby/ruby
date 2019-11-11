@@ -38,6 +38,8 @@ def gemfile(install = false, options = {}, &gemfile)
   raise ArgumentError, "Unknown options: #{opts.keys.join(", ")}" unless opts.empty?
 
   old_root = Bundler.method(:root)
+  bundler_module = class << Bundler; self; end
+  bundler_module.send(:remove_method, :root)
   def Bundler.root
     Bundler::SharedHelpers.pwd.expand_path
   end
@@ -56,7 +58,7 @@ def gemfile(install = false, options = {}, &gemfile)
       definition.missing_specs?
     end
 
-    Bundler.ui = ui if install
+    Bundler.ui = install ? ui : Bundler::UI::Silent.new
     if install || missing_specs.call
       Bundler.settings.temporary(:inline => true, :disable_platform_warnings => true) do
         installer = Bundler::Installer.install(Bundler.root, definition, :system => true)
@@ -70,6 +72,8 @@ def gemfile(install = false, options = {}, &gemfile)
     runtime.setup.require
   end
 ensure
-  bundler_module = class << Bundler; self; end
-  bundler_module.send(:define_method, :root, old_root) if old_root
+  if bundler_module
+    bundler_module.send(:remove_method, :root)
+    bundler_module.send(:define_method, :root, old_root)
+  end
 end

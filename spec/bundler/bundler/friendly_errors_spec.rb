@@ -94,7 +94,7 @@ RSpec.describe Bundler, "friendly errors" do
       end
 
       it "writes to Bundler.ui.trace" do
-        expect(Bundler.ui).to receive(:trace).with(orig_error, nil, true)
+        expect(Bundler.ui).to receive(:trace).with(orig_error)
         Bundler::FriendlyErrors.log_error(error)
       end
     end

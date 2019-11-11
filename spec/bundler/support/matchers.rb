@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 require "forwardable"
-require "support/the_bundle"
+require_relative "the_bundle"
+
 module Spec
   module Matchers
     extend RSpec::Matchers
@@ -170,7 +171,7 @@ module Spec
               end
             R
           rescue StandardError => e
-            next "checking for #{name} failed:\n#{e}"
+            next "checking for #{name} failed:\n#{e}\n#{e.backtrace.join("\n")}"
           end
           next if out == "WIN"
           next "expected #{name} to not be installed, but it was" if version.nil?

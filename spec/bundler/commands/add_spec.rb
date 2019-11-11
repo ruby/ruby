@@ -239,4 +239,13 @@ RSpec.describe "bundle add" do
       expect(err).not_to include("You may also need to change the version requirement specified in the Gemfile if it's too restrictive")
     end
   end
+
+  describe "when a gem is added and cache exists" do
+    it "caches all new dependencies added for the specified gem" do
+      bundle! :cache
+
+      bundle "add 'rack' --version=1.0.0"
+      expect(bundled_app("vendor/cache/rack-1.0.0.gem")).to exist
+    end
+  end
 end

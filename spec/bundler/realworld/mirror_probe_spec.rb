@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "../support/silent_logger"
+
 RSpec.describe "fetching dependencies with a not available mirror", :realworld => true do
   let(:mirror) { @mirror_uri }
   let(:original) { @server_uri }
@@ -121,7 +123,7 @@ Could not fetch specs from #{mirror}/
     @server_port = find_unused_port
     @server_uri = "http://#{host}:#{@server_port}"
 
-    require File.expand_path("../../support/artifice/endpoint", __FILE__)
+    require_relative "../support/artifice/endpoint"
 
     @server_thread = Thread.new do
       Rack::Server.start(:app       => Endpoint,

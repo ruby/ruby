@@ -22,7 +22,7 @@ module Spec
     end
 
     def gem_bin
-      @gem_bin ||= ruby_core? ? ENV["GEM_COMMAND"] : "#{Gem.ruby} -S gem --backtrace"
+      @gem_bin ||= ruby_core? ? ENV["GEM_COMMAND"] : "#{Gem.ruby} --disable-gems -r#{spec_dir}/support/rubygems -S gem --backtrace"
     end
 
     def spec_dir
@@ -131,7 +131,7 @@ module Spec
       tmp("libs", *args)
     end
 
-    def lib
+    def lib_dir
       root.join("lib")
     end
 

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require File.expand_path("../../path.rb", __FILE__)
+require_relative "../path"
 include Spec::Path
 
 $LOAD_PATH.unshift(*Dir[Spec::Path.base_system_gems.join("gems/{artifice,mustermann,rack,tilt,sinatra}-*/lib")].map(&:to_s))

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "rubygems/user_interaction"
 require_relative "path"
 require "fileutils"
 
@@ -29,7 +28,9 @@ module Spec
       "ruby-graphviz" => ">= 0.a",
     }.freeze
 
-    def self.dev_setup
+    extend self
+
+    def dev_setup
       deps = DEV_DEPS
 
       # JRuby can't build ronn, so we skip that
@@ -38,22 +39,17 @@ module Spec
       install_gems(deps)
     end
 
-    def self.gem_load(gem_name, bin_container)
-      gem_activate(gem_name)
-      load Gem.bin_path(gem_name, bin_container)
+    def gem_load(gem_name, bin_container)
+      require_relative "rubygems"
+      gem_load_and_activate(gem_name, bin_container)
     end
 
-    def self.gem_activate(gem_name)
-      gem_requirement = DEV_DEPS[gem_name]
-      gem gem_name, gem_requirement
-    end
-
-    def self.gem_require(gem_name)
+    def gem_require(gem_name)
       gem_activate(gem_name)
       require gem_name
     end
 
-    def self.setup
+    def setup
       Gem.clear_paths
 
       ENV["BUNDLE_PATH"] = nil
@@ -71,20 +67,37 @@ module Spec
         manifest_path.open("w") {|f| f << manifest.join }
       end
 
+      FileUtils.mkdir_p(Path.home)
+      FileUtils.mkdir_p(Path.tmpdir)
+
       ENV["HOME"] = Path.home.to_s
       ENV["TMPDIR"] = Path.tmpdir.to_s
 
+      require "rubygems/user_interaction"
       Gem::DefaultUserInteraction.ui = Gem::SilentUI.new
     end
 
-    def self.install_gems(gems)
+  private
+
+    def gem_load_and_activate(gem_name, bin_container)
+      gem_activate(gem_name)
+      load Gem.bin_path(gem_name, bin_container)
+    rescue Gem::LoadError => e
+      abort "We couln't activate #{gem_name} (#{e.requirement}). Run `gem install #{gem_name}:'#{e.requirement}'`"
+    end
+
+    def gem_activate(gem_name)
+      gem_requirement = DEV_DEPS[gem_name]
+      gem gem_name, gem_requirement
+    end
+
+    def install_gems(gems)
       reqs, no_reqs = gems.partition {|_, req| !req.nil? && !req.split(" ").empty? }
       no_reqs.map!(&:first)
       reqs.map! {|name, req| "'#{name}:#{req}'" }
       deps = reqs.concat(no_reqs).join(" ")
       gem = Path.gem_bin
       cmd = "#{gem} install #{deps} --no-document --conservative"
-      puts cmd
       system(cmd) || raise("Installing gems #{deps} for the tests to use failed!")
     end
   end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require File.expand_path("../endpoint", __FILE__)
+require_relative "endpoint"
 
 class EndpointMirrorSource < Endpoint
   get "/gems/:id" do

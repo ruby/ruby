@@ -390,7 +390,7 @@ You have deleted from the Gemfile:
       expect(the_bundle).to include_gems "foo 1.0"
 
       bundle "config set cache_all true"
-      bundle! :package
+      bundle! :cache
       expect(bundled_app("vendor/cache/foo")).to be_directory
 
       bundle! "install --local"

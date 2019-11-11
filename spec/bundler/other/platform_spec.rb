@@ -781,7 +781,7 @@ G
         #{ruby_version_correct}
       G
 
-      bundle :pack
+      bundle :cache
       expect(bundled_app("vendor/cache/rack-1.0.0.gem")).to exist
     end
 
@@ -794,7 +794,7 @@ G
           #{ruby_version_correct_engineless}
         G
 
-        bundle :pack
+        bundle :cache
         expect(bundled_app("vendor/cache/rack-1.0.0.gem")).to exist
       end
     end
@@ -806,7 +806,7 @@ G
         #{ruby_version_incorrect}
       G
 
-      bundle :pack
+      bundle :cache
       should_be_ruby_version_incorrect
     end
 
@@ -817,7 +817,7 @@ G
         #{engine_incorrect}
       G
 
-      bundle :pack
+      bundle :cache
       should_be_engine_incorrect
     end
 
@@ -829,7 +829,7 @@ G
           #{engine_version_incorrect}
         G
 
-        bundle :pack
+        bundle :cache
         should_be_engine_version_incorrect
       end
     end
@@ -842,7 +842,7 @@ G
         #{patchlevel_incorrect}
       G
 
-      bundle :pack
+      bundle :cache
       should_be_patchlevel_incorrect
     end
   end

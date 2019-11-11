@@ -193,7 +193,7 @@ RSpec.describe "Bundler.require" do
       G
 
       cmd = <<-RUBY
-        require '#{lib}/bundler'
+        require '#{lib_dir}/bundler'
         Bundler.require
       RUBY
       ruby(cmd)

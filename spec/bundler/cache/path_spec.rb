@@ -1,146 +1,144 @@
 # frozen_string_literal: true
 
-%w[cache package].each do |cmd|
-  RSpec.describe "bundle #{cmd} with path" do
-    it "is no-op when the path is within the bundle" do
-      build_lib "foo", :path => bundled_app("lib/foo")
+RSpec.describe "bundle cache with path" do
+  it "is no-op when the path is within the bundle" do
+    build_lib "foo", :path => bundled_app("lib/foo")
 
-      install_gemfile <<-G
-        gem "foo", :path => '#{bundled_app("lib/foo")}'
-      G
+    install_gemfile <<-G
+      gem "foo", :path => '#{bundled_app("lib/foo")}'
+    G
 
-      bundle "config set cache_all true"
-      bundle cmd
-      expect(bundled_app("vendor/cache/foo-1.0")).not_to exist
-      expect(the_bundle).to include_gems "foo 1.0"
+    bundle "config set cache_all true"
+    bundle :cache
+    expect(bundled_app("vendor/cache/foo-1.0")).not_to exist
+    expect(the_bundle).to include_gems "foo 1.0"
+  end
+
+  it "copies when the path is outside the bundle " do
+    build_lib "foo"
+
+    install_gemfile <<-G
+      gem "foo", :path => '#{lib_path("foo-1.0")}'
+    G
+
+    bundle "config set cache_all true"
+    bundle :cache
+    expect(bundled_app("vendor/cache/foo-1.0")).to exist
+    expect(bundled_app("vendor/cache/foo-1.0/.bundlecache")).to be_file
+
+    FileUtils.rm_rf lib_path("foo-1.0")
+    expect(the_bundle).to include_gems "foo 1.0"
+  end
+
+  it "copies when the path is outside the bundle and the paths intersect" do
+    libname = File.basename(Dir.pwd) + "_gem"
+    libpath = File.join(File.dirname(Dir.pwd), libname)
+
+    build_lib libname, :path => libpath
+
+    install_gemfile <<-G
+      gem "#{libname}", :path => '#{libpath}'
+    G
+
+    bundle "config set cache_all true"
+    bundle :cache
+    expect(bundled_app("vendor/cache/#{libname}")).to exist
+    expect(bundled_app("vendor/cache/#{libname}/.bundlecache")).to be_file
+
+    FileUtils.rm_rf libpath
+    expect(the_bundle).to include_gems "#{libname} 1.0"
+  end
+
+  it "updates the path on each cache" do
+    build_lib "foo"
+
+    install_gemfile <<-G
+      gem "foo", :path => '#{lib_path("foo-1.0")}'
+    G
+
+    bundle "config set cache_all true"
+    bundle :cache
+
+    build_lib "foo" do |s|
+      s.write "lib/foo.rb", "puts :CACHE"
     end
 
-    it "copies when the path is outside the bundle " do
-      build_lib "foo"
+    bundle :cache
 
-      install_gemfile <<-G
-        gem "foo", :path => '#{lib_path("foo-1.0")}'
-      G
+    expect(bundled_app("vendor/cache/foo-1.0")).to exist
+    FileUtils.rm_rf lib_path("foo-1.0")
 
-      bundle "config set cache_all true"
-      bundle cmd
-      expect(bundled_app("vendor/cache/foo-1.0")).to exist
-      expect(bundled_app("vendor/cache/foo-1.0/.bundlecache")).to be_file
+    run "require 'foo'"
+    expect(out).to eq("CACHE")
+  end
 
-      FileUtils.rm_rf lib_path("foo-1.0")
-      expect(the_bundle).to include_gems "foo 1.0"
-    end
+  it "removes stale entries cache" do
+    build_lib "foo"
 
-    it "copies when the path is outside the bundle and the paths intersect" do
-      libname = File.basename(Dir.pwd) + "_gem"
-      libpath = File.join(File.dirname(Dir.pwd), libname)
+    install_gemfile <<-G
+      gem "foo", :path => '#{lib_path("foo-1.0")}'
+    G
 
-      build_lib libname, :path => libpath
+    bundle "config set cache_all true"
+    bundle :cache
 
-      install_gemfile <<-G
-        gem "#{libname}", :path => '#{libpath}'
-      G
+    install_gemfile <<-G
+      gem "bar", :path => '#{lib_path("bar-1.0")}'
+    G
 
-      bundle "config set cache_all true"
-      bundle cmd
-      expect(bundled_app("vendor/cache/#{libname}")).to exist
-      expect(bundled_app("vendor/cache/#{libname}/.bundlecache")).to be_file
+    bundle :cache
+    expect(bundled_app("vendor/cache/bar-1.0")).not_to exist
+  end
 
-      FileUtils.rm_rf libpath
-      expect(the_bundle).to include_gems "#{libname} 1.0"
-    end
+  it "raises a warning without --all", :bundler => "< 3" do
+    build_lib "foo"
 
-    it "updates the path on each cache" do
-      build_lib "foo"
+    install_gemfile <<-G
+      gem "foo", :path => '#{lib_path("foo-1.0")}'
+    G
 
-      install_gemfile <<-G
-        gem "foo", :path => '#{lib_path("foo-1.0")}'
-      G
+    bundle :cache
+    expect(err).to match(/please pass the \-\-all flag/)
+    expect(bundled_app("vendor/cache/foo-1.0")).not_to exist
+  end
 
-      bundle "config set cache_all true"
-      bundle cmd
+  it "stores the given flag" do
+    build_lib "foo"
 
-      build_lib "foo" do |s|
-        s.write "lib/foo.rb", "puts :CACHE"
-      end
+    install_gemfile <<-G
+      gem "foo", :path => '#{lib_path("foo-1.0")}'
+    G
 
-      bundle cmd
+    bundle "config set cache_all true"
+    bundle :cache
+    build_lib "bar"
 
-      expect(bundled_app("vendor/cache/foo-1.0")).to exist
-      FileUtils.rm_rf lib_path("foo-1.0")
+    install_gemfile <<-G
+      gem "foo", :path => '#{lib_path("foo-1.0")}'
+      gem "bar", :path => '#{lib_path("bar-1.0")}'
+    G
 
-      run "require 'foo'"
-      expect(out).to eq("CACHE")
-    end
+    bundle :cache
+    expect(bundled_app("vendor/cache/bar-1.0")).to exist
+  end
 
-    it "removes stale entries cache" do
-      build_lib "foo"
+  it "can rewind chosen configuration" do
+    build_lib "foo"
 
-      install_gemfile <<-G
-        gem "foo", :path => '#{lib_path("foo-1.0")}'
-      G
+    install_gemfile <<-G
+      gem "foo", :path => '#{lib_path("foo-1.0")}'
+    G
 
-      bundle "config set cache_all true"
-      bundle cmd
+    bundle "config set cache_all true"
+    bundle :cache
+    build_lib "baz"
 
-      install_gemfile <<-G
-        gem "bar", :path => '#{lib_path("bar-1.0")}'
-      G
+    gemfile <<-G
+      gem "foo", :path => '#{lib_path("foo-1.0")}'
+      gem "baz", :path => '#{lib_path("baz-1.0")}'
+    G
 
-      bundle cmd
-      expect(bundled_app("vendor/cache/bar-1.0")).not_to exist
-    end
-
-    it "raises a warning without --all", :bundler => "< 3" do
-      build_lib "foo"
-
-      install_gemfile <<-G
-        gem "foo", :path => '#{lib_path("foo-1.0")}'
-      G
-
-      bundle cmd
-      expect(err).to match(/please pass the \-\-all flag/)
-      expect(bundled_app("vendor/cache/foo-1.0")).not_to exist
-    end
-
-    it "stores the given flag" do
-      build_lib "foo"
-
-      install_gemfile <<-G
-        gem "foo", :path => '#{lib_path("foo-1.0")}'
-      G
-
-      bundle "config set cache_all true"
-      bundle cmd
-      build_lib "bar"
-
-      install_gemfile <<-G
-        gem "foo", :path => '#{lib_path("foo-1.0")}'
-        gem "bar", :path => '#{lib_path("bar-1.0")}'
-      G
-
-      bundle cmd
-      expect(bundled_app("vendor/cache/bar-1.0")).to exist
-    end
-
-    it "can rewind chosen configuration" do
-      build_lib "foo"
-
-      install_gemfile <<-G
-        gem "foo", :path => '#{lib_path("foo-1.0")}'
-      G
-
-      bundle "config set cache_all true"
-      bundle cmd
-      build_lib "baz"
-
-      gemfile <<-G
-        gem "foo", :path => '#{lib_path("foo-1.0")}'
-        gem "baz", :path => '#{lib_path("baz-1.0")}'
-      G
-
-      bundle "#{cmd} --no-all"
-      expect(bundled_app("vendor/cache/baz-1.0")).not_to exist
-    end
+    bundle "cache --no-all"
+    expect(bundled_app("vendor/cache/baz-1.0")).not_to exist
   end
 end

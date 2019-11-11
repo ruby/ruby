@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 require "net/http"
+require_relative "../path"
 
-CASSETTE_PATH = File.expand_path("../vcr_cassettes", __FILE__)
+CASSETTE_PATH = "#{Spec::Path.spec_dir}/support/artifice/vcr_cassettes"
 CASSETTE_NAME = ENV.fetch("BUNDLER_SPEC_VCR_CASSETTE_NAME") { "realworld" }
 
 class BundlerVCRHTTP < Net::HTTP

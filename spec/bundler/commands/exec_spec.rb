@@ -89,7 +89,7 @@ RSpec.describe "bundle exec" do
       else
         require 'tempfile'
         io = Tempfile.new("io-test-fd")
-        args = %W[#{Gem.ruby} -I#{lib} #{bindir.join("bundle")} exec --keep-file-descriptors #{Gem.ruby} #{command.path} \#{io.to_i}]
+        args = %W[#{Gem.ruby} -I#{lib_dir} #{bindir.join("bundle")} exec --keep-file-descriptors #{Gem.ruby} #{command.path} \#{io.to_i}]
         args << { io.to_i => io }
         exec(*args)
       end
@@ -279,7 +279,7 @@ RSpec.describe "bundle exec" do
     G
 
     rubyopt = ENV["RUBYOPT"]
-    rubyopt = "-r#{lib}/bundler/setup #{rubyopt}"
+    rubyopt = "-r#{lib_dir}/bundler/setup #{rubyopt}"
 
     bundle "exec 'echo $RUBYOPT'"
     expect(out).to have_rubyopts(rubyopt)
@@ -294,7 +294,7 @@ RSpec.describe "bundle exec" do
     G
 
     rubylib = ENV["RUBYLIB"]
-    rubylib = rubylib.to_s.split(File::PATH_SEPARATOR).unshift lib.to_s
+    rubylib = rubylib.to_s.split(File::PATH_SEPARATOR).unshift lib_dir.to_s
     rubylib = rubylib.uniq.join(File::PATH_SEPARATOR)
 
     bundle "exec 'echo $RUBYLIB'"

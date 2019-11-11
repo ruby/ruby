@@ -2,6 +2,9 @@
 
 require "open3"
 
+require_relative "command_execution"
+require_relative "the_bundle"
+
 module Spec
   module Helpers
     def reset!
@@ -16,8 +19,6 @@ module Spec
       FileUtils.mkdir_p(home)
       FileUtils.mkdir_p(tmpdir)
       Bundler.reset!
-      Bundler.ui = nil
-      Bundler.ui # force it to initialize
     end
 
     def self.bang(method)
@@ -77,7 +78,7 @@ module Spec
     def run(cmd, *args)
       opts = args.last.is_a?(Hash) ? args.pop : {}
       groups = args.map(&:inspect).join(", ")
-      setup = "require '#{lib}/bundler' ; Bundler.setup(#{groups})\n"
+      setup = "require '#{lib_dir}/bundler' ; Bundler.ui.silence { Bundler.setup(#{groups}) }\n"
       ruby(setup + cmd, opts)
     end
     bang :run
@@ -95,10 +96,6 @@ module Spec
       run(cmd, *args)
     end
 
-    def spec
-      spec_dir.to_s
-    end
-
     def bundle(cmd, options = {})
       with_sudo = options.delete(:sudo)
       sudo = with_sudo == :preserve_env ? "sudo -E" : "sudo" if with_sudo
@@ -113,6 +110,7 @@ module Spec
       env["PATH"].gsub!("#{Path.root}/exe", "") if env["PATH"] && system_bundler
 
       requires = options.delete(:requires) || []
+      requires << "support/rubygems"
       requires << "support/hax"
 
       artifice = options.delete(:artifice) do
@@ -123,14 +121,14 @@ module Spec
         end
       end
       if artifice
-        requires << File.expand_path("../artifice/#{artifice}", __FILE__)
+        requires << "support/artifice/#{artifice}"
       end
 
       requires_str = requires.map {|r| "-r#{r}" }.join(" ")
 
       load_path = []
-      load_path << lib unless system_bundler
-      load_path << spec
+      load_path << lib_dir unless system_bundler
+      load_path << spec_dir
       load_path_str = "-I#{load_path.join(File::PATH_SEPARATOR)}"
 
       args = options.map do |k, v|
@@ -146,7 +144,7 @@ module Spec
         end
       end.join
 
-      cmd = "#{sudo} #{Gem.ruby} #{load_path_str} #{requires_str} #{bundle_bin} #{cmd}#{args}"
+      cmd = "#{sudo} #{Gem.ruby} --disable-gems #{load_path_str} #{requires_str} #{bundle_bin} #{cmd}#{args}"
       sys_exec(cmd, env) {|i, o, thr| yield i, o, thr if block_given? }
     end
     bang :bundle
@@ -174,10 +172,10 @@ module Spec
     end
 
     def ruby(ruby, options = {})
-      env = (options.delete(:env) || {}).map {|k, v| "#{k}='#{v}' " }.join
+      env = options.delete(:env) || {}
       ruby = ruby.gsub(/["`\$]/) {|m| "\\#{m}" }
-      lib_option = options[:no_lib] ? "" : " -I#{lib}"
-      sys_exec(%(#{env}#{Gem.ruby}#{lib_option} -e "#{ruby}"))
+      lib_option = options[:no_lib] ? "" : " -I#{lib_dir}"
+      sys_exec(%(#{Gem.ruby}#{lib_option} -e "#{ruby}"), env)
     end
     bang :ruby
 
@@ -193,7 +191,7 @@ module Spec
 
     def gembin(cmd)
       old = ENV["RUBYOPT"]
-      ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -I#{lib}"
+      ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -I#{lib_dir}"
       cmd = bundled_app("bin/#{cmd}") unless cmd.to_s.include?("/")
       sys_exec(cmd.to_s)
     ensure
@@ -511,10 +509,6 @@ module Spec
 
     def revision_for(path)
       Dir.chdir(path) { `git rev-parse HEAD`.strip }
-    end
-
-    def capture_output
-      capture(:stdout)
     end
 
     def with_read_only(pattern)

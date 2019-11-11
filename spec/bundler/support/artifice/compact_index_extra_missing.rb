@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require File.expand_path("../compact_index_extra", __FILE__)
+require_relative "compact_index_extra"
 
 Artifice.deactivate
 

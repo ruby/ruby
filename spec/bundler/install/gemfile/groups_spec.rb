@@ -333,7 +333,7 @@ RSpec.describe "bundle install with groups" do
       G
 
       ruby <<-R
-        require "#{lib}/bundler"
+        require "#{lib_dir}/bundler"
         Bundler.setup :default
         Bundler.require :default
         puts RACK
