@@ -197,6 +197,8 @@ class Gem::Version
   end
 
   @@all = {}
+  @@bump = {}
+  @@release = {}
 
   def self.new(version) # :nodoc:
     return super unless Gem::Version == self
@@ -227,14 +229,14 @@ class Gem::Version
   # Pre-release (alpha) parts, e.g, 5.3.1.b.2 => 5.4, are ignored.
 
   def bump
-    @bump ||= begin
-                segments = self.segments
-                segments.pop while segments.any? { |s| String === s }
-                segments.pop if segments.size > 1
+    @@bump[self] ||= begin
+                       segments = self.segments
+                       segments.pop while segments.any? { |s| String === s }
+                       segments.pop if segments.size > 1
 
-                segments[-1] = segments[-1].succ
-                self.class.new segments.join(".")
-              end
+                       segments[-1] = segments[-1].succ
+                       self.class.new segments.join(".")
+                     end
   end
 
   ##
@@ -306,13 +308,13 @@ class Gem::Version
   # Non-prerelease versions return themselves.
 
   def release
-    @release ||= if prerelease?
-                   segments = self.segments
-                   segments.pop while segments.any? { |s| String === s }
-                   self.class.new segments.join('.')
-                 else
-                   self
-                 end
+    @@release[self] ||= if prerelease?
+                          segments = self.segments
+                          segments.pop while segments.any? { |s| String === s }
+                          self.class.new segments.join('.')
+                        else
+                          self
+                        end
   end
 
   def segments # :nodoc:
@@ -372,6 +374,12 @@ class Gem::Version
       _split_segments.map! do |segments|
         segments.reverse_each.drop_while {|s| s == 0 }.reverse
       end.reduce(&:concat)
+  end
+
+  def freeze
+    prerelease?
+    canonical_segments
+    super
   end
 
   protected

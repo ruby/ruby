@@ -5,6 +5,9 @@ class TestGemInstaller < Gem::InstallerTestCase
 
   @@symlink_supported = nil
 
+  # Our CI does not currently hit the "symlink not supported" case, but this is
+  # needed for Windows developers without symlink support enabled (the default
+  # for non admin) to be able to run the tests successfully
   def symlink_supported?
     if @@symlink_supported.nil?
       begin
@@ -544,7 +547,7 @@ gem 'other', version
   end
 
   def test_generate_bin_symlink
-    return if win_platform? #Windows FS do not support symlinks
+    skip "Symlinks not supported or not enabled" unless symlink_supported?
 
     installer = setup_base_installer
 
@@ -596,7 +599,7 @@ gem 'other', version
   end
 
   def test_generate_bin_symlink_update_newer
-    return if win_platform? #Windows FS do not support symlinks
+    skip "Symlinks not supported or not enabled" unless symlink_supported?
 
     installer = setup_base_installer
 
@@ -628,7 +631,7 @@ gem 'other', version
   end
 
   def test_generate_bin_symlink_update_older
-    return if !symlink_supported?
+    skip "Symlinks not supported or not enabled" unless symlink_supported?
 
     installer = setup_base_installer
 
@@ -666,7 +669,7 @@ gem 'other', version
   end
 
   def test_generate_bin_symlink_update_remove_wrapper
-    return if !symlink_supported?
+    skip "Symlinks not supported or not enabled" unless symlink_supported?
 
     installer = setup_base_installer
 
@@ -739,7 +742,7 @@ gem 'other', version
   end
 
   def test_generate_bin_uses_default_shebang
-    return if !symlink_supported?
+    skip "Symlinks not supported or not enabled" unless symlink_supported?
 
     installer = setup_base_installer
 

@@ -36,7 +36,7 @@ class Gem::PathSupport
 
     @spec_cache_dir = env["GEM_SPEC_CACHE"] || Gem.default_spec_cache_dir
 
-    @spec_cache_dir = @spec_cache_dir.dup.untaint
+    @spec_cache_dir = @spec_cache_dir.dup.tap(&Gem::UNTAINT)
   end
 
   private

@@ -259,10 +259,10 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
     Gem::DefaultUserInteraction.ui = Gem::MockGemUi.new
 
     tmpdir = File.realpath Dir.tmpdir
-    tmpdir.untaint
+    tmpdir.tap(&Gem::UNTAINT)
 
     @tempdir = File.join(tmpdir, "test_rubygems_#{$$}")
-    @tempdir.untaint
+    @tempdir.tap(&Gem::UNTAINT)
 
     FileUtils.mkdir_p @tempdir
 
@@ -274,7 +274,7 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
     # Short and long path name is specific to Windows filesystem.
     if win_platform?
       @tempdir = Dir[@tempdir][0]
-      @tempdir.untaint
+      @tempdir.tap(&Gem::UNTAINT)
     end
 
     @gemhome  = File.join @tempdir, 'gemhome'
@@ -295,7 +295,7 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
     $LOAD_PATH.map! do |s|
       expand_path = File.realpath(s) rescue File.expand_path(s)
       if expand_path != s
-        expand_path.untaint
+        expand_path.tap(&Gem::UNTAINT)
         if s.instance_variable_defined?(:@gem_prelude_index)
           expand_path.instance_variable_set(:@gem_prelude_index, expand_path)
         end
@@ -527,7 +527,7 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
         end
       end
 
-      gem = File.join(@tempdir, File.basename(spec.cache_file)).untaint
+      gem = File.join(@tempdir, File.basename(spec.cache_file)).tap(&Gem::UNTAINT)
     end
 
     Gem::Installer.at(gem, options.merge({:wrappers => true})).install
@@ -566,7 +566,7 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
   # Reads a Marshal file at +path+
 
   def read_cache(path)
-    File.open path.dup.untaint, 'rb' do |io|
+    File.open path.dup.tap(&Gem::UNTAINT), 'rb' do |io|
       Marshal.load io.read
     end
   end

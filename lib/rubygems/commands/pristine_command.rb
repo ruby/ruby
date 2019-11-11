@@ -111,11 +111,6 @@ extensions will be restored.
             "Failed to find gems #{options[:args]} #{options[:version]}"
     end
 
-    install_dir = Gem.dir # TODO use installer option
-
-    raise Gem::FilePermissionError.new(install_dir) unless
-      File.writable?(install_dir)
-
     say "Restoring gems to pristine condition..."
 
     specs.each do |spec|

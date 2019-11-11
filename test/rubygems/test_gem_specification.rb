@@ -939,22 +939,24 @@ dependencies: []
     assert_equal File.join(@tempdir, 'a-2.gemspec'), spec.loaded_from
   end
 
-  def test_self_load_tainted
-    full_path = @a2.spec_file
-    write_file full_path do |io|
-      io.write @a2.to_ruby_for_cache
+  if RUBY_VERSION < '2.7'
+    def test_self_load_tainted
+      full_path = @a2.spec_file
+      write_file full_path do |io|
+        io.write @a2.to_ruby_for_cache
+      end
+
+      full_path.taint
+      loader = Thread.new { $SAFE = 1; Gem::Specification.load full_path }
+      spec = loader.value
+
+      @a2.files.clear
+
+      assert_equal @a2, spec
+
+    ensure
+      $SAFE = 0
     end
-
-    full_path.taint
-    loader = Thread.new { $SAFE = 1; Gem::Specification.load full_path }
-    spec = loader.value
-
-    @a2.files.clear
-
-    assert_equal @a2, spec
-
-  ensure
-    $SAFE = 0
   end
 
   def test_self_load_escape_curly
@@ -1160,12 +1162,11 @@ dependencies: []
     # Create gemspecs in three locations used in stubs
     loaded_spec = Gem::Specification.new 'a', '3'
     Gem.loaded_specs['a'] = loaded_spec
-    save_gemspec 'a', '2', dir_default_specs
-    save_gemspec 'a', '1', dir_standard_specs
+    save_gemspec('a-2', '2', dir_default_specs) { |s| s.name = 'a' }
+    save_gemspec('a-1', '1', dir_standard_specs) { |s| s.name = 'a' }
 
     full_names = ['a-3', 'a-2', 'a-1']
 
-    full_names = Gem::Specification.stubs_for('a').map { |s| s.full_name }
     assert_equal full_names, Gem::Specification.stubs_for('a').map { |s| s.full_name }
     assert_equal 1, Gem::Specification.class_variable_get(:@@stubs_by_name).length
 
@@ -2472,7 +2473,7 @@ Gem::Specification.new do |s|
   s.email = "example@example.com".freeze
   s.files = ["lib/code.rb".freeze]
   s.homepage = "http://example.com".freeze
-  s.rubygems_version = "3.1.0.pre2".freeze
+  s.rubygems_version = "#{Gem::VERSION}".freeze
   s.summary = "this is a summary".freeze
 end
     SPEC

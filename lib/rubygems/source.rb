@@ -106,7 +106,7 @@ class Gem::Source
   def cache_dir(uri)
     # Correct for windows paths
     escaped_path = uri.path.sub(/^\/([a-z]):\//i, '/\\1-/')
-    escaped_path.untaint
+    escaped_path.tap(&Gem::UNTAINT)
 
     File.join Gem.spec_cache_dir, "#{uri.host}%#{uri.port}", File.dirname(escaped_path)
   end

@@ -79,7 +79,9 @@ class Gem::RequestSet::Lockfile
     @gem_deps_file = File.expand_path(gem_deps_file)
     @gem_deps_dir  = File.dirname(@gem_deps_file)
 
-    @gem_deps_file.untaint unless gem_deps_file.tainted?
+    if RUBY_VERSION < '2.7'
+      @gem_deps_file.untaint unless gem_deps_file.tainted?
+    end
 
     @platforms = []
   end
