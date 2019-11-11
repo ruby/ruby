@@ -709,6 +709,15 @@ x = __ENCODING__
 
   def test_embedded_rd
     assert_valid_syntax("=begin\n""=end")
+    assert_valid_syntax("=begin\n""=end\0")
+    assert_valid_syntax("=begin\n""=end\C-d")
+    assert_valid_syntax("=begin\n""=end\C-z")
+  end
+
+  def test_embedded_rd_error
+    error = 'embedded document meets end of file'
+    assert_syntax_error("=begin\n", error)
+    assert_syntax_error("=begin", error)
   end
 
   def test_float

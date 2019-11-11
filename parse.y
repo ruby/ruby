@@ -7391,6 +7391,19 @@ whole_match_p(struct parser_params *p, const char *eos, long len, int indent)
     return strncmp(eos, ptr, len) == 0;
 }
 
+static int
+word_match_p(struct parser_params *p, const char *word, long len)
+{
+    if (strncmp(p->lex.pcur, word, len)) return 0;
+    if (p->lex.pcur + len == p->lex.pend) return 1;
+    int c = (unsigned char)p->lex.pcur[len];
+    if (ISSPACE(c)) return 1;
+    switch (c) {
+      case '\0': case '\004': case '\032': return 1;
+    }
+    return 0;
+}
+
 #define NUM_SUFFIX_R   (1<<0)
 #define NUM_SUFFIX_I   (1<<1)
 #define NUM_SUFFIX_ALL 3
@@ -8976,7 +8989,7 @@ parser_yylex(struct parser_params *p)
       case '=':
 	if (was_bol(p)) {
 	    /* skip embedded rd document */
-	    if (strncmp(p->lex.pcur, "begin", 5) == 0 && ISSPACE(p->lex.pcur[5])) {
+	    if (word_match_p(p, "begin", 5)) {
 		int first_p = TRUE;
 
 		lex_goto_eol(p);
@@ -8992,11 +9005,10 @@ parser_yylex(struct parser_params *p)
 			compile_error(p, "embedded document meets end of file");
 			return 0;
 		    }
-		    if (c != '=') continue;
-		    if (c == '=' && strncmp(p->lex.pcur, "end", 3) == 0 &&
-			(p->lex.pcur + 3 == p->lex.pend || ISSPACE(p->lex.pcur[3]))) {
+		    if (c == '=' && word_match_p(p, "end", 3)) {
 			break;
 		    }
+		    pushback(p, c);
 		}
 		lex_goto_eol(p);
 		dispatch_scan_event(p, tEMBDOC_END);
