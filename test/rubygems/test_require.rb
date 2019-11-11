@@ -509,11 +509,11 @@ class TestGemRequire < Gem::TestCase
         _, err = capture_subprocess_io do
           system(@@ruby, "-w", "-rpp", "--disable=gems", "-I", lib, "-C", dir, "-I.", "main.rb")
         end
-        assert_equal "main.rb:1: warning: uplevel\ntest\n", err
+        assert_includes err, "main.rb:1: warning: uplevel\ntest\n"
         _, err = capture_subprocess_io do
           system(@@ruby, "-w", "-rpp", "--enable=gems", "-I", lib, "-C", dir, "-I.", "main.rb")
         end
-        assert_equal "main.rb:1: warning: uplevel\ntest\n", err
+        assert_includes err, "main.rb:1: warning: uplevel\ntest\n"
       end
     end
 
@@ -524,11 +524,11 @@ class TestGemRequire < Gem::TestCase
         _, err = capture_subprocess_io do
           system(@@ruby, "-w", "-rpp", "--disable=gems", "-I", lib, "-C", dir, "-I.", "main.rb")
         end
-        assert_equal "{:x=>1}\n{:y=>2}\n", err
+        assert_includes err, "{:x=>1}\n{:y=>2}\n"
         _, err = capture_subprocess_io do
           system(@@ruby, "-w", "-rpp", "--enable=gems", "-I", lib, "-C", dir, "-I.", "main.rb")
         end
-        assert_equal "{:x=>1}\n{:y=>2}\n", err
+        assert_includes err, "{:x=>1}\n{:y=>2}\n"
       end
     end
   end
