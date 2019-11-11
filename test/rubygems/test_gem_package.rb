@@ -703,12 +703,12 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
 
     file = 'file.rb'.dup
-    file.taint
+    file.taint if RUBY_VERSION < '2.7'
 
     destination = package.install_location file, @destination
 
     assert_equal File.join(@destination, 'file.rb'), destination
-    refute destination.tainted?
+    refute destination.tainted? if RUBY_VERSION < '2.7'
   end
 
   def test_install_location_absolute
@@ -742,14 +742,14 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
 
     file = 'foo//file.rb'.dup
-    file.taint
+    file.taint if RUBY_VERSION < '2.7'
 
     destination = @destination.sub '/', '//'
 
     destination = package.install_location file, destination
 
     assert_equal File.join(@destination, 'foo', 'file.rb'), destination
-    refute destination.tainted?
+    refute destination.tainted? if RUBY_VERSION < '2.7'
   end
 
   def test_install_location_relative

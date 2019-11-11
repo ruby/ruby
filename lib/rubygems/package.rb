@@ -498,7 +498,7 @@ EOM
         real_destination.start_with? destination_dir + '/'
     end
 
-    destination.untaint
+    destination.tap(&Gem::UNTAINT)
     destination
   end
 

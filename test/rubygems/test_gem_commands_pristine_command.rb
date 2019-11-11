@@ -53,6 +53,55 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert_empty out, out.inspect
   end
 
+  def test_execute_user_install
+    FileUtils.chmod 0555, @gemhome
+
+    a = util_spec "a" do |s|
+      s.executables = %w[foo]
+      s.files = %w[bin/foo lib/a.rb]
+    end
+
+    write_file File.join(@tempdir, "lib", "a.rb") do |fp|
+      fp.puts "puts __FILE__"
+    end
+
+    write_file File.join(@tempdir, "bin", "foo") do |fp|
+      fp.puts "#!/usr/bin/ruby"
+    end
+
+    install_gem_user(a)
+
+    Gem::Specification.dirs = [Gem.dir, Gem.user_dir]
+
+    foo_path  = File.join(Gem.user_dir, "gems", a.full_name, "bin", "foo")
+    a_rb_path = File.join(Gem.user_dir, "gems", a.full_name, "lib", "a.rb")
+
+    write_file foo_path do |io|
+      io.puts("I changed it!")
+    end
+
+    write_file a_rb_path do |io|
+      io.puts("I changed it!")
+    end
+
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_equal "#!/usr/bin/ruby\n", File.read(foo_path), foo_path
+    assert_equal "puts __FILE__\n", File.read(a_rb_path), a_rb_path
+
+    out = @ui.output.split("\n")
+
+    assert_equal "Restoring gems to pristine condition...", out.shift
+    assert_equal "Restored #{a.full_name}", out.shift
+    assert_empty out, out.inspect
+  ensure
+    FileUtils.chmod(0755, @gemhome)
+  end
+
   def test_execute_all
     a = util_spec 'a' do |s|
       s.executables = %w[foo]

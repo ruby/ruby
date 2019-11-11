@@ -196,8 +196,6 @@ class Gem::Installer
     @package.prog_mode = options[:prog_mode]
     @package.data_mode = options[:data_mode]
 
-    @bin_dir = options[:bin_dir] if options[:bin_dir]
-
     if options[:user_install]
       @gem_home = Gem.user_dir
       @bin_dir = Gem.bindir gem_home unless options[:bin_dir]
@@ -394,7 +392,7 @@ class Gem::Installer
       specs = []
 
       Gem::Util.glob_files_in_dir("*.gemspec", File.join(gem_home, "specifications")).each do |path|
-        spec = Gem::Specification.load path.untaint
+        spec = Gem::Specification.load path.tap(&Gem::UNTAINT)
         specs << spec if spec
       end
 
@@ -502,7 +500,7 @@ class Gem::Installer
     raise Gem::FilePermissionError.new(@bin_dir) unless File.writable? @bin_dir
 
     spec.executables.each do |filename|
-      filename.untaint
+      filename.tap(&Gem::UNTAINT)
       bin_path = File.join gem_dir, spec.bindir, filename
 
       unless File.exist? bin_path
@@ -633,7 +631,7 @@ class Gem::Installer
 
   def ensure_loadable_spec
     ruby = spec.to_ruby_for_cache
-    ruby.untaint
+    ruby.tap(&Gem::UNTAINT)
 
     begin
       eval ruby

@@ -763,7 +763,7 @@ class Gem::Specification < Gem::BasicSpecification
   def self.each_gemspec(dirs) # :nodoc:
     dirs.each do |dir|
       Gem::Util.glob_files_in_dir("*.gemspec", dir).each do |path|
-        yield path.untaint
+        yield path.tap(&Gem::UNTAINT)
       end
     end
   end
@@ -930,7 +930,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   def self.dirs
     @@dirs ||= Gem.path.collect do |dir|
-      File.join dir.dup.untaint, "specifications"
+      File.join dir.dup.tap(&Gem::UNTAINT), "specifications"
     end
   end
 
@@ -1112,12 +1112,12 @@ class Gem::Specification < Gem::BasicSpecification
     _spec = LOAD_CACHE_MUTEX.synchronize { LOAD_CACHE[file] }
     return _spec if _spec
 
-    file = file.dup.untaint
+    file = file.dup.tap(&Gem::UNTAINT)
     return unless File.file?(file)
 
     code = File.read file, :mode => 'r:UTF-8:-'
 
-    code.untaint
+    code.tap(&Gem::UNTAINT)
 
     begin
       _spec = eval code, binding, file
@@ -2642,9 +2642,9 @@ class Gem::Specification < Gem::BasicSpecification
       case ivar
       when "date"
         # Force Date to go through the extra coerce logic in date=
-        self.date = val.untaint
+        self.date = val.tap(&Gem::UNTAINT)
       else
-        instance_variable_set "@#{ivar}", val.untaint
+        instance_variable_set "@#{ivar}", val.tap(&Gem::UNTAINT)
       end
     end
 

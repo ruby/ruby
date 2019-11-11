@@ -217,6 +217,13 @@ class TestGemVersion < Gem::TestCase
     assert_equal [1, 2, 3, "pre", 1], v("1.2.3-1").canonical_segments
   end
 
+  def test_frozen_version
+    v = v('1.freeze.test').freeze
+    assert_less_than v, v('1')
+    assert_version_equal v('1'), v.release
+    assert_version_equal v('2'), v.bump
+  end
+
   # Asserts that +version+ is a prerelease.
 
   def assert_prerelease(version)

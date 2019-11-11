@@ -41,7 +41,7 @@ module Kernel
     resolved_path = begin
       rp = nil
       $LOAD_PATH[0...Gem.load_path_insert_index || -1].each do |lp|
-        safe_lp = lp.dup.untaint
+        safe_lp = lp.dup.tap(&Gem::UNTAINT)
         next if File.symlink? safe_lp # for backword compatibility
         Gem.suffixes.each do |s|
           full_path = File.expand_path(File.join(safe_lp, "#{path}#{s}"))

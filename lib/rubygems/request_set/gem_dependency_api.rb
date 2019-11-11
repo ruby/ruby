@@ -280,7 +280,7 @@ class Gem::RequestSet::GemDependencyAPI
   # Loads the gem dependency file and returns self.
 
   def load
-    instance_eval File.read(@path).untaint, @path, 1
+    instance_eval File.read(@path).tap(&Gem::UNTAINT), @path, 1
 
     self
   end

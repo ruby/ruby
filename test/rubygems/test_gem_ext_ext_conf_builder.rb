@@ -17,7 +17,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
   end
 
   def test_class_build
-    if java_platform? && ENV["CI"]
+    if java_platform?
       skip("failing on jruby")
     end
 
@@ -49,7 +49,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
   end
 
   def test_class_build_rbconfig_make_prog
-    if java_platform? && ENV["CI"]
+    if java_platform?
       skip("failing on jruby")
     end
 
@@ -76,7 +76,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
     env_make = ENV.delete 'MAKE'
     ENV['MAKE'] = 'anothermake'
 
-    if java_platform? && ENV["CI"]
+    if java_platform?
       skip("failing on jruby")
     end
 

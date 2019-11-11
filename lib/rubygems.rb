@@ -9,7 +9,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = "3.1.0.pre2".freeze
+  VERSION = "3.1.0.pre3".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -115,6 +115,11 @@ require 'rubygems/path_support'
 
 module Gem
   RUBYGEMS_DIR = File.dirname File.expand_path(__FILE__)
+
+  # Taint support is deprecated in Ruby 2.7.
+  # This allows switching ".untaint" to ".tap(&Gem::UNTAINT)",
+  # to avoid deprecation warnings in Ruby 2.7.
+  UNTAINT = RUBY_VERSION < '2.7' ? :untaint.to_sym : proc{}
 
   ##
   # An Array of Regexps that match windows Ruby platforms.
@@ -521,7 +526,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     glob_with_suffixes = "#{glob}#{Gem.suffix_pattern}"
     $LOAD_PATH.map do |load_path|
       Gem::Util.glob_files_in_dir(glob_with_suffixes, load_path)
-    end.flatten.select { |file| File.file? file.untaint }
+    end.flatten.select { |file| File.file? file.tap(&Gem::UNTAINT) }
   end
 
   ##
@@ -1083,7 +1088,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # The home directory for the user.
 
   def self.user_home
-    @user_home ||= find_home.untaint
+    @user_home ||= find_home.tap(&Gem::UNTAINT)
   end
 
   ##
@@ -1150,7 +1155,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       globbed = Gem::Util.glob_files_in_dir(glob, load_path)
 
       globbed.each do |load_path_file|
-        files << load_path_file if File.file?(load_path_file.untaint)
+        files << load_path_file if File.file?(load_path_file.tap(&Gem::UNTAINT))
       end
     end
 
@@ -1196,7 +1201,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       end
     end
 
-    path.untaint
+    path.tap(&Gem::UNTAINT)
 
     unless File.file? path
       return unless raise_exception
