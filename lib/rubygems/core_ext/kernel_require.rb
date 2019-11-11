@@ -42,7 +42,15 @@ module Kernel
       rp = nil
       $LOAD_PATH[0...Gem.load_path_insert_index || -1].each do |lp|
         safe_lp = lp.dup.tap(&Gem::UNTAINT)
-        next if File.symlink? safe_lp # for backword compatibility
+        begin
+          if File.symlink? safe_lp # for backword compatibility
+            next
+          end
+        rescue SecurityError
+          RUBYGEMS_ACTIVATION_MONITOR.exit
+          raise
+        end
+
         Gem.suffixes.each do |s|
           full_path = File.expand_path(File.join(safe_lp, "#{path}#{s}"))
           if File.file?(full_path)
@@ -159,7 +167,7 @@ module Kernel
     raise load_error
   ensure
     if RUBYGEMS_ACTIVATION_MONITOR.mon_owned?
-      STDERR.puts [$!, $!.backtrace].inspect
+      STDERR.puts [$$, Thread.current, $!, $!.backtrace].inspect if $!
       raise "CRITICAL: RUBYGEMS_ACTIVATION_MONITOR is holding."
     end
   end
