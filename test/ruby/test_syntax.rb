@@ -230,25 +230,11 @@ class TestSyntax < Test::Unit::TestCase
   end
 
   def test_keyword_self_reference
-    o = Object.new
-    assert_raise(SyntaxError) do
-      o.instance_eval("def foo(var: defined?(var)) var end")
-    end
-
-    o = Object.new
-    assert_raise(SyntaxError) do
-      o.instance_eval("def foo(var: var) var end")
-    end
-
-    o = Object.new
-    assert_raise(SyntaxError) do
-      o.instance_eval("def foo(var: bar(var)) var end")
-    end
-
-    o = Object.new
-    assert_raise(SyntaxError) do
-      o.instance_eval("def foo(var: bar {var}) var end")
-    end
+    message = /circular argument reference - var/
+    assert_syntax_error("def foo(var: defined?(var)) var end", message)
+    assert_syntax_error("def foo(var: var) var end", message)
+    assert_syntax_error("def foo(var: bar(var)) var end", message)
+    assert_syntax_error("def foo(var: bar {var}) var end", message)
 
     o = Object.new
     assert_warn("") do
@@ -269,25 +255,24 @@ class TestSyntax < Test::Unit::TestCase
   def test_keyword_invalid_name
     bug11663 = '[ruby-core:71356] [Bug #11663]'
 
-    o = o = Object.new
-    assert_syntax_error('def o.foo(arg1?:) end', /arg1\?/, bug11663)
-    assert_syntax_error('def o.foo(arg1?:, arg2:) end', /arg1\?/, bug11663)
+    assert_syntax_error('def foo(arg1?:) end', /arg1\?/, bug11663)
+    assert_syntax_error('def foo(arg1?:, arg2:) end', /arg1\?/, bug11663)
     assert_syntax_error('proc {|arg1?:|}', /arg1\?/, bug11663)
     assert_syntax_error('proc {|arg1?:, arg2:|}', /arg1\?/, bug11663)
 
     bug10545 = '[ruby-dev:48742] [Bug #10545]'
-    assert_syntax_error('def o.foo(FOO: a) end', /constant/, bug10545)
-    assert_syntax_error('def o.foo(@foo: a) end', /instance variable/)
-    assert_syntax_error('def o.foo(@@foo: a) end', /class variable/)
+    assert_syntax_error('def foo(FOO: a) end', /constant/, bug10545)
+    assert_syntax_error('def foo(@foo: a) end', /instance variable/)
+    assert_syntax_error('def foo(@@foo: a) end', /class variable/)
   end
 
   def test_keywords_specified_and_not_accepted
-    assert_syntax_error('def o.foo(a:, **nil) end', /unexpected/)
-    assert_syntax_error('def o.foo(a:, **nil, &b) end', /unexpected/)
-    assert_syntax_error('def o.foo(**a, **nil) end', /unexpected/)
-    assert_syntax_error('def o.foo(**a, **nil, &b) end', /unexpected/)
-    assert_syntax_error('def o.foo(**nil, **a) end', /unexpected/)
-    assert_syntax_error('def o.foo(**nil, **a, &b) end', /unexpected/)
+    assert_syntax_error('def foo(a:, **nil) end', /unexpected/)
+    assert_syntax_error('def foo(a:, **nil, &b) end', /unexpected/)
+    assert_syntax_error('def foo(**a, **nil) end', /unexpected/)
+    assert_syntax_error('def foo(**a, **nil, &b) end', /unexpected/)
+    assert_syntax_error('def foo(**nil, **a) end', /unexpected/)
+    assert_syntax_error('def foo(**nil, **a, &b) end', /unexpected/)
 
     assert_syntax_error('proc do |a:, **nil| end', /unexpected/)
     assert_syntax_error('proc do |a:, **nil, &b| end', /unexpected/)
@@ -298,35 +283,13 @@ class TestSyntax < Test::Unit::TestCase
   end
 
   def test_optional_self_reference
-    o = Object.new
-    assert_raise(SyntaxError) do
-      o.instance_eval("def foo(var = defined?(var)) var end")
-    end
-
-    o = Object.new
-    assert_raise(SyntaxError) do
-      o.instance_eval("def foo(var = var) var end")
-    end
-
-    o = Object.new
-    assert_raise(SyntaxError) do
-      o.instance_eval("def foo(var = bar(var)) var end")
-    end
-
-    o = Object.new
-    assert_raise(SyntaxError) do
-      o.instance_eval("def foo(var = bar {var}) var end")
-    end
-
-    o = Object.new
-    assert_raise(SyntaxError) do
-      o.instance_eval("def foo(var = (def bar;end; var)) var end")
-    end
-
-    o = Object.new
-    assert_raise(SyntaxError) do
-      o.instance_eval("def foo(var = (def self.bar;end; var)) var end")
-    end
+    message = /circular argument reference - var/
+    assert_syntax_error("def foo(var = defined?(var)) var end", message)
+    assert_syntax_error("def foo(var = var) var end", message)
+    assert_syntax_error("def foo(var = bar(var)) var end", message)
+    assert_syntax_error("def foo(var = bar {var}) var end", message)
+    assert_syntax_error("def foo(var = (def bar;end; var)) var end", message)
+    assert_syntax_error("def foo(var = (def self.bar;end; var)) var end", message)
 
     o = Object.new
     assert_warn("") do
@@ -644,7 +607,7 @@ WARN
   def test_unassignable
     gvar = global_variables
     %w[self nil true false __FILE__ __LINE__ __ENCODING__].each do |kwd|
-      assert_raise(SyntaxError) {eval("#{kwd} = nil")}
+      assert_syntax_error("#{kwd} = nil", /Can't .* #{kwd}$/)
       assert_equal(gvar, global_variables)
     end
   end
