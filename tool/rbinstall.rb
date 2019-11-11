@@ -838,7 +838,7 @@ def install_default_gem(dir, srcdir)
     puts "#{INDENT}#{gemspec.name} #{gemspec.version}"
     gemspec_path = File.join(default_spec_dir, "#{full_name}.gemspec")
     open_for_install(gemspec_path, $data_mode) do
-      gemspec.to_ruby
+      gemspec.to_ruby.gsub(/.*\0.*\n/, '')
     end
 
     specific_gem_dir = File.join(gem_dir, 'gems', full_name)
