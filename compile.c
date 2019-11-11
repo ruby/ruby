@@ -6740,8 +6740,7 @@ iseq_builtin_function_lookup(const rb_iseq_t *iseq, const char *name)
 {
     int i;
     const struct rb_builtin_function *table = ISEQ_COMPILE_DATA(iseq)->builtin_function_table;
-    for (i=0; table[i].name != NULL; i++) {
-        // fprintf(stderr, "table[%d].name:%s, name:%s\n", i, table[i].name, name);
+    for (i=0; table[i].index != -1; i++) {
         if (strcmp(table[i].name, name) == 0) {
             return &table[i];
         }
@@ -6886,6 +6885,8 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     }
 #endif
     const char *builtin_func;
+    NODE *args_node = node->nd_args;
+
     if (UNLIKELY(iseq_has_builtin_function_table(iseq)) &&
         (builtin_func = iseq_builtin_function_name(mid)) != NULL) {
 
@@ -6894,9 +6895,18 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
             return COMPILE_NG;
         }
         else {
+            char inline_func[0x20];
+          retry:;
             const struct rb_builtin_function *bf = iseq_builtin_function_lookup(iseq, builtin_func);
 
             if (bf == NULL) {
+                if (strcmp("inline!", builtin_func) == 0) {
+                    int inline_index = GET_VM()->builtin_inline_index++;
+                    snprintf(inline_func, 0x20, "__builtin_inline%d", inline_index);
+                    builtin_func = inline_func;
+                    args_node = NULL;
+                    goto retry;
+                }
                 if (1) {
                     rb_bug("can't find builtin function:%s", builtin_func);
                 }
@@ -6908,7 +6918,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 
             // fprintf(stderr, "func_name:%s -> %p\n", builtin_func, bf->func_ptr);
 
-            argc = setup_args(iseq, args, node->nd_args, &flag, &keywords);
+            argc = setup_args(iseq, args, args_node, &flag, &keywords);
 
             if (FIX2INT(argc) != bf->argc) {
                 COMPILE_ERROR(ERROR_ARGS "argc is not match for builtin function:%s (expect %d but %d)",

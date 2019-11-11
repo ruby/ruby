@@ -25,9 +25,12 @@ rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin
     const unsigned char *bin = builtin_lookup(feature_name, &size);
 
     // load binary
-    GET_VM()->builtin_function_table = table;
+    rb_vm_t *vm = GET_VM();
+    if (vm->builtin_function_table != NULL) rb_bug("vm->builtin_function_table should be NULL.");
+    vm->builtin_function_table = table;
+    vm->builtin_inline_index = 0;
     const rb_iseq_t *iseq = rb_iseq_ibf_load_bytes((const char *)bin, size);
-    GET_VM()->builtin_function_table = NULL;
+    vm->builtin_function_table = NULL;
 
     // exec
     rb_iseq_eval(iseq);
@@ -37,4 +40,12 @@ void
 Init_builtin(void)
 {
     //
+}
+
+// inline
+VALUE
+rb_vm_lvar_exposed(rb_execution_context_t *ec, int index)
+{
+    const rb_control_frame_t *cfp = ec->cfp;
+    return cfp->ep[index];
 }

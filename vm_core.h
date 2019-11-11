@@ -652,6 +652,7 @@ typedef struct rb_vm_struct {
     st_table *frozen_strings;
 
     const struct rb_builtin_function *builtin_function_table;
+    int builtin_inline_index;
 
     /* params */
     struct { /* size in byte */
