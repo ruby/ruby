@@ -27,7 +27,7 @@ def collect_builtin base, iseq_ary, bs, inlines
         if func_name ==  'inline!'
           raise "argc (#{argc}) of inline! should be 1" unless argc == 1
           raise "1st argument should be string literal" unless prev_insn[0] == :putstring
-          text = prev_insn[1]
+          text = prev_insn[1].rstrip
 
           func_name = "rb_compiled_inline#{inlines.size}"
           inlines << [func_name, [lineno, text, params]]
