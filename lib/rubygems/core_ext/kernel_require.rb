@@ -157,6 +157,11 @@ module Kernel
     return gem_original_require(path) if require_again
 
     raise load_error
+  ensure
+    if RUBYGEMS_ACTIVATION_MONITOR.mon_owned?
+      pp $!
+      raise "CRITICAL: RUBYGEMS_ACTIVATION_MONITOR is holding."
+    end
   end
 
   private :require
