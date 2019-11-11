@@ -46,12 +46,17 @@ jobs:
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           ../src/win32/configure.bat --disable-install-doc --without-ext=+,dbm,gdbm --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows
         shell: cmd
+      - name: Update
+        run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          cd build
+          nmake RUBY="$(BASERUBY)" MINIRUBY="$(RUBY)" RUNRUBY="$(RUBY)" up
+        shell: cmd
       - name: nmake
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           set YACC=win_bison
           cd build
-          nmake up
           nmake
         shell: cmd
       - name: nmake test

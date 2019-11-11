@@ -52,6 +52,8 @@ jobs:
           mkdir build
           cd build
           ../src/configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
+      - name: Update
+        run: make -C build $JOBS -s RUBY='$(BASERUBY)' MINIRUBY='$(RUBY)' RUNRUBY='$(RUBY)' up
       - name: Make
         run: make -C build $JOBS
       - name: Tests

@@ -76,6 +76,8 @@ jobs:
           mkdir build
           cd build
           ../src/configure -C --disable-install-doc
+      - name: Update
+        run: make -C build $JOBS -s RUBY='$(BASERUBY)' MINIRUBY='$(RUBY)' RUNRUBY='$(RUBY)' up
       - name: Make
         run: make -C build $JOBS
       - name: Tests
