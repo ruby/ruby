@@ -1253,6 +1253,7 @@ yes::
 no::
 
 after-update:: extract-extlibs
+after-update:: extract-gems
 
 update-remote:: update-src update-download
 update-download:: $(ALWAYS_UPDATE_UNICODE:yes=update-unicode)
