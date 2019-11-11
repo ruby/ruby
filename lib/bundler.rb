@@ -14,6 +14,25 @@ require_relative "bundler/constants"
 require_relative "bundler/current_ruby"
 require_relative "bundler/build_metadata"
 
+# Bundler provides a consistent environment for Ruby projects by
+# tracking and installing the exact gems and versions that are needed.
+#
+# Since Ruby 2.6, Bundler is a part of Ruby's standard library.
+#
+# Bunder is used by creating _gemfiles_ listing all the project dependencies
+# and (optionally) their versions and then using
+#
+#   require 'bundler/setup'
+#
+# or Bundler.setup to setup environment where only specified gems and their
+# specified versions could be used.
+#
+# See {Bundler website}[https://bundler.io/docs.html] for extensive documentation
+# on gemfiles creation and Bundler usage.
+#
+# As a standard library inside project, Bundler could be used for introspection
+# of loaded and required modules.
+#
 module Bundler
   environment_preserver = EnvironmentPreserver.new(ENV, EnvironmentPreserver::BUNDLER_KEYS)
   ORIGINAL_ENV = environment_preserver.restore
@@ -64,11 +83,11 @@ module Bundler
     end
 
     def ui
-      (defined?(@ui) && @ui) || (self.ui = UI::Silent.new)
+      (defined?(@ui) && @ui) || (self.ui = UI::Shell.new)
     end
 
     def ui=(ui)
-      Bundler.rubygems.ui = ui ? UI::RGProxy.new(ui) : nil
+      Bundler.rubygems.ui = UI::RGProxy.new(ui)
       @ui = ui
     end
 
@@ -91,6 +110,33 @@ module Bundler
       end
     end
 
+    # Turns on the Bundler runtime. After +Bundler.setup+ call, all +load+ or
+    # +require+ of the gems would be allowed only if they are part of
+    # the Gemfile or Ruby's standard library. If the versions specified
+    # in Gemfile, only those versions would be loaded.
+    #
+    # Assuming Gemfile
+    #
+    #    gem 'first_gem', '= 1.0'
+    #    group :test do
+    #      gem 'second_gem', '= 1.0'
+    #    end
+    #
+    # The code using Bundler.setup works as follows:
+    #
+    #    require 'third_gem' # allowed, required from global gems
+    #    require 'first_gem' # allowed, loads the last installed version
+    #    Bundler.setup
+    #    require 'fourth_gem' # fails with LoadError
+    #    require 'second_gem' # loads exactly version 1.0
+    #
+    # +Bundler.setup+ can be called only once, all subsequent calls are no-op.
+    #
+    # If _groups_ list is provided, only gems from specified groups would
+    # be allowed (gems specified outside groups belong to special +:default+ group).
+    #
+    # To require all gems from Gemfile (or only some groups), see Bundler.require.
+    #
     def setup(*groups)
       # Return if all groups are already loaded
       return @setup if defined?(@setup) && @setup
@@ -107,6 +153,24 @@ module Bundler
       end
     end
 
+    # Setups Bundler environment (see Bundler.setup) if it is not already set,
+    # and loads all gems from groups specified. Unlike ::setup, can be called
+    # multiple times with different groups (if they were allowed by setup).
+    #
+    # Assuming Gemfile
+    #
+    #    gem 'first_gem', '= 1.0'
+    #    group :test do
+    #      gem 'second_gem', '= 1.0'
+    #    end
+    #
+    # The code will work as follows:
+    #
+    #    Bundler.setup # allow all groups
+    #    Bundler.require(:default) # requires only first_gem
+    #    # ...later
+    #    Bundler.require(:test)   # requires second_gem
+    #
     def require(*groups)
       setup(*groups).require(*groups)
     end
@@ -116,7 +180,7 @@ module Bundler
     end
 
     def environment
-      SharedHelpers.major_deprecation 2, "Bundler.environment has been removed in favor of Bundler.load"
+      SharedHelpers.major_deprecation 2, "Bundler.environment has been removed in favor of Bundler.load", :print_caller_location => true
       load
     end
 
@@ -167,29 +231,13 @@ module Bundler
         end
 
         if warning
-          Kernel.send(:require, "etc")
-          user_home = tmp_home_path(Etc.getlogin, warning)
+          user_home = tmp_home_path(warning)
           Bundler.ui.warn "#{warning}\nBundler will use `#{user_home}' as your home directory temporarily.\n"
           user_home
         else
           Pathname.new(home)
         end
       end
-    end
-
-    def tmp_home_path(login, warning)
-      login ||= "unknown"
-      Kernel.send(:require, "tmpdir")
-      path = Pathname.new(Dir.tmpdir).join("bundler", "home")
-      SharedHelpers.filesystem_access(path) do |tmp_home_path|
-        unless tmp_home_path.exist?
-          tmp_home_path.mkpath
-          tmp_home_path.chmod(0o777)
-        end
-        tmp_home_path.join(login).tap(&:mkpath)
-      end
-    rescue RuntimeError => e
-      raise e.exception("#{warning}\nBundler also failed to create a temporary home directory at `#{path}':\n#{e}")
     end
 
     def user_bundle_path(dir = "home")
@@ -282,7 +330,8 @@ EOF
       Bundler::SharedHelpers.major_deprecation(
         2,
         "`Bundler.clean_env` has been deprecated in favor of `Bundler.unbundled_env`. " \
-        "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env`"
+        "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env`",
+        :print_caller_location => true
       )
 
       unbundled_env
@@ -321,7 +370,8 @@ EOF
       Bundler::SharedHelpers.major_deprecation(
         2,
         "`Bundler.with_clean_env` has been deprecated in favor of `Bundler.with_unbundled_env`. " \
-        "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env`"
+        "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env`",
+        :print_caller_location => true
       )
 
       with_env(unbundled_env) { yield }
@@ -342,7 +392,8 @@ EOF
       Bundler::SharedHelpers.major_deprecation(
         2,
         "`Bundler.clean_system` has been deprecated in favor of `Bundler.unbundled_system`. " \
-        "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system`"
+        "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system`",
+        :print_caller_location => true
       )
 
       with_env(unbundled_env) { Kernel.system(*args) }
@@ -363,7 +414,8 @@ EOF
       Bundler::SharedHelpers.major_deprecation(
         2,
         "`Bundler.clean_exec` has been deprecated in favor of `Bundler.unbundled_exec`. " \
-        "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec`"
+        "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec`",
+        :print_caller_location => true
       )
 
       with_env(unbundled_env) { Kernel.exec(*args) }
@@ -606,6 +658,17 @@ EOF
     def configure_gem_home
       Bundler::SharedHelpers.set_env "GEM_HOME", File.expand_path(bundle_path, root)
       Bundler.rubygems.clear_paths
+    end
+
+    def tmp_home_path(warning)
+      Kernel.send(:require, "tmpdir")
+      SharedHelpers.filesystem_access(Dir.tmpdir) do
+        path = Bundler.tmp
+        at_exit { Bundler.rm_rf(path) }
+        path
+      end
+    rescue RuntimeError => e
+      raise e.exception("#{warning}\nBundler also failed to create a temporary home directory':\n#{e}")
     end
 
     # @param env [Hash]

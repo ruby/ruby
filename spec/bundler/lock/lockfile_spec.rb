@@ -621,7 +621,7 @@ RSpec.describe "the lockfile format" do
     G
 
     bundle "config set cache_all true"
-    bundle! :package
+    bundle! :cache
     bundle! :install, :local => true
 
     lockfile_should_be <<-G

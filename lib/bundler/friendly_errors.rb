@@ -16,7 +16,7 @@ module Bundler
         Bundler.ui.error error.message
       when GemRequireError
         Bundler.ui.error error.message
-        Bundler.ui.trace error.orig_exception, nil, true
+        Bundler.ui.trace error.orig_exception
       when BundlerError
         Bundler.ui.error error.message, :wrap => true
         Bundler.ui.trace error

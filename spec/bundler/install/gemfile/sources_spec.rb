@@ -102,7 +102,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       it "can cache and deploy" do
-        bundle! :package
+        bundle! :cache
 
         expect(bundled_app("vendor/cache/rack-1.0.0.gem")).to exist
         expect(bundled_app("vendor/cache/rack-obama-1.0.gem")).to exist

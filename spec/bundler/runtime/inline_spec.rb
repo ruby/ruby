@@ -2,8 +2,8 @@
 
 RSpec.describe "bundler/inline#gemfile" do
   def script(code, options = {})
-    requires = ["#{lib}/bundler/inline"]
-    requires.unshift File.expand_path("../../support/artifice/" + options.delete(:artifice) + ".rb", __FILE__) if options.key?(:artifice)
+    requires = ["#{lib_dir}/bundler/inline"]
+    requires.unshift "#{spec_dir}/support/artifice/" + options.delete(:artifice) if options.key?(:artifice)
     requires = requires.map {|r| "require '#{r}'" }.join("\n")
     @out = ruby("#{requires}\n\n" + code, options)
   end
@@ -97,7 +97,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
   it "lets me use my own ui object" do
     script <<-RUBY, :artifice => "endpoint"
-      require '#{lib}/bundler'
+      require '#{lib_dir}/bundler'
       class MyBundlerUI < Bundler::UI::Silent
         def confirm(msg, newline = nil)
           puts "CONFIRMED!"
@@ -141,7 +141,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
   it "does not mutate the option argument" do
     script <<-RUBY
-      require '#{lib}/bundler'
+      require '#{lib_dir}/bundler'
       options = { :ui => Bundler::UI::Shell.new }
       gemfile(false, options) do
         path "#{lib_path}" do

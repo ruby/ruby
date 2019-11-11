@@ -25,9 +25,9 @@ RSpec.describe "double checking sources", :realworld => true, :sometimes => true
     RUBY
 
     cmd = <<-RUBY
-      require "#{lib}/bundler"
-      require #{File.expand_path("../../support/artifice/vcr.rb", __FILE__).dump}
-      require "#{lib}/bundler/inline"
+      require "#{lib_dir}/bundler"
+      require "#{spec_dir}/support/artifice/vcr"
+      require "#{lib_dir}/bundler/inline"
       gemfile(true) do
         source "https://rubygems.org"
         gem "rails", path: "."

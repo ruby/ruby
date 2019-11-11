@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require File.expand_path("../endpoint_extra", __FILE__)
+require_relative "endpoint_extra"
 
 Artifice.deactivate
 
