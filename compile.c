@@ -6902,7 +6902,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
             if (bf == NULL) {
                 if (strcmp("inline!", builtin_func) == 0) {
                     int inline_index = GET_VM()->builtin_inline_index++;
-                    snprintf(inline_func, 0x20, "__builtin_inline%d", inline_index);
+                    snprintf(inline_func, 0x20, "rb_compiled_inline%d", inline_index);
                     builtin_func = inline_func;
                     args_node = NULL;
                     goto retry;

@@ -29,7 +29,7 @@ def collect_builtin base, iseq_ary, bs, inlines
           raise "1st argument should be string literal" unless prev_insn[0] == :putstring
           text = prev_insn[1]
 
-          func_name = "__builtin_inline#{inlines.size}"
+          func_name = "rb_compiled_inline#{inlines.size}"
           inlines << [func_name, [lineno, text, params]]
           argc -= 1
         end
