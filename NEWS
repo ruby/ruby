@@ -644,3 +644,7 @@ JIT::
   * RUBY_REVISION class is changed from Integer to String.
 
   * RUBY_DESCRIPTION includes Git revision instead of Subversion's one.
+
+* Support built-in methods in Ruby with `__builtin_` syntax. [Feature #16254]
+  Some methods are defined in *.rb (such as trace_point.rb).
+  For example, it is easy to define a method which accepts keyword arguments.
