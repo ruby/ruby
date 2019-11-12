@@ -26,9 +26,9 @@ jobs:
         with:
           path: C:\vcpkg\downloads
           key: ${{ runner.os }}-vcpkg-download-${{ matrix.os }}-${{ github.sha }}
-          restore-keys:
-            - "${{ runner.os }}-vcpkg-download-${{ matrix.os }}-"
-            - "${{ runner.os }}-vcpkg-download-"
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-download-${{ matrix.os }}-
+            ${{ runner.os }}-vcpkg-download-
       - name: Install libraries with vcpkg
         run: |
           vcpkg --triplet x64-windows install readline zlib
@@ -36,9 +36,9 @@ jobs:
         with:
           path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
           key: ${{ runner.os }}-chocolatey-${{ matrix.os }}-${{ github.sha }}
-          restore-keys:
-            - "${{ runner.os }}-chocolatey-${{ matrix.os }}-"
-            - "${{ runner.os }}-chocolatey-"
+          restore-keys: |
+            ${{ runner.os }}-chocolatey-${{ matrix.os }}-
+            ${{ runner.os }}-chocolatey-
       - name: Install libraries with chocolatey
         run: |
           choco config get cacheLocation
