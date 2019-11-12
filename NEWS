@@ -126,6 +126,11 @@ sufficient information, see the ChangeLog file or Redmine
 
     [1, 2, 10].map { _1.to_s(16) } #=> ["1", "2", "a"]
 
+  You can still define a local variable named _1 and so on, and that is honored when present, but renders warning.
+
+    _1 = 0
+    [1].each { p _1 } # prints 0 instead of 1, but also warns.
+
 ==== proc/lambda without block is deprecated
 
 * Proc.new and Kernel#proc with no block in a method called with a block is
