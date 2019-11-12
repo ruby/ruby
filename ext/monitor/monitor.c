@@ -86,10 +86,25 @@ monitor_enter(VALUE monitor)
 }
 
 static VALUE
-monitor_exit(VALUE monitor)
+monitor_check_owner(VALUE monitor)
 {
     struct rb_monitor *mc = monitor_ptr(monitor);
+    if (!mc_owner_p(mc)) {
+        rb_raise(rb_eThreadError, "current thread not owner");
+    }
+    return Qnil;
+}
+
+static VALUE
+monitor_exit(VALUE monitor)
+{
+    monitor_check_owner(monitor);
+
+    struct rb_monitor *mc = monitor_ptr(monitor);
+
+    if (mc->count <= 0) rb_bug("monitor_exit: count:%d\n", (int)mc->count);
     mc->count--;
+
     if (mc->count == 0) {
         RB_OBJ_WRITE(monitor, &mc->owner, Qnil);
         rb_mutex_unlock(mc->mutex);
@@ -109,16 +124,6 @@ monitor_owned_p(VALUE monitor)
 {
     struct rb_monitor *mc = monitor_ptr(monitor);
     return (rb_mutex_locked_p(mc->mutex) && mc_owner_p(mc)) ? Qtrue : Qfalse;
-}
-
-static VALUE
-monitor_check_owner(VALUE monitor)
-{
-    struct rb_monitor *mc = monitor_ptr(monitor);
-    if (!mc_owner_p(mc)) {
-        rb_raise(rb_eThreadError, "current thread not owner");
-    }
-    return Qnil;
 }
 
 static VALUE
