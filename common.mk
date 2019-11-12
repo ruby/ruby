@@ -58,6 +58,7 @@ DOCLIE_GIT_REF = v1.3.2
 STATIC_RUBY   = static-ruby
 
 TIMESTAMPDIR  = $(EXTOUT)/.timestamp
+RUBYCOMMONDIR = $(EXTOUT)/common
 EXTCONF       = extconf.rb
 LIBRUBY_EXTS  = ./.libruby-with-ext.time
 REVISION_H    = ./.revision.time
@@ -271,7 +272,8 @@ EXTS_NOTE = -f $(EXTS_MK) $(mflags) RUBY="$(MINIRUBY)" top_srcdir="$(srcdir)" no
 exts: build-ext
 
 EXTS_MK = exts.mk
-$(EXTS_MK): ext/configure-ext.mk $(TIMESTAMPDIR)/$(arch)/.time $(srcdir)/template/exts.mk.tmpl
+$(EXTS_MK): ext/configure-ext.mk $(srcdir)/template/exts.mk.tmpl \
+	    $(TIMESTAMPDIR)/$(arch)/.time $(TIMESTAMPDIR)/.RUBYCOMMONDIR.time
 	$(Q)$(MAKE) -f ext/configure-ext.mk $(mflags) V=$(V) EXTSTATIC=$(EXTSTATIC) \
 		gnumake=$(gnumake) MINIRUBY="$(MINIRUBY)" \
 		EXTLDFLAGS="$(EXTLDFLAGS)" srcdir="$(srcdir)"
@@ -898,6 +900,10 @@ $(ENC_TRANS_D):
 
 $(TIMESTAMPDIR)/$(arch)/.time:
 	$(Q)$(MAKEDIRS) $(@D) $(EXTOUT)/$(arch)
+	@$(NULLCMD) > $@
+
+$(TIMESTAMPDIR)/.RUBYCOMMONDIR.time:
+	$(Q)$(MAKEDIRS) $(@D) $(RUBYCOMMONDIR)
 	@$(NULLCMD) > $@
 
 ###
