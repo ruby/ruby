@@ -741,7 +741,7 @@ rb_func_lambda_new(rb_block_call_func_t func, VALUE val, int min_argc, int max_a
 static const char proc_without_block[] = "tried to create Proc object without a block";
 
 static VALUE
-proc_new(VALUE klass, int8_t is_lambda)
+proc_new(VALUE klass, int8_t is_lambda, int8_t kernel)
 {
     VALUE procval;
     const rb_execution_context_t *ec = GET_EC();
@@ -757,11 +757,13 @@ proc_new(VALUE klass, int8_t is_lambda)
                 rb_raise(rb_eArgError, proc_without_block);
             }
             else {
-                rb_warn("Capturing the given block using Proc.new is deprecated; use `&block` instead");
+                const char *name = kernel ? "Kernel#proc" : "Proc.new";
+                rb_warn("Capturing the given block using %s is deprecated; "
+                        "use `&block` instead", name);
 	    }
 	}
 #else
-	if (0)
+	if (0);
 #endif
 	else {
 	    rb_raise(rb_eArgError, proc_without_block);
@@ -817,7 +819,7 @@ proc_new(VALUE klass, int8_t is_lambda)
 static VALUE
 rb_proc_s_new(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE block = proc_new(klass, FALSE);
+    VALUE block = proc_new(klass, FALSE, FALSE);
 
     rb_obj_call_init_kw(block, argc, argv, RB_PASS_CALLED_KEYWORDS);
     return block;
@@ -826,7 +828,7 @@ rb_proc_s_new(int argc, VALUE *argv, VALUE klass)
 VALUE
 rb_block_proc(void)
 {
-    return proc_new(rb_cProc, FALSE);
+    return proc_new(rb_cProc, FALSE, FALSE);
 }
 
 /*
@@ -839,13 +841,13 @@ rb_block_proc(void)
 static VALUE
 f_proc(VALUE _)
 {
-    return rb_block_proc();
+    return proc_new(rb_cProc, FALSE, TRUE);
 }
 
 VALUE
 rb_block_lambda(void)
 {
-    return proc_new(rb_cProc, TRUE);
+    return proc_new(rb_cProc, TRUE, FALSE);
 }
 
 /*

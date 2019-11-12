@@ -56,7 +56,7 @@ describe "Kernel#proc" do
 
       -> {
         some_method { "hello" }
-      }.should complain(/Capturing the given block using Proc.new is deprecated/)
+      }.should complain(/Capturing the given block using Kernel#proc is deprecated/)
     end
   end
 end
