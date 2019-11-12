@@ -32,6 +32,7 @@ module Kernel
   # that file has already been loaded is preserved.
 
   def require(path)
+    monitor_owned = RUBYGEMS_ACTIVATION_MONITOR.mon_owned?
     RUBYGEMS_ACTIVATION_MONITOR.enter
 
     path = path.to_path if path.respond_to? :to_path
@@ -166,7 +167,7 @@ module Kernel
 
     raise load_error
   ensure
-    if RUBYGEMS_ACTIVATION_MONITOR.mon_owned?
+    if !monitor_owned && RUBYGEMS_ACTIVATION_MONITOR.mon_owned?
       STDERR.puts [$$, Thread.current, $!, $!.backtrace].inspect if $!
       raise "CRITICAL: RUBYGEMS_ACTIVATION_MONITOR is holding."
     end
