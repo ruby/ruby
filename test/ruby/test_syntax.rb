@@ -986,6 +986,13 @@ eom
     assert_syntax_error('0...%q.', /unterminated string/, bug10957)
   end
 
+  def test_range_at_eol
+    assert_warn(/\.\.\. at EOL/) {eval("1...\n2")}
+    assert_warn('') {eval("(1...)")}
+    assert_warn('') {eval("(1...\n2)")}
+    assert_warn('') {eval("{a: 1...\n2}")}
+  end
+
   def test_too_big_nth_ref
     bug11192 = '[ruby-core:69393] [Bug #11192]'
     assert_warn(/too big/, bug11192) do

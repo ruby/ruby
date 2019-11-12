@@ -9235,6 +9235,9 @@ parser_yylex(struct parser_params *p)
 	switch (c = nextc(p)) {
 	  case '.':
 	    if ((c = nextc(p)) == '.') {
+		if (p->lex.paren_nest == 0 && looking_at_eol_p(p)) {
+		    rb_warn0("... at EOL, should be parenthesized?");
+		}
 		return is_beg ? tBDOT3 : tDOT3;
 	    }
 	    pushback(p, c);
