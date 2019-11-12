@@ -167,9 +167,9 @@ module Kernel
 
     raise load_error
   ensure
-    if !monitor_owned && RUBYGEMS_ACTIVATION_MONITOR.mon_owned?
+    if monitor_owned != (ow = RUBYGEMS_ACTIVATION_MONITOR.mon_owned?)
       STDERR.puts [$$, Thread.current, $!, $!.backtrace].inspect if $!
-      raise "CRITICAL: RUBYGEMS_ACTIVATION_MONITOR is holding."
+      raise "CRITICAL: RUBYGEMS_ACTIVATION_MONITOR.owned?: before #{monitor_owned} -> after #{ow}"
     end
   end
 
