@@ -191,7 +191,7 @@ sufficient information, see the ChangeLog file or Redmine
 
 * +yield+ in singleton class syntax is warned and will be deprecated later [Feature #15575].
 
-* Argument forwarding by <code>...</code> is introduced. [Feature #16253]
+* Argument forwarding by <code>(...)</code> is introduced. [Feature #16253]
 
     def foo(...)
       bar(...)
@@ -199,6 +199,7 @@ sufficient information, see the ChangeLog file or Redmine
 
   All arguments to +foo+ are forwarded to +bar+, including keyword and
   block arguments.
+  Note that the parentheses are mandatory.  `bar ...` is parsed as an endless range.
 
 === Core classes updates (outstanding ones only)
 
