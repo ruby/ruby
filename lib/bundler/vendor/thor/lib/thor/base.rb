@@ -1,6 +1,5 @@
 require_relative "command"
 require_relative "core_ext/hash_with_indifferent_access"
-require_relative "core_ext/ordered_hash"
 require_relative "error"
 require_relative "invocation"
 require_relative "parser"
@@ -89,6 +88,7 @@ class Bundler::Thor
 
     class << self
       def included(base) #:nodoc:
+        super(base)
         base.extend ClassMethods
         base.send :include, Invocation
         base.send :include, Shell
@@ -353,22 +353,22 @@ class Bundler::Thor
       # Returns the commands for this Bundler::Thor class.
       #
       # ==== Returns
-      # OrderedHash:: An ordered hash with commands names as keys and Bundler::Thor::Command
-      #               objects as values.
+      # Hash:: An ordered hash with commands names as keys and Bundler::Thor::Command
+      #        objects as values.
       #
       def commands
-        @commands ||= Bundler::Thor::CoreExt::OrderedHash.new
+        @commands ||= Hash.new
       end
       alias_method :tasks, :commands
 
       # Returns the commands for this Bundler::Thor class and all subclasses.
       #
       # ==== Returns
-      # OrderedHash:: An ordered hash with commands names as keys and Bundler::Thor::Command
-      #               objects as values.
+      # Hash:: An ordered hash with commands names as keys and Bundler::Thor::Command
+      #        objects as values.
       #
       def all_commands
-        @all_commands ||= from_superclass(:all_commands, Bundler::Thor::CoreExt::OrderedHash.new)
+        @all_commands ||= from_superclass(:all_commands, Hash.new)
         @all_commands.merge!(commands)
       end
       alias_method :all_tasks, :all_commands
@@ -502,7 +502,7 @@ class Bundler::Thor
         msg = "ERROR: \"#{basename} #{name}\" was called with ".dup
         msg << "no arguments"               if     args.empty?
         msg << "arguments " << args.inspect unless args.empty?
-        msg << "\nUsage: #{banner(command).inspect}"
+        msg << "\nUsage: \"#{banner(command).split("\n").join("\"\n       \"")}\""
         raise InvocationError, msg
       end
 
@@ -596,6 +596,7 @@ class Bundler::Thor
       # Everytime someone inherits from a Bundler::Thor class, register the klass
       # and file into baseclass.
       def inherited(klass)
+        super(klass)
         Bundler::Thor::Base.register_klass_file(klass)
         klass.instance_variable_set(:@no_commands, false)
       end
@@ -603,6 +604,7 @@ class Bundler::Thor
       # Fire this callback whenever a method is added. Added methods are
       # tracked as commands by invoking the create_command method.
       def method_added(meth)
+        super(meth)
         meth = meth.to_s
 
         if meth == "initialize"

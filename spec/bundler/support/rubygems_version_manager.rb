@@ -56,7 +56,7 @@ private
   end
 
   def rubygems_unrequire_needed?
-    defined?(Gem) && Gem::VERSION != target_gem_version
+    defined?(Gem::VERSION) && Gem::VERSION != target_gem_version
   end
 
   def local_copy_switch_needed?

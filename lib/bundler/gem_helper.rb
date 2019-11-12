@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "vendored_thor" unless defined?(Thor)
 require_relative "../bundler"
 require "shellwords"
 

@@ -25,6 +25,7 @@ class Bundler::Thor
     end
 
     def self.included(base)
+      super(base)
       # Hack. Make rakefile point to invoker, so rdoc task is generated properly.
       rakefile = File.basename(caller[0].match(/(.*):\d+/)[1])
       Rake.application.instance_variable_set(:@rakefile, rakefile)

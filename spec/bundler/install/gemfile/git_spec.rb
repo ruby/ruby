@@ -1056,7 +1056,6 @@ RSpec.describe "bundle install with git sources" do
 
       File.open(lib_path("install_hooks.rb"), "w") do |h|
         h.write <<-H
-          require '#{spec_dir}/support/rubygems'
           Gem.pre_install_hooks << lambda do |inst|
             STDERR.puts "Ran pre-install hook: \#{inst.spec.full_name}"
           end
@@ -1076,7 +1075,6 @@ RSpec.describe "bundle install with git sources" do
 
       File.open(lib_path("install_hooks.rb"), "w") do |h|
         h.write <<-H
-          require '#{spec_dir}/support/rubygems'
           Gem.post_install_hooks << lambda do |inst|
             STDERR.puts "Ran post-install hook: \#{inst.spec.full_name}"
           end
@@ -1096,7 +1094,6 @@ RSpec.describe "bundle install with git sources" do
 
       File.open(lib_path("install_hooks.rb"), "w") do |h|
         h.write <<-H
-          require '#{spec_dir}/support/rubygems'
           Gem.pre_install_hooks << lambda do |inst|
             false
           end

@@ -23,14 +23,14 @@ class Bundler::Thor
       destination = args.first || source
       source = File.expand_path(find_in_source_paths(source.to_s))
 
-      create_file destination, nil, config do
+      resulting_destination = create_file destination, nil, config do
         content = File.binread(source)
         content = yield(content) if block
         content
       end
       if config[:mode] == :preserve
         mode = File.stat(source).mode
-        chmod(destination, mode, config)
+        chmod(resulting_destination, mode, config)
       end
     end
 
@@ -80,13 +80,13 @@ class Bundler::Thor
       config = args.last.is_a?(Hash) ? args.pop : {}
       destination = args.first
 
-      if source =~ %r{^https?\://}
+      render = if source =~ %r{^https?\://}
         require "open-uri"
+        URI.send(:open, source) { |input| input.binmode.read }
       else
         source = File.expand_path(find_in_source_paths(source.to_s))
+        open(source) { |input| input.binmode.read }
       end
-
-      render = open(source) { |input| input.binmode.read }
 
       destination ||= if block_given?
         block.arity == 1 ? yield(render) : yield

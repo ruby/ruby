@@ -115,7 +115,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
   it "has an option for quiet installation" do
     script <<-RUBY, :artifice => "endpoint"
-      require 'bundler'
+      require '#{lib_dir}/bundler/inline'
 
       gemfile(true, :quiet => true) do
         source "https://notaserver.com"
