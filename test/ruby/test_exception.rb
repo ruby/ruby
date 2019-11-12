@@ -1259,6 +1259,12 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     };
   end
 
+  def test_warning_category
+    assert_raise(TypeError) {Warning[nil]}
+    assert_raise(ArgumentError) {Warning[:XXXX]}
+    assert_include([true, false], Warning[:deprecated])
+  end
+
   def test_undefined_backtrace
     assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;

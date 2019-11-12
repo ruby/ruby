@@ -128,6 +128,50 @@ rb_syntax_error_append(VALUE exc, VALUE file, int line, int column,
     return exc;
 }
 
+static unsigned int warning_disabled_categories;
+#define RB_WARN_CATEGORY_DEPRECATED 1
+
+static unsigned int
+rb_warning_category_mask(VALUE category)
+{
+    unsigned int mask = 0;
+    Check_Type(category, T_SYMBOL);
+    if (category == ID2SYM(rb_intern("deprecated"))) {
+        mask = RB_WARN_CATEGORY_DEPRECATED;
+    }
+    else {
+        rb_raise(rb_eArgError, "unknown category: %"PRIsVALUE, category);
+    }
+    return mask;
+}
+
+static int
+rb_warning_category_enabled_p(VALUE category)
+{
+    return !(warning_disabled_categories & rb_warning_category_mask(category));
+}
+
+static VALUE
+rb_warning_s_aref(VALUE mod, VALUE category)
+{
+    if (rb_warning_category_enabled_p(category))
+        return Qtrue;
+    return Qfalse;
+}
+
+static VALUE
+rb_warning_s_aset(VALUE mod, VALUE category, VALUE flag)
+{
+    unsigned int mask = rb_warning_category_mask(category);
+    unsigned int disabled = warning_disabled_categories;
+    if (!RTEST(flag))
+        disabled |= mask;
+    else
+        disabled &= ~mask;
+    warning_disabled_categories = disabled;
+    return flag;
+}
+
 /*
  * call-seq:
  *    warn(msg)  -> nil
@@ -2501,6 +2545,8 @@ Init_Exception(void)
     rb_mErrno = rb_define_module("Errno");
 
     rb_mWarning = rb_define_module("Warning");
+    rb_define_singleton_method(rb_mWarning, "[]", rb_warning_s_aref, 1);
+    rb_define_singleton_method(rb_mWarning, "[]=", rb_warning_s_aset, 2);
     rb_define_method(rb_mWarning, "warn", rb_warning_s_warn, 1);
     rb_extend_object(rb_mWarning, rb_mWarning);
 
