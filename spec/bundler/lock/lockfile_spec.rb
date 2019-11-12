@@ -1418,7 +1418,6 @@ RSpec.describe "the lockfile format" do
       it "preserves Gemfile.lock \\n line endings" do
         expect do
           ruby <<-RUBY
-                   require 'rubygems'
                    require 'bundler'
                    Bundler.setup
                  RUBY
@@ -1432,7 +1431,6 @@ RSpec.describe "the lockfile format" do
 
         expect do
           ruby <<-RUBY
-                   require 'rubygems'
                    require 'bundler'
                    Bundler.setup
                  RUBY

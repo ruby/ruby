@@ -1086,7 +1086,6 @@ G
       FileUtils.rm(bundled_app("Gemfile.lock"))
 
       ruby <<-R
-        require 'rubygems'
         require 'bundler/setup'
       R
 
@@ -1106,7 +1105,6 @@ G
       FileUtils.rm(bundled_app("Gemfile.lock"))
 
       ruby <<-R
-        require 'rubygems'
         require 'bundler/setup'
       R
 
@@ -1127,7 +1125,6 @@ G
         FileUtils.rm(bundled_app("Gemfile.lock"))
 
         ruby <<-R
-          require 'rubygems'
           require 'bundler/setup'
         R
 
@@ -1148,7 +1145,6 @@ G
       FileUtils.rm(bundled_app("Gemfile.lock"))
 
       ruby <<-R
-        require 'rubygems'
         require 'bundler/setup'
       R
 

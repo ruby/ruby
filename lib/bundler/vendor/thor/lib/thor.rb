@@ -175,7 +175,7 @@ class Bundler::Thor
       handle_no_command_error(meth) unless command
 
       shell.say "Usage:"
-      shell.say "  #{banner(command)}"
+      shell.say "  #{banner(command).split("\n").join("\n  ")}"
       shell.say
       class_options_help(shell, nil => command.options.values)
       if command.long_description
@@ -398,7 +398,10 @@ class Bundler::Thor
     # the namespace should be displayed as arguments.
     #
     def banner(command, namespace = nil, subcommand = false)
-      "#{basename} #{command.formatted_usage(self, $thor_runner, subcommand)}"
+      $thor_runner ||= false
+      command.formatted_usage(self, $thor_runner, subcommand).split("\n").map do |formatted_usage|
+        "#{basename} #{formatted_usage}"
+      end.join("\n")
     end
 
     def baseclass #:nodoc:

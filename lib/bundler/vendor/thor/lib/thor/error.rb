@@ -1,22 +1,18 @@
 class Bundler::Thor
-  Correctable =
-    begin
-      require 'did_you_mean'
+  Correctable = if defined?(DidYouMean::SpellChecker) && defined?(DidYouMean::Correctable)
+                  # In order to support versions of Ruby that don't have keyword
+                  # arguments, we need our own spell checker class that doesn't take key
+                  # words. Even though this code wouldn't be hit because of the check
+                  # above, it's still necessary because the interpreter would otherwise be
+                  # unable to parse the file.
+                  class NoKwargSpellChecker < DidYouMean::SpellChecker # :nodoc:
+                    def initialize(dictionary)
+                      @dictionary = dictionary
+                    end
+                  end
 
-      # In order to support versions of Ruby that don't have keyword
-      # arguments, we need our own spell checker class that doesn't take key
-      # words. Even though this code wouldn't be hit because of the check
-      # above, it's still necessary because the interpreter would otherwise be
-      # unable to parse the file.
-      class NoKwargSpellChecker < DidYouMean::SpellChecker # :nodoc:
-        def initialize(dictionary)
-          @dictionary = dictionary
-        end
-      end
-
-      DidYouMean::Correctable
-    rescue LoadError, NameError
-    end
+                  DidYouMean::Correctable
+                end
 
   # Bundler::Thor::Error is raised when it's caused by wrong usage of thor classes. Those
   # errors have their backtrace suppressed and are nicely shown to the user.

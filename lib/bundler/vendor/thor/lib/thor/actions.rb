@@ -12,6 +12,7 @@ class Bundler::Thor
     attr_accessor :behavior
 
     def self.included(base) #:nodoc:
+      super(base)
       base.extend ClassMethods
     end
 

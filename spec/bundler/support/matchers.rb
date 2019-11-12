@@ -128,9 +128,10 @@ module Spec
         groups << opts
         @errors = names.map do |name|
           name, version, platform = name.split(/\s+/)
+          require_path = name == "bundler" ? "#{lib_dir}/bundler" : name
           version_const = name == "bundler" ? "Bundler::VERSION" : Spec::Builders.constantize(name)
           begin
-            run! "require '#{name}.rb'; puts #{version_const}", *groups
+            run! "require '#{require_path}.rb'; puts #{version_const}", *groups
           rescue StandardError => e
             next "#{name} is not installed:\n#{indent(e)}"
           end

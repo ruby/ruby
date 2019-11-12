@@ -985,9 +985,7 @@ end
       build_git "bar", :gemspec => false do |s|
         s.write "lib/bar/version.rb", %(BAR_VERSION = '1.0')
         s.write "bar.gemspec", <<-G
-          lib = File.expand_path('../lib/', __FILE__)
-          $:.unshift lib unless $:.include?(lib)
-          require 'bar/version'
+          require_relative 'lib/bar/version'
 
           Gem::Specification.new do |s|
             s.name        = 'bar'

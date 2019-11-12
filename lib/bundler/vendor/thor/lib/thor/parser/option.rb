@@ -1,17 +1,18 @@
 class Bundler::Thor
   class Option < Argument #:nodoc:
-    attr_reader :aliases, :group, :lazy_default, :hide
+    attr_reader :aliases, :group, :lazy_default, :hide, :repeatable
 
     VALID_TYPES = [:boolean, :numeric, :hash, :array, :string]
 
     def initialize(name, options = {})
       @check_default_type = options[:check_default_type]
       options[:required] = false unless options.key?(:required)
+      @repeatable     = options.fetch(:repeatable, false)
       super
-      @lazy_default = options[:lazy_default]
-      @group        = options[:group].to_s.capitalize if options[:group]
-      @aliases      = Array(options[:aliases])
-      @hide         = options[:hide]
+      @lazy_default   = options[:lazy_default]
+      @group          = options[:group].to_s.capitalize if options[:group]
+      @aliases        = Array(options[:aliases])
+      @hide           = options[:hide]
     end
 
     # This parse quick options given as method_options. It makes several
@@ -128,7 +129,8 @@ class Bundler::Thor
         @default.class.name.downcase.to_sym
       end
 
-      raise ArgumentError, "Expected #{@type} default value for '#{switch_name}'; got #{@default.inspect} (#{default_type})" unless default_type == @type
+      expected_type = (@repeatable && @type != :hash) ? :array : @type
+      raise ArgumentError, "Expected #{expected_type} default value for '#{switch_name}'; got #{@default.inspect} (#{default_type})" unless default_type == expected_type
     end
 
     def dasherized?

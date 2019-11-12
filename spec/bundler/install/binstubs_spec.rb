@@ -7,7 +7,6 @@ RSpec.describe "bundle install" do
     it "overrides Gem.bindir" do
       expect(Pathname.new("/usr/bin")).not_to be_writable unless Process.euid == 0
       gemfile <<-G
-        require 'rubygems'
         def Gem.bindir; "/usr/bin"; end
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
