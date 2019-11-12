@@ -3453,15 +3453,6 @@ block_param_def	: '|' opt_bv_decl '|'
 		    /*% %*/
 		    /*% ripper: block_var!(params!(Qnil,Qnil,Qnil,Qnil,Qnil,Qnil,Qnil), escape_Qundef($2)) %*/
 		    }
-		| tOROP
-		    {
-			p->cur_arg = 0;
-			p->max_numparam = ORDINAL_PARAM;
-		    /*%%%*/
-			$$ = 0;
-		    /*% %*/
-		    /*% ripper: block_var!(params!(Qnil,Qnil,Qnil,Qnil,Qnil,Qnil,Qnil), Qnil) %*/
-		    }
 		| '|' block_param opt_bv_decl '|'
 		    {
 			p->cur_arg = 0;
@@ -9164,6 +9155,11 @@ parser_yylex(struct parser_params *p)
 		return tOP_ASGN;
 	    }
 	    pushback(p, c);
+	    if (IS_lex_state_for(last_state, EXPR_BEG)) {
+		c = '|';
+		pushback(p, '|');
+		return c;
+	    }
 	    return tOROP;
 	}
 	if (c == '=') {
