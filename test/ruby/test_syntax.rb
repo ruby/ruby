@@ -243,6 +243,16 @@ class TestSyntax < Test::Unit::TestCase
 
     o = Object.new
     assert_warn("") do
+      o.instance_eval("def foo(var: bar {| | var}) var end")
+    end
+
+    o = Object.new
+    assert_warn("") do
+      o.instance_eval("def foo(var: bar {|| var}) var end")
+    end
+
+    o = Object.new
+    assert_warn("") do
       o.instance_eval("def foo(var: def bar(var) var; end) var end")
     end
 
@@ -294,6 +304,16 @@ class TestSyntax < Test::Unit::TestCase
     o = Object.new
     assert_warn("") do
       o.instance_eval("def foo(var = bar {|var| var}) var end")
+    end
+
+    o = Object.new
+    assert_warn("") do
+      o.instance_eval("def foo(var = bar {| | var}) var end")
+    end
+
+    o = Object.new
+    assert_warn("") do
+      o.instance_eval("def foo(var = bar {|| var}) var end")
     end
 
     o = Object.new

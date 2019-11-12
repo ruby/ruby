@@ -3455,6 +3455,7 @@ block_param_def	: '|' opt_bv_decl '|'
 		    }
 		| tOROP
 		    {
+			p->cur_arg = 0;
 			p->max_numparam = ORDINAL_PARAM;
 		    /*%%%*/
 			$$ = 0;
