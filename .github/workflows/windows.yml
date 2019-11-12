@@ -22,11 +22,24 @@ jobs:
     runs-on: ${{ matrix.os }}
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
+      - uses: actions/cache@v1
+        with:
+          path: C:\vcpkg\downloads
+          key: ${{ runner.os }}-vcpkg-download-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-download-
       - name: Install libraries with vcpkg
         run: |
           vcpkg --triplet x64-windows install readline zlib
+      - uses: actions/cache@v1
+        with:
+          path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
+          key: ${{ runner.os }}-chocolatey-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-chocolatey-
       - name: Install libraries with chocolatey
         run: |
+          choco config get cacheLocation
           choco install --no-progress openssl winflexbison3
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
       - name: Checkout ruby/ruby
