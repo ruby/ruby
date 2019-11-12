@@ -224,7 +224,7 @@ Complex::
 
 Dir::
 
-  Modified method::
+  Modified methods::
 
     * Dir.glob and Dir.[] no longer allow NUL-separated glob pattern.
       Use Array instead.  [Feature #14643]
@@ -293,7 +293,7 @@ FrozenError::
     * Added FrozenError#receiver to return the frozen object that
       modification was attempted on.  To set this object when raising
       FrozenError in Ruby code, pass it as the second argument to
-      FrozenError.new.
+      FrozenError.new. [Feature #15751]
 
 GC::
 
