@@ -46,7 +46,7 @@ module Kernel
       $LOAD_PATH[0...Gem.load_path_insert_index || -1].each do |lp|
         safe_lp = lp.dup.tap(&Gem::UNTAINT)
         begin
-          if File.symlink? safe_lp # for backword compatibility
+          if File.symlink? safe_lp # for backward compatibility
             next
           end
         rescue SecurityError
