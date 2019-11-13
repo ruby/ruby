@@ -63,7 +63,9 @@ jobs:
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           set YACC=win_bison
           cd build
+          echo on
           nmake up
+          nmake extract-gems
           nmake
         shell: cmd
       - name: nmake test
