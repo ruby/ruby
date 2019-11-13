@@ -63,6 +63,11 @@ jobs:
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: "minitest"
       - name: Leaked Globals
         run: make -C build -s leaked-globals
+      - name: Cleaning
+        run: |
+          make -C build -s distclean
+          ls -ARl build
+          rmdir build
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |
