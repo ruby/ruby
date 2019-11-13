@@ -1,4 +1,4 @@
-name: Ubuntu
+name: MJIT
 on:
   push:
     branches:
@@ -7,46 +7,14 @@ on:
     branches:
       - '*'
 jobs:
-  make:
+  test:
     strategy:
       matrix:
-        test_task: [ "check", "test-bundler", "test-bundled-gems" ]
-        os: [ubuntu-latest, ubuntu-16.04]
-        exclude:
-          - test_task: test-bundler
-            os: ubuntu-16.04
-          - test_task: test-bundled-gems
-            os: ubuntu-16.04
+        jit_opts: [ "--jit", "--jit-wait" ]
       fail-fast: false
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
-      - run: env | sort
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
-      - name: Dump job context
-        env:
-          JOB_CONTEXT: ${{ toJson(job) }}
-        run: echo "$JOB_CONTEXT"
-      - name: Dump steps context
-        env:
-          STEPS_CONTEXT: ${{ toJson(steps) }}
-        run: echo "$STEPS_CONTEXT"
-      - name: Dump runner context
-        env:
-          RUNNER_CONTEXT: ${{ toJson(runner) }}
-        run: echo "$RUNNER_CONTEXT"
-      - name: Dump strategy context
-        env:
-          STRATEGY_CONTEXT: ${{ toJson(strategy) }}
-        run: echo "$STRATEGY_CONTEXT"
-      - name: Dump matrix context
-        env:
-          MATRIX_CONTEXT: ${{ toJson(matrix) }}
-        run: echo "$MATRIX_CONTEXT"
-
       - name: Install libraries
         run: |
           set -x
@@ -67,7 +35,6 @@ jobs:
           GITHUB_BRANCH: ${{ github.event.pull_request.head.ref }}
           GITHUB_REPO: ${{ github.event.pull_request.head.repo.full_name }}
         if: github.event_name == 'pull_request'
-      - run: ./src/tool/actions-commit-info.sh
       - name: Fixed world writable dirs
         run: |
           chmod go-w $HOME
@@ -82,14 +49,16 @@ jobs:
           mkdir build
           cd build
           ../src/configure -C --disable-install-doc
-      - name: Make
+      - name: make all
         run: make -C build $JOBS
-      - name: Tests
-        run: make -C build $JOBS -s ${{ matrix.test_task }}
-        env:
-          RUBY_TESTOPTS: "-q --tty=no"
-          # Remove minitest from TEST_BUNDLED_GEMS_ALLOW_FAILURES if https://github.com/seattlerb/minitest/pull/798 is resolved
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: "minitest"
+      - name: make install
+        run: sudo make -C build $JOBS install
+      - name: make test
+        run: "make -C build $JOBS -s test TESTOPTS='-q --tty=no' RUN_OPTS='--disable-gems --jit-warnings ${{ matrix.jit_opts }}'"
+      - name: make test-all
+        run: "make -C build $JOBS -s test-all TESTOPTS='-q --tty=no' RUN_OPTS='--disable-gems --jit-warnings ${{ matrix.jit_opts }}'"
+      - name: make test-spec
+        run: "make -C build $JOBS -s test-spec RUN_OPTS='--disable-gems --jit-warnings ${{ matrix.jit_opts }}'"
       - name: Leaked Globals
         run: make -C build -s leaked-globals
       - uses: k0kubun/action-slack@v2.0.0
@@ -97,7 +66,7 @@ jobs:
           payload: |
             {
               "attachments": [{
-                "text": "${{ job.status }}: ${{ env.COMMIT_DATE }}-${{ env.COMMIT_NUMBER_OF_DAY }} <https://github.com/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ matrix.os }} / ${{ matrix.test_task }}> " +
+                "text": "${{ job.status}}: <https://github.com/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ matrix.os }} / ${{ matrix.test_task }}> " +
                         "(<https://github.com/${{ github.repository }}/commit/${{ github.sha }}|" + "${{ github.sha }}".substring(0, 10) + ">) " +
                         "of ${{ github.repository }}@" + "${{ github.ref }}".split('/').reverse()[0] + " by ${{ github.event.head_commit.committer.name }}",
                 "color": "danger"
