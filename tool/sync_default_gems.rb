@@ -82,7 +82,6 @@ $repositories = {
   rexml: 'ruby/rexml',
   rss: 'ruby/rss',
   irb: 'ruby/irb',
-  sync: 'ruby/sync',
   tracer: 'ruby/tracer',
   forwardable: "ruby/forwardable",
   e2mmap: "ruby/e2mmap",
