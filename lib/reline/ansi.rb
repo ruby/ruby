@@ -135,7 +135,7 @@ class Reline::ANSI
 
   def self.deprep(otio)
     int_handle = Signal.trap('INT', 'IGNORE')
-    `stty #{otio}`
+    system("stty #{otio}", err: File::NULL)
     Signal.trap('INT', int_handle)
     Signal.trap('WINCH', @@old_winch_handler) if @@old_winch_handler
   end
