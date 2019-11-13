@@ -84,6 +84,8 @@ jobs:
           ../src/configure -C --disable-install-doc
       - name: Make
         run: make -C build $JOBS
+      - name: Extract gems
+        run: make -C build extract-gems
       - name: Tests
         run: make -C build $JOBS -s ${{ matrix.test_task }}
         env:
