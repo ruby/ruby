@@ -154,6 +154,7 @@ module IRB # :nodoc:
       def scan(code, allow_last_error:)
         pos = [1, 0]
 
+        verbose, $VERBOSE = $VERBOSE, nil
         lexer = Ripper::Lexer.new(code)
         if lexer.respond_to?(:scan) # Ruby 2.7+
           lexer.scan.each do |elem|
@@ -177,6 +178,7 @@ module IRB # :nodoc:
             yield(elem.event, elem.tok, elem.state)
           end
         end
+        $VERBOSE = verbose
       end
 
       def dispatch_seq(token, expr, str, in_symbol:)

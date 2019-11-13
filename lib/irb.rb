@@ -766,7 +766,10 @@ module IRB
       # s-expression where the second selement of the top level array is an
       # array of parsed expressions. The first element of each expression is the
       # expression's type.
-      ASSIGNMENT_NODE_TYPES.include?(Ripper.sexp(line)&.dig(1,-1,0))
+      verbose, $VERBOSE = $VERBOSE, nil
+      result = ASSIGNMENT_NODE_TYPES.include?(Ripper.sexp(line)&.dig(1,-1,0))
+      $VERBOSE = verbose
+      result
     end
 
     ATTR_TTY = "\e[%sm"

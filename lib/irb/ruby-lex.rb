@@ -71,20 +71,27 @@ class RubyLex
     end
   end
 
+  def ripper_lex_without_warning(code)
+    verbose, $VERBOSE = $VERBOSE, nil
+    tokens = Ripper.lex(code)
+    $VERBOSE = verbose
+    tokens
+  end
+
   def set_auto_indent(context)
     if @io.respond_to?(:auto_indent) and context.auto_indent_mode
       @io.auto_indent do |lines, line_index, byte_pointer, is_newline|
         if is_newline
           md = lines[line_index - 1].match(/(\A +)/)
           prev_spaces = md.nil? ? 0 : md[1].count(' ')
-          @tokens = Ripper.lex(lines[0..line_index].join("\n"))
+          @tokens = ripper_lex_without_warning(lines[0..line_index].join("\n"))
           depth_difference = check_newline_depth_difference
           prev_spaces + depth_difference * 2
         else
           code = line_index.zero? ? '' : lines[0..(line_index - 1)].map{ |l| l + "\n" }.join
           last_line = lines[line_index]&.byteslice(0, byte_pointer)
           code += last_line if last_line
-          @tokens = Ripper.lex(code)
+          @tokens = ripper_lex_without_warning(code)
           corresponding_token_depth = check_corresponding_token_depth
           if corresponding_token_depth
             corresponding_token_depth
@@ -97,7 +104,7 @@ class RubyLex
   end
 
   def check_state(code)
-    @tokens = Ripper.lex(code)
+    @tokens = ripper_lex_without_warning(code)
     ltype = process_literal_type
     indent = process_nesting_level
     continue = process_continue
@@ -160,7 +167,7 @@ class RubyLex
     end
     code = @line + (line.nil? ? '' : line)
     code.gsub!(/\s*\z/, '').concat("\n")
-    @tokens = Ripper.lex(code)
+    @tokens = ripper_lex_without_warning(code)
     @continue = process_continue
     @code_block_open = check_code_block(code)
     @indent = process_nesting_level

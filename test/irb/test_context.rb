@@ -63,6 +63,12 @@ module TestIRB
       assert_not_match(/rescue _\.class/, e.message)
     end
 
+    def test_evaluate_with_onigmo_warning
+      assert_warning("(irb):1: warning: character class has duplicated range: /[aa]/\n") do
+        @context.evaluate('/[aa]/', 1)
+      end
+    end
+
     def test_eval_input
       verbose, $VERBOSE = $VERBOSE, nil
       input = TestInputMethod.new([
