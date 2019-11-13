@@ -67,7 +67,7 @@ jobs:
           payload: |
             {
               "attachments": [{
-                "text": "${{ job.status }}: ${{ env.COMMIT_DATE }}-${{ env.COMMIT_NUMBER_OF_DAY }} <https://github.com/${{ github.repository }}/commit/${{ github.sha }}/checks|MJIT / ${{ matrix.jit_opts }}> " +
+                "text": "${{ job.status }}: MJIT / ${{ matrix.jit_opts }} <https://github.com/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ env.COMMIT_DATE }} #${{ env.COMMIT_NUMBER_OF_DAY }}> " +
                         "(<https://github.com/${{ github.repository }}/commit/${{ github.sha }}|" + "${{ github.sha }}".substring(0, 10) + ">) " +
                         "of ${{ github.repository }}@" + "${{ github.ref }}".split('/').reverse()[0] + " by ${{ github.event.head_commit.committer.name }}",
                 "color": "danger"
