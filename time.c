@@ -3067,7 +3067,16 @@ time_arg(int argc, const VALUE *argv, struct vtm *vtm)
 static int
 leap_year_p(long y)
 {
-    return ((y % 4 == 0) && (y % 100 != 0)) || (y % 400 == 0);
+    /* TODO:
+     *  ensure about negative years in proleptic Gregorian calendar.
+     */
+    unsigned long uy = (unsigned long)(LIKELY(y >= 0) ? y : -y);
+
+    if (LIKELY(uy % 4 != 0)) return 0;
+
+    unsigned long century = uy / 100;
+    if (LIKELY(uy != century * 100)) return 1;
+    return century % 4 == 0;
 }
 
 static time_t
