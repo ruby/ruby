@@ -1799,6 +1799,133 @@ EOF
     end
   end
 
+  def test_passive_pasv
+    commands = []
+    binary_data = (0..0xff).map {|i| i.chr}.join * 4 * 3
+    server = create_ftp_server { |sock, port|
+      sock.print("220 (test_ftp).\r\n")
+
+      commands.push(sock.gets) # USER
+      sock.print("331 Please specify the password.\r\n")
+      commands.push(sock.gets) # PASS
+      sock.print("230 Login successful.\r\n")
+      commands.push(sock.gets) # TYPE I
+      sock.print("200 Switching to Binary mode.\r\n")
+
+      commands.push(sock.gets) # PASV
+      if server.local_address.ipv4?
+        begin
+          data_server = TCPServer.new(SERVER_ADDR, 0)
+          data_port = data_server.local_address.ip_port
+          sock.printf("227 Entering Passive Mode (127,0,0,1,%s).\r\n", data_port.divmod(256).join(","))
+
+          commands.push(sock.gets) # RETR foo
+          sock.print("150 Opening BINARY mode data connection for foo (#{binary_data.size} bytes)\r\n")
+
+          data_sock = data_server.accept
+          binary_data.scan(/.{1,1024}/nm) do |s|
+            data_sock.print(s)
+          end
+          data_sock.close
+          sock.print("226 Transfer complete.\r\n")
+        ensure
+          data_server.close if data_server
+        end
+      else
+        sock.print("522 No IPv4 address available for PASV. Use EPSV.\r\n")
+      end
+    }
+    begin
+      begin
+        ftp = Net::FTP.new(SERVER_NAME,
+                           port: server.port,
+                           passive: :PASV)
+
+        ftp.login
+        assert_match(/\AUSER /, commands.shift)
+        assert_match(/\APASS /, commands.shift)
+        assert_equal("TYPE I\r\n", commands.shift)
+
+        if server.local_address.ipv4?
+          buf = ftp.getbinaryfile("foo", nil)
+          assert_equal(binary_data, buf)
+          assert_equal(Encoding::ASCII_8BIT, buf.encoding)
+          assert_match(/\APASV\r\n/, commands.shift)
+          assert_equal("RETR foo\r\n", commands.shift)
+        else
+          assert_raise(Net::FTPPermError) do
+            buf = ftp.getbinaryfile("foo", nil)
+          end
+          assert_match(/\APASV\r\n/, commands.shift)
+        end
+
+        assert_equal(nil, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+  end
+
+  def test_passive_epsv
+    commands = []
+    binary_data = (0..0xff).map {|i| i.chr}.join * 4 * 3
+    server = create_ftp_server { |sock, port|
+      sock.print("220 (test_ftp).\r\n")
+
+      commands.push(sock.gets) # USER
+      sock.print("331 Please specify the password.\r\n")
+      commands.push(sock.gets) # PASS
+      sock.print("230 Login successful.\r\n")
+      commands.push(sock.gets) # TYPE I
+      sock.print("200 Switching to Binary mode.\r\n")
+
+      commands.push(sock.gets) # EPSV
+      begin
+        data_server = TCPServer.new(SERVER_ADDR, 0)
+        data_port = data_server.local_address.ip_port
+        sock.printf("229 Entering Extended Passive Mode (|||%d|)\r\n", data_port)
+
+        commands.push(sock.gets) # RETR foo
+        sock.print("150 Opening BINARY mode data connection for foo (#{binary_data.size} bytes)\r\n")
+
+        data_sock = data_server.accept
+        binary_data.scan(/.{1,1024}/nm) do |s|
+          data_sock.print(s)
+        end
+        data_sock.close
+        sock.print("226 Transfer complete.\r\n")
+      ensure
+        data_server.close if data_server
+      end
+    }
+    begin
+      begin
+        ftp = Net::FTP.new(SERVER_NAME,
+                           port: server.port,
+                           passive: :EPSV)
+
+        ftp.login
+        assert_match(/\AUSER /, commands.shift)
+        assert_match(/\APASS /, commands.shift)
+        assert_equal("TYPE I\r\n", commands.shift)
+
+        buf = ftp.getbinaryfile("foo", nil)
+        assert_equal(binary_data, buf)
+        assert_equal(Encoding::ASCII_8BIT, buf.encoding)
+        assert_match(/\AEPSV\r\n/, commands.shift)
+        assert_equal("RETR foo\r\n", commands.shift)
+
+        assert_equal(nil, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+  end
+
   if defined?(OpenSSL::SSL)
     def test_tls_unknown_ca
       assert_raise(OpenSSL::SSL::SSLError) do
