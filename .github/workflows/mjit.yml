@@ -51,10 +51,8 @@ jobs:
           ../src/configure -C --disable-install-doc
       - name: make
         run: make -C build $JOBS
-      - name: make test
-        run: "make -C build $JOBS -s test TESTOPTS='-q --tty=no' RUN_OPTS='--disable-gems --jit-warnings ${{ matrix.jit_opts }}'"
       - name: make test-all
-        run: "make -C build $JOBS -s test-all TESTOPTS='-q --tty=no' RUN_OPTS='--disable-gems --jit-warnings ${{ matrix.jit_opts }}'"
+        run: "make -C build $JOBS -s test-all TESTOPTS='-q --tty=no' RUN_OPTS='--disable-gems --jit-verbose=2 --jit-warnings ${{ matrix.jit_opts }}'"
       - name: make test-spec
         run: "make -C build $JOBS -s test-spec RUN_OPTS='--disable-gems --jit-warnings ${{ matrix.jit_opts }}'"
       - name: Leaked Globals
