@@ -91,11 +91,6 @@ jobs:
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: "minitest"
       - name: Leaked Globals
         run: make -C build -s leaked-globals
-      - name: Debug GitHub context
-        run: echo "$GITHUB_CONTEXT"
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        if: failure() && github.event_name == 'push'
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |
