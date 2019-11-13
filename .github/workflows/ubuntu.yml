@@ -86,7 +86,6 @@ jobs:
       - name: Tests
         run: make -C build $JOBS -s ${{ matrix.test_task }}
         env:
-          MSPECOPT: "-ff" # not using `-j` because sometimes `mspec -j` silently dies
           RUBY_TESTOPTS: "-q --tty=no"
           # Remove minitest from TEST_BUNDLED_GEMS_ALLOW_FAILURES if https://github.com/seattlerb/minitest/pull/798 is resolved
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: "minitest"
