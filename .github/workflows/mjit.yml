@@ -49,7 +49,7 @@ jobs:
           mkdir build
           cd build
           ../src/configure -C --disable-install-doc
-      - name: Make
+      - name: make
         run: make -C build $JOBS
       - name: make test
         run: "make -C build $JOBS -s test TESTOPTS='-q --tty=no' RUN_OPTS='--disable-gems --jit-warnings ${{ matrix.jit_opts }}'"
