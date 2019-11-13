@@ -7,7 +7,7 @@ on:
     branches:
       - '*'
 jobs:
-  latest:
+  make:
     runs-on: macos-latest
     strategy:
       matrix:
