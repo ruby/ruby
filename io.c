@@ -2493,16 +2493,6 @@ io_fread(VALUE str, long offset, long size, rb_io_t *fptr)
     return len;
 }
 
-ssize_t
-rb_io_bufread(VALUE io, void *buf, size_t size)
-{
-    rb_io_t *fptr;
-
-    GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
-    return (ssize_t)io_bufread(buf, (long)size, fptr);
-}
-
 static long
 remain_size(rb_io_t *fptr)
 {
@@ -12868,12 +12858,6 @@ static void
 opt_i_set(VALUE val, ID id, VALUE *var)
 {
     argf_inplace_mode_set(*var, val);
-}
-
-const char *
-ruby_get_inplace_mode(void)
-{
-    return RSTRING_PTR(ARGF.inplace);
 }
 
 void

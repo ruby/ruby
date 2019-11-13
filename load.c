@@ -28,13 +28,6 @@ static const char *const loadable_ext[] = {
     0
 };
 
-VALUE
-rb_get_load_path(void)
-{
-    VALUE load_path = GET_VM()->load_path;
-    return load_path;
-}
-
 enum expand_type {
     EXPAND_ALL,
     EXPAND_RELATIVE,

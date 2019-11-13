@@ -60,7 +60,6 @@
 #undef rb_str_cat2
 #undef rb_str_cat_cstr
 #undef rb_fstring_cstr
-#undef rb_fstring_enc_cstr
 
 static VALUE rb_str_clear(VALUE str);
 
@@ -412,12 +411,6 @@ VALUE
 rb_fstring_cstr(const char *ptr)
 {
     return rb_fstring_new(ptr, strlen(ptr));
-}
-
-VALUE
-rb_fstring_enc_cstr(const char *ptr, rb_encoding *enc)
-{
-    return rb_fstring_enc_new(ptr, strlen(ptr), enc);
 }
 
 static int

@@ -250,9 +250,6 @@ CREF_OMOD_SHARED_UNSET(rb_cref_t *cref)
     cref->flags &= ~CREF_FL_OMOD_SHARED;
 }
 
-void rb_thread_cleanup(void);
-void rb_thread_wait_other_threads(void);
-
 enum {
     RAISED_EXCEPTION = 1,
     RAISED_STACKOVERFLOW = 2,

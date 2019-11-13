@@ -127,13 +127,6 @@ rb_syntax_error_append(VALUE exc, VALUE file, int line, int column,
     return exc;
 }
 
-void
-ruby_deprecated_internal_feature(const char *func)
-{
-    rb_print_backtrace();
-    rb_fatal("%s is only for internal use and deprecated; do not use", func);
-}
-
 /*
  * call-seq:
  *    warn(msg)  -> nil

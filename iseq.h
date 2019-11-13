@@ -182,11 +182,9 @@ void rb_iseq_mark_insn_storage(struct iseq_compile_data_storage *arena);
 /* iseq.c */
 VALUE rb_iseq_load(VALUE data, VALUE parent, VALUE opt);
 VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
-struct st_table *ruby_insn_make_insn_table(void);
 unsigned int rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos);
 void rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events);
 void rb_iseq_trace_set_all(rb_event_flag_t turnon_events);
-void rb_iseq_trace_on_all(void);
 void rb_iseq_insns_info_encode_positions(const rb_iseq_t *iseq);
 
 VALUE rb_iseqw_new(const rb_iseq_t *iseq);

@@ -2418,12 +2418,6 @@ rb_public_const_get_from(VALUE klass, ID id)
     return rb_const_get_0(klass, id, TRUE, TRUE, TRUE);
 }
 
-VALUE
-rb_public_const_get(VALUE klass, ID id)
-{
-    return rb_const_get_0(klass, id, FALSE, TRUE, TRUE);
-}
-
 MJIT_FUNC_EXPORTED VALUE
 rb_public_const_get_at(VALUE klass, ID id)
 {
@@ -2474,12 +2468,6 @@ rb_const_location(VALUE klass, ID id, int exclude, int recurse, int visibility)
     if (BUILTIN_TYPE(klass) != T_MODULE) return loc;
     /* search global const too, if klass is a module */
     return rb_const_location_from(rb_cObject, id, FALSE, recurse, visibility);
-}
-
-VALUE
-rb_const_source_location_from(VALUE klass, ID id)
-{
-    return rb_const_location(klass, id, TRUE, TRUE, FALSE);
 }
 
 VALUE
@@ -2723,18 +2711,6 @@ MJIT_FUNC_EXPORTED int
 rb_public_const_defined_from(VALUE klass, ID id)
 {
     return rb_const_defined_0(klass, id, TRUE, TRUE, TRUE);
-}
-
-int
-rb_public_const_defined(VALUE klass, ID id)
-{
-    return rb_const_defined_0(klass, id, FALSE, TRUE, TRUE);
-}
-
-int
-rb_public_const_defined_at(VALUE klass, ID id)
-{
-    return rb_const_defined_0(klass, id, TRUE, FALSE, TRUE);
 }
 
 static void

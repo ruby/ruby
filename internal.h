@@ -841,12 +841,12 @@ enum ruby_rhash_flags {
 #define RHASH_AR_TABLE_SIZE_RAW(h) \
   ((unsigned int)((RBASIC(h)->flags & RHASH_AR_TABLE_SIZE_MASK) >> RHASH_AR_TABLE_SIZE_SHIFT))
 
-int rb_hash_ar_table_p(VALUE hash);
-struct ar_table_struct *rb_hash_ar_table(VALUE hash);
-st_table *rb_hash_st_table(VALUE hash);
 void rb_hash_st_table_set(VALUE hash, st_table *st);
 
 #if 0 /* for debug */
+int rb_hash_ar_table_p(VALUE hash);
+struct ar_table_struct *rb_hash_ar_table(VALUE hash);
+st_table *rb_hash_st_table(VALUE hash);
 #define RHASH_AR_TABLE_P(hash)       rb_hash_ar_table_p(hash)
 #define RHASH_AR_TABLE(h)            rb_hash_ar_table(h)
 #define RHASH_ST_TABLE(h)            rb_hash_st_table(h)
@@ -1520,16 +1520,9 @@ VALUE rb_check_backtrace(VALUE);
 NORETURN(void rb_async_bug_errno(const char *,int));
 const char *rb_builtin_type_name(int t);
 const char *rb_builtin_class_name(VALUE x);
-PRINTF_ARGS(void rb_sys_warn(const char *fmt, ...), 1, 2);
-PRINTF_ARGS(void rb_syserr_warn(int err, const char *fmt, ...), 2, 3);
-PRINTF_ARGS(void rb_sys_warning(const char *fmt, ...), 1, 2);
-PRINTF_ARGS(void rb_syserr_warning(int err, const char *fmt, ...), 2, 3);
 #ifdef RUBY_ENCODING_H
 VALUE rb_syntax_error_append(VALUE, VALUE, int, int, rb_encoding*, const char*, va_list);
 PRINTF_ARGS(void rb_enc_warn(rb_encoding *enc, const char *fmt, ...), 2, 3);
-PRINTF_ARGS(void rb_sys_enc_warn(rb_encoding *enc, const char *fmt, ...), 2, 3);
-PRINTF_ARGS(void rb_syserr_enc_warn(int err, rb_encoding *enc, const char *fmt, ...), 3, 4);
-PRINTF_ARGS(void rb_enc_warning(rb_encoding *enc, const char *fmt, ...), 2, 3);
 PRINTF_ARGS(void rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...), 2, 3);
 PRINTF_ARGS(void rb_syserr_enc_warning(int err, rb_encoding *enc, const char *fmt, ...), 3, 4);
 #endif
@@ -1548,9 +1541,6 @@ VALUE rb_nomethod_err_new(VALUE mesg, VALUE recv, VALUE method, VALUE args, int 
 VALUE rb_key_err_new(VALUE mesg, VALUE recv, VALUE name);
 #define rb_key_err_raise(mesg, recv, name) \
     rb_exc_raise(rb_key_err_new(mesg, recv, name))
-NORETURN(void ruby_deprecated_internal_feature(const char *));
-#define DEPRECATED_INTERNAL_FEATURE(func) \
-    (ruby_deprecated_internal_feature(func), UNREACHABLE)
 VALUE rb_warning_warn(VALUE mod, VALUE str);
 PRINTF_ARGS(VALUE rb_warning_string(const char *fmt, ...), 1, 2);
 NORETURN(void rb_vraise(VALUE, const char *, va_list));
@@ -1694,9 +1684,7 @@ int rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func fun
 void rb_call_inits(void);
 
 /* io.c */
-const char *ruby_get_inplace_mode(void);
 void ruby_set_inplace_mode(const char *);
-ssize_t rb_io_bufread(VALUE io, void *buf, size_t size);
 void rb_stdio_set_default_encoding(void);
 VALUE rb_io_flush_raw(VALUE, int);
 #ifdef RUBY_IO_H
@@ -1707,7 +1695,6 @@ void rb_io_fptr_finalize_internal(void *ptr);
 #define rb_io_fptr_finalize rb_io_fptr_finalize_internal
 
 /* load.c */
-VALUE rb_get_load_path(void);
 VALUE rb_get_expanded_load_path(void);
 int rb_require_internal(VALUE fname, int safe);
 NORETURN(void rb_load_fail(VALUE, const char*));
@@ -1973,7 +1960,6 @@ struct RBasicRaw {
 #ifndef USE_SYMBOL_GC
 #define USE_SYMBOL_GC 1
 #endif
-VALUE rb_parser_get_yydebug(VALUE);
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
 RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_parser_set_context(VALUE, const struct rb_iseq_struct *, int);
@@ -1981,23 +1967,12 @@ RUBY_SYMBOL_EXPORT_END
 void *rb_parser_load_file(VALUE parser, VALUE name);
 int rb_is_const_name(VALUE name);
 int rb_is_class_name(VALUE name);
-int rb_is_global_name(VALUE name);
 int rb_is_instance_name(VALUE name);
-int rb_is_attrset_name(VALUE name);
 int rb_is_local_name(VALUE name);
-int rb_is_method_name(VALUE name);
-int rb_is_junk_name(VALUE name);
 PUREFUNC(int rb_is_const_sym(VALUE sym));
-PUREFUNC(int rb_is_class_sym(VALUE sym));
-PUREFUNC(int rb_is_global_sym(VALUE sym));
-PUREFUNC(int rb_is_instance_sym(VALUE sym));
 PUREFUNC(int rb_is_attrset_sym(VALUE sym));
-PUREFUNC(int rb_is_local_sym(VALUE sym));
-PUREFUNC(int rb_is_method_sym(VALUE sym));
-PUREFUNC(int rb_is_junk_sym(VALUE sym));
 ID rb_make_internal_id(void);
 void rb_gc_free_dsymbol(VALUE);
-ID rb_id_attrget(ID id);
 
 /* proc.c */
 VALUE rb_proc_location(VALUE self);
@@ -2130,14 +2105,6 @@ VALUE rb_fstring_cstr(const char *str);
 VALUE rb_fstring_enc_new(const char *ptr, long len, rb_encoding *enc);
 #define rb_fstring_enc_lit(str, enc) rb_fstring_enc_new((str), rb_strlen_lit(str), (enc))
 #define rb_fstring_enc_literal(str, enc) rb_fstring_enc_lit(str, enc)
-VALUE rb_fstring_enc_cstr(const char *ptr, rb_encoding *enc);
-# ifdef HAVE_BUILTIN___BUILTIN_CONSTANT_P
-#  define rb_fstring_enc_cstr(str, enc) RB_GNUC_EXTENSION_BLOCK( \
-    (__builtin_constant_p(str)) ?		\
-	rb_fstring_enc_new((str), (long)strlen(str), (enc)) : \
-	rb_fstring_enc_cstr(str, enc) \
-)
-# endif
 #endif
 int rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p);
 int rb_str_symname_p(VALUE);
@@ -2190,15 +2157,6 @@ rb_str_eql_internal(const VALUE str1, const VALUE str2)
 /* symbol.c */
 #ifdef RUBY_ENCODING_H
 VALUE rb_sym_intern(const char *ptr, long len, rb_encoding *enc);
-VALUE rb_sym_intern_cstr(const char *ptr, rb_encoding *enc);
-#ifdef __GNUC__
-#define rb_sym_intern_cstr(ptr, enc) __extension__ ( \
-{						\
-    (__builtin_constant_p(ptr)) ?		\
-	rb_sym_intern((ptr), (long)strlen(ptr), (enc)) : \
-	rb_sym_intern_cstr((ptr), (enc)); \
-})
-#endif
 #endif
 VALUE rb_sym_intern_ascii(const char *ptr, long len);
 VALUE rb_sym_intern_ascii_cstr(const char *ptr);
@@ -2296,9 +2254,6 @@ void rb_vm_mark(void *ptr);
 void Init_BareVM(void);
 void Init_vm_objects(void);
 PUREFUNC(VALUE rb_vm_top_self(void));
-void rb_thread_recycle_stack_release(VALUE *);
-VALUE *rb_thread_recycle_stack(size_t);
-void rb_vm_change_state(void);
 void rb_vm_inc_const_missing_count(void);
 const void **rb_vm_get_insns_address_table(void);
 VALUE rb_source_location(int *pline);
