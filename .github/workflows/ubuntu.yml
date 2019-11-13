@@ -68,7 +68,7 @@ jobs:
           sudo chmod -R go-w /usr/share
       - name: Set ENV
         run: |
-          echo '##[set-env name=JOBS]'-j$((1 + $(nproc --all)))
+          echo '::set-env name=JOBS::'-j$((1 + $(nproc --all)))
       - name: Autoconf
         run: cd src && exec autoconf
       - name: configure
