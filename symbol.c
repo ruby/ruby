@@ -92,8 +92,6 @@ WARN_UNUSED_RESULT(static VALUE dsymbol_check(const VALUE sym));
 WARN_UNUSED_RESULT(static ID lookup_str_id(VALUE str));
 WARN_UNUSED_RESULT(static VALUE lookup_str_sym(const VALUE str));
 WARN_UNUSED_RESULT(static VALUE lookup_id_str(ID id));
-WARN_UNUSED_RESULT(static ID attrsetname_to_attr(VALUE name));
-WARN_UNUSED_RESULT(static ID attrsetname_to_attr_id(VALUE name));
 WARN_UNUSED_RESULT(static ID intern_str(VALUE str, int mutable));
 
 ID
@@ -152,12 +150,6 @@ rb_id_attrset(ID id)
     sym = lookup_str_sym(str);
     id = sym ? rb_sym2id(sym) : intern_str(str, 1);
     return id;
-}
-
-ID
-rb_id_attrget(ID id)
-{
-    return attrsetname_to_attr(rb_id2str(id));
 }
 
 static int
@@ -907,39 +899,9 @@ rb_is_const_sym(VALUE sym)
 }
 
 int
-rb_is_class_sym(VALUE sym)
-{
-    return is_class_sym(sym);
-}
-
-int
-rb_is_global_sym(VALUE sym)
-{
-    return is_global_sym(sym);
-}
-
-int
-rb_is_instance_sym(VALUE sym)
-{
-    return is_instance_sym(sym);
-}
-
-int
 rb_is_attrset_sym(VALUE sym)
 {
     return is_attrset_sym(sym);
-}
-
-int
-rb_is_local_sym(VALUE sym)
-{
-    return is_local_sym(sym);
-}
-
-int
-rb_is_junk_sym(VALUE sym)
-{
-    return is_junk_sym(sym);
 }
 
 /**
@@ -1049,13 +1011,11 @@ rb_check_symbol_cstr(const char *ptr, long len, rb_encoding *enc)
     return Qnil;
 }
 
-#undef rb_sym_intern_cstr
 #undef rb_sym_intern_ascii_cstr
 #ifdef __clang__
 NOINLINE(VALUE rb_sym_intern(const char *ptr, long len, rb_encoding *enc));
 #else
 FUNC_MINIMIZED(VALUE rb_sym_intern(const char *ptr, long len, rb_encoding *enc));
-FUNC_MINIMIZED(VALUE rb_sym_intern_cstr(const char *ptr, rb_encoding *enc));
 FUNC_MINIMIZED(VALUE rb_sym_intern_ascii(const char *ptr, long len));
 FUNC_MINIMIZED(VALUE rb_sym_intern_ascii_cstr(const char *ptr));
 #endif
@@ -1066,12 +1026,6 @@ rb_sym_intern(const char *ptr, long len, rb_encoding *enc)
     struct RString fake_str;
     const VALUE name = rb_setup_fake_str(&fake_str, ptr, len, enc);
     return rb_str_intern(name);
-}
-
-VALUE
-rb_sym_intern_cstr(const char *ptr, rb_encoding *enc)
-{
-    return rb_sym_intern(ptr, strlen(ptr), enc);
 }
 
 VALUE
@@ -1092,34 +1046,6 @@ rb_to_symbol_type(VALUE obj)
     return rb_convert_type_with_id(obj, T_SYMBOL, "Symbol", idTo_sym);
 }
 
-static ID
-attrsetname_to_attr_id(VALUE name)
-{
-    ID id;
-    struct RString fake_str;
-    /* make local name by chopping '=' */
-    const VALUE localname = rb_setup_fake_str(&fake_str,
-					      RSTRING_PTR(name), RSTRING_LEN(name) - 1,
-					      rb_enc_get(name));
-    OBJ_FREEZE(localname);
-
-    if ((id = lookup_str_id(localname)) != 0) {
-	return id;
-    }
-    RB_GC_GUARD(name);
-    return (ID)0;
-}
-
-static ID
-attrsetname_to_attr(VALUE name)
-{
-    if (rb_is_attrset_name(name)) {
-	return attrsetname_to_attr_id(name);
-    }
-
-    return (ID)0;
-}
-
 int
 rb_is_const_name(VALUE name)
 {
@@ -1133,43 +1059,15 @@ rb_is_class_name(VALUE name)
 }
 
 int
-rb_is_global_name(VALUE name)
-{
-    return rb_str_symname_type(name, 0) == ID_GLOBAL;
-}
-
-int
 rb_is_instance_name(VALUE name)
 {
     return rb_str_symname_type(name, 0) == ID_INSTANCE;
 }
 
 int
-rb_is_attrset_name(VALUE name)
-{
-    return rb_str_symname_type(name, IDSET_ATTRSET_FOR_INTERN) == ID_ATTRSET;
-}
-
-int
 rb_is_local_name(VALUE name)
 {
     return rb_str_symname_type(name, 0) == ID_LOCAL;
-}
-
-int
-rb_is_method_name(VALUE name)
-{
-    switch (rb_str_symname_type(name, 0)) {
-      case ID_LOCAL: case ID_ATTRSET: case ID_JUNK:
-	return TRUE;
-    }
-    return FALSE;
-}
-
-int
-rb_is_junk_name(VALUE name)
-{
-    return rb_str_symname_type(name, IDSET_ATTRSET_FOR_SYNTAX) == -1;
 }
 
 #include "id_table.c"

@@ -1012,12 +1012,6 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
     return iseq;
 }
 
-rb_iseq_t *
-rb_iseq_compile(VALUE src, VALUE file, VALUE line)
-{
-    return rb_iseq_compile_with_option(src, file, Qnil, line, Qnil);
-}
-
 VALUE
 rb_iseq_path(const rb_iseq_t *iseq)
 {
@@ -3306,14 +3300,6 @@ void
 rb_iseq_trace_set_all(rb_event_flag_t turnon_events)
 {
     rb_objspace_each_objects(trace_set_i, &turnon_events);
-}
-
-/* This is exported since Ruby 2.5 but not internally used for now. If you're going to use this, please
-   update `ruby_vm_event_enabled_global_flags` and set `mjit_call_p = FALSE` as well to cancel MJIT code. */
-void
-rb_iseq_trace_on_all(void)
-{
-    rb_iseq_trace_set_all(RUBY_EVENT_TRACEPOINT_ALL);
 }
 
 VALUE

@@ -2736,19 +2736,6 @@ rb_method_entry_location(const rb_method_entry_t *me)
     return method_def_location(me->def);
 }
 
-VALUE
-rb_mod_method_location(VALUE mod, ID id)
-{
-    const rb_method_entry_t *me = original_method_entry(mod, id);
-    return rb_method_entry_location(me);
-}
-
-MJIT_FUNC_EXPORTED VALUE
-rb_obj_method_location(VALUE obj, ID id)
-{
-    return rb_mod_method_location(CLASS_OF(obj), id);
-}
-
 /*
  * call-seq:
  *    meth.source_location  -> [String, Integer]

@@ -6045,13 +6045,6 @@ parser_compile_string(VALUE vparser, VALUE fname, VALUE s, int line)
 }
 
 rb_ast_t*
-rb_compile_string(const char *f, VALUE s, int line)
-{
-    must_be_ascii_compatible(s);
-    return parser_compile_string(rb_parser_new(), rb_filesystem_str_new_cstr(f), s, line);
-}
-
-rb_ast_t*
 rb_parser_compile_string(VALUE vparser, const char *f, VALUE s, int line)
 {
     return rb_parser_compile_string_path(vparser, rb_filesystem_str_new_cstr(f), s, line);
@@ -6064,40 +6057,12 @@ rb_parser_compile_string_path(VALUE vparser, VALUE f, VALUE s, int line)
     return parser_compile_string(vparser, f, s, line);
 }
 
-rb_ast_t*
-rb_compile_cstr(const char *f, const char *s, int len, int line)
-{
-    VALUE str = rb_str_new(s, len);
-    return parser_compile_string(rb_parser_new(), rb_filesystem_str_new_cstr(f), str, line);
-}
-
-rb_ast_t*
-rb_parser_compile_cstr(VALUE vparser, const char *f, const char *s, int len, int line)
-{
-    VALUE str = rb_str_new(s, len);
-    return parser_compile_string(vparser, rb_filesystem_str_new_cstr(f), str, line);
-}
-
 VALUE rb_io_gets_internal(VALUE io);
 
 static VALUE
 lex_io_gets(struct parser_params *p, VALUE io)
 {
     return rb_io_gets_internal(io);
-}
-
-rb_ast_t*
-rb_compile_file(const char *f, VALUE file, int start)
-{
-    VALUE vparser = rb_parser_new();
-
-    return rb_parser_compile_file(vparser, f, file, start);
-}
-
-rb_ast_t*
-rb_parser_compile_file(VALUE vparser, const char *f, VALUE file, int start)
-{
-    return rb_parser_compile_file_path(vparser, rb_filesystem_str_new_cstr(f), file, start);
 }
 
 rb_ast_t*
@@ -12472,6 +12437,7 @@ rb_parser_encoding(VALUE vparser)
     return rb_enc_from_encoding(p->enc);
 }
 
+#ifdef RIPPER
 /*
  *  call-seq:
  *    ripper.yydebug   -> true or false
@@ -12486,6 +12452,7 @@ rb_parser_get_yydebug(VALUE self)
     TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
     return p->debug ? Qtrue : Qfalse;
 }
+#endif
 
 /*
  *  call-seq:

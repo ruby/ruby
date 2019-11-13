@@ -544,7 +544,7 @@ RHASH_TABLE_EMPTY_P(VALUE hash)
     return RHASH_SIZE(hash) == 0;
 }
 
-MJIT_FUNC_EXPORTED int
+int
 rb_hash_ar_table_p(VALUE hash)
 {
     if (FL_TEST_RAW((hash), RHASH_ST_TABLE_FLAG)) {
@@ -563,7 +563,7 @@ rb_hash_ar_table(VALUE hash)
     return RHASH(hash)->as.ar;
 }
 
-MJIT_FUNC_EXPORTED st_table *
+st_table *
 rb_hash_st_table(VALUE hash)
 {
     HASH_ASSERT(!RHASH_AR_TABLE_P(hash));

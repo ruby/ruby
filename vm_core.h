@@ -1029,7 +1029,6 @@ rb_iseq_t *rb_iseq_new_with_callback(const struct rb_iseq_new_with_callback_call
     const rb_iseq_t *parent, enum iseq_type, const rb_compile_option_t*);
 
 /* src -> iseq */
-rb_iseq_t *rb_iseq_compile(VALUE src, VALUE file, VALUE line);
 rb_iseq_t *rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, VALUE opt);
 
 VALUE rb_iseq_disasm(const rb_iseq_t *iseq);
@@ -1131,8 +1130,6 @@ typedef union iseq_inline_storage_entry *ISE;
 typedef struct rb_call_info *CALL_INFO;
 typedef struct rb_call_cache *CALL_CACHE;
 typedef struct rb_call_data *CALL_DATA;
-
-void rb_vm_change_state(void);
 
 typedef VALUE CDHASH;
 
