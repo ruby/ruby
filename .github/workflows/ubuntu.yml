@@ -1,4 +1,4 @@
-name: ubuntu
+name: Ubuntu
 on:
   push:
     branches:
