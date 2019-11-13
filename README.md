@@ -1,9 +1,10 @@
 [![Build Status](https://travis-ci.org/ruby/ruby.svg?branch=master)](https://travis-ci.org/ruby/ruby)
 [![Build status](https://ci.appveyor.com/api/projects/status/0sy8rrxut4o0k960/branch/master?svg=true)](https://ci.appveyor.com/project/ruby/ruby/branch/master)
 [![Build Status](https://dev.azure.com/rubylang/ruby/_apis/build/status/ruby.ruby?branchName=master)](https://dev.azure.com/rubylang/ruby/_build/latest?definitionId=3&branchName=master)
-![](https://github.com/ruby/ruby/workflows/macos/badge.svg)
-![](https://github.com/ruby/ruby/workflows/ubuntu/badge.svg)
-![](https://github.com/ruby/ruby/workflows/windows/badge.svg)
+![](https://github.com/ruby/ruby/workflows/macOS/badge.svg)
+![](https://github.com/ruby/ruby/workflows/MJIT/badge.svg)
+![](https://github.com/ruby/ruby/workflows/Ubuntu/badge.svg)
+![](https://github.com/ruby/ruby/workflows/Windows/badge.svg)
 
 # What's Ruby
 
