@@ -45,7 +45,10 @@ static inline void rb_builtin_function_check_arity15(VALUE (*f)(rb_execution_con
 
 VALUE rb_vm_lvar_exposed(rb_execution_context_t *ec, int index);
 
-// inline
+// __builtin_inline!
+
+PUREFUNC(static inline VALUE rb_vm_lvar(rb_execution_context_t *ec, int index));
+
 static inline VALUE
 rb_vm_lvar(rb_execution_context_t *ec, int index)
 {

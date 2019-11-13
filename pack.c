@@ -15,7 +15,6 @@
 #include <ctype.h>
 #include <errno.h>
 #include <float.h>
-#include "vm_core.h"
 #include "builtin.h"
 
 /*
