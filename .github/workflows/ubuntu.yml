@@ -85,7 +85,7 @@ jobs:
       - name: Make
         run: make -C build $JOBS
       - name: Extract gems
-        run: make -C build extract-gems
+        run: make -C build update-gems extract-gems
       - name: Tests
         run: make -C build $JOBS -s ${{ matrix.test_task }}
         env:
