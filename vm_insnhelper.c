@@ -4995,3 +4995,12 @@ vm_invoke_builtin_delegate(rb_execution_context_t *ec, rb_control_frame_t *cfp, 
     // fprintf(stderr, "%s %s(%d):%p\n", __func__, bf->name, bf->argc, bf->func_ptr);
     return invoke_bf(ec, cfp, bf, argv);
 }
+
+// for __builtin_inline!()
+
+VALUE
+rb_vm_lvar_exposed(rb_execution_context_t *ec, int index)
+{
+    const rb_control_frame_t *cfp = ec->cfp;
+    return cfp->ep[index];
+}
