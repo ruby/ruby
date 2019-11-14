@@ -438,8 +438,8 @@ $LOAD_PATH::
 
 Bundler::
 
-  * Upgrade to Bundler 2.1.0.pre.1
-    Bundled from https://github.com/bundler/bundler/commit/a53709556b95a914e874b22ed2116a46b0528852
+  * Upgrade to Bundler 2.1.0.pre.3
+    See https://github.com/bundler/bundler/blob/2-1-stable/CHANGELOG.md#210pre3-november-12-2019
 
 CGI::
 
@@ -540,8 +540,8 @@ RSS::
 
 RubyGems::
 
-  * Upgrade to RubyGems 3.1.0.pre1
-    Bundled from https://github.com/rubygems/rubygems/commit/97b264f0fa248c864b6ee9a23d3ff1cdd217dddb
+  * Upgrade to RubyGems 3.1.0.pre3
+    See https://github.com/rubygems/rubygems/blob/3.1/History.txt#L3
 
 StringScanner::
 
