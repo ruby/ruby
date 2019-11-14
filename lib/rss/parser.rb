@@ -120,7 +120,7 @@ module RSS
 
       if uri.respond_to?(:read)
         uri.read
-      elsif !rss.tainted? and File.readable?(rss)
+      elsif (RUBY_VERSION >= '2.7' || !rss.tainted?) and File.readable?(rss)
         File.open(rss) {|f| f.read}
       else
         rss
