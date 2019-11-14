@@ -58,7 +58,10 @@ class TestProc < Test::Unit::TestCase
     b = assert_warn(/Capturing the given block using Proc\.new is deprecated/) do
       Proc.new
     end
-    meta.class_eval {define_method(:foo, b)}
+    meta.class_eval {
+      remove_method(:foo) if method_defined?(:foo)
+      define_method(:foo, b)
+    }
     assert_equal(n, method(:foo).arity)
   end
 
