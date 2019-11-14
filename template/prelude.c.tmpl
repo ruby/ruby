@@ -38,7 +38,7 @@ class Prelude
     @builtin_count = 0
     @preludes = {}
     @mains = preludes.map do |filename|
-      if prelude = filename.end_with?("prelude.rb")
+      if prelude = filename.end_with?("_prelude.rb")
         @prelude_count += 1
       else
         @builtin_count += 1
