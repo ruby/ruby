@@ -358,6 +358,7 @@ class TestParse < Test::Unit::TestCase
     assert_equal("foo 1 bar", "foo #@@foo bar")
     "1" =~ /(.)/
     assert_equal("foo 1 bar", "foo #$1 bar")
+    assert_equal('foo #@1 bar', eval('"foo #@1 bar"'))
   end
 
   def test_dstr_disallowed_variable

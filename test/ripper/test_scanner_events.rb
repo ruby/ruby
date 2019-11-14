@@ -269,7 +269,7 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('embvar', '"#@ivar"')
     assert_equal ['#'],
                  scan('embvar', '"#@@cvar"')
-    assert_equal ['#'],
+    assert_equal [],
                  scan('embvar', '"#@1"')
     assert_equal [],
                  scan('embvar', '"#lvar"')

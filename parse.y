@@ -7013,9 +7013,6 @@ parser_peek_variable_name(struct parser_params *p)
 	    if (++ptr >= p->lex.pend) return 0;
 	    c = *ptr;
 	}
-	else if (ISDIGIT(c)) {
-	    return tSTRING_DVAR;
-	}
 	break;
       case '{':
 	p->lex.pcur = ptr;
