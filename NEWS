@@ -563,6 +563,25 @@ Proc::
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
+* Promote stdlib to default gems
+  * The following default gems was published at rubygems.org
+    * benchmarck
+    * cgi
+    * delegate
+    * getoptlong
+    * net-pop
+    * net-smtp
+    * open3
+    * pstore
+    * singleton
+  * The following default gems only promoted ruby-core, Not yet published at rubygems.org.
+    * monitor
+    * observer
+    * timeout
+    * tracer
+    * uri
+    * yaml
+
 pathname::
 
   * Kernel#Pathname when called with a Pathname argument now returns
