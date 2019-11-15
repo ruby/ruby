@@ -44,6 +44,10 @@ class Reline::TestCase < Test::Unit::TestCase
     retry
   end
 
+  def input_key_by_symbol(input)
+    @line_editor.input_key(Reline::Key.new(input, input, false))
+  end
+
   def input_keys(input, convert = true)
     input = convert_str(input) if convert
     input.chars.each do |c|

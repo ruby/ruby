@@ -138,6 +138,7 @@ class Reline::LineEditor
 
   def reset_variables(prompt = '', encoding = Encoding.default_external)
     @prompt = prompt
+    @mark_pointer = nil
     @encoding = encoding
     @is_multiline = false
     @finished = false
@@ -1941,4 +1942,20 @@ class Reline::LineEditor
     arg -= 1
     vi_join_lines(key, arg: arg) if arg > 0
   end
+
+  private def em_set_mark(key)
+    @mark_pointer = [@byte_pointer, @line_index]
+  end
+  alias_method :set_mark, :em_set_mark
+
+  private def em_exchange_mark(key)
+    new_pointer = [@byte_pointer, @line_index]
+    @previous_line_index = @line_index
+    @byte_pointer, @line_index = @mark_pointer
+    @byte_pointer, @line_index = @mark_pointer
+    @cursor = calculate_width(@line.byteslice(0, @byte_pointer))
+    @cursor_max = calculate_width(@line)
+    @mark_pointer = new_pointer
+  end
+  alias_method :exchange_point_and_mark, :em_exchange_mark
 end

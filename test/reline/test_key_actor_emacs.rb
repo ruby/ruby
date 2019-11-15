@@ -1403,6 +1403,38 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     @config.history_size = history_size
   end
 
+  def test_em_set_mark_and_em_exchange_mark
+    input_keys('aaa bbb ccc ddd')
+    assert_byte_pointer_size('aaa bbb ccc ddd')
+    assert_cursor(15)
+    assert_cursor_max(15)
+    assert_line('aaa bbb ccc ddd')
+    input_keys("\C-a\M-F\M-F", false)
+    assert_byte_pointer_size('aaa bbb')
+    assert_cursor(7)
+    assert_cursor_max(15)
+    assert_line('aaa bbb ccc ddd')
+    assert_equal(nil, @line_editor.instance_variable_get(:@mark_pointer))
+    input_keys("\x00", false) # C-Space
+    assert_byte_pointer_size('aaa bbb')
+    assert_cursor(7)
+    assert_cursor_max(15)
+    assert_line('aaa bbb ccc ddd')
+    assert_equal([7, 0], @line_editor.instance_variable_get(:@mark_pointer))
+    input_keys("\C-a", false)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(15)
+    assert_line('aaa bbb ccc ddd')
+    assert_equal([7, 0], @line_editor.instance_variable_get(:@mark_pointer))
+    input_key_by_symbol(:em_exchange_mark)
+    assert_byte_pointer_size('aaa bbb')
+    assert_cursor(7)
+    assert_cursor_max(15)
+    assert_line('aaa bbb ccc ddd')
+    assert_equal([0, 0], @line_editor.instance_variable_get(:@mark_pointer))
+  end
+
 =begin # TODO: move KeyStroke instance from Reline to LineEditor
   def test_key_delete
     input_keys('ab')
