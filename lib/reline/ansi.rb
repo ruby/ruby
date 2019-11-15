@@ -6,7 +6,7 @@ class Reline::ANSI
     [27, 91, 68] => :ed_prev_char,        # ←
     [27, 91, 51, 126] => :key_delete,     # Del
     [27, 91, 49, 126] => :ed_move_to_beg, # Home
-    [27, 91, 68] => :ed_prev_char,        # ←
+    [27, 91, 52, 126] => :ed_move_to_end, # End
     [27, 32] => :em_set_mark,             # M-<space>
     [24, 24] => :em_exchange_mark,        # C-x C-x TODO also add Windows
   }
