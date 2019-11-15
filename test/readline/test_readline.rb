@@ -43,19 +43,22 @@ module BasetestReadline
       assert_equal("hello", Readline::HISTORY[0])
 
       # Work around lack of SecurityError in Reline
-      # test mode with tainted prompt
-      return if kind_of?(TestRelineAsReadline)
-
-      Thread.start {
-        $SAFE = 1
-        assert_raise(SecurityError) do
-          replace_stdio(stdin.path, stdout.path) do
-            Readline.readline("> ".taint)
-          end
+      # test mode with tainted prompt.
+      # Also skip test on Ruby 2.7+, where $SAFE/taint is deprecated.
+      if RUBY_VERSION < '2.7' && !kind_of?(TestRelineAsReadline)
+        begin
+          Thread.start {
+            $SAFE = 1
+            assert_raise(SecurityError) do
+              replace_stdio(stdin.path, stdout.path) do
+                Readline.readline("> ".taint)
+              end
+            end
+          }.join
+        ensure
+          $SAFE = 0
         end
-      }.join
-    ensure
-      $SAFE = 0
+      end
     end
   end
 
@@ -96,7 +99,8 @@ module BasetestReadline
       assert_equal(12, actual_point)
       assert_equal("first complete  finish", Readline.line_buffer)
       assert_equal(Encoding.find("locale"), Readline.line_buffer.encoding)
-      assert_equal(true, Readline.line_buffer.tainted?)
+      assert_equal(true, Readline.line_buffer.tainted?) if RUBY_VERSION < '2.7'
+
       assert_equal(22, Readline.point)
 
       stdin.rewind
@@ -113,7 +117,8 @@ module BasetestReadline
       assert_equal(12, actual_point)
       assert_equal("first complete finish", Readline.line_buffer)
       assert_equal(Encoding.find("locale"), Readline.line_buffer.encoding)
-      assert_equal(true, Readline.line_buffer.tainted?)
+      assert_equal(true, Readline.line_buffer.tainted?) if RUBY_VERSION < '2.7'
+
       assert_equal(21, Readline.point)
     end
   end
@@ -526,7 +531,7 @@ module BasetestReadline
     end
 
     assert_equal('second\\ third', passed_text)
-    assert_equal('first completion', line)
+    assert_equal('first completion', line.chomp(' '))
   ensure
     Readline.completer_quote_characters = saved_completer_quote_characters
     Readline.completer_word_break_characters = saved_completer_word_break_characters
