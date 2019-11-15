@@ -155,13 +155,15 @@ class TestBigDecimal < Test::Unit::TestCase
     end
   end
 
-  def test_BigDecimal_with_tainted_string
-    Thread.new {
-      $SAFE = 1
-      BigDecimal('1'.taint)
-    }.join
-  ensure
-    $SAFE = 0
+  if RUBY_VERSION < '2.7'
+    def test_BigDecimal_with_tainted_string
+      Thread.new {
+        $SAFE = 1
+        BigDecimal('1'.taint)
+      }.join
+    ensure
+      $SAFE = 0
+    end
   end
 
   def test_BigDecimal_with_exception_keyword
