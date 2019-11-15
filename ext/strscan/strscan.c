@@ -77,7 +77,6 @@ struct strscanner
    ======================================================================= */
 
 static inline long minl _((const long n, const long x));
-static VALUE infect _((VALUE str, struct strscanner *p));
 static VALUE extract_range _((struct strscanner *p, long beg_i, long end_i));
 static VALUE extract_beg_len _((struct strscanner *p, long beg_i, long len));
 
@@ -139,13 +138,6 @@ static VALUE inspect2 _((struct strscanner *p));
    ======================================================================= */
 
 static VALUE
-infect(VALUE str, struct strscanner *p)
-{
-    OBJ_INFECT(str, p->str);
-    return str;
-}
-
-static VALUE
 str_new(struct strscanner *p, const char *ptr, long len)
 {
     VALUE str = rb_str_new(ptr, len);
@@ -164,7 +156,7 @@ extract_range(struct strscanner *p, long beg_i, long end_i)
 {
     if (beg_i > S_LEN(p)) return Qnil;
     end_i = minl(end_i, S_LEN(p));
-    return infect(str_new(p, S_PBEG(p) + beg_i, end_i - beg_i), p);
+    return str_new(p, S_PBEG(p) + beg_i, end_i - beg_i);
 }
 
 static VALUE
@@ -172,7 +164,7 @@ extract_beg_len(struct strscanner *p, long beg_i, long len)
 {
     if (beg_i > S_LEN(p)) return Qnil;
     len = minl(len, S_LEN(p) - beg_i);
-    return infect(str_new(p, S_PBEG(p) + beg_i, len), p);
+    return str_new(p, S_PBEG(p) + beg_i, len);
 }
 
 /* =======================================================================
@@ -950,7 +942,7 @@ strscan_peek(VALUE self, VALUE vlen)
 
     len = NUM2LONG(vlen);
     if (EOS_P(p))
-        return infect(str_new(p, "", 0), p);
+        return str_new(p, "", 0);
 
     len = minl(len, S_RESTLEN(p));
     return extract_beg_len(p, p->curr, len);
@@ -1336,7 +1328,7 @@ strscan_rest(VALUE self)
 
     GET_SCANNER(self, p);
     if (EOS_P(p)) {
-        return infect(str_new(p, "", 0), p);
+        return str_new(p, "", 0);
     }
     return extract_range(p, p->curr, S_LEN(p));
 }
@@ -1391,11 +1383,11 @@ strscan_inspect(VALUE self)
     p = check_strscan(self);
     if (NIL_P(p->str)) {
 	a = rb_sprintf("#<%"PRIsVALUE" (uninitialized)>", rb_obj_class(self));
-	return infect(a, p);
+	return a;
     }
     if (EOS_P(p)) {
 	a = rb_sprintf("#<%"PRIsVALUE" fin>", rb_obj_class(self));
-	return infect(a, p);
+	return a;
     }
     if (p->curr == 0) {
 	b = inspect2(p);
@@ -1403,7 +1395,7 @@ strscan_inspect(VALUE self)
 		       rb_obj_class(self),
 		       p->curr, S_LEN(p),
 		       b);
-	return infect(a, p);
+	return a;
     }
     a = inspect1(p);
     b = inspect2(p);
@@ -1411,7 +1403,7 @@ strscan_inspect(VALUE self)
 		   rb_obj_class(self),
 		   p->curr, S_LEN(p),
 		   a, b);
-    return infect(a, p);
+    return a;
 }
 
 static VALUE
