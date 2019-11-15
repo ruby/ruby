@@ -6762,39 +6762,65 @@ iseq_builtin_function_name(ID mid)
 }
 
 static int
-delegate_call_p(const rb_iseq_t *iseq, unsigned int argc, const LINK_ANCHOR *args)
+delegate_call_p(const rb_iseq_t *iseq, unsigned int argc, const LINK_ANCHOR *args, unsigned int *pstart_index)
 {
+
     if (argc == 0) {
+        *pstart_index = 0;
         return TRUE;
     }
-    else if (argc == iseq->body->param.size) {
-        const LINK_ELEMENT *elem = FIRST_ELEMENT(args);
+    else if (argc <= iseq->body->local_table_size) {
+        unsigned int start=0;
 
-        for (unsigned int i=0; i<argc; i++) {
-            if (elem->type == ISEQ_ELEMENT_INSN &&
-                INSN_OF(elem) == BIN(getlocal)) {
-                int local_index = FIX2INT(OPERAND_AT(elem, 0));
-                int local_level = FIX2INT(OPERAND_AT(elem, 1));
-                if (local_level == 0) {
-                    unsigned int index = iseq->body->local_table_size - (local_index - VM_ENV_DATA_SIZE + 1);
-#if 0
-                    ID param_id = iseq->body->local_table[i];
-                    fprintf(stderr, "param_id:%s (%d), id:%s (%d) local_index:%d, local_size:%d\n",
-                            rb_id2name(param_id), i,
-                            rb_id2name(iseq->body->local_table[index]), index,
-                            local_index, (int)iseq->body->local_table_size);
-#endif
-                    if (i == index) {
-                        elem = elem->next;
-                        continue; /* for */
+        // local_table: [p1, p2, p3, l1, l2, l3]
+        // arguments:           [p3, l1, l2]     -> 2
+        for (start = 0;
+             argc + start <= iseq->body->local_table_size;
+             start++) {
+            const LINK_ELEMENT *elem = FIRST_ELEMENT(args);
+
+            for (unsigned int i=start; i-start<argc; i++) {
+                if (elem->type == ISEQ_ELEMENT_INSN &&
+                    INSN_OF(elem) == BIN(getlocal)) {
+                    int local_index = FIX2INT(OPERAND_AT(elem, 0));
+                    int local_level = FIX2INT(OPERAND_AT(elem, 1));
+
+                    if (local_level == 0) {
+                        unsigned int index = iseq->body->local_table_size - (local_index - VM_ENV_DATA_SIZE + 1);
+                        if (0) { // for debug
+                            fprintf(stderr, "lvar:%s (%d), id:%s (%d) local_index:%d, local_size:%d\n",
+                                    rb_id2name(iseq->body->local_table[i]),     i,
+                                    rb_id2name(iseq->body->local_table[index]), index,
+                                    local_index, (int)iseq->body->local_table_size);
+                        }
+                        if (i == index) {
+                            elem = elem->next;
+                            continue; /* for */
+                        }
+                        else {
+                            goto next;
+                        }
+                    }
+                    else {
+                        goto fail; // level != 0 is unsupport
                     }
                 }
+                else {
+                    goto fail; // insn is not a getlocal
+                }
             }
-            return FALSE;
+            goto success;
+          next:;
         }
+      fail:
+        return FALSE;
+      success:
+        *pstart_index = start;
         return TRUE;
     }
-    return FALSE;
+    else {
+        return FALSE;
+    }
 }
 
 static int
@@ -6924,8 +6950,9 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
                 return COMPILE_NG;
             }
 
-            if (delegate_call_p(iseq, FIX2INT(argc), args)) {
-                ADD_INSN1(ret, line, opt_invokebuiltin_delegate, bf);
+            unsigned int start_index;
+            if (delegate_call_p(iseq, FIX2INT(argc), args, &start_index)) {
+                ADD_INSN2(ret, line, opt_invokebuiltin_delegate, bf, INT2FIX(start_index));
             }
             else {
                 ADD_SEQ(ret, args);

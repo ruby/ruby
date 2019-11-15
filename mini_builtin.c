@@ -21,6 +21,11 @@ rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin
 
     rb_ast_dispose(ast);
 
+    // for debug
+    if (0 && strcmp("prelude", feature_name) == 0) {
+        rb_io_write(rb_stdout, rb_iseq_disasm((const rb_iseq_t *)iseq));
+    }
+
     // register (loaded iseq will not be freed)
     st_insert(loaded_builtin_table, (st_data_t)feature_name, (st_data_t)iseq);
     rb_gc_register_mark_object((VALUE)iseq);

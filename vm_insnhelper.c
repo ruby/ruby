@@ -4989,10 +4989,18 @@ vm_invoke_builtin(rb_execution_context_t *ec, rb_control_frame_t *cfp, const str
 }
 
 static VALUE
-vm_invoke_builtin_delegate(rb_execution_context_t *ec, rb_control_frame_t *cfp, const struct rb_builtin_function *bf)
+vm_invoke_builtin_delegate(rb_execution_context_t *ec, rb_control_frame_t *cfp, const struct rb_builtin_function *bf, int start_index)
 {
-    const VALUE *argv = cfp->ep - cfp->iseq->body->local_table_size - VM_ENV_DATA_SIZE + 1;
-    // fprintf(stderr, "%s %s(%d):%p\n", __func__, bf->name, bf->argc, bf->func_ptr);
+    if (0) { // debug print
+        fprintf(stderr, "vm_invoke_builtin_delegate: passing -> ");
+        for (int i=0; i<bf->argc; i++) {
+            fprintf(stderr, ":%s ", rb_id2name(cfp->iseq->body->local_table[i+start_index]));
+        }
+        fprintf(stderr, "\n");
+        fprintf(stderr, "%s %s(%d):%p\n", __func__, bf->name, bf->argc, bf->func_ptr);
+    }
+
+    const VALUE *argv = cfp->ep - cfp->iseq->body->local_table_size - VM_ENV_DATA_SIZE + 1 + start_index;
     return invoke_bf(ec, cfp, bf, argv);
 }
 
