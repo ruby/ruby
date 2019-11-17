@@ -205,7 +205,7 @@ sufficient information, see the ChangeLog file or Redmine
   no longer have an effect (all objects are always considered untainted), and are now
   warned in verbose mode. This warning will be disabled even in non-verbose mode in
   Ruby 3.0, and the methods and C functions will be removed in Ruby 3.2.
-  [Feature #16131] 
+  [Feature #16131]
 
 === Core classes updates (outstanding ones only)
 
