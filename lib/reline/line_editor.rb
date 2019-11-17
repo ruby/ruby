@@ -766,7 +766,7 @@ class Reline::LineEditor
   end
 
   def input_key(key)
-    if key.nil? or key.char.nil?
+    if key.char.nil?
       if @first_char
         @line = nil
       end
