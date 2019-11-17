@@ -63,7 +63,6 @@ Gem::Specification.new do |spec|
     "lib/irb/notifier.rb",
     "lib/irb/output-method.rb",
     "lib/irb/ruby-lex.rb",
-    "lib/irb/ruby-token.rb",
     "lib/irb/ruby_logo.aa",
     "lib/irb/slex.rb",
     "lib/irb/src_encoding.rb",
