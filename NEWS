@@ -397,6 +397,10 @@ RubyVM::
 
 String::
 
+  New methods::
+
+    * Added Symbol#start_with? and Symbol#end_with? method.  [Feature #16348]
+
   Unicode::
 
     * Update Unicode version and Emoji version from 11.0.0 to

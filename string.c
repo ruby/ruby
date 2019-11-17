@@ -11076,6 +11076,46 @@ sym_swapcase(int argc, VALUE *argv, VALUE sym)
 }
 
 /*
+ *  call-seq:
+ *     sym.start_with?([prefixes]+)   -> true or false
+ *
+ *  Returns true if +sym+ starts with one of the +prefixes+ given.
+ *  Each of the +prefixes+ should be a String or a Regexp.
+ *
+ *    :hello.start_with?("hell")               #=> true
+ *    :hello.start_with?(/H/i)                 #=> true
+ *
+ *    # returns true if one of the prefixes matches.
+ *    :hello.start_with?("heaven", "hell")     #=> true
+ *    :hello.start_with?("heaven", "paradise") #=> false
+ */
+
+static VALUE
+sym_start_with(int argc, VALUE *argv, VALUE sym)
+{
+    return rb_str_start_with(argc, argv, rb_sym2str(sym));
+}
+
+/*
+ *  call-seq:
+ *     sym.end_with?([suffixes]+)   -> true or false
+ *
+ *  Returns true if +sym+ ends with one of the +suffixes+ given.
+ *
+ *    :hello.end_with?("ello")               #=> true
+ *
+ *    # returns true if one of the +suffixes+ matches.
+ *    :hello.end_with?("heaven", "ello")     #=> true
+ *    :hello.end_with?("heaven", "paradise") #=> false
+ */
+
+static VALUE
+sym_end_with(int argc, VALUE *argv, VALUE sym)
+{
+    return rb_str_end_with(argc, argv, rb_sym2str(sym));
+}
+
+/*
  * call-seq:
  *   sym.encoding   -> encoding
  *
@@ -11360,6 +11400,9 @@ Init_String(void)
     rb_define_method(rb_cSymbol, "downcase", sym_downcase, -1);
     rb_define_method(rb_cSymbol, "capitalize", sym_capitalize, -1);
     rb_define_method(rb_cSymbol, "swapcase", sym_swapcase, -1);
+
+    rb_define_method(rb_cSymbol, "start_with?", sym_start_with, -1);
+    rb_define_method(rb_cSymbol, "end_with?", sym_end_with, -1);
 
     rb_define_method(rb_cSymbol, "encoding", sym_encoding, 0);
 }

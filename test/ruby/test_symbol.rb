@@ -560,4 +560,27 @@ class TestSymbol < Test::Unit::TestCase
       puts :a == :a
     RUBY
   end
+
+  def test_start_with?
+    assert_equal(true, :hello.start_with?("hel"))
+    assert_equal(false, :hello.start_with?("el"))
+    assert_equal(true, :hello.start_with?("el", "he"))
+
+    bug5536 = '[ruby-core:40623]'
+    assert_raise(TypeError, bug5536) {:str.start_with? :not_convertible_to_string}
+
+    assert_equal(true, :hello.start_with?(/hel/))
+    assert_equal("hel", $&)
+    assert_equal(false, :hello.start_with?(/el/))
+    assert_nil($&)
+  end
+
+  def test_end_with?
+    assert_equal(true, :hello.end_with?("llo"))
+    assert_equal(false, :hello.end_with?("ll"))
+    assert_equal(true, :hello.end_with?("el", "lo"))
+
+    bug5536 = '[ruby-core:40623]'
+    assert_raise(TypeError, bug5536) {:str.end_with? :not_convertible_to_string}
+  end
 end
