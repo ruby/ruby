@@ -30,14 +30,23 @@ module Spec
     end
 
     def tracked_files
+      if root != `git rev-parse --show-toplevel`
+        skip 'not in git working directory'
+      end
       @tracked_files ||= ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb spec/bundler man/bundler*` : `git ls-files -z`
     end
 
     def shipped_files
+      if root != `git rev-parse --show-toplevel`
+        skip 'not in git working directory'
+      end
       @shipped_files ||= ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb man/bundler* libexec/bundle*` : `git ls-files -z -- lib man exe CHANGELOG.md LICENSE.md README.md bundler.gemspec`
     end
 
     def lib_tracked_files
+      if root != `git rev-parse --show-toplevel`
+        skip 'not in git working directory'
+      end
       @lib_tracked_files ||= ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb` : `git ls-files -z -- lib`
     end
 
