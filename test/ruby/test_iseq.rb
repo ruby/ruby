@@ -562,7 +562,7 @@ class TestISeq < Test::Unit::TestCase
 
   def test_iseq_builtin_to_a
     insns = RubyVM::InstructionSequence.of([].method(:pack)).to_a.last
-    invokebuiltin = insns.find { |insn| insn.is_a?(Array) && insn[0] == :invokebuiltin }
+    invokebuiltin = insns.find { |insn| insn.is_a?(Array) && insn[0] == :opt_invokebuiltin_delegate_leave }
     assert_not_nil(invokebuiltin)
     assert_equal([:func_ptr, :argc, :index, :name], invokebuiltin[1].keys)
   end
