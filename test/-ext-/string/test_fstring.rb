@@ -44,7 +44,12 @@ class Test_String_Fstring < Test::Unit::TestCase
 
   def test_shared_string_safety
     _unused = -('a' * 30).force_encoding(Encoding::ASCII)
-    str = ('a' * 30).force_encoding(Encoding::ASCII).taint
+    begin
+      verbose_back, $VERBOSE = $VERBOSE, nil
+      str = ('a' * 30).force_encoding(Encoding::ASCII).taint
+    ensure
+      $VERBOSE = verbose_back
+    end
     frozen_str = Bug::String.rb_str_new_frozen(str)
     assert_fstring(frozen_str) {|s| assert_equal(str, s)}
     GC.start
