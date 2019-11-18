@@ -2220,6 +2220,7 @@ hash.$(OBJEXT): {$(VPATH)}util.h
 inits.$(OBJEXT): $(hdrdir)/ruby.h
 inits.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 inits.$(OBJEXT): {$(VPATH)}assert.h
+inits.$(OBJEXT): {$(VPATH)}builtin.h
 inits.$(OBJEXT): {$(VPATH)}config.h
 inits.$(OBJEXT): {$(VPATH)}defines.h
 inits.$(OBJEXT): {$(VPATH)}encoding.h
@@ -2230,10 +2231,9 @@ inits.$(OBJEXT): {$(VPATH)}io.h
 inits.$(OBJEXT): {$(VPATH)}missing.h
 inits.$(OBJEXT): {$(VPATH)}onigmo.h
 inits.$(OBJEXT): {$(VPATH)}oniguruma.h
+inits.$(OBJEXT): {$(VPATH)}prelude.rbinc
 inits.$(OBJEXT): {$(VPATH)}st.h
 inits.$(OBJEXT): {$(VPATH)}subst.h
-inits.$(OBJEXT): {$(VPATH)}builtin.h
-inits.$(OBJEXT): {$(VPATH)}prelude.rbinc
 io.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 io.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 io.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -2469,6 +2469,7 @@ miniprelude.$(OBJEXT): {$(VPATH)}miniprelude.c
 miniprelude.$(OBJEXT): {$(VPATH)}missing.h
 miniprelude.$(OBJEXT): {$(VPATH)}node.h
 miniprelude.$(OBJEXT): {$(VPATH)}pack.rb
+miniprelude.$(OBJEXT): {$(VPATH)}prelude.rb
 miniprelude.$(OBJEXT): {$(VPATH)}ruby_assert.h
 miniprelude.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 miniprelude.$(OBJEXT): {$(VPATH)}st.h
