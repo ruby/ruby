@@ -21,6 +21,9 @@ class TestJIT < Test::Unit::TestCase
     :defineclass,
     :opt_call_c_function,
 
+    # to be tested
+    :invokebuiltin,
+
     # never used
     :opt_invokebuiltin_delegate,
   ].each do |insn|
@@ -594,12 +597,6 @@ class TestJIT < Test::Unit::TestCase
 
   def test_compile_insn_opt_call_c_function
     skip "support this in opt_call_c_function (low priority)"
-  end
-
-  def test_compile_insn_invokebuiltin
-    insns = collect_insns(RubyVM::InstructionSequence.of([0].method(:pack)).to_a)
-    mark_tested_insn(:invokebuiltin, used_insns: insns)
-    assert_eval_with_jit('print [0].pack("c")', stdout: "\x00", success_count: 1)
   end
 
   def test_compile_insn_opt_invokebuiltin_delegate_leave
