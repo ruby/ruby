@@ -899,13 +899,6 @@ rb_tainted_str_new(const char *ptr, long len)
     return rb_str_new(ptr, len);
 }
 
-static VALUE
-rb_tainted_str_new_with_enc(const char *ptr, long len, rb_encoding *enc)
-{
-    rb_warning("rb_tainted_str_new_with_enc is deprecated and will be removed in Ruby 3.2.");
-    return rb_enc_str_new(ptr, len, enc);
-}
-
 VALUE
 rb_tainted_str_new_cstr(const char *ptr)
 {
