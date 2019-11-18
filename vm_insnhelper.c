@@ -4989,7 +4989,7 @@ vm_invoke_builtin(rb_execution_context_t *ec, rb_control_frame_t *cfp, const str
 }
 
 static VALUE
-vm_invoke_builtin_delegate(rb_execution_context_t *ec, rb_control_frame_t *cfp, const struct rb_builtin_function *bf, int start_index)
+vm_invoke_builtin_delegate(rb_execution_context_t *ec, rb_control_frame_t *cfp, const struct rb_builtin_function *bf, unsigned int start_index)
 {
     if (0) { // debug print
         fprintf(stderr, "vm_invoke_builtin_delegate: passing -> ");

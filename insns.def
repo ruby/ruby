@@ -1497,7 +1497,7 @@ opt_invokebuiltin_delegate
 (VALUE ret)
 // attr bool leaf = false; /* anything can happen inside */
 {
-    ret = vm_invoke_builtin_delegate(ec, reg_cfp, bf, index);
+    ret = vm_invoke_builtin_delegate(ec, reg_cfp, bf, (unsigned int)index);
 }
 
 /* call specific function with args (same parameters) and leave */
@@ -1508,7 +1508,7 @@ opt_invokebuiltin_delegate_leave
 (VALUE val)
 // attr bool leaf = false; /* anything can happen inside */
 {
-    val = vm_invoke_builtin_delegate(ec, reg_cfp, bf, index);
+    val = vm_invoke_builtin_delegate(ec, reg_cfp, bf, (unsigned int)index);
 
     /* leave fastpath */
     /* TracePoint/return should fallback this insn to opt_invokebuiltin_delegate */
