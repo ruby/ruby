@@ -188,6 +188,13 @@ sufficient information, see the ChangeLog file or Redmine
 
 * +yield+ in singleton class syntax is warned and will be deprecated later [Feature #15575].
 
+   def foo
+     class << Object.new
+       yield
+     end
+   end
+   foo { p :ok } #=> warning: `yield' in class syntax will not be supported from Ruby 3.0.
+
 * Argument forwarding by <code>(...)</code> is introduced. [Feature #16253]
 
     def foo(...)
