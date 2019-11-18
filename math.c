@@ -573,6 +573,8 @@ math_log10(VALUE unused_obj, VALUE x)
     return DBL2NUM(log10(d) + numbits * log10(2)); /* log10(d * 2 ** numbits) */
 }
 
+static VALUE rb_math_sqrt(VALUE x);
+
 /*
  *  call-seq:
  *     Math.sqrt(x)    -> Float
@@ -630,7 +632,7 @@ f_signbit(VALUE x)
     return f_negative_p(x);
 }
 
-VALUE
+static VALUE
 rb_math_sqrt(VALUE x)
 {
     double d;

@@ -172,7 +172,6 @@ RUBY_SYMBOL_EXPORT_BEGIN
 /* compile.c */
 VALUE rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node);
 VALUE rb_iseq_compile_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_callback_callback_func * ifunc);
-int rb_iseq_translate_threaded_code(rb_iseq_t *iseq);
 VALUE *rb_iseq_original_iseq(const rb_iseq_t *iseq);
 void rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc,
 			    VALUE locals, VALUE args,
@@ -303,7 +302,6 @@ enum defined_type {
 };
 
 VALUE rb_iseq_defined_string(enum defined_type type);
-void rb_iseq_make_compile_option(struct rb_compile_option_struct *option, VALUE opt);
 
 /* vm.c */
 VALUE rb_iseq_local_variables(const rb_iseq_t *iseq);

@@ -1206,7 +1206,6 @@ typedef struct rb_imemo_tmpbuf_struct {
 } rb_imemo_tmpbuf_t;
 
 #define rb_imemo_tmpbuf_auto_free_pointer() rb_imemo_new(imemo_tmpbuf, 0, 0, 0, 0)
-VALUE rb_imemo_tmpbuf_auto_free_maybe_mark_buffer(void *buf, size_t cnt);
 rb_imemo_tmpbuf_t *rb_imemo_tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt);
 
 #define RB_IMEMO_TMPBUF_PTR(v) \
@@ -1364,7 +1363,6 @@ void rb_ary_delete_same(VALUE, VALUE);
 VALUE rb_ary_tmp_new_fill(long capa);
 VALUE rb_ary_at(VALUE, VALUE);
 VALUE rb_ary_aref1(VALUE ary, VALUE i);
-VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
 size_t rb_ary_memsize(VALUE);
 VALUE rb_to_array_type(VALUE obj);
 VALUE rb_check_to_array(VALUE ary);
@@ -1425,7 +1423,6 @@ VALUE rb_big_even_p(VALUE);
 size_t rb_big_size(VALUE);
 VALUE rb_integer_float_cmp(VALUE x, VALUE y);
 VALUE rb_integer_float_eq(VALUE x, VALUE y);
-VALUE rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base);
 VALUE rb_str_convert_to_inum(VALUE str, int base, int badcheck, int raise_exception);
 VALUE rb_big_comp(VALUE x);
 VALUE rb_big_aref(VALUE x, VALUE y);
@@ -1516,7 +1513,6 @@ extern VALUE rb_eEAGAIN;
 extern VALUE rb_eEWOULDBLOCK;
 extern VALUE rb_eEINPROGRESS;
 void rb_report_bug_valist(VALUE file, int line, const char *fmt, va_list args);
-VALUE rb_check_backtrace(VALUE);
 NORETURN(void rb_async_bug_errno(const char *,int));
 const char *rb_builtin_type_name(int t);
 const char *rb_builtin_class_name(VALUE x);
@@ -1541,7 +1537,6 @@ VALUE rb_nomethod_err_new(VALUE mesg, VALUE recv, VALUE method, VALUE args, int 
 VALUE rb_key_err_new(VALUE mesg, VALUE recv, VALUE name);
 #define rb_key_err_raise(mesg, recv, name) \
     rb_exc_raise(rb_key_err_new(mesg, recv, name))
-VALUE rb_warning_warn(VALUE mod, VALUE str);
 PRINTF_ARGS(VALUE rb_warning_string(const char *fmt, ...), 1, 2);
 NORETURN(void rb_vraise(VALUE, const char *, va_list));
 
@@ -1635,7 +1630,6 @@ __attribute__((__alloc_align__(1)))
 #endif
 #endif
 void *rb_aligned_malloc(size_t, size_t) RUBY_ATTR_MALLOC RUBY_ATTR_ALLOC_SIZE((2));
-void rb_aligned_free(void *);
 
 size_t rb_size_mul_or_raise(size_t, size_t, VALUE); /* used in compile.c */
 size_t rb_size_mul_add_or_raise(size_t, size_t, size_t, VALUE); /* used in iseq.h */
@@ -1657,10 +1651,8 @@ VALUE rb_hash_new_with_size(st_index_t size);
 VALUE rb_hash_has_key(VALUE hash, VALUE key);
 VALUE rb_hash_default_value(VALUE hash, VALUE key);
 VALUE rb_hash_set_default_proc(VALUE hash, VALUE proc);
-long rb_objid_hash(st_index_t index);
 long rb_dbl_long_hash(double d);
 st_table *rb_init_identtable(void);
-st_table *rb_init_identtable_with_size(st_index_t size);
 VALUE rb_hash_compare_by_id_p(VALUE hash);
 VALUE rb_to_hash_type(VALUE obj);
 VALUE rb_hash_key_str(VALUE);
@@ -1714,7 +1706,6 @@ VALUE rb_math_hypot(VALUE, VALUE);
 VALUE rb_math_log(int argc, const VALUE *argv);
 VALUE rb_math_sin(VALUE);
 VALUE rb_math_sinh(VALUE);
-VALUE rb_math_sqrt(VALUE);
 
 /* mjit.c */
 
@@ -1768,7 +1759,6 @@ int ruby_float_step(VALUE from, VALUE to, VALUE step, int excl, int allow_endles
 double ruby_float_mod(double x, double y);
 int rb_num_negative_p(VALUE);
 VALUE rb_int_succ(VALUE num);
-VALUE rb_int_pred(VALUE num);
 VALUE rb_int_uminus(VALUE num);
 VALUE rb_float_uminus(VALUE num);
 VALUE rb_int_plus(VALUE x, VALUE y);
@@ -1779,9 +1769,7 @@ VALUE rb_float_mul(VALUE x, VALUE y);
 VALUE rb_float_div(VALUE x, VALUE y);
 VALUE rb_int_idiv(VALUE x, VALUE y);
 VALUE rb_int_modulo(VALUE x, VALUE y);
-VALUE rb_int_round(VALUE num, int ndigits, enum ruby_num_rounding_mode mode);
 VALUE rb_int2str(VALUE num, int base);
-VALUE rb_dbl_hash(double d);
 VALUE rb_fix_plus(VALUE x, VALUE y);
 VALUE rb_fix_aref(VALUE fix, VALUE idx);
 VALUE rb_int_gt(VALUE x, VALUE y);
@@ -2280,7 +2268,6 @@ VALUE rb_check_funcall_with_hook_kw(VALUE recv, ID mid, int argc, const VALUE *a
                                  rb_check_funcall_hook *hook, VALUE arg, int kw_splat);
 const char *rb_type_str(enum ruby_value_type type);
 VALUE rb_check_funcall_default(VALUE, ID, int, const VALUE *, VALUE);
-VALUE rb_check_funcall_default_kw(VALUE, ID, int, const VALUE *, VALUE, int);
 VALUE rb_yield_1(VALUE val);
 VALUE rb_yield_force_blockarg(VALUE values);
 VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
@@ -2402,11 +2389,6 @@ const char *rb_objspace_data_type_name(VALUE obj);
 
 /* Temporary.  This API will be removed (renamed). */
 VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd);
-
-/* array.c (export) */
-void rb_ary_detransient(VALUE a);
-VALUE *rb_ary_ptr_use_start(VALUE ary);
-void rb_ary_ptr_use_end(VALUE ary);
 
 /* bignum.c (export) */
 VALUE rb_big_mul_normal(VALUE x, VALUE y);

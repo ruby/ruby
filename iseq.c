@@ -690,7 +690,7 @@ set_compile_option_from_hash(rb_compile_option_t *option, VALUE opt)
 #undef SET_COMPILE_OPTION_NUM
 }
 
-void
+static void
 rb_iseq_make_compile_option(rb_compile_option_t *option, VALUE opt)
 {
     Check_Type(opt, T_HASH);
@@ -963,7 +963,7 @@ rb_iseq_load(VALUE data, VALUE parent, VALUE opt)
     return iseq_load(data, RTEST(parent) ? (rb_iseq_t *)parent : NULL, opt);
 }
 
-rb_iseq_t *
+static rb_iseq_t *
 rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, VALUE opt)
 {
     rb_iseq_t *iseq = NULL;

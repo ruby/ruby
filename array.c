@@ -1532,6 +1532,8 @@ rb_ary_subseq(VALUE ary, long beg, long len)
     return ary_make_partial(ary, klass, beg, len);
 }
 
+static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
+
 /*
  *  call-seq:
  *     ary[index]                -> obj     or nil

@@ -1747,6 +1747,8 @@ heap_unlink_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *pag
     heap->total_slots -= page->total_slots;
 }
 
+static void rb_aligned_free(void *ptr);
+
 static void
 heap_page_free(rb_objspace_t *objspace, struct heap_page *page)
 {
@@ -2302,7 +2304,7 @@ rb_imemo_tmpbuf_new(VALUE v1, VALUE v2, VALUE v3, VALUE v0)
     return newobj_of(v0, flags, v1, v2, v3, FALSE);
 }
 
-VALUE
+static VALUE
 rb_imemo_tmpbuf_auto_free_maybe_mark_buffer(void *buf, size_t cnt)
 {
     return rb_imemo_tmpbuf_new((VALUE)buf, 0, (VALUE)cnt, 0);
@@ -9624,7 +9626,7 @@ rb_aligned_malloc(size_t alignment, size_t size)
     return res;
 }
 
-void
+static void
 rb_aligned_free(void *ptr)
 {
 #if defined __MINGW32__

@@ -146,7 +146,7 @@ rb_hash(VALUE obj)
     return hval;
 }
 
-long rb_objid_hash(st_index_t index);
+static long rb_objid_hash(st_index_t index);
 
 static st_index_t
 dbl_to_index(double d)
@@ -264,7 +264,7 @@ key64_hash(uint64_t key, uint32_t seed)
 /* Should cast down the result for each purpose */
 #define st_index_hash(index) key64_hash(rb_hash_start(index), prime2)
 
-long
+static long
 rb_objid_hash(st_index_t index)
 {
     return (long)st_index_hash(index);
@@ -4153,6 +4153,8 @@ rb_hash_compact_bang(VALUE hash)
     return Qnil;
 }
 
+static st_table *rb_init_identtable_with_size(st_index_t size);
+
 /*
  *  call-seq:
  *     hsh.compare_by_identity -> hsh
@@ -4227,7 +4229,7 @@ rb_init_identtable(void)
     return st_init_table(&identhash);
 }
 
-st_table *
+static st_table *
 rb_init_identtable_with_size(st_index_t size)
 {
     return st_init_table_with_size(&identhash, size);

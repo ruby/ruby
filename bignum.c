@@ -3990,6 +3990,8 @@ str2big_gmp(
 }
 #endif
 
+static VALUE rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base);
+
 /*
  * Parse +str+ as Ruby Integer, i.e., underscores, 0d and 0b prefixes.
  *
@@ -4233,7 +4235,7 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
     return bignorm(z);
 }
 
-VALUE
+static VALUE
 rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base)
 {
     return rb_int_parse_cstr(str, len, endp, NULL, base,
