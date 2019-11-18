@@ -364,6 +364,9 @@ def read_single_cc_deps(path_i, cwd)
     next if !dep.to_s.start_with?(cwd.to_s) # omit system headers.
     deps << dep
   }
+  if deps.include?(cwd + "probes.h")
+    deps << (cwd + "probes.dmyh")
+  end
   deps
 end
 
