@@ -2338,7 +2338,6 @@ rb_check_argv(int argc, VALUE *argv)
 {
     VALUE tmp, prog;
     int i;
-    const char *name = 0;
 
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
 
@@ -2353,7 +2352,6 @@ rb_check_argv(int argc, VALUE *argv)
 	SafeStringValue(prog);
 	StringValueCStr(prog);
 	prog = rb_str_new_frozen(prog);
-	name = RSTRING_PTR(prog);
     }
     for (i = 0; i < argc; i++) {
 	SafeStringValue(argv[i]);

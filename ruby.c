@@ -1217,12 +1217,9 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 	  case 'T':
             {
                 size_t numlen;
-                int v = 1;
 
                 if (*++s) {
-                    v = scan_oct(s, 2, &numlen);
-                    if (numlen == 0)
-                        v = 1;
+                    scan_oct(s, 2, &numlen);
                     s += numlen;
                 }
             }
