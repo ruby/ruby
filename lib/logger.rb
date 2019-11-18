@@ -353,10 +353,11 @@ class Logger
   #   +STDOUT+, +STDERR+, or an open file).
   # +shift_age+::
   #   Number of old log files to keep, *or* frequency of rotation (+daily+,
-  #   +weekly+ or +monthly+). Default value is 0.
+  #   +weekly+ or +monthly+). Default value is 0, which disables log file
+  #   rotation.
   # +shift_size+::
-  #   Maximum logfile size in bytes (only applies when +shift_age+ is a number).
-  #   Defaults to +1048576+ (1MB).
+  #   Maximum logfile size in bytes (only applies when +shift_age+ is a positive
+  #   Integer). Defaults to +1048576+ (1MB).
   # +level+::
   #   Logging severity threshold. Default values is Logger::DEBUG.
   # +progname+::
