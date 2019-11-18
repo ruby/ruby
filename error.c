@@ -159,7 +159,7 @@ rb_warning_s_warn(VALUE mod, VALUE str)
  *  printing the warning to $stderr.
  */
 
-VALUE
+static VALUE
 rb_warning_warn(VALUE mod, VALUE str)
 {
     return rb_funcallv(mod, id_warn, 1, &str);
@@ -1169,6 +1169,8 @@ exc_backtrace(VALUE exc)
     return obj;
 }
 
+static VALUE rb_check_backtrace(VALUE);
+
 VALUE
 rb_get_backtrace(VALUE exc)
 {
@@ -1212,7 +1214,7 @@ exc_backtrace_locations(VALUE exc)
     return obj;
 }
 
-VALUE
+static VALUE
 rb_check_backtrace(VALUE bt)
 {
     long i;
@@ -1506,6 +1508,8 @@ name_err_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+static VALUE rb_name_err_mesg_new(VALUE mesg, VALUE recv, VALUE method);
+
 static VALUE
 name_err_init(VALUE exc, VALUE mesg, VALUE recv, VALUE method)
 {
@@ -1636,7 +1640,7 @@ static const rb_data_type_t name_err_mesg_data_type = {
 };
 
 /* :nodoc: */
-VALUE
+static VALUE
 rb_name_err_mesg_new(VALUE mesg, VALUE recv, VALUE method)
 {
     VALUE result = TypedData_Wrap_Struct(rb_cNameErrorMesg, &name_err_mesg_data_type, 0);

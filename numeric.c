@@ -1404,6 +1404,7 @@ rb_float_equal(VALUE x, VALUE y)
 }
 
 #define flo_eq rb_float_equal
+static VALUE rb_dbl_hash(double d);
 
 /*
  * call-seq:
@@ -1420,7 +1421,7 @@ flo_hash(VALUE num)
     return rb_dbl_hash(RFLOAT_VALUE(num));
 }
 
-VALUE
+static VALUE
 rb_dbl_hash(double d)
 {
     return LONG2FIX(rb_dbl_long_hash(d));
@@ -2099,7 +2100,7 @@ int_half_p_half_down(VALUE num, VALUE n, VALUE f)
 /*
  * Assumes num is an Integer, ndigits <= 0
  */
-VALUE
+static VALUE
 rb_int_round(VALUE num, int ndigits, enum ruby_num_rounding_mode mode)
 {
     VALUE n, f, h, r;
@@ -3342,7 +3343,7 @@ rb_int_succ(VALUE num)
  *     (-1).pred   #=> -2
  */
 
-VALUE
+static VALUE
 rb_int_pred(VALUE num)
 {
     if (FIXNUM_P(num)) {
