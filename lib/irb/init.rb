@@ -274,11 +274,11 @@ module IRB # :nodoc:
     if home = ENV["HOME"]
       yield proc{|rc| home+"/.irb#{rc}"}
     end
-    home = Dir.pwd
-    yield proc{|rc| home+"/.irb#{rc}"}
-    yield proc{|rc| home+"/irb#{rc.sub(/\A_?/, '.')}"}
-    yield proc{|rc| home+"/_irb#{rc}"}
-    yield proc{|rc| home+"/$irb#{rc}"}
+    current_dir = Dir.pwd
+    yield proc{|rc| current_dir+"/.irb#{rc}"}
+    yield proc{|rc| current_dir+"/irb#{rc.sub(/\A_?/, '.')}"}
+    yield proc{|rc| current_dir+"/_irb#{rc}"}
+    yield proc{|rc| current_dir+"/$irb#{rc}"}
   end
 
   # loading modules
