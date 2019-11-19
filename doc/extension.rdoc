@@ -117,11 +117,11 @@ is a String.  Notice that the macros take only the lvalue as their
 argument, to change the value of var in place.
 
 You can also use the macro named StringValueCStr(). This is just
-like StringValuePtr(), but always adds a NUL character at the end of
-the result. If the result contains a NUL character, this macro causes
+like StringValuePtr(), but always adds a NULL character at the end of
+the result. If the result contains a NULL character, this macro causes
 the ArgumentError exception.
-StringValuePtr() doesn't guarantee the existence of a NUL at the end
-of the result, and the result may contain NUL.
+StringValuePtr() doesn't guarantee the existence of a NULL at the end
+of the result, and the result may contain NULL.
 
 Other data types have corresponding C structures, e.g. struct RArray
 for T_ARRAY etc. The VALUE of the type which has the corresponding
@@ -530,7 +530,7 @@ a Symbol nor a String.  The second function stores the converted
 result into *name, and returns 0 if the string is not a known symbol.
 After this function returned a non-zero value, *name is always a
 Symbol or a String, otherwise it is a String if the result is 0.
-The third function takes NUL-terminated C string, not Ruby VALUE.
+The third function takes NULL-terminated C string, not Ruby VALUE.
 
 You can retrieve Symbol from Ruby object (Symbol or String) given as
 an argument by using
@@ -1265,7 +1265,7 @@ RSTRING_LEN(str) ::
 RSTRING_PTR(str) ::
 
   String -> pointer to String data
-  Note that the result pointer may not be NUL-terminated
+  Note that the result pointer may not be NULL-terminated
 
 StringValue(value) ::
 
@@ -1277,8 +1277,8 @@ StringValuePtr(value) ::
 
 StringValueCStr(value) ::
 
-  Object with \#to_str -> pointer to String data without NUL bytes
-  It is guaranteed that the result data is NUL-terminated
+  Object with \#to_str -> pointer to String data without NULL bytes
+  It is guaranteed that the result data is NULL-terminated
 
 rb_str_new2(s) ::
 
