@@ -435,6 +435,9 @@ eot
 
     [__LINE__, %q{ case 0; in a?:; end }] =>
     nil,
+
+    [__LINE__, %q{ case 0; in "A":; end }] =>
+    nil,
   }
   pattern_matching_data.each do |(i, src), expected|
     define_method(:"test_pattern_matching_#{i}") do

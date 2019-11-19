@@ -497,17 +497,18 @@ static NODE *heredoc_dedent(struct parser_params*,NODE*);
 
 static void check_literal_when(struct parser_params *p, NODE *args, const YYLTYPE *loc);
 
-static void error_duplicate_pattern_variable(struct parser_params *p, ID id, const YYLTYPE *loc);
-
 #define get_id(id) (id)
 #define get_value(val) (val)
 #define get_num(num) (num)
 #else  /* RIPPER */
 #define NODE_RIPPER NODE_CDECL
 
+static inline int ripper_is_node_yylval(VALUE n);
+
 static inline VALUE
 ripper_new_yylval(struct parser_params *p, ID a, VALUE b, VALUE c)
 {
+    if (ripper_is_node_yylval(c)) c = RNODE(c)->nd_cval;
     add_mark_object(p, b);
     add_mark_object(p, c);
     return (VALUE)NEW_CDECL(a, b, c, &NULL_LOC);
@@ -566,6 +567,7 @@ YYLTYPE *rb_parser_set_location_of_none(struct parser_params *p, YYLTYPE *yylloc
 YYLTYPE *rb_parser_set_location(struct parser_params *p, YYLTYPE *yylloc);
 RUBY_SYMBOL_EXPORT_END
 
+static void error_duplicate_pattern_variable(struct parser_params *p, ID id, const YYLTYPE *loc);
 static void parser_token_value_print(struct parser_params *p, enum yytokentype type, const YYSTYPE *valp);
 static ID formal_argument(struct parser_params*, ID);
 static ID shadowing_lvar(struct parser_params*,ID);
@@ -1080,7 +1082,7 @@ static int looking_at_eol_p(struct parser_params *p);
 %type <id>   keyword_variable user_variable sym operation operation2 operation3
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
 %type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords relop dot_or_colon
-%type <id>   p_kwrest p_kwnorest
+%type <id>   p_kwrest p_kwnorest p_kw_label
 %type <id>   f_no_kwarg args_forward
 %token END_OF_INPUT 0	"end-of-input"
 %token <id> '.'
@@ -4080,59 +4082,47 @@ p_kwarg 	: p_kw
 		    }
 		;
 
-p_kw		: tLABEL p_expr
+p_kw		: p_kw_label p_expr
 		    {
 		    /*%%%*/
 			$$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), &@$), &@$), $2);
 		    /*% %*/
 		    /*% ripper: rb_ary_new_from_args(1, rb_ary_new_from_args(2, get_value($1), get_value($2))) %*/
 		    }
-		| tLABEL
+		| p_kw_label
 		    {
-			if (!is_local_id(get_id($1))) {
+			if ($1 && !is_local_id(get_id($1))) {
 			    yyerror1(&@1, "key must be valid as local variables");
 			}
+			error_duplicate_pattern_variable(p, get_id($1), &@1);
 		    /*%%%*/
-			error_duplicate_pattern_variable(p, $1, &@1);
 			$$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), &@$), &@$), assignable(p, $1, 0, &@$));
 		    /*% %*/
 		    /*% ripper: rb_ary_new_from_args(1, rb_ary_new_from_args(2, get_value($1), Qnil)) %*/
 		    }
-		| tSTRING_BEG string_contents tLABEL_END p_expr
-		    {
-		    /*%%%*/
-			YYLTYPE loc = code_loc_gen(&@1, &@3);
-			NODE *node = dsym_node(p, $2, &loc);
-			if (nd_type(node) == NODE_LIT) {
-			    $$ = list_append(p, NEW_LIST(node, &loc), $4);
-			}
-			else {
-			    yyerror1(&loc, "symbol literal with interpolation is not allowed");
-			    $$ = 0;
-			}
-		    /*% %*/
-		    /*% ripper: rb_ary_new_from_args(1, rb_ary_new_from_args(2, $2, get_value($4))) %*/
-		    }
+		;
+
+p_kw_label	: tLABEL
 		| tSTRING_BEG string_contents tLABEL_END
 		    {
-		    /*%%%*/
 			YYLTYPE loc = code_loc_gen(&@1, &@3);
-			NODE *node = dsym_node(p, $2, &loc);
-			ID id;
-			if (nd_type(node) == NODE_LIT) {
-			    id = SYM2ID(node->nd_lit);
-			    if (!is_local_id(id)) {
-				yyerror1(&loc, "key must be valid as local variables");
-			    }
-			    error_duplicate_pattern_variable(p, id, &loc);
-			    $$ = list_append(p, NEW_LIST(node, &loc), assignable(p, id, 0, &@$));
+		    /*%%%*/
+			if (!$2 || nd_type($2) == NODE_STR) {
+			    NODE *node = dsym_node(p, $2, &loc);
+			    $$ = SYM2ID(node->nd_lit);
 			}
+		    /*%
+			if (ripper_is_node_yylval($2) && RNODE($2)->nd_cval) {
+			    VALUE label = RNODE($2)->nd_cval;
+			    VALUE rval = RNODE($2)->nd_rval;
+			    $$ = ripper_new_yylval(p, rb_intern_str(label), rval, label);
+			    RNODE($$)->nd_loc = loc;
+			}
+		    %*/
 			else {
 			    yyerror1(&loc, "symbol literal with interpolation is not allowed");
 			    $$ = 0;
 			}
-		    /*% %*/
-		    /*% ripper: rb_ary_new_from_args(1, rb_ary_new_from_args(2, $2, Qnil)) %*/
 		    }
 		;
 
@@ -4521,6 +4511,10 @@ string_contents : /* none */
 			$$ = 0;
 		    /*% %*/
 		    /*% ripper: string_content! %*/
+		    /*%%%*/
+		    /*%
+			$$ = ripper_new_yylval(p, 0, $$, 0);
+		    %*/
 		    }
 		| string_contents string_content
 		    {
@@ -4528,6 +4522,15 @@ string_contents : /* none */
 			$$ = literal_concat(p, $1, $2, &@$);
 		    /*% %*/
 		    /*% ripper: string_add!($1, $2) %*/
+		    /*%%%*/
+		    /*%
+			if (ripper_is_node_yylval($1) && ripper_is_node_yylval($2) &&
+			    !RNODE($1)->nd_cval) {
+			    RNODE($1)->nd_cval = RNODE($2)->nd_cval;
+			    RNODE($1)->nd_rval = $$;
+			    $$ = $1;
+			}
+		    %*/
 		    }
 		;
 
@@ -4600,6 +4603,7 @@ regexp_contents: /* none */
 		;
 
 string_content	: tSTRING_CONTENT
+		    /*% ripper[brace]: ripper_new_yylval(p, 0, get_value($1), $1) %*/
 		| tSTRING_DVAR
 		    {
 			/* need to backup p->lex.strterm so that a string literal `%&foo,#$&,bar&` can be parsed */
@@ -5753,8 +5757,21 @@ ruby_show_error_line(VALUE errbuf, const YYLTYPE *yylloc, int lineno, VALUE str)
 static int
 parser_yyerror(struct parser_params *p, const YYLTYPE *yylloc, const char *msg)
 {
+    const char *pcur = 0, *ptok = 0;
+    if (yylloc &&
+	p->ruby_sourceline == yylloc->beg_pos.lineno &&
+	p->ruby_sourceline == yylloc->end_pos.lineno) {
+	pcur = p->lex.pcur;
+	ptok = p->lex.ptok;
+	p->lex.ptok = p->lex.pbeg + yylloc->beg_pos.column;
+	p->lex.pcur = p->lex.pbeg + yylloc->end_pos.column;
+    }
     dispatch1(parse_error, STR_NEW2(msg));
     ripper_error(p);
+    if (pcur) {
+	p->lex.ptok = ptok;
+	p->lex.pcur = pcur;
+    }
     return 0;
 }
 
@@ -8342,6 +8359,7 @@ static enum yytokentype
 parse_percent(struct parser_params *p, const int space_seen, const enum lex_state_e last_state)
 {
     register int c;
+    const char *ptok = p->lex.pcur;
 
     if (IS_BEG()) {
 	int term;
@@ -8371,6 +8389,7 @@ parse_percent(struct parser_params *p, const int space_seen, const enum lex_stat
 	else if (term == '<') term = '>';
 	else paren = 0;
 
+	p->lex.ptok = ptok-1;
 	switch (c) {
 	  case 'Q':
 	    p->lex.strterm = NEW_STRTERM(str_dquote, term, paren);
@@ -9035,6 +9054,7 @@ parser_yylex(struct parser_params *p)
       case '"':
 	label = (IS_LABEL_POSSIBLE() ? str_label : 0);
 	p->lex.strterm = NEW_STRTERM(str_dquote | label, '"', 0);
+	p->lex.ptok = p->lex.pcur-1;
 	return tSTRING_BEG;
 
       case '`':
@@ -9055,6 +9075,7 @@ parser_yylex(struct parser_params *p)
       case '\'':
 	label = (IS_LABEL_POSSIBLE() ? str_label : 0);
 	p->lex.strterm = NEW_STRTERM(str_squote | label, '\'', 0);
+	p->lex.ptok = p->lex.pcur-1;
 	return tSTRING_BEG;
 
       case '?':
@@ -11499,6 +11520,7 @@ new_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc)
     if (hash) hash = remove_duplicate_keys(p, hash);
     return NEW_HASH(hash, loc);
 }
+#endif
 
 static void
 error_duplicate_pattern_variable(struct parser_params *p, ID id, const YYLTYPE *loc)
@@ -11514,6 +11536,7 @@ error_duplicate_pattern_variable(struct parser_params *p, ID id, const YYLTYPE *
     }
 }
 
+#ifndef RIPPER
 static void
 error_duplicate_keys(struct parser_params *p, NODE *hash)
 {
@@ -12155,6 +12178,7 @@ parser_reg_compile(struct parser_params* p, VALUE str, int options, VALUE *errms
 {
     VALUE err = rb_errinfo();
     VALUE re;
+    str = ripper_is_node_yylval(str) ? RNODE(str)->nd_cval : str;
     int c = rb_reg_fragment_setenc(p, str, options);
     if (c) reg_fragment_enc_error(p, str, c);
     re = rb_parser_reg_compile(p, str, options);
