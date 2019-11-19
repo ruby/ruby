@@ -1034,7 +1034,10 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
     if (ftptr) load_unlock(RSTRING_PTR(path), !state);
 
     if (state) {
-        if (exception) {
+        if (state == TAG_FATAL) {
+            EC_JUMP_TAG(ec, state);
+        }
+        else if (exception) {
             /* usually state == TAG_RAISE only, except for
              * rb_iseq_load_iseq in load_iseq_eval case */
             VALUE exc = rb_vm_make_jump_tag_but_local_jump(state, Qundef);
