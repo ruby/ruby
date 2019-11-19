@@ -2419,14 +2419,20 @@ static VALUE
 enum_reverse_each(int argc, VALUE *argv, VALUE obj)
 {
     VALUE ary;
-    long i;
+    long len;
 
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enum_size);
 
     ary = enum_to_a(argc, argv, obj);
 
-    for (i = RARRAY_LEN(ary); --i >= 0; ) {
-	rb_yield(RARRAY_AREF(ary, i));
+    len = RARRAY_LEN(ary);
+    while (len--) {
+        long nlen;
+        rb_yield(RARRAY_AREF(ary, len));
+        nlen = RARRAY_LEN(ary);
+        if (nlen < len) {
+            len = nlen;
+        }
     }
 
     return obj;
