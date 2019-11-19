@@ -332,7 +332,7 @@ class RubyLex
     depth_difference = 0
     @tokens.each_with_index do |t, index|
       case t[1]
-      when :on_ignored_nl, :on_nl
+      when :on_ignored_nl, :on_nl, :on_comment
         if index != (@tokens.size - 1)
           depth_difference = 0
         end
@@ -381,7 +381,7 @@ class RubyLex
     @tokens.each_with_index do |t, index|
       corresponding_token_depth = nil
       case t[1]
-      when :on_ignored_nl, :on_nl
+      when :on_ignored_nl, :on_nl, :on_comment
         spaces_at_line_head = 0
         is_first_spaces_of_line = true
         is_first_printable_of_line = true
