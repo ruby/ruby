@@ -957,12 +957,15 @@ rb_struct_deconstruct_keys(VALUE s, VALUE keys)
                  rb_obj_class(keys));
 
     }
+    if (RSTRUCT_LEN(s) < RARRAY_LEN(keys)) {
+        return rb_hash_new_with_size(0);
+    }
     h = rb_hash_new_with_size(RARRAY_LEN(keys));
     for (i=0; i<RARRAY_LEN(keys); i++) {
         VALUE key = RARRAY_AREF(keys, i);
         int i = rb_struct_pos(s, &key);
         if (i < 0) {
-            return rb_hash_new_with_size(0);
+            return h;
         }
         rb_hash_aset(h, key, RSTRUCT_GET(s, i));
     }

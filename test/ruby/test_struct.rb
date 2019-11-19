@@ -437,7 +437,7 @@ module TestStruct
     assert_equal({a: 1, b: 2}, o.deconstruct_keys(nil))
     assert_equal({a: 1, b: 2}, o.deconstruct_keys([:b, :a]))
     assert_equal({a: 1}, o.deconstruct_keys([:a]))
-    assert_equal({}, o.deconstruct_keys([:a, :c]))
+    assert_not_send([o.deconstruct_keys([:a, :c]), :key?, :c])
     assert_raise(TypeError) {
       o.deconstruct_keys(0)
     }
