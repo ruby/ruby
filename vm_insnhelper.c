@@ -4453,7 +4453,7 @@ vm_opt_and(VALUE recv, VALUE obj)
 {
     if (FIXNUM_2_P(recv, obj) &&
         BASIC_OP_UNREDEFINED_P(BOP_AND, INTEGER_REDEFINED_OP_FLAG)) {
-        return LONG2NUM(FIX2LONG(recv) & FIX2LONG(obj));
+        return (recv & obj) | 1;
     }
     else {
         return Qundef;
@@ -4465,7 +4465,7 @@ vm_opt_or(VALUE recv, VALUE obj)
 {
     if (FIXNUM_2_P(recv, obj) &&
         BASIC_OP_UNREDEFINED_P(BOP_OR, INTEGER_REDEFINED_OP_FLAG)) {
-        return LONG2NUM(FIX2LONG(recv) | FIX2LONG(obj));
+        return recv | obj;
     }
     else {
         return Qundef;
@@ -4476,7 +4476,7 @@ static VALUE
 vm_opt_aref(VALUE recv, VALUE obj)
 {
     if (SPECIAL_CONST_P(recv)) {
-        if (FIXNUM_P(recv) && FIXNUM_P(obj) &&
+        if (FIXNUM_2_P(recv, obj) &&
                 BASIC_OP_UNREDEFINED_P(BOP_AREF, INTEGER_REDEFINED_OP_FLAG)) {
             return rb_fix_aref(recv, obj);
         }
@@ -4591,21 +4591,15 @@ VALUE rb_false(VALUE obj);
 static VALUE
 vm_opt_nil_p(CALL_DATA cd, VALUE recv)
 {
-    if (recv == Qnil) {
-        if (BASIC_OP_UNREDEFINED_P(BOP_NIL_P, NIL_REDEFINED_OP_FLAG)) {
-            return Qtrue;
-        }
-        else {
-            return Qundef;
-        }
+    if (recv == Qnil &&
+        BASIC_OP_UNREDEFINED_P(BOP_NIL_P, NIL_REDEFINED_OP_FLAG)) {
+        return Qtrue;
+    }
+    else if (vm_method_cfunc_is(cd, recv, rb_false)) {
+        return Qfalse;
     }
     else {
-        if (vm_method_cfunc_is(cd, recv, rb_false)) {
-            return Qfalse;
-        }
-        else {
-            return Qundef;
-        }
+        return Qundef;
     }
 }
 
@@ -4670,12 +4664,15 @@ vm_opt_not(CALL_DATA cd, VALUE recv)
 static VALUE
 vm_opt_regexpmatch2(VALUE recv, VALUE obj)
 {
-    if (CLASS_OF(recv) == rb_cString &&
+    if (SPECIAL_CONST_P(recv)) {
+        return Qundef;
+    }
+    else if (RBASIC_CLASS(recv) == rb_cString &&
         CLASS_OF(obj) == rb_cRegexp &&
 	BASIC_OP_UNREDEFINED_P(BOP_MATCH, STRING_REDEFINED_OP_FLAG)) {
 	return rb_reg_match(obj, recv);
     }
-    else if (CLASS_OF(recv) == rb_cRegexp &&
+    else if (RBASIC_CLASS(recv) == rb_cRegexp &&
         BASIC_OP_UNREDEFINED_P(BOP_MATCH, REGEXP_REDEFINED_OP_FLAG)) {
 	return rb_reg_match(recv, obj);
     }
