@@ -463,7 +463,11 @@ end unless $extstatic
 if ARGV[0]
   ext_prefix, exts = ARGV.shift.split('/', 2)
   $extension = [exts] if exts
-  @gemname = exts if ext_prefix == 'gems'
+  if ext_prefix == 'gems'
+    @gemname = exts
+  elsif exts
+    $static_ext.delete_if {|t, *| !File.fnmatch(t, exts)}
+  end
 end
 ext_prefix = "#{$top_srcdir}/#{ext_prefix || 'ext'}"
 exts = $static_ext.sort_by {|t, i| i}.collect {|t, i| t}
