@@ -57,6 +57,7 @@ jobs:
         run: make -C build $JOBS
       - name: Extract gems
         run: make -C build update-gems extract-gems
+        if: matrix.test_task == 'check'
       - name: Tests
         run: make -C build $JOBS -s ${{ matrix.test_task }}
         env:
