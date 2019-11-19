@@ -1156,9 +1156,13 @@ rb_iseqw_new(const rb_iseq_t *iseq)
  *  Takes +source+, a String of Ruby code and compiles it to an
  *  InstructionSequence.
  *
- *  Optionally takes +file+, +path+, and +line+ which describe the filename,
- *  absolute path and first line number of the ruby code in +source+ which are
+ *  Optionally takes +file+, +path+, and +line+ which describe the file path,
+ *  real path and first line number of the ruby code in +source+ which are
  *  metadata attached to the returned +iseq+.
+ *
+ *  +file+ is used for `__FILE__` and exception backtrace. +path+ is used for
+ *  +require_relative+ base. It is recommended these should be the same full
+ *  path.
  *
  *  +options+, which can be +true+, +false+ or a +Hash+, is used to
  *  modify the default behavior of the Ruby iseq compiler.
@@ -1167,6 +1171,14 @@ rb_iseqw_new(const rb_iseq_t *iseq)
  *
  *     RubyVM::InstructionSequence.compile("a = 1 + 2")
  *     #=> <RubyVM::InstructionSequence:<compiled>@<compiled>>
+ *
+ *     path = "test.rb"
+ *     RubyVM::InstructionSequence.compile(File.read(path), path, File.expand_path(path))
+ *     #=> <RubyVM::InstructionSequence:<compiled>@test.rb:1>
+ *
+ *     path = File.expand_path("test.rb")
+ *     RubyVM::InstructionSequence.compile(File.read(path), path, path)
+ *     #=> <RubyVM::InstructionSequence:<compiled>@/absolute/path/to/test.rb:1>
  *
  */
 static VALUE
