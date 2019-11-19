@@ -323,7 +323,7 @@ p Foo::Bar
 
   def test_autoload_same_file
     Dir.mktmpdir('autoload') do |tmpdir|
-      File.write("#{tmpdir}/b.rb", "#{<<~'begin;'}\n#{<<~'end;'}")
+      File.write("#{tmpdir}/bug14742.rb", "#{<<~'begin;'}\n#{<<~'end;'}")
       begin;
         module Foo; end
         module Bar; end
@@ -331,8 +331,8 @@ p Foo::Bar
       3.times do # timing-dependent, needs a few times to hit [Bug #14742]
         assert_separately(%W[-I #{tmpdir}], "#{<<-'begin;'}\n#{<<-'end;'}")
         begin;
-          autoload :Foo, 'b'
-          autoload :Bar, 'b'
+          autoload :Foo, 'bug14742'
+          autoload :Bar, 'bug14742'
           t1 = Thread.new do Foo end
           t2 = Thread.new do Bar end
           t1.join
@@ -340,6 +340,26 @@ p Foo::Bar
           bug = '[ruby-core:86935] [Bug #14742]'
           assert_instance_of Module, t1.value, bug
           assert_instance_of Module, t2.value, bug
+        end;
+      end
+    end
+  end
+
+  def test_autoload_same_file_with_raise
+    Dir.mktmpdir('autoload') do |tmpdir|
+      File.write("#{tmpdir}/bug16177.rb", "#{<<~'begin;'}\n#{<<~'end;'}")
+      begin;
+        raise '[ruby-core:95055] [Bug #16177]'
+      end;
+      assert_raise(RuntimeError, '[ruby-core:95055] [Bug #16177]') do
+        assert_separately(%W[-I #{tmpdir}], "#{<<-'begin;'}\n#{<<-'end;'}")
+        begin;
+          autoload :Foo, 'bug16177'
+          autoload :Bar, 'bug16177'
+          t1 = Thread.new do Foo end
+          t2 = Thread.new do Bar end
+          t1.join
+          t2.join
         end;
       end
     end
