@@ -2838,6 +2838,7 @@ method_inspect(VALUE method)
         const VALUE keyrest = ID2SYM(rb_intern("keyrest"));
         const VALUE block = ID2SYM(rb_intern("block"));
         const VALUE nokey = ID2SYM(rb_intern("nokey"));
+        int forwarding = 0;
 
         rb_str_buf_cat2(str, "(");
 
@@ -2850,30 +2851,56 @@ method_inspect(VALUE method)
                 // FIXME: can it be reduced to switch/case?
                 if (kind == req || kind == opt) {
                     name = rb_str_new2("_");
-                } else if (kind == rest || kind == keyrest) {
+                }
+                else if (kind == rest || kind == keyrest) {
                     name = rb_str_new2("");
-                } else if (kind == block) {
+                }
+                else if (kind == block) {
                     name = rb_str_new2("block");
-                } else if (kind == nokey) {
+                }
+                else if (kind == nokey) {
                     name = rb_str_new2("nil");
                 }
             }
 
             if (kind == req) {
                 rb_str_catf(str, "%"PRIsVALUE, name);
-            } else if (kind == opt) {
+            }
+            else if (kind == opt) {
                 rb_str_catf(str, "%"PRIsVALUE"=...", name);
-            } else if (kind == keyreq) {
+            }
+            else if (kind == keyreq) {
                 rb_str_catf(str, "%"PRIsVALUE":", name);
-            } else if (kind == key) {
+            }
+            else if (kind == key) {
                 rb_str_catf(str, "%"PRIsVALUE": ...", name);
-            } else if (kind == rest) {
-                rb_str_catf(str, "*%"PRIsVALUE, name);
-            } else if (kind == keyrest) {
+            }
+            else if (kind == rest) {
+                if (name == ID2SYM('*')) {
+                    forwarding = 1;
+                    rb_str_cat_cstr(str, "...");
+                }
+                else {
+                    rb_str_catf(str, "*%"PRIsVALUE, name);
+                }
+            }
+            else if (kind == keyrest) {
                 rb_str_catf(str, "**%"PRIsVALUE, name);
-            } else if (kind == block) {
-                rb_str_catf(str, "&%"PRIsVALUE, name);
-            } else if (kind == nokey) {
+            }
+            else if (kind == block) {
+                if (name == ID2SYM('&')) {
+                    if (forwarding) {
+                        rb_str_set_len(str, RSTRING_LEN(str) - 2);
+                    }
+                    else {
+                        rb_str_cat_cstr(str, "...");
+                    }
+                }
+                else {
+                    rb_str_catf(str, "&%"PRIsVALUE, name);
+                }
+            }
+            else if (kind == nokey) {
                 rb_str_buf_cat2(str, "**nil");
             }
 
