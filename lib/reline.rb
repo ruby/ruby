@@ -16,12 +16,6 @@ module Reline
   CursorPos = Struct.new(:x, :y)
 
   class Core
-    if RbConfig::CONFIG['host_os'] =~ /mswin|msys|mingw|cygwin|bccwin|wince|emc/
-      IS_WINDOWS = true
-    else
-      IS_WINDOWS = false
-    end
-
     ATTR_READER_NAMES = %i(
       completion_append_character
       basic_word_break_characters
@@ -400,9 +394,15 @@ module Reline
   HISTORY = History.new(core.config)
 end
 
-if Reline::Core::IS_WINDOWS
+if RbConfig::CONFIG['host_os'] =~ /mswin|msys|mingw|cygwin|bccwin|wince|emc/
   require 'reline/windows'
-  Reline::IOGate = Reline::Windows
+  if Reline::Windows.get_screen_size == [0, 0]
+    # Maybe Mintty on Cygwin
+    require 'reline/ansi'
+    Reline::IOGate = Reline::ANSI
+  else
+    Reline::IOGate = Reline::Windows
+  end
 else
   require 'reline/ansi'
   Reline::IOGate = Reline::ANSI
