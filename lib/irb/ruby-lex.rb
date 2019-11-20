@@ -307,7 +307,7 @@ class RubyLex
         case t[2]
         when 'do'
           if index > 0 and @tokens[index - 1][3].anybits?(Ripper::EXPR_CMDARG | Ripper::EXPR_ENDFN)
-            # method_with_bock do; end
+            # method_with_block do; end
             indent += 1
           else
             # while cond do; end # also "until" or "for"
@@ -350,7 +350,7 @@ class RubyLex
         case t[2]
         when 'do'
           if index > 0 and @tokens[index - 1][3].anybits?(Ripper::EXPR_CMDARG | Ripper::EXPR_ENDFN)
-            # method_with_bock do; end
+            # method_with_block do; end
             depth_difference += 1
           else
             # while cond do; end # also "until" or "for"
