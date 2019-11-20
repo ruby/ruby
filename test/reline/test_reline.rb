@@ -2,6 +2,10 @@ require_relative 'helper'
 require "reline"
 
 class Reline::Test < Reline::TestCase
+  class DummyCallbackObject
+    def call; end
+  end
+
   def setup
   end
 
@@ -102,6 +106,10 @@ class Reline::Test < Reline::TestCase
 
     assert_raise(ArgumentError) { Reline.completion_proc = 42 }
     assert_raise(ArgumentError) { Reline.completion_proc = "hoge" }
+
+    dummy = DummyCallbackObject.new
+    Reline.completion_proc = dummy
+    assert_equal(dummy, Reline.completion_proc)
   end
 
   def test_output_modifier_proc
@@ -117,6 +125,10 @@ class Reline::Test < Reline::TestCase
 
     assert_raise(ArgumentError) { Reline.output_modifier_proc = 42 }
     assert_raise(ArgumentError) { Reline.output_modifier_proc = "hoge" }
+
+    dummy = DummyCallbackObject.new
+    Reline.output_modifier_proc = dummy
+    assert_equal(dummy, Reline.output_modifier_proc)
   end
 
   def test_prompt_proc
@@ -132,6 +144,10 @@ class Reline::Test < Reline::TestCase
 
     assert_raise(ArgumentError) { Reline.prompt_proc = 42 }
     assert_raise(ArgumentError) { Reline.prompt_proc = "hoge" }
+
+    dummy = DummyCallbackObject.new
+    Reline.prompt_proc = dummy
+    assert_equal(dummy, Reline.prompt_proc)
   end
 
   def test_auto_indent_proc
@@ -147,6 +163,10 @@ class Reline::Test < Reline::TestCase
 
     assert_raise(ArgumentError) { Reline.auto_indent_proc = 42 }
     assert_raise(ArgumentError) { Reline.auto_indent_proc = "hoge" }
+
+    dummy = DummyCallbackObject.new
+    Reline.auto_indent_proc = dummy
+    assert_equal(dummy, Reline.auto_indent_proc)
   end
 
   def test_pre_input_hook
@@ -174,6 +194,10 @@ class Reline::Test < Reline::TestCase
 
     assert_raise(ArgumentError) { Reline.dig_perfect_match_proc = 42 }
     assert_raise(ArgumentError) { Reline.dig_perfect_match_proc = "hoge" }
+
+    dummy = DummyCallbackObject.new
+    Reline.dig_perfect_match_proc = dummy
+    assert_equal(dummy, Reline.dig_perfect_match_proc)
   end
 
   def test_insert_text

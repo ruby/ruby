@@ -84,22 +84,22 @@ module Reline
     end
 
     def completion_proc=(p)
-      raise ArgumentError unless p.is_a?(Proc)
+      raise ArgumentError unless p.respond_to?(:call)
       @completion_proc = p
     end
 
     def output_modifier_proc=(p)
-      raise ArgumentError unless p.is_a?(Proc)
+      raise ArgumentError unless p.respond_to?(:call)
       @output_modifier_proc = p
     end
 
     def prompt_proc=(p)
-      raise ArgumentError unless p.is_a?(Proc)
+      raise ArgumentError unless p.respond_to?(:call)
       @prompt_proc = p
     end
 
     def auto_indent_proc=(p)
-      raise ArgumentError unless p.is_a?(Proc)
+      raise ArgumentError unless p.respond_to?(:call)
       @auto_indent_proc = p
     end
 
@@ -108,7 +108,7 @@ module Reline
     end
 
     def dig_perfect_match_proc=(p)
-      raise ArgumentError unless p.is_a?(Proc)
+      raise ArgumentError unless p.respond_to?(:call)
       @dig_perfect_match_proc = p
     end
 
