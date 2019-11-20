@@ -806,6 +806,26 @@ class Reline::LineEditor
 
   private def process_auto_indent
     return if not @check_new_auto_indent and @previous_line_index # move cursor up or down
+    if @check_new_auto_indent and @previous_line_index and @previous_line_index > 0 and @line_index > @previous_line_index
+      # Fix indent of a line when a newline is inserted to the next
+      new_lines = whole_lines(index: @previous_line_index, line: @line)
+      new_indent = @auto_indent_proc.(new_lines[0..-3].push(''), @line_index - 1, 0, true)
+      md = @line.match(/\A */)
+      prev_indent = md[0].count(' ')
+      @line = ' ' * new_indent + @line.lstrip
+
+      new_indent = nil
+      (new_lines[-2].size + 1).times do |n|
+        result = @auto_indent_proc.(new_lines[0..-2], @line_index - 1, n, false)
+        if result
+          new_indent = result
+          break
+        end
+      end
+      if new_indent&.>= 0
+        @line = ' ' * new_indent + @line.lstrip
+      end
+    end
     if @previous_line_index
       new_lines = whole_lines(index: @previous_line_index, line: @line)
     else
