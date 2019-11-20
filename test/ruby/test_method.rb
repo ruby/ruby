@@ -33,6 +33,7 @@ class TestMethod < Test::Unit::TestCase
   def mk7(a, b = nil, *c, d, **o) nil && o end
   def mk8(a, b = nil, *c, d, e:, f: nil, **o) nil && o end
   def mnk(**nil) end
+  def mf(...) end
 
   class Base
     def foo() :base end
@@ -554,6 +555,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], method(:mk7).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], method(:mk8).parameters)
     assert_equal([[:nokey]], method(:mnk).parameters)
+    assert_equal([[:rest, :*], [:block, :&]], method(:mf).parameters)
   end
 
   def test_unbound_parameters
@@ -578,6 +580,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], self.class.instance_method(:mk7).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], self.class.instance_method(:mk8).parameters)
     assert_equal([[:nokey]], self.class.instance_method(:mnk).parameters)
+    assert_equal([[:rest, :*], [:block, :&]], self.class.instance_method(:mf).parameters)
   end
 
   def test_bmethod_bound_parameters
@@ -654,6 +657,7 @@ class TestMethod < Test::Unit::TestCase
     assert_include(method(:mk7).inspect, "(a, b=..., *c, d, **o)")
     assert_include(method(:mk8).inspect, "(a, b=..., *c, d, e:, f: ..., **o)")
     assert_include(method(:mnk).inspect, "(**nil)")
+    assert_include(method(:mf).inspect, "(**, &&)")
   end
 
   def test_unbound_method_parameters_inspect
@@ -678,6 +682,7 @@ class TestMethod < Test::Unit::TestCase
     assert_include(self.class.instance_method(:mk7).inspect, "(a, b=..., *c, d, **o)")
     assert_include(self.class.instance_method(:mk8).inspect, "(a, b=..., *c, d, e:, f: ..., **o)")
     assert_include(self.class.instance_method(:mnk).inspect, "(**nil)")
+    assert_include(self.class.instance_method(:mf).inspect, "(**, &&)")
   end
 
   def test_public_method_with_zsuper_method
