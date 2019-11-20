@@ -844,6 +844,7 @@ enum {
 struct heap_page {
     short total_slots;
     short free_slots;
+    short pinned_slots;
     short final_slots;
     struct {
 	unsigned int before_sweep : 1;
@@ -7731,9 +7732,13 @@ count_pinned(struct heap_page *page)
 static int
 compare_pinned(const void *left, const void *right, void *dummy)
 {
-    int left_count = count_pinned(*(struct heap_page * const *)left);
-    int right_count = count_pinned(*(struct heap_page * const *)right);
-    return right_count - left_count;
+    struct heap_page *left_page;
+    struct heap_page *right_page;
+
+    left_page = *(struct heap_page * const *)left;
+    right_page = *(struct heap_page * const *)right;
+
+    return right_page->pinned_slots - left_page->pinned_slots;
 }
 
 static int
@@ -7760,6 +7765,7 @@ allocate_page_list(rb_objspace_t *objspace, page_compare_func_t *comparator)
 
     list_for_each(&heap_eden->pages, page, page_node) {
         page_list[i++] = page;
+        page->pinned_slots = count_pinned(page);
         GC_ASSERT(page != NULL);
     }
     GC_ASSERT(total_pages > 0);
