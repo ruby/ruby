@@ -340,13 +340,11 @@ Integer::
          0b01001100[2...6] #=> 0b0011
              ^^^^
 
-NilClass / TrueClass / FalseClass::
+Method::
 
-  Modified methods::
+  Modified method::
 
-    * NilClass#to_s, TrueClass#to_s and FalseClass#to_s now always return a
-      frozen String. The returned String is always the same for each of these
-      values. This change is experimental. [Feature #16150]
+    * Method#inspect shows much information. [Feature #14145]
 
 Module::
 
@@ -368,6 +366,15 @@ Module::
     * Module#name now always returns a frozen String. The returned String is
       always the same for a given Module. This change is
       experimental. [Feature #16150]
+
+
+NilClass / TrueClass / FalseClass::
+
+  Modified methods::
+
+    * NilClass#to_s, TrueClass#to_s and FalseClass#to_s now always return a
+      frozen String. The returned String is always the same for each of these
+      values. This change is experimental. [Feature #16150]
 
 ObjectSpace::WeakMap::
 
