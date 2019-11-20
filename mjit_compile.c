@@ -295,7 +295,7 @@ mjit_compile_body(FILE *f, const rb_iseq_t *iseq, struct compile_status *status)
         fprintf(f, "    VALUE *stack = reg_cfp->sp;\n");
     }
     if (status->inlined_iseqs != NULL) // i.e. compile root
-        fprintf(f, "    static const rb_iseq_t *original_iseq = 0x%"PRIxVALUE";\n", (VALUE)iseq);
+        fprintf(f, "    static const rb_iseq_t *original_iseq = (const rb_iseq_t *)0x%"PRIxVALUE";\n", (VALUE)iseq);
     fprintf(f, "    static const VALUE *const original_body_iseq = (VALUE *)0x%"PRIxVALUE";\n",
             (VALUE)body->iseq_encoded);
 
