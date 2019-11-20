@@ -15,8 +15,9 @@ VALUE rb_keyword_error_new(const char *error, VALUE keys); /* class.c */
 static VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv,
                             enum method_missing_reason call_status, int kw_splat);
 #if !defined(_MSC_VER) || !defined(MJIT_HEADER)
-MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *rb_resolve_refined_method_callable(VALUE refinements, const rb_callable_method_entry_t *me);
+MJIT_FUNC_EXPORTED
 #endif
+const rb_callable_method_entry_t *rb_resolve_refined_method_callable(VALUE refinements, const rb_callable_method_entry_t *me);
 
 struct args_info {
     /* basic args info */
