@@ -306,7 +306,7 @@ class RubyLex
         next if index > 0 and @tokens[index - 1][3].allbits?(Ripper::EXPR_FNAME)
         case t[2]
         when 'do'
-          if index > 0 and @tokens[index - 1][3].allbits?(Ripper::EXPR_CMDARG)
+          if index > 0 and @tokens[index - 1][3].anybits?(Ripper::EXPR_CMDARG | Ripper::EXPR_ENDFN)
             # method_with_bock do; end
             indent += 1
           else
@@ -349,7 +349,7 @@ class RubyLex
         next if index > 0 and @tokens[index - 1][3].allbits?(Ripper::EXPR_FNAME)
         case t[2]
         when 'do'
-          if index > 0 and @tokens[index - 1][3].allbits?(Ripper::EXPR_CMDARG)
+          if index > 0 and @tokens[index - 1][3].anybits?(Ripper::EXPR_CMDARG | Ripper::EXPR_ENDFN)
             # method_with_bock do; end
             depth_difference += 1
           else
