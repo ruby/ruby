@@ -192,7 +192,7 @@ class Reline::LineEditor
     lines.each_with_index { |line, i|
       prompt = ''
       prompt = prompt_list[i] if prompt_list and prompt_list[i]
-      result += calculate_height_by_width(calculate_width(prompt + line))
+      result += calculate_height_by_width(calculate_width(prompt, true) + calculate_width(line))
     }
     result
   end
