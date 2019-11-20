@@ -2830,7 +2830,6 @@ method_inspect(VALUE method)
     {
         VALUE params = rb_method_parameters(method);
         VALUE pair, name, kind;
-        int arg_num = 1;
         const VALUE req = ID2SYM(rb_intern("req"));
         const VALUE opt = ID2SYM(rb_intern("opt"));
         const VALUE keyreq = ID2SYM(rb_intern("keyreq"));
@@ -2850,8 +2849,7 @@ method_inspect(VALUE method)
             if (NIL_P(name) || name == Qfalse) {
                 // FIXME: can it be reduced to switch/case?
                 if (kind == req || kind == opt) {
-                    name = rb_sprintf("arg%d", arg_num);
-                    arg_num++;
+                    name = rb_str_new2("_");
                 } else if (kind == rest || kind == keyrest) {
                     name = rb_str_new2("");
                 } else if (kind == block) {
@@ -2864,11 +2862,11 @@ method_inspect(VALUE method)
             if (kind == req) {
                 rb_str_catf(str, "%"PRIsVALUE, name);
             } else if (kind == opt) {
-                rb_str_catf(str, "%"PRIsVALUE"=<default>", name);
+                rb_str_catf(str, "%"PRIsVALUE"=...", name);
             } else if (kind == keyreq) {
                 rb_str_catf(str, "%"PRIsVALUE":", name);
             } else if (kind == key) {
-                rb_str_catf(str, "%"PRIsVALUE": <default>", name);
+                rb_str_catf(str, "%"PRIsVALUE": ...", name);
             } else if (kind == rest) {
                 rb_str_catf(str, "*%"PRIsVALUE, name);
             } else if (kind == keyrest) {
