@@ -161,7 +161,7 @@ module IRB # :nodoc:
         end
       when "--noinspect"
         @CONF[:INSPECT_MODE] = false
-      when "--singleline", "--readline"
+      when "--singleline", "--readline", "--legacy"
         @CONF[:USE_SINGLELINE] = true
       when "--nosingleline", "--noreadline"
         @CONF[:USE_SINGLELINE] = false
