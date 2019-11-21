@@ -620,6 +620,7 @@ enum {
     BITS_SIZE = sizeof(bits_t),
     BITS_BITLENGTH = ( BITS_SIZE * CHAR_BIT )
 };
+#define popcount_bits rb_popcount_intptr
 
 struct heap_page_header {
     struct heap_page *page;
@@ -7698,32 +7699,11 @@ init_cursors(rb_objspace_t *objspace, struct heap_cursor *free, struct heap_curs
 static int
 count_pinned(struct heap_page *page)
 {
-    RVALUE *pstart = page->start;
-    RVALUE *pend = pstart + page->total_slots;
     int pinned = 0;
+    int i;
 
-    VALUE v = (VALUE)pstart;
-    for (; v != (VALUE)pend; v += sizeof(RVALUE)) {
-        void *poisoned = asan_poisoned_object_p(v);
-        asan_unpoison_object(v, false);
-
-        switch (BUILTIN_TYPE(v)) {
-          case T_NONE:
-            break;
-          case T_ZOMBIE:
-            pinned++;
-            break;
-          default:
-            if (RVALUE_PINNED(v)) {
-                pinned++;
-            }
-            break;
-        }
-
-        if (poisoned) {
-            GC_ASSERT(BUILTIN_TYPE(v) == T_NONE);
-            asan_poison_object(v);
-        }
+    for (i = 0; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
+        pinned += popcount_bits(page->pinned_bits[i]);
     }
 
     return pinned;
