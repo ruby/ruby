@@ -573,11 +573,12 @@ class Pathname    # * FileUtils *
   # exist.
   #
   # See FileUtils.mkpath and FileUtils.mkdir_p
-  def mkpath
+  def mkdir_p
     require 'fileutils'
-    FileUtils.mkpath(@path)
+    FileUtils.mkdir_p(@path)
     nil
   end
+  alias :mkpath :mkdir_p
 
   # Recursively deletes a directory, including all directories beneath it.
   #

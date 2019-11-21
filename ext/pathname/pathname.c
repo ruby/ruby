@@ -1487,6 +1487,7 @@ path_f_pathname(VALUE self, VALUE str)
  *
  * These methods are a mixture of Find, FileUtils, and others:
  * - #find(&block)
+ * - #mkdir_p
  * - #mkpath
  * - #rmtree
  * - #unlink / #delete
