@@ -553,7 +553,7 @@ module IRB
     end
 
     def handle_exception(exc)
-      if exc.backtrace && exc.backtrace[0] =~ /irb(2)?(\/.*|-.*|\.rb)?:/ && exc.class.to_s !~ /^IRB/ &&
+      if exc.backtrace && exc.backtrace[0] =~ /\/irb(2)?(\/.*|-.*|\.rb)?:/ && exc.class.to_s !~ /^IRB/ &&
          !(SyntaxError === exc)
         irb_bug = true
       else

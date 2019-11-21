@@ -124,8 +124,8 @@ EOF
 
     # error message manipulator
     def filter_backtrace(bt)
-      return nil if bt =~ /irb\/.*\.rb/
-      return nil if bt =~ /irb\.rb/
+      return nil if bt =~ /\/irb\/.*\.rb/
+      return nil if bt =~ /\/irb\.rb/
       case IRB.conf[:CONTEXT_MODE]
       when 1
         return nil if bt =~ %r!/tmp/irb-binding!
