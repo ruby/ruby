@@ -23,6 +23,9 @@ end
 
 if ok
   $srcs = %w[cxxanyargs.cpp]
-  $cleanfiles << "failure.failed"
-  create_makefile("-test-/cxxanyargs")
+  failures = Dir.glob($srcdir + "/failure*.cpp").map {|n| File.basename(n)}
+  $cleanfiles << "$(FAILURES:.cpp=.failed)"
+  create_makefile("-test-/cxxanyargs") do |mk|
+    mk << "FAILURES #{['=', failures].join(' ')}\n"
+  end
 end
