@@ -126,4 +126,107 @@ Tracer.off
       end
     end
   end
+
+  def test_tracer_by_set_get_line_procs_with_block
+    Dir.mktmpdir("test_ruby_tracer") do |dir|
+      dummy_script = File.join(dir, "dummy.rb")
+      open(dummy_script, "w") do |f|
+        f.print <<-'EOF'
+class Dummy
+  def initialize
+    @number = 135
+  end
+  attr :number
+end
+        EOF
+      end
+      script = File.join(dir, "require_tracer.rb")
+      open(script, "w") do |f|
+        f.print <<-EOF
+require 'tracer'
+
+Tracer.set_get_line_procs('#{dummy_script}') { |line|
+  str = %{\\n}
+  str = %{!!\\n} if line >= 3 and line <= 6
+  str
+}
+Tracer.on
+require_relative 'dummy'
+
+dm = Dummy.new
+puts dm.number
+        EOF
+      end
+      assert_in_out_err([script]) do |(*lines), err|
+        expected = [
+          "#0:#{script}:9::-: require_relative 'dummy'",
+          "#0:#{dummy_script}:1::-: ",
+          "#0:#{dummy_script}:1::C: ",
+          "#0:#{dummy_script}:2::-: ",
+          "#0:#{dummy_script}:5::-: !!",
+          "#0:#{dummy_script}:6::E: !!",
+          "#0:#{script}:11::-: dm = Dummy.new",
+          "#0:#{dummy_script}:2:Dummy:>: ",
+          "#0:#{dummy_script}:3:Dummy:-: !!",
+          "#0:#{dummy_script}:4:Dummy:<: !!",
+          "#0:#{script}:12::-: puts dm.number",
+          "135"
+        ]
+        assert_equal(expected, lines)
+        assert_empty(err)
+      end
+    end
+  end
+
+  def test_tracer_by_set_get_line_procs_with_proc
+    Dir.mktmpdir("test_ruby_tracer") do |dir|
+      dummy_script = File.join(dir, "dummy.rb")
+      open(dummy_script, "w") do |f|
+        f.print <<-'EOF'
+class Dummy
+  def initialize
+    @number = 135
+  end
+  attr :number
+end
+        EOF
+      end
+      script = File.join(dir, "require_tracer.rb")
+      open(script, "w") do |f|
+        f.print <<-EOF
+require 'tracer'
+
+a_proc_to_set_get_line_procs = proc { |line|
+  str = %{\\n}
+  str = %{!!\\n} if line >= 3 and line <= 6
+  str
+}
+Tracer.set_get_line_procs('#{dummy_script}', a_proc_to_set_get_line_procs)
+Tracer.on
+require_relative 'dummy'
+
+dm = Dummy.new
+puts dm.number
+        EOF
+      end
+      assert_in_out_err([script]) do |(*lines), err|
+        expected = [
+          "#0:#{script}:10::-: require_relative 'dummy'",
+          "#0:#{dummy_script}:1::-: ",
+          "#0:#{dummy_script}:1::C: ",
+          "#0:#{dummy_script}:2::-: ",
+          "#0:#{dummy_script}:5::-: !!",
+          "#0:#{dummy_script}:6::E: !!",
+          "#0:#{script}:12::-: dm = Dummy.new",
+          "#0:#{dummy_script}:2:Dummy:>: ",
+          "#0:#{dummy_script}:3:Dummy:-: !!",
+          "#0:#{dummy_script}:4:Dummy:<: !!",
+          "#0:#{script}:13::-: puts dm.number",
+          "135"
+        ]
+        assert_equal(expected, lines)
+        assert_empty(err)
+      end
+    end
+  end
 end
