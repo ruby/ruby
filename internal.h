@@ -2231,6 +2231,7 @@ NORETURN(VALUE rb_mod_const_missing(VALUE,VALUE));
 rb_gvar_getter_t *rb_gvar_getter_function_of(const struct rb_global_entry *);
 rb_gvar_setter_t *rb_gvar_setter_function_of(const struct rb_global_entry *);
 bool rb_gvar_is_traced(const struct rb_global_entry *);
+void rb_gvar_readonly_setter(VALUE v, ID id, VALUE *_);
 
 /* vm_insnhelper.h */
 rb_serial_t rb_next_class_serial(void);
