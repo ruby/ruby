@@ -13,6 +13,7 @@ require 'shellwords'
 
 ENV['LC_ALL'] = 'C'
 ORIGIN = 'git@git.ruby-lang.org:ruby.git'
+GITHUB = 'git@github.com:ruby/ruby.git'
 
 module Merger
   REPOS = 'svn+ssh://svn@ci.ruby-lang.org/ruby/'
@@ -178,6 +179,7 @@ class << Merger
     else
       execute('git', 'tag', '-d', tagname)
       execute('git', 'push', ORIGIN, ":#{tagname}", interactive: true)
+      execute('git', 'push', GITHUB, ":#{tagname}", interactive: true)
     end
   end
 
