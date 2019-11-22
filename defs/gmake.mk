@@ -292,7 +292,7 @@ $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: \
 endif
 
 REVISION_IN_HEADER := $(shell sed -n 's/^\#define RUBY_FULL_REVISION "\(.*\)"/\1/p' $(srcdir)/revision.h 2>/dev/null)
-REVISION_LATEST := $(shell cd $(srcdir) && git log -1 --format=%H)
+REVISION_LATEST := $(shell cd $(srcdir) && git log -1 --format=%H 2>/dev/null)
 ifneq ($(REVISION_IN_HEADER),$(REVISION_LATEST))
 # GNU make treat the target as unmodified when its dependents get
 # updated but it is not updated, while others may not.
