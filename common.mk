@@ -723,7 +723,9 @@ clean-spec: PHONY
 
 check: main test test-tool test-all test-spec
 	$(ECHO) check succeeded
-	- $(GIT) --no-pager -C "$(srcdir)" log --format=oneline -G "^ *# *include" origin/master..HEAD
+	-$(Q) if [ x"$(GIT)" != x ] && $(CHDIR) "$(srcdir)" && $(GIT) rev-parse > /dev/null 2>&1; then \
+	  set -x; $(GIT) --no-pager log --format=oneline -G "^ *# *include" origin/master..HEAD; \
+	fi
 check-ruby: test test-ruby
 
 fake: $(CROSS_COMPILING)-fake
