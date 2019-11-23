@@ -140,6 +140,7 @@ class Dummy
 end
         EOF
       end
+      dummy_script = File.realpath dummy_script
       script = File.join(dir, "require_tracer.rb")
       open(script, "w") do |f|
         f.print <<-EOF
@@ -191,6 +192,7 @@ class Dummy
 end
         EOF
       end
+      dummy_script = File.realpath dummy_script
       script = File.join(dir, "require_tracer.rb")
       open(script, "w") do |f|
         f.print <<-EOF
