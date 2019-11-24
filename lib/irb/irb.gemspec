@@ -64,7 +64,6 @@ Gem::Specification.new do |spec|
     "lib/irb/output-method.rb",
     "lib/irb/ruby-lex.rb",
     "lib/irb/ruby_logo.aa",
-    "lib/irb/slex.rb",
     "lib/irb/src_encoding.rb",
     "lib/irb/version.rb",
     "lib/irb/workspace.rb",
