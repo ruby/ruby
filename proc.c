@@ -3362,8 +3362,8 @@ rb_proc_compose_to_left(VALUE self, VALUE g)
  *     prc >> g -> a_proc
  *
  *  Returns a proc that is the composition of this proc and the given <i>g</i>.
- *  The returned proc takes a variable number of arguments, calls <i>g</i> with them
- *  then calls this proc with the result.
+ *  The returned proc takes a variable number of arguments, calls this proc with them
+ *  then calls <i>g</i> with the result.
  *
  *     f = proc {|x| x * x }
  *     g = proc {|x| x + x }
