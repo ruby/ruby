@@ -10,7 +10,6 @@
 #
 #
 begin
-  raise LoadError
   require "tracer"
 rescue LoadError
   $stderr.puts "Tracer extension of IRB is enabled but tracer gem doesn't found."
