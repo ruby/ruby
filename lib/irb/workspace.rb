@@ -74,7 +74,7 @@ EOF
           begin
             @binding = eval("IRB.conf[:__MAIN__].instance_eval('binding', __FILE__, __LINE__)", @binding, __FILE__, __LINE__)
           rescue TypeError
-            IRB.fail CantChangeBinding, @main.inspect
+            fail CantChangeBinding, @main.inspect
           end
         end
       end

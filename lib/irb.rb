@@ -9,7 +9,6 @@
 #
 #
 #
-require "e2mmap"
 require "ripper"
 
 require "irb/init"

@@ -10,14 +10,16 @@
 #
 #
 
-require "e2mmap"
 require "ripper"
 
 # :stopdoc:
 class RubyLex
 
-  extend Exception2MessageMapper
-  def_exception(:TerminateLineInput, "Terminate Line Input")
+  class TerminateLineInput < StandardError
+    def initialize
+      super("Terminate Line Input")
+    end
+  end
 
   def initialize
     @exp_line_no = @line_no = 1

@@ -21,7 +21,7 @@ module IRB # :nodoc:
     IRB.load_modules
 
     unless @CONF[:PROMPT][@CONF[:PROMPT_MODE]]
-      IRB.fail(UndefinedPromptMode, @CONF[:PROMPT_MODE])
+      fail UndefinedPromptMode, @CONF[:PROMPT_MODE]
     end
   end
 
@@ -217,7 +217,7 @@ module IRB # :nodoc:
         end
         break
       when /^-/
-        IRB.fail UnrecognizedSwitch, opt
+        fail UnrecognizedSwitch, opt
       else
         @CONF[:SCRIPT] = opt
         $0 = opt
@@ -262,7 +262,7 @@ module IRB # :nodoc:
     when String
       return rc_file
     else
-      IRB.fail IllegalRCNameGenerator
+      fail IllegalRCNameGenerator
     end
   end
 
