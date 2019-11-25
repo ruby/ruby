@@ -83,7 +83,6 @@ sufficient information, see the ChangeLog file or Redmine
       def foo(h={}, key: 42); end; foo("key" => 43, key: 42)   # warned
       def foo(h={}, key: 42); end; foo({"key" => 43, key: 42}) # warned
       def foo(h={}, key: 42); end; foo({"key" => 43}, key: 42) # OK
-      def foo(h={}, key: 42); end; foo({"key" => 43}, key: 42) # OK
 
   * If a method does not accept keywords, and is called with keywords,
     the keywords are still treated as a positional hash, with no warning.
