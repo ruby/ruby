@@ -4719,7 +4719,7 @@ env_delete(VALUE name)
 	    RB_GC_GUARD(name);
 	}
 	else if (ENVMATCH(nam, TZ_ENV)) {
-	    ruby_tz_uptodate_p = FALSE;
+	    ruby_tz_uptodate_p = false;
 	}
 	return value;
     }

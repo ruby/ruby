@@ -235,19 +235,19 @@ f_negate(VALUE x)
     return rb_funcall(x, id_negate, 0);
 }
 
-static VALUE nucomp_real_p(VALUE self);
+static bool nucomp_real_p(VALUE self);
 
 static inline bool
 f_real_p(VALUE x)
 {
     if (RB_INTEGER_TYPE_P(x)) {
-        return TRUE;
+        return true;
     }
     else if (RB_FLOAT_TYPE_P(x)) {
-        return TRUE;
+        return true;
     }
     else if (RB_TYPE_P(x, T_RATIONAL)) {
-        return TRUE;
+        return true;
     }
     else if (RB_TYPE_P(x, T_COMPLEX)) {
         return nucomp_real_p(x);
@@ -1096,11 +1096,11 @@ nucomp_eqeq_p(VALUE self, VALUE other)
     return f_boolcast(f_eqeq_p(other, self));
 }
 
-static VALUE
+static bool
 nucomp_real_p(VALUE self)
 {
     get_dat1(self);
-    return(f_zero_p(dat->imag) ? Qtrue : Qfalse);
+    return(f_zero_p(dat->imag) ? true : false);
 }
 
 /*

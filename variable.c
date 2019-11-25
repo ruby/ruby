@@ -2614,7 +2614,7 @@ rb_const_list(void *data)
 VALUE
 rb_mod_constants(int argc, const VALUE *argv, VALUE mod)
 {
-    bool inherit = TRUE;
+    bool inherit = true;
 
     if (rb_check_arity(argc, 0, 1)) inherit = RTEST(argv[0]);
 
@@ -3213,7 +3213,7 @@ cvar_list(void *data)
 VALUE
 rb_mod_class_variables(int argc, const VALUE *argv, VALUE mod)
 {
-    bool inherit = TRUE;
+    bool inherit = true;
     st_table *tbl;
 
     if (rb_check_arity(argc, 0, 1)) inherit = RTEST(argv[0]);
