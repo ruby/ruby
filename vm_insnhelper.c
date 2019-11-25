@@ -4997,8 +4997,13 @@ vm_invoke_builtin_delegate(rb_execution_context_t *ec, rb_control_frame_t *cfp, 
         fprintf(stderr, "%s %s(%d):%p\n", RUBY_FUNCTION_NAME_STRING, bf->name, bf->argc, bf->func_ptr);
     }
 
-    const VALUE *argv = cfp->ep - cfp->iseq->body->local_table_size - VM_ENV_DATA_SIZE + 1 + start_index;
-    return invoke_bf(ec, cfp, bf, argv);
+    if (bf->argc == 0) {
+        return invoke_bf(ec, cfp, bf, NULL);
+    }
+    else {
+        const VALUE *argv = cfp->ep - cfp->iseq->body->local_table_size - VM_ENV_DATA_SIZE + 1 + start_index;
+        return invoke_bf(ec, cfp, bf, argv);
+    }
 }
 
 // for __builtin_inline!()
