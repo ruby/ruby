@@ -531,12 +531,13 @@ class CSV
     # plan to output non-ASCII compatible data.
     #
     def generate(str=nil, **options)
+      encoding = options[:encoding]
       # add a default empty String, if none was given
       if str
         str = StringIO.new(str)
         str.seek(0, IO::SEEK_END)
+        str.set_encoding(encoding) if encoding
       else
-        encoding = options[:encoding]
         str = +""
         str.force_encoding(encoding) if encoding
       end

@@ -5,6 +5,7 @@ require_relative "helper"
 
 class TestCSVEncodings < Test::Unit::TestCase
   extend DifferentOFS
+  include Helper
 
   def setup
     super
@@ -247,6 +248,15 @@ class TestCSVEncodings < Test::Unit::TestCase
       csv << ["foo".force_encoding("ISO-8859-1"), "\u3042"]
     end
     assert_equal(["foo,\u3042\n".encode(Encoding::Windows_31J), Encoding::Windows_31J], [s, s.encoding], bug9766)
+  end
+
+  def test_encoding_with_default_internal
+    with_default_internal(Encoding::UTF_8) do
+      s = CSV.generate(String.new(encoding: Encoding::Big5), encoding: Encoding::Big5) do |csv|
+        csv << ["漢字"]
+      end
+      assert_equal(["漢字\n".encode(Encoding::Big5), Encoding::Big5], [s, s.encoding])
+    end
   end
 
   def test_row_separator_detection_with_invalid_encoding
