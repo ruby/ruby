@@ -158,7 +158,10 @@ def lldb_inspect(debugger, target, result, val):
                 result.write(" {(empty)}\n")
             else:
                 result.write("\n")
-                append_command_output(debugger, "expression -Z %d -fx -- (const VALUE*)%0#x" % (len, ptr.GetValueAsUnsigned()), result)
+                if ptr.GetValueAsSigned() == 0:
+                    append_command_output(debugger, "expression -fx -- ((struct RArray*)%0#x)->as.ary" % val.GetValueAsUnsigned(), result)
+                else:
+                    append_command_output(debugger, "expression -Z %d -fx -- (const VALUE*)%0#x" % (len, ptr.GetValueAsUnsigned()), result)
         elif flType == RUBY_T_HASH:
             result.write("T_HASH: %s" % flaginfo)
             append_command_output(debugger, "p *(struct RHash *) %0#x" % val.GetValueAsUnsigned(), result)
