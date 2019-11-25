@@ -680,7 +680,7 @@ rb_localtime_r(const time_t *t, struct tm *result)
     if (*t != (time_t)(int)*t) return NULL;
 #endif
     if (!ruby_tz_uptodate_p) {
-	ruby_tz_uptodate_p = 1;
+	ruby_tz_uptodate_p = TRUE;
 	tzset();
     }
 #ifdef HAVE_GMTIME_R
