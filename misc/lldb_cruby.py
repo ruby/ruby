@@ -46,10 +46,10 @@ def string2cstr(rstring):
         clen = (flags & RSTRING_EMBED_LEN_MASK) >> RSTRING_EMBED_LEN_SHIFT
     return cptr, clen
 
-def output_string(ctx, rstring):
+def output_string(debugger, result, rstring):
     cptr, clen = string2cstr(rstring)
-    expr = 'printf("%%.*s", (size_t)%d, (const char*)%d)' % (clen, cptr)
-    ctx.frame.EvaluateExpression(expr)
+    expr = "print *(const char (*)[%d])%0#x" % (clen, cptr)
+    append_command_output(debugger, expr, result)
 
 def fixnum_p(x):
     return x & RUBY_FIXNUM_FLAG != 0
@@ -105,6 +105,7 @@ def lldb_inspect(debugger, target, result, val):
             print("T_SYMBOL: %c" % num, file=result)
         else:
             print("T_SYMBOL: (%x)" % num, file=result)
+            append_command_output(debugger, "p rb_id2name(%0#x)" % (num >> 8), result)
     elif num & RUBY_IMMEDIATE_MASK:
         print('immediate(%x)' % num, file=result)
     else:
@@ -134,7 +135,11 @@ def lldb_inspect(debugger, target, result, val):
             append_command_output(debugger, "print *(const char (*)[%d])%0#x" % (len, ptr), result)
         elif flType == RUBY_T_SYMBOL:
             result.write('T_SYMBOL: %s' % flaginfo)
-            append_command_output(debugger, "print *(struct RSymbol*)%0#x" % val.GetValueAsUnsigned(), result)
+            tRSymbol = target.FindFirstType("struct RSymbol").GetPointerType()
+            val = val.Cast(tRSymbol)
+            append_command_output(debugger, 'print (ID)%0#x ' % val.GetValueForExpressionPath("->id").GetValueAsUnsigned(), result)
+            tRString = target.FindFirstType("struct RString").GetPointerType()
+            output_string(debugger, result, val.GetValueForExpressionPath("->fstr").Cast(tRString))
         elif flType == RUBY_T_ARRAY:
             tRArray = target.FindFirstType("struct RArray").GetPointerType()
             val = val.Cast(tRArray)
@@ -263,7 +268,7 @@ def dump_node(debugger, command, ctx, result, internal_dict):
     node = args[0]
 
     dump = ctx.frame.EvaluateExpression("(struct RString*)rb_parser_dump_tree((NODE*)(%s), 0)" % node)
-    output_string(ctx, dump)
+    output_string(ctx, result, dump)
 
 def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand("command script add -f lldb_cruby.lldb_rp rp")
