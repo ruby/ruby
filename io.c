@@ -266,10 +266,46 @@ rb_fix_detect_o_cloexec(int fd)
 }
 
 int
+get_rb_cloexec_open_retry_interval() {
+    const char *interval = getenv("RB_CLOEXEC_OPEN_RETRY_INTERVAL");
+
+    if (interval) {
+        return atof(interval);
+    }
+
+    return 0;
+}
+
+int
+get_rb_cloexec_open_retry_max_count() {
+    const char *count = getenv("RB_CLOEXEC_OPEN_RETRY_MAX_COUNT");
+
+    if (count) {
+        return atoi(count);
+    }
+
+    return 10000;
+}
+
+int
 rb_cloexec_open(const char *pathname, int flags, mode_t mode)
 {
     int ret;
     static int o_cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
+
+    static int retry_init = 0;
+    static double retry_interval = 0;
+    static int retry_max_count = 0;
+
+    int retry_count = 0;
+    int e;
+
+    if (!retry_init) {
+        retry_init = 1;
+
+        retry_interval = get_rb_cloexec_open_retry_interval();
+        retry_max_count = get_rb_cloexec_open_retry_max_count();
+    }
 
 #ifdef O_CLOEXEC
     /* O_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
@@ -277,7 +313,23 @@ rb_cloexec_open(const char *pathname, int flags, mode_t mode)
 #elif defined O_NOINHERIT
     flags |= O_NOINHERIT;
 #endif
-    ret = open(pathname, flags, mode);
+
+    while (true) {
+        ret = open(pathname, flags, mode);
+        e = errno;
+
+        if (ret != -1 || e != EAGAIN || retry_count >= retry_max_count) {
+            if (retry_count > 0) {
+                fprintf(stderr, "%s:%d %s - pathname = %s, ret = %d, errno = %d, retry_count = %d\n", __FILE__, __LINE__, __func__, pathname, ret, errno, retry_count);
+            }
+
+            break;
+        }
+
+        retry_count++;
+        sleep(retry_interval);
+    }
+
     if (ret < 0) return ret;
     if (ret <= 2 || o_cloexec_state == 0) {
 	rb_maygvl_fd_fix_cloexec(ret);
