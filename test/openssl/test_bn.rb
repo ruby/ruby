@@ -15,6 +15,10 @@ class OpenSSL::TestBN < OpenSSL::TestCase
   end
 
   def test_new
+    assert_raise(ArgumentError) { OpenSSL::BN.new }
+    assert_raise(ArgumentError) { OpenSSL::BN.new(nil) }
+    assert_raise(ArgumentError) { OpenSSL::BN.new(nil, 2) }
+
     assert_equal(@e1, OpenSSL::BN.new("999"))
     assert_equal(@e1, OpenSSL::BN.new("999", 10))
     assert_equal(@e1, OpenSSL::BN.new("\x03\xE7", 2))
@@ -271,11 +275,6 @@ class OpenSSL::TestBN < OpenSSL::TestCase
     assert_equal(0, @e1.ucmp(999))
     assert_equal(0, @e1.ucmp(-999))
     assert_instance_of(String, @e1.hash.to_s)
-  end
-
-  def test_type_error
-    bug15760 = '[ruby-core:92231] [Bug #15760]'
-    assert_raise(TypeError, bug15760) { OpenSSL::BN.new(nil, 2) }
   end
 end
 

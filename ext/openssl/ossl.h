@@ -13,8 +13,8 @@
 #include RUBY_EXTCONF_H
 
 #include <assert.h>
-#include <ruby.h>
 #include <errno.h>
+#include <ruby.h>
 #include <ruby/io.h>
 #include <ruby/thread.h>
 #include <openssl/opensslv.h>
@@ -27,6 +27,10 @@
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
 #include <openssl/conf.h>
+#include <openssl/conf_api.h>
+#ifndef OPENSSL_NO_TS
+  #include <openssl/ts.h>
+#endif
 #include <openssl/crypto.h>
 #if !defined(OPENSSL_NO_ENGINE)
 #  include <openssl/engine.h>
@@ -167,6 +171,9 @@ void ossl_debug(const char *, ...);
 #include "ossl_pkey.h"
 #include "ossl_rand.h"
 #include "ossl_ssl.h"
+#ifndef OPENSSL_NO_TS
+  #include "ossl_ts.h"
+#endif
 #include "ossl_version.h"
 #include "ossl_x509.h"
 #include "ossl_engine.h"

@@ -289,6 +289,22 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     assert_equal true, point.on_curve?
   end
 
+  def test_ec_point_add
+    group = OpenSSL::PKey::EC::Group.new(:GFp, 17, 2, 2)
+    group.point_conversion_form = :uncompressed
+    gen = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 05 01 }))
+    group.set_generator(gen, 19, 1)
+
+    point_a = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 06 03 }))
+    point_b = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 10 0D }))
+
+    result = point_a.add(point_b)
+    assert_equal B(%w{ 04 0D 07 }), result.to_octet_string(:uncompressed)
+
+    assert_raise(TypeError) { point_a.add(nil) }
+    assert_raise(ArgumentError) { point_a.add }
+  end
+
   def test_ec_point_mul
     begin
       # y^2 = x^3 + 2x + 2 over F_17

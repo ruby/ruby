@@ -56,6 +56,52 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_socket_open
+    start_server { |port|
+      begin
+        ssl = OpenSSL::SSL::SSLSocket.open("127.0.0.1", port)
+        ssl.sync_close = true
+        ssl.connect
+
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+      ensure
+        ssl&.close
+      end
+    }
+  end
+
+  def test_socket_open_with_context
+    start_server { |port|
+      begin
+        ctx = OpenSSL::SSL::SSLContext.new
+        ssl = OpenSSL::SSL::SSLSocket.open("127.0.0.1", port, context: ctx)
+        ssl.sync_close = true
+        ssl.connect
+
+        assert_equal ssl.context, ctx
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+      ensure
+        ssl&.close
+      end
+    }
+  end
+
+  def test_socket_open_with_local_address_port_context
+    start_server { |port|
+      begin
+        ctx = OpenSSL::SSL::SSLContext.new
+        ssl = OpenSSL::SSL::SSLSocket.open("127.0.0.1", port, "127.0.0.1", 8000, context: ctx)
+        ssl.sync_close = true
+        ssl.connect
+
+        assert_equal ssl.context, ctx
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+      ensure
+        ssl&.close
+      end
+    }
+  end
+
   def test_add_certificate
     ctx_proc = -> ctx {
       # Unset values set by start_server
@@ -139,6 +185,11 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
+  def test_add_certificate_chain_file
+    ctx = OpenSSL::SSL::SSLContext.new
+    assert ctx.add_certificate_chain_file(Fixtures.file_path("chain", "server.crt"))
+  end
+
   def test_sysread_and_syswrite
     start_server { |port|
       server_connect(port) { |ssl|
@@ -153,21 +204,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         assert_equal(str, buf)
       }
     }
-  end
-
-  def test_sysread_nonblock_and_syswrite_nonblock_keywords
-    start_server(ignore_listener_error: true) do |port|
-      sock = TCPSocket.new("127.0.0.1", port)
-      ssl = OpenSSL::SSL::SSLSocket.new(sock)
-
-      assert_warn ("") do
-        ssl.send(:syswrite_nonblock, "1", exception: false)
-        ssl.send(:sysread_nonblock, 1, exception: false) rescue nil
-        ssl.send(:sysread_nonblock, 1, String.new, exception: false) rescue nil
-      end
-    ensure
-      sock&.close
-    end
   end
 
   def test_sync_close
@@ -432,6 +468,29 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         ssl.close
       end
     }
+  end
+
+  def test_finished_messages
+    server_finished = nil
+    server_peer_finished = nil
+    client_finished = nil
+    client_peer_finished = nil
+
+    start_server(accept_proc: proc { |server|
+      server_finished = server.finished_message
+      server_peer_finished = server.peer_finished_message
+    }) { |port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      server_connect(port, ctx) { |ssl|
+        client_finished = ssl.finished_message
+        client_peer_finished = ssl.peer_finished_message
+        sleep 0.05
+        ssl.send :stop
+      }
+    }
+    assert_equal(server_finished, client_peer_finished)
+    assert_equal(server_peer_finished, client_finished)
   end
 
   def test_sslctx_set_params
@@ -1563,6 +1622,20 @@ end
         server_connect(port, ctx)
       }
     }
+  end
+
+  def test_fileno
+    ctx = OpenSSL::SSL::SSLContext.new
+    sock1, sock2 = socketpair
+
+    socket = OpenSSL::SSL::SSLSocket.new(sock1)
+    server = OpenSSL::SSL::SSLServer.new(sock2, ctx)
+
+    assert_equal socket.fileno, socket.to_io.fileno
+    assert_equal server.fileno, server.to_io.fileno
+  ensure
+    sock1.close
+    sock2.close
   end
 
   private

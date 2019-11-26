@@ -387,16 +387,20 @@ ossl_x509name_cmp0(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    name.cmp(other) -> -1 | 0 | 1
- *    name <=> other  -> -1 | 0 | 1
+ *    name.cmp(other) -> -1 | 0 | 1 | nil
+ *    name <=> other  -> -1 | 0 | 1 | nil
  *
  * Compares this Name with _other_ and returns +0+ if they are the same and +-1+
  * or ++1+ if they are greater or less than each other respectively.
+ * Returns +nil+ if they are not comparable (i.e. different types).
  */
 static VALUE
 ossl_x509name_cmp(VALUE self, VALUE other)
 {
     int result;
+
+    if (!rb_obj_is_kind_of(other, cX509Name))
+	return Qnil;
 
     result = ossl_x509name_cmp0(self, other);
     if (result < 0) return INT2FIX(-1);

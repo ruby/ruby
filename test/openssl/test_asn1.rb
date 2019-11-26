@@ -332,6 +332,32 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
       pend "OBJ_obj2txt() not working (LibreSSL?)" if $!.message =~ /OBJ_obj2txt/
       raise
     end
+
+    aki = [
+      OpenSSL::ASN1::ObjectId.new("authorityKeyIdentifier"),
+      OpenSSL::ASN1::ObjectId.new("X509v3 Authority Key Identifier"),
+      OpenSSL::ASN1::ObjectId.new("2.5.29.35")
+    ]
+
+    ski = [
+      OpenSSL::ASN1::ObjectId.new("subjectKeyIdentifier"),
+      OpenSSL::ASN1::ObjectId.new("X509v3 Subject Key Identifier"),
+      OpenSSL::ASN1::ObjectId.new("2.5.29.14")
+    ]
+
+    aki.each do |a|
+      aki.each do |b|
+        assert a == b
+      end
+
+      ski.each do |b|
+        refute a == b
+      end
+    end
+
+    assert_raise(TypeError) {
+      OpenSSL::ASN1::ObjectId.new("authorityKeyIdentifier") == nil
+    }
   end
 
   def test_sequence
@@ -633,11 +659,6 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     seq = OpenSSL::ASN1::Sequence.new data
 
     assert_equal data, seq.entries
-  end
-
-  def test_gc_stress
-    skip "very time consuming test"
-    assert_ruby_status(['--disable-gems', '-eGC.stress=true', '-erequire "openssl.so"'])
   end
 
   private

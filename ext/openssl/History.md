@@ -1,3 +1,58 @@
+Version 2.2.0 (not yet released)
+=============
+
+* Change default `OpenSSL::SSL::SSLServer#listen` backlog argument from
+  5 to `Socket::SOMAXCONN`.
+* Make `OpenSSL::HMAC#==` use a timing safe string comparison.
+* Remove unsupported MDC2, DSS, DSS1, and SHA algorithms.
+* Add support for SHA3 and BLAKE digests.
+* Add `OpenSSL::SSL::SSLSocket.open` for opening a `TCPSocket` and
+  returning an `OpenSSL::SSL::SSLSocket` for it.
+* Support marshalling of `OpenSSL::X509` objects.
+* Add `OpenSSL.secure_compare` for timing safe string comparison for
+  strings of possibly unequal length.
+* Add `OpenSSL.fixed_length_secure_compare` for timing safe string
+  comparison for strings of equal length.
+* Add `OpenSSL::SSL::SSLSocket#{finished_message,peer_finished_message}`
+  for last finished message sent and received.
+* Add `OpenSSL::Timestamp` module for handing timestamp requests and
+  responses.
+* Add helper methods for `OpenSSL::X509::Certificate`:
+  `find_extension`, `subject_key_identifier`,
+  `authority_key_identifier`, `crl_uris`, `ca_issuer_uris` and
+  `ocsp_uris`.
+* Add helper methods for `OpenSSL::X509::CRL`:
+  `find_extension` and `subject_key_identifier`.
+* Remove `OpenSSL::PKCS7::SignerInfo#name` alias for `#issuer`.
+* Add `OpenSSL::ECPoint#add` for adding points to an elliptic curve
+  group.
+  [[GitHub #261]](https://github.com/ruby/openssl/pull/261)
+* Make `OpenSSL::PKey::RSA#{export,to_der}` correctly check `key`,
+  `factors`, and `crt_params`.
+  [[GitHub #258]](https://github.com/ruby/openssl/pull/258)
+* Add `OpenSSL::SSL::SSLContext#add_certificate_chain_file` for
+  handling certificate chains.
+* Add `OpenSSL::SSL::{SSLSocket,SSLServer}#fileno`, returning the
+  underlying socket file descriptor number.
+  [[GitHub #247]](https://github.com/ruby/openssl/pull/247)
+* Support client certificates with TLS 1.3, and support post-handshake
+  authentication with OpenSSL 1.1.1+.
+  [[GitHub #239]](https://github.com/ruby/openssl/pull/239)
+* Add `OpenSSL::ASN1::ObjectId#==` for equality testing.
+* Add `OpenSSL::X509::Extension#value_der` for the raw value of
+  the extension.
+  [[GitHub #234]](https://github.com/ruby/openssl/pull/234)
+* Signficantly reduce allocated memory in `OpenSSL::Buffering#do_write`.
+  [[GitHub #212]](https://github.com/ruby/openssl/pull/212)
+* Ensure all valid IPv6 addresses are considered valid as elements
+  of subjectAlternativeName in certificates.
+  [[GitHub #185]](https://github.com/ruby/openssl/pull/185)
+* Allow recipient's certificate to be omitted in PCKS7#decrypt.
+  [[GitHub #183]](https://github.com/ruby/openssl/pull/183)
+* Add instance methods for exporting public and private keys in PKCS8 format
+  to `OpenSSL::PKey` classes: `private_to_der`, `private_to_pem`,
+  `public_to_der` and `public_to_pem`.
+
 Version 2.1.2
 =============
 

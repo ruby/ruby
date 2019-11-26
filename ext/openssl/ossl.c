@@ -338,7 +338,7 @@ ossl_clear_error(void)
  * implementation.
  */
 VALUE
-ossl_get_errors(VALUE _)
+ossl_get_errors(void)
 {
     VALUE ary;
     long e;
@@ -398,7 +398,7 @@ ossl_debug_set(VALUE self, VALUE val)
 }
 
 /*
- * call-seq:
+ * call-seq
  *   OpenSSL.fips_mode -> true | false
  */
 static VALUE
@@ -605,6 +605,35 @@ static void Init_ossl_locks(void)
 #endif /* !HAVE_OPENSSL_110_THREADING_API */
 
 /*
+ * call-seq:
+ *   OpenSSL.fixed_length_secure_compare(string, string) -> boolean
+ *
+ * Constant time memory comparison for fixed length strings, such as results
+ * of HMAC calculations.
+ *
+ * Returns +true+ if the strings are identical, +false+ if they are of the same
+ * length but not identical. If the length is different, +ArgumentError+ is
+ * raised.
+ */
+static VALUE
+ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
+{
+    const unsigned char *p1 = (const unsigned char *)StringValuePtr(str1);
+    const unsigned char *p2 = (const unsigned char *)StringValuePtr(str2);
+    long len1 = RSTRING_LEN(str1);
+    long len2 = RSTRING_LEN(str2);
+
+    if (len1 != len2) {
+        ossl_raise(rb_eArgError, "inputs must be of equal length");
+    }
+
+    switch (CRYPTO_memcmp(p1, p2, len1)) {
+        case 0:	return Qtrue;
+        default: return Qfalse;
+    }
+}
+
+/*
  * OpenSSL provides SSL, TLS and general purpose cryptography.  It wraps the
  * OpenSSL[https://www.openssl.org/] library.
  *
@@ -635,7 +664,7 @@ static void Init_ossl_locks(void)
  * ahold of the key may use it unless it is encrypted.  In order to securely
  * export a key you may export it with a pass phrase.
  *
- *   cipher = OpenSSL::Cipher.new 'AES-128-CBC'
+ *   cipher = OpenSSL::Cipher.new 'AES-256-CBC'
  *   pass_phrase = 'my secure pass phrase goes here'
  *
  *   key_secure = key.export cipher, pass_phrase
@@ -745,7 +774,7 @@ static void Init_ossl_locks(void)
  * using PBKDF2. PKCS #5 v2.0 recommends at least 8 bytes for the salt,
  * the number of iterations largely depends on the hardware being used.
  *
- *   cipher = OpenSSL::Cipher.new 'AES-128-CBC'
+ *   cipher = OpenSSL::Cipher.new 'AES-256-CBC'
  *   cipher.encrypt
  *   iv = cipher.random_iv
  *
@@ -768,7 +797,7 @@ static void Init_ossl_locks(void)
  * Use the same steps as before to derive the symmetric AES key, this time
  * setting the Cipher up for decryption.
  *
- *   cipher = OpenSSL::Cipher.new 'AES-128-CBC'
+ *   cipher = OpenSSL::Cipher.new 'AES-256-CBC'
  *   cipher.decrypt
  *   cipher.iv = iv # the one generated with #random_iv
  *
@@ -803,7 +832,7 @@ static void Init_ossl_locks(void)
  *
  * First set up the cipher for encryption
  *
- *   encryptor = OpenSSL::Cipher.new 'AES-128-CBC'
+ *   encryptor = OpenSSL::Cipher.new 'AES-256-CBC'
  *   encryptor.encrypt
  *   encryptor.pkcs5_keyivgen pass_phrase, salt
  *
@@ -816,7 +845,7 @@ static void Init_ossl_locks(void)
  *
  * Use a new Cipher instance set up for decryption
  *
- *   decryptor = OpenSSL::Cipher.new 'AES-128-CBC'
+ *   decryptor = OpenSSL::Cipher.new 'AES-256-CBC'
  *   decryptor.decrypt
  *   decryptor.pkcs5_keyivgen pass_phrase, salt
  *
@@ -904,7 +933,7 @@ static void Init_ossl_locks(void)
  *   ca_key = OpenSSL::PKey::RSA.new 2048
  *   pass_phrase = 'my secure pass phrase goes here'
  *
- *   cipher = OpenSSL::Cipher.new 'AES-128-CBC'
+ *   cipher = OpenSSL::Cipher.new 'AES-256-CBC'
  *
  *   open 'ca_key.pem', 'w', 0400 do |io|
  *     io.write ca_key.export(cipher, pass_phrase)
@@ -1125,6 +1154,7 @@ Init_openssl(void)
      */
     mOSSL = rb_define_module("OpenSSL");
     rb_global_variable(&mOSSL);
+    rb_define_singleton_method(mOSSL, "fixed_length_secure_compare", ossl_crypto_fixed_length_secure_compare, 2);
 
     /*
      * OpenSSL ruby extension version
@@ -1205,6 +1235,9 @@ Init_openssl(void)
     Init_ossl_pkey();
     Init_ossl_rand();
     Init_ossl_ssl();
+#ifndef OPENSSL_NO_TS
+    Init_ossl_ts();
+#endif
     Init_ossl_x509();
     Init_ossl_ocsp();
     Init_ossl_engine();

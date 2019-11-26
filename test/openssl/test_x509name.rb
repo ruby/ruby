@@ -403,6 +403,9 @@ class OpenSSL::TestX509Name < OpenSSL::TestCase
     n2 = OpenSSL::X509::Name.parse_rfc2253 'CN=a'
 
     assert_equal n1, n2
+
+    assert_equal false, n1 == 'abc'
+    assert_equal false, n2 == nil
   end
 
   def test_spaceship
@@ -410,12 +413,15 @@ class OpenSSL::TestX509Name < OpenSSL::TestCase
     n2 = OpenSSL::X509::Name.new([["CN", "a"]])
     n3 = OpenSSL::X509::Name.new([["CN", "ab"]])
 
-    assert_equal(0, n1 <=> n2)
+    assert_equal 0, n1 <=> n2
     assert_equal(-1, n1 <=> n3)
-    assert_equal(0, n2 <=> n1)
+    assert_equal 0, n2 <=> n1
     assert_equal(-1, n2 <=> n3)
-    assert_equal(1, n3 <=> n1)
-    assert_equal(1, n3 <=> n2)
+    assert_equal 1, n3 <=> n1
+    assert_equal 1, n3 <=> n2
+    assert_equal nil, n1 <=> 'abc'
+    assert_equal nil, n2 <=> 123
+    assert_equal nil, n3 <=> nil
   end
 
   def name_hash(name)
@@ -446,6 +452,13 @@ class OpenSSL::TestX509Name < OpenSSL::TestCase
     assert_equal true, name0.eql?(name1)
     assert_equal false, name0 == name2
     assert_equal false, name0.eql?(name2)
+  end
+
+  def test_marshal
+    name = OpenSSL::X509::Name.new([["DC", "org"], ["DC", "ruby-lang"], ["CN", "bar.ruby-lang.org"]])
+    deserialized = Marshal.load(Marshal.dump(name))
+
+    assert_equal name.to_der, deserialized.to_der
   end
 
   def test_dup

@@ -380,7 +380,7 @@ ossl_call_session_get_cb(VALUE ary)
 }
 
 static SSL_SESSION *
-#if (!defined(LIBRESSL_VERSION_NUMBER) ? OPENSSL_VERSION_NUMBER >= 0x10100000 : LIBRESSL_VERSION_NUMBER >= 0x2080000f)
+#if OPENSSL_VERSION_NUMBER >= 0x10100000 && !defined(LIBRESSL_VERSION_NUMBER)
 ossl_sslctx_session_get_cb(SSL *ssl, const unsigned char *buf, int len, int *copy)
 #else
 ossl_sslctx_session_get_cb(SSL *ssl, unsigned char *buf, int len, int *copy)
@@ -592,7 +592,7 @@ ssl_renegotiation_cb(const SSL *ssl)
 #if !defined(OPENSSL_NO_NEXTPROTONEG) || \
     defined(HAVE_SSL_CTX_SET_ALPN_SELECT_CB)
 static VALUE
-ssl_npn_encode_protocol_i(RB_BLOCK_CALL_FUNC_ARGLIST(cur, encoded))
+ssl_npn_encode_protocol_i(VALUE cur, VALUE encoded)
 {
     int len = RSTRING_LENINT(cur);
     char len_byte;
@@ -809,6 +809,10 @@ ossl_sslctx_setup(VALUE self)
 # endif
     }
 #endif /* OPENSSL_NO_EC */
+
+#ifdef HAVE_SSL_CTX_SET_POST_HANDSHAKE_AUTH
+    SSL_CTX_set_post_handshake_auth(ctx, 1);
+#endif
 
     val = rb_attr_get(self, id_i_cert_store);
     if (!NIL_P(val)) {
@@ -1316,6 +1320,17 @@ ossl_sslctx_add_certificate(int argc, VALUE *argv, VALUE self)
 #endif
     }
     return self;
+}
+
+static VALUE
+ossl_sslctx_add_certificate_chain_file(VALUE self, VALUE path)
+{
+    StringValue(path);
+    SSL_CTX *ctx = NULL;
+
+    GetSSLCTX(self, ctx);
+
+    return SSL_CTX_use_certificate_chain_file(ctx, RSTRING_PTR(path)) == 1 ? Qtrue : Qfalse;
 }
 
 /*
@@ -1870,7 +1885,6 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 			rb_eof_error();
 		    }
 		}
-                /* fall through */
 	    default:
 		ossl_raise(eSSLError, "SSL_read");
 	    }
@@ -1880,13 +1894,8 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 	ID meth = nonblock ? rb_intern("read_nonblock") : rb_intern("sysread");
 
 	rb_warning("SSL session is not started yet.");
-	if (nonblock) {
-            VALUE argv[3];
-            argv[0] = len;
-            argv[1] = str;
-            argv[2] = opts;
-            return rb_funcallv_kw(io, meth, 3, argv, RB_PASS_KEYWORDS);
-        }
+	if (nonblock)
+	    return rb_funcall(io, meth, 3, len, str, opts);
 	else
 	    return rb_funcall(io, meth, 2, len, str);
     }
@@ -1977,12 +1986,8 @@ ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
 	    rb_intern("write_nonblock") : rb_intern("syswrite");
 
 	rb_warning("SSL session is not started yet.");
-	if (nonblock) {
-            VALUE argv[2];
-            argv[0] = str;
-            argv[1] = opts;
-            return rb_funcallv_kw(io, meth, 2, argv, RB_PASS_KEYWORDS);
-        }
+	if (nonblock)
+	    return rb_funcall(io, meth, 2, str, opts);
 	else
 	    return rb_funcall(io, meth, 1, str);
     }
@@ -2290,6 +2295,56 @@ ossl_ssl_get_verify_result(VALUE self)
     GetSSL(self, ssl);
 
     return INT2NUM(SSL_get_verify_result(ssl));
+}
+
+/*
+ * call-seq:
+ *    ssl.finished_message => "finished message"
+ *
+ * Returns the last *Finished* message sent
+ *
+ */
+static VALUE
+ossl_ssl_get_finished(VALUE self)
+{
+    SSL *ssl;
+
+    GetSSL(self, ssl);
+
+    char sizer[0];
+    size_t len = SSL_get_finished(ssl, sizer, 0);
+    if(len == 0)
+      return Qnil;
+
+    char* buf = ALLOCA_N(char, len+1);
+          buf[len] = 0;
+    SSL_get_finished(ssl, buf, len);
+    return rb_str_new_cstr(buf);
+}
+
+/*
+ * call-seq:
+ *    ssl.peer_finished_message => "peer finished message"
+ *
+ * Returns the last *Finished* message received
+ *
+ */
+static VALUE
+ossl_ssl_get_peer_finished(VALUE self)
+{
+    SSL *ssl;
+
+    GetSSL(self, ssl);
+
+    char sizer[0];
+    size_t len = SSL_get_peer_finished(ssl, sizer, 0);
+    if(len == 0)
+      return Qnil;
+
+    char* buf = ALLOCA_N(char, len+1);
+          buf[len] = 0;
+    SSL_get_peer_finished(ssl, buf, len);
+    return rb_str_new_cstr(buf);
 }
 
 /*
@@ -2614,13 +2669,13 @@ Init_ossl_ssl(void)
     rb_define_const(mSSLExtConfig, "HAVE_TLSEXT_HOST_NAME", Qtrue);
 
     /*
-     * A callback invoked whenever a new handshake is initiated. May be used
-     * to disable renegotiation entirely.
+     * A callback invoked whenever a new handshake is initiated on an
+     * established connection. May be used to disable renegotiation entirely.
      *
      * The callback is invoked with the active SSLSocket. The callback's
-     * return value is irrelevant, normal return indicates "approval" of the
+     * return value is ignored. A normal return indicates "approval" of the
      * renegotiation and will continue the process. To forbid renegotiation
-     * and to cancel the process, an Error may be raised within the callback.
+     * and to cancel the process, raise an exception within the callback.
      *
      * === Disable client renegotiation
      *
@@ -2628,10 +2683,8 @@ Init_ossl_ssl(void)
      * renegotiation entirely. You may use a callback as follows to implement
      * this feature:
      *
-     *   num_handshakes = 0
      *   ctx.renegotiation_cb = lambda do |ssl|
-     *     num_handshakes += 1
-     *     raise RuntimeError.new("Client renegotiation disabled") if num_handshakes > 1
+     *     raise RuntimeError, "Client renegotiation disabled"
      *   end
      */
     rb_attr(cSSLContext, rb_intern("renegotiation_cb"), 1, 1, Qfalse);
@@ -2712,6 +2765,7 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLContext, "enable_fallback_scsv", ossl_sslctx_enable_fallback_scsv, 0);
 #endif
     rb_define_method(cSSLContext, "add_certificate", ossl_sslctx_add_certificate, -1);
+    rb_define_method(cSSLContext, "add_certificate_chain_file", ossl_sslctx_add_certificate_chain_file, 1);
 
     rb_define_method(cSSLContext, "setup", ossl_sslctx_setup, 0);
     rb_define_alias(cSSLContext, "freeze", "setup");
@@ -2809,6 +2863,8 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLSocket, "client_ca", ossl_ssl_get_client_ca_list, 0);
     /* #hostname is defined in lib/openssl/ssl.rb */
     rb_define_method(cSSLSocket, "hostname=", ossl_ssl_set_hostname, 1);
+    rb_define_method(cSSLSocket, "finished_message", ossl_ssl_get_finished, 0);
+    rb_define_method(cSSLSocket, "peer_finished_message", ossl_ssl_get_peer_finished, 0);
 # ifdef HAVE_SSL_GET_SERVER_TMP_KEY
     rb_define_method(cSSLSocket, "tmp_key", ossl_ssl_tmp_key, 0);
 # endif

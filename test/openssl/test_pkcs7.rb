@@ -172,6 +172,28 @@ class OpenSSL::TestPKCS7 < OpenSSL::TestCase
     assert_equal(:encrypted, p7.type)
   end
 
+  def test_smime
+    store = OpenSSL::X509::Store.new
+    store.add_cert(@ca_cert)
+    ca_certs = [@ca_cert]
+
+    data = "aaaaa\r\nbbbbb\r\nccccc\r\n"
+    tmp = OpenSSL::PKCS7.sign(@ee1_cert, @rsa1024, data, ca_certs)
+    p7 = OpenSSL::PKCS7.new(tmp.to_der)
+    smime = OpenSSL::PKCS7.write_smime(p7)
+    assert_equal(true, smime.start_with?(<<END))
+MIME-Version: 1.0
+Content-Disposition: attachment; filename="smime.p7m"
+Content-Type: application/x-pkcs7-mime; smime-type=signed-data; name="smime.p7m"
+Content-Transfer-Encoding: base64
+
+END
+    assert_equal(p7.to_der, OpenSSL::PKCS7.read_smime(smime).to_der)
+
+    smime = OpenSSL::PKCS7.write_smime(p7, nil, 0)
+    assert_equal(p7.to_der, OpenSSL::PKCS7.read_smime(smime).to_der)
+  end
+
   def test_degenerate_pkcs7
     ca_cert_pem = <<END
 -----BEGIN CERTIFICATE-----

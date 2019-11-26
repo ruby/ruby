@@ -284,24 +284,8 @@ Init_ossl_kdf(void)
      * Typically, "==" short-circuits on evaluation, and is therefore
      * vulnerable to timing attacks. The proper way is to use a method that
      * always takes the same amount of time when comparing two values, thus
-     * not leaking any information to potential attackers. To compare two
-     * values, the following could be used:
-     *
-     *   def eql_time_cmp(a, b)
-     *     unless a.length == b.length
-     *       return false
-     *     end
-     *     cmp = b.bytes
-     *     result = 0
-     *     a.bytes.each_with_index {|c,i|
-     *       result |= c ^ cmp[i]
-     *     }
-     *     result == 0
-     *   end
-     *
-     * Please note that the premature return in case of differing lengths
-     * typically does not leak valuable information - when using PBKDF2, the
-     * length of the values to be compared is of fixed size.
+     * not leaking any information to potential attackers. To do this, use
+     * +OpenSSL.fixed_length_secure_compare+.
      */
     mKDF = rb_define_module_under(mOSSL, "KDF");
     /*
