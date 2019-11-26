@@ -44,6 +44,30 @@ RSpec.describe "bundle remove" do
           source "#{file_uri_for(gem_repo1)}"
         G
       end
+
+      context "when gem is specified in multiple lines" do
+        it "shows success for removed gem" do
+          gemfile <<-G
+            source '#{file_uri_for(gem_repo1)}'
+
+            gem 'git'
+            gem 'rack',
+                git: 'https://github.com/rack/rack',
+                branch: 'master'
+            gem 'nokogiri'
+          G
+
+          bundle! "remove rack"
+
+          expect(out).to include("rack was removed.")
+          gemfile_should_be <<-G
+            source '#{file_uri_for(gem_repo1)}'
+
+            gem 'git'
+            gem 'nokogiri'
+          G
+        end
+      end
     end
 
     context "when gem is not present in gemfile" do
