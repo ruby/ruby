@@ -48,6 +48,7 @@
 # * https://github.com/ruby/timeout
 # * https://github.com/ruby/yaml
 # * https://github.com/ruby/uri
+# * https://github.com/ruby/openssl
 #
 
 require 'fileutils'
@@ -102,6 +103,7 @@ $repositories = {
   timeout: "ruby/timeout",
   yaml: "ruby/yaml",
   uri: "ruby/uri",
+  openssl: "ruby/openssl",
 }
 
 def sync_default_gems(gem)
@@ -246,6 +248,17 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/test/cgi", "test")
     cp_r("#{upstream}/cgi.gemspec", "lib/cgi")
     `git checkout ext/cgi/escape/depend`
+  when "openssl"
+    rm_rf(%w[ext/openssl test/openssl])
+    cp_r("#{upstream}/ext/openssl", "ext")
+    mkdir_p("ext/openssl/lib")
+    cp_r("#{upstream}/lib/openssl", "ext/openssl/lib")
+    cp_r("#{upstream}/lib/openssl.rb", "ext/openssl/lib")
+    cp_r("#{upstream}/test", "test/openssl")
+    rm_rf("test/openssl/envutil.rb")
+    cp_r("#{upstream}/openssl.gemspec", "ext/openssl")
+    cp_r("#{upstream}/HISTORY.md", "ext/openssl")
+    `git checkout ext/openssl/depend`
   when "netpop"
     sync_lib "net-pop"
     mv "lib/net-pop.gemspec", "lib/net/pop"
