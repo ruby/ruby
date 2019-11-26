@@ -180,8 +180,19 @@ module Bundler
     def remove_gems_from_gemfile(gems, gemfile_path)
       patterns = /gem\s+(['"])#{Regexp.union(gems)}\1|gem\s*\((['"])#{Regexp.union(gems)}\2\)/
 
-      # remove lines which match the regex
-      new_gemfile = IO.readlines(gemfile_path).reject {|line| line.match(patterns) }
+      new_gemfile = []
+      multiline_removal = false
+      IO.readlines(gemfile_path).each do |line|
+        if line.match(patterns)
+          multiline_removal = line.rstrip.end_with?(",")
+          # skip lines which match the regex
+          next
+        end
+
+        # skip followup lines until line does not end with ','
+        new_gemfile << line unless multiline_removal
+        multiline_removal = line.rstrip.end_with?(",") if multiline_removal
+      end
 
       # remove line \n and append them with other strings
       new_gemfile.each_with_index do |_line, index|
