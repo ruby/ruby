@@ -4073,12 +4073,13 @@ p_kwargs	: p_kwarg ',' p_kwrest
 		;
 
 p_kwarg 	: p_kw
+		    /*% ripper[brace]: rb_ary_new_from_args(1, $1) %*/
 		| p_kwarg ',' p_kw
 		    {
 		    /*%%%*/
 			$$ = list_concat($1, $3);
 		    /*% %*/
-		    /*% ripper: rb_ary_concat($1, $3) %*/
+		    /*% ripper: rb_ary_push($1, $3) %*/
 		    }
 		;
 
@@ -4087,7 +4088,7 @@ p_kw		: p_kw_label p_expr
 		    /*%%%*/
 			$$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), &@$), &@$), $2);
 		    /*% %*/
-		    /*% ripper: rb_ary_new_from_args(1, rb_ary_new_from_args(2, get_value($1), get_value($2))) %*/
+		    /*% ripper: rb_ary_new_from_args(2, get_value($1), get_value($2)) %*/
 		    }
 		| p_kw_label
 		    {
@@ -4098,7 +4099,7 @@ p_kw		: p_kw_label p_expr
 		    /*%%%*/
 			$$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), &@$), &@$), assignable(p, $1, 0, &@$));
 		    /*% %*/
-		    /*% ripper: rb_ary_new_from_args(1, rb_ary_new_from_args(2, get_value($1), Qnil)) %*/
+		    /*% ripper: rb_ary_new_from_args(2, get_value($1), Qnil) %*/
 		    }
 		;
 
