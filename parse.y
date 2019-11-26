@@ -324,6 +324,21 @@ struct parser_params {
 #define STR_NEW3(ptr,len,e,func) parser_str_new((ptr),(len),(e),(func),p->enc)
 #define TOK_INTERN() intern_cstr(tok(p), toklen(p), p->enc)
 
+static st_table *
+push_pvtbl(struct parser_params *p)
+{
+    st_table *tbl = p->pvtbl;
+    p->pvtbl = st_init_numtable();
+    return tbl;
+}
+
+static void
+pop_pvtbl(struct parser_params *p, st_table *tbl)
+{
+    st_free_table(p->pvtbl);
+    p->pvtbl = tbl;
+}
+
 static int parser_yyerror(struct parser_params*, const YYLTYPE *yylloc, const char*);
 #define yyerror0(msg) parser_yyerror(p, NULL, (msg))
 #define yyerror1(loc, msg) parser_yyerror(p, (loc), (msg))
@@ -1566,15 +1581,9 @@ expr		: command_call
 			$<num>$ = p->in_kwarg;
 			p->in_kwarg = 1;
 		    }
-		    {
-			$<tbl>$ = p->pvtbl;
-			p->pvtbl = st_init_numtable();
-		    }
+		    {$<tbl>$ = push_pvtbl(p);}
 		  p_expr
-		    {
-			st_free_table(p->pvtbl);
-			p->pvtbl = $<tbl>4;
-		    }
+		    {pop_pvtbl(p, $<tbl>4);}
 		    {
 			p->in_kwarg = !!$<num>3;
 		    /*%%%*/
@@ -3798,15 +3807,9 @@ p_case_body	: keyword_in
 			$<num>$ = p->in_kwarg;
 			p->in_kwarg = 1;
 		    }
-		    {
-			$<tbl>$ = p->pvtbl;
-			p->pvtbl = st_init_numtable();
-		    }
+		    {$<tbl>$ = push_pvtbl(p);}
 		  p_top_expr then
-		    {
-			st_free_table(p->pvtbl);
-			p->pvtbl = $<tbl>3;
-		    }
+		    {pop_pvtbl(p, $<tbl>3);}
 		    {
 			p->in_kwarg = !!$<num>2;
 		    }
