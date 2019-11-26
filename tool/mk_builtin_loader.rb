@@ -1,4 +1,10 @@
 
+def inline_text argc, prev_insn
+  raise "argc (#{argc}) of inline! should be 1" unless argc == 1
+  raise "1st argument should be string literal" unless prev_insn[0] == :putstring
+  prev_insn[1].rstrip
+end
+
 def collect_builtin base, iseq_ary, bs, inlines
   code = iseq_ary[13]
   params = iseq_ary[10]
@@ -24,14 +30,29 @@ def collect_builtin base, iseq_ary, bs, inlines
         func_name = $1
         argc = ci[:orig_argc]
 
-        if func_name ==  'inline!'
-          raise "argc (#{argc}) of inline! should be 1" unless argc == 1
-          raise "1st argument should be string literal" unless prev_insn[0] == :putstring
-          text = prev_insn[1].rstrip
+        if /(.+)\!\z/ =~ func_name
+          case $1
+          when 'cstmt'
+            text = inline_text argc, prev_insn
 
-          func_name = "rb_compiled_inline#{inlines.size}"
-          inlines << [func_name, [lineno, text, params]]
-          argc -= 1
+            func_name = "builtin_inline#{inlines.size}"
+            inlines << [func_name, [lineno, text, params]]
+            argc -= 1
+
+          when 'cexpr', 'cconst'
+            text = inline_text argc, prev_insn
+            code = "return #{text};"
+
+            func_name = "builtin_inline#{inlines.size}"
+            params = [] if $1 == 'cconst'
+            inlines << [func_name, [lineno, code, params]]
+            argc -= 1
+          when 'cinit'
+            text = inline_text argc, prev_insn
+            func_name = nil
+            inlines << [nil, [lineno, text, nil]]
+            argc -= 1
+          end
         end
 
         if bs[func_name] &&
@@ -39,7 +60,7 @@ def collect_builtin base, iseq_ary, bs, inlines
           raise "same builtin function \"#{func_name}\", but different arity (was #{bs[func_name]} but #{argc})"
         end
 
-        bs[func_name] = argc
+        bs[func_name] = argc if func_name
       end
     else
       insn[1..-1].each{|op|
@@ -76,25 +97,36 @@ def mk_builtin_header file
     f.puts "//   with #{file}"
     f.puts
     lineno = 6
+    line_file = file.gsub('\\', '/')
 
     inlines.each{|name, (body_lineno, text, params)|
-      f.puts "static VALUE #{name}(rb_execution_context_t *ec, const VALUE self) {"
-      lineno += 1
-
-      params.reverse_each.with_index{|param, i|
-        next unless Symbol === param
-        f.puts "MAYBE_UNUSED(const VALUE) #{param} = rb_vm_lvar(ec, #{-3 - i});"
+      if name
+        f.puts "static VALUE #{name}(rb_execution_context_t *ec, const VALUE self) {"
         lineno += 1
-      }
-      f.puts "#line #{body_lineno} \"#{file}\""
-      lineno += 1
 
-      f.puts text
-      lineno += text.count("\n") + 1
+        params.reverse_each.with_index{|param, i|
+          next unless Symbol === param
+          f.puts "MAYBE_UNUSED(const VALUE) #{param} = rb_vm_lvar(ec, #{-3 - i});"
+          lineno += 1
+        }
+        f.puts "#line #{body_lineno} \"#{line_file}\""
+        lineno += 1
 
-      f.puts "#line #{lineno + 2} \"#{ofile}\"" # TODO: restore line number.
-      f.puts "}"
-      lineno += 2
+        f.puts text
+        lineno += text.count("\n") + 1
+
+        f.puts "#line #{lineno + 2} \"#{ofile}\"" # TODO: restore line number.
+        f.puts "}"
+        lineno += 2
+      else
+        # cinit!
+        f.puts "#line #{body_lineno} \"#{line_file}\""
+        lineno += 1
+        f.puts text
+        lineno += text.count("\n") + 1
+        f.puts "#line #{lineno + 2} \"#{ofile}\"" # TODO: restore line number.
+        lineno += 1
+      end
     }
 
     f.puts "static void load_#{base}(void)"

@@ -6920,17 +6920,30 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
         }
         else {
             char inline_func[0x20];
+            bool cconst = false;
           retry:;
             const struct rb_builtin_function *bf = iseq_builtin_function_lookup(iseq, builtin_func);
 
             if (bf == NULL) {
-                if (strcmp("inline!", builtin_func) == 0) {
+                if (strcmp("cstmt!", builtin_func) == 0 ||
+                    strcmp("cexpr!", builtin_func) == 0) {
+                  inlinec:;
                     int inline_index = GET_VM()->builtin_inline_index++;
-                    snprintf(inline_func, 0x20, "rb_compiled_inline%d", inline_index);
+                    snprintf(inline_func, 0x20, "builtin_inline%d", inline_index);
                     builtin_func = inline_func;
                     args_node = NULL;
                     goto retry;
                 }
+                else if (strcmp("cconst!", builtin_func) == 0) {
+                    cconst = true;
+                    goto inlinec;
+                }
+                else if (strcmp("cinit!", builtin_func) == 0) {
+                    // ignore
+                    GET_VM()->builtin_inline_index++;
+                    return COMPILE_OK;
+                }
+
                 if (1) {
                     rb_bug("can't find builtin function:%s", builtin_func);
                 }
@@ -6938,6 +6951,13 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
                     COMPILE_ERROR(ERROR_ARGS "can't find builtin function:%s", builtin_func);
                 }
                 return COMPILE_NG;
+            }
+
+            if (cconst) {
+                typedef VALUE(*builtin_func0)(void *, VALUE);
+                VALUE const_val = (*(builtin_func0)bf->func_ptr)(NULL, Qnil);
+                ADD_INSN1(ret, line, putobject, const_val);
+                return COMPILE_OK;
             }
 
             // fprintf(stderr, "func_name:%s -> %p\n", builtin_func, bf->func_ptr);
