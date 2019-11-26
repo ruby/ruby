@@ -438,11 +438,36 @@ eot
 
     [__LINE__, %q{ case 0; in "A":; end }] =>
     nil,
+
+    [__LINE__, %q{ case 0; in "a\x0":a1, "a\0":a2; end }] =>
+    nil,                        # duplicated key name
   }
   pattern_matching_data.each do |(i, src), expected|
     define_method(:"test_pattern_matching_#{i}") do
       sexp = Ripper.sexp(src.strip)
       assert_equal expected, sexp && sexp[1][0], src
     end
+  end
+
+  def test_hshptn
+    parser = Class.new(Ripper::SexpBuilder) do
+      def on_label(token)
+        [:@label, token]
+      end
+    end
+
+    result = parser.new("#{<<~"begin;"}#{<<~'end;'}").parse
+    begin;
+      case foo
+      in { a: 1 }
+        bar
+      else
+        baz
+      end
+    end;
+
+    hshptn = result.dig(1, 2, 2, 1)
+    assert_equal(:hshptn, hshptn[0])
+    assert_equal([:@label, "a:"], hshptn.dig(2, 0, 0))
   end
 end if ripper_test

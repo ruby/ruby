@@ -251,6 +251,7 @@ struct parser_params {
     char *tokenbuf;
     struct local_vars *lvtbl;
     st_table *pvtbl;
+    st_table *pktbl;
     int line_count;
     int ruby_sourceline;	/* current line no. */
     const char *ruby_sourcefile; /* current source file */
@@ -337,6 +338,21 @@ pop_pvtbl(struct parser_params *p, st_table *tbl)
 {
     st_free_table(p->pvtbl);
     p->pvtbl = tbl;
+}
+
+static st_table *
+push_pktbl(struct parser_params *p)
+{
+    st_table *tbl = p->pktbl;
+    p->pktbl = 0;
+    return tbl;
+}
+
+static void
+pop_pktbl(struct parser_params *p, st_table *tbl)
+{
+    if (p->pktbl) st_free_table(p->pktbl);
+    p->pktbl = tbl;
 }
 
 static int parser_yyerror(struct parser_params*, const YYLTYPE *yylloc, const char*);
@@ -583,6 +599,7 @@ YYLTYPE *rb_parser_set_location(struct parser_params *p, YYLTYPE *yylloc);
 RUBY_SYMBOL_EXPORT_END
 
 static void error_duplicate_pattern_variable(struct parser_params *p, ID id, const YYLTYPE *loc);
+static void error_duplicate_pattern_key(struct parser_params *p, ID id, const YYLTYPE *loc);
 static void parser_token_value_print(struct parser_params *p, enum yytokentype type, const YYSTYPE *valp);
 static ID formal_argument(struct parser_params*, ID);
 static ID shadowing_lvar(struct parser_params*,ID);
@@ -826,40 +843,7 @@ new_array_pattern_tail(struct parser_params *p, VALUE pre_args, VALUE has_rest, 
 static VALUE
 new_unique_key_hash(struct parser_params *p, VALUE ary, const YYLTYPE *loc)
 {
-    const long len = RARRAY_LEN(ary);
-    st_table *tbl;
-    long i;
-
-    tbl = st_init_strtable_with_size(len);
-    for (i = 0; i < len; i++) {
-	VALUE key, a1, a2, a3;
-	a1 = RARRAY_AREF(ary, i);
-	if (!(RB_TYPE_P(a1, T_ARRAY) && RARRAY_LEN(a1) == 2)) goto error;
-	a2 = RARRAY_AREF(a1, 0);
-	if (!RB_TYPE_P(a2, T_ARRAY)) goto error;
-	switch (RARRAY_LEN(a2)) {
-	  case 2: /* "key": */
-	    a3 = RARRAY_AREF(a2, 1);
-	    if (!(RB_TYPE_P(a3, T_ARRAY) && RARRAY_LEN(a3) == 3)) goto error;
-	    key = RARRAY_AREF(a3, 1);
-	    break;
-	  case 3: /* key: */
-	    key = RARRAY_AREF(a2, 1);
-	    break;
-	  default:
-	    goto error;
-	}
-	if (!RB_TYPE_P(key, T_STRING)) goto error;
-	if (st_is_member(tbl, (st_data_t)RSTRING_PTR(key))) goto error;
-	st_insert(tbl, (st_data_t)RSTRING_PTR(key), (st_data_t)ary);
-    }
-    st_free_table(tbl);
     return ary;
-
-  error:
-    ripper_error(p);
-    st_free_table(tbl);
-    return Qnil;
 }
 
 static VALUE
@@ -3808,7 +3792,9 @@ p_case_body	: keyword_in
 			p->in_kwarg = 1;
 		    }
 		    {$<tbl>$ = push_pvtbl(p);}
+		    {$<tbl>$ = push_pktbl(p);}
 		  p_top_expr then
+		    {pop_pktbl(p, $<tbl>4);}
 		    {pop_pvtbl(p, $<tbl>3);}
 		    {
 			p->in_kwarg = !!$<num>2;
@@ -3817,9 +3803,9 @@ p_case_body	: keyword_in
 		  p_cases
 		    {
 		    /*%%%*/
-			$$ = NEW_IN($4, $8, $9, &@$);
+			$$ = NEW_IN($5, $10, $11, &@$);
 		    /*% %*/
-		    /*% ripper: in!($4, $8, escape_Qundef($9)) %*/
+		    /*% ripper: in!($5, $10, escape_Qundef($11)) %*/
 		    }
 		;
 
@@ -3895,17 +3881,22 @@ p_alt		: p_alt '|' p_expr_basic
 		| p_expr_basic
 		;
 
+p_lparen	: '(' {$<tbl>$ = push_pktbl(p);};
+p_lbracket	: '[' {$<tbl>$ = push_pktbl(p);};
+
 p_expr_basic	: p_value
-		| p_const '(' p_args rparen
+		| p_const p_lparen p_args rparen
 		    {
+			pop_pktbl(p, $<tbl>2);
 			$$ = new_array_pattern(p, $1, Qnone, $3, &@$);
 		    /*%%%*/
 			nd_set_first_loc($$, @1.beg_pos);
 		    /*%
 		    %*/
 		    }
-		| p_const '(' p_kwargs rparen
+		| p_const p_lparen p_kwargs rparen
 		    {
+			pop_pktbl(p, $<tbl>2);
 			$$ = new_hash_pattern(p, $1, $3, &@$);
 		    /*%%%*/
 			nd_set_first_loc($$, @1.beg_pos);
@@ -3917,16 +3908,18 @@ p_expr_basic	: p_value
 			$$ = new_array_pattern_tail(p, Qnone, 0, 0, Qnone, &@$);
 			$$ = new_array_pattern(p, $1, Qnone, $$, &@$);
 		    }
-		| p_const '[' p_args rbracket
+		| p_const p_lbracket p_args rbracket
 		    {
+			pop_pktbl(p, $<tbl>2);
 			$$ = new_array_pattern(p, $1, Qnone, $3, &@$);
 		    /*%%%*/
 			nd_set_first_loc($$, @1.beg_pos);
 		    /*%
 		    %*/
 		    }
-		| p_const '[' p_kwargs rbracket
+		| p_const p_lbracket p_kwargs rbracket
 		    {
+			pop_pktbl(p, $<tbl>2);
 			$$ = new_hash_pattern(p, $1, $3, &@$);
 		    /*%%%*/
 			nd_set_first_loc($$, @1.beg_pos);
@@ -3938,27 +3931,30 @@ p_expr_basic	: p_value
 			$$ = new_array_pattern_tail(p, Qnone, 0, 0, Qnone, &@$);
 			$$ = new_array_pattern(p, $1, Qnone, $$, &@$);
 		    }
-		| tLBRACK p_args rbracket
+		| tLBRACK {$<tbl>$ = push_pktbl(p);} p_args rbracket
 		    {
-			$$ = new_array_pattern(p, Qnone, Qnone, $2, &@$);
+			pop_pktbl(p, $<tbl>2);
+			$$ = new_array_pattern(p, Qnone, Qnone, $3, &@$);
 		    }
 		| tLBRACK rbracket
 		    {
 			$$ = new_array_pattern_tail(p, Qnone, 0, 0, Qnone, &@$);
 			$$ = new_array_pattern(p, Qnone, Qnone, $$, &@$);
 		    }
-		| tLBRACE p_kwargs '}'
+		| tLBRACE {$<tbl>$ = push_pktbl(p);} p_kwargs '}'
 		    {
-			$$ = new_hash_pattern(p, Qnone, $2, &@$);
+			pop_pktbl(p, $<tbl>2);
+			$$ = new_hash_pattern(p, Qnone, $3, &@$);
 		    }
 		| tLBRACE '}'
 		    {
 			$$ = new_hash_pattern_tail(p, Qnone, 0, &@$);
 			$$ = new_hash_pattern(p, Qnone, $$, &@$);
 		    }
-		| tLPAREN p_expr rparen
+		| tLPAREN {$<tbl>$ = push_pktbl(p);} p_expr rparen
 		    {
-			$$ = $2;
+			pop_pktbl(p, $<tbl>2);
+			$$ = $3;
 		    }
 		;
 
@@ -4088,6 +4084,7 @@ p_kwarg 	: p_kw
 
 p_kw		: p_kw_label p_expr
 		    {
+			error_duplicate_pattern_key(p, get_id($1), &@1);
 		    /*%%%*/
 			$$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), &@$), &@$), $2);
 		    /*% %*/
@@ -4095,6 +4092,7 @@ p_kw		: p_kw_label p_expr
 		    }
 		| p_kw_label
 		    {
+			error_duplicate_pattern_key(p, get_id($1), &@1);
 			if ($1 && !is_local_id(get_id($1))) {
 			    yyerror1(&@1, "key must be valid as local variables");
 			}
@@ -11540,36 +11538,23 @@ error_duplicate_pattern_variable(struct parser_params *p, ID id, const YYLTYPE *
     }
 }
 
-#ifndef RIPPER
 static void
-error_duplicate_keys(struct parser_params *p, NODE *hash)
+error_duplicate_pattern_key(struct parser_params *p, VALUE key, const YYLTYPE *loc)
 {
-    st_table *literal_keys = st_init_numtable_with_size(hash->nd_alen / 2);
-    while (hash && hash->nd_head && hash->nd_next) {
-	NODE *head = hash->nd_head;
-	NODE *next = hash->nd_next->nd_next;
-	VALUE key = (VALUE)head;
-	if (nd_type(head) != NODE_LIT) {
-	    yyerror1(&head->nd_loc, "key must be symbol literal");
-	}
-	if (st_is_member(literal_keys, (key = head->nd_lit))) {
-	    yyerror1(&head->nd_loc, "duplicated key name");
-	}
-	else {
-	    st_insert(literal_keys, (st_data_t)key, (st_data_t)hash);
-	}
-	hash = next;
+    if (!p->pktbl) {
+	p->pktbl = st_init_numtable();
     }
-    st_free_table(literal_keys);
-    return;
+    else if (st_is_member(p->pktbl, key)) {
+	yyerror1(loc, "duplicated key name");
+	return;
+    }
+    st_insert(p->pktbl, (st_data_t)key, 0);
 }
 
+#ifndef RIPPER
 static NODE *
 new_unique_key_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc)
 {
-    if (hash) {
-        error_duplicate_keys(p, hash);
-    }
     return NEW_HASH(hash, loc);
 }
 #endif /* !RIPPER */
