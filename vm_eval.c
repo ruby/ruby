@@ -981,6 +981,7 @@ rb_funcallv_with_cc(struct rb_call_data *cd, VALUE recv, ID mid, int argc, const
     }
 
     *cd = (struct rb_call_data) /* reset */ { { 0, }, { mid, }, };
+    (*cd).cc.compact_count = rb_gc_compact_count();
     return rb_funcallv(recv, mid, argc, argv);
 }
 
@@ -1016,6 +1017,19 @@ rb_funcall_with_block_kw(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE 
     }
 
     return rb_call(recv, mid, argc, argv, kw_splat ? CALL_PUBLIC_KW : CALL_PUBLIC);
+}
+
+void
+rb_vm_update_cc_references(struct rb_call_data *cd)
+{
+    cd->cc.compact_count = rb_gc_compact_count();
+    if (GET_GLOBAL_METHOD_STATE() == cd->cc.method_state) {
+        struct rb_callable_method_entry_struct *nv = (struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)cd->cc.me);
+        if (nv != cd->cc.me && nv) {
+            cd->cc.me = nv;
+            cd->cc.def = nv->def;
+        }
+    }
 }
 
 static VALUE *

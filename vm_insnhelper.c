@@ -1493,6 +1493,7 @@ rb_vm_search_method_slowpath(struct rb_call_data *cd, VALUE klass)
         }
     }
     MEMCPY(cc, &buf, struct rb_call_cache, 1);
+    cc->compact_count = rb_gc_compact_count();
     VM_ASSERT(callable_method_entry_p(cc->me));
 }
 
@@ -1786,6 +1787,7 @@ VALUE
 rb_equal_opt(VALUE obj1, VALUE obj2)
 {
     struct rb_call_data cd = { .ci = { .mid = idEq, }, };
+    cd.cc.compact_count = rb_gc_compact_count();
 
     return opt_eq_func(obj1, obj2, &cd);
 }
@@ -1794,6 +1796,7 @@ VALUE
 rb_eql_opt(VALUE obj1, VALUE obj2)
 {
     struct rb_call_data cd = { .ci = { .mid = idEqlP, }, };
+    cd.cc.compact_count = rb_gc_compact_count();
 
     return opt_eql_func(obj1, obj2, &cd);
 }

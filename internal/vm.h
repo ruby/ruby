@@ -12,6 +12,7 @@
 #include "internal/serial.h"        /* for rb_serial_t */
 #include "internal/static_assert.h" /* for STATIC_ASSERT */
 #include "internal/stdbool.h"       /* for bool */
+#include "internal/imemo.h"         /* for rb_imemo_new */
 #include "ruby/ruby.h"              /* for ID */
 #include "ruby/st.h"                /* for st_table */
 
@@ -139,6 +140,7 @@ VALUE rb_yield_force_blockarg(VALUE values);
 VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
                      rb_block_call_func_t bl_proc, int min_argc, int max_argc,
                      VALUE data2);
+void rb_vm_update_cc_references(struct rb_call_data *cd);
 
 MJIT_SYMBOL_EXPORT_BEGIN
 VALUE rb_vm_call0(struct rb_execution_context_struct *ec, VALUE recv, ID id, int argc, const VALUE *argv, const struct rb_callable_method_entry_struct *me, int kw_splat);
@@ -184,7 +186,8 @@ MJIT_SYMBOL_EXPORT_END
         static struct rb_call_data rb_funcallv_data; \
         static VALUE wrapper = 0; \
         if (!wrapper) { \
-            wrapper = rb_imemo_new(imemo_call_data, 0, 0, 0, (VALUE)&rb_funcallv_data); \
+            rb_funcallv_data.cc.compact_count = rb_gc_compact_count(); \
+            wrapper = rb_imemo_new(imemo_call_data, (VALUE)&rb_funcallv_data, 0, 0, (VALUE)&rb_funcallv_data); \
             rb_gc_register_mark_object(wrapper); \
         } \
         rb_funcallv_with_cc(&rb_funcallv_data, recv, mid, argc, argv); \
@@ -194,7 +197,8 @@ MJIT_SYMBOL_EXPORT_END
         static struct rb_call_data rb_mbdp; \
         static VALUE wrapper = 0; \
         if (!wrapper) { \
-            wrapper = rb_imemo_new(imemo_call_data, 0, 0, 0, (VALUE)&rb_mbdp); \
+            rb_mbdp.cc.compact_count = rb_gc_compact_count(); \
+            wrapper = rb_imemo_new(imemo_call_data, (VALUE)&rb_mbdp, 0, 0, (VALUE)&rb_mbdp); \
             rb_gc_register_mark_object(wrapper); \
         } \
         (klass == Qfalse) ? /* hidden object cannot be overridden */ true : \
