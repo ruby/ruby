@@ -57,12 +57,18 @@ end
 
 def mk_builtin_header file
   base = File.basename(file, '.rb')
-  ofile = "#{base}.rbinc"
+  ofile = "#{file}inc"
 
   # bs = { func_name => argc }
   collect_builtin(base, RubyVM::InstructionSequence.compile_file(file, false).to_a, bs = {}, inlines = [])
 
-  open(ofile, 'w'){|f|
+  begin
+    f = open(ofile, 'w')
+  rescue Errno::EACCESS
+    # Fall back to the current directory
+    f = open(File.basename(ofile), 'w')
+  end
+  begin
     f.puts "// -*- c -*-"
     f.puts "// DO NOT MODIFY THIS FILE DIRECTLY."
     f.puts "// auto-generated file"
@@ -120,7 +126,9 @@ def mk_builtin_header file
     f.puts "  rb_load_with_builtin_functions(#{base.dump}, #{table});"
 
     f.puts "}"
-  }
+  ensure
+    f.close
+  end
 end
 
 ARGV.each{|file|
