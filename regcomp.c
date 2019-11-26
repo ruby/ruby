@@ -138,6 +138,25 @@ bitset_on_num(BitSetRef bs)
 }
 #endif
 
+// Attempt to right size allocated buffers for a regex post compile
+static void
+onig_reg_resize(regex_t *reg)
+{
+  resize:
+    if (reg->alloc > reg->used) {
+      unsigned char *new_ptr = xrealloc(reg->p, reg->used);
+      // Skip the right size optimization if memory allocation fails
+      if (new_ptr) {
+        reg->alloc = reg->used;
+        reg->p = new_ptr;
+      }
+    }
+    if (reg->chain) {
+      reg = reg->chain;
+      goto resize;
+    }
+}
+
 extern int
 onig_bbuf_init(BBuf* buf, OnigDistance size)
 {
@@ -5886,6 +5905,7 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
 #endif
 
  end:
+  onig_reg_resize(reg);
   return r;
 
  err_unset:
