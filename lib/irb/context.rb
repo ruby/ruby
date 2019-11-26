@@ -86,7 +86,8 @@ module IRB
             puts <<~EOM
               This version of IRB is drastically different from the previous version.
               If you hit any issues, you can use "irb --legacy" to run the old version.
-              If you want to just erase this message, please use "irb --multiline".
+              If you want to just erase this message, please use "irb --multiline" or
+              add `IRB.conf[:USE_MULTILINE] = true` in your ~/.irbrc file.
             EOM
             @io = ReidlineInputMethod.new
           else
