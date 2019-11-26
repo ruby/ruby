@@ -118,8 +118,7 @@ module IRB
     # See IO#gets for more information.
     def gets
       print @prompt
-      l = @io.gets
-      l
+      @io.gets
     end
 
     # The external encoding for standard input.
