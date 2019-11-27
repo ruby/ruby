@@ -79,12 +79,12 @@ _end_of_pem_
 
   def test_request_mandatory_fields
     req = OpenSSL::Timestamp::Request.new
-    assert_raises(OpenSSL::Timestamp::TimestampError) do
+    assert_raise(OpenSSL::Timestamp::TimestampError) do
       tmp = req.to_der
       pp OpenSSL::ASN1.decode(tmp)
     end
     req.algorithm = "sha1"
-    assert_raises(OpenSSL::Timestamp::TimestampError) do
+    assert_raise(OpenSSL::Timestamp::TimestampError) do
       req.to_der
     end
     req.message_imprint = OpenSSL::Digest::SHA1.new.digest("data")
@@ -96,27 +96,27 @@ _end_of_pem_
 
     req.version = 2
     assert_equal(2, req.version)
-    assert_raises(TypeError) { req.version = nil }
-    assert_raises(TypeError) { req.version = "foo" }
+    assert_raise(TypeError) { req.version = nil }
+    assert_raise(TypeError) { req.version = "foo" }
 
     req.algorithm = "SHA1"
     assert_equal("SHA1", req.algorithm)
-    assert_raises(TypeError) { req.algorithm = nil }
-    assert_raises(OpenSSL::ASN1::ASN1Error) { req.algorithm = "xxx" }
+    assert_raise(TypeError) { req.algorithm = nil }
+    assert_raise(OpenSSL::ASN1::ASN1Error) { req.algorithm = "xxx" }
 
     req.message_imprint = "test"
     assert_equal("test", req.message_imprint)
-    assert_raises(TypeError) { req.message_imprint = nil }
+    assert_raise(TypeError) { req.message_imprint = nil }
 
     req.policy_id = "1.2.3.4.5"
     assert_equal("1.2.3.4.5", req.policy_id)
-    assert_raises(TypeError) { req.policy_id = 123 }
-    assert_raises(TypeError) { req.policy_id = nil }
+    assert_raise(TypeError) { req.policy_id = 123 }
+    assert_raise(TypeError) { req.policy_id = nil }
 
     req.nonce = 42
     assert_equal(42, req.nonce)
-    assert_raises(TypeError) { req.nonce = "foo" }
-    assert_raises(TypeError) { req.nonce = nil }
+    assert_raise(TypeError) { req.nonce = "foo" }
+    assert_raise(TypeError) { req.nonce = nil }
 
     req.cert_requested = false
     assert_equal(false, req.cert_requested?)
@@ -235,30 +235,30 @@ _end_of_pem_
   def test_response_mandatory_fields
     fac = OpenSSL::Timestamp::Factory.new
     req = OpenSSL::Timestamp::Request.new
-    assert_raises(OpenSSL::Timestamp::TimestampError) do
+    assert_raise(OpenSSL::Timestamp::TimestampError) do
       fac.create_timestamp(ee_key, ts_cert_ee, req)
     end
     req.algorithm = "sha1"
-    assert_raises(OpenSSL::Timestamp::TimestampError) do
+    assert_raise(OpenSSL::Timestamp::TimestampError) do
       fac.create_timestamp(ee_key, ts_cert_ee, req)
     end
     req.message_imprint = OpenSSL::Digest::SHA1.new.digest("data")
-    assert_raises(OpenSSL::Timestamp::TimestampError) do
+    assert_raise(OpenSSL::Timestamp::TimestampError) do
       fac.create_timestamp(ee_key, ts_cert_ee, req)
     end
     fac.gen_time = Time.now
-    assert_raises(OpenSSL::Timestamp::TimestampError) do
+    assert_raise(OpenSSL::Timestamp::TimestampError) do
       fac.create_timestamp(ee_key, ts_cert_ee, req)
     end
     fac.serial_number = 1
     fac.allowed_digests = ["sha1"]
-    assert_raises(OpenSSL::Timestamp::TimestampError) do
+    assert_raise(OpenSSL::Timestamp::TimestampError) do
       fac.create_timestamp(ee_key, ts_cert_ee, req)
     end
     fac.default_policy_id = "1.2.3.4.5"
     assert_equal OpenSSL::Timestamp::Response::GRANTED, fac.create_timestamp(ee_key, ts_cert_ee, req).status
     fac.default_policy_id = nil
-    assert_raises(OpenSSL::Timestamp::TimestampError) do
+    assert_raise(OpenSSL::Timestamp::TimestampError) do
       fac.create_timestamp(ee_key, ts_cert_ee, req)
     end
     req.policy_id = "1.2.3.4.5"
@@ -302,7 +302,7 @@ _end_of_pem_
 
     # Non-String, non-Digest Array element
     fac.allowed_digests = ["sha1", OpenSSL::Digest::SHA1.new, 123]
-    assert_raises(TypeError) do
+    assert_raise(TypeError) do
       fac.create_timestamp(ee_key, ts_cert_ee, req)
     end
   end
@@ -338,7 +338,7 @@ _end_of_pem_
     fac.allowed_digests = ["sha1"]
 
 
-    assert_raises(OpenSSL::Timestamp::TimestampError) do
+    assert_raise(OpenSSL::Timestamp::TimestampError) do
       fac.create_timestamp(ee_key, intermediate_cert, req)
     end
   end
@@ -362,7 +362,7 @@ _end_of_pem_
   end
 
   def test_response_no_policy_defined
-    assert_raises(OpenSSL::Timestamp::TimestampError) do
+    assert_raise(OpenSSL::Timestamp::TimestampError) do
       req = OpenSSL::Timestamp::Request.new
       req.algorithm = "SHA1"
       digest = OpenSSL::Digest::SHA1.new.digest("test")
@@ -378,35 +378,35 @@ _end_of_pem_
   end
 
   def test_verify_ee_no_req
-    assert_raises(TypeError) do
+    assert_raise(TypeError) do
       ts, _ = timestamp_ee
       ts.verify(nil, ca_cert)
     end
   end
 
   def test_verify_ee_no_store
-    assert_raises(TypeError) do
+    assert_raise(TypeError) do
       ts, req = timestamp_ee
       ts.verify(req, nil)
     end
   end
 
   def test_verify_ee_wrong_root_no_intermediate
-    assert_raises(OpenSSL::Timestamp::TimestampError) do
+    assert_raise(OpenSSL::Timestamp::TimestampError) do
       ts, req = timestamp_ee
       ts.verify(req, intermediate_store)
     end
   end
 
   def test_verify_ee_wrong_root_wrong_intermediate
-    assert_raises(OpenSSL::Timestamp::TimestampError) do
+    assert_raise(OpenSSL::Timestamp::TimestampError) do
       ts, req = timestamp_ee
       ts.verify(req, intermediate_store, [ca_cert])
     end
   end
 
   def test_verify_ee_nonce_mismatch
-    assert_raises(OpenSSL::Timestamp::TimestampError) do
+    assert_raise(OpenSSL::Timestamp::TimestampError) do
       ts, req = timestamp_ee
       req.nonce = 1
       ts.verify(req, ca_store, [intermediate_cert])
@@ -414,7 +414,7 @@ _end_of_pem_
   end
 
   def test_verify_ee_intermediate_missing
-    assert_raises(OpenSSL::Timestamp::TimestampError) do
+    assert_raise(OpenSSL::Timestamp::TimestampError) do
       ts, req = timestamp_ee
       ts.verify(req, ca_store)
     end
@@ -427,7 +427,7 @@ _end_of_pem_
 
   def test_verify_ee_intermediate_type_error
     ts, req = timestamp_ee
-    assert_raises(TypeError) { ts.verify(req, [ca_cert], 123) }
+    assert_raise(TypeError) { ts.verify(req, [ca_cert], 123) }
   end
 
   def test_verify_ee_def_policy
@@ -463,14 +463,14 @@ _end_of_pem_
   end
 
   def test_verify_direct_wrong_root
-    assert_raises(OpenSSL::Timestamp::TimestampError) do
+    assert_raise(OpenSSL::Timestamp::TimestampError) do
       ts, req = timestamp_direct
       ts.verify(req, intermediate_store)
     end
   end
 
   def test_verify_direct_no_cert_no_intermediate
-    assert_raises(OpenSSL::Timestamp::TimestampError) do
+    assert_raise(OpenSSL::Timestamp::TimestampError) do
       ts, req = timestamp_direct_no_cert
       ts.verify(req, ca_store)
     end
@@ -482,7 +482,7 @@ _end_of_pem_
   end
 
   def test_verify_ee_no_cert_no_intermediate
-    assert_raises(OpenSSL::Timestamp::TimestampError) do
+    assert_raise(OpenSSL::Timestamp::TimestampError) do
       ts, req = timestamp_ee_no_cert
       ts.verify(req, ca_store, [ts_cert_ee])
     end

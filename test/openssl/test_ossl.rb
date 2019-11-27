@@ -7,23 +7,23 @@ if defined?(OpenSSL)
 
 class OpenSSL::OSSL < OpenSSL::SSLTestCase
   def test_fixed_length_secure_compare
-    assert_raises(ArgumentError) { OpenSSL.fixed_length_secure_compare("aaa", "a") }
-    assert_raises(ArgumentError) { OpenSSL.fixed_length_secure_compare("aaa", "aa") }
+    assert_raise(ArgumentError) { OpenSSL.fixed_length_secure_compare("aaa", "a") }
+    assert_raise(ArgumentError) { OpenSSL.fixed_length_secure_compare("aaa", "aa") }
 
     assert OpenSSL.fixed_length_secure_compare("aaa", "aaa")
     assert OpenSSL.fixed_length_secure_compare(
       OpenSSL::Digest::SHA256.digest("aaa"), OpenSSL::Digest::SHA256.digest("aaa")
     )
 
-    assert_raises(ArgumentError) { OpenSSL.fixed_length_secure_compare("aaa", "aaaa") }
+    assert_raise(ArgumentError) { OpenSSL.fixed_length_secure_compare("aaa", "aaaa") }
     refute OpenSSL.fixed_length_secure_compare("aaa", "baa")
     refute OpenSSL.fixed_length_secure_compare("aaa", "aba")
     refute OpenSSL.fixed_length_secure_compare("aaa", "aab")
-    assert_raises(ArgumentError) { OpenSSL.fixed_length_secure_compare("aaa", "aaab") }
-    assert_raises(ArgumentError) { OpenSSL.fixed_length_secure_compare("aaa", "b") }
-    assert_raises(ArgumentError) { OpenSSL.fixed_length_secure_compare("aaa", "bb") }
+    assert_raise(ArgumentError) { OpenSSL.fixed_length_secure_compare("aaa", "aaab") }
+    assert_raise(ArgumentError) { OpenSSL.fixed_length_secure_compare("aaa", "b") }
+    assert_raise(ArgumentError) { OpenSSL.fixed_length_secure_compare("aaa", "bb") }
     refute OpenSSL.fixed_length_secure_compare("aaa", "bbb")
-    assert_raises(ArgumentError) { OpenSSL.fixed_length_secure_compare("aaa", "bbbb") }
+    assert_raise(ArgumentError) { OpenSSL.fixed_length_secure_compare("aaa", "bbbb") }
   end
 
   def test_secure_compare
