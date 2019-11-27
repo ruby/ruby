@@ -11,13 +11,8 @@ jobs:
     strategy:
       matrix:
         test_task: [test]
-        os: [windows-2016, windows-2019]
-        vs: [2017, 2019]
-        exclude:
-          - os: windows-2016
-            vs: 2019
-          - os: windows-2019
-            vs: 2017
+        os: [windows-2019]
+        vs: [2019]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
