@@ -1769,7 +1769,7 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
  *  a keyword splat.  It marks the method such that if the method is called
  *  with keyword arguments, the final hash argument is marked with a special
  *  flag such that if it is the final element of a normal argument splat to
- *  another method call, and that method calls does not include explicit
+ *  another method call, and that method call does not include explicit
  *  keywords or a keyword splat, the final element is interpreted as keywords.
  *  In other words, keywords will be passed through the method to other
  *  methods.
@@ -1779,8 +1779,10 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
  *  2.7.
  *
  *  This method will probably be removed at some point, as it exists only
- *  for backwards compatibility, so always check that the module responds
- *  to this method before calling it.
+ *  for backwards compatibility. As it does not exist in Ruby versions
+ *  before 2.7, check that the module responds to this method before calling
+ *  it. Also, be aware that if this method is removed, the behavior of the
+ *  method will change so that it does not pass through keywords.
  *
  *    module Mod
  *      def foo(meth, *args, &block)
