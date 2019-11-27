@@ -742,7 +742,6 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
             if (RB_TYPE_P(rest_last, T_HASH) &&
                 (((struct RHash *)rest_last)->basic.flags & RHASH_PASS_AS_KEYWORDS)) {
                 rest_last = rb_hash_dup(rest_last);
-                RARRAY_ASET(args->rest, len - 1, rest_last);
                 kw_flag |= VM_CALL_KW_SPLAT;
                 if (iseq->body->param.flags.ruby2_keywords) {
                     remove_empty_keyword_hash = 0;
@@ -754,7 +753,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         }
 
         if (kw_flag & VM_CALL_KW_SPLAT) {
-            if (len > 0 && ignore_keyword_hash_p(RARRAY_AREF(args->rest, len - 1), iseq)) {
+            if (len > 0 && ignore_keyword_hash_p(rest_last, iseq)) {
                 if (given_argc != min_argc) {
                     if (remove_empty_keyword_hash) {
                         arg_rest_dup(args);

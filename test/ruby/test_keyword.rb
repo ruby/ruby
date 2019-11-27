@@ -2649,6 +2649,11 @@ class TestKeywordArguments < Test::Unit::TestCase
         baz(*args)
       end
 
+      ruby2_keywords def foo_baz2(*args)
+        baz(*args)
+        baz(*args)
+      end
+
       ruby2_keywords def foo_foo_bar(meth, *args)
         foo_bar(meth, *args)
       end
@@ -2760,6 +2765,10 @@ class TestKeywordArguments < Test::Unit::TestCase
 
     h1 = {a: 1}
     o = c.new
+
+    assert_equal([1, h1], o.foo_baz2(1, :a=>1))
+    assert_equal([1], o.foo_baz2(1, **{}))
+    assert_equal([h1], o.foo_baz2(h1, **{}))
 
     assert_equal([[1], h1], o.foo(:bar, 1, :a=>1))
     assert_equal([1, h1], o.foo(:baz, 1, :a=>1))
