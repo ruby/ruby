@@ -10,7 +10,7 @@
   (See the file 'LICENCE'.)
 =end
 
-require_relative 'openssl.so'
+require 'openssl.so'
 
 require_relative 'openssl/bn'
 require_relative 'openssl/pkey'
