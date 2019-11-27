@@ -175,6 +175,7 @@ ripper_token2eventid(enum yytokentype tok)
         [keyword_if]		= O(kw),
         [modifier_if]		= O(kw),
         [keyword_in]		= O(kw),
+        [keyword_in_case]	= O(kw),
         [keyword_module]	= O(kw),
         [keyword_next]		= O(kw),
         [keyword_nil]		= O(kw),
