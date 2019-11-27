@@ -326,7 +326,7 @@ module IRB
         end
       end
 
-      %i(IRB SLex RubyLex RubyToken).each do |sym|
+      %i(IRB RubyLex).each do |sym|
         next unless Object.const_defined?(sym)
         scanner.call(Object.const_get(sym))
       end
