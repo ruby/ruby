@@ -1004,19 +1004,25 @@ struct rb_subclass_entry {
 typedef unsigned LONG_LONG rb_serial_t;
 #define SERIALT2NUM ULL2NUM
 #define PRI_SERIALT_PREFIX PRI_LL_PREFIX
+#define SIZEOF_SERIAL_T SIZEOF_LONG_LONG
 #elif defined(HAVE_UINT64_T)
 typedef uint64_t rb_serial_t;
 #define SERIALT2NUM SIZET2NUM
 #define PRI_SERIALT_PREFIX PRI_64_PREFIX
+#define SIZEOF_SERIAL_T SIZEOF_UINT64_T
 #else
 typedef unsigned long rb_serial_t;
 #define SERIALT2NUM ULONG2NUM
 #define PRI_SERIALT_PREFIX PRI_LONG_PREFIX
+#define SIZEOF_SERIAL_T SIZEOF_LONG
 #endif
 
 struct rb_classext_struct {
     struct st_table *iv_index_tbl;
     struct st_table *iv_tbl;
+#if SIZEOF_SERIAL_T == SIZEOF_VALUE /* otherwise m_tbl is in struct RClass */
+    struct rb_id_table *m_tbl;
+#endif
     struct rb_id_table *const_tbl;
     struct rb_id_table *callable_m_tbl;
     rb_subclass_entry_t *subclasses;
@@ -1027,7 +1033,9 @@ struct rb_classext_struct {
      * included. Hopefully that makes sense.
      */
     rb_subclass_entry_t **module_subclasses;
+#if SIZEOF_SERIAL_T != SIZEOF_VALUE /* otherwise class_serial is in struct RClass */
     rb_serial_t class_serial;
+#endif
     const VALUE origin_;
     const VALUE refined_class;
     rb_alloc_func_t allocator;
@@ -1040,7 +1048,13 @@ struct RClass {
     struct RBasic basic;
     VALUE super;
     rb_classext_t *ptr;
+#if SIZEOF_SERIAL_T == SIZEOF_VALUE
+    /* Class serial is as wide as VALUE.  Place it here. */
+    rb_serial_t class_serial;
+#else
+    /* Class serial does not fit into struct RClass. Place m_tbl instead. */
     struct rb_id_table *m_tbl;
+#endif
 };
 
 void rb_class_subclass_add(VALUE super, VALUE klass);
@@ -1050,12 +1064,20 @@ int rb_singleton_class_internal_p(VALUE sklass);
 #define RCLASS_EXT(c) (RCLASS(c)->ptr)
 #define RCLASS_IV_TBL(c) (RCLASS_EXT(c)->iv_tbl)
 #define RCLASS_CONST_TBL(c) (RCLASS_EXT(c)->const_tbl)
-#define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
+#if SIZEOF_SERIAL_T == SIZEOF_VALUE
+# define RCLASS_M_TBL(c) (RCLASS_EXT(c)->m_tbl)
+#else
+# define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
+#endif
 #define RCLASS_CALLABLE_M_TBL(c) (RCLASS_EXT(c)->callable_m_tbl)
 #define RCLASS_IV_INDEX_TBL(c) (RCLASS_EXT(c)->iv_index_tbl)
 #define RCLASS_ORIGIN(c) (RCLASS_EXT(c)->origin_)
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT(c)->refined_class)
-#define RCLASS_SERIAL(c) (RCLASS_EXT(c)->class_serial)
+#if SIZEOF_SERIAL_T == SIZEOF_VALUE
+# define RCLASS_SERIAL(c) (RCLASS(c)->class_serial)
+#else
+# define RCLASS_SERIAL(c) (RCLASS_EXT(c)->class_serial)
+#endif
 
 #define RCLASS_CLONED     FL_USER6
 #define RICLASS_IS_ORIGIN FL_USER5
