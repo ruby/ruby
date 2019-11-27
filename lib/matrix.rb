@@ -15,18 +15,6 @@
 require_relative "matrix/version"
 
 module ExceptionForMatrix # :nodoc:
-  class TypeError
-    def initialize(val)
-      "wrong argument type #{val} (expected #{val})"
-    end
-  end
-
-  class ArgumentError
-    def initialize(val)
-      "Wrong # of arguments(#{val} for #{val})"
-    end
-  end
-
   class ErrDimensionMismatch < StandardError
     def initialize
       super("\#{self.name} dimension mismatch")
@@ -40,14 +28,14 @@ module ExceptionForMatrix # :nodoc:
   end
 
   class ErrOperationNotDefined < StandardError
-    def initialize(val)
-      super("Operation(#{val}) can\\'t be defined: #{val} op #{val}")
+    def initialize(op, sc, oc)
+      super("Operation(#{op}) can\\'t be defined: #{sc} op #{oc}")
     end
   end
 
   class ErrOperationNotImplemented < StandardError
-    def initialize(val)
-      super("Sorry, Operation(#{val}) not implemented: #{val} op #{val}")
+    def initialize(op, sc, oc)
+      super("Sorry, Operation(#{op}) not implemented: #{sc} op #{oc}")
     end
   end
 end
