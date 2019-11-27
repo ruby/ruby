@@ -308,23 +308,29 @@ rb_fix_detect_o_cloexec(int fd)
 
 int
 get_rb_cloexec_open_retry_interval() {
-    const char *interval = getenv("RB_CLOEXEC_OPEN_RETRY_INTERVAL");
+    const char *env_str = getenv("RB_CLOEXEC_OPEN_RETRY_INTERVAL");
 
-    if (interval) {
-        return atof(interval);
+    if (env_str) {
+        int ret = atoi(env_str);
+        free(env_str);
+        return ret;
     }
 
+    // RB_CLOEXEC_OPEN_RETRY_INTERVAL: default value is 0
     return 0;
 }
 
 int
 get_rb_cloexec_open_retry_max_count() {
-    const char *count = getenv("RB_CLOEXEC_OPEN_RETRY_MAX_COUNT");
+    const char *env_str = getenv("RB_CLOEXEC_OPEN_RETRY_MAX_COUNT");
 
-    if (count) {
-        return atoi(count);
+    if (env_str) {
+        int ret = atoi(env_str);
+        free(env_str);
+        return ret;
     }
 
+    // RB_CLOEXEC_OPEN_RETRY_MAX_COUNT: default value is 10000
     return 10000;
 }
 
@@ -355,13 +361,13 @@ rb_cloexec_open(const char *pathname, int flags, mode_t mode)
     flags |= O_NOINHERIT;
 #endif
 
-    while (true) {
+    while (1) {
         ret = open(pathname, flags, mode);
         e = errno;
 
         if (ret != -1 || e != EAGAIN || retry_count >= retry_max_count) {
             if (retry_count > 0) {
-                fprintf(stderr, "%s:%d %s - pathname = %s, ret = %d, errno = %d, retry_count = %d\n", __FILE__, __LINE__, __func__, pathname, ret, errno, retry_count);
+                // fprintf(stderr, "%s:%d %s - pathname = %s, ret = %d, errno = %d, retry_count = %d\n", __FILE__, __LINE__, __func__, pathname, ret, errno, retry_count);
             }
 
             break;
