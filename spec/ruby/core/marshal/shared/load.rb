@@ -623,7 +623,7 @@ describe :marshal_load, shared: true do
 
   describe "for a Regexp" do
     it "loads an extended Regexp" do
-      obj = /[a-z]/.extend(Meths, MethsMore)
+      obj = /[a-z]/.dup.extend(Meths, MethsMore)
       new_obj = Marshal.send(@method, "\004\be:\nMethse:\016MethsMore/\n[a-z]\000")
 
       new_obj.should == obj

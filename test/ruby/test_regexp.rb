@@ -622,7 +622,7 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_dup
     assert_equal(//, //.dup)
-    assert_raise(TypeError) { //.instance_eval { initialize_copy(nil) } }
+    assert_raise(TypeError) { //.dup.instance_eval { initialize_copy(nil) } }
   end
 
   def test_regsub

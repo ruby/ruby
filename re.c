@@ -2967,6 +2967,7 @@ rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline)
 	return Qnil;
     }
     FL_SET(re, REG_LITERAL);
+    rb_obj_freeze(re);
     return re;
 }
 

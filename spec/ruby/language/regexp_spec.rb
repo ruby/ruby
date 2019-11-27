@@ -18,6 +18,12 @@ describe "Literal Regexps" do
     /Hello/.should be_kind_of(Regexp)
   end
 
+  ruby_version_is "2.7" do
+    it "is frozen" do
+      /Hello/.frozen?.should == true
+    end
+  end
+
   it "caches the Regexp object" do
     rs = []
     2.times do |i|

@@ -235,13 +235,13 @@ describe "Marshal.dump" do
     end
 
     it "dumps a Regexp with instance variables" do
-      o = //
+      o = Regexp.new("")
       o.instance_variable_set(:@ivar, :ivar)
       Marshal.dump(o).should == "\x04\bI/\x00\x00\a:\x06EF:\n@ivar:\tivar"
     end
 
     it "dumps an extended Regexp" do
-      Marshal.dump(//.extend(Meths)).should == "\x04\bIe:\nMeths/\x00\x00\x06:\x06EF"
+      Marshal.dump(Regexp.new("").extend(Meths)).should == "\x04\bIe:\nMeths/\x00\x00\x06:\x06EF"
     end
 
     it "dumps a Regexp subclass" do
