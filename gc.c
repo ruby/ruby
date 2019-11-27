@@ -3794,10 +3794,10 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	break;
       case T_MODULE:
       case T_CLASS:
-	if (RCLASS_M_TBL(obj)) {
-	    size += rb_id_table_memsize(RCLASS_M_TBL(obj));
-	}
 	if (RCLASS_EXT(obj)) {
+            if (RCLASS_M_TBL(obj)) {
+                size += rb_id_table_memsize(RCLASS_M_TBL(obj));
+            }
 	    if (RCLASS_IV_TBL(obj)) {
 		size += st_memsize(RCLASS_IV_TBL(obj));
 	    }
@@ -5306,11 +5306,11 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
       case T_MODULE:
-	mark_m_tbl(objspace, RCLASS_M_TBL(obj));
         if (RCLASS_SUPER(obj)) {
             gc_mark(objspace, RCLASS_SUPER(obj));
         }
 	if (!RCLASS_EXT(obj)) break;
+        mark_m_tbl(objspace, RCLASS_M_TBL(obj));
         mark_tbl_no_pin(objspace, RCLASS_IV_TBL(obj));
 	mark_const_tbl(objspace, RCLASS_CONST_TBL(obj));
 	break;
