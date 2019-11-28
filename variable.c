@@ -799,7 +799,7 @@ gen_ivtbl_get(VALUE obj, struct gen_ivtbl **ivtbl)
     return 0;
 }
 
-MJIT_FUNC_EXPORTED struct st_table *
+struct st_table *
 rb_ivar_generic_ivtbl(void)
 {
     return generic_iv_tbl;
