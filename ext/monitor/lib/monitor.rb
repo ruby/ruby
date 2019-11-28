@@ -205,7 +205,7 @@ module MonitorMixin
 
   #
   # Creates a new MonitorMixin::ConditionVariable associated with the
-  # receiver.
+  # Monitor object.
   #
   def new_cond
     return ConditionVariable.new(@mon_data)
