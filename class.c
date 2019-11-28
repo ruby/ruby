@@ -1003,7 +1003,6 @@ ensure_origin(VALUE klass)
 void
 rb_prepend_module(VALUE klass, VALUE module)
 {
-    VALUE origin;
     int changed = 0;
 
     ensure_includable(klass, module);
