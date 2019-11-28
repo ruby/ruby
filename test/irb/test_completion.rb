@@ -1,5 +1,6 @@
 # frozen_string_literal: false
-require 'test/unit'
+require "test/unit"
+require "irb"
 
 module TestIRB
   class TestCompletion < Test::Unit::TestCase
