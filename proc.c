@@ -691,6 +691,7 @@ sym_proc_new(VALUE klass, VALUE sym)
     GetProcPtr(procval, proc);
 
     vm_block_type_set(&proc->block, block_type_symbol);
+    proc->is_lambda = TRUE;
     RB_OBJ_WRITE(procval, &proc->block.as.symbol, sym);
     return procval;
 }
