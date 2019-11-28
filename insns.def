@@ -935,8 +935,6 @@ leave
 	}
     }
 
-    RUBY_VM_CHECK_INTS(ec);
-
     if (vm_pop_frame(ec, GET_CFP(), GET_EP())) {
 #if OPT_CALL_THREADED_CODE
 	rb_ec_thread_ptr(ec)->retval = val;
