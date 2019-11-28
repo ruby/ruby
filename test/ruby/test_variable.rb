@@ -178,6 +178,25 @@ class TestVariable < Test::Unit::TestCase
     end
   end
 
+  class ExIvar < Hash
+    def initialize
+      @a = 1
+      @b = 2
+      @c = 3
+    end
+
+    def ivars
+      [@a, @b, @c]
+    end
+  end
+
+  def test_external_ivars
+    3.times{
+      # check inline cache for external ivar access
+      assert_equal [1, 2, 3], ExIvar.new.ivars
+    }
+  end
+
   def test_local_variables_with_kwarg
     bug11674 = '[ruby-core:71437] [Bug #11674]'
     v = with_kwargs_11(v1:1,v2:2,v3:3,v4:4,v5:5,v6:6,v7:7,v8:8,v9:9,v10:10,v11:11)

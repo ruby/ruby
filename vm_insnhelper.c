@@ -18,6 +18,7 @@
 #include "internal.h"
 #include "ruby/config.h"
 #include "debug_counter.h"
+#include "variable.h"
 
 extern rb_method_definition_t *rb_method_definition_create(rb_method_type_t type, ID mid);
 extern void rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, void *opts);
@@ -1011,26 +1012,48 @@ static inline VALUE
 vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
 {
 #if OPT_IC_FOR_IVAR
-    if (LIKELY(RB_TYPE_P(obj, T_OBJECT))) {
-	VALUE val = Qundef;
-        if (LIKELY(is_attr ?
-		   RB_DEBUG_COUNTER_INC_UNLESS(ivar_get_ic_miss_unset, cc->aux.index > 0) :
-		   RB_DEBUG_COUNTER_INC_UNLESS(ivar_get_ic_miss_serial,
-					       ic->ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass)))) {
-            st_index_t index = !is_attr ? ic->ic_value.index : (cc->aux.index - 1);
-	    if (LIKELY(index < ROBJECT_NUMIV(obj))) {
-		val = ROBJECT_IVPTR(obj)[index];
-	    }
-	}
-	else {
-            st_data_t index;
-	    struct st_table *iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
+    VALUE val = Qundef;
 
+    if (SPECIAL_CONST_P(obj)) {
+        // frozen?
+    }
+    else if (LIKELY(is_attr ?
+                    RB_DEBUG_COUNTER_INC_UNLESS(ivar_get_ic_miss_unset, cc->aux.index > 0) :
+                    RB_DEBUG_COUNTER_INC_UNLESS(ivar_get_ic_miss_serial,
+                                                ic->ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass)))) {
+        st_index_t index = !is_attr ? ic->ic_value.index : (cc->aux.index - 1);
+
+        RB_DEBUG_COUNTER_INC(ivar_get_ic_hit);
+
+        if (LIKELY(BUILTIN_TYPE(obj) == T_OBJECT) &&
+            LIKELY(index < ROBJECT_NUMIV(obj))) {
+            val = ROBJECT_IVPTR(obj)[index];
+        }
+        else if (FL_TEST_RAW(obj, FL_EXIVAR)) {
+            struct gen_ivtbl *ivtbl;
+
+            if (LIKELY(st_lookup(rb_ivar_generic_ivtbl(), (st_data_t)obj, (st_data_t *)&ivtbl)) &&
+                LIKELY(index < ivtbl->numiv)) {
+                val = ivtbl->ivptr[index];
+            }
+        }
+        goto ret;
+    }
+    else {
+        struct st_table *iv_index_tbl;
+        st_index_t numiv;
+        VALUE *ivptr;
+
+        st_data_t index;
+
+        if (BUILTIN_TYPE(obj) == T_OBJECT) {
+            iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
+            numiv = ROBJECT_NUMIV(obj);
+            ivptr = ROBJECT_IVPTR(obj);
+
+          fill:
 	    if (iv_index_tbl) {
 		if (st_lookup(iv_index_tbl, id, &index)) {
-		    if (index < ROBJECT_NUMIV(obj)) {
-			val = ROBJECT_IVPTR(obj)[index];
-		    }
                     if (!is_attr) {
                         ic->ic_value.index = index;
                         ic->ic_serial = RCLASS_SERIAL(RBASIC(obj)->klass);
@@ -1038,26 +1061,49 @@ vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
                     else { /* call_info */
                         cc->aux.index = (int)index + 1;
                     }
+
+                    if (index < numiv) {
+                        val = ivptr[index];
+		    }
 		}
 	    }
 	}
-	if (UNLIKELY(val == Qundef)) {
-	    if (!is_attr && RTEST(ruby_verbose))
-		rb_warning("instance variable %"PRIsVALUE" not initialized", QUOTE_ID(id));
-	    val = Qnil;
-	}
-	RB_DEBUG_COUNTER_INC(ivar_get_ic_hit);
-	return val;
+        else if (FL_TEST_RAW(obj, FL_EXIVAR)) {
+            struct gen_ivtbl *ivtbl;
+
+            if (LIKELY(st_lookup(rb_ivar_generic_ivtbl(), (st_data_t)obj, (st_data_t *)&ivtbl))) {
+                numiv = ivtbl->numiv;
+                ivptr = ivtbl->ivptr;
+                iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
+                goto fill;
+            }
+        }
+        else {
+            // T_CLASS / T_MODULE
+            goto general_path;
+        }
+
+      ret:
+        if (LIKELY(val != Qundef)) {
+            return val;
+        }
+        else {
+            if (!is_attr && RTEST(ruby_verbose)) {
+                rb_warning("instance variable %"PRIsVALUE" not initialized", QUOTE_ID(id));
+            }
+            return Qnil;
+        }
     }
-    else {
-	RB_DEBUG_COUNTER_INC(ivar_get_ic_miss_noobject);
-    }
+  general_path:
 #endif /* OPT_IC_FOR_IVAR */
     RB_DEBUG_COUNTER_INC(ivar_get_ic_miss);
 
-    if (is_attr)
-	return rb_attr_get(obj, id);
-    return rb_ivar_get(obj, id);
+    if (is_attr) {
+        return rb_attr_get(obj, id);
+    }
+    else {
+        return rb_ivar_get(obj, id);
+    }
 }
 
 static inline VALUE

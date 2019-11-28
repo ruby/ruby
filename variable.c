@@ -23,6 +23,7 @@
 #include "debug_counter.h"
 #include "vm_core.h"
 #include "transient_heap.h"
+#include "variable.h"
 
 static struct rb_id_table *rb_global_tbl;
 static ID autoload, classpath, tmp_classpath;
@@ -33,12 +34,6 @@ static void setup_const_entry(rb_const_entry_t *, VALUE, VALUE, rb_const_flag_t)
 static VALUE rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility);
 static st_table *generic_iv_tbl;
 static st_table *generic_iv_tbl_compat;
-
-/* per-object */
-struct gen_ivtbl {
-    uint32_t numiv;
-    VALUE ivptr[FLEX_ARY_LEN];
-};
 
 struct ivar_update {
     union {
@@ -802,6 +797,12 @@ gen_ivtbl_get(VALUE obj, struct gen_ivtbl **ivtbl)
 	return 1;
     }
     return 0;
+}
+
+struct st_table *
+rb_ivar_generic_ivtbl(void)
+{
+    return generic_iv_tbl;
 }
 
 static VALUE
