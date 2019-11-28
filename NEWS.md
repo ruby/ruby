@@ -34,6 +34,13 @@ sufficient information, see the ChangeLog file or Redmine
         * Hash#transform_keys now accepts a hash that maps keys to new
           keys.  [[Feature #16274]]
 
+* Symbol
+
+    * Modified method
+
+        * Symbol#to_proc now returns a lambda Proc.
+          [[Feature #16260]]
+
 ## Stdlib updates (outstanding ones only)
 
 * Net::HTTP
@@ -71,6 +78,7 @@ sufficient information, see the ChangeLog file or Redmine
 [Feature #8948]:  https://bugs.ruby-lang.org/issues/8948
 [Feature #15575]: https://bugs.ruby-lang.org/issues/15575
 [Feature #16131]: https://bugs.ruby-lang.org/issues/16131
+[Feature #16260]: https://bugs.ruby-lang.org/issues/16260
 [Feature #16274]: https://bugs.ruby-lang.org/issues/16274
 [Feature #16377]: https://bugs.ruby-lang.org/issues/16377
 [Feature #16555]: https://bugs.ruby-lang.org/issues/16555
