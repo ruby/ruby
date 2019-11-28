@@ -26,6 +26,9 @@ void *rb_transient_heap_alloc(VALUE obj, size_t req_size);
    to assert liveness of `obj` (and ptr). */
 void  rb_transient_heap_mark(VALUE obj, const void *ptr);
 
+// ruby cleanup
+void rb_transient_heap_free(void);
+
 /* used by gc.c */
 void rb_transient_heap_promote(VALUE obj);
 void rb_transient_heap_start_marking(int full_marking);
@@ -52,6 +55,7 @@ void rb_struct_transient_heap_evacuate(VALUE st, int promote);
 #define rb_transient_heap_update_references() ((void)0)
 #define rb_transient_heap_finish_marking() ((void)0)
 #define rb_transient_heap_mark(obj, ptr) ((void)0)
+#define rb_transient_heap_free() ((void)0)
 
 #define rb_ary_transient_heap_evacuate(x, y) ((void)0)
 #define rb_obj_transient_heap_evacuate(x, y) ((void)0)
