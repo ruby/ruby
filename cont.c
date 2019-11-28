@@ -1336,8 +1336,8 @@ cont_restore_1(rb_context_t *cont)
         /* workaround for x64 SEH */
         jmp_buf buf;
         setjmp(buf);
-        ((_JUMP_BUFFER*)(&cont->jmpbuf))->Frame =
-            ((_JUMP_BUFFER*)(&buf))->Frame;
+        _JUMP_BUFFER *bp = (void*)&cont->jmpbuf;
+        bp->Frame = ((_JUMP_BUFFER*)((void*)&buf))->Frame;
     }
 #endif
     if (cont->machine.stack_src) {
