@@ -10,7 +10,7 @@ Diffy::Diff.default_options.merge!(
 )
 
 class Tarball
-  attr_reader :version, :sha256
+  attr_reader :version, :size, :sha1, :sha256, :sha512
 
   def initialize(version, url, size, sha1, sha256, sha512)
     @url = url
@@ -46,8 +46,6 @@ eom
   #   SHA256: 97cea8aa63dfa250ba6902b658a7aa066daf817b22f82b7ee28f44aec7c2e394
   #   SHA512: 1e2042324821bb4e110af7067f52891606dcfc71e640c194ab1c117f0b941550e0b3ac36ad3511214ac80c536b9e5cfaf8789eec74cf56971a832ea8fc4e6d94
   def self.parse(wwwdir, version)
-    ary = []
-
     unless /\A(\d+)\.(\d+)\.(\d+)(?:-(?:preview|rc)\d+)?\z/ =~ version
       raise "unexpected version string '#{version}'"
     end
@@ -73,6 +71,7 @@ eom
     if info.size != 1
       raise "unexpected info.yml '#{uri}'"
     end
+    tarballs = []
     info[0]["size"].each_key do |ext|
       url = info[0]["url"][ext]
       size = info[0]["size"][ext]
@@ -80,35 +79,25 @@ eom
       sha256 = info[0]["sha256"][ext]
       sha512 = info[0]["sha512"][ext]
       tarball = Tarball.new(version, url, size, sha1, sha256, sha512)
-      ary << tarball
+      tarballs << tarball
     end
 
     if prev_tag
       # show diff shortstat
       tag = "v#{version.gsub(/[.\-]/, '_')}"
       stat = `git diff --shortstat #{prev_tag}..#{tag}`
-      changes, add, delete = stat.scan(/\d+/)
-      puts stat
-      puts <<eom
-See [NEWS](https://github.com/ruby/ruby/blob/#{tag}/NEWS) or [commit logs](https://github.com/ruby/ruby/compare/#{prev_tag}...#{tag}) for more details.
-
-With those changes, [stat](https://github.com/ruby/ruby/compare/#{prev_tag}...#{tag}) since Ruby #{prev_ver}!
-
-その他詳細については、[NEWS](https://github.com/ruby/ruby/blob/#{tag}/NEWS) ファイルまたは[コミットログ](https://github.com/ruby/ruby/compare/#{prev_tag}...#{tag})を参照してください。
-
-なお、こうした変更により、Ruby #{prev_ver} 以降では [#{changes} 個のファイルに変更が加えられ、#{add} 行の追加と #{delete} 行の削除が行われました](https://github.com/ruby/ruby/compare/#{prev_tag}...#{tag}) !
-eom
+      total_files, insertions, deletions = stat.scan(/\d+/)
     end
 
     xy = version[/\A\d+\.\d+/]
-    puts "## Download\n\n"
-    ary.each do |tarball|
-      puts tarball.to_md
-    end
+    #puts "## Download\n\n"
+    #tarballs.each do |tarball|
+    #  puts tarball.to_md
+    #end
     update_branches_yml(version, xy, wwwdir)
     update_downloads_yml(version, xy, wwwdir)
-    update_releases_yml(version, xy, ary, wwwdir)
-    ary
+    update_releases_yml(version, xy, tarballs, wwwdir, total_files, insertions, deletions)
+    tarballs
   end
 
   def self.update_branches_yml(ver, xy, wwwdir)
@@ -174,7 +163,7 @@ eom
     end
   end
 
-  def self.update_releases_yml(ver, xy, ary, wwwdir)
+  def self.update_releases_yml(ver, xy, ary, wwwdir, total_files, insertions, deletions)
     filename = "_data/releases.yml"
     orig_data = File.read(File.join(wwwdir, filename))
     data = orig_data.dup
@@ -184,16 +173,34 @@ eom
 - version: #{ver}
   date: #{date.strftime("%Y-%m-%d")}
   post: /en/news/#{date.strftime("%Y/%m/%d")}/ruby-#{ver.tr('.', '-')}-released/
+  total_files: #{total_files}
+  insertions: #{insertions}
+  deletions: #{deletions}
   url:
     gz:  https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.tar.gz
     zip: https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.zip
     bz2: https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.tar.bz2
     xz:  https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.tar.xz
+  size:
+    gz:  #{ary.find{|x|x.gz? }.size}
+    zip: #{ary.find{|x|x.zip?}.size}
+    bz2: #{ary.find{|x|x.bz2?}.size}
+    xz:  #{ary.find{|x|x.xz? }.size}
+  sha1:
+    gz:  #{ary.find{|x|x.gz? }.sha1}
+    zip: #{ary.find{|x|x.zip?}.sha1}
+    bz2: #{ary.find{|x|x.bz2?}.sha1}
+    xz:  #{ary.find{|x|x.xz? }.sha1}
   sha256:
     gz:  #{ary.find{|x|x.gz? }.sha256}
     zip: #{ary.find{|x|x.zip?}.sha256}
     bz2: #{ary.find{|x|x.bz2?}.sha256}
     xz:  #{ary.find{|x|x.xz? }.sha256}
+  sha512:
+    gz:  #{ary.find{|x|x.gz? }.sha512}
+    zip: #{ary.find{|x|x.zip?}.sha512}
+    bz2: #{ary.find{|x|x.bz2?}.sha512}
+    xz:  #{ary.find{|x|x.xz? }.sha512}
 eom
 
     if data.include?("\n- version: #{ver}\n")
