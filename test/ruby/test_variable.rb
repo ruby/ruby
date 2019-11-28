@@ -43,7 +43,7 @@ class TestVariable < Test::Unit::TestCase
     c.class_variable_set(:@@foo, 1)
     assert_equal([:@@foo], c.singleton_class.class_variables)
     assert_equal(1, c.singleton_class.class_variable_get(:@@foo))
-    
+
     c = Class.new
     c.extend(Olympians)
     sc = Class.new(c)
