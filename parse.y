@@ -1007,6 +1007,7 @@ static int looking_at_eol_p(struct parser_params *p);
         keyword_redo         "`redo'"
         keyword_retry        "`retry'"
         keyword_in           "`in'"
+        keyword_in_case      "`in' for pattern"
         keyword_do           "`do'"
         keyword_do_cond      "`do' for condition"
         keyword_do_block     "`do' for block"
@@ -1074,7 +1075,7 @@ static int looking_at_eol_p(struct parser_params *p);
 %type <node> brace_block cmd_brace_block do_block lhs none fitem
 %type <node> mlhs mlhs_head mlhs_basic mlhs_item mlhs_node mlhs_post mlhs_inner
 %type <node> p_case_body p_cases p_top_expr p_top_expr_body
-%type <node> p_expr p_as p_alt p_expr_basic
+%type <node> p_expr p_as p_alt p_expr_basic p_expr_arg
 %type <node> p_args p_args_head p_args_tail p_args_post p_arg
 %type <node> p_value p_primitive p_variable p_var_ref p_const
 %type <node> p_kwargs p_kwarg p_kw
@@ -1556,25 +1557,6 @@ expr		: command_call
 		| '!' command_call
 		    {
 			$$ = call_uni_op(p, method_cond(p, $2, &@2), '!', &@1, &@$);
-		    }
-		| arg keyword_in
-		    {
-			value_expr($1);
-			SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
-			p->command_start = FALSE;
-			$<num>$ = p->in_kwarg;
-			p->in_kwarg = 1;
-		    }
-		    {$<tbl>$ = push_pvtbl(p);}
-		  p_expr
-		    {pop_pvtbl(p, $<tbl>4);}
-		    {
-			p->in_kwarg = !!$<num>3;
-		    /*%%%*/
-			$$ = NEW_CASE3($1, NEW_IN($5, NEW_TRUE(&@5), NEW_FALSE(&@5), &@5), &@$);
-			rb_warn0L(nd_line($$), "Pattern matching is experimental, and the behavior may change in future versions of Ruby!");
-		    /*% %*/
-		    /*% ripper: case!($1, in!($5, Qnil, Qnil)) %*/
 		    }
 		| arg %prec tLBRACE_ARG
 		;
@@ -2351,6 +2333,25 @@ arg		: lhs '=' arg_rhs
 			fixpos($$, $1);
 		    /*% %*/
 		    /*% ripper: ifop!($1, $3, $6) %*/
+		    }
+		| arg keyword_in
+		    {
+			value_expr($1);
+			SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
+			p->command_start = FALSE;
+			$<num>$ = p->in_kwarg;
+			p->in_kwarg = 1;
+		    }
+		    {$<tbl>$ = push_pvtbl(p);}
+		  p_expr_arg
+		    {pop_pvtbl(p, $<tbl>4);}
+		    {
+			p->in_kwarg = !!$<num>3;
+		    /*%%%*/
+			$$ = NEW_CASE3($1, NEW_IN($5, NEW_TRUE(&@5), NEW_FALSE(&@5), &@5), &@$);
+			rb_warn0L(nd_line($$), "Pattern matching is experimental, and the behavior may change in future versions of Ruby!");
+		    /*% %*/
+		    /*% ripper: case!($1, in!($5, Qnil, Qnil)) %*/
 		    }
 		| primary
 		    {
@@ -3784,7 +3785,7 @@ cases		: opt_else
 		| case_body
 		;
 
-p_case_body	: keyword_in
+p_case_body	: keyword_in_case
 		    {
 			SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
 			p->command_start = FALSE;
@@ -3931,7 +3932,10 @@ p_expr_basic	: p_value
 			$$ = new_array_pattern_tail(p, Qnone, 0, 0, Qnone, &@$);
 			$$ = new_array_pattern(p, $1, Qnone, $$, &@$);
 		    }
-		| tLBRACK {$<tbl>$ = push_pktbl(p);} p_args rbracket
+		| p_expr_arg
+		;
+
+p_expr_arg	: tLBRACK {$<tbl>$ = push_pktbl(p);} p_args rbracket
 		    {
 			pop_pktbl(p, $<tbl>2);
 			$$ = new_array_pattern(p, Qnone, Qnone, $3, &@$);
@@ -8724,7 +8728,8 @@ parse_ident(struct parser_params *p, int c, int cmd_state)
 	    if (IS_lex_state(EXPR_BEG)) {
 		p->command_start = TRUE;
 	    }
-	    if (kw->id[0] == keyword_do) {
+	    switch (kw->id[0]) {
+	      case keyword_do:
 		if (lambda_beginning_p()) {
 		    p->lex.lpar_beg = -1; /* make lambda_beginning_p() == FALSE in the body of "-> do ... end" */
 		    return keyword_do_LAMBDA;
@@ -8733,6 +8738,12 @@ parse_ident(struct parser_params *p, int c, int cmd_state)
 		if (CMDARG_P() && !IS_lex_state_for(state, EXPR_CMDARG))
 		    return keyword_do_block;
 		return keyword_do;
+	      case keyword_in:
+		if (p->command_start &&
+		    IS_lex_state_for(state, EXPR_BEG) && !IS_lex_state_for(state, EXPR_LABEL)) {
+		    return keyword_in_case;
+		}
+		return keyword_in;
 	    }
 	    if (IS_lex_state_for(state, (EXPR_BEG | EXPR_LABELED)))
 		return kw->id[0];
