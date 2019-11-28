@@ -1261,8 +1261,11 @@ END
   ################################################################
 
   def test_modifier_in
-    assert_equal true, (1 in a)
+    assert_nil (1 in a)
     assert_equal 1, a
+    assert_raise(NoMatchingPatternError) do
+      {a: 1} in {a: 0}
+    end
     assert_valid_syntax "p(({} in {a:}), a:\n 1)"
     assert_syntax_error(%q{
       1 in a, b

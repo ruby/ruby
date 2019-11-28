@@ -1571,7 +1571,7 @@ expr		: command_call
 		    {
 			p->in_kwarg = !!$<num>3;
 		    /*%%%*/
-			$$ = NEW_CASE3($1, NEW_IN($5, NEW_TRUE(&@5), NEW_FALSE(&@5), &@5), &@$);
+			$$ = NEW_CASE3($1, NEW_IN($5, 0, 0, &@5), &@$);
 			rb_warn0L(nd_line($$), "Pattern matching is experimental, and the behavior may change in future versions of Ruby!");
 		    /*% %*/
 		    /*% ripper: case!($1, in!($5, Qnil, Qnil)) %*/
