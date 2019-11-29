@@ -1949,6 +1949,19 @@ top_private(int argc, VALUE *argv, VALUE _)
 
 /*
  *  call-seq:
+ *     ruby2_keywords(method_name, ...) -> self
+ *
+ *  For the given method names, marks the method as passing keywords through
+ *  a normal argument splat.  See Module#ruby2_keywords in detail.
+ */
+static VALUE
+top_ruby2_keywords(int argc, VALUE *argv, VALUE module)
+{
+    return rb_mod_ruby2_keywords(argc, argv, rb_cObject);
+}
+
+/*
+ *  call-seq:
  *     module_function(symbol, ...)    -> self
  *     module_function(string, ...)    -> self
  *
@@ -2280,6 +2293,8 @@ Init_eval_method(void)
 			     "public", top_public, -1);
     rb_define_private_method(rb_singleton_class(rb_vm_top_self()),
 			     "private", top_private, -1);
+    rb_define_private_method(rb_singleton_class(rb_vm_top_self()),
+			     "ruby2_keywords", top_ruby2_keywords, -1);
 
     {
 #define REPLICATE_METHOD(klass, id) do { \

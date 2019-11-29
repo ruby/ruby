@@ -2985,6 +2985,18 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(FrozenError) { c.send(:ruby2_keywords, :baz) }
   end
 
+  def test_top_ruby2_keywords
+    assert_in_out_err([], <<-INPUT, ["[1, 2, 3]", "{:k=>1}"], [])
+      def bar(*a, **kw)
+        p a, kw
+      end
+      ruby2_keywords def foo(*a)
+        bar(*a)
+      end
+      foo(1, 2, 3, k:1)
+    INPUT
+  end
+
   def test_dig_kwsplat
     kw = {}
     h = {:a=>1}
