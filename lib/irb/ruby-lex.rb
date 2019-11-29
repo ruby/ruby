@@ -186,15 +186,6 @@ class RubyLex
       return false
     elsif @tokens.size >= 2 and @tokens[-2][1] == :on_kw and ['begin', 'else', 'ensure'].include?(@tokens[-2][2])
       return false
-    elsif @tokens.size >= 3 and @tokens[-3][1] == :on_symbeg and @tokens[-2][1] == :on_ivar
-      # This is for :@a or :@1 because :@1 ends with EXPR_FNAME
-      return false
-    elsif @tokens.size >= 2 and @tokens[-2][1] == :on_ivar and @tokens[-2][2] =~ /\A@\d+\z/
-      # This is for @1
-      return false
-    elsif @tokens.size >= 2 and @tokens[-2][1] == :on_cvar and @tokens[-1][1] == :on_int
-      # This is for @@1 or :@@1 and ends with on_int because it's syntax error
-      return false
     elsif !@tokens.empty? and @tokens.last[2] == "\\\n"
       return true
     elsif @tokens.size >= 1 and @tokens[-1][1] == :on_heredoc_end # "EOH\n"
@@ -264,12 +255,6 @@ class RubyLex
         #
         #   example:
         #     method / f /
-        return false
-      when /numbered parameter outside block/
-        # "numbered parameter outside block"
-        #
-        #   example:
-        #     :@1
         return false
       end
     ensure
