@@ -16,8 +16,14 @@ require_relative "matrix/version"
 
 module ExceptionForMatrix # :nodoc:
   class ErrDimensionMismatch < StandardError
-    def initialize
-      super("\#{self.name} dimension mismatch")
+    def initialize(val = nil)
+      if val.nil?
+        super
+      elsif val.is_a?(String)
+        super(val)
+      else
+        super("#{val.class.name} dimension mismatch")
+      end
     end
   end
 
@@ -29,7 +35,11 @@ module ExceptionForMatrix # :nodoc:
 
   class ErrOperationNotDefined < StandardError
     def initialize(vals)
-      super("Operation(#{vals[0]}) can\\'t be defined: #{vals[1]} op #{vals[2]}")
+      if vals.is_a?(Array)
+        super("Operation(#{vals[0]}) can\\'t be defined: #{vals[1]} op #{vals[2]}")
+      else
+        super(vals)
+      end
     end
   end
 
