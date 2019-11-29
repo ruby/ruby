@@ -30,7 +30,6 @@
 # * https://github.com/ruby/irb
 # * https://github.com/ruby/tracer
 # * https://github.com/ruby/forwardable
-# * https://github.com/ruby/e2mmap
 # * https://github.com/ruby/mutex_m
 # * https://github.com/ruby/racc
 # * https://github.com/ruby/singleton
@@ -85,7 +84,6 @@ $repositories = {
   irb: 'ruby/irb',
   tracer: 'ruby/tracer',
   forwardable: "ruby/forwardable",
-  e2mmap: "ruby/e2mmap",
   mutex_m: "ruby/mutex_m",
   racc: "ruby/racc",
   singleton: "ruby/singleton",
@@ -221,10 +219,6 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/ext/fcntl", "ext")
     cp_r("#{upstream}/fcntl.gemspec", "ext/fcntl")
     `git checkout ext/fcntl/depend`
-  when "e2mmap"
-    rm_rf(%w[lib/e2mmap*])
-    cp_r(Dir.glob("#{upstream}/lib/*"), "lib")
-    cp_r("#{upstream}/e2mmap.gemspec", "lib/e2mmap")
   when "strscan"
     rm_rf(%w[ext/strscan test/strscan])
     cp_r("#{upstream}/ext/strscan", "ext")
