@@ -162,9 +162,6 @@ Zachary Scott (zzak)
   _unmaintained_
   https://github.com/ruby/delegate
   https://rubygems.org/gems/delegate
-[lib/e2mmap.rb]
-  Keiju ISHITSUKA (keiju)
-  https://rubygems.org/gems/e2mmap
 [lib/fileutils.rb]
   _unmaintained_
   https://github.com/ruby/fileutils
