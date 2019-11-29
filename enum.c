@@ -543,7 +543,6 @@ collect_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 static VALUE
 collect_all(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
-    rb_thread_check_ints();
     rb_ary_push(ary, rb_enum_values_pack(argc, argv));
 
     return Qnil;
@@ -663,14 +662,12 @@ static VALUE
 enum_to_h_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 {
     ENUM_WANT_SVALUE();
-    rb_thread_check_ints();
     return rb_hash_set_pair(hash, i);
 }
 
 static VALUE
 enum_to_h_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 {
-    rb_thread_check_ints();
     return rb_hash_set_pair(hash, rb_yield_values2(argc, argv));
 }
 

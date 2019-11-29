@@ -816,17 +816,19 @@ class TestThread < Test::Unit::TestCase
   def test_handle_interrupt_and_io
     assert_in_out_err([], <<-INPUT, %w(ok), [])
       th_waiting = true
+      q = Queue.new
 
       t = Thread.new {
         Thread.current.report_on_exception = false
         Thread.handle_interrupt(RuntimeError => :on_blocking) {
+          q << true
           nil while th_waiting
           # async interrupt should be raised _before_ writing puts arguments
           puts "ng"
         }
       }
 
-      Thread.pass while t.stop?
+      q.pop
       t.raise RuntimeError
       th_waiting = false
       t.join rescue nil
