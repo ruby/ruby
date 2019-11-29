@@ -75,7 +75,7 @@ EOT
     silence do
       JSON.const_set :SAFE_STATE_PROTOTYPE, const
     end
-  end
+  end if JSON.const_defined?("Ext")
 
   def test_generate
     json = generate(@hash)
