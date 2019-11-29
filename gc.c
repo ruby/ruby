@@ -559,6 +559,12 @@ typedef struct gc_profile_record {
 #endif
 } gc_profile_record;
 
+struct RMoved {
+    VALUE flags;
+    VALUE destination;
+    VALUE next;
+};
+
 #if defined(_MSC_VER) || defined(__CYGWIN__)
 #pragma pack(push, 1) /* magic for reducing sizeof(RVALUE): 24 -> 20 */
 #endif
