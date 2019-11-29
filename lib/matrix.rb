@@ -28,8 +28,12 @@ module ExceptionForMatrix # :nodoc:
   end
 
   class ErrNotRegular < StandardError
-    def initialize
-      super("Not Regular Matrix")
+    def initialize(val = nil)
+      if val
+        super(val)
+      else
+        super("Not Regular Matrix")
+      end
     end
   end
 
