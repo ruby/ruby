@@ -78,7 +78,7 @@ class Matrix
 
     def det
       if (@row_count != @column_count)
-        Matrix.Raise Matrix::ErrDimensionMismatch
+        raise Matrix::ErrDimensionMismatch
       end
       d = @pivot_sign
       @column_count.times do |j|
@@ -94,11 +94,11 @@ class Matrix
 
     def solve b
       if (singular?)
-        Matrix.Raise Matrix::ErrNotRegular, "Matrix is singular."
+        raise Matrix::ErrNotRegular, "Matrix is singular."
       end
       if b.is_a? Matrix
         if (b.row_count != @row_count)
-          Matrix.Raise Matrix::ErrDimensionMismatch
+          raise Matrix::ErrDimensionMismatch
         end
 
         # Copy right hand side with pivoting
@@ -128,7 +128,7 @@ class Matrix
       else # same algorithm, specialized for simpler case of a vector
         b = convert_to_array(b)
         if (b.size != @row_count)
-          Matrix.Raise Matrix::ErrDimensionMismatch
+          raise Matrix::ErrDimensionMismatch
         end
 
         # Copy right hand side with pivoting
