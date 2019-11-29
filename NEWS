@@ -584,6 +584,7 @@ StringScanner::
   * Shell (shell gem)
   * Synchronizer (sync gem)
   * ThreadsWait (thwait gem)
+  * E2MM (e2mmap gem)
 
 Proc::
   * Proc#to_s format was changed. [Feature #16101]
