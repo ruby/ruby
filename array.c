@@ -2618,10 +2618,20 @@ rotate_count(long cnt, long len)
 static void
 ary_rotate_ptr(VALUE *ptr, long len, long cnt)
 {
-    --len;
-    if (cnt < len) ary_reverse(ptr + cnt, ptr + len);
-    if (--cnt > 0) ary_reverse(ptr, ptr + cnt);
-    if (len > 0) ary_reverse(ptr, ptr + len);
+    if (cnt == 1) {
+        VALUE tmp = *ptr;
+        memmove(ptr, ptr + 1, sizeof(VALUE)*(len - 1));
+        *(ptr + len - 1) = tmp;
+    } else if (cnt == len - 1) {
+        VALUE tmp = *(ptr + len - 1);
+        memmove(ptr + 1, ptr, sizeof(VALUE)*(len - 1));
+        *ptr = tmp;
+    } else {
+        --len;
+        if (cnt < len) ary_reverse(ptr + cnt, ptr + len);
+        if (--cnt > 0) ary_reverse(ptr, ptr + cnt);
+        if (len > 0) ary_reverse(ptr, ptr + len);
+    }
 }
 
 VALUE
@@ -2631,7 +2641,7 @@ rb_ary_rotate(VALUE ary, long cnt)
 
     if (cnt != 0) {
         long len = RARRAY_LEN(ary);
-        if (len > 0 && (cnt = rotate_count(cnt, len)) > 0) {
+        if (len > 1 && (cnt = rotate_count(cnt, len)) > 0) {
             RARRAY_PTR_USE_TRANSIENT(ary, ptr, ary_rotate_ptr(ptr, len, cnt));
             return ary;
         }
