@@ -1749,7 +1749,7 @@ class Matrix
       when Numeric
         Scalar.new(@value + other)
       when Vector, Matrix
-        Scalar.Raise ErrOperationNotDefined, "+", @value.class, other.class
+        raise ErrOperationNotDefined, ["+", @value.class, other.class]
       else
         apply_through_coercion(other, __method__)
       end
@@ -1760,7 +1760,7 @@ class Matrix
       when Numeric
         Scalar.new(@value - other)
       when Vector, Matrix
-        Scalar.Raise ErrOperationNotDefined, "-", @value.class, other.class
+        raise ErrOperationNotDefined, ["-", @value.class, other.class]
       else
         apply_through_coercion(other, __method__)
       end
@@ -1782,7 +1782,7 @@ class Matrix
       when Numeric
         Scalar.new(@value / other)
       when Vector
-        Scalar.Raise ErrOperationNotDefined, "/", @value.class, other.class
+        raise ErrOperationNotDefined, ["/", @value.class, other.class]
       when Matrix
         self * other.inverse
       else
@@ -1795,10 +1795,10 @@ class Matrix
       when Numeric
         Scalar.new(@value ** other)
       when Vector
-        Scalar.Raise ErrOperationNotDefined, "**", @value.class, other.class
+        raise ErrOperationNotDefined, ["**", @value.class, other.class]
       when Matrix
         #other.powered_by(self)
-        Scalar.Raise ErrOperationNotImplemented, "**", @value.class, other.class
+        raise ErrOperationNotImplemented, ["**", @value.class, other.class]
       else
         apply_through_coercion(other, __method__)
       end
