@@ -10740,6 +10740,17 @@ value_expr_check(struct parser_params *p, NODE *node)
 	  case NODE_RETRY:
 	    return void_node ? void_node : node;
 
+	  case NODE_CASE3:
+	    if (!node->nd_body || nd_type(node->nd_body) != NODE_IN) {
+		compile_error(p, "unexpected node");
+		return NULL;
+	    }
+	    if (node->nd_body->nd_body) {
+		return NULL;
+	    }
+	    /* single line pattern matching */
+	    return void_node ? void_node : node;
+
 	  case NODE_BLOCK:
 	    while (node->nd_next) {
 		node = node->nd_next;
