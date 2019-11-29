@@ -397,10 +397,6 @@ RubyVM::
 
 String::
 
-  New methods::
-
-    * Added Symbol#start_with? and Symbol#end_with? method.  [Feature #16348]
-
   Unicode::
 
     * Update Unicode version and Emoji version from 11.0.0 to
@@ -410,6 +406,12 @@ String::
       U+32FF SQUARE ERA NAME REIWA.  [Feature #15195]
 
     * Update Unicode Emoji version to 12.1 [Feature #16272]
+
+Symbol::
+
+  New methods::
+
+    * Added Symbol#start_with? and Symbol#end_with? method.  [Feature #16348]
 
 Time::
 
