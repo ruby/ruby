@@ -63,6 +63,29 @@ class TestVariable < Test::Unit::TestCase
     assert_equal(1, o.singleton_class.class_variable_get(:@@foo))
   end
 
+  class IncludeRefinedModuleClassVariableNoWarning
+    module Mod
+      @@_test_include_refined_module_class_variable = true
+    end
+
+    module Mod2
+      refine Mod do
+      end
+    end
+
+    include Mod
+
+    def t
+      @@_test_include_refined_module_class_variable
+    end
+  end
+
+  def test_include_refined_module_class_variable
+    assert_warning('') do
+      IncludeRefinedModuleClassVariableNoWarning.new.t
+    end
+  end
+
   def test_variable
     assert_instance_of(Integer, $$)
 
