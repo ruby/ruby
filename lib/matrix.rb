@@ -17,12 +17,10 @@ require_relative "matrix/version"
 module ExceptionForMatrix # :nodoc:
   class ErrDimensionMismatch < StandardError
     def initialize(val = nil)
-      if val.nil?
-        super
-      elsif val.is_a?(String)
+      if val
         super(val)
       else
-        super("#{val.class.name} dimension mismatch")
+        super("Dimension mismatch")
       end
     end
   end
