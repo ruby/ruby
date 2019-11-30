@@ -216,7 +216,7 @@ eom
           }
 
           assert expected, proc {
-            exception_details(e, message(msg) {"#{mu_pp(exp)} exception expected, not"}.call)
+            flunk(message(msg) {"#{mu_pp(exp)} exception expected, not #{mu_pp(e)}"})
           }
 
           return e
