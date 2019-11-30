@@ -19,7 +19,7 @@ class SpecEvaluate
   # single quotes to set if off from the rest of the description string. If
   # the source does contain newline characters, sets the indent level to four
   # characters.
-  def format(ruby, newline=true)
+  def format(ruby, newline = true)
     if ruby.include?("\n")
       lines = ruby.each_line.to_a
       if /( *)/ =~ lines.first
@@ -49,6 +49,6 @@ class SpecEvaluate
   end
 end
 
-def evaluate(str, desc=nil, &block)
+def evaluate(str, desc = nil, &block)
   SpecEvaluate.new(str, desc).define(&block)
 end

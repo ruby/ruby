@@ -1,14 +1,13 @@
-require 'mspec/expectations/expectations'
-require 'mspec/runner/formatters/dotted'
+require 'mspec/runner/formatters/base'
 
-class SpinnerFormatter < DottedFormatter
+class SpinnerFormatter < BaseFormatter
   attr_reader :length
 
   Spins = %w!| / - \\!
   HOUR = 3600
   MIN = 60
 
-  def initialize(out=nil)
+  def initialize(out = nil)
     super(nil)
 
     @which = 0
@@ -28,7 +27,6 @@ class SpinnerFormatter < DottedFormatter
 
     MSpec.register :start, self
     MSpec.register :unload, self
-    MSpec.unregister :before, self
   end
 
   def length=(length)
@@ -107,6 +105,7 @@ class SpinnerFormatter < DottedFormatter
 
   # Callback for the MSpec :after event. Updates the spinner.
   def after(state = nil)
+    super(state)
     print progress_line
   end
 end

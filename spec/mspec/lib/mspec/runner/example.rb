@@ -5,7 +5,7 @@ require 'mspec/runner/mspec'
 class ExampleState
   attr_reader   :context, :it, :example
 
-  def initialize(context, it, example=nil)
+  def initialize(context, it, example = nil)
     @context  = context
     @it       = it
     @example  = example

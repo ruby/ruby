@@ -10,7 +10,7 @@ require 'mspec/runner/filters/match'
 # trigger the action.
 
 class ActionFilter
-  def initialize(tags=nil, descs=nil)
+  def initialize(tags = nil, descs = nil)
     @tags = Array(tags)
     descs = Array(descs)
     @sfilter = descs.empty? ? nil : MatchFilter.new(nil, *descs)

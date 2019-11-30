@@ -45,7 +45,7 @@ class TimeoutAction
     end
   end
 
-  def before(state=nil)
+  def before(state = nil)
     time = now
     @queue << -> do
       @current_state = state

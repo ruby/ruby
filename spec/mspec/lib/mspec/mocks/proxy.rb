@@ -1,5 +1,5 @@
 class MockObject
-  def initialize(name, options={})
+  def initialize(name, options = {})
     @name = name
     @null = options[:null_object]
   end
@@ -11,7 +11,7 @@ class MockObject
 end
 
 class NumericMockObject < Numeric
-  def initialize(name, options={})
+  def initialize(name, options = {})
     @name = name
     @null = options[:null_object]
   end
@@ -50,7 +50,7 @@ end
 class MockProxy
   attr_reader :raising, :yielding
 
-  def initialize(type=nil)
+  def initialize(type = nil)
     @multiple_returns = nil
     @returning = nil
     @raising   = nil

@@ -18,7 +18,7 @@ class HaveProtectedInstanceMethodMatcher < MethodMatcher
 end
 
 module MSpecMatchers
-  private def have_protected_instance_method(method, include_super=true)
+  private def have_protected_instance_method(method, include_super = true)
     HaveProtectedInstanceMethodMatcher.new method, include_super
   end
 end

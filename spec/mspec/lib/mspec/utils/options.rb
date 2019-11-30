@@ -34,7 +34,7 @@ class MSpecOptions
 
   attr_accessor :config, :banner, :width, :options
 
-  def initialize(banner="", width=30, config=nil)
+  def initialize(banner = "", width = 30, config = nil)
     @banner   = banner
     @config   = config
     @width    = width
@@ -123,7 +123,7 @@ class MSpecOptions
 
   # Parses an array of command line entries, calling blocks for
   # registered options.
-  def parse(argv=ARGV)
+  def parse(argv = ARGV)
     argv = Array(argv).dup
 
     while entry = argv.shift

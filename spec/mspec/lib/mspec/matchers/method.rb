@@ -1,5 +1,5 @@
 class MethodMatcher
-  def initialize(method, include_super=true)
+  def initialize(method, include_super = true)
     @include_super = include_super
     @method = method.to_sym
   end

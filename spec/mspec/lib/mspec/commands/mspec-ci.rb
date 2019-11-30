@@ -8,7 +8,7 @@ require 'mspec/utils/script'
 
 
 class MSpecCI < MSpecScript
-  def options(argv=ARGV)
+  def options(argv = ARGV)
     options = MSpecOptions.new "mspec ci [options] (FILE|DIRECTORY|GLOB)+", 30, config
 
     options.doc " Ask yourself:"

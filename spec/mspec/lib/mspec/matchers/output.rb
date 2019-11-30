@@ -61,7 +61,7 @@ class OutputMatcher
 end
 
 module MSpecMatchers
-  private def output(stdout=nil, stderr=nil)
+  private def output(stdout = nil, stderr = nil)
     OutputMatcher.new(stdout, stderr)
   end
 end

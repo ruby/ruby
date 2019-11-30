@@ -12,7 +12,7 @@
 class ContextState
   attr_reader :state, :parent, :parents, :children, :examples, :to_s
 
-  def initialize(mod, options=nil)
+  def initialize(mod, options = nil)
     @to_s = mod.to_s
     if options.is_a? Hash
       @options = options
@@ -174,7 +174,7 @@ class ContextState
   # so that exceptions are handled and tallied. Returns true and does
   # NOT evaluate any blocks if +check+ is true and
   # <tt>MSpec.mode?(:pretend)</tt> is true.
-  def protect(what, blocks, check=true)
+  def protect(what, blocks, check = true)
     return true if check and MSpec.mode? :pretend
     Array(blocks).all? { |block| MSpec.protect what, &block }
   end

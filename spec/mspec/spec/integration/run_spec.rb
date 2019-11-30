@@ -37,8 +37,14 @@ EOS
     ret.success?.should == false
   end
 
-  it "runs the specs in parallel with -j" do
+  it "runs the specs in parallel with -j using the dotted formatter" do
     out, ret = run_mspec("run", "-j #{fixtures}/a_spec.rb #{fixtures}/b_spec.rb")
+    out.should == "RUBY_DESCRIPTION\n...\n#{a_spec_output}\n#{ab_stats}"
+    ret.success?.should == false
+  end
+
+  it "runs the specs in parallel with -j -fa" do
+    out, ret = run_mspec("run", "-j -fa #{fixtures}/a_spec.rb #{fixtures}/b_spec.rb")
     progress_bar =
       "\r[/ |                   0%                     | 00:00:00] \e[0;32m     0F \e[0;32m     0E\e[0m " +
       "\r[- | ==================50%                    | 00:00:00] \e[0;32m     0F \e[0;32m     0E\e[0m " +

@@ -149,7 +149,10 @@ class MSpecScript
     if config[:formatter].nil?
       config[:formatter] = STDOUT.tty? ? SpinnerFormatter : @files.size < 50 ? DottedFormatter : FileFormatter
     end
-    config[:formatter].new(config[:output])
+
+    if config[:formatter]
+      config[:formatter].new(config[:output])
+    end
   end
 
   # Callback for enabling custom actions, etc. This version is a

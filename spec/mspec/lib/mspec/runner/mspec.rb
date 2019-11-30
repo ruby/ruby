@@ -38,7 +38,7 @@ module MSpec
   @expectation  = nil
   @expectations = false
 
-  def self.describe(mod, options=nil, &block)
+  def self.describe(mod, options = nil, &block)
     state = ContextState.new mod, options
     state.parent = current
 
@@ -259,7 +259,7 @@ module MSpec
     end
   end
 
-  def self.randomize(flag=true)
+  def self.randomize(flag = true)
     @randomize = flag
   end
 

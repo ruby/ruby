@@ -64,7 +64,7 @@ end
 # Creates a "bare" file descriptor (i.e. one that is not associated
 # with any Ruby object). The file descriptor can safely be passed
 # to IO.new without creating a Ruby object alias to the fd.
-def new_fd(name, mode="w:utf-8")
+def new_fd(name, mode = "w:utf-8")
   if mode.kind_of? Hash
     if mode.key? :mode
       mode = mode[:mode]
