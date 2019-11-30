@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 Gem::Specification.new do |s|
   s.name = "dbm"
-  s.version = '1.0.0'
+  s.version = '1.1.0'
   s.summary = "Provides a wrapper for the UNIX-style Database Manager Library"
   s.description = "Provides a wrapper for the UNIX-style Database Manager Library"
 
