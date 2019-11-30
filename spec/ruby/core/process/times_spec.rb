@@ -16,6 +16,11 @@ describe "Process.times" do
   ruby_version_is "2.5" do
     platform_is_not :windows do
       it "uses getrusage when available to improve precision beyond milliseconds" do
+        times = 100.times.map { Process.clock_gettime(:GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID) }
+        if times.count { |t| ((t * 1e6).to_i % 1000) > 0 } == 0
+          skip "getrusage is not supported on this environment"
+        end
+
         times = 100.times.map { Process.times }
         times.count { |t| ((t.utime * 1e6).to_i % 1000) > 0 }.should > 0
         times.count { |t| ((t.stime * 1e6).to_i % 1000) > 0 }.should > 0
