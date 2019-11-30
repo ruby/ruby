@@ -52,7 +52,7 @@ char *getenv();
 #endif
 char *getlogin();
 
-#define RUBY_ETC_VERSION "1.0.1"
+#define RUBY_ETC_VERSION "1.1.0"
 
 #include "constdefs.h"
 
