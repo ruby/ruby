@@ -279,6 +279,10 @@ def sync_default_gems_with_commits(gem, range)
   end
   system(*%W"git fetch --no-tags #{gem}")
 
+  unless range.include?("..")
+    range = "#{range}~1..#{range}"
+  end
+
   commits = IO.popen(%W"git log --format=%H,%s #{range}") do |f|
     f.read.split("\n").reverse.map{|commit| commit.split(',', 2)}
   end
