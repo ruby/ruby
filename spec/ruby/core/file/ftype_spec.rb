@@ -12,8 +12,9 @@ describe "File.ftype" do
   end
 
   it "raises Errno::ENOENT if the file is not valid" do
-    l = -> { File.ftype("/#{$$}#{Time.now.to_f}") }
-    l.should raise_error(Errno::ENOENT)
+    -> {
+      File.ftype("/#{$$}#{Time.now.to_f}")
+    }.should raise_error(Errno::ENOENT)
   end
 
   it "returns a String" do

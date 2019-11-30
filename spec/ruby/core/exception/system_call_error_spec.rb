@@ -20,40 +20,81 @@ describe "SystemCallError" do
 end
 
 describe "SystemCallError.new" do
+  before :all do
+    @example_errno = Errno::EINVAL::Errno
+    @example_errno_class = Errno::EINVAL
+    @last_known_errno = Errno.constants.size - 1
+    @unknown_errno = Errno.constants.size
+  end
+
   it "requires at least one argument" do
     -> { SystemCallError.new }.should raise_error(ArgumentError)
   end
 
   it "accepts single Fixnum argument as errno" do
     SystemCallError.new(-2**24).errno.should == -2**24
-    SystemCallError.new(42).errno.should == 42
+    SystemCallError.new(-1).errno.should == -1
+    SystemCallError.new(0).errno.should == 0
+    SystemCallError.new(@last_known_errno).errno.should == @last_known_errno
+    SystemCallError.new(@unknown_errno).errno.should == @unknown_errno
     SystemCallError.new(2**24).errno.should == 2**24
   end
 
+  it "constructs a SystemCallError for an unknown error number" do
+    SystemCallError.new(-2**24).should be_an_instance_of(SystemCallError)
+    SystemCallError.new(-1).should be_an_instance_of(SystemCallError)
+    SystemCallError.new(@unknown_errno).should be_an_instance_of(SystemCallError)
+    SystemCallError.new(2**24).should be_an_instance_of(SystemCallError)
+  end
+
   it "constructs the appropriate Errno class" do
-    # EINVAL should be more or less mortable across the platforms,
-    # so let's use it then.
-    SystemCallError.new(22).should be_kind_of(SystemCallError)
-    SystemCallError.new(22).should be_an_instance_of(Errno::EINVAL)
-    SystemCallError.new(2**28).should be_an_instance_of(SystemCallError)
+    e = SystemCallError.new(@example_errno)
+    e.should be_kind_of(SystemCallError)
+    e.should be_an_instance_of(@example_errno_class)
   end
 
   it "accepts an optional custom message preceding the errno" do
-    exc = SystemCallError.new("custom message", 22)
-    exc.should be_an_instance_of(Errno::EINVAL)
-    exc.errno.should == 22
-    exc.message.should == "Invalid argument - custom message"
+    exc = SystemCallError.new("custom message", @example_errno)
+    exc.should be_an_instance_of(@example_errno_class)
+    exc.errno.should == @example_errno
+    exc.message.should == 'Invalid argument - custom message'
   end
 
   it "accepts an optional third argument specifying the location" do
-    exc = SystemCallError.new("custom message", 22, "location")
-    exc.should be_an_instance_of(Errno::EINVAL)
-    exc.errno.should == 22
-    exc.message.should == "Invalid argument @ location - custom message"
+    exc = SystemCallError.new("custom message", @example_errno, "location")
+    exc.should be_an_instance_of(@example_errno_class)
+    exc.errno.should == @example_errno
+    exc.message.should == 'Invalid argument @ location - custom message'
+  end
+
+  it "coerces location if it is not a String" do
+    e = SystemCallError.new('foo', 1, :not_a_string)
+    e.message.should =~ /@ not_a_string - foo/
   end
 
   it "returns an arity of -1 for the initialize method" do
     SystemCallError.instance_method(:initialize).arity.should == -1
+  end
+
+  it "converts to Integer if errno is a Float" do
+    SystemCallError.new('foo', 2.0).should == SystemCallError.new('foo', 2)
+    SystemCallError.new('foo', 2.9).should == SystemCallError.new('foo', 2)
+  end
+
+  it "converts to Integer if errno is a Complex convertible to Integer" do
+    SystemCallError.new('foo', Complex(2.9, 0)).should == SystemCallError.new('foo', 2)
+  end
+
+  it "raises TypeError if message is not a String" do
+    -> { SystemCallError.new(:foo, 1) }.should raise_error(TypeError, /no implicit conversion of Symbol into String/)
+  end
+
+  it "raises TypeError if errno is not an Integer" do
+    -> { SystemCallError.new('foo', 'bar') }.should raise_error(TypeError, /no implicit conversion of String into Integer/)
+  end
+
+  it "raises RangeError if errno is a Complex not convertible to Integer" do
+    -> { SystemCallError.new('foo', Complex(2.9, 1)) }.should raise_error(RangeError, /can't convert/)
   end
 end
 

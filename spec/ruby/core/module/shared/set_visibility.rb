@@ -5,6 +5,23 @@ describe :set_visibility, shared: true do
     Module.should have_private_instance_method(@method, false)
   end
 
+  describe "with argument" do
+    it "does not clone method from the ancestor when setting to the same visibility in a child" do
+      visibility = @method
+      parent = Module.new {
+        def test_method; end
+        send(visibility, :test_method)
+      }
+
+      child = Module.new {
+        include parent
+        send(visibility, :test_method)
+      }
+
+      child.should_not send(:"have_#{visibility}_instance_method", :test_method, false)
+    end
+  end
+
   describe "without arguments" do
     it "sets visibility to following method definitions" do
       visibility = @method

@@ -30,6 +30,12 @@ describe "ENV.delete" do
     ScratchPad.recorded.should == "foo"
   end
 
+  it "does not evaluate the block if the envirionment variable exists" do
+    ENV["foo"] = "bar"
+    ENV.delete("foo") { |name| fail "Should not happen" }
+    ENV["foo"].should == nil
+  end
+
   it "raises TypeError if the argument is not a String and does not respond to #to_str" do
     -> { ENV.delete(Object.new) }.should raise_error(TypeError, "no implicit conversion of Object into String")
   end

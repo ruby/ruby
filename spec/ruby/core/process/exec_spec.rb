@@ -200,9 +200,9 @@ describe "Process.exec" do
         it "maps the key to a file descriptor in the child that inherits the file descriptor from the parent specified by the value" do
           map_fd_fixture = fixture __FILE__, "map_fd.rb"
           cmd = <<-EOC
-            f = File.open("#{@name}", "w+")
+            f = File.open(#{@name.inspect}, "w+")
             child_fd = f.fileno + 1
-            File.open("#{@child_fd_file}", "w") { |io| io.print child_fd }
+            File.open(#{@child_fd_file.inspect}, "w") { |io| io.print child_fd }
             Process.exec "#{ruby_cmd(map_fd_fixture)} \#{child_fd}", { child_fd => f }
             EOC
 
@@ -211,6 +211,35 @@ describe "Process.exec" do
           child_fd.to_i.should > STDERR.fileno
 
           File.read(@name).should == "writing to fd: #{child_fd}"
+        end
+
+        it "lets the process after exec have specified file descriptor despite close_on_exec" do
+          map_fd_fixture = fixture __FILE__, "map_fd.rb"
+          cmd = <<-EOC
+            f = File.open(#{@name.inspect}, 'w+')
+            puts(f.fileno, f.close_on_exec?)
+            STDOUT.flush
+            Process.exec("#{ruby_cmd(map_fd_fixture)} \#{f.fileno}", f.fileno => f.fileno)
+            EOC
+
+          output = ruby_exe(cmd, escape: true)
+          child_fd, close_on_exec = output.split
+
+          child_fd.to_i.should > STDERR.fileno
+          close_on_exec.should == 'true'
+          File.read(@name).should == "writing to fd: #{child_fd}"
+        end
+
+        it "sets close_on_exec to false on specified fd even when it fails" do
+          cmd = <<-EOC
+            f = File.open(#{__FILE__.inspect}, 'r')
+            puts(f.close_on_exec?)
+            Process.exec('/', f.fileno => f.fileno) rescue nil
+            puts(f.close_on_exec?)
+            EOC
+
+          output = ruby_exe(cmd, escape: true)
+          output.split.should == ['true', 'false']
         end
       end
     end

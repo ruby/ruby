@@ -473,6 +473,12 @@ describe "Marshal.dump" do
       Marshal.dump(obj).should == "\x04\bo:\x0EException\a:\tmesg\"\bfoo:\abt[\x06\"\x12foo/bar.rb:10"
     end
 
+    it "dumps instance variables if they exist" do
+      obj = Exception.new("foo")
+      obj.instance_variable_set(:@ivar, 1)
+      Marshal.dump(obj).should == "\x04\bo:\x0EException\b:\tmesg\"\bfoo:\abt0:\n@ivari\x06"
+    end
+
     it "dumps the cause for the exception" do
       exc = nil
       begin

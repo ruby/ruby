@@ -2,8 +2,8 @@ require_relative '../../spec_helper'
 
 describe "ENV.keys" do
 
-  it "returns all the keys" do
-    ENV.keys.sort.should == ENV.to_hash.keys.sort
+  it "returns an array of the keys" do
+    ENV.keys.should == ENV.to_hash.keys
   end
 
   it "returns the keys in the locale encoding" do

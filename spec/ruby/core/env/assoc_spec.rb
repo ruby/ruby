@@ -26,6 +26,6 @@ describe "ENV.assoc" do
   end
 
   it "raises TypeError if the argument is not a String and does not respond to #to_str" do
-    -> { ENV.assoc(Object.new) }.should raise_error(TypeError)
+    -> { ENV.assoc(Object.new) }.should raise_error(TypeError, "no implicit conversion of Object into String")
   end
 end

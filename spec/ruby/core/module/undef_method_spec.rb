@@ -56,8 +56,37 @@ describe "Module#undef_method" do
     @module.send(:undef_method, :method_to_undef).should equal(@module)
   end
 
-  it "raises a NameError when passed a missing name" do
-    -> { @module.send :undef_method, :not_exist }.should raise_error(NameError) { |e|
+  it "raises a NameError when passed a missing name for a module" do
+    -> { @module.send :undef_method, :not_exist }.should raise_error(NameError, /undefined method `not_exist' for module `#{@module}'/) { |e|
+      # a NameError and not a NoMethodError
+      e.class.should == NameError
+    }
+  end
+
+  it "raises a NameError when passed a missing name for a class" do
+    klass = Class.new
+    -> { klass.send :undef_method, :not_exist }.should raise_error(NameError, /undefined method `not_exist' for class `#{klass}'/) { |e|
+      # a NameError and not a NoMethodError
+      e.class.should == NameError
+    }
+  end
+
+  it "raises a NameError when passed a missing name for a singleton class" do
+    klass = Class.new
+    obj = klass.new
+    sclass = obj.singleton_class
+
+    -> { sclass.send :undef_method, :not_exist }.should raise_error(NameError, /undefined method `not_exist' for class `#{sclass}'/) { |e|
+      e.message.should include('`#<Class:#<#<Class:')
+
+      # a NameError and not a NoMethodError
+      e.class.should == NameError
+    }
+  end
+
+  it "raises a NameError when passed a missing name for a metaclass" do
+    klass = String.singleton_class
+    -> { klass.send :undef_method, :not_exist }.should raise_error(NameError, /undefined method `not_exist' for class `String'/) { |e|
       # a NameError and not a NoMethodError
       e.class.should == NameError
     }

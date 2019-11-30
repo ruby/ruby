@@ -53,6 +53,11 @@ describe "C-API Kernel function" do
         i + 1
       end.should == [2, 4, 6]
     end
+
+    it "can pass extra data to the function" do
+      ary = [3]
+      @s.rb_block_call_extra_data(ary).should equal(ary)
+    end
   end
 
   describe "rb_frame_this_func" do

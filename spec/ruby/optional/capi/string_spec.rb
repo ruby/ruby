@@ -1007,4 +1007,28 @@ end
       str.should == "2345678".encode("UTF-32LE")
     end
   end
+
+  describe "rb_utf8_str_new_static" do
+    it "returns a UTF-8 string of the correct characters and length" do
+      str = @s.rb_utf8_str_new_static
+      str.should == "nokogiri"
+      str.encoding.should == Encoding::UTF_8
+    end
+  end
+
+  describe "rb_utf8_str_new" do
+    it "returns a UTF-8 string of the correct characters and length" do
+      str = @s.rb_utf8_str_new
+      str.should == "nokogiri"
+      str.encoding.should == Encoding::UTF_8
+    end
+  end
+
+  describe "rb_utf8_str_new_cstr" do
+    it "returns a UTF-8 string of the correct characters and length" do
+      str = @s.rb_utf8_str_new_cstr
+      str.should == "nokogiri"
+      str.encoding.should == Encoding::UTF_8
+    end
+  end
 end

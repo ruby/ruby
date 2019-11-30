@@ -3,11 +3,10 @@ require_relative '../../spec_helper'
 describe "ENV.to_a" do
 
   it "returns the ENV as an array" do
-    ENV["foo"] = "bar"
     a = ENV.to_a
     a.is_a?(Array).should == true
-    a.find { |e| e.first == "foo" }.should == ["foo", "bar"]
-    ENV.delete "foo"
+    a.size.should == ENV.size
+    ENV.each_pair { |k, v| a.should include([k, v])}
   end
 
   it "returns the entries in the locale encoding" do

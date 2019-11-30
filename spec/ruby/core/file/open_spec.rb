@@ -623,6 +623,14 @@ describe "File.open" do
     end
   end
 
+  ruby_version_is "2.5" do
+    it "raises ArgumentError if mixing :newline and binary mode" do
+      -> {
+        File.open(@file, "rb", newline: :universal) {}
+      }.should raise_error(ArgumentError, "newline decorator with binary mode")
+    end
+  end
+
   ruby_version_is "2.6" do
     context "'x' flag" do
       before :each do

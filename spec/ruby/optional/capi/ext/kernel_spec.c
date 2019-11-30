@@ -59,6 +59,14 @@ VALUE kernel_spec_rb_block_call_multi_arg(VALUE self, VALUE ary) {
   return rb_block_call(ary, rb_intern("inject"), 1, method_args, block_call_inject_multi_arg, Qnil);
 }
 
+static VALUE return_extra_data(RB_BLOCK_CALL_FUNC_ARGLIST(yield_value, extra_data)) {
+  return extra_data;
+}
+
+VALUE rb_block_call_extra_data(VALUE self, VALUE object) {
+  return rb_block_call(object, rb_intern("instance_exec"), 0, NULL, return_extra_data, object);
+}
+
 VALUE kernel_spec_rb_block_call_no_func(VALUE self, VALUE ary) {
   return rb_block_call(ary, rb_intern("map"), 0, NULL, NULL, Qnil);
 }
@@ -304,6 +312,7 @@ void Init_kernel_spec(void) {
   rb_define_method(cls, "rb_block_call", kernel_spec_rb_block_call, 1);
   rb_define_method(cls, "rb_block_call_multi_arg", kernel_spec_rb_block_call_multi_arg, 1);
   rb_define_method(cls, "rb_block_call_no_func", kernel_spec_rb_block_call_no_func, 1);
+  rb_define_method(cls, "rb_block_call_extra_data", rb_block_call_extra_data, 1);
   rb_define_method(cls, "rb_block_proc", kernel_spec_rb_block_proc, 0);
   rb_define_method(cls, "rb_block_lambda", kernel_spec_rb_block_lambda, 0);
   rb_define_method(cls, "rb_frame_this_func_test", kernel_spec_rb_frame_this_func, 0);

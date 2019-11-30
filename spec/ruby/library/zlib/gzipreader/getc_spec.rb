@@ -2,8 +2,7 @@ require_relative '../../../spec_helper'
 require 'stringio'
 require 'zlib'
 
-describe "GzipReader#getc" do
-
+describe "Zlib::GzipReader#getc" do
   before :each do
     @data = '12345abcde'
     @zip = [31, 139, 8, 0, 44, 220, 209, 71, 0, 3, 51, 52, 50, 54, 49, 77,
@@ -37,5 +36,4 @@ describe "GzipReader#getc" do
     gz.getc.should be_nil
     gz.pos.should == pos
   end
-
 end

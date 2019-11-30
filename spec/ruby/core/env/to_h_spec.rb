@@ -19,6 +19,11 @@ describe "ENV.to_h" do
         ENV.to_h { |k, v| [k, v.upcase] }.should == { 'a' => "B", 'c' => "D" }
       end
 
+      it "does not require the array elements to be strings" do
+        ENV.replace("a" => "b", "c" => "d")
+        ENV.to_h { |k, v| [k.to_sym, v.to_sym] }.should == { :a => :b, :c => :d }
+      end
+
       it "raises ArgumentError if block returns longer or shorter array" do
         -> do
           ENV.to_h { |k, v| [k, v.upcase, 1] }

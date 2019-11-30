@@ -531,6 +531,19 @@ describe :marshal_load, shared: true do
       loaded.message.should == obj.message
       loaded.backtrace.should == obj.backtrace
     end
+
+    it "loads an marshalled exception with ivars" do
+      s = 'hi'
+      arr = [:so, :so, s, s]
+      obj = Exception.new("foo")
+      obj.instance_variable_set :@arr, arr
+
+      loaded = Marshal.send(@method, "\x04\bo:\x0EException\b:\tmesg\"\bfoo:\abt0:\t@arr[\t:\aso;\t\"\ahi@\b")
+      new_arr = loaded.instance_variable_get :@arr
+
+      loaded.message.should == obj.message
+      new_arr.should == arr
+    end
   end
 
   describe "for an Object" do
