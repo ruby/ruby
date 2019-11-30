@@ -917,8 +917,11 @@ module FileUtils
   private_module_function :apply_mask
 
   def symbolic_modes_to_i(mode_sym, path)  #:nodoc:
-    path = File.stat(path) unless File::Stat === path
-    mode = path.mode
+    mode = if File::Stat === path
+             path.mode
+           else
+             File.stat(path).mode
+           end
     mode_sym.split(/,/).inject(mode & 07777) do |current_mode, clause|
       target, *actions = clause.split(/([=+-])/)
       raise ArgumentError, "invalid file mode: #{mode_sym}" if actions.empty?
@@ -935,7 +938,7 @@ module FileUtils
           when "x"
             mask | 0111
           when "X"
-            if path.directory?
+            if FileTest.directory? path
               mask | 0111
             else
               mask
