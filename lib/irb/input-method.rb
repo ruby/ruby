@@ -269,7 +269,7 @@ module IRB
     #
     # See IO#eof? for more information.
     def eof?
-      super
+      @eof
     end
 
     # Whether this input method is still readable when there is no more data to
