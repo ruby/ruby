@@ -47,7 +47,7 @@ module JITSupport
     return @supported if defined?(@supported)
     @supported = UNSUPPORTED_COMPILERS.all? do |regexp|
       !regexp.match?(RbConfig::CONFIG['CC'])
-    end
+    end && RbConfig::CONFIG["MJIT_SUPPORT"] != 'no'
   end
 
   def remove_mjit_logs(stderr)

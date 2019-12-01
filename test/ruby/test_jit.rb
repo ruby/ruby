@@ -3,8 +3,6 @@ require 'test/unit'
 require 'tmpdir'
 require_relative '../lib/jit_support'
 
-return if RbConfig::CONFIG["MJIT_SUPPORT"] == 'no'
-
 # Test for --jit option
 class TestJIT < Test::Unit::TestCase
   include JITSupport
