@@ -1045,7 +1045,8 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_jit_debug
     if JITSupport.supported?
-      assert_in_out_err(["--jit-debug=-O0 -O1", "--jit-verbose=2", ""], "", [], /-O0 -O1/)
+      env = { 'MJIT_SEARCH_BUILD_DIR' => 'true' }
+      assert_in_out_err([env, "--jit-debug=-O0 -O1", "--jit-verbose=2", "" ], "", [], /-O0 -O1/)
     end
   end
 
