@@ -36,7 +36,7 @@ static VALUE array_spec_RARRAY_PTR_assign(VALUE self, VALUE array, VALUE value) 
 
 static VALUE array_spec_RARRAY_PTR_memcpy(VALUE self, VALUE array1, VALUE array2) {
   VALUE *ptr1, *ptr2;
-  int size;
+  long size;
   size = RARRAY_LEN(array1);
   ptr1 = RARRAY_PTR(array1);
   ptr2 = RARRAY_PTR(array2);
