@@ -1159,7 +1159,7 @@ class Reline::LineEditor
       loop do
         key = Fiber.yield(search_word)
         case key
-        when "\C-h".ord, 127
+        when "\C-h".ord, "\C-?".ord
           grapheme_clusters = search_word.grapheme_clusters
           if grapheme_clusters.size > 0
             grapheme_clusters.pop
@@ -1217,7 +1217,7 @@ class Reline::LineEditor
     @searching_prompt = "(reverse-i-search)`': "
     @waiting_proc = ->(k) {
       case k
-      when "\C-j".ord, "\C-?".ord
+      when "\C-j".ord
         if @history_pointer
           @line = Reline::HISTORY[@history_pointer]
         else
@@ -1237,7 +1237,7 @@ class Reline::LineEditor
         @cursor = @byte_pointer = 0
       else
         chr = k.is_a?(String) ? k : k.chr(Encoding::ASCII_8BIT)
-        if chr.match?(/[[:print:]]/) or k == "\C-h".ord or k == 127
+        if chr.match?(/[[:print:]]/) or k == "\C-h".ord or k == "\C-?".ord
           searcher.resume(k)
         else
           if @history_pointer
