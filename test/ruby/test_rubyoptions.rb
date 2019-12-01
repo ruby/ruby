@@ -1044,7 +1044,8 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_jit_debug
-    if JITSupport.supported?
+    # mswin uses prebuilt precompiled header. Thus it does not show a pch compilation log to check "-O0 -O1".
+    if JITSupport.supported? && !RUBY_PLATFORM.match?(/mswin/)
       env = { 'MJIT_SEARCH_BUILD_DIR' => 'true' }
       assert_in_out_err([env, "--jit-debug=-O0 -O1", "--jit-verbose=2", "" ], "", [], /-O0 -O1/)
     end
