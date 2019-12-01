@@ -741,7 +741,7 @@ split_flags(const char *flags)
 // processing ISeqs.  The function should be called first for using MJIT.
 // If everything is successful, MJIT_INIT_P will be TRUE.
 void
-mjit_init(struct mjit_options *opts)
+mjit_init(const struct mjit_options *opts)
 {
     mjit_opts = *opts;
     mjit_enabled = true;
