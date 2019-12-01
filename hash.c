@@ -4711,15 +4711,23 @@ env_delete(VALUE name)
 
     nam = env_name(name);
     val = getenv(nam);
+
+    /*
+     * ENV['TZ'] = nil has a special meaning.
+     * TZ is no longer considered up-to-date and ruby call tzset() as needed.
+     * It could be useful if sysadmin change /etc/localtime.
+     * This hack might works only on Linux glibc.
+     */
+    if (ENVMATCH(nam, TZ_ENV)) {
+        ruby_tz_uptodate_p = FALSE;
+    }
+
     if (val) {
 	VALUE value = env_str_new2(val);
 
 	ruby_setenv(nam, 0);
 	if (ENVMATCH(nam, PATH_ENV)) {
 	    RB_GC_GUARD(name);
-	}
-	else if (ENVMATCH(nam, TZ_ENV)) {
-	    ruby_tz_uptodate_p = false;
 	}
 	return value;
     }

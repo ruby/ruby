@@ -3139,15 +3139,10 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
 
     find_dst = 0 < tptr->tm_isdst;
 
-#if defined(HAVE_MKTIME)
-    tm0 = *tptr;
-    if (!utc_p && (guess = mktime(&tm0)) != -1) {
-        tm = GUESS(&guess);
-        if (tm && tmcmp(tptr, tm) == 0) {
-            goto found;
-        }
+    /* /etc/localtime might be changed. reload it. */
+    if (!ruby_tz_uptodate_p) {
+        tzset();
     }
-#endif
 
     tm0 = *tptr;
     if (tm0.tm_mon < 0) {
