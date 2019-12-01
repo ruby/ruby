@@ -1175,7 +1175,12 @@ class Reline::LineEditor
           @history_pointer = nil
           hit = @line_backup_in_history
         else
-          hit_index = Reline::HISTORY.rindex { |item|
+          if @history_pointer
+            history = Reline::HISTORY[0..@history_pointer]
+          else
+            history = Reline::HISTORY
+          end
+          hit_index = history.rindex { |item|
             item.include?(search_word)
           }
           if hit_index
