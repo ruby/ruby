@@ -16,7 +16,7 @@ class VerboseFormatterTest < Test::Unit::TestCase
       undefined method `zeor?' for 1:Integer
 
           Did you mean? zero?
-       
+
     MESSAGE
   end
 end
