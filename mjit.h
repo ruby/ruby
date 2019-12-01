@@ -43,6 +43,8 @@ struct mjit_options {
     // Disable compiler optimization and add debug symbols. It can be
     // very slow.
     char debug;
+    // Add arbitrary cflags.
+    char* debug_flags;
     // If not 0, all ISeqs are synchronously compiled. For testing.
     unsigned int wait;
     // Number of calls to trigger JIT compilation. For testing.

@@ -700,6 +700,33 @@ start_worker(void)
     return true;
 }
 
+// Convert "foo bar" to {"foo", "bar", NULL} array. Caller is responsible for
+// freeing a returned buffer and its elements.
+static char **
+split_flags(char *flags)
+{
+    char *buf[MAXPATHLEN];
+    int i = 0;
+    char *next;
+    for (; flags != NULL; flags = next) {
+        next = strchr(flags, ' ');
+        if (next == NULL) {
+            if (strlen(flags) > 0)
+                buf[i++] = strdup(flags);
+        }
+        else {
+            if (next > flags)
+                buf[i++] = strndup(flags, next - flags);
+            next++; // skip space
+        }
+    }
+    buf[i] = NULL;
+
+    char **ret = xmalloc(sizeof(char **) * i);
+    memcpy((void *)ret, buf, sizeof(char **) * i);
+    return ret;
+}
+
 // Initialize MJIT.  Start a thread creating the precompiled header and
 // processing ISeqs.  The function should be called first for using MJIT.
 // If everything is successful, MJIT_INIT_P will be TRUE.
@@ -728,6 +755,8 @@ mjit_init(struct mjit_options *opts)
     verbose(2, "MJIT: CC defaults to %s", cc_path);
     cc_common_args = xmalloc(sizeof(CC_COMMON_ARGS));
     memcpy((void *)cc_common_args, CC_COMMON_ARGS, sizeof(CC_COMMON_ARGS));
+    cc_added_args = split_flags(opts->debug_flags);
+    xfree(opts->debug_flags);
 #if MJIT_CFLAGS_PIPE
     { // eliminate a flag incompatible with `-pipe`
         size_t i, j;
@@ -921,6 +950,9 @@ mjit_finish(bool close_handle_p)
     xfree(header_file); header_file = NULL;
 #endif
     xfree((void *)cc_common_args); cc_common_args = NULL;
+    for (char **flag = cc_added_args; *flag != NULL; flag++)
+        xfree(*flag);
+    xfree((void *)cc_added_args); cc_added_args = NULL;
     xfree(tmp_dir); tmp_dir = NULL;
     xfree(pch_file); pch_file = NULL;
 

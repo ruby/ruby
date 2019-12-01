@@ -298,7 +298,7 @@ usage(const char *name, int help)
     };
     static const struct message mjit_options[] = {
         M("--jit-warnings",      "", "Enable printing JIT warnings"),
-        M("--jit-debug",         "", "Enable JIT debugging (very slow)"),
+        M("--jit-debug",         "", "Enable JIT debugging (very slow), or add cflags if specified"),
         M("--jit-wait",          "", "Wait until JIT compilation is finished everytime (for testing)"),
         M("--jit-save-temps",    "", "Save JIT temporary files in $TMP or /tmp (for testing)"),
         M("--jit-verbose=num",   "", "Print JIT logs of level num or less to stderr (default: 0)"),
@@ -968,6 +968,9 @@ setup_mjit_options(const char *s, struct mjit_options *mjit_opt)
     if (*s == 0) return;
     else if (strcmp(s, "-warnings") == 0) {
         mjit_opt->warnings = 1;
+    }
+    else if (strncmp(s, "-debug=", 7) == 0) {
+        mjit_opt->debug_flags = strdup(s + 7);
     }
     else if (strcmp(s, "-debug") == 0) {
         mjit_opt->debug = 1;

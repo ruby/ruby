@@ -221,6 +221,8 @@ static VALUE valid_class_serials;
 static const char *cc_path;
 // Used C compiler flags.
 static const char **cc_common_args;
+// Used C compiler flags added by --jit-debug=...
+static char **cc_added_args;
 // Name of the precompiled header file.
 static char *pch_file;
 // The process id which should delete the pch_file on mjit_finish.
@@ -759,7 +761,7 @@ make_pch(void)
     };
 
     verbose(2, "Creating precompiled header");
-    char **args = form_args(3, cc_common_args, CC_CODEFLAG_ARGS, rest_args);
+    char **args = form_args(4, cc_common_args, CC_CODEFLAG_ARGS, cc_added_args, rest_args);
     if (args == NULL) {
         mjit_warning("making precompiled header failed on forming args");
         CRITICAL_SECTION_START(3, "in make_pch");
@@ -796,7 +798,7 @@ compile_c_to_o(const char *c_file, const char *o_file)
         "-c", NULL
     };
 
-    char **args = form_args(4, cc_common_args, CC_CODEFLAG_ARGS, files, CC_LINKER_ARGS);
+    char **args = form_args(5, cc_common_args, CC_CODEFLAG_ARGS, cc_added_args, files, CC_LINKER_ARGS);
     if (args == NULL)
         return false;
 
