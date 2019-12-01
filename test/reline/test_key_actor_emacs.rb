@@ -1404,7 +1404,6 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
   end
 
   def test_search_history_to_back
-    setup_editor
     Reline::HISTORY.concat([
       '1235', # old
       '12aa',
