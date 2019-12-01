@@ -700,6 +700,16 @@ start_worker(void)
     return true;
 }
 
+// There's no strndup on Windows
+static char*
+ruby_strndup(char *str, size_t n)
+{
+    char *ret = xmalloc(n + 1);
+    memcpy(ret, str, n);
+    ret[n] = '\0';
+    return ret;
+}
+
 // Convert "foo bar" to {"foo", "bar", NULL} array. Caller is responsible for
 // freeing a returned buffer and its elements.
 static char **
@@ -716,7 +726,7 @@ split_flags(char *flags)
         }
         else {
             if (next > flags)
-                buf[i++] = strndup(flags, next - flags);
+                buf[i++] = ruby_strndup(flags, next - flags);
             next++; // skip space
         }
     }
