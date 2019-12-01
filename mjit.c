@@ -702,7 +702,7 @@ start_worker(void)
 
 // There's no strndup on Windows
 static char*
-ruby_strndup(char *str, size_t n)
+ruby_strndup(const char *str, size_t n)
 {
     char *ret = xmalloc(n + 1);
     memcpy(ret, str, n);
@@ -713,7 +713,7 @@ ruby_strndup(char *str, size_t n)
 // Convert "foo bar" to {"foo", "bar", NULL} array. Caller is responsible for
 // freeing a returned buffer and its elements.
 static char **
-split_flags(char *flags)
+split_flags(const char *flags)
 {
     char *buf[MAXPATHLEN];
     int i = 0;
