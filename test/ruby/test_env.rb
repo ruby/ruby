@@ -120,7 +120,7 @@ class TestEnv < Test::Unit::TestCase
     assert_equal("foo", ENV.fetch("test"))
     ENV.delete("test")
     feature8649 = '[ruby-core:56062] [Feature #8649]'
-    e = assert_raise_with_message(KeyError, 'key not found: "test"', feature8649) do
+    e = assert_raise_with_message(KeyError, /key not found: "test"/, feature8649) do
       ENV.fetch("test")
     end
     assert_same(ENV, e.receiver)
