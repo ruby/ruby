@@ -1452,6 +1452,28 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_cursor_max(4)
   end
 
+  def test_search_history_twice
+    Reline::HISTORY.concat([
+      '1235', # old
+      '12aa',
+      '1234' # new
+    ])
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-r123")
+    assert_line('1234')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0) # doesn't determine yet
+    input_keys("\C-r")
+    assert_line('1235')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+  end
+
   def test_em_set_mark_and_em_exchange_mark
     input_keys('aaa bbb ccc ddd')
     assert_byte_pointer_size('aaa bbb ccc ddd')

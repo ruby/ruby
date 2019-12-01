@@ -1158,6 +1158,7 @@ class Reline::LineEditor
       last_hit = nil
       loop do
         key = Fiber.yield(search_word)
+        search_again = false
         case key
         when "\C-h".ord, "\C-?".ord
           grapheme_clusters = search_word.grapheme_clusters
@@ -1165,6 +1166,8 @@ class Reline::LineEditor
             grapheme_clusters.pop
             search_word = grapheme_clusters.join
           end
+        when "\C-r".ord
+          search_again = true
         else
           multibyte_buf << key
           if multibyte_buf.dup.force_encoding(@encoding).valid_encoding?
@@ -1177,7 +1180,11 @@ class Reline::LineEditor
           @history_pointer = nil
           hit = @line_backup_in_history
         else
-          if @history_pointer
+          if search_again
+            if @history_pointer
+              history = Reline::HISTORY[0..(@history_pointer - 1)]
+            end
+          elsif @history_pointer
             history = Reline::HISTORY[0..@history_pointer]
           else
             history = Reline::HISTORY
@@ -1237,7 +1244,7 @@ class Reline::LineEditor
         @cursor = @byte_pointer = 0
       else
         chr = k.is_a?(String) ? k : k.chr(Encoding::ASCII_8BIT)
-        if chr.match?(/[[:print:]]/) or k == "\C-h".ord or k == "\C-?".ord
+        if chr.match?(/[[:print:]]/) or k == "\C-h".ord or k == "\C-?".ord or k == "\C-r".ord
           searcher.resume(k)
         else
           if @history_pointer
