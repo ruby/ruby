@@ -35,8 +35,6 @@ describe :env_each, shared: true do
       @internal = Encoding.default_internal
 
       Encoding.default_external = Encoding::BINARY
-
-      @locale_encoding = Encoding.find "locale"
     end
 
     after :each do
@@ -48,8 +46,8 @@ describe :env_each, shared: true do
       Encoding.default_internal = nil
 
       ENV.send(@method) do |key, value|
-        key.encoding.should equal(@locale_encoding)
-        value.encoding.should equal(@locale_encoding)
+        key.should.be_locale_env
+        value.should.be_locale_env
       end
     end
 

@@ -1,4 +1,4 @@
-require_relative '../../spec_helper'
+require_relative 'spec_helper'
 
 describe "ENV.to_a" do
 
@@ -11,8 +11,8 @@ describe "ENV.to_a" do
 
   it "returns the entries in the locale encoding" do
     ENV.to_a.each do |key, value|
-      key.encoding.should == Encoding.find('locale')
-      value.encoding.should == Encoding.find('locale')
+      key.should.be_locale_env
+      value.should.be_locale_env
     end
   end
 end

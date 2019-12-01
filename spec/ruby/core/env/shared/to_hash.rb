@@ -15,11 +15,11 @@ describe :env_to_hash, shared: true do
   end
 
   it "uses the locale encoding for keys" do
-    ENV.send(@method).keys.all? {|k| k.encoding == Encoding.find('locale') }.should be_true
+    ENV.send(@method).keys.each {|k| k.should.be_locale_env }
   end
 
   it "uses the locale encoding for values" do
-    ENV.send(@method).values.all? {|v| v.encoding == Encoding.find('locale') }.should be_true
+    ENV.send(@method).values.each {|k| k.should.be_locale_env }
   end
 
   it "duplicates the ENV when converting to a Hash" do

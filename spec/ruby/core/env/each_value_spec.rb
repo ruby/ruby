@@ -1,4 +1,4 @@
-require_relative '../../spec_helper'
+require_relative 'spec_helper'
 require_relative '../enumerable/shared/enumeratorized'
 
 describe "ENV.each_value" do
@@ -26,7 +26,7 @@ describe "ENV.each_value" do
 
   it "uses the locale encoding" do
     ENV.each_value do |value|
-      value.encoding.should == Encoding.find('locale')
+      value.should.be_locale_env
     end
   end
 
