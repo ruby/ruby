@@ -730,10 +730,10 @@ split_flags(char *flags)
             next++; // skip space
         }
     }
-    buf[i] = NULL;
 
-    char **ret = xmalloc(sizeof(char **) * i);
+    char **ret = xmalloc(sizeof(char **) * (i + 1));
     memcpy((void *)ret, buf, sizeof(char **) * i);
+    ret[i] = NULL;
     return ret;
 }
 
