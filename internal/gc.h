@@ -47,10 +47,8 @@ RUBY_SYMBOL_EXPORT_END
                         rb_wb_unprotected_newobj_of(klass, flags))
 #define NEWOBJ_OF(obj,type,klass,flags) RB_NEWOBJ_OF(obj,type,klass,flags)
 
-#ifdef __has_attribute
 #if __has_attribute(alloc_align)
 __attribute__((__alloc_align__(1)))
-#endif
 #endif
 void *rb_aligned_malloc(size_t, size_t) RUBY_ATTR_MALLOC RUBY_ATTR_ALLOC_SIZE((2));
 

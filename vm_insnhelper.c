@@ -1424,10 +1424,8 @@ vm_expandarray(VALUE *sp, VALUE ary, rb_num_t num, int flag)
 
 static VALUE vm_call_general(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, struct rb_call_data *cd);
 
-#ifdef __has_attribute
 #if __has_attribute(artificial)
 __attribute__((__artificial__))
-#endif
 #endif
 static inline vm_call_handler
 calccall(const struct rb_call_data *cd, const rb_callable_method_entry_t *me)
@@ -1817,7 +1815,7 @@ check_match(rb_execution_context_t *ec, VALUE pattern, VALUE target, enum vm_che
 }
 
 
-#if defined(_MSC_VER) && _MSC_VER < 1300
+#if MSC_VERSION_BEFORE(1300)
 #define CHECK_CMP_NAN(a, b) if (isnan(a) || isnan(b)) return Qfalse;
 #else
 #define CHECK_CMP_NAN(a, b) /* do nothing */

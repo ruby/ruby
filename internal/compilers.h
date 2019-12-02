@@ -10,20 +10,109 @@
  *             file COPYING are met.  Consult the file for details.
  */
 
+#include "ruby/defines.h"       /* for GCC_VERSION_SINCE */
+
+#ifdef _MSC_VER
+# define MSC_VERSION_SINCE(_)  (_MSC_VER >= _)
+# define MSC_VERSION_BEFORE(_) (_MSC_VER <  _)
+#else
+# define MSC_VERSION_SINCE(_)  0
+# define MSC_VERSION_BEFORE(_) 0
+#endif
+
+#ifndef __has_attribute
+# define __has_attribute(...) __has_attribute_##__VA_ARGS__
+# /* GCC  <= 4  lacks __has_attribute  predefined macro,  while has  attributes
+#  * themselves.  We can simulate the macro like the following: */
+# define __has_attribute_aligned                    GCC_VERSION_SINCE(0, 0, 0)
+# define __has_attribute_alloc_size                 GCC_VERSION_SINCE(4, 3, 0)
+# define __has_attribute_artificial                 GCC_VERSION_SINCE(4, 3, 0)
+# define __has_attribute_always_inline              GCC_VERSION_SINCE(3, 1, 0)
+# define __has_attribute_cdecl                      GCC_VERSION_SINCE(0, 0, 0)
+# define __has_attribute_cold                       GCC_VERSION_SINCE(4, 3, 0)
+# define __has_attribute_const                      GCC_VERSION_SINCE(2, 6, 0)
+# define __has_attribute_deprecated                 GCC_VERSION_SINCE(3, 1, 0)
+# define __has_attribute_dllexport                  GCC_VERSION_SINCE(0, 0, 0)
+# define __has_attribute_dllimport                  GCC_VERSION_SINCE(0, 0, 0)
+# define __has_attribute_error                      GCC_VERSION_SINCE(4, 3, 0)
+# define __has_attribute_format                     GCC_VERSION_SINCE(0, 0, 0)
+# define __has_attribute_hot                        GCC_VERSION_SINCE(4, 3, 0)
+# define __has_attribute_leaf                       GCC_VERSION_SINCE(4, 6, 0)
+# define __has_attribute_malloc                     GCC_VERSION_SINCE(3, 0, 0)
+# define __has_attribute_no_address_safety_analysis GCC_VERSION_SINCE(4, 8, 0)
+# define __has_attribute_no_sanitize_address        GCC_VERSION_SINCE(4, 8, 0)
+# define __has_attribute_no_sanitize_undefined      GCC_VERSION_SINCE(4, 9, 0)
+# define __has_attribute_noinline                   GCC_VERSION_SINCE(3, 1, 0)
+# define __has_attribute_nonnull                    GCC_VERSION_SINCE(3, 3, 0)
+# define __has_attribute_noreturn                   GCC_VERSION_SINCE(2, 5, 0)
+# define __has_attribute_nothrow                    GCC_VERSION_SINCE(3, 3, 0)
+# define __has_attribute_pure                       GCC_VERSION_SINCE(2, 96, 0)
+# define __has_attribute_returns_nonnull            GCC_VERSION_SINCE(4, 9, 0)
+# define __has_attribute_returns_twice              GCC_VERSION_SINCE(4, 1, 0)
+# define __has_attribute_stdcall                    GCC_VERSION_SINCE(0, 0, 0)
+# define __has_attribute_unused                     GCC_VERSION_SINCE(0, 0, 0)
+# define __has_attribute_visibility                 GCC_VERSION_SINCE(3, 3, 0)
+# define __has_attribute_visibility                 GCC_VERSION_SINCE(3, 3, 0)
+# define __has_attribute_warn_unused_result         GCC_VERSION_SINCE(3, 4, 0)
+# define __has_attribute_warning                    GCC_VERSION_SINCE(4, 3, 0)
+# define __has_attribute_weak                       GCC_VERSION_SINCE(0, 0, 0)
+# /* Note that 0,0,0 might be inaccurate. */
+#endif
+
+#ifndef __has_c_attribute
+# /* As  of writing  everything  that lacks  __has_c_attribute also  completely
+#  * lacks C2x attributes as well.  Might change in future? */
+# define __has_c_attribute(...) 0
+#endif
+
+#ifndef __has_declspec_attribute
+# define __has_declspec_attribute(...) __has_declspec_attribute_##__VA_ARGS__
+# define __has_declspec_attribute_align      MSC_VERSION_SINCE( 800)
+# define __has_declspec_attribute_deprecated MSC_VERSION_SINCE(1300)
+# define __has_declspec_attribute_dllexport  MSC_VERSION_SINCE( 800)
+# define __has_declspec_attribute_dllimport  MSC_VERSION_SINCE( 800)
+# define __has_declspec_attribute_noalias    MSC_VERSION_SINCE( 800)
+# define __has_declspec_attribute_noinline   MSC_VERSION_SINCE(1300)
+# define __has_declspec_attribute_noreturn   MSC_VERSION_SINCE(1100)
+# define __has_declspec_attribute_nothrow    MSC_VERSION_SINCE( 800)
+# define __has_declspec_attribute_restrict   MSC_VERSION_SINCE( 800)
+# /* Note that 800 might be inaccurate. */
+#endif
+
+#ifndef __has_builtin
+# /* :FIXME:  Historically GCC  has had  tons of  builtins, but  it implemented
+#  * __has_builtin  only  since  GCC  10.    This  section  can  be  made  more
+#  * granular. */
+# /* https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66970 */
+# define __has_builtin(...) GCC_VERSION_SINCE(0, 0, 0)
+#endif
+
+#ifndef __has_feature
+# define __has_feature(...) 0
+#endif
+
+#ifndef __has_extension
+# /* Pre-3.0 clang had __has_feature but not __has_extension. */
+# define __has_extension __has_feature
+#endif
+
+#ifndef __has_warning
+# /* We cannot  simulate __has_warning  like the ones  above, because  it takes
+#  * string liteals  (we can stringize  a macro arugment  but there is  no such
+#  * thing like an unquote of strrings). */
+# define __has_warning(...) 0
+#endif
+
+#ifndef __GNUC__
+# define __extension__ /* void */
+#endif
+
 #ifndef MAYBE_UNUSED
 # define MAYBE_UNUSED(x) x
 #endif
 
 #ifndef WARN_UNUSED_RESULT
 # define WARN_UNUSED_RESULT(x) x
-#endif
-
-#ifndef __has_feature
-# define __has_feature(x) 0
-#endif
-
-#ifndef __has_extension
-# define __has_extension __has_feature
 #endif
 
 #define RB_OBJ_BUILTIN_TYPE(obj) rb_obj_builtin_type(obj)

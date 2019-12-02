@@ -1389,7 +1389,7 @@ rb_float_equal(VALUE x, VALUE y)
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
 	b = RFLOAT_VALUE(y);
-#if defined(_MSC_VER) && _MSC_VER < 1300
+#if MSC_VERSION_BEFORE(1300)
 	if (isnan(b)) return Qfalse;
 #endif
     }
@@ -1397,7 +1397,7 @@ rb_float_equal(VALUE x, VALUE y)
 	return num_equal(x, y);
     }
     a = RFLOAT_VALUE(x);
-#if defined(_MSC_VER) && _MSC_VER < 1300
+#if MSC_VERSION_BEFORE(1300)
     if (isnan(a)) return Qfalse;
 #endif
     return (a == b)?Qtrue:Qfalse;
@@ -1513,14 +1513,14 @@ rb_float_gt(VALUE x, VALUE y)
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
 	b = RFLOAT_VALUE(y);
-#if defined(_MSC_VER) && _MSC_VER < 1300
+#if MSC_VERSION_BEFORE(1300)
 	if (isnan(b)) return Qfalse;
 #endif
     }
     else {
 	return rb_num_coerce_relop(x, y, '>');
     }
-#if defined(_MSC_VER) && _MSC_VER < 1300
+#if MSC_VERSION_BEFORE(1300)
     if (isnan(a)) return Qfalse;
 #endif
     return (a > b)?Qtrue:Qfalse;
@@ -1550,14 +1550,14 @@ flo_ge(VALUE x, VALUE y)
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
 	b = RFLOAT_VALUE(y);
-#if defined(_MSC_VER) && _MSC_VER < 1300
+#if MSC_VERSION_BEFORE(1300)
 	if (isnan(b)) return Qfalse;
 #endif
     }
     else {
 	return rb_num_coerce_relop(x, y, idGE);
     }
-#if defined(_MSC_VER) && _MSC_VER < 1300
+#if MSC_VERSION_BEFORE(1300)
     if (isnan(a)) return Qfalse;
 #endif
     return (a >= b)?Qtrue:Qfalse;
@@ -1587,14 +1587,14 @@ flo_lt(VALUE x, VALUE y)
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
 	b = RFLOAT_VALUE(y);
-#if defined(_MSC_VER) && _MSC_VER < 1300
+#if MSC_VERSION_BEFORE(1300)
 	if (isnan(b)) return Qfalse;
 #endif
     }
     else {
 	return rb_num_coerce_relop(x, y, '<');
     }
-#if defined(_MSC_VER) && _MSC_VER < 1300
+#if MSC_VERSION_BEFORE(1300)
     if (isnan(a)) return Qfalse;
 #endif
     return (a < b)?Qtrue:Qfalse;
@@ -1624,14 +1624,14 @@ flo_le(VALUE x, VALUE y)
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
 	b = RFLOAT_VALUE(y);
-#if defined(_MSC_VER) && _MSC_VER < 1300
+#if MSC_VERSION_BEFORE(1300)
 	if (isnan(b)) return Qfalse;
 #endif
     }
     else {
 	return rb_num_coerce_relop(x, y, idLE);
     }
-#if defined(_MSC_VER) && _MSC_VER < 1300
+#if MSC_VERSION_BEFORE(1300)
     if (isnan(a)) return Qfalse;
 #endif
     return (a <= b)?Qtrue:Qfalse;
@@ -1656,7 +1656,7 @@ rb_float_eql(VALUE x, VALUE y)
     if (RB_TYPE_P(y, T_FLOAT)) {
 	double a = RFLOAT_VALUE(x);
 	double b = RFLOAT_VALUE(y);
-#if defined(_MSC_VER) && _MSC_VER < 1300
+#if MSC_VERSION_BEFORE(1300)
 	if (isnan(a) || isnan(b)) return Qfalse;
 #endif
 	if (a == b)
