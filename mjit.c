@@ -731,8 +731,8 @@ split_flags(const char *flags)
         }
     }
 
-    char **ret = xmalloc(sizeof(char **) * (i + 1));
-    memcpy((void *)ret, buf, sizeof(char **) * i);
+    char **ret = xmalloc(sizeof(char *) * (i + 1));
+    memcpy(ret, buf, sizeof(char *) * i);
     ret[i] = NULL;
     return ret;
 }
