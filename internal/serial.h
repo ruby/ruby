@@ -10,21 +10,13 @@
  *             file COPYING are met.  Consult the file for details.
  */
 
-#if defined(HAVE_LONG_LONG)
-typedef unsigned LONG_LONG rb_serial_t;
-# define SERIALT2NUM ULL2NUM
-# define PRI_SERIALT_PREFIX PRI_LL_PREFIX
-# define SIZEOF_SERIAL_T SIZEOF_LONG_LONG
-#elif defined(HAVE_UINT64_T)
-typedef uint64_t rb_serial_t;
-# define SERIALT2NUM SIZET2NUM
-# define PRI_SERIALT_PREFIX PRI_64_PREFIX
-# define SIZEOF_SERIAL_T SIZEOF_UINT64_T
-#else
-typedef unsigned long rb_serial_t;
-# define SERIALT2NUM ULONG2NUM
-# define PRI_SERIALT_PREFIX PRI_LONG_PREFIX
-# define SIZEOF_SERIAL_T SIZEOF_LONG
+#ifndef HAVE_LONG_LONG
+# error need C99+
 #endif
+
+typedef unsigned LONG_LONG rb_serial_t;
+#define SERIALT2NUM ULL2NUM
+#define PRI_SERIALT_PREFIX PRI_LL_PREFIX
+#define SIZEOF_SERIAL_T SIZEOF_LONG_LONG
 
 #endif /* INTERNAL_SERIAL_H */
