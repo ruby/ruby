@@ -768,14 +768,12 @@ mjit_init(const struct mjit_options *opts)
     cc_added_args = split_flags(opts->debug_flags);
     xfree(opts->debug_flags);
 #if MJIT_CFLAGS_PIPE
-    { // eliminate a flag incompatible with `-pipe`
-        size_t i, j;
-        for (i = 0, j = 0; i < sizeof(CC_COMMON_ARGS) / sizeof(char *); i++) {
-            if (CC_COMMON_ARGS[i] && strncmp("-save-temps", CC_COMMON_ARGS[i], strlen("-save-temps")) == 0)
-                continue; // skip -save-temps flag
-            cc_common_args[j] = CC_COMMON_ARGS[i];
-            j++;
-        }
+    // eliminate a flag incompatible with `-pipe`
+    for (size_t i = 0, j = 0; i < sizeof(CC_COMMON_ARGS) / sizeof(char *); i++) {
+        if (CC_COMMON_ARGS[i] && strncmp("-save-temps", CC_COMMON_ARGS[i], strlen("-save-temps")) == 0)
+            continue; // skip -save-temps flag
+        cc_common_args[j] = CC_COMMON_ARGS[i];
+        j++;
     }
 #endif
 
