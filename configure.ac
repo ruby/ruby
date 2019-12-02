@@ -569,6 +569,17 @@ AS_IF([test "$GCC" = yes], [
     # argument check. The performance drop is very little and Ubuntu enables
     # _FORTIFY_SOURCE=2 by default. So, let's support it for protecting us from
     # a mistake of silly C extensions.
+
+    # TODO: check if link succeeds with _FORTIFY_SOURCE=2.
+    AS_CASE(["$target_os"],
+    [mingw*], [
+	fortify_source=no
+    ])
+    AC_ARG_ENABLE(fortify_source,
+		  AS_HELP_STRING([--disable-fortify-source],
+				 [disable -D_FORTIFY_SOURCE=2 option, which causes link error on mingw]),
+		  [fortify_source=$enableval])
+    test "x$fortify_source" = xno ||
     RUBY_TRY_CFLAGS(-D_FORTIFY_SOURCE=2, [RUBY_APPEND_OPTION(XCFLAGS, -D_FORTIFY_SOURCE=2)])
 
     : ${MJIT_HEADER_FLAGS='-P -dD'}
