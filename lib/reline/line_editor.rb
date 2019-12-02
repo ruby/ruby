@@ -1160,6 +1160,9 @@ class Reline::LineEditor
         key = Fiber.yield(search_word)
         search_again = false
         case key
+        when -1 # determined
+          Reline.last_incremental_search = search_word
+          break
         when "\C-h".ord, "\C-?".ord
           grapheme_clusters = search_word.grapheme_clusters
           if grapheme_clusters.size > 0
@@ -1176,13 +1179,18 @@ class Reline::LineEditor
           end
         end
         hit = nil
-        if @line_backup_in_history&.include?(search_word)
+        if not search_word.empty? and @line_backup_in_history&.include?(search_word)
           @history_pointer = nil
           hit = @line_backup_in_history
         else
           if search_again
+            if search_word.empty? and Reline.last_incremental_search
+              search_word = Reline.last_incremental_search
+            end
             if @history_pointer
               history = Reline::HISTORY[0..(@history_pointer - 1)]
+            else
+              history = Reline::HISTORY
             end
           elsif @history_pointer
             history = Reline::HISTORY[0..@history_pointer]
@@ -1226,22 +1234,41 @@ class Reline::LineEditor
       case k
       when "\C-j".ord
         if @history_pointer
-          @line = Reline::HISTORY[@history_pointer]
+          buffer = Reline::HISTORY[@history_pointer]
         else
-          @line = @line_backup_in_history
+          buffer = @line_backup_in_history
+        end
+        if @is_multiline
+          @buffer_of_lines = buffer.split("\n")
+          @buffer_of_lines = [String.new(encoding: @encoding)] if @buffer_of_lines.empty?
+          @line_index = @buffer_of_lines.size - 1
+          @line = @buffer_of_lines.last
+          @rerender_all = true
+        else
+          @line = buffer
         end
         @searching_prompt = nil
         @waiting_proc = nil
         @cursor_max = calculate_width(@line)
         @cursor = @byte_pointer = 0
+        searcher.resume(-1)
       when "\C-g".ord
-        @line = @line_backup_in_history
+        if @is_multiline
+          @buffer_of_lines = @line_backup_in_history.split("\n")
+          @buffer_of_lines = [String.new(encoding: @encoding)] if @buffer_of_lines.empty?
+          @line_index = @buffer_of_lines.size - 1
+          @line = @buffer_of_lines.last
+          @rerender_all = true
+        else
+          @line = @line_backup_in_history
+        end
         @history_pointer = nil
         @searching_prompt = nil
         @waiting_proc = nil
         @line_backup_in_history = nil
         @cursor_max = calculate_width(@line)
         @cursor = @byte_pointer = 0
+        @rerender_all = true
       else
         chr = k.is_a?(String) ? k : k.chr(Encoding::ASCII_8BIT)
         if chr.match?(/[[:print:]]/) or k == "\C-h".ord or k == "\C-?".ord or k == "\C-r".ord
@@ -1267,6 +1294,7 @@ class Reline::LineEditor
           @waiting_proc = nil
           @cursor_max = calculate_width(@line)
           @cursor = @byte_pointer = 0
+          searcher.resume(-1)
         end
       end
     }

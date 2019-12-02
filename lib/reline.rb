@@ -40,6 +40,7 @@ module Reline
     attr_accessor :key_stroke
     attr_accessor :line_editor
     attr_accessor :ambiguous_width
+    attr_accessor :last_incremental_search
     attr_reader :output
 
     def initialize
@@ -367,6 +368,8 @@ module Reline
   def_single_delegator :line_editor, :rerender, :redisplay
   def_single_delegators :core, :vi_editing_mode?, :emacs_editing_mode?
   def_single_delegators :core, :ambiguous_width
+  def_single_delegators :core, :last_incremental_search
+  def_single_delegators :core, :last_incremental_search=
 
   def_single_delegators :core, :readmultiline
   def_instance_delegators self, :readmultiline
