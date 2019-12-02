@@ -84,7 +84,78 @@
 #  * __has_builtin  only  since  GCC  10.    This  section  can  be  made  more
 #  * granular. */
 # /* https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66970 */
-# define __has_builtin(...) GCC_VERSION_SINCE(0, 0, 0)
+# define __has_builtin(...) __has_builtin_##__VA_ARGS__
+# define __has_builtin____builtin_bswap16        GCC_VERSION_SINCE(4, 8, 0) /* http://gcc.gnu.org/bugzilla/show_bug.cgi?id=52624 */
+# define __has_builtin____builtin_bswap32        GCC_VERSION_SINCE(3, 6, 0)
+# define __has_builtin____builtin_bswap64        GCC_VERSION_SINCE(3, 6, 0)
+# define __has_builtin____builtin_clz            GCC_VERSION_SINCE(3, 6, 0)
+# define __has_builtin____builtin_clzl           GCC_VERSION_SINCE(3, 6, 0)
+# define __has_builtin____builtin_clzll          GCC_VERSION_SINCE(3, 6, 0)
+# define __has_builtin____builtin_ctz            GCC_VERSION_SINCE(3, 6, 0)
+# define __has_builtin____builtin_ctzl           GCC_VERSION_SINCE(3, 6, 0)
+# define __has_builtin____builtin_ctzll          GCC_VERSION_SINCE(3, 6, 0)
+# define __has_builtin____builtin_mul_overflow   GCC_VERSION_SINCE(5, 0, 0)
+# define __has_builtin____builtin_mul_overflow_p GCC_VERSION_SINCE(7, 0, 0)
+# define __has_builtin____builtin_popcount       GCC_VERSION_SINCE(3, 6, 0)
+# define __has_builtin____builtin_popcountl      GCC_VERSION_SINCE(3, 6, 0)
+# define __has_builtin____builtin_popcountll     GCC_VERSION_SINCE(3, 6, 0)
+# /* Take config.h definition when available */
+# ifdef HAVE_BUILTIN____BUILTIN_BSWAP16
+#  undef __has_builtin____builtin_bswap16
+#  define __has_builtin____builtin_bswap16 HAVE_BUILTIN____BUILTIN_BSWAP16
+# endif
+# ifdef HAVE_BUILTIN____BUILTIN_BSWAP32
+#  undef __has_builtin____builtin_bswap32
+#  define __has_builtin____builtin_bswap16 HAVE_BUILTIN____BUILTIN_BSWAP32
+# endif
+# ifdef HAVE_BUILTIN____BUILTIN_BSWAP64
+#  undef __has_builtin____builtin_bswap64
+#  define __has_builtin____builtin_bswap64 HAVE_BUILTIN____BUILTIN_BSWAP64
+# endif
+# ifdef HAVE_BUILTIN____BUILTIN_CLZ
+#  undef __has_builtin____builtin_clz
+#  define __has_builtin____builtin_clz HAVE_BUILTIN____BUILTIN_CLZ
+# endif
+# ifdef HAVE_BUILTIN____BUILTIN_CLZL
+#  undef __has_builtin____builtin_clzl
+#  define __has_builtin____builtin_clzl HAVE_BUILTIN____BUILTIN_CLZL
+# endif
+# ifdef HAVE_BUILTIN____BUILTIN_CLZLL
+#  undef __has_builtin____builtin_clzll
+#  define __has_builtin____builtin_clzll HAVE_BUILTIN____BUILTIN_CLZLL
+# endif
+# ifdef HAVE_BUILTIN____BUILTIN_CTZ
+#  undef __has_builtin____builtin_ctz
+#  define __has_builtin____builtin_ctz HAVE_BUILTIN____BUILTIN_CTZ
+# endif
+# ifdef HAVE_BUILTIN____BUILTIN_CTZL
+#  undef __has_builtin____builtin_ctzl
+#  define __has_builtin____builtin_ctzl HAVE_BUILTIN____BUILTIN_CTZL
+# endif
+# ifdef HAVE_BUILTIN____BUILTIN_CTZLL
+#  undef __has_builtin____builtin_ctzll
+#  define __has_builtin____builtin_ctzll HAVE_BUILTIN____BUILTIN_CTZLL
+# endif
+# ifdef HAVE_BUILTIN____BUILTIN_MUL_OVERFLOW
+#  undef __has_builtin____builtin_mul_overflow
+#  define __has_builtin____builtin_mul_overflow HAVE_BUILTIN____BUILTIN_MUL_OVERFLOW
+# endif
+# ifdef HAVE_BUILTIN____BUILTIN_MUL_OVERFLOW_P
+#  undef __has_builtin____builtin_mul_overflow_p
+#  define __has_builtin____builtin_mul_overflow_p HAVE_BUILTIN____BUILTIN_MUL_OVERFLOW_P
+# endif
+# ifdef HAVE_BUILTIN____BUILTIN_POPCOUNT
+#  undef __has_builtin____builtin_popcount
+#  define __has_builtin____builtin_popcount HAVE_BUILTIN____BUILTIN_POPCOUNT
+# endif
+# ifdef HAVE_BUILTIN____BUILTIN_POPCOUNTL
+#  undef __has_builtin____builtin_popcountl
+#  define __has_builtin____builtin_popcountl HAVE_BUILTIN____BUILTIN_POPCOUNTL
+# endif
+# ifdef HAVE_BUILTIN____BUILTIN_POPCOUNTLL
+#  undef __has_builtin____builtin_popcountll
+#  define __has_builtin____builtin_popcountll HAVE_BUILTIN____BUILTIN_POPCOUNTLL
+# endif
 #endif
 
 #ifndef __has_feature

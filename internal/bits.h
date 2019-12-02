@@ -8,7 +8,44 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @see        Henry S. Warren Jr., "Hacker's Delight" (2nd ed.), 2013.
+ * @see        SEI CERT C Coding Standard  INT32-C.  "Ensure that operations on
+ *             signed integers do not result in overflow"
+ * @see        https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html
+ * @see        https://clang.llvm.org/docs/LanguageExtensions.html#builtin-rotateleft
+ * @see        https://clang.llvm.org/docs/LanguageExtensions.html#builtin-rotateright
+ * @see        https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/byteswap-uint64-byteswap-ulong-byteswap-ushort
+ * @see        https://docs.microsoft.com/en-us/cpp/intrinsics/bitscanforward-bitscanforward64
+ * @see        https://docs.microsoft.com/en-us/cpp/intrinsics/bitscanreverse-bitscanreverse64
+ * @see        https://docs.microsoft.com/en-us/cpp/intrinsics/lzcnt16-lzcnt-lzcnt64
+ * @see        https://docs.microsoft.com/en-us/cpp/intrinsics/popcnt16-popcnt-popcnt64
+ * @see        https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_lzcnt_u32
+ * @see        https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_tzcnt_u32
  */
+#include "ruby/config.h"
+#include <limits.h>             /* for CHAR_BITS */
+#include <stdint.h>             /* for uintptr_t */
+
+#ifdef _MSC_VER
+# include <stdlib.h>            /* for _byteswap_uint64 */
+#endif
+
+#if defined(__x86_64__) && defined(__LZCNT__) && ! defined(MJIT_HEADER)
+# /* Rule out MJIT_HEADER, which does not interface well with <immintrin.h> */
+# include <immintrin.h>         /* for _lzcnt_u64 */
+#endif
+
+#if defined(_MSC_VER) && defined(_WIN64)
+# include <intrin.h>            /* for the following intrinsics */
+# pragma intrinsic(_BitScanForward)
+# pragma intrinsic(_BitScanForward64)
+# pragma intrinsic(_BitScanReverse)
+# pragma intrinsic(_BitScanReverse64)
+#endif
+
+#include "ruby/ruby.h"              /* for VALUE */
+#include "internal/compilers.h"     /* for __has_builtin */
+#include "internal/static_assert.h" /* for STATIC_ASSERT */
 
 /* The most significant bit of the lower part of half-long integer.
  * If sizeof(long) == 4, this is 0x8000.
@@ -16,19 +53,25 @@
  */
 #define HALF_LONG_MSB ((SIGNED_VALUE)1<<((SIZEOF_LONG*CHAR_BIT-1)/2))
 
-#define SIGNED_INTEGER_TYPE_P(int_type) (0 > ((int_type)0)-1)
-#define SIGNED_INTEGER_MAX(sint_type) \
-  (sint_type) \
-  ((((sint_type)1) << (sizeof(sint_type) * CHAR_BIT - 2)) | \
-  ((((sint_type)1) << (sizeof(sint_type) * CHAR_BIT - 2)) - 1))
-#define SIGNED_INTEGER_MIN(sint_type) (-SIGNED_INTEGER_MAX(sint_type)-1)
-#define UNSIGNED_INTEGER_MAX(uint_type) (~(uint_type)0)
-#ifdef HAVE_BUILTIN___BUILTIN_MUL_OVERFLOW_P
-#define MUL_OVERFLOW_P(a, b) \
+#define SIGNED_INTEGER_TYPE_P(T) (0 > ((T)0)-1)
+
+#define SIGNED_INTEGER_MIN(T)                           \
+    ((sizeof(T) == sizeof(int8_t))  ? ((T)INT8_MIN)  :  \
+    ((sizeof(T) == sizeof(int16_t)) ? ((T)INT16_MIN) :  \
+    ((sizeof(T) == sizeof(int32_t)) ? ((T)INT32_MIN) :  \
+    ((sizeof(T) == sizeof(int64_t)) ? ((T)INT64_MIN) :  \
+     0))))
+
+#define SIGNED_INTEGER_MAX(T) ((T)(SIGNED_INTEGER_MIN(T) ^ ((T)~(T)0)))
+
+#define UNSIGNED_INTEGER_MAX(T) ((T)~(T)0)
+
+#if __has_builtin(__builtin_mul_overflow_p)
+# define MUL_OVERFLOW_P(a, b) \
     __builtin_mul_overflow_p((a), (b), (__typeof__(a * b))0)
-#elif defined HAVE_BUILTIN___BUILTIN_MUL_OVERFLOW
-#define MUL_OVERFLOW_P(a, b) \
-    RB_GNUC_EXTENSION_BLOCK(__typeof__(a) c; __builtin_mul_overflow((a), (b), &c))
+#elif __has_builtin(__builtin_mul_overflow)
+# define MUL_OVERFLOW_P(a, b) \
+    __extension__ ({ __typeof__(a) c; __builtin_mul_overflow((a), (b), &c); })
 #endif
 
 #define MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, min, max) ( \
@@ -38,91 +81,137 @@
       ((b) > 0 ? (max) / (a) < (b) : (min) / (a) > (b)) : \
       ((b) > 0 ? (min) / (a) < (b) : (max) / (a) > (b)))
 
-#ifdef HAVE_BUILTIN___BUILTIN_MUL_OVERFLOW_P
+#if __has_builtin(__builtin_mul_overflow_p)
 /* __builtin_mul_overflow_p can take bitfield */
 /* and GCC permits bitfields for integers other than int */
-#define MUL_OVERFLOW_FIXNUM_P(a, b) RB_GNUC_EXTENSION_BLOCK( \
-    struct { long fixnum : SIZEOF_LONG * CHAR_BIT - 1; } c; \
-    __builtin_mul_overflow_p((a), (b), c.fixnum); \
-)
+# define MUL_OVERFLOW_FIXNUM_P(a, b) \
+    __extension__ ({ \
+        struct { long fixnum : sizeof(long) * CHAR_BIT - 1; } c; \
+        __builtin_mul_overflow_p((a), (b), c.fixnum); \
+    })
 #else
-#define MUL_OVERFLOW_FIXNUM_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, FIXNUM_MIN, FIXNUM_MAX)
+# define MUL_OVERFLOW_FIXNUM_P(a, b) \
+    MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, FIXNUM_MIN, FIXNUM_MAX)
 #endif
 
 #ifdef MUL_OVERFLOW_P
-#define MUL_OVERFLOW_LONG_LONG_P(a, b) MUL_OVERFLOW_P(a, b)
-#define MUL_OVERFLOW_LONG_P(a, b)      MUL_OVERFLOW_P(a, b)
-#define MUL_OVERFLOW_INT_P(a, b)       MUL_OVERFLOW_P(a, b)
+# define MUL_OVERFLOW_LONG_LONG_P(a, b) MUL_OVERFLOW_P(a, b)
+# define MUL_OVERFLOW_LONG_P(a, b)      MUL_OVERFLOW_P(a, b)
+# define MUL_OVERFLOW_INT_P(a, b)       MUL_OVERFLOW_P(a, b)
 #else
-#define MUL_OVERFLOW_LONG_LONG_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, LLONG_MIN, LLONG_MAX)
-#define MUL_OVERFLOW_LONG_P(a, b)      MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, LONG_MIN, LONG_MAX)
-#define MUL_OVERFLOW_INT_P(a, b)       MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, INT_MIN, INT_MAX)
+# define MUL_OVERFLOW_LONG_LONG_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, LLONG_MIN, LLONG_MAX)
+# define MUL_OVERFLOW_LONG_P(a, b)      MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, LONG_MIN, LONG_MAX)
+# define MUL_OVERFLOW_INT_P(a, b)       MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, INT_MIN, INT_MAX)
 #endif
 
-#ifndef swap16
-# ifdef HAVE_BUILTIN___BUILTIN_BSWAP16
-#  define swap16(x) __builtin_bswap16(x)
-# endif
+#ifdef HAVE_UINT128_T
+# define bit_length(x) \
+    (unsigned int) \
+    (sizeof(x) <= sizeof(int32_t) ? 32 - nlz_int32((uint32_t)(x)) : \
+     sizeof(x) <= sizeof(int64_t) ? 64 - nlz_int64((uint64_t)(x)) : \
+                                   128 - nlz_int128((uint128_t)(x)))
+#else
+# define bit_length(x) \
+    (unsigned int) \
+    (sizeof(x) <= sizeof(int32_t) ? 32 - nlz_int32((uint32_t)(x)) : \
+                                    64 - nlz_int64((uint64_t)(x)))
 #endif
 
-#ifndef swap16
-# define swap16(x)      ((uint16_t)((((x)&0xFF)<<8) | (((x)>>8)&0xFF)))
+static inline uint16_t swap16(uint16_t);
+static inline uint32_t swap32(uint32_t);
+static inline uint64_t swap64(uint64_t);
+static inline unsigned nlz_int(unsigned x);
+static inline unsigned nlz_long(unsigned long x);
+static inline unsigned nlz_long_long(unsigned long long x);
+static inline unsigned nlz_intptr(uintptr_t x);
+static inline unsigned nlz_int32(uint32_t x);
+static inline unsigned nlz_int64(uint64_t x);
+#ifdef HAVE_UINT128_T
+static inline unsigned nlz_int128(uint128_t x);
 #endif
+static inline unsigned rb_popcount32(uint32_t x);
+static inline unsigned rb_popcount64(uint64_t x);
+static inline unsigned rb_popcount_intptr(uintptr_t x);
+static inline int ntz_int32(uint32_t x);
+static inline int ntz_int64(uint64_t x);
+static inline int ntz_intptr(uintptr_t x);
+static inline VALUE RUBY_BIT_ROTL(VALUE, int);
+static inline VALUE RUBY_BIT_ROTR(VALUE, int);
 
-#ifndef swap32
-# ifdef HAVE_BUILTIN___BUILTIN_BSWAP32
-#  define swap32(x) __builtin_bswap32(x)
-# endif
-#endif
+static inline uint16_t
+swap16(uint16_t x)
+{
+#if __has_builtin(__builtin_bswap16)
+    return __builtin_bswap16(x);
 
-#ifndef swap32
-# define swap32(x)      ((uint32_t)((((x)&0xFF)<<24)    \
-                        |(((x)>>24)&0xFF)       \
-                        |(((x)&0x0000FF00)<<8)  \
-                        |(((x)&0x00FF0000)>>8)  ))
-#endif
+#elif defined(_MSC_VER)
+    return _byteswap_ushort(x);
 
-#ifndef swap64
-# ifdef HAVE_BUILTIN___BUILTIN_BSWAP64
-#  define swap64(x) __builtin_bswap64(x)
-# endif
-#endif
+#else
+    return (x << 8) | (x >> 8);
 
-#ifndef swap64
-# ifdef HAVE_INT64_T
-#  define byte_in_64bit(n) ((uint64_t)0xff << (n))
-#  define swap64(x)       ((uint64_t)((((x)&byte_in_64bit(0))<<56)      \
-                           |(((x)>>56)&0xFF)                    \
-                           |(((x)&byte_in_64bit(8))<<40)        \
-                           |(((x)&byte_in_64bit(48))>>40)       \
-                           |(((x)&byte_in_64bit(16))<<24)       \
-                           |(((x)&byte_in_64bit(40))>>24)       \
-                           |(((x)&byte_in_64bit(24))<<8)        \
-                           |(((x)&byte_in_64bit(32))>>8)))
-# endif
 #endif
+}
+
+static inline uint32_t
+swap32(uint32_t x)
+{
+#if __has_builtin(__builtin_bswap32)
+    return __builtin_bswap32(x);
+
+#elif defined(_MSC_VER)
+    return _byteswap_ulong(x);
+
+#else
+    x = ((x & 0x0000FFFF) << 16) | ((x & 0xFFFF0000) >> 16);
+    x = ((x & 0x00FF00FF) <<  8) | ((x & 0xFF00FF00) >>  8);
+    return x;
+
+#endif
+}
+
+static inline uint64_t
+swap64(uint64_t x)
+{
+#if __has_builtin(__builtin_bswap64)
+    return __builtin_bswap64(x);
+
+#elif defined(_MSC_VER)
+    return _byteswap_uint64(x);
+
+#else
+    x = ((x & 0x00000000FFFFFFFFULL) << 32) | ((x & 0xFFFFFFFF00000000ULL) >> 32);
+    x = ((x & 0x0000FFFF0000FFFFULL) << 16) | ((x & 0xFFFF0000FFFF0000ULL) >> 16);
+    x = ((x & 0x00FF00FF00FF00FFULL) <<  8) | ((x & 0xFF00FF00FF00FF00ULL) >>  8);
+    return x;
+
+#endif
+}
 
 static inline unsigned int
-nlz_int(unsigned int x)
+nlz_int32(uint32_t x)
 {
-#if defined(HAVE_BUILTIN___BUILTIN_CLZ)
-    if (x == 0) return SIZEOF_INT * CHAR_BIT;
-    return (unsigned int)__builtin_clz(x);
+#if defined(_MSC_VER) && defined(_WIN64) && defined(__AVX2__)
+    /* Note: It seems there is no such tihng like __LZCNT__ predefined in MSVC.
+     * AMD  CPUs have  had this  instruction for  decades (since  K10) but  for
+     * Intel, Haswell is  the oldest one.  We need to  use __AVX2__ for maximum
+     * safety. */
+    return (unsigned int)__lzcnt(x);
+
+#elif defined(__x86_64__) && defined(__LZCNT__) && ! defined(MJIT_HEADER)
+    return (unsigned int)_lzcnt_u32(x);
+
+#elif defined(_MSC_VER) && defined(_Win64) /* &&! defined(__AVX2__) */
+    unsigned long r;
+    return _BitScanReverse(&r, x) ? (int)r : 32;
+
+#elif __has_builtin(__builtin_clz)
+    STATIC_ASSERT(sizeof_int, sizeof(int) * CHAR_BIT == 32);
+    return x ? (unsigned int)__builtin_clz(x) : 32;
+
 #else
-    unsigned int y;
-# if 64 < SIZEOF_INT * CHAR_BIT
-    unsigned int n = 128;
-# elif 32 < SIZEOF_INT * CHAR_BIT
-    unsigned int n = 64;
-# else
-    unsigned int n = 32;
-# endif
-# if 64 < SIZEOF_INT * CHAR_BIT
-    y = x >> 64; if (y) {n -= 64; x = y;}
-# endif
-# if 32 < SIZEOF_INT * CHAR_BIT
-    y = x >> 32; if (y) {n -= 32; x = y;}
-# endif
+    uint32_t y;
+    unsigned n = 32;
     y = x >> 16; if (y) {n -= 16; x = y;}
     y = x >>  8; if (y) {n -=  8; x = y;}
     y = x >>  4; if (y) {n -=  4; x = y;}
@@ -133,196 +222,289 @@ nlz_int(unsigned int x)
 }
 
 static inline unsigned int
-nlz_long(unsigned long x)
+nlz_int64(uint64_t x)
 {
-#if defined(HAVE_BUILTIN___BUILTIN_CLZL)
-    if (x == 0) return SIZEOF_LONG * CHAR_BIT;
-    return (unsigned int)__builtin_clzl(x);
-#else
-    unsigned long y;
-# if 64 < SIZEOF_LONG * CHAR_BIT
-    unsigned int n = 128;
-# elif 32 < SIZEOF_LONG * CHAR_BIT
-    unsigned int n = 64;
-# else
-    unsigned int n = 32;
-# endif
-# if 64 < SIZEOF_LONG * CHAR_BIT
-    y = x >> 64; if (y) {n -= 64; x = y;}
-# endif
-# if 32 < SIZEOF_LONG * CHAR_BIT
-    y = x >> 32; if (y) {n -= 32; x = y;}
-# endif
-    y = x >> 16; if (y) {n -= 16; x = y;}
-    y = x >>  8; if (y) {n -=  8; x = y;}
-    y = x >>  4; if (y) {n -=  4; x = y;}
-    y = x >>  2; if (y) {n -=  2; x = y;}
-    y = x >>  1; if (y) {return n - 2;}
-    return (unsigned int)(n - x);
-#endif
-}
+#if defined(_MSC_VER) && defined(_WIN64) && defined(__AVX2__)
+    return (unsigned int)__lzcnt64(x);
 
-#ifdef HAVE_LONG_LONG
-static inline unsigned int
-nlz_long_long(unsigned LONG_LONG x)
-{
-#if defined(HAVE_BUILTIN___BUILTIN_CLZLL)
-    if (x == 0) return SIZEOF_LONG_LONG * CHAR_BIT;
-    return (unsigned int)__builtin_clzll(x);
+#elif defined(__x86_64__) && defined(__LZCNT__) && ! defined(MJIT_HEADER)
+    return (unsigned int)_lzcnt_u64(x);
+
+#elif defined(_MSC_VER) && defined(_Win64) /* &&! defined(__AVX2__) */
+    unsigned long r;
+    return _BitScanReverse64(&r, x) ? (unsigned int)r : 64;
+
+#elif __has_builtin(__builtin_clzl)
+    if (x == 0) {
+        return 64;
+    }
+    else if (sizeof(long) * CHAR_BIT == 64) {
+        return (unsigned int)__builtin_clzl((unsigned long)x);
+    }
+    else if (sizeof(long long) * CHAR_BIT == 64) {
+        return (unsigned int)__builtin_clzll((unsigned long long)x);
+    }
+    else {
+        /* :FIXME: Is there a way to make this branch a compile-time error? */
+        __builtin_unreachable();
+    }
+
 #else
-    unsigned LONG_LONG y;
-# if 64 < SIZEOF_LONG_LONG * CHAR_BIT
-    unsigned int n = 128;
-# elif 32 < SIZEOF_LONG_LONG * CHAR_BIT
+    uint64_t y;
     unsigned int n = 64;
-# else
-    unsigned int n = 32;
-# endif
-# if 64 < SIZEOF_LONG_LONG * CHAR_BIT
-    y = x >> 64; if (y) {n -= 64; x = y;}
-# endif
-# if 32 < SIZEOF_LONG_LONG * CHAR_BIT
     y = x >> 32; if (y) {n -= 32; x = y;}
-# endif
     y = x >> 16; if (y) {n -= 16; x = y;}
     y = x >>  8; if (y) {n -=  8; x = y;}
     y = x >>  4; if (y) {n -=  4; x = y;}
     y = x >>  2; if (y) {n -=  2; x = y;}
     y = x >>  1; if (y) {return n - 2;}
     return (unsigned int)(n - x);
+
 #endif
 }
-#endif
 
 #ifdef HAVE_UINT128_T
 static inline unsigned int
 nlz_int128(uint128_t x)
 {
-    uint128_t y;
-    unsigned int n = 128;
-    y = x >> 64; if (y) {n -= 64; x = y;}
-    y = x >> 32; if (y) {n -= 32; x = y;}
-    y = x >> 16; if (y) {n -= 16; x = y;}
-    y = x >>  8; if (y) {n -=  8; x = y;}
-    y = x >>  4; if (y) {n -=  4; x = y;}
-    y = x >>  2; if (y) {n -=  2; x = y;}
-    y = x >>  1; if (y) {return n - 2;}
-    return (unsigned int)(n - x);
+    uint64_t y = (uint64_t)(x >> 64);
+
+    if (x == 0) {
+        return 128;
+    }
+    else if (y == 0) {
+        return (unsigned int)nlz_int64(y) + 64;
+    }
+    else {
+        return (unsigned int)nlz_int64(y);
+    }
 }
 #endif
 
 static inline unsigned int
+nlz_int(unsigned int x)
+{
+    if (sizeof(unsigned int) * CHAR_BIT == 32) {
+        return nlz_int32((uint32_t)x);
+    }
+    else if (sizeof(unsigned int) * CHAR_BIT == 64) {
+        return nlz_int64((uint64_t)x);
+    }
+    else {
+        UNREACHABLE_RETURN(~0);
+    }
+}
+
+static inline unsigned int
+nlz_long(unsigned long x)
+{
+    if (sizeof(unsigned long) * CHAR_BIT == 32) {
+        return nlz_int32((uint32_t)x);
+    }
+    else if (sizeof(unsigned long) * CHAR_BIT == 64) {
+        return nlz_int64((uint64_t)x);
+    }
+    else {
+        UNREACHABLE_RETURN(~0);
+    }
+}
+
+static inline unsigned int
+nlz_long_long(unsigned long long x)
+{
+    if (sizeof(unsigned long long) * CHAR_BIT == 64) {
+        return nlz_int64((uint64_t)x);
+    }
+#ifdef HAVE_UINT128_T
+    else if (sizeof(unsigned long long) * CHAR_BIT == 128) {
+        return nlz_int128((uint128_t)x);
+    }
+#endif
+    else {
+        UNREACHABLE_RETURN(~0);
+    }
+}
+
+static inline unsigned int
 nlz_intptr(uintptr_t x)
 {
-#if SIZEOF_UINTPTR_T == SIZEOF_INT
-    return nlz_int(x);
-#elif SIZEOF_UINTPTR_T == SIZEOF_LONG
-    return nlz_long(x);
-#elif SIZEOF_UINTPTR_T == SIZEOF_LONG_LONG
-    return nlz_long_long(x);
-#else
-    #error no known integer type corresponds uintptr_t
-    return /* sane compiler */ ~0;
-#endif
+    if (sizeof(uintptr_t) == sizeof(unsigned int)) {
+        return nlz_int((unsigned int)x);
+    }
+    if (sizeof(uintptr_t) == sizeof(unsigned long)) {
+        return nlz_long((unsigned long)x);
+    }
+    if (sizeof(uintptr_t) == sizeof(unsigned long long)) {
+        return nlz_long_long((unsigned long long)x);
+    }
+    else {
+        UNREACHABLE_RETURN(~0);
+    }
 }
 
 static inline unsigned int
 rb_popcount32(uint32_t x)
 {
-#ifdef HAVE_BUILTIN___BUILTIN_POPCOUNT
+#if defined(_MSC_VER) && defined(_WIN64) && defined(__AVX__)
+    /* Note: CPUs since Nehalem and Barcelona  have had this instruction so SSE
+     * 4.2 should suffice, but it seems there is no such thing like __SSE_4_2__
+     * predefined macro in MSVC.  They do have __AVX__ so use it instead. */
+    return (unsigned int)__popcnt(x);
+
+#elif __has_builtin(__builtin_popcount)
+    STATIC_ASSERT(sizeof_int, sizeof(int) * CHAR_BIT >= 32);
     return (unsigned int)__builtin_popcount(x);
+
 #else
     x = (x & 0x55555555) + (x >> 1 & 0x55555555);
     x = (x & 0x33333333) + (x >> 2 & 0x33333333);
     x = (x & 0x0f0f0f0f) + (x >> 4 & 0x0f0f0f0f);
     x = (x & 0x001f001f) + (x >> 8 & 0x001f001f);
-    return (x & 0x0000003f) + (x >>16 & 0x0000003f);
+    x = (x & 0x0000003f) + (x >>16 & 0x0000003f);
+    return (unsigned int)x;
+
 #endif
 }
 
-static inline int
+static inline unsigned int
 rb_popcount64(uint64_t x)
 {
-#ifdef HAVE_BUILTIN___BUILTIN_POPCOUNT
-    return __builtin_popcountll(x);
+#if defined(_MSC_VER) && defined(_WIN64) && defined(__AVX__)
+    return (unsigned int)__popcnt64(x);
+
+#elif __has_builtin(__builtin_popcount)
+    if (sizeof(long) * CHAR_BIT == 64) {
+        return (unsigned int)__builtin_popcountl((unsigned long)x);
+    }
+    else if (sizeof(long long) * CHAR_BIT == 64) {
+        return (unsigned int)__builtin_popcountll((unsigned long long)x);
+    }
+    else {
+        /* :FIXME: Is there a way to make this branch a compile-time error? */
+        __builtin_unreachable();
+    }
+
 #else
     x = (x & 0x5555555555555555) + (x >> 1 & 0x5555555555555555);
     x = (x & 0x3333333333333333) + (x >> 2 & 0x3333333333333333);
     x = (x & 0x0707070707070707) + (x >> 4 & 0x0707070707070707);
     x = (x & 0x001f001f001f001f) + (x >> 8 & 0x001f001f001f001f);
     x = (x & 0x0000003f0000003f) + (x >>16 & 0x0000003f0000003f);
-    return (x & 0x7f) + (x >>32 & 0x7f);
+    x = (x & 0x000000000000007f) + (x >>32 & 0x000000000000007f);
+    return (unsigned int)x;
+
 #endif
 }
 
-static inline int
+static inline unsigned int
 rb_popcount_intptr(uintptr_t x)
 {
-#if SIZEOF_VOIDP == 8
-    return rb_popcount64(x);
-#elif SIZEOF_VOIDP == 4
-    return rb_popcount32(x);
-#endif
+    if (sizeof(uintptr_t) * CHAR_BIT == 64) {
+        return rb_popcount64((uint64_t)x);
+    }
+    else if (sizeof(uintptr_t) * CHAR_BIT == 32) {
+        return rb_popcount32((uint32_t)x);
+    }
+    else {
+        UNREACHABLE_RETURN(~0);
+    }
 }
 
 static inline int
 ntz_int32(uint32_t x)
 {
-#ifdef HAVE_BUILTIN___BUILTIN_CTZ
-    return __builtin_ctz(x);
+#if defined(__x86_64__) && defined(__BMI__) && ! defined(MJIT_HEADER)
+    return (unsigned)_tzcnt_u32(x);
+
+#elif defined(_MSC_VER) && defined(_WIN64)
+    /* :FIXME: Is there any way to issue TZCNT instead of BSF, apart from using
+     *         assembly?  Because issueing LZCNT seems possible (see nlz.h). */
+    unsigned long r;
+    return _BitScanForward(&r, x) ? (int)r : 32;
+
+#elif __has_builtin(__builtin_ctz)
+    STATIC_ASSERT(sizeof_int, sizeof(int) * CHAR_BIT == 32);
+    return x ? (unsigned)__builtin_ctz(x) : 32;
+
 #else
     return rb_popcount32((~x) & (x-1));
+
 #endif
 }
 
 static inline int
 ntz_int64(uint64_t x)
 {
-#ifdef HAVE_BUILTIN___BUILTIN_CTZLL
-    return __builtin_ctzll(x);
+#if defined(__x86_64__) && defined(__BMI__) && ! defined(MJIT_HEADER)
+    return (unsigned)_tzcnt_u64(x);
+
+#elif defined(_MSC_VER) && defined(_WIN64)
+    unsigned long r;
+    return _BitScanForward64(&r, x) ? (int)r : 64;
+
+#elif __has_builtin(__builtin_ctzl)
+    if (x == 0) {
+        return 64;
+    }
+    else if (sizeof(long) * CHAR_BIT == 64) {
+        return (unsigned)__builtin_ctzl((unsigned long)x);
+    }
+    else if (sizeof(long long) * CHAR_BIT == 64) {
+        return (unsigned)__builtin_ctzll((unsigned long long)x);
+    }
+    else {
+        /* :FIXME: Is there a way to make this branch a compile-time error? */
+        __builtin_unreachable();
+    }
+
 #else
     return rb_popcount64((~x) & (x-1));
+
 #endif
 }
 
 static inline int
 ntz_intptr(uintptr_t x)
 {
-#if SIZEOF_VOIDP == 8
-    return ntz_int64(x);
-#elif SIZEOF_VOIDP == 4
-    return ntz_int32(x);
+    if (sizeof(uintptr_t) * CHAR_BIT == 64) {
+        return ntz_int64((uint64_t)x);
+    }
+    else if (sizeof(uintptr_t) * CHAR_BIT == 32) {
+        return ntz_int32((uint32_t)x);
+    }
+    else {
+        UNREACHABLE_RETURN(~0);
+    }
+}
+
+static inline VALUE
+RUBY_BIT_ROTL(VALUE v, int n)
+{
+#if __has_builtin(__builtin_rotateleft32) && (SIZEOF_VALUE * CHAR_BIT == 32)
+    return __builtin_rotateleft32(v, n);
+
+#elif __has_builtin(__builtin_rotateleft64) && (SIZEOF_VALUE * CHAR_BIT == 64)
+    return __builtin_rotateleft64(v, n);
+
+#else
+    const int m = sizeof(VALUE) * CHAR_BIT;
+    return (v << n) | (v >> (m - n));
 #endif
 }
 
-#if defined(HAVE_UINT128_T) && defined(HAVE_LONG_LONG)
-#   define bit_length(x) \
-    (unsigned int) \
-    (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int((unsigned int)(x)) : \
-     sizeof(x) <= SIZEOF_LONG ? SIZEOF_LONG * CHAR_BIT - nlz_long((unsigned long)(x)) : \
-     sizeof(x) <= SIZEOF_LONG_LONG ? SIZEOF_LONG_LONG * CHAR_BIT - nlz_long_long((unsigned LONG_LONG)(x)) : \
-     SIZEOF_INT128_T * CHAR_BIT - nlz_int128((uint128_t)(x)))
-#elif defined(HAVE_UINT128_T)
-#   define bit_length(x) \
-    (unsigned int) \
-    (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int((unsigned int)(x)) : \
-     sizeof(x) <= SIZEOF_LONG ? SIZEOF_LONG * CHAR_BIT - nlz_long((unsigned long)(x)) : \
-     SIZEOF_INT128_T * CHAR_BIT - nlz_int128((uint128_t)(x)))
-#elif defined(HAVE_LONG_LONG)
-#   define bit_length(x) \
-    (unsigned int) \
-    (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int((unsigned int)(x)) : \
-     sizeof(x) <= SIZEOF_LONG ? SIZEOF_LONG * CHAR_BIT - nlz_long((unsigned long)(x)) : \
-     SIZEOF_LONG_LONG * CHAR_BIT - nlz_long_long((unsigned LONG_LONG)(x)))
-#else
-#   define bit_length(x) \
-    (unsigned int) \
-    (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int((unsigned int)(x)) : \
-     SIZEOF_LONG * CHAR_BIT - nlz_long((unsigned long)(x)))
-#endif
+static inline VALUE
+RUBY_BIT_ROTR(VALUE v, int n)
+{
+#if __has_builtin(__builtin_rotateright32) && (SIZEOF_VALUE * CHAR_BIT == 32)
+    return __builtin_rotateright32(v, n);
 
-#if USE_FLONUM
-#define RUBY_BIT_ROTL(v, n) (((v) << (n)) | ((v) >> ((sizeof(v) * 8) - n)))
-#define RUBY_BIT_ROTR(v, n) (((v) >> (n)) | ((v) << ((sizeof(v) * 8) - n)))
+#elif __has_builtin(__builtin_rotateright64) && (SIZEOF_VALUE * CHAR_BIT == 64)
+    return __builtin_rotateright64(v, n);
+
+#else
+    const int m = sizeof(VALUE) * CHAR_BIT;
+    return (v << (m - n)) | (v >> n);
 #endif
+}
+
 #endif /* INTERNAL_BITS_H */
