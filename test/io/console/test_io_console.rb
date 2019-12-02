@@ -41,12 +41,15 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   end
 
   def test_raw_minchar
+    q = Thread::Queue.new
     helper {|m, s|
       len = 0
       assert_equal([nil, 0], [s.getch(min: 0), len])
       main = Thread.current
       go = false
       th = Thread.start {
+        q.pop
+        sleep 0.01 until main.stop?
         len += 1
         m.print("a")
         m.flush
@@ -56,6 +59,8 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
         m.flush
       }
       begin
+        sleep 0.1
+        q.push(1)
         assert_equal(["a", 1], [s.getch(min: 1), len])
         go = true
         assert_equal(["1", 11], [s.getch, len])
