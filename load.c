@@ -79,7 +79,7 @@ rb_construct_expanded_load_path(enum expand_type type, int *has_relative, int *h
 	if (is_string)
 	    rb_str_freeze(path);
         as_str = rb_get_path_check_convert(as_str);
-	expanded_path = rb_check_realpath(Qnil, as_str);
+	expanded_path = rb_check_realpath(Qnil, as_str, NULL);
 	if (NIL_P(expanded_path)) expanded_path = as_str;
 	rb_ary_push(ary, rb_fstring(expanded_path));
     }

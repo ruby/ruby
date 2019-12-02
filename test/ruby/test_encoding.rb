@@ -123,4 +123,15 @@ class TestEncoding < Test::Unit::TestCase
       assert_include(e.message, "/regexp/sQ\n")
     end;
   end
+
+  def test_nonascii_library_path
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}".force_encoding("US-ASCII"))
+    begin;
+      assert_equal(Encoding::US_ASCII, __ENCODING__)
+      $:.unshift("/\x80")
+      assert_raise_with_message(LoadError, /\[Bug #16382\]/) do
+        $:.resolve_feature_path "[Bug #16382]"
+      end
+    end;
+  end
 end
