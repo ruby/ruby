@@ -137,7 +137,7 @@ int_pair_to_real_inclusive(uint32_t a, uint32_t b)
     const uint128_t m = ((uint128_t)1 << dig) | 1;
     uint128_t x = ((uint128_t)a << 32) | b;
     r = (double)(uint64_t)((x * m) >> 64);
-#elif defined HAVE_UINT64_T && !(defined _MSC_VER && _MSC_VER <= 1200)
+#elif defined HAVE_UINT64_T && !MSC_VERSION_BEFORE(1300)
     uint64_t x = ((uint64_t)a << dig_u) +
 	(((uint64_t)b + (a >> dig_u)) >> dig_r64);
     r = (double)x;
