@@ -1121,8 +1121,8 @@ preludes: {$(srcdir)}golf_prelude.c
 	$(ECHO) making $@
 	$(Q) $(BASERUBY) $(srcdir)/tool/mk_builtin_loader.rb $<
 
-builtin_binary.inc: $(PREP) $(BUILTIN_RB_SRCS) $(srcdir)/tool/mk_builtin_binary.rb
-	$(Q) $(MINIRUBY) $(srcdir)/tool/mk_builtin_binary.rb
+builtin_binary.inc: miniruby$(EXEEXT) $(BUILTIN_RB_SRCS) $(srcdir)/tool/mk_builtin_binary.rb
+	$(Q) ./miniruby$(EXEEXT) $(srcdir)/tool/mk_builtin_binary.rb
 
 $(BUILTIN_RB_INCS): $(top_srcdir)/tool/mk_builtin_loader.rb
 
