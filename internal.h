@@ -12,13 +12,10 @@
 #ifndef RUBY_INTERNAL_H
 #define RUBY_INTERNAL_H 1
 
-#include "ruby.h"
+#include "ruby/config.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
+#ifdef __cplusplus
+# error not for C++
 #endif
 
 #include "ruby/encoding.h"
@@ -87,10 +84,4 @@ extern "C" {
 #include "internal/inits.h"
 #include "internal/warnings.h"
 
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
 #endif /* RUBY_INTERNAL_H */
