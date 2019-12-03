@@ -9,6 +9,15 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
+#include "ruby/config.h"        /* for HAVE_LIBGMP */
+#include <stddef.h>             /* for size_t */
+
+#ifdef HAVE_SYS_TYPES_H
+# include <sys/types.h>         /* for ssize_t (note: on Windows ssize_t is */
+#endif                          /* `#define`d in ruby/config.h) */
+
+#include "internal/stdbool.h"   /* for bool */
+#include "ruby/ruby.h"          /* for struct RBasic */
 
 #ifndef BDIGIT
 # if SIZEOF_INT*2 <= SIZEOF_LONG_LONG
@@ -42,6 +51,7 @@
 #  define PRI_BDIGIT_DBL_PREFIX "l"
 # endif
 #endif
+
 #ifndef SIZEOF_ACTUAL_BDIGIT
 # define SIZEOF_ACTUAL_BDIGIT SIZEOF_BDIGIT
 #endif
@@ -64,7 +74,14 @@
 # define PRIXBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"X"
 #endif
 
+#define RBIGNUM(obj) (R_CAST(RBignum)(obj))
+#define BIGNUM_SIGN_BIT FL_USER1
+#define BIGNUM_EMBED_FLAG ((VALUE)FL_USER2)
 #define BIGNUM_EMBED_LEN_NUMBITS 3
+#define BIGNUM_EMBED_LEN_MASK \
+    (~(~(VALUE)0U << BIGNUM_EMBED_LEN_NUMBITS) << BIGNUM_EMBED_LEN_SHIFT)
+#define BIGNUM_EMBED_LEN_SHIFT \
+    (FL_USHIFT+3) /* bit offset of BIGNUM_EMBED_LEN_MASK */
 #ifndef BIGNUM_EMBED_LEN_MAX
 # if (SIZEOF_VALUE*RVALUE_EMBED_LEN_MAX/SIZEOF_ACTUAL_BDIGIT) < (1 << BIGNUM_EMBED_LEN_NUMBITS)-1
 #  define BIGNUM_EMBED_LEN_MAX (SIZEOF_VALUE*RVALUE_EMBED_LEN_MAX/SIZEOF_ACTUAL_BDIGIT)
@@ -72,6 +89,14 @@
 #  define BIGNUM_EMBED_LEN_MAX ((1 << BIGNUM_EMBED_LEN_NUMBITS)-1)
 # endif
 #endif
+
+enum rb_int_parse_flags {
+    RB_INT_PARSE_SIGN       = 0x01,
+    RB_INT_PARSE_UNDERSCORE = 0x02,
+    RB_INT_PARSE_PREFIX     = 0x04,
+    RB_INT_PARSE_ALL        = 0x07,
+    RB_INT_PARSE_DEFAULT    = 0x07,
+};
 
 struct RBignum {
     struct RBasic basic;
@@ -83,34 +108,6 @@ struct RBignum {
         BDIGIT ary[BIGNUM_EMBED_LEN_MAX];
     } as;
 };
-#define BIGNUM_SIGN_BIT ((VALUE)FL_USER1)
-/* sign: positive:1, negative:0 */
-#define BIGNUM_SIGN(b) ((RBASIC(b)->flags & BIGNUM_SIGN_BIT) != 0)
-#define BIGNUM_SET_SIGN(b,sign) \
-  ((sign) ? (RBASIC(b)->flags |= BIGNUM_SIGN_BIT) \
-          : (RBASIC(b)->flags &= ~BIGNUM_SIGN_BIT))
-#define BIGNUM_POSITIVE_P(b) BIGNUM_SIGN(b)
-#define BIGNUM_NEGATIVE_P(b) (!BIGNUM_SIGN(b))
-#define BIGNUM_NEGATE(b) (RBASIC(b)->flags ^= BIGNUM_SIGN_BIT)
-
-#define BIGNUM_EMBED_FLAG ((VALUE)FL_USER2)
-#define BIGNUM_EMBED_LEN_MASK \
-    (~(~(VALUE)0U << BIGNUM_EMBED_LEN_NUMBITS) << BIGNUM_EMBED_LEN_SHIFT)
-#define BIGNUM_EMBED_LEN_SHIFT \
-    (FL_USHIFT+3) /* bit offset of BIGNUM_EMBED_LEN_MASK */
-#define BIGNUM_LEN(b) \
-    ((RBASIC(b)->flags & BIGNUM_EMBED_FLAG) ? \
-     (size_t)((RBASIC(b)->flags >> BIGNUM_EMBED_LEN_SHIFT) & \
-              (BIGNUM_EMBED_LEN_MASK >> BIGNUM_EMBED_LEN_SHIFT)) : \
-     RBIGNUM(b)->as.heap.len)
-/* LSB:BIGNUM_DIGITS(b)[0], MSB:BIGNUM_DIGITS(b)[BIGNUM_LEN(b)-1] */
-#define BIGNUM_DIGITS(b) \
-    ((RBASIC(b)->flags & BIGNUM_EMBED_FLAG) ? \
-     RBIGNUM(b)->as.ary : \
-     RBIGNUM(b)->as.heap.digits)
-#define BIGNUM_LENINT(b) rb_long2int(BIGNUM_LEN(b))
-
-#define RBIGNUM(obj) (R_CAST(RBignum)(obj))
 
 /* bignum.c */
 extern const char ruby_digitmap[];
@@ -134,6 +131,14 @@ VALUE rb_big_ge(VALUE x, VALUE y);
 VALUE rb_big_lt(VALUE x, VALUE y);
 VALUE rb_big_le(VALUE x, VALUE y);
 VALUE rb_int_powm(int const argc, VALUE * const argv, VALUE const num);
+static inline bool BIGNUM_SIGN(VALUE b);
+static inline bool BIGNUM_POSITIVE_P(VALUE b);
+static inline bool BIGNUM_NEGATIVE_P(VALUE b);
+static inline void BIGNUM_SET_SIGN(VALUE b, bool sign);
+static inline void BIGNUM_NEGATE(VALUE b);
+static inline size_t BIGNUM_LEN(VALUE b);
+static inline BDIGIT *BIGNUM_DIGITS(VALUE b);
+static inline int BIGNUM_LENINT(VALUE b);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* bignum.c (export) */
@@ -154,14 +159,80 @@ VALUE rb_big_divrem_gmp(VALUE x, VALUE y);
 VALUE rb_big2str_gmp(VALUE x, int base);
 VALUE rb_str2big_gmp(VALUE arg, int base, int badcheck);
 #endif
-enum rb_int_parse_flags {
-    RB_INT_PARSE_SIGN       = 0x01,
-    RB_INT_PARSE_UNDERSCORE = 0x02,
-    RB_INT_PARSE_PREFIX     = 0x04,
-    RB_INT_PARSE_ALL        = 0x07,
-    RB_INT_PARSE_DEFAULT    = 0x07
-};
 VALUE rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits, int base, int flags);
 RUBY_SYMBOL_EXPORT_END
 
+MJIT_SYMBOL_EXPORT_BEGIN
+#if defined(HAVE_INT128_T)
+VALUE rb_int128t2big(int128_t n);
+#endif
+MJIT_SYMBOL_EXPORT_END
+
+/* sign: positive:1, negative:0 */
+static inline bool
+BIGNUM_SIGN(VALUE b)
+{
+    return FL_TEST_RAW(b, BIGNUM_SIGN_BIT);
+}
+
+static inline bool
+BIGNUM_POSITIVE_P(VALUE b)
+{
+    return BIGNUM_SIGN(b);
+}
+
+static inline bool
+BIGNUM_NEGATIVE_P(VALUE b)
+{
+    return ! BIGNUM_POSITIVE_P(b);
+}
+
+static inline void
+BIGNUM_SET_SIGN(VALUE b, bool sign)
+{
+    if (sign) {
+        FL_SET_RAW(b, BIGNUM_SIGN_BIT);
+    }
+    else {
+        FL_UNSET_RAW(b, BIGNUM_SIGN_BIT);
+    }
+}
+
+static inline void
+BIGNUM_NEGATE(VALUE b)
+{
+    FL_REVERSE_RAW(b, BIGNUM_SIGN_BIT);
+}
+
+static inline size_t
+BIGNUM_LEN(VALUE b)
+{
+    if (! FL_TEST_RAW(b, BIGNUM_EMBED_FLAG)) {
+        return RBIGNUM(b)->as.heap.len;
+    }
+    else {
+        size_t ret = RBASIC(b)->flags;
+        ret &= BIGNUM_EMBED_LEN_MASK;
+        ret >>= BIGNUM_EMBED_LEN_SHIFT;
+        return ret;
+    }
+}
+
+static inline int
+BIGNUM_LENINT(VALUE b)
+{
+    return rb_long2int(BIGNUM_LEN(b));
+}
+
+/* LSB:BIGNUM_DIGITS(b)[0], MSB:BIGNUM_DIGITS(b)[BIGNUM_LEN(b)-1] */
+static inline BDIGIT *
+BIGNUM_DIGITS(VALUE b)
+{
+    if (FL_TEST_RAW(b, BIGNUM_EMBED_FLAG)) {
+        return RBIGNUM(b)->as.ary;
+    }
+    else {
+        return RBIGNUM(b)->as.heap.digits;
+    }
+}
 #endif /* INTERNAL_BIGNUM_H */
