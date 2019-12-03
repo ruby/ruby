@@ -26,22 +26,6 @@ VALUE rb_get_path_check_to_string(VALUE);
 VALUE rb_get_path_check_convert(VALUE);
 int ruby_is_fd_loadable(int fd);
 
-#ifdef RUBY_FUNCTION_NAME_STRING
-# if defined __GNUC__ && __GNUC__ >= 4
-#   pragma GCC visibility push(default)
-# endif
-NORETURN(void rb_sys_fail_path_in(const char *func_name, VALUE path));
-NORETURN(void rb_syserr_fail_path_in(const char *func_name, int err, VALUE path));
-# if defined __GNUC__ && __GNUC__ >= 4
-#   pragma GCC visibility pop
-# endif
-# define rb_sys_fail_path(path) rb_sys_fail_path_in(RUBY_FUNCTION_NAME_STRING, path)
-# define rb_syserr_fail_path(err, path) rb_syserr_fail_path_in(RUBY_FUNCTION_NAME_STRING, (err), (path))
-#else
-# define rb_sys_fail_path(path) rb_sys_fail_str(path)
-# define rb_syserr_fail_path(err, path) rb_syserr_fail_str((err), (path))
-#endif
-
 RUBY_SYMBOL_EXPORT_BEGIN
 /* file.c (export) */
 #if defined HAVE_READLINK && defined RUBY_ENCODING_H
