@@ -93,14 +93,12 @@ describe "Regexp#match" do
 
   ruby_version_is ""..."3.0" do
     it "resets $~ if passed nil" do
-      suppress_warning do
-        # set $~
-        /./.match("a")
-        $~.should be_kind_of(MatchData)
+      # set $~
+      /./.match("a")
+      $~.should be_kind_of(MatchData)
 
-        /1/.match(nil)
-        $~.should be_nil
-      end
+      /1/.match(nil)
+      $~.should be_nil
     end
   end
 
@@ -151,9 +149,7 @@ describe "Regexp#match?" do
 
   ruby_version_is ""..."3.0" do
     it "returns false when given nil" do
-      suppress_warning do
-        /./.match?(nil).should be_false
-      end
+      /./.match?(nil).should be_false
     end
   end
 
