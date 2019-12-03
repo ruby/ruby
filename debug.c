@@ -19,6 +19,15 @@
 #include "symbol.h"
 #include "id.h"
 
+/* This is the only place struct RIMemo is actually used */
+struct RIMemo {
+    VALUE flags;
+    VALUE v0;
+    VALUE v1;
+    VALUE v2;
+    VALUE v3;
+};
+
 /* for gdb */
 const union {
     enum ruby_special_consts    special_consts;
