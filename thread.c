@@ -1192,11 +1192,21 @@ thread_value(VALUE self)
 #define TIMESPEC_SEC_MAX TIMET_MAX
 #define TIMESPEC_SEC_MIN TIMET_MIN
 
+COMPILER_WARNING_PUSH
+#if __has_warning("-Wimplicit-int-float-conversion")
+COMPILER_WARNING_IGNORED(-Wimplicit-int-float-conversion)
+#elif defined(_MSC_VER)
+/* C4305: 'initializing': truncation from '__int64' to 'const double' */
+COMPILER_WARNING_IGNORED(4305)
+#endif
+static const double TIMESPEC_SEC_MAX_as_doube = TIMESPEC_SEC_MAX;
+COMPILER_WARNING_POP
+
 static rb_hrtime_t *
 double2hrtime(rb_hrtime_t *hrt, double d)
 {
     /* assume timespec.tv_sec has same signedness as time_t */
-    const double TIMESPEC_SEC_MAX_PLUS_ONE = 2.0 * (TIMESPEC_SEC_MAX / 2 + 1.0);
+    const double TIMESPEC_SEC_MAX_PLUS_ONE = 2.0 * (TIMESPEC_SEC_MAX_as_doube / 2.0 + 1.0);
 
     if (TIMESPEC_SEC_MAX_PLUS_ONE <= d) {
         return NULL;
