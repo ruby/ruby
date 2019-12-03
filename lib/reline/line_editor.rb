@@ -815,12 +815,9 @@ class Reline::LineEditor
       @line = ' ' * new_indent + @line.lstrip
 
       new_indent = nil
-      (new_lines[-2].size + 1).times do |n|
-        result = @auto_indent_proc.(new_lines[0..-2], @line_index - 1, n, false)
-        if result
-          new_indent = result
-          break
-        end
+      result = @auto_indent_proc.(new_lines[0..-2], @line_index - 1, (new_lines[-2].size + 1), false)
+      if result
+        new_indent = result
       end
       if new_indent&.>= 0
         @line = ' ' * new_indent + @line.lstrip

@@ -366,9 +366,9 @@ class RubyLex
     spaces_of_nest = []
     spaces_at_line_head = 0
     @tokens.each_with_index do |t, index|
-      corresponding_token_depth = nil
       case t[1]
       when :on_ignored_nl, :on_nl, :on_comment
+        corresponding_token_depth = nil
         spaces_at_line_head = 0
         is_first_spaces_of_line = true
         is_first_printable_of_line = true
