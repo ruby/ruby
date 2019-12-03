@@ -483,6 +483,7 @@ module BasetestReadline
 
   def test_refresh_line
     skip "Only when refresh_line exists" unless Readline.respond_to?(:refresh_line)
+    skip unless respond_to?(:assert_ruby_status)
     bug6232 = '[ruby-core:43957] [Bug #6232] refresh_line after set_screen_size'
     with_temp_stdio do |stdin, stdout|
       replace_stdio(stdin.path, stdout.path) do
