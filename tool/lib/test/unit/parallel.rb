@@ -145,9 +145,13 @@ module Test
         rescue Exception => e
           begin
             trace = e.backtrace || ['unknown method']
-            err = ["#{trace.shift}: #{e.message} (#{e.class})"] + trace.map{|t| t.prepend("\t") }
+            err = ["#{trace.shift}: #{e.message} (#{e.class})"] + trace.map{|t| "\t" + t }
 
-            _report "bye", Marshal.dump(err.join("\n"))
+            if @stdout
+              _report "bye", Marshal.dump(err.join("\n"))
+            else
+              raise "failed to report a failure due to lack of @stdout"
+            end
           rescue Errno::EPIPE;end
           exit
         ensure
