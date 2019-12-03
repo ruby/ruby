@@ -85,6 +85,7 @@
 #  * granular. */
 # /* https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66970 */
 # define __has_builtin(...) __has_builtin_##__VA_ARGS__
+# define __has_builtin____builtin_add_overflow   GCC_VERSION_SINCE(5, 1, 0)
 # define __has_builtin____builtin_bswap16        GCC_VERSION_SINCE(4, 8, 0) /* http://gcc.gnu.org/bugzilla/show_bug.cgi?id=52624 */
 # define __has_builtin____builtin_bswap32        GCC_VERSION_SINCE(3, 6, 0)
 # define __has_builtin____builtin_bswap64        GCC_VERSION_SINCE(3, 6, 0)
@@ -94,12 +95,17 @@
 # define __has_builtin____builtin_ctz            GCC_VERSION_SINCE(3, 6, 0)
 # define __has_builtin____builtin_ctzl           GCC_VERSION_SINCE(3, 6, 0)
 # define __has_builtin____builtin_ctzll          GCC_VERSION_SINCE(3, 6, 0)
-# define __has_builtin____builtin_mul_overflow   GCC_VERSION_SINCE(5, 0, 0)
+# define __has_builtin____builtin_mul_overflow   GCC_VERSION_SINCE(5, 1, 0)
 # define __has_builtin____builtin_mul_overflow_p GCC_VERSION_SINCE(7, 0, 0)
 # define __has_builtin____builtin_popcount       GCC_VERSION_SINCE(3, 6, 0)
 # define __has_builtin____builtin_popcountl      GCC_VERSION_SINCE(3, 6, 0)
 # define __has_builtin____builtin_popcountll     GCC_VERSION_SINCE(3, 6, 0)
+# define __has_builtin____builtin_sub_overflow   GCC_VERSION_SINCE(5, 1, 0)
 # /* Take config.h definition when available */
+# ifdef HAVE_BUILTIN____BUILTIN_ADD_OVERFLOW
+#  undef __has_builtin____builtin_add_overflow
+#  define __has_builtin____builtin_add_overflow HAVE_BUILTIN____BUILTIN_ADD_OVERFLOW
+# endif
 # ifdef HAVE_BUILTIN____BUILTIN_BSWAP16
 #  undef __has_builtin____builtin_bswap16
 #  define __has_builtin____builtin_bswap16 HAVE_BUILTIN____BUILTIN_BSWAP16
@@ -155,6 +161,10 @@
 # ifdef HAVE_BUILTIN____BUILTIN_POPCOUNTLL
 #  undef __has_builtin____builtin_popcountll
 #  define __has_builtin____builtin_popcountll HAVE_BUILTIN____BUILTIN_POPCOUNTLL
+# endif
+# ifdef HAVE_BUILTIN____BUILTIN_SUB_OVERFLOW
+#  undef __has_builtin____builtin_SUB_overflow
+#  define __has_builtin____builtin_sub_overflow HAVE_BUILTIN____BUILTIN_SUB_OVERFLOW
 # endif
 #endif
 

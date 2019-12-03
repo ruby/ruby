@@ -9,6 +9,12 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
+#include "ruby/config.h"        /* for HAVE_LONG_LONG */
+#include <limits.h>             /* for CHAR_BIT */
+#include "internal/compilers.h" /* for __has_builtin */
+#include "internal/stdbool.h"   /* for bool */
+#include "ruby/intern.h"        /* for rb_big_mul */
+#include "ruby/ruby.h"          /* for RB_FIXABLE */
 
 #if HAVE_LONG_LONG && SIZEOF_LONG * 2 <= SIZEOF_LONG_LONG
 # define DLONG LONG_LONG
@@ -16,8 +22,19 @@
 #elif defined(HAVE_INT128_T)
 # define DLONG int128_t
 # define DL2NUM(x) (RB_FIXABLE(x) ? LONG2FIX(x) : rb_int128t2big(x))
-VALUE rb_int128t2big(int128_t n);
+VALUE rb_int128t2big(int128_t n); /* in bignum.c */
 #endif
+
+static inline long rb_overflowed_fix_to_int(long x);
+static inline VALUE rb_fix_plus_fix(VALUE x, VALUE y);
+static inline VALUE rb_fix_minus_fix(VALUE x, VALUE y);
+static inline VALUE rb_fix_mul_fix(VALUE x, VALUE y);
+static inline void rb_fix_divmod_fix(VALUE x, VALUE y, VALUE *divp, VALUE *modp);
+static inline VALUE rb_fix_div_fix(VALUE x, VALUE y);
+static inline VALUE rb_fix_mod_fix(VALUE x, VALUE y);
+static inline bool FIXNUM_POSITIVE_P(VALUE num);
+static inline bool FIXNUM_NEGATIVE_P(VALUE num);
+static inline bool FIXNUM_ZERO_P(VALUE num);
 
 static inline long
 rb_overflowed_fix_to_int(long x)
@@ -28,7 +45,10 @@ rb_overflowed_fix_to_int(long x)
 static inline VALUE
 rb_fix_plus_fix(VALUE x, VALUE y)
 {
-#ifdef HAVE_BUILTIN___BUILTIN_ADD_OVERFLOW
+#if !__has_builtin(__builtin_add_overflow)
+    long lz = FIX2LONG(x) + FIX2LONG(y);
+    return LONG2NUM(lz);
+#else
     long lz;
     /* NOTE
      * (1) `LONG2FIX(FIX2LONG(x)+FIX2LONG(y))`
@@ -56,16 +76,16 @@ rb_fix_plus_fix(VALUE x, VALUE y)
     else {
         return (VALUE)lz;
     }
-#else
-    long lz = FIX2LONG(x) + FIX2LONG(y);
-    return LONG2NUM(lz);
 #endif
 }
 
 static inline VALUE
 rb_fix_minus_fix(VALUE x, VALUE y)
 {
-#ifdef HAVE_BUILTIN___BUILTIN_SUB_OVERFLOW
+#if !__has_builtin(__builtin_sub_overflow)
+    long lz = FIX2LONG(x) - FIX2LONG(y);
+    return LONG2NUM(lz);
+#else
     long lz;
     if (__builtin_sub_overflow((long)x, (long)y-1, &lz)) {
         return rb_int2big(rb_overflowed_fix_to_int(lz));
@@ -73,9 +93,6 @@ rb_fix_minus_fix(VALUE x, VALUE y)
     else {
         return (VALUE)lz;
     }
-#else
-    long lz = FIX2LONG(x) - FIX2LONG(y);
-    return LONG2NUM(lz);
 #endif
 }
 
@@ -146,5 +163,23 @@ rb_fix_mod_fix(VALUE x, VALUE y)
     VALUE mod;
     rb_fix_divmod_fix(x, y, NULL, &mod);
     return mod;
+}
+
+static inline bool
+FIXNUM_POSITIVE_P(VALUE num)
+{
+    return (SIGNED_VALUE)num > (SIGNED_VALUE)INT2FIX(0);
+}
+
+static inline bool
+FIXNUM_NEGATIVE_P(VALUE num)
+{
+    return (SIGNED_VALUE)num < 0;
+}
+
+static inline bool
+FIXNUM_ZERO_P(VALUE num)
+{
+    return num == INT2FIX(0);
 }
 #endif /* INTERNAL_FIXNUM_H */
