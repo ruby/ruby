@@ -3299,7 +3299,6 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 	pos = 0;
     }
 
-    str = SYMBOL_P(str) ? rb_sym2str(str) : StringValue(str);
     pos = reg_match_pos(re, &str, pos);
     if (pos < 0) {
 	rb_backref_set(Qnil);
@@ -3345,6 +3344,7 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
     const UChar *start, *end;
     int tmpreg;
 
+    if (NIL_P(str)) return Qfalse;
     str = SYMBOL_P(str) ? rb_sym2str(str) : StringValue(str);
     if (pos) {
 	if (pos < 0) {
