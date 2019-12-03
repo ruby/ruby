@@ -9,15 +9,33 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
+#include "ruby/config.h"
+#include "internal/compilers.h" /* for __has_feature */
 
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+# include <valgrind/memcheck.h>
+#endif
+
+#ifdef HAVE_SANITIZER_ASAN_INTERFACE_H
+# include <sanitizer/asan_interface.h>
+#endif
+
+#ifdef HAVE_SANITIZER_MSAN_INTERFACE_H
+# if __has_feature(memory_sanitizer)
+#  include <sanitizer/msan_interface.h>
+# endif
+#endif
+
+#include "internal/stdbool.h"   /* for bool */
+#include "ruby/ruby.h"          /* for VALUE */
 
 #if 0
-#elif defined(NO_SANITIZE) && __has_feature(memory_sanitizer)
+#elif __has_feature(memory_sanitizer) && __has_feature(address_sanitizer)
 # define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
-    NO_SANITIZE("memory", NO_SANITIZE("address", NOINLINE(x)))
-#elif defined(NO_SANITIZE)
+    __attribute__((__no_sanitize__("memory, address"), __noinline__)) x
+#elif __has_feature(address_sanitizer)
 # define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
-    NO_SANITIZE("address", NOINLINE(x))
+    __attribute__((__no_sanitize__("memory, address"), __noinline__)) x
 #elif defined(NO_SANITIZE_ADDRESS)
 # define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
     NO_SANITIZE_ADDRESS(NOINLINE(x))
@@ -30,8 +48,9 @@
 
 #if defined(NO_SANITIZE) && defined(__GNUC__) &&! defined(__clang__)
 /* GCC warns about unknown sanitizer, which is annoying. */
-#undef NO_SANITIZE
-#define NO_SANITIZE(x, y) \
+# include "internal/warnings.h"
+# undef NO_SANITIZE
+# define NO_SANITIZE(x, y) \
     COMPILER_WARNING_PUSH; \
     COMPILER_WARNING_IGNORED(-Wattributes); \
     __attribute__((__no_sanitize__(x))) y; \
@@ -42,35 +61,10 @@
 # define NO_SANITIZE(x, y) y
 #endif
 
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-# include <valgrind/memcheck.h>
-# ifndef VALGRIND_MAKE_MEM_DEFINED
-#  define VALGRIND_MAKE_MEM_DEFINED(p, n) VALGRIND_MAKE_READABLE((p), (n))
-# endif
-# ifndef VALGRIND_MAKE_MEM_UNDEFINED
-#  define VALGRIND_MAKE_MEM_UNDEFINED(p, n) VALGRIND_MAKE_WRITABLE((p), (n))
-# endif
-#else
-# define VALGRIND_MAKE_MEM_DEFINED(p, n) 0
-# define VALGRIND_MAKE_MEM_UNDEFINED(p, n) 0
-#endif
-
-#ifndef MJIT_HEADER
-
-#ifdef HAVE_SANITIZER_ASAN_INTERFACE_H
-# include <sanitizer/asan_interface.h>
-#endif
-
 #if !__has_feature(address_sanitizer)
 # define __asan_poison_memory_region(x, y)
 # define __asan_unpoison_memory_region(x, y)
 # define __asan_region_is_poisoned(x, y) 0
-#endif
-
-#ifdef HAVE_SANITIZER_MSAN_INTERFACE_H
-# if __has_feature(memory_sanitizer)
-#  include <sanitizer/msan_interface.h>
-# endif
 #endif
 
 #if !__has_feature(memory_sanitizer)
@@ -79,6 +73,24 @@
 # define __msan_unpoison(x, y) ((void)(x), (void)(y))
 # define __msan_unpoison_string(x) ((void)(x))
 #endif
+
+#ifdef VALGRIND_MAKE_READABLE
+# define VALGRIND_MAKE_MEM_DEFINED(p, n) VALGRIND_MAKE_READABLE((p), (n))
+#endif
+
+#ifdef VALGRIND_MAKE_WRITABLE
+# define VALGRIND_MAKE_MEM_UNDEFINED(p, n) VALGRIND_MAKE_WRITABLE((p), (n))
+#endif
+
+#ifndef VALGRIND_MAKE_MEM_DEFINED
+# define VALGRIND_MAKE_MEM_DEFINED(p, n) 0
+#endif
+
+#ifndef VALGRIND_MAKE_MEM_UNDEFINED
+# define VALGRIND_MAKE_MEM_UNDEFINED(p, n) 0
+#endif
+
+#ifndef MJIT_HEADER
 
 /*!
  * This function asserts that a (continuous) memory region from ptr to size
@@ -174,6 +186,6 @@ asan_unpoison_object(VALUE obj, bool newobj_p)
     asan_unpoison_memory_region(ptr, SIZEOF_VALUE, newobj_p);
 }
 
-#endif
+#endif /* MJIT_HEADER */
 
 #endif /* INTERNAL_SANITIZERS_H */
