@@ -9,14 +9,24 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
+#include "ruby/config.h"
+#include <stddef.h>             /* for size_t */
+#include "ruby/ruby.h"          /* for rb_event_flag_t */
+
+struct rb_iseq_struct;          /* in vm_core.h */
 
 /* compile.c */
-struct rb_block;
-struct rb_iseq_struct;
 int rb_dvar_defined(ID, const struct rb_iseq_struct *);
 int rb_local_defined(ID, const struct rb_iseq_struct *);
-const char * rb_insns_name(int i);
+const char *rb_insns_name(int i);
 VALUE rb_insns_name_array(void);
+
+/* iseq.c */
 int rb_vm_insn_addr2insn(const void *);
+
+MJIT_SYMBOL_EXPORT_BEGIN
+/* iseq.c (export) */
+rb_event_flag_t rb_iseq_event_flags(const struct rb_iseq_struct *iseq, size_t pos);
+MJIT_SYMBOL_EXPORT_END
 
 #endif /* INTERNAL_COMPILE_H */
