@@ -2996,7 +2996,7 @@ static VALUE
 bignew_1(VALUE klass, size_t len, int sign)
 {
     NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0));
-    BIGNUM_SET_SIGN(big, sign);
+    BIGNUM_SET_SIGN((VALUE)big, sign);
     if (len <= BIGNUM_EMBED_LEN_MAX) {
 	RBASIC(big)->flags |= BIGNUM_EMBED_FLAG;
 	BIGNUM_SET_LEN(big, len);
