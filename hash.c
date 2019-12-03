@@ -56,7 +56,7 @@ copy_default(struct RHash *hash, const struct RHash *hash2)
 {
     hash->basic.flags &= ~RHASH_PROC_DEFAULT;
     hash->basic.flags |= hash2->basic.flags & RHASH_PROC_DEFAULT;
-    RHASH_SET_IFNONE(hash, RHASH_IFNONE(hash2));
+    RHASH_SET_IFNONE(hash, RHASH_IFNONE((VALUE)hash2));
 }
 
 static VALUE
@@ -1637,7 +1637,7 @@ struct update_arg {
 typedef int (*tbl_update_func)(st_data_t *, st_data_t *, st_data_t, int);
 
 int
-rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func func, st_data_t arg)
+rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func *func, st_data_t arg)
 {
     if (RHASH_AR_TABLE_P(hash)) {
         int result = ar_update(hash, (st_data_t)key, func, arg);
