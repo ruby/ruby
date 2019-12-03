@@ -104,10 +104,10 @@ for:
     - pacman -Syd --noconfirm --noprogressbar --needed mingw-w64-x86_64-binutils mingw-w64-x86_64-crt mingw-w64-x86_64-headers mingw-w64-x86_64-isl mingw-w64-x86_64-libiconv mingw-w64-x86_64-mpc mingw-w64-x86_64-windows-default-manifest mingw-w64-x86_64-libwinpthread mingw-w64-x86_64-winpthreads  mingw-w64-x86_64-gcc-libs mingw-w64-x86_64-gcc
     - pacman -S  --noconfirm --noprogressbar --needed mingw-w64-x86_64-gdbm mingw-w64-x86_64-gmp mingw-w64-x86_64-libffi mingw-w64-x86_64-libyaml mingw-w64-x86_64-openssl mingw-w64-x86_64-ragel mingw-w64-x86_64-readline mingw-w64-x86_64-zlib
     - cd %APPVEYOR_BUILD_FOLDER%
-    - set CFLAGS=-march=%MSYS2_ARCH:_=-% -mtune=generic -O3 -pipe
+    - set CFLAGS=-march=%MSYS2_ARCH:_=-% -mtune=generic -O3  -fstack-protector-strong -pipe
     - set CXXFLAGS=%CFLAGS%
     - set CPPFLAGS=-D_FORTIFY_SOURCE=2 -D__USE_MINGW_ANSI_STDIO=1 -DFD_SETSIZE=2048
-    - set LDFLAGS=-pipe
+    - set LDFLAGS=-fstack-protector-strong -pipe
     - sh -c "autoreconf -fi"
     - cd ..\build
     - sh ../ruby/configure --disable-install-doc --prefix=/. --build=%MINGW_CHOST% --host=%MINGW_CHOST% --target=%MINGW_CHOST%
