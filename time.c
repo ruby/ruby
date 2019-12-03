@@ -3268,7 +3268,7 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
                 status = 0;
             }
             if (guess <= guess_lo || guess_hi <= guess) {
-                /* Precious guess is invalid. try binary search. */
+                /* Previous guess is invalid. try binary search. */
 #ifdef DEBUG_GUESSRANGE
                 if (guess <= guess_lo) fprintf(stderr, "too small guess: %ld <= %ld\n", guess, guess_lo);
                 if (guess_hi <= guess) fprintf(stderr, "too big guess: %ld <= %ld\n", guess_hi, guess);
