@@ -10,6 +10,12 @@
  *             file COPYING are met.  Consult the file for details.
  * @warning    DO NOT ADD RANDOM GARBAGE HERE THIS FILE IS FOR util.c
  */
+#include "ruby/config.h"
+#include <stddef.h>             /* for size_t */
+
+#ifdef HAVE_SYS_TYPES_H
+# include <sys/types.h>         /* for ssize_t (note: on Windows ssize_t is */
+#endif                          /* `#define`d in ruby/config.h) */
 
 /* util.c */
 char *ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve);

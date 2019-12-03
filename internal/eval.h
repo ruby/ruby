@@ -11,13 +11,16 @@
  * @note       There  also  is  eval_intern.h, which  is  evaluator's  internal
  *             header (related to this file, but not the same role).
  */
+#include "ruby/ruby.h"          /* for ID */
 
-/* eval.c */
-VALUE rb_refinement_module_get_refined_class(VALUE module);
-extern ID ruby_static_id_signo, ruby_static_id_status;
-void rb_class_modify_check(VALUE);
 #define id_signo ruby_static_id_signo
 #define id_status ruby_static_id_status
+
+/* eval.c */
+extern ID ruby_static_id_signo;
+extern ID ruby_static_id_status;
+VALUE rb_refinement_module_get_refined_class(VALUE module);
+void rb_class_modify_check(VALUE);
 NORETURN(VALUE rb_f_raise(int argc, VALUE *argv));
 
 /* eval_error.c */

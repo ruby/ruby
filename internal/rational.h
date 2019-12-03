@@ -9,6 +9,8 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
+#include "ruby/config.h"        /* for HAVE_LIBGMP */
+#include "ruby/ruby.h"          /* for struct RBasic */
 
 struct RRational {
     struct RBasic basic;
@@ -17,8 +19,8 @@ struct RRational {
 };
 
 #define RRATIONAL(obj) (R_CAST(RRational)(obj))
-#define RRATIONAL_SET_NUM(rat, n) RB_OBJ_WRITE((rat), &((struct RRational *)(rat))->num,(n))
-#define RRATIONAL_SET_DEN(rat, d) RB_OBJ_WRITE((rat), &((struct RRational *)(rat))->den,(d))
+#define RRATIONAL_SET_NUM(rat, n) RB_OBJ_WRITE((rat), &RRATIONAL(rat)->num, (n))
+#define RRATIONAL_SET_DEN(rat, d) RB_OBJ_WRITE((rat), &RRATIONAL(rat)->den, (d))
 
 /* rational.c */
 VALUE rb_rational_canonicalize(VALUE x);

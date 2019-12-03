@@ -9,6 +9,7 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
+#include "ruby/ruby.h"          /* for struct RBasic */
 
 struct RComplex {
     struct RBasic basic;
@@ -19,8 +20,8 @@ struct RComplex {
 #define RCOMPLEX(obj) (R_CAST(RComplex)(obj))
 
 /* shortcut macro for internal only */
-#define RCOMPLEX_SET_REAL(cmp, r) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->real,(r))
-#define RCOMPLEX_SET_IMAG(cmp, i) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->imag,(i))
+#define RCOMPLEX_SET_REAL(cmp, r) RB_OBJ_WRITE((cmp), &RCOMPLEX(cmp)->real, (r))
+#define RCOMPLEX_SET_IMAG(cmp, i) RB_OBJ_WRITE((cmp), &RCOMPLEX(cmp)->imag, (i))
 
 /* complex.c */
 VALUE rb_dbl_complex_new_polar_pi(double abs, double ang);

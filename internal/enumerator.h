@@ -9,6 +9,8 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
+#include "ruby/ruby.h"          /* for VALUE */
+#include "ruby/intern.h"        /* for rb_enumerator_size_func */
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* enumerator.c (export) */

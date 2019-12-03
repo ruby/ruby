@@ -9,16 +9,12 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
-
+#include "ruby/encoding.h"      /* for rb_encoding */
 
 /* us_ascii.c */
-#ifdef RUBY_ENCODING_H
 extern rb_encoding OnigEncodingUS_ASCII;
-#endif
 
 /* utf_8.c */
-#ifdef RUBY_ENCODING_H
 extern rb_encoding OnigEncodingUTF_8;
-#endif
 
 #endif /* INTERNAL_ENC_H */

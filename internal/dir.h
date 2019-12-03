@@ -9,6 +9,7 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
+#include "ruby/ruby.h"          /* for VALUE */
 
 /* dir.c */
 VALUE rb_dir_getwd_ospath(void);

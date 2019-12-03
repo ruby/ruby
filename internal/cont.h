@@ -9,8 +9,10 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
+#include "ruby/ruby.h"          /* for VALUE */
 
-struct rb_thread_struct;
+struct rb_thread_struct;        /* in vm_core.h */
+
 /* cont.c */
 VALUE rb_obj_is_fiber(VALUE);
 void rb_fiber_reset_root_local_storage(struct rb_thread_struct *);
