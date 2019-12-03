@@ -9,6 +9,7 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
+#include "ruby/ruby.h"          /* for VALUE */
 
 /* load.c */
 VALUE rb_get_expanded_load_path(void);

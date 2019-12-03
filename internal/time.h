@@ -9,6 +9,9 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
+#include "ruby/config.h"        /* for SIGNEDNESS_OF_TIME_T */
+#include "internal/bits.h"      /* for SIGNED_INTEGER_MAX */
+#include "ruby/ruby.h"          /* for VALUE */
 
 #if SIGNEDNESS_OF_TIME_T < 0    /* signed */
 # define TIMET_MAX SIGNED_INTEGER_MAX(time_t)
@@ -17,7 +20,8 @@
 # define TIMET_MAX UNSIGNED_INTEGER_MAX(time_t)
 # define TIMET_MIN ((time_t)0)
 #endif
-#define TIMET_MAX_PLUS_ONE (2*(double)(TIMET_MAX/2+1))
+
+struct timeval; /* <- in <sys/time.h> or <winsock2.h> */
 
 /* time.c */
 struct timeval rb_time_timeval(VALUE);

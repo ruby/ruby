@@ -9,11 +9,13 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
+#include "ruby/config.h"
+#include <stddef.h>             /* for size_t */
+#include "ruby/ruby.h"          /* for VALUE */
+#include "ruby/encoding.h"      /* for rb_econv_t */
 
 /* transcode.c */
 extern VALUE rb_cEncodingConverter;
-#ifdef RUBY_ENCODING_H
 size_t rb_econv_memsize(rb_econv_t *);
-#endif
 
 #endif /* INTERNAL_TRANSCODE_H */

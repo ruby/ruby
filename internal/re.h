@@ -9,6 +9,8 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
+#include "internal/stdbool.h"   /* for bool */
+#include "ruby/ruby.h"          /* for VALUE */
 
 /* re.c */
 VALUE rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline);
@@ -20,6 +22,8 @@ void rb_backref_set_string(VALUE string, long pos, long len);
 void rb_match_unbusy(VALUE);
 int rb_match_count(VALUE match);
 int rb_match_nth_defined(int nth, VALUE match);
+MJIT_SYMBOL_EXPORT_BEGIN
 VALUE rb_reg_new_ary(VALUE ary, int options);
+MJIT_SYMBOL_EXPORT_END
 
 #endif /* INTERNAL_RE_H */

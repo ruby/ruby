@@ -9,6 +9,8 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
+#include "ruby/ruby.h"          /* for RUBY_INTEGER_UNIFICATION */
+#include "internal/vm.h"        /* for rb_method_basic_definition_p */
 
 #define STRING_P(s) (RB_TYPE_P((s), T_STRING) && CLASS_OF(s) == rb_cString)
 

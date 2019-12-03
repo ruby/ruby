@@ -1196,7 +1196,7 @@ static rb_hrtime_t *
 double2hrtime(rb_hrtime_t *hrt, double d)
 {
     /* assume timespec.tv_sec has same signedness as time_t */
-    const double TIMESPEC_SEC_MAX_PLUS_ONE = TIMET_MAX_PLUS_ONE;
+    const double TIMESPEC_SEC_MAX_PLUS_ONE = 2.0 * (TIMESPEC_SEC_MAX / 2 + 1.0);
 
     if (TIMESPEC_SEC_MAX_PLUS_ONE <= d) {
         return NULL;

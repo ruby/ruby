@@ -9,6 +9,8 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
+#include "ruby/config.h"        /* for HAVE_LONG_LONG */
+#include "ruby/defines.h"       /* for LONG_LONG */
 
 #ifndef HAVE_LONG_LONG
 # error need C99+

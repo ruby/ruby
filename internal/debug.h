@@ -9,11 +9,19 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
+#include "ruby/config.h"
+#include <stdio.h>              /* for fprintf */
+#include "ruby/ruby.h"          /* for VALUE */
 
 /* MRI debug support */
+
+/* gc.c */
 void rb_obj_info_dump(VALUE obj);
 void rb_obj_info_dump_loc(VALUE obj, const char *file, int line, const char *func);
+
+/* debug.c */
 void ruby_debug_breakpoint(void);
+PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
 
 // show obj data structure without any side-effect
 #define rp(obj) rb_obj_info_dump_loc((VALUE)(obj), __FILE__, __LINE__, __func__)
@@ -27,8 +35,5 @@ void ruby_debug_breakpoint(void);
 // `ruby_debug_breakpoint()` does nothing,
 // but breakpoint is set in run.gdb, so `make gdb` can stop here.
 #define bp() ruby_debug_breakpoint()
-
-/* debug.c */
-PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
 
 #endif /* INTERNAL_DEBUG_H */
