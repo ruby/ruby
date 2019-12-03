@@ -104,7 +104,7 @@ describe "Regexp#match" do
 
   ruby_version_is "2.7"..."3.0" do
     it "warns the deprecation when the given argument is nil" do
-      -> { /foo/.match(nil) }.should complain(/given argument is nil; this will raise a TypeError in the next release/)
+      -> { /foo/.match(nil) }.should complain(/given argument is nil/)
     end
   end
 
@@ -155,7 +155,7 @@ describe "Regexp#match?" do
 
   ruby_version_is "2.7"..."3.0" do
     it "warns the deprecation" do
-      -> { /./.match?(nil) }.should complain(/given argument is nil; this will raise a TypeError in the next release/)
+      -> { /./.match?(nil) }.should complain(/given argument is nil/)
     end
   end
 

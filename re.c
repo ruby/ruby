@@ -3300,7 +3300,7 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
     }
 
     if (NIL_P(str)) {
-        rb_warn("given argument is nil; this will raise a TypeError in the next release");
+        rb_warn("given argument is nil");
     }
     pos = reg_match_pos(re, &str, pos);
     if (pos < 0) {
@@ -3348,7 +3348,7 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
     int tmpreg;
 
     if (NIL_P(str)) {
-        rb_warn("given argument is nil; this will raise a TypeError in the next release");
+        rb_warn("given argument is nil");
         return Qfalse;
     }
     str = SYMBOL_P(str) ? rb_sym2str(str) : StringValue(str);
