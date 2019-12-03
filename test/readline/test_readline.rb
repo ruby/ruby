@@ -434,8 +434,8 @@ module BasetestReadline
   def test_input_metachar
     skip "Skip Editline" if /EditLine/n.match(Readline::VERSION)
     # test will pass on Windows reline, but not readline
-    skip "Won't pass on mingw readline.so using 8.0.001" if mingw? and defined?(TestReadline) and kind_of?(TestReadline)
-    skip 'Needs GNU Readline 6 or later' if windows? and defined?(TestReadline) and kind_of?(TestReadline) and Readline::VERSION < '6.0'
+    skip "Won't pass on mingw readline.so using 8.0.001" if /mingw/ =~ RUBY_PLATFORM and defined?(TestReadline) and kind_of?(TestReadline)
+    skip 'Needs GNU Readline 6 or later' if /mswin|mingw/ =~ RUBY_PLATFORM and defined?(TestReadline) and kind_of?(TestReadline) and Readline::VERSION < '6.0'
     bug6601 = '[ruby-core:45682]'
     Readline::HISTORY << "hello"
     wo = nil
@@ -684,7 +684,7 @@ module BasetestReadline
       # http://rubyci.s3.amazonaws.com/solaris11s-sunc/ruby-trunk/log/20181228T102505Z.fail.html.gz
       skip 'This test does not succeed on Oracle Developer Studio for now'
     end
-    skip 'Needs GNU Readline 6 or later' if windows? and defined?(TestReadline) and kind_of?(TestReadline) and Readline::VERSION < '6.0'
+    skip 'Needs GNU Readline 6 or later' if /mswin|mingw/ =~ RUBY_PLATFORM and defined?(TestReadline) and kind_of?(TestReadline) and Readline::VERSION < '6.0'
 
     Readline.completion_proc = -> (_) { [] }
     Readline.completer_quote_characters = "'\""
@@ -731,7 +731,7 @@ module BasetestReadline
     Tempfile.create("test_readline_stdin") {|stdin|
       Tempfile.create("test_readline_stdout") {|stdout|
         yield stdin, stdout
-        if windows?
+        if /mswin|mingw/ =~ RUBY_PLATFORM
           # needed since readline holds refs to tempfiles, can't delete on Windows
           Readline.input = STDIN
           Readline.output = STDOUT
