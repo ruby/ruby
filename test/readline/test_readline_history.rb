@@ -283,4 +283,4 @@ class TestRelineAsReadlineHistory < Test::Unit::TestCase
       super
     end
   end
-end
+end if defined?(Reline)

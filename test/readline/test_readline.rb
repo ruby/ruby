@@ -799,4 +799,4 @@ class TestRelineAsReadline < Test::Unit::TestCase
       super
     end
   end
-end
+end if defined?(Reline)
