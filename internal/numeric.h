@@ -9,6 +9,7 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
+#include "internal/fixnum.h"    /* for FIXNUM_POSITIVE_P */
 
 struct RFloat {
     struct RBasic basic;
@@ -18,10 +19,6 @@ struct RFloat {
 #define RFLOAT(obj)  (R_CAST(RFloat)(obj))
 
 /* numeric.c */
-
-#define FIXNUM_POSITIVE_P(num) ((SIGNED_VALUE)(num) > (SIGNED_VALUE)INT2FIX(0))
-#define FIXNUM_NEGATIVE_P(num) ((SIGNED_VALUE)(num) < 0)
-#define FIXNUM_ZERO_P(num) ((num) == INT2FIX(0))
 
 #define INT_NEGATIVE_P(x) (FIXNUM_P(x) ? FIXNUM_NEGATIVE_P(x) : BIGNUM_NEGATIVE_P(x))
 
