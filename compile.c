@@ -2048,9 +2048,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     if (stack_max < 0) return COMPILE_NG;
 
     /* fix label position */
-    list = FIRST_ELEMENT(anchor);
     insn_num = code_index = 0;
-    while (list) {
+    for (list = FIRST_ELEMENT(anchor); list; list = list->next) {
 	switch (list->type) {
 	  case ISEQ_ELEMENT_INSN:
 	    {
@@ -2109,7 +2108,6 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 	    }
 	  default: break;
 	}
-	list = list->next;
     }
 
     /* make instruction sequence */
