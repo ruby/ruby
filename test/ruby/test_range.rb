@@ -950,4 +950,59 @@ class TestRange < Test::Unit::TestCase
   def test_beginless_range_iteration
     assert_raise(TypeError) { (..1).each { } }
   end
+
+  def test_beginless
+    assert_equal((..10).beginless?, true);
+    assert_equal((.."z").beginless?, true);
+    assert_equal((nil..nil).beginless?, true);
+
+    assert_equal((1..10).beginless?, false);
+    assert_equal(("a".."z").beginless?, false);
+    assert_equal((Float::INFINITY..10).beginless?, false);
+    assert_equal((-Float::INFINITY..10).beginless?, false);
+  end
+
+  def test_endless
+    assert_equal((1..).endless?, true);
+    assert_equal(("a"..).endless?, true);
+    assert_equal((nil..nil).endless?, true);
+
+    assert_equal((1..10).endless?, false);
+    assert_equal(("a".."z").endless?, false);
+    assert_equal((1..Float::INFINITY).endless?, false);
+    assert_equal((1..-Float::INFINITY).endless?, false);
+    assert_equal((1..Float::INFINITY).endless?, false);
+  end
+
+  def test_infinite
+    assert_equal((1..).infinite?, true);
+    assert_equal((..1).infinite?, true);
+    assert_equal(("a"..).infinite?, true);
+    assert_equal((.."z").infinite?, true);
+    assert_equal((..nil).infinite?, true);
+    assert_equal((nil..).infinite?, true);
+    assert_equal((nil..nil).infinite?, true);
+
+    assert_equal((1..1).infinite?, false);
+    assert_equal((1..10).infinite?, false);
+    assert_equal(("a".."z").infinite?, false);
+    assert_equal((1..Float::INFINITY).infinite?, false);
+    assert_equal((-Float::INFINITY..1).infinite?, false);
+  end
+
+  def test_finite
+    assert_equal((1..1).finite?, true);
+    assert_equal((1..10).finite?, true);
+    assert_equal(("a".."z").finite?, true);
+    assert_equal((1..Float::INFINITY).finite?, true);
+    assert_equal((-Float::INFINITY..1).finite?, true);
+
+    assert_equal((1..).finite?, false);
+    assert_equal((..1).finite?, false);
+    assert_equal(("a"..).finite?, false);
+    assert_equal((.."z").finite?, false);
+    assert_equal((..nil).finite?, false);
+    assert_equal((nil..).finite?, false);
+    assert_equal((nil..nil).finite?, false);
+  end
 end

@@ -1555,6 +1555,90 @@ r_cover_p(VALUE range, VALUE beg, VALUE end, VALUE val)
     return Qfalse;
 }
 
+
+/*
+ *  call-seq:
+ *     rng.beginless?  ->  true or false
+ *
+ *  Returns <code>true</code> if +begin+ is +nil+ of
+ *  the range, <code>false</code> otherwise.
+ *     (.."z").beginless?       #=> true
+ *     ("a"..).beginless?       #=> false
+ *     ("a".."z").beginless?    #=> false
+ */
+
+static VALUE
+range_beginless(VALUE range)
+{
+    VALUE b = RANGE_BEG(range);
+    if (NIL_P(b)) {
+        return Qtrue;
+    }
+    return Qfalse;
+}
+
+
+/*
+ *  call-seq:
+ *     rng.endless?  ->  true or false
+ *
+ *  Returns <code>true</code> if +end+ is +nil+ of
+ *  the range, <code>false</code> otherwise.
+ *     ("a"..).endless?      #=> true
+ *     (.."z").endless?      #=> false
+ *     ("a".."z").endless?   #=> false
+ */
+
+static VALUE
+range_endless(VALUE range)
+{
+    VALUE e = RANGE_END(range);
+    if (NIL_P(e)) {
+        return Qtrue;
+    }
+    return Qfalse;
+}
+
+
+/*
+ *  call-seq:
+ *     rng.infinite?  ->  true or false
+ *
+ *  Returns <code>true</code> if +beginless?+ is +nil+ or +endless?+ is +nil+ of
+ *  the range, <code>false</code> otherwise.
+ *     ("a"..).infinite?      #=> true
+ *     (.."z").infinite?      #=> true
+ *     ("a".."z").infinite?   #=> false
+ */
+
+static VALUE
+range_infinite(VALUE range)
+{
+    if (range_beginless(range) == Qtrue || range_endless(range) == Qtrue) {
+        return Qtrue;
+    }
+    return Qfalse;
+}
+
+
+/*
+ *  call-seq:
+ *     rng.finite?  ->  true or false
+ *
+ *  Returns <code>true</code> if +beginless?+ is not +nil+ and +endless?+ is not +nil+ of
+ *  the range, <code>false</code> otherwise.
+ *     ("a"..).finite?      #=> false
+ *     (.."z").finite?      #=> false
+ *     ("a".."z").finite?   #=> true
+ */
+
+static VALUE
+range_finite(VALUE range)
+{
+    return range_infinite(range) == Qtrue ? Qfalse : Qtrue;
+}
+
+
 static VALUE
 range_dumper(VALUE range)
 {
@@ -1733,4 +1817,9 @@ Init_Range(void)
     rb_define_method(rb_cRange, "member?", range_include, 1);
     rb_define_method(rb_cRange, "include?", range_include, 1);
     rb_define_method(rb_cRange, "cover?", range_cover, 1);
+
+    rb_define_method(rb_cRange, "beginless?", range_beginless, 0);
+    rb_define_method(rb_cRange, "endless?", range_endless, 0);
+    rb_define_method(rb_cRange, "infinite?", range_infinite, 0);
+    rb_define_method(rb_cRange, "finite?", range_finite, 0);
 }
