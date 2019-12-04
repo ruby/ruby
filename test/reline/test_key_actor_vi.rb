@@ -988,6 +988,45 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_line('abcde foo_bar_baz ABCDE')
   end
 
+  def test_completion
+    @line_editor.completion_proc = proc { |word|
+      %w{
+        foo_bar
+        foo_bar_baz
+      }
+    }
+    input_keys('foo')
+    assert_byte_pointer_size('foo')
+    assert_cursor(3)
+    assert_cursor_max(3)
+    assert_line('foo')
+    input_keys("\C-i")
+    assert_byte_pointer_size('foo_bar')
+    assert_cursor(7)
+    assert_cursor_max(7)
+    assert_line('foo_bar')
+  end
+
+  def test_completion_with_disable_completion
+    @config.disable_completion = true
+    @line_editor.completion_proc = proc { |word|
+      %w{
+        foo_bar
+        foo_bar_baz
+      }
+    }
+    input_keys('foo')
+    assert_byte_pointer_size('foo')
+    assert_cursor(3)
+    assert_cursor_max(3)
+    assert_line('foo')
+    input_keys("\C-i")
+    assert_byte_pointer_size('foo')
+    assert_cursor(3)
+    assert_cursor_max(3)
+    assert_line('foo')
+  end
+
   def test_vi_first_print
     input_keys("abcde\C-[^")
     assert_byte_pointer_size('')

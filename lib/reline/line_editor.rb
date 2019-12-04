@@ -776,20 +776,24 @@ class Reline::LineEditor
     @first_char = false
     completion_occurs = false
     if @config.editing_mode_is?(:emacs, :vi_insert) and key.char == "\C-i".ord
-      result = retrieve_completion_block
-      slice = result[1]
-      result = @completion_proc.(slice) if @completion_proc and slice
-      if result.is_a?(Array)
-        completion_occurs = true
-        complete(result)
+      unless @config.disable_completion
+        result = retrieve_completion_block
+        slice = result[1]
+        result = @completion_proc.(slice) if @completion_proc and slice
+        if result.is_a?(Array)
+          completion_occurs = true
+          complete(result)
+        end
       end
-    elsif @config.editing_mode_is?(:vi_insert) and ["\C-p".ord, "\C-n".ord].include?(key.char)
-      result = retrieve_completion_block
-      slice = result[1]
-      result = @completion_proc.(slice) if @completion_proc and slice
-      if result.is_a?(Array)
-        completion_occurs = true
-        move_completed_list(result, "\C-p".ord == key.char ? :up : :down)
+    elsif not @config.disable_completion and @config.editing_mode_is?(:vi_insert) and ["\C-p".ord, "\C-n".ord].include?(key.char)
+      unless @config.disable_completion
+        result = retrieve_completion_block
+        slice = result[1]
+        result = @completion_proc.(slice) if @completion_proc and slice
+        if result.is_a?(Array)
+          completion_occurs = true
+          move_completed_list(result, "\C-p".ord == key.char ? :up : :down)
+        end
       end
     elsif Symbol === key.char and respond_to?(key.char, true)
       process_key(key.char, key.char)
