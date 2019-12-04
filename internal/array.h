@@ -9,7 +9,6 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
-
 #include "ruby/config.h"
 #include <stddef.h>                 /* for size_t */
 #include "internal/static_assert.h" /* for STATIC_ASSERT */
@@ -87,6 +86,7 @@ RARY_TRANSIENT_UNSET(VALUE ary)
 #endif
 }
 
+#undef rb_ary_new_from_args
 #if defined(__GNUC__) && defined(HAVE_VA_ARGS_MACRO)
 #define rb_ary_new_from_args(n, ...) \
     __extension__ ({ \

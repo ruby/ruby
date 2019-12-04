@@ -10,11 +10,6 @@
  *             file COPYING are met.  Consult the file for details.
  */
 #include "ruby/ruby.h"          /* for VALUE */
-
-#ifndef USE_SYMBOL_GC
-# define USE_SYMBOL_GC 1
-#endif
-
 struct rb_iseq_struct;          /* in vm_core.h */
 
 /* parse.y */

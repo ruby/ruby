@@ -11,6 +11,7 @@
 
 #ifndef DLN_H
 #define DLN_H
+#include "ruby/defines.h"       /* for RUBY_SYMBOL_EXPORT_BEGIN */
 
 #ifdef __cplusplus
 # ifndef  HAVE_PROTOTYPES

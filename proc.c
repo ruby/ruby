@@ -10,10 +10,15 @@
 **********************************************************************/
 
 #include "eval_intern.h"
-#include "internal.h"
 #include "gc.h"
-#include "vm_core.h"
+#include "internal.h"
+#include "internal/class.h"
+#include "internal/error.h"
+#include "internal/object.h"
+#include "internal/proc.h"
+#include "internal/symbol.h"
 #include "iseq.h"
+#include "vm_core.h"
 
 /* Proc.new with no block will raise an exception in the future
  * versions */

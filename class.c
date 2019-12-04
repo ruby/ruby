@@ -23,12 +23,20 @@
  * \{
  */
 
-#include "internal.h"
-#include "ruby/st.h"
-#include "constant.h"
-#include "vm_core.h"
-#include "id_table.h"
+#include "ruby/config.h"
 #include <ctype.h>
+
+#include "constant.h"
+#include "id_table.h"
+#include "internal.h"
+#include "internal/class.h"
+#include "internal/error.h"
+#include "internal/eval.h"
+#include "internal/hash.h"
+#include "internal/object.h"
+#include "internal/variable.h"
+#include "ruby/st.h"
+#include "vm_core.h"
 
 #define id_attached id__attached__
 

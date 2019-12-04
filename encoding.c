@@ -9,14 +9,24 @@
 
 **********************************************************************/
 
-#include "ruby/encoding.h"
-#include "internal.h"
-#include "encindex.h"
-#include "regenc.h"
-#include <ctype.h>
-#include "ruby/util.h"
+#include "ruby/config.h"
 
+#include <ctype.h>
+
+#include "encindex.h"
+#include "internal.h"
+#include "internal/enc.h"
+#include "internal/encoding.h"
+#include "internal/inits.h"
+#include "internal/load.h"
+#include "internal/object.h"
+#include "internal/string.h"
+#include "internal/vm.h"
+#include "regenc.h"
+#include "ruby/encoding.h"
+#include "ruby/util.h"
 #include "ruby_assert.h"
+
 #ifndef ENC_DEBUG
 #define ENC_DEBUG 0
 #endif

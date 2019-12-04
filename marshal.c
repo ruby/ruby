@@ -9,13 +9,7 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
-#include "ruby/io.h"
-#include "internal.h"
-#include "ruby/st.h"
-#include "ruby/util.h"
-#include "encindex.h"
-#include "id_table.h"
+#include "ruby/config.h"
 
 #include <math.h>
 #ifdef HAVE_FLOAT_H
@@ -24,6 +18,23 @@
 #ifdef HAVE_IEEEFP_H
 #include <ieeefp.h>
 #endif
+
+#include "encindex.h"
+#include "id_table.h"
+#include "internal.h"
+#include "internal/bignum.h"
+#include "internal/class.h"
+#include "internal/encoding.h"
+#include "internal/error.h"
+#include "internal/hash.h"
+#include "internal/object.h"
+#include "internal/struct.h"
+#include "internal/util.h"
+#include "internal/vm.h"
+#include "ruby/io.h"
+#include "ruby/ruby.h"
+#include "ruby/st.h"
+#include "ruby/util.h"
 
 #define BITSPERSHORT (2*CHAR_BIT)
 #define SHORTMASK ((1<<BITSPERSHORT)-1)

@@ -64,23 +64,34 @@
 /* for model 2 */
 
 #include "ruby/config.h"
-#include "ruby/io.h"
-#include "eval_intern.h"
-#include "timev.h"
-#include "ruby/thread.h"
-#include "ruby/thread_native.h"
-#include "ruby/debug.h"
-#include "gc.h"
-#include "internal.h"
-#include "iseq.h"
-#include "vm_core.h"
-#include "mjit.h"
-#include "hrtime.h"
 
 #ifdef __linux__
 // Normally,  gcc(1)  translates  calls to alloca() with inlined code.  This is not done when either the -ansi, -std=c89, -std=c99, or the -std=c11 option is given and the header <alloca.h> is not included.
-#include <alloca.h>
+# include <alloca.h>
 #endif
+
+#include "eval_intern.h"
+#include "gc.h"
+#include "hrtime.h"
+#include "internal.h"
+#include "internal/class.h"
+#include "internal/error.h"
+#include "internal/hash.h"
+#include "internal/io.h"
+#include "internal/object.h"
+#include "internal/proc.h"
+#include "internal/signal.h"
+#include "internal/thread.h"
+#include "internal/time.h"
+#include "internal/warnings.h"
+#include "iseq.h"
+#include "mjit.h"
+#include "ruby/debug.h"
+#include "ruby/io.h"
+#include "ruby/thread.h"
+#include "ruby/thread_native.h"
+#include "timev.h"
+#include "vm_core.h"
 
 #ifndef USE_NATIVE_THREAD_PRIORITY
 #define USE_NATIVE_THREAD_PRIORITY 0

@@ -8,9 +8,11 @@
 
 ************************************************/
 
+#include "gc.h"
+#include "internal/hash.h"
+#include "internal/thread.h"
 #include "ruby.h"
 #include "vm_core.h"
-#include "gc.h"
 
 static int current_mode;
 static VALUE me2counter = Qnil;

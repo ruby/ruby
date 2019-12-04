@@ -11,12 +11,10 @@
 
 **********************************************************************/
 
-#include "ruby/encoding.h"
-#include "ruby/thread.h"
-#include "internal.h"
-#include "id.h"
-#include "encindex.h"
+#include "ruby/config.h"
 
+#include <ctype.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -36,11 +34,9 @@
 #   define USE_OPENDIR_AT 0
 # endif
 #endif
+
 #if USE_OPENDIR_AT
 # include <fcntl.h>
-#endif
-#ifndef AT_FDCWD
-# define AT_FDCWD -1
 #endif
 
 #undef HAVE_DIRENT_NAMLEN
@@ -68,36 +64,12 @@
 # endif
 #endif
 
-#include <errno.h>
-
 #ifndef HAVE_STDLIB_H
 char *getenv();
 #endif
 
 #ifndef HAVE_STRING_H
 char *strchr(char*,char);
-#endif
-
-#include <ctype.h>
-
-#include "ruby/util.h"
-
-#define vm_initialized rb_cThread
-
-/* define system APIs */
-#ifdef _WIN32
-#undef chdir
-#define chdir(p) rb_w32_uchdir(p)
-#undef mkdir
-#define mkdir(p, m) rb_w32_umkdir((p), (m))
-#undef rmdir
-#define rmdir(p) rb_w32_urmdir(p)
-#undef opendir
-#define opendir(p) rb_w32_uopendir(p)
-#define ruby_getcwd() rb_w32_ugetcwd(NULL, 0)
-#define IS_WIN32 1
-#else
-#define IS_WIN32 0
 #endif
 
 #ifdef HAVE_SYS_ATTR_H
@@ -123,15 +95,51 @@ char *strchr(char*,char);
 
 #ifdef __APPLE__
 # define NORMALIZE_UTF8PATH 1
+# include <sys/param.h>
+# include <sys/mount.h>
+# include <sys/vnode.h>
 #else
 # define NORMALIZE_UTF8PATH 0
 #endif
 
-#if NORMALIZE_UTF8PATH
-#include <sys/param.h>
-#include <sys/mount.h>
-#include <sys/vnode.h>
+#include "encindex.h"
+#include "id.h"
+#include "internal.h"
+#include "internal/dir.h"
+#include "internal/encoding.h"
+#include "internal/error.h"
+#include "internal/file.h"
+#include "internal/gc.h"
+#include "internal/io.h"
+#include "internal/vm.h"
+#include "ruby/encoding.h"
+#include "ruby/ruby.h"
+#include "ruby/thread.h"
+#include "ruby/util.h"
 
+#ifndef AT_FDCWD
+# define AT_FDCWD -1
+#endif
+
+#define vm_initialized rb_cThread
+
+/* define system APIs */
+#ifdef _WIN32
+# undef chdir
+# define chdir(p) rb_w32_uchdir(p)
+# undef mkdir
+# define mkdir(p, m) rb_w32_umkdir((p), (m))
+# undef rmdir
+# define rmdir(p) rb_w32_urmdir(p)
+# undef opendir
+# define opendir(p) rb_w32_uopendir(p)
+# define ruby_getcwd() rb_w32_ugetcwd(NULL, 0)
+# define IS_WIN32 1
+#else
+# define IS_WIN32 0
+#endif
+
+#if NORMALIZE_UTF8PATH
 # if defined HAVE_FGETATTRLIST || !defined HAVE_GETATTRLIST
 #   define need_normalization(dirp, path) need_normalization(dirp)
 # else

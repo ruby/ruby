@@ -9,18 +9,24 @@
 
 **********************************************************************/
 
-#include "internal.h"
-#include "vm_core.h"
-#include "gc.h"
-#include "eval_intern.h"
-#include "mjit.h"
-
-#include COROUTINE_H
+#include "ruby/config.h"
 
 #ifndef _WIN32
 #include <unistd.h>
 #include <sys/mman.h>
 #endif
+
+#include COROUTINE_H
+
+#include "eval_intern.h"
+#include "gc.h"
+#include "internal.h"
+#include "internal/cont.h"
+#include "internal/mjit.h"
+#include "internal/proc.h"
+#include "internal/warnings.h"
+#include "mjit.h"
+#include "vm_core.h"
 
 static const int DEBUG = 0;
 

@@ -9,7 +9,6 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
-
 #include "ruby/config.h"
 #include <stddef.h>             /* for size_t */
 #include "constant.h"           /* for rb_const_entry_t */

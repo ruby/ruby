@@ -46,6 +46,19 @@
 #define VMDEBUG 3
 #endif
 
+#include "ruby/config.h"
+
+#include <stddef.h>
+#include <signal.h>
+
+#ifdef HAVE_STDARG_PROTOTYPES
+#include <stdarg.h>
+#define va_init_list(a,b) va_start((a),(b))
+#else
+#include <varargs.h>
+#define va_init_list(a,b) va_start((a))
+#endif
+
 #include "ruby_assert.h"
 
 #if VM_CHECK_MODE > 0
@@ -55,6 +68,29 @@
 #else
 #define VM_ASSERT(expr) ((void)0)
 #define VM_UNREACHABLE(func) UNREACHABLE
+#endif
+
+#include <setjmp.h>
+
+#include "id.h"
+#include "internal.h"
+#include "internal/array.h"
+#include "internal/serial.h"
+#include "internal/stdbool.h"
+#include "ccan/list/list.h"
+#include "internal/vm.h"
+#include "method.h"
+#include "node.h"
+#include "ruby/ruby.h"
+#include "ruby/st.h"
+#include "ruby_atomic.h"
+#include "vm_opts.h"
+
+#include "ruby/thread_native.h"
+#if   defined(_WIN32)
+#include "thread_win32.h"
+#elif defined(HAVE_PTHREAD_H)
+#include "thread_pthread.h"
 #endif
 
 #define RUBY_VM_THREAD_MODEL 2
@@ -68,26 +104,6 @@
 #ifndef VM_INSN_INFO_TABLE_IMPL
 # define VM_INSN_INFO_TABLE_IMPL 2
 #endif
-
-#include "ruby/ruby.h"
-#include "ruby/st.h"
-
-#include "node.h"
-#include "vm_opts.h"
-#include "id.h"
-#include "method.h"
-#include "ruby_atomic.h"
-#include "ccan/list/list.h"
-
-#include "ruby/thread_native.h"
-#if   defined(_WIN32)
-#include "thread_win32.h"
-#elif defined(HAVE_PTHREAD_H)
-#include "thread_pthread.h"
-#endif
-
-#include <setjmp.h>
-#include <signal.h>
 
 #if defined(NSIG_MAX)           /* POSIX issue 8 */
 # undef NSIG
@@ -122,14 +138,6 @@
 
 /* define to 0 to test old code path */
 #define WAITPID_USE_SIGCHLD (RUBY_SIGCHLD || SIGCHLD_LOSSY)
-
-#ifdef HAVE_STDARG_PROTOTYPES
-#include <stdarg.h>
-#define va_init_list(a,b) va_start((a),(b))
-#else
-#include <varargs.h>
-#define va_init_list(a,b) va_start((a))
-#endif
 
 #if defined(SIGSEGV) && defined(HAVE_SIGALTSTACK) && defined(SA_SIGINFO) && !defined(__NetBSD__)
 #  define USE_SIGALTSTACK

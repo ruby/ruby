@@ -9,40 +9,58 @@
 
 **********************************************************************/
 
-#include "internal.h"
+#include "ruby/config.h"
 
+#include <errno.h>
 #include <limits.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
+#include <math.h>
 #include <time.h>
+
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+
 #include <sys/types.h>
 #include <sys/stat.h>
+
 #ifdef HAVE_FCNTL_H
-#include <fcntl.h>
+# include <fcntl.h>
 #endif
-#include <math.h>
-#include <errno.h>
+
 #if defined(HAVE_SYS_TIME_H)
-#include <sys/time.h>
+# include <sys/time.h>
 #endif
 
 #ifdef HAVE_SYSCALL_H
-#include <syscall.h>
+# include <syscall.h>
 #elif defined HAVE_SYS_SYSCALL_H
-#include <sys/syscall.h>
+# include <sys/syscall.h>
 #endif
 
 #ifdef _WIN32
-#include <windows.h>
-#include <wincrypt.h>
+# include <winsock2.h>
+# include <windows.h>
+# include <wincrypt.h>
 #endif
-#include "ruby_atomic.h"
 
 #ifdef __OpenBSD__
 /* to define OpenBSD for version check */
-#include <sys/param.h>
+# include <sys/param.h>
 #endif
+
+#if defined HAVE_GETRANDOM
+# include <sys/random.h>
+#elif defined __linux__ && defined __NR_getrandom
+# include <linux/random.h>
+#endif
+
+#include "internal.h"
+#include "internal/compilers.h"
+#include "internal/error.h"
+#include "internal/numeric.h"
+#include "internal/random.h"
+#include "internal/sanitizers.h"
+#include "ruby_atomic.h"
 
 typedef int int_must_be_32bit_at_least[sizeof(int) * CHAR_BIT < 32 ? -1 : 1];
 
@@ -320,11 +338,7 @@ fill_random_bytes_urandom(void *seed, size_t size)
 # define fill_random_bytes_urandom(seed, size) -1
 #endif
 
-#if defined HAVE_GETRANDOM
-# include <sys/random.h>
-#elif defined __linux__ && defined __NR_getrandom
-# include <linux/random.h>
-
+#if ! defined HAVE_GETRANDOM && defined __linux__ && defined __NR_getrandom
 # ifndef GRND_NONBLOCK
 #   define GRND_NONBLOCK 0x0001	/* not defined in musl libc */
 # endif

@@ -1,45 +1,51 @@
-#include	"ruby/config.h"
+#include "ruby/config.h"
+
 #ifdef RUBY_EXTCONF_H
-#include RUBY_EXTCONF_H
+# include RUBY_EXTCONF_H
 #endif
-#include	<stdlib.h>
-#include	<stdio.h>
-#include	<sys/types.h>
-#include	<sys/stat.h>
-#include	<sys/file.h>
-#include	<fcntl.h>
-#include	<errno.h>
+
+#include <ctype.h>
+#include <errno.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/file.h>
+#include <fcntl.h>
+
 #ifdef HAVE_PWD_H
-#include	<pwd.h>
+# include <pwd.h>
 #endif
+
 #ifdef HAVE_SYS_IOCTL_H
-#include	<sys/ioctl.h>
+# include <sys/ioctl.h>
 #endif
+
 #ifdef HAVE_LIBUTIL_H
-#include	<libutil.h>
+# include <libutil.h>
 #endif
+
 #ifdef HAVE_UTIL_H
-#include	<util.h>
+# include <util.h>
 #endif
+
 #ifdef HAVE_PTY_H
-#include	<pty.h>
+# include <pty.h>
 #endif
+
 #if defined(HAVE_SYS_PARAM_H)
-  /* for __FreeBSD_version */
+ /* for __FreeBSD_version */
 # include <sys/param.h>
 #endif
+
 #ifdef HAVE_SYS_WAIT_H
-#include <sys/wait.h>
+# include <sys/wait.h>
 #else
-#define WIFSTOPPED(status)    (((status) & 0xff) == 0x7f)
+# define WIFSTOPPED(status) (((status) & 0xff) == 0x7f)
 #endif
-#include <ctype.h>
 
-#include "ruby/io.h"
-#include "internal.h"
-#include "ruby/util.h"
-
-#include <signal.h>
 #ifdef HAVE_SYS_STROPTS_H
 #include <sys/stropts.h>
 #endif
@@ -47,6 +53,12 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+
+#include "internal.h"
+#include "internal/process.h"
+#include "internal/signal.h"
+#include "ruby/io.h"
+#include "ruby/util.h"
 
 #define	DEVICELEN	16
 

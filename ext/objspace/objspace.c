@@ -12,12 +12,16 @@
 
 **********************************************************************/
 
-#include <ruby/io.h>
-#include "internal.h"
-#include <ruby/st.h>
-#include <ruby/re.h>
-#include "node.h"
 #include "gc.h"
+#include "internal.h"
+#include "internal/class.h"
+#include "internal/compilers.h"
+#include "internal/hash.h"
+#include "internal/imemo.h"
+#include "node.h"
+#include "ruby/io.h"
+#include "ruby/re.h"
+#include "ruby/st.h"
 #include "symbol.h"
 
 /*

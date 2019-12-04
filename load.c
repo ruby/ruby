@@ -2,13 +2,20 @@
  * load methods from eval.c
  */
 
-#include "ruby/encoding.h"
-#include "ruby/util.h"
-#include "internal.h"
 #include "dln.h"
 #include "eval_intern.h"
-#include "probes.h"
+#include "internal.h"
+#include "internal/dir.h"
+#include "internal/error.h"
+#include "internal/file.h"
+#include "internal/load.h"
+#include "internal/parse.h"
+#include "internal/thread.h"
+#include "internal/variable.h"
 #include "iseq.h"
+#include "probes.h"
+#include "ruby/encoding.h"
+#include "ruby/util.h"
 
 static VALUE ruby_dln_librefs;
 

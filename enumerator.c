@@ -12,13 +12,21 @@
 
 ************************************************/
 
-#include "ruby/ruby.h"
-#include "internal.h"
-#include "id.h"
+#include "ruby/config.h"
 
 #ifdef HAVE_FLOAT_H
 #include <float.h>
 #endif
+
+#include "id.h"
+#include "internal.h"
+#include "internal/enumerator.h"
+#include "internal/error.h"
+#include "internal/hash.h"
+#include "internal/imemo.h"
+#include "internal/numeric.h"
+#include "internal/range.h"
+#include "ruby/ruby.h"
 
 /*
  * Document-class: Enumerator

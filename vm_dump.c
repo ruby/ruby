@@ -8,26 +8,31 @@
 
 **********************************************************************/
 
-
-#include "internal.h"
-#include "addr2line.h"
-#include "vm_core.h"
-#include "iseq.h"
-#include "gc.h"
+#include "ruby/config.h"
 
 #ifdef HAVE_UCONTEXT_H
-#include <ucontext.h>
+# include <ucontext.h>
 #endif
+
 #ifdef __APPLE__
-#ifdef HAVE_LIBPROC_H
-#include <libproc.h>
+# ifdef HAVE_LIBPROC_H
+#  include <libproc.h>
+# endif
+# include <mach/vm_map.h>
+# include <mach/mach_init.h>
+# ifdef __LP64__
+#  define vm_region_recurse vm_region_recurse_64
+# endif
 #endif
-#include <mach/vm_map.h>
-#include <mach/mach_init.h>
-#ifdef __LP64__
-#define vm_region_recurse vm_region_recurse_64
-#endif
-#endif
+
+#include "addr2line.h"
+#include "gc.h"
+#include "internal.h"
+#include "internal/variable.h"
+#include "internal/vm.h"
+#include "iseq.h"
+#include "vm_core.h"
+
 
 /* see vm_insnhelper.h for the values */
 #ifndef VMDEBUG

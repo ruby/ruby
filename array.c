@@ -10,14 +10,25 @@
   Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
 **********************************************************************/
-#include "ruby/encoding.h"
-#include "ruby/util.h"
-#include "ruby/st.h"
-#include "probes.h"
-#include "id.h"
+
 #include "debug_counter.h"
-#include "transient_heap.h"
+#include "id.h"
 #include "internal.h"
+#include "internal/array.h"
+#include "internal/compar.h"
+#include "internal/enum.h"
+#include "internal/gc.h"
+#include "internal/hash.h"
+#include "internal/numeric.h"
+#include "internal/object.h"
+#include "internal/proc.h"
+#include "internal/rational.h"
+#include "internal/vm.h"
+#include "probes.h"
+#include "ruby/encoding.h"
+#include "ruby/st.h"
+#include "ruby/util.h"
+#include "transient_heap.h"
 
 #if !ARRAY_DEBUG
 # define NDEBUG

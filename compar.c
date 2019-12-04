@@ -9,9 +9,12 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
 #include "id.h"
 #include "internal.h"
+#include "internal/compar.h"
+#include "internal/error.h"
+#include "internal/vm.h"
+#include "ruby/ruby.h"
 
 VALUE rb_mComparable;
 

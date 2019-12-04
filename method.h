@@ -12,6 +12,9 @@
 #define RUBY_METHOD_H 1
 
 #include "internal.h"
+#include "internal/imemo.h"
+#include "internal/compilers.h"
+#include "internal/static_assert.h"
 
 #ifndef END_OF_ENUMERATION
 # if defined(__GNUC__) &&! defined(__STRICT_ANSI__)

@@ -55,6 +55,10 @@
 #include "win32/file.h"
 #include "id.h"
 #include "internal.h"
+#include "internal/enc.h"
+#include "internal/object.h"
+#include "internal/static_assert.h"
+#include "internal/stdbool.h"
 #include "encindex.h"
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
 

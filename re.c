@@ -9,13 +9,20 @@
 
 **********************************************************************/
 
+#include "ruby/config.h"
+
+#include <ctype.h>
+
+#include "encindex.h"
+#include "internal.h"
+#include "internal/error.h"
+#include "internal/hash.h"
+#include "internal/imemo.h"
+#include "internal/re.h"
+#include "regint.h"
 #include "ruby/encoding.h"
 #include "ruby/re.h"
 #include "ruby/util.h"
-#include "internal.h"
-#include "regint.h"
-#include "encindex.h"
-#include <ctype.h>
 
 VALUE rb_eRegexpError;
 

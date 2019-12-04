@@ -19,6 +19,10 @@
 #define STR_NOEMBED      FL_USER1
 #define STR_SHARED       FL_USER2 /* = ELTS_SHARED */
 
+#ifdef rb_fstring_cstr
+# undef rb_fstring_cstr
+#endif
+
 /* string.c */
 VALUE rb_fstring(VALUE);
 VALUE rb_fstring_cstr(const char *str);

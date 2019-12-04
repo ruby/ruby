@@ -11,18 +11,31 @@
 
 **********************************************************************/
 
+#include "ruby/config.h"
+
+#include <ctype.h>
+#include <errno.h>
+#include <float.h>
+#include <math.h>
+#include <stdio.h>
+
+#include "constant.h"
+#include "id.h"
+#include "internal.h"
+#include "internal/array.h"
+#include "internal/class.h"
+#include "internal/error.h"
+#include "internal/eval.h"
+#include "internal/inits.h"
+#include "internal/numeric.h"
+#include "internal/object.h"
+#include "internal/struct.h"
+#include "internal/symbol.h"
+#include "internal/variable.h"
+#include "probes.h"
 #include "ruby/encoding.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
-#include "internal.h"
-#include <stdio.h>
-#include <errno.h>
-#include <ctype.h>
-#include <math.h>
-#include <float.h>
-#include "constant.h"
-#include "id.h"
-#include "probes.h"
 
 /*!
  * \defgroup object Core objects and their operations

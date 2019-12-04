@@ -9,10 +9,13 @@
 #ifndef RUBY_MJIT_H
 #define RUBY_MJIT_H 1
 
-#include "ruby.h"
-#include "debug_counter.h"
+#include "ruby/config.h"
 
 #if USE_MJIT
+
+#include "debug_counter.h"
+#include "ruby.h"
+#include "vm_core.h"
 
 // Special address values of a function generated from the
 // corresponding iseq by MJIT:

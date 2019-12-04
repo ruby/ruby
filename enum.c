@@ -9,13 +9,19 @@
 
 **********************************************************************/
 
-#include "ruby/encoding.h"
-#include "internal.h"
-#include "ruby/util.h"
 #include "id.h"
+#include "internal.h"
+#include "internal/compar.h"
+#include "internal/enum.h"
+#include "internal/hash.h"
+#include "internal/imemo.h"
+#include "internal/numeric.h"
+#include "internal/object.h"
+#include "internal/proc.h"
+#include "internal/rational.h"
+#include "ruby/util.h"
+#include "ruby_assert.h"
 #include "symbol.h"
-
-#include <assert.h>
 
 VALUE rb_mEnumerable;
 

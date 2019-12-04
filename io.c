@@ -11,37 +11,30 @@
 
 **********************************************************************/
 
-#include "ruby/encoding.h"
-#include "ruby/io.h"
-#include "ruby/thread.h"
-#include "internal.h"
-#include "dln.h"
-#include "encindex.h"
-#include "id.h"
+#include "ruby/config.h"
+
+#ifdef _WIN32
+# include "ruby/ruby.h"
+# include "ruby/io.h"
+#endif
+
 #include <ctype.h>
 #include <errno.h>
-#include "ruby_atomic.h"
-#include "ccan/list/list.h"
+#include <stddef.h>
 
 /* non-Linux poll may not work on all FDs */
 #if defined(HAVE_POLL)
-#  if defined(__linux__)
-#    define USE_POLL 1
-#  endif
-#  if defined(__FreeBSD_version) && __FreeBSD_version >= 1100000
-#    define USE_POLL 1
-#  endif
+# if defined(__linux__)
+#   define USE_POLL 1
+# endif
+# if defined(__FreeBSD_version) && __FreeBSD_version >= 1100000
+#  define USE_POLL 1
+# endif
 #endif
 
 #ifndef USE_POLL
-#  define USE_POLL 0
+# define USE_POLL 0
 #endif
-
-#if !USE_POLL
-#  include "vm_core.h"
-#endif
-
-#include "builtin.h"
 
 #undef free
 #define free(x) xfree(x)
@@ -119,7 +112,31 @@
 # include <copyfile.h>
 #endif
 
+#include "dln.h"
+#include "encindex.h"
+#include "id.h"
+#include "internal.h"
+#include "internal/encoding.h"
+#include "internal/error.h"
+#include "internal/inits.h"
+#include "internal/io.h"
+#include "internal/numeric.h"
+#include "internal/object.h"
+#include "internal/process.h"
+#include "internal/stdbool.h"
+#include "ccan/list/list.h"
+#include "internal/thread.h"
+#include "internal/transcode.h"
+#include "ruby/io.h"
+#include "ruby/thread.h"
 #include "ruby/util.h"
+#include "ruby_atomic.h"
+
+#if !USE_POLL
+#  include "vm_core.h"
+#endif
+
+#include "builtin.h"
 
 #ifndef O_ACCMODE
 #define O_ACCMODE (O_RDONLY | O_WRONLY | O_RDWR)

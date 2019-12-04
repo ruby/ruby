@@ -9,25 +9,37 @@
 
 **********************************************************************/
 
-#include "internal.h"
-#include "ruby/util.h"
-#include "eval_intern.h"
+#define RUBY_VM_INSNS_INFO 1
+/* #define RUBY_MARK_FREE_DEBUG 1 */
+
+#include "ruby/config.h"
 
 #ifdef HAVE_DLADDR
 # include <dlfcn.h>
 #endif
 
-#define RUBY_VM_INSNS_INFO 1
-/* #define RUBY_MARK_FREE_DEBUG 1 */
+#include "eval_intern.h"
 #include "gc.h"
-#include "vm_core.h"
-#include "iseq.h"
 #include "id_table.h"
-#include "builtin.h"
+#include "internal.h"
+#include "internal/bits.h"
+#include "internal/compile.h"
+#include "internal/error.h"
+#include "internal/file.h"
+#include "internal/hash.h"
+#include "internal/parse.h"
+#include "internal/sanitizers.h"
+#include "internal/symbol.h"
+#include "internal/thread.h"
+#include "internal/variable.h"
+#include "iseq.h"
+#include "mjit.h"
+#include "ruby/util.h"
+#include "vm_core.h"
 
+#include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
-#include "mjit.h"
 
 VALUE rb_cISeq;
 static VALUE iseqw_new(const rb_iseq_t *iseq);

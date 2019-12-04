@@ -10,17 +10,22 @@
 // call Ruby methods (C functions that may call rb_funcall) or trigger
 // GC (using ZALLOC, xmalloc, xfree, etc.) in this file.
 
-#include "internal.h"
+#include "ruby/config.h"
 
 #if USE_MJIT
 
+#include "internal.h"
+#include "internal/compile.h"
+#include "internal/hash.h"
+#include "internal/variable.h"
+#include "mjit.h"
 #include "vm_core.h"
 #include "vm_exec.h"
-#include "mjit.h"
+#include "vm_insnhelper.h"
+
 #include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
-#include "vm_insnhelper.h"
 
 // Macros to check if a position is already compiled using compile_status.stack_size_for_pos
 #define NOT_COMPILED_STACK_SIZE -1

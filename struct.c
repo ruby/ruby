@@ -9,10 +9,17 @@
 
 **********************************************************************/
 
-#include "internal.h"
-#include "vm_core.h"
 #include "id.h"
+#include "internal.h"
+#include "internal/class.h"
+#include "internal/error.h"
+#include "internal/hash.h"
+#include "internal/object.h"
+#include "internal/proc.h"
+#include "internal/struct.h"
+#include "internal/symbol.h"
 #include "transient_heap.h"
+#include "vm_core.h"
 
 /* only for struct[:field] access */
 enum {

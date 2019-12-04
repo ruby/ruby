@@ -14,43 +14,25 @@
 #define rb_data_object_alloc rb_data_object_alloc
 #define rb_data_typed_object_alloc rb_data_typed_object_alloc
 
-#include "ruby/encoding.h"
-#include "ruby/io.h"
-#include "ruby/st.h"
-#include "ruby/re.h"
-#include "ruby/thread.h"
-#include "ruby/util.h"
-#include "ruby/debug.h"
-#include "internal.h"
-#include "eval_intern.h"
-#include "vm_core.h"
-#include "builtin.h"
-#include "gc.h"
-#include "constant.h"
-#include "ruby_atomic.h"
-#include "probes.h"
-#include "id_table.h"
-#include "symbol.h"
-#include <stdio.h>
-#include <stdarg.h>
-#include <setjmp.h>
-#include <sys/types.h>
-#include "ruby_assert.h"
-#include "debug_counter.h"
-#include "transient_heap.h"
-#include "mjit.h"
+#include "ruby/config.h"
+#ifdef _WIN32
+# include "ruby/ruby.h"
+#endif
 
-#undef rb_data_object_wrap
+#include <setjmp.h>
+#include <stdarg.h>
+#include <stdio.h>
 
 #ifndef HAVE_MALLOC_USABLE_SIZE
 # ifdef _WIN32
-#   define HAVE_MALLOC_USABLE_SIZE
-#   define malloc_usable_size(a) _msize(a)
+#  define HAVE_MALLOC_USABLE_SIZE
+#  define malloc_usable_size(a) _msize(a)
 # elif defined HAVE_MALLOC_SIZE
-#   define HAVE_MALLOC_USABLE_SIZE
-#   define malloc_usable_size(a) malloc_size(a)
+#  define HAVE_MALLOC_USABLE_SIZE
+#  define malloc_usable_size(a) malloc_size(a)
 # endif
 #endif
+
 #ifdef HAVE_MALLOC_USABLE_SIZE
 # ifdef RUBY_ALTERNATIVE_MALLOC_HEADER
 #  include RUBY_ALTERNATIVE_MALLOC_HEADER
@@ -64,27 +46,72 @@
 #endif
 
 #ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
+# include <sys/time.h>
 #endif
 
 #ifdef HAVE_SYS_RESOURCE_H
-#include <sys/resource.h>
+# include <sys/resource.h>
 #endif
 
 #if defined _WIN32 || defined __CYGWIN__
-#include <windows.h>
+# include <windows.h>
 #elif defined(HAVE_POSIX_MEMALIGN)
 #elif defined(HAVE_MEMALIGN)
-#include <malloc.h>
+# include <malloc.h>
 #endif
+
+#include <sys/types.h>
+
+#if defined(_MSC_VER) && defined(_WIN64)
+# include <intrin.h>
+# pragma intrinsic(_umul128)
+#endif
+
+#include "constant.h"
+#include "debug_counter.h"
+#include "eval_intern.h"
+#include "gc.h"
+#include "id_table.h"
+#include "internal.h"
+#include "internal/class.h"
+#include "internal/complex.h"
+#include "internal/cont.h"
+#include "internal/error.h"
+#include "internal/eval.h"
+#include "internal/gc.h"
+#include "internal/hash.h"
+#include "internal/imemo.h"
+#include "internal/io.h"
+#include "internal/numeric.h"
+#include "internal/object.h"
+#include "internal/proc.h"
+#include "internal/rational.h"
+#include "internal/sanitizers.h"
+#include "internal/struct.h"
+#include "internal/symbol.h"
+#include "internal/thread.h"
+#include "internal/variable.h"
+#include "internal/warnings.h"
+#include "mjit.h"
+#include "probes.h"
+#include "regint.h"
+#include "ruby/debug.h"
+#include "ruby/io.h"
+#include "ruby/re.h"
+#include "ruby/st.h"
+#include "ruby/thread.h"
+#include "ruby/util.h"
+#include "ruby_assert.h"
+#include "ruby_atomic.h"
+#include "symbol.h"
+#include "transient_heap.h"
+#include "vm_core.h"
+
+#include "builtin.h"
 
 #define rb_setjmp(env) RUBY_SETJMP(env)
 #define rb_jmp_buf rb_jmpbuf_t
-
-#if defined(_MSC_VER) && defined(_WIN64)
-#include <intrin.h>
-#pragma intrinsic(_umul128)
-#endif
+#undef rb_data_object_wrap
 
 /* Expecting this struct to be eliminated by function inlinings */
 struct optional {
@@ -3806,8 +3833,6 @@ rb_obj_id(VALUE obj)
 
     return rb_find_object_id(obj, cached_object_id);
 }
-
-#include "regint.h"
 
 static size_t
 obj_memsize_of(VALUE obj, int use_all_types)

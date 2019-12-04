@@ -9,26 +9,39 @@
 
 **********************************************************************/
 
-#include "internal.h"
-#include "ruby/thread.h"
-#include "ruby/util.h"
-#include "id.h"
+#include "ruby/config.h"
+
+#include <ctype.h>
+#include <float.h>
+#include <math.h>
 
 #ifdef HAVE_STRINGS_H
-#include <strings.h>
+# include <strings.h>
 #endif
-#include <math.h>
-#include <float.h>
-#include <ctype.h>
+
 #ifdef HAVE_IEEEFP_H
-#include <ieeefp.h>
+# include <ieeefp.h>
 #endif
-#include "ruby_assert.h"
 
 #if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
-#define USE_GMP
-#include <gmp.h>
+# define USE_GMP
+# include <gmp.h>
 #endif
+
+#include "id.h"
+#include "internal.h"
+#include "internal/bignum.h"
+#include "internal/complex.h"
+#include "internal/gc.h"
+#include "internal/numeric.h"
+#include "internal/object.h"
+#include "internal/sanitizers.h"
+#include "internal/util.h"
+#include "internal/variable.h"
+#include "internal/warnings.h"
+#include "ruby/thread.h"
+#include "ruby/util.h"
+#include "ruby_assert.h"
 
 #define RB_BIGNUM_TYPE_P(x) RB_TYPE_P((x), T_BIGNUM)
 

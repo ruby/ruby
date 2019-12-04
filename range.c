@@ -9,14 +9,24 @@
 
 **********************************************************************/
 
-#include "internal.h"
-#include "id.h"
+#include "ruby/config.h"
+
 #include <assert.h>
+#include <math.h>
 
 #ifdef HAVE_FLOAT_H
 #include <float.h>
 #endif
-#include <math.h>
+
+#include "id.h"
+#include "internal.h"
+#include "internal/array.h"
+#include "internal/compar.h"
+#include "internal/enum.h"
+#include "internal/enumerator.h"
+#include "internal/error.h"
+#include "internal/numeric.h"
+#include "internal/range.h"
 
 VALUE rb_cRange;
 static ID id_beg, id_end, id_excl;

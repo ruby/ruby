@@ -1,4 +1,4 @@
-#include "internal.h"
+#include "internal/numeric.h"
 
 static VALUE
 int_bignum_p(VALUE self)

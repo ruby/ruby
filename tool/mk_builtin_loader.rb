@@ -127,13 +127,18 @@ def mk_builtin_header file
     f.puts "// auto-generated file"
     f.puts "//   by #{__FILE__}"
     f.puts "//   with #{file}"
+    f.puts '#include "internal/compilers.h"     /* for MAYBE_UNUSED */'
+    f.puts '#include "internal/warnings.h"      /* for COMPILER_WARNING_PUSH */'
+    f.puts '#include "ruby/ruby.h"              /* for VALUE */'
+    f.puts '#include "builtin.h"                /* for RB_BUILTIN_FUNCTION */'
+    f.puts 'struct rb_execution_context_struct; /* in vm_core.h */'
     f.puts
-    lineno = 6
+    lineno = 11
     line_file = file.gsub('\\', '/')
 
     inlines.each{|cfunc_name, (body_lineno, text, params, func_name)|
       if String === cfunc_name
-        f.puts "static VALUE #{cfunc_name}(rb_execution_context_t *ec, const VALUE self) {"
+        f.puts "static VALUE #{cfunc_name}(struct rb_execution_context_struct *ec, const VALUE self) {"
         lineno += 1
 
         params.reverse_each.with_index{|param, i|

@@ -11,16 +11,26 @@
 
 **********************************************************************/
 
-#include "ruby/encoding.h"
-#include "ruby/re.h"
-#include "internal.h"
-#include "id.h"
+#include "ruby/config.h"
+
 #include <math.h>
 #include <stdarg.h>
 
 #ifdef HAVE_IEEEFP_H
-#include <ieeefp.h>
+# include <ieeefp.h>
 #endif
+
+#include "id.h"
+#include "internal.h"
+#include "internal/error.h"
+#include "internal/hash.h"
+#include "internal/numeric.h"
+#include "internal/object.h"
+#include "internal/sanitizers.h"
+#include "internal/symbol.h"
+#include "internal/util.h"
+#include "ruby/encoding.h"
+#include "ruby/re.h"
 
 #define BIT_DIGITS(N)   (((N)*146)/485 + 1)  /* log2(10) =~ 146/485 */
 

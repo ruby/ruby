@@ -9,12 +9,20 @@
 
 **********************************************************************/
 
-#include "ruby/encoding.h"
-#include "internal.h"
-#include <sys/types.h>
+#include "ruby/config.h"
+
 #include <ctype.h>
 #include <errno.h>
 #include <float.h>
+#include <sys/types.h>
+
+#include "internal.h"
+#include "internal/bits.h"
+#include "internal/string.h"
+#include "internal/symbol.h"
+#include "internal/util.h"
+#include "internal/variable.h"
+
 #include "builtin.h"
 
 /*

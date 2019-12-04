@@ -1,6 +1,6 @@
-
 #ifndef RUBY_GC_H
 #define RUBY_GC_H 1
+#include "ruby/ruby.h"
 
 #if defined(__x86_64__) && !defined(_ILP32) && defined(__GNUC__)
 #define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("movq\t%%rsp, %0" : "=r" (*(p)))

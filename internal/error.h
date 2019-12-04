@@ -17,7 +17,16 @@
 #include "ruby/intern.h"        /* for rb_exc_raise */
 #include "ruby/ruby.h"          /* for enum ruby_value_type */
 
-#undef Check_Type               /* in ruby/ruby.h */
+#ifdef Check_Type
+# undef Check_Type               /* in ruby/ruby.h */
+#endif
+
+#ifdef rb_raise_static
+# undef rb_raise_static
+# undef rb_sys_fail_path
+# undef rb_syserr_fail_path
+#endif
+
 #define rb_raise_static(e, m) \
     rb_raise_cstr_i((e), rb_str_new_static((m), rb_strlen_lit(m)))
 #ifdef RUBY_FUNCTION_NAME_STRING

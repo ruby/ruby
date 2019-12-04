@@ -13,6 +13,10 @@
 #include "ruby/encoding.h"      /* for rb_encoding */
 #include "internal/compilers.h" /* for __has_builtin */
 
+#ifdef rb_sym_intern_ascii_cstr
+# undef rb_sym_intern_ascii_cstr
+#endif
+
 /* symbol.c */
 VALUE rb_to_symbol_type(VALUE obj);
 VALUE rb_sym_intern(const char *ptr, long len, rb_encoding *enc);

@@ -1,5 +1,8 @@
 #ifndef RUBY_WIN32_DIR_H
 #define RUBY_WIN32_DIR_H
+#include <stdint.h>             /* for uint8_t */
+#include <esent.h>              /* for WCHAR */
+#include "ruby/encoding.h"      /* for rb_encoding */
 
 #define DT_UNKNOWN 0
 #define DT_DIR (S_IFDIR>>12)
