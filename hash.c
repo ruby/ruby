@@ -5096,62 +5096,50 @@ ruby_unsetenv(const char *name)
 
 /*
  * call-seq:
- *   ENV[name] = value
- *
- * Creates, updates, or deletes the named environment variable, returning the value.
- * Both +name+ and +value+ may be instances of String.
- * See {Valid Names and Values}[#class-ENV-label-Valid+Names+and+Values].
- *
- * - If the named environment variable does not exist:
- *   - If +value+ is not +nil+, creates the environment variable with +name+ and +value+:
- *       ENV.clear
- *       ENV['foo'] = '0' # => '0'
- *   - If +value+ is +nil+, does nothing.
- *       ENV.clear
- *       ENV['foo'] = nil # => nil
- * - If the named environment variable exists:
- *   - If +value+ is not +nil+, updates the envirionment variable with value +value+:
- *       ENV['foo'] = '1' # => '1'
- *   - If +value+ is +nil+, deletes the environment variable:
- *       ENV['foo'] = nil # => nil
- *
- * Raises an exception if +name+ or +value+ is invalid.
- * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
- */
-static VALUE
-env_aset_m(VALUE obj, VALUE nm, VALUE val)
-{
-    return env_aset(nm, val);
-}
-
-/*
- * call-seq:
+ *   ENV[name] = value -> value
  *   ENV.store(name, value) -> value
  *
  * ENV.store is an alias for ENV.[]=.
  *
  * Creates, updates, or deletes the named environment variable, returning the value.
  * Both +name+ and +value+ may be instances of String.
- * See details at {Valid Names and Values}[#class-ENV-label-Valid+Names+and+Values].
+ * See {Valid Names and Values}[#class-ENV-label-Valid+Names+and+Values].
  *
  * - If the named environment variable does not exist:
- *   - If +value+ is not +nil+, creates the environment variable with +name+ and +value+:
- *       ENV.clear
- *       ENV.store('foo', '0') # => '0'
  *   - If +value+ is +nil+, does nothing.
  *       ENV.clear
- *       ENV.store('foo', nil) # => nil
+ *       ENV['foo'] = nil # => nil
+ *       ENV.include?('foo') # => false
+ *       ENV.store('bar', nil) # => nil
+ *       ENV.include?('bar') # => false
+ *   - If +value+ is not +nil+, creates the environment variable with +name+ and +value+:
+ *       # Create 'foo' using ENV.[]=.
+ *       ENV['foo'] = '0' # => '0'
+ *       ENV['foo'] # => '0'
+ *       # Create 'bar' using ENV.store.
+ *       ENV.store('bar', '1') # => '1'
+ *       ENV['bar'] # => '1'
  * - If the named environment variable exists:
- *   - If +value+ is not +nil+, updates the envirionment variable with value +value+:
- *       ENV.store('foo', '1') # => '1'
+ *   - If +value+ is not +nil+, updates the environment variable with value +value+:
+ *       # Update 'foo' using ENV.[]=.
+ *       ENV['foo'] = '2' # => '2'
+ *       ENV['foo'] # => '2'
+ *       # Update 'bar' using ENV.store.
+ *       ENV.store('bar', '3') # => '3'
+ *       ENV['bar'] # => '3'
  *   - If +value+ is +nil+, deletes the environment variable:
- *       ENV.store('foo', nil) # => nil
+ *       # Delete 'foo' using ENV.[]=.
+ *       ENV['foo'] = nil # => nil
+ *       ENV.include?('foo') # => false
+ *       # Delete 'bar' using ENV.store.
+ *       ENV.store('bar', nil) # => nil
+ *       ENV.include?('bar') # => false
  *
  * Raises an exception if +name+ or +value+ is invalid.
  * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
  */
 static VALUE
-env_store(VALUE obj, VALUE nm, VALUE val)
+env_aset_m(VALUE obj, VALUE nm, VALUE val)
 {
     return env_aset(nm, val);
 }
@@ -6435,7 +6423,7 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "[]", rb_f_getenv, 1);
     rb_define_singleton_method(envtbl, "fetch", env_fetch, -1);
     rb_define_singleton_method(envtbl, "[]=", env_aset_m, 2);
-    rb_define_singleton_method(envtbl, "store", env_store, 2);
+    rb_define_singleton_method(envtbl, "store", env_aset_m, 2);
     rb_define_singleton_method(envtbl, "each", env_each_pair, 0);
     rb_define_singleton_method(envtbl, "each_pair", env_each_pair, 0);
     rb_define_singleton_method(envtbl, "each_key", env_each_key, 0);
