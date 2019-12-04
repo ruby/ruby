@@ -1213,6 +1213,10 @@ module DRb
       @thread.alive?
     end
 
+    def kill
+      @thread.kill
+    end
+
     def method_missing(msg, *arg, &blk)
       synchronize do
         @wait_ev.wait_until { @status == :wait }
@@ -1281,11 +1285,15 @@ module DRb
         end
       end
     end
-    @pool_proxy = make_pool
+
+    def self.stop_pool
+      @pool_proxy&.kill
+      @pool_proxy = nil
+    end
 
     def self.open(remote_uri)  # :nodoc:
       begin
-        @pool_proxy = make_pool unless @pool_proxy.alive?
+        @pool_proxy = make_pool unless @pool_proxy&.alive?
 
         conn = @pool_proxy.take(remote_uri)
         conn = self.new(remote_uri) unless conn
