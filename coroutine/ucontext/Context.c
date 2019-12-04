@@ -5,6 +5,7 @@
  *  Copyright, 2019, by Samuel Williams. All rights reserved.
 */
 
+#include "ruby/config.h"
 #include "Context.h"
 
 void coroutine_trampoline(void * _start, void * _context)
