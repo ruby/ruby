@@ -184,7 +184,7 @@ class Reline::Config
 
   def bind_variable(name, value)
     case name
-    when VARIABLE_NAMES then
+    when *VARIABLE_NAMES then
       variable_name = :"@#{name.tr(?-, ?_)}"
       instance_variable_set(variable_name, value.nil? || value == '1' || value == 'on')
     when 'bell-style'
