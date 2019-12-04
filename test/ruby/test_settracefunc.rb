@@ -2266,4 +2266,8 @@ class TestSetTraceFunc < Test::Unit::TestCase
     bar
     EOS
   end
+
+  def test_stat_exists
+    assert_instance_of Hash, TracePoint.stat
+  end
 end

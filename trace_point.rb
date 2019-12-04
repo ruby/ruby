@@ -114,7 +114,7 @@ class TracePoint
   #  It may be changed in future.
   #
   #  This method is only for debugging TracePoint itself.
-  def stat
+  def self.stat
     __builtin_tracepoint_stat_s
   end
 
