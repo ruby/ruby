@@ -11,18 +11,30 @@
 
 **********************************************************************/
 
-#include "internal.h"
-#include "eval_intern.h"
-#include "iseq.h"
-#include "gc.h"
-#include "ruby/vm.h"
-#include "vm_core.h"
-#include "mjit.h"
-#include "probes.h"
-#include "probes_helper.h"
+#include "ruby/config.h"
+
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
 #endif
+
+#include "eval_intern.h"
+#include "gc.h"
+#include "internal.h"
+#include "internal/class.h"
+#include "internal/error.h"
+#include "internal/eval.h"
+#include "internal/hash.h"
+#include "internal/inits.h"
+#include "internal/io.h"
+#include "internal/mjit.h"
+#include "internal/object.h"
+#include "internal/variable.h"
+#include "iseq.h"
+#include "mjit.h"
+#include "probes.h"
+#include "probes_helper.h"
+#include "ruby/vm.h"
+#include "vm_core.h"
 
 NORETURN(void rb_raise_jump(VALUE, VALUE));
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);

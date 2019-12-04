@@ -9,26 +9,39 @@
 
 **********************************************************************/
 
-#include "ruby/encoding.h"
-#include "ruby/st.h"
-#include "internal.h"
-#include "ruby_assert.h"
-#include "vm_core.h"
-#include "builtin.h"
+#include "ruby/config.h"
 
-#include <stdio.h>
-#include <stdarg.h>
-#ifdef HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
 #include <errno.h>
+#include <stdarg.h>
+#include <stdio.h>
+
+#ifdef HAVE_STDLIB_H
+# include <stdlib.h>
+#endif
+
 #ifdef HAVE_UNISTD_H
-#include <unistd.h>
+# include <unistd.h>
 #endif
 
 #if defined __APPLE__
 # include <AvailabilityMacros.h>
 #endif
+
+#include "internal.h"
+#include "internal/error.h"
+#include "internal/eval.h"
+#include "internal/io.h"
+#include "internal/load.h"
+#include "internal/object.h"
+#include "internal/symbol.h"
+#include "internal/thread.h"
+#include "internal/variable.h"
+#include "ruby/encoding.h"
+#include "ruby/st.h"
+#include "ruby_assert.h"
+#include "vm_core.h"
+
+#include "builtin.h"
 
 /*!
  * \defgroup exception Exception handlings

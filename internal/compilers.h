@@ -9,7 +9,6 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
-
 #include "ruby/defines.h"       /* for GCC_VERSION_SINCE */
 
 #ifdef _MSC_VER

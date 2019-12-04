@@ -105,6 +105,9 @@
 #include "st.h"
 #else
 #include "internal.h"
+#include "internal/bits.h"
+#include "internal/hash.h"
+#include "internal/sanitizers.h"
 #endif
 
 #include <stdio.h>

@@ -8,17 +8,33 @@
 
 **********************************************************************/
 
-#include "internal.h"
-#include "ruby/vm.h"
-#include "ruby/st.h"
-
 #define vm_exec rb_vm_exec
 
+#include "eval_intern.h"
 #include "gc.h"
+#include "internal.h"
+#include "internal/compile.h"
+#include "internal/cont.h"
+#include "internal/debug.h"
+#include "internal/error.h"
+#include "internal/eval.h"
+#include "internal/inits.h"
+#include "internal/mjit.h"
+#include "internal/object.h"
+#include "internal/parse.h"
+#include "internal/proc.h"
+#include "internal/re.h"
+#include "internal/symbol.h"
+#include "internal/vm.h"
+#include "iseq.h"
+#include "mjit.h"
+#include "ruby/st.h"
+#include "ruby/vm.h"
 #include "vm_core.h"
 #include "vm_debug.h"
-#include "iseq.h"
-#include "eval_intern.h"
+#include "vm_exec.h"
+#include "vm_insnhelper.h"
+
 #include "builtin.h"
 
 #ifndef MJIT_HEADER
@@ -338,9 +354,6 @@ extern VALUE rb_vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, V
                                   const rb_callable_method_entry_t *me);
 static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, int kw_splat, VALUE block_handler);
 
-#include "mjit.h"
-#include "vm_insnhelper.h"
-#include "vm_exec.h"
 #include "vm_insnhelper.c"
 
 #ifndef MJIT_HEADER

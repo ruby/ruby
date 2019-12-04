@@ -6,15 +6,25 @@
 */
 
 #include "ruby/config.h"
+
 #if defined _MSC_VER
 /* Microsoft Visual C does not define M_PI and others by default */
 # define _USE_MATH_DEFINES 1
 #endif
+
+#include <ctype.h>
 #include <math.h>
-#include "internal.h"
-#include "id.h"
 
 #define NDEBUG
+#include "id.h"
+#include "internal.h"
+#include "internal/class.h"
+#include "internal/complex.h"
+#include "internal/error.h"
+#include "internal/math.h"
+#include "internal/numeric.h"
+#include "internal/object.h"
+#include "internal/rational.h"
 #include "ruby_assert.h"
 
 #define ZERO INT2FIX(0)
@@ -1699,8 +1709,6 @@ numeric_to_c(VALUE self)
 {
     return rb_complex_new1(self);
 }
-
-#include <ctype.h>
 
 inline static int
 issign(int c)

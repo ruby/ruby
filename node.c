@@ -9,6 +9,9 @@
 
 **********************************************************************/
 
+#include "internal.h"
+#include "internal/hash.h"
+#include "internal/variable.h"
 #include "ruby/ruby.h"
 #include "vm_core.h"
 

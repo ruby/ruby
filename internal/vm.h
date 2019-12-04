@@ -15,6 +15,14 @@
 #include "ruby/ruby.h"              /* for ID */
 #include "ruby/st.h"                /* for st_table */
 
+#ifdef rb_funcallv
+# undef rb_funcallv
+#endif
+
+#ifdef rb_method_basic_definition_p
+# undef rb_method_basic_definition_p
+#endif
+
 /* I have several reasons to choose 64 here:
  *
  * - A cache line must be a power-of-two size.

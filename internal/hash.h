@@ -55,8 +55,14 @@ struct RHash {
 };
 
 #define RHASH(obj) (R_CAST(RHash)(obj))
-#undef RHASH_IFNONE
-#undef RHASH_SIZE
+
+#ifdef RHASH_IFNONE
+# undef RHASH_IFNONE
+#endif
+
+#ifdef RHASH_SIZE
+# undef RHASH_SIZE
+#endif
 
 /* hash.c */
 void rb_hash_st_table_set(VALUE hash, st_table *st);

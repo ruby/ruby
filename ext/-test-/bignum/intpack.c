@@ -1,4 +1,4 @@
-#include "internal.h"
+#include "internal/bignum.h"
 
 static VALUE
 rb_integer_pack_raw_m(VALUE val, VALUE buf, VALUE numwords_arg, VALUE wordsize_arg, VALUE nails, VALUE flags)

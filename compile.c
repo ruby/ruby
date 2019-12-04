@@ -9,25 +9,39 @@
 
 **********************************************************************/
 
-#include "ruby/encoding.h"
-#include "ruby/re.h"
-#include "ruby/util.h"
-#include "internal.h"
-#include "encindex.h"
+#include "ruby/config.h"
 #include <math.h>
-
-#include "vm_core.h"
-#include "vm_debug.h"
-#include "builtin.h"
-#include "iseq.h"
-#include "insns.inc"
-#include "insns_info.inc"
-#include "id_table.h"
-#include "gc.h"
 
 #ifdef HAVE_DLADDR
 # include <dlfcn.h>
 #endif
+
+#include "encindex.h"
+#include "gc.h"
+#include "id_table.h"
+#include "internal.h"
+#include "internal/array.h"
+#include "internal/compile.h"
+#include "internal/complex.h"
+#include "internal/debug.h"
+#include "internal/encoding.h"
+#include "internal/error.h"
+#include "internal/hash.h"
+#include "internal/numeric.h"
+#include "internal/object.h"
+#include "internal/re.h"
+#include "internal/symbol.h"
+#include "internal/thread.h"
+#include "internal/variable.h"
+#include "iseq.h"
+#include "ruby/re.h"
+#include "ruby/util.h"
+#include "vm_core.h"
+#include "vm_debug.h"
+
+#include "builtin.h"
+#include "insns.inc"
+#include "insns_info.inc"
 
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0

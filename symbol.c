@@ -9,13 +9,22 @@
 
 **********************************************************************/
 
+#include "gc.h"
+#include "internal.h"
+#include "internal/error.h"
+#include "internal/gc.h"
+#include "internal/hash.h"
+#include "internal/object.h"
+#include "internal/symbol.h"
+#include "internal/vm.h"
+#include "probes.h"
 #include "ruby/encoding.h"
 #include "ruby/st.h"
-#include "internal.h"
 #include "symbol.h"
-#include "gc.h"
-#include "probes.h"
 
+#ifndef USE_SYMBOL_GC
+# define USE_SYMBOL_GC 1
+#endif
 #ifndef SYMBOL_DEBUG
 # define SYMBOL_DEBUG 0
 #endif

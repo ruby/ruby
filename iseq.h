@@ -11,6 +11,8 @@
 
 #ifndef RUBY_ISEQ_H
 #define RUBY_ISEQ_H 1
+#include "internal/gc.h"
+#include "vm_core.h"
 
 RUBY_EXTERN const int ruby_api_version[];
 #define ISEQ_MAJOR_VERSION ((unsigned int)ruby_api_version[0])

@@ -19,6 +19,9 @@ VALUE rb_io_flush_raw(VALUE, int);
 size_t rb_io_memsize(const rb_io_t *);
 int rb_stderr_tty_p(void);
 void rb_io_fptr_finalize_internal(void *ptr);
+#ifdef rb_io_fptr_finalize
+# undef rb_io_fptr_finalize
+#endif
 #define rb_io_fptr_finalize rb_io_fptr_finalize_internal
 
 RUBY_SYMBOL_EXPORT_BEGIN

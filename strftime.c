@@ -47,10 +47,7 @@
  * January 1996
  */
 
-#include "ruby/ruby.h"
-#include "ruby/encoding.h"
-#include "timev.h"
-#include "internal.h"
+#include "ruby/config.h"
 
 #ifndef GAWK
 #include <stdio.h>
@@ -67,6 +64,14 @@
 #endif
 #endif
 #include <math.h>
+
+#include "internal.h"
+#include "internal/string.h"
+#include "internal/util.h"
+#include "internal/vm.h"
+#include "ruby/encoding.h"
+#include "ruby/ruby.h"
+#include "timev.h"
 
 /* defaults: season to taste */
 #define SYSV_EXT	1	/* stuff in System V ascftime routine */

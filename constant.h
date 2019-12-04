@@ -10,6 +10,8 @@
 **********************************************************************/
 #ifndef CONSTANT_H
 #define CONSTANT_H
+#include "ruby/ruby.h"
+#include "id_table.h"
 
 typedef enum {
     CONST_DEPRECATED = 0x100,

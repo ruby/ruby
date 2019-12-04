@@ -11,14 +11,20 @@
 
 // To share variables privately, include mjit_worker.c instead of linking.
 
-#include "internal.h"
+#include "ruby/config.h"
 
 #if USE_MJIT
 
-#include "mjit_worker.c"
-
 #include "constant.h"
 #include "id_table.h"
+#include "internal.h"
+#include "internal/class.h"
+#include "internal/file.h"
+#include "internal/hash.h"
+#include "internal/mjit.h"
+#include "internal/warnings.h"
+
+#include "mjit_worker.c"
 
 // Copy ISeq's states so that race condition does not happen on compilation.
 static void

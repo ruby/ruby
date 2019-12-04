@@ -9,7 +9,8 @@
 
 **********************************************************************/
 
-#include "internal.h"
+#include "internal/inits.h"
+#include "ruby.h"
 #include "builtin.h"
 #include "prelude.rbinc"
 

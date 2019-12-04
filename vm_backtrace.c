@@ -9,13 +9,13 @@
 
 **********************************************************************/
 
-#include "ruby/encoding.h"
-#include "ruby/debug.h"
-#include "internal.h"
-
-#include "vm_core.h"
 #include "eval_intern.h"
+#include "internal.h"
+#include "internal/vm.h"
 #include "iseq.h"
+#include "ruby/debug.h"
+#include "ruby/encoding.h"
+#include "vm_core.h"
 
 static VALUE rb_cBacktrace;
 static VALUE rb_cBacktraceLocation;

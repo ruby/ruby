@@ -9,7 +9,7 @@
 
 **********************************************************************/
 
-#include "internal.h"
+#include "internal/encoding.h"
 
 #define ENC_REPLICATE(name, orig) rb_encdb_replicate((name), (orig))
 #define ENC_ALIAS(name, orig) rb_encdb_alias((name), (orig))

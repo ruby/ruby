@@ -6,14 +6,20 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
-#include "ruby/debug.h"
-#include "vm_debug.h"
+#include "debug_counter.h"
 #include "gc.h"
 #include "internal.h"
+#include "internal/gc.h"
+#include "internal/hash.h"
+#include "internal/sanitizers.h"
+#include "internal/static_assert.h"
+#include "internal/struct.h"
+#include "internal/variable.h"
+#include "ruby/debug.h"
+#include "ruby/ruby.h"
 #include "ruby_assert.h"
 #include "transient_heap.h"
-#include "debug_counter.h"
+#include "vm_debug.h"
 
 #if USE_TRANSIENT_HEAP /* USE_TRANSIENT_HEAP */
 /*

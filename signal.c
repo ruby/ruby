@@ -11,35 +11,38 @@
 
 **********************************************************************/
 
-#include "internal.h"
-#include "vm_core.h"
+#include "ruby/config.h"
+
+#include <errno.h>
 #include <signal.h>
 #include <stdio.h>
-#include <errno.h>
-#include "ruby_atomic.h"
-#include "eval_intern.h"
+
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
+
 #ifdef HAVE_SYS_UIO_H
-#include <sys/uio.h>
-#endif
-#ifdef HAVE_UCONTEXT_H
-#include <ucontext.h>
+# include <sys/uio.h>
 #endif
 
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-# include <valgrind/memcheck.h>
-# ifndef VALGRIND_MAKE_MEM_DEFINED
-#  define VALGRIND_MAKE_MEM_DEFINED(p, n) VALGRIND_MAKE_READABLE((p), (n))
-# endif
-# ifndef VALGRIND_MAKE_MEM_UNDEFINED
-#  define VALGRIND_MAKE_MEM_UNDEFINED(p, n) VALGRIND_MAKE_WRITABLE((p), (n))
-# endif
-#else
-# define VALGRIND_MAKE_MEM_DEFINED(p, n) 0
-# define VALGRIND_MAKE_MEM_UNDEFINED(p, n) 0
+#ifdef HAVE_UCONTEXT_H
+# include <ucontext.h>
 #endif
+
+#if HAVE_PTHREAD_H
+# include <pthread.h>
+#endif
+
+#include "debug_counter.h"
+#include "eval_intern.h"
+#include "internal.h"
+#include "internal/eval.h"
+#include "internal/sanitizers.h"
+#include "internal/signal.h"
+#include "internal/string.h"
+#include "internal/thread.h"
+#include "ruby_atomic.h"
+#include "vm_core.h"
 
 #ifdef NEED_RUBY_ATOMIC_OPS
 rb_atomic_t
@@ -395,7 +398,6 @@ interrupt_init(int argc, VALUE *argv, VALUE self)
     return rb_call_super(2, args);
 }
 
-#include "debug_counter.h"
 void rb_malloc_info_show_results(void); /* gc.c */
 
 void
@@ -727,10 +729,6 @@ rb_signal_buff_size(void)
 {
     return signal_buff.size;
 }
-
-#if HAVE_PTHREAD_H
-#include <pthread.h>
-#endif
 
 static void
 rb_disable_interrupt(void)

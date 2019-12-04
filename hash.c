@@ -11,17 +11,10 @@
 
 **********************************************************************/
 
-#include "ruby/encoding.h"
-#include "ruby/st.h"
-#include "ruby/util.h"
-#include "internal.h"
+#include "ruby/config.h"
+
 #include <errno.h>
-#include "probes.h"
-#include "id.h"
-#include "symbol.h"
-#include "debug_counter.h"
-#include "transient_heap.h"
-#include "ruby_assert.h"
+
 #ifdef __APPLE__
 # ifdef HAVE_CRT_EXTERNS_H
 #  include <crt_externs.h>
@@ -29,6 +22,26 @@
 #  include "missing/crt_externs.h"
 # endif
 #endif
+
+#include "debug_counter.h"
+#include "id.h"
+#include "internal.h"
+#include "internal/array.h"
+#include "internal/bignum.h"
+#include "internal/class.h"
+#include "internal/cont.h"
+#include "internal/error.h"
+#include "internal/hash.h"
+#include "internal/object.h"
+#include "internal/proc.h"
+#include "internal/symbol.h"
+#include "internal/vm.h"
+#include "probes.h"
+#include "ruby/st.h"
+#include "ruby/util.h"
+#include "ruby_assert.h"
+#include "symbol.h"
+#include "transient_heap.h"
 
 #ifndef HASH_DEBUG
 #define HASH_DEBUG 0

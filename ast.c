@@ -1,11 +1,15 @@
 /* indent-tabs-mode: nil */
+#include "internal.h"
+#include "internal/parse.h"
+#include "internal/symbol.h"
+#include "internal/warnings.h"
+#include "iseq.h"
+#include "node.h"
 #include "ruby.h"
 #include "ruby/encoding.h"
 #include "ruby/util.h"
-#include "internal.h"
-#include "node.h"
 #include "vm_core.h"
-#include "iseq.h"
+
 #include "builtin.h"
 
 static VALUE rb_mAST;

@@ -18,9 +18,11 @@
 
 struct rb_execution_context_struct; /* in vm_core.h */
 
-#undef NEWOBJ_OF
-#undef RB_NEWOBJ_OF
-#undef RB_OBJ_WRITE
+#ifdef NEWOBJ_OF
+# undef NEWOBJ_OF
+# undef RB_NEWOBJ_OF
+# undef RB_OBJ_WRITE
+#endif
 
 /* optimized version of NEWOBJ() */
 #define RB_NEWOBJ_OF(var, T, c, f) \

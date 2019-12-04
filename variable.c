@@ -11,19 +11,30 @@
 
 **********************************************************************/
 
+#include "ruby/config.h"
+#include <stddef.h>
+#include "constant.h"
+#include "debug_counter.h"
+#include "id.h"
+#include "id_table.h"
+#include "internal.h"
+#include "internal/class.h"
+#include "internal/compilers.h"
+#include "internal/error.h"
+#include "internal/eval.h"
+#include "internal/hash.h"
+#include "internal/re.h"
+#include "internal/symbol.h"
+#include "internal/stdbool.h"
+#include "ccan/list/list.h"
+#include "internal/thread.h"
+#include "internal/variable.h"
 #include "ruby/encoding.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
-#include "internal.h"
-#include "id_table.h"
-#include "constant.h"
-#include "id.h"
-#include "ccan/list/list.h"
-#include "id_table.h"
-#include "debug_counter.h"
-#include "vm_core.h"
 #include "transient_heap.h"
 #include "variable.h"
+#include "vm_core.h"
 
 static struct rb_id_table *rb_global_tbl;
 static ID autoload, classpath, tmp_classpath;

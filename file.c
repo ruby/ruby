@@ -11,14 +11,22 @@
 
 **********************************************************************/
 
+#include "ruby/config.h"
+
 #ifdef _WIN32
-#include "missing/file.h"
+# include "missing/file.h"
+# include "ruby.h"
 #endif
+
+#include <ctype.h>
+#include <time.h>
+
 #ifdef __CYGWIN__
-#include <windows.h>
-#include <sys/cygwin.h>
-#include <wchar.h>
+# include <windows.h>
+# include <sys/cygwin.h>
+# include <wchar.h>
 #endif
+
 #ifdef __APPLE__
 # if !(defined(__has_feature) && defined(__has_attribute))
 /* Maybe a bug in SDK of Xcode 10.2.1 */
@@ -28,21 +36,13 @@
 #   define API_AVAILABLE(...)
 #   define API_DEPRECATED(...)
 # endif
-#include <CoreFoundation/CFString.h>
+# include <CoreFoundation/CFString.h>
 #endif
-
-#include "id.h"
-#include "ruby/encoding.h"
-#include "ruby/io.h"
-#include "ruby/util.h"
-#include "ruby/thread.h"
-#include "internal.h"
-#include "dln.h"
-#include "encindex.h"
 
 #ifdef HAVE_UNISTD_H
-#include <unistd.h>
+# include <unistd.h>
 #endif
+
 #ifdef HAVE_SYS_TIME_H
 # include <sys/time.h>
 #endif
@@ -60,77 +60,73 @@ int flock(int, int);
 # define MAXPATHLEN 1024
 #endif
 
-#include <ctype.h>
-
-#include <time.h>
-
 #ifdef HAVE_UTIME_H
-#include <utime.h>
+# include <utime.h>
 #elif defined HAVE_SYS_UTIME_H
-#include <sys/utime.h>
+# include <sys/utime.h>
 #endif
 
 #ifdef HAVE_PWD_H
-#include <pwd.h>
+# include <pwd.h>
 #endif
 
 #ifdef HAVE_SYS_SYSMACROS_H
-#include <sys/sysmacros.h>
+# include <sys/sysmacros.h>
 #endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #ifdef HAVE_SYS_MKDEV_H
-#include <sys/mkdev.h>
+# include <sys/mkdev.h>
 #endif
 
 #if defined(HAVE_FCNTL_H)
-#include <fcntl.h>
+# include <fcntl.h>
 #endif
 
 #if defined(HAVE_SYS_TIME_H)
-#include <sys/time.h>
+# include <sys/time.h>
 #endif
 
 #if !defined HAVE_LSTAT && !defined lstat
-#define lstat stat
+# define lstat stat
 #endif
 
 /* define system APIs */
 #ifdef _WIN32
-#include "win32/file.h"
-#define STAT(p, s)	rb_w32_ustati128((p), (s))
-#undef lstat
-#define lstat(p, s)	rb_w32_ulstati128((p), (s))
-#undef access
-#define access(p, m)	rb_w32_uaccess((p), (m))
-#undef truncate
-#define truncate(p, n)	rb_w32_utruncate((p), (n))
-#undef chmod
-#define chmod(p, m)	rb_w32_uchmod((p), (m))
-#undef chown
-#define chown(p, o, g)	rb_w32_uchown((p), (o), (g))
-#undef lchown
-#define lchown(p, o, g)	rb_w32_ulchown((p), (o), (g))
-#undef utimensat
-#define utimensat(s, p, t, f)	rb_w32_uutimensat((s), (p), (t), (f))
-#undef link
-#define link(f, t)	rb_w32_ulink((f), (t))
-#undef unlink
-#define unlink(p)	rb_w32_uunlink(p)
-#undef rename
-#define rename(f, t)	rb_w32_urename((f), (t))
-#undef symlink
-#define symlink(s, l)	rb_w32_usymlink((s), (l))
+# include "win32/file.h"
+# define STAT(p, s)      rb_w32_ustati128((p), (s))
+# undef lstat
+# define lstat(p, s)     rb_w32_ulstati128((p), (s))
+# undef access
+# define access(p, m)    rb_w32_uaccess((p), (m))
+# undef truncate
+# define truncate(p, n)  rb_w32_utruncate((p), (n))
+# undef chmod
+# define chmod(p, m)     rb_w32_uchmod((p), (m))
+# undef chown
+# define chown(p, o, g)  rb_w32_uchown((p), (o), (g))
+# undef lchown
+# define lchown(p, o, g) rb_w32_ulchown((p), (o), (g))
+# undef utimensat
+# define utimensat(s, p, t, f)   rb_w32_uutimensat((s), (p), (t), (f))
+# undef link
+# define link(f, t)      rb_w32_ulink((f), (t))
+# undef unlink
+# define unlink(p)       rb_w32_uunlink(p)
+# undef rename
+# define rename(f, t)    rb_w32_urename((f), (t))
+# undef symlink
+# define symlink(s, l)   rb_w32_usymlink((s), (l))
 
-#ifdef HAVE_REALPATH
+# ifdef HAVE_REALPATH
 /* Don't use native realpath(3) on Windows, as the check for
    absolute paths does not work for drive letters. */
-#undef HAVE_REALPATH
-#endif
+#  undef HAVE_REALPATH
+# endif
 #else
-#define STAT(p, s)	stat((p), (s))
+# define STAT(p, s)      stat((p), (s))
 #endif
 
 #if defined _WIN32 || defined __APPLE__
@@ -143,7 +139,7 @@ int flock(int, int);
 
 /* utime may fail if time is out-of-range for the FS [ruby-dev:38277] */
 #if defined DOSISH || defined __CYGWIN__
-#  define UTIME_EINVAL
+# define UTIME_EINVAL
 #endif
 
 /* Solaris 10 realpath(3) doesn't support File.realpath */
@@ -152,9 +148,28 @@ int flock(int, int);
 #endif
 
 #ifdef HAVE_REALPATH
-#include <limits.h>
-#include <stdlib.h>
+# include <limits.h>
+# include <stdlib.h>
 #endif
+
+#include "dln.h"
+#include "encindex.h"
+#include "id.h"
+#include "internal.h"
+#include "internal/compilers.h"
+#include "internal/dir.h"
+#include "internal/error.h"
+#include "internal/file.h"
+#include "internal/io.h"
+#include "internal/load.h"
+#include "internal/object.h"
+#include "internal/process.h"
+#include "internal/thread.h"
+#include "internal/vm.h"
+#include "ruby/encoding.h"
+#include "ruby/io.h"
+#include "ruby/thread.h"
+#include "ruby/util.h"
 
 VALUE rb_cFile;
 VALUE rb_mFileTest;

@@ -9,15 +9,22 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
+#include "ruby/config.h"
+
+#include <stdio.h>
+
+#include "eval_intern.h"
+#include "id.h"
+#include "internal/debug.h"
+#include "internal/signal.h"
+#include "internal/util.h"
 #include "ruby/encoding.h"
 #include "ruby/io.h"
+#include "ruby/ruby.h"
 #include "ruby/util.h"
-#include "vm_debug.h"
-#include "eval_intern.h"
-#include "vm_core.h"
 #include "symbol.h"
-#include "id.h"
+#include "vm_core.h"
+#include "vm_debug.h"
 
 /* This is the only place struct RIMemo is actually used */
 struct RIMemo {

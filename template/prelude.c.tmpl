@@ -87,10 +87,11 @@ Prelude.new(output, ARGV, vpath).instance_eval do
  sources: <%= @preludes.map {|n,*| prelude_base(n)}.join(', ') %><%=%>
 */
 %unless @preludes.empty?
-#include "ruby/ruby.h"
 #include "internal.h"
-#include "vm_core.h"
+#include "internal/warnings.h"
 #include "iseq.h"
+#include "ruby/ruby.h"
+#include "vm_core.h"
 
 % preludes = @preludes.values.sort
 % preludes.each {|i, prelude, lines, sub|

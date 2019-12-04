@@ -12,6 +12,7 @@
 #include "internal/gc.h"        /* for RB_OBJ_WRITE */
 #include "internal/stdbool.h"   /* for bool */
 #include "ruby/ruby.h"          /* for struct RBasic */
+#include "internal/gc.h"        /* for RB_OBJ_WRITE */
 
 enum {
     RSTRUCT_EMBED_LEN_MAX = RVALUE_EMBED_LEN_MAX,
@@ -32,10 +33,22 @@ struct RStruct {
 };
 
 #define RSTRUCT(obj) (R_CAST(RStruct)(obj))
-#undef RSTRUCT_LEN
-#undef RSTRUCT_PTR
-#undef RSTRUCT_SET
-#undef RSTRUCT_GET
+
+#ifdef RSTRUCT_LEN
+# undef RSTRUCT_LEN
+#endif
+
+#ifdef RSTRUCT_PTR
+# undef RSTRUCT_PTR
+#endif
+
+#ifdef RSTRUCT_SET
+# undef RSTRUCT_SET
+#endif
+
+#ifdef RSTRUCT_GET
+# undef RSTRUCT_GET
+#endif
 
 /* struct.c */
 VALUE rb_struct_init_copy(VALUE copy, VALUE s);

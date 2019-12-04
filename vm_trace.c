@@ -21,13 +21,15 @@
  *
  */
 
-#include "internal.h"
-#include "ruby/debug.h"
-
-#include "vm_core.h"
-#include "mjit.h"
-#include "iseq.h"
 #include "eval_intern.h"
+#include "internal.h"
+#include "internal/hash.h"
+#include "internal/symbol.h"
+#include "iseq.h"
+#include "mjit.h"
+#include "ruby/debug.h"
+#include "vm_core.h"
+
 #include "builtin.h"
 
 /* (1) trace mechanisms */

@@ -9,10 +9,8 @@
 
 **********************************************************************/
 
-#include "ruby/encoding.h"
-#include "ruby/util.h"
-#include "internal.h"
-#include "id.h"
+#include "ruby/config.h"
+
 #include <assert.h>
 #include <ctype.h>
 #include <math.h>
@@ -25,6 +23,22 @@
 #ifdef HAVE_IEEEFP_H
 #include <ieeefp.h>
 #endif
+
+#include "id.h"
+#include "internal.h"
+#include "internal/array.h"
+#include "internal/compilers.h"
+#include "internal/complex.h"
+#include "internal/enumerator.h"
+#include "internal/gc.h"
+#include "internal/hash.h"
+#include "internal/numeric.h"
+#include "internal/object.h"
+#include "internal/rational.h"
+#include "internal/util.h"
+#include "internal/variable.h"
+#include "ruby/encoding.h"
+#include "ruby/util.h"
 
 /* use IEEE 64bit values if not defined */
 #ifndef FLT_RADIX

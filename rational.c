@@ -5,22 +5,31 @@
   which is written in ruby.
 */
 
-#include "internal.h"
-#include "id.h"
-#include <math.h>
+#include "ruby/config.h"
+
+#include <ctype.h>
 #include <float.h>
+#include <math.h>
 
 #ifdef HAVE_IEEEFP_H
 #include <ieeefp.h>
 #endif
 
-#define NDEBUG
-#include "ruby_assert.h"
-
 #if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
 #define USE_GMP
 #include <gmp.h>
 #endif
+
+#define NDEBUG
+#include "id.h"
+#include "internal.h"
+#include "internal/complex.h"
+#include "internal/error.h"
+#include "internal/gc.h"
+#include "internal/numeric.h"
+#include "internal/object.h"
+#include "internal/rational.h"
+#include "ruby_assert.h"
 
 #define ZERO INT2FIX(0)
 #define ONE INT2FIX(1)
@@ -2298,8 +2307,6 @@ float_rationalize(int argc, VALUE *argv, VALUE self)
         return rb_flt_rationalize(self);
     }
 }
-
-#include <ctype.h>
 
 inline static int
 issign(int c)

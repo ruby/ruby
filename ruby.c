@@ -11,48 +11,63 @@
 
 **********************************************************************/
 
-#ifdef __CYGWIN__
-#include <windows.h>
-#include <sys/cygwin.h>
-#endif
-#include "ruby/encoding.h"
-#include "ruby/thread.h"
-#include "ruby/version.h"
-#include "internal.h"
-#include "eval_intern.h"
-#include "dln.h"
+#include "ruby/config.h"
+
+#include <ctype.h>
 #include <stdio.h>
 #include <sys/types.h>
-#include <ctype.h>
+
+#ifdef __CYGWIN__
+# include <windows.h>
+# include <sys/cygwin.h>
+#endif
 
 #ifdef __hpux
-#include <sys/pstat.h>
+# include <sys/pstat.h>
 #endif
+
 #if defined(LOAD_RELATIVE) && defined(HAVE_DLADDR)
-#include <dlfcn.h>
+# include <dlfcn.h>
 #endif
 
 #ifdef HAVE_UNISTD_H
-#include <unistd.h>
+# include <unistd.h>
 #endif
+
 #if defined(HAVE_FCNTL_H)
-#include <fcntl.h>
+# include <fcntl.h>
 #elif defined(HAVE_SYS_FCNTL_H)
-#include <sys/fcntl.h>
+# include <sys/fcntl.h>
 #endif
+
 #ifdef HAVE_SYS_PARAM_H
 # include <sys/param.h>
 #endif
+
+#include "dln.h"
+#include "eval_intern.h"
+#include "internal.h"
+#include "internal/error.h"
+#include "internal/file.h"
+#include "internal/inits.h"
+#include "internal/io.h"
+#include "internal/load.h"
+#include "internal/loadpath.h"
+#include "internal/missing.h"
+#include "internal/object.h"
+#include "internal/parse.h"
+#include "mjit.h"
+#include "ruby/encoding.h"
+#include "ruby/thread.h"
+#include "ruby/util.h"
+#include "ruby/version.h"
+
 #ifndef MAXPATHLEN
 # define MAXPATHLEN 1024
 #endif
 #ifndef O_ACCMODE
 # define O_ACCMODE (O_RDONLY | O_WRONLY | O_RDWR)
 #endif
-
-#include "ruby/util.h"
-
-#include "mjit.h"
 
 void Init_ruby_description(void);
 

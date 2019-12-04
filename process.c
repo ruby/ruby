@@ -12,81 +12,105 @@
 **********************************************************************/
 
 #include "ruby/config.h"
-#include "ruby/io.h"
-#include "internal.h"
-#include "ruby/thread.h"
-#include "ruby/util.h"
-#include "vm_core.h"
-#include "hrtime.h"
 
-#include <stdio.h>
+#include <ctype.h>
 #include <errno.h>
 #include <signal.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <time.h>
+
 #ifdef HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-#ifdef HAVE_PROCESS_H
-#include <process.h>
+# include <stdlib.h>
 #endif
 
-#include <time.h>
-#include <ctype.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+
+#ifdef HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#ifdef HAVE_PROCESS_H
+# include <process.h>
+#endif
 
 #ifndef EXIT_SUCCESS
-#define EXIT_SUCCESS 0
+# define EXIT_SUCCESS 0
 #endif
+
 #ifndef EXIT_FAILURE
-#define EXIT_FAILURE 1
+# define EXIT_FAILURE 1
 #endif
 
 #ifdef HAVE_SYS_WAIT_H
 # include <sys/wait.h>
 #endif
+
 #ifdef HAVE_SYS_RESOURCE_H
 # include <sys/resource.h>
 #endif
+
 #ifdef HAVE_VFORK_H
 # include <vfork.h>
 #endif
+
 #ifdef HAVE_SYS_PARAM_H
 # include <sys/param.h>
 #endif
+
 #ifndef MAXPATHLEN
 # define MAXPATHLEN 1024
 #endif
-#include "ruby/st.h"
 
 #include <sys/stat.h>
 
 #ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
+# include <sys/time.h>
 #endif
+
 #ifdef HAVE_SYS_TIMES_H
-#include <sys/times.h>
+# include <sys/times.h>
 #endif
 
 #ifdef HAVE_PWD_H
-#include <pwd.h>
+# include <pwd.h>
 #endif
+
 #ifdef HAVE_GRP_H
-#include <grp.h>
+# include <grp.h>
 # ifdef __CYGWIN__
 int initgroups(const char *, rb_gid_t);
 # endif
 #endif
+
 #ifdef HAVE_SYS_ID_H
-#include <sys/id.h>
+# include <sys/id.h>
 #endif
 
 #ifdef __APPLE__
 # include <mach/mach_time.h>
 #endif
+
+#include "dln.h"
+#include "hrtime.h"
+#include "internal.h"
+#include "internal/bits.h"
+#include "internal/error.h"
+#include "internal/eval.h"
+#include "internal/hash.h"
+#include "internal/mjit.h"
+#include "internal/object.h"
+#include "internal/process.h"
+#include "internal/thread.h"
+#include "internal/variable.h"
+#include "internal/warnings.h"
+#include "ruby/io.h"
+#include "ruby/st.h"
+#include "ruby/thread.h"
+#include "ruby/util.h"
+#include "vm_core.h"
 
 /* define system APIs */
 #ifdef _WIN32
@@ -316,8 +340,6 @@ close_unless_reserved(int fd)
 
 /*#define DEBUG_REDIRECT*/
 #if defined(DEBUG_REDIRECT)
-
-#include <stdarg.h>
 
 static void
 ttyprintf(const char *fmt, ...)
@@ -1571,8 +1593,6 @@ after_fork_ruby(void)
     after_exec();
 }
 #endif
-
-#include "dln.h"
 
 #if defined(HAVE_WORKING_FORK)
 

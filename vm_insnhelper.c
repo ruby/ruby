@@ -8,17 +8,28 @@
 
 **********************************************************************/
 
+#include "ruby/config.h"
+
+#include <math.h>
+
+#include "constant.h"
+#include "debug_counter.h"
+#include "internal.h"
+#include "internal/class.h"
+#include "internal/compar.h"
+#include "internal/hash.h"
+#include "internal/numeric.h"
+#include "internal/proc.h"
+#include "internal/random.h"
+#include "internal/variable.h"
+#include "ruby/config.h"
+#include "variable.h"
+
 /* finish iseq array */
 #include "insns.inc"
 #ifndef MJIT_HEADER
 #include "insns_info.inc"
 #endif
-#include <math.h>
-#include "constant.h"
-#include "internal.h"
-#include "ruby/config.h"
-#include "debug_counter.h"
-#include "variable.h"
 
 extern rb_method_definition_t *rb_method_definition_create(rb_method_type_t type, ID mid);
 extern void rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, void *opts);

@@ -9,10 +9,18 @@
 
 **********************************************************************/
 
-#include "ruby/encoding.h"
-#include "internal.h"
-#include "transcode_data.h"
+#include "ruby/config.h"
+
 #include <ctype.h>
+
+#include "internal.h"
+#include "internal/inits.h"
+#include "internal/object.h"
+#include "internal/string.h"
+#include "internal/transcode.h"
+#include "ruby/encoding.h"
+
+#include "transcode_data.h"
 
 #define ENABLE_ECONV_NEWLINE_OPTION 1
 

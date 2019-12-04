@@ -11,36 +11,51 @@
 
 **********************************************************************/
 
-#include "ruby/encoding.h"
-#include "ruby/re.h"
-#include "internal.h"
-#include "encindex.h"
-#include "probes.h"
-#include "gc.h"
-#include "ruby_assert.h"
-#include "id.h"
-#include "debug_counter.h"
-#include "ruby/util.h"
+#include "ruby/config.h"
 
-#define BEG(no) (regs->beg[(no)])
-#define END(no) (regs->end[(no)])
-
+#include <ctype.h>
 #include <errno.h>
 #include <math.h>
-#include <ctype.h>
 
 #ifdef HAVE_UNISTD_H
-#include <unistd.h>
+# include <unistd.h>
 #endif
 
 #if defined HAVE_CRYPT_R
 # if defined HAVE_CRYPT_H
-# include <crypt.h>
+#  include <crypt.h>
 # endif
 #elif !defined HAVE_CRYPT
 # include "missing/crypt.h"
 # define HAVE_CRYPT_R 1
 #endif
+
+#include "debug_counter.h"
+#include "encindex.h"
+#include "gc.h"
+#include "id.h"
+#include "internal.h"
+#include "internal/array.h"
+#include "internal/compar.h"
+#include "internal/compilers.h"
+#include "internal/encoding.h"
+#include "internal/error.h"
+#include "internal/gc.h"
+#include "internal/numeric.h"
+#include "internal/object.h"
+#include "internal/proc.h"
+#include "internal/re.h"
+#include "internal/sanitizers.h"
+#include "internal/string.h"
+#include "internal/transcode.h"
+#include "probes.h"
+#include "ruby/encoding.h"
+#include "ruby/re.h"
+#include "ruby/util.h"
+#include "ruby_assert.h"
+
+#define BEG(no) (regs->beg[(no)])
+#define END(no) (regs->end[(no)])
 
 #undef rb_str_new
 #undef rb_usascii_str_new
