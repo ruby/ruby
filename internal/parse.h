@@ -19,13 +19,5 @@ RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_parser_set_context(VALUE, const struct rb_iseq_struct *, int);
 RUBY_SYMBOL_EXPORT_END
 void *rb_parser_load_file(VALUE parser, VALUE name);
-int rb_is_const_name(VALUE name);
-int rb_is_class_name(VALUE name);
-int rb_is_instance_name(VALUE name);
-int rb_is_local_name(VALUE name);
-PUREFUNC(int rb_is_const_sym(VALUE sym));
-PUREFUNC(int rb_is_attrset_sym(VALUE sym));
-ID rb_make_internal_id(void);
-void rb_gc_free_dsymbol(VALUE);
 
 #endif /* INTERNAL_PARSE_H */
