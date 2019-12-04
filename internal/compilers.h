@@ -92,6 +92,7 @@
 # define __has_builtin____builtin_clz            GCC_VERSION_SINCE(3, 6, 0)
 # define __has_builtin____builtin_clzl           GCC_VERSION_SINCE(3, 6, 0)
 # define __has_builtin____builtin_clzll          GCC_VERSION_SINCE(3, 6, 0)
+# define __has_builtin____builtin_constant_p     GCC_VERSION_SINCE(2,95, 3)
 # define __has_builtin____builtin_ctz            GCC_VERSION_SINCE(3, 6, 0)
 # define __has_builtin____builtin_ctzl           GCC_VERSION_SINCE(3, 6, 0)
 # define __has_builtin____builtin_ctzll          GCC_VERSION_SINCE(3, 6, 0)
@@ -129,6 +130,10 @@
 # ifdef HAVE_BUILTIN____BUILTIN_CLZLL
 #  undef __has_builtin____builtin_clzll
 #  define __has_builtin____builtin_clzll HAVE_BUILTIN____BUILTIN_CLZLL
+# endif
+# ifdef HAVE_BUILTIN____BUILTIN_CONSTANT_P
+#  undef __has_builtin____builtin_constant_p
+#  define __has_builtin____builtin_constant_p HAVE_BUILTIN____BUILTIN_CONSTANT_P
 # endif
 # ifdef HAVE_BUILTIN____BUILTIN_CTZ
 #  undef __has_builtin____builtin_ctz
