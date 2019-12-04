@@ -12,10 +12,6 @@
 #ifndef RUBY_IO_H
 #define RUBY_IO_H 1
 
-#ifdef RUBY_INTERNAL_H
-#error "Include this file before internal.h"
-#endif
-
 #if defined(__cplusplus)
 extern "C" {
 #if 0
