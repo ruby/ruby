@@ -54,7 +54,6 @@ VALUE rb_str_initialize(VALUE str, const char *ptr, long len, rb_encoding *enc);
 #define is_broken_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN)
 size_t rb_str_memsize(VALUE);
 VALUE rb_sym_proc_call(ID mid, int argc, const VALUE *argv, int kw_splat, VALUE passed_proc);
-VALUE rb_sym_to_proc(VALUE sym);
 char *rb_str_to_cstr(VALUE str);
 VALUE rb_str_eql(VALUE str1, VALUE str2);
 VALUE rb_obj_as_string_result(VALUE str, VALUE obj);
