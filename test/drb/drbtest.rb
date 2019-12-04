@@ -116,6 +116,7 @@ module DRbBase
       }
     end
     @drb_service.finish
+    DRb::DRbConn.stop_pool
   end
 end
 
