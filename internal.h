@@ -21,6 +21,8 @@ extern "C" {
 #endif
 #endif
 
+#include "ruby/encoding.h"
+#include "ruby/io.h"
 #include "internal/stdbool.h"
 #include "internal/bits.h"
 
