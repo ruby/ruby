@@ -208,6 +208,10 @@ module MonitorMixin
   # Monitor object.
   #
   def new_cond
+    unless defined?(@mon_data)
+      mon_initialize
+      @mon_initialized_by_new_cond = true
+    end
     return ConditionVariable.new(@mon_data)
   end
 
@@ -224,8 +228,12 @@ module MonitorMixin
   # Initializes the MonitorMixin after being included in a class or when an
   # object has been extended with the MonitorMixin
   def mon_initialize
-    if defined?(@mon_data) && @mon_data_owner_object_id == self.object_id
-      raise ThreadError, "already initialized"
+    if defined?(@mon_data)
+      if defined?(@mon_initialized_by_new_cond)
+        return # already initalized.
+      elsif @mon_data_owner_object_id == self.object_id
+        raise ThreadError, "already initialized"
+      end
     end
     @mon_data = ::Monitor.new
     @mon_data_owner_object_id = self.object_id

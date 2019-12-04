@@ -223,6 +223,19 @@ class TestMonitor < Test::Unit::TestCase
     assert_join_threads([th, th2])
   end
 
+  class NewCondTest
+    include MonitorMixin
+    attr_reader :cond
+    def initialize
+      @cond = new_cond
+      super # mon_initialize
+    end
+  end
+
+  def test_new_cond_before_initialize
+    assert NewCondTest.new.cond.instance_variable_get(:@monitor) != nil
+  end
+
   def test_timedwait
     cond = @monitor.new_cond
     b = "foo"
