@@ -1596,6 +1596,42 @@ range_alloc(VALUE klass)
     return rb_struct_alloc_noinit(klass);
 }
 
+/*
+ *  call-seq:
+ *     range.count                 -> int
+ *     range.count(item)           -> int
+ *     range.count { |obj| block } -> int
+ *
+ *  Identical to Enumerable#count, except it returns Infinity for endless
+ *  ranges.
+ *
+ */
+static VALUE
+range_count(int argc, VALUE *argv, VALUE range)
+{
+    if (argc != 0) {
+        /* It is odd for instace (1...).count(0) to return Infinity. Just let
+         * it loop. */
+        return rb_call_super(argc, argv);
+    }
+    else if (rb_block_given_p()) {
+        /* Likewise it is odd for instace (1...).count {|x| x == 0 } to return
+         * Infinity. Just let it loop. */
+        return rb_call_super(argc, argv);
+    }
+    else if (NIL_P(RANGE_END(range))) {
+        /* We are confident that the answer is Infinity. */
+        return DBL2NUM(HUGE_VAL);
+    }
+    else if (NIL_P(RANGE_BEG(range))) {
+        /* We are confident that the answer is Infinity. */
+        return DBL2NUM(HUGE_VAL);
+    }
+    else {
+        return rb_call_super(argc, argv);
+    }
+}
+
 /*  A Range represents an interval---a set of values with a
  *  beginning and an end. Ranges may be constructed using the
  *  <em>s</em><code>..</code><em>e</em> and
@@ -1733,4 +1769,5 @@ Init_Range(void)
     rb_define_method(rb_cRange, "member?", range_include, 1);
     rb_define_method(rb_cRange, "include?", range_include, 1);
     rb_define_method(rb_cRange, "cover?", range_cover, 1);
+    rb_define_method(rb_cRange, "count", range_count, -1);
 }

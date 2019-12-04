@@ -950,4 +950,8 @@ class TestRange < Test::Unit::TestCase
   def test_beginless_range_iteration
     assert_raise(TypeError) { (..1).each { } }
   end
+
+  def test_count
+    assert_equal(Float::INFINITY, (1..).count)
+  end
 end
