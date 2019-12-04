@@ -9,8 +9,20 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
+#include "ruby/config.h"        /* for rb_pid_t */
+#include <stddef.h>             /* for size_t */
 
-/* process.c */
+#ifdef HAVE_SYS_TYPES_H
+# include <sys/types.h>         /* for mode_t */
+#endif
+
+#ifdef _WIN32
+# include "ruby/win32.h"        /* for mode_t */
+#endif
+
+#include "ruby/ruby.h"          /* for VALUE */
+#include "internal/imemo.h"     /* for RB_IMEMO_TMPBUF_PTR */
+
 #define RB_MAX_GROUPS (65536)
 
 struct waitpid_state;
@@ -60,24 +72,11 @@ struct rb_execarg {
     VALUE chdir_dir;
 };
 
-/* argv_str contains extra two elements.
- * The beginning one is for /bin/sh used by exec_with_sh.
- * The last one for terminating NULL used by execve.
- * See rb_exec_fillarg() in process.c. */
-#define ARGVSTR2ARGV(argv_str) ((char **)RB_IMEMO_TMPBUF_PTR(argv_str) + 1)
-
-static inline size_t
-ARGVSTR2ARGC(VALUE argv_str)
-{
-    size_t i = 0;
-    char *const *p = ARGVSTR2ARGV(argv_str);
-    while (p[i++])
-        ;
-    return i - 1;
-}
-
+/* process.c */
 rb_pid_t rb_fork_ruby(int *status);
 void rb_last_status_clear(void);
+static inline char **ARGVSTR2ARGV(VALUE argv_str);
+static inline size_t ARGVSTR2ARGC(VALUE argv_str);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* process.c (export) */
@@ -92,4 +91,26 @@ int rb_execarg_run_options(const struct rb_execarg *e, struct rb_execarg *s, cha
 VALUE rb_execarg_extract_options(VALUE execarg_obj, VALUE opthash);
 void rb_execarg_setenv(VALUE execarg_obj, VALUE env);
 RUBY_SYMBOL_EXPORT_END
+
+/* argv_str contains extra two elements.
+ * The beginning one is for /bin/sh used by exec_with_sh.
+ * The last one for terminating NULL used by execve.
+ * See rb_exec_fillarg() in process.c. */
+static inline char **
+ARGVSTR2ARGV(VALUE argv_str)
+{
+    char **buf = RB_IMEMO_TMPBUF_PTR(argv_str);
+    return &buf[1];
+}
+
+static inline size_t
+ARGVSTR2ARGC(VALUE argv_str)
+{
+    size_t i = 0;
+    char *const *p = ARGVSTR2ARGV(argv_str);
+    while (p[i++])
+        ;
+    return i - 1;
+}
+
 #endif /* INTERNAL_PROCESS_H */
