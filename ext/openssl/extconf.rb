@@ -19,9 +19,6 @@ dir_config("kerberos")
 
 Logging::message "=== OpenSSL for Ruby configurator ===\n"
 
-# Add -Werror=deprecated-declarations to $warnflags if available
-OpenSSL.deprecated_warning_flag
-
 ##
 # Adds -DOSSL_DEBUG for compilation and some more targets when GCC is used
 # To turn it on, use: --with-debug or --enable-debug
