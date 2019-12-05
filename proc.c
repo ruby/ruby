@@ -3465,6 +3465,70 @@ rb_method_compose_to_right(VALUE self, VALUE g)
 }
 
 /*
+ *  call-seq:
+ *     proc.ruby2_keywords -> proc
+ *
+ *  Marks the proc as passing keywords through a normal argument splat.
+ *  This should only be called on procs that accept an argument splat
+ *  (<tt>*args</tt>) but not explicit keywords or a keyword splat.  It
+ *  marks the proc such that if the proc is called with keyword arguments,
+ *  the final hash argument is marked with a special flag such that if it
+ *  is the final element of a normal argument splat to another method call,
+ *  and that method call does not include explicit keywords or a keyword
+ *  splat, the final element is interpreted as keywords.  In other words,
+ *  keywords will be passed through the proc to other methods.
+ *
+ *  This should only be used for procs that delegate keywords to another
+ *  method, and only for backwards compatibility with Ruby versions before
+ *  2.7.
+ *
+ *  This method will probably be removed at some point, as it exists only
+ *  for backwards compatibility. As it does not exist in Ruby versions
+ *  before 2.7, check that the proc responds to this method before calling
+ *  it. Also, be aware that if this method is removed, the behavior of the
+ *  proc will change so that it does not pass through keywords.
+ *
+ *    module Mod
+ *      foo = ->(meth, *args, &block) do
+ *        send(:"do_#{meth}", *args, &block)
+ *      end
+ *      foo.ruby2_keywords if foo.respond_to?(:ruby2_keywords)
+ *    end
+ */
+
+static VALUE
+proc_ruby2_keywords(VALUE procval)
+{
+    rb_proc_t *proc;
+    GetProcPtr(procval, proc);
+
+    rb_check_frozen(procval);
+
+    if (proc->is_from_method) {
+            rb_warn("Skipping set of ruby2_keywords flag for proc (proc created from method)");
+            return procval;
+    }
+
+    switch (proc->block.type) {
+      case block_type_iseq:
+        if (proc->block.as.captured.code.iseq->body->param.flags.has_rest &&
+                !proc->block.as.captured.code.iseq->body->param.flags.has_kw &&
+                !proc->block.as.captured.code.iseq->body->param.flags.has_kwrest) {
+            proc->block.as.captured.code.iseq->body->param.flags.ruby2_keywords = 1;
+        }
+        else {
+            rb_warn("Skipping set of ruby2_keywords flag for proc (proc accepts keywords or proc does not accept argument splat)");
+        }
+        break;
+      default:
+        rb_warn("Skipping set of ruby2_keywords flag for proc (proc not defined in Ruby)");
+        break;
+    }
+
+    return procval;
+}
+
+/*
  *  Document-class: LocalJumpError
  *
  *  Raised when Ruby can't yield as requested.
@@ -3789,6 +3853,7 @@ Init_Proc(void)
     rb_define_method(rb_cProc, ">>", proc_compose_to_right, 1);
     rb_define_method(rb_cProc, "source_location", rb_proc_location, 0);
     rb_define_method(rb_cProc, "parameters", rb_proc_parameters, 0);
+    rb_define_method(rb_cProc, "ruby2_keywords", proc_ruby2_keywords, 0);
 
     /* Exceptions */
     rb_eLocalJumpError = rb_define_class("LocalJumpError", rb_eStandardError);
