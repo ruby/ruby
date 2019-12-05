@@ -5,7 +5,7 @@ module JITSupport
   JIT_SUCCESS_PREFIX = 'JIT success \(\d+\.\dms\)'
   JIT_COMPACTION_PREFIX = 'JIT compaction \(\d+\.\dms\)'
   UNSUPPORTED_COMPILERS = [
-    %r[\Aicc\b],
+    %r[\A/opt/intel/.*/bin/intel64/icc\b],
     %r[\A/opt/developerstudio\d+\.\d+/bin/cc\z],
   ]
 
