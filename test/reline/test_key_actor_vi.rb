@@ -942,6 +942,8 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
       %w{
         foo_bar
         foo_bar_baz
+      }.map { |i|
+        i.encode(@encoding)
       }
     }
     input_keys('abcde fo ABCDE')
@@ -998,6 +1000,8 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
       %w{
         foo_bar
         foo_bar_baz
+      }.map { |i|
+        i.encode(@encoding)
       }
     }
     input_keys('foo')
@@ -1018,6 +1022,8 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
       %w{
         foo_bar
         foo_bar_baz
+      }.map { |i|
+        i.encode(@encoding)
       }
     }
     input_keys('foo')
