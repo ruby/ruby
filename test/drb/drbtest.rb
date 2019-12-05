@@ -11,9 +11,6 @@ class DRbService
   @@ruby << "-d" if $DEBUG
   def self.add_service_command(nm)
     dir = File.dirname(File.expand_path(__FILE__))
-    if /ssl/ =~ nm && RUBY_PLATFORM =~ /solaris/i
-      @@ruby[1..-1] = "-dv"
-    end
     DRb::ExtServManager.command[nm] = @@ruby + ["#{dir}/#{nm}"]
   end
 
