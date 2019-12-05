@@ -92,13 +92,13 @@
 module URI
 end
 
-require 'uri/version'
-require 'uri/common'
-require 'uri/generic'
-require 'uri/file'
-require 'uri/ftp'
-require 'uri/http'
-require 'uri/https'
-require 'uri/ldap'
-require 'uri/ldaps'
-require 'uri/mailto'
+require_relative 'uri/version'
+require_relative 'uri/common'
+require_relative 'uri/generic'
+require_relative 'uri/file'
+require_relative 'uri/ftp'
+require_relative 'uri/http'
+require_relative 'uri/https'
+require_relative 'uri/ldap'
+require_relative 'uri/ldaps'
+require_relative 'uri/mailto'
