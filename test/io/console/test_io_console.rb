@@ -13,7 +13,7 @@ class TestIO_Console < Test::Unit::TestCase
   # FreeBSD seems to hang on TTOU when running parallel tests
   # tested on FreeBSD 11.x
   def set_winsize_setup
-    @old_ttou = trap(:TTOU, 'IGNORE') if RUBY_PLATFORM =~ /freebsd/i
+    @old_ttou = trap(:TTOU, 'IGNORE') if RUBY_PLATFORM =~ /freebsd|solaris/i
   end
 
   def set_winsize_teardown
