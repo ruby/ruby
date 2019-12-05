@@ -1,7 +1,11 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'did_you_mean/version'
+begin
+  require_relative "lib/did_you_mean/version"
+rescue LoadError # Fallback to load version file in ruby core repository
+  require_relative "version"
+end
 
 Gem::Specification.new do |spec|
   spec.name          = "did_you_mean"
