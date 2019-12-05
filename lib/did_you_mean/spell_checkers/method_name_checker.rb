@@ -43,14 +43,22 @@ module DidYouMean
     end
 
     def corrections
-      @corrections ||= SpellChecker.new(dictionary: RB_RESERVED_WORDS + method_names).correct(method_name) - NAMES_TO_EXCLUDE[@receiver.class]
+      @corrections ||= SpellChecker.new(dictionary: RB_RESERVED_WORDS + method_names).correct(method_name) - names_to_exclude
     end
 
     def method_names
-      method_names = receiver.methods + receiver.singleton_methods
-      method_names += receiver.private_methods if @private_call
-      method_names.uniq!
-      method_names
+      if Object === receiver
+        method_names = receiver.methods + receiver.singleton_methods
+        method_names += receiver.private_methods if @private_call
+        method_names.uniq!
+        method_names
+      else
+        []
+      end
+    end
+
+    def names_to_exclude
+      Object === receiver ? NAMES_TO_EXCLUDE[receiver.class] : []
     end
   end
 end
