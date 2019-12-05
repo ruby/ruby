@@ -674,7 +674,7 @@ class TestRubyOptions < Test::Unit::TestCase
       %r(
         (?:--\s(?:.+\n)*\n)?
         --\sControl\sframe\sinformation\s-+\n
-        (?:c:.*\n)*
+        (?:(?:c:.*\n)|(?:^\s+.+\n))*
         \n
       )x,
       %r(

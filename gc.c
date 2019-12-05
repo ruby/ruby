@@ -11344,8 +11344,8 @@ obj_type_name(VALUE obj)
     return type_name(TYPE(obj), obj);
 }
 
-static const char *
-method_type_name(rb_method_type_t type)
+const char *
+rb_method_type_name(rb_method_type_t type)
 {
     switch (type) {
       case VM_METHOD_TYPE_ISEQ:           return "iseq";
@@ -11361,7 +11361,7 @@ method_type_name(rb_method_type_t type)
       case VM_METHOD_TYPE_UNDEF:          return "undef";
       case VM_METHOD_TYPE_NOTIMPLEMENTED: return "notimplemented";
     }
-    rb_bug("method_type_name: unreachable (type: %d)", type);
+    rb_bug("rb_method_type_name: unreachable (type: %d)", type);
 }
 
 /* from array.c */
@@ -11564,7 +11564,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 		if (me->def) {
                     APPENDF((BUFF_ARGS, "(called_id: %s, type: %s, alias: %d, owner: %s, defined_class: %s)",
 			     rb_id2name(me->called_id),
-			     method_type_name(me->def->type),
+                             rb_method_type_name(me->def->type),
 			     me->def->alias_count,
 			     obj_info(me->owner),
                              obj_info(me->defined_class)));

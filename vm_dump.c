@@ -13,6 +13,8 @@
 #include "addr2line.h"
 #include "vm_core.h"
 #include "iseq.h"
+#include "gc.h"
+
 #ifdef HAVE_UCONTEXT_H
 #include <ucontext.h>
 #endif
@@ -38,6 +40,9 @@
   ((rb_control_frame_t *)((ec)->vm_stack + (ec)->vm_stack_size) - \
    (rb_control_frame_t *)(cfp))
 
+const char *rb_method_type_name(rb_method_type_t type);
+int ruby_on_ci;
+
 static void
 control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
@@ -46,11 +51,10 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     char ep_in_heap = ' ';
     char posbuf[MAX_POSBUF+1];
     int line = 0;
-
     const char *magic, *iseq_name = "-", *selfstr = "-", *biseq_name = "-";
     VALUE tmp;
-
-    const rb_callable_method_entry_t *me;
+    const rb_iseq_t *iseq = NULL;
+    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
 
     if (ep < 0 || (size_t)ep > ec->vm_stack_size) {
 	ep = (ptrdiff_t)cfp->ep;
@@ -110,15 +114,16 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
 	    line = -1;
 	}
 	else {
-	    pc = cfp->pc - cfp->iseq->body->iseq_encoded;
-	    iseq_name = RSTRING_PTR(cfp->iseq->body->location.label);
+            iseq = cfp->iseq;
+	    pc = cfp->pc - iseq->body->iseq_encoded;
+	    iseq_name = RSTRING_PTR(iseq->body->location.label);
 	    line = rb_vm_get_sourceline(cfp);
 	    if (line) {
-		snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(rb_iseq_path(cfp->iseq)), line);
+		snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(rb_iseq_path(iseq)), line);
 	    }
 	}
     }
-    else if ((me = rb_vm_frame_method_entry(cfp)) != NULL) {
+    else if (me != NULL) {
 	iseq_name = rb_id2name(me->def->original_id);
 	snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);
 	line = -1;
@@ -148,6 +153,37 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
 	fprintf(stderr, "%-1s ", biseq_name);
     }
     fprintf(stderr, "\n");
+
+    // additional information for CI machines
+    if (ruby_on_ci) {
+        char buff[0x100];
+
+        if (me) {
+            if (imemo_type_p((VALUE)me, imemo_ment)) {
+                fprintf(stderr, "  me:\n");
+                fprintf(stderr, "    called_id: %s, type: %s\n", rb_id2name(me->called_id), rb_method_type_name(me->def->type));
+                fprintf(stderr, "    owner class: %s\n", rb_raw_obj_info(buff, 0x100, me->owner));
+                if (me->owner != me->defined_class) {
+                    fprintf(stderr, "    defined_class: %s\n", rb_raw_obj_info(buff, 0x100, me->defined_class));
+                }
+            }
+            else {
+                fprintf(stderr, " me is corrupted (%s)\n", rb_raw_obj_info(buff, 0x100, (VALUE)me));
+            }
+        }
+
+        if (iseq) {
+            if (iseq->body->local_table_size > 0) {
+                fprintf(stderr, "  lvars:\n");
+                for (unsigned int i=0; i<iseq->body->local_table_size; i++) {
+                    const VALUE *argv = cfp->ep - cfp->iseq->body->local_table_size - VM_ENV_DATA_SIZE + 1;
+                    fprintf(stderr, "    %s: %s\n",
+                            rb_id2name(iseq->body->local_table[i]),
+                            rb_raw_obj_info(buff, 0x100, argv[i]));
+                }
+            }
+        }
+    }
 }
 
 void
