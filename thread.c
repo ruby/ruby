@@ -681,6 +681,7 @@ thread_do_start(rb_thread_t *th)
 	th->ec->root_svar = Qfalse;
 
         EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
+        vm_check_ints_blocking(th->ec);
 
         if (args_len < 8) {
             /* free proc.args if the length is enough small */
@@ -693,7 +694,6 @@ thread_do_start(rb_thread_t *th)
         }
 
         rb_adjust_argv_kw_splat(&args_len, &args_ptr, &kw_splat);
-        vm_check_ints_blocking(th->ec);
         th->value = rb_vm_invoke_proc(th->ec, proc,
                                       args_len, args_ptr,
                                       kw_splat, VM_BLOCK_HANDLER_NONE);
