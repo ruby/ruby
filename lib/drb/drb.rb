@@ -1285,7 +1285,7 @@ module DRb
         end
       end
     end
-    @pool_proxy = make_pool
+    @pool_proxy = nil
 
     def self.stop_pool
       @pool_proxy&.kill
