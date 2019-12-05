@@ -8,8 +8,9 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     @config.read_lines(<<~LINES.split(/(?<=\n)/))
       set editing-mode vi
     LINES
+    @encoding = (RELINE_TEST_ENCODING rescue Encoding.default_external)
     @line_editor = Reline::LineEditor.new(@config)
-    @line_editor.reset(@prompt, (RELINE_TEST_ENCODING rescue Encoding.default_external))
+    @line_editor.reset(@prompt, @encoding)
   end
 
   def test_vi_command_mode
@@ -829,6 +830,8 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
       %w{
         foo_bar
         foo_bar_baz
+      }.map { |i|
+        i.encode(@encoding)
       }
     }
     input_keys('foo')
@@ -883,6 +886,8 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
       %w{
         foo_bar
         foo_bar_baz
+      }.map { |i|
+        i.encode(@encoding)
       }
     }
     input_keys('foo')
