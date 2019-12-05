@@ -3280,6 +3280,7 @@ vm_dump.$(OBJEXT): {$(VPATH)}addr2line.h
 vm_dump.$(OBJEXT): {$(VPATH)}assert.h
 vm_dump.$(OBJEXT): {$(VPATH)}config.h
 vm_dump.$(OBJEXT): {$(VPATH)}defines.h
+vm_dump.$(OBJEXT): {$(VPATH)}gc.h
 vm_dump.$(OBJEXT): {$(VPATH)}id.h
 vm_dump.$(OBJEXT): {$(VPATH)}intern.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal.h
