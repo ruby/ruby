@@ -107,8 +107,6 @@ end
     end
 
     @current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
-
-    load 'rubygems/syck_hack.rb'
   end
 
   def test_self_find_active_stub_by_path
@@ -745,125 +743,6 @@ end
 
     assert_equal Gem::Specification::NONEXISTENT_SPECIFICATION_VERSION,
                  spec.specification_version
-  end
-
-  def test_self_from_yaml_syck_date_bug
-    # This is equivalent to (and totally valid) psych 1.0 output and
-    # causes parse errors on syck.
-    yaml = @a1.to_yaml
-    yaml.sub!(/^date:.*/, "date: 2011-04-26 00:00:00.000000000Z")
-
-    spec = with_syck do
-      Gem::Specification.from_yaml yaml
-    end
-
-    assert_kind_of Time, @a1.date
-    assert_kind_of Time, spec.date
-  end
-
-  def test_self_from_yaml_syck_default_key_bug
-    # This is equivalent to (and totally valid) psych 1.0 output and
-    # causes parse errors on syck.
-    yaml = <<-YAML
---- !ruby/object:Gem::Specification
-name: posix-spawn
-version: !ruby/object:Gem::Version
-  version: 0.3.6
-  prerelease:
-dependencies:
-- !ruby/object:Gem::Dependency
-  name: rake-compiler
-  requirement: &70243867725240 !ruby/object:Gem::Requirement
-    none: false
-    requirements:
-    - - =
-      - !ruby/object:Gem::Version
-        version: 0.7.6
-  type: :development
-  prerelease: false
-  version_requirements: *70243867725240
-platform: ruby
-files: []
-test_files: []
-bindir:
-    YAML
-
-    spec = with_syck do
-      Gem::Specification.from_yaml yaml
-    end
-
-    op = spec.dependencies.first.requirement.requirements.first.first
-    refute_kind_of YAML::Syck::DefaultKey, op
-
-    refute_match %r{DefaultKey}, spec.to_ruby
-  end
-
-  def test_self_from_yaml_cleans_up_defaultkey
-    yaml = <<-YAML
---- !ruby/object:Gem::Specification
-name: posix-spawn
-version: !ruby/object:Gem::Version
-  version: 0.3.6
-  prerelease:
-dependencies:
-- !ruby/object:Gem::Dependency
-  name: rake-compiler
-  requirement: &70243867725240 !ruby/object:Gem::Requirement
-    none: false
-    requirements:
-    - - !ruby/object:YAML::Syck::DefaultKey {}
-
-      - !ruby/object:Gem::Version
-        version: 0.7.6
-  type: :development
-  prerelease: false
-  version_requirements: *70243867725240
-platform: ruby
-files: []
-test_files: []
-bindir:
-    YAML
-
-    spec = Gem::Specification.from_yaml yaml
-
-    op = spec.dependencies.first.requirement.requirements.first.first
-    refute_kind_of YAML::Syck::DefaultKey, op
-
-    refute_match %r{DefaultKey}, spec.to_ruby
-  end
-
-  def test_self_from_yaml_cleans_up_defaultkey_from_newer_192
-    yaml = <<-YAML
---- !ruby/object:Gem::Specification
-name: posix-spawn
-version: !ruby/object:Gem::Version
-  version: 0.3.6
-  prerelease:
-dependencies:
-- !ruby/object:Gem::Dependency
-  name: rake-compiler
-  requirement: &70243867725240 !ruby/object:Gem::Requirement
-    none: false
-    requirements:
-    - - !ruby/object:Syck::DefaultKey {}
-
-      - !ruby/object:Gem::Version
-        version: 0.7.6
-  type: :development
-  prerelease: false
-  version_requirements: *70243867725240
-platform: ruby
-files: []
-test_files: []
-bindir:
-    YAML
-
-    spec = Gem::Specification.from_yaml yaml
-
-    op = spec.dependencies.first.requirement.requirements.first.first
-    refute_kind_of YAML::Syck::DefaultKey, op
-
-    refute_match %r{DefaultKey}, spec.to_ruby
   end
 
   def test_self_from_yaml_cleans_up_Date_objects
@@ -3857,49 +3736,6 @@ end
       ensure
         File.umask(umask_orig)
       end
-    end
-  end
-
-  def with_syck
-    begin
-      verbose, $VERBOSE = $VERBOSE, nil
-      require "yaml"
-      old_engine = YAML::ENGINE.yamler
-      YAML::ENGINE.yamler = 'syck'
-      load 'rubygems/syck_hack.rb'
-    rescue NameError
-      # probably on 1.8, ignore
-    ensure
-      $VERBOSE = verbose
-    end
-
-    yield
-  ensure
-    begin
-      YAML::ENGINE.yamler = old_engine
-      load 'rubygems/syck_hack.rb'
-    rescue NameError
-      # ignore
-    end
-  end
-
-  def with_psych
-    begin
-      require "yaml"
-      old_engine = YAML::ENGINE.yamler
-      YAML::ENGINE.yamler = 'psych'
-      load 'rubygems/syck_hack.rb'
-    rescue NameError
-      # probably on 1.8, ignore
-    end
-
-    yield
-  ensure
-    begin
-      YAML::ENGINE.yamler = old_engine
-      load 'rubygems/syck_hack.rb'
-    rescue NameError
-      # ignore
     end
   end
 

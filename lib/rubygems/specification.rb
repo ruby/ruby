@@ -1690,12 +1690,6 @@ class Gem::Specification < Gem::BasicSpecification
             when String then
               if DateTimeFormat =~ date
                 Time.utc($1.to_i, $2.to_i, $3.to_i)
-
-              # Workaround for where the date format output from psych isn't
-              # parsed as a Time object by syck and thus comes through as a
-              # string.
-              elsif /\A(\d{4})-(\d{2})-(\d{2}) \d{2}:\d{2}:\d{2}\.\d+?Z\z/ =~ date
-                Time.utc($1.to_i, $2.to_i, $3.to_i)
               else
                 raise(Gem::InvalidSpecificationException,
                       "invalid date format in specification: #{date.inspect}")
