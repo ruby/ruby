@@ -2684,6 +2684,45 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(ArgumentError) { m.call(42, a: 1, **h2) }
   end
 
+  def test_proc_ruby2_keywords
+    h1 = {:a=>1}
+    foo = ->(*args, &block){block.call(*args)}
+    assert_same(foo, foo.ruby2_keywords)
+
+    assert_equal([[1], h1], foo.call(1, :a=>1, &->(*args, **kw){[args, kw]}))
+    assert_equal([1, h1], foo.call(1, :a=>1, &->(*args){args}))
+    assert_warn(/The last argument is used as the keyword parameter/) do
+      assert_equal([[1], h1], foo.call(1, {:a=>1}, &->(*args, **kw){[args, kw]}))
+    end
+    assert_equal([1, h1], foo.call(1, {:a=>1}, &->(*args){args}))
+    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+      assert_equal([h1, {}], foo.call(:a=>1, &->(arg, **kw){[arg, kw]}))
+    end
+    assert_equal(h1, foo.call(:a=>1, &->(arg){arg}))
+
+    [->(){}, ->(arg){}, ->(*args, **kw){}, ->(*args, k: 1){}, ->(*args, k: ){}].each do |pr|
+      assert_warn(/Skipping set of ruby2_keywords flag for proc \(proc accepts keywords or proc does not accept argument splat\)/) do
+        pr.ruby2_keywords
+      end
+    end
+
+    o = Object.new
+    def o.foo(*args)
+      yield *args
+    end
+    foo = o.method(:foo).to_proc
+    assert_warn(/Skipping set of ruby2_keywords flag for proc \(proc created from method\)/) do
+      foo.ruby2_keywords
+    end
+
+    foo = :foo.to_proc
+    assert_warn(/Skipping set of ruby2_keywords flag for proc \(proc not defined in Ruby\)/) do
+      foo.ruby2_keywords
+    end
+
+    assert_raise(FrozenError) { ->(*args){}.freeze.ruby2_keywords }
+  end
+
   def test_ruby2_keywords
     c = Class.new do
       ruby2_keywords def foo(meth, *args)
