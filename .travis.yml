@@ -304,6 +304,7 @@ env:
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
           ccache \
           crossbuild-essential-armhf \
+          libc6:armhf \
           libstdc++-5-dev:armhf \
           libffi-dev:armhf \
           libffi6:armhf \
@@ -432,7 +433,6 @@ matrix:
     - <<: *CALL_THREADED_CODE
     - <<: *NO_THREADED_CODE
   allow_failures:
-    - name: arm32-linux
     - name: -fsanitize=address
     - name: -fsanitize=memory
     - name: -fsanitize=undefined
