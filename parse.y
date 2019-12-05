@@ -11713,18 +11713,17 @@ new_bodystmt(struct parser_params *p, NODE *head, NODE *rescue, NODE *rescue_els
 static void
 warn_unused_var(struct parser_params *p, struct local_vars *local)
 {
-    int i, cnt;
-    ID *v, *u;
+    int cnt;
 
     if (!local->used) return;
-    v = local->vars->tbl;
-    u = local->used->tbl;
     cnt = local->used->pos;
     if (cnt != local->vars->pos) {
 	rb_parser_fatal(p, "local->used->pos != local->vars->pos");
     }
 #ifndef RIPPER
-    for (i = 0; i < cnt; ++i) {
+    ID *v = local->vars->tbl;
+    ID *u = local->used->tbl;
+    for (int i = 0; i < cnt; ++i) {
 	if (!v[i] || (u[i] & LVAR_USED)) continue;
 	if (is_private_local_id(v[i])) continue;
 	rb_warn1L((int)u[i], "assigned but unused variable - %"PRIsWARN, rb_id2str(v[i]));
