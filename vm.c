@@ -2870,7 +2870,7 @@ extern size_t rb_gc_stack_maxsize;
 
 /* :nodoc: */
 static VALUE
-sdr(void)
+sdr(VALUE self)
 {
     rb_vm_bugreport(NULL);
     return Qnil;
@@ -2878,7 +2878,7 @@ sdr(void)
 
 /* :nodoc: */
 static VALUE
-nsdr(void)
+nsdr(VALUE self)
 {
     VALUE ary = rb_ary_new();
 #if HAVE_BACKTRACE
