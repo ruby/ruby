@@ -19,6 +19,9 @@ dir_config("kerberos")
 
 Logging::message "=== OpenSSL for Ruby configurator ===\n"
 
+# Check with -Werror=deprecated-declarations if available
+OpenSSL.deprecated_warning_flag
+
 ##
 # Adds -DOSSL_DEBUG for compilation and some more targets when GCC is used
 # To turn it on, use: --with-debug or --enable-debug
@@ -166,5 +169,6 @@ have_func("EVP_PBE_scrypt")
 Logging::message "=== Checking done. ===\n"
 
 create_header
+OpenSSL.restore_warning_flag
 create_makefile("openssl")
 Logging::message "Done.\n"
