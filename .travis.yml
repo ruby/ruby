@@ -128,6 +128,11 @@ env:
     arch: arm64
     <<: *gcc-8
 
+  - &s390x-linux
+    name: s390x-linux
+    arch: s390x
+    <<: *gcc-8
+    
   - &jemalloc
     name: --with-jemalloc
     <<: *gcc-8
@@ -413,6 +418,7 @@ matrix:
     - <<: *arm64-linux
     - <<: *i686-linux
     - <<: *arm32-linux
+    - <<: *s390x-linux
     - <<: *pedanticism
     - <<: *assertions
     - <<: *baseruby
