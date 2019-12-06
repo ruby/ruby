@@ -121,6 +121,15 @@ class TestSocket < Test::Unit::TestCase
     }
   end
 
+  def test_ip_address_list_include_localhost
+    begin
+      list = Socket.ip_address_list
+    rescue NotImplementedError
+      return
+    end
+    assert_includes list.map(&:ip_address), Addrinfo.tcp("localhost", 0).ip_address
+  end
+
   def test_tcp
     TCPServer.open(0) {|serv|
       addr = serv.connect_address
