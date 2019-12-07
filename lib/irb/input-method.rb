@@ -293,5 +293,5 @@ module IRB
     def encoding
       @stdin.external_encoding
     end
-  end
+  end if RUBY_VERSION >= "2.5.0" # Reline needs String#grapheme_clusters
 end
