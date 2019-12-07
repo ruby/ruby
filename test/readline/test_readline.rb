@@ -578,6 +578,25 @@ module BasetestReadline
     Readline.completer_word_break_characters = saved_completer_word_break_characters
   end
 
+  def test_simple_completion
+    line = nil
+
+    open(IO::NULL, 'w') do |null|
+      IO.pipe do |r, w|
+        Readline.input = r
+        Readline.output = null
+        Readline.completion_proc = ->(text) do
+          ['abcde', 'abc12']
+        end
+        w.write("a\t\n")
+        w.flush
+        line = Readline.readline('> ', false)
+      end
+    end
+
+    assert_equal('abc', line)
+  end
+
   def test_completion_quote_character_completing_unquoted_argument
     return unless Readline.respond_to?(:completion_quote_character)
 
