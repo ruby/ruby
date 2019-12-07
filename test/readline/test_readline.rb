@@ -586,7 +586,9 @@ module BasetestReadline
         Readline.input = r
         Readline.output = null
         Readline.completion_proc = ->(text) do
-          ['abcde', 'abc12']
+          ['abcde', 'abc12'].map { |i|
+            i.encode(get_default_internal_encoding)
+          }
         end
         w.write("a\t\n")
         w.flush
@@ -595,6 +597,31 @@ module BasetestReadline
     end
 
     assert_equal('abc', line)
+  end
+
+  def test_completion_with_completion_append_character
+    skip "Reline doesn't still implement it" if defined?(Reline) and Readline == Reline
+    line = nil
+
+    append_character = Readline.completion_append_character
+    open(IO::NULL, 'w') do |null|
+      IO.pipe do |r, w|
+        Readline.input = r
+        Readline.output = null
+        Readline.completion_append_character = '!'
+        Readline.completion_proc = ->(text) do
+          ['abcde']
+        end
+        w.write("a\t\n")
+        w.flush
+        line = Readline.readline('> ', false)
+      end
+    end
+
+    assert_equal('abcde!', line)
+  ensure
+    return if defined?(Reline) and Readline == Reline
+    Readline.completion_append_character = append_character
   end
 
   def test_completion_quote_character_completing_unquoted_argument
