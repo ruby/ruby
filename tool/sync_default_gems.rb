@@ -340,8 +340,10 @@ def sync_default_gems_with_commits(gem, range)
     end
   end
 
-  puts "---- failed commits ----"
-  puts failed_commits
+  unless failed_commits.empty?
+    puts "---- failed commits ----"
+    puts failed_commits
+  end
 end
 
 def sync_lib(repo)
