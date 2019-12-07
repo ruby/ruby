@@ -18,7 +18,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def setup
-    @dir = Dir.mktmpdir("rubytest-file")
+    @dir = Dir.mktmpdir("ruby-test")
     File.chown(-1, Process.gid, @dir)
   end
 
