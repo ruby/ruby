@@ -579,6 +579,7 @@ module BasetestReadline
   end
 
   def test_simple_completion
+    skip "Skip Editline" if /EditLine/n.match(Readline::VERSION)
     line = nil
 
     open(IO::NULL, 'w') do |null|
@@ -600,6 +601,7 @@ module BasetestReadline
   end
 
   def test_completion_with_completion_append_character
+    skip "Skip Editline" if /EditLine/n.match(Readline::VERSION)
     skip "Reline doesn't still implement it" if defined?(Reline) and Readline == Reline
     line = nil
 
@@ -620,6 +622,7 @@ module BasetestReadline
 
     assert_equal('abcde!', line)
   ensure
+    return if /EditLine/n.match(Readline::VERSION)
     return if defined?(Reline) and Readline == Reline
     Readline.completion_append_character = append_character
   end
