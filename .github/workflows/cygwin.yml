@@ -37,15 +37,15 @@ jobs:
       - name: Checkout ruby/ruby
         run: |
           path C:\tools\cygwin\bin;C:\tools\cygwin\usr\bin
-          git.exe clone -b github-actions-workflows-cygwin --single-branch --shallow-since=yesterday https://github.com/${{ github.repository }} src
-          git.exe -C src reset --hard ${{ github.sha }}
+          git clone --single-branch --shallow-since=yesterday https://github.com/ruby/ruby src
+          git -C src reset --hard ${{ github.sha }}
         if: github.event_name == 'push'
         shell: cmd
       - name: Checkout a pull request
         run: |
           path C:\tools\cygwin\bin;C:\tools\cygwin\usr\bin
-          git.exe clone --single-branch --shallow-since=yesterday --branch=${{ github.event.pull_request.head.ref }} https://github.com/${{ github.event.pull_request.head.repo.full_name }} src
-          git.exe -C src reset --hard ${{ github.event.pull_request.head.sha }}
+          git clone --single-branch --shallow-since=yesterday --branch=${{ github.event.pull_request.head.ref }} https://github.com/${{ github.event.pull_request.head.repo.full_name }} src
+          git -C src reset --hard ${{ github.event.pull_request.head.sha }}
         if: github.event_name == 'pull_request'
         shell: cmd
       - name: Actions-commit-info.sh
