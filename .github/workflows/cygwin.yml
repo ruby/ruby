@@ -53,7 +53,22 @@ jobs:
         run: |
           bash.exe -c "./src/tool/actions-commit-info.sh"
         shell: cmd
-      - name: Autoconf && configure & make & make btest
+      - name: Autoconf
         run: |
-          bash.exe -c "cd src && autoconf && ./configure && make && make btest"
+          cd src
+          bash.exe -c autoconf
+        shell: cmd
+      - name: Configure
+        run: |
+          md build
+          cd build
+          bash -c ../src/configure
+        shell: cmd
+      - name: make
+        run: |
+          make -C build
+        shell: cmd
+      - name: make btest
+        run: |
+          make -C build btest
         shell: cmd
