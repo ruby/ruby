@@ -427,11 +427,14 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
     return size;
 }
 
+static unsigned long fresh_iseq_unique_id = 0; /* -- Remove In 3.0 -- */
+
 static rb_iseq_t *
 iseq_alloc(void)
 {
     rb_iseq_t *iseq = iseq_imemo_alloc();
     iseq->body = ZALLOC(struct rb_iseq_constant_body);
+    iseq->body->iseq_unique_id = fresh_iseq_unique_id++; /* -- Remove In 3.0 -- */
     return iseq;
 }
 
