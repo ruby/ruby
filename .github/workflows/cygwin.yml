@@ -27,7 +27,6 @@ jobs:
             ${{ runner.os }}-chocolatey-
       - name: Install cygwin base packages with chocolatey
         run: |
-          choco config get cacheLocation
           choco install --no-progress cygwin
       - name: Install cygwin additional packages
         run: |
