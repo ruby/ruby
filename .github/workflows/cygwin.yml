@@ -21,10 +21,10 @@ jobs:
       - uses: actions/cache@v1
         with:
           path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
-          key: ${{ runner.os }}-chocolatey-${{ matrix.os }}-${{ github.sha }}
+          key: ${{ runner.os }}-cygwin-chocolatey-${{ matrix.os }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-chocolatey-${{ matrix.os }}-
-            ${{ runner.os }}-chocolatey-
+            ${{ runner.os }}-cygwin-chocolatey-${{ matrix.os }}-
+            ${{ runner.os }}-cygwin-chocolatey-
       - name: Install cygwin base packages with chocolatey
         run: |
           choco install --no-progress cygwin
