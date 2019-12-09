@@ -27,9 +27,16 @@ jobs:
       - name: Install cygwin base packages with chocolatey
         run: |
           choco install --no-progress cygwin
+      - uses: actions/cache@v1
+        with:
+          path: C:\tools\cygwin\package
+          key: ${{ runner.os }}-cygwin-package-${{ matrix.os }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-cygwin-package-${{ matrix.os }}-
+            ${{ runner.os }}-cygwin-package-
       - name: Install cygwin additional packages
         run: |
-          C:\tools\cygwin\cygwinsetup.exe -qgnNdO -R C:/tools/cygwin -s http://mirrors.kernel.org/sourceware/cygwin/ -P autoconf,bison,gcc-core,git,libcrypt-devel,libedit-devel,libffi-devel,libgdbm-devel,libgmp-devel,libintl-devel,libncurses-devel,libreadline-devel,libssl-devel,libuuid-devel,make,patch,ruby,tcl-tk-devel,zlib-devel
+          C:\tools\cygwin\cygwinsetup.exe -qgnNdO -R C:/tools/cygwin -l C:/tools/cygwin/package -s http://mirrors.kernel.org/sourceware/cygwin/ -P autoconf,bison,gcc-core,git,libcrypt-devel,libedit-devel,libffi-devel,libgdbm-devel,libgmp-devel,libintl-devel,libncurses-devel,libreadline-devel,libssl-devel,libuuid-devel,make,patch,ruby,tcl-tk-devel,zlib-devel
         shell: cmd
       - name: Set ENV
         run: |
