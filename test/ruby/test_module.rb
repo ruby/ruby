@@ -294,8 +294,11 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_nested_get
-    assert_equal Other, Object.const_get([self.class, Other].join('::'))
+    assert_equal Other, Object.const_get([self.class, 'Other'].join('::'))
     assert_equal User::USER, self.class.const_get([User, 'USER'].join('::'))
+    assert_raise(NameError) {
+      Object.const_get([self.class.name, 'String'].join('::'))
+    }
   end
 
   def test_nested_get_symbol
@@ -328,6 +331,7 @@ class TestModule < Test::Unit::TestCase
     assert_send([Object, :const_defined?, [self.class.name, 'Other'].join('::')])
     assert_send([self.class, :const_defined?, 'User::USER'])
     assert_not_send([self.class, :const_defined?, 'User::Foo'])
+    assert_not_send([Object, :const_defined?, [self.class.name, 'String'].join('::')])
   end
 
   def test_nested_defined_symbol
