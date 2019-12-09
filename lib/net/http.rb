@@ -590,7 +590,7 @@ module Net   #:nodoc:
       p_addr = :ENV if arg.size < 2
       port = https_default_port if !port && opt && opt[:use_ssl]
       http = new(address, port, p_addr, p_port, p_user, p_pass)
-      http.ipaddr = opt[:ipaddr] if opt[:ipaddr]
+      http.ipaddr = opt[:ipaddr] if opt && opt[:ipaddr]
 
       if opt
         if opt[:use_ssl]
