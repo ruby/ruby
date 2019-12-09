@@ -593,8 +593,12 @@ VALUE rb_iseq_location(const rb_iseq_t *iseq);
  */
 static st_table *caller_to_callees = 0;
 
-static VALUE rb_warn_check(const rb_execution_context_t * const ec, const void *const callee)
+static VALUE rb_warn_check(const rb_execution_context_t * const ec, const rb_iseq_t *const iseq)
 {
+    if (!iseq) return 0;
+
+    const void *const callee = (void *)(iseq->body->iseq_unique_id * 2);
+
     const rb_control_frame_t * const cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
 
     if (!cfp) return 0;

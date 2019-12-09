@@ -10490,7 +10490,7 @@ ibf_load_location_str(const struct ibf_load *load, VALUE str_index)
 static void
 ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
 {
-    struct rb_iseq_constant_body *load_body = iseq->body = ZALLOC(struct rb_iseq_constant_body);
+    struct rb_iseq_constant_body *load_body = iseq->body = rb_iseq_constant_body_alloc();
 
     ibf_offset_t reading_pos = offset;
 
