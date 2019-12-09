@@ -587,9 +587,7 @@ module BasetestReadline
         Readline.input = r
         Readline.output = null
         Readline.completion_proc = ->(text) do
-          ['abcde', 'abc12'].map { |i|
-            i.encode(get_default_internal_encoding)
-          }
+          ['abcde', 'abc12']
         end
         w.write("a\t\n")
         w.flush
