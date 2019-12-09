@@ -508,6 +508,11 @@ Net::FTP::
   * Add Net::FTP#features to check available features, and Net::FTP#option to
     enable/disable each of them.  [Feature #15964]
 
+Net::HTTP::
+
+  * Add ipaddr optional parameter to Net::HTTP#start to replace the address for
+    TCP/IP connection [Feature #5180]
+
 Net::IMAP::
 
   * Add Server Name Indication (SNI) support.  [Feature #15594]

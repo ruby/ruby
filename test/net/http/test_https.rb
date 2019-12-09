@@ -50,6 +50,37 @@ class TestNetHTTPS < Test::Unit::TestCase
     skip $!
   end
 
+  def test_get_SNI
+    http = Net::HTTP.new("localhost", config("port"))
+    http.ipaddr = config('host')
+    http.use_ssl = true
+    http.cert_store = TEST_STORE
+    certs = []
+    http.verify_callback = Proc.new do |preverify_ok, store_ctx|
+      certs << store_ctx.current_cert
+      preverify_ok
+    end
+    http.request_get("/") {|res|
+      assert_equal($test_net_http_data, res.body)
+    }
+    assert_equal(CA_CERT.to_der, certs[0].to_der)
+    assert_equal(SERVER_CERT.to_der, certs[1].to_der)
+  end
+
+  def test_get_SNI_failure
+    http = Net::HTTP.new("invalid_servername", config("port"))
+    http.ipaddr = config('host')
+    http.use_ssl = true
+    http.cert_store = TEST_STORE
+    certs = []
+    http.verify_callback = Proc.new do |preverify_ok, store_ctx|
+      certs << store_ctx.current_cert
+      preverify_ok
+    end
+    @log_tester = lambda {|_| }
+    assert_raise(OpenSSL::SSL::SSLError){ http.start }
+  end
+
   def test_post
     http = Net::HTTP.new("localhost", config("port"))
     http.use_ssl = true
