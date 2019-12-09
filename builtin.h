@@ -1,3 +1,6 @@
+#ifndef BUILTIN_H_INCLUDED
+#define BUILTIN_H_INCLUDED
+
 // invoke
 
 struct rb_builtin_function {
@@ -66,3 +69,5 @@ struct builtin_binary {
     const unsigned char *bin;     // binary by ISeq#to_binary
     size_t bin_size;
 };
+
+#endif // BUILTIN_H_INCLUDED
