@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - master
-      - github-actions-workflows-cygwin
   pull_request:
     branches:
       - '*'
