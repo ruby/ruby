@@ -32,10 +32,6 @@ module Reline
       dig_perfect_match_proc
     ).each(&method(:attr_reader))
 
-    ATTR_ACCESSOR_NAMES = %i(
-      completion_case_fold
-    ).each(&method(:attr_accessor))
-
     attr_accessor :config
     attr_accessor :key_stroke
     attr_accessor :line_editor
@@ -82,6 +78,14 @@ module Reline
 
     def special_prefixes=(v)
       @special_prefixes = v.encode(Encoding::default_external)
+    end
+
+    def completion_case_fold=(v)
+      @config.completion_ignore_case = v
+    end
+
+    def completion_case_fold
+      @config.completion_ignore_case
     end
 
     def completion_proc=(p)
@@ -336,12 +340,13 @@ module Reline
   # Documented API
   #--------------------------------------------------------
 
-  (Core::ATTR_READER_NAMES + Core::ATTR_ACCESSOR_NAMES).each { |name|
+  (Core::ATTR_READER_NAMES).each { |name|
     def_single_delegators :core, "#{name}", "#{name}="
   }
   def_single_delegators :core, :input=, :output=
   def_single_delegators :core, :vi_editing_mode, :emacs_editing_mode
   def_single_delegators :core, :readline
+  def_single_delegators :core, :completion_case_fold, :completion_case_fold=
   def_instance_delegators self, :readline
   private :readline
 

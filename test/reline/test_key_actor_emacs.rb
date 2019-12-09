@@ -1287,6 +1287,57 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line('foo_ba')
   end
 
+  def test_completion_with_completion_ignore_case
+    @line_editor.completion_proc = proc { |word|
+      %w{
+        foo_foo
+        foo_bar
+        Foo_baz
+        qux
+      }.map { |i|
+        i.encode(@encoding)
+      }
+    }
+    input_keys('fo')
+    assert_byte_pointer_size('fo')
+    assert_cursor(2)
+    assert_cursor_max(2)
+    assert_line('fo')
+    assert_equal(nil, @line_editor.instance_variable_get(:@menu_info))
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo_')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('foo_')
+    assert_equal(nil, @line_editor.instance_variable_get(:@menu_info))
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo_')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('foo_')
+    assert_equal(%w{foo_foo foo_bar}, @line_editor.instance_variable_get(:@menu_info).list)
+    @config.completion_ignore_case = true
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo_')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('foo_')
+    assert_equal(%w{foo_foo foo_bar Foo_baz}, @line_editor.instance_variable_get(:@menu_info).list)
+    input_keys('a')
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo_a')
+    assert_cursor(5)
+    assert_cursor_max(5)
+    assert_line('foo_a')
+    input_keys("\C-h", false)
+    input_keys('b')
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo_ba')
+    assert_cursor(6)
+    assert_cursor_max(6)
+    assert_line('foo_ba')
+  end
+
   def test_completion_in_middle_of_line
     @line_editor.completion_proc = proc { |word|
       %w{

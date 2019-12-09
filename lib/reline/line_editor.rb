@@ -552,7 +552,11 @@ class Reline::LineEditor
       if i and not Encoding.compatible?(target.encoding, i.encoding)
         raise Encoding::CompatibilityError
       end
-      i&.start_with?(target)
+      if @config.completion_ignore_case
+        i&.downcase.start_with?(target.downcase)
+      else
+        i&.start_with?(target)
+      end
     }
     if is_menu
       menu(target, list)
@@ -569,10 +573,18 @@ class Reline::LineEditor
       size = [memo_mbchars.size, item_mbchars.size].min
       result = ''
       size.times do |i|
-        if memo_mbchars[i] == item_mbchars[i]
-          result << memo_mbchars[i]
+        if @config.completion_ignore_case
+          if memo_mbchars[i].casecmp?(item_mbchars[i])
+            result << memo_mbchars[i]
+          else
+            break
+          end
         else
-          break
+          if memo_mbchars[i] == item_mbchars[i]
+            result << memo_mbchars[i]
+          else
+            break
+          end
         end
       end
       result
