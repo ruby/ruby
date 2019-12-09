@@ -549,7 +549,7 @@ class Reline::LineEditor
   private def complete_internal_proc(list, is_menu)
     preposing, target, postposing = retrieve_completion_block
     list = list.select { |i|
-      if i and i.encoding != Encoding::US_ASCII and i.encoding != @encoding
+      if i and not Encoding.compatible?(target.encoding, i.encoding)
         raise Encoding::CompatibilityError
       end
       i&.start_with?(target)
