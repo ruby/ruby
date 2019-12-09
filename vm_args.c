@@ -597,7 +597,7 @@ static VALUE rb_warn_check(const rb_execution_context_t * const ec, const rb_ise
 {
     if (!iseq) return 0;
 
-    const void *const callee = (void *)(iseq->body->iseq_unique_id * 2);
+    const void *const callee = (void *)iseq->body->iseq_unique_id;
 
     const rb_control_frame_t * const cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
 
