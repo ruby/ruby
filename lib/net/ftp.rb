@@ -686,14 +686,20 @@ module Net
       end
       synchronize do
         with_binary(true) do
-          conn = transfercmd(cmd)
-          loop do
-            buf = file.read(blocksize)
-            break if buf == nil
-            conn.write(buf)
-            yield(buf) if block_given?
+          begin
+            conn = transfercmd(cmd)
+            loop do
+              buf = file.read(blocksize)
+              break if buf == nil
+              conn.write(buf)
+              yield(buf) if block_given?
+            end
+            conn.shutdown(Socket::SHUT_WR)
+            conn.read_timeout = 1
+            conn.read
+          ensure
+            conn.close if conn
           end
-          conn.close
           voidresp
         end
       end
@@ -715,17 +721,23 @@ module Net
     def storlines(cmd, file) # :yield: line
       synchronize do
         with_binary(false) do
-          conn = transfercmd(cmd)
-          loop do
-            buf = file.gets
-            break if buf == nil
-            if buf[-2, 2] != CRLF
-              buf = buf.chomp + CRLF
+          begin
+            conn = transfercmd(cmd)
+            loop do
+              buf = file.gets
+              break if buf == nil
+              if buf[-2, 2] != CRLF
+                buf = buf.chomp + CRLF
+              end
+              conn.write(buf)
+              yield(buf) if block_given?
             end
-            conn.write(buf)
-            yield(buf) if block_given?
+            conn.shutdown(Socket::SHUT_WR)
+            conn.read_timeout = 1
+            conn.read
+          ensure
+            conn.close if conn
           end
-          conn.close
           voidresp
         end
       end
