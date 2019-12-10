@@ -2022,12 +2022,12 @@ dirent_match(const char *pat, rb_encoding *enc, const char *name, const struct d
 
 struct push_glob_args {
     int fd;
+    int flags;
     const char *path;
     size_t baselen;
     size_t namelen;
     int dirsep; /* '/' should be placed before appending child entry's name to 'path'. */
     rb_pathtype_t pathtype; /* type of 'path' */
-    int flags;
     const ruby_glob_funcs_t *funcs;
     VALUE arg;
 };
