@@ -465,7 +465,6 @@ nogvl_getch(void *p)
     switch (c) {
       case WEOF:
 	break;
-	return (VALUE)0;
       case 0x00:
       case 0xe0:
 	buf[len++] = c;
