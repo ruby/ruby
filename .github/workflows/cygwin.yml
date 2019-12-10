@@ -56,18 +56,18 @@ jobs:
         shell: cmd
       - name: Actions-commit-info.sh
         run: |
-          bash.exe -c "./src/tool/actions-commit-info.sh"
+          bash ./src/tool/actions-commit-info.sh
         shell: cmd
       - name: Autoconf
         run: |
           cd src
-          bash.exe -c autoconf
+          bash /usr/bin/autoconf
         shell: cmd
       - name: Configure
         run: |
           md build
           cd build
-          bash -c ../src/configure
+          bash ../src/configure
         shell: cmd
       - name: make
         run: |
