@@ -186,10 +186,10 @@ module Racc
   class Parser
 
     Racc_Runtime_Version = ::Racc::VERSION
-    Racc_Runtime_Revision = '$Id: 87af5c09d4467cae567837b4162ec2145417a90e $'
+    Racc_Runtime_Revision = '$Id: e754525bd317344c4284fca6fdce0a425979ade1 $'
 
     Racc_Runtime_Core_Version_R = ::Racc::VERSION
-    Racc_Runtime_Core_Revision_R = '$Id: 87af5c09d4467cae567837b4162ec2145417a90e $'.split[1]
+    Racc_Runtime_Core_Revision_R = '$Id: e754525bd317344c4284fca6fdce0a425979ade1 $'.split[1]
     begin
       if Object.const_defined?(:RUBY_ENGINE) and RUBY_ENGINE == 'jruby'
         require 'racc/cparse-jruby.jar'
