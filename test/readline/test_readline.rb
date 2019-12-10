@@ -433,7 +433,8 @@ module BasetestReadline
 
   def test_input_metachar
     skip "Skip Editline" if /EditLine/n.match(Readline::VERSION)
-    skip("Won't pass on mingw w/readline 7.0.005 [ruby-core:45682]") if mingw?
+    # test will pass on Windows reline, but not readline
+    skip "Won't pass on mingw readline.so using 8.0.001" if mingw? and defined?(TestReadline) and kind_of?(TestReadline)
     skip 'Needs GNU Readline 6 or later' if windows? and defined?(TestReadline) and kind_of?(TestReadline) and Readline::VERSION < '6.0'
     bug6601 = '[ruby-core:45682]'
     Readline::HISTORY << "hello"
