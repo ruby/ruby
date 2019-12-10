@@ -412,6 +412,9 @@ typedef unsigned int  BitStatusType;
 #define BITS_PER_BYTE      8
 #define SINGLE_BYTE_SIZE   (1 << BITS_PER_BYTE)
 #define BITS_IN_ROOM       ((int )sizeof(Bits) * BITS_PER_BYTE)
+#ifdef BITSET_SIZE
+#undef BITSET_SIZE
+#endif
 #define BITSET_SIZE        (SINGLE_BYTE_SIZE / BITS_IN_ROOM)
 
 #ifdef PLATFORM_UNALIGNED_WORD_ACCESS
