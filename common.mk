@@ -1001,6 +1001,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/io.rb \
 		$(srcdir)/pack.rb \
 		$(srcdir)/trace_point.rb \
+		$(srcdir)/warning.rb \
 		$(srcdir)/prelude.rb \
 		$(srcdir)/gem_prelude.rb \
 		$(empty)
@@ -1974,6 +1975,7 @@ error.$(OBJEXT): $(CCAN_DIR)/str/str.h
 error.$(OBJEXT): $(hdrdir)/ruby.h
 error.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 error.$(OBJEXT): {$(VPATH)}assert.h
+error.$(OBJEXT): {$(VPATH)}builtin.h
 error.$(OBJEXT): {$(VPATH)}config.h
 error.$(OBJEXT): {$(VPATH)}defines.h
 error.$(OBJEXT): {$(VPATH)}encoding.h
@@ -1995,6 +1997,7 @@ error.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 error.$(OBJEXT): {$(VPATH)}thread_native.h
 error.$(OBJEXT): {$(VPATH)}vm_core.h
 error.$(OBJEXT): {$(VPATH)}vm_opts.h
+error.$(OBJEXT): {$(VPATH)}warning.rbinc
 eval.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 eval.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 eval.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -2385,6 +2388,7 @@ miniinit.$(OBJEXT): {$(VPATH)}thread_native.h
 miniinit.$(OBJEXT): {$(VPATH)}trace_point.rb
 miniinit.$(OBJEXT): {$(VPATH)}vm_core.h
 miniinit.$(OBJEXT): {$(VPATH)}vm_opts.h
+miniinit.$(OBJEXT): {$(VPATH)}warning.rb
 mjit.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 mjit.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 mjit.$(OBJEXT): $(CCAN_DIR)/list/list.h
