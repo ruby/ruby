@@ -14,6 +14,7 @@
 #include "internal.h"
 #include "ruby_assert.h"
 #include "vm_core.h"
+#include "builtin.h"
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -291,73 +292,27 @@ warning_write(int argc, VALUE *argv, VALUE buf)
     return buf;
 }
 
-/*
- * call-seq:
- *    warn(*msgs, uplevel: nil)   -> nil
- *
- * If warnings have been disabled (for example with the
- * <code>-W0</code> flag), does nothing.  Otherwise,
- * converts each of the messages to strings, appends a newline
- * character to the string if the string does not end in a newline,
- * and calls Warning.warn with the string.
- *
- *    warn("warning 1", "warning 2")
- *
- *  <em>produces:</em>
- *
- *    warning 1
- *    warning 2
- *
- * If the <code>uplevel</code> keyword argument is given, the string will
- * be prepended with information for the given caller frame in
- * the same format used by the <code>rb_warn</code> C function.
- *
- *    # In baz.rb
- *    def foo
- *      warn("invalid call to foo", uplevel: 1)
- *    end
- *
- *    def bar
- *      foo
- *    end
- *
- *    bar
- *
- *  <em>produces:</em>
- *
- *    baz.rb:6: warning: invalid call to foo
- */
-
 static VALUE
-rb_warn_m(int argc, VALUE *argv, VALUE exc)
+rb_warn_m(rb_execution_context_t *ec, VALUE exc, VALUE msgs, VALUE uplevel)
 {
-    VALUE opts, location = Qnil;
+    VALUE location = Qnil;
+    int argc = RARRAY_LENINT(msgs);
+    const VALUE *argv = RARRAY_CONST_PTR(msgs);
 
-    if (!NIL_P(ruby_verbose) && argc > 0 &&
-            (argc = rb_scan_args(argc, argv, "*:", NULL, &opts)) > 0) {
-	VALUE str = argv[0], uplevel = Qnil;
-	if (!NIL_P(opts)) {
-	    static ID kwds[1];
-	    if (!kwds[0]) {
-		CONST_ID(kwds[0], "uplevel");
-	    }
-	    rb_get_kwargs(opts, kwds, 0, 1, &uplevel);
-	    if (uplevel == Qundef) {
-		uplevel = Qnil;
-	    }
-	    else if (!NIL_P(uplevel)) {
-		VALUE args[2];
-		long lev = NUM2LONG(uplevel);
-		if (lev < 0) {
-		    rb_raise(rb_eArgError, "negative level (%ld)", lev);
-		}
-		args[0] = LONG2NUM(lev + 1);
-		args[1] = INT2FIX(1);
-		location = rb_vm_thread_backtrace_locations(2, args, GET_THREAD()->self);
-		if (!NIL_P(location)) {
-		    location = rb_ary_entry(location, 0);
-		}
-	    }
+    if (!NIL_P(ruby_verbose) && argc > 0) {
+        VALUE str = argv[0];
+        if (!NIL_P(uplevel)) {
+            VALUE args[2];
+            long lev = NUM2LONG(uplevel);
+            if (lev < 0) {
+                rb_raise(rb_eArgError, "negative level (%ld)", lev);
+            }
+            args[0] = LONG2NUM(lev + 1);
+            args[1] = INT2FIX(1);
+            location = rb_vm_thread_backtrace_locations(2, args, GET_THREAD()->self);
+            if (!NIL_P(location)) {
+                location = rb_ary_entry(location, 0);
+            }
 	}
 	if (argc > 1 || !NIL_P(uplevel) || !end_with_asciichar(str, '\n')) {
 	    VALUE path;
@@ -2555,8 +2510,6 @@ Init_Exception(void)
     rb_cWarningBuffer = rb_define_class_under(rb_mWarning, "buffer", rb_cString);
     rb_define_method(rb_cWarningBuffer, "write", warning_write, -1);
 
-    rb_define_global_function("warn", rb_warn_m, -1);
-
     id_cause = rb_intern_const("cause");
     id_message = rb_intern_const("message");
     id_backtrace = rb_intern_const("backtrace");
@@ -2989,6 +2942,14 @@ Init_syserr(void)
 #include "known_errors.inc"
 #undef defined_error
 #undef undefined_error
+}
+
+#include "warning.rbinc"
+
+void
+Init_warning(void)
+{
+    load_warning();
 }
 
 /*!
