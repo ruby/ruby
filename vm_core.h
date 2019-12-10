@@ -448,7 +448,7 @@ struct rb_iseq_constant_body {
     struct rb_mjit_unit *jit_unit;
 #endif
 
-    unsigned long iseq_unique_id; /* -- Remove In 3.0 -- */
+    uintptr_t iseq_unique_id; /* -- Remove In 3.0 -- */
 };
 
 /* T_IMEMO/iseq */

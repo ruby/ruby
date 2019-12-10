@@ -597,38 +597,38 @@ static VALUE rb_warn_check(const rb_execution_context_t * const ec, const rb_ise
 {
     if (!iseq) return 0;
 
-    const void *const callee = (void *)(iseq->body->iseq_unique_id * 2);
+    const st_data_t callee = (st_data_t)(iseq->body->iseq_unique_id * 2);
 
     const rb_control_frame_t * const cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
 
     if (!cfp) return 0;
 
-    const void *const caller = cfp->pc;
+    const st_data_t caller = (st_data_t)cfp->pc;
 
     if (!caller_to_callees) {
         caller_to_callees = st_init_numtable();
     }
 
     st_data_t val;
-    if (st_lookup(caller_to_callees, (st_data_t) caller, &val)) {
+    if (st_lookup(caller_to_callees, caller, &val)) {
         st_table *callees;
 
         if (val & 1) {
             val &= ~(st_data_t)1;
-            if (val == (st_data_t) callee) return 1; /* already warned */
+            if (val == callee) return 1; /* already warned */
 
             callees = st_init_numtable();
             st_insert(callees, val, 1);
         }
         else {
             callees = (st_table *) val;
-            if (st_is_member(callees, (st_data_t) callee)) return 1; /* already warned */
+            if (st_is_member(callees, callee)) return 1; /* already warned */
         }
-        st_insert(callees, (st_data_t) callee, 1);
-        st_insert(caller_to_callees, (st_data_t) caller, (st_data_t) callees);
+        st_insert(callees, callee, 1);
+        st_insert(caller_to_callees, caller, (st_data_t) callees);
     }
     else {
-        st_insert(caller_to_callees, (st_data_t) caller, ((st_data_t) callee) | 1);
+        st_insert(caller_to_callees, caller, callee | 1);
     }
 
     return 0; /* not warned yet for the pair of caller and callee */

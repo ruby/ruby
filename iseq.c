@@ -427,7 +427,7 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
     return size;
 }
 
-static unsigned long fresh_iseq_unique_id = 0; /* -- Remove In 3.0 -- */
+static uintptr_t fresh_iseq_unique_id = 0; /* -- Remove In 3.0 -- */
 
 struct rb_iseq_constant_body *
 rb_iseq_constant_body_alloc(void)
