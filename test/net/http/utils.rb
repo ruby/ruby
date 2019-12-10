@@ -107,4 +107,23 @@ module TestNetHTTPUtils
     def print(*args) end
     def printf(*args) end
   end
+
+  def self.clean_http_proxy_env
+    orig = {
+      'http_proxy'      => ENV['http_proxy'],
+      'http_proxy_user' => ENV['http_proxy_user'],
+      'http_proxy_pass' => ENV['http_proxy_pass'],
+      'no_proxy'        => ENV['no_proxy'],
+    }
+
+    orig.each_key do |key|
+      ENV.delete key
+    end
+
+    yield
+  ensure
+    orig.each do |key, value|
+      ENV[key] = value
+    end
+  end
 end

@@ -68,17 +68,19 @@ class TestNetHTTPS < Test::Unit::TestCase
   end
 
   def test_get_SNI_failure
-    http = Net::HTTP.new("invalid_servername", config("port"))
-    http.ipaddr = config('host')
-    http.use_ssl = true
-    http.cert_store = TEST_STORE
-    certs = []
-    http.verify_callback = Proc.new do |preverify_ok, store_ctx|
-      certs << store_ctx.current_cert
-      preverify_ok
+    TestNetHTTPUtils.clean_http_proxy_env do
+      http = Net::HTTP.new("invalid_servername", config("port"))
+      http.ipaddr = config('host')
+      http.use_ssl = true
+      http.cert_store = TEST_STORE
+      certs = []
+      http.verify_callback = Proc.new do |preverify_ok, store_ctx|
+        certs << store_ctx.current_cert
+        preverify_ok
+      end
+      @log_tester = lambda {|_| }
+      assert_raise(OpenSSL::SSL::SSLError){ http.start }
     end
-    @log_tester = lambda {|_| }
-    assert_raise(OpenSSL::SSL::SSLError){ http.start }
   end
 
   def test_post
