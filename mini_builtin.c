@@ -2,11 +2,15 @@
 #include "vm_core.h"
 #include "iseq.h"
 #include "builtin.h"
+
 #include "miniprelude.c"
 
 // included from miniinit.c
 
+#ifndef INCLUDED_BY_BUILTIN_C
 static struct st_table *loaded_builtin_table;
+#endif
+
 rb_ast_t *rb_builtin_ast(const char *feature_name, VALUE *name_str);
 
 static const rb_iseq_t *
@@ -26,8 +30,10 @@ builtin_iseq_load(const char *feature_name, const struct rb_builtin_function *ta
         rb_io_write(rb_stdout, rb_iseq_disasm((const rb_iseq_t *)iseq));
     }
 
+#ifndef INCLUDED_BY_BUILTIN_C
     st_insert(loaded_builtin_table, (st_data_t)feature_name, (st_data_t)iseq);
     rb_gc_register_mark_object((VALUE)iseq);
+#endif
 
     return iseq;
 }
@@ -38,6 +44,8 @@ rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin
     const rb_iseq_t *iseq = builtin_iseq_load(feature_name, table);
     rb_iseq_eval(iseq);
 }
+
+#ifndef INCLUDED_BY_BUILTIN_C
 
 static int
 each_builtin_i(st_data_t key, st_data_t val, st_data_t dmy)
@@ -70,3 +78,4 @@ Init_builtin_features(void)
     // register for ruby
     builtin_iseq_load("gem_prelude", NULL);
 }
+#endif

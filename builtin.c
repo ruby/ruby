@@ -3,6 +3,13 @@
 #include "iseq.h"
 #include "builtin.h"
 
+#if CROSS_COMPILING
+
+#define INCLUDED_BY_BUILTIN_C 1
+#include "mini_builtin.c"
+
+#else
+
 #include "builtin_binary.inc"
 
 static const unsigned char*
@@ -35,6 +42,8 @@ rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin
     // exec
     rb_iseq_eval(iseq);
 }
+
+#endif
 
 void
 Init_builtin(void)
