@@ -292,6 +292,7 @@ warning_write(int argc, VALUE *argv, VALUE buf)
     return buf;
 }
 
+VALUE rb_ec_backtrace_location_ary(rb_execution_context_t *ec, long lev, long n);
 static VALUE
 rb_warn_m(rb_execution_context_t *ec, VALUE exc, VALUE msgs, VALUE uplevel)
 {
@@ -302,14 +303,11 @@ rb_warn_m(rb_execution_context_t *ec, VALUE exc, VALUE msgs, VALUE uplevel)
     if (!NIL_P(ruby_verbose) && argc > 0) {
         VALUE str = argv[0];
         if (!NIL_P(uplevel)) {
-            VALUE args[2];
             long lev = NUM2LONG(uplevel);
             if (lev < 0) {
                 rb_raise(rb_eArgError, "negative level (%ld)", lev);
             }
-            args[0] = LONG2NUM(lev + 1);
-            args[1] = INT2FIX(1);
-            location = rb_vm_thread_backtrace_locations(2, args, GET_THREAD()->self);
+            location = rb_ec_backtrace_location_ary(ec, lev + 1, 1);
             if (!NIL_P(location)) {
                 location = rb_ary_entry(location, 0);
             }
