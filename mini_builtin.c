@@ -2,6 +2,7 @@
 #include "vm_core.h"
 #include "iseq.h"
 #include "builtin.h"
+#include "miniprelude.c"
 
 // included from miniinit.c
 

@@ -527,11 +527,6 @@ MINIPRELUDE_C = $(srcdir)/miniprelude.c
 !else
 MINIPRELUDE_C = miniprelude.c
 !endif
-!if !exist(prelude.c) && exist($(srcdir)/prelude.c)
-PRELUDE_C = $(srcdir)/prelude.c
-!else
-PRELUDE_C = prelude.c
-!endif
 !if !exist(golf_prelude.c) && exist($(srcdir)/golf_prelude.c)
 GOLF_PRELUDE_C = $(srcdir)/golf_prelude.c
 !else
