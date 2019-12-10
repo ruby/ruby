@@ -76,7 +76,7 @@ NORMALMAINOBJ = main.$(OBJEXT)
 MAINOBJ       = $(NORMALMAINOBJ)
 DLDOBJS	      = $(INITOBJS)
 EXTSOLIBS     =
-MINIOBJS      = $(ARCHMINIOBJS) miniinit.$(OBJEXT) dmyext.$(OBJEXT) miniprelude.$(OBJEXT)
+MINIOBJS      = $(ARCHMINIOBJS) miniinit.$(OBJEXT) dmyext.$(OBJEXT)
 ENC_MK        = enc.mk
 MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
 		RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(mflags)
@@ -157,7 +157,7 @@ EXPORTOBJS    = $(DLNOBJ) \
 		loadpath.$(OBJEXT) \
 		$(COMMONOBJS)
 
-OBJS          = $(EXPORTOBJS) prelude.$(OBJEXT) builtin.$(OBJEXT)
+OBJS          = $(EXPORTOBJS) builtin.$(OBJEXT)
 ALLOBJS       = $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(INITOBJS)
 
 GOLFOBJS      = goruby.$(OBJEXT) golf_prelude.$(OBJEXT)
@@ -165,7 +165,7 @@ GOLFOBJS      = goruby.$(OBJEXT) golf_prelude.$(OBJEXT)
 DEFAULT_PRELUDES = $(GEM_PRELUDE)
 PRELUDE_SCRIPTS = $(DEFAULT_PRELUDES)
 GEM_PRELUDE   = 
-PRELUDES      = {$(srcdir)}prelude.c {$(srcdir)}miniprelude.c
+PRELUDES      = {$(srcdir)}miniprelude.c
 GOLFPRELUDES  = {$(srcdir)}golf_prelude.c
 
 SCRIPT_ARGS   =	--dest-dir="$(DESTDIR)" \
@@ -949,7 +949,6 @@ $(COROUTINE_H:/Context.h=/.time):
 # dependencies for generated C sources.
 parse.$(OBJEXT): {$(VPATH)}parse.c
 miniprelude.$(OBJEXT): {$(VPATH)}miniprelude.c
-prelude.$(OBJEXT): {$(VPATH)}prelude.c
 
 # dependencies for optional sources.
 compile.$(OBJEXT): {$(VPATH)}opt_sc.inc {$(VPATH)}optunifs.inc
@@ -1088,12 +1087,6 @@ $(MINIPRELUDE_C): $(COMPILE_PRELUDE) $(BUILTIN_RB_SRCS)
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb -I$(srcdir) -o $@ \
 		$(srcdir)/template/prelude.c.tmpl $(BUILTIN_RB_SRCS)
 
-$(PRELUDE_C): $(COMPILE_PRELUDE) \
-	   $(PRELUDE_SCRIPTS)
-	$(ECHO) generating $@
-	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb -I$(srcdir) -c -o $@ \
-		$(srcdir)/template/prelude.c.tmpl $(PRELUDE_SCRIPTS)
-
 $(GOLF_PRELUDE_C): $(COMPILE_PRELUDE) {$(srcdir)}golf_prelude.rb
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb -I$(srcdir) -c -o $@ \
@@ -1114,7 +1107,6 @@ probes.h: {$(VPATH)}probes.$(DTRACE_EXT)
 
 prereq: incs srcs preludes PHONY
 
-preludes: {$(VPATH)}prelude.c
 preludes: {$(VPATH)}miniprelude.c
 preludes: {$(srcdir)}golf_prelude.c
 
@@ -2373,6 +2365,7 @@ miniinit.$(OBJEXT): {$(VPATH)}iseq.h
 miniinit.$(OBJEXT): {$(VPATH)}method.h
 miniinit.$(OBJEXT): {$(VPATH)}mini_builtin.c
 miniinit.$(OBJEXT): {$(VPATH)}miniinit.c
+miniinit.$(OBJEXT): {$(VPATH)}miniprelude.c
 miniinit.$(OBJEXT): {$(VPATH)}missing.h
 miniinit.$(OBJEXT): {$(VPATH)}node.h
 miniinit.$(OBJEXT): {$(VPATH)}onigmo.h
@@ -2385,37 +2378,6 @@ miniinit.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 miniinit.$(OBJEXT): {$(VPATH)}thread_native.h
 miniinit.$(OBJEXT): {$(VPATH)}vm_core.h
 miniinit.$(OBJEXT): {$(VPATH)}vm_opts.h
-miniprelude.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
-miniprelude.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
-miniprelude.$(OBJEXT): $(CCAN_DIR)/list/list.h
-miniprelude.$(OBJEXT): $(CCAN_DIR)/str/str.h
-miniprelude.$(OBJEXT): $(hdrdir)/ruby.h
-miniprelude.$(OBJEXT): $(hdrdir)/ruby/ruby.h
-miniprelude.$(OBJEXT): {$(VPATH)}assert.h
-miniprelude.$(OBJEXT): {$(VPATH)}ast.rb
-miniprelude.$(OBJEXT): {$(VPATH)}config.h
-miniprelude.$(OBJEXT): {$(VPATH)}defines.h
-miniprelude.$(OBJEXT): {$(VPATH)}gc.rb
-miniprelude.$(OBJEXT): {$(VPATH)}id.h
-miniprelude.$(OBJEXT): {$(VPATH)}intern.h
-miniprelude.$(OBJEXT): {$(VPATH)}internal.h
-miniprelude.$(OBJEXT): {$(VPATH)}io.rb
-miniprelude.$(OBJEXT): {$(VPATH)}iseq.h
-miniprelude.$(OBJEXT): {$(VPATH)}method.h
-miniprelude.$(OBJEXT): {$(VPATH)}miniprelude.c
-miniprelude.$(OBJEXT): {$(VPATH)}missing.h
-miniprelude.$(OBJEXT): {$(VPATH)}node.h
-miniprelude.$(OBJEXT): {$(VPATH)}pack.rb
-miniprelude.$(OBJEXT): {$(VPATH)}prelude.rb
-miniprelude.$(OBJEXT): {$(VPATH)}ruby_assert.h
-miniprelude.$(OBJEXT): {$(VPATH)}ruby_atomic.h
-miniprelude.$(OBJEXT): {$(VPATH)}st.h
-miniprelude.$(OBJEXT): {$(VPATH)}subst.h
-miniprelude.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
-miniprelude.$(OBJEXT): {$(VPATH)}thread_native.h
-miniprelude.$(OBJEXT): {$(VPATH)}trace_point.rb
-miniprelude.$(OBJEXT): {$(VPATH)}vm_core.h
-miniprelude.$(OBJEXT): {$(VPATH)}vm_opts.h
 mjit.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 mjit.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 mjit.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -2586,32 +2548,6 @@ parse.$(OBJEXT): {$(VPATH)}st.h
 parse.$(OBJEXT): {$(VPATH)}subst.h
 parse.$(OBJEXT): {$(VPATH)}symbol.h
 parse.$(OBJEXT): {$(VPATH)}util.h
-prelude.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
-prelude.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
-prelude.$(OBJEXT): $(CCAN_DIR)/list/list.h
-prelude.$(OBJEXT): $(CCAN_DIR)/str/str.h
-prelude.$(OBJEXT): $(hdrdir)/ruby.h
-prelude.$(OBJEXT): $(hdrdir)/ruby/ruby.h
-prelude.$(OBJEXT): {$(VPATH)}assert.h
-prelude.$(OBJEXT): {$(VPATH)}config.h
-prelude.$(OBJEXT): {$(VPATH)}defines.h
-prelude.$(OBJEXT): {$(VPATH)}gem_prelude.rb
-prelude.$(OBJEXT): {$(VPATH)}id.h
-prelude.$(OBJEXT): {$(VPATH)}intern.h
-prelude.$(OBJEXT): {$(VPATH)}internal.h
-prelude.$(OBJEXT): {$(VPATH)}iseq.h
-prelude.$(OBJEXT): {$(VPATH)}method.h
-prelude.$(OBJEXT): {$(VPATH)}missing.h
-prelude.$(OBJEXT): {$(VPATH)}node.h
-prelude.$(OBJEXT): {$(VPATH)}prelude.c
-prelude.$(OBJEXT): {$(VPATH)}ruby_assert.h
-prelude.$(OBJEXT): {$(VPATH)}ruby_atomic.h
-prelude.$(OBJEXT): {$(VPATH)}st.h
-prelude.$(OBJEXT): {$(VPATH)}subst.h
-prelude.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
-prelude.$(OBJEXT): {$(VPATH)}thread_native.h
-prelude.$(OBJEXT): {$(VPATH)}vm_core.h
-prelude.$(OBJEXT): {$(VPATH)}vm_opts.h
 proc.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 proc.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 proc.$(OBJEXT): $(CCAN_DIR)/list/list.h
