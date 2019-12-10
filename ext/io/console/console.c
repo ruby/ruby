@@ -4,6 +4,7 @@
  */
 #include "ruby.h"
 #include "ruby/io.h"
+#include "ruby/thread.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -454,7 +455,7 @@ getc_call(VALUE io)
     return rb_funcallv(io, id_getc, 0, 0);
 }
 #else
-static VALUE
+static void *
 nogvl_getch(void *p)
 {
     int len = 0;
@@ -473,7 +474,7 @@ nogvl_getch(void *p)
 	buf[len++] = c;
 	break;
     }
-    return (VALUE)len;
+    return (void *)(VALUE)len;
 }
 #endif
 
@@ -521,7 +522,7 @@ console_getch(int argc, VALUE *argv, VALUE io)
 	    rb_warning("vtime option ignored if intr flag is unset");
 	}
     }
-    len = (int)rb_thread_io_blocking_region(nogvl_getch, wbuf, fptr->fd);
+    len = (int)(VALUE)rb_thread_call_without_gvl(nogvl_getch, wbuf, RUBY_UBF_IO, 0);
     switch (len) {
       case 0:
 	return Qnil;
