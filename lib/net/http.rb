@@ -948,10 +948,10 @@ module Net   #:nodoc:
     def connect
       if proxy? then
         conn_addr = proxy_address
-        conn_port    = proxy_port
+        conn_port = proxy_port
       else
         conn_addr = conn_address
-        conn_port    = port
+        conn_port = port
       end
 
       D "opening connection to #{conn_addr}:#{conn_port}..."
