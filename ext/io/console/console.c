@@ -190,6 +190,7 @@ set_rawmode(conmode *t, void *arg)
 	    t->c_lflag |= ISIG|IEXTEN;
 	}
 #endif
+	(void)r;
     }
 }
 
