@@ -2708,7 +2708,7 @@ class TestKeywordArguments < Test::Unit::TestCase
 
     o = Object.new
     def o.foo(*args)
-      yield *args
+      yield(*args)
     end
     foo = o.method(:foo).to_proc
     assert_warn(/Skipping set of ruby2_keywords flag for proc \(proc created from method\)/) do
