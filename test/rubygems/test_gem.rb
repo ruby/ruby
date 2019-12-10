@@ -226,7 +226,7 @@ class TestGem < Gem::TestCase
   def test_require_missing
     save_loaded_features do
       assert_raises ::LoadError do
-        require "q"
+        require "test_require_missing"
       end
     end
   end
