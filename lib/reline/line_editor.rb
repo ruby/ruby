@@ -904,7 +904,7 @@ class Reline::LineEditor
       target = before
     end
     postposing = @line.byteslice(@byte_pointer, @line.bytesize - @byte_pointer)
-    [preposing, target, postposing]
+    [preposing.encode(@encoding), target.encode(@encoding), postposing.encode(@encoding)]
   end
 
   def confirm_multiline_termination
