@@ -517,6 +517,9 @@ console_getch(int argc, VALUE *argv, VALUE io)
 	    if (w < 0) rb_eof_error();
 	    if (!(w & RB_WAITFD_IN)) return Qnil;
 	}
+	else {
+	    rb_warning("vtime option ignored if intr flag is unset");
+	}
     }
     len = (int)rb_thread_io_blocking_region(nogvl_getch, wbuf, fptr->fd);
     switch (len) {
