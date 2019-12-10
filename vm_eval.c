@@ -1456,8 +1456,8 @@ struct iter_method_arg {
     VALUE obj;
     ID mid;
     int argc;
-    const VALUE *argv;
     int kw_splat;
+    const VALUE *argv;
 };
 
 static VALUE
