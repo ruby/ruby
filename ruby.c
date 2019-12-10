@@ -1408,10 +1408,12 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
     return argc0 - argc;
 }
 
+void Init_builtin_features(void);
+
 static void
 ruby_init_prelude(void)
 {
-    Init_prelude();
+    Init_builtin_features();
     rb_const_remove(rb_cObject, rb_intern_const("TMP_RUBY_PREFIX"));
 }
 

@@ -39,5 +39,11 @@ rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin
 void
 Init_builtin(void)
 {
-    //
+    // nothing
+}
+
+void
+Init_builtin_features(void)
+{
+    rb_load_with_builtin_functions("gem_prelude", NULL);
 }

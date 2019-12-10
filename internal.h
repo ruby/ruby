@@ -2395,9 +2395,6 @@ RUBY_FUNC_NONNULL(1, bool rb_method_basic_definition_p_with_cc(struct rb_call_da
     })
 #endif
 
-/* miniprelude.c, prelude.c */
-void Init_prelude(void);
-
 /* vm_backtrace.c */
 void Init_vm_backtrace(void);
 VALUE rb_vm_thread_backtrace(int argc, const VALUE *argv, VALUE thval);
