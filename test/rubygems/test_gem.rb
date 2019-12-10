@@ -1388,7 +1388,7 @@ class TestGem < Gem::TestCase
       a = util_spec "a", "1"
       b = util_spec "b", "1", "c" => nil
       c = util_spec "c", "2"
-      d = util_spec "d", "1", {'e' => '= 1'}, "lib/d.rb"
+      d = util_spec "d", "1", {'e' => '= 1'}, "lib/d#{$$}.rb"
       e = util_spec "e", "1"
 
       install_specs a, c, b, e, d
@@ -1397,7 +1397,7 @@ class TestGem < Gem::TestCase
         r.gem "a"
         r.gem "b", "= 1"
 
-        require 'd'
+        require "d#{$$}"
       end
 
       assert_equal %w!a-1 b-1 c-2 d-1 e-1!, loaded_spec_names

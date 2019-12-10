@@ -124,13 +124,13 @@ class TestGemRequire < Gem::TestCase
     Object.const_set :FILE_ENTERED_LATCH, Latch.new(2)
     Object.const_set :FILE_EXIT_LATCH, Latch.new(1)
 
-    a1 = util_spec "a", "1", nil, "lib/a.rb"
-    b1 = util_spec "b", "1", nil, "lib/b.rb"
+    a1 = util_spec "a#{$$}", "1", nil, "lib/a#{$$}.rb"
+    b1 = util_spec "b#{$$}", "1", nil, "lib/b#{$$}.rb"
 
     install_specs a1, b1
 
-    t1 = create_sync_thread{ assert_require 'a' }
-    t2 = create_sync_thread{ assert_require 'b' }
+    t1 = create_sync_thread{ assert_require "a#{$$}" }
+    t2 = create_sync_thread{ assert_require "b#{$$}" }
 
     # wait until both files are waiting on the exit latch
     FILE_ENTERED_LATCH.await
@@ -326,7 +326,7 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_require_doesnt_traverse_development_dependencies
-    a = util_spec("a", "1", nil, "lib/a.rb")
+    a = util_spec("a#{$$}", "1", nil, "lib/a#{$$}.rb")
     z = util_spec("z", "1", "w" => "> 0")
     w1 = util_spec("w", "1") { |s| s.add_development_dependency "non-existent" }
     w2 = util_spec("w", "2") { |s| s.add_development_dependency "non-existent" }
@@ -337,7 +337,7 @@ class TestGemRequire < Gem::TestCase
     assert_equal %w(z-1), loaded_spec_names
     assert_equal ["w (> 0)"], unresolved_names
 
-    assert require("a")
+    assert require("a#{$$}")
   end
 
   def test_default_gem_only
@@ -451,15 +451,15 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_require_default_when_gem_defined
-    a = util_spec("a", "1", nil, "lib/a.rb")
+    a = util_spec("a#{$$}", "1", nil, "lib/a#{$$}.rb")
     install_specs a
     c = Class.new do
       def self.gem(*args)
         raise "received #gem with #{args.inspect}"
       end
     end
-    assert c.send(:require, "a")
-    assert_equal %w(a-1), loaded_spec_names
+    assert c.send(:require, "a#{$$}")
+    assert_equal %W(a#{$$}-1), loaded_spec_names
   end
 
   def test_require_bundler
