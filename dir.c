@@ -2448,8 +2448,8 @@ static int ruby_glob0(const char *path, int fd, const char *base, int flags,
 
 struct push_glob0_args {
     int fd;
-    const char *base;
     int flags;
+    const char *base;
     const ruby_glob_funcs_t *funcs;
     VALUE arg;
 };
