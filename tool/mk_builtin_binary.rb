@@ -11,11 +11,6 @@ def dump_bin iseq
   print "\n"
 end
 
-ary = []
-RubyVM::each_builtin{|feature, iseq|
-  ary << [feature, iseq]
-}
-
 $stdout = open('builtin_binary.inc', 'wb')
 
 puts <<H
@@ -25,17 +20,25 @@ puts <<H
 
 H
 
-ary.each{|feature, iseq|
-  print "\n""static const unsigned char #{feature}_bin[] = {"
+if !ARGV.grep('--cross=yes').empty?
+  # do nothing
+else
+  ary = []
+  RubyVM::each_builtin{|feature, iseq|
+    ary << [feature, iseq]
+  }
+
+  ary.each{|feature, iseq|
+    print "\n""static const unsigned char #{feature}_bin[] = {"
     dump_bin(iseq)
+    puts "};"
+  }
+
+  print "\n""static const struct builtin_binary builtin_binary[] = {\n"
+  ary.each{|feature, iseq|
+    puts "  {#{feature.dump}, #{feature}_bin, sizeof(#{feature}_bin)},"
+  }
+  puts "  {NULL}," # dummy sentry
   puts "};"
-}
-
-print "\n""static const struct builtin_binary builtin_binary[] = {\n"
-ary.each{|feature, iseq|
-  puts "  {#{feature.dump}, #{feature}_bin, sizeof(#{feature}_bin)},"
-}
-puts "  {NULL}," # dummy sentry
-puts "};"
-
-puts "#define BUILTIN_BINARY_SIZE #{ary.size}"
+  puts "#define BUILTIN_BINARY_SIZE #{ary.size}"
+end

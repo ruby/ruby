@@ -3053,6 +3053,7 @@ AS_IF([test x"$cross_compiling" = xyes], [
   XRUBY='$(MINIRUBY)'
   TEST_RUNNABLE=no
   CROSS_COMPILING=yes
+  AC_DEFINE(CROSS_COMPILING, 1)
 ], [
   MINIRUBY='./miniruby$(EXEEXT) -I$(srcdir)/lib -I.'
   MINIRUBY="$MINIRUBY"' -I$(EXTOUT)/common'
