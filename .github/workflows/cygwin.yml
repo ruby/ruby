@@ -36,7 +36,7 @@ jobs:
             ${{ runner.os }}-cygwin-package-
       - name: Install cygwin additional packages
         run: |
-          C:\tools\cygwin\cygwinsetup.exe -qgnNdO -R C:/tools/cygwin -l C:/tools/cygwin/package -s http://mirrors.kernel.org/sourceware/cygwin/ -P autoconf,bison,gcc-core,git,libcrypt-devel,libedit-devel,libffi-devel,libgdbm-devel,libgmp-devel,libintl-devel,libncurses-devel,libreadline-devel,libssl-devel,libuuid-devel,make,patch,ruby,tcl-tk-devel,zlib-devel
+          C:\tools\cygwin\cygwinsetup.exe -qgnNdO -R C:/tools/cygwin -l C:/tools/cygwin/package -s http://mirrors.kernel.org/sourceware/cygwin/ -P autoconf,bison,gcc-core,git,libffi-devel,libgdbm-devel,libgmp-devel,libreadline-devel,libssl-devel,make,patch,ruby,zlib-devel
         shell: cmd
       - name: Set ENV
         run: |
