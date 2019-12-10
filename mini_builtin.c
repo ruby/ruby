@@ -6,11 +6,10 @@
 // included from miniinit.c
 
 static struct st_table *loaded_builtin_table;
-
 rb_ast_t *rb_builtin_ast(const char *feature_name, VALUE *name_str);
 
-void
-rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table)
+static const rb_iseq_t *
+builtin_iseq_load(const char *feature_name, const struct rb_builtin_function *table)
 {
     VALUE name_str = 0;
     rb_ast_t *ast = rb_builtin_ast(feature_name, &name_str);
@@ -26,11 +25,16 @@ rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin
         rb_io_write(rb_stdout, rb_iseq_disasm((const rb_iseq_t *)iseq));
     }
 
-    // register (loaded iseq will not be freed)
     st_insert(loaded_builtin_table, (st_data_t)feature_name, (st_data_t)iseq);
     rb_gc_register_mark_object((VALUE)iseq);
 
-    // eval
+    return iseq;
+}
+
+void
+rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table)
+{
+    const rb_iseq_t *iseq = builtin_iseq_load(feature_name, table);
     rb_iseq_eval(iseq);
 }
 
@@ -57,4 +61,11 @@ Init_builtin(void)
 {
     rb_define_singleton_method(rb_cRubyVM, "each_builtin", each_builtin, 0);
     loaded_builtin_table = st_init_strtable();
+}
+
+void
+Init_builtin_features(void)
+{
+    // register for ruby
+    builtin_iseq_load("gem_prelude", NULL);
 }
