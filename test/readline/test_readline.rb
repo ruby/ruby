@@ -580,12 +580,11 @@ module BasetestReadline
 
   def test_simple_completion
     skip "Skip Editline" if /EditLine/n.match(Readline::VERSION)
-    skip if /mingw/ =~ RUBY_DESCRIPTION # TODO: skip continuous failure.
 
     line = nil
 
     open(IO::NULL, 'w') do |null|
-      IO.pipe do |r, w|
+      IO.pipe(__ENCODING__) do |r, w|
         Readline.input = r
         Readline.output = null
         Readline.completion_proc = ->(text) do
