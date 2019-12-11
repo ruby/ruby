@@ -550,7 +550,7 @@ class Reline::LineEditor
     preposing, target, postposing = retrieve_completion_block
     list = list.select { |i|
       if i and not Encoding.compatible?(target.encoding, i.encoding)
-        raise Encoding::CompatibilityError
+        raise Encoding::CompatibilityError, "#{target.encoding.name} is not comaptible with #{i.encoding.name}"
       end
       if @config.completion_ignore_case
         i&.downcase.start_with?(target.downcase)
