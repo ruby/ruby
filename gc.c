@@ -8179,14 +8179,12 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
       case T_MODULE:
-        update_m_tbl(objspace, RCLASS_M_TBL(obj));
         if (RCLASS_SUPER((VALUE)obj)) {
             UPDATE_IF_MOVED(objspace, RCLASS(obj)->super);
         }
         if (!RCLASS_EXT(obj)) break;
-        if (RCLASS_IV_TBL(obj)) {
-            gc_update_tbl_refs(objspace, RCLASS_IV_TBL(obj));
-        }
+        update_m_tbl(objspace, RCLASS_M_TBL(obj));
+        gc_update_tbl_refs(objspace, RCLASS_IV_TBL(obj));
         update_class_ext(objspace, RCLASS_EXT(obj));
         update_const_tbl(objspace, RCLASS_CONST_TBL(obj));
         break;
