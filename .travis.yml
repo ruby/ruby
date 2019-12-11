@@ -418,7 +418,6 @@ matrix:
     - <<: *arm64-linux
     - <<: *i686-linux
     - <<: *arm32-linux
-    - <<: *s390x-linux
     - <<: *pedanticism
     - <<: *assertions
     - <<: *baseruby
@@ -442,6 +441,7 @@ matrix:
     - name: -fsanitize=address
     - name: -fsanitize=memory
     - name: -fsanitize=undefined
+    - <<: *s390x-linux
   fast_finish: true
 
 before_script:
