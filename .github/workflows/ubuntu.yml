@@ -91,6 +91,7 @@ jobs:
         run: |
           cd build
           ./miniruby -e '(("a".."z").to_a+("A".."Z").to_a+("0".."9").to_a+%w[foo bar test zzz]).each{|basename|File.write("#{basename}.rb", "raise %(do not load #{basename}.rb)")}'
+        if: matrix.test_task == 'check'
       - name: Tests
         run: make -C build $JOBS -s ${{ matrix.test_task }}
         env:
