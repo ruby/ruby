@@ -20,7 +20,7 @@ puts <<H
 
 H
 
-if !ARGV.grep('--cross=yes').empty?
+if ARGV.include?('--cross=yes')
   # do nothing
 else
   ary = []
