@@ -553,7 +553,7 @@ class Reline::LineEditor
         raise Encoding::CompatibilityError, "#{target.encoding.name} is not comaptible with #{i.encoding.name}"
       end
       if @config.completion_ignore_case
-        i&.downcase.start_with?(target.downcase)
+        i&.downcase&.start_with?(target.downcase)
       else
         i&.start_with?(target)
       end
