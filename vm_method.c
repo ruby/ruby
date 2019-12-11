@@ -62,6 +62,11 @@ static struct {
 static void
 rb_class_clear_method_cache(VALUE klass, VALUE arg)
 {
+    VALUE old_serial = *(rb_serial_t *)arg;
+    if (RCLASS_SERIAL(klass) > old_serial) {
+        return;
+    }
+
     mjit_remove_class_serial(RCLASS_SERIAL(klass));
     RCLASS_SERIAL(klass) = rb_next_class_serial();
 
@@ -99,7 +104,8 @@ rb_clear_method_cache_by_class(VALUE klass)
 	    INC_GLOBAL_METHOD_STATE();
 	}
 	else {
-	    rb_class_clear_method_cache(klass, Qnil);
+	    rb_serial_t old_serial = rb_next_class_serial();
+	    rb_class_clear_method_cache(klass, (VALUE)&old_serial);
 	}
     }
 
