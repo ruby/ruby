@@ -4029,6 +4029,10 @@ int_range_sum(VALUE beg, VALUE end, int excl, VALUE init)
  *   { 1 => 10, 2 => 20 }.sum([])                   #=> [1, 10, 2, 20]
  *   "a\nb\nc".each_line.lazy.map(&:chomp).sum("")  #=> "abc"
  *
+ * If the method is applied to an Integer range without a block,
+ * the sum is not done by iteration, but instead using Gauss's summation
+ * formula.
+ *
  * Enumerable#sum method may not respect method redefinition of "+"
  * methods such as Integer#+, or "each" methods such as Range#each.
  */
