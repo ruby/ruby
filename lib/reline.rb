@@ -42,6 +42,7 @@ module Reline
     def initialize
       self.output = STDOUT
       yield self
+      @completion_quote_character = nil
     end
 
     def completion_append_character=(val)
@@ -86,6 +87,10 @@ module Reline
 
     def completion_case_fold
       @config.completion_ignore_case
+    end
+
+    def completion_quote_character
+      @completion_quote_character
     end
 
     def completion_proc=(p)
@@ -347,6 +352,7 @@ module Reline
   def_single_delegators :core, :vi_editing_mode, :emacs_editing_mode
   def_single_delegators :core, :readline
   def_single_delegators :core, :completion_case_fold, :completion_case_fold=
+  def_single_delegators :core, :completion_quote_character
   def_instance_delegators self, :readline
   private :readline
 

@@ -789,9 +789,7 @@ class Reline::LineEditor
     completion_occurs = false
     if @config.editing_mode_is?(:emacs, :vi_insert) and key.char == "\C-i".ord
       unless @config.disable_completion
-        result = retrieve_completion_block
-        slice = result[1]
-        result = @completion_proc.(slice) if @completion_proc and slice
+        result = call_completion_proc
         if result.is_a?(Array)
           completion_occurs = true
           complete(result)
@@ -799,9 +797,7 @@ class Reline::LineEditor
       end
     elsif not @config.disable_completion and @config.editing_mode_is?(:vi_insert) and ["\C-p".ord, "\C-n".ord].include?(key.char)
       unless @config.disable_completion
-        result = retrieve_completion_block
-        slice = result[1]
-        result = @completion_proc.(slice) if @completion_proc and slice
+        result = call_completion_proc
         if result.is_a?(Array)
           completion_occurs = true
           move_completed_list(result, "\C-p".ord == key.char ? :up : :down)
@@ -818,6 +814,14 @@ class Reline::LineEditor
     if @is_multiline and @auto_indent_proc
       process_auto_indent
     end
+  end
+
+  def call_completion_proc
+    result = retrieve_completion_block(true)
+    slice = result[1]
+    result = @completion_proc.(slice) if @completion_proc and slice
+    Reline.core.instance_variable_set(:@completion_quote_character, nil)
+    result
   end
 
   private def process_auto_indent
@@ -861,7 +865,7 @@ class Reline::LineEditor
     @check_new_auto_indent = false
   end
 
-  def retrieve_completion_block
+  def retrieve_completion_block(set_completion_quote_character = false)
     word_break_regexp = /\A[#{Regexp.escape(Reline.completer_word_break_characters)}]/
     quote_characters_regexp = /\A[#{Regexp.escape(Reline.completer_quote_characters)}]/
     before = @line.byteslice(0, @byte_pointer)
@@ -880,14 +884,18 @@ class Reline::LineEditor
       if quote and slice.start_with?(closing_quote)
         quote = nil
         i += 1
+        rest = nil
+        break_pointer = nil
       elsif quote and slice.start_with?(escaped_quote)
         # skip
         i += 2
       elsif slice =~ quote_characters_regexp # find new "
+        rest = $'
         quote = $&
         closing_quote = /(?!\\)#{Regexp.escape(quote)}/
         escaped_quote = /\\#{Regexp.escape(quote)}/
         i += 1
+        break_pointer = i
       elsif not quote and slice =~ word_break_regexp
         rest = $'
         i += 1
@@ -896,14 +904,20 @@ class Reline::LineEditor
         i += 1
       end
     end
+    postposing = @line.byteslice(@byte_pointer, @line.bytesize - @byte_pointer)
     if rest
       preposing = @line.byteslice(0, break_pointer)
       target = rest
+      if set_completion_quote_character and quote
+        Reline.core.instance_variable_set(:@completion_quote_character, quote)
+        if postposing !~ /(?!\\)#{Regexp.escape(quote)}/ # closing quote
+          insert_text(quote)
+        end
+      end
     else
       preposing = ''
       target = before
     end
-    postposing = @line.byteslice(@byte_pointer, @line.bytesize - @byte_pointer)
     [preposing.encode(@encoding), target.encode(@encoding), postposing.encode(@encoding)]
   end
 
