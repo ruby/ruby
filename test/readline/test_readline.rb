@@ -516,7 +516,9 @@ module BasetestReadline
       replace_stdio(stdin.path, stdout.path) do
         Readline.completion_proc = ->(text) do
           passed_text = text
-          ['completion']
+          ['completion'].map { |i|
+            i.encode(Encoding.default_external)
+          }
         end
         Readline.completer_quote_characters = '\'"'
         Readline.completer_word_break_characters = ' '
@@ -554,7 +556,9 @@ module BasetestReadline
       replace_stdio(stdin.path, stdout.path) do
         Readline.completion_proc = ->(text) do
           passed_text = text
-          ['completion']
+          ['completion'].map { |i|
+            i.encode(Encoding.default_external)
+          }
         end
         Readline.completer_quote_characters = '\'"'
         Readline.completer_word_break_characters = ' '
@@ -580,7 +584,6 @@ module BasetestReadline
 
   def test_simple_completion
     skip "Skip Editline" if /EditLine/n.match(Readline::VERSION)
-    skip if /mingw/ =~ RUBY_DESCRIPTION # TODO: skip continuous failure.
 
     line = nil
 
@@ -589,7 +592,9 @@ module BasetestReadline
         Readline.input = r
         Readline.output = null
         Readline.completion_proc = ->(text) do
-          ['abcde', 'abc12']
+          ['abcde', 'abc12'].map { |i|
+            i.encode(Encoding.default_external)
+          }
         end
         w.write("a\t\n")
         w.flush
@@ -612,7 +617,9 @@ module BasetestReadline
         Readline.output = null
         Readline.completion_append_character = '!'
         Readline.completion_proc = ->(text) do
-          ['abcde']
+          ['abcde'].map { |i|
+            i.encode(Encoding.default_external)
+          }
         end
         w.write("a\t\n")
         w.flush
