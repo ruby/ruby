@@ -54,10 +54,9 @@ jobs:
           git -C src reset --hard ${{ github.event.pull_request.head.sha }}
         if: github.event_name == 'pull_request'
         shell: cmd
-      - name: Actions-commit-info.sh
-        run: |
-          bash ./src/tool/actions-commit-info.sh
-        shell: cmd
+      - run: ./src/tool/actions-commit-info.sh
+        shell: bash
+        id: commit_info
       - name: Autoconf
         run: |
           cd src
