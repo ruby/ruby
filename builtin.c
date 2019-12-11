@@ -15,10 +15,21 @@
 static const unsigned char*
 builtin_lookup(const char *feature, size_t *psize)
 {
-    for (int i=0; i<BUILTIN_BINARY_SIZE; i++) {
-        if (strcmp(builtin_binary[i].feature, feature) == 0) {
-            *psize = builtin_binary[i].bin_size;
-            return builtin_binary[i].bin;
+    static int index = 0;
+    int i = index++;
+
+    // usually, `builtin_binary` order is loading order at miniruby.
+    if (LIKELY(strcmp(builtin_binary[i].feature, feature) == 0)) {
+      found:
+        *psize = builtin_binary[i].bin_size;
+        return builtin_binary[i].bin;
+    }
+    else {
+        if (0) fprintf(stderr, "builtin_lookup: cached index miss (index:%d)\n", i);
+        for (i=0; i<BUILTIN_BINARY_SIZE; i++) {
+            if (strcmp(builtin_binary[i].feature, feature) == 0) {
+                goto found;
+            }
         }
     }
     rb_bug("builtin_lookup: can not find %s\n", feature);
