@@ -500,7 +500,7 @@ rb_add_refined_method_entry(VALUE refined_class, ID mid)
 }
 
 static void
-check_override_opt_method(VALUE klass, VALUE arg)
+check_override_opt_method_i(VALUE klass, VALUE arg)
 {
     ID mid = (ID)arg;
     const rb_method_entry_t *me, *newme;
@@ -512,7 +512,15 @@ check_override_opt_method(VALUE klass, VALUE arg)
 	    if (newme != me) rb_vm_check_redefinition_opt_method(me, me->owner);
 	}
     }
-    rb_class_foreach_subclass(klass, check_override_opt_method, (VALUE)mid);
+    rb_class_foreach_subclass(klass, check_override_opt_method_i, (VALUE)mid);
+}
+
+static void
+check_override_opt_method(VALUE klass, VALUE mid)
+{
+    if (rb_vm_check_optimizable_mid(mid)) {
+        check_override_opt_method_i(klass, mid);
+    }
 }
 
 /*
