@@ -2113,11 +2113,20 @@ newobj_init(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_prote
 #endif
 
     /* OBJSETUP */
-    RBASIC(obj)->flags = flags;
-    RBASIC_SET_CLASS_RAW(obj, klass);
-    RANY(obj)->as.values.v1 = v1;
-    RANY(obj)->as.values.v2 = v2;
-    RANY(obj)->as.values.v3 = v3;
+    struct RVALUE buf = {
+        .as = {
+            .values =  {
+                .basic = {
+                    .flags = flags,
+                    .klass = klass,
+                },
+                .v1 = v1,
+                .v2 = v2,
+                .v3 = v3,
+            },
+        },
+    };
+    MEMCPY(RANY(obj), &buf, RVALUE, 1);
 
 #if RGENGC_CHECK_MODE
     GC_ASSERT(RVALUE_MARKED(obj) == FALSE);
