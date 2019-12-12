@@ -1920,12 +1920,20 @@ rb_obj_singleton_method(VALUE obj, VALUE vid)
 }
 
 static VALUE
-mod_instance_method_internal(VALUE mod, VALUE vid, int search_ancestors, int public_only)
+mod_instance_method_internal(int argc, VALUE *argv, VALUE mod, bool public_only)
 {
-    VALUE id = rb_check_id(&vid);
+    ID id;
+    VALUE vid;
     VALUE iclass = Qnil;
     const rb_method_entry_t *me;
+    bool search_ancestors = true;
 
+    rb_check_arity(argc, 1, 2);
+    if (argc >= 2) {
+        search_ancestors = RTEST(argv[1]);
+    }
+    vid = argv[0];
+    id = rb_check_id(&vid);
     if (!id) {
         rb_method_name_error(mod, vid);
     }
@@ -1944,15 +1952,15 @@ mod_instance_method_internal(VALUE mod, VALUE vid, int search_ancestors, int pub
 }
 
 static VALUE
-mod_instance_method(rb_execution_context_t *ec, VALUE mod, VALUE vid, VALUE search_ancestors)
+mod_instance_method(int argc, VALUE *argv, VALUE mod)
 {
-    return mod_instance_method_internal(mod, vid, RTEST(search_ancestors), FALSE);
+    return mod_instance_method_internal(argc, argv, mod, false);
 }
 
 static VALUE
-mod_public_instance_method(rb_execution_context_t *ec, VALUE mod, VALUE vid, VALUE search_ancestors)
+mod_public_instance_method(int argc, VALUE *argv, VALUE mod)
 {
-    return mod_instance_method_internal(mod, vid, RTEST(search_ancestors), TRUE);
+    return mod_instance_method_internal(argc, argv, mod, true);
 }
 
 /*
@@ -3728,8 +3736,6 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  *
  */
 
-#include "module.rbinc"
-
 void
 Init_Proc(void)
 {
@@ -3833,6 +3839,8 @@ Init_Proc(void)
     rb_define_method(rb_cUnboundMethod, "super_method", method_super_method, 0);
 
     /* Module#*_method */
+    rb_define_method(rb_cModule, "instance_method", mod_instance_method, -1);
+    rb_define_method(rb_cModule, "public_instance_method", mod_public_instance_method, -1);
     rb_define_method(rb_cModule, "define_method", rb_mod_define_method, -1);
 
     /* Kernel */
@@ -3895,8 +3903,9 @@ Init_Binding(void)
     rb_define_global_function("binding", rb_f_binding, 0);
 }
 
-void
-Init_module(void)
-{
-    load_module();
-}
+// #include "module.rbinc"
+// void
+// Init_module(void)
+// {
+//     load_module();
+// }
