@@ -501,13 +501,16 @@ class TestFile < Test::Unit::TestCase
     assert_file.not_absolute_path?("~")
     assert_file.not_absolute_path?("~user")
 
-    if /mswin|mingw/ =~ RUBY_PLATFORM
+    if /cygwin|mswin|mingw/ =~ RUBY_PLATFORM
       assert_file.absolute_path?("C:\\foo\\bar")
       assert_file.absolute_path?("C:/foo/bar")
-      assert_file.not_absolute_path?("/foo/bar\\baz")
     else
       assert_file.not_absolute_path?("C:\\foo\\bar")
       assert_file.not_absolute_path?("C:/foo/bar")
+    end
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      assert_file.not_absolute_path?("/foo/bar\\baz")
+    else
       assert_file.absolute_path?("/foo/bar\\baz")
     end
   end
