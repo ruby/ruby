@@ -43,6 +43,7 @@ class Reline::LineEditor
     COMPLETION = :completion
     MENU = :menu
     JOURNEY = :journey
+    MENU_WITH_PERFECT_MATCH = :menu_with_perfect_match
     PERFECT_MATCH = :perfect_match
   end
 
@@ -599,16 +600,24 @@ class Reline::LineEditor
     when CompletionState::PERFECT_MATCH
       @dig_perfect_match_proc&.(@perfect_matched)
     end
-    is_menu = (@completion_state == CompletionState::MENU)
+    is_menu = (@completion_state == CompletionState::MENU or @completion_state == CompletionState::MENU_WITH_PERFECT_MATCH)
     result = complete_internal_proc(list, is_menu)
+    if @completion_state == CompletionState::MENU_WITH_PERFECT_MATCH
+      @completion_state = CompletionState::PERFECT_MATCH
+    end
     return if result.nil?
     target, preposing, completed, postposing = result
     return if completed.nil?
-    if target <= completed and (@completion_state == CompletionState::COMPLETION or @completion_state == CompletionState::PERFECT_MATCH)
-      @completion_state = CompletionState::MENU
+    if target <= completed and (@completion_state == CompletionState::COMPLETION)
       if list.include?(completed)
-        @completion_state = CompletionState::PERFECT_MATCH
+        if list.one?
+          @completion_state = CompletionState::PERFECT_MATCH
+        else
+          @completion_state = CompletionState::MENU_WITH_PERFECT_MATCH
+        end
         @perfect_matched = completed
+      else
+        @completion_state = CompletionState::MENU
       end
       if target < completed
         @line = preposing + completed + postposing
@@ -622,7 +631,8 @@ class Reline::LineEditor
 
   private def move_completed_list(list, direction)
     case @completion_state
-    when CompletionState::NORMAL, CompletionState::COMPLETION, CompletionState::MENU
+    when CompletionState::NORMAL, CompletionState::COMPLETION,
+         CompletionState::MENU, CompletionState::MENU_WITH_PERFECT_MATCH
       @completion_state = CompletionState::JOURNEY
       result = retrieve_completion_block
       return if result.nil?
