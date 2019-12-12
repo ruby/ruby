@@ -14,7 +14,6 @@
 #include "gc.h"
 #include "vm_core.h"
 #include "iseq.h"
-#include "builtin.h"
 
 /* Proc.new with no block will raise an exception in the future
  * versions */
@@ -1951,11 +1950,52 @@ mod_instance_method_internal(int argc, VALUE *argv, VALUE mod, bool public_only)
     return mnew_from_me(me, mod, iclass, Qundef, id, rb_cUnboundMethod, public_only);
 }
 
+/*
+ *  call-seq:
+ *     mod.instance_method(symbol, inherit=true)   -> unbound_method
+ *
+ *  Returns an +UnboundMethod+ representing the given
+ *  instance method in _mod_.
+ *
+ *     class Interpreter
+ *       def do_a() print "there, "; end
+ *       def do_d() print "Hello ";  end
+ *       def do_e() print "!\n";     end
+ *       def do_v() print "Dave";    end
+ *       Dispatcher = {
+ *         "a" => instance_method(:do_a),
+ *         "d" => instance_method(:do_d),
+ *         "e" => instance_method(:do_e),
+ *         "v" => instance_method(:do_v)
+ *       }
+ *       def interpret(string)
+ *         string.each_char {|b| Dispatcher[b].bind(self).call }
+ *       end
+ *     end
+ *
+ *     interpreter = Interpreter.new
+ *     interpreter.interpret('dave')
+ *
+ *  <em>produces:</em>
+ *
+ *     Hello there, Dave!
+ *
+ *  When inherit is _false_, return the instance method that is directly
+ *  defined on _mod_.
+ */
+
 static VALUE
 mod_instance_method(int argc, VALUE *argv, VALUE mod)
 {
     return mod_instance_method_internal(argc, argv, mod, false);
 }
+
+/*
+ *  call-seq:
+ *     mod.public_instance_method(symbol, inherit=true)   -> unbound_method
+ *
+ *  Similar to _instance_method_, searches public method only.
+ */
 
 static VALUE
 mod_public_instance_method(int argc, VALUE *argv, VALUE mod)
@@ -3902,10 +3942,3 @@ Init_Binding(void)
     rb_define_method(rb_cBinding, "source_location", bind_location, 0);
     rb_define_global_function("binding", rb_f_binding, 0);
 }
-
-// #include "module.rbinc"
-// void
-// Init_module(void)
-// {
-//     load_module();
-// }
