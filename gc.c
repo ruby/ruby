@@ -11681,7 +11681,7 @@ rb_gcdebug_print_obj_condition(VALUE obj)
 }
 
 static VALUE
-gcdebug_sentinel(VALUE obj, VALUE name)
+gcdebug_sentinel(RB_BLOCK_CALL_FUNC_ARGLIST(obj, name))
 {
     fprintf(stderr, "WARNING: object %s(%p) is inadvertently collected\n", (char *)name, (void *)obj);
     return Qnil;
