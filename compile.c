@@ -11268,7 +11268,7 @@ ibf_load_object(const struct ibf_load *load, VALUE object_index)
 
 #if IBF_ISEQ_DEBUG
             fprintf(stderr, "ibf_load_object: list=%#x offsets=%p offset=%#x\n",
-                    load->current_buffer->obj_list_offset, offsets, offset);
+                    load->current_buffer->obj_list_offset, (void *)offsets, offset);
             fprintf(stderr, "ibf_load_object: type=%#x special=%d frozen=%d internal=%d\n",
                     header.type, header.special_const, header.frozen, header.internal);
 #endif
@@ -11458,7 +11458,7 @@ ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
 
 #if IBF_ISEQ_DEBUG
     fprintf(stderr, "ibf_load_iseq: index_iseq=%p iseq_list=%p\n",
-	    index_iseq, (void *)load->iseq_list);
+	    (void *)index_iseq, (void *)load->iseq_list);
 #endif
     if (iseq_index == -1) {
 	return NULL;
@@ -11475,27 +11475,27 @@ ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
 	else {
 	    rb_iseq_t *iseq = iseq_imemo_alloc();
 #if IBF_ISEQ_DEBUG
-	    fprintf(stderr, "ibf_load_iseq: new iseq=%p\n", iseq);
+	    fprintf(stderr, "ibf_load_iseq: new iseq=%p\n", (void *)iseq);
 #endif
 	    FL_SET(iseq, ISEQ_NOT_LOADED_YET);
 	    iseq->aux.loader.obj = load->loader_obj;
 	    iseq->aux.loader.index = iseq_index;
 #if IBF_ISEQ_DEBUG
 	    fprintf(stderr, "ibf_load_iseq: iseq=%p loader_obj=%p index=%d\n",
-		    iseq, (void *)load->loader_obj, iseq_index);
+		    (void *)iseq, (void *)load->loader_obj, iseq_index);
 #endif
 	    rb_ary_store(load->iseq_list, iseq_index, (VALUE)iseq);
 
 #if !USE_LAZY_LOAD
 #if IBF_ISEQ_DEBUG
-	    fprintf(stderr, "ibf_load_iseq: loading iseq=%p\n", iseq);
+	    fprintf(stderr, "ibf_load_iseq: loading iseq=%p\n", (void *)iseq);
 #endif
 	    rb_ibf_load_iseq_complete(iseq);
 #endif /* !USE_LAZY_LOAD */
 
 #if IBF_ISEQ_DEBUG
 	    fprintf(stderr, "ibf_load_iseq: iseq=%p loaded %p\n",
-		    iseq, load->iseq);
+		    (void *)iseq, (void *)load->iseq);
 #endif
 	    return iseq;
 	}
