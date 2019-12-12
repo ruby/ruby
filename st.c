@@ -871,19 +871,19 @@ secondary_hash(st_index_t ind, st_table *tab, st_index_t *perterb)
 static inline st_index_t
 find_entry(st_table *tab, st_hash_t hash_value, st_data_t key)
 {
-    int eq_p, rebuilt_p;
-    st_index_t i, bound;
-    st_table_entry *entries;
+    unsigned short int eq_p, rebuilt_p;
+    st_index_t i = tab->entries_bound - tab->entries_start + 1;
+    st_index_t offset = tab->entries_start - 1;
 
-    bound = tab->entries_bound;
-    entries = tab->entries;
-    for (i = tab->entries_start; i < bound; i++) {
-	DO_PTR_EQUAL_CHECK(tab, &entries[i], hash_value, key, eq_p, rebuilt_p);
-	if (EXPECT(rebuilt_p, 0))
-	    return REBUILT_TABLE_ENTRY_IND;
-	if (eq_p)
-	    return i;
+    while(--i) {
+        DO_PTR_EQUAL_CHECK(tab, &tab->entries[i + offset], hash_value, key, eq_p, rebuilt_p);
+
+        if (EXPECT(rebuilt_p, 0))
+            return REBUILT_TABLE_ENTRY_IND;
+        if (eq_p)
+            return i + offset;
     }
+
     return UNDEFINED_ENTRY_IND;
 }
 
@@ -898,29 +898,25 @@ find_entry(st_table *tab, st_hash_t hash_value, st_data_t key)
 static st_index_t
 find_table_entry_ind(st_table *tab, st_hash_t hash_value, st_data_t key)
 {
-    int eq_p, rebuilt_p;
-    st_index_t ind;
-#ifdef QUADRATIC_PROBE
-    st_index_t d;
-#else
-    st_index_t peterb;
-#endif
-    st_index_t bin;
-    st_table_entry *entries = tab->entries;
-
     st_assert(tab != NULL);
     st_assert(tab->bins != NULL);
-    ind = hash_bin(hash_value, tab);
+
+    unsigned short int eq_p, rebuilt_p;
+    st_index_t ind = hash_bin(hash_value, tab);
+    st_index_t bin;
 #ifdef QUADRATIC_PROBE
-    d = 1;
+    st_index_t d = 1;
 #else
-    peterb = hash_value;
+    st_index_t peterb = hash_value;
 #endif
     FOUND_BIN;
+
     for (;;) {
         bin = get_bin(tab->bins, get_size_ind(tab), ind);
+
         if (! EMPTY_OR_DELETED_BIN_P(bin)) {
-	    DO_PTR_EQUAL_CHECK(tab, &entries[bin - ENTRY_BASE], hash_value, key, eq_p, rebuilt_p);
+	    DO_PTR_EQUAL_CHECK(tab, &tab->entries[bin - ENTRY_BASE], hash_value, key, eq_p, rebuilt_p);
+
 	    if (EXPECT(rebuilt_p, 0))
 		return REBUILT_TABLE_ENTRY_IND;
 	    if (eq_p)
