@@ -451,7 +451,7 @@ class TestFile < Test::Unit::TestCase
     end
   end
 
-  if /(bcc|ms|cyg)win|mingw|emx/ =~ RUBY_PLATFORM
+  if /mswin|mingw/ =~ RUBY_PLATFORM
     def test_long_unc
       feature3399 = '[ruby-core:30623]'
       path = File.expand_path(__FILE__)
