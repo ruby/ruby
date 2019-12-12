@@ -14,6 +14,7 @@
 #include "gc.h"
 #include "vm_core.h"
 #include "iseq.h"
+#include "builtin.h"
 
 /* Proc.new with no block will raise an exception in the future
  * versions */
@@ -1918,62 +1919,40 @@ rb_obj_singleton_method(VALUE obj, VALUE vid)
     return mnew_from_me(me, klass, klass, obj, id, rb_cMethod, FALSE);
 }
 
-/*
- *  call-seq:
- *     mod.instance_method(symbol)   -> unbound_method
- *
- *  Returns an +UnboundMethod+ representing the given
- *  instance method in _mod_.
- *
- *     class Interpreter
- *       def do_a() print "there, "; end
- *       def do_d() print "Hello ";  end
- *       def do_e() print "!\n";     end
- *       def do_v() print "Dave";    end
- *       Dispatcher = {
- *         "a" => instance_method(:do_a),
- *         "d" => instance_method(:do_d),
- *         "e" => instance_method(:do_e),
- *         "v" => instance_method(:do_v)
- *       }
- *       def interpret(string)
- *         string.each_char {|b| Dispatcher[b].bind(self).call }
- *       end
- *     end
- *
- *     interpreter = Interpreter.new
- *     interpreter.interpret('dave')
- *
- *  <em>produces:</em>
- *
- *     Hello there, Dave!
- */
-
 static VALUE
-rb_mod_instance_method(VALUE mod, VALUE vid)
+mod_instance_method_internal(VALUE mod, VALUE vid, int search_ancestors, int public_only)
 {
-    ID id = rb_check_id(&vid);
+    VALUE id = rb_check_id(&vid);
+    VALUE iclass = Qnil;
+    const rb_method_entry_t *me;
+
     if (!id) {
-	rb_method_name_error(mod, vid);
+        rb_method_name_error(mod, vid);
     }
-    return mnew(mod, Qundef, id, rb_cUnboundMethod, FALSE);
+
+    if (search_ancestors) {
+        me = rb_method_entry_with_refinements(mod, id, &iclass);
+    }
+    else {
+        me = rb_method_entry_at(RCLASS_ORIGIN(mod), id);
+        if (UNDEFINED_METHOD_ENTRY_P(me)) {
+            rb_name_err_raise("method `%1$s' is not directly defined on `%2$s'", vid, mod);
+        }
+    }
+
+    return mnew_from_me(me, mod, iclass, Qundef, id, rb_cUnboundMethod, public_only);
 }
 
-/*
- *  call-seq:
- *     mod.public_instance_method(symbol)   -> unbound_method
- *
- *  Similar to _instance_method_, searches public method only.
- */
+static VALUE
+mod_instance_method(rb_execution_context_t *ec, VALUE mod, VALUE vid, VALUE search_ancestors)
+{
+    return mod_instance_method_internal(mod, vid, RTEST(search_ancestors), FALSE);
+}
 
 static VALUE
-rb_mod_public_instance_method(VALUE mod, VALUE vid)
+mod_public_instance_method(rb_execution_context_t *ec, VALUE mod, VALUE vid, VALUE search_ancestors)
 {
-    ID id = rb_check_id(&vid);
-    if (!id) {
-	rb_method_name_error(mod, vid);
-    }
-    return mnew(mod, Qundef, id, rb_cUnboundMethod, TRUE);
+    return mod_instance_method_internal(mod, vid, RTEST(search_ancestors), TRUE);
 }
 
 /*
@@ -3749,6 +3728,7 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  *
  */
 
+#include "module.rbinc"
 
 void
 Init_Proc(void)
@@ -3853,8 +3833,6 @@ Init_Proc(void)
     rb_define_method(rb_cUnboundMethod, "super_method", method_super_method, 0);
 
     /* Module#*_method */
-    rb_define_method(rb_cModule, "instance_method", rb_mod_instance_method, 1);
-    rb_define_method(rb_cModule, "public_instance_method", rb_mod_public_instance_method, 1);
     rb_define_method(rb_cModule, "define_method", rb_mod_define_method, -1);
 
     /* Kernel */
@@ -3915,4 +3893,10 @@ Init_Binding(void)
     rb_define_method(rb_cBinding, "receiver", bind_receiver, 0);
     rb_define_method(rb_cBinding, "source_location", bind_location, 0);
     rb_define_global_function("binding", rb_f_binding, 0);
+}
+
+void
+Init_module(void)
+{
+    load_module();
 }
