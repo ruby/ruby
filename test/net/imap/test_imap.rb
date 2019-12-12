@@ -482,9 +482,9 @@ class IMAPTest < Test::Unit::TestCase
     end
     assert_raise(Net::IMAP::Error) do
       Net::IMAP.new(server_addr, :port => port)
+    rescue Errno::EINVAL => e # for debug on OpenCSW
+      raise({e: e, server: server, port: port, server_addr: server_addr}.inspect)
     end
-  rescue Errno::EINVAL => e # for debug on OpenCSW
-    raise({e: e, server: server, port: port, server_addr: server_addr}.inspect)
   end
 
   def test_default_port
