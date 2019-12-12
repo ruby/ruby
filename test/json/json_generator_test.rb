@@ -49,6 +49,7 @@ EOT
   end
 
   def test_remove_const_segv
+    return if RUBY_ENGINE == 'jruby'
     stress = GC.stress
     const = JSON::SAFE_STATE_PROTOTYPE.dup
 
