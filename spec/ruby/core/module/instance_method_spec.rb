@@ -1,5 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative 'shared/instance_method'
 
 describe "Module#instance_method" do
   before :all do
@@ -82,4 +83,6 @@ describe "Module#instance_method" do
       e.name.should == :missing
     end
   end
+
+  it_behaves_like(:instance_method, :instance_method)
 end

@@ -1,5 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative 'shared/instance_method'
 
 describe "Module#public_instance_method" do
   it "is a public method" do
@@ -62,4 +63,6 @@ describe "Module#public_instance_method" do
       e.name.should == :missing
     end
   end
+
+  it_behaves_like(:instance_method, :public_instance_method)
 end
