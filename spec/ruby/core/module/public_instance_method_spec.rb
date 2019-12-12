@@ -7,7 +7,7 @@ describe "Module#public_instance_method" do
   end
 
   it "requires an argument" do
-    Module.new.method(:public_instance_method).arity.should == 1
+    -> { Module.new.instance_method }.should raise_error(ArgumentError)
   end
 
   describe "when given a public method name" do

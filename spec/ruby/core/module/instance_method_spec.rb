@@ -13,7 +13,7 @@ describe "Module#instance_method" do
   end
 
   it "requires an argument" do
-    Module.new.method(:instance_method).arity.should == 1
+    -> { Module.new.instance_method }.should raise_error(ArgumentError)
   end
 
   it "returns an UnboundMethod corresponding to the given name" do
