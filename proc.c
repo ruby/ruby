@@ -1936,7 +1936,7 @@ mod_instance_method_internal(VALUE mod, VALUE vid, int search_ancestors, int pub
     else {
         me = rb_method_entry_at(RCLASS_ORIGIN(mod), id);
         if (UNDEFINED_METHOD_ENTRY_P(me)) {
-            rb_name_err_raise("method `%1$s' is not directly defined on `%2$s'", vid, mod);
+            rb_name_err_raise("method `%1$s' is not directly defined on `%2$s'", mod, vid);
         }
     }
 
