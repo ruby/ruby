@@ -6,7 +6,7 @@ class TestGemGemRunner < Gem::TestCase
   def setup
     super
 
-    require 'rubygems/commands'
+    require 'rubygems/command'
     @orig_args = Gem::Command.build_args
 
     require 'rubygems/gem_runner'
