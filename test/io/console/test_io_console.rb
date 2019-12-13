@@ -319,6 +319,42 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
     end
   end
 
+  def assert_ctrl(expect, cc, r, w)
+    sleep 0.1
+    w.print cc
+    w.flush
+    result = EnvUtil.timeout(3) {r.gets}
+    assert_equal(expect, result.chomp)
+  end
+
+  def test_intr
+    run_pty("#{<<~"begin;"}\n#{<<~'end;'}") do |r, w, _|
+      begin;
+        STDOUT.puts `stty -a`.scan(/\b\w+ *= *\^.;/), ""
+        STDOUT.flush
+        while c = STDIN.getch
+          p c.ord
+          p STDIN.getch(intr: false).ord
+          begin
+            p STDIN.getch(intr: true).ord
+          rescue Interrupt => e
+            p e
+          end
+        end
+      end;
+      ctrl = {}
+      r.each do |l|
+        break unless /^(\w+) *= *\^(\\?.)/ =~ l
+        ctrl[$1] = eval("?\\C-#$2")
+      end
+      if cc = ctrl["intr"]
+        assert_ctrl("#{cc.ord}", cc, r, w)
+        assert_ctrl("#{cc.ord}", cc, r, w)
+        assert_ctrl("Interrupt", cc, r, w)
+      end
+    end
+  end
+
   unless IO.console
     def test_close
       assert_equal(["true"], run_pty("IO.console.close; p IO.console.fileno >= 0"))
