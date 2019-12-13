@@ -2,6 +2,7 @@
 # fronzen-string-literal: true
 
 module Kernel
+  module_function
 
   # call-seq:
   #    warn(*msgs, uplevel: nil)   -> nil
