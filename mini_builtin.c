@@ -18,8 +18,10 @@ builtin_iseq_load(const char *feature_name, const struct rb_builtin_function *ta
 {
     VALUE name_str = 0;
     rb_ast_t *ast = rb_builtin_ast(feature_name, &name_str);
+    rb_vm_t *vm = GET_VM();
 
-    GET_VM()->builtin_function_table = table;
+    vm->builtin_function_table = table;
+    vm->builtin_inline_index = 0;
     const rb_iseq_t *iseq = rb_iseq_new(&ast->body, name_str, name_str, Qnil, NULL, ISEQ_TYPE_TOP);
     GET_VM()->builtin_function_table = NULL;
 

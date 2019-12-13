@@ -13,7 +13,12 @@ struct rb_builtin_function {
     const char * const name;
 };
 
-#define RB_BUILTIN_FUNCTION(_i, _name, _arity) { .name = #_name, .func_ptr = (void *)_name, .argc = _arity, .index = _i }
+#define RB_BUILTIN_FUNCTION(_i, _name, _fname, _arity) { \
+  .name = #_name, \
+  .func_ptr = (void *)_fname, \
+  .argc = _arity, \
+  .index = _i \
+}
 
 void rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table);
 
