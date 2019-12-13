@@ -18,4 +18,5 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
   spec.extensions    = ["ext/gdbm/extconf.rb"]
   spec.required_ruby_version = ">= 2.3.0"
+  spec.metadata["msys2_mingw_dependencies"] = "gdbm"
 end
