@@ -20,9 +20,9 @@ module TestIRB
     end
 
     def test_rc_file
-      ENV.delete("IRBRC") # This is for RVM...
+      backup_irbrc = ENV.delete("IRBRC") # This is for RVM...
+      backup_home = ENV["HOME"]
       Dir.mktmpdir("test_irb_init_#{$$}") do |tmpdir|
-        backup_home = ENV["HOME"]
         ENV["HOME"] = tmpdir
 
         IRB.conf[:RC_NAME_GENERATOR] = nil
@@ -32,15 +32,16 @@ module TestIRB
         FileUtils.touch(tmpdir+"/.irb#{IRB::IRBRC_EXT}")
         assert_equal(tmpdir+"/.irb#{IRB::IRBRC_EXT}", IRB.rc_file)
         assert_equal(tmpdir+"/.irb_history", IRB.rc_file("_history"))
-
-        ENV["HOME"] = backup_home
       end
+    ensure
+      ENV["HOME"] = backup_home
+      ENV["IRBRC"] = backup_irbrc
     end
 
     def test_rc_file_in_subdir
-      ENV.delete("IRBRC") # This is for RVM...
+      backup_irbrc = ENV.delete("IRBRC") # This is for RVM...
+      backup_home = ENV["HOME"]
       Dir.mktmpdir("test_irb_init_#{$$}") do |tmpdir|
-        backup_home = ENV["HOME"]
         ENV["HOME"] = tmpdir
 
         FileUtils.mkdir_p("#{tmpdir}/mydir")
@@ -53,9 +54,10 @@ module TestIRB
           assert_equal(tmpdir+"/.irb#{IRB::IRBRC_EXT}", IRB.rc_file)
           assert_equal(tmpdir+"/.irb_history", IRB.rc_file("_history"))
         end
-
-        ENV["HOME"] = backup_home
       end
+    ensure
+      ENV["HOME"] = backup_home
+      ENV["IRBRC"] = backup_irbrc
     end
 
     private
