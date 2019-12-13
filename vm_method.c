@@ -104,7 +104,7 @@ rb_clear_method_cache_by_class(VALUE klass)
 	    INC_GLOBAL_METHOD_STATE();
 	}
 	else {
-	    rb_serial_t old_serial = rb_next_class_serial();
+	    rb_serial_t old_serial = PREV_CLASS_SERIAL();
 	    rb_class_clear_method_cache(klass, (VALUE)&old_serial);
 	}
     }
