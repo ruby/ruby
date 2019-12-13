@@ -184,6 +184,7 @@ CC_SET_ME(CALL_CACHE cc, const rb_callable_method_entry_t *me)
 } while (0)
 #endif
 
+#define PREV_CLASS_SERIAL() (ruby_vm_class_serial)
 #define NEXT_CLASS_SERIAL() (++ruby_vm_class_serial)
 #define GET_GLOBAL_METHOD_STATE() (ruby_vm_global_method_state)
 #define INC_GLOBAL_METHOD_STATE() (++ruby_vm_global_method_state)
