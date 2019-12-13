@@ -77,10 +77,7 @@ rb_class_clear_method_cache(VALUE klass, VALUE arg)
 	}
     }
     else {
-	if (RCLASS_CALLABLE_M_TBL(klass) != 0) {
-	    rb_obj_info_dump(klass);
-	    rb_bug("RCLASS_CALLABLE_M_TBL(klass) != 0");
-	}
+	VM_ASSERT(RCLASS_CALLABLE_M_TBL(klass) == 0);
     }
 
     rb_class_foreach_subclass(klass, rb_class_clear_method_cache, arg);
