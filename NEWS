@@ -39,8 +39,8 @@ sufficient information, see the ChangeLog file or Redmine
       "children": [{ "name": "Bob", "age": 2 }]
     }
     END
-    if JSON.parse(json, symbolize_names: true) in
-         {name: "Alice", children: [{name: "Bob", age: age}]}
+    case JSON.parse(json, symbolize_names: true)
+    in {name: "Alice", children: [{name: "Bob", age: age}]}
       p age #=> 2
     end
 
