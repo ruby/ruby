@@ -365,19 +365,16 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_realworld_default_gem
-    begin
-      gem 'json'
-    rescue Gem::MissingSpecError
-      skip "default gems are only available after ruby installation"
-    end
+    testing_ruby_repo = !ENV["GEM_COMMAND"].nil?
+    skip "this test can't work under ruby-core setup" if testing_ruby_repo || java_platform?
 
     cmd = <<-RUBY
       $stderr = $stdout
       require "json"
-      puts Gem.loaded_specs["json"].default_gem?
+      puts Gem.loaded_specs["json"]
     RUBY
     output = Gem::Util.popen(Gem.ruby, "-e", cmd).strip
-    assert_equal "true", output
+    refute_empty output
   end
 
   def test_default_gem_and_normal_gem
@@ -499,36 +496,38 @@ class TestGemRequire < Gem::TestCase
     end
   end
 
-  # uplevel is 2.5+ only and jruby has some issues with it
-  if RUBY_VERSION >= "2.5" && !java_platform?
-    def test_no_kernel_require_in_warn_with_uplevel
-      lib = File.realpath("../../../lib", __FILE__)
-      Dir.mktmpdir("warn_test") do |dir|
-        File.write(dir + "/sub.rb", "warn 'uplevel', 'test', uplevel: 1\n")
-        File.write(dir + "/main.rb", "require 'sub'\n")
-        _, err = capture_subprocess_io do
-          system(@@ruby, "-w", "-rpp", "--disable=gems", "-I", lib, "-C", dir, "-I.", "main.rb")
+  # uplevel is 2.5+ only
+  if RUBY_VERSION >= "2.5"
+    ["", "Kernel."].each do |prefix|
+      define_method "test_no_kernel_require_in_#{prefix.tr(".", "_")}warn_with_uplevel" do
+        lib = File.realpath("../../../lib", __FILE__)
+        Dir.mktmpdir("warn_test") do |dir|
+          File.write(dir + "/sub.rb", "#{prefix}warn 'uplevel', 'test', uplevel: 1\n")
+          File.write(dir + "/main.rb", "require 'sub'\n")
+          _, err = capture_subprocess_io do
+            system(@@ruby, "-w", "--disable=gems", "-I", lib, "-C", dir, "-I.", "main.rb")
+          end
+          assert_match(/main\.rb:1: warning: uplevel\ntest\n$/, err)
+          _, err = capture_subprocess_io do
+            system(@@ruby, "-w", "--enable=gems", "-I", lib, "-C", dir, "-I.", "main.rb")
+          end
+          assert_match(/main\.rb:1: warning: uplevel\ntest\n$/, err)
         end
-        assert_equal "main.rb:1: warning: uplevel\ntest\n", err
-        _, err = capture_subprocess_io do
-          system(@@ruby, "-w", "-rpp", "--enable=gems", "-I", lib, "-C", dir, "-I.", "main.rb")
-        end
-        assert_equal "main.rb:1: warning: uplevel\ntest\n", err
       end
-    end
 
-    def test_no_other_behavioral_changes_with_kernel_warn
-      lib = File.realpath("../../../lib", __FILE__)
-      Dir.mktmpdir("warn_test") do |dir|
-        File.write(dir + "/main.rb", "warn({x:1}, {y:2}, [])\n")
-        _, err = capture_subprocess_io do
-          system(@@ruby, "-w", "-rpp", "--disable=gems", "-I", lib, "-C", dir, "-I.", "main.rb")
+      define_method "test_no_other_behavioral_changes_with_#{prefix.tr(".", "_")}warn" do
+        lib = File.realpath("../../../lib", __FILE__)
+        Dir.mktmpdir("warn_test") do |dir|
+          File.write(dir + "/main.rb", "#{prefix}warn({x:1}, {y:2}, [])\n")
+          _, err = capture_subprocess_io do
+            system(@@ruby, "-w", "--disable=gems", "-I", lib, "-C", dir, "main.rb")
+          end
+          assert_match(/{:x=>1}\n{:y=>2}\n$/, err)
+          _, err = capture_subprocess_io do
+            system(@@ruby, "-w", "--enable=gems", "-I", lib, "-C", dir, "main.rb")
+          end
+          assert_match(/{:x=>1}\n{:y=>2}\n$/, err)
         end
-        assert_equal "{:x=>1}\n{:y=>2}\n", err
-        _, err = capture_subprocess_io do
-          system(@@ruby, "-w", "-rpp", "--enable=gems", "-I", lib, "-C", dir, "-I.", "main.rb")
-        end
-        assert_equal "{:x=>1}\n{:y=>2}\n", err
       end
     end
   end

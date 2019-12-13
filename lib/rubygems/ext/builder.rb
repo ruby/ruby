@@ -6,7 +6,6 @@
 #++
 
 require 'rubygems/user_interaction'
-require "open3"
 
 class Gem::Ext::Builder
 
@@ -68,6 +67,7 @@ class Gem::Ext::Builder
       results << "current directory: #{Dir.pwd}"
       results << (command.respond_to?(:shelljoin) ? command.shelljoin : command)
 
+      require "open3"
       output, status = Open3.capture2e(*command)
       if verbose
         puts output

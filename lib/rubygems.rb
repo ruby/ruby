@@ -160,24 +160,14 @@ module Gem
   ].freeze
 
   ##
-  # Exception classes used in a Gem.read_binary +rescue+ statement. Not all of
-  # these are defined in Ruby 1.8.7, hence the need for this convoluted setup.
+  # Exception classes used in a Gem.read_binary +rescue+ statement
 
-  READ_BINARY_ERRORS = begin
-    read_binary_errors = [Errno::EACCES, Errno::EROFS, Errno::ENOSYS]
-    read_binary_errors << Errno::ENOTSUP if Errno.const_defined?(:ENOTSUP)
-    read_binary_errors
-  end.freeze
+  READ_BINARY_ERRORS = [Errno::EACCES, Errno::EROFS, Errno::ENOSYS, Errno::ENOTSUP].freeze
 
   ##
-  # Exception classes used in Gem.write_binary +rescue+ statement. Not all of
-  # these are defined in Ruby 1.8.7.
+  # Exception classes used in Gem.write_binary +rescue+ statement
 
-  WRITE_BINARY_ERRORS = begin
-    write_binary_errors = [Errno::ENOSYS]
-    write_binary_errors << Errno::ENOTSUP if Errno.const_defined?(:ENOTSUP)
-    write_binary_errors
-  end.freeze
+  WRITE_BINARY_ERRORS = [Errno::ENOSYS, Errno::ENOTSUP].freeze
 
   @@win_platform = nil
 

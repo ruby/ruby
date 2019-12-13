@@ -369,21 +369,43 @@ class Gem::Command
     end
   end
 
-  def deprecate_option(short_name: nil, long_name: nil, version: nil)
-    @deprecated_options[command].merge!({ short_name => { "rg_version_to_expire" => version } }) if short_name
-    @deprecated_options[command].merge!({ long_name  => { "rg_version_to_expire" => version } }) if long_name
+  ##
+  # Mark a command-line option as deprecated, and optionally specify a
+  # deprecation horizon.
+  #
+  # Note that with the current implementation, every version of the option needs
+  # to be explicitly deprecated, so to deprecate an option defined as
+  #
+  #   add_option('-t', '--[no-]test', 'Set test mode') do |value, options|
+  #     # ... stuff ...
+  #   end
+  #
+  # you would need to explicitly add a call to `deprecate_option` for every
+  # version of the option you want to deprecate, like
+  #
+  #   deprecate_option('-t')
+  #   deprecate_option('--test')
+  #   deprecate_option('--no-test')
+
+  def deprecate_option(name, version: nil, extra_msg: nil)
+    @deprecated_options[command].merge!({ name => { "rg_version_to_expire" => version, "extra_msg" => extra_msg } })
   end
 
   def check_deprecated_options(options)
     options.each do |option|
       if option_is_deprecated?(option)
-        version_to_expire = @deprecated_options[command][option]["rg_version_to_expire"]
+        deprecation = @deprecated_options[command][option]
+        version_to_expire = deprecation["rg_version_to_expire"]
 
         deprecate_option_msg = if version_to_expire
-                                 "The \"#{option}\" option has been deprecated and will be removed in Rubygems #{version_to_expire}, its use is discouraged."
+                                 "The \"#{option}\" option has been deprecated and will be removed in Rubygems #{version_to_expire}."
                                else
-                                 "The \"#{option}\" option has been deprecated and will be removed in future versions of Rubygems, its use is discouraged."
+                                 "The \"#{option}\" option has been deprecated and will be removed in future versions of Rubygems."
                                end
+
+        extra_msg = deprecation["extra_msg"]
+
+        deprecate_option_msg += " #{extra_msg}" if extra_msg
 
         alert_warning(deprecate_option_msg)
       end

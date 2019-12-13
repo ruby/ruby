@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 require 'rubygems/test_case'
-require 'rubygems/gem_runner'
 
 class TestGemGemRunner < Gem::TestCase
 
@@ -8,6 +7,8 @@ class TestGemGemRunner < Gem::TestCase
     super
 
     @orig_args = Gem::Command.build_args
+
+    require 'rubygems/gem_runner'
     @runner = Gem::GemRunner.new
   end
 

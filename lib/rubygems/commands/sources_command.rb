@@ -43,6 +43,8 @@ class Gem::Commands::SourcesCommand < Gem::Command
 
     source = Gem::Source.new source_uri
 
+    check_typo_squatting(source)
+
     begin
       if Gem.sources.include? source
         say "source #{source_uri} already present in the cache"
@@ -59,6 +61,18 @@ class Gem::Commands::SourcesCommand < Gem::Command
     rescue Gem::RemoteFetcher::FetchError => e
       say "Error fetching #{source_uri}:\n\t#{e.message}"
       terminate_interaction 1
+    end
+  end
+
+  def check_typo_squatting(source)
+    if source.typo_squatting?("rubygems.org")
+      question = <<-QUESTION.chomp
+#{source.uri.to_s} is too similar to https://rubygems.org
+
+Do you want to add this source?
+      QUESTION
+
+      terminate_interaction 1 unless ask_yes_no question
     end
   end
 
