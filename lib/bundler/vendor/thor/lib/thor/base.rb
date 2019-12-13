@@ -2,6 +2,7 @@ require_relative "command"
 require_relative "core_ext/hash_with_indifferent_access"
 require_relative "error"
 require_relative "invocation"
+require_relative "nested_context"
 require_relative "parser"
 require_relative "shell"
 require_relative "line_editor"
@@ -418,13 +419,19 @@ class Bundler::Thor
       #     remove_command :this_is_not_a_command
       #   end
       #
-      def no_commands
-        @no_commands = true
-        yield
-      ensure
-        @no_commands = false
+      def no_commands(&block)
+        no_commands_context.enter(&block)
       end
+
       alias_method :no_tasks, :no_commands
+
+      def no_commands_context
+        @no_commands_context ||= NestedContext.new
+      end
+
+      def no_commands?
+        no_commands_context.entered?
+      end
 
       # Sets the namespace for the Bundler::Thor or Bundler::Thor::Group class. By default the
       # namespace is retrieved from the class name. If your Bundler::Thor class is named
@@ -607,7 +614,7 @@ class Bundler::Thor
       def inherited(klass)
         super(klass)
         Bundler::Thor::Base.register_klass_file(klass)
-        klass.instance_variable_set(:@no_commands, false)
+        klass.instance_variable_set(:@no_commands, 0)
       end
 
       # Fire this callback whenever a method is added. Added methods are
@@ -624,8 +631,7 @@ class Bundler::Thor
         # Return if it's not a public instance method
         return unless public_method_defined?(meth.to_sym)
 
-        @no_commands ||= false
-        return if @no_commands || !create_command(meth)
+        return if no_commands? || !create_command(meth)
 
         is_thor_reserved_word?(meth, :command)
         Bundler::Thor::Base.register_klass_file(self)
