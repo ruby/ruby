@@ -2706,6 +2706,53 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
     return Qtrue;
 }
 
+/*
+ *  call-seq:
+ *     mod.const_source_location(sym, inherit=true)   -> [String, Integer]
+ *     mod.const_source_location(str, inherit=true)   -> [String, Integer]
+ *
+ *  Returns the Ruby source filename and line number containing first definition
+ *  of constant specified. If the named constant is not found, +nil+ is returned.
+ *  If the constant is found, but its source location can not be extracted
+ *  (constant is defined in C code), empty array is returned.
+ *
+ *  _inherit_ specifies whether to lookup in <code>mod.ancestors</code> (+true+
+ *  by default).
+ *
+ *      # test.rb:
+ *      class A
+ *        C1 = 1
+ *      end
+ *
+ *      module M
+ *        C2 = 2
+ *      end
+ *
+ *      class B < A
+ *        include M
+ *        C3 = 3
+ *      end
+ *
+ *      class A # continuation of A definition
+ *      end
+ *
+ *      p B.const_source_location('C3')           # => ["test.rb", 11]
+ *      p B.const_source_location('C2')           # => ["test.rb", 6]
+ *      p B.const_source_location('C1')           # => ["test.rb", 2]
+ *
+ *      p B.const_source_location('C2', false)    # => nil  -- don't lookup in ancestors
+ *
+ *      p Object.const_source_location('B')       # => ["test.rb", 9]
+ *      p Object.const_source_location('A')       # => ["test.rb", 1]  -- note it is first entry, not "continuation"
+ *
+ *      p B.const_source_location('A')            # => ["test.rb", 1]  -- because Object is in ancestors
+ *      p M.const_source_location('A')            # => ["test.rb", 1]  -- Object is not ancestor, but additionally checked for modules
+ *
+ *      p Object.const_source_location('A::C1')   # => ["test.rb", 2]  -- nesting is supported
+ *      p Object.const_source_location('String')  # => []  -- constant is defined in C code
+ *
+ *
+ */
 static VALUE
 rb_mod_const_source_location(int argc, VALUE *argv, VALUE mod)
 {
