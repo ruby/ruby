@@ -50,7 +50,7 @@ jobs:
       - name: Install libraries
         run: |
           set -x
-          sudo apt-get update -q
+          sudo apt-get update -q || :
           sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev bison autoconf ruby
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
       - name: Checkout ruby/ruby
