@@ -1435,6 +1435,15 @@ frozen_err_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *   frozen_error.receiver  -> object
+ *
+ * Return the receiver associated with this FrozenError exception.
+ */
+
+#define frozen_err_receiver name_err_receiver
+
 void
 rb_name_error(ID id, const char *fmt, ...)
 {
@@ -2529,7 +2538,7 @@ Init_Exception(void)
     rb_eRuntimeError = rb_define_class("RuntimeError", rb_eStandardError);
     rb_eFrozenError = rb_define_class("FrozenError", rb_eRuntimeError);
     rb_define_method(rb_eFrozenError, "initialize", frozen_err_initialize, -1);
-    rb_define_method(rb_eFrozenError, "receiver", name_err_receiver, 0);
+    rb_define_method(rb_eFrozenError, "receiver", frozen_err_receiver, 0);
     rb_eSecurityError = rb_define_class("SecurityError", rb_eException);
     rb_eNoMemError = rb_define_class("NoMemoryError", rb_eException);
     rb_eEncodingError = rb_define_class("EncodingError", rb_eStandardError);
