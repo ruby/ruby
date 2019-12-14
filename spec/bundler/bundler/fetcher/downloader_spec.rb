@@ -3,7 +3,7 @@
 RSpec.describe Bundler::Fetcher::Downloader do
   let(:connection)     { double(:connection) }
   let(:redirect_limit) { 5 }
-  let(:uri)            { URI("http://www.uri-to-fetch.com/api/v2/endpoint") }
+  let(:uri)            { Bundler::URI("http://www.uri-to-fetch.com/api/v2/endpoint") }
   let(:options)        { double(:options) }
 
   subject { described_class.new(connection, redirect_limit) }
@@ -41,19 +41,19 @@ RSpec.describe Bundler::Fetcher::Downloader do
       before { http_response["location"] = "http://www.redirect-uri.com/api/v2/endpoint" }
 
       it "should try to fetch the redirect uri and iterate the # requests counter" do
-        expect(subject).to receive(:fetch).with(URI("http://www.uri-to-fetch.com/api/v2/endpoint"), options, 0).and_call_original
-        expect(subject).to receive(:fetch).with(URI("http://www.redirect-uri.com/api/v2/endpoint"), options, 1)
+        expect(subject).to receive(:fetch).with(Bundler::URI("http://www.uri-to-fetch.com/api/v2/endpoint"), options, 0).and_call_original
+        expect(subject).to receive(:fetch).with(Bundler::URI("http://www.redirect-uri.com/api/v2/endpoint"), options, 1)
         subject.fetch(uri, options, counter)
       end
 
       context "when the redirect uri and original uri are the same" do
-        let(:uri) { URI("ssh://username:password@www.uri-to-fetch.com/api/v2/endpoint") }
+        let(:uri) { Bundler::URI("ssh://username:password@www.uri-to-fetch.com/api/v2/endpoint") }
 
         before { http_response["location"] = "ssh://www.uri-to-fetch.com/api/v1/endpoint" }
 
         it "should set the same user and password for the redirect uri" do
-          expect(subject).to receive(:fetch).with(URI("ssh://username:password@www.uri-to-fetch.com/api/v2/endpoint"), options, 0).and_call_original
-          expect(subject).to receive(:fetch).with(URI("ssh://username:password@www.uri-to-fetch.com/api/v1/endpoint"), options, 1)
+          expect(subject).to receive(:fetch).with(Bundler::URI("ssh://username:password@www.uri-to-fetch.com/api/v2/endpoint"), options, 0).and_call_original
+          expect(subject).to receive(:fetch).with(Bundler::URI("ssh://username:password@www.uri-to-fetch.com/api/v1/endpoint"), options, 1)
           subject.fetch(uri, options, counter)
         end
       end
@@ -84,7 +84,7 @@ RSpec.describe Bundler::Fetcher::Downloader do
       end
 
       context "when the there are credentials provided in the request" do
-        let(:uri) { URI("http://user:password@www.uri-to-fetch.com") }
+        let(:uri) { Bundler::URI("http://user:password@www.uri-to-fetch.com") }
 
         it "should raise a Bundler::Fetcher::BadAuthenticationError that doesn't contain the password" do
           expect { subject.fetch(uri, options, counter) }.
@@ -102,7 +102,7 @@ RSpec.describe Bundler::Fetcher::Downloader do
       end
 
       context "when the there are credentials provided in the request" do
-        let(:uri) { URI("http://username:password@www.uri-to-fetch.com/api/v2/endpoint") }
+        let(:uri) { Bundler::URI("http://username:password@www.uri-to-fetch.com/api/v2/endpoint") }
 
         it "should raise a Bundler::Fetcher::FallbackError that doesn't contain the password" do
           expect { subject.fetch(uri, options, counter) }.
@@ -137,7 +137,7 @@ RSpec.describe Bundler::Fetcher::Downloader do
     context "when there is a user provided in the request" do
       context "and there is also a password provided" do
         context "that contains cgi escaped characters" do
-          let(:uri) { URI("http://username:password%24@www.uri-to-fetch.com/api/v2/endpoint") }
+          let(:uri) { Bundler::URI("http://username:password%24@www.uri-to-fetch.com/api/v2/endpoint") }
 
           it "should request basic authentication with the username and password" do
             expect(net_http_get).to receive(:basic_auth).with("username", "password$")
@@ -146,7 +146,7 @@ RSpec.describe Bundler::Fetcher::Downloader do
         end
 
         context "that is all unescaped characters" do
-          let(:uri) { URI("http://username:password@www.uri-to-fetch.com/api/v2/endpoint") }
+          let(:uri) { Bundler::URI("http://username:password@www.uri-to-fetch.com/api/v2/endpoint") }
           it "should request basic authentication with the username and proper cgi compliant password" do
             expect(net_http_get).to receive(:basic_auth).with("username", "password")
             subject.request(uri, options)
@@ -155,7 +155,7 @@ RSpec.describe Bundler::Fetcher::Downloader do
       end
 
       context "and there is no password provided" do
-        let(:uri) { URI("http://username@www.uri-to-fetch.com/api/v2/endpoint") }
+        let(:uri) { Bundler::URI("http://username@www.uri-to-fetch.com/api/v2/endpoint") }
 
         it "should request basic authentication with just the user" do
           expect(net_http_get).to receive(:basic_auth).with("username", nil)
@@ -164,7 +164,7 @@ RSpec.describe Bundler::Fetcher::Downloader do
       end
 
       context "that contains cgi escaped characters" do
-        let(:uri) { URI("http://username%24@www.uri-to-fetch.com/api/v2/endpoint") }
+        let(:uri) { Bundler::URI("http://username%24@www.uri-to-fetch.com/api/v2/endpoint") }
 
         it "should request basic authentication with the proper cgi compliant password user" do
           expect(net_http_get).to receive(:basic_auth).with("username$", nil)
@@ -244,7 +244,7 @@ RSpec.describe Bundler::Fetcher::Downloader do
         end
 
         context "when the there are credentials provided in the request" do
-          let(:uri) { URI("http://username:password@www.uri-to-fetch.com/api/v2/endpoint") }
+          let(:uri) { Bundler::URI("http://username:password@www.uri-to-fetch.com/api/v2/endpoint") }
           before do
             allow(net_http_get).to receive(:basic_auth).with("username", "password")
           end

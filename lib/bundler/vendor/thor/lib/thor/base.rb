@@ -153,17 +153,20 @@ class Bundler::Thor
 
       # If you want to raise an error when the default value of an option does not match
       # the type call check_default_type!
-      # This is disabled by default for compatibility.
+      # This will be the default; for compatibility a deprecation warning is issued if necessary.
       def check_default_type!
         @check_default_type = true
       end
 
-      def check_default_type #:nodoc:
-        @check_default_type ||= from_superclass(:check_default_type, false)
+      # If you want to use defaults that don't match the type of an option,
+      # either specify `check_default_type: false` or call `allow_incompatible_default_type!`
+      def allow_incompatible_default_type!
+        @check_default_type = false
       end
 
-      def check_default_type? #:nodoc:
-        !!check_default_type
+      def check_default_type #:nodoc:
+        @check_default_type = from_superclass(:check_default_type, nil) unless defined?(@check_default_type)
+        @check_default_type
       end
 
       # If true, option parsing is suspended as soon as an unknown option or a
@@ -506,6 +509,12 @@ class Bundler::Thor
         raise InvocationError, msg
       end
 
+      # A flag that makes the process exit with status 1 if any error happens.
+      def exit_on_failure?
+        Bundler::Thor.deprecation_warning "Bundler::Thor exit with status 0 on errors. To keep this behavior, you must define `exit_on_failure?` in `#{self.name}`"
+        false
+      end
+
     protected
 
       # Prints the class options per group. If an option does not belong to
@@ -563,7 +572,7 @@ class Bundler::Thor
       # options<Hash>:: Described in both class_option and method_option.
       # scope<Hash>:: Options hash that is being built up
       def build_option(name, options, scope) #:nodoc:
-        scope[name] = Bundler::Thor::Option.new(name, options.merge(:check_default_type => check_default_type?))
+        scope[name] = Bundler::Thor::Option.new(name, {:check_default_type => check_default_type}.merge!(options))
       end
 
       # Receives a hash of options, parse them and add to the scope. This is a
@@ -641,11 +650,6 @@ class Bundler::Thor
           end
 
         end
-      end
-
-      # A flag that makes the process exit with status 1 if any error happens.
-      def exit_on_failure?
-        false
       end
 
       #

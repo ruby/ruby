@@ -46,7 +46,7 @@ module Bundler
     settings_flag(:specific_platform) { bundler_3_mode? }
     settings_flag(:suppress_install_using_messages) { bundler_3_mode? }
     settings_flag(:unlock_source_unlocks_spec) { !bundler_3_mode? }
-    settings_flag(:update_requires_all_flag) { bundler_3_mode? }
+    settings_flag(:update_requires_all_flag) { bundler_4_mode? }
     settings_flag(:use_gem_version_promoter_for_major_updates) { bundler_3_mode? }
 
     settings_option(:default_cli_command) { bundler_3_mode? ? :cli_help : :install }

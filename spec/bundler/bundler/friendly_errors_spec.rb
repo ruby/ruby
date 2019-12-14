@@ -22,7 +22,7 @@ RSpec.describe Bundler, "friendly errors" do
         gem "rack"
       G
 
-      bundle :install, :env => { "DEBUG" => true }
+      bundle :install, :env => { "DEBUG" => "true" }
 
       expect(err).to include("Failed to load #{home(".gemrc")}")
       expect(exitstatus).to eq(0) if exitstatus

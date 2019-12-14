@@ -1,14 +1,13 @@
 # frozen_string_literal: true
 
 require_relative "../vendored_fileutils"
-require "uri"
 
 module Bundler
   class Source
     class Git < Path
       autoload :GitProxy, File.expand_path("git/git_proxy", __dir__)
 
-      attr_reader :uri, :ref, :branch, :options, :submodules
+      attr_reader :uri, :ref, :branch, :options, :glob, :submodules
 
       def initialize(options)
         @options = options
@@ -48,13 +47,14 @@ module Bundler
       end
 
       def hash
-        [self.class, uri, ref, branch, name, version, submodules].hash
+        [self.class, uri, ref, branch, name, version, glob, submodules].hash
       end
 
       def eql?(other)
         other.is_a?(Git) && uri == other.uri && ref == other.ref &&
           branch == other.branch && name == other.name &&
-          version == other.version && submodules == other.submodules
+          version == other.version && glob == other.glob &&
+          submodules == other.submodules
       end
 
       alias_method :==, :eql?
@@ -284,7 +284,7 @@ module Bundler
         if uri =~ %r{^\w+://(\w+@)?}
           # Downcase the domain component of the URI
           # and strip off a trailing slash, if one is present
-          input = URI.parse(uri).normalize.to_s.sub(%r{/$}, "")
+          input = Bundler::URI.parse(uri).normalize.to_s.sub(%r{/$}, "")
         else
           # If there is no URI scheme, assume it is an ssh/git URI
           input = uri

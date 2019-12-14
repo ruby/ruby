@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "cgi"
 require_relative "vendored_thor"
 
 module Bundler
@@ -114,6 +113,7 @@ module Bundler
     def issues_url(exception)
       message = exception.message.lines.first.tr(":", " ").chomp
       message = message.split("-").first if exception.is_a?(Errno)
+      require "cgi"
       "https://github.com/bundler/bundler/search?q=" \
         "#{CGI.escape(message)}&type=Issues"
     end

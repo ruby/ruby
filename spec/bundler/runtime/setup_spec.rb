@@ -130,7 +130,7 @@ RSpec.describe "Bundler.setup" do
       load_path = out.split("\n")
       rack_load_order = load_path.index {|path| path.include?("rack") }
 
-      expect(err).to eq("")
+      expect(err).to be_empty
       expect(load_path).to include(a_string_ending_with("dash_i_dir"), "rubylib_dir")
       expect(rack_load_order).to be > 0
     end
@@ -845,6 +845,12 @@ end
   end
 
   describe "when a vendored gem specification uses the :path option" do
+    let(:filesystem_root) do
+      current = Pathname.new(Dir.pwd)
+      current = current.parent until current == current.parent
+      current
+    end
+
     it "should resolve paths relative to the Gemfile" do
       path = bundled_app(File.join("vendor", "foo"))
       build_lib "foo", :path => path
@@ -858,7 +864,7 @@ end
       G
 
       Dir.chdir(bundled_app.parent) do
-        run <<-R, :env => { "BUNDLE_GEMFILE" => bundled_app("Gemfile") }
+        run <<-R, :env => { "BUNDLE_GEMFILE" => bundled_app("Gemfile").to_s }
           require 'foo'
         R
       end
@@ -866,7 +872,7 @@ end
     end
 
     it "should make sure the Bundler.root is really included in the path relative to the Gemfile" do
-      relative_path = File.join("vendor", Dir.pwd[1..-1], "foo")
+      relative_path = File.join("vendor", Dir.pwd.gsub(/^#{filesystem_root}/, ""))
       absolute_path = bundled_app(relative_path)
       FileUtils.mkdir_p(absolute_path)
       build_lib "foo", :path => absolute_path
@@ -882,7 +888,7 @@ end
       bundle :install
 
       Dir.chdir(bundled_app.parent) do
-        run <<-R, :env => { "BUNDLE_GEMFILE" => bundled_app("Gemfile") }
+        run <<-R, :env => { "BUNDLE_GEMFILE" => bundled_app("Gemfile").to_s }
           require 'foo'
         R
       end
@@ -1027,6 +1033,8 @@ end
 
       ruby <<-RUBY
         require '#{lib_dir}/bundler'
+        bundler_module = class << Bundler; self; end
+        bundler_module.send(:remove_method, :require)
         def Bundler.require(path)
           raise "LOSE"
         end
@@ -1034,7 +1042,7 @@ end
       RUBY
 
       expect(err).to be_empty
-      expect(out).to eq("")
+      expect(out).to be_empty
     end
   end
 
@@ -1090,8 +1098,8 @@ end
       it "does not change the lock or warn" do
         lockfile lock_with(Bundler::VERSION.succ)
         ruby "require '#{lib_dir}/bundler/setup'"
-        expect(out).to eq("")
-        expect(err).to eq("")
+        expect(out).to be_empty
+        expect(err).to be_empty
         lockfile_should_be lock_with(Bundler::VERSION.succ)
       end
     end
@@ -1154,8 +1162,8 @@ end
       let(:ruby_version) { "5.5.5" }
       it "does not change the lock or warn" do
         expect { ruby! "require '#{lib_dir}/bundler/setup'" }.not_to change { lockfile }
-        expect(out).to eq("")
-        expect(err).to eq("")
+        expect(out).to be_empty
+        expect(err).to be_empty
       end
     end
 
@@ -1195,7 +1203,7 @@ end
     describe "default gem activation" do
       let(:exemptions) do
         if Gem::Version.new(Gem::VERSION) >= Gem::Version.new("2.7")
-          []
+          %w[delegate did_you_mean]
         else
           %w[io-console openssl]
         end << "bundler"
@@ -1204,17 +1212,15 @@ end
       let(:activation_warning_hack) { strip_whitespace(<<-RUBY) }
         require #{spec_dir.join("support/hax").to_s.dump}
 
-        if Gem::Specification.instance_methods.map(&:to_sym).include?(:activate)
-          Gem::Specification.send(:alias_method, :bundler_spec_activate, :activate)
-          Gem::Specification.send(:define_method, :activate) do
-            unless #{exemptions.inspect}.include?(name)
-              warn '-' * 80
-              warn "activating \#{full_name}"
-              warn *caller
-              warn '*' * 80
-            end
-            bundler_spec_activate
+        Gem::Specification.send(:alias_method, :bundler_spec_activate, :activate)
+        Gem::Specification.send(:define_method, :activate) do
+          unless #{exemptions.inspect}.include?(name)
+            warn '-' * 80
+            warn "activating \#{full_name}"
+            warn(*caller)
+            warn '*' * 80
           end
+          bundler_spec_activate
         end
       RUBY
 
@@ -1238,14 +1244,14 @@ end
 
       it "activates no gems with -rbundler/setup" do
         install_gemfile! ""
-        ruby! code, :env => { :RUBYOPT => activation_warning_hack_rubyopt + " -r#{lib_dir}/bundler/setup" }
+        ruby! code, :env => { "RUBYOPT" => activation_warning_hack_rubyopt + " -r#{lib_dir}/bundler/setup" }
         expect(out).to eq("{}")
       end
 
       it "activates no gems with bundle exec" do
         install_gemfile! ""
         create_file("script.rb", code)
-        bundle! "exec ruby ./script.rb", :env => { :RUBYOPT => activation_warning_hack_rubyopt }
+        bundle! "exec ruby ./script.rb", :env => { "RUBYOPT" => activation_warning_hack_rubyopt }
         expect(out).to eq("{}")
       end
 
@@ -1253,54 +1259,40 @@ end
         install_gemfile! ""
         create_file("script.rb", "#!/usr/bin/env ruby\n\n#{code}")
         FileUtils.chmod(0o777, bundled_app("script.rb"))
-        bundle! "exec ./script.rb", :artifice => nil, :env => { :RUBYOPT => activation_warning_hack_rubyopt }
+        bundle! "exec ./script.rb", :artifice => nil, :env => { "RUBYOPT" => activation_warning_hack_rubyopt }
         expect(out).to eq("{}")
       end
 
-      let(:default_gems) do
-        ruby!(<<-RUBY).split("\n")
-          if Gem::Specification.is_a?(Enumerable)
-            puts Gem::Specification.select(&:default_gem?).map(&:name)
-          end
-        RUBY
-      end
+      Gem::Specification.select(&:default_gem?).map(&:name).each do |g|
+        it "activates newer versions of #{g}" do
+          skip if exemptions.include?(g)
 
-      it "activates newer versions of default gems" do
-        build_repo4 do
-          default_gems.each do |g|
+          build_repo4 do
             build_gem g, "999999"
           end
+
+          install_gemfile! <<-G
+            source "#{file_uri_for(gem_repo4)}"
+            gem "#{g}", "999999"
+          G
+
+          expect(the_bundle).to include_gem("#{g} 999999", :env => { "RUBYOPT" => activation_warning_hack_rubyopt })
         end
 
-        default_gems.reject! {|g| exemptions.include?(g) }
+        it "activates older versions of #{g}" do
+          skip if exemptions.include?(g)
 
-        install_gemfile! <<-G
-          source "#{file_uri_for(gem_repo4)}"
-          #{default_gems}.each do |g|
-            gem g, "999999"
-          end
-        G
-
-        expect(the_bundle).to include_gems(*default_gems.map {|g| "#{g} 999999" })
-      end
-
-      it "activates older versions of default gems" do
-        build_repo4 do
-          default_gems.each do |g|
+          build_repo4 do
             build_gem g, "0.0.0.a"
           end
+
+          install_gemfile! <<-G
+            source "#{file_uri_for(gem_repo4)}"
+            gem "#{g}", "0.0.0.a"
+          G
+
+          expect(the_bundle).to include_gem("#{g} 0.0.0.a", :env => { "RUBYOPT" => activation_warning_hack_rubyopt })
         end
-
-        default_gems.reject! {|g| exemptions.include?(g) }
-
-        install_gemfile! <<-G
-          source "#{file_uri_for(gem_repo4)}"
-          #{default_gems}.each do |g|
-            gem g, "0.0.0.a"
-          end
-        G
-
-        expect(the_bundle).to include_gems(*default_gems.map {|g| "#{g} 0.0.0.a" })
       end
     end
   end

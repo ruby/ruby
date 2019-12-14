@@ -27,9 +27,9 @@ RSpec.describe Bundler::Env do
       end
 
       it "prints gem path" do
-        with_clear_paths("GEM_PATH", "/a/b/c:/d/e/f") do
+        with_clear_paths("GEM_PATH", "/a/b/c#{File::PATH_SEPARATOR}d/e/f") do
           out = described_class.report
-          expect(out).to include("Gem Path    /a/b/c:/d/e/f")
+          expect(out).to include("Gem Path    /a/b/c#{File::PATH_SEPARATOR}d/e/f")
         end
       end
 

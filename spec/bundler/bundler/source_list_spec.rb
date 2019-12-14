@@ -125,8 +125,8 @@ RSpec.describe Bundler::SourceList do
       it "adds the provided remote to the beginning of the aggregate source" do
         source_list.add_rubygems_remote("https://othersource.org")
         expect(returned_source.remotes).to eq [
-          URI("https://othersource.org/"),
-          URI("https://rubygems.org/"),
+          Bundler::URI("https://othersource.org/"),
+          Bundler::URI("https://rubygems.org/"),
         ]
       end
     end

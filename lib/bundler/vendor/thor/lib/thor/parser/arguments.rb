@@ -82,7 +82,7 @@ class Bundler::Thor
     end
 
     def current_is_value?
-      peek && peek.to_s !~ /^-/
+      peek && peek.to_s !~ /^-{1,2}\S+/
     end
 
     # Runs through the argument array getting strings that contains ":" and

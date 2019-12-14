@@ -458,7 +458,7 @@ RSpec.describe "bundle binstubs <gem>" do
       G
 
       bundle "config set auto_install 1"
-      bundle "binstubs rack", :env => { "BUNDLE_INSTALL" => 1 }
+      bundle "binstubs rack", :env => { "BUNDLE_INSTALL" => "1" }
       expect(out).not_to include("Installing rack 1.0.0")
     end
   end

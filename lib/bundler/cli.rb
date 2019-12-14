@@ -783,7 +783,7 @@ module Bundler
       return unless SharedHelpers.md5_available?
 
       latest = Fetcher::CompactIndex.
-               new(nil, Source::Rubygems::Remote.new(URI("https://rubygems.org")), nil).
+               new(nil, Source::Rubygems::Remote.new(Bundler::URI("https://rubygems.org")), nil).
                send(:compact_index_client).
                instance_variable_get(:@cache).
                dependencies("bundler").

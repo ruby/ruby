@@ -18,7 +18,7 @@ RSpec.describe Bundler::Fetcher::Index do
 
   context "error handling" do
     shared_examples_for "the error is properly handled" do
-      let(:remote_uri) { URI("http://remote-uri.org") }
+      let(:remote_uri) { Bundler::URI("http://remote-uri.org") }
       before do
         allow(subject).to receive(:remote_uri).and_return(remote_uri)
       end
