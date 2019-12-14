@@ -21,8 +21,12 @@ module Spec
       @bindir ||= root.join(ruby_core? ? "libexec" : "exe")
     end
 
+    def gem_cmd
+      @gem_cmd ||= ruby_core? ? root.join("bin/gem") : "gem"
+    end
+
     def gem_bin
-      @gem_bin ||= ruby_core? ? ENV["GEM_COMMAND"] : "#{Gem.ruby} -S gem --backtrace"
+      @gem_bin ||= ruby_core? ? ENV["GEM_COMMAND"] : "gem"
     end
 
     def spec_dir

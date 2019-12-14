@@ -99,7 +99,7 @@ module Spec
       no_reqs.map!(&:first)
       reqs.map! {|name, req| "'#{name}:#{req}'" }
       deps = reqs.concat(no_reqs).join(" ")
-      gem = Path.gem_bin
+      gem = ENV["GEM_COMMAND"] || "#{Gem.ruby} -S gem --backtrace"
       cmd = "#{gem} install #{deps} --no-document --conservative"
       system(cmd) || raise("Installing gems #{deps} for the tests to use failed!")
     end
