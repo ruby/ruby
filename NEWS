@@ -365,7 +365,6 @@ Module::
       always the same for a given Module. This change is
       experimental. [Feature #16150]
 
-
 NilClass / TrueClass / FalseClass::
 
   Modified methods::
@@ -380,13 +379,6 @@ ObjectSpace::WeakMap::
 
     * ObjectSpace::WeakMap#[]= now accepts special objects as either key or
       values.  [Feature #16035]
-
-Regexp::
-
-  Modified method::
-
-    * Regexp#match and Regexp#match? with a +nil+ argument are deprecated
-      and will raise a TypeError in the next release.  [Feature #13083]
 
 RubyVM::
 
