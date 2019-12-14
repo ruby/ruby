@@ -57,7 +57,7 @@ RSpec.describe "bundle exec" do
 
   it "works when exec'ing to rubygems" do
     install_gemfile 'gem "rack"'
-    bundle "exec gem --version"
+    bundle "exec #{gem_cmd} --version"
     expect(out).to eq(Gem::VERSION)
   end
 
