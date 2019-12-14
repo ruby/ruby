@@ -1203,7 +1203,7 @@ end
     describe "default gem activation" do
       let(:exemptions) do
         if Gem::Version.new(Gem::VERSION) >= Gem::Version.new("2.7")
-          %w[delegate did_you_mean]
+          %w[did_you_mean]
         else
           %w[io-console openssl]
         end << "bundler"
