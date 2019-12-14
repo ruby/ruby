@@ -27,7 +27,7 @@ class Windows < Sinatra::Base
 
   files.each do |file|
     get "/#{file}" do
-      File.read gem_repo.join(file)
+      File.binread gem_repo.join(file)
     end
   end
 

@@ -439,7 +439,7 @@ RSpec.describe "bundle install with explicit source paths" do
         gem 'net-ssh', '1.0'
       G
 
-      bundle :check, :env => { "DEBUG" => 1 }
+      bundle :check, :env => { "DEBUG" => "1" }
       expect(out).to match(/using resolution from the lockfile/)
       expect(the_bundle).to include_gems "rack-obama 1.0", "net-ssh 1.0"
     end
@@ -459,7 +459,7 @@ RSpec.describe "bundle install with explicit source paths" do
         gem 'net-ssh', :path => "#{lib_path("omg")}"
       G
 
-      bundle :check, :env => { "DEBUG" => 1 }
+      bundle :check, :env => { "DEBUG" => "1" }
       expect(out).to match(/using resolution from the lockfile/)
       expect(the_bundle).to include_gems "rack-obama 1.0", "net-ssh 1.0"
     end
@@ -654,7 +654,7 @@ RSpec.describe "bundle install with explicit source paths" do
       File.open(lib_path("private_lib/Gemfile"), "w") {|f| f.puts gemfile }
 
       Dir.chdir(lib_path("private_lib")) do
-        bundle :install, :env => { "DEBUG" => 1 }, :artifice => "endpoint"
+        bundle :install, :env => { "DEBUG" => "1" }, :artifice => "endpoint"
         expect(out).to match(%r{^HTTP GET http://localgemserver\.test/api/v1/dependencies\?gems=rack$})
         expect(out).not_to match(/^HTTP GET.*private_lib/)
         expect(the_bundle).to include_gems "private_lib 2.2"

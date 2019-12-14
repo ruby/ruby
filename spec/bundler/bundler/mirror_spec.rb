@@ -36,12 +36,12 @@ RSpec.describe Bundler::Settings::Mirror do
 
   it "takes a string for the uri but returns an uri object" do
     mirror.uri = "http://localhost:9292"
-    expect(mirror.uri).to eq(URI("http://localhost:9292"))
+    expect(mirror.uri).to eq(Bundler::URI("http://localhost:9292"))
   end
 
   it "takes an uri object for the uri" do
-    mirror.uri = URI("http://localhost:9293")
-    expect(mirror.uri).to eq(URI("http://localhost:9293"))
+    mirror.uri = Bundler::URI("http://localhost:9293")
+    expect(mirror.uri).to eq(Bundler::URI("http://localhost:9293"))
   end
 
   context "without a uri" do
@@ -145,7 +145,7 @@ RSpec.describe Bundler::Settings::Mirror do
 end
 
 RSpec.describe Bundler::Settings::Mirrors do
-  let(:localhost_uri) { URI("http://localhost:9292") }
+  let(:localhost_uri) { Bundler::URI("http://localhost:9292") }
 
   context "with a just created mirror" do
     let(:mirrors) do
@@ -260,7 +260,7 @@ RSpec.describe Bundler::Settings::Mirrors do
         before { mirrors.parse("mirror.all.fallback_timeout", "true") }
 
         it "returns the source uri, not localhost" do
-          expect(mirrors.for("http://whatever.com").uri).to eq(URI("http://whatever.com/"))
+          expect(mirrors.for("http://whatever.com").uri).to eq(Bundler::URI("http://whatever.com/"))
         end
       end
     end
@@ -270,7 +270,7 @@ RSpec.describe Bundler::Settings::Mirrors do
 
       context "without a fallback timeout" do
         it "returns the uri that is not mirrored" do
-          expect(mirrors.for("http://whatever.com").uri).to eq(URI("http://whatever.com/"))
+          expect(mirrors.for("http://whatever.com").uri).to eq(Bundler::URI("http://whatever.com/"))
         end
 
         it "returns localhost for rubygems.org" do
@@ -282,11 +282,11 @@ RSpec.describe Bundler::Settings::Mirrors do
         before { mirrors.parse("mirror.http://rubygems.org/.fallback_timeout", "true") }
 
         it "returns the uri that is not mirrored" do
-          expect(mirrors.for("http://whatever.com").uri).to eq(URI("http://whatever.com/"))
+          expect(mirrors.for("http://whatever.com").uri).to eq(Bundler::URI("http://whatever.com/"))
         end
 
         it "returns rubygems.org for rubygems.org" do
-          expect(mirrors.for("http://rubygems.org/").uri).to eq(URI("http://rubygems.org/"))
+          expect(mirrors.for("http://rubygems.org/").uri).to eq(Bundler::URI("http://rubygems.org/"))
         end
       end
     end

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "uri"
 require_relative "match_platform"
 
 module Bundler

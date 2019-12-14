@@ -55,6 +55,12 @@ RSpec.describe "bundle exec" do
     expect(out).to eq("hi")
   end
 
+  it "works when exec'ing to rubygems" do
+    install_gemfile 'gem "rack"'
+    bundle "exec gem --version"
+    expect(out).to eq(Gem::VERSION)
+  end
+
   it "respects custom process title when loading through ruby" do
     script_that_changes_its_own_title_and_checks_if_picked_up_by_ps_unix_utility = <<~'RUBY'
       Process.setproctitle("1-2-3-4-5-6-7-8-9-10-11-12-13-14-15")
@@ -98,7 +104,7 @@ RSpec.describe "bundle exec" do
     install_gemfile ""
     sys_exec "#{Gem.ruby} #{command.path}"
 
-    expect(out).to eq("")
+    expect(out).to be_empty
     expect(err).to be_empty
   end
 

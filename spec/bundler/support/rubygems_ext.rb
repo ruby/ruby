@@ -5,13 +5,13 @@ require_relative "path"
 module Spec
   module Rubygems
     DEV_DEPS = {
-      "automatiek" => "~> 0.2.0",
+      "automatiek" => "~> 0.3.0",
       "parallel_tests" => "~> 2.29",
       "rake" => "~> 12.0",
       "ronn" => "~> 0.7.3",
       "rspec" => "~> 3.8",
-      "rubocop" => "= 0.74.0",
-      "rubocop-performance" => "= 1.4.0",
+      "rubocop" => "= 0.77.0",
+      "rubocop-performance" => "= 1.5.1",
     }.freeze
 
     DEPS = {
@@ -39,7 +39,9 @@ module Spec
     end
 
     def gem_load(gem_name, bin_container)
-      require_relative "../rubygems/rubygems"
+      require_relative "rubygems_version_manager"
+      RubygemsVersionManager.new(ENV["RGV"]).switch
+
       gem_load_and_activate(gem_name, bin_container)
     end
 
@@ -65,7 +67,7 @@ module Spec
         FileUtils.mkdir_p(Path.base_system_gems)
         puts "installing gems for the tests to use..."
         install_gems(DEPS)
-        manifest_path.open("w") {|f| f << manifest.join }
+        manifest_path.open("wb") {|f| f << manifest.join }
       end
 
       FileUtils.mkdir_p(Path.home)
