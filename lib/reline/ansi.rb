@@ -60,14 +60,18 @@ class Reline::ANSI
   def self.cursor_pos
     begin
       res = ''
+      m = nil
       @@input.raw do |stdin|
         @@output << "\e[6n"
         @@output.flush
         while (c = stdin.getc) != 'R'
           res << c if c
         end
+        m = res.match(/\e\[(?<row>\d+);(?<column>\d+)/)
+        (m.pre_match + m.post_match).chars.reverse_each do |ch|
+          stdin.ungetc ch
+        end
       end
-      m = res.match(/(?<row>\d+);(?<column>\d+)/)
       column = m[:column].to_i - 1
       row = m[:row].to_i - 1
     rescue Errno::ENOTTY
