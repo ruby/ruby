@@ -23,7 +23,7 @@ typedef struct termios conmode;
 static int
 setattr(int fd, conmode *t)
 {
-    while (tcsetattr(fd, TCSAFLUSH, t)) {
+    while (tcsetattr(fd, TCSANOW, t)) {
 	if (errno != EINTR) return 0;
     }
     return 1;
