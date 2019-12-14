@@ -127,8 +127,8 @@ sufficient information, see the ChangeLog file or Redmine
 
   You can still define a local variable named _1 and so on, and that is honored when present, but renders warning.
 
-    _1 = 0
-    [1].each { p _1 } # prints 0 instead of 1, but also warns.
+    _1 = 0            #=> warning: `_1' is used as numbered parameter
+    [1].each { p _1 } # prints 0 instead of 1
 
 ==== proc/lambda without block is deprecated
 
@@ -138,7 +138,7 @@ sufficient information, see the ChangeLog file or Redmine
     def foo
       proc
     end
-    foo { puts "Hello" } #=> warning: Capturing the given block using Proc.new is deprecated; use `&block` instead
+    foo { puts "Hello" } #=> warning: Capturing the given block using Kernel#proc is deprecated; use `&block` instead
 
 * Kernel#lambda with no block in a method called with a block raises an exception.
 
@@ -189,10 +189,10 @@ sufficient information, see the ChangeLog file or Redmine
 
    def foo
      class << Object.new
-       yield
+       yield #=> warning: `yield' in class syntax will not be supported from Ruby 3.0. [Feature #15575]
      end
    end
-   foo { p :ok } #=> warning: `yield' in class syntax will not be supported from Ruby 3.0.
+   foo { p :ok }
 
 * Argument forwarding by <code>(...)</code> is introduced. [Feature #16253]
 
