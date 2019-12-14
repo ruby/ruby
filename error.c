@@ -1409,6 +1409,17 @@ exit_success_p(VALUE exc)
     return Qfalse;
 }
 
+static VALUE
+err_attr_receiver(VALUE self)
+{
+    VALUE recv;
+
+    recv = rb_ivar_lookup(self, id_receiver, Qundef);
+    if (recv == Qundef)
+        rb_raise(rb_eArgError, "no receiver is available");
+    return recv;
+}
+
 /*
  * call-seq:
  *   FrozenError.new(msg=nil, receiver=nil)  -> frozen_error
@@ -1434,6 +1445,15 @@ frozen_err_initialize(int argc, VALUE *argv, VALUE self)
     rb_call_super(argc, argv);
     return self;
 }
+
+/*
+ * call-seq:
+ *   frozen_error.receiver  -> object
+ *
+ * Return the receiver associated with this FrozenError exception.
+ */
+
+#define frozen_err_receiver err_attr_receiver
 
 void
 rb_name_error(ID id, const char *fmt, ...)
@@ -1802,15 +1822,7 @@ rb_invalid_str(const char *str, const char *type)
  * Return the receiver associated with this KeyError exception.
  */
 
-static VALUE
-key_err_receiver(VALUE self)
-{
-    VALUE recv;
-
-    recv = rb_ivar_lookup(self, id_receiver, Qundef);
-    if (recv != Qundef) return recv;
-    rb_raise(rb_eArgError, "no receiver is available");
-}
+#define key_err_receiver err_attr_receiver
 
 /*
  * call-seq:
@@ -2529,7 +2541,7 @@ Init_Exception(void)
     rb_eRuntimeError = rb_define_class("RuntimeError", rb_eStandardError);
     rb_eFrozenError = rb_define_class("FrozenError", rb_eRuntimeError);
     rb_define_method(rb_eFrozenError, "initialize", frozen_err_initialize, -1);
-    rb_define_method(rb_eFrozenError, "receiver", name_err_receiver, 0);
+    rb_define_method(rb_eFrozenError, "receiver", frozen_err_receiver, 0);
     rb_eSecurityError = rb_define_class("SecurityError", rb_eException);
     rb_eNoMemError = rb_define_class("NoMemoryError", rb_eException);
     rb_eEncodingError = rb_define_class("EncodingError", rb_eStandardError);
