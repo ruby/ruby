@@ -1411,7 +1411,7 @@ exit_success_p(VALUE exc)
 
 /*
  * call-seq:
- *   FrozenError.new(msg=nil, receiver=nil)  -> name_error
+ *   FrozenError.new(msg=nil, receiver=nil)  -> frozen_error
  *
  * Construct a new FrozenError exception. If given the <i>receiver</i>
  * parameter may subsequently be examined using the FrozenError#receiver
