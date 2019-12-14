@@ -120,20 +120,29 @@ class Reline::ANSI
   def self.prep
     retrieve_keybuffer
     int_handle = Signal.trap('INT', 'IGNORE')
-    otio = `stty -g`.chomp
-    setting = ' -echo -icrnl cbreak -ixoff -iexten'
-    stty = `stty -a`
-    if /-parenb\b/ =~ stty
-      setting << ' pass8'
+    begin
+      otio = IO.popen(%w[stty -g], in: @@input, &:read).chomp
+    rescue ArgumentError
+    else
+      setting = %w'-echo -icrnl cbreak -ixoff -iexten'
+      stty = IO.popen(%w[stty -a], in: @@input, &:read)
+      if /-parenb\b/ =~ stty
+        setting << 'pass8'
+      end
+      system("stty", *setting, in: @@input)
     end
-    `stty #{setting}`
     Signal.trap('INT', int_handle)
     otio
   end
 
   def self.deprep(otio)
     int_handle = Signal.trap('INT', 'IGNORE')
-    system("stty #{otio}", err: File::NULL)
+    if otio
+      begin
+        system("stty #{otio}", in: @@input, err: File::NULL)
+      rescue ArgumentError
+      end
+    end
     Signal.trap('INT', int_handle)
     Signal.trap('WINCH', @@old_winch_handler) if @@old_winch_handler
   end
