@@ -15,7 +15,7 @@ class RubyVM
   # access children nodes by name, etc.
   #
   # If you are looking for a stable API or an API working under multiple Ruby
-  # implementations, consider using the +parser+ gem or Ripper. If you would
+  # implementations, consider using the _parser_ gem or Ripper. If you would
   # like to make RubyVM::AbstractSyntaxTree stable, please join the discussion
   # at https://bugs.ruby-lang.org/issues/14844.
   #
