@@ -121,15 +121,11 @@ class Reline::ANSI
     retrieve_keybuffer
     int_handle = Signal.trap('INT', 'IGNORE')
     otio = `stty -g`.chomp
-    setting = ' -echo -icrnl cbreak'
+    setting = ' -echo -icrnl cbreak -ixoff -iexten'
     stty = `stty -a`
     if /-parenb\b/ =~ stty
       setting << ' pass8'
     end
-    if /\bdsusp *=/ =~ stty
-      setting << ' dsusp undef'
-    end
-    setting << ' -ixoff'
     `stty #{setting}`
     Signal.trap('INT', int_handle)
     otio
