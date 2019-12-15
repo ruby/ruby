@@ -608,7 +608,7 @@ module BasetestReadline
 
   def test_completion_with_completion_append_character
     skip "Skip Editline" if /EditLine/n.match(Readline::VERSION)
-    skip "Reline doesn't still implement it" if defined?(Reline) and Readline == Reline
+    skip "Readline.completion_append_character is not implemented" unless Readline.respond_to?(:completion_append_character=)
     line = nil
 
     append_character = Readline.completion_append_character
