@@ -43,7 +43,5 @@ mrkn:
 - muraken@b2dd03c8-39d4-4d8f-98ff-823fe69b080e
 naruse:
 - nurse@users.noreply.github.com
-odaira:
-- rodaira@us.ibm.com
 tenderlove:
 - tenderlove@github.com
