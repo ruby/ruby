@@ -730,6 +730,19 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([2,1,3,2,1], @obj.reverse_each.to_a)
   end
 
+  def test_reverse_each_memory_corruption
+    bug16354 = '[ruby-dev:50867]'
+    assert_normal_exit %q{
+      size = 1000
+      (0...size).reverse_each do |i|
+        i.inspect
+        ObjectSpace.each_object(Array) do |a|
+          a.clear if a.length == size
+        end
+      end
+    }, bug16354
+  end
+
   def test_chunk
     e = [].chunk {|elt| true }
     assert_equal([], e.to_a)
