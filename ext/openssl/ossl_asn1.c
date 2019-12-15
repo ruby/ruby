@@ -1824,7 +1824,7 @@ do{\
     rb_define_method(cASN1EndOfContent, "to_der", ossl_asn1eoc_to_der, 0);
 
     class_tag_map = rb_hash_new();
-    rb_global_variable(&class_tag_map);
+    rb_gc_register_mark_object(class_tag_map);
     rb_hash_aset(class_tag_map, cASN1EndOfContent, INT2NUM(V_ASN1_EOC));
     rb_hash_aset(class_tag_map, cASN1Boolean, INT2NUM(V_ASN1_BOOLEAN));
     rb_hash_aset(class_tag_map, cASN1Integer, INT2NUM(V_ASN1_INTEGER));
