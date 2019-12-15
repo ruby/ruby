@@ -2102,6 +2102,9 @@ EOT
         File.open(path, "rb") {|f|
           assert_equal(Encoding.find(name), f.set_encoding_by_bom)
         }
+        File.open(path, "rb", encoding: "iso-8859-1") {|f|
+          assert_raise(ArgumentError) {f.set_encoding_by_bom}
+        }
       }
     end
   end
@@ -2114,6 +2117,10 @@ EOT
       bug3407 = '[ruby-core:30641]'
       result = File.read(path, encoding: 'BOM|UTF-8')
       assert_equal("a", result.b, bug3407)
+
+      File.open(path, "rb", encoding: "iso-8859-1") {|f|
+        assert_raise(ArgumentError) {f.set_encoding_by_bom}
+      }
     }
   end
 
@@ -2147,6 +2154,9 @@ EOT
 
       File.open(path, "rb") {|f|
         assert_nil(f.set_encoding_by_bom)
+      }
+      File.open(path, "rb", encoding: "iso-8859-1") {|f|
+        assert_raise(ArgumentError) {f.set_encoding_by_bom}
       }
     }
   end

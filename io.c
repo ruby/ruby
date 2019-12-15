@@ -8334,6 +8334,10 @@ rb_io_set_encoding_by_bom(VALUE io)
     if (fptr->encs.enc2) {
         rb_raise(rb_eArgError, "encoding conversion is set");
     }
+    else if (fptr->encs.enc && fptr->encs.enc != rb_ascii8bit_encoding()) {
+        rb_raise(rb_eArgError, "encoding is set to %s already",
+                 rb_enc_name(fptr->encs.enc));
+    }
     if (!io_set_encoding_by_bom(io)) return Qnil;
     return rb_enc_from_encoding(fptr->encs.enc);
 }
