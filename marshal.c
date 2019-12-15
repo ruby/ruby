@@ -257,7 +257,7 @@ class2path(VALUE klass)
 }
 
 static void w_long(long, struct dump_arg*);
-static void w_encoding(VALUE encname, struct dump_call_arg *arg);
+static int w_encoding(VALUE encname, struct dump_call_arg *arg);
 static VALUE encoding_name(VALUE obj, struct dump_arg *arg);
 
 static void
@@ -550,14 +550,25 @@ w_uclass(VALUE obj, VALUE super, struct dump_arg *arg)
 
 #define to_be_skipped_id(id) (id == rb_id_encoding() || id == rb_intern("E") || !rb_id2str(id))
 
+struct w_ivar_arg {
+    struct dump_call_arg *dump;
+    st_data_t num_ivar;
+};
+
 static int
 w_obj_each(st_data_t key, st_data_t val, st_data_t a)
 {
     ID id = (ID)key;
     VALUE value = (VALUE)val;
-    struct dump_call_arg *arg = (struct dump_call_arg *)a;
+    struct w_ivar_arg *ivarg = (struct w_ivar_arg *)a;
+    struct dump_call_arg *arg = ivarg->dump;
 
     if (to_be_skipped_id(id)) return ST_CONTINUE;
+    if (!ivarg->num_ivar) {
+        rb_raise(rb_eRuntimeError, "instance variable added to %"PRIsVALUE" instance",
+                 CLASS_OF(arg->obj));
+    }
+    --ivarg->num_ivar;
     w_symbol(ID2SYM(id), arg->arg);
     w_object(value, arg->arg, arg->limit);
     return ST_CONTINUE;
@@ -604,7 +615,7 @@ encoding_name(VALUE obj, struct dump_arg *arg)
     }
 }
 
-static void
+static int
 w_encoding(VALUE encname, struct dump_call_arg *arg)
 {
     int limit = arg->limit;
@@ -614,11 +625,13 @@ w_encoding(VALUE encname, struct dump_call_arg *arg)
       case Qtrue:
 	w_symbol(ID2SYM(rb_intern("E")), arg->arg);
 	w_object(encname, arg->arg, limit);
+        return 1;
       case Qnil:
-	return;
+	return 0;
     }
     w_symbol(ID2SYM(rb_id_encoding()), arg->arg);
     w_object(encname, arg->arg, limit);
+    return 1;
 }
 
 static st_index_t
@@ -643,12 +656,24 @@ has_ivars(VALUE obj, VALUE encname, VALUE *ivobj)
 }
 
 static void
+w_ivar_each(VALUE obj, st_index_t num, struct dump_call_arg *arg)
+{
+    struct w_ivar_arg ivarg = {arg, num};
+    if (!num) return;
+    rb_ivar_foreach(obj, w_obj_each, (st_data_t)&ivarg);
+    if (ivarg.num_ivar) {
+        rb_raise(rb_eRuntimeError, "instance variable removed from %"PRIsVALUE" instance",
+                 CLASS_OF(arg->obj));
+    }
+}
+
+static void
 w_ivar(st_index_t num, VALUE ivobj, VALUE encname, struct dump_call_arg *arg)
 {
     w_long(num, arg->arg);
-    w_encoding(encname, arg);
+    num -= w_encoding(encname, arg);
     if (ivobj != Qundef) {
-	rb_ivar_foreach(ivobj, w_obj_each, (st_data_t)arg);
+        w_ivar_each(ivobj, num, arg);
     }
 }
 
@@ -659,9 +684,7 @@ w_objivar(VALUE obj, struct dump_call_arg *arg)
 
     rb_ivar_foreach(obj, obj_count_ivars, (st_data_t)&num);
     w_long(num, arg->arg);
-    if (num != 0) {
-        rb_ivar_foreach(obj, w_obj_each, (st_data_t)arg);
-    }
+    w_ivar_each(obj, num, arg);
 }
 
 static void
@@ -680,6 +703,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
     if (limit > 0) limit--;
     c_arg.limit = limit;
     c_arg.arg = arg;
+    c_arg.obj = obj;
 
     if (st_lookup(arg->data, obj, &num)) {
 	w_byte(TYPE_LINK, arg);
