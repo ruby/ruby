@@ -570,7 +570,8 @@ fill_keys_values(st_data_t key, st_data_t val, st_data_t ptr)
 }
 
 static inline int
-ignore_keyword_hash_p(VALUE keyword_hash, const rb_iseq_t * const iseq) {
+ignore_keyword_hash_p(VALUE keyword_hash, const rb_iseq_t * const iseq)
+{
     if (!(iseq->body->param.flags.has_kw) &&
 	      !(iseq->body->param.flags.has_kwrest)) {
 	keyword_hash = rb_check_hash_type(keyword_hash);
@@ -593,7 +594,8 @@ VALUE rb_iseq_location(const rb_iseq_t *iseq);
  */
 static st_table *caller_to_callees = 0;
 
-static VALUE rb_warn_check(const rb_execution_context_t * const ec, const rb_iseq_t *const iseq)
+static VALUE
+rb_warn_check(const rb_execution_context_t * const ec, const rb_iseq_t *const iseq)
 {
     if (!iseq) return 0;
 
