@@ -5,7 +5,7 @@ require "yaml"
 
 EMAIL_YML_URL = "https://raw.githubusercontent.com/ruby/ruby-commit-hook/master/config/email.yml"
 
-email_yml = URI.open(EMAIL_YML_URL).read.sub(/\A(?:#.*\n)+/, "").gsub(/^# +(.+)$/) { $1 + ": []" }
+email_yml = URI(EMAIL_YML_URL).read.sub(/\A(?:#.*\n)+/, "").gsub(/^# +(.+)$/) { $1 + ": []" }
 
 email = YAML.load(email_yml)
 YAML.load(DATA.read).each do |name, mails|
