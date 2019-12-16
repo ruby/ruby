@@ -179,22 +179,25 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, struc
 		super_class = RCLASS_ORIGIN(super_class);
 	    }
 	    else if (cc->me->def->body.refined.orig_me) {
-		cc->me = refined_method_callable_without_refinement(cc->me);
+                CC_SET_ME(cc, refined_method_callable_without_refinement(cc->me));
 		goto again;
 	    }
 
 	    super_class = RCLASS_SUPER(super_class);
+            if (super_class) {
+                CC_SET_ME(cc, rb_callable_method_entry(super_class, ci->mid));
+                if (cc->me) {
+                    RUBY_VM_CHECK_INTS(ec);
+                    goto again;
+                }
+            }
 
-	    if (!super_class || !(cc->me = rb_callable_method_entry(super_class, ci->mid))) {
-		enum method_missing_reason ex = (type == VM_METHOD_TYPE_ZSUPER) ? MISSING_SUPER : 0;
-                ret = method_missing(calling->recv, ci->mid, calling->argc, argv, ex, calling->kw_splat);
-		goto success;
-	    }
-	    RUBY_VM_CHECK_INTS(ec);
-	    goto again;
+            enum method_missing_reason ex = (type == VM_METHOD_TYPE_ZSUPER) ? MISSING_SUPER : 0;
+            ret = method_missing(calling->recv, ci->mid, calling->argc, argv, ex, calling->kw_splat);
+            goto success;
 	}
       case VM_METHOD_TYPE_ALIAS:
-	cc->me = aliased_callable_method_entry(cc->me);
+        CC_SET_ME(cc, aliased_callable_method_entry(cc->me));
 	goto again;
       case VM_METHOD_TYPE_MISSING:
 	{
