@@ -564,8 +564,8 @@ RSS::
 
 RubyGems::
 
-  * Upgrade to RubyGems 3.1.0.pre3
-    See https://github.com/rubygems/rubygems/blob/3.1/History.txt#L3
+  * Upgrade to RubyGems 3.1.1
+    See https://github.com/rubygems/rubygems/releases/tag/v3.1.0
 
 StringScanner::
 
