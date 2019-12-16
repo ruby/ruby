@@ -4000,9 +4000,12 @@ do_select(VALUE p)
 	}, set->sigwait_fd >= 0 ? ubf_sigwait : ubf_select, set->th, TRUE);
 
         if (set->sigwait_fd >= 0) {
-            if (result > 0 && rb_fd_isset(set->sigwait_fd, set->rset))
+            if (result > 0 && rb_fd_isset(set->sigwait_fd, set->rset)) {
                 result--;
-            (void)check_signals_nogvl(set->th, set->sigwait_fd);
+                (void)check_signals_nogvl(set->th, set->sigwait_fd);
+            } else {
+                (void)check_signals_nogvl(set->th, -1);
+            }
         }
 
         RUBY_VM_CHECK_INTS_BLOCKING(set->th->ec); /* may raise */
@@ -4177,8 +4180,10 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
             if (fds[1].fd >= 0) {
                 if (result > 0 && fds[1].revents) {
                     result--;
+                    (void)check_signals_nogvl(wfd.th, fds[1].fd);
+                } else {
+                    (void)check_signals_nogvl(wfd.th, -1);
                 }
-                (void)check_signals_nogvl(wfd.th, fds[1].fd);
                 rb_sigwait_fd_put(wfd.th, fds[1].fd);
                 rb_sigwait_fd_migrate(wfd.th->vm);
             }
@@ -4394,7 +4399,7 @@ static int
 check_signals_nogvl(rb_thread_t *th, int sigwait_fd)
 {
     rb_vm_t *vm = GET_VM(); /* th may be 0 */
-    int ret = consume_communication_pipe(sigwait_fd);
+    int ret = sigwait_fd >= 0 ? consume_communication_pipe(sigwait_fd) : FALSE;
     ubf_wakeup_all_threads();
     ruby_sigchld_handler(vm);
     if (rb_signal_buff_size()) {
