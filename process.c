@@ -4279,7 +4279,7 @@ rb_f_abort(int argc, const VALUE *argv)
     rb_check_arity(argc, 0, 1);
     if (argc == 0) {
 	rb_execution_context_t *ec = GET_EC();
-	VALUE errinfo = ec->errinfo;
+        VALUE errinfo = rb_ec_get_errinfo(ec);
 	if (!NIL_P(errinfo)) {
 	    rb_ec_error_print(ec, errinfo);
 	}
