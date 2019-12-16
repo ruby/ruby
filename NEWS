@@ -457,8 +457,8 @@ $LOAD_PATH::
 
 Bundler::
 
-  * Upgrade to Bundler 2.1.0.pre.3
-    See https://github.com/bundler/bundler/blob/2-1-stable/CHANGELOG.md#210pre3-november-12-2019
+  * Upgrade to Bundler 2.1.0
+    See https://github.com/bundler/bundler/releases/tag/v2.1.0
 
 CGI::
 
