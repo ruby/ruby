@@ -1515,7 +1515,7 @@ class TestProcess < Test::Unit::TestCase
         STDERR.reopen(STDOUT)
         begin
           raise "[Bug #16424]"
-        rescue => e
+        rescue
           abort
         end
       end;
