@@ -107,9 +107,9 @@ EOS
 HTTP/1.1 200 OK
 Connection: close
 Content-Encoding: deflate
-Content-Length: 7
+Content-Length: 13
 
-\xCBH\xCD\xC9\xC9\a\x00
+x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15
 EOS
 
     res = Net::HTTPResponse.read_new(io)
@@ -126,7 +126,7 @@ EOS
       assert_equal 'hello', body
     else
       assert_equal 'deflate', res['content-encoding']
-      assert_equal "\xCBH\xCD\xC9\xC9\a\x00", body
+      assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15", body
     end
   end
 
@@ -135,9 +135,9 @@ EOS
 HTTP/1.1 200 OK
 Connection: close
 Content-Encoding: DEFLATE
-Content-Length: 7
+Content-Length: 13
 
-\xCBH\xCD\xC9\xC9\a\x00
+x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15
 EOS
 
     res = Net::HTTPResponse.read_new(io)
@@ -154,7 +154,7 @@ EOS
       assert_equal 'hello', body
     else
       assert_equal 'DEFLATE', res['content-encoding']
-      assert_equal "\xCBH\xCD\xC9\xC9\a\x00", body
+      assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15", body
     end
   end
 
@@ -165,10 +165,10 @@ Connection: close
 Content-Encoding: deflate
 Transfer-Encoding: chunked
 
-4
-\xCBH\xCD\xC9
-3
-\xC9\a\x00
+6
+x\x9C\xCBH\xCD\xC9
+7
+\xC9\a\x00\x06,\x02\x15
 0
 
 EOS
@@ -187,7 +187,7 @@ EOS
       assert_equal 'hello', body
     else
       assert_equal 'deflate', res['content-encoding']
-      assert_equal "\xCBH\xCD\xC9\xC9\a\x00", body
+      assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15", body
     end
   end
 
@@ -196,9 +196,9 @@ EOS
 HTTP/1.1 200 OK
 Connection: close
 Content-Encoding: deflate
-Content-Length: 7
+Content-Length: 13
 
-\xCBH\xCD\xC9\xC9\a\x00
+x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15
 EOS
 
     res = Net::HTTPResponse.read_new(io)
@@ -211,7 +211,7 @@ EOS
     end
 
     assert_equal 'deflate', res['content-encoding'], 'Bug #7831'
-    assert_equal "\xCBH\xCD\xC9\xC9\a\x00", body, 'Bug #7381'
+    assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15", body, 'Bug #7381'
   end
 
   def test_read_body_content_encoding_deflate_no_length
@@ -220,7 +220,7 @@ HTTP/1.1 200 OK
 Connection: close
 Content-Encoding: deflate
 
-\xCBH\xCD\xC9\xC9\a\x00
+x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15
 EOS
 
     res = Net::HTTPResponse.read_new(io)
@@ -237,7 +237,7 @@ EOS
       assert_equal 'hello', body
     else
       assert_equal 'deflate', res['content-encoding']
-      assert_equal "\xCBH\xCD\xC9\xC9\a\x00\r\n", body
+      assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15\r\n", body
     end
   end
 
