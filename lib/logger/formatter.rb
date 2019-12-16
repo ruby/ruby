@@ -1,7 +1,9 @@
+# frozen_string_literal: true
+
 class Logger
   # Default formatter for log messages.
   class Formatter
-    Format = "%s, [%s#%d] %5s -- %s: %s\n".freeze
+    Format = "%s, [%s#%d] %5s -- %s: %s\n"
 
     attr_accessor :datetime_format
 
@@ -17,7 +19,7 @@ class Logger
   private
 
     def format_datetime(time)
-      time.strftime(@datetime_format || "%Y-%m-%dT%H:%M:%S.%6N ".freeze)
+      time.strftime(@datetime_format || "%Y-%m-%dT%H:%M:%S.%6N ")
     end
 
     def msg2str(msg)
@@ -25,8 +27,7 @@ class Logger
       when ::String
         msg
       when ::Exception
-        "#{ msg.message } (#{ msg.class })\n" <<
-          (msg.backtrace || []).join("\n")
+        "#{ msg.message } (#{ msg.class })\n#{ msg.backtrace.join("\n") if msg.backtrace }"
       else
         msg.inspect
       end

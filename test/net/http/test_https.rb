@@ -50,6 +50,78 @@ class TestNetHTTPS < Test::Unit::TestCase
     skip $!
   end
 
+  def test_get_SNI
+    http = Net::HTTP.new("localhost", config("port"))
+    http.ipaddr = config('host')
+    http.use_ssl = true
+    http.cert_store = TEST_STORE
+    certs = []
+    http.verify_callback = Proc.new do |preverify_ok, store_ctx|
+      certs << store_ctx.current_cert
+      preverify_ok
+    end
+    http.request_get("/") {|res|
+      assert_equal($test_net_http_data, res.body)
+    }
+    assert_equal(CA_CERT.to_der, certs[0].to_der)
+    assert_equal(SERVER_CERT.to_der, certs[1].to_der)
+  end
+
+  def test_get_SNI_proxy
+    TCPServer.open("127.0.0.1", 0) {|serv|
+      _, port, _, _ = serv.addr
+      client_thread = Thread.new {
+        proxy = Net::HTTP.Proxy("127.0.0.1", port, 'user', 'password')
+        http = proxy.new("foo.example.org", 8000)
+        http.ipaddr = "192.0.2.1"
+        http.use_ssl = true
+        http.cert_store = TEST_STORE
+        certs = []
+        http.verify_callback = Proc.new do |preverify_ok, store_ctx|
+          certs << store_ctx.current_cert
+          preverify_ok
+        end
+        begin
+          http.start
+        rescue EOFError
+        end
+      }
+      server_thread = Thread.new {
+        sock = serv.accept
+        begin
+          proxy_request = sock.gets("\r\n\r\n")
+          assert_equal(
+            "CONNECT 192.0.2.1:8000 HTTP/1.1\r\n" +
+            "Host: foo.example.org:8000\r\n" +
+            "Proxy-Authorization: Basic dXNlcjpwYXNzd29yZA==\r\n" +
+            "\r\n",
+            proxy_request,
+            "[ruby-dev:25673]")
+        ensure
+          sock.close
+        end
+      }
+      assert_join_threads([client_thread, server_thread])
+    }
+
+  end
+
+  def test_get_SNI_failure
+    TestNetHTTPUtils.clean_http_proxy_env do
+      http = Net::HTTP.new("invalid_servername", config("port"))
+      http.ipaddr = config('host')
+      http.use_ssl = true
+      http.cert_store = TEST_STORE
+      certs = []
+      http.verify_callback = Proc.new do |preverify_ok, store_ctx|
+        certs << store_ctx.current_cert
+        preverify_ok
+      end
+      @log_tester = lambda {|_| }
+      assert_raise(OpenSSL::SSL::SSLError){ http.start }
+    end
+  end
+
   def test_post
     http = Net::HTTP.new("localhost", config("port"))
     http.use_ssl = true

@@ -28,7 +28,7 @@ module Bundler
         spec -= [nil, "ruby", ""]
         spec_file_name = "#{spec.join "-"}.gemspec"
 
-        uri = URI.parse("#{remote_uri}#{Gem::MARSHAL_SPEC_DIR}#{spec_file_name}.rz")
+        uri = Bundler::URI.parse("#{remote_uri}#{Gem::MARSHAL_SPEC_DIR}#{spec_file_name}.rz")
         if uri.scheme == "file"
           path = Bundler.rubygems.correct_for_windows_path(uri.path)
           Bundler.load_marshal Bundler.rubygems.inflate(Gem.read_binary(path))

@@ -1,8 +1,6 @@
-require 'delegate'
-require 'uri'
 require 'rubygems/user_interaction'
 
-class Gem::SpecificationPolicy < SimpleDelegator
+class Gem::SpecificationPolicy
 
   include Gem::UserInteraction
 
@@ -25,7 +23,7 @@ class Gem::SpecificationPolicy < SimpleDelegator
   def initialize(specification)
     @warnings = 0
 
-    super(specification)
+    @specification = specification
   end
 
   ##
@@ -51,7 +49,7 @@ class Gem::SpecificationPolicy < SimpleDelegator
 
     validate_require_paths
 
-    keep_only_files_and_directories
+    @specification.keep_only_files_and_directories
 
     validate_non_files
 
@@ -92,6 +90,8 @@ class Gem::SpecificationPolicy < SimpleDelegator
   # Implementation for Specification#validate_metadata
 
   def validate_metadata
+    metadata = @specification.metadata
+
     unless Hash === metadata
       error 'metadata must be a hash'
     end
@@ -130,7 +130,7 @@ class Gem::SpecificationPolicy < SimpleDelegator
 
     error_messages = []
     warning_messages = []
-    dependencies.each do |dep|
+    @specification.dependencies.each do |dep|
       if prev = seen[dep.type][dep.name]
         error_messages << <<-MESSAGE
 duplicate dependency on #{dep}, (#{prev.requirement}) use:
@@ -145,7 +145,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
       end
 
       warning_messages << "prerelease dependency on #{dep} is not recommended" if
-          prerelease_dep && !version.prerelease?
+          prerelease_dep && !@specification.version.prerelease?
 
       open_ended = dep.requirement.requirements.all? do |op, version|
         not version.prerelease? and (op == '>' or op == '>=')
@@ -190,14 +190,14 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   def validate_permissions
     return if Gem.win_platform?
 
-    files.each do |file|
+    @specification.files.each do |file|
       next unless File.file?(file)
       next if File.stat(file).mode & 0444 == 0444
       warning "#{file} is not world-readable"
     end
 
-    executables.each do |name|
-      exec = File.join bindir, name
+    @specification.executables.each do |name|
+      exec = File.join @specification.bindir, name
       next unless File.file?(exec)
       next if File.stat(exec).executable?
       warning "#{exec} is not executable"
@@ -208,7 +208,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
 
   def validate_nil_attributes
     nil_attributes = Gem::Specification.non_nil_attributes.select do |attrname|
-      __getobj__.instance_variable_get("@#{attrname}").nil?
+      @specification.instance_variable_get("@#{attrname}").nil?
     end
     return if nil_attributes.empty?
     error "#{nil_attributes.join ', '} must not be nil"
@@ -216,6 +216,9 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
 
   def validate_rubygems_version
     return unless packaging
+
+    rubygems_version = @specification.rubygems_version
+
     return if rubygems_version == Gem::VERSION
 
     error "expected RubyGems version #{Gem::VERSION}, was #{rubygems_version}"
@@ -223,13 +226,15 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
 
   def validate_required_attributes
     Gem::Specification.required_attributes.each do |symbol|
-      unless send symbol
+      unless @specification.send symbol
         error "missing value for attribute #{symbol}"
       end
     end
   end
 
   def validate_name
+    name = @specification.name
+
     if !name.is_a?(String)
       error "invalid value for attribute name: \"#{name.inspect}\" must be a string"
     elsif name !~ /[a-zA-Z]/
@@ -242,14 +247,15 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   end
 
   def validate_require_paths
-    return unless raw_require_paths.empty?
+    return unless @specification.raw_require_paths.empty?
 
     error 'specification must have at least one require_path'
   end
 
   def validate_non_files
     return unless packaging
-    non_files = files.reject {|x| File.file?(x) || File.symlink?(x)}
+
+    non_files = @specification.files.reject {|x| File.file?(x) || File.symlink?(x)}
 
     unless non_files.empty?
       error "[\"#{non_files.join "\", \""}\"] are not files"
@@ -257,18 +263,22 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   end
 
   def validate_self_inclusion_in_files_list
-    return unless files.include?(file_name)
+    file_name = @specification.file_name
 
-    error "#{full_name} contains itself (#{file_name}), check your files list"
+    return unless @specification.files.include?(file_name)
+
+    error "#{@specification.full_name} contains itself (#{file_name}), check your files list"
   end
 
   def validate_specification_version
-    return if specification_version.is_a?(Integer)
+    return if @specification.specification_version.is_a?(Integer)
 
     error 'specification_version must be an Integer (did you mean version?)'
   end
 
   def validate_platform
+    platform = @specification.platform
+
     case platform
     when Gem::Platform, Gem::Platform::RUBY  # ok
     else
@@ -283,7 +293,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   end
 
   def validate_array_attribute(field)
-    val = self.send(field)
+    val = @specification.send(field)
     klass = case field
             when :dependencies then
               Gem::Dependency
@@ -298,12 +308,14 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   end
 
   def validate_authors_field
-    return unless authors.empty?
+    return unless @specification.authors.empty?
 
     error "authors may not be empty"
   end
 
   def validate_licenses
+    licenses = @specification.licenses
+
     licenses.each do |license|
       if license.length > 64
         error "each license must be 64 characters or less"
@@ -331,24 +343,27 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
   HOMEPAGE_URI_PATTERN = /\A[a-z][a-z\d+.-]*:/i.freeze
 
   def validate_lazy_metadata
-    unless authors.grep(LAZY_PATTERN).empty?
+    unless @specification.authors.grep(LAZY_PATTERN).empty?
       error "#{LAZY} is not an author"
     end
 
-    unless Array(email).grep(LAZY_PATTERN).empty?
+    unless Array(@specification.email).grep(LAZY_PATTERN).empty?
       error "#{LAZY} is not an email"
     end
 
-    if description =~ LAZY_PATTERN
+    if @specification.description =~ LAZY_PATTERN
       error "#{LAZY} is not a description"
     end
 
-    if summary =~ LAZY_PATTERN
+    if @specification.summary =~ LAZY_PATTERN
       error "#{LAZY} is not a summary"
     end
 
+    homepage = @specification.homepage
+
     # Make sure a homepage is valid HTTP/HTTPS URI
     if homepage and not homepage.empty?
+      require 'uri'
       begin
         homepage_uri = URI.parse(homepage)
         unless [URI::HTTP, URI::HTTPS].member? homepage_uri.class
@@ -365,29 +380,29 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
       validate_attribute_present(attribute)
     end
 
-    if description == summary
+    if @specification.description == @specification.summary
       warning "description and summary are identical"
     end
 
     # TODO: raise at some given date
-    warning "deprecated autorequire specified" if autorequire
+    warning "deprecated autorequire specified" if @specification.autorequire
 
-    executables.each do |executable|
+    @specification.executables.each do |executable|
       validate_shebang_line_in(executable)
     end
 
-    files.select { |f| File.symlink?(f) }.each do |file|
+    @specification.files.select { |f| File.symlink?(f) }.each do |file|
       warning "#{file} is a symlink, which is not supported on all platforms"
     end
   end
 
   def validate_attribute_present(attribute)
-    value = self.send attribute
+    value = @specification.send attribute
     warning("no #{attribute} specified") if value.nil? || value.empty?
   end
 
   def validate_shebang_line_in(executable)
-    executable_path = File.join(bindir, executable)
+    executable_path = File.join(@specification.bindir, executable)
     return if File.read(executable_path, 2) == '#!'
 
     warning "#{executable_path} is missing #! line"

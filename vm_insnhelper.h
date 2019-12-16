@@ -124,6 +124,14 @@ enum vm_regan_acttype {
     if (LIKELY(enabled)) ((cc)->call = (func)); \
 } while (0)
 
+#define CC_SET_ME(cc, newme) do { \
+    CALL_CACHE ccx = (cc); \
+    const rb_callable_method_entry_t *mex = (newme); \
+    const rb_method_definition_t *defx = mex ? mex->def : NULL; \
+    ccx->me = mex; \
+    ccx->def = defx; \
+} while (0)
+
 #define GET_BLOCK_HANDLER() (GET_LEP()[VM_ENV_DATA_INDEX_SPECVAL])
 
 /**********************************************************/

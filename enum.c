@@ -426,6 +426,9 @@ enum_size_over_p(VALUE obj, long n)
  *  Returns an array containing all elements of +enum+
  *  for which the given +block+ returns a true value.
  *
+ *  The <i>find_all</i> and <i>select</i> methods are aliases.
+ *  There is no performance benefit to either.
+ *
  *  If no block is given, an Enumerator is returned instead.
  *
  *
@@ -4025,6 +4028,10 @@ int_range_sum(VALUE beg, VALUE end, int excl, VALUE init)
  *
  *   { 1 => 10, 2 => 20 }.sum([])                   #=> [1, 10, 2, 20]
  *   "a\nb\nc".each_line.lazy.map(&:chomp).sum("")  #=> "abc"
+ *
+ * If the method is applied to an Integer range without a block,
+ * the sum is not done by iteration, but instead using Gauss's summation
+ * formula.
  *
  * Enumerable#sum method may not respect method redefinition of "+"
  * methods such as Integer#+, or "each" methods such as Range#each.

@@ -1043,9 +1043,11 @@ random_s_bytes(VALUE obj, VALUE len)
 static VALUE
 range_values(VALUE vmax, VALUE *begp, VALUE *endp, int *exclp)
 {
-    VALUE end;
+    VALUE beg, end;
 
-    if (!rb_range_values(vmax, begp, &end, exclp)) return Qfalse;
+    if (!rb_range_values(vmax, &beg, &end, exclp)) return Qfalse;
+    if (begp) *begp = beg;
+    if (NIL_P(beg)) return Qnil;
     if (endp) *endp = end;
     if (NIL_P(end)) return Qnil;
     return rb_check_funcall_default(end, id_minus, 1, begp, Qfalse);

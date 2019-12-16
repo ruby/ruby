@@ -25,6 +25,9 @@ class Gem::Commands::GenerateIndexCommand < Gem::Command
       options[:build_modern] = value
     end
 
+    deprecate_option('--modern', version: '4.0', extra_msg: 'Modern indexes (specs, latest_specs, and prerelease_specs) are always generated, so this option is not needed.')
+    deprecate_option('--no-modern', version: '4.0', extra_msg: 'The `--no-modern` option is currently ignored. Modern indexes (specs, latest_specs, and prerelease_specs) are always generated.')
+
     add_option '--update',
                'Update modern indexes with gems added',
                'since the last update' do |value, options|

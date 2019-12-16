@@ -37,43 +37,48 @@ def gemfile(install = false, options = {}, &gemfile)
   ui.level = "silent" if opts.delete(:quiet)
   raise ArgumentError, "Unknown options: #{opts.keys.join(", ")}" unless opts.empty?
 
-  old_root = Bundler.method(:root)
-  bundler_module = class << Bundler; self; end
-  bundler_module.send(:remove_method, :root)
-  def Bundler.root
-    Bundler::SharedHelpers.pwd.expand_path
-  end
-  Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", "Gemfile"
-
-  Bundler::Plugin.gemfile_install(&gemfile) if Bundler.feature_flag.plugins?
-  builder = Bundler::Dsl.new
-  builder.instance_eval(&gemfile)
-
-  Bundler.settings.temporary(:frozen => false) do
-    definition = builder.to_definition(nil, true)
-    def definition.lock(*); end
-    definition.validate_runtime!
-
-    missing_specs = proc do
-      definition.missing_specs?
+  begin
+    old_root = Bundler.method(:root)
+    bundler_module = class << Bundler; self; end
+    bundler_module.send(:remove_method, :root)
+    def Bundler.root
+      Bundler::SharedHelpers.pwd.expand_path
     end
+    old_gemfile = ENV["BUNDLE_GEMFILE"]
+    Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", "Gemfile"
 
-    Bundler.ui = install ? ui : Bundler::UI::Silent.new
-    if install || missing_specs.call
-      Bundler.settings.temporary(:inline => true, :disable_platform_warnings => true) do
-        installer = Bundler::Installer.install(Bundler.root, definition, :system => true)
-        installer.post_install_messages.each do |name, message|
-          Bundler.ui.info "Post-install message from #{name}:\n#{message}"
+    Bundler::Plugin.gemfile_install(&gemfile) if Bundler.feature_flag.plugins?
+    builder = Bundler::Dsl.new
+    builder.instance_eval(&gemfile)
+
+    Bundler.settings.temporary(:frozen => false) do
+      definition = builder.to_definition(nil, true)
+      def definition.lock(*); end
+      definition.validate_runtime!
+
+      Bundler.ui = install ? ui : Bundler::UI::Silent.new
+      if install || definition.missing_specs?
+        Bundler.settings.temporary(:inline => true, :disable_platform_warnings => true) do
+          installer = Bundler::Installer.install(Bundler.root, definition, :system => true)
+          installer.post_install_messages.each do |name, message|
+            Bundler.ui.info "Post-install message from #{name}:\n#{message}"
+          end
         end
       end
+
+      runtime = Bundler::Runtime.new(nil, definition)
+      runtime.setup.require
+    end
+  ensure
+    if bundler_module
+      bundler_module.send(:remove_method, :root)
+      bundler_module.send(:define_method, :root, old_root)
     end
 
-    runtime = Bundler::Runtime.new(nil, definition)
-    runtime.setup.require
-  end
-ensure
-  if bundler_module
-    bundler_module.send(:remove_method, :root)
-    bundler_module.send(:define_method, :root, old_root)
+    if old_gemfile
+      ENV["BUNDLE_GEMFILE"] = old_gemfile
+    else
+      ENV.delete("BUNDLE_GEMFILE")
+    end
   end
 end

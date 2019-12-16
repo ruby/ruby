@@ -46,7 +46,7 @@ RSpec.describe Bundler::Definition do
         s.add_dependency "rack", "1.0"
       end
 
-      bundle :install, :env => { "DEBUG" => 1 }
+      bundle :install, :env => { "DEBUG" => "1" }
 
       expect(out).to match(/re-resolving dependencies/)
       lockfile_should_be <<-G
@@ -84,7 +84,7 @@ RSpec.describe Bundler::Definition do
         s.add_dependency "rack", "1.0"
       end
 
-      bundle :install, :env => { "DEBUG" => 1 }
+      bundle :install, :env => { "DEBUG" => "1" }
 
       expect(out).to match(/re-resolving dependencies/)
       lockfile_should_be <<-G
@@ -121,7 +121,7 @@ RSpec.describe Bundler::Definition do
         gem "foo", :path => "#{lib_path("foo")}"
       G
 
-      bundle :check, :env => { "DEBUG" => 1 }
+      bundle :check, :env => { "DEBUG" => "1" }
 
       expect(out).to match(/using resolution from the lockfile/)
       lockfile_should_be <<-G
@@ -154,7 +154,7 @@ RSpec.describe Bundler::Definition do
       G
 
       bundle "lock --add-platform java"
-      bundle :check, :env => { "DEBUG" => 1 }
+      bundle :check, :env => { "DEBUG" => "1" }
 
       expect(out).to match(/using resolution from the lockfile/)
       lockfile_should_be <<-G
@@ -181,7 +181,7 @@ RSpec.describe Bundler::Definition do
         gem "foo"
       G
 
-      bundle :check, :env => { "DEBUG" => 1 }
+      bundle :check, :env => { "DEBUG" => "1" }
 
       expect(out).to match(/using resolution from the lockfile/)
       lockfile_should_be <<-G

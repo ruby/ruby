@@ -5,7 +5,7 @@ class TestRemoteFetchError < Gem::TestCase
 
   def test_password_redacted
     error = Gem::RemoteFetcher::FetchError.new('There was an error fetching', 'https://user:secret@gemsource.org')
-    refute_match error.to_s, 'secret'
+    refute_match 'secret', error.to_s
   end
 
   def test_invalid_url

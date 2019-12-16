@@ -34,7 +34,7 @@ class TestNetHTTP < Test::Unit::TestCase
   end
 
   def test_class_Proxy_from_ENV
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       ENV['http_proxy']      = 'http://proxy.example:8000'
 
       # These are ignored on purpose.  See Bug 4388 and Feature 6546
@@ -115,7 +115,7 @@ class TestNetHTTP < Test::Unit::TestCase
   end
 
   def test_proxy_address
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       http = Net::HTTP.new 'hostname.example', nil, 'proxy.example'
       assert_equal 'proxy.example', http.proxy_address
 
@@ -125,7 +125,7 @@ class TestNetHTTP < Test::Unit::TestCase
   end
 
   def test_proxy_address_no_proxy
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       http = Net::HTTP.new 'hostname.example', nil, 'proxy.example', nil, nil, nil, 'example'
       assert_nil http.proxy_address
 
@@ -135,7 +135,7 @@ class TestNetHTTP < Test::Unit::TestCase
   end
 
   def test_proxy_from_env_ENV
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       ENV['http_proxy'] = 'http://proxy.example:8000'
 
       assert_equal false, Net::HTTP.proxy_class?
@@ -146,7 +146,7 @@ class TestNetHTTP < Test::Unit::TestCase
   end
 
   def test_proxy_address_ENV
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       ENV['http_proxy'] = 'http://proxy.example:8000'
 
       http = Net::HTTP.new 'hostname.example'
@@ -156,13 +156,13 @@ class TestNetHTTP < Test::Unit::TestCase
   end
 
   def test_proxy_eh_no_proxy
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       assert_equal false, Net::HTTP.new('hostname.example', nil, nil).proxy?
     end
   end
 
   def test_proxy_eh_ENV
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       ENV['http_proxy'] = 'http://proxy.example:8000'
 
       http = Net::HTTP.new 'hostname.example'
@@ -172,7 +172,7 @@ class TestNetHTTP < Test::Unit::TestCase
   end
 
   def test_proxy_eh_ENV_with_user
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       ENV['http_proxy'] = 'http://foo:bar@proxy.example:8000'
 
       http = Net::HTTP.new 'hostname.example'
@@ -189,13 +189,13 @@ class TestNetHTTP < Test::Unit::TestCase
   end
 
   def test_proxy_eh_ENV_none_set
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       assert_equal false, Net::HTTP.new('hostname.example').proxy?
     end
   end
 
   def test_proxy_eh_ENV_no_proxy
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       ENV['http_proxy'] = 'http://proxy.example:8000'
       ENV['no_proxy']   = 'hostname.example'
 
@@ -204,7 +204,7 @@ class TestNetHTTP < Test::Unit::TestCase
   end
 
   def test_proxy_port
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       http = Net::HTTP.new 'example', nil, 'proxy.example'
       assert_equal 'proxy.example', http.proxy_address
       assert_equal 80, http.proxy_port
@@ -216,7 +216,7 @@ class TestNetHTTP < Test::Unit::TestCase
   end
 
   def test_proxy_port_ENV
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       ENV['http_proxy'] = 'http://proxy.example:8000'
 
       http = Net::HTTP.new 'hostname.example'
@@ -226,31 +226,12 @@ class TestNetHTTP < Test::Unit::TestCase
   end
 
   def test_newobj
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       ENV['http_proxy'] = 'http://proxy.example:8000'
 
       http = Net::HTTP.newobj 'hostname.example'
 
       assert_equal false, http.proxy?
-    end
-  end
-
-  def clean_http_proxy_env
-    orig = {
-      'http_proxy'      => ENV['http_proxy'],
-      'http_proxy_user' => ENV['http_proxy_user'],
-      'http_proxy_pass' => ENV['http_proxy_pass'],
-      'no_proxy'        => ENV['no_proxy'],
-    }
-
-    orig.each_key do |key|
-      ENV.delete key
-    end
-
-    yield
-  ensure
-    orig.each do |key, value|
-      ENV[key] = value
     end
   end
 
@@ -262,7 +243,7 @@ class TestNetHTTP < Test::Unit::TestCase
     def host.to_str; raise SocketError, "open failure"; end
     uri = Struct.new(:scheme, :hostname, :port).new("http", host, port)
     assert_raise_with_message(SocketError, /#{host}:#{port}/) do
-      clean_http_proxy_env{ Net::HTTP.get(uri) }
+      TestNetHTTPUtils.clean_http_proxy_env{ Net::HTTP.get(uri) }
     end
   end
 

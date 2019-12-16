@@ -36,7 +36,6 @@ jobs:
             ${{ runner.os }}-chocolatey-
       - name: Install libraries with chocolatey
         run: |
-          choco config get cacheLocation
           choco install --no-progress openssl winflexbison3
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
       - name: Checkout ruby/ruby
@@ -51,6 +50,7 @@ jobs:
         if: github.event_name == 'pull_request'
       - run: ./src/tool/actions-commit-info.sh
         shell: bash
+        id: commit_info
       - name: Configure
         run: |
           md build
@@ -79,7 +79,7 @@ jobs:
           payload: |
             {
               "attachments": [{
-                "text": "${{ job.status }}: ${{ matrix.os }} / ${{ matrix.test_task }} <https://github.com/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ env.COMMIT_DATE }} #${{ env.COMMIT_NUMBER_OF_DAY }}> " +
+                "text": "${{ job.status }}: ${{ matrix.os }} / ${{ matrix.test_task }} <https://github.com/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ steps.commit_info.outputs.COMMIT_DATE }} #${{ steps.commit_info.outputs.COMMIT_NUMBER_OF_DAY }}> " +
                         "(<https://github.com/${{ github.repository }}/commit/${{ github.sha }}|" + "${{ github.sha }}".substring(0, 10) + ">) " +
                         "of ${{ github.repository }}@" + "${{ github.ref }}".split('/').reverse()[0] + " by ${{ github.event.head_commit.committer.name }}",
                 "color": "danger"

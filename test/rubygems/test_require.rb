@@ -124,13 +124,13 @@ class TestGemRequire < Gem::TestCase
     Object.const_set :FILE_ENTERED_LATCH, Latch.new(2)
     Object.const_set :FILE_EXIT_LATCH, Latch.new(1)
 
-    a1 = util_spec "a", "1", nil, "lib/a.rb"
-    b1 = util_spec "b", "1", nil, "lib/b.rb"
+    a1 = util_spec "a#{$$}", "1", nil, "lib/a#{$$}.rb"
+    b1 = util_spec "b#{$$}", "1", nil, "lib/b#{$$}.rb"
 
     install_specs a1, b1
 
-    t1 = create_sync_thread{ assert_require 'a' }
-    t2 = create_sync_thread{ assert_require 'b' }
+    t1 = create_sync_thread{ assert_require "a#{$$}" }
+    t2 = create_sync_thread{ assert_require "b#{$$}" }
 
     # wait until both files are waiting on the exit latch
     FILE_ENTERED_LATCH.await
@@ -326,7 +326,7 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_require_doesnt_traverse_development_dependencies
-    a = util_spec("a", "1", nil, "lib/a.rb")
+    a = util_spec("a#{$$}", "1", nil, "lib/a#{$$}.rb")
     z = util_spec("z", "1", "w" => "> 0")
     w1 = util_spec("w", "1") { |s| s.add_development_dependency "non-existent" }
     w2 = util_spec("w", "2") { |s| s.add_development_dependency "non-existent" }
@@ -337,7 +337,7 @@ class TestGemRequire < Gem::TestCase
     assert_equal %w(z-1), loaded_spec_names
     assert_equal ["w (> 0)"], unresolved_names
 
-    assert require("a")
+    assert require("a#{$$}")
   end
 
   def test_default_gem_only
@@ -365,19 +365,16 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_realworld_default_gem
-    begin
-      gem 'json'
-    rescue Gem::MissingSpecError
-      skip "default gems are only available after ruby installation"
-    end
+    testing_ruby_repo = !ENV["GEM_COMMAND"].nil?
+    skip "this test can't work under ruby-core setup" if testing_ruby_repo || java_platform?
 
     cmd = <<-RUBY
       $stderr = $stdout
       require "json"
-      puts Gem.loaded_specs["json"].default_gem?
+      puts Gem.loaded_specs["json"]
     RUBY
     output = Gem::Util.popen(Gem.ruby, "-e", cmd).strip
-    assert_equal "true", output
+    refute_empty output
   end
 
   def test_default_gem_and_normal_gem
@@ -451,15 +448,15 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_require_default_when_gem_defined
-    a = util_spec("a", "1", nil, "lib/a.rb")
+    a = util_spec("a#{$$}", "1", nil, "lib/a#{$$}.rb")
     install_specs a
     c = Class.new do
       def self.gem(*args)
         raise "received #gem with #{args.inspect}"
       end
     end
-    assert c.send(:require, "a")
-    assert_equal %w(a-1), loaded_spec_names
+    assert c.send(:require, "a#{$$}")
+    assert_equal %W(a#{$$}-1), loaded_spec_names
   end
 
   def test_require_bundler
@@ -499,36 +496,38 @@ class TestGemRequire < Gem::TestCase
     end
   end
 
-  # uplevel is 2.5+ only and jruby has some issues with it
-  if RUBY_VERSION >= "2.5" && !java_platform?
-    def test_no_kernel_require_in_warn_with_uplevel
-      lib = File.realpath("../../../lib", __FILE__)
-      Dir.mktmpdir("warn_test") do |dir|
-        File.write(dir + "/sub.rb", "warn 'uplevel', 'test', uplevel: 1\n")
-        File.write(dir + "/main.rb", "require 'sub'\n")
-        _, err = capture_subprocess_io do
-          system(@@ruby, "-w", "-rpp", "--disable=gems", "-I", lib, "-C", dir, "-I.", "main.rb")
+  # uplevel is 2.5+ only
+  if RUBY_VERSION >= "2.5"
+    ["", "Kernel."].each do |prefix|
+      define_method "test_no_kernel_require_in_#{prefix.tr(".", "_")}warn_with_uplevel" do
+        lib = File.realpath("../../../lib", __FILE__)
+        Dir.mktmpdir("warn_test") do |dir|
+          File.write(dir + "/sub.rb", "#{prefix}warn 'uplevel', 'test', uplevel: 1\n")
+          File.write(dir + "/main.rb", "require 'sub'\n")
+          _, err = capture_subprocess_io do
+            system(@@ruby, "-w", "--disable=gems", "-I", lib, "-C", dir, "-I.", "main.rb")
+          end
+          assert_match(/main\.rb:1: warning: uplevel\ntest\n$/, err)
+          _, err = capture_subprocess_io do
+            system(@@ruby, "-w", "--enable=gems", "-I", lib, "-C", dir, "-I.", "main.rb")
+          end
+          assert_match(/main\.rb:1: warning: uplevel\ntest\n$/, err)
         end
-        assert_equal "main.rb:1: warning: uplevel\ntest\n", err
-        _, err = capture_subprocess_io do
-          system(@@ruby, "-w", "-rpp", "--enable=gems", "-I", lib, "-C", dir, "-I.", "main.rb")
-        end
-        assert_equal "main.rb:1: warning: uplevel\ntest\n", err
       end
-    end
 
-    def test_no_other_behavioral_changes_with_kernel_warn
-      lib = File.realpath("../../../lib", __FILE__)
-      Dir.mktmpdir("warn_test") do |dir|
-        File.write(dir + "/main.rb", "warn({x:1}, {y:2}, [])\n")
-        _, err = capture_subprocess_io do
-          system(@@ruby, "-w", "-rpp", "--disable=gems", "-I", lib, "-C", dir, "-I.", "main.rb")
+      define_method "test_no_other_behavioral_changes_with_#{prefix.tr(".", "_")}warn" do
+        lib = File.realpath("../../../lib", __FILE__)
+        Dir.mktmpdir("warn_test") do |dir|
+          File.write(dir + "/main.rb", "#{prefix}warn({x:1}, {y:2}, [])\n")
+          _, err = capture_subprocess_io do
+            system(@@ruby, "-w", "--disable=gems", "-I", lib, "-C", dir, "main.rb")
+          end
+          assert_match(/{:x=>1}\n{:y=>2}\n$/, err)
+          _, err = capture_subprocess_io do
+            system(@@ruby, "-w", "--enable=gems", "-I", lib, "-C", dir, "main.rb")
+          end
+          assert_match(/{:x=>1}\n{:y=>2}\n$/, err)
         end
-        assert_equal "{:x=>1}\n{:y=>2}\n", err
-        _, err = capture_subprocess_io do
-          system(@@ruby, "-w", "-rpp", "--enable=gems", "-I", lib, "-C", dir, "-I.", "main.rb")
-        end
-        assert_equal "{:x=>1}\n{:y=>2}\n", err
       end
     end
   end

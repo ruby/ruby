@@ -6,8 +6,6 @@ rescue LoadError
   # for make mjit-headers
 end
 
-require_relative "fileutils/version"
-
 #
 # = fileutils.rb
 #
@@ -104,6 +102,7 @@ require_relative "fileutils/version"
 # <tt>:verbose</tt> flags to methods in Bundler::FileUtils.
 #
 module Bundler::FileUtils
+  VERSION = "1.4.1"
 
   def self.private_module_function(name)   #:nodoc:
     module_function name
@@ -1300,7 +1299,8 @@ module Bundler::FileUtils
            .reject {|n| n == '.' or n == '..' }
       end
 
-      files.map {|n| Entry_.new(prefix(), join(rel(), n.tap{|x| x.untaint if RUBY_VERSION < "2.7" })) }
+      untaint = RUBY_VERSION < '2.7'
+      files.map {|n| Entry_.new(prefix(), join(rel(), untaint ? n.untaint : n)) }
     end
 
     def stat

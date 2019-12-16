@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 autoload :FileUtils, 'fileutils'
-autoload :URI, 'uri'
 
+require "rubygems/text"
 ##
 # A Source knows how to list and fetch gems from a RubyGems marshal index.
 #
@@ -11,6 +11,7 @@ autoload :URI, 'uri'
 class Gem::Source
 
   include Comparable
+  include Gem::Text
 
   FILES = { # :nodoc:
     :released   => 'specs',
@@ -217,6 +218,11 @@ class Gem::Source
         q.text api.to_s
       end
     end
+  end
+
+  def typo_squatting?(host, distance_threshold=4)
+    return if @uri.host.nil?
+    levenshtein_distance(@uri.host, host) <= distance_threshold
   end
 
 end

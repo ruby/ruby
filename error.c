@@ -14,6 +14,7 @@
 #include "internal.h"
 #include "ruby_assert.h"
 #include "vm_core.h"
+#include "builtin.h"
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -125,6 +126,50 @@ rb_syntax_error_append(VALUE exc, VALUE file, int line, int column,
     }
 
     return exc;
+}
+
+static unsigned int warning_disabled_categories;
+#define RB_WARN_CATEGORY_DEPRECATED 1
+
+static unsigned int
+rb_warning_category_mask(VALUE category)
+{
+    unsigned int mask = 0;
+    Check_Type(category, T_SYMBOL);
+    if (category == ID2SYM(rb_intern("deprecated"))) {
+        mask = RB_WARN_CATEGORY_DEPRECATED;
+    }
+    else {
+        rb_raise(rb_eArgError, "unknown category: %"PRIsVALUE, category);
+    }
+    return mask;
+}
+
+static int
+rb_warning_category_enabled_p(VALUE category)
+{
+    return !(warning_disabled_categories & rb_warning_category_mask(category));
+}
+
+static VALUE
+rb_warning_s_aref(VALUE mod, VALUE category)
+{
+    if (rb_warning_category_enabled_p(category))
+        return Qtrue;
+    return Qfalse;
+}
+
+static VALUE
+rb_warning_s_aset(VALUE mod, VALUE category, VALUE flag)
+{
+    unsigned int mask = rb_warning_category_mask(category);
+    unsigned int disabled = warning_disabled_categories;
+    if (!RTEST(flag))
+        disabled |= mask;
+    else
+        disabled &= ~mask;
+    warning_disabled_categories = disabled;
+    return flag;
 }
 
 /*
@@ -291,73 +336,25 @@ warning_write(int argc, VALUE *argv, VALUE buf)
     return buf;
 }
 
-/*
- * call-seq:
- *    warn(*msgs, uplevel: nil)   -> nil
- *
- * If warnings have been disabled (for example with the
- * <code>-W0</code> flag), does nothing.  Otherwise,
- * converts each of the messages to strings, appends a newline
- * character to the string if the string does not end in a newline,
- * and calls Warning.warn with the string.
- *
- *    warn("warning 1", "warning 2")
- *
- *  <em>produces:</em>
- *
- *    warning 1
- *    warning 2
- *
- * If the <code>uplevel</code> keyword argument is given, the string will
- * be prepended with information for the given caller frame in
- * the same format used by the <code>rb_warn</code> C function.
- *
- *    # In baz.rb
- *    def foo
- *      warn("invalid call to foo", uplevel: 1)
- *    end
- *
- *    def bar
- *      foo
- *    end
- *
- *    bar
- *
- *  <em>produces:</em>
- *
- *    baz.rb:6: warning: invalid call to foo
- */
-
+VALUE rb_ec_backtrace_location_ary(rb_execution_context_t *ec, long lev, long n);
 static VALUE
-rb_warn_m(int argc, VALUE *argv, VALUE exc)
+rb_warn_m(rb_execution_context_t *ec, VALUE exc, VALUE msgs, VALUE uplevel)
 {
-    VALUE opts, location = Qnil;
+    VALUE location = Qnil;
+    int argc = RARRAY_LENINT(msgs);
+    const VALUE *argv = RARRAY_CONST_PTR(msgs);
 
-    if (!NIL_P(ruby_verbose) && argc > 0 &&
-            (argc = rb_scan_args(argc, argv, "*:", NULL, &opts)) > 0) {
-	VALUE str = argv[0], uplevel = Qnil;
-	if (!NIL_P(opts)) {
-	    static ID kwds[1];
-	    if (!kwds[0]) {
-		CONST_ID(kwds[0], "uplevel");
-	    }
-	    rb_get_kwargs(opts, kwds, 0, 1, &uplevel);
-	    if (uplevel == Qundef) {
-		uplevel = Qnil;
-	    }
-	    else if (!NIL_P(uplevel)) {
-		VALUE args[2];
-		long lev = NUM2LONG(uplevel);
-		if (lev < 0) {
-		    rb_raise(rb_eArgError, "negative level (%ld)", lev);
-		}
-		args[0] = LONG2NUM(lev + 1);
-		args[1] = INT2FIX(1);
-		location = rb_vm_thread_backtrace_locations(2, args, GET_THREAD()->self);
-		if (!NIL_P(location)) {
-		    location = rb_ary_entry(location, 0);
-		}
-	    }
+    if (!NIL_P(ruby_verbose) && argc > 0) {
+        VALUE str = argv[0];
+        if (!NIL_P(uplevel)) {
+            long lev = NUM2LONG(uplevel);
+            if (lev < 0) {
+                rb_raise(rb_eArgError, "negative level (%ld)", lev);
+            }
+            location = rb_ec_backtrace_location_ary(ec, lev + 1, 1);
+            if (!NIL_P(location)) {
+                location = rb_ary_entry(location, 0);
+            }
 	}
 	if (argc > 1 || !NIL_P(uplevel) || !end_with_asciichar(str, '\n')) {
 	    VALUE path;
@@ -1414,7 +1411,7 @@ exit_success_p(VALUE exc)
 
 /*
  * call-seq:
- *   FrozenError.new(msg=nil, receiver=nil)  -> name_error
+ *   FrozenError.new(msg=nil, receiver=nil)  -> frozen_error
  *
  * Construct a new FrozenError exception. If given the <i>receiver</i>
  * parameter may subsequently be examined using the FrozenError#receiver
@@ -1437,6 +1434,15 @@ frozen_err_initialize(int argc, VALUE *argv, VALUE self)
     rb_call_super(argc, argv);
     return self;
 }
+
+/*
+ * call-seq:
+ *   frozen_error.receiver  -> object
+ *
+ * Return the receiver associated with this FrozenError exception.
+ */
+
+#define frozen_err_receiver name_err_receiver
 
 void
 rb_name_error(ID id, const char *fmt, ...)
@@ -2532,7 +2538,7 @@ Init_Exception(void)
     rb_eRuntimeError = rb_define_class("RuntimeError", rb_eStandardError);
     rb_eFrozenError = rb_define_class("FrozenError", rb_eRuntimeError);
     rb_define_method(rb_eFrozenError, "initialize", frozen_err_initialize, -1);
-    rb_define_method(rb_eFrozenError, "receiver", name_err_receiver, 0);
+    rb_define_method(rb_eFrozenError, "receiver", frozen_err_receiver, 0);
     rb_eSecurityError = rb_define_class("SecurityError", rb_eException);
     rb_eNoMemError = rb_define_class("NoMemoryError", rb_eException);
     rb_eEncodingError = rb_define_class("EncodingError", rb_eStandardError);
@@ -2548,14 +2554,14 @@ Init_Exception(void)
     rb_mErrno = rb_define_module("Errno");
 
     rb_mWarning = rb_define_module("Warning");
+    rb_define_singleton_method(rb_mWarning, "[]", rb_warning_s_aref, 1);
+    rb_define_singleton_method(rb_mWarning, "[]=", rb_warning_s_aset, 2);
     rb_define_method(rb_mWarning, "warn", rb_warning_s_warn, 1);
     rb_extend_object(rb_mWarning, rb_mWarning);
 
     /* :nodoc: */
     rb_cWarningBuffer = rb_define_class_under(rb_mWarning, "buffer", rb_cString);
     rb_define_method(rb_cWarningBuffer, "write", warning_write, -1);
-
-    rb_define_global_function("warn", rb_warn_m, -1);
 
     id_cause = rb_intern_const("cause");
     id_message = rb_intern_const("message");
@@ -2989,6 +2995,14 @@ Init_syserr(void)
 #include "known_errors.inc"
 #undef defined_error
 #undef undefined_error
+}
+
+#include "warning.rbinc"
+
+void
+Init_warning(void)
+{
+    load_warning();
 }
 
 /*!

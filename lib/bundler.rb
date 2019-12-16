@@ -50,7 +50,6 @@ module Bundler
   autoload :FeatureFlag,            File.expand_path("bundler/feature_flag", __dir__)
   autoload :GemHelper,              File.expand_path("bundler/gem_helper", __dir__)
   autoload :GemHelpers,             File.expand_path("bundler/gem_helpers", __dir__)
-  autoload :GemRemoteFetcher,       File.expand_path("bundler/gem_remote_fetcher", __dir__)
   autoload :GemVersionPromoter,     File.expand_path("bundler/gem_version_promoter", __dir__)
   autoload :Graph,                  File.expand_path("bundler/graph", __dir__)
   autoload :Index,                  File.expand_path("bundler/index", __dir__)

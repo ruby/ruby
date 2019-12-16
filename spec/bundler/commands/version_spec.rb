@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-require_relative '../support/path'
+require_relative "../support/path"
 
 RSpec.describe "bundle version" do
   if Spec::Path.ruby_core?
-    COMMIT_HASH = /unknown|[a-fA-F0-9]{7,}/
+    COMMIT_HASH = /unknown|[a-fA-F0-9]{7,}/.freeze
   else
-    COMMIT_HASH = /[a-fA-F0-9]{7,}/
+    COMMIT_HASH = /[a-fA-F0-9]{7,}/.freeze
   end
 
   context "with -v" do

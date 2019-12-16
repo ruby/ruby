@@ -172,6 +172,8 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
             }
         }
 
+        fprintf(stderr, "  self: %s\n", rb_raw_obj_info(buff, 0x100, cfp->self));
+
         if (iseq) {
             if (iseq->body->local_table_size > 0) {
                 fprintf(stderr, "  lvars:\n");

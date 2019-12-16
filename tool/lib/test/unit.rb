@@ -922,12 +922,15 @@ module Test
       end
     end
 
-    module GCStressOption # :nodoc: all
+    module GCOption # :nodoc: all
       def setup_options(parser, options)
         super
         parser.separator "GC options:"
         parser.on '--[no-]gc-stress', 'Set GC.stress as true' do |flag|
           options[:gc_stress] = flag
+        end
+        parser.on '--[no-]gc-compact', 'GC.compact every time' do |flag|
+          options[:gc_compact] = flag
         end
       end
 
@@ -941,6 +944,18 @@ module Test
                 oldrun.bind_call(self, runner)
               ensure
                 GC.stress = gc_stress
+              end
+            end
+          end
+        end
+        if options.delete(:gc_compact)
+          MiniTest::Unit::TestCase.class_eval do
+            oldrun = instance_method(:run)
+            define_method(:run) do |runner|
+              begin
+                oldrun.bind_call(self, runner)
+              ensure
+                GC.compact
               end
             end
           end
@@ -1080,7 +1095,7 @@ module Test
       include Test::Unit::GlobOption
       include Test::Unit::RepeatOption
       include Test::Unit::LoadPathOption
-      include Test::Unit::GCStressOption
+      include Test::Unit::GCOption
       include Test::Unit::ExcludesOption
       include Test::Unit::TimeoutOption
       include Test::Unit::RunCount

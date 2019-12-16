@@ -160,6 +160,7 @@ module Forwardable
   # +accessor.method+.  +accessor+ should be a method name, instance
   # variable name, or constant name.  Use the full path to the
   # constant if providing the constant name.
+  # Returns the name of the method defined.
   #
   #   class MyQueue
   #     CONST = 1
@@ -184,8 +185,9 @@ module Forwardable
 
     # If it's not a class or module, it's an instance
     mod = Module === self ? self : singleton_class
-    mod.module_eval(&gen)
+    ret = mod.module_eval(&gen)
     mod.send(:ruby2_keywords, ali) if RUBY_VERSION >= '2.7'
+    ret
   end
 
   alias delegate instance_delegate
@@ -299,11 +301,13 @@ module SingleForwardable
   # Defines a method _method_ which delegates to _accessor_ (i.e. it calls
   # the method of the same name in _accessor_).  If _new_name_ is
   # provided, it is used as the name for the delegate method.
+  # Returns the name of the method defined.
   def def_single_delegator(accessor, method, ali = method)
     gen = Forwardable._delegator_method(self, accessor, method, ali)
 
-    instance_eval(&gen)
+    ret = instance_eval(&gen)
     singleton_class.send(:ruby2_keywords, ali) if RUBY_VERSION >= '2.7'
+    ret
   end
 
   alias delegate single_delegate

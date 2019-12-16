@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "uri"
-
 module Bundler
   # Represents a lazily loaded gem specification, where the full specification
   # is on the source server in rubygems' "quick" index. The proxy object is to

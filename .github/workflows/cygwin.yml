@@ -1,0 +1,78 @@
+name: Cygwin
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - '*'
+jobs:
+  make:
+    strategy:
+      matrix:
+        test_task: [test]
+        os: [windows-2019]
+        vs: [2019]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    steps:
+      - uses: actions/cache@v1
+        with:
+          path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
+          key: ${{ runner.os }}-cygwin-chocolatey-${{ matrix.os }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-cygwin-chocolatey-${{ matrix.os }}-
+            ${{ runner.os }}-cygwin-chocolatey-
+      - name: Install cygwin base packages with chocolatey
+        run: |
+          choco install --no-progress cygwin
+      - uses: actions/cache@v1
+        with:
+          path: C:\tools\cygwin\package
+          key: ${{ runner.os }}-cygwin-package-${{ matrix.os }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-cygwin-package-${{ matrix.os }}-
+            ${{ runner.os }}-cygwin-package-
+      - name: Install cygwin additional packages
+        run: |
+          C:\tools\cygwin\cygwinsetup.exe -qgnNdO -R C:/tools/cygwin -l C:/tools/cygwin/package -s http://mirrors.kernel.org/sourceware/cygwin/ -P autoconf,bison,gcc-core,git,libffi-devel,libgdbm-devel,libgmp-devel,libreadline-devel,libssl-devel,make,patch,ruby,zlib-devel
+        shell: cmd
+      - name: Set ENV
+        run: |
+          echo '::set-env name=PATH::C:\tools\cygwin\bin;C:\tools\cygwin\usr\bin'
+      # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
+      - name: Checkout ruby/ruby
+        run: |
+          git clone --single-branch --shallow-since=yesterday https://github.com/ruby/ruby src
+          git -C src reset --hard ${{ github.sha }}
+        if: github.event_name == 'push'
+        shell: cmd
+      - name: Checkout a pull request
+        run: |
+          git clone --single-branch --shallow-since=yesterday --branch=${{ github.event.pull_request.head.ref }} https://github.com/${{ github.event.pull_request.head.repo.full_name }} src
+          git -C src reset --hard ${{ github.event.pull_request.head.sha }}
+        if: github.event_name == 'pull_request'
+        shell: cmd
+      - run: ./src/tool/actions-commit-info.sh
+        shell: bash
+        id: commit_info
+      - name: Autoconf
+        run: |
+          cd src
+          bash /usr/bin/autoconf
+        shell: cmd
+      - name: Configure
+        run: |
+          md build
+          cd build
+          bash ../src/configure
+        shell: cmd
+      - name: make
+        run: |
+          make -C build
+        shell: cmd
+      - name: make btest
+        run: |
+          make -C build btest
+        shell: cmd

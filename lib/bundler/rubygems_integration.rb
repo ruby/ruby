@@ -247,12 +247,6 @@ module Bundler
       EXT_LOCK
     end
 
-    def fetch_prerelease_specs
-      fetch_specs(false, true)
-    rescue Gem::RemoteFetcher::FetchError
-      {} # if we can't download them, there aren't any
-    end
-
     def with_build_args(args)
       ext_lock.synchronize do
         old_args = build_args
@@ -531,8 +525,8 @@ module Bundler
       end
     end
 
-    def fetch_specs(source, remote, name)
-      path = source + "#{name}.#{Gem.marshal_version}.gz"
+    def fetch_specs(remote, name)
+      path = remote.uri.to_s + "#{name}.#{Gem.marshal_version}.gz"
       fetcher = gem_remote_fetcher
       fetcher.headers = { "X-Gemfile-Source" => remote.original_uri.to_s } if remote.original_uri
       string = fetcher.fetch_path(path)
@@ -543,10 +537,8 @@ module Bundler
     end
 
     def fetch_all_remote_specs(remote)
-      source = remote.uri.is_a?(URI) ? remote.uri : URI.parse(source.to_s)
-
-      specs = fetch_specs(source, remote, "specs")
-      pres = fetch_specs(source, remote, "prerelease_specs") || []
+      specs = fetch_specs(remote, "specs")
+      pres = fetch_specs(remote, "prerelease_specs") || []
 
       specs.concat(pres)
     end
@@ -564,7 +556,7 @@ module Bundler
       require "resolv"
       proxy = configuration[:http_proxy]
       dns = Resolv::DNS.new
-      Bundler::GemRemoteFetcher.new(proxy, dns)
+      Gem::RemoteFetcher.new(proxy, dns)
     end
 
     def gem_from_path(path, policy = nil)

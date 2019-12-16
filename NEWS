@@ -39,8 +39,8 @@ sufficient information, see the ChangeLog file or Redmine
       "children": [{ "name": "Bob", "age": 2 }]
     }
     END
-    if JSON.parse(json, symbolize_names: true) in
-         {name: "Alice", children: [{name: "Bob", age: age}]}
+    case JSON.parse(json, symbolize_names: true)
+    in {name: "Alice", children: [{name: "Bob", age: age}]}
       p age #=> 2
     end
 
@@ -127,8 +127,8 @@ sufficient information, see the ChangeLog file or Redmine
 
   You can still define a local variable named _1 and so on, and that is honored when present, but renders warning.
 
-    _1 = 0
-    [1].each { p _1 } # prints 0 instead of 1, but also warns.
+    _1 = 0            #=> warning: `_1' is used as numbered parameter
+    [1].each { p _1 } # prints 0 instead of 1
 
 ==== proc/lambda without block is deprecated
 
@@ -138,7 +138,7 @@ sufficient information, see the ChangeLog file or Redmine
     def foo
       proc
     end
-    foo { puts "Hello" } #=> warning: Capturing the given block using Proc.new is deprecated; use `&block` instead
+    foo { puts "Hello" } #=> warning: Capturing the given block using Kernel#proc is deprecated; use `&block` instead
 
 * Kernel#lambda with no block in a method called with a block raises an exception.
 
@@ -189,10 +189,10 @@ sufficient information, see the ChangeLog file or Redmine
 
    def foo
      class << Object.new
-       yield
+       yield #=> warning: `yield' in class syntax will not be supported from Ruby 3.0. [Feature #15575]
      end
    end
-   foo { p :ok } #=> warning: `yield' in class syntax will not be supported from Ruby 3.0.
+   foo { p :ok }
 
 * Argument forwarding by <code>(...)</code> is introduced. [Feature #16253]
 
@@ -365,7 +365,6 @@ Module::
       always the same for a given Module. This change is
       experimental. [Feature #16150]
 
-
 NilClass / TrueClass / FalseClass::
 
   Modified methods::
@@ -380,13 +379,6 @@ ObjectSpace::WeakMap::
 
     * ObjectSpace::WeakMap#[]= now accepts special objects as either key or
       values.  [Feature #16035]
-
-Regexp::
-
-  Modified method::
-
-    * Regexp#match and Regexp#match? with a +nil+ argument are deprecated
-      and will raise a TypeError in the next release.  [Feature #13083]
 
 RubyVM::
 
@@ -465,8 +457,8 @@ $LOAD_PATH::
 
 Bundler::
 
-  * Upgrade to Bundler 2.1.0.pre.3
-    See https://github.com/bundler/bundler/blob/2-1-stable/CHANGELOG.md#210pre3-november-12-2019
+  * Upgrade to Bundler 2.1.0
+    See https://github.com/bundler/bundler/releases/tag/v2.1.0
 
 CGI::
 
@@ -507,6 +499,11 @@ Net::FTP::
 
   * Add Net::FTP#features to check available features, and Net::FTP#option to
     enable/disable each of them.  [Feature #15964]
+
+Net::HTTP::
+
+  * Add ipaddr optional parameter to Net::HTTP#start to replace the address for
+    TCP/IP connection [Feature #5180]
 
 Net::IMAP::
 
@@ -567,8 +564,8 @@ RSS::
 
 RubyGems::
 
-  * Upgrade to RubyGems 3.1.0.pre3
-    See https://github.com/rubygems/rubygems/blob/3.1/History.txt#L3
+  * Upgrade to RubyGems 3.1.1
+    See https://github.com/rubygems/rubygems/releases/tag/v3.1.0
 
 StringScanner::
 

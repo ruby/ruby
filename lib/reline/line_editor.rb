@@ -43,6 +43,7 @@ class Reline::LineEditor
     COMPLETION = :completion
     MENU = :menu
     JOURNEY = :journey
+    MENU_WITH_PERFECT_MATCH = :menu_with_perfect_match
     PERFECT_MATCH = :perfect_match
   end
 
@@ -549,10 +550,14 @@ class Reline::LineEditor
   private def complete_internal_proc(list, is_menu)
     preposing, target, postposing = retrieve_completion_block
     list = list.select { |i|
-      if i and i.encoding != Encoding::US_ASCII and i.encoding != @encoding
-        raise Encoding::CompatibilityError
+      if i and not Encoding.compatible?(target.encoding, i.encoding)
+        raise Encoding::CompatibilityError, "#{target.encoding.name} is not comaptible with #{i.encoding.name}"
       end
-      i&.start_with?(target)
+      if @config.completion_ignore_case
+        i&.downcase&.start_with?(target.downcase)
+      else
+        i&.start_with?(target)
+      end
     }
     if is_menu
       menu(target, list)
@@ -569,10 +574,18 @@ class Reline::LineEditor
       size = [memo_mbchars.size, item_mbchars.size].min
       result = ''
       size.times do |i|
-        if memo_mbchars[i] == item_mbchars[i]
-          result << memo_mbchars[i]
+        if @config.completion_ignore_case
+          if memo_mbchars[i].casecmp?(item_mbchars[i])
+            result << memo_mbchars[i]
+          else
+            break
+          end
         else
-          break
+          if memo_mbchars[i] == item_mbchars[i]
+            result << memo_mbchars[i]
+          else
+            break
+          end
         end
       end
       result
@@ -587,16 +600,24 @@ class Reline::LineEditor
     when CompletionState::PERFECT_MATCH
       @dig_perfect_match_proc&.(@perfect_matched)
     end
-    is_menu = (@completion_state == CompletionState::MENU)
+    is_menu = (@completion_state == CompletionState::MENU or @completion_state == CompletionState::MENU_WITH_PERFECT_MATCH)
     result = complete_internal_proc(list, is_menu)
+    if @completion_state == CompletionState::MENU_WITH_PERFECT_MATCH
+      @completion_state = CompletionState::PERFECT_MATCH
+    end
     return if result.nil?
     target, preposing, completed, postposing = result
     return if completed.nil?
-    if target <= completed and (@completion_state == CompletionState::COMPLETION or @completion_state == CompletionState::PERFECT_MATCH)
-      @completion_state = CompletionState::MENU
+    if target <= completed and (@completion_state == CompletionState::COMPLETION)
       if list.include?(completed)
-        @completion_state = CompletionState::PERFECT_MATCH
+        if list.one?
+          @completion_state = CompletionState::PERFECT_MATCH
+        else
+          @completion_state = CompletionState::MENU_WITH_PERFECT_MATCH
+        end
         @perfect_matched = completed
+      else
+        @completion_state = CompletionState::MENU
       end
       if target < completed
         @line = preposing + completed + postposing
@@ -610,7 +631,8 @@ class Reline::LineEditor
 
   private def move_completed_list(list, direction)
     case @completion_state
-    when CompletionState::NORMAL, CompletionState::COMPLETION, CompletionState::MENU
+    when CompletionState::NORMAL, CompletionState::COMPLETION,
+         CompletionState::MENU, CompletionState::MENU_WITH_PERFECT_MATCH
       @completion_state = CompletionState::JOURNEY
       result = retrieve_completion_block
       return if result.nil?
@@ -777,9 +799,7 @@ class Reline::LineEditor
     completion_occurs = false
     if @config.editing_mode_is?(:emacs, :vi_insert) and key.char == "\C-i".ord
       unless @config.disable_completion
-        result = retrieve_completion_block
-        slice = result[1]
-        result = @completion_proc.(slice) if @completion_proc and slice
+        result = call_completion_proc
         if result.is_a?(Array)
           completion_occurs = true
           complete(result)
@@ -787,9 +807,7 @@ class Reline::LineEditor
       end
     elsif not @config.disable_completion and @config.editing_mode_is?(:vi_insert) and ["\C-p".ord, "\C-n".ord].include?(key.char)
       unless @config.disable_completion
-        result = retrieve_completion_block
-        slice = result[1]
-        result = @completion_proc.(slice) if @completion_proc and slice
+        result = call_completion_proc
         if result.is_a?(Array)
           completion_occurs = true
           move_completed_list(result, "\C-p".ord == key.char ? :up : :down)
@@ -806,6 +824,14 @@ class Reline::LineEditor
     if @is_multiline and @auto_indent_proc
       process_auto_indent
     end
+  end
+
+  def call_completion_proc
+    result = retrieve_completion_block(true)
+    slice = result[1]
+    result = @completion_proc.(slice) if @completion_proc and slice
+    Reline.core.instance_variable_set(:@completion_quote_character, nil)
+    result
   end
 
   private def process_auto_indent
@@ -849,7 +875,7 @@ class Reline::LineEditor
     @check_new_auto_indent = false
   end
 
-  def retrieve_completion_block
+  def retrieve_completion_block(set_completion_quote_character = false)
     word_break_regexp = /\A[#{Regexp.escape(Reline.completer_word_break_characters)}]/
     quote_characters_regexp = /\A[#{Regexp.escape(Reline.completer_quote_characters)}]/
     before = @line.byteslice(0, @byte_pointer)
@@ -868,14 +894,18 @@ class Reline::LineEditor
       if quote and slice.start_with?(closing_quote)
         quote = nil
         i += 1
+        rest = nil
+        break_pointer = nil
       elsif quote and slice.start_with?(escaped_quote)
         # skip
         i += 2
       elsif slice =~ quote_characters_regexp # find new "
+        rest = $'
         quote = $&
         closing_quote = /(?!\\)#{Regexp.escape(quote)}/
         escaped_quote = /\\#{Regexp.escape(quote)}/
         i += 1
+        break_pointer = i
       elsif not quote and slice =~ word_break_regexp
         rest = $'
         i += 1
@@ -884,15 +914,21 @@ class Reline::LineEditor
         i += 1
       end
     end
+    postposing = @line.byteslice(@byte_pointer, @line.bytesize - @byte_pointer)
     if rest
       preposing = @line.byteslice(0, break_pointer)
       target = rest
+      if set_completion_quote_character and quote
+        Reline.core.instance_variable_set(:@completion_quote_character, quote)
+        if postposing !~ /(?!\\)#{Regexp.escape(quote)}/ # closing quote
+          insert_text(quote)
+        end
+      end
     else
       preposing = ''
       target = before
     end
-    postposing = @line.byteslice(@byte_pointer, @line.bytesize - @byte_pointer)
-    [preposing, target, postposing]
+    [preposing.encode(@encoding), target.encode(@encoding), postposing.encode(@encoding)]
   end
 
   def confirm_multiline_termination

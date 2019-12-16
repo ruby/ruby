@@ -398,4 +398,4 @@ SEE ALSO
 
 
 
-				 November 2019		     BUNDLE-INSTALL(1)
+				 December 2019		     BUNDLE-INSTALL(1)

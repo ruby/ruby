@@ -1,5 +1,5 @@
 require 'net/http'
-require 'uri'
+require_relative '../../../../uri/lib/uri'
 require 'cgi' # for escaping
 require_relative '../../../../connection_pool/lib/connection_pool'
 
@@ -31,7 +31,7 @@ autoload :OpenSSL, 'openssl'
 #
 #   require 'bundler/vendor/net-http-persistent/lib/net/http/persistent'
 #
-#   uri = URI 'http://example.com/awesome/web/service'
+#   uri = Bundler::URI 'http://example.com/awesome/web/service'
 #
 #   http = Bundler::Persistent::Net::HTTP::Persistent.new name: 'my_app_name'
 #
@@ -48,17 +48,17 @@ autoload :OpenSSL, 'openssl'
 #   post = Net::HTTP::Post.new post_uri.path
 #   post.set_form_data 'some' => 'cool data'
 #
-#   # perform the POST, the URI is always required
+#   # perform the POST, the Bundler::URI is always required
 #   response http.request post_uri, post
 #
 # Note that for GET, HEAD and other requests that do not have a body you want
-# to use URI#request_uri not URI#path.  The request_uri contains the query
+# to use Bundler::URI#request_uri not Bundler::URI#path.  The request_uri contains the query
 # params which are sent in the body for other requests.
 #
 # == SSL
 #
 # SSL connections are automatically created depending upon the scheme of the
-# URI.  SSL connections are automatically verified against the default
+# Bundler::URI.  SSL connections are automatically verified against the default
 # certificate store for your computer.  You can override this by changing
 # verify_mode or by specifying an alternate cert_store.
 #
@@ -81,7 +81,7 @@ autoload :OpenSSL, 'openssl'
 # == Proxies
 #
 # A proxy can be set through #proxy= or at initialization time by providing a
-# second argument to ::new.  The proxy may be the URI of the proxy server or
+# second argument to ::new.  The proxy may be the Bundler::URI of the proxy server or
 # <code>:ENV</code> which will consult environment variables.
 #
 # See #proxy= and #proxy_from_env for details.
@@ -150,7 +150,7 @@ autoload :OpenSSL, 'openssl'
 #
 #   require 'bundler/vendor/net-http-persistent/lib/net/http/persistent'
 #
-#   uri = URI 'http://example.com/awesome/web/service'
+#   uri = Bundler::URI 'http://example.com/awesome/web/service'
 #   post_uri = uri + 'create'
 #
 #   http = Bundler::Persistent::Net::HTTP::Persistent.new name: 'my_app_name'
@@ -249,7 +249,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   # NOTE:  This may not work on ruby > 1.9.
 
   def self.detect_idle_timeout uri, max = 10
-    uri = URI uri unless URI::Generic === uri
+    uri = Bundler::URI uri unless Bundler::URI::Generic === uri
     uri += '/'
 
     req = Net::HTTP::Head.new uri.request_uri
@@ -513,13 +513,13 @@ class Bundler::Persistent::Net::HTTP::Persistent
   # required currently, but highly recommended.  Your library name should be
   # good enough.  This parameter will be required in a future version.
   #
-  # +proxy+ may be set to a URI::HTTP or :ENV to pick up proxy options from
+  # +proxy+ may be set to a Bundler::URI::HTTP or :ENV to pick up proxy options from
   # the environment.  See proxy_from_env for details.
   #
-  # In order to use a URI for the proxy you may need to do some extra work
-  # beyond URI parsing if the proxy requires a password:
+  # In order to use a Bundler::URI for the proxy you may need to do some extra work
+  # beyond Bundler::URI parsing if the proxy requires a password:
   #
-  #   proxy = URI 'http://proxy.example'
+  #   proxy = Bundler::URI 'http://proxy.example'
   #   proxy.user     = 'AzureDiamond'
   #   proxy.password = 'hunter2'
   #
@@ -566,7 +566,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
     @verify_mode        = nil
     @cert_store         = nil
 
-    @generation         = 0 # incremented when proxy URI changes
+    @generation         = 0 # incremented when proxy Bundler::URI changes
 
     if HAVE_OPENSSL then
       @verify_mode        = OpenSSL::SSL::VERIFY_PEER
@@ -688,14 +688,14 @@ class Bundler::Persistent::Net::HTTP::Persistent
   end
 
   ##
-  # URI::escape wrapper
+  # Bundler::URI::escape wrapper
 
   def escape str
     CGI.escape str if str
   end
 
   ##
-  # URI::unescape wrapper
+  # Bundler::URI::unescape wrapper
 
   def unescape str
     CGI.unescape str if str
@@ -803,12 +803,12 @@ class Bundler::Persistent::Net::HTTP::Persistent
   alias key= private_key=
 
   ##
-  # Sets the proxy server.  The +proxy+ may be the URI of the proxy server,
+  # Sets the proxy server.  The +proxy+ may be the Bundler::URI of the proxy server,
   # the symbol +:ENV+ which will read the proxy from the environment or nil to
   # disable use of a proxy.  See #proxy_from_env for details on setting the
   # proxy from the environment.
   #
-  # If the proxy URI is set after requests have been made, the next request
+  # If the proxy Bundler::URI is set after requests have been made, the next request
   # will shut-down and re-open all connections.
   #
   # The +no_proxy+ query parameter can be used to specify hosts which shouldn't
@@ -819,9 +819,9 @@ class Bundler::Persistent::Net::HTTP::Persistent
   def proxy= proxy
     @proxy_uri = case proxy
                  when :ENV      then proxy_from_env
-                 when URI::HTTP then proxy
+                 when Bundler::URI::HTTP then proxy
                  when nil       then # ignore
-                 else raise ArgumentError, 'proxy must be :ENV or a URI::HTTP'
+                 else raise ArgumentError, 'proxy must be :ENV or a Bundler::URI::HTTP'
                  end
 
     @no_proxy.clear
@@ -846,13 +846,13 @@ class Bundler::Persistent::Net::HTTP::Persistent
   end
 
   ##
-  # Creates a URI for an HTTP proxy server from ENV variables.
+  # Creates a Bundler::URI for an HTTP proxy server from ENV variables.
   #
   # If +HTTP_PROXY+ is set a proxy will be returned.
   #
-  # If +HTTP_PROXY_USER+ or +HTTP_PROXY_PASS+ are set the URI is given the
+  # If +HTTP_PROXY_USER+ or +HTTP_PROXY_PASS+ are set the Bundler::URI is given the
   # indicated user and password unless HTTP_PROXY contains either of these in
-  # the URI.
+  # the Bundler::URI.
   #
   # The +NO_PROXY+ ENV variable can be used to specify hosts which shouldn't
   # be reached via proxy; if set it should be a comma separated list of
@@ -868,7 +868,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
 
     return nil if env_proxy.nil? or env_proxy.empty?
 
-    uri = URI normalize_uri env_proxy
+    uri = Bundler::URI normalize_uri env_proxy
 
     env_no_proxy = ENV['no_proxy'] || ENV['NO_PROXY']
 
@@ -951,7 +951,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
     retried      = false
     bad_response = false
 
-    uri      = URI uri
+    uri      = Bundler::URI uri
     req      = request_setup req || uri
     response = nil
 
@@ -1024,13 +1024,13 @@ class Bundler::Persistent::Net::HTTP::Persistent
   end
 
   ##
-  # Creates a GET request if +req_or_uri+ is a URI and adds headers to the
+  # Creates a GET request if +req_or_uri+ is a Bundler::URI and adds headers to the
   # request.
   #
   # Returns the request.
 
   def request_setup req_or_uri # :nodoc:
-    req = if URI === req_or_uri then
+    req = if Bundler::URI === req_or_uri then
             Net::HTTP::Get.new req_or_uri.request_uri
           else
             req_or_uri

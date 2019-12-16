@@ -3181,7 +3181,7 @@ rb_thread_to_s(VALUE thread)
         rb_str_catf(str, "@%"PRIsVALUE, target_th->name);
     }
     if ((loc = threadptr_invoke_proc_location(target_th)) != Qnil) {
-        rb_str_catf(str, "@%"PRIsVALUE":%"PRIsVALUE,
+        rb_str_catf(str, " %"PRIsVALUE":%"PRIsVALUE,
                     RARRAY_AREF(loc, 0), RARRAY_AREF(loc, 1));
         rb_gc_force_recycle(loc);
     }

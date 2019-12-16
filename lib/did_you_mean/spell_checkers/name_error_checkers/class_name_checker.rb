@@ -1,6 +1,5 @@
 # frozen-string-literal: true
 
-require 'delegate'
 require_relative "../../spell_checker"
 
 module DidYouMean
@@ -32,16 +31,16 @@ module DidYouMean
       end.uniq
     end
 
-    class ClassName < SimpleDelegator
+    class ClassName < String
       attr :namespace
 
       def initialize(name, namespace = '')
-        super(name)
+        super(name.to_s)
         @namespace = namespace
       end
 
       def full_name
-        self.class.new("#{namespace}#{__getobj__}")
+        self.class.new("#{namespace}#{self}")
       end
     end
 

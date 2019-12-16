@@ -22,7 +22,7 @@ RSpec.describe "bundle install with install-time dependencies" do
     build_repo2
 
     path = "#{gem_repo2}/#{Gem::MARSHAL_SPEC_DIR}/actionpack-2.3.2.gemspec.rz"
-    spec = Marshal.load(Bundler.rubygems.inflate(File.read(path)))
+    spec = Marshal.load(Bundler.rubygems.inflate(File.binread(path)))
     spec.dependencies.each do |d|
       d.instance_variable_set(:@type, :fail)
     end
@@ -108,7 +108,7 @@ RSpec.describe "bundle install with install-time dependencies" do
           end
         end
 
-        install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2 }
+        install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
           ruby "#{RUBY_VERSION}"
           source "http://localgemserver.test/"
           gem 'rack'
@@ -127,7 +127,7 @@ RSpec.describe "bundle install with install-time dependencies" do
           build_gem "foo1", "1.0"
         end
 
-        install_gemfile <<-G, :artifice => "compact_index_rate_limited", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4 }
+        install_gemfile <<-G, :artifice => "compact_index_rate_limited", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
           ruby "#{RUBY_VERSION}"
           source "http://localgemserver.test/"
           gem 'rack'
@@ -153,7 +153,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
       shared_examples_for "ruby version conflicts" do
         it "raises an error during resolution" do
-          install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2 }
+          install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
             source "http://localgemserver.test/"
             ruby #{ruby_requirement}
             gem 'require_ruby'

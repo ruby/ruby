@@ -2113,11 +2113,20 @@ newobj_init(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_prote
 #endif
 
     /* OBJSETUP */
-    RBASIC(obj)->flags = flags;
-    RBASIC_SET_CLASS_RAW(obj, klass);
-    RANY(obj)->as.values.v1 = v1;
-    RANY(obj)->as.values.v2 = v2;
-    RANY(obj)->as.values.v3 = v3;
+    struct RVALUE buf = {
+        .as = {
+            .values =  {
+                .basic = {
+                    .flags = flags,
+                    .klass = klass,
+                },
+                .v1 = v1,
+                .v2 = v2,
+                .v3 = v3,
+            },
+        },
+    };
+    MEMCPY(RANY(obj), &buf, RVALUE, 1);
 
 #if RGENGC_CHECK_MODE
     GC_ASSERT(RVALUE_MARKED(obj) == FALSE);
@@ -8179,14 +8188,12 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
       case T_MODULE:
-        update_m_tbl(objspace, RCLASS_M_TBL(obj));
         if (RCLASS_SUPER((VALUE)obj)) {
             UPDATE_IF_MOVED(objspace, RCLASS(obj)->super);
         }
         if (!RCLASS_EXT(obj)) break;
-        if (RCLASS_IV_TBL(obj)) {
-            gc_update_tbl_refs(objspace, RCLASS_IV_TBL(obj));
-        }
+        update_m_tbl(objspace, RCLASS_M_TBL(obj));
+        gc_update_tbl_refs(objspace, RCLASS_IV_TBL(obj));
         update_class_ext(objspace, RCLASS_EXT(obj));
         update_const_tbl(objspace, RCLASS_CONST_TBL(obj));
         break;
@@ -11683,7 +11690,7 @@ rb_gcdebug_print_obj_condition(VALUE obj)
 }
 
 static VALUE
-gcdebug_sentinel(VALUE obj, VALUE name)
+gcdebug_sentinel(RB_BLOCK_CALL_FUNC_ARGLIST(obj, name))
 {
     fprintf(stderr, "WARNING: object %s(%p) is inadvertently collected\n", (char *)name, (void *)obj);
     return Qnil;

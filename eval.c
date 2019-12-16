@@ -477,7 +477,7 @@ rb_class_modify_check(VALUE klass)
 
 NORETURN(static void rb_longjmp(rb_execution_context_t *, int, volatile VALUE, VALUE));
 static VALUE get_errinfo(void);
-static VALUE get_ec_errinfo(const rb_execution_context_t *ec);
+#define get_ec_errinfo(ec) rb_ec_get_errinfo(ec)
 
 static VALUE
 exc_setup_cause(VALUE exc, VALUE cause)
@@ -1847,8 +1847,8 @@ errinfo_place(const rb_execution_context_t *ec)
     return 0;
 }
 
-static VALUE
-get_ec_errinfo(const rb_execution_context_t *ec)
+VALUE
+rb_ec_get_errinfo(const rb_execution_context_t *ec)
 {
     const VALUE *ptr = errinfo_place(ec);
     if (ptr) {

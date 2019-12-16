@@ -472,16 +472,25 @@ class IMAPTest < Test::Unit::TestCase
   def test_connection_closed_without_greeting
     server = create_tcp_server
     port = server.addr[1]
+    h = {'server before close': server.inspect} # inspect info before close
     start_server do
       begin
         sock = server.accept
+        h[:sock_addr], h[:sock_peeraddr] = sock.addr, sock.peeraddr
         sock.close
       ensure
         server.close
       end
     end
     assert_raise(Net::IMAP::Error) do
+      #begin
       Net::IMAP.new(server_addr, :port => port)
+      #rescue Net::IMAP::Error
+      #  raise Errno::EINVAL
+      #end
+    rescue Errno::EINVAL => e # for debug on OpenCSW
+      h.merge!({e: e, server: server, port: port, server_addr: server_addr})
+      raise(h.inspect)
     end
   end
 

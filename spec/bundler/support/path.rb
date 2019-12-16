@@ -21,8 +21,12 @@ module Spec
       @bindir ||= root.join(ruby_core? ? "libexec" : "exe")
     end
 
+    def gem_cmd
+      @gem_cmd ||= ruby_core? ? root.join("bin/gem") : "gem"
+    end
+
     def gem_bin
-      @gem_bin ||= ruby_core? ? ENV["GEM_COMMAND"] : "#{Gem.ruby} -I#{spec_dir}/rubygems -S gem --backtrace"
+      @gem_bin ||= ruby_core? ? ENV["GEM_COMMAND"] : "gem"
     end
 
     def spec_dir
@@ -30,23 +34,20 @@ module Spec
     end
 
     def tracked_files
-      if root != `git rev-parse --show-toplevel`
-        skip 'not in git working directory'
-      end
+      skip "not in git working directory" unless git_root_dir?
+
       @tracked_files ||= ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb spec/bundler man/bundler*` : `git ls-files -z`
     end
 
     def shipped_files
-      if root != `git rev-parse --show-toplevel`
-        skip 'not in git working directory'
-      end
+      skip "not in git working directory" unless git_root_dir?
+
       @shipped_files ||= ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb man/bundler* libexec/bundle*` : `git ls-files -z -- lib man exe CHANGELOG.md LICENSE.md README.md bundler.gemspec`
     end
 
     def lib_tracked_files
-      if root != `git rev-parse --show-toplevel`
-        skip 'not in git working directory'
-      end
+      skip "not in git working directory" unless git_root_dir?
+
       @lib_tracked_files ||= ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb` : `git ls-files -z -- lib`
     end
 
@@ -102,8 +103,6 @@ module Spec
     def file_uri_for(path)
       protocol = "file://"
       root = Gem.win_platform? ? "/" : ""
-
-      return protocol + "localhost" + root + path.to_s if RUBY_VERSION < "2.5"
 
       protocol + root + path.to_s
     end
@@ -182,5 +181,11 @@ module Spec
     end
 
     extend self
+
+  private
+
+    def git_root_dir?
+      root.to_s == `git rev-parse --show-toplevel`.chomp
+    end
   end
 end
