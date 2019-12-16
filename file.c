@@ -237,7 +237,7 @@ rb_str_encode_ospath(VALUE path)
 {
 #if USE_OSPATH
     int encidx = ENCODING_GET(path);
-#ifdef _WIN32
+#if 0 && defined _WIN32
     if (encidx == ENCINDEX_ASCII) {
 	encidx = rb_filesystem_encindex();
     }
