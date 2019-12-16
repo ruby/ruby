@@ -3604,6 +3604,33 @@ rb_thread_aref(VALUE thread, VALUE key)
 }
 
 /*
+ * call-seq:
+ *   thr.dig(sym, ...)                 -> object
+ *
+ * Extracts the nested value specified by the sequence of <i>key</i>
+ * objects by calling +dig+ at each step, returning +nil+ if any
+ * intermediate step is +nil+.
+ *
+ *   Thread.current[:foo] = {bar: {baz: 1}}
+ *
+ *   Thread.current.dig(:foo, :bar, :baz)     #=> 1
+ *   Thread.current.dig(:foo, :zot, :xyz)     #=> nil
+ */
+
+static VALUE
+rb_thread_dig(int argc, VALUE *argv, VALUE thread)
+{
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
+    VALUE key = argv[0];
+    ID id = rb_check_id(&key);
+    if (!id) return Qnil;
+    VALUE self = rb_thread_local_aref(thread, id);
+    if (!--argc) return self;
+    ++argv;
+    return rb_obj_dig(argc, argv, self, Qnil);
+}
+
+/*
  *  call-seq:
  *      thr.fetch(sym)           -> obj
  *      thr.fetch(sym) { }       -> obj
@@ -5431,6 +5458,7 @@ Init_Thread(void)
     rb_define_method(rb_cThread, "[]", rb_thread_aref, 1);
     rb_define_method(rb_cThread, "[]=", rb_thread_aset, 2);
     rb_define_method(rb_cThread, "fetch", rb_thread_fetch, -1);
+    rb_define_method(rb_cThread, "dig", rb_thread_dig, -1);
     rb_define_method(rb_cThread, "key?", rb_thread_key_p, 1);
     rb_define_method(rb_cThread, "keys", rb_thread_keys, 0);
     rb_define_method(rb_cThread, "priority", rb_thread_priority, 0);
