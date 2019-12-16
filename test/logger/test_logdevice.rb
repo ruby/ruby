@@ -276,7 +276,7 @@ class TestLogDevice < Test::Unit::TestCase
   end
 
   def test_invalid_shifting_age
-    assert_raise(ArgumentError) { Logger.new(@filename, 'invalid') }
+    assert_raise(ArgumentError) { Logger::Period.next_rotate_time(Time.now, 'invalid') }
     assert_raise(ArgumentError) { Logger::Period.previous_period_end(Time.now, 'invalid') }
   end
 
