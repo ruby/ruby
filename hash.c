@@ -5217,9 +5217,17 @@ rb_env_size(VALUE ehash, VALUE args, VALUE eobj)
  *   ENV.each_key { |name| block } -> ENV
  *   ENV.each_key                  -> Enumerator
  *
- * Yields each environment variable name.
+ * Yields each environment variable name:
+ *   ENV.replace('foo' => '0', 'bar' => '1') # => ENV
+ *   names = []
+ *   ENV.each_key { |name| names.push(name) } # => ENV
+ *   names # => ["bar", "foo"]
  *
- * An Enumerator is returned if no block is given.
+ * Returns an Enumerator if no block given:
+ *   e = ENV.each_key # => #<Enumerator: {"bar"=>"1", "foo"=>"0"}:each_key>
+ *   names = []
+ *   e.each { |name| names.push(name) } # => ENV
+ *   names # => ["bar", "foo"]
  */
 static VALUE
 env_each_key(VALUE ehash)
@@ -5258,9 +5266,16 @@ env_values(void)
  * call-seq:
  *   ENV.values -> Array
  *
- * Returns every environment variable value as an Array
+ * Returns all environment variable values in an Array:
+ *   ENV.replace('foo' => '0', 'bar' => '1')
+ *   ENV.values # => ['1', '0']
+ * The order of the values is OS-dependent.
+ * See {About Ordering}[#class-ENV-label-About+Ordering].
+ *
+ * Returns the empty Array if ENV is empty:
+ *   ENV.clear
+ *   ENV.values # => []
  */
-
 static VALUE
 env_f_values(VALUE _)
 {
@@ -5272,9 +5287,17 @@ env_f_values(VALUE _)
  *   ENV.each_value { |value| block } -> ENV
  *   ENV.each_value                   -> Enumerator
  *
- * Yields each environment variable +value+.
+ * Yields each environment variable value:
+ *   ENV.replace('foo' => '0', 'bar' => '1') # => ENV
+ *   values = []
+ *   ENV.each_value { |value| values.push(value) } # => ENV
+ *   values # => ["1", "0"]
  *
- * An Enumerator is returned if no block was given.
+ * Returns an Enumerator if no block given:
+ *   e = ENV.each_value # => #<Enumerator: {"bar"=>"1", "foo"=>"0"}:each_value>
+ *   values = []
+ *   e.each { |value| values.push(value) } # => ENV
+ *   values # => ["1", "0"]
  */
 static VALUE
 env_each_value(VALUE ehash)
@@ -5297,9 +5320,16 @@ env_each_value(VALUE ehash)
  *   ENV.each_pair { |name, value| block } -> ENV
  *   ENV.each_pair                         -> Enumerator
  *
- * Yields each environment variable +name+ and +value+.
+ * Yields each environment variable name and its value as a 2-element Array:
+ *   h = {}
+ *   ENV.each_pair { |name, value| h[name] = value } # => ENV
+ *   h # => {"bar"=>"1", "foo"=>"0"}
  *
- * If no block is given an Enumerator is returned.
+ * Returns an Enumerator if no block given:
+ *   h = {}
+ *   e = ENV.each_pair # => #<Enumerator: {"bar"=>"1", "foo"=>"0"}:each_pair>
+ *   e.each { |name, value| h[name] = value } # => ENV
+ *   h # => {"bar"=>"1", "foo"=>"0"}
  */
 static VALUE
 env_each_pair(VALUE ehash)
@@ -5340,9 +5370,21 @@ env_each_pair(VALUE ehash)
  *   ENV.reject! { |name, value| block } -> ENV or nil
  *   ENV.reject!                         -> Enumerator
  *
- * Equivalent to ENV.delete_if but returns +nil+ if no changes were made.
+ * Similar to ENV.delete_if, but returns +nil+ if no changes were made.
  *
- * Returns an Enumerator if no block was given.
+ * Deletes each environment variable for which the block returns a truthy value,
+ * returning ENV (if any deletions) or +nil+ (if not):
+ *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
+ *   ENV.reject! { |name, value| name.start_with?('b') } # => ENV
+ *   ENV # => {"foo"=>"0"}
+ *   ENV.reject! { |name, value| name.start_with?('b') } # => nil
+ *
+ * Returns an Enumerator if no block given:
+ *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
+ *   e = ENV.reject! # => #<Enumerator: {"bar"=>"1", "baz"=>"2", "foo"=>"0"}:reject!>
+ *   e.each { |name, value| name.start_with?('b') } # => ENV
+ *   ENV # => {"foo"=>"0"}
+ *   e.each { |name, value| name.start_with?('b') } # => nil
  */
 static VALUE
 env_reject_bang(VALUE ehash)
