@@ -1556,42 +1556,20 @@ rb_name_error_str(VALUE str, const char *fmt, ...)
 }
 
 static VALUE
-name_err_init_attr(VALUE exc, VALUE recv, VALUE method)
+name_err_init_attr(rb_execution_context_t *ec, VALUE exc, VALUE method)
 {
-    const rb_execution_context_t *ec = GET_EC();
     rb_control_frame_t *cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(ec->cfp);
     cfp = rb_vm_get_ruby_level_next_cfp(ec, cfp);
     rb_ivar_set(exc, id_name, method);
-    err_init_recv(exc, recv);
     if (cfp) rb_ivar_set(exc, id_iseq, rb_iseqw_new(cfp->iseq));
     return exc;
 }
 
-/*
- * call-seq:
- *   NameError.new(msg=nil, name=nil, receiver: nil)  -> name_error
- *
- * Construct a new NameError exception. If given the <i>name</i>
- * parameter may subsequently be examined using the NameError#name
- * method. <i>receiver</i> parameter allows to pass object in
- * context of which the error happened. Example:
- *
- *    [1, 2, 3].method(:rject) # NameError with name "rject" and receiver: Array
- *    [1, 2, 3].singleton_method(:rject) # NameError with name "rject" and receiver: [1, 2, 3]
- */
-
 static VALUE
-name_err_initialize(int argc, VALUE *argv, VALUE self)
+name_err_initialize(rb_execution_context_t *ec, VALUE self, VALUE recv, VALUE name)
 {
-    ID keywords[1];
-    VALUE values[numberof(keywords)], name, options;
-
-    argc = rb_scan_args(argc, argv, "*:", NULL, &options);
-    keywords[0] = id_receiver;
-    rb_get_kwargs(options, keywords, 0, numberof(values), values);
-    name = (argc > 1) ? argv[--argc] : Qnil;
-    rb_call_super(argc, argv);
-    name_err_init_attr(self, values[0], name);
+    if (recv != self) err_init_recv(self, recv);
+    name_err_init_attr(ec, self, name);
     return self;
 }
 
@@ -1601,7 +1579,8 @@ static VALUE
 name_err_init(VALUE exc, VALUE mesg, VALUE recv, VALUE method)
 {
     exc_init(exc, rb_name_err_mesg_new(mesg, recv, method));
-    return name_err_init_attr(exc, recv, method);
+    err_init_recv(exc, recv);
+    return name_err_init_attr(GET_EC(), exc, method);
 }
 
 VALUE
@@ -1656,33 +1635,10 @@ nometh_err_init_attr(VALUE exc, VALUE args, int priv)
     return exc;
 }
 
-/*
- * call-seq:
- *   NoMethodError.new(msg=nil, name=nil, args=nil, private=false, receiver: nil)  -> no_method_error
- *
- * Construct a NoMethodError exception for a method of the given name
- * called with the given arguments. The name may be accessed using
- * the <code>#name</code> method on the resulting object, and the
- * arguments using the <code>#args</code> method.
- *
- * If <i>private</i> argument were passed, it designates method was
- * attempted to call in private context, and can be accessed with
- * <code>#private_call?</code> method.
- *
- * <i>receiver</i> argument stores an object whose method was called.
- */
-
 static VALUE
-nometh_err_initialize(int argc, VALUE *argv, VALUE self)
+nometh_err_initialize(rb_execution_context_t *ec, VALUE exc, VALUE args, VALUE priv)
 {
-    int priv;
-    VALUE args, options;
-    argc = rb_scan_args(argc, argv, "*:", NULL, &options);
-    priv = (argc > 3) && (--argc, RTEST(argv[argc]));
-    args = (argc > 2) ? argv[--argc] : Qnil;
-    if (!NIL_P(options)) argv[argc++] = options;
-    rb_call_super_kw(argc, argv, RB_PASS_CALLED_KEYWORDS);
-    return nometh_err_init_attr(self, args, priv);
+    return nometh_err_init_attr(exc, args, RTEST(priv));
 }
 
 VALUE
@@ -2602,7 +2558,6 @@ Init_Exception(void)
     rb_eNotImpError = rb_define_class("NotImplementedError", rb_eScriptError);
 
     rb_eNameError     = rb_define_class("NameError", rb_eStandardError);
-    rb_define_method(rb_eNameError, "initialize", name_err_initialize, -1);
     rb_define_method(rb_eNameError, "name", name_err_name, 0);
     rb_define_method(rb_eNameError, "receiver", name_err_receiver, 0);
     rb_define_method(rb_eNameError, "local_variables", name_err_local_variables, 0);
@@ -2612,7 +2567,6 @@ Init_Exception(void)
     rb_define_method(rb_cNameErrorMesg, "_dump", name_err_mesg_dump, 1);
     rb_define_singleton_method(rb_cNameErrorMesg, "_load", name_err_mesg_load, 1);
     rb_eNoMethodError = rb_define_class("NoMethodError", rb_eNameError);
-    rb_define_method(rb_eNoMethodError, "initialize", nometh_err_initialize, -1);
     rb_define_method(rb_eNoMethodError, "args", nometh_err_args, 0);
     rb_define_method(rb_eNoMethodError, "private_call?", nometh_err_private_call_p, 0);
 
@@ -3084,6 +3038,7 @@ Init_syserr(void)
 #undef undefined_error
 }
 
+#include "errors.rbinc"
 #include "warning.rbinc"
 
 /*!

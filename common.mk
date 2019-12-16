@@ -1003,6 +1003,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/dir.rb \
 		$(srcdir)/pack.rb \
 		$(srcdir)/trace_point.rb \
+		$(srcdir)/errors.rb \
 		$(srcdir)/warning.rb \
 		$(srcdir)/array.rb \
 		$(srcdir)/kernel.rb \
@@ -5174,6 +5175,7 @@ error.$(OBJEXT): {$(VPATH)}constant.h
 error.$(OBJEXT): {$(VPATH)}defines.h
 error.$(OBJEXT): {$(VPATH)}encoding.h
 error.$(OBJEXT): {$(VPATH)}error.c
+error.$(OBJEXT): {$(VPATH)}errors.rbinc
 error.$(OBJEXT): {$(VPATH)}eval_intern.h
 error.$(OBJEXT): {$(VPATH)}id.h
 error.$(OBJEXT): {$(VPATH)}id_table.h
@@ -8201,6 +8203,8 @@ miniinit.$(OBJEXT): {$(VPATH)}config.h
 miniinit.$(OBJEXT): {$(VPATH)}defines.h
 miniinit.$(OBJEXT): {$(VPATH)}dir.rb
 miniinit.$(OBJEXT): {$(VPATH)}encoding.h
+miniinit.$(OBJEXT): {$(VPATH)}errors.rb
+miniinit.$(OBJEXT): {$(VPATH)}errors.rbinc
 miniinit.$(OBJEXT): {$(VPATH)}gc.rb
 miniinit.$(OBJEXT): {$(VPATH)}gem_prelude.rb
 miniinit.$(OBJEXT): {$(VPATH)}id.h

@@ -83,6 +83,7 @@ rb_call_inits(void)
     BUILTIN(ast);
     BUILTIN(trace_point);
     BUILTIN(pack);
+    BUILTIN(errors);
     BUILTIN(warning);
     BUILTIN(array);
     BUILTIN(kernel);
