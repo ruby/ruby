@@ -1848,6 +1848,7 @@ void rb_threadptr_interrupt(rb_thread_t *th);
 void rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th);
 void rb_threadptr_pending_interrupt_clear(rb_thread_t *th);
 void rb_threadptr_pending_interrupt_enque(rb_thread_t *th, VALUE v);
+VALUE rb_ec_get_errinfo(const rb_execution_context_t *ec);
 void rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo);
 void rb_execution_context_update(const rb_execution_context_t *ec);
 void rb_execution_context_mark(const rb_execution_context_t *ec);
