@@ -132,7 +132,7 @@ static inline void
 CC_SET_ME(CALL_CACHE cc, const rb_callable_method_entry_t *me)
 {
     cc->me = me;
-    cc->def = me ? me->def : NULL;
+    cc->method_serial = me ? me->def->method_serial : 0;
 }
 
 #define GET_BLOCK_HANDLER() (GET_LEP()[VM_ENV_DATA_INDEX_SPECVAL])

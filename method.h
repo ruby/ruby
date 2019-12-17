@@ -177,6 +177,7 @@ struct rb_method_definition_struct {
     } body;
 
     ID original_id;
+    uintptr_t method_serial;
 };
 
 typedef struct rb_method_definition_struct rb_method_definition_t;

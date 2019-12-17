@@ -1443,7 +1443,7 @@ calccall(const struct rb_call_data *cd, const rb_callable_method_entry_t *me)
         RB_DEBUG_COUNTER_INC(mc_miss_by_distinct);
         return vm_call_general; /* normal cases */
     }
-    else if (UNLIKELY(cc->def != me->def)) {
+    else if (UNLIKELY(cc->method_serial != me->def->method_serial)) {
         RB_DEBUG_COUNTER_INC(mc_miss_by_refine);
         return vm_call_general;  /* cc->me was refined elsewhere */
     }
@@ -1475,7 +1475,7 @@ rb_vm_search_method_slowpath(struct rb_call_data *cd, VALUE klass)
         GET_GLOBAL_METHOD_STATE(),
         { RCLASS_SERIAL(klass) },
         me,
-        me ? me->def : NULL,
+        me ? me->def->method_serial : 0,
         call,
     };
     if (call != vm_call_general) {
