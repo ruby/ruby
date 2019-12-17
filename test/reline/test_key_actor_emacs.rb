@@ -6,6 +6,7 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     @prompt = '> '
     @config = Reline::Config.new # Emacs mode is default
     Reline::HISTORY.instance_variable_set(:@config, @config)
+    Reline::HISTORY.clear
     @encoding = (RELINE_TEST_ENCODING rescue Encoding.default_external)
     @line_editor = Reline::LineEditor.new(@config)
     @line_editor.reset(@prompt, @encoding)
@@ -1587,6 +1588,33 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_cursor_max(0)
     input_keys("\C-h3")
     assert_line('1235')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+  end
+
+  def test_search_history_to_front
+    Reline::HISTORY.concat([
+      '1235', # old
+      '12aa',
+      '1234' # new
+    ])
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-s123")
+    assert_line('1235')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0) # doesn't determine yet
+    input_keys("\C-ha")
+    assert_line('12aa')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-h3")
+    assert_line('1234')
     assert_byte_pointer_size('')
     assert_cursor(0)
     assert_cursor_max(0)

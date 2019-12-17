@@ -1181,18 +1181,18 @@ class Reline::LineEditor
   end
   alias_method :end_of_line, :ed_move_to_end
 
-  private def ed_search_prev_history(key)
-    unless @history_pointer
-      if @is_multiline
-        @line_backup_in_history = whole_buffer
-      else
-        @line_backup_in_history = @line
-      end
-    end
-    searcher = Fiber.new do
+  private def generate_searcher
+    Fiber.new do |first_key|
+      prev_search_key = first_key
       search_word = String.new(encoding: @encoding)
       multibyte_buf = String.new(encoding: 'ASCII-8BIT')
       last_hit = nil
+      case first_key
+      when "\C-r".ord
+        prompt_name = 'reverse-i-search'
+      when "\C-s".ord
+        prompt_name = 'i-search'
+      end
       loop do
         key = Fiber.yield(search_word)
         search_again = false
@@ -1206,8 +1206,9 @@ class Reline::LineEditor
             grapheme_clusters.pop
             search_word = grapheme_clusters.join
           end
-        when "\C-r".ord
-          search_again = true
+        when "\C-r".ord, "\C-s".ord
+          search_again = true if prev_search_key == key
+          prev_search_key = key
         else
           multibyte_buf << key
           if multibyte_buf.dup.force_encoding(@encoding).valid_encoding?
@@ -1224,23 +1225,52 @@ class Reline::LineEditor
             if search_word.empty? and Reline.last_incremental_search
               search_word = Reline.last_incremental_search
             end
-            if @history_pointer
-              history = Reline::HISTORY[0..(@history_pointer - 1)]
+            if @history_pointer # TODO
+              case prev_search_key
+              when "\C-r".ord
+                history_pointer_base = 0
+                history = Reline::HISTORY[0..(@history_pointer - 1)]
+              when "\C-s".ord
+                history_pointer_base = @history_pointer + 1
+                history = Reline::HISTORY[(@history_pointer + 1)..-1]
+              end
             else
+              history_pointer_base = 0
               history = Reline::HISTORY
             end
           elsif @history_pointer
-            history = Reline::HISTORY[0..@history_pointer]
+            case prev_search_key
+            when "\C-r".ord
+              history_pointer_base = 0
+              history = Reline::HISTORY[0..@history_pointer]
+            when "\C-s".ord
+              history_pointer_base = @history_pointer
+              history = Reline::HISTORY[@history_pointer..-1]
+            end
           else
+            history_pointer_base = 0
             history = Reline::HISTORY
           end
-          hit_index = history.rindex { |item|
-            item.include?(search_word)
-          }
+          case prev_search_key
+          when "\C-r".ord
+            hit_index = history.rindex { |item|
+              item.include?(search_word)
+            }
+          when "\C-s".ord
+            hit_index = history.index { |item|
+              item.include?(search_word)
+            }
+          end
           if hit_index
-            @history_pointer = hit_index
+            @history_pointer = history_pointer_base + hit_index
             hit = Reline::HISTORY[@history_pointer]
           end
+        end
+        case prev_search_key
+        when "\C-r".ord
+          prompt_name = 'reverse-i-search'
+        when "\C-s".ord
+          prompt_name = 'i-search'
         end
         if hit
           if @is_multiline
@@ -1249,23 +1279,34 @@ class Reline::LineEditor
             @line_index = @buffer_of_lines.size - 1
             @line = @buffer_of_lines.last
             @rerender_all = true
-            @searching_prompt = "(reverse-i-search)`%s'" % [search_word]
+            @searching_prompt = "(%s)`%s'" % [prompt_name, search_word]
           else
             @line = hit
-            @searching_prompt = "(reverse-i-search)`%s': %s" % [search_word, hit]
+            @searching_prompt = "(%s)`%s': %s" % [prompt_name, search_word, hit]
           end
           last_hit = hit
         else
           if @is_multiline
             @rerender_all = true
-            @searching_prompt = "(failed reverse-i-search)`%s'" % [search_word]
+            @searching_prompt = "(failed %s)`%s'" % [prompt_name, search_word]
           else
-            @searching_prompt = "(failed reverse-i-search)`%s': %s" % [search_word, last_hit]
+            @searching_prompt = "(failed %s)`%s': %s" % [prompt_name, search_word, last_hit]
           end
         end
       end
     end
-    searcher.resume
+  end
+
+  private def search_history(key)
+    unless @history_pointer
+      if @is_multiline
+        @line_backup_in_history = whole_buffer
+      else
+        @line_backup_in_history = @line
+      end
+    end
+    searcher = generate_searcher
+    searcher.resume(key)
     @searching_prompt = "(reverse-i-search)`': "
     @waiting_proc = ->(k) {
       case k
@@ -1308,7 +1349,7 @@ class Reline::LineEditor
         @rerender_all = true
       else
         chr = k.is_a?(String) ? k : k.chr(Encoding::ASCII_8BIT)
-        if chr.match?(/[[:print:]]/) or k == "\C-h".ord or k == "\C-?".ord or k == "\C-r".ord
+        if chr.match?(/[[:print:]]/) or k == "\C-h".ord or k == "\C-?".ord or k == "\C-r".ord or k == "\C-s".ord
           searcher.resume(k)
         else
           if @history_pointer
@@ -1337,8 +1378,15 @@ class Reline::LineEditor
     }
   end
 
-  private def ed_search_next_history(key)
+  private def ed_search_prev_history(key)
+    search_history(key)
   end
+  alias_method :reverse_search_history, :ed_search_prev_history
+
+  private def ed_search_next_history(key)
+    search_history(key)
+  end
+  alias_method :forward_search_history, :ed_search_next_history
 
   private def ed_prev_history(key, arg: 1)
     if @is_multiline and @line_index > 0
