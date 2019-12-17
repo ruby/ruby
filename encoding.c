@@ -1699,8 +1699,8 @@ rb_enc_aliases_enc_i(st_data_t name, st_data_t orig, st_data_t arg)
  * Returns the hash of available encoding alias and original encoding name.
  *
  *   Encoding.aliases
- *   #=> {"BINARY"=>"ASCII-8BIT", "ASCII"=>"US-ASCII", "ANSI_X3.4-1986"=>"US-ASCII",
- *         "SJIS"=>"Shift_JIS", "eucJP"=>"EUC-JP", "CP932"=>"Windows-31J"}
+ *   #=> {"BINARY"=>"ASCII-8BIT", "ASCII"=>"US-ASCII", "ANSI_X3.4-1968"=>"US-ASCII",
+ *         "SJIS"=>"Windows-31J", "eucJP"=>"EUC-JP", "CP932"=>"Windows-31J"}
  *
  */
 
