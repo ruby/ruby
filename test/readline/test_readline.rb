@@ -631,7 +631,7 @@ module BasetestReadline
     assert_equal('abcde!', line)
   ensure
     return if /EditLine/n.match(Readline::VERSION)
-    return if defined?(Reline) and Readline == Reline
+    return unless Readline.respond_to?(:completion_append_character=)
     Readline.completion_append_character = append_character
   end
 
