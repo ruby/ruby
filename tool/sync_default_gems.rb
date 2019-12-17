@@ -310,6 +310,8 @@ def sync_default_gems_with_commits(gem, range)
 
   failed_commits = []
 
+  ENV["FILTER_BRANCH_SQUELCH_WARNING"] = "1"
+
   commits.each do |sha, subject|
     puts "Pick #{sha} from #{$repositories[gem.to_sym]}."
 
