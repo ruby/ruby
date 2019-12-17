@@ -1554,6 +1554,13 @@ PRINTF_ARGS(void rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...), 2, 
 PRINTF_ARGS(void rb_syserr_enc_warning(int err, rb_encoding *enc, const char *fmt, ...), 3, 4);
 #endif
 
+typedef enum {
+    RB_WARN_CATEGORY_NONE,
+    RB_WARN_CATEGORY_DEPRECATED,
+} rb_warning_category_t;
+rb_warning_category_t rb_warning_category_from_name(VALUE category);
+bool rb_warning_category_enabled_p(rb_warning_category_t category);
+
 #define rb_raise_cstr(etype, mesg) \
     rb_exc_raise(rb_exc_new_str(etype, rb_str_new_cstr(mesg)))
 #define rb_raise_static(etype, mesg) \

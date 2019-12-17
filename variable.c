@@ -2302,7 +2302,8 @@ rb_autoload_at_p(VALUE mod, ID id, int recur)
 MJIT_FUNC_EXPORTED void
 rb_const_warn_if_deprecated(const rb_const_entry_t *ce, VALUE klass, ID id)
 {
-    if (RB_CONST_DEPRECATED_P(ce)) {
+    if (RB_CONST_DEPRECATED_P(ce) &&
+        rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) {
 	if (klass == rb_cObject) {
 	    rb_warn("constant ::%"PRIsVALUE" is deprecated", QUOTE_ID(id));
 	}
