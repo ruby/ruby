@@ -1174,7 +1174,7 @@ enc_names_i(st_data_t name, st_data_t idx, st_data_t args)
  *
  * Returns the list of name and aliases of the encoding.
  *
- *   Encoding::WINDOWS_31J.names  #=> ["Windows-31J", "CP932", "csWindows31J"]
+ *   Encoding::WINDOWS_31J.names  #=> ["Windows-31J", "CP932", "csWindows31J", "SJIS", "PCK"]
  */
 static VALUE
 enc_names(VALUE self)
