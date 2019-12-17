@@ -631,9 +631,7 @@ module Net
         with_binary(true) do
           begin
             conn = transfercmd(cmd, rest_offset)
-            loop do
-              data = conn.read(blocksize)
-              break if data == nil
+            while data = conn.read(blocksize)
               yield(data)
             end
             conn.shutdown(Socket::SHUT_WR)
@@ -658,9 +656,7 @@ module Net
         with_binary(false) do
           begin
             conn = transfercmd(cmd)
-            loop do
-              line = conn.gets
-              break if line == nil
+            while line = conn.gets
               yield(line.sub(/\r?\n\z/, ""), !line.match(/\n\z/).nil?)
             end
             conn.shutdown(Socket::SHUT_WR)
@@ -688,9 +684,7 @@ module Net
         with_binary(true) do
           begin
             conn = transfercmd(cmd)
-            loop do
-              buf = file.read(blocksize)
-              break if buf == nil
+            while buf = file.read(blocksize)
               conn.write(buf)
               yield(buf) if block_given?
             end
@@ -723,9 +717,7 @@ module Net
         with_binary(false) do
           begin
             conn = transfercmd(cmd)
-            loop do
-              buf = file.gets
-              break if buf == nil
+            while buf = file.gets
               if buf[-2, 2] != CRLF
                 buf = buf.chomp + CRLF
               end
