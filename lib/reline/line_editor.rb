@@ -1198,7 +1198,6 @@ class Reline::LineEditor
       loop do
         key = Fiber.yield(search_word)
         search_again = false
-        change_direction = false
         case key
         when -1 # determined
           Reline.last_incremental_search = search_word
@@ -1210,11 +1209,7 @@ class Reline::LineEditor
             search_word = grapheme_clusters.join
           end
         when "\C-r".ord, "\C-s".ord
-          if prev_search_key == key
-            search_again = true
-          else
-            change_direction = true
-          end
+          search_again = true if prev_search_key == key
           prev_search_key = key
         else
           multibyte_buf << key
