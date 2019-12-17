@@ -332,11 +332,12 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       begin;
         STDOUT.puts `stty -a`.scan(/\b\w+ *= *\^.;/), ""
         STDOUT.flush
-        while c = STDIN.getch
+        con = IO.console
+        while c = con.getch
           p c.ord
-          p STDIN.getch(intr: false).ord
+          p con.getch(intr: false).ord
           begin
-            p STDIN.getch(intr: true).ord
+            p con.getch(intr: true).ord
           rescue Interrupt => e
             p e
           end
