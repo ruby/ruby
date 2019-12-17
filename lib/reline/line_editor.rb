@@ -1236,19 +1236,10 @@ class Reline::LineEditor
               case prev_search_key
               when "\C-r".ord
                 history_pointer_base = 0
-                if change_direction
-                  history = Reline::HISTORY[0..@history_pointer]
-                else
-                  history = Reline::HISTORY[0..(@history_pointer - 1)]
-                end
+                history = Reline::HISTORY[0..(@history_pointer - 1)]
               when "\C-s".ord
-                if change_direction
-                  history_pointer_base = @history_pointer
-                  history = Reline::HISTORY[(@history_pointer)..-1]
-                else
-                  history_pointer_base = @history_pointer + 1
-                  history = Reline::HISTORY[(@history_pointer + 1)..-1]
-                end
+                history_pointer_base = @history_pointer + 1
+                history = Reline::HISTORY[(@history_pointer + 1)..-1]
               end
             else
               history_pointer_base = 0
@@ -1258,19 +1249,10 @@ class Reline::LineEditor
             case prev_search_key
             when "\C-r".ord
               history_pointer_base = 0
-              if change_direction
-                history = Reline::HISTORY[0..@history_pointer]
-              else
-                history = Reline::HISTORY[0..@history_pointer]
-              end
+              history = Reline::HISTORY[0..@history_pointer]
             when "\C-s".ord
-              if change_direction
-                history_pointer_base = @history_pointer
-                history = Reline::HISTORY[(@history_pointer - 1)..-1]
-              else
-                history_pointer_base = @history_pointer
-                history = Reline::HISTORY[@history_pointer..-1]
-              end
+              history_pointer_base = @history_pointer
+              history = Reline::HISTORY[@history_pointer..-1]
             end
           else
             history_pointer_base = 0
