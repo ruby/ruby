@@ -5069,23 +5069,30 @@ rb_ary_uniq_p(VALUE ary)
 {
     VALUE hash;
     long i;
-    int block_given_p;
 
     if (RARRAY_LEN(ary) <= 1) {
 	return Qtrue;
     }
 
     hash = ary_tmp_hash_new(ary);
-    block_given_p = rb_block_given_p();
 
-    for (i=0; i<RARRAY_LEN(ary); i++) {
-	VALUE elt = rb_ary_elt(ary, i);
-	if (block_given_p) {
+    if (rb_block_given_p()) {
+	for (i=0; i<RARRAY_LEN(ary); i++) {
+	    VALUE elt = rb_ary_elt(ary, i);
 	    elt = rb_yield(elt);
+	    if (rb_hash_add_new_element(hash, elt, elt)) {
+		ary_recycle_hash(hash);
+		return Qfalse;
+	    }
 	}
-	if (rb_hash_add_new_element(hash, elt, elt)) {
-	    ary_recycle_hash(hash);
-	    return Qfalse;
+    }
+    else {
+	for (i=0; i<RARRAY_LEN(ary); i++) {
+	    VALUE elt = rb_ary_elt(ary, i);
+	    if (rb_hash_add_new_element(hash, elt, elt)) {
+		ary_recycle_hash(hash);
+		return Qfalse;
+	    }
 	}
     }
 
