@@ -351,6 +351,8 @@ rb_method_definition_create(rb_method_type_t type, ID mid)
     def = ZALLOC(rb_method_definition_t);
     def->type = type;
     def->original_id = mid;
+    static uintptr_t method_serial = 1;
+    def->method_serial = method_serial++;
     return def;
 }
 

@@ -2350,7 +2350,7 @@ struct rb_call_cache {
         (CACHELINE
          - sizeof(rb_serial_t)                                   /* method_state */
          - sizeof(struct rb_callable_method_entry_struct *)      /* me */
-         - sizeof(struct rb_callable_method_definition_struct *) /* def */
+         - sizeof(uintptr_t)                                     /* method_serial */
          - sizeof(enum method_missing_reason)                    /* aux */
          - sizeof(VALUE (*)(                                     /* call */
                struct rb_execution_context_struct *e,
@@ -2362,7 +2362,7 @@ struct rb_call_cache {
 
     /* inline cache: values */
     const struct rb_callable_method_entry_struct *me;
-    const struct rb_method_definition_struct *def;
+    uintptr_t method_serial; /* me->def->method_serial */
 
     VALUE (*call)(struct rb_execution_context_struct *ec,
                   struct rb_control_frame_struct *cfp,
