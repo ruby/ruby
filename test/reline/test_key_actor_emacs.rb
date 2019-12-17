@@ -1620,6 +1620,70 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_cursor_max(0)
   end
 
+  def test_search_history_front_and_back
+    Reline::HISTORY.concat([
+      '1235', # old
+      '12aa',
+      '1234' # new
+    ])
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-s12")
+    assert_line('1235')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0) # doesn't determine yet
+    input_keys("\C-s")
+    assert_line('12aa')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-r")
+    assert_line('12aa')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-r")
+    assert_line('1235')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+  end
+
+  def test_search_history_back_and_front
+    Reline::HISTORY.concat([
+      '1235', # old
+      '12aa',
+      '1234' # new
+    ])
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-r12")
+    assert_line('1234')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0) # doesn't determine yet
+    input_keys("\C-r")
+    assert_line('12aa')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-s")
+    assert_line('12aa')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-s")
+    assert_line('1234')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+  end
+
   def test_search_history_to_back_in_the_middle_of_histories
     Reline::HISTORY.concat([
       '1235', # old

@@ -1196,6 +1196,7 @@ class Reline::LineEditor
       loop do
         key = Fiber.yield(search_word)
         search_again = false
+        change_direction = false
         case key
         when -1 # determined
           Reline.last_incremental_search = search_word
@@ -1207,7 +1208,11 @@ class Reline::LineEditor
             search_word = grapheme_clusters.join
           end
         when "\C-r".ord, "\C-s".ord
-          search_again = true if prev_search_key == key
+          if prev_search_key == key
+            search_again = true
+          else
+            change_direction = true
+          end
           prev_search_key = key
         else
           multibyte_buf << key
@@ -1229,10 +1234,19 @@ class Reline::LineEditor
               case prev_search_key
               when "\C-r".ord
                 history_pointer_base = 0
-                history = Reline::HISTORY[0..(@history_pointer - 1)]
+                if change_direction
+                  history = Reline::HISTORY[0..@history_pointer]
+                else
+                  history = Reline::HISTORY[0..(@history_pointer - 1)]
+                end
               when "\C-s".ord
-                history_pointer_base = @history_pointer + 1
-                history = Reline::HISTORY[(@history_pointer + 1)..-1]
+                if change_direction
+                  history_pointer_base = @history_pointer
+                  history = Reline::HISTORY[(@history_pointer)..-1]
+                else
+                  history_pointer_base = @history_pointer + 1
+                  history = Reline::HISTORY[(@history_pointer + 1)..-1]
+                end
               end
             else
               history_pointer_base = 0
@@ -1242,10 +1256,19 @@ class Reline::LineEditor
             case prev_search_key
             when "\C-r".ord
               history_pointer_base = 0
-              history = Reline::HISTORY[0..@history_pointer]
+              if change_direction
+                history = Reline::HISTORY[0..@history_pointer]
+              else
+                history = Reline::HISTORY[0..@history_pointer]
+              end
             when "\C-s".ord
-              history_pointer_base = @history_pointer
-              history = Reline::HISTORY[@history_pointer..-1]
+              if change_direction
+                history_pointer_base = @history_pointer
+                history = Reline::HISTORY[(@history_pointer - 1)..-1]
+              else
+                history_pointer_base = @history_pointer
+                history = Reline::HISTORY[@history_pointer..-1]
+              end
             end
           else
             history_pointer_base = 0
