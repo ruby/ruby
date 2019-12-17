@@ -1160,6 +1160,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
 
   def capture_warning_warn
     verbose = $VERBOSE
+    deprecated = Warning[:deprecated]
     warning = []
 
     ::Warning.class_eval do
@@ -1172,11 +1173,13 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     end
 
     $VERBOSE = true
+    Warning[:deprecated] = true
     yield
 
     return warning
   ensure
     $VERBOSE = verbose
+    Warning[:deprecated] = deprecated
 
     ::Warning.class_eval do
       remove_method :warn

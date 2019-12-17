@@ -597,6 +597,8 @@ static st_table *caller_to_callees = 0;
 static VALUE
 rb_warn_check(const rb_execution_context_t * const ec, const rb_iseq_t *const iseq)
 {
+    if (!rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) return 1;
+
     if (!iseq) return 0;
 
     const st_data_t callee = (st_data_t)(iseq->body->iseq_unique_id * 2);
