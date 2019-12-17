@@ -673,16 +673,21 @@ static VALUE tm_from_time(VALUE klass, VALUE time);
 
 bool ruby_tz_uptodate_p;
 
+static void
+update_tz(void)
+{
+    if (ruby_tz_uptodate_p) return;
+    ruby_tz_uptodate_p = true;
+    tzset();
+}
+
 static struct tm *
 rb_localtime_r(const time_t *t, struct tm *result)
 {
 #if defined __APPLE__ && defined __LP64__
     if (*t != (time_t)(int)*t) return NULL;
 #endif
-    if (!ruby_tz_uptodate_p) {
-	ruby_tz_uptodate_p = true;
-	tzset();
-    }
+    update_tz();
 #ifdef HAVE_GMTIME_R
     result = localtime_r(t, result);
 #else
@@ -3140,9 +3145,7 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
     find_dst = 0 < tptr->tm_isdst;
 
     /* /etc/localtime might be changed. reload it. */
-    if (!ruby_tz_uptodate_p) {
-        tzset();
-    }
+    update_tz();
 
     tm0 = *tptr;
     if (tm0.tm_mon < 0) {
