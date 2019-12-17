@@ -120,17 +120,20 @@ enum vm_regan_acttype {
  * because inline method cache does not care about receiver.
  */
 
-#define CC_SET_FASTPATH(cc, func, enabled) do { \
-    if (LIKELY(enabled)) ((cc)->call = (func)); \
-} while (0)
+static inline void
+CC_SET_FASTPATH(CALL_CACHE cc, vm_call_handler func, bool enabled)
+{
+    if (LIKELY(enabled)) {
+        cc->call = func;
+    }
+}
 
-#define CC_SET_ME(cc, newme) do { \
-    CALL_CACHE ccx = (cc); \
-    const rb_callable_method_entry_t *mex = (newme); \
-    const rb_method_definition_t *defx = mex ? mex->def : NULL; \
-    ccx->me = mex; \
-    ccx->def = defx; \
-} while (0)
+static inline void
+CC_SET_ME(CALL_CACHE cc, const rb_callable_method_entry_t *me)
+{
+    cc->me = me;
+    cc->def = me ? me->def : NULL;
+}
 
 #define GET_BLOCK_HANDLER() (GET_LEP()[VM_ENV_DATA_INDEX_SPECVAL])
 
