@@ -46,6 +46,7 @@ RB_DEBUG_COUNTER(mc_miss_by_distinct)
 RB_DEBUG_COUNTER(mc_miss_by_refine)
 RB_DEBUG_COUNTER(mc_miss_by_visi)
 RB_DEBUG_COUNTER(mc_miss_spurious)
+RB_DEBUG_COUNTER(mc_miss_reuse_call)
 
 /*
  * call cache fastpath usage

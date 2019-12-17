@@ -1458,6 +1458,7 @@ calccall(const struct rb_call_data *cd, const rb_callable_method_entry_t *me)
     }
     else {
         RB_DEBUG_COUNTER_INC(mc_miss_spurious);
+        (void)RB_DEBUG_COUNTER_INC_IF(mc_miss_reuse_call, cc->call != vm_call_general);
         return cc->call;
     }
 }
