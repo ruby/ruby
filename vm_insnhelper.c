@@ -1424,45 +1424,6 @@ vm_expandarray(VALUE *sp, VALUE ary, rb_num_t num, int flag)
 
 static VALUE vm_call_general(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, struct rb_call_data *cd);
 
-#ifdef __has_attribute
-#if __has_attribute(artificial)
-__attribute__((__artificial__))
-#endif
-#endif
-static inline vm_call_handler
-calccall(const struct rb_call_data *cd, const rb_callable_method_entry_t *me)
-{
-    const struct rb_call_info *ci = &cd->ci;
-    const struct rb_call_cache *cc = &cd->cc;
-
-    if (UNLIKELY(!me)) {
-        RB_DEBUG_COUNTER_INC(mc_miss_by_nome);
-        return vm_call_general; /* vm_call_method_nome() situation */
-    }
-    else if (LIKELY(cc->me != me)) {
-        RB_DEBUG_COUNTER_INC(mc_miss_by_distinct);
-        return vm_call_general; /* normal cases */
-    }
-    else if (UNLIKELY(cc->def != me->def)) {
-        RB_DEBUG_COUNTER_INC(mc_miss_by_refine);
-        return vm_call_general;  /* cc->me was refined elsewhere */
-    }
-    /* "Calling a formerly-public method, which is now privatised, with an
-     * explicit receiver" is the only situation we have to check here.  A
-     * formerly-private method now publicised is an absolutely safe thing.
-     * Calling a private method without specifying a receiver is also safe. */
-    else if ((METHOD_ENTRY_VISI(cc->me) != METHOD_VISI_PUBLIC) &&
-             !(ci->flag & VM_CALL_FCALL)) {
-        RB_DEBUG_COUNTER_INC(mc_miss_by_visi);
-        return vm_call_general;
-    }
-    else {
-        RB_DEBUG_COUNTER_INC(mc_miss_spurious);
-        (void)RB_DEBUG_COUNTER_INC_IF(mc_miss_reuse_call, cc->call != vm_call_general);
-        return cc->call;
-    }
-}
-
 MJIT_FUNC_EXPORTED void
 rb_vm_search_method_slowpath(struct rb_call_data *cd, VALUE klass)
 {
@@ -1470,15 +1431,14 @@ rb_vm_search_method_slowpath(struct rb_call_data *cd, VALUE klass)
     struct rb_call_cache *cc = &cd->cc;
     const rb_callable_method_entry_t *me =
         rb_callable_method_entry(klass, ci->mid);
-    const vm_call_handler call = calccall(cd, me);
     struct rb_call_cache buf = {
         GET_GLOBAL_METHOD_STATE(),
         { RCLASS_SERIAL(klass) },
         me,
         me ? me->def : NULL,
-        call,
+        vm_call_general
     };
-    if (call != vm_call_general) {
+    if ((buf.me == cc->me) && (buf.def == cc->def)) {
         for (int i = 0; i < numberof(cc->class_serial) - 1; i++) {
             buf.class_serial[i + 1] = cc->class_serial[i];
         }
