@@ -330,6 +330,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   def test_intr
     run_pty("#{<<~"begin;"}\n#{<<~'end;'}") do |r, w, _|
       begin;
+        require 'timeout'
         STDOUT.puts `stty -a`.scan(/\b\w+ *= *\^.;/), ""
         STDOUT.flush
         con = IO.console
@@ -337,8 +338,8 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
           p c.ord
           p con.getch(intr: false).ord
           begin
-            p con.getch(intr: true).ord
-          rescue Interrupt => e
+            p Timeout.timeout(1) {con.getch(intr: true)}.ord
+          rescue Timeout::Error, Interrupt => e
             p e
           end
         end
