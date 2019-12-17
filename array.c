@@ -5042,6 +5042,60 @@ rb_ary_uniq(VALUE ary)
 
 /*
  *  call-seq:
+ *     ary.uniq?                -> true or false
+ *     ary.uniq? {|item| ...}   -> true or false
+ *
+ *  Returns +true+ if no duplicates are found in +self+, otherwise returns +false+.
+ *
+ *  If +self+ is empty, returns +true+.
+ *
+ *  If a block is given, it will use the return value of the block for comparison.
+ *
+ *  It compares values using their #hash and #eql? methods for efficiency.
+ *
+ *     a = [ "a", "b", "c" ]
+ *     a.uniq?   # => true
+ *
+ *     b = [ "a", "b", "a" ]
+ *     b.uniq?   # => false
+ *
+ *     c = [ "a", "b", "A" ]
+ *     c.uniq? {|s| s.upcase}   # => false
+ *
+ */
+
+static VALUE
+rb_ary_uniq_p(VALUE ary)
+{
+    VALUE hash;
+    long i;
+    int block_given_p;
+
+    if (RARRAY_LEN(ary) <= 1) {
+	return Qtrue;
+    }
+
+    hash = ary_tmp_hash_new(ary);
+    block_given_p = rb_block_given_p();
+
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+	VALUE elt = rb_ary_elt(ary, i);
+	if (block_given_p) {
+	    elt = rb_yield(elt);
+	}
+	if (rb_hash_add_new_element(hash, elt, elt)) {
+	    ary_recycle_hash(hash);
+	    return Qfalse;
+	}
+    }
+
+    ary_recycle_hash(hash);
+
+    return Qtrue;
+}
+
+/*
+ *  call-seq:
  *     ary.compact!    -> ary  or  nil
  *
  *  Removes +nil+ elements from the array.
@@ -7017,6 +7071,7 @@ Init_Array(void)
 
     rb_define_method(rb_cArray, "uniq", rb_ary_uniq, 0);
     rb_define_method(rb_cArray, "uniq!", rb_ary_uniq_bang, 0);
+    rb_define_method(rb_cArray, "uniq?", rb_ary_uniq_p, 0);
     rb_define_method(rb_cArray, "compact", rb_ary_compact, 0);
     rb_define_method(rb_cArray, "compact!", rb_ary_compact_bang, 0);
     rb_define_method(rb_cArray, "flatten", rb_ary_flatten, -1);
