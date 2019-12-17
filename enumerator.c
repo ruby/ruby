@@ -466,7 +466,7 @@ enumerator_initialize(int argc, VALUE *argv, VALUE obj)
     }
     else {
 	rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
-	rb_warn("Enumerator.new without a block is deprecated; use Object#to_enum");
+	rb_warn_deprecated("Enumerator.new without a block", "Object#to_enum");
 	recv = *argv++;
 	if (--argc) {
 	    meth = *argv++;

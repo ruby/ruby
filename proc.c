@@ -758,8 +758,8 @@ proc_new(VALUE klass, int8_t is_lambda, int8_t kernel)
             }
             else {
                 const char *name = kernel ? "Kernel#proc" : "Proc.new";
-                rb_warn("Capturing the given block using %s is deprecated; "
-                        "use `&block` instead", name);
+                rb_warn_deprecated("Capturing the given block using %s",
+                                   "`&block`", name);
 	    }
 	}
 #else

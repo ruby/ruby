@@ -325,6 +325,22 @@ rb_enc_warning(rb_encoding *enc, const char *fmt, ...)
 }
 #endif
 
+void
+rb_warn_deprecated(const char *fmt, const char *suggest, ...)
+{
+    if (NIL_P(ruby_verbose)) return;
+    if (!rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) return;
+    va_list args;
+    va_start(args, suggest);
+    VALUE mesg = warning_string(0, fmt, args);
+    va_end(args);
+    rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
+    rb_str_cat_cstr(mesg, " is deprecated");
+    if (suggest) rb_str_catf(mesg, "; use %s instead", suggest);
+    rb_str_cat_cstr(mesg, "\n");
+    rb_write_warning_str(mesg);
+}
+
 static inline int
 end_with_asciichar(VALUE str, int c)
 {

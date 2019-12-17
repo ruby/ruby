@@ -2245,7 +2245,7 @@ rb_hash_key(VALUE hash, VALUE value)
 static VALUE
 rb_hash_index(VALUE hash, VALUE value)
 {
-    rb_warn("Hash#index is deprecated; use Hash#key");
+    rb_warn_deprecated("Hash#index", "Hash#key");
     return rb_hash_key(hash, value);
 }
 
@@ -5861,7 +5861,7 @@ env_key(VALUE dmy, VALUE value)
 static VALUE
 env_index(VALUE dmy, VALUE value)
 {
-    rb_warn("ENV.index is deprecated; use ENV.key");
+    rb_warn_deprecated("ENV.index", "ENV.key");
     return env_key(dmy, value);
 }
 
