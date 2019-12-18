@@ -165,11 +165,13 @@ set_rawmode(conmode *t, void *arg)
     cfmakeraw(t);
     t->c_lflag &= ~(ECHOE|ECHOK);
 #elif defined HAVE_TERMIOS_H || defined HAVE_TERMIO_H
-    t->c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON);
+    t->c_iflag &= ~(IGNBRK|BRKINT|IGNPAR|PARMRK|INPCK|ISTRIP|INLCR|IGNCR|ICRNL|IXON|IXOFF|IXANY|IMAXBEL);
     t->c_oflag &= ~OPOST;
-    t->c_lflag &= ~(ECHO|ECHOE|ECHOK|ECHONL|ICANON|ISIG|IEXTEN);
+    t->c_lflag &= ~(ECHO|ECHOE|ECHOK|ECHONL|ICANON|ISIG|IEXTEN|XCASE);
     t->c_cflag &= ~(CSIZE|PARENB);
     t->c_cflag |= CS8;
+    t->c_cc[VMIN] = 1;
+    t->c_cc[VTIME] = 0;
 #elif defined HAVE_SGTTY_H
     t->sg_flags &= ~ECHO;
     t->sg_flags |= RAW;
