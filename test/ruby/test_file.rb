@@ -233,11 +233,9 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_chown
-    assert_nothing_raised {
-      File.open(__FILE__) {|f| f.chown(-1, -1) }
-    }
-    assert_nothing_raised("[ruby-dev:27140]") {
-      File.open(__FILE__) {|f| f.chown nil, nil }
+    Tempfile.create("test-chown") {|f|
+      assert_nothing_raised {f.chown(-1, -1)}
+      assert_nothing_raised("[ruby-dev:27140]") {f.chown(nil, nil)}
     }
   end
 
