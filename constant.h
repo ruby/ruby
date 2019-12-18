@@ -13,6 +13,7 @@
 
 typedef enum {
     CONST_DEPRECATED = 0x100,
+    CONST_DEPRECATED_MESG = CONST_DEPRECATED << 1,
 
     CONST_VISIBILITY_MASK = 0xff,
     CONST_PUBLIC    = 0x00,
@@ -34,6 +35,11 @@ typedef struct rb_const_entry_struct {
     VALUE value;            /* should be mark */
     VALUE file;             /* should be mark */
 } rb_const_entry_t;
+
+typedef struct rb_deprecated_const_entry_struct {
+    rb_const_entry_t base;
+    const VALUE message;          /* should be mark */
+} rb_deprecated_const_entry_t;
 
 VALUE rb_mod_private_constant(int argc, const VALUE *argv, VALUE obj);
 VALUE rb_mod_public_constant(int argc, const VALUE *argv, VALUE obj);
