@@ -1710,9 +1710,10 @@ heap_page_add_freeobj(rb_objspace_t *objspace, struct heap_page *page, VALUE obj
 }
 
 static inline void
-heap_add_freepage(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
+heap_add_freepage(rb_heap_t *heap, struct heap_page *page)
 {
     asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
+    GC_ASSERT(page->free_slots != 0);
     if (page->freelist) {
 	page->free_next = heap->free_pages;
 	heap->free_pages = page;
@@ -1920,7 +1921,7 @@ heap_assign_page(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     struct heap_page *page = heap_page_create(objspace);
     heap_add_page(objspace, heap, page);
-    heap_add_freepage(objspace, heap, page);
+    heap_add_freepage(heap, page);
 }
 
 static void
@@ -4320,11 +4321,11 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
 		}
 	    }
 	    else {
-		heap_add_freepage(objspace, heap, sweep_page);
+		heap_add_freepage(heap, sweep_page);
 		break;
 	    }
 #else
-	    heap_add_freepage(objspace, heap, sweep_page);
+	    heap_add_freepage(heap, sweep_page);
 	    break;
 #endif
 	}
@@ -6271,8 +6272,7 @@ heap_move_pooled_pages_to_free_pages(rb_heap_t *heap)
 
     if (page) {
 	heap->pooled_pages = page->free_next;
-	page->free_next = heap->free_pages;
-	heap->free_pages = page;
+        heap_add_freepage(heap, page);
     }
 
     return page;
@@ -8576,7 +8576,7 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
     struct heap_page *page = NULL;
     list_for_each(&heap_eden->pages, page, page_node) {
         if (page->free_slots > 0) {
-            heap_add_freepage(objspace, heap_eden, page);
+            heap_add_freepage(heap_eden, page);
         } else {
             page->free_next = NULL;
         }
