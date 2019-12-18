@@ -31,6 +31,7 @@
  * * mc_miss_by_refine:          ... by ment being refined.
  * * mc_miss_by_visi:            ... by visibility change.
  * * mc_miss_spurious: spurious inline mc misshit.
+ * * mc_miss_reuse_call: count of resue of cc->call.
  */
 RB_DEBUG_COUNTER(mc_inline_hit)
 RB_DEBUG_COUNTER(mc_inline_miss)
