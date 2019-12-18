@@ -1,2 +1,6 @@
 require 'rubygems.rb' if defined?(Gem)
-require 'did_you_mean' if defined?(DidYouMean)
+
+begin
+  require 'did_you_mean'
+rescue LoadError
+end if defined?(DidYouMean)
