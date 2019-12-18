@@ -525,6 +525,14 @@ module Bundler
       end
     end
 
+    def plain_specs
+      Gem::Specification._all
+    end
+
+    def plain_specs=(specs)
+      Gem::Specification.all = specs
+    end
+
     def fetch_specs(remote, name)
       path = remote.uri.to_s + "#{name}.#{Gem.marshal_version}.gz"
       fetcher = gem_remote_fetcher

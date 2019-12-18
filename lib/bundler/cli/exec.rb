@@ -25,12 +25,12 @@ module Bundler
       SharedHelpers.set_bundle_environment
       if bin_path = Bundler.which(cmd)
         if !Bundler.settings[:disable_exec_load] && ruby_shebang?(bin_path)
-          return with_verbose_rubygems { kernel_load(bin_path, *args) }
+          return kernel_load(bin_path, *args)
         end
-        with_verbose_rubygems { kernel_exec(bin_path, *args) }
+        kernel_exec(bin_path, *args)
       else
         # exec using the given command
-        with_verbose_rubygems { kernel_exec(cmd, *args) }
+        kernel_exec(cmd, *args)
       end
     end
 
@@ -88,15 +88,6 @@ module Bundler
 
       first_line = File.open(file, "rb") {|f| f.read(possibilities.map(&:size).max) }
       possibilities.any? {|shebang| first_line.start_with?(shebang) }
-    end
-
-    def with_verbose_rubygems
-      old_ui = Gem::DefaultUserInteraction.ui
-      Gem::DefaultUserInteraction.ui = nil
-
-      yield
-    ensure
-      Gem::DefaultUserInteraction.ui = old_ui
     end
   end
 end
