@@ -261,12 +261,6 @@ rb_adjust_argv_kw_splat(int *argc, const VALUE **argv, int *kw_splat)
     return 0;
 }
 
-VALUE
-rb_vm_call(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me)
-{
-    return rb_vm_call0(ec, recv, id, argc, argv, me, RB_NO_KEYWORDS);
-}
-
 MJIT_FUNC_EXPORTED VALUE
 rb_vm_call_kw(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me, int kw_splat)
 {
