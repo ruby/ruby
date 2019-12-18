@@ -1,6 +1,7 @@
 begin
   require 'rubygems.rb'
 rescue LoadError
+  warn "`RubyGems' were not loaded."
 end if defined?(Gem)
 
 begin
