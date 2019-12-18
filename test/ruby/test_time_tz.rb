@@ -156,6 +156,12 @@ class TestTimeTZ < Test::Unit::TestCase
     }
   end
 
+  def test_asia_kuala_lumpur
+    with_tz(tz="Asia/Kuala_Lumpur") {
+      assert_time_constructor(tz, "1933-01-01 00:20:00 +0720", :local, [1933])
+    }
+  end
+
   def test_canada_newfoundland
     with_tz(tz="America/St_Johns") {
       assert_time_constructor(tz, "2007-11-03 23:00:59 -0230", :new, [2007,11,3,23,0,59,:dst])
