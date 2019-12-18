@@ -9520,7 +9520,8 @@ struct ibf_header {
 
 struct ibf_dump_buffer {
     VALUE str;
-    VALUE obj_list;     /* [objs] */
+    VALUE obj_list;      /* [objs] */
+    st_table *obj_table; /* obj -> obj number */
 };
 
 struct ibf_dump {
@@ -9666,10 +9667,13 @@ static VALUE ibf_load_object(const struct ibf_load *load, VALUE object_index);
 static rb_iseq_t *ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq);
 
 static VALUE
-ibf_dump_object_list_new(void)
+ibf_dump_object_list_new(st_table **obj_table)
 {
     VALUE obj_list = rb_ary_tmp_new(1);
     rb_ary_push(obj_list, Qnil); /* 0th is nil */
+
+    *obj_table = st_init_numtable(); /* need free */
+    rb_st_insert(*obj_table, (st_data_t)Qnil, (st_data_t)0); /* 0th is nil */
 
     return obj_list;
 }
@@ -9677,14 +9681,12 @@ ibf_dump_object_list_new(void)
 static VALUE
 ibf_dump_object(struct ibf_dump *dump, VALUE obj)
 {
-    VALUE obj_list = dump->current_buffer->obj_list;
-    long index = RARRAY_LEN(obj_list);
-    long i;
-    for (i=0; i<index; i++) {
-        if (RARRAY_AREF(obj_list, i) == obj) return (VALUE)i; /* dedup */
+    int obj_index = ibf_table_lookup(dump->current_buffer->obj_table, (st_data_t)obj);
+    if (obj_index < 0) {
+        obj_index = ibf_table_index(dump->current_buffer->obj_table, (st_data_t)obj);
+        rb_ary_push(dump->current_buffer->obj_list, obj);
     }
-    rb_ary_push(obj_list, obj);
-    return (VALUE)index;
+    return obj_index;
 }
 
 static VALUE
@@ -10372,7 +10374,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     struct ibf_dump_buffer *saved_buffer = dump->current_buffer;
     struct ibf_dump_buffer buffer;
     buffer.str = rb_str_new(0, 0);
-    buffer.obj_list = ibf_dump_object_list_new();
+    buffer.obj_list = ibf_dump_object_list_new(&buffer.obj_table);
     dump->current_buffer = &buffer;
 #endif
 
@@ -10477,6 +10479,8 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, local_obj_list_offset);
     ibf_dump_write_small_value(dump, local_obj_list_size);
 
+    rb_st_free_table(buffer.obj_table);
+
     return offset;
 #else
     return body_offset;
@@ -10504,15 +10508,15 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     struct ibf_load_buffer *saved_buffer = load->current_buffer;
     load->current_buffer = &load->global_buffer;
 
-    const ibf_offset_t iseq_start = ibf_load_small_value(load, &reading_pos);
-    const ibf_offset_t iseq_length_bytes = ibf_load_small_value(load, &reading_pos);
-    const ibf_offset_t body_offset = ibf_load_small_value(load, &reading_pos);
+    const ibf_offset_t iseq_start = (ibf_offset_t)ibf_load_small_value(load, &reading_pos);
+    const ibf_offset_t iseq_length_bytes = (ibf_offset_t)ibf_load_small_value(load, &reading_pos);
+    const ibf_offset_t body_offset = (ibf_offset_t)ibf_load_small_value(load, &reading_pos);
 
     struct ibf_load_buffer buffer;
     buffer.buff = load->global_buffer.buff + iseq_start;
     buffer.size = iseq_length_bytes;
-    buffer.obj_list_offset = ibf_load_small_value(load, &reading_pos);
-    buffer.obj_list_size = ibf_load_small_value(load, &reading_pos);
+    buffer.obj_list_offset = (ibf_offset_t)ibf_load_small_value(load, &reading_pos);
+    buffer.obj_list_size = (ibf_offset_t)ibf_load_small_value(load, &reading_pos);
     buffer.obj_list = rb_ary_tmp_new(buffer.obj_list_size);
     rb_ary_resize(buffer.obj_list, buffer.obj_list_size);
 
@@ -11338,6 +11342,10 @@ static void
 ibf_dump_free(void *ptr)
 {
     struct ibf_dump *dump = (struct ibf_dump *)ptr;
+    if (dump->global_buffer.obj_table) {
+        st_free_table(dump->global_buffer.obj_table);
+        dump->global_buffer.obj_table = 0;
+    }
     if (dump->iseq_table) {
         st_free_table(dump->iseq_table);
         dump->iseq_table = 0;
@@ -11351,6 +11359,7 @@ ibf_dump_memsize(const void *ptr)
     struct ibf_dump *dump = (struct ibf_dump *)ptr;
     size_t size = sizeof(*dump);
     if (dump->iseq_table) size += st_memsize(dump->iseq_table);
+    if (dump->global_buffer.obj_table) size += st_memsize(dump->global_buffer.obj_table);
     return size;
 }
 
@@ -11364,7 +11373,7 @@ static void
 ibf_dump_setup(struct ibf_dump *dump, VALUE dumper_obj)
 {
     RB_OBJ_WRITE(dumper_obj, &dump->iseq_list, rb_ary_tmp_new(0));
-    RB_OBJ_WRITE(dumper_obj, &dump->global_buffer.obj_list, ibf_dump_object_list_new());
+    RB_OBJ_WRITE(dumper_obj, &dump->global_buffer.obj_list, ibf_dump_object_list_new(&dump->global_buffer.obj_table));
     RB_OBJ_WRITE(dumper_obj, &dump->global_buffer.str, rb_str_new(0, 0));
     dump->iseq_table = st_init_numtable(); /* need free */
 
