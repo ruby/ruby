@@ -31,7 +31,7 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
         alias compile_error on_error
       end
     end
-    lexer.lex.select {|_1,type,_2| type == sym }.map {|_1,_2,tok| tok }
+    lexer.lex.select {|_,type,_| type == sym }.map {|_,_,tok| tok }
   end
 
   def test_tokenize

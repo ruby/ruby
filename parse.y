@@ -11830,18 +11830,24 @@ node_newnode_with_locals(struct parser_params *p, enum node_type type, VALUE a1,
 #endif
 
 static void
+numparam_name(struct parser_params *p, ID id)
+{
+    if (!NUMPARAM_ID_P(id)) return;
+    rb_warn1("`_%d' is used as numbered parameter",
+	     WARN_I(NUMPARAM_ID_TO_IDX(id)));
+}
+
+static void
 arg_var(struct parser_params *p, ID id)
 {
+    numparam_name(p, id);
     vtable_add(p->lvtbl->args, id);
 }
 
 static void
 local_var(struct parser_params *p, ID id)
 {
-    if (NUMPARAM_ID_P(id)) {
-	rb_warn1("`_%d' is used as numbered parameter",
-		 WARN_I(NUMPARAM_ID_TO_IDX(id)));
-    }
+    numparam_name(p, id);
     vtable_add(p->lvtbl->vars, id);
     if (p->lvtbl->used) {
 	vtable_add(p->lvtbl->used, (ID)p->ruby_sourceline);

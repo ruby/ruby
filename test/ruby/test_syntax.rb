@@ -1439,6 +1439,8 @@ eom
     assert_syntax_error('proc {_1; _1 = nil}', /Can't assign to numbered parameter _1/)
     assert_warn(/`_1' is used as numbered parameter/) {eval('proc {_1 = nil}')}
     assert_warn(/`_2' is used as numbered parameter/) {eval('_2=1')}
+    assert_warn(/`_3' is used as numbered parameter/) {eval('proc {|_3|}')}
+    assert_warn(/`_4' is used as numbered parameter/) {instance_eval('def x(_4) end')}
     assert_raise_with_message(NameError, /undefined local variable or method `_1'/) {
       eval('_1')
     }
