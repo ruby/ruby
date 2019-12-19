@@ -1441,6 +1441,8 @@ eom
     assert_warn(/`_2' is used as numbered parameter/) {eval('_2=1')}
     assert_warn(/`_3' is used as numbered parameter/) {eval('proc {|_3|}')}
     assert_warn(/`_4' is used as numbered parameter/) {instance_eval('def x(_4) end')}
+    assert_warn(/`_5' is used as numbered parameter/) {instance_eval('def _5; end')}
+    assert_warn(/`_6' is used as numbered parameter/) {instance_eval('def self._6; end')}
     assert_raise_with_message(NameError, /undefined local variable or method `_1'/) {
       eval('_1')
     }
