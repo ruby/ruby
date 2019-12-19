@@ -11,6 +11,8 @@ class Reline::ANSI
     [27, 91, 70] => :ed_move_to_end,      # End
     [27, 32] => :em_set_mark,             # M-<space>
     [24, 24] => :em_exchange_mark,        # C-x C-x TODO also add Windows
+    [27, 91, 49, 59, 53, 67] => :em_next_word, # Ctrl+→
+    [27, 91, 49, 59, 53, 68] => :ed_prev_word, # Ctrl+←
   }
 
   @@input = STDIN
