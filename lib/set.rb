@@ -284,15 +284,15 @@ class Set
   end
   alias <= subset?
 
-  # Returns true if the set is a proper subset of the given set.
-  def proper_subset?(set)
+  # Returns true if the set is a proper subset of the given enumerable.
+  def proper_subset?(enum)
     case
-    when set.instance_of?(self.class) && @hash.respond_to?(:<)
-      @hash < set.instance_variable_get(:@hash)
-    when set.is_a?(Set)
-      size < set.size && all? { |o| set.include?(o) }
+    when enum.instance_of?(self.class) && @hash.respond_to?(:<)
+      @hash < enum.instance_variable_get(:@hash)
+    when enum.is_a?(Enumerable)
+      size < enum.size && all? { |o| enum.include?(o) }
     else
-      raise ArgumentError, "value must be a set"
+      raise ArgumentError, "value must be enumerable"
     end
   end
   alias < proper_subset?
