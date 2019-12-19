@@ -278,11 +278,7 @@ class TC_Set < Test::Unit::TestCase
       set.subset?(2)
     }
 
-    assert_raise(ArgumentError) {
-      set.subset?([2])
-    }
-
-    [Set, Set2].each { |klass|
+    [Set, Set2, Array].each { |klass|
       assert_equal(true, set.subset?(klass[1,2,3,4]), klass.name)
       assert_equal(true, set.subset?(klass[1,2,3]), klass.name)
       assert_equal(false, set.subset?(klass[1,2]), klass.name)
