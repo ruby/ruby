@@ -253,11 +253,7 @@ class TC_Set < Test::Unit::TestCase
       set.proper_superset?(2)
     }
 
-    assert_raise(ArgumentError) {
-      set.proper_superset?([2])
-    }
-
-    [Set, Set2].each { |klass|
+    [Set, Set2, Array].each { |klass|
       assert_equal(true, set.proper_superset?(klass[]), klass.name)
       assert_equal(true, set.proper_superset?(klass[1,2]), klass.name)
       assert_equal(false, set.proper_superset?(klass[1,2,3]), klass.name)
