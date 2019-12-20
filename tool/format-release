@@ -168,7 +168,7 @@ eom
     orig_data = File.read(File.join(wwwdir, filename))
     data = orig_data.dup
 
-    date = Time.now
+    date = Time.now.utc # use utc to use previous day in midnight
     entry = <<eom
 - version: #{ver}
   date: #{date.strftime("%Y-%m-%d")}
@@ -233,7 +233,7 @@ end
 
 def main
   if ARGV.size != 2
-    STDERR.puts "usage: format-release <dir-of-w.r-l.o> <output-of-make-snapshot>"
+    STDERR.puts "usage: format-release <dir-of-w.r-l.o> <version>"
     exit
   end
   wwwdir = ARGV.shift
