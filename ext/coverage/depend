@@ -17,6 +17,16 @@ coverage.o: $(top_srcdir)/ccan/list/list.h
 coverage.o: $(top_srcdir)/ccan/str/str.h
 coverage.o: $(top_srcdir)/gc.h
 coverage.o: $(top_srcdir)/internal.h
+coverage.o: $(top_srcdir)/internal/array.h
+coverage.o: $(top_srcdir)/internal/compilers.h
+coverage.o: $(top_srcdir)/internal/gc.h
+coverage.o: $(top_srcdir)/internal/hash.h
+coverage.o: $(top_srcdir)/internal/imemo.h
+coverage.o: $(top_srcdir)/internal/serial.h
+coverage.o: $(top_srcdir)/internal/static_assert.h
+coverage.o: $(top_srcdir)/internal/stdbool.h
+coverage.o: $(top_srcdir)/internal/thread.h
+coverage.o: $(top_srcdir)/internal/vm.h
 coverage.o: $(top_srcdir)/method.h
 coverage.o: $(top_srcdir)/node.h
 coverage.o: $(top_srcdir)/ruby_assert.h
