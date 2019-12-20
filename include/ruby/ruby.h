@@ -2569,7 +2569,7 @@ rb_scan_args_set(int argc, const VALUE *argv,
                     if (!keyword_given) {
                         /* Warn if treating positional as keyword, as in Ruby 3,
                            this will be an error */
-                        rb_warn("The last argument is used as the keyword parameter");
+                        rb_warn("The last argument is used as keyword parameters");
                     }
                     argc--;
                 }

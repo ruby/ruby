@@ -24,7 +24,7 @@ class TestKeywordArguments < Test::Unit::TestCase
 
   def test_f2
     assert_equal([:xyz, "foo", 424242], f2(:xyz))
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `f2'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `f2'/m) do
       assert_equal([{"bar"=>42}, "foo", 424242], f2("bar"=>42))
     end
   end
@@ -224,10 +224,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.m(args)
       args
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal(kw, c.m(**{}))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal(kw, c.m(**kw))
     end
     assert_equal(kw, c.m(kw, **kw))
@@ -248,11 +248,11 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, c.m(**h2))
     assert_equal(h3, c.m(**h3))
     assert_equal(h3, c.m(a: 1, **h2))
-    assert_warn(/The last argument is used as the keyword parameter.*for `m'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `m'/m) do
       assert_equal(h, c.m(h))
     end
     assert_raise(ArgumentError) { c.m(h2) }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `m'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `m'/m) do
       assert_raise(ArgumentError) { c.m(h3) }
     end
 
@@ -260,25 +260,25 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.m(arg, **args)
       [arg, args]
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       c.m(**{})
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       c.m(**kw)
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h, kw], c.m(**h))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h, kw], c.m(a: 1))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h2, kw], c.m(**h2))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h3, kw], c.m(**h3))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h3, kw], c.m(a: 1, **h2))
     end
     assert_equal([h, kw], c.m(h))
@@ -296,11 +296,11 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h2], c.m(**h2))
     assert_equal([1, h3], c.m(**h3))
     assert_equal([1, h3], c.m(a: 1, **h2))
-    assert_warn(/The last argument is used as the keyword parameter.*for `m'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `m'/m) do
       assert_equal([1, h], c.m(h))
     end
     assert_equal([h2, kw], c.m(h2))
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `m'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `m'/m) do
       assert_equal([h2, h], c.m(h3))
     end
   end
@@ -357,11 +357,11 @@ class TestKeywordArguments < Test::Unit::TestCase
         args
       end
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal(kw, c.m(**{}))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal(kw, c.m(**kw))
     end
     assert_equal(h, c.m(**h))
@@ -383,11 +383,11 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, c.m(**h2))
     assert_equal(h3, c.m(**h3))
     assert_equal(h3, c.m(a: 1, **h2))
-    assert_warn(/The last argument is used as the keyword parameter.*for `m'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `m'/m) do
       assert_equal(h, c.m(h))
     end
     assert_raise(ArgumentError) { c.m(h2) }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `m'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `m'/m) do
       assert_raise(ArgumentError) { c.m(h3) }
     end
 
@@ -398,31 +398,31 @@ class TestKeywordArguments < Test::Unit::TestCase
       end
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       c.m(**{})
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       c.m(**kw)
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h, kw], c.m(**h))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h, kw], c.m(a: 1))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h2, kw], c.m(**h2))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h3, kw], c.m(**h3))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h3, kw], c.m(a: 1, **h2))
     end
 
@@ -493,11 +493,11 @@ class TestKeywordArguments < Test::Unit::TestCase
         args
       end
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal(kw, c.m(**{}))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal(kw, c.m(**kw))
     end
     assert_equal(h, c.m(**h))
@@ -519,11 +519,11 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, c.m(**h2))
     assert_equal(h3, c.m(**h3))
     assert_equal(h3, c.m(a: 1, **h2))
-    assert_warn(/The last argument is used as the keyword parameter.*for `m'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `m'/m) do
       assert_equal(h, c.m(h))
     end
     assert_raise(ArgumentError) { c.m(h2) }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `m'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `m'/m) do
       assert_raise(ArgumentError) { c.m(h3) }
     end
 
@@ -534,31 +534,31 @@ class TestKeywordArguments < Test::Unit::TestCase
       end
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       c.m(**{})
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       c.m(**kw)
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h, kw], c.m(**h))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h, kw], c.m(a: 1))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h2, kw], c.m(**h2))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h3, kw], c.m(**h3))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h3, kw], c.m(a: 1, **h2))
     end
 
@@ -612,34 +612,34 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, f[**h2])
     assert_equal(h3, f[**h3])
     assert_equal(h3, f[a: 1, **h2])
-    assert_warn(/The last argument is used as the keyword parameter.*for `\[\]'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `\[\]'/m) do
       assert_equal(h, f[h])
     end
     assert_raise(ArgumentError) { f[h2] }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `\[\]'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `\[\]'/m) do
       assert_raise(ArgumentError) { f[h3] }
     end
 
     f = ->(a, **x) { [a,x] }
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `\[\]'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `\[\]'/m) do
       assert_equal([{}, {}], f[**{}])
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `\[\]'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `\[\]'/m) do
       assert_equal([{}, {}], f[**kw])
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `\[\]'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `\[\]'/m) do
       assert_equal([h, {}], f[**h])
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `\[\]'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `\[\]'/m) do
       assert_equal([h, {}], f[a: 1])
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `\[\]'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `\[\]'/m) do
       assert_equal([h2, {}], f[**h2])
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `\[\]'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `\[\]'/m) do
       assert_equal([h3, {}], f[**h3])
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `\[\]'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `\[\]'/m) do
       assert_equal([h3, {}], f[a: 1, **h2])
     end
 
@@ -691,11 +691,11 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, f[**h2])
     assert_equal(h3, f[**h3])
     assert_equal(h3, f[a: 1, **h2])
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(h, f[h])
     end
     assert_raise(ArgumentError) { f[h2] }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for method/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method is defined here/m) do
       assert_raise(ArgumentError) { f[h3] }
     end
 
@@ -771,11 +771,11 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, t.new(**h2, &f).value)
     assert_equal(h3, t.new(**h3, &f).value)
     assert_equal(h3, t.new(a: 1, **h2, &f).value)
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(h, t.new(h, &f).value)
     end
     assert_raise(ArgumentError) { t.new(h2, &f).value }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for method/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method is defined here/m) do
       assert_raise(ArgumentError) { t.new(h3, &f).value }
     end
 
@@ -850,11 +850,11 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, t.new(&f).resume(**h2))
     assert_equal(h3, t.new(&f).resume(**h3))
     assert_equal(h3, t.new(&f).resume(a: 1, **h2))
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(h, t.new(&f).resume(h))
     end
     assert_raise(ArgumentError) { t.new(&f).resume(h2) }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for method/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method is defined here/m) do
       assert_raise(ArgumentError) { t.new(&f).resume(h3) }
     end
 
@@ -927,11 +927,11 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, g.new(&f).each(**h2))
     assert_equal(h3, g.new(&f).each(**h3))
     assert_equal(h3, g.new(&f).each(a: 1, **h2))
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(h, g.new(&f).each(h))
     end
     assert_raise(ArgumentError) { g.new(&f).each(h2) }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for method/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method is defined here/m) do
       assert_raise(ArgumentError) { g.new(&f).each(h3) }
     end
 
@@ -1004,11 +1004,11 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, g.new{|y| y.yield(**h2)}.each(&f))
     assert_equal(h3, g.new{|y| y.yield(**h3)}.each(&f))
     assert_equal(h3, g.new{|y| y.yield(a: 1, **h2)}.each(&f))
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(h, g.new{|y| y.yield(h)}.each(&f))
     end
     assert_raise(ArgumentError) { g.new{|y| y.yield(h2)}.each(&f) }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for method/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method is defined here/m) do
       assert_raise(ArgumentError) { g.new{|y| y.yield(h3)}.each(&f) }
     end
 
@@ -1087,10 +1087,10 @@ class TestKeywordArguments < Test::Unit::TestCase
         @args = args
       end
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `initialize'/m) do
       assert_equal(kw, c[**{}].args)
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `initialize'/m) do
       assert_equal(kw, c[**kw].args)
     end
     assert_equal(h, c[**h].args)
@@ -1111,11 +1111,11 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, c[**h2].args)
     assert_equal(h3, c[**h3].args)
     assert_equal(h3, c[a: 1, **h2].args)
-    assert_warn(/The last argument is used as the keyword parameter.*for `initialize'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `initialize'/m) do
       assert_equal(h, c[h].args)
     end
     assert_raise(ArgumentError) { c[h2].args }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `initialize'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `initialize'/m) do
       assert_raise(ArgumentError) { c[h3].args }
     end
 
@@ -1124,25 +1124,25 @@ class TestKeywordArguments < Test::Unit::TestCase
         @args = [arg, args]
       end
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `initialize'/m) do
       assert_equal([kw, kw], c[**{}].args)
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `initialize'/m) do
       assert_equal([kw, kw], c[**kw].args)
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `initialize'/m) do
       assert_equal([h, kw], c[**h].args)
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `initialize'/m) do
       assert_equal([h, kw], c[a: 1].args)
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `initialize'/m) do
       assert_equal([h2, kw], c[**h2].args)
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `initialize'/m) do
       assert_equal([h3, kw], c[**h3].args)
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `initialize'/m) do
       assert_equal([h3, kw], c[a: 1, **h2].args)
     end
 
@@ -1199,10 +1199,10 @@ class TestKeywordArguments < Test::Unit::TestCase
         @args = args
       end
     end.method(:new)
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `initialize'/m) do
       assert_equal(kw, c[**{}].args)
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `initialize'/m) do
       assert_equal(kw, c[**kw].args)
     end
     assert_equal(h, c[**h].args)
@@ -1223,11 +1223,11 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, c[**h2].args)
     assert_equal(h3, c[**h3].args)
     assert_equal(h3, c[a: 1, **h2].args)
-    assert_warn(/The last argument is used as the keyword parameter.*for `initialize'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `initialize'/m) do
       assert_equal(h, c[h].args)
     end
     assert_raise(ArgumentError) { c[h2].args }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `initialize'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `initialize'/m) do
       assert_raise(ArgumentError) { c[h3].args }
     end
 
@@ -1236,25 +1236,25 @@ class TestKeywordArguments < Test::Unit::TestCase
         @args = [arg, args]
       end
     end.method(:new)
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `initialize'/m) do
       assert_equal([kw, kw], c[**{}].args)
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `initialize'/m) do
       assert_equal([kw, kw], c[**kw].args)
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `initialize'/m) do
       assert_equal([h, kw], c[**h].args)
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `initialize'/m) do
       assert_equal([h, kw], c[a: 1].args)
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `initialize'/m) do
       assert_equal([h2, kw], c[**h2].args)
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `initialize'/m) do
       assert_equal([h3, kw], c[**h3].args)
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `initialize'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `initialize'/m) do
       assert_equal([h3, kw], c[a: 1, **h2].args)
     end
 
@@ -1304,10 +1304,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.m(args)
       args
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal(kw, c.method(:m)[**{}])
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal(kw, c.method(:m)[**kw])
     end
     assert_equal(h, c.method(:m)[**h])
@@ -1327,11 +1327,11 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, c.method(:m)[**h2])
     assert_equal(h3, c.method(:m)[**h3])
     assert_equal(h3, c.method(:m)[a: 1, **h2])
-    assert_warn(/The last argument is used as the keyword parameter.*for `m'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `m'/m) do
       assert_equal(h, c.method(:m)[h])
     end
     assert_raise(ArgumentError) { c.method(:m)[h2] }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `m'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `m'/m) do
       assert_raise(ArgumentError) { c.method(:m)[h3] }
     end
 
@@ -1339,25 +1339,25 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.m(arg, **args)
       [arg, args]
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([kw, kw], c.method(:m)[**{}])
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([kw, kw], c.method(:m)[**kw])
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h, kw], c.method(:m)[**h])
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h, kw], c.method(:m)[a: 1])
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h2, kw], c.method(:m)[**h2])
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h3, kw], c.method(:m)[**h3])
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h3, kw], c.method(:m)[a: 1, **h2])
     end
 
@@ -1407,10 +1407,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.m(args)
       args
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal(kw, sc.instance_method(:m).bind_call(c, **{}))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal(kw, sc.instance_method(:m).bind_call(c, **kw))
     end
     assert_equal(h, sc.instance_method(:m).bind_call(c, **h))
@@ -1430,11 +1430,11 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, sc.instance_method(:m).bind_call(c, **h2))
     assert_equal(h3, sc.instance_method(:m).bind_call(c, **h3))
     assert_equal(h3, sc.instance_method(:m).bind_call(c, a: 1, **h2))
-    assert_warn(/The last argument is used as the keyword parameter.*for `m'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `m'/m) do
       assert_equal(h, sc.instance_method(:m).bind_call(c, h))
     end
     assert_raise(ArgumentError) { sc.instance_method(:m).bind_call(c, h2) }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `m'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `m'/m) do
       assert_raise(ArgumentError) { sc.instance_method(:m).bind_call(c, h3) }
     end
 
@@ -1442,25 +1442,25 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.m(arg, **args)
       [arg, args]
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([kw, kw], sc.instance_method(:m).bind_call(c, **{}))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([kw, kw], sc.instance_method(:m).bind_call(c, **kw))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h, kw], sc.instance_method(:m).bind_call(c, **h))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h, kw], sc.instance_method(:m).bind_call(c, a: 1))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h2, kw], sc.instance_method(:m).bind_call(c, **h2))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h3, kw], sc.instance_method(:m).bind_call(c, **h3))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h3, kw], sc.instance_method(:m).bind_call(c, a: 1, **h2))
     end
 
@@ -1509,10 +1509,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.m(args)
       args
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal(kw, c.send(:m, **{}))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal(kw, c.send(:m, **kw))
     end
     assert_equal(h, c.send(:m, **h))
@@ -1532,11 +1532,11 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, c.send(:m, **h2))
     assert_equal(h3, c.send(:m, **h3))
     assert_equal(h3, c.send(:m, a: 1, **h2))
-    assert_warn(/The last argument is used as the keyword parameter.*for `m'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `m'/m) do
       assert_equal(h, c.send(:m, h))
     end
     assert_raise(ArgumentError) { c.send(:m, h2) }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `m'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `m'/m) do
       assert_raise(ArgumentError) { c.send(:m, h3) }
     end
 
@@ -1544,25 +1544,25 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.m(arg, **args)
       [arg, args]
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       c.send(:m, **{})
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       c.send(:m, **kw)
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h, kw], c.send(:m, **h))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h, kw], c.send(:m, a: 1))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h2, kw], c.send(:m, **h2))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h3, kw], c.send(:m, **h3))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h3, kw], c.send(:m, a: 1, **h2))
     end
 
@@ -1611,10 +1611,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.m(args)
       args
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal(kw, c.public_send(:m, **{}))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal(kw, c.public_send(:m, **kw))
     end
     assert_equal(h, c.public_send(:m, **h))
@@ -1634,11 +1634,11 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, c.public_send(:m, **h2))
     assert_equal(h3, c.public_send(:m, **h3))
     assert_equal(h3, c.public_send(:m, a: 1, **h2))
-    assert_warn(/The last argument is used as the keyword parameter.*for `m'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `m'/m) do
       assert_equal(h, c.public_send(:m, h))
     end
     assert_raise(ArgumentError) { c.public_send(:m, h2) }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `m'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `m'/m) do
       assert_raise(ArgumentError) { c.public_send(:m, h3) }
     end
 
@@ -1646,25 +1646,25 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.m(arg, **args)
       [arg, args]
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       c.public_send(:m, **{})
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       c.public_send(:m, **kw)
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h, kw], c.public_send(:m, **h))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h, kw], c.public_send(:m, a: 1))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h2, kw], c.public_send(:m, **h2))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h3, kw], c.public_send(:m, **h3))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h3, kw], c.public_send(:m, a: 1, **h2))
     end
 
@@ -1716,10 +1716,10 @@ class TestKeywordArguments < Test::Unit::TestCase
       args
     end
     m = c.method(:send)
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal(kw, m.call(:m, **{}))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal(kw, m.call(:m, **kw))
     end
     assert_equal(h, m.call(:m, **h))
@@ -1740,11 +1740,11 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, m.call(:m, **h2))
     assert_equal(h3, m.call(:m, **h3))
     assert_equal(h3, m.call(:m, a: 1, **h2))
-    assert_warn(/The last argument is used as the keyword parameter.*for `m'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `m'/m) do
       assert_equal(h, m.call(:m, h))
     end
     assert_raise(ArgumentError) { m.call(:m, h2) }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `m'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `m'/m) do
       assert_raise(ArgumentError) { m.call(:m, h3) }
     end
 
@@ -1753,25 +1753,25 @@ class TestKeywordArguments < Test::Unit::TestCase
       [arg, args]
     end
     m = c.method(:send)
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       m.call(:m, **{})
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       m.call(:m, **kw)
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h, kw], m.call(:m, **h))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h, kw], m.call(:m, a: 1))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h2, kw], m.call(:m, **h2))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h3, kw], m.call(:m, **h3))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h3, kw], m.call(:m, a: 1, **h2))
     end
 
@@ -1821,10 +1821,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.m(args)
       args
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal(kw, :m.to_proc.call(c, **{}))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal(kw, :m.to_proc.call(c, **kw))
     end
     assert_equal(h, :m.to_proc.call(c, **h))
@@ -1844,11 +1844,11 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, :m.to_proc.call(c, **h2))
     assert_equal(h3, :m.to_proc.call(c, **h3))
     assert_equal(h3, :m.to_proc.call(c, a: 1, **h2))
-    assert_warn(/The last argument is used as the keyword parameter.*for `m'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `m'/m) do
       assert_equal(h, :m.to_proc.call(c, h))
     end
     assert_raise(ArgumentError) { :m.to_proc.call(c, h2) }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `m'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `m'/m) do
       assert_raise(ArgumentError) { :m.to_proc.call(c, h3) }
     end
 
@@ -1856,25 +1856,25 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.m(arg, **args)
       [arg, args]
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([kw, kw], :m.to_proc.call(c, **{}))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([kw, kw], :m.to_proc.call(c, **kw))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h, kw], :m.to_proc.call(c, **h))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h, kw], :m.to_proc.call(c, a: 1))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h2, kw], :m.to_proc.call(c, **h2))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h3, kw], :m.to_proc.call(c, **h3))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h3, kw], :m.to_proc.call(c, a: 1, **h2))
     end
 
@@ -1924,10 +1924,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.m(args)
       args
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal(kw, m.call(c, **{}))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal(kw, m.call(c, **kw))
     end
     assert_equal(h, m.call(c, **h))
@@ -1947,11 +1947,11 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, m.call(c, **h2))
     assert_equal(h3, m.call(c, **h3))
     assert_equal(h3, m.call(c, a: 1, **h2))
-    assert_warn(/The last argument is used as the keyword parameter.*for `m'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `m'/m) do
       assert_equal(h, m.call(c, h))
     end
     assert_raise(ArgumentError) { m.call(c, h2) }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `m'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `m'/m) do
       assert_raise(ArgumentError) { m.call(c, h3) }
     end
 
@@ -1959,25 +1959,25 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.m(arg, **args)
       [arg, args]
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([kw, kw], m.call(c, **{}))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([kw, kw], m.call(c, **kw))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h, kw], m.call(c, **h))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h, kw], m.call(c, a: 1))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h2, kw], m.call(c, **h2))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h3, kw], m.call(c, **h3))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h3, kw], m.call(c, a: 1, **h2))
     end
 
@@ -2026,10 +2026,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.method_missing(_, args)
       args
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal(kw, c.m(**{}))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal(kw, c.m(**kw))
     end
     assert_equal(h, c.m(**h))
@@ -2049,11 +2049,11 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, c.m(**h2))
     assert_equal(h3, c.m(**h3))
     assert_equal(h3, c.m(a: 1, **h2))
-    assert_warn(/The last argument is used as the keyword parameter.*for `method_missing'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `method_missing'/m) do
       assert_equal(h, c.m(h))
     end
     assert_raise(ArgumentError) { c.m(h2) }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `method_missing'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `method_missing'/m) do
       assert_raise(ArgumentError) { c.m(h3) }
     end
 
@@ -2061,25 +2061,25 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.method_missing(_, arg, **args)
       [arg, args]
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([kw, kw], c.m(**{}))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([kw, kw], c.m(**kw))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h, kw], c.m(**h))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h, kw], c.m(a: 1))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h2, kw], c.m(**h2))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h3, kw], c.m(**h3))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h3, kw], c.m(a: 1, **h2))
     end
 
@@ -2137,11 +2137,11 @@ class TestKeywordArguments < Test::Unit::TestCase
       END
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal(kw, c.m(**{}))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal(kw, c.m(**kw))
     end
     assert_equal(h, c.m(**h))
@@ -2161,11 +2161,11 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, c.m(**h2))
     assert_equal(h3, c.m(**h3))
     assert_equal(h3, c.m(a: 1, **h2))
-    assert_warn(/The last argument is used as the keyword parameter.*for `m'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `m'/m) do
       assert_equal(h, c.m(h))
     end
     assert_raise(ArgumentError) { c.m(h2) }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `m'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `m'/m) do
       assert_raise(ArgumentError) { c.m(h3) }
     end
 
@@ -2178,31 +2178,31 @@ class TestKeywordArguments < Test::Unit::TestCase
       END
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([kw, kw], c.m(**{}))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([kw, kw], c.m(**kw))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h, kw], c.m(**h))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h, kw], c.m(a: 1))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h2, kw], c.m(**h2))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h3, kw], c.m(**h3))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h3, kw], c.m(a: 1, **h2))
     end
 
@@ -2252,10 +2252,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.method_missing(_, args)
       args
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal(kw, c.m(**{}))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal(kw, c.m(**kw))
     end
     assert_equal(h, c.m(**h))
@@ -2275,11 +2275,11 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, c.m(**h2))
     assert_equal(h3, c.m(**h3))
     assert_equal(h3, c.m(a: 1, **h2))
-    assert_warn(/The last argument is used as the keyword parameter.*for `method_missing'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `method_missing'/m) do
       assert_equal(h, c.m(h))
     end
     assert_raise(ArgumentError) { c.m(h2) }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `method_missing'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `method_missing'/m) do
       assert_raise(ArgumentError) { c.m(h3) }
     end
 
@@ -2287,25 +2287,25 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.method_missing(_, arg, **args)
       [arg, args]
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([kw, kw], c.m(**{}))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([kw, kw], c.m(**kw))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h, kw], c.m(**h))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h, kw], c.m(a: 1))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h2, kw], c.m(**h2))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h3, kw], c.m(**h3))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h3, kw], c.m(a: 1, **h2))
     end
 
@@ -2379,7 +2379,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, c.m(**h2))
     assert_equal(h3, c.m(**h3))
     assert_equal(h3, c.m(a: 1, **h2))
-    assert_warn(/The last argument is used as the keyword parameter/m) do
+    assert_warn(/The last argument is used as keyword parameters/m) do
       assert_equal(h, c.m(h))
     end
     assert_raise(ArgumentError) { c.m(h2) }
@@ -2429,10 +2429,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     class << c
       define_method(:m) {|*args, **opt| [args, opt] }
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal([[], h], c.m(h))
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal([[h], h], c.m(h, h))
     end
 
@@ -2440,10 +2440,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     class << c
       define_method(:m) {|arg=nil, a: nil| [arg, a] }
     end
-    assert_warn(/The last argument is split into positional and keyword parameters.*for method/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method is defined here/m) do
       assert_equal([h2, 1], c.m(h3))
     end
-    assert_warn(/The last argument is split into positional and keyword parameters.*for method/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method is defined here/m) do
       assert_equal([h2, 1], c.m(**h3))
     end
   end
@@ -2509,7 +2509,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, m.call(**h2))
     assert_equal(h3, m.call(**h3))
     assert_equal(h3, m.call(a: 1, **h2))
-    assert_warn(/The last argument is used as the keyword parameter/m) do
+    assert_warn(/The last argument is used as keyword parameters/m) do
       assert_equal(h, m.call(h))
     end
     assert_raise(ArgumentError) { m.call(h2) }
@@ -2562,10 +2562,10 @@ class TestKeywordArguments < Test::Unit::TestCase
       define_method(:m) {|*args, **opt| [args, opt] }
     end
     m = c.method(:m)
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal([[], h], m.call(h))
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal([[h], h], m.call(h, h))
     end
 
@@ -2574,10 +2574,10 @@ class TestKeywordArguments < Test::Unit::TestCase
       define_method(:m) {|arg=nil, a: nil| [arg, a] }
     end
     m = c.method(:m)
-    assert_warn(/The last argument is split into positional and keyword parameters.*for method/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method is defined here/m) do
       assert_equal([h2, 1], m.call(h3))
     end
-    assert_warn(/The last argument is split into positional and keyword parameters.*for method/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method is defined here/m) do
       assert_equal([h2, 1], m.call(**h3))
     end
   end
@@ -2691,7 +2691,7 @@ class TestKeywordArguments < Test::Unit::TestCase
 
     assert_equal([[1], h1], foo.call(1, :a=>1, &->(*args, **kw){[args, kw]}))
     assert_equal([1, h1], foo.call(1, :a=>1, &->(*args){args}))
-    assert_warn(/The last argument is used as the keyword parameter/) do
+    assert_warn(/The last argument is used as keyword parameters/) do
       assert_equal([[1], h1], foo.call(1, {:a=>1}, &->(*args, **kw){[args, kw]}))
     end
     assert_equal([1, h1], foo.call(1, {:a=>1}, &->(*args){args}))
@@ -2907,19 +2907,19 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([[h1], {}], o.foo_foo_bar(h1, **{}))
     assert_equal([h1], o.foo_foo_baz(h1, **{}))
 
-    assert_warn(/The last argument is used as the keyword parameter.* for `bar'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `bar'/m) do
       assert_equal([[1], h1], o.foo(:bar, 1, h1))
     end
     assert_equal([1, h1], o.foo(:baz, 1, h1))
-    assert_warn(/The last argument is used as the keyword parameter.* for `bar'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `bar'/m) do
       assert_equal([[1], h1], o.bfoo(:bar, 1, h1))
     end
     assert_equal([1, h1], o.bfoo(:baz, 1, h1))
-    assert_warn(/The last argument is used as the keyword parameter.* for `bar'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `bar'/m) do
       assert_equal([[1], h1], o.store_foo(:bar, 1, h1))
     end
     assert_equal([1, h1], o.store_foo(:baz, 1, h1))
-    assert_warn(/The last argument is used as the keyword parameter.* for `bar'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `bar'/m) do
       assert_equal([[1], h1], o.foo_bar(1, h1))
     end
     assert_equal([1, h1], o.foo_baz(1, h1))
@@ -2971,33 +2971,33 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([[h1], {}], o.foo_dbar(h1, **{}))
     assert_equal([h1], o.foo_dbaz(h1, **{}))
 
-    assert_warn(/The last argument is used as the keyword parameter.* for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal([[1], h1], o.foo(:dbar, 1, h1))
     end
     assert_equal([1, h1], o.foo(:dbaz, 1, h1))
-    assert_warn(/The last argument is used as the keyword parameter.* for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal([[1], h1], o.bfoo(:dbar, 1, h1))
     end
     assert_equal([1, h1], o.bfoo(:dbaz, 1, h1))
-    assert_warn(/The last argument is used as the keyword parameter.* for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal([[1], h1], o.store_foo(:dbar, 1, h1))
     end
     assert_equal([1, h1], o.store_foo(:dbaz, 1, h1))
-    assert_warn(/The last argument is used as the keyword parameter.* for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal([[1], h1], o.foo_dbar(1, h1))
     end
     assert_equal([1, h1], o.foo_dbaz(1, h1))
 
     assert_equal([[1], h1], o.block(1, :a=>1))
     assert_equal([[1], h1], o.block(1, **h1))
-    assert_warn(/The last argument is used as the keyword parameter.* for `call'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `call'/m) do
       assert_equal([[1], h1], o.block(1, h1))
     end
     assert_equal([[h1], {}], o.block(h1, **{}))
 
     assert_equal([[1], h1], o.cfunc(1, :a=>1))
     assert_equal([[1], h1], o.cfunc(1, **h1))
-    assert_warn(/The last argument is used as the keyword parameter.* for `initialize'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `initialize'/m) do
       assert_equal([[1], h1], o.cfunc(1, h1))
     end
     assert_equal([[h1], {}], o.cfunc(h1, **{}))
@@ -3005,7 +3005,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     o = mmkw.new
     assert_equal([[:b, 1], h1], o.b(1, :a=>1))
     assert_equal([[:b, 1], h1], o.b(1, **h1))
-    assert_warn(/The last argument is used as the keyword parameter.* for `method_missing'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `method_missing'/m) do
       assert_equal([[:b, 1], h1], o.b(1, h1))
     end
     assert_equal([[:b, h1], {}], o.b(h1, **{}))
@@ -3019,7 +3019,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     o = implicit_super.new
     assert_equal([[1], h1], o.bar(1, :a=>1))
     assert_equal([[1], h1], o.bar(1, **h1))
-    assert_warn(/The last argument is used as the keyword parameter.* for `bar'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `bar'/m) do
       assert_equal([[1], h1], o.bar(1, h1))
     end
     assert_equal([[h1], {}], o.bar(h1, **{}))
@@ -3032,7 +3032,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     o = explicit_super.new
     assert_equal([[1], h1], o.bar(1, :a=>1))
     assert_equal([[1], h1], o.bar(1, **h1))
-    assert_warn(/The last argument is used as the keyword parameter.* for `bar'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `bar'/m) do
       assert_equal([[1], h1], o.bar(1, h1))
     end
     assert_equal([[h1], {}], o.bar(h1, **{}))
@@ -3048,11 +3048,11 @@ class TestKeywordArguments < Test::Unit::TestCase
         [args, kw]
       end
     end
-    assert_warn(/The last argument is used as the keyword parameter.* for `bar'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `bar'/m) do
       assert_equal([[1], h1], o.foo(:pass_bar, 1, :a=>1))
     end
 
-    assert_warn(/The last argument is used as the keyword parameter.* for `initialize'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `initialize'/m) do
       assert_equal([[1], h1], o.foo(:pass_cfunc, 1, :a=>1))
     end
 
@@ -3142,23 +3142,23 @@ class TestKeywordArguments < Test::Unit::TestCase
     end
     assert_equal(c, [c].dig(0, **{}))
     assert_equal(c, [c].dig(0, **kw))
-    assert_warn(/The last argument is used as the keyword parameter.*for `dig'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `dig'/m) do
       assert_equal(h, [c].dig(0, **h))
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for `dig'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `dig'/m) do
       assert_equal(h, [c].dig(0, a: 1))
     end
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `dig'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `dig'/m) do
       assert_raise(ArgumentError) { [c].dig(0, **h3) }
     end
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `dig'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `dig'/m) do
       assert_raise(ArgumentError) { [c].dig(0, a: 1, **h2) }
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for `dig'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `dig'/m) do
       assert_equal(h, [c].dig(0, h))
     end
     assert_raise(ArgumentError) { [c].dig(0, h2) }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `dig'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `dig'/m) do
       assert_raise(ArgumentError) { [c].dig(0, h3) }
     end
 
@@ -3180,24 +3180,24 @@ class TestKeywordArguments < Test::Unit::TestCase
     end
     assert_equal(c, [c].dig(0, **{}))
     assert_equal(c, [c].dig(0, **kw))
-    assert_warn(/The last argument is used as the keyword parameter.*for `dig'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `dig'/m) do
       assert_equal([1, h], [c].dig(0, **h))
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for `dig'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `dig'/m) do
       assert_equal([1, h], [c].dig(0, a: 1))
     end
     assert_equal([h2, kw], [c].dig(0, **h2))
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `dig'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `dig'/m) do
       assert_equal([h2, h], [c].dig(0, **h3))
     end
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `dig'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `dig'/m) do
       assert_equal([h2, h], [c].dig(0, a: 1, **h2))
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for `dig'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `dig'/m) do
       assert_equal([1, h], [c].dig(0, h))
     end
     assert_equal([h2, kw], [c].dig(0, h2))
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `dig'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `dig'/m) do
       assert_equal([h2, h], [c].dig(0, h3))
     end
     assert_equal([h, kw], [c].dig(0, h, **{}))
@@ -3252,23 +3252,23 @@ class TestKeywordArguments < Test::Unit::TestCase
     end
     assert_equal(c, [c].dig(0, **{}))
     assert_equal(c, [c].dig(0, **kw))
-    assert_warn(/The last argument is used as the keyword parameter.*for `method_missing'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `method_missing'/m) do
       assert_equal(h, [c].dig(0, **h))
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for `method_missing'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `method_missing'/m) do
       assert_equal(h, [c].dig(0, a: 1))
     end
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `method_missing'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `method_missing'/m) do
       assert_raise(ArgumentError) { [c].dig(0, **h3) }
     end
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `method_missing'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `method_missing'/m) do
       assert_raise(ArgumentError) { [c].dig(0, a: 1, **h2) }
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for `method_missing'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `method_missing'/m) do
       assert_equal(h, [c].dig(0, h))
     end
     assert_raise(ArgumentError) { [c].dig(0, h2) }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `method_missing'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `method_missing'/m) do
       assert_raise(ArgumentError) { [c].dig(0, h3) }
     end
 
@@ -3290,24 +3290,24 @@ class TestKeywordArguments < Test::Unit::TestCase
     end
     assert_equal(c, [c].dig(0, **{}))
     assert_equal(c, [c].dig(0, **kw))
-    assert_warn(/The last argument is used as the keyword parameter.*for `method_missing'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `method_missing'/m) do
       assert_equal([1, h], [c].dig(0, **h))
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for `method_missing'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `method_missing'/m) do
       assert_equal([1, h], [c].dig(0, a: 1))
     end
     assert_equal([h2, kw], [c].dig(0, **h2))
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `method_missing'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `method_missing'/m) do
       assert_equal([h2, h], [c].dig(0, **h3))
     end
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `method_missing'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `method_missing'/m) do
       assert_equal([h2, h], [c].dig(0, a: 1, **h2))
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for `method_missing'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `method_missing'/m) do
       assert_equal([1, h], [c].dig(0, h))
     end
     assert_equal([h2, kw], [c].dig(0, h2))
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `method_missing'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `method_missing'/m) do
       assert_equal([h2, h], [c].dig(0, h3))
     end
     assert_equal([h, kw], [c].dig(0, h, **{}))
@@ -3363,7 +3363,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, c.to_enum(:each, **h2, &m).size)
     assert_equal(h3, c.to_enum(:each, **h3, &m).size)
     assert_equal(h3, c.to_enum(:each, a: 1, **h2, &m).size)
-    assert_warn(/The last argument is used as the keyword parameter/m) do
+    assert_warn(/The last argument is used as keyword parameters/m) do
       assert_equal(h, c.to_enum(:each, h, &m).size)
     end
     assert_raise(ArgumentError) { c.to_enum(:each, h2, &m).size }
@@ -3405,7 +3405,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h2], c.to_enum(:each, **h2, &m).size)
     assert_equal([1, h3], c.to_enum(:each, **h3, &m).size)
     assert_equal([1, h3], c.to_enum(:each, a: 1, **h2, &m).size)
-    assert_warn(/The last argument is used as the keyword parameter/m) do
+    assert_warn(/The last argument is used as keyword parameters/m) do
       assert_equal([1, h], c.to_enum(:each, h, &m).size)
     end
     assert_equal([h2, kw], c.to_enum(:each, h2, &m).size)
@@ -3461,7 +3461,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, c.instance_exec(**h2, &m))
     assert_equal(h3, c.instance_exec(**h3, &m))
     assert_equal(h3, c.instance_exec(a: 1, **h2, &m))
-    assert_warn(/The last argument is used as the keyword parameter/) do
+    assert_warn(/The last argument is used as keyword parameters/) do
       assert_equal(h, c.instance_exec(h, &m))
     end
     assert_raise(ArgumentError) { c.instance_exec(h2, &m) }
@@ -3503,7 +3503,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h2], c.instance_exec(**h2, &m))
     assert_equal([1, h3], c.instance_exec(**h3, &m))
     assert_equal([1, h3], c.instance_exec(a: 1, **h2, &m))
-    assert_warn(/The last argument is used as the keyword parameter/m) do
+    assert_warn(/The last argument is used as keyword parameters/m) do
       assert_equal([1, h], c.instance_exec(h, &m))
     end
     assert_equal([h2, kw], c.instance_exec(h2, &m))
@@ -3573,7 +3573,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, c.instance_exec(**h2, &m))
     assert_equal(h3, c.instance_exec(**h3, &m))
     assert_equal(h3, c.instance_exec(a: 1, **h2, &m))
-    assert_warn(/The last argument is used as the keyword parameter/) do
+    assert_warn(/The last argument is used as keyword parameters/) do
       assert_equal(h, c.instance_exec(h, &m))
     end
     assert_raise(ArgumentError) { c.instance_exec(h2, &m) }
@@ -3623,7 +3623,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h2], c.instance_exec(**h2, &m))
     assert_equal([1, h3], c.instance_exec(**h3, &m))
     assert_equal([1, h3], c.instance_exec(a: 1, **h2, &m))
-    assert_warn(/The last argument is used as the keyword parameter/m) do
+    assert_warn(/The last argument is used as keyword parameters/m) do
       assert_equal([1, h], c.instance_exec(h, &m))
     end
     assert_equal([h2, kw], c.instance_exec(h2, &m))
@@ -3693,7 +3693,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, c.instance_exec(**h2, &m))
     assert_equal(h3, c.instance_exec(**h3, &m))
     assert_equal(h3, c.instance_exec(a: 1, **h2, &m))
-    assert_warn(/The last argument is used as the keyword parameter/) do
+    assert_warn(/The last argument is used as keyword parameters/) do
       assert_equal(h, c.instance_exec(h, &m))
     end
     assert_raise(ArgumentError) { c.instance_exec(h2, &m) }
@@ -3743,7 +3743,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h2], c.instance_exec(**h2, &m))
     assert_equal([1, h3], c.instance_exec(**h3, &m))
     assert_equal([1, h3], c.instance_exec(a: 1, **h2, &m))
-    assert_warn(/The last argument is used as the keyword parameter/m) do
+    assert_warn(/The last argument is used as keyword parameters/m) do
       assert_equal([1, h], c.instance_exec(h, &m))
     end
     assert_equal([h2, kw], c.instance_exec(h2, &m))
@@ -3809,7 +3809,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(h2, c.instance_exec(c, **h2, &:m))
     assert_equal(h3, c.instance_exec(c, **h3, &:m))
     assert_equal(h3, c.instance_exec(c, a: 1, **h2, &:m))
-    assert_warn(/The last argument is used as the keyword parameter/) do
+    assert_warn(/The last argument is used as keyword parameters/) do
       assert_equal(h, c.instance_exec(c, h, &:m))
     end
     assert_raise(ArgumentError) { c.instance_exec(c, h2, &:m) }
@@ -3857,7 +3857,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h2], c.instance_exec(c, **h2, &:m))
     assert_equal([1, h3], c.instance_exec(c, **h3, &:m))
     assert_equal([1, h3], c.instance_exec(c, a: 1, **h2, &:m))
-    assert_warn(/The last argument is used as the keyword parameter/m) do
+    assert_warn(/The last argument is used as keyword parameters/m) do
       assert_equal([1, h], c.instance_exec(c, h, &:m))
     end
     assert_equal([h2, kw], c.instance_exec(c, h2, &:m))
@@ -3902,10 +3902,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.c(args)
       args
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `c'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `c'/m) do
       assert_equal(kw, c.m(:c, **{}))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `c'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `c'/m) do
       assert_equal(kw, c.m(:c, **kw))
     end
     assert_equal(kw, c.m(:c, kw, **kw))
@@ -3927,11 +3927,11 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([h2, h2], c.m(:c, **h2, &m))
     assert_equal([h3, h3], c.m(:c, **h3, &m))
     assert_equal([h3, h3], c.m(:c, a: 1, **h2, &m))
-    assert_warn(/The last argument is used as the keyword parameter.*for `c'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `c'/m) do
       assert_equal([h, h], c.m(:c, h, &m))
     end
     assert_raise(ArgumentError) { c.m(:c, h2, &m) }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `c'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `c'/m) do
       assert_raise(ArgumentError) { c.m(:c, h3, &m) }
     end
 
@@ -3939,25 +3939,25 @@ class TestKeywordArguments < Test::Unit::TestCase
     def c.c(arg, **args)
       [arg, args]
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `c'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `c'/m) do
       assert_equal([kw, kw], c.m(:c, **{}))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `c'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `c'/m) do
       assert_equal([kw, kw], c.m(:c, **kw))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `c'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `c'/m) do
       assert_equal([h, kw], c.m(:c, **h))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `c'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `c'/m) do
       assert_equal([h, kw], c.m(:c, a: 1))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `c'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `c'/m) do
       assert_equal([h2, kw], c.m(:c, **h2))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `c'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `c'/m) do
       assert_equal([h3, kw], c.m(:c, **h3))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `c'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `c'/m) do
       assert_equal([h3, kw], c.m(:c, a: 1, **h2))
     end
     assert_equal([h, kw], c.m(:c, h))
@@ -3975,11 +3975,11 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h2], c.m(:c, **h2))
     assert_equal([1, h3], c.m(:c, **h3))
     assert_equal([1, h3], c.m(:c, a: 1, **h2))
-    assert_warn(/The last argument is used as the keyword parameter.*for `c'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `c'/m) do
       assert_equal([1, h], c.m(:c, h))
     end
     assert_equal([h2, kw], c.m(:c, h2))
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `c'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `c'/m) do
       assert_equal([h2, h], c.m(:c, h3))
     end
   end
@@ -4110,22 +4110,22 @@ class TestKeywordArguments < Test::Unit::TestCase
     bug7665 = '[ruby-core:51278]'
     bug8463 = '[ruby-core:55203] [Bug #8463]'
     expect = [*%w[foo bar], {zzz: 42}]
-    assert_warn(/The last argument is used as the keyword parameter.* for `rest_keyrest'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `rest_keyrest'/m) do
       assert_equal(expect, rest_keyrest(*expect), bug7665)
     end
     pr = proc {|*args, **opt| next *args, opt}
-    assert_warn(/The last argument is used as the keyword parameter.* for `call'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `call'/m) do
       assert_equal(expect, pr.call(*expect), bug7665)
     end
-    assert_warn(/The last argument is used as the keyword parameter.* for `call'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `call'/m) do
       assert_equal(expect, pr.call(expect), bug8463)
     end
     pr = proc {|a, *b, **opt| next a, *b, opt}
-    assert_warn(/The last argument is used as the keyword parameter.* for `call'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `call'/m) do
       assert_equal(expect, pr.call(expect), bug8463)
     end
     pr = proc {|a, **opt| next a, opt}
-    assert_warn(/The last argument is used as the keyword parameter.* for `call'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `call'/m) do
       assert_equal(expect.values_at(0, -1), pr.call(expect), bug8463)
     end
   end
@@ -4143,13 +4143,13 @@ class TestKeywordArguments < Test::Unit::TestCase
   end
 
   def test_keyword_split
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `req_plus_keyword'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `req_plus_keyword'/m) do
       assert_equal([{:a=>1}, {}], req_plus_keyword(:a=>1))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `req_plus_keyword'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `req_plus_keyword'/m) do
       assert_equal([{"a"=>1}, {}], req_plus_keyword("a"=>1))
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `req_plus_keyword'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `req_plus_keyword'/m) do
       assert_equal([{"a"=>1, :a=>1}, {}], req_plus_keyword("a"=>1, :a=>1))
     end
     assert_equal([{:a=>1}, {}], req_plus_keyword({:a=>1}))
@@ -4159,22 +4159,22 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, {:a=>1}], opt_plus_keyword(:a=>1))
     assert_equal([1, {"a"=>1}], opt_plus_keyword("a"=>1))
     assert_equal([1, {"a"=>1, :a=>1}], opt_plus_keyword("a"=>1, :a=>1))
-    assert_warn(/The last argument is used as the keyword parameter.* for `opt_plus_keyword'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `opt_plus_keyword'/m) do
       assert_equal([1, {:a=>1}], opt_plus_keyword({:a=>1}))
     end
     assert_equal([{"a"=>1}, {}], opt_plus_keyword({"a"=>1}))
-    assert_warn(/The last argument is split into positional and keyword parameters.* for `opt_plus_keyword'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `opt_plus_keyword'/m) do
       assert_equal([{"a"=>1}, {:a=>1}], opt_plus_keyword({"a"=>1, :a=>1}))
     end
 
     assert_equal([[], {:a=>1}], splat_plus_keyword(:a=>1))
     assert_equal([[], {"a"=>1}], splat_plus_keyword("a"=>1))
     assert_equal([[], {"a"=>1, :a=>1}], splat_plus_keyword("a"=>1, :a=>1))
-    assert_warn(/The last argument is used as the keyword parameter.* for `splat_plus_keyword'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `splat_plus_keyword'/m) do
       assert_equal([[], {:a=>1}], splat_plus_keyword({:a=>1}))
     end
     assert_equal([[{"a"=>1}], {}], splat_plus_keyword({"a"=>1}))
-    assert_warn(/The last argument is split into positional and keyword parameters.* for `splat_plus_keyword'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `splat_plus_keyword'/m) do
       assert_equal([[{"a"=>1}], {:a=>1}], splat_plus_keyword({"a"=>1, :a=>1}))
     end
   end
@@ -4361,7 +4361,7 @@ class TestKeywordArguments < Test::Unit::TestCase
         [a, b, c, d, e, f, g]
       end
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `foo'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `foo'/m) do
       assert_equal([1, 2, 1, [], {:f=>5}, 2, {}], a.new.foo(1, 2, f:5), bug8993)
     end
   end
@@ -4396,10 +4396,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     o = Object.new
     def o.to_hash() { k: 9 } end
     assert_equal([1, 42, [], o, :key, {}, nil], f9(1, o))
-    assert_warn(/The last argument is used as the keyword parameter.* for `m1'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `m1'/m) do
       assert_equal([1, 9], m1(1, o) {|a, k: 0| break [a, k]}, bug10016)
     end
-    assert_warn(/The last argument is used as the keyword parameter.* for `m1'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `m1'/m) do
       assert_equal([1, 9], m1(1, o, &->(a, k: 0) {break [a, k]}), bug10016)
     end
   end
@@ -4708,11 +4708,11 @@ class TestKeywordArgumentsSymProcRefinements < Test::Unit::TestCase
       END
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal(kw, c.call(**{}, &:m))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal(kw, c.call(**kw, &:m))
     end
     assert_equal(h, c.call(**h, &:m))
@@ -4732,11 +4732,11 @@ class TestKeywordArgumentsSymProcRefinements < Test::Unit::TestCase
     assert_equal(h2, c.call(**h2, &:m))
     assert_equal(h3, c.call(**h3, &:m))
     assert_equal(h3, c.call(a: 1, **h2, &:m))
-    assert_warn(/The last argument is used as the keyword parameter.*for `call'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `call'/m) do
       assert_equal(h, c.call(h, &:m))
     end
     assert_raise(ArgumentError) { c.call(h2, &:m) }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `call'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `call'/m) do
       assert_raise(ArgumentError) { c.call(h3, &:m) }
     end
 
@@ -4749,31 +4749,31 @@ class TestKeywordArgumentsSymProcRefinements < Test::Unit::TestCase
       END
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([kw, kw], c.call(**{}, &:m))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([kw, kw], c.call(**kw, &:m))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h, kw], c.call(**h, &:m))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h, kw], c.call(a: 1, &:m))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h2, kw], c.call(**h2, &:m))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h3, kw], c.call(**h3, &:m))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `m'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `m'/m) do
       assert_equal([h3, kw], c.call(a: 1, **h2, &:m))
     end
 
@@ -4828,11 +4828,11 @@ class TestKeywordArgumentsSymProcRefinements < Test::Unit::TestCase
       END
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal(kw, c.call(**{}, &:m))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal(kw, c.call(**kw, &:m))
     end
     assert_equal(h, c.call(**h, &:m))
@@ -4852,11 +4852,11 @@ class TestKeywordArgumentsSymProcRefinements < Test::Unit::TestCase
     assert_equal(h2, c.call(**h2, &:m))
     assert_equal(h3, c.call(**h3, &:m))
     assert_equal(h3, c.call(a: 1, **h2, &:m))
-    assert_warn(/The last argument is used as the keyword parameter.*for `call'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `call'/m) do
       assert_equal(h, c.call(h, &:m2))
     end
     assert_raise(ArgumentError) { c.call(h2, &:m2) }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `call'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `call'/m) do
       assert_raise(ArgumentError) { c.call(h3, &:m2) }
     end
 
@@ -4869,31 +4869,31 @@ class TestKeywordArgumentsSymProcRefinements < Test::Unit::TestCase
       END
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([kw, kw], c.call(**{}, &:m))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([kw, kw], c.call(**kw, &:m))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h, kw], c.call(**h, &:m))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h, kw], c.call(a: 1, &:m))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h2, kw], c.call(**h2, &:m))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h3, kw], c.call(**h3, &:m))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h3, kw], c.call(a: 1, **h2, &:m))
     end
 
@@ -4948,11 +4948,11 @@ class TestKeywordArgumentsSymProcRefinements < Test::Unit::TestCase
       END
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal(kw, c.call(**{}, &:m2))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal(kw, c.call(**kw, &:m2))
     end
     assert_equal(h, c.call(**h, &:m2))
@@ -4972,11 +4972,11 @@ class TestKeywordArgumentsSymProcRefinements < Test::Unit::TestCase
     assert_equal(h2, c.call(**h2, &:m2))
     assert_equal(h3, c.call(**h3, &:m2))
     assert_equal(h3, c.call(a: 1, **h2, &:m2))
-    assert_warn(/The last argument is used as the keyword parameter.*for `call'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `call'/m) do
       assert_equal(h, c.call(h, &:m2))
     end
     assert_raise(ArgumentError) { c.call(h2, &:m2) }
-    assert_warn(/The last argument is split into positional and keyword parameters.*for `call'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `call'/m) do
       assert_raise(ArgumentError) { c.call(h3, &:m2) }
     end
 
@@ -4989,31 +4989,31 @@ class TestKeywordArgumentsSymProcRefinements < Test::Unit::TestCase
       END
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([kw, kw], c.call(**{}, &:m2))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([kw, kw], c.call(**kw, &:m2))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h, kw], c.call(**h, &:m2))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h, kw], c.call(a: 1, &:m2))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h2, kw], c.call(**h2, &:m2))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h3, kw], c.call(**h3, &:m2))
     end
     redef[]
-    assert_warn(/The keyword argument is passed as the last hash parameter.* for `method_missing'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `method_missing'/m) do
       assert_equal([h3, kw], c.call(a: 1, **h2, &:m2))
     end
 

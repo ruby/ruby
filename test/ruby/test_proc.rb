@@ -1485,27 +1485,27 @@ class TestProcKeywords < Test::Unit::TestCase
     g = ->(kw) { kw.merge(:a=>2) }
 
     assert_equal(2, (f >> g).call(a: 3)[:a])
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(1, (f << g).call(a: 3)[:a])
     end
     assert_equal(2, (f >> g).call(a: 3)[:a])
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(1, (f << g).call({a: 3})[:a])
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(2, (f >> g).call({a: 3})[:a])
     end
     assert_equal(2, (g << f).call(a: 3)[:a])
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(1, (g >> f).call(a: 3)[:a])
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(2, (g << f).call({a: 3})[:a])
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(1, (g >> f).call({a: 3})[:a])
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.*The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(1, (f << g).call(**{})[:a])
     end
     assert_equal(2, (f >> g).call(**{})[:a])
@@ -1515,27 +1515,27 @@ class TestProcKeywords < Test::Unit::TestCase
     f = ->(**kw) { kw.merge(:a=>1) }.method(:call)
     g = ->(kw) { kw.merge(:a=>2) }.method(:call)
 
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(1, (f << g).call(a: 3)[:a])
     end
     assert_equal(2, (f >> g).call(a: 3)[:a])
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(1, (f << g).call({a: 3})[:a])
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(2, (f >> g).call({a: 3})[:a])
     end
     assert_equal(2, (g << f).call(a: 3)[:a])
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(1, (g >> f).call(a: 3)[:a])
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(2, (g << f).call({a: 3})[:a])
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(1, (g >> f).call({a: 3})[:a])
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.*The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(1, (f << g).call(**{})[:a])
     end
     assert_equal(2, (f >> g).call(**{})[:a])
@@ -1549,27 +1549,27 @@ class TestProcKeywords < Test::Unit::TestCase
     def g.<<(f) to_proc << f end
     def g.>>(f) to_proc >> f end
 
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(1, (f << g).call(a: 3)[:a])
     end
     assert_equal(2, (f >> g).call(a: 3)[:a])
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(1, (f << g).call({a: 3})[:a])
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(2, (f >> g).call({a: 3})[:a])
     end
     assert_equal(2, (g << f).call(a: 3)[:a])
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(1, (g >> f).call(a: 3)[:a])
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(2, (g << f).call({a: 3})[:a])
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method is defined here/m) do
       assert_equal(1, (g >> f).call({a: 3})[:a])
     end
-    assert_warn(/The keyword argument is passed as the last hash parameter.*for `call'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The called method `call'/m) do
       assert_equal(1, (f << g).call(**{})[:a])
     end
     assert_equal(2, (f >> g).call(**{})[:a])
@@ -1582,27 +1582,27 @@ class TestProcKeywords < Test::Unit::TestCase
     def g.>>(f) to_proc >> f end
 
     assert_equal(1, (f << g).call(a: 3)[:a])
-    assert_warn(/The last argument is used as the keyword parameter.*for `call'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `call'/m) do
       assert_equal(2, (f >> g).call(a: 3)[:a])
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for `call'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `call'/m) do
       assert_equal(1, (f << g).call({a: 3})[:a])
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for `call'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `call'/m) do
       assert_equal(2, (f >> g).call({a: 3})[:a])
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for `call'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `call'/m) do
       assert_equal(2, (g << f).call(a: 3)[:a])
     end
     assert_equal(1, (g >> f).call(a: 3)[:a])
-    assert_warn(/The last argument is used as the keyword parameter.*for `call'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `call'/m) do
       assert_equal(2, (g << f).call({a: 3})[:a])
     end
-    assert_warn(/The last argument is used as the keyword parameter.*for `call'/m) do
+    assert_warn(/The last argument is used as keyword parameters.*The called method `call'/m) do
       assert_equal(1, (g >> f).call({a: 3})[:a])
     end
     assert_equal(1, (f << g).call(**{})[:a])
-    assert_warn(/The keyword argument is passed as the last hash parameter.*The last argument is used as the keyword parameter.*for `call'/m) do
+    assert_warn(/The keyword argument is passed as the last hash parameter.*The last argument is used as keyword parameters.*The called method `call'/m) do
       assert_equal(2, (f >> g).call(**{})[:a])
     end
   end

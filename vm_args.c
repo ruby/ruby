@@ -658,11 +658,11 @@ rb_warn_keyword_to_last_hash(rb_execution_context_t * const ec, struct rb_callin
         rb_warn("The keyword argument is passed as the last hash parameter");
         if (name) {
             rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
-                            "for `%"PRIsVALUE"' defined here", name);
+                            "The called method `%"PRIsVALUE"' is defined here", name);
         }
         else {
             rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
-                            "for method defined here");
+                            "The called method is defined here");
         }
     }
 }
@@ -683,11 +683,11 @@ rb_warn_split_last_hash_to_keyword(rb_execution_context_t * const ec, struct rb_
         rb_warn("The last argument is split into positional and keyword parameters");
         if (calling->recv != Qundef) {
             rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
-                            "for `%"PRIsVALUE"' defined here", name);
+                            "The called method `%"PRIsVALUE"' is defined here", name);
         }
         else {
             rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
-                            "for method defined here");
+                            "The called method is defined here");
         }
     }
 }
@@ -701,18 +701,18 @@ rb_warn_last_hash_to_keyword(rb_execution_context_t * const ec, struct rb_callin
     name = rb_id2str(ci->mid);
     loc = rb_iseq_location(iseq);
     if (NIL_P(loc)) {
-        rb_warn("The last argument for `%"PRIsVALUE"' is used as the keyword parameter; maybe ** should be added to the call?",
+        rb_warn("The last argument for `%"PRIsVALUE"' is used as keyword parameters; maybe ** should be added to the call",
                 name);
     }
     else {
-        rb_warn("The last argument is used as the keyword parameter");
+        rb_warn("The last argument is used as keyword parameters; maybe ** should be added to the call");
         if (calling->recv != Qundef) {
             rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
-                            "for `%"PRIsVALUE"' defined here; maybe ** should be added to the call?", name);
+                            "The called method `%"PRIsVALUE"' is defined here", name);
         }
         else {
             rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
-                            "for method defined here; maybe ** should be added to the call?");
+                            "The called method is defined here");
         }
     }
 }

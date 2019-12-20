@@ -182,7 +182,7 @@ class TestSyntax < Test::Unit::TestCase
     h = {k3: 31}
     assert_raise(ArgumentError) {o.kw(**h)}
     h = {"k1"=>11, k2: 12}
-    assert_warn(/The last argument is split into positional and keyword parameters.* for `kw'/m) do
+    assert_warn(/The last argument is split into positional and keyword parameters.*The called method `kw'/m) do
       assert_raise(ArgumentError) {o.kw(**h)}
     end
   end
@@ -1523,7 +1523,7 @@ eom
       assert_warning('') {
         assert_equal([[1, 2, 3], {k1: 4, k2: 5}], obj.foo(1, 2, 3, k1: 4, k2: 5))
       }
-      warning = "warning: The last argument is used as the keyword parameter"
+      warning = "warning: The last argument is used as keyword parameters"
       assert_warning(/\A\z|:(?!#{__LINE__+1})\d+: #{warning}/o) {
         assert_equal([[], {}], obj.foo({}) {|*x| x})
       }

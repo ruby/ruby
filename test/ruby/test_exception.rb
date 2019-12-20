@@ -1208,8 +1208,8 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     assert_raise(ArgumentError) {warn("test warning", uplevel: -1)}
     assert_in_out_err(["-e", "warn 'ok', uplevel: 1"], '', [], /warning:/)
     warning = capture_warning_warn {warn("test warning", {uplevel: 0})}
-    assert_equal("#{__FILE__}:#{__LINE__-1}: warning: The last argument is used as the keyword parameter\n", warning[0])
-    assert_match(/warning: for method defined here|warning: test warning/, warning[1])
+    assert_equal("#{__FILE__}:#{__LINE__-1}: warning: The last argument is used as keyword parameters; maybe ** should be added to the call\n", warning[0])
+    assert_match(/warning: The called method (?:`.*' )?is defined here|warning: test warning/, warning[1])
     warning = capture_warning_warn {warn("test warning", **{uplevel: 0})}
     assert_equal("#{__FILE__}:#{__LINE__-1}: warning: test warning\n", warning[0])
     warning = capture_warning_warn {warn("test warning", {uplevel: 0}, **{})}
