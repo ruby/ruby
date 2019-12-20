@@ -7543,7 +7543,7 @@ rb_output_fs_setter(VALUE val, ID id, VALUE *var)
 {
     rb_str_setter(val, id, &val);
     if (!NIL_P(val)) {
-        rb_warn("non-nil $, will be deprecated");
+        rb_warn_deprecated("`$,'", NULL);
     }
     *var = val;
 }

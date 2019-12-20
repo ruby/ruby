@@ -1771,7 +1771,7 @@ CODE
 
     begin
       fs = $;
-      assert_warn(/\$; will be deprecated/) {$; = " "}
+      assert_warn(/`\$;' is deprecated/) {$; = " "}
     ensure
       EnvUtil.suppress_warning {$; = fs}
     end
