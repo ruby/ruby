@@ -1078,6 +1078,9 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
                 if (NAME_MATCH_P("deprecated", s, len)) {
                     bits = 1U << RB_WARN_CATEGORY_DEPRECATED;
                 }
+                else if (NAME_MATCH_P("experimental", s, len)) {
+                    bits = 1U << RB_WARN_CATEGORY_EXPERIMENTAL;
+                }
                 else {
                     rb_warn("unknown warning category: `%s'", s);
                 }
