@@ -127,7 +127,7 @@ sufficient information, see the ChangeLog file or Redmine
 
   You can still define a local variable named _1 and so on, and that is honored when present, but renders warning.
 
-    _1 = 0            #=> warning: `_1' is used as numbered parameter
+    _1 = 0            #=> warning: `_1' is reserved for numbered parameter; consider another name
     [1].each { p _1 } # prints 0 instead of 1
 
 ==== proc/lambda without block is deprecated

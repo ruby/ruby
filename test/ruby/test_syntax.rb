@@ -1437,7 +1437,7 @@ eom
     assert_syntax_error('-> {_1; -> {_2}}', /numbered parameter is already used/)
     assert_syntax_error('-> {-> {_1}; _2}', /numbered parameter is already used/)
     assert_syntax_error('proc {_1; _1 = nil}', /Can't assign to numbered parameter _1/)
-    mesg = proc {|n| /`_#{n}' is reserved as numbered parameter/}
+    mesg = proc {|n| /`_#{n}' is reserved for numbered parameter/}
     assert_warn(mesg[1]) {eval('proc {_1 = nil}')}
     assert_warn(mesg[2]) {eval('_2=1')}
     assert_warn(mesg[3]) {eval('proc {|_3|}')}
