@@ -144,6 +144,9 @@ rb_warning_category_from_name(VALUE category)
     if (category == ID2SYM(rb_intern("deprecated"))) {
         cat = RB_WARN_CATEGORY_DEPRECATED;
     }
+    else if (category == ID2SYM(rb_intern("experimental"))) {
+        cat = RB_WARN_CATEGORY_EXPERIMENTAL;
+    }
     else {
         rb_raise(rb_eArgError, "unknown category: %"PRIsVALUE, category);
     }

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require 'test/unit'
 
-verbose, $VERBOSE = $VERBOSE, nil # suppress "warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!"
+experimental, Warning[:experimental] = Warning[:experimental], false # suppress "warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!"
 eval "\n#{<<~'END_of_GUARD'}", binding, __FILE__, __LINE__
 class TestPatternMatching < Test::Unit::TestCase
   class C
@@ -92,7 +92,8 @@ class TestPatternMatching < Test::Unit::TestCase
     end
 
     assert_block do
-      verbose, $VERBOSE = $VERBOSE, nil # suppress "warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!"
+      # suppress "warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!"
+      experimental, Warning[:experimental] = Warning[:experimental], false
       eval(%q{
         case true
         in a
@@ -100,7 +101,7 @@ class TestPatternMatching < Test::Unit::TestCase
         end
       })
     ensure
-      $VERBOSE = verbose
+      Warning[:experimental] = experimental
     end
 
     assert_block do
@@ -1274,6 +1275,23 @@ END
       1 in a:
     }, /unexpected/, '[ruby-core:95098]')
   end
+
+  def assert_experimental_warning(code)
+    w = Warning[:experimental]
+
+    Warning[:experimental] = false
+    assert_warn('') {eval(code)}
+
+    Warning[:experimental] = true
+    assert_warn(/Pattern matching is experimental/) {eval(code)}
+  ensure
+    Warning[:experimental] = w
+  end
+
+  def test_experimental_warning
+    assert_experimental_warning("case 0; in 0; end")
+    assert_experimental_warning("0 in 0")
+  end
 end
 END_of_GUARD
-$VERBOSE = verbose
+Warning[:experimental] = experimental

@@ -11457,7 +11457,8 @@ new_case3(struct parser_params *p, NODE *val, NODE *pat, const YYLTYPE *loc)
 {
     NODE *node = NEW_CASE3(val, pat, loc);
 
-    rb_warn0L(nd_line(node), "Pattern matching is experimental, and the behavior may change in future versions of Ruby!");
+    if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL))
+	rb_warn0L(nd_line(node), "Pattern matching is experimental, and the behavior may change in future versions of Ruby!");
     return node;
 }
 

@@ -1558,6 +1558,7 @@ PRINTF_ARGS(void rb_syserr_enc_warning(int err, rb_encoding *enc, const char *fm
 typedef enum {
     RB_WARN_CATEGORY_NONE,
     RB_WARN_CATEGORY_DEPRECATED,
+    RB_WARN_CATEGORY_EXPERIMENTAL,
 } rb_warning_category_t;
 rb_warning_category_t rb_warning_category_from_name(VALUE category);
 bool rb_warning_category_enabled_p(rb_warning_category_t category);

@@ -1266,6 +1266,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     assert_raise(TypeError) {Warning[nil]}
     assert_raise(ArgumentError) {Warning[:XXXX]}
     assert_include([true, false], Warning[:deprecated])
+    assert_include([true, false], Warning[:experimental])
   end
 
   def test_undefined_backtrace
