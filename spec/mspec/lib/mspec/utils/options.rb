@@ -94,7 +94,7 @@ class MSpecOptions
     @options.find { |o| o.match? opt }
   end
 
-  # Processes an option. Calles the #on_extra block (or default) for
+  # Processes an option. Calls the #on_extra block (or default) for
   # unrecognized options. For registered options, possibly fetches an
   # argument and invokes the option's block if it is not nil.
   def process(argv, entry, opt, arg)
@@ -414,7 +414,7 @@ class MSpecOptions
   end
 
   def interrupt
-    on("--int-spec", "Control-C interupts the current spec only") do
+    on("--int-spec", "Control-C interrupts the current spec only") do
       config[:abort] = false
     end
   end

@@ -208,7 +208,7 @@ class TestDateParse < Test::Unit::TestCase
      [['08-DEC-0088',false],[88,12,8,nil,nil,nil,nil,nil,nil], __LINE__],
      [['08-DEC-0088',true],[88,12,8,nil,nil,nil,nil,nil,nil], __LINE__],
 
-     # swaped vms
+     # swapped vms
      [['DEC-08-1988',false],[1988,12,8,nil,nil,nil,nil,nil,nil], __LINE__],
      [['JAN-31-1999',false],[1999,1,31,nil,nil,nil,nil,nil,nil], __LINE__],
      [['JAN-31--1999',false],[-1999,1,31,nil,nil,nil,nil,nil,nil], __LINE__],

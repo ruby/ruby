@@ -70,7 +70,7 @@ class ClassNameCheckTest < Test::Unit::TestCase
 
     # This is a weird require, but in a multi-threaded condition, a constant may
     # be loaded between when a NameError occurred and when the spell checker
-    # attemps to find a possible suggestion. The manual require here simulates
+    # attempts to find a possible suggestion. The manual require here simulates
     # a race condition a single test.
     require_relative '../fixtures/book'
 

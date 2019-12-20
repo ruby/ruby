@@ -586,7 +586,7 @@ def n(cls, *args)
   rescue
     puts "An exception occurred during the creation of a #{cls} instance."
     puts
-    puts "The arguments passed to the constructer were:"
+    puts "The arguments passed to the constructor were:"
     puts args
     puts
     puts @tok.last.context

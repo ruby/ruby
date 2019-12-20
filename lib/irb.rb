@@ -319,7 +319,7 @@ require "irb/version"
 #   # check if Foo#foo is available
 #   irb(main):005:0> Foo.instance_methods #=> [:foo, ...]
 #
-#   # change the active sesssion
+#   # change the active session
 #   irb(main):006:0> fg 2
 #   # define Foo#bar in the context of Foo
 #   irb.2(Foo):005:0> def bar

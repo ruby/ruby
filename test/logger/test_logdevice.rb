@@ -51,7 +51,7 @@ class TestLogDevice < Test::Unit::TestCase
     ensure
       logdev.close
     end
-    # create logfile whitch is already exist.
+    # create logfile which is already exist.
     logdev = d(@filename)
     begin
       assert_predicate(logdev.dev, :sync)

@@ -3504,7 +3504,7 @@ end
   #
   # The previous test assumes that between the =begin/=end blocks that there
   # is only one line, or minima formatting directives. This test tests for
-  # those who use the =begin bloc with longer / more advanced formatting
+  # those who use the =begin block with longer / more advanced formatting
   # within.
   #
   ##

@@ -32,7 +32,7 @@ module IRB # :nodoc:
 
     # Displays current configuration.
     #
-    # Modifing the configuration is achieved by sending a message to IRB.conf.
+    # Modifying the configuration is achieved by sending a message to IRB.conf.
     def irb_context
       IRB.CurrentContext
     end

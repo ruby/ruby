@@ -241,7 +241,7 @@ class Tracer
   end
 
   ##
-  # Register an event handler <code>p</code> which is called everytime a line
+  # Register an event handler <code>p</code> which is called every time a line
   # in +file_name+ is executed.
   #
   # Example:
