@@ -22,6 +22,10 @@ leap_second.o: $(hdrdir)/ruby/missing.h
 leap_second.o: $(hdrdir)/ruby/ruby.h
 leap_second.o: $(hdrdir)/ruby/st.h
 leap_second.o: $(hdrdir)/ruby/subst.h
+leap_second.o: $(top_srcdir)/internal/bits.h
+leap_second.o: $(top_srcdir)/internal/compilers.h
+leap_second.o: $(top_srcdir)/internal/static_assert.h
+leap_second.o: $(top_srcdir)/internal/time.h
 leap_second.o: leap_second.c
 new.o: $(RUBY_EXTCONF_H)
 new.o: $(arch_hdrdir)/ruby/config.h

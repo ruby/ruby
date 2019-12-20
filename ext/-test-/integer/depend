@@ -11,6 +11,15 @@ core_ext.o: $(hdrdir)/ruby/ruby.h
 core_ext.o: $(hdrdir)/ruby/st.h
 core_ext.o: $(hdrdir)/ruby/subst.h
 core_ext.o: $(top_srcdir)/internal.h
+core_ext.o: $(top_srcdir)/internal/bignum.h
+core_ext.o: $(top_srcdir)/internal/bits.h
+core_ext.o: $(top_srcdir)/internal/compilers.h
+core_ext.o: $(top_srcdir)/internal/fixnum.h
+core_ext.o: $(top_srcdir)/internal/numeric.h
+core_ext.o: $(top_srcdir)/internal/serial.h
+core_ext.o: $(top_srcdir)/internal/static_assert.h
+core_ext.o: $(top_srcdir)/internal/stdbool.h
+core_ext.o: $(top_srcdir)/internal/vm.h
 core_ext.o: core_ext.c
 init.o: $(RUBY_EXTCONF_H)
 init.o: $(arch_hdrdir)/ruby/config.h
