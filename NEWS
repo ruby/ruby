@@ -226,9 +226,12 @@ sufficient information, see the ChangeLog file or Redmine
 
 Array::
 
-  New method::
+  New methods::
 
     * Added Array#intersection. [Feature #16155]
+
+    * Added Array#minmax, with a faster implementation than Enumerable#minmax.
+      [Bug #15929]
 
 Comparable::
 
@@ -389,6 +392,22 @@ ObjectSpace::WeakMap::
 
     * ObjectSpace::WeakMap#[]= now accepts special objects as either key or
       values.  [Feature #16035]
+
+Proc::
+
+  New method::
+
+    * Added Proc#ruby2_keywords for marking the proc as passing keyword
+      arguments through a regular argument splat, useful when delegating
+      all arguments to another method or proc in a way that can be backwards
+      compatible with older Ruby versions.  [Feature #16404]
+
+Range::
+
+  New method::
+
+    * Added Range#minmax, with a faster implementation than Enumerable#minmax.
+      [Bug #15807]
 
 RubyVM::
 
