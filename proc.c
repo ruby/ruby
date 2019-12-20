@@ -3819,6 +3819,56 @@ proc_ruby2_keywords(VALUE procval)
  * Since +return+ and +break+ exits the block itself in lambdas,
  * lambdas cannot be orphaned.
  *
+ * == Numbered parameters
+ *
+ * Numbered parameters are implicitly defined block parameters intended to
+ * simplify writing short blocks:
+ *
+ *     # Explicit parameter:
+ *     %w[test me please].each { |str| puts str.upcase } # prints TEST, ME, PLEASE
+ *     (1..5).map { |i| i**2 } # => [1, 4, 9, 16, 25]
+ *
+ *     # Implicit parameter:
+ *     %w[test me please].each { puts _1.upcase } # prints TEST, ME, PLEASE
+ *     (1..5).map { _1**2 } # => [1, 4, 9, 16, 25]
+ *
+ * Parameter names from +_1+ to +_9+ are supported:
+ *
+ *     [10, 20, 30].zip([40, 50, 60], [70, 80, 90]).map { _1 + _2 + _3 }
+ *     # => [120, 150, 180]
+ *
+ * Though, it is advised to resort to them wisely, probably limiting
+ * yourself to +_1+ and +_2+, and to one-line blocks.
+ *
+ * Numbered parameters can't be used together with explicitly named
+ * ones:
+ *
+ *     [10, 20, 30].map { |x| _1**2 }
+ *     # SyntaxError (ordinary parameter is defined)
+ *
+ * To avoid conflicts, naming local variables or method
+ * arguments +_1+, +_2+ and so on, causes a warning.
+ *
+ *     _1 = 'test'
+ *     # warning: `_1' is reserved as numbered parameter
+ *
+ * Using implicit numbered parameters affects block's arity:
+ *
+ *     p = proc { _1 + _2 }
+ *     l = lambda { _1 + _2 }
+ *     p.parameters     # => [[:opt, :_1], [:opt, :_2]]
+ *     p.arity          # => 2
+ *     l.parameters     # => [[:req, :_1], [:req, :_2]]
+ *     l.arity          # => 2
+ *
+ * Blocks with numbered parameters can't be nested:
+ *
+ *     %w[test me].each { _1.each_char { p _1 } }
+ *     # SyntaxError (numbered parameter is already used in outer block here)
+ *     # %w[test me].each { _1.each_char { p _1 } }
+ *     #                    ^~
+ *
+ * Numbered parameter was introduced in Ruby 2.7.
  */
 
 
