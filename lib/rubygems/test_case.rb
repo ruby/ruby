@@ -164,6 +164,50 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
     end
   end
 
+  ##
+  # Sets the bindir entry in RbConfig::CONFIG to +value+ and restores the
+  # original value when the block ends
+  #
+  def bindir(value)
+    bindir = RbConfig::CONFIG['bindir']
+
+    if value
+      RbConfig::CONFIG['bindir'] = value
+    else
+      RbConfig::CONFIG.delete 'bindir'
+    end
+
+    yield
+  ensure
+    if bindir
+      RbConfig::CONFIG['bindir'] = bindir
+    else
+      RbConfig::CONFIG.delete 'bindir'
+    end
+  end
+
+  ##
+  # Sets the EXEEXT entry in RbConfig::CONFIG to +value+ and restores the
+  # original value when the block ends
+  #
+  def exeext(value)
+    exeext = RbConfig::CONFIG['EXEEXT']
+
+    if value
+      RbConfig::CONFIG['EXEEXT'] = value
+    else
+      RbConfig::CONFIG.delete 'EXEEXT'
+    end
+
+    yield
+  ensure
+    if exeext
+      RbConfig::CONFIG['EXEEXT'] = exeext
+    else
+      RbConfig::CONFIG.delete 'EXEEXT'
+    end
+  end
+
   # TODO: move to minitest
   def refute_path_exists(path, msg = nil)
     msg = message(msg) { "Expected path '#{path}' to not exist" }

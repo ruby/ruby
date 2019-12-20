@@ -104,32 +104,19 @@ end
   def test_check_executable_overwrite_default_bin_dir
     installer = setup_base_installer
 
-    if defined?(RUBY_FRAMEWORK_VERSION)
-      orig_RUBY_FRAMEWORK_VERSION = RUBY_FRAMEWORK_VERSION
-      Object.send :remove_const, :RUBY_FRAMEWORK_VERSION
-    end
-    orig_bindir = RbConfig::CONFIG['bindir']
-    RbConfig::CONFIG['bindir'] = Gem.bindir
+    bindir(Gem.bindir) do
+      util_conflict_executable false
 
-    util_conflict_executable false
+      ui = Gem::MockGemUi.new "n\n"
+      use_ui ui do
+        e = assert_raises Gem::InstallError do
+          installer.generate_bin
+        end
 
-    ui = Gem::MockGemUi.new "n\n"
-    use_ui ui do
-      e = assert_raises Gem::InstallError do
-        installer.generate_bin
+        conflicted = File.join @gemhome, 'bin', 'executable'
+        assert_match %r%\A"executable" from a conflicts with (?:#{Regexp.quote(conflicted)}|installed executable from conflict)\z%,
+                     e.message
       end
-
-      conflicted = File.join @gemhome, 'bin', 'executable'
-      assert_match %r%\A"executable" from a conflicts with (?:#{Regexp.quote(conflicted)}|installed executable from conflict)\z%,
-                   e.message
-    end
-  ensure
-    Object.const_set :RUBY_FRAMEWORK_VERSION, orig_RUBY_FRAMEWORK_VERSION if
-      orig_RUBY_FRAMEWORK_VERSION
-    if orig_bindir
-      RbConfig::CONFIG['bindir'] = orig_bindir
-    else
-      RbConfig::CONFIG.delete 'bindir'
     end
   end
 

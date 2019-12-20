@@ -1917,16 +1917,11 @@ You may need to `gem install -g` to install missing gems
   end
 
   def with_bindir_and_exeext(bindir, exeext)
-    orig_bindir = RbConfig::CONFIG['bindir']
-    orig_exe_ext = RbConfig::CONFIG['EXEEXT']
-
-    RbConfig::CONFIG['bindir'] = bindir
-    RbConfig::CONFIG['EXEEXT'] = exeext
-
-    yield
-  ensure
-    RbConfig::CONFIG['bindir'] = orig_bindir
-    RbConfig::CONFIG['EXEEXT'] = orig_exe_ext
+    bindir(bindir) do
+      exeext(exeext) do
+        yield
+      end
+    end
   end
 
   def with_clean_path_to_ruby
