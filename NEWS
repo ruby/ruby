@@ -32,6 +32,11 @@ sufficient information, see the ChangeLog file or Redmine
       p var #=> 1
     end
 
+    case -1
+    in 0 then :unreachable
+    in 1 then :unreachable
+    end #=> NoMatchingPatternError
+
     json = <<END
     {
       "name": "Alice",
@@ -39,13 +44,18 @@ sufficient information, see the ChangeLog file or Redmine
       "children": [{ "name": "Bob", "age": 2 }]
     }
     END
-    case JSON.parse(json, symbolize_names: true)
-    in {name: "Alice", children: [{name: "Bob", age: age}]}
-      p age #=> 2
-    end
+
+    JSON.parse(json, symbolize_names: true) in {name: "Alice", children: [{name: name, age: age}]}
+
+    p name #=> "Bob"
+    p age  #=> 2
+
+    JSON.parse(json, symbolize_names: true) in {name: "Alice", children: [{name: "Charlie", age: age}]}
+    #=> NoMatchingPatternError
 
 * See the following slides in detail
   * https://speakerdeck.com/k_tsj/pattern-matching-new-feature-in-ruby-2-dot-7
+  * Note that the slides are slightly obsolete
 
 ==== The spec of keyword arguments is changed towards 3.0
 
