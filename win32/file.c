@@ -552,7 +552,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     /* Determine require buffer size */
     size = GetFullPathNameW(buffer, PATH_BUFFER_SIZE, wfullpath_buffer, NULL);
     if (size > PATH_BUFFER_SIZE) {
-	/* allocate more memory than alloted originally by PATH_BUFFER_SIZE */
+	/* allocate more memory than allotted originally by PATH_BUFFER_SIZE */
 	wfullpath = ALLOC_N(wchar_t, size);
 	size = GetFullPathNameW(buffer, size, wfullpath, NULL);
     }

@@ -389,7 +389,7 @@ When you're ready to commit:
 This will open your editor in which you write your commit message.
 Use the following style for commit messages:
 
-* Use a succint subject line.
+* Use a succinct subject line.
 * Include reasoning behind the change in the commit message, focusing on why
   the change is being made.
 * Refer to redmine issue (such as Fixes [Bug #1234] or Implements

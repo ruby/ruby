@@ -349,7 +349,7 @@ vm_stack_dump_each(const rb_execution_context_t *ec, const rb_control_frame_t *c
 	}
     }
     else {
-	rb_bug("unsupport frame type: %08lx", VM_FRAME_TYPE(cfp));
+	rb_bug("unsupported frame type: %08lx", VM_FRAME_TYPE(cfp));
     }
 }
 #endif

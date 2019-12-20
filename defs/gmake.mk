@@ -90,7 +90,7 @@ sudo-precheck: test yes-test-testframework no-test-testframework
 install-prereq: sudo-precheck
 yes-test-all no-test-all: install
 endif
-# Cross referece needs to parse all files at once
+# Cross reference needs to parse all files at once
 love install reinstall: RDOCFLAGS = --force-update
 
 $(srcdir)/missing/des_tables.c: $(srcdir)/missing/crypt.c

@@ -30,7 +30,7 @@ describe "ENV.delete" do
     ScratchPad.recorded.should == "foo"
   end
 
-  it "does not evaluate the block if the envirionment variable exists" do
+  it "does not evaluate the block if the environment variable exists" do
     ENV["foo"] = "bar"
     ENV.delete("foo") { |name| fail "Should not happen" }
     ENV["foo"].should == nil

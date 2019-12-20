@@ -6827,7 +6827,7 @@ delegate_call_p(const rb_iseq_t *iseq, unsigned int argc, const LINK_ANCHOR *arg
                         }
                     }
                     else {
-                        goto fail; // level != 0 is unsupport
+                        goto fail; // level != 0 is unsupported
                     }
                 }
                 else {

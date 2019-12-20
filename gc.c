@@ -86,7 +86,7 @@
 #pragma intrinsic(_umul128)
 #endif
 
-/* Expecting this struct to be elminated by function inlinings */
+/* Expecting this struct to be eliminated by function inlinings */
 struct optional {
     bool left;
     size_t right;

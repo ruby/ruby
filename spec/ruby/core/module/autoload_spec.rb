@@ -23,7 +23,7 @@ describe "Module#autoload?" do
       ModuleSpecs::Autoload::Child.autoload?(:InheritedAutoload, false).should be_nil
     end
 
-    it "returns the name of the file that will be loaded if recursion is disabled but the autoload is defined on the classs itself" do
+    it "returns the name of the file that will be loaded if recursion is disabled but the autoload is defined on the class itself" do
       ModuleSpecs::Autoload::Child.autoload :ChildAutoload, "child_autoload.rb"
       ModuleSpecs::Autoload::Child.autoload?(:ChildAutoload, false).should == "child_autoload.rb"
     end

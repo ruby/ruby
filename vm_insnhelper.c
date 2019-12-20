@@ -165,7 +165,7 @@ vm_check_frame_detail(VALUE type, int req_block, int req_me, int req_cref, VALUE
 
     if ((type & VM_FRAME_MAGIC_MASK) == VM_FRAME_MAGIC_DUMMY) {
 	VM_ASSERT(iseq == NULL ||
-		  RUBY_VM_NORMAL_ISEQ_P(iseq) /* argument error. it shold be fixed */);
+		  RUBY_VM_NORMAL_ISEQ_P(iseq) /* argument error. it should be fixed */);
     }
     else {
 	VM_ASSERT(is_cframe == !RUBY_VM_NORMAL_ISEQ_P(iseq));
@@ -226,7 +226,7 @@ vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
         return;
     }
     else {
-        /* we are going to call metods below; squash the canary to
+        /* we are going to call methods below; squash the canary to
          * prevent infinite loop. */
         sp[0] = Qundef;
     }
@@ -1334,7 +1334,7 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
 	/* do nothing */
     }
     else {
-	rb_bug("isns(throw): unsupport throw type");
+	rb_bug("isns(throw): unsupported throw type");
     }
 
     ec->tag->state = state;
@@ -1536,7 +1536,7 @@ rb_vm_search_method_slowpath(struct rb_call_data *cd, VALUE klass)
  * - It scans the array from left to right, looking for the expected class
  *   serial.  If it finds that at `cc->class_serial[0]` (this branch
  *   probability is 98% according to @shyouhei's experiment), just returns
- *   true.  If it reaches the end of the array without finding anytihng,
+ *   true.  If it reaches the end of the array without finding anything,
  *   returns false.  This is done in the #1 loop below.
  *
  * - What needs to be complicated is when the class serial is found at either

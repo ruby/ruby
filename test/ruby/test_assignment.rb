@@ -456,7 +456,7 @@ class TestAssignment < Test::Unit::TestCase
     assert(defined?(a))
     assert_nil(a)
 
-    # multiple asignment
+    # multiple assignment
     a, b = 1, 2
     assert_equal 1, a
     assert_equal 2, b

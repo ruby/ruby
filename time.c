@@ -5801,7 +5801,7 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *  At loading marshaled data, a timezone name will be converted to a timezone
  *  object by +find_timezone+ class method, if the method is defined.
  *
- *  Similary, that class method will be called when a timezone argument does
+ *  Similarly, that class method will be called when a timezone argument does
  *  not have the necessary methods mentioned above.
  */
 

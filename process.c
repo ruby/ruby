@@ -6472,7 +6472,7 @@ proc_setmaxgroups(VALUE obj, VALUE val)
     int ngroups_max = get_sc_ngroups_max();
 
     if (ngroups <= 0)
-	rb_raise(rb_eArgError, "maxgroups %d shold be positive", ngroups);
+	rb_raise(rb_eArgError, "maxgroups %d should be positive", ngroups);
 
     if (ngroups > RB_MAX_GROUPS)
 	ngroups = RB_MAX_GROUPS;

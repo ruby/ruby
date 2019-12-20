@@ -31,7 +31,7 @@ class TupleSpace
   def initialize
     @que = {}
     @waiting = {}
-    @que.taint		# enable tainted comunication
+    @que.taint		# enable tainted communication
     @waiting.taint
     self.taint
   end

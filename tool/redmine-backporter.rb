@@ -97,7 +97,7 @@ class String
 end
 
 class StringScanner
-  # lx: limit of x (colmns of screen)
+  # lx: limit of x (columns of screen)
   # ly: limit of y (rows of screen)
   def getrows(lx, ly)
     cp1 = charpos
@@ -349,7 +349,7 @@ eom
     i["custom_fields"].each do |x|
       sio.puts "%-10s: %s" % [x["name"], x["value"]]
     end
-    #res["attachements"].each do |x|
+    #res["attachments"].each do |x|
     #end
     sio.puts i["description"]
     sio.puts

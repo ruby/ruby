@@ -4663,7 +4663,7 @@ parse_char_class(Node** np, Node** asc_np, OnigToken* tok, UChar** src, UChar* e
 	  p = psave;
 	  for (i = 1; i < len; i++) {
 	    (void)fetch_token_in_cc(tok, &p, end, env);
-	    /* no need to check the retun value (already checked above) */
+	    /* no need to check the return value (already checked above) */
 	  }
 	  fetched = 0;
 	}

@@ -298,7 +298,7 @@ ruby_version_is "2.6" do
 
     # At loading marshaled data, a timezone name will be converted to a timezone object
     # by find_timezone class method, if the method is defined.
-    # Similary, that class method will be called when a timezone argument does not have
+    # Similarly, that class method will be called when a timezone argument does not have
     # the necessary methods mentioned above.
     context "subject's class implements .find_timezone method" do
       it "calls .find_timezone to build a time object at loading marshaled data" do

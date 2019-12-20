@@ -3014,12 +3014,12 @@ Init_VM(void)
      *	For example, we can create a new thread separate from the main thread's
      *	execution using ::new.
      *
-     *	    thr = Thread.new { puts "Whats the big deal" }
+     *	    thr = Thread.new { puts "What's the big deal" }
      *
      *	Then we are able to pause the execution of the main thread and allow
      *	our new thread to finish, using #join:
      *
-     *	    thr.join #=> "Whats the big deal"
+     *	    thr.join #=> "What's the big deal"
      *
      *	If we don't call +thr.join+ before the main thread terminates, then all
      *	other threads including +thr+ will be killed.
@@ -3028,7 +3028,7 @@ Init_VM(void)
      *	once, like in the following example:
      *
      *	    threads = []
-     *	    threads << Thread.new { puts "Whats the big deal" }
+     *	    threads << Thread.new { puts "What's the big deal" }
      *	    threads << Thread.new { 3.times { puts "Threads are fun!" } }
      *
      *	After creating a few threads we wait for them all to finish

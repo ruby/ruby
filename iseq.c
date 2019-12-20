@@ -932,7 +932,7 @@ iseq_load(VALUE data, const rb_iseq_t *parent, VALUE opt)
 
     iseq_type = iseq_type_from_sym(type);
     if (iseq_type == (enum iseq_type)-1) {
-	rb_raise(rb_eTypeError, "unsupport type: :%"PRIsVALUE, rb_sym2str(type));
+	rb_raise(rb_eTypeError, "unsupported type: :%"PRIsVALUE, rb_sym2str(type));
     }
 
     node_id = rb_hash_aref(misc, ID2SYM(rb_intern("node_id")));
@@ -3404,7 +3404,7 @@ iseqw_s_load_from_binary_extra_data(VALUE self, VALUE str)
  * To lookup the lineno of insn4, calculate rank("10100001", 8) = 3, so
  * the line (B) is the entry in question.
  *
- * A naive implementatoin of succinct bit-vector works really well
+ * A naive implementation of succinct bit-vector works really well
  * not only for large size but also for small size.  However, it has
  * tiny overhead for very small size.  So, this implementation consist
  * of two parts: one part is the "immediate" table that keeps rank result

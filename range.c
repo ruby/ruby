@@ -1610,12 +1610,12 @@ static VALUE
 range_count(int argc, VALUE *argv, VALUE range)
 {
     if (argc != 0) {
-        /* It is odd for instace (1...).count(0) to return Infinity. Just let
+        /* It is odd for instance (1...).count(0) to return Infinity. Just let
          * it loop. */
         return rb_call_super(argc, argv);
     }
     else if (rb_block_given_p()) {
-        /* Likewise it is odd for instace (1...).count {|x| x == 0 } to return
+        /* Likewise it is odd for instance (1...).count {|x| x == 0 } to return
          * Infinity. Just let it loop. */
         return rb_call_super(argc, argv);
     }
