@@ -845,7 +845,7 @@ end.join
 
   def test_frozen_error_initialize
     obj = Object.new
-    exc = FrozenError.new("bar", obj)
+    exc = FrozenError.new("bar", receiver: obj)
     assert_equal("bar", exc.message)
     assert_same(obj, exc.receiver)
 

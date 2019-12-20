@@ -1431,9 +1431,16 @@ exit_success_p(VALUE exc)
     return Qfalse;
 }
 
+static VALUE
+err_init_recv(VALUE exc, VALUE recv)
+{
+    if (recv != Qundef) rb_ivar_set(exc, id_recv, recv);
+    return exc;
+}
+
 /*
  * call-seq:
- *   FrozenError.new(msg=nil, receiver=nil)  -> frozen_error
+ *   FrozenError.new(msg=nil, receiver: nil)  -> frozen_error
  *
  * Construct a new FrozenError exception. If given the <i>receiver</i>
  * parameter may subsequently be examined using the FrozenError#receiver
@@ -1446,14 +1453,14 @@ exit_success_p(VALUE exc)
 static VALUE
 frozen_err_initialize(int argc, VALUE *argv, VALUE self)
 {
-    VALUE mesg, recv;
+    ID keywords[1];
+    VALUE values[numberof(keywords)], options;
 
-    argc = rb_scan_args(argc, argv, "02", &mesg, &recv);
-    if (argc > 1) {
-        argc--;
-        rb_ivar_set(self, id_recv, recv);
-    }
+    argc = rb_scan_args(argc, argv, "*:", NULL, &options);
+    keywords[0] = id_receiver;
+    rb_get_kwargs(options, keywords, 0, numberof(values), values);
     rb_call_super(argc, argv);
+    err_init_recv(self, values[0]);
     return self;
 }
 
@@ -1503,7 +1510,7 @@ name_err_init_attr(VALUE exc, VALUE recv, VALUE method)
     rb_control_frame_t *cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(ec->cfp);
     cfp = rb_vm_get_ruby_level_next_cfp(ec, cfp);
     rb_ivar_set(exc, id_name, method);
-    if (recv != Qundef) rb_ivar_set(exc, id_recv, recv);
+    err_init_recv(exc, recv);
     if (cfp) rb_ivar_set(exc, id_iseq, rb_iseqw_new(cfp->iseq));
     return exc;
 }
