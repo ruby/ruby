@@ -144,6 +144,7 @@ rb_feature_set_to(ruby_features_t *feat, unsigned int bit_mask, unsigned int bit
 #define FEATURE_SET_TO(feat, bit_mask, bit_set) \
     rb_feature_set_to(&(feat), bit_mask, bit_set)
 #define FEATURE_SET(feat, bits) FEATURE_SET_TO(feat, bits, bits)
+#define FEATURE_SET_RESTORE(feat, save) FEATURE_SET_TO(feat, (save).mask, (save).set & (save).mask)
 #define FEATURE_SET_P(feat, bits) ((feat).set & (bits))
 
 struct ruby_cmdline_options {
@@ -1582,7 +1583,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	    opt->ext.enc.name = ext_enc_name;
 	if (int_enc_name)
 	    opt->intern.enc.name = int_enc_name;
-        FEATURE_SET_TO(opt->features, feat.mask, feat.set & feat.mask);
+        FEATURE_SET_RESTORE(opt->features, feat);
     }
 
     if (opt->src.enc.name)
