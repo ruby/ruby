@@ -150,6 +150,13 @@ rb_warning_category_from_name(VALUE category)
     return cat;
 }
 
+void
+rb_warning_category_update(unsigned int mask, unsigned int bits)
+{
+    warning_disabled_categories &= ~mask;
+    warning_disabled_categories |= mask & ~bits;
+}
+
 MJIT_FUNC_EXPORTED bool
 rb_warning_category_enabled_p(rb_warning_category_t category)
 {
