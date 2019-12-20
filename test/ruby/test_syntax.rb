@@ -1437,12 +1437,13 @@ eom
     assert_syntax_error('-> {_1; -> {_2}}', /numbered parameter is already used/)
     assert_syntax_error('-> {-> {_1}; _2}', /numbered parameter is already used/)
     assert_syntax_error('proc {_1; _1 = nil}', /Can't assign to numbered parameter _1/)
-    assert_warn(/`_1' is used as numbered parameter/) {eval('proc {_1 = nil}')}
-    assert_warn(/`_2' is used as numbered parameter/) {eval('_2=1')}
-    assert_warn(/`_3' is used as numbered parameter/) {eval('proc {|_3|}')}
-    assert_warn(/`_4' is used as numbered parameter/) {instance_eval('def x(_4) end')}
-    assert_warn(/`_5' is used as numbered parameter/) {instance_eval('def _5; end')}
-    assert_warn(/`_6' is used as numbered parameter/) {instance_eval('def self._6; end')}
+    mesg = proc {|n| /`_#{n}' is reserved as numbered parameter/}
+    assert_warn(mesg[1]) {eval('proc {_1 = nil}')}
+    assert_warn(mesg[2]) {eval('_2=1')}
+    assert_warn(mesg[3]) {eval('proc {|_3|}')}
+    assert_warn(mesg[4]) {instance_eval('def x(_4) end')}
+    assert_warn(mesg[5]) {instance_eval('def _5; end')}
+    assert_warn(mesg[6]) {instance_eval('def self._6; end')}
     assert_raise_with_message(NameError, /undefined local variable or method `_1'/) {
       eval('_1')
     }
