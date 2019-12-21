@@ -795,14 +795,15 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_handle_interrupt_blocking
-    r=:ng
-    e=Class.new(Exception)
+    r = nil
+    q = Queue.new
+    e = Class.new(Exception)
     th_s = Thread.current
-    th = Thread.start{
+    th = Thread.start {
       assert_raise(RuntimeError) {
         Thread.handle_interrupt(Object => :on_blocking){
           begin
-            Thread.pass until r == :wait
+            q.pop
             Thread.current.raise RuntimeError, "will raise in sleep"
             r = :ok
             sleep
@@ -812,9 +813,8 @@ class TestThread < Test::Unit::TestCase
         }
       }
     }
-    assert_raise(e) {r = :wait; sleep 0.2}
-    th.join
-    assert_equal(:ok,r)
+    assert_raise(e) {q << true; th.join}
+    assert_equal(:ok, r)
   end
 
   def test_handle_interrupt_and_io
