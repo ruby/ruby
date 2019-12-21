@@ -54,8 +54,6 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       io.puts '# b.rb'
     end
 
-    FileUtils.mkdir_p 'default/gems'
-
     gemspec = Gem::Specification.new
     gemspec.author = "Us"
     gemspec.name = "bundler"
