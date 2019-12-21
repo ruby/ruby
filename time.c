@@ -4091,14 +4091,15 @@ time_to_s(VALUE time)
  *  call-seq:
  *     time.inspect -> string
  *
- *  Returns a detailed string representing _time_.
+ *  Returns a detailed string representing _time_. Inlike to_s, preserves
+ *  nanoseconds in representation for easier debugging.
  *
  *     t = Time.now
- *     t.to_s                              #=> "2012-11-10 18:16:12 +0100"
- *     t.strftime "%Y-%m-%d %H:%M:%S %z"   #=> "2012-11-10 18:16:12 +0100"
+ *     t.inspect                             #=> "2012-11-10 18:16:12.261257655 +0100"
+ *     t.strftime "%Y-%m-%d %H:%M:%S.%N %z"  #=> "2012-11-10 18:16:12.261257655 +0100"
  *
- *     t.utc.to_s                          #=> "2012-11-10 17:16:12 UTC"
- *     t.strftime "%Y-%m-%d %H:%M:%S UTC"  #=> "2012-11-10 17:16:12 UTC"
+ *     t.utc.inspect                          #=> "2012-11-10 17:16:12.261257655 UTC"
+ *     t.strftime "%Y-%m-%d %H:%M:%S.%N UTC"  #=> "2012-11-10 17:16:12.261257655 UTC"
  */
 
 static VALUE
