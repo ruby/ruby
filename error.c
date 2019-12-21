@@ -1482,7 +1482,7 @@ err_init_recv(VALUE exc, VALUE recv)
  * method.
  *
  *    a = [].freeze
- *    raise FrozenError.new("can't modify frozen array", a)
+ *    raise FrozenError.new("can't modify frozen array", receiver: a)
  */
 
 static VALUE
@@ -1500,6 +1500,7 @@ frozen_err_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * Document-method: FrozenError#receiver
  * call-seq:
  *   frozen_error.receiver  -> object
  *
