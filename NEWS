@@ -161,10 +161,19 @@ sufficient information, see the ChangeLog file or Redmine
 
 ==== Other miscellaneous changes
 
-* A beginless range is experimentally introduced.  It might not be as useful
-  as an endless range, but would be good for DSL purposes.  [Feature #14799]
+* A beginless range is experimentally introduced.  It might be useful
+  in +case+, new call-sequence of the <code>Comparable#clamp</code>,
+  constants and DSLs.  [Feature #14799]
 
      ary[..3]  # identical to ary[0..3]
+
+     case RUBY_VERSION
+     when ..."2.4" then puts "EOL"
+     # ...
+     end
+
+     age.clamp(..100)
+
      where(sales: ..100)
 
 * Setting <code>$;</code> to a non-nil value is warned now.
@@ -246,6 +255,10 @@ Comparable::
         -1.clamp(0..2) #=> 0
          1.clamp(0..2) #=> 1
          3.clamp(0..2) #=> 2
+        # With beginless and endless ranges:
+        -1.clamp(0..)  #=> 0
+         3.clamp(..2)  #=> 2
+
 
 Complex::
 
@@ -413,6 +426,12 @@ Range::
 
     * Added Range#minmax, with a faster implementation than Enumerable#minmax.
       It returns a maximum that now corresponds to Range#max. [Bug #15807]
+
+  Modified method::
+
+    * Range#=== now uses #cover? for String arguments, too (in Ruby 2.6, it was
+      changed from #include? for all types except strings). [Bug #15449]
+
 
 RubyVM::
 
