@@ -2766,11 +2766,30 @@ rb_method_parameters(VALUE method)
  *
  *  Returns a human-readable description of the underlying method.
  *
- *    "cat".method(:count).inspect   #=> "#<Method: String#count>"
- *    (1..3).method(:map).inspect    #=> "#<Method: Range(Enumerable)#map>"
+ *    "cat".method(:count).inspect   #=> "#<Method: String#count(*)>"
+ *    (1..3).method(:map).inspect    #=> "#<Method: Range(Enumerable)#map()>"
  *
  *  In the latter case, the method description includes the "owner" of the
  *  original method (+Enumerable+ module, which is included into +Range+).
+ *
+ *  +inspect+ also provides, when possible, method argument names (call
+ *  sequence) and source location.
+ *
+ *    require 'net/http'
+ *    Net::HTTP.method(:get).inspect
+ *    #=> "#<Method: Net::HTTP.get(uri_or_host, path=..., port=...) <skip>/lib/ruby/2.7.0/net/http.rb:457>"
+ *
+ *  <code>...</code> in argument definition means argument is optional (has
+ *  some default value).
+ *
+ *  For methods defined in C (language core and extensions), location and
+ *  argument names can't be extracted, and only generic information is provided
+ *  in form of <code>*</code> (any number of arguments) or <code>_</code> (some
+ *  positional argument).
+ *
+ *    "cat".method(:count).inspect   #=> "#<Method: String#count(*)>"
+ *    "cat".method(:+).inspect       #=> "#<Method: String#+(_)>""
+
  */
 
 static VALUE
