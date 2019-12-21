@@ -70,18 +70,13 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       io.puts gemspec.to_ruby
     end
 
-    FileUtils.mkdir_p File.join(Gem.default_dir, "specifications")
+    spec_fetcher do |fetcher|
+      fetcher.download "bundler", "1.15.4"
 
-    open(File.join(Gem.default_dir, "specifications", "bundler-#{BUNDLER_VERS}.gemspec"), 'w') do |io|
-      io.puts "# bundler-#{BUNDLER_VERS}"
+      fetcher.gem "bundler", BUNDLER_VERS
+
+      fetcher.gem "bundler-audit", "1.0.0"
     end
-
-    open(File.join(Gem.default_dir, "specifications", "bundler-audit-1.0.0.gemspec"), 'w') do |io|
-      io.puts '# bundler-audit'
-    end
-
-    FileUtils.mkdir_p 'default/gems/bundler-1.15.4'
-    FileUtils.mkdir_p 'default/gems/bundler-audit-1.0.0'
   end
 
   def gem_install(name)
@@ -249,14 +244,14 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     assert_path_exists File.join(default_dir, "bundler-#{BUNDLER_VERS}.gemspec")
 
     # expect to not remove bundler-* gemspecs.
-    assert_path_exists File.join(Gem.default_dir, "specifications", "bundler-audit-1.0.0.gemspec")
+    assert_path_exists File.join(Gem.dir, "specifications", "bundler-audit-1.0.0.gemspec")
 
     # expect to remove normal gem that was same version. because it's promoted default gems.
-    refute_path_exists File.join(Gem.default_dir, "specifications", "bundler-#{BUNDLER_VERS}.gemspec")
+    refute_path_exists File.join(Gem.dir, "specifications", "bundler-#{BUNDLER_VERS}.gemspec")
 
-    assert_path_exists "default/gems/bundler-#{BUNDLER_VERS}"
-    assert_path_exists 'default/gems/bundler-1.15.4'
-    assert_path_exists 'default/gems/bundler-audit-1.0.0'
+    assert_path_exists "#{Gem.dir}/gems/bundler-#{BUNDLER_VERS}"
+    assert_path_exists "#{Gem.dir}/gems/bundler-1.15.4"
+    assert_path_exists "#{Gem.dir}/gems/bundler-audit-1.0.0"
   end
 
   def test_install_default_bundler_gem_with_force_flag
