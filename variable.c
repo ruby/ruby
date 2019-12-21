@@ -2992,7 +2992,19 @@ rb_mod_public_constant(int argc, const VALUE *argv, VALUE obj)
  *  call-seq:
  *     mod.deprecate_constant(symbol, ...)    => mod
  *
- *  Makes a list of existing constants deprecated.
+ *  Makes a list of existing constants deprecated. Attempt
+ *  to refer to them will produce a warning.
+ *
+ *     module HTTP
+ *       NotFound = Exception.new
+ *       NOT_FOUND = NotFound # previous version of the library used this name
+ *
+ *       deprecate_constant :NOT_FOUND
+ *     end
+ *
+ *     HTTP::NOT_FOUND
+ *     # warning: constant HTTP::NOT_FOUND is deprecated
+ *
  */
 
 VALUE
