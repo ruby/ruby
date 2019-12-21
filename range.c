@@ -1373,19 +1373,26 @@ static VALUE range_include_internal(VALUE range, VALUE val, int string_use_cover
  *  call-seq:
  *     rng === obj       ->  true or false
  *
- *  Returns <code>true</code> if +obj+ is an element of the range,
- *  <code>false</code> otherwise.  Conveniently, <code>===</code> is the
- *  comparison operator used by <code>case</code> statements.
+ *  Returns <code>true</code> if +obj+ is between begin and end of range,
+ *  <code>false</code> otherwise (same as #cover?). Conveniently,
+ *  <code>===</code> is the comparison operator used by <code>case</code>
+ *  statements.
  *
  *     case 79
- *     when 1..50   then   print "low\n"
- *     when 51..75  then   print "medium\n"
- *     when 76..100 then   print "high\n"
+ *     when 1..50   then   puts "low"
+ *     when 51..75  then   puts "medium"
+ *     when 76..100 then   puts "high"
  *     end
+ *     # Prints "high"
  *
- *  <em>produces:</em>
+ *     case "2.6.5"
+ *     when ..."2.4" then puts "EOL"
+ *     when "2.4"..."2.5" then puts "maintenance"
+ *     when "2.5"..."2.7" then puts "stable"
+ *     when "2.7".. then puts "upcoming"
+ *     end
+ *     # Prints "stable"
  *
- *     high
  */
 
 static VALUE
@@ -1403,12 +1410,19 @@ range_eqq(VALUE range, VALUE val)
  *     rng.include?(obj) ->  true or false
  *
  *  Returns <code>true</code> if +obj+ is an element of
- *  the range, <code>false</code> otherwise.  If begin and end are
- *  numeric, comparison is done according to the magnitude of the values.
+ *  the range, <code>false</code> otherwise.
  *
  *     ("a".."z").include?("g")   #=> true
  *     ("a".."z").include?("A")   #=> false
  *     ("a".."z").include?("cc")  #=> false
+ *
+ *  If you need to ensure +obj+ is between +begin+ and +end+, use #cover?
+ *
+ *     ("a".."z").cover?("cc")  #=> true
+ *
+ *  If begin and end are numeric, #include? behaves like #cover?
+ *
+ *     (1..3).include?(1.5) # => true
  */
 
 static VALUE
