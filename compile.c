@@ -5017,7 +5017,14 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
           case NODE_ARGSPUSH: {
             int next_is_list = (nd_type(argn->nd_head) == NODE_LIST);
             VALUE argc = setup_args_core(iseq, args, argn->nd_head, 1, NULL, NULL);
-            NO_CHECK(COMPILE(args, "args (cat: splat)", argn->nd_body));
+            if (nd_type(argn->nd_body) == NODE_LIST) {
+                /* This branch is needed to avoid "newarraykwsplat" [Bug #16442] */
+                int rest_len = compile_args(iseq, args, argn->nd_body, NULL, NULL);
+                ADD_INSN1(args, nd_line(argn), newarray, INT2FIX(rest_len));
+            }
+            else {
+                NO_CHECK(COMPILE(args, "args (cat: splat)", argn->nd_body));
+            }
             if (flag) {
                 *flag |= VM_CALL_ARGS_SPLAT;
                 /* This is a dirty hack.  It traverses the AST twice.
