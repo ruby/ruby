@@ -86,7 +86,7 @@ eom
       # show diff shortstat
       tag = "v#{version.gsub(/[.\-]/, '_')}"
       stat = `git diff --shortstat #{prev_tag}..#{tag}`
-      total_files, insertions, deletions = stat.scan(/\d+/)
+      files_changed, insertions, deletions = stat.scan(/\d+/)
     end
 
     xy = version[/\A\d+\.\d+/]
@@ -96,7 +96,7 @@ eom
     #end
     update_branches_yml(version, xy, wwwdir)
     update_downloads_yml(version, xy, wwwdir)
-    update_releases_yml(version, xy, tarballs, wwwdir, total_files, insertions, deletions)
+    update_releases_yml(version, xy, tarballs, wwwdir, files_changed, insertions, deletions)
     tarballs
   end
 
@@ -163,7 +163,7 @@ eom
     end
   end
 
-  def self.update_releases_yml(ver, xy, ary, wwwdir, total_files, insertions, deletions)
+  def self.update_releases_yml(ver, xy, ary, wwwdir, files_changed, insertions, deletions)
     filename = "_data/releases.yml"
     orig_data = File.read(File.join(wwwdir, filename))
     data = orig_data.dup
@@ -173,9 +173,10 @@ eom
 - version: #{ver}
   date: #{date.strftime("%Y-%m-%d")}
   post: /en/news/#{date.strftime("%Y/%m/%d")}/ruby-#{ver.tr('.', '-')}-released/
-  total_files: #{total_files}
-  insertions: #{insertions}
-  deletions: #{deletions}
+  stats:
+    files_changed: #{files_changed}
+    insertions: #{insertions}
+    deletions: #{deletions}
   url:
     gz:  https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.tar.gz
     zip: https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.zip
