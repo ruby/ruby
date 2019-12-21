@@ -1268,19 +1268,19 @@ class TestFileExhaustive < Test::Unit::TestCase
     infixes2 = infixes + [".ext "]
     appendixes = [""]
     if NTFS
-      appendixes << " " << "." << "::$DATA" << "::$DATA.bar"
+      appendixes << " " << [".", ".", ""] << "::$DATA" << "::$DATA.bar"
     else
       appendixes << [".", "."]
     end
     prefixes.each do |prefix|
-      appendixes.each do |appendix, ext = ""|
+      appendixes.each do |appendix, ext = "", ext2 = ext|
         infixes.each do |infix|
           path = "#{prefix}foo#{infix}#{appendix}"
           assert_equal(ext, File.extname(path), "File.extname(#{path.inspect})")
         end
         infixes2.each do |infix|
           path = "#{prefix}foo#{infix}.ext#{appendix}"
-          assert_equal(ext.empty? ? ".ext" : appendix, File.extname(path), "File.extname(#{path.inspect})")
+          assert_equal(ext2.empty? ? ".ext" : appendix, File.extname(path), "File.extname(#{path.inspect})")
         end
       end
     end
