@@ -264,6 +264,7 @@ class TestPatternMatching < Test::Unit::TestCase
     assert_block do
       case 0
       in a
+        assert_equal(0, a)
         true
       in a
         flunk
@@ -471,6 +472,7 @@ END
       [[0], C.new([0])].all? do |i|
         case i
         in *a, 0, 1
+          raise a # suppress "unused variable: a" warning
         else
           true
         end
@@ -637,6 +639,7 @@ END
     assert_block do
       case []
       in [0, *a]
+        raise a # suppress "unused variable: a" warning
       else
         true
       end
@@ -652,6 +655,7 @@ END
     assert_block do
       case [0]
       in [0, *a, 1]
+        raise a # suppress "unused variable: a" warning
       else
         true
       end
@@ -696,6 +700,7 @@ END
     assert_block do
       case []
       in [0, *a]
+        raise a # suppress "unused variable: a" warning
       else
         true
       end
@@ -792,6 +797,7 @@ END
       [{}, C.new({})].all? do |i|
         case i
         in a:
+          raise a # suppress "unused variable: a" warning
         else
           true
         end
@@ -874,6 +880,8 @@ END
       [{}, C.new({})].all? do |i|
         case i
         in a:, **b
+          raise a # suppress "unused variable: a" warning
+          raise b # suppress "unused variable: b" warning
         else
           true
         end
@@ -921,6 +929,7 @@ END
       [{a: 0}, C.new({a: 0})].all? do |i|
         case i
         in a:, **nil
+          assert_equal(0, a)
           true
         end
       end
@@ -930,6 +939,7 @@ END
       [{a: 0, b: 1}, C.new({a: 0, b: 1})].all? do |i|
         case i
         in a:, **nil
+          assert_equal(0, a)
         else
           true
         end
@@ -1130,6 +1140,7 @@ END
     assert_block do
       case C.new({a: 0, b: 0, c: 0})
       in {a: 0, b:}
+        assert_equal(0, b)
         C.keys == [:a, :b]
       end
     end
@@ -1137,6 +1148,7 @@ END
     assert_block do
       case C.new({a: 0, b: 0, c: 0})
       in {a: 0, b:, **}
+        assert_equal(0, b)
         C.keys == [:a, :b]
       end
     end
@@ -1144,6 +1156,8 @@ END
     assert_block do
       case C.new({a: 0, b: 0, c: 0})
       in {a: 0, b:, **r}
+        assert_equal(0, b)
+        assert_equal({c: 0}, r)
         C.keys == nil
       end
     end
@@ -1158,6 +1172,7 @@ END
     assert_block do
       case C.new({a: 0, b: 0, c: 0})
       in {**r}
+        assert_equal({a: 0, b: 0, c: 0}, r)
         C.keys == nil
       end
     end
@@ -1250,6 +1265,8 @@ END
       s = Struct.new(:a, :b, keyword_init: true)
       case s[a: 0, b: 1]
       in a:, c:
+        raise a # suppress "unused variable: a" warning
+        raise c # suppress "unused variable: c" warning
         flunk
       in a:, b:, c:
         flunk
