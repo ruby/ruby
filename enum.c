@@ -1002,11 +1002,11 @@ tally_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
  *  call-seq:
  *     enum.tally -> a_hash
  *
- *  Tallys the collection.  Returns a hash where the keys are the
- *  elements and the values are numbers of elements in the collection
- *  that correspond to the key.
+ *  Tallies the collection, i.e., counts the occurrences of each element.
+ *  Returns a hash with the elements of the collection as keys and the
+ *  corresponding counts as values.
  *
- *     ["a", "b", "c", "b"].tally #=> {"a"=>1, "b"=>2, "c"=>1}
+ *     ["a", "b", "c", "b"].tally  #=> {"a"=>1, "b"=>2, "c"=>1}
  */
 
 static VALUE
