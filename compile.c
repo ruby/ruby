@@ -7108,8 +7108,10 @@ check_yield_place(const rb_iseq_t *iseq, int line)
         return FALSE;
       case ISEQ_TYPE_CLASS:
         file = rb_iseq_path(iseq);
-        rb_compile_warn(RSTRING_PTR(file), line,
-                        "`yield' in class syntax will not be supported from Ruby 3.0. [Feature #15575]");
+        if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) {
+            rb_compile_warn(RSTRING_PTR(file), line,
+                            "`yield' in class syntax will not be supported from Ruby 3.0. [Feature #15575]");
+        }
         return TRUE;
       default:
         return TRUE;
