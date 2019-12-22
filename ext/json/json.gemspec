@@ -123,7 +123,7 @@ Gem::Specification.new do |s|
   s.homepage = "http://flori.github.com/json"
   s.licenses = ["Ruby"]
   s.rdoc_options = ["--title", "JSON implemention for Ruby", "--main", "README.md"]
-  s.required_ruby_version = Gem::Requirement.new(">= 1.9")
+  s.required_ruby_version = Gem::Requirement.new(">= 2.0")
   s.rubygems_version = "3.0.3"
   s.summary = "JSON Implementation for Ruby"
   s.test_files = ["tests/test_helper.rb"]
