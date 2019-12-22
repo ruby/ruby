@@ -316,7 +316,7 @@ proc_entry_ptr(VALUE proc_entry)
  *   some_method(a.to_enum)
  *
  *   # String#split in block form is more memory-effective:
- *   very_large_string.to_enum(:split, "|") { |chunk| return chunk if chunk.include?('DATE') }
+ *   very_large_string.split("|") { |chunk| return chunk if chunk.include?('DATE') }
  *   # This could be rewritten more idiomatically with to_enum:
  *   very_large_string.to_enum(:split, "|").lazy.grep(/DATE/).first
  *
