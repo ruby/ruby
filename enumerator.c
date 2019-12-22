@@ -1736,7 +1736,7 @@ lazy_generator_init(VALUE enumerator, VALUE procs)
 
 /*
  * call-seq:
- *   Lazy.new(obj, size=nil) { |yielder, *values| ... }
+ *   Lazy.new(obj, size=nil) { |yielder, *values| block }
  *
  * Creates a new Lazy enumerator. When the enumerator is actually enumerated
  * (e.g. by calling #force), +obj+ will be enumerated and each value passed
@@ -1899,10 +1899,10 @@ lazy_to_enum_i(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator
 
 /*
  * call-seq:
- *   lzy.to_enum(method = :each, *args)                 -> lazy_enum
- *   lzy.enum_for(method = :each, *args)                -> lazy_enum
- *   lzy.to_enum(method = :each, *args) {|*args| block} -> lazy_enum
- *   lzy.enum_for(method = :each, *args){|*args| block} -> lazy_enum
+ *   lzy.to_enum(method = :each, *args)                   -> lazy_enum
+ *   lzy.enum_for(method = :each, *args)                  -> lazy_enum
+ *   lzy.to_enum(method = :each, *args) {|*args| block }  -> lazy_enum
+ *   lzy.enum_for(method = :each, *args) {|*args| block } -> lazy_enum
  *
  * Similar to Object#to_enum, except it returns a lazy enumerator.
  * This makes it easy to define Enumerable methods that will
@@ -2080,19 +2080,19 @@ lazy_flat_map_proc(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
  *     lazy.flat_map       { |obj| block } -> a_lazy_enumerator
  *
  *  Returns a new lazy enumerator with the concatenated results of running
- *  <i>block</i> once for every element in <i>lazy</i>.
+ *  +block+ once for every element in the lazy enumerator.
  *
  *    ["foo", "bar"].lazy.flat_map {|i| i.each_char.lazy}.force
  *    #=> ["f", "o", "o", "b", "a", "r"]
  *
- *  A value <i>x</i> returned by <i>block</i> is decomposed if either of
+ *  A value +x+ returned by +block+ is decomposed if either of
  *  the following conditions is true:
  *
- *  * a) <i>x</i> responds to both each and force, which means that
- *    <i>x</i> is a lazy enumerator.
- *  * b) <i>x</i> is an array or responds to to_ary.
+ *  * +x+ responds to both each and force, which means that
+ *    +x+ is a lazy enumerator.
+ *  * +x+ is an array or responds to to_ary.
  *
- *  Otherwise, <i>x</i> is contained as-is in the return value.
+ *  Otherwise, +x+ is contained as-is in the return value.
  *
  *    [{a:1}, {b:2}].lazy.flat_map {|i| i}.force
  *    #=> [{:a=>1}, {:b=>2}]
@@ -2159,7 +2159,8 @@ static const lazyenum_funcs lazy_filter_map_funcs = {
  *
  *  Like Enumerable#filter_map, but chains operation to be lazy-evaluated.
  *
- *     (1..).lazy.filter_map { |i| i * 2 if i.even? }.first(5) #=> [4, 8, 12, 16, 20]
+ *    (1..).lazy.filter_map { |i| i * 2 if i.even? }.first(5)
+ *    #=> [4, 8, 12, 16, 20]
  */
 
 static VALUE
@@ -2631,8 +2632,8 @@ static const lazyenum_funcs lazy_uniq_funcs = {
 
 /*
  *  call-seq:
- *     lazy.uniq                -> lazy_enumerator
- *     lazy.uniq { |item| ... } -> lazy_enumerator
+ *     lazy.uniq                  -> lazy_enumerator
+ *     lazy.uniq { |item| block } -> lazy_enumerator
  *
  *  Like Enumerable#uniq, but chains operation to be lazy-evaluated.
  */
@@ -2674,20 +2675,20 @@ static const lazyenum_funcs lazy_with_index_funcs = {
 };
 
 /*
- *  call-seq:
- *     lazy.with_index(offset = 0) {|(*args), idx| ... }
- *     lazy.with_index(offset = 0)
+ * call-seq:
+ *   lazy.with_index(offset = 0) {|(*args), idx| block }
+ *   lazy.with_index(offset = 0)
  *
- *  If a block is given, iterates the given block for each element
- *  with an index, which starts from +offset+, and returns a
- *  lazy enumerator that yields the same values (without the index).
+ * If a block is given, iterates the given block for each element
+ * with an index, which starts from +offset+, and returns a
+ * lazy enumerator that yields the same values (without the index).
  *
- *  If a block is not given, returns a new lazy enumerator that
- *  includes the index, starting from +offset+.
+ * If a block is not given, returns a new lazy enumerator that
+ * includes the index, starting from +offset+.
  *
  * +offset+:: the starting index to use
  *
- * see Enumerator#with_index.
+ * See Enumerator#with_index.
  */
 static VALUE
 lazy_with_index(int argc, VALUE *argv, VALUE obj)
