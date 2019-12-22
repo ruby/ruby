@@ -3887,7 +3887,7 @@ proc_ruby2_keywords(VALUE procval)
  *     # %w[test me].each { _1.each_char { p _1 } }
  *     #                    ^~
  *
- * Numbered parameter was introduced in Ruby 2.7.
+ * Numbered parameters were introduced in Ruby 2.7.
  */
 
 
