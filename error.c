@@ -174,7 +174,7 @@ rb_warning_category_enabled_p(rb_warning_category_t category)
  * Supported categories are:
  *
  * +:deprecated+ :: deprecation warnings
- * * assignemnt of non-nil value to <code>$,</code> and <code>$;</code>
+ * * assignment of non-nil value to <code>$,</code> and <code>$;</code>
  * * keyword arguments
  * * proc/lambda without block
  * etc.
