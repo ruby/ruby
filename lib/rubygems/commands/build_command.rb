@@ -57,18 +57,32 @@ Gems can be saved to a specified filename with the output option:
   end
 
   def execute
-    gemspec = get_one_gem_name
+    gem_name = get_one_optional_argument || find_gemspec
+    build_gem(gem_name)
+  end
 
-    unless File.exist? gemspec
-      gemspec += '.gemspec' if File.exist? gemspec + '.gemspec'
+  private
+
+  def find_gemspec
+    gemspecs = Dir.glob("*.gemspec").sort
+
+    if gemspecs.size > 1
+      alert_error "Multiple gemspecs found: #{gemspecs}, please specify one"
+      terminate_interaction(1)
     end
 
-    if File.exist? gemspec
+    gemspecs.first
+  end
+
+  def build_gem(gem_name)
+    gemspec = File.exist?(gem_name) ? gem_name : "#{gem_name}.gemspec"
+
+    if File.exist?(gemspec)
       spec = Gem::Specification.load(gemspec)
 
       if options[:build_path]
         Dir.chdir(File.dirname(gemspec)) do
-          spec = Gem::Specification.load File.basename(gemspec)
+          spec = Gem::Specification.load(File.basename(gemspec))
           build_package(spec)
         end
       else
@@ -77,11 +91,9 @@ Gems can be saved to a specified filename with the output option:
 
     else
       alert_error "Gemspec file not found: #{gemspec}"
-      terminate_interaction 1
+      terminate_interaction(1)
     end
   end
-
-  private
 
   def build_package(spec)
     if spec

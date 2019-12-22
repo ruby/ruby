@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "uri"
 require "rubygems/user_interaction"
 
 module Bundler
@@ -328,9 +327,10 @@ module Bundler
       def normalize_uri(uri)
         uri = uri.to_s
         uri = "#{uri}/" unless uri =~ %r{/$}
-        uri = URI(uri)
+        require_relative "../vendored_uri"
+        uri = Bundler::URI(uri)
         raise ArgumentError, "The source must be an absolute URI. For example:\n" \
-          "source 'https://rubygems.org'" if !uri.absolute? || (uri.is_a?(URI::HTTP) && uri.host.nil?)
+          "source 'https://rubygems.org'" if !uri.absolute? || (uri.is_a?(Bundler::URI::HTTP) && uri.host.nil?)
         uri
       end
 

@@ -21,7 +21,7 @@ module IRB # :nodoc:
     IRB.load_modules
 
     unless @CONF[:PROMPT][@CONF[:PROMPT_MODE]]
-      IRB.fail(UndefinedPromptMode, @CONF[:PROMPT_MODE])
+      fail UndefinedPromptMode, @CONF[:PROMPT_MODE]
     end
   end
 
@@ -43,7 +43,7 @@ module IRB # :nodoc:
     @CONF[:LOAD_MODULES] = []
     @CONF[:IRB_RC] = nil
 
-    @CONF[:USE_READLINE] = false unless defined?(ReadlineInputMethod)
+    @CONF[:USE_SINGLELINE] = false unless defined?(ReadlineInputMethod)
     @CONF[:USE_COLORIZE] = true
     @CONF[:INSPECT_MODE] = true
     @CONF[:USE_TRACER] = false
@@ -51,6 +51,7 @@ module IRB # :nodoc:
     @CONF[:IGNORE_SIGINT] = true
     @CONF[:IGNORE_EOF] = false
     @CONF[:ECHO] = nil
+    @CONF[:ECHO_ON_ASSIGNMENT] = nil
     @CONF[:VERBOSE] = nil
 
     @CONF[:EVAL_HISTORY] = nil
@@ -160,18 +161,22 @@ module IRB # :nodoc:
         end
       when "--noinspect"
         @CONF[:INSPECT_MODE] = false
-      when "--readline"
-        @CONF[:USE_READLINE] = true
-      when "--noreadline"
-        @CONF[:USE_READLINE] = false
-      when "--reidline"
-        @CONF[:USE_REIDLINE] = true
-      when "--noreidline"
-        @CONF[:USE_REIDLINE] = false
+      when "--singleline", "--readline", "--legacy"
+        @CONF[:USE_SINGLELINE] = true
+      when "--nosingleline", "--noreadline"
+        @CONF[:USE_SINGLELINE] = false
+      when "--multiline", "--reidline"
+        @CONF[:USE_MULTILINE] = true
+      when "--nomultiline", "--noreidline"
+        @CONF[:USE_MULTILINE] = false
       when "--echo"
         @CONF[:ECHO] = true
       when "--noecho"
         @CONF[:ECHO] = false
+      when "--echo-on-assignment"
+        @CONF[:ECHO_ON_ASSIGNMENT] = true
+      when "--noecho-on-assignment"
+        @CONF[:ECHO_ON_ASSIGNMENT] = false
       when "--verbose"
         @CONF[:VERBOSE] = true
       when "--noverbose"
@@ -212,7 +217,7 @@ module IRB # :nodoc:
         end
         break
       when /^-/
-        IRB.fail UnrecognizedSwitch, opt
+        fail UnrecognizedSwitch, opt
       else
         @CONF[:SCRIPT] = opt
         $0 = opt
@@ -257,7 +262,7 @@ module IRB # :nodoc:
     when String
       return rc_file
     else
-      IRB.fail IllegalRCNameGenerator
+      fail IllegalRCNameGenerator
     end
   end
 
@@ -269,11 +274,11 @@ module IRB # :nodoc:
     if home = ENV["HOME"]
       yield proc{|rc| home+"/.irb#{rc}"}
     end
-    home = Dir.pwd
-    yield proc{|rc| home+"/.irb#{rc}"}
-    yield proc{|rc| home+"/irb#{rc.sub(/\A_?/, '.')}"}
-    yield proc{|rc| home+"/_irb#{rc}"}
-    yield proc{|rc| home+"/$irb#{rc}"}
+    current_dir = Dir.pwd
+    yield proc{|rc| current_dir+"/.irb#{rc}"}
+    yield proc{|rc| current_dir+"/irb#{rc.sub(/\A_?/, '.')}"}
+    yield proc{|rc| current_dir+"/_irb#{rc}"}
+    yield proc{|rc| current_dir+"/$irb#{rc}"}
   end
 
   # loading modules

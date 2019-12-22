@@ -3,19 +3,21 @@
 RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
   def rubygems_version(name, requirement)
     ruby! <<-RUBY
-      require #{File.expand_path("../../support/artifice/vcr.rb", __FILE__).dump}
-      require "bundler"
-      require "bundler/source/rubygems/remote"
-      require "bundler/fetcher"
-      source = Bundler::Source::Rubygems::Remote.new(URI("https://rubygems.org"))
-      fetcher = Bundler::Fetcher.new(source)
-      index = fetcher.specs([#{name.dump}], nil)
-      rubygem = index.search(Gem::Dependency.new(#{name.dump}, #{requirement.dump})).last
+      require "#{spec_dir}/support/artifice/vcr"
+      require "#{lib_dir}/bundler"
+      require "#{lib_dir}/bundler/source/rubygems/remote"
+      require "#{lib_dir}/bundler/fetcher"
+      rubygem = Bundler.ui.silence do
+        source = Bundler::Source::Rubygems::Remote.new(Bundler::URI("https://rubygems.org"))
+        fetcher = Bundler::Fetcher.new(source)
+        index = fetcher.specs([#{name.dump}], nil)
+        index.search(Gem::Dependency.new(#{name.dump}, #{requirement.dump})).last
+      end
       if rubygem.nil?
         raise "Could not find #{name} (#{requirement}) on rubygems.org!\n" \
           "Found specs:\n\#{index.send(:specs).inspect}"
       end
-      "#{name} (\#{rubygem.version})"
+      puts "#{name} (\#{rubygem.version})"
     RUBY
   end
 

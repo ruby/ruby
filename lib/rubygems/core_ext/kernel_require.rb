@@ -32,14 +32,52 @@ module Kernel
   # that file has already been loaded is preserved.
 
   def require(path)
+    if RUBYGEMS_ACTIVATION_MONITOR.respond_to?(:mon_owned?)
+      monitor_owned = RUBYGEMS_ACTIVATION_MONITOR.mon_owned?
+    end
     RUBYGEMS_ACTIVATION_MONITOR.enter
 
     path = path.to_path if path.respond_to? :to_path
 
-    if spec = Gem.find_unresolved_default_spec(path)
-      Gem.remove_unresolved_default_spec(spec)
+    # Ensure -I beats a default gem
+    # https://github.com/rubygems/rubygems/pull/1868
+    resolved_path = begin
+      rp = nil
+      $LOAD_PATH[0...Gem.load_path_insert_index || -1].each do |lp|
+        safe_lp = lp.dup.tap(&Gem::UNTAINT)
+        begin
+          if File.symlink? safe_lp # for backward compatibility
+            next
+          end
+        rescue SecurityError
+          RUBYGEMS_ACTIVATION_MONITOR.exit
+          raise
+        end
+
+        Gem.suffixes.each do |s|
+          full_path = File.expand_path(File.join(safe_lp, "#{path}#{s}"))
+          if File.file?(full_path)
+            rp = full_path
+            break
+          end
+        end
+        break if rp
+      end
+      rp
+    end
+
+    if resolved_path
       begin
-        Kernel.send(:gem, spec.name, "#{Gem::Requirement.default}.a")
+        RUBYGEMS_ACTIVATION_MONITOR.exit
+        return gem_original_require(resolved_path)
+      rescue LoadError
+        RUBYGEMS_ACTIVATION_MONITOR.enter
+      end
+    end
+
+    if spec = Gem.find_unresolved_default_spec(path)
+      begin
+        Kernel.send(:gem, spec.name, Gem::Requirement.default_prerelease)
       rescue Exception
         RUBYGEMS_ACTIVATION_MONITOR.exit
         raise
@@ -130,6 +168,13 @@ module Kernel
     return gem_original_require(path) if require_again
 
     raise load_error
+  ensure
+    if RUBYGEMS_ACTIVATION_MONITOR.respond_to?(:mon_owned?)
+      if monitor_owned != (ow = RUBYGEMS_ACTIVATION_MONITOR.mon_owned?)
+        STDERR.puts [$$, Thread.current, $!, $!.backtrace].inspect if $!
+        raise "CRITICAL: RUBYGEMS_ACTIVATION_MONITOR.owned?: before #{monitor_owned} -> after #{ow}"
+      end
+    end
   end
 
   private :require

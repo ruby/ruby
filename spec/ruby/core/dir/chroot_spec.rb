@@ -9,7 +9,7 @@ platform_is_not :windows do
     end
   end
 
-  platform_is_not :cygwin do
+  platform_is_not :cygwin, :android do
     as_user do
       describe "Dir.chroot as regular user" do
         before :all do

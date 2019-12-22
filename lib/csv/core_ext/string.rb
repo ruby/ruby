@@ -4,6 +4,6 @@ class String # :nodoc:
   #   "CSV,data".parse_csv
   #     #=> ["CSV", "data"]
   def parse_csv(**options)
-    CSV.parse_line(self, options)
+    CSV.parse_line(self, **options)
   end
 end

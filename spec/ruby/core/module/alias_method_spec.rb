@@ -14,7 +14,7 @@ describe "Module#alias_method" do
     @object.double(12).should == @object.public_two(12)
   end
 
-  it "creates methods that are == to eachother" do
+  it "creates methods that are == to each other" do
     @class.make_alias :uno, :public_one
     @object.method(:uno).should == @object.method(:public_one)
   end

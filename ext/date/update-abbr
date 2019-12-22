@@ -1,0 +1,35 @@
+# -*- mode: ruby -*-
+require 'nokogiri'
+require 'open-uri'
+
+doc = Nokogiri::HTML(URI.open('https://www.timeanddate.com/time/zones/'))
+
+h = {}
+
+doc.css('#tz-abb tbody tr').each do |tr|
+  tds = tr.css('td')
+  abbr = tds[0].text.strip.downcase
+  offset = tds[3].text.strip.gsub(/UTC\s*/, '')
+  next if offset.include?('/') # skip ambiguous timezones
+  next if offset.empty?
+
+
+  hour, min = offset.split(':', 2)
+  offset = (Integer(hour) * 60 + (Integer(min || 0)))*60
+  if h.has_key?(abbr)
+    h[abbr] = false
+  else
+    h[abbr] = offset
+  end
+end
+
+h.delete_if{|_,v| !v}
+
+lines = File.readlines('zonetab.list')
+lines.select{|l| l.include?(',')}.
+  map{|l| l.split(',', 2)[0]}.
+  each{|a| h.delete(a)}
+
+lines.insert(-2, h.sort.map{|k,v| "#{k},#{v}\n"})
+lines.flatten!
+File.write('zonetab.list', lines.join)

@@ -6,12 +6,8 @@ object_tracing.o: $(hdrdir)/ruby/assert.h
 object_tracing.o: $(hdrdir)/ruby/backward.h
 object_tracing.o: $(hdrdir)/ruby/debug.h
 object_tracing.o: $(hdrdir)/ruby/defines.h
-object_tracing.o: $(hdrdir)/ruby/encoding.h
 object_tracing.o: $(hdrdir)/ruby/intern.h
-object_tracing.o: $(hdrdir)/ruby/io.h
 object_tracing.o: $(hdrdir)/ruby/missing.h
-object_tracing.o: $(hdrdir)/ruby/onigmo.h
-object_tracing.o: $(hdrdir)/ruby/oniguruma.h
 object_tracing.o: $(hdrdir)/ruby/ruby.h
 object_tracing.o: $(hdrdir)/ruby/st.h
 object_tracing.o: $(hdrdir)/ruby/subst.h
@@ -70,7 +66,6 @@ objspace_dump.o: $(top_srcdir)/ruby_assert.h
 objspace_dump.o: $(top_srcdir)/ruby_atomic.h
 objspace_dump.o: $(top_srcdir)/thread_pthread.h
 objspace_dump.o: $(top_srcdir)/vm_core.h
-objspace_dump.o: $(top_srcdir)/vm_debug.h
 objspace_dump.o: $(top_srcdir)/vm_opts.h
 objspace_dump.o: objspace.h
 objspace_dump.o: objspace_dump.c

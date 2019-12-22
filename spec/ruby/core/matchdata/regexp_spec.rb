@@ -10,4 +10,15 @@ describe "MatchData#regexp" do
     m = 'haystack'.match(/hay/)
     m.regexp.should == /hay/
   end
+
+  it "returns the same Regexp used to match" do
+    r = /hay/
+    m = 'haystack'.match(r)
+    m.regexp.object_id.should == r.object_id
+  end
+
+  it "returns a Regexp for the result of gsub(String)" do
+    'he[[o'.gsub('[', ']')
+    $~.regexp.should == /\[/
+  end
 end

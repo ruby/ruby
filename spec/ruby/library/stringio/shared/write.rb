@@ -45,9 +45,11 @@ describe :stringio_write_string, shared: true do
     @io.pos.should eql(4)
   end
 
-  it "taints self's String when the passed argument is tainted" do
-    @io.send(@method, "test".taint)
-    @io.string.tainted?.should be_true
+  ruby_version_is ""..."2.7" do
+    it "taints self's String when the passed argument is tainted" do
+      @io.send(@method, "test".taint)
+      @io.string.tainted?.should be_true
+    end
   end
 
   it "does not taint self when the passed argument is tainted" do

@@ -54,12 +54,14 @@ describe "String#squeeze" do
     -> { s.squeeze("^e-b") }.should raise_error(ArgumentError)
   end
 
-  it "taints the result when self is tainted" do
-    "hello".taint.squeeze("e").tainted?.should == true
-    "hello".taint.squeeze("a-z").tainted?.should == true
+  ruby_version_is ''...'2.7' do
+    it "taints the result when self is tainted" do
+      "hello".taint.squeeze("e").tainted?.should == true
+      "hello".taint.squeeze("a-z").tainted?.should == true
 
-    "hello".squeeze("e".taint).tainted?.should == false
-    "hello".squeeze("l".taint).tainted?.should == false
+      "hello".squeeze("e".taint).tainted?.should == false
+      "hello".squeeze("l".taint).tainted?.should == false
+    end
   end
 
   it "tries to convert each set arg to a string using to_str" do

@@ -264,6 +264,10 @@ module Psych
   #
   # Raises a TypeError when `yaml` parameter is NilClass
   #
+  # NOTE: This method *should not* be used to parse untrusted documents, such as
+  # YAML documents that are supplied via user input.  Instead, please use the
+  # safe_load method.
+  #
   def self.load yaml, legacy_filename = NOT_GIVEN, filename: nil, fallback: false, symbolize_names: false
     if legacy_filename != NOT_GIVEN
       warn_with_uplevel 'Passing filename with the 2nd argument of Psych.load is deprecated. Use keyword argument like Psych.load(yaml, filename: ...) instead.', uplevel: 1 if $VERBOSE

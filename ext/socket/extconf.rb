@@ -444,6 +444,7 @@ else
   test_func = "socket(0,0,0)"
   have_library("nsl", 't_open("", 0, (struct t_info *)NULL)', headers) # SunOS
   have_library("socket", "socket(0,0,0)", headers) # SunOS
+  have_library("anl", 'getaddrinfo_a', headers)
 end
 
 if have_func(test_func, headers)
@@ -505,6 +506,7 @@ EOF
   unless have_func("gethostname((char *)0, 0)", headers)
     have_func("uname((struct utsname *)NULL)", headers)
   end
+  have_func("getaddrinfo_a", headers)
 
   ipv6 = false
   default_ipv6 = /haiku/ !~ RUBY_PLATFORM
@@ -646,7 +648,7 @@ EOS
   if enable_config("socks", ENV["SOCKS_SERVER"])
     if have_library("socks5", "SOCKSinit")
       $defs << "-DSOCKS5" << "-DSOCKS"
-    elsif have_library("socks", "Rconnect")
+    elsif have_library("socksd", "Rconnect") || have_library("socks", "Rconnect")
       $defs << "-DSOCKS"
     end
   end

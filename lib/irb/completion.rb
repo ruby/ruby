@@ -42,9 +42,7 @@ module IRB
       retrieve_completion_data(input).compact.map{ |i| i.encode(Encoding.default_external) }
     }
 
-    def self.retrieve_completion_data(input, doc_namespace = false)
-      bind = IRB.conf[:MAIN_CONTEXT].workspace.binding
-
+    def self.retrieve_completion_data(input, bind: IRB.conf[:MAIN_CONTEXT].workspace.binding, doc_namespace: false)
       case input
       when /^((["'`]).*\2)\.([^.]*)$/
         # String
@@ -145,7 +143,7 @@ module IRB
           select_message(receiver, message, candidates, sep)
         end
 
-      when /^(?<num>-?(0[dbo])?[0-9_]+(\.[0-9_]+)?([eE][+-]?[0-9]+i?|r)?)(?<sep>\.|::)(?<mes>[^.]*)$/
+      when /^(?<num>-?(0[dbo])?[0-9_]+(\.[0-9_]+)?(([eE][+-]?[0-9]+)?i?|r)?)(?<sep>\.|::)(?<mes>[^.]*)$/
         # Numeric
         receiver = $~[:num]
         sep = $~[:sep]
@@ -277,7 +275,7 @@ module IRB
         end
         return
       end
-      namespace = retrieve_completion_data(matched, true)
+      namespace = retrieve_completion_data(matched, doc_namespace: true)
       return unless matched
       if namespace.is_a?(Array)
         out = RDoc::Markup::Document.new
@@ -326,7 +324,7 @@ module IRB
         end
       end
 
-      %i(IRB SLex RubyLex RubyToken).each do |sym|
+      %i(IRB RubyLex).each do |sym|
         next unless Object.const_defined?(sym)
         scanner.call(Object.const_get(sym))
       end

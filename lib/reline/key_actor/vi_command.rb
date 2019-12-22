@@ -37,7 +37,7 @@ class Reline::KeyActor::ViCommand < Reline::KeyActor::Base
     #  17 ^Q
     :ed_ignore,
     #  18 ^R
-    :ed_redisplay,
+    :ed_search_prev_history,
     #  19 ^S
     :ed_ignore,
     #  20 ^T
@@ -55,7 +55,7 @@ class Reline::KeyActor::ViCommand < Reline::KeyActor::Base
     #  26 ^Z
     :ed_unassigned,
     #  27 ^[
-    :em_meta_next,
+    :ed_unassigned,
     #  28 ^\
     :ed_ignore,
     #  29 ^]

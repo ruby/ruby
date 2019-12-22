@@ -98,6 +98,7 @@ module TestParallel
         while buf = @worker_out.gets
           break if /^p (.+?)$/ =~ buf
         end
+        assert_not_nil($1, "'p' was not found")
         assert_match(/TestA#test_nothing_test = \d+\.\d+ s = \.\n/, $1.chomp.unpack("m")[0])
       end
     end
@@ -108,11 +109,11 @@ module TestParallel
         while buf = @worker_out.gets
           break if /^done (.+?)$/ =~ buf
         end
+        assert_not_nil($1, "'done' was not found")
 
         result = Marshal.load($1.chomp.unpack("m")[0])
-
         assert_equal(5, result[0])
-        assert_equal(2, result[1])
+        assert_equal(17, result[1])
         assert_kind_of(Array,result[2])
         assert_kind_of(Array,result[3])
         assert_kind_of(Array,result[4])

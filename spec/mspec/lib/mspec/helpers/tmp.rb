@@ -30,7 +30,7 @@ all specs are cleaning up temporary files:
   end
 end
 
-def tmp(name, uniquify=true)
+def tmp(name, uniquify = true)
   Dir.mkdir SPEC_TEMP_DIR unless Dir.exist? SPEC_TEMP_DIR
 
   if uniquify and !name.empty?

@@ -16,7 +16,7 @@ describe "File.link" do
   platform_is_not :windows do
     it "link a file with another" do
       File.link(@file, @link).should == 0
-      File.exist?(@link).should == true
+      File.should.exist?(@link)
       File.identical?(@file, @link).should == true
     end
 

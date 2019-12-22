@@ -611,7 +611,12 @@ module WEBrick
       end
       if host_port = self["x-forwarded-host"]
         host_port = host_port.split(",", 2).first
-        @forwarded_host, tmp = host_port.split(":", 2)
+        if host_port =~ /\A(\[[0-9a-fA-F:]+\])(?::(\d+))?\z/
+          @forwarded_host = $1
+          tmp = $2
+        else
+          @forwarded_host, tmp = host_port.split(":", 2)
+        end
         @forwarded_port = (tmp || (@forwarded_proto == "https" ? 443 : 80)).to_i
       end
       if addrs = self["x-forwarded-for"]

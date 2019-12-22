@@ -398,7 +398,7 @@ class TestRubyOptimization < Test::Unit::TestCase
         foo
       end;1
     end;
-    status, _err = EnvUtil.invoke_ruby([], "", true, true, {}) {
+    status, _err = EnvUtil.invoke_ruby([], "", true, true, **{}) {
       |in_p, out_p, err_p, pid|
       in_p.write(script)
       in_p.close
@@ -449,6 +449,22 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_nothing_raised(SystemStackError, mesg) {
       obj.run(1, level)
     }
+  end
+
+  def test_tailcall_not_to_grow_stack
+    skip 'currently JIT-ed code always creates a new stack frame' if RubyVM::MJIT.enabled?
+    bug16161 = '[ruby-core:94881]'
+
+    tailcall("#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
+      def foo(n)
+        return :ok if n < 1
+        foo(n - 1)
+      end
+    end;
+    assert_nothing_raised(SystemStackError, bug16161) do
+      assert_equal(:ok, foo(1_000_000), bug16161)
+    end
   end
 
   class Bug10557
@@ -698,17 +714,6 @@ class TestRubyOptimization < Test::Unit::TestCase
     END
   end
 
-  def test_block_parameter_should_restore_safe_level
-    assert_separately [], <<-END
-      #
-      def foo &b
-        $SAFE = 1
-        b.call
-      end
-      assert_equal 1, foo{$SAFE}
-    END
-  end
-
   def test_peephole_optimization_without_trace
     assert_separately [], <<-END
       RubyVM::InstructionSequence.compile_option = {trace_instruction: false}
@@ -823,6 +828,21 @@ class TestRubyOptimization < Test::Unit::TestCase
       assert_raise(RuntimeError) {
         begin raise ensure nil if nil end
       }
+    end;
+  end
+
+  def test_optimized_rescue
+    assert_in_out_err("", "#{<<~"begin;"}\n#{<<~'end;'}", [], /END \(RuntimeError\)/)
+    begin;
+      if false
+        begin
+          require "some_mad_stuff"
+        rescue LoadError
+          puts "no mad stuff loaded"
+        end
+      end
+
+      raise  "END"
     end;
   end
 end

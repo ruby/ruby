@@ -1,5 +1,6 @@
 # frozen_string_literal: false
-require 'test/unit'
+require "test/unit"
+require "irb"
 
 module TestIRB
   class TestCompletion < Test::Unit::TestCase
@@ -18,6 +19,11 @@ module TestIRB
       rescue LoadError
         skip "cannot load irb/completion"
       end
+    end
+
+    def test_complete_numeric
+      assert_include(IRB::InputCompletor.retrieve_completion_data("1r.positi", bind: binding), "1r.positive?")
+      assert_empty(IRB::InputCompletor.retrieve_completion_data("1i.positi", bind: binding))
     end
   end
 end

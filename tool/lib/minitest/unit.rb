@@ -718,6 +718,8 @@ module MiniTest
       raise MiniTest::Skip, msg, bt
     end
 
+    alias omit skip
+
     ##
     # Was this testcase skipped? Meant for #teardown.
 
@@ -939,28 +941,36 @@ module MiniTest
 
       leakchecker = LeakChecker.new
 
-      assertions = filtered_test_methods.map { |method|
-        inst = suite.new method
-        inst._assertions = 0
+      continuation = proc do
+        assertions = filtered_test_methods.map { |method|
+          inst = suite.new method
+          inst._assertions = 0
 
-        print "#{suite}##{method} = " if @verbose
+          print "#{suite}##{method} = " if @verbose
 
-        start_time = Time.now if @verbose
-        result = inst.run self
+          start_time = Time.now if @verbose
+          result = inst.run self
 
-        print "%.2f s = " % (Time.now - start_time) if @verbose
-        print result
-        puts if @verbose
-        $stdout.flush
+          print "%.2f s = " % (Time.now - start_time) if @verbose
+          print result
+          puts if @verbose
+          $stdout.flush
 
-        unless defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # compiler process is wrongly considered as leak
-          leakchecker.check("#{inst.class}\##{inst.__name__}")
-        end
+          unless defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # compiler process is wrongly considered as leak
+            leakchecker.check("#{inst.class}\##{inst.__name__}")
+          end
 
-        inst._assertions
-      }
+          inst._assertions
+        }
+        return assertions.size, assertions.inject(0) { |sum, n| sum + n }
+      end
 
-      return assertions.size, assertions.inject(0) { |sum, n| sum + n }
+      if ENV["LEAK_CHECKER_TRACE_OBJECT_ALLOCATION"]
+        require "objspace"
+        ObjectSpace.trace_object_allocations(&continuation)
+      else
+        continuation.call
+      end
     end
 
     ##

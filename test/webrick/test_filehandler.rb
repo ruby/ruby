@@ -289,7 +289,7 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
     return if File.executable?(__FILE__) # skip on strange file system
 
     config = {
-      :CGIInterpreter => TestWEBrick::RubyBin,
+      :CGIInterpreter => TestWEBrick::RubyBinArray,
       :DocumentRoot => File.dirname(__FILE__),
       :CGIPathEnv => ENV['PATH'],
       :RequestCallback => Proc.new{|req, res|
@@ -308,7 +308,7 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
     TestWEBrick.start_httpserver(config, log_tester) do |server, addr, port, log|
       http = Net::HTTP.new(addr, port)
       http.read_timeout = EnvUtil.apply_timeout_scale(60)
-      http.write_timeout = EnvUtil.apply_timeout_scale(60)
+      http.write_timeout = EnvUtil.apply_timeout_scale(60) if http.respond_to?(:write_timeout=)
 
       req = Net::HTTP::Get.new("/webrick.cgi/test")
       http.request(req) do |res|

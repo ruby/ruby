@@ -180,17 +180,6 @@ class TestStringIO < Test::Unit::TestCase
     f.close unless f.closed?
   end
 
-  def test_write_infection
-    bug9769 = '[ruby-dev:48118] [Bug #9769]'
-    s = "".untaint
-    f = StringIO.new(s, "w")
-    f.print("bar".taint)
-    f.close
-    assert_predicate(s, :tainted?, bug9769)
-  ensure
-    f.close unless f.closed?
-  end
-
   def test_write_encoding
     s = "".force_encoding(Encoding::UTF_8)
     f = StringIO.new(s)
@@ -199,9 +188,8 @@ class TestStringIO < Test::Unit::TestCase
   end
 
   def test_write_integer_overflow
-    long_max = (1 << (RbConfig::SIZEOF["long"] * 8 - 1)) - 1
     f = StringIO.new
-    f.pos = long_max
+    f.pos = RbConfig::LIMITS["LONG_MAX"]
     assert_raise(ArgumentError) {
       f.write("pos + len overflows")
     }
@@ -767,7 +755,7 @@ class TestStringIO < Test::Unit::TestCase
 
   def test_overflow
     skip if RbConfig::SIZEOF["void*"] > RbConfig::SIZEOF["long"]
-    limit = (1 << (RbConfig::SIZEOF["void*"]*8-1)) - 0x10
+    limit = RbConfig::LIMITS["INTPTR_MAX"] - 0x10
     assert_separately(%w[-rstringio], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
       limit = #{limit}

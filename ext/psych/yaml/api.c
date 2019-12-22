@@ -1122,7 +1122,9 @@ yaml_document_delete(yaml_document_t *document)
     } context;
     yaml_tag_directive_t *tag_directive;
 
-    context.error = YAML_NO_ERROR;  /* Eliminate a compliler warning. */
+    /* Eliminate a compliler warning. */
+    context.error = YAML_NO_ERROR;
+    (void)context.error;
 
     assert(document);   /* Non-NULL document object is expected. */
 

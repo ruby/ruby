@@ -1,7 +1,7 @@
 require 'timeout'
 
 class Reline::GeneralIO
-  RAW_KEYSTROKE_CONFIG = {}.freeze
+  RAW_KEYSTROKE_CONFIG = {}
 
   @@buf = []
 
@@ -54,6 +54,9 @@ class Reline::GeneralIO
   end
 
   def self.set_screen_size(rows, columns)
+  end
+
+  def self.set_winch_handler(&handler)
   end
 
   def self.prep

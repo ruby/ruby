@@ -2,7 +2,7 @@
 
 require_relative "shared_helpers"
 Bundler::SharedHelpers.major_deprecation 2,
-  "The Bundler task for Capistrano. Please use http://github.com/capistrano/bundler"
+  "The Bundler task for Capistrano. Please use https://github.com/capistrano/bundler"
 
 # Capistrano task for Bundler.
 #
@@ -12,7 +12,7 @@ require_relative "deployment"
 require "capistrano/version"
 
 if defined?(Capistrano::Version) && Gem::Version.new(Capistrano::Version).release >= Gem::Version.new("3.0")
-  raise "For Capistrano 3.x integration, please use http://github.com/capistrano/bundler"
+  raise "For Capistrano 3.x integration, please use https://github.com/capistrano/bundler"
 end
 
 Capistrano::Configuration.instance(:must_exist).load do

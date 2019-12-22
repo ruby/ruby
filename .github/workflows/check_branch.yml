@@ -6,7 +6,7 @@
 # to prevent us from accidentally pushing commits to GitHub directly.
 #
 # Details: https://bugs.ruby-lang.org/issues/16094
-name: pull_request
+name: Pull Request
 on: [pull_request]
 jobs:
   check_branch:

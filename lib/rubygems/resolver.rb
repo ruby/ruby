@@ -125,7 +125,10 @@ class Gem::Resolver
 
     data = yield
     $stderr.printf "%10s (%d entries)\n", stage.to_s.upcase, data.size
-    PP.pp data, $stderr unless data.empty?
+    unless data.empty?
+      require 'pp'
+      PP.pp data, $stderr
+    end
   end
 
   ##

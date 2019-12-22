@@ -526,7 +526,7 @@ bt_init(void *ptr, size_t size)
     struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
     arg->btobj = backtrace_alloc(rb_cBacktrace);
     GetCoreDataFromValue(arg->btobj, rb_backtrace_t, arg->bt);
-    arg->bt->backtrace_base = arg->bt->backtrace = ruby_xmalloc(sizeof(rb_backtrace_location_t) * size);
+    arg->bt->backtrace_base = arg->bt->backtrace = ALLOC_N(rb_backtrace_location_t, size);
     arg->bt->backtrace_size = 0;
 }
 
@@ -578,7 +578,7 @@ backtrace_collect(rb_backtrace_t *bt, long lev, long n, VALUE (*func)(rb_backtra
 	rb_bug("backtrace_collect: unreachable");
     }
 
-    btary = rb_ary_new();
+    btary = rb_ary_new2(n);
 
     for (i=0; i+lev<bt->backtrace_size && i<n; i++) {
 	rb_backtrace_location_t *loc = &bt->backtrace[bt->backtrace_size - 1 - (lev+i)];
@@ -716,8 +716,8 @@ rb_ec_backtrace_str_ary(const rb_execution_context_t *ec, long lev, long n)
     return backtrace_to_str_ary(rb_ec_backtrace_object(ec), lev, n);
 }
 
-static VALUE
-ec_backtrace_location_ary(const rb_execution_context_t *ec, long lev, long n)
+VALUE
+rb_ec_backtrace_location_ary(const rb_execution_context_t *ec, long lev, long n)
 {
     return backtrace_to_location_ary(rb_ec_backtrace_object(ec), lev, n);
 }
@@ -1007,7 +1007,7 @@ rb_vm_thread_backtrace_locations(int argc, const VALUE *argv, VALUE thval)
  */
 
 static VALUE
-rb_f_caller(int argc, VALUE *argv)
+rb_f_caller(int argc, VALUE *argv, VALUE _)
 {
     return ec_backtrace_to_ary(GET_EC(), argc, argv, 1, 1, 1);
 }
@@ -1035,7 +1035,7 @@ rb_f_caller(int argc, VALUE *argv)
  *  entries within the specified range.
  */
 static VALUE
-rb_f_caller_locations(int argc, VALUE *argv)
+rb_f_caller_locations(int argc, VALUE *argv, VALUE _)
 {
     return ec_backtrace_to_ary(GET_EC(), argc, argv, 1, 1, 0);
 }
@@ -1240,7 +1240,7 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
 
     dbg_context.ec = ec;
     dbg_context.cfp = dbg_context.ec->cfp;
-    dbg_context.backtrace = ec_backtrace_location_ary(ec, 0, 0);
+    dbg_context.backtrace = rb_ec_backtrace_location_ary(ec, 0, 0);
     dbg_context.backtrace_size = RARRAY_LEN(dbg_context.backtrace);
     dbg_context.contexts = collect_caller_bindings(ec);
 

@@ -111,7 +111,7 @@ describe RaiseErrorMatcher do
     matcher = RaiseErrorMatcher.new(ExpectedException, "expected")
     matcher.matches?(proc)
     matcher.failure_message.should ==
-      ["Expected ExpectedException (expected)", "but no exception was raised (#pretty_inspect raised ArgumentError; A #<Object> was returned)"]
+      ["Expected ExpectedException (expected)", "but no exception was raised (#<Object>(#pretty_inspect raised #<ArgumentError: bad>) was returned)"]
   end
 
   it "provides a useful negative failure message" do

@@ -22,6 +22,12 @@ describe :enumerable_collect, shared: true do
     multi.send(@method) {|e| e}.should == [1,3,6]
   end
 
+  it "only yields increasing values for a Range" do
+    (1..0).send(@method) { |x| x }.should == []
+    (1..1).send(@method) { |x| x }.should == [1]
+    (1..2).send(@method) { |x| x }.should == [1, 2]
+  end
+
   it "returns an enumerator when no block given" do
     enum = EnumerableSpecs::Numerous.new.send(@method)
     enum.should be_an_instance_of(Enumerator)

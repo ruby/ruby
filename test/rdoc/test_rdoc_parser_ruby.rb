@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'minitest_helper'
+require_relative 'helper'
 
 class TestRDocParserRuby < RDoc::TestCase
 
@@ -100,7 +100,7 @@ class C; end
     assert_equal 'E', name_t[:text]
     assert_equal 'D::E', given_name
 
-    assert_raises RDoc::Error do
+    assert_raise RDoc::Error do
       util_parser("A::\nB").get_class_or_module ctxt
     end
   end
@@ -776,6 +776,7 @@ end
 
     blah = foo.method_list.first
     assert_equal 'Foo#blah', blah.full_name
+    assert_equal 3, blah.line
     assert_equal @top_level, blah.file
   end
 
@@ -825,6 +826,7 @@ end
     blah = foo.method_list.first
     assert_equal 'Foo#yields', blah.full_name
     assert_equal 'yields(name)', blah.call_seq
+    assert_equal 3, blah.line
     assert_equal @top_level, blah.file
   end
 
@@ -1323,7 +1325,7 @@ EOF
     assert_equal 'foo',       foo.name
     assert_equal 'my method', foo.comment.text
     assert_equal @top_level,  foo.file
-    assert_equal 1,           foo.line
+    assert_equal 2,           foo.line
 
     assert_equal [],          foo.aliases
     assert_nil                foo.block_params
@@ -1344,8 +1346,8 @@ EOF
 
     stream = [
       {
-        :line_no => 1, :char_no => 1, :kind => :on_comment,
-        :text => "# File #{@top_level.relative_name}, line 1"
+        :line_no => 2, :char_no => 1, :kind => :on_comment,
+        :text => "# File #{@top_level.relative_name}, line 2"
       },
       { :line_no => 0, :char_no => 0, :kind => :on_nl, :text => "\n" },
       { :line_no => 1, :char_no => 1, :kind => :on_sp, :text => '' }
@@ -3502,7 +3504,7 @@ end
   #
   # The previous test assumes that between the =begin/=end blocks that there
   # is only one line, or minima formatting directives. This test tests for
-  # those who use the =begin bloc with longer / more advanced formatting
+  # those who use the =begin block with longer / more advanced formatting
   # within.
   #
   ##

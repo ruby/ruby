@@ -10,14 +10,16 @@
 #
 #
 
-require "e2mmap"
 require "ripper"
 
 # :stopdoc:
 class RubyLex
 
-  extend Exception2MessageMapper
-  def_exception(:TerminateLineInput, "Terminate Line Input")
+  class TerminateLineInput < StandardError
+    def initialize
+      super("Terminate Line Input")
+    end
+  end
 
   def initialize
     @exp_line_no = @line_no = 1
@@ -71,20 +73,27 @@ class RubyLex
     end
   end
 
+  def ripper_lex_without_warning(code)
+    verbose, $VERBOSE = $VERBOSE, nil
+    tokens = Ripper.lex(code)
+    $VERBOSE = verbose
+    tokens
+  end
+
   def set_auto_indent(context)
     if @io.respond_to?(:auto_indent) and context.auto_indent_mode
       @io.auto_indent do |lines, line_index, byte_pointer, is_newline|
         if is_newline
           md = lines[line_index - 1].match(/(\A +)/)
           prev_spaces = md.nil? ? 0 : md[1].count(' ')
-          @tokens = Ripper.lex(lines[0..line_index].join("\n"))
+          @tokens = ripper_lex_without_warning(lines[0..line_index].join("\n"))
           depth_difference = check_newline_depth_difference
           prev_spaces + depth_difference * 2
         else
           code = line_index.zero? ? '' : lines[0..(line_index - 1)].map{ |l| l + "\n" }.join
           last_line = lines[line_index]&.byteslice(0, byte_pointer)
           code += last_line if last_line
-          @tokens = Ripper.lex(code)
+          @tokens = ripper_lex_without_warning(code)
           corresponding_token_depth = check_corresponding_token_depth
           if corresponding_token_depth
             corresponding_token_depth
@@ -97,7 +106,7 @@ class RubyLex
   end
 
   def check_state(code)
-    @tokens = Ripper.lex(code)
+    @tokens = ripper_lex_without_warning(code)
     ltype = process_literal_type
     indent = process_nesting_level
     continue = process_continue
@@ -160,7 +169,7 @@ class RubyLex
     end
     code = @line + (line.nil? ? '' : line)
     code.gsub!(/\s*\z/, '').concat("\n")
-    @tokens = Ripper.lex(code)
+    @tokens = ripper_lex_without_warning(code)
     @continue = process_continue
     @code_block_open = check_code_block(code)
     @indent = process_nesting_level
@@ -176,15 +185,6 @@ class RubyLex
     elsif @tokens.size >= 2 and @tokens[-2][1] == :on_semicolon
       return false
     elsif @tokens.size >= 2 and @tokens[-2][1] == :on_kw and ['begin', 'else', 'ensure'].include?(@tokens[-2][2])
-      return false
-    elsif @tokens.size >= 3 and @tokens[-3][1] == :on_symbeg and @tokens[-2][1] == :on_ivar
-      # This is for :@a or :@1 because :@1 ends with EXPR_FNAME
-      return false
-    elsif @tokens.size >= 2 and @tokens[-2][1] == :on_ivar and @tokens[-2][2] =~ /\A@\d+\z/
-      # This is for @1
-      return false
-    elsif @tokens.size >= 2 and @tokens[-2][1] == :on_cvar and @tokens[-1][1] == :on_int
-      # This is for @@1 or :@@1 and ends with on_int because it's syntax error
       return false
     elsif !@tokens.empty? and @tokens.last[2] == "\\\n"
       return true
@@ -256,12 +256,6 @@ class RubyLex
         #   example:
         #     method / f /
         return false
-      when /numbered parameter outside block/
-        # "numbered parameter outside block"
-        #
-        #   example:
-        #     :@1
-        return false
       end
     ensure
       $VERBOSE = verbose
@@ -298,7 +292,16 @@ class RubyLex
       when :on_kw
         next if index > 0 and @tokens[index - 1][3].allbits?(Ripper::EXPR_FNAME)
         case t[2]
-        when 'def', 'do', 'case', 'for', 'begin', 'class', 'module'
+        when 'do'
+          if index > 0 and @tokens[index - 1][3].anybits?(Ripper::EXPR_CMDARG | Ripper::EXPR_ENDFN | Ripper::EXPR_ARG)
+            # method_with_block do; end
+            indent += 1
+          else
+            # while cond do; end # also "until" or "for"
+            # This "do" doesn't increment indent because "while" already
+            # incremented.
+          end
+        when 'def', 'case', 'for', 'begin', 'class', 'module'
           indent += 1
         when 'if', 'unless', 'while', 'until'
           # postfix if/unless/while/until/rescue must be Ripper::EXPR_LABEL
@@ -316,7 +319,7 @@ class RubyLex
     depth_difference = 0
     @tokens.each_with_index do |t, index|
       case t[1]
-      when :on_ignored_nl, :on_nl
+      when :on_ignored_nl, :on_nl, :on_comment
         if index != (@tokens.size - 1)
           depth_difference = 0
         end
@@ -332,7 +335,16 @@ class RubyLex
       when :on_kw
         next if index > 0 and @tokens[index - 1][3].allbits?(Ripper::EXPR_FNAME)
         case t[2]
-        when 'def', 'do', 'case', 'for', 'begin', 'class', 'module'
+        when 'do'
+          if index > 0 and @tokens[index - 1][3].anybits?(Ripper::EXPR_CMDARG | Ripper::EXPR_ENDFN | Ripper::EXPR_ARG)
+            # method_with_block do; end
+            depth_difference += 1
+          else
+            # while cond do; end # also "until" or "for"
+            # This "do" doesn't increment indent because "while" already
+            # incremented.
+          end
+        when 'def', 'case', 'for', 'begin', 'class', 'module'
           depth_difference += 1
         when 'if', 'unless', 'while', 'until'
           # postfix if/unless/while/until/rescue must be Ripper::EXPR_LABEL
@@ -354,9 +366,9 @@ class RubyLex
     spaces_of_nest = []
     spaces_at_line_head = 0
     @tokens.each_with_index do |t, index|
-      corresponding_token_depth = nil
       case t[1]
-      when :on_ignored_nl, :on_nl
+      when :on_ignored_nl, :on_nl, :on_comment
+        corresponding_token_depth = nil
         spaces_at_line_head = 0
         is_first_spaces_of_line = true
         is_first_printable_of_line = true

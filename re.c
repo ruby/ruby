@@ -462,7 +462,6 @@ rb_reg_desc(const char *s, long len, VALUE re)
 	if (RBASIC(re)->flags & REG_ENCODING_NONE)
 	    rb_str_buf_cat2(str, "n");
     }
-    OBJ_INFECT(str, re);
     return str;
 }
 
@@ -488,7 +487,6 @@ rb_reg_source(VALUE re)
 
     rb_reg_check(re);
     str = rb_str_dup(RREGEXP_SRC(re));
-    if (OBJ_TAINTED(re)) OBJ_TAINT(str);
     return str;
 }
 
@@ -647,7 +645,6 @@ rb_reg_str_with_term(VALUE re, int term)
     }
     rb_enc_copy(str, re);
 
-    OBJ_INFECT(str, re);
     return str;
 }
 
@@ -1044,7 +1041,7 @@ static void
 match_check(VALUE match)
 {
     if (!RMATCH(match)->regexp) {
-	rb_raise(rb_eTypeError, "uninitialized Match");
+	rb_raise(rb_eTypeError, "uninitialized MatchData");
     }
 }
 
@@ -1333,10 +1330,10 @@ match_set_string(VALUE m, VALUE string, long pos, long len)
 
     match->str = string;
     match->regexp = Qnil;
-    onig_region_resize(&rmatch->regs, 1);
+    int err = onig_region_resize(&rmatch->regs, 1);
+    if (err) rb_memerror();
     rmatch->regs.beg[0] = pos;
     rmatch->regs.end[0] = pos + len;
-    OBJ_INFECT(match, string);
 }
 
 void
@@ -1600,19 +1597,13 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
 	onig_region_free(regs, 0);
 	if (err) rb_memerror();
     }
-    else {
-	FL_UNSET(match, FL_TAINT);
-    }
 
     if (set_backref_str) {
 	RMATCH(match)->str = rb_str_new4(str);
-	OBJ_INFECT(match, str);
     }
 
     RMATCH(match)->regexp = re;
     rb_backref_set(match);
-
-    OBJ_INFECT(match, re);
 
     return result;
 }
@@ -1684,17 +1675,11 @@ rb_reg_start_with_p(VALUE re, VALUE str)
 	onig_region_free(regs, 0);
 	if (err) rb_memerror();
     }
-    else {
-	FL_UNSET(match, FL_TAINT);
-    }
 
     RMATCH(match)->str = rb_str_new4(str);
-    OBJ_INFECT(match, str);
 
     RMATCH(match)->regexp = re;
     rb_backref_set(match);
-
-    OBJ_INFECT(match, re);
 
     return true;
 }
@@ -1739,7 +1724,6 @@ rb_reg_nth_match(int nth, VALUE match)
     end = END(nth);
     len = end - start;
     str = rb_str_subseq(RMATCH(match)->str, start, len);
-    OBJ_INFECT(str, match);
     return str;
 }
 
@@ -1772,7 +1756,6 @@ rb_reg_match_pre(VALUE match)
     regs = RMATCH_REGS(match);
     if (BEG(0) == -1) return Qnil;
     str = rb_str_subseq(RMATCH(match)->str, 0, BEG(0));
-    if (OBJ_TAINTED(match)) OBJ_TAINT(str);
     return str;
 }
 
@@ -1802,7 +1785,6 @@ rb_reg_match_post(VALUE match)
     str = RMATCH(match)->str;
     pos = END(0);
     str = rb_str_subseq(str, pos, RSTRING_LEN(str) - pos);
-    if (OBJ_TAINTED(match)) OBJ_TAINT(str);
     return str;
 }
 
@@ -1824,25 +1806,25 @@ rb_reg_match_last(VALUE match)
 }
 
 static VALUE
-last_match_getter(void)
+last_match_getter(ID _x, VALUE *_y)
 {
     return rb_reg_last_match(rb_backref_get());
 }
 
 static VALUE
-prematch_getter(void)
+prematch_getter(ID _x, VALUE *_y)
 {
     return rb_reg_match_pre(rb_backref_get());
 }
 
 static VALUE
-postmatch_getter(void)
+postmatch_getter(ID _x, VALUE *_y)
 {
     return rb_reg_match_post(rb_backref_get());
 }
 
 static VALUE
-last_paren_match_getter(void)
+last_paren_match_getter(ID _x, VALUE *_y)
 {
     return rb_reg_match_last(rb_backref_get());
 }
@@ -1854,7 +1836,6 @@ match_array(VALUE match, int start)
     VALUE ary;
     VALUE target;
     int i;
-    int taint = OBJ_TAINTED(match);
 
     match_check(match);
     regs = RMATCH_REGS(match);
@@ -1867,7 +1848,6 @@ match_array(VALUE match, int start)
 	}
 	else {
 	    VALUE str = rb_str_subseq(target, regs->beg[i], regs->end[i]-regs->beg[i]);
-	    if (taint) OBJ_TAINT(str);
 	    rb_ary_push(ary, str);
 	}
     }
@@ -2128,8 +2108,6 @@ match_to_s(VALUE match)
 
     match_check(match);
     if (NIL_P(str)) str = rb_str_new(0,0);
-    if (OBJ_TAINTED(match)) OBJ_TAINT(str);
-    if (OBJ_TAINTED(RMATCH(match)->str)) OBJ_TAINT(str);
     return str;
 }
 
@@ -2890,7 +2868,6 @@ rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err,
     }
     ret = rb_reg_initialize(obj, RSTRING_PTR(str), RSTRING_LEN(str), enc,
 			    options, err, sourcefile, sourceline);
-    OBJ_INFECT(obj, str);
     if (ret == 0) reg_set_source(obj, str, str_enc);
     return ret;
 }
@@ -3573,7 +3550,6 @@ rb_reg_quote(VALUE str)
         t += rb_enc_mbcput(c, t, enc);
     }
     rb_str_resize(tmp, t - RSTRING_PTR(tmp));
-    OBJ_INFECT(tmp, str);
     return tmp;
 }
 
@@ -3919,27 +3895,27 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
 }
 
 static VALUE
-kcode_getter(void)
+kcode_getter(ID _x, VALUE *_y)
 {
     rb_warn("variable $KCODE is no longer effective");
     return Qnil;
 }
 
 static void
-kcode_setter(VALUE val, ID id)
+kcode_setter(VALUE val, ID id, VALUE *_)
 {
     rb_warn("variable $KCODE is no longer effective; ignored");
 }
 
 static VALUE
-ignorecase_getter(void)
+ignorecase_getter(ID _x, VALUE *_y)
 {
     rb_warn("variable $= is no longer effective");
     return Qfalse;
 }
 
 static void
-ignorecase_setter(VALUE val, ID id)
+ignorecase_setter(VALUE val, ID id, VALUE *_)
 {
     rb_warn("variable $= is no longer effective; ignored");
 }
@@ -3954,8 +3930,14 @@ match_getter(void)
     return match;
 }
 
+static VALUE
+get_LAST_MATCH_INFO(ID _x, VALUE *_y)
+{
+    return match_getter();
+}
+
 static void
-match_setter(VALUE val)
+match_setter(VALUE val, ID _x, VALUE *_y)
 {
     if (!NIL_P(val)) {
 	Check_Type(val, T_MATCH);
@@ -3992,7 +3974,7 @@ match_setter(VALUE val)
  */
 
 static VALUE
-rb_reg_s_last_match(int argc, VALUE *argv)
+rb_reg_s_last_match(int argc, VALUE *argv, VALUE _)
 {
     if (rb_check_arity(argc, 0, 1) == 1) {
         VALUE match = rb_backref_get();
@@ -4042,7 +4024,7 @@ Init_Regexp(void)
     onig_set_warn_func(re_warn);
     onig_set_verb_warn_func(re_warn);
 
-    rb_define_virtual_variable("$~", match_getter, match_setter);
+    rb_define_virtual_variable("$~", get_LAST_MATCH_INFO, match_setter);
     rb_define_virtual_variable("$&", last_match_getter, 0);
     rb_define_virtual_variable("$`", prematch_getter, 0);
     rb_define_virtual_variable("$'", postmatch_getter, 0);
@@ -4097,6 +4079,7 @@ Init_Regexp(void)
     rb_cMatch  = rb_define_class("MatchData", rb_cObject);
     rb_define_alloc_func(rb_cMatch, match_alloc);
     rb_undef_method(CLASS_OF(rb_cMatch), "new");
+    rb_undef_method(CLASS_OF(rb_cMatch), "allocate");
 
     rb_define_method(rb_cMatch, "initialize_copy", match_init_copy, 1);
     rb_define_method(rb_cMatch, "regexp", match_regexp, 0);

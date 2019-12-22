@@ -6,6 +6,7 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     @prompt = '> '
     @config = Reline::Config.new # Emacs mode is default
     Reline::HISTORY.instance_variable_set(:@config, @config)
+    Reline::HISTORY.clear
     @encoding = (RELINE_TEST_ENCODING rescue Encoding.default_external)
     @line_editor = Reline::LineEditor.new(@config)
     @line_editor.reset(@prompt, @encoding)
@@ -439,6 +440,16 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert(@line_editor.instance_variable_get(:@cleared))
     assert_byte_pointer_size('ab')
     assert_cursor(2)
+    assert_cursor_max(3)
+    assert_line('abc')
+  end
+
+  def test_ed_delete_next_char
+    input_keys('abc')
+    assert_cursor(3)
+    assert_cursor_max(3)
+    @line_editor.input_key(Reline::Key.new(:key_delete, :key_delete, false))
+    assert_cursor(3)
     assert_cursor_max(3)
     assert_line('abc')
   end
@@ -1277,6 +1288,123 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line('foo_ba')
   end
 
+  def test_completion_with_perfect_match
+    @line_editor.completion_proc = proc { |word|
+      %w{
+        foo
+        foo_bar
+      }.map { |i|
+        i.encode(@encoding)
+      }
+    }
+    matched = nil
+    @line_editor.dig_perfect_match_proc = proc { |m|
+      matched = m
+    }
+    input_keys('fo')
+    assert_byte_pointer_size('fo')
+    assert_cursor(2)
+    assert_cursor_max(2)
+    assert_line('fo')
+    assert_equal(Reline::LineEditor::CompletionState::NORMAL, @line_editor.instance_variable_get(:@completion_state))
+    assert_equal(nil, matched)
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo')
+    assert_cursor(3)
+    assert_cursor_max(3)
+    assert_line('foo')
+    assert_equal(Reline::LineEditor::CompletionState::MENU_WITH_PERFECT_MATCH, @line_editor.instance_variable_get(:@completion_state))
+    assert_equal(nil, matched)
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo')
+    assert_cursor(3)
+    assert_cursor_max(3)
+    assert_line('foo')
+    assert_equal(Reline::LineEditor::CompletionState::PERFECT_MATCH, @line_editor.instance_variable_get(:@completion_state))
+    assert_equal(nil, matched)
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo')
+    assert_cursor(3)
+    assert_cursor_max(3)
+    assert_line('foo')
+    assert_equal(Reline::LineEditor::CompletionState::PERFECT_MATCH, @line_editor.instance_variable_get(:@completion_state))
+    assert_equal('foo', matched)
+    matched = nil
+    input_keys('_')
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo_bar')
+    assert_cursor(7)
+    assert_cursor_max(7)
+    assert_line('foo_bar')
+    assert_equal(Reline::LineEditor::CompletionState::MENU_WITH_PERFECT_MATCH, @line_editor.instance_variable_get(:@completion_state))
+    assert_equal(nil, matched)
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo_bar')
+    assert_cursor(7)
+    assert_cursor_max(7)
+    assert_line('foo_bar')
+    assert_equal(Reline::LineEditor::CompletionState::PERFECT_MATCH, @line_editor.instance_variable_get(:@completion_state))
+    assert_equal(nil, matched)
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo_bar')
+    assert_cursor(7)
+    assert_cursor_max(7)
+    assert_line('foo_bar')
+    assert_equal(Reline::LineEditor::CompletionState::PERFECT_MATCH, @line_editor.instance_variable_get(:@completion_state))
+    assert_equal('foo_bar', matched)
+  end
+
+  def test_completion_with_completion_ignore_case
+    @line_editor.completion_proc = proc { |word|
+      %w{
+        foo_foo
+        foo_bar
+        Foo_baz
+        qux
+      }.map { |i|
+        i.encode(@encoding)
+      }
+    }
+    input_keys('fo')
+    assert_byte_pointer_size('fo')
+    assert_cursor(2)
+    assert_cursor_max(2)
+    assert_line('fo')
+    assert_equal(nil, @line_editor.instance_variable_get(:@menu_info))
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo_')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('foo_')
+    assert_equal(nil, @line_editor.instance_variable_get(:@menu_info))
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo_')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('foo_')
+    assert_equal(%w{foo_foo foo_bar}, @line_editor.instance_variable_get(:@menu_info).list)
+    @config.completion_ignore_case = true
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo_')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('foo_')
+    assert_equal(%w{foo_foo foo_bar Foo_baz}, @line_editor.instance_variable_get(:@menu_info).list)
+    input_keys('a')
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo_a')
+    assert_cursor(5)
+    assert_cursor_max(5)
+    assert_line('foo_a')
+    input_keys("\C-h", false)
+    input_keys('b')
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo_ba')
+    assert_cursor(6)
+    assert_cursor_max(6)
+    assert_line('foo_ba')
+  end
+
   def test_completion_in_middle_of_line
     @line_editor.completion_proc = proc { |word|
       %w{
@@ -1300,6 +1428,51 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_cursor(10)
     assert_cursor_max(18)
     assert_line('abcde foo_o_ ABCDE')
+  end
+
+  def test_completion_with_nil_value
+    @line_editor.completion_proc = proc { |word|
+      %w{
+        foo_foo
+        foo_bar
+        Foo_baz
+        qux
+      }.map { |i|
+        i.encode(@encoding)
+      }.prepend(nil)
+    }
+    @config.completion_ignore_case = true
+    input_keys('fo')
+    assert_byte_pointer_size('fo')
+    assert_cursor(2)
+    assert_cursor_max(2)
+    assert_line('fo')
+    assert_equal(nil, @line_editor.instance_variable_get(:@menu_info))
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo_')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('foo_')
+    assert_equal(nil, @line_editor.instance_variable_get(:@menu_info))
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo_')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('foo_')
+    assert_equal(%w{foo_foo foo_bar Foo_baz}, @line_editor.instance_variable_get(:@menu_info).list)
+    input_keys('a')
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo_a')
+    assert_cursor(5)
+    assert_cursor_max(5)
+    assert_line('foo_a')
+    input_keys("\C-h", false)
+    input_keys('b')
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo_ba')
+    assert_cursor(6)
+    assert_cursor_max(6)
+    assert_line('foo_ba')
   end
 
   def test_em_kill_region
@@ -1391,6 +1564,237 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_cursor_max(3)
   ensure
     @config.history_size = history_size
+  end
+
+  def test_search_history_to_back
+    Reline::HISTORY.concat([
+      '1235', # old
+      '12aa',
+      '1234' # new
+    ])
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-r123")
+    assert_line('1234')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0) # doesn't determine yet
+    input_keys("\C-ha")
+    assert_line('12aa')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-h3")
+    assert_line('1235')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+  end
+
+  def test_search_history_to_front
+    Reline::HISTORY.concat([
+      '1235', # old
+      '12aa',
+      '1234' # new
+    ])
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-s123")
+    assert_line('1235')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0) # doesn't determine yet
+    input_keys("\C-ha")
+    assert_line('12aa')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-h3")
+    assert_line('1234')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+  end
+
+  def test_search_history_front_and_back
+    Reline::HISTORY.concat([
+      '1235', # old
+      '12aa',
+      '1234' # new
+    ])
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-s12")
+    assert_line('1235')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0) # doesn't determine yet
+    input_keys("\C-s")
+    assert_line('12aa')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-r")
+    assert_line('12aa')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-r")
+    assert_line('1235')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+  end
+
+  def test_search_history_back_and_front
+    Reline::HISTORY.concat([
+      '1235', # old
+      '12aa',
+      '1234' # new
+    ])
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-r12")
+    assert_line('1234')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0) # doesn't determine yet
+    input_keys("\C-r")
+    assert_line('12aa')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-s")
+    assert_line('12aa')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-s")
+    assert_line('1234')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+  end
+
+  def test_search_history_to_back_in_the_middle_of_histories
+    Reline::HISTORY.concat([
+      '1235', # old
+      '12aa',
+      '1234' # new
+    ])
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-p\C-p")
+    assert_line('12aa')
+    assert_byte_pointer_size('12aa')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    input_keys("\C-r123")
+    assert_line('1235')
+    assert_byte_pointer_size('1235')
+    assert_cursor(4)
+    assert_cursor_max(4)
+  end
+
+  def test_search_history_twice
+    Reline::HISTORY.concat([
+      '1235', # old
+      '12aa',
+      '1234' # new
+    ])
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-r123")
+    assert_line('1234')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0) # doesn't determine yet
+    input_keys("\C-r")
+    assert_line('1235')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+  end
+
+  def test_search_history_by_last_determined
+    Reline::HISTORY.concat([
+      '1235', # old
+      '12aa',
+      '1234' # new
+    ])
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-r123")
+    assert_line('1234')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0) # doesn't determine yet
+    input_keys("\C-j")
+    assert_line('1234')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(4)
+    input_keys("\C-k") # delete
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-r")
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-r")
+    assert_line('1235')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+  end
+
+  def test_em_set_mark_and_em_exchange_mark
+    input_keys('aaa bbb ccc ddd')
+    assert_byte_pointer_size('aaa bbb ccc ddd')
+    assert_cursor(15)
+    assert_cursor_max(15)
+    assert_line('aaa bbb ccc ddd')
+    input_keys("\C-a\M-F\M-F", false)
+    assert_byte_pointer_size('aaa bbb')
+    assert_cursor(7)
+    assert_cursor_max(15)
+    assert_line('aaa bbb ccc ddd')
+    assert_equal(nil, @line_editor.instance_variable_get(:@mark_pointer))
+    input_keys("\x00", false) # C-Space
+    assert_byte_pointer_size('aaa bbb')
+    assert_cursor(7)
+    assert_cursor_max(15)
+    assert_line('aaa bbb ccc ddd')
+    assert_equal([7, 0], @line_editor.instance_variable_get(:@mark_pointer))
+    input_keys("\C-a", false)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(15)
+    assert_line('aaa bbb ccc ddd')
+    assert_equal([7, 0], @line_editor.instance_variable_get(:@mark_pointer))
+    input_key_by_symbol(:em_exchange_mark)
+    assert_byte_pointer_size('aaa bbb')
+    assert_cursor(7)
+    assert_cursor_max(15)
+    assert_line('aaa bbb ccc ddd')
+    assert_equal([0, 0], @line_editor.instance_variable_get(:@mark_pointer))
   end
 
 =begin # TODO: move KeyStroke instance from Reline to LineEditor

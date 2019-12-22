@@ -186,9 +186,11 @@ describe "A lambda literal -> () { }" do
       @a.().should == {}
       @a.(1, 2, 3, a: 4, b: 5).should == {a: 4, b: 5}
 
-      h = mock("keyword splat")
-      h.should_receive(:to_hash).and_return({a: 1})
-      @a.(h).should == {a: 1}
+      suppress_keyword_warning do
+        h = mock("keyword splat")
+        h.should_receive(:to_hash).and_return({a: 1})
+        @a.(h).should == {a: 1}
+      end
     end
 
     evaluate <<-ruby do
@@ -265,20 +267,38 @@ describe "A lambda literal -> () { }" do
     end
 
     describe "with circular optional argument reference" do
-      it "shadows an existing local with the same name as the argument" do
-        a = 1
-        -> {
-          @proc = eval "-> (a=a) { a }"
-        }.should complain(/circular argument reference/)
-        @proc.call.should == nil
+      ruby_version_is ''...'2.7' do
+        it "warns and uses a nil value when there is an existing local variable with same name" do
+          a = 1
+          -> {
+            @proc = eval "-> (a=a) { a }"
+          }.should complain(/circular argument reference/)
+          @proc.call.should == nil
+        end
+
+        it "warns and uses a nil value when there is an existing method with same name" do
+          def a; 1; end
+          -> {
+            @proc = eval "-> (a=a) { a }"
+          }.should complain(/circular argument reference/)
+          @proc.call.should == nil
+        end
       end
 
-      it "shadows an existing method with the same name as the argument" do
-        def a; 1; end
-        -> {
-          @proc = eval "-> (a=a) { a }"
-        }.should complain(/circular argument reference/)
-        @proc.call.should == nil
+      ruby_version_is '2.7' do
+        it "raises a SyntaxError if using an existing local with the same name as the argument" do
+          a = 1
+          -> {
+            @proc = eval "-> (a=a) { a }"
+          }.should raise_error(SyntaxError)
+        end
+
+        it "raises a SyntaxError if there is an existing method with the same name as the argument" do
+          def a; 1; end
+          -> {
+            @proc = eval "-> (a=a) { a }"
+          }.should raise_error(SyntaxError)
+        end
       end
 
       it "calls an existing method with the same name as the argument if explicitly using ()" do
@@ -520,9 +540,11 @@ describe "A lambda expression 'lambda { ... }'" do
       @a.().should == {}
       @a.(1, 2, 3, a: 4, b: 5).should == {a: 4, b: 5}
 
-      h = mock("keyword splat")
-      h.should_receive(:to_hash).and_return({a: 1})
-      @a.(h).should == {a: 1}
+      suppress_keyword_warning do
+        h = mock("keyword splat")
+        h.should_receive(:to_hash).and_return({a: 1})
+        @a.(h).should == {a: 1}
+      end
     end
 
     evaluate <<-ruby do

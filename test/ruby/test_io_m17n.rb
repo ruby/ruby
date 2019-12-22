@@ -23,7 +23,8 @@ class TestIO_M17N < Test::Unit::TestCase
 
   def pipe(*args, wp, rp)
     re, we = nil, nil
-    r, w = IO.pipe(*args)
+    kw = args.last.is_a?(Hash) ? args.pop : {}
+    r, w = IO.pipe(*args, **kw)
     rt = Thread.new do
       begin
         rp.call(r)
@@ -2101,6 +2102,9 @@ EOT
         File.open(path, "rb") {|f|
           assert_equal(Encoding.find(name), f.set_encoding_by_bom)
         }
+        File.open(path, "rb", encoding: "iso-8859-1") {|f|
+          assert_raise(ArgumentError) {f.set_encoding_by_bom}
+        }
       }
     end
   end
@@ -2113,6 +2117,10 @@ EOT
       bug3407 = '[ruby-core:30641]'
       result = File.read(path, encoding: 'BOM|UTF-8')
       assert_equal("a", result.b, bug3407)
+
+      File.open(path, "rb", encoding: "iso-8859-1") {|f|
+        assert_raise(ArgumentError) {f.set_encoding_by_bom}
+      }
     }
   end
 
@@ -2146,6 +2154,9 @@ EOT
 
       File.open(path, "rb") {|f|
         assert_nil(f.set_encoding_by_bom)
+      }
+      File.open(path, "rb", encoding: "iso-8859-1") {|f|
+        assert_raise(ArgumentError) {f.set_encoding_by_bom}
       }
     }
   end

@@ -42,16 +42,18 @@ describe :array_collect, shared: true do
     }.should raise_error(ArgumentError)
   end
 
-  it "does not copy tainted status" do
-    a = [1, 2, 3]
-    a.taint
-    a.send(@method){|x| x}.tainted?.should be_false
-  end
+  ruby_version_is ''...'2.7' do
+    it "does not copy tainted status" do
+      a = [1, 2, 3]
+      a.taint
+      a.send(@method){|x| x}.tainted?.should be_false
+    end
 
-  it "does not copy untrusted status" do
-    a = [1, 2, 3]
-    a.untrust
-    a.send(@method){|x| x}.untrusted?.should be_false
+    it "does not copy untrusted status" do
+      a = [1, 2, 3]
+      a.untrust
+      a.send(@method){|x| x}.untrusted?.should be_false
+    end
   end
 
   before :all do
@@ -94,19 +96,21 @@ describe :array_collect_b, shared: true do
     a.should == ["1!", "2!", "3!"]
   end
 
-  it "keeps tainted status" do
-    a = [1, 2, 3]
-    a.taint
-    a.tainted?.should be_true
-    a.send(@method){|x| x}
-    a.tainted?.should be_true
-  end
+  ruby_version_is ''...'2.7' do
+    it "keeps tainted status" do
+      a = [1, 2, 3]
+      a.taint
+      a.tainted?.should be_true
+      a.send(@method){|x| x}
+      a.tainted?.should be_true
+    end
 
-  it "keeps untrusted status" do
-    a = [1, 2, 3]
-    a.untrust
-    a.send(@method){|x| x}
-    a.untrusted?.should be_true
+    it "keeps untrusted status" do
+      a = [1, 2, 3]
+      a.untrust
+      a.send(@method){|x| x}
+      a.untrusted?.should be_true
+    end
   end
 
   describe "when frozen" do

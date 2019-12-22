@@ -51,7 +51,7 @@ RSpec.describe "compact index api" do
       build_gem "Rack", "0.1"
     end
 
-    install_gemfile! <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4 }
+    install_gemfile! <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
       source "#{source_uri}"
       gem "rack", "1.0"
       gem "Rack", "0.1"

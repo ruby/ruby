@@ -107,7 +107,7 @@ describe :io_readlines_options_19, shared: true do
         options = mock("io readlines options Hash")
         options.should_receive(:to_hash).and_return({ mode: "w" })
         -> do
-          IO.send(@method, @filename, 10, options, &@object)
+          IO.send(@method, @filename, 10, **options, &@object)
         end.should raise_error(IOError)
       end
     end
@@ -135,7 +135,7 @@ describe :io_readlines_options_19, shared: true do
         options = mock("io readlines options Hash")
         options.should_receive(:to_hash).and_return({ mode: "w" })
         -> do
-          IO.send(@method, @filename, " ", options, &@object)
+          IO.send(@method, @filename, " ", **options, &@object)
         end.should raise_error(IOError)
       end
     end
@@ -170,7 +170,7 @@ describe :io_readlines_options_19, shared: true do
         options = mock("io readlines options Hash")
         options.should_receive(:to_hash).and_return({ mode: "w" })
         -> do
-          IO.send(@method, @filename, " ", options, &@object)
+          IO.send(@method, @filename, " ", **options, &@object)
         end.should raise_error(IOError)
       end
     end
@@ -202,7 +202,7 @@ describe :io_readlines_options_19, shared: true do
       options = mock("io readlines options Hash")
       options.should_receive(:to_hash).and_return({ mode: "w" })
       -> do
-        IO.send(@method, @filename, " ", 10, options, &@object)
+        IO.send(@method, @filename, " ", 10, **options, &@object)
       end.should raise_error(IOError)
     end
   end

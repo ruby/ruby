@@ -13,8 +13,20 @@
 #include "addr2line.h"
 #include "vm_core.h"
 #include "iseq.h"
+#include "gc.h"
+
 #ifdef HAVE_UCONTEXT_H
 #include <ucontext.h>
+#endif
+#ifdef __APPLE__
+#ifdef HAVE_LIBPROC_H
+#include <libproc.h>
+#endif
+#include <mach/vm_map.h>
+#include <mach/mach_init.h>
+#ifdef __LP64__
+#define vm_region_recurse vm_region_recurse_64
+#endif
 #endif
 
 /* see vm_insnhelper.h for the values */
@@ -28,6 +40,9 @@
   ((rb_control_frame_t *)((ec)->vm_stack + (ec)->vm_stack_size) - \
    (rb_control_frame_t *)(cfp))
 
+const char *rb_method_type_name(rb_method_type_t type);
+int ruby_on_ci;
+
 static void
 control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
@@ -36,11 +51,10 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     char ep_in_heap = ' ';
     char posbuf[MAX_POSBUF+1];
     int line = 0;
-
     const char *magic, *iseq_name = "-", *selfstr = "-", *biseq_name = "-";
     VALUE tmp;
-
-    const rb_callable_method_entry_t *me;
+    const rb_iseq_t *iseq = NULL;
+    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
 
     if (ep < 0 || (size_t)ep > ec->vm_stack_size) {
 	ep = (ptrdiff_t)cfp->ep;
@@ -100,15 +114,16 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
 	    line = -1;
 	}
 	else {
-	    pc = cfp->pc - cfp->iseq->body->iseq_encoded;
-	    iseq_name = RSTRING_PTR(cfp->iseq->body->location.label);
+            iseq = cfp->iseq;
+	    pc = cfp->pc - iseq->body->iseq_encoded;
+	    iseq_name = RSTRING_PTR(iseq->body->location.label);
 	    line = rb_vm_get_sourceline(cfp);
 	    if (line) {
-		snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(rb_iseq_path(cfp->iseq)), line);
+		snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(rb_iseq_path(iseq)), line);
 	    }
 	}
     }
-    else if ((me = rb_vm_frame_method_entry(cfp)) != NULL) {
+    else if (me != NULL) {
 	iseq_name = rb_id2name(me->def->original_id);
 	snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);
 	line = -1;
@@ -138,6 +153,39 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
 	fprintf(stderr, "%-1s ", biseq_name);
     }
     fprintf(stderr, "\n");
+
+    // additional information for CI machines
+    if (ruby_on_ci) {
+        char buff[0x100];
+
+        if (me) {
+            if (imemo_type_p((VALUE)me, imemo_ment)) {
+                fprintf(stderr, "  me:\n");
+                fprintf(stderr, "    called_id: %s, type: %s\n", rb_id2name(me->called_id), rb_method_type_name(me->def->type));
+                fprintf(stderr, "    owner class: %s\n", rb_raw_obj_info(buff, 0x100, me->owner));
+                if (me->owner != me->defined_class) {
+                    fprintf(stderr, "    defined_class: %s\n", rb_raw_obj_info(buff, 0x100, me->defined_class));
+                }
+            }
+            else {
+                fprintf(stderr, " me is corrupted (%s)\n", rb_raw_obj_info(buff, 0x100, (VALUE)me));
+            }
+        }
+
+        fprintf(stderr, "  self: %s\n", rb_raw_obj_info(buff, 0x100, cfp->self));
+
+        if (iseq) {
+            if (iseq->body->local_table_size > 0) {
+                fprintf(stderr, "  lvars:\n");
+                for (unsigned int i=0; i<iseq->body->local_table_size; i++) {
+                    const VALUE *argv = cfp->ep - cfp->iseq->body->local_table_size - VM_ENV_DATA_SIZE + 1;
+                    fprintf(stderr, "    %s: %s\n",
+                            rb_id2name(iseq->body->local_table[i]),
+                            rb_raw_obj_info(buff, 0x100, argv[i]));
+                }
+            }
+        }
+    }
 }
 
 void
@@ -301,7 +349,7 @@ vm_stack_dump_each(const rb_execution_context_t *ec, const rb_control_frame_t *c
 	}
     }
     else {
-	rb_bug("unsupport frame type: %08lx", VM_FRAME_TYPE(cfp));
+	rb_bug("unsupported frame type: %08lx", VM_FRAME_TYPE(cfp));
     }
 }
 #endif
@@ -984,6 +1032,42 @@ rb_vm_bugreport(const void *ctx)
 	    fprintf(stderr, "\n");
 	}
 #endif /* __FreeBSD__ */
+#ifdef __APPLE__
+        vm_address_t addr = 0;
+        vm_size_t size = 0;
+        struct vm_region_submap_info map;
+        mach_msg_type_number_t count = VM_REGION_SUBMAP_INFO_COUNT;
+        natural_t depth = 0;
+
+        fprintf(stderr, "* Process memory map:\n\n");
+        while (1) {
+            if (vm_region_recurse(mach_task_self(), &addr, &size, &depth,
+                        (vm_region_recurse_info_t)&map, &count) != KERN_SUCCESS) {
+                break;
+            }
+
+            if (map.is_submap) {
+                // We only look at main addresses
+                depth++;
+            }
+            else {
+                fprintf(stderr, "%lx-%lx %s%s%s", addr, (addr+size),
+                        ((map.protection & VM_PROT_READ) != 0 ? "r" : "-"),
+                        ((map.protection & VM_PROT_WRITE) != 0 ? "w" : "-"),
+                    ((map.protection & VM_PROT_EXECUTE) != 0 ? "x" : "-"));
+#ifdef HAVE_LIBPROC_H
+                char buff[PATH_MAX];
+                if (proc_regionfilename(getpid(), addr, buff, sizeof(buff)) > 0) {
+                    fprintf(stderr, " %s", buff);
+                }
+#endif
+                fprintf(stderr, "\n");
+            }
+
+            addr += size;
+            size = 0;
+        }
+#endif
     }
 }
 

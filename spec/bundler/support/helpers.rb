@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require "open3"
+require_relative "command_execution"
+require_relative "the_bundle"
 
 module Spec
   module Helpers
@@ -16,17 +17,13 @@ module Spec
       FileUtils.mkdir_p(home)
       FileUtils.mkdir_p(tmpdir)
       Bundler.reset!
-      Bundler.ui = nil
-      Bundler.ui # force it to initialize
     end
 
     def self.bang(method)
       define_method("#{method}!") do |*args, &blk|
         send(method, *args, &blk).tap do
           unless last_command.success?
-            raise RuntimeError,
-              "Invoking #{method}!(#{args.map(&:inspect).join(", ")}) failed:\n#{last_command.stdboth}",
-              caller.drop_while {|bt| bt.start_with?(__FILE__) }
+            raise "Invoking #{method}!(#{args.map(&:inspect).join(", ")}) failed:\n#{last_command.stdboth}"
           end
         end
       end
@@ -77,7 +74,7 @@ module Spec
     def run(cmd, *args)
       opts = args.last.is_a?(Hash) ? args.pop : {}
       groups = args.map(&:inspect).join(", ")
-      setup = "require 'bundler' ; Bundler.setup(#{groups})\n"
+      setup = "require '#{lib_dir}/bundler' ; Bundler.ui.silence { Bundler.setup(#{groups}) }\n"
       ruby(setup + cmd, opts)
     end
     bang :run
@@ -95,14 +92,6 @@ module Spec
       run(cmd, *args)
     end
 
-    def lib
-      root.join("lib")
-    end
-
-    def spec
-      spec_dir.to_s
-    end
-
     def bundle(cmd, options = {})
       with_sudo = options.delete(:sudo)
       sudo = with_sudo == :preserve_env ? "sudo -E" : "sudo" if with_sudo
@@ -110,7 +99,7 @@ module Spec
       bundle_bin = options.delete("bundle_bin") || bindir.join("bundle")
 
       if system_bundler = options.delete(:system_bundler)
-        bundle_bin = system_bundle_bin_path
+        bundle_bin = system_gem_path.join("bin/bundler")
       end
 
       env = options.delete(:env) || {}
@@ -127,14 +116,14 @@ module Spec
         end
       end
       if artifice
-        requires << File.expand_path("../artifice/#{artifice}", __FILE__)
+        requires << "support/artifice/#{artifice}"
       end
 
       requires_str = requires.map {|r| "-r#{r}" }.join(" ")
 
       load_path = []
-      load_path << lib unless system_bundler
-      load_path << spec
+      load_path << lib_dir unless system_bundler
+      load_path << spec_dir
       load_path_str = "-I#{load_path.join(File::PATH_SEPARATOR)}"
 
       args = options.map do |k, v|
@@ -178,10 +167,10 @@ module Spec
     end
 
     def ruby(ruby, options = {})
-      env = (options.delete(:env) || {}).map {|k, v| "#{k}='#{v}' " }.join
+      env = options.delete(:env) || {}
       ruby = ruby.gsub(/["`\$]/) {|m| "\\#{m}" }
-      lib_option = options[:no_lib] ? "" : " -I#{lib}"
-      sys_exec(%(#{env}#{Gem.ruby}#{lib_option} -e "#{ruby}"))
+      lib_option = options[:no_lib] ? "" : " -I#{lib_dir}"
+      sys_exec(%(#{Gem.ruby}#{lib_option} -w -e "#{ruby}"), env)
     end
     bang :ruby
 
@@ -196,22 +185,16 @@ module Spec
     end
 
     def gembin(cmd)
-      lib = File.expand_path("../../../lib", __FILE__)
       old = ENV["RUBYOPT"]
-      ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -I#{lib}"
+      ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -I#{lib_dir}"
       cmd = bundled_app("bin/#{cmd}") unless cmd.to_s.include?("/")
       sys_exec(cmd.to_s)
     ensure
       ENV["RUBYOPT"] = old
     end
 
-    def gem_command(command, args = "", options = {})
-      if command == :exec && !options[:no_quote]
-        args = args.gsub(/(?=")/, "\\")
-        args = %("#{args}")
-      end
-      gem = ENV["BUNDLE_GEM"] || "#{Gem.ruby} -rrubygems -S gem --backtrace"
-      sys_exec("#{gem} #{command} #{args}")
+    def gem_command(command, args = "")
+      sys_exec("#{Path.gem_bin} #{command} #{args}")
     end
     bang :gem_command
 
@@ -222,8 +205,7 @@ module Spec
     def sys_exec(cmd, env = {})
       command_execution = CommandExecution.new(cmd.to_s, Dir.pwd)
 
-      env = env.map {|k, v| [k.to_s, v.to_s] }.to_h # convert env keys and values to string
-
+      require "open3"
       Open3.popen3(env, cmd.to_s) do |stdin, stdout, stderr, wait_thr|
         yield stdin, stdout, wait_thr if block_given?
         stdin.close
@@ -307,32 +289,35 @@ module Spec
       options = gems.last.is_a?(Hash) ? gems.pop : {}
       gem_repo = options.fetch(:gem_repo) { gem_repo1 }
       gems.each do |g|
-        path = if g == :bundler
-          if ruby_core?
-            spec = Gem::Specification.load(gemspec.to_s)
-            spec.bindir = "libexec"
-            File.open(root.join("bundler.gemspec").to_s, "w") {|f| f.write spec.to_ruby }
-            Dir.chdir(root) { gem_command! :build, root.join("bundler.gemspec").to_s }
-            FileUtils.rm(root.join("bundler.gemspec"))
-          else
-            Dir.chdir(root) { gem_command! :build, gemspec.to_s }
-          end
-          bundler_path = root + "bundler-#{Bundler::VERSION}.gem"
+        if g == :bundler
+          with_built_bundler {|gem_path| install_gem(gem_path) }
         elsif g.to_s =~ %r{\A(?:[A-Z]:)?/.*\.gem\z}
-          g
+          install_gem(g)
         else
-          "#{gem_repo}/gems/#{g}.gem"
+          install_gem("#{gem_repo}/gems/#{g}.gem")
         end
-
-        raise "OMG `#{path}` does not exist!" unless File.exist?(path)
-
-        gem_command! :install, "--no-document --ignore-dependencies '#{path}'"
-
-        bundler_path && bundler_path.rmtree
       end
     end
 
-    alias_method :install_gem, :install_gems
+    def install_gem(path)
+      raise "OMG `#{path}` does not exist!" unless File.exist?(path)
+
+      gem_command! :install, "--no-document --ignore-dependencies '#{path}'"
+    end
+
+    def with_built_bundler
+      with_root_gemspec do |gemspec|
+        Dir.chdir(root) { gem_command! :build, gemspec.to_s }
+      end
+
+      bundler_path = root + "bundler-#{Bundler::VERSION}.gem"
+
+      begin
+        yield(bundler_path)
+      ensure
+        bundler_path.rmtree
+      end
+    end
 
     def with_gem_path_as(path)
       backup = ENV.to_hash
@@ -520,10 +505,6 @@ module Spec
       Dir.chdir(path) { `git rev-parse HEAD`.strip }
     end
 
-    def capture_output
-      capture(:stdout)
-    end
-
     def with_read_only(pattern)
       chmod = lambda do |dirmode, filemode|
         lambda do |f|
@@ -599,14 +580,6 @@ module Spec
         false
       end
       port
-    end
-
-    def bundler_fileutils
-      if RUBY_VERSION >= "2.4"
-        ::Bundler::FileUtils
-      else
-        ::FileUtils
-      end
     end
   end
 end

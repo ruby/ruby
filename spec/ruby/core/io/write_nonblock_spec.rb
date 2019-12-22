@@ -68,8 +68,10 @@ describe 'IO#write_nonblock' do
 
   context "when exception option is set to false" do
     it "returns :wait_writable when the operation would block" do
-      loop { break if @write.write_nonblock("a" * 10_000, exception: false) == :wait_writable }
-      1.should == 1
+      loop {
+        break if @write.write_nonblock("a" * 10_000, exception: false) == :wait_writable
+      }
+      @write.write_nonblock("a" * 10_000, exception: false).should == :wait_writable
     end
   end
 

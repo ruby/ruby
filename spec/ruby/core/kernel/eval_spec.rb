@@ -341,5 +341,22 @@ CODE
       value.encoding.should == Encoding::BINARY
       value.frozen?.should be_true
     end
+
+    it "ignores the frozen_string_literal magic comment if it appears after a token and warns if $VERBOSE is true" do
+      code = <<CODE
+some_token_before_magic_comment = :anything
+# frozen_string_literal: true
+class EvalSpecs
+  Vπstring_not_frozen = "not frozen"
+end
+CODE
+      -> { eval(code) }.should complain(/warning: `frozen_string_literal' is ignored after any tokens/, verbose: true)
+      EvalSpecs::Vπstring_not_frozen.frozen?.should be_false
+      EvalSpecs.send :remove_const, :Vπstring_not_frozen
+
+      -> { eval(code) }.should_not complain(verbose: false)
+      EvalSpecs::Vπstring_not_frozen.frozen?.should be_false
+      EvalSpecs.send :remove_const, :Vπstring_not_frozen
+    end
   end
 end

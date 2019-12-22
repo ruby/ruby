@@ -21,6 +21,7 @@ AC_ARG_VAR([cxxflags], [additional CXXFLAGS (ignored when CXXFLAGS is given)])
 
 : "environment section" && {
 HAVE_BASERUBY=yes
+BASERUBY_VERSION=
 AC_ARG_WITH(baseruby,
 	AS_HELP_STRING([--with-baseruby=RUBY], [use RUBY as baseruby; RUBY is the pathname of ruby]),
 	[AS_CASE(["$withval"],
@@ -34,6 +35,7 @@ AC_ARG_WITH(baseruby,
 AS_IF([test "$HAVE_BASERUBY" = yes -a "`RUBYOPT=- $BASERUBY -e 'print 42' 2>/dev/null`" = 42], [
     AS_IF([test "`RUBYOPT=- $BASERUBY --disable=gems -e 'print 42' 2>/dev/null`" = 42], [
 	BASERUBY="$BASERUBY --disable=gems"
+        BASERUBY_VERSION=`$BASERUBY -v`
     ])
     $BASERUBY -C "$srcdir" tool/downloader.rb -d tool -e gnu config.guess config.sub >&AS_MESSAGE_FD
 ], [
@@ -125,7 +127,7 @@ AS_CASE("${os_version_style}",
 	[minor],   [os_version_style_transform=['s/\([0-9]\.[0-9][0-9]*\)\.[0-9][.0-9]*$/\1/']],
 	[major+0], [os_version_style_transform=['s/\([0-9]\)\.[0-9][.0-9]*$/\1.0/']],
 	[major],   [os_version_style_transform=['s/\([0-9]\)\.[0-9][.0-9]*$/\1/']],
-	[none],    [os_version_style_transform=['s/[0-9]\.[0-9][.0-9]*$//']],
+	[none],    [os_version_style_transform=['s/[0-9]*\.[0-9][.0-9]*$//']],
 	[AC_MSG_ERROR(unknown --with-os-version-style: $withval)])
 AS_IF([test -z "$target_alias" -a -n "$os_version_style_transform"],
 	[
@@ -162,11 +164,11 @@ AS_IF([test -z "${CFLAGS+set}"], [
     orig_cflags="$cflags"
     cflags="$cflags "'${optflags} ${debugflags} ${warnflags}'
 ])
-AS_IF([test -z "${CXXFLAGS+set}"], [
-    cxxflags=`echo " $cxxflags " | sed "$cflagspat;s/^ *//;s/ *$//"`
-    orig_cxxflags="$cxxflags"
-    cxxflags="$cxxflags "'${optflags} ${debugflags} ${warnflags}'
-])
+dnl AS_IF([test -z "${CXXFLAGS+set}"], [
+dnl     cxxflags=`echo " $cxxflags " | sed "$cflagspat;s/^ *//;s/ *$//"`
+dnl     orig_cxxflags="$cxxflags"
+dnl     cxxflags="$cxxflags "'${optflags} ${debugflags} ${warnflags}'
+dnl ])
 
 AS_CASE(["$host_os:$build_os"],
 [darwin*:darwin*], [
@@ -181,7 +183,9 @@ AS_CASE(["$host_os:$build_os"],
 	@%:@endif
 SRC
 	AC_MSG_ERROR([clang version 3.0 or later is required])
-    ])
+    ])],
+[openbsd*:openbsd*], [
+    AC_CHECK_TOOLS(CC, [cc])
 ])
 AS_IF([test x"${build}" != x"${host}"], [
   AC_CHECK_TOOL(CC, gcc)
@@ -192,22 +196,44 @@ AS_CASE([$CC],
 [gcc-*], [
     gcc_prefix=gcc- gcc_suffix=`echo "$CC" | sed 's/^gcc//'`
     AC_PROG_CXX(g++${gcc_suffix})],
-[clang-*], [
+[clang-*|clang], [
     gcc_prefix=clang- gcc_suffix=`echo "$CC" | sed 's/^clang//'`
     AC_PROG_CXX(clang++${gcc_suffix})],
 [gcc_prefix= gcc_suffix=])
 
 dnl Select the appropriate C++ compiler in OS X
-AS_CASE(["$build_os"],
-  [darwin1*.*], [
-    AS_CASE(["x$CC"],
-      [xgcc-4.2|x/usr/bin/gcc-4.2], [: ${CXX=g++-4.2}],
-      [xgcc|x/usr/bin/gcc],         [: ${CXX=g++}],
-      [xcc|x/usr/bin/cc],           [: ${CXX=c++}],
-      [xicc],                       [: ${CXX=icpc}],
-      [xclang|x/usr/bin/clang],     [: ${CXX=clang++}])
-  ])
+AS_CASE(["$build_os:${CXX}"],
+    [darwin1*.*:], [
+        AC_MSG_CHECKING([CXX for $CC])
+        AS_CASE(["/$CC "],
+            [*@<:@\ /@:>@"gcc-4.2 "*], [pat='gcc-4\.2' CXX=g++-4.2],
+            [*@<:@\ /@:>@"gcc "*],     [pat=gcc CXX=g++],
+            [*@<:@\ /@:>@"cc "*],      [pat=cc CXX=c++],
+            [*@<:@\ /@:>@"icc "*],     [pat=icc CXX=icpc],
+            [*@<:@\ /@:>@"clang "*],   [pat=clang CXX=clang++])
+        AS_IF([test "${CXX}"], [
+            CXX=`echo "/$CC " | sed ["s:\([ /]\)${pat}:\1$CXX:; s:^/::; s: *$::"]`
+        ])
+        AC_MSG_RESULT([$CXX])],
+    [openbsd*:*], [
+        AC_CHECK_TOOLS(CXX, [c++])
+    ])
 test -z "$CXX" || ac_cv_prog_CXX="$CXX"
+
+AS_CASE(["$target_os"],
+[darwin*], [
+    AC_MSG_CHECKING(if minimum required OS X version is supported)
+    AC_TRY_CPP([@%:@include <AvailabilityMacros.h>
+	@%:@if MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_5
+	@%:@error pre OS X 10.5
+	[!<===== pre OS X 10.5 =====>]
+	@%:@endif
+	],
+	[macosx_min_required=yes],
+	[AC_MSG_RESULT(no)
+	AC_MSG_ERROR([Unsupported OS X version is required])])
+    AC_MSG_RESULT(${macosx_min_required})
+])
 
 AC_PROG_CXX
 RUBY_MINGW32
@@ -224,9 +250,7 @@ AS_IF([test "$GCC" = yes], [
     gcc_minor=`echo =__GNUC_MINOR__ | $CC -E -xc - | sed '/^=/!d;s///'`
     test -n "$gcc_major" || gcc_major=0
     test -n "$gcc_minor" || gcc_minor=0
-    AS_CASE(["x$CC"], [xicc], [
-      icc_version=`echo =__ICC | $CC -E -xc - | sed '/^=/!d;s///'`
-    ])
+    icc_version=`echo =__ICC | $CC -E -xc - | sed '/^=/!d;s///;/^__ICC/d'`
     test -n "$icc_version" || icc_version=0
     # RUBY_APPEND_OPTIONS(XCFLAGS, ["-include ruby/config.h" "-include ruby/missing.h"])
 ], [
@@ -545,7 +569,19 @@ AS_IF([test "$GCC" = yes], [
     # argument check. The performance drop is very little and Ubuntu enables
     # _FORTIFY_SOURCE=2 by default. So, let's support it for protecting us from
     # a mistake of silly C extensions.
+
+    # TODO: check if link succeeds with _FORTIFY_SOURCE=2.
+    AS_CASE(["$target_os"],
+    [mingw*], [
+	fortify_source=no
+    ])
+    AC_ARG_ENABLE(fortify_source,
+		  AS_HELP_STRING([--disable-fortify-source],
+				 [disable -D_FORTIFY_SOURCE=2 option, which causes link error on mingw]),
+		  [fortify_source=$enableval])
+    AS_IF([test "x$fortify_source" != xno], [
     RUBY_TRY_CFLAGS(-D_FORTIFY_SOURCE=2, [RUBY_APPEND_OPTION(XCFLAGS, -D_FORTIFY_SOURCE=2)])
+    ])
 
     : ${MJIT_HEADER_FLAGS='-P -dD'}
 
@@ -779,28 +815,20 @@ AS_CASE(["$target_os"],
 		ORIG_LIBS="$LIBS"
 		RUBY_PREPEND_OPTION(LIBS, -lobjc)
 		RUBY_APPEND_OPTIONS(CPPFLAGS, -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE -D_DARWIN_UNLIMITED_SELECT -D_REENTRANT)
-		AC_MSG_CHECKING(whether Mac OS X 10.5 or later)
-		AC_TRY_CPP([#include <AvailabilityMacros.h>
-		    #if MAC_OS_X_VERSION_MAX_ALLOWED <= 1040
-		    #error pre OS X 10.4
-		    [!<===== pre OS X 10.4 =====>]
-		    #endif
-		    ],
-		    [macosx_10_5=yes], [macosx_10_5=no])
-		AC_MSG_RESULT($macosx_10_5)
-		AS_IF([test "${target_os@%:@darwin}" -ge 16], [
+		AC_CACHE_CHECK([whether syscall(2) is deprecated], rb_cv_syscall_deprecated,
+		    [RUBY_WERROR_FLAG([
+			AC_TRY_COMPILE([@%:@include <unistd.h>],
+				       [if (syscall(0)) return 1;],
+			    [rb_cv_syscall_deprecated=no],
+			    [rb_cv_syscall_deprecated=yes])])])
+		AS_IF([test $rb_cv_syscall_deprecated = yes], [
 		    ac_cv_func___syscall=no
 		    ac_cv_func_syscall=no
 		    ac_cv_header_sys_syscall_h=no
 		    ac_cv_header_syscall_h=no
 		])
-		AS_IF([test $macosx_10_5 = yes], [
-		    ac_cv_func_getcontext=no
-		    ac_cv_func_setcontext=no
-		], [
-		    AC_DEFINE(BROKEN_SETREUID, 1)
-		    AC_DEFINE(BROKEN_SETREGID, 1)
-		])
+		ac_cv_func_getcontext=no
+		ac_cv_func_setcontext=no
 		incs=`$CC -v -E -xc - < /dev/null 2>&1 | sed ['1,/^@%:@include </d;s/^ *//;s|[^./][^/]*/\.\./||g;/\/include$/!d;s||/lib|;/\/usr\/lib/d']`
 		for d in `$CC -print-search-dirs | sed -e '/^libraries: */!d;s///' | tr : '\012' | fgrep -v /../ | sed -n 's|^\(/.*/lib\)/$|\1|p'`; do
 		    incs=`echo "$incs" | fgrep -v "$d"`
@@ -1385,6 +1413,21 @@ AS_IF([test "$rb_cv_func_weak" != x], [
    AC_DEFINE(HAVE_FUNC_WEAK)
 ])
 
+AC_CACHE_CHECK([for __attribute__((__depreacted__(msg))) in C++],
+  rb_cv_CentOS6_CXX_workaround,
+  RUBY_WERROR_FLAG([
+    AC_LANG_PUSH([C++])
+    AC_COMPILE_IFELSE(
+      [AC_LANG_PROGRAM(
+        [],
+        [__attribute__((__deprecated__("message"))) int conftest(...);])],
+      [rb_cv_CentOS6_CXX_workaround=yes],
+      [rb_cv_CentOS6_CXX_workaround=no])
+    AC_LANG_POP()]))
+AS_IF([test "$rb_cv_CentOS6_CXX_workaround" != no],[
+  AC_DEFINE([RUBY_CXX_DEPRECATED(msg)],
+    [__attribute__((__deprecated__(msg)))])])
+
 if_i386=${universal_binary+[defined __i386__]}
 RUBY_FUNC_ATTRIBUTE(__stdcall__,  FUNC_STDCALL,  rb_cv_func_stdcall,  ${if_i386})
 RUBY_FUNC_ATTRIBUTE(__cdecl__,    FUNC_CDECL,    rb_cv_func_cdecl,    ${if_i386})
@@ -1463,6 +1506,11 @@ done
 ])])
 AS_IF([test "$rb_cv_func_exported" != no], [
     AC_DEFINE_UNQUOTED(RUBY_FUNC_EXPORTED, [$rb_cv_func_exported extern])
+])
+RUBY_DECL_ATTRIBUTE([__nonnull__(n)], [RUBY_FUNC_NONNULL(n,x)], [rb_cv_func_nonnull],
+                    [], [function], [
+@%:@define x int conftest_attribute_check(void *p)
+@%:@define n 1
 ])
 
 RUBY_APPEND_OPTION(XCFLAGS, -DRUBY_EXPORT)
@@ -1761,6 +1809,7 @@ AC_CHECK_FUNCS(dup3)
 AC_CHECK_FUNCS(eaccess)
 AC_CHECK_FUNCS(endgrent)
 AC_CHECK_FUNCS(eventfd)
+AC_CHECK_FUNCS(explicit_memset)
 AC_CHECK_FUNCS(fcopyfile)
 AC_CHECK_FUNCS(fchmod)
 AC_CHECK_FUNCS(fchown)
@@ -2764,6 +2813,7 @@ AS_CASE(["$target_os"],
     ])
 AS_CASE(["$target_cpu-$target_os"],
 [*-darwin*], [
+    AC_CHECK_HEADERS([libproc.h])
     AC_CHECK_HEADERS([execinfo.h])
     AS_IF([test "x$ac_cv_header_execinfo_h" = xyes], [
 	AC_CHECK_LIB([execinfo], [backtrace])
@@ -3003,6 +3053,7 @@ AS_IF([test x"$cross_compiling" = xyes], [
   XRUBY='$(MINIRUBY)'
   TEST_RUNNABLE=no
   CROSS_COMPILING=yes
+  AC_DEFINE(CROSS_COMPILING, 1)
 ], [
   MINIRUBY='./miniruby$(EXEEXT) -I$(srcdir)/lib -I.'
   MINIRUBY="$MINIRUBY"' -I$(EXTOUT)/common'
@@ -3582,7 +3633,7 @@ rb_cv_warnflags=`echo "$rb_cv_warnflags" | sed 's/^ *//;s/ *$//'`
 warnflags="$rb_cv_warnflags"
 AC_SUBST(cppflags)dnl
 AC_SUBST(cflags, ["${orig_cflags:+$orig_cflags }"'${optflags} ${debugflags} ${warnflags}'])dnl
-AC_SUBST(cxxflags, ["${orig_cxxflags:+$orig_cxxflags }"'${optflags} ${debugflags} ${warnflags}'])dnl
+AC_SUBST(cxxflags)dnl
 AC_SUBST(optflags)dnl
 AC_SUBST(debugflags)dnl
 AC_SUBST(warnflags)dnl
@@ -3759,8 +3810,8 @@ AS_IF([test "${universal_binary-no}" = yes ], [
     AC_SUBST(UNIVERSAL_ARCHNAMES, "${universal_archnames}")
     AC_SUBST(UNIVERSAL_INTS, "${ints}")
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM_OS, "${target_os}")
-    AC_DEFINE_UNQUOTED(RUBY_ARCH, "universal-"RUBY_PLATFORM_OS)
-    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "universal."RUBY_PLATFORM_CPU"-"RUBY_PLATFORM_OS)
+    AC_DEFINE_UNQUOTED(RUBY_ARCH, "universal-" RUBY_PLATFORM_OS)
+    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "universal." RUBY_PLATFORM_CPU "-" RUBY_PLATFORM_OS)
 ], [
     arch="${target_cpu}-${target_os}"
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "$arch")
@@ -4032,6 +4083,7 @@ config_summary "JIT support"         "$MJIT_SUPPORT"
 config_summary "man page type"       "$MANTYPE"
 config_summary "search path"         "$search_path"
 config_summary "static-linked-ext"   ${EXTSTATIC:+"yes"}
+config_summary "BASERUBY -v"         "$BASERUBY_VERSION"
 echo ""
 echo "---"
 ])

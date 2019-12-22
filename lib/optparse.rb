@@ -169,7 +169,7 @@
 # - Array -- Strings separated by ',' (e.g. 1,2,3)
 # - Regexp -- Regular expressions. Also includes options.
 #
-# We can also add our own coercions, which we will cover soon.
+# We can also add our own coercions, which we will cover below.
 #
 # ==== Using Built-in Conversions
 #
@@ -866,6 +866,10 @@ class OptionParser
       __send__(id).complete(opt, icase, *pat, &block)
     end
 
+    def get_candidates(id)
+      yield __send__(id).keys
+    end
+
     #
     # Iterates over each option, passing the option to the +block+.
     #
@@ -1544,7 +1548,10 @@ XXX
 
   #
   # Parses command line arguments +argv+ in order. When a block is given,
-  # each non-option argument is yielded.
+  # each non-option argument is yielded. When optional +into+ keyword
+  # argument is provided, the parsed option values are stored there via
+  # <code>[]=</code> method (so it can be Hash, or OpenStruct, or other
+  # similar object).
   #
   # Returns the rest of +argv+ left unparsed.
   #
@@ -1640,7 +1647,10 @@ XXX
 
   #
   # Parses command line arguments +argv+ in permutation mode and returns
-  # list of non-option arguments.
+  # list of non-option arguments. When optional +into+ keyword
+  # argument is provided, the parsed option values are stored there via
+  # <code>[]=</code> method (so it can be Hash, or OpenStruct, or other
+  # similar object).
   #
   def permute(*argv, into: nil)
     argv = argv[0].dup if argv.size == 1 and Array === argv[0]
@@ -1661,6 +1671,9 @@ XXX
   #
   # Parses command line arguments +argv+ in order when environment variable
   # POSIXLY_CORRECT is set, and in permutation mode otherwise.
+  # When optional +into+ keyword argument is provided, the parsed option
+  # values are stored there via <code>[]=</code> method (so it can be Hash,
+  # or OpenStruct, or other similar object).
   #
   def parse(*argv, into: nil)
     argv = argv[0].dup if argv.size == 1 and Array === argv[0]
@@ -1764,12 +1777,27 @@ XXX
     if pat.empty?
       search(typ, opt) {|sw| return [sw, opt]} # exact match or...
     end
-    raise AmbiguousOption, catch(:ambiguous) {
+    ambiguous = catch(:ambiguous) {
       visit(:complete, typ, opt, icase, *pat) {|o, *sw| return sw}
-      raise InvalidOption, opt
     }
+    exc = ambiguous ? AmbiguousOption : InvalidOption
+    raise exc.new(opt, additional: self.method(:additional_message).curry[typ])
   end
   private :complete
+
+  #
+  # Returns additional info.
+  #
+  def additional_message(typ, opt)
+    return unless typ and opt and defined?(DidYouMean::SpellChecker)
+    all_candidates = []
+    visit(:get_candidates, typ) do |candidates|
+      all_candidates.concat(candidates)
+    end
+    all_candidates.select! {|cand| cand.is_a?(String) }
+    checker = DidYouMean::SpellChecker.new(dictionary: all_candidates)
+    DidYouMean.formatter.message_for(all_candidates & checker.correct(opt))
+  end
 
   def candidate(word)
     list = []
@@ -1997,13 +2025,16 @@ XXX
     # Reason which caused the error.
     Reason = 'parse error'
 
-    def initialize(*args)
+    def initialize(*args, additional: nil)
+      @additional = additional
+      @arg0, = args
       @args = args
       @reason = nil
     end
 
     attr_reader :args
     attr_writer :reason
+    attr_accessor :additional
 
     #
     # Pushes back erred argument(s) to +argv+.
@@ -2048,7 +2079,7 @@ XXX
     # Default stringizing method to emit standard error message.
     #
     def message
-      reason + ': ' + args.join(' ')
+      "#{reason}: #{args.join(' ')}#{additional[@arg0] if additional}"
     end
 
     alias to_s message

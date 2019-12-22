@@ -6,10 +6,8 @@ class PlatformGuard < SpecGuard
       case name
       when :rubinius
         RUBY_ENGINE.start_with?('rbx')
-      when :ruby, :jruby, :truffleruby, :ironruby, :macruby, :maglev, :topaz, :opal
-        RUBY_ENGINE.start_with?(name.to_s)
       else
-        raise "unknown implementation #{name}"
+        RUBY_ENGINE.start_with?(name.to_s)
       end
     end
   end

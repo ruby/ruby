@@ -88,14 +88,14 @@ METHOD_ENTRY_FLAGS_SET(rb_method_entry_t *me, rb_method_visibility_t visi, unsig
     VM_ASSERT(basic <= 1);
     me->flags =
       (me->flags & ~(IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2)) |
-	((visi << (IMEMO_FL_USHIFT+0)) | (basic << (IMEMO_FL_USHIFT+2)));
+        ((visi << (IMEMO_FL_USHIFT+0)) | (basic << (IMEMO_FL_USHIFT+2)));
 }
 static inline void
 METHOD_ENTRY_FLAGS_COPY(rb_method_entry_t *dst, const rb_method_entry_t *src)
 {
     dst->flags =
       (dst->flags & ~(IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2)) |
-	(src->flags & (IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2));
+        (src->flags & (IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2));
 }
 
 typedef enum {
@@ -166,17 +166,18 @@ struct rb_method_definition_struct {
     int complemented_count : 28;
 
     union {
-	rb_method_iseq_t iseq;
-	rb_method_cfunc_t cfunc;
-	rb_method_attr_t attr;
-	rb_method_alias_t alias;
-	rb_method_refined_t refined;
+        rb_method_iseq_t iseq;
+        rb_method_cfunc_t cfunc;
+        rb_method_attr_t attr;
+        rb_method_alias_t alias;
+        rb_method_refined_t refined;
         rb_method_bmethod_t bmethod;
 
         enum method_optimized_type optimize_type;
     } body;
 
     ID original_id;
+    uintptr_t method_serial;
 };
 
 typedef struct rb_method_definition_struct rb_method_definition_t;
@@ -202,7 +203,6 @@ const rb_method_entry_t *rb_method_entry_with_refinements(VALUE klass, ID id, VA
 const rb_method_entry_t *rb_method_entry_without_refinements(VALUE klass, ID id, VALUE *defined_class);
 const rb_method_entry_t *rb_resolve_refined_method(VALUE refinements, const rb_method_entry_t *me);
 RUBY_SYMBOL_EXPORT_BEGIN
-const rb_callable_method_entry_t *rb_resolve_refined_method_callable(VALUE refinements, const rb_callable_method_entry_t *me);
 const rb_method_entry_t *rb_resolve_me_location(const rb_method_entry_t *, VALUE[5]);
 RUBY_SYMBOL_EXPORT_END
 
@@ -215,11 +215,8 @@ int rb_method_entry_eq(const rb_method_entry_t *m1, const rb_method_entry_t *m2)
 st_index_t rb_hash_method_entry(st_index_t hash, const rb_method_entry_t *me);
 
 VALUE rb_method_entry_location(const rb_method_entry_t *me);
-VALUE rb_mod_method_location(VALUE mod, ID id);
-VALUE rb_obj_method_location(VALUE obj, ID id);
 
 void rb_free_method_entry(const rb_method_entry_t *me);
-void rb_sweep_method_entry(void *vm);
 
 const rb_method_entry_t *rb_method_entry_clone(const rb_method_entry_t *me);
 const rb_callable_method_entry_t *rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID called_id, VALUE defined_class);

@@ -6,7 +6,6 @@ RSpec.describe "real source plugins" do
       build_repo2 do
         build_plugin "bundler-source-mpath" do |s|
           s.write "plugins.rb", <<-RUBY
-            require "bundler/vendored_fileutils"
             require "bundler-source-mpath"
 
             class MPath < Bundler::Plugin::API
@@ -170,7 +169,7 @@ RSpec.describe "real source plugins" do
       it "bundler package copies repository to vendor cache" do
         bundle! :install, forgotten_command_line_options(:path => "vendor/bundle")
         bundle "config set cache_all true"
-        bundle! :package
+        bundle! :cache
 
         expect(bundled_app("vendor/cache/a-path-gem-1.0-#{uri_hash}")).to exist
 

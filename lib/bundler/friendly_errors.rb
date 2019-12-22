@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "cgi"
 require_relative "vendored_thor"
 
 module Bundler
@@ -16,7 +15,7 @@ module Bundler
         Bundler.ui.error error.message
       when GemRequireError
         Bundler.ui.error error.message
-        Bundler.ui.trace error.orig_exception, nil, true
+        Bundler.ui.trace error.orig_exception
       when BundlerError
         Bundler.ui.error error.message, :wrap => true
         Bundler.ui.trace error
@@ -28,7 +27,7 @@ module Bundler
         Bundler.ui.warn <<-WARN, :wrap => true
           You must recompile Ruby with OpenSSL support or change the sources in your \
           Gemfile from 'https' to 'http'. Instructions for compiling with OpenSSL \
-          using RVM are available at http://rvm.io/packages/openssl.
+          using RVM are available at https://rvm.io/packages/openssl.
         WARN
         Bundler.ui.trace error
       when Interrupt
@@ -114,6 +113,7 @@ module Bundler
     def issues_url(exception)
       message = exception.message.lines.first.tr(":", " ").chomp
       message = message.split("-").first if exception.is_a?(Errno)
+      require "cgi"
       "https://github.com/bundler/bundler/search?q=" \
         "#{CGI.escape(message)}&type=Issues"
     end

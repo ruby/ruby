@@ -434,13 +434,24 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_to_binary_pattern_matching
-    code = "case foo in []; end"
+    code = "case foo; in []; end"
     iseq = compile(code)
     assert_include(iseq.disasm, "TypeError")
     assert_include(iseq.disasm, "NoMatchingPatternError")
     EnvUtil.suppress_warning do
       assert_iseq_to_binary(code, "[Feature #14912]")
     end
+  end
+
+  def test_to_binary_dumps_nokey
+    iseq = assert_iseq_to_binary(<<-RUBY)
+      o = Object.new
+      class << o
+        def foo(**nil); end
+      end
+      o
+    RUBY
+    assert_equal([[:nokey]], iseq.eval.singleton_method(:foo).parameters)
   end
 
   def test_to_binary_line_info
@@ -547,5 +558,12 @@ class TestISeq < Test::Unit::TestCase
       # ISeq objects should be same for same src
       assert_equal iseq1.object_id, iseq2.object_id
     }
+  end
+
+  def test_iseq_builtin_to_a
+    insns = RubyVM::InstructionSequence.of([].method(:pack)).to_a.last
+    invokebuiltin = insns.find { |insn| insn.is_a?(Array) && insn[0] == :opt_invokebuiltin_delegate_leave }
+    assert_not_nil(invokebuiltin)
+    assert_equal([:func_ptr, :argc, :index, :name], invokebuiltin[1].keys)
   end
 end

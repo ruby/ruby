@@ -423,7 +423,7 @@ class TestIO < Test::Unit::TestCase
     path = t.path
     t.close!
     assert_raise(Errno::ENOENT, "[ruby-dev:33072]") do
-      File.read(path, nil, nil, {})
+      File.read(path, nil, nil, **{})
     end
   end
 
@@ -1395,7 +1395,7 @@ class TestIO < Test::Unit::TestCase
   def test_dup_many
     opts = {}
     opts[:rlimit_nofile] = 1024 if defined?(Process::RLIMIT_NOFILE)
-    assert_separately([], <<-'End', opts)
+    assert_separately([], <<-'End', **opts)
       a = []
       assert_raise(Errno::EMFILE, Errno::ENFILE, Errno::ENOMEM) do
         loop {a << IO.pipe}
@@ -2279,6 +2279,33 @@ class TestIO < Test::Unit::TestCase
     assert_equal(o, o2)
   end
 
+  def test_open_redirect_keyword
+    o = Object.new
+    def o.to_open(**kw); kw; end
+    assert_equal({:a=>1}, open(o, a: 1))
+
+    w = /The last argument is used as keyword parameters.*The called method `(to_)?open'/m
+    redefined = nil
+    w.singleton_class.define_method(:===) do |s|
+      match = super(s)
+      redefined = !$1
+      match
+    end
+
+    assert_warn(w) do
+      assert_equal({:a=>1}, open(o, {a: 1}))
+    end
+
+    class << o
+      remove_method(:to_open)
+    end
+    def o.to_open(kw); kw; end
+    assert_equal({:a=>1}, open(o, a: 1))
+    unless redefined
+      assert_equal({:a=>1}, open(o, {a: 1}))
+    end
+  end
+
   def test_open_pipe
     open("|" + EnvUtil.rubybin, "r+") do |f|
       f.puts "puts 'foo'"
@@ -2489,15 +2516,15 @@ class TestIO < Test::Unit::TestCase
       assert_equal(["foo\n", "bar\n", "baz\n"], a)
 
       a = []
-      IO.foreach(t.path, {:mode => "r" }) {|x| a << x }
+      IO.foreach(t.path, :mode => "r") {|x| a << x }
       assert_equal(["foo\n", "bar\n", "baz\n"], a)
 
       a = []
-      IO.foreach(t.path, {:open_args => [] }) {|x| a << x }
+      IO.foreach(t.path, :open_args => []) {|x| a << x }
       assert_equal(["foo\n", "bar\n", "baz\n"], a)
 
       a = []
-      IO.foreach(t.path, {:open_args => ["r"] }) {|x| a << x }
+      IO.foreach(t.path, :open_args => ["r"]) {|x| a << x }
       assert_equal(["foo\n", "bar\n", "baz\n"], a)
 
       a = []
@@ -2740,13 +2767,6 @@ class TestIO < Test::Unit::TestCase
       }
     }
   end if /freebsd|linux/ =~ RUBY_PLATFORM and defined? File::NOFOLLOW
-
-  def test_tainted
-    make_tempfile {|t|
-      assert_predicate(File.read(t.path, 4), :tainted?, '[ruby-dev:38826]')
-      assert_predicate(File.open(t.path) {|f| f.read(4)}, :tainted?, '[ruby-dev:38826]')
-    }
-  end
 
   def test_binmode_after_closed
     make_tempfile {|t|
@@ -3119,7 +3139,9 @@ __END__
       assert_equal(1, File.write(path, "f", 0, encoding: "UTF-8"))
       assert_equal("ff", File.read(path))
       assert_raise(TypeError) {
-        File.write(path, "foo", Object.new => Object.new)
+        assert_warn(/The last argument is split into positional and keyword parameters/) do
+          File.write(path, "foo", Object.new => Object.new)
+        end
       }
     end
   end
@@ -3644,7 +3666,7 @@ __END__
 
   def test_race_gets_and_close
     opt = { signal: :ABRT, timeout: 200 }
-    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}", opt)
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}", **opt)
     bug13076 = '[ruby-core:78845] [Bug #13076]'
     begin;
       10.times do |i|
@@ -3813,38 +3835,40 @@ __END__
         end
       end
     end
-
-    def test_pread
-      make_tempfile { |t|
-        open(t.path) do |f|
-          assert_equal("bar", f.pread(3, 4))
-          buf = "asdf"
-          assert_equal("bar", f.pread(3, 4, buf))
-          assert_equal("bar", buf)
-          assert_raise(EOFError) { f.pread(1, f.size) }
-        end
-      }
-    end if IO.method_defined?(:pread)
-
-    def test_pwrite
-      make_tempfile { |t|
-        open(t.path, IO::RDWR) do |f|
-          assert_equal(3, f.pwrite("ooo", 4))
-          assert_equal("ooo", f.pread(3, 4))
-        end
-      }
-    end if IO.method_defined?(:pread) and IO.method_defined?(:pwrite)
   end
 
+  def test_pread
+    make_tempfile { |t|
+      open(t.path) do |f|
+        assert_equal("bar", f.pread(3, 4))
+        buf = "asdf"
+        assert_equal("bar", f.pread(3, 4, buf))
+        assert_equal("bar", buf)
+        assert_raise(EOFError) { f.pread(1, f.size) }
+      end
+    }
+  end if IO.method_defined?(:pread)
+
+  def test_pwrite
+    make_tempfile { |t|
+      open(t.path, IO::RDWR) do |f|
+        assert_equal(3, f.pwrite("ooo", 4))
+        assert_equal("ooo", f.pread(3, 4))
+      end
+    }
+  end if IO.method_defined?(:pread) and IO.method_defined?(:pwrite)
+
   def test_select_exceptfds
-    if Etc.uname[:sysname] == 'SunOS' && Etc.uname[:release] == '5.11'
-      skip "Solaris 11 fails this"
+    if Etc.uname[:sysname] == 'SunOS'
+      str = 'h'.freeze #(???) Only 1 byte with MSG_OOB on Solaris
+    else
+      str = 'hello'.freeze
     end
 
     TCPServer.open('localhost', 0) do |svr|
       con = TCPSocket.new('localhost', svr.addr[1])
       acc = svr.accept
-      assert_equal 5, con.send('hello', Socket::MSG_OOB)
+      assert_equal str.length, con.send(str, Socket::MSG_OOB)
       set = IO.select(nil, nil, [acc], 30)
       assert_equal([[], [], [acc]], set, 'IO#select exceptions array OK')
       acc.close

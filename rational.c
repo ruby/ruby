@@ -1543,7 +1543,7 @@ nurat_round_n(int argc, VALUE *argv, VALUE self)
 {
     VALUE opt;
     enum ruby_num_rounding_mode mode = (
-	argc = rb_scan_args(argc, argv, "*:", NULL, &opt),
+        argc = rb_scan_args(argc, argv, "*:", NULL, &opt),
 	rb_num_get_rounding_option(opt));
     VALUE (*round_func)(VALUE) = ROUND_FUNC(mode, nurat_round);
     return f_round_common(argc, argv, self, round_func);
@@ -1853,7 +1853,6 @@ nurat_marshal_load(VALUE self, VALUE a)
     VALUE num, den;
 
     rb_check_frozen(self);
-    rb_check_trusted(self);
 
     Check_Type(a, T_ARRAY);
     if (RARRAY_LEN(a) != 2)

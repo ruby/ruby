@@ -235,7 +235,7 @@ class TestRefinement < Test::Unit::TestCase
       meth.call(3)
     EOS
     assert_equal(:refine_pow, eval_using(MethodIntegerPowEx, "2.pow(3)"))
-    assert_equal(:refine_pow, eval_using(MethodIntegerPowEx, "2.:pow.(3)"))
+    assert_equal(:refine_pow, eval_using(MethodIntegerPowEx, "2.method(:pow).(3)"))
   end
 
   module InstanceMethodIntegerPowEx
@@ -538,7 +538,7 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_main_using_is_private
     assert_raise(NoMethodError) do
-      eval("self.using Module.new", Sandbox::BINDING)
+      eval("recv = self; recv.using Module.new", Sandbox::BINDING)
     end
   end
 
@@ -2064,7 +2064,6 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_tostring
     assert_equal("ok", ToString.new.string)
-    assert_predicate(ToString.new.taint.string, :tainted?)
   end
 
   class ToSymbol
@@ -2293,6 +2292,94 @@ class TestRefinement < Test::Unit::TestCase
     end
     assert_equal("[C[A[B]]]", c.new.foo, '[ruby-dev:50390] [Bug #14232]')
     d
+  end
+
+  class RefineInUsing
+    module M1
+      refine RefineInUsing do
+        def foo
+          :ok
+        end
+      end
+    end
+
+    module M2
+      using M1
+      refine RefineInUsing do
+        def call_foo
+	  RefineInUsing.new.foo
+        end
+      end
+    end
+
+    using M2
+    def self.test
+      new.call_foo
+    end
+  end
+
+  def test_refine_in_using
+    assert_equal(:ok, RefineInUsing.test)
+  end
+
+  class Bug16242
+    module OtherM
+    end
+
+    module M
+      prepend OtherM
+
+      refine M do
+        def refine_method
+          "refine_method"
+        end
+      end
+      using M
+
+      def hoge
+        refine_method
+      end
+    end
+
+    class X
+      include M
+    end
+  end
+
+  def test_refine_prepended_module
+    assert_equal("refine_method", Bug16242::X.new.hoge)
+  end
+
+  module Bug13446
+    module Enumerable
+      def sum(*args)
+        i = 0
+        args.each { |arg| i += a }
+        i
+      end
+    end
+
+    using Module.new {
+      refine Enumerable do
+        alias :orig_sum :sum
+      end
+    }
+
+    module Enumerable
+      def sum(*args)
+        orig_sum(*args)
+      end
+    end
+
+    class GenericEnumerable
+      include Enumerable
+    end
+
+    Enumerable.prepend(Module.new)
+  end
+
+  def test_prepend_refined_module
+    assert_equal(0, Bug13446::GenericEnumerable.new.sum)
   end
 
   private

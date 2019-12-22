@@ -90,9 +90,14 @@ class Bundler::Thor
     # ==== Parameters
     # Hash[String|Array => Symbol]:: Maps the string or the strings in the array to the given command.
     #
-    def map(mappings = nil)
+    def map(mappings = nil, **kw)
       @map ||= from_superclass(:map, {})
 
+      if mappings && !kw.empty?
+        mappings = kw.merge!(mappings)
+      else
+        mappings ||= kw
+      end
       if mappings
         mappings.each do |key, value|
           if key.respond_to?(:each)
@@ -170,7 +175,7 @@ class Bundler::Thor
       handle_no_command_error(meth) unless command
 
       shell.say "Usage:"
-      shell.say "  #{banner(command)}"
+      shell.say "  #{banner(command).split("\n").join("\n  ")}"
       shell.say
       class_options_help(shell, nil => command.options.values)
       if command.long_description
@@ -339,6 +344,13 @@ class Bundler::Thor
       command && disable_required_check.include?(command.name.to_sym)
     end
 
+    def deprecation_warning(message) #:nodoc:
+      unless ENV['THOR_SILENCE_DEPRECATION']
+        warn "Deprecation warning: #{message}\n" +
+          'You can silence deprecations warning by setting the environment variable THOR_SILENCE_DEPRECATION.'
+      end
+    end
+
   protected
 
     def stop_on_unknown_option #:nodoc:
@@ -393,7 +405,10 @@ class Bundler::Thor
     # the namespace should be displayed as arguments.
     #
     def banner(command, namespace = nil, subcommand = false)
-      "#{basename} #{command.formatted_usage(self, $thor_runner, subcommand)}"
+      $thor_runner ||= false
+      command.formatted_usage(self, $thor_runner, subcommand).split("\n").map do |formatted_usage|
+        "#{basename} #{formatted_usage}"
+      end.join("\n")
     end
 
     def baseclass #:nodoc:

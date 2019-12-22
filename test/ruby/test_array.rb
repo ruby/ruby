@@ -241,6 +241,23 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[],     @cls[ 1, 2, 3 ]*64 & @cls[ 4, 5, 6 ]*64)
   end
 
+  def test_intersection
+    assert_equal(@cls[1, 2], @cls[1, 2, 3].intersection(@cls[1, 2]))
+    assert_equal(@cls[ ], @cls[1].intersection(@cls[ ]))
+    assert_equal(@cls[ ], @cls[ ].intersection(@cls[1]))
+    assert_equal(@cls[1], @cls[1, 2, 3].intersection(@cls[1, 2], @cls[1]))
+    assert_equal(@cls[ ], @cls[1, 2, 3].intersection(@cls[1, 2], @cls[3]))
+    assert_equal(@cls[ ], @cls[1, 2, 3].intersection(@cls[4, 5, 6]))
+  end
+
+  def test_intersection_big_array
+    assert_equal(@cls[1, 2], (@cls[1, 2, 3] * 64).intersection(@cls[1, 2] * 64))
+    assert_equal(@cls[ ], (@cls[1] * 64).intersection(@cls[ ]))
+    assert_equal(@cls[ ], @cls[ ].intersection(@cls[1] * 64))
+    assert_equal(@cls[1], (@cls[1, 2, 3] * 64).intersection((@cls[1, 2] * 64), (@cls[1] * 64)))
+    assert_equal(@cls[ ], (@cls[1, 2, 3] * 64).intersection(@cls[4, 5, 6] * 64))
+  end
+
   def test_MUL # '*'
     assert_equal(@cls[], @cls[]*3)
     assert_equal(@cls[1, 1, 1], @cls[1]*3)
@@ -539,18 +556,14 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_clone
-    for taint in [ false, true ]
-      for frozen in [ false, true ]
-        a = @cls[*(0..99).to_a]
-        a.taint  if taint
-        a.freeze if frozen
-        b = a.clone
+    for frozen in [ false, true ]
+      a = @cls[*(0..99).to_a]
+      a.freeze if frozen
+      b = a.clone
 
-        assert_equal(a, b)
-        assert_not_equal(a.__id__, b.__id__)
-        assert_equal(a.frozen?, b.frozen?)
-        assert_equal(a.tainted?, b.tainted?)
-      end
+      assert_equal(a, b)
+      assert_not_equal(a.__id__, b.__id__)
+      assert_equal(a.frozen?, b.frozen?)
     end
   end
 
@@ -737,18 +750,14 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_dup
-    for taint in [ false, true ]
-      for frozen in [ false, true ]
-        a = @cls[*(0..99).to_a]
-        a.taint  if taint
-        a.freeze if frozen
-        b = a.dup
+    for frozen in [ false, true ]
+      a = @cls[*(0..99).to_a]
+      a.freeze if frozen
+      b = a.dup
 
-        assert_equal(a, b)
-        assert_not_equal(a.__id__, b.__id__)
-        assert_equal(false, b.frozen?)
-        assert_equal(a.tainted?, b.tainted?)
-      end
+      assert_equal(a, b)
+      assert_not_equal(a.__id__, b.__id__)
+      assert_equal(false, b.frozen?)
     end
   end
 
@@ -846,13 +855,6 @@ class TestArray < Test::Unit::TestCase
 
   def test_flatten_wrong_argument
     assert_raise(TypeError, "[ruby-dev:31197]") { [[]].flatten("") }
-  end
-
-  def test_flatten_taint
-    a6 = @cls[[1, 2], 3]
-    a6.taint
-    a7 = a6.flatten
-    assert_equal(true, a7.tainted?)
   end
 
   def test_flatten_level0
@@ -1115,20 +1117,6 @@ class TestArray < Test::Unit::TestCase
     assert_equal("1,2,3", a.join(','))
 
     $, = ""
-    a = @cls[1, 2, 3]
-    a.taint
-    s = a.join
-    assert_equal(true, s.tainted?)
-
-    bug5902 = '[ruby-core:42161]'
-    sep = ":".taint
-
-    s = @cls[].join(sep)
-    assert_equal(false, s.tainted?, bug5902)
-    s = @cls[1].join(sep)
-    assert_equal(false, s.tainted?, bug5902)
-    s = @cls[1, 2].join(sep)
-    assert_equal(true, s.tainted?, bug5902)
 
     e = ''.force_encoding('EUC-JP')
     u = ''.force_encoding('UTF-8')
@@ -1855,6 +1843,31 @@ class TestArray < Test::Unit::TestCase
     ary = [bug9340, bug9340.dup, bug9340.dup]
     assert_equal 1, ary.uniq.size
     assert_same bug9340, ary.uniq[0]
+
+    sc = Class.new(@cls)
+    a = sc[]
+    b = a.dup
+    assert_instance_of(sc, a.uniq)
+    assert_equal(sc[], a.uniq)
+    assert_equal(b, a)
+
+    a = sc[1]
+    b = a.dup
+    assert_instance_of(sc, a.uniq)
+    assert_equal(sc[1], a.uniq)
+    assert_equal(b, a)
+
+    a = sc[1, 1]
+    b = a.dup
+    assert_instance_of(sc, a.uniq)
+    assert_equal(sc[1], a.uniq)
+    assert_equal(b, a)
+
+    a = sc[1, 1]
+    b = a.dup
+    assert_instance_of(sc, a.uniq{|x| x})
+    assert_equal(sc[1], a.uniq{|x| x})
+    assert_equal(b, a)
   end
 
   def test_uniq_with_block
@@ -2857,13 +2870,6 @@ class TestArray < Test::Unit::TestCase
     assert_equal(Array2, Array2[*(1..100)][1..99].class) #not embedded
   end
 
-  def test_inspect
-    a = @cls[1, 2, 3]
-    a.taint
-    s = a.inspect
-    assert_equal(true, s.tainted?)
-  end
-
   def test_initialize2
     a = [1] * 1000
     a.instance_eval { initialize }
@@ -3186,6 +3192,14 @@ class TestArray < Test::Unit::TestCase
 
     assert_raise(TypeError) {[0].sum("")}
     assert_raise(TypeError) {[1].sum("")}
+  end
+
+  def test_big_array_literal_with_kwsplat
+    lit = "["
+    10000.times { lit << "{}," }
+    lit << "**{}]"
+
+    assert_equal(10000, eval(lit).size)
   end
 
   private

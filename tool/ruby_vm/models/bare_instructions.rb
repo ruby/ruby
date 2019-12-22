@@ -33,6 +33,7 @@ class RubyVM::BareInstructions
       h[a.key] = a
     }
     @attrs_orig = @attrs.dup
+    check_attribute_consistency
     predefine_attributes
   end
 
@@ -139,7 +140,27 @@ class RubyVM::BareInstructions
     return @pops.any? {|i| i[:name] == var[:name] }
   end
 
+  def use_call_data?
+    @use_call_data ||=
+      @variables.find { |_, var_info| var_info[:type] == 'CALL_DATA' }
+  end
+
   private
+
+  def check_attribute_consistency
+    if has_attribute?('sp_inc') \
+        && use_call_data? \
+        && !has_attribute?('comptime_sp_inc')
+      # As the call cache caches information that can only be obtained at
+      # runtime, we do not need it when compiling from AST to bytecode. This
+      # attribute defines an expression that computes the stack pointer
+      # increase based on just the call info to avoid reserving space for the
+      # call cache at compile time. In the expression, all call data operands
+      # are mapped to their call info counterpart. Additionally, all mentions
+      # of `cd` in the operand name are replaced with `ci`.
+      raise "Please define attribute `comptime_sp_inc` for `#{@name}`"
+    end
+  end
 
   def generate_attribute t, k, v
     @attrs[k] ||= RubyVM::Attribute.new \

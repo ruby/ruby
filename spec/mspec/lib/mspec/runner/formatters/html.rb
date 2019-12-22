@@ -1,7 +1,6 @@
-require 'mspec/expectations/expectations'
-require 'mspec/runner/formatters/dotted'
+require 'mspec/runner/formatters/base'
 
-class HtmlFormatter < DottedFormatter
+class HtmlFormatter < BaseFormatter
   def register
     super
     MSpec.register :start, self
@@ -44,13 +43,14 @@ EOH
   end
 
   def exception(exception)
-    super
+    super(exception)
     outcome = exception.failure? ? "FAILED" : "ERROR"
     print %[<li class="fail">- #{exception.it} (<a href="#details-#{@count}">]
     print %[#{outcome} - #{@count}</a>)</li>\n]
   end
 
-  def after(state)
+  def after(state = nil)
+    super(state)
     print %[<li class="pass">- #{state.it}</li>\n] unless exception?
   end
 

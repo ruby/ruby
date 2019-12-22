@@ -1,5 +1,3 @@
-require "uri"
-require_relative "core_ext/io_binary_read"
 require_relative "actions/create_file"
 require_relative "actions/create_link"
 require_relative "actions/directory"
@@ -12,6 +10,7 @@ class Bundler::Thor
     attr_accessor :behavior
 
     def self.included(base) #:nodoc:
+      super(base)
       base.extend ClassMethods
     end
 
@@ -257,12 +256,18 @@ class Bundler::Thor
 
       return if options[:pretend]
 
-      result = config[:capture] ? `#{command}` : system(command.to_s)
+      env_splat = [config[:env]] if config[:env]
 
-      if config[:abort_on_failure]
-        success = config[:capture] ? $?.success? : result
-        abort unless success
+      if config[:capture]
+        require "open3"
+        result, status = Open3.capture2e(*env_splat, command.to_s)
+        success = status.success?
+      else
+        result = system(*env_splat, command.to_s)
+        success = result
       end
+
+      abort if !success && config.fetch(:abort_on_failure, self.class.exit_on_failure?)
 
       result
     end

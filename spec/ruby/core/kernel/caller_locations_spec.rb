@@ -13,7 +13,7 @@ describe 'Kernel#caller_locations' do
   it 'returns an Array of caller locations using a custom offset' do
     locations = KernelSpecs::CallerLocationsTest.locations(2)
 
-    locations[0].absolute_path.end_with?('mspec.rb').should == true
+    locations[0].absolute_path.should.end_with?('mspec.rb')
   end
 
   it 'returns an Array of caller locations using a custom limit' do

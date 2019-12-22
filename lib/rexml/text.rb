@@ -109,7 +109,7 @@ module REXML
         @string = arg.instance_variable_get(:@string).dup
         @raw = arg.raw
         @entity_filter = arg.instance_variable_get(:@entity_filter)
-      elsif
+      else
         raise "Illegal argument of type #{arg.type} for Text constructor (#{arg})"
       end
 

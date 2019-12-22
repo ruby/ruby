@@ -696,15 +696,6 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(set, ret.flatten)
   end
 
-  def test_taintness
-    orig = set = Set[1,2,3]
-    assert_equal false, set.tainted?
-    assert_same orig, set.taint
-    assert_equal true, set.tainted?
-    assert_same orig, set.untaint
-    assert_equal false, set.tainted?
-  end
-
   def test_freeze
     orig = set = Set[1,2,3]
     assert_equal false, set.frozen?

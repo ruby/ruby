@@ -147,7 +147,7 @@ module Shellwords
     # Treat multibyte characters as is.  It is the caller's responsibility
     # to encode the string in the right encoding for the shell
     # environment.
-    str.gsub!(/([^A-Za-z0-9_\-.,:\/@\n])/, "\\\\\\1")
+    str.gsub!(/[^A-Za-z0-9_\-.,:+\/@\n]/, "\\\\\\&")
 
     # A LF cannot be escaped with a backslash because a backslash + LF
     # combo is regarded as a line continuation and simply ignored.

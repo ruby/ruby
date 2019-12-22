@@ -146,7 +146,7 @@ RSpec.describe "install with --deployment or --frozen" do
       expect(the_bundle).to include_gems "path_gem 1.0"
       FileUtils.rm_r lib_path("path_gem-1.0")
 
-      bundle! :install, forgotten_command_line_options(:path => ".bundle", :without => "development", :deployment => true).merge(:env => { :DEBUG => "1" })
+      bundle! :install, forgotten_command_line_options(:path => ".bundle", :without => "development", :deployment => true).merge(:env => { "DEBUG" => "1" })
       run! "puts :WIN"
       expect(out).to eq("WIN")
     end
@@ -390,7 +390,7 @@ You have deleted from the Gemfile:
       expect(the_bundle).to include_gems "foo 1.0"
 
       bundle "config set cache_all true"
-      bundle! :package
+      bundle! :cache
       expect(bundled_app("vendor/cache/foo")).to be_directory
 
       bundle! "install --local"

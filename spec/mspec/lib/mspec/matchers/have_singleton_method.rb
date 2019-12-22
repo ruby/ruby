@@ -18,7 +18,7 @@ class HaveSingletonMethodMatcher < MethodMatcher
 end
 
 module MSpecMatchers
-  private def have_singleton_method(method, include_super=true)
+  private def have_singleton_method(method, include_super = true)
     HaveSingletonMethodMatcher.new method, include_super
   end
 end

@@ -9,12 +9,8 @@ rat.o: $(hdrdir)/ruby.h
 rat.o: $(hdrdir)/ruby/assert.h
 rat.o: $(hdrdir)/ruby/backward.h
 rat.o: $(hdrdir)/ruby/defines.h
-rat.o: $(hdrdir)/ruby/encoding.h
 rat.o: $(hdrdir)/ruby/intern.h
-rat.o: $(hdrdir)/ruby/io.h
 rat.o: $(hdrdir)/ruby/missing.h
-rat.o: $(hdrdir)/ruby/onigmo.h
-rat.o: $(hdrdir)/ruby/oniguruma.h
 rat.o: $(hdrdir)/ruby/ruby.h
 rat.o: $(hdrdir)/ruby/st.h
 rat.o: $(hdrdir)/ruby/subst.h

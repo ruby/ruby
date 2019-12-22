@@ -21,6 +21,7 @@ module IRB # :nodoc:
     LOCALE_DIR = "/lc/"
 
     @@legacy_encoding_alias_map = {}.freeze
+    @@loaded = []
 
     def initialize(locale = nil)
       @lang = @territory = @encoding_name = @modifier = nil
@@ -107,7 +108,10 @@ module IRB # :nodoc:
     def load(file, priv=nil)
       found = find(file)
       if found
-        return real_load(found, priv)
+        unless @@loaded.include?(found)
+          @@loaded << found # cache
+          return real_load(found, priv)
+        end
       else
         raise LoadError, "No such file to load -- #{file}"
       end

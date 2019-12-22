@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 require "forwardable"
-require "support/the_bundle"
+require_relative "the_bundle"
+
 module Spec
   module Matchers
     extend RSpec::Matchers
@@ -127,9 +128,10 @@ module Spec
         groups << opts
         @errors = names.map do |name|
           name, version, platform = name.split(/\s+/)
+          require_path = name == "bundler" ? "#{lib_dir}/bundler" : name
           version_const = name == "bundler" ? "Bundler::VERSION" : Spec::Builders.constantize(name)
           begin
-            run! "require '#{name}.rb'; puts #{version_const}", *groups
+            run! "require '#{require_path}.rb'; puts #{version_const}", *groups
           rescue StandardError => e
             next "#{name} is not installed:\n#{indent(e)}"
           end
@@ -170,7 +172,7 @@ module Spec
               end
             R
           rescue StandardError => e
-            next "checking for #{name} failed:\n#{e}"
+            next "checking for #{name} failed:\n#{e}\n#{e.backtrace.join("\n")}"
           end
           next if out == "WIN"
           next "expected #{name} to not be installed, but it was" if version.nil?

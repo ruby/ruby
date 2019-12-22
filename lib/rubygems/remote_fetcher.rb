@@ -4,6 +4,7 @@ require 'rubygems/request'
 require 'rubygems/request/connection_pools'
 require 'rubygems/s3_uri_signer'
 require 'rubygems/uri_formatter'
+require 'rubygems/uri_parsing'
 require 'rubygems/user_interaction'
 require 'resolv'
 require 'rubygems/deprecate'
@@ -17,11 +18,15 @@ class Gem::RemoteFetcher
   include Gem::UserInteraction
   extend Gem::Deprecate
 
+  include Gem::UriParsing
+
   ##
   # A FetchError exception wraps up the various possible IO and HTTP failures
   # that could happen while downloading from the internet.
 
   class FetchError < Gem::Exception
+
+    include Gem::UriParsing
 
     ##
     # The URI which was being accessed when the exception happened.
@@ -30,13 +35,12 @@ class Gem::RemoteFetcher
 
     def initialize(message, uri)
       super message
-      begin
-        uri = URI(uri)
-        uri.password = 'REDACTED' if uri.password
-        @uri = uri.to_s
-      rescue URI::InvalidURIError, ArgumentError
-        @uri = uri
-      end
+
+      uri = parse_uri(uri)
+
+      uri.password = 'REDACTED' if uri.respond_to?(:password) && uri.password
+
+      @uri = uri.to_s
     end
 
     def to_s # :nodoc:
@@ -107,7 +111,7 @@ class Gem::RemoteFetcher
 
     spec, source = found.max_by { |(s,_)| s.version }
 
-    download spec, source.uri.to_s
+    download spec, source.uri
   end
 
   ##
@@ -130,18 +134,7 @@ class Gem::RemoteFetcher
 
     FileUtils.mkdir_p cache_dir rescue nil unless File.exist? cache_dir
 
-    # Always escape URI's to deal with potential spaces and such
-    # It should also be considered that source_uri may already be
-    # a valid URI with escaped characters. e.g. "{DESede}" is encoded
-    # as "%7BDESede%7D". If this is escaped again the percentage
-    # symbols will be escaped.
-    unless source_uri.is_a?(URI::Generic)
-      begin
-        source_uri = URI.parse(source_uri)
-      rescue
-        source_uri = URI.parse(URI::DEFAULT_PARSER.escape(source_uri.to_s))
-      end
-    end
+    source_uri = parse_uri(source_uri)
 
     scheme = source_uri.scheme
 
@@ -159,7 +152,7 @@ class Gem::RemoteFetcher
           remote_gem_path = source_uri + "gems/#{gem_file_name}"
 
           self.cache_update_path remote_gem_path, local_gem_path
-        rescue Gem::RemoteFetcher::FetchError
+        rescue FetchError
           raise if spec.original_platform == spec.platform
 
           alternate_name = "#{spec.original_name}.gem"
@@ -236,7 +229,7 @@ class Gem::RemoteFetcher
       unless location = response['Location']
         raise FetchError.new("redirecting but no redirect location was given", uri)
       end
-      location = URI.parse response['Location']
+      location = parse_uri location
 
       if https?(uri) && !https?(location)
         raise FetchError.new("redirecting to non-https resource: #{location}", uri)
@@ -254,9 +247,7 @@ class Gem::RemoteFetcher
   # Downloads +uri+ and returns it as a String.
 
   def fetch_path(uri, mtime = nil, head = false)
-    uri = URI.parse uri unless URI::Generic === uri
-
-    raise ArgumentError, "bad uri: #{uri}" unless uri
+    uri = parse_uri uri
 
     unless uri.scheme
       raise ArgumentError, "uri scheme is invalid: #{uri.scheme.inspect}"
@@ -268,21 +259,19 @@ class Gem::RemoteFetcher
       begin
         data = Gem::Util.gunzip data
       rescue Zlib::GzipFile::Error
-        raise FetchError.new("server did not return a valid file", uri.to_s)
+        raise FetchError.new("server did not return a valid file", uri)
       end
     end
 
     data
-  rescue FetchError
-    raise
   rescue Timeout::Error
-    raise UnknownHostError.new('timed out', uri.to_s)
+    raise UnknownHostError.new('timed out', uri)
   rescue IOError, SocketError, SystemCallError,
          *(OpenSSL::SSL::SSLError if defined?(OpenSSL)) => e
     if e.message =~ /getaddrinfo/
-      raise UnknownHostError.new('no such name', uri.to_s)
+      raise UnknownHostError.new('no such name', uri)
     else
-      raise FetchError.new("#{e.class}: #{e}", uri.to_s)
+      raise FetchError.new("#{e.class}: #{e}", uri)
     end
   end
 

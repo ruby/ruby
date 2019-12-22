@@ -116,13 +116,6 @@ Lint/ShadowedArgument:
   Exclude:
     - 'language/fixtures/super.rb'
 
-# Offense count: 10
-Lint/ShadowingOuterLocalVariable:
-  Exclude:
-    - 'core/binding/local_variables_spec.rb'
-    - 'language/block_spec.rb'
-    - 'language/proc_spec.rb'
-
 # Offense count: 2
 # Cop supports --auto-correct.
 Lint/StringConversionInInterpolation:

@@ -7,17 +7,21 @@ require 'pathname'
 require 'tmpdir'
 require 'rbconfig'
 
+if File.exist?(File.join(Dir.tmpdir, "Gemfile"))
+  raise "rubygems/bundler tests do not work correctly if there is #{ File.join(Dir.tmpdir, "Gemfile") }"
+end
+
 # TODO: push this up to test_case.rb once battle tested
 
 $LOAD_PATH.map! do |path|
-  path.dup.untaint
+  path.dup.tap(&Gem::UNTAINT)
 end
 
 class TestGem < Gem::TestCase
 
   PLUGINS_LOADED = [] # rubocop:disable Style/MutableConstant
 
-  PROJECT_DIR = File.expand_path('../../..', __FILE__).untaint
+  PROJECT_DIR = File.expand_path('../../..', __FILE__).tap(&Gem::UNTAINT)
 
   def setup
     super
@@ -216,13 +220,13 @@ class TestGem < Gem::TestCase
     end
     assert_equal(expected, result)
   ensure
-    File.chmod(0755, *Dir.glob(@gemhome + '/gems/**/').map {|path| path.untaint})
+    File.chmod(0755, *Dir.glob(@gemhome + '/gems/**/').map {|path| path.tap(&Gem::UNTAINT)})
   end
 
   def test_require_missing
     save_loaded_features do
       assert_raises ::LoadError do
-        require "q"
+        require "test_require_missing"
       end
     end
   end
@@ -339,6 +343,74 @@ class TestGem < Gem::TestCase
     assert_includes e.message, "To update to the latest version installed on your system, run `bundle update --bundler`."
     assert_includes e.message, "To install the missing version, run `gem install bundler:9999`"
     refute_includes e.message, "can't find gem bundler (>= 0.a) with executable bundle"
+  end
+
+  def test_activate_bin_path_selects_exact_bundler_version_if_present
+    bundler_latest = util_spec 'bundler', '2.0.1' do |s|
+      s.executables = ['bundle']
+    end
+
+    bundler_previous = util_spec 'bundler', '2.0.0' do |s|
+      s.executables = ['bundle']
+    end
+
+    install_specs bundler_latest, bundler_previous
+
+    File.open("Gemfile.lock", "w") do |f|
+      f.write <<-L.gsub(/ {8}/, "")
+        GEM
+          remote: https://rubygems.org/
+          specs:
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+
+        BUNDLED WITH
+          2.0.0
+      L
+    end
+
+    File.open("Gemfile", "w") { |f| f.puts('source "https://rubygems.org"') }
+
+    load Gem.activate_bin_path("bundler", "bundle", ">= 0.a")
+
+    assert_equal %w(bundler-2.0.0), loaded_spec_names
+  end
+
+  def test_activate_bin_path_respects_underscore_selection_if_given
+    bundler_latest = util_spec 'bundler', '2.0.1' do |s|
+      s.executables = ['bundle']
+    end
+
+    bundler_previous = util_spec 'bundler', '1.17.3' do |s|
+      s.executables = ['bundle']
+    end
+
+    install_specs bundler_latest, bundler_previous
+
+    File.open("Gemfile.lock", "w") do |f|
+      f.write <<-L.gsub(/ {8}/, "")
+        GEM
+          remote: https://rubygems.org/
+          specs:
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+
+        BUNDLED WITH
+          2.0.1
+      L
+    end
+
+    File.open("Gemfile", "w") { |f| f.puts('source "https://rubygems.org"') }
+
+    load Gem.activate_bin_path("bundler", "bundle", "= 1.17.3")
+
+    assert_equal %w(bundler-1.17.3), loaded_spec_names
   end
 
   def test_self_bin_path_no_exec_name
@@ -1316,7 +1388,7 @@ class TestGem < Gem::TestCase
       a = util_spec "a", "1"
       b = util_spec "b", "1", "c" => nil
       c = util_spec "c", "2"
-      d = util_spec "d", "1", {'e' => '= 1'}, "lib/d.rb"
+      d = util_spec "d", "1", {'e' => '= 1'}, "lib/d#{$$}.rb"
       e = util_spec "e", "1"
 
       install_specs a, c, b, e, d
@@ -1325,7 +1397,7 @@ class TestGem < Gem::TestCase
         r.gem "a"
         r.gem "b", "= 1"
 
-        require 'd'
+        require "d#{$$}"
       end
 
       assert_equal %w!a-1 b-1 c-2 d-1 e-1!, loaded_spec_names
@@ -1545,8 +1617,8 @@ class TestGem < Gem::TestCase
     assert_equal expected_specs, Gem.use_gemdeps.sort_by { |s| s.name }
   end
 
-  LIB_PATH = File.expand_path "../../../lib".dup.untaint, __FILE__.dup.untaint
-  BUNDLER_LIB_PATH = File.expand_path $LOAD_PATH.find {|lp| File.file?(File.join(lp, "bundler.rb")) }.dup.untaint
+  LIB_PATH = File.expand_path "../../../lib".dup.tap(&Gem::UNTAINT), __FILE__.dup.tap(&Gem::UNTAINT)
+  BUNDLER_LIB_PATH = File.expand_path $LOAD_PATH.find {|lp| File.file?(File.join(lp, "bundler.rb")) }.dup.tap(&Gem::UNTAINT)
   BUNDLER_FULL_NAME = "bundler-#{Bundler::VERSION}".freeze
 
   def add_bundler_full_name(names)
@@ -1573,8 +1645,8 @@ class TestGem < Gem::TestCase
     ENV['RUBYGEMS_GEMDEPS'] = "-"
 
     path = File.join @tempdir, "gem.deps.rb"
-    cmd = [Gem.ruby.dup.untaint, "-I#{LIB_PATH.untaint}",
-           "-I#{BUNDLER_LIB_PATH.untaint}", "-rrubygems"]
+    cmd = [Gem.ruby.dup.tap(&Gem::UNTAINT), "-I#{LIB_PATH.tap(&Gem::UNTAINT)}",
+           "-I#{BUNDLER_LIB_PATH.tap(&Gem::UNTAINT)}", "-rrubygems"]
     cmd << "-eputs Gem.loaded_specs.values.map(&:full_name).sort"
 
     File.open path, "w" do |f|
@@ -1611,8 +1683,8 @@ class TestGem < Gem::TestCase
     Dir.mkdir "sub1"
 
     path = File.join @tempdir, "gem.deps.rb"
-    cmd = [Gem.ruby.dup.untaint, "-Csub1", "-I#{LIB_PATH.untaint}",
-           "-I#{BUNDLER_LIB_PATH.untaint}", "-rrubygems"]
+    cmd = [Gem.ruby.dup.tap(&Gem::UNTAINT), "-Csub1", "-I#{LIB_PATH.tap(&Gem::UNTAINT)}",
+           "-I#{BUNDLER_LIB_PATH.tap(&Gem::UNTAINT)}", "-rrubygems"]
     cmd << "-eputs Gem.loaded_specs.values.map(&:full_name).sort"
 
     File.open path, "w" do |f|
@@ -1660,7 +1732,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_use_gemdeps
-    gem_deps_file = 'gem.deps.rb'.untaint
+    gem_deps_file = 'gem.deps.rb'.tap(&Gem::UNTAINT)
     spec = util_spec 'a', 1
     install_specs spec
 
@@ -1845,16 +1917,11 @@ You may need to `gem install -g` to install missing gems
   end
 
   def with_bindir_and_exeext(bindir, exeext)
-    orig_bindir = RbConfig::CONFIG['bindir']
-    orig_exe_ext = RbConfig::CONFIG['EXEEXT']
-
-    RbConfig::CONFIG['bindir'] = bindir
-    RbConfig::CONFIG['EXEEXT'] = exeext
-
-    yield
-  ensure
-    RbConfig::CONFIG['bindir'] = orig_bindir
-    RbConfig::CONFIG['EXEEXT'] = orig_exe_ext
+    bindir(bindir) do
+      exeext(exeext) do
+        yield
+      end
+    end
   end
 
   def with_clean_path_to_ruby

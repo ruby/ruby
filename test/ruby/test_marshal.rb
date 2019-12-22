@@ -189,57 +189,6 @@ class TestMarshal < Test::Unit::TestCase
     end
   end
 
-  def test_taint
-    x = Object.new
-    x.taint
-    s = Marshal.dump(x)
-    assert_equal(true, s.tainted?)
-    y = Marshal.load(s)
-    assert_equal(true, y.tainted?)
-  end
-
-  def test_taint_each_object
-    x = Object.new
-    obj = [[x]]
-
-    # clean object causes crean stream
-    assert_equal(false, obj.tainted?)
-    assert_equal(false, obj.first.tainted?)
-    assert_equal(false, obj.first.first.tainted?)
-    s = Marshal.dump(obj)
-    assert_equal(false, s.tainted?)
-
-    # tainted object causes tainted stream
-    x.taint
-    assert_equal(false, obj.tainted?)
-    assert_equal(false, obj.first.tainted?)
-    assert_equal(true, obj.first.first.tainted?)
-    t = Marshal.dump(obj)
-    assert_equal(true, t.tainted?)
-
-    # clean stream causes clean objects
-    assert_equal(false, s.tainted?)
-    y = Marshal.load(s)
-    assert_equal(false, y.tainted?)
-    assert_equal(false, y.first.tainted?)
-    assert_equal(false, y.first.first.tainted?)
-
-    # tainted stream causes tainted objects
-    assert_equal(true, t.tainted?)
-    y = Marshal.load(t)
-    assert_equal(true, y.tainted?)
-    assert_equal(true, y.first.tainted?)
-    assert_equal(true, y.first.first.tainted?)
-
-    # same tests by different senario
-    s.taint
-    assert_equal(true, s.tainted?)
-    y = Marshal.load(s)
-    assert_equal(true, y.tainted?)
-    assert_equal(true, y.first.tainted?)
-    assert_equal(true, y.first.first.tainted?)
-  end
-
   def test_symbol2
     [:ruby, :"\u{7d05}\u{7389}"].each do |sym|
       assert_equal(sym, Marshal.load(Marshal.dump(sym)), '[ruby-core:24788]')
@@ -499,16 +448,6 @@ class TestMarshal < Test::Unit::TestCase
   module TestModule
   end
 
-  def test_marshal_load_should_not_taint_classes
-    bug7325 = '[ruby-core:49198]'
-    for c in [TestClass, TestModule]
-      assert_not_predicate(c, :tainted?)
-      c2 = Marshal.load(Marshal.dump(c).taint)
-      assert_same(c, c2)
-      assert_not_predicate(c, :tainted?, bug7325)
-    end
-  end
-
   class Bug7627 < Struct.new(:bar)
     attr_accessor :foo
 
@@ -618,15 +557,6 @@ class TestMarshal < Test::Unit::TestCase
     packed = ["foo"].pack("p")
     bare = "".force_encoding(Encoding::ASCII_8BIT) << packed
     assert_equal(Marshal.dump(bare), Marshal.dump(packed))
-  end
-
-  def test_untainted_numeric
-    bug8945 = '[ruby-core:57346] [Bug #8945] Numerics never be tainted'
-    b = RbConfig::LIMITS['FIXNUM_MAX'] + 1
-    tainted = [0, 1.0, 1.72723e-77, b].select do |x|
-      Marshal.load(Marshal.dump(x).taint).tainted?
-    end
-    assert_empty(tainted.map {|x| [x, x.class]}, bug8945)
   end
 
   class Bug9523

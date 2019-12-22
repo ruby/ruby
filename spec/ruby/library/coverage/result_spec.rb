@@ -35,8 +35,9 @@ describe 'Coverage.result' do
     Coverage.start
     require @class_file.chomp('.rb')
     Coverage.result
-    -> { Coverage.result }
-      .should raise_error(RuntimeError, 'coverage measurement is not enabled')
+    -> {
+      Coverage.result
+    }.should raise_error(RuntimeError, 'coverage measurement is not enabled')
   end
 
   it 'second run should give same result' do

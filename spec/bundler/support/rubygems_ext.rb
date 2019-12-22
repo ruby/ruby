@@ -1,27 +1,25 @@
 # frozen_string_literal: true
 
-require "rubygems/user_interaction"
 require_relative "path"
-require "fileutils"
 
 module Spec
   module Rubygems
     DEV_DEPS = {
-      "automatiek" => "~> 0.2.0",
+      "automatiek" => "~> 0.3.0",
+      "parallel_tests" => "~> 2.29",
       "rake" => "~> 12.0",
       "ronn" => "~> 0.7.3",
-      "rspec" => "~> 3.6",
-      "rubocop" => "= 0.74.0",
-      "rubocop-performance" => "= 1.4.0",
+      "rspec" => "~> 3.8",
+      "rubocop" => "= 0.77.0",
+      "rubocop-performance" => "= 1.5.1",
     }.freeze
 
     DEPS = {
-      # artifice doesn't support rack 2.x now.
-      "rack" => "< 2.0",
+      "rack" => "~> 2.0",
       "rack-test" => "~> 1.1",
       "artifice" => "~> 0.6.0",
       "compact_index" => "~> 0.11.0",
-      "sinatra" => "~> 1.4.7",
+      "sinatra" => "~> 2.0",
       # Rake version has to be consistent for tests to pass
       "rake" => "12.3.2",
       "builder" => "~> 3.2",
@@ -29,7 +27,9 @@ module Spec
       "ruby-graphviz" => ">= 0.a",
     }.freeze
 
-    def self.dev_setup
+    extend self
+
+    def dev_setup
       deps = DEV_DEPS
 
       # JRuby can't build ronn, so we skip that
@@ -38,22 +38,21 @@ module Spec
       install_gems(deps)
     end
 
-    def self.gem_load(gem_name, bin_container)
-      gem_activate(gem_name)
-      load Gem.bin_path(gem_name, bin_container)
+    def gem_load(gem_name, bin_container)
+      require_relative "rubygems_version_manager"
+      RubygemsVersionManager.new(ENV["RGV"]).switch
+
+      gem_load_and_activate(gem_name, bin_container)
     end
 
-    def self.gem_activate(gem_name)
-      gem_requirement = DEV_DEPS[gem_name]
-      gem gem_name, gem_requirement
-    end
-
-    def self.gem_require(gem_name)
+    def gem_require(gem_name)
       gem_activate(gem_name)
       require gem_name
     end
 
-    def self.setup
+    def setup
+      require "fileutils"
+
       Gem.clear_paths
 
       ENV["BUNDLE_PATH"] = nil
@@ -68,23 +67,40 @@ module Spec
         FileUtils.mkdir_p(Path.base_system_gems)
         puts "installing gems for the tests to use..."
         install_gems(DEPS)
-        manifest_path.open("w") {|f| f << manifest.join }
+        manifest_path.open("wb") {|f| f << manifest.join }
       end
+
+      FileUtils.mkdir_p(Path.home)
+      FileUtils.mkdir_p(Path.tmpdir)
 
       ENV["HOME"] = Path.home.to_s
       ENV["TMPDIR"] = Path.tmpdir.to_s
 
+      require "rubygems/user_interaction"
       Gem::DefaultUserInteraction.ui = Gem::SilentUI.new
     end
 
-    def self.install_gems(gems)
+  private
+
+    def gem_load_and_activate(gem_name, bin_container)
+      gem_activate(gem_name)
+      load Gem.bin_path(gem_name, bin_container)
+    rescue Gem::LoadError => e
+      abort "We couln't activate #{gem_name} (#{e.requirement}). Run `gem install #{gem_name}:'#{e.requirement}'`"
+    end
+
+    def gem_activate(gem_name)
+      gem_requirement = DEV_DEPS[gem_name]
+      gem gem_name, gem_requirement
+    end
+
+    def install_gems(gems)
       reqs, no_reqs = gems.partition {|_, req| !req.nil? && !req.split(" ").empty? }
       no_reqs.map!(&:first)
       reqs.map! {|name, req| "'#{name}:#{req}'" }
       deps = reqs.concat(no_reqs).join(" ")
-      gem = Spec::Path.ruby_core? ? ENV["BUNDLE_GEM"] : "#{Gem.ruby} -S gem"
+      gem = ENV["GEM_COMMAND"] || "#{Gem.ruby} -S gem --backtrace"
       cmd = "#{gem} install #{deps} --no-document --conservative"
-      puts cmd
       system(cmd) || raise("Installing gems #{deps} for the tests to use failed!")
     end
   end

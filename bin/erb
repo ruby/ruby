@@ -128,10 +128,10 @@ EOU
       exit 2 unless src
       trim = trim_mode_opt(trim_mode, disable_percent)
       if safe_level.nil?
-        erb = factory.new(src.untaint, trim_mode: trim)
+        erb = factory.new(src, trim_mode: trim)
       else
         # [deprecated] This will be removed at Ruby 2.7.
-        erb = factory.new(src.untaint, safe_level, trim_mode: trim)
+        erb = factory.new(src, safe_level, trim_mode: trim)
       end
       erb.filename = filename
       if output
@@ -143,7 +143,7 @@ EOU
           puts erb.src
         end
       else
-        bind = TOPLEVEL_BINDING.taint
+        bind = TOPLEVEL_BINDING
         if variables
           enc = erb.encoding
           for var, val in variables do

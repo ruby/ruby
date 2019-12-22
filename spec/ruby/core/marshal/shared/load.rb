@@ -182,85 +182,87 @@ describe :marshal_load, shared: true do
     end
   end
 
-  it "returns an untainted object if source is untainted" do
-    x = Object.new
-    y = Marshal.send(@method, Marshal.dump(x))
-    y.tainted?.should be_false
-  end
-
-  describe "when source is tainted" do
-    it "returns a tainted object" do
+  ruby_version_is ''...'2.7' do
+    it "returns an untainted object if source is untainted" do
       x = Object.new
-      x.taint
-      s = Marshal.dump(x)
-      y = Marshal.send(@method, s)
-      y.tainted?.should be_true
+      y = Marshal.send(@method, Marshal.dump(x))
+      y.tainted?.should be_false
+    end
 
-      # note that round-trip via Marshal does not preserve
-      # the taintedness at each level of the nested structure
-      y = Marshal.send(@method, Marshal.dump([[x]]))
+    describe "when source is tainted" do
+      it "returns a tainted object" do
+        x = Object.new
+        x.taint
+        s = Marshal.dump(x)
+        y = Marshal.send(@method, s)
+        y.tainted?.should be_true
+
+        # note that round-trip via Marshal does not preserve
+        # the taintedness at each level of the nested structure
+        y = Marshal.send(@method, Marshal.dump([[x]]))
+        y.tainted?.should be_true
+        y.first.tainted?.should be_true
+        y.first.first.tainted?.should be_true
+      end
+
+      it "does not taint Symbols" do
+        x = [:x]
+        y = Marshal.send(@method, Marshal.dump(x).taint)
+        y.tainted?.should be_true
+        y.first.tainted?.should be_false
+      end
+
+      it "does not taint Fixnums" do
+        x = [1]
+        y = Marshal.send(@method, Marshal.dump(x).taint)
+        y.tainted?.should be_true
+        y.first.tainted?.should be_false
+      end
+
+      it "does not taint Bignums" do
+        x = [bignum_value]
+        y = Marshal.send(@method, Marshal.dump(x).taint)
+        y.tainted?.should be_true
+        y.first.tainted?.should be_false
+      end
+
+      it "does not taint Floats" do
+        x = [1.2]
+        y = Marshal.send(@method, Marshal.dump(x).taint)
+        y.tainted?.should be_true
+        y.first.tainted?.should be_false
+      end
+    end
+
+    it "preserves taintedness of nested structure" do
+      x = Object.new
+      a = [[x]]
+      x.taint
+      y = Marshal.send(@method, Marshal.dump(a))
       y.tainted?.should be_true
       y.first.tainted?.should be_true
       y.first.first.tainted?.should be_true
     end
 
-    it "does not taint Symbols" do
-      x = [:x]
-      y = Marshal.send(@method, Marshal.dump(x).taint)
-      y.tainted?.should be_true
-      y.first.tainted?.should be_false
+    it "returns a trusted object if source is trusted" do
+      x = Object.new
+      y = Marshal.send(@method, Marshal.dump(x))
+      y.untrusted?.should be_false
     end
 
-    it "does not taint Fixnums" do
-      x = [1]
-      y = Marshal.send(@method, Marshal.dump(x).taint)
-      y.tainted?.should be_true
-      y.first.tainted?.should be_false
+    it "returns an untrusted object if source is untrusted" do
+      x = Object.new
+      x.untrust
+      y = Marshal.send(@method, Marshal.dump(x))
+      y.untrusted?.should be_true
+
+      # note that round-trip via Marshal does not preserve
+      # the untrustedness at each level of the nested structure
+      y = Marshal.send(@method, Marshal.dump([[x]]))
+      y.untrusted?.should be_true
+      y.first.untrusted?.should be_true
+      y.first.first.untrusted?.should be_true
     end
-
-    it "does not taint Bignums" do
-      x = [bignum_value]
-      y = Marshal.send(@method, Marshal.dump(x).taint)
-      y.tainted?.should be_true
-      y.first.tainted?.should be_false
-    end
-
-    it "does not taint Floats" do
-      x = [1.2]
-      y = Marshal.send(@method, Marshal.dump(x).taint)
-      y.tainted?.should be_true
-      y.first.tainted?.should be_false
-    end
-  end
-
-  it "preserves taintedness of nested structure" do
-    x = Object.new
-    a = [[x]]
-    x.taint
-    y = Marshal.send(@method, Marshal.dump(a))
-    y.tainted?.should be_true
-    y.first.tainted?.should be_true
-    y.first.first.tainted?.should be_true
-  end
-
-  it "returns a trusted object if source is trusted" do
-    x = Object.new
-    y = Marshal.send(@method, Marshal.dump(x))
-    y.untrusted?.should be_false
-  end
-
-  it "returns an untrusted object if source is untrusted" do
-    x = Object.new
-    x.untrust
-    y = Marshal.send(@method, Marshal.dump(x))
-    y.untrusted?.should be_true
-
-    # note that round-trip via Marshal does not preserve
-    # the untrustedness at each level of the nested structure
-    y = Marshal.send(@method, Marshal.dump([[x]]))
-    y.untrusted?.should be_true
-    y.first.untrusted?.should be_true
-    y.first.first.untrusted?.should be_true
   end
 
   # Note: Ruby 1.9 should be compatible with older marshal format
@@ -528,6 +530,19 @@ describe :marshal_load, shared: true do
       loaded = Marshal.send(@method, "\x04\bo:\x0EException\a:\tmesgI\"\bfoo\x06:\x06EF:\abt[\x06I\"\x12foo/bar.rb:10\x06;\aF")
       loaded.message.should == obj.message
       loaded.backtrace.should == obj.backtrace
+    end
+
+    it "loads an marshalled exception with ivars" do
+      s = 'hi'
+      arr = [:so, :so, s, s]
+      obj = Exception.new("foo")
+      obj.instance_variable_set :@arr, arr
+
+      loaded = Marshal.send(@method, "\x04\bo:\x0EException\b:\tmesg\"\bfoo:\abt0:\t@arr[\t:\aso;\t\"\ahi@\b")
+      new_arr = loaded.instance_variable_get :@arr
+
+      loaded.message.should == obj.message
+      new_arr.should == arr
     end
   end
 

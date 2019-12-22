@@ -48,28 +48,28 @@ describe EqualElementMatcher do
   it "provides a useful failure message" do
     equal_element = EqualElementMatcher.new("A", {}, "Test")
     equal_element.matches?('<A></A>').should be_false
-    equal_element.failure_message.should == [%{Expected "<A></A>"\n}, %{to be a 'A' element with no attributes and "Test" as content}]
+    equal_element.failure_message.should == [%{Expected "<A></A>"}, %{to be a 'A' element with no attributes and "Test" as content}]
 
     equal_element = EqualElementMatcher.new("A", {}, "")
     equal_element.matches?('<A>Test</A>').should be_false
-    equal_element.failure_message.should == [%{Expected "<A>Test</A>"\n}, %{to be a 'A' element with no attributes and no content}]
+    equal_element.failure_message.should == [%{Expected "<A>Test</A>"}, %{to be a 'A' element with no attributes and no content}]
 
     equal_element = EqualElementMatcher.new("A", "HREF" => "http://www.example.com")
     equal_element.matches?('<A>Test</A>').should be_false
-    equal_element.failure_message.should == [%{Expected "<A>Test</A>"\n}, %{to be a 'A' element with HREF="http://www.example.com" and any content}]
+    equal_element.failure_message.should == [%{Expected "<A>Test</A>"}, %{to be a 'A' element with HREF="http://www.example.com" and any content}]
   end
 
   it "provides a useful negative failure message" do
     equal_element = EqualElementMatcher.new("A", {}, "Test")
     equal_element.matches?('<A></A>').should be_false
-    equal_element.negative_failure_message.should == [%{Expected "<A></A>"\n}, %{not to be a 'A' element with no attributes and "Test" as content}]
+    equal_element.negative_failure_message.should == [%{Expected "<A></A>"}, %{not to be a 'A' element with no attributes and "Test" as content}]
 
     equal_element = EqualElementMatcher.new("A", {}, "")
     equal_element.matches?('<A>Test</A>').should be_false
-    equal_element.negative_failure_message.should == [%{Expected "<A>Test</A>"\n}, %{not to be a 'A' element with no attributes and no content}]
+    equal_element.negative_failure_message.should == [%{Expected "<A>Test</A>"}, %{not to be a 'A' element with no attributes and no content}]
 
     equal_element = EqualElementMatcher.new("A", "HREF" => "http://www.example.com")
     equal_element.matches?('<A>Test</A>').should be_false
-    equal_element.negative_failure_message.should == [%{Expected "<A>Test</A>"\n}, %{not to be a 'A' element with HREF="http://www.example.com" and any content}]
+    equal_element.negative_failure_message.should == [%{Expected "<A>Test</A>"}, %{not to be a 'A' element with HREF="http://www.example.com" and any content}]
   end
 end

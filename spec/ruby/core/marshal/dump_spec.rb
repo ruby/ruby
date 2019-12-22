@@ -473,6 +473,12 @@ describe "Marshal.dump" do
       Marshal.dump(obj).should == "\x04\bo:\x0EException\a:\tmesg\"\bfoo:\abt[\x06\"\x12foo/bar.rb:10"
     end
 
+    it "dumps instance variables if they exist" do
+      obj = Exception.new("foo")
+      obj.instance_variable_set(:@ivar, 1)
+      Marshal.dump(obj).should == "\x04\bo:\x0EException\b:\tmesg\"\bfoo:\abt0:\n@ivari\x06"
+    end
+
     it "dumps the cause for the exception" do
       exc = nil
       begin
@@ -581,27 +587,29 @@ describe "Marshal.dump" do
     -> { Marshal.dump(m) }.should raise_error(TypeError)
   end
 
-  it "returns an untainted string if object is untainted" do
-    Marshal.dump(Object.new).tainted?.should be_false
-  end
+  ruby_version_is ''...'2.7' do
+    it "returns an untainted string if object is untainted" do
+      Marshal.dump(Object.new).tainted?.should be_false
+    end
 
-  it "returns a tainted string if object is tainted" do
-    Marshal.dump(Object.new.taint).tainted?.should be_true
-  end
+    it "returns a tainted string if object is tainted" do
+      Marshal.dump(Object.new.taint).tainted?.should be_true
+    end
 
-  it "returns a tainted string if nested object is tainted" do
-    Marshal.dump([[Object.new.taint]]).tainted?.should be_true
-  end
+    it "returns a tainted string if nested object is tainted" do
+      Marshal.dump([[Object.new.taint]]).tainted?.should be_true
+    end
 
-  it "returns a trusted string if object is trusted" do
-    Marshal.dump(Object.new).untrusted?.should be_false
-  end
+    it "returns a trusted string if object is trusted" do
+      Marshal.dump(Object.new).untrusted?.should be_false
+    end
 
-  it "returns an untrusted string if object is untrusted" do
-    Marshal.dump(Object.new.untrust).untrusted?.should be_true
-  end
+    it "returns an untrusted string if object is untrusted" do
+      Marshal.dump(Object.new.untrust).untrusted?.should be_true
+    end
 
-  it "returns an untrusted string if nested object is untrusted" do
-    Marshal.dump([[Object.new.untrust]]).untrusted?.should be_true
+    it "returns an untrusted string if nested object is untrusted" do
+      Marshal.dump([[Object.new.untrust]]).untrusted?.should be_true
+    end
   end
 end

@@ -1,3 +1,5 @@
+require 'io/console'
+
 class Reline::ANSI
   RAW_KEYSTROKE_CONFIG = {
     [27, 91, 65] => :ed_prev_history,     # ↑
@@ -7,7 +9,13 @@ class Reline::ANSI
     [27, 91, 51, 126] => :key_delete,     # Del
     [27, 91, 49, 126] => :ed_move_to_beg, # Home
     [27, 91, 52, 126] => :ed_move_to_end, # End
-  }.each_key(&:freeze).freeze
+    [27, 91, 72] => :ed_move_to_beg,      # Home
+    [27, 91, 70] => :ed_move_to_end,      # End
+    [27, 32] => :em_set_mark,             # M-<space>
+    [24, 24] => :em_exchange_mark,        # C-x C-x TODO also add Windows
+    [27, 91, 49, 59, 53, 67] => :em_next_word, # Ctrl+→
+    [27, 91, 49, 59, 53, 68] => :ed_prev_word, # Ctrl+←
+  }
 
   @@input = STDIN
   def self.input=(val)
@@ -24,18 +32,21 @@ class Reline::ANSI
     unless @@buf.empty?
       return @@buf.shift
     end
-    c = nil
-    loop do
-      result = select([@@input], [], [], 0.1)
-      next if result.nil?
-      c = @@input.read(1)
-      break
-    end
-    c&.ord
+    c = @@input.raw(intr: true, &:getbyte)
+    (c == 0x16 && @@input.raw(min: 0, tim: 0, &:getbyte)) || c
   end
 
   def self.ungetc(c)
     @@buf.unshift(c)
+  end
+
+  def self.retrieve_keybuffer
+      result = select([@@input], [], [], 0.001)
+      return if result.nil?
+      str = @@input.read_nonblock(1024)
+      str.bytes.each do |c|
+        @@buf.push(c)
+      end
   end
 
   def self.get_screen_size
@@ -54,14 +65,18 @@ class Reline::ANSI
   def self.cursor_pos
     begin
       res = ''
+      m = nil
       @@input.raw do |stdin|
         @@output << "\e[6n"
         @@output.flush
         while (c = stdin.getc) != 'R'
           res << c if c
         end
+        m = res.match(/\e\[(?<row>\d+);(?<column>\d+)/)
+        (m.pre_match + m.post_match).chars.reverse_each do |ch|
+          stdin.ungetc ch
+        end
       end
-      m = res.match(/(?<row>\d+);(?<column>\d+)/)
       column = m[:column].to_i - 1
       row = m[:row].to_i - 1
     rescue Errno::ENOTTY
@@ -106,22 +121,21 @@ class Reline::ANSI
     print "\e[1;1H"
   end
 
+  @@old_winch_handler = nil
+  def self.set_winch_handler(&handler)
+    @@old_winch_handler = Signal.trap('WINCH', &handler)
+  end
+
   def self.prep
+    retrieve_keybuffer
     int_handle = Signal.trap('INT', 'IGNORE')
-    otio = `stty -g`.chomp
-    setting = ' -echo -icrnl cbreak'
-    if /-parenb\b/ =~ `stty -a`
-      setting << ' pass8'
-    end
-    setting << ' -ixoff'
-    `stty #{setting}`
     Signal.trap('INT', int_handle)
-    otio
+    nil
   end
 
   def self.deprep(otio)
     int_handle = Signal.trap('INT', 'IGNORE')
-    `stty #{otio}`
     Signal.trap('INT', int_handle)
+    Signal.trap('WINCH', @@old_winch_handler) if @@old_winch_handler
   end
 end

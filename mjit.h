@@ -43,6 +43,8 @@ struct mjit_options {
     // Disable compiler optimization and add debug symbols. It can be
     // very slow.
     char debug;
+    // Add arbitrary cflags.
+    char* debug_flags;
     // If not 0, all ISeqs are synchronously compiled. For testing.
     unsigned int wait;
     // Number of calls to trigger JIT compilation. For testing.
@@ -78,9 +80,7 @@ extern void rb_mjit_recompile_iseq(const rb_iseq_t *iseq);
 RUBY_SYMBOL_EXPORT_END
 
 extern bool mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname);
-extern void mjit_init(struct mjit_options *opts);
-extern void mjit_postponed_job_register_start_hook(void);
-extern void mjit_postponed_job_register_finish_hook(void);
+extern void mjit_init(const struct mjit_options *opts);
 extern void mjit_gc_start_hook(void);
 extern void mjit_gc_exit_hook(void);
 extern void mjit_free_iseq(const rb_iseq_t *iseq);
@@ -164,8 +164,6 @@ void mjit_child_after_fork(void);
 #else // USE_MJIT
 static inline struct mjit_cont *mjit_cont_new(rb_execution_context_t *ec){return NULL;}
 static inline void mjit_cont_free(struct mjit_cont *cont){}
-static inline void mjit_postponed_job_register_start_hook(void){}
-static inline void mjit_postponed_job_register_finish_hook(void){}
 static inline void mjit_gc_start_hook(void){}
 static inline void mjit_gc_exit_hook(void){}
 static inline void mjit_free_iseq(const rb_iseq_t *iseq){}

@@ -337,6 +337,28 @@ module KernelSpecs
     end
   end
 
+  module LambdaSpecs
+    module ZSuper
+      def lambda
+        super
+      end
+    end
+
+    class ForwardBlockWithZSuper
+      prepend(ZSuper)
+    end
+
+    module Ampersand
+      def lambda(&block)
+        super(&block)
+      end
+    end
+
+    class SuperAmpersand
+      prepend(Ampersand)
+    end
+  end
+
   class RespondViaMissing
     def respond_to_missing?(method, priv=false)
       case method

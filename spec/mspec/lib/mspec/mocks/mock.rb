@@ -48,7 +48,7 @@ module Mock
     end
   end
 
-  def self.install_method(obj, sym, type=nil)
+  def self.install_method(obj, sym, type = nil)
     meta = obj.singleton_class
 
     key = replaced_key obj, sym

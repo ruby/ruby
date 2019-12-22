@@ -27,9 +27,9 @@ RSpec.describe Bundler::Env do
       end
 
       it "prints gem path" do
-        with_clear_paths("GEM_PATH", "/a/b/c:/d/e/f") do
+        with_clear_paths("GEM_PATH", "/a/b/c#{File::PATH_SEPARATOR}d/e/f") do
           out = described_class.report
-          expect(out).to include("Gem Path    /a/b/c:/d/e/f")
+          expect(out).to include("Gem Path    /a/b/c#{File::PATH_SEPARATOR}d/e/f")
         end
       end
 
@@ -190,11 +190,11 @@ RSpec.describe Bundler::Env do
     end
   end
 
-  describe ".version_of", :ruby_repo do
+  describe ".version_of" do
     let(:parsed_version) { described_class.send(:version_of, "ruby") }
 
     it "strips version of new line characters" do
-      expect(parsed_version).to_not include("\n")
+      expect(parsed_version).to_not end_with("\n")
     end
   end
 end

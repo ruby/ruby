@@ -30,16 +30,16 @@ class Ripper
   #   require 'pp'
   #
   #   pp Ripper.lex("def m(a) nil end")
-  #   #=> [[[1,  0], :on_kw,     "def", Ripper::EXPR_FNAME                   ],
-  #        [[1,  3], :on_sp,     " ",   Ripper::EXPR_FNAME                   ],
-  #        [[1,  4], :on_ident,  "m",   Ripper::EXPR_ENDFN                   ],
-  #        [[1,  5], :on_lparen, "(",   Ripper::EXPR_LABEL | Ripper::EXPR_BEG],
-  #        [[1,  6], :on_ident,  "a",   Ripper::EXPR_ARG                     ],
-  #        [[1,  7], :on_rparen, ")",   Ripper::EXPR_ENDFN                   ],
-  #        [[1,  8], :on_sp,     " ",   Ripper::EXPR_BEG                     ],
-  #        [[1,  9], :on_kw,     "nil", Ripper::EXPR_END                     ],
-  #        [[1, 12], :on_sp,     " ",   Ripper::EXPR_END                     ],
-  #        [[1, 13], :on_kw,     "end", Ripper::EXPR_END                     ]]
+  #   #=> [[[1,  0], :on_kw,     "def", FNAME    ],
+  #        [[1,  3], :on_sp,     " ",   FNAME    ],
+  #        [[1,  4], :on_ident,  "m",   ENDFN    ],
+  #        [[1,  5], :on_lparen, "(",   BEG|LABEL],
+  #        [[1,  6], :on_ident,  "a",   ARG      ],
+  #        [[1,  7], :on_rparen, ")",   ENDFN    ],
+  #        [[1,  8], :on_sp,     " ",   BEG      ],
+  #        [[1,  9], :on_kw,     "nil", END      ],
+  #        [[1, 12], :on_sp,     " ",   END      ],
+  #        [[1, 13], :on_kw,     "end", END      ]]
   #
   def Ripper.lex(src, filename = '-', lineno = 1)
     Lexer.new(src, filename, lineno).lex

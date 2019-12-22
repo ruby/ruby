@@ -41,17 +41,19 @@ describe "Array#+" do
     ([5, 6] + ArraySpecs::ToAryArray[1, 2]).should == [5, 6, 1, 2]
   end
 
-  it "does not get infected even if an original array is tainted" do
-    ([1, 2] + [3, 4]).tainted?.should be_false
-    ([1, 2].taint + [3, 4]).tainted?.should be_false
-    ([1, 2] + [3, 4].taint).tainted?.should be_false
-    ([1, 2].taint + [3, 4].taint).tainted?.should be_false
-  end
+  ruby_version_is ''...'2.7' do
+    it "does not get infected even if an original array is tainted" do
+      ([1, 2] + [3, 4]).tainted?.should be_false
+      ([1, 2].taint + [3, 4]).tainted?.should be_false
+      ([1, 2] + [3, 4].taint).tainted?.should be_false
+      ([1, 2].taint + [3, 4].taint).tainted?.should be_false
+    end
 
-  it "does not infected even if an original array is untrusted" do
-    ([1, 2] + [3, 4]).untrusted?.should be_false
-    ([1, 2].untrust + [3, 4]).untrusted?.should be_false
-    ([1, 2] + [3, 4].untrust).untrusted?.should be_false
-    ([1, 2].untrust + [3, 4].untrust).untrusted?.should be_false
+    it "does not infected even if an original array is untrusted" do
+      ([1, 2] + [3, 4]).untrusted?.should be_false
+      ([1, 2].untrust + [3, 4]).untrusted?.should be_false
+      ([1, 2] + [3, 4].untrust).untrusted?.should be_false
+      ([1, 2].untrust + [3, 4].untrust).untrusted?.should be_false
+    end
   end
 end

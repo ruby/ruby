@@ -19,7 +19,7 @@ EOR
       @rss_tmp = Tempfile.new(%w"rss10- .rdf")
       @rss_tmp.print(@rss10)
       @rss_tmp.close
-      @rss_file = @rss_tmp.path.untaint
+      @rss_file = @rss_tmp.path
     end
 
     def teardown

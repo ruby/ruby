@@ -38,6 +38,10 @@ describe "Regexp#match" do
     -> { Regexp.allocate.match('foo') }.should raise_error(TypeError)
   end
 
+  it "raises TypeError on an uninitialized Regexp" do
+    -> { Regexp.allocate.match('foo'.encode("UTF-16LE")) }.should raise_error(TypeError)
+  end
+
   describe "with [string, position]" do
     describe "when given a positive position" do
       it "matches the input at a given position" do

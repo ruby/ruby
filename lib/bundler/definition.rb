@@ -113,7 +113,7 @@ module Bundler
       end
       @unlocking ||= @unlock[:ruby] ||= (!@locked_ruby_version ^ !@ruby_version)
 
-      add_platforms unless Bundler.frozen_bundle?
+      add_current_platform unless Bundler.frozen_bundle?
 
       converge_path_sources_to_gemspec_sources
       @path_changes = converge_paths
@@ -317,7 +317,7 @@ module Bundler
     end
 
     def spec_git_paths
-      sources.git_sources.map {|s| File.realpath(s.path) }
+      sources.git_sources.map {|s| File.realpath(s.path) if File.exist?(s.path) }.compact
     end
 
     def groups
@@ -518,6 +518,10 @@ module Bundler
       raise InvalidOption, "Unable to remove the platform `#{platform}` since the only platforms are #{@platforms.join ", "}"
     end
 
+    def add_current_platform
+      current_platforms.each {|platform| add_platform(platform) }
+    end
+
     def find_resolved_spec(current_spec)
       specs.find_by_name_and_platform(current_spec.name, current_spec.platform)
     end
@@ -538,12 +542,6 @@ module Bundler
     end
 
   private
-
-    def add_platforms
-      (@dependencies.flat_map(&:expanded_platforms) + current_platforms).uniq.each do |platform|
-        add_platform(platform)
-      end
-    end
 
     def current_platforms
       current_platform = Bundler.local_platform
@@ -892,7 +890,17 @@ module Bundler
       dependencies.each do |dep|
         dep = Dependency.new(dep, ">= 0") unless dep.respond_to?(:name)
         next if !remote && !dep.current_platform?
-        dep.gem_platforms(sorted_platforms).each do |p|
+        platforms = dep.gem_platforms(sorted_platforms)
+        if platforms.empty? && !Bundler.settings[:disable_platform_warnings]
+          mapped_platforms = dep.expanded_platforms
+          Bundler.ui.warn \
+            "The dependency #{dep} will be unused by any of the platforms Bundler is installing for. " \
+            "Bundler is installing for #{@platforms.join ", "} but the dependency " \
+            "is only for #{mapped_platforms.join ", "}. " \
+            "To add those platforms to the bundle, " \
+            "run `bundle lock --add-platform #{mapped_platforms.join " "}`."
+        end
+        platforms.each do |p|
           deps << DepProxy.new(dep, p) if remote || p == generic_local_platform
         end
       end

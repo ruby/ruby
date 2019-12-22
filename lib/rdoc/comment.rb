@@ -24,6 +24,11 @@ class RDoc::Comment
   attr_accessor :location
 
   ##
+  # Line where this Comment was written
+
+  attr_accessor :line
+
+  ##
   # For duck-typing when merging classes at load time
 
   alias file location # :nodoc:

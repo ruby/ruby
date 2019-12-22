@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require File.expand_path("../endpoint", __FILE__)
+require_relative "endpoint"
 
 $LOAD_PATH.unshift Dir[base_system_gems.join("gems/compact_index*/lib")].first.to_s
 require "compact_index"
@@ -10,7 +10,7 @@ class CompactIndexAPI < Endpoint
     def load_spec(name, version, platform, gem_repo)
       full_name = "#{name}-#{version}"
       full_name += "-#{platform}" if platform != "ruby"
-      Marshal.load(Bundler.rubygems.inflate(File.open(gem_repo.join("quick/Marshal.4.8/#{full_name}.gemspec.rz")).read))
+      Marshal.load(Bundler.rubygems.inflate(File.binread(gem_repo.join("quick/Marshal.4.8/#{full_name}.gemspec.rz"))))
     end
 
     def etag_response

@@ -40,10 +40,12 @@ describe :string_each_line, shared: true do
     b.should == ["foo\n", "🤡🤡🤡🤡🤡🤡🤡\n", "bar\n", "baz\n"]
   end
 
-  it "taints substrings that are passed to the block if self is tainted" do
-    "one\ntwo\r\nthree".taint.send(@method) { |s| s.tainted?.should == true }
+  ruby_version_is ''...'2.7' do
+    it "taints substrings that are passed to the block if self is tainted" do
+      "one\ntwo\r\nthree".taint.send(@method) { |s| s.tainted?.should == true }
 
-    "x.y.".send(@method, ".".taint) { |s| s.tainted?.should == false }
+      "x.y.".send(@method, ".".taint) { |s| s.tainted?.should == false }
+    end
   end
 
   it "passes self as a whole to the block if the separator is nil" do

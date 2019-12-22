@@ -13,6 +13,10 @@ VALUE kernel_spec_call_proc(VALUE arg_array) {
   return rb_funcall(proc, rb_intern("call"), 1, arg);
 }
 
+VALUE kernel_spec_call_proc_raise(VALUE arg_array, VALUE raised_exc) {
+  return kernel_spec_call_proc(arg_array);
+}
+
 static VALUE kernel_spec_rb_block_given_p(VALUE self) {
   return rb_block_given_p() ? Qtrue : Qfalse;
 }
@@ -30,7 +34,7 @@ VALUE kernel_spec_rb_block_lambda(VALUE self) {
   return rb_block_lambda();
 }
 
-VALUE block_call_inject(VALUE yield_value, VALUE data2) {
+VALUE block_call_inject(RB_BLOCK_CALL_FUNC_ARGLIST(yield_value, data2)) {
   /* yield_value yields the first block argument */
   VALUE elem = yield_value;
   VALUE elem_incr = INT2FIX(FIX2INT(elem) + 1);
@@ -41,7 +45,7 @@ VALUE kernel_spec_rb_block_call(VALUE self, VALUE ary) {
   return rb_block_call(ary, rb_intern("map"), 0, NULL, block_call_inject, Qnil);
 }
 
-VALUE block_call_inject_multi_arg(VALUE yield_value, VALUE data2, int argc, VALUE argv[]) {
+VALUE block_call_inject_multi_arg(RB_BLOCK_CALL_FUNC_ARGLIST(yield_value, data2)) {
   /* yield_value yields the first block argument */
   VALUE sum  = yield_value;
   VALUE elem = argv[1];
@@ -53,6 +57,14 @@ VALUE kernel_spec_rb_block_call_multi_arg(VALUE self, VALUE ary) {
   VALUE method_args[1];
   method_args[0] = INT2FIX(0);
   return rb_block_call(ary, rb_intern("inject"), 1, method_args, block_call_inject_multi_arg, Qnil);
+}
+
+static VALUE return_extra_data(RB_BLOCK_CALL_FUNC_ARGLIST(yield_value, extra_data)) {
+  return extra_data;
+}
+
+VALUE rb_block_call_extra_data(VALUE self, VALUE object) {
+  return rb_block_call(object, rb_intern("instance_exec"), 0, NULL, return_extra_data, object);
 }
 
 VALUE kernel_spec_rb_block_call_no_func(VALUE self, VALUE ary) {
@@ -80,7 +92,7 @@ VALUE kernel_spec_rb_ensure(VALUE self, VALUE main_proc, VALUE arg,
       kernel_spec_call_proc, ensure_array);
 }
 
-VALUE kernel_spec_call_proc_with_catch(VALUE arg, VALUE data) {
+VALUE kernel_spec_call_proc_with_catch(RB_BLOCK_CALL_FUNC_ARGLIST(arg, data)) {
   return rb_funcall(data, rb_intern("call"), 0);
 }
 
@@ -88,12 +100,12 @@ VALUE kernel_spec_rb_catch(VALUE self, VALUE sym, VALUE main_proc) {
   return rb_catch(StringValuePtr(sym), kernel_spec_call_proc_with_catch, main_proc);
 }
 
-VALUE kernel_spec_call_proc_with_catch_obj(VALUE arg, VALUE data) {
+VALUE kernel_spec_call_proc_with_catch_obj(RB_BLOCK_CALL_FUNC_ARGLIST(arg, data)) {
   return rb_funcall(data, rb_intern("call"), 0);
 }
 
 VALUE kernel_spec_rb_catch_obj(VALUE self, VALUE obj, VALUE main_proc) {
-  return rb_catch_obj(obj, kernel_spec_call_proc_with_catch, main_proc);
+  return rb_catch_obj(obj, kernel_spec_call_proc_with_catch_obj, main_proc);
 }
 
 VALUE kernel_spec_rb_eval_string(VALUE self, VALUE str) {
@@ -161,7 +173,7 @@ VALUE kernel_spec_rb_rescue2(int argc, VALUE *args, VALUE self) {
   rb_ary_push(raise_array, args[3]);
 
   return rb_rescue2(kernel_spec_call_proc, main_array,
-      kernel_spec_call_proc, raise_array, args[4], args[5], (VALUE)0);
+      kernel_spec_call_proc_raise, raise_array, args[4], args[5], (VALUE)0);
 }
 
 static VALUE kernel_spec_rb_protect_yield(VALUE self, VALUE obj, VALUE ary) {
@@ -300,6 +312,7 @@ void Init_kernel_spec(void) {
   rb_define_method(cls, "rb_block_call", kernel_spec_rb_block_call, 1);
   rb_define_method(cls, "rb_block_call_multi_arg", kernel_spec_rb_block_call_multi_arg, 1);
   rb_define_method(cls, "rb_block_call_no_func", kernel_spec_rb_block_call_no_func, 1);
+  rb_define_method(cls, "rb_block_call_extra_data", rb_block_call_extra_data, 1);
   rb_define_method(cls, "rb_block_proc", kernel_spec_rb_block_proc, 0);
   rb_define_method(cls, "rb_block_lambda", kernel_spec_rb_block_lambda, 0);
   rb_define_method(cls, "rb_frame_this_func_test", kernel_spec_rb_frame_this_func, 0);

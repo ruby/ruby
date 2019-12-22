@@ -1042,7 +1042,7 @@ sock_s_gethostbyname(VALUE obj, VALUE host)
  *
  */
 static VALUE
-sock_s_gethostbyaddr(int argc, VALUE *argv)
+sock_s_gethostbyaddr(int argc, VALUE *argv, VALUE _)
 {
     VALUE addr, family;
     struct hostent *h;
@@ -1104,7 +1104,7 @@ sock_s_gethostbyaddr(int argc, VALUE *argv)
  *   Socket.getservbyname("syslog", "udp") #=> 514
  */
 static VALUE
-sock_s_getservbyname(int argc, VALUE *argv)
+sock_s_getservbyname(int argc, VALUE *argv, VALUE _)
 {
     VALUE service, proto;
     struct servent *sp;
@@ -1145,7 +1145,7 @@ sock_s_getservbyname(int argc, VALUE *argv)
  *
  */
 static VALUE
-sock_s_getservbyport(int argc, VALUE *argv)
+sock_s_getservbyport(int argc, VALUE *argv, VALUE _)
 {
     VALUE port, proto;
     struct servent *sp;
@@ -1164,7 +1164,7 @@ sock_s_getservbyport(int argc, VALUE *argv)
     if (!sp) {
 	rb_raise(rb_eSocket, "no such service for port %d/%s", (int)portnum, protoname);
     }
-    return rb_tainted_str_new2(sp->s_name);
+    return rb_str_new2(sp->s_name);
 }
 
 /*
@@ -1203,7 +1203,7 @@ sock_s_getservbyport(int argc, VALUE *argv)
  * If Addrinfo object is preferred, use Addrinfo.getaddrinfo.
  */
 static VALUE
-sock_s_getaddrinfo(int argc, VALUE *argv)
+sock_s_getaddrinfo(int argc, VALUE *argv, VALUE _)
 {
     VALUE host, port, family, socktype, protocol, flags, ret, revlookup;
     struct addrinfo hints;
@@ -1257,7 +1257,7 @@ sock_s_getaddrinfo(int argc, VALUE *argv)
  * If Addrinfo object is preferred, use Addrinfo#getnameinfo.
  */
 static VALUE
-sock_s_getnameinfo(int argc, VALUE *argv)
+sock_s_getnameinfo(int argc, VALUE *argv, VALUE _)
 {
     VALUE sa, af = Qnil, host = Qnil, port = Qnil, flags, tmp;
     char *hptr, *pptr;
@@ -1414,8 +1414,6 @@ sock_s_pack_sockaddr_in(VALUE self, VALUE port, VALUE host)
     VALUE addr = rb_str_new((char*)res->ai->ai_addr, res->ai->ai_addrlen);
 
     rb_freeaddrinfo(res);
-    OBJ_INFECT(addr, port);
-    OBJ_INFECT(addr, host);
 
     return addr;
 }
@@ -1457,7 +1455,6 @@ sock_s_unpack_sockaddr_in(VALUE self, VALUE addr)
 #endif
     }
     host = rsock_make_ipaddr((struct sockaddr*)sockaddr, RSTRING_SOCKLEN(addr));
-    OBJ_INFECT(host, addr);
     return rb_assoc_new(INT2NUM(ntohs(sockaddr->sin_port)), host);
 }
 
@@ -1487,7 +1484,6 @@ sock_s_pack_sockaddr_un(VALUE self, VALUE path)
     }
     memcpy(sockaddr.sun_path, RSTRING_PTR(path), RSTRING_LEN(path));
     addr = rb_str_new((char*)&sockaddr, rsock_unix_sockaddr_len(path));
-    OBJ_INFECT(addr, path);
 
     return addr;
 }
@@ -1524,7 +1520,6 @@ sock_s_unpack_sockaddr_un(VALUE self, VALUE addr)
 		 RSTRING_LEN(addr), (int)sizeof(struct sockaddr_un));
     }
     path = rsock_unixpath_str(sockaddr, RSTRING_SOCKLEN(addr));
-    OBJ_INFECT(path, addr);
     return path;
 }
 #endif

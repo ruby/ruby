@@ -25,6 +25,8 @@ TEST_TARGETS := $(patsubst test-short,btest-ruby test-knownbug test-basic,$(TEST
 TEST_DEPENDS := $(filter-out test-short $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_DEPENDS += $(if $(filter great exam love check,$(MAKECMDGOALS)),all exts)
 
+in-srcdir := $(if $(filter-out .,$(srcdir)),$(CHDIR) $(srcdir) &&)
+
 ifneq ($(filter -O0 -Od,$(optflags)),)
 override XCFLAGS := $(filter-out -D_FORTIFY_SOURCE=%,$(XCFLAGS))
 endif
@@ -88,20 +90,15 @@ sudo-precheck: test yes-test-testframework no-test-testframework
 install-prereq: sudo-precheck
 yes-test-all no-test-all: install
 endif
-ifneq ($(filter love install reinstall,$(MAKECMDGOALS)),)
-# Cross referece needs to parse all files at once
-RDOCFLAGS = --force-update
-endif
-ifneq ($(filter great,$(MAKECMDGOALS)),)
-love: test-rubyspec
-endif
+# Cross reference needs to parse all files at once
+love install reinstall: RDOCFLAGS = --force-update
 
 $(srcdir)/missing/des_tables.c: $(srcdir)/missing/crypt.c
 ifeq ($(if $(filter yes,$(CROSS_COMPILING)),,$(CC)),)
 	touch $@
 else
 	@$(ECHO) building make_des_table
-	$(CC) $(CPPFLAGS) -DDUMP $(LDFLAGS) $(XLDFLAGS) $(LIBS) -omake_des_table $(srcdir)/missing/crypt.c
+	$(CC) $(INCFLAGS) $(CPPFLAGS) -DDUMP $(LDFLAGS) $(XLDFLAGS) $(LIBS) -omake_des_table $(srcdir)/missing/crypt.c
 	@[ -x ./make_des_table ]
 	@$(ECHO) generating $@
 	$(Q) $(MAKEDIRS) $(@D)
@@ -148,7 +145,7 @@ commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS
 	@$(BASERUBY) -C "$(srcdir)" -I./tool/lib -rvcs -e 'VCS.detect(".").commit'
 	+$(Q) \
 	{ \
-	  $(CHDIR) "$(srcdir)"; \
+	  $(in-srcdir) \
 	  exec sed -f tool/prereq.status defs/gmake.mk template/Makefile.in common.mk; \
 	} | \
 	$(MAKE) $(mflags) Q=$(Q) ECHO=$(ECHO) srcdir="$(srcdir)" srcs_vpath="" CHDIR="$(CHDIR)" \
@@ -196,13 +193,13 @@ update-github: fetch-github
 	  curl -s $(if $(GITHUB_TOKEN),-H "Authorization: bearer $(GITHUB_TOKEN)") $(PULL_REQUEST_API) | \
 	  $(BASERUBY) -rjson -e 'JSON.parse(STDIN.read)["head"].tap { |h| print "#{h["repo"]["full_name"]} #{h["ref"]}" }' \
 	))
-	$(eval FORK_REPO := $(shell echo $(PULL_REQUEST_FORK_BRANCH) | cut -d' ' -f1))
-	$(eval PR_BRANCH := $(shell echo $(PULL_REQUEST_FORK_BRANCH) | cut -d' ' -f2))
+	$(eval FORK_REPO := $(word 1,$(PULL_REQUEST_FORK_BRANCH)))
+	$(eval PR_BRANCH := $(word 2,$(PULL_REQUEST_FORK_BRANCH)))
 
 	$(eval GITHUB_UPDATE_WORKTREE := $(shell mktemp -d "$(srcdir)/gh-$(PR)-XXXXXX"))
 	git -C "$(srcdir)" worktree add $(notdir $(GITHUB_UPDATE_WORKTREE)) "gh-$(PR)"
 	git -C "$(GITHUB_UPDATE_WORKTREE)" merge master --no-edit
-	@$(BASERUBY) -e 'print "Are you sure to push this to PR=$(PR)? [Y/n]: "; exit(gets.chomp == "n" ? 1 : 0)'
+	@$(BASERUBY) -e 'print "Are you sure to push this to PR=$(PR)? [Y/n]: "; exit(gets.chomp != "n")'
 	git -C "$(srcdir)" remote add fork-$(PR) git@github.com:$(FORK_REPO).git
 	git -C "$(GITHUB_UPDATE_WORKTREE)" push fork-$(PR) gh-$(PR):$(PR_BRANCH)
 	git -C "$(srcdir)" remote rm fork-$(PR)
@@ -232,7 +229,7 @@ fetch-github-%:
 
 .PHONY: checkout-github-%
 checkout-github-%: fetch-github-%
-	git -C "$(srcdir)" checkout "gh-$(1)"
+	git -C "$(srcdir)" checkout "gh-$*"
 
 .PHONY: pr-% pull-github-%
 pr-% pull-github-%: fetch-github-%
@@ -244,8 +241,15 @@ HELP_EXTRA_TASKS = \
 	"  update-github:       merge master branch and push it to Pull Request [PR=1234]" \
 	""
 
-ifeq ($(words $(filter update-gems extract-gems,$(MAKECMDGOALS))),2)
+ifneq ($(filter refresh-gems,$(MAKECMDGOALS)),)
 extract-gems: update-gems
+update-gems: update-bundled_gems
+endif
+ifneq ($(filter extract-gems,$(MAKECMDGOALS)),)
+extract-gems: $(filter update-gems update-bundled_gems,$(MAKECMDGOALS))
+endif
+ifneq ($(filter update-gems,$(MAKECMDGOALS)),)
+update-gems: $(filter update-bundled_gems,$(MAKECMDGOALS))
 endif
 
 ifeq ($(filter 0 1,$(words $(arch_flags))),)
@@ -287,9 +291,13 @@ $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: \
 	$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
 endif
 
+REVISION_IN_HEADER := $(shell sed -n 's/^\#define RUBY_FULL_REVISION "\(.*\)"/\1/p' $(srcdir)/revision.h 2>/dev/null)
+REVISION_LATEST := $(shell $(CHDIR) $(srcdir) && git log -1 --format=%H 2>/dev/null)
+ifneq ($(REVISION_IN_HEADER),$(REVISION_LATEST))
 # GNU make treat the target as unmodified when its dependents get
 # updated but it is not updated, while others may not.
 $(srcdir)/revision.h: $(REVISION_H)
+endif
 
 # Query on the generated rdoc
 #
@@ -305,6 +313,12 @@ spec/bundler/%: PHONY
 
 spec/%: programs exts PHONY
 	+$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec-run -B $(srcdir)/spec/default.mspec $(SPECOPTS) $(patsubst %,$(srcdir)/%,$@)
+
+benchmark/%: miniruby$(EXEEXT) update-benchmark-driver PHONY
+	$(Q)$(BASERUBY) -rrubygems -I$(srcdir)/benchmark/lib $(srcdir)/benchmark/benchmark-driver/exe/benchmark-driver \
+	            --executables="compare-ruby::$(COMPARE_RUBY) -I$(EXTOUT)/common --disable-gem" \
+	            --executables="built-ruby::$(BENCH_RUBY) --disable-gem" \
+	            $(srcdir)/$@ $(OPTS)
 
 clean-srcs-ext::
 	$(Q)$(RM) $(patsubst $(srcdir)/%,%,$(EXT_SRCS))

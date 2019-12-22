@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require File.expand_path("../endpoint_fallback", __FILE__)
+require_relative "endpoint_fallback"
 
 Artifice.deactivate
 

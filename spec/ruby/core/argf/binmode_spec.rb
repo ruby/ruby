@@ -22,7 +22,7 @@ describe "ARGF.binmode" do
       end
     end
 
-    it "puts alls subsequent stream reading through ARGF into binmode" do
+    it "puts all subsequent streams reading through ARGF into binmode" do
       argf [@bin_file, @bin_file] do
         @argf.binmode
         @argf.gets.should == "test\r\n"

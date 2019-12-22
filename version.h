@@ -5,8 +5,8 @@
 #define RUBY_PATCHLEVEL -1
 
 #define RUBY_RELEASE_YEAR 2019
-#define RUBY_RELEASE_MONTH 8
-#define RUBY_RELEASE_DAY 16
+#define RUBY_RELEASE_MONTH 12
+#define RUBY_RELEASE_DAY 23
 
 #include "ruby/version.h"
 

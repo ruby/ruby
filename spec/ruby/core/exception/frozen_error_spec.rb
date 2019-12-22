@@ -12,7 +12,7 @@ describe "FrozenError.new" do
   ruby_version_is "2.7" do
     it "should take optional receiver argument" do
       o = Object.new
-      FrozenError.new("msg", o).receiver.should equal(o)
+      FrozenError.new("msg", receiver: o).receiver.should equal(o)
     end
   end
 end

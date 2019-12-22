@@ -8,7 +8,7 @@ describe ComplainMatcher do
     ComplainMatcher.new(nil).matches?(proc).should == true
   end
 
-  it "maches when executing the proc results in the expected output to $stderr" do
+  it "matches when executing the proc results in the expected output to $stderr" do
     proc = lambda { warn "Que haces?" }
     ComplainMatcher.new("Que haces?\n").matches?(proc).should == true
     ComplainMatcher.new("Que pasa?\n").matches?(proc).should == false

@@ -18,7 +18,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def setup
-    @dir = Dir.mktmpdir("rubytest-file")
+    @dir = Dir.mktmpdir("ruby-test")
     File.chown(-1, Process.gid, @dir)
   end
 
@@ -70,7 +70,7 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def notownedfile
     return @notownedfile if defined? @notownedfile
-    if Process.euid != 0
+    if Process.euid != File.stat("/").uid
       @notownedfile = '/'
     else
       @notownedfile = nil
@@ -184,24 +184,6 @@ class TestFileExhaustive < Test::Unit::TestCase
         define_method(:to_path) { file }
       end
       assert_equal(file, File.path(o))
-    end
-  end
-
-  def test_path_taint
-    [regular_file, utf8_file].each do |file|
-      file.untaint
-      assert_equal(false, File.open(file) {|f| f.path}.tainted?)
-      assert_equal(true, File.open(file.dup.taint) {|f| f.path}.tainted?)
-      o = Object.new
-      class << o; self; end.class_eval do
-        define_method(:to_path) { file }
-      end
-      assert_equal(false, File.open(o) {|f| f.path}.tainted?)
-      class << o; self; end.class_eval do
-        remove_method(:to_path)
-        define_method(:to_path) { file.dup.taint }
-      end
-      assert_equal(true, File.open(o) {|f| f.path}.tainted?)
     end
   end
 
@@ -642,6 +624,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_birthtime
+    skip if RUBY_PLATFORM =~ /android/
     [regular_file, utf8_file].each do |file|
       t1 = File.birthtime(file)
       t2 = File.open(file) {|f| f.birthtime}
@@ -1076,32 +1059,6 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_match(%r"\A#{DRIVE}/foo\z"i, File.expand_path('/foo'))
   end
 
-  def test_expand_path_returns_tainted_strings_or_not
-    assert_equal(true, File.expand_path('foo').tainted?)
-    assert_equal(true, File.expand_path('foo'.taint).tainted?)
-    assert_equal(true, File.expand_path('/foo'.taint).tainted?)
-    assert_equal(true, File.expand_path('foo', 'bar').tainted?)
-    assert_equal(true, File.expand_path('foo', '/bar'.taint).tainted?)
-    assert_equal(true, File.expand_path('foo'.taint, '/bar').tainted?)
-    assert_equal(true, File.expand_path('~').tainted?) if ENV["HOME"]
-
-    if DRIVE
-      assert_equal(true, File.expand_path('/foo').tainted?)
-      assert_equal(false, File.expand_path('//foo').tainted?)
-      assert_equal(true, File.expand_path('C:/foo'.taint).tainted?)
-      assert_equal(false, File.expand_path('C:/foo').tainted?)
-      assert_equal(true, File.expand_path('foo', '/bar').tainted?)
-      assert_equal(true, File.expand_path('foo', 'C:/bar'.taint).tainted?)
-      assert_equal(true, File.expand_path('foo'.taint, 'C:/bar').tainted?)
-      assert_equal(false, File.expand_path('foo', 'C:/bar').tainted?)
-      assert_equal(false, File.expand_path('C:/foo/../bar').tainted?)
-      assert_equal(false, File.expand_path('foo', '//bar').tainted?)
-    else
-      assert_equal(false, File.expand_path('/foo').tainted?)
-      assert_equal(false, File.expand_path('foo', '/bar').tainted?)
-    end
-  end
-
   def test_expand_path_converts_a_pathname_to_an_absolute_pathname_using_home_as_base
     old_home = ENV["HOME"]
     home = ENV["HOME"] = "#{DRIVE}/UserHome"
@@ -1307,21 +1264,23 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal(".test", File.extname(regular_file))
     assert_equal(".test", File.extname(utf8_file))
     prefixes = ["", "/", ".", "/.", "bar/.", "/bar/."]
-    infixes = ["", " ", "."]
+    infixes = ["", " "]
     infixes2 = infixes + [".ext "]
     appendixes = [""]
     if NTFS
-      appendixes << " " << "." << "::$DATA" << "::$DATA.bar"
+      appendixes << " " << [".", ".", ""] << "::$DATA" << "::$DATA.bar"
+    else
+      appendixes << [".", "."]
     end
     prefixes.each do |prefix|
-      appendixes.each do |appendix|
+      appendixes.each do |appendix, ext = "", ext2 = ext|
         infixes.each do |infix|
           path = "#{prefix}foo#{infix}#{appendix}"
-          assert_equal("", File.extname(path), "File.extname(#{path.inspect})")
+          assert_equal(ext, File.extname(path), "File.extname(#{path.inspect})")
         end
         infixes2.each do |infix|
           path = "#{prefix}foo#{infix}.ext#{appendix}"
-          assert_equal(".ext", File.extname(path), "File.extname(#{path.inspect})")
+          assert_equal(ext2.empty? ? ".ext" : appendix, File.extname(path), "File.extname(#{path.inspect})")
         end
       end
     end

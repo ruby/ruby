@@ -128,7 +128,6 @@ FILES_NEED_VPATH = %w[
   optunifs.inc
   parse.c
   parse.h
-  prelude.c
   probes.dmyh
   vm.inc
   vmtc.inc
@@ -263,7 +262,7 @@ end
 
 def read_make_deps(cwd)
   dependencies = {}
-  make_p, make_p_stderr, make_p_status = Open3.capture3("make -p all miniruby ruby golf")
+  make_p, make_p_stderr, make_p_status = Open3.capture3("make -p all miniruby ruby-runner golf")
   File.open('update-deps.make.out.log', 'w') {|f| f.print make_p }
   File.open('update-deps.make.err.log', 'w') {|f| f.print make_p_stderr }
   if !make_p_status.success?
@@ -300,6 +299,7 @@ def read_make_deps(cwd)
       target = rule_target
       deps = rule_sources
       deps = deps.scan(%r{[/0-9a-zA-Z._-]+})
+      deps.delete_if {|dep| /\.time\z/ =~ dep} # skip timestamp
       next if /\.o\z/ !~ target.to_s
       next if /\A\./ =~ target.to_s # skip rules such as ".c.o"
       #p [curdir, target, deps]
@@ -363,6 +363,9 @@ def read_single_cc_deps(path_i, cwd)
     next if !dep.to_s.start_with?(cwd.to_s) # omit system headers.
     deps << dep
   }
+  if deps.include?(cwd + "probes.h")
+    deps << (cwd + "probes.dmyh")
+  end
   deps
 end
 

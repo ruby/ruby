@@ -1,5 +1,5 @@
 #
-# $Id: 5e1871defa15d288d2252e6a76bb2c4cf2119ed3 $
+# $Id: 63bd084db2dce8a2c9760318faae6104717cead7 $
 #
 # Copyright (c) 1999-2006 Minero Aoki
 #
@@ -450,6 +450,7 @@ module Racc
             nest -= 1
             if nest == 0
               @in_block = nil
+              buf.sub!(/[ \t\f]+\z/, '')
               return buf
             end
             buf << (pre = ch)

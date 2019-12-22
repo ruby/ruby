@@ -221,6 +221,8 @@ static VALUE valid_class_serials;
 static const char *cc_path;
 // Used C compiler flags.
 static const char **cc_common_args;
+// Used C compiler flags added by --jit-debug=...
+static char **cc_added_args;
 // Name of the precompiled header file.
 static char *pch_file;
 // The process id which should delete the pch_file on mjit_finish.
@@ -268,8 +270,9 @@ static const char *const CC_DEBUG_ARGS[] = {MJIT_DEBUGFLAGS NULL};
 static const char *const CC_OPTIMIZE_ARGS[] = {MJIT_OPTFLAGS NULL};
 
 static const char *const CC_LDSHARED_ARGS[] = {MJIT_LDSHARED GCC_PIC_FLAGS NULL};
-static const char *const CC_DLDFLAGS_ARGS[] = {
-    MJIT_DLDFLAGS
+static const char *const CC_DLDFLAGS_ARGS[] = {MJIT_DLDFLAGS NULL};
+// `CC_LINKER_ARGS` are linker flags which must be passed to `-c` as well.
+static const char *const CC_LINKER_ARGS[] = {
 #if defined __GNUC__ && !defined __clang__ && !defined(__OpenBSD__)
     "-nostartfiles",
 #endif
@@ -285,6 +288,9 @@ static const char *const CC_LIBS[] = {
     "-lmsvcrt", // mingw
 # endif
     "-lgcc", // mingw, cygwin, and GCC platforms using `-nodefaultlibs -nostdlib`
+#endif
+#if defined __ANDROID__
+    "-lm", // to avoid 'cannot locate symbol "modf" referenced by .../_ruby_mjit_XXX.so"'
 #endif
     NULL
 };
@@ -755,7 +761,7 @@ make_pch(void)
     };
 
     verbose(2, "Creating precompiled header");
-    char **args = form_args(3, cc_common_args, CC_CODEFLAG_ARGS, rest_args);
+    char **args = form_args(4, cc_common_args, CC_CODEFLAG_ARGS, cc_added_args, rest_args);
     if (args == NULL) {
         mjit_warning("making precompiled header failed on forming args");
         CRITICAL_SECTION_START(3, "in make_pch");
@@ -792,7 +798,7 @@ compile_c_to_o(const char *c_file, const char *o_file)
         "-c", NULL
     };
 
-    char **args = form_args(5, cc_common_args, CC_CODEFLAG_ARGS, files, CC_LIBS, CC_DLDFLAGS_ARGS);
+    char **args = form_args(5, cc_common_args, CC_CODEFLAG_ARGS, cc_added_args, files, CC_LINKER_ARGS);
     if (args == NULL)
         return false;
 
@@ -816,8 +822,8 @@ link_o_to_so(const char **o_files, const char *so_file)
         NULL
     };
 
-    char **args = form_args(6, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
-            options, o_files, CC_LIBS, CC_DLDFLAGS_ARGS);
+    char **args = form_args(7, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
+            options, o_files, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
     if (args == NULL)
         return false;
 
@@ -1034,7 +1040,6 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         fclose(f);
         if (!mjit_opts.save_temps)
             remove_file(c_file);
-        free_unit(unit);
         in_jit = false; // just being explicit for return
     }
     else {
@@ -1104,11 +1109,8 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         remove_so_file(so_file, unit);
 
     if ((uintptr_t)func > (uintptr_t)LAST_JIT_ISEQ_FUNC) {
-        CRITICAL_SECTION_START(3, "end of jit");
-        add_to_list(unit, &active_units);
         verbose(1, "JIT success (%.1fms): %s@%s:%ld -> %s",
                 end_time - start_time, iseq_label, iseq_path, iseq_lineno, c_file);
-        CRITICAL_SECTION_FINISH(3, "end of jit");
     }
     return (mjit_func_t)func;
 }
@@ -1224,19 +1226,20 @@ mjit_worker(void)
             mjit_func_t func = convert_unit_to_func(unit);
             (void)RB_DEBUG_COUNTER_INC_IF(mjit_compile_failures, func == (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC);
 
-            // `mjit_copy_cache_from_main_thread` in `mjit_compile` may wait for a long time
-            // and worker may be stopped during the compilation.
-            if (stop_worker_p)
-                break;
-
             CRITICAL_SECTION_START(3, "in jit func replace");
             while (in_gc) { // Make sure we're not GC-ing when touching ISeq
                 verbose(3, "Waiting wakeup from GC");
                 rb_native_cond_wait(&mjit_gc_wakeup, &mjit_engine_mutex);
             }
             if (unit->iseq) { // Check whether GCed or not
+                if ((uintptr_t)func > (uintptr_t)LAST_JIT_ISEQ_FUNC) {
+                    add_to_list(unit, &active_units);
+                }
                 // Usage of jit_code might be not in a critical section.
                 MJIT_ATOMIC_SET(unit->iseq->body->jit_func, func);
+            }
+            else {
+                free_unit(unit);
             }
             CRITICAL_SECTION_FINISH(3, "in jit func replace");
 

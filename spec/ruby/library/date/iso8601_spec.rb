@@ -35,3 +35,10 @@ describe "Date.iso8601" do
     -> { Date.iso8601(Object.new) }.should raise_error(TypeError)
   end
 end
+
+describe "Date._iso8601" do
+  it "returns an empty hash if the argument is a invalid Date" do
+    h = Date._iso8601('invalid')
+    h.should == {}
+  end
+end

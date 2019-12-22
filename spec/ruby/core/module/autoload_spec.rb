@@ -23,7 +23,7 @@ describe "Module#autoload?" do
       ModuleSpecs::Autoload::Child.autoload?(:InheritedAutoload, false).should be_nil
     end
 
-    it "returns the name of the file that will be loaded if recursion is disabled but the autoload is defined on the classs itself" do
+    it "returns the name of the file that will be loaded if recursion is disabled but the autoload is defined on the class itself" do
       ModuleSpecs::Autoload::Child.autoload :ChildAutoload, "child_autoload.rb"
       ModuleSpecs::Autoload::Child.autoload?(:ChildAutoload, false).should == "child_autoload.rb"
     end
@@ -650,6 +650,27 @@ describe "Module#autoload" do
       Kernel.require fixture(__FILE__, "autoload_during_require.rb")
     }.should_not complain(verbose: true)
     ModuleSpecs::Autoload::AutoloadDuringRequire.should be_kind_of(Class)
+  end
+
+  it "does not call #require a second time and does not warn if feature sets and trigger autoload on itself" do
+    main = TOPLEVEL_BINDING.eval("self")
+    main.should_not_receive(:require)
+
+    -> {
+      Kernel.require fixture(__FILE__, "autoload_self_during_require.rb")
+    }.should_not complain(verbose: true)
+    ModuleSpecs::Autoload::AutoloadSelfDuringRequire.should be_kind_of(Class)
+  end
+
+  it "handles multiple autoloads in the same file" do
+    $LOAD_PATH.unshift(File.expand_path('../fixtures/multi', __FILE__))
+    begin
+      require 'foo/bar_baz'
+      ModuleSpecs::Autoload::Foo::Bar.should be_kind_of(Class)
+      ModuleSpecs::Autoload::Foo::Baz.should be_kind_of(Class)
+    ensure
+      $LOAD_PATH.shift
+    end
   end
 
   it "calls #to_path on non-string filenames" do

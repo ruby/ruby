@@ -9,11 +9,11 @@
 **********************************************************************/
 
 #include "debug_counter.h"
-#if USE_DEBUG_COUNTER
+#include "internal.h"
 #include <stdio.h>
 #include <locale.h>
-#include "internal.h"
 
+#if USE_DEBUG_COUNTER
 static const char *const debug_counter_names[] = {
     ""
 #define RB_DEBUG_COUNTER(name) #name,
@@ -44,14 +44,14 @@ rb_debug_counter_show_results(const char *msg)
 }
 
 VALUE
-rb_debug_counter_show(void)
+rb_debug_counter_show(RB_UNUSED_VAR(VALUE klass))
 {
     rb_debug_counter_show_results("method call");
     return Qnil;
 }
 
 VALUE
-rb_debug_counter_reset(void)
+rb_debug_counter_reset(RB_UNUSED_VAR(VALUE klass))
 {
     for (int i = 0; i < RB_DEBUG_COUNTER_MAX; i++) {
         switch (i) {

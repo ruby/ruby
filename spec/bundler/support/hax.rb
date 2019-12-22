@@ -1,8 +1,14 @@
 # frozen_string_literal: true
 
-require "rubygems"
-
 module Gem
+  def self.ruby=(ruby)
+    @ruby = ruby
+  end
+
+  if ENV["RUBY"]
+    Gem.ruby = ENV["RUBY"]
+  end
+
   if version = ENV["BUNDLER_SPEC_RUBYGEMS_VERSION"]
     remove_const(:VERSION) if const_defined?(:VERSION)
     VERSION = version
@@ -13,7 +19,8 @@ module Gem
   end
   @platforms = [Gem::Platform::RUBY, Gem::Platform.local]
 
-  if defined?(@path_to_default_spec_map) && !ENV["BUNDLER_SPEC_KEEP_DEFAULT_BUNDLER_GEM"]
+  # We only need this hack for rubygems versions without the BundlerVersionFinder
+  if Gem::Version.new(Gem::VERSION) < Gem::Version.new("2.7.0") || ENV["BUNDLER_SPEC_DISABLE_DEFAULT_BUNDLER_GEM"]
     @path_to_default_spec_map.delete_if do |_path, spec|
       spec.name == "bundler"
     end
@@ -21,7 +28,8 @@ module Gem
 end
 
 if ENV["BUNDLER_SPEC_VERSION"]
-  require "bundler/version"
+  require_relative "path"
+  require "#{Spec::Path.lib_dir}/bundler/version"
 
   module Bundler
     remove_const(:VERSION) if const_defined?(:VERSION)
@@ -30,7 +38,8 @@ if ENV["BUNDLER_SPEC_VERSION"]
 end
 
 if ENV["BUNDLER_SPEC_WINDOWS"] == "true"
-  require "bundler/constants"
+  require_relative "path"
+  require "#{Spec::Path.lib_dir}/bundler/constants"
 
   module Bundler
     remove_const :WINDOWS if defined?(WINDOWS)
@@ -53,9 +62,7 @@ class Object
     remove_const :RUBY_ENGINE
     RUBY_ENGINE = ENV["BUNDLER_SPEC_RUBY_ENGINE"]
 
-    if RUBY_ENGINE == "jruby"
-      remove_const :JRUBY_VERSION if defined?(JRUBY_VERSION)
-      JRUBY_VERSION = ENV["BUNDLER_SPEC_RUBY_ENGINE_VERSION"]
-    end
+    remove_const :RUBY_ENGINE_VERSION
+    RUBY_ENGINE_VERSION = ENV["BUNDLER_SPEC_RUBY_ENGINE_VERSION"]
   end
 end

@@ -50,6 +50,8 @@ class Gem::SourceList
   # String.
 
   def <<(obj)
+    require "uri"
+
     src = case obj
           when URI
             Gem::Source.new(obj)

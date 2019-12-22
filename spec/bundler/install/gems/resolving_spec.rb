@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle install with install-time dependencies" do
-  it "installs gems with implicit rake dependencies", :ruby_repo do
+  it "installs gems with implicit rake dependencies" do
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "with_implicit_rake_dep"
@@ -22,7 +22,7 @@ RSpec.describe "bundle install with install-time dependencies" do
     build_repo2
 
     path = "#{gem_repo2}/#{Gem::MARSHAL_SPEC_DIR}/actionpack-2.3.2.gemspec.rz"
-    spec = Marshal.load(Bundler.rubygems.inflate(File.read(path)))
+    spec = Marshal.load(Bundler.rubygems.inflate(File.binread(path)))
     spec.dependencies.each do |d|
       d.instance_variable_set(:@type, :fail)
     end
@@ -48,7 +48,7 @@ RSpec.describe "bundle install with install-time dependencies" do
       expect(the_bundle).to include_gems "net_b 1.0"
     end
 
-    it "installs plugins depended on by other plugins", :ruby_repo do
+    it "installs plugins depended on by other plugins" do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "net_a"
@@ -57,7 +57,7 @@ RSpec.describe "bundle install with install-time dependencies" do
       expect(the_bundle).to include_gems "net_a 1.0", "net_b 1.0"
     end
 
-    it "installs multiple levels of dependencies", :ruby_repo do
+    it "installs multiple levels of dependencies" do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "net_c"
@@ -108,7 +108,7 @@ RSpec.describe "bundle install with install-time dependencies" do
           end
         end
 
-        install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2 }
+        install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
           ruby "#{RUBY_VERSION}"
           source "http://localgemserver.test/"
           gem 'rack'
@@ -127,7 +127,7 @@ RSpec.describe "bundle install with install-time dependencies" do
           build_gem "foo1", "1.0"
         end
 
-        install_gemfile <<-G, :artifice => "compact_index_rate_limited", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4 }
+        install_gemfile <<-G, :artifice => "compact_index_rate_limited", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
           ruby "#{RUBY_VERSION}"
           source "http://localgemserver.test/"
           gem 'rack'
@@ -153,7 +153,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
       shared_examples_for "ruby version conflicts" do
         it "raises an error during resolution" do
-          install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2 }
+          install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
             source "http://localgemserver.test/"
             ruby #{ruby_requirement}
             gem 'require_ruby'

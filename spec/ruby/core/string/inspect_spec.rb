@@ -3,14 +3,16 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe "String#inspect" do
-  it "taints the result if self is tainted" do
-    "foo".taint.inspect.tainted?.should == true
-    "foo\n".taint.inspect.tainted?.should == true
-  end
+  ruby_version_is ''...'2.7' do
+    it "taints the result if self is tainted" do
+      "foo".taint.inspect.tainted?.should == true
+      "foo\n".taint.inspect.tainted?.should == true
+    end
 
-  it "untrusts the result if self is untrusted" do
-    "foo".untrust.inspect.untrusted?.should == true
-    "foo\n".untrust.inspect.untrusted?.should == true
+    it "untrusts the result if self is untrusted" do
+      "foo".untrust.inspect.untrusted?.should == true
+      "foo\n".untrust.inspect.untrusted?.should == true
+    end
   end
 
   it "does not return a subclass instance" do

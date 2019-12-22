@@ -28,7 +28,7 @@ module Bundler
 
   protected
 
-    # http://www.informit.com/articles/article.aspx?p=683059&seqNum=36
+    # https://www.informit.com/articles/article.aspx?p=683059&seqNum=36
     def levenshtein_distance(this, that, ins = 2, del = 2, sub = 1)
       # ins, del, sub are weighted costs
       return nil if this.nil?

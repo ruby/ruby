@@ -88,6 +88,14 @@ Array.should have_method(:new)
   raise "oops"
 }.should raise_error(RuntimeError, /oops/)
 
+-> {
+  raise "oops"
+}.should raise_error(RuntimeError) { |e|
+  # Custom checks on the Exception object
+  e.message.should include("oops")
+  e.cause.should == nil
+}
+
 # To avoid! Instead, use an expectation testing what the code in the lambda does.
 # If an exception is raised, it will fail the example anyway.
 -> { ... }.should_not raise_error

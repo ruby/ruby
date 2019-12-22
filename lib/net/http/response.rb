@@ -8,11 +8,13 @@
 # header values both via hash-like methods and via individual readers.
 #
 # Note that each possible HTTP response code defines its own
-# HTTPResponse subclass.  These are listed below.
+# HTTPResponse subclass. All classes are defined under the Net module.
+# Indentation indicates inheritance.  For a list of the classes see Net::HTTP.
 #
-# All classes are defined under the Net module. Indentation indicates
-# inheritance.  For a list of the classes see Net::HTTP.
+# Correspondence <code>HTTP code => class</code> is stored in CODE_TO_OBJ
+# constant:
 #
+#    Net::HTTPResponse::CODE_TO_OBJ['404'] #=> Net::HTTPNotFound
 #
 class Net::HTTPResponse
   class << self
@@ -173,6 +175,10 @@ class Net::HTTPResponse
   #
   # If a block is given, the body is passed to the block, and
   # the body is provided in fragments, as it is read in from the socket.
+  #
+  # If +dest+ argument is given, response is read into that variable,
+  # with <code>dest#<<</code> method (it could be String or IO, or any
+  # other object responding to <code><<</code>).
   #
   # Calling this method a second or subsequent time for the same
   # HTTPResponse object will return the value already read.

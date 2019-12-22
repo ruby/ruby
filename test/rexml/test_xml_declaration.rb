@@ -38,5 +38,11 @@ module REXMLTests
                    "encoding=\"UTF-8\" standalone=\"yes\"?>",
                    @xml_declaration.to_s)
     end
+
+    def test_is_writethis_attribute_copied_by_clone
+      assert_equal(true, @xml_declaration.clone.writethis)
+      @xml_declaration.nowrite
+      assert_equal(false, @xml_declaration.clone.writethis)
+    end
   end
 end

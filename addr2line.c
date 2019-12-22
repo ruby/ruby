@@ -21,6 +21,10 @@
 #include <stdio.h>
 #include <errno.h>
 
+#ifdef HAVE_LIBPROC_H
+#include <libproc.h>
+#endif
+
 #ifdef HAVE_STDBOOL_H
 #include <stdbool.h>
 #else
@@ -2066,6 +2070,15 @@ main_exe_path(void)
 	return -1;
     }
     len--; /* sysctl sets strlen+1 */
+    return len;
+}
+#elif defined(HAVE_LIBPROC_H)
+static ssize_t
+main_exe_path(void)
+{
+    int len = proc_pidpath(getpid(), binary_filename, PATH_MAX);
+    if (len == 0) return 0;
+    binary_filename[len] = 0;
     return len;
 }
 #else

@@ -49,14 +49,16 @@ describe "String#chop" do
     s.chop.should_not equal(s)
   end
 
-  it "taints result when self is tainted" do
-    "hello".taint.chop.tainted?.should == true
-    "".taint.chop.tainted?.should == true
-  end
+  ruby_version_is ''...'2.7' do
+    it "taints result when self is tainted" do
+      "hello".taint.chop.tainted?.should == true
+      "".taint.chop.tainted?.should == true
+    end
 
-  it "untrusts result when self is untrusted" do
-    "hello".untrust.chop.untrusted?.should == true
-    "".untrust.chop.untrusted?.should == true
+    it "untrusts result when self is untrusted" do
+      "hello".untrust.chop.untrusted?.should == true
+      "".untrust.chop.untrusted?.should == true
+    end
   end
 
   it "returns subclass instances when called on a subclass" do

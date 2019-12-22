@@ -1056,7 +1056,6 @@ RSpec.describe "bundle install with git sources" do
 
       File.open(lib_path("install_hooks.rb"), "w") do |h|
         h.write <<-H
-          require 'rubygems'
           Gem.pre_install_hooks << lambda do |inst|
             STDERR.puts "Ran pre-install hook: \#{inst.spec.full_name}"
           end
@@ -1076,7 +1075,6 @@ RSpec.describe "bundle install with git sources" do
 
       File.open(lib_path("install_hooks.rb"), "w") do |h|
         h.write <<-H
-          require 'rubygems'
           Gem.post_install_hooks << lambda do |inst|
             STDERR.puts "Ran post-install hook: \#{inst.spec.full_name}"
           end
@@ -1096,7 +1094,6 @@ RSpec.describe "bundle install with git sources" do
 
       File.open(lib_path("install_hooks.rb"), "w") do |h|
         h.write <<-H
-          require 'rubygems'
           Gem.pre_install_hooks << lambda do |inst|
             false
           end
@@ -1110,7 +1107,7 @@ RSpec.describe "bundle install with git sources" do
   end
 
   context "with an extension" do
-    it "installs the extension", :ruby_repo do
+    it "installs the extension" do
       build_git "foo" do |s|
         s.add_dependency "rake"
         s.extensions << "Rakefile"
@@ -1139,7 +1136,7 @@ RSpec.describe "bundle install with git sources" do
       run! <<-R
         puts $:.grep(/ext/)
       R
-      expect(out).to eq(Pathname.glob(default_bundle_path("bundler/gems/extensions/**/foo-1.0-*")).first.to_s)
+      expect(out).to include(Pathname.glob(default_bundle_path("bundler/gems/extensions/**/foo-1.0-*")).first.to_s)
     end
 
     it "does not use old extension after ref changes", :ruby_repo do
@@ -1204,7 +1201,7 @@ In Gemfile:
       expect(out).not_to include("gem install foo")
     end
 
-    it "does not reinstall the extension", :ruby_repo do
+    it "does not reinstall the extension" do
       build_git "foo" do |s|
         s.add_dependency "rake"
         s.extensions << "Rakefile"
@@ -1245,7 +1242,7 @@ In Gemfile:
       expect(out).to eq(installed_time)
     end
 
-    it "does not reinstall the extension when changing another gem", :ruby_repo do
+    it "does not reinstall the extension when changing another gem" do
       build_git "foo" do |s|
         s.add_dependency "rake"
         s.extensions << "Rakefile"
@@ -1288,7 +1285,7 @@ In Gemfile:
       expect(out).to eq(installed_time)
     end
 
-    it "does reinstall the extension when changing refs", :ruby_repo do
+    it "does reinstall the extension when changing refs" do
       build_git "foo" do |s|
         s.add_dependency "rake"
         s.extensions << "Rakefile"
@@ -1391,7 +1388,7 @@ In Gemfile:
         end
       G
       bundle "config set cache_all true"
-      bundle :package
+      bundle :cache
       simulate_new_machine
 
       bundle! "install", :env => { "PATH" => "" }

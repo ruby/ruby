@@ -34,7 +34,7 @@ class MSpecOptions
 
   attr_accessor :config, :banner, :width, :options
 
-  def initialize(banner="", width=30, config=nil)
+  def initialize(banner = "", width = 30, config = nil)
     @banner   = banner
     @config   = config
     @width    = width
@@ -94,7 +94,7 @@ class MSpecOptions
     @options.find { |o| o.match? opt }
   end
 
-  # Processes an option. Calles the #on_extra block (or default) for
+  # Processes an option. Calls the #on_extra block (or default) for
   # unrecognized options. For registered options, possibly fetches an
   # argument and invokes the option's block if it is not nil.
   def process(argv, entry, opt, arg)
@@ -123,7 +123,7 @@ class MSpecOptions
 
   # Parses an array of command line entries, calling blocks for
   # registered options.
-  def parse(argv=ARGV)
+  def parse(argv = ARGV)
     argv = Array(argv).dup
 
     while entry = argv.shift
@@ -414,8 +414,16 @@ class MSpecOptions
   end
 
   def interrupt
-    on("--int-spec", "Control-C interupts the current spec only") do
+    on("--int-spec", "Control-C interrupts the current spec only") do
       config[:abort] = false
+    end
+  end
+
+  def timeout
+    on("--timeout", "TIMEOUT", "Abort if a spec takes longer than TIMEOUT seconds") do |timeout|
+      require 'mspec/runner/actions/timeout'
+      timeout = Float(timeout)
+      TimeoutAction.new(timeout).register
     end
   end
 

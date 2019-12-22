@@ -17,6 +17,7 @@
 #include "vm_core.h"
 #include "vm_exec.h"
 #include "mjit.h"
+#include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
 #include "vm_insnhelper.h"
@@ -24,6 +25,21 @@
 // Macros to check if a position is already compiled using compile_status.stack_size_for_pos
 #define NOT_COMPILED_STACK_SIZE -1
 #define ALREADY_COMPILED_P(status, pos) (status->stack_size_for_pos[pos] != NOT_COMPILED_STACK_SIZE)
+
+static size_t
+call_data_index(CALL_DATA cd, const struct rb_iseq_constant_body *body)
+{
+    const struct rb_kwarg_call_data *kw_calls = (const struct rb_kwarg_call_data *)&body->call_data[body->ci_size];
+    const struct rb_kwarg_call_data *kw_cd = (const struct rb_kwarg_call_data *)cd;
+
+    VM_ASSERT(cd >= body->call_data && kw_cd < (kw_calls + body->ci_kw_size));
+    if (kw_cd < kw_calls) {
+        return cd - body->call_data;
+    }
+    else {
+        return kw_cd - kw_calls + body->ci_size;
+    }
+}
 
 // For propagating information needed for lazily pushing a frame.
 struct inlined_call_context {
@@ -72,7 +88,7 @@ has_valid_method_type(CALL_CACHE cc)
 {
     extern bool mjit_valid_class_serial_p(rb_serial_t class_serial);
     return GET_GLOBAL_METHOD_STATE() == cc->method_state
-        && mjit_valid_class_serial_p(cc->class_serial) && cc->me;
+        && mjit_valid_class_serial_p(cc->class_serial[0]) && cc->me;
 }
 
 // Returns true if iseq can use fastpath for setup, otherwise NULL. This becomes true in the same condition
@@ -279,7 +295,7 @@ mjit_compile_body(FILE *f, const rb_iseq_t *iseq, struct compile_status *status)
         fprintf(f, "    VALUE *stack = reg_cfp->sp;\n");
     }
     if (status->inlined_iseqs != NULL) // i.e. compile root
-        fprintf(f, "    static const rb_iseq_t *original_iseq = 0x%"PRIxVALUE";\n", (VALUE)iseq);
+        fprintf(f, "    static const rb_iseq_t *original_iseq = (const rb_iseq_t *)0x%"PRIxVALUE";\n", (VALUE)iseq);
     fprintf(f, "    static const VALUE *const original_body_iseq = (VALUE *)0x%"PRIxVALUE";\n",
             (VALUE)body->iseq_encoded);
 
@@ -383,8 +399,9 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
 #endif
 
         if (insn == BIN(opt_send_without_block)) { // `compile_inlined_cancel_handler` supports only `opt_send_without_block`
-            CALL_INFO ci = (CALL_INFO)body->iseq_encoded[pos + 1];
-            CALL_CACHE cc_copy = status->cc_entries + ((CALL_CACHE)body->iseq_encoded[pos + 2] - body->cc_entries); // use copy to avoid race condition
+            CALL_DATA cd = (CALL_DATA)body->iseq_encoded[pos + 1];
+            CALL_INFO ci = &cd->ci;
+            CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body); // use copy to avoid race condition
 
             const rb_iseq_t *child_iseq;
             if (has_valid_method_type(cc_copy) &&

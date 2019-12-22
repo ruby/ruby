@@ -105,7 +105,7 @@ describe "File.chmod" do
     File.chmod(0, mock_to_path(@file))
   end
 
-  it "throws a TypeError if the given path is not coercable into a string" do
+  it "throws a TypeError if the given path is not coercible into a string" do
     -> { File.chmod(0, []) }.should raise_error(TypeError)
   end
 

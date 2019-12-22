@@ -27,25 +27,21 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
     @cmd = Gem::Commands::PushCommand.new
 
-    class << Gem
-
+    singleton_gem_class.class_eval do
       alias_method :orig_latest_rubygems_version, :latest_rubygems_version
 
       def latest_rubygems_version
         Gem.rubygems_version
       end
-
     end
   end
 
   def teardown
     super
 
-    class << Gem
-
+    singleton_gem_class.class_eval do
       remove_method :latest_rubygems_version
       alias_method :latest_rubygems_version, :orig_latest_rubygems_version
-
     end
   end
 
@@ -402,6 +398,12 @@ class TestGemCommandsPushCommand < Gem::TestCase
     assert_match 'You have enabled multi-factor authentication. Please enter OTP code.', @otp_ui.output
     assert_match 'Code: ', @otp_ui.output
     assert_equal '111111', @fetcher.last_request['OTP']
+  end
+
+  private
+
+  def singleton_gem_class
+    class << Gem; self; end
   end
 
 end

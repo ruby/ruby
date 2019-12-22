@@ -79,7 +79,6 @@ module Fiddle
     def test_to_ptr_string
       str = "hello world"
       ptr = Pointer[str]
-      assert ptr.tainted?, 'pointer should be tainted'
       assert_equal str.length, ptr.size
       assert_equal 'hello', ptr[0,5]
     end

@@ -117,18 +117,20 @@ describe "Array#shift" do
       ArraySpecs::MyArray[1, 2, 3].shift(2).should be_an_instance_of(Array)
     end
 
-    it "returns an untainted array even if the array is tainted" do
-      ary = [1, 2].taint
-      ary.shift(2).tainted?.should be_false
-      ary.shift(0).tainted?.should be_false
-    end
+    ruby_version_is ''...'2.7' do
+      it "returns an untainted array even if the array is tainted" do
+        ary = [1, 2].taint
+        ary.shift(2).tainted?.should be_false
+        ary.shift(0).tainted?.should be_false
+      end
 
-    it "keeps taint status" do
-      a = [1, 2].taint
-      a.shift(2)
-      a.tainted?.should be_true
-      a.shift(2)
-      a.tainted?.should be_true
+      it "keeps taint status" do
+        a = [1, 2].taint
+        a.shift(2)
+        a.tainted?.should be_true
+        a.shift(2)
+        a.tainted?.should be_true
+      end
     end
   end
 end

@@ -2,7 +2,7 @@
 
 module Bundler
   module GemHelpers
-    GENERIC_CACHE = { Gem::Platform::RUBY => Gem::Platform::RUBY } # rubocop:disable MutableConstant
+    GENERIC_CACHE = { Gem::Platform::RUBY => Gem::Platform::RUBY } # rubocop:disable Style/MutableConstant
     GENERICS = [
       [Gem::Platform.new("java"), Gem::Platform.new("java")],
       [Gem::Platform.new("mswin32"), Gem::Platform.new("mswin32")],

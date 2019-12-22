@@ -66,4 +66,39 @@ describe "ConditionVariable#signal" do
     # released in the same order
     r2.should == r1
   end
+
+  it "allows control to be passed between a pair of threads" do
+    m = Mutex.new
+    cv = ConditionVariable.new
+    repeats = 100
+    in_synchronize = false
+
+    t1 = Thread.new do
+      m.synchronize do
+        in_synchronize = true
+        repeats.times do
+          cv.wait(m)
+          cv.signal
+        end
+      end
+    end
+
+    # Make sure t1 is waiting for a signal before launching t2.
+    Thread.pass until in_synchronize
+    Thread.pass until t1.status == 'sleep'
+
+    t2 = Thread.new do
+      m.synchronize do
+        repeats.times do
+          cv.signal
+          cv.wait(m)
+        end
+      end
+    end
+
+    # Check that both threads terminated without exception
+    t1.join
+    t2.join
+    m.locked?.should == false
+  end
 end

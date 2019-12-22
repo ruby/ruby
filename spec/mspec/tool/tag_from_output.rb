@@ -21,6 +21,10 @@ output.slice_before(NUMBER).select { |number, error_line, *rest|
   description = error_line.match(ERROR_OR_FAILED).pre_match
 
   spec_file = rest.find { |line| line =~ SPEC_FILE }
+  unless spec_file
+    warn "Could not find file for:\n#{error_line}"
+    next
+  end
   spec_file = spec_file[SPEC_FILE, 1]
   prefix = spec_file.index('spec/ruby')
   spec_file = spec_file[prefix..-1]

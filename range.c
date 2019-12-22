@@ -1325,7 +1325,6 @@ range_to_s(VALUE range)
     str = rb_str_dup(str);
     rb_str_cat(str, "...", EXCL(range) ? 3 : 2);
     rb_str_append(str, str2);
-    OBJ_INFECT(str, range);
 
     return str;
 }
@@ -1349,7 +1348,6 @@ inspect_range(VALUE range, VALUE dummy, int recur)
         str2 = rb_inspect(RANGE_END(range));
     }
     if (str2 != Qundef) rb_str_append(str, str2);
-    OBJ_INFECT(str, range);
 
     return str;
 }
@@ -1375,19 +1373,26 @@ static VALUE range_include_internal(VALUE range, VALUE val, int string_use_cover
  *  call-seq:
  *     rng === obj       ->  true or false
  *
- *  Returns <code>true</code> if +obj+ is an element of the range,
- *  <code>false</code> otherwise.  Conveniently, <code>===</code> is the
- *  comparison operator used by <code>case</code> statements.
+ *  Returns <code>true</code> if +obj+ is between begin and end of range,
+ *  <code>false</code> otherwise (same as #cover?). Conveniently,
+ *  <code>===</code> is the comparison operator used by <code>case</code>
+ *  statements.
  *
  *     case 79
- *     when 1..50   then   print "low\n"
- *     when 51..75  then   print "medium\n"
- *     when 76..100 then   print "high\n"
+ *     when 1..50   then   puts "low"
+ *     when 51..75  then   puts "medium"
+ *     when 76..100 then   puts "high"
  *     end
+ *     # Prints "high"
  *
- *  <em>produces:</em>
+ *     case "2.6.5"
+ *     when ..."2.4" then puts "EOL"
+ *     when "2.4"..."2.5" then puts "maintenance"
+ *     when "2.5"..."2.7" then puts "stable"
+ *     when "2.7".. then puts "upcoming"
+ *     end
+ *     # Prints "stable"
  *
- *     high
  */
 
 static VALUE
@@ -1405,12 +1410,19 @@ range_eqq(VALUE range, VALUE val)
  *     rng.include?(obj) ->  true or false
  *
  *  Returns <code>true</code> if +obj+ is an element of
- *  the range, <code>false</code> otherwise.  If begin and end are
- *  numeric, comparison is done according to the magnitude of the values.
+ *  the range, <code>false</code> otherwise.
  *
  *     ("a".."z").include?("g")   #=> true
  *     ("a".."z").include?("A")   #=> false
  *     ("a".."z").include?("cc")  #=> false
+ *
+ *  If you need to ensure +obj+ is between +begin+ and +end+, use #cover?
+ *
+ *     ("a".."z").cover?("cc")  #=> true
+ *
+ *  If begin and end are numeric, #include? behaves like #cover?
+ *
+ *     (1..3).include?(1.5) # => true
  */
 
 static VALUE
@@ -1598,6 +1610,42 @@ range_alloc(VALUE klass)
     return rb_struct_alloc_noinit(klass);
 }
 
+/*
+ *  call-seq:
+ *     range.count                 -> int
+ *     range.count(item)           -> int
+ *     range.count { |obj| block } -> int
+ *
+ *  Identical to Enumerable#count, except it returns Infinity for endless
+ *  ranges.
+ *
+ */
+static VALUE
+range_count(int argc, VALUE *argv, VALUE range)
+{
+    if (argc != 0) {
+        /* It is odd for instance (1...).count(0) to return Infinity. Just let
+         * it loop. */
+        return rb_call_super(argc, argv);
+    }
+    else if (rb_block_given_p()) {
+        /* Likewise it is odd for instance (1...).count {|x| x == 0 } to return
+         * Infinity. Just let it loop. */
+        return rb_call_super(argc, argv);
+    }
+    else if (NIL_P(RANGE_END(range))) {
+        /* We are confident that the answer is Infinity. */
+        return DBL2NUM(HUGE_VAL);
+    }
+    else if (NIL_P(RANGE_BEG(range))) {
+        /* We are confident that the answer is Infinity. */
+        return DBL2NUM(HUGE_VAL);
+    }
+    else {
+        return rb_call_super(argc, argv);
+    }
+}
+
 /*  A Range represents an interval---a set of values with a
  *  beginning and an end. Ranges may be constructed using the
  *  <em>s</em><code>..</code><em>e</em> and
@@ -1735,4 +1783,5 @@ Init_Range(void)
     rb_define_method(rb_cRange, "member?", range_include, 1);
     rb_define_method(rb_cRange, "include?", range_include, 1);
     rb_define_method(rb_cRange, "cover?", range_cover, 1);
+    rb_define_method(rb_cRange, "count", range_count, -1);
 }

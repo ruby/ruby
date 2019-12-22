@@ -5,6 +5,12 @@
  *  Copyright, 2019, by Samuel Williams. All rights reserved.
 */
 
+/* According to Solaris' ucontext.h, makecontext, etc. are removed in SUSv4.
+ * To enable the prototype declarations, we need to define __EXTENSIONS__.
+ */
+#if defined(__sun) && !defined(__EXTENSIONS__)
+#define __EXTENSIONS__
+#endif
 #include "Context.h"
 
 void coroutine_trampoline(void * _start, void * _context)

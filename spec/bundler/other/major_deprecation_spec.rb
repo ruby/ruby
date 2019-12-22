@@ -20,7 +20,8 @@ RSpec.describe "major deprecations" do
       it "is deprecated in favor of .unbundled_env", :bundler => "2" do
         expect(deprecations).to include \
           "`Bundler.clean_env` has been deprecated in favor of `Bundler.unbundled_env`. " \
-          "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env`"
+          "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env` " \
+          "(called at -e:1)"
       end
 
       pending "is removed and shows a helpful error message about it", :bundler => "3"
@@ -35,7 +36,8 @@ RSpec.describe "major deprecations" do
       it "is deprecated in favor of .unbundled_env", :bundler => "2" do
         expect(deprecations).to include(
           "`Bundler.with_clean_env` has been deprecated in favor of `Bundler.with_unbundled_env`. " \
-          "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env`"
+          "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env` " \
+          "(called at -e:1)"
         )
       end
 
@@ -51,7 +53,8 @@ RSpec.describe "major deprecations" do
       it "is deprecated in favor of .unbundled_system", :bundler => "2" do
         expect(deprecations).to include(
           "`Bundler.clean_system` has been deprecated in favor of `Bundler.unbundled_system`. " \
-          "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system`"
+          "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system` " \
+          "(called at -e:1)"
         )
       end
 
@@ -67,7 +70,8 @@ RSpec.describe "major deprecations" do
       it "is deprecated in favor of .unbundled_exec", :bundler => "2" do
         expect(deprecations).to include(
           "`Bundler.clean_exec` has been deprecated in favor of `Bundler.unbundled_exec`. " \
-          "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec`"
+          "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec` " \
+          "(called at -e:1)"
         )
       end
 
@@ -81,7 +85,7 @@ RSpec.describe "major deprecations" do
       end
 
       it "is deprecated in favor of .load", :bundler => "2" do
-        expect(deprecations).to include "Bundler.environment has been removed in favor of Bundler.load"
+        expect(deprecations).to include "Bundler.environment has been removed in favor of Bundler.load (called at -e:1)"
       end
 
       pending "is removed and shows a helpful error message about it", :bundler => "3"
@@ -95,13 +99,35 @@ RSpec.describe "major deprecations" do
     end
   end
 
+  context "bundle check --path" do
+    before do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      G
+
+      bundle "check --path vendor/bundle"
+    end
+
+    it "should print a deprecation warning", :bundler => "2" do
+      expect(deprecations).to include(
+        "The `--path` flag is deprecated because it relies on being " \
+        "remembered across bundler invocations, which bundler will no " \
+        "longer do in future versions. Instead please use `bundle config set " \
+        "path 'vendor/bundle'`, and stop using this flag"
+      )
+    end
+
+    pending "should fail with a helpful error", :bundler => "3"
+  end
+
   describe "bundle config" do
     describe "old list interface" do
       before do
         bundle! "config"
       end
 
-      it "warns", :bundler => "2" do
+      it "warns", :bundler => "3" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config list` instead.")
       end
 
@@ -113,7 +139,7 @@ RSpec.describe "major deprecations" do
         bundle! "config waka"
       end
 
-      it "warns", :bundler => "2" do
+      it "warns", :bundler => "3" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config get waka` instead.")
       end
 
@@ -125,7 +151,7 @@ RSpec.describe "major deprecations" do
         bundle! "config waka wakapun"
       end
 
-      it "warns", :bundler => "2" do
+      it "warns", :bundler => "3" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config set waka wakapun` instead.")
       end
 
@@ -137,7 +163,7 @@ RSpec.describe "major deprecations" do
         bundle! "config --local waka wakapun"
       end
 
-      it "warns", :bundler => "2" do
+      it "warns", :bundler => "3" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config set --local waka wakapun` instead.")
       end
 
@@ -149,7 +175,7 @@ RSpec.describe "major deprecations" do
         bundle! "config --global waka wakapun"
       end
 
-      it "warns", :bundler => "2" do
+      it "warns", :bundler => "3" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config set --global waka wakapun` instead.")
       end
 
@@ -161,7 +187,7 @@ RSpec.describe "major deprecations" do
         bundle! "config --delete waka"
       end
 
-      it "warns", :bundler => "2" do
+      it "warns", :bundler => "3" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config unset waka` instead.")
       end
 
@@ -173,7 +199,7 @@ RSpec.describe "major deprecations" do
         bundle! "config --delete --local waka"
       end
 
-      it "warns", :bundler => "2" do
+      it "warns", :bundler => "3" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config unset --local waka` instead.")
       end
 
@@ -185,7 +211,7 @@ RSpec.describe "major deprecations" do
         bundle! "config --delete --global waka"
       end
 
-      it "warns", :bundler => "2" do
+      it "warns", :bundler => "3" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config unset --global waka` instead.")
       end
 
@@ -201,7 +227,7 @@ RSpec.describe "major deprecations" do
       G
     end
 
-    it "warns when no options are given", :bundler => "2" do
+    it "warns when no options are given", :bundler => "3" do
       bundle! "update"
       expect(deprecations).to include("Pass --all to `bundle update` to update everything")
     end
@@ -288,9 +314,9 @@ RSpec.describe "major deprecations" do
         it "should print a deprecation warning", :bundler => "2" do
           expect(deprecations).to include(
             "The `#{flag_name}` flag is deprecated because it relies on " \
-            "being remembered accross bundler invokations, which bundler " \
+            "being remembered across bundler invocations, which bundler " \
             "will no longer do in future versions. Instead please use " \
-            "`bundle config #{name} '#{value}'`, and stop using this flag"
+            "`bundle config set #{name} '#{value}'`, and stop using this flag"
           )
         end
 
@@ -330,11 +356,8 @@ RSpec.describe "major deprecations" do
       G
 
       ruby <<-RUBY
-        require 'rubygems'
-        require 'bundler'
-        require 'bundler/vendored_thor'
+        require '#{lib_dir}/bundler'
 
-        Bundler.ui = Bundler::UI::Shell.new
         Bundler.setup
         Bundler.setup
       RUBY

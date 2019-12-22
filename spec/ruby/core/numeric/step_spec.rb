@@ -16,9 +16,8 @@ describe "Numeric#step" do
     before :all do
       # This lambda definition limits to return the arguments it receives.
       # It's needed to test numeric_step behaviour with positional arguments.
-      @step_args = -> *args { args }
+      @step = -> receiver, *args, &block { receiver.step(*args, &block) }
     end
-
     it_behaves_like :numeric_step, :step
 
     describe "when no block is given" do
@@ -135,13 +134,12 @@ describe "Numeric#step" do
     end
 
     before :all do
-      # This lambda transforms a positional step method args into
-      # keyword arguments.
+      # This lambda transforms a positional step method args into  keyword arguments.
       # It's needed to test numeric_step behaviour with keyword arguments.
-      @step_args = -> *args do
-        kw_args = {to: args[0]}
+      @step = -> receiver, *args, &block do
+        kw_args = { to: args[0] }
         kw_args[:by] = args[1] if args.size == 2
-        [kw_args]
+        receiver.step(**kw_args, &block)
       end
     end
     it_behaves_like :numeric_step, :step
@@ -183,16 +181,17 @@ describe "Numeric#step" do
         end
       end
     end
+
     before :all do
       # This lambda definition transforms a positional step method args into
       # a mix of positional and keyword arguments.
       # It's needed to test numeric_step behaviour with positional mixed with
       # keyword arguments.
-      @step_args = -> *args do
+      @step = -> receiver, *args, &block do
         if args.size == 2
-          [args[0], {by: args[1]}]
+          receiver.step(args[0], by: args[1], &block)
         else
-          args
+          receiver.step(*args, &block)
         end
       end
     end

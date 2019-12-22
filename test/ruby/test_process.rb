@@ -1509,7 +1509,17 @@ class TestProcess < Test::Unit::TestCase
   def test_abort
     with_tmpchdir do
       s = run_in_child("abort")
-      assert_not_equal(0, s.exitstatus)
+      assert_not_predicate(s, :success?)
+      write_file("test-script", "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        STDERR.reopen(STDOUT)
+        begin
+          raise "[Bug #16424]"
+        rescue
+          abort
+        end
+      end;
+      assert_include(IO.popen([RUBY, "test-script"], &:read), "[Bug #16424]")
     end
   end
 
@@ -1583,6 +1593,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_setegid
+    skip "root can use Process.egid on Android platform" if RUBY_PLATFORM =~ /android/
     assert_nothing_raised(TypeError) {Process.egid += 0}
   rescue NotImplementedError
   end
@@ -1871,6 +1882,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_execopts_uid
+    skip "root can use uid option of Kernel#system on Android platform" if RUBY_PLATFORM =~ /android/
     feature6975 = '[ruby-core:47414]'
 
     [30000, [Process.uid, ENV["USER"]]].each do |uid, user|
@@ -1902,6 +1914,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_execopts_gid
     skip "Process.groups not implemented on Windows platform" if windows?
+    skip "root can use Process.groups on Android platform" if RUBY_PLATFORM =~ /android/
     feature6975 = '[ruby-core:47414]'
 
     groups = Process.groups.map do |g|
@@ -2266,7 +2279,9 @@ EOS
     th = nil
     x = with_tmpchdir {|d|
       prog = "#{d}/notexist"
-      th = Thread.start {system(prog);sleep}
+      q = Thread::Queue.new
+      th = Thread.start {system(prog);q.push(nil);sleep}
+      q.pop
       th.kill
       th.join(0.1)
     }

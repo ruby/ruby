@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
-require "open3"
 require "shellwords"
-require "tempfile"
+
 module Bundler
   class Source
     class Git
@@ -19,7 +18,7 @@ module Bundler
         def initialize(command)
           msg = String.new
           msg << "Bundler is trying to run a `git #{command}` at runtime. You probably need to run `bundle install`. However, "
-          msg << "this error message could probably be more useful. Please submit a ticket at http://github.com/bundler/bundler/issues "
+          msg << "this error message could probably be more useful. Please submit a ticket at https://github.com/bundler/bundler/issues "
           msg << "with steps to reproduce as well as the following\n\nCALLER: #{caller.join("\n")}"
           super msg
         end
@@ -218,7 +217,7 @@ module Bundler
         # Adds credentials to the URI as Fetcher#configured_uri_for does
         def configured_uri_for(uri)
           if /https?:/ =~ uri
-            remote = URI(uri)
+            remote = Bundler::URI(uri)
             config_auth = Bundler.settings[remote.to_s] || Bundler.settings[remote.host]
             remote.userinfo ||= config_auth
             remote.to_s
@@ -243,12 +242,14 @@ module Bundler
         end
 
         def capture_and_filter_stderr(uri, cmd)
+          require "open3"
           return_value, captured_err, status = Open3.capture3(cmd)
           Bundler.ui.warn URICredentialsFilter.credential_filtered_string(captured_err, uri) if uri && !captured_err.empty?
           [return_value, status]
         end
 
         def capture_and_ignore_stderr(cmd)
+          require "open3"
           return_value, _, status = Open3.capture3(cmd)
           [return_value, status]
         end

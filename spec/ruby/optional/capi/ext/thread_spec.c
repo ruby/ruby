@@ -114,7 +114,8 @@ static VALUE thread_spec_rb_thread_wait_for(VALUE self, VALUE s, VALUE ms) {
 }
 
 
-VALUE thread_spec_call_proc(VALUE arg_array) {
+VALUE thread_spec_call_proc(void *arg_ptr) {
+  VALUE arg_array = (VALUE)arg_ptr;
   VALUE arg = rb_ary_pop(arg_array);
   VALUE proc = rb_ary_pop(arg_array);
   return rb_funcall(proc, rb_intern("call"), 1, arg);

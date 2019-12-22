@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "vendored_thor" unless defined?(Thor)
 require_relative "../bundler"
 require "shellwords"
 
@@ -26,7 +25,6 @@ module Bundler
     attr_reader :spec_path, :base, :gemspec
 
     def initialize(base = nil, name = nil)
-      Bundler.ui = UI::Shell.new
       @base = (base ||= SharedHelpers.pwd)
       gemspecs = name ? [File.join(base, "#{name}.gemspec")] : Dir[File.join(base, "{,*}.gemspec")]
       raise "Unable to determine name from existing gemspec. Use :name => 'gemname' in #install_tasks to manually set it." unless gemspecs.size == 1
@@ -75,8 +73,7 @@ module Bundler
 
     def build_gem
       file_name = nil
-      gem = ENV["BUNDLE_GEM"] ? ENV["BUNDLE_GEM"] : "gem"
-      sh(%W[#{gem} build -V #{spec_path}]) do
+      sh("#{gem_command} build -V #{spec_path}".shellsplit) do
         file_name = File.basename(built_gem_path)
         SharedHelpers.filesystem_access(File.join(base, "pkg")) {|p| FileUtils.mkdir_p(p) }
         FileUtils.mv(built_gem_path, "pkg")
@@ -87,11 +84,10 @@ module Bundler
 
     def install_gem(built_gem_path = nil, local = false)
       built_gem_path ||= build_gem
-      gem = ENV["BUNDLE_GEM"] ? ENV["BUNDLE_GEM"] : "gem"
-      cmd = %W[#{gem} install #{built_gem_path}]
-      cmd << "--local" if local
-      out, status = sh_with_status(cmd)
-      unless status.success? && out[/Successfully installed/]
+      cmd = "#{gem_command} install #{built_gem_path}"
+      cmd += " --local" if local
+      _, status = sh_with_status(cmd.shellsplit)
+      unless status.success?
         raise "Couldn't install gem, run `gem install #{built_gem_path}' for more detailed output"
       end
       Bundler.ui.confirm "#{name} (#{version}) installed."
@@ -100,13 +96,13 @@ module Bundler
   protected
 
     def rubygem_push(path)
-      gem_command = %W[gem push #{path}]
-      gem_command << "--key" << gem_key if gem_key
-      gem_command << "--host" << allowed_push_host if allowed_push_host
+      cmd = %W[#{gem_command} push #{path}]
+      cmd << "--key" << gem_key if gem_key
+      cmd << "--host" << allowed_push_host if allowed_push_host
       unless allowed_push_host || Bundler.user_home.join(".gem/credentials").file?
         raise "Your rubygems.org credentials aren't set. Run `gem push` to set them."
       end
-      sh_with_input(gem_command)
+      sh_with_input(cmd)
       Bundler.ui.confirm "Pushed #{name} #{version} to #{gem_push_host}"
     end
 
@@ -212,6 +208,10 @@ module Bundler
 
     def gem_push?
       !%w[n no nil false off 0].include?(ENV["gem_push"].to_s.downcase)
+    end
+
+    def gem_command
+      ENV["GEM_COMMAND"] ? ENV["GEM_COMMAND"] : "gem"
     end
   end
 end

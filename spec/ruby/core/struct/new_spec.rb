@@ -74,6 +74,10 @@ describe "Struct.new" do
     end
   end
 
+  it "raises ArgumentError when there is a duplicate member" do
+    -> { Struct.new(:foo, :foo) }.should raise_error(ArgumentError, "duplicate member: foo")
+  end
+
   it "raises a TypeError if object is not a Symbol" do
     obj = mock(':ruby')
     def obj.to_sym() :ruby end
@@ -147,7 +151,6 @@ describe "Struct.new" do
     context "keyword_init: true option" do
       before :all do
         @struct_with_kwa = Struct.new(:name, :legs, keyword_init: true)
-        @struct_without_kwa = Struct.new(:name, :legs, keyword_init: false)
       end
 
       it "creates a class that accepts keyword arguments to initialize" do
@@ -156,11 +159,27 @@ describe "Struct.new" do
         obj.legs.should == 4
       end
 
+      it "raises when there is a duplicate member" do
+        -> { Struct.new(:foo, :foo, keyword_init: true) }.should raise_error(ArgumentError, "duplicate member: foo")
+      end
+
       describe "new class instantiation" do
         it "accepts arguments as hash as well" do
           obj = @struct_with_kwa.new({name: "elefant", legs: 4})
           obj.name.should == "elefant"
           obj.legs.should == 4
+        end
+
+        it "allows missing arguments" do
+          obj = @struct_with_kwa.new(name: "elefant")
+          obj.name.should == "elefant"
+          obj.legs.should be_nil
+        end
+
+        it "allows no arguments" do
+          obj = @struct_with_kwa.new
+          obj.name.should be_nil
+          obj.legs.should be_nil
         end
 
         it "raises ArgumentError when passed not declared keyword argument" do
@@ -184,6 +203,10 @@ describe "Struct.new" do
     end
 
     context "keyword_init: false option" do
+      before :all do
+        @struct_without_kwa = Struct.new(:name, :legs, keyword_init: false)
+      end
+
       it "behaves like it does without :keyword_init option" do
         obj = @struct_without_kwa.new("elefant", 4)
         obj.name.should == "elefant"

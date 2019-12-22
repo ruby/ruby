@@ -149,46 +149,80 @@ describe :hash_eql_additional, shared: true do
     h.send(@method, HashSpecs::MyHash[h]).should be_true
   end
 
-  # Why isn't this true of eql? too ?
-  it "compares keys with matching hash codes via eql?" do
-    a = Array.new(2) do
-      obj = mock('0')
-      obj.should_receive(:hash).at_least(1).and_return(0)
+  ruby_version_is '2.7' do
+    # Why isn't this true of eql? too ?
+    it "compares keys with matching hash codes via eql?" do
+      a = Array.new(2) do
+        obj = mock('0')
+        obj.should_receive(:hash).at_least(1).and_return(0)
 
-      # It's undefined whether the impl does a[0].eql?(a[1]) or
-      # a[1].eql?(a[0]) so we taint both.
-      def obj.eql?(o)
-        return true if self.equal?(o)
-        taint
-        o.taint
-        false
+        def obj.eql?(o)
+          return true if self.equal?(o)
+          false
+        end
+
+        obj
       end
 
-      obj
-    end
+      { a[0] => 1 }.send(@method, { a[1] => 1 }).should be_false
 
-    { a[0] => 1 }.send(@method, { a[1] => 1 }).should be_false
-    a[0].tainted?.should be_true
-    a[1].tainted?.should be_true
+      a = Array.new(2) do
+        obj = mock('0')
+        obj.should_receive(:hash).at_least(1).and_return(0)
 
-    a = Array.new(2) do
-      obj = mock('0')
-      obj.should_receive(:hash).at_least(1).and_return(0)
+        def obj.eql?(o)
+          true
+        end
 
-      def obj.eql?(o)
-        # It's undefined whether the impl does a[0].send(@method, a[1]) or
-        # a[1].send(@method, a[0]) so we taint both.
-        taint
-        o.taint
-        true
+        obj
       end
 
-      obj
+      { a[0] => 1 }.send(@method, { a[1] => 1 }).should be_true
     end
+  end
 
-    { a[0] => 1 }.send(@method, { a[1] => 1 }).should be_true
-    a[0].tainted?.should be_true
-    a[1].tainted?.should be_true
+  ruby_version_is ''...'2.7' do
+    # Why isn't this true of eql? too ?
+    it "compares keys with matching hash codes via eql?" do
+      a = Array.new(2) do
+        obj = mock('0')
+        obj.should_receive(:hash).at_least(1).and_return(0)
+
+        # It's undefined whether the impl does a[0].eql?(a[1]) or
+        # a[1].eql?(a[0]) so we taint both.
+        def obj.eql?(o)
+          return true if self.equal?(o)
+          taint
+          o.taint
+          false
+        end
+
+        obj
+      end
+
+      { a[0] => 1 }.send(@method, { a[1] => 1 }).should be_false
+      a[0].tainted?.should be_true
+      a[1].tainted?.should be_true
+
+      a = Array.new(2) do
+        obj = mock('0')
+        obj.should_receive(:hash).at_least(1).and_return(0)
+
+        def obj.eql?(o)
+          # It's undefined whether the impl does a[0].send(@method, a[1]) or
+          # a[1].send(@method, a[0]) so we taint both.
+          taint
+          o.taint
+          true
+        end
+
+        obj
+      end
+
+      { a[0] => 1 }.send(@method, { a[1] => 1 }).should be_true
+      a[0].tainted?.should be_true
+      a[1].tainted?.should be_true
+    end
   end
 
   it "compares the values in self to values in other hash" do

@@ -171,6 +171,7 @@ SpecificExampleException
 Specs
 StrChild
 StrangeEach
+StringIO
 StringRefinement
 StringScanner
 StringSubclass

@@ -2,10 +2,10 @@
 
 RSpec.describe "bundler/inline#gemfile" do
   def script(code, options = {})
-    requires = ["bundler/inline"]
-    requires.unshift File.expand_path("../../support/artifice/" + options.delete(:artifice) + ".rb", __FILE__) if options.key?(:artifice)
+    requires = ["#{lib_dir}/bundler/inline"]
+    requires.unshift "#{spec_dir}/support/artifice/" + options.delete(:artifice) if options.key?(:artifice)
     requires = requires.map {|r| "require '#{r}'" }.join("\n")
-    @out = ruby("#{requires}\n\n" + code, options)
+    ruby("#{requires}\n\n" + code, options)
   end
 
   before :each do
@@ -88,15 +88,15 @@ RSpec.describe "bundler/inline#gemfile" do
     RUBY
 
     expect(out).to include("Installing activesupport")
-    err.gsub! %r{.*lib/sinatra/base\.rb:\d+: warning: constant ::Fixnum is deprecated$}, ""
-    err.strip!
-    expect(err).to be_empty
+    err_lines = err.split("\n")
+    err_lines.reject!{|line| line =~ /\.rb:\d+: warning: / } unless RUBY_VERSION < "2.7"
+    expect(err_lines).to be_empty
     expect(exitstatus).to be_zero if exitstatus
   end
 
   it "lets me use my own ui object" do
     script <<-RUBY, :artifice => "endpoint"
-      require 'bundler'
+      require '#{lib_dir}/bundler'
       class MyBundlerUI < Bundler::UI::Silent
         def confirm(msg, newline = nil)
           puts "CONFIRMED!"
@@ -114,7 +114,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
   it "has an option for quiet installation" do
     script <<-RUBY, :artifice => "endpoint"
-      require 'bundler'
+      require '#{lib_dir}/bundler/inline'
 
       gemfile(true, :quiet => true) do
         source "https://notaserver.com"
@@ -140,7 +140,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
   it "does not mutate the option argument" do
     script <<-RUBY
-      require 'bundler'
+      require '#{lib_dir}/bundler'
       options = { :ui => Bundler::UI::Shell.new }
       gemfile(false, options) do
         path "#{lib_path}" do
@@ -315,5 +315,22 @@ RSpec.describe "bundler/inline#gemfile" do
     RUBY
 
     expect(err).to be_empty
+  end
+
+  it "preserves previous BUNDLE_GEMFILE value" do
+    ENV["BUNDLE_GEMFILE"] = ""
+    script <<-RUBY
+      gemfile do
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      end
+
+      puts "BUNDLE_GEMFILE is empty" if ENV["BUNDLE_GEMFILE"].empty?
+      system("#{Gem.ruby} -w -e '42'") # this should see original value of BUNDLE_GEMFILE
+      exit $?.exitstatus
+    RUBY
+
+    expect(last_command).to be_success
+    expect(out).to include("BUNDLE_GEMFILE is empty")
   end
 end

@@ -16,6 +16,38 @@ describe "Float#<=>" do
     (1.0 <=> "1").should be_nil
   end
 
+  it "compares using #coerce when argument is not a Float" do
+    klass = Class.new do
+      attr_reader :call_count
+      def coerce(other)
+        @call_count ||= 0
+        @call_count += 1
+        [other, 42.0]
+      end
+    end
+
+    coercible = klass.new
+    (2.33 <=> coercible).should == -1
+    (42.0 <=> coercible).should == 0
+    (43.0 <=> coercible).should == 1
+    coercible.call_count.should == 3
+  end
+
+  ruby_version_is "2.5" do
+    it "raises TypeError when #coerce misbehaves" do
+      klass = Class.new do
+        def coerce(other)
+          :incorrect
+        end
+      end
+
+      bad_coercible = klass.new
+      -> {
+        4.2 <=> bad_coercible
+      }.should raise_error(TypeError, "coerce must return [x, y]")
+    end
+  end
+
   # The 4 tests below are taken from matz's revision 23730 for Ruby trunk
   #
   it "returns 1 when self is Infinity and other is a Bignum" do

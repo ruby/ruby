@@ -58,17 +58,12 @@ closure.o: $(hdrdir)/ruby.h
 closure.o: $(hdrdir)/ruby/assert.h
 closure.o: $(hdrdir)/ruby/backward.h
 closure.o: $(hdrdir)/ruby/defines.h
-closure.o: $(hdrdir)/ruby/encoding.h
 closure.o: $(hdrdir)/ruby/intern.h
-closure.o: $(hdrdir)/ruby/io.h
 closure.o: $(hdrdir)/ruby/missing.h
-closure.o: $(hdrdir)/ruby/onigmo.h
-closure.o: $(hdrdir)/ruby/oniguruma.h
 closure.o: $(hdrdir)/ruby/ruby.h
 closure.o: $(hdrdir)/ruby/st.h
 closure.o: $(hdrdir)/ruby/subst.h
 closure.o: $(hdrdir)/ruby/thread.h
-closure.o: $(top_srcdir)/internal.h
 closure.o: closure.c
 closure.o: closure.h
 closure.o: conversions.h

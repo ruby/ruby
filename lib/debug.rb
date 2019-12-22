@@ -5,11 +5,6 @@
 
 require 'continuation'
 
-if $SAFE > 0
-  STDERR.print "-r debug.rb is not available in safe mode\n"
-  exit 1
-end
-
 require 'tracer'
 require 'pp'
 
@@ -432,7 +427,7 @@ class DEBUGGER__
             pos = $2
             if $1
               klass = debug_silent_eval($1, binding)
-              file = $1
+              file = File.expand_path($1)
             end
             if pos =~ /^\d+$/
               pname = pos

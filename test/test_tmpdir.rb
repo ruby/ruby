@@ -11,19 +11,6 @@ class TestTmpdir < Test::Unit::TestCase
     assert_equal(tmpdir_org, Dir.tmpdir)
   end
 
-  def test_tmpdir_modifiable_safe
-    Thread.new {
-      $SAFE = 1
-      tmpdir = Dir.tmpdir
-      assert_equal(false, tmpdir.frozen?)
-      tmpdir_org = tmpdir.dup
-      tmpdir << "foo"
-      assert_equal(tmpdir_org, Dir.tmpdir)
-    }.join
-  ensure
-    $SAFE = 0
-  end
-
   def test_world_writable
     skip "no meaning on this platform" if /mswin|mingw/ =~ RUBY_PLATFORM
     Dir.mktmpdir do |tmpdir|
@@ -65,22 +52,29 @@ class TestTmpdir < Test::Unit::TestCase
     }
   end
 
-  TRAVERSAL_PATH = Array.new(Dir.pwd.split('/').count, '..').join('/') + Dir.pwd + '/'
-  TRAVERSAL_PATH.delete!(':') if /mswin|mingw/ =~ RUBY_PLATFORM
-
   def test_mktmpdir_traversal
-    expect = Dir.glob(TRAVERSAL_PATH + '*').count
-    Dir.mktmpdir(TRAVERSAL_PATH + 'foo') do
-      actual = Dir.glob(TRAVERSAL_PATH + '*').count
-      assert_equal expect, actual
+    assert_mktmpdir_traversal do |traversal_path|
+      Dir.mktmpdir(traversal_path + 'foo') do |actual|
+        actual
+      end
     end
   end
 
   def test_mktmpdir_traversal_array
-    expect = Dir.glob(TRAVERSAL_PATH + '*').count
-    Dir.mktmpdir([TRAVERSAL_PATH, 'foo']) do
-      actual = Dir.glob(TRAVERSAL_PATH + '*').count
-      assert_equal expect, actual
+    assert_mktmpdir_traversal do |traversal_path|
+      Dir.mktmpdir([traversal_path, 'foo']) do |actual|
+        actual
+      end
+    end
+  end
+
+  def assert_mktmpdir_traversal
+    Dir.mktmpdir do |target|
+      target = target.chomp('/') + '/'
+      traversal_path = target.sub(/\A\w:/, '') # for DOSISH
+      traversal_path = Array.new(target.count('/')-2, '..').join('/') + traversal_path
+      actual = yield traversal_path
+      assert_not_send([File.absolute_path(actual), :start_with?, target])
     end
   end
 end

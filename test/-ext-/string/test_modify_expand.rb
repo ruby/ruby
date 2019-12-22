@@ -19,9 +19,8 @@ class Test_StringModifyExpand < Test::Unit::TestCase
     return if RbConfig::SIZEOF['size_t'] > RbConfig::SIZEOF['long']
     bug12390 = '[ruby-core:75592] [Bug #12390]'
     s = Bug::String.new
-    long_max = (1 << (8 * RbConfig::SIZEOF['long'] - 1)) - 1
     assert_raise(ArgumentError, bug12390) {
-      s.modify_expand!(long_max)
+      s.modify_expand!(RbConfig::LIMITS["LONG_MAX"])
     }
   end
 end

@@ -248,8 +248,6 @@ module DRb
     # configuration.  Either a Hash or DRb::DRbSSLSocket::SSLConfig
     def self.open(uri, config)
       host, port, = parse_uri(uri)
-      host.untaint
-      port.untaint
       soc = TCPSocket.open(host, port)
       ssl_conf = SSLConfig::new(config)
       ssl_conf.setup_ssl_context

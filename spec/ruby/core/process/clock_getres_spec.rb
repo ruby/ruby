@@ -8,10 +8,7 @@ describe "Process.clock_getres" do
     # NOTE: Look at fixtures/clocks.rb for clock and OS-specific exclusions
     ProcessSpecs.clock_constants_for_resolution_checks.each do |name, value|
       it "matches the clock in practice for Process::#{name}" do
-        times = []
-        10_000.times do
-          times << Process.clock_gettime(value, :nanosecond)
-        end
+        times = 10_000.times.map { Process.clock_gettime(value, :nanosecond) }
         reported = Process.clock_getres(value, :nanosecond)
 
         # The clock should not be more accurate than reported (times should be

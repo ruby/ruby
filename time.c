@@ -303,7 +303,7 @@ v2w(VALUE v)
 {
     if (RB_TYPE_P(v, T_RATIONAL)) {
         if (RRATIONAL(v)->den != LONG2FIX(1))
-            return v;
+            return WIDEVAL_WRAP(v);
         v = RRATIONAL(v)->num;
     }
 #if WIDEVALUE_IS_WIDER
@@ -673,16 +673,21 @@ static VALUE tm_from_time(VALUE klass, VALUE time);
 
 bool ruby_tz_uptodate_p;
 
+static void
+update_tz(void)
+{
+    if (ruby_tz_uptodate_p) return;
+    ruby_tz_uptodate_p = true;
+    tzset();
+}
+
 static struct tm *
 rb_localtime_r(const time_t *t, struct tm *result)
 {
 #if defined __APPLE__ && defined __LP64__
     if (*t != (time_t)(int)*t) return NULL;
 #endif
-    if (!ruby_tz_uptodate_p) {
-	ruby_tz_uptodate_p = 1;
-	tzset();
-    }
+    update_tz();
 #ifdef HAVE_GMTIME_R
     result = localtime_r(t, result);
 #else
@@ -1818,7 +1823,6 @@ static void
 time_modify(VALUE time)
 {
     rb_check_frozen(time);
-    rb_check_trusted(time);
 }
 
 static wideval_t
@@ -2193,7 +2197,7 @@ extract_vtm(VALUE time, struct vtm *vtm, VALUE subsecx)
         *vtm = tobj->vtm;
         t = rb_time_unmagnify(tobj->timew);
         if (TZMODE_FIXOFF_P(tobj) && vtm->utc_offset != INT2FIX(0))
-            t = wadd(t, vtm->utc_offset);
+            t = wadd(t, v2w(vtm->utc_offset));
     }
     else if (RB_TYPE_P(time, T_STRUCT)) {
 #define AREF(x) rb_struct_aref(time, ID2SYM(id_##x))
@@ -2698,6 +2702,12 @@ rb_time_timespec(VALUE time)
     return time_timespec(time, FALSE);
 }
 
+struct timespec
+rb_time_timespec_interval(VALUE num)
+{
+    return time_timespec(num, TRUE);
+}
+
 enum {
     TMOPT_IN,
     TMOPT_MAX_
@@ -3061,7 +3071,16 @@ time_arg(int argc, const VALUE *argv, struct vtm *vtm)
 static int
 leap_year_p(long y)
 {
-    return ((y % 4 == 0) && (y % 100 != 0)) || (y % 400 == 0);
+    /* TODO:
+     *  ensure about negative years in proleptic Gregorian calendar.
+     */
+    unsigned long uy = (unsigned long)(LIKELY(y >= 0) ? y : -y);
+
+    if (LIKELY(uy % 4 != 0)) return 0;
+
+    unsigned long century = uy / 100;
+    if (LIKELY(uy != century * 100)) return 1;
+    return century % 4 == 0;
 }
 
 static time_t
@@ -3125,15 +3144,8 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
 
     find_dst = 0 < tptr->tm_isdst;
 
-#if defined(HAVE_MKTIME)
-    tm0 = *tptr;
-    if (!utc_p && (guess = mktime(&tm0)) != -1) {
-        tm = GUESS(&guess);
-        if (tm && tmcmp(tptr, tm) == 0) {
-            goto found;
-        }
-    }
-#endif
+    /* /etc/localtime might be changed. reload it. */
+    update_tz();
 
     tm0 = *tptr;
     if (tm0.tm_mon < 0) {
@@ -3259,7 +3271,7 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
                 status = 0;
             }
             if (guess <= guess_lo || guess_hi <= guess) {
-                /* Precious guess is invalid. try binary search. */
+                /* Previous guess is invalid. try binary search. */
 #ifdef DEBUG_GUESSRANGE
                 if (guess <= guess_lo) fprintf(stderr, "too small guess: %ld <= %ld\n", guess, guess_lo);
                 if (guess_hi <= guess) fprintf(stderr, "too big guess: %ld <= %ld\n", guess_hi, guess);
@@ -3356,12 +3368,12 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
 
     *tp = guess_lo +
           ((tptr->tm_year - tm_lo.tm_year) * 365 +
-           ((tptr->tm_year-69)/4) -
-           ((tptr->tm_year-1)/100) +
-           ((tptr->tm_year+299)/400) -
-           ((tm_lo.tm_year-69)/4) +
-           ((tm_lo.tm_year-1)/100) -
-           ((tm_lo.tm_year+299)/400) +
+           DIV((tptr->tm_year-69), 4) -
+           DIV((tptr->tm_year-1), 100) +
+           DIV((tptr->tm_year+299), 400) -
+           DIV((tm_lo.tm_year-69), 4) +
+           DIV((tm_lo.tm_year-1), 100) -
+           DIV((tm_lo.tm_year+299), 400) +
            tptr_tm_yday -
            tm_lo.tm_yday) * 86400 +
           (tptr->tm_hour - tm_lo.tm_hour) * 3600 +
@@ -4050,7 +4062,6 @@ time_asctime(VALUE time)
 
 /*
  *  call-seq:
- *     time.inspect -> string
  *     time.to_s    -> string
  *
  *  Returns a string representing _time_. Equivalent to calling
@@ -4074,6 +4085,53 @@ time_to_s(VALUE time)
         return strftimev("%Y-%m-%d %H:%M:%S UTC", time, rb_usascii_encoding());
     else
         return strftimev("%Y-%m-%d %H:%M:%S %z", time, rb_usascii_encoding());
+}
+
+/*
+ *  call-seq:
+ *     time.inspect -> string
+ *
+ *  Returns a detailed string representing _time_. Inlike to_s, preserves
+ *  nanoseconds in representation for easier debugging.
+ *
+ *     t = Time.now
+ *     t.inspect                             #=> "2012-11-10 18:16:12.261257655 +0100"
+ *     t.strftime "%Y-%m-%d %H:%M:%S.%N %z"  #=> "2012-11-10 18:16:12.261257655 +0100"
+ *
+ *     t.utc.inspect                          #=> "2012-11-10 17:16:12.261257655 UTC"
+ *     t.strftime "%Y-%m-%d %H:%M:%S.%N UTC"  #=> "2012-11-10 17:16:12.261257655 UTC"
+ */
+
+static VALUE
+time_inspect(VALUE time)
+{
+    struct time_object *tobj;
+    VALUE str, subsec;
+
+    GetTimeval(time, tobj);
+    str = strftimev("%Y-%m-%d %H:%M:%S", time, rb_usascii_encoding());
+    subsec = w2v(wmod(tobj->timew, WINT2FIXWV(TIME_SCALE)));
+    if (FIXNUM_P(subsec) && FIX2LONG(subsec) == 0) {
+    }
+    else if (FIXNUM_P(subsec) && FIX2LONG(subsec) < TIME_SCALE) {
+        long len;
+        str = rb_enc_sprintf(rb_usascii_encoding(), "%"PRIsVALUE".%09ld", str, FIX2LONG(subsec));
+        for (len=RSTRING_LEN(str); RSTRING_PTR(str)[len-1] == '0' && len > 0; len--)
+            ;
+        rb_str_resize(str, len);
+    }
+    else {
+        rb_str_cat_cstr(str, " ");
+        subsec = quov(subsec, INT2FIX(TIME_SCALE));
+        rb_str_concat(str, rb_obj_as_string(subsec));
+    }
+    if (TZMODE_UTC_P(tobj)) {
+        rb_str_cat_cstr(str, " UTC");
+    }
+    else {
+        rb_str_concat(str, strftimev(" %z", time, rb_usascii_encoding()));
+    }
+    return str;
 }
 
 static VALUE
@@ -5204,7 +5262,7 @@ mload_zone(VALUE time, VALUE zone)
     VALUE z, args[2];
     args[0] = time;
     args[1] = zone;
-    z = rb_rescue(mload_findzone, (VALUE)args, (VALUE (*)(ANYARGS))NULL, Qnil);
+    z = rb_rescue(mload_findzone, (VALUE)args, 0, Qnil);
     if (NIL_P(z)) return rb_fstring(zone);
     if (RB_TYPE_P(z, T_STRING)) return rb_fstring(z);
     return z;
@@ -5554,7 +5612,7 @@ Init_tm(VALUE outer, const char *name)
     rb_define_method(tm, "utc?", time_utc_p, 0);
     rb_define_method(tm, "gmt?", time_utc_p, 0);
     rb_define_method(tm, "to_s", time_to_s, 0);
-    rb_define_method(tm, "inspect", time_to_s, 0);
+    rb_define_method(tm, "inspect", time_inspect, 0);
     rb_define_method(tm, "to_a", time_to_a, 0);
     rb_define_method(tm, "tv_sec", time_to_i, 0);
     rb_define_method(tm, "tv_usec", time_usec, 0);
@@ -5744,7 +5802,7 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *  At loading marshaled data, a timezone name will be converted to a timezone
  *  object by +find_timezone+ class method, if the method is defined.
  *
- *  Similary, that class method will be called when a timezone argument does
+ *  Similarly, that class method will be called when a timezone argument does
  *  not have the necessary methods mentioned above.
  */
 
@@ -5805,7 +5863,7 @@ Init_Time(void)
     rb_define_method(rb_cTime, "ctime", time_asctime, 0);
     rb_define_method(rb_cTime, "asctime", time_asctime, 0);
     rb_define_method(rb_cTime, "to_s", time_to_s, 0);
-    rb_define_method(rb_cTime, "inspect", time_to_s, 0);
+    rb_define_method(rb_cTime, "inspect", time_inspect, 0);
     rb_define_method(rb_cTime, "to_a", time_to_a, 0);
 
     rb_define_method(rb_cTime, "+", time_plus, 1);

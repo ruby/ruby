@@ -125,12 +125,7 @@ class MSpecScript
     require 'mspec/runner/formatters/file'
     require 'mspec/runner/filters'
 
-    if config[:formatter].nil?
-      config[:formatter] = STDOUT.tty? ? SpinnerFormatter : @files.size < 50 ? DottedFormatter : FileFormatter
-    end
-
-    if config[:formatter]
-      formatter = config[:formatter].new(config[:output])
+    if formatter = config_formatter
       formatter.register
       MSpec.store :formatter, formatter
     end
@@ -147,6 +142,17 @@ class MSpecScript
     DebugAction.new(config[:atags], config[:astrings]).register if config[:debugger]
 
     custom_register
+  end
+
+  # Makes a formatter specified by :formatter option.
+  def config_formatter
+    if config[:formatter].nil?
+      config[:formatter] = STDOUT.tty? ? SpinnerFormatter : @files.size < 50 ? DottedFormatter : FileFormatter
+    end
+
+    if config[:formatter]
+      config[:formatter].new(config[:output])
+    end
   end
 
   # Callback for enabling custom actions, etc. This version is a

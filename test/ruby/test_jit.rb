@@ -3,8 +3,6 @@ require 'test/unit'
 require 'tmpdir'
 require_relative '../lib/jit_support'
 
-return if RbConfig::CONFIG["MJIT_SUPPORT"] == 'no'
-
 # Test for --jit option
 class TestJIT < Test::Unit::TestCase
   include JITSupport
@@ -21,14 +19,16 @@ class TestJIT < Test::Unit::TestCase
     :defineclass,
     :opt_call_c_function,
 
-    # joke
-    :bitblt,
-    :answer,
+    # to be tested
+    :invokebuiltin,
 
-    # TODO: write tests for them
-    :reput,
-    :tracecoverage,
-  ]
+    # never used
+    :opt_invokebuiltin_delegate,
+  ].each do |insn|
+    if !RubyVM::INSTRUCTION_NAMES.include?(insn.to_s)
+      warn "instruction #{insn.inspect} is not defined but included in TestJIT::TEST_PENDING_INSNS"
+    end
+  end
 
   def self.untested_insns
     @untested_insns ||= (RubyVM::INSTRUCTION_NAMES.map(&:to_sym) - TEST_PENDING_INSNS)
@@ -112,13 +112,10 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_setspecial
-    verbose_bak, $VERBOSE = $VERBOSE, nil
     assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: 'true', insns: %i[setspecial])
     begin;
       true if nil.nil?..nil.nil?
     end;
-  ensure
-    $VERBOSE = verbose_bak
   end
 
   def test_compile_insn_instancevariable
@@ -249,6 +246,10 @@ class TestJIT < Test::Unit::TestCase
       a, b, c = 1, 2, 3
       [a, b, c]
     end;
+  end
+
+  def test_compile_insn_newarraykwsplat
+    assert_compile_once('[**{ x: 1 }]', result_inspect: '[{:x=>1}]', insns: %i[newarraykwsplat])
   end
 
   def test_compile_insn_intern_duparray
@@ -482,13 +483,6 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
-  def test_compile_insn_methodref
-    assert_compile_once("#{<<~"begin;"}\n#{<<~'end;'}", result_inspect: '"main"', insns: %i[methodref])
-    begin;
-      self.:inspect.call
-    end;
-  end
-
   def test_compile_insn_inlinecache
     assert_compile_once('Struct', result_inspect: 'Struct', insns: %i[opt_getinlinecache opt_setinlinecache])
   end
@@ -594,16 +588,19 @@ class TestJIT < Test::Unit::TestCase
     assert_compile_once('!!true', result_inspect: 'true', insns: %i[opt_not])
   end
 
-  def test_compile_insn_opt_regexpmatch1
-    assert_compile_once("/true/ =~ 'true'", result_inspect: '0', insns: %i[opt_regexpmatch1])
-  end
-
   def test_compile_insn_opt_regexpmatch2
+    assert_compile_once("/true/ =~ 'true'", result_inspect: '0', insns: %i[opt_regexpmatch2])
     assert_compile_once("'true' =~ /true/", result_inspect: '0', insns: %i[opt_regexpmatch2])
   end
 
   def test_compile_insn_opt_call_c_function
     skip "support this in opt_call_c_function (low priority)"
+  end
+
+  def test_compile_insn_opt_invokebuiltin_delegate_leave
+    insns = collect_insns(RubyVM::InstructionSequence.of("\x00".method(:unpack)).to_a)
+    mark_tested_insn(:opt_invokebuiltin_delegate_leave, used_insns: insns)
+    assert_eval_with_jit('print "\x00".unpack("c")', stdout: '[0]', success_count: 1)
   end
 
   def test_jit_output
@@ -742,6 +739,28 @@ class TestJIT < Test::Unit::TestCase
       print(Foo.new.bar)
       print(Foo.new.bar)
       $VERBOSE = verbose
+    end;
+  end
+
+  def test_inlined_setivar_frozen
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "FrozenError\n", success_count: 2, min_calls: 3)
+    begin;
+      class A
+        def a
+          @a = 1
+        end
+      end
+
+      a = A.new
+      a.a
+      a.a
+      a.a
+      a.freeze
+      begin
+        a.a
+      rescue FrozenError => e
+        p e.class
+      end
     end;
   end
 
@@ -945,7 +964,7 @@ class TestJIT < Test::Unit::TestCase
 
         before_fork; before_fork # the child should not delete this .o file
         pid = Process.fork do # this child should not delete shared .pch file
-          sleep 0.5 # to prevent mixing outputs on Solaris
+          sleep 2.0 # to prevent mixing outputs on Solaris
           after_fork; after_fork # this child does not share JIT-ed after_fork with parent
         end
         after_fork; after_fork # this parent does not share JIT-ed after_fork with child
@@ -989,11 +1008,7 @@ class TestJIT < Test::Unit::TestCase
     # Make sure that the script has insns expected to be tested
     used_insns = method_insns(script)
     insns.each do |insn|
-      unless used_insns.include?(insn)
-        $stderr.puts
-        warn "'#{insn}' insn is not included in the script. Actual insns are: #{used_insns.join(' ')}\n", uplevel: uplevel+2
-      end
-      TestJIT.untested_insns.delete(insn)
+      mark_tested_insn(insn, used_insns: used_insns, uplevel: uplevel + 3)
     end
 
     assert_equal(
@@ -1012,6 +1027,14 @@ class TestJIT < Test::Unit::TestCase
     unless err_lines.empty?
       warn err_lines.join(''), uplevel: uplevel
     end
+  end
+
+  def mark_tested_insn(insn, used_insns:, uplevel: 1)
+    unless used_insns.include?(insn)
+      $stderr.puts
+      warn "'#{insn}' insn is not included in the script. Actual insns are: #{used_insns.join(' ')}\n", uplevel: uplevel
+    end
+    TestJIT.untested_insns.delete(insn)
   end
 
   # Collect block's insns or defined method's insns, which are expected to be JIT-ed.

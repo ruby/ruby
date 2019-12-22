@@ -4,7 +4,7 @@ require 'mspec/runner/actions/filter'
 # tagged with +tags+. If +tags+ is an empty list, prints out
 # descriptions for any specs that are tagged.
 class TagListAction
-  def initialize(tags=nil)
+  def initialize(tags = nil)
     @tags = tags.nil? || tags.empty? ? nil : Array(tags)
     @filter = nil
   end

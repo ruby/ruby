@@ -1,10 +1,10 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative 'shared/rand'
 
 describe "Random.rand" do
-  it "returns a Float if no max argument is passed" do
-    Random.rand.should be_kind_of(Float)
-  end
+  it_behaves_like :random_number, :rand, Random.new
+  it_behaves_like :random_number, :rand, Random
 
   it "returns a Float >= 0 if no max argument is passed" do
     floats = 200.times.map { Random.rand }
@@ -22,10 +22,6 @@ describe "Random.rand" do
     Random.srand 33
     floats_b = 20.times.map { Random.rand }
     floats_a.should == floats_b
-  end
-
-  it "returns an Integer if an Integer argument is passed" do
-    Random.rand(20).should be_kind_of(Integer)
   end
 
   it "returns an Integer >= 0 if an Integer argument is passed" do

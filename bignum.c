@@ -3990,6 +3990,8 @@ str2big_gmp(
 }
 #endif
 
+static VALUE rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base);
+
 /*
  * Parse +str+ as Ruby Integer, i.e., underscores, 0d and 0b prefixes.
  *
@@ -4233,7 +4235,7 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
     return bignorm(z);
 }
 
-VALUE
+static VALUE
 rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base)
 {
     return rb_int_parse_cstr(str, len, endp, NULL, base,
@@ -5369,6 +5371,17 @@ rb_integer_float_cmp(VALUE x, VALUE y)
     return INT2FIX(-1);
 }
 
+#if SIZEOF_LONG * CHAR_BIT >= DBL_MANT_DIG /* assume FLT_RADIX == 2 */
+COMPILER_WARNING_PUSH
+#ifdef __has_warning
+#if __has_warning("-Wimplicit-int-float-conversion")
+COMPILER_WARNING_IGNORED(-Wimplicit-int-float-conversion)
+#endif
+#endif
+static const double LONG_MAX_as_double = LONG_MAX;
+COMPILER_WARNING_POP
+#endif
+
 VALUE
 rb_integer_float_eq(VALUE x, VALUE y)
 {
@@ -5388,7 +5401,7 @@ rb_integer_float_eq(VALUE x, VALUE y)
         return Qtrue;
 #else
         long xn, yn;
-        if (yi < LONG_MIN || LONG_MAX < yi)
+        if (yi < LONG_MIN || LONG_MAX_as_double <= yi)
             return Qfalse;
         xn = FIX2LONG(x);
         yn = (long)yi;
@@ -5400,6 +5413,7 @@ rb_integer_float_eq(VALUE x, VALUE y)
     y = rb_dbl2big(yi);
     return rb_big_eq(x, y);
 }
+
 
 VALUE
 rb_big_cmp(VALUE x, VALUE y)
@@ -6876,7 +6890,15 @@ estimate_initial_sqrt(VALUE *xp, const size_t xn, const BDIGIT *nds, size_t len)
     rshift /= 2;
     rshift += (2-(len&1))*BITSPERDIG/2;
     if (rshift >= 0) {
-	d <<= rshift;
+        if (nlz((BDIGIT)d) + rshift >= BITSPERDIG) {
+            /* (d << rshift) does cause overflow.
+             * example: Integer.sqrt(0xffff_ffff_ffff_ffff ** 2)
+             */
+            d = ~(BDIGIT_DBL)0;
+        }
+        else {
+            d <<= rshift;
+        }
     }
     BDIGITS_ZERO(xds, xn-2);
     bdigitdbl2bary(&xds[xn-2], 2, d);

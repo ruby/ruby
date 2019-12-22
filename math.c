@@ -573,6 +573,8 @@ math_log10(VALUE unused_obj, VALUE x)
     return DBL2NUM(log10(d) + numbits * log10(2)); /* log10(d * 2 ** numbits) */
 }
 
+static VALUE rb_math_sqrt(VALUE x);
+
 /*
  *  call-seq:
  *     Math.sqrt(x)    -> Float
@@ -630,7 +632,7 @@ f_signbit(VALUE x)
     return f_negative_p(x);
 }
 
-VALUE
+static VALUE
 rb_math_sqrt(VALUE x)
 {
     double d;
@@ -982,7 +984,7 @@ InitVM_Math(void)
     rb_define_const(rb_mMath, "PI", DBL2NUM(M_PI));
 
 #ifdef M_E
-    /*  Definition of the mathematical constant E (e) as a Float number. */
+    /*  Definition of the mathematical constant for Euler's number E (e) as a Float number. */
     rb_define_const(rb_mMath, "E", DBL2NUM(M_E));
 #else
     rb_define_const(rb_mMath, "E", DBL2NUM(exp(1.0)));

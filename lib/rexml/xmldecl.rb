@@ -26,6 +26,7 @@ module REXML
         self.encoding = version.encoding
         @writeencoding = version.writeencoding
         @standalone = version.standalone
+        @writethis = version.writethis
       else
         super()
         @version = version

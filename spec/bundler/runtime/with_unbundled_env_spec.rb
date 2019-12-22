@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
 RSpec.describe "Bundler.with_env helpers" do
-  def bundle_exec_ruby!(code)
-    build_bundler_context
-    bundle! "exec '#{Gem.ruby}' -e #{code}"
+  def bundle_exec_ruby!(code, options = {})
+    build_bundler_context options
+    bundle! "exec '#{Gem.ruby}' -e #{code}", options
   end
 
-  def build_bundler_context
+  def build_bundler_context(options = {})
     bundle "config set path vendor/bundle"
     gemfile ""
-    bundle "install"
+    bundle "install", options
   end
 
   describe "Bundler.original_env" do
@@ -31,7 +31,7 @@ RSpec.describe "Bundler.with_env helpers" do
       end
     end
 
-    it "works with nested bundle exec invocations", :ruby_repo do
+    it "works with nested bundle exec invocations" do
       create_file("exe.rb", <<-'RB')
         count = ARGV.first.to_i
         exit if count < 0
@@ -75,14 +75,14 @@ RSpec.describe "Bundler.with_env helpers" do
     it "should remove '-rbundler/setup' from RUBYOPT" do
       code = "print #{modified_env}['RUBYOPT']"
       ENV["RUBYOPT"] = "-W2 -rbundler/setup #{ENV["RUBYOPT"]}"
-      bundle_exec_ruby! code.dump
+      bundle_exec_ruby! code.dump, :env => { "BUNDLER_SPEC_DISABLE_DEFAULT_BUNDLER_GEM" => "true" }
       expect(last_command.stdboth).not_to include("-rbundler/setup")
     end
 
     it "should restore RUBYLIB", :ruby_repo do
       code = "print #{modified_env}['RUBYLIB']"
-      ENV["RUBYLIB"] = root.join("lib").to_s + File::PATH_SEPARATOR + "/foo"
-      ENV["BUNDLER_ORIG_RUBYLIB"] = root.join("lib").to_s + File::PATH_SEPARATOR + "/foo-original"
+      ENV["RUBYLIB"] = lib_dir.to_s + File::PATH_SEPARATOR + "/foo"
+      ENV["BUNDLER_ORIG_RUBYLIB"] = lib_dir.to_s + File::PATH_SEPARATOR + "/foo-original"
       bundle_exec_ruby! code.dump
       expect(last_command.stdboth).to include("/foo-original")
     end
@@ -127,13 +127,17 @@ RSpec.describe "Bundler.with_env helpers" do
   describe "Bundler.with_clean_env", :bundler => 2 do
     it "should set ENV to unbundled_env in the block" do
       expected = Bundler.unbundled_env
-      actual = Bundler.with_clean_env { ENV.to_hash }
+
+      actual = Bundler.ui.silence do
+        Bundler.with_clean_env { ENV.to_hash }
+      end
+
       expect(actual).to eq(expected)
     end
 
     it "should restore the environment after execution" do
-      Bundler.with_clean_env do
-        ENV["FOO"] = "hello"
+      Bundler.ui.silence do
+        Bundler.with_clean_env { ENV["FOO"] = "hello" }
       end
 
       expect(ENV).not_to have_key("FOO")
@@ -166,8 +170,7 @@ RSpec.describe "Bundler.with_env helpers" do
     end
 
     it "runs system inside with_original_env" do
-      lib = File.expand_path("../../lib", __dir__)
-      system({ "BUNDLE_FOO" => "bar" }, "ruby -I#{lib} -rbundler -e '#{code}'")
+      system({ "BUNDLE_FOO" => "bar" }, "ruby -I#{lib_dir} -rbundler -e '#{code}'")
       expect($?.exitstatus).to eq(42)
     end
   end
@@ -175,15 +178,14 @@ RSpec.describe "Bundler.with_env helpers" do
   describe "Bundler.clean_system", :bundler => 2 do
     let(:code) do
       <<~RUBY
-        Bundler.clean_system(%([ "\$BUNDLE_FOO" = "bar" ] || exit 42))
+        Bundler.ui.silence { Bundler.clean_system(%([ "\$BUNDLE_FOO" = "bar" ] || exit 42)) }
 
         exit $?.exitstatus
       RUBY
     end
 
     it "runs system inside with_clean_env" do
-      lib = File.expand_path("../../lib", __dir__)
-      system({ "BUNDLE_FOO" => "bar" }, "ruby -I#{lib} -rbundler -e '#{code}'")
+      system({ "BUNDLE_FOO" => "bar" }, "ruby -I#{lib_dir} -rbundler -e '#{code}'")
       expect($?.exitstatus).to eq(42)
     end
   end
@@ -198,8 +200,7 @@ RSpec.describe "Bundler.with_env helpers" do
     end
 
     it "runs system inside with_unbundled_env" do
-      lib = File.expand_path("../../lib", __dir__)
-      system({ "BUNDLE_FOO" => "bar" }, "ruby -I#{lib} -rbundler -e '#{code}'")
+      system({ "BUNDLE_FOO" => "bar" }, "ruby -I#{lib_dir} -rbundler -e '#{code}'")
       expect($?.exitstatus).to eq(42)
     end
   end
@@ -220,8 +221,7 @@ RSpec.describe "Bundler.with_env helpers" do
     it "runs exec inside with_original_env" do
       skip "Fork not implemented" if Gem.win_platform?
 
-      lib = File.expand_path("../../lib", __dir__)
-      system({ "BUNDLE_FOO" => "bar" }, "ruby -I#{lib} -rbundler -e '#{code}'")
+      system({ "BUNDLE_FOO" => "bar" }, "ruby -I#{lib_dir} -rbundler -e '#{code}'")
       expect($?.exitstatus).to eq(0)
     end
   end
@@ -230,7 +230,7 @@ RSpec.describe "Bundler.with_env helpers" do
     let(:code) do
       <<~RUBY
         Process.fork do
-          exit Bundler.clean_exec(%(test "\$BUNDLE_FOO" = "bar"))
+          exit Bundler.ui.silence { Bundler.clean_exec(%(test "\$BUNDLE_FOO" = "bar")) }
         end
 
         _, status = Process.wait2
@@ -242,8 +242,7 @@ RSpec.describe "Bundler.with_env helpers" do
     it "runs exec inside with_clean_env" do
       skip "Fork not implemented" if Gem.win_platform?
 
-      lib = File.expand_path("../../lib", __dir__)
-      system({ "BUNDLE_FOO" => "bar" }, "ruby -I#{lib} -rbundler -e '#{code}'")
+      system({ "BUNDLE_FOO" => "bar" }, "ruby -I#{lib_dir} -rbundler -e '#{code}'")
       expect($?.exitstatus).to eq(1)
     end
   end
@@ -264,8 +263,7 @@ RSpec.describe "Bundler.with_env helpers" do
     it "runs exec inside with_clean_env" do
       skip "Fork not implemented" if Gem.win_platform?
 
-      lib = File.expand_path("../../lib", __dir__)
-      system({ "BUNDLE_FOO" => "bar" }, "ruby -I#{lib} -rbundler -e '#{code}'")
+      system({ "BUNDLE_FOO" => "bar" }, "ruby -I#{lib_dir} -rbundler -e '#{code}'")
       expect($?.exitstatus).to eq(1)
     end
   end

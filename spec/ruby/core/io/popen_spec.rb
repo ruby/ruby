@@ -1,13 +1,22 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative '../process/fixtures/common'
 
 describe "IO.popen" do
+  ProcessSpecs.use_system_ruby(self)
+
   before :each do
+    @fname = tmp("IO_popen_spec")
     @io = nil
+    @var = "$FOO"
+    platform_is :windows do
+      @var = "%FOO%"
+    end
   end
 
   after :each do
-    @io.close if @io
+    @io.close if @io and !@io.closed?
+    rm_r @fname
   end
 
   it "returns an open IO" do
@@ -16,26 +25,14 @@ describe "IO.popen" do
   end
 
   it "reads a read-only pipe" do
-    @io = IO.popen(ruby_cmd('puts "foo"'), "r")
+    @io = IO.popen('echo foo', "r")
     @io.read.should == "foo\n"
   end
 
   it "raises IOError when writing a read-only pipe" do
-    @io = IO.popen(ruby_cmd('puts "foo"'), "r")
+    @io = IO.popen('echo foo', "r")
     -> { @io.write('bar') }.should raise_error(IOError)
     @io.read.should == "foo\n"
-  end
-end
-
-describe "IO.popen" do
-  before :each do
-    @fname = tmp("IO_popen_spec")
-    @io = nil
-  end
-
-  after :each do
-    @io.close if @io and !@io.closed?
-    rm_r @fname
   end
 
   it "sees an infinitely looping subprocess exit when read pipe is closed" do
@@ -96,16 +93,6 @@ describe "IO.popen" do
     mode = mock("mode")
     mode.should_receive(:to_str).and_return("r")
     @io = IO.popen(ruby_cmd('exit 0'), mode)
-  end
-end
-
-describe "IO.popen" do
-  before :each do
-    @io = nil
-  end
-
-  after :each do
-    @io.close if @io
   end
 
   describe "with a block" do
@@ -171,13 +158,13 @@ describe "IO.popen" do
 
   context "with a leading ENV Hash" do
     it "accepts a single String command" do
-      IO.popen({"FOO" => "bar"}, ruby_cmd('puts ENV["FOO"]')) do |io|
+      IO.popen({"FOO" => "bar"}, "echo #{@var}") do |io|
         io.read.should == "bar\n"
       end
     end
 
     it "accepts a single String command, and an IO mode" do
-      IO.popen({"FOO" => "bar"}, ruby_cmd('puts ENV["FOO"]'), "r") do |io|
+      IO.popen({"FOO" => "bar"}, "echo #{@var}", "r") do |io|
         io.read.should == "bar\n"
       end
     end

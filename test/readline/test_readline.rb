@@ -36,26 +36,29 @@ module BasetestReadline
         Readline.readline("> ", true)
       }
       assert_equal("hello", line)
-      assert_equal(true, line.tainted?)
+      assert_equal(true, line.tainted?) if RUBY_VERSION < '2.7'
       stdout.rewind
       assert_equal("> ", stdout.read(2))
       assert_equal(1, Readline::HISTORY.length)
       assert_equal("hello", Readline::HISTORY[0])
 
       # Work around lack of SecurityError in Reline
-      # test mode with tainted prompt
-      return if kind_of?(TestRelineAsReadline)
-
-      Thread.start {
-        $SAFE = 1
-        assert_raise(SecurityError) do
-          replace_stdio(stdin.path, stdout.path) do
-            Readline.readline("> ".taint)
-          end
+      # test mode with tainted prompt.
+      # Also skip test on Ruby 2.7+, where $SAFE/taint is deprecated.
+      if RUBY_VERSION < '2.7' && !kind_of?(TestRelineAsReadline)
+        begin
+          Thread.start {
+            $SAFE = 1
+            assert_raise(SecurityError) do
+              replace_stdio(stdin.path, stdout.path) do
+                Readline.readline("> ".taint)
+              end
+            end
+          }.join
+        ensure
+          $SAFE = 0
         end
-      }.join
-    ensure
-      $SAFE = 0
+      end
     end
   end
 
@@ -96,7 +99,8 @@ module BasetestReadline
       assert_equal(12, actual_point)
       assert_equal("first complete  finish", Readline.line_buffer)
       assert_equal(Encoding.find("locale"), Readline.line_buffer.encoding)
-      assert_equal(true, Readline.line_buffer.tainted?)
+      assert_equal(true, Readline.line_buffer.tainted?) if RUBY_VERSION < '2.7'
+
       assert_equal(22, Readline.point)
 
       stdin.rewind
@@ -113,7 +117,8 @@ module BasetestReadline
       assert_equal(12, actual_point)
       assert_equal("first complete finish", Readline.line_buffer)
       assert_equal(Encoding.find("locale"), Readline.line_buffer.encoding)
-      assert_equal(true, Readline.line_buffer.tainted?)
+      assert_equal(true, Readline.line_buffer.tainted?) if RUBY_VERSION < '2.7'
+
       assert_equal(21, Readline.point)
     end
   end
@@ -429,6 +434,7 @@ module BasetestReadline
   def test_input_metachar
     skip "Skip Editline" if /EditLine/n.match(Readline::VERSION)
     skip("Won't pass on mingw w/readline 7.0.005 [ruby-core:45682]") if mingw?
+    skip 'Needs GNU Readline 6 or later' if windows? and defined?(TestReadline) and kind_of?(TestReadline) and Readline::VERSION < '6.0'
     bug6601 = '[ruby-core:45682]'
     Readline::HISTORY << "hello"
     wo = nil
@@ -511,7 +517,9 @@ module BasetestReadline
       replace_stdio(stdin.path, stdout.path) do
         Readline.completion_proc = ->(text) do
           passed_text = text
-          ['completion']
+          ['completion'].map { |i|
+            i.encode(Encoding.default_external)
+          }
         end
         Readline.completer_quote_characters = '\'"'
         Readline.completer_word_break_characters = ' '
@@ -526,7 +534,7 @@ module BasetestReadline
     end
 
     assert_equal('second\\ third', passed_text)
-    assert_equal('first completion', line)
+    assert_equal('first completion', line.chomp(' '))
   ensure
     Readline.completer_quote_characters = saved_completer_quote_characters
     Readline.completer_word_break_characters = saved_completer_word_break_characters
@@ -549,7 +557,9 @@ module BasetestReadline
       replace_stdio(stdin.path, stdout.path) do
         Readline.completion_proc = ->(text) do
           passed_text = text
-          ['completion']
+          ['completion'].map { |i|
+            i.encode(Encoding.default_external)
+          }
         end
         Readline.completer_quote_characters = '\'"'
         Readline.completer_word_break_characters = ' '
@@ -571,6 +581,58 @@ module BasetestReadline
   ensure
     Readline.completer_quote_characters = saved_completer_quote_characters
     Readline.completer_word_break_characters = saved_completer_word_break_characters
+  end
+
+  def test_simple_completion
+    skip "Skip Editline" if /EditLine/n.match(Readline::VERSION)
+
+    line = nil
+
+    open(IO::NULL, 'w') do |null|
+      IO.pipe do |r, w|
+        Readline.input = r
+        Readline.output = null
+        Readline.completion_proc = ->(text) do
+          ['abcde', 'abc12'].map { |i|
+            i.encode(Encoding.default_external)
+          }
+        end
+        w.write("a\t\n")
+        w.flush
+        line = Readline.readline('> ', false)
+      end
+    end
+
+    assert_equal('abc', line)
+  end
+
+  def test_completion_with_completion_append_character
+    skip "Skip Editline" if /EditLine/n.match(Readline::VERSION)
+    skip "Readline.completion_append_character is not implemented" unless Readline.respond_to?(:completion_append_character=)
+    line = nil
+
+    append_character = Readline.completion_append_character
+    open(IO::NULL, 'w') do |null|
+      IO.pipe do |r, w|
+        Readline.input = r
+        Readline.output = null
+        Readline.completion_append_character = '!'
+        Readline.completion_proc = ->(text) do
+          ['abcde'].map { |i|
+            i.encode(Encoding.default_external)
+          }
+        end
+        w.write("a\t\n")
+        w.flush
+        line = Readline.readline('> ', false)
+      end
+    end
+
+    assert_equal('abcde!', line)
+  ensure
+    return if /EditLine/n.match(Readline::VERSION)
+    return unless Readline.respond_to?(:completion_append_character=)
+    Readline.completion_append_character = append_character
   end
 
   def test_completion_quote_character_completing_unquoted_argument
@@ -621,6 +683,7 @@ module BasetestReadline
       # http://rubyci.s3.amazonaws.com/solaris11s-sunc/ruby-trunk/log/20181228T102505Z.fail.html.gz
       skip 'This test does not succeed on Oracle Developer Studio for now'
     end
+    skip 'Needs GNU Readline 6 or later' if windows? and defined?(TestReadline) and kind_of?(TestReadline) and Readline::VERSION < '6.0'
 
     Readline.completion_proc = -> (_) { [] }
     Readline.completer_quote_characters = "'\""

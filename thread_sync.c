@@ -224,6 +224,17 @@ rb_mutex_trylock(VALUE self)
 static const rb_thread_t *patrol_thread = NULL;
 
 static VALUE
+mutex_owned_p(rb_thread_t *th, rb_mutex_t *mutex)
+{
+    if (mutex->th == th) {
+        return Qtrue;
+    }
+    else {
+        return Qfalse;
+    }
+}
+
+static VALUE
 do_mutex_lock(VALUE self, int interruptible_p)
 {
     rb_thread_t *th = GET_THREAD();
@@ -292,11 +303,16 @@ do_mutex_lock(VALUE self, int interruptible_p)
                     mutex->th = th;
                     mutex_locked(th, self);
                 }
-            } else {
+            }
+            else {
                 if (mutex->th == th) mutex_locked(th, self);
             }
 	}
     }
+
+    // assertion
+    if (mutex_owned_p(th, mutex) == Qfalse) rb_bug("do_mutex_lock: mutex is not owned.");
+
     return self;
 }
 
@@ -328,14 +344,10 @@ rb_mutex_lock(VALUE self)
 VALUE
 rb_mutex_owned_p(VALUE self)
 {
-    VALUE owned = Qfalse;
     rb_thread_t *th = GET_THREAD();
     rb_mutex_t *mutex = mutex_ptr(self);
 
-    if (mutex->th == th)
-	owned = Qtrue;
-
-    return owned;
+    return mutex_owned_p(th, mutex);
 }
 
 static const char *
@@ -521,7 +533,7 @@ rb_mutex_synchronize(VALUE mutex, VALUE (*func)(VALUE arg), VALUE arg)
  * completes.  See the example under +Mutex+.
  */
 static VALUE
-rb_mutex_synchronize_m(VALUE self, VALUE args)
+rb_mutex_synchronize_m(VALUE self)
 {
     if (!rb_block_given_p()) {
 	rb_raise(rb_eThreadError, "must be called with a block");
@@ -1363,8 +1375,9 @@ do_sleep(VALUE args)
 }
 
 static VALUE
-delete_from_waitq(struct sync_waiter *w)
+delete_from_waitq(VALUE v)
 {
+    struct sync_waiter *w = (void *)v;
     list_del(&w->node);
 
     return Qnil;

@@ -162,12 +162,7 @@ end
 def test_new_specs
   require "yaml"
   Dir.chdir(SOURCE_REPO) do
-    versions = YAML.load_file(".travis.yml")
-    versions = if versions.include? "matrix"
-      versions["matrix"]["include"].map { |job| job["rvm"] }
-    else
-      versions["rvm"]
-    end
+    versions = YAML.load_file("#{MSPEC_REPO}/.travis.yml").fetch("rvm")
     versions = versions.grep(/^\d+\./) # Test on MRI
     min_version, max_version = versions.minmax
 

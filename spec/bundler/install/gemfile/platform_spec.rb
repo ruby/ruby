@@ -372,7 +372,7 @@ RSpec.describe "bundle install with platform conditionals" do
     expect(out).not_to match(/Could not find gem 'some_gem/)
   end
 
-  it "resolves all platforms by default and without warning messages" do
+  it "prints a helpful warning when a dependency is unused on any platform" do
     simulate_platform "ruby"
     simulate_ruby_engine "ruby"
 
@@ -384,27 +384,28 @@ RSpec.describe "bundle install with platform conditionals" do
 
     bundle! "install"
 
-    expect(err).to be_empty
+    expect(err).to include <<-O.strip
+The dependency #{Gem::Dependency.new("rack", ">= 0")} will be unused by any of the platforms Bundler is installing for. Bundler is installing for ruby but the dependency is only for x86-mingw32, x86-mswin32, x64-mingw32, java. To add those platforms to the bundle, run `bundle lock --add-platform x86-mingw32 x86-mswin32 x64-mingw32 java`.
+    O
+  end
 
-    lockfile_should_be <<-L
-      GEM
-        remote: #{file_uri_for(gem_repo1)}/
-        specs:
-          rack (1.0.0)
+  context "when disable_platform_warnings is true" do
+    before { bundle! "config set disable_platform_warnings true" }
 
-      PLATFORMS
-        java
-        ruby
-        x64-mingw32
-        x86-mingw32
-        x86-mswin32
+    it "does not print the warning when a dependency is unused on any platform" do
+      simulate_platform "ruby"
+      simulate_ruby_engine "ruby"
 
-      DEPENDENCIES
-        rack
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
 
-      BUNDLED WITH
-         #{Bundler::VERSION}
-    L
+        gem "rack", :platform => [:mingw, :mswin, :x64_mingw, :jruby]
+      G
+
+      bundle! "install"
+
+      expect(out).not_to match(/The dependency (.*) will be unused/)
+    end
   end
 end
 

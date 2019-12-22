@@ -58,7 +58,7 @@ end
 # [-E, --embedded]
 #   Output parser which doesn't need runtime files (racc/parser.rb).
 # [-C, --check-only]
-#   Check syntax of racc grammer file and quit.
+#   Check syntax of racc grammar file and quit.
 # [-S, --output-status]
 #   Print messages time to time while compiling.
 # [-l, --no-line-convert]
@@ -186,10 +186,10 @@ module Racc
   class Parser
 
     Racc_Runtime_Version = ::Racc::VERSION
-    Racc_Runtime_Revision = '$Id: 87af5c09d4467cae567837b4162ec2145417a90e $'
+    Racc_Runtime_Revision = '$Id: e754525bd317344c4284fca6fdce0a425979ade1 $'
 
     Racc_Runtime_Core_Version_R = ::Racc::VERSION
-    Racc_Runtime_Core_Revision_R = '$Id: 87af5c09d4467cae567837b4162ec2145417a90e $'.split[1]
+    Racc_Runtime_Core_Revision_R = '$Id: e754525bd317344c4284fca6fdce0a425979ade1 $'.split[1]
     begin
       if Object.const_defined?(:RUBY_ENGINE) and RUBY_ENGINE == 'jruby'
         require 'racc/cparse-jruby.jar'
@@ -197,7 +197,7 @@ module Racc
       else
         require 'racc/cparse'
       end
-    # Racc_Runtime_Core_Version_C  = (defined in extention)
+    # Racc_Runtime_Core_Version_C  = (defined in extension)
       Racc_Runtime_Core_Revision_C = Racc_Runtime_Core_Id_C.split[2]
       unless new.respond_to?(:_racc_do_parse_c, true)
         raise LoadError, 'old cparse.so'

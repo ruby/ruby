@@ -26,6 +26,12 @@
  * * mc_cme_complement: callable_method_entry complement counts.
  * * mc_cme_complement_hit: callable_method_entry cache hit counts.
  * * mc_search_super: search_method() call counts.
+ * * mc_miss_by_nome: inline mc miss by no ment.
+ * * mc_miss_by_distinct:        ... by distinct ment.
+ * * mc_miss_by_refine:          ... by ment being refined.
+ * * mc_miss_by_visi:            ... by visibility change.
+ * * mc_miss_spurious: spurious inline mc misshit.
+ * * mc_miss_reuse_call: count of reuse of cc->call.
  */
 RB_DEBUG_COUNTER(mc_inline_hit)
 RB_DEBUG_COUNTER(mc_inline_miss)
@@ -36,6 +42,12 @@ RB_DEBUG_COUNTER(mc_class_serial_miss)
 RB_DEBUG_COUNTER(mc_cme_complement)
 RB_DEBUG_COUNTER(mc_cme_complement_hit)
 RB_DEBUG_COUNTER(mc_search_super)
+RB_DEBUG_COUNTER(mc_miss_by_nome)
+RB_DEBUG_COUNTER(mc_miss_by_distinct)
+RB_DEBUG_COUNTER(mc_miss_by_refine)
+RB_DEBUG_COUNTER(mc_miss_by_visi)
+RB_DEBUG_COUNTER(mc_miss_spurious)
+RB_DEBUG_COUNTER(mc_miss_reuse_call)
 
 /*
  * call cache fastpath usage
@@ -206,6 +218,7 @@ RB_DEBUG_COUNTER(obj_str_fstr)
 RB_DEBUG_COUNTER(obj_ary_embed)
 RB_DEBUG_COUNTER(obj_ary_transient)
 RB_DEBUG_COUNTER(obj_ary_ptr)
+RB_DEBUG_COUNTER(obj_ary_extracapa)
 /*
   ary_shared_create: shared ary by Array#dup and so on.
   ary_shared: finished in shard.
@@ -349,8 +362,8 @@ rb_debug_counter_add(enum rb_debug_counter_type type, int add, int cond)
     return cond;
 }
 
-VALUE rb_debug_counter_reset(void);
-VALUE rb_debug_counter_show(void);
+VALUE rb_debug_counter_reset(VALUE klass);
+VALUE rb_debug_counter_show(VALUE klass);
 
 #define RB_DEBUG_COUNTER_INC(type)                rb_debug_counter_add(RB_DEBUG_COUNTER_##type, 1, 1)
 #define RB_DEBUG_COUNTER_INC_UNLESS(type, cond) (!rb_debug_counter_add(RB_DEBUG_COUNTER_##type, 1, !(cond)))

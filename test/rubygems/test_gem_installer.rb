@@ -5,6 +5,9 @@ class TestGemInstaller < Gem::InstallerTestCase
 
   @@symlink_supported = nil
 
+  # Our CI does not currently hit the "symlink not supported" case, but this is
+  # needed for Windows developers without symlink support enabled (the default
+  # for non admin) to be able to run the tests successfully
   def symlink_supported?
     if @@symlink_supported.nil?
       begin
@@ -101,32 +104,19 @@ end
   def test_check_executable_overwrite_default_bin_dir
     installer = setup_base_installer
 
-    if defined?(RUBY_FRAMEWORK_VERSION)
-      orig_RUBY_FRAMEWORK_VERSION = RUBY_FRAMEWORK_VERSION
-      Object.send :remove_const, :RUBY_FRAMEWORK_VERSION
-    end
-    orig_bindir = RbConfig::CONFIG['bindir']
-    RbConfig::CONFIG['bindir'] = Gem.bindir
+    bindir(Gem.bindir) do
+      util_conflict_executable false
 
-    util_conflict_executable false
+      ui = Gem::MockGemUi.new "n\n"
+      use_ui ui do
+        e = assert_raises Gem::InstallError do
+          installer.generate_bin
+        end
 
-    ui = Gem::MockGemUi.new "n\n"
-    use_ui ui do
-      e = assert_raises Gem::InstallError do
-        installer.generate_bin
+        conflicted = File.join @gemhome, 'bin', 'executable'
+        assert_match %r%\A"executable" from a conflicts with (?:#{Regexp.quote(conflicted)}|installed executable from conflict)\z%,
+                     e.message
       end
-
-      conflicted = File.join @gemhome, 'bin', 'executable'
-      assert_match %r%\A"executable" from a conflicts with (?:#{Regexp.quote(conflicted)}|installed executable from conflict)\z%,
-                   e.message
-    end
-  ensure
-    Object.const_set :RUBY_FRAMEWORK_VERSION, orig_RUBY_FRAMEWORK_VERSION if
-      orig_RUBY_FRAMEWORK_VERSION
-    if orig_bindir
-      RbConfig::CONFIG['bindir'] = orig_bindir
-    else
-      RbConfig::CONFIG.delete 'bindir'
     end
   end
 
@@ -544,7 +534,7 @@ gem 'other', version
   end
 
   def test_generate_bin_symlink
-    return if win_platform? #Windows FS do not support symlinks
+    skip "Symlinks not supported or not enabled" unless symlink_supported?
 
     installer = setup_base_installer
 
@@ -596,7 +586,7 @@ gem 'other', version
   end
 
   def test_generate_bin_symlink_update_newer
-    return if win_platform? #Windows FS do not support symlinks
+    skip "Symlinks not supported or not enabled" unless symlink_supported?
 
     installer = setup_base_installer
 
@@ -628,7 +618,7 @@ gem 'other', version
   end
 
   def test_generate_bin_symlink_update_older
-    return if !symlink_supported?
+    skip "Symlinks not supported or not enabled" unless symlink_supported?
 
     installer = setup_base_installer
 
@@ -666,7 +656,7 @@ gem 'other', version
   end
 
   def test_generate_bin_symlink_update_remove_wrapper
-    return if !symlink_supported?
+    skip "Symlinks not supported or not enabled" unless symlink_supported?
 
     installer = setup_base_installer
 
@@ -739,7 +729,7 @@ gem 'other', version
   end
 
   def test_generate_bin_uses_default_shebang
-    return if !symlink_supported?
+    skip "Symlinks not supported or not enabled" unless symlink_supported?
 
     installer = setup_base_installer
 

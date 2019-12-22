@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "double checking sources", :realworld => true do
+RSpec.describe "double checking sources", :realworld => true, :sometimes => true do
   it "finds already-installed gems" do
     create_file("rails.gemspec", <<-RUBY)
       Gem::Specification.new do |s|
@@ -25,9 +25,9 @@ RSpec.describe "double checking sources", :realworld => true do
     RUBY
 
     cmd = <<-RUBY
-      require "bundler"
-      require #{File.expand_path("../../support/artifice/vcr.rb", __FILE__).dump}
-      require "bundler/inline"
+      require "#{lib_dir}/bundler"
+      require "#{spec_dir}/support/artifice/vcr"
+      require "#{lib_dir}/bundler/inline"
       gemfile(true) do
         source "https://rubygems.org"
         gem "rails", path: "."

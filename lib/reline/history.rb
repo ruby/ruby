@@ -13,7 +13,7 @@ class Reline::History < Array
   end
 
   def [](index)
-    index = check_index(index)
+    index = check_index(index) unless index.is_a?(Range)
     super(index)
   end
 

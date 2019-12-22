@@ -21,12 +21,12 @@ describe EqualMatcher do
   it "provides a useful failure message" do
     matcher = EqualMatcher.new("red")
     matcher.matches?("red")
-    matcher.failure_message.should == ["Expected \"red\"\n", "to be identical to \"red\"\n"]
+    matcher.failure_message.should == ["Expected \"red\"", "to be identical to \"red\""]
   end
 
   it "provides a useful negative failure message" do
     matcher = EqualMatcher.new(1)
     matcher.matches?(1)
-    matcher.negative_failure_message.should == ["Expected 1\n", "not to be identical to 1\n"]
+    matcher.negative_failure_message.should == ["Expected 1", "not to be identical to 1"]
   end
 end

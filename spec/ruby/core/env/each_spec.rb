@@ -1,4 +1,4 @@
-require_relative '../../spec_helper'
+require_relative 'spec_helper'
 require_relative 'shared/each'
 
 describe "ENV.each" do

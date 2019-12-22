@@ -6,15 +6,23 @@ if RUBY_VERSION >= "2.5"
   module Kernel
     path = "#{__dir__}/" # Frames to be skipped start with this path.
 
-    # Suppress "method redefined" warning
-    original_warn = instance_method(:warn)
-    Module.new {define_method(:warn, original_warn)}
-
     original_warn = method(:warn)
 
-    module_function define_method(:warn) {|*messages, uplevel: nil|
-      unless uplevel
-        return original_warn.call(*messages)
+    remove_method :warn
+
+    class << self
+
+      remove_method :warn
+
+    end
+
+    module_function define_method(:warn) {|*messages, **kw|
+      unless uplevel = kw[:uplevel]
+        if Gem.java_platform?
+          return original_warn.call(*messages)
+        else
+          return original_warn.call(*messages, **kw)
+        end
       end
 
       # Ensure `uplevel` fits a `long`
@@ -39,7 +47,9 @@ if RUBY_VERSION >= "2.5"
         end
         uplevel = start
       end
-      original_warn.call(*messages, uplevel: uplevel)
+
+      kw[:uplevel] = uplevel
+      original_warn.call(*messages, **kw)
     }
   end
 end

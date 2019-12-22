@@ -10,6 +10,8 @@
 **********************************************************************/
 
 #include "internal.h"
+#include "builtin.h"
+#include "prelude.rbinc"
 
 #define CALL(n) {void Init_##n(void); Init_##n();}
 
@@ -42,7 +44,6 @@ rb_call_inits(void)
     CALL(Hash);
     CALL(Struct);
     CALL(Regexp);
-    CALL(pack);
     CALL(transcode);
     CALL(marshal);
     CALL(Range);
@@ -55,7 +56,6 @@ rb_call_inits(void)
     CALL(Proc);
     CALL(Binding);
     CALL(Math);
-    CALL(GC);
     CALL(Enumerator);
     CALL(VM);
     CALL(ISeq);
@@ -65,9 +65,18 @@ rb_call_inits(void)
     CALL(Rational);
     CALL(Complex);
     CALL(version);
-    CALL(vm_trace);
     CALL(vm_stack_canary);
-    CALL(ast);
     CALL(gc_stress);
+
+    // enable builtin loading
+    CALL(builtin);
+
+    CALL(GC);
+    CALL(IO_nonblock);
+    CALL(ast);
+    CALL(vm_trace);
+    CALL(pack);
+    CALL(warning);
+    load_prelude();
 }
 #undef CALL

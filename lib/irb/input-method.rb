@@ -32,7 +32,7 @@ module IRB
     #
     # See IO#gets for more information.
     def gets
-      IRB.fail NotImplementedError, "gets"
+      fail NotImplementedError, "gets"
     end
     public :gets
 
@@ -118,8 +118,7 @@ module IRB
     # See IO#gets for more information.
     def gets
       print @prompt
-      l = @io.gets
-      l
+      @io.gets
     end
 
     # The external encoding for standard input.
@@ -270,7 +269,7 @@ module IRB
     #
     # See IO#eof? for more information.
     def eof?
-      super
+      @eof
     end
 
     # Whether this input method is still readable when there is no more data to

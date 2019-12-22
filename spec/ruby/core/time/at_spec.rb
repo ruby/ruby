@@ -147,31 +147,31 @@ describe "Time.at" do
   ruby_version_is "2.5" do
     describe "passed [Time, Numeric, format]" do
       context ":nanosecond format" do
-        it "traits second argument as nanoseconds" do
+        it "treats second argument as nanoseconds" do
           Time.at(0, 123456789, :nanosecond).nsec.should == 123456789
         end
       end
 
       context ":nsec format" do
-        it "traits second argument as nanoseconds" do
+        it "treats second argument as nanoseconds" do
           Time.at(0, 123456789, :nsec).nsec.should == 123456789
         end
       end
 
       context ":microsecond format" do
-        it "traits second argument as microseconds" do
+        it "treats second argument as microseconds" do
           Time.at(0, 123456, :microsecond).nsec.should == 123456000
         end
       end
 
       context ":usec format" do
-        it "traits second argument as microseconds" do
+        it "treats second argument as microseconds" do
           Time.at(0, 123456, :usec).nsec.should == 123456000
         end
       end
 
       context ":millisecond format" do
-        it "traits second argument as milliseconds" do
+        it "treats second argument as milliseconds" do
           Time.at(0, 123, :millisecond).nsec.should == 123000000
         end
       end
@@ -235,14 +235,14 @@ describe "Time.at" do
       end
 
       it "could be a timezone object" do
-        zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo", offset: (5*3600+30*60))
+        zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo")
         time = Time.at(@epoch_time, in: zone)
 
         time.utc_offset.should == 5*3600+30*60
         time.zone.should == zone
         time.to_i.should == @epoch_time
 
-        zone = TimeSpecs::TimezoneWithName.new(name: "PST", offset: (-9*60*60))
+        zone = TimeSpecs::TimezoneWithName.new(name: "PST")
         time = Time.at(@epoch_time, in: zone)
 
         time.utc_offset.should == -9*60*60

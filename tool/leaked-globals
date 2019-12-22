@@ -24,7 +24,7 @@ IO.foreach("|#{NM} -Pgp #{ARGV.join(' ')}") do |line|
   next unless /[BDT]/ =~ t
   next unless n.sub!(/^#{SYMBOL_PREFIX}/o, "")
   next if n.include?(".")
-  next if /\A(?:Init_|InitVM_|ruby_|rb_|[Oo]nig|st_|dln_|mjit_|coroutine_|nu(?:comp|rat)_)/ =~ n
+  next if /\A(?:Init_|InitVM_|ruby_|rb_|[Oo]nig|dln_|mjit_|coroutine_|nu(?:comp|rat)_)/ =~ n
   next if REPLACE.include?(n)
   puts col.fail("leaked") if count.zero?
   count += 1

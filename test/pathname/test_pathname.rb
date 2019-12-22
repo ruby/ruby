@@ -471,6 +471,12 @@ class TestPathname < Test::Unit::TestCase
     assert_raise(ArgumentError) { Pathname.new("a\0") }
   end
 
+  def test_global_constructor
+    p = Pathname.new('a')
+    assert_equal(p, Pathname('a'))
+    assert_same(p, Pathname(p))
+  end
+
   class AnotherStringLike # :nodoc:
     def initialize(s) @s = s end
     def to_str() @s end
@@ -586,39 +592,6 @@ class TestPathname < Test::Unit::TestCase
     assert_raise(ArgumentError) { Pathname.new("\0") }
   end
 
-  def test_taint
-    obj = Pathname.new("a"); assert_same(obj, obj.taint)
-    obj = Pathname.new("a"); assert_same(obj, obj.untaint)
-
-    assert_equal(false, Pathname.new("a"          )           .tainted?)
-    assert_equal(false, Pathname.new("a"          )      .to_s.tainted?)
-    assert_equal(true,  Pathname.new("a"          ).taint     .tainted?)
-    assert_equal(true,  Pathname.new("a"          ).taint.to_s.tainted?)
-    assert_equal(true,  Pathname.new("a".dup.taint)           .tainted?)
-    assert_equal(true,  Pathname.new("a".dup.taint)      .to_s.tainted?)
-    assert_equal(true,  Pathname.new("a".dup.taint).taint     .tainted?)
-    assert_equal(true,  Pathname.new("a".dup.taint).taint.to_s.tainted?)
-
-    str = "a".dup
-    path = Pathname.new(str)
-    str.taint
-    assert_equal(false, path     .tainted?)
-    assert_equal(false, path.to_s.tainted?)
-  end
-
-  def test_untaint
-    obj = Pathname.new("a"); assert_same(obj, obj.untaint)
-
-    assert_equal(false, Pathname.new("a").taint.untaint     .tainted?)
-    assert_equal(false, Pathname.new("a").taint.untaint.to_s.tainted?)
-
-    str = "a".dup.taint
-    path = Pathname.new(str)
-    str.untaint
-    assert_equal(true, path     .tainted?)
-    assert_equal(true, path.to_s.tainted?)
-  end
-
   def test_freeze
     obj = Pathname.new("a"); assert_same(obj, obj.freeze)
 
@@ -630,20 +603,6 @@ class TestPathname < Test::Unit::TestCase
     assert_equal(false, Pathname.new("a".freeze)       .to_s.frozen?)
     assert_equal(false, Pathname.new("a"       ).freeze.to_s.frozen?)
     assert_equal(false, Pathname.new("a".freeze).freeze.to_s.frozen?)
-  end
-
-  def test_freeze_and_taint
-    obj = Pathname.new("a")
-    obj.freeze
-    assert_equal(false, obj.tainted?)
-    assert_raise(FrozenError) { obj.taint }
-
-    obj = Pathname.new("a")
-    obj.taint
-    assert_equal(true, obj.tainted?)
-    obj.freeze
-    assert_equal(true, obj.tainted?)
-    assert_nothing_raised { obj.taint }
   end
 
   def test_to_s
@@ -739,6 +698,14 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_readlines_opts
+    with_tmpchdir('rubytest-pathname') {|dir|
+      open("a", "w") {|f| f.puts 1, 2 }
+      a = Pathname("a").readlines 1, chomp: true
+      assert_equal(["1", "", "2", ""], a)
+    }
+  end
+
   def test_read
     with_tmpchdir('rubytest-pathname') {|dir|
       open("a", "w") {|f| f.puts 1, 2 }
@@ -763,10 +730,26 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_write_opts
+    with_tmpchdir('rubytest-pathname') {|dir|
+      path = Pathname("a")
+      path.write "abc", mode: "w"
+      assert_equal("abc", path.read)
+    }
+  end
+
   def test_binwrite
     with_tmpchdir('rubytest-pathname') {|dir|
       path = Pathname("a")
       path.binwrite "abc\x80"
+      assert_equal("abc\x80".b, path.binread)
+    }
+  end
+
+  def test_binwrite_opts
+    with_tmpchdir('rubytest-pathname') {|dir|
+      path = Pathname("a")
+      path.binwrite "abc\x80", mode: 'w'
       assert_equal("abc\x80".b, path.binread)
     }
   end
@@ -789,6 +772,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_birthtime
+    skip if RUBY_PLATFORM =~ /android/
     # Check under a (probably) local filesystem.
     # Remote filesystems often may not support birthtime.
     with_tmpchdir('rubytest-pathname') do |dir|
@@ -922,15 +906,23 @@ class TestPathname < Test::Unit::TestCase
         assert_equal("abc", f.read)
       }
 
+      path.open(mode: "r") {|f|
+        assert_equal("abc", f.read)
+      }
+
       Pathname("b").open("w", 0444) {|f| f.write "def" }
       assert_equal(0444 & ~File.umask, File.stat("b").mode & 0777)
       assert_equal("def", File.read("b"))
 
-      Pathname("c").open("w", 0444, {}) {|f| f.write "ghi" }
+      Pathname("c").open("w", 0444, **{}) {|f| f.write "ghi" }
       assert_equal(0444 & ~File.umask, File.stat("c").mode & 0777)
       assert_equal("ghi", File.read("c"))
 
       g = path.open
+      assert_equal("abc", g.read)
+      g.close
+
+      g = path.open(mode: "r")
       assert_equal("abc", g.read)
       g.close
     }
@@ -1426,16 +1418,6 @@ class TestPathname < Test::Unit::TestCase
 
   def test_file_fnmatch
     assert(File.fnmatch("*.*", Pathname.new("bar.baz")))
-  end
-
-  def test_file_join
-    assert_equal("foo/bar", File.join(Pathname.new("foo"), Pathname.new("bar")))
-    lambda {
-      $SAFE = 1
-      assert_equal("foo/bar", File.join(Pathname.new("foo"), Pathname.new("bar").taint))
-    }.call
-  ensure
-    $SAFE = 0
   end
 
   def test_relative_path_from_casefold

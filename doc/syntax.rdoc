@@ -32,3 +32,5 @@ Refinements[rdoc-ref:syntax/refinements.rdoc] ::
 Miscellaneous[rdoc-ref:syntax/miscellaneous.rdoc] ::
   +alias+, +undef+, +BEGIN+, +END+
 
+Comments[rdoc-ref:syntax/comments.rdoc] ::
+  Line and block code comments

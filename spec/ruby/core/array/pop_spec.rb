@@ -30,12 +30,14 @@ describe "Array#pop" do
     array.pop.should == [1, 'two', 3.0, array, array, array, array]
   end
 
-  it "keeps taint status" do
-    a = [1, 2].taint
-    a.pop
-    a.tainted?.should be_true
-    a.pop
-    a.tainted?.should be_true
+  ruby_version_is ''...'2.7' do
+    it "keeps taint status" do
+      a = [1, 2].taint
+      a.pop
+      a.tainted?.should be_true
+      a.pop
+      a.tainted?.should be_true
+    end
   end
 
   it "raises a #{frozen_error_class} on a frozen array" do
@@ -46,12 +48,14 @@ describe "Array#pop" do
     -> { ArraySpecs.empty_frozen_array.pop }.should raise_error(frozen_error_class)
   end
 
-  it "keeps untrusted status" do
-    a = [1, 2].untrust
-    a.pop
-    a.untrusted?.should be_true
-    a.pop
-    a.untrusted?.should be_true
+  ruby_version_is ''...'2.7' do
+    it "keeps untrusted status" do
+      a = [1, 2].untrust
+      a.pop
+      a.untrusted?.should be_true
+      a.pop
+      a.untrusted?.should be_true
+    end
   end
 
   describe "passed a number n as an argument" do
@@ -132,24 +136,26 @@ describe "Array#pop" do
       ArraySpecs::MyArray[1, 2, 3].pop(2).should be_an_instance_of(Array)
     end
 
-    it "returns an untainted array even if the array is tainted" do
-      ary = [1, 2].taint
-      ary.pop(2).tainted?.should be_false
-      ary.pop(0).tainted?.should be_false
-    end
+    ruby_version_is ''...'2.7' do
+      it "returns an untainted array even if the array is tainted" do
+        ary = [1, 2].taint
+        ary.pop(2).tainted?.should be_false
+        ary.pop(0).tainted?.should be_false
+      end
 
-    it "keeps taint status" do
-      a = [1, 2].taint
-      a.pop(2)
-      a.tainted?.should be_true
-      a.pop(2)
-      a.tainted?.should be_true
-    end
+      it "keeps taint status" do
+        a = [1, 2].taint
+        a.pop(2)
+        a.tainted?.should be_true
+        a.pop(2)
+        a.tainted?.should be_true
+      end
 
-    it "returns a trusted array even if the array is untrusted" do
-      ary = [1, 2].untrust
-      ary.pop(2).untrusted?.should be_false
-      ary.pop(0).untrusted?.should be_false
+      it "returns a trusted array even if the array is untrusted" do
+        ary = [1, 2].untrust
+        ary.pop(2).untrusted?.should be_false
+        ary.pop(0).untrusted?.should be_false
+      end
     end
 
     it "raises a #{frozen_error_class} on a frozen array" do
@@ -157,12 +163,14 @@ describe "Array#pop" do
       -> { ArraySpecs.frozen_array.pop(0) }.should raise_error(frozen_error_class)
     end
 
-    it "keeps untrusted status" do
-      a = [1, 2].untrust
-      a.pop(2)
-      a.untrusted?.should be_true
-      a.pop(2)
-      a.untrusted?.should be_true
+    ruby_version_is ''...'2.7' do
+      it "keeps untrusted status" do
+        a = [1, 2].untrust
+        a.pop(2)
+        a.untrusted?.should be_true
+        a.pop(2)
+        a.untrusted?.should be_true
+      end
     end
   end
 end

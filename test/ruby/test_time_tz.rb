@@ -9,7 +9,7 @@ class TestTimeTZ < Test::Unit::TestCase
   case RUBY_PLATFORM
   when /linux/
     force_tz_test = true
-  when /darwin|freebsd/
+  when /darwin|freebsd|openbsd/
     has_lisbon_tz = false
     force_tz_test = true
   end
@@ -153,6 +153,12 @@ class TestTimeTZ < Test::Unit::TestCase
       assert_time_constructor(tz, "1951-05-06 0#{h+1}:00:00 +1000", :local, [1951,5,6,h,0,0])
       assert_time_constructor(tz, "1951-05-06 0#{h+1}:59:59 +1000", :local, [1951,5,6,h,59,59])
       assert_time_constructor(tz, "2010-06-10 06:13:28 +0900", :local, [2010,6,10,6,13,28])
+    }
+  end
+
+  def test_asia_kuala_lumpur
+    with_tz(tz="Asia/Kuala_Lumpur") {
+      assert_time_constructor(tz, "1933-01-01 00:20:00 +0720", :local, [1933])
     }
   end
 

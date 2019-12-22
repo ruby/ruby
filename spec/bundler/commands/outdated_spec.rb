@@ -228,7 +228,7 @@ RSpec.describe "bundle outdated" do
     context "and no gems are outdated" do
       it "has empty output" do
         subject
-        expect(out).to eq("")
+        expect(out).to be_empty
       end
     end
   end

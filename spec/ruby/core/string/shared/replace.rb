@@ -10,32 +10,34 @@ describe :string_replace, shared: true do
     a.should == "another string"
   end
 
-  it "taints self if other is tainted" do
-    a = ""
-    b = "".taint
-    a.send(@method, b)
-    a.tainted?.should == true
-  end
+  ruby_version_is ''...'2.7' do
+    it "taints self if other is tainted" do
+      a = ""
+      b = "".taint
+      a.send(@method, b)
+      a.tainted?.should == true
+    end
 
-  it "does not untaint self if other is untainted" do
-    a = "".taint
-    b = ""
-    a.send(@method, b)
-    a.tainted?.should == true
-  end
+    it "does not untaint self if other is untainted" do
+      a = "".taint
+      b = ""
+      a.send(@method, b)
+      a.tainted?.should == true
+    end
 
-  it "untrusts self if other is untrusted" do
-    a = ""
-    b = "".untrust
-    a.send(@method, b)
-    a.untrusted?.should == true
-  end
+    it "untrusts self if other is untrusted" do
+      a = ""
+      b = "".untrust
+      a.send(@method, b)
+      a.untrusted?.should == true
+    end
 
-  it "does not trust self if other is trusted" do
-    a = "".untrust
-    b = ""
-    a.send(@method, b)
-    a.untrusted?.should == true
+    it "does not trust self if other is trusted" do
+      a = "".untrust
+      b = ""
+      a.send(@method, b)
+      a.untrusted?.should == true
+    end
   end
 
   it "replaces the encoding of self with that of other" do

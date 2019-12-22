@@ -46,7 +46,6 @@ class TestEnv < Test::Unit::TestCase
     end
     ENV['TEST'] = 'bar'
     assert_equal('bar', ENV['TEST'])
-    assert_predicate(ENV['TEST'], :tainted?)
     if IGNORE_CASE
       assert_equal('bar', ENV['test'])
     else
@@ -113,7 +112,6 @@ class TestEnv < Test::Unit::TestCase
     assert_invalid_env {|v| ENV[v]}
     ENV[PATH_ENV] = ""
     assert_equal("", ENV[PATH_ENV])
-    assert_predicate(ENV[PATH_ENV], :tainted?)
     assert_nil(ENV[""])
   end
 
@@ -122,7 +120,7 @@ class TestEnv < Test::Unit::TestCase
     assert_equal("foo", ENV.fetch("test"))
     ENV.delete("test")
     feature8649 = '[ruby-core:56062] [Feature #8649]'
-    e = assert_raise_with_message(KeyError, 'key not found: "test"', feature8649) do
+    e = assert_raise_with_message(KeyError, /key not found: "test"/, feature8649) do
       ENV.fetch("test")
     end
     assert_same(ENV, e.receiver)
@@ -136,7 +134,6 @@ class TestEnv < Test::Unit::TestCase
     assert_nothing_raised { ENV.fetch(PATH_ENV, "foo") }
     ENV[PATH_ENV] = ""
     assert_equal("", ENV.fetch(PATH_ENV))
-    assert_predicate(ENV.fetch(PATH_ENV), :tainted?)
   end
 
   def test_aset
@@ -154,9 +151,6 @@ class TestEnv < Test::Unit::TestCase
       assert_equal("test", ENV["foo"])
     rescue Errno::EINVAL
     end
-
-    ENV[PATH_ENV] = "/tmp/".taint
-    assert_equal("/tmp/", ENV[PATH_ENV])
   end
 
   def test_keys
@@ -375,7 +369,6 @@ class TestEnv < Test::Unit::TestCase
       assert_equal("foo", v)
     end
     assert_invalid_env {|var| ENV.assoc(var)}
-    assert_predicate(v, :tainted?)
     assert_equal(Encoding.find("locale"), v.encoding)
   end
 
@@ -463,7 +456,7 @@ class TestEnv < Test::Unit::TestCase
     ENV.clear
     ENV["foo"] = "bar"
     ENV["baz"] = "qux"
-    ENV.update({"baz"=>"quux","a"=>"b"}) {|k, v1, v2| v1 ? k + "_" + v1 + "_" + v2 : v2 }
+    ENV.update({"baz"=>"quux","a"=>"b"}) {|k, v1, v2| k + "_" + v1 + "_" + v2 }
     check(ENV.to_hash.to_a, [%w(foo bar), %w(baz baz_qux_quux), %w(a b)])
   end
 

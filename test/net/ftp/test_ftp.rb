@@ -1530,6 +1530,102 @@ EOF
     end
   end
 
+  def test_features
+    commands = []
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp).\r\n")
+      commands.push(sock.gets)
+      sock.print("211-Features\r\n")
+      sock.print(" LANG EN*\r\n")
+      sock.print(" UTF8\r\n")
+      sock.print("211 End\r\n")
+    }
+    begin
+      begin
+        ftp = Net::FTP.new
+        ftp.connect(SERVER_ADDR, server.port)
+        assert_equal(['LANG EN*', 'UTF8'], ftp.features)
+        assert_equal("FEAT\r\n", commands.shift)
+        assert_equal(nil, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+  end
+
+  def test_features_not_implemented
+    commands = []
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp).\r\n")
+      commands.push(sock.gets)
+      sock.print("502 Not Implemented\r\n")
+    }
+    begin
+      begin
+        ftp = Net::FTP.new
+        ftp.connect(SERVER_ADDR, server.port)
+        assert_raise(Net::FTPPermError) do
+          ftp.features
+        end
+        assert_equal("FEAT\r\n", commands.shift)
+        assert_equal(nil, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+
+  end
+
+  def test_option
+    commands = []
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp)\r\n")
+      commands.push(sock.gets)
+      sock.print("200 OPTS UTF8 command successful\r\n")
+    }
+    begin
+      begin
+        ftp = Net::FTP.new
+        ftp.connect(SERVER_ADDR, server.port)
+        ftp.option("UTF8", "ON")
+        assert_equal("OPTS UTF8 ON\r\n", commands.shift)
+        assert_equal(nil, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+  end
+
+  def test_option_not_implemented
+    commands = []
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp)\r\n")
+      commands.push(sock.gets)
+      sock.print("502 Not implemented\r\n")
+    }
+    begin
+      begin
+        ftp = Net::FTP.new
+        ftp.connect(SERVER_ADDR, server.port)
+        assert_raise(Net::FTPPermError) do
+          ftp.option("UTF8", "ON")
+        end
+        assert_equal("OPTS UTF8 ON\r\n", commands.shift)
+        assert_equal(nil, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+  end
+
   def test_mlst
     commands = []
     server = create_ftp_server { |sock|

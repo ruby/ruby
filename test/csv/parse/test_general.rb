@@ -233,11 +233,21 @@ line,5,jkl
     assert_equal([["a"]], CSV.parse("a\r\n"))
   end
 
+  def test_seeked_string_io
+    input_with_bom = StringIO.new("\ufeffあ,い,う\r\na,b,c\r\n")
+    input_with_bom.read(3)
+    assert_equal([
+                   ["あ", "い", "う"],
+                   ["a", "b", "c"],
+                 ],
+                 CSV.new(input_with_bom).each.to_a)
+  end
+
   private
-  def assert_parse_errors_out(*args)
+  def assert_parse_errors_out(data, **options)
     assert_raise(CSV::MalformedCSVError) do
       Timeout.timeout(0.2) do
-        CSV.parse(*args)
+        CSV.parse(data, **options)
         fail("Parse didn't error out")
       end
     end

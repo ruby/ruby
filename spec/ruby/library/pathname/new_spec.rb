@@ -10,9 +10,11 @@ describe "Pathname.new" do
     -> { Pathname.new("\0")}.should raise_error(ArgumentError)
   end
 
-  it "is tainted if path is tainted" do
-    path = '/usr/local/bin'.taint
-    Pathname.new(path).tainted?.should == true
+  ruby_version_is ''...'2.7' do
+    it "is tainted if path is tainted" do
+      path = '/usr/local/bin'.taint
+      Pathname.new(path).tainted?.should == true
+    end
   end
 
   it "raises a TypeError if not passed a String type" do

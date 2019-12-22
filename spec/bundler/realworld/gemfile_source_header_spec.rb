@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "../support/silent_logger"
+
 RSpec.describe "fetching dependencies with a mirrored source", :realworld => true do
   let(:mirror) { "https://server.example.org" }
   let(:original) { "http://127.0.0.1:#{@port}" }
@@ -35,7 +37,7 @@ private
     @port = find_unused_port
     @server_uri = "http://127.0.0.1:#{@port}"
 
-    require File.expand_path("../../support/artifice/endpoint_mirror_source", __FILE__)
+    require_relative "../support/artifice/endpoint_mirror_source"
 
     @t = Thread.new do
       Rack::Server.start(:app       => EndpointMirrorSource,

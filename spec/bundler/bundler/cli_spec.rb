@@ -15,7 +15,7 @@ RSpec.describe "bundle executable" do
 
   it "looks for a binary and executes it if it's named bundler-<task>" do
     File.open(tmp("bundler-testtasks"), "w", 0o755) do |f|
-      ruby = ENV["BUNDLE_RUBY"] || "/usr/bin/env ruby"
+      ruby = ENV["RUBY"] || "/usr/bin/env ruby"
       f.puts "#!#{ruby}\nputs 'Hello, world'\n"
     end
 
@@ -25,6 +25,56 @@ RSpec.describe "bundle executable" do
 
     expect(exitstatus).to be_zero if exitstatus
     expect(out).to eq("Hello, world")
+  end
+
+  describe "aliases" do
+    it "aliases e to exec" do
+      bundle "e --help"
+
+      expect(out).to include("BUNDLE-EXEC")
+    end
+
+    it "aliases ex to exec" do
+      bundle "ex --help"
+
+      expect(out).to include("BUNDLE-EXEC")
+    end
+
+    it "aliases exe to exec" do
+      bundle "exe --help"
+
+      expect(out).to include("BUNDLE-EXEC")
+    end
+
+    it "aliases c to check" do
+      bundle "c --help"
+
+      expect(out).to include("BUNDLE-CHECK")
+    end
+
+    it "aliases i to install" do
+      bundle "i --help"
+
+      expect(out).to include("BUNDLE-INSTALL")
+    end
+
+    it "aliases ls to list" do
+      bundle "ls --help"
+
+      expect(out).to include("BUNDLE-LIST")
+    end
+
+    it "aliases package to cache" do
+      bundle "package --help"
+
+      expect(out).to include("BUNDLE-CACHE")
+    end
+
+    it "aliases pack to cache" do
+      bundle "pack --help"
+
+      expect(out).to include("BUNDLE-CACHE")
+    end
   end
 
   context "with no arguments" do

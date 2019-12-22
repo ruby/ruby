@@ -728,4 +728,16 @@ class TestCoverage < Test::Unit::TestCase
       }
     }
   end
+
+  def test_stop_wrong_peephole_optimization
+    result = {
+      :lines => [1, 1, 1, nil]
+    }
+    assert_coverage(<<~"end;", { lines: true }, result)
+      raise if 1 == 2
+      while true
+        break
+      end
+    end;
+  end
 end

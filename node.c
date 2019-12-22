@@ -114,7 +114,7 @@ dump_array(VALUE buf, VALUE indent, int comment, const NODE *node)
     const char *next_indent = default_indent;
     F_LONG(nd_alen, "length");
     F_NODE(nd_head, "element");
-    while (node->nd_next && nd_type(node->nd_next) == NODE_ARRAY) {
+    while (node->nd_next && nd_type(node->nd_next) == NODE_LIST) {
 	node = node->nd_next;
 	F_NODE(nd_head, "element");
     }
@@ -557,8 +557,8 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	ANN("example: super");
 	return;
 
-      case NODE_ARRAY:
-	ANN("array constructor");
+      case NODE_LIST:
+	ANN("list constructor");
 	ANN("format: [ [nd_head], [nd_next].. ] (length: [nd_alen])");
 	ANN("example: [1, 2, 3]");
 	goto ary;
@@ -570,8 +570,8 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	dump_array(buf, indent, comment, node);
 	return;
 
-      case NODE_ZARRAY:
-	ANN("empty array constructor");
+      case NODE_ZLIST:
+	ANN("empty list constructor");
 	ANN("format: []");
 	ANN("example: []");
 	return;
@@ -954,15 +954,6 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	F_NODE(nd_args, "arguments");
 	return;
 
-      case NODE_METHREF:
-        ANN("method reference");
-        ANN("format: [nd_recv].:[nd_mid]");
-        ANN("example: foo.:method");
-        F_NODE(nd_recv, "receiver");
-        LAST_NODE;
-        F_ID(nd_mid, "method name");
-        return;
-
       case NODE_LAMBDA:
 	ANN("lambda expression");
 	ANN("format: -> [nd_body]");
@@ -1065,7 +1056,12 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         F_NODE(nd_pconst, "constant");
         F_NODE(nd_pkwargs, "keyword arguments");
         LAST_NODE;
-        F_NODE(nd_pkwrestarg, "keyword rest argument");
+        if (node->nd_pkwrestarg == NODE_SPECIAL_NO_REST_KEYWORD) {
+            F_MSG(nd_pkwrestarg, "keyword rest argument", "NODE_SPECIAL_NO_REST_KEYWORD (**nil)");
+        }
+        else {
+            F_NODE(nd_pkwrestarg, "keyword rest argument");
+        }
         return;
 
       case NODE_ARGS_AUX:
@@ -1111,30 +1107,50 @@ rb_node_init(NODE *n, enum node_type type, VALUE a0, VALUE a1, VALUE a2)
 
 typedef struct node_buffer_elem_struct {
     struct node_buffer_elem_struct *next;
+    long len;
     NODE buf[FLEX_ARY_LEN];
 } node_buffer_elem_t;
 
-struct node_buffer_struct {
+typedef struct {
     long idx, len;
     node_buffer_elem_t *head;
     node_buffer_elem_t *last;
-    VALUE mark_ary;
+} node_buffer_list_t;
+
+struct node_buffer_struct {
+    node_buffer_list_t unmarkable;
+    node_buffer_list_t markable;
+    VALUE mark_hash;
 };
+
+static void
+init_node_buffer_list(node_buffer_list_t * nb, node_buffer_elem_t *head)
+{
+    nb->idx = 0;
+    nb->len = NODE_BUF_DEFAULT_LEN;
+    nb->head = nb->last = head;
+    nb->head->len = nb->len;
+    nb->head->next = NULL;
+}
 
 static node_buffer_t *
 rb_node_buffer_new(void)
 {
-    node_buffer_t *nb = xmalloc(sizeof(node_buffer_t) + offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_LEN * sizeof(NODE));
-    nb->idx = 0;
-    nb->len = NODE_BUF_DEFAULT_LEN;
-    nb->head = nb->last = (node_buffer_elem_t*) &nb[1];
-    nb->head->next = NULL;
-    nb->mark_ary = rb_ary_tmp_new(0);
+    const size_t bucket_size = offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_LEN * sizeof(NODE);
+    const size_t alloc_size = sizeof(node_buffer_t) + (bucket_size * 2);
+    STATIC_ASSERT(
+        integer_overflow,
+        offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_LEN * sizeof(NODE)
+        > sizeof(node_buffer_t) + 2 * sizeof(node_buffer_elem_t));
+    node_buffer_t *nb = ruby_xmalloc(alloc_size);
+    init_node_buffer_list(&nb->unmarkable, (node_buffer_elem_t*)&nb[1]);
+    init_node_buffer_list(&nb->markable, (node_buffer_elem_t*)((size_t)nb->unmarkable.head + bucket_size));
+    nb->mark_hash = Qnil;
     return nb;
 }
 
 static void
-rb_node_buffer_free(node_buffer_t *nb)
+node_buffer_list_free(node_buffer_list_t * nb)
 {
     node_buffer_elem_t *nbe = nb->head;
 
@@ -1143,23 +1159,52 @@ rb_node_buffer_free(node_buffer_t *nb)
 	nbe = nbe->next;
 	xfree(buf);
     }
+}
+
+static void
+rb_node_buffer_free(node_buffer_t *nb)
+{
+    node_buffer_list_free(&nb->unmarkable);
+    node_buffer_list_free(&nb->markable);
     xfree(nb);
 }
 
-NODE *
-rb_ast_newnode(rb_ast_t *ast)
+static NODE *
+ast_newnode_in_bucket(node_buffer_list_t *nb)
 {
-    node_buffer_t *nb = ast->node_buffer;
     if (nb->idx >= nb->len) {
 	long n = nb->len * 2;
 	node_buffer_elem_t *nbe;
-	nbe = xmalloc(offsetof(node_buffer_elem_t, buf) + n * sizeof(NODE));
+        nbe = rb_xmalloc_mul_add(n, sizeof(NODE), offsetof(node_buffer_elem_t, buf));
+        nbe->len = n;
 	nb->idx = 0;
 	nb->len = n;
 	nbe->next = nb->head;
 	nb->head = nbe;
     }
     return &nb->head->buf[nb->idx++];
+}
+
+NODE *
+rb_ast_newnode(rb_ast_t *ast, enum node_type type)
+{
+    node_buffer_t *nb = ast->node_buffer;
+    switch (type) {
+      case NODE_MATCH:
+      case NODE_LIT:
+      case NODE_STR:
+      case NODE_XSTR:
+      case NODE_DSTR:
+      case NODE_DXSTR:
+      case NODE_DREGX:
+      case NODE_DSYM:
+      case NODE_ARGS:
+      case NODE_SCOPE:
+      case NODE_ARYPTN:
+        return ast_newnode_in_bucket(&nb->markable);
+      default:
+        return ast_newnode_in_bucket(&nb->unmarkable);
+    }
 }
 
 void
@@ -1174,16 +1219,135 @@ rb_ast_t *
 rb_ast_new(void)
 {
     node_buffer_t *nb = rb_node_buffer_new();
-    VALUE mark_ary = nb->mark_ary;
     rb_ast_t *ast = (rb_ast_t *)rb_imemo_new(imemo_ast, 0, 0, 0, (VALUE)nb);
-    RB_OBJ_WRITTEN(ast, Qnil, mark_ary);
     return ast;
+}
+
+typedef void node_itr_t(void *ctx, NODE * node);
+
+static void
+iterate_buffer_elements(node_buffer_elem_t *nbe, long len, node_itr_t *func, void *ctx)
+{
+    long cursor;
+    for (cursor = 0; cursor < len; cursor++) {
+        func(ctx, &nbe->buf[cursor]);
+    }
+}
+
+static void
+iterate_node_values(node_buffer_list_t *nb, node_itr_t * func, void *ctx)
+{
+    node_buffer_elem_t *nbe = nb->head;
+
+    /* iterate over the head first because it's not full */
+    iterate_buffer_elements(nbe, nb->idx, func, ctx);
+
+    nbe = nbe->next;
+    while (nbe) {
+        iterate_buffer_elements(nbe, nbe->len, func, ctx);
+        nbe = nbe->next;
+    }
+}
+
+static void
+mark_ast_value(void *ctx, NODE * node)
+{
+    switch (nd_type(node)) {
+      case NODE_SCOPE:
+        {
+            ID *buf = node->nd_tbl;
+            if (buf) {
+                unsigned int size = (unsigned int)*buf;
+                rb_gc_mark_movable((VALUE)buf[size + 1]);
+            }
+            break;
+        }
+      case NODE_ARYPTN:
+        {
+            struct rb_ary_pattern_info *apinfo = node->nd_apinfo;
+            rb_gc_mark_movable(apinfo->imemo);
+            break;
+        }
+      case NODE_ARGS:
+        {
+            struct rb_args_info *args = node->nd_ainfo;
+            rb_gc_mark_movable(args->imemo);
+            break;
+        }
+      case NODE_MATCH:
+      case NODE_LIT:
+      case NODE_STR:
+      case NODE_XSTR:
+      case NODE_DSTR:
+      case NODE_DXSTR:
+      case NODE_DREGX:
+      case NODE_DSYM:
+        rb_gc_mark_movable(node->nd_lit);
+        break;
+      default:
+        rb_bug("unreachable node %s", ruby_node_name(nd_type(node)));
+    }
+}
+
+static void
+update_ast_value(void *ctx, NODE * node)
+{
+    switch (nd_type(node)) {
+      case NODE_SCOPE:
+        {
+            ID *buf = node->nd_tbl;
+            if (buf) {
+                unsigned int size = (unsigned int)*buf;
+                buf[size + 1] = rb_gc_location((VALUE)buf[size + 1]);
+            }
+            break;
+        }
+      case NODE_ARYPTN:
+        {
+            struct rb_ary_pattern_info *apinfo = node->nd_apinfo;
+            apinfo->imemo = rb_gc_location(apinfo->imemo);
+            break;
+        }
+      case NODE_ARGS:
+        {
+            struct rb_args_info *args = node->nd_ainfo;
+            args->imemo = rb_gc_location(args->imemo);
+            break;
+        }
+      case NODE_LIT:
+      case NODE_STR:
+      case NODE_XSTR:
+      case NODE_DSTR:
+      case NODE_DXSTR:
+      case NODE_DREGX:
+      case NODE_DSYM:
+        node->nd_lit = rb_gc_location(node->nd_lit);
+        break;
+      default:
+        rb_bug("unreachable");
+    }
+}
+
+void
+rb_ast_update_references(rb_ast_t *ast)
+{
+    if (ast->node_buffer) {
+        node_buffer_t *nb = ast->node_buffer;
+
+        iterate_node_values(&nb->markable, update_ast_value, NULL);
+    }
 }
 
 void
 rb_ast_mark(rb_ast_t *ast)
 {
-    if (ast->node_buffer) rb_gc_mark(ast->node_buffer->mark_ary);
+    if (ast->node_buffer) rb_gc_mark(ast->node_buffer->mark_hash);
+    if (ast->body.compile_option) rb_gc_mark(ast->body.compile_option);
+    if (ast->node_buffer) {
+        node_buffer_t *nb = ast->node_buffer;
+
+        iterate_node_values(&nb->markable, mark_ast_value, NULL);
+    }
 }
 
 void
@@ -1195,6 +1359,18 @@ rb_ast_free(rb_ast_t *ast)
     }
 }
 
+static size_t
+buffer_list_size(node_buffer_list_t *nb)
+{
+    size_t size = 0;
+    node_buffer_elem_t *nbe = nb->head;
+    while (nbe != nb->last) {
+        nbe = nbe->next;
+        size += offsetof(node_buffer_elem_t, buf) + nb->len * sizeof(NODE);
+    }
+    return size;
+}
+
 size_t
 rb_ast_memsize(const rb_ast_t *ast)
 {
@@ -1203,11 +1379,8 @@ rb_ast_memsize(const rb_ast_t *ast)
 
     if (nb) {
         size += sizeof(node_buffer_t) + offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_LEN * sizeof(NODE);
-        node_buffer_elem_t *nbe = nb->head;
-        while (nbe != nb->last) {
-            nbe = nbe->next;
-            size += offsetof(node_buffer_elem_t, buf) + nb->len * sizeof(NODE);
-        }
+        size += buffer_list_size(&nb->unmarkable);
+        size += buffer_list_size(&nb->markable);
     }
     return size;
 }
@@ -1221,5 +1394,8 @@ rb_ast_dispose(rb_ast_t *ast)
 void
 rb_ast_add_mark_object(rb_ast_t *ast, VALUE obj)
 {
-    rb_ary_push(ast->node_buffer->mark_ary, obj);
+    if (NIL_P(ast->node_buffer->mark_hash)) {
+        RB_OBJ_WRITE(ast, &ast->node_buffer->mark_hash, rb_ident_hash_new());
+    }
+    rb_hash_aset(ast->node_buffer->mark_hash, obj, Qtrue);
 }

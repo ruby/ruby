@@ -19,9 +19,6 @@ assert_equal %q{ok}, %q{
     :ok
   }.value
 }
-assert_equal %q{[]}, %q{
-  Thread.new{sleep}.backtrace
-}
 assert_equal %q{ok}, %q{
 begin
   v = 0
@@ -48,7 +45,7 @@ begin
     }
   }
 rescue ThreadError => e
-  :ok if /can't create Thread/ =~ e.message
+  /can't create Thread/ =~ e.message ? :ok : e.message
 end
 }
 assert_equal %q{ok}, %q{
@@ -62,7 +59,7 @@ begin
     }
   }
 rescue ThreadError => e
-  :ok if /can't create Thread/ =~ e.message
+  /can't create Thread/ =~ e.message ? :ok : e.message
 end
 }
 assert_equal %q{ok}, %q{

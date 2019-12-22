@@ -250,7 +250,6 @@ static void
 rb_struct_modify(VALUE s)
 {
     rb_check_frozen(s);
-    rb_check_trusted(s);
 }
 
 static VALUE
@@ -311,15 +310,24 @@ rb_struct_s_inspect(VALUE klass)
 }
 
 static VALUE
-setup_struct(VALUE nstr, VALUE members)
+struct_new_kw(int argc, const VALUE *argv, VALUE klass)
+{
+    return rb_class_new_instance_kw(argc, argv, klass, RB_PASS_CALLED_KEYWORDS);
+}
+
+static VALUE
+setup_struct(VALUE nstr, VALUE members, int keyword_init)
 {
     long i, len;
+    VALUE (*new_func)(int, const VALUE *, VALUE) = rb_class_new_instance;
+
+    if (keyword_init) new_func = struct_new_kw;
 
     members = struct_set_members(nstr, members);
 
     rb_define_alloc_func(nstr, struct_alloc);
-    rb_define_singleton_method(nstr, "new", rb_class_new_instance, -1);
-    rb_define_singleton_method(nstr, "[]", rb_class_new_instance, -1);
+    rb_define_singleton_method(nstr, "new", new_func, -1);
+    rb_define_singleton_method(nstr, "[]", new_func, -1);
     rb_define_singleton_method(nstr, "members", rb_struct_s_members_m, 0);
     rb_define_singleton_method(nstr, "inspect", rb_struct_s_inspect, 0);
     len = RARRAY_LEN(members);
@@ -434,7 +442,7 @@ rb_struct_define(const char *name, ...)
 
     if (!name) st = anonymous_struct(rb_cStruct);
     else st = new_struct(rb_str_new2(name), rb_cStruct);
-    return setup_struct(st, ary);
+    return setup_struct(st, ary, 0);
 }
 
 VALUE
@@ -447,7 +455,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
     ary = struct_make_members_list(ar);
     va_end(ar);
 
-    return setup_struct(rb_define_class_under(outer, name, rb_cStruct), ary);
+    return setup_struct(rb_define_class_under(outer, name, rb_cStruct), ary, 0);
 }
 
 /*
@@ -516,7 +524,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
 static VALUE
 rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE name, rest, keyword_init;
+    VALUE name, rest, keyword_init = Qfalse;
     long i;
     VALUE st;
     st_table *tbl;
@@ -532,18 +540,16 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     }
 
     if (RB_TYPE_P(argv[argc-1], T_HASH)) {
-	VALUE kwargs[1];
 	static ID keyword_ids[1];
 
 	if (!keyword_ids[0]) {
 	    keyword_ids[0] = rb_intern("keyword_init");
 	}
-	rb_get_kwargs(argv[argc-1], keyword_ids, 0, 1, kwargs);
+        rb_get_kwargs(argv[argc-1], keyword_ids, 0, 1, &keyword_init);
+        if (keyword_init == Qundef) {
+            keyword_init = Qfalse;
+        }
 	--argc;
-	keyword_init = kwargs[0];
-    }
-    else {
-	keyword_init = Qfalse;
     }
 
     rest = rb_ident_hash_new();
@@ -551,6 +557,9 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     tbl = RHASH_TBL(rest);
     for (i=0; i<argc; i++) {
 	VALUE mem = rb_to_symbol(argv[i]);
+        if (rb_is_attrset_sym(mem)) {
+            rb_raise(rb_eArgError, "invalid struct member: %"PRIsVALUE, mem);
+        }
 	if (st_insert(tbl, mem, Qtrue)) {
 	    rb_raise(rb_eArgError, "duplicate member: %"PRIsVALUE, mem);
 	}
@@ -565,10 +574,10 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     else {
 	st = new_struct(name, klass);
     }
-    setup_struct(st, rest);
+    setup_struct(st, rest, (int)keyword_init);
     rb_ivar_set(st, id_keyword_init, keyword_init);
     if (rb_block_given_p()) {
-	rb_mod_module_eval(0, 0, st);
+        rb_mod_module_eval(0, 0, st);
     }
 
     return st;
@@ -623,7 +632,7 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
     n = num_members(klass);
     if (argc > 0 && RTEST(rb_struct_s_keyword_init(klass))) {
 	struct struct_hash_set_arg arg;
-	if (argc > 2 || !RB_TYPE_P(argv[0], T_HASH)) {
+	if (argc > 1 || !RB_TYPE_P(argv[0], T_HASH)) {
 	    rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected 0)", argc);
 	}
 	rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), n);
@@ -862,7 +871,6 @@ inspect_struct(VALUE s, VALUE dummy, int recur)
 	rb_str_append(str, rb_inspect(RSTRUCT_GET(s, i)));
     }
     rb_str_cat2(str, ">");
-    OBJ_INFECT(str, s);
 
     return str;
 }
@@ -930,6 +938,36 @@ rb_struct_to_h(VALUE s)
             rb_hash_set_pair(h, rb_yield_values(2, k, v));
         else
             rb_hash_aset(h, k, v);
+    }
+    return h;
+}
+
+static VALUE
+rb_struct_deconstruct_keys(VALUE s, VALUE keys)
+{
+    VALUE h;
+    long i;
+
+    if (NIL_P(keys)) {
+        return rb_struct_to_h(s);
+    }
+    if (UNLIKELY(!RB_TYPE_P(keys, T_ARRAY))) {
+	rb_raise(rb_eTypeError,
+                 "wrong argument type %"PRIsVALUE" (expected Array or nil)",
+                 rb_obj_class(keys));
+
+    }
+    if (RSTRUCT_LEN(s) < RARRAY_LEN(keys)) {
+        return rb_hash_new_with_size(0);
+    }
+    h = rb_hash_new_with_size(RARRAY_LEN(keys));
+    for (i=0; i<RARRAY_LEN(keys); i++) {
+        VALUE key = RARRAY_AREF(keys, i);
+        int i = rb_struct_pos(s, &key);
+        if (i < 0) {
+            return h;
+        }
+        rb_hash_aset(h, key, RSTRUCT_GET(s, i));
     }
     return h;
 }
@@ -1347,6 +1385,7 @@ InitVM_Struct(void)
     rb_define_method(rb_cStruct, "dig", rb_struct_dig, -1);
 
     rb_define_method(rb_cStruct, "deconstruct", rb_struct_to_a, 0);
+    rb_define_method(rb_cStruct, "deconstruct_keys", rb_struct_deconstruct_keys, 1);
 }
 
 #undef rb_intern

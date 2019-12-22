@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "../support/streams"
+
 RSpec.describe Bundler::Plugin do
   Plugin = Bundler::Plugin
 

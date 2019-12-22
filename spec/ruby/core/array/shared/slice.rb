@@ -117,6 +117,27 @@ describe :array_slice, shared: true do
     a.send(@method, 0, obj).should == [1, 2]
   end
 
+  it "raises TypeError if to_int returns non-integer" do
+    from = mock('from')
+    to = mock('to')
+
+    # So we can construct a range out of them...
+    def from.<=>(o) 0 end
+    def to.<=>(o) 0 end
+
+    a = [1, 2, 3, 4, 5]
+
+    def from.to_int() 'cat' end
+    def to.to_int() -2 end
+
+    -> { a.send(@method, from..to) }.should raise_error(TypeError)
+
+    def from.to_int() 1 end
+    def to.to_int() 'cat' end
+
+    -> { a.send(@method, from..to) }.should raise_error(TypeError)
+  end
+
   it "returns the elements specified by Range indexes with [m..n]" do
     [ "a", "b", "c", "d", "e" ].send(@method, 1..3).should == ["b", "c", "d"]
     [ "a", "b", "c", "d", "e" ].send(@method, 4..-1).should == ['e']

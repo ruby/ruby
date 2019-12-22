@@ -141,7 +141,7 @@ class LeakChecker
     end
   end
 
-  def find_tempfiles(prev_count=-1)
+  def find_tempfiles(prev_count = -1)
     return [prev_count, []] unless defined? Tempfile
     extend_tempfile_counter
     count = TempfileCounter.count

@@ -83,6 +83,50 @@ RSpec.describe "bundle install with explicit source paths" do
     end
   end
 
+  it "sorts paths consistently on install and update when they start with ./" do
+    build_lib "demo", :path => lib_path("demo")
+    build_lib "aaa", :path => lib_path("demo/aaa")
+
+    gemfile = <<-G
+      gemspec
+      gem "aaa", :path => "./aaa"
+    G
+
+    File.open(lib_path("demo/Gemfile"), "w") {|f| f.puts gemfile }
+
+    lockfile = <<~L
+      PATH
+        remote: .
+        specs:
+          demo (1.0)
+
+      PATH
+        remote: aaa
+        specs:
+          aaa (1.0)
+
+      GEM
+        specs:
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        aaa!
+        demo!
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    Dir.chdir(lib_path("demo")) do
+      bundle :install
+      expect(lib_path("demo/Gemfile.lock")).to have_lockfile(lockfile)
+      bundle :update, :all => true
+      expect(lib_path("demo/Gemfile.lock")).to have_lockfile(lockfile)
+    end
+  end
+
   it "expands paths when comparing locked paths to Gemfile paths" do
     build_lib "foo", :path => bundled_app("foo-1.0")
 
@@ -370,13 +414,13 @@ RSpec.describe "bundle install with explicit source paths" do
   end
 
   it "works when the path does not have a gemspec but there is a lockfile" do
-    lockfile <<-L
-    PATH
-      remote: vendor/bar
-      specs:
+    lockfile <<~L
+      PATH
+        remote: vendor/bar
+        specs:
 
-    GEM
-      remote: http://rubygems.org
+      GEM
+        remote: http://rubygems.org
     L
 
     in_app_root { FileUtils.mkdir_p("vendor/bar") }
@@ -395,7 +439,7 @@ RSpec.describe "bundle install with explicit source paths" do
         gem 'net-ssh', '1.0'
       G
 
-      bundle :check, :env => { "DEBUG" => 1 }
+      bundle :check, :env => { "DEBUG" => "1" }
       expect(out).to match(/using resolution from the lockfile/)
       expect(the_bundle).to include_gems "rack-obama 1.0", "net-ssh 1.0"
     end
@@ -415,7 +459,7 @@ RSpec.describe "bundle install with explicit source paths" do
         gem 'net-ssh', :path => "#{lib_path("omg")}"
       G
 
-      bundle :check, :env => { "DEBUG" => 1 }
+      bundle :check, :env => { "DEBUG" => "1" }
       expect(out).to match(/using resolution from the lockfile/)
       expect(the_bundle).to include_gems "rack-obama 1.0", "net-ssh 1.0"
     end
@@ -610,7 +654,7 @@ RSpec.describe "bundle install with explicit source paths" do
       File.open(lib_path("private_lib/Gemfile"), "w") {|f| f.puts gemfile }
 
       Dir.chdir(lib_path("private_lib")) do
-        bundle :install, :env => { "DEBUG" => 1 }, :artifice => "endpoint"
+        bundle :install, :env => { "DEBUG" => "1" }, :artifice => "endpoint"
         expect(out).to match(%r{^HTTP GET http://localgemserver\.test/api/v1/dependencies\?gems=rack$})
         expect(out).not_to match(/^HTTP GET.*private_lib/)
         expect(the_bundle).to include_gems "private_lib 2.2"
@@ -628,7 +672,6 @@ RSpec.describe "bundle install with explicit source paths" do
 
       File.open(lib_path("install_hooks.rb"), "w") do |h|
         h.write <<-H
-          require 'rubygems'
           Gem.pre_install_hooks << lambda do |inst|
             STDERR.puts "Ran pre-install hook: \#{inst.spec.full_name}"
           end
@@ -648,7 +691,6 @@ RSpec.describe "bundle install with explicit source paths" do
 
       File.open(lib_path("install_hooks.rb"), "w") do |h|
         h.write <<-H
-          require 'rubygems'
           Gem.post_install_hooks << lambda do |inst|
             STDERR.puts "Ran post-install hook: \#{inst.spec.full_name}"
           end
@@ -668,7 +710,6 @@ RSpec.describe "bundle install with explicit source paths" do
 
       File.open(lib_path("install_hooks.rb"), "w") do |h|
         h.write <<-H
-          require 'rubygems'
           Gem.pre_install_hooks << lambda do |inst|
             false
           end

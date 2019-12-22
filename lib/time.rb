@@ -397,6 +397,9 @@ class Time
     # %D :: Date (%m/%d/%y)
     # %e :: Day of the month, blank-padded ( 1..31)
     # %F :: Equivalent to %Y-%m-%d (the ISO 8601 date format)
+    # %g :: The last two digits of the commercial year
+    # %G :: The week-based year according to ISO-8601 (week 1 starts on Monday
+    #       and includes January 4)
     # %h :: Equivalent to %b
     # %H :: Hour of the day, 24-hour clock (00..23)
     # %I :: Hour of the day, 12-hour clock (01..12)
@@ -410,7 +413,6 @@ class Time
     # %N :: Fractional seconds digits
     # %p :: Meridian indicator ("AM" or "PM")
     # %P :: Meridian indicator ("am" or "pm")
-    # %Q :: Number of milliseconds since 1970-01-01 00:00:00 UTC.
     # %r :: time, 12-hour (same as %I:%M:%S %p)
     # %R :: time, 24-hour (%H:%M)
     # %s :: Number of seconds since 1970-01-01 00:00:00 UTC.
@@ -457,7 +459,15 @@ class Time
       else
         year = d[:year]
         year = yield(year) if year && block_given?
-        t = make_time(date, year, d[:yday], d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
+        yday = d[:yday]
+        if (d[:cwyear] && !year) || ((d[:cwday] || d[:cweek]) && !(d[:mon] && d[:mday]))
+          # make_time doesn't deal with cwyear/cwday/cweek
+          return Date.strptime(date, format).to_time
+        end
+        if (d[:wnum0] || d[:wnum1]) && !yday && !(d[:mon] && d[:mday])
+          yday = Date.strptime(date, format).yday
+        end
+        t = make_time(date, year, yday, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
       end
       t
     end

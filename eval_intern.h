@@ -250,9 +250,6 @@ CREF_OMOD_SHARED_UNSET(rb_cref_t *cref)
     cref->flags &= ~CREF_FL_OMOD_SHARED;
 }
 
-void rb_thread_cleanup(void);
-void rb_thread_wait_other_threads(void);
-
 enum {
     RAISED_EXCEPTION = 1,
     RAISED_STACKOVERFLOW = 2,
@@ -290,6 +287,7 @@ VALUE rb_vm_cbase(void);
 /* vm_backtrace.c */
 VALUE rb_ec_backtrace_object(const rb_execution_context_t *ec);
 VALUE rb_ec_backtrace_str_ary(const rb_execution_context_t *ec, long lev, long n);
+VALUE rb_ec_backtrace_location_ary(const rb_execution_context_t *ec, long lev, long n);
 
 #ifndef CharNext		/* defined as CharNext[AW] on Windows. */
 # ifdef HAVE_MBLEN

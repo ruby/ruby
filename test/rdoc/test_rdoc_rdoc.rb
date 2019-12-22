@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'minitest_helper'
+require_relative 'helper'
 
 class TestRDocRDoc < RDoc::TestCase
 
@@ -119,7 +119,7 @@ class TestRDocRDoc < RDoc::TestCase
         io.write "a: !ruby.yaml.org,2002:str |\nfoo"
       end
 
-      e = assert_raises RDoc::Error do
+      e = assert_raise RDoc::Error do
         @rdoc.load_options
       end
 
@@ -152,8 +152,6 @@ class TestRDocRDoc < RDoc::TestCase
   end
 
   def test_normalized_file_list_not_modified
-    files = [__FILE__]
-
     @rdoc.last_modified[__FILE__] = File.stat(__FILE__).mtime
 
     files = @rdoc.normalized_file_list [__FILE__]
@@ -163,7 +161,7 @@ class TestRDocRDoc < RDoc::TestCase
 
   def test_normalized_file_list_non_file_directory
     dev = File::NULL
-    skip "#{dev} is not a character special" unless
+    omit "#{dev} is not a character special" unless
       File.chardev? dev
 
     files = nil
@@ -190,6 +188,10 @@ class TestRDocRDoc < RDoc::TestCase
       FileUtils.touch a
       FileUtils.touch b
       FileUtils.touch c
+      # Use Dir.glob to convert short path of Dir.tmpdir to long path.
+      a = Dir.glob(a).first
+      b = Dir.glob(b).first
+      c = Dir.glob(c).first
 
       dot_doc = File.expand_path('.document')
       FileUtils.touch dot_doc
@@ -217,6 +219,10 @@ class TestRDocRDoc < RDoc::TestCase
       FileUtils.touch a
       FileUtils.touch b
       FileUtils.touch c
+      # Use Dir.glob to convert short path of Dir.tmpdir to long path.
+      a = Dir.glob(a).first
+      b = Dir.glob(b).first
+      c = Dir.glob(c).first
 
       dot_doc = File.expand_path('.document')
       FileUtils.touch dot_doc
@@ -349,8 +355,8 @@ class TestRDocRDoc < RDoc::TestCase
   end
 
   def test_parse_file_forbidden
-    skip 'chmod not supported' if Gem.win_platform?
-    skip "assumes that euid is not root" if Process.euid == 0
+    omit 'chmod not supported' if Gem.win_platform?
+    omit "assumes that euid is not root" if Process.euid == 0
 
     @rdoc.store = RDoc::Store.new
 
@@ -463,7 +469,7 @@ class TestRDocRDoc < RDoc::TestCase
     Dir.mktmpdir {|path|
       File.open @rdoc.output_flag_file(path), 'w' do end
 
-      e = assert_raises RDoc::Error do
+      e = assert_raise RDoc::Error do
         @rdoc.setup_output_dir path, false
       end
 
@@ -475,7 +481,7 @@ class TestRDocRDoc < RDoc::TestCase
     tf = Tempfile.open 'test_rdoc_rdoc' do |tempfile|
       path = tempfile.path
 
-      e = assert_raises RDoc::Error do
+      e = assert_raise RDoc::Error do
         @rdoc.setup_output_dir path, false
       end
 
@@ -488,7 +494,7 @@ class TestRDocRDoc < RDoc::TestCase
 
   def test_setup_output_dir_exists_not_rdoc
     Dir.mktmpdir do |dir|
-      e = assert_raises RDoc::Error do
+      e = assert_raise RDoc::Error do
         @rdoc.setup_output_dir dir, false
       end
 

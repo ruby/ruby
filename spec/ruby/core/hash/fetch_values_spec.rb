@@ -12,6 +12,10 @@ describe "Hash#fetch_values" do
       @hash.fetch_values(:a).should == [1]
       @hash.fetch_values(:a, :c).should == [1, 3]
     end
+
+    it "returns the values for keys ordered in the order of the requested keys" do
+      @hash.fetch_values(:c, :a).should == [3, 1]
+    end
   end
 
   describe "with unmatched keys" do

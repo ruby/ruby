@@ -1,11 +1,12 @@
 # frozen_string_literal: true
-require 'minitest_helper'
+require_relative 'helper'
 
 class TestRDocRIPaths < RDoc::TestCase
 
   def setup
     super
 
+    @orig_env = ENV.to_hash
     @orig_gem_path = Gem.path
 
     @tempdir = File.join Dir.tmpdir, "test_rdoc_ri_paths_#{$$}"
@@ -40,6 +41,7 @@ class TestRDocRIPaths < RDoc::TestCase
     Gem.use_paths(*@orig_gem_path)
     Gem::Specification.reset
     FileUtils.rm_rf @tempdir
+    ENV.replace(@orig_env)
   end
 
   def test_class_each

@@ -1,7 +1,7 @@
 # coding: US-ASCII
 # frozen_string_literal: true
 
-require 'minitest_helper'
+require_relative 'helper'
 
 class TestRDocGeneratorJsonIndex < RDoc::TestCase
 
@@ -168,7 +168,7 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
     begin
       require 'zlib'
     rescue LoadError
-      skip "no zlib"
+      omit "no zlib"
     end
     @g.generate
     @g.generate_gzipped

@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'minitest_helper'
+require_relative 'helper'
 
 class TestRDocOptions < RDoc::TestCase
 
@@ -17,8 +17,8 @@ class TestRDocOptions < RDoc::TestCase
   end
 
   def test_check_files
-    skip "assumes UNIX permission model" if /mswin|mingw/ =~ RUBY_PLATFORM
-    skip "assumes that euid is not root" if Process.euid == 0
+    omit "assumes UNIX permission model" if /mswin|mingw/ =~ RUBY_PLATFORM
+    omit "assumes that euid is not root" if Process.euid == 0
 
     out, err = capture_output do
       temp_dir do
@@ -288,7 +288,7 @@ rdoc_include:
   end
 
   def test_parse_formatter
-    e = assert_raises OptionParser::InvalidOption do
+    e = assert_raise OptionParser::InvalidOption do
       @options.parse %w[--format darkfish --format ri]
     end
 
@@ -296,8 +296,22 @@ rdoc_include:
                  e.message
   end
 
+  def test_parse_force_update
+    @options.parse %w[--force-update]
+
+    assert @options.force_update
+
+    @options.parse %w[--no-force-update]
+
+    assert !@options.force_update
+
+    @options.parse %w[-U]
+
+    assert @options.force_update
+  end
+
   def test_parse_formatter_ri
-    e = assert_raises OptionParser::InvalidOption do
+    e = assert_raise OptionParser::InvalidOption do
       @options.parse %w[--format darkfish --ri]
     end
 
@@ -306,7 +320,7 @@ rdoc_include:
 
     @options = RDoc::Options.new
 
-    e = assert_raises OptionParser::InvalidOption do
+    e = assert_raise OptionParser::InvalidOption do
       @options.parse %w[--format darkfish -r]
     end
 
@@ -315,7 +329,7 @@ rdoc_include:
   end
 
   def test_parse_formatter_ri_site
-    e = assert_raises OptionParser::InvalidOption do
+    e = assert_raise OptionParser::InvalidOption do
       @options.parse %w[--format darkfish --ri-site]
     end
 
@@ -324,7 +338,7 @@ rdoc_include:
 
     @options = RDoc::Options.new
 
-    e = assert_raises OptionParser::InvalidOption do
+    e = assert_raise OptionParser::InvalidOption do
       @options.parse %w[--format darkfish -R]
     end
 
@@ -417,7 +431,7 @@ rdoc_include:
 
   def test_parse_ignore_invalid_no
     out, err = capture_output do
-      assert_raises SystemExit do
+      assert_raise SystemExit do
         @options.parse %w[--no-ignore-invalid --bogus=arg --bobogus --visibility=extended]
       end
     end
@@ -430,7 +444,7 @@ rdoc_include:
 
   def test_parse_ignore_invalid_no_quiet
     out, err = capture_output do
-      assert_raises SystemExit do
+      assert_raise SystemExit do
         @options.parse %w[--quiet --no-ignore-invalid --bogus=arg --bobogus --visibility=extended]
       end
     end
@@ -493,8 +507,14 @@ rdoc_include:
     assert_empty out
     assert_empty err
 
-    expected =
-      Pathname(Dir.tmpdir).expand_path.relative_path_from @options.root
+    expected = nil
+    begin
+      expected =
+        Pathname(Dir.tmpdir).expand_path.relative_path_from @options.root
+    rescue ArgumentError
+      # On Windows, sometimes crosses different drive letters.
+      expected = Pathname(Dir.tmpdir).expand_path
+    end
 
     assert_equal expected,     @options.page_dir
     assert_equal [Dir.tmpdir], @options.files
@@ -631,7 +651,7 @@ rdoc_include:
     FileUtils.mkdir_p tmpdir
 
     Dir.chdir tmpdir do
-      e = assert_raises SystemExit do
+      e = assert_raise SystemExit do
         @options.parse %w[--write-options]
       end
 

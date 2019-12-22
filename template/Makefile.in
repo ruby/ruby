@@ -83,10 +83,10 @@ debugflags = @debugflags@
 warnflags = @warnflags@ @strict_warnflags@
 cppflags = @cppflags@
 MATHN = @MATHN@
-XCFLAGS = @XCFLAGS@ $(MATHN:yes=-DCANONICALIZATION_FOR_MATHN)
+XCFLAGS = @XCFLAGS@ $(MATHN:yes=-DCANONICALIZATION_FOR_MATHN) $(INCFLAGS)
 USE_RUBYGEMS = @USE_RUBYGEMS@
 USE_RUBYGEMS_ = $(USE_RUBYGEMS:yes=)
-CPPFLAGS = @CPPFLAGS@ $(INCFLAGS) $(USE_RUBYGEMS_:no=-DDISABLE_RUBYGEMS=1)
+CPPFLAGS = @CPPFLAGS@ $(USE_RUBYGEMS_:no=-DDISABLE_RUBYGEMS=1)
 MJIT_SUPPORT = @MJIT_SUPPORT@
 MJIT_HEADER_FLAGS = @MJIT_HEADER_FLAGS@
 MJIT_HEADER_SUFFIX =
@@ -235,7 +235,6 @@ INSTALLED_LIST= .installed.list
 
 NEWLINE_C     = enc/trans/newline.c
 MINIPRELUDE_C = miniprelude.c
-PRELUDE_C     = prelude.c
 GOLF_PRELUDE_C= golf_prelude.c
 RBCONFIG      = .rbconfig.time
 
@@ -275,7 +274,7 @@ $(PROGRAM):
 		$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(MAINLIBS) $(LIBS) $(EXTLIBS) $(OUTFLAG)$@
 		$(Q) $(POSTLINK)
 
-PRE_LIBRUBY_UPDATE = [ -n "$(LIBRUBY_SO_UPDATE)" ] || $(exec) $(RM) $(LIBRUBY_EXTS)
+PRE_LIBRUBY_UPDATE = [ -n "$(LIBRUBY_SO_UPDATE)" ] || $(gnumake:yes=exec) $(RM) $(LIBRUBY_EXTS)
 
 # We must `rm' the library each time this rule is invoked because "updating" a
 # MAB library on Apple/NeXT (see --enable-fat-binary in configure) is not
@@ -456,12 +455,14 @@ probes.$(OBJEXT): $(srcdir)/probes.d $(DTRACE_REBUILD:yes=probes.stamp)
 main: mjit-headers
 yes-mjit-headers: $(MJIT_MIN_HEADER)
 clean-local::
-	$(Q)$(RM) $(MJIT_HEADER) $(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX:%=*).h
-	$(Q)$(RM) $(MJIT_MIN_HEADER) $(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX:%=*).h
-	$(Q)$(RM) $(MJIT_HEADER_INSTALL_DIR)/rb_mjit_min_header-*.h
-	$(Q)$(RM) $(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time mjit_config.h
+	$(Q)$(RM) \
+	  $(MJIT_HEADER) $(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX:%=*).h \
+	  $(MJIT_MIN_HEADER) $(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX:%=*).h \
+	  $(MJIT_HEADER_INSTALL_DIR)/rb_mjit_min_header-*.h \
+	  $(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time mjit_config.h \
+	|| $(NULLCMD)
 	$(Q)$(RM) -r mjit_build_dir.*
-	-$(Q) $(RMDIRS) $(MJIT_HEADER_INSTALL_DIR) 2> $(NULL) || exit 0
+	-$(Q) $(RMDIRS) $(MJIT_HEADER_INSTALL_DIR) $(MJIT_HEADER_BUILD_DIR) $(TIMESTAMPDIR) 2> $(NULL) || $(NULLCMD)
 
 # DTrace static library hacks described here:
 # http://mail.opensolaris.org/pipermail/dtrace-discuss/2005-August/000207.html
@@ -470,15 +471,18 @@ ruby-glommed.$(OBJEXT):
 	$(Q) $(LD) -r -o $@ $(OBJS)
 
 clean-local::
-	$(Q)$(RM) ext/extinit.c ext/extinit.$(OBJEXT) ext/ripper/y.output \
-		enc/encinit.c enc/encinit.$(OBJEXT)
-	-$(Q)$(RM) $(pkgconfig_DATA)
-	-$(Q)$(RMALL) exe/ ruby-runner.$(OBJEXT) ruby-runner.h *.dSYM
+	$(Q)$(RM) \
+	  ext/extinit.c ext/extinit.$(OBJEXT) ext/ripper/y.output \
+	  enc/encinit.c enc/encinit.$(OBJEXT) $(pkgconfig_DATA) \
+	  ruby-runner.$(OBJEXT) ruby-runner.h *.dSYM \
+	|| $(NULLCMD)
+	-$(Q)$(RMALL) exe/
 
 distclean-local::
-	$(Q)$(RM) ext/config.cache $(RBCONFIG) Doxyfile
-	-$(Q)$(RM) run.gdb
-	-$(Q)$(RM) $(INSTALLED_LIST) $(arch_hdrdir)/ruby/config.h verconf.h
+	$(Q)$(RM) \
+	  ext/config.cache $(RBCONFIG) Doxyfile run.gdb \
+	  $(INSTALLED_LIST) $(arch_hdrdir)/ruby/config.h verconf.h \
+	|| $(NULLCMD)
 	-$(Q)$(RMDIRS) $(arch_hdrdir)/ruby 2> /dev/null || true
 
 ext/clean.sub:: ext/clean.mk
@@ -532,20 +536,6 @@ enc/encinit.$(OBJEXT): enc/encinit.c $(SETUP)
 
 cont.$(OBJEXT): $(COROUTINE_H)
 
-# Override this to allow failure of specific gems on CI
-TEST_BUNDLED_GEMS_ALLOW_FAILURES =
-
-test-bundled-gems-run:
-	$(Q) fail=0 keep=; case "$(MFLAGS)" in *k*) keep=1;; esac; \
-	while read gem _; do \
-	  echo testing $$gem gem; \
-	  [ $$keep ] || echo $(TEST_BUNDLED_GEMS_ALLOW_FAILURES) | grep -q $$gem || set -e; \
-	  $(XRUBY) -C $(srcdir)/gems/src/$$gem -Ilib ../../../.bundle/bin/rake; \
-	  [ $$? = 0 ] || fail=1; \
-	  set +e; \
-	done < $(srcdir)/gems/bundled_gems; \
-	exit $$fail
-
 update-src::
 	@$(CHDIR) "$(srcdir)" && LC_TIME=C exec $(VCSUP)
 
@@ -590,7 +580,52 @@ INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 
 $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(srcdir)/defs/opt_operand.def $(srcdir)/defs/opt_insn_unif.def \
-	  $(srcdir)/tool/insns2vm.rb
+	  $(srcdir)/tool/insns2vm.rb \
+	  $(srcdir)/tool/ruby_vm/controllers/application_controller.rb \
+	  $(srcdir)/tool/ruby_vm/helpers/c_escape.rb \
+	  $(srcdir)/tool/ruby_vm/helpers/dumper.rb \
+	  $(srcdir)/tool/ruby_vm/helpers/scanner.rb \
+	  $(srcdir)/tool/ruby_vm/loaders/insns_def.rb \
+	  $(srcdir)/tool/ruby_vm/loaders/opt_insn_unif_def.rb \
+	  $(srcdir)/tool/ruby_vm/loaders/opt_operand_def.rb \
+	  $(srcdir)/tool/ruby_vm/loaders/vm_opts_h.rb \
+	  $(srcdir)/tool/ruby_vm/models/attribute.rb \
+	  $(srcdir)/tool/ruby_vm/models/bare_instructions.rb \
+	  $(srcdir)/tool/ruby_vm/models/c_expr.rb \
+	  $(srcdir)/tool/ruby_vm/models/instructions.rb \
+	  $(srcdir)/tool/ruby_vm/models/instructions_unifications.rb \
+	  $(srcdir)/tool/ruby_vm/models/operands_unifications.rb \
+	  $(srcdir)/tool/ruby_vm/models/trace_instructions.rb \
+	  $(srcdir)/tool/ruby_vm/models/typemap.rb \
+	  $(srcdir)/tool/ruby_vm/scripts/converter.rb \
+	  $(srcdir)/tool/ruby_vm/scripts/insns2vm.rb \
+	  $(srcdir)/tool/ruby_vm/views/_attributes.erb \
+	  $(srcdir)/tool/ruby_vm/views/_c_expr.erb \
+	  $(srcdir)/tool/ruby_vm/views/_comptime_insn_stack_increase.erb \
+	  $(srcdir)/tool/ruby_vm/views/_copyright.erb \
+	  $(srcdir)/tool/ruby_vm/views/_insn_entry.erb \
+	  $(srcdir)/tool/ruby_vm/views/_insn_len_info.erb \
+	  $(srcdir)/tool/ruby_vm/views/_insn_name_info.erb \
+	  $(srcdir)/tool/ruby_vm/views/_insn_operand_info.erb \
+	  $(srcdir)/tool/ruby_vm/views/_insn_sp_pc_dependency.erb \
+	  $(srcdir)/tool/ruby_vm/views/_insn_type_chars.erb \
+	  $(srcdir)/tool/ruby_vm/views/_leaf_helpers.erb \
+	  $(srcdir)/tool/ruby_vm/views/_mjit_compile_insn.erb \
+	  $(srcdir)/tool/ruby_vm/views/_mjit_compile_insn_body.erb \
+	  $(srcdir)/tool/ruby_vm/views/_mjit_compile_ivar.erb \
+	  $(srcdir)/tool/ruby_vm/views/_mjit_compile_pc_and_sp.erb \
+	  $(srcdir)/tool/ruby_vm/views/_mjit_compile_send.erb \
+	  $(srcdir)/tool/ruby_vm/views/_notice.erb \
+	  $(srcdir)/tool/ruby_vm/views/_sp_inc_helpers.erb \
+	  $(srcdir)/tool/ruby_vm/views/_trace_instruction.erb \
+	  $(srcdir)/tool/ruby_vm/views/insns.inc.erb \
+	  $(srcdir)/tool/ruby_vm/views/insns_info.inc.erb \
+	  $(srcdir)/tool/ruby_vm/views/mjit_compile.inc.erb \
+	  $(srcdir)/tool/ruby_vm/views/opt_sc.inc.erb \
+	  $(srcdir)/tool/ruby_vm/views/optinsn.inc.erb \
+	  $(srcdir)/tool/ruby_vm/views/optunifs.inc.erb \
+	  $(srcdir)/tool/ruby_vm/views/vm.inc.erb \
+	  $(srcdir)/tool/ruby_vm/views/vmtc.inc.erb
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) -Ku $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) $@
 
@@ -639,7 +674,7 @@ mjit_config.h:
 yes-test-almost yes-test-all: mjit_build_dir.$(SOEXT)
 mjit_build_dir.$(SOEXT): $(MJIT_MIN_HEADER) $(srcdir)/ruby-runner.c ruby-runner.h
 	$(ECHO) making $@
-	$(Q) $(DLDSHARED) $(MJIT_DLDFLAGS) $(ARCH_FLAG) $(CFLAGS) $(CPPFLAGS) \
+	$(Q) $(DLDSHARED) $(MJIT_DLDFLAGS) $(ARCH_FLAG) $(CFLAGS) $(INCFLAGS) $(CPPFLAGS) \
 		-DMAKE_MJIT_BUILD_DIR=1 -DMJIT_MIN_HEADER='"$(MJIT_MIN_HEADER)"' \
 		$(OUTFLAG)$@ $(srcdir)/ruby-runner.c
 

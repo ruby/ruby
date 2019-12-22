@@ -2,7 +2,12 @@ verbose = $VERBOSE
 $VERBOSE = true
 begin
 
-require 'minitest/autorun'
+require 'test/unit'
+begin
+  require_relative './lib/core_assertions'
+  Test::Unit::TestCase.include Test::Unit::CoreAssertions
+rescue LoadError
+end
 require 'racc/static'
 require 'fileutils'
 require 'tempfile'
@@ -71,8 +76,9 @@ module Racc
     end
 
     def assert_exec(asset)
+      lib_path = File.expand_path("../../lib", __FILE__)
       file = File.basename(asset, '.y')
-      ruby("#{@TAB_DIR}/#{file}")
+      ruby "-I#{lib_path}", "#{@TAB_DIR}/#{file}"
     end
 
     def strip_version(source)
@@ -80,6 +86,9 @@ module Racc
     end
 
     def assert_output_unchanged(asset)
+      # racc generates the difference results in GitHub Actions
+      omit unless RUBY_PLATFORM =~ /darwin/
+
       file = File.basename(asset, '.y')
 
       expected = File.read("#{REGRESS_DIR}/#{file}")
@@ -91,7 +100,8 @@ module Racc
     end
 
     def racc(*arg, **opt)
-      ruby "-S", RACC, *arg, **opt
+      lib_path = File.expand_path("../../lib", __FILE__)
+      ruby "-I#{lib_path}", "-S", RACC, *arg, **opt
     end
 
     def ruby(*arg, **opt)

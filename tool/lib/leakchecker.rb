@@ -16,14 +16,9 @@ class LeakChecker
       check_tempfile_leak(test_name),
       check_env(test_name),
       check_encodings(test_name),
-      check_safe(test_name),
       check_verbose(test_name),
     ]
     GC.start if leaks.any?
-  end
-
-  def check_safe test_name
-    puts "#{test_name}: $SAFE == #{$SAFE}" unless $SAFE == 0
   end
 
   def check_verbose test_name
@@ -75,9 +70,13 @@ class LeakChecker
       }
       fd_leaked.each {|fd|
         str = ''.dup
+        pos = nil
         if h[fd]
           str << ' :'
           h[fd].map {|io, autoclose, inspect|
+            if ENV["LEAK_CHECKER_TRACE_OBJECT_ALLOCATION"]
+              pos = "#{ObjectSpace.allocation_sourcefile(io)}:#{ObjectSpace.allocation_sourceline(io)}"
+            end
             s = ' ' + inspect
             s << "(not-autoclose)" if !autoclose
             s
@@ -86,6 +85,7 @@ class LeakChecker
           }
         end
         puts "Leaked file descriptor: #{test_name}: #{fd}#{str}"
+        puts "  The IO was created at #{pos}" if pos
       }
       #system("lsof -p #$$") if !fd_leaked.empty?
       h.each {|fd, list|

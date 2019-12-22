@@ -61,14 +61,16 @@ describe "String#tr" do
     StringSpecs::MyString.new("hello").tr("e", "a").should be_an_instance_of(StringSpecs::MyString)
   end
 
-  it "taints the result when self is tainted" do
-    ["h", "hello"].each do |str|
-      tainted_str = str.dup.taint
+  ruby_version_is ''...'2.7' do
+    it "taints the result when self is tainted" do
+      ["h", "hello"].each do |str|
+        tainted_str = str.dup.taint
 
-      tainted_str.tr("e", "a").tainted?.should == true
+        tainted_str.tr("e", "a").tainted?.should == true
 
-      str.tr("e".taint, "a").tainted?.should == false
-      str.tr("e", "a".taint).tainted?.should == false
+        str.tr("e".taint, "a").tainted?.should == false
+        str.tr("e", "a".taint).tainted?.should == false
+      end
     end
   end
 

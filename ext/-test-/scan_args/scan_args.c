@@ -250,6 +250,33 @@ scan_args_lead_opt_var_trail_hash(int argc, VALUE *argv, VALUE self)
     return rb_ary_new_from_values(numberof(args), args);
 }
 
+static VALUE
+scan_args_k_lead_opt_hash(int argc, VALUE *argv, VALUE self)
+{
+    VALUE args[4];
+    int n = rb_scan_args_kw(RB_SCAN_ARGS_KEYWORDS, argc, argv, "11:", args+1, args+2, args+3);
+    args[0] = INT2NUM(n);
+    return rb_ary_new_from_values(numberof(args), args);
+}
+
+static VALUE
+scan_args_e_lead_opt_hash(int argc, VALUE *argv, VALUE self)
+{
+    VALUE args[4];
+    int n = rb_scan_args_kw(RB_SCAN_ARGS_EMPTY_KEYWORDS, argc, argv, "11:", args+1, args+2, args+3);
+    args[0] = INT2NUM(n);
+    return rb_ary_new_from_values(numberof(args), args);
+}
+
+static VALUE
+scan_args_n_lead_opt_hash(int argc, VALUE *argv, VALUE self)
+{
+    VALUE args[4];
+    int n = rb_scan_args_kw(RB_SCAN_ARGS_LAST_HASH_KEYWORDS, argc, argv, "11:", args+1, args+2, args+3);
+    args[0] = INT2NUM(n);
+    return rb_ary_new_from_values(numberof(args), args);
+}
+
 void
 Init_scan_args(void)
 {
@@ -282,5 +309,7 @@ Init_scan_args(void)
     rb_define_singleton_method(module, "lead_var_trail_hash", scan_args_lead_var_trail_hash, -1);
     rb_define_singleton_method(module, "opt_var_trail_hash", scan_args_opt_var_trail_hash, -1);
     rb_define_singleton_method(module, "lead_opt_var_trail_hash", scan_args_lead_opt_var_trail_hash, -1);
+    rb_define_singleton_method(module, "k_lead_opt_hash", scan_args_k_lead_opt_hash, -1);
+    rb_define_singleton_method(module, "e_lead_opt_hash", scan_args_e_lead_opt_hash, -1);
+    rb_define_singleton_method(module, "n_lead_opt_hash", scan_args_n_lead_opt_hash, -1);
 }
-

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require File.expand_path("../endpoint_marshal_fail", __FILE__)
+require_relative "endpoint_marshal_fail"
 
 Artifice.deactivate
 

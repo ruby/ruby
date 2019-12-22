@@ -62,7 +62,7 @@ File.foreach "config.status" do |line|
     when /^(?:X|(?:MINI|RUN|(?:HAVE_)?BASE|BOOTSTRAP|BTEST)RUBY(?:_COMMAND)?$)/; next
     when /^INSTALLDOC|TARGET$/; next
     when /^DTRACE/; next
-    when /^MJIT_SUPPORT/; # pass
+    when /^MJIT_(CC|SUPPORT)$/; # pass
     when /^MJIT_/; next
     when /^(?:MAJOR|MINOR|TEENY)$/; vars[name] = val; next
     when /^LIBRUBY_D?LD/; next
@@ -268,7 +268,7 @@ print <<EOS if $unicode_emoji_version
   CONFIG["UNICODE_EMOJI_VERSION"] = #{$unicode_emoji_version.dump}
 EOS
 print <<EOS if /darwin/ =~ arch
-  CONFIG["SDKROOT"] = ENV["SDKROOT"] || "" # don't run xcrun everytime, usually useless.
+  CONFIG["SDKROOT"] = ENV["SDKROOT"] || "" # don't run xcrun every time, usually useless.
 EOS
 print <<EOS
   CONFIG["archdir"] = "$(rubyarchdir)"

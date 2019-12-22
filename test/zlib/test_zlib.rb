@@ -488,6 +488,17 @@ if defined? Zlib
       }
     end
 
+    def test_zero_mtime
+      sio = StringIO.new
+      gz = Zlib::GzipWriter.new(sio)
+      gz.mtime = 0
+      gz.write("Hi")
+      gz.close
+      reading_io = StringIO.new(sio.string)
+      reader = Zlib::GzipReader.new(reading_io)
+      assert_equal(0, reader.mtime.to_i)
+    end
+
     def test_level
       Tempfile.create("test_zlib_gzip_file_level") {|t|
         t.close
@@ -1103,7 +1114,6 @@ if defined? Zlib
   class TestZlib < Test::Unit::TestCase
     def test_version
       assert_instance_of(String, Zlib.zlib_version)
-      assert(Zlib.zlib_version.tainted?)
     end
 
     def test_adler32

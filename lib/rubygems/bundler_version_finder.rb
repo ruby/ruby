@@ -45,6 +45,11 @@ To install the missing version, run `gem install bundler:#{vr.first}`
     return unless bundler_version = self.bundler_version
 
     specs.reject! { |spec| spec.version.segments.first != bundler_version.segments.first }
+
+    exact_match_index = specs.find_index { |spec| spec.version == bundler_version }
+    return unless exact_match_index
+
+    specs.unshift(specs.delete_at(exact_match_index))
   end
 
   def self.bundle_update_bundler_version
@@ -78,7 +83,7 @@ To install the missing version, run `gem install bundler:#{vr.first}`
     gemfile = ENV["BUNDLE_GEMFILE"]
     gemfile = nil if gemfile && gemfile.empty?
     Gem::Util.traverse_parents Dir.pwd do |directory|
-      next unless gemfile = Gem::GEM_DEP_FILES.find { |f| File.file?(f.untaint) }
+      next unless gemfile = Gem::GEM_DEP_FILES.find { |f| File.file?(f.tap(&Gem::UNTAINT)) }
 
       gemfile = File.join directory, gemfile
       break
@@ -89,7 +94,7 @@ To install the missing version, run `gem install bundler:#{vr.first}`
     lockfile = case gemfile
                when "gems.rb" then "gems.locked"
                else "#{gemfile}.lock"
-               end.dup.untaint
+               end.dup.tap(&Gem::UNTAINT)
 
     return unless File.file?(lockfile)
 

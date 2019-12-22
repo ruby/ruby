@@ -147,6 +147,7 @@ extern int ruby_w32_rtc_error;
 UINT ruby_w32_codepage[2];
 #endif
 extern int ruby_rgengc_debug;
+extern int ruby_on_ci;
 
 int
 ruby_env_debug_option(const char *str, int len, void *arg)
@@ -192,6 +193,7 @@ ruby_env_debug_option(const char *str, int len, void *arg)
 
     SET_WHEN("gc_stress", *ruby_initial_gc_stress_ptr, Qtrue);
     SET_WHEN("core", ruby_enable_coredump, 1);
+    SET_WHEN("ci", ruby_on_ci, 1);
     if (NAME_MATCH_VALUE("rgengc")) {
 	if (!len) ruby_rgengc_debug = 1;
 	else SET_UINT_LIST("rgengc", &ruby_rgengc_debug, 1);

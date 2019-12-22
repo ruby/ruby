@@ -190,8 +190,8 @@ class Gem::Specification < Gem::BasicSpecification
 
   # Sentinel object to represent "not found" stubs
   NOT_FOUND = Struct.new(:to_spec, :this).new # :nodoc:
-  @@spec_with_requirable_file          = {}
-  @@active_stub_with_requirable_file   = {}
+  @@spec_with_requirable_file = {}
+  @@active_stub_with_requirable_file = {}
 
   ######################################################################
   # :section: Required gemspec attributes
@@ -763,7 +763,7 @@ class Gem::Specification < Gem::BasicSpecification
   def self.each_gemspec(dirs) # :nodoc:
     dirs.each do |dir|
       Gem::Util.glob_files_in_dir("*.gemspec", dir).each do |path|
-        yield path.untaint
+        yield path.tap(&Gem::UNTAINT)
       end
     end
   end
@@ -930,7 +930,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   def self.dirs
     @@dirs ||= Gem.path.collect do |dir|
-      File.join dir.dup.untaint, "specifications"
+      File.join dir.dup.tap(&Gem::UNTAINT), "specifications"
     end
   end
 
@@ -1112,12 +1112,12 @@ class Gem::Specification < Gem::BasicSpecification
     _spec = LOAD_CACHE_MUTEX.synchronize { LOAD_CACHE[file] }
     return _spec if _spec
 
-    file = file.dup.untaint
+    file = file.dup.tap(&Gem::UNTAINT)
     return unless File.file?(file)
 
     code = File.read file, :mode => 'r:UTF-8:-'
 
-    code.untaint
+    code.tap(&Gem::UNTAINT)
 
     begin
       _spec = eval code, binding, file
@@ -1230,8 +1230,8 @@ class Gem::Specification < Gem::BasicSpecification
     @@all = nil
     @@stubs = nil
     @@stubs_by_name = {}
-    @@spec_with_requirable_file          = {}
-    @@active_stub_with_requirable_file   = {}
+    @@spec_with_requirable_file = {}
+    @@active_stub_with_requirable_file = {}
     _clear_load_cache
     unresolved = unresolved_deps
     unless unresolved.empty?
@@ -1667,7 +1667,7 @@ class Gem::Specification < Gem::BasicSpecification
   # https://reproducible-builds.org/specs/source-date-epoch/
 
   def date
-    @date ||= ENV["SOURCE_DATE_EPOCH"] ? Time.utc(*Time.at(ENV["SOURCE_DATE_EPOCH"].to_i).utc.to_a[3..5].reverse) : TODAY
+    @date ||= Time.utc(*Gem.source_date_epoch.utc.to_a[3..5].reverse)
   end
 
   DateLike = Object.new # :nodoc:
@@ -2293,18 +2293,18 @@ class Gem::Specification < Gem::BasicSpecification
 
   def ruby_code(obj)
     case obj
-    when String            then obj.dump + ".freeze"
-    when Array             then '[' + obj.map { |x| ruby_code x }.join(", ") + ']'
-    when Hash              then
+    when String             then obj.dump + ".freeze"
+    when Array              then '[' + obj.map { |x| ruby_code x }.join(", ") + ']'
+    when Hash               then
       seg = obj.keys.sort.map { |k| "#{k.to_s.dump} => #{obj[k].to_s.dump}" }
       "{ #{seg.join(', ')} }"
-    when Gem::Version      then obj.to_s.dump
-    when DateLike          then obj.strftime('%Y-%m-%d').dump
-    when Time              then obj.strftime('%Y-%m-%d').dump
-    when Numeric           then obj.inspect
-    when true, false, nil  then obj.inspect
-    when Gem::Platform     then "Gem::Platform.new(#{obj.to_a.inspect})"
-    when Gem::Requirement  then
+    when Gem::Version       then obj.to_s.dump
+    when DateLike           then obj.strftime('%Y-%m-%d').dump
+    when Time               then obj.strftime('%Y-%m-%d').dump
+    when Numeric            then obj.inspect
+    when true, false, nil   then obj.inspect
+    when Gem::Platform      then "Gem::Platform.new(#{obj.to_a.inspect})"
+    when Gem::Requirement   then
       list = obj.as_list
       "Gem::Requirement.new(#{ruby_code(list.size == 1 ? obj.to_s : list)})"
     else raise Gem::Exception, "ruby_code case not handled: #{obj.class}"
@@ -2423,6 +2423,7 @@ class Gem::Specification < Gem::BasicSpecification
   # still have their default values are omitted.
 
   def to_ruby
+    require 'openssl'
     mark_version
     result = []
     result << "# -*- encoding: utf-8 -*-"
@@ -2461,9 +2462,8 @@ class Gem::Specification < Gem::BasicSpecification
     @@attributes.each do |attr_name|
       next if handled.include? attr_name
       current_value = self.send(attr_name)
-      if current_value != default_value(attr_name) or
-         self.class.required_attribute? attr_name
-        result << "  s.#{attr_name} = #{ruby_code current_value}"
+      if current_value != default_value(attr_name) || self.class.required_attribute?(attr_name)
+        result << "  s.#{attr_name} = #{ruby_code current_value}" unless current_value.is_a?(OpenSSL::PKey::RSA)
       end
     end
 
@@ -2642,9 +2642,9 @@ class Gem::Specification < Gem::BasicSpecification
       case ivar
       when "date"
         # Force Date to go through the extra coerce logic in date=
-        self.date = val.untaint
+        self.date = val.tap(&Gem::UNTAINT)
       else
-        instance_variable_set "@#{ivar}", val.untaint
+        instance_variable_set "@#{ivar}", val.tap(&Gem::UNTAINT)
       end
     end
 

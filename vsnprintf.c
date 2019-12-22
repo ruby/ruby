@@ -823,7 +823,7 @@ reswitch:	switch (ch) {
 	(PRI_EXTRA_MARK_LEN < 1 || \
 	 (*(s) == PRI_EXTRA_MARK[0] && \
 	  (PRI_EXTRA_MARK_LEN == 1 || \
-	   strncmp((s)+1, PRI_EXTRA_MARK+1, \
+	   strncmp((s)+1, &PRI_EXTRA_MARK[1], \
 		   PRI_EXTRA_MARK_LEN-1) == 0)))
 #else
 # define PRI_EXTRA_MARK_LEN 0

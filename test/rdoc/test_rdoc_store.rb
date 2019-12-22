@@ -172,7 +172,7 @@ class TestRDocStore < XrefTestCase
   end
 
   def test_all_files
-    assert_equal %w[xref_data.rb],
+    assert_equal %w[EXAMPLE.md xref_data.rb],
                  @store.all_files.map { |m| m.full_name }.sort
   end
 

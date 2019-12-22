@@ -322,7 +322,7 @@ module Net # :nodoc:
 
 
   class InternetMessageIO < BufferedIO   #:nodoc: internal use only
-    def initialize(*)
+    def initialize(*, **)
       super
       @wbuf = nil
     end

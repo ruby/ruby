@@ -373,9 +373,8 @@ load_transcoder_entry(transcoder_entry_t *entry)
         memcpy(path, transcoder_lib_prefix, sizeof(transcoder_lib_prefix) - 1);
         memcpy(path + sizeof(transcoder_lib_prefix) - 1, lib, len);
         rb_str_set_len(fn, total_len);
-        FL_UNSET(fn, FL_TAINT);
         OBJ_FREEZE(fn);
-        rb_require_safe(fn, rb_safe_level());
+        rb_require_string(fn);
     }
 
     if (entry->transcoder)
@@ -1841,7 +1840,6 @@ rb_econv_substr_append(rb_econv_t *ec, VALUE src, long off, long len, VALUE dst,
     src = rb_str_new_frozen(src);
     dst = rb_econv_append(ec, RSTRING_PTR(src) + off, len, dst, flags);
     RB_GC_GUARD(src);
-    OBJ_INFECT_RAW(dst, src);
     return dst;
 }
 
@@ -3780,7 +3778,6 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     res = rb_econv_convert(ec, &ip, is, &op, os, flags);
     rb_str_set_len(output, op-(unsigned char *)RSTRING_PTR(output));
     if (!NIL_P(input)) {
-        OBJ_INFECT_RAW(output, input);
         rb_str_drop_bytes(input, ip - (unsigned char *)RSTRING_PTR(input));
     }
 

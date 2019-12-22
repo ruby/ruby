@@ -9,7 +9,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = "3.1.0.pre1".freeze
+  VERSION = "3.1.2".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -18,7 +18,6 @@ require 'rubygems/compatibility'
 require 'rubygems/defaults'
 require 'rubygems/deprecate'
 require 'rubygems/errors'
-require 'rubygems/path_support'
 
 ##
 # RubyGems is the Ruby standard for publishing and managing third party
@@ -116,6 +115,11 @@ require 'rubygems/path_support'
 module Gem
   RUBYGEMS_DIR = File.dirname File.expand_path(__FILE__)
 
+  # Taint support is deprecated in Ruby 2.7.
+  # This allows switching ".untaint" to ".tap(&Gem::UNTAINT)",
+  # to avoid deprecation warnings in Ruby 2.7.
+  UNTAINT = RUBY_VERSION < '2.7' ? :untaint.to_sym : proc{}
+
   ##
   # An Array of Regexps that match windows Ruby platforms.
 
@@ -156,24 +160,14 @@ module Gem
   ].freeze
 
   ##
-  # Exception classes used in a Gem.read_binary +rescue+ statement. Not all of
-  # these are defined in Ruby 1.8.7, hence the need for this convoluted setup.
+  # Exception classes used in a Gem.read_binary +rescue+ statement
 
-  READ_BINARY_ERRORS = begin
-    read_binary_errors = [Errno::EACCES, Errno::EROFS, Errno::ENOSYS]
-    read_binary_errors << Errno::ENOTSUP if Errno.const_defined?(:ENOTSUP)
-    read_binary_errors
-  end.freeze
+  READ_BINARY_ERRORS = [Errno::EACCES, Errno::EROFS, Errno::ENOSYS, Errno::ENOTSUP].freeze
 
   ##
-  # Exception classes used in Gem.write_binary +rescue+ statement. Not all of
-  # these are defined in Ruby 1.8.7.
+  # Exception classes used in Gem.write_binary +rescue+ statement
 
-  WRITE_BINARY_ERRORS = begin
-    write_binary_errors = [Errno::ENOSYS]
-    write_binary_errors << Errno::ENOTSUP if Errno.const_defined?(:ENOTSUP)
-    write_binary_errors
-  end.freeze
+  WRITE_BINARY_ERRORS = [Errno::ENOSYS, Errno::ENOTSUP].freeze
 
   @@win_platform = nil
 
@@ -469,7 +463,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     subdirs.each do |name|
       subdir = File.join dir, name
       next if File.exist? subdir
-      FileUtils.mkdir_p subdir, options rescue nil
+      FileUtils.mkdir_p subdir, **options rescue nil
     end
   ensure
     File.umask old_umask
@@ -521,7 +515,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     glob_with_suffixes = "#{glob}#{Gem.suffix_pattern}"
     $LOAD_PATH.map do |load_path|
       Gem::Util.glob_files_in_dir(glob_with_suffixes, load_path)
-    end.flatten.select { |file| File.file? file.untaint }
+    end.flatten.select { |file| File.file? file.tap(&Gem::UNTAINT) }
   end
 
   ##
@@ -1024,6 +1018,10 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     @suffix_pattern ||= "{#{suffixes.join(',')}}"
   end
 
+  def self.suffix_regexp
+    @suffix_regexp ||= /#{Regexp.union(suffixes)}\z/
+  end
+
   ##
   # Suffixes for require-able paths.
 
@@ -1079,7 +1077,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # The home directory for the user.
 
   def self.user_home
-    @user_home ||= find_home.untaint
+    @user_home ||= find_home.tap(&Gem::UNTAINT)
   end
 
   ##
@@ -1146,7 +1144,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       globbed = Gem::Util.glob_files_in_dir(glob, load_path)
 
       globbed.each do |load_path_file|
-        files << load_path_file if File.file?(load_path_file.untaint)
+        files << load_path_file if File.file?(load_path_file.tap(&Gem::UNTAINT))
       end
     end
 
@@ -1192,7 +1190,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       end
     end
 
-    path.untaint
+    path.tap(&Gem::UNTAINT)
 
     unless File.file? path
       return unless raise_exception
@@ -1205,13 +1203,12 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     Gem::DefaultUserInteraction.use_ui(ui) do
       require "bundler"
       begin
-        @gemdeps = Bundler.setup
-      ensure
-        if Gem::DefaultUserInteraction.ui.is_a?(Gem::SilentUI)
-          Gem::DefaultUserInteraction.ui.close
+        Bundler.ui.silence do
+          @gemdeps = Bundler.setup
         end
+      ensure
+        Gem::DefaultUserInteraction.ui.close
       end
-      Bundler.ui = nil
       @gemdeps.requested_specs.map(&:to_spec).sort_by(&:name)
     end
 
@@ -1236,6 +1233,23 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     extend Gem::Deprecate
     deprecate :detect_gemdeps, "Gem.use_gemdeps", 2018, 12
 
+  end
+
+  ##
+  # The SOURCE_DATE_EPOCH environment variable (or, if that's not set, the current time), converted to Time object.
+  # This is used throughout RubyGems for enabling reproducible builds.
+  #
+  # If it is not set as an environment variable already, this also sets it.
+  #
+  # Details on SOURCE_DATE_EPOCH:
+  # https://reproducible-builds.org/specs/source-date-epoch/
+
+  def self.source_date_epoch
+    if ENV["SOURCE_DATE_EPOCH"].nil? || ENV["SOURCE_DATE_EPOCH"].empty?
+      ENV["SOURCE_DATE_EPOCH"] = Time.now.to_i.to_s
+    end
+
+    Time.at(ENV["SOURCE_DATE_EPOCH"].to_i).utc.freeze
   end
 
   # FIX: Almost everywhere else we use the `def self.` way of defining class
@@ -1274,8 +1288,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
         prefix_pattern = /^(#{prefix_group})/
       end
 
-      suffix_pattern = /#{Regexp.union(Gem.suffixes)}\z/
-
       spec.files.each do |file|
         if new_format
           file = file.sub(prefix_pattern, "")
@@ -1283,7 +1295,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
         end
 
         @path_to_default_spec_map[file] = spec
-        @path_to_default_spec_map[file.sub(suffix_pattern, "")] = spec
+        @path_to_default_spec_map[file.sub(suffix_regexp, "")] = spec
       end
     end
 
@@ -1291,17 +1303,8 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     # Find a Gem::Specification of default gem from +path+
 
     def find_unresolved_default_spec(path)
-      @path_to_default_spec_map[path]
-    end
-
-    ##
-    # Remove needless Gem::Specification of default gem from
-    # unresolved default gem list
-
-    def remove_unresolved_default_spec(spec)
-      spec.files.each do |file|
-        @path_to_default_spec_map.delete(file)
-      end
+      default_spec = @path_to_default_spec_map[path]
+      return default_spec if default_spec && loaded_specs[default_spec.name] != default_spec
     end
 
     ##

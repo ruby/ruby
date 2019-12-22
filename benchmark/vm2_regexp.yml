@@ -3,4 +3,6 @@ prelude: |
 benchmark:
   vm2_regexp: |
     /hoge/ =~ str
+  vm2_regexp_invert: |
+    str =~ /hoge/
 loop_count: 6000000

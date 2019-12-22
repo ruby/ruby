@@ -22,7 +22,7 @@ RSpec.describe Bundler, "friendly errors" do
         gem "rack"
       G
 
-      bundle :install, :env => { "DEBUG" => true }
+      bundle :install, :env => { "DEBUG" => "true" }
 
       expect(err).to include("Failed to load #{home(".gemrc")}")
       expect(exitstatus).to eq(0) if exitstatus
@@ -94,7 +94,7 @@ RSpec.describe Bundler, "friendly errors" do
       end
 
       it "writes to Bundler.ui.trace" do
-        expect(Bundler.ui).to receive(:trace).with(orig_error, nil, true)
+        expect(Bundler.ui).to receive(:trace).with(orig_error)
         Bundler::FriendlyErrors.log_error(error)
       end
     end

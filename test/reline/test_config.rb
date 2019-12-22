@@ -28,6 +28,14 @@ class Reline::Config::Test < Reline::TestCase
     assert_equal :audible, @config.instance_variable_get(:@bell_style)
   end
 
+  def test_read_lines_with_variable
+    @config.read_lines(<<~LINES.lines)
+      set disable-completion on
+    LINES
+
+    assert_equal true, @config.instance_variable_get(:@disable_completion)
+  end
+
   def test_comment_line
     @config.read_lines([" #a: error\n"])
     assert_not_include @config.key_bindings, nil

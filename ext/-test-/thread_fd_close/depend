@@ -4,12 +4,8 @@ thread_fd_close.o: $(arch_hdrdir)/ruby/config.h
 thread_fd_close.o: $(hdrdir)/ruby/assert.h
 thread_fd_close.o: $(hdrdir)/ruby/backward.h
 thread_fd_close.o: $(hdrdir)/ruby/defines.h
-thread_fd_close.o: $(hdrdir)/ruby/encoding.h
 thread_fd_close.o: $(hdrdir)/ruby/intern.h
-thread_fd_close.o: $(hdrdir)/ruby/io.h
 thread_fd_close.o: $(hdrdir)/ruby/missing.h
-thread_fd_close.o: $(hdrdir)/ruby/onigmo.h
-thread_fd_close.o: $(hdrdir)/ruby/oniguruma.h
 thread_fd_close.o: $(hdrdir)/ruby/ruby.h
 thread_fd_close.o: $(hdrdir)/ruby/st.h
 thread_fd_close.o: $(hdrdir)/ruby/subst.h

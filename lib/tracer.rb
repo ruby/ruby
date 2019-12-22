@@ -142,11 +142,13 @@ class Tracer
     stdout.print "Trace off\n" if Tracer.verbose?
   end
 
-  def add_filter(&p) # :nodoc:
+  def add_filter(p = nil, &b) # :nodoc:
+    p ||= b
     @filters.push p
   end
 
-  def set_get_line_procs(file, &p) # :nodoc:
+  def set_get_line_procs(file, p = nil, &b) # :nodoc:
+    p ||= b
     @get_line_procs[file] = p
   end
 
@@ -239,7 +241,7 @@ class Tracer
   end
 
   ##
-  # Register an event handler <code>p</code> which is called everytime a line
+  # Register an event handler <code>p</code> which is called every time a line
   # in +file_name+ is executed.
   #
   # Example:
@@ -248,7 +250,8 @@ class Tracer
   #     puts "line number executed is #{line}"
   #   })
 
-  def Tracer.set_get_line_procs(file_name, &p)
+  def Tracer.set_get_line_procs(file_name, p = nil, &b)
+    p ||= b
     Single.set_get_line_procs(file_name, p)
   end
 
@@ -261,7 +264,8 @@ class Tracer
   #     "Kernel" == klass.to_s
   #   end
 
-  def Tracer.add_filter(&p)
+  def Tracer.add_filter(p = nil, &b)
+    p ||= b
     Single.add_filter(p)
   end
 end

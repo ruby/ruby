@@ -75,16 +75,13 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(-Wx -e) + ['p $-W'], "", %w(1), [])
     assert_in_out_err(%w(-W -e) + ['p $-W'], "", %w(2), [])
     assert_in_out_err(%w(-w -W0 -e) + ['p $-W'], "", %w(0), [])
+    assert_in_out_err(%w(-W:deprecated -e) + ['p Warning[:deprecated]'], "", %w(true), [])
+    assert_in_out_err(%w(-W:no-deprecated -e) + ['p Warning[:deprecated]'], "", %w(false), [])
+    assert_in_out_err(%w(-W:experimental -e) + ['p Warning[:experimental]'], "", %w(true), [])
+    assert_in_out_err(%w(-W:no-experimental -e) + ['p Warning[:experimental]'], "", %w(false), [])
+    assert_in_out_err(%w(-W:qux), "", [], /unknown warning category: `qux'/)
   ensure
     ENV['RUBYOPT'] = save_rubyopt
-  end
-
-  def test_safe_level
-    assert_in_out_err(%w(-T -e) + [""], "", [],
-                      /no -e allowed in tainted mode \(SecurityError\)/)
-
-    assert_in_out_err(%w(-T4 -S foo.rb), "", [],
-                      /no -S allowed in tainted mode \(SecurityError\)/)
   end
 
   def test_debug
@@ -287,7 +284,7 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(--encoding test_ruby_test_rubyoptions_foobarbazqux), "", [],
                       /unknown encoding name - test_ruby_test_rubyoptions_foobarbazqux \(RuntimeError\)/)
 
-    if /mswin|mingw|aix/ =~ RUBY_PLATFORM &&
+    if /mswin|mingw|aix|android/ =~ RUBY_PLATFORM &&
       (str = "\u3042".force_encoding(Encoding.find("locale"))).valid_encoding?
       # This result depends on locale because LANG=C doesn't affect locale
       # on Windows.
@@ -326,12 +323,6 @@ class TestRubyOptions < Test::Unit::TestCase
     ENV['RUBYOPT'] = '-e "p 1"'
     assert_in_out_err([], "", [], /invalid switch in RUBYOPT: -e \(RuntimeError\)/)
 
-    ENV['RUBYOPT'] = '-T1'
-    assert_in_out_err(["--disable-gems"], "", [], /no program input from stdin allowed in tainted mode \(SecurityError\)/)
-
-    ENV['RUBYOPT'] = '-T4'
-    assert_in_out_err(["--disable-gems"], "", [], /no program input from stdin allowed in tainted mode \(SecurityError\)/)
-
     ENV['RUBYOPT'] = '-Eus-ascii -KN'
     assert_in_out_err(%w(-Eutf-8 -KU), "p '\u3042'") do |r, e|
       assert_equal("\"\u3042\"", r.join.force_encoding(Encoding::UTF_8))
@@ -342,6 +333,16 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(), "p $VERBOSE", ["true"])
     assert_in_out_err(%w(-W1), "p $VERBOSE", ["false"])
     assert_in_out_err(%w(-W0), "p $VERBOSE", ["nil"])
+    ENV['RUBYOPT'] = '-W:deprecated'
+    assert_in_out_err(%w(), "p Warning[:deprecated]", ["true"])
+    ENV['RUBYOPT'] = '-W:no-deprecated'
+    assert_in_out_err(%w(), "p Warning[:deprecated]", ["false"])
+    ENV['RUBYOPT'] = '-W:experimental'
+    assert_in_out_err(%w(), "p Warning[:experimental]", ["true"])
+    ENV['RUBYOPT'] = '-W:no-experimental'
+    assert_in_out_err(%w(), "p Warning[:experimental]", ["false"])
+    ENV['RUBYOPT'] = '-W:qux'
+    assert_in_out_err(%w(), "", [], /unknown warning category: `qux'/)
   ensure
     if rubyopt_orig
       ENV['RUBYOPT'] = rubyopt_orig
@@ -688,7 +689,7 @@ class TestRubyOptions < Test::Unit::TestCase
       %r(
         (?:--\s(?:.+\n)*\n)?
         --\sControl\sframe\sinformation\s-+\n
-        (?:c:.*\n)*
+        (?:(?:c:.*\n)|(?:^\s+.+\n))*
         \n
       )x,
       %r(
@@ -1057,11 +1058,12 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err([IO::NULL], success: true)
   end
 
-  def test_argv_tainted
-    assert_separately(%w[- arg], "#{<<~"begin;"}\n#{<<~'end;'}")
-    begin;
-      assert_predicate(ARGV[0], :tainted?, '[ruby-dev:50596] [Bug #14941]')
-    end;
+  def test_jit_debug
+    # mswin uses prebuilt precompiled header. Thus it does not show a pch compilation log to check "-O0 -O1".
+    if JITSupport.supported? && !RUBY_PLATFORM.match?(/mswin/)
+      env = { 'MJIT_SEARCH_BUILD_DIR' => 'true' }
+      assert_in_out_err([env, "--jit-debug=-O0 -O1", "--jit-verbose=2", "" ], "", [], /-O0 -O1/)
+    end
   end
 
   private

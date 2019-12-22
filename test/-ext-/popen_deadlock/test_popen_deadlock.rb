@@ -26,7 +26,7 @@ class TestPopenDeadlock < Test::Unit::TestCase
   end
   private :assert_popen_without_deadlock
 
-  # 10 test methods are defined for showing progess reports
+  # 10 test methods are defined for showing progress reports
   10.times do |i|
     define_method("test_popen_without_deadlock_#{i}") {
       assert_popen_without_deadlock

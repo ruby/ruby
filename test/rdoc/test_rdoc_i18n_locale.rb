@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'minitest_helper'
+require_relative 'helper'
 
 class TestRDocI18nLocale < RDoc::TestCase
 
@@ -23,16 +23,16 @@ class TestRDocI18nLocale < RDoc::TestCase
   end
 
   def test_load_nonexistent_po
-    File.stub(:exist?, false) do
-      refute @locale.load('nonexsitent-locale')
-    end
+    locale = File.join(@locale_dir, 'nonexsitent-locale')
+    refute_file locale
+    refute @locale.load(locale)
   end
 
   def test_load_existent_po
     begin
       require 'gettext/po_parser'
     rescue LoadError
-      skip 'gettext gem is not found'
+      omit 'gettext gem is not found'
     end
 
     fr_locale_dir = File.join @locale_dir, 'fr'

@@ -13,7 +13,7 @@ module Bundler
       @cmd = args.shift
       @args = args
 
-      if Bundler.current_ruby.ruby_2? && !Bundler.current_ruby.jruby?
+      if !Bundler.current_ruby.jruby?
         @args << { :close_others => !options.keep_file_descriptors? }
       elsif options.keep_file_descriptors?
         Bundler.ui.warn "Ruby version #{RUBY_VERSION} defaults to keeping non-standard file descriptors on Kernel#exec."
@@ -43,15 +43,11 @@ module Bundler
     end
 
     def kernel_exec(*args)
-      ui = Bundler.ui
-      Bundler.ui = nil
       Kernel.exec(*args)
     rescue Errno::EACCES, Errno::ENOEXEC
-      Bundler.ui = ui
       Bundler.ui.error "bundler: not executable: #{cmd}"
       exit 126
     rescue Errno::ENOENT
-      Bundler.ui = ui
       Bundler.ui.error "bundler: command not found: #{cmd}"
       Bundler.ui.warn "Install missing gem executables with `bundle install`"
       exit 127
@@ -62,15 +58,12 @@ module Bundler
       ARGV.replace(args)
       $0 = file
       Process.setproctitle(process_title(file, args)) if Process.respond_to?(:setproctitle)
-      ui = Bundler.ui
-      Bundler.ui = nil
       require_relative "../setup"
       TRAPPED_SIGNALS.each {|s| trap(s, "DEFAULT") }
       Kernel.load(file)
     rescue SystemExit, SignalException
       raise
     rescue Exception => e # rubocop:disable Lint/RescueException
-      Bundler.ui = ui
       Bundler.ui.error "bundler: failed to load command: #{cmd} (#{file})"
       backtrace = e.backtrace ? e.backtrace.take_while {|bt| !bt.start_with?(__FILE__) } : []
       abort "#{e.class}: #{e.message}\n  #{backtrace.join("\n  ")}"

@@ -14,14 +14,16 @@ describe "String#[]= with Fixnum index" do
     a.should == "bamelo"
   end
 
-  it "taints self if other_str is tainted" do
-    a = "hello"
-    a[0] = "".taint
-    a.tainted?.should == true
+  ruby_version_is ''...'2.7' do
+    it "taints self if other_str is tainted" do
+      a = "hello"
+      a[0] = "".taint
+      a.tainted?.should == true
 
-    a = "hello"
-    a[0] = "x".taint
-    a.tainted?.should == true
+      a = "hello"
+      a[0] = "x".taint
+      a.tainted?.should == true
+    end
   end
 
   it "raises an IndexError without changing self if idx is outside of self" do
@@ -485,14 +487,16 @@ describe "String#[]= with Fixnum index, count" do
     a.should == "hellobob"
   end
 
-  it "taints self if other_str is tainted" do
-    a = "hello"
-    a[0, 0] = "".taint
-    a.tainted?.should == true
+  ruby_version_is ''...'2.7' do
+    it "taints self if other_str is tainted" do
+      a = "hello"
+      a[0, 0] = "".taint
+      a.tainted?.should == true
 
-    a = "hello"
-    a[1, 4] = "x".taint
-    a.tainted?.should == true
+      a = "hello"
+      a[1, 4] = "x".taint
+      a.tainted?.should == true
+    end
   end
 
   it "calls #to_int to convert the index and count objects" do

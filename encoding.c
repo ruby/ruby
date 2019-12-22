@@ -266,7 +266,7 @@ enc_table_expand(int newsize)
 
     if (enc_table.size >= newsize) return newsize;
     newsize = (newsize + 7) / 8 * 8;
-    ent = xrealloc(enc_table.list, sizeof(*enc_table.list) * newsize);
+    ent = REALLOC_N(enc_table.list, struct rb_encoding_entry, newsize);
     memset(ent + enc_table.size, 0, sizeof(*ent)*(newsize - enc_table.size));
     enc_table.list = ent;
     enc_table.size = newsize;
@@ -649,12 +649,11 @@ load_encoding(const char *name)
 	else if (ISUPPER(*s)) *s = (char)TOLOWER(*s);
 	++s;
     }
-    FL_UNSET(enclib, FL_TAINT);
     enclib = rb_fstring(enclib);
     ruby_verbose = Qfalse;
     ruby_debug = Qfalse;
     errinfo = rb_errinfo();
-    loaded = rb_require_internal(enclib, rb_safe_level());
+    loaded = rb_require_internal(enclib);
     ruby_verbose = verbose;
     ruby_debug = debug;
     rb_set_errinfo(errinfo);
@@ -1175,7 +1174,7 @@ enc_names_i(st_data_t name, st_data_t idx, st_data_t args)
  *
  * Returns the list of name and aliases of the encoding.
  *
- *   Encoding::WINDOWS_31J.names  #=> ["Windows-31J", "CP932", "csWindows31J"]
+ *   Encoding::WINDOWS_31J.names  #=> ["Windows-31J", "CP932", "csWindows31J", "SJIS", "PCK"]
  */
 static VALUE
 enc_names(VALUE self)
@@ -1700,8 +1699,8 @@ rb_enc_aliases_enc_i(st_data_t name, st_data_t orig, st_data_t arg)
  * Returns the hash of available encoding alias and original encoding name.
  *
  *   Encoding.aliases
- *   #=> {"BINARY"=>"ASCII-8BIT", "ASCII"=>"US-ASCII", "ANSI_X3.4-1986"=>"US-ASCII",
- *         "SJIS"=>"Shift_JIS", "eucJP"=>"EUC-JP", "CP932"=>"Windows-31J"}
+ *   #=> {"BINARY"=>"ASCII-8BIT", "ASCII"=>"US-ASCII", "ANSI_X3.4-1968"=>"US-ASCII",
+ *         "SJIS"=>"Windows-31J", "eucJP"=>"EUC-JP", "CP932"=>"Windows-31J"}
  *
  */
 
@@ -1917,12 +1916,6 @@ rb_enc_aliases(VALUE klass)
  */
 
 void
-Init_encodings(void)
-{
-    rb_enc_init();
-}
-
-void
 Init_Encoding(void)
 {
 #undef rb_intern
@@ -1965,6 +1958,12 @@ Init_Encoding(void)
     }
 
     rb_marshal_define_compat(rb_cEncoding, Qnil, NULL, enc_m_loader);
+}
+
+void
+Init_encodings(void)
+{
+    rb_enc_init();
 }
 
 /* locale insensitive ctype functions */

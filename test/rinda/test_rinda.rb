@@ -509,6 +509,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
       end
     }
     @server.stop_service
+    DRb::DRbConn.stop_pool
     super
   end
 
@@ -564,6 +565,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
                  '[bug:8215] tuple lost')
   ensure
     service.stop_service if service
+    DRb::DRbConn.stop_pool
     signal = /mswin|mingw/ =~ RUBY_PLATFORM ? "KILL" : "TERM"
     Process.kill(signal, write) if write && status.nil?
     Process.kill(signal, take)  if take
@@ -632,6 +634,7 @@ class TestRingServer < Test::Unit::TestCase
       end
     }
     @server.stop_service
+    DRb::DRbConn.stop_pool
   end
 
   def test_do_reply

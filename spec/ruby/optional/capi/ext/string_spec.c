@@ -14,14 +14,9 @@ extern "C" {
  * On TruffleRuby RSTRING_PTR and the bytes remain in managed memory
  * until they must be written to native memory.
  * In some specs we want to test using the native memory. */
-char* NATIVE_RSTRING_PTR(VALUE str) {
-  char* ptr = RSTRING_PTR(str);
-  char** native = malloc(sizeof(char*));
-  *native = ptr;
-  ptr = *native;
-  free(native);
-  return ptr;
-}
+#ifndef NATIVE_RSTRING_PTR
+#define NATIVE_RSTRING_PTR(str) RSTRING_PTR(str)
+#endif
 
 VALUE string_spec_rb_cstr2inum(VALUE self, VALUE str, VALUE inum) {
   int num = FIX2INT(inum);
@@ -122,6 +117,10 @@ VALUE string_spec_rb_str_conv_enc_opts(VALUE self, VALUE str, VALUE from, VALUE 
   }
 
   return rb_str_conv_enc_opts(str, from_enc, to_enc, FIX2INT(ecflags), ecopts);
+}
+
+VALUE string_spec_rb_str_drop_bytes(VALUE self, VALUE str, VALUE len) {
+  return rb_str_drop_bytes(str, NUM2LONG(len));
 }
 
 VALUE string_spec_rb_str_export(VALUE self, VALUE str) {
@@ -412,6 +411,18 @@ static VALUE string_spec_rb_str_modify(VALUE self, VALUE str) {
   return str;
 }
 
+static VALUE string_spec_rb_utf8_str_new_static(VALUE self) {
+  return rb_utf8_str_new_static("nokogiri", 8);
+}
+
+static VALUE string_spec_rb_utf8_str_new(VALUE self) {
+  return rb_utf8_str_new("nokogiri", 8);
+}
+
+static VALUE string_spec_rb_utf8_str_new_cstr(VALUE self) {
+  return rb_utf8_str_new_cstr("nokogiri");
+}
+
 void Init_string_spec(void) {
   VALUE cls = rb_define_class("CApiStringSpecs", rb_cObject);
   rb_define_method(cls, "rb_cstr2inum", string_spec_rb_cstr2inum, 2);
@@ -427,6 +438,7 @@ void Init_string_spec(void) {
   rb_define_method(cls, "rb_str_cmp", string_spec_rb_str_cmp, 2);
   rb_define_method(cls, "rb_str_conv_enc", string_spec_rb_str_conv_enc, 3);
   rb_define_method(cls, "rb_str_conv_enc_opts", string_spec_rb_str_conv_enc_opts, 5);
+  rb_define_method(cls, "rb_str_drop_bytes", string_spec_rb_str_drop_bytes, 2);
   rb_define_method(cls, "rb_str_export", string_spec_rb_str_export, 1);
   rb_define_method(cls, "rb_str_export_locale", string_spec_rb_str_export_locale, 1);
   rb_define_method(cls, "rb_str_dup", string_spec_rb_str_dup, 1);
@@ -485,6 +497,9 @@ void Init_string_spec(void) {
   rb_define_method(cls, "rb_String", string_spec_rb_String, 1);
   rb_define_method(cls, "rb_string_value_cstr", string_spec_rb_string_value_cstr, 1);
   rb_define_method(cls, "rb_str_modify", string_spec_rb_str_modify, 1);
+  rb_define_method(cls, "rb_utf8_str_new_static", string_spec_rb_utf8_str_new_static, 0);
+  rb_define_method(cls, "rb_utf8_str_new", string_spec_rb_utf8_str_new, 0);
+  rb_define_method(cls, "rb_utf8_str_new_cstr", string_spec_rb_utf8_str_new_cstr, 0);
 }
 
 #ifdef __cplusplus

@@ -1,5 +1,5 @@
 #
-# $Id: 10d9595b388ab1ba061c08c038901ff632a0c3c3 $
+# $Id: 8ab2cb5341529fe5e35956bb1a1f42ec9b9c6f5a $
 #
 # Copyright (c) 1999-2006 Minero Aoki
 #
@@ -8,7 +8,7 @@
 # see the file "COPYING".
 
 module Racc
-  VERSION   = '1.4.16.pre.1'
+  VERSION   = '1.4.16'
   Version = VERSION
   Copyright = 'Copyright (c) 1999-2006 Minero Aoki'
 end

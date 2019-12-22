@@ -146,15 +146,16 @@ assert_equal %q{131}, %q{
     end
   }
 }
-assert_equal %q{ok}, %q{
+assert_match %r{Invalid retry}, %q{
+STDERR.reopen(STDOUT)
 begin
   eval %q{
     1.times{
       retry
     }
   }
-rescue SyntaxError
-  :ok
+rescue SyntaxError => e
+  e.message
 end
 }
 assert_equal %q{3}, %q{

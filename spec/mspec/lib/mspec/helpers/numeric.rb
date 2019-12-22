@@ -8,7 +8,7 @@ def infinity_value
   1/0.0
 end
 
-def bignum_value(plus=0)
+def bignum_value(plus = 0)
   0x8000_0000_0000_0000 + plus
 end
 

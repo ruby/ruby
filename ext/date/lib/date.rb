@@ -5,6 +5,10 @@ require 'date_core'
 
 class Date
 
+  def infinite?
+    false
+  end
+
   class Infinity < Numeric # :nodoc:
 
     include Comparable

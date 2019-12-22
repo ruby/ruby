@@ -38,7 +38,7 @@ module MSpec
   @expectation  = nil
   @expectations = false
 
-  def self.describe(mod, options=nil, &block)
+  def self.describe(mod, options = nil, &block)
     state = ContextState.new mod, options
     state.parent = current
 
@@ -105,6 +105,8 @@ module MSpec
       return true
     rescue SystemExit => e
       raise e
+    rescue SkippedSpecError => e
+      return false
     rescue Exception => exc
       register_exit 1
       actions :exception, ExceptionState.new(current && current.state, location, exc)
@@ -257,7 +259,7 @@ module MSpec
     end
   end
 
-  def self.randomize(flag=true)
+  def self.randomize(flag = true)
     @randomize = flag
   end
 

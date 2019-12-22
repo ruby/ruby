@@ -99,7 +99,7 @@ module URI
     #   # => "@%3F@%21"
     #
     def escape(*arg)
-      warn "URI.escape is obsolete", uplevel: 1 if $VERBOSE
+      warn "URI.escape is obsolete", uplevel: 1
       DEFAULT_PARSER.escape(*arg)
     end
     alias encode escape
@@ -130,7 +130,7 @@ module URI
     #   # => "http://example.com/?a=\t\r"
     #
     def unescape(*arg)
-      warn "URI.unescape is obsolete", uplevel: 1 if $VERBOSE
+      warn "URI.unescape is obsolete", uplevel: 1
       DEFAULT_PARSER.unescape(*arg)
     end
     alias decode unescape
@@ -370,7 +370,7 @@ module URI
     if str.encoding != Encoding::ASCII_8BIT
       if enc && enc != Encoding::ASCII_8BIT
         str.encode!(Encoding::UTF_8, invalid: :replace, undef: :replace)
-        str.encode!(enc, fallback: ->(x){"&#{x.ord};"})
+        str.encode!(enc, fallback: ->(x){"&##{x.ord};"})
       end
       str.force_encoding(Encoding::ASCII_8BIT)
     end

@@ -10,7 +10,7 @@ describe "ENV.each_key" do
       ENV.clear
       ENV["1"] = "3"
       ENV["2"] = "4"
-      ENV.each_key { |k| e << k }
+      ENV.each_key { |k| e << k }.should equal(ENV)
       e.should include("1")
       e.should include("2")
     ensure
@@ -19,7 +19,9 @@ describe "ENV.each_key" do
   end
 
   it "returns an Enumerator if called without a block" do
-    ENV.each_key.should be_an_instance_of(Enumerator)
+    enum = ENV.each_key
+    enum.should be_an_instance_of(Enumerator)
+    enum.to_a.should == ENV.keys
   end
 
   it "returns keys in the locale encoding" do
