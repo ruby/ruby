@@ -1,5 +1,5 @@
 # -*- ruby -*-
-_VERSION = "0.5.2"
+_VERSION = "0.5.3"
 date = %w$Date::                           $[1]
 
 Gem::Specification.new do |s|
