@@ -474,6 +474,12 @@ UnboundMethod::
           p Foo.instance_method(:add_1).bind(obj).call(1) #=> 2
           p Foo.instance_method(:add_1).bind_call(obj, 1) #=> 2
 
+Warning::
+
+  New method::
+
+    * Added Warning.[] and Warning.[]= to manage emit/suppress some categories of
+      warnings.  [Feature #16345]
 
 $LOAD_PATH::
 
