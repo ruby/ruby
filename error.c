@@ -166,6 +166,23 @@ rb_warning_category_enabled_p(rb_warning_category_t category)
     return !(warning_disabled_categories & (1U << category));
 }
 
+/*
+ * call-seq
+ *    Warning[category]  -> true or false
+ *
+ * Returns the flag to show the warning messages for +category+.
+ * Supported categories are:
+ *
+ * +:deprecated+ :: deprecation warnings
+ * * assignemnt of non-nil value to <code>$,</code> and <code>$;</code>
+ * * keyword arguments
+ * * proc/lambda without block
+ * etc.
+ *
+ * +:experimental+ :: experimental features
+ * * Pattern matching
+ */
+
 static VALUE
 rb_warning_s_aref(VALUE mod, VALUE category)
 {
@@ -174,6 +191,14 @@ rb_warning_s_aref(VALUE mod, VALUE category)
         return Qtrue;
     return Qfalse;
 }
+
+/*
+ * call-seq
+ *    Warning[category] = flag -> flag
+ *
+ * Sets the warning flags for +category+.
+ * See Warning.[] for the categories.
+ */
 
 static VALUE
 rb_warning_s_aset(VALUE mod, VALUE category, VALUE flag)
