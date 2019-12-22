@@ -729,3 +729,7 @@ RubyVM::InstructionSequence::
 * Support built-in methods in Ruby with `__builtin_` syntax. [Feature #16254]
   Some methods are defined in *.rb (such as trace_point.rb).
   For example, it is easy to define a method which accepts keyword arguments.
+
+* Per-call-site method cache, which has been there since around 1.9, was
+  improved: cache hit rate raised from 89% to 94%.
+  https://github.com/ruby/ruby/pull/2583
