@@ -3644,7 +3644,8 @@ id2ref(VALUE objid)
         }
     }
 
-    if (st_lookup(objspace->id_to_obj_tbl, objid, &orig)) {
+    if (st_lookup(objspace->id_to_obj_tbl, objid, &orig) &&
+        is_live_object(objspace, orig)) {
         return orig;
     }
 
