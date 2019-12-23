@@ -72,6 +72,9 @@
 # the objects that are created, as there is much more overhead in the setting
 # of these properties compared to using a Hash or a Struct.
 #
+
+require_relative 'ostruct/version'
+
 class OpenStruct
 
   #
