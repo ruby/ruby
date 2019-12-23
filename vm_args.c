@@ -645,17 +645,17 @@ rb_warn_keyword_to_last_hash(rb_execution_context_t * const ec, struct rb_callin
 
     VALUE name, loc;
     if (calling->recv == Qundef) {
-        rb_warn("The keyword argument is passed as the last hash parameter");
+        rb_warn("Passing the keyword argument as the last hash parameter is deprecated");
         return;
     }
     name = rb_id2str(ci->mid);
     loc = rb_iseq_location(iseq);
     if (NIL_P(loc)) {
-        rb_warn("The keyword argument for `%"PRIsVALUE"' is passed as the last hash parameter",
+        rb_warn("Passing the keyword argument for `%"PRIsVALUE"' as the last hash parameter is deprecated",
                 name);
     }
     else {
-        rb_warn("The keyword argument is passed as the last hash parameter");
+        rb_warn("Passing the keyword argument as the last hash parameter is deprecated");
         if (name) {
             rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
                             "The called method `%"PRIsVALUE"' is defined here", name);
@@ -676,11 +676,11 @@ rb_warn_split_last_hash_to_keyword(rb_execution_context_t * const ec, struct rb_
     name = rb_id2str(ci->mid);
     loc = rb_iseq_location(iseq);
     if (NIL_P(loc)) {
-        rb_warn("The last argument for `%"PRIsVALUE"' is split into positional and keyword parameters",
+        rb_warn("Splitting the last argument for `%"PRIsVALUE"' into positional and keyword parameters is deprecated",
                 name);
     }
     else {
-        rb_warn("The last argument is split into positional and keyword parameters");
+        rb_warn("Splitting the last argument into positional and keyword parameters is deprecated");
         if (calling->recv != Qundef) {
             rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
                             "The called method `%"PRIsVALUE"' is defined here", name);
@@ -701,11 +701,11 @@ rb_warn_last_hash_to_keyword(rb_execution_context_t * const ec, struct rb_callin
     name = rb_id2str(ci->mid);
     loc = rb_iseq_location(iseq);
     if (NIL_P(loc)) {
-        rb_warn("The last argument for `%"PRIsVALUE"' is used as keyword parameters; maybe ** should be added to the call",
+        rb_warn("Using the last argument for `%"PRIsVALUE"' as keyword parameters is deprecated; maybe ** should be added to the call",
                 name);
     }
     else {
-        rb_warn("The last argument is used as keyword parameters; maybe ** should be added to the call");
+        rb_warn("Using the last argument as keyword parameters is deprecated; maybe ** should be added to the call");
         if (calling->recv != Qundef) {
             rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
                             "The called method `%"PRIsVALUE"' is defined here", name);

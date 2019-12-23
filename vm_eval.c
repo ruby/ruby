@@ -145,7 +145,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, struc
                 RB_TYPE_P(argv[calling->argc-1], T_HASH) &&
                 RHASH_EMPTY_P(argv[calling->argc-1])) {
             if (calling->argc == 1) {
-                rb_warn("The keyword argument is passed as the last hash parameter");
+                rb_warn("Passing the keyword argument as the last hash parameter is deprecated");
             }
             else {
                 calling->argc--;

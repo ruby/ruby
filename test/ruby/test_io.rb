@@ -2284,7 +2284,7 @@ class TestIO < Test::Unit::TestCase
     def o.to_open(**kw); kw; end
     assert_equal({:a=>1}, open(o, a: 1))
 
-    w = /The last argument is used as keyword parameters.*The called method `(to_)?open'/m
+    w = /Using the last argument as keyword parameters is deprecated.*The called method `(to_)?open'/m
     redefined = nil
     w.singleton_class.define_method(:===) do |s|
       match = super(s)

@@ -115,7 +115,7 @@ module TestStruct
     assert_equal "#{@Struct}::KeywordInitTrue(keyword_init: true)", @Struct::KeywordInitTrue.inspect
     # eval is needed to prevent the warning duplication filter
     k = eval("Class.new(@Struct::KeywordInitFalse) {def initialize(**) end}")
-    assert_warn(/The last argument is used as keyword parameters/) {k.new(a: 1, b: 2)}
+    assert_warn(/Using the last argument as keyword parameters is deprecated/) {k.new(a: 1, b: 2)}
     k = Class.new(@Struct::KeywordInitTrue) {def initialize(**) end}
     assert_warn('') {k.new(a: 1, b: 2)}
 
