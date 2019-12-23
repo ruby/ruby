@@ -2750,7 +2750,11 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	}
 	break;
       case T_RATIONAL:
+        RB_DEBUG_COUNTER_INC(obj_rational);
+        break;
       case T_COMPLEX:
+        RB_DEBUG_COUNTER_INC(obj_complex);
+        break;
       case T_MOVED:
 	break;
       case T_ICLASS:
@@ -2774,6 +2778,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_FLOAT:
+        RB_DEBUG_COUNTER_INC(obj_float);
 	break;
 
       case T_BIGNUM:
@@ -2781,6 +2786,9 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	    xfree(BIGNUM_DIGITS(obj));
             RB_DEBUG_COUNTER_INC(obj_bignum_ptr);
 	}
+        else {
+            RB_DEBUG_COUNTER_INC(obj_bignum_embed);
+        }
 	break;
 
       case T_NODE:

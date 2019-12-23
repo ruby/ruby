@@ -247,8 +247,6 @@ RB_DEBUG_COUNTER(obj_struct_embed)
 RB_DEBUG_COUNTER(obj_struct_transient)
 RB_DEBUG_COUNTER(obj_struct_ptr)
 
-RB_DEBUG_COUNTER(obj_regexp_ptr)
-
 RB_DEBUG_COUNTER(obj_data_empty)
 RB_DEBUG_COUNTER(obj_data_xfree)
 RB_DEBUG_COUNTER(obj_data_imm_free)
@@ -258,9 +256,19 @@ RB_DEBUG_COUNTER(obj_match_under4)
 RB_DEBUG_COUNTER(obj_match_ge4)
 RB_DEBUG_COUNTER(obj_match_ge8)
 RB_DEBUG_COUNTER(obj_match_ptr)
-RB_DEBUG_COUNTER(obj_file_ptr)
-RB_DEBUG_COUNTER(obj_bignum_ptr)
 
+RB_DEBUG_COUNTER(obj_iclass_ptr)
+RB_DEBUG_COUNTER(obj_class_ptr)
+RB_DEBUG_COUNTER(obj_module_ptr)
+
+RB_DEBUG_COUNTER(obj_bignum_ptr)
+RB_DEBUG_COUNTER(obj_bignum_embed)
+RB_DEBUG_COUNTER(obj_float)
+RB_DEBUG_COUNTER(obj_complex)
+RB_DEBUG_COUNTER(obj_rational)
+
+RB_DEBUG_COUNTER(obj_regexp_ptr)
+RB_DEBUG_COUNTER(obj_file_ptr)
 RB_DEBUG_COUNTER(obj_symbol)
 
 RB_DEBUG_COUNTER(obj_imemo_ment)
@@ -274,10 +282,6 @@ RB_DEBUG_COUNTER(obj_imemo_throw_data)
 RB_DEBUG_COUNTER(obj_imemo_ifunc)
 RB_DEBUG_COUNTER(obj_imemo_memo)
 RB_DEBUG_COUNTER(obj_imemo_parser_strterm)
-
-RB_DEBUG_COUNTER(obj_iclass_ptr)
-RB_DEBUG_COUNTER(obj_class_ptr)
-RB_DEBUG_COUNTER(obj_module_ptr)
 
 /* ar_table */
 RB_DEBUG_COUNTER(artable_hint_hit)
