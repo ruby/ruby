@@ -1534,29 +1534,34 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(BigDecimal::SIGN_NEGATIVE_ZERO, (-1 / inf).sign)
   end
 
+  def assert_equal_us_ascii_string(a, b)
+    assert_equal(a, b)
+    assert_equal(Encoding::US_ASCII, b.encoding)
+  end
+
   def test_to_special_string
     BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
     BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
     nan = BigDecimal("NaN")
-    assert_equal("NaN", nan.to_s)
+    assert_equal_us_ascii_string("NaN", nan.to_s)
     inf = BigDecimal("Infinity")
-    assert_equal("Infinity", inf.to_s)
-    assert_equal(" Infinity", inf.to_s(" "))
-    assert_equal("+Infinity", inf.to_s("+"))
-    assert_equal("-Infinity", (-inf).to_s)
+    assert_equal_us_ascii_string("Infinity", inf.to_s)
+    assert_equal_us_ascii_string(" Infinity", inf.to_s(" "))
+    assert_equal_us_ascii_string("+Infinity", inf.to_s("+"))
+    assert_equal_us_ascii_string("-Infinity", (-inf).to_s)
     pzero = BigDecimal("0")
-    assert_equal("0.0", pzero.to_s)
-    assert_equal(" 0.0", pzero.to_s(" "))
-    assert_equal("+0.0", pzero.to_s("+"))
-    assert_equal("-0.0", (-pzero).to_s)
+    assert_equal_us_ascii_string("0.0", pzero.to_s)
+    assert_equal_us_ascii_string(" 0.0", pzero.to_s(" "))
+    assert_equal_us_ascii_string("+0.0", pzero.to_s("+"))
+    assert_equal_us_ascii_string("-0.0", (-pzero).to_s)
   end
 
   def test_to_string
-    assert_equal("0.01", BigDecimal("0.01").to_s("F"))
+    assert_equal_us_ascii_string("0.01", BigDecimal("0.01").to_s("F"))
     s = "0." + "0" * 100 + "1"
-    assert_equal(s, BigDecimal(s).to_s("F"))
+    assert_equal_us_ascii_string(s, BigDecimal(s).to_s("F"))
     s = "1" + "0" * 100 + ".0"
-    assert_equal(s, BigDecimal(s).to_s("F"))
+    assert_equal_us_ascii_string(s, BigDecimal(s).to_s("F"))
   end
 
   def test_ctov
