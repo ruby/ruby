@@ -306,7 +306,7 @@ usage(const char *name, int help)
     static const struct message mjit_options[] = {
         M("--jit-warnings",      "", "Enable printing JIT warnings"),
         M("--jit-debug",         "", "Enable JIT debugging (very slow), or add cflags if specified"),
-        M("--jit-wait",          "", "Wait until JIT compilation is finished everytime (for testing)"),
+        M("--jit-wait",          "", "Wait until JIT compilation finishes every time (for testing)"),
         M("--jit-save-temps",    "", "Save JIT temporary files in $TMP or /tmp (for testing)"),
         M("--jit-verbose=num",   "", "Print JIT logs of level num or less to stderr (default: 0)"),
         M("--jit-max-cache=num", "", "Max number of methods to be JIT-ed in a cache (default: 100)"),
