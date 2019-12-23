@@ -3608,6 +3608,18 @@ rb_objspace_garbage_object_p(VALUE obj)
     return is_garbage_object(objspace, obj);
 }
 
+static VALUE
+id2ref_obj_tbl(rb_objspace_t *objspace, VALUE objid)
+{
+    VALUE orig;
+    if (st_lookup(objspace->id_to_obj_tbl, objid, &orig)) {
+        return orig;
+    }
+    else {
+        return Qundef;
+    }
+}
+
 /*
  *  call-seq:
  *     ObjectSpace._id2ref(object_id) -> an_object
@@ -3652,7 +3664,7 @@ id2ref(VALUE objid)
         }
     }
 
-    if (st_lookup(objspace->id_to_obj_tbl, objid, &orig) &&
+    if ((orig = id2ref_obj_tbl(objspace, objid)) != Qundef &&
         is_live_object(objspace, orig)) {
         return orig;
     }
@@ -10442,7 +10454,9 @@ wmap_finalize(RB_BLOCK_CALL_FUNC_ARGLIST(objid, self))
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
     /* Get reference from object id. */
-    obj = id2ref(objid);
+    if ((obj = id2ref_obj_tbl(&rb_objspace, objid)) == Qundef) {
+        rb_bug("wmap_finalize: objid is not found.");
+    }
 
     /* obj is original referenced object and/or weak reference. */
     orig = (st_data_t)obj;
