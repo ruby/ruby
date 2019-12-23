@@ -624,7 +624,7 @@ Proc::
 === Stdlib compatibility issues (excluding feature bug fixes)
 
 * Promote stdlib to default gems
-  * The following default gems was published at rubygems.org
+  * The following default gems are also published at rubygems.org
     * benchmark
     * cgi
     * delegate
