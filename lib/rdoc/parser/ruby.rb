@@ -378,7 +378,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       record_location container
 
       get_tk
-      skip_tkspace_without_nl
+      skip_tkspace
       if :on_lparen == peek_tk[:kind] # ProcObjectInConstant::()
         parse_method_or_yield_parameters
         break

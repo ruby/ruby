@@ -100,7 +100,7 @@ class C; end
     assert_equal 'E', name_t[:text]
     assert_equal 'D::E', given_name
 
-    assert_raise RDoc::Error do
+    assert_nothing_raised do
       util_parser("A::\nB").get_class_or_module ctxt
     end
   end
