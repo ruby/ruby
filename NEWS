@@ -578,8 +578,8 @@ OptionParser::
 
 Pathname::
 
-  * Delegates 3 arguments from Pathname.glob to Dir.glob to
-    accept +base+ keyword.
+  * Pathname.glob now delegates 3 arguments to Dir.glob
+    to accept +base+ keyword. [Feature #14405]
 
 Racc::
 
