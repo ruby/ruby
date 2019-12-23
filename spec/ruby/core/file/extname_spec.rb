@@ -23,14 +23,14 @@ describe "File.extname" do
   end
 
   describe "for a filename ending with a dot" do
-    ruby_version_is ""..."2.7" do
+    guard -> { platform_is :windows or ruby_version_is ""..."2.7" } do
       it "returns ''" do
         File.extname(".foo.").should == ""
         File.extname("foo.").should == ""
       end
     end
 
-    ruby_version_is "2.7" do
+    guard -> { platform_is_not :windows and ruby_version_is "2.7" } do
       it "returns '.'" do
         File.extname(".foo.").should == "."
         File.extname("foo.").should == "."

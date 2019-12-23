@@ -4711,26 +4711,13 @@ ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
     while (*p) {
 	if (*p == '.' || istrailinggarbage(*p)) {
 #if USE_NTFS
-	    const char *first = 0, *last, *dot;
-	    if (*p == '.') first = p;
-	    last = p++;
-	    dot = last;
+	    const char *last = p++, *dot = last;
 	    while (istrailinggarbage(*p)) {
-		if (*p == '.') {
-		    dot = p;
-		    if (!first) {
-			first = p;
-		    }
-		}
+		if (*p == '.') dot = p;
 		p++;
 	    }
 	    if (!*p || isADS(*p)) {
-		if (first == dot && e == 0) {
-		    e = first;
-		}
-		else {
-		    p = last;
-		}
+		p = last;
 		break;
 	    }
 	    if (*last == '.' || dot > last) e = dot;
@@ -4779,7 +4766,8 @@ ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
  *     File.extname("test.rb")         #=> ".rb"
  *     File.extname("a/b/d/test.rb")   #=> ".rb"
  *     File.extname(".a/b/d/test.rb")  #=> ".rb"
- *     File.extname("foo.")            #=> "."
+ *     File.extname("foo.")            #=> "" on Windows
+ *     File.extname("foo.")            #=> "." on non-Windows
  *     File.extname("test")            #=> ""
  *     File.extname(".profile")        #=> ""
  *     File.extname(".profile.sh")     #=> ".sh"
