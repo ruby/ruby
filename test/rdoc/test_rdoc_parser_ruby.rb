@@ -830,6 +830,17 @@ end
     assert_equal @top_level, blah.file
   end
 
+  def test_parse_call_syntax_sugar_for_constant
+    util_parser <<-CODE
+Foo = proc{}
+Foo::()
+    CODE
+
+    assert_nothing_raised do
+      @parser.scan
+    end
+  end
+
   def test_parse_class_multi_ghost_methods
     util_parser <<-'CLASS'
 class Foo

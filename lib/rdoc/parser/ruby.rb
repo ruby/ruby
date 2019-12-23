@@ -379,6 +379,10 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
       get_tk
       skip_tkspace_without_nl
+      if :on_lparen == peek_tk[:kind] # ProcObjectInConstant::()
+        parse_method_or_yield_parameters
+        break
+      end
       name_t = get_tk
       unless :on_const == name_t[:kind] || :on_ident == name_t[:kind]
         raise RDoc::Error, "Invalid class or module definition: #{given_name}"
