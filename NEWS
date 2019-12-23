@@ -319,8 +319,8 @@ FrozenError::
 
     * Added FrozenError#receiver to return the frozen object that
       modification was attempted on.  To set this object when raising
-      FrozenError in Ruby code, pass it as the second argument to
-      FrozenError.new. [Feature #15751]
+      FrozenError in Ruby code, FrozenError.new accepts a +:receiver+
+      option.  [Feature #15751]
 
 GC::
 
