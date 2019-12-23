@@ -407,7 +407,7 @@ Range::
   New method::
 
     * Added Range#minmax, with a faster implementation than Enumerable#minmax.
-      [Bug #15807]
+      It returns a maximum that now corresponds to Range#max. [Bug #15807]
 
 RubyVM::
 
