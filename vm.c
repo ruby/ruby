@@ -3057,7 +3057,7 @@ Init_VM(void)
      *
      *	The class method ::kill, is meant to exit a given thread:
      *
-     *	    thr = Thread.new { ... }
+     *	    thr = Thread.new { sleep }
      *	    Thread.kill(thr) # sends exit() to thr
      *
      *	Alternatively, you can use the instance method #exit, or any of its
