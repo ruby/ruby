@@ -63,10 +63,10 @@ sufficient information, see the ChangeLog file or Redmine
   deprecated, and conversion will be removed in Ruby 3.  [Feature #14183]
 
   * When a method call passes a Hash at the last argument, and when it
-    passes no keywords, and when the called method accepts keywords, a
-    warning is emitted.  To continue treating as keywords, add a double
-    splat operator to avoid the warning and ensure correct behavior in
-    Ruby 3.
+    passes no keywords, and when the called method accepts keywords,
+    a warning is emitted.  To continue treating the hash as keywords,
+    add a double splat operator to avoid the warning and ensure
+    correct behavior in Ruby 3.
 
       def foo(key: 42); end; foo({key: 42})   # warned
       def foo(**kw);    end; foo({key: 42})   # warned
@@ -100,7 +100,7 @@ sufficient information, see the ChangeLog file or Redmine
 
       def foo(opt={});  end; foo( key: 42 )   # OK
 
-* Non-symbols are allowed as a keyword argument keys if method accepts
+* Non-symbols are allowed as keyword argument keys if the method accepts
   arbitrary keywords. [Feature #14183]
 
   * Non-Symbol keys in a keyword arguments hash were prohibited in 2.6.0,
@@ -160,7 +160,7 @@ sufficient information, see the ChangeLog file or Redmine
 ==== Other miscellaneous changes
 
 * A beginless range is experimentally introduced.  It might not be as useful
-  as an endless range, but would be good for DSL purpose.  [Feature #14799]
+  as an endless range, but would be good for DSL purposes.  [Feature #14799]
 
      ary[..3]  # identical to ary[0..3]
      where(sales: ..100)
@@ -382,7 +382,7 @@ NilClass / TrueClass / FalseClass::
 
   Modified methods::
 
-    * NilClass#to_s, TrueClass#to_s and FalseClass#to_s now always return a
+    * NilClass#to_s, TrueClass#to_s, and FalseClass#to_s now always return a
       frozen String. The returned String is always the same for each of these
       values. This change is experimental. [Feature #16150]
 
@@ -599,7 +599,7 @@ RSS::
 
 RubyGems::
 
-  * Upgrade to RubyGems 3.1.1
+  * Upgrade to RubyGems 3.1.1.
     See https://github.com/rubygems/rubygems/releases/tag/v3.1.0
 
 StringScanner::
@@ -630,7 +630,7 @@ Range::
 === Stdlib compatibility issues (excluding feature bug fixes)
 
 * Promote stdlib to default gems
-  * The following default gems are also published at rubygems.org
+  * The following default gems were published on rubygems.org
     * benchmark
     * cgi
     * delegate
@@ -640,7 +640,8 @@ Range::
     * open3
     * pstore
     * singleton
-  * The following default gems only promoted ruby-core, Not yet published at rubygems.org.
+  * The following default gems were only promoted at ruby-core,
+    but not yet published on rubygems.org.
     * monitor
     * observer
     * timeout
@@ -711,9 +712,9 @@ JIT::
   * Method inlining is performed when a method is considered as pure.
     This optimization is still experimental and many methods are NOT considered as pure yet.
 
-  * Default value of +--jit-max-cache+ is changed from 1,000 to 100
+  * The default value of +--jit-max-cache+ is changed from 1,000 to 100.
 
-  * Default value of +--jit-min-calls+ is changed from 5 to 10,000
+  * The default value of +--jit-min-calls+ is changed from 5 to 10,000.
 
 RubyVM::InstructionSequence::
 
