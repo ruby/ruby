@@ -117,7 +117,7 @@ def mk_builtin_header file
 
   begin
     f = open(ofile, 'w')
-  rescue Errno::EACCESS
+  rescue Errno::EACCES
     # Fall back to the current directory
     f = open(File.basename(ofile), 'w')
   end
