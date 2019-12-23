@@ -621,6 +621,12 @@ StringScanner::
 Proc::
   * Proc#to_s format was changed. [Feature #16101]
 
+Range::
+  * Range#minmax used to iterate on the range to determine the maximum.
+    It now uses the same algorithm as Range#max. In rare cases (e.g.
+    ranges of Float or Strings), this may yield different results.
+    [Bug #15929]
+
 === Stdlib compatibility issues (excluding feature bug fixes)
 
 * Promote stdlib to default gems
