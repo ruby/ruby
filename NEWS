@@ -718,6 +718,12 @@ JIT::
 
   * The default value of +--jit-min-calls+ is changed from 5 to 10,000.
 
+RubyVM::
+
+  * Per-call-site method cache, which has been there since around 1.9, was
+    improved: cache hit rate raised from 89% to 94%.
+    See https://github.com/ruby/ruby/pull/2583
+
 RubyVM::InstructionSequence::
 
   * RubyVM::InstructionSequence#to_binary method generates compiled binary.
@@ -745,7 +751,3 @@ RubyVM::InstructionSequence::
 
   Some methods are defined in *.rb (such as trace_point.rb).
   For example, it is easy to define a method which accepts keyword arguments.
-
-* Per-call-site method cache, which has been there since around 1.9, was
-  improved: cache hit rate raised from 89% to 94%.
-  See https://github.com/ruby/ruby/pull/2583
