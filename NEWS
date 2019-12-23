@@ -308,7 +308,8 @@ File::
 
   Modified method::
 
-    * File.extname now returns a dot string at a name ending with a dot.  [Bug #15267]
+    * File.extname now returns a dot string at a name ending with a dot on
+      non-Windows platforms.  [Bug #15267]
 
           File.extname("foo.") #=> "."
 
