@@ -625,7 +625,7 @@ Range::
   * Range#minmax used to iterate on the range to determine the maximum.
     It now uses the same algorithm as Range#max. In rare cases (e.g.
     ranges of Float or Strings), this may yield different results.
-    [Bug #15929]
+    [Bug #15807]
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
