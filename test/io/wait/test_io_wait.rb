@@ -63,16 +63,20 @@ class TestIOWait < Test::Unit::TestCase
   end
 
   def test_wait_forever
-    th = Thread.new { sleep 0.01; @w.syswrite "." }
+    q = Thread::Queue.new
+    th = Thread.new { q.pop; @w.syswrite "." }
+    q.push(true)
     assert_equal @r, @r.wait
   ensure
     th.join
   end
 
   def test_wait_eof
-    th = Thread.new { sleep 0.01; @w.close }
+    q = Thread::Queue.new
+    th = Thread.new { q.pop; @w.close }
     ret = nil
     assert_nothing_raised(Timeout::Error) do
+      q.push(true)
       Timeout.timeout(0.1) { ret = @r.wait }
     end
     assert_equal @r, ret
@@ -94,16 +98,20 @@ class TestIOWait < Test::Unit::TestCase
   end
 
   def test_wait_readable_forever
-    th = Thread.new { sleep 0.01; @w.syswrite "." }
+    q = Thread::Queue.new
+    th = Thread.new { q.pop; @w.syswrite "." }
+    q.push(true)
     assert_equal @r, @r.wait_readable
   ensure
     th.join
   end
 
   def test_wait_readable_eof
-    th = Thread.new { sleep 0.01; @w.close }
+    q = Thread::Queue.new
+    th = Thread.new { q.pop; @w.close }
     ret = nil
     assert_nothing_raised(Timeout::Error) do
+      q.push(true)
       Timeout.timeout(0.1) { ret = @r.wait_readable }
     end
     assert_equal @r, ret
