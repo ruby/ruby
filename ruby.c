@@ -302,6 +302,7 @@ usage(const char *name, int help)
     };
     static const struct message warn_categories[] = {
         M("deprecated", "",       "deprecated features"),
+        M("experimental", "",     "experimental features"),
     };
     static const struct message mjit_options[] = {
         M("--jit-warnings",      "", "Enable printing JIT warnings"),
