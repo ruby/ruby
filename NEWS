@@ -471,8 +471,8 @@ Range::
 
   Modified method::
 
-    * Range#=== now uses #cover? for String arguments, too (in Ruby 2.6, it was
-      changed from #include? for all types except strings). [Bug #15449]
+    * Range#=== now uses Range#cover? for String arguments, too (in Ruby 2.6, it was
+      changed from Range#include? for all types except strings). [Bug #15449]
 
 
 RubyVM::
