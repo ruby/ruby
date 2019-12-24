@@ -596,6 +596,10 @@ IRB::
 
   * Enable auto indent and save/load history by default.
 
+JSON::
+
+  * Upgrade to 2.3.0.
+
 Net::FTP::
 
   * Add Net::FTP#features to check available features, and Net::FTP#option to
