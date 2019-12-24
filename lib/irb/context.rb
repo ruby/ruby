@@ -83,12 +83,6 @@ module IRB
         when nil
           if STDIN.tty? && IRB.conf[:PROMPT_MODE] != :INF_RUBY && !use_singleline?
             # Both of multiline mode and singleline mode aren't specified.
-            puts <<~EOM
-              This version of IRB is drastically different from the previous version.
-              If you hit any issues, you can use "irb --legacy" to run the old version.
-              If you want to just erase this message, please use "irb --multiline" or
-              add `IRB.conf[:USE_MULTILINE] = true` to your ~/.irbrc file.
-            EOM
             @io = ReidlineInputMethod.new
           else
             @io = nil
