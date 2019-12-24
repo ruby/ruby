@@ -434,6 +434,9 @@ Module::
     * Module#autoload? now takes an +inherit+ optional argument, like
       Module#const_defined?.  [Feature #15777]
 
+    * Module#name and Module#inspect no longer search through all defined
+      constants when the receiver is anonymous.  [Feature #15765]
+
     * Module#name now always returns a frozen String. The returned String is
       always the same for a given Module. This change is
       experimental. [Feature #16150]
