@@ -236,6 +236,30 @@ sufficient information, see the ChangeLog file or Redmine
 
 * Refinements take place at Object#method and Module#instance_method. [Feature #15373]
 
+* Command line option +-W+ has been extended with a following +:+, to manage categorized
+  warnings.  [Feature #16345]  [Feature #16420]
+
+    # deprecation warning
+    $ ruby -e '$; = ""'
+    -e:1: warning: `$;' is deprecated
+
+    # suppress the deprecation warning
+    $ ruby -W:no-deprecated -e '$; = //'
+
+    # works with RUBYOPT environment variable
+    $ RUBYOPT=-W:no-deprecated ruby -e '$; = //'
+
+    # experimental feature warning
+    $ ruby -e '0 in a'
+    -e:1: warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!
+
+    # suppress experimental feature warning
+    $ ruby -W:no-experimental -e '0 in a'
+
+    # suppress both by using RUBYOPT
+    $ RUBYOPT='-W:no-deprecated -W:no-experimental' ruby -e '($; = "") in a'
+
+
 === Core classes updates (outstanding ones only)
 
 Array::
@@ -504,7 +528,7 @@ Warning::
   New methods::
 
     * Added Warning.[] and Warning.[]= to manage emit/suppress of
-      some categories of warnings.  [Feature #16345]
+      some categories of warnings.  [Feature #16345] [Feature #16420]
 
 $LOAD_PATH::
 
