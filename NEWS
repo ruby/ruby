@@ -719,6 +719,7 @@ Range::
     * tracer
     * uri
     * yaml
+* The <tt>did_you_mean</tt> gem has been promoted up to a default gem from a bundled gem
 
 pathname::
 
