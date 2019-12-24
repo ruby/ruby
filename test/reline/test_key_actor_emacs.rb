@@ -372,7 +372,7 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line('abcd012ABCa')
   end
 
-  def test_em_delete_or_list
+  def test_em_delete
     input_keys('ab')
     assert_byte_pointer_size('ab')
     assert_cursor(2)
@@ -388,7 +388,7 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line('b')
   end
 
-  def test_em_delete_or_list_for_mbchar
+  def test_em_delete_for_mbchar
     input_keys('かき')
     assert_byte_pointer_size('かき')
     assert_cursor(4)
@@ -407,7 +407,7 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line('き')
   end
 
-  def test_em_delete_or_list_for_mbchar_by_plural_code_points
+  def test_em_delete_for_mbchar_by_plural_code_points
     input_keys("か\u3099き\u3099")
     assert_byte_pointer_size("か\u3099き\u3099")
     assert_cursor(4)
@@ -1242,6 +1242,43 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_cursor(20)
     assert_cursor_max(20)
     assert_line('{}#*    AAA!!!CCC   ')
+  end
+
+  def test_em_delete_or_list
+    @line_editor.completion_proc = proc { |word|
+      %w{
+        foo_foo
+        foo_bar
+        foo_baz
+        qux
+      }.map { |i|
+        i.encode(@encoding)
+      }
+    }
+    input_keys('fooo')
+    assert_byte_pointer_size('fooo')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('fooo')
+    assert_equal(nil, @line_editor.instance_variable_get(:@menu_info))
+    input_keys("\C-b", false)
+    assert_byte_pointer_size('foo')
+    assert_cursor(3)
+    assert_cursor_max(4)
+    assert_line('fooo')
+    assert_equal(nil, @line_editor.instance_variable_get(:@menu_info))
+    @line_editor.input_key(Reline::Key.new(:em_delete_or_list, :em_delete_or_list, false))
+    assert_byte_pointer_size('foo')
+    assert_cursor(3)
+    assert_cursor_max(3)
+    assert_line('foo')
+    assert_equal(nil, @line_editor.instance_variable_get(:@menu_info))
+    @line_editor.input_key(Reline::Key.new(:em_delete_or_list, :em_delete_or_list, false))
+    assert_byte_pointer_size('foo')
+    assert_cursor(3)
+    assert_cursor_max(3)
+    assert_line('foo')
+    assert_equal(%w{foo_foo foo_bar foo_baz}, @line_editor.instance_variable_get(:@menu_info).list)
   end
 
   def test_completion

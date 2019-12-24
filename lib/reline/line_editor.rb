@@ -595,14 +595,22 @@ class Reline::LineEditor
     [target, preposing, completed, postposing]
   end
 
-  private def complete(list)
+  private def complete(list, just_show_list = false)
     case @completion_state
     when CompletionState::NORMAL, CompletionState::JOURNEY
       @completion_state = CompletionState::COMPLETION
     when CompletionState::PERFECT_MATCH
       @dig_perfect_match_proc&.(@perfect_matched)
     end
-    is_menu = (@completion_state == CompletionState::MENU or @completion_state == CompletionState::MENU_WITH_PERFECT_MATCH)
+    if just_show_list
+      is_menu = true
+    elsif @completion_state == CompletionState::MENU
+      is_menu = true
+    elsif @completion_state == CompletionState::MENU_WITH_PERFECT_MATCH
+      is_menu = true
+    else
+      is_menu = false
+    end
     result = complete_internal_proc(list, is_menu)
     if @completion_state == CompletionState::MENU_WITH_PERFECT_MATCH
       @completion_state = CompletionState::PERFECT_MATCH
@@ -621,7 +629,7 @@ class Reline::LineEditor
       else
         @completion_state = CompletionState::MENU
       end
-      if target < completed
+      if not just_show_list and target < completed
         @line = preposing + completed + completion_append_character.to_s + postposing
         line_to_pointer = preposing + completed + completion_append_character.to_s
         @cursor_max = calculate_width(@line)
@@ -1567,7 +1575,7 @@ class Reline::LineEditor
     end
   end
 
-  private def em_delete_or_list(key)
+  private def em_delete(key)
     if (not @is_multiline and @line.empty?) or (@is_multiline and @line.empty? and @buffer_of_lines.size == 1)
       @line = nil
       if @buffer_of_lines.size > 1
@@ -1592,7 +1600,20 @@ class Reline::LineEditor
       @rest_height += 1
     end
   end
-  alias_method :delete_char, :em_delete_or_list
+  alias_method :delete_char, :em_delete
+
+  private def em_delete_or_list(key)
+    if @line.empty? or @byte_pointer < @line.bytesize
+      em_delete(key)
+    else # show completed list
+      result = call_completion_proc
+      if result.is_a?(Array)
+        completion_occurs = true
+        complete(result, true)
+      end
+    end
+  end
+  alias_method :delete_char_or_list, :em_delete_or_list
 
   private def em_yank(key)
     yanked = @kill_ring.yank

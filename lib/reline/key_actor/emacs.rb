@@ -9,7 +9,7 @@ class Reline::KeyActor::Emacs < Reline::KeyActor::Base
     #   3 ^C
     :ed_ignore,
     #   4 ^D
-    :em_delete_or_list,
+    :em_delete,
     #   5 ^E
     :ed_move_to_end,
     #   6 ^F
