@@ -172,4 +172,8 @@ private
       return written
     end while true
   end
+
+  def sleep(time)
+    super EnvUtil.apply_timeout_scale(time)
+  end
 end if IO.method_defined?(:wait)
