@@ -909,7 +909,7 @@ class CSV
   #                                       empty value(s) on each line will be
   #                                       replaced with the specified value.
   # <b><tt>:strip</tt></b>::              When setting a +true+ value, CSV will
-  #                                       strip "\t\r\n\f\v" around the values.
+  #                                       strip " \t\f\v" around the values.
   #                                       If you specify a string instead of
   #                                       +true+, CSV will strip string. The
   #                                       length of the string must be 1.
