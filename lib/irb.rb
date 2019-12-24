@@ -131,7 +131,7 @@ require "irb/version"
 #
 # See IRB::Context#save_history= for more information.
 #
-# The history of _resuls_ of commands evaluated is not stored by default,
+# The history of _results_ of commands evaluated is not stored by default,
 # but can be turned on to be stored with this +.irbrc+ setting:
 #
 #     IRB.conf[:EVAL_HISTORY] = <number>
