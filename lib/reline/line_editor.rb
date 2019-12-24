@@ -1608,7 +1608,6 @@ class Reline::LineEditor
     else # show completed list
       result = call_completion_proc
       if result.is_a?(Array)
-        completion_occurs = true
         complete(result, true)
       end
     end
