@@ -130,8 +130,8 @@ sufficient information, see the ChangeLog file or Redmine
 
 ==== Numbered parameters
 
-* Numbered parameters as default block parameters are introduced
-  as an experimental feature.  [Feature #4475]
+* Numbered parameters as default block parameters are introduced.
+  [Feature #4475]
 
     [1, 2, 10].map { _1.to_s(16) }    #=> ["1", "2", "a"]
     [[1, 2], [3, 4]].map { _1 + _2 }  #=> [3, 7]
