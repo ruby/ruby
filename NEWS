@@ -225,6 +225,8 @@ sufficient information, see the ChangeLog file or Redmine
   warned in verbose mode. This warning will be disabled even in non-verbose mode in
   Ruby 3.0, and the methods and C functions will be removed in Ruby 3.2. [Feature #16131]
 
+* Refinements take place at Object#method and Module#instance_method. [Feature #15373]
+
 === Core classes updates (outstanding ones only)
 
 Array::
