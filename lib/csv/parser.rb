@@ -446,6 +446,7 @@ class CSV
       @strip = @options[:strip]
       @escaped_strip = nil
       @strip_value = nil
+      @rstrip_value = nil
       if @strip.is_a?(String)
         case @strip.length
         when 0
@@ -460,6 +461,8 @@ class CSV
         if @quote_character
           @strip_value = Regexp.new(@escaped_strip +
                                     "+".encode(@encoding))
+          @rstrip_value = Regexp.new(@escaped_strip +
+                                     "+\\z".encode(@encoding))
         end
         @need_robust_parsing = true
       elsif @strip
@@ -467,6 +470,7 @@ class CSV
         @escaped_strip = strip_values.encode(@encoding)
         if @quote_character
           @strip_value = Regexp.new("[#{strip_values}]+".encode(@encoding))
+          @rstrip_value = Regexp.new("[#{strip_values}]+\\z".encode(@encoding))
         end
         @need_robust_parsing = true
       end
@@ -560,9 +564,6 @@ class CSV
       no_unquoted_values << @escaped_first_column_separator
       unless @liberal_parsing
         no_unquoted_values << @escaped_quote_character
-      end
-      if @escaped_strip
-        no_unquoted_values << @escaped_strip
       end
       @unquoted_value = Regexp.new("[^".encode(@encoding) +
                                    no_unquoted_values +
@@ -939,6 +940,7 @@ class CSV
       if @liberal_parsing
         quoted_value = parse_quoted_column_value
         if quoted_value
+          @scanner.scan_all(@strip_value) if @strip_value
           unquoted_value = parse_unquoted_column_value
           if unquoted_value
             if @double_quote_outside_quote
@@ -986,6 +988,9 @@ class CSV
         end
       end
       value.gsub!(@backslash_quote_character, @quote_character) if @backslash_quote
+      if @rstrip_value
+        value.gsub!(@rstrip_value, "")
+      end
       value
     end
 
