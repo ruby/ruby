@@ -1624,8 +1624,10 @@ rb_false(VALUE obj)
 static VALUE
 rb_obj_match(VALUE obj1, VALUE obj2)
 {
-    rb_warn("deprecated Object#=~ is called on %"PRIsVALUE
-            "; it always returns nil", rb_obj_class(obj1));
+    if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) {
+        rb_warn("deprecated Object#=~ is called on %"PRIsVALUE
+                "; it always returns nil", rb_obj_class(obj1));
+    }
     return Qnil;
 }
 
