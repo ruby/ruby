@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "rubygems"
+
 module Bundler
   class RubygemsIntegration
     if defined?(Gem::Ext::Builder::CHDIR_MONITOR)

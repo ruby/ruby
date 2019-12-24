@@ -1344,5 +1344,11 @@ end
       expect(last_command.stdboth).not_to include "FAIL"
       expect(err).to include "private method `require'"
     end
+
+    it "takes care of requiring rubygems" do
+      sys_exec("#{Gem.ruby} -I#{lib_dir} -e \"puts require('bundler/setup')\"", "RUBYOPT" => "--disable=gems")
+
+      expect(last_command.stdboth).to eq("true")
+    end
   end
 end
