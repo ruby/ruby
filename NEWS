@@ -57,6 +57,9 @@ sufficient information, see the ChangeLog file or Redmine
   * https://speakerdeck.com/k_tsj/pattern-matching-new-feature-in-ruby-2-dot-7
   * Note that the slides are slightly obsolete.
 
+* The warning against pattern matching can be suppressed with
+  {-W:no-experimental option}[#label-Warning+option].
+
 ==== The spec of keyword arguments is changed towards 3.0
 
 * Automatic conversion of keyword arguments and positional arguments is
@@ -128,6 +131,8 @@ sufficient information, see the ChangeLog file or Redmine
     h = {}; def foo(*a) a end; foo(h)   # [{}]
     h = {}; def foo(a) a end; foo(h)    # {}
 
+* Above warnings can be suppressed also with {-W:no-deprecated option}[#label-Warning+option].
+
 ==== Numbered parameters
 
 * Numbered parameters as default block parameters are introduced.
@@ -151,6 +156,8 @@ sufficient information, see the ChangeLog file or Redmine
       proc
     end
     foo { puts "Hello" } #=> warning: Capturing the given block using Kernel#proc is deprecated; use `&block` instead
+
+  This warning can be suppressed with {-W:no-deprecated option}[#label-Warning+option].
 
 * Kernel#lambda with no block in a method called with a block raises an exception.
 
@@ -178,9 +185,11 @@ sufficient information, see the ChangeLog file or Redmine
 
 * Setting <code>$;</code> to a non-nil value is warned now.
   Use of it in String#split is warned too.
+  This warning can be suppressed with {-W:no-deprecated option}[#label-Warning+option].
 
 * Setting <code>$,</code> to a non-nil value is warned now.
   Use of it in Array#join is warned too.
+  This warning can be suppressed with {-W:no-deprecated option}[#label-Warning+option].
 
 * Quoted here-document identifiers must end within the same line.
 
@@ -214,6 +223,8 @@ sufficient information, see the ChangeLog file or Redmine
      end
    end
    foo { p :ok }
+
+  This warning can be suppressed with {-W:no-deprecated option}[#label-Warning+option].
 
 * Argument forwarding by <code>(...)</code> is introduced. [Feature #16253]
 
