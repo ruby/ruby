@@ -68,9 +68,9 @@ a backslash literally, backslash-escape it: <tt>\\\\</tt>.
     /1 \+ 2 = 3\?/.match('Does 1 + 2 = 3?') #=> #<MatchData "1 + 2 = 3?">
     /a\\\\b/.match('a\\\\b')                    #=> #<MatchData "a\\b">
 
-Patterns behave like double-quoted strings so can contain the same
-backslash escapes (the meaning of <tt>\s</tt> is different a little however,
-see bellow[#label-Character+Classes]).
+Patterns behave like double-quoted strings and can contain the same
+backslash escapes (the meaning of <tt>\s</tt> is different, however,
+see below[#label-Character+Classes]).
 
     /\s\u{6771 4eac 90fd}/.match("Go to 東京都")
         #=> #<MatchData " 東京都">
