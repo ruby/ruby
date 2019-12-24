@@ -353,8 +353,6 @@ enum rb_debug_counter_type {
 };
 
 #if USE_DEBUG_COUNTER
-#include "ruby/ruby.h"
-
 extern size_t rb_debug_counter[];
 
 inline static int
@@ -380,5 +378,13 @@ VALUE rb_debug_counter_show(VALUE klass);
 #endif
 
 void rb_debug_counter_show_results(const char *msg);
+
+RUBY_SYMBOL_EXPORT_BEGIN
+
+size_t ruby_debug_counter_get(const char **names_ptr, size_t *counters_ptr);
+void ruby_debug_counter_reset(void);
+void ruby_debug_counter_show_at_exit(int enable);
+
+RUBY_SYMBOL_EXPORT_END
 
 #endif /* RUBY_DEBUG_COUNTER_H */
