@@ -415,7 +415,7 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *ar
  *
  * In the first form, iteration is defined by the given block, in
  * which a "yielder" object, given as block parameter, can be used to
- * yield a value by calling the +yield+ method (aliased as +<<+):
+ * yield a value by calling the +yield+ method (aliased as <code><<</code>):
  *
  *   fib = Enumerator.new do |y|
  *     a = b = 1
@@ -425,13 +425,13 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *ar
  *     end
  *   end
  *
- *   p fib.take(10) # => [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
+ *   fib.take(10) # => [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
  *
  * The optional parameter can be used to specify how to calculate the size
  * in a lazy fashion (see Enumerator#size). It can either be a value or
  * a callable object.
  *
- * In the second, deprecated, form, a generated Enumerator iterates over the
+ * In the deprecated second form, a generated Enumerator iterates over the
  * given object using the given method with the given arguments passed.
  *
  * Use of this form is discouraged.  Use Object#enum_for or Object#to_enum
@@ -440,7 +440,7 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *ar
  *   e = Enumerator.new(ObjectSpace, :each_object)
  *       #-> ObjectSpace.enum_for(:each_object)
  *
- *   e.select { |obj| obj.is_a?(Class) }  #=> array of all classes
+ *   e.select { |obj| obj.is_a?(Class) }  # => array of all classes
  *
  */
 static VALUE
@@ -2959,18 +2959,16 @@ producer_size(VALUE obj, VALUE args, VALUE eobj)
 
 /*
  * call-seq:
- *    Enumerator.produce(initial = nil) { |val| } -> enumerator
+ *    Enumerator.produce(initial = nil) { |prev| block } -> enumerator
  *
  * Creates an infinite enumerator from any block, just called over and
- * over.  Result of the previous iteration is passed to the next one.
+ * over.  The result of the previous iteration is passed to the next one.
  * If +initial+ is provided, it is passed to the first iteration, and
  * becomes the first element of the enumerator; if it is not provided,
- * first iteration receives +nil+, and its result becomes first
+ * the first iteration receives +nil+, and its result becomes the first
  * element of the iterator.
  *
  * Raising StopIteration from the block stops an iteration.
- *
- * Examples of usage:
  *
  *   Enumerator.produce(1, &:succ)   # => enumerator of 1, 2, 3, 4, ....
  *
@@ -2980,18 +2978,18 @@ producer_size(VALUE obj, VALUE args, VALUE eobj)
  *   enclosing_section = ancestors.find { |n| n.type == :section }
  *
  * Using ::produce together with Enumerable methods like Enumerable#detect,
- * Enumerable#slice, Enumerable#take_while can provide Enumerator-based alternative
+ * Enumerable#slice, Enumerable#take_while can provide Enumerator-based alternatives
  * for +while+ and +until+ cycles:
  *
  *   # Find next Tuesday
- *   require 'date'
+ *   require "date"
  *   Enumerator.produce(Date.today, &:succ).detect(&:tuesday?)
  *
  *   # Simple lexer:
- *   require 'strscan'
- *   scanner = StringScanner.new('7+38/6')
+ *   require "strscan"
+ *   scanner = StringScanner.new("7+38/6")
  *   PATTERN = %r{\d+|[-/+*]}
- *   p Enumerator.produce { scanner.scan(PATTERN) }.slice_after { scanner.eos? }.first
+ *   Enumerator.produce { scanner.scan(PATTERN) }.slice_after { scanner.eos? }.first
  *   # => ["7", "+", "38", "/", "6"]
  */
 static VALUE
