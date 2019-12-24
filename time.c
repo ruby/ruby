@@ -4091,8 +4091,8 @@ time_to_s(VALUE time)
  *  call-seq:
  *     time.inspect -> string
  *
- *  Returns a detailed string representing _time_. Inlike to_s, preserves
- *  nanoseconds in representation for easier debugging.
+ *  Returns a detailed string representing _time_. Unlike to_s,
+ *  preserves nanoseconds in the representation for easier debugging.
  *
  *     t = Time.now
  *     t.inspect                             #=> "2012-11-10 18:16:12.261257655 +0100"
