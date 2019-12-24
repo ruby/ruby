@@ -236,6 +236,37 @@ sufficient information, see the ChangeLog file or Redmine
 
 * Refinements take place at Object#method and Module#instance_method. [Feature #15373]
 
+=== Command line option
+
+==== Warning option
+
++-W+ option has been extended with a following +:+, to manage categorized
+warnings.  [Feature #16345] [Feature #16420]
+
+* To suppress the deprecation warning:
+
+    $ ruby -e '$; = ""'
+    -e:1: warning: `$;' is deprecated
+
+    $ ruby -W:no-deprecated -e '$; = //'
+
+* It works with the +RUBYOPT+ environment variable:
+
+    $ RUBYOPT=-W:no-deprecated ruby -e '$; = //'
+
+* To suppress experimental feature warning:
+
+    $ ruby -e '0 in a'
+    -e:1: warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!
+
+    $ ruby -W:no-experimental -e '0 in a'
+
+* To suppress both by using +RUBYOPT+, set space separated values:
+
+    $ RUBYOPT='-W:no-deprecated -W:no-experimental' ruby -e '($; = "") in a'
+
+See also Warning in {Core classes updates}[#label-Core+classes+updates+-28outstanding+ones+only-29].
+
 === Core classes updates (outstanding ones only)
 
 Array::
@@ -682,31 +713,6 @@ pathname::
 profile.rb, Profiler__::
 
   * Removed from standard library. It was unmaintained since Ruby 2.0.0.
-
-=== Command line option
-
-* +-W+ option has been extended with a following +:+, to manage categorized
-  warnings.  [Feature #16345] [Feature #16420]
-
-    # deprecation warning
-    $ ruby -e '$; = ""'
-    -e:1: warning: `$;' is deprecated
-
-    # suppress the deprecation warning
-    $ ruby -W:no-deprecated -e '$; = //'
-
-    # works with RUBYOPT environment variable
-    $ RUBYOPT=-W:no-deprecated ruby -e '$; = //'
-
-    # experimental feature warning
-    $ ruby -e '0 in a'
-    -e:1: warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!
-
-    # suppress experimental feature warning
-    $ ruby -W:no-experimental -e '0 in a'
-
-    # suppress both by using RUBYOPT
-    $ RUBYOPT='-W:no-deprecated -W:no-experimental' ruby -e '($; = "") in a'
 
 === C API updates
 
