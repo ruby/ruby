@@ -710,6 +710,8 @@ Range::
     * net-smtp
     * open3
     * pstore
+    * readline
+    * readline-ext
     * singleton
   * The following default gems were only promoted at ruby-core,
     but not yet published on rubygems.org.
