@@ -141,8 +141,9 @@ class Prime
     generator.each(&block)
   end
 
-  # Return true if +obj+ is an Integer an is prime.  Also returns
+  # Returns true if +obj+ is an Integer and is prime.  Also returns
   # true if +obj+ is a Module that is an ancestor of +Prime+.
+  # Otherwise returns false.
   def include?(obj)
     case obj
     when Integer
