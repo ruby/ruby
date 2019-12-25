@@ -11452,7 +11452,7 @@ rb_ibf_load_iseq_complete(rb_iseq_t *iseq)
 }
 
 #if USE_LAZY_LOAD
-const rb_iseq_t *
+MJIT_FUNC_EXPORTED const rb_iseq_t *
 rb_iseq_complete(const rb_iseq_t *iseq)
 {
     rb_ibf_load_iseq_complete((rb_iseq_t *)iseq);
