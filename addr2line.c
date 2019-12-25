@@ -25,11 +25,7 @@
 #include <libproc.h>
 #endif
 
-#ifdef HAVE_STDBOOL_H
-#include <stdbool.h>
-#else
-#include "missing/stdbool.h"
-#endif
+#include "internal/stdbool.h"
 
 #if defined(USE_ELF) || defined(HAVE_MACH_O_LOADER_H)
 
