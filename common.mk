@@ -1300,7 +1300,9 @@ update-bundled_gems: PHONY
 	    -e   's.platform=="ruby"&&s.name==$$F[0]' \
 	    -e '}' \
 	    -e 'gem = src.fetch_spec(gem)' \
-	    -e '$$_ = [gem.name, gem.version, gem.metadata["source_code_uri"]||gem.homepage].join(" ")' \
+	    -e 'uri = gem.metadata["source_code_uri"]||gem.homepage' \
+	    -e 'uri = uri.sub(%r[\Ahttps://github\.com/[^/]+/[^/]+\K/tree/.*], "")' \
+	    -e '$$_ = [gem.name, gem.version, uri].join(" ")' \
 	     "$(srcdir)/gems/bundled_gems" | \
 	"$(IFCHANGE)" "$(srcdir)/gems/bundled_gems" -
 
