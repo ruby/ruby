@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "rubygems"
+require "rubygems" unless defined?(Gem)
 
 module Bundler
   class RubygemsIntegration
