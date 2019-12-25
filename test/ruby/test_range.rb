@@ -81,6 +81,8 @@ class TestRange < Test::Unit::TestCase
     assert_equal(nil, (2..1).min)
     assert_equal(1, (1...2).min)
     assert_equal(1, (1..).min)
+    assert_raise(RangeError) { (..1).min }
+    assert_raise(RangeError) { (...1).min }
 
     assert_equal(1.0, (1.0..2.0).min)
     assert_equal(nil, (2.0..1.0).min)
@@ -93,6 +95,8 @@ class TestRange < Test::Unit::TestCase
     assert_equal([0,1,2], (0..10).min(3))
     assert_equal([0,1], (0..1).min(3))
     assert_equal([0,1,2], (0..).min(3))
+    assert_raise(RangeError) { (..1).min(3) }
+    assert_raise(RangeError) { (...1).min(3) }
 
     assert_raise(RangeError) { (0..).min {|a, b| a <=> b } }
   end
@@ -119,6 +123,8 @@ class TestRange < Test::Unit::TestCase
     assert_equal([9,8,7], (0...10).max(3))
     assert_raise(RangeError) { (1..).max(3) }
     assert_raise(RangeError) { (1...).max(3) }
+
+    assert_raise(RangeError) { (..0).min {|a, b| a <=> b } }
   end
 
   def test_minmax

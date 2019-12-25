@@ -1136,6 +1136,10 @@ range_last(int argc, VALUE *argv, VALUE range)
 static VALUE
 range_min(int argc, VALUE *argv, VALUE range)
 {
+    if (NIL_P(RANGE_BEG(range))) {
+	rb_raise(rb_eRangeError, "cannot get the minimum of beginless range");
+    }
+
     if (rb_block_given_p()) {
         if (NIL_P(RANGE_END(range))) {
             rb_raise(rb_eRangeError, "cannot get the minimum of endless range with custom comparison method");
@@ -1185,6 +1189,9 @@ range_max(int argc, VALUE *argv, VALUE range)
     }
 
     if (rb_block_given_p() || (EXCL(range) && !nm) || argc) {
+        if (NIL_P(RANGE_BEG(range))) {
+            rb_raise(rb_eRangeError, "cannot get the maximum of beginless range with custom comparison method");
+        }
         return rb_call_super(argc, argv);
     }
     else {
