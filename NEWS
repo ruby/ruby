@@ -209,7 +209,7 @@ sufficient information, see the ChangeLog file or Redmine
   is now allowed. [Feature #11297] [Feature #16123]
 
 * Modifier rescue now operates the same for multiple assignment as single
-  assignment:
+  assignment. [Bug #8279]
 
     a, b = raise rescue [1, 2]
     # Previously parsed as: (a, b = raise) rescue [1, 2]
