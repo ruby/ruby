@@ -5631,7 +5631,18 @@ static void ruby_show_error_line(VALUE errbuf, const YYLTYPE *yylloc, int lineno
 static inline void
 parser_show_error_line(struct parser_params *p, const YYLTYPE *yylloc)
 {
-    ruby_show_error_line(p->error_buffer, yylloc, p->ruby_sourceline, p->lex.lastline);
+    VALUE str;
+    int lineno = p->ruby_sourceline;
+    if (!yylloc) {
+	return;
+    }
+    else if (yylloc->beg_pos.lineno == lineno) {
+	str = p->lex.lastline;
+    }
+    else {
+	return;
+    }
+    ruby_show_error_line(p->error_buffer, yylloc, lineno, str);
 }
 
 static int
