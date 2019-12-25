@@ -760,6 +760,7 @@ Fiber::
     allocates many stacks in a single memory region. Stack allocation
     becomes O(log N) and fiber creation is amortized O(1). Around 10x
     performance improvement was measured in micro-benchmarks.
+    https://github.com/ruby/ruby/pull/2224
 
 File::
   * File.realpath now uses realpath(3) on many platforms, which can
