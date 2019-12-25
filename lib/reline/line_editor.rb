@@ -1938,9 +1938,11 @@ class Reline::LineEditor
       @eof = true
       finish
     else
-      # TODO: list
+      ed_newline(key)
     end
   end
+  alias_method :vi_end_of_transmission, :vi_list_or_eof
+  alias_method :vi_eof_maybe, :vi_list_or_eof
 
   private def ed_delete_next_char(key, arg: 1)
     byte_size = Reline::Unicode.get_next_mbchar_size(@line, @byte_pointer)
