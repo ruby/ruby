@@ -183,11 +183,11 @@ sufficient information, see the ChangeLog file or Redmine
 
      where(sales: ..100)
 
-* Setting <code>$;</code> to a non-nil value is warned now.
+* Setting <code>$;</code> to a non-nil value is warned now. [Feature #14240]
   Use of it in String#split is warned too.
   This warning can be suppressed with {-W:no-deprecated option}[#label-Warning+option].
 
-* Setting <code>$,</code> to a non-nil value is warned now.
+* Setting <code>$,</code> to a non-nil value is warned now. [Feature #14240]
   Use of it in Array#join is warned too.
   This warning can be suppressed with {-W:no-deprecated option}[#label-Warning+option].
 
