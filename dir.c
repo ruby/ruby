@@ -3031,7 +3031,7 @@ dir_s_each_child(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     dir.each_child {| filename | block }  -> nil
+ *     dir.each_child {| filename | block }  -> dir
  *     dir.each_child                        -> an_enumerator
  *
  *  Calls the block once for each entry except for "." and ".." in
