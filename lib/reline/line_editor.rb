@@ -919,6 +919,7 @@ class Reline::LineEditor
       elsif not quote and slice =~ word_break_regexp
         rest = $'
         i += 1
+        before = @line.byteslice(i, @byte_pointer - i)
         break_pointer = i
       else
         i += 1
