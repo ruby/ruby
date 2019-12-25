@@ -11499,7 +11499,11 @@ ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
 #if IBF_ISEQ_DEBUG
 	    fprintf(stderr, "ibf_load_iseq: loading iseq=%p\n", (void *)iseq);
 #endif
-	    rb_ibf_load_iseq_complete(iseq);
+            rb_ibf_load_iseq_complete(iseq);
+#else
+            if (GET_VM()->builtin_function_table) {
+                rb_ibf_load_iseq_complete(iseq);
+            }
 #endif /* !USE_LAZY_LOAD */
 
 #if IBF_ISEQ_DEBUG

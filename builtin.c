@@ -51,7 +51,7 @@ rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin
     vm->builtin_function_table = NULL;
 
     // exec
-    rb_iseq_eval(iseq);
+    rb_iseq_eval(rb_iseq_check(iseq));
 }
 
 #endif
