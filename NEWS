@@ -149,8 +149,8 @@ sufficient information, see the ChangeLog file or Redmine
 
 ==== proc/lambda without block is deprecated
 
-* Proc.new and Kernel#proc with no block in a method called with a block is
-  warned now.
+* Proc.new and Kernel#proc with no block in a method called with a block will
+  now display a warning.
 
     def foo
       proc
@@ -183,12 +183,12 @@ sufficient information, see the ChangeLog file or Redmine
 
      where(sales: ..100)
 
-* Setting <code>$;</code> to a non-nil value is warned now. [Feature #14240]
-  Use of it in String#split is warned too.
+* Setting <code>$;</code> to a non-nil value will now display a warning. [Feature #14240]
+  This includes the usage in String#split.
   This warning can be suppressed with {-W:no-deprecated option}[#label-Warning+option].
 
-* Setting <code>$,</code> to a non-nil value is warned now. [Feature #14240]
-  Use of it in Array#join is warned too.
+* Setting <code>$,</code> to a non-nil value will now display a warning. [Feature #14240]
+  This include the usage in Array#join.
   This warning can be suppressed with {-W:no-deprecated option}[#label-Warning+option].
 
 * Quoted here-document identifiers must end within the same line.
@@ -215,7 +215,8 @@ sufficient information, see the ChangeLog file or Redmine
     # Previously parsed as: (a, b = raise) rescue [1, 2]
     # Now parsed as:         a, b = (raise rescue [1, 2])
 
-* +yield+ in singleton class syntax is warned and will be deprecated later. [Feature #15575].
+* +yield+ in singleton class syntax will now display a warning. This behavior
+  will soon be deprecated. [Feature #15575].
 
    def foo
      class << Object.new
@@ -237,12 +238,13 @@ sufficient information, see the ChangeLog file or Redmine
   Note that the parentheses are mandatory.  <code>bar ...</code> is parsed
   as an endless range.
 
-* Access and setting of <code>$SAFE</code> is now always warned. <code>$SAFE</code>
-  will become a normal global variable in Ruby 3.0. [Feature #16131]
+* Access and setting of <code>$SAFE</code> will now always display a warning.
+  <code>$SAFE</code> will become a normal global variable in Ruby 3.0.
+  [Feature #16131]
 
 * <code>Object#{taint,untaint,trust,untrust}</code> and related functions in the C-API
-  no longer have an effect (all objects are always considered untainted), and are now
-  warned in verbose mode. This warning will be disabled even in non-verbose mode in
+  no longer have an effect (all objects are always considered untainted), and will now
+  display a warning in verbose mode. This warning will be disabled even in non-verbose mode in
   Ruby 3.0, and the methods and C functions will be removed in Ruby 3.2. [Feature #16131]
 
 * Refinements take place at Object#method and Module#instance_method. [Feature #15373]
