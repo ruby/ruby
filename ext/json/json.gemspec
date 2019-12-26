@@ -2,12 +2,12 @@
 
 Gem::Specification.new do |s|
   s.name = "json"
-  s.version = "2.2.0"
+  s.version = "2.3.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib"]
   s.authors = ["Florian Frank"]
-  s.date = "2019-02-21"
+  s.date = "2019-12-11"
   s.description = "This is a JSON implementation as a Ruby extension in C."
   s.email = "flori@ping.de"
   s.extensions = ["ext/json/ext/generator/extconf.rb", "ext/json/ext/parser/extconf.rb", "ext/json/extconf.rb"]
@@ -124,7 +124,7 @@ Gem::Specification.new do |s|
   s.licenses = ["Ruby"]
   s.rdoc_options = ["--title", "JSON implemention for Ruby", "--main", "README.md"]
   s.required_ruby_version = Gem::Requirement.new(">= 1.9")
-  s.rubygems_version = "3.0.2"
+  s.rubygems_version = "3.0.3"
   s.summary = "JSON Implementation for Ruby"
   s.test_files = ["tests/test_helper.rb"]
 

@@ -165,7 +165,7 @@ vm_check_frame_detail(VALUE type, int req_block, int req_me, int req_cref, VALUE
 
     if ((type & VM_FRAME_MAGIC_MASK) == VM_FRAME_MAGIC_DUMMY) {
 	VM_ASSERT(iseq == NULL ||
-		  RUBY_VM_NORMAL_ISEQ_P(iseq) /* argument error. it shold be fixed */);
+		  RUBY_VM_NORMAL_ISEQ_P(iseq) /* argument error. it should be fixed */);
     }
     else {
 	VM_ASSERT(is_cframe == !RUBY_VM_NORMAL_ISEQ_P(iseq));
@@ -226,7 +226,7 @@ vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
         return;
     }
     else {
-        /* we are going to call metods below; squash the canary to
+        /* we are going to call methods below; squash the canary to
          * prevent infinite loop. */
         sp[0] = Qundef;
     }
@@ -1334,7 +1334,7 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
 	/* do nothing */
     }
     else {
-	rb_bug("isns(throw): unsupport throw type");
+	rb_bug("isns(throw): unsupported throw type");
     }
 
     ec->tag->state = state;
@@ -1443,7 +1443,7 @@ calccall(const struct rb_call_data *cd, const rb_callable_method_entry_t *me)
         RB_DEBUG_COUNTER_INC(mc_miss_by_distinct);
         return vm_call_general; /* normal cases */
     }
-    else if (UNLIKELY(cc->def != me->def)) {
+    else if (UNLIKELY(cc->method_serial != me->def->method_serial)) {
         RB_DEBUG_COUNTER_INC(mc_miss_by_refine);
         return vm_call_general;  /* cc->me was refined elsewhere */
     }
@@ -1458,6 +1458,7 @@ calccall(const struct rb_call_data *cd, const rb_callable_method_entry_t *me)
     }
     else {
         RB_DEBUG_COUNTER_INC(mc_miss_spurious);
+        (void)RB_DEBUG_COUNTER_INC_IF(mc_miss_reuse_call, cc->call != vm_call_general);
         return cc->call;
     }
 }
@@ -1474,7 +1475,7 @@ rb_vm_search_method_slowpath(struct rb_call_data *cd, VALUE klass)
         GET_GLOBAL_METHOD_STATE(),
         { RCLASS_SERIAL(klass) },
         me,
-        me ? me->def : NULL,
+        me ? me->def->method_serial : 0,
         call,
     };
     if (call != vm_call_general) {
@@ -1535,7 +1536,7 @@ rb_vm_search_method_slowpath(struct rb_call_data *cd, VALUE klass)
  * - It scans the array from left to right, looking for the expected class
  *   serial.  If it finds that at `cc->class_serial[0]` (this branch
  *   probability is 98% according to @shyouhei's experiment), just returns
- *   true.  If it reaches the end of the array without finding anytihng,
+ *   true.  If it reaches the end of the array without finding anything,
  *   returns false.  This is done in the #1 loop below.
  *
  * - What needs to be complicated is when the class serial is found at either
@@ -2655,7 +2656,7 @@ vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct
 	DEC_SP(1);
     }
 
-    cc->me = rb_callable_method_entry_with_refinements(CLASS_OF(calling->recv), ci->mid, NULL);
+    CC_SET_ME(cc, rb_callable_method_entry_with_refinements(CLASS_OF(calling->recv), ci->mid, NULL));
     ci->flag = VM_CALL_FCALL | VM_CALL_OPT_SEND | (calling->kw_splat ? VM_CALL_KW_SPLAT : 0);
     return vm_call_method(ec, reg_cfp, calling, (CALL_DATA)&cd);
 }
@@ -2752,14 +2753,14 @@ vm_call_zsuper(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_ca
     const struct rb_call_info *ci = &cd->ci;
     struct rb_call_cache *cc = &cd->cc;
     klass = RCLASS_SUPER(klass);
-    cc->me = klass ? rb_callable_method_entry(klass, ci->mid) : NULL;
+    CC_SET_ME(cc, klass ? rb_callable_method_entry(klass, ci->mid) : NULL);
 
     if (!cc->me) {
         return vm_call_method_nome(ec, cfp, calling, cd);
     }
     if (cc->me->def->type == VM_METHOD_TYPE_REFINED &&
 	cc->me->def->body.refined.orig_me) {
-	cc->me = refined_method_callable_without_refinement(cc->me);
+        CC_SET_ME(cc, refined_method_callable_without_refinement(cc->me));
     }
     return vm_call_method_each_type(ec, cfp, calling, cd);
 }
@@ -2885,24 +2886,24 @@ search_refined_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, ID mi
             }
             if (cc->me->def->type != VM_METHOD_TYPE_REFINED ||
                 cc->me->def != ref_me->def) {
-                cc->me = ref_me;
+                CC_SET_ME(cc, ref_me);
             }
             if (ref_me->def->type != VM_METHOD_TYPE_REFINED) {
                 return TRUE;
             }
         }
         else {
-            cc->me = NULL;
+            CC_SET_ME(cc, NULL);
             return FALSE;
         }
     }
 
     if (cc->me->def->body.refined.orig_me) {
-        cc->me = refined_method_callable_without_refinement(cc->me);
+        CC_SET_ME(cc, refined_method_callable_without_refinement(cc->me));
     }
     else {
         VALUE klass = RCLASS_SUPER(cc->me->defined_class);
-        cc->me = klass ? rb_callable_method_entry(klass, mid) : NULL;
+        CC_SET_ME(cc, klass ? rb_callable_method_entry(klass, mid) : NULL);
     }
     return TRUE;
 }
@@ -2955,7 +2956,7 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
         return vm_call_bmethod(ec, cfp, calling, cd);
 
       case VM_METHOD_TYPE_ALIAS:
-	cc->me = aliased_callable_method_entry(cc->me);
+        CC_SET_ME(cc, aliased_callable_method_entry(cc->me));
 	VM_ASSERT(cc->me != NULL);
         return vm_call_method_each_type(ec, cfp, calling, cd);
 
@@ -3126,16 +3127,17 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
     }
 
     if (BUILTIN_TYPE(current_defined_class) != T_MODULE &&
-	BUILTIN_TYPE(current_defined_class) != T_ICLASS && /* bound UnboundMethod */
 	!FL_TEST(current_defined_class, RMODULE_INCLUDED_INTO_REFINEMENT) &&
         !rb_obj_is_kind_of(recv, current_defined_class)) {
 	VALUE m = RB_TYPE_P(current_defined_class, T_ICLASS) ?
-	    RBASIC(current_defined_class)->klass : current_defined_class;
+            RCLASS_INCLUDER(current_defined_class) : current_defined_class;
 
-	rb_raise(rb_eTypeError,
-		 "self has wrong type to call super in this context: "
-		 "%"PRIsVALUE" (expected %"PRIsVALUE")",
-                 rb_obj_class(recv), m);
+        if (m) { /* not bound UnboundMethod */
+            rb_raise(rb_eTypeError,
+                     "self has wrong type to call super in this context: "
+                     "%"PRIsVALUE" (expected %"PRIsVALUE")",
+                     rb_obj_class(recv), m);
+        }
     }
 
     if (me->def->type == VM_METHOD_TYPE_BMETHOD && (ci->flag & VM_CALL_ZSUPER)) {
@@ -3155,7 +3157,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
     }
     else {
         /* TODO: use inline cache */
-	cc->me = rb_callable_method_entry(klass, ci->mid);
+        CC_SET_ME(cc, rb_callable_method_entry(klass, ci->mid));
         CC_SET_FASTPATH(cc, vm_call_super_method, TRUE);
     }
 }

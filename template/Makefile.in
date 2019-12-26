@@ -235,7 +235,6 @@ INSTALLED_LIST= .installed.list
 
 NEWLINE_C     = enc/trans/newline.c
 MINIPRELUDE_C = miniprelude.c
-PRELUDE_C     = prelude.c
 GOLF_PRELUDE_C= golf_prelude.c
 RBCONFIG      = .rbconfig.time
 

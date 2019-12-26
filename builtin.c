@@ -3,15 +3,33 @@
 #include "iseq.h"
 #include "builtin.h"
 
+#if CROSS_COMPILING
+
+#define INCLUDED_BY_BUILTIN_C 1
+#include "mini_builtin.c"
+
+#else
+
 #include "builtin_binary.inc"
 
 static const unsigned char*
 builtin_lookup(const char *feature, size_t *psize)
 {
-    for (int i=0; i<BUILTIN_BINARY_SIZE; i++) {
-        if (strcmp(builtin_binary[i].feature, feature) == 0) {
-            *psize = builtin_binary[i].bin_size;
-            return builtin_binary[i].bin;
+    static int index = 0;
+    int i = index++;
+
+    // usually, `builtin_binary` order is loading order at miniruby.
+    if (LIKELY(strcmp(builtin_binary[i].feature, feature) == 0)) {
+      found:
+        *psize = builtin_binary[i].bin_size;
+        return builtin_binary[i].bin;
+    }
+    else {
+        if (0) fprintf(stderr, "builtin_lookup: cached index miss (index:%d)\n", i);
+        for (i=0; i<BUILTIN_BINARY_SIZE; i++) {
+            if (strcmp(builtin_binary[i].feature, feature) == 0) {
+                goto found;
+            }
         }
     }
     rb_bug("builtin_lookup: can not find %s\n", feature);
@@ -33,11 +51,19 @@ rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin
     vm->builtin_function_table = NULL;
 
     // exec
-    rb_iseq_eval(iseq);
+    rb_iseq_eval(rb_iseq_check(iseq));
 }
+
+#endif
 
 void
 Init_builtin(void)
 {
-    //
+    // nothing
+}
+
+void
+Init_builtin_features(void)
+{
+    rb_load_with_builtin_functions("gem_prelude", NULL);
 }

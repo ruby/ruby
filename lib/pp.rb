@@ -149,6 +149,10 @@ class PP < PrettyPrint
     # Object#pretty_print_cycle is used when +obj+ is already
     # printed, a.k.a the object reference chain has a cycle.
     def pp(obj)
+      # If obj is a Delegator then use the object being delegated to for cycle
+      # detection
+      obj = obj.__getobj__ if defined?(::Delegator) and obj.is_a?(::Delegator)
+
       if check_inspect_key(obj)
         group {obj.pretty_print_cycle self}
         return

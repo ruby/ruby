@@ -2,6 +2,7 @@ require_relative "command"
 require_relative "core_ext/hash_with_indifferent_access"
 require_relative "error"
 require_relative "invocation"
+require_relative "nested_context"
 require_relative "parser"
 require_relative "shell"
 require_relative "line_editor"
@@ -153,17 +154,20 @@ class Bundler::Thor
 
       # If you want to raise an error when the default value of an option does not match
       # the type call check_default_type!
-      # This is disabled by default for compatibility.
+      # This will be the default; for compatibility a deprecation warning is issued if necessary.
       def check_default_type!
         @check_default_type = true
       end
 
-      def check_default_type #:nodoc:
-        @check_default_type ||= from_superclass(:check_default_type, false)
+      # If you want to use defaults that don't match the type of an option,
+      # either specify `check_default_type: false` or call `allow_incompatible_default_type!`
+      def allow_incompatible_default_type!
+        @check_default_type = false
       end
 
-      def check_default_type? #:nodoc:
-        !!check_default_type
+      def check_default_type #:nodoc:
+        @check_default_type = from_superclass(:check_default_type, nil) unless defined?(@check_default_type)
+        @check_default_type
       end
 
       # If true, option parsing is suspended as soon as an unknown option or a
@@ -415,13 +419,19 @@ class Bundler::Thor
       #     remove_command :this_is_not_a_command
       #   end
       #
-      def no_commands
-        @no_commands = true
-        yield
-      ensure
-        @no_commands = false
+      def no_commands(&block)
+        no_commands_context.enter(&block)
       end
+
       alias_method :no_tasks, :no_commands
+
+      def no_commands_context
+        @no_commands_context ||= NestedContext.new
+      end
+
+      def no_commands?
+        no_commands_context.entered?
+      end
 
       # Sets the namespace for the Bundler::Thor or Bundler::Thor::Group class. By default the
       # namespace is retrieved from the class name. If your Bundler::Thor class is named
@@ -506,6 +516,12 @@ class Bundler::Thor
         raise InvocationError, msg
       end
 
+      # A flag that makes the process exit with status 1 if any error happens.
+      def exit_on_failure?
+        Bundler::Thor.deprecation_warning "Bundler::Thor exit with status 0 on errors. To keep this behavior, you must define `exit_on_failure?` in `#{self.name}`"
+        false
+      end
+
     protected
 
       # Prints the class options per group. If an option does not belong to
@@ -563,7 +579,7 @@ class Bundler::Thor
       # options<Hash>:: Described in both class_option and method_option.
       # scope<Hash>:: Options hash that is being built up
       def build_option(name, options, scope) #:nodoc:
-        scope[name] = Bundler::Thor::Option.new(name, options.merge(:check_default_type => check_default_type?))
+        scope[name] = Bundler::Thor::Option.new(name, {:check_default_type => check_default_type}.merge!(options))
       end
 
       # Receives a hash of options, parse them and add to the scope. This is a
@@ -598,7 +614,7 @@ class Bundler::Thor
       def inherited(klass)
         super(klass)
         Bundler::Thor::Base.register_klass_file(klass)
-        klass.instance_variable_set(:@no_commands, false)
+        klass.instance_variable_set(:@no_commands, 0)
       end
 
       # Fire this callback whenever a method is added. Added methods are
@@ -615,8 +631,7 @@ class Bundler::Thor
         # Return if it's not a public instance method
         return unless public_method_defined?(meth.to_sym)
 
-        @no_commands ||= false
-        return if @no_commands || !create_command(meth)
+        return if no_commands? || !create_command(meth)
 
         is_thor_reserved_word?(meth, :command)
         Bundler::Thor::Base.register_klass_file(self)
@@ -641,11 +656,6 @@ class Bundler::Thor
           end
 
         end
-      end
-
-      # A flag that makes the process exit with status 1 if any error happens.
-      def exit_on_failure?
-        false
       end
 
       #

@@ -234,6 +234,7 @@ def sync_default_gems(gem)
     mkdir_p("ext/racc/cparse")
     cp_r(Dir.glob("#{upstream}/ext/racc/cparse/*"), "ext/racc/cparse")
     cp_r("#{upstream}/test", "test/racc")
+    cp_r("#{upstream}/racc.gemspec", "lib/racc")
     rm_rf("test/racc/lib")
     rm_rf("lib/racc/cparse-jruby.jar")
     `git checkout ext/racc/cparse/README ext/racc/cparse/depend`
@@ -309,6 +310,8 @@ def sync_default_gems_with_commits(gem, range)
 
   failed_commits = []
 
+  ENV["FILTER_BRANCH_SQUELCH_WARNING"] = "1"
+
   commits.each do |sha, subject|
     puts "Pick #{sha} from #{$repositories[gem.to_sym]}."
 
@@ -340,8 +343,10 @@ def sync_default_gems_with_commits(gem, range)
     end
   end
 
-  puts "---- failed commits ----"
-  puts failed_commits
+  unless failed_commits.empty?
+    puts "---- failed commits ----"
+    puts failed_commits
+  end
 end
 
 def sync_lib(repo)

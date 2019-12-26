@@ -502,7 +502,7 @@ it would not be treated as keywords:
 
 If a method is called with keywords, but it is missing one
 mandatory positional argument, the keywords are converted to
-a hash and the hash used as the mandtory positional argument:
+a hash and the hash used as the mandatory positional argument:
 
   def my_method(hash, **keywords)
     [hash, keywords]

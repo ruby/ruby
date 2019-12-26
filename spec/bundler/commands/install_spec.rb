@@ -45,7 +45,7 @@ RSpec.describe "bundle install with gem sources" do
         gem "rack"
       G
 
-      bundle! :install, :env => { "BUNDLE_PATH__SYSTEM" => true } # can't use install_gemfile since it sets retry
+      bundle! :install, :env => { "BUNDLE_PATH__SYSTEM" => "true" } # can't use install_gemfile since it sets retry
       expect(bundled_app(".bundle")).not_to exist
     end
 

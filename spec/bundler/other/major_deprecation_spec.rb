@@ -127,7 +127,7 @@ RSpec.describe "major deprecations" do
         bundle! "config"
       end
 
-      it "warns", :bundler => "2" do
+      it "warns", :bundler => "3" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config list` instead.")
       end
 
@@ -139,7 +139,7 @@ RSpec.describe "major deprecations" do
         bundle! "config waka"
       end
 
-      it "warns", :bundler => "2" do
+      it "warns", :bundler => "3" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config get waka` instead.")
       end
 
@@ -151,7 +151,7 @@ RSpec.describe "major deprecations" do
         bundle! "config waka wakapun"
       end
 
-      it "warns", :bundler => "2" do
+      it "warns", :bundler => "3" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config set waka wakapun` instead.")
       end
 
@@ -163,7 +163,7 @@ RSpec.describe "major deprecations" do
         bundle! "config --local waka wakapun"
       end
 
-      it "warns", :bundler => "2" do
+      it "warns", :bundler => "3" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config set --local waka wakapun` instead.")
       end
 
@@ -175,7 +175,7 @@ RSpec.describe "major deprecations" do
         bundle! "config --global waka wakapun"
       end
 
-      it "warns", :bundler => "2" do
+      it "warns", :bundler => "3" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config set --global waka wakapun` instead.")
       end
 
@@ -187,7 +187,7 @@ RSpec.describe "major deprecations" do
         bundle! "config --delete waka"
       end
 
-      it "warns", :bundler => "2" do
+      it "warns", :bundler => "3" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config unset waka` instead.")
       end
 
@@ -199,7 +199,7 @@ RSpec.describe "major deprecations" do
         bundle! "config --delete --local waka"
       end
 
-      it "warns", :bundler => "2" do
+      it "warns", :bundler => "3" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config unset --local waka` instead.")
       end
 
@@ -211,7 +211,7 @@ RSpec.describe "major deprecations" do
         bundle! "config --delete --global waka"
       end
 
-      it "warns", :bundler => "2" do
+      it "warns", :bundler => "3" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config unset --global waka` instead.")
       end
 
@@ -227,7 +227,7 @@ RSpec.describe "major deprecations" do
       G
     end
 
-    it "warns when no options are given", :bundler => "2" do
+    it "warns when no options are given", :bundler => "3" do
       bundle! "update"
       expect(deprecations).to include("Pass --all to `bundle update` to update everything")
     end

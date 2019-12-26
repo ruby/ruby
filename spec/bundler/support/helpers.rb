@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "open3"
-
 require_relative "command_execution"
 require_relative "the_bundle"
 
@@ -25,9 +23,7 @@ module Spec
       define_method("#{method}!") do |*args, &blk|
         send(method, *args, &blk).tap do
           unless last_command.success?
-            raise RuntimeError,
-              "Invoking #{method}!(#{args.map(&:inspect).join(", ")}) failed:\n#{last_command.stdboth}",
-              caller.drop_while {|bt| bt.start_with?(__FILE__) }
+            raise "Invoking #{method}!(#{args.map(&:inspect).join(", ")}) failed:\n#{last_command.stdboth}"
           end
         end
       end
@@ -174,7 +170,7 @@ module Spec
       env = options.delete(:env) || {}
       ruby = ruby.gsub(/["`\$]/) {|m| "\\#{m}" }
       lib_option = options[:no_lib] ? "" : " -I#{lib_dir}"
-      sys_exec(%(#{Gem.ruby}#{lib_option} -e "#{ruby}"), env)
+      sys_exec(%(#{Gem.ruby}#{lib_option} -w -e "#{ruby}"), env)
     end
     bang :ruby
 
@@ -209,8 +205,7 @@ module Spec
     def sys_exec(cmd, env = {})
       command_execution = CommandExecution.new(cmd.to_s, Dir.pwd)
 
-      env = env.map {|k, v| [k.to_s, v.to_s] }.to_h # convert env keys and values to string
-
+      require "open3"
       Open3.popen3(env, cmd.to_s) do |stdin, stdout, stderr, wait_thr|
         yield stdin, stdout, wait_thr if block_given?
         stdin.close

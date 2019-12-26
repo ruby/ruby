@@ -29,7 +29,7 @@ class TestFuncall < Test::Unit::TestCase
     assert_equal([[{}], {}], Relay.with_funcall_passing_block_kw(2, {}, **{}, &block))
     assert_equal([[], {a: 1}], Relay.with_funcall_passing_block_kw(3, a: 1, &block))
     assert_equal([[{a: 1}], {}], Relay.with_funcall_passing_block_kw(3, {a: 1}, **{}, &block))
-    assert_warn(/warning: The keyword argument is passed as the last hash parameter.*for method/m) do
+    assert_warn(/warning: Passing the keyword argument as the last hash parameter is deprecated.*The called method is defined here/m) do
       assert_equal({}, Relay.with_funcall_passing_block_kw(3, **{}, &->(a){a}))
     end
   end
@@ -53,7 +53,7 @@ class TestFuncall < Test::Unit::TestCase
     assert_equal([[], {a: 1}], Relay.with_funcallv_public_kw(o, :foo, 3, a: 1))
     assert_equal([[{a: 1}], {}], Relay.with_funcallv_public_kw(o, :foo, 3, {a: 1}, **{}))
     assert_raise(NoMethodError) { Relay.with_funcallv_public_kw(o, :bar, 3, {a: 1}, **{}) }
-    assert_warn(/warning: The keyword argument is passed as the last hash parameter.*for `baz'/m) do
+    assert_warn(/warning: Passing the keyword argument as the last hash parameter is deprecated.*The called method `baz'/m) do
       assert_equal({}, Relay.with_funcallv_public_kw(o, :baz, 3, **{}))
     end
   end
@@ -64,11 +64,11 @@ class TestFuncall < Test::Unit::TestCase
     assert_equal([[], {a: 1}], Relay.with_yield_splat_kw(1, [{a: 1}], &block))
     assert_equal([[1], {a: 1}], Relay.with_yield_splat_kw(1, [1, {a: 1}], &block))
     assert_equal([[{}], {}], Relay.with_yield_splat_kw(2, [{}], **{}, &block))
-    assert_warn(/warning: The last argument is used as the keyword parameter.*for method/m) do
+    assert_warn(/warning: Using the last argument as keyword parameters is deprecated.*The called method is defined here/m) do
       assert_equal([[], {a: 1}], Relay.with_yield_splat_kw(3, [{a: 1}], &block))
     end
     assert_equal([[{a: 1}], {}], Relay.with_yield_splat_kw(3, [{a: 1}], **{}, &block))
-    assert_warn(/warning: The keyword argument is passed as the last hash parameter/) do
+    assert_warn(/warning: Passing the keyword argument as the last hash parameter is deprecated/) do
       assert_equal({}, Relay.with_yield_splat_kw(3, [], **{}, &->(a){a}))
     end
   end

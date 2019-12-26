@@ -921,6 +921,7 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
 	}
 	iclass = rb_include_class_new(module, RCLASS_SUPER(c));
 	c = RCLASS_SET_SUPER(c, iclass);
+        RCLASS_SET_INCLUDER(iclass, klass);
 
 	{
 	    VALUE m = module;
@@ -2050,7 +2051,7 @@ rb_scan_args_parse(int kw_flag, int argc, const VALUE *argv, const char *fmt, st
                     if (!keyword_given && !last_hash_keyword) {
                         /* Warn if treating positional as keyword, as in Ruby 3,
                            this will be an error */
-                        rb_warn("The last argument is used as the keyword parameter");
+                        rb_warn("Using the last argument as keyword parameters is deprecated");
                     }
                     argc--;
                 }
@@ -2065,7 +2066,7 @@ rb_scan_args_parse(int kw_flag, int argc, const VALUE *argv, const char *fmt, st
         }
         else if (arg->f_hash && keyword_given && arg->n_mand == argc) {
             /* Warn if treating keywords as positional, as in Ruby 3, this will be an error */
-            rb_warn("The keyword argument is passed as the last hash parameter");
+            rb_warn("Passing the keyword argument as the last hash parameter is deprecated");
         }
     }
     if (arg->f_hash && arg->n_mand == argc+1 && empty_keyword_given) {
@@ -2074,7 +2075,7 @@ rb_scan_args_parse(int kw_flag, int argc, const VALUE *argv, const char *fmt, st
         ptr[argc] = rb_hash_new();
         argc++;
         *(&argv) = ptr;
-        rb_warn("The keyword argument is passed as the last hash parameter");
+        rb_warn("Passing the keyword argument as the last hash parameter is deprecated");
     }
 
     arg->argc = argc;

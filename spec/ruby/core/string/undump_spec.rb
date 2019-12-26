@@ -38,7 +38,7 @@ ruby_version_is '2.5' do
       ].should be_computed_by(:undump)
     end
 
-    it "returns a string with unescaped sequencies \" and \\" do
+    it "returns a string with unescaped sequences \" and \\" do
       [ ['"\\""' , "\""],
         ['"\\\\"', "\\"]
       ].should be_computed_by(:undump)

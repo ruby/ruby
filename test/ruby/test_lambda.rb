@@ -74,6 +74,26 @@ class TestLambdaParameters < Test::Unit::TestCase
     assert_raise(ArgumentError, bug9605) {proc(&plus).call [1,2]}
   end
 
+  def pass_along(&block)
+    lambda(&block)
+  end
+
+  def pass_along2(&block)
+    pass_along(&block)
+  end
+
+  def test_create_non_lambda_for_proc_one_level
+    f = pass_along {}
+    refute_predicate(f, :lambda?, '[Bug #15620]')
+    assert_nothing_raised(ArgumentError) { f.call(:extra_arg) }
+  end
+
+  def test_create_non_lambda_for_proc_two_levels
+    f = pass_along2 {}
+    refute_predicate(f, :lambda?, '[Bug #15620]')
+    assert_nothing_raised(ArgumentError) { f.call(:extra_arg) }
+  end
+
   def test_instance_exec
     bug12568 = '[ruby-core:76300] [Bug #12568]'
     assert_nothing_raised(ArgumentError, bug12568) do

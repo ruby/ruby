@@ -184,6 +184,18 @@ class PPDelegateTest < Test::Unit::TestCase
   def test_delegate
     assert_equal("[]\n", A.new([]).pretty_inspect, "[ruby-core:25804]")
   end
+
+  def test_delegate_cycle
+    a = HasPrettyPrint.new nil
+
+    a.instance_eval {@a = a}
+    cycle_pretty_inspect = a.pretty_inspect
+
+    a.instance_eval {@a = SimpleDelegator.new(a)}
+    delegator_cycle_pretty_inspect = a.pretty_inspect
+
+    assert_equal(cycle_pretty_inspect, delegator_cycle_pretty_inspect)
+  end
 end
 
 class PPFileStatTest < Test::Unit::TestCase

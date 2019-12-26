@@ -818,9 +818,9 @@ class TestRequire < Test::Unit::TestCase
       rescue NotImplementedError, Errno::EACCES
         skip "File.symlink is not implemented"
       end
-      File.write(File.join(tmp, "real/a.rb"), "print __FILE__")
-      result = IO.popen([EnvUtil.rubybin, "-I#{tmp}/symlink", "-e", "require 'a.rb'"], &:read)
-      assert_operator(result, :end_with?, "/real/a.rb")
+      File.write(File.join(tmp, "real/test_symlink_load_path.rb"), "print __FILE__")
+      result = IO.popen([EnvUtil.rubybin, "-I#{tmp}/symlink", "-e", "require 'test_symlink_load_path.rb'"], &:read)
+      assert_operator(result, :end_with?, "/real/test_symlink_load_path.rb")
     }
   end
 

@@ -316,7 +316,7 @@ def package(vcs, rev, destdir, tmp = nil)
       FileUtils.mkpath(File.dirname(dest))
       begin
         FileUtils.cp_r(file, dest)
-        FileUtils.chmod_R("u=rwX,go=rX", dest)
+        FileUtils.chmod_R("a+rwX,go-w", dest)
       rescue SystemCallError
       end
     end

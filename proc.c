@@ -758,8 +758,8 @@ proc_new(VALUE klass, int8_t is_lambda, int8_t kernel)
             }
             else {
                 const char *name = kernel ? "Kernel#proc" : "Proc.new";
-                rb_warn("Capturing the given block using %s is deprecated; "
-                        "use `&block` instead", name);
+                rb_warn_deprecated("Capturing the given block using %s",
+                                   "`&block`", name);
 	    }
 	}
 #else
@@ -792,8 +792,16 @@ proc_new(VALUE klass, int8_t is_lambda, int8_t kernel)
 	break;
 
       case block_handler_type_ifunc:
-      case block_handler_type_iseq:
 	return rb_vm_make_proc_lambda(ec, VM_BH_TO_CAPT_BLOCK(block_handler), klass, is_lambda);
+      case block_handler_type_iseq:
+        {
+            const struct rb_captured_block *captured = VM_BH_TO_CAPT_BLOCK(block_handler);
+            rb_control_frame_t *last_ruby_cfp = rb_vm_get_ruby_level_next_cfp(ec, cfp);
+            if (is_lambda && last_ruby_cfp && vm_cfp_forwarded_bh_p(last_ruby_cfp, block_handler)) {
+                is_lambda = false;
+            }
+            return rb_vm_make_proc_lambda(ec, captured, klass, is_lambda);
+        }
     }
     VM_UNREACHABLE(proc_new);
     return Qnil;
@@ -2758,11 +2766,30 @@ rb_method_parameters(VALUE method)
  *
  *  Returns a human-readable description of the underlying method.
  *
- *    "cat".method(:count).inspect   #=> "#<Method: String#count>"
- *    (1..3).method(:map).inspect    #=> "#<Method: Range(Enumerable)#map>"
+ *    "cat".method(:count).inspect   #=> "#<Method: String#count(*)>"
+ *    (1..3).method(:map).inspect    #=> "#<Method: Range(Enumerable)#map()>"
  *
  *  In the latter case, the method description includes the "owner" of the
  *  original method (+Enumerable+ module, which is included into +Range+).
+ *
+ *  +inspect+ also provides, when possible, method argument names (call
+ *  sequence) and source location.
+ *
+ *    require 'net/http'
+ *    Net::HTTP.method(:get).inspect
+ *    #=> "#<Method: Net::HTTP.get(uri_or_host, path=..., port=...) <skip>/lib/ruby/2.7.0/net/http.rb:457>"
+ *
+ *  <code>...</code> in argument definition means argument is optional (has
+ *  some default value).
+ *
+ *  For methods defined in C (language core and extensions), location and
+ *  argument names can't be extracted, and only generic information is provided
+ *  in form of <code>*</code> (any number of arguments) or <code>_</code> (some
+ *  positional argument).
+ *
+ *    "cat".method(:count).inspect   #=> "#<Method: String#count(*)>"
+ *    "cat".method(:+).inspect       #=> "#<Method: String#+(_)>""
+
  */
 
 static VALUE
@@ -3471,6 +3498,70 @@ rb_method_compose_to_right(VALUE self, VALUE g)
 }
 
 /*
+ *  call-seq:
+ *     proc.ruby2_keywords -> proc
+ *
+ *  Marks the proc as passing keywords through a normal argument splat.
+ *  This should only be called on procs that accept an argument splat
+ *  (<tt>*args</tt>) but not explicit keywords or a keyword splat.  It
+ *  marks the proc such that if the proc is called with keyword arguments,
+ *  the final hash argument is marked with a special flag such that if it
+ *  is the final element of a normal argument splat to another method call,
+ *  and that method call does not include explicit keywords or a keyword
+ *  splat, the final element is interpreted as keywords.  In other words,
+ *  keywords will be passed through the proc to other methods.
+ *
+ *  This should only be used for procs that delegate keywords to another
+ *  method, and only for backwards compatibility with Ruby versions before
+ *  2.7.
+ *
+ *  This method will probably be removed at some point, as it exists only
+ *  for backwards compatibility. As it does not exist in Ruby versions
+ *  before 2.7, check that the proc responds to this method before calling
+ *  it. Also, be aware that if this method is removed, the behavior of the
+ *  proc will change so that it does not pass through keywords.
+ *
+ *    module Mod
+ *      foo = ->(meth, *args, &block) do
+ *        send(:"do_#{meth}", *args, &block)
+ *      end
+ *      foo.ruby2_keywords if foo.respond_to?(:ruby2_keywords)
+ *    end
+ */
+
+static VALUE
+proc_ruby2_keywords(VALUE procval)
+{
+    rb_proc_t *proc;
+    GetProcPtr(procval, proc);
+
+    rb_check_frozen(procval);
+
+    if (proc->is_from_method) {
+            rb_warn("Skipping set of ruby2_keywords flag for proc (proc created from method)");
+            return procval;
+    }
+
+    switch (proc->block.type) {
+      case block_type_iseq:
+        if (proc->block.as.captured.code.iseq->body->param.flags.has_rest &&
+                !proc->block.as.captured.code.iseq->body->param.flags.has_kw &&
+                !proc->block.as.captured.code.iseq->body->param.flags.has_kwrest) {
+            proc->block.as.captured.code.iseq->body->param.flags.ruby2_keywords = 1;
+        }
+        else {
+            rb_warn("Skipping set of ruby2_keywords flag for proc (proc accepts keywords or proc does not accept argument splat)");
+        }
+        break;
+      default:
+        rb_warn("Skipping set of ruby2_keywords flag for proc (proc not defined in Ruby)");
+        break;
+    }
+
+    return procval;
+}
+
+/*
  *  Document-class: LocalJumpError
  *
  *  Raised when Ruby can't yield as requested.
@@ -3753,6 +3844,56 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  * Since +return+ and +break+ exits the block itself in lambdas,
  * lambdas cannot be orphaned.
  *
+ * == Numbered parameters
+ *
+ * Numbered parameters are implicitly defined block parameters intended to
+ * simplify writing short blocks:
+ *
+ *     # Explicit parameter:
+ *     %w[test me please].each { |str| puts str.upcase } # prints TEST, ME, PLEASE
+ *     (1..5).map { |i| i**2 } # => [1, 4, 9, 16, 25]
+ *
+ *     # Implicit parameter:
+ *     %w[test me please].each { puts _1.upcase } # prints TEST, ME, PLEASE
+ *     (1..5).map { _1**2 } # => [1, 4, 9, 16, 25]
+ *
+ * Parameter names from +_1+ to +_9+ are supported:
+ *
+ *     [10, 20, 30].zip([40, 50, 60], [70, 80, 90]).map { _1 + _2 + _3 }
+ *     # => [120, 150, 180]
+ *
+ * Though, it is advised to resort to them wisely, probably limiting
+ * yourself to +_1+ and +_2+, and to one-line blocks.
+ *
+ * Numbered parameters can't be used together with explicitly named
+ * ones:
+ *
+ *     [10, 20, 30].map { |x| _1**2 }
+ *     # SyntaxError (ordinary parameter is defined)
+ *
+ * To avoid conflicts, naming local variables or method
+ * arguments +_1+, +_2+ and so on, causes a warning.
+ *
+ *     _1 = 'test'
+ *     # warning: `_1' is reserved as numbered parameter
+ *
+ * Using implicit numbered parameters affects block's arity:
+ *
+ *     p = proc { _1 + _2 }
+ *     l = lambda { _1 + _2 }
+ *     p.parameters     # => [[:opt, :_1], [:opt, :_2]]
+ *     p.arity          # => 2
+ *     l.parameters     # => [[:req, :_1], [:req, :_2]]
+ *     l.arity          # => 2
+ *
+ * Blocks with numbered parameters can't be nested:
+ *
+ *     %w[test me].each { _1.each_char { p _1 } }
+ *     # SyntaxError (numbered parameter is already used in outer block here)
+ *     # %w[test me].each { _1.each_char { p _1 } }
+ *     #                    ^~
+ *
+ * Numbered parameters were introduced in Ruby 2.7.
  */
 
 
@@ -3795,6 +3936,7 @@ Init_Proc(void)
     rb_define_method(rb_cProc, ">>", proc_compose_to_right, 1);
     rb_define_method(rb_cProc, "source_location", rb_proc_location, 0);
     rb_define_method(rb_cProc, "parameters", rb_proc_parameters, 0);
+    rb_define_method(rb_cProc, "ruby2_keywords", proc_ruby2_keywords, 0);
 
     /* Exceptions */
     rb_eLocalJumpError = rb_define_class("LocalJumpError", rb_eStandardError);

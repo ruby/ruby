@@ -120,9 +120,20 @@ enum vm_regan_acttype {
  * because inline method cache does not care about receiver.
  */
 
-#define CC_SET_FASTPATH(cc, func, enabled) do { \
-    if (LIKELY(enabled)) ((cc)->call = (func)); \
-} while (0)
+static inline void
+CC_SET_FASTPATH(CALL_CACHE cc, vm_call_handler func, bool enabled)
+{
+    if (LIKELY(enabled)) {
+        cc->call = func;
+    }
+}
+
+static inline void
+CC_SET_ME(CALL_CACHE cc, const rb_callable_method_entry_t *me)
+{
+    cc->me = me;
+    cc->method_serial = me ? me->def->method_serial : 0;
+}
 
 #define GET_BLOCK_HANDLER() (GET_LEP()[VM_ENV_DATA_INDEX_SPECVAL])
 
@@ -173,6 +184,7 @@ enum vm_regan_acttype {
 } while (0)
 #endif
 
+#define PREV_CLASS_SERIAL() (ruby_vm_class_serial)
 #define NEXT_CLASS_SERIAL() (++ruby_vm_class_serial)
 #define GET_GLOBAL_METHOD_STATE() (ruby_vm_global_method_state)
 #define INC_GLOBAL_METHOD_STATE() (++ruby_vm_global_method_state)

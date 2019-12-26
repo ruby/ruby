@@ -47,7 +47,7 @@ rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE
 {
     struct rb_calling_info calling = { Qundef, recv, argc, kw_splat, };
     struct rb_call_info ci = { id, (kw_splat ? VM_CALL_KW_SPLAT : 0), argc, };
-    struct rb_call_cache cc = { 0, { 0, }, me, me->def, vm_call_general, { 0, }, };
+    struct rb_call_cache cc = { 0, { 0, }, me, me->def->method_serial, vm_call_general, { 0, }, };
     struct rb_call_data cd = { cc, ci, };
     return vm_call0_body(ec, &calling, &cd, argv);
 }
@@ -145,7 +145,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, struc
                 RB_TYPE_P(argv[calling->argc-1], T_HASH) &&
                 RHASH_EMPTY_P(argv[calling->argc-1])) {
             if (calling->argc == 1) {
-                rb_warn("The keyword argument is passed as the last hash parameter");
+                rb_warn("Passing the keyword argument as the last hash parameter is deprecated");
             }
             else {
                 calling->argc--;
@@ -179,22 +179,25 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, struc
 		super_class = RCLASS_ORIGIN(super_class);
 	    }
 	    else if (cc->me->def->body.refined.orig_me) {
-		cc->me = refined_method_callable_without_refinement(cc->me);
+                CC_SET_ME(cc, refined_method_callable_without_refinement(cc->me));
 		goto again;
 	    }
 
 	    super_class = RCLASS_SUPER(super_class);
+            if (super_class) {
+                CC_SET_ME(cc, rb_callable_method_entry(super_class, ci->mid));
+                if (cc->me) {
+                    RUBY_VM_CHECK_INTS(ec);
+                    goto again;
+                }
+            }
 
-	    if (!super_class || !(cc->me = rb_callable_method_entry(super_class, ci->mid))) {
-		enum method_missing_reason ex = (type == VM_METHOD_TYPE_ZSUPER) ? MISSING_SUPER : 0;
-                ret = method_missing(calling->recv, ci->mid, calling->argc, argv, ex, calling->kw_splat);
-		goto success;
-	    }
-	    RUBY_VM_CHECK_INTS(ec);
-	    goto again;
+            enum method_missing_reason ex = (type == VM_METHOD_TYPE_ZSUPER) ? MISSING_SUPER : 0;
+            ret = method_missing(calling->recv, ci->mid, calling->argc, argv, ex, calling->kw_splat);
+            goto success;
 	}
       case VM_METHOD_TYPE_ALIAS:
-	cc->me = aliased_callable_method_entry(cc->me);
+        CC_SET_ME(cc, aliased_callable_method_entry(cc->me));
 	goto again;
       case VM_METHOD_TYPE_MISSING:
 	{
@@ -256,12 +259,6 @@ rb_adjust_argv_kw_splat(int *argc, const VALUE **argv, int *kw_splat)
     }
 
     return 0;
-}
-
-VALUE
-rb_vm_call(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me)
-{
-    return rb_vm_call0(ec, recv, id, argc, argv, me, RB_NO_KEYWORDS);
 }
 
 MJIT_FUNC_EXPORTED VALUE

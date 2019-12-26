@@ -427,11 +427,22 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
     return size;
 }
 
+static uintptr_t fresh_iseq_unique_id = 0; /* -- Remove In 3.0 -- */
+
+struct rb_iseq_constant_body *
+rb_iseq_constant_body_alloc(void)
+{
+    struct rb_iseq_constant_body *iseq_body;
+    iseq_body = ZALLOC(struct rb_iseq_constant_body);
+    iseq_body->iseq_unique_id = fresh_iseq_unique_id++; /* -- Remove In 3.0 -- */
+    return iseq_body;
+}
+
 static rb_iseq_t *
 iseq_alloc(void)
 {
     rb_iseq_t *iseq = iseq_imemo_alloc();
-    iseq->body = ZALLOC(struct rb_iseq_constant_body);
+    iseq->body = rb_iseq_constant_body_alloc();
     return iseq;
 }
 
@@ -921,7 +932,7 @@ iseq_load(VALUE data, const rb_iseq_t *parent, VALUE opt)
 
     iseq_type = iseq_type_from_sym(type);
     if (iseq_type == (enum iseq_type)-1) {
-	rb_raise(rb_eTypeError, "unsupport type: :%"PRIsVALUE, rb_sym2str(type));
+	rb_raise(rb_eTypeError, "unsupported type: :%"PRIsVALUE, rb_sym2str(type));
     }
 
     node_id = rb_hash_aref(misc, ID2SYM(rb_intern("node_id")));
@@ -3393,7 +3404,7 @@ iseqw_s_load_from_binary_extra_data(VALUE self, VALUE str)
  * To lookup the lineno of insn4, calculate rank("10100001", 8) = 3, so
  * the line (B) is the entry in question.
  *
- * A naive implementatoin of succinct bit-vector works really well
+ * A naive implementation of succinct bit-vector works really well
  * not only for large size but also for small size.  However, it has
  * tiny overhead for very small size.  So, this implementation consist
  * of two parts: one part is the "immediate" table that keeps rank result

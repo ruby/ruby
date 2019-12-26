@@ -31,6 +31,7 @@
  * * mc_miss_by_refine:          ... by ment being refined.
  * * mc_miss_by_visi:            ... by visibility change.
  * * mc_miss_spurious: spurious inline mc misshit.
+ * * mc_miss_reuse_call: count of reuse of cc->call.
  */
 RB_DEBUG_COUNTER(mc_inline_hit)
 RB_DEBUG_COUNTER(mc_inline_miss)
@@ -46,6 +47,7 @@ RB_DEBUG_COUNTER(mc_miss_by_distinct)
 RB_DEBUG_COUNTER(mc_miss_by_refine)
 RB_DEBUG_COUNTER(mc_miss_by_visi)
 RB_DEBUG_COUNTER(mc_miss_spurious)
+RB_DEBUG_COUNTER(mc_miss_reuse_call)
 
 /*
  * call cache fastpath usage
@@ -245,8 +247,6 @@ RB_DEBUG_COUNTER(obj_struct_embed)
 RB_DEBUG_COUNTER(obj_struct_transient)
 RB_DEBUG_COUNTER(obj_struct_ptr)
 
-RB_DEBUG_COUNTER(obj_regexp_ptr)
-
 RB_DEBUG_COUNTER(obj_data_empty)
 RB_DEBUG_COUNTER(obj_data_xfree)
 RB_DEBUG_COUNTER(obj_data_imm_free)
@@ -256,9 +256,19 @@ RB_DEBUG_COUNTER(obj_match_under4)
 RB_DEBUG_COUNTER(obj_match_ge4)
 RB_DEBUG_COUNTER(obj_match_ge8)
 RB_DEBUG_COUNTER(obj_match_ptr)
-RB_DEBUG_COUNTER(obj_file_ptr)
-RB_DEBUG_COUNTER(obj_bignum_ptr)
 
+RB_DEBUG_COUNTER(obj_iclass_ptr)
+RB_DEBUG_COUNTER(obj_class_ptr)
+RB_DEBUG_COUNTER(obj_module_ptr)
+
+RB_DEBUG_COUNTER(obj_bignum_ptr)
+RB_DEBUG_COUNTER(obj_bignum_embed)
+RB_DEBUG_COUNTER(obj_float)
+RB_DEBUG_COUNTER(obj_complex)
+RB_DEBUG_COUNTER(obj_rational)
+
+RB_DEBUG_COUNTER(obj_regexp_ptr)
+RB_DEBUG_COUNTER(obj_file_ptr)
 RB_DEBUG_COUNTER(obj_symbol)
 
 RB_DEBUG_COUNTER(obj_imemo_ment)
@@ -272,10 +282,6 @@ RB_DEBUG_COUNTER(obj_imemo_throw_data)
 RB_DEBUG_COUNTER(obj_imemo_ifunc)
 RB_DEBUG_COUNTER(obj_imemo_memo)
 RB_DEBUG_COUNTER(obj_imemo_parser_strterm)
-
-RB_DEBUG_COUNTER(obj_iclass_ptr)
-RB_DEBUG_COUNTER(obj_class_ptr)
-RB_DEBUG_COUNTER(obj_module_ptr)
 
 /* ar_table */
 RB_DEBUG_COUNTER(artable_hint_hit)
@@ -347,8 +353,6 @@ enum rb_debug_counter_type {
 };
 
 #if USE_DEBUG_COUNTER
-#include "ruby/ruby.h"
-
 extern size_t rb_debug_counter[];
 
 inline static int
@@ -374,5 +378,13 @@ VALUE rb_debug_counter_show(VALUE klass);
 #endif
 
 void rb_debug_counter_show_results(const char *msg);
+
+RUBY_SYMBOL_EXPORT_BEGIN
+
+size_t ruby_debug_counter_get(const char **names_ptr, size_t *counters_ptr);
+void ruby_debug_counter_reset(void);
+void ruby_debug_counter_show_at_exit(int enable);
+
+RUBY_SYMBOL_EXPORT_END
 
 #endif /* RUBY_DEBUG_COUNTER_H */

@@ -7,11 +7,12 @@ module ThreadSpecs
   end
 
   class Status
-    attr_reader :thread, :inspect, :status
+    attr_reader :thread, :inspect, :status, :to_s
     def initialize(thread)
       @thread = thread
       @alive = thread.alive?
       @inspect = thread.inspect
+      @to_s = thread.to_s
       @status = thread.status
       @stop = thread.stop?
     end

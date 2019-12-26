@@ -7,7 +7,7 @@ $:.unshift Spec::Path.lib_dir.to_s
 
 require "bundler/psyched_yaml"
 require "bundler/vendored_fileutils"
-require "uri"
+require "bundler/vendored_uri"
 require "digest"
 
 if File.expand_path(__FILE__) =~ %r{([^\w/\.:\-])}
@@ -82,7 +82,7 @@ RSpec.configure do |config|
   config.before :suite do
     require_relative "support/rubygems_ext"
     Spec::Rubygems.setup
-    ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -I#{Spec::Path.spec_dir}/rubygems -r#{Spec::Path.spec_dir}/support/hax.rb"
+    ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -r#{Spec::Path.spec_dir}/support/hax.rb"
     ENV["BUNDLE_SPEC_RUN"] = "true"
     ENV["BUNDLE_USER_CONFIG"] = ENV["BUNDLE_USER_CACHE"] = ENV["BUNDLE_USER_PLUGIN"] = nil
     ENV["GEMRC"] = nil

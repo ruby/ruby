@@ -447,6 +447,8 @@ struct rb_iseq_constant_body {
     long unsigned total_calls; /* number of total calls with `mjit_exec()` */
     struct rb_mjit_unit *jit_unit;
 #endif
+
+    uintptr_t iseq_unique_id; /* -- Remove In 3.0 -- */
 };
 
 /* T_IMEMO/iseq */
@@ -495,7 +497,7 @@ static inline const rb_iseq_t *
 def_iseq_ptr(rb_method_definition_t *def)
 {
 //TODO: re-visit. to check the bug, enable this assertion.
-#if 1 || VM_CHECK_MODE > 0
+#if VM_CHECK_MODE > 0
     if (def->type != VM_METHOD_TYPE_ISEQ) rb_bug("def_iseq_ptr: not iseq (%d)", def->type);
 #endif
     return rb_iseq_check(def->body.iseq.iseqptr);
@@ -761,7 +763,7 @@ typedef struct rb_control_frame_struct {
     const rb_iseq_t *iseq;	/* cfp[2] */
     VALUE self;			/* cfp[3] / block[0] */
     const VALUE *ep;		/* cfp[4] / block[1] */
-    const void *block_code;     /* cfp[5] / block[2] */ /* iseq or ifunc */
+    const void *block_code;     /* cfp[5] / block[2] */ /* iseq or ifunc or forwarded block handler */
     VALUE *__bp__;              /* cfp[6] */ /* outside vm_push_frame, use vm_base_ptr instead. */
 
 #if VM_DEBUG_BP_CHECK
@@ -1492,6 +1494,12 @@ vm_block_handler_verify(MAYBE_UNUSED(VALUE block_handler))
 	      (vm_block_handler_type(block_handler), 1));
 }
 
+static inline int
+vm_cfp_forwarded_bh_p(const rb_control_frame_t *cfp, VALUE block_handler)
+{
+    return ((VALUE) cfp->block_code) == block_handler;
+}
+
 static inline enum rb_block_type
 vm_block_type(const struct rb_block *block)
 {
@@ -1669,8 +1677,6 @@ const rb_env_t *rb_vm_env_prev_env(const rb_env_t *env);
 const VALUE *rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const ID *dynvars);
 void rb_vm_inc_const_missing_count(void);
 void rb_vm_gvl_destroy(rb_vm_t *vm);
-VALUE rb_vm_call(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc,
-		 const VALUE *argv, const rb_callable_method_entry_t *me);
 VALUE rb_vm_call_kw(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc,
                  const VALUE *argv, const rb_callable_method_entry_t *me, int kw_splat);
 MJIT_STATIC void rb_vm_pop_frame(rb_execution_context_t *ec);
@@ -1846,6 +1852,7 @@ void rb_threadptr_interrupt(rb_thread_t *th);
 void rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th);
 void rb_threadptr_pending_interrupt_clear(rb_thread_t *th);
 void rb_threadptr_pending_interrupt_enque(rb_thread_t *th, VALUE v);
+VALUE rb_ec_get_errinfo(const rb_execution_context_t *ec);
 void rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo);
 void rb_execution_context_update(const rb_execution_context_t *ec);
 void rb_execution_context_mark(const rb_execution_context_t *ec);

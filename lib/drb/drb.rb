@@ -1215,6 +1215,7 @@ module DRb
 
     def kill
       @thread.kill
+      @thread.join
     end
 
     def method_missing(msg, *arg, &blk)

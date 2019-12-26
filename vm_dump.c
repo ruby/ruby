@@ -172,6 +172,8 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
             }
         }
 
+        fprintf(stderr, "  self: %s\n", rb_raw_obj_info(buff, 0x100, cfp->self));
+
         if (iseq) {
             if (iseq->body->local_table_size > 0) {
                 fprintf(stderr, "  lvars:\n");
@@ -347,7 +349,7 @@ vm_stack_dump_each(const rb_execution_context_t *ec, const rb_control_frame_t *c
 	}
     }
     else {
-	rb_bug("unsupport frame type: %08lx", VM_FRAME_TYPE(cfp));
+	rb_bug("unsupported frame type: %08lx", VM_FRAME_TYPE(cfp));
     }
 }
 #endif

@@ -24,7 +24,7 @@ class SpecdocFormatter < BaseFormatter
   # the sequential number of the exception raised. If
   # there has already been an exception raised while
   # evaluating this example, it prints another +it+
-  # block description string so that each discription
+  # block description string so that each description
   # string has an associated 'ERROR' or 'FAILED'
   def exception(exception)
     print "\n- #{exception.it}" if exception?

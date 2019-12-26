@@ -233,11 +233,9 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_chown
-    assert_nothing_raised {
-      File.open(__FILE__) {|f| f.chown(-1, -1) }
-    }
-    assert_nothing_raised("[ruby-dev:27140]") {
-      File.open(__FILE__) {|f| f.chown nil, nil }
+    Tempfile.create("test-chown") {|f|
+      assert_nothing_raised {f.chown(-1, -1)}
+      assert_nothing_raised("[ruby-dev:27140]") {f.chown(nil, nil)}
     }
   end
 
@@ -451,7 +449,7 @@ class TestFile < Test::Unit::TestCase
     end
   end
 
-  if /(bcc|ms|cyg)win|mingw|emx/ =~ RUBY_PLATFORM
+  if /mswin|mingw/ =~ RUBY_PLATFORM
     def test_long_unc
       feature3399 = '[ruby-core:30623]'
       path = File.expand_path(__FILE__)
@@ -501,13 +499,16 @@ class TestFile < Test::Unit::TestCase
     assert_file.not_absolute_path?("~")
     assert_file.not_absolute_path?("~user")
 
-    if /mswin|mingw/ =~ RUBY_PLATFORM
+    if /cygwin|mswin|mingw/ =~ RUBY_PLATFORM
       assert_file.absolute_path?("C:\\foo\\bar")
       assert_file.absolute_path?("C:/foo/bar")
-      assert_file.not_absolute_path?("/foo/bar\\baz")
     else
       assert_file.not_absolute_path?("C:\\foo\\bar")
       assert_file.not_absolute_path?("C:/foo/bar")
+    end
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      assert_file.not_absolute_path?("/foo/bar\\baz")
+    else
       assert_file.absolute_path?("/foo/bar\\baz")
     end
   end

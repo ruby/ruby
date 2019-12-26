@@ -69,6 +69,8 @@ char *getenv();
 #define DEFAULT_RUBYGEMS_ENABLED "enabled"
 #endif
 
+void rb_warning_category_update(unsigned int mask, unsigned int bits);
+
 #define COMMA ,
 #define FEATURE_BIT(bit) (1U << feature_##bit)
 #define EACH_FEATURES(X, SEP) \
@@ -144,6 +146,7 @@ rb_feature_set_to(ruby_features_t *feat, unsigned int bit_mask, unsigned int bit
 #define FEATURE_SET_TO(feat, bit_mask, bit_set) \
     rb_feature_set_to(&(feat), bit_mask, bit_set)
 #define FEATURE_SET(feat, bits) FEATURE_SET_TO(feat, bits, bits)
+#define FEATURE_SET_RESTORE(feat, save) FEATURE_SET_TO(feat, (save).mask, (save).set & (save).mask)
 #define FEATURE_SET_P(feat, bits) ((feat).set & (bits))
 
 struct ruby_cmdline_options {
@@ -158,6 +161,7 @@ struct ruby_cmdline_options {
     } src, ext, intern;
     VALUE req_list;
     ruby_features_t features;
+    ruby_features_t warn;
     unsigned int dump;
 #if USE_MJIT
     struct mjit_options mjit;
@@ -265,7 +269,7 @@ usage(const char *name, int help)
 	M("-S",		   "",			   "look for the script using PATH environment variable"),
 	M("-v",		   "",			   "print the version number, then turn on verbose mode"),
 	M("-w",		   "",			   "turn warnings on for your script"),
-	M("-W[level=2]",   "",			   "set warning level; 0=silence, 1=medium, 2=verbose"),
+	M("-W[level=2|:category]",   "",	   "set warning level; 0=silence, 1=medium, 2=verbose"),
 	M("-x[directory]", "",			   "strip off text before #!ruby line and perhaps cd to directory"),
         M("--jit",         "",                     "enable JIT with default options (experimental)"),
         M("--jit-[option]","",                     "enable JIT with an option (experimental)"),
@@ -296,10 +300,14 @@ usage(const char *name, int help)
 	M("frozen-string-literal", "", "freeze all string literals (default: disabled)"),
         M("jit", "",            "JIT compiler (default: disabled)"),
     };
+    static const struct message warn_categories[] = {
+        M("deprecated", "",       "deprecated features"),
+        M("experimental", "",     "experimental features"),
+    };
     static const struct message mjit_options[] = {
         M("--jit-warnings",      "", "Enable printing JIT warnings"),
         M("--jit-debug",         "", "Enable JIT debugging (very slow), or add cflags if specified"),
-        M("--jit-wait",          "", "Wait until JIT compilation is finished everytime (for testing)"),
+        M("--jit-wait",          "", "Wait until JIT compilation finishes every time (for testing)"),
         M("--jit-save-temps",    "", "Save JIT temporary files in $TMP or /tmp (for testing)"),
         M("--jit-verbose=num",   "", "Print JIT logs of level num or less to stderr (default: 0)"),
         M("--jit-max-cache=num", "", "Max number of methods to be JIT-ed in a cache (default: 100)"),
@@ -323,6 +331,9 @@ usage(const char *name, int help)
     puts("Features:");
     for (i = 0; i < numberof(features); ++i)
 	SHOW(features[i]);
+    puts("Warning categories:");
+    for (i = 0; i < numberof(warn_categories); ++i)
+	SHOW(warn_categories[i]);
     puts("JIT options (experimental):");
     for (i = 0; i < numberof(mjit_options); ++i)
 	SHOW(mjit_options[i]);
@@ -1059,6 +1070,24 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 	    goto reswitch;
 
 	  case 'W':
+            if (s[1] == ':') {
+                unsigned int bits = 0;
+                static const char no_prefix[] = "no-";
+                int enable = strncmp(s += 2, no_prefix, sizeof(no_prefix)-1) != 0;
+                if (!enable) s += sizeof(no_prefix)-1;
+                size_t len = strlen(s);
+                if (NAME_MATCH_P("deprecated", s, len)) {
+                    bits = 1U << RB_WARN_CATEGORY_DEPRECATED;
+                }
+                else if (NAME_MATCH_P("experimental", s, len)) {
+                    bits = 1U << RB_WARN_CATEGORY_EXPERIMENTAL;
+                }
+                else {
+                    rb_warn("unknown warning category: `%s'", s);
+                }
+                if (bits) FEATURE_SET_TO(opt->warn, bits, enable ? bits : 0);
+                break;
+            }
 	    {
 		size_t numlen;
 		int v = 2;	/* -W as -W2 */
@@ -1408,10 +1437,12 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
     return argc0 - argc;
 }
 
+void Init_builtin_features(void);
+
 static void
 ruby_init_prelude(void)
 {
-    Init_prelude();
+    Init_builtin_features();
     rb_const_remove(rb_cObject, rb_intern_const("TMP_RUBY_PREFIX"));
 }
 
@@ -1571,6 +1602,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	VALUE ext_enc_name = opt->ext.enc.name;
 	VALUE int_enc_name = opt->intern.enc.name;
         ruby_features_t feat = opt->features;
+        ruby_features_t warn = opt->warn;
 
 	opt->src.enc.name = opt->ext.enc.name = opt->intern.enc.name = 0;
 	moreswitches(s, opt, 1);
@@ -1580,7 +1612,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	    opt->ext.enc.name = ext_enc_name;
 	if (int_enc_name)
 	    opt->intern.enc.name = int_enc_name;
-        FEATURE_SET_TO(opt->features, feat.mask, feat.set & feat.mask);
+        FEATURE_SET_RESTORE(opt->features, feat);
+        FEATURE_SET_RESTORE(opt->warn, warn);
     }
 
     if (opt->src.enc.name)
@@ -1774,6 +1807,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         ruby_set_script_name(progname);
 	rb_parser_set_options(parser, opt->do_print, opt->do_loop,
 			      opt->do_line, opt->do_split);
+        rb_warning_category_update(opt->warn.mask, opt->warn.set);
 	ast = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
     }
     else {
@@ -2012,6 +2046,7 @@ load_file_internal(VALUE argp_v)
     }
     rb_parser_set_options(parser, opt->do_print, opt->do_loop,
 			  opt->do_line, opt->do_split);
+    rb_warning_category_update(opt->warn.mask, opt->warn.set);
     if (NIL_P(f)) {
 	f = rb_str_new(0, 0);
 	rb_enc_associate(f, enc);

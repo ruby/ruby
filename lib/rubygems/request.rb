@@ -19,6 +19,7 @@ class Gem::Request
   end
 
   def self.proxy_uri(proxy) # :nodoc:
+    require "uri"
     case proxy
     when :no_proxy then nil
     when URI::HTTP then proxy
@@ -173,6 +174,7 @@ class Gem::Request
         :no_proxy : get_proxy_from_env('http')
     end
 
+    require "uri"
     uri = URI(Gem::UriFormatter.new(env_proxy).normalize)
 
     if uri and uri.user.nil? and uri.password.nil?

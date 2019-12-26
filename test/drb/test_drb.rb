@@ -329,6 +329,7 @@ class TestDRbAnyToS < Test::Unit::TestCase
     assert_match(/\A#<DRbTests::TestDRbAnyToS::BO:0x[0-9a-f]+>\z/, server.any_to_s(BO.new))
     server.stop_service
     server.thread.join
+    DRb::DRbConn.stop_pool
   end
 end
 
@@ -344,6 +345,7 @@ class TestDRbTCP < Test::Unit::TestCase
     client.close
     server.stop_service
     server.thread.join
+    DRb::DRbConn.stop_pool
   end
 end
 

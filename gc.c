@@ -86,7 +86,7 @@
 #pragma intrinsic(_umul128)
 #endif
 
-/* Expecting this struct to be elminated by function inlinings */
+/* Expecting this struct to be eliminated by function inlinings */
 struct optional {
     bool left;
     size_t right;
@@ -1710,9 +1710,10 @@ heap_page_add_freeobj(rb_objspace_t *objspace, struct heap_page *page, VALUE obj
 }
 
 static inline void
-heap_add_freepage(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
+heap_add_freepage(rb_heap_t *heap, struct heap_page *page)
 {
     asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
+    GC_ASSERT(page->free_slots != 0);
     if (page->freelist) {
 	page->free_next = heap->free_pages;
 	heap->free_pages = page;
@@ -1920,7 +1921,7 @@ heap_assign_page(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     struct heap_page *page = heap_page_create(objspace);
     heap_add_page(objspace, heap, page);
-    heap_add_freepage(objspace, heap, page);
+    heap_add_freepage(heap, page);
 }
 
 static void
@@ -2113,11 +2114,20 @@ newobj_init(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_prote
 #endif
 
     /* OBJSETUP */
-    RBASIC(obj)->flags = flags;
-    RBASIC_SET_CLASS_RAW(obj, klass);
-    RANY(obj)->as.values.v1 = v1;
-    RANY(obj)->as.values.v2 = v2;
-    RANY(obj)->as.values.v3 = v3;
+    struct RVALUE buf = {
+        .as = {
+            .values =  {
+                .basic = {
+                    .flags = flags,
+                    .klass = klass,
+                },
+                .v1 = v1,
+                .v2 = v2,
+                .v3 = v3,
+            },
+        },
+    };
+    MEMCPY(RANY(obj), &buf, RVALUE, 1);
 
 #if RGENGC_CHECK_MODE
     GC_ASSERT(RVALUE_MARKED(obj) == FALSE);
@@ -2740,7 +2750,11 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	}
 	break;
       case T_RATIONAL:
+        RB_DEBUG_COUNTER_INC(obj_rational);
+        break;
       case T_COMPLEX:
+        RB_DEBUG_COUNTER_INC(obj_complex);
+        break;
       case T_MOVED:
 	break;
       case T_ICLASS:
@@ -2764,6 +2778,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_FLOAT:
+        RB_DEBUG_COUNTER_INC(obj_float);
 	break;
 
       case T_BIGNUM:
@@ -2771,6 +2786,9 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	    xfree(BIGNUM_DIGITS(obj));
             RB_DEBUG_COUNTER_INC(obj_bignum_ptr);
 	}
+        else {
+            RB_DEBUG_COUNTER_INC(obj_bignum_embed);
+        }
 	break;
 
       case T_NODE:
@@ -3590,6 +3608,18 @@ rb_objspace_garbage_object_p(VALUE obj)
     return is_garbage_object(objspace, obj);
 }
 
+static VALUE
+id2ref_obj_tbl(rb_objspace_t *objspace, VALUE objid)
+{
+    VALUE orig;
+    if (st_lookup(objspace->id_to_obj_tbl, objid, &orig)) {
+        return orig;
+    }
+    else {
+        return Qundef;
+    }
+}
+
 /*
  *  call-seq:
  *     ObjectSpace._id2ref(object_id) -> an_object
@@ -3634,7 +3664,8 @@ id2ref(VALUE objid)
         }
     }
 
-    if (st_lookup(objspace->id_to_obj_tbl, objid, &orig)) {
+    if ((orig = id2ref_obj_tbl(objspace, objid)) != Qundef &&
+        is_live_object(objspace, orig)) {
         return orig;
     }
 
@@ -4311,11 +4342,11 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
 		}
 	    }
 	    else {
-		heap_add_freepage(objspace, heap, sweep_page);
+		heap_add_freepage(heap, sweep_page);
 		break;
 	    }
 #else
-	    heap_add_freepage(objspace, heap, sweep_page);
+	    heap_add_freepage(heap, sweep_page);
 	    break;
 #endif
 	}
@@ -6262,8 +6293,7 @@ heap_move_pooled_pages_to_free_pages(rb_heap_t *heap)
 
     if (page) {
 	heap->pooled_pages = page->free_next;
-	page->free_next = heap->free_pages;
-	heap->free_pages = page;
+        heap_add_freepage(heap, page);
     }
 
     return page;
@@ -8179,14 +8209,12 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
       case T_MODULE:
-        update_m_tbl(objspace, RCLASS_M_TBL(obj));
         if (RCLASS_SUPER((VALUE)obj)) {
             UPDATE_IF_MOVED(objspace, RCLASS(obj)->super);
         }
         if (!RCLASS_EXT(obj)) break;
-        if (RCLASS_IV_TBL(obj)) {
-            gc_update_tbl_refs(objspace, RCLASS_IV_TBL(obj));
-        }
+        update_m_tbl(objspace, RCLASS_M_TBL(obj));
+        gc_update_tbl_refs(objspace, RCLASS_IV_TBL(obj));
         update_class_ext(objspace, RCLASS_EXT(obj));
         update_const_tbl(objspace, RCLASS_CONST_TBL(obj));
         break;
@@ -8569,7 +8597,7 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
     struct heap_page *page = NULL;
     list_for_each(&heap_eden->pages, page, page_node) {
         if (page->free_slots > 0) {
-            heap_add_freepage(objspace, heap_eden, page);
+            heap_add_freepage(heap_eden, page);
         } else {
             page->free_next = NULL;
         }
@@ -10426,7 +10454,9 @@ wmap_finalize(RB_BLOCK_CALL_FUNC_ARGLIST(objid, self))
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
     /* Get reference from object id. */
-    obj = id2ref(objid);
+    if ((obj = id2ref_obj_tbl(&rb_objspace, objid)) == Qundef) {
+        rb_bug("wmap_finalize: objid is not found.");
+    }
 
     /* obj is original referenced object and/or weak reference. */
     orig = (st_data_t)obj;
@@ -11683,7 +11713,7 @@ rb_gcdebug_print_obj_condition(VALUE obj)
 }
 
 static VALUE
-gcdebug_sentinel(VALUE obj, VALUE name)
+gcdebug_sentinel(RB_BLOCK_CALL_FUNC_ARGLIST(obj, name))
 {
     fprintf(stderr, "WARNING: object %s(%p) is inadvertently collected\n", (char *)name, (void *)obj);
     return Qnil;

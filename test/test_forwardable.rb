@@ -24,11 +24,13 @@ class TestForwardable < Test::Unit::TestCase
 
   def test_def_instance_delegator
     %i[def_delegator def_instance_delegator].each do |m|
+      ret = nil
       cls = forwardable_class do
-        __send__ m, :@receiver, :delegated1
+        ret = __send__ m, :@receiver, :delegated1
       end
 
       assert_same RETURNED1, cls.new.delegated1
+      assert_equal :delegated1, ret
     end
   end
 
@@ -185,11 +187,13 @@ class TestForwardable < Test::Unit::TestCase
 
   def test_class_single_delegator
     %i[def_delegator def_single_delegator].each do |m|
+      ret = nil
       cls = single_forwardable_class do
-        __send__ m, :@receiver, :delegated1
+        ret = __send__ m, :@receiver, :delegated1
       end
 
       assert_same RETURNED1, cls.delegated1
+      assert_equal :delegated1, ret
     end
   end
 

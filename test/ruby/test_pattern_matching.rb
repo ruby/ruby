@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require 'test/unit'
 
-verbose, $VERBOSE = $VERBOSE, nil # suppress "warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!"
+experimental, Warning[:experimental] = Warning[:experimental], false # suppress "warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!"
 eval "\n#{<<~'END_of_GUARD'}", binding, __FILE__, __LINE__
 class TestPatternMatching < Test::Unit::TestCase
   class C
@@ -92,7 +92,8 @@ class TestPatternMatching < Test::Unit::TestCase
     end
 
     assert_block do
-      verbose, $VERBOSE = $VERBOSE, nil # suppress "warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!"
+      # suppress "warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!"
+      experimental, Warning[:experimental] = Warning[:experimental], false
       eval(%q{
         case true
         in a
@@ -100,7 +101,7 @@ class TestPatternMatching < Test::Unit::TestCase
         end
       })
     ensure
-      $VERBOSE = verbose
+      Warning[:experimental] = experimental
     end
 
     assert_block do
@@ -263,6 +264,7 @@ class TestPatternMatching < Test::Unit::TestCase
     assert_block do
       case 0
       in a
+        assert_equal(0, a)
         true
       in a
         flunk
@@ -470,6 +472,7 @@ END
       [[0], C.new([0])].all? do |i|
         case i
         in *a, 0, 1
+          raise a # suppress "unused variable: a" warning
         else
           true
         end
@@ -636,6 +639,7 @@ END
     assert_block do
       case []
       in [0, *a]
+        raise a # suppress "unused variable: a" warning
       else
         true
       end
@@ -651,6 +655,7 @@ END
     assert_block do
       case [0]
       in [0, *a, 1]
+        raise a # suppress "unused variable: a" warning
       else
         true
       end
@@ -695,6 +700,7 @@ END
     assert_block do
       case []
       in [0, *a]
+        raise a # suppress "unused variable: a" warning
       else
         true
       end
@@ -791,6 +797,7 @@ END
       [{}, C.new({})].all? do |i|
         case i
         in a:
+          raise a # suppress "unused variable: a" warning
         else
           true
         end
@@ -873,6 +880,8 @@ END
       [{}, C.new({})].all? do |i|
         case i
         in a:, **b
+          raise a # suppress "unused variable: a" warning
+          raise b # suppress "unused variable: b" warning
         else
           true
         end
@@ -920,6 +929,7 @@ END
       [{a: 0}, C.new({a: 0})].all? do |i|
         case i
         in a:, **nil
+          assert_equal(0, a)
           true
         end
       end
@@ -929,6 +939,7 @@ END
       [{a: 0, b: 1}, C.new({a: 0, b: 1})].all? do |i|
         case i
         in a:, **nil
+          assert_equal(0, a)
         else
           true
         end
@@ -1129,6 +1140,7 @@ END
     assert_block do
       case C.new({a: 0, b: 0, c: 0})
       in {a: 0, b:}
+        assert_equal(0, b)
         C.keys == [:a, :b]
       end
     end
@@ -1136,6 +1148,7 @@ END
     assert_block do
       case C.new({a: 0, b: 0, c: 0})
       in {a: 0, b:, **}
+        assert_equal(0, b)
         C.keys == [:a, :b]
       end
     end
@@ -1143,6 +1156,8 @@ END
     assert_block do
       case C.new({a: 0, b: 0, c: 0})
       in {a: 0, b:, **r}
+        assert_equal(0, b)
+        assert_equal({c: 0}, r)
         C.keys == nil
       end
     end
@@ -1157,6 +1172,7 @@ END
     assert_block do
       case C.new({a: 0, b: 0, c: 0})
       in {**r}
+        assert_equal({a: 0, b: 0, c: 0}, r)
         C.keys == nil
       end
     end
@@ -1249,6 +1265,8 @@ END
       s = Struct.new(:a, :b, keyword_init: true)
       case s[a: 0, b: 1]
       in a:, c:
+        raise a # suppress "unused variable: a" warning
+        raise c # suppress "unused variable: c" warning
         flunk
       in a:, b:, c:
         flunk
@@ -1274,6 +1292,23 @@ END
       1 in a:
     }, /unexpected/, '[ruby-core:95098]')
   end
+
+  def assert_experimental_warning(code)
+    w = Warning[:experimental]
+
+    Warning[:experimental] = false
+    assert_warn('') {eval(code)}
+
+    Warning[:experimental] = true
+    assert_warn(/Pattern matching is experimental/) {eval(code)}
+  ensure
+    Warning[:experimental] = w
+  end
+
+  def test_experimental_warning
+    assert_experimental_warning("case 0; in 0; end")
+    assert_experimental_warning("0 in 0")
+  end
 end
 END_of_GUARD
-$VERBOSE = verbose
+Warning[:experimental] = experimental

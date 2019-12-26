@@ -175,4 +175,4 @@ RUBYGEMS PLUGINS
 
 
 
-				 November 2019			BUNDLE-EXEC(1)
+				 December 2019			BUNDLE-EXEC(1)

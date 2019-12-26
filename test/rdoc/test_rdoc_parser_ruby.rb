@@ -100,7 +100,7 @@ class C; end
     assert_equal 'E', name_t[:text]
     assert_equal 'D::E', given_name
 
-    assert_raise RDoc::Error do
+    assert_nothing_raised do
       util_parser("A::\nB").get_class_or_module ctxt
     end
   end
@@ -828,6 +828,17 @@ end
     assert_equal 'yields(name)', blah.call_seq
     assert_equal 3, blah.line
     assert_equal @top_level, blah.file
+  end
+
+  def test_parse_call_syntax_sugar_for_constant
+    util_parser <<-CODE
+Foo = proc{}
+Foo::()
+    CODE
+
+    assert_nothing_raised do
+      @parser.scan
+    end
   end
 
   def test_parse_class_multi_ghost_methods
@@ -3504,7 +3515,7 @@ end
   #
   # The previous test assumes that between the =begin/=end blocks that there
   # is only one line, or minima formatting directives. This test tests for
-  # those who use the =begin bloc with longer / more advanced formatting
+  # those who use the =begin block with longer / more advanced formatting
   # within.
   #
   ##

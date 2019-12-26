@@ -353,7 +353,7 @@ class Sentence
   # * No rule derives to empty sequence
   # * Underivable rule simplified
   # * No channel rule
-  # * Symbols which has zero or one choices are not appered in rhs.
+  # * Symbols which has zero or one choices are not appeared in rhs.
   #
   # Note that the rules which can derive empty and non-empty
   # sequences are modified to derive only non-empty sequences.

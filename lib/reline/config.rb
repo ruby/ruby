@@ -157,7 +157,7 @@ class Reline::Config
     case directive
     when 'if'
       condition = false
-      case args # TODO: variables
+      case args
       when 'mode'
       when 'term'
       when 'version'

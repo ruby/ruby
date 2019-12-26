@@ -3810,7 +3810,7 @@ rb_io_each_line(int argc, VALUE *argv, VALUE io)
 static VALUE
 rb_io_lines(int argc, VALUE *argv, VALUE io)
 {
-    rb_warn("IO#lines is deprecated; use #each_line instead");
+    rb_warn_deprecated("IO#lines", "#each_line");
     if (!rb_block_given_p())
 	return rb_enumeratorize(io, ID2SYM(rb_intern("each_line")), argc, argv);
     return rb_io_each_line(argc, argv, io);
@@ -3861,7 +3861,7 @@ rb_io_each_byte(VALUE io)
 static VALUE
 rb_io_bytes(VALUE io)
 {
-    rb_warn("IO#bytes is deprecated; use #each_byte instead");
+    rb_warn_deprecated("IO#bytes", "#each_byte");
     if (!rb_block_given_p())
 	return rb_enumeratorize(io, ID2SYM(rb_intern("each_byte")), 0, 0);
     return rb_io_each_byte(io);
@@ -4015,7 +4015,7 @@ rb_io_each_char(VALUE io)
 static VALUE
 rb_io_chars(VALUE io)
 {
-    rb_warn("IO#chars is deprecated; use #each_char instead");
+    rb_warn_deprecated("IO#chars", "#each_char");
     if (!rb_block_given_p())
 	return rb_enumeratorize(io, ID2SYM(rb_intern("each_char")), 0, 0);
     return rb_io_each_char(io);
@@ -4143,7 +4143,7 @@ rb_io_each_codepoint(VALUE io)
 static VALUE
 rb_io_codepoints(VALUE io)
 {
-    rb_warn("IO#codepoints is deprecated; use #each_codepoint instead");
+    rb_warn_deprecated("IO#codepoints", "#each_codepoint");
     if (!rb_block_given_p())
 	return rb_enumeratorize(io, ID2SYM(rb_intern("each_codepoint")), 0, 0);
     return rb_io_each_codepoint(io);
@@ -7543,7 +7543,7 @@ rb_output_fs_setter(VALUE val, ID id, VALUE *var)
 {
     rb_str_setter(val, id, &val);
     if (!NIL_P(val)) {
-        rb_warn("non-nil $, will be deprecated");
+        rb_warn_deprecated("`$,'", NULL);
     }
     *var = val;
 }
@@ -8333,6 +8333,10 @@ rb_io_set_encoding_by_bom(VALUE io)
     }
     if (fptr->encs.enc2) {
         rb_raise(rb_eArgError, "encoding conversion is set");
+    }
+    else if (fptr->encs.enc && fptr->encs.enc != rb_ascii8bit_encoding()) {
+        rb_raise(rb_eArgError, "encoding is set to %s already",
+                 rb_enc_name(fptr->encs.enc));
     }
     if (!io_set_encoding_by_bom(io)) return Qnil;
     return rb_enc_from_encoding(fptr->encs.enc);
@@ -12475,7 +12479,7 @@ argf_each_line(int argc, VALUE *argv, VALUE argf)
 static VALUE
 argf_lines(int argc, VALUE *argv, VALUE argf)
 {
-    rb_warn("ARGF#lines is deprecated; use #each_line instead");
+    rb_warn_deprecated("ARGF#lines", "#each_line");
     if (!rb_block_given_p())
 	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_line")), argc, argv);
     return argf_each_line(argc, argv, argf);
@@ -12522,7 +12526,7 @@ argf_each_byte(VALUE argf)
 static VALUE
 argf_bytes(VALUE argf)
 {
-    rb_warn("ARGF#bytes is deprecated; use #each_byte instead");
+    rb_warn_deprecated("ARGF#bytes", "#each_byte");
     if (!rb_block_given_p())
 	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_byte")), 0, 0);
     return argf_each_byte(argf);
@@ -12561,7 +12565,7 @@ argf_each_char(VALUE argf)
 static VALUE
 argf_chars(VALUE argf)
 {
-    rb_warn("ARGF#chars is deprecated; use #each_char instead");
+    rb_warn_deprecated("ARGF#chars", "#each_char");
     if (!rb_block_given_p())
 	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_char")), 0, 0);
     return argf_each_char(argf);
@@ -12600,7 +12604,7 @@ argf_each_codepoint(VALUE argf)
 static VALUE
 argf_codepoints(VALUE argf)
 {
-    rb_warn("ARGF#codepoints is deprecated; use #each_codepoint instead");
+    rb_warn_deprecated("ARGF#codepoints", "#each_codepoint");
     if (!rb_block_given_p())
 	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_codepoint")), 0, 0);
     return argf_each_codepoint(argf);

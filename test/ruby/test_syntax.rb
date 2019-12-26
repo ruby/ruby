@@ -182,7 +182,7 @@ class TestSyntax < Test::Unit::TestCase
     h = {k3: 31}
     assert_raise(ArgumentError) {o.kw(**h)}
     h = {"k1"=>11, k2: 12}
-    assert_warn(/The last argument is split into positional and keyword parameters.* for `kw'/m) do
+    assert_warn(/Splitting the last argument into positional and keyword parameters is deprecated.*The called method `kw'/m) do
       assert_raise(ArgumentError) {o.kw(**h)}
     end
   end
@@ -1437,8 +1437,13 @@ eom
     assert_syntax_error('-> {_1; -> {_2}}', /numbered parameter is already used/)
     assert_syntax_error('-> {-> {_1}; _2}', /numbered parameter is already used/)
     assert_syntax_error('proc {_1; _1 = nil}', /Can't assign to numbered parameter _1/)
-    assert_warn(/`_1' is used as numbered parameter/) {eval('proc {_1 = nil}')}
-    assert_warn(/`_2' is used as numbered parameter/) {eval('_2=1')}
+    mesg = proc {|n| /`_#{n}' is reserved for numbered parameter/}
+    assert_warn(mesg[1]) {eval('proc {_1 = nil}')}
+    assert_warn(mesg[2]) {eval('_2=1')}
+    assert_warn(mesg[3]) {eval('proc {|_3|}')}
+    assert_warn(mesg[4]) {instance_eval('def x(_4) end')}
+    assert_warn(mesg[5]) {instance_eval('def _5; end')}
+    assert_warn(mesg[6]) {instance_eval('def self._6; end')}
     assert_raise_with_message(NameError, /undefined local variable or method `_1'/) {
       eval('_1')
     }
@@ -1518,7 +1523,7 @@ eom
       assert_warning('') {
         assert_equal([[1, 2, 3], {k1: 4, k2: 5}], obj.foo(1, 2, 3, k1: 4, k2: 5))
       }
-      warning = "warning: The last argument is used as the keyword parameter"
+      warning = "warning: Using the last argument as keyword parameters is deprecated"
       assert_warning(/\A\z|:(?!#{__LINE__+1})\d+: #{warning}/o) {
         assert_equal([[], {}], obj.foo({}) {|*x| x})
       }

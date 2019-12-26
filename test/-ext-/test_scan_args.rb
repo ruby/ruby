@@ -93,12 +93,12 @@ class TestScanArgs < Test::Unit::TestCase
     assert_equal([1, "a", nil], Bug::ScanArgs.lead_hash("a"))
     assert_raise(ArgumentError) {Bug::ScanArgs.lead_hash("a", "b")}
     assert_equal([1, "a", {b: 1}], Bug::ScanArgs.lead_hash("a", b: 1))
-    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+    assert_warn(/Passing the keyword argument as the last hash parameter is deprecated/) do
       assert_equal([1, {b: 1}, nil], Bug::ScanArgs.lead_hash(b: 1))
     end
     assert_equal([1, {"a"=>0, b: 1}, nil], Bug::ScanArgs.lead_hash({"a"=>0, b: 1}, **{}))
     assert_raise(ArgumentError) {Bug::ScanArgs.lead_hash(1, {"a"=>0, b: 1}, **{})}
-    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+    assert_warn(/Passing the keyword argument as the last hash parameter is deprecated/) do
       assert_equal([1, {}, nil], Bug::ScanArgs.lead_hash(**{}))
     end
   end
@@ -120,7 +120,7 @@ class TestScanArgs < Test::Unit::TestCase
     assert_equal([2, "a", "b", nil], Bug::ScanArgs.lead_opt_hash("a", "b"))
     assert_equal([1, "a", nil, {c: 1}], Bug::ScanArgs.lead_opt_hash("a", c: 1))
     assert_equal([2, "a", "b", {c: 1}], Bug::ScanArgs.lead_opt_hash("a", "b", c: 1))
-    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+    assert_warn(/Passing the keyword argument as the last hash parameter is deprecated/) do
       assert_equal([1, {c: 1}, nil, nil], Bug::ScanArgs.lead_opt_hash(c: 1))
     end
     assert_raise(ArgumentError) {Bug::ScanArgs.lead_opt_hash("a", "b", "c")}
@@ -145,7 +145,7 @@ class TestScanArgs < Test::Unit::TestCase
     assert_equal([2, "a", ["b"], nil], Bug::ScanArgs.lead_var_hash("a", "b"))
     assert_equal([2, "a", ["b"], {c: 1}], Bug::ScanArgs.lead_var_hash("a", "b", c: 1))
     assert_equal([1, "a", [], {c: 1}], Bug::ScanArgs.lead_var_hash("a", c: 1))
-    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+    assert_warn(/Passing the keyword argument as the last hash parameter is deprecated/) do
       assert_equal([1, {c: 1}, [], nil], Bug::ScanArgs.lead_var_hash(c: 1))
     end
     assert_equal([3, "a", ["b", "c"], nil], Bug::ScanArgs.lead_var_hash("a", "b", "c"))
@@ -173,7 +173,7 @@ class TestScanArgs < Test::Unit::TestCase
     assert_equal([2, "a", "b", [], nil], Bug::ScanArgs.lead_opt_var_hash("a", "b"))
     assert_equal([2, "a", "b", [], {c: 1}], Bug::ScanArgs.lead_opt_var_hash("a", "b", c: 1))
     assert_equal([1, "a", nil, [], {c: 1}], Bug::ScanArgs.lead_opt_var_hash("a", c: 1))
-    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+    assert_warn(/Passing the keyword argument as the last hash parameter is deprecated/) do
       assert_equal([1, {c: 1}, nil, [], nil], Bug::ScanArgs.lead_opt_var_hash(c: 1))
     end
     assert_equal([3, "a", "b", ["c"], nil], Bug::ScanArgs.lead_opt_var_hash("a", "b", "c"))
@@ -189,7 +189,7 @@ class TestScanArgs < Test::Unit::TestCase
     assert_equal([2, "a", "b", nil], Bug::ScanArgs.opt_trail_hash("a", "b"))
     assert_equal([1, nil, "a", {c: 1}], Bug::ScanArgs.opt_trail_hash("a", c: 1))
     assert_equal([2, "a", "b", {c: 1}], Bug::ScanArgs.opt_trail_hash("a", "b", c: 1))
-    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+    assert_warn(/Passing the keyword argument as the last hash parameter is deprecated/) do
       assert_equal([1, nil, {c: 1}, nil], Bug::ScanArgs.opt_trail_hash(c: 1))
     end
     assert_raise(ArgumentError) {Bug::ScanArgs.opt_trail_hash("a", "b", "c")}
@@ -203,7 +203,7 @@ class TestScanArgs < Test::Unit::TestCase
     assert_raise(ArgumentError) {Bug::ScanArgs.lead_opt_trail_hash("a")}
     assert_raise(ArgumentError) {Bug::ScanArgs.lead_opt_trail_hash(c: 1)}
     assert_equal([2, "a", nil, "b", nil], Bug::ScanArgs.lead_opt_trail_hash("a", "b"))
-    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+    assert_warn(/Passing the keyword argument as the last hash parameter is deprecated/) do
       assert_equal([2, "a", nil, {c: 1}, nil], Bug::ScanArgs.lead_opt_trail_hash("a", c: 1))
     end
     assert_equal([2, "a", nil, "b", {c: 1}], Bug::ScanArgs.lead_opt_trail_hash("a", "b", c: 1))
@@ -221,7 +221,7 @@ class TestScanArgs < Test::Unit::TestCase
     assert_equal([2, ["a"], "b", nil], Bug::ScanArgs.var_trail_hash("a", "b"))
     assert_equal([1, [], "a", {c: 1}], Bug::ScanArgs.var_trail_hash("a", c: 1))
     assert_equal([2, ["a"], "b", {c: 1}], Bug::ScanArgs.var_trail_hash("a", "b", c: 1))
-    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+    assert_warn(/Passing the keyword argument as the last hash parameter is deprecated/) do
       assert_equal([1, [], {c: 1}, nil], Bug::ScanArgs.var_trail_hash(c: 1))
     end
     assert_equal([3, ["a", "b"], "c", nil], Bug::ScanArgs.var_trail_hash("a", "b", "c"))
@@ -235,7 +235,7 @@ class TestScanArgs < Test::Unit::TestCase
     assert_raise(ArgumentError) {Bug::ScanArgs.lead_var_trail_hash()}
     assert_raise(ArgumentError) {Bug::ScanArgs.lead_var_trail_hash("a")}
     assert_raise(ArgumentError) {Bug::ScanArgs.lead_var_trail_hash(c: 1)}
-    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+    assert_warn(/Passing the keyword argument as the last hash parameter is deprecated/) do
       assert_equal([2, "a", [], {c: 1}, nil], Bug::ScanArgs.lead_var_trail_hash("a", c: 1))
     end
     assert_equal([2, "a", [], "b", nil], Bug::ScanArgs.lead_var_trail_hash("a", "b"))
@@ -250,7 +250,7 @@ class TestScanArgs < Test::Unit::TestCase
   def test_opt_var_trail_hash
     assert_raise(ArgumentError) {Bug::ScanArgs.opt_var_trail_hash()}
     assert_equal([1, nil, [], "a", nil], Bug::ScanArgs.opt_var_trail_hash("a"))
-    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+    assert_warn(/Passing the keyword argument as the last hash parameter is deprecated/) do
       assert_equal([1, nil, [], {c: 1}, nil], Bug::ScanArgs.opt_var_trail_hash(c: 1))
     end
     assert_equal([1, nil, [], "a", {c: 1}], Bug::ScanArgs.opt_var_trail_hash("a", c: 1))
@@ -266,7 +266,7 @@ class TestScanArgs < Test::Unit::TestCase
   def test_lead_opt_var_trail_hash
     assert_raise(ArgumentError) {Bug::ScanArgs.lead_opt_var_trail_hash()}
     assert_raise(ArgumentError) {Bug::ScanArgs.lead_opt_var_trail_hash("a")}
-    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+    assert_warn(/Passing the keyword argument as the last hash parameter is deprecated/) do
       assert_equal([2, "a", nil, [], {b: 1}, nil], Bug::ScanArgs.lead_opt_var_trail_hash("a", b: 1))
     end
     assert_equal([2, "a", nil, [], "b", nil], Bug::ScanArgs.lead_opt_var_trail_hash("a", "b"))
@@ -285,7 +285,7 @@ class TestScanArgs < Test::Unit::TestCase
     assert_equal([1, "a", nil, {c: 1}], Bug::ScanArgs.k_lead_opt_hash("a", {c: 1}))
     assert_equal([2, "a", "b", {c: 1}], Bug::ScanArgs.k_lead_opt_hash("a", "b", c: 1))
     assert_equal([2, "a", "b", {c: 1}], Bug::ScanArgs.k_lead_opt_hash("a", "b", {c: 1}))
-    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+    assert_warn(/Passing the keyword argument as the last hash parameter is deprecated/) do
       assert_equal([1, {c: 1}, nil, nil], Bug::ScanArgs.k_lead_opt_hash(c: 1))
     end
     assert_warn(/The last argument is split into positional and keyword parameters/) do
@@ -294,7 +294,7 @@ class TestScanArgs < Test::Unit::TestCase
   end
 
   def test_e_lead_opt_hash
-    assert_warn(/The keyword argument is passed as the last hash parameter/) do
+    assert_warn(/Passing the keyword argument as the last hash parameter is deprecated/) do
       assert_equal([1, {}, nil, nil], Bug::ScanArgs.e_lead_opt_hash)
     end
     assert_equal([1, "a", nil, nil], Bug::ScanArgs.e_lead_opt_hash("a"))

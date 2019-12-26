@@ -4,6 +4,7 @@
  */
 #include "ruby.h"
 #include "ruby/io.h"
+#include "ruby/thread.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -22,7 +23,7 @@ typedef struct termios conmode;
 static int
 setattr(int fd, conmode *t)
 {
-    while (tcsetattr(fd, TCSAFLUSH, t)) {
+    while (tcsetattr(fd, TCSANOW, t)) {
 	if (errno != EINTR) return 0;
     }
     return 1;
@@ -164,11 +165,13 @@ set_rawmode(conmode *t, void *arg)
     cfmakeraw(t);
     t->c_lflag &= ~(ECHOE|ECHOK);
 #elif defined HAVE_TERMIOS_H || defined HAVE_TERMIO_H
-    t->c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON);
+    t->c_iflag &= ~(IGNBRK|BRKINT|IGNPAR|PARMRK|INPCK|ISTRIP|INLCR|IGNCR|ICRNL|IXON|IXOFF|IXANY|IMAXBEL);
     t->c_oflag &= ~OPOST;
-    t->c_lflag &= ~(ECHO|ECHOE|ECHOK|ECHONL|ICANON|ISIG|IEXTEN);
+    t->c_lflag &= ~(ECHO|ECHOE|ECHOK|ECHONL|ICANON|ISIG|IEXTEN|XCASE);
     t->c_cflag &= ~(CSIZE|PARENB);
     t->c_cflag |= CS8;
+    t->c_cc[VMIN] = 1;
+    t->c_cc[VTIME] = 0;
 #elif defined HAVE_SGTTY_H
     t->sg_flags &= ~ECHO;
     t->sg_flags |= RAW;
@@ -186,9 +189,10 @@ set_rawmode(conmode *t, void *arg)
 #ifdef ISIG
 	if (r->intr) {
 	    t->c_iflag |= BRKINT|IXON;
-	    t->c_lflag |= ISIG|IEXTEN;
+	    t->c_lflag |= ISIG;
 	}
 #endif
+	(void)r;
     }
 }
 
@@ -454,7 +458,7 @@ getc_call(VALUE io)
     return rb_funcallv(io, id_getc, 0, 0);
 }
 #else
-static VALUE
+static void *
 nogvl_getch(void *p)
 {
     int len = 0;
@@ -463,7 +467,6 @@ nogvl_getch(void *p)
     switch (c) {
       case WEOF:
 	break;
-	return (VALUE)0;
       case 0x00:
       case 0xe0:
 	buf[len++] = c;
@@ -473,7 +476,7 @@ nogvl_getch(void *p)
 	buf[len++] = c;
 	break;
     }
-    return (VALUE)len;
+    return (void *)(VALUE)len;
 }
 #endif
 
@@ -517,8 +520,11 @@ console_getch(int argc, VALUE *argv, VALUE io)
 	    if (w < 0) rb_eof_error();
 	    if (!(w & RB_WAITFD_IN)) return Qnil;
 	}
+	else {
+	    rb_warning("vtime option ignored if intr flag is unset");
+	}
     }
-    len = (int)rb_thread_io_blocking_region(nogvl_getch, wbuf, fptr->fd);
+    len = (int)(VALUE)rb_thread_call_without_gvl(nogvl_getch, wbuf, RUBY_UBF_IO, 0);
     switch (len) {
       case 0:
 	return Qnil;

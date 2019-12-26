@@ -293,7 +293,7 @@ class TestNumeric < Test::Unit::TestCase
     assert_raise(ArgumentError, bug9811) { 1.step(10, 1, by: 11).size }
 
 
-    e = assert_warn(/The last argument is used as the keyword parameter/) {
+    e = assert_warn(/Using the last argument as keyword parameters is deprecated/) {
       1.step(10, {by: "1"})
     }
     assert_warn('') {

@@ -19,7 +19,7 @@ procstat_vm(struct procstat *procstat, struct kinfo_proc *kipp)
 #endif
 	fprintf(stderr, "%*s %*s %3s %4s %4s %3s %3s %4s %-2s %-s\n",
 		ptrwidth, "START", ptrwidth, "END", "PRT", "RES",
-		"PRES", "REF", "SHD", "FL", "TP", "PATH");
+		"P""RES", "REF", "SHD", "FL", "TP", "PATH");
 
 #ifdef HAVE_PROCSTAT_GETVMMAP
 	freep = procstat_getvmmap(procstat, kipp, &cnt);

@@ -1,8 +1,15 @@
 # frozen_string_literal: true
 
+begin
+  require_relative "lib/ostruct/version"
+rescue LoadError
+  # for Ruby core repository
+  require_relative "version"
+end
+
 Gem::Specification.new do |spec|
   spec.name          = "ostruct"
-  spec.version       = "0.1.0"
+  spec.version       = OpenStruct::VERSION
   spec.authors       = ["Marc-Andre Lafortune"]
   spec.email         = ["ruby-core@marc-andre.ca"]
 
@@ -11,7 +18,7 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/ruby/ostruct"
   spec.license       = "BSD-2-Clause"
 
-  spec.files         = [".gitignore", ".travis.yml", "Gemfile", "LICENSE.txt", "README.md", "Rakefile", "bin/console", "bin/setup", "lib/ostruct.rb", "ostruct.gemspec"]
+  spec.files         = [".gitignore", ".travis.yml", "Gemfile", "LICENSE.txt", "README.md", "Rakefile", "bin/console", "bin/setup", "lib/ostruct.rb", "lib/ostruct/version.rb", "ostruct.gemspec"]
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]

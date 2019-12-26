@@ -45,7 +45,7 @@ begin
     }
   }
 rescue ThreadError => e
-  :ok if /can't create Thread/ =~ e.message
+  /can't create Thread/ =~ e.message ? :ok : e.message
 end
 }
 assert_equal %q{ok}, %q{
@@ -59,7 +59,7 @@ begin
     }
   }
 rescue ThreadError => e
-  :ok if /can't create Thread/ =~ e.message
+  /can't create Thread/ =~ e.message ? :ok : e.message
 end
 }
 assert_equal %q{ok}, %q{

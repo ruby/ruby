@@ -52,7 +52,7 @@ describe SpecPositiveOperatorMatcher, ">= operator" do
   end
 end
 
-describe SpecPositiveOperatorMatcher, "< operater" do
+describe SpecPositiveOperatorMatcher, "< operator" do
   it "provides a failure message that 'Expected x to be less than y'" do
     lambda {
       SpecPositiveOperatorMatcher.new(5) < 4
@@ -64,7 +64,7 @@ describe SpecPositiveOperatorMatcher, "< operater" do
   end
 end
 
-describe SpecPositiveOperatorMatcher, "<= operater" do
+describe SpecPositiveOperatorMatcher, "<= operator" do
   it "provides a failure message that 'Expected x to be less than or equal to y'" do
     lambda {
       SpecPositiveOperatorMatcher.new(5) <= 4

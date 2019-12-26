@@ -112,7 +112,7 @@ class Bundler::Thor
 
     def validate!
       raise ArgumentError, "An option cannot be boolean and required." if boolean? && required?
-      validate_default_type! if @check_default_type
+      validate_default_type!
     end
 
     def validate_default_type!
@@ -130,7 +130,18 @@ class Bundler::Thor
       end
 
       expected_type = (@repeatable && @type != :hash) ? :array : @type
-      raise ArgumentError, "Expected #{expected_type} default value for '#{switch_name}'; got #{@default.inspect} (#{default_type})" unless default_type == expected_type
+
+      if default_type != expected_type
+        err = "Expected #{expected_type} default value for '#{switch_name}'; got #{@default.inspect} (#{default_type})"
+
+        if @check_default_type
+          raise ArgumentError, err
+        elsif @check_default_type == nil
+          Bundler::Thor.deprecation_warning "#{err}.\n" +
+            'This will be rejected in the future unless you explicitly pass the options `check_default_type: false`' +
+            ' or call `allow_incompatible_default_type!` in your code'
+        end
+      end
     end
 
     def dasherized?

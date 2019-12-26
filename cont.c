@@ -2367,7 +2367,7 @@ rb_fiber_pool_initialize(int argc, VALUE* argv, VALUE self)
     VALUE size = Qnil, count = Qnil, vm_stack_size = Qnil;
     struct fiber_pool * fiber_pool = NULL;
 
-    // Maybe these should be keyworkd arguments.
+    // Maybe these should be keyword arguments.
     rb_scan_args(argc, argv, "03", &size, &count, &vm_stack_size);
 
     if (NIL_P(size)) {

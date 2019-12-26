@@ -10,6 +10,7 @@ class Reline::LineEditor
   attr_reader :byte_pointer
   attr_accessor :confirm_multiline_termination_proc
   attr_accessor :completion_proc
+  attr_accessor :completion_append_character
   attr_accessor :output_modifier_proc
   attr_accessor :prompt_proc
   attr_accessor :auto_indent_proc
@@ -43,6 +44,7 @@ class Reline::LineEditor
     COMPLETION = :completion
     MENU = :menu
     JOURNEY = :journey
+    MENU_WITH_PERFECT_MATCH = :menu_with_perfect_match
     PERFECT_MATCH = :perfect_match
   end
 
@@ -57,6 +59,7 @@ class Reline::LineEditor
 
   def initialize(config)
     @config = config
+    @completion_append_character = ''
     reset_variables
   end
 
@@ -549,10 +552,14 @@ class Reline::LineEditor
   private def complete_internal_proc(list, is_menu)
     preposing, target, postposing = retrieve_completion_block
     list = list.select { |i|
-      if i and i.encoding != Encoding::US_ASCII and i.encoding != @encoding
-        raise Encoding::CompatibilityError
+      if i and not Encoding.compatible?(target.encoding, i.encoding)
+        raise Encoding::CompatibilityError, "#{target.encoding.name} is not compatible with #{i.encoding.name}"
       end
-      i&.start_with?(target)
+      if @config.completion_ignore_case
+        i&.downcase&.start_with?(target.downcase)
+      else
+        i&.start_with?(target)
+      end
     }
     if is_menu
       menu(target, list)
@@ -569,10 +576,18 @@ class Reline::LineEditor
       size = [memo_mbchars.size, item_mbchars.size].min
       result = ''
       size.times do |i|
-        if memo_mbchars[i] == item_mbchars[i]
-          result << memo_mbchars[i]
+        if @config.completion_ignore_case
+          if memo_mbchars[i].casecmp?(item_mbchars[i])
+            result << memo_mbchars[i]
+          else
+            break
+          end
         else
-          break
+          if memo_mbchars[i] == item_mbchars[i]
+            result << memo_mbchars[i]
+          else
+            break
+          end
         end
       end
       result
@@ -580,27 +595,43 @@ class Reline::LineEditor
     [target, preposing, completed, postposing]
   end
 
-  private def complete(list)
+  private def complete(list, just_show_list = false)
     case @completion_state
     when CompletionState::NORMAL, CompletionState::JOURNEY
       @completion_state = CompletionState::COMPLETION
     when CompletionState::PERFECT_MATCH
       @dig_perfect_match_proc&.(@perfect_matched)
     end
-    is_menu = (@completion_state == CompletionState::MENU)
+    if just_show_list
+      is_menu = true
+    elsif @completion_state == CompletionState::MENU
+      is_menu = true
+    elsif @completion_state == CompletionState::MENU_WITH_PERFECT_MATCH
+      is_menu = true
+    else
+      is_menu = false
+    end
     result = complete_internal_proc(list, is_menu)
+    if @completion_state == CompletionState::MENU_WITH_PERFECT_MATCH
+      @completion_state = CompletionState::PERFECT_MATCH
+    end
     return if result.nil?
     target, preposing, completed, postposing = result
     return if completed.nil?
-    if target <= completed and (@completion_state == CompletionState::COMPLETION or @completion_state == CompletionState::PERFECT_MATCH)
-      @completion_state = CompletionState::MENU
+    if target <= completed and (@completion_state == CompletionState::COMPLETION)
       if list.include?(completed)
-        @completion_state = CompletionState::PERFECT_MATCH
+        if list.one?
+          @completion_state = CompletionState::PERFECT_MATCH
+        else
+          @completion_state = CompletionState::MENU_WITH_PERFECT_MATCH
+        end
         @perfect_matched = completed
+      else
+        @completion_state = CompletionState::MENU
       end
-      if target < completed
-        @line = preposing + completed + postposing
-        line_to_pointer = preposing + completed
+      if not just_show_list and target < completed
+        @line = preposing + completed + completion_append_character.to_s + postposing
+        line_to_pointer = preposing + completed + completion_append_character.to_s
         @cursor_max = calculate_width(@line)
         @cursor = calculate_width(line_to_pointer)
         @byte_pointer = line_to_pointer.bytesize
@@ -610,7 +641,8 @@ class Reline::LineEditor
 
   private def move_completed_list(list, direction)
     case @completion_state
-    when CompletionState::NORMAL, CompletionState::COMPLETION, CompletionState::MENU
+    when CompletionState::NORMAL, CompletionState::COMPLETION,
+         CompletionState::MENU, CompletionState::MENU_WITH_PERFECT_MATCH
       @completion_state = CompletionState::JOURNEY
       result = retrieve_completion_block
       return if result.nil?
@@ -777,9 +809,7 @@ class Reline::LineEditor
     completion_occurs = false
     if @config.editing_mode_is?(:emacs, :vi_insert) and key.char == "\C-i".ord
       unless @config.disable_completion
-        result = retrieve_completion_block
-        slice = result[1]
-        result = @completion_proc.(slice) if @completion_proc and slice
+        result = call_completion_proc
         if result.is_a?(Array)
           completion_occurs = true
           complete(result)
@@ -787,9 +817,7 @@ class Reline::LineEditor
       end
     elsif not @config.disable_completion and @config.editing_mode_is?(:vi_insert) and ["\C-p".ord, "\C-n".ord].include?(key.char)
       unless @config.disable_completion
-        result = retrieve_completion_block
-        slice = result[1]
-        result = @completion_proc.(slice) if @completion_proc and slice
+        result = call_completion_proc
         if result.is_a?(Array)
           completion_occurs = true
           move_completed_list(result, "\C-p".ord == key.char ? :up : :down)
@@ -806,6 +834,14 @@ class Reline::LineEditor
     if @is_multiline and @auto_indent_proc
       process_auto_indent
     end
+  end
+
+  def call_completion_proc
+    result = retrieve_completion_block(true)
+    slice = result[1]
+    result = @completion_proc.(slice) if @completion_proc and slice
+    Reline.core.instance_variable_set(:@completion_quote_character, nil)
+    result
   end
 
   private def process_auto_indent
@@ -849,7 +885,7 @@ class Reline::LineEditor
     @check_new_auto_indent = false
   end
 
-  def retrieve_completion_block
+  def retrieve_completion_block(set_completion_quote_character = false)
     word_break_regexp = /\A[#{Regexp.escape(Reline.completer_word_break_characters)}]/
     quote_characters_regexp = /\A[#{Regexp.escape(Reline.completer_quote_characters)}]/
     before = @line.byteslice(0, @byte_pointer)
@@ -868,31 +904,42 @@ class Reline::LineEditor
       if quote and slice.start_with?(closing_quote)
         quote = nil
         i += 1
+        rest = nil
+        break_pointer = nil
       elsif quote and slice.start_with?(escaped_quote)
         # skip
         i += 2
       elsif slice =~ quote_characters_regexp # find new "
+        rest = $'
         quote = $&
         closing_quote = /(?!\\)#{Regexp.escape(quote)}/
         escaped_quote = /\\#{Regexp.escape(quote)}/
         i += 1
+        break_pointer = i
       elsif not quote and slice =~ word_break_regexp
         rest = $'
         i += 1
+        before = @line.byteslice(i, @byte_pointer - i)
         break_pointer = i
       else
         i += 1
       end
     end
+    postposing = @line.byteslice(@byte_pointer, @line.bytesize - @byte_pointer)
     if rest
       preposing = @line.byteslice(0, break_pointer)
       target = rest
+      if set_completion_quote_character and quote
+        Reline.core.instance_variable_set(:@completion_quote_character, quote)
+        if postposing !~ /(?!\\)#{Regexp.escape(quote)}/ # closing quote
+          insert_text(quote)
+        end
+      end
     else
       preposing = ''
       target = before
     end
-    postposing = @line.byteslice(@byte_pointer, @line.bytesize - @byte_pointer)
-    [preposing, target, postposing]
+    [preposing.encode(@encoding), target.encode(@encoding), postposing.encode(@encoding)]
   end
 
   def confirm_multiline_termination
@@ -1145,18 +1192,18 @@ class Reline::LineEditor
   end
   alias_method :end_of_line, :ed_move_to_end
 
-  private def ed_search_prev_history(key)
-    unless @history_pointer
-      if @is_multiline
-        @line_backup_in_history = whole_buffer
-      else
-        @line_backup_in_history = @line
-      end
-    end
-    searcher = Fiber.new do
+  private def generate_searcher
+    Fiber.new do |first_key|
+      prev_search_key = first_key
       search_word = String.new(encoding: @encoding)
       multibyte_buf = String.new(encoding: 'ASCII-8BIT')
       last_hit = nil
+      case first_key
+      when "\C-r".ord
+        prompt_name = 'reverse-i-search'
+      when "\C-s".ord
+        prompt_name = 'i-search'
+      end
       loop do
         key = Fiber.yield(search_word)
         search_again = false
@@ -1170,8 +1217,9 @@ class Reline::LineEditor
             grapheme_clusters.pop
             search_word = grapheme_clusters.join
           end
-        when "\C-r".ord
-          search_again = true
+        when "\C-r".ord, "\C-s".ord
+          search_again = true if prev_search_key == key
+          prev_search_key = key
         else
           multibyte_buf << key
           if multibyte_buf.dup.force_encoding(@encoding).valid_encoding?
@@ -1188,23 +1236,52 @@ class Reline::LineEditor
             if search_word.empty? and Reline.last_incremental_search
               search_word = Reline.last_incremental_search
             end
-            if @history_pointer
-              history = Reline::HISTORY[0..(@history_pointer - 1)]
+            if @history_pointer # TODO
+              case prev_search_key
+              when "\C-r".ord
+                history_pointer_base = 0
+                history = Reline::HISTORY[0..(@history_pointer - 1)]
+              when "\C-s".ord
+                history_pointer_base = @history_pointer + 1
+                history = Reline::HISTORY[(@history_pointer + 1)..-1]
+              end
             else
+              history_pointer_base = 0
               history = Reline::HISTORY
             end
           elsif @history_pointer
-            history = Reline::HISTORY[0..@history_pointer]
+            case prev_search_key
+            when "\C-r".ord
+              history_pointer_base = 0
+              history = Reline::HISTORY[0..@history_pointer]
+            when "\C-s".ord
+              history_pointer_base = @history_pointer
+              history = Reline::HISTORY[@history_pointer..-1]
+            end
           else
+            history_pointer_base = 0
             history = Reline::HISTORY
           end
-          hit_index = history.rindex { |item|
-            item.include?(search_word)
-          }
+          case prev_search_key
+          when "\C-r".ord
+            hit_index = history.rindex { |item|
+              item.include?(search_word)
+            }
+          when "\C-s".ord
+            hit_index = history.index { |item|
+              item.include?(search_word)
+            }
+          end
           if hit_index
-            @history_pointer = hit_index
+            @history_pointer = history_pointer_base + hit_index
             hit = Reline::HISTORY[@history_pointer]
           end
+        end
+        case prev_search_key
+        when "\C-r".ord
+          prompt_name = 'reverse-i-search'
+        when "\C-s".ord
+          prompt_name = 'i-search'
         end
         if hit
           if @is_multiline
@@ -1213,23 +1290,34 @@ class Reline::LineEditor
             @line_index = @buffer_of_lines.size - 1
             @line = @buffer_of_lines.last
             @rerender_all = true
-            @searching_prompt = "(reverse-i-search)`%s'" % [search_word]
+            @searching_prompt = "(%s)`%s'" % [prompt_name, search_word]
           else
             @line = hit
-            @searching_prompt = "(reverse-i-search)`%s': %s" % [search_word, hit]
+            @searching_prompt = "(%s)`%s': %s" % [prompt_name, search_word, hit]
           end
           last_hit = hit
         else
           if @is_multiline
             @rerender_all = true
-            @searching_prompt = "(failed reverse-i-search)`%s'" % [search_word]
+            @searching_prompt = "(failed %s)`%s'" % [prompt_name, search_word]
           else
-            @searching_prompt = "(failed reverse-i-search)`%s': %s" % [search_word, last_hit]
+            @searching_prompt = "(failed %s)`%s': %s" % [prompt_name, search_word, last_hit]
           end
         end
       end
     end
-    searcher.resume
+  end
+
+  private def search_history(key)
+    unless @history_pointer
+      if @is_multiline
+        @line_backup_in_history = whole_buffer
+      else
+        @line_backup_in_history = @line
+      end
+    end
+    searcher = generate_searcher
+    searcher.resume(key)
     @searching_prompt = "(reverse-i-search)`': "
     @waiting_proc = ->(k) {
       case k
@@ -1272,7 +1360,7 @@ class Reline::LineEditor
         @rerender_all = true
       else
         chr = k.is_a?(String) ? k : k.chr(Encoding::ASCII_8BIT)
-        if chr.match?(/[[:print:]]/) or k == "\C-h".ord or k == "\C-?".ord or k == "\C-r".ord
+        if chr.match?(/[[:print:]]/) or k == "\C-h".ord or k == "\C-?".ord or k == "\C-r".ord or k == "\C-s".ord
           searcher.resume(k)
         else
           if @history_pointer
@@ -1301,8 +1389,15 @@ class Reline::LineEditor
     }
   end
 
-  private def ed_search_next_history(key)
+  private def ed_search_prev_history(key)
+    search_history(key)
   end
+  alias_method :reverse_search_history, :ed_search_prev_history
+
+  private def ed_search_next_history(key)
+    search_history(key)
+  end
+  alias_method :forward_search_history, :ed_search_next_history
 
   private def ed_prev_history(key, arg: 1)
     if @is_multiline and @line_index > 0
@@ -1481,7 +1576,7 @@ class Reline::LineEditor
     end
   end
 
-  private def em_delete_or_list(key)
+  private def em_delete(key)
     if (not @is_multiline and @line.empty?) or (@is_multiline and @line.empty? and @buffer_of_lines.size == 1)
       @line = nil
       if @buffer_of_lines.size > 1
@@ -1506,7 +1601,19 @@ class Reline::LineEditor
       @rest_height += 1
     end
   end
-  alias_method :delete_char, :em_delete_or_list
+  alias_method :delete_char, :em_delete
+
+  private def em_delete_or_list(key)
+    if @line.empty? or @byte_pointer < @line.bytesize
+      em_delete(key)
+    else # show completed list
+      result = call_completion_proc
+      if result.is_a?(Array)
+        complete(result, true)
+      end
+    end
+  end
+  alias_method :delete_char_or_list, :em_delete_or_list
 
   private def em_yank(key)
     yanked = @kill_ring.yank
@@ -1810,18 +1917,6 @@ class Reline::LineEditor
   private def vi_yank(key)
   end
 
-  private def vi_end_of_transmission(key)
-    if @line.empty?
-      @line = nil
-      if @buffer_of_lines.size > 1
-        scroll_down(@highest_in_all - @first_line_started_from)
-      end
-      Reline::IOGate.move_cursor_column(0)
-      @eof = true
-      finish
-    end
-  end
-
   private def vi_list_or_eof(key)
     if (not @is_multiline and @line.empty?) or (@is_multiline and @line.empty? and @buffer_of_lines.size == 1)
       @line = nil
@@ -1832,9 +1927,11 @@ class Reline::LineEditor
       @eof = true
       finish
     else
-      # TODO: list
+      ed_newline(key)
     end
   end
+  alias_method :vi_end_of_transmission, :vi_list_or_eof
+  alias_method :vi_eof_maybe, :vi_list_or_eof
 
   private def ed_delete_next_char(key, arg: 1)
     byte_size = Reline::Unicode.get_next_mbchar_size(@line, @byte_pointer)

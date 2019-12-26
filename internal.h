@@ -1039,6 +1039,7 @@ struct rb_classext_struct {
     const VALUE origin_;
     const VALUE refined_class;
     rb_alloc_func_t allocator;
+    const VALUE includer;
 };
 
 typedef struct rb_classext_struct rb_classext_t;
@@ -1078,6 +1079,7 @@ int rb_singleton_class_internal_p(VALUE sklass);
 #else
 # define RCLASS_SERIAL(c) (RCLASS_EXT(c)->class_serial)
 #endif
+#define RCLASS_INCLUDER(c) (RCLASS_EXT(c)->includer)
 
 #define RCLASS_CLONED     FL_USER6
 #define RICLASS_IS_ORIGIN FL_USER5
@@ -1088,6 +1090,12 @@ RCLASS_SET_ORIGIN(VALUE klass, VALUE origin)
 {
     RB_OBJ_WRITE(klass, &RCLASS_ORIGIN(klass), origin);
     if (klass != origin) FL_SET(origin, RICLASS_IS_ORIGIN);
+}
+
+static inline void
+RCLASS_SET_INCLUDER(VALUE iclass, VALUE klass)
+{
+    RB_OBJ_WRITE(iclass, &RCLASS_INCLUDER(iclass), klass);
 }
 
 #undef RCLASS_SUPER
@@ -1539,12 +1547,21 @@ void rb_report_bug_valist(VALUE file, int line, const char *fmt, va_list args);
 NORETURN(void rb_async_bug_errno(const char *,int));
 const char *rb_builtin_type_name(int t);
 const char *rb_builtin_class_name(VALUE x);
+PRINTF_ARGS(void rb_warn_deprecated(const char *fmt, const char *suggest, ...), 1, 3);
 #ifdef RUBY_ENCODING_H
 VALUE rb_syntax_error_append(VALUE, VALUE, int, int, rb_encoding*, const char*, va_list);
 PRINTF_ARGS(void rb_enc_warn(rb_encoding *enc, const char *fmt, ...), 2, 3);
 PRINTF_ARGS(void rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...), 2, 3);
 PRINTF_ARGS(void rb_syserr_enc_warning(int err, rb_encoding *enc, const char *fmt, ...), 3, 4);
 #endif
+
+typedef enum {
+    RB_WARN_CATEGORY_NONE,
+    RB_WARN_CATEGORY_DEPRECATED,
+    RB_WARN_CATEGORY_EXPERIMENTAL,
+} rb_warning_category_t;
+rb_warning_category_t rb_warning_category_from_name(VALUE category);
+bool rb_warning_category_enabled_p(rb_warning_category_t category);
 
 #define rb_raise_cstr(etype, mesg) \
     rb_exc_raise(rb_exc_new_str(etype, rb_str_new_cstr(mesg)))
@@ -2274,6 +2291,7 @@ const char *rb_source_location_cstr(int *pline);
 MJIT_STATIC void rb_vm_pop_cfunc_frame(void);
 int rb_vm_add_root_module(ID id, VALUE module);
 void rb_vm_check_redefinition_by_prepend(VALUE klass);
+int rb_vm_check_optimizable_mid(VALUE mid);
 VALUE rb_yield_refine_block(VALUE refinement, VALUE refinements);
 MJIT_STATIC VALUE ruby_vm_special_exception_copy(VALUE);
 PUREFUNC(st_table *rb_vm_fstring_table(void));
@@ -2341,7 +2359,7 @@ struct rb_call_cache {
         (CACHELINE
          - sizeof(rb_serial_t)                                   /* method_state */
          - sizeof(struct rb_callable_method_entry_struct *)      /* me */
-         - sizeof(struct rb_callable_method_definition_struct *) /* def */
+         - sizeof(uintptr_t)                                     /* method_serial */
          - sizeof(enum method_missing_reason)                    /* aux */
          - sizeof(VALUE (*)(                                     /* call */
                struct rb_execution_context_struct *e,
@@ -2353,7 +2371,7 @@ struct rb_call_cache {
 
     /* inline cache: values */
     const struct rb_callable_method_entry_struct *me;
-    const struct rb_method_definition_struct *def;
+    uintptr_t method_serial; /* me->def->method_serial */
 
     VALUE (*call)(struct rb_execution_context_struct *ec,
                   struct rb_control_frame_struct *cfp,
@@ -2394,9 +2412,6 @@ RUBY_FUNC_NONNULL(1, bool rb_method_basic_definition_p_with_cc(struct rb_call_da
             rb_method_basic_definition_p_with_cc(&rb_mbdp, klass, mid); \
     })
 #endif
-
-/* miniprelude.c, prelude.c */
-void Init_prelude(void);
 
 /* vm_backtrace.c */
 void Init_vm_backtrace(void);

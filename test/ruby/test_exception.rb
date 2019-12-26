@@ -845,7 +845,7 @@ end.join
 
   def test_frozen_error_initialize
     obj = Object.new
-    exc = FrozenError.new("bar", obj)
+    exc = FrozenError.new("bar", receiver: obj)
     assert_equal("bar", exc.message)
     assert_same(obj, exc.receiver)
 
@@ -1160,6 +1160,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
 
   def capture_warning_warn
     verbose = $VERBOSE
+    deprecated = Warning[:deprecated]
     warning = []
 
     ::Warning.class_eval do
@@ -1172,11 +1173,13 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     end
 
     $VERBOSE = true
+    Warning[:deprecated] = true
     yield
 
     return warning
   ensure
     $VERBOSE = verbose
+    Warning[:deprecated] = deprecated
 
     ::Warning.class_eval do
       remove_method :warn
@@ -1205,8 +1208,8 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     assert_raise(ArgumentError) {warn("test warning", uplevel: -1)}
     assert_in_out_err(["-e", "warn 'ok', uplevel: 1"], '', [], /warning:/)
     warning = capture_warning_warn {warn("test warning", {uplevel: 0})}
-    assert_equal("#{__FILE__}:#{__LINE__-1}: warning: The last argument is used as the keyword parameter\n", warning[0])
-    assert_match(/warning: for method defined here|warning: test warning/, warning[1])
+    assert_equal("#{__FILE__}:#{__LINE__-1}: warning: Using the last argument as keyword parameters is deprecated; maybe ** should be added to the call\n", warning[0])
+    assert_match(/warning: The called method (?:`.*' )?is defined here|warning: test warning/, warning[1])
     warning = capture_warning_warn {warn("test warning", **{uplevel: 0})}
     assert_equal("#{__FILE__}:#{__LINE__-1}: warning: test warning\n", warning[0])
     warning = capture_warning_warn {warn("test warning", {uplevel: 0}, **{})}
@@ -1257,6 +1260,13 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       $VERBOSE = true
       @a
     };
+  end
+
+  def test_warning_category
+    assert_raise(TypeError) {Warning[nil]}
+    assert_raise(ArgumentError) {Warning[:XXXX]}
+    assert_include([true, false], Warning[:deprecated])
+    assert_include([true, false], Warning[:experimental])
   end
 
   def test_undefined_backtrace

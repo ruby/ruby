@@ -253,9 +253,9 @@ cmp_clamp(int argc, VALUE *argv, VALUE x)
 /*
  *  The Comparable mixin is used by classes whose objects may be
  *  ordered. The class must define the <code><=></code> operator,
- *  which compares the receiver against another object, returning
- *  a value less than 0, 0, or a value greater than 0, depending on
- *  whether the receiver is less than, equal to,
+ *  which compares the receiver against another object, returning a
+ *  value less than 0, returning 0, or returning a value greater than 0,
+ *  depending on whether the receiver is less than, equal to,
  *  or greater than the other object. If the other object is not
  *  comparable then the <code><=></code> operator should return +nil+.
  *  Comparable uses <code><=></code> to implement the conventional

@@ -76,6 +76,7 @@ rb_call_inits(void)
     CALL(ast);
     CALL(vm_trace);
     CALL(pack);
+    CALL(warning);
     load_prelude();
 }
 #undef CALL

@@ -613,6 +613,8 @@ class VCS
                            chdir: @srcdir, exception: false)
         abort "Could not fetch notes/commits tree"
       end
+      system(*%W"#{COMMAND} fetch origin refs/notes/log-fix:refs/notes/log-fix",
+               chdir: @srcdir, exception: false)
       to ||= url.to_str
       if from
         arg = ["#{from}^..#{to}"]
@@ -628,14 +630,32 @@ class VCS
 
     def format_changelog(path, arg)
       env = {'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'}
-      cmd = %W"#{COMMAND} log --format=medium --notes=commits --topo-order --no-merges"
+      cmd = %W"#{COMMAND} log --format=medium --notes=commits --notes=log-fix --topo-order --no-merges"
       date = "--date=iso-local"
       unless system(env, *cmd, date, chdir: @srcdir, out: NullDevice, exception: false)
         date = "--date=iso"
       end
       cmd << date
       cmd.concat(arg)
-      system(env, *cmd, chdir: @srcdir, out: path)
+      File.open(path, 'w') do |w|
+        cmd_pipe(env, cmd, chdir: @srcdir) do |r|
+          while s = r.gets("\ncommit ")
+            if s.sub!(/\nNotes \(log-fix\):\n((?: +.*\n)+)/, '')
+              fix = $1
+              h, s = s.split(/^$/, 2)
+              s = s.lines
+              fix.each_line do |x|
+                if %r[^ +(\d+)s/(.+)/(.+)/] =~ x
+                  s[$1.to_i][$2] = $3
+                end
+              end
+              s = [h, s.join('')].join('')
+            end
+            s.gsub!(/ +\n/, "\n")
+            w.print s
+          end
+        end
+      end
     end
 
     def format_changelog_as_svn(path, arg)

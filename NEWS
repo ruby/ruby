@@ -8,7 +8,7 @@ releases except for bug fixes.
 Note that each entry is kept so brief that no reason behind or reference
 information is supplied with.  For a full list of changes with all
 sufficient information, see the ChangeLog file or Redmine
-(e.g. <tt>https://bugs.ruby-lang.org/issues/$FEATURE_OR_BUG_NUMBER</tt>)
+(e.g. <tt>https://bugs.ruby-lang.org/issues/$FEATURE_OR_BUG_NUMBER</tt>).
 
 == Changes since the 2.6.0 release
 
@@ -32,6 +32,11 @@ sufficient information, see the ChangeLog file or Redmine
       p var #=> 1
     end
 
+    case -1
+    in 0 then :unreachable
+    in 1 then :unreachable
+    end #=> NoMatchingPatternError
+
     json = <<END
     {
       "name": "Alice",
@@ -39,13 +44,21 @@ sufficient information, see the ChangeLog file or Redmine
       "children": [{ "name": "Bob", "age": 2 }]
     }
     END
-    if JSON.parse(json, symbolize_names: true) in
-         {name: "Alice", children: [{name: "Bob", age: age}]}
-      p age #=> 2
-    end
 
-* See the following slides in detail
+    JSON.parse(json, symbolize_names: true) in {name: "Alice", children: [{name: name, age: age}]}
+
+    p name #=> "Bob"
+    p age  #=> 2
+
+    JSON.parse(json, symbolize_names: true) in {name: "Alice", children: [{name: "Charlie", age: age}]}
+    #=> NoMatchingPatternError
+
+* See the following slides for more details:
   * https://speakerdeck.com/k_tsj/pattern-matching-new-feature-in-ruby-2-dot-7
+  * Note that the slides are slightly obsolete.
+
+* The warning against pattern matching can be suppressed with
+  {-W:no-experimental option}[#label-Warning+option].
 
 ==== The spec of keyword arguments is changed towards 3.0
 
@@ -53,10 +66,10 @@ sufficient information, see the ChangeLog file or Redmine
   deprecated, and conversion will be removed in Ruby 3.  [Feature #14183]
 
   * When a method call passes a Hash at the last argument, and when it
-    passes no keywords, and when the called method accepts keywords, a
-    warning is emitted.  To continue treating as keywords, add a double
-    splat operator to avoid the warning and ensure correct behavior in
-    Ruby 3.
+    passes no keywords, and when the called method accepts keywords,
+    a warning is emitted.  To continue treating the hash as keywords,
+    add a double splat operator to avoid the warning and ensure
+    correct behavior in Ruby 3.
 
       def foo(key: 42); end; foo({key: 42})   # warned
       def foo(**kw);    end; foo({key: 42})   # warned
@@ -90,7 +103,7 @@ sufficient information, see the ChangeLog file or Redmine
 
       def foo(opt={});  end; foo( key: 42 )   # OK
 
-* Non-symbols are allowed as a keyword argument keys if method accepts
+* Non-symbols are allowed as keyword argument keys if the method accepts
   arbitrary keywords. [Feature #14183]
 
   * Non-Symbol keys in a keyword arguments hash were prohibited in 2.6.0,
@@ -118,17 +131,21 @@ sufficient information, see the ChangeLog file or Redmine
     h = {}; def foo(*a) a end; foo(h)   # [{}]
     h = {}; def foo(a) a end; foo(h)    # {}
 
-==== Numbered parameter
+* Above warnings can be suppressed also with {-W:no-deprecated option}[#label-Warning+option].
 
-* Numbered parameter as the default block parameter is introduced as an
-  experimental feature.  [Feature #4475]
+==== Numbered parameters
 
-    [1, 2, 10].map { _1.to_s(16) } #=> ["1", "2", "a"]
+* Numbered parameters as default block parameters are introduced.
+  [Feature #4475]
 
-  You can still define a local variable named _1 and so on, and that is honored when present, but renders warning.
+    [1, 2, 10].map { _1.to_s(16) }    #=> ["1", "2", "a"]
+    [[1, 2], [3, 4]].map { _1 + _2 }  #=> [3, 7]
 
-    _1 = 0
-    [1].each { p _1 } # prints 0 instead of 1, but also warns.
+  You can still define a local variable named +_1+ and so on,
+  and that is honored when present, but renders a warning.
+
+    _1 = 0            #=> warning: `_1' is reserved for numbered parameter; consider another name
+    [1].each { p _1 } # prints 0 instead of 1
 
 ==== proc/lambda without block is deprecated
 
@@ -138,7 +155,9 @@ sufficient information, see the ChangeLog file or Redmine
     def foo
       proc
     end
-    foo { puts "Hello" } #=> warning: Capturing the given block using Proc.new is deprecated; use `&block` instead
+    foo { puts "Hello" } #=> warning: Capturing the given block using Kernel#proc is deprecated; use `&block` instead
+
+  This warning can be suppressed with {-W:no-deprecated option}[#label-Warning+option].
 
 * Kernel#lambda with no block in a method called with a block raises an exception.
 
@@ -149,19 +168,30 @@ sufficient information, see the ChangeLog file or Redmine
 
 ==== Other miscellaneous changes
 
-* A beginless range is experimentally introduced.  It might not be as useful
-  as an endless range, but would be good for DSL purpose.  [Feature #14799]
+* A beginless range is experimentally introduced.  It might be useful
+  in +case+, new call-sequence of the <code>Comparable#clamp</code>,
+  constants and DSLs.  [Feature #14799]
 
      ary[..3]  # identical to ary[0..3]
+
+     case RUBY_VERSION
+     when ..."2.4" then puts "EOL"
+     # ...
+     end
+
+     age.clamp(..100)
+
      where(sales: ..100)
 
-* Setting <code>$;</code> to non-nil value is warned now.  Use of it in
-  String#split is warned too.
+* Setting <code>$;</code> to a non-nil value is warned now. [Feature #14240]
+  Use of it in String#split is warned too.
+  This warning can be suppressed with {-W:no-deprecated option}[#label-Warning+option].
 
-* Setting <code>$,</code> to non-nil value is warned now.  Use of it in
-  Array#join is warned too.
+* Setting <code>$,</code> to a non-nil value is warned now. [Feature #14240]
+  Use of it in Array#join is warned too.
+  This warning can be suppressed with {-W:no-deprecated option}[#label-Warning+option].
 
-* Quoted here-document identifier must end within the same line.
+* Quoted here-document identifiers must end within the same line.
 
      <<"EOS
      " # This had been warned since 2.4; Now it raises a SyntaxError
@@ -175,24 +205,26 @@ sufficient information, see the ChangeLog file or Redmine
       # .bar
       .baz # => foo.baz
 
-* Calling a private method with a literal <code>self</code> as the receiver
+* Calling a private method with a literal +self+ as the receiver
   is now allowed. [Feature #11297] [Feature #16123]
 
 * Modifier rescue now operates the same for multiple assignment as single
-  assignment:
+  assignment. [Bug #8279]
 
     a, b = raise rescue [1, 2]
     # Previously parsed as: (a, b = raise) rescue [1, 2]
     # Now parsed as:         a, b = (raise rescue [1, 2])
 
-* +yield+ in singleton class syntax is warned and will be deprecated later [Feature #15575].
+* +yield+ in singleton class syntax is warned and will be deprecated later. [Feature #15575].
 
    def foo
      class << Object.new
-       yield
+       yield #=> warning: `yield' in class syntax will not be supported from Ruby 3.0. [Feature #15575]
      end
    end
-   foo { p :ok } #=> warning: `yield' in class syntax will not be supported from Ruby 3.0.
+   foo { p :ok }
+
+  This warning can be suppressed with {-W:no-deprecated option}[#label-Warning+option].
 
 * Argument forwarding by <code>(...)</code> is introduced. [Feature #16253]
 
@@ -202,7 +234,8 @@ sufficient information, see the ChangeLog file or Redmine
 
   All arguments to +foo+ are forwarded to +bar+, including keyword and
   block arguments.
-  Note that the parentheses are mandatory.  `bar ...` is parsed as an endless range.
+  Note that the parentheses are mandatory.  <code>bar ...</code> is parsed
+  as an endless range.
 
 * Access and setting of <code>$SAFE</code> is now always warned. <code>$SAFE</code>
   will become a normal global variable in Ruby 3.0. [Feature #16131]
@@ -212,13 +245,48 @@ sufficient information, see the ChangeLog file or Redmine
   warned in verbose mode. This warning will be disabled even in non-verbose mode in
   Ruby 3.0, and the methods and C functions will be removed in Ruby 3.2. [Feature #16131]
 
+* Refinements take place at Object#method and Module#instance_method. [Feature #15373]
+
+=== Command line options
+
+==== Warning option
+
+The +-W+ option has been extended with a following +:+, to manage categorized
+warnings.  [Feature #16345] [Feature #16420]
+
+* To suppress deprecation warnings:
+
+    $ ruby -e '$; = ""'
+    -e:1: warning: `$;' is deprecated
+
+    $ ruby -W:no-deprecated -e '$; = //'
+
+* It works with the +RUBYOPT+ environment variable:
+
+    $ RUBYOPT=-W:no-deprecated ruby -e '$; = //'
+
+* To suppress experimental feature warnings:
+
+    $ ruby -e '0 in a'
+    -e:1: warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!
+
+    $ ruby -W:no-experimental -e '0 in a'
+
+* To suppress both by using +RUBYOPT+, set space separated values:
+
+    $ RUBYOPT='-W:no-deprecated -W:no-experimental' ruby -e '($; = "") in a'
+
+See also Warning in {Core classes updates}[#label-Core+classes+updates+-28outstanding+ones+only-29].
+
 === Core classes updates (outstanding ones only)
 
 Array::
 
-  New method::
+  New methods::
 
     * Added Array#intersection. [Feature #16155]
+
+    * Added Array#minmax, with a faster implementation than Enumerable#minmax. [Bug #15929]
 
 Comparable::
 
@@ -229,12 +297,17 @@ Comparable::
         -1.clamp(0..2) #=> 0
          1.clamp(0..2) #=> 1
          3.clamp(0..2) #=> 2
+        # With beginless and endless ranges:
+        -1.clamp(0..)  #=> 0
+         3.clamp(..2)  #=> 2
+
 
 Complex::
 
   New method::
 
-    * Added Complex#<=>. So 0 <=> 0i will not raise NoMethodError. [Bug #15857]
+    * Added Complex#<=>.
+      So <code>0 <=> 0i</code> will not raise NoMethodError. [Bug #15857]
 
 Dir::
 
@@ -247,7 +320,7 @@ Encoding::
 
   New encoding::
 
-    * Added new encoding CESU-8 [Feature #15931]
+    * Added new encoding CESU-8. [Feature #15931]
 
 Enumerable::
 
@@ -265,12 +338,12 @@ Enumerator::
 
   New methods::
 
-    * Added Enumerator.produce to generate Enumerator from any custom
-      data-transformation.  [Feature #14781]
+    * Added Enumerator.produce to generate an Enumerator from any custom
+      data transformation.  [Feature #14781]
 
-        require 'date'
+        require "date"
         dates = Enumerator.produce(Date.today, &:succ) #=> infinite sequence of dates
-        dates.detect(&:tuesday?) #=> next tuesday
+        dates.detect(&:tuesday?) #=> next Tuesday
 
     * Added Enumerator::Lazy#eager that generates a non-lazy enumerator
       from a lazy enumerator.  [Feature #15901]
@@ -295,7 +368,7 @@ File::
 
   Modified method::
 
-    * File.extname now returns a dot string at a name ending with a dot on
+    * File.extname now returns a dot string for names ending with a dot on
       non-Windows platforms.  [Bug #15267]
 
           File.extname("foo.") #=> "."
@@ -304,10 +377,10 @@ FrozenError::
 
   New method::
 
-    * Added FrozenError#receiver to return the frozen object that
-      modification was attempted on.  To set this object when raising
-      FrozenError in Ruby code, pass it as the second argument to
-      FrozenError.new. [Feature #15751]
+    * Added FrozenError#receiver to return the frozen object on which
+      modification was attempted.  To set this object when raising
+      FrozenError in Ruby code, FrozenError.new accepts a +:receiver+
+      option.  [Feature #15751]
 
 GC::
 
@@ -315,7 +388,7 @@ GC::
 
     * Added GC.compact method for compacting the heap.
       This function compacts live objects in the heap so that fewer pages may
-      be used, and the heap may be more CoW friendly. [Feature #15626]
+      be used, and the heap may be more CoW (copy-on-write) friendly. [Feature #15626]
 
       Details on the algorithm and caveats can be found here:
       https://bugs.ruby-lang.org/issues/15626
@@ -331,18 +404,18 @@ Integer::
 
   Modified method::
 
-    * Integer#[] now supports range operation.  [Feature #8842]
+    * Integer#[] now supports range operations.  [Feature #8842]
 
          0b01001101[2, 4]  #=> 0b0011
          0b01001100[2..5]  #=> 0b0011
          0b01001100[2...6] #=> 0b0011
-             ^^^^
+         #   ^^^^
 
 Method::
 
   Modified method::
 
-    * Method#inspect shows much information. [Feature #14145]
+    * Method#inspect shows more information. [Feature #14145]
 
 Module::
 
@@ -358,19 +431,18 @@ Module::
 
   Modified methods::
 
-    * Module#autoload? now takes an +inherit+ optional argument, like as
+    * Module#autoload? now takes an +inherit+ optional argument, like
       Module#const_defined?.  [Feature #15777]
 
     * Module#name now always returns a frozen String. The returned String is
       always the same for a given Module. This change is
       experimental. [Feature #16150]
 
-
 NilClass / TrueClass / FalseClass::
 
   Modified methods::
 
-    * NilClass#to_s, TrueClass#to_s and FalseClass#to_s now always return a
+    * NilClass#to_s, TrueClass#to_s, and FalseClass#to_s now always return a
       frozen String. The returned String is always the same for each of these
       values. This change is experimental. [Feature #16150]
 
@@ -381,12 +453,27 @@ ObjectSpace::WeakMap::
     * ObjectSpace::WeakMap#[]= now accepts special objects as either key or
       values.  [Feature #16035]
 
-Regexp::
+Proc::
+
+  New method::
+
+    * Added Proc#ruby2_keywords for marking the proc as passing keyword
+      arguments through a regular argument splat, useful when delegating
+      all arguments to another method or proc in a way that can be backwards
+      compatible with older Ruby versions.  [Feature #16404]
+
+Range::
+
+  New method::
+
+    * Added Range#minmax, with a faster implementation than Enumerable#minmax.
+      It returns a maximum that now corresponds to Range#max. [Bug #15807]
 
   Modified method::
 
-    * Regexp#match and Regexp#match? with a +nil+ argument are deprecated
-      and will raise a TypeError in the next release.  [Feature #13083]
+    * Range#=== now uses Range#cover? for String arguments, too (in Ruby 2.6, it was
+      changed from Range#include? for all types except strings). [Bug #15449]
+
 
 RubyVM::
 
@@ -405,13 +492,13 @@ String::
     * Update Unicode version to 12.1.0, adding support for
       U+32FF SQUARE ERA NAME REIWA.  [Feature #15195]
 
-    * Update Unicode Emoji version to 12.1 [Feature #16272]
+    * Update Unicode Emoji version to 12.1. [Feature #16272]
 
 Symbol::
 
   New methods::
 
-    * Added Symbol#start_with? and Symbol#end_with? method.  [Feature #16348]
+    * Added Symbol#start_with? and Symbol#end_with? methods.  [Feature #16348]
 
 Time::
 
@@ -423,8 +510,8 @@ Time::
 
   Modified method::
 
-    * Time#inspect is separated from Time#to_s and it shows its sub
-      second.  [Feature #15958]
+    * Time#inspect is separated from Time#to_s and it shows
+      the time's sub second.  [Feature #15958]
 
 UnboundMethod::
 
@@ -435,7 +522,7 @@ UnboundMethod::
       <code>umethod.bind_call(obj, ...)</code> is semantically equivalent
       to <code>umethod.bind(obj).call(...)</code>.  This idiom is used in
       some libraries to call a method that is overridden.  The added
-      method does the same without allocation of intermediate Method
+      method does the same without allocation of an intermediate Method
       object.
 
           class Foo
@@ -454,6 +541,12 @@ UnboundMethod::
           p Foo.instance_method(:add_1).bind(obj).call(1) #=> 2
           p Foo.instance_method(:add_1).bind_call(obj, 1) #=> 2
 
+Warning::
+
+  New methods::
+
+    * Added Warning.[] and Warning.[]= to manage emitting/suppressing
+      some categories of warnings.  [Feature #16345] [Feature #16420]
 
 $LOAD_PATH::
 
@@ -465,13 +558,13 @@ $LOAD_PATH::
 
 Bundler::
 
-  * Upgrade to Bundler 2.1.0.pre.3
-    See https://github.com/bundler/bundler/blob/2-1-stable/CHANGELOG.md#210pre3-november-12-2019
+  * Upgrade to Bundler 2.1.2.
+    See https://github.com/bundler/bundler/releases/tag/v2.1.2
 
 CGI::
 
-  * CGI.escapeHTML becomes 2~5x faster when there's at least one escaped character.
-    https://github.com/ruby/ruby/pull/2226
+  * CGI.escapeHTML becomes 2~5x faster when there is at least one escaped character.
+    See https://github.com/ruby/ruby/pull/2226
 
 CSV::
 
@@ -494,19 +587,28 @@ ERB::
 
 IRB::
 
-  * Introduce syntax highlight inspired by pry.gem to Binding#irb source lines,
-    REPL input, and inspect output of some core-class objects.
+  * Introduce syntax highlighting inspired by the Pry gem to Binding#irb
+    source lines, REPL input, and inspect output of some core-class objects.
 
-  * Introduce multiline mode by Reline.
+  * Introduce multiline editing mode provided by Reline.
 
-  * Show documents when completion.
+  * Show documentation when completion.
 
   * Enable auto indent and save/load history by default.
+
+JSON::
+
+  * Upgrade to 2.3.0.
 
 Net::FTP::
 
   * Add Net::FTP#features to check available features, and Net::FTP#option to
     enable/disable each of them.  [Feature #15964]
+
+Net::HTTP::
+
+  * Add +ipaddr+ optional parameter to Net::HTTP#start to replace the address for
+    the TCP/IP connection. [Feature #5180]
 
 Net::IMAP::
 
@@ -517,16 +619,16 @@ open-uri::
   * Warn open-uri's "open" method at Kernel.
     Use URI.open instead.  [Misc #15893]
 
-  * The default charset of text/* media type is UTF-8 instead of
+  * The default charset of "text/*" media type is UTF-8 instead of
     ISO-8859-1.  [Bug #15933]
 
 OptionParser::
 
-  * Now show "Did you mean?" for unknown option.  [Feature #16256]
+  * Now show "Did you mean?" for unknown options.  [Feature #16256]
 
     test.rb:
 
-      require 'optparse'
+      require "optparse"
       OptionParser.new do |opts|
         opts.on("-f", "--foo", "foo") {|v| }
         opts.on("-b", "--bar", "bar") {|v| }
@@ -543,8 +645,8 @@ OptionParser::
 
 Pathname::
 
-  * Delegates 3 arguments from Pathname.glob to Dir.glob to
-    accept base: keyword.
+  * Pathname.glob now delegates 3 arguments to Dir.glob
+    to accept +base+ keyword. [Feature #14405]
 
 Racc::
 
@@ -552,8 +654,8 @@ Racc::
 
 Reline::
 
-  * New stdlib that is compatible with readline stdlib by pure Ruby and also
-    has a multiline mode.
+  * New stdlib that is compatible with the readline stdlib but is
+    implemented in pure Ruby. It also provides a multiline editing mode.
 
 REXML::
 
@@ -567,8 +669,10 @@ RSS::
 
 RubyGems::
 
-  * Upgrade to RubyGems 3.1.0.pre3
-    See https://github.com/rubygems/rubygems/blob/3.1/History.txt#L3
+  * Upgrade to RubyGems 3.1.2.
+    * https://github.com/rubygems/rubygems/releases/tag/v3.1.0
+    * https://github.com/rubygems/rubygems/releases/tag/v3.1.1
+    * https://github.com/rubygems/rubygems/releases/tag/v3.1.2
 
 StringScanner::
 
@@ -587,12 +691,17 @@ StringScanner::
   * E2MM (e2mmap gem)
 
 Proc::
-  * Proc#to_s format was changed. [Feature #16101]
+  * The Proc#to_s format was changed. [Feature #16101]
+
+Range::
+  * Range#minmax used to iterate on the range to determine the maximum.
+    It now uses the same algorithm as Range#max. In rare cases (e.g.
+    ranges of Floats or Strings), this may yield different results. [Bug #15807]
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
 * Promote stdlib to default gems
-  * The following default gems was published at rubygems.org
+  * The following default gems were published on rubygems.org
     * benchmark
     * cgi
     * delegate
@@ -601,14 +710,18 @@ Proc::
     * net-smtp
     * open3
     * pstore
+    * readline
+    * readline-ext
     * singleton
-  * The following default gems only promoted ruby-core, Not yet published at rubygems.org.
+  * The following default gems were only promoted at ruby-core,
+    but not yet published on rubygems.org.
     * monitor
     * observer
     * timeout
     * tracer
     * uri
     * yaml
+* The <tt>did_you_mean</tt> gem has been promoted up to a default gem from a bundled gem
 
 pathname::
 
@@ -619,7 +732,7 @@ pathname::
 
 profile.rb, Profiler__::
 
-  * Removed from standard library. No one maintains it from Ruby 2.0.0.
+  * Removed from standard library. It was unmaintained since Ruby 2.0.0.
 
 === C API updates
 
@@ -632,27 +745,28 @@ profile.rb, Profiler__::
   treated as keyword arguments. Passing a positional hash instead of
   keyword arguments will emit a deprecation warning.
 
-* C API declarations with +ANYARGS+ are changed not to use +ANYARGS+
-  https://github.com/ruby/ruby/pull/2404
+* C API declarations with +ANYARGS+ are changed not to use +ANYARGS+.
+  See https://github.com/ruby/ruby/pull/2404
 
 === Implementation improvements
 
 Fiber::
 
-  * Allow selecting different coroutine implementation by using
-    `--with-coroutine=`, e.g.
+  * Allow selecting different coroutine implementations by using
+    +--with-coroutine=+, e.g.
 
-         ./configure --with-coroutine=ucontext
-         ./configure --with-coroutine=copy
+         $ ./configure --with-coroutine=ucontext
+         $ ./configure --with-coroutine=copy
 
   * Replace previous stack cache with fiber pool cache. The fiber pool
     allocates many stacks in a single memory region. Stack allocation
     becomes O(log N) and fiber creation is amortized O(1). Around 10x
     performance improvement was measured in micro-benchmarks.
+    https://github.com/ruby/ruby/pull/2224
 
 File::
   * File.realpath now uses realpath(3) on many platforms, which can
-    significantly improve performance.
+    significantly improve performance. [Feature #15797]
 
 Hash::
   * Change data structure of small Hash objects. [Feature #15602]
@@ -664,7 +778,7 @@ Thread::
 
   * VM stack memory allocation is now combined with native thread stack,
     improving thread allocation performance and reducing allocation related
-    failures. ~10x performance improvement was measured in micro-benchmarks.
+    failures. Around 10x performance improvement was measured in micro-benchmarks.
 
 JIT::
 
@@ -673,9 +787,20 @@ JIT::
   * Method inlining is performed when a method is considered as pure.
     This optimization is still experimental and many methods are NOT considered as pure yet.
 
-  * Default value of +--jit-max-cache+ is changed from 1,000 to 100
+  * The default value of +--jit-max-cache+ is changed from 1,000 to 100.
 
-  * Default value of +--jit-min-calls+ is changed from 5 to 10,000
+  * The default value of +--jit-min-calls+ is changed from 5 to 10,000.
+
+RubyVM::
+
+  * Per-call-site method cache, which has been there since around 1.9, was
+    improved: cache hit rate raised from 89% to 94%.
+    See https://github.com/ruby/ruby/pull/2583
+
+RubyVM::InstructionSequence::
+
+  * RubyVM::InstructionSequence#to_binary method generates compiled binary.
+    The binary size is reduced. [Feature #16163]
 
 === Miscellaneous changes
 
@@ -683,7 +808,7 @@ JIT::
   difficult to find, native fiber code is difficult to implement, and it added
   non-trivial complexity to the interpreter. [Feature #15894]
 
-* Require compilers to support C99 [Misc #15347]
+* Require compilers to support C99. [Misc #15347]
 
   * Details of our dialect: https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/C99
 
@@ -695,6 +820,7 @@ JIT::
 
   * RUBY_DESCRIPTION includes Git revision instead of Subversion's one.
 
-* Support built-in methods in Ruby with `__builtin_` syntax. [Feature #16254]
+* Support built-in methods in Ruby with the <code>_\_builtin_</code> syntax. [Feature #16254]
+
   Some methods are defined in *.rb (such as trace_point.rb).
   For example, it is easy to define a method which accepts keyword arguments.

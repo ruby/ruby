@@ -319,6 +319,54 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
     end
   end
 
+  def assert_ctrl(expect, cc, r, w)
+    sleep 0.1
+    w.print cc
+    w.flush
+    result = EnvUtil.timeout(3) {r.gets}
+    assert_equal(expect, result.chomp)
+  end
+
+  def test_intr
+    run_pty("#{<<~"begin;"}\n#{<<~'end;'}") do |r, w, _|
+      begin;
+        require 'timeout'
+        STDOUT.puts `stty -a`.scan(/\b\w+ *= *\^.;/), ""
+        STDOUT.flush
+        con = IO.console
+        while c = con.getch
+          p c.ord
+          p con.getch(intr: false).ord
+          begin
+            p Timeout.timeout(1) {con.getch(intr: true)}.ord
+          rescue Timeout::Error, Interrupt => e
+            p e
+          end
+        end
+      end;
+      ctrl = {}
+      r.each do |l|
+        break unless /^(\w+) *= *\^(\\?.)/ =~ l
+        ctrl[$1] = eval("?\\C-#$2")
+      end
+      if cc = ctrl["intr"]
+        assert_ctrl("#{cc.ord}", cc, r, w)
+        assert_ctrl("#{cc.ord}", cc, r, w)
+        assert_ctrl("Interrupt", cc, r, w) unless /linux/ =~ RUBY_PLATFORM
+      end
+      if cc = ctrl["dsusp"]
+        assert_ctrl("#{cc.ord}", cc, r, w)
+        assert_ctrl("#{cc.ord}", cc, r, w)
+        assert_ctrl("#{cc.ord}", cc, r, w)
+      end
+      if cc = ctrl["lnext"]
+        assert_ctrl("#{cc.ord}", cc, r, w)
+        assert_ctrl("#{cc.ord}", cc, r, w)
+        assert_ctrl("#{cc.ord}", cc, r, w)
+      end
+    end
+  end
+
   unless IO.console
     def test_close
       assert_equal(["true"], run_pty("IO.console.close; p IO.console.fileno >= 0"))

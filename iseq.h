@@ -186,6 +186,7 @@ void rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events);
 void rb_iseq_trace_set_all(rb_event_flag_t turnon_events);
 void rb_iseq_insns_info_encode_positions(const rb_iseq_t *iseq);
 
+struct rb_iseq_constant_body *rb_iseq_constant_body_alloc(void);
 VALUE rb_iseqw_new(const rb_iseq_t *iseq);
 const rb_iseq_t *rb_iseqw_to_iseq(VALUE iseqw);
 

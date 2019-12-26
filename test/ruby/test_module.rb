@@ -28,10 +28,13 @@ class TestModule < Test::Unit::TestCase
   def setup
     @verbose = $VERBOSE
     $VERBOSE = nil
+    @deprecated = Warning[:deprecated]
+    Warning[:deprecated] = true
   end
 
   def teardown
     $VERBOSE = @verbose
+    Warning[:deprecated] = @deprecated
   end
 
   def test_LT_0
@@ -1580,6 +1583,8 @@ class TestModule < Test::Unit::TestCase
     assert_warn(/#{c}::FOO is deprecated/) {Class.new(c)::FOO}
     bug12382 = '[ruby-core:75505] [Bug #12382]'
     assert_warn(/deprecated/, bug12382) {c.class_eval "FOO"}
+    Warning[:deprecated] = false
+    assert_warn('') {c::FOO}
   end
 
   NIL = nil

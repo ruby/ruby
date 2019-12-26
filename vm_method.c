@@ -62,20 +62,22 @@ static struct {
 static void
 rb_class_clear_method_cache(VALUE klass, VALUE arg)
 {
+    VALUE old_serial = *(rb_serial_t *)arg;
+    if (RCLASS_SERIAL(klass) > old_serial) {
+        return;
+    }
+
     mjit_remove_class_serial(RCLASS_SERIAL(klass));
     RCLASS_SERIAL(klass) = rb_next_class_serial();
 
-    if (RB_TYPE_P(klass, T_ICLASS)) {
+    if (BUILTIN_TYPE(klass) == T_ICLASS) {
 	struct rb_id_table *table = RCLASS_CALLABLE_M_TBL(klass);
 	if (table) {
 	    rb_id_table_clear(table);
 	}
     }
     else {
-	if (RCLASS_CALLABLE_M_TBL(klass) != 0) {
-	    rb_obj_info_dump(klass);
-	    rb_bug("RCLASS_CALLABLE_M_TBL(klass) != 0");
-	}
+	VM_ASSERT(RCLASS_CALLABLE_M_TBL(klass) == 0);
     }
 
     rb_class_foreach_subclass(klass, rb_class_clear_method_cache, arg);
@@ -99,7 +101,8 @@ rb_clear_method_cache_by_class(VALUE klass)
 	    INC_GLOBAL_METHOD_STATE();
 	}
 	else {
-	    rb_class_clear_method_cache(klass, Qnil);
+	    rb_serial_t old_serial = PREV_CLASS_SERIAL();
+	    rb_class_clear_method_cache(klass, (VALUE)&old_serial);
 	}
     }
 
@@ -348,6 +351,8 @@ rb_method_definition_create(rb_method_type_t type, ID mid)
     def = ZALLOC(rb_method_definition_t);
     def->type = type;
     def->original_id = mid;
+    static uintptr_t method_serial = 1;
+    def->method_serial = method_serial++;
     return def;
 }
 
@@ -497,7 +502,7 @@ rb_add_refined_method_entry(VALUE refined_class, ID mid)
 }
 
 static void
-check_override_opt_method(VALUE klass, VALUE arg)
+check_override_opt_method_i(VALUE klass, VALUE arg)
 {
     ID mid = (ID)arg;
     const rb_method_entry_t *me, *newme;
@@ -509,7 +514,15 @@ check_override_opt_method(VALUE klass, VALUE arg)
 	    if (newme != me) rb_vm_check_redefinition_opt_method(me, me->owner);
 	}
     }
-    rb_class_foreach_subclass(klass, check_override_opt_method, (VALUE)mid);
+    rb_class_foreach_subclass(klass, check_override_opt_method_i, (VALUE)mid);
+}
+
+static void
+check_override_opt_method(VALUE klass, VALUE mid)
+{
+    if (rb_vm_check_optimizable_mid(mid)) {
+        check_override_opt_method_i(klass, mid);
+    }
 }
 
 /*

@@ -74,6 +74,80 @@ class TestGemCommandsSourcesCommand < Gem::TestCase
     assert_equal '', @ui.error
   end
 
+  def test_execute_add_allow_typo_squatting_source
+    rubygems_org = "https://rubyems.org"
+
+    spec_fetcher do |fetcher|
+      fetcher.spec("a", 1)
+    end
+
+    specs = Gem::Specification.map do |spec|
+      [spec.name, spec.version, spec.original_platform]
+    end
+
+    specs_dump_gz = StringIO.new
+    Zlib::GzipWriter.wrap(specs_dump_gz) do |io|
+      Marshal.dump(specs, io)
+    end
+
+    @fetcher.data["#{rubygems_org}/specs.#{@marshal_version}.gz"] = specs_dump_gz.string
+    @cmd.handle_options %W[--add #{rubygems_org}]
+    ui = Gem::MockGemUi.new("y")
+
+    use_ui ui do
+      @cmd.execute
+    end
+
+    expected = "https://rubyems.org is too similar to https://rubygems.org\n\nDo you want to add this source? [yn]  https://rubyems.org added to sources\n"
+
+    assert_equal expected, ui.output
+
+    source = Gem::Source.new(rubygems_org)
+    assert Gem.sources.include?(source)
+
+    assert_empty ui.error
+  end
+
+  def test_execute_add_deny_typo_squatting_source
+    rubygems_org = "https://rubyems.org"
+
+    spec_fetcher do |fetcher|
+      fetcher.spec("a", 1)
+    end
+
+    specs = Gem::Specification.map do |spec|
+      [spec.name, spec.version, spec.original_platform]
+    end
+
+    specs_dump_gz = StringIO.new
+    Zlib::GzipWriter.wrap(specs_dump_gz) do |io|
+      Marshal.dump(specs, io)
+    end
+
+    @fetcher.data["#{rubygems_org}/specs.#{@marshal_version}.gz"] =
+      specs_dump_gz.string
+
+    @cmd.handle_options %W[--add #{rubygems_org}]
+
+    ui = Gem::MockGemUi.new("n")
+
+    use_ui ui do
+
+      assert_raises Gem::MockGemUi::TermError do
+        @cmd.execute
+      end
+    end
+
+    expected = "https://rubyems.org is too similar to https://rubygems.org\n\nDo you want to add this source? [yn]  "
+
+    assert_equal expected, ui.output
+
+    source = Gem::Source.new(rubygems_org)
+    refute Gem.sources.include?(source)
+
+    assert_empty ui.error
+  end
+
   def test_execute_add_nonexistent_source
     spec_fetcher
 

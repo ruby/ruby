@@ -123,6 +123,18 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     assert_equal "I changed it!\n", File.read(gem_bin_path)
   end
 
+  def test_execute_informs_about_installed_executables
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+
+    exec_line = out.shift until exec_line == "RubyGems installed the following executables:"
+    assert_equal "\t#{default_gem_bin_path}", out.shift
+    assert_equal "\t#{default_bundle_bin_path}", out.shift
+  end
+
   def test_env_shebang_flag
     gem_bin_path = gem_install 'a'
     write_file gem_bin_path do |io|
@@ -133,10 +145,6 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     @cmd.options[:env_shebang] = true
     @cmd.execute
 
-    gem_exec = sprintf Gem.default_exec_format, 'gem'
-    default_gem_bin_path = File.join @install_dir, 'bin', gem_exec
-    bundle_exec = sprintf Gem.default_exec_format, 'bundle'
-    default_bundle_bin_path = File.join @install_dir, 'bin', bundle_exec
     ruby_exec = sprintf Gem.default_exec_format, 'ruby'
 
     if Gem.win_platform?
@@ -212,8 +220,39 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
     # TODO: We need to assert to remove same version of bundler on gem_dir directory(It's not site_ruby dir)
 
-    # expect to not remove bundler-* direcotyr.
+    # expect to not remove bundler-* directory.
     assert_path_exists 'default/gems/bundler-audit-1.0.0'
+  end
+
+  def test_install_default_bundler_gem_with_force_flag
+    @cmd.extend FileUtils
+
+    bin_dir = File.join(@gemhome, 'bin')
+    bundle_bin = File.join(bin_dir, 'bundle')
+
+    write_file bundle_bin do |f|
+      f.puts '#!/usr/bin/ruby'
+      f.puts ''
+      f.puts 'echo "hello"'
+    end
+
+    bindir(bin_dir) do
+      @cmd.options[:force] = true
+
+      @cmd.install_default_bundler_gem bin_dir
+
+      bundler_spec = Gem::Specification.load("bundler/bundler.gemspec")
+      default_spec_path = File.join(Gem.default_specifications_dir, "#{bundler_spec.full_name}.gemspec")
+      spec = Gem::Specification.load(default_spec_path)
+
+      spec.executables.each do |e|
+        if Gem.win_platform?
+          assert_path_exists File.join(bin_dir, "#{e}.bat")
+        end
+
+        assert_path_exists File.join bin_dir, Gem.default_exec_format % e
+      end
+    end
   end
 
   def test_remove_old_lib_files
@@ -308,11 +347,6 @@ class TestGemCommandsSetupCommand < Gem::TestCase
   * Fixed release note display for LANG=C when installing rubygems
   * π is tasty
 
-=== 2.0.2 / 2013-03-06
-
-* Bug fixes:
-  * Other bugs fixed
-
     EXPECTED
 
     output = @ui.output
@@ -321,6 +355,18 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     assert_equal expected, output
   ensure
     @ui.outs.set_encoding @default_external if @default_external
+  end
+
+  private
+
+  def default_gem_bin_path
+    gem_exec = sprintf Gem.default_exec_format, 'gem'
+    File.join @install_dir, 'bin', gem_exec
+  end
+
+  def default_bundle_bin_path
+    bundle_exec = sprintf Gem.default_exec_format, 'bundle'
+    File.join @install_dir, 'bin', bundle_exec
   end
 
 end unless Gem.java_platform?

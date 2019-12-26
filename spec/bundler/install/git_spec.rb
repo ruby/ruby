@@ -61,5 +61,25 @@ RSpec.describe "bundle install" do
 
       expect(out).to include("Bundle complete!")
     end
+
+    it "allows multiple gems from the same git source" do
+      build_repo2 do
+        build_lib "foo", "1.0", :path => lib_path("gems/foo")
+        build_lib "zebra", "2.0", :path => lib_path("gems/zebra")
+        build_git "gems", :path => lib_path("gems"), :gemspec => false
+      end
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo2)}"
+        gem "foo", :git => "#{lib_path("gems")}", :glob => "foo/*.gemspec"
+        gem "zebra", :git => "#{lib_path("gems")}", :glob => "zebra/*.gemspec"
+      G
+
+      bundle "info foo"
+      expect(out).to include("* foo (1.0 #{revision_for(lib_path("gems"))[0..6]})")
+
+      bundle "info zebra"
+      expect(out).to include("* zebra (2.0 #{revision_for(lib_path("gems"))[0..6]})")
+    end
   end
 end

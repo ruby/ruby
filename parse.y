@@ -188,6 +188,7 @@ numparam_id_p(ID id)
     unsigned int idx = NUMPARAM_ID_TO_IDX(id);
     return idx > 0 && idx <= NUMPARAM_MAX;
 }
+static void numparam_name(struct parser_params *p, ID id);
 
 #define DVARS_INHERIT ((void*)1)
 #define DVARS_TOPSCOPE NULL
@@ -471,6 +472,7 @@ static NODE *new_array_pattern(struct parser_params *p, NODE *constant, NODE *pr
 static NODE *new_array_pattern_tail(struct parser_params *p, NODE *pre_args, int has_rest, ID rest_arg, NODE *post_args, const YYLTYPE *loc);
 static NODE *new_hash_pattern(struct parser_params *p, NODE *constant, NODE *hshptn, const YYLTYPE *loc);
 static NODE *new_hash_pattern_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, const YYLTYPE *loc);
+static NODE *new_case3(struct parser_params *p, NODE *val, NODE *pat, const YYLTYPE *loc);
 
 static NODE *new_kw_arg(struct parser_params *p, NODE *k, const YYLTYPE *loc);
 static NODE *args_with_numbered(struct parser_params*,NODE*,int);
@@ -1571,8 +1573,7 @@ expr		: command_call
 		    {
 			p->in_kwarg = !!$<num>3;
 		    /*%%%*/
-			$$ = NEW_CASE3($1, NEW_IN($5, 0, 0, &@5), &@$);
-			rb_warn0L(nd_line($$), "Pattern matching is experimental, and the behavior may change in future versions of Ruby!");
+			$$ = new_case3(p, $1, NEW_IN($5, 0, 0, &@5), &@$);
 		    /*% %*/
 		    /*% ripper: case!($1, in!($5, Qnil, Qnil)) %*/
 		    }
@@ -2859,8 +2860,7 @@ primary		: literal
 		  k_end
 		    {
 		    /*%%%*/
-			$$ = NEW_CASE3($2, $4, &@$);
-			rb_warn0L(nd_line($$), "Pattern matching is experimental, and the behavior may change in future versions of Ruby!");
+			$$ = new_case3(p, $2, $4, &@$);
 		    /*% %*/
 		    /*% ripper: case!($2, $4) %*/
 		    }
@@ -2981,6 +2981,7 @@ primary		: literal
 		    }
 		| k_def fname
 		    {
+			numparam_name(p, get_id($2));
 			local_push(p, 0);
 			$<id>$ = p->cur_arg;
 			p->cur_arg = 0;
@@ -3007,6 +3008,7 @@ primary		: literal
 		    }
 		| k_def singleton dot_or_colon {SET_LEX_STATE(EXPR_FNAME);} fname
 		    {
+			numparam_name(p, get_id($5));
 			$<num>4 = p->in_def;
 			p->in_def = 1;
 			SET_LEX_STATE(EXPR_ENDFN|EXPR_LABEL); /* force for args */
@@ -5629,7 +5631,18 @@ static void ruby_show_error_line(VALUE errbuf, const YYLTYPE *yylloc, int lineno
 static inline void
 parser_show_error_line(struct parser_params *p, const YYLTYPE *yylloc)
 {
-    ruby_show_error_line(p->error_buffer, yylloc, p->ruby_sourceline, p->lex.lastline);
+    VALUE str;
+    int lineno = p->ruby_sourceline;
+    if (!yylloc) {
+	return;
+    }
+    else if (yylloc->beg_pos.lineno == lineno) {
+	str = p->lex.lastline;
+    }
+    else {
+	return;
+    }
+    ruby_show_error_line(p->error_buffer, yylloc, lineno, str);
 }
 
 static int
@@ -11450,6 +11463,16 @@ new_hash_pattern_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, co
     return node;
 }
 
+static NODE *
+new_case3(struct parser_params *p, NODE *val, NODE *pat, const YYLTYPE *loc)
+{
+    NODE *node = NEW_CASE3(val, pat, loc);
+
+    if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL))
+	rb_warn0L(nd_line(node), "Pattern matching is experimental, and the behavior may change in future versions of Ruby!");
+    return node;
+}
+
 static NODE*
 dsym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 {
@@ -11830,18 +11853,24 @@ node_newnode_with_locals(struct parser_params *p, enum node_type type, VALUE a1,
 #endif
 
 static void
+numparam_name(struct parser_params *p, ID id)
+{
+    if (!NUMPARAM_ID_P(id)) return;
+    rb_warn1("`_%d' is reserved for numbered parameter; consider another name",
+	     WARN_I(NUMPARAM_ID_TO_IDX(id)));
+}
+
+static void
 arg_var(struct parser_params *p, ID id)
 {
+    numparam_name(p, id);
     vtable_add(p->lvtbl->args, id);
 }
 
 static void
 local_var(struct parser_params *p, ID id)
 {
-    if (NUMPARAM_ID_P(id)) {
-	rb_warn1("`_%d' is used as numbered parameter",
-		 WARN_I(NUMPARAM_ID_TO_IDX(id)));
-    }
+    numparam_name(p, id);
     vtable_add(p->lvtbl->vars, id);
     if (p->lvtbl->used) {
 	vtable_add(p->lvtbl->used, (ID)p->ruby_sourceline);

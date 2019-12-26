@@ -2302,7 +2302,8 @@ rb_autoload_at_p(VALUE mod, ID id, int recur)
 MJIT_FUNC_EXPORTED void
 rb_const_warn_if_deprecated(const rb_const_entry_t *ce, VALUE klass, ID id)
 {
-    if (RB_CONST_DEPRECATED_P(ce)) {
+    if (RB_CONST_DEPRECATED_P(ce) &&
+        rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) {
 	if (klass == rb_cObject) {
 	    rb_warn("constant ::%"PRIsVALUE" is deprecated", QUOTE_ID(id));
 	}
@@ -2991,7 +2992,19 @@ rb_mod_public_constant(int argc, const VALUE *argv, VALUE obj)
  *  call-seq:
  *     mod.deprecate_constant(symbol, ...)    => mod
  *
- *  Makes a list of existing constants deprecated.
+ *  Makes a list of existing constants deprecated. Attempt
+ *  to refer to them will produce a warning.
+ *
+ *     module HTTP
+ *       NotFound = Exception.new
+ *       NOT_FOUND = NotFound # previous version of the library used this name
+ *
+ *       deprecate_constant :NOT_FOUND
+ *     end
+ *
+ *     HTTP::NOT_FOUND
+ *     # warning: constant HTTP::NOT_FOUND is deprecated
+ *
  */
 
 VALUE

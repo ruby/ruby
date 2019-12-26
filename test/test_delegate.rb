@@ -190,7 +190,7 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_equal([], d.bar)
     assert_equal([[], {:a=>1}], d.foo(:a=>1))
     assert_equal([{:a=>1}], d.bar(:a=>1))
-    assert_warn(/The last argument is used as the keyword parameter.* for `foo'/m) do
+    assert_warn(/Using the last argument as keyword parameters is deprecated.*The called method `foo'/m) do
       assert_equal([[], {:a=>1}], d.foo({:a=>1}))
     end
     assert_equal([{:a=>1}], d.bar({:a=>1}))

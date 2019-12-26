@@ -1732,7 +1732,7 @@ a = nil
 test_ok(defined?(a))
 test_ok(a == nil)
 
-# multiple asignment
+# multiple assignment
 a, b = 1, 2
 test_ok(a == 1 && b == 2)
 

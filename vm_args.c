@@ -570,7 +570,8 @@ fill_keys_values(st_data_t key, st_data_t val, st_data_t ptr)
 }
 
 static inline int
-ignore_keyword_hash_p(VALUE keyword_hash, const rb_iseq_t * const iseq) {
+ignore_keyword_hash_p(VALUE keyword_hash, const rb_iseq_t * const iseq)
+{
     if (!(iseq->body->param.flags.has_kw) &&
 	      !(iseq->body->param.flags.has_kwrest)) {
 	keyword_hash = rb_check_hash_type(keyword_hash);
@@ -593,38 +594,45 @@ VALUE rb_iseq_location(const rb_iseq_t *iseq);
  */
 static st_table *caller_to_callees = 0;
 
-static VALUE rb_warn_check(const rb_execution_context_t * const ec, const void *const callee)
+static VALUE
+rb_warn_check(const rb_execution_context_t * const ec, const rb_iseq_t *const iseq)
 {
+    if (!rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) return 1;
+
+    if (!iseq) return 0;
+
+    const st_data_t callee = (st_data_t)(iseq->body->iseq_unique_id * 2);
+
     const rb_control_frame_t * const cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
 
     if (!cfp) return 0;
 
-    const void *const caller = cfp->pc;
+    const st_data_t caller = (st_data_t)cfp->pc;
 
     if (!caller_to_callees) {
         caller_to_callees = st_init_numtable();
     }
 
     st_data_t val;
-    if (st_lookup(caller_to_callees, (st_data_t) caller, &val)) {
+    if (st_lookup(caller_to_callees, caller, &val)) {
         st_table *callees;
 
         if (val & 1) {
             val &= ~(st_data_t)1;
-            if (val == (st_data_t) callee) return 1; /* already warned */
+            if (val == callee) return 1; /* already warned */
 
             callees = st_init_numtable();
             st_insert(callees, val, 1);
         }
         else {
             callees = (st_table *) val;
-            if (st_is_member(callees, (st_data_t) callee)) return 1; /* already warned */
+            if (st_is_member(callees, callee)) return 1; /* already warned */
         }
-        st_insert(callees, (st_data_t) callee, 1);
-        st_insert(caller_to_callees, (st_data_t) caller, (st_data_t) callees);
+        st_insert(callees, callee, 1);
+        st_insert(caller_to_callees, caller, (st_data_t) callees);
     }
     else {
-        st_insert(caller_to_callees, (st_data_t) caller, ((st_data_t) callee) | 1);
+        st_insert(caller_to_callees, caller, callee | 1);
     }
 
     return 0; /* not warned yet for the pair of caller and callee */
@@ -637,24 +645,24 @@ rb_warn_keyword_to_last_hash(rb_execution_context_t * const ec, struct rb_callin
 
     VALUE name, loc;
     if (calling->recv == Qundef) {
-        rb_warn("The keyword argument is passed as the last hash parameter");
+        rb_warn("Passing the keyword argument as the last hash parameter is deprecated");
         return;
     }
     name = rb_id2str(ci->mid);
     loc = rb_iseq_location(iseq);
     if (NIL_P(loc)) {
-        rb_warn("The keyword argument for `%"PRIsVALUE"' is passed as the last hash parameter",
+        rb_warn("Passing the keyword argument for `%"PRIsVALUE"' as the last hash parameter is deprecated",
                 name);
     }
     else {
-        rb_warn("The keyword argument is passed as the last hash parameter");
+        rb_warn("Passing the keyword argument as the last hash parameter is deprecated");
         if (name) {
             rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
-                            "for `%"PRIsVALUE"' defined here", name);
+                            "The called method `%"PRIsVALUE"' is defined here", name);
         }
         else {
             rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
-                            "for method defined here");
+                            "The called method is defined here");
         }
     }
 }
@@ -668,18 +676,18 @@ rb_warn_split_last_hash_to_keyword(rb_execution_context_t * const ec, struct rb_
     name = rb_id2str(ci->mid);
     loc = rb_iseq_location(iseq);
     if (NIL_P(loc)) {
-        rb_warn("The last argument for `%"PRIsVALUE"' is split into positional and keyword parameters",
+        rb_warn("Splitting the last argument for `%"PRIsVALUE"' into positional and keyword parameters is deprecated",
                 name);
     }
     else {
-        rb_warn("The last argument is split into positional and keyword parameters");
+        rb_warn("Splitting the last argument into positional and keyword parameters is deprecated");
         if (calling->recv != Qundef) {
             rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
-                            "for `%"PRIsVALUE"' defined here", name);
+                            "The called method `%"PRIsVALUE"' is defined here", name);
         }
         else {
             rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
-                            "for method defined here");
+                            "The called method is defined here");
         }
     }
 }
@@ -693,18 +701,18 @@ rb_warn_last_hash_to_keyword(rb_execution_context_t * const ec, struct rb_callin
     name = rb_id2str(ci->mid);
     loc = rb_iseq_location(iseq);
     if (NIL_P(loc)) {
-        rb_warn("The last argument for `%"PRIsVALUE"' is used as the keyword parameter; maybe ** should be added to the call?",
+        rb_warn("Using the last argument for `%"PRIsVALUE"' as keyword parameters is deprecated; maybe ** should be added to the call",
                 name);
     }
     else {
-        rb_warn("The last argument is used as the keyword parameter");
+        rb_warn("Using the last argument as keyword parameters is deprecated; maybe ** should be added to the call");
         if (calling->recv != Qundef) {
             rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
-                            "for `%"PRIsVALUE"' defined here; maybe ** should be added to the call?", name);
+                            "The called method `%"PRIsVALUE"' is defined here", name);
         }
         else {
             rb_compile_warn(RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)),
-                            "for method defined here; maybe ** should be added to the call?");
+                            "The called method is defined here");
         }
     }
 }
@@ -1196,7 +1204,10 @@ vm_caller_setup_arg_block(const rb_execution_context_t *ec, rb_control_frame_t *
             return VM_BLOCK_HANDLER_NONE;
         }
 	else if (block_code == rb_block_param_proxy) {
-            return VM_CF_BLOCK_HANDLER(reg_cfp);
+            VM_ASSERT(!VM_CFP_IN_HEAP_P(GET_EC(), reg_cfp));
+            VALUE handler = VM_CF_BLOCK_HANDLER(reg_cfp);
+            reg_cfp->block_code = (const void *) handler;
+            return handler;
         }
 	else if (SYMBOL_P(block_code) && rb_method_basic_definition_p(rb_cSymbol, idTo_proc)) {
 	    const rb_cref_t *cref = vm_env_cref(reg_cfp->ep);

@@ -11,11 +11,12 @@
 prelude.rb
 rbconfig.rb
 
-trace_point.rb
 ast.rb
-io.rb
 gc.rb
+io.rb
 pack.rb
+trace_point.rb
+warning.rb
 
 # the lib/ directory (which has its own .document file)
 lib

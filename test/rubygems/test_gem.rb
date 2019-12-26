@@ -226,7 +226,7 @@ class TestGem < Gem::TestCase
   def test_require_missing
     save_loaded_features do
       assert_raises ::LoadError do
-        require "q"
+        require "test_require_missing"
       end
     end
   end
@@ -1388,7 +1388,7 @@ class TestGem < Gem::TestCase
       a = util_spec "a", "1"
       b = util_spec "b", "1", "c" => nil
       c = util_spec "c", "2"
-      d = util_spec "d", "1", {'e' => '= 1'}, "lib/d.rb"
+      d = util_spec "d", "1", {'e' => '= 1'}, "lib/d#{$$}.rb"
       e = util_spec "e", "1"
 
       install_specs a, c, b, e, d
@@ -1397,7 +1397,7 @@ class TestGem < Gem::TestCase
         r.gem "a"
         r.gem "b", "= 1"
 
-        require 'd'
+        require "d#{$$}"
       end
 
       assert_equal %w!a-1 b-1 c-2 d-1 e-1!, loaded_spec_names
@@ -1917,16 +1917,11 @@ You may need to `gem install -g` to install missing gems
   end
 
   def with_bindir_and_exeext(bindir, exeext)
-    orig_bindir = RbConfig::CONFIG['bindir']
-    orig_exe_ext = RbConfig::CONFIG['EXEEXT']
-
-    RbConfig::CONFIG['bindir'] = bindir
-    RbConfig::CONFIG['EXEEXT'] = exeext
-
-    yield
-  ensure
-    RbConfig::CONFIG['bindir'] = orig_bindir
-    RbConfig::CONFIG['EXEEXT'] = orig_exe_ext
+    bindir(bindir) do
+      exeext(exeext) do
+        yield
+      end
+    end
   end
 
   def with_clean_path_to_ruby

@@ -316,7 +316,7 @@ proc_entry_ptr(VALUE proc_entry)
  *   some_method(a.to_enum)
  *
  *   # String#split in block form is more memory-effective:
- *   very_large_string.to_enum(:split, "|") { |chunk| return chunk if chunk.include?('DATE') }
+ *   very_large_string.split("|") { |chunk| return chunk if chunk.include?('DATE') }
  *   # This could be rewritten more idiomatically with to_enum:
  *   very_large_string.to_enum(:split, "|").lazy.grep(/DATE/).first
  *
@@ -415,7 +415,7 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *ar
  *
  * In the first form, iteration is defined by the given block, in
  * which a "yielder" object, given as block parameter, can be used to
- * yield a value by calling the +yield+ method (aliased as +<<+):
+ * yield a value by calling the +yield+ method (aliased as <code><<</code>):
  *
  *   fib = Enumerator.new do |y|
  *     a = b = 1
@@ -425,13 +425,13 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *ar
  *     end
  *   end
  *
- *   p fib.take(10) # => [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
+ *   fib.take(10) # => [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
  *
  * The optional parameter can be used to specify how to calculate the size
  * in a lazy fashion (see Enumerator#size). It can either be a value or
  * a callable object.
  *
- * In the second, deprecated, form, a generated Enumerator iterates over the
+ * In the deprecated second form, a generated Enumerator iterates over the
  * given object using the given method with the given arguments passed.
  *
  * Use of this form is discouraged.  Use Object#enum_for or Object#to_enum
@@ -440,7 +440,7 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *ar
  *   e = Enumerator.new(ObjectSpace, :each_object)
  *       #-> ObjectSpace.enum_for(:each_object)
  *
- *   e.select { |obj| obj.is_a?(Class) }  #=> array of all classes
+ *   e.select { |obj| obj.is_a?(Class) }  # => array of all classes
  *
  */
 static VALUE
@@ -466,7 +466,7 @@ enumerator_initialize(int argc, VALUE *argv, VALUE obj)
     }
     else {
 	rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
-	rb_warn("Enumerator.new without a block is deprecated; use Object#to_enum");
+	rb_warn_deprecated("Enumerator.new without a block", "Object#to_enum");
 	recv = *argv++;
 	if (--argc) {
 	    meth = *argv++;
@@ -1736,7 +1736,7 @@ lazy_generator_init(VALUE enumerator, VALUE procs)
 
 /*
  * call-seq:
- *   Lazy.new(obj, size=nil) { |yielder, *values| ... }
+ *   Lazy.new(obj, size=nil) { |yielder, *values| block }
  *
  * Creates a new Lazy enumerator. When the enumerator is actually enumerated
  * (e.g. by calling #force), +obj+ will be enumerated and each value passed
@@ -1899,10 +1899,10 @@ lazy_to_enum_i(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator
 
 /*
  * call-seq:
- *   lzy.to_enum(method = :each, *args)                 -> lazy_enum
- *   lzy.enum_for(method = :each, *args)                -> lazy_enum
- *   lzy.to_enum(method = :each, *args) {|*args| block} -> lazy_enum
- *   lzy.enum_for(method = :each, *args){|*args| block} -> lazy_enum
+ *   lzy.to_enum(method = :each, *args)                   -> lazy_enum
+ *   lzy.enum_for(method = :each, *args)                  -> lazy_enum
+ *   lzy.to_enum(method = :each, *args) {|*args| block }  -> lazy_enum
+ *   lzy.enum_for(method = :each, *args) {|*args| block } -> lazy_enum
  *
  * Similar to Object#to_enum, except it returns a lazy enumerator.
  * This makes it easy to define Enumerable methods that will
@@ -2080,19 +2080,19 @@ lazy_flat_map_proc(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
  *     lazy.flat_map       { |obj| block } -> a_lazy_enumerator
  *
  *  Returns a new lazy enumerator with the concatenated results of running
- *  <i>block</i> once for every element in <i>lazy</i>.
+ *  +block+ once for every element in the lazy enumerator.
  *
  *    ["foo", "bar"].lazy.flat_map {|i| i.each_char.lazy}.force
  *    #=> ["f", "o", "o", "b", "a", "r"]
  *
- *  A value <i>x</i> returned by <i>block</i> is decomposed if either of
+ *  A value +x+ returned by +block+ is decomposed if either of
  *  the following conditions is true:
  *
- *  * a) <i>x</i> responds to both each and force, which means that
- *    <i>x</i> is a lazy enumerator.
- *  * b) <i>x</i> is an array or responds to to_ary.
+ *  * +x+ responds to both each and force, which means that
+ *    +x+ is a lazy enumerator.
+ *  * +x+ is an array or responds to to_ary.
  *
- *  Otherwise, <i>x</i> is contained as-is in the return value.
+ *  Otherwise, +x+ is contained as-is in the return value.
  *
  *    [{a:1}, {b:2}].lazy.flat_map {|i| i}.force
  *    #=> [{:a=>1}, {:b=>2}]
@@ -2159,7 +2159,8 @@ static const lazyenum_funcs lazy_filter_map_funcs = {
  *
  *  Like Enumerable#filter_map, but chains operation to be lazy-evaluated.
  *
- *     (1..).lazy.filter_map { |i| i * 2 if i.even? }.first(5) #=> [4, 8, 12, 16, 20]
+ *    (1..).lazy.filter_map { |i| i * 2 if i.even? }.first(5)
+ *    #=> [4, 8, 12, 16, 20]
  */
 
 static VALUE
@@ -2631,8 +2632,8 @@ static const lazyenum_funcs lazy_uniq_funcs = {
 
 /*
  *  call-seq:
- *     lazy.uniq                -> lazy_enumerator
- *     lazy.uniq { |item| ... } -> lazy_enumerator
+ *     lazy.uniq                  -> lazy_enumerator
+ *     lazy.uniq { |item| block } -> lazy_enumerator
  *
  *  Like Enumerable#uniq, but chains operation to be lazy-evaluated.
  */
@@ -2643,6 +2644,62 @@ lazy_uniq(VALUE obj)
     const lazyenum_funcs *const funcs =
         rb_block_given_p() ? &lazy_uniq_iter_funcs : &lazy_uniq_funcs;
     return lazy_add_method(obj, 0, 0, Qnil, Qnil, funcs);
+}
+
+static struct MEMO *
+lazy_with_index_proc(VALUE proc_entry, struct MEMO* result, VALUE memos, long memo_index)
+{
+    struct proc_entry *entry = proc_entry_ptr(proc_entry);
+    VALUE memo = rb_ary_entry(memos, memo_index);
+    VALUE argv[2];
+
+    if (NIL_P(memo)) {
+        memo = entry->memo;
+    }
+
+    argv[0] = result->memo_value;
+    argv[1] = memo;
+    if (entry->proc) {
+        rb_proc_call_with_block(entry->proc, 2, argv, Qnil);
+        LAZY_MEMO_RESET_PACKED(result);
+    } else {
+        LAZY_MEMO_SET_VALUE(result, rb_ary_new_from_values(2, argv));
+        LAZY_MEMO_SET_PACKED(result);
+    }
+    rb_ary_store(memos, memo_index, LONG2NUM(NUM2LONG(memo) + 1));
+    return result;
+}
+
+static const lazyenum_funcs lazy_with_index_funcs = {
+    lazy_with_index_proc, 0,
+};
+
+/*
+ * call-seq:
+ *   lazy.with_index(offset = 0) {|(*args), idx| block }
+ *   lazy.with_index(offset = 0)
+ *
+ * If a block is given, iterates the given block for each element
+ * with an index, which starts from +offset+, and returns a
+ * lazy enumerator that yields the same values (without the index).
+ *
+ * If a block is not given, returns a new lazy enumerator that
+ * includes the index, starting from +offset+.
+ *
+ * +offset+:: the starting index to use
+ *
+ * See Enumerator#with_index.
+ */
+static VALUE
+lazy_with_index(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE memo;
+
+    rb_scan_args(argc, argv, "01", &memo);
+    if (NIL_P(memo))
+        memo = LONG2NUM(0);
+
+    return lazy_add_method(obj, 0, 0, memo, rb_ary_new_from_values(1, &memo), &lazy_with_index_funcs);
 }
 
 #if 0 /* for RDoc */
@@ -2902,18 +2959,16 @@ producer_size(VALUE obj, VALUE args, VALUE eobj)
 
 /*
  * call-seq:
- *    Enumerator.produce(initial = nil) { |val| } -> enumerator
+ *    Enumerator.produce(initial = nil) { |prev| block } -> enumerator
  *
  * Creates an infinite enumerator from any block, just called over and
- * over.  Result of the previous iteration is passed to the next one.
+ * over.  The result of the previous iteration is passed to the next one.
  * If +initial+ is provided, it is passed to the first iteration, and
  * becomes the first element of the enumerator; if it is not provided,
- * first iteration receives +nil+, and its result becomes first
+ * the first iteration receives +nil+, and its result becomes the first
  * element of the iterator.
  *
  * Raising StopIteration from the block stops an iteration.
- *
- * Examples of usage:
  *
  *   Enumerator.produce(1, &:succ)   # => enumerator of 1, 2, 3, 4, ....
  *
@@ -2923,18 +2978,18 @@ producer_size(VALUE obj, VALUE args, VALUE eobj)
  *   enclosing_section = ancestors.find { |n| n.type == :section }
  *
  * Using ::produce together with Enumerable methods like Enumerable#detect,
- * Enumerable#slice, Enumerable#take_while can provide Enumerator-based alternative
+ * Enumerable#slice, Enumerable#take_while can provide Enumerator-based alternatives
  * for +while+ and +until+ cycles:
  *
  *   # Find next Tuesday
- *   require 'date'
+ *   require "date"
  *   Enumerator.produce(Date.today, &:succ).detect(&:tuesday?)
  *
  *   # Simple lexer:
- *   require 'strscan'
- *   scanner = StringScanner.new('7+38/6')
+ *   require "strscan"
+ *   scanner = StringScanner.new("7+38/6")
  *   PATTERN = %r{\d+|[-/+*]}
- *   p Enumerator.produce { scanner.scan(PATTERN) }.slice_after { scanner.eos? }.first
+ *   Enumerator.produce { scanner.scan(PATTERN) }.slice_after { scanner.eos? }.first
  *   # => ["7", "+", "38", "/", "6"]
  */
 static VALUE
@@ -3839,71 +3894,6 @@ arith_seq_size(VALUE self)
     }
 
     return len;
-}
-
-static VALUE
-lazy_with_index_func(RB_BLOCK_CALL_FUNC_ARGLIST(val, offset))
-{
-    VALUE yielder, memo, result;
-    VALUE e = rb_enum_values_pack(argc - 1, argv + 1);
-    long idx;
-
-    yielder = argv[0];
-    memo = rb_attr_get(yielder, id_memo);
-    if (NIL_P(memo))
-        memo = offset;
-    idx = NUM2LONG(memo);
-    result = rb_assoc_new(e, memo);
-    rb_funcall(yielder, idLTLT, 1, result);
-    rb_ivar_set(yielder, id_memo, LONG2NUM(++idx));
-    return Qnil;
-}
-
-static VALUE
-lazy_with_index_iter(RB_BLOCK_CALL_FUNC_ARGLIST(val, offset))
-{
-    VALUE yielder, memo, result;
-    VALUE e = rb_enum_values_pack(argc - 1, argv + 1);
-    long idx;
-
-    yielder = argv[0];
-    memo = rb_attr_get(yielder, id_memo);
-    if (NIL_P(memo))
-        memo = offset;
-    idx = NUM2LONG(memo);
-    result = rb_yield(rb_assoc_new(e, memo));
-    rb_funcall(yielder, idLTLT, 1, result);
-    rb_ivar_set(yielder, id_memo, LONG2NUM(++idx));
-    return Qnil;
-}
-
-/*
- *  call-seq:
- *     lazy.with_index(offset = 0) {|(*args), idx| ... }
- *     lazy.with_index(offset = 0)
- *
- *  Iterates the given block for each element with an index, which
- *  starts from +offset+.  If no block is given, returns a new
- *  lazy enumerator that includes the index, starting from +offset+
- *
- * +offset+:: the starting index to use
- *
- * see Enumerator#with_index.
- */
-static VALUE
-lazy_with_index(int argc, VALUE *argv, VALUE obj)
-{
-    VALUE memo;
-
-    rb_scan_args(argc, argv, "01", &memo);
-    if (NIL_P(memo))
-        memo = LONG2NUM(0);
-
-    return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
-                                         rb_block_given_p() ?
-                                         lazy_with_index_iter : lazy_with_index_func,
-                                         memo),
-                           rb_ary_new_from_values(argc, argv), 0);
 }
 
 void

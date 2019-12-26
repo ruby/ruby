@@ -127,7 +127,7 @@ AS_CASE("${os_version_style}",
 	[minor],   [os_version_style_transform=['s/\([0-9]\.[0-9][0-9]*\)\.[0-9][.0-9]*$/\1/']],
 	[major+0], [os_version_style_transform=['s/\([0-9]\)\.[0-9][.0-9]*$/\1.0/']],
 	[major],   [os_version_style_transform=['s/\([0-9]\)\.[0-9][.0-9]*$/\1/']],
-	[none],    [os_version_style_transform=['s/[0-9]\.[0-9][.0-9]*$//']],
+	[none],    [os_version_style_transform=['s/[0-9]*\.[0-9][.0-9]*$//']],
 	[AC_MSG_ERROR(unknown --with-os-version-style: $withval)])
 AS_IF([test -z "$target_alias" -a -n "$os_version_style_transform"],
 	[
@@ -3053,6 +3053,7 @@ AS_IF([test x"$cross_compiling" = xyes], [
   XRUBY='$(MINIRUBY)'
   TEST_RUNNABLE=no
   CROSS_COMPILING=yes
+  AC_DEFINE(CROSS_COMPILING, 1)
 ], [
   MINIRUBY='./miniruby$(EXEEXT) -I$(srcdir)/lib -I.'
   MINIRUBY="$MINIRUBY"' -I$(EXTOUT)/common'

@@ -42,6 +42,7 @@ class DRbService
     server.stop_service
     manager.instance_variable_get(:@queue)&.push(nil)
     manager.instance_variable_get(:@thread)&.join
+    DRb::DRbConn.stop_pool
   end
 end
 

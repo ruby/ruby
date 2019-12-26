@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 require 'cgi'
-require 'uri'
 
 ##
 # The UriFormatter handles URIs from user-input and escaping.

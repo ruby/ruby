@@ -714,7 +714,7 @@ st_free_table(st_table *tab)
     free(tab);
 }
 
-/* Return byte size of memory allocted for table TAB.  */
+/* Return byte size of memory allocated for table TAB.  */
 size_t
 st_memsize(const st_table *tab)
 {

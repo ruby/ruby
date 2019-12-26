@@ -400,6 +400,7 @@ END
     assert_raise(Errno::EDOM, Errno::ERANGE) { r.rand(1.0 / 0.0) }
     assert_raise(Errno::EDOM, Errno::ERANGE) { r.rand(0.0 / 0.0) }
     assert_raise(Errno::EDOM) {r.rand(1..)}
+    assert_raise(Errno::EDOM) {r.rand(..1)}
 
     r = Random.new(0)
     assert_in_delta(1.5488135039273248, r.rand(1.0...2.0), 0.0001, '[ruby-core:24655]')

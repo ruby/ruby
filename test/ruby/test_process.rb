@@ -1509,7 +1509,17 @@ class TestProcess < Test::Unit::TestCase
   def test_abort
     with_tmpchdir do
       s = run_in_child("abort")
-      assert_not_equal(0, s.exitstatus)
+      assert_not_predicate(s, :success?)
+      write_file("test-script", "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        STDERR.reopen(STDOUT)
+        begin
+          raise "[Bug #16424]"
+        rescue
+          abort
+        end
+      end;
+      assert_include(IO.popen([RUBY, "test-script"], &:read), "[Bug #16424]")
     end
   end
 

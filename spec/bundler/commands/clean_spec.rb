@@ -782,7 +782,7 @@ RSpec.describe "bundle clean" do
     expect(vendored_gems("bundler/gems/very_simple_git_binary-1.0-#{revision[0..11]}")).to exist
 
     bundle! :clean
-    expect(out).to eq("")
+    expect(out).to be_empty
 
     expect(vendored_gems("bundler/gems/extensions")).to exist
     expect(vendored_gems("bundler/gems/very_simple_git_binary-1.0-#{revision[0..11]}")).to exist

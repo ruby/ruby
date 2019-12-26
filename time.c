@@ -673,16 +673,21 @@ static VALUE tm_from_time(VALUE klass, VALUE time);
 
 bool ruby_tz_uptodate_p;
 
+static void
+update_tz(void)
+{
+    if (ruby_tz_uptodate_p) return;
+    ruby_tz_uptodate_p = true;
+    tzset();
+}
+
 static struct tm *
 rb_localtime_r(const time_t *t, struct tm *result)
 {
 #if defined __APPLE__ && defined __LP64__
     if (*t != (time_t)(int)*t) return NULL;
 #endif
-    if (!ruby_tz_uptodate_p) {
-	ruby_tz_uptodate_p = true;
-	tzset();
-    }
+    update_tz();
 #ifdef HAVE_GMTIME_R
     result = localtime_r(t, result);
 #else
@@ -3140,9 +3145,7 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
     find_dst = 0 < tptr->tm_isdst;
 
     /* /etc/localtime might be changed. reload it. */
-    if (!ruby_tz_uptodate_p) {
-        tzset();
-    }
+    update_tz();
 
     tm0 = *tptr;
     if (tm0.tm_mon < 0) {
@@ -3365,12 +3368,12 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
 
     *tp = guess_lo +
           ((tptr->tm_year - tm_lo.tm_year) * 365 +
-           ((tptr->tm_year-69)/4) -
-           ((tptr->tm_year-1)/100) +
-           ((tptr->tm_year+299)/400) -
-           ((tm_lo.tm_year-69)/4) +
-           ((tm_lo.tm_year-1)/100) -
-           ((tm_lo.tm_year+299)/400) +
+           DIV((tptr->tm_year-69), 4) -
+           DIV((tptr->tm_year-1), 100) +
+           DIV((tptr->tm_year+299), 400) -
+           DIV((tm_lo.tm_year-69), 4) +
+           DIV((tm_lo.tm_year-1), 100) -
+           DIV((tm_lo.tm_year+299), 400) +
            tptr_tm_yday -
            tm_lo.tm_yday) * 86400 +
           (tptr->tm_hour - tm_lo.tm_hour) * 3600 +
@@ -4088,14 +4091,15 @@ time_to_s(VALUE time)
  *  call-seq:
  *     time.inspect -> string
  *
- *  Returns a detailed string representing _time_.
+ *  Returns a detailed string representing _time_. Unlike to_s,
+ *  preserves nanoseconds in the representation for easier debugging.
  *
  *     t = Time.now
- *     t.to_s                              #=> "2012-11-10 18:16:12 +0100"
- *     t.strftime "%Y-%m-%d %H:%M:%S %z"   #=> "2012-11-10 18:16:12 +0100"
+ *     t.inspect                             #=> "2012-11-10 18:16:12.261257655 +0100"
+ *     t.strftime "%Y-%m-%d %H:%M:%S.%N %z"  #=> "2012-11-10 18:16:12.261257655 +0100"
  *
- *     t.utc.to_s                          #=> "2012-11-10 17:16:12 UTC"
- *     t.strftime "%Y-%m-%d %H:%M:%S UTC"  #=> "2012-11-10 17:16:12 UTC"
+ *     t.utc.inspect                          #=> "2012-11-10 17:16:12.261257655 UTC"
+ *     t.strftime "%Y-%m-%d %H:%M:%S.%N UTC"  #=> "2012-11-10 17:16:12.261257655 UTC"
  */
 
 static VALUE
@@ -5798,7 +5802,7 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *  At loading marshaled data, a timezone name will be converted to a timezone
  *  object by +find_timezone+ class method, if the method is defined.
  *
- *  Similary, that class method will be called when a timezone argument does
+ *  Similarly, that class method will be called when a timezone argument does
  *  not have the necessary methods mentioned above.
  */
 

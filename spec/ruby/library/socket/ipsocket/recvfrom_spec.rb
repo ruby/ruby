@@ -64,7 +64,7 @@ describe "Socket::IPSocket#recvfrom" do
 
     data.size.should == 2
     data.first.should == "hel"
-    # This does not apply to every platform, dependant on recvfrom(2)
+    # This does not apply to every platform, dependent on recvfrom(2)
     # data.last.should == nil
   end
 end
