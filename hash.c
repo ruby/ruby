@@ -49,6 +49,7 @@
 
 #if HASH_DEBUG
 #include "gc.h"
+#include "internal/debug.h"
 #endif
 
 #define HAS_EXTRA_STATES(hash, klass) ( \
