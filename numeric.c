@@ -462,9 +462,11 @@ rb_num_coerce_relop(VALUE x, VALUE y, ID func)
 {
     VALUE c, x0 = x, y0 = y;
 
-    if (!do_coerce(&x, &y, FALSE) ||
-	NIL_P(c = rb_funcall(x, func, 1, y))) {
-	rb_cmperr(x0, y0);
+    if (!do_coerce(&x, &y, FALSE)) {
+	rb_cmperr(x0, y0, "coercion was not possible");
+	return Qnil;		/* not reached */
+    } else if (NIL_P(c = rb_funcall(x, func, 1, y))) {
+	rb_cmperr(x0, y0, "comparator returned nil");
 	return Qnil;		/* not reached */
     }
     return c;
@@ -5111,7 +5113,7 @@ int_upto(VALUE from, VALUE to)
 	    rb_yield(i);
 	    i = rb_funcall(i, '+', 1, INT2FIX(1));
 	}
-	if (NIL_P(c)) rb_cmperr(i, to);
+	if (NIL_P(c)) rb_cmperr(i, to, "comparator returned nil");
     }
     return from;
 }
@@ -5157,7 +5159,7 @@ int_downto(VALUE from, VALUE to)
 	    rb_yield(i);
 	    i = rb_funcall(i, '-', 1, INT2FIX(1));
 	}
-	if (NIL_P(c)) rb_cmperr(i, to);
+	if (NIL_P(c)) rb_cmperr(i, to, "comparator returned nil");
     }
     return from;
 }
