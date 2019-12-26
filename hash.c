@@ -3023,6 +3023,28 @@ rb_hash_each_pair(VALUE hash)
     return hash;
 }
 
+struct transform_keys_args{
+    VALUE trans;
+    VALUE result;
+    int block_given;
+};
+
+static int
+transform_keys_hash_i(VALUE key, VALUE value, VALUE transarg)
+{
+    struct transform_keys_args *p = (void *)transarg;
+    VALUE trans = p->trans, result = p->result;
+    VALUE new_key = rb_hash_lookup2(trans, key, Qundef);
+    if (new_key == Qundef) {
+        if (p->block_given)
+            new_key = rb_yield(key);
+        else
+            new_key = key;
+    }
+    rb_hash_aset(result, new_key, value);
+    return ST_CONTINUE;
+}
+
 static int
 transform_keys_i(VALUE key, VALUE value, VALUE result)
 {
@@ -3049,14 +3071,28 @@ transform_keys_i(VALUE key, VALUE value, VALUE result)
  *  If no block is given, an enumerator is returned instead.
  */
 static VALUE
-rb_hash_transform_keys(VALUE hash)
+rb_hash_transform_keys(int argc, VALUE *argv, VALUE hash)
 {
     VALUE result;
+    struct transform_keys_args transarg = {0};
 
-    RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
+    argc = rb_check_arity(argc, 0, 1);
+    if (argc > 0) {
+        transarg.trans = to_hash(argv[0]);
+        transarg.block_given = rb_block_given_p();
+    }
+    else {
+        RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
+    }
     result = rb_hash_new();
     if (!RHASH_EMPTY_P(hash)) {
-        rb_hash_foreach(hash, transform_keys_i, result);
+        if (transarg.trans) {
+            transarg.result = result;
+            rb_hash_foreach(hash, transform_keys_hash_i, (VALUE)&transarg);
+        }
+        else {
+            rb_hash_foreach(hash, transform_keys_i, result);
+        }
     }
 
     return result;
@@ -3082,17 +3118,40 @@ static VALUE rb_hash_flatten(int argc, VALUE *argv, VALUE hash);
  *  If no block is given, an enumerator is returned instead.
  */
 static VALUE
-rb_hash_transform_keys_bang(VALUE hash)
+rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)
 {
-    RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
+    VALUE trans = 0;
+    int block_given = 0;
+
+    argc = rb_check_arity(argc, 0, 1);
+    if (argc > 0) {
+        trans = to_hash(argv[0]);
+        block_given = rb_block_given_p();
+    }
+    else {
+        RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
+    }
     rb_hash_modify_check(hash);
     if (!RHASH_TABLE_EMPTY_P(hash)) {
         long i;
         VALUE pairs = rb_hash_flatten(0, NULL, hash);
         rb_hash_clear(hash);
         for (i = 0; i < RARRAY_LEN(pairs); i += 2) {
-            VALUE key = RARRAY_AREF(pairs, i), new_key = rb_yield(key),
-                  val = RARRAY_AREF(pairs, i+1);
+            VALUE key = RARRAY_AREF(pairs, i), new_key, val;
+
+            if (!trans) {
+                new_key = rb_yield(key);
+            }
+            else if ((new_key = rb_hash_lookup2(trans, key, Qundef)) != Qundef) {
+                /* use the transformed key */
+            }
+            else if (block_given) {
+                new_key = rb_yield(key);
+            }
+            else {
+                new_key = key;
+            }
+            val = RARRAY_AREF(pairs, i+1);
             rb_hash_aset(hash, new_key, val);
         }
     }
@@ -6285,8 +6344,8 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "each_pair", rb_hash_each_pair, 0);
     rb_define_method(rb_cHash, "each", rb_hash_each_pair, 0);
 
-    rb_define_method(rb_cHash, "transform_keys", rb_hash_transform_keys, 0);
-    rb_define_method(rb_cHash, "transform_keys!", rb_hash_transform_keys_bang, 0);
+    rb_define_method(rb_cHash, "transform_keys", rb_hash_transform_keys, -1);
+    rb_define_method(rb_cHash, "transform_keys!", rb_hash_transform_keys_bang, -1);
     rb_define_method(rb_cHash, "transform_values", rb_hash_transform_values, 0);
     rb_define_method(rb_cHash, "transform_values!", rb_hash_transform_values_bang, 0);
 

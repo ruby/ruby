@@ -1638,6 +1638,9 @@ class TestHash < Test::Unit::TestCase
 
     y = x.transform_keys.with_index {|k, i| "#{k}.#{i}" }
     assert_equal(%w(a.0 b.1 c.2), y.keys)
+
+    assert_equal({A: 1, B: 2, c: 3}, x.transform_keys({a: :A, b: :B, d: :D}))
+    assert_equal({A: 1, B: 2, "c" => 3}, x.transform_keys({a: :A, b: :B, d: :D}, &:to_s))
   end
 
   def test_transform_keys_bang
@@ -1660,6 +1663,13 @@ class TestHash < Test::Unit::TestCase
     x = @cls[true => :a, false => :b]
     x.transform_keys! {|k| !k }
     assert_equal([false, :a, true, :b], x.flatten)
+
+    x = @cls[a: 1, b: 2, c: 3]
+    x.transform_keys!({a: :A, b: :B, d: :D})
+    assert_equal({A: 1, B: 2, c: 3}, x)
+    x = @cls[a: 1, b: 2, c: 3]
+    x.transform_keys!({a: :A, b: :B, d: :D}, &:to_s)
+    assert_equal({A: 1, B: 2, "c" => 3}, x)
   end
 
   def test_transform_values
