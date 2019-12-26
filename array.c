@@ -470,6 +470,25 @@ ary_shrink_capa(VALUE ary)
     ary_verify(ary);
 }
 
+void rb_ary_shrink_on_uncollectible(void *obj)
+{
+    long capacity, old_capa;
+    VALUE ary = (VALUE)obj;
+    /* OK to modify a frozen array by only reducing capacity */
+    if (ARY_OWNS_HEAP_P(ary))
+    {
+       capacity = ARY_HEAP_LEN(ary);
+       old_capa = ARY_HEAP_CAPA(ary);
+       if (old_capa > capacity) {
+           ary_heap_realloc(ary, capacity);
+           RARRAY(ary)->as.heap.aux.capa = capacity;
+#ifdef RB_GC_LOG_SHRINK_ON_UNCOLLECTIBLE
+           rb_objspace_log_shrink_on_uncollectible("T_ARRAY", old_capa, capacity);
+ #endif
+       }
+    }
+}
+
 static void
 ary_double_capa(VALUE ary, long min)
 {
