@@ -23,6 +23,9 @@
 # ifdef __LP64__
 #  define vm_region_recurse vm_region_recurse_64
 # endif
+/* that is defined in sys/queue.h, and conflicts with
+ * ccan/list/list.h */
+# undef LIST_HEAD
 #endif
 
 #include "addr2line.h"
