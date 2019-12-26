@@ -81,7 +81,8 @@ leafness_of_defined(rb_num_t op_type)
       case DEFINED_ZSUPER:
         return false;
       case DEFINED_CONST:
-      case DEFINED_CONST_FROM:
+      case DEFINED_CONST_FROM_DYNAMIC:
+      case DEFINED_CONST_FROM_STATIC:
         /* has rb_autoload_load(); */
         return false;
       case DEFINED_FUNC:
