@@ -6270,7 +6270,7 @@ copy_path_class(VALUE path, VALUE orig)
 {
     str_shrink(path);
     RBASIC_SET_CLASS(path, rb_obj_class(orig));
-    OBJ_FREEZE(path);
+    rb_str_freeze(path);
     return path;
 }
 
@@ -6532,7 +6532,7 @@ Init_File(void)
 
 #ifdef DOSISH
     /* platform specific alternative separator */
-    rb_define_const(rb_cFile, "ALT_SEPARATOR", rb_obj_freeze(rb_usascii_str_new2(file_alt_separator)));
+    rb_define_const(rb_cFile, "ALT_SEPARATOR", rb_str_freeze(rb_usascii_str_new2(file_alt_separator)));
 #else
     rb_define_const(rb_cFile, "ALT_SEPARATOR", Qnil);
 #endif

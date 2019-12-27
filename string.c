@@ -1305,7 +1305,7 @@ str_new_frozen(VALUE klass, VALUE orig)
     }
 
     rb_enc_cr_str_exact_copy(str, orig);
-    OBJ_FREEZE(str);
+    rb_str_freeze(str);
     return str;
 }
 
