@@ -84,7 +84,7 @@ end
 # There are few implementations of generator.
 #
 # [+Prime+::+EratosthenesGenerator+]
-#   Uses eratosthenes' sieve.
+#   Uses Eratosthenes' sieve.
 # [+Prime+::+TrialDivisionGenerator+]
 #   Uses the trial division method.
 # [+Prime+::+Generator23+]
