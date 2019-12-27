@@ -3,7 +3,10 @@ class Object
 
   def should(matcher = NO_MATCHER_GIVEN)
     MSpec.expectation
-    MSpec.actions :expectation, MSpec.current.state
+    state = MSpec.current.state
+    raise "should outside example" unless state
+    MSpec.actions :expectation, state
+
     if NO_MATCHER_GIVEN.equal?(matcher)
       SpecPositiveOperatorMatcher.new(self)
     else
@@ -16,7 +19,10 @@ class Object
 
   def should_not(matcher = NO_MATCHER_GIVEN)
     MSpec.expectation
-    MSpec.actions :expectation, MSpec.current.state
+    state = MSpec.current.state
+    raise "should_not outside example" unless state
+    MSpec.actions :expectation, state
+
     if NO_MATCHER_GIVEN.equal?(matcher)
       SpecNegativeOperatorMatcher.new(self)
     else
