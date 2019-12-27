@@ -2,7 +2,6 @@
 require_relative '../../../spec_helper'
 
 describe "Encoding::InvalidByteSequenceError#incomplete_input?" do
-
   it "returns nil by default" do
     Encoding::InvalidByteSequenceError.new.incomplete_input?.should be_nil
   end
