@@ -1630,8 +1630,8 @@ rb_false(VALUE obj)
  *
  * This method is deprecated.
  *
- * This is not only unuseful but also troublesome because it
- * may hide a type error.
+ * This is not only useless but also troublesome because it may hide a
+ * type error.
  */
 
 static VALUE
