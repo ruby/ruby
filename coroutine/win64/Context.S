@@ -2,7 +2,7 @@
 ##  This file is part of the "Coroutine" project and released under the MIT License.
 ##
 ##  Created by Samuel Williams on 4/11/2018.
-##  Copyright, 2018, by Samuel Williams. All rights reserved.
+##  Copyright, 2018, by Samuel Williams.
 ##
 
 .text
