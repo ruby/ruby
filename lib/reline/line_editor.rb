@@ -1091,6 +1091,11 @@ class Reline::LineEditor
 
   private def ed_insert(key)
     if key.instance_of?(String)
+      begin
+        key.encode(Encoding::UTF_8)
+      rescue Encoding::UndefinedConversionError
+        return
+      end
       width = Reline::Unicode.get_mbchar_width(key)
       if @cursor == @cursor_max
         @line += key
@@ -1101,6 +1106,11 @@ class Reline::LineEditor
       @cursor += width
       @cursor_max += width
     else
+      begin
+        key.chr.encode(Encoding::UTF_8)
+      rescue Encoding::UndefinedConversionError
+        return
+      end
       if @cursor == @cursor_max
         @line += key.chr
       else
