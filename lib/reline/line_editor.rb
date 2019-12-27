@@ -317,7 +317,7 @@ class Reline::LineEditor
     if @menu_info
       scroll_down(@highest_in_all - @first_line_started_from)
       @rerender_all = true
-      @menu_info.list.each do |item|
+      @menu_info.list.sort!.each do |item|
         Reline::IOGate.move_cursor_column(0)
         @output.print item
         @output.flush
