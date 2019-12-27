@@ -208,20 +208,8 @@ module URI
     #   #=> #<URI::LDAP ldap://ldap.example.com/dc=example?user=john>
     #
     def parse(uri)
-      scheme, userinfo, host, port,
-        registry, path, opaque, query, fragment = self.split(uri)
-
-      if scheme && URI.scheme_list.include?(scheme.upcase)
-        URI.scheme_list[scheme.upcase].new(scheme, userinfo, host, port,
-                                           registry, path, opaque, query,
-                                           fragment, self)
-      else
-        Generic.new(scheme, userinfo, host, port,
-                    registry, path, opaque, query,
-                    fragment, self)
-      end
+      URI.for(*self.split(uri), self)
     end
-
 
     #
     # == Args

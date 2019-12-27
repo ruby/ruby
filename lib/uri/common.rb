@@ -146,6 +146,20 @@ module URI
   end
 
   #
+  # Construct a URI instance, using the scheme to detect the appropriate class
+  # from +URI.scheme_list+.
+  # 
+  def self.for(scheme, *arguments, default: Generic)
+    if scheme
+      uri_class = @@schemes[scheme.upcase] || default
+    else
+      uri_class = default
+    end
+
+    return uri_class.new(scheme, *arguments)
+  end
+
+  #
   # Base class for all URI exceptions.
   #
   class Error < StandardError; end
