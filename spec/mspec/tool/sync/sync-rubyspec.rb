@@ -12,7 +12,6 @@ IMPLS = {
   },
   mri: {
     git: "https://github.com/ruby/ruby.git",
-    master: "trunk",
   },
 }
 
@@ -46,10 +45,6 @@ class RubyImplementation
 
   def git_url
     @data[:git]
-  end
-
-  def default_branch
-    @data[:master] || "master"
   end
 
   def repo_name
@@ -99,7 +94,7 @@ def update_repo(impl)
   Dir.chdir(impl.repo_name) do
     puts Dir.pwd
 
-    sh "git", "checkout", impl.default_branch
+    sh "git", "checkout", "master"
     sh "git", "pull"
   end
 end
