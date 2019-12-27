@@ -7,6 +7,7 @@ class LeakChecker
     @env_info = find_env
     @encoding_info = find_encodings
     @old_verbose = $VERBOSE
+    @old_warning_flags = find_warning_flags
   end
 
   def check(test_name)
@@ -17,6 +18,7 @@ class LeakChecker
       check_env(test_name),
       check_encodings(test_name),
       check_verbose(test_name),
+      check_warning_flags(test_name),
     ]
     GC.start if leaks.any?
   end
@@ -227,6 +229,26 @@ class LeakChecker
       puts "Encoding.default_external changed: #{test_name} : #{old_external.inspect} to #{new_external.inspect}"
     end
     @encoding_info = [new_internal, new_external]
+    return leaked
+  end
+
+  WARNING_CATEGORIES = %i[deprecated experimental].freeze
+
+  def find_warning_flags
+    WARNING_CATEGORIES.to_h do |category|
+      [category, Warning[category]]
+    end
+  end
+
+  def check_warning_flags(test_name)
+    new_warning_flags = find_warning_flags
+    leaked = false
+    WARNING_CATEGORIES.each do |category|
+      if new_warning_flags[category] != @old_warning_flags[category]
+        leaked = true
+        puts "Warning[#{category.inspect}] changed: #{test_name} : #{@old_warning_flags[category]} to #{new_warning_flags[category]}"
+      end
+    end
     return leaked
   end
 
