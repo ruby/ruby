@@ -12,7 +12,11 @@
 #include <setjmp.h>
 #include <string.h>
 #include <stdlib.h>
+
+/* OpenBSD supports alloca, but does not include alloca.h */
+#ifndef __OpenBSD__
 #include <alloca.h>
+#endif
 
 #define COROUTINE __attribute__((noreturn)) void
 
