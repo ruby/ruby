@@ -117,9 +117,21 @@
                                     64 - nlz_int64((uint64_t)(x)))
 #endif
 
-static inline uint16_t swap16(uint16_t);
-static inline uint32_t swap32(uint32_t);
-static inline uint64_t swap64(uint64_t);
+#ifndef swap16
+# define swap16 ruby_swap16
+#endif
+
+#ifndef swap32
+# define swap32 ruby_swap32
+#endif
+
+#ifndef swap64
+# define swap64 ruby_swap64
+#endif
+
+static inline uint16_t ruby_swap16(uint16_t);
+static inline uint32_t ruby_swap32(uint32_t);
+static inline uint64_t ruby_swap64(uint64_t);
 static inline unsigned nlz_int(unsigned x);
 static inline unsigned nlz_long(unsigned long x);
 static inline unsigned nlz_long_long(unsigned long long x);
@@ -139,7 +151,7 @@ static inline VALUE RUBY_BIT_ROTL(VALUE, int);
 static inline VALUE RUBY_BIT_ROTR(VALUE, int);
 
 static inline uint16_t
-swap16(uint16_t x)
+ruby_swap16(uint16_t x)
 {
 #if __has_builtin(__builtin_bswap16)
     return __builtin_bswap16(x);
@@ -154,7 +166,7 @@ swap16(uint16_t x)
 }
 
 static inline uint32_t
-swap32(uint32_t x)
+ruby_swap32(uint32_t x)
 {
 #if __has_builtin(__builtin_bswap32)
     return __builtin_bswap32(x);
@@ -171,7 +183,7 @@ swap32(uint32_t x)
 }
 
 static inline uint64_t
-swap64(uint64_t x)
+ruby_swap64(uint64_t x)
 {
 #if __has_builtin(__builtin_bswap64)
     return __builtin_bswap64(x);
