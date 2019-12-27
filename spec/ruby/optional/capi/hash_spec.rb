@@ -254,4 +254,13 @@ describe "C-API Hash function" do
       -> { @s.rb_Hash(h) }.should raise_error(TypeError)
     end
   end
+
+  describe "hash code functions" do
+    it "computes a deterministic number" do
+      hash_code = @s.compute_a_hash_code(53)
+      hash_code.should be_an_instance_of(Integer)
+      hash_code.should == @s.compute_a_hash_code(53)
+      @s.compute_a_hash_code(90) == @s.compute_a_hash_code(90)
+    end
+  end
 end

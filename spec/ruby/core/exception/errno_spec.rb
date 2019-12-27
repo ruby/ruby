@@ -1,10 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/common'
 
-describe "SystemCallError#errno" do
-  it "needs to be reviewed for spec completeness"
-end
-
 describe "Errno::EINVAL.new" do
   it "can be called with no arguments" do
     exc = Errno::EINVAL.new

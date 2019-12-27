@@ -104,3 +104,17 @@ describe "NoMethodError#message" do
     end
   end
 end
+
+describe "NoMethodError#dup" do
+  it "copies the name, arguments and receiver" do
+    begin
+      receiver = Object.new
+      receiver.foo(:one, :two)
+    rescue NoMethodError => nme
+      no_method_error_dup = nme.dup
+      no_method_error_dup.name.should == :foo
+      no_method_error_dup.receiver.should == receiver
+      no_method_error_dup.args.should == [:one, :two]
+    end
+  end
+end

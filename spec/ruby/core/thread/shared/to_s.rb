@@ -4,11 +4,13 @@ describe :thread_to_s, shared: true do
   sep = ruby_version_is("2.7") ? " " : "@"
 
   it "returns a description including file and line number" do
-    Thread.new { "hello" }.send(@method).should =~ /^#<Thread:([^ ]*?)#{sep}#{Regexp.escape __FILE__}:#{__LINE__ } \w+>$/
+    thread, line = Thread.new { "hello" }, __LINE__
+    thread.join
+    thread.send(@method).should =~ /^#<Thread:([^ ]*?)#{sep}#{Regexp.escape __FILE__}:#{line} \w+>$/
   end
 
   it "has a binary encoding" do
-    Thread.new { "hello" }.send(@method).encoding.should == Encoding::BINARY
+    ThreadSpecs.status_of_current_thread.send(@method).encoding.should == Encoding::BINARY
   end
 
   it "can check it's own status" do

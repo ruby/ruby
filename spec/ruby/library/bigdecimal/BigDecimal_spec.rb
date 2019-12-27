@@ -46,6 +46,12 @@ describe "Kernel#BigDecimal" do
     BigDecimal("  \t\n \r-Infinity   \n").infinite?.should == -1
   end
 
+  it "coerces the value argument with #to_str" do
+    initial = mock("value")
+    initial.should_receive(:to_str).and_return("123")
+    BigDecimal(initial).should == BigDecimal("123")
+  end
+
   ruby_version_is ""..."2.6" do
     it "ignores trailing garbage" do
       BigDecimal("123E45ruby").should == BigDecimal("123E45")

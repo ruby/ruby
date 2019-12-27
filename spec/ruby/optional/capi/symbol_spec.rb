@@ -71,6 +71,19 @@ describe "C-API Symbol function" do
     end
   end
 
+  describe "rb_check_symbol_cstr" do
+    it "returns a Symbol if a Symbol already exists for the given C string" do
+      sym = :test_symbol
+      @s.rb_check_symbol_cstr('test_symbol').should == sym
+    end
+
+    it "returns nil if the Symbol does not exist yet and does not create it" do
+      str = "symbol_does_not_exist_#{Object.new.object_id}_#{rand}"
+      @s.rb_check_symbol_cstr(str).should == nil # does not create the Symbol
+      @s.rb_check_symbol_cstr(str).should == nil
+    end
+  end
+
   describe "rb_is_const_id" do
     it "returns true given a const-like symbol" do
       @s.rb_is_const_id(:Foo).should == true

@@ -1,11 +1,5 @@
 require_relative '../../spec_helper'
 
-describe "IOError" do
-  it "is a superclass of EOFError" do
-    IOError.should be_ancestor_of(EOFError)
-  end
-end
-
 describe "IO::EAGAINWaitReadable" do
   it "combines Errno::EAGAIN and IO::WaitReadable" do
     IO::EAGAINWaitReadable.superclass.should == Errno::EAGAIN

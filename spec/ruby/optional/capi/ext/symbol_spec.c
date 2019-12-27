@@ -51,6 +51,10 @@ VALUE symbol_spec_rb_intern_str(VALUE self, VALUE str) {
   return ID2SYM(rb_intern_str(str));
 }
 
+VALUE symbol_spec_rb_check_symbol_cstr(VALUE self, VALUE str) {
+  return rb_check_symbol_cstr(RSTRING_PTR(str), RSTRING_LEN(str), rb_enc_get(str));
+}
+
 VALUE symbol_spec_rb_is_class_id(VALUE self, VALUE sym) {
   return rb_is_class_id(SYM2ID(sym)) ? Qtrue : Qfalse;
 }
@@ -79,6 +83,7 @@ void Init_symbol_spec(void) {
   rb_define_method(cls, "rb_id2name", symbol_spec_rb_id2name, 1);
   rb_define_method(cls, "rb_id2str", symbol_spec_rb_id2str, 1);
   rb_define_method(cls, "rb_intern_str", symbol_spec_rb_intern_str, 1);
+  rb_define_method(cls, "rb_check_symbol_cstr", symbol_spec_rb_check_symbol_cstr, 1);
   rb_define_method(cls, "rb_is_class_id", symbol_spec_rb_is_class_id, 1);
   rb_define_method(cls, "rb_is_const_id", symbol_spec_rb_is_const_id, 1);
   rb_define_method(cls, "rb_is_instance_id", symbol_spec_rb_is_instance_id, 1);

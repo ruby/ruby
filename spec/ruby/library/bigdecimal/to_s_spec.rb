@@ -41,6 +41,7 @@ describe "BigDecimal#to_s" do
 
     str1 = '-123.45678 90123 45678 9'
     BigDecimal("-123.45678901234567890").to_s('5F').should ==  str1
+    BigDecimal('1000010').to_s('5F').should == "10000 10.0"
     # trailing zeroes removed
     BigDecimal("1.00000000000").to_s('1F').should == "1.0"
     # 0 is treated as no spaces

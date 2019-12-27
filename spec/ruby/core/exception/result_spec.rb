@@ -1,11 +1,5 @@
 require_relative '../../spec_helper'
 
-describe "StopIteration" do
-  it "is a subclass of IndexError" do
-    StopIteration.superclass.should equal(IndexError)
-  end
-end
-
 describe "StopIteration#result" do
   before :each do
     obj = Object.new

@@ -34,6 +34,11 @@ static VALUE gc_spec_rb_gc_adjust_memory_usage(VALUE self, VALUE diff) {
   return Qnil;
 }
 
+static VALUE gc_spec_rb_gc_register_mark_object(VALUE self, VALUE obj) {
+  rb_gc_register_mark_object(obj);
+  return Qnil;
+}
+
 void Init_gc_spec(void) {
   VALUE cls = rb_define_class("CApiGCSpecs", rb_cObject);
   registered_tagged_value    = INT2NUM(10);
@@ -48,6 +53,7 @@ void Init_gc_spec(void) {
   rb_define_method(cls, "rb_gc_disable", gc_spec_rb_gc_disable, 0);
   rb_define_method(cls, "rb_gc", gc_spec_rb_gc, 0);
   rb_define_method(cls, "rb_gc_adjust_memory_usage", gc_spec_rb_gc_adjust_memory_usage, 1);
+  rb_define_method(cls, "rb_gc_register_mark_object", gc_spec_rb_gc_register_mark_object, 1);
 }
 
 #ifdef __cplusplus

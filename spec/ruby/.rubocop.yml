@@ -10,7 +10,7 @@ AllCops:
 Layout/TrailingWhitespace:
   Enabled: true
 
-Layout/TrailingBlankLines:
+Layout/TrailingEmptyLines:
   Enabled: true
   Exclude:
     - library/coverage/fixtures/some_class.rb
@@ -34,10 +34,10 @@ Lint/InterpolationCheck:
 Lint/LiteralAsCondition:
   Enabled: false
 
-Lint/UnneededRequireStatement:
+Lint/RedundantRequireStatement:
   Enabled: false
 
-Lint/UnneededSplatExpansion:
+Lint/RedundantSplatExpansion:
   Enabled: false
 
 Lint/UnifiedInteger:

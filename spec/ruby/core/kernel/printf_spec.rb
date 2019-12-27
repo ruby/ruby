@@ -10,7 +10,6 @@ describe "Kernel#printf" do
 end
 
 describe "Kernel.printf" do
-
   before :each do
     @stdout = $stdout
     @name = tmp("kernel_puts.txt")
@@ -38,7 +37,7 @@ describe "Kernel.printf" do
     context "io is specified" do
       it_behaves_like :kernel_sprintf, -> format, *args {
         io = StringIO.new
-        printf(io, format, *args)
+        Kernel.printf(io, format, *args)
         io.string
       }
     end
@@ -49,7 +48,7 @@ describe "Kernel.printf" do
 
         begin
           $stdout = io = StringIO.new
-          printf(format, *args)
+          Kernel.printf(format, *args)
           io.string
         ensure
           $stdout = stdout

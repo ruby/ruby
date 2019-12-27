@@ -38,4 +38,9 @@ describe "Symbol#to_proc" do
     end
     klass.new.to_proc.should == :value
   end
+
+  it "produces a proc with source location nil" do
+    pr = :to_s.to_proc
+    pr.source_location.should == nil
+  end
 end

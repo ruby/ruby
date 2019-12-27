@@ -58,4 +58,10 @@ describe "CApiGCSpecs" do
       }.should_not raise_error
     end
   end
+
+  describe "rb_gc_register_mark_object" do
+    it "can be called with an object" do
+      @f.rb_gc_register_mark_object(Object.new).should be_nil
+    end
+  end
 end

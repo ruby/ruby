@@ -196,6 +196,14 @@ static VALUE encoding_spec_rb_enc_codepoint_len(VALUE self, VALUE str) {
   return rb_ary_new3(2, LONG2NUM(codepoint), LONG2NUM(len));
 }
 
+static VALUE encoding_spec_rb_enc_str_asciionly_p(VALUE self, VALUE str) {
+  if (rb_enc_str_asciionly_p(str)) {
+    return Qtrue;
+  } else {
+    return Qfalse;
+  }
+}
+
 void Init_encoding_spec(void) {
   VALUE cls = rb_define_class("CApiEncodingSpecs", rb_cObject);
   rb_define_method(cls, "ENC_CODERANGE_ASCIIONLY",
@@ -242,6 +250,7 @@ void Init_encoding_spec(void) {
   rb_define_method(cls, "rb_to_encoding_index", encoding_spec_rb_to_encoding_index, 1);
   rb_define_method(cls, "rb_enc_nth", encoding_spec_rb_enc_nth, 2);
   rb_define_method(cls, "rb_enc_codepoint_len", encoding_spec_rb_enc_codepoint_len, 1);
+  rb_define_method(cls, "rb_enc_str_asciionly_p", encoding_spec_rb_enc_str_asciionly_p, 1);
 }
 
 #ifdef __cplusplus

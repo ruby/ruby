@@ -319,6 +319,10 @@ describe "String#inspect" do
     0.chr.inspect.should == '"\\x00"'
   end
 
+  it "uses \\x notation for broken UTF-8 sequences" do
+    "\xF0\x9F".inspect.should == '"\\xF0\\x9F"'
+  end
+
   describe "when default external is UTF-8" do
     before :each do
       @extenc, Encoding.default_external = Encoding.default_external, Encoding::UTF_8

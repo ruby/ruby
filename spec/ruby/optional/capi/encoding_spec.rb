@@ -479,4 +479,14 @@ describe "C-API Encoding function" do
       length.should == 4
     end
   end
+
+  describe "rb_enc_str_asciionly_p" do
+    it "returns true for an ASCII string" do
+      @s.rb_enc_str_asciionly_p("hello").should be_true
+    end
+
+    it "returns false for a non-ASCII string" do
+      @s.rb_enc_str_asciionly_p("hüllo").should be_false
+    end
+  end
 end

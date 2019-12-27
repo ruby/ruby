@@ -1,7 +1,21 @@
 require_relative '../../spec_helper'
+require_relative '../kernel/shared/sprintf'
+require_relative '../kernel/shared/sprintf_encoding'
 require_relative 'fixtures/classes'
 require_relative '../../shared/hash/key_error'
 
+describe "String#%" do
+  it_behaves_like :kernel_sprintf, -> format, *args {
+    format % args
+  }
+
+  it_behaves_like :kernel_sprintf_encoding, -> format, *args {
+    format % args
+  }
+end
+
+# TODO: these specs are mostly redundant with kernel/shared/sprintf.rb specs.
+# These specs should be moved there and deduplicated.
 describe "String#%" do
   context "when key is missing from passed-in hash" do
     it_behaves_like :key_error, -> obj, key { "%{#{key}}" % obj }, { a: 5 }

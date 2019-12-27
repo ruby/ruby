@@ -34,6 +34,12 @@ describe "RUBY_PLATFORM" do
   it "is a String" do
     RUBY_PLATFORM.should be_kind_of(String)
   end
+
+  platform_is :darwin do
+    it 'ends with the build time kernel major version on darwin' do
+      RUBY_PLATFORM.should =~ /-darwin\d+$/
+    end
+  end
 end
 
 describe "RUBY_RELEASE_DATE" do

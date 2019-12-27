@@ -113,6 +113,15 @@ VALUE hash_spec_rb_hash_set_ifnone(VALUE self, VALUE hash, VALUE def) {
   return rb_hash_set_ifnone(hash, def);
 }
 
+VALUE hash_spec_compute_a_hash_code(VALUE self, VALUE seed) {
+  int int_seed = FIX2INT(seed);
+  st_index_t h = rb_hash_start(int_seed);
+  h = rb_hash_uint32(h, 540u);
+  h = rb_hash_uint32(h, 340u);
+  h = rb_hash_end(h);
+  return ULONG2NUM(h);
+}
+
 void Init_hash_spec(void) {
   VALUE cls = rb_define_class("CApiHashSpecs", rb_cObject);
   rb_define_method(cls, "rb_hash", hash_spec_rb_hash, 1);
@@ -136,6 +145,7 @@ void Init_hash_spec(void) {
   rb_define_method(cls, "rb_hash_new", hash_spec_rb_hash_new, 0);
   rb_define_method(cls, "rb_hash_size", hash_spec_rb_hash_size, 1);
   rb_define_method(cls, "rb_hash_set_ifnone", hash_spec_rb_hash_set_ifnone, 2);
+  rb_define_method(cls, "compute_a_hash_code", hash_spec_compute_a_hash_code, 1);
 }
 
 #ifdef __cplusplus
