@@ -1525,15 +1525,18 @@ AC_SUBST(MATHN, $mathn)
 
 AC_CACHE_CHECK(for function name string predefined identifier,
     rb_cv_function_name_string,
-    [rb_cv_function_name_string=no
-    RUBY_WERROR_FLAG([
-	for func in __func__ __FUNCTION__; do
-	    AC_TRY_LINK([@%:@include <stdio.h>],
-			[puts($func);],
-			[rb_cv_function_name_string=$func
-			break])
-	done
-    ])]
+    [AS_CASE(["$target_os"],[openbsd*],[
+      rb_cv_function_name_string=__func__
+     ],[
+     rb_cv_function_name_string=no
+      RUBY_WERROR_FLAG([
+        for func in __func__ __FUNCTION__; do
+            AC_TRY_LINK([@%:@include <stdio.h>],
+            [puts($func);],
+            [rb_cv_function_name_string=$func
+            break])
+        done
+      ])])]
 )
 AS_IF([test "$rb_cv_function_name_string" != no], [
     AC_DEFINE_UNQUOTED(RUBY_FUNCTION_NAME_STRING, [$rb_cv_function_name_string])
