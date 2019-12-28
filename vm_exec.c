@@ -15,6 +15,36 @@
 static void vm_analysis_insn(int insn);
 #endif
 
+#if USE_INSNS_COUNTER
+static size_t rb_insns_counter[VM_INSTRUCTION_SIZE];
+
+static void
+vm_insns_counter_count_insn(int insn)
+{
+    rb_insns_counter[insn]++;
+}
+
+__attribute__((destructor))
+static void
+vm_insns_counter_show_results_at_exit(void)
+{
+    int insn_end = (ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS)
+        ? VM_INSTRUCTION_SIZE : VM_INSTRUCTION_SIZE / 2;
+
+    size_t total = 0;
+    for (int insn = 0; insn < insn_end; insn++)
+        total += rb_insns_counter[insn];
+
+    for (int insn = 0; insn < insn_end; insn++) {
+        fprintf(stderr, "[RUBY_INSNS_COUNTER]\t%-32s%'12"PRIuSIZE" (%4.1f%%)\n",
+                insn_name(insn), rb_insns_counter[insn],
+                100.0 * rb_insns_counter[insn] / total);
+    }
+}
+#else
+static void vm_insns_counter_count_insn(int insn) {}
+#endif
+
 #if VMDEBUG > 0
 #define DECL_SC_REG(type, r, reg) register type reg_##r
 
