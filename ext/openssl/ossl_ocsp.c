@@ -1489,13 +1489,15 @@ ossl_ocspcid_initialize_copy(VALUE self, VALUE other)
  * call-seq:
  *   OpenSSL::OCSP::CertificateId.new(subject, issuer, digest = nil) -> certificate_id
  *   OpenSSL::OCSP::CertificateId.new(der_string)                    -> certificate_id
+ *   OpenSSL::OCSP::CertificateId.new(obj)                           -> certificate_id
  *
  * Creates a new OpenSSL::OCSP::CertificateId for the given _subject_ and
  * _issuer_ X509 certificates.  The _digest_ is a digest algorithm that is used
  * to compute the hash values. This defaults to SHA-1.
  *
  * If only one argument is given, decodes it as DER representation of a
- * certificate ID.
+ * certificate ID or generates certificate ID from the object that responds to
+ * the to_der method.
  */
 static VALUE
 ossl_ocspcid_initialize(int argc, VALUE *argv, VALUE self)

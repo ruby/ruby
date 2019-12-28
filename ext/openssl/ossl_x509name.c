@@ -498,7 +498,7 @@ ossl_x509name_to_der(VALUE self)
  * You can create a Name by parsing a distinguished name String or by
  * supplying the distinguished name as an Array.
  *
- *   name = OpenSSL::X509::Name.parse 'CN=nobody/DC=example'
+ *   name = OpenSSL::X509::Name.parse '/CN=nobody/DC=example'
  *
  *   name = OpenSSL::X509::Name.new [['CN', 'nobody'], ['DC', 'example']]
  */

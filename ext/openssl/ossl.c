@@ -338,7 +338,7 @@ ossl_clear_error(void)
  * implementation.
  */
 VALUE
-ossl_get_errors(void)
+ossl_get_errors(VALUE _)
 {
     VALUE ary;
     long e;
@@ -398,7 +398,7 @@ ossl_debug_set(VALUE self, VALUE val)
 }
 
 /*
- * call-seq
+ * call-seq:
  *   OpenSSL.fips_mode -> true | false
  */
 static VALUE
@@ -862,7 +862,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  * signature.
  *
  *   key = OpenSSL::PKey::RSA.new 2048
- *   name = OpenSSL::X509::Name.parse 'CN=nobody/DC=example'
+ *   name = OpenSSL::X509::Name.parse '/CN=nobody/DC=example'
  *
  *   cert = OpenSSL::X509::Certificate.new
  *   cert.version = 2
@@ -944,7 +944,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  * A CA certificate is created the same way we created a certificate above, but
  * with different extensions.
  *
- *   ca_name = OpenSSL::X509::Name.parse 'CN=ca/DC=example'
+ *   ca_name = OpenSSL::X509::Name.parse '/CN=ca/DC=example'
  *
  *   ca_cert = OpenSSL::X509::Certificate.new
  *   ca_cert.serial = 0
@@ -1155,11 +1155,6 @@ Init_openssl(void)
     mOSSL = rb_define_module("OpenSSL");
     rb_global_variable(&mOSSL);
     rb_define_singleton_method(mOSSL, "fixed_length_secure_compare", ossl_crypto_fixed_length_secure_compare, 2);
-
-    /*
-     * OpenSSL ruby extension version
-     */
-    rb_define_const(mOSSL, "VERSION", rb_str_new2(OSSL_VERSION));
 
     /*
      * Version of OpenSSL the ruby OpenSSL extension was built with

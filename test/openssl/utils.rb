@@ -286,8 +286,9 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
         pend = nil
         threads.each { |th|
           begin
-            th.join(10) or
-              th.raise(RuntimeError, "[start_server] thread did not exit in 10 secs")
+            timeout = EnvUtil.apply_timeout_scale(30)
+            th.join(timeout) or
+              th.raise(RuntimeError, "[start_server] thread did not exit in #{timeout} secs")
           rescue (defined?(MiniTest::Skip) ? MiniTest::Skip : Test::Unit::PendedError)
             # MiniTest::Skip is for the Ruby tree
             pend = $!

@@ -49,8 +49,8 @@ Version 2.2.0 (not yet released)
   [[GitHub #185]](https://github.com/ruby/openssl/pull/185)
 * Allow recipient's certificate to be omitted in PCKS7#decrypt.
   [[GitHub #183]](https://github.com/ruby/openssl/pull/183)
-* Add instance methods for exporting public and private keys in PKCS8 format
-  to `OpenSSL::PKey` classes: `private_to_der`, `private_to_pem`,
+* Add support for reading keys in PKCS8 format and export via instance methods
+  added to `OpenSSL::PKey` classes: `private_to_der`, `private_to_pem`,
   `public_to_der` and `public_to_pem`.
 
 Version 2.1.2

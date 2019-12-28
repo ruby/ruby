@@ -207,7 +207,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_sync_close
-    start_server { |port|
+    start_server do |port|
       begin
         sock = TCPSocket.new("127.0.0.1", port)
         ssl = OpenSSL::SSL::SSLSocket.new(sock)
@@ -230,7 +230,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       ensure
         sock&.close
       end
-    }
+    end
   end
 
   def test_copy_stream

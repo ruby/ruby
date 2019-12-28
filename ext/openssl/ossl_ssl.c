@@ -380,7 +380,7 @@ ossl_call_session_get_cb(VALUE ary)
 }
 
 static SSL_SESSION *
-#if OPENSSL_VERSION_NUMBER >= 0x10100000 && !defined(LIBRESSL_VERSION_NUMBER)
+#if (!defined(LIBRESSL_VERSION_NUMBER) ? OPENSSL_VERSION_NUMBER >= 0x10100000 : LIBRESSL_VERSION_NUMBER >= 0x2080000f)
 ossl_sslctx_session_get_cb(SSL *ssl, const unsigned char *buf, int len, int *copy)
 #else
 ossl_sslctx_session_get_cb(SSL *ssl, unsigned char *buf, int len, int *copy)
@@ -592,7 +592,7 @@ ssl_renegotiation_cb(const SSL *ssl)
 #if !defined(OPENSSL_NO_NEXTPROTONEG) || \
     defined(HAVE_SSL_CTX_SET_ALPN_SELECT_CB)
 static VALUE
-ssl_npn_encode_protocol_i(VALUE cur, VALUE encoded)
+ssl_npn_encode_protocol_i(RB_BLOCK_CALL_FUNC_ARGLIST(cur, encoded))
 {
     int len = RSTRING_LENINT(cur);
     char len_byte;
@@ -1885,19 +1885,31 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 			rb_eof_error();
 		    }
 		}
+                /* fall through */
 	    default:
 		ossl_raise(eSSLError, "SSL_read");
 	    }
         }
     }
     else {
-	ID meth = nonblock ? rb_intern("read_nonblock") : rb_intern("sysread");
+        ID meth = nonblock ? rb_intern("read_nonblock") : rb_intern("sysread");
 
-	rb_warning("SSL session is not started yet.");
-	if (nonblock)
-	    return rb_funcall(io, meth, 3, len, str, opts);
-	else
-	    return rb_funcall(io, meth, 2, len, str);
+        rb_warning("SSL session is not started yet.");
+#if defined(RB_PASS_KEYWORDS)
+        if (nonblock) {
+            VALUE argv[3];
+            argv[0] = len;
+            argv[1] = str;
+            argv[2] = opts;
+            return rb_funcallv_kw(io, meth, 3, argv, RB_PASS_KEYWORDS);
+        }
+#else
+        if (nonblock) {
+            return rb_funcall(io, meth, 3, len, str, opts);
+        }
+#endif
+        else
+            return rb_funcall(io, meth, 2, len, str);
     }
 
   end:
@@ -1985,11 +1997,21 @@ ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
 	ID meth = nonblock ?
 	    rb_intern("write_nonblock") : rb_intern("syswrite");
 
-	rb_warning("SSL session is not started yet.");
-	if (nonblock)
-	    return rb_funcall(io, meth, 2, str, opts);
-	else
-	    return rb_funcall(io, meth, 1, str);
+        rb_warning("SSL session is not started yet.");
+#if defined(RB_PASS_KEYWORDS)
+        if (nonblock) {
+            VALUE argv[2];
+            argv[0] = str;
+            argv[1] = opts;
+            return rb_funcallv_kw(io, meth, 2, argv, RB_PASS_KEYWORDS);
+        }
+#else
+        if (nonblock) {
+            return rb_funcall(io, meth, 2, str, opts);
+        }
+#endif
+        else
+            return rb_funcall(io, meth, 1, str);
     }
 
   end:
