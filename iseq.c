@@ -1147,7 +1147,10 @@ static const rb_data_type_t iseqw_data_type = {
 static VALUE
 iseqw_new(const rb_iseq_t *iseq)
 {
-    if (iseq->wrapper) {
+    if (iseq == NULL) {
+        return Qnil;
+    }
+    else if (iseq->wrapper) {
         return iseq->wrapper;
     }
     else {
