@@ -35,7 +35,7 @@
     __attribute__((__no_sanitize__("memory, address"), __noinline__)) x
 #elif __has_feature(address_sanitizer)
 # define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
-    __attribute__((__no_sanitize__("memory, address"), __noinline__)) x
+    __attribute__((__no_sanitize__("address"), __noinline__)) x
 #elif defined(NO_SANITIZE_ADDRESS)
 # define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
     NO_SANITIZE_ADDRESS(NOINLINE(x))
