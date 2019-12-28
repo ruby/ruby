@@ -1,5 +1,9 @@
 
-require_relative 'lib/openssl/version'
+begin
+  require_relative "lib/openssl/version"
+rescue LoadError
+  require_relative "version"
+end
 
 Gem::Specification.new do |spec|
   spec.name          = "openssl"
