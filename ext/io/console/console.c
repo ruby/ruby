@@ -188,7 +188,7 @@ set_rawmode(conmode *t, void *arg)
 #endif
 #ifdef ISIG
 	if (r->intr) {
-	    t->c_iflag |= BRKINT|IXON;
+	    t->c_iflag |= BRKINT;
 	    t->c_lflag |= ISIG;
 	}
 #endif
