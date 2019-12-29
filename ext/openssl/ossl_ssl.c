@@ -1911,6 +1911,7 @@ ossl_ssl_read(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * :nodoc:
  * call-seq:
  *    ssl.sysread_nonblock(length) => string
  *    ssl.sysread_nonblock(length, buffer) => buffer
@@ -2003,6 +2004,7 @@ ossl_ssl_write(VALUE self, VALUE str)
 }
 
 /*
+ * :nodoc:
  * call-seq:
  *    ssl.syswrite_nonblock(string) => Integer
  *
@@ -2020,6 +2022,7 @@ ossl_ssl_write_nonblock(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * :nodoc:
  * call-seq:
  *    ssl.stop => nil
  *
