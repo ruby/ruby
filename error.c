@@ -3077,12 +3077,6 @@ Init_syserr(void)
 
 #include "warning.rbinc"
 
-void
-Init_warning(void)
-{
-    load_warning();
-}
-
 /*!
  * \}
  */

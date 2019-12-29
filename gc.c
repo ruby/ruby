@@ -11868,7 +11868,6 @@ Init_GC(void)
     VALUE gc_constants;
 
     rb_mGC = rb_define_module("GC");
-    load_gc();
 
     gc_constants = rb_hash_new();
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_SIZE")), SIZET2NUM(sizeof(RVALUE)));

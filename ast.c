@@ -690,6 +690,4 @@ Init_ast(void)
     rb_mAST = rb_define_module_under(rb_cRubyVM, "AbstractSyntaxTree");
     rb_cNode = rb_define_class_under(rb_mAST, "Node", rb_cObject);
     rb_undef_alloc_func(rb_cNode);
-
-    load_ast();
 }
