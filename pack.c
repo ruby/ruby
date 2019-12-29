@@ -1767,7 +1767,5 @@ utf8_to_uv(const char *p, long *lenp)
 void
 Init_pack(void)
 {
-    load_pack();
-
     id_associated = rb_make_internal_id();
 }

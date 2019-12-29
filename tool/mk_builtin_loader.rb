@@ -166,7 +166,7 @@ def mk_builtin_header file
       end
     }
 
-    f.puts "static void load_#{base}(void)"
+    f.puts "void Init_builtin_#{base}(void)"
     f.puts "{"
 
     table = "#{base}_table"

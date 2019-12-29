@@ -13522,9 +13522,3 @@ Init_IO(void)
 }
 
 #include "io.rbinc"
-
-void
-Init_IO_nonblock(void)
-{
-    load_io();
-}

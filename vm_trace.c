@@ -1526,8 +1526,6 @@ Init_vm_trace(void)
 
     rb_cTracePoint = rb_define_class("TracePoint", rb_cObject);
     rb_undef_alloc_func(rb_cTracePoint);
-
-    load_trace_point();
 }
 
 typedef struct rb_postponed_job_struct {
