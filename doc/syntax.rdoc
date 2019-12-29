@@ -27,7 +27,7 @@ Precedence[rdoc-ref:syntax/precedence.rdoc] ::
   Precedence of ruby operators
 
 Refinements[rdoc-ref:syntax/refinements.rdoc] ::
-  Use and behavior of the experimental refinements feature
+  Use and behavior of the refinements feature
 
 Miscellaneous[rdoc-ref:syntax/miscellaneous.rdoc] ::
   +alias+, +undef+, +BEGIN+, +END+
