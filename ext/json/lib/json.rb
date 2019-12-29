@@ -45,7 +45,7 @@ require 'json/common'
 # Or an alternative way:
 #
 #   require 'json'
-#   puts {:hello => "goodbye"}.to_json # => "{\"hello\":\"goodbye\"}"
+#   puts({:hello => "goodbye"}.to_json) # => "{\"hello\":\"goodbye\"}"
 #
 # <tt>JSON.generate</tt> only allows objects or arrays to be converted
 # to JSON syntax. <tt>to_json</tt>, however, accepts many Ruby classes
@@ -53,7 +53,7 @@ require 'json/common'
 #
 #   require 'json'
 #
-#   1.to_json => "1"
+#   1.to_json # => "1"
 #
 # The {#generate}[rdoc-ref:JSON#generate] method accepts a variety of options
 # to set the formatting of string output and defining what input is accepteable.
