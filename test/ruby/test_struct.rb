@@ -114,8 +114,8 @@ module TestStruct
     assert_equal "#{@Struct}::KeywordInitFalse", @Struct::KeywordInitFalse.inspect
     assert_equal "#{@Struct}::KeywordInitTrue(keyword_init: true)", @Struct::KeywordInitTrue.inspect
     # eval is needed to prevent the warning duplication filter
-    k = eval("Class.new(@Struct::KeywordInitFalse) {def initialize(**) end}")
-    assert_warn(/Using the last argument as keyword parameters is deprecated/) {k.new(a: 1, b: 2)}
+    k = eval("Class.new(@Struct::KeywordInitFalse) {def initialize(*) end}")
+    assert_warn('') {k.new(a: 1, b: 2)}
     k = Class.new(@Struct::KeywordInitTrue) {def initialize(**) end}
     assert_warn('') {k.new(a: 1, b: 2)}
 
@@ -442,6 +442,20 @@ module TestStruct
     assert_raise(TypeError) {
       o.deconstruct_keys(0)
     }
+  end
+
+  def test_normal_struct_with_keyword_arguments
+    klass = @Struct.new(:s1, :s2, :s3) do
+      def initialize(a1:, a2:)
+        super(a1, a2, a1 + a2)
+      end
+    end
+    assert_warn('', "[Bug #16465]") do
+      s = klass.new(a1: 1, a2: 2)
+      assert_equal(1, s.s1)
+      assert_equal(2, s.s2)
+      assert_equal(3, s.s3)
+    end
   end
 
   class TopStruct < Test::Unit::TestCase
