@@ -364,6 +364,11 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
         assert_ctrl("#{cc.ord}", cc, r, w)
         assert_ctrl("#{cc.ord}", cc, r, w)
       end
+      if cc = ctrl["stop"]
+        assert_ctrl("#{cc.ord}", cc, r, w)
+        assert_ctrl("#{cc.ord}", cc, r, w)
+        assert_ctrl("#{cc.ord}", cc, r, w)
+      end
     end
   end
 
