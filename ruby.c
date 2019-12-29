@@ -674,6 +674,7 @@ ruby_init_loadpath(void)
     if (!archlibdir) archlibdir = ruby_prefix_path;
     rb_gc_register_address(&ruby_archlibdir_path);
     ruby_archlibdir_path = archlibdir;
+    rb_str_freeze(ruby_archlibdir_path);
 
     load_path = GET_VM()->load_path;
 
