@@ -317,11 +317,13 @@ class RubyLex
 
   def check_newline_depth_difference
     depth_difference = 0
+    open_brace_on_line = 0
     @tokens.each_with_index do |t, index|
       case t[1]
       when :on_ignored_nl, :on_nl, :on_comment
         if index != (@tokens.size - 1)
           depth_difference = 0
+          open_brace_on_line = 0
         end
         next
       when :on_sp
@@ -330,8 +332,9 @@ class RubyLex
       case t[1]
       when :on_lbracket, :on_lbrace, :on_lparen
         depth_difference += 1
+        open_brace_on_line += 1
       when :on_rbracket, :on_rbrace, :on_rparen
-        depth_difference -= 1
+        depth_difference -= 1 if open_brace_on_line > 0
       when :on_kw
         next if index > 0 and @tokens[index - 1][3].allbits?(Ripper::EXPR_FNAME)
         case t[2]
