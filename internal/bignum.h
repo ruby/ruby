@@ -139,6 +139,7 @@ static inline void BIGNUM_NEGATE(VALUE b);
 static inline size_t BIGNUM_LEN(VALUE b);
 static inline BDIGIT *BIGNUM_DIGITS(VALUE b);
 static inline int BIGNUM_LENINT(VALUE b);
+static inline bool BIGNUM_EMBED_P(VALUE b);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* bignum.c (export) */
@@ -207,7 +208,7 @@ BIGNUM_NEGATE(VALUE b)
 static inline size_t
 BIGNUM_LEN(VALUE b)
 {
-    if (! FL_TEST_RAW(b, BIGNUM_EMBED_FLAG)) {
+    if (! BIGNUM_EMBED_P(b)) {
         return RBIGNUM(b)->as.heap.len;
     }
     else {
@@ -228,11 +229,18 @@ BIGNUM_LENINT(VALUE b)
 static inline BDIGIT *
 BIGNUM_DIGITS(VALUE b)
 {
-    if (FL_TEST_RAW(b, BIGNUM_EMBED_FLAG)) {
+    if (BIGNUM_EMBED_P(b)) {
         return RBIGNUM(b)->as.ary;
     }
     else {
         return RBIGNUM(b)->as.heap.digits;
     }
 }
+
+static inline bool
+BIGNUM_EMBED_P(VALUE b)
+{
+    return FL_TEST_RAW(b, BIGNUM_EMBED_FLAG);
+}
+
 #endif /* INTERNAL_BIGNUM_H */
