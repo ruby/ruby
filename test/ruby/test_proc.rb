@@ -1413,9 +1413,13 @@ class TestProc < Test::Unit::TestCase
   def test_compose_with_lambda
     f = lambda {|x| x * 2}
     g = lambda {|x| x}
+    not_lambda = proc {|x| x}
 
     assert_predicate((f << g), :lambda?)
     assert_predicate((g >> f), :lambda?)
+    assert_predicate((not_lambda << f), :lambda?)
+    assert_not_predicate((f << not_lambda), :lambda?)
+    assert_not_predicate((not_lambda >> f), :lambda?)
   end
 
   def test_compose_with_method
@@ -1427,6 +1431,7 @@ class TestProc < Test::Unit::TestCase
 
     assert_equal(6, (f << g).call(2))
     assert_equal(5, (f >> g).call(2))
+    assert_predicate((f << g), :lambda?)
   end
 
   def test_compose_with_callable
@@ -1438,6 +1443,7 @@ class TestProc < Test::Unit::TestCase
 
     assert_equal(6, (f << g).call(2))
     assert_equal(5, (f >> g).call(2))
+    assert_predicate((f << g), :lambda?)
   end
 
   def test_compose_with_noncallable

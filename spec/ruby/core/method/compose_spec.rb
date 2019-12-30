@@ -39,7 +39,8 @@ ruby_version_is "2.6" do
         double = proc { |x| x + x }
 
         (pow_2 << double).is_a?(Proc).should == true
-        (pow_2 << double).lambda?.should == true
+        ruby_version_is(''...'2.8') { (pow_2 << double).lambda?.should == true }
+        ruby_version_is('2.8') { (pow_2 << double).lambda?.should == false }
       end
 
       it "may accept multiple arguments" do

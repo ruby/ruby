@@ -3386,8 +3386,14 @@ rb_proc_compose_to_left(VALUE self, VALUE g)
     procs[1] = g;
     args = rb_ary_tmp_new_from_values(0, 2, procs);
 
-    GetProcPtr(self, procp);
-    is_lambda = procp->is_lambda;
+    if (rb_obj_is_proc(g)) {
+        GetProcPtr(g, procp);
+        is_lambda = procp->is_lambda;
+    }
+    else {
+        VM_ASSERT(rb_obj_is_method(g) || rb_obj_respond_to(g, idCall, TRUE));
+        is_lambda = 1;
+    }
 
     proc = rb_proc_new(compose, args);
     GetProcPtr(proc, procp);
