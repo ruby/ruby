@@ -73,7 +73,22 @@ module TestIRB
       lines = []
       input_with_correct_indents.each do |row|
         lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+      end
+    end
 
+    def test_braces_on_thier_own_line
+      input_with_correct_indents = [
+        Row.new(%q(if true), nil, 2),
+        Row.new(%q(  [), nil, 4),
+        Row.new(%q(  ]), 2, 2),
+        Row.new(%q(end), 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
         assert_indenting(lines, row.current_line_spaces, false)
         assert_indenting(lines, row.new_line_spaces, true)
       end
