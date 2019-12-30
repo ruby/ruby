@@ -4,7 +4,7 @@ require_relative "../path"
 require Spec::Path.lib_dir.join("bundler/deprecate")
 include Spec::Path
 
-$LOAD_PATH.unshift(*Dir[Spec::Path.base_system_gems.join("gems/{artifice,mustermann,rack,tilt,sinatra}-*/lib")].map(&:to_s))
+$LOAD_PATH.unshift(*Dir[Spec::Path.base_system_gems.join("gems/{artifice,mustermann,rack,tilt,sinatra,ruby2_keywords}-*/lib")].map(&:to_s))
 
 require "artifice"
 require "sinatra/base"
