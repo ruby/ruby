@@ -748,7 +748,7 @@ inspect_obj(VALUE obj, VALUE str, int recur)
  *
  * Returns a string containing a human-readable representation of <i>obj</i>.
  * The default #inspect shows the object's class name, an encoding of
- * the object id, and a list of the instance variables and their
+ * its memory address, and a list of the instance variables and their
  * values (by calling #inspect on each of them).  User defined classes
  * should override this method to provide a better representation of
  * <i>obj</i>.  When overriding this method, it should return a string
