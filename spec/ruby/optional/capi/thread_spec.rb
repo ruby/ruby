@@ -121,23 +121,25 @@ describe "C-API Thread function" do
       thr.value.should be_true
     end
 
-    it "runs a C function with the global lock unlocked and unlocks IO with the generic RUBY_UBF_IO" do
-      thr = Thread.new do
-        @t.rb_thread_call_without_gvl_with_ubf_io
+    guard -> { platform_is :mingw and ruby_version_is ""..."2.7" } do
+      it "runs a C function with the global lock unlocked and unlocks IO with the generic RUBY_UBF_IO" do
+        thr = Thread.new do
+          @t.rb_thread_call_without_gvl_with_ubf_io
+        end
+
+        # Wait until it's blocking...
+        Thread.pass while thr.status and thr.status != "sleep"
+
+        # The thread status is set to sleep by rb_thread_call_without_gvl(),
+        # but the thread might not be in the blocking read(2) yet, so wait a bit.
+        sleep 0.1
+
+        # Wake it up, causing the unblock function to be run.
+        thr.wakeup
+
+        # Make sure it stopped and we got a proper value
+        thr.value.should be_true
       end
-
-      # Wait until it's blocking...
-      Thread.pass while thr.status and thr.status != "sleep"
-
-      # The thread status is set to sleep by rb_thread_call_without_gvl(),
-      # but the thread might not be in the blocking read(2) yet, so wait a bit.
-      sleep 0.1
-
-      # Wake it up, causing the unblock function to be run.
-      thr.wakeup
-
-      # Make sure it stopped and we got a proper value
-      thr.value.should be_true
     end
   end
 end
