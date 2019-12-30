@@ -560,6 +560,10 @@ class TestThreadQueue < Test::Unit::TestCase
     if ENV['APPVEYOR'] == 'True' && RUBY_PLATFORM.match?(/mswin/)
       skip 'This test fails too often on AppVeyor vs140'
     end
+    if RUBY_PLATFORM.match?(/mingw/)
+      skip 'This test fails too often on MinGW'
+    end
+
     assert_in_out_err([], <<-INPUT, %w(INT INT exit), [])
       q = Queue.new
       trap(:INT){
