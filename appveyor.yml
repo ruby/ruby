@@ -10,10 +10,6 @@ environment:
   ruby_version: "24-%Platform%"
   zlib_version: "1.2.11"
   matrix:
-    # to reduce time for finishing all jobs, run the slowest msys2 build first.
-    - build: msys2
-      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-      GEMS_FOR_TEST: "timezone tzinfo"
     - build: vs
       vs: 120
       ssl: OpenSSL
@@ -78,52 +74,6 @@ for:
     # separately execute tests without -j which may crash worker with -j.
     - nmake -l "TESTOPTS=-v --timeout-scale=3.0 --excludes=../test/excludes/_appveyor" test-all TESTS="../test/win32ole ../test/ruby/test_bignum.rb ../test/ruby/test_syntax.rb ../test/open-uri/test_open-uri.rb ../test/rubygems/test_bundled_ca.rb"
     - nmake -l test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
--
-  matrix:
-    only:
-      - build: msys2
-  install:
-    - ver
-    - chcp
-    - set /a JOBS=%NUMBER_OF_PROCESSORS%
-    - set MSYS_NO_PATHCONV=1
-    - SET MSYSTEM=%Platform:x86=32%
-    - SET MSYSTEM=%MSYSTEM:x=MINGW%
-    - SET MSYS2_ARCH=%Platform:x86=i686%
-    - SET MSYS2_ARCH=%MSYS2_ARCH:x64=x86_64%
-    - set MSYSTEM_PREFIX=/mingw64
-    - set MINGW_CHOST=%MSYS2_ARCH%-w64-mingw32
-    - SET ruby_path=C:\Ruby%ruby_version:-x86=%
-    - cd ..
-    - mkdir build
-    - mkdir install
-    - SET PATH=%ruby_path%\bin;C:\msys64\%MSYSTEM%\bin;C:\msys64\usr\bin;%PATH%
-    - ruby --version
-  build_script:
-    - pacman -Syd --noconfirm --noprogressbar --needed mingw-w64-x86_64-binutils mingw-w64-x86_64-isl mingw-w64-x86_64-libiconv mingw-w64-x86_64-mpc mingw-w64-x86_64-gcc-libs mingw-w64-x86_64-windows-default-manifest mingw-w64-x86_64-winpthreads mingw-w64-x86_64-gcc
-    # when fixed in MSYS2 / Mingw-w64, remove above and use normal code below
-    #- pacman -Sy --noconfirm --noprogressbar --needed mingw-w64-x86_64-toolchain
-    - pacman -S  --noconfirm --noprogressbar --needed mingw-w64-x86_64-gdbm mingw-w64-x86_64-gmp mingw-w64-x86_64-libffi mingw-w64-x86_64-libyaml mingw-w64-x86_64-openssl mingw-w64-x86_64-ragel mingw-w64-x86_64-readline mingw-w64-x86_64-zlib
-    - cd %APPVEYOR_BUILD_FOLDER%
-    - set CFLAGS=-march=%MSYS2_ARCH:_=-% -mtune=generic -O3 -pipe
-    - set CXXFLAGS=%CFLAGS%
-    - set CPPFLAGS=-D_FORTIFY_SOURCE=2 -D__USE_MINGW_ANSI_STDIO=1 -DFD_SETSIZE=2048
-    - set LDFLAGS=-pipe
-    - sh -c "autoreconf -fi"
-    - cd ..\build
-    - sh ../ruby/configure --disable-install-doc --prefix=/. --build=%MINGW_CHOST% --host=%MINGW_CHOST% --target=%MINGW_CHOST%
-    - mingw32-make %mflags% touch-unicode-files
-    - mingw32-make -j%JOBS% %UPDATE_UNICODE% up incs
-    - mingw32-make -j%JOBS% V=1
-    - mingw32-make DESTDIR=../install install-nodoc
-    - if not "%GEMS_FOR_TEST%" == "" ..\install\bin\gem install --no-document %GEMS_FOR_TEST%
-    - ..\install\bin\ruby.exe -v -ropenssl -e "puts 'Build    ' + OpenSSL::OPENSSL_VERSION, 'Runtime  ' + OpenSSL::OPENSSL_LIBRARY_VERSION"
-  test_script:
-    - mingw32-make test
-    - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --timeout-scale=1.5 --excludes=../ruby/test/excludes/_appveyor -j %JOBS% --exclude win32ole --exclude test_open-uri"
-    # separately execute tests without -j which may crash worker with -j.
-    - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --timeout-scale=1.5 --excludes=../ruby/test/excludes/_appveyor" TESTS="../ruby/test/win32ole ../ruby/test/open-uri/test_open-uri.rb"
-    - mingw32-make test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
 notifications:
   # Using "Webhook" with templated body to skip notification on Pull Request
   - provider: Webhook
