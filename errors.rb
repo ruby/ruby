@@ -9,9 +9,10 @@ class NameError
   #
   #    [1, 2, 3].method(:rject) # NameError with name "rject" and receiver: Array
   #    [1, 2, 3].singleton_method(:rject) # NameError with name "rject" and receiver: [1, 2, 3]
-  def initialize(msg = nil, name = nil, receiver: self, **kws)
+  def initialize(msg = nil, name = nil, receiver: no = true, **kws)
     super(msg, **kws)
-    __builtin_name_err_initialize(receiver, name)
+    __builtin_err_init_recv(receiver) unless no
+    __builtin_name_err_init_attr(name)
     self
   end
 end

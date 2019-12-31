@@ -1483,7 +1483,7 @@ exit_success_p(VALUE exc)
 }
 
 static VALUE
-err_init_recv(VALUE exc, VALUE recv)
+err_init_recv(rb_execution_context_t *ec, VALUE exc, VALUE recv)
 {
     if (recv != Qundef) rb_ivar_set(exc, id_recv, recv);
     return exc;
@@ -1511,7 +1511,7 @@ frozen_err_initialize(int argc, VALUE *argv, VALUE self)
     keywords[0] = id_receiver;
     rb_get_kwargs(options, keywords, 0, numberof(values), values);
     rb_call_super(argc, argv);
-    err_init_recv(self, values[0]);
+    err_init_recv(NULL, self, values[0]);
     return self;
 }
 
@@ -1565,21 +1565,13 @@ name_err_init_attr(rb_execution_context_t *ec, VALUE exc, VALUE method)
     return exc;
 }
 
-static VALUE
-name_err_initialize(rb_execution_context_t *ec, VALUE self, VALUE recv, VALUE name)
-{
-    if (recv != self) err_init_recv(self, recv);
-    name_err_init_attr(ec, self, name);
-    return self;
-}
-
 static VALUE rb_name_err_mesg_new(VALUE mesg, VALUE recv, VALUE method);
 
 static VALUE
 name_err_init(VALUE exc, VALUE mesg, VALUE recv, VALUE method)
 {
     exc_init(exc, rb_name_err_mesg_new(mesg, recv, method));
-    err_init_recv(exc, recv);
+    err_init_recv(NULL, exc, recv);
     return name_err_init_attr(GET_EC(), exc, method);
 }
 
