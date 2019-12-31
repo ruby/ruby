@@ -55,3 +55,17 @@ class FrozenError
     self
   end
 end
+
+class KeyError
+  # call-seq:
+  #   KeyError.new(message=nil, receiver: nil, key: nil) -> key_error
+  #
+  # Construct a new +KeyError+ exception with the given message,
+  # receiver and key.
+  def initialize(msg = nil, receiver: norecv = true, key: nokey = true, **kws)
+    super(msg, **kws)
+    __builtin_err_init_receiver(receiver) unless norecv
+    __builtin_err_init_key(key) unless nokey
+    self
+  end
+end

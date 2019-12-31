@@ -1841,6 +1841,20 @@ key_err_key(VALUE self)
     rb_raise(rb_eArgError, "no key is available");
 }
 
+static VALUE
+err_init_receiver(rb_execution_context_t *ec, VALUE exc, VALUE recv)
+{
+    if (recv != Qundef) rb_ivar_set(exc, id_receiver, recv);
+    return exc;
+}
+
+static VALUE
+err_init_key(rb_execution_context_t *ec, VALUE exc, VALUE key)
+{
+    if (key != Qundef) rb_ivar_set(exc, id_key, key);
+    return exc;
+}
+
 VALUE
 rb_key_err_new(VALUE mesg, VALUE recv, VALUE key)
 {
@@ -1850,38 +1864,6 @@ rb_key_err_new(VALUE mesg, VALUE recv, VALUE key)
     rb_ivar_set(exc, id_key, key);
     rb_ivar_set(exc, id_receiver, recv);
     return exc;
-}
-
-/*
- * call-seq:
- *   KeyError.new(message=nil, receiver: nil, key: nil) -> key_error
- *
- * Construct a new +KeyError+ exception with the given message,
- * receiver and key.
- */
-
-static VALUE
-key_err_initialize(int argc, VALUE *argv, VALUE self)
-{
-    VALUE options;
-
-    rb_call_super(rb_scan_args(argc, argv, "01:", NULL, &options), argv);
-
-    if (!NIL_P(options)) {
-	ID keywords[2];
-	VALUE values[numberof(keywords)];
-	int i;
-	keywords[0] = id_receiver;
-	keywords[1] = id_key;
-	rb_get_kwargs(options, keywords, 0, numberof(values), values);
-	for (i = 0; i < numberof(values); ++i) {
-	    if (values[i] != Qundef) {
-		rb_ivar_set(self, keywords[i], values[i]);
-	    }
-	}
-    }
-
-    return self;
 }
 
 /*
@@ -2508,7 +2490,6 @@ Init_Exception(void)
     rb_eArgError      = rb_define_class("ArgumentError", rb_eStandardError);
     rb_eIndexError    = rb_define_class("IndexError", rb_eStandardError);
     rb_eKeyError      = rb_define_class("KeyError", rb_eIndexError);
-    rb_define_method(rb_eKeyError, "initialize", key_err_initialize, -1);
     rb_define_method(rb_eKeyError, "receiver", key_err_receiver, 0);
     rb_define_method(rb_eKeyError, "key", key_err_key, 0);
     rb_eRangeError    = rb_define_class("RangeError", rb_eStandardError);
