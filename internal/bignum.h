@@ -19,6 +19,11 @@
 #include "internal/stdbool.h"   /* for bool */
 #include "ruby/ruby.h"          /* for struct RBasic */
 
+#if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
+# define USE_GMP
+# include <gmp.h>
+#endif
+
 #ifndef BDIGIT
 # if SIZEOF_INT*2 <= SIZEOF_LONG_LONG
 #  define BDIGIT unsigned int
@@ -101,10 +106,14 @@ enum rb_int_parse_flags {
 struct RBignum {
     struct RBasic basic;
     union {
+#ifdef USE_GMP
+        mpz_t mpz;
+#else
         struct {
             size_t len;
             BDIGIT *digits;
         } heap;
+#endif
         BDIGIT ary[BIGNUM_EMBED_LEN_MAX];
     } as;
 };

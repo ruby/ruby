@@ -23,11 +23,6 @@
 # include <ieeefp.h>
 #endif
 
-#if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
-# define USE_GMP
-# include <gmp.h>
-#endif
-
 #include "id.h"
 #include "internal.h"
 #include "internal/bignum.h"
