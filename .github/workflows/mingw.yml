@@ -116,6 +116,18 @@ jobs:
           $env:TMPDIR = "$pwd/temp"
           make -C build test
 
+      - name: test-all
+        if: success() || failure()
+        timeout-minutes: 25
+        run: |
+          $env:TMPDIR = "$pwd/temp"
+          # Actions uses UTF8, causes test failures, similar to normal OS setup
+          $PSDefaultParameterValues['*:Encoding'] = 'utf8'
+          [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
+          [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
+          $jobs = [int]$env:NUMBER_OF_PROCESSORS
+          make -C build test-all TESTOPTS="-j $jobs --retry --job-status=normal --show-skip --timeout-scale=1.5"
+
       - name: test-spec
         if: success() || failure()
         timeout-minutes: 10
@@ -129,18 +141,6 @@ jobs:
           ruby -v
           cd src/spec/ruby
           ruby ../mspec/bin/mspec -j
-
-      - name: test-all
-        if: success() || failure()
-        timeout-minutes: 25
-        run: |
-          $env:TMPDIR = "$pwd/temp"
-          # Actions uses UTF8, causes test failures, similar to normal OS setup
-          $PSDefaultParameterValues['*:Encoding'] = 'utf8'
-          [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
-          [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
-          $jobs = [int]$env:NUMBER_OF_PROCESSORS
-          make -C build test-all TESTOPTS="-j $jobs --retry --job-status=normal --show-skip --timeout-scale=1.5"
 
       - uses: k0kubun/action-slack@v2.0.0
         with:
