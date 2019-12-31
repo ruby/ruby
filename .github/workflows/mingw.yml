@@ -36,7 +36,7 @@ jobs:
         run: |
           git config --system core.autocrlf false
           git config --system core.eol lf
-      # Not using official actions/checkout@v2 because it's unstable and sometimes doesn't work for a fork.
+      # Not using official actions/checkout@v2 because it's unstable.
       - name: Checkout ruby/ruby
         run: |
           git clone --single-branch --shallow-since=yesterday https://github.com/ruby/ruby src
