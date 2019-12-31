@@ -152,6 +152,7 @@ static inline int BIGNUM_LENINT(VALUE b);
 static inline bool BIGNUM_EMBED_P(VALUE b);
 #ifdef USE_GMP
 static inline mpz_t *BIGNUM_MPZ(VALUE b);
+static inline void BIGNUM_MPZ_NEGATE(VALUE b);
 #endif
 
 RUBY_SYMBOL_EXPORT_BEGIN
@@ -186,6 +187,11 @@ MJIT_SYMBOL_EXPORT_END
 static inline bool
 BIGNUM_SIGN(VALUE b)
 {
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(b)) {
+        return mpz_sgn(*BIGNUM_MPZ(b));
+    }
+#endif
     return FL_TEST_RAW(b, BIGNUM_SIGN_BIT);
 }
 
@@ -204,6 +210,14 @@ BIGNUM_NEGATIVE_P(VALUE b)
 static inline void
 BIGNUM_SET_SIGN(VALUE b, bool sign)
 {
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(b)) {
+        if (BIGNUM_POSITIVE_P(b) != sign) {
+            BIGNUM_MPZ_NEGATE(b);
+        }
+    }
+    else
+#endif
     if (sign) {
         FL_SET_RAW(b, BIGNUM_SIGN_BIT);
     }
@@ -215,16 +229,27 @@ BIGNUM_SET_SIGN(VALUE b, bool sign)
 static inline void
 BIGNUM_NEGATE(VALUE b)
 {
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(b)) {
+        BIGNUM_MPZ_NEGATE(b);
+    }
+    else
+#endif
     FL_REVERSE_RAW(b, BIGNUM_SIGN_BIT);
 }
 
 static inline size_t
 BIGNUM_LEN(VALUE b)
 {
+#ifdef USE_GMP
+    assert(BIGNUM_EMBED_P(b));
+#else
     if (! BIGNUM_EMBED_P(b)) {
         return RBIGNUM(b)->as.heap.len;
     }
-    else {
+    else
+#endif
+    {
         size_t ret = RBASIC(b)->flags;
         ret &= BIGNUM_EMBED_LEN_MASK;
         ret >>= BIGNUM_EMBED_LEN_SHIFT;
@@ -242,12 +267,15 @@ BIGNUM_LENINT(VALUE b)
 static inline BDIGIT *
 BIGNUM_DIGITS(VALUE b)
 {
-    if (BIGNUM_EMBED_P(b)) {
-        return RBIGNUM(b)->as.ary;
-    }
-    else {
+#ifdef USE_GMP
+    assert(BIGNUM_EMBED_P(b));
+#else
+    if (! BIGNUM_EMBED_P(b)) {
         return RBIGNUM(b)->as.heap.digits;
     }
+    else
+#endif
+    return RBIGNUM(b)->as.ary;
 }
 
 static inline bool
@@ -262,6 +290,14 @@ BIGNUM_MPZ(VALUE b)
 {
     assert(! BIGNUM_EMBED_P(b));
     return &RBIGNUM(b)->as.mpz;
+}
+
+static inline void
+BIGNUM_MPZ_NEGATE(VALUE b)
+{
+    assert(! BIGNUM_EMBED_P(b));
+    mpz_t *mb = BIGNUM_MPZ(b);
+    mpz_neg(*mb, *mb);
 }
 #endif
 
