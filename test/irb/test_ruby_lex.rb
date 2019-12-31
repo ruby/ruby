@@ -1,5 +1,5 @@
 require 'test/unit'
-require 'openstruct'
+require 'ostruct'
 
 module TestIRB
   class TestRubyLex < Test::Unit::TestCase
