@@ -837,9 +837,9 @@ end.join
 
   def test_frozen_error_receiver
     obj = Object.new.freeze
-    (obj.foo = 1) rescue (e = $!)
+    e = assert_raise(FrozenError) {def obj.foo; end}
     assert_same(obj, e.receiver)
-    obj.singleton_class.const_set(:A, 2) rescue (e = $!)
+    e = assert_raise(FrozenError) {obj.singleton_class.const_set(:A, 2)}
     assert_same(obj.singleton_class, e.receiver)
   end
 
