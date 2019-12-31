@@ -43,6 +43,7 @@ objspace.o: $(top_srcdir)/internal/imemo.h
 objspace.o: $(top_srcdir)/internal/serial.h
 objspace.o: $(top_srcdir)/internal/static_assert.h
 objspace.o: $(top_srcdir)/internal/stdbool.h
+objspace.o: $(top_srcdir)/internal/warnings.h
 objspace.o: $(top_srcdir)/node.h
 objspace.o: $(top_srcdir)/symbol.h
 objspace.o: objspace.c
@@ -80,6 +81,7 @@ objspace_dump.o: $(top_srcdir)/internal/static_assert.h
 objspace_dump.o: $(top_srcdir)/internal/stdbool.h
 objspace_dump.o: $(top_srcdir)/internal/string.h
 objspace_dump.o: $(top_srcdir)/internal/vm.h
+objspace_dump.o: $(top_srcdir)/internal/warnings.h
 objspace_dump.o: $(top_srcdir)/method.h
 objspace_dump.o: $(top_srcdir)/node.h
 objspace_dump.o: $(top_srcdir)/ruby_assert.h

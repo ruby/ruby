@@ -93,6 +93,7 @@ ripper.o: $(top_srcdir)/internal/thread.h
 ripper.o: $(top_srcdir)/internal/util.h
 ripper.o: $(top_srcdir)/internal/variable.h
 ripper.o: $(top_srcdir)/internal/vm.h
+ripper.o: $(top_srcdir)/internal/warnings.h
 ripper.o: $(top_srcdir)/node.h
 ripper.o: $(top_srcdir)/regenc.h
 ripper.o: $(top_srcdir)/symbol.h
