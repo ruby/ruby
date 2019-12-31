@@ -53,6 +53,7 @@ const char ruby_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 # endif
 #endif
 
+STATIC_ASSERT(RBignum_size, sizeof(struct RBignum) == sizeof(struct RObject));
 STATIC_ASSERT(sizeof_bdigit_dbl, sizeof(BDIGIT_DBL) == SIZEOF_BDIGIT_DBL);
 STATIC_ASSERT(sizeof_bdigit_dbl_signed, sizeof(BDIGIT_DBL_SIGNED) == SIZEOF_BDIGIT_DBL);
 STATIC_ASSERT(sizeof_bdigit, SIZEOF_BDIGIT <= sizeof(BDIGIT));
