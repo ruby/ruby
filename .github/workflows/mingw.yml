@@ -36,7 +36,7 @@ jobs:
         run: |
           git config --system core.autocrlf false
           git config --system core.eol lf
-      # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
+      # Not using official actions/checkout@v2 because it's unstable and sometimes doesn't work for a fork.
       - name: Checkout ruby/ruby
         run: |
           git clone --single-branch --shallow-since=yesterday https://github.com/ruby/ruby src
@@ -140,7 +140,7 @@ jobs:
           [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
           [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
           $jobs = [int]$env:NUMBER_OF_PROCESSORS
-          make -C build test-all TESTOPTS="--retry --job-status=normal --show-skip --timeout-scale=1.5 --excludes=../src/test/excludes -n !/memory_leak/ -j $jobs"
+          make -C build test-all TESTOPTS="-j $jobs --retry --job-status=normal --show-skip --timeout-scale=1.5"
 
       - uses: k0kubun/action-slack@v2.0.0
         with:
