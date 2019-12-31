@@ -16,11 +16,11 @@ DESC
   s.email = [nil, "aaron@tenderlovemaking.com"]
   s.homepage = "http://i.loveruby.net/en/projects/racc/"
   s.licenses = ["MIT"]
-  s.executables = ["racc", "racc2y", "y2racc"]
+  s.executables = ["racc"]
   s.files = [
     "COPYING", "ChangeLog", "DEPENDS", "Manifest.txt",
     "README.ja.rdoc", "README.rdoc", "Rakefile", "TODO", "bin/racc",
-    "bin/racc2y", "bin/y2racc", "ext/racc/MANIFEST",
+    "ext/racc/MANIFEST",
     "ext/racc/com/headius/racc/Cparse.java", "ext/racc/cparse.c",
     "ext/racc/depend", "ext/racc/extconf.rb", "fastcache/extconf.rb",
     "fastcache/fastcache.c", "lib/racc.rb", "lib/racc/compat.rb",
