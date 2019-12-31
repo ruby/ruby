@@ -36,10 +36,21 @@ jobs:
         run: |
           git config --system core.autocrlf false
           git config --system core.eol lf
-      - name: Checkout repo
-        uses: actions/checkout@v2
-        with:
-          path: src
+      # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
+      - name: Checkout ruby/ruby
+        run: |
+          git clone --single-branch --shallow-since=yesterday https://github.com/ruby/ruby src
+          git -C src reset --hard "$GITHUB_SHA"
+        if: github.event_name == 'push'
+      - name: Checkout a pull request
+        run: |
+          git clone --single-branch --shallow-since=yesterday "--branch=$GITHUB_BRANCH" "https://github.com/${GITHUB_REPO}" src
+          git -C src reset --hard "$GITHUB_REV"
+        env:
+          GITHUB_REV: ${{ github.event.pull_request.head.sha }}
+          GITHUB_BRANCH: ${{ github.event.pull_request.head.ref }}
+          GITHUB_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        if: github.event_name == 'pull_request'
       - run: ./src/tool/actions-commit-info.sh
         shell: bash
         id: commit_info
