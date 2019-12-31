@@ -2957,7 +2957,7 @@ rb_cmpint(VALUE val, VALUE a, VALUE b)
 }
 
 #define BIGNUM_SET_LEN(b,l) \
-    ((RBASIC(b)->flags & BIGNUM_EMBED_FLAG) ? \
+    (BIGNUM_EMBED_P(b) ? \
      (void)(RBASIC(b)->flags = \
 	    (RBASIC(b)->flags & ~BIGNUM_EMBED_LEN_MASK) | \
 	    ((l) << BIGNUM_EMBED_LEN_SHIFT)) : \
@@ -2967,19 +2967,19 @@ static void
 rb_big_realloc(VALUE big, size_t len)
 {
     BDIGIT *ds;
-    if (RBASIC(big)->flags & BIGNUM_EMBED_FLAG) {
+    if (BIGNUM_EMBED_P(big)) {
 	if (BIGNUM_EMBED_LEN_MAX < len) {
 	    ds = ALLOC_N(BDIGIT, len);
 	    MEMCPY(ds, RBIGNUM(big)->as.ary, BDIGIT, BIGNUM_EMBED_LEN_MAX);
 	    RBIGNUM(big)->as.heap.len = BIGNUM_LEN(big);
 	    RBIGNUM(big)->as.heap.digits = ds;
-	    RBASIC(big)->flags &= ~BIGNUM_EMBED_FLAG;
+            FL_UNSET_RAW(big, BIGNUM_EMBED_FLAG);
 	}
     }
     else {
 	if (len <= BIGNUM_EMBED_LEN_MAX) {
 	    ds = RBIGNUM(big)->as.heap.digits;
-	    RBASIC(big)->flags |= BIGNUM_EMBED_FLAG;
+            FL_SET_RAW(big, BIGNUM_EMBED_FLAG);
 	    BIGNUM_SET_LEN(big, len);
             (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)RBIGNUM(big)->as.ary, sizeof(RBIGNUM(big)->as.ary));
 	    if (ds) {
@@ -3011,8 +3011,8 @@ bignew_1(VALUE klass, size_t len, int sign)
     NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0));
     BIGNUM_SET_SIGN((VALUE)big, sign);
     if (len <= BIGNUM_EMBED_LEN_MAX) {
-	RBASIC(big)->flags |= BIGNUM_EMBED_FLAG;
-	BIGNUM_SET_LEN(big, len);
+        FL_SET_RAW(big, BIGNUM_EMBED_FLAG);
+	BIGNUM_SET_LEN((VALUE)big, len);
         (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)RBIGNUM(big)->as.ary, sizeof(RBIGNUM(big)->as.ary));
     }
     else {
