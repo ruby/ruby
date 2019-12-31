@@ -18,6 +18,7 @@
 
 #include "internal/stdbool.h"   /* for bool */
 #include "ruby/ruby.h"          /* for struct RBasic */
+#include "ruby_assert.h"        /* for assert */
 
 #if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
 # define USE_GMP
@@ -149,6 +150,9 @@ static inline size_t BIGNUM_LEN(VALUE b);
 static inline BDIGIT *BIGNUM_DIGITS(VALUE b);
 static inline int BIGNUM_LENINT(VALUE b);
 static inline bool BIGNUM_EMBED_P(VALUE b);
+#ifdef USE_GMP
+static inline mpz_t *BIGNUM_MPZ(VALUE b);
+#endif
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* bignum.c (export) */
@@ -251,5 +255,14 @@ BIGNUM_EMBED_P(VALUE b)
 {
     return FL_TEST_RAW(b, BIGNUM_EMBED_FLAG);
 }
+
+#ifdef USE_GMP
+static inline mpz_t *
+BIGNUM_MPZ(VALUE b)
+{
+    assert(! BIGNUM_EMBED_P(b));
+    return &RBIGNUM(b)->as.mpz;
+}
+#endif
 
 #endif /* INTERNAL_BIGNUM_H */
