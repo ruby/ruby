@@ -28,7 +28,7 @@ jobs:
       UPDATE_UNICODE: "UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
     strategy:
       matrix:
-        test_task: [ "check" ] # not used, but to make job names consistent
+        test_task: [ "check" ] # to make job names consistent
       fail-fast: false
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
@@ -133,3 +133,18 @@ jobs:
           [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
           $jobs = [int]$env:NUMBER_OF_PROCESSORS
           make -C build test-all TESTOPTS="--retry --job-status=normal --show-skip --timeout-scale=1.5 --excludes=../src/test/excludes -n !/memory_leak/ -j $jobs"
+
+      - uses: k0kubun/action-slack@v2.0.0
+        with:
+          payload: |
+            {
+              "attachments": [{
+                "text": "${{ job.status }}: ${{ github.workflow }} / ${{ matrix.test_task }} <https://github.com/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ steps.commit_info.outputs.COMMIT_DATE }} #${{ steps.commit_info.outputs.COMMIT_NUMBER_OF_DAY }}> " +
+                        "(<https://github.com/${{ github.repository }}/commit/${{ github.sha }}|" + "${{ github.sha }}".substring(0, 10) + ">) " +
+                        "of ${{ github.repository }}@" + "${{ github.ref }}".split('/').reverse()[0] + " by ${{ github.event.head_commit.committer.name }}",
+                "color": "danger"
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: failure() && github.event_name == 'push'
