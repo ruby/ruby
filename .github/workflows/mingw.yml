@@ -1,4 +1,4 @@
-name: Windows
+name: MinGW
 on:
   push:
     branches:
@@ -14,7 +14,7 @@ on:
 # Console encoding causes issues, see test-all & test-spec steps
 #
 jobs:
-  mingw:
+  make:
     runs-on: windows-2019
     env:
       MSYSTEM: MINGW64
@@ -27,6 +27,8 @@ jobs:
       LDFLAGS:  "-pipe -fstack-protector-strong"
       UPDATE_UNICODE: "UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
     strategy:
+      matrix:
+        test_task: [ "check" ] # not used, but to make job names consistent
       fail-fast: false
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
