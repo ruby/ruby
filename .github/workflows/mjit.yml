@@ -7,9 +7,10 @@ on:
     branches:
       - '*'
 jobs:
-  test:
+  make:
     strategy:
       matrix:
+        test_task: [ "check" ] # not used, but to make job names consistent
         jit_opts: [ "--jit", "--jit-wait" ]
       fail-fast: false
     runs-on: ubuntu-latest
