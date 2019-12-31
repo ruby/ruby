@@ -1,0 +1,133 @@
+name: Windows
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+    branches:
+      - '*'
+
+# Notes:
+# Action ENV TEMP and TMP are short 8.3 paths, but the long path differs.
+#  Code uses TMPDIR, which is Ruby's 'first' check
+#
+# Console encoding causes issues, see test-all & test-spec steps
+#
+jobs:
+  mingw:
+    runs-on: windows-2019
+    env:
+      MSYSTEM: MINGW64
+      MSYSTEM_PREFIX: /mingw64
+      MSYS2_ARCH: x86_64
+      CHOST: "x86_64-w64-mingw32"
+      CFLAGS:   "-march=x86-64 -mtune=generic -O3 -pipe -fstack-protector-strong"
+      CXXFLAGS: "-march=x86-64 -mtune=generic -O3 -pipe"
+      CPPFLAGS: "-D_FORTIFY_SOURCE=2 -D__USE_MINGW_ANSI_STDIO=1 -DFD_SETSIZE=2048"
+      LDFLAGS:  "-pipe -fstack-protector-strong"
+      UPDATE_UNICODE: "UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
+    strategy:
+      fail-fast: false
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    steps:
+      - name: git config
+        run: |
+          git config --system core.autocrlf false
+          git config --system core.eol lf
+      - name: Checkout repo
+        uses: actions/checkout@v2
+        with:
+          path: src
+      - run: ./src/tool/actions-commit-info.sh
+        shell: bash
+        id: commit_info
+      - name: Set up Ruby & MSYS2
+        uses: MSP-Greg/actions-ruby@master
+        with:
+          ruby-version: 2.6.x
+          base: update
+          mingw: gdbm gmp libffi libyaml openssl ragel readline
+          msys2: automake1.16 bison
+      - name: where check
+        run: |
+          # show where
+          Write-Host
+          $where = 'gcc.exe', 'ragel.exe', 'make.exe', 'bison.exe', 'libcrypto-1_1-x64.dll', 'libssl-1_1-x64.dll'
+          foreach ($e in $where) {
+            $rslt = where.exe $e 2>&1 | Out-String
+            if ($rslt.contains($e)) { Write-Host $rslt }
+            else { Write-Host "`nCan't find $e" }
+          }
+      - name: misc setup, autoreconf
+        run: |
+          mkdir build
+          mkdir install
+          mkdir temp
+          cd src
+          sh -c "autoreconf -fi"
+
+      - name: configure
+        run: |
+          # Actions uses UTF8, causes test failures, similar to normal OS setup
+          $PSDefaultParameterValues['*:Encoding'] = 'utf8'
+          [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
+          [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
+          cd build
+          $config_args = "--build=$env:CHOST --host=$env:CHOST --target=$env:CHOST"
+          Write-Host $config_args
+          sh -c "../src/configure --disable-install-doc --prefix=/install $config_args"
+          # Write-Host "-------------------------------------- config.log"
+          # Get-Content ./config.log | foreach {Write-Output $_}
+
+      - name: download unicode, gems, etc
+        run: |
+          $jobs = [int]$env:NUMBER_OF_PROCESSORS + 1
+          cd build
+          make -j $jobs update-unicode
+          make -j $jobs update-gems
+
+      - name: make compile
+        timeout-minutes: 20
+        run: |
+          $jobs = [int]$env:NUMBER_OF_PROCESSORS + 1
+          make -C build -j $jobs V=1
+
+      - name: make install
+        run: |
+          # Actions uses UTF8, causes test failures, similar to normal OS setup
+          $PSDefaultParameterValues['*:Encoding'] = 'utf8'
+          [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
+          [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
+          make -C build DESTDIR=.. install-nodoc
+
+      - name: test
+        timeout-minutes: 5
+        run: |
+          $env:TMPDIR = "$pwd/temp"
+          make -C build test
+
+      - name: test-spec
+        if: success() || failure()
+        timeout-minutes: 10
+        run: |
+          $env:TMPDIR = "$pwd/temp"
+          $env:PATH = "$pwd/install/bin;$env:PATH"
+          # Actions uses UTF8, causes test failures, similar to normal OS setup
+          $PSDefaultParameterValues['*:Encoding'] = 'utf8'
+          [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
+          [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
+          ruby -v
+          cd src/spec/ruby
+          ruby ../mspec/bin/mspec -j
+
+      - name: test-all
+        if: success() || failure()
+        timeout-minutes: 25
+        run: |
+          $env:TMPDIR = "$pwd/temp"
+          # Actions uses UTF8, causes test failures, similar to normal OS setup
+          $PSDefaultParameterValues['*:Encoding'] = 'utf8'
+          [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
+          [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
+          $jobs = [int]$env:NUMBER_OF_PROCESSORS
+          make -C build test-all TESTOPTS="--retry --job-status=normal --show-skip --timeout-scale=1.5 --excludes=../src/test/excludes -n !/memory_leak/ -j $jobs"
