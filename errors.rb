@@ -38,3 +38,20 @@ class NoMethodError
     self
   end
 end
+
+class FrozenError
+  # call-seq:
+  #   FrozenError.new(msg=nil, receiver: nil)  -> frozen_error
+  #
+  # Construct a new FrozenError exception. If given the <i>receiver</i>
+  # parameter may subsequently be examined using the FrozenError#receiver
+  # method.
+  #
+  #    a = [].freeze
+  #    raise FrozenError.new("can't modify frozen array", receiver: a)
+  def initialize(msg = nil, receiver: no = true, **kws)
+    super(msg, **kws)
+    __builtin_err_init_recv(receiver) unless no
+    self
+  end
+end

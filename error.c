@@ -1490,32 +1490,6 @@ err_init_recv(rb_execution_context_t *ec, VALUE exc, VALUE recv)
 }
 
 /*
- * call-seq:
- *   FrozenError.new(msg=nil, receiver: nil)  -> frozen_error
- *
- * Construct a new FrozenError exception. If given the <i>receiver</i>
- * parameter may subsequently be examined using the FrozenError#receiver
- * method.
- *
- *    a = [].freeze
- *    raise FrozenError.new("can't modify frozen array", receiver: a)
- */
-
-static VALUE
-frozen_err_initialize(int argc, VALUE *argv, VALUE self)
-{
-    ID keywords[1];
-    VALUE values[numberof(keywords)], options;
-
-    argc = rb_scan_args(argc, argv, "*:", NULL, &options);
-    keywords[0] = id_receiver;
-    rb_get_kwargs(options, keywords, 0, numberof(values), values);
-    rb_call_super(argc, argv);
-    err_init_recv(NULL, self, values[0]);
-    return self;
-}
-
-/*
  * Document-method: FrozenError#receiver
  * call-seq:
  *   frozen_error.receiver  -> object
@@ -2564,7 +2538,6 @@ Init_Exception(void)
 
     rb_eRuntimeError = rb_define_class("RuntimeError", rb_eStandardError);
     rb_eFrozenError = rb_define_class("FrozenError", rb_eRuntimeError);
-    rb_define_method(rb_eFrozenError, "initialize", frozen_err_initialize, -1);
     rb_define_method(rb_eFrozenError, "receiver", frozen_err_receiver, 0);
     rb_eSecurityError = rb_define_class("SecurityError", rb_eException);
     rb_eNoMemError = rb_define_class("NoMemoryError", rb_eException);
