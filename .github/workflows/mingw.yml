@@ -117,7 +117,6 @@ jobs:
           make -C build test
 
       - name: test-all
-        if: success() || failure()
         timeout-minutes: 25
         run: |
           $env:TMPDIR = "$pwd/temp"
@@ -129,7 +128,6 @@ jobs:
           make -C build test-all TESTOPTS="-j $jobs --retry --job-status=normal --show-skip --timeout-scale=1.5"
 
       - name: test-spec
-        if: success() || failure()
         timeout-minutes: 10
         run: |
           $env:TMPDIR = "$pwd/temp"
