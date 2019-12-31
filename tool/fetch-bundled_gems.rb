@@ -10,8 +10,6 @@ BEGIN {
 
 n, v, u = $F
 case n
-when "minitest"
-  v = "master"
 when "test-unit"
 else
   v = "v" + v
