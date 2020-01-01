@@ -2970,12 +2970,20 @@ rb_cmpint(VALUE val, VALUE a, VALUE b)
     return 0;
 }
 
+#ifdef USE_GMP
+# define BIGNUM_SET_HEAP_LEN(b, l) \
+     assert(BIGNUM_EMBED_P(b)) /* DO NOT ALLOW FOR MPZ */
+#else
+# define BIGNUM_SET_HEAP_LEN(b, l) \
+    (void)(RBIGNUM(b)->as.heap.len = (l))
+#endif
+
 #define BIGNUM_SET_LEN(b,l) \
     (BIGNUM_EMBED_P(b) ? \
      (void)(RBASIC(b)->flags = \
 	    (RBASIC(b)->flags & ~BIGNUM_EMBED_LEN_MASK) | \
 	    ((l) << BIGNUM_EMBED_LEN_SHIFT)) : \
-     (void)(RBIGNUM(b)->as.heap.len = (l)))
+     BIGNUM_SET_HEAP_LEN(b,l))
 
 static void
 rb_big_realloc(VALUE big, size_t len)
