@@ -2290,10 +2290,23 @@ rb_big_mul_toom3(VALUE x, VALUE y)
 }
 
 #ifdef USE_GMP
+static inline void
+bdigits_to_mpz(mpz_t mp, const BDIGIT *digits, size_t len)
+{
+    const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGIT)*CHAR_BIT;
+    mpz_import(mp, len, -1, sizeof(BDIGIT), 0, nails, digits);
+}
+
+static inline void
+bdigits_from_mpz(mpz_t mp, BDIGIT *digits, size_t *len)
+{
+    const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGIT)*CHAR_BIT;
+    mpz_export(digits, len, -1, sizeof(BDIGIT), 0, nails, mp);
+}
+
 static void
 bary_mul_gmp(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
 {
-    const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGIT)*CHAR_BIT;
     mpz_t x, y, z;
     size_t count;
 
@@ -2302,15 +2315,15 @@ bary_mul_gmp(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT 
     mpz_init(x);
     mpz_init(y);
     mpz_init(z);
-    mpz_import(x, xn, -1, sizeof(BDIGIT), 0, nails, xds);
+    bdigits_to_mpz(x, xds, xn);
     if (xds == yds && xn == yn) {
         mpz_mul(z, x, x);
     }
     else {
-        mpz_import(y, yn, -1, sizeof(BDIGIT), 0, nails, yds);
+        bdigits_to_mpz(y, yds, yn);
         mpz_mul(z, x, y);
     }
-    mpz_export(zds, &count, -1, sizeof(BDIGIT), 0, nails, z);
+    bdigits_from_mpz(z, zds, &count);
     BDIGITS_ZERO(zds+count, zn-count);
     mpz_clear(x);
     mpz_clear(y);
@@ -2761,7 +2774,6 @@ rb_big_divrem_normal(VALUE x, VALUE y)
 static void
 bary_divmod_gmp(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
 {
-    const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGIT)*CHAR_BIT;
     mpz_t x, y, q, r;
     size_t count;
 
@@ -2775,8 +2787,8 @@ bary_divmod_gmp(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xd
     if (qds) mpz_init(q);
     if (rds) mpz_init(r);
 
-    mpz_import(x, xn, -1, sizeof(BDIGIT), 0, nails, xds);
-    mpz_import(y, yn, -1, sizeof(BDIGIT), 0, nails, yds);
+    bdigits_to_mpz(x, xds, xn);
+    bdigits_to_mpz(y, yds, yn);
 
     if (!rds) {
         mpz_fdiv_q(q, x, y);
@@ -2792,13 +2804,13 @@ bary_divmod_gmp(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xd
     mpz_clear(y);
 
     if (qds) {
-        mpz_export(qds, &count, -1, sizeof(BDIGIT), 0, nails, q);
+        bdigits_from_mpz(q, qds, &count);
         BDIGITS_ZERO(qds+count, qn-count);
         mpz_clear(q);
     }
 
     if (rds) {
-        mpz_export(rds, &count, -1, sizeof(BDIGIT), 0, nails, r);
+        bdigits_from_mpz(r, rds, &count);
         BDIGITS_ZERO(rds+count, rn-count);
         mpz_clear(r);
     }
@@ -3969,7 +3981,6 @@ str2big_gmp(
     size_t num_bdigits,
     int base)
 {
-    const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGIT)*CHAR_BIT;
     char *buf, *p;
     const char *q;
     VALUE tmps;
@@ -3992,7 +4003,7 @@ str2big_gmp(
     zn = num_bdigits;
     z = bignew(zn, sign);
     zds = BDIGITS(z);
-    mpz_export(BDIGITS(z), &count, -1, sizeof(BDIGIT), 0, nails, mz);
+    bdigits_from_mpz(mz, BDIGITS(z), &count);
     BDIGITS_ZERO(zds+count, zn-count);
     mpz_clear(mz);
 
@@ -5023,7 +5034,6 @@ rb_big2str_generic(VALUE x, int base)
 static VALUE
 big2str_gmp(VALUE x, int base)
 {
-    const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGIT)*CHAR_BIT;
     mpz_t mx;
     size_t size;
     VALUE str;
@@ -5031,7 +5041,7 @@ big2str_gmp(VALUE x, int base)
     size_t xn = BIGNUM_LEN(x);
 
     mpz_init(mx);
-    mpz_import(mx, xn, -1, sizeof(BDIGIT), 0, nails, xds);
+    bdigits_to_mpz(mx, xds, xn);
 
     size = mpz_sizeinbase(mx, base);
 
@@ -6962,18 +6972,17 @@ rb_big_isqrt(VALUE n)
 static void
 bary_powm_gmp(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn, const BDIGIT *mds, size_t mn)
 {
-    const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGIT)*CHAR_BIT;
     mpz_t z, x, y, m;
     size_t count;
     mpz_init(x);
     mpz_init(y);
     mpz_init(m);
     mpz_init(z);
-    mpz_import(x, xn, -1, sizeof(BDIGIT), 0, nails, xds);
-    mpz_import(y, yn, -1, sizeof(BDIGIT), 0, nails, yds);
-    mpz_import(m, mn, -1, sizeof(BDIGIT), 0, nails, mds);
+    bdigits_to_mpz(x, xds, xn);
+    bdigits_to_mpz(y, yds, yn);
+    bdigits_to_mpz(m, mds, mn);
     mpz_powm(z, x, y, m);
-    mpz_export(zds, &count, -1, sizeof(BDIGIT), 0, nails, z);
+    bdigits_from_mpz(z, zds, &count);
     BDIGITS_ZERO(zds+count, zn-count);
     mpz_clear(x);
     mpz_clear(y);
