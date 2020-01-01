@@ -77,3 +77,17 @@ jobs:
       #   run: |
       #     make -C build btest
       #   shell: cmd
+      - uses: k0kubun/action-slack@v2.0.0
+        with:
+          payload: |
+            {
+              "attachments": [{
+                "text": "${{ github.workflow }} / ${{ matrix.test_task }} <https://github.com/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ steps.commit_info.outputs.COMMIT_DATE }} #${{ steps.commit_info.outputs.COMMIT_NUMBER_OF_DAY }}> " +
+                        "(<https://github.com/${{ github.repository }}/commit/${{ github.sha }}|" + "${{ github.sha }}".substring(0, 10) + ">) " +
+                        "of ${{ github.repository }}@" + "${{ github.ref }}".split('/').reverse()[0] + " by ${{ github.event.head_commit.committer.name }} failed",
+                "color": "danger"
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: failure() && github.event_name == 'push'

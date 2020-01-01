@@ -145,9 +145,9 @@ jobs:
           payload: |
             {
               "attachments": [{
-                "text": "${{ job.status }}: ${{ github.workflow }} / ${{ matrix.test_task }} <https://github.com/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ steps.commit_info.outputs.COMMIT_DATE }} #${{ steps.commit_info.outputs.COMMIT_NUMBER_OF_DAY }}> " +
+                "text": "${{ github.workflow }} / ${{ matrix.test_task }} <https://github.com/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ steps.commit_info.outputs.COMMIT_DATE }} #${{ steps.commit_info.outputs.COMMIT_NUMBER_OF_DAY }}> " +
                         "(<https://github.com/${{ github.repository }}/commit/${{ github.sha }}|" + "${{ github.sha }}".substring(0, 10) + ">) " +
-                        "of ${{ github.repository }}@" + "${{ github.ref }}".split('/').reverse()[0] + " by ${{ github.event.head_commit.committer.name }}",
+                        "of ${{ github.repository }}@" + "${{ github.ref }}".split('/').reverse()[0] + " by ${{ github.event.head_commit.committer.name }} failed",
                 "color": "danger"
               }]
             }
