@@ -3042,7 +3042,6 @@ bignew_1(VALUE klass, size_t len, int sign)
     assert(len <= BIGNUM_EMBED_LEN_MAX);
 #endif
     NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0));
-    BIGNUM_SET_SIGN((VALUE)big, sign);
 #ifndef USE_GMP
     if (BIGNUM_EMBED_LEN_MAX < len) {
 	RBIGNUM(big)->as.heap.digits = ALLOC_N(BDIGIT, len);
@@ -3055,6 +3054,7 @@ bignew_1(VALUE klass, size_t len, int sign)
 	BIGNUM_SET_LEN((VALUE)big, len);
         (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)RBIGNUM(big)->as.ary, sizeof(RBIGNUM(big)->as.ary));
     }
+    BIGNUM_SET_SIGN((VALUE)big, sign);
     OBJ_FREEZE(big);
     return (VALUE)big;
 }
