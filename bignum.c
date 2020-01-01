@@ -6717,6 +6717,38 @@ rb_big_lshift(VALUE x, VALUE y)
 	    }
             shift_numbits = (int)(shift & (BITSPERDIG-1));
             shift_numdigits = shift >> bit_length(BITSPERDIG-1);
+
+#ifdef USE_GMP
+            if (lshift_p) {
+                if (! BIGNUM_EMBED_P(x)) {
+                    VALUE z = bignew_mpz();
+                    mpz_mul_2exp(*BIGNUM_MPZ(z), *BIGNUM_MPZ(x), shift);
+                    return z;
+                }
+                else if ((BIGNUM_LEN(x) + shift_numdigits + (shift_numbits > 0)) > BIGNUM_EMBED_LEN_MAX) {
+                    VALUE z = bignew_mpz();
+                    bdigits_to_mpz(*BIGNUM_MPZ(z), BDIGITS(x), BIGNUM_LEN(x));
+                    mpz_mul_2exp(*BIGNUM_MPZ(z), *BIGNUM_MPZ(z), shift);
+                    return z;
+                }
+            }
+            else /* ! lshift_p */ {
+                if (! BIGNUM_EMBED_P(x)) {
+                    VALUE z = bignew_mpz();
+                    mpz_tdiv_q_2exp(*BIGNUM_MPZ(z), *BIGNUM_MPZ(x), shift);
+                    if (BIGNUM_MPZ_LEN(z) <= BIGNUM_EMBED_LEN_MAX) {
+                        BDIGIT zds[BIGNUM_EMBED_LEN_MAX];
+                        size_t zn;
+                        bdigits_from_mpz(*BIGNUM_MPZ(z), zds, &zn);
+                        mpz_clear(*BIGNUM_MPZ(z));
+                        FL_SET_RAW(z, BIGNUM_EMBED_FLAG);
+                        MEMCPY(BDIGITS(z), zds, BDIGIT, zn);
+                        BIGNUM_SET_LEN(z, zn);
+                    }
+                    return z;
+                }
+            }
+#endif
             return bignorm(big_shift3(x, lshift_p, shift_numdigits, shift_numbits));
 	}
 	else if (RB_BIGNUM_TYPE_P(y)) {
