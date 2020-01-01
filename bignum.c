@@ -122,6 +122,9 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGIT % SIZEOF_LONG == 0);
 #define BIGNUM_SET_POSITIVE_SIGN(b) BIGNUM_SET_SIGN(b, 1)
 
 #define bignew(len,sign) bignew_1(rb_cInteger,(len),(sign))
+#ifdef USE_GMP
+# define bignew_mpz() bignew_mpz_1(rb_cInteger)
+#endif
 
 #define BDIGITS_ZERO(ptr, n) do { \
   BDIGIT *bdigitz_zero_ptr = (ptr); \
@@ -163,6 +166,9 @@ static void bary_divmod(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BD
 static VALUE bigmul0(VALUE x, VALUE y);
 static void bary_mul_toom3(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn, BDIGIT *wds, size_t wn);
 static VALUE bignew_1(VALUE klass, size_t len, int sign);
+#ifdef USE_GMP
+static VALUE bignew_mpz_1(VALUE klass);
+#endif
 static inline VALUE bigtrunc(VALUE x);
 
 static VALUE bigsq(VALUE x);
@@ -3038,6 +3044,15 @@ bignew_1(VALUE klass, size_t len, int sign)
 }
 
 #ifdef USE_GMP
+static VALUE
+bignew_mpz_1(VALUE klass)
+{
+    NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0));
+    mpz_init(RBIGNUM(big)->as.mpz);
+    OBJ_FREEZE(big);
+    return (VALUE)big;
+}
+
 static VALUE
 bignew_mpz_set_1(VALUE klass, mpz_t mp)
 {
