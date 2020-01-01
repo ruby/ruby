@@ -2985,6 +2985,7 @@ rb_cmpint(VALUE val, VALUE a, VALUE b)
 	    ((l) << BIGNUM_EMBED_LEN_SHIFT)) : \
      BIGNUM_SET_HEAP_LEN(b,l))
 
+#ifndef USE_GMP
 static void
 rb_big_realloc(VALUE big, size_t len)
 {
@@ -3019,12 +3020,19 @@ rb_big_realloc(VALUE big, size_t len)
 	}
     }
 }
+#endif
 
 void
 rb_big_resize(VALUE big, size_t len)
 {
+#ifdef USE_GMP
+    if (BIGNUM_EMBED_P(big) && len <= BIGNUM_EMBED_LEN_MAX) {
+        BIGNUM_SET_LEN(big, len);
+    }
+#else
     rb_big_realloc(big, len);
     BIGNUM_SET_LEN(big, len);
+#endif
 }
 
 static VALUE
@@ -6981,6 +6989,14 @@ estimate_initial_sqrt(VALUE *xp, const size_t xn, const BDIGIT *nds, size_t len)
 VALUE
 rb_big_isqrt(VALUE n)
 {
+#ifdef USE_GMP
+    if (BIGNUM_EMBED_P(n)) {
+        VALUE z = bignew_mpz();
+        mpz_sqrt(*BIGNUM_MPZ(z), *BIGNUM_MPZ(n));
+        return z;
+    }
+#endif
+
     BDIGIT *nds = BDIGITS(n);
     size_t len = BIGNUM_LEN(n);
     size_t xn = (len+1) / 2;
@@ -6989,11 +7005,11 @@ rb_big_isqrt(VALUE n)
 
     if (len <= 2) {
 	BDIGIT sq = rb_bdigit_dbl_isqrt(bary2bdigitdbl(nds, len));
-#if SIZEOF_BDIGIT > SIZEOF_LONG
+# if SIZEOF_BDIGIT > SIZEOF_LONG
 	return ULL2NUM(sq);
-#else
+# else
 	return ULONG2NUM(sq);
-#endif
+# endif
     }
     else if ((xds = estimate_initial_sqrt(&x, xn, nds, len)) != 0) {
 	size_t tn = xn + BIGDIVREM_EXTRA_WORDS;
@@ -7011,7 +7027,9 @@ rb_big_isqrt(VALUE n)
 	    bary_small_rshift(xds, xds, xn, 1, carry);
 	    tn = BIGNUM_LEN(t);
 	}
+#ifndef USE_GMP
 	rb_big_realloc(t, 0);
+#endif
 	rb_gc_force_recycle(t);
     }
     RBASIC_SET_CLASS_RAW(x, rb_cInteger);
