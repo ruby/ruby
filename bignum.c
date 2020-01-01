@@ -3016,20 +3016,37 @@ rb_big_resize(VALUE big, size_t len)
 static VALUE
 bignew_1(VALUE klass, size_t len, int sign)
 {
+#ifdef USE_GMP
+    assert(len <= BIGNUM_EMBED_LEN_MAX);
+#endif
     NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0));
     BIGNUM_SET_SIGN((VALUE)big, sign);
-    if (len <= BIGNUM_EMBED_LEN_MAX) {
+#ifndef USE_GMP
+    if (BIGNUM_EMBED_LEN_MAX < len) {
+	RBIGNUM(big)->as.heap.digits = ALLOC_N(BDIGIT, len);
+	RBIGNUM(big)->as.heap.len = len;
+    }
+    else
+#endif
+    {
         FL_SET_RAW(big, BIGNUM_EMBED_FLAG);
 	BIGNUM_SET_LEN((VALUE)big, len);
         (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)RBIGNUM(big)->as.ary, sizeof(RBIGNUM(big)->as.ary));
     }
-    else {
-	RBIGNUM(big)->as.heap.digits = ALLOC_N(BDIGIT, len);
-	RBIGNUM(big)->as.heap.len = len;
-    }
     OBJ_FREEZE(big);
     return (VALUE)big;
 }
+
+#ifdef USE_GMP
+static VALUE
+bignew_mpz_set_1(VALUE klass, mpz_t mp)
+{
+    NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0));
+    mpz_init_set(RBIGNUM(big)->as.mpz, mp);
+    OBJ_FREEZE(big);
+    return (VALUE)big;
+}
+#endif
 
 VALUE
 rb_big_new(size_t len, int sign)
@@ -3037,9 +3054,23 @@ rb_big_new(size_t len, int sign)
     return bignew(len, sign != 0);
 }
 
+#ifdef USE_GMP
+static VALUE
+big_clone_mpz(VALUE x)
+{
+    assert(! BIGNUM_EMBED_P(x));
+    return bignew_mpz_set_1(CLASS_OF(x), *BIGNUM_MPZ(x));
+}
+#endif
+
 VALUE
 rb_big_clone(VALUE x)
 {
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return big_clone_mpz(x);
+    }
+#endif
     size_t len = BIGNUM_LEN(x);
     VALUE z = bignew_1(CLASS_OF(x), len, BIGNUM_SIGN(x));
 
