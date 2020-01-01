@@ -2,7 +2,7 @@ name: MinGW
 on:
   push:
     branches:
-      - master
+      - '*'
   pull_request:
     branches:
       - '*'
