@@ -190,7 +190,7 @@ BIGNUM_SIGN(VALUE b)
 {
 #ifdef USE_GMP
     if (! BIGNUM_EMBED_P(b)) {
-        return mpz_sgn(*BIGNUM_MPZ(b));
+        return mpz_sgn(*BIGNUM_MPZ(b)) >= 0;
     }
 #endif
     return FL_TEST_RAW(b, BIGNUM_SIGN_BIT);
