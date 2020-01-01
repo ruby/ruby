@@ -271,7 +271,7 @@ def backport_command_string
 
       # check if the Git revision is included in trunk
       begin
-        uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/git/revisions/#{c}")
+        uri = URI("#{REDMINE_BASE}/projects/ruby-master/repository/git/revisions/#{c}")
         uri.read($openuri_options)
         true
       rescue
@@ -301,7 +301,7 @@ class CommandSyntaxError < RuntimeError; end
 commands = {
   "ls" => proc{|args|
     raise CommandSyntaxError unless /\A(\d+)?\z/ =~ args
-    uri = URI(REDMINE_BASE+'/projects/ruby-trunk/issues.json?'+URI.encode_www_form(@query.dup.merge('page' => ($1 ? $1.to_i : 1))))
+    uri = URI(REDMINE_BASE+'/projects/ruby-master/issues.json?'+URI.encode_www_form(@query.dup.merge('page' => ($1 ? $1.to_i : 1))))
     # puts uri
     res = JSON(uri.read($openuri_options))
     @issues = issues = res["issues"]
@@ -379,10 +379,10 @@ eom
     case args
     when /\Ar?(\d+)\z/ # SVN
       rev = $1
-      uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/trunk/revisions/#{rev}/issues.json")
+      uri = URI("#{REDMINE_BASE}/projects/ruby-master/repository/trunk/revisions/#{rev}/issues.json")
     when /\A\h{7,40}\z/ # Git
       rev = args
-      uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/git/revisions/#{rev}/issues.json")
+      uri = URI("#{REDMINE_BASE}/projects/ruby-master/repository/git/revisions/#{rev}/issues.json")
     else
       raise CommandSyntaxError
     end

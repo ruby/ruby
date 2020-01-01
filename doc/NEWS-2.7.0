@@ -812,7 +812,7 @@ RubyVM::InstructionSequence::
 
 * Require compilers to support C99. [Misc #15347]
 
-  * Details of our dialect: https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/C99
+  * Details of our dialect: https://bugs.ruby-lang.org/projects/ruby-master/wiki/C99
 
 * Ruby's upstream repository is changed from Subversion to Git.
 

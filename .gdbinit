@@ -1274,7 +1274,7 @@ document rb_count_objects
   Counts all objects grouped by type.
 end
 
-# Details: https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/MachineInstructionsTraceWithGDB
+# Details: https://bugs.ruby-lang.org/projects/ruby-master/wiki/MachineInstructionsTraceWithGDB
 define trace_machine_instructions
   set logging on
   set height 0

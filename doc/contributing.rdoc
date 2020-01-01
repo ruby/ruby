@@ -27,10 +27,10 @@ on your ticket.
   stable release. See
   {Downloading Ruby}[https://www.ruby-lang.org/en/downloads/].
 * Look to see if anyone already reported your issue, try
-  {searching on redmine}[https://bugs.ruby-lang.org/projects/ruby-trunk/issues]
+  {searching on redmine}[https://bugs.ruby-lang.org/projects/ruby-master/issues]
   for your problem.
 * If you can't find a ticket addressing your issue,
-  {create a new one}[https://bugs.ruby-lang.org/projects/ruby-trunk/issues/new].
+  {create a new one}[https://bugs.ruby-lang.org/projects/ruby-master/issues/new].
 * Choose the target version, usually current. Bugs will be first fixed in the
   current release and then {backported}[rdoc-label:label-Backport+Requests].
 * Fill in the Ruby version you're using when experiencing this issue
@@ -116,7 +116,7 @@ these? Quite a bit, actually:
 
 When a bug report goes for a while without any feedback, it goes to the bug
 graveyard which is unfortunate. If you check the {issues
-list}[https://bugs.ruby-lang.org/projects/ruby-trunk/issues] you will find lots
+list}[https://bugs.ruby-lang.org/projects/ruby-master/issues] you will find lots
 of delinquent bugs that require attention.
 
 You can help by verifying the existing tickets, try to reproduce the reported
@@ -156,7 +156,7 @@ If there's a new feature that you want to see added to Ruby, you will need to
 write a convincing proposal and patch to implement the feature.
 
 For new features in CRuby, use the {'Feature'
-tracker}[https://bugs.ruby-lang.org/projects/ruby-trunk/issues?set_filter=1&tracker_id=2]
+tracker}[https://bugs.ruby-lang.org/projects/ruby-master/issues?set_filter=1&tracker_id=2]
 on ruby-master. For non-CRuby dependent features, features that would apply to
 alternate Ruby implementations such as JRuby and Rubinius, use the {CommonRuby
 tracker}[https://bugs.ruby-lang.org/projects/common-ruby].

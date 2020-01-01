@@ -66,7 +66,7 @@ Gem::Specification.new do |s|
 
   if s.respond_to?(:metadata=)
     s.metadata = {
-      "bug_tracker_uri" => "https://bugs.ruby-lang.org/projects/ruby-trunk/issues",
+      "bug_tracker_uri" => "https://bugs.ruby-lang.org/projects/ruby-master/issues",
       "homepage_uri" => "https://www.ruby-lang.org",
       "source_code_uri" => "https://git.ruby-lang.org/ruby.git/"
     }
