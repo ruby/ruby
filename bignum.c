@@ -5985,6 +5985,25 @@ rb_big_minus(VALUE x, VALUE y)
     }
 }
 
+#ifdef USE_GMP
+static VALUE
+bigsq_mpz(VALUE x)
+{
+    assert(! BIGNUM_EMBED_P(x));
+
+    long xn = BIGNUM_MPZ_LEN(x);
+
+    mpz_t mz;
+    mpz_init2(mz, 2*xn);
+    mpz_mul(mz, *BIGNUM_MPZ(x), *BIGNUM_MPZ(x));
+
+    VALUE z = bignew_mpz_set(mz);
+    mpz_clear(mz);
+
+    return z;
+}
+#endif
+
 static VALUE
 bigsq(VALUE x)
 {
@@ -5992,8 +6011,28 @@ bigsq(VALUE x)
     VALUE z;
     BDIGIT *xds, *zds;
 
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return bigsq_mpz(x);
+    }
+#endif
+
     xn = BIGNUM_LEN(x);
     zn = 2 * xn;
+
+#ifdef USE_GMP
+    if (zn > BIGNUM_EMBED_LEN_MAX) {
+        mpz_t mx, mz;
+        mpz_init(mx);
+        mpz_init2(mz, zn*SIZEOF_BDIGIT*CHAR_BIT);
+        bdigits_to_mpz(mx, BDIGITS(x), xn);
+        mpz_mul(mz, mx, mx);
+        z = bignew_mpz_set(mz);
+        mpz_clear(mx);
+        mpz_clear(mz);
+        return z;
+    }
+#endif
 
     z = bignew(zn, 1);
 
