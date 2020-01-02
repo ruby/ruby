@@ -7058,25 +7058,8 @@ rb_big_lshift(VALUE x, VALUE y)
             shift_numbits = (int)(shift & (BITSPERDIG-1));
             shift_numdigits = shift >> bit_length(BITSPERDIG-1);
 #ifdef USE_GMP
-            if (lshift_p) {
-                if (! BIGNUM_EMBED_P(x)) {
-                    VALUE z = bignew_mpz();
-                    mpz_mul_2exp(*BIGNUM_MPZ(z), *BIGNUM_MPZ(x), shift);
-                    return z;
-                }
-                else if ((BIGNUM_LEN(x) + shift_numdigits + (shift_numbits > 0)) > BIGNUM_EMBED_LEN_MAX) {
-                    VALUE z = bignew_mpz_set_bdigits(BDIGITS(x), BIGNUM_LEN(x));
-                    mpz_mul_2exp(*BIGNUM_MPZ(z), *BIGNUM_MPZ(z), shift);
-                    return z;
-                }
-            }
-            else /* ! lshift_p */ {
-                if (! BIGNUM_EMBED_P(x)) {
-                    mpz_t mz;
-                    mpz_init(mz);
-                    mpz_tdiv_q_2exp(mz, *BIGNUM_MPZ(x), shift);
-                    return bignew_mpz_set(mz);
-                }
+            if (! BIGNUM_EMBED_P(x)) {
+                return big_shift3_mpz(*BIGNUM_MPZ(x), lshift_p, shift);
             }
 #endif
             return bignorm(big_shift3(x, lshift_p, shift_numdigits, shift_numbits));
