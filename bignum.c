@@ -7193,7 +7193,7 @@ VALUE
 rb_big_isqrt(VALUE n)
 {
 #ifdef USE_GMP
-    if (BIGNUM_EMBED_P(n)) {
+    if (! BIGNUM_EMBED_P(n)) {
         VALUE z = bignew_mpz();
         mpz_sqrt(*BIGNUM_MPZ(z), *BIGNUM_MPZ(n));
         return z;
