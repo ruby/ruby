@@ -656,7 +656,7 @@ VALUE rb_cTime;
 static VALUE rb_cTimeTM;
 
 static int obj2int(VALUE obj);
-static uint32_t obj2ubits(VALUE obj, size_t bits);
+static uint32_t obj2ubits(VALUE obj, unsigned int bits);
 static VALUE obj2vint(VALUE obj);
 static uint32_t month_arg(VALUE arg);
 static VALUE validate_utc_offset(VALUE utc_offset);
@@ -2863,20 +2863,16 @@ obj2int(VALUE obj)
     return NUM2INT(obj);
 }
 
+/* bits should be 0 <= x <= 31 */
 static uint32_t
-obj2ubits(VALUE obj, size_t bits)
+obj2ubits(VALUE obj, unsigned int bits)
 {
-    static const uint32_t u32max = (uint32_t)-1;
-    const uint32_t usable_mask = ~(u32max << bits);
-    uint32_t rv;
-    int tmp = obj2int(obj);
+    const unsigned int usable_mask = (1U << bits) - 1;
+    unsigned int rv = (unsigned int)obj2int(obj);
 
-    if (tmp < 0)
-	rb_raise(rb_eArgError, "argument out of range");
-    rv = tmp;
     if ((rv & usable_mask) != rv)
 	rb_raise(rb_eArgError, "argument out of range");
-    return rv;
+    return (uint32_t)rv;
 }
 
 static VALUE
