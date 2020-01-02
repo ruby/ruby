@@ -152,7 +152,7 @@ static inline int BIGNUM_LENINT(VALUE b);
 static inline bool BIGNUM_EMBED_P(VALUE b);
 #ifdef USE_GMP
 static inline mpz_t *BIGNUM_MPZ(VALUE b);
-static inline size_t BIGNUM_MPZ_LEN(VALUE b);
+static inline size_t BIGNUM_MPZ_LEN(mpz_t mx);
 static inline void BIGNUM_MPZ_NEGATE(VALUE b);
 #endif
 
@@ -244,7 +244,7 @@ BIGNUM_LEN(VALUE b)
 {
     if (! BIGNUM_EMBED_P(b)) {
 #ifdef USE_GMP
-        return BIGNUM_MPZ_LEN(b);
+        return BIGNUM_MPZ_LEN(*BIGNUM_MPZ(b));
 #else
         return RBIGNUM(b)->as.heap.len;
 #endif
@@ -295,12 +295,10 @@ BIGNUM_MPZ(VALUE b)
 
 // Return the size of mpz in the number of BDIGITs
 static inline size_t
-BIGNUM_MPZ_LEN(VALUE b)
+BIGNUM_MPZ_LEN(mpz_t mx)
 {
-    assert(! BIGNUM_EMBED_P(b));
-
     const size_t BITS_OF_BDIGIT = SIZEOF_BDIGIT*CHAR_BIT;
-    const size_t bits_of_mpz = mpz_sizeinbase(*BIGNUM_MPZ(b), 2);
+    const size_t bits_of_mpz = mpz_sizeinbase(mx, 2);
     const size_t length = (bits_of_mpz + BITS_OF_BDIGIT - 1) / BITS_OF_BDIGIT;
     return length;
 }

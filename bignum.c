@@ -6022,7 +6022,7 @@ bigsq_mpz(VALUE x)
 {
     assert(! BIGNUM_EMBED_P(x));
 
-    long xn = BIGNUM_MPZ_LEN(x);
+    long xn = BIGNUM_MPZ_LEN(*BIGNUM_MPZ(x));
 
     mpz_t mz;
     mpz_init2(mz, 2*xn);
@@ -6087,7 +6087,7 @@ bigmul0_mpz(VALUE x, VALUE y)
     VALUE z;
     mpz_t mz;
 
-    xn = BIGNUM_MPZ_LEN(x);
+    xn = BIGNUM_MPZ_LEN(*BIGNUM_MPZ(x));
     yn = BIGNUM_LEN(y);
     zn = xn + yn;
 
@@ -6891,7 +6891,7 @@ rb_big_lshift(VALUE x, VALUE y)
                 if (! BIGNUM_EMBED_P(x)) {
                     VALUE z = bignew_mpz();
                     mpz_tdiv_q_2exp(*BIGNUM_MPZ(z), *BIGNUM_MPZ(x), shift);
-                    if (BIGNUM_MPZ_LEN(z) <= BIGNUM_EMBED_LEN_MAX) {
+                    if (BIGNUM_MPZ_LEN(*BIGNUM_MPZ(z)) <= BIGNUM_EMBED_LEN_MAX) {
                         BDIGIT zds[BIGNUM_EMBED_LEN_MAX];
                         size_t zn;
                         bdigits_from_mpz(*BIGNUM_MPZ(z), zds, &zn);
