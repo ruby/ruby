@@ -1,5 +1,5 @@
 # encoding: utf-8
-# fronzen-string-literal: true
+# frozen-string-literal: true
 
 module Kernel
   module_function
