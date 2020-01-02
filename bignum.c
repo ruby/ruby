@@ -2294,7 +2294,7 @@ rb_big_mul_toom3(VALUE x, VALUE y)
 
 #ifdef USE_GMP
 static inline void
-bdigits_to_mpz(mpz_t mp, const BDIGIT *digits, size_t len)
+mpz_set_bdigits(mpz_t mp, const BDIGIT *digits, size_t len)
 {
     const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGIT)*CHAR_BIT;
     mpz_import(mp, len, -1, sizeof(BDIGIT), 0, nails, digits);
@@ -2304,7 +2304,7 @@ static inline void
 mpz_init_set_bdigits(mpz_t mp, const BDIGIT *digits, size_t len)
 {
     mpz_init2(mp, len*SIZEOF_BDIGIT*CHAR_BIT);
-    bdigits_to_mpz(mp, digits, len);
+    mpz_set_bdigits(mp, digits, len);
 }
 
 static inline void
@@ -6889,7 +6889,7 @@ rb_big_lshift(VALUE x, VALUE y)
                 }
                 else if ((BIGNUM_LEN(x) + shift_numdigits + (shift_numbits > 0)) > BIGNUM_EMBED_LEN_MAX) {
                     VALUE z = bignew_mpz();
-                    bdigits_to_mpz(*BIGNUM_MPZ(z), BDIGITS(x), BIGNUM_LEN(x));
+                    mpz_set_bdigits(*BIGNUM_MPZ(z), BDIGITS(x), BIGNUM_LEN(x));
                     mpz_mul_2exp(*BIGNUM_MPZ(z), *BIGNUM_MPZ(z), shift);
                     return z;
                 }
