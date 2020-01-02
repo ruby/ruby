@@ -3184,9 +3184,31 @@ bigtrunc(VALUE x)
     return x;
 }
 
+#ifdef USE_GMP
+static inline VALUE
+bigfixize_mpz(VALUE x)
+{
+    assert(! BIGNUM_EMBED_P(x));
+
+    int fits_long = mpz_fits_slong_p(*BIGNUM_MPZ(x));
+    if (fits_long) {
+        long l = mpz_get_si(*BIGNUM_MPZ(x));
+        if (FIXABLE(l))
+            return LONG2FIX(l);
+    }
+    return x;
+}
+#endif
+
 static inline VALUE
 bigfixize(VALUE x)
 {
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return bigfixize_mpz(x);
+    }
+#endif
+
     size_t n = BIGNUM_LEN(x);
     BDIGIT *ds = BDIGITS(x);
 #if SIZEOF_BDIGIT < SIZEOF_LONG
