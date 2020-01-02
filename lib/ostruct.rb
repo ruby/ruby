@@ -9,6 +9,8 @@
 # See OpenStruct for an example.
 #
 
+require_relative 'ostruct/version'
+
 #
 # An OpenStruct is a data structure, similar to a Hash, that allows the
 # definition of arbitrary attributes with their accompanying values. This is
@@ -72,9 +74,6 @@
 # the objects that are created, as there is much more overhead in the setting
 # of these properties compared to using a Hash or a Struct.
 #
-
-require_relative 'ostruct/version'
-
 class OpenStruct
 
   #
