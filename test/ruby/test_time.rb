@@ -431,6 +431,10 @@ class TestTime < Test::Unit::TestCase
 
     assert_equal(-4427700000, Time.utc(-4427700000,12,1).year)
     assert_equal(-2**30+10, Time.utc(-2**30+10,1,1).year)
+
+    assert_raise(ArgumentError) { Time.gm(2000, 1, -1) }
+    assert_raise(ArgumentError) { Time.gm(2000, 1, 2**30 + 1) }
+    assert_raise(ArgumentError) { Time.gm(2000, 1, -2**30 + 1) }
   end
 
   def test_time_interval
