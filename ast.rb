@@ -83,8 +83,10 @@ class RubyVM
       #
       #    root = RubyVM::AbstractSyntaxTree.parse("x = 1 + 2")
       #    root.type # => :SCOPE
-      #    call = root.children[2]
-      #    call.type # => :LASGN
+      #    lasgn = root.children[2]
+      #    lasgn.type # => :LASGN
+      #    call = lasgn.children[1]
+      #    call.type # => :OPCALL
       def type
         __builtin_ast_node_type
       end
