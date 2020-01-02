@@ -5684,19 +5684,17 @@ rb_big_le(VALUE x, VALUE y)
 
 #ifdef USE_GMP
 static VALUE
-big_eq_mpz(VALUE x, VALUE y)
+big_eq_mpz(mpz_t mx, VALUE y)
 {
-    assert(! BIGNUM_EMBED_P(x));
-
     int cmp;
     if (BIGNUM_EMBED_P(y)) {
         mpz_t my;
         mpz_init_set_bignum(my, y);
-        cmp = mpz_cmp(*BIGNUM_MPZ(x), my);
+        cmp = mpz_cmp(mx, my);
         mpz_clear(my);
     }
     else {
-        cmp = mpz_cmp(*BIGNUM_MPZ(x), *BIGNUM_MPZ(y));
+        cmp = mpz_cmp(mx, *BIGNUM_MPZ(y));
     }
 
     return cmp == 0 ? Qtrue : Qfalse;
@@ -5731,10 +5729,10 @@ rb_big_eq(VALUE x, VALUE y)
     if (BIGNUM_SIGN(x) != BIGNUM_SIGN(y)) return Qfalse;
 #ifdef USE_GMP
     if (! BIGNUM_EMBED_P(x)) {
-        return big_eq_mpz(x, y);
+        return big_eq_mpz(*BIGNUM_MPZ(x), y);
     }
     else if (! BIGNUM_EMBED_P(y)) {
-        return big_eq_mpz(y, x);
+        return big_eq_mpz(*BIGNUM_MPZ(y), x);
     }
 #endif
     if (BIGNUM_LEN(x) != BIGNUM_LEN(y)) return Qfalse;
@@ -6082,19 +6080,11 @@ rb_big_minus(VALUE x, VALUE y)
 
 #ifdef USE_GMP
 static VALUE
-bigsq_mpz(VALUE x)
+bigsq_mpz(mpz_t mx)
 {
-    assert(! BIGNUM_EMBED_P(x));
-
-    long xn = BIGNUM_MPZ_LEN(*BIGNUM_MPZ(x));
-
-    mpz_t mz;
-    mpz_init2(mz, 2*xn);
-    mpz_mul(mz, *BIGNUM_MPZ(x), *BIGNUM_MPZ(x));
-
-    VALUE z = bignew_mpz_set(mz);
-    mpz_clear(mz);
-
+    long xn = BIGNUM_MPZ_LEN(mx);
+    VALUE z = bignew_mpz_init2(2*xn);
+    mpz_mul(*BIGNUM_MPZ(z), mx, mx);
     return z;
 }
 #endif
@@ -6108,7 +6098,7 @@ bigsq(VALUE x)
 
 #ifdef USE_GMP
     if (! BIGNUM_EMBED_P(x)) {
-        return bigsq_mpz(x);
+        return bigsq_mpz(*BIGNUM_MPZ(x));
     }
 #endif
 
@@ -6117,13 +6107,10 @@ bigsq(VALUE x)
 
 #ifdef USE_GMP
     if (zn > BIGNUM_EMBED_LEN_MAX) {
-        mpz_t mx, mz;
+        mpz_t mx;
         mpz_init_set_bdigits(mx, BDIGITS(x), xn);
-        mpz_init2(mz, zn*SIZEOF_BDIGIT*CHAR_BIT);
-        mpz_mul(mz, mx, mx);
-        z = bignew_mpz_set(mz);
+        z = bigsq_mpz(mx);
         mpz_clear(mx);
-        mpz_clear(mz);
         return z;
     }
 #endif
@@ -6144,29 +6131,25 @@ bigsq(VALUE x)
 
 #ifdef USE_GMP
 static VALUE
-bigmul0_mpz(VALUE x, VALUE y)
+bigmul0_mpz(mpz_t mx, VALUE y)
 {
     long xn, yn, zn;
     VALUE z;
-    mpz_t mz;
 
-    xn = BIGNUM_MPZ_LEN(*BIGNUM_MPZ(x));
+    xn = BIGNUM_MPZ_LEN(mx);
     yn = BIGNUM_LEN(y);
     zn = xn + yn;
 
-    mpz_init2(mz, zn*SIZEOF_BDIGIT*CHAR_BIT);
+    z = bignew_mpz_init2(zn*BITSPERDIG);
     if (BIGNUM_EMBED_P(y)) {
         mpz_t my;
         mpz_init_set_bdigits(my, BDIGITS(y), yn);
-        mpz_mul(mz, *BIGNUM_MPZ(x), my);
+        mpz_mul(*BIGNUM_MPZ(z), mx, my);
         mpz_clear(my);
     }
     else {
-        mpz_mul(mz, *BIGNUM_MPZ(x), *BIGNUM_MPZ(y));
+        mpz_mul(*BIGNUM_MPZ(z), mx, *BIGNUM_MPZ(y));
     }
-
-    z = bignew_mpz_set(mz);
-    mpz_init(mz);
 
     return z;
 }
@@ -6184,10 +6167,10 @@ bigmul0(VALUE x, VALUE y)
 
 #ifdef USE_GMP
     if (! BIGNUM_EMBED_P(x)) {
-        return bigmul0_mpz(x, y);
+        return bigmul0_mpz(*BIGNUM_MPZ(x), y);
     }
     else if (! BIGNUM_EMBED_P(y)) {
-        return bigmul0_mpz(y, x);
+        return bigmul0_mpz(*BIGNUM_MPZ(y), x);
     }
 #endif
 
@@ -6197,15 +6180,10 @@ bigmul0(VALUE x, VALUE y)
 
 #ifdef USE_GMP
     if (zn > BIGNUM_EMBED_LEN_MAX) {
-        mpz_t mx, my, mz;
+        mpz_t mx;
         mpz_init_set_bdigits(mx, BDIGITS(x), xn);
-        mpz_init_set_bdigits(my, BDIGITS(y), yn);
-        mpz_init2(mz, zn*SIZEOF_BDIGIT*CHAR_BIT);
-        mpz_mul(mz, mx, my);
-        z = bignew_mpz_set(mz);
+        z = bigmul0_mpz(mx, y);
         mpz_clear(mx);
-        mpz_clear(my);
-        mpz_clear(mz);
         return z;
     }
 #endif
@@ -6243,11 +6221,10 @@ rb_big_mul(VALUE x, VALUE y)
 
 #ifdef USE_GMP
 static VALUE
-bigdivrem_mpz(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
+bigdivrem_mpz(mpz_t mx, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
 {
     mpz_t mq, mr;
 
-    assert(! BIGNUM_EMBED_P(x));
     assert(divp || modp);
 
     if (divp) mpz_init(mq);
@@ -6258,26 +6235,26 @@ bigdivrem_mpz(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
         mpz_init_set_bignum(my, y);
 
         if (!modp) {
-            mpz_fdiv_q(mq, *BIGNUM_MPZ(x), my);
+            mpz_fdiv_q(mq, mx, my);
         }
         else if (!divp) {
-            mpz_fdiv_r(mr, *BIGNUM_MPZ(x), my);
+            mpz_fdiv_r(mr, mx, my);
         }
         else {
-            mpz_fdiv_qr(mq, mr, *BIGNUM_MPZ(x), my);
+            mpz_fdiv_qr(mq, mr, mx, my);
         }
 
         mpz_clear(my);
     }
     else {
         if (!modp) {
-            mpz_fdiv_q(mq, *BIGNUM_MPZ(x), *BIGNUM_MPZ(y));
+            mpz_fdiv_q(mq, mx, *BIGNUM_MPZ(y));
         }
         else if (!divp) {
-            mpz_fdiv_r(mr, *BIGNUM_MPZ(x), *BIGNUM_MPZ(y));
+            mpz_fdiv_r(mr, mx, *BIGNUM_MPZ(y));
         }
         else {
-            mpz_fdiv_qr(mq, mr, *BIGNUM_MPZ(x), *BIGNUM_MPZ(y));
+            mpz_fdiv_qr(mq, mr, mx, *BIGNUM_MPZ(y));
         }
     }
 
@@ -6311,7 +6288,7 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
 {
 #ifdef USE_GMP
     if (! BIGNUM_EMBED_P(x)) {
-        return bigdivrem_mpz(x, y, divp, modp);
+        return bigdivrem_mpz(*BIGNUM_MPZ(x), y, divp, modp);
     }
 #endif
 
@@ -6437,22 +6414,18 @@ bigdivmod(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
 
 #ifdef USE_GMP
 static VALUE
-rb_big_divide_mpz_si(VALUE x, long y)
+rb_big_divide_mpz_si(mpz_t mx, long y)
 {
-    mpz_t mz;
-    mpz_init(mz);
+    VALUE z = bignew_mpz();
     if (y > 0) {
-        mpz_fdiv_q_ui(mz, *BIGNUM_MPZ(x), (unsigned long)y);
+        mpz_fdiv_q_ui(*BIGNUM_MPZ(z), mx, (unsigned long)y);
     }
     else if (y < 0) {
-        mpz_fdiv_q_ui(mz, *BIGNUM_MPZ(x), (unsigned long)(-y));
+        mpz_fdiv_q_ui(*BIGNUM_MPZ(z), mx, (unsigned long)(-y));
     }
     else {
         rb_num_zerodiv();
     }
-
-    VALUE z = bignew_mpz_set(mz);
-    mpz_clear(mz);
 
     return z;
 }
@@ -6468,7 +6441,7 @@ rb_big_divide(VALUE x, VALUE y, ID op)
 
 #ifdef USE_GMP
         if (! BIGNUM_EMBED_P(x)) {
-            return rb_big_divide_mpz_si(x, l);
+            return rb_big_divide_mpz_si(*BIGNUM_MPZ(x), l);
         }
 #endif
 
