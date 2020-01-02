@@ -15,7 +15,6 @@
 
 #include "eval_intern.h"
 #include "id.h"
-#include "internal/debug.h"
 #include "internal/signal.h"
 #include "internal/util.h"
 #include "ruby/encoding.h"

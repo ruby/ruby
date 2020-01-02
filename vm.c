@@ -15,7 +15,6 @@
 #include "internal.h"
 #include "internal/compile.h"
 #include "internal/cont.h"
-#include "internal/debug.h"
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/inits.h"

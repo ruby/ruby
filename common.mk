@@ -1802,7 +1802,6 @@ compile.$(OBJEXT): $(top_srcdir)/internal/bits.h
 compile.$(OBJEXT): $(top_srcdir)/internal/compile.h
 compile.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 compile.$(OBJEXT): $(top_srcdir)/internal/complex.h
-compile.$(OBJEXT): $(top_srcdir)/internal/debug.h
 compile.$(OBJEXT): $(top_srcdir)/internal/encoding.h
 compile.$(OBJEXT): $(top_srcdir)/internal/error.h
 compile.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
@@ -1942,7 +1941,6 @@ debug.$(OBJEXT): $(hdrdir)/ruby.h
 debug.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 debug.$(OBJEXT): $(top_srcdir)/internal/array.h
 debug.$(OBJEXT): $(top_srcdir)/internal/compilers.h
-debug.$(OBJEXT): $(top_srcdir)/internal/debug.h
 debug.$(OBJEXT): $(top_srcdir)/internal/gc.h
 debug.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 debug.$(OBJEXT): $(top_srcdir)/internal/serial.h
@@ -4110,7 +4108,6 @@ vm.$(OBJEXT): $(top_srcdir)/internal/compar.h
 vm.$(OBJEXT): $(top_srcdir)/internal/compile.h
 vm.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 vm.$(OBJEXT): $(top_srcdir)/internal/cont.h
-vm.$(OBJEXT): $(top_srcdir)/internal/debug.h
 vm.$(OBJEXT): $(top_srcdir)/internal/error.h
 vm.$(OBJEXT): $(top_srcdir)/internal/eval.h
 vm.$(OBJEXT): $(top_srcdir)/internal/fixnum.h

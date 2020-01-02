@@ -23,7 +23,6 @@
 #include "internal/array.h"
 #include "internal/compile.h"
 #include "internal/complex.h"
-#include "internal/debug.h"
 #include "internal/encoding.h"
 #include "internal/error.h"
 #include "internal/hash.h"

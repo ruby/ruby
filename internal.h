@@ -74,4 +74,28 @@
 #define rb_funcallv(...) rb_nonexistent_symbol(__VA_ARGS__)
 #define rb_method_basic_definition_p(...) rb_nonexistent_symbol(__VA_ARGS__)
 
+
+/* MRI debug support */
+
+/* gc.c */
+void rb_obj_info_dump(VALUE obj);
+void rb_obj_info_dump_loc(VALUE obj, const char *file, int line, const char *func);
+
+/* debug.c */
+void ruby_debug_breakpoint(void);
+PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
+
+// show obj data structure without any side-effect
+#define rp(obj) rb_obj_info_dump_loc((VALUE)(obj), __FILE__, __LINE__, __func__)
+
+// same as rp, but add message header
+#define rp_m(msg, obj) do { \
+    fprintf(stderr, "%s", (msg)); \
+    rb_obj_info_dump((VALUE)obj); \
+} while (0)
+
+// `ruby_debug_breakpoint()` does nothing,
+// but breakpoint is set in run.gdb, so `make gdb` can stop here.
+#define bp() ruby_debug_breakpoint()
+
 #endif /* RUBY_INTERNAL_H */
