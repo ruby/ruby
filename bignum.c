@@ -3085,11 +3085,25 @@ bignew_mpz_1(VALUE klass)
     return (VALUE)big;
 }
 
+static inline int
+mpz_fits_bignum_embed_p(const mpz_t mp)
+{
+    return BIGNUM_MPZ_LEN(mp) <= BIGNUM_EMBED_LEN_MAX;
+}
+
 static VALUE
 bignew_mpz_set_1(VALUE klass, mpz_t mp)
 {
     NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0));
-    mpz_init_set(RBIGNUM(big)->as.mpz, mp);
+    if (mpz_fits_bignum_embed_p(mp)) {
+        size_t len;
+        FL_SET_RAW(big, BIGNUM_EMBED_FLAG);
+        bdigits_from_mpz(mp, BDIGITS((VALUE)big), &len);
+        BIGNUM_SET_LEN((VALUE)big, len);
+    }
+    else {
+        mpz_init_set(RBIGNUM(big)->as.mpz, mp);
+    }
     OBJ_FREEZE(big);
     return (VALUE)big;
 }
@@ -6905,18 +6919,10 @@ rb_big_lshift(VALUE x, VALUE y)
             }
             else /* ! lshift_p */ {
                 if (! BIGNUM_EMBED_P(x)) {
-                    VALUE z = bignew_mpz();
-                    mpz_tdiv_q_2exp(*BIGNUM_MPZ(z), *BIGNUM_MPZ(x), shift);
-                    if (BIGNUM_MPZ_LEN(*BIGNUM_MPZ(z)) <= BIGNUM_EMBED_LEN_MAX) {
-                        BDIGIT zds[BIGNUM_EMBED_LEN_MAX];
-                        size_t zn;
-                        bdigits_from_mpz(*BIGNUM_MPZ(z), zds, &zn);
-                        mpz_clear(*BIGNUM_MPZ(z));
-                        FL_SET_RAW(z, BIGNUM_EMBED_FLAG);
-                        MEMCPY(BDIGITS(z), zds, BDIGIT, zn);
-                        BIGNUM_SET_LEN(z, zn);
-                    }
-                    return z;
+                    mpz_t mz;
+                    mpz_init(mz);
+                    mpz_tdiv_q_2exp(mz, *BIGNUM_MPZ(x), shift);
+                    return bignew_mpz_set(mz);
                 }
             }
 #endif
