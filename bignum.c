@@ -5616,6 +5616,29 @@ rb_big_le(VALUE x, VALUE y)
     return big_op(x, y, big_op_le);
 }
 
+#ifdef USE_GMP
+static VALUE
+big_eq_mpz(VALUE x, VALUE y)
+{
+    assert(! BIGNUM_EMBED_P(x));
+
+    int cmp;
+    if (BIGNUM_EMBED_P(y)) {
+        mpz_t my;
+        long yn = BIGNUM_LEN(y);
+        mpz_init2(my, yn*SIZEOF_BDIGIT*CHAR_BIT);
+        bdigits_to_mpz(my, BDIGITS(y), yn);
+        cmp = mpz_cmp(*BIGNUM_MPZ(x), my);
+        mpz_clear(my);
+    }
+    else {
+        cmp = mpz_cmp(*BIGNUM_MPZ(x), *BIGNUM_MPZ(y));
+    }
+
+    return cmp == 0 ? Qtrue : Qfalse;
+}
+#endif
+
 /*
  *  call-seq:
  *     big == obj  -> true or false
@@ -5642,6 +5665,14 @@ rb_big_eq(VALUE x, VALUE y)
 	return rb_equal(y, x);
     }
     if (BIGNUM_SIGN(x) != BIGNUM_SIGN(y)) return Qfalse;
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return big_eq_mpz(x, y);
+    }
+    else if (! BIGNUM_EMBED_P(y)) {
+        return big_eq_mpz(y, x);
+    }
+#endif
     if (BIGNUM_LEN(x) != BIGNUM_LEN(y)) return Qfalse;
     if (MEMCMP(BDIGITS(x),BDIGITS(y),BDIGIT,BIGNUM_LEN(y)) != 0) return Qfalse;
     return Qtrue;
