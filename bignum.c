@@ -3134,21 +3134,12 @@ rb_big_new(size_t len, int sign)
     return bignew(len, sign != 0);
 }
 
-#ifdef USE_GMP
-static VALUE
-big_clone_mpz(VALUE x)
-{
-    assert(! BIGNUM_EMBED_P(x));
-    return bignew_mpz_set_1(CLASS_OF(x), *BIGNUM_MPZ(x));
-}
-#endif
-
 VALUE
 rb_big_clone(VALUE x)
 {
 #ifdef USE_GMP
     if (! BIGNUM_EMBED_P(x)) {
-        return big_clone_mpz(x);
+        return bignew_mpz_set_1(CLASS_OF(x), *BIGNUM_MPZ(x));
     }
 #endif
     size_t len = BIGNUM_LEN(x);
