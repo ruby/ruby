@@ -274,6 +274,11 @@ AC_SUBST(CSRCFLAG)
 : ${MJIT_CC=$CC}
 AS_IF([test "x$cross_compiling" = xno], [
     AC_PATH_PROG([MJIT_CC], ${MJIT_CC})
+
+    # if $CC is in /usr/lib/ccache/$CC, search original $CC (disable ccache)
+    AS_IF([echo $MJIT_CC | grep ^/usr/lib/ccache > /dev/null], [
+           PATH=`echo $PATH | sed "s/\/usr\/lib\/ccache://"` MJIT_CC=`which $CC`])
+
     AS_CASE([$target_os],
 	[*mingw*], [command -v cygpath > /dev/null && MJIT_CC=`cygpath -ma $MJIT_CC`])
     shift 2
