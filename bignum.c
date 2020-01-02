@@ -2301,6 +2301,24 @@ bdigits_to_mpz(mpz_t mp, const BDIGIT *digits, size_t len)
 }
 
 static inline void
+mpz_init_set_bdigits(mpz_t mp, const BDIGIT *digits, size_t len)
+{
+    mpz_init2(mp, len*SIZEOF_BDIGIT*CHAR_BIT);
+    bdigits_to_mpz(mp, digits, len);
+}
+
+static inline void
+mpz_init_set_bignum(mpz_t mp, VALUE x)
+{
+    if (BIGNUM_EMBED_P(x)) {
+        mpz_init_set_bdigits(mp, BDIGITS(x), BIGNUM_LEN(x));
+    }
+    else {
+        mpz_init_set(mp, *BIGNUM_MPZ(x));
+    }
+}
+
+static inline void
 bdigits_from_mpz(mpz_t mp, BDIGIT *digits, size_t *len)
 {
     const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGIT)*CHAR_BIT;
@@ -2315,21 +2333,19 @@ bary_mul_gmp(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT 
 
     assert(xn + yn <= zn);
 
-    mpz_init(x);
-    mpz_init(y);
+    mpz_init_set_bdigits(x, xds, xn);
     mpz_init(z);
-    bdigits_to_mpz(x, xds, xn);
     if (xds == yds && xn == yn) {
         mpz_mul(z, x, x);
     }
     else {
-        bdigits_to_mpz(y, yds, yn);
+        mpz_init_set_bdigits(y, yds, yn);
         mpz_mul(z, x, y);
+        mpz_clear(y);
     }
     bdigits_from_mpz(z, zds, &count);
     BDIGITS_ZERO(zds+count, zn-count);
     mpz_clear(x);
-    mpz_clear(y);
     mpz_clear(z);
 }
 
@@ -2785,13 +2801,11 @@ bary_divmod_gmp(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xd
     assert(rds ? yn <= rn : 1);
     assert(qds || rds);
 
-    mpz_init(x);
-    mpz_init(y);
+    mpz_init_set_bdigits(x, xds, xn);
+    mpz_init_set_bdigits(y, yds, yn);
+
     if (qds) mpz_init(q);
     if (rds) mpz_init(r);
-
-    bdigits_to_mpz(x, xds, xn);
-    bdigits_to_mpz(y, yds, yn);
 
     if (!rds) {
         mpz_fdiv_q(q, x, y);
@@ -5126,8 +5140,7 @@ big2str_gmp(VALUE x, int base)
     BDIGIT *xds = BDIGITS(x);
     size_t xn = BIGNUM_LEN(x);
 
-    mpz_init(mx);
-    bdigits_to_mpz(mx, xds, xn);
+    mpz_init_set_bdigits(mx, xds, xn);
 
     size = mpz_sizeinbase(mx, base);
 
@@ -5625,9 +5638,7 @@ big_eq_mpz(VALUE x, VALUE y)
     int cmp;
     if (BIGNUM_EMBED_P(y)) {
         mpz_t my;
-        long yn = BIGNUM_LEN(y);
-        mpz_init2(my, yn*SIZEOF_BDIGIT*CHAR_BIT);
-        bdigits_to_mpz(my, BDIGITS(y), yn);
+        mpz_init_set_bignum(my, y);
         cmp = mpz_cmp(*BIGNUM_MPZ(x), my);
         mpz_clear(my);
     }
@@ -6054,9 +6065,8 @@ bigsq(VALUE x)
 #ifdef USE_GMP
     if (zn > BIGNUM_EMBED_LEN_MAX) {
         mpz_t mx, mz;
-        mpz_init(mx);
+        mpz_init_set_bdigits(mx, BDIGITS(x), xn);
         mpz_init2(mz, zn*SIZEOF_BDIGIT*CHAR_BIT);
-        bdigits_to_mpz(mx, BDIGITS(x), xn);
         mpz_mul(mz, mx, mx);
         z = bignew_mpz_set(mz);
         mpz_clear(mx);
@@ -6094,8 +6104,7 @@ bigmul0_mpz(VALUE x, VALUE y)
     mpz_init2(mz, zn*SIZEOF_BDIGIT*CHAR_BIT);
     if (BIGNUM_EMBED_P(y)) {
         mpz_t my;
-        mpz_init2(my, yn*SIZEOF_BDIGIT*CHAR_BIT);
-        bdigits_to_mpz(my, BDIGITS(y), yn);
+        mpz_init_set_bdigits(my, BDIGITS(y), yn);
         mpz_mul(mz, *BIGNUM_MPZ(x), my);
         mpz_clear(my);
     }
@@ -6136,11 +6145,9 @@ bigmul0(VALUE x, VALUE y)
 #ifdef USE_GMP
     if (zn > BIGNUM_EMBED_LEN_MAX) {
         mpz_t mx, my, mz;
-        mpz_init2(mx, xn*SIZEOF_BDIGIT*CHAR_BIT);
-        mpz_init2(my, yn*SIZEOF_BDIGIT*CHAR_BIT);
+        mpz_init_set_bdigits(mx, BDIGITS(x), xn);
+        mpz_init_set_bdigits(my, BDIGITS(y), yn);
         mpz_init2(mz, zn*SIZEOF_BDIGIT*CHAR_BIT);
-        bdigits_to_mpz(mx, BDIGITS(x), xn);
-        bdigits_to_mpz(my, BDIGITS(y), yn);
         mpz_mul(mz, mx, my);
         z = bignew_mpz_set(mz);
         mpz_clear(mx);
@@ -7229,13 +7236,10 @@ bary_powm_gmp(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT
 {
     mpz_t z, x, y, m;
     size_t count;
-    mpz_init(x);
-    mpz_init(y);
-    mpz_init(m);
+    mpz_init_set_bdigits(x, xds, xn);
+    mpz_init_set_bdigits(y, yds, yn);
+    mpz_init_set_bdigits(m, mds, mn);
     mpz_init(z);
-    bdigits_to_mpz(x, xds, xn);
-    bdigits_to_mpz(y, yds, yn);
-    bdigits_to_mpz(m, mds, mn);
     mpz_powm(z, x, y, m);
     bdigits_from_mpz(z, zds, &count);
     BDIGITS_ZERO(zds+count, zn-count);
