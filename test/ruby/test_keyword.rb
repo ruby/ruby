@@ -2724,6 +2724,12 @@ class TestKeywordArguments < Test::Unit::TestCase
   end
 
   def test_ruby2_keywords
+    assert_raise(ArgumentError) do
+      Class.new do
+        ruby2_keywords
+      end
+    end
+
     c = Class.new do
       ruby2_keywords def foo(meth, *args)
         send(meth, *args)

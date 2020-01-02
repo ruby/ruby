@@ -1811,6 +1811,7 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
     int i;
     VALUE origin_class = RCLASS_ORIGIN(module);
 
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     rb_check_frozen(module);
 
     for (i = 0; i < argc; i++) {
