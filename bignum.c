@@ -6212,9 +6212,80 @@ rb_big_mul(VALUE x, VALUE y)
     return bignorm(bigmul0(x, y));
 }
 
+#ifdef USE_GMP
+static VALUE
+bigdivrem_mpz(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
+{
+    mpz_t mq, mr;
+
+    assert(! BIGNUM_EMBED_P(x));
+    assert(divp || modp);
+
+    if (divp) mpz_init(mq);
+    if (modp) mpz_init(mr);
+
+    if (BIGNUM_EMBED_P(y)) {
+        mpz_t my;
+        mpz_init_set_bignum(my, y);
+
+        if (!modp) {
+            mpz_fdiv_q(mq, *BIGNUM_MPZ(x), my);
+        }
+        else if (!divp) {
+            mpz_fdiv_r(mr, *BIGNUM_MPZ(x), my);
+        }
+        else {
+            mpz_fdiv_qr(mq, mr, *BIGNUM_MPZ(x), my);
+        }
+
+        mpz_clear(my);
+    }
+    else {
+        if (!modp) {
+            mpz_fdiv_q(mq, *BIGNUM_MPZ(x), *BIGNUM_MPZ(y));
+        }
+        else if (!divp) {
+            mpz_fdiv_r(mr, *BIGNUM_MPZ(x), *BIGNUM_MPZ(y));
+        }
+        else {
+            mpz_fdiv_qr(mq, mr, *BIGNUM_MPZ(x), *BIGNUM_MPZ(y));
+        }
+    }
+
+    if (divp) {
+        if (mpz_fits_slong_p(mq)) {
+            *divp = LONG2NUM(mpz_get_si(mq));
+        }
+        else {
+            *divp = bignew_mpz_set(mq);
+        }
+    }
+
+    if (modp) {
+        if (mpz_fits_slong_p(mr)) {
+            *modp = LONG2NUM(mpz_get_si(mr));
+        }
+        else {
+            *modp = bignew_mpz_set(mr);
+        }
+    }
+
+    mpz_clear(mq);
+    mpz_clear(mr);
+
+    return Qnil;
+}
+#endif
+
 static VALUE
 bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
 {
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return bigdivrem_mpz(x, y, divp, modp);
+    }
+#endif
+
     long xn = BIGNUM_LEN(x), yn = BIGNUM_LEN(y);
     VALUE z;
     BDIGIT *xds, *yds, *zds;
@@ -6320,6 +6391,43 @@ bigdivmod(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
     }
 }
 
+// Let `n` be a numerator, `d` be a denominator, `q` be a quotient,
+// and `r` be remainder.  Assume they satisfy `n = q*d + r`.
+//
+// There are three kinds of division in GMP.
+//
+// (1) `cdiv` rounds `q` up towards +Inf, and `r` will have the opposite sign to `d`.
+// (2) `fdiv` rounds `q` down towards -Inf, and `r` will have the same sign as `d`.
+// (3) `tdiv` rounds `q` towards zero, and `r` will have the same sign as `n`.
+//
+// `c` in `cdiv` stands for "ceil", `f` in `fdiv` stands for "floor",
+// and `t` in `tdiv` stands for "truncate".
+//
+// Ruby's Numeric#divmod, Numeric#div, and Numeric#modulo behave as `fdiv` in GMP.
+// Ruby's Numeric#remainder behaves as `tdiv` in GMP.
+
+#ifdef USE_GMP
+static VALUE
+rb_big_divide_mpz_si(VALUE x, long y)
+{
+    mpz_t mz;
+    mpz_init(mz);
+    if (y > 0) {
+        mpz_fdiv_q_ui(mz, *BIGNUM_MPZ(x), (unsigned long)y);
+    }
+    else if (y < 0) {
+        mpz_fdiv_q_ui(mz, *BIGNUM_MPZ(x), (unsigned long)(-y));
+    }
+    else {
+        rb_num_zerodiv();
+    }
+
+    VALUE z = bignew_mpz_set(mz);
+    mpz_clear(mz);
+
+    return z;
+}
+#endif
 
 static VALUE
 rb_big_divide(VALUE x, VALUE y, ID op)
@@ -6327,7 +6435,15 @@ rb_big_divide(VALUE x, VALUE y, ID op)
     VALUE z;
 
     if (FIXNUM_P(y)) {
-	y = rb_int2big(FIX2LONG(y));
+        long l = FIX2LONG(y);
+
+#ifdef USE_GMP
+        if (! BIGNUM_EMBED_P(x)) {
+            return rb_big_divide_mpz_si(x, l);
+        }
+#endif
+
+	y = rb_int2big(l);
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
     }
