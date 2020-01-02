@@ -124,6 +124,7 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGIT % SIZEOF_LONG == 0);
 #define bignew(len,sign) bignew_1(rb_cInteger,(len),(sign))
 #ifdef USE_GMP
 # define bignew_mpz() bignew_mpz_1(rb_cInteger)
+# define bignew_mpz_init2(bits) bignew_mpz_init2_1(rb_cInteger,(bits))
 # define bignew_mpz_set(mp) bignew_mpz_set_1(rb_cInteger,(mp))
 # define bignew_mpz_set_bdigits(digits, len) bignew_mpz_set_bdigits_1(rb_cInteger,(digits),(len))
 #endif
@@ -3092,6 +3093,15 @@ mpz_fits_bignum_embed_p(const mpz_t mp)
 }
 
 static VALUE
+bignew_mpz_init2_1(VALUE klass, size_t bits)
+{
+    NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0));
+    mpz_init2(RBIGNUM(big)->as.mpz, bits);
+    OBJ_FREEZE(big);
+    return (VALUE)big;
+}
+
+static VALUE
 bignew_mpz_set_1(VALUE klass, mpz_t mp)
 {
     NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0));
@@ -4694,6 +4704,25 @@ rb_str2inum(VALUE str, int base)
     return rb_str_to_inum(str, base, base==0);
 }
 
+#ifdef USE_GMP
+static VALUE
+big_shift3_mpz(const mpz_t mx, int lshift_p, size_t shift)
+{
+    size_t x_bits = mpz_sizeinbase(mx, 2);
+
+    if (lshift_p) {
+        VALUE z = bignew_mpz_init2(x_bits + shift);
+        mpz_mul_2exp(*BIGNUM_MPZ(z), mx, shift);
+        return z;
+    }
+    else /* ! lshift_p */ {
+        VALUE z = bignew_mpz_init2(x_bits - shift);
+        mpz_tdiv_q_2exp(*BIGNUM_MPZ(z), mx, shift);
+        return z;
+    }
+}
+#endif
+
 static VALUE
 big_shift3(VALUE x, int lshift_p, size_t shift_numdigits, int shift_numbits)
 {
@@ -4710,6 +4739,15 @@ big_shift3(VALUE x, int lshift_p, size_t shift_numdigits, int shift_numbits)
         s1 = shift_numdigits;
         s2 = shift_numbits;
         xn = BIGNUM_LEN(x);
+#ifdef USE_GMP
+        if (xn+s1+1 >= BIGNUM_EMBED_LEN_MAX) {
+            mpz_t mx;
+            mpz_init_set_bignum(mx, x);
+            z = big_shift3_mpz(mx, lshift_p, s1*BITSPERDIG + s2);
+            mpz_clear(mx);
+            return z;
+        }
+#endif
         z = bignew(xn+s1+1, BIGNUM_SIGN(x));
         zds = BDIGITS(z);
         BDIGITS_ZERO(zds, s1);
@@ -7019,7 +7057,6 @@ rb_big_lshift(VALUE x, VALUE y)
 	    }
             shift_numbits = (int)(shift & (BITSPERDIG-1));
             shift_numdigits = shift >> bit_length(BITSPERDIG-1);
-
 #ifdef USE_GMP
             if (lshift_p) {
                 if (! BIGNUM_EMBED_P(x)) {
@@ -7072,6 +7109,12 @@ rb_big_rshift(VALUE x, VALUE y)
 	    }
             shift_numbits = (int)(shift & (BITSPERDIG-1));
             shift_numdigits = shift >> bit_length(BITSPERDIG-1);
+#ifdef USE_GMP
+            if (! BIGNUM_EMBED_P(x)) {
+                return big_shift3_mpz(*BIGNUM_MPZ(x), lshift_p, shift);
+            }
+            else
+#endif
             return bignorm(big_shift3(x, lshift_p, shift_numdigits, shift_numbits));
 	}
 	else if (RB_BIGNUM_TYPE_P(y)) {
