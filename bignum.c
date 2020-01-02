@@ -124,6 +124,7 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGIT % SIZEOF_LONG == 0);
 #define bignew(len,sign) bignew_1(rb_cInteger,(len),(sign))
 #ifdef USE_GMP
 # define bignew_mpz() bignew_mpz_1(rb_cInteger)
+# define bignew_mpz_set(mp) bignew_mpz_set_1(rb_cInteger,(mp))
 #endif
 
 #define BDIGITS_ZERO(ptr, n) do { \
