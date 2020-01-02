@@ -125,6 +125,7 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGIT % SIZEOF_LONG == 0);
 #ifdef USE_GMP
 # define bignew_mpz() bignew_mpz_1(rb_cInteger)
 # define bignew_mpz_set(mp) bignew_mpz_set_1(rb_cInteger,(mp))
+# define bignew_mpz_set_bdigits(digits, len) bignew_mpz_set_bdigits_1(rb_cInteger,(digits),(len))
 #endif
 
 #define BDIGITS_ZERO(ptr, n) do { \
@@ -3089,6 +3090,15 @@ bignew_mpz_set_1(VALUE klass, mpz_t mp)
 {
     NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0));
     mpz_init_set(RBIGNUM(big)->as.mpz, mp);
+    OBJ_FREEZE(big);
+    return (VALUE)big;
+}
+
+static VALUE
+bignew_mpz_set_bdigits_1(VALUE klass, const BDIGIT *digits, size_t len)
+{
+    NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0));
+    mpz_init_set_bdigits(RBIGNUM(big)->as.mpz, digits, len);
     OBJ_FREEZE(big);
     return (VALUE)big;
 }
@@ -6888,8 +6898,7 @@ rb_big_lshift(VALUE x, VALUE y)
                     return z;
                 }
                 else if ((BIGNUM_LEN(x) + shift_numdigits + (shift_numbits > 0)) > BIGNUM_EMBED_LEN_MAX) {
-                    VALUE z = bignew_mpz();
-                    mpz_set_bdigits(*BIGNUM_MPZ(z), BDIGITS(x), BIGNUM_LEN(x));
+                    VALUE z = bignew_mpz_set_bdigits(BDIGITS(x), BIGNUM_LEN(x));
                     mpz_mul_2exp(*BIGNUM_MPZ(z), *BIGNUM_MPZ(z), shift);
                     return z;
                 }
