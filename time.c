@@ -2923,6 +2923,10 @@ month_arg(VALUE arg)
 {
     int i, mon;
 
+    if (FIXNUM_P(arg)) {
+        return obj2ubits(arg, 4);
+    }
+
     VALUE s = rb_check_string_type(arg);
     if (!NIL_P(s) && RSTRING_LEN(s) > 0) {
         mon = 0;
