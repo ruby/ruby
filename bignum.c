@@ -6048,6 +6048,37 @@ bigsq(VALUE x)
     return z;
 }
 
+#ifdef USE_GMP
+static VALUE
+bigmul0_mpz(VALUE x, VALUE y)
+{
+    long xn, yn, zn;
+    VALUE z;
+    mpz_t mz;
+
+    xn = BIGNUM_MPZ_LEN(x);
+    yn = BIGNUM_LEN(y);
+    zn = xn + yn;
+
+    mpz_init2(mz, zn*SIZEOF_BDIGIT*CHAR_BIT);
+    if (BIGNUM_EMBED_P(y)) {
+        mpz_t my;
+        mpz_init2(my, yn*SIZEOF_BDIGIT*CHAR_BIT);
+        bdigits_to_mpz(my, BDIGITS(y), yn);
+        mpz_mul(mz, *BIGNUM_MPZ(x), my);
+        mpz_clear(my);
+    }
+    else {
+        mpz_mul(mz, *BIGNUM_MPZ(x), *BIGNUM_MPZ(y));
+    }
+
+    z = bignew_mpz_set(mz);
+    mpz_init(mz);
+
+    return z;
+}
+#endif
+
 static VALUE
 bigmul0(VALUE x, VALUE y)
 {
@@ -6058,9 +6089,35 @@ bigmul0(VALUE x, VALUE y)
     if (x == y)
         return bigsq(x);
 
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return bigmul0_mpz(x, y);
+    }
+    else if (! BIGNUM_EMBED_P(y)) {
+        return bigmul0_mpz(y, x);
+    }
+#endif
+
     xn = BIGNUM_LEN(x);
     yn = BIGNUM_LEN(y);
     zn = xn + yn;
+
+#ifdef USE_GMP
+    if (zn > BIGNUM_EMBED_LEN_MAX) {
+        mpz_t mx, my, mz;
+        mpz_init2(mx, xn*SIZEOF_BDIGIT*CHAR_BIT);
+        mpz_init2(my, yn*SIZEOF_BDIGIT*CHAR_BIT);
+        mpz_init2(mz, zn*SIZEOF_BDIGIT*CHAR_BIT);
+        bdigits_to_mpz(mx, BDIGITS(x), xn);
+        bdigits_to_mpz(my, BDIGITS(y), yn);
+        mpz_mul(mz, mx, my);
+        z = bignew_mpz_set(mz);
+        mpz_clear(mx);
+        mpz_clear(my);
+        mpz_clear(mz);
+        return z;
+    }
+#endif
 
     z = bignew(zn, BIGNUM_SIGN(x)==BIGNUM_SIGN(y));
 
