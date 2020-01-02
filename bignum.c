@@ -6416,17 +6416,17 @@ bigdivmod(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
 static VALUE
 rb_big_divide_mpz_si(mpz_t mx, long y)
 {
+    if (y == 0) {
+        rb_num_zerodiv();
+    }
+
     VALUE z = bignew_mpz();
     if (y > 0) {
         mpz_fdiv_q_ui(*BIGNUM_MPZ(z), mx, (unsigned long)y);
     }
-    else if (y < 0) {
+    else /* y < 0 */ {
         mpz_fdiv_q_ui(*BIGNUM_MPZ(z), mx, (unsigned long)(-y));
     }
-    else {
-        rb_num_zerodiv();
-    }
-
     return z;
 }
 #endif
