@@ -33,6 +33,7 @@
 #include "vm_debug.h"
 #include "vm_exec.h"
 #include "vm_insnhelper.h"
+#include "id_table.h"
 
 #include "builtin.h"
 
@@ -1562,7 +1563,7 @@ rb_iter_break_value(VALUE val)
 /* optimization: redefine management */
 
 static st_table *vm_opt_method_table = 0;
-static st_table *vm_opt_mid_table = 0;
+static struct rb_id_table *vm_opt_mid_table = 0;
 
 static int
 vm_redefinition_check_flag(VALUE klass)
@@ -1585,11 +1586,12 @@ vm_redefinition_check_flag(VALUE klass)
 int
 rb_vm_check_optimizable_mid(VALUE mid)
 {
+    VALUE val;
     if (!vm_opt_mid_table) {
       return FALSE;
     }
 
-    return st_lookup(vm_opt_mid_table, mid, NULL);
+    return rb_id_table_lookup(vm_opt_mid_table, (ID)mid, &val);
 }
 
 static int
@@ -1646,7 +1648,7 @@ add_opt_method(VALUE klass, ID mid, VALUE bop)
 
     if (me && vm_redefinition_check_method_type(me->def)) {
 	st_insert(vm_opt_method_table, (st_data_t)me, (st_data_t)bop);
-	st_insert(vm_opt_mid_table, (st_data_t)mid, (st_data_t)Qtrue);
+	rb_id_table_insert(vm_opt_mid_table, mid, (VALUE)Qtrue);
     }
     else {
 	rb_bug("undefined optimized method: %s", rb_id2name(mid));
@@ -1660,7 +1662,7 @@ vm_init_redefined_flag(void)
     VALUE bop;
 
     vm_opt_method_table = st_init_numtable();
-    vm_opt_mid_table = st_init_numtable();
+    vm_opt_mid_table = rb_id_table_create(0);
 
 #define OP(mid_, bop_) (mid = id##mid_, bop = BOP_##bop_, ruby_vm_redefined_flag[bop] = 0)
 #define C(k) add_opt_method(rb_c##k, mid, bop)
