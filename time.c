@@ -47,6 +47,8 @@ static ID id_submicro, id_nano_num, id_nano_den, id_offset, id_zone;
 static ID id_nanosecond, id_microsecond, id_millisecond, id_nsec, id_usec;
 static ID id_local_to_utc, id_utc_to_local, id_find_timezone;
 static ID id_year, id_mon, id_mday, id_hour, id_min, id_sec, id_isdst;
+static VALUE str_utc, str_empty;
+
 #define id_quo idQuo
 #define id_div idDiv
 #define id_divmod idDivmod
@@ -1023,7 +1025,7 @@ gmtimew_noleapsecond(wideval_t timew, struct vtm *vtm)
     }
 
     vtm->utc_offset = INT2FIX(0);
-    vtm->zone = rb_fstring_lit("UTC");
+    vtm->zone = str_utc;
 }
 
 static struct tm *
@@ -1455,7 +1457,7 @@ guess_local_offset(struct vtm *vtm_utc, int *isdst_ret, VALUE *zone_ret)
 
     timev = w2v(rb_time_unmagnify(timegmw(&vtm2)));
     t = NUM2TIMET(timev);
-    zone = rb_fstring_lit("UTC");
+    zone = str_utc;
     if (localtime_with_gmtoff_zone(&t, &tm, &gmtoff, &zone)) {
         if (isdst_ret)
             *isdst_ret = tm.tm_isdst;
@@ -2299,7 +2301,7 @@ time_init_1(int argc, VALUE *argv, VALUE time)
 
     vtm.wday = VTM_WDAY_INITVAL;
     vtm.yday = 0;
-    vtm.zone = rb_fstring_lit("");
+    vtm.zone = str_empty;
 
     /*                             year  mon   mday  hour  min   sec   off */
     rb_scan_args(argc, argv, "16", &v[0],&v[1],&v[2],&v[3],&v[4],&v[5],&v[6]);
@@ -2994,7 +2996,7 @@ time_arg(int argc, const VALUE *argv, struct vtm *vtm)
     vtm->wday = 0;
     vtm->yday = 0;
     vtm->isdst = 0;
-    vtm->zone = rb_fstring_lit("");
+    vtm->zone = str_empty;
 
     if (argc == 10) {
 	v[0] = argv[5];
@@ -3918,7 +3920,7 @@ time_gmtime(VALUE time)
 	time_modify(time);
     }
 
-    vtm.zone = rb_fstring_lit("UTC");
+    vtm.zone = str_utc;
     GMTIMEW(tobj->timew, &vtm);
     tobj->vtm = vtm;
 
@@ -5367,7 +5369,7 @@ time_mload(VALUE time, VALUE str)
         vtm.utc_offset = INT2FIX(0);
 	vtm.yday = vtm.wday = 0;
 	vtm.isdst = 0;
-	vtm.zone = rb_fstring_lit("");
+	vtm.zone = str_empty;
 
 	usec = (long)(s & 0xfffff);
         nsec = usec * 1000;
@@ -5840,6 +5842,11 @@ Init_Time(void)
     id_sec = rb_intern("sec");
     id_isdst = rb_intern("isdst");
     id_find_timezone = rb_intern("find_timezone");
+
+    str_utc = rb_fstring_lit("UTC");
+    rb_gc_register_mark_object(str_utc);
+    str_empty = rb_fstring_lit("");
+    rb_gc_register_mark_object(str_empty);
 
     rb_cTime = rb_define_class("Time", rb_cObject);
     rb_include_module(rb_cTime, rb_mComparable);
