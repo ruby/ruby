@@ -242,14 +242,14 @@ BIGNUM_NEGATE(VALUE b)
 static inline size_t
 BIGNUM_LEN(VALUE b)
 {
-#ifdef USE_GMP
-    assert(BIGNUM_EMBED_P(b));
-#else
     if (! BIGNUM_EMBED_P(b)) {
+#ifdef USE_GMP
+        return BIGNUM_MPZ_LEN(b);
+#else
         return RBIGNUM(b)->as.heap.len;
+#endif
     }
     else
-#endif
     {
         size_t ret = RBASIC(b)->flags;
         ret &= BIGNUM_EMBED_LEN_MASK;
