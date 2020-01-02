@@ -3168,6 +3168,11 @@ twocomp2abs_bang(VALUE x, int hibits)
 static inline VALUE
 bigtrunc(VALUE x)
 {
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+      return x;
+    }
+#endif
     size_t len = BIGNUM_LEN(x);
     BDIGIT *ds = BDIGITS(x);
 
