@@ -120,6 +120,14 @@ Gem::Specification.new do |s|
     "tools/server.rb",
   ]
   s.homepage = "http://flori.github.com/json"
+  s.metadata = {
+    'bug_tracker_uri'   => 'https://github.com/flori/json/issues',
+    'changelog_uri'     => 'https://github.com/flori/json/blob/master/CHANGES.md',
+    'documentation_uri' => 'http://flori.github.io/json/doc/index.html',
+    'homepage_uri'      => 'http://flori.github.io/json/',
+    'source_code_uri'   => 'https://github.com/flori/json',
+    'wiki_uri'          => 'https://github.com/flori/json/wiki'
+  }
   s.licenses = ["Ruby"]
   s.rdoc_options = ["--title", "JSON implemention for Ruby", "--main", "README.md"]
   s.required_ruby_version = Gem::Requirement.new(">= 2.0")
