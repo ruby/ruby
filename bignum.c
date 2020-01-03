@@ -5455,7 +5455,10 @@ big2dbl_mpz(mpz_t mx)
 {
     const size_t bits = mpz_sizeinbase(mx, 2);
     if (bits > DBL_MANT_DIG+DBL_MAX_EXP) {
-        return HUGE_VAL;
+        if (mpz_sgn(mx) >= 0)
+            return HUGE_VAL;
+        else
+            return -HUGE_VAL;
     }
     else {
         return mpz_get_d(mx);
