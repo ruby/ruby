@@ -7953,6 +7953,26 @@ rb_int_powm(int const argc, VALUE * const argv, VALUE const num)
     UNREACHABLE_RETURN(Qnil);
 }
 
+#ifdef USE_GMP
+VALUE
+rb_big_gcd_mpz(mpz_t mx, VALUE y)
+{
+    VALUE z = bignew_mpz();
+
+    if (BIGNUM_EMBED_P(y)) {
+        mpz_t my;
+        mpz_init_set_bignum(my, y);
+        mpz_gcd(*BIGNUM_MPZ(z), mx, my);
+        mpz_clear(my);
+    }
+    else {
+        mpz_gcd(*BIGNUM_MPZ(z), mx, *BIGNUM_MPZ(y));
+    }
+
+    return z;
+}
+#endif
+
 /*
  *  Bignum objects hold integers outside the range of
  *  Fixnum. Bignum objects are created

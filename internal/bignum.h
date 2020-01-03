@@ -141,6 +141,7 @@ VALUE rb_big_ge(VALUE x, VALUE y);
 VALUE rb_big_lt(VALUE x, VALUE y);
 VALUE rb_big_le(VALUE x, VALUE y);
 VALUE rb_int_powm(int const argc, VALUE * const argv, VALUE const num);
+VALUE rb_big_gcd_mpz(mpz_t mx, VALUE y);
 static inline bool BIGNUM_SIGN(VALUE b);
 static inline bool BIGNUM_POSITIVE_P(VALUE b);
 static inline bool BIGNUM_NEGATIVE_P(VALUE b);
