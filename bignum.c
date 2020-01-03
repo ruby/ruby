@@ -7273,6 +7273,40 @@ rb_big_rshift(VALUE x, VALUE y)
     }
 }
 
+#ifdef USE_GMP
+static VALUE
+big_aref_mpz_ui(const mpz_t mx, size_t shift)
+{
+    const size_t BITS_PER_MP_LIMB = sizeof(mp_limb_t)*CHAR_BIT;
+    const size_t s1 = shift / BITS_PER_MP_LIMB;
+    const bool positive_p = mpz_sgn(mx) >= 0;
+
+    if (s1 >= mpz_size(mx)) {
+        return positive_p ? INT2FIX(0) : INT2FIX(1);
+    }
+
+    const size_t s2 = shift % BITS_PER_MP_LIMB;
+    const mp_limb_t bit = (mp_limb_t)1 << s2;
+    const mp_limb_t *limbs = mpz_limbs_read(mx);
+
+    if (positive_p) {
+        return (limbs[s1] & bit) ? INT2FIX(1) : INT2FIX(0);
+    }
+    else if (limbs[s1] & (bit - 1)) {
+        return (limbs[s1] & bit) ? INT2FIX(0) : INT2FIX(1);
+    }
+    else {
+        size_t i;
+        for (i = 0; i < s1; ++i) {
+            if (limbs[i]) {
+                return (limbs[s1] & bit) ? INT2FIX(0) : INT2FIX(1);
+            }
+        }
+    }
+    return (limbs[s1] & bit) ? INT2FIX(1) : INT2FIX(0);
+}
+#endif
+
 VALUE
 rb_big_aref(VALUE x, VALUE y)
 {
@@ -7301,6 +7335,13 @@ rb_big_aref(VALUE x, VALUE y)
 	if (l < 0) return INT2FIX(0);
 	shift = (size_t)l;
     }
+
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return big_aref_mpz_ui(*BIGNUM_MPZ(x), shift);
+    }
+#endif
+
     s1 = shift/BITSPERDIG;
     s2 = shift%BITSPERDIG;
     bit = (BDIGIT)1 << s2;
