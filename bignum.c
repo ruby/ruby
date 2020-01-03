@@ -6475,10 +6475,77 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
     return Qnil;
 }
 
+#ifdef USE_GMP
+static void
+bigdivmod_mpz(const mpz_t mx, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
+{
+    mpz_t mq, mr;
+
+    assert(divp || modp);
+
+    if (divp) mpz_init(mq);
+    if (modp) mpz_init(mr);
+
+    if (BIGNUM_EMBED_P(y)) {
+        mpz_t my;
+        mpz_init_set_bignum(my, y);
+
+        if (!modp) {
+            mpz_fdiv_q(mq, mx, my);
+        }
+        else if (!divp) {
+            mpz_fdiv_r(mr, mx, my);
+        }
+        else {
+            mpz_fdiv_qr(mq, mr, mx, my);
+        }
+
+        mpz_clear(my);
+    }
+    else {
+        if (!modp) {
+            mpz_fdiv_q(mq, mx, *BIGNUM_MPZ(y));
+        }
+        else if (!divp) {
+            mpz_fdiv_r(mr, mx, *BIGNUM_MPZ(y));
+        }
+        else {
+            mpz_fdiv_qr(mq, mr, mx, *BIGNUM_MPZ(y));
+        }
+    }
+
+    if (divp) {
+        if (mpz_fits_slong_p(mq)) {
+            *divp = LONG2NUM(mpz_get_si(mq));
+        }
+        else {
+            *divp = bignew_mpz_set(mq);
+        }
+        mpz_clear(mq);
+    }
+
+    if (modp) {
+        if (mpz_fits_slong_p(mr)) {
+            *modp = LONG2NUM(mpz_get_si(mr));
+        }
+        else {
+            *modp = bignew_mpz_set(mr);
+        }
+        mpz_clear(mr);
+    }
+}
+#endif
+
 static void
 bigdivmod(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
 {
     VALUE mod;
+
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return bigdivmod_mpz(*BIGNUM_MPZ(x), y, divp, modp);
+    }
+#endif
 
     bigdivrem(x, y, divp, &mod);
     if (BIGNUM_SIGN(x) != BIGNUM_SIGN(y) && !BIGZEROP(mod)) {
