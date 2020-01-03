@@ -6038,11 +6038,39 @@ bigadd(VALUE x, VALUE y, int sign)
     else {
 	len = BIGNUM_LEN(y) + 1;
     }
-    z = bignew(len, sign);
 
-    bary_add(BDIGITS(z), BIGNUM_LEN(z),
-             BDIGITS(x), BIGNUM_LEN(x),
-             BDIGITS(y), BIGNUM_LEN(y));
+#ifdef USE_GMP
+    // len should be less than or equal to BIGNUM_EMBED_LEN_MAX + 1
+    // because both x and y are embed when USE_GMP.
+    if (len == BIGNUM_EMBED_LEN_MAX + 1) {
+        VALUE tmpz = 0;
+        BDIGIT *zds;
+        zds = ALLOCV_N(BDIGIT, tmpz, BIGNUM_EMBED_LEN_MAX + 1);
+
+        bary_add(zds, sizeof(zds),
+                 BDIGITS(x), BIGNUM_LEN(x),
+                 BDIGITS(y), BIGNUM_LEN(y));
+
+        if (zds[BIGNUM_EMBED_LEN_MAX] == 0) {
+            z = bignew(BIGNUM_EMBED_LEN_MAX, sign);
+            MEMCPY(BDIGITS(z), zds, BDIGIT, BIGNUM_EMBED_LEN_MAX);
+        }
+        else {
+            z = bignew_mpz_set_bdigits(zds, len);
+            BIGNUM_SET_SIGN(z, sign);
+        }
+        if (tmpz)
+            ALLOCV_END(tmpz);
+    }
+    else
+#endif
+    {
+        z = bignew(len, sign);
+
+        bary_add(BDIGITS(z), BIGNUM_LEN(z),
+                 BDIGITS(x), BIGNUM_LEN(x),
+                 BDIGITS(y), BIGNUM_LEN(y));
+    }
 
     return z;
 }
