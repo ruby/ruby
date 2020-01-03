@@ -6784,6 +6784,54 @@ big_shift(VALUE x, long n)
 
 enum {DBL_BIGDIG = ((DBL_MANT_DIG + BITSPERDIG) / BITSPERDIG)};
 
+#ifdef USE_GMP
+static void
+mpz_shift(mpz_t z, const mpz_t x, long shift)
+{
+    if (shift > 0) {
+        mpz_tdiv_q_2exp(z, x, (size_t)shift);
+    }
+    else if (shift < 0) {
+        mpz_mul_2exp(z, x, (size_t)-shift);
+    }
+}
+
+static double
+big_fdiv_mpz_2(const mpz_t mx, const mpz_t my, long ey)
+{
+    long ex = mpz_sizeinbase(mx, 2) - 2*DBL_MANT_DIG;
+    mpz_t mu;
+    mpz_init2(mu, 2*DBL_MANT_DIG);
+    mpz_shift(mu, mx, ex);
+
+    mpz_t mz;
+    mpz_init2(mz, 2*DBL_MANT_DIG);
+    mpz_tdiv_q(mz, mu, my);
+
+    double dz = ldexp(mpz_get_d(mz), (int)(ex - ey));
+
+    mpz_clear(mu);
+    mpz_clear(mz);
+
+    return dz;
+}
+
+static double
+big_fdiv_mpz(const mpz_t mx, VALUE y, long ey)
+{
+    if (BIGNUM_EMBED_P(y)) {
+        mpz_t my;
+        mpz_init_set_bignum(my, y);
+        double dz = big_fdiv_mpz_2(mx, my, ey);
+        mpz_clear(my);
+        return dz;
+    }
+    else {
+        return big_fdiv_mpz_2(mx, *BIGNUM_MPZ(y), ey);
+    }
+}
+#endif
+
 static double
 big_fdiv(VALUE x, VALUE y, long ey)
 {
@@ -6840,17 +6888,6 @@ big_fdiv_int_mpz_si(mpz_t mx, long y)
     return dz;
 }
 
-static void
-mpz_shift(mpz_t z, const mpz_t x, long shift)
-{
-    if (shift > 0) {
-        mpz_tdiv_q_2exp(z, x, (size_t)shift);
-    }
-    else if (shift < 0) {
-        mpz_mul_2exp(z, x, (size_t)-shift);
-    }
-}
-
 static double
 big_fdiv_int_mpz_2(mpz_t mx, mpz_t my)
 {
@@ -6859,20 +6896,9 @@ big_fdiv_int_mpz_2(mpz_t mx, mpz_t my)
     mpz_init2(mw, DBL_MANT_DIG);
     mpz_shift(mw, my, ey);
 
-    long ex = mpz_sizeinbase(mx, 2) - 2*DBL_MANT_DIG;
-    mpz_t mu;
-    mpz_init2(mu, 2*DBL_MANT_DIG);
-    mpz_shift(mu, mx, ex);
-
-    mpz_t mz;
-    mpz_init2(mz, 2*DBL_MANT_DIG);
-    mpz_tdiv_q(mz, mu, mw);
-
-    double dz = ldexp(mpz_get_d(mz), (int)(ex - ey));
+    double dz = big_fdiv_mpz_2(mx, mw, ey);
 
     mpz_clear(mw);
-    mpz_clear(mu);
-    mpz_clear(mz);
 
     return dz;
 }
@@ -6912,6 +6938,12 @@ big_fdiv_float(VALUE x, VALUE y)
 {
     int i;
     y = dbl2big(ldexp(frexp(RFLOAT_VALUE(y), &i), DBL_MANT_DIG));
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return big_fdiv_mpz(*BIGNUM_MPZ(x), y, i - DBL_MANT_DIG);
+    }
+    else
+#endif
     return big_fdiv(x, y, i - DBL_MANT_DIG);
 }
 
