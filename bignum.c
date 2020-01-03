@@ -100,9 +100,17 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGIT % SIZEOF_LONG == 0);
 #   define swap_bdigit(x) swap64(x)
 #endif
 
-#define BIGZEROP(x) (BIGNUM_LEN(x) == 0 || \
-		     (BDIGITS(x)[0] == 0 && \
-		      (BIGNUM_LEN(x) == 1 || bigzero_p(x))))
+#ifdef USE_GMP
+# define BIGZEROP(x) (BIGNUM_LEN(x) == 0 || \
+                      (BIGNUM_EMBED_P(x) ? (BDIGITS(x)[0] == 0 && \
+                                            (BIGNUM_LEN(x) == 1 || bigzero_p(x))) \
+                                         : mpz_sgn(*BIGNUM_MPZ(x)) == 0))
+#else
+# define BIGZEROP(x) (BIGNUM_LEN(x) == 0 || \
+                      (BDIGITS(x)[0] == 0 && \
+                       (BIGNUM_LEN(x) == 1 || bigzero_p(x))))
+#endif
+
 #define BIGSIZE(x) (BIGNUM_LEN(x) == 0 ? (size_t)0 : \
     BDIGITS(x)[BIGNUM_LEN(x)-1] ? \
         (size_t)(BIGNUM_LEN(x)*SIZEOF_BDIGIT - nlz(BDIGITS(x)[BIGNUM_LEN(x)-1])/CHAR_BIT) : \
