@@ -6505,8 +6505,20 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
 
     if (divp) {
         qn = xn + BIGDIVREM_EXTRA_WORDS;
-        q = bignew(qn, BIGNUM_SIGN(x)==BIGNUM_SIGN(y));
-        qds = BDIGITS(q);
+#ifdef USE_GMP
+        if (BIGNUM_EMBED_LEN_MAX < qn) {
+            mpz_t mx;
+            mpz_init_set_bignum(mx, x);
+            bigdivrem_mpz(mx, y, divp, modp);
+            mpz_clear(mx);
+            return Qnil;
+        }
+        else
+#endif
+        {
+            q = bignew(qn, BIGNUM_SIGN(x)==BIGNUM_SIGN(y));
+            qds = BDIGITS(q);
+        }
     }
     else {
         qn = 0;
@@ -6608,7 +6620,7 @@ bigdivmod(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
         bigdivmod_mpz(*BIGNUM_MPZ(x), y, divp, modp);
         return;
     }
-    else if (! BIGNUM_EMBED_P(y)) {
+    else if (BIGNUM_LEN(x) == BIGNUM_EMBED_LEN_MAX || ! BIGNUM_EMBED_P(y)) {
         mpz_t mx;
         mpz_init_set_bignum(mx, x);
         bigdivmod_mpz(mx, y, divp, modp);
