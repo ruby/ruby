@@ -1968,7 +1968,6 @@ static void
 rb_scan_args_parse(int kw_flag, int argc, const VALUE *argv, const char *fmt, struct rb_scan_args_t *arg)
 {
     const char *p = fmt;
-    VALUE *tmp_buffer = arg->tmp_buffer;
     int keyword_given = 0;
     int last_hash_keyword = 0;
 

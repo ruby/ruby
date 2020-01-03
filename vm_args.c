@@ -208,29 +208,6 @@ args_kw_argv_to_hash(struct args_info *args)
     return args->argc;
 }
 
-static void
-args_stored_kw_argv_to_hash(struct args_info *args)
-{
-    int i;
-    const struct rb_call_info_kw_arg *kw_arg = args->kw_arg;
-    const VALUE *const passed_keywords = kw_arg->keywords;
-    const int passed_keyword_len = kw_arg->keyword_len;
-    VALUE h = rb_hash_new_with_size(passed_keyword_len);
-
-    for (i=0; i<passed_keyword_len; i++) {
-	rb_hash_aset(h, passed_keywords[i], args->kw_argv[i]);
-    }
-    args->kw_argv = NULL;
-
-    if (args->rest) {
-	arg_rest_dup(args);
-	rb_ary_push(args->rest, h);
-    }
-    else {
-	args->argv[args->argc++] = h;
-    }
-}
-
 static inline void
 args_setup_lead_parameters(struct args_info *args, int argc, VALUE *locals)
 {
