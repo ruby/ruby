@@ -2815,9 +2815,15 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_BIGNUM:
-	if (!BIGNUM_EMBED_P(obj) && BIGNUM_DIGITS(obj)) {
-	    xfree(BIGNUM_DIGITS(obj));
-            RB_DEBUG_COUNTER_INC(obj_bignum_ptr);
+	if (!BIGNUM_EMBED_P(obj)) {
+#ifdef USE_GMP
+            mpz_clear(*BIGNUM_MPZ(obj));
+#else
+            if (BIGNUM_DIGITS(obj)) {
+                xfree(BIGNUM_DIGITS(obj));
+                RB_DEBUG_COUNTER_INC(obj_bignum_ptr);
+            }
+#endif
 	}
         else {
             RB_DEBUG_COUNTER_INC(obj_bignum_embed);
