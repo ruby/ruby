@@ -6359,6 +6359,7 @@ bigdivrem_mpz(mpz_t mx, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
         else {
             *divp = bignew_mpz_set(mq);
         }
+        mpz_clear(mq);
     }
 
     if (modp) {
@@ -6368,10 +6369,8 @@ bigdivrem_mpz(mpz_t mx, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
         else {
             *modp = bignew_mpz_set(mr);
         }
+        mpz_clear(mr);
     }
-
-    mpz_clear(mq);
-    mpz_clear(mr);
 
     return Qnil;
 }
