@@ -6020,10 +6020,50 @@ bigadd(VALUE x, VALUE y, int sign)
     return z;
 }
 
+#ifdef USE_GMP
+static VALUE
+big_plus_mpz(mpz_t mx, VALUE y)
+{
+    assert(RB_INTEGER_TYPE_P(y));
+
+    VALUE z = bignew_mpz();
+
+    if (FIXNUM_P(y)) {
+        long yy = FIX2LONG(y);
+        if (yy >= 0) {
+            mpz_add_ui(*BIGNUM_MPZ(z), mx, (unsigned long)yy);
+        }
+        else {
+            mpz_sub_ui(*BIGNUM_MPZ(z), mx, (unsigned long)(-yy));
+        }
+    }
+    else if (BIGNUM_EMBED_P(y)) {
+        mpz_t my;
+        mpz_init_set_bignum(my, y);
+        mpz_add(*BIGNUM_MPZ(z), mx, my);
+        mpz_clear(my);
+    }
+    else {
+        mpz_add(*BIGNUM_MPZ(z), mx, *BIGNUM_MPZ(y));
+    }
+
+    return z;
+}
+#endif
+
 VALUE
 rb_big_plus(VALUE x, VALUE y)
 {
     long n;
+
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x) && RB_INTEGER_TYPE_P(y)) {
+        if (y == INT2FIX(0)) {
+            return x;
+        }
+        return big_plus_mpz(*BIGNUM_MPZ(x), y);
+    }
+#endif
 
     if (FIXNUM_P(y)) {
 	n = FIX2LONG(y);
@@ -6039,6 +6079,12 @@ rb_big_plus(VALUE x, VALUE y)
 	return bigadd_int(x, n);
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
+#ifdef USE_GMP
+        if (! BIGNUM_EMBED_P(y)) {
+            return big_plus_mpz(*BIGNUM_MPZ(y), x);
+        }
+        else
+#endif
 	return bignorm(bigadd(x, y, 1));
     }
     else if (RB_FLOAT_TYPE_P(y)) {
