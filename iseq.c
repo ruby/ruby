@@ -3084,7 +3084,7 @@ rb_iseq_defined_string(enum defined_type type)
 /* A map from encoded_insn to insn_data: decoded insn number, its len,
  * non-trace version of encoded insn, and trace version. */
 
-static st_table *encoded_insn_data;
+static struct rb_id_table *encoded_insn_data = 0;
 typedef struct insn_data_struct {
     int insn;
     int insn_len;
@@ -3103,29 +3103,29 @@ rb_vm_encoded_insn_data_table_init(void)
 #define INSN_CODE(insn) (insn)
 #endif
     st_data_t insn;
-    encoded_insn_data = st_init_numtable_with_size(VM_INSTRUCTION_SIZE / 2);
+    encoded_insn_data = rb_id_table_create(VM_INSTRUCTION_SIZE / 2);
 
     for (insn = 0; insn < VM_INSTRUCTION_SIZE/2; insn++) {
-        st_data_t key1 = (st_data_t)INSN_CODE(insn);
-        st_data_t key2 = (st_data_t)INSN_CODE(insn + VM_INSTRUCTION_SIZE/2);
+        ID key1 = (ID)INSN_CODE(insn);
+        ID key2 = (ID)INSN_CODE(insn + VM_INSTRUCTION_SIZE/2);
 
         insn_data[insn].insn = (int)insn;
         insn_data[insn].insn_len = insn_len(insn);
         insn_data[insn].notrace_encoded_insn = (void *) key1;
         insn_data[insn].trace_encoded_insn = (void *) key2;
 
-        st_add_direct(encoded_insn_data, key1, (st_data_t)&insn_data[insn]);
-        st_add_direct(encoded_insn_data, key2, (st_data_t)&insn_data[insn]);
+        rb_id_table_insert(encoded_insn_data, key1, (VALUE)&insn_data[insn]);
+        rb_id_table_insert(encoded_insn_data, key2, (VALUE)&insn_data[insn]);
     }
 }
 
 int
 rb_vm_insn_addr2insn(const void *addr)
 {
-    st_data_t key = (st_data_t)addr;
-    st_data_t val;
+    ID key = (ID)addr;
+    VALUE val;
 
-    if (st_lookup(encoded_insn_data, key, &val)) {
+    if (rb_id_table_lookup(encoded_insn_data, key, &val)) {
         insn_data_t *e = (insn_data_t *)val;
         return (int)e->insn;
     }
@@ -3136,10 +3136,10 @@ rb_vm_insn_addr2insn(const void *addr)
 static inline int
 encoded_iseq_trace_instrument(VALUE *iseq_encoded_insn, rb_event_flag_t turnon)
 {
-    st_data_t key = (st_data_t)*iseq_encoded_insn;
-    st_data_t val;
+    ID key = (ID)*iseq_encoded_insn;
+    VALUE val;
 
-    if (st_lookup(encoded_insn_data, key, &val)) {
+    if (rb_id_table_lookup(encoded_insn_data, key, &val)) {
         insn_data_t *e = (insn_data_t *)val;
         *iseq_encoded_insn = (VALUE) (turnon ? e->trace_encoded_insn : e->notrace_encoded_insn);
         return e->insn_len;
