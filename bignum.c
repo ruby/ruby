@@ -6329,26 +6329,26 @@ bigdivrem_mpz(mpz_t mx, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
         mpz_init_set_bignum(my, y);
 
         if (!modp) {
-            mpz_fdiv_q(mq, mx, my);
+            mpz_tdiv_q(mq, mx, my);
         }
         else if (!divp) {
-            mpz_fdiv_r(mr, mx, my);
+            mpz_tdiv_r(mr, mx, my);
         }
         else {
-            mpz_fdiv_qr(mq, mr, mx, my);
+            mpz_tdiv_qr(mq, mr, mx, my);
         }
 
         mpz_clear(my);
     }
     else {
         if (!modp) {
-            mpz_fdiv_q(mq, mx, *BIGNUM_MPZ(y));
+            mpz_tdiv_q(mq, mx, *BIGNUM_MPZ(y));
         }
         else if (!divp) {
-            mpz_fdiv_r(mr, mx, *BIGNUM_MPZ(y));
+            mpz_tdiv_r(mr, mx, *BIGNUM_MPZ(y));
         }
         else {
-            mpz_fdiv_qr(mq, mr, mx, *BIGNUM_MPZ(y));
+            mpz_tdiv_qr(mq, mr, mx, *BIGNUM_MPZ(y));
         }
     }
 
