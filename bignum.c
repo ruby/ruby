@@ -6755,6 +6755,90 @@ big_fdiv(VALUE x, VALUE y, long ey)
     return ldexp(big2dbl(z), (int)l);
 }
 
+#ifdef USE_GMP
+static double
+big_fdiv_int_mpz_si(mpz_t mx, long y)
+{
+    long ex, ey;
+# if SIZEOF_LONG * CHAR_BIT < DBL_MANT_DIG // assume FLT_RADIX == 2
+    ey = 0;
+# else
+    ey = SIZEOF_LONG*CHAR_BIT - DBL_MANT_DIG;
+# endif
+    y >>= ey;
+
+    ex = mpz_sizeinbase(mx, 2) - 2*DBL_MANT_DIG;
+
+    mpz_t mu;
+    mpz_init2(mu, 2*DBL_MANT_DIG);
+    mpz_tdiv_q_2exp(mu, mx, ex);
+
+    mpz_t mz;
+    mpz_init2(mz, DBL_MANT_DIG);
+    mpz_tdiv_q_ui(mz, mu, y);
+
+    double dz = ldexp(mpz_get_d(mz), (int)(ex - ey));
+
+    mpz_clear(mu);
+    mpz_clear(mz);
+
+    return dz;
+}
+
+static void
+mpz_shift(mpz_t z, const mpz_t x, long shift)
+{
+    if (shift > 0) {
+        mpz_tdiv_q_2exp(z, x, (size_t)shift);
+    }
+    else if (shift < 0) {
+        mpz_mul_2exp(z, x, (size_t)-shift);
+    }
+}
+
+static double
+big_fdiv_int_mpz_2(mpz_t mx, mpz_t my)
+{
+    long ey = mpz_sizeinbase(my, 2) - DBL_MANT_DIG;
+    mpz_t mw;
+    mpz_init2(mw, DBL_MANT_DIG);
+    mpz_shift(mw, my, ey);
+
+    long ex = mpz_sizeinbase(mx, 2) - 2*DBL_MANT_DIG;
+    mpz_t mu;
+    mpz_init2(mu, 2*DBL_MANT_DIG);
+    mpz_shift(mu, mx, ex);
+
+    mpz_t mz;
+    mpz_init2(mz, 2*DBL_MANT_DIG);
+    mpz_tdiv_q(mz, mu, mw);
+
+    double dz = ldexp(mpz_get_d(mz), (int)(ex - ey));
+
+    mpz_clear(mw);
+    mpz_clear(mu);
+    mpz_clear(mz);
+
+    return dz;
+}
+
+static double
+big_fdiv_int_mpz(mpz_t mx, VALUE y)
+{
+    assert(RB_BIGNUM_TYPE_P(y));
+
+    if (BIGNUM_EMBED_P(y)) {
+        mpz_t my;
+        mpz_init_set_bignum(my, y);
+        double dz = big_fdiv_int_mpz_2(mx, my);
+        mpz_clear(my);
+        return dz;
+    }
+    else {
+        return big_fdiv_int_mpz_2(mx, *BIGNUM_MPZ(y));
+    }
+}
+#else
 static double
 big_fdiv_int(VALUE x, VALUE y)
 {
@@ -6766,6 +6850,7 @@ big_fdiv_int(VALUE x, VALUE y)
     if (ey) y = big_shift(y, ey);
     return big_fdiv(x, y, ey);
 }
+#endif
 
 static double
 big_fdiv_float(VALUE x, VALUE y)
@@ -6783,19 +6868,37 @@ rb_big_fdiv_double(VALUE x, VALUE y)
 
     dx = big2dbl(x);
     if (FIXNUM_P(y)) {
-	dy = (double)FIX2LONG(y);
-	if (isinf(dx))
-	    return big_fdiv_int(x, rb_int2big(FIX2LONG(y)));
+        dy = (double)FIX2LONG(y);
+        if (isinf(dx)) {
+#ifdef USE_GMP
+            return big_fdiv_int_mpz_si(*BIGNUM_MPZ(x), FIX2LONG(y));
+#else
+            return big_fdiv_int(x, rb_int2big(FIX2LONG(y)));
+#endif
+        }
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
-	return big_fdiv_int(x, y);
+#ifdef USE_GMP
+        if (! BIGNUM_EMBED_P(x)) {
+            return big_fdiv_int_mpz(*BIGNUM_MPZ(x), y);
+        }
+        else {
+            mpz_t mx;
+            mpz_init_set_bignum(mx, x);
+            double dz = big_fdiv_int_mpz(mx, y);
+            mpz_clear(mx);
+            return dz;
+        }
+#else
+        return big_fdiv_int(x, y);
+#endif
     }
     else if (RB_FLOAT_TYPE_P(y)) {
-	dy = RFLOAT_VALUE(y);
-	if (isnan(dy))
-	    return dy;
-	if (isinf(dx))
-	    return big_fdiv_float(x, y);
+        dy = RFLOAT_VALUE(y);
+        if (isnan(dy))
+            return dy;
+        if (isinf(dx))
+            return big_fdiv_float(x, y);
     }
     else {
         return NUM2DBL(rb_num_coerce_bin(x, y, idFdiv));
