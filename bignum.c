@@ -4123,14 +4123,20 @@ str2big_gmp(
     }
     *p = '\0';
 
-    mpz_init(mz);
-    mpz_set_str(mz, buf, base);
-    zn = num_bdigits;
-    z = bignew(zn, sign);
-    zds = BDIGITS(z);
-    bdigits_from_mpz(mz, BDIGITS(z), &count);
-    BDIGITS_ZERO(zds+count, zn-count);
-    mpz_clear(mz);
+    if (num_bdigits <= BIGNUM_EMBED_LEN_MAX) {
+        mpz_init(mz);
+        mpz_set_str(mz, buf, base);
+        zn = num_bdigits;
+        z = bignew(zn, sign);
+        zds = BDIGITS(z);
+        bdigits_from_mpz(mz, BDIGITS(z), &count);
+        BDIGITS_ZERO(zds+count, zn-count);
+        mpz_clear(mz);
+    }
+    else {
+        z = bignew_mpz();
+        mpz_set_str(*BIGNUM_MPZ(z), buf, base);
+    }
 
     if (tmps)
         ALLOCV_END(tmps);
@@ -4355,6 +4361,17 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
     if (ndigits) *ndigits += num_digits;
     digits_end = digits_start + len;
 
+#ifdef USE_GMP
+    if (GMP_STR2BIG_DIGITS < num_digits) {
+        int digits_per_bdigits_dbl;
+        maxpow_in_bdigit_dbl(base, &digits_per_bdigits_dbl);
+        num_bdigits = roomof(num_digits, digits_per_bdigits_dbl)*2;
+
+        z = str2big_gmp(sign, digits_start, digits_end, num_digits,
+                        num_bdigits, base);
+    }
+    else
+#endif
     if (POW2_P(base)) {
         z = str2big_poweroftwo(sign, digits_start, digits_end, num_digits,
 			       bit_length(base-1));
@@ -4364,13 +4381,6 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
         maxpow_in_bdigit_dbl(base, &digits_per_bdigits_dbl);
         num_bdigits = roomof(num_digits, digits_per_bdigits_dbl)*2;
 
-#ifdef USE_GMP
-        if (GMP_STR2BIG_DIGITS < num_bdigits) {
-            z = str2big_gmp(sign, digits_start, digits_end, num_digits,
-                    num_bdigits, base);
-        }
-        else
-#endif
         if (num_bdigits < KARATSUBA_MUL_DIGITS) {
             z = str2big_normal(sign, digits_start, digits_end,
                     num_bdigits, base);
@@ -5190,11 +5200,9 @@ big2str_gmp(VALUE x, int base)
     mpz_t mx;
     size_t size;
     VALUE str;
-    BDIGIT *xds = BDIGITS(x);
-    size_t xn = BIGNUM_LEN(x);
 
-    mpz_init_set_bdigits(mx, xds, xn);
-
+    /* TODO: stop mpz_set when ! BIGNUM_EMBED_P(x) */
+    mpz_init_set_bignum(mx, x);
     size = mpz_sizeinbase(mx, base);
 
     if (BIGNUM_NEGATIVE_P(x)) {
@@ -5232,6 +5240,12 @@ rb_big2str1(VALUE x, int base)
 	return rb_fix2str(x, base);
     }
 
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return big2str_gmp(x, base);
+    }
+#endif
+
     bigtrunc(x);
     xds = BDIGITS(x);
     xn = BIGNUM_LEN(x);
@@ -5252,12 +5266,6 @@ rb_big2str1(VALUE x, int base)
         /* base == 2 || base == 4 || base == 8 || base == 16 || base == 32 */
         return big2str_base_poweroftwo(x, base);
     }
-
-#ifdef USE_GMP
-    if (GMP_BIG2STR_DIGITS < xn) {
-        return big2str_gmp(x, base);
-    }
-#endif
 
     return big2str_generic(x, base);
 }
