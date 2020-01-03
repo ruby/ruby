@@ -337,10 +337,13 @@ inline static VALUE
 f_gcd(VALUE x, VALUE y)
 {
 #ifdef USE_GMP
-    if (RB_TYPE_P(x, T_BIGNUM) && RB_TYPE_P(y, T_BIGNUM)) {
-        if (! (BIGNUM_EMBED_P(x) && BIGNUM_EMBED_P(y)))
-            return rb_gcd_gmp(x, y);
+    if (RB_TYPE_P(x, T_BIGNUM) && ! BIGNUM_EMBED_P(x)) {
+        return rb_gcd_gmp(x, y);
     }
+    else if (RB_TYPE_P(y, T_BIGNUM) && ! BIGNUM_EMBED_P(y)) {
+        return rb_gcd_gmp(y, x);
+    }
+    else
 #endif
     return f_gcd_normal(x, y);
 }

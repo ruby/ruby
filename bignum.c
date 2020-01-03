@@ -8061,7 +8061,16 @@ rb_big_gcd_mpz(mpz_t mx, VALUE y)
 {
     VALUE z = bignew_mpz();
 
-    if (BIGNUM_EMBED_P(y)) {
+    if (FIXNUM_P(y)) {
+        long l = FIX2LONG(y);
+        if (l >= 0) {
+            mpz_gcd_ui(*BIGNUM_MPZ(z), mx, (unsigned long)l);
+        }
+        else {
+            mpz_gcd_ui(*BIGNUM_MPZ(z), mx, (unsigned long)-l);
+        }
+    }
+    else if (BIGNUM_EMBED_P(y)) {
         mpz_t my;
         mpz_init_set_bignum(my, y);
         mpz_gcd(*BIGNUM_MPZ(z), mx, my);
