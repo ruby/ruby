@@ -6623,6 +6623,16 @@ rb_big_fdiv(VALUE x, VALUE y)
     return DBL2NUM(rb_big_fdiv_double(x, y));
 }
 
+#ifdef USE_GMP
+static VALUE
+big_pow_mpz_ui(const mpz_t mx, unsigned long y)
+{
+    VALUE z = bignew_mpz();
+    mpz_pow_ui(*BIGNUM_MPZ(z), mx, y);
+    return z;
+}
+#endif
+
 VALUE
 rb_big_pow(VALUE x, VALUE y)
 {
@@ -6655,6 +6665,11 @@ rb_big_pow(VALUE x, VALUE y)
             else
                 return DBL2NUM(1.0 / NUM2DBL(x));
         }
+#ifdef USE_GMP
+        else if (! BIGNUM_EMBED_P(x)) {
+            return big_pow_mpz_ui(*BIGNUM_MPZ(x), (unsigned long)yy);
+        }
+#endif
 	else {
 	    VALUE z = 0;
 	    SIGNED_VALUE mask;
