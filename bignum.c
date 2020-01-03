@@ -5408,6 +5408,13 @@ dbl2big(double d)
 	u /= (double)(BIGRAD);
 	i++;
     }
+#ifdef USE_GMP
+    if (BIGNUM_EMBED_LEN_MAX < i) {
+        z = bignew_mpz_init2(i*BITSPERDIG);
+        mpz_set_d(*BIGNUM_MPZ(z), d);
+        return z;
+    }
+#endif
     z = bignew(i, d>=0);
     digits = BDIGITS(z);
     while (i--) {
