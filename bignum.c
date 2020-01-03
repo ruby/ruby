@@ -5433,9 +5433,29 @@ rb_dbl2big(double d)
     return bignorm(dbl2big(d));
 }
 
+#ifdef USE_GMP
+static inline double
+big2dbl_mpz(mpz_t mx)
+{
+    const size_t bits = mpz_sizeinbase(mx, 2);
+    if (bits > DBL_MANT_DIG+DBL_MAX_EXP) {
+        return HUGE_VAL;
+    }
+    else {
+        return mpz_get_d(mx);
+    }
+}
+#endif
+
 static double
 big2dbl(VALUE x)
 {
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return big2dbl_mpz(*BIGNUM_MPZ(x));
+    }
+#endif
+
     double d = 0.0;
     long i = (bigtrunc(x), BIGNUM_LEN(x)), lo = 0, bits;
     BDIGIT *ds = BDIGITS(x), dl;
