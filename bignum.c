@@ -7346,6 +7346,34 @@ bigxor_int(VALUE x, long xn, BDIGIT hibitsx, long y)
     return bignorm(z);
 }
 
+#ifdef USE_GMP
+static VALUE
+big_xor_mpz(const mpz_t mx, VALUE y)
+{
+    assert(RB_INTEGER_TYPE_P(y));
+
+    VALUE z = bignew_mpz();
+
+    if (FIXNUM_P(y)) {
+        mpz_t my;
+        mpz_init_set_si(my, FIX2LONG(y));
+        mpz_xor(*BIGNUM_MPZ(z), mx, my);
+        mpz_clear(my);
+    }
+    else if (BIGNUM_EMBED_P(y)) {
+        mpz_t my;
+        mpz_init_set_bignum(my, y);
+        mpz_xor(*BIGNUM_MPZ(z), mx, my);
+        mpz_clear(my);
+    }
+    else {
+        mpz_xor(*BIGNUM_MPZ(z), mx, *BIGNUM_MPZ(y));
+    }
+
+    return bignorm(z);
+}
+#endif
+
 VALUE
 rb_big_xor(VALUE x, VALUE y)
 {
@@ -7361,6 +7389,15 @@ rb_big_xor(VALUE x, VALUE y)
     if (!RB_INTEGER_TYPE_P(y)) {
 	return rb_num_coerce_bit(x, y, '^');
     }
+
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return big_xor_mpz(*BIGNUM_MPZ(x), y);
+    }
+    else if (RB_BIGNUM_TYPE_P(y) && ! BIGNUM_EMBED_P(y)) {
+        return big_xor_mpz(*BIGNUM_MPZ(y), x);
+    }
+#endif
 
     hibitsx = abs2twocomp(&x, &xn);
     if (FIXNUM_P(y)) {
