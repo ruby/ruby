@@ -5487,9 +5487,19 @@ env_reject_bang(VALUE ehash)
  *   ENV.delete_if { |name, value| block } -> ENV
  *   ENV.delete_if                         -> Enumerator
  *
- * Deletes every environment variable for which the block evaluates to +true+.
+ * Deletes each environment variable for which the block returns a truthy value,
+ * returning ENV (regardless or whether any deletions):
+ *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
+ *   ENV.delete_if { |name, value| name.start_with?('b') } # => ENV
+ *   ENV # => {"foo"=>"0"}
+ *   ENV.delete_if { |name, value| name.start_with?('b') } # => ENV
  *
- * If no block is given an enumerator is returned instead.
+ * Returns an Enumerator if no block given:
+ *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
+ *   e = ENV.delete_if # => #<Enumerator: {"bar"=>"1", "baz"=>"2", "foo"=>"0"}:delete_if!>
+ *   e.each { |name, value| name.start_with?('b') } # => ENV
+ *   ENV # => {"foo"=>"0"}
+ *   e.each { |name, value| name.start_with?('b') } # => ENV
  */
 static VALUE
 env_delete_if(VALUE ehash)
