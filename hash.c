@@ -5511,10 +5511,21 @@ env_delete_if(VALUE ehash)
 
 /*
  * call-seq:
- *   ENV.values_at(name, ...) -> Array
+ *   ENV.values_at(*names) -> Array
  *
- * Returns an array containing the environment variable values associated with
- * the given names.  See also ENV.select.
+ * Returns an Array containing the environment variable values associated with
+ * the given names:
+ *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
+ *   ENV.values_at('foo', 'baz') # => ["0", "2"]
+ *
+ * Returns +nil+ in the Array for each name that is not an ENV name:
+ *   ENV.values_at('foo', 'bat', 'bar', 'bam') # => ["0", nil, "1", nil]
+ *
+ * Returns an empty Array if no names given:
+ *   ENV.values_at() # => []
+ *
+ * Raises an exception if any name is invalid.
+ * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
  */
 static VALUE
 env_values_at(int argc, VALUE *argv, VALUE _)
