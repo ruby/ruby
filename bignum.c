@@ -6394,6 +6394,7 @@ bigmul0_mpz(mpz_t mx, VALUE y)
     if (BIGNUM_EMBED_P(y)) {
         mpz_t my;
         mpz_init_set_bdigits(my, BDIGITS(y), yn);
+        if (BIGNUM_NEGATIVE_P(y)) mpz_neg(my, my);
         mpz_mul(*BIGNUM_MPZ(z), mx, my);
         mpz_clear(my);
     }
@@ -6432,6 +6433,7 @@ bigmul0(VALUE x, VALUE y)
     if (zn > BIGNUM_EMBED_LEN_MAX) {
         mpz_t mx;
         mpz_init_set_bdigits(mx, BDIGITS(x), xn);
+        if (BIGNUM_NEGATIVE_P(x)) mpz_neg(mx, mx);
         z = bigmul0_mpz(mx, y);
         mpz_clear(mx);
         return z;
