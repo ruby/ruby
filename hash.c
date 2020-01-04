@@ -5653,9 +5653,18 @@ env_select_bang(VALUE ehash)
  *   ENV.keep_if { |name, value| block } -> ENV
  *   ENV.keep_if                         -> Enumerator
  *
- * Deletes every environment variable where the block evaluates to +false+.
+ * Yields each environment variable name and its value as a 2-element Array,
+ * deleting each environment variable for which the block returns +false+ or +nil+,
+ * and returning ENV:
+ *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
+ *   ENV.keep_if { |name, value| name.start_with?('b') } # => ENV
+ *   ENV # => {"bar"=>"1", "baz"=>"2"}
  *
- * Returns an enumerator if no block was given.
+ * Returns an Enumerator if no block given:
+ *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
+ *   e = ENV.keep_if # => #<Enumerator: {"bar"=>"1", "baz"=>"2", "foo"=>"0"}:keep_if>
+ *   e.each { |name, value| name.start_with?('b') } # => ENV
+ *   ENV # => {"bar"=>"1", "baz"=>"2"}
  */
 static VALUE
 env_keep_if(VALUE ehash)
