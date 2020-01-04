@@ -5911,6 +5911,14 @@ VALUE
 rb_big_comp(VALUE x)
 {
     VALUE z = rb_big_clone(x);
+
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        mpz_com(*BIGNUM_MPZ(z), *BIGNUM_MPZ(z));
+        return z;
+    }
+#endif
+
     BDIGIT *ds = BDIGITS(z);
     long n = BIGNUM_LEN(z);
 
