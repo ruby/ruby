@@ -141,7 +141,6 @@ VALUE rb_big_ge(VALUE x, VALUE y);
 VALUE rb_big_lt(VALUE x, VALUE y);
 VALUE rb_big_le(VALUE x, VALUE y);
 VALUE rb_int_powm(int const argc, VALUE * const argv, VALUE const num);
-VALUE rb_big_gcd_mpz(mpz_t mx, VALUE y);
 static inline bool BIGNUM_SIGN(VALUE b);
 static inline bool BIGNUM_POSITIVE_P(VALUE b);
 static inline bool BIGNUM_NEGATIVE_P(VALUE b);
@@ -152,6 +151,8 @@ static inline BDIGIT *BIGNUM_DIGITS(VALUE b);
 static inline int BIGNUM_LENINT(VALUE b);
 static inline bool BIGNUM_EMBED_P(VALUE b);
 #ifdef USE_GMP
+size_t rb_absint_size_mpz(const mpz_t mx, int *nlz_bits_ret);
+VALUE rb_big_gcd_mpz(mpz_t mx, VALUE y);
 static inline mpz_t *BIGNUM_MPZ(VALUE b);
 static inline size_t BIGNUM_MPZ_LEN(const mpz_t mx);
 static inline void BIGNUM_MPZ_NEGATE(VALUE b);

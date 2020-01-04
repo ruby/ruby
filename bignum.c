@@ -999,7 +999,6 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
 }
 
 #ifdef USE_GMP
-static size_t rb_absint_size_mpz(const mpz_t mx, int *nlz_bits_ret);
 static inline void bdigits_from_mpz(const mpz_t mp, BDIGIT *digits, size_t *len);
 
 static int
@@ -3423,7 +3422,7 @@ rb_big_unpack(unsigned long *buf, long num_longs)
 
 #ifdef USE_GMP
 // mpz_t version of rb_absint_size
-static size_t
+size_t
 rb_absint_size_mpz(const mpz_t mx, int *nlz_bits_ret)
 {
     const size_t nails = sizeof(mp_limb_t)*CHAR_BIT - mp_bits_per_limb;
