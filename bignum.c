@@ -3118,6 +3118,7 @@ bignew_mpz_set_1(VALUE klass, mpz_t mp)
         FL_SET_RAW(big, BIGNUM_EMBED_FLAG);
         bdigits_from_mpz(mp, BDIGITS((VALUE)big), &len);
         BIGNUM_SET_LEN((VALUE)big, len);
+        BIGNUM_SET_SIGN((VALUE)big, mpz_sgn(mp) >= 0);
     }
     else {
         mpz_init_set(RBIGNUM(big)->as.mpz, mp);
@@ -3385,6 +3386,34 @@ rb_big_unpack(unsigned long *buf, long num_longs)
             INTEGER_PACK_2COMP);
 }
 
+#ifdef USE_GMP
+// mpz_t version of rb_absint_size
+static size_t
+rb_absint_size_mpz(const mpz_t mx, int *nlz_bits_ret)
+{
+    const size_t nails = sizeof(mp_limb_t)*CHAR_BIT - mp_bits_per_limb;
+    const size_t mp_bytes_per_limb = (mp_bits_per_limb + CHAR_BIT - 1) / CHAR_BIT;
+    const size_t nlimbs = mpz_size(mx);
+    if (nlimbs == 0) return INT2FIX(0);
+
+    const mp_limb_t *dp = mpz_limbs_read(mx);
+    const mp_limb_t *de = dp + nlimbs;
+    while (dp < de && de[-1] == 0)
+        --de;
+    if (dp == de) {
+        if (nlz_bits_ret)
+            *nlz_bits_ret = 0;
+        return 0;
+    }
+
+    // TODO: use SIZEOF_MP_LIMB_T
+    const size_t num_leading_zeros = nlz_long(de[-1]) - nails;
+    if (nlz_bits_ret)
+        *nlz_bits_ret = num_leading_zeros % CHAR_BIT;
+    return (de - dp) * mp_bytes_per_limb - num_leading_zeros/CHAR_BIT;
+}
+#endif
+
 /*
  * Calculate the number of bytes to be required to represent
  * the absolute value of the integer given as _val_.
@@ -3431,6 +3460,11 @@ rb_absint_size(VALUE val, int *nlz_bits_ret)
         dp = fixbuf;
         de = fixbuf + numberof(fixbuf);
     }
+#ifdef USE_GMP
+    else if (! BIGNUM_EMBED_P(val)) {
+        return rb_absint_size_mpz(*BIGNUM_MPZ(val), nlz_bits_ret);
+    }
+#endif
     else {
         dp = BDIGITS(val);
         de = dp + BIGNUM_LEN(val);
@@ -3572,6 +3606,28 @@ rb_absint_numwords(VALUE val, size_t word_numbits, size_t *nlz_bits_ret)
     return numwords;
 }
 
+#ifdef USE_GMP
+// mpz_t version of rb_absint_singlebit_p
+static int
+rb_absint_singlebit_p_mpz(const mpz_t mx)
+{
+    const size_t nlimbs = mpz_size(mx);
+    const mp_limb_t *dp = mpz_limbs_read(mx);
+    const mp_limb_t *de = dp + nlimbs;
+
+    while (dp < de && de[-1] == 0)
+        --de;
+    while (dp < de && dp[0] == 0)
+        ++dp;
+    if (dp == de) // no bit set.
+        return 0;
+    if (dp != de-1) // two non-zero words. two bits set, at least.
+        return 0;
+    const mp_limb_t d = *dp;
+    return POW2_P(d);
+}
+#endif
+
 /* Test abs(val) consists only a bit or not.
  *
  * Returns 1 if abs(val) == 1 << n for some n >= 0.
@@ -3629,6 +3685,11 @@ rb_absint_singlebit_p(VALUE val)
         dp = fixbuf;
         de = fixbuf + numberof(fixbuf);
     }
+#ifdef USE_GMP
+    else if (! BIGNUM_EMBED_P(val)) {
+        return rb_absint_singlebit_p_mpz(*BIGNUM_MPZ(val));
+    }
+#endif
     else {
         dp = BDIGITS(val);
         de = dp + BIGNUM_LEN(val);
