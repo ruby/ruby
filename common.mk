@@ -3729,6 +3729,7 @@ string.$(OBJEXT): $(top_srcdir)/internal/proc.h
 string.$(OBJEXT): $(top_srcdir)/internal/re.h
 string.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 string.$(OBJEXT): $(top_srcdir)/internal/serial.h
+string.$(OBJEXT): $(top_srcdir)/internal/simd_strip.h
 string.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 string.$(OBJEXT): $(top_srcdir)/internal/stdbool.h
 string.$(OBJEXT): $(top_srcdir)/internal/string.h

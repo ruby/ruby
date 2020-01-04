@@ -1,0 +1,20 @@
+prelude: |
+  small_chars = "WWWWWWW"
+  large_chars = "W" * 10000
+  small_left_spaces = "   WWW"
+  large_left_spaces = " " * 10000 + "WWW"
+  small_right_spaces = "WWW   "
+  large_right_spaces = "WWW" + " " * 10000
+  small_both_spaces = "   WWW   "
+  large_both_spaces = " " * 5000 + "WWW" + " " * 5000
+
+benchmark:
+  small_chars.strip: small_chars.strip
+  large_chars.strip: large_chars.strip
+  small_left_spaces.strip: small_left_spaces.strip
+  large_left_spaces.strip: large_left_spaces.strip
+  small_right_spaces.strip: small_right_spaces.strip
+  large_right_spaces.strip: large_right_spaces.strip
+  small_both_spaces.strip: small_both_spaces.strip
+  large_both_spaces.strip: large_both_spaces.strip
+
