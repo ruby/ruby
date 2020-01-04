@@ -6021,10 +6021,12 @@ static VALUE
 bigadd_int(VALUE x, long y)
 {
     VALUE z;
-    BDIGIT *xds, *zds;
+    BDIGIT *xds, zds[BIGNUM_EMBED_LEN_MAX+1];
     long xn, zn;
     BDIGIT_DBL num;
     long i;
+
+    assert(BIGNUM_EMBED_P(x));
 
     xds = BDIGITS(x);
     xn = BIGNUM_LEN(x);
@@ -6037,10 +6039,8 @@ bigadd_int(VALUE x, long y)
     if (zn < bdigit_roomof(SIZEOF_LONG))
         zn = bdigit_roomof(SIZEOF_LONG);
 #endif
+    // NOTE: we can assume zn <= BIGNUM_EMBED_LEN_MAX
     zn++;
-
-    z = bignew(zn, BIGNUM_SIGN(x));
-    zds = BDIGITS(z);
 
 #if SIZEOF_BDIGIT >= SIZEOF_LONG
     num = (BDIGIT_DBL)xds[0] + y;
@@ -6054,17 +6054,17 @@ bigadd_int(VALUE x, long y)
     num = 0;
     for (i=0; i < xn; i++) {
         if (y == 0) goto y_is_zero_x;
-	num += (BDIGIT_DBL)xds[i] + BIGLO(y);
-	zds[i] = BIGLO(num);
-	num = BIGDN(num);
-	y = BIGDN(y);
+        num += (BDIGIT_DBL)xds[i] + BIGLO(y);
+        zds[i] = BIGLO(num);
+        num = BIGDN(num);
+        y = BIGDN(y);
     }
     for (; i < zn; i++) {
         if (y == 0) goto y_is_zero_z;
-	num += BIGLO(y);
-	zds[i] = BIGLO(num);
-	num = BIGDN(num);
-	y = BIGDN(y);
+        num += BIGLO(y);
+        zds[i] = BIGLO(num);
+        num = BIGDN(num);
+        y = BIGDN(y);
     }
     goto finish;
 
@@ -6073,31 +6073,44 @@ bigadd_int(VALUE x, long y)
     for (;i < xn; i++) {
       y_is_zero_x:
         if (num == 0) goto num_is_zero_x;
-	num += (BDIGIT_DBL)xds[i];
-	zds[i] = BIGLO(num);
-	num = BIGDN(num);
+        num += (BDIGIT_DBL)xds[i];
+        zds[i] = BIGLO(num);
+        num = BIGDN(num);
     }
     for (; i < zn; i++) {
       y_is_zero_z:
         if (num == 0) goto num_is_zero_z;
-	zds[i] = BIGLO(num);
-	num = BIGDN(num);
+        zds[i] = BIGLO(num);
+        num = BIGDN(num);
     }
     goto finish;
 
     for (;i < xn; i++) {
       num_is_zero_x:
-	zds[i] = xds[i];
+        zds[i] = xds[i];
     }
     for (; i < zn; i++) {
       num_is_zero_z:
-	zds[i] = 0;
+        zds[i] = 0;
     }
     goto finish;
 
   finish:
     RB_GC_GUARD(x);
-    return bignorm(z);
+    BARY_TRUNC(zds, zn);
+#ifdef USE_GMP
+    if (BIGNUM_EMBED_LEN_MAX < zn) {
+        z = bignew_mpz_set_bdigits(zds, zn);
+        BIGNUM_SET_SIGN(z, BIGNUM_SIGN(x));
+        return z;
+    }
+    else
+#endif
+    {
+        z = bignew(zn, BIGNUM_SIGN(x));
+        MEMCPY(BDIGITS(z), zds, BDIGIT, zn);
+        return bignorm(z);
+    }
 }
 
 static VALUE
