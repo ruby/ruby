@@ -2337,7 +2337,7 @@ mpz_init_set_bignum(mpz_t mp, VALUE x)
 }
 
 static inline void
-bdigits_from_mpz(mpz_t mp, BDIGIT *digits, size_t *len)
+bdigits_from_mpz(const mpz_t mp, BDIGIT *digits, size_t *len)
 {
     const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGIT)*CHAR_BIT;
     mpz_export(digits, len, -1, sizeof(BDIGIT), 0, nails, mp);
@@ -5702,6 +5702,28 @@ rb_integer_float_eq(VALUE x, VALUE y)
     return rb_big_eq(x, y);
 }
 
+#ifdef USE_GMP
+static int
+big_cmp_mpz(const mpz_t mx, VALUE y)
+{
+    if (BIGNUM_EMBED_P(y)) {
+        if (! mpz_fits_bignum_embed_p(mx)) {
+            return mpz_sgn(mx) >= 0 ? 1 : -1;
+        }
+
+        BDIGIT xds[BIGNUM_EMBED_LEN_MAX];
+        size_t xn;
+        bdigits_from_mpz(mx, xds, &xn);
+
+        return bary_cmp(xds, xn, BDIGITS(y), BIGNUM_LEN(y));
+    }
+    else {
+        int cmp = mpz_cmp(mx, *BIGNUM_MPZ(y));
+        if (cmp < 0) return -1;
+        return cmp > 0;
+    }
+}
+#endif
 
 VALUE
 rb_big_cmp(VALUE x, VALUE y)
@@ -5718,6 +5740,16 @@ rb_big_cmp(VALUE x, VALUE y)
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
 	if (BIGNUM_SIGN(x) == BIGNUM_SIGN(y)) {
+#ifdef USE_GMP
+            if (! BIGNUM_EMBED_P(x)) {
+                int cmp = big_cmp_mpz(*BIGNUM_MPZ(x), y);
+                return INT2FIX(BIGNUM_SIGN(x) ? cmp : -cmp);
+            }
+            else if (! BIGNUM_EMBED_P(y)) {
+                int cmp = -big_cmp_mpz(*BIGNUM_MPZ(y), x);
+                return INT2FIX(BIGNUM_SIGN(x) ? cmp : -cmp);
+            }
+#endif
 	    int cmp = bary_cmp(BDIGITS(x), BIGNUM_LEN(x), BDIGITS(y), BIGNUM_LEN(y));
 	    return INT2FIX(BIGNUM_SIGN(x) ? cmp : -cmp);
 	}
