@@ -111,10 +111,18 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGIT % SIZEOF_LONG == 0);
                        (BIGNUM_LEN(x) == 1 || bigzero_p(x))))
 #endif
 
-#define BIGSIZE(x) (BIGNUM_LEN(x) == 0 ? (size_t)0 : \
+#define BIGSIZE_EMBED(x) (BIGNUM_LEN(x) == 0 ? (size_t)0 : \
     BDIGITS(x)[BIGNUM_LEN(x)-1] ? \
         (size_t)(BIGNUM_LEN(x)*SIZEOF_BDIGIT - nlz(BDIGITS(x)[BIGNUM_LEN(x)-1])/CHAR_BIT) : \
     rb_absint_size(x, NULL))
+
+#ifdef USE_GMP
+# define BIGSIZE_NOEMBED(x) rb_absint_size(x, NULL)
+#else
+# define BIGSIZE_NOEMBED(x) BIGSIZE_EMBED(x)
+#endif
+
+#define BIGSIZE(x) (BIGNUM_EMBED_P(x) ? BIGSIZE_EMBED(x) : BIGSIZE_NOEMBED(x))
 
 #define BIGDIVREM_EXTRA_WORDS 1
 #define bdigit_roomof(n) roomof(n, SIZEOF_BDIGIT)
