@@ -998,6 +998,33 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
 #undef TAKE_LOWBITS
 }
 
+#ifdef USE_GMP
+static size_t rb_absint_size_mpz(const mpz_t mx, int *nlz_bits_ret);
+static inline void bdigits_from_mpz(const mpz_t mp, BDIGIT *digits, size_t *len);
+
+static int
+mpz_pack(const mpz_t mx, void *words, size_t numwords, size_t wordsize, size_t nails, int flags)
+{
+    // FIXME: stop using bdigits_from_mpz
+
+
+    int sign = mpz_sgn(mx) >= 0;
+    const size_t nbytes = rb_absint_size_mpz(mx, NULL);
+    const size_t len = (nbytes + SIZEOF_BDIGIT - 1) / SIZEOF_BDIGIT;
+
+    VALUE tmp;
+    BDIGIT *ds = ALLOCV_N(BDIGIT, tmp, len);
+    size_t num_bdigits;
+    bdigits_from_mpz(mx, ds, &num_bdigits);
+    assert(num_bdigits <= len);
+
+    sign = bary_pack(sign, ds, num_bdigits, words, numwords, wordsize, nails, flags);
+
+    ALLOCV_END(tmp);
+    return sign;
+}
+#endif
+
 static size_t
 integer_unpack_num_bdigits_small(size_t numwords, size_t wordsize, size_t nails, int *nlp_bits_ret)
 {
@@ -3803,6 +3830,11 @@ rb_integer_pack(VALUE val, void *words, size_t numwords, size_t wordsize, size_t
         ds = fixbuf;
         num_bdigits = numberof(fixbuf);
     }
+#ifdef USE_GMP
+    else if (! BIGNUM_EMBED_P(val)) {
+        return mpz_pack(*BIGNUM_MPZ(val), words, numwords, wordsize, nails, flags);
+    }
+#endif
     else {
         sign = BIGNUM_POSITIVE_P(val) ? 1 : -1;
         ds = BDIGITS(val);
