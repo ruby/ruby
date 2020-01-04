@@ -7911,6 +7911,12 @@ rb_big_bit_length(VALUE big)
 VALUE
 rb_big_odd_p(VALUE num)
 {
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(num)) {
+        return mpz_odd_p(*BIGNUM_MPZ(num)) ? Qtrue : Qfalse;
+    }
+    else
+#endif
     if (BIGNUM_LEN(num) != 0 && BDIGITS(num)[0] & 1) {
 	return Qtrue;
     }
@@ -7920,6 +7926,12 @@ rb_big_odd_p(VALUE num)
 VALUE
 rb_big_even_p(VALUE num)
 {
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(num)) {
+        return mpz_even_p(*BIGNUM_MPZ(num)) ? Qtrue : Qfalse;
+    }
+    else
+#endif
     if (BIGNUM_LEN(num) != 0 && BDIGITS(num)[0] & 1) {
 	return Qfalse;
     }
