@@ -4894,17 +4894,14 @@ big_shift3(VALUE x, int lshift_p, size_t shift_numdigits, int shift_numbits)
 static VALUE
 big_shift2(VALUE x, int lshift_p, VALUE y)
 {
-    int sign;
-    size_t lens[2];
-    size_t shift_numdigits;
-    int shift_numbits;
-
     assert(POW2_P(CHAR_BIT));
     assert(POW2_P(BITSPERDIG));
 
     if (BIGZEROP(x))
         return INT2FIX(0);
-    sign = rb_integer_pack(y, lens, numberof(lens), sizeof(size_t), 0,
+
+    size_t lens[2];
+    int sign = rb_integer_pack(y, lens, numberof(lens), sizeof(size_t), 0,
         INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
     if (sign < 0) {
         lshift_p = !lshift_p;
@@ -4918,9 +4915,17 @@ big_shift2(VALUE x, int lshift_p, VALUE y)
         if (1 < sign || CHAR_BIT <= lens[1])
             return BIGNUM_POSITIVE_P(x) ? INT2FIX(0) : INT2FIX(-1);
     }
-    shift_numbits = (int)(lens[0] & (BITSPERDIG-1));
-    shift_numdigits = (lens[0] >> bit_length(BITSPERDIG-1)) |
+
+    const int shift_numbits = (int)(lens[0] & (BITSPERDIG-1));
+    const size_t shift_numdigits = (lens[0] >> bit_length(BITSPERDIG-1)) |
       (lens[1] << (CHAR_BIT*SIZEOF_SIZE_T - bit_length(BITSPERDIG-1)));
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        const size_t shift = shift_numdigits*BITSPERDIG + shift_numbits;
+        return big_shift3_mpz(*BIGNUM_MPZ(x), lshift_p, shift);
+    }
+    else
+#endif
     return big_shift3(x, lshift_p, shift_numdigits, shift_numbits);
 }
 
