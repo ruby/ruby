@@ -3939,9 +3939,15 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	break;
 
       case T_BIGNUM:
-	if (!(RBASIC(obj)->flags & BIGNUM_EMBED_FLAG) && BIGNUM_DIGITS(obj)) {
-	    size += BIGNUM_LEN(obj) * sizeof(BDIGIT);
-	}
+        if (! BIGNUM_EMBED_P(obj)) {
+#ifdef USE_GMP
+            size += mpz_size(*BIGNUM_MPZ(obj)) * sizeof(mp_limb_t);
+#else
+            if (BIGNUM_DIGITS(obj)) {
+                size += BIGNUM_LEN(obj) * sizeof(BDIGIT);
+            }
+#endif
+        }
 	break;
 
       case T_NODE:
