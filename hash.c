@@ -5444,8 +5444,9 @@ env_each_pair(VALUE ehash)
  *
  * Similar to ENV.delete_if, but returns +nil+ if no changes were made.
  *
- * Deletes each environment variable for which the block returns a truthy value,
- * returning ENV (if any deletions) or +nil+ (if not):
+ * Yields each environment variable name and its value as a 2-element Array,
+ * deleting each environment variable for which the block returns a truthy value,
+ * and returning ENV (if any deletions) or +nil+ (if not):
  *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
  *   ENV.reject! { |name, value| name.start_with?('b') } # => ENV
  *   ENV # => {"foo"=>"0"}
@@ -5487,8 +5488,9 @@ env_reject_bang(VALUE ehash)
  *   ENV.delete_if { |name, value| block } -> ENV
  *   ENV.delete_if                         -> Enumerator
  *
- * Deletes each environment variable for which the block returns a truthy value,
- * returning ENV (regardless or whether any deletions):
+ * Yields each environment variable name and its value as a 2-element Array,
+ * deleting each environment variable for which the block returns a truthy value,
+ * and returning ENV (regardless or whether any deletions):
  *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
  *   ENV.delete_if { |name, value| name.start_with?('b') } # => ENV
  *   ENV # => {"foo"=>"0"}
@@ -5547,11 +5549,19 @@ env_values_at(int argc, VALUE *argv, VALUE _)
  *   ENV.filter { |name, value| block } -> Hash
  *   ENV.filter                         -> Enumerator
  *
- * Returns a copy of the environment for entries where the block returns true.
- *
- * Returns an Enumerator if no block was given.
- *
  * ENV.filter is an alias for ENV.select.
+ *
+ * Yields each environment variable name and its value as a 2-element Array,
+ * returning a Hash of the names and values for which the block returns a truthy value:
+ *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
+ *   ENV.select { |name, value| name.start_with?('b') } # => {"bar"=>"1", "baz"=>"2"}
+ *   ENV.filter { |name, value| name.start_with?('b') } # => {"bar"=>"1", "baz"=>"2"}
+ *
+ * Returns an Enumerator if no block given:
+ *   e = ENV.select # => #<Enumerator: {"bar"=>"1", "baz"=>"2", "foo"=>"0"}:select>
+ *   e.each { |name, value | name.start_with?('b') } # => {"bar"=>"1", "baz"=>"2"}
+ *   e = ENV.filter # => #<Enumerator: {"bar"=>"1", "baz"=>"2", "foo"=>"0"}:filter>
+ *   e.each { |name, value | name.start_with?('b') } # => {"bar"=>"1", "baz"=>"2"}
  */
 static VALUE
 env_select(VALUE ehash)
