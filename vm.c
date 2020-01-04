@@ -2501,6 +2501,13 @@ rb_execution_context_update(const rb_execution_context_t *ec)
     }
 }
 
+static enum rb_id_table_iterator_result
+mark_local_storage_i(VALUE local, void *data)
+{
+    rb_gc_mark(local);
+    return ID_TABLE_CONTINUE;
+}
+
 void
 rb_execution_context_mark(const rb_execution_context_t *ec)
 {
@@ -2544,7 +2551,9 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 
     RUBY_MARK_UNLESS_NULL(ec->errinfo);
     RUBY_MARK_UNLESS_NULL(ec->root_svar);
-    rb_mark_tbl(ec->local_storage);
+    if (ec->local_storage) {
+        rb_id_table_foreach_values(ec->local_storage, mark_local_storage_i, NULL);
+    }
     RUBY_MARK_UNLESS_NULL(ec->local_storage_recursive_hash);
     RUBY_MARK_UNLESS_NULL(ec->local_storage_recursive_hash_for_trace);
     RUBY_MARK_UNLESS_NULL(ec->private_const_reference);
@@ -2639,7 +2648,7 @@ thread_memsize(const void *ptr)
 	size += th->ec->vm_stack_size * sizeof(VALUE);
     }
     if (th->ec->local_storage) {
-	size += st_memsize(th->ec->local_storage);
+	size += rb_id_table_memsize(th->ec->local_storage);
     }
     return size;
 }
