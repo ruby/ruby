@@ -1919,6 +1919,7 @@ cont.$(OBJEXT): {$(VPATH)}defines.h
 cont.$(OBJEXT): {$(VPATH)}eval_intern.h
 cont.$(OBJEXT): {$(VPATH)}gc.h
 cont.$(OBJEXT): {$(VPATH)}id.h
+cont.$(OBJEXT): {$(VPATH)}id_table.h
 cont.$(OBJEXT): {$(VPATH)}intern.h
 cont.$(OBJEXT): {$(VPATH)}internal.h
 cont.$(OBJEXT): {$(VPATH)}method.h

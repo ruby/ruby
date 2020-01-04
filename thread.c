@@ -3219,11 +3219,11 @@ threadptr_local_aref(rb_thread_t *th, ID id)
 	return th->ec->local_storage_recursive_hash;
     }
     else {
-	st_data_t val;
-	st_table *local_storage = th->ec->local_storage;
+	VALUE val;
+	struct rb_id_table *local_storage = th->ec->local_storage;
 
-	if (local_storage != NULL && st_lookup(local_storage, id, &val)) {
-	    return (VALUE)val;
+	if (local_storage != NULL && rb_id_table_lookup(local_storage, id, &val)) {
+	    return val;
 	}
 	else {
 	    return Qnil;
@@ -3340,7 +3340,7 @@ rb_thread_fetch(int argc, VALUE *argv, VALUE self)
 	return target_th->ec->local_storage_recursive_hash;
     }
     else if (id && target_th->ec->local_storage &&
-	     st_lookup(target_th->ec->local_storage, id, &val)) {
+	     rb_id_table_lookup(target_th->ec->local_storage, id, &val)) {
 	return val;
     }
     else if (block_given) {
@@ -3362,18 +3362,18 @@ threadptr_local_aset(rb_thread_t *th, ID id, VALUE val)
 	return val;
     }
     else {
-	st_table *local_storage = th->ec->local_storage;
+	struct rb_id_table *local_storage = th->ec->local_storage;
 
 	if (NIL_P(val)) {
 	    if (!local_storage) return Qnil;
-	    st_delete_wrap(local_storage, id);
+	    rb_id_table_delete(local_storage, id);
 	    return Qnil;
 	}
 	else {
 	    if (local_storage == NULL) {
-		th->ec->local_storage = local_storage = st_init_numtable();
+		th->ec->local_storage = local_storage = rb_id_table_create(0);
 	    }
-	    st_insert(local_storage, id, val);
+	    rb_id_table_insert(local_storage, id, val);
 	    return val;
 	}
     }
@@ -3486,13 +3486,14 @@ rb_thread_variable_set(VALUE thread, VALUE id, VALUE val)
 static VALUE
 rb_thread_key_p(VALUE self, VALUE key)
 {
+    VALUE val;
     ID id = rb_check_id(&key);
-    st_table *local_storage = rb_thread_ptr(self)->ec->local_storage;
+    struct rb_id_table *local_storage = rb_thread_ptr(self)->ec->local_storage;
 
     if (!id || local_storage == NULL) {
 	return Qfalse;
     }
-    else if (st_is_member(local_storage, id)) {
+    else if (rb_id_table_lookup(local_storage, id, &val)) {
 	return Qtrue;
     }
     else {
@@ -3500,11 +3501,11 @@ rb_thread_key_p(VALUE self, VALUE key)
     }
 }
 
-static int
-thread_keys_i(ID key, VALUE value, VALUE ary)
+static enum rb_id_table_iterator_result
+thread_keys_i(ID key, VALUE value, void *ary)
 {
-    rb_ary_push(ary, ID2SYM(key));
-    return ST_CONTINUE;
+    rb_ary_push((VALUE)ary, ID2SYM(key));
+    return ID_TABLE_CONTINUE;
 }
 
 int
@@ -3530,11 +3531,11 @@ rb_thread_alone(void)
 static VALUE
 rb_thread_keys(VALUE self)
 {
-    st_table *local_storage = rb_thread_ptr(self)->ec->local_storage;
+    struct rb_id_table *local_storage = rb_thread_ptr(self)->ec->local_storage;
     VALUE ary = rb_ary_new();
 
     if (local_storage) {
-	st_foreach(local_storage, thread_keys_i, ary);
+	rb_id_table_foreach(local_storage, thread_keys_i, (void *)ary);
     }
     return ary;
 }

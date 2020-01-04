@@ -27,6 +27,7 @@
 #include "internal/warnings.h"
 #include "mjit.h"
 #include "vm_core.h"
+#include "id_table.h"
 
 static const int DEBUG = 0;
 
@@ -1018,7 +1019,7 @@ fiber_free(void *ptr)
     //if (DEBUG) fprintf(stderr, "fiber_free: %p[%p]\n", fiber, fiber->stack.base);
 
     if (fiber->cont.saved_ec.local_storage) {
-        st_free_table(fiber->cont.saved_ec.local_storage);
+        rb_id_table_free(fiber->cont.saved_ec.local_storage);
     }
 
     cont_free(&fiber->cont);
@@ -1037,7 +1038,7 @@ fiber_memsize(const void *ptr)
      * vm.c::thread_memsize already counts th->ec->local_storage
      */
     if (saved_ec->local_storage && fiber != th->root_fiber) {
-        size += st_memsize(saved_ec->local_storage);
+        size += rb_id_table_memsize(saved_ec->local_storage);
     }
     size += cont_memsize(&fiber->cont);
     return size;

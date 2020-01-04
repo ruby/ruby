@@ -865,7 +865,7 @@ typedef struct rb_execution_context_struct {
     struct rb_thread_struct *thread_ptr;
 
     /* storage (ec (fiber) local) */
-    st_table *local_storage;
+    struct rb_id_table *local_storage;
     VALUE local_storage_recursive_hash;
     VALUE local_storage_recursive_hash_for_trace;
 
