@@ -3194,8 +3194,21 @@ rb_big_clone(VALUE x)
 static void
 big_extend_carry(VALUE x)
 {
-    rb_big_resize(x, BIGNUM_LEN(x)+1);
-    BDIGITS(x)[BIGNUM_LEN(x)-1] = 1;
+#ifdef USE_GMP
+    assert(BIGNUM_EMBED_P(x));
+    if (BIGNUM_LEN(x) == BIGNUM_EMBED_LEN_MAX) {
+        BDIGIT xds[BIGNUM_EMBED_LEN_MAX + 1];
+        MEMCPY(xds, BDIGITS(x), BDIGIT, BIGNUM_EMBED_LEN_MAX);
+        xds[BIGNUM_EMBED_LEN_MAX] = 1;
+        FL_UNSET_RAW(x, BIGNUM_EMBED_FLAG);
+        mpz_init_set_bdigits(*BIGNUM_MPZ(x), xds, BIGNUM_EMBED_LEN_MAX+1);
+    }
+    else
+#endif
+    {
+        rb_big_resize(x, BIGNUM_LEN(x)+1);
+        BDIGITS(x)[BIGNUM_LEN(x)-1] = 1;
+    }
 }
 
 /* modify a bignum by 2's complement */
