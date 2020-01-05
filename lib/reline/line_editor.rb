@@ -905,7 +905,6 @@ class Reline::LineEditor
         quote = nil
         i += 1
         rest = nil
-        break_pointer = nil
       elsif quote and slice.start_with?(escaped_quote)
         # skip
         i += 2
@@ -915,7 +914,7 @@ class Reline::LineEditor
         closing_quote = /(?!\\)#{Regexp.escape(quote)}/
         escaped_quote = /\\#{Regexp.escape(quote)}/
         i += 1
-        break_pointer = i
+        break_pointer = i - 1
       elsif not quote and slice =~ word_break_regexp
         rest = $'
         i += 1
@@ -937,6 +936,11 @@ class Reline::LineEditor
       end
     else
       preposing = ''
+      if break_pointer
+        preposing = @line.byteslice(0, break_pointer)
+      else
+        preposing = ''
+      end
       target = before
     end
     [preposing.encode(@encoding), target.encode(@encoding), postposing.encode(@encoding)]
