@@ -1552,7 +1552,7 @@ io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
 #endif
     str = do_writeconv(str, fptr, &converted);
     if (converted)
-	rb_str_freeze(str);
+	rb_obj_freeze(str);
 
     tmp = rb_str_tmp_frozen_acquire(str);
     RSTRING_GETMEM(tmp, ptr, len);
@@ -1717,7 +1717,7 @@ io_fwritev(int argc, VALUE *argv, rb_io_t *fptr)
 	converted = 0;
 	str = do_writeconv(str, fptr, &converted);
 	if (converted)
-	    rb_str_freeze(str);
+	    rb_obj_freeze(str);
 
 	tmp = rb_str_tmp_frozen_acquire(str);
 	tmp_array[i] = tmp;
