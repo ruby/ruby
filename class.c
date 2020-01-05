@@ -1960,7 +1960,6 @@ struct rb_scan_args_t {
     int argi;
     VALUE hash;
     VALUE last_hash;
-    VALUE *tmp_buffer;
 };
 
 static void
@@ -2105,16 +2104,11 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
 {
     int error;
     va_list vargs;
-    VALUE tmp_buffer = 0;
     struct rb_scan_args_t arg;
-    arg.tmp_buffer = &tmp_buffer;
     rb_scan_args_parse(RB_SCAN_ARGS_PASS_CALLED_KEYWORDS, argc, argv, fmt, &arg);
     va_start(vargs,fmt);
     error = rb_scan_args_assign(&arg, vargs);
     va_end(vargs);
-    if (tmp_buffer) {
-        rb_free_tmp_buffer(&tmp_buffer);
-    }
     if (error) {
         rb_error_arity(arg.argc, arg.n_mand, arg.f_var ? UNLIMITED_ARGUMENTS : arg.n_mand + arg.n_opt);
     }
@@ -2126,16 +2120,11 @@ rb_scan_args_kw(int kw_flag, int argc, const VALUE *argv, const char *fmt, ...)
 {
     int error;
     va_list vargs;
-    VALUE tmp_buffer = 0;
     struct rb_scan_args_t arg;
-    arg.tmp_buffer = &tmp_buffer;
     rb_scan_args_parse(kw_flag, argc, argv, fmt, &arg);
     va_start(vargs,fmt);
     error = rb_scan_args_assign(&arg, vargs);
     va_end(vargs);
-    if (tmp_buffer) {
-        rb_free_tmp_buffer(&tmp_buffer);
-    }
     if (error) {
         rb_error_arity(arg.argc, arg.n_mand, arg.f_var ? UNLIMITED_ARGUMENTS : arg.n_mand + arg.n_opt);
     }
