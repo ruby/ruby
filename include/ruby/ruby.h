@@ -2520,7 +2520,6 @@ rb_scan_args_set(int argc, const VALUE *argv,
     int i, argi = 0, vari = 0;
     VALUE *var, hash = Qnil, last_hash = 0;
     const int n_mand = n_lead + n_trail;
-    VALUE tmp_buffer = 0;
 
     if (f_hash && argc > 0 && rb_keyword_given_p()) {
         hash = rb_hash_dup(argv[argc - 1]);
@@ -2589,11 +2588,9 @@ rb_scan_args_set(int argc, const VALUE *argv,
 
     if (argi < argc) {
       argc_error:
-        if (tmp_buffer) rb_free_tmp_buffer(&tmp_buffer);
         rb_error_arity(argc, n_mand, f_var ? UNLIMITED_ARGUMENTS : n_mand + n_opt);
     }
 
-    if (tmp_buffer) rb_free_tmp_buffer(&tmp_buffer);
     return argc;
 }
 #endif
