@@ -3940,6 +3940,11 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
         val = Qfalse;
         ds = fixbuf;
     }
+#ifdef USE_GMP
+    else if (BIGNUM_EMBED_LEN_MAX < num_bdigits) {
+        ds = ALLOCV_N(BDIGIT, val, num_bdigits + 1);
+    }
+#endif
     else {
         val = bignew((long)num_bdigits, 0);
         ds = BDIGITS(val);
@@ -3948,6 +3953,13 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
 
     if (sign == -2) {
         if (val) {
+#ifdef USE_GMP
+            if (BIGNUM_EMBED_LEN_MAX < num_bdigits) {
+                ++num_bdigits;
+                ds[num_bdigits - 1] = 1;
+            }
+            else
+#endif
             big_extend_carry(val);
         }
         else if (num_bdigits == numberof(fixbuf)) {
@@ -3972,6 +3984,13 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
         val = bignew((long)num_bdigits, 0 <= sign);
         MEMCPY(BDIGITS(val), fixbuf, BDIGIT, num_bdigits);
     }
+#ifdef USE_GMP
+    else if (BIGNUM_EMBED_LEN_MAX < num_bdigits) {
+        VALUE tmp = val;
+        val = bignew_mpz_set_bdigits(ds, num_bdigits);
+        ALLOCV_END(tmp);
+    }
+#endif
 
     if ((flags & INTEGER_PACK_FORCE_BIGNUM) && sign != 0 &&
         bary_zero_p(BDIGITS(val), BIGNUM_LEN(val)))
