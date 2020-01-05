@@ -93,5 +93,24 @@ module TestIRB
         assert_indenting(lines, row.new_line_spaces, true)
       end
     end
+
+    def test_multiple_braces_in_a_line
+      input_with_correct_indents = [
+        Row.new(%q([[[), nil, 6),
+        Row.new(%q(    ]), 4, 4),
+        Row.new(%q(  ]), 2, 2),
+        Row.new(%q(]), 0, 0),
+        Row.new(%q([<<FOO]), nil, 0),
+        Row.new(%q(hello), nil, 0),
+        Row.new(%q(FOO), nil, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+      end
+    end
   end
 end
