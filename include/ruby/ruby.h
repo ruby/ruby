@@ -2517,7 +2517,7 @@ rb_scan_args_set(int argc, const VALUE *argv,
     __attribute__((diagnose_if(rb_scan_args_count(fmt)!=varc,"variable argument length doesn't match","error")))
 # endif
 {
-    int i, argi = 0, vari = 0, last_idx = -1;
+    int i, argi = 0, vari = 0;
     VALUE *var, hash = Qnil, last_hash = 0;
     const int n_mand = n_lead + n_trail;
     VALUE tmp_buffer = 0;
@@ -2534,14 +2534,14 @@ rb_scan_args_set(int argc, const VALUE *argv,
     /* capture leading mandatory arguments */
     for (i = n_lead; i-- > 0; ) {
 	var = vars[vari++];
-	if (var) *var = (argi == last_idx) ? last_hash : argv[argi];
+	if (var) *var = argv[argi];
 	argi++;
     }
     /* capture optional arguments */
     for (i = n_opt; i-- > 0; ) {
 	var = vars[vari++];
 	if (argi < argc - n_trail) {
-	    if (var) *var = (argi == last_idx) ? last_hash : argv[argi];
+	    if (var) *var = argv[argi];
 	    argi++;
 	}
 	else {
@@ -2555,7 +2555,7 @@ rb_scan_args_set(int argc, const VALUE *argv,
 	var = vars[vari++];
 	if (0 < n_var) {
 	    if (var) {
-		int f_last = (last_idx + 1 == argc - n_trail);
+		int f_last = (argc == n_trail);
 		*var = rb_ary_new4(n_var-f_last, &argv[argi]);
 		if (f_last) rb_ary_push(*var, last_hash);
 	    }
@@ -2568,7 +2568,7 @@ rb_scan_args_set(int argc, const VALUE *argv,
     /* capture trailing mandatory arguments */
     for (i = n_trail; i-- > 0; ) {
 	var = vars[vari++];
-	if (var) *var = (argi == last_idx) ? last_hash : argv[argi];
+	if (var) *var = argv[argi];
 	argi++;
     }
     /* capture an option hash - phase 2: assignment */
