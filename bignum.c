@@ -3085,9 +3085,8 @@ void
 rb_big_resize(VALUE big, size_t len)
 {
 #ifdef USE_GMP
-    if (BIGNUM_EMBED_P(big) && len <= BIGNUM_EMBED_LEN_MAX) {
-        BIGNUM_SET_LEN(big, len);
-    }
+    assert(BIGNUM_EMBED_P(big) && len <= BIGNUM_EMBED_LEN_MAX);
+    BIGNUM_SET_LEN(big, len);
 #else
     rb_big_realloc(big, len);
     BIGNUM_SET_LEN(big, len);
