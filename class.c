@@ -1958,7 +1958,6 @@ struct rb_scan_args_t {
     int n_trail;
     int n_mand;
     int argi;
-    int last_idx;
     VALUE hash;
     VALUE last_hash;
     VALUE *tmp_buffer;
@@ -1972,7 +1971,6 @@ rb_scan_args_parse(int kw_flag, int argc, const VALUE *argv, const char *fmt, st
     int last_hash_keyword = 0;
 
     memset(arg, 0, sizeof(*arg));
-    arg->last_idx = -1;
     arg->hash = Qnil;
 
     switch (kw_flag) {
@@ -2043,14 +2041,14 @@ rb_scan_args_assign(struct rb_scan_args_t *arg, va_list vargs)
     /* capture leading mandatory arguments */
     for (i = arg->n_lead; i-- > 0; ) {
 	var = va_arg(vargs, VALUE *);
-        if (var) *var = (argi == arg->last_idx) ? arg->last_hash : arg->argv[argi];
+        if (var) *var = arg->argv[argi];
 	argi++;
     }
     /* capture optional arguments */
     for (i = arg->n_opt; i-- > 0; ) {
 	var = va_arg(vargs, VALUE *);
         if (argi < arg->argc - arg->n_trail) {
-            if (var) *var = (argi == arg->last_idx) ? arg->last_hash : arg->argv[argi];
+            if (var) *var = arg->argv[argi];
 	    argi++;
 	}
 	else {
@@ -2064,7 +2062,7 @@ rb_scan_args_assign(struct rb_scan_args_t *arg, va_list vargs)
 	var = va_arg(vargs, VALUE *);
 	if (0 < n_var) {
 	    if (var) {
-                int f_last = (arg->last_idx + 1 == arg->argc - arg->n_trail);
+                int f_last = (arg->argc == arg->n_trail);
                 *var = rb_ary_new4(n_var - f_last, &arg->argv[argi]);
                 if (f_last) rb_ary_push(*var, arg->last_hash);
 	    }
@@ -2077,7 +2075,7 @@ rb_scan_args_assign(struct rb_scan_args_t *arg, va_list vargs)
     /* capture trailing mandatory arguments */
     for (i = arg->n_trail; i-- > 0; ) {
 	var = va_arg(vargs, VALUE *);
-        if (var) *var = (argi == arg->last_idx) ? arg->last_hash : arg->argv[argi];
+        if (var) *var = arg->argv[argi];
 	argi++;
     }
     /* capture an option hash - phase 2: assignment */
