@@ -3277,6 +3277,18 @@ bigfixize_mpz(VALUE x)
         if (FIXABLE(l))
             return LONG2FIX(l);
     }
+    else if (mpz_fits_bignum_embed_p(*BIGNUM_MPZ(x))) {
+        BDIGIT xds[BIGNUM_EMBED_LEN_MAX];
+        size_t xn;
+        bdigits_from_mpz(*BIGNUM_MPZ(x), xds, &xn);
+        const int sign = mpz_sgn(*BIGNUM_MPZ(x)) >= 0;
+        mpz_clear(*BIGNUM_MPZ(x));
+
+        FL_SET_RAW(x, BIGNUM_EMBED_FLAG);
+        MEMCPY(BDIGITS(x), xds, BDIGIT, xn);
+        BIGNUM_SET_LEN(x, xn);
+        BIGNUM_SET_SIGN(x, sign);
+    }
     return x;
 }
 #endif
