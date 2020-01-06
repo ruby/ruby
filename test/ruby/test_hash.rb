@@ -1756,4 +1756,28 @@ class TestHash < Test::Unit::TestCase
       super
     end
   end
+
+  ruby2_keywords def get_flagged_hash(*args)
+    args.last
+  end
+
+  def check_flagged_hash(k: :NG)
+    k
+  end
+
+  def test_ruby2_keywords_hash?
+    flagged_hash = get_flagged_hash(k: 1)
+    assert_equal(true, Hash.ruby2_keywords_hash?(flagged_hash))
+    assert_equal(false, Hash.ruby2_keywords_hash?({}))
+    assert_raise(TypeError) { Hash.ruby2_keywords_hash?(1) }
+  end
+
+  def test_ruby2_keywords_hash!
+    hash = {k: 1}
+    assert_equal(false, Hash.ruby2_keywords_hash?(hash))
+    hash = Hash.ruby2_keywords_hash(hash)
+    assert_equal(true, Hash.ruby2_keywords_hash?(hash))
+    assert_equal(1, check_flagged_hash(*[hash]))
+    assert_raise(TypeError) { Hash.ruby2_keywords_hash(1) }
+  end
 end
