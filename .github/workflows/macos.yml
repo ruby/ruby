@@ -20,9 +20,9 @@ jobs:
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
-      - name: Checkout ruby/ruby
+      - name: Checkout push to ruby
         run: |
-          git clone --single-branch --shallow-since=yesterday https://github.com/ruby/ruby src
+          git clone --single-branch --shallow-since=yesterday https://github.com/${{ github.repository }} src
           git -C src reset --hard "$GITHUB_SHA"
         if: github.event_name == 'push'
       - name: Checkout a pull request
