@@ -580,17 +580,6 @@ bug_report_begin_valist(FILE *out, const char *fmt, va_list args)
     snprintf(buf, sizeof(buf), "\n%s\n\n", ruby_description);
     fputs(buf, out);
     preface_dump(out);
-
-#if RUBY_DEVEL
-    const char *cmd = getenv("RUBY_ON_BUG");
-    if (cmd) {
-        snprintf(buf, sizeof(buf), "%s %"PRI_PIDT_PREFIX"d", cmd, getpid());
-        int r = system(buf);
-        if (r == -1) {
-            snprintf(buf, sizeof(buf), "Launching RUBY_ON_BUG command failed.");
-        }
-    }
-#endif
 }
 
 #define bug_report_begin(out, fmt) do { \
