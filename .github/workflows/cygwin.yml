@@ -42,7 +42,7 @@ jobs:
         run: |
           echo '::set-env name=PATH::C:\tools\cygwin\bin;C:\tools\cygwin\usr\bin'
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
-      - name: Checkout push to ruby
+      - name: Checkout ruby
         run: |
           git clone --single-branch --shallow-since=yesterday https://github.com/${{ github.repository }} src
           git -C src reset --hard ${{ github.sha }}
