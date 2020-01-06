@@ -53,9 +53,9 @@ jobs:
           sudo apt-get update -q || :
           sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev bison autoconf ruby
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
-      - name: Checkout ruby/ruby
+      - name: Checkout push to ruby
         run: |
-          git clone --single-branch --shallow-since=yesterday https://github.com/ruby/ruby src
+          git clone --single-branch --shallow-since=yesterday https://github.com/${{ github.repository }} src
           git -C src reset --hard "$GITHUB_SHA"
         if: github.event_name == 'push'
       - name: Checkout a pull request
