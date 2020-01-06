@@ -3506,7 +3506,6 @@ class TestKeywordArguments < Test::Unit::TestCase
   end
 
   def test_precedence_of_keyword_arguments_with_post_argument
-    bug8993 = '[ruby-core:57706] [Bug #8993]'
     a = Class.new do
       def foo(a, b, c=1, *d, e, f:2, **g)
         [a, b, c, d, e, f, g]

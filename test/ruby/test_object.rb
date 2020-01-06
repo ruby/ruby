@@ -80,7 +80,6 @@ class TestObject < Test::Unit::TestCase
       attr_reader :f
     end
     o = c.new
-    f = true
     def o.initialize_clone(_, freeze: true)
       @f = freeze
       super
@@ -92,6 +91,9 @@ class TestObject < Test::Unit::TestCase
     assert_kind_of c, clone
     assert_equal false, clone.f
 
+    class << o
+      remove_method(:initialize_clone)
+    end
     def o.initialize_clone(_)
       super
     end
