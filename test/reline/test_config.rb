@@ -195,4 +195,15 @@ class Reline::Config::Test < Reline::TestCase
     expected = { 'ef'.bytes => 'EF'.bytes, 'gh'.bytes => 'GH'.bytes }
     assert_equal expected, @config.key_bindings
   end
+
+  def test_history_size
+    @config.read_lines(<<~LINES.lines)
+      set history-size 5000
+    LINES
+
+    assert_equal 5000, @config.instance_variable_get(:@history_size)
+    history = Reline::History.new(@config)
+    history << "a\n"
+    assert_equal 1, history.size
+  end
 end

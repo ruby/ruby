@@ -184,9 +184,8 @@ class Reline::Config
 
   def bind_variable(name, value)
     case name
-    when *VARIABLE_NAMES then
-      variable_name = :"@#{name.tr(?-, ?_)}"
-      instance_variable_set(variable_name, value.nil? || value == '1' || value == 'on')
+    when 'history-size'
+      @history_size = value.to_i
     when 'bell-style'
       @bell_style =
         case value
@@ -225,6 +224,9 @@ class Reline::Config
       end
     when 'keyseq-timeout'
       @keyseq_timeout = value.to_i
+    when *VARIABLE_NAMES then
+      variable_name = :"@#{name.tr(?-, ?_)}"
+      instance_variable_set(variable_name, value.nil? || value == '1' || value == 'on')
     end
   end
 
