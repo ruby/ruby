@@ -2188,10 +2188,19 @@ class TestSetTraceFunc < Test::Unit::TestCase
                   [__FILE__+"/instance_eval", eval_script],
                   [__FILE__+"/class_eval", eval_script],
                  ], events
+
     events.clear
+    tp.enable{
+      begin
+        eval('a=')
+      rescue SyntaxError
+      end
+    }
+    assert_equal [], events, 'script_compiled event should not be invoked on compile error'
 
     skip "TODO: test for requires"
 
+    events.clear
     tp.enable{
       require ''
       require_relative ''
