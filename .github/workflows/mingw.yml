@@ -42,11 +42,10 @@ jobs:
           git clone --single-branch --shallow-since=yesterday https://github.com/ruby/ruby src
           git -C src reset --hard "$GITHUB_SHA"
         if: github.event_name == 'push'
-      # It's hard to propagate `env` to this workflow's shell environment to checkout PR. Using unstable actions/checkout as a workaround.
       - name: Checkout a pull request
-        uses: actions/checkout@v2
-        with:
-          path: src
+        run: |
+          git clone --single-branch --shallow-since=yesterday --branch=${{ github.event.pull_request.head.ref }} https://github.com/${{ github.event.pull_request.head.repo.full_name }} src
+          git -C src reset --hard ${{ github.event.pull_request.head.sha }}
         if: github.event_name == 'pull_request'
       - run: ./src/tool/actions-commit-info.sh
         shell: bash

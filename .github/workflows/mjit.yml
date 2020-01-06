@@ -29,12 +29,8 @@ jobs:
         if: github.event_name == 'push'
       - name: Checkout a pull request
         run: |
-          git clone --single-branch --shallow-since=yesterday "--branch=$GITHUB_BRANCH" "https://github.com/${GITHUB_REPO}" src
-          git -C src reset --hard "$GITHUB_REV"
-        env:
-          GITHUB_REV: ${{ github.event.pull_request.head.sha }}
-          GITHUB_BRANCH: ${{ github.event.pull_request.head.ref }}
-          GITHUB_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          git clone --single-branch --shallow-since=yesterday --branch=${{ github.event.pull_request.head.ref }} https://github.com/${{ github.event.pull_request.head.repo.full_name }} src
+          git -C src reset --hard ${{ github.event.pull_request.head.sha }}
         if: github.event_name == 'pull_request'
       - run: ./src/tool/actions-commit-info.sh
         id: commit_info
