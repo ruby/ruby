@@ -37,7 +37,7 @@ jobs:
           git config --system core.autocrlf false
           git config --system core.eol lf
       # Not using official actions/checkout@v2 because it's unstable.
-      - name: Checkout push to ruby
+      - name: Checkout ruby
         run: |
           git clone --single-branch --shallow-since=yesterday https://github.com/${{ github.repository }} src
           git -C src reset --hard "$GITHUB_SHA"
