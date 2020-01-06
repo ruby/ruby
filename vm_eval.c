@@ -1552,7 +1552,7 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
     const VALUE parser = rb_parser_new();
     const rb_iseq_t *const parent = vm_block_iseq(base_block);
     VALUE realpath = Qnil;
-    rb_iseq_t *iseq = 0;
+    rb_iseq_t *iseq = NULL;
     rb_ast_t *ast;
 
     if (!fname) {
@@ -1583,12 +1583,14 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
     }
     rb_ast_dispose(ast);
 
-    if (0 && iseq) {		/* for debug */
-	VALUE disasm = rb_iseq_disasm(iseq);
-	printf("%s\n", StringValuePtr(disasm));
-    }
+    if (iseq != NULL) {
+        if (0 && iseq) {		/* for debug */
+            VALUE disasm = rb_iseq_disasm(iseq);
+            printf("%s\n", StringValuePtr(disasm));
+        }
 
-    rb_exec_event_hook_script_compiled(GET_EC(), iseq, src);
+        rb_exec_event_hook_script_compiled(GET_EC(), iseq, src);
+    }
 
     return iseq;
 }
