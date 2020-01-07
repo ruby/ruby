@@ -883,6 +883,26 @@ rb_include_module(VALUE klass, VALUE module)
     changed = include_modules_at(klass, RCLASS_ORIGIN(klass), module, TRUE);
     if (changed < 0)
 	rb_raise(rb_eArgError, "cyclic include detected");
+
+    if (RB_TYPE_P(klass, T_MODULE)) {
+        rb_subclass_entry_t *iclass = RCLASS_EXT(klass)->subclasses;
+        int do_include = 1;
+        while (iclass) {
+            VALUE check_class = iclass->klass;
+            while (check_class) {
+                if (RB_TYPE_P(check_class, T_ICLASS) &&
+                        (RBASIC(check_class)->klass == module)) {
+                    do_include = 0;
+                }
+                check_class = RCLASS_SUPER(check_class);
+            }
+
+            if (do_include) {
+                include_modules_at(iclass->klass, RCLASS_ORIGIN(iclass->klass), module, TRUE);
+            }
+            iclass = iclass->next;
+        }
+    }
 }
 
 static enum rb_id_table_iterator_result
