@@ -47,6 +47,7 @@ env:
     - RUBY_PREFIX=/tmp/ruby-prefix
     - GEMS_FOR_TEST='timezone tzinfo'
     - UPDATE_UNICODE="UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
+    - BEFORE_INSTALL=true
     # https://github.com/travis-ci/travis-build/blob/e411371dda21430a60f61b8f3f57943d2fe4d344/lib/travis/build/bash/travis_apt_get_options.bash#L7
     - travis_apt_get_options='--allow-downgrades --allow-remove-essential --allow-change-held-packages'
     - travis_apt_get_options="-yq --no-install-suggests --no-install-recommends $travis_apt_get_options"
@@ -68,10 +69,10 @@ env:
     #     sources:
     #       - ubuntu-toolchain-r-test
     before_install:
+      - bash -cx "${BEFORE_INSTALL}"
       - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
       - |-
-        ${BEFORE_INSTALL}
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
           ccache \
           gcc-8 \
@@ -132,7 +133,9 @@ env:
     name: s390x-linux
     arch: s390x
     <<: *gcc-8
-    
+    env:
+      - BEFORE_INSTALL="tool/travis_disable_ipv6.sh"
+
   - &jemalloc
     name: --with-jemalloc
     <<: *gcc-8
@@ -453,6 +456,8 @@ before_script:
   - echo JOBS=${JOBS} SETARCH=${SETARCH}
   - $SETARCH uname -a
   - $SETARCH uname -r
+  - ip a
+  - cat /etc/hosts
   - rm -fr .ext autom4te.cache
   - echo $TERM
   - |-
