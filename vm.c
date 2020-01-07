@@ -30,6 +30,7 @@
 #include "ruby/st.h"
 #include "ruby/vm.h"
 #include "vm_core.h"
+#include "vm_callinfo.h"
 #include "vm_debug.h"
 #include "vm_exec.h"
 #include "vm_insnhelper.h"

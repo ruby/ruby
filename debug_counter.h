@@ -49,6 +49,12 @@ RB_DEBUG_COUNTER(mc_miss_by_visi)
 RB_DEBUG_COUNTER(mc_miss_spurious)
 RB_DEBUG_COUNTER(mc_miss_reuse_call)
 
+// callinfo
+RB_DEBUG_COUNTER(ci_packed)
+RB_DEBUG_COUNTER(ci_kw)
+RB_DEBUG_COUNTER(ci_nokw)
+RB_DEBUG_COUNTER(ci_runtime)
+
 /*
  * call cache fastpath usage
  */
@@ -282,6 +288,7 @@ RB_DEBUG_COUNTER(obj_imemo_throw_data)
 RB_DEBUG_COUNTER(obj_imemo_ifunc)
 RB_DEBUG_COUNTER(obj_imemo_memo)
 RB_DEBUG_COUNTER(obj_imemo_parser_strterm)
+RB_DEBUG_COUNTER(obj_imemo_callinfo)
 
 /* ar_table */
 RB_DEBUG_COUNTER(artable_hint_hit)

@@ -20,6 +20,7 @@
 #include "internal/variable.h"
 #include "mjit.h"
 #include "vm_core.h"
+#include "vm_callinfo.h"
 #include "vm_exec.h"
 #include "vm_insnhelper.h"
 
@@ -34,16 +35,7 @@
 static size_t
 call_data_index(CALL_DATA cd, const struct rb_iseq_constant_body *body)
 {
-    const struct rb_kwarg_call_data *kw_calls = (const struct rb_kwarg_call_data *)&body->call_data[body->ci_size];
-    const struct rb_kwarg_call_data *kw_cd = (const struct rb_kwarg_call_data *)cd;
-
-    VM_ASSERT(cd >= body->call_data && kw_cd < (kw_calls + body->ci_kw_size));
-    if (kw_cd < kw_calls) {
-        return cd - body->call_data;
-    }
-    else {
-        return kw_cd - kw_calls + body->ci_size;
-    }
+    return cd - body->call_data;
 }
 
 // For propagating information needed for lazily pushing a frame.
@@ -103,8 +95,8 @@ fastpath_applied_iseq_p(const CALL_INFO ci, const CALL_CACHE cc, const rb_iseq_t
 {
     extern bool rb_simple_iseq_p(const rb_iseq_t *iseq);
     return iseq != NULL
-        && !(ci->flag & VM_CALL_KW_SPLAT) && rb_simple_iseq_p(iseq) // Top of vm_callee_setup_arg. In this case, opt_pc is 0.
-        && ci->orig_argc == iseq->body->param.lead_num // exclude argument_arity_error (assumption: `calling->argc == ci->orig_argc` in send insns)
+        && !(vm_ci_flag(ci) & VM_CALL_KW_SPLAT) && rb_simple_iseq_p(iseq) // Top of vm_callee_setup_arg. In this case, opt_pc is 0.
+        && vm_ci_argc(ci) == (unsigned int)iseq->body->param.lead_num // exclude argument_arity_error (assumption: `calling->argc == ci->orig_argc` in send insns)
         && vm_call_iseq_optimizable_p(ci, cc); // CC_SET_FASTPATH condition
 }
 
@@ -376,8 +368,8 @@ inlinable_iseq_p(const struct rb_iseq_constant_body *body)
         .stack_size_for_pos = (int *)alloca(sizeof(int) * body->iseq_size), \
         .inlined_iseqs = compile_root_p ? \
             alloca(sizeof(const struct rb_iseq_constant_body *) * body->iseq_size) : NULL, \
-        .cc_entries = (body->ci_size + body->ci_kw_size) > 0 ? \
-            alloca(sizeof(struct rb_call_cache) * (body->ci_size + body->ci_kw_size)) : NULL, \
+        .cc_entries = body->ci_size > 0 ? \
+            alloca(sizeof(struct rb_call_cache) * body->ci_size) : NULL, \
         .is_entries = (body->is_size > 0) ? \
             alloca(sizeof(union iseq_inline_storage_entry) * body->is_size) : NULL, \
         .compile_info = compile_root_p ? \
@@ -405,12 +397,12 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
 
         if (insn == BIN(opt_send_without_block)) { // `compile_inlined_cancel_handler` supports only `opt_send_without_block`
             CALL_DATA cd = (CALL_DATA)body->iseq_encoded[pos + 1];
-            CALL_INFO ci = &cd->ci;
+            const struct rb_callinfo *ci = cd->ci;
             CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body); // use copy to avoid race condition
 
             const rb_iseq_t *child_iseq;
             if (has_valid_method_type(cc_copy) &&
-                    !(ci->flag & VM_CALL_TAILCALL) && // inlining only non-tailcall path
+                    !(vm_ci_flag(ci) & VM_CALL_TAILCALL) && // inlining only non-tailcall path
                     cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, child_iseq = def_iseq_ptr(cc_copy->me->def)) && // CC_SET_FASTPATH in vm_callee_setup_arg
                     inlinable_iseq_p(child_iseq->body)) {
                 status->inlined_iseqs[pos] = child_iseq->body;
@@ -425,7 +417,7 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
                 struct compile_status child_status;
                 INIT_COMPILE_STATUS(child_status, child_iseq->body, false);
                 child_status.inline_context = (struct inlined_call_context){
-                    .orig_argc = ci->orig_argc,
+                    .orig_argc = vm_ci_argc(ci),
                     .me = (VALUE)cc_copy->me,
                     .param_size = child_iseq->body->param.size,
                     .local_size = child_iseq->body->local_table_size

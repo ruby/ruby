@@ -39,9 +39,9 @@ static const vm_call_handler vm_call_iseq_handlers[][#{L.to_a.size}] = {
 };
 
 static inline vm_call_handler
-vm_call_iseq_setup_func(const struct rb_call_info *ci, const int param_size, const int local_size)
+vm_call_iseq_setup_func(const struct rb_callinfo *ci, const int param_size, const int local_size)
 {
-    if (UNLIKELY(ci->flag & VM_CALL_TAILCALL)) {
+    if (UNLIKELY(vm_ci_flag(ci) & VM_CALL_TAILCALL)) {
 	return &vm_call_iseq_setup_tailcall_0start;
     }
     else if (0) { /* to disable optimize */
@@ -59,11 +59,10 @@ vm_call_iseq_setup_func(const struct rb_call_info *ci, const int param_size, con
 
 #else
 
-
 static inline vm_call_handler
-vm_call_iseq_setup_func(const struct rb_call_info *ci, const int param_size, const int local_size)
+vm_call_iseq_setup_func(const struct rb_callinfo *ci, const int param_size, const int local_size)
 {
-    if (UNLIKELY(ci->flag & VM_CALL_TAILCALL)) {
+    if (UNLIKELY(vm_ci_flag(ci) & VM_CALL_TAILCALL)) {
 	return &vm_call_iseq_setup_tailcall_0start;
     }
     else {

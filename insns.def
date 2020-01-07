@@ -775,10 +775,10 @@ send
 (CALL_DATA cd, ISEQ blockiseq)
 (...)
 (VALUE val)
-// attr rb_snum_t sp_inc = sp_inc_of_sendish(&cd->ci);
+// attr rb_snum_t sp_inc = sp_inc_of_sendish(cd->ci);
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
-    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), &cd->ci, blockiseq, false);
+    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, false);
     val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);
 
     if (val == Qundef) {
@@ -794,7 +794,7 @@ opt_send_without_block
 (...)
 (VALUE val)
 // attr bool handles_sp = true;
-// attr rb_snum_t sp_inc = sp_inc_of_sendish(&cd->ci);
+// attr rb_snum_t sp_inc = sp_inc_of_sendish(cd->ci);
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
@@ -881,10 +881,10 @@ invokesuper
 (CALL_DATA cd, ISEQ blockiseq)
 (...)
 (VALUE val)
-// attr rb_snum_t sp_inc = sp_inc_of_sendish(&cd->ci);
+// attr rb_snum_t sp_inc = sp_inc_of_sendish(cd->ci);
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
-    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), &cd->ci, blockiseq, true);
+    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, true);
     val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_super_method);
 
     if (val == Qundef) {
@@ -900,7 +900,7 @@ invokeblock
 (...)
 (VALUE val)
 // attr bool handles_sp = true;
-// attr rb_snum_t sp_inc = sp_inc_of_invokeblock(&cd->ci);
+// attr rb_snum_t sp_inc = sp_inc_of_invokeblock(cd->ci);
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_invokeblock(ci);
 {
     if (UNLIKELY(cd->cc.call != vm_invokeblock_i)) {

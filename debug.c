@@ -24,6 +24,7 @@
 #include "symbol.h"
 #include "vm_core.h"
 #include "vm_debug.h"
+#include "vm_callinfo.h"
 
 /* This is the only place struct RIMemo is actually used */
 struct RIMemo {

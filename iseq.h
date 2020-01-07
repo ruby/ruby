@@ -25,14 +25,6 @@ typedef struct rb_iseq_struct rb_iseq_t;
 
 extern const ID rb_iseq_shared_exc_local_tbl[];
 
-static inline size_t
-rb_call_info_kw_arg_bytes(int keyword_len)
-{
-    return rb_size_mul_add_or_raise(
-        keyword_len - 1, sizeof(VALUE), sizeof(struct rb_call_info_kw_arg),
-        rb_eRuntimeError);
-}
-
 #define ISEQ_COVERAGE(iseq)           iseq->body->variable.coverage
 #define ISEQ_COVERAGE_SET(iseq, cov)  RB_OBJ_WRITE(iseq, &iseq->body->variable.coverage, cov)
 #define ISEQ_LINE_COVERAGE(iseq)      RARRAY_AREF(ISEQ_COVERAGE(iseq), COVERAGE_INDEX_LINES)
@@ -115,7 +107,6 @@ struct iseq_compile_data {
     int label_no;
     int node_level;
     unsigned int ci_index;
-    unsigned int ci_kw_index;
     const rb_compile_option_t *option;
     struct rb_id_table *ivar_cache_table;
     const struct rb_builtin_function *builtin_function_table;

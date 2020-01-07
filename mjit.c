@@ -55,12 +55,8 @@ mjit_copy_job_handler(void *data)
         unsigned int i;
         struct rb_call_cache *sink = job->cc_entries;
         const struct rb_call_data *calls = body->call_data;
-        const struct rb_kwarg_call_data *kw_calls = (struct rb_kwarg_call_data *)&body->call_data[body->ci_size];
         for (i = 0; i < body->ci_size; i++) {
             *sink++ = calls[i].cc;
-        }
-        for (i = 0; i < body->ci_kw_size; i++) {
-            *sink++ = kw_calls[i].cc;
         }
     }
     if (job->is_entries) {
