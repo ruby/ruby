@@ -18,13 +18,13 @@
 %
     if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
         const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+        const CALL_INFO ci = cd->ci;
+        unsigned int argc = vm_ci_argc(ci); // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
 % if insn.name == 'send'
-        argc += ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0); // simulate `vm_caller_setup_arg_block`'s `--reg_cfp->sp`
+        argc += ((vm_ci_flag(ci) & VM_CALL_ARGS_BLOCKARG) ? 1 : 0); // simulate `vm_caller_setup_arg_block`'s `--reg_cfp->sp`
 % end
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
+        if (!(vm_ci_flag(ci) & VM_CALL_TAILCALL) // inlining non-tailcall path
                 && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
             int param_size = iseq->body->param.size;
 
@@ -63,7 +63,7 @@
 % else
                 fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
 % end
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
+                fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
                 fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
 
 % # JIT: Special CALL_METHOD. Bypass cc_copy->call and inline vm_call_iseq_setup_normal for vm_call_iseq_setup_func FASTPATH.

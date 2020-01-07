@@ -9,7 +9,7 @@
 #line <%= __LINE__ + 1 %> <%=cstr __FILE__ %>
 
 static rb_snum_t
-sp_inc_of_sendish(const struct rb_call_info *ci)
+sp_inc_of_sendish(const struct rb_callinfo *ci)
 {
     /* Send-ish instructions will:
      *
@@ -18,8 +18,8 @@ sp_inc_of_sendish(const struct rb_call_info *ci)
      * 3. Pop receiver.
      * 4. Push return value.
      */
-    const int argb = (ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0;
-    const int argc = ci->orig_argc;
+    const int argb = (vm_ci_flag(ci) & VM_CALL_ARGS_BLOCKARG) ? 1 : 0;
+    const int argc = vm_ci_argc(ci);
     const int recv = 1;
     const int retn = 1;
 
@@ -28,7 +28,7 @@ sp_inc_of_sendish(const struct rb_call_info *ci)
 }
 
 static rb_snum_t
-sp_inc_of_invokeblock(const struct rb_call_info *ci)
+sp_inc_of_invokeblock(const struct rb_callinfo *ci)
 {
     /* sp_inc of invokeblock is almost identical to that of sendish
      * instructions, except that it does not pop receiver. */

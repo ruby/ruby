@@ -35,7 +35,7 @@
 %   when 'ID'
         comment_id(f, (ID)operands[<%= i %>]);
 %   when 'CALL_DATA'
-        comment_id(f, ((CALL_DATA)operands[<%= i %>])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[<%= i %>])->ci));
 %   when 'VALUE'
         if (SYMBOL_P((VALUE)operands[<%= i %>])) comment_id(f, SYM2ID((VALUE)operands[<%= i %>]));
 %   end

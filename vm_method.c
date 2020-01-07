@@ -2054,17 +2054,6 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
     return module;
 }
 
-bool
-rb_method_basic_definition_p_with_cc(struct rb_call_data *cd, VALUE klass, ID mid)
-{
-    if (cd->ci.mid != mid) {
-        *cd = (struct rb_call_data) /* reset */ { .ci = { .mid = mid, }, };
-    }
-
-    vm_search_method_fastpath(cd, klass);
-    return cd->cc.me && METHOD_ENTRY_BASIC(cd->cc.me);
-}
-
 #ifdef __GNUC__
 #pragma push_macro("rb_method_basic_definition_p")
 #undef rb_method_basic_definition_p

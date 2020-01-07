@@ -27,7 +27,7 @@ struct args_info {
     /* additional args info */
     int rest_index;
     int rest_dupped;
-    const struct rb_call_info_kw_arg *kw_arg;
+    const struct rb_callinfo_kwarg *kw_arg;
     VALUE *kw_argv;
     VALUE rest;
 };
@@ -190,7 +190,7 @@ args_rest_array(struct args_info *args)
 static int
 args_kw_argv_to_hash(struct args_info *args)
 {
-    const struct rb_call_info_kw_arg *kw_arg = args->kw_arg;
+    const struct rb_callinfo_kwarg *kw_arg = args->kw_arg;
     const VALUE *const passed_keywords = kw_arg->keywords;
     const int kw_len = kw_arg->keyword_len;
     VALUE h = rb_hash_new_with_size(kw_len);
@@ -440,13 +440,13 @@ ignore_keyword_hash_p(VALUE keyword_hash, const rb_iseq_t * const iseq)
 static int
 setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * const iseq,
 			 struct rb_calling_info *const calling,
-			 const struct rb_call_info *ci,
-			 VALUE * const locals, const enum arg_setup_type arg_setup_type)
+                         const struct rb_callinfo *ci,
+                         VALUE * const locals, const enum arg_setup_type arg_setup_type)
 {
     const int min_argc = iseq->body->param.lead_num + iseq->body->param.post_num;
     const int max_argc = (iseq->body->param.flags.has_rest == FALSE) ? min_argc + iseq->body->param.opt_num : UNLIMITED_ARGUMENTS;
     int given_argc;
-    unsigned int kw_flag = ci->flag & (VM_CALL_KWARG | VM_CALL_KW_SPLAT);
+    unsigned int kw_flag = vm_ci_flag(ci) & (VM_CALL_KWARG | VM_CALL_KW_SPLAT);
     int opt_pc = 0, allow_autosplat = !kw_flag;
     struct args_info args_body, *args;
     VALUE keyword_hash = Qnil;
@@ -481,7 +481,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     args->rest_dupped = FALSE;
 
     if (kw_flag & VM_CALL_KWARG) {
-	args->kw_arg = ((struct rb_call_info_with_kwarg *)ci)->kw_arg;
+	args->kw_arg = vm_ci_kwarg(ci);
 
 	if (iseq->body->param.flags.has_kw) {
 	    int kw_len = args->kw_arg->keyword_len;
@@ -502,7 +502,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 	args->kw_argv = NULL;
     }
 
-    if (ci->flag & VM_CALL_ARGS_SPLAT) {
+    if (vm_ci_flag(ci) & VM_CALL_ARGS_SPLAT) {
         VALUE rest_last = 0;
         int len;
 	args->rest = locals[--args->argc];
@@ -631,7 +631,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 	VALUE * const klocals = locals + iseq->body->param.keyword->bits_start - iseq->body->param.keyword->num;
 
 	if (args->kw_argv != NULL) {
-	    const struct rb_call_info_kw_arg *kw_arg = args->kw_arg;
+	    const struct rb_callinfo_kwarg *kw_arg = args->kw_arg;
 	    args_setup_kw_parameters(ec, iseq, args->kw_argv, kw_arg->keyword_len, kw_arg->keywords, klocals);
 	}
 	else if (!NIL_P(keyword_hash)) {
@@ -759,11 +759,10 @@ vm_caller_setup_arg_splat(rb_control_frame_t *cfp, struct rb_calling_info *calli
 }
 
 static inline void
-vm_caller_setup_arg_kw(rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci)
+vm_caller_setup_arg_kw(rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_callinfo *ci)
 {
-    struct rb_call_info_with_kwarg *ci_kw = (struct rb_call_info_with_kwarg *)ci;
-    const VALUE *const passed_keywords = ci_kw->kw_arg->keywords;
-    const int kw_len = ci_kw->kw_arg->keyword_len;
+    const VALUE *const passed_keywords = vm_ci_kwarg(ci)->keywords;
+    const int kw_len = vm_ci_kwarg(ci)->keyword_len;
     const VALUE h = rb_hash_new_with_size(kw_len);
     VALUE *sp = cfp->sp;
     int i;
@@ -844,9 +843,9 @@ refine_sym_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
 
 static VALUE
 vm_caller_setup_arg_block(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
-                          const struct rb_call_info *ci, const rb_iseq_t *blockiseq, const int is_super)
+                          const struct rb_callinfo *ci, const rb_iseq_t *blockiseq, const int is_super)
 {
-    if (ci->flag & VM_CALL_ARGS_BLOCKARG) {
+    if (vm_ci_flag(ci) & VM_CALL_ARGS_BLOCKARG) {
 	VALUE block_code = *(--reg_cfp->sp);
 
 	if (NIL_P(block_code)) {

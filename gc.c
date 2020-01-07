@@ -106,6 +106,7 @@
 #include "symbol.h"
 #include "transient_heap.h"
 #include "vm_core.h"
+#include "vm_callinfo.h"
 
 #include "builtin.h"
 
@@ -2892,6 +2893,9 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
           case imemo_parser_strterm:
             RB_DEBUG_COUNTER_INC(obj_imemo_parser_strterm);
             break;
+          case imemo_callinfo:
+            RB_DEBUG_COUNTER_INC(obj_imemo_callinfo);
+            break;
 	  default:
             /* unreachable */
 	    break;
@@ -5202,7 +5206,10 @@ gc_mark_ptr(rb_objspace_t *objspace, VALUE obj)
     if (LIKELY(objspace->mark_func_data == NULL)) {
 	rgengc_check_relation(objspace, obj);
 	if (!gc_mark_set(objspace, obj)) return; /* already marked */
-        if (RB_TYPE_P(obj, T_NONE)) rb_bug("try to mark T_NONE object"); /* check here will help debugging */
+        if (RB_TYPE_P(obj, T_NONE)) {
+            rp(obj);
+            rb_bug("try to mark T_NONE object"); /* check here will help debugging */
+        }
 	gc_aging(objspace, obj);
 	gc_grey(objspace, obj);
     }
@@ -5326,6 +5333,8 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
       case imemo_parser_strterm:
 	rb_strterm_mark(obj);
 	return;
+      case imemo_callinfo:
+        return;
 #if VM_CHECK_MODE > 0
       default:
 	VM_UNREACHABLE(gc_mark_imemo);
@@ -8119,6 +8128,7 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
         break;
       case imemo_parser_strterm:
       case imemo_tmpbuf:
+      case imemo_callinfo:
         break;
       default:
         rb_bug("not reachable %d", imemo_type(obj));
@@ -11595,6 +11605,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 		IMEMO_NAME(tmpbuf);
                 IMEMO_NAME(ast);
                 IMEMO_NAME(parser_strterm);
+                IMEMO_NAME(callinfo);
 #undef IMEMO_NAME
 	      default: UNREACHABLE;
 	    }
@@ -11621,6 +11632,16 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
                 rb_raw_iseq_info(BUFF_ARGS, iseq);
 		break;
 	      }
+              case imemo_callinfo:
+                {
+                    const struct rb_callinfo *ci = (const struct rb_callinfo *)obj;
+                    APPENDF((BUFF_ARGS, "(mid:%s, flag:%x argc:%d, kwarg:%s)",
+                             rb_id2name(vm_ci_mid(ci)),
+                             vm_ci_flag(ci),
+                             vm_ci_argc(ci),
+                             vm_ci_kwarg(ci) ? "available" : "NULL"));
+                    break;
+                }
 	      default:
 		break;
 	    }
@@ -11676,7 +11697,7 @@ rb_obj_info_dump(VALUE obj)
     fprintf(stderr, "rb_obj_info_dump: %s\n", rb_raw_obj_info(buff, 0x100, obj));
 }
 
-void
+MJIT_FUNC_EXPORTED void
 rb_obj_info_dump_loc(VALUE obj, const char *file, int line, const char *func)
 {
     char buff[0x100];
