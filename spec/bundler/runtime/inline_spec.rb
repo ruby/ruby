@@ -333,4 +333,21 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(last_command).to be_success
     expect(out).to include("BUNDLE_GEMFILE is empty")
   end
+
+  it "resets BUNDLE_GEMFILE to the empty string if it wasn't set previously" do
+    ENV["BUNDLE_GEMFILE"] = nil
+    script <<-RUBY
+      gemfile do
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      end
+
+      puts "BUNDLE_GEMFILE is empty" if ENV["BUNDLE_GEMFILE"].empty?
+      system("#{Gem.ruby} -w -e '42'") # this should see original value of BUNDLE_GEMFILE
+      exit $?.exitstatus
+    RUBY
+
+    expect(last_command).to be_success
+    expect(out).to include("BUNDLE_GEMFILE is empty")
+  end
 end

@@ -73,7 +73,7 @@ module Bundler
 
     def build_gem
       file_name = nil
-      sh("#{gem_command} build -V #{spec_path}".shellsplit) do
+      sh("#{gem_command} build -V #{spec_path.shellescape}".shellsplit) do
         file_name = File.basename(built_gem_path)
         SharedHelpers.filesystem_access(File.join(base, "pkg")) {|p| FileUtils.mkdir_p(p) }
         FileUtils.mv(built_gem_path, "pkg")
@@ -130,9 +130,8 @@ module Bundler
 
     def perform_git_push(options = "")
       cmd = "git push #{options}"
-      out, status = sh_with_status(cmd)
+      out, status = sh_with_status(cmd.shellsplit)
       return if status.success?
-      cmd = cmd.shelljoin if cmd.respond_to?(:shelljoin)
       raise "Couldn't git push. `#{cmd}' failed with the following output:\n\n#{out}\n"
     end
 

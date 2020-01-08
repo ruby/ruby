@@ -38,7 +38,8 @@ module Bundler
         if Bundler.feature_flag.deployment_means_frozen?
           Bundler.settings.set_command_option :deployment, true
         else
-          Bundler.settings.set_command_option :frozen, true
+          Bundler.settings.set_command_option :deployment, true if options[:deployment]
+          Bundler.settings.set_command_option :frozen, true if options[:frozen]
         end
       end
 
@@ -169,7 +170,7 @@ module Bundler
     def normalize_settings
       Bundler.settings.set_command_option :path, nil if options[:system]
       Bundler.settings.temporary(:path_relative_to_cwd => false) do
-        Bundler.settings.set_command_option :path, "vendor/bundle" if options[:deployment]
+        Bundler.settings.set_command_option :path, "vendor/bundle" if Bundler.settings[:deployment] && Bundler.settings[:path].nil?
       end
       Bundler.settings.set_command_option_if_given :path, options[:path]
       Bundler.settings.temporary(:path_relative_to_cwd => false) do

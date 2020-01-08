@@ -168,7 +168,6 @@ RSpec.describe "Bundler.require" do
       build_lib "jquery-rails", "1.0.0" do |s|
         s.write "lib/jquery/rails.rb", "puts 'jquery/rails'"
       end
-      lib_path("jquery-rails-1.0.0/lib/jquery-rails.rb").rmtree
     end
 
     it "requires gem names that are namespaced" do
@@ -241,7 +240,6 @@ RSpec.describe "Bundler.require" do
       build_lib "load-fuuu", "1.0.0" do |s|
         s.write "lib/load/fuuu.rb", "raise LoadError.new(\"cannot load such file -- load-bar\")"
       end
-      lib_path("load-fuuu-1.0.0/lib/load-fuuu.rb").rmtree
 
       gemfile <<-G
         path "#{lib_path}" do

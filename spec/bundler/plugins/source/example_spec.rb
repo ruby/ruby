@@ -125,14 +125,14 @@ RSpec.describe "real source plugins" do
     end
 
     it "installs the gem executables" do
-      build_lib "gem-with-bin" do |s|
+      build_lib "gem_with_bin" do |s|
         s.executables = ["foo"]
       end
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}" # plugin source
-        source "#{lib_path("gem-with-bin-1.0")}", :type => :mpath do
-          gem "gem-with-bin"
+        source "#{lib_path("gem_with_bin-1.0")}", :type => :mpath do
+          gem "gem_with_bin"
         end
       G
 
@@ -451,7 +451,7 @@ RSpec.describe "real source plugins" do
         bundle "install"
 
         run <<-RUBY
-          require 'ma-gitp-gem'
+          require 'ma/gitp/gem'
           puts "WIN" unless defined?(MAGITPGEM_PREV_REF)
         RUBY
         expect(out).to eq("WIN")
@@ -462,7 +462,7 @@ RSpec.describe "real source plugins" do
         bundle "update ma-gitp-gem"
 
         run <<-RUBY
-          require 'ma-gitp-gem'
+          require 'ma/gitp/gem'
           puts "WIN" if defined?(MAGITPGEM_PREV_REF)
         RUBY
         expect(out).to eq("WIN")
