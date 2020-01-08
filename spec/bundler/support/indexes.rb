@@ -45,7 +45,7 @@ module Spec
 
     def should_conflict_on(names)
       got = resolve
-      flunk "The resolve succeeded with: #{got.map(&:full_name).sort.inspect}"
+      raise "The resolve succeeded with: #{got.map(&:full_name).sort.inspect}"
     rescue Bundler::VersionConflict => e
       expect(Array(names).sort).to eq(e.conflicts.sort)
     end
