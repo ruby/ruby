@@ -566,6 +566,8 @@ static void
 verify_call_cache(rb_iseq_t *iseq)
 {
 #if CPDEBUG
+    // fprintf(stderr, "ci_size:%d\t", iseq->body->ci_size); rp(iseq);
+
     VALUE *original = rb_iseq_original_iseq(iseq);
     size_t i = 0;
     while (i < iseq->body->iseq_size) {
@@ -574,15 +576,26 @@ verify_call_cache(rb_iseq_t *iseq)
 
         for (int j=0; types[j]; j++) {
             if (types[j] == TS_CALLDATA) {
-                struct rb_call_cache cc;
                 struct rb_call_data *cd = (struct rb_call_data *)original[i+j+1];
-                MEMZERO(&cc, cc, 1);
-                if (memcmp(&cc, &cd->cc, sizeof(cc))) {
-                    rb_bug("call cache not zero for fresh iseq");
+                const struct rb_callinfo *ci = cd->ci;
+                const struct rb_callcache *cc = cd->cc;
+                if (cc != vm_cc_empty()) {
+                    vm_ci_dump(ci);
+                    rb_bug("call cache is not initialized by vm_cc_empty()");
                 }
             }
         }
         i += insn_len(insn);
+    }
+
+    for (unsigned int i=0; i<iseq->body->ci_size; i++) {
+        struct rb_call_data *cd = &iseq->body->call_data[i];
+        const struct rb_callinfo *ci = cd->ci;
+        const struct rb_callcache *cc = cd->cc;
+        if (cc != NULL && cc != vm_cc_empty()) {
+            vm_ci_dump(ci);
+            rb_bug("call cache is not initialized by vm_cc_empty()");
+        }
     }
 #endif
 }
@@ -661,7 +674,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
     DECL_ANCHOR(ret);
     INIT_ANCHOR(ret);
 
-    if (imemo_type_p((VALUE)node, imemo_ifunc)) {
+    if (IMEMO_TYPE_P(node, imemo_ifunc)) {
         rb_raise(rb_eArgError, "unexpected imemo_ifunc");
     }
 
@@ -1212,6 +1225,7 @@ new_callinfo(rb_iseq_t *iseq, ID mid, int argc, unsigned int flag, struct rb_cal
         argc += kw_arg->keyword_len;
     }
 
+    // fprintf(stderr, "[%d] id:%s\t", (int)iseq->body->ci_size, rb_id2name(mid)); rp(iseq);
     iseq->body->ci_size++;
     const struct rb_callinfo *ci = vm_ci_new(mid, flag, argc, kw_arg);
     RB_OBJ_WRITTEN(iseq, Qundef, ci);
@@ -2223,6 +2237,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                             struct rb_call_data *cd = &body->call_data[ISEQ_COMPILE_DATA(iseq)->ci_index++];
                             assert(ISEQ_COMPILE_DATA(iseq)->ci_index <= body->ci_size);
                             cd->ci = source_ci;
+                            cd->cc = vm_cc_empty();
                             generated_iseq[code_index + 1 + j] = (VALUE)cd;
                             break;
                         }
@@ -10301,16 +10316,18 @@ ibf_dump_ci_entries(struct ibf_dump *dump, const rb_iseq_t *iseq)
 }
 
 /* note that we dump out rb_call_info but load back rb_call_data */
-static struct rb_call_data *
+static void
 ibf_load_ci_entries(const struct ibf_load *load,
                     ibf_offset_t ci_entries_offset,
-                    unsigned int ci_size)
+                    unsigned int ci_size,
+                    struct rb_call_data **cd_ptr)
 {
     ibf_offset_t reading_pos = ci_entries_offset;
 
     unsigned int i;
 
     struct rb_call_data *cds = ZALLOC_N(struct rb_call_data, ci_size);
+    *cd_ptr = cds;
 
     for (i = 0; i < ci_size; i++) {
         VALUE mid_index = ibf_load_small_value(load, &reading_pos);
@@ -10331,10 +10348,9 @@ ibf_load_ci_entries(const struct ibf_load *load,
 
         cds[i].ci = vm_ci_new(mid, flag, argc, kwarg);
         RB_OBJ_WRITTEN(load->iseq, Qundef, cds[i].ci);
+        cds[i].cc = vm_cc_empty();
     }
-
-    return cds;
-} 
+}
 
 static ibf_offset_t
 ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
@@ -10588,7 +10604,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->catch_except_p = catch_except_p;
 
     load_body->is_entries           = ZALLOC_N(union iseq_inline_storage_entry, is_size);
-    load_body->call_data            = ibf_load_ci_entries(load, ci_entries_offset, ci_size);
+                                      ibf_load_ci_entries(load, ci_entries_offset, ci_size, &load_body->call_data);
     load_body->param.opt_table      = ibf_load_param_opt_table(load, param_opt_table_offset, param_opt_num);
     load_body->param.keyword        = ibf_load_param_keyword(load, param_keyword_offset);
     load_body->param.flags.has_kw   = (param_flags >> 4) & 1;

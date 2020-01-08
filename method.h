@@ -69,8 +69,12 @@ typedef struct rb_callable_method_entry_struct { /* same fields with rb_method_e
 
 #define METHOD_ENTRY_VISI(me)  (rb_method_visibility_t)(((me)->flags & (IMEMO_FL_USER0 | IMEMO_FL_USER1)) >> (IMEMO_FL_USHIFT+0))
 #define METHOD_ENTRY_BASIC(me) (int)                   (((me)->flags & (IMEMO_FL_USER2                 )) >> (IMEMO_FL_USHIFT+2))
-#define METHOD_ENTRY_COMPLEMENTED(me)     ((me)->flags & IMEMO_FL_USER3)
-#define METHOD_ENTRY_COMPLEMENTED_SET(me) ((me)->flags = (me)->flags | IMEMO_FL_USER3)
+#define METHOD_ENTRY_COMPLEMENTED(me)        ((me)->flags & IMEMO_FL_USER3)
+#define METHOD_ENTRY_COMPLEMENTED_SET(me)    ((me)->flags = (me)->flags | IMEMO_FL_USER3)
+#define METHOD_ENTRY_CACHED(me)              ((me)->flags & IMEMO_FL_USER4)
+#define METHOD_ENTRY_CACHED_SET(me)          ((me)->flags = (me)->flags | IMEMO_FL_USER4)
+#define METHOD_ENTRY_INVALIDATED(me)         ((me)->flags & IMEMO_FL_USER5)
+#define METHOD_ENTRY_INVALIDATED_SET(me)     ((me)->flags = (me)->flags | IMEMO_FL_USER5)
 
 static inline void
 METHOD_ENTRY_VISI_SET(rb_method_entry_t *me, rb_method_visibility_t visi)
@@ -228,5 +232,8 @@ void rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src);
 void rb_scope_visibility_set(rb_method_visibility_t);
 
 VALUE rb_unnamed_parameters(int arity);
+
+void rb_clear_method_cache(VALUE klass_or_module, ID mid);
+void rb_clear_method_cache_all(void);
 
 #endif /* RUBY_METHOD_H */

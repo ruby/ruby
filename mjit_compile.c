@@ -41,9 +41,9 @@ call_data_index(CALL_DATA cd, const struct rb_iseq_constant_body *body)
 // For propagating information needed for lazily pushing a frame.
 struct inlined_call_context {
     int orig_argc; // ci->orig_argc
-    VALUE me; // cc->me
-    int param_size; // def_iseq_ptr(cc->me->def)->body->param.size
-    int local_size; // def_iseq_ptr(cc->me->def)->body->local_table_size
+    VALUE me; // vm_cc_cme(cc)
+    int param_size; // def_iseq_ptr(vm_cc_cme(cc)->def)->body->param.size
+    int local_size; // def_iseq_ptr(vm_cc_cme(cc)->def)->body->local_table_size
 };
 
 // Storage to keep compiler's status.  This should have information
@@ -57,7 +57,6 @@ struct compile_status {
     bool local_stack_p;
     // Safely-accessible cache entries copied from main thread.
     union iseq_inline_storage_entry *is_entries;
-    struct rb_call_cache *cc_entries;
     // Mutated optimization levels
     struct rb_mjit_compile_info *compile_info;
     // If `inlined_iseqs[pos]` is not NULL, `mjit_compile_body` tries to inline ISeq there.
@@ -79,13 +78,11 @@ struct case_dispatch_var {
     VALUE last_value;
 };
 
-// Returns true if call cache is still not obsoleted and cc->me->def->type is available.
+// Returns true if call cache is still not obsoleted and vm_cc_cme(cc)->def->type is available.
 static bool
 has_valid_method_type(CALL_CACHE cc)
 {
-    extern bool mjit_valid_class_serial_p(rb_serial_t class_serial);
-    return GET_GLOBAL_METHOD_STATE() == cc->method_state
-        && mjit_valid_class_serial_p(cc->class_serial[0]) && cc->me;
+    return vm_cc_cme(cc) != NULL;
 }
 
 // Returns true if iseq can use fastpath for setup, otherwise NULL. This becomes true in the same condition
@@ -276,7 +273,8 @@ compile_cancel_handler(FILE *f, const struct rb_iseq_constant_body *body, struct
     fprintf(f, "    return Qundef;\n");
 }
 
-extern bool mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq, struct rb_call_cache *cc_entries, union iseq_inline_storage_entry *is_entries);
+extern bool mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq,
+                                             union iseq_inline_storage_entry *is_entries);
 
 static bool
 mjit_compile_body(FILE *f, const rb_iseq_t *iseq, struct compile_status *status)
@@ -368,8 +366,6 @@ inlinable_iseq_p(const struct rb_iseq_constant_body *body)
         .stack_size_for_pos = (int *)alloca(sizeof(int) * body->iseq_size), \
         .inlined_iseqs = compile_root_p ? \
             alloca(sizeof(const struct rb_iseq_constant_body *) * body->iseq_size) : NULL, \
-        .cc_entries = body->ci_size > 0 ? \
-            alloca(sizeof(struct rb_call_cache) * body->ci_size) : NULL, \
         .is_entries = (body->is_size > 0) ? \
             alloca(sizeof(union iseq_inline_storage_entry) * body->is_size) : NULL, \
         .compile_info = compile_root_p ? \
@@ -394,17 +390,18 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
 #else
         int insn = (int)body->iseq_encoded[pos];
 #endif
-
         if (insn == BIN(opt_send_without_block)) { // `compile_inlined_cancel_handler` supports only `opt_send_without_block`
             CALL_DATA cd = (CALL_DATA)body->iseq_encoded[pos + 1];
             const struct rb_callinfo *ci = cd->ci;
-            CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body); // use copy to avoid race condition
+            const struct rb_callcache *cc = iseq->body->jit_unit->cc_entries[call_data_index(cd, body)]; // use copy to avoid race condition
 
             const rb_iseq_t *child_iseq;
-            if (has_valid_method_type(cc_copy) &&
-                    !(vm_ci_flag(ci) & VM_CALL_TAILCALL) && // inlining only non-tailcall path
-                    cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, child_iseq = def_iseq_ptr(cc_copy->me->def)) && // CC_SET_FASTPATH in vm_callee_setup_arg
-                    inlinable_iseq_p(child_iseq->body)) {
+            if (has_valid_method_type(cc) &&
+                !(vm_ci_flag(ci) & VM_CALL_TAILCALL) && // inlining only non-tailcall path
+                vm_cc_cme(cc)->def->type == VM_METHOD_TYPE_ISEQ &&
+                fastpath_applied_iseq_p(ci, cc, child_iseq = def_iseq_ptr(vm_cc_cme(cc)->def)) &&
+                // CC_SET_FASTPATH in vm_callee_setup_arg
+                inlinable_iseq_p(child_iseq->body)) {
                 status->inlined_iseqs[pos] = child_iseq->body;
 
                 if (mjit_opts.verbose >= 1) // print beforehand because ISeq may be GCed during copy job.
@@ -418,12 +415,12 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
                 INIT_COMPILE_STATUS(child_status, child_iseq->body, false);
                 child_status.inline_context = (struct inlined_call_context){
                     .orig_argc = vm_ci_argc(ci),
-                    .me = (VALUE)cc_copy->me,
+                    .me = (VALUE)vm_cc_cme(cc),
                     .param_size = child_iseq->body->param.size,
                     .local_size = child_iseq->body->local_table_size
                 };
-                if ((child_status.cc_entries != NULL || child_status.is_entries != NULL)
-                        && !mjit_copy_cache_from_main_thread(child_iseq, child_status.cc_entries, child_status.is_entries))
+                if ((child_iseq->body->ci_size > 0 || child_status.is_entries != NULL)
+                        && !mjit_copy_cache_from_main_thread(child_iseq, child_status.is_entries))
                     return false;
 
                 fprintf(f, "ALWAYS_INLINE(static VALUE _mjit_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq));\n", pos);
@@ -454,9 +451,10 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname)
 
     struct compile_status status;
     INIT_COMPILE_STATUS(status, iseq->body, true);
-    if ((status.cc_entries != NULL || status.is_entries != NULL)
-            && !mjit_copy_cache_from_main_thread(iseq, status.cc_entries, status.is_entries))
+    if ((iseq->body->ci_size > 0 || status.is_entries != NULL)
+        && !mjit_copy_cache_from_main_thread(iseq, status.is_entries)) {
         return false;
+    }
 
     if (!status.compile_info->disable_send_cache && !status.compile_info->disable_inlining) {
         if (!precompile_inlinable_iseqs(f, iseq, &status))

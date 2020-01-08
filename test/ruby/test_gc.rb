@@ -94,6 +94,9 @@ class TestGc < Test::Unit::TestCase
     GC.start
     GC.stat(stat)
     ObjectSpace.count_objects(count)
+    # repeat same methods invocation for cache object creation.
+    GC.stat(stat)
+    ObjectSpace.count_objects(count) 
     assert_equal(count[:TOTAL]-count[:FREE], stat[:heap_live_slots])
     assert_equal(count[:FREE], stat[:heap_free_slots])
 

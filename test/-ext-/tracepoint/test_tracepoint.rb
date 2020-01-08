@@ -10,33 +10,25 @@ class TestTracepointObj < Test::Unit::TestCase
   end
 
   def test_tracks_objspace_events
-    result = Bug.tracepoint_track_objspace_events{
-      Object.new
-    }
-    object_new_newobj = result[0]
-
     result = EnvUtil.suppress_warning {eval(<<-EOS, nil, __FILE__, __LINE__+1)}
     Bug.tracepoint_track_objspace_events {
       99
       'abc'
       _="foobar"
-      Object.new
       nil
     }
     EOS
 
     newobj_count, free_count, gc_start_count, gc_end_mark_count, gc_end_sweep_count, *newobjs = *result
-    assert_equal 1 + object_new_newobj, newobj_count
-    assert_equal 1 + object_new_newobj, newobjs.size
+    assert_equal 1, newobj_count
+    assert_equal 1, newobjs.size
     assert_equal 'foobar', newobjs[0]
-    assert_equal Object, newobjs[1].class
     assert_operator free_count, :>=, 0
     assert_operator gc_start_count, :==, gc_end_mark_count
     assert_operator gc_start_count, :>=, gc_end_sweep_count
   end
 
   def test_tracks_objspace_count
-    return
     stat1 = {}
     stat2 = {}
     GC.disable

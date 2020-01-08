@@ -386,6 +386,8 @@ rb_serial_t ruby_vm_global_method_state = 1;
 rb_serial_t ruby_vm_global_constant_state = 1;
 rb_serial_t ruby_vm_class_serial = 1;
 
+const struct rb_callcache *vm_empty_cc;
+
 static void thread_free(void *ptr);
 
 void
@@ -2806,8 +2808,9 @@ static VALUE
 m_core_undef_method(VALUE self, VALUE cbase, VALUE sym)
 {
     REWIND_CFP({
-	rb_undef(cbase, SYM2ID(sym));
-	rb_clear_method_cache_by_class(self);
+        ID mid = SYM2ID(sym);
+	rb_undef(cbase, mid);
+	rb_clear_method_cache(self, mid);
     });
     return Qnil;
 }
@@ -2960,6 +2963,13 @@ static VALUE
 f_lambda(VALUE _)
 {
     return rb_block_lambda();
+}
+
+static VALUE
+vm_mtbl(VALUE self, VALUE obj, VALUE sym)
+{
+    vm_mtbl_dump(CLASS_OF(obj), SYM2ID(sym));
+    return Qnil;
 }
 
 void
@@ -3249,9 +3259,11 @@ Init_VM(void)
 #if VMDEBUG
     rb_define_singleton_method(rb_cRubyVM, "SDR", sdr, 0);
     rb_define_singleton_method(rb_cRubyVM, "NSDR", nsdr, 0);
+    rb_define_singleton_method(rb_cRubyVM, "mtbl", vm_mtbl, 2);
 #else
     (void)sdr;
     (void)nsdr;
+    (void)vm_mtbl;
 #endif
 
     /* VM bootstrap: phase 2 */
@@ -3348,6 +3360,10 @@ Init_vm_objects(void)
     vm->frozen_strings = st_init_table_with_size(&rb_fstring_hash_type, 10000);
 
     rb_objspace_gc_enable(vm->objspace);
+
+    vm_empty_cc = vm_cc_new(0, NULL, vm_call_general);
+    FL_SET_RAW(vm_empty_cc, VM_CALLCACHE_UNMARKABLE);
+    rb_gc_register_mark_object((VALUE)vm_empty_cc);
 }
 
 /* top self */
@@ -3715,6 +3731,12 @@ vm_collect_usage_register(int reg, int isset)
 	(*ruby_vm_collect_usage_func_register)(reg, isset);
 }
 #endif
+
+MJIT_FUNC_EXPORTED const struct rb_callcache *
+rb_vm_empty_cc(void)
+{
+    return vm_empty_cc;
+}
 
 #endif /* #ifndef MJIT_HEADER */
 

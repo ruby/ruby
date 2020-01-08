@@ -229,7 +229,7 @@ rb_id_table_lookup(struct rb_id_table *tbl, ID id, VALUE *valp)
     int index = hash_table_index(tbl, key);
 
     if (index >= 0) {
-	*valp = tbl->items[index].val;
+        *valp = tbl->items[index].val;
 	return TRUE;
     }
     else {

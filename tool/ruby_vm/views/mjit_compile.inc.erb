@@ -57,7 +57,7 @@ switch (insn) {
 %   when *send_compatible_opt_insns
 %     # To avoid cancel, just emit `opt_send_without_block` instead of `opt_*` insn if call cache is populated.
 %     cd_index = insn.opes.index { |o| o.fetch(:type) == 'CALL_DATA' }
-      if (has_valid_method_type(status->cc_entries + call_data_index((CALL_DATA)operands[<%= cd_index %>], body))) {
+      if (has_valid_method_type(body->jit_unit->cc_entries[call_data_index((CALL_DATA)operands[<%= cd_index %>], body)])) {
 <%=       render 'mjit_compile_send', locals: { insn: opt_send_without_block } -%>
 <%=       render 'mjit_compile_insn', locals: { insn: opt_send_without_block } -%>
           break;

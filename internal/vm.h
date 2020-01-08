@@ -52,44 +52,6 @@ enum method_missing_reason {
     MISSING_NONE      = 0x40
 };
 
-struct rb_call_cache {
-    /* inline cache: keys */
-    rb_serial_t method_state;
-    rb_serial_t class_serial[
-        (CACHELINE
-         - sizeof(rb_serial_t)                                   /* method_state */
-         - sizeof(struct rb_callable_method_entry_struct *)      /* me */
-         - sizeof(uintptr_t)                                     /* method_serial */
-         - sizeof(enum method_missing_reason)                    /* aux */
-         - sizeof(VALUE (*)(                                     /* call */
-               struct rb_execution_context_struct *e,
-               struct rb_control_frame_struct *,
-               struct rb_calling_info *,
-               const struct rb_call_data *)))
-        / sizeof(rb_serial_t)
-    ];
-
-    /* inline cache: values */
-    const struct rb_callable_method_entry_struct *me;
-    uintptr_t method_serial; /* me->def->method_serial */
-
-    VALUE (*call)(struct rb_execution_context_struct *ec,
-                  struct rb_control_frame_struct *cfp,
-                  struct rb_calling_info *calling,
-                  struct rb_call_data *cd);
-
-    union {
-        unsigned int index; /* used by ivar */
-        enum method_missing_reason method_missing_reason; /* used by method_missing */
-    } aux;
-};
-STATIC_ASSERT(cachelined, sizeof(struct rb_call_cache) <= CACHELINE);
-
-struct rb_call_data {
-    const struct rb_callinfo *ci;
-    struct rb_call_cache cc;
-};
-
 /* vm_insnhelper.h */
 rb_serial_t rb_next_class_serial(void);
 
@@ -139,8 +101,9 @@ MJIT_SYMBOL_EXPORT_END
 VALUE rb_equal_opt(VALUE obj1, VALUE obj2);
 VALUE rb_eql_opt(VALUE obj1, VALUE obj2);
 
+struct rb_iseq_struct;
 MJIT_SYMBOL_EXPORT_BEGIN
-void rb_vm_search_method_slowpath(struct rb_call_data *cd, VALUE klass);
+void rb_vm_search_method_slowpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass);
 MJIT_SYMBOL_EXPORT_END
 
 /* vm_dump.c */

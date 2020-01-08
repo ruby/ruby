@@ -1476,7 +1476,7 @@ rb_using_module(const rb_cref_t *cref, VALUE module)
 {
     Check_Type(module, T_MODULE);
     using_module_recursive(cref, module);
-    rb_clear_method_cache_by_class(rb_cObject);
+    rb_clear_method_cache_all();
 }
 
 /*! \private */

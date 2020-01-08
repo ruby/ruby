@@ -41,6 +41,7 @@ struct rb_classext_struct {
 #endif
     struct rb_id_table *const_tbl;
     struct rb_id_table *callable_m_tbl;
+    struct rb_id_table *cc_tbl; /* ID -> [[ci, cc1], cc2, ...] */
     struct rb_subclass_entry *subclasses;
     struct rb_subclass_entry **parent_subclasses;
     /**
@@ -83,6 +84,7 @@ typedef struct rb_classext_struct rb_classext_t;
 # define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
 #endif
 #define RCLASS_CALLABLE_M_TBL(c) (RCLASS_EXT(c)->callable_m_tbl)
+#define RCLASS_CC_TBL(c) (RCLASS_EXT(c)->cc_tbl)
 #define RCLASS_IV_INDEX_TBL(c) (RCLASS_EXT(c)->iv_index_tbl)
 #define RCLASS_ORIGIN(c) (RCLASS_EXT(c)->origin_)
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT(c)->refined_class)

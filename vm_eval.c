@@ -47,7 +47,8 @@ rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE
 {
     struct rb_calling_info calling = { Qundef, recv, argc, kw_splat, };
     const struct rb_callinfo *ci = vm_ci_new_runtime(id, kw_splat ? VM_CALL_KW_SPLAT : 0, argc, NULL);
-    const struct rb_call_cache cc = { 0, { 0, }, me, me->def->method_serial, vm_call_general, { 0, }, };
+    struct rb_callcache cc_body;
+    const struct rb_callcache *cc = vm_cc_fill(&cc_body, 0, me, vm_call_general);
     struct rb_call_data cd = { ci, cc, };
     return vm_call0_body(ec, &calling, &cd, argv);
 }
@@ -56,9 +57,9 @@ static VALUE
 vm_call0_cfunc_with_frame(rb_execution_context_t* ec, struct rb_calling_info *calling, struct rb_call_data *cd, const VALUE *argv)
 {
     const struct rb_callinfo *ci = cd->ci;
-    const struct rb_call_cache *cc = &cd->cc;
+    const struct rb_callcache *cc = cd->cc;
     VALUE val;
-    const rb_callable_method_entry_t *me = cc->me;
+    const rb_callable_method_entry_t *me = vm_cc_cme(cc);
     const rb_method_cfunc_t *cfunc = UNALIGNED_MEMBER_PTR(me->def, body.cfunc);
     int len = cfunc->argc;
     VALUE recv = calling->recv;
@@ -109,14 +110,14 @@ static VALUE
 vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, struct rb_call_data *cd, const VALUE *argv)
 {
     const struct rb_callinfo *ci = cd->ci;
-    struct rb_call_cache *cc = &cd->cc;
+    const struct rb_callcache *cc = cd->cc;
 
     VALUE ret;
 
     calling->block_handler = vm_passed_block_handler(ec);
 
   again:
-    switch (cc->me->def->type) {
+    switch (vm_cc_cme(cc)->def->type) {
       case VM_METHOD_TYPE_ISEQ:
 	{
 	    rb_control_frame_t *reg_cfp = ec->cfp;
@@ -147,7 +148,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, struc
         }
 
 	rb_check_arity(calling->argc, 1, 1);
-	ret = rb_ivar_set(calling->recv, cc->me->def->body.attr.id, argv[0]);
+	ret = rb_ivar_set(calling->recv, vm_cc_cme(cc)->def->body.attr.id, argv[0]);
 	goto success;
       case VM_METHOD_TYPE_IVAR:
         if (calling->kw_splat &&
@@ -158,7 +159,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, struc
         }
 
 	rb_check_arity(calling->argc, 0, 0);
-	ret = rb_attr_get(calling->recv, cc->me->def->body.attr.id);
+	ret = rb_attr_get(calling->recv, vm_cc_cme(cc)->def->body.attr.id);
 	goto success;
       case VM_METHOD_TYPE_BMETHOD:
         ret = vm_call_bmethod_body(ec, calling, cd, argv);
@@ -166,21 +167,21 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, struc
       case VM_METHOD_TYPE_ZSUPER:
       case VM_METHOD_TYPE_REFINED:
 	{
-	    const rb_method_type_t type = cc->me->def->type;
-	    VALUE super_class = cc->me->defined_class;
+	    const rb_method_type_t type = vm_cc_cme(cc)->def->type;
+	    VALUE super_class = vm_cc_cme(cc)->defined_class;
 
 	    if (type == VM_METHOD_TYPE_ZSUPER) {
 		super_class = RCLASS_ORIGIN(super_class);
 	    }
-	    else if (cc->me->def->body.refined.orig_me) {
-                CC_SET_ME(cc, refined_method_callable_without_refinement(cc->me));
-		goto again;
+	    else if (vm_cc_cme(cc)->def->body.refined.orig_me) {
+                vm_cc_cme_set(cc, refined_method_callable_without_refinement(vm_cc_cme(cc)));
+                goto again;
 	    }
 
 	    super_class = RCLASS_SUPER(super_class);
             if (super_class) {
-                CC_SET_ME(cc, rb_callable_method_entry(super_class, vm_ci_mid(ci)));
-                if (cc->me) {
+                vm_cc_cme_set(cc, rb_callable_method_entry(super_class, vm_ci_mid(ci)));
+                if (vm_cc_cme(cc)) {
                     RUBY_VM_CHECK_INTS(ec);
                     goto again;
                 }
@@ -191,7 +192,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, struc
             goto success;
 	}
       case VM_METHOD_TYPE_ALIAS:
-        CC_SET_ME(cc, aliased_callable_method_entry(cc->me));
+        vm_cc_cme_set(cc, aliased_callable_method_entry(vm_cc_cme(cc)));
 	goto again;
       case VM_METHOD_TYPE_MISSING:
 	{
@@ -200,7 +201,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, struc
                                   argv, MISSING_NOENTRY, calling->kw_splat);
 	}
       case VM_METHOD_TYPE_OPTIMIZED:
-	switch (cc->me->def->body.optimize_type) {
+	switch (vm_cc_cme(cc)->def->body.optimize_type) {
 	  case OPTIMIZED_METHOD_TYPE_SEND:
             ret = send_internal(calling->argc, argv, calling->recv, calling->kw_splat ? CALL_FCALL_KW : CALL_FCALL);
 	    goto success;
@@ -212,13 +213,13 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, struc
 		goto success;
 	    }
 	  default:
-	    rb_bug("vm_call0: unsupported optimized method type (%d)", cc->me->def->body.optimize_type);
+	    rb_bug("vm_call0: unsupported optimized method type (%d)", vm_cc_cme(cc)->def->body.optimize_type);
 	}
 	break;
       case VM_METHOD_TYPE_UNDEF:
 	break;
     }
-    rb_bug("vm_call0: unsupported method type (%d)", cc->me->def->type);
+    rb_bug("vm_call0: unsupported method type (%d)", vm_cc_cme(cc)->def->type);
     return Qundef;
 
   success:
@@ -359,7 +360,7 @@ struct rescue_funcall_args {
     VALUE recv;
     ID mid;
     rb_execution_context_t *ec;
-    const rb_method_entry_t *me;
+    const rb_callable_method_entry_t *cme;
     unsigned int respond: 1;
     unsigned int respond_to_missing: 1;
     int argc;
@@ -373,7 +374,7 @@ check_funcall_exec(VALUE v)
     struct rescue_funcall_args *args = (void *)v;
     return call_method_entry(args->ec, args->defined_class,
 			     args->recv, idMethodMissing,
-                             args->me, args->argc, args->argv, args->kw_splat);
+                             args->cme, args->argc, args->argv, args->kw_splat);
 }
 
 static VALUE
@@ -417,7 +418,7 @@ static VALUE
 check_funcall_missing(rb_execution_context_t *ec, VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int respond, VALUE def, int kw_splat)
 {
     struct rescue_funcall_args args;
-    const rb_method_entry_t *me;
+    const rb_callable_method_entry_t *cme;
     VALUE ret = Qundef;
 
     ret = basic_obj_respond_to_missing(ec, klass, recv,
@@ -426,8 +427,9 @@ check_funcall_missing(rb_execution_context_t *ec, VALUE klass, VALUE recv, ID mi
     args.respond = respond > 0;
     args.respond_to_missing = (ret != Qundef);
     ret = def;
-    me = method_entry_get(klass, idMethodMissing, &args.defined_class);
-    if (me && !METHOD_ENTRY_BASIC(me)) {
+    cme = callable_method_entry(klass, idMethodMissing, &args.defined_class);
+
+    if (cme && !METHOD_ENTRY_BASIC(cme)) {
 	VALUE argbuf, *new_args = ALLOCV_N(VALUE, argbuf, argc+1);
 
 	new_args[0] = ID2SYM(mid);
@@ -442,7 +444,7 @@ check_funcall_missing(rb_execution_context_t *ec, VALUE klass, VALUE recv, ID mi
 	ec->method_missing_reason = MISSING_NOENTRY;
 	args.ec = ec;
 	args.recv = recv;
-	args.me = me;
+	args.cme = cme;
 	args.mid = mid;
 	args.argc = argc + 1;
 	args.argv = new_args;
