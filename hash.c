@@ -105,7 +105,7 @@ rb_hash_freeze(VALUE hash)
 VALUE rb_cHash;
 
 static VALUE envtbl;
-static ID id_hash, id_yield, id_default, id_flatten_bang;
+static ID id_hash, id_default, id_flatten_bang;
 static ID id_hash_iter_lev;
 
 VALUE
@@ -1945,11 +1945,14 @@ rb_hash_rehash(VALUE hash)
 VALUE
 rb_hash_default_value(VALUE hash, VALUE key)
 {
-    if (rb_method_basic_definition_p(CLASS_OF(hash), id_default)) {
+    VALUE args[2];
+    if (LIKELY(rb_method_basic_definition_p(CLASS_OF(hash), id_default))) {
 	VALUE ifnone = RHASH_IFNONE(hash);
         if (!FL_TEST(hash, RHASH_PROC_DEFAULT)) return ifnone;
 	if (key == Qundef) return Qnil;
-	return rb_funcall(ifnone, id_yield, 2, hash, key);
+      args[0] = hash;
+      args[1] = key;
+      return rb_proc_call_with_block(ifnone, 2, args, Qnil);
     }
     else {
 	return rb_funcall(hash, id_default, 1, key);
@@ -2124,7 +2127,7 @@ rb_hash_default(int argc, VALUE *argv, VALUE hash)
 	if (argc == 0) return Qnil;
 	args[0] = hash;
 	args[1] = argv[0];
-	return rb_funcallv(ifnone, id_yield, 2, args);
+      return rb_proc_call_with_block(ifnone, 2, args, Qnil);
     }
     return ifnone;
 }
@@ -6312,7 +6315,6 @@ Init_Hash(void)
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
     id_hash = rb_intern("hash");
-    id_yield = rb_intern("yield");
     id_default = rb_intern("default");
     id_flatten_bang = rb_intern("flatten!");
     id_hash_iter_lev = rb_make_internal_id();
