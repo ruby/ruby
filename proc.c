@@ -66,18 +66,18 @@ block_mark(const struct rb_block *block)
       case block_type_ifunc:
 	{
 	    const struct rb_captured_block *captured = &block->as.captured;
-	    RUBY_MARK_NO_PIN_UNLESS_NULL(captured->self);
-	    RUBY_MARK_NO_PIN_UNLESS_NULL((VALUE)captured->code.val);
+	    RUBY_MARK_MOVABLE_UNLESS_NULL(captured->self);
+	    RUBY_MARK_MOVABLE_UNLESS_NULL((VALUE)captured->code.val);
 	    if (captured->ep && captured->ep[VM_ENV_DATA_INDEX_ENV] != Qundef /* cfunc_proc_t */) {
-                RUBY_MARK_NO_PIN_UNLESS_NULL(VM_ENV_ENVVAL(captured->ep));
+                RUBY_MARK_MOVABLE_UNLESS_NULL(VM_ENV_ENVVAL(captured->ep));
 	    }
 	}
 	break;
       case block_type_symbol:
-	RUBY_MARK_NO_PIN_UNLESS_NULL(block->as.symbol);
+	RUBY_MARK_MOVABLE_UNLESS_NULL(block->as.symbol);
 	break;
       case block_type_proc:
-	RUBY_MARK_NO_PIN_UNLESS_NULL(block->as.proc);
+	RUBY_MARK_MOVABLE_UNLESS_NULL(block->as.proc);
 	break;
     }
 }

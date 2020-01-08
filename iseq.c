@@ -314,7 +314,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
         rb_gc_mark_movable(body->location.label);
         rb_gc_mark_movable(body->location.base_label);
         rb_gc_mark_movable(body->location.pathobj);
-        RUBY_MARK_NO_PIN_UNLESS_NULL((VALUE)body->parent_iseq);
+        RUBY_MARK_MOVABLE_UNLESS_NULL((VALUE)body->parent_iseq);
 
 	if (body->param.flags.has_kw && ISEQ_COMPILE_DATA(iseq) == NULL) {
 	    const struct rb_iseq_param_keyword *const keyword = body->param.keyword;
