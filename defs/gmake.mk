@@ -107,6 +107,8 @@ else
 	$(Q) $(RMALL) make_des_table*
 endif
 
+config.status: $(wildcard config.cache)
+
 STUBPROGRAM = rubystub$(EXEEXT)
 IGNOREDPATTERNS = %~ .% %.orig %.rej \#%\#
 SCRIPTBINDIR := $(if $(EXEEXT),,exec/)
