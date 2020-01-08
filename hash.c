@@ -1950,9 +1950,9 @@ rb_hash_default_value(VALUE hash, VALUE key)
 	VALUE ifnone = RHASH_IFNONE(hash);
         if (!FL_TEST(hash, RHASH_PROC_DEFAULT)) return ifnone;
 	if (key == Qundef) return Qnil;
-      args[0] = hash;
-      args[1] = key;
-      return rb_proc_call_with_block(ifnone, 2, args, Qnil);
+        args[0] = hash;
+        args[1] = key;
+        return rb_proc_call_with_block(ifnone, 2, args, Qnil);
     }
     else {
 	return rb_funcall(hash, id_default, 1, key);
@@ -2127,7 +2127,7 @@ rb_hash_default(int argc, VALUE *argv, VALUE hash)
 	if (argc == 0) return Qnil;
 	args[0] = hash;
 	args[1] = argv[0];
-      return rb_proc_call_with_block(ifnone, 2, args, Qnil);
+        return rb_proc_call_with_block(ifnone, 2, args, Qnil);
     }
     return ifnone;
 }
