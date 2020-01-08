@@ -1479,6 +1479,7 @@ Init_RandomSeedCore(void)
     init_seed(&mt);
 
     explicit_bzero(initial_seed, DEFAULT_SEED_LEN);
+    explicit_bzero(&mt, sizeof(mt));
 }
 
 static VALUE
