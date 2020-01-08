@@ -423,7 +423,7 @@ RSpec.describe "bundle outdated" do
       expect(err).to include("You are trying to check outdated gems in deployment mode.")
       expect(err).to include("Run `bundle outdated` elsewhere.")
       expect(err).to include("If this is a development machine, remove the ")
-      expect(err).to include("Gemfile freeze\nby running `bundle install --no-deployment`.")
+      expect(err).to include("Gemfile freeze\nby running `bundle config unset deployment`.")
     end
   end
 

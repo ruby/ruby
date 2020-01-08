@@ -99,7 +99,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
 
     it "reinstall gemspec dependency" do
       spec = Bundler.definition.specs["baz-dev"].first
-      changed_file = Pathname.new(spec.full_gem_path).join("lib/baz-dev.rb")
+      changed_file = Pathname.new(spec.full_gem_path).join("lib/baz/dev.rb")
       diff = "#Pristine spec changes"
 
       File.open(changed_file, "a") {|f| f.puts "#Pristine spec changes" }

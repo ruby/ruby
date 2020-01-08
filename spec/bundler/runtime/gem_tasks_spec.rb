@@ -57,6 +57,20 @@ RSpec.describe "require 'bundler/gem_tasks'" do
     expect(err).to be_empty
   end
 
+  context "rake build when path has spaces" do
+    before do
+      spaced_bundled_app = tmp.join("bundled app")
+      FileUtils.mv bundled_app, spaced_bundled_app
+      Dir.chdir(spaced_bundled_app)
+    end
+
+    it "still runs successfully" do
+      bundle! "exec rake build"
+
+      expect(err).to be_empty
+    end
+  end
+
   it "adds 'pkg' to rake/clean's CLOBBER" do
     with_gem_path_as(Spec::Path.base_system_gems.to_s) do
       sys_exec! %(#{rake} -e 'load "Rakefile"; puts CLOBBER.inspect')

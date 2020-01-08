@@ -286,7 +286,7 @@ RSpec.describe "bundle update" do
 
       expect(last_command).to be_failure
       expect(err).to match(/You are trying to install in deployment mode after changing.your Gemfile/m)
-      expect(err).to match(/freeze \nby running `bundle install --no-deployment`./m)
+      expect(err).to match(/freeze \nby running `bundle config unset deployment`./m)
     end
 
     it "should suggest different command when frozen is set globally", :bundler => "< 3" do
