@@ -2963,7 +2963,9 @@ Init_heap(void)
     init_mark_stack(&objspace->mark_stack);
 
     objspace->profile.invoke_time = getrusage_time();
+#if DEBUG_COMPACT
     objspace->profile.compact_count = 5;
+#endif
     finalizer_table = st_init_numtable();
 }
 
@@ -8160,6 +8162,7 @@ rb_gc_compact_count(void)
     return objspace->profile.compact_count;
 }
 
+#if DEBUG_COMPACT
 void
 rb_gc_check_compact(size_t count)
 {
@@ -8167,6 +8170,7 @@ rb_gc_check_compact(size_t count)
 
     assert(count == objspace->profile.compact_count);
 }
+#endif
 
 /* Returns the new location of an object, if it moved.  Otherwise returns
  * the existing location. */

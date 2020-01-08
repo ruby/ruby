@@ -13,6 +13,7 @@
 #include "internal/static_assert.h" /* for STATIC_ASSERT */
 #include "internal/stdbool.h"       /* for bool */
 #include "internal/imemo.h"         /* for rb_imemo_new */
+#include "internal/gc.h"            /* for DEBUG_COMPACT */
 #include "ruby/ruby.h"              /* for ID */
 #include "ruby/st.h"                /* for st_table */
 
@@ -67,7 +68,9 @@ struct rb_call_cache {
                struct rb_control_frame_struct *,
                struct rb_calling_info *,
                const struct rb_call_data *))
+#if DEBUG_COMPACT
          - sizeof(size_t)                                        /* compact_count */
+#endif
         )
         / sizeof(rb_serial_t)
     ];
@@ -81,7 +84,9 @@ struct rb_call_cache {
                   struct rb_calling_info *calling,
                   struct rb_call_data *cd);
 
+#if DEBUG_COMPACT
     size_t compact_count;
+#endif
 
     union {
         unsigned int index; /* used by ivar */
@@ -180,13 +185,20 @@ VALUE rb_ec_backtrace_object(const struct rb_execution_context_struct *ec);
 void rb_backtrace_use_iseq_first_lineno_for_last_location(VALUE self);
 MJIT_SYMBOL_EXPORT_END
 
+#if DEBUG_COMPACT
+# define SET_COMPACT_COUNT(on) \
+    (on).cc.compact_count = rb_gc_compact_count();
+#else
+# define SET_COMPACT_COUNT(on)
+#endif
+
 #ifdef __GNUC__
 # define rb_funcallv(recv, mid, argc, argv) \
     __extension__({ \
         static struct rb_call_data rb_funcallv_data; \
         static VALUE wrapper = 0; \
         if (!wrapper) { \
-            rb_funcallv_data.cc.compact_count = rb_gc_compact_count(); \
+            SET_COMPACT_COUNT(rb_funcallv_data) \
             wrapper = rb_imemo_new(imemo_call_data, (VALUE)&rb_funcallv_data, 0, 0, (VALUE)&rb_funcallv_data); \
             rb_gc_register_mark_object(wrapper); \
         } \
@@ -197,7 +209,7 @@ MJIT_SYMBOL_EXPORT_END
         static struct rb_call_data rb_mbdp; \
         static VALUE wrapper = 0; \
         if (!wrapper) { \
-            rb_mbdp.cc.compact_count = rb_gc_compact_count(); \
+            SET_COMPACT_COUNT(rb_mbdp) \
             wrapper = rb_imemo_new(imemo_call_data, (VALUE)&rb_mbdp, 0, 0, (VALUE)&rb_mbdp); \
             rb_gc_register_mark_object(wrapper); \
         } \

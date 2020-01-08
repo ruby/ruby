@@ -2234,7 +2234,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                                 assert(ISEQ_COMPILE_DATA(iseq)->ci_index <= body->ci_size);
                             }
 
+#if DEBUG_COMPACT
                             cd->cc.compact_count = rb_gc_compact_count();
+#endif
 
                             generated_iseq[code_index + 1 + j] = (VALUE)cd;
                             break;
@@ -10012,8 +10014,10 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, ibf_offset_t b
                 {
                     unsigned char op = ibf_load_byte(load, &reading_pos);
                     code[code_index] = op ? (VALUE)cd_kw_entries++ : (VALUE)cd_entries++; /* op is 1 (kw) or 0 (!kw) */
+#if DEBUG_COMPACT
                     struct rb_call_data *cd = (struct rb_call_data *)code[code_index];
                     cd->cc.compact_count = rb_gc_compact_count();
+#endif
                 }
                 break;
               case TS_ID:

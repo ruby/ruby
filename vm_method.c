@@ -2114,7 +2114,9 @@ rb_method_basic_definition_p_with_cc(struct rb_call_data *cd, VALUE klass, ID mi
 {
     if (cd->ci.mid != mid) {
         *cd = (struct rb_call_data) /* reset */ { .ci = { .mid = mid, }, };
+#if DEBUG_COMPACT
         (*cd).cc.compact_count = rb_gc_compact_count();
+#endif
     }
 
     vm_search_method_fastpath(cd, klass);

@@ -47,9 +47,15 @@ rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE
 {
     struct rb_calling_info calling = { Qundef, recv, argc, kw_splat, };
     struct rb_call_info ci = { id, (kw_splat ? VM_CALL_KW_SPLAT : 0), argc, };
-    struct rb_call_cache cc = { 0, { 0, }, me, me->def->method_serial, vm_call_general, rb_gc_compact_count(), { 0, }, };
+    struct rb_call_cache cc = { 0, { 0, }, me, me->def->method_serial, vm_call_general,
+#if DEBUG_COMPACT
+      rb_gc_compact_count(),
+#endif
+      { 0, }, };
     struct rb_call_data cd = { cc, ci, };
+#if DEBUG_COMPACT
     rb_gc_check_compact(cc.compact_count);
+#endif
 
     return vm_call0_body(ec, &calling, &cd, argv);
 }
@@ -113,7 +119,9 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, struc
     const struct rb_call_info *ci = &cd->ci;
     struct rb_call_cache *cc = &cd->cc;
 
+#if DEBUG_COMPACT
     rb_gc_check_compact(cc->compact_count);
+#endif
 
     VALUE ret;
 
@@ -985,7 +993,9 @@ rb_funcallv_with_cc(struct rb_call_data *cd, VALUE recv, ID mid, int argc, const
     }
 
     *cd = (struct rb_call_data) /* reset */ { { 0, }, { mid, }, };
+#if DEBUG_COMPACT
     (*cd).cc.compact_count = rb_gc_compact_count();
+#endif
     return rb_funcallv(recv, mid, argc, argv);
 }
 
@@ -1026,7 +1036,9 @@ rb_funcall_with_block_kw(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE 
 void
 rb_vm_update_cc_references(struct rb_call_data *cd)
 {
+#if DEBUG_COMPACT
     cd->cc.compact_count = rb_gc_compact_count();
+#endif
     if (GET_GLOBAL_METHOD_STATE() == cd->cc.method_state && cd->cc.me) {
         struct rb_callable_method_entry_struct *nv = (struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)cd->cc.me);
         if (nv != cd->cc.me) {

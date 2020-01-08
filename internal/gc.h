@@ -54,6 +54,10 @@ struct rb_execution_context_struct; /* in vm_core.h */
     UNALIGNED_MEMBER_ACCESS(\
         rb_obj_write((VALUE)(a), (VALUE *)(slot), (VALUE)(b), __FILE__, __LINE__))
 
+#ifndef DEBUG_COMPACT
+#define DEBUG_COMPACT 0
+#endif
+
 /* gc.c */
 extern VALUE *ruby_initial_gc_stress_ptr;
 extern int ruby_disable_gc;
