@@ -903,8 +903,9 @@ module Net
     #     end
     #   }
     #
-    def add_response_handler(handler = Proc.new)
-      @response_handlers.push(handler)
+    def add_response_handler(handler = nil, &block)
+      raise ArgumentError, "two Procs are passed" if handler && block
+      @response_handlers.push(block || handler)
     end
 
     # Removes the response handler.
@@ -959,7 +960,7 @@ module Net
         put_string("#{tag} IDLE#{CRLF}")
 
         begin
-          add_response_handler(response_handler)
+          add_response_handler(&response_handler)
           @idle_done_cond = new_cond
           @idle_done_cond.wait(timeout)
           @idle_done_cond = nil
@@ -1267,7 +1268,7 @@ module Net
           @logout_command_tag = tag
         end
         if block
-          add_response_handler(block)
+          add_response_handler(&block)
         end
         begin
           return get_tagged_response(tag, cmd)
