@@ -1942,17 +1942,21 @@ rb_hash_rehash(VALUE hash)
     return hash;
 }
 
+static VALUE
+call_default_proc(VALUE proc, VALUE hash, VALUE key)
+{
+    VALUE args[2] = {hash, key};
+    return rb_proc_call_with_block(proc, 2, args, Qnil);
+}
+
 VALUE
 rb_hash_default_value(VALUE hash, VALUE key)
 {
-    VALUE args[2];
     if (LIKELY(rb_method_basic_definition_p(CLASS_OF(hash), id_default))) {
 	VALUE ifnone = RHASH_IFNONE(hash);
         if (!FL_TEST(hash, RHASH_PROC_DEFAULT)) return ifnone;
 	if (key == Qundef) return Qnil;
-        args[0] = hash;
-        args[1] = key;
-        return rb_proc_call_with_block(ifnone, 2, args, Qnil);
+        return call_default_proc(ifnone, hash, key);
     }
     else {
 	return rb_funcall(hash, id_default, 1, key);
@@ -2119,15 +2123,13 @@ rb_hash_fetch(VALUE hash, VALUE key)
 static VALUE
 rb_hash_default(int argc, VALUE *argv, VALUE hash)
 {
-    VALUE args[2], ifnone;
+    VALUE ifnone;
 
     rb_check_arity(argc, 0, 1);
     ifnone = RHASH_IFNONE(hash);
     if (FL_TEST(hash, RHASH_PROC_DEFAULT)) {
 	if (argc == 0) return Qnil;
-	args[0] = hash;
-	args[1] = argv[0];
-        return rb_proc_call_with_block(ifnone, 2, args, Qnil);
+	return call_default_proc(ifnone, hash, argv[0]);
     }
     return ifnone;
 }
