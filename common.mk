@@ -2946,6 +2946,7 @@ mjit.$(OBJEXT): {$(VPATH)}thread.h
 mjit.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 mjit.$(OBJEXT): {$(VPATH)}thread_native.h
 mjit.$(OBJEXT): {$(VPATH)}util.h
+mjit.$(OBJEXT): {$(VPATH)}vm_callinfo.h
 mjit.$(OBJEXT): {$(VPATH)}vm_core.h
 mjit.$(OBJEXT): {$(VPATH)}vm_opts.h
 mjit_compile.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h

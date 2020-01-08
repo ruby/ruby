@@ -2530,6 +2530,116 @@ rb_free_const_table(struct rb_id_table *tbl)
     rb_id_table_free(tbl);
 }
 
+// alive: if false, target pointers can be freed already.
+//        To check it, we need objspace parameter.
+static void
+vm_ccs_free(struct rb_class_cc_entries *ccs, int alive, rb_objspace_t *objspace, VALUE klass)
+{
+    if (ccs->entries) {
+        for (int i=0; i<ccs->len; i++) {
+            const struct rb_callcache *cc = ccs->entries[i].cc;
+            if (!alive) {
+                // ccs can be free'ed.
+                if (is_pointer_to_heap(objspace, (void *)cc) &&
+                    IMEMO_TYPE_P(cc, imemo_callcache) &&
+                    cc->klass == klass) {
+                    // OK. maybe target cc.
+                }
+                else {
+                    continue;
+                }
+            }
+            vm_cc_invalidate(cc);
+        }
+        ruby_xfree(ccs->entries);
+    }
+    ruby_xfree(ccs);
+}
+
+void
+rb_vm_ccs_free(struct rb_class_cc_entries *ccs)
+{
+    RB_DEBUG_COUNTER_INC(ccs_free);
+    vm_ccs_free(ccs, TRUE, NULL, Qundef);
+}
+
+struct cc_tbl_i_data {
+    rb_objspace_t *objspace;
+    VALUE klass;
+    bool alive;
+};
+
+static enum rb_id_table_iterator_result
+cc_table_mark_i(ID id, VALUE ccs_ptr, void *data_ptr)
+{
+    struct cc_tbl_i_data *data = data_ptr;
+    struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
+    VM_ASSERT(vm_ccs_p(ccs));
+    VM_ASSERT(id == ccs->cme->called_id);
+
+    if (METHOD_ENTRY_INVALIDATED(ccs->cme)) {
+        rb_vm_ccs_free(ccs);
+        return ID_TABLE_DELETE;
+    }
+    else {
+        gc_mark(data->objspace, (VALUE)ccs->cme);
+
+        for (int i=0; i<ccs->len; i++) {
+            VM_ASSERT(data->klass == ccs->entries[i].cc->klass);
+            VM_ASSERT(ccs->cme == vm_cc_cme(ccs->entries[i].cc));
+
+            gc_mark(data->objspace, (VALUE)ccs->entries[i].ci);
+            gc_mark(data->objspace, (VALUE)ccs->entries[i].cc);
+        }
+        return ID_TABLE_CONTINUE;
+    }
+}
+
+static void
+cc_table_mark(rb_objspace_t *objspace, VALUE klass)
+{
+    struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
+    if (cc_tbl) {
+        struct cc_tbl_i_data data = {
+            .objspace = objspace,
+            .klass = klass,
+        };
+        rb_id_table_foreach(cc_tbl, cc_table_mark_i, &data);
+    }
+}
+
+static enum rb_id_table_iterator_result
+cc_table_free_i(ID id, VALUE ccs_ptr, void *data_ptr)
+{
+    struct cc_tbl_i_data *data = data_ptr;
+    struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
+    VM_ASSERT(vm_ccs_p(ccs));
+    vm_ccs_free(ccs, data->alive, data->objspace, data->klass);
+    return ID_TABLE_CONTINUE;
+}
+
+static void
+cc_table_free(rb_objspace_t *objspace, VALUE klass, bool alive)
+{
+    struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
+
+    if (cc_tbl) {
+        struct cc_tbl_i_data data = {
+            .objspace = objspace,
+            .klass = klass,
+            .alive = alive,
+        };
+        rb_id_table_foreach(cc_tbl, cc_table_free_i, &data);
+        rb_id_table_free(cc_tbl);
+    }
+}
+
+void
+rb_cc_table_free(VALUE klass)
+{
+    cc_table_free(&rb_objspace, klass, TRUE);
+}
+
 static inline void
 make_zombie(rb_objspace_t *objspace, VALUE obj, void (*dfree)(void *), void *data)
 {
@@ -2621,6 +2731,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_CLASS:
         mjit_remove_class_serial(RCLASS_SERIAL(obj));
 	rb_id_table_free(RCLASS_M_TBL(obj));
+        cc_table_free(objspace, obj, FALSE);
 	if (RCLASS_IV_TBL(obj)) {
 	    st_free_table(RCLASS_IV_TBL(obj));
 	}
@@ -2805,6 +2916,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	    rb_class_detach_subclasses(obj);
 	    RCLASS_EXT(obj)->subclasses = NULL;
 	}
+        cc_table_free(objspace, obj, FALSE);
 	rb_class_remove_from_module_subclasses(obj);
 	rb_class_remove_from_super_subclasses(obj);
 	xfree(RANY(obj)->as.klass.ptr);
@@ -2895,6 +3007,9 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             break;
           case imemo_callinfo:
             RB_DEBUG_COUNTER_INC(obj_imemo_callinfo);
+            break;
+          case imemo_callcache:
+            RB_DEBUG_COUNTER_INC(obj_imemo_callcache);
             break;
 	  default:
             /* unreachable */
@@ -5335,6 +5450,13 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
 	return;
       case imemo_callinfo:
         return;
+      case imemo_callcache:
+        {
+            const struct rb_callcache *cc = (const struct rb_callcache *)obj;
+            // should not mark klass here
+            gc_mark(objspace, (VALUE)vm_cc_cme(cc));
+        }
+        return;
 #if VM_CHECK_MODE > 0
       default:
 	VM_UNREACHABLE(gc_mark_imemo);
@@ -5383,7 +5505,9 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
             gc_mark(objspace, RCLASS_SUPER(obj));
         }
 	if (!RCLASS_EXT(obj)) break;
+
         mark_m_tbl(objspace, RCLASS_M_TBL(obj));
+        cc_table_mark(objspace, obj);
         mark_tbl_no_pin(objspace, RCLASS_IV_TBL(obj));
 	mark_const_tbl(objspace, RCLASS_CONST_TBL(obj));
 	break;
@@ -5397,6 +5521,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         }
 	if (!RCLASS_EXT(obj)) break;
 	mark_m_tbl(objspace, RCLASS_CALLABLE_M_TBL(obj));
+        cc_table_mark(objspace, obj);
 	break;
 
       case T_ARRAY:
@@ -8126,6 +8251,13 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
       case imemo_ast:
         rb_ast_update_references((rb_ast_t *)obj);
         break;
+      case imemo_callcache:
+        {
+            const struct rb_callcache *cc = (const struct rb_callcache *)obj;
+            UPDATE_IF_MOVED(objspace, cc->klass);
+            TYPED_UPDATE_IF_MOVED(objspace, struct rb_callable_method_entry_struct *, cc->cme_);
+        }
+        break;
       case imemo_parser_strterm:
       case imemo_tmpbuf:
       case imemo_callinfo:
@@ -8202,6 +8334,39 @@ update_m_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl)
 }
 
 static enum rb_id_table_iterator_result
+update_cc_tbl_i(ID id, VALUE ccs_ptr, void *data)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)data;
+    struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
+    VM_ASSERT(vm_ccs_p(ccs));
+
+    if (gc_object_moved_p(objspace, (VALUE)ccs->cme)) {
+        ccs->cme = (const rb_callable_method_entry_t *)rb_gc_location((VALUE)ccs->cme);
+    }
+
+    for (int i=0; i<ccs->len; i++) {
+        if (gc_object_moved_p(objspace, (VALUE)ccs->entries[i].ci)) {
+            ccs->entries[i].ci = (struct rb_callinfo *)rb_gc_location((VALUE)ccs->entries[i].ci);
+        }
+        if (gc_object_moved_p(objspace, (VALUE)ccs->entries[i].cc)) {
+            ccs->entries[i].cc = (struct rb_callcache *)rb_gc_location((VALUE)ccs->entries[i].cc);
+        }
+    }
+
+    // do not replace
+    return ID_TABLE_CONTINUE;
+}
+
+static void
+update_cc_tbl(rb_objspace_t *objspace, VALUE klass)
+{
+    struct rb_id_table *tbl = RCLASS_CC_TBL(klass);
+    if (tbl) {
+        rb_id_table_foreach_with_replace(tbl, update_cc_tbl_i, NULL, objspace);
+    }
+}
+
+static enum rb_id_table_iterator_result
 update_const_table(VALUE value, void *data)
 {
     rb_const_entry_t *ce = (rb_const_entry_t *)value;
@@ -8257,7 +8422,10 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         }
         if (!RCLASS_EXT(obj)) break;
         update_m_tbl(objspace, RCLASS_M_TBL(obj));
+        update_cc_tbl(objspace, obj);
+
         gc_update_tbl_refs(objspace, RCLASS_IV_TBL(obj));
+
         update_class_ext(objspace, RCLASS_EXT(obj));
         update_const_tbl(objspace, RCLASS_CONST_TBL(obj));
         break;
@@ -8275,6 +8443,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         }
         update_class_ext(objspace, RCLASS_EXT(obj));
         update_m_tbl(objspace, RCLASS_CALLABLE_M_TBL(obj));
+        update_cc_tbl(objspace, obj);
         break;
 
       case T_IMEMO:
@@ -8607,7 +8776,6 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
         gc_check_references_for_moved(objspace);
     }
 
-    rb_clear_method_cache_by_class(rb_cObject);
     rb_clear_constant_cache();
     heap_eden->free_pages = NULL;
     heap_eden->using_page = NULL;
@@ -11550,6 +11718,9 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
                 if (!NIL_P(class_path)) {
                     APPENDF((BUFF_ARGS, "%s", RSTRING_PTR(class_path)));
                 }
+                else {
+                    APPENDF((BUFF_ARGS, "(annon)"));
+                }
                 break;
             }
           case T_ICLASS:
@@ -11606,21 +11777,31 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
                 IMEMO_NAME(ast);
                 IMEMO_NAME(parser_strterm);
                 IMEMO_NAME(callinfo);
+                IMEMO_NAME(callcache);
 #undef IMEMO_NAME
 	      default: UNREACHABLE;
 	    }
-            APPENDF((BUFF_ARGS, "/%s", imemo_name));
+            APPENDF((BUFF_ARGS, "<%s> ", imemo_name));
 
 	    switch (imemo_type(obj)) {
 	      case imemo_ment: {
 		const rb_method_entry_t *me = &RANY(obj)->as.imemo.ment;
 		if (me->def) {
-                    APPENDF((BUFF_ARGS, "(called_id: %s, type: %s, alias: %d, owner: %s, defined_class: %s)",
+                    APPENDF((BUFF_ARGS, ":%s (%s%s%s%s) type:%s alias:%d owner:%p defined_class:%p",
 			     rb_id2name(me->called_id),
+                             METHOD_ENTRY_VISI(me) == METHOD_VISI_PUBLIC ?  "pub" :
+                             METHOD_ENTRY_VISI(me) == METHOD_VISI_PRIVATE ? "pri" : "pro",
+                             METHOD_ENTRY_COMPLEMENTED(me) ? ",cmp" : "",
+                             METHOD_ENTRY_CACHED(me) ? ",cc" : "",
+                             METHOD_ENTRY_INVALIDATED(me) ? ",inv" : "",
                              rb_method_type_name(me->def->type),
-			     me->def->alias_count,
-			     obj_info(me->owner),
-                             obj_info(me->defined_class)));
+                             me->def->alias_count,
+                             (void *)me->owner, // obj_info(me->owner),
+                             (void *)me->defined_class)); //obj_info(me->defined_class)));
+
+                    if (me->def->type == VM_METHOD_TYPE_ISEQ) {
+                        APPENDF((BUFF_ARGS, " (iseq:%p)", (void *)me->def->body.iseq.iseqptr));
+                    }
 		}
 		else {
                     APPENDF((BUFF_ARGS, "%s", rb_id2name(me->called_id)));
@@ -11640,6 +11821,17 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
                              vm_ci_flag(ci),
                              vm_ci_argc(ci),
                              vm_ci_kwarg(ci) ? "available" : "NULL"));
+                    break;
+                }
+              case imemo_callcache:
+                {
+                    const struct rb_callcache *cc = (const struct rb_callcache *)obj;
+                    VALUE class_path = cc->klass ? rb_class_path_cached(cc->klass) : Qnil;
+
+                    APPENDF((BUFF_ARGS, "(klass:%s, cme:%s (%p) call:%p",
+                             NIL_P(class_path) ? "??" : RSTRING_PTR(class_path),
+                             vm_cc_cme(cc) ? rb_id2name(vm_cc_cme(cc)->called_id) : "<NULL>",
+                             (void *)vm_cc_cme(cc), (void *)vm_cc_call(cc)));
                     break;
                 }
 	      default:

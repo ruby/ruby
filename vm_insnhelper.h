@@ -121,18 +121,11 @@ enum vm_regan_acttype {
  */
 
 static inline void
-CC_SET_FASTPATH(CALL_CACHE cc, vm_call_handler func, bool enabled)
+CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enabled)
 {
     if (LIKELY(enabled)) {
-        cc->call = func;
+        vm_cc_call_set(cc, func);
     }
-}
-
-static inline void
-CC_SET_ME(CALL_CACHE cc, const rb_callable_method_entry_t *me)
-{
-    cc->me = me;
-    cc->method_serial = me ? me->def->method_serial : 0;
 }
 
 #define GET_BLOCK_HANDLER() (GET_LEP()[VM_ENV_DATA_INDEX_SPECVAL])
@@ -258,10 +251,10 @@ THROW_DATA_CONSUMED_SET(struct vm_throw_data *obj)
 /* If this returns true, an optimized function returned by `vm_call_iseq_setup_func`
    can be used as a fastpath. */
 static bool
-vm_call_iseq_optimizable_p(const struct rb_callinfo *ci, const struct rb_call_cache *cc)
+vm_call_iseq_optimizable_p(const struct rb_callinfo *ci, const struct rb_callcache *cc)
 {
     return !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
-        !(METHOD_ENTRY_VISI(cc->me) == METHOD_VISI_PROTECTED);
+        !(METHOD_ENTRY_VISI(vm_cc_cme(cc)) == METHOD_VISI_PROTECTED);
 }
 
 #endif /* RUBY_INSNHELPER_H */

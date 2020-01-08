@@ -253,7 +253,6 @@ struct rb_calling_info {
 };
 
 struct rb_execution_context_struct;
-typedef VALUE (*vm_call_handler)(struct rb_execution_context_struct *ec, struct rb_control_frame_struct *cfp, struct rb_calling_info *calling, struct rb_call_data *cd);
 
 #if 1
 #define CoreDataFromValue(obj, type) (type*)DATA_PTR(obj)
@@ -1088,7 +1087,7 @@ typedef struct iseq_inline_cache_entry *IC;
 typedef struct iseq_inline_iv_cache_entry *IVC;
 typedef union iseq_inline_storage_entry *ISE;
 typedef const struct rb_callinfo *CALL_INFO;
-typedef struct rb_call_cache *CALL_CACHE;
+typedef const struct rb_callcache *CALL_CACHE;
 typedef struct rb_call_data *CALL_DATA;
 
 typedef VALUE CDHASH;

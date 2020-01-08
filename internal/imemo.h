@@ -29,6 +29,7 @@
 #define IMEMO_FL_USER2 FL_USER6
 #define IMEMO_FL_USER3 FL_USER7
 #define IMEMO_FL_USER4 FL_USER8
+#define IMEMO_FL_USER5 FL_USER9
 
 enum imemo_type {
     imemo_env            =  0,
@@ -43,6 +44,7 @@ enum imemo_type {
     imemo_ast            =  9,
     imemo_parser_strterm = 10,
     imemo_callinfo       = 11,
+    imemo_callcache      = 12,
 };
 
 /* CREF (Class REFerence) is defined in method.h */
@@ -170,6 +172,8 @@ imemo_type_p(VALUE imemo, enum imemo_type imemo_type)
         return 0;
     }
 }
+
+#define IMEMO_TYPE_P(v, t) imemo_type_p((VALUE)v, t)
 
 static inline bool
 imemo_throw_data_p(VALUE imemo)

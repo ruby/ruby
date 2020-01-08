@@ -827,7 +827,7 @@ opt_nil_p
 (VALUE recv)
 (VALUE val)
 {
-    val = vm_opt_nil_p(cd, recv);
+    val = vm_opt_nil_p(GET_ISEQ(), cd, recv);
 
     if (val == Qundef) {
         CALL_SIMPLE_METHOD();
@@ -903,8 +903,9 @@ invokeblock
 // attr rb_snum_t sp_inc = sp_inc_of_invokeblock(cd->ci);
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_invokeblock(ci);
 {
-    if (UNLIKELY(cd->cc.call != vm_invokeblock_i)) {
-        cd->cc.call = vm_invokeblock_i; // check before setting to avoid CoW
+    if (UNLIKELY(vm_cc_call(cd->cc) != vm_invokeblock_i)) {
+        const struct rb_callcache *cc = vm_cc_new(0, NULL, vm_invokeblock_i);
+        RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, cc);
     }
 
     VALUE bh = VM_BLOCK_HANDLER_NONE;
@@ -1167,7 +1168,7 @@ opt_eq
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
-    val = opt_eq_func(recv, obj, cd);
+    val = opt_eq_func(GET_ISEQ(), recv, obj, cd);
 
     if (val == Qundef) {
         CALL_SIMPLE_METHOD();
@@ -1181,7 +1182,7 @@ opt_neq
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
-    val = vm_opt_neq(cd, cd_eq, recv, obj);
+    val = vm_opt_neq(GET_ISEQ(), cd, cd_eq, recv, obj);
 
     if (val == Qundef) {
         CALL_SIMPLE_METHOD();
@@ -1431,7 +1432,7 @@ opt_not
 (VALUE recv)
 (VALUE val)
 {
-    val = vm_opt_not(cd, recv);
+    val = vm_opt_not(GET_ISEQ(), cd, recv);
 
     if (val == Qundef) {
         CALL_SIMPLE_METHOD();

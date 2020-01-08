@@ -122,32 +122,6 @@ typedef intptr_t pid_t;
 
 #define MJIT_TMP_PREFIX "_ruby_mjit_"
 
-// The unit structure that holds metadata of ISeq for MJIT.
-struct rb_mjit_unit {
-    // Unique order number of unit.
-    int id;
-    // Dlopen handle of the loaded object file.
-    void *handle;
-    rb_iseq_t *iseq;
-#ifndef _MSC_VER
-    // This value is always set for `compact_all_jit_code`. Also used for lazy deletion.
-    char *o_file;
-    // true if it's inherited from parent Ruby process and lazy deletion should be skipped.
-    // `o_file = NULL` can't be used to skip lazy deletion because `o_file` could be used
-    // by child for `compact_all_jit_code`.
-    bool o_file_inherited_p;
-#endif
-#if defined(_WIN32)
-    // DLL cannot be removed while loaded on Windows. If this is set, it'll be lazily deleted.
-    char *so_file;
-#endif
-    // Only used by unload_units. Flag to check this unit is currently on stack or not.
-    char used_code_p;
-    struct list_node unode;
-    // mjit_compile's optimization switches
-    struct rb_mjit_compile_info compile_info;
-};
-
 // Linked list of struct rb_mjit_unit.
 struct rb_mjit_unit_list {
     struct list_head head;
@@ -1117,7 +1091,6 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 
 typedef struct {
     const rb_iseq_t *iseq;
-    struct rb_call_cache *cc_entries;
     union iseq_inline_storage_entry *is_entries;
     bool finish_p;
 } mjit_copy_job_t;
@@ -1138,7 +1111,7 @@ int rb_workqueue_register(unsigned flags, rb_postponed_job_func_t , void *);
 // We're lazily copying cache values from main thread because these cache values
 // could be different between ones on enqueue timing and ones on dequeue timing.
 bool
-mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq, struct rb_call_cache *cc_entries, union iseq_inline_storage_entry *is_entries)
+mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq, union iseq_inline_storage_entry *is_entries)
 {
     mjit_copy_job_t *job = &mjit_copy_job; // just a short hand
 
@@ -1146,7 +1119,6 @@ mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq, struct rb_call_cache *cc
     job->finish_p = true; // disable dispatching this job in mjit_copy_job_handler while it's being modified
     CRITICAL_SECTION_FINISH(3, "in mjit_copy_cache_from_main_thread");
 
-    job->cc_entries = cc_entries;
     job->is_entries = is_entries;
 
     CRITICAL_SECTION_START(3, "in mjit_copy_cache_from_main_thread");
