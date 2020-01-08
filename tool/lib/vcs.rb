@@ -411,9 +411,7 @@ class VCS
       range = [to || 'HEAD', (from ? from+1 : branch_beginning(url))].compact.join(':')
       IO.popen({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
                %W"#{COMMAND} log -r#{range} #{url}") do |r|
-        open(path, 'w') do |w|
-          IO.copy_stream(r, w)
-        end
+        IO.copy_stream(r, path)
       end
     end
 
@@ -661,7 +659,7 @@ class VCS
     def format_changelog_as_svn(path, arg)
       cmd = %W"#{COMMAND} log --topo-order --no-notes -z --format=%an%n%at%n%B"
       cmd.concat(arg)
-      open(path, 'w') do |w|
+      File.open(path, 'w') do |w|
         sep = "-"*72 + "\n"
         w.print sep
         cmd_pipe(cmd) do |r|
