@@ -3785,18 +3785,23 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *     str =~ obj   -> integer or nil
  *
- *  Match---If <i>obj</i> is a Regexp, use it as a pattern to match
- *  against <i>str</i>,and returns the position the match starts, or
- *  <code>nil</code> if there is no match. Otherwise, invokes
- *  <i>obj.=~</i>, passing <i>str</i> as an argument. The default
- *  <code>=~</code> in Object returns <code>nil</code>.
- *
- *  Note: <code>str =~ regexp</code> is not the same as
- *  <code>regexp =~ str</code>. Strings captured from named capture groups
- *  are assigned to local variables only in the second case.
+ *  Match---If <i>obj</i> is a Regexp, uses it as a pattern to match
+ *  against the receiver, and returns the position the match starts,
+ *  or +nil+ if there is no match. Otherwise, invokes <i>obj.=~</i>,
+ *  passing the string as an argument.
+ *  The default Object#=~ (deprecated) returns +nil+.
  *
  *     "cat o' 9 tails" =~ /\d/   #=> 7
  *     "cat o' 9 tails" =~ 9      #=> nil
+ *
+ *  Note that <code>string =~ regexp</code> is not the same as
+ *  <code>regexp =~ string</code>. Strings captured from named capture groups
+ *  are assigned to local variables only in the second case.
+ *
+ *     "no. 9" =~ /(?<number>\d+)/
+ *     number                        #=> nil (not assigned)
+ *     /(?<number>\d+)/ =~ "no. 9"
+ *     number                        #=> "9"
  */
 
 static VALUE
