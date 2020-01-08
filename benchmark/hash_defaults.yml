@@ -1,0 +1,6 @@
+prelude: |
+  h = Hash.new { :foo }
+benchmark:
+  default_aref: h[1]
+  default_method: h.default(1)
+loop_count: 1000000
