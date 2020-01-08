@@ -3831,9 +3831,9 @@ static VALUE get_pat(VALUE);
  *     str.match(pattern, pos)   -> matchdata or nil
  *
  *  Converts <i>pattern</i> to a Regexp (if it isn't already one),
- *  then invokes its <code>match</code> method on <i>str</i>.  If the second
- *  parameter is present, it specifies the position in the string to begin the
- *  search.
+ *  then invokes its <code>match</code> method on the receiver.
+ *  If the second parameter is present, it specifies the position
+ *  in the string to begin the search.
  *
  *     'hello'.match('(.)\1')      #=> #<MatchData "ll" 1:"l">
  *     'hello'.match('(.)\1')[0]   #=> "ll"
@@ -3841,18 +3841,18 @@ static VALUE get_pat(VALUE);
  *     'hello'.match(/(.)\1/, 3)   #=> nil
  *     'hello'.match('xx')         #=> nil
  *
- *  If a block is given, invoke the block with MatchData if match succeed, so
- *  that you can write
+ *  If a block is given, invokes the block with MatchData if match succeeds,
+ *  so that you can write
  *
- *     str.match(pat) {|m| ...}
+ *     str.match(pat) {|m| block }
  *
  *  instead of
  *
  *     if m = str.match(pat)
- *       ...
+ *       # ...
  *     end
  *
- *  The return value is a value from block execution in this case.
+ *  The return value in this case is the value from block execution.
  */
 
 static VALUE
