@@ -454,6 +454,7 @@ ruby_fill_random_bytes(void *seed, size_t size, int need_secure)
 
 #define fill_random_bytes ruby_fill_random_bytes
 
+/* cnt must be 4 or more */
 static void
 fill_random_seed(uint32_t *seed, size_t cnt)
 {
@@ -1466,7 +1467,12 @@ rb_memhash(const void *ptr, long len)
 void
 Init_RandomSeedCore(void)
 {
+    if (!fill_random_bytes(&hash_salt, sizeof(hash_salt), FALSE)) return;
+
     /*
+      If failed to fill siphash's salt with random data, expand less random
+      data with MT.
+
       Don't reuse this MT for Random::DEFAULT. Random::DEFAULT::seed shouldn't
       provide a hint that an attacker guess siphash's seed.
     */
