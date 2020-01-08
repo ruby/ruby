@@ -504,6 +504,10 @@ make_seed_value(uint32_t *ptr, size_t len)
     return seed;
 }
 
+#define with_random_seed(size, add) \
+    for (uint32_t seedbuf[(size)+(add)], loop = (fill_random_seed(seedbuf, (size)), 1); \
+         loop; explicit_bzero(seedbuf, (size)*sizeof(seedbuf[0])), loop = 0)
+
 /*
  * call-seq: Random.new_seed -> integer
  *
@@ -516,10 +520,9 @@ static VALUE
 random_seed(VALUE _)
 {
     VALUE v;
-    uint32_t buf[DEFAULT_SEED_CNT+1];
-    fill_random_seed(buf, DEFAULT_SEED_CNT);
-    v = make_seed_value(buf, DEFAULT_SEED_CNT);
-    explicit_bzero(buf, DEFAULT_SEED_LEN);
+    with_random_seed(DEFAULT_SEED_CNT, 1) {
+        v = make_seed_value(seedbuf, DEFAULT_SEED_CNT);
+    }
     return v;
 }
 
@@ -1477,28 +1480,13 @@ Init_RandomSeedCore(void)
       provide a hint that an attacker guess siphash's seed.
     */
     struct MT mt;
-    uint32_t initial_seed[DEFAULT_SEED_CNT];
 
-    fill_random_seed(initial_seed, DEFAULT_SEED_CNT);
-    init_by_array(&mt, initial_seed, DEFAULT_SEED_CNT);
+    with_random_seed(DEFAULT_SEED_CNT, 0) {
+        init_by_array(&mt, seedbuf, DEFAULT_SEED_CNT);
+    }
 
     init_hash_salt(&mt);
-
-    explicit_bzero(initial_seed, DEFAULT_SEED_LEN);
     explicit_bzero(&mt, sizeof(mt));
-}
-
-static VALUE
-init_randomseed(struct MT *mt)
-{
-    uint32_t initial[DEFAULT_SEED_CNT+1];
-    VALUE seed;
-
-    fill_random_seed(initial, DEFAULT_SEED_CNT);
-    init_by_array(mt, initial, DEFAULT_SEED_CNT);
-    seed = make_seed_value(initial, DEFAULT_SEED_CNT);
-    explicit_bzero(initial, DEFAULT_SEED_LEN);
-    return seed;
 }
 
 /* construct Random::DEFAULT bits */
@@ -1510,7 +1498,10 @@ Init_Random_default(VALUE klass)
     VALUE v = TypedData_Wrap_Struct(klass, &random_mt_type, r);
 
     rb_gc_register_mark_object(v);
-    r->seed = init_randomseed(mt);
+    with_random_seed(DEFAULT_SEED_CNT, 1) {
+        init_by_array(mt, seedbuf, DEFAULT_SEED_CNT);
+        r->seed = make_seed_value(seedbuf, DEFAULT_SEED_CNT);
+    }
 
     return v;
 }
