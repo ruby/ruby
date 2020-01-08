@@ -78,7 +78,7 @@ def gemfile(install = false, options = {}, &gemfile)
     if old_gemfile
       ENV["BUNDLE_GEMFILE"] = old_gemfile
     else
-      ENV.delete("BUNDLE_GEMFILE")
+      ENV["BUNDLE_GEMFILE"] = ""
     end
   end
 end

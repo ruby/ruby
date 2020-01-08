@@ -899,17 +899,17 @@ end
 
   describe "with git gems that don't have gemspecs" do
     before :each do
-      build_git "no-gemspec", :gemspec => false
+      build_git "no_gemspec", :gemspec => false
 
       install_gemfile <<-G
-        gem "no-gemspec", "1.0", :git => "#{lib_path("no-gemspec-1.0")}"
+        gem "no_gemspec", "1.0", :git => "#{lib_path("no_gemspec-1.0")}"
       G
     end
 
     it "loads the library via a virtual spec" do
       run <<-R
-        require 'no-gemspec'
-        puts NOGEMSPEC
+        require 'no_gemspec'
+        puts NO_GEMSPEC
       R
 
       expect(out).to eq("1.0")
@@ -1261,6 +1261,27 @@ end
         FileUtils.chmod(0o777, bundled_app("script.rb"))
         bundle! "exec ./script.rb", :artifice => nil, :env => { "RUBYOPT" => activation_warning_hack_rubyopt }
         expect(out).to eq("{}")
+      end
+
+      it "does not load net-http-pipeline too early" do
+        build_repo4 do
+          build_gem "net-http-pipeline", "1.0.1"
+        end
+
+        system_gems "net-http-pipeline-1.0.1", :gem_repo => gem_repo4 do
+          gemfile <<-G
+            source "#{file_uri_for(gem_repo4)}"
+            gem "net-http-pipeline", "1.0.1"
+          G
+
+          bundle "config set --local path vendor/bundle"
+
+          bundle! :install
+
+          bundle! :check
+
+          expect(out).to eq("The Gemfile's dependencies are satisfied")
+        end
       end
 
       Gem::Specification.select(&:default_gem?).map(&:name).each do |g|

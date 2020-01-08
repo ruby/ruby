@@ -128,7 +128,7 @@ module Spec
         groups << opts
         @errors = names.map do |name|
           name, version, platform = name.split(/\s+/)
-          require_path = name == "bundler" ? "#{lib_dir}/bundler" : name
+          require_path = name == "bundler" ? "#{lib_dir}/bundler" : name.tr("-", "/")
           version_const = name == "bundler" ? "Bundler::VERSION" : Spec::Builders.constantize(name)
           begin
             run! "require '#{require_path}.rb'; puts #{version_const}", *groups
@@ -145,7 +145,7 @@ module Spec
           next unless source
           begin
             source_const = "#{Spec::Builders.constantize(name)}_SOURCE"
-            run! "require '#{name}/source'; puts #{source_const}", *groups
+            run! "require '#{require_path}/source'; puts #{source_const}", *groups
           rescue StandardError
             next "#{name} does not have a source defined:\n#{indent(e)}"
           end
