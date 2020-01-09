@@ -2703,7 +2703,6 @@ RB_METHOD_DEFINITION_DECL(rb_define_method, (2,3), (VALUE klass, const char *nam
 #ifdef __cplusplus
 #define rb_define_method(m, n, f, a) rb_define_method_tmpl<a>::define(m, n, f)
 #else
-#define rb_define_method_if_constexpr(x, t, f)    __builtin_choose_expr(__builtin_choose_expr(__builtin_constant_p(x),(x),0),(t),(f))
 #define rb_define_method_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_method15,rb_define_methodm3)
 #define rb_define_method_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_method14,rb_define_method_choose_prototype15(n))
 #define rb_define_method_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_method13,rb_define_method_choose_prototype14(n))

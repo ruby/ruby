@@ -1052,6 +1052,10 @@ extern "C++" {
     }
 #endif
 
+#if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
+#define rb_define_method_if_constexpr(x, t, f)    __builtin_choose_expr(__builtin_choose_expr(__builtin_constant_p(x),(x),0),(t),(f))
+#endif
+
 #define RB_UNWRAP_MACRO(...) __VA_ARGS__
 
 #ifdef __cplusplus
