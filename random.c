@@ -1435,7 +1435,7 @@ static union {
 } hash_salt;
 
 static void
-init_seed(struct MT *mt)
+init_hash_salt(struct MT *mt)
 {
     int i;
 
@@ -1476,7 +1476,7 @@ Init_RandomSeedCore(void)
     fill_random_seed(initial_seed, DEFAULT_SEED_CNT);
     init_by_array(&mt, initial_seed, DEFAULT_SEED_CNT);
 
-    init_seed(&mt);
+    init_hash_salt(&mt);
 
     explicit_bzero(initial_seed, DEFAULT_SEED_LEN);
     explicit_bzero(&mt, sizeof(mt));
