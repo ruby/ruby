@@ -15,12 +15,16 @@
  * @see        https://clang.llvm.org/docs/LanguageExtensions.html#builtin-rotateleft
  * @see        https://clang.llvm.org/docs/LanguageExtensions.html#builtin-rotateright
  * @see        https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/byteswap-uint64-byteswap-ulong-byteswap-ushort
+ * @see        https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/rotl-rotl64-rotr-rotr64
  * @see        https://docs.microsoft.com/en-us/cpp/intrinsics/bitscanforward-bitscanforward64
  * @see        https://docs.microsoft.com/en-us/cpp/intrinsics/bitscanreverse-bitscanreverse64
  * @see        https://docs.microsoft.com/en-us/cpp/intrinsics/lzcnt16-lzcnt-lzcnt64
  * @see        https://docs.microsoft.com/en-us/cpp/intrinsics/popcnt16-popcnt-popcnt64
  * @see        https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_lzcnt_u32
  * @see        https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_tzcnt_u32
+ * @see        https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_rotl64
+ * @see        https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_rotr64
+ * @see        https://stackoverflow.com/a/776523
  */
 #include "ruby/config.h"
 #include <limits.h>             /* for CHAR_BITS */
@@ -31,13 +35,33 @@
 # include <stdlib.h>            /* for _byteswap_uint64 */
 #endif
 
-#if defined(__x86_64__) && defined(__LZCNT__) && ! defined(MJIT_HEADER)
+#if defined(HAVE_X86INTRIN_H) && ! defined(MJIT_HEADER)
 # /* Rule out MJIT_HEADER, which does not interface well with <immintrin.h> */
-# include <immintrin.h>         /* for _lzcnt_u64 */
+# include <x86intrin.h>         /* for _lzcnt_u64 */
+#elif MSC_VERSION_SINCE(1310)
+# include <intrin.h>            /* for the following intrinsics */
+#endif
+
+#if defined(_MSC_VER) && defined(__AVX__)
+# pragma intrinsic(__popcnt)
+# pragma intrinsic(__popcnt64)
+#endif
+
+#if defined(_MSC_VER) && defined(__AVX2__)
+# pragma intrinsic(__lzcnt)
+# pragma intrinsic(__lzcnt64)
+#endif
+
+#if MSC_VERSION_SINCE(1310)
+# pragma intrinsic(_rotl)
+# pragma intrinsic(_rotr)
+# ifdef _WIN64
+#  pragma intrinsic(_rotl64)
+#  pragma intrinsic(_rotr64)
+# endif
 #endif
 
 #if MSC_VERSION_SINCE(1400)
-# include <intrin.h>            /* for the following intrinsics */
 # pragma intrinsic(_BitScanForward)
 # pragma intrinsic(_BitScanReverse)
 # ifdef _WIN64
@@ -500,9 +524,18 @@ RUBY_BIT_ROTL(VALUE v, int n)
 #elif __has_builtin(__builtin_rotateleft64) && (SIZEOF_VALUE * CHAR_BIT == 64)
     return __builtin_rotateleft64(v, n);
 
+#elif MSC_VERSION_SINCE(1310) && (SIZEOF_VALUE * CHAR_BIT == 32)
+    return _rotl(v, n);
+
+#elif MSC_VERSION_SINCE(1310) && (SIZEOF_VALUE * CHAR_BIT == 64)
+    return _rotl64(v, n);
+
+#elif defined(_lrotl) && (SIZEOF_VALUE == SIZEOF_LONG)
+    return _lrotl(v, n);
+
 #else
-    const int m = sizeof(VALUE) * CHAR_BIT;
-    return (v << n) | (v >> (m - n));
+    const int m = (sizeof(VALUE) * CHAR_BIT) - 1;
+    return (v << (n & m)) | (v >> (-n & m));
 #endif
 }
 
@@ -515,9 +548,18 @@ RUBY_BIT_ROTR(VALUE v, int n)
 #elif __has_builtin(__builtin_rotateright64) && (SIZEOF_VALUE * CHAR_BIT == 64)
     return __builtin_rotateright64(v, n);
 
+#elif MSC_VERSION_SINCE(1310) && (SIZEOF_VALUE * CHAR_BIT == 32)
+    return _rotr(v, n);
+
+#elif MSC_VERSION_SINCE(1310) && (SIZEOF_VALUE * CHAR_BIT == 64)
+    return _rotr64(v, n);
+
+#elif defined(_lrotr) && (SIZEOF_VALUE == SIZEOF_LONG)
+    return _lrotr(v, n);
+
 #else
-    const int m = sizeof(VALUE) * CHAR_BIT;
-    return (v << (m - n)) | (v >> n);
+    const int m = (sizeof(VALUE) * CHAR_BIT) - 1;
+    return (v << (-n & m)) | (v >> (n & m));
 #endif
 }
 
