@@ -1427,33 +1427,33 @@ random_s_rand(int argc, VALUE *argv, VALUE obj)
 typedef struct {
     st_index_t hash;
     uint8_t sip[16];
-} seed_keys_t;
+} hash_salt_t;
 
 static union {
-    seed_keys_t key;
-    uint32_t u32[type_roomof(seed_keys_t, uint32_t)];
-} seed;
+    hash_salt_t key;
+    uint32_t u32[type_roomof(hash_salt_t, uint32_t)];
+} hash_salt;
 
 static void
 init_seed(struct MT *mt)
 {
     int i;
 
-    for (i = 0; i < numberof(seed.u32); ++i)
-	seed.u32[i] = genrand_int32(mt);
+    for (i = 0; i < numberof(hash_salt.u32); ++i)
+	hash_salt.u32[i] = genrand_int32(mt);
 }
 
 NO_SANITIZE("unsigned-integer-overflow", extern st_index_t rb_hash_start(st_index_t h));
 st_index_t
 rb_hash_start(st_index_t h)
 {
-    return st_hash_start(seed.key.hash + h);
+    return st_hash_start(hash_salt.key.hash + h);
 }
 
 st_index_t
 rb_memhash(const void *ptr, long len)
 {
-    sip_uint64_t h = sip_hash13(seed.key.sip, ptr, len);
+    sip_uint64_t h = sip_hash13(hash_salt.key.sip, ptr, len);
 #ifdef HAVE_UINT64_T
     return (st_index_t)h;
 #else
