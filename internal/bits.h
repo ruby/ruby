@@ -25,8 +25,9 @@
 #include "ruby/config.h"
 #include <limits.h>             /* for CHAR_BITS */
 #include <stdint.h>             /* for uintptr_t */
+#include "internal/compilers.h" /* for MSC_VERSION_SINCE */
 
-#ifdef _MSC_VER
+#if MSC_VERSION_SINCE(1310)
 # include <stdlib.h>            /* for _byteswap_uint64 */
 #endif
 
@@ -35,16 +36,17 @@
 # include <immintrin.h>         /* for _lzcnt_u64 */
 #endif
 
-#if defined(_MSC_VER) && defined(_WIN64)
+#if MSC_VERSION_SINCE(1400)
 # include <intrin.h>            /* for the following intrinsics */
 # pragma intrinsic(_BitScanForward)
-# pragma intrinsic(_BitScanForward64)
 # pragma intrinsic(_BitScanReverse)
-# pragma intrinsic(_BitScanReverse64)
+# ifdef _WIN64
+#  pragma intrinsic(_BitScanForward64)
+#  pragma intrinsic(_BitScanReverse64)
+# endif
 #endif
 
 #include "ruby/ruby.h"              /* for VALUE */
-#include "internal/compilers.h"     /* for __has_builtin */
 #include "internal/static_assert.h" /* for STATIC_ASSERT */
 
 /* The most significant bit of the lower part of half-long integer.
@@ -156,7 +158,7 @@ ruby_swap16(uint16_t x)
 #if __has_builtin(__builtin_bswap16)
     return __builtin_bswap16(x);
 
-#elif defined(_MSC_VER)
+#elif MSC_VERSION_SINCE(1310)
     return _byteswap_ushort(x);
 
 #else
@@ -171,7 +173,7 @@ ruby_swap32(uint32_t x)
 #if __has_builtin(__builtin_bswap32)
     return __builtin_bswap32(x);
 
-#elif defined(_MSC_VER)
+#elif MSC_VERSION_SINCE(1310)
     return _byteswap_ulong(x);
 
 #else
@@ -188,7 +190,7 @@ ruby_swap64(uint64_t x)
 #if __has_builtin(__builtin_bswap64)
     return __builtin_bswap64(x);
 
-#elif defined(_MSC_VER)
+#elif MSC_VERSION_SINCE(1310)
     return _byteswap_uint64(x);
 
 #else
@@ -203,7 +205,7 @@ ruby_swap64(uint64_t x)
 static inline unsigned int
 nlz_int32(uint32_t x)
 {
-#if defined(_MSC_VER) && defined(_WIN64) && defined(__AVX2__)
+#if defined(_MSC_VER) && defined(__AVX2__)
     /* Note: It seems there is no such tihng like __LZCNT__ predefined in MSVC.
      * AMD  CPUs have  had this  instruction for  decades (since  K10) but  for
      * Intel, Haswell is  the oldest one.  We need to  use __AVX2__ for maximum
@@ -213,7 +215,7 @@ nlz_int32(uint32_t x)
 #elif defined(__x86_64__) && defined(__LZCNT__) && ! defined(MJIT_HEADER)
     return (unsigned int)_lzcnt_u32(x);
 
-#elif defined(_MSC_VER) && defined(_WIN64) /* &&! defined(__AVX2__) */
+#elif MSC_VERSION_SINCE(1400) /* &&! defined(__AVX2__) */
     unsigned long r;
     return _BitScanReverse(&r, x) ? (31 - (int)r) : 32;
 
@@ -236,13 +238,13 @@ nlz_int32(uint32_t x)
 static inline unsigned int
 nlz_int64(uint64_t x)
 {
-#if defined(_MSC_VER) && defined(_WIN64) && defined(__AVX2__)
+#if defined(_MSC_VER) && defined(__AVX2__)
     return (unsigned int)__lzcnt64(x);
 
 #elif defined(__x86_64__) && defined(__LZCNT__) && ! defined(MJIT_HEADER)
     return (unsigned int)_lzcnt_u64(x);
 
-#elif defined(_MSC_VER) && defined(_WIN64) /* &&! defined(__AVX2__) */
+#elif defined(_WIN64) && MSC_VERSION_SINCE(1400) /* &&! defined(__AVX2__) */
     unsigned long r;
     return _BitScanReverse64(&r, x) ? (63u - (unsigned int)r) : 64;
 
@@ -357,7 +359,7 @@ nlz_intptr(uintptr_t x)
 static inline unsigned int
 rb_popcount32(uint32_t x)
 {
-#if defined(_MSC_VER) && defined(_WIN64) && defined(__AVX__)
+#if defined(_MSC_VER) && defined(__AVX__)
     /* Note: CPUs since Nehalem and Barcelona  have had this instruction so SSE
      * 4.2 should suffice, but it seems there is no such thing like __SSE_4_2__
      * predefined macro in MSVC.  They do have __AVX__ so use it instead. */
@@ -381,7 +383,7 @@ rb_popcount32(uint32_t x)
 static inline unsigned int
 rb_popcount64(uint64_t x)
 {
-#if defined(_MSC_VER) && defined(_WIN64) && defined(__AVX__)
+#if defined(_MSC_VER) && defined(__AVX__)
     return (unsigned int)__popcnt64(x);
 
 #elif __has_builtin(__builtin_popcount)
@@ -428,7 +430,7 @@ ntz_int32(uint32_t x)
 #if defined(__x86_64__) && defined(__BMI__) && ! defined(MJIT_HEADER)
     return (unsigned)_tzcnt_u32(x);
 
-#elif defined(_MSC_VER) && defined(_WIN64)
+#elif MSC_VERSION_SINCE(1400)
     /* :FIXME: Is there any way to issue TZCNT instead of BSF, apart from using
      *         assembly?  Because issueing LZCNT seems possible (see nlz.h). */
     unsigned long r;
@@ -450,7 +452,7 @@ ntz_int64(uint64_t x)
 #if defined(__x86_64__) && defined(__BMI__) && ! defined(MJIT_HEADER)
     return (unsigned)_tzcnt_u64(x);
 
-#elif defined(_MSC_VER) && defined(_WIN64)
+#elif defined(_WIN64) && MSC_VERSION_SINCE(1400)
     unsigned long r;
     return _BitScanForward64(&r, x) ? (int)r : 64;
 
