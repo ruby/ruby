@@ -127,6 +127,7 @@
 #include "ccan/list/list.h"
 #include "internal/thread.h"
 #include "internal/transcode.h"
+#include "internal/variable.h"
 #include "ruby/io.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
