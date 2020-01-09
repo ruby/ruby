@@ -209,7 +209,7 @@ VALUE rb_default_rs;
 
 static VALUE argf;
 
-static ID id_write, id_read, id_getc, id_flush, id_readpartial, id_set_encoding;
+static ID id_write, id_read, id_getc, id_flush, id_readpartial;
 static VALUE sym_mode, sym_perm, sym_flags, sym_extenc, sym_intenc, sym_encoding, sym_open_args;
 static VALUE sym_textmode, sym_binmode, sym_autoclose;
 static VALUE sym_SET, sym_CUR, sym_END;
@@ -11769,15 +11769,11 @@ rb_io_internal_encoding(VALUE io)
  *  optional hash argument specify the conversion option.
  */
 
-static VALUE
+VALUE
 rb_io_set_encoding(int argc, VALUE *argv, VALUE io)
 {
     rb_io_t *fptr;
     VALUE v1, v2, opt;
-
-    if (!RB_TYPE_P(io, T_FILE)) {
-        return rb_funcallv(io, id_set_encoding, argc, argv);
-    }
 
     argc = rb_scan_args(argc, argv, "11:", &v1, &v2, &opt);
     GetOpenFile(io, fptr);
@@ -13195,7 +13191,6 @@ Init_IO(void)
     id_getc = rb_intern("getc");
     id_flush = rb_intern("flush");
     id_readpartial = rb_intern("readpartial");
-    id_set_encoding = rb_intern("set_encoding");
 
     rb_define_global_function("syscall", rb_f_syscall, -1);
 
