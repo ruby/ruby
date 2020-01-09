@@ -103,7 +103,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
   end
 
   def test_error_message
-    e = assert_raise_with_message(SocketError, /getaddrinfo:/) do
+    e = assert_raise_with_message(SocketError, /getaddrinfo/) do
       Addrinfo.ip("...")
     end
     m = e.message
