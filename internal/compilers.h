@@ -210,6 +210,7 @@ __extension__({ \
         RB_BUILTIN_TYPE(arg_obj); \
     })
 #else
+# include "ruby/ruby.h"
 static inline int
 rb_obj_builtin_type(VALUE obj)
 {
