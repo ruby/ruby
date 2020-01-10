@@ -144,7 +144,7 @@ Zachary Scott (zzak)
 
 [lib/benchmark.rb]
   _unmaintained_
-  https://github.com/bundler/benchmark
+  https://github.com/ruby/benchmark
   https://rubygems.org/gems/benchmark
 [lib/bundler.rb, lib/bundler/*]
   Hiroshi SHIBATA (hsbt)
