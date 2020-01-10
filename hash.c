@@ -1549,10 +1549,8 @@ rb_hash_new_with_size(st_index_t size)
 }
 
 static VALUE
-hash_dup(VALUE hash, VALUE klass, VALUE flags)
+hash_copy(VALUE ret, VALUE hash)
 {
-    VALUE ret = hash_alloc_flags(klass, flags,
-				 RHASH_IFNONE(hash));
     if (!RHASH_EMPTY_P(hash)) {
         if (RHASH_AR_TABLE_P(hash))
             ar_copy(ret, hash);
@@ -1560,6 +1558,13 @@ hash_dup(VALUE hash, VALUE klass, VALUE flags)
             RHASH_ST_TABLE_SET(ret, st_copy(RHASH_ST_TABLE(hash)));
     }
     return ret;
+}
+
+static VALUE
+hash_dup(VALUE hash, VALUE klass, VALUE flags)
+{
+    return hash_copy(hash_alloc_flags(klass, flags, RHASH_IFNONE(hash)),
+                     hash);
 }
 
 VALUE
@@ -3213,7 +3218,7 @@ rb_hash_transform_values(VALUE hash)
     VALUE result;
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
-    result = hash_dup(hash, rb_cHash, 0);
+    result = hash_copy(hash_alloc(rb_cHash), hash);
 
     if (!RHASH_EMPTY_P(hash)) {
         rb_hash_stlike_foreach_with_replace(result, transform_values_foreach_func, transform_values_foreach_replace, 0);
