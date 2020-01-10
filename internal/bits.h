@@ -215,7 +215,7 @@ nlz_int32(uint32_t x)
 
 #elif defined(_MSC_VER) && defined(_WIN64) /* &&! defined(__AVX2__) */
     unsigned long r;
-    return _BitScanReverse(&r, x) ? (int)r : 32;
+    return _BitScanReverse(&r, x) ? (31 - (int)r) : 32;
 
 #elif __has_builtin(__builtin_clz)
     STATIC_ASSERT(sizeof_int, sizeof(int) * CHAR_BIT == 32);
@@ -244,7 +244,7 @@ nlz_int64(uint64_t x)
 
 #elif defined(_MSC_VER) && defined(_WIN64) /* &&! defined(__AVX2__) */
     unsigned long r;
-    return _BitScanReverse64(&r, x) ? (unsigned int)r : 64;
+    return _BitScanReverse64(&r, x) ? (63u - (unsigned int)r) : 64;
 
 #elif __has_builtin(__builtin_clzl)
     if (x == 0) {
