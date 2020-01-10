@@ -37,6 +37,8 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
     assert @cmd.options[:force]
     assert @cmd.options[:strict]
+    assert @cmd.handles?(%W[--platform #{Gem::Platform.local}])
+    assert_includes Gem.platforms, Gem::Platform.local
   end
 
   def test_options_filename
@@ -84,6 +86,26 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     @cmd.options[:args] = [gemspec_file]
 
     util_test_build_gem @gem
+  end
+
+  def test_execute_platform
+    gemspec_file = File.join(@tempdir, @gem.spec_name)
+
+    File.open gemspec_file, 'w' do |gs|
+      gs.write @gem.to_ruby
+    end
+
+    @cmd.options[:args] = [gemspec_file]
+
+    platforms = Gem.platforms.dup
+    begin
+      Gem.platforms << Gem::Platform.new("java")
+
+      spec = util_test_build_gem @gem, suffix: "java"
+    ensure
+      Gem.platforms.replace(platforms)
+    end
+    assert_match spec.platform, "java"
   end
 
   def test_execute_bad_name
@@ -327,27 +349,29 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     refute File.exist?(expected_gem)
   end
 
-  def util_test_build_gem(gem)
+  def util_test_build_gem(gem, suffix: nil)
     use_ui @ui do
       Dir.chdir @tempdir do
         @cmd.execute
       end
     end
-
+    suffix &&= "-#{suffix}"
+    gem_file = "some_gem-2#{suffix}.gem"
     output = @ui.output.split "\n"
     assert_equal "  Successfully built RubyGem", output.shift
     assert_equal "  Name: some_gem", output.shift
     assert_equal "  Version: 2", output.shift
-    assert_equal "  File: some_gem-2.gem", output.shift
+    assert_equal "  File: #{gem_file}", output.shift
     assert_equal [], output
 
-    gem_file = File.join(@tempdir, File.basename(gem.cache_file))
+    gem_file = File.join(@tempdir, gem_file)
     assert File.exist?(gem_file)
 
     spec = Gem::Package.new(gem_file).spec
 
     assert_equal "some_gem", spec.name
     assert_equal "this is a summary", spec.summary
+    spec
   end
 
   def test_execute_force
