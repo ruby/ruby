@@ -5641,19 +5641,18 @@ rb_str_reverse(VALUE str)
     VALUE rev;
     char *s, *e, *p;
     int cr;
+    size_t len = RSTRING_LEN(str);
 
-    if (RSTRING_LEN(str) <= 1) return rb_str_dup(str);
+    if (len <= 1) return rb_str_dup(str);
     enc = STR_ENC_GET(str);
     rev = rb_str_new_with_class(str, 0, RSTRING_LEN(str));
     s = RSTRING_PTR(str); e = RSTRING_END(str);
     p = RSTRING_END(rev);
     cr = ENC_CODERANGE(str);
 
-    if (RSTRING_LEN(str) > 1) {
+    if (len > 1) {
 	if (single_byte_optimizable(str)) {
-	    while (s < e) {
-		*--p = *s++;
-	    }
+            ruby_reverse(RSTRING_PTR(rev), s, len);
 	}
 	else if (cr == ENC_CODERANGE_VALID) {
 	    while (s < e) {
@@ -5677,7 +5676,7 @@ rb_str_reverse(VALUE str)
 	    }
 	}
     }
-    STR_SET_LEN(rev, RSTRING_LEN(str));
+    STR_SET_LEN(rev, len);
     str_enc_copy(rev, str);
     ENC_CODERANGE_SET(rev, cr);
 
@@ -5695,18 +5694,12 @@ rb_str_reverse(VALUE str)
 static VALUE
 rb_str_reverse_bang(VALUE str)
 {
-    if (RSTRING_LEN(str) > 1) {
-	if (single_byte_optimizable(str)) {
-	    char *s, *e, c;
-
-	    str_modify_keep_cr(str);
-	    s = RSTRING_PTR(str);
-	    e = RSTRING_END(str) - 1;
-	    while (s < e) {
-		c = *s;
-		*s++ = *e;
-		*e-- = c;
-	    }
+    size_t len = RSTRING_LEN(str);
+    if (len > 1) {
+        if (single_byte_optimizable(str)) {
+            str_modify_keep_cr(str);
+            char *s = RSTRING_PTR(str);
+            ruby_reverse(s, s, len);
 	}
 	else {
 	    str_shared_replace(str, rb_str_reverse(str));
