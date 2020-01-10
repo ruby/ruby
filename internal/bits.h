@@ -213,7 +213,7 @@ nlz_int32(uint32_t x)
 #elif defined(__x86_64__) && defined(__LZCNT__) && ! defined(MJIT_HEADER)
     return (unsigned int)_lzcnt_u32(x);
 
-#elif defined(_MSC_VER) && defined(_Win64) /* &&! defined(__AVX2__) */
+#elif defined(_MSC_VER) && defined(_WIN64) /* &&! defined(__AVX2__) */
     unsigned long r;
     return _BitScanReverse(&r, x) ? (int)r : 32;
 
@@ -242,7 +242,7 @@ nlz_int64(uint64_t x)
 #elif defined(__x86_64__) && defined(__LZCNT__) && ! defined(MJIT_HEADER)
     return (unsigned int)_lzcnt_u64(x);
 
-#elif defined(_MSC_VER) && defined(_Win64) /* &&! defined(__AVX2__) */
+#elif defined(_MSC_VER) && defined(_WIN64) /* &&! defined(__AVX2__) */
     unsigned long r;
     return _BitScanReverse64(&r, x) ? (unsigned int)r : 64;
 
@@ -285,7 +285,7 @@ nlz_int128(uint128_t x)
         return 128;
     }
     else if (y == 0) {
-        return (unsigned int)nlz_int64(y) + 64;
+        return (unsigned int)nlz_int64(x) + 64;
     }
     else {
         return (unsigned int)nlz_int64(y);
