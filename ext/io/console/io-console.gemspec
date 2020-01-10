@@ -21,5 +21,20 @@ Gem::Specification.new do |s|
     lib/io/console/size.rb
   ]
   s.extensions = %w[ext/io/console/extconf.rb]
+
+  if i = ARGV.index("--") and !(argv = ARGV[i+1..-1]).empty?
+    OptionParser.new(__FILE__) do |opt|
+      opt.on("--platform=PLATFORM") {|p| s.platform = p}
+    end.parse!(argv)
+  end
+  if Gem::Platform === s.platform and s.platform =~ 'java'
+    s.files.delete_if {|f| f.start_with?("ext/")}
+    s.extensions.clear
+    s.require_paths.unshift("jruby")
+    s.files.concat(%w[
+      jruby/io/console.rb
+    ])
+  end
+
   s.licenses = ["Ruby", "BSD-2-Clause"]
 end
