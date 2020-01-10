@@ -1,0 +1,18 @@
+prelude: |
+  str1 = [*"A".."Z",*"0".."9"].join
+  str10 = str1 * 10
+  str100 = str10 * 10
+  str1000 = str100 * 10
+  str10000 = str1000 * 10
+benchmark:
+  reverse-1: str1.reverse
+  reverse-10: str10.reverse
+  reverse-100: str100.reverse
+  reverse-1000: str1000.reverse
+  reverse-10000: str10000.reverse
+  reverse!-1: str1.reverse!
+  reverse!-10: str10.reverse!
+  reverse!-100: str100.reverse!
+  reverse!-1000: str1000.reverse!
+  reverse!-10000: str10000.reverse!
+
