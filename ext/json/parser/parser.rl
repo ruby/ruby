@@ -92,7 +92,7 @@ static VALUE CNaN, CInfinity, CMinusInfinity;
 static VALUE cBigDecimal = Qundef;
 
 static ID i_json_creatable_p, i_json_create, i_create_id, i_create_additions,
-          i_chr, i_max_nesting, i_allow_nan, i_symbolize_names,
+          i_chr, i_max_nesting, i_allow_nan, i_allow_trailing_comma, i_symbolize_names,
           i_object_class, i_array_class, i_decimal_class, i_key_p,
           i_deep_const_get, i_match, i_match_string, i_aset, i_aref,
           i_leftshift, i_new, i_BigDecimal;
@@ -131,6 +131,8 @@ static ID i_json_creatable_p, i_json_create, i_create_id, i_create_additions,
 
     write data;
 
+    action allow_trailing_comma { json->allow_trailing_comma }
+
     action parse_value {
         VALUE v = Qnil;
         char *np = JSON_parse_value(json, fpc, pe, &v, current_nesting);
@@ -161,7 +163,7 @@ static ID i_json_creatable_p, i_json_create, i_create_id, i_create_additions,
 
     main := (
       begin_object
-      (pair (next_pair)*)? ignore*
+      (pair (next_pair)*((ignore* value_separator) when allow_trailing_comma)?)? ignore*
       end_object
     ) @exit;
 }%%
@@ -390,6 +392,8 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
 
     write data;
 
+    action allow_trailing_comma { json->allow_trailing_comma }
+
     action parse_value {
         VALUE v = Qnil;
         char *np = JSON_parse_value(json, fpc, pe, &v, current_nesting);
@@ -411,7 +415,7 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
 
     main := begin_array ignore*
           ((begin_value >parse_value ignore*)
-           (ignore* next_element ignore*)*)?
+           (ignore* next_element ignore*)*((value_separator ignore*) when allow_trailing_comma)?)?
           end_array @exit;
 }%%
 
@@ -626,6 +630,9 @@ static VALUE convert_encoding(VALUE source)
  * * *allow_nan*: If set to true, allow NaN, Infinity and -Infinity in
  *   defiance of RFC 4627 to be parsed by the Parser. This option defaults to
  *   false.
+ * * *allow_trailing_comma*: If set to true, allow arrays and objects with a
+ *   trailing comma in defiance of RFC 4627 to be parsed by the Parser.
+ *   This option defaults to false.
  * * *symbolize_names*: If set to true, returns symbols for the names
  *   (keys) in a JSON object. Otherwise strings are returned, which is
  *   also the default. It's not possible to use this option in
@@ -673,6 +680,12 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
                 json->allow_nan = RTEST(rb_hash_aref(opts, tmp)) ? 1 : 0;
             } else {
                 json->allow_nan = 0;
+            }
+            tmp = ID2SYM(i_allow_trailing_comma);
+            if (option_given_p(opts, tmp)) {
+                json->allow_trailing_comma = RTEST(rb_hash_aref(opts, tmp)) ? 1 : 0;
+            } else {
+                json->allow_trailing_comma = 0;
             }
             tmp = ID2SYM(i_symbolize_names);
             if (option_given_p(opts, tmp)) {
@@ -728,6 +741,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
     } else {
         json->max_nesting = 100;
         json->allow_nan = 0;
+        json->allow_trailing_comma = 0;
         json->create_additions = 0;
         json->create_id = rb_funcall(mJSON, i_create_id, 0);
         json->object_class = Qnil;
@@ -872,6 +886,7 @@ void Init_parser(void)
     i_chr = rb_intern("chr");
     i_max_nesting = rb_intern("max_nesting");
     i_allow_nan = rb_intern("allow_nan");
+    i_allow_trailing_comma = rb_intern("allow_trailing_comma");
     i_symbolize_names = rb_intern("symbolize_names");
     i_object_class = rb_intern("object_class");
     i_array_class = rb_intern("array_class");
