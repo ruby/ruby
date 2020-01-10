@@ -490,7 +490,8 @@ ntz_intptr(uintptr_t x)
 }
 
 // fast reversal algorithm https://github.com/Wunkolo/qreverse
-static inline void ruby_reverse(void* dst, void* src, size_t len) {
+static inline void
+ruby_reverse(void* dst, void* src, size_t len) {
     uint8_t* dst8 = (uint8_t*) (dst);
     uint8_t* src8 = (uint8_t*) (src);
     size_t i = 0;
