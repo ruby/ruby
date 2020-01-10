@@ -1,7 +1,7 @@
 # sync following repositories to ruby repository
 #
 # * https://github.com/rubygems/rubygems
-# * https://github.com/bundler/bundler
+# * https://github.com/rubygems/bundler
 # * https://github.com/ruby/rdoc
 # * https://github.com/ruby/reline
 # * https://github.com/flori/json
@@ -56,7 +56,7 @@ include FileUtils
 
 $repositories = {
   rubygems: 'rubygems/rubygems',
-  bundler: 'bundler/bundler',
+  bundler: 'rubygems/bundler',
   rdoc: 'ruby/rdoc',
   reline: 'ruby/reline',
   json: 'flori/json',
