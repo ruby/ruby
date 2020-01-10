@@ -1801,12 +1801,7 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
         tmp = rb_hash_s_try_convert(Qnil, argv[0]);
 	if (!NIL_P(tmp)) {
 	    hash = hash_alloc(klass);
-            if (RHASH_AR_TABLE_P(tmp)) {
-                ar_copy(hash, tmp);
-	    }
-            else {
-                RHASH_ST_TABLE_SET(hash, st_copy(RHASH_ST_TABLE(tmp)));
-            }
+            hash_copy(hash, tmp);
 	    return hash;
 	}
 
