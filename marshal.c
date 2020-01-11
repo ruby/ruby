@@ -574,7 +574,7 @@ w_obj_each(st_data_t key, st_data_t val, st_data_t a)
 
     if (to_be_skipped_id(id)) {
         if (id == s_encoding_short) {
-            rb_warn("instance variable `E' on class %"PRIsVALUE" is not dumped",
+            rb_warn("instance variable `"name_s_encoding_short"' on class %"PRIsVALUE" is not dumped",
                     CLASS_OF(arg->obj));
         }
         return ST_CONTINUE;
@@ -1360,6 +1360,13 @@ r_bytes0(long len, struct load_arg *arg)
     return str;
 }
 
+static inline int
+name_equal(const char *name, size_t nlen, const char *p, long l)
+{
+    if ((size_t)l != nlen || *p != *name) return 0;
+    return nlen == 1 || memcmp(p+1, name+1, nlen-1) == 0;
+}
+
 static int
 sym2encidx(VALUE sym, VALUE val)
 {
@@ -1369,12 +1376,11 @@ sym2encidx(VALUE sym, VALUE val)
     if (rb_enc_get_index(sym) != ENCINDEX_US_ASCII) return -1;
     RSTRING_GETMEM(sym, p, l);
     if (l <= 0) return -1;
-    if (l == sizeof(name_encoding) &&
-	memcmp(p, name_encoding, sizeof(name_encoding)) == 0) {
+    if (name_equal(name_encoding, sizeof(name_encoding), p, l)) {
 	int idx = rb_enc_find_index(StringValueCStr(val));
 	return idx;
     }
-    else if (l == 1 && *p == 'E') {
+    if (name_equal(name_s_encoding_short, rb_strlen_lit(name_s_encoding_short), p, l)) {
 	if (val == Qfalse) return rb_usascii_encindex();
 	else if (val == Qtrue) return rb_utf8_encindex();
 	/* bogus ignore */
