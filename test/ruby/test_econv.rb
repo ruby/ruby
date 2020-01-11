@@ -912,6 +912,19 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /\u{3042}/) {
       Encoding::Converter.new("", "", newline: "\u{3042}".to_sym)
     }
+    newlines = %i[universal_newline crlf_newline cr_newline]
+    (2..newlines.size).each do |i|
+      newlines.combination(i) do |opts|
+        assert_raise(Encoding::ConverterNotFoundError, "#{opts} are mutually exclusive") do
+          Encoding::Converter.new("", "", **opts.inject({}) {|o,nl|o[nl]=true;o})
+        end
+      end
+    end
+    newlines.each do |nl|
+      opts = {newline: :universal, nl => true}
+      ec2 = Encoding::Converter.new("", "", **opts)
+      assert_equal(ec1, ec2)
+    end
   end
 
   def test_default_external
