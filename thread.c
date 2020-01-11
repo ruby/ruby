@@ -150,12 +150,6 @@ struct waiting_fd {
     int fd;
 };
 
-inline static void
-st_delete_wrap(st_table *table, st_data_t key)
-{
-    st_delete(table, &key, 0);
-}
-
 /********************************************************************************/
 
 #define THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
