@@ -80,7 +80,6 @@ Prime:: Prime numbers and factorization library
 PStore:: Implements a file based persistence mechanism based on a Hash
 Racc:: A LALR(1) parser generator written in Ruby.
 RDoc:: Produces HTML and command-line documentation for Ruby
-REXML:: An XML toolkit for Ruby
 RSS:: Family of libraries that support various formats of XML "feeds"
 Singleton:: Implementation of the Singleton pattern for Ruby
 Timeout:: Auto-terminate potentially long-running operations in Ruby
@@ -119,3 +118,4 @@ PowerAssert:: Power Assert for Ruby.
 Rake:: Ruby build program with capabilities similar to make
 Test::Unit:: A compatibility layer for MiniTest
 XMLRPC:: Remote Procedure Call over HTTP support for Ruby
+REXML:: An XML toolkit for Ruby

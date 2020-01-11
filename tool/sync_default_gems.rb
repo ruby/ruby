@@ -25,7 +25,6 @@
 # * https://github.com/ruby/prime
 # * https://github.com/ruby/matrix
 # * https://github.com/ruby/ostruct
-# * https://github.com/ruby/rexml
 # * https://github.com/ruby/rss
 # * https://github.com/ruby/irb
 # * https://github.com/ruby/tracer
@@ -80,7 +79,6 @@ $repositories = {
   prime: 'ruby/prime',
   matrix: 'ruby/matrix',
   ostruct: 'ruby/ostruct',
-  rexml: 'ruby/rexml',
   rss: 'ruby/rss',
   irb: 'ruby/irb',
   tracer: 'ruby/tracer',

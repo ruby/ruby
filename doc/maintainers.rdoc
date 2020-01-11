@@ -239,10 +239,6 @@ Zachary Scott (zzak)
   aycabta
   https://github.com/ruby/reline
   https://rubygems.org/gems/reline
-[lib/rexml/*]
-  Kouhei Sutou (kou)
-  https://github.com/ruby/rexml
-  https://rubygems.org/gems/rexml
 [lib/rss.rb, lib/rss/*]
   Kouhei Sutou (kou)
   https://github.com/ruby/rss
@@ -357,3 +353,5 @@ Zachary Scott (zzak)
   https://github.com/test-unit/test-unit
 [xmlrpc]
   https://github.com/ruby/xmlrpc
+[rexml]
+  https://github.com/ruby/rexml
