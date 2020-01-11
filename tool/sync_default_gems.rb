@@ -25,7 +25,6 @@
 # * https://github.com/ruby/prime
 # * https://github.com/ruby/matrix
 # * https://github.com/ruby/ostruct
-# * https://github.com/ruby/rss
 # * https://github.com/ruby/irb
 # * https://github.com/ruby/tracer
 # * https://github.com/ruby/forwardable
@@ -79,7 +78,6 @@ $repositories = {
   prime: 'ruby/prime',
   matrix: 'ruby/matrix',
   ostruct: 'ruby/ostruct',
-  rss: 'ruby/rss',
   irb: 'ruby/irb',
   tracer: 'ruby/tracer',
   forwardable: "ruby/forwardable",
@@ -129,7 +127,7 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/rdoc.gemspec", "lib/rdoc")
     cp_r("#{upstream}/exe/rdoc", "libexec")
     cp_r("#{upstream}/exe/ri", "libexec")
-    rm_rf(%w[lib/rdoc/markdown.kpeg lib/rdoc/markdown/literals.kpeg lib/rdoc/rd/block_parser.ry lib/rdoc/rd/inline_parser.ry])
+    rm_rf(%w[lib/rdoc/markdown.kpeg lib/rdoc/markdown/literals.kpeg lib/rdoc/rd/block_pager.ry lib/rdoc/rd/inline_parser.ry])
     `git checkout lib/rdoc/.document`
   when "reline"
     rm_rf(%w[lib/reline* test/reline])
