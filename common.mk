@@ -1647,6 +1647,7 @@ ast.$(OBJEXT): {$(VPATH)}config.h
 ast.$(OBJEXT): {$(VPATH)}defines.h
 ast.$(OBJEXT): {$(VPATH)}encoding.h
 ast.$(OBJEXT): {$(VPATH)}id.h
+ast.$(OBJEXT): {$(VPATH)}io.h
 ast.$(OBJEXT): {$(VPATH)}intern.h
 ast.$(OBJEXT): {$(VPATH)}internal.h
 ast.$(OBJEXT): {$(VPATH)}iseq.h

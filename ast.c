@@ -8,6 +8,7 @@
 #include "ruby.h"
 #include "ruby/encoding.h"
 #include "ruby/util.h"
+#include "ruby/io.h"
 #include "vm_core.h"
 
 #include "builtin.h"
@@ -110,16 +111,13 @@ ast_s_parse_file(rb_execution_context_t *ec, VALUE module, VALUE path)
 static VALUE
 rb_ast_parse_file(VALUE path)
 {
-    VALUE args[2];
     VALUE f;
     rb_ast_t *ast = 0;
     rb_encoding *enc = rb_utf8_encoding();
 
     FilePathValue(path);
     f = rb_file_open_str(path, "r");
-    args[0] = rb_enc_from_encoding(enc);
-    args[1] = rb_str_new_cstr("-");
-    rb_io_set_encoding(2, args, f);
+    rb_io_set_encoding_internal(f, rb_enc_from_encoding(enc), Qfalse);
     ast = rb_parser_compile_file_path(ast_parse_new(), Qnil, f, 1);
     rb_io_close(f);
     return ast_parse_done(ast);

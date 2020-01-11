@@ -220,6 +220,7 @@ static VALUE sym_DATA;
 #ifdef SEEK_HOLE
 static VALUE sym_HOLE;
 #endif
+static VALUE str_no_transcoding;
 
 struct argf {
     VALUE filename, current_file;
@@ -11769,7 +11770,7 @@ rb_io_internal_encoding(VALUE io)
  *  optional hash argument specify the conversion option.
  */
 
-VALUE
+static VALUE
 rb_io_set_encoding(int argc, VALUE *argv, VALUE io)
 {
     rb_io_t *fptr;
@@ -11779,6 +11780,40 @@ rb_io_set_encoding(int argc, VALUE *argv, VALUE io)
     GetOpenFile(io, fptr);
     io_encoding_set(fptr, v1, v2, opt);
     return io;
+}
+
+/*
+ *  Fixed 2 argument variation of rb_io_set_encoding without support for the third options
+ *  argument. Introduced to skip rb_funcall calls on loading files and invoke rb_io_set_encoding
+ *  directly instead.
+ *
+ *  call-seq:
+ *     rb_io_set_encoding_internal(io, ext_enc)
+ *     rb_io_set_encoding_internal(io, "ext_enc:int_enc")
+ *     rb_io_set_encoding_internal(io, ext_enc, int_enc)
+ *     rb_io_set_encoding_internal(io, "ext_enc:int_enc", opt)
+ *
+ *  A second argument of value Qnil implies 1 argument to rb_io_set_encoding.
+ *  A special second argument of Qfalse would assign the "-" no transcoding option (an optimization
+ *  reduce transient calls to allocate "-" strings)
+ */
+
+void
+rb_io_set_encoding_internal(VALUE io, VALUE ext_enc, VALUE int_enc)
+{
+    VALUE args[2];
+    int argc = 1;
+
+    args[0] = ext_enc;
+    if (!NIL_P(int_enc)) {
+      argc += 1;
+      if (int_enc == Qfalse) {
+          int_enc = str_no_transcoding;
+      }
+      args[1] = int_enc;
+    }
+
+    rb_io_set_encoding(argc, args, io);
 }
 
 void
@@ -13528,6 +13563,8 @@ Init_IO(void)
 #endif
     sym_wait_readable = ID2SYM(rb_intern("wait_readable"));
     sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
+    str_no_transcoding = rb_fstring_lit("-");
+    rb_gc_register_mark_object(str_no_transcoding);
 }
 
 #include "io.rbinc"
