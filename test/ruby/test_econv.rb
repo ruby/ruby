@@ -922,7 +922,9 @@ class TestEncodingConverter < Test::Unit::TestCase
     end
     newlines.each do |nl|
       opts = {newline: :universal, nl => true}
-      ec2 = Encoding::Converter.new("", "", **opts)
+      ec2 = assert_warning(/:newline option preceds/, opts.inspect) do
+        Encoding::Converter.new("", "", **opts)
+      end
       assert_equal(ec1, ec2)
     end
   end

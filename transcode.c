@@ -2418,6 +2418,7 @@ static int
 econv_opts(VALUE opt, int ecflags)
 {
     VALUE v;
+    int newlineflag = 0;
 
     v = rb_hash_aref(opt, sym_invalid);
     if (NIL_P(v)) {
@@ -2463,6 +2464,7 @@ econv_opts(VALUE opt, int ecflags)
 #ifdef ENABLE_ECONV_NEWLINE_OPTION
     v = rb_hash_aref(opt, sym_newline);
     if (!NIL_P(v)) {
+        newlineflag = 2;
 	ecflags &= ~ECONV_NEWLINE_DECORATOR_MASK;
 	if (v == sym_universal) {
 	    ecflags |= ECONV_UNIVERSAL_NEWLINE_DECORATOR;
@@ -2484,10 +2486,9 @@ econv_opts(VALUE opt, int ecflags)
 	    rb_raise(rb_eArgError, "unexpected value for newline option");
 	}
     }
-    else
 #endif
     {
-	int setflags = 0, newlineflag = 0;
+        int setflags = 0;
 
 	v = rb_hash_aref(opt, sym_universal_newline);
 	if (RTEST(v))
@@ -2504,9 +2505,15 @@ econv_opts(VALUE opt, int ecflags)
 	    setflags |= ECONV_CR_NEWLINE_DECORATOR;
 	newlineflag |= !NIL_P(v);
 
-	if (newlineflag) {
+        switch (newlineflag) {
+          case 1:
 	    ecflags &= ~ECONV_NEWLINE_DECORATOR_MASK;
 	    ecflags |= setflags;
+            break;
+
+          case 3:
+            rb_warning(":newline option preceds other newline options");
+            break;
 	}
     }
 
