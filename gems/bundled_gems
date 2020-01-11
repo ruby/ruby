@@ -5,3 +5,4 @@ rake 13.0.1 https://github.com/ruby/rake
 test-unit 3.3.4 https://github.com/test-unit/test-unit
 xmlrpc 0.3.0 https://github.com/ruby/xmlrpc
 rexml 3.2.3 https://github.com/ruby/rexml
+rss 0.2.8 https://github.com/ruby/rss
