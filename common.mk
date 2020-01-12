@@ -1523,6 +1523,11 @@ update-man-date: PHONY
 	-e '$$_.sub!(/^(\.Dd ).*/){$$1+@vcs.modified(ARGF.path).strftime("%B %d, %Y")}' \
 	"$(srcdir)" "$(srcdir)"/man/*.1
 
+ChangeLog:
+	-$(Q) $(BASERUBY) -I"$(srcdir)/tool/lib" -rvcs \
+	-e 'VCS.detect(ARGV[0]).export_changelog("@", nil, nil, ARGV[1])' \
+	"$(srcdir)" $@
+
 HELP_EXTRA_TASKS = ""
 
 help: PHONY
