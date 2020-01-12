@@ -38,8 +38,10 @@ module Reline
     attr_accessor :ambiguous_width
     attr_accessor :last_incremental_search
     attr_reader :output
+    attr_reader :encoding
 
-    def initialize
+    def initialize(encoding)
+      @encoding = encoding
       self.output = STDOUT
       yield self
       @completion_quote_character = nil
@@ -49,36 +51,36 @@ module Reline
       if val.nil?
         @completion_append_character = nil
       elsif val.size == 1
-        @completion_append_character = val.encode(Encoding::default_external)
+        @completion_append_character = val.encode(@encoding)
       elsif val.size > 1
-        @completion_append_character = val[0].encode(Encoding::default_external)
+        @completion_append_character = val[0].encode(@encoding)
       else
         @completion_append_character = nil
       end
     end
 
     def basic_word_break_characters=(v)
-      @basic_word_break_characters = v.encode(Encoding::default_external)
+      @basic_word_break_characters = v.encode(@encoding)
     end
 
     def completer_word_break_characters=(v)
-      @completer_word_break_characters = v.encode(Encoding::default_external)
+      @completer_word_break_characters = v.encode(@encoding)
     end
 
     def basic_quote_characters=(v)
-      @basic_quote_characters = v.encode(Encoding::default_external)
+      @basic_quote_characters = v.encode(@encoding)
     end
 
     def completer_quote_characters=(v)
-      @completer_quote_characters = v.encode(Encoding::default_external)
+      @completer_quote_characters = v.encode(@encoding)
     end
 
     def filename_quote_characters=(v)
-      @filename_quote_characters = v.encode(Encoding::default_external)
+      @filename_quote_characters = v.encode(@encoding)
     end
 
     def special_prefixes=(v)
-      @special_prefixes = v.encode(Encoding::default_external)
+      @special_prefixes = v.encode(@encoding)
     end
 
     def completion_case_fold=(v)
@@ -201,7 +203,7 @@ module Reline
       otio = Reline::IOGate.prep
 
       may_req_ambiguous_char_width
-      line_editor.reset(prompt)
+      line_editor.reset(prompt, encoding: @encoding)
       if multiline
         line_editor.multiline_on
         if block_given?
@@ -387,11 +389,15 @@ module Reline
   def_instance_delegators self, :readmultiline
   private :readmultiline
 
+  def self.encoding_system_needs
+    self.core.encoding
+  end
+
   def self.core
-    @core ||= Core.new { |core|
+    @core ||= Core.new(Reline::IOGate.encoding) { |core|
       core.config = Reline::Config.new
       core.key_stroke = Reline::KeyStroke.new(core.config)
-      core.line_editor = Reline::LineEditor.new(core.config)
+      core.line_editor = Reline::LineEditor.new(core.config, Reline::IOGate.encoding)
 
       core.basic_word_break_characters = " \t\n`><=;|&{("
       core.completer_word_break_characters = " \t\n`><=;|&{("
@@ -405,8 +411,6 @@ module Reline
   def self.line_editor
     core.line_editor
   end
-
-  HISTORY = History.new(core.config)
 end
 
 if RbConfig::CONFIG['host_os'] =~ /mswin|msys|mingw|cygwin|bccwin|wince|emc/
@@ -422,4 +426,5 @@ else
   require 'reline/ansi'
   Reline::IOGate = Reline::ANSI
 end
+Reline::HISTORY = Reline::History.new(Reline.core.config)
 require 'reline/general_io'

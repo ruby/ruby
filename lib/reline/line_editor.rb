@@ -57,10 +57,10 @@ class Reline::LineEditor
   NON_PRINTING_END = "\2"
   WIDTH_SCANNER = /\G(?:#{NON_PRINTING_START}|#{NON_PRINTING_END}|#{CSI_REGEXP}|#{OSC_REGEXP}|\X)/
 
-  def initialize(config)
+  def initialize(config, encoding)
     @config = config
     @completion_append_character = ''
-    reset_variables
+    reset_variables(encoding: encoding)
   end
 
   private def check_multiline_prompt(buffer, prompt)
@@ -85,10 +85,10 @@ class Reline::LineEditor
     end
   end
 
-  def reset(prompt = '', encoding = Encoding.default_external)
+  def reset(prompt = '', encoding:)
     @rest_height = (Reline::IOGate.get_screen_size.first - 1) - Reline::IOGate.cursor_pos.y
     @screen_size = Reline::IOGate.get_screen_size
-    reset_variables(prompt, encoding)
+    reset_variables(prompt, encoding: encoding)
     @old_trap = Signal.trap('SIGINT') {
       @old_trap.call if @old_trap.respond_to?(:call) # can also be string, ex: "DEFAULT"
       raise Interrupt
@@ -139,7 +139,7 @@ class Reline::LineEditor
     @eof
   end
 
-  def reset_variables(prompt = '', encoding = Encoding.default_external)
+  def reset_variables(prompt = '', encoding:)
     @prompt = prompt
     @mark_pointer = nil
     @encoding = encoding
