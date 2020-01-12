@@ -2653,7 +2653,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
       case T_HASH:
 #if USE_DEBUG_COUNTER
-        switch RHASH_SIZE(obj) {
+        switch (RHASH_SIZE(obj)) {
           case 0:
             RB_DEBUG_COUNTER_INC(obj_hash_empty);
             break;
