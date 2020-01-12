@@ -974,6 +974,7 @@ ar_foreach_check(VALUE hash, st_foreach_check_callback_func *func, st_data_t arg
 
             switch (retval) {
               case ST_CHECK: {
+                  pair = RHASH_AR_TABLE_REF(hash, i);
                   if (pair->key == never) break;
                   ret = ar_find_entry_hint(hash, hint, key);
                   if (ret == RHASH_AR_TABLE_MAX_BOUND) {
