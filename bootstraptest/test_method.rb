@@ -1190,3 +1190,19 @@ assert_equal 'DC', %q{
   test2 o1, [], block
   $result.join
 }
+
+assert_equal 'ok', %q{
+  def foo(*args, &blk)
+    blk.call(args)
+  end
+  args = [1, 2, -> (args) { args.size == 3 ? "ok" : "NG" }]
+  foo(*args, &args.pop)
+}, "Bug #16504"
+
+assert_equal 'ok', %q{
+  def foo(*args, &blk)
+    blk.call(args)
+  end
+  args = [1, 2, -> (args) { args.size == 4 ? "ok" : "NG" }]
+  foo(0, *args, &args.pop)
+}, "Bug #16504"

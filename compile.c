@@ -5084,18 +5084,26 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
         INIT_ANCHOR(arg_block);
         NO_CHECK(COMPILE(arg_block, "block", argn->nd_body));
 
-        *flag |= VM_CALL_ARGS_BLOCKARG;
-        ret = setup_args_core(iseq, args, argn->nd_head, 0, flag, keywords);
-
+        /* For foo(*args, &(block_expr)), the rest arguments need to be duplicated
+         * because block_expr may modify args.
+         * If block_expr has no side effect (e.g., block_expr is a variable refernce),
+         * the duplication is not needed.  [Bug #16504]
+         */
+        int dup_rest = 1;
         if (LIST_INSN_SIZE_ONE(arg_block)) {
             LINK_ELEMENT *elem = FIRST_ELEMENT(arg_block);
             if (elem->type == ISEQ_ELEMENT_INSN) {
                 INSN *iobj = (INSN *)elem;
                 if (iobj->insn_id == BIN(getblockparam)) {
                     iobj->insn_id = BIN(getblockparamproxy);
+                    dup_rest = 0;
                 }
             }
         }
+
+        *flag |= VM_CALL_ARGS_BLOCKARG;
+        ret = setup_args_core(iseq, args, argn->nd_head, dup_rest, flag, keywords);
+
         ADD_SEQ(args, arg_block);
     }
     else {
