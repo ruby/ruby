@@ -1,6 +1,10 @@
 require 'io/console'
 
 class Reline::ANSI
+  def self.encoding
+    Encoding.default_external
+  end
+
   RAW_KEYSTROKE_CONFIG = {
     [27, 91, 65] => :ed_prev_history,     # ↑
     [27, 91, 66] => :ed_next_history,     # ↓

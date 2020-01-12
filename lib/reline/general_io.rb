@@ -1,6 +1,10 @@
 require 'timeout'
 
 class Reline::GeneralIO
+  def self.encoding
+    Encoding.default_external
+  end
+
   RAW_KEYSTROKE_CONFIG = {}
 
   @@buf = []

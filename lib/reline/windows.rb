@@ -1,6 +1,10 @@
 require 'fiddle/import'
 
 class Reline::Windows
+  def self.encoding
+    Encoding::UTF_8
+  end
+
   RAW_KEYSTROKE_CONFIG = {
     [224, 72] => :ed_prev_history, # ↑
     [224, 80] => :ed_next_history, # ↓
@@ -99,7 +103,7 @@ class Reline::Windows
         return @@input_buf.shift
       end
       begin
-        bytes = ret.chr(Encoding::UTF_8).encode(Encoding.default_external).bytes
+        bytes = ret.chr(Encoding::UTF_8).bytes
         @@input_buf.push(*bytes)
       rescue Encoding::UndefinedConversionError
         @@input_buf << ret
