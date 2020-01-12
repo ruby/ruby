@@ -643,7 +643,7 @@ class VCS
               h, s = s.split(/^$/, 2)
               s = s.lines
               fix.each_line do |x|
-                if %r[^ +(\d+)s/(.+)/(.+)/] =~ x
+                if %r[^ +(\d+)s/(.+)/(.*)/] =~ x
                   s[$1.to_i][$2] = $3
                 end
               end
