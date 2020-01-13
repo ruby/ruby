@@ -8631,7 +8631,6 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
         gc_check_references_for_moved(objspace);
     }
 
-    rb_clear_method_cache_by_class(rb_cObject);
     rb_clear_constant_cache();
     heap_eden->free_pages = NULL;
     heap_eden->using_page = NULL;
