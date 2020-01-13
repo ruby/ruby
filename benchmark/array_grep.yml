@@ -1,0 +1,7 @@
+prelude: |
+  list = ('a'..'z').to_a
+
+benchmark:
+  grep: list.grep('z') { 'z' }
+
+loop_count: 2000000
