@@ -300,7 +300,6 @@ module IRB # :nodoc:
       verbose, $VERBOSE = $VERBOSE, nil
       Encoding.default_external = extern unless extern.nil? || extern.empty?
       Encoding.default_internal = intern unless intern.nil? || intern.empty?
-      @CONF[:ENCODINGS] = IRB::DefaultEncodings.new(extern, intern)
       [$stdin, $stdout, $stderr].each do |io|
         io.set_encoding(extern, intern)
       end
