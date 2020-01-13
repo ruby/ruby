@@ -442,7 +442,6 @@ matrix:
     - <<: *CALL_THREADED_CODE
     - <<: *NO_THREADED_CODE
   allow_failures:
-    - name: s390x-linux
     - name: -fsanitize=address
     - name: -fsanitize=memory
     - name: -fsanitize=undefined
