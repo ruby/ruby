@@ -3,15 +3,15 @@ require 'rbconfig'
 allowed_failures = ENV['TEST_BUNDLED_GEMS_ALLOW_FAILURES'] || ''
 allowed_failures = allowed_failures.split(',').reject(&:empty?)
 
-gem_dir = File.expand_path('../../gems', __FILE__)
+rake = File.realpath("../../.bundle/bin/rake", __FILE__)
+gem_dir = File.realpath('../../gems', __FILE__)
 exit_code = 0
 ruby = ENV['RUBY'] || RbConfig.ruby
 File.foreach("#{gem_dir}/bundled_gems") do |line|
   gem = line.split.first
   puts "\nTesting the #{gem} gem"
 
-  gem_src_dir = File.expand_path("#{gem_dir}/src/#{gem}", __FILE__)
-  test_command = "#{ruby} -C #{gem_src_dir} -Ilib ../../../.bundle/bin/rake"
+  test_command = "#{ruby} -C #{gem_dir}/src/#{gem} -Ilib #{rake}"
   puts test_command
   system test_command
 
