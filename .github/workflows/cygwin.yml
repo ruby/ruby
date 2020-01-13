@@ -44,10 +44,10 @@ jobs:
       # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
       - name: Checkout ruby
         run: |
-          git clone --single-branch --shallow-since=yesterday --branch=${GITHUB_REF#refs/heads/} https://github.com/${{ github.repository }} src
+          git clone --single-branch --shallow-since=yesterday --branch=%GITHUB_REF:refs/heads/=% https://github.com/${{ github.repository }} src
           git -C src reset --hard ${{ github.sha }}
         if: github.event_name == 'push'
-        shell: bash
+        shell: cmd
       - name: Checkout a pull request
         run: |
           git clone --single-branch --shallow-since=yesterday --branch=${{ github.event.pull_request.head.ref }} https://github.com/${{ github.event.pull_request.head.repo.full_name }} src
