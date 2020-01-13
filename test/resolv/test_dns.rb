@@ -169,9 +169,9 @@ class TestResolvDNS < Test::Unit::TestCase
         }
       end
     rescue Timeout::Error
-      if RUBY_PLATFORM.match?(/mingw/)
+      if RUBY_PLATFORM.match?(/mingw|mswin/)
         # cannot repo locally
-        skip 'Timeout Error on MinGW CI'
+        skip 'Timeout Error on Windows CI'
       else
         raise Timeout::Error
       end

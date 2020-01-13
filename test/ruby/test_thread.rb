@@ -1322,6 +1322,9 @@ q.pop
   end
 
   def test_thread_interrupt_for_killed_thread
+    if ENV['APPVEYOR'] == 'True' && RUBY_PLATFORM.include?('mswin')
+      skip 'test has intermittent CI SIGSEGV on mswin'
+    end
     opts = { timeout: 5, timeout_error: nil }
 
     # prevent SIGABRT from slow shutdown with MJIT
