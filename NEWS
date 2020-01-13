@@ -18,6 +18,12 @@ sufficient information, see the ChangeLog file or Redmine
 
 === Core classes updates (outstanding ones only)
 
+Hash::
+
+  Modified method::
+
+    * Hash#transform_keys now accepts a hash that maps keys to new keys.  [Feature #16274]
+
 === Stdlib updates (outstanding ones only)
 
 === Compatibility issues (excluding feature bug fixes)
