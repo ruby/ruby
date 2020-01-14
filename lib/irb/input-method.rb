@@ -133,6 +133,9 @@ module IRB
       include Readline
       # Creates a new input method object using Readline
       def initialize
+        if Readline.respond_to?(:encoding_system_needs)
+          IRB.__send__(:set_encoding, Readline.encoding_system_needs.name, override: false)
+        end
         super
 
         @line_no = 0
@@ -207,6 +210,7 @@ module IRB
     include Reline
     # Creates a new input method object using Readline
     def initialize
+      IRB.__send__(:set_encoding, Reline.encoding_system_needs.name, override: false)
       super
 
       @line_no = 0
