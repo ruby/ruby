@@ -1,0 +1,4 @@
+benchmark:
+  all: Process.constants
+  inherited: Process.constants(true)
+loop_count: 1000000
