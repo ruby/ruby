@@ -24,6 +24,7 @@ module IRB # :nodoc:
     @@loaded = []
 
     def initialize(locale = nil)
+      @override_encoding = nil
       @lang = @territory = @encoding_name = @modifier = nil
       @locale = locale || ENV["IRB_LANG"] || ENV["LC_MESSAGES"] || ENV["LC_ALL"] || ENV["LANG"] || "C"
       if m = LOCALE_NAME_RE.match(@locale)
@@ -40,12 +41,16 @@ module IRB # :nodoc:
       @encoding ||= (Encoding.find('locale') rescue Encoding::ASCII_8BIT)
     end
 
-    attr_reader :lang, :territory, :encoding, :modifier
+    attr_reader :lang, :territory, :modifier
+
+    def encoding
+      @override_encoding || @encoding
+    end
 
     def String(mes)
       mes = super(mes)
-      if @encoding
-        mes.encode(@encoding, undef: :replace)
+      if encoding
+        mes.encode(encoding, undef: :replace)
       else
         mes
       end
