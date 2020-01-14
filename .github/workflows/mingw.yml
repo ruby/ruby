@@ -119,6 +119,7 @@ jobs:
       - name: test-all
         timeout-minutes: 25
         run: |
+          $env:GIT = "git.exe"
           $env:TMPDIR = "$pwd/temp"
           # Actions uses UTF8, causes test failures, similar to normal OS setup
           $PSDefaultParameterValues['*:Encoding'] = 'utf8'

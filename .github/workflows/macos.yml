@@ -8,10 +8,15 @@ on:
       - '*'
 jobs:
   make:
+    name: >-
+      make (${{ matrix.m.test_task }})
     runs-on: macos-latest
     strategy:
       matrix:
-        test_task: [ "check", "test-bundler", "test-bundled-gems" ]
+        m:
+          - { test_task: "check",             timeout: 10 }
+          - { test_task: "test-bundler",      timeout: 45 }
+          - { test_task: "test-bundled-gems", timeout: 5  }
       fail-fast: false
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
@@ -54,14 +59,15 @@ jobs:
         run: make -C build $JOBS
       - name: Extract gems
         run: make -C build update-gems extract-gems
-        if: matrix.test_task == 'check'
+        if: matrix.m.test_task == 'check'
       - name: Tests
-        run: make -C build $JOBS -s ${{ matrix.test_task }}
+        run: make -C build $JOBS -s ${{ matrix.m.test_task }}
         env:
           RUBY_TESTOPTS: "-q --tty=no"
           # Remove minitest from TEST_BUNDLED_GEMS_ALLOW_FAILURES if https://github.com/seattlerb/minitest/pull/798 is resolved
           # rss needs to add workaround for the non rexml environment
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: "minitest,xmlrpc,rss"
+        timeout-minutes: ${{ matrix.m.timeout }}
       - name: Leaked Globals
         run: make -C build -s leaked-globals
       - uses: k0kubun/action-slack@v2.0.0
@@ -69,7 +75,7 @@ jobs:
           payload: |
             {
               "attachments": [{
-                "text": "${{ github.workflow }} / ${{ matrix.test_task }} <https://github.com/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ steps.commit_info.outputs.COMMIT_DATE }} #${{ steps.commit_info.outputs.COMMIT_NUMBER_OF_DAY }}> " +
+                "text": "${{ github.workflow }} / ${{ matrix.m.test_task }} <https://github.com/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ steps.commit_info.outputs.COMMIT_DATE }} #${{ steps.commit_info.outputs.COMMIT_NUMBER_OF_DAY }}> " +
                         "(<https://github.com/${{ github.repository }}/commit/${{ github.sha }}|" + "${{ github.sha }}".substring(0, 10) + ">) " +
                         "of ${{ github.repository }}@" + "${{ github.ref }}".split('/').reverse()[0] + " by ${{ github.event.head_commit.committer.name }} failed",
                 "color": "danger"
