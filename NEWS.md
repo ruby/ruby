@@ -26,6 +26,12 @@ Hash::
 
 ### Compatibility issues (excluding feature bug fixes)
 
+* Regexp literals are frozen [Feature #8948] [Feature #16377]
+
+```
+/foo/.frozen? #=> true
+```
+
 ### Stdlib compatibility issues (excluding feature bug fixes)
 
 ### C API updates
