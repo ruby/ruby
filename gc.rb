@@ -140,6 +140,10 @@ module GC
   #  The contents of the hash are implementation specific and may be changed in
   #  the future.
   #
+  #  If the optional argument, hash, is given,
+  #  it is overwritten and returned.
+  #  This is intended to avoid probe effect.
+  #
   #  This method is only expected to work on C Ruby.
   def self.stat hash_or_key = nil
     __builtin_gc_stat hash_or_key
@@ -151,6 +155,10 @@ module GC
   #     GC.latest_gc_info(:major_by) -> :malloc
   #
   #  Returns information about the most recent garbage collection.
+  #
+  # If the optional argument, hash, is given,
+  # it is overwritten and returned.
+  # This is intended to avoid probe effect.
   def self.latest_gc_info hash_or_key = nil
     __builtin_gc_latest_gc_info hash_or_key
   end
