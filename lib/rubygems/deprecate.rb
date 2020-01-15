@@ -47,7 +47,7 @@ module Gem::Deprecate
   # telling the user of +repl+ (unless +repl+ is :none) and the
   # year/month that it is planned to go away.
 
-  def deprecate(name, repl, year, month)
+  def deprecate(name, repl, year, month, day=1)
     class_eval do
       old = "_deprecated_#{name}"
       alias_method old, name
@@ -56,7 +56,7 @@ module Gem::Deprecate
         target = klass ? "#{self}." : "#{self.class}#"
         msg = [ "NOTE: #{target}#{name} is deprecated",
                 repl == :none ? " with no replacement" : "; use #{repl} instead",
-                ". It will be removed on or after %4d-%02d-01." % [year, month],
+                ". It will be removed on or after %4d-%02d-%02d." % [year, month, day],
                 "\n#{target}#{name} called from #{Gem.location_of_caller.join(":")}",
         ]
         warn "#{msg.join}." unless Gem::Deprecate.skip
