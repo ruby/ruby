@@ -18,7 +18,7 @@ describe "Literal Regexps" do
     /Hello/.should be_kind_of(Regexp)
   end
 
-  ruby_version_is "2.7" do
+  ruby_version_is "2.8" do
     it "is frozen" do
       /Hello/.frozen?.should == true
     end
