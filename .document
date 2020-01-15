@@ -25,7 +25,7 @@ lib
 ext
 
 # rdoc files
-NEWS
+NEWS.md
 
 README.md
 README.ja.md
