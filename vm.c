@@ -3344,7 +3344,7 @@ Init_vm_objects(void)
     /* initialize mark object array, hash */
     vm->mark_object_ary = rb_ary_tmp_new(128);
     vm->loading_table = st_init_strtable();
-    vm->frozen_strings = st_init_table_with_size(&rb_fstring_hash_type, 1000);
+    vm->frozen_strings = st_init_table_with_size(&rb_fstring_hash_type, 10000);
 }
 
 /* top self */
