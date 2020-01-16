@@ -5977,6 +5977,15 @@ rb_big_eql(VALUE x, VALUE y)
 {
     if (!RB_BIGNUM_TYPE_P(y)) return Qfalse;
     if (BIGNUM_SIGN(x) != BIGNUM_SIGN(y)) return Qfalse;
+
+#ifdef USE_GMP
+    if (BIGNUM_EMBED_P(x) != BIGNUM_EMBED_P(y)) return Qfalse;
+    if (! BIGNUM_EMBED_P(x)) {
+        if (mpz_cmpabs(*BIGNUM_MPZ(x), *BIGNUM_MPZ(y)) != 0) return Qfalse;
+        return Qtrue;
+    }
+#endif
+
     if (BIGNUM_LEN(x) != BIGNUM_LEN(y)) return Qfalse;
     if (MEMCMP(BDIGITS(x),BDIGITS(y),BDIGIT,BIGNUM_LEN(y)) != 0) return Qfalse;
     return Qtrue;
