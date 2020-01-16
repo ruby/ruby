@@ -3168,6 +3168,12 @@ bignew_mpz_set_bdigits_1(VALUE klass, const BDIGIT *digits, size_t len)
     OBJ_FREEZE(big);
     return (VALUE)big;
 }
+
+VALUE
+rb_big_new_mpz_set_bdigits(const BDIGIT *digits, size_t len)
+{
+    return bignew_mpz_set_bdigits(digits, len);
+}
 #endif
 
 VALUE

@@ -178,6 +178,9 @@ VALUE rb_big2str_gmp(VALUE x, int base);
 VALUE rb_str2big_gmp(VALUE arg, int base, int badcheck);
 #endif
 VALUE rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits, int base, int flags);
+#ifdef USE_GMP
+VALUE rb_big_new_mpz_set_bdigits(const BDIGIT *digits, size_t len);
+#endif
 RUBY_SYMBOL_EXPORT_END
 
 MJIT_SYMBOL_EXPORT_BEGIN
