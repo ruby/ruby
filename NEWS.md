@@ -32,6 +32,12 @@ Hash::
 /foo/.frozen? #=> true
 ```
 
+* The bundled gems
+
+  * net-telnet and xmlrpc has been removed from the bundled gems.
+    If you interested in the maintain them, Please comment your plan
+    to https://github.com/ruby/xmlrpc or https://github.com/ruby/net-telnet.
+
 ### Stdlib compatibility issues (excluding feature bug fixes)
 
 ### C API updates

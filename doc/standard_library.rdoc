@@ -112,10 +112,8 @@ Zlib:: Ruby interface for the zlib compression/decompression library
 == Libraries
 
 MiniTest:: A test suite with TDD, BDD, mocking and benchmarking
-Net::Telnet:: Telnet client library for Ruby
 PowerAssert:: Power Assert for Ruby.
 Rake:: Ruby build program with capabilities similar to make
 Test::Unit:: A compatibility layer for MiniTest
-XMLRPC:: Remote Procedure Call over HTTP support for Ruby
 REXML:: An XML toolkit for Ruby
 RSS:: Family of libraries that support various formats of XML "feeds"

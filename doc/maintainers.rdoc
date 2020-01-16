@@ -339,16 +339,12 @@ Zachary Scott (zzak)
 
 [minitest]
   https://github.com/seattlerb/minitest
-[net-telnet]
-  https://github.com/ruby/net-telnet
 [power_assert]
   https://github.com/k-tsj/power_assert
 [rake]
   https://github.com/ruby/rake
 [test-unit]
   https://github.com/test-unit/test-unit
-[xmlrpc]
-  https://github.com/ruby/xmlrpc
 [rexml]
   https://github.com/ruby/rexml
 [rss]
