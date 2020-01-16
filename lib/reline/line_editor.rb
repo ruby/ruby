@@ -1890,6 +1890,16 @@ class Reline::LineEditor
     end
   end
 
+  private def vi_insert_at_bol(key)
+    ed_move_to_beg(key)
+    @config.editing_mode = :vi_insert
+  end
+
+  private def vi_add_at_eol(key)
+    ed_move_to_end(key)
+    @config.editing_mode = :vi_insert
+  end
+
   private def ed_delete_prev_char(key, arg: 1)
     deleted = ''
     arg.times do
