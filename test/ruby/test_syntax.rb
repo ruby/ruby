@@ -1450,7 +1450,13 @@ eom
       assert_valid_syntax("->{_1;#{c};->{_1};end}\n")
     end
 
-    1.times {_1}
+    1.times {
+      [
+        _1,
+        assert_equal([:a], eval("[:a].map{_1}")),
+        assert_raise(NameError) {eval("_1")},
+      ]
+    }
   end
 
   def test_value_expr_in_condition

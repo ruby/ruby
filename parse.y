@@ -12041,7 +12041,7 @@ dvar_defined_ref(struct parser_params *p, ID id, ID **vidrefp)
 	if (used) used = used->prev;
     }
 
-    if (vars == DVARS_INHERIT) {
+    if (vars == DVARS_INHERIT && !NUMPARAM_ID_P(id)) {
         return rb_dvar_defined(id, p->parent_iseq);
     }
 
