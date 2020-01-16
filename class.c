@@ -1022,17 +1022,22 @@ rb_prepend_module(VALUE klass, VALUE module)
  *  call-seq:
  *     mod.included_modules -> array
  *
- *  Returns the list of modules included in <i>mod</i>.
+ *  Returns the list of modules included or prepended in <i>mod</i>
+ *  or one of <i>mod</i>'s ancestors.
+ *
+ *     module Sub
+ *     end
  *
  *     module Mixin
+ *       prepend Sub
  *     end
  *
  *     module Outer
  *       include Mixin
  *     end
  *
- *     Mixin.included_modules   #=> []
- *     Outer.included_modules   #=> [Mixin]
+ *     Mixin.included_modules   #=> [Sub]
+ *     Outer.included_modules   #=> [Sub, Mixin]
  */
 
 VALUE
@@ -1056,8 +1061,8 @@ rb_mod_included_modules(VALUE mod)
  *  call-seq:
  *     mod.include?(module)    -> true or false
  *
- *  Returns <code>true</code> if <i>module</i> is included in
- *  <i>mod</i> or one of <i>mod</i>'s ancestors.
+ *  Returns <code>true</code> if <i>module</i> is included
+ *  or prepended in <i>mod</i> or one of <i>mod</i>'s ancestors.
  *
  *     module A
  *     end
