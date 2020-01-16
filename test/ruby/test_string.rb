@@ -2567,6 +2567,8 @@ CODE
     hello = "hello"
     hello.partition("hi").map(&:upcase!)
     assert_equal("hello", hello, bug)
+
+    assert_equal(["", "", "foo"], "foo".partition(/^=*/))
   end
 
   def test_rpartition

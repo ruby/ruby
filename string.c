@@ -9795,7 +9795,6 @@ rb_str_partition(VALUE str, VALUE sep)
 	    return rb_ary_new3(3, rb_str_dup(str), str_new_empty(str), str_new_empty(str));
 	}
 	sep = rb_str_subpat(str, sep, INT2FIX(0));
-	if (pos == 0 && RSTRING_LEN(sep) == 0) goto failed;
     }
     else {
 	pos = rb_str_index(str, sep, 0);
