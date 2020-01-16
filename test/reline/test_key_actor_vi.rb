@@ -56,6 +56,42 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
   end
 
+  def test_vi_insert_at_bol
+    input_keys('I')
+    assert_line('I')
+    assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
+    input_keys("12345\C-[hh")
+    assert_line('I12345')
+    assert_byte_pointer_size('I12')
+    assert_cursor(3)
+    assert_cursor_max(6)
+    assert_instance_of(Reline::KeyActor::ViCommand, @config.editing_mode)
+    input_keys('I')
+    assert_line('I12345')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(6)
+    assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
+  end
+
+  def test_vi_add_at_eol
+    input_keys('A')
+    assert_line('A')
+    assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
+    input_keys("12345\C-[hh")
+    assert_line('A12345')
+    assert_byte_pointer_size('A12')
+    assert_cursor(3)
+    assert_cursor_max(6)
+    assert_instance_of(Reline::KeyActor::ViCommand, @config.editing_mode)
+    input_keys('A')
+    assert_line('A12345')
+    assert_byte_pointer_size('A12345')
+    assert_cursor(6)
+    assert_cursor_max(6)
+    assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
+  end
+
   def test_ed_insert_one
     input_keys('a')
     assert_line('a')
