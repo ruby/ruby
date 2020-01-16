@@ -24,6 +24,38 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_line('abc')
   end
 
+  def test_vi_insert
+    assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
+    input_keys('i')
+    assert_line('i')
+    assert_cursor(1)
+    assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
+    input_keys("\C-[")
+    assert_line('i')
+    assert_cursor(0)
+    assert_instance_of(Reline::KeyActor::ViCommand, @config.editing_mode)
+    input_keys('i')
+    assert_line('i')
+    assert_cursor(0)
+    assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
+  end
+
+  def test_vi_add
+    assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
+    input_keys('a')
+    assert_line('a')
+    assert_cursor(1)
+    assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
+    input_keys("\C-[")
+    assert_line('a')
+    assert_cursor(0)
+    assert_instance_of(Reline::KeyActor::ViCommand, @config.editing_mode)
+    input_keys('a')
+    assert_line('a')
+    assert_cursor(1)
+    assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
+  end
+
   def test_ed_insert_one
     input_keys('a')
     assert_line('a')
