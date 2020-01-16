@@ -379,11 +379,22 @@ converted to an Array:
 
   gather_arguments 1, 2, 3 # prints [1, 2, 3]
 
-The array argument must be the last positional argument, it must appear before
-any keyword arguments.
+The array argument must appear before any keyword arguments.
+
+It is possible to gather arguments at the beginning or in the middle:
+
+  def gather_arguments(first_arg, *middle_arguments, last_arg)
+    p middle_arguments
+  end
+
+  gather_arguments 1, 2, 3, 4 # prints [2, 3]
 
 The array argument will capture a Hash as the last entry if a hash was sent by
 the caller after all positional arguments.
+
+  def gather_arguments(*arguments)
+    p arguments
+  end
 
   gather_arguments 1, a: 2 # prints [1, {:a=>2}]
 
