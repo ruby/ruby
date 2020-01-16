@@ -133,6 +133,11 @@ module IRB
       if @echo_on_assignment.nil?
         @echo_on_assignment = false
       end
+
+      @newline_before_multiline_output = IRB.conf[:NEWLINE_BEFORE_MULTILINE_OUTPUT]
+      if @newline_before_multiline_output.nil?
+        @newline_before_multiline_output = true
+      end
     end
 
     # The top-level workspace, see WorkSpace#main
@@ -253,6 +258,20 @@ module IRB
     #     a = "omg"
     #     #=> omg
     attr_accessor :echo_on_assignment
+    # Whether a newline is put before multiline output.
+    #
+    # Uses IRB.conf[:NEWLINE_BEFORE_MULTILINE_OUTPUT] if available,
+    # or defaults to +true+.
+    #
+    #     "abc\ndef"
+    #     #=>
+    #     abc
+    #     def
+    #     IRB.CurrentContext.newline_before_multiline_output = false
+    #     "abc\ndef"
+    #     #=> abc
+    #     def
+    attr_accessor :newline_before_multiline_output
     # Whether verbose messages are displayed or not.
     #
     # A copy of the default <code>IRB.conf[:VERBOSE]</code>
@@ -287,6 +306,7 @@ module IRB
     alias ignore_eof? ignore_eof
     alias echo? echo
     alias echo_on_assignment? echo_on_assignment
+    alias newline_before_multiline_output? newline_before_multiline_output
 
     # Returns whether messages are displayed or not.
     def verbose?

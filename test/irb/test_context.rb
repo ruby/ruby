@@ -216,5 +216,36 @@ module TestIRB
       assert(irb.context.echo?, "echo? should be true by default")
       assert(irb.context.echo_on_assignment?, "echo_on_assignment? should be true when IRB.conf[:ECHO_ON_ASSIGNMENT] is set to true")
     end
+
+    def test_multiline_output_on_default_inspector
+      main = Object.new
+      def main.inspect
+        "abc\ndef"
+      end
+      input = TestInputMethod.new([
+        "self"
+      ])
+      irb = IRB::Irb.new(IRB::WorkSpace.new(main), input)
+      irb.context.return_format = "=> %s\n"
+
+      # The default
+      irb.context.newline_before_multiline_output = true
+      out, err = capture_io do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_equal("=> \nabc\ndef\n",
+                   out)
+
+      # No newline before multiline output
+      input.reset
+      irb.context.newline_before_multiline_output = false
+      out, err = capture_io do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_equal("=> abc\ndef\n",
+                   out)
+    end
   end
 end
