@@ -2087,12 +2087,17 @@ class Reline::LineEditor
     @waiting_proc = ->(key_for_proc) { search_next_char(key_for_proc, arg) }
   end
 
-  private def search_next_char(key, arg)
+  private def vi_to_next_char(key, arg: 1)
+    @waiting_proc = ->(key_for_proc) { search_next_char(key_for_proc, arg, true) }
+  end
+
+  private def search_next_char(key, arg, need_prev_char = false)
     if key.instance_of?(String)
       inputed_char = key
     else
       inputed_char = key.chr
     end
+    prev_total = nil
     total = nil
     found = false
     @line.byteslice(@byte_pointer..-1).grapheme_clusters.each do |mbchar|
@@ -2110,11 +2115,16 @@ class Reline::LineEditor
           end
         end
         width = Reline::Unicode.get_mbchar_width(mbchar)
+        prev_total = total
         total = [total.first + mbchar.bytesize, total.last + width]
       end
     end
-    if found and total
+    if not need_prev_char and found and total
       byte_size, width = total
+      @byte_pointer += byte_size
+      @cursor += width
+    elsif need_prev_char and found and prev_total
+      byte_size, width = prev_total
       @byte_pointer += byte_size
       @cursor += width
     end
