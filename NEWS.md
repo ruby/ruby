@@ -14,6 +14,13 @@ sufficient information, see the ChangeLog file or Redmine
 
 ## Core classes updates (outstanding ones only)
 
+* Dir
+
+    * Modified method
+
+        * Dir.glob and Dir.[] now sort the results by default, and
+          accept `sort:` keyword option.  [[Feature #8709]]
+
 * Hash
 
     * Modified method
@@ -46,6 +53,7 @@ sufficient information, see the ChangeLog file or Redmine
 ## Miscellaneous changes
 
 
+[Feature #8709]:  https://bugs.ruby-lang.org/issues/8709
 [Feature #8948]:  https://bugs.ruby-lang.org/issues/8948
 [Feature #16274]: https://bugs.ruby-lang.org/issues/16274
 [Feature #16377]: https://bugs.ruby-lang.org/issues/16377
