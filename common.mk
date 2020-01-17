@@ -3053,6 +3053,7 @@ numeric.$(OBJEXT): {$(VPATH)}missing.h
 numeric.$(OBJEXT): {$(VPATH)}numeric.c
 numeric.$(OBJEXT): {$(VPATH)}onigmo.h
 numeric.$(OBJEXT): {$(VPATH)}oniguruma.h
+numeric.$(OBJEXT): {$(VPATH)}ruby_assert.h
 numeric.$(OBJEXT): {$(VPATH)}st.h
 numeric.$(OBJEXT): {$(VPATH)}subst.h
 numeric.$(OBJEXT): {$(VPATH)}util.h
@@ -3175,6 +3176,7 @@ parse.$(OBJEXT): {$(VPATH)}probes.dmyh
 parse.$(OBJEXT): {$(VPATH)}probes.h
 parse.$(OBJEXT): {$(VPATH)}regenc.h
 parse.$(OBJEXT): {$(VPATH)}regex.h
+parse.$(OBJEXT): {$(VPATH)}ruby_assert.h
 parse.$(OBJEXT): {$(VPATH)}st.h
 parse.$(OBJEXT): {$(VPATH)}subst.h
 parse.$(OBJEXT): {$(VPATH)}symbol.h
@@ -3949,6 +3951,7 @@ time.$(OBJEXT): {$(VPATH)}internal.h
 time.$(OBJEXT): {$(VPATH)}missing.h
 time.$(OBJEXT): {$(VPATH)}onigmo.h
 time.$(OBJEXT): {$(VPATH)}oniguruma.h
+time.$(OBJEXT): {$(VPATH)}ruby_assert.h
 time.$(OBJEXT): {$(VPATH)}st.h
 time.$(OBJEXT): {$(VPATH)}subst.h
 time.$(OBJEXT): {$(VPATH)}time.c

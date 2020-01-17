@@ -96,6 +96,7 @@ ripper.o: $(top_srcdir)/internal/vm.h
 ripper.o: $(top_srcdir)/internal/warnings.h
 ripper.o: $(top_srcdir)/node.h
 ripper.o: $(top_srcdir)/regenc.h
+ripper.o: $(top_srcdir)/ruby_assert.h
 ripper.o: $(top_srcdir)/symbol.h
 ripper.o: ../../probes.h
 ripper.o: eventids2.c
