@@ -12,6 +12,8 @@
 #include "ruby/config.h"        /* for HAVE_LIBGMP */
 #include "ruby/ruby.h"          /* for struct RBasic */
 #include "internal/gc.h"        /* for RB_OBJ_WRITE */
+#include "internal/numeric.h"   /* for INT_POSITIVE_P */
+#include "ruby_assert.h"        /* for assert */
 
 struct RRational {
     struct RBasic basic;
@@ -51,12 +53,15 @@ RUBY_SYMBOL_EXPORT_END
 static inline void
 RATIONAL_SET_NUM(VALUE r, VALUE n)
 {
+    assert(RB_INTEGER_TYPE_P(n));
     RB_OBJ_WRITE(r, &RRATIONAL(r)->num, n);
 }
 
 static inline void
 RATIONAL_SET_DEN(VALUE r, VALUE d)
 {
+    assert(RB_INTEGER_TYPE_P(d));
+    assert(INT_POSITIVE_P(d));
     RB_OBJ_WRITE(r, &RRATIONAL(r)->den, d);
 }
 

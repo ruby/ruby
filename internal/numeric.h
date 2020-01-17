@@ -89,6 +89,7 @@ static inline double rb_float_flonum_value(VALUE v);
 static inline double rb_float_noflonum_value(VALUE v);
 static inline double rb_float_value_inline(VALUE v);
 static inline VALUE rb_float_new_inline(double d);
+static inline bool INT_POSITIVE_P(VALUE num);
 static inline bool INT_NEGATIVE_P(VALUE num);
 static inline bool FLOAT_ZERO_P(VALUE num);
 #define rb_float_value rb_float_value_inline
@@ -107,6 +108,17 @@ int rb_float_cmp(VALUE x, VALUE y);
 VALUE rb_float_eql(VALUE x, VALUE y);
 VALUE rb_fix_aref(VALUE fix, VALUE idx);
 MJIT_SYMBOL_EXPORT_END
+
+static inline bool
+INT_POSITIVE_P(VALUE num)
+{
+    if (FIXNUM_P(num)) {
+        return FIXNUM_POSITIVE_P(num);
+    }
+    else {
+        return BIGNUM_POSITIVE_P(num);
+    }
+}
 
 static inline bool
 INT_NEGATIVE_P(VALUE num)
