@@ -42,10 +42,11 @@ class TestAst < Test::Unit::TestCase
   class Helper
     attr_reader :errors
 
-    def initialize(path)
+    def initialize(path, src: nil)
       @path = path
       @errors = []
       @debug = false
+      @ast = RubyVM::AbstractSyntaxTree.parse(src) if src
     end
 
     def validate_range
@@ -311,5 +312,11 @@ class TestAst < Test::Unit::TestCase
     assert_equal([nil], kwrest.call('**'))
     assert_equal(false, kwrest.call('**nil'))
     assert_equal([:a], kwrest.call('**a'))
+  end
+
+  def test_ranges_numbered_parameter
+    helper = Helper.new(__FILE__, src: "1.times {_1}")
+    helper.validate_range
+    assert_equal([], helper.errors)
   end
 end
