@@ -190,6 +190,7 @@ set_rawmode(conmode *t, void *arg)
 	if (r->intr) {
 	    t->c_iflag |= BRKINT;
 	    t->c_lflag |= ISIG;
+	    t->c_oflag |= OPOST;
 	}
 #endif
 	(void)r;
