@@ -10,6 +10,8 @@ sufficient information, see the ChangeLog file or Redmine
 
 ## Language changes
 
+* $SAFE is now a normal global variable with no special behavior. [Feature #16131]
+
 ## Command line options
 
 ## Core classes updates (outstanding ones only)

@@ -225,19 +225,6 @@ assert_equal %q{[[nil, []], [1, []], [1, [2]], [1, [2, 3]]]}, %q{
   ]
 }
 assert_equal %q{1}, %q{
-  pr = proc{
-    $SAFE
-  }
-  $SAFE = 1
-  pr.call
-}
-assert_equal %q{[1, 1]}, %q{
-  pr = proc{
-    $SAFE += 1
-  }
-  [pr.call, $SAFE]
-}
-assert_equal %q{1}, %q{
   def m(&b)
     b
   end

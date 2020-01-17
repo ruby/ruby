@@ -626,42 +626,6 @@ VALUE rb_get_path(VALUE);
 VALUE rb_get_path_no_checksafe(VALUE);
 #define FilePathStringValue(v) ((v) = rb_get_path(v))
 
-/* Remove in 3.0 */
-#define RUBY_SAFE_LEVEL_MAX 1
-void rb_secure(int);
-int rb_safe_level(void);
-void rb_set_safe_level(int);
-#if GCC_VERSION_SINCE(4,4,0)
-int ruby_safe_level_2_error(void) __attribute__((error("$SAFE=2 to 4 are obsolete")));
-int ruby_safe_level_2_warning(void) __attribute__((const,warning("$SAFE=2 to 4 are obsolete")));
-# ifdef RUBY_EXPORT
-#   define ruby_safe_level_2_warning() ruby_safe_level_2_error()
-# endif
-# if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
-#  define RUBY_SAFE_LEVEL_INVALID_P(level) \
-    __extension__(\
-	__builtin_choose_expr(\
-	    __builtin_constant_p(level), \
-	    ((level) < 0 || RUBY_SAFE_LEVEL_MAX < (level)), 0))
-#  define RUBY_SAFE_LEVEL_CHECK(level, type) \
-    __extension__(__builtin_choose_expr(RUBY_SAFE_LEVEL_INVALID_P(level), ruby_safe_level_2_##type(), (level)))
-# else
-/* in gcc 4.8 or earlier, __builtin_choose_expr() does not consider
- * __builtin_constant_p(variable) a constant expression.
- */
-#  define RUBY_SAFE_LEVEL_INVALID_P(level) \
-    __extension__(__builtin_constant_p(level) && \
-		  ((level) < 0 || RUBY_SAFE_LEVEL_MAX < (level)))
-#  define RUBY_SAFE_LEVEL_CHECK(level, type) \
-    (RUBY_SAFE_LEVEL_INVALID_P(level) ? ruby_safe_level_2_##type() : (level))
-# endif
-# define rb_secure(level) rb_secure(RUBY_SAFE_LEVEL_CHECK(level, warning))
-# define rb_set_safe_level(level) rb_set_safe_level(RUBY_SAFE_LEVEL_CHECK(level, error))
-#endif
-void rb_set_safe_level_force(int);
-void rb_secure_update(VALUE);
-NORETURN(void rb_insecure_operation(void));
-
 VALUE rb_errinfo(void);
 void rb_set_errinfo(VALUE);
 
