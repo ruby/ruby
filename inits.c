@@ -37,7 +37,6 @@ rb_call_inits(void)
     CALL(String);
     CALL(Exception);
     CALL(eval);
-    CALL(safe);
     CALL(jump);
     CALL(Numeric);
     CALL(Bignum);
