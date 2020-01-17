@@ -2131,6 +2131,54 @@ class Reline::LineEditor
     @waiting_proc = nil
   end
 
+  private def vi_prev_char(key, arg: 1)
+    @waiting_proc = ->(key_for_proc) { search_prev_char(key_for_proc, arg) }
+  end
+
+  private def vi_to_prev_char(key, arg: 1)
+    @waiting_proc = ->(key_for_proc) { search_prev_char(key_for_proc, arg, true) }
+  end
+
+  private def search_prev_char(key, arg, need_next_char = false)
+    if key.instance_of?(String)
+      inputed_char = key
+    else
+      inputed_char = key.chr
+    end
+    prev_total = nil
+    total = nil
+    found = false
+    @line.byteslice(0..@byte_pointer).grapheme_clusters.reverse_each do |mbchar|
+      # total has [byte_size, cursor]
+      unless total
+        # skip cursor point
+        width = Reline::Unicode.get_mbchar_width(mbchar)
+        total = [mbchar.bytesize, width]
+      else
+        if inputed_char == mbchar
+          arg -= 1
+          if arg.zero?
+            found = true
+            break
+          end
+        end
+        width = Reline::Unicode.get_mbchar_width(mbchar)
+        prev_total = total
+        total = [total.first + mbchar.bytesize, total.last + width]
+      end
+    end
+    if not need_next_char and found and total
+      byte_size, width = total
+      @byte_pointer -= byte_size
+      @cursor -= width
+    elsif need_next_char and found and prev_total
+      byte_size, width = prev_total
+      @byte_pointer -= byte_size
+      @cursor -= width
+    end
+    @waiting_proc = nil
+  end
+
   private def vi_join_lines(key, arg: 1)
     if @is_multiline and @buffer_of_lines.size > @line_index + 1
       @cursor = calculate_width(@line)

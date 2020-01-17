@@ -651,6 +651,42 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_cursor_max(6)
   end
 
+  def test_vi_prev_char
+    input_keys("abcdef\C-[")
+    assert_line('abcdef')
+    assert_byte_pointer_size('abcde')
+    assert_cursor(5)
+    assert_cursor_max(6)
+    input_keys('Fz')
+    assert_line('abcdef')
+    assert_byte_pointer_size('abcde')
+    assert_cursor(5)
+    assert_cursor_max(6)
+    input_keys('Fa')
+    assert_line('abcdef')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(6)
+  end
+
+  def test_vi_to_prev_char
+    input_keys("abcdef\C-[")
+    assert_line('abcdef')
+    assert_byte_pointer_size('abcde')
+    assert_cursor(5)
+    assert_cursor_max(6)
+    input_keys('Tz')
+    assert_line('abcdef')
+    assert_byte_pointer_size('abcde')
+    assert_cursor(5)
+    assert_cursor_max(6)
+    input_keys('Ta')
+    assert_line('abcdef')
+    assert_byte_pointer_size('a')
+    assert_cursor(1)
+    assert_cursor_max(6)
+  end
+
   def test_vi_delete_next_char
     input_keys("abc\C-[h")
     assert_byte_pointer_size('a')
