@@ -1927,6 +1927,10 @@ rb_gcdlcm(VALUE self, VALUE other)
 VALUE
 rb_rational_raw(VALUE x, VALUE y)
 {
+    if (! RB_INTEGER_TYPE_P(x))
+        x = rb_to_int(x);
+    if (! RB_INTEGER_TYPE_P(y))
+        y = rb_to_int(y);
     if (INT_NEGATIVE_P(y)) {
         x = rb_int_uminus(x);
         y = rb_int_uminus(y);
