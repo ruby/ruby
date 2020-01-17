@@ -29,4 +29,18 @@ class TestRational < Test::Unit::TestCase
     rescue NotImplementedError
     end
   end
+
+  def test_rb_rational_raw
+    rat = Rational.raw(1, 2)
+    assert_equal(1, rat.numerator)
+    assert_equal(2, rat.denominator)
+
+    rat = Rational.raw(-1, 2)
+    assert_equal(-1, rat.numerator)
+    assert_equal(2, rat.denominator)
+
+    rat = Rational.raw(1, -2)
+    assert_equal(-1, rat.numerator)
+    assert_equal(2, rat.denominator)
+  end
 end

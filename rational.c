@@ -1927,6 +1927,10 @@ rb_gcdlcm(VALUE self, VALUE other)
 VALUE
 rb_rational_raw(VALUE x, VALUE y)
 {
+    if (INT_NEGATIVE_P(y)) {
+        x = rb_int_uminus(x);
+        y = rb_int_uminus(y);
+    }
     return nurat_s_new_internal(rb_cRational, x, y);
 }
 
