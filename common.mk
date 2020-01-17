@@ -3939,6 +3939,7 @@ time.$(OBJEXT): $(top_srcdir)/internal/string.h
 time.$(OBJEXT): $(top_srcdir)/internal/time.h
 time.$(OBJEXT): $(top_srcdir)/internal/variable.h
 time.$(OBJEXT): $(top_srcdir)/internal/vm.h
+time.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 time.$(OBJEXT): {$(VPATH)}assert.h
 time.$(OBJEXT): {$(VPATH)}config.h
 time.$(OBJEXT): {$(VPATH)}constant.h
