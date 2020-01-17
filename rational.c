@@ -403,8 +403,8 @@ nurat_s_new_internal(VALUE klass, VALUE num, VALUE den)
 {
     NEWOBJ_OF(obj, struct RRational, klass, T_RATIONAL | (RGENGC_WB_PROTECTED_RATIONAL ? FL_WB_PROTECTED : 0));
 
-    RRATIONAL_SET_NUM(obj, num);
-    RRATIONAL_SET_DEN(obj, den);
+    RATIONAL_SET_NUM((VALUE)obj, num);
+    RATIONAL_SET_DEN((VALUE)obj, den);
     OBJ_FREEZE_RAW(obj);
 
     return (VALUE)obj;
@@ -1836,8 +1836,8 @@ nurat_loader(VALUE self, VALUE a)
     nurat_int_check(num);
     nurat_int_check(den);
     nurat_canonicalize(&num, &den);
-    RRATIONAL_SET_NUM(dat, num);
-    RRATIONAL_SET_DEN(dat, den);
+    RATIONAL_SET_NUM((VALUE)dat, num);
+    RATIONAL_SET_DEN((VALUE)dat, den);
     OBJ_FREEZE_RAW(self);
 
     return self;

@@ -11240,7 +11240,7 @@ negate_lit(struct parser_params *p, VALUE lit)
 	lit = rb_big_norm(lit);
 	break;
       case T_RATIONAL:
-	RRATIONAL_SET_NUM(lit, negate_lit(p, RRATIONAL(lit)->num));
+	RATIONAL_SET_NUM(lit, negate_lit(p, RRATIONAL(lit)->num));
 	break;
       case T_COMPLEX:
 	RCOMPLEX_SET_REAL(lit, negate_lit(p, RCOMPLEX(lit)->real));
