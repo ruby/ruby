@@ -497,25 +497,6 @@ nurat_s_canonicalize_internal_no_reduce(VALUE klass, VALUE num, VALUE den)
     return nurat_s_new_internal(klass, num, den);
 }
 
-static VALUE
-nurat_s_new(int argc, VALUE *argv, VALUE klass)
-{
-    VALUE num, den;
-
-    switch (rb_scan_args(argc, argv, "11", &num, &den)) {
-      case 1:
-	num = nurat_int_value(num);
-	den = ONE;
-	break;
-      default:
-	num = nurat_int_value(num);
-	den = nurat_int_value(den);
-	break;
-    }
-
-    return nurat_s_canonicalize_internal(klass, num, den);
-}
-
 inline static VALUE
 f_rational_new2(VALUE klass, VALUE x, VALUE y)
 {
@@ -2644,21 +2625,20 @@ nurat_convert(VALUE klass, VALUE numv, VALUE denv, int raise)
             return f_div(a1, a2);
     }
 
-    {
-        int argc;
-        VALUE argv2[2];
-        argv2[0] = a1;
-        if (a2 == Qundef) {
-            argv2[1] = Qnil;
-            argc = 1;
-        }
-        else {
-            if (!k_integer_p(a2) && !raise) return Qnil;
-            argv2[1] = a2;
-            argc = 2;
-        }
-        return nurat_s_new(argc, argv2, klass);
+    a1 = nurat_int_value(a1);
+
+    if (a2 == Qundef) {
+        a2 = ONE;
     }
+    else if (!k_integer_p(a2) && !raise) {
+        return Qnil;
+    }
+    else {
+        a2 = nurat_int_value(a2);
+    }
+
+
+    return nurat_s_canonicalize_internal(klass, a1, a2);
 }
 
 static VALUE
