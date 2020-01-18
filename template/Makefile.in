@@ -474,9 +474,9 @@ clean-local::
 	$(Q)$(RM) \
 	  ext/extinit.c ext/extinit.$(OBJEXT) ext/ripper/y.output \
 	  enc/encinit.c enc/encinit.$(OBJEXT) $(pkgconfig_DATA) \
-	  ruby-runner.$(OBJEXT) ruby-runner.h *.dSYM \
+	  ruby-runner.$(OBJEXT) ruby-runner.h \
 	|| $(NULLCMD)
-	-$(Q)$(RMALL) exe/
+	-$(Q)$(RMALL) exe/ *.dSYM
 
 distclean-local::
 	$(Q)$(RM) \
