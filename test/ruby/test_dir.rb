@@ -137,13 +137,13 @@ class TestDir < Test::Unit::TestCase
   def test_glob
     assert_equal((%w(. ..) + ("a".."z").to_a).map{|f| File.join(@root, f) },
                  Dir.glob(File.join(@root, "*"), File::FNM_DOTMATCH).sort)
-    assert_equal([@root] + ("a".."z").map {|f| File.join(@root, f) }.sort,
+    assert_equal([@root] + ("a".."z").map {|f| File.join(@root, f) },
                  Dir.glob([@root, File.join(@root, "*")]).sort)
     assert_raise_with_message(ArgumentError, /nul-separated/) do
       Dir.glob(@root + "\0\0\0" + File.join(@root, "*"))
     end
 
-    assert_equal(("a".."z").step(2).map {|f| File.join(File.join(@root, f), "") }.sort,
+    assert_equal(("a".."z").step(2).map {|f| File.join(File.join(@root, f), "") },
                  Dir.glob(File.join(@root, "*/")).sort)
     assert_equal([File.join(@root, '//a')], Dir.glob(@root + '//a'))
 
@@ -154,7 +154,7 @@ class TestDir < Test::Unit::TestCase
     assert_equal([], Dir.glob(File.join(@root, '[a-\\')))
 
     assert_equal([File.join(@root, "a")], Dir.glob(File.join(@root, 'a\\')))
-    assert_equal(("a".."f").map {|f| File.join(@root, f) }.sort, Dir.glob(File.join(@root, '[abc/def]')).sort)
+    assert_equal(("a".."f").map {|f| File.join(@root, f) }, Dir.glob(File.join(@root, '[abc/def]')).sort)
 
     open(File.join(@root, "}}{}"), "wb") {}
     open(File.join(@root, "}}a"), "wb") {}
@@ -339,7 +339,7 @@ class TestDir < Test::Unit::TestCase
     assert_equal([*"a".."z", *"symlink-a".."symlink-z"].each_slice(2).map {|f, _| File.join(@root, f + "/") }.sort,
 		 Dir.glob(File.join(@root, "*/")).sort)
 
-    assert_equal([@root + "/", *[*"a".."z"].each_slice(2).map {|f, _| File.join(@root, f + "/") }.sort],
+    assert_equal([@root + "/", *[*"a".."z"].each_slice(2).map {|f, _| File.join(@root, f + "/") }],
                  Dir.glob(File.join(@root, "**/")).sort)
   end
 
