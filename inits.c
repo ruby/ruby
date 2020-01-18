@@ -79,6 +79,7 @@ rb_call_inits(void)
 #define BUILTIN(n) CALL(builtin_##n)
     BUILTIN(gc);
     BUILTIN(io);
+    BUILTIN(dir);
     BUILTIN(ast);
     BUILTIN(trace_point);
     BUILTIN(pack);

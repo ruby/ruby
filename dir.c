@@ -116,6 +116,7 @@ char *strchr(char*,char);
 #include "ruby/ruby.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
+#include "builtin.h"
 
 #ifndef AT_FDCWD
 # define AT_FDCWD -1
@@ -520,40 +521,13 @@ opendir_without_gvl(const char *path)
 	return opendir(path);
 }
 
-/*
- *  call-seq:
- *     Dir.new( string ) -> aDir
- *     Dir.new( string, encoding: enc ) -> aDir
- *
- *  Returns a new directory object for the named directory.
- *
- *  The optional <i>encoding</i> keyword argument specifies the encoding of the directory.
- *  If not specified, the filesystem encoding is used.
- */
 static VALUE
-dir_initialize(int argc, VALUE *argv, VALUE dir)
+dir_initialize(rb_execution_context_t *ec, VALUE dir, VALUE dirname, VALUE enc)
 {
     struct dir_data *dp;
-    rb_encoding  *fsenc;
-    VALUE dirname, opt, orig;
-    static ID keyword_ids[1];
+    VALUE orig;
     const char *path;
-
-    if (!keyword_ids[0]) {
-	keyword_ids[0] = rb_id_encoding();
-    }
-
-    fsenc = rb_filesystem_encoding();
-
-    rb_scan_args(argc, argv, "1:", &dirname, &opt);
-
-    if (!NIL_P(opt)) {
-	VALUE enc;
-	rb_get_kwargs(opt, keyword_ids, 0, 1, &enc);
-	if (enc != Qundef && !NIL_P(enc)) {
-	    fsenc = rb_to_encoding(enc);
-	}
-    }
+    rb_encoding *fsenc = NIL_P(enc) ? rb_filesystem_encoding() : rb_to_encoding(enc);
 
     FilePathValue(dirname);
     orig = rb_str_dup_frozen(dirname);
@@ -591,33 +565,21 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
     return dir;
 }
 
-/*
- *  call-seq:
- *     Dir.open( string ) -> aDir
- *     Dir.open( string, encoding: enc ) -> aDir
- *     Dir.open( string ) {| aDir | block } -> anObject
- *     Dir.open( string, encoding: enc ) {| aDir | block } -> anObject
- *
- *  The optional <i>encoding</i> keyword argument specifies the encoding of the directory.
- *  If not specified, the filesystem encoding is used.
- *
- *  With no block, <code>open</code> is a synonym for Dir::new. If a
- *  block is present, it is passed <i>aDir</i> as a parameter. The
- *  directory is closed at the end of the block, and Dir::open returns
- *  the value of the block.
- */
 static VALUE
-dir_s_open(int argc, VALUE *argv, VALUE klass)
+dir_s_open(rb_execution_context_t *ec, VALUE klass, VALUE dirname, VALUE enc)
 {
     struct dir_data *dp;
     VALUE dir = TypedData_Make_Struct(klass, struct dir_data, &dir_data_type, dp);
 
-    dir_initialize(argc, argv, dir);
-    if (rb_block_given_p()) {
-	return rb_ensure(rb_yield, dir, dir_close, dir);
-    }
+    dir_initialize(ec, dir, dirname, enc);
 
     return dir;
+}
+
+static VALUE
+dir_s_close(rb_execution_context_t *ec, VALUE klass, VALUE dir)
+{
+    return dir_close(dir);
 }
 
 NORETURN(static void dir_closed(void));
@@ -3599,13 +3561,11 @@ Init_Dir(void)
     rb_include_module(rb_cDir, rb_mEnumerable);
 
     rb_define_alloc_func(rb_cDir, dir_s_alloc);
-    rb_define_singleton_method(rb_cDir, "open", dir_s_open, -1);
     rb_define_singleton_method(rb_cDir, "foreach", dir_foreach, -1);
     rb_define_singleton_method(rb_cDir, "entries", dir_entries, -1);
     rb_define_singleton_method(rb_cDir, "each_child", dir_s_each_child, -1);
     rb_define_singleton_method(rb_cDir, "children", dir_s_children, -1);
 
-    rb_define_method(rb_cDir,"initialize", dir_initialize, -1);
     rb_define_method(rb_cDir,"fileno", dir_fileno, 0);
     rb_define_method(rb_cDir,"path", dir_path, 0);
     rb_define_method(rb_cDir,"to_path", dir_path, 0);
@@ -3687,3 +3647,5 @@ Init_Dir(void)
      */
     rb_file_const("FNM_SHORTNAME", INT2FIX(FNM_SHORTNAME));
 }
+
+#include "dir.rbinc"
