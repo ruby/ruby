@@ -72,6 +72,8 @@ class Reline::Windows
   STD_INPUT_HANDLE = -10
   STD_OUTPUT_HANDLE = -11
   WINDOW_BUFFER_SIZE_EVENT = 0x04
+  FILE_TYPE_PIPE = 0x0003
+  FILE_NAME_INFO = 2
   @@getwch = Win32API.new('msvcrt', '_getwch', [], 'I')
   @@kbhit = Win32API.new('msvcrt', '_kbhit', [], 'I')
   @@GetKeyState = Win32API.new('user32', 'GetKeyState', ['L'], 'L')
@@ -84,8 +86,35 @@ class Reline::Windows
   @@hConsoleInputHandle = @@GetStdHandle.call(STD_INPUT_HANDLE)
   @@GetNumberOfConsoleInputEvents = Win32API.new('kernel32', 'GetNumberOfConsoleInputEvents', ['L', 'P'], 'L')
   @@ReadConsoleInput = Win32API.new('kernel32', 'ReadConsoleInput', ['L', 'P', 'L', 'P'], 'L')
+  @@GetFileType = Win32API.new('kernel32', 'GetFileType', ['L'], 'L')
+  @@GetFileInformationByHandleEx = Win32API.new('kernel32', 'GetFileInformationByHandleEx', ['L', 'I', 'P', 'L'], 'I')
+
   @@input_buf = []
   @@output_buf = []
+
+  def self.msys_tty?(io=@@hConsoleInputHandle)
+    # check if fd is a pipe
+    if @@GetFileType.call(io) != FILE_TYPE_PIPE
+      return false
+    end
+
+    bufsize = 1024
+    p_buffer = "\0" * bufsize
+    res = @@GetFileInformationByHandleEx.call(io, FILE_NAME_INFO, p_buffer, bufsize - 2)
+    return false if res == 0
+
+    # get pipe name: p_buffer layout is:
+    #   struct _FILE_NAME_INFO {
+    #     DWORD FileNameLength;
+    #     WCHAR FileName[1];
+    #   } FILE_NAME_INFO
+    len = p_buffer[0, 4].unpack("L")[0]
+    name = p_buffer[4, len].encode(Encoding::UTF_8, Encoding::UTF_16LE, invalid: :replace)
+
+    # Check if this could be a MSYS2 pty pipe ('\msys-XXXX-ptyN-XX')
+    # or a cygwin pty pipe ('\cygwin-XXXX-ptyN-XX')
+    name =~ /(msys-|cygwin-).*-pty/ ? true : false
+  end
 
   def self.getwch
     unless @@input_buf.empty?
