@@ -1000,6 +1000,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/ast.rb \
 		$(srcdir)/gc.rb \
 		$(srcdir)/io.rb \
+		$(srcdir)/dir.rb \
 		$(srcdir)/pack.rb \
 		$(srcdir)/trace_point.rb \
 		$(srcdir)/warning.rb \
@@ -2024,9 +2025,11 @@ dir.$(OBJEXT): $(top_srcdir)/internal/string.h
 dir.$(OBJEXT): $(top_srcdir)/internal/vm.h
 dir.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 dir.$(OBJEXT): {$(VPATH)}assert.h
+dir.$(OBJEXT): {$(VPATH)}builtin.h
 dir.$(OBJEXT): {$(VPATH)}config.h
 dir.$(OBJEXT): {$(VPATH)}defines.h
 dir.$(OBJEXT): {$(VPATH)}dir.c
+dir.$(OBJEXT): {$(VPATH)}dir.rbinc
 dir.$(OBJEXT): {$(VPATH)}encindex.h
 dir.$(OBJEXT): {$(VPATH)}encoding.h
 dir.$(OBJEXT): {$(VPATH)}id.h
@@ -2840,6 +2843,7 @@ miniinit.$(OBJEXT): {$(VPATH)}ast.rb
 miniinit.$(OBJEXT): {$(VPATH)}builtin.h
 miniinit.$(OBJEXT): {$(VPATH)}config.h
 miniinit.$(OBJEXT): {$(VPATH)}defines.h
+miniinit.$(OBJEXT): {$(VPATH)}dir.rb
 miniinit.$(OBJEXT): {$(VPATH)}encoding.h
 miniinit.$(OBJEXT): {$(VPATH)}gc.rb
 miniinit.$(OBJEXT): {$(VPATH)}gem_prelude.rb
