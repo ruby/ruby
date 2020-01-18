@@ -268,6 +268,10 @@ class Reline::History::Test < Reline::TestCase
   end
 
   def get_default_internal_encoding
-    return Encoding.default_internal || Encoding.find("locale")
+    if RUBY_PLATFORM =~ /mswin|mingw/
+      Encoding.default_internal || Encoding::UTF_8
+    else
+      Encoding.default_internal || Encoding.find("locale")
+    end
   end
 end

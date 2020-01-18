@@ -238,7 +238,7 @@ module BasetestReadline
     append_character = Readline.completion_append_character
     Readline.completion_append_character = ""
     completion_case_fold = Readline.completion_case_fold
-    locale = Encoding.find("locale")
+    locale = get_default_internal_encoding
     if locale == Encoding::UTF_8
       enc1 = Encoding::EUC_JP
     else
@@ -545,7 +545,7 @@ module BasetestReadline
     saved_completer_quote_characters = Readline.completer_quote_characters
     saved_completer_word_break_characters = Readline.completer_word_break_characters
     return unless Readline.respond_to?(:quoting_detection_proc=)
-    unless Encoding.find("locale") == Encoding::UTF_8
+    unless Encoding.find("external") == Encoding::UTF_8
       return if assert_under_utf8
       skip 'this test needs UTF-8 locale'
     end
@@ -595,7 +595,7 @@ module BasetestReadline
         Readline.output = null
         Readline.completion_proc = ->(text) do
           ['abcde', 'abc12'].map { |i|
-            i.encode(Encoding.default_external)
+            i.encode(get_default_internal_encoding)
           }
         end
         w.write("a\t\n")
@@ -620,7 +620,7 @@ module BasetestReadline
         Readline.completion_append_character = '!'
         Readline.completion_proc = ->(text) do
           ['abcde'].map { |i|
-            i.encode(Encoding.default_external)
+            i.encode(get_default_internal_encoding)
           }
         end
         w.write("a\t\n")
@@ -789,5 +789,13 @@ class TestRelineAsReadline < Test::Unit::TestCase
   def setup
     use_lib_reline
     super
+  end
+
+  def get_default_internal_encoding
+    if RUBY_PLATFORM =~ /mswin|mingw/
+      Encoding.default_internal || Encoding::UTF_8
+    else
+      super
+    end
   end
 end

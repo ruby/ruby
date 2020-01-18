@@ -275,4 +275,12 @@ class TestRelineAsReadlineHistory < Test::Unit::TestCase
     use_lib_reline
     super
   end
+
+  def get_default_internal_encoding
+    if RUBY_PLATFORM =~ /mswin|mingw/
+      Encoding.default_internal || Encoding::UTF_8
+    else
+      super
+    end
+  end
 end
