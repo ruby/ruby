@@ -2755,10 +2755,12 @@ dir_globs(long argc, const VALUE *argv, VALUE base, int flags)
 static void
 dir_glob_options(VALUE opt, VALUE *base, int *flags)
 {
-    ID kw[2];
+    static ID kw[2];
     VALUE args[2];
-    kw[0] = rb_intern("base");
-    if (flags) kw[1] = rb_intern("flags");
+    if (!kw[0]) {
+        kw[0] = rb_intern_const("base");
+        kw[1] = rb_intern_const("flags");
+    }
     rb_get_kwargs(opt, kw, 0, flags ? 2 : 1, args);
     if (args[0] == Qundef || NIL_P(args[0])) {
 	*base = Qnil;
