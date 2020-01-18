@@ -21,13 +21,13 @@ sufficient information, see the ChangeLog file or Redmine
     * Modified method
 
         * Hash#transform_keys now accepts a hash that maps keys to new
-          keys.  [Feature #16274]
+          keys.  [[Feature #16274]]
 
 ### Stdlib updates (outstanding ones only)
 
 ### Compatibility issues (excluding feature bug fixes)
 
-* Regexp literals are frozen [Feature #8948] [Feature #16377]
+* Regexp literals are frozen [[Feature #8948]] [[Feature #16377]]
 
     ```
     /foo/.frozen? #=> true
@@ -46,3 +46,8 @@ sufficient information, see the ChangeLog file or Redmine
 ### Implementation improvements
 
 ### Miscellaneous changes
+
+
+[Feature #8948]:  https://bugs.ruby-lang.org/issues/8948
+[Feature #16274]: https://bugs.ruby-lang.org/issues/16274
+[Feature #16377]: https://bugs.ruby-lang.org/issues/16377
