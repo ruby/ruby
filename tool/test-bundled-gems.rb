@@ -1,4 +1,5 @@
 require 'rbconfig'
+require 'timeout'
 
 allowed_failures = ENV['TEST_BUNDLED_GEMS_ALLOW_FAILURES'] || ''
 allowed_failures = allowed_failures.split(',').reject(&:empty?)
@@ -13,7 +14,17 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
 
   test_command = "#{ruby} -C #{gem_dir}/src/#{gem} -Ilib #{rake}"
   puts test_command
-  system test_command
+  pid = Process.spawn(test_command, "#{/mingw|mswin/ =~ RUBY_PLATFORM ? 'new_' : ''}pgroup": true)
+  {nil => 60, INT: 30, TERM: 10, KILL: nil}.each do |sig, sec|
+    if sig
+      puts "Sending #{sig} signal"
+      Process.kill("-#{sig}", pid)
+    end
+    begin
+      break Timeout.timeout(sec) {Process.wait(pid)}
+    rescue Timeout::Error
+    end
+  end
 
   unless $?.success?
     puts "Tests failed with exit code #{$?.exitstatus}"
