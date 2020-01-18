@@ -415,8 +415,7 @@ end
 
 if RbConfig::CONFIG['host_os'] =~ /mswin|msys|mingw|cygwin|bccwin|wince|emc/
   require 'reline/windows'
-  if Reline::Windows.get_screen_size == [0, 0]
-    # Maybe Mintty on Cygwin
+  if Reline::Windows.msys_tty?
     require 'reline/ansi'
     Reline::IOGate = Reline::ANSI
   else
