@@ -2374,7 +2374,9 @@ rb_ary_join(VALUE ary, VALUE sep)
 
 	if (NIL_P(tmp) || tmp != val) {
 	    int first;
-	    result = rb_str_buf_new(len + (RARRAY_LEN(ary)-i)*10);
+            long n = RARRAY_LEN(ary);
+            if (i > n) i = n;
+            result = rb_str_buf_new(len + (n-i)*10);
 	    rb_enc_associate(result, rb_usascii_encoding());
             i = ary_join_0(ary, sep, i, result);
 	    first = i == 0;

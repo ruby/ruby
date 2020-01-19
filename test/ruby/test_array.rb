@@ -2457,6 +2457,17 @@ class TestArray < Test::Unit::TestCase
     assert_equal("ab012z", x.ary.join(""))
   end
 
+  def test_join_recheck_array_length
+    x = Struct.new(:ary).new
+    def x.to_str
+      ary.clear
+      ary[0] = "b"
+      "z"
+    end
+    x.ary = Array.new(1023) {"a"*1} << x
+    assert_equal("b", x.ary.join(""))
+  end
+
   def test_to_a2
     klass = Class.new(Array)
     a = klass.new.to_a
