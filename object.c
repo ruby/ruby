@@ -2762,8 +2762,8 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
  *     mod.const_source_location(sym, inherit=true)   -> [String, Integer]
  *     mod.const_source_location(str, inherit=true)   -> [String, Integer]
  *
- *  Returns the Ruby source filename and line number containing first definition
- *  of constant specified. If the named constant is not found, +nil+ is returned.
+ *  Returns the Ruby source filename and line number containing the definition
+ *  of the constant specified. If the named constant is not found, +nil+ is returned.
  *  If the constant is found, but its source location can not be extracted
  *  (constant is defined in C code), empty array is returned.
  *
@@ -2773,28 +2773,32 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
  *      # test.rb:
  *      class A
  *        C1 = 1
+ *        C2 = 2
  *      end
  *
  *      module M
- *        C2 = 2
+ *        C3 = 3
  *      end
  *
  *      class B < A
  *        include M
- *        C3 = 3
+ *        C4 = 4
  *      end
  *
  *      class A # continuation of A definition
+ *        C2 = 8 # constant redefinition; warned yet allowed
  *      end
  *
- *      p B.const_source_location('C3')           # => ["test.rb", 11]
- *      p B.const_source_location('C2')           # => ["test.rb", 6]
+ *      p B.const_source_location('C4')           # => ["test.rb", 11]
+ *      p B.const_source_location('C3')           # => ["test.rb", 6]
  *      p B.const_source_location('C1')           # => ["test.rb", 2]
  *
- *      p B.const_source_location('C2', false)    # => nil  -- don't lookup in ancestors
+ *      p B.const_source_location('C3', false)    # => nil  -- don't lookup in ancestors
  *
- *      p Object.const_source_location('B')       # => ["test.rb", 9]
- *      p Object.const_source_location('A')       # => ["test.rb", 1]  -- note it is first entry, not "continuation"
+ *      p A.const_source_location('C2')           # => ["test.rb", 16] -- actual (last) definition place
+ *
+ *      p Object.const_source_location('B')       # => ["test.rb", 9] -- top-level constant could be looked through Object
+ *      p Object.const_source_location('A')       # => ["test.rb", 1] -- class reopening is NOT considered new definition
  *
  *      p B.const_source_location('A')            # => ["test.rb", 1]  -- because Object is in ancestors
  *      p M.const_source_location('A')            # => ["test.rb", 1]  -- Object is not ancestor, but additionally checked for modules
