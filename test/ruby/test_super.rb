@@ -583,4 +583,17 @@ class TestSuper < Test::Unit::TestCase
   def test_super_with_modified_rest_parameter
     assert_equal [13], TestFor_super_with_modified_rest_parameter.new.foo
   end
+
+  def test_super_with_define_method
+    superklass = Class.new do
+      def foo; :foo; end
+      def bar; :bar; end
+    end
+    subklass = Class.new(superklass)
+    [:foo, :bar].each do |sym|
+      subklass.define_method(sym){ super() }
+    end
+    assert_equal :foo, subklass.new.foo
+    assert_equal :bar, subklass.new.bar
+  end
 end

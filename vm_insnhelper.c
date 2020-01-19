@@ -3154,9 +3154,25 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
         CC_SET_FASTPATH(cc, vm_call_method_missing, TRUE);
     }
     else {
-        /* TODO: use inline cache */
+#if OPT_INLINE_METHOD_CACHE
+	/* Unlike normal method search, we only consider the first class
+	 * serial. Since we're testing defined_class rather than receiver,
+	 * there's only one valid "warm" value. */
+	if (LIKELY(RB_DEBUG_COUNTER_INC_UNLESS(mc_global_state_miss,
+			GET_GLOBAL_METHOD_STATE() == cc->method_state) &&
+			cc->class_serial[0] == RCLASS_SERIAL(klass)) &&
+			cc->me && ci->mid == cc->me->def->original_id) {
+	    VM_ASSERT(cc->call != NULL);
+	    RB_DEBUG_COUNTER_INC(mc_inline_hit);
+	    return;
+	}
+#endif
+
         CC_SET_ME(cc, rb_callable_method_entry(klass, ci->mid));
         CC_SET_FASTPATH(cc, vm_call_super_method, TRUE);
+
+	cc->method_state = GET_GLOBAL_METHOD_STATE();
+	cc->class_serial[0] = RCLASS_SERIAL(klass);
     }
 }
 
