@@ -2286,7 +2286,7 @@ recursive_join(VALUE obj, VALUE argp, int recur)
     return Qnil;
 }
 
-static void
+static long
 ary_join_0(VALUE ary, VALUE sep, long max, VALUE result)
 {
     long i;
@@ -2295,10 +2295,12 @@ ary_join_0(VALUE ary, VALUE sep, long max, VALUE result)
     if (max > 0) rb_enc_copy(result, RARRAY_AREF(ary, 0));
     for (i=0; i<max; i++) {
 	val = RARRAY_AREF(ary, i);
+        if (!RB_TYPE_P(val, T_STRING)) break;
 	if (i > 0 && !NIL_P(sep))
 	    rb_str_buf_append(result, sep);
 	rb_str_buf_append(result, val);
     }
+    return i;
 }
 
 static void
@@ -2374,7 +2376,7 @@ rb_ary_join(VALUE ary, VALUE sep)
 	    int first;
 	    result = rb_str_buf_new(len + (RARRAY_LEN(ary)-i)*10);
 	    rb_enc_associate(result, rb_usascii_encoding());
-	    ary_join_0(ary, sep, i, result);
+            i = ary_join_0(ary, sep, i, result);
 	    first = i == 0;
 	    ary_join_1(ary, ary, sep, i, result, &first);
 	    return result;

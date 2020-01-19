@@ -2447,6 +2447,16 @@ class TestArray < Test::Unit::TestCase
     assert_equal("12345", [1,[2,[3,4],5]].join)
   end
 
+  def test_join_recheck_elements_type
+    x = Struct.new(:ary).new
+    def x.to_str
+      ary[2] = [0, 1, 2]
+      "z"
+    end
+    (x.ary = ["a", "b", "c", x])
+    assert_equal("ab012z", x.ary.join(""))
+  end
+
   def test_to_a2
     klass = Class.new(Array)
     a = klass.new.to_a
