@@ -11,7 +11,7 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        test_task: [ "check", "test-bundler" ] # "test-bundled-gems"
+        test_task: [ "check", "test-bundler", "test-bundled-gems" ]
       fail-fast: false
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
@@ -61,7 +61,7 @@ jobs:
           RUBY_TESTOPTS: "-q --tty=no"
           # Remove minitest from TEST_BUNDLED_GEMS_ALLOW_FAILURES if https://github.com/seattlerb/minitest/pull/798 is resolved
           # rss needs to add workaround for the non rexml environment
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: "minitest,xmlrpc,rss"
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: "minitest,xmlrpc,rss,rexml"
       - name: Leaked Globals
         run: make -C build -s leaked-globals
       - uses: k0kubun/action-slack@v2.0.0
