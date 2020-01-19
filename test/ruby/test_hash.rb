@@ -1772,7 +1772,7 @@ class TestHash < Test::Unit::TestCase
     assert_raise(TypeError) { Hash.ruby2_keywords_hash?(1) }
   end
 
-  def test_ruby2_keywords_hash!
+  def test_ruby2_keywords_hash
     hash = {k: 1}
     assert_equal(false, Hash.ruby2_keywords_hash?(hash))
     hash = Hash.ruby2_keywords_hash(hash)
