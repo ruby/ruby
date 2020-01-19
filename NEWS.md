@@ -34,7 +34,7 @@ sufficient information, see the ChangeLog file or Redmine
 
 * Regexp literals are frozen [[Feature #8948]] [[Feature #16377]]
 
-    ```
+    ```ruby
     /foo/.frozen? #=> true
     ```
 
