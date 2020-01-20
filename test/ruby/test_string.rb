@@ -387,6 +387,8 @@ CODE
   end
 
   def test_chomp
+    verbose, $VERBOSE = $VERBOSE, nil
+
     assert_equal(S("hello"), S("hello").chomp("\n"))
     assert_equal(S("hello"), S("hello\n").chomp("\n"))
     save = $/
@@ -452,9 +454,12 @@ CODE
     assert_equal("foo", s.chomp("\n"))
   ensure
     $/ = save
+    $VERBOSE = verbose
   end
 
   def test_chomp!
+    verbose, $VERBOSE = $VERBOSE, nil
+
     a = S("hello")
     a.chomp!(S("\n"))
 
@@ -511,6 +516,7 @@ CODE
 
     s = S("").freeze
     assert_raise_with_message(FrozenError, /frozen/) {s.chomp!}
+    $VERBOSE = nil # EnvUtil.suppress_warning resets $VERBOSE to the original state
 
     s = S("ax")
     o = Struct.new(:s).new(s)
@@ -519,6 +525,7 @@ CODE
       "x"
     end
     assert_raise_with_message(FrozenError, /frozen/) {s.chomp!(o)}
+    $VERBOSE = nil # EnvUtil.suppress_warning resets $VERBOSE to the original state
 
     s = S("hello")
     assert_equal("hel", s.chomp!('lo'))
@@ -569,6 +576,7 @@ CODE
     assert_equal("foo", s.chomp!("\n"))
   ensure
     $/ = save
+    $VERBOSE = verbose
   end
 
   def test_chop
@@ -859,6 +867,8 @@ CODE
   end
 
   def test_each
+    verbose, $VERBOSE = $VERBOSE, nil
+
     save = $/
     $/ = "\n"
     res=[]
@@ -878,6 +888,7 @@ CODE
     assert_equal(S("world"),  res[1])
   ensure
     $/ = save
+    $VERBOSE = verbose
   end
 
   def test_each_byte
@@ -1055,6 +1066,8 @@ CODE
   end
 
   def test_each_line
+    verbose, $VERBOSE = $VERBOSE, nil
+
     save = $/
     $/ = "\n"
     res=[]
@@ -1101,6 +1114,7 @@ CODE
     end
   ensure
     $/ = save
+    $VERBOSE = verbose
   end
 
   def test_each_line_chomp

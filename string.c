@@ -8246,6 +8246,21 @@ chomp_newline(const char *p, const char *e, rb_encoding *enc)
 }
 
 static VALUE
+get_rs(void)
+{
+    VALUE rs = rb_rs;
+    if (!NIL_P(rs) &&
+	(!RB_TYPE_P(rs, T_STRING) ||
+	 RSTRING_LEN(rs) != 1 ||
+	 RSTRING_PTR(rs)[0] != '\n')) {
+        rb_warn("$/ is set to non-default value");
+    }
+    return rs;
+}
+
+#define rb_rs get_rs()
+
+static VALUE
 rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
 {
     rb_encoding *enc;

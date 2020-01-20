@@ -13288,8 +13288,8 @@ Init_IO(void)
     rb_gc_register_mark_object(rb_default_rs);
     rb_rs = rb_default_rs;
     rb_output_rs = Qnil;
-    rb_define_hooked_variable("$/", &rb_rs, 0, rb_str_setter);
-    rb_define_hooked_variable("$-0", &rb_rs, 0, rb_str_setter);
+    rb_define_hooked_variable("$/", &rb_rs, 0, deprecated_str_setter);
+    rb_define_hooked_variable("$-0", &rb_rs, 0, deprecated_str_setter);
     rb_define_hooked_variable("$\\", &rb_output_rs, 0, deprecated_str_setter);
 
     rb_define_virtual_variable("$_", get_LAST_READ_LINE, set_LAST_READ_LINE);

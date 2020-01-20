@@ -71,11 +71,12 @@ describe :stringio_each_no_arguments, shared: true do
   it "uses $/ as the default line separator" do
     seen = []
     begin
-      old_rs, $/ = $/, " "
+      old_rs = $/
+      suppress_warning {$/ = " "}
       @io.send(@method) {|s| seen << s }
       seen.should eql(["a ", "b ", "c ", "d ", "e\n1 ", "2 ", "3 ", "4 ", "5"])
     ensure
-      $/ = old_rs
+      suppress_warning {$/ = old_rs}
     end
   end
 

@@ -84,7 +84,7 @@ describe :string_each_line, shared: true do
     end
 
     after :each do
-      $/ = @before_separator
+      suppress_warning {$/ = @before_separator}
     end
 
     it "as the separator when none is given" do
@@ -96,10 +96,10 @@ describe :string_each_line, shared: true do
           expected = []
           str.send(@method, sep) { |x| expected << x }
 
-          $/ = sep
+          suppress_warning {$/ = sep}
 
           actual = []
-          str.send(@method) { |x| actual << x }
+          suppress_warning {str.send(@method) { |x| actual << x }}
 
           actual.should == expected
         end

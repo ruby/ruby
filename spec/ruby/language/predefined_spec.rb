@@ -541,6 +541,7 @@ $stdout          IO              The current standard output. Assignment to $std
 
 describe "Predefined global $/" do
   before :each do
+    @verbose, $VERBOSE = $VERBOSE, nil
     @dollar_slash = $/
     @dollar_dash_zero = $-0
   end
@@ -548,6 +549,7 @@ describe "Predefined global $/" do
   after :each do
     $/ = @dollar_slash
     $-0 = @dollar_dash_zero
+    $VERBOSE = @verbose
   end
 
   it "can be assigned a String" do
@@ -589,6 +591,7 @@ end
 
 describe "Predefined global $-0" do
   before :each do
+    @verbose, $VERBOSE = $VERBOSE, nil
     @dollar_slash = $/
     @dollar_dash_zero = $-0
   end
@@ -596,6 +599,7 @@ describe "Predefined global $-0" do
   after :each do
     $/ = @dollar_slash
     $-0 = @dollar_dash_zero
+    $VERBOSE = @verbose
   end
 
   it "can be assigned a String" do

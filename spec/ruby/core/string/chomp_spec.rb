@@ -6,11 +6,13 @@ describe "String#chomp" do
   describe "when passed no argument" do
     before do
       # Ensure that $/ is set to the default value
+      @verbose, $VERBOSE = $VERBOSE, nil
       @dollar_slash, $/ = $/, "\n"
     end
 
     after do
       $/ = @dollar_slash
+      $VERBOSE = @verbose
     end
 
     it "does not modify a String with no trailing carriage return or newline" do
@@ -179,11 +181,13 @@ describe "String#chomp!" do
   describe "when passed no argument" do
     before do
       # Ensure that $/ is set to the default value
+      @verbose, $VERBOSE = $VERBOSE, nil
       @dollar_slash, $/ = $/, "\n"
     end
 
     after do
       $/ = @dollar_slash
+      $VERBOSE = @verbose
     end
 
     it "modifies self" do
@@ -350,11 +354,13 @@ end
 
 describe "String#chomp" do
   before :each do
+    @verbose, $VERBOSE = $VERBOSE, nil
     @before_separator = $/
   end
 
   after :each do
     $/ = @before_separator
+    $VERBOSE = @verbose
   end
 
   it "does not modify a multi-byte character" do
@@ -379,11 +385,13 @@ end
 
 describe "String#chomp!" do
   before :each do
+    @verbose, $VERBOSE = $VERBOSE, nil
     @before_separator = $/
   end
 
   after :each do
     $/ = @before_separator
+    $VERBOSE = @verbose
   end
 
   it "returns nil when the String is not modified" do

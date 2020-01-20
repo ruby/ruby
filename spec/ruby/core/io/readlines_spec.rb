@@ -22,11 +22,11 @@ describe "IO#readlines" do
 
   describe "when passed no arguments" do
     before :each do
-      @sep, $/ = $/, " "
+      suppress_warning {@sep, $/ = $/, " "}
     end
 
     after :each do
-      $/ = @sep
+      suppress_warning {$/ = @sep}
     end
 
     it "returns an Array containing lines based on $/" do
@@ -184,7 +184,7 @@ describe "IO.readlines" do
   after :each do
     Encoding.default_external = @external
     Encoding.default_internal = @internal
-    $/ = @dollar_slash
+    suppress_warning {$/ = @dollar_slash}
   end
 
   it "encodes lines using the default external encoding" do
@@ -196,7 +196,7 @@ describe "IO.readlines" do
   it "encodes lines using the default internal encoding, when set" do
     Encoding.default_external = Encoding::UTF_8
     Encoding.default_internal = Encoding::UTF_16
-    $/ = $/.encode Encoding::UTF_16
+    suppress_warning {$/ = $/.encode Encoding::UTF_16}
     lines = IO.readlines(@name)
     lines.all? { |s| s.encoding == Encoding::UTF_16 }.should be_true
   end

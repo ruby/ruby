@@ -64,12 +64,13 @@ describe "StringIO#readline when passed no argument" do
     @io.readline.should == "this is\n"
 
     begin
-      old_sep, $/ = $/, " "
+      old_sep = $/
+      suppress_warning {$/ = " "}
       @io.readline.should == "an "
       @io.readline.should == "example\nfor "
       @io.readline.should == "StringIO#readline"
     ensure
-      $/ = old_sep
+      suppress_warning {$/ = old_sep}
     end
   end
 

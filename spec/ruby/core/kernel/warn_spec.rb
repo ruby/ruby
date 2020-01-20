@@ -8,8 +8,9 @@ describe "Kernel#warn" do
   end
 
   after :each do
-    $VERBOSE = @before_verbose
+    $VERBOSE = nil
     $/ = @before_separator
+    $VERBOSE = @before_verbose
   end
 
   it "is a private method" do

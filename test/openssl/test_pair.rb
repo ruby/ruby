@@ -160,10 +160,10 @@ module OpenSSL::TestPairM
     ssl_pair {|s1, s2|
       begin
         old = $/
-        $/ = '*'
+        EnvUtil.suppress_warning {$/ = '*'}
         s1.puts 'a'
       ensure
-        $/ = old
+        EnvUtil.suppress_warning {$/ = old}
       end
       s1.close
       assert_equal("a\n", s2.read)

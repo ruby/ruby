@@ -49,7 +49,7 @@ module KernelSpecs
 
   def self.chomp(str, method, sep="\n")
     code = "$_ = #{str.inspect}; $/ = #{sep.inspect}; #{method}; print $_"
-    IO.popen([*ruby_exe, "-n", "-e", code], "r+") do |io|
+    IO.popen([*ruby_exe, "-W0", "-n", "-e", code], "r+") do |io|
       io.puts
       io.close_write
       io.read
