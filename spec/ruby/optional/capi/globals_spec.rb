@@ -140,7 +140,7 @@ describe "CApiGlobalSpecs" do
     end
 
     after :each do
-      $\ = @dollar_backslash
+      suppress_warning {$\ = @dollar_backslash}
     end
 
     it "returns nil by default" do
@@ -148,7 +148,7 @@ describe "CApiGlobalSpecs" do
     end
 
     it "returns the value of $\\" do
-      $\ = "foo"
+      suppress_warning {$\ = "foo"}
       @f.rb_output_rs.should == "foo"
     end
   end

@@ -30,11 +30,12 @@ describe "StringIO#puts when passed an Array" do
 
   it "does not honor the global output record separator $\\" do
     begin
-      old_rs, $\ = $\, "test"
+      old_rs = $\
+      suppress_warning {$\ = "test"}
       @io.puts([1, 2, 3, 4])
       @io.string.should == "1\n2\n3\n4\n"
     ensure
-      $\ = old_rs
+      suppress_warning {$\ = old_rs}
     end
   end
 
@@ -68,11 +69,12 @@ describe "StringIO#puts when passed 1 or more objects" do
 
   it "does not honor the global output record separator $\\" do
     begin
-      old_rs, $\ = $\, "test"
+      old_rs = $\
+      suppress_warning {$\ = "test"}
       @io.puts(1, 2, 3, 4)
       @io.string.should == "1\n2\n3\n4\n"
     ensure
-      $\ = old_rs
+      suppress_warning {$\ = old_rs}
     end
   end
 
@@ -117,11 +119,12 @@ describe "StringIO#puts when passed no arguments" do
 
   it "does not honor the global output record separator $\\" do
     begin
-      old_rs, $\ = $\, "test"
+      old_rs = $\
+      suppress_warning {$\ = "test"}
       @io.puts
       @io.string.should == "\n"
     ensure
-      $\ = old_rs
+      suppress_warning {$\ = old_rs}
     end
   end
 end

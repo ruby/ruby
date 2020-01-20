@@ -67,18 +67,18 @@ describe "English" do
 
   it "aliases $ORS to $\\" do
     original = $\
-    $\ = "\t"
+    suppress_warning {$\ = "\t"}
     $ORS.should_not be_nil
     $ORS.should == $\
-    $\ = original
+    suppress_warning {$\ = original}
   end
 
   it "aliases $OUTPUT_RECORD_SEPARATOR to $\\" do
     original = $\
-    $\ = "\t"
+    suppress_warning {$\ = "\t"}
     $OUTPUT_RECORD_SEPARATOR.should_not be_nil
     $OUTPUT_RECORD_SEPARATOR.should == $\
-    $\ = original
+    suppress_warning {$\ = original}
   end
 
   it "aliases $INPUT_LINE_NUMBER to $." do

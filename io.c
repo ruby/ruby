@@ -7570,11 +7570,11 @@ rb_f_printf(int argc, VALUE *argv, VALUE _)
 }
 
 static void
-rb_output_fs_setter(VALUE val, ID id, VALUE *var)
+deprecated_str_setter(VALUE val, ID id, VALUE *var)
 {
     rb_str_setter(val, id, &val);
     if (!NIL_P(val)) {
-        rb_warn_deprecated("`$,'", NULL);
+        rb_warn_deprecated("`%s'", NULL, rb_id2name(id));
     }
     *var = val;
 }
@@ -13282,7 +13282,7 @@ Init_IO(void)
     rb_define_method(rb_cIO, "initialize", rb_io_initialize, -1);
 
     rb_output_fs = Qnil;
-    rb_define_hooked_variable("$,", &rb_output_fs, 0, rb_output_fs_setter);
+    rb_define_hooked_variable("$,", &rb_output_fs, 0, deprecated_str_setter);
 
     rb_default_rs = rb_fstring_lit("\n"); /* avoid modifying RS_default */
     rb_gc_register_mark_object(rb_default_rs);
@@ -13290,7 +13290,7 @@ Init_IO(void)
     rb_output_rs = Qnil;
     rb_define_hooked_variable("$/", &rb_rs, 0, rb_str_setter);
     rb_define_hooked_variable("$-0", &rb_rs, 0, rb_str_setter);
-    rb_define_hooked_variable("$\\", &rb_output_rs, 0, rb_str_setter);
+    rb_define_hooked_variable("$\\", &rb_output_rs, 0, deprecated_str_setter);
 
     rb_define_virtual_variable("$_", get_LAST_READ_LINE, set_LAST_READ_LINE);
 
