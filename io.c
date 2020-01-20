@@ -7615,6 +7615,9 @@ rb_io_print(int argc, const VALUE *argv, VALUE out)
 	line = rb_lastline_get();
 	argv = &line;
     }
+    if (argc > 1 && !NIL_P(rb_output_fs)) {
+        rb_warn("$, is set to non-nil value");
+    }
     for (i=0; i<argc; i++) {
 	if (!NIL_P(rb_output_fs) && i>0) {
 	    rb_io_write(out, rb_output_fs);

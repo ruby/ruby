@@ -2572,7 +2572,7 @@ class TestIO < Test::Unit::TestCase
     $\ = "\n"
     pipe(proc do |w|
       w.print('a')
-      w.print('a','b','c')
+      EnvUtil.suppress_warning {w.print('a','b','c')}
       w.close
     end, proc do |r|
       assert_equal("a\n", r.gets)
