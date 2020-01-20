@@ -2252,8 +2252,10 @@ glob_opendir(ruby_glob_entries_t *ent, DIR *dirp, int flags, rb_encoding *enc)
         }
         closedir(dirp);
         if (count < capacity) {
-            if (!(newp = GLOB_REALLOC_N(ent->sort.entries, count)))
-                goto nomem;
+            if (!(newp = GLOB_REALLOC_N(ent->sort.entries, count))) {
+                glob_dir_finish(ent, 0);
+                return NULL;
+            }
             ent->sort.entries = newp;
         }
         ruby_qsort(ent->sort.entries, ent->sort.count, sizeof(ent->sort.entries[0]),
