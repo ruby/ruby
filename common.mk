@@ -1210,6 +1210,8 @@ benchmark: miniruby$(EXEEXT) update-benchmark-driver PHONY
 
 run.gdb:
 	echo set breakpoint pending on         > run.gdb
+	echo b rb_assert_failure              >> run.gdb
+	echo b rb_bug                         >> run.gdb
 	echo b ruby_debug_breakpoint          >> run.gdb
 	echo '# handle SIGINT nostop'         >> run.gdb
 	echo '# handle SIGPIPE nostop'        >> run.gdb
