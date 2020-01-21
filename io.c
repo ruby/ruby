@@ -316,7 +316,6 @@ rb_cloexec_open(const char *pathname, int flags, mode_t mode)
     static const int retry_max_count = 10000;
 
     int retry_count = 0;
-    int e;
 
 #ifdef O_CLOEXEC
     /* O_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
@@ -325,15 +324,11 @@ rb_cloexec_open(const char *pathname, int flags, mode_t mode)
     flags |= O_NOINHERIT;
 #endif
 
-    while (1) {
-        ret = open(pathname, flags, mode);
-        e = errno;
+    while ((ret = open(pathname, flags, mode)) == -1) {
+        int e = errno;
+        if (e != EAGAIN && e != EWOULDBLOCK) break;
+        if (retry_count++ >= retry_max_count) break;
 
-        if (ret != -1 || e != EAGAIN || retry_count >= retry_max_count) {
-            break;
-        }
-
-        retry_count++;
         sleep(retry_interval);
     }
 
