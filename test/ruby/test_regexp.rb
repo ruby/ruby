@@ -62,6 +62,13 @@ class TestRegexp < Test::Unit::TestCase
     Regexp.union("a", "a")
   end
 
+  def test_literal_deduplication
+    assert_same(/a/, /a/)
+    refute_same(/a/, /a/m)
+    refute_same(/a/, Regexp.new('a'))
+    assert_equal(/a/, Regexp.new('a'))
+  end
+
   def test_to_s
     assert_equal '(?-mix:\x00)', Regexp.new("\0").to_s
 

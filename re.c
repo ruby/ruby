@@ -13,12 +13,15 @@
 
 #include <ctype.h>
 
+#include "debug_counter.h"
 #include "encindex.h"
+#include "gc.h"
 #include "internal.h"
 #include "internal/error.h"
 #include "internal/hash.h"
 #include "internal/imemo.h"
 #include "internal/re.h"
+#include "internal/vm.h"
 #include "regint.h"
 #include "ruby/encoding.h"
 #include "ruby/re.h"
@@ -2956,33 +2959,41 @@ rb_reg_new(const char *s, long len, int options)
     return rb_enc_reg_new(s, len, rb_ascii8bit_encoding(), options);
 }
 
-VALUE
-rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline)
+static int
+reg_lit_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 {
-    VALUE re = rb_reg_alloc();
-    onig_errmsg_buffer err = "";
+    VALUE *new_re = (VALUE *)arg;
+    VALUE re = (VALUE)*key;
 
-    if (!str) str = rb_str_new(0,0);
-    if (rb_reg_initialize_str(re, str, options, err, sourcefile, sourceline) != 0) {
-	rb_set_errinfo(rb_reg_error_desc(str, options, err));
-	return Qnil;
+    if (existing) {
+        /* because of lazy sweep, str may be unmarked already and swept
+        * at next time */
+
+        if (rb_objspace_garbage_object_p(re)) {
+            *new_re = Qundef;
+            return ST_DELETE;
+        }
+
+        *new_re = re;
+        return ST_STOP;
+    } else {
+        FL_SET(re, REG_LITERAL);
+        rb_obj_freeze(re);
+
+        *key = *new_re = re;
+        *value = RREGEXP_SRC(re);
+        return ST_CONTINUE;
     }
-    FL_SET(re, REG_LITERAL);
-    rb_obj_freeze(re);
-    return re;
 }
 
-static VALUE reg_cache;
-
-VALUE
-rb_reg_regcomp(VALUE str)
+static st_index_t
+reg_lit_hash(VALUE re)
 {
-    if (reg_cache && RREGEXP_SRC_LEN(reg_cache) == RSTRING_LEN(str)
-	&& ENCODING_GET(reg_cache) == ENCODING_GET(str)
-	&& memcmp(RREGEXP_SRC_PTR(reg_cache), RSTRING_PTR(str), RSTRING_LEN(str)) == 0)
-	return reg_cache;
-
-    return reg_cache = rb_reg_new_str(str, 0);
+    st_index_t hashval;
+    hashval = rb_reg_options(re);
+    hashval ^= ENCODING_GET(re);
+    hashval = rb_hash_uint(hashval, rb_memhash(RREGEXP_SRC_PTR(re), RREGEXP_SRC_LEN(re)));
+    return rb_hash_end(hashval);
 }
 
 static st_index_t reg_hash(VALUE re);
@@ -3013,6 +3024,70 @@ reg_hash(VALUE re)
     return rb_hash_end(hashval);
 }
 
+VALUE
+rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline)
+{
+    VALUE re, ret;
+    onig_errmsg_buffer err = "";
+    st_table *regexp_literals = rb_vm_regexp_literals_table();
+
+    if (!str) str = rb_str_new(0,0);
+    re = rb_reg_alloc();
+    if (rb_reg_initialize_str(re, str, options, err, sourcefile, sourceline) != 0) {
+        rb_set_errinfo(rb_reg_error_desc(str, options, err));
+        return Qnil;
+    }
+
+    do {
+        ret = re;
+        st_update(regexp_literals, (st_data_t)re,
+        reg_lit_update_callback, (st_data_t)&ret);
+    } while (ret == Qundef);
+    return ret;
+}
+
+void
+rb_reg_free(VALUE re) {
+    if (FL_TEST(re, REG_LITERAL)) {
+        st_data_t regexp_literal = (st_data_t)re;
+        st_delete(rb_vm_regexp_literals_table(), &regexp_literal, NULL);
+    }
+
+    onig_free(RREGEXP_PTR(re));
+    RB_DEBUG_COUNTER_INC(obj_regexp_ptr);
+}
+
+static VALUE reg_cache;
+
+VALUE
+rb_reg_regcomp(VALUE str)
+{
+    if (reg_cache && RREGEXP_SRC_LEN(reg_cache) == RSTRING_LEN(str)
+	&& ENCODING_GET(reg_cache) == ENCODING_GET(str)
+	&& memcmp(RREGEXP_SRC_PTR(reg_cache), RSTRING_PTR(str), RSTRING_LEN(str)) == 0)
+	return reg_cache;
+
+    return reg_cache = rb_reg_new_str(str, 0);
+}
+
+static int
+reg_cmp(VALUE re1, VALUE re2)
+{
+    if (re1 == re2) return 0;
+
+    if (!RB_TYPE_P(re2, T_REGEXP)) return 1;
+    if (FL_TEST(re1, KCODE_FIXED) != FL_TEST(re2, KCODE_FIXED)) return 1;
+    if (RREGEXP_PTR(re1)->options != RREGEXP_PTR(re2)->options) return 1;
+    if (RREGEXP_SRC_LEN(re1) != RREGEXP_SRC_LEN(re2)) return 1;
+    if (ENCODING_GET(re1) != ENCODING_GET(re2)) return 1;
+
+    return memcmp(RREGEXP_SRC_PTR(re1), RREGEXP_SRC_PTR(re2), RREGEXP_SRC_LEN(re1));
+}
+
+const struct st_hash_type rb_regexp_literal_hash_type = {
+    reg_cmp,
+    reg_lit_hash,
+};
 
 /*
  *  call-seq:
@@ -3035,14 +3110,7 @@ rb_reg_equal(VALUE re1, VALUE re2)
     if (re1 == re2) return Qtrue;
     if (!RB_TYPE_P(re2, T_REGEXP)) return Qfalse;
     rb_reg_check(re1); rb_reg_check(re2);
-    if (FL_TEST(re1, KCODE_FIXED) != FL_TEST(re2, KCODE_FIXED)) return Qfalse;
-    if (RREGEXP_PTR(re1)->options != RREGEXP_PTR(re2)->options) return Qfalse;
-    if (RREGEXP_SRC_LEN(re1) != RREGEXP_SRC_LEN(re2)) return Qfalse;
-    if (ENCODING_GET(re1) != ENCODING_GET(re2)) return Qfalse;
-    if (memcmp(RREGEXP_SRC_PTR(re1), RREGEXP_SRC_PTR(re2), RREGEXP_SRC_LEN(re1)) == 0) {
-	return Qtrue;
-    }
-    return Qfalse;
+    return reg_cmp(re1, re2) == 0 ? Qtrue : Qfalse;
 }
 
 /*
