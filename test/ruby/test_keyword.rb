@@ -2429,8 +2429,8 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h1], o.baz(1, h1))
     assert_equal([h1], o.baz(h1, **{}))
 
-    assert_equal([[1, h1], {}], o.foo(:pass_bar, 1, :a=>1))
-    assert_equal([[1, h1], {}], o.foo(:pass_cfunc, 1, :a=>1))
+    assert_equal([[1], h1], o.foo(:pass_bar, 1, :a=>1))
+    assert_equal([[1], h1], o.foo(:pass_cfunc, 1, :a=>1))
 
     assert_warn(/Skipping set of ruby2_keywords flag for bar \(method accepts keywords or method does not accept argument splat\)/) do
       assert_nil(c.send(:ruby2_keywords, :bar))
