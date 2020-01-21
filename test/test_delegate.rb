@@ -330,4 +330,12 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_equal(1, delegate.bar)
     assert_raise(NoMethodError, /undefined method `foo' for/) { delegate.foo }
   end
+
+  def test_keyword_argument
+    k = EnvUtil.labeled_class("Target") do
+      def test(a, k:) [a, k]; end
+    end
+    a = DelegateClass(k).new(k.new)
+    assert_equal([1, 0], a.test(1, k: 0))
+  end
 end

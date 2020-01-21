@@ -334,7 +334,7 @@ def Delegator.delegating_block(mid) # :nodoc:
   lambda do |*args, &block|
     target = self.__getobj__
     target.__send__(mid, *args, &block)
-  end
+  end.ruby2_keywords
 end
 
 #
