@@ -62,7 +62,7 @@ static struct {
 static void
 rb_class_clear_method_cache(VALUE klass, VALUE arg)
 {
-    VALUE old_serial = *(rb_serial_t *)arg;
+    rb_serial_t old_serial = *(rb_serial_t *)arg;
     if (RCLASS_SERIAL(klass) > old_serial) {
         return;
     }
