@@ -11301,7 +11301,8 @@ new_args(struct parser_params *p, NODE *pre_args, NODE *opt_args, ID rest_arg, N
 
     args->opt_args       = opt_args;
 
-    args->ruby2_keywords = rest_arg == idFWD_REST;
+    args->ruby2_keywords = (rest_arg == idFWD_REST) ||
+        (rest_arg && !args->kw_args && !args->kw_rest_arg && !args->no_kwarg);
 
     p->ruby_sourceline = saved_line;
     nd_set_loc(tail, loc);
