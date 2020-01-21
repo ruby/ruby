@@ -1922,6 +1922,18 @@ class Reline::LineEditor
   end
 
   private def vi_change_meta(key)
+    @waiting_operator_proc = proc { |cursor_diff, byte_pointer_diff|
+      if byte_pointer_diff > 0
+        @line, cut = byteslice!(@line, @byte_pointer, byte_pointer_diff)
+      elsif byte_pointer_diff < 0
+        @line, cut = byteslice!(@line, @byte_pointer + byte_pointer_diff, -byte_pointer_diff)
+      end
+      copy_for_vi(cut)
+      @cursor += cursor_diff if cursor_diff < 0
+      @cursor_max -= cursor_diff.abs
+      @byte_pointer += byte_pointer_diff if byte_pointer_diff < 0
+      @config.editing_mode = :vi_insert
+    }
   end
 
   private def vi_delete_meta(key)
