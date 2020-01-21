@@ -312,13 +312,31 @@ rb_cloexec_open(const char *pathname, int flags, mode_t mode)
     int ret;
     static int o_cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
 
+    static const int retry_interval = 0;
+    static const int retry_max_count = 10000;
+
+    int retry_count = 0;
+    int e;
+
 #ifdef O_CLOEXEC
     /* O_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
     flags |= O_CLOEXEC;
 #elif defined O_NOINHERIT
     flags |= O_NOINHERIT;
 #endif
-    ret = open(pathname, flags, mode);
+
+    while (1) {
+        ret = open(pathname, flags, mode);
+        e = errno;
+
+        if (ret != -1 || e != EAGAIN || retry_count >= retry_max_count) {
+            break;
+        }
+
+        retry_count++;
+        sleep(retry_interval);
+    }
+
     if (ret < 0) return ret;
     if (ret <= 2 || o_cloexec_state == 0) {
 	rb_maygvl_fd_fix_cloexec(ret);
