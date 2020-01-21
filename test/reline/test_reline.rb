@@ -269,6 +269,7 @@ class Reline::Test < Reline::TestCase
   end
 
   def get_reline_encoding
-    RUBY_PLATFORM =~ /mswin|mingw/ ? Encoding::UTF_8 : Encoding::default_external
+    (RUBY_PLATFORM.match? /mswin|mingw/ and !STDOUT.tty?) ?
+      Encoding::UTF_8 : Encoding::default_external
   end
 end
