@@ -6625,6 +6625,9 @@ bigdivrem_mpz(mpz_t mx, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
         mpz_t my;
         mpz_init_set_bignum(my, y);
 
+        if (0 == mpz_cmp_ui(my, 0))
+          rb_num_zerodiv();
+
         if (!modp) {
             mpz_tdiv_q(mq, mx, my);
         }
@@ -6638,6 +6641,9 @@ bigdivrem_mpz(mpz_t mx, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
         mpz_clear(my);
     }
     else {
+        if (0 == mpz_cmp_ui(*BIGNUM_MPZ(y), 0))
+          rb_num_zerodiv();
+
         if (!modp) {
             mpz_tdiv_q(mq, mx, *BIGNUM_MPZ(y));
         }
@@ -6806,6 +6812,9 @@ bigdivmod_mpz(const mpz_t mx, VALUE y, volatile VALUE *divp, volatile VALUE *mod
         mpz_t my;
         mpz_init_set_bignum(my, y);
 
+        if (0 == mpz_cmp_ui(my, 0))
+          rb_num_zerodiv();
+
         if (!modp) {
             mpz_fdiv_q(mq, mx, my);
         }
@@ -6819,6 +6828,9 @@ bigdivmod_mpz(const mpz_t mx, VALUE y, volatile VALUE *divp, volatile VALUE *mod
         mpz_clear(my);
     }
     else {
+        if (0 == mpz_cmp_ui(*BIGNUM_MPZ(y), 0))
+          rb_num_zerodiv();
+
         if (!modp) {
             mpz_fdiv_q(mq, mx, *BIGNUM_MPZ(y));
         }
