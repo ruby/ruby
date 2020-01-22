@@ -5372,7 +5372,6 @@ big2str_gmp(VALUE x, int base)
     size = mpz_sizeinbase(mx, base);
 
     if (BIGNUM_NEGATIVE_P(x)) {
-        mpz_neg(mx, mx);
         str = rb_usascii_str_new(0, size+1);
     }
     else {
