@@ -1,5 +1,13 @@
 # sync following repositories to ruby repository
 #
+# Usage:
+# git clone from the upstream repository and copy from the upstream repository with cp -rf. It's lost the git commits.
+# $ ruby tool/sync_default_gems.rb rubygems
+# pick the single commit from the upstream repository.
+# $ ruby tool/sync_default_gems.rb rubygems 97e9768612
+# pick the commits range from the upstream repository
+# $ ruby tool/sync_default_gems.rb rubygems 97e9768612..9e53702832
+#
 # * https://github.com/rubygems/rubygems
 # * https://github.com/rubygems/bundler
 # * https://github.com/ruby/rdoc
