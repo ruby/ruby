@@ -62,7 +62,7 @@ $repositories = {
   fileutils: 'ruby/fileutils',
   fiddle: 'ruby/fiddle',
   stringio: 'ruby/stringio',
-  ioconsole: 'ruby/io-console',
+  "io-console": 'ruby/io-console',
   csv: 'ruby/csv',
   webrick: 'ruby/webrick',
   dbm: 'ruby/dbm',
@@ -89,11 +89,11 @@ $repositories = {
   pstore: "ruby/pstore",
   delegate: "ruby/delegate",
   benchmark: "ruby/benchmark",
-  netpop: "ruby/net-pop",
-  netsmtp: "ruby/net-smtp",
+  "net-pop": "ruby/net-pop",
+  "net-smtp": "ruby/net-smtp",
   cgi: "ruby/cgi",
   readline: "ruby/readline",
-  readlineext: "ruby/readline-ext",
+  "readline-ext": "ruby/readline-ext",
   observer: "ruby/observer",
   timeout: "ruby/timeout",
   yaml: "ruby/yaml",
@@ -166,7 +166,7 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/test/stringio", "test")
     cp_r("#{upstream}/stringio.gemspec", "ext/stringio")
     `git checkout ext/stringio/depend ext/stringio/README.md`
-  when "ioconsole"
+  when "io-console"
     rm_rf(%w[ext/io/console test/io/console])
     cp_r("#{upstream}/ext/io/console", "ext/io")
     cp_r("#{upstream}/test/io/console", "test/io")
@@ -252,13 +252,13 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/openssl.gemspec", "ext/openssl")
     cp_r("#{upstream}/HISTORY.md", "ext/openssl")
     `git checkout ext/openssl/depend`
-  when "netpop"
+  when "net-pop"
     sync_lib "net-pop"
     mv "lib/net-pop.gemspec", "lib/net/pop"
-  when "netsmtp"
+  when "net-smtp"
     sync_lib "net-smtp"
     mv "lib/net-smtp.gemspec", "lib/net/smtp"
-  when "readlineext"
+  when "readline-ext"
     sync_lib "readline-ext"
     mv "lib/readline-ext.gemspec", "ext/readline"
   when "did_you_mean"
