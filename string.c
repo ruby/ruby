@@ -910,14 +910,14 @@ rb_enc_str_new_static(const char *ptr, long len, rb_encoding *enc)
 VALUE
 rb_tainted_str_new(const char *ptr, long len)
 {
-    rb_warning("rb_tainted_str_new is deprecated and will be removed in Ruby 3.2.");
+    rb_warn("rb_tainted_str_new is deprecated and will be removed in Ruby 3.2.");
     return rb_str_new(ptr, len);
 }
 
 VALUE
 rb_tainted_str_new_cstr(const char *ptr)
 {
-    rb_warning("rb_tainted_str_new_cstr is deprecated and will be removed in Ruby 3.2.");
+    rb_warn("rb_tainted_str_new_cstr is deprecated and will be removed in Ruby 3.2.");
     return rb_str_new_cstr(ptr);
 }
 
