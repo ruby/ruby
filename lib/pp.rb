@@ -223,7 +223,16 @@ class PP < PrettyPrint
         else
           sep.call
         end
-        yield(*v)
+        case v.last
+        when Hash
+          if Hash.ruby2_keywords_hash?(v.last)
+            yield(*v, **{})
+          else
+            yield(*v)
+          end
+        else
+          yield(*v)
+        end
       }
     end
 
