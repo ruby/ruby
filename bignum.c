@@ -6450,8 +6450,10 @@ rb_big_minus(VALUE x, VALUE y)
     else if (RB_BIGNUM_TYPE_P(y)) {
 #ifdef USE_GMP
         if (! BIGNUM_EMBED_P(y)) {
-            VALUE z = big_minus_mpz(*BIGNUM_MPZ(y), x);
-            BIGNUM_SET_SIGN(z, !BIGNUM_SIGN(z));
+            mpz_t mx;
+            mpz_init_set_bignum(mx, x);
+            VALUE z = big_minus_mpz(mx, y);
+            mpz_clear(mx);
             return z;
         }
         else
