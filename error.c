@@ -3035,14 +3035,14 @@ rb_check_frozen(VALUE obj)
 void
 rb_error_untrusted(VALUE obj)
 {
-    rb_warning("rb_error_untrusted is deprecated and will be removed in Ruby 3.2.");
+    rb_warn("rb_error_untrusted is deprecated and will be removed in Ruby 3.2.");
 }
 
 #undef rb_check_trusted
 void
 rb_check_trusted(VALUE obj)
 {
-    rb_warning("rb_check_trusted is deprecated and will be removed in Ruby 3.2.");
+    rb_warn("rb_check_trusted is deprecated and will be removed in Ruby 3.2.");
 }
 
 void
