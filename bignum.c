@@ -2356,6 +2356,7 @@ mpz_init_set_bignum(mpz_t mp, VALUE x)
 {
     if (BIGNUM_EMBED_P(x)) {
         mpz_init_set_bdigits(mp, BDIGITS(x), BIGNUM_LEN(x));
+        if (BIGNUM_NEGATIVE_P(x)) mpz_neg(mp, mp);
     }
     else {
         mpz_init_set(mp, *BIGNUM_MPZ(x));
@@ -3206,8 +3207,11 @@ big_extend_carry(VALUE x)
         BDIGIT xds[BIGNUM_EMBED_LEN_MAX + 1];
         MEMCPY(xds, BDIGITS(x), BDIGIT, BIGNUM_EMBED_LEN_MAX);
         xds[BIGNUM_EMBED_LEN_MAX] = 1;
+
+        int sign = BIGNUM_SIGN(x);
         FL_UNSET_RAW(x, BIGNUM_EMBED_FLAG);
         mpz_init_set_bdigits(*BIGNUM_MPZ(x), xds, BIGNUM_EMBED_LEN_MAX+1);
+        BIGNUM_SET_SIGN(x, sign);
     }
     else
 #endif
