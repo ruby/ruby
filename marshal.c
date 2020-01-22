@@ -881,7 +881,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
             if (! BIGNUM_EMBED_P(obj)) {
                 const size_t nbytes = rb_absint_size_mpz(*BIGNUM_MPZ(obj), NULL);
 
-                const size_t slen = nbytes/2;
+                const size_t slen = (nbytes+1)/2;
                 if (LONG_MAX < slen) {
                     rb_raise(rb_eTypeError, "too big Bignum can't be dumped");
                 }
