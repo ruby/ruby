@@ -7832,33 +7832,33 @@ rb_big_rshift(VALUE x, VALUE y)
 static VALUE
 big_aref_mpz_ui(const mpz_t mx, size_t shift)
 {
-    const size_t BITS_PER_MP_LIMB = sizeof(mp_limb_t)*CHAR_BIT;
-    const size_t s1 = shift / BITS_PER_MP_LIMB;
+    const mp_size_t s1 = shift / mp_bits_per_limb;
     const bool positive_p = mpz_sgn(mx) >= 0;
 
-    if (s1 >= mpz_size(mx)) {
+    if ((size_t)s1 >= mpz_size(mx)) {
         return positive_p ? INT2FIX(0) : INT2FIX(1);
     }
 
-    const size_t s2 = shift % BITS_PER_MP_LIMB;
+    const size_t s2 = shift % mp_bits_per_limb;
     const mp_limb_t bit = (mp_limb_t)1 << s2;
-    const mp_limb_t *limbs = mpz_limbs_read(mx);
+    const mp_limb_t limb = mpz_getlimbn(mx, s1);
 
     if (positive_p) {
-        return (limbs[s1] & bit) ? INT2FIX(1) : INT2FIX(0);
+        return (limb & bit) ? INT2FIX(1) : INT2FIX(0);
     }
-    else if (limbs[s1] & (bit - 1)) {
-        return (limbs[s1] & bit) ? INT2FIX(0) : INT2FIX(1);
+    else if (limb & (bit - 1)) {
+        return (limb & bit) ? INT2FIX(0) : INT2FIX(1);
     }
     else {
-        size_t i;
+        const mp_limb_t* limbs = mpz_limbs_read(mx);
+        mp_size_t i;
         for (i = 0; i < s1; ++i) {
             if (limbs[i]) {
                 return (limbs[s1] & bit) ? INT2FIX(0) : INT2FIX(1);
             }
         }
+        return (limbs[s1] & bit) ? INT2FIX(1) : INT2FIX(0);
     }
-    return (limbs[s1] & bit) ? INT2FIX(1) : INT2FIX(0);
 }
 #endif
 
