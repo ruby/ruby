@@ -223,7 +223,7 @@ class PP < PrettyPrint
         else
           sep.call
         end
-        yield(*v)
+        yield(*v, **{})
       }
     end
 
