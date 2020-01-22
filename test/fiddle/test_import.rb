@@ -54,6 +54,28 @@ module Fiddle
       assert_match(/call dlload before/, err.message)
     end
 
+    def test_struct_memory_access()
+      # check memory operations performed directly on struct
+      my_struct = Fiddle::Importer.struct(['int id']).malloc
+      my_struct[0, Fiddle::SIZEOF_INT] = "\x01".b * Fiddle::SIZEOF_INT
+      assert_equal 0x01010101, my_struct.id
+
+      my_struct.id = 0
+      assert_equal "\x00".b * Fiddle::SIZEOF_INT, my_struct[0, Fiddle::SIZEOF_INT]
+    end
+
+    def test_struct_ptr_array_subscript_multiarg()
+      # check memory operations performed on struct#to_ptr
+      struct = Fiddle::Importer.struct([ 'int x' ]).malloc
+      ptr = struct.to_ptr
+
+      struct.x = 0x02020202
+      assert_equal("\x02".b * Fiddle::SIZEOF_INT, ptr[0, Fiddle::SIZEOF_INT])
+
+      ptr[0, Fiddle::SIZEOF_INT] = "\x01".b * Fiddle::SIZEOF_INT
+      assert_equal 0x01010101, struct.x
+    end
+
     def test_malloc()
       s1 = LIBC::Timeval.malloc()
       s2 = LIBC::Timeval.malloc()

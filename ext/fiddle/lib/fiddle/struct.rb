@@ -54,6 +54,8 @@ module Fiddle
           @entity = klass.entity_class.new(addr, types)
           @entity.assign_names(members)
         }
+        define_method(:[]) { |*args| @entity.send(:[], *args) }
+        define_method(:[]=) { |*args| @entity.send(:[]=, *args) }
         define_method(:to_ptr){ @entity }
         define_method(:to_i){ @entity.to_i }
         members.each{|name|
@@ -148,8 +150,21 @@ module Fiddle
       @size = PackInfo.align(offset, max_align)
     end
 
-    # Fetch struct member +name+
-    def [](name)
+    # Fetch struct member +name+ if only one argument is specified. If two
+    # arguments are specified, the first is an offset and the second is a
+    # length and this method returns the string of +length+ bytes beginning at
+    # +offset+.
+    #
+    # Examples:
+    #
+    #     my_struct = struct(['int id']).malloc
+    #     my_struct.id = 1
+    #     my_struct['id'] # => 1
+    #     my_struct[0, 4] # => "\x01\x00\x00\x00".b
+    #
+    def [](*args)
+      return super(*args) if args.size > 1
+      name = args[0]
       idx = @members.index(name)
       if( idx.nil? )
         raise(ArgumentError, "no such member: #{name}")
@@ -182,8 +197,20 @@ module Fiddle
       end
     end
 
-    # Set struct member +name+, to value +val+
-    def []=(name, val)
+    # Set struct member +name+, to value +val+. If more arguments are
+    # specified, writes the string of bytes to the memory at the given
+    # +offset+ and +length+.
+    #
+    # Examples:
+    #
+    #     my_struct = struct(['int id']).malloc
+    #     my_struct['id'] = 1
+    #     my_struct[0, 4] = "\x01\x00\x00\x00".b
+    #     my_struct.id # => 1
+    #
+    def []=(*args)
+      return super(*args) if args.size > 2
+      name, val = *args
       idx = @members.index(name)
       if( idx.nil? )
         raise(ArgumentError, "no such member: #{name}")
