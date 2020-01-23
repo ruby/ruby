@@ -12,6 +12,11 @@ jobs:
     strategy:
       matrix:
         test_task: [ "check", "test-bundler", "test-bundled-gems" ]
+        include:
+          - test_task: "check"
+            use_gmp: true
+          - test_task: "check"
+            use_gmp: false
       fail-fast: false
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
@@ -37,7 +42,13 @@ jobs:
           export WAITS='5 60'
           cd src
           tool/travis_retry.sh brew update
-          tool/travis_retry.sh brew install gdbm gmp libffi openssl@1.1 zlib autoconf automake libtool readline
+          tool/travis_retry.sh brew install gdbm libffi openssl@1.1 zlib autoconf automake libtool readline
+      - name: Install gmp
+        run: |
+          export WAITS='5 60'
+          cd src
+          tool/travis_retry.sh brew install gmp
+        if: matrix.use_gmp
       - name: Set ENV
         run: |
           echo '::set-env name=JOBS::'-j$((1 + $(sysctl -n hw.activecpu)))
