@@ -6939,7 +6939,13 @@ rb_big_divide_mpz_si(mpz_t mx, long y)
         mpz_fdiv_q_ui(*BIGNUM_MPZ(z), mx, (unsigned long)y);
     }
     else /* y < 0 */ {
-        mpz_fdiv_q_ui(*BIGNUM_MPZ(z), mx, (unsigned long)(-y));
+        if (mpz_sgn(mx) >= 0) {
+            mpz_cdiv_q_ui(*BIGNUM_MPZ(z), mx, (unsigned long)(-y));
+        }
+        else {
+            mpz_tdiv_q_ui(*BIGNUM_MPZ(z), mx, (unsigned long)(-y));
+        }
+        mpz_neg(*BIGNUM_MPZ(z), *BIGNUM_MPZ(z));
     }
     return z;
 }
