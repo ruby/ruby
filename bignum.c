@@ -1006,8 +1006,7 @@ mpz_pack(const mpz_t mx, void *words, size_t numwords, size_t wordsize, size_t n
 {
     // FIXME: stop using bdigits_from_mpz
 
-
-    int sign = mpz_sgn(mx) >= 0;
+    int sign = mpz_sgn(mx);
     const size_t nbytes = rb_absint_size_mpz(mx, NULL);
     const size_t len = (nbytes + SIZEOF_BDIGIT - 1) / SIZEOF_BDIGIT;
 
