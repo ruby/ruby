@@ -818,7 +818,7 @@ class TestPathname < Test::Unit::TestCase
       old = path.lstat.mode
       begin
         path.lchmod(0444)
-      rescue NotImplementedError
+      rescue NotImplementedError, Errno::EOPNOTSUPP
         next
       end
       assert_equal(0444, path.lstat.mode & 0777)
