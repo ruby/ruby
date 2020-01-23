@@ -3952,6 +3952,7 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
 #ifdef USE_GMP
     else if (BIGNUM_EMBED_LEN_MAX < num_bdigits) {
         ds = ALLOCV_N(BDIGIT, val, num_bdigits + 1);
+        if (!val) val = Qtrue; // mark use of ALLOCV_N
     }
 #endif
     else {
@@ -3997,7 +3998,8 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
     else if (BIGNUM_EMBED_LEN_MAX < num_bdigits) {
         VALUE tmp = val;
         val = bignew_mpz_set_bdigits(ds, num_bdigits);
-        ALLOCV_END(tmp);
+        if (tmp != Qtrue)
+            ALLOCV_END(tmp);
     }
 #endif
 
