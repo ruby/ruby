@@ -5218,8 +5218,10 @@ gc_mark_ptr(rb_objspace_t *objspace, VALUE obj)
 static inline void
 gc_pin(rb_objspace_t *objspace, VALUE obj)
 {
-    GC_ASSERT(is_markable_object(objspace, obj));
-    MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj);
+    if (LIKELY(objspace->mark_func_data == NULL)) {
+        GC_ASSERT(is_markable_object(objspace, obj));
+        MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj);
+    }
 }
 
 static inline void
