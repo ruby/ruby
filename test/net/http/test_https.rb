@@ -204,6 +204,29 @@ class TestNetHTTPS < Test::Unit::TestCase
     skip $!
   end
 
+  def test_skip_hostname_verfiction
+    TestNetHTTPUtils.clean_http_proxy_env do
+      http = Net::HTTP.new('invalid_servername', config('port'))
+      http.ipaddr = config('host')
+      http.use_ssl = true
+      http.cert_store = TEST_STORE
+      http.verify_hostname = false
+      assert_nothing_raised { http.start }
+    end
+  end
+
+  def test_fail_if_verify_hostname_is_true
+    TestNetHTTPUtils.clean_http_proxy_env do
+      http = Net::HTTP.new('invalid_servername', config('port'))
+      http.ipaddr = config('host')
+      http.use_ssl = true
+      http.cert_store = TEST_STORE
+      http.verify_hostname = true
+      @log_tester = lambda { |_| }
+      assert_raise(OpenSSL::SSL::SSLError) { http.start }
+    end
+  end
+
   def test_certificate_verify_failure
     http = Net::HTTP.new("localhost", config("port"))
     http.use_ssl = true
