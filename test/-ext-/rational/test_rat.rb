@@ -1,6 +1,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 require "-test-/rational"
+require "-test-/bignum"
 
 class TestRational < Test::Unit::TestCase
   class TestGCD < Test::Unit::TestCase
@@ -18,7 +19,7 @@ class TestRational < Test::Unit::TestCase
       gcd = 2*2*3*3
       assert_equal(gcd, x.gcd_gmp(y))
     rescue NotImplementedError
-    end
+    end unless Integer::USE_GMP
 
     def test_gcd_gmp_brute_force
       -13.upto(13) {|x|
@@ -27,7 +28,7 @@ class TestRational < Test::Unit::TestCase
         }
       }
     rescue NotImplementedError
-    end
+    end unless Integer::USE_GMP
   end
 
   def test_rb_rational_raw
