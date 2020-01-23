@@ -5849,11 +5849,11 @@ rb_big_cmp(VALUE x, VALUE y)
 #ifdef USE_GMP
             if (! BIGNUM_EMBED_P(x)) {
                 int cmp = big_cmp_mpz(*BIGNUM_MPZ(x), y);
-                return INT2FIX(BIGNUM_SIGN(x) ? cmp : -cmp);
+                return INT2FIX(cmp);
             }
             else if (! BIGNUM_EMBED_P(y)) {
                 int cmp = -big_cmp_mpz(*BIGNUM_MPZ(y), x);
-                return INT2FIX(BIGNUM_SIGN(x) ? cmp : -cmp);
+                return INT2FIX(cmp);
             }
 #endif
 	    int cmp = bary_cmp(BDIGITS(x), BIGNUM_LEN(x), BDIGITS(y), BIGNUM_LEN(y));
