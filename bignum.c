@@ -4296,6 +4296,7 @@ str2big_gmp(
     else {
         z = bignew_mpz();
         mpz_set_str(*BIGNUM_MPZ(z), buf, base);
+        if (!sign) mpz_neg(*BIGNUM_MPZ(z), *BIGNUM_MPZ(z));
     }
 
     if (tmps)
