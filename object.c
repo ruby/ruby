@@ -1216,7 +1216,7 @@ rb_obj_dummy1(VALUE _x, VALUE _y)
 VALUE
 rb_obj_tainted(VALUE obj)
 {
-    rb_warn("Object#tainted? is deprecated and will be removed in Ruby 3.2.");
+    rb_warn_deprecated_to_remove("Object#tainted?", "3.2");
     return Qfalse;
 }
 
@@ -1230,7 +1230,7 @@ rb_obj_tainted(VALUE obj)
 VALUE
 rb_obj_taint(VALUE obj)
 {
-    rb_warn("Object#taint is deprecated and will be removed in Ruby 3.2.");
+    rb_warn_deprecated_to_remove("Object#taint", "3.2");
     return obj;
 }
 
@@ -1245,7 +1245,7 @@ rb_obj_taint(VALUE obj)
 VALUE
 rb_obj_untaint(VALUE obj)
 {
-    rb_warn("Object#untaint is deprecated and will be removed in Ruby 3.2.");
+    rb_warn_deprecated_to_remove("Object#untaint", "3.2");
     return obj;
 }
 
@@ -1259,7 +1259,7 @@ rb_obj_untaint(VALUE obj)
 VALUE
 rb_obj_untrusted(VALUE obj)
 {
-    rb_warn("Object#untrusted? is deprecated and will be removed in Ruby 3.2.");
+    rb_warn_deprecated_to_remove("Object#untrusted?", "3.2");
     return Qfalse;
 }
 
@@ -1273,7 +1273,7 @@ rb_obj_untrusted(VALUE obj)
 VALUE
 rb_obj_untrust(VALUE obj)
 {
-    rb_warn("Object#untrust is deprecated and will be removed in Ruby 3.2.");
+    rb_warn_deprecated_to_remove("Object#untrust", "3.2");
     return obj;
 }
 
@@ -1288,7 +1288,7 @@ rb_obj_untrust(VALUE obj)
 VALUE
 rb_obj_trust(VALUE obj)
 {
-    rb_warn("Object#trust is deprecated and will be removed in Ruby 3.2.");
+    rb_warn_deprecated_to_remove("Object#trust", "3.2");
     return obj;
 }
 
@@ -1299,7 +1299,7 @@ rb_obj_trust(VALUE obj)
 void
 rb_obj_infect(VALUE victim, VALUE carrier)
 {
-    rb_warn("rb_obj_infect is deprecated and will be removed in Ruby 3.2.");
+    rb_warn_deprecated_to_remove("rb_obj_infect", "3.2");
 }
 
 /**

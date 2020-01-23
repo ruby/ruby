@@ -4968,7 +4968,7 @@ env_fetch(int argc, VALUE *argv, VALUE _)
 int
 rb_env_path_tainted(void)
 {
-    rb_warn("rb_env_path_tainted is deprecated and will be removed in Ruby 3.2.");
+    rb_warn_deprecated_to_remove("rb_env_path_tainted", "3.2");
     return 0;
 }
 

@@ -138,7 +138,7 @@ path_freeze(VALUE self)
 static VALUE
 path_taint(VALUE self)
 {
-    rb_warn("Pathname#taint is deprecated and will be removed in Ruby 3.2.");
+    rb_warn_deprecated_to_remove("Pathname#taint", "3.2");
     return self;
 }
 
@@ -151,7 +151,7 @@ path_taint(VALUE self)
 static VALUE
 path_untaint(VALUE self)
 {
-    rb_warn("Pathname#untaint is deprecated and will be removed in Ruby 3.2.");
+    rb_warn_deprecated_to_remove("Pathname#untaint", "3.2");
     return self;
 }
 

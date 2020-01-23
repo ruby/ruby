@@ -389,6 +389,20 @@ rb_warn_deprecated(const char *fmt, const char *suggest, ...)
     rb_write_warning_str(mesg);
 }
 
+void
+rb_warn_deprecated_to_remove(const char *fmt, const char *removal, ...)
+{
+    if (NIL_P(ruby_verbose)) return;
+    if (!rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) return;
+    va_list args;
+    va_start(args, removal);
+    VALUE mesg = warning_string(0, fmt, args);
+    va_end(args);
+    rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
+    rb_str_catf(mesg, " is deprecated and will be removed in Ruby %s\n", removal);
+    rb_write_warning_str(mesg);
+}
+
 static inline int
 end_with_asciichar(VALUE str, int c)
 {
@@ -3035,14 +3049,14 @@ rb_check_frozen(VALUE obj)
 void
 rb_error_untrusted(VALUE obj)
 {
-    rb_warn("rb_error_untrusted is deprecated and will be removed in Ruby 3.2.");
+    rb_warn_deprecated_to_remove("rb_error_untrusted", "3.2");
 }
 
 #undef rb_check_trusted
 void
 rb_check_trusted(VALUE obj)
 {
-    rb_warn("rb_check_trusted is deprecated and will be removed in Ruby 3.2.");
+    rb_warn_deprecated_to_remove("rb_check_trusted", "3.2");
 }
 
 void
