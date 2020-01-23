@@ -17,6 +17,10 @@ when /android/
   end
   libc_so = File.join(libdir, "libc.so")
   libm_so = File.join(libdir, "libm.so")
+when /linux-musl/
+  Dir.glob('/lib/ld-musl-*.so.1') do |ld|
+    libc_so = libm_so = ld
+  end
 when /linux/
   libdir = '/lib'
   case RbConfig::SIZEOF['void*']
