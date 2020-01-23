@@ -20,6 +20,33 @@ module Fiddle
     end
   end
 
+  # Wrapper for arrays within a struct
+  class StructArray < Array
+    include ValueUtil
+
+    def initialize(ptr, type, initial_values)
+      @ptr = ptr
+      @type = type
+      @align = PackInfo::ALIGN_MAP[type]
+      @size = Fiddle::PackInfo::SIZE_MAP[type]
+      @pack_format = Fiddle::PackInfo::PACK_MAP[type]
+      super(initial_values.collect { |v| unsigned_value(v, type) })
+    end
+
+    def to_ptr
+      @ptr
+    end
+
+    def []=(index, value)
+      if index < 0 || index >= size
+        raise IndexError, 'index %d outside of array bounds 0...%d' % [index, size]
+      end
+
+      to_ptr[index * @size, @size] = [value].pack(@pack_format)
+      super(index, value)
+    end
+  end
+
   # Used to construct C classes (CUnion, CStruct, etc)
   #
   # Fiddle::Importer#struct and Fiddle::Importer#union wrap this functionality in an
@@ -191,7 +218,7 @@ module Fiddle
       if( ty.is_a?(Integer) && (ty < 0) )
         return unsigned_value(val, ty)
       elsif( ty.is_a?(Array) && (ty[0] < 0) )
-        return val.collect{|v| unsigned_value(v,ty[0])}
+        return StructArray.new(self + @offset[idx], ty[0], val)
       else
         return val
       end
