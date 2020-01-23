@@ -2339,10 +2339,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([[1, h1, 1], {}], o.foo_bar_mod(1, **h1))
     assert_equal([1, h1, 1], o.foo_baz_mod(1, **h1))
 
-    assert_equal([[h1, {}, 1], {}], o.foo_mod(:bar, h1, **{}))
-    assert_equal([h1, {}, 1], o.foo_mod(:baz, h1, **{}))
-    assert_equal([[h1, {}, 1], {}], o.foo_bar_mod(h1, **{}))
-    assert_equal([h1, {}, 1], o.foo_baz_mod(h1, **{}))
+    assert_equal([[h1, 1], {}], o.foo_mod(:bar, h1, **{}))
+    assert_equal([h1, 1], o.foo_mod(:baz, h1, **{}))
+    assert_equal([[h1, 1], {}], o.foo_bar_mod(h1, **{}))
+    assert_equal([h1, 1], o.foo_baz_mod(h1, **{}))
 
     assert_equal([[1, h1, 1], {}], o.foo_mod(:bar, 1, h1))
     assert_equal([1, h1, 1], o.foo_mod(:baz, 1, h1))
