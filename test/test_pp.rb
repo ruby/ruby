@@ -178,7 +178,7 @@ class PPSingleLineTest < Test::Unit::TestCase
   end
 
   def test_hash_in_array
-    assert_equal("[{}]", PP.singleline_pp([->(*a){a.last}.ruby2_keywords.call(**{})], ''.dup))
+    assert_equal("[{}]", PP.singleline_pp([->(*a){a.last.clear}.ruby2_keywords.call(a: 1)], ''.dup))
     assert_equal("[{}]", PP.singleline_pp([Hash.ruby2_keywords_hash({})], ''.dup))
   end
 end
