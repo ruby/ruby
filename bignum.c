@@ -5626,35 +5626,33 @@ rb_dbl2big(double d)
     return bignorm(dbl2big(d));
 }
 
-#ifdef USE_GMP
-static inline double
-big2dbl_mpz(mpz_t mx)
-{
-    const size_t bits = mpz_sizeinbase(mx, 2);
-    if (bits > DBL_MANT_DIG+DBL_MAX_EXP) {
-        if (mpz_sgn(mx) >= 0)
-            return HUGE_VAL;
-        else
-            return -HUGE_VAL;
-    }
-    else {
-        return mpz_get_d(mx);
-    }
-}
-#endif
-
 static double
 big2dbl(VALUE x)
 {
+    BDIGIT *ds;
+    long i;
+
 #ifdef USE_GMP
+    VALUE tmp = 0;
     if (! BIGNUM_EMBED_P(x)) {
-        return big2dbl_mpz(*BIGNUM_MPZ(x));
+        // NOTE: Since mpz_get_d and mpz_get_d_2exp truncate the value,
+        //       we cannot use them.
+        size_t n = BIGNUM_MPZ_LEN(*BIGNUM_MPZ(x));
+        ds = ALLOCV_N(BDIGIT, tmp, n);
+        if (!tmp) tmp = Qtrue; // mark of use ALLOCV_N
+        bdigits_from_mpz(*BIGNUM_MPZ(x), ds, &n);
+        i = (long)n;
     }
+    else
 #endif
+    {
+        i = (bigtrunc(x), BIGNUM_LEN(x));
+        ds = BDIGITS(x);
+    }
 
     double d = 0.0;
-    long i = (bigtrunc(x), BIGNUM_LEN(x)), lo = 0, bits;
-    BDIGIT *ds = BDIGITS(x), dl;
+    long lo = 0, bits;
+    BDIGIT dl;
 
     if (i) {
 	bits = i * BITSPERDIG - nlz(ds[i-1]);
@@ -5701,6 +5699,10 @@ big2dbl(VALUE x)
 	}
     }
     if (BIGNUM_NEGATIVE_P(x)) d = -d;
+#ifdef USE_GMP
+    if (tmp && tmp != Qtrue)
+        ALLOCV_END(tmp);
+#endif
     return d;
 }
 
