@@ -844,6 +844,7 @@ module Net   #:nodoc:
       :@verify_callback,
       :@verify_depth,
       :@verify_mode,
+      :@verify_hostname,
     ]
     SSL_ATTRIBUTES = [
       :ca_file,
@@ -859,6 +860,7 @@ module Net   #:nodoc:
       :verify_callback,
       :verify_depth,
       :verify_mode,
+      :verify_hostname,
     ]
 
     # Sets path of a CA certification file in PEM format.
@@ -907,6 +909,10 @@ module Net   #:nodoc:
     #
     # OpenSSL::SSL::VERIFY_NONE or OpenSSL::SSL::VERIFY_PEER are acceptable.
     attr_accessor :verify_mode
+
+    # Sets to check the server certificate is valid for the hostname.
+    # See OpenSSL::SSL::SSLContext#verify_hostname=
+    attr_accessor :verify_hostname
 
     # Returns the X.509 certificates the server presented.
     def peer_cert
@@ -986,9 +992,11 @@ module Net   #:nodoc:
         ssl_parameters = Hash.new
         iv_list = instance_variables
         SSL_IVNAMES.each_with_index do |ivname, i|
-          if iv_list.include?(ivname) and
+          if iv_list.include?(ivname)
             value = instance_variable_get(ivname)
-            ssl_parameters[SSL_ATTRIBUTES[i]] = value if value
+            unless value.nil?
+              ssl_parameters[SSL_ATTRIBUTES[i]] = value
+            end
           end
         end
         @ssl_context = OpenSSL::SSL::SSLContext.new
@@ -1007,7 +1015,7 @@ module Net   #:nodoc:
           s.session = @ssl_session
         end
         ssl_socket_connect(s, @open_timeout)
-        if @ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE
+        if (@ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE) && @ssl_context.verify_hostname
           s.post_connection_check(@address)
         end
         D "SSL established, protocol: #{s.ssl_version}, cipher: #{s.cipher[0]}"
