@@ -2771,16 +2771,16 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
  *  by default).
  *
  *      # test.rb:
- *      class A
+ *      class A         # line 1
  *        C1 = 1
  *        C2 = 2
  *      end
  *
- *      module M
+ *      module M        # line 6
  *        C3 = 3
  *      end
  *
- *      class B < A
+ *      class B < A     # line 10
  *        include M
  *        C4 = 4
  *      end
@@ -2789,15 +2789,15 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
  *        C2 = 8 # constant redefinition; warned yet allowed
  *      end
  *
- *      p B.const_source_location('C4')           # => ["test.rb", 11]
- *      p B.const_source_location('C3')           # => ["test.rb", 6]
+ *      p B.const_source_location('C4')           # => ["test.rb", 12]
+ *      p B.const_source_location('C3')           # => ["test.rb", 7]
  *      p B.const_source_location('C1')           # => ["test.rb", 2]
  *
  *      p B.const_source_location('C3', false)    # => nil  -- don't lookup in ancestors
  *
  *      p A.const_source_location('C2')           # => ["test.rb", 16] -- actual (last) definition place
  *
- *      p Object.const_source_location('B')       # => ["test.rb", 9] -- top-level constant could be looked through Object
+ *      p Object.const_source_location('B')       # => ["test.rb", 10] -- top-level constant could be looked through Object
  *      p Object.const_source_location('A')       # => ["test.rb", 1] -- class reopening is NOT considered new definition
  *
  *      p B.const_source_location('A')            # => ["test.rb", 1]  -- because Object is in ancestors
