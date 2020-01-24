@@ -32,6 +32,13 @@ sufficient information, see the ChangeLog file or Redmine
 
 ## Stdlib updates (outstanding ones only)
 
+* Net::HTTP
+
+    * New method
+
+        * Add #verify_hostname= and #verify_hostname to skip hostname verification
+          [[Feature #16555]]
+
 ## Compatibility issues (excluding feature bug fixes)
 
 * Regexp literals are frozen [[Feature #8948]] [[Feature #16377]]
