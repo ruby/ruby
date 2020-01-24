@@ -445,9 +445,9 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 {
     const int min_argc = iseq->body->param.lead_num + iseq->body->param.post_num;
     const int max_argc = (iseq->body->param.flags.has_rest == FALSE) ? min_argc + iseq->body->param.opt_num : UNLIMITED_ARGUMENTS;
-    int opt_pc = 0;
     int given_argc;
     unsigned int kw_flag = ci->flag & (VM_CALL_KWARG | VM_CALL_KW_SPLAT);
+    int opt_pc = 0, allow_autosplat = !kw_flag;
     struct args_info args_body, *args;
     VALUE keyword_hash = Qnil;
     VALUE * const orig_sp = ec->cfp->sp;
@@ -573,6 +573,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 	break; /* do nothing special */
       case arg_setup_block:
         if (given_argc == (keyword_hash == Qnil ? 1 : 2) &&
+            allow_autosplat &&
 	    (min_argc > 0 || iseq->body->param.opt_num > 1 ||
 	     iseq->body->param.flags.has_kw || iseq->body->param.flags.has_kwrest) &&
 	    !iseq->body->param.flags.ambiguous_param0 &&
