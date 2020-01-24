@@ -1087,6 +1087,26 @@ class TestProc < Test::Unit::TestCase
     assert_equal([1,2,[3],4,5], r, "[ruby-core:19485]")
   end
 
+  def test_proc_autosplat
+    def self.a(arg, kw)
+      yield arg
+      yield arg, **kw
+      yield arg, kw
+    end
+
+    arr = []
+    a([1,2,3], {}) do |arg1, arg2=0|
+      arr << [arg1, arg2]
+    end
+    assert_equal([[1, 2], [[1, 2, 3], 0], [[1, 2, 3], {}]], arr)
+
+    arr = []
+    a([1,2,3], a: 1) do |arg1, arg2=0|
+      arr << [arg1, arg2]
+    end
+    assert_equal([[1, 2], [[1, 2, 3], {a: 1}], [[1, 2, 3], {a: 1}]], arr)
+  end
+
   def test_parameters
     assert_equal([], proc {}.parameters)
     assert_equal([], proc {||}.parameters)
