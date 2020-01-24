@@ -83,7 +83,7 @@ If you need only C code coverage, you can remove `COVERAGE=true` from the above 
 You can also use `gcov` command directly to get per-file coverage.
 
 If you need only Ruby code coverage, you can remove `--enable-gcov`.
-Note that `test-coverage.dat` accumlates all runs of `make test-all`.
+Note that `test-coverage.dat` accumulates all runs of `make test-all`.
 Make sure that you remove the file if you want to measure one test run.
 
 You can see the coverage result of CI: https://rubyci.org/coverage
