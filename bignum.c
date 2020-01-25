@@ -5436,16 +5436,7 @@ rb_big2str1(VALUE x, int base)
 	return rb_fix2str(x, base);
     }
 
-#ifdef USE_GMP
-    if (! BIGNUM_EMBED_P(x)) {
-        return big2str_gmp(x, base);
-    }
-#endif
-
-    bigtrunc(x);
-    xds = BDIGITS(x);
     xn = BIGNUM_LEN(x);
-    BARY_TRUNC(xds, xn);
 
     if (xn == 0) {
 	return rb_usascii_str_new2("0");
@@ -5457,6 +5448,16 @@ rb_big2str1(VALUE x, int base)
     if (xn >= LONG_MAX/BITSPERDIG) {
         rb_raise(rb_eRangeError, "bignum too big to convert into `string'");
     }
+
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return big2str_gmp(x, base);
+    }
+#endif
+
+    bigtrunc(x);
+    xds = BDIGITS(x);
+    BARY_TRUNC(xds, xn);
 
     if (POW2_P(base)) {
         /* base == 2 || base == 4 || base == 8 || base == 16 || base == 32 */
