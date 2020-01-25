@@ -391,12 +391,11 @@ def update_default_gems(gem)
       `git co ruby-core/master`
       `git branch ruby-core`
     end
-    `git co ruby-core`
     `git fetch ruby-core master --no-tags`
+    `git co ruby-core`
     `git rebase ruby-core/master`
     `git co master`
-    `git stash`
-    `git pull --rebase`
+    `git rebase origin/master`
   end
 end
 
