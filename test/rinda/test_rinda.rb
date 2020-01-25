@@ -638,7 +638,7 @@ class TestRingServer < Test::Unit::TestCase
   end
 
   def test_do_reply
-    with_timeout(10) {_test_do_reply}
+    with_timeout(30) {_test_do_reply}
   end
 
   def _test_do_reply
@@ -654,14 +654,14 @@ class TestRingServer < Test::Unit::TestCase
 
     @rs.do_reply
 
-    wait_for(10) {called}
+    wait_for(30) {called}
 
     assert_same @ts, called
   end
 
   def test_do_reply_local
     skip 'timeout-based test becomes unstable with --jit-wait' if RubyVM::MJIT.enabled?
-    with_timeout(10) {_test_do_reply_local}
+    with_timeout(30) {_test_do_reply_local}
   end
 
   def _test_do_reply_local
@@ -675,7 +675,7 @@ class TestRingServer < Test::Unit::TestCase
 
     @rs.do_reply
 
-    wait_for(10) {called}
+    wait_for(30) {called}
 
     assert_same @ts, called
   end
