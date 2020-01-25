@@ -374,7 +374,10 @@ def sync_lib(repo)
 end
 
 def update_default_gems(gem)
+
   author, repository = $repositories[gem.to_sym].split('/')
+
+  puts "Update #{author}/#{repository}"
 
   unless File.exist?("../../#{author}/#{repository}")
     mkdir_p("../../#{author}")
