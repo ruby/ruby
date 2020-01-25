@@ -23,7 +23,14 @@ describe "Process.times" do
 
         times = 1000.times.map { Process.times }
         times.count { |t| !('%.6f' % t.utime).end_with?('000') }.should > 0
-        times.count { |t| !('%.6f' % t.stime).end_with?('000') }.should > 0
+        n = times.count { |t| !('%.6f' % t.stime).end_with?('000') }
+        if n == 0
+          # temporal debugging code for FreeBSD: https://rubyci.org/logs/rubyci.s3.amazonaws.com/freebsd11zfs/ruby-master/log/20200125T093004Z.fail.html.gz
+          puts "DEBUG OUTPUT"
+          p(*times)
+          puts "DEBUG OUTPUT END"
+        end
+        n.should > 0
       end
     end
   end
