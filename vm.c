@@ -1376,15 +1376,25 @@ rb_source_location(int *pline)
 {
     const rb_execution_context_t *ec = GET_EC();
     const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
+    VALUE path = Qnil;
+    int line = 0;
 
     if (cfp && VM_FRAME_RUBYFRAME_P(cfp)) {
-	if (pline) *pline = rb_vm_get_sourceline(cfp);
-	return rb_iseq_path(cfp->iseq);
+        static const char internal_prefix[] = "<internal:";
+        static const long internal_prefix_len = (long)sizeof(internal_prefix)-1;
+        path = rb_iseq_path(cfp->iseq);
+        while (RB_TYPE_P(path, T_STRING) && RSTRING_LEN(path) > internal_prefix_len &&
+               memcmp(RSTRING_PTR(path), internal_prefix, internal_prefix_len) == 0) {
+            const rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+            prev_cfp = rb_vm_get_ruby_level_next_cfp(ec, prev_cfp);
+            if (!prev_cfp || !VM_FRAME_RUBYFRAME_P(prev_cfp)) break;
+            cfp = prev_cfp;
+            path = rb_iseq_path(cfp->iseq);
+        }
+        if (pline) line = rb_vm_get_sourceline(cfp);
     }
-    else {
-	if (pline) *pline = 0;
-	return Qnil;
-    }
+    if (pline) *pline = line;
+    return path;
 }
 
 MJIT_FUNC_EXPORTED const char *
