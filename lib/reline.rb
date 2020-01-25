@@ -38,49 +38,51 @@ module Reline
     attr_accessor :ambiguous_width
     attr_accessor :last_incremental_search
     attr_reader :output
-    attr_reader :encoding
 
-    def initialize(encoding)
-      @encoding = encoding
+    def initialize
       self.output = STDOUT
       yield self
       @completion_quote_character = nil
+    end
+
+    def encoding
+      Reline::IOGate.encoding
     end
 
     def completion_append_character=(val)
       if val.nil?
         @completion_append_character = nil
       elsif val.size == 1
-        @completion_append_character = val.encode(@encoding)
+        @completion_append_character = val.encode(Reline::IOGate.encoding)
       elsif val.size > 1
-        @completion_append_character = val[0].encode(@encoding)
+        @completion_append_character = val[0].encode(Reline::IOGate.encoding)
       else
         @completion_append_character = nil
       end
     end
 
     def basic_word_break_characters=(v)
-      @basic_word_break_characters = v.encode(@encoding)
+      @basic_word_break_characters = v.encode(Reline::IOGate.encoding)
     end
 
     def completer_word_break_characters=(v)
-      @completer_word_break_characters = v.encode(@encoding)
+      @completer_word_break_characters = v.encode(Reline::IOGate.encoding)
     end
 
     def basic_quote_characters=(v)
-      @basic_quote_characters = v.encode(@encoding)
+      @basic_quote_characters = v.encode(Reline::IOGate.encoding)
     end
 
     def completer_quote_characters=(v)
-      @completer_quote_characters = v.encode(@encoding)
+      @completer_quote_characters = v.encode(Reline::IOGate.encoding)
     end
 
     def filename_quote_characters=(v)
-      @filename_quote_characters = v.encode(@encoding)
+      @filename_quote_characters = v.encode(Reline::IOGate.encoding)
     end
 
     def special_prefixes=(v)
-      @special_prefixes = v.encode(@encoding)
+      @special_prefixes = v.encode(Reline::IOGate.encoding)
     end
 
     def completion_case_fold=(v)
@@ -203,7 +205,7 @@ module Reline
       otio = Reline::IOGate.prep
 
       may_req_ambiguous_char_width
-      line_editor.reset(prompt, encoding: @encoding)
+      line_editor.reset(prompt, encoding: Reline::IOGate.encoding)
       if multiline
         line_editor.multiline_on
         if block_given?
@@ -394,7 +396,7 @@ module Reline
   end
 
   def self.core
-    @core ||= Core.new(Reline::IOGate.encoding) { |core|
+    @core ||= Core.new { |core|
       core.config = Reline::Config.new
       core.key_stroke = Reline::KeyStroke.new(core.config)
       core.line_editor = Reline::LineEditor.new(core.config, Reline::IOGate.encoding)
