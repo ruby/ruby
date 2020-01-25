@@ -7860,7 +7860,7 @@ rb_big_rshift(VALUE x, VALUE y)
 static VALUE
 big_aref_mpz_ui(const mpz_t mx, size_t shift)
 {
-    const mp_size_t s1 = shift / mp_bits_per_limb;
+    const size_t s1 = shift / mp_bits_per_limb;
     const bool positive_p = mpz_sgn(mx) >= 0;
 
     if ((size_t)s1 >= mpz_size(mx)) {
@@ -7879,7 +7879,7 @@ big_aref_mpz_ui(const mpz_t mx, size_t shift)
     }
     else {
         const mp_limb_t* limbs = mpz_limbs_read(mx);
-        mp_size_t i;
+        size_t i;
         for (i = 0; i < s1; ++i) {
             if (limbs[i]) {
                 return (limbs[s1] & bit) ? INT2FIX(0) : INT2FIX(1);
