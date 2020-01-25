@@ -204,6 +204,18 @@ static int nlz(BDIGIT x) { return nlz_long_long((unsigned LONG_LONG)x) - (SIZEOF
 static int nlz(BDIGIT x) { return nlz_int128((uint128_t)x) - (SIZEOF_INT128_T-SIZEOF_BDIGIT) * CHAR_BIT; }
 #endif
 
+#ifdef USE_GMP
+# if SIZEOF_MP_LIMB_T <= SIZEOF_INT
+static int nlz_mp_limb_t(mp_limb_t x) { return nlz_int((unsigned int)x) - (SIZEOF_INT - SIZEOF_MP_LIMB_T) * CHAR_BIT; }
+# elif SIZEOF_MP_LIMB_T <= SIZEOF_LONG
+static int nlz_mp_limb_t(mp_limb_t x) { return nlz_long((unsigned long)x) - (SIZEOF_LONG - SIZEOF_MP_LIMB_T) * CHAR_BIT; }
+# elif SIZEOF_MP_LIMB_T <= SIZEOF_LONG_LONG
+static int nlz_mp_limb_t(mp_limb_t x) { return nlz_long_long((unsigned LONG_LONG)x) - (SIZEOF_LONG_LONG - SIZEOF_MP_LIMB_T) * CHAR_BIT; }
+# elif SIZEOF_MP_LIMB_T <= SIZEOF_INT128_T
+static int nlz_mp_limb_t(mp_limb_t x) { return nlz_int128((uint128_t)x) - (SIZEOF_INT128_T - SIZEOF_MP_LIMB_T) * CHAR_BIT; }
+# endif
+#endif
+
 #define U16(a) ((uint16_t)(a))
 #define U32(a) ((uint32_t)(a))
 #ifdef HAVE_UINT64_T
@@ -3473,8 +3485,7 @@ rb_absint_size_mpz(const mpz_t mx, int *nlz_bits_ret)
         return 0;
     }
 
-    // TODO: use SIZEOF_MP_LIMB_T
-    const size_t num_leading_zeros = nlz_long(de[-1]) - nails;
+    const size_t num_leading_zeros = nlz_mp_limb_t(de[-1]) - nails;
     if (nlz_bits_ret)
         *nlz_bits_ret = num_leading_zeros % CHAR_BIT;
     return (de - dp) * mp_bytes_per_limb - num_leading_zeros/CHAR_BIT;
