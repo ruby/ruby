@@ -5337,10 +5337,6 @@ rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
     return result;
 }
 
-#define OPTHASH_GIVEN_P(opts) \
-    (argc > 0 && !NIL_P((opts) = rb_check_hash_type(argv[argc-1])) && (--argc, 1))
-static ID id_random;
-
 #define RAND_UPTO(max) (long)rb_random_ulong_limited((randgen), (max)-1)
 
 static VALUE
@@ -5373,55 +5369,16 @@ rb_ary_shuffle(rb_execution_context_t *ec, VALUE ary, VALUE randgen)
     return ary;
 }
 
-
-/*
- *  call-seq:
- *     ary.sample                  -> obj
- *     ary.sample(random: rng)     -> obj
- *     ary.sample(n)               -> new_ary
- *     ary.sample(n, random: rng)  -> new_ary
- *
- *  Choose a random element or +n+ random elements from the array.
- *
- *  The elements are chosen by using random and unique indices into the array
- *  in order to ensure that an element doesn't repeat itself unless the array
- *  already contained duplicate elements.
- *
- *  If the array is empty the first form returns +nil+ and the second form
- *  returns an empty array.
- *
- *     a = [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
- *     a.sample         #=> 7
- *     a.sample(4)      #=> [6, 4, 2, 5]
- *
- *  The optional +rng+ argument will be used as the random number generator.
- *
- *     a.sample(random: Random.new(1))     #=> 6
- *     a.sample(4, random: Random.new(1))  #=> [6, 10, 9, 2]
- */
-
-
 static VALUE
-rb_ary_sample(int argc, VALUE *argv, VALUE ary)
+rb_ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE to_array)
 {
-    VALUE nv, result;
-    VALUE opts, randgen = rb_cRandom;
+    VALUE result;
     long n, len, i, j, k, idx[10];
     long rnds[numberof(idx)];
     long memo_threshold;
 
-    if (OPTHASH_GIVEN_P(opts)) {
-	VALUE rnd;
-	ID keyword_ids[1];
-
-	keyword_ids[0] = id_random;
-	rb_get_kwargs(opts, keyword_ids, 0, 1, &rnd);
-	if (rnd != Qundef) {
-	    randgen = rnd;
-	}
-    }
     len = RARRAY_LEN(ary);
-    if (rb_check_arity(argc, 0, 1) == 0) {
+    if (!to_array) {
 	if (len < 2)
 	    i = 0;
 	else
@@ -5429,7 +5386,6 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 
 	return rb_ary_elt(ary, i);
     }
-    nv = argv[0];
     n = NUM2LONG(nv);
     if (n < 0) rb_raise(rb_eArgError, "negative sample number");
     if (n > len) n = len;
@@ -7003,7 +6959,6 @@ Init_Array(void)
     rb_define_method(rb_cArray, "flatten", rb_ary_flatten, -1);
     rb_define_method(rb_cArray, "flatten!", rb_ary_flatten_bang, -1);
     rb_define_method(rb_cArray, "count", rb_ary_count, -1);
-    rb_define_method(rb_cArray, "sample", rb_ary_sample, -1);
     rb_define_method(rb_cArray, "cycle", rb_ary_cycle, -1);
     rb_define_method(rb_cArray, "permutation", rb_ary_permutation, -1);
     rb_define_method(rb_cArray, "combination", rb_ary_combination, 1);
@@ -7025,8 +6980,6 @@ Init_Array(void)
     rb_define_method(rb_cArray, "sum", rb_ary_sum, -1);
 
     rb_define_method(rb_cArray, "deconstruct", rb_ary_deconstruct, 0);
-
-    id_random = rb_intern("random");
 }
 
 #include "array.rbinc"

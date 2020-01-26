@@ -65,21 +65,24 @@ describe "Array#sample" do
   end
 
   describe "with options" do
-    it "calls #to_hash to convert the passed Object" do
-      obj = mock("array_sample")
-      obj.should_receive(:to_hash).and_return({})
-      obj.should_not_receive(:to_int)
+    ruby_version_is ""..."2.8" do
+      # keyword argument since 2.8
+      it "calls #to_hash to convert the passed Object" do
+        obj = mock("array_sample")
+        obj.should_receive(:to_hash).and_return({})
+        obj.should_not_receive(:to_int)
 
-      [1, 2].sample(obj).should be_an_instance_of(Fixnum)
-    end
+        [1, 2].sample(obj).should be_an_instance_of(Fixnum)
+      end
 
-    it "calls #to_int on the first argument and #to_hash on the second when passed Objects" do
-      count = mock("array_sample_count")
-      count.should_receive(:to_int).and_return(2)
-      options = mock("array_sample_options")
-      options.should_receive(:to_hash).and_return({})
+      it "calls #to_int on the first argument and #to_hash on the second when passed Objects" do
+        count = mock("array_sample_count")
+        count.should_receive(:to_int).and_return(2)
+        options = mock("array_sample_options")
+        options.should_receive(:to_hash).and_return({})
 
-      [1, 2].sample(count, options).size.should == 2
+        [1, 2].sample(count, options).size.should == 2
+      end
     end
 
     it "calls #rand on the Object passed by the :random key in the arguments Hash" do
