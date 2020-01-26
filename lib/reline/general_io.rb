@@ -2,7 +2,7 @@ require 'timeout'
 
 class Reline::GeneralIO
   def self.encoding
-    Encoding.default_external
+    RUBY_PLATFORM =~ /mswin|mingw/ ? Encoding::UTF_8 : Encoding::default_external
   end
 
   RAW_KEYSTROKE_CONFIG = {}
