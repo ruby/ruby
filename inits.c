@@ -83,6 +83,7 @@ rb_call_inits(void)
     BUILTIN(trace_point);
     BUILTIN(pack);
     BUILTIN(warning);
+    BUILTIN(array);
     Init_builtin_prelude();
 }
 #undef CALL

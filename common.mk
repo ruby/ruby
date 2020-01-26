@@ -1001,6 +1001,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/pack.rb \
 		$(srcdir)/trace_point.rb \
 		$(srcdir)/warning.rb \
+		$(srcdir)/array.rb \
 		$(srcdir)/prelude.rb \
 		$(srcdir)/gem_prelude.rb \
 		$(empty)
@@ -1601,7 +1602,9 @@ array.$(OBJEXT): $(top_srcdir)/internal/stdbool.h
 array.$(OBJEXT): $(top_srcdir)/internal/vm.h
 array.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 array.$(OBJEXT): {$(VPATH)}array.c
+array.$(OBJEXT): {$(VPATH)}array.rbinc
 array.$(OBJEXT): {$(VPATH)}assert.h
+array.$(OBJEXT): {$(VPATH)}builtin.h
 array.$(OBJEXT): {$(VPATH)}config.h
 array.$(OBJEXT): {$(VPATH)}debug_counter.h
 array.$(OBJEXT): {$(VPATH)}defines.h

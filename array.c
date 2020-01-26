@@ -29,6 +29,7 @@
 #include "ruby/st.h"
 #include "ruby/util.h"
 #include "transient_heap.h"
+#include "builtin.h"
 
 #if !ARRAY_DEBUG
 # define NDEBUG
@@ -5342,39 +5343,11 @@ static ID id_random;
 
 #define RAND_UPTO(max) (long)rb_random_ulong_limited((randgen), (max)-1)
 
-/*
- *  call-seq:
- *     ary.shuffle!              -> ary
- *     ary.shuffle!(random: rng) -> ary
- *
- *  Shuffles elements in +self+ in place.
- *
- *     a = [ 1, 2, 3 ]           #=> [1, 2, 3]
- *     a.shuffle!                #=> [2, 3, 1]
- *     a                         #=> [2, 3, 1]
- *
- *  The optional +rng+ argument will be used as the random number generator.
- *
- *     a.shuffle!(random: Random.new(1))  #=> [1, 3, 2]
- */
-
 static VALUE
-rb_ary_shuffle_bang(int argc, VALUE *argv, VALUE ary)
+rb_ary_shuffle_bang(rb_execution_context_t *ec, VALUE ary, VALUE randgen)
 {
-    VALUE opts, randgen = rb_cRandom;
     long i, len;
 
-    if (OPTHASH_GIVEN_P(opts)) {
-	VALUE rnd;
-	ID keyword_ids[1];
-
-	keyword_ids[0] = id_random;
-	rb_get_kwargs(opts, keyword_ids, 0, 1, &rnd);
-	if (rnd != Qundef) {
-	    randgen = rnd;
-	}
-    }
-    rb_check_arity(argc, 0, 0);
     rb_ary_modify(ary);
     i = len = RARRAY_LEN(ary);
     RARRAY_PTR_USE(ary, ptr, {
@@ -5392,28 +5365,11 @@ rb_ary_shuffle_bang(int argc, VALUE *argv, VALUE ary)
     return ary;
 }
 
-
-/*
- *  call-seq:
- *     ary.shuffle              -> new_ary
- *     ary.shuffle(random: rng) -> new_ary
- *
- *  Returns a new array with elements of +self+ shuffled.
- *
- *     a = [ 1, 2, 3 ]           #=> [1, 2, 3]
- *     a.shuffle                 #=> [2, 3, 1]
- *     a                         #=> [1, 2, 3]
- *
- *  The optional +rng+ argument will be used as the random number generator.
- *
- *     a.shuffle(random: Random.new(1))  #=> [1, 3, 2]
- */
-
 static VALUE
-rb_ary_shuffle(int argc, VALUE *argv, VALUE ary)
+rb_ary_shuffle(rb_execution_context_t *ec, VALUE ary, VALUE randgen)
 {
     ary = rb_ary_dup(ary);
-    rb_ary_shuffle_bang(argc, argv, ary);
+    rb_ary_shuffle_bang(ec, ary, randgen);
     return ary;
 }
 
@@ -7047,8 +7003,6 @@ Init_Array(void)
     rb_define_method(rb_cArray, "flatten", rb_ary_flatten, -1);
     rb_define_method(rb_cArray, "flatten!", rb_ary_flatten_bang, -1);
     rb_define_method(rb_cArray, "count", rb_ary_count, -1);
-    rb_define_method(rb_cArray, "shuffle!", rb_ary_shuffle_bang, -1);
-    rb_define_method(rb_cArray, "shuffle", rb_ary_shuffle, -1);
     rb_define_method(rb_cArray, "sample", rb_ary_sample, -1);
     rb_define_method(rb_cArray, "cycle", rb_ary_cycle, -1);
     rb_define_method(rb_cArray, "permutation", rb_ary_permutation, -1);
@@ -7074,3 +7028,5 @@ Init_Array(void)
 
     id_random = rb_intern("random");
 }
+
+#include "array.rbinc"
