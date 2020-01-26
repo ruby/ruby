@@ -472,25 +472,65 @@ class IMAPTest < Test::Unit::TestCase
   def test_connection_closed_without_greeting
     server = create_tcp_server
     port = server.addr[1]
-    h = {'server before close': server.inspect} # inspect info before close
+    h = {
+      server: server,
+      port: port,
+      server_created: {
+        server: server.inspect,
+        t: Process.clock_gettime(Process::CLOCK_MONOTONIC),
+      }
+    }
+    net_imap = Class.new(Net::IMAP) do
+      @@h = h
+      def tcp_socket(host, port)
+        @@h[:in_tcp_socket] = {
+          host: host,
+          port: port,
+          server: @@h[:server].inspect,
+          t: Process.clock_gettime(Process::CLOCK_MONOTONIC),
+        }
+        super
+      end
+    end
     start_server do
       begin
+        h[:in_start_server_before_accept] = {
+          t: Process.clock_gettime(Process::CLOCK_MONOTONIC),
+        }
         sock = server.accept
-        h[:sock_addr], h[:sock_peeraddr] = sock.addr, sock.peeraddr
+        h[:in_start_server] = {
+          sock_addr: sock.addr,
+          sock_peeraddr: sock.peeraddr,
+          t: Process.clock_gettime(Process::CLOCK_MONOTONIC),
+        }
         sock.close
+        h[:in_start_server_sock_closed] = {
+          t: Process.clock_gettime(Process::CLOCK_MONOTONIC),
+        }
       ensure
         server.close
       end
     end
     assert_raise(Net::IMAP::Error) do
-      #begin
-      Net::IMAP.new(server_addr, :port => port)
-      #rescue Net::IMAP::Error
-      #  raise Errno::EINVAL
-      #end
+      #Net::IMAP.new(server_addr, :port => port)
+      if true
+          net_imap.new(server_addr, :port => port)
+      else
+        # for testing debug print
+        begin
+          net_imap.new(server_addr, :port => port)
+        rescue Net::IMAP::Error
+          raise Errno::EINVAL
+        end
+      end
     rescue Errno::EINVAL => e # for debug on OpenCSW
-      h.merge!({e: e, server: server, port: port, server_addr: server_addr})
-      raise(h.inspect)
+      h[:in_rescue] = {
+        e: e,
+        server_addr: server_addr,
+        t: Process.clock_gettime(Process::CLOCK_MONOTONIC),
+      }
+      require 'pp'
+      raise(PP.pp(h, +''))
     end
   end
 
