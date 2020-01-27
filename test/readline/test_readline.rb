@@ -546,7 +546,7 @@ module BasetestReadline
     saved_completer_quote_characters = Readline.completer_quote_characters
     saved_completer_word_break_characters = Readline.completer_word_break_characters
     return unless Readline.respond_to?(:quoting_detection_proc=)
-    unless Encoding.find("external") == Encoding::UTF_8
+    unless get_default_internal_encoding == Encoding::UTF_8
       return if assert_under_utf8
       omit 'this test needs UTF-8 locale'
     end
