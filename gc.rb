@@ -168,7 +168,7 @@ module GC
   end
 
   # call-seq:
-  #    GC.verify_compaction_references(toward: nil, double_heap: nil) -> nil
+  #    GC.verify_compaction_references(toward: nil, double_heap: false) -> hash
   #
   # Verify compaction reference consistency.
   #
