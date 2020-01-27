@@ -31,7 +31,7 @@ class Array
   #
   #    a.shuffle(random: Random.new(1))  #=> [1, 3, 2]
   def shuffle(random: Random)
-    __builtin_rb_ary_shuffle(random);
+    __builtin_rb_ary_shuffle(random)
   end
 
   # call-seq:
