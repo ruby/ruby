@@ -1632,6 +1632,7 @@ ast.$(OBJEXT): $(top_srcdir)/internal/array.h
 ast.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 ast.$(OBJEXT): $(top_srcdir)/internal/gc.h
 ast.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+ast.$(OBJEXT): $(top_srcdir)/internal/io.h
 ast.$(OBJEXT): $(top_srcdir)/internal/parse.h
 ast.$(OBJEXT): $(top_srcdir)/internal/serial.h
 ast.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
@@ -1647,9 +1648,9 @@ ast.$(OBJEXT): {$(VPATH)}config.h
 ast.$(OBJEXT): {$(VPATH)}defines.h
 ast.$(OBJEXT): {$(VPATH)}encoding.h
 ast.$(OBJEXT): {$(VPATH)}id.h
-ast.$(OBJEXT): {$(VPATH)}io.h
 ast.$(OBJEXT): {$(VPATH)}intern.h
 ast.$(OBJEXT): {$(VPATH)}internal.h
+ast.$(OBJEXT): {$(VPATH)}io.h
 ast.$(OBJEXT): {$(VPATH)}iseq.h
 ast.$(OBJEXT): {$(VPATH)}method.h
 ast.$(OBJEXT): {$(VPATH)}missing.h
