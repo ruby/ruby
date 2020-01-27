@@ -764,6 +764,9 @@ class TestFloat < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /xxx/) {
       1.0.round(half: "\0xxx")
     }
+    assert_raise_with_message(Encoding::CompatibilityError, /ASCII incompatible/) {
+      1.0.round(half: "up".force_encoding("utf-16be"))
+    }
   end
 
   def test_Float

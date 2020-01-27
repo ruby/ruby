@@ -233,6 +233,7 @@ rb_num_get_rounding_option(VALUE opts)
 	    str = rb_check_string_type(rounding);
 	    if (NIL_P(str)) goto invalid;
 	}
+        rb_must_asciicompat(str);
 	s = RSTRING_PTR(str);
 	switch (RSTRING_LEN(str)) {
 	  case 2:
