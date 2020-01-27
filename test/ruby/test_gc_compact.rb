@@ -39,6 +39,8 @@ class TestGCCompact < Test::Unit::TestCase
     hash = list_of_objects.hash
     GC.verify_compaction_references(toward: :empty)
     assert_equal hash, list_of_objects.hash
+    GC.verify_compaction_references(double_heap: false)
+    assert_equal hash, list_of_objects.hash
   end
 
   def walk_ast ast

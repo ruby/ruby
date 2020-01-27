@@ -8647,53 +8647,14 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
     mjit_gc_exit_hook(); // unlock MJIT here, because `rb_gc()` calls `mjit_gc_start_hook()` again.
 }
 
-/*
- *  call-seq:
- *     GC.verify_compaction_references                  -> nil
- *
- *  Verify compaction reference consistency.
- *
- *  This method is implementation specific.  During compaction, objects that
- *  were moved are replaced with T_MOVED objects.  No object should have a
- *  reference to a T_MOVED object after compaction.
- *
- *  This function doubles the heap to ensure room to move all objects,
- *  compacts the heap to make sure everything moves, updates all references,
- *  then performs a full GC.  If any object contains a reference to a T_MOVED
- *  object, that object should be pushed on the mark stack, and will
- *  make a SEGV.
- */
 static VALUE
-gc_verify_compaction_references(int argc, VALUE *argv, VALUE mod)
+gc_verify_compaction_references(rb_execution_context_t *ec, VALUE mod, VALUE toward, VALUE double_heap)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    int use_toward_empty = FALSE;
-    int use_double_pages = FALSE;
-
-    if (dont_gc) return Qnil;
-
-    VALUE opt = Qnil;
-    static ID keyword_ids[2];
-    VALUE kwvals[2];
-
-    kwvals[1] = Qtrue;
-
-    rb_scan_args(argc, argv, "0:", &opt);
-
-    if (!NIL_P(opt)) {
-        if (!keyword_ids[0]) {
-            keyword_ids[0] = rb_intern("toward");
-            keyword_ids[1] = rb_intern("double_heap");
-        }
-
-        rb_get_kwargs(opt, keyword_ids, 0, 2, kwvals);
-        if (rb_intern("empty") == rb_sym2id(kwvals[0])) {
-            use_toward_empty = TRUE;
-        }
-        if (kwvals[1] != Qundef && RTEST(kwvals[1])) {
-            use_double_pages = TRUE;
-        }
-    }
+    const ID id_empty = rb_intern("empty");
+    const int use_toward_empty = NIL_P(toward) ? FALSE :
+        (Check_Type(toward, T_SYMBOL), toward == ID2SYM(id_empty));
+    const int use_double_pages = RTEST(double_heap);
 
     gc_compact(objspace, use_toward_empty, use_double_pages, TRUE);
     return gc_compact_stats(objspace);
@@ -11926,7 +11887,6 @@ Init_GC(void)
 
     /* internal methods */
     rb_define_singleton_method(rb_mGC, "verify_internal_consistency", gc_verify_internal_consistency_m, 0);
-    rb_define_singleton_method(rb_mGC, "verify_compaction_references", gc_verify_compaction_references, -1);
     rb_define_singleton_method(rb_mGC, "verify_transient_heap_internal_consistency", gc_verify_transient_heap_internal_consistency, 0);
 #if MALLOC_ALLOCATED_SIZE
     rb_define_singleton_method(rb_mGC, "malloc_allocated_size", gc_malloc_allocated_size, 0);
