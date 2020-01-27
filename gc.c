@@ -8618,7 +8618,7 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
 
 /*
  *  call-seq:
- *     GC.verify_compaction_references                  -> nil
+ *     GC.verify_compaction_references(toward: nil, double_heap: nil) -> nil
  *
  *  Verify compaction reference consistency.
  *
@@ -8656,7 +8656,7 @@ gc_verify_compaction_references(int argc, VALUE *argv, VALUE mod)
         }
 
         rb_get_kwargs(opt, keyword_ids, 0, 2, kwvals);
-        if (rb_intern("empty") == rb_sym2id(kwvals[0])) {
+        if (kwvals[0] != Qundef && rb_intern("empty") == rb_sym2id(kwvals[0])) {
             use_toward_empty = TRUE;
         }
         if (kwvals[1] != Qundef && RTEST(kwvals[1])) {
