@@ -375,7 +375,7 @@ concatstrings
 (...)
 (VALUE val)
 /* This instruction can concat UTF-8 and binary strings, resulting in
- * Encoding::CompatiblityError. */
+ * Encoding::CompatibilityError. */
 // attr bool leaf = false; /* has rb_enc_cr_str_buf_cat() */
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
