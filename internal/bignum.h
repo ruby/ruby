@@ -153,7 +153,12 @@ static inline bool BIGNUM_EMBED_P(VALUE b);
 #ifdef USE_GMP
 size_t rb_absint_size_mpz(const mpz_t mx, int *nlz_bits_ret);
 VALUE rb_big_gcd_mpz(mpz_t mx, VALUE y);
-static inline mpz_t *BIGNUM_MPZ(VALUE b);
+static inline mpz_t *BIGNUM_MPZ_PTR(VALUE b);
+# ifdef _MSC_VER
+#  define BIGNUM_MPZ(b) RBIGNUM(b)->as.mpz
+# else
+#  define BIGNUM_MPZ(b) *BIGNUM_MPZ_PTR(b)
+# endif
 static inline size_t BIGNUM_MPZ_LEN(const mpz_t mx);
 static inline void BIGNUM_MPZ_NEGATE(VALUE b);
 #endif
@@ -195,7 +200,7 @@ BIGNUM_SIGN(VALUE b)
 {
 #ifdef USE_GMP
     if (! BIGNUM_EMBED_P(b)) {
-        return mpz_sgn(*BIGNUM_MPZ(b)) >= 0;
+        return mpz_sgn(BIGNUM_MPZ(b)) >= 0;
     }
 #endif
     return FL_TEST_RAW(b, BIGNUM_SIGN_BIT);
@@ -249,7 +254,7 @@ BIGNUM_LEN(VALUE b)
 {
     if (! BIGNUM_EMBED_P(b)) {
 #ifdef USE_GMP
-        return BIGNUM_MPZ_LEN(*BIGNUM_MPZ(b));
+        return BIGNUM_MPZ_LEN(BIGNUM_MPZ(b));
 #else
         return RBIGNUM(b)->as.heap.len;
 #endif
@@ -292,7 +297,7 @@ BIGNUM_EMBED_P(VALUE b)
 
 #ifdef USE_GMP
 static inline mpz_t *
-BIGNUM_MPZ(VALUE b)
+BIGNUM_MPZ_PTR(VALUE b)
 {
     assert(! BIGNUM_EMBED_P(b));
     return &RBIGNUM(b)->as.mpz;
@@ -312,8 +317,7 @@ static inline void
 BIGNUM_MPZ_NEGATE(VALUE b)
 {
     assert(! BIGNUM_EMBED_P(b));
-    mpz_t *mb = BIGNUM_MPZ(b);
-    mpz_neg(*mb, *mb);
+    mpz_neg(BIGNUM_MPZ(b), BIGNUM_MPZ(b));
 }
 #endif
 

@@ -879,7 +879,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    w_byte(TYPE_BIGNUM, arg);
 #ifdef USE_GMP
             if (! BIGNUM_EMBED_P(obj)) {
-                const size_t nbytes = rb_absint_size_mpz(*BIGNUM_MPZ(obj), NULL);
+                const size_t nbytes = rb_absint_size_mpz(BIGNUM_MPZ(obj), NULL);
 
                 const size_t slen = (nbytes+1)/2;
                 if (LONG_MAX < slen) {
@@ -891,8 +891,8 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
                 w_long((long)slen, arg);
 
                 const int bytes_per_limb = mp_bits_per_limb / CHAR_BIT;
-                const size_t nlimbs = mpz_size(*BIGNUM_MPZ(obj));
-                const mp_limb_t *limbs = mpz_limbs_read(*BIGNUM_MPZ(obj));
+                const size_t nlimbs = mpz_size(BIGNUM_MPZ(obj));
+                const mp_limb_t *limbs = mpz_limbs_read(BIGNUM_MPZ(obj));
                 size_t j;
                 for (j = 0; j < nlimbs; j++) {
                     mp_limb_t num = limbs[j];

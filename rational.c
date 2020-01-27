@@ -242,10 +242,10 @@ rb_gcd_gmp(VALUE x, VALUE y)
 {
     assert(! (BIGNUM_EMBED_P(x) && BIGNUM_EMBED_P(y)));
     if (! BIGNUM_EMBED_P(x)) {
-        return rb_big_gcd_mpz(*BIGNUM_MPZ(x), y);
+        return rb_big_gcd_mpz(BIGNUM_MPZ(x), y);
     }
     else {
-        return rb_big_gcd_mpz(*BIGNUM_MPZ(y), x);
+        return rb_big_gcd_mpz(BIGNUM_MPZ(y), x);
     }
 }
 #endif

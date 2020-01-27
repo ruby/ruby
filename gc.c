@@ -2817,7 +2817,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_BIGNUM:
 	if (!BIGNUM_EMBED_P(obj)) {
 #ifdef USE_GMP
-            mpz_clear(*BIGNUM_MPZ(obj));
+            mpz_clear(BIGNUM_MPZ(obj));
 #else
             if (BIGNUM_DIGITS(obj)) {
                 xfree(BIGNUM_DIGITS(obj));
@@ -3941,7 +3941,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
       case T_BIGNUM:
         if (! BIGNUM_EMBED_P(obj)) {
 #ifdef USE_GMP
-            size += mpz_size(*BIGNUM_MPZ(obj)) * sizeof(mp_limb_t);
+            size += mpz_size(BIGNUM_MPZ(obj)) * sizeof(mp_limb_t);
 #else
             if (BIGNUM_DIGITS(obj)) {
                 size += BIGNUM_LEN(obj) * sizeof(BDIGIT);
