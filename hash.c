@@ -35,6 +35,7 @@
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/symbol.h"
+#include "internal/time.h"
 #include "internal/vm.h"
 #include "probes.h"
 #include "ruby/st.h"
@@ -4758,7 +4759,6 @@ env_str_new2(const char *ptr)
 }
 
 static const char TZ_ENV[] = "TZ";
-extern bool ruby_tz_uptodate_p;
 
 static rb_encoding *
 env_encoding_for(const char *name, const char *ptr)
@@ -4843,7 +4843,7 @@ env_delete(VALUE name)
      * This hack might works only on Linux glibc.
      */
     if (ENVMATCH(nam, TZ_ENV)) {
-        ruby_tz_uptodate_p = FALSE;
+        ruby_reset_timezone();
     }
 
     if (val) {
@@ -5275,7 +5275,7 @@ env_aset(VALUE nm, VALUE val)
 	RB_GC_GUARD(nm);
     }
     else if (ENVMATCH(name, TZ_ENV)) {
-	ruby_tz_uptodate_p = FALSE;
+        ruby_reset_timezone();
     }
     return val;
 }

@@ -683,6 +683,12 @@ static VALUE tm_from_time(VALUE klass, VALUE time);
 
 bool ruby_tz_uptodate_p;
 
+void
+ruby_reset_timezone(void)
+{
+    ruby_tz_uptodate_p = false;
+}
+
 static void
 update_tz(void)
 {

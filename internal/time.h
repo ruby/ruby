@@ -29,6 +29,7 @@ struct timeval rb_time_timeval(VALUE);
 RUBY_SYMBOL_EXPORT_BEGIN
 /* time.c (export) */
 void ruby_reset_leap_second_info(void);
+void ruby_reset_timezone(void);
 RUBY_SYMBOL_EXPORT_END
 
 #endif /* INTERNAL_TIME_H */
