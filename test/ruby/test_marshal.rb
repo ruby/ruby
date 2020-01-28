@@ -596,7 +596,8 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   def test_unloadable_data
-    c = eval("class Unloadable\u{23F0 23F3}<Time;;self;end")
+    name = "Unloadable\u{23F0 23F3}"
+    c = eval("class #{name} < Time;;self;end")
     c.class_eval {
       alias _dump_data _dump
       undef _dump
@@ -605,10 +606,16 @@ class TestMarshal < Test::Unit::TestCase
     assert_raise_with_message(TypeError, /Unloadable\u{23F0 23F3}/) {
       Marshal.load(d)
     }
+
+    # cleanup
+    self.class.class_eval do
+      remove_const name
+    end
   end
 
   def test_unloadable_userdef
-    c = eval("class Userdef\u{23F0 23F3}<Time;self;end")
+    name = "Userdef\u{23F0 23F3}"
+    c = eval("class #{name} < Time;self;end")
     class << c
       undef _load
     end
@@ -616,6 +623,11 @@ class TestMarshal < Test::Unit::TestCase
     assert_raise_with_message(TypeError, /Userdef\u{23F0 23F3}/) {
       Marshal.load(d)
     }
+
+    # cleanup
+    self.class.class_eval do
+      remove_const name
+    end
   end
 
   def test_unloadable_usrmarshal
