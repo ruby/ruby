@@ -673,6 +673,62 @@ namespace test_rb_define_private_method {
     }
 }
 
+namespace test_rb_define_global_function {
+    static VALUE
+    m1(VALUE, VALUE)
+    {
+        return Qnil;
+    }
+
+    static VALUE
+    m2(VALUE, VALUE, VALUE)
+    {
+        return Qnil;
+    }
+
+    static VALUE
+    ma(VALUE, VALUE)
+    {
+        return Qnil;
+    }
+
+    static VALUE
+    mv(int, VALUE*, VALUE)
+    {
+        return Qnil;
+    }
+
+    VALUE
+    test(VALUE self)
+    {
+        // No cast
+        rb_define_global_function("m1", m1, 1);
+        rb_define_global_function("m2", m2, 2);
+        rb_define_global_function("ma", ma, -2);
+        rb_define_global_function("mv", mv, -1);
+
+        // Cast by RUBY_METHOD_FUNC
+        rb_define_global_function("m1", RUBY_METHOD_FUNC(m1), 1);
+        rb_define_global_function("m2", RUBY_METHOD_FUNC(m2), 2);
+        rb_define_global_function("ma", RUBY_METHOD_FUNC(ma), -2);
+        rb_define_global_function("mv", RUBY_METHOD_FUNC(mv), -1);
+
+        // Explicit cast instead of RUBY_METHOD_FUNC
+        rb_define_global_function("m1", (VALUE (*)(...))(m1), 1);
+        rb_define_global_function("m2", (VALUE (*)(...))(m2), 2);
+        rb_define_global_function("ma", (VALUE (*)(...))(ma), -2);
+        rb_define_global_function("mv", (VALUE (*)(...))(mv), -1);
+
+        // rb_f_notimplement
+        rb_define_global_function("m1", rb_f_notimplement, 1);
+        rb_define_global_function("m2", rb_f_notimplement, 2);
+        rb_define_global_function("ma", rb_f_notimplement, -2);
+        rb_define_global_function("mv", rb_f_notimplement, -1);
+
+        return self;
+    }
+}
+
 extern "C" void
 Init_cxxanyargs(void)
 {
@@ -698,8 +754,10 @@ Init_cxxanyargs(void)
     test(rb_hash_foreach);
     test(rb_ivar_foreach);
     test(rb_define_method);
+    test(rb_define_method_id);
     test(rb_define_module_function);
     test(rb_define_singleton_method);
     test(rb_define_protected_method);
     test(rb_define_private_method);
+    test(rb_define_global_function);
 }
