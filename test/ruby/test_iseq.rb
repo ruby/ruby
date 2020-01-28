@@ -465,6 +465,11 @@ class TestISeq < Test::Unit::TestCase
         attr_reader :i
       end
     end;
+
+    # cleanup
+    ::Object.class_eval do
+      remove_const :P
+    end
   end
 
   def collect_from_binary_tracepoint_lines(tracepoint_type, filename)
