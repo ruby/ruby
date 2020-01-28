@@ -104,6 +104,12 @@ class TestMethod < Test::Unit::TestCase
     assert_raise(TypeError) do
       um.bind(Base.new)
     end
+
+    # cleanup
+    Derived.class_eval do
+      remove_method :foo
+      def foo() :derived; end
+    end
   end
 
   def test_callee
@@ -1102,17 +1108,26 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([:bar, :foo], b.local_variables.sort, bug11012)
   end
 
-  class MethodInMethodClass
-    def m1
-      def m2
-      end
+  setup_for_test_method_in_method_visibility_should_be_public_proc = -> do
+    remove_const :MethodInMethodClass if defined? MethodInMethodClass
 
-      self.class.send(:define_method, :m3){} # [Bug #11754]
+    class MethodInMethodClass
+      def m1
+        def m2
+        end
+        self.class.send(:define_method, :m3){} # [Bug #11754]
+      end
+      private
     end
-    private
+  end
+
+  define_method :setup_for_test_method_in_method_visibility_should_be_public do
+    setup_for_test_method_in_method_visibility_should_be_public_proc.call
   end
 
   def test_method_in_method_visibility_should_be_public
+    setup_for_test_method_in_method_visibility_should_be_public
+
     assert_equal([:m1].sort, MethodInMethodClass.public_instance_methods(false).sort)
     assert_equal([].sort, MethodInMethodClass.private_instance_methods(false).sort)
 
