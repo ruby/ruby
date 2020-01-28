@@ -3,20 +3,33 @@
 require 'test/unit'
 
 class TestConst < Test::Unit::TestCase
-  TEST1 = 1
-  TEST2 = 2
 
-  module Const
-    TEST3 = 3
-    TEST4 = 4
+  setup_constants_proc = -> do
+    remove_const :TEST1  if defined? ::TestConst::TEST1
+    remove_const :TEST2  if defined? ::TestConst::TEST2
+    remove_const :Const  if defined? ::TestConst::Const
+    remove_const :Const2 if defined? ::TestConst::Const2
+
+    TEST1 = 1
+    TEST2 = 2
+
+    module Const
+      TEST3 = 3
+      TEST4 = 4
+    end
+
+    module Const2
+      TEST3 = 6
+      TEST4 = 8
+    end
   end
 
-  module Const2
-    TEST3 = 6
-    TEST4 = 8
+  define_method :setup_constants do
+    setup_constants_proc.call
   end
 
   def test_const
+    setup_constants
     assert defined?(TEST1)
     assert_equal 1, TEST1
     assert defined?(TEST2)
