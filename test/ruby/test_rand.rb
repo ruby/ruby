@@ -2,9 +2,6 @@
 require 'test/unit'
 
 class TestRand < Test::Unit::TestCase
-  def teardown
-    raise if srand == 0
-  end
   def assert_random_int(ws, m, init = 0)
     # call srand in another process
     assert_separately [], %Q{
