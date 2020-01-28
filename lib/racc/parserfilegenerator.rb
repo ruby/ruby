@@ -1,3 +1,4 @@
+#--
 #
 # $Id: fff07ebfd582f8dbc845e424908cb9f41f8bf42f $
 #
@@ -6,6 +7,8 @@
 # This program is free software.
 # You can distribute/modify this program under the same terms of ruby.
 # see the file "COPYING".
+#
+#++
 
 require 'enumerator'
 require 'racc/compat'

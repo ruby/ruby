@@ -1,3 +1,4 @@
+#--
 #
 # $Id: 4c5f4311663b6d03050953d64d6a0e7905ff2216 $
 #
@@ -8,6 +9,7 @@
 # the GNU LGPL, Lesser General Public License version 2.1.
 # For details of LGPL, see the file "COPYING".
 #
+#++
 
 require 'racc/parser'
 

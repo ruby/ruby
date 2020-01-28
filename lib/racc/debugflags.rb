@@ -1,3 +1,4 @@
+#--
 #
 # $Id: 74ff4369ce53c7f45cfc2644ce907785104ebf6e $
 #
@@ -8,6 +9,7 @@
 # the GNU LGPL, Lesser General Public License version 2.1.
 # For details of LGPL, see the file "COPYING".
 #
+#++
 
 module Racc
 
