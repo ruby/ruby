@@ -445,5 +445,6 @@ p Foo::Bar
   def remove_autoload_constant
     $".replace($" - @autoload_paths)
     ::Object.class_eval {remove_const(:AutoloadTest)}
+    TestAutoload.class_eval {remove_const(:AutoloadTest)} if defined? TestAutoload::AutoloadTest
   end
 end
