@@ -88,8 +88,11 @@ class TestModule < Test::Unit::TestCase
     private :user3
   end
 
-  module Other
-    def other
+  OtherSetup = -> do
+    remove_const :Other if defined? ::TestModule::Other
+    module Other
+      def other
+      end
     end
   end
 
@@ -223,6 +226,8 @@ class TestModule < Test::Unit::TestCase
   @@class_eval = 'b'
 
   def test_class_eval
+    OtherSetup.call
+
     Other.class_eval("CLASS_EVAL = 1")
     assert_equal(1, Other::CLASS_EVAL)
     assert_include(Other.constants, :CLASS_EVAL)
@@ -331,6 +336,8 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_nested_defined
+    OtherSetup.call
+
     assert_send([Object, :const_defined?, [self.class.name, 'Other'].join('::')])
     assert_send([self.class, :const_defined?, 'User::USER'])
     assert_not_send([self.class, :const_defined?, 'User::Foo'])
@@ -363,6 +370,8 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_const_set
+    OtherSetup.call
+
     assert_not_operator(Other, :const_defined?, :KOALA)
     Other.const_set(:KOALA, 99)
     assert_operator(Other, :const_defined?, :KOALA)
@@ -421,6 +430,8 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_dup
+    OtherSetup.call
+
     bug6454 = '[ruby-core:45132]'
 
     a = Module.new
@@ -522,6 +533,11 @@ class TestModule < Test::Unit::TestCase
     assert !c.method_defined?(:userx, false)
     c.define_method(:userx){}
     assert c.method_defined?(:userx, false)
+
+    # cleanup
+    User.class_eval do
+      remove_const :FOO
+    end
   end
 
   def module_exec_aux
@@ -552,6 +568,14 @@ class TestModule < Test::Unit::TestCase
       def dynamically_added_method_4; end
     end
     assert_method_defined?(User, :dynamically_added_method_4)
+
+    # cleanup
+    User.class_eval do
+      remove_method :dynamically_added_method_1
+      remove_method :dynamically_added_method_2
+      remove_method :dynamically_added_method_3
+      remove_method :dynamically_added_method_4
+    end
   end
 
   def test_module_eval
@@ -651,6 +675,10 @@ class TestModule < Test::Unit::TestCase
     Object.module_eval "WALTER = 99"
     c2 = Module.constants
     assert_equal([:WALTER], c2 - c1)
+
+    Object.class_eval do
+      remove_const :WALTER
+    end
 
     assert_equal([], Module.constants(true))
     assert_equal([], Module.constants(false))
@@ -2152,6 +2180,9 @@ class TestModule < Test::Unit::TestCase
   class AttrTest
     class << self
       attr_accessor :cattr
+      def reset
+        self.cattr = nil
+      end
     end
     attr_accessor :iattr
     def ivar
@@ -2194,6 +2225,8 @@ class TestModule < Test::Unit::TestCase
     assert_warning '' do
       assert_equal(42, AttrTest.cattr)
     end
+
+    AttrTest.reset
   end
 
   def test_uninitialized_attr_non_object
