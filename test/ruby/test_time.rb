@@ -108,6 +108,10 @@ class TestTime < Test::Unit::TestCase
       assert_equal(78796800, Time.utc(1972, 7, 1, 0, 0, 0).tv_sec)
       assert_equal(78796801, Time.utc(1972, 7, 1, 0, 0, 1).tv_sec)
       assert_equal(946684800, Time.utc(2000, 1, 1, 0, 0, 0).tv_sec)
+
+      # Giveup to try 2nd test because some state is changed.
+      skip if Minitest::Unit.current_repeat_count > 0
+
       assert_equal(0x7fffffff, Time.utc(2038, 1, 19, 3, 14, 7).tv_sec)
       assert_equal(0x80000000, Time.utc(2038, 1, 19, 3, 14, 8).tv_sec)
     else
@@ -1133,6 +1137,9 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_2038
+    # Giveup to try 2nd test because some state is changed.
+    skip if Minitest::Unit.current_repeat_count > 0
+
     if no_leap_seconds?
       assert_equal(0x80000000, Time.utc(2038, 1, 19, 3, 14, 8).tv_sec)
     end
