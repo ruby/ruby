@@ -974,10 +974,12 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       t.puts "require '#{basename}'"
       t.close
       $LOAD_PATH.push(File.dirname(t))
-      warning = capture_warning_warn {require basename}
+      warning = capture_warning_warn {
+        assert require(basename)
+      }
     ensure
       $LOAD_PATH.pop
-      $LOADED_FEATURES.delete(t)
+      $LOADED_FEATURES.delete(t.path)
     end
     assert_equal(1, warning.size)
     assert_match(/circular require/, warning.first)
