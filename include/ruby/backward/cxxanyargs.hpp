@@ -625,7 +625,7 @@ struct rb_define_global_function  : public driver0<const char *, ::rb_define_glo
 /// @copydetails  #rb_define_method
 #define rb_define_module_function(klass, mid, func, arity)  ruby::backward::cxxanyargs::define_method::rb_define_module_function::specific<arity>::define(klass, mid, func)
 
-/// @brief Defines ::rb_cKerbel \#mid.
+/// @brief Defines ::rb_mKernel \#mid.
 /// @param mid    Name of the defining method.
 /// @param func   Implementation of \#mid.
 /// @param arity  Arity of \#mid.
