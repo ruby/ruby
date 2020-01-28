@@ -428,7 +428,9 @@ class TestBasicInstructions < Test::Unit::TestCase
   end
 
   class CVarA
-    @@cv = 'CVarA@@cv'
+    def self.setup
+      @@cv = 'CVarA@@cv'
+    end
     def self.cv() @@cv end
     def self.cv=(v) @@cv = v end
     class << self
@@ -449,6 +451,7 @@ class TestBasicInstructions < Test::Unit::TestCase
   end
 
   def test_class_variable
+    CVarA.setup
     assert_equal 'CVarA@@cv',   CVarA.cv
     assert_equal 'CVarA@@cv',   CVarA.cv2
     assert_equal 'CVarA@@cv',   CVarA.new.cv
