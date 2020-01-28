@@ -268,11 +268,7 @@ module IRB
     PerfectMatchedProc = ->(matched) {
       RDocRIDriver ||= RDoc::RI::Driver.new
       if matched =~ /\A(?:::)?RubyVM/ and not ENV['RUBY_YES_I_AM_NOT_A_NORMAL_USER']
-        File.open(File.join(__dir__, 'ruby_logo.aa')) do |f|
-          RDocRIDriver.page do |io|
-            IO.copy_stream(f, io)
-          end
-        end
+        IRB.send(:easter_egg)
         return
       end
       namespace = retrieve_completion_data(matched, doc_namespace: true)
