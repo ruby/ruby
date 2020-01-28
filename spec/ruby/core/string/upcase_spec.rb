@@ -85,11 +85,23 @@ describe "String#upcase!" do
     a.should == "HELLO"
   end
 
+  it "modifies self in place for non-ascii-compatible encodings" do
+    a = "HeLlO".encode("utf-16le")
+    a.upcase!
+    a.should == "HELLO".encode("utf-16le")
+  end
+
   describe "full Unicode case mapping" do
     it "modifies self in place for all of Unicode with no option" do
       a = "äöü"
       a.upcase!
       a.should == "ÄÖÜ"
+    end
+
+    it "works for non-ascii-compatible encodings" do
+      a = "äöü".encode("utf-16le")
+      a.upcase!
+      a.should == "ÄÖÜ".encode("utf-16le")
     end
 
     it "updates string metadata for self" do
@@ -108,6 +120,12 @@ describe "String#upcase!" do
       a = "aßet"
       a.upcase!(:ascii)
       a.should == "AßET"
+    end
+
+    it "works for non-ascii-compatible encodings" do
+      a = "abc".encode("utf-16le")
+      a.upcase!(:ascii)
+      a.should == "ABC".encode("utf-16le")
     end
   end
 

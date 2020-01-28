@@ -255,4 +255,9 @@ describe "The alias keyword" do
     code = '$a = 1; $b = 2; alias $b $a; p [$a, $b]; $b = 3; p [$a, $b]'
     ruby_exe(code).should == "[1, 1]\n[3, 3]\n"
   end
+
+  it "supports aliasing twice the same global variables" do
+    code = '$a = 1; alias $b $a; alias $b $a; p [$a, $b]'
+    ruby_exe(code).should == "[1, 1]\n"
+  end
 end

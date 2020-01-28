@@ -81,6 +81,19 @@ describe "Range#bsearch" do
         [1, 2].should include(result)
       end
     end
+
+    it "returns nil for empty ranges" do
+      (0...0).bsearch { true }.should == nil
+      (0...0).bsearch { false }.should == nil
+      (0...0).bsearch { 1 }.should == nil
+      (0...0).bsearch { 0 }.should == nil
+      (0...0).bsearch { -1 }.should == nil
+
+      (4..2).bsearch { true }.should == nil
+      (4..2).bsearch { 1 }.should == nil
+      (4..2).bsearch { 0 }.should == nil
+      (4..2).bsearch { -1 }.should == nil
+    end
   end
 
   context "with Float values" do
@@ -94,12 +107,45 @@ describe "Range#bsearch" do
       end
 
       it "returns minimum element if the block returns true for every element" do
-        (-0.2..4.8).bsearch { |x| x < 4 }.should == -0.2
+        (-0.2..4.8).bsearch { |x| x < 5 }.should == -0.2
       end
 
       it "returns the smallest element for which block returns true" do
         (0..4.2).bsearch { |x| x >= 2 }.should == 2
         (-1.2..4.3).bsearch { |x| x >= 1 }.should == 1
+      end
+
+      it "returns a boundary element if appropriate" do
+        (1.0..3.0).bsearch { |x| x >= 3.0 }.should == 3.0
+        (1.0...3.0).bsearch { |x| x >= 3.0.prev_float }.should == 3.0.prev_float
+        (1.0..3.0).bsearch { |x| x >= 1.0 }.should == 1.0
+        (1.0...3.0).bsearch { |x| x >= 1.0 }.should == 1.0
+      end
+
+      it "works with infinity bounds" do
+        inf = Float::INFINITY
+        (0..inf).bsearch { |x| x == inf }.should == inf
+        (0...inf).bsearch { |x| x == inf }.should == nil
+        (-inf..0).bsearch { |x| x == -inf }.should == nil
+        (-inf...0).bsearch { |x| x == -inf }.should == nil
+        (inf..inf).bsearch { |x| true }.should == inf
+        (inf...inf).bsearch { |x| true }.should == nil
+        (-inf..-inf).bsearch { |x| true }.should == -inf
+        (-inf...-inf).bsearch { |x| true }.should == nil
+        (inf..0).bsearch { true }.should == nil
+        (inf...0).bsearch { true }.should == nil
+        (0..-inf).bsearch { true }.should == nil
+        (0...-inf).bsearch { true }.should == nil
+        (inf..-inf).bsearch { true }.should == nil
+        (inf...-inf).bsearch { true }.should == nil
+        (0..inf).bsearch { |x| x >= 3 }.should == 3.0
+        (0...inf).bsearch { |x| x >= 3 }.should == 3.0
+        (-inf..0).bsearch { |x| x >= -3 }.should == -3.0
+        (-inf...0).bsearch { |x| x >= -3 }.should == -3.0
+        (-inf..inf).bsearch { |x| x >= 3 }.should == 3.0
+        (-inf...inf).bsearch { |x| x >= 3 }.should == 3.0
+        (0..inf).bsearch { |x| x >= Float::MAX }.should == Float::MAX
+        (0...inf).bsearch { |x| x >= Float::MAX }.should == Float::MAX
       end
     end
 
@@ -130,7 +176,157 @@ describe "Range#bsearch" do
       it "returns an element at an index for which block returns 0" do
         result = (0.1..4.9).bsearch { |x| x < 1 ? 1 : x > 3 ? -1 : 0 }
         result.should >= 1
-        result.should <= 2
+        result.should <= 3
+      end
+
+      it "returns an element at an index for which block returns 0 (small numbers)" do
+        result = (0.1..0.3).bsearch { |x| x < 0.1 ? 1 : x > 0.3 ? -1 : 0 }
+        result.should >= 0.1
+        result.should <= 0.3
+      end
+
+      it "returns a boundary element if appropriate" do
+        (1.0..3.0).bsearch { |x| 3.0 - x }.should == 3.0
+        (1.0...3.0).bsearch { |x| 3.0.prev_float - x }.should == 3.0.prev_float
+        (1.0..3.0).bsearch { |x| 1.0 - x }.should == 1.0
+        (1.0...3.0).bsearch { |x| 1.0 - x }.should == 1.0
+      end
+
+      it "works with infinity bounds" do
+        inf = Float::INFINITY
+        (0..inf).bsearch { |x| x == inf ? 0 : -1 }.should == nil
+        (0...inf).bsearch { |x| x == inf ? 0 : -1 }.should == nil
+        (-inf...0).bsearch { |x| x == -inf ? 0 : 1 }.should == nil
+        (-inf..0).bsearch { |x| x == -inf ? 0 : 1 }.should == nil
+        (inf..inf).bsearch { 0 }.should == inf
+        (inf...inf).bsearch { 0 }.should == nil
+        (-inf..-inf).bsearch { 0 }.should == -inf
+        (-inf...-inf).bsearch { 0 }.should == nil
+        (inf..0).bsearch { 0 }.should == nil
+        (inf...0).bsearch { 0 }.should == nil
+        (0..-inf).bsearch { 0 }.should == nil
+        (0...-inf).bsearch { 0 }.should == nil
+        (inf..-inf).bsearch { 0 }.should == nil
+        (inf...-inf).bsearch { 0 }.should == nil
+        (-inf..inf).bsearch { |x| 3 - x }.should == 3.0
+        (-inf...inf).bsearch { |x| 3 - x }.should == 3.0
+        (0...inf).bsearch { |x| x >= Float::MAX ? 0 : 1 }.should == Float::MAX
+      end
+    end
+  end
+
+  ruby_version_is "2.6" do
+    context "with endless ranges and Integer values" do
+      context "with a block returning true or false" do
+        it "returns minimum element if the block returns true for every element" do
+          eval("(-2..)").bsearch { |x| true }.should == -2
+        end
+
+        it "returns the smallest element for which block returns true" do
+          eval("(0..)").bsearch { |x| x >= 2 }.should == 2
+          eval("(-1..)").bsearch { |x| x >= 1 }.should == 1
+        end
+      end
+
+      context "with a block returning negative, zero, positive numbers" do
+        it "returns nil if the block returns less than zero for every element" do
+          eval("(0..)").bsearch { |x| -1 }.should be_nil
+        end
+
+        it "returns nil if the block never returns zero" do
+          eval("(0..)").bsearch { |x| x > 5 ? -1 : 1 }.should be_nil
+        end
+
+        it "accepts -Float::INFINITY from the block" do
+          eval("(0..)").bsearch { |x| -Float::INFINITY }.should be_nil
+        end
+
+        it "returns an element at an index for which block returns 0.0" do
+          result = eval("(0..)").bsearch { |x| x < 2 ? 1.0 : x > 2 ? -1.0 : 0.0 }
+          result.should == 2
+        end
+
+        it "returns an element at an index for which block returns 0" do
+          result = eval("(0..)").bsearch { |x| x < 1 ? 1 : x > 3 ? -1 : 0 }
+          [1, 2].should include(result)
+        end
+      end
+    end
+
+    context "with endless ranges and Float values" do
+      context "with a block returning true or false" do
+        it "returns nil if the block returns false for every element" do
+          eval("(0.1..)").bsearch { |x| x < 0.0 }.should be_nil
+          eval("(0.1...)").bsearch { |x| x < 0.0 }.should be_nil
+        end
+
+        it "returns nil if the block returns nil for every element" do
+          eval("(-0.0..)").bsearch { |x| nil }.should be_nil
+          eval("(-0.0...)").bsearch { |x| nil }.should be_nil
+        end
+
+        it "returns minimum element if the block returns true for every element" do
+          eval("(-0.2..)").bsearch { |x| true }.should == -0.2
+          eval("(-0.2...)").bsearch { |x| true }.should == -0.2
+        end
+
+        it "returns the smallest element for which block returns true" do
+          eval("(0..)").bsearch { |x| x >= 2 }.should == 2
+          eval("(-1.2..)").bsearch { |x| x >= 1 }.should == 1
+        end
+
+        it "works with infinity bounds" do
+          inf = Float::INFINITY
+          eval("(inf..)").bsearch { |x| true }.should == inf
+          eval("(inf...)").bsearch { |x| true }.should == nil
+          eval("(-inf..)").bsearch { |x| true }.should == -inf
+          eval("(-inf...)").bsearch { |x| true }.should == -inf
+        end
+      end
+
+      context "with a block returning negative, zero, positive numbers" do
+        it "returns nil if the block returns less than zero for every element" do
+          eval("(-2.0..)").bsearch { |x| -1 }.should be_nil
+          eval("(-2.0...)").bsearch { |x| -1 }.should be_nil
+        end
+
+        it "returns nil if the block returns greater than zero for every element" do
+          eval("(0.3..)").bsearch { |x| 1 }.should be_nil
+          eval("(0.3...)").bsearch { |x| 1 }.should be_nil
+        end
+
+        it "returns nil if the block never returns zero" do
+          eval("(0.2..)").bsearch { |x| x < 2 ? 1 : -1 }.should be_nil
+        end
+
+        it "accepts (+/-)Float::INFINITY from the block" do
+          eval("(0.1..)").bsearch { |x| Float::INFINITY }.should be_nil
+          eval("(-5.0..)").bsearch { |x| -Float::INFINITY }.should be_nil
+        end
+
+        it "returns an element at an index for which block returns 0.0" do
+          result = eval("(0.0..)").bsearch { |x| x < 2 ? 1.0 : x > 2 ? -1.0 : 0.0 }
+          result.should == 2
+        end
+
+        it "returns an element at an index for which block returns 0" do
+          result = eval("(0.1..)").bsearch { |x| x < 1 ? 1 : x > 3 ? -1 : 0 }
+          result.should >= 1
+          result.should <= 3
+        end
+
+        it "works with infinity bounds" do
+          inf = Float::INFINITY
+          eval("(inf..)").bsearch { |x| 1 }.should == nil
+          eval("(inf...)").bsearch { |x| 1 }.should == nil
+          eval("(inf..)").bsearch { |x| x == inf ? 0 : 1 }.should == inf
+          eval("(inf...)").bsearch { |x| x == inf ? 0 : 1 }.should == nil
+          eval("(-inf..)").bsearch { |x| x == -inf ? 0 : -1 }.should == -inf
+          eval("(-inf...)").bsearch { |x| x == -inf ? 0 : -1 }.should == -inf
+          eval("(-inf..)").bsearch { |x| 3 - x }.should == 3
+          eval("(-inf...)").bsearch { |x| 3 - x }.should == 3
+          eval("(0.0...)").bsearch { 0 }.should != inf
+        end
       end
     end
   end

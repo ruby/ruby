@@ -72,4 +72,11 @@ describe "Range#min given a block" do
     ('z'..'l').min {|x,y| x <=> y}.should be_nil
     (7...7).min {|x,y| x <=> y}.should be_nil
   end
+
+  ruby_version_is "2.6" do
+    it "returns the start point for endless ranges" do
+      eval("(1..)").min.should == 1
+      eval("(1.0...)").min.should == 1.0
+    end
+  end
 end

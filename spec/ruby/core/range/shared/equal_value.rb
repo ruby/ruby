@@ -42,4 +42,12 @@ describe :range_eql, shared: true do
     b = RangeSpecs::MyRange.new(RangeSpecs::Xs.new(3), RangeSpecs::Xs.new(5))
     a.send(@method, b).should == true
   end
+
+  ruby_version_is "2.6" do
+    it "works for endless Ranges" do
+      eval("(1..)").send(@method, eval("(1..)")).should == true
+      eval("(0.5...)").send(@method, eval("(0.5...)")).should == true
+      eval("(1..)").send(@method, eval("(1...)")).should == false
+    end
+  end
 end

@@ -153,6 +153,18 @@ describe "Array#slice!" do
   it "raises a #{frozen_error_class} on a frozen array" do
     -> { ArraySpecs.frozen_array.slice!(0, 0) }.should raise_error(frozen_error_class)
   end
+
+  ruby_version_is "2.6" do
+    it "works with endless ranges" do
+      a = [1, 2, 3]
+      a.slice!(eval("(1..)")).should == [2, 3]
+      a.should == [1]
+
+      a = [1, 2, 3]
+      a.slice!(eval("(2...)")).should == [3]
+      a.should == [1, 2]
+    end
+  end
 end
 
 describe "Array#slice" do

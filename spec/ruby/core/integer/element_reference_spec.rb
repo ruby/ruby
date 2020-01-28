@@ -78,6 +78,91 @@ describe "Integer#[]" do
     it "returns 0 when passed a Float in the range of a Bignum" do
       3[bignum_value.to_f].should == 0
     end
+
+    ruby_version_is "2.7" do
+      context "when index and length passed" do
+        it "returns specified number of bits from specified position" do
+          0b101001101[2, 4].should ==    0b0011
+          0b101001101[2, 5].should ==   0b10011
+          0b101001101[2, 7].should == 0b1010011
+        end
+
+        it "ensures n[i, len] equals to (n >> i) & ((1 << len) - 1)" do
+          n = 0b101001101; i = 2; len = 4
+          n[i, len].should == (n >> i) & ((1 << len) - 1)
+        end
+
+        it "moves start position to the most significant bits when negative index passed" do
+          0b000001[-1, 4].should == 0b10
+          0b000001[-2, 4].should == 0b100
+          0b000001[-3, 4].should == 0b1000
+        end
+
+        it "ignores negative length" do
+          0b101001101[1, -1].should == 0b10100110
+          0b101001101[2, -1].should == 0b1010011
+          0b101001101[3, -1].should == 0b101001
+
+          0b101001101[3,   -5].should == 0b101001
+          0b101001101[3,  -15].should == 0b101001
+          0b101001101[3, -125].should == 0b101001
+        end
+      end
+
+      context "when range passed" do
+        it "returns bits specified by range" do
+          0b101001101[2..5].should ==    0b0011
+          0b101001101[2..6].should ==   0b10011
+          0b101001101[2..8].should == 0b1010011
+        end
+
+        it "ensures n[i..j] equals to (n >> i) & ((1 << (j - i + 1)) - 1)" do
+          n = 0b101001101; i = 2; j = 5
+          n[i..j].should == (n >> i) & ((1 << (j - i + 1)) - 1)
+        end
+
+        it "ensures n[i..] equals to (n >> i)" do
+          eval("0b101001101[3..]").should == 0b101001101 >> 3
+        end
+
+        it "moves lower boundary to the most significant bits when negative value passed" do
+          0b000001[-1, 4].should == 0b10
+          0b000001[-2, 4].should == 0b100
+          0b000001[-3, 4].should == 0b1000
+        end
+
+        it "ignores negative upper boundary" do
+          0b101001101[1..-1].should == 0b10100110
+          0b101001101[1..-2].should == 0b10100110
+          0b101001101[1..-3].should == 0b10100110
+        end
+
+        it "ignores upper boundary smaller than lower boundary" do
+          0b101001101[4..1].should == 0b10100
+          0b101001101[4..2].should == 0b10100
+          0b101001101[4..3].should == 0b10100
+        end
+
+        it "raises FloatDomainError if any boundary is infinity" do
+          -> { 0x0001[3..Float::INFINITY] }.should raise_error(FloatDomainError, /Infinity/)
+          -> { 0x0001[-Float::INFINITY..3] }.should raise_error(FloatDomainError, /-Infinity/)
+        end
+
+        context "when passed (..i)" do
+          it "returns 0 if all i bits equal 0" do
+            eval("0b10000[..1]").should == 0
+            eval("0b10000[..2]").should == 0
+            eval("0b10000[..3]").should == 0
+          end
+
+          it "raises ArgumentError if any of i bit equals 1" do
+            -> {
+              eval("0b111110[..3]")
+            }.should raise_error(ArgumentError, /The beginless range for Integer#\[\] results in infinity/)
+          end
+        end
+      end
+    end
   end
 
   context "bignum" do

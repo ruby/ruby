@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 
 describe "Complex#<=>" do
-  ruby_version_is '2.7' do
+  ruby_version_is "2.7" do
     it "returns nil if either self or argument has imaginary part" do
       (Complex(5, 1) <=> Complex(2)).should be_nil
       (Complex(1) <=> Complex(2, 1)).should be_nil

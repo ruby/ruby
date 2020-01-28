@@ -45,6 +45,12 @@ describe "Range#max" do
     time_end = Time.now + 1.0
     -> { (time_start...time_end).max  }.should raise_error(TypeError)
   end
+
+  ruby_version_is "2.6" do
+    it "raises RangeError when called on an endless range" do
+      -> { eval("(1..)").max }.should raise_error(RangeError)
+    end
+  end
 end
 
 describe "Range#max given a block" do

@@ -88,6 +88,12 @@ describe "String#downcase!" do
     a.should == "hello"
   end
 
+  it "modifies self in place for non-ascii-compatible encodings" do
+    a = "HeLlO".encode("utf-16le")
+    a.downcase!
+    a.should == "hello".encode("utf-16le")
+  end
+
   describe "full Unicode case mapping" do
     it "modifies self in place for all of Unicode with no option" do
       a = "ÄÖÜ"
@@ -111,6 +117,12 @@ describe "String#downcase!" do
       a = "CÅR"
       a.downcase!(:ascii)
       a.should == "cÅr"
+    end
+
+    it "works for non-ascii-compatible encodings" do
+      a = "ABC".encode("utf-16le")
+      a.downcase!(:ascii)
+      a.should == "abc".encode("utf-16le")
     end
   end
 

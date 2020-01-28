@@ -111,7 +111,7 @@ describe "Kernel#warn" do
         -> { w.f4(obj, 2) }.should output(nil, %r|core/kernel/fixtures/classes.rb:#{w.f2_call_lineno}: warning: to_s called|)
       end
 
-      it "does not prepend caller information if line number is too big" do
+      it "does not prepend caller information if the uplevel argument is too large" do
         w = KernelSpecs::WarnInNestedCall.new
         -> { w.f4("foo", 100) }.should output(nil, "warning: foo\n")
       end

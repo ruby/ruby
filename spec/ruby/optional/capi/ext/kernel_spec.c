@@ -305,6 +305,13 @@ static VALUE kernel_spec_rb_funcall_with_block(VALUE self, VALUE obj, VALUE meth
   return rb_funcall_with_block(obj, SYM2ID(method), 0, NULL, block);
 }
 
+static VALUE kernel_spec_rb_funcall_many_args(VALUE self, VALUE obj, VALUE method) {
+  return rb_funcall(obj, SYM2ID(method), 15,
+                    INT2FIX(15), INT2FIX(14), INT2FIX(13), INT2FIX(12), INT2FIX(11),
+                    INT2FIX(10), INT2FIX(9), INT2FIX(8), INT2FIX(7), INT2FIX(6),
+                    INT2FIX(5), INT2FIX(4), INT2FIX(3), INT2FIX(2), INT2FIX(1));
+}
+
 void Init_kernel_spec(void) {
   VALUE cls = rb_define_class("CApiKernelSpecs", rb_cObject);
   rb_define_method(cls, "rb_block_given_p", kernel_spec_rb_block_given_p, 0);
@@ -342,6 +349,7 @@ void Init_kernel_spec(void) {
   rb_define_method(cls, "rb_make_backtrace", kernel_spec_rb_make_backtrace, 0);
   rb_define_method(cls, "rb_obj_method", kernel_spec_rb_obj_method, 2);
   rb_define_method(cls, "rb_funcall3", kernel_spec_rb_funcall3, 2);
+  rb_define_method(cls, "rb_funcall_many_args", kernel_spec_rb_funcall_many_args, 2);
   rb_define_method(cls, "rb_funcall_with_block", kernel_spec_rb_funcall_with_block, 3);
 }
 

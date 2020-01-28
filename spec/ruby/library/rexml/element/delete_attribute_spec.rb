@@ -40,4 +40,3 @@ ruby_version_is ''...'2.8' do
     end
   end
 end
-

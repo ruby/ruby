@@ -113,6 +113,20 @@ describe :array_join_with_default_separator, shared: true do
 
     -> { ary_utf8_bad_binary.send(@method) }.should raise_error(EncodingError)
   end
+
+  ruby_version_is "2.7" do
+    context "when $, is not nil" do
+      before do
+        suppress_warning do
+          $, = '*'
+        end
+      end
+
+      it "warns" do
+        -> { [].join }.should complain(/warning: \$, is set to non-nil value/)
+      end
+    end
+  end
 end
 
 describe :array_join_with_string_separator, shared: true do

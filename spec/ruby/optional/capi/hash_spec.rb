@@ -260,7 +260,7 @@ describe "C-API Hash function" do
       hash_code = @s.compute_a_hash_code(53)
       hash_code.should be_an_instance_of(Integer)
       hash_code.should == @s.compute_a_hash_code(53)
-      @s.compute_a_hash_code(90) == @s.compute_a_hash_code(90)
+      @s.compute_a_hash_code(90).should == @s.compute_a_hash_code(90)
     end
   end
 end

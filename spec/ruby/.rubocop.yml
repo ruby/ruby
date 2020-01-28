@@ -114,6 +114,7 @@ Style/Lambda:
   Exclude:
     - 'language/lambda_spec.rb'
     - 'language/proc_spec.rb'
+    - 'language/numbered_parameters_spec.rb'
     - 'core/kernel/lambda_spec.rb'
 
 Style/EmptyLambdaParameter:

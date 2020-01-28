@@ -11,6 +11,13 @@ describe "Range#to_s" do
     (0.5..2.4).to_s.should == "0.5..2.4"
   end
 
+  ruby_version_is "2.6" do
+    it "can show endless ranges" do
+      eval("(1..)").to_s.should == "1.."
+      eval("(1.0...)").to_s.should == "1.0..."
+    end
+  end
+
   ruby_version_is ''...'2.7' do
     it "returns a tainted string if either end is tainted" do
       (("a".taint)..."c").to_s.tainted?.should be_true

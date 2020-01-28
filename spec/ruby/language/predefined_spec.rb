@@ -398,6 +398,19 @@ describe "Predefined global $!" do
       $!.should == nil
     end
 
+    it "should be cleared when an exception is rescued even when a non-local return from block" do
+      [ 1 ].each do
+        begin
+          raise StandardError.new('err')
+        rescue => e
+          $!.should == e
+          return
+        end
+      end
+
+      $!.should == nil
+    end
+
     it "should not be cleared when an exception is not rescued" do
       e = StandardError.new
       begin
@@ -633,6 +646,12 @@ describe "Predefined global $," do
   it "raises TypeError if assigned a non-String" do
     -> { $, = Object.new }.should raise_error(TypeError)
   end
+
+  ruby_version_is "2.7" do
+    it "warns if assigned non-nil" do
+      -> { $, = "_" }.should complain(/warning: `\$,' is deprecated/)
+    end
+  end
 end
 
 describe "Predefined global $." do
@@ -659,6 +678,18 @@ describe "Predefined global $." do
     obj.should_receive(:to_int).and_return('abc')
 
     -> { $. = obj }.should raise_error(TypeError)
+  end
+end
+
+describe "Predefined global $;" do
+  after :each do
+    $; = nil
+  end
+
+  ruby_version_is "2.7" do
+    it "warns if assigned non-nil" do
+      -> { $; = "_" }.should complain(/warning: `\$;' is deprecated/)
+    end
   end
 end
 

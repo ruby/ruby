@@ -84,6 +84,24 @@ describe "String#split with String" do
         $; = old_fs
       end
     end
+
+    ruby_version_is "2.7" do
+      context "when $; is not nil" do
+        before do
+          suppress_warning do
+            @old_value, $; = $;, 'foobar'
+          end
+        end
+
+        after do
+          $; = @old_value
+        end
+
+        it "warns" do
+          -> { "".split }.should complain(/warning: \$; is set to non-nil value/)
+        end
+      end
+    end
   end
 
   it "ignores leading and continuous whitespace when string is a single space" do

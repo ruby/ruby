@@ -19,4 +19,10 @@ describe "Range#to_a" do
   it "works with Ranges of Symbols" do
     (:A..:z).to_a.size.should == 58
   end
+
+  ruby_version_is "2.6" do
+    it "throws an exception for endless ranges" do
+      -> { eval("(1..)").to_a }.should raise_error(RangeError)
+    end
+  end
 end

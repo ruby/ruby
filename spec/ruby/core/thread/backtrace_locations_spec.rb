@@ -19,6 +19,43 @@ describe "Thread#backtrace_locations" do
     locations.each { |loc| loc.should be_an_instance_of(Thread::Backtrace::Location) }
   end
 
+  it "can be called with a number of locations to omit" do
+    locations1 = Thread.current.backtrace_locations
+    locations2 = Thread.current.backtrace_locations(2)
+    locations1[2..-1].length.should == locations2.length
+    locations1[2..-1].map(&:to_s).should == locations2.map(&:to_s)
+  end
+
+  it "can be called with a maximum number of locations to return as second parameter" do
+    locations1 = Thread.current.backtrace_locations
+    locations2 = Thread.current.backtrace_locations(2, 3)
+    locations1[2..4].map(&:to_s).should == locations2.map(&:to_s)
+  end
+
+  it "can be called with a range" do
+    locations1 = Thread.current.backtrace_locations
+    locations2 = Thread.current.backtrace_locations(2..4)
+    locations1[2..4].map(&:to_s).should == locations2.map(&:to_s)
+  end
+
+  it "can be called with a range whose end is negative" do
+    locations1 = Thread.current.backtrace_locations
+    locations2 = Thread.current.backtrace_locations(2..-1)
+    locations3 = Thread.current.backtrace_locations(2..-2)
+    locations1[2..-1].map(&:to_s).should == locations2.map(&:to_s)
+    locations1[2..-2].map(&:to_s).should == locations3.map(&:to_s)
+  end
+
+  it "returns nil if omitting more locations than available" do
+    Thread.current.backtrace_locations(100).should == nil
+    Thread.current.backtrace_locations(100..-1).should == nil
+  end
+
+  it "returns [] if omitting exactly the number of locations available" do
+    omit = Thread.current.backtrace_locations.length
+    Thread.current.backtrace_locations(omit).should == []
+  end
+
   it "without argument is the same as showing all locations with 0..-1" do
     Thread.current.backtrace_locations.map(&:to_s).should == Thread.current.backtrace_locations(0..-1).map(&:to_s)
   end

@@ -1,6 +1,5 @@
 # -*- encoding: binary -*-
 require_relative '../fixtures/marshal_data'
-require 'stringio'
 
 describe :marshal_load, shared: true do
   before :all do
@@ -410,8 +409,9 @@ describe :marshal_load, shared: true do
     end
 
     it "loads a string through StringIO stream" do
-        obj = "This is a string which should be unmarshalled through StringIO stream!"
-        Marshal.send(@method, StringIO.new(Marshal.dump(obj))).should == obj
+      require 'stringio'
+      obj = "This is a string which should be unmarshalled through StringIO stream!"
+      Marshal.send(@method, StringIO.new(Marshal.dump(obj))).should == obj
     end
 
     it "loads a string with an ivar" do

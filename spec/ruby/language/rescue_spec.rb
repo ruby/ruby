@@ -481,5 +481,15 @@ describe "The rescue keyword" do
         a = raise(Exception) rescue 1
       }.should raise_error(Exception)
     end
+
+    ruby_version_is "2.7" do
+      it "rescues with multiple assignment" do
+
+        a, b = raise rescue [1, 2]
+
+        a.should == 1
+        b.should == 2
+      end
+    end
   end
 end
