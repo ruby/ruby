@@ -217,6 +217,8 @@ class TestRefinement < Test::Unit::TestCase
     assert_raise(NoMethodError) { FooExtClient.public_send_b_on(foo) }
   end
 
+  DONE_TESTS = []
+
   module MethodIntegerPowEx
     refine Integer do
       def pow(*)
@@ -225,6 +227,9 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
   def test_method_should_use_refinements
+    skip if DONE_TESTS.include? __method__ # giveup multi-run
+    DONE_TESTS << __method__
+
     foo = Foo.new
     assert_raise(NameError) { foo.method(:z) }
     assert_equal("FooExt#z", FooExtClient.method_z(foo).call)
@@ -246,6 +251,9 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
   def test_instance_method_should_use_refinements
+    skip if DONE_TESTS.include? __method__ # giveup multi-run
+    DONE_TESTS << __method__
+
     foo = Foo.new
     assert_raise(NameError) { Foo.instance_method(:z) }
     assert_equal("FooExt#z", FooExtClient.instance_method_z(foo).bind(foo).call)
