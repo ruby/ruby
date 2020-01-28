@@ -59,10 +59,10 @@ class TestProc < Test::Unit::TestCase
       Proc.new
     end
     meta.class_eval {
-      remove_method(:foo) if method_defined?(:foo)
-      define_method(:foo, b)
+      remove_method(:foo_arity) if method_defined?(:foo_arity)
+      define_method(:foo_arity, b)
     }
-    assert_equal(n, method(:foo).arity)
+    assert_equal(n, method(:foo_arity).arity)
   end
 
   def test_arity
