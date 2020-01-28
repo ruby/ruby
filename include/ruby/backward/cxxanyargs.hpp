@@ -574,7 +574,7 @@ struct driver0 {
     template<bool b> struct specific< 0, b> : public engine< 0, VALUE(*)(VALUE)> {};
     template<bool b> struct specific<-1, b> : public engine<-1, VALUE(*)(int argc, VALUE *argv, VALUE self)> {
         using engine<-1, VALUE(*)(int argc, VALUE *argv, VALUE self)>::define;
-        static inline void define(T m, VALUE(*f)(int argc, const VALUE *argv, VALUE self, VALUE)) { F(m, reinterpret_cast<type *>(f), -1); }
+        static inline void define(T m, VALUE(*f)(int argc, const VALUE *argv, VALUE self)) { F(m, reinterpret_cast<type *>(f), -1); }
     };
     template<bool b> struct specific<-2, b> : public engine<-2, VALUE(*)(VALUE, VALUE)> {};
     /// @endcond

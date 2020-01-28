@@ -362,6 +362,12 @@ namespace test_rb_define_method {
         return Qnil;
     }
 
+    static VALUE
+    mc(int, const VALUE*, VALUE)
+    {
+        return Qnil;
+    }
+
     VALUE
     test(VALUE self)
     {
@@ -370,24 +376,28 @@ namespace test_rb_define_method {
         rb_define_method(self, "m2", m2, 2);
         rb_define_method(self, "ma", ma, -2);
         rb_define_method(self, "mv", mv, -1);
+        rb_define_method(self, "mc", mc, -1);
 
         // Cast by RUBY_METHOD_FUNC
         rb_define_method(self, "m1", RUBY_METHOD_FUNC(m1), 1);
         rb_define_method(self, "m2", RUBY_METHOD_FUNC(m2), 2);
         rb_define_method(self, "ma", RUBY_METHOD_FUNC(ma), -2);
         rb_define_method(self, "mv", RUBY_METHOD_FUNC(mv), -1);
+        rb_define_method(self, "mc", RUBY_METHOD_FUNC(mc), -1);
 
         // Explicit cast instead of RUBY_METHOD_FUNC
         rb_define_method(self, "m1", (VALUE (*)(...))(m1), 1);
         rb_define_method(self, "m2", (VALUE (*)(...))(m2), 2);
         rb_define_method(self, "ma", (VALUE (*)(...))(ma), -2);
         rb_define_method(self, "mv", (VALUE (*)(...))(mv), -1);
+        rb_define_method(self, "mc", (VALUE (*)(...))(mc), -1);
 
         // rb_f_notimplement
         rb_define_method(self, "m1", rb_f_notimplement, 1);
         rb_define_method(self, "m2", rb_f_notimplement, 2);
         rb_define_method(self, "ma", rb_f_notimplement, -2);
         rb_define_method(self, "mv", rb_f_notimplement, -1);
+        rb_define_method(self, "mc", rb_f_notimplement, -1);
 
         return self;
     }
@@ -418,6 +428,12 @@ namespace test_rb_define_method_id {
         return Qnil;
     }
 
+    static VALUE
+    mc(int, const VALUE*, VALUE)
+    {
+        return Qnil;
+    }
+
     VALUE
     test(VALUE self)
     {
@@ -426,24 +442,28 @@ namespace test_rb_define_method_id {
         rb_define_method_id(self, rb_intern("m2"), m2, 2);
         rb_define_method_id(self, rb_intern("ma"), ma, -2);
         rb_define_method_id(self, rb_intern("mv"), mv, -1);
+        rb_define_method_id(self, rb_intern("mc"), mc, -1);
 
         // Cast by RUBY_METHOD_FUNC
         rb_define_method_id(self, rb_intern("m1"), RUBY_METHOD_FUNC(m1), 1);
         rb_define_method_id(self, rb_intern("m2"), RUBY_METHOD_FUNC(m2), 2);
         rb_define_method_id(self, rb_intern("ma"), RUBY_METHOD_FUNC(ma), -2);
         rb_define_method_id(self, rb_intern("mv"), RUBY_METHOD_FUNC(mv), -1);
+        rb_define_method_id(self, rb_intern("mc"), RUBY_METHOD_FUNC(mc), -1);
 
         // Explicit cast instead of RUBY_METHOD_FUNC
         rb_define_method_id(self, rb_intern("m1"), (VALUE (*)(...))(m1), 1);
         rb_define_method_id(self, rb_intern("m2"), (VALUE (*)(...))(m2), 2);
         rb_define_method_id(self, rb_intern("ma"), (VALUE (*)(...))(ma), -2);
         rb_define_method_id(self, rb_intern("mv"), (VALUE (*)(...))(mv), -1);
+        rb_define_method_id(self, rb_intern("mc"), (VALUE (*)(...))(mc), -1);
 
         // rb_f_notimplement
         rb_define_method_id(self, rb_intern("m1"), rb_f_notimplement, 1);
         rb_define_method_id(self, rb_intern("m2"), rb_f_notimplement, 2);
         rb_define_method_id(self, rb_intern("ma"), rb_f_notimplement, -2);
         rb_define_method_id(self, rb_intern("mv"), rb_f_notimplement, -1);
+        rb_define_method_id(self, rb_intern("mc"), rb_f_notimplement, -1);
 
         return self;
     }
@@ -474,6 +494,12 @@ namespace test_rb_define_module_function {
         return Qnil;
     }
 
+    static VALUE
+    mc(int, const VALUE*, VALUE)
+    {
+        return Qnil;
+    }
+
     VALUE
     test(VALUE self)
     {
@@ -482,24 +508,28 @@ namespace test_rb_define_module_function {
         rb_define_module_function(self, "m2", m2, 2);
         rb_define_module_function(self, "ma", ma, -2);
         rb_define_module_function(self, "mv", mv, -1);
+        rb_define_module_function(self, "mc", mc, -1);
 
         // Cast by RUBY_METHOD_FUNC
         rb_define_module_function(self, "m1", RUBY_METHOD_FUNC(m1), 1);
         rb_define_module_function(self, "m2", RUBY_METHOD_FUNC(m2), 2);
         rb_define_module_function(self, "ma", RUBY_METHOD_FUNC(ma), -2);
         rb_define_module_function(self, "mv", RUBY_METHOD_FUNC(mv), -1);
+        rb_define_module_function(self, "mc", RUBY_METHOD_FUNC(mc), -1);
 
         // Explicit cast instead of RUBY_METHOD_FUNC
         rb_define_module_function(self, "m1", (VALUE (*)(...))(m1), 1);
         rb_define_module_function(self, "m2", (VALUE (*)(...))(m2), 2);
         rb_define_module_function(self, "ma", (VALUE (*)(...))(ma), -2);
         rb_define_module_function(self, "mv", (VALUE (*)(...))(mv), -1);
+        rb_define_module_function(self, "mc", (VALUE (*)(...))(mc), -1);
 
         // rb_f_notimplement
         rb_define_module_function(self, "m1", rb_f_notimplement, 1);
         rb_define_module_function(self, "m2", rb_f_notimplement, 2);
         rb_define_module_function(self, "ma", rb_f_notimplement, -2);
         rb_define_module_function(self, "mv", rb_f_notimplement, -1);
+        rb_define_module_function(self, "mc", rb_f_notimplement, -1);
 
         return self;
     }
@@ -530,6 +560,12 @@ namespace test_rb_define_singleton_method {
         return Qnil;
     }
 
+    static VALUE
+    mc(int, const VALUE*, VALUE)
+    {
+        return Qnil;
+    }
+
     VALUE
     test(VALUE self)
     {
@@ -538,24 +574,28 @@ namespace test_rb_define_singleton_method {
         rb_define_singleton_method(self, "m2", m2, 2);
         rb_define_singleton_method(self, "ma", ma, -2);
         rb_define_singleton_method(self, "mv", mv, -1);
+        rb_define_singleton_method(self, "mc", mc, -1);
 
         // Cast by RUBY_METHOD_FUNC
         rb_define_singleton_method(self, "m1", RUBY_METHOD_FUNC(m1), 1);
         rb_define_singleton_method(self, "m2", RUBY_METHOD_FUNC(m2), 2);
         rb_define_singleton_method(self, "ma", RUBY_METHOD_FUNC(ma), -2);
         rb_define_singleton_method(self, "mv", RUBY_METHOD_FUNC(mv), -1);
+        rb_define_singleton_method(self, "mc", RUBY_METHOD_FUNC(mc), -1);
 
         // Explicit cast instead of RUBY_METHOD_FUNC
         rb_define_singleton_method(self, "m1", (VALUE (*)(...))(m1), 1);
         rb_define_singleton_method(self, "m2", (VALUE (*)(...))(m2), 2);
         rb_define_singleton_method(self, "ma", (VALUE (*)(...))(ma), -2);
         rb_define_singleton_method(self, "mv", (VALUE (*)(...))(mv), -1);
+        rb_define_singleton_method(self, "mc", (VALUE (*)(...))(mc), -1);
 
         // rb_f_notimplement
         rb_define_singleton_method(self, "m1", rb_f_notimplement, 1);
         rb_define_singleton_method(self, "m2", rb_f_notimplement, 2);
         rb_define_singleton_method(self, "ma", rb_f_notimplement, -2);
         rb_define_singleton_method(self, "mv", rb_f_notimplement, -1);
+        rb_define_singleton_method(self, "mc", rb_f_notimplement, -1);
 
         return self;
     }
@@ -586,6 +626,12 @@ namespace test_rb_define_protected_method {
         return Qnil;
     }
 
+    static VALUE
+    mc(int, const VALUE*, VALUE)
+    {
+        return Qnil;
+    }
+
     VALUE
     test(VALUE self)
     {
@@ -594,24 +640,28 @@ namespace test_rb_define_protected_method {
         rb_define_protected_method(self, "m2", m2, 2);
         rb_define_protected_method(self, "ma", ma, -2);
         rb_define_protected_method(self, "mv", mv, -1);
+        rb_define_protected_method(self, "mc", mc, -1);
 
         // Cast by RUBY_METHOD_FUNC
         rb_define_protected_method(self, "m1", RUBY_METHOD_FUNC(m1), 1);
         rb_define_protected_method(self, "m2", RUBY_METHOD_FUNC(m2), 2);
         rb_define_protected_method(self, "ma", RUBY_METHOD_FUNC(ma), -2);
         rb_define_protected_method(self, "mv", RUBY_METHOD_FUNC(mv), -1);
+        rb_define_protected_method(self, "mc", RUBY_METHOD_FUNC(mc), -1);
 
         // Explicit cast instead of RUBY_METHOD_FUNC
         rb_define_protected_method(self, "m1", (VALUE (*)(...))(m1), 1);
         rb_define_protected_method(self, "m2", (VALUE (*)(...))(m2), 2);
         rb_define_protected_method(self, "ma", (VALUE (*)(...))(ma), -2);
         rb_define_protected_method(self, "mv", (VALUE (*)(...))(mv), -1);
+        rb_define_protected_method(self, "mc", (VALUE (*)(...))(mc), -1);
 
         // rb_f_notimplement
         rb_define_protected_method(self, "m1", rb_f_notimplement, 1);
         rb_define_protected_method(self, "m2", rb_f_notimplement, 2);
         rb_define_protected_method(self, "ma", rb_f_notimplement, -2);
         rb_define_protected_method(self, "mv", rb_f_notimplement, -1);
+        rb_define_protected_method(self, "mc", rb_f_notimplement, -1);
 
         return self;
     }
@@ -642,6 +692,12 @@ namespace test_rb_define_private_method {
         return Qnil;
     }
 
+    static VALUE
+    mc(int, const VALUE*, VALUE)
+    {
+        return Qnil;
+    }
+
     VALUE
     test(VALUE self)
     {
@@ -650,24 +706,28 @@ namespace test_rb_define_private_method {
         rb_define_private_method(self, "m2", m2, 2);
         rb_define_private_method(self, "ma", ma, -2);
         rb_define_private_method(self, "mv", mv, -1);
+        rb_define_private_method(self, "mc", mc, -1);
 
         // Cast by RUBY_METHOD_FUNC
         rb_define_private_method(self, "m1", RUBY_METHOD_FUNC(m1), 1);
         rb_define_private_method(self, "m2", RUBY_METHOD_FUNC(m2), 2);
         rb_define_private_method(self, "ma", RUBY_METHOD_FUNC(ma), -2);
         rb_define_private_method(self, "mv", RUBY_METHOD_FUNC(mv), -1);
+        rb_define_private_method(self, "mc", RUBY_METHOD_FUNC(mc), -1);
 
         // Explicit cast instead of RUBY_METHOD_FUNC
         rb_define_private_method(self, "m1", (VALUE (*)(...))(m1), 1);
         rb_define_private_method(self, "m2", (VALUE (*)(...))(m2), 2);
         rb_define_private_method(self, "ma", (VALUE (*)(...))(ma), -2);
         rb_define_private_method(self, "mv", (VALUE (*)(...))(mv), -1);
+        rb_define_private_method(self, "mc", (VALUE (*)(...))(mc), -1);
 
         // rb_f_notimplement
         rb_define_private_method(self, "m1", rb_f_notimplement, 1);
         rb_define_private_method(self, "m2", rb_f_notimplement, 2);
         rb_define_private_method(self, "ma", rb_f_notimplement, -2);
         rb_define_private_method(self, "mv", rb_f_notimplement, -1);
+        rb_define_private_method(self, "mc", rb_f_notimplement, -1);
 
         return self;
     }
@@ -698,6 +758,12 @@ namespace test_rb_define_global_function {
         return Qnil;
     }
 
+    static VALUE
+    mc(int, const VALUE*, VALUE)
+    {
+        return Qnil;
+    }
+
     VALUE
     test(VALUE self)
     {
@@ -706,24 +772,28 @@ namespace test_rb_define_global_function {
         rb_define_global_function("m2", m2, 2);
         rb_define_global_function("ma", ma, -2);
         rb_define_global_function("mv", mv, -1);
+        rb_define_global_function("mc", mc, -1);
 
         // Cast by RUBY_METHOD_FUNC
         rb_define_global_function("m1", RUBY_METHOD_FUNC(m1), 1);
         rb_define_global_function("m2", RUBY_METHOD_FUNC(m2), 2);
         rb_define_global_function("ma", RUBY_METHOD_FUNC(ma), -2);
         rb_define_global_function("mv", RUBY_METHOD_FUNC(mv), -1);
+        rb_define_global_function("mc", RUBY_METHOD_FUNC(mc), -1);
 
         // Explicit cast instead of RUBY_METHOD_FUNC
         rb_define_global_function("m1", (VALUE (*)(...))(m1), 1);
         rb_define_global_function("m2", (VALUE (*)(...))(m2), 2);
         rb_define_global_function("ma", (VALUE (*)(...))(ma), -2);
         rb_define_global_function("mv", (VALUE (*)(...))(mv), -1);
+        rb_define_global_function("mc", (VALUE (*)(...))(mc), -1);
 
         // rb_f_notimplement
         rb_define_global_function("m1", rb_f_notimplement, 1);
         rb_define_global_function("m2", rb_f_notimplement, 2);
         rb_define_global_function("ma", rb_f_notimplement, -2);
         rb_define_global_function("mv", rb_f_notimplement, -1);
+        rb_define_global_function("mc", rb_f_notimplement, -1);
 
         return self;
     }
