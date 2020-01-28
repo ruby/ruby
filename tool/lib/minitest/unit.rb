@@ -867,6 +867,10 @@ module MiniTest
     ##
     # Runner for a given +type+ (eg, test vs bench).
 
+    def self.current_repeat_count
+      @@current_repeat_count
+    end
+
     def _run_anything type
       suites = TestCase.send "#{type}_suites"
       return if suites.empty?
@@ -880,7 +884,7 @@ module MiniTest
       sync = output.respond_to? :"sync=" # stupid emacs
       old_sync, output.sync = output.sync, true if sync
 
-      count = 0
+      @@current_repeat_count = 0
       begin
         start = Time.now
 
@@ -891,15 +895,15 @@ module MiniTest
         test_count      += @test_count
         assertion_count += @assertion_count
         t = Time.now - start
-        count += 1
+        @@current_repeat_count += 1
         unless @repeat_count
           puts
           puts
         end
         puts "Finished%s %ss in %.6fs, %.4f tests/s, %.4f assertions/s.\n" %
-             [(@repeat_count ? "(#{count}/#{@repeat_count}) " : ""), type,
+             [(@repeat_count ? "(#{@@current_repeat_count}/#{@repeat_count}) " : ""), type,
                t, @test_count.fdiv(t), @assertion_count.fdiv(t)]
-      end while @repeat_count && count < @repeat_count &&
+      end while @repeat_count && @@current_repeat_count < @repeat_count &&
                 report.empty? && failures.zero? && errors.zero?
 
       output.sync = old_sync if sync
