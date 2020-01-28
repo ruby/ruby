@@ -362,7 +362,7 @@ env:
         -Wunused-variable'
       - LDFLAGS=-Wno-unused-command-line-argument
 
-  - &rubyspec
+  - &rubyspec24
     name: Check ruby/spec version guards on Ruby 2.4
     language: ruby
     rvm: 2.4.9
@@ -373,6 +373,18 @@ env:
     script: ruby -C spec/ruby ../mspec/bin/mspec .
     after_failure:
       - echo "ruby/spec failed on Ruby 2.4. This is likely because of a missing ruby_version_is guard, please add it. See spec/README.md."
+
+  - &rubyspec27
+    name: Check ruby/spec version guards on Ruby 2.7
+    language: ruby
+    rvm: 2.7.0
+    before_install:
+    install:
+    before_script: chmod -R u+w spec/ruby
+    # -j randomly hangs.
+    script: ruby -C spec/ruby ../mspec/bin/mspec .
+    after_failure:
+      - echo "ruby/spec failed on Ruby 2.7. This is likely because of a missing ruby_version_is guard, please add it. See spec/README.md."
 
   - &baseruby
     name: "BASERUBY: Ruby 2.2"
@@ -425,7 +437,8 @@ matrix:
     - <<: *pedanticism
     - <<: *assertions
     - <<: *baseruby
-    - <<: *rubyspec
+    - <<: *rubyspec24
+    - <<: *rubyspec27
     - <<: *dependency
     # Build every commit (Allowed Failures):
     - <<: *ASAN
