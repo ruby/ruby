@@ -28,6 +28,7 @@ class ContextState
     @pre      = {}
     @post     = {}
     @examples = []
+    @state    = nil
     @parent   = nil
     @parents  = [self]
     @children = []
@@ -127,6 +128,7 @@ class ContextState
   # Creates an ExampleState instance for the block and stores it
   # in a list of examples to evaluate unless the example is filtered.
   def it(desc, &block)
+    raise "nested #it" if @state
     example = ExampleState.new(self, desc, block)
     MSpec.actions :add, example
     return if MSpec.guarded?

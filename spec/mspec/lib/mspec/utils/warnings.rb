@@ -16,6 +16,10 @@ if RUBY_ENGINE == "ruby" and ruby_version_is("2.4")
   end
 
   def Warning.warn(message)
+    # Suppress any warning inside the method to prevent recursion
+    verbose = $VERBOSE
+    $VERBOSE = nil
+
     if Thread.current[:in_mspec_complain_matcher]
       return $stderr.write(message)
     end
@@ -52,9 +56,12 @@ if RUBY_ENGINE == "ruby" and ruby_version_is("2.4")
     when /env\/shared\/key\.rb:\d+: warning: ENV\.index is deprecated; use ENV\.key/
     when /exponent(_spec)?\.rb:\d+: warning: in a\*\*b, b may be too big/
     when /enumerator\/(new_spec|initialize_spec)\.rb:\d+: warning: Enumerator\.new without a block is deprecated/
+    when /Pattern matching is experimental, and the behavior may change in future versions of Ruby!/
     else
       $stderr.write message
     end
+  ensure
+    $VERBOSE = verbose
   end
 else
   $VERBOSE = nil unless ENV['OUTPUT_WARNINGS']
