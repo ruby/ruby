@@ -2,28 +2,35 @@
 require 'test/unit'
 
 class TestRand < Test::Unit::TestCase
+  def teardown
+    raise if srand == 0
+  end
   def assert_random_int(ws, m, init = 0)
-    srand(init)
-    rnds = [Random.new(init)]
-    rnds2 = [rnds[0].dup]
-    rnds3 = [rnds[0].dup]
-    ws.each_with_index do |w, i|
-      w = w.to_i
-      assert_equal(w, rand(m))
-      rnds.each do |rnd|
-        assert_equal(w, rnd.rand(m))
+    # call srand in another process
+    assert_separately [], %Q{
+      m = #{m}
+      srand(#{init})
+      rnds = [Random.new(#{init})]
+      rnds2 = [rnds[0].dup]
+      rnds3 = [rnds[0].dup]
+      #{ws.inspect}.each_with_index do |w, i|
+        w = w.to_i
+        assert_equal(w, rand(m))
+        rnds.each do |rnd|
+          assert_equal(w, rnd.rand(m))
+        end
+        rnds2.each do |rnd|
+          r=rnd.rand(i...(m+i))
+          assert_equal(w+i, r)
+        end
+        rnds3.each do |rnd|
+          r=rnd.rand(i..(m+i-1))
+          assert_equal(w+i, r)
+        end
+        rnds << Marshal.load(Marshal.dump(rnds[-1]))
+        rnds2 << Marshal.load(Marshal.dump(rnds2[-1]))
       end
-      rnds2.each do |rnd|
-        r=rnd.rand(i...(m+i))
-        assert_equal(w+i, r)
-      end
-      rnds3.each do |rnd|
-        r=rnd.rand(i..(m+i-1))
-        assert_equal(w+i, r)
-      end
-      rnds << Marshal.load(Marshal.dump(rnds[-1]))
-      rnds2 << Marshal.load(Marshal.dump(rnds2[-1]))
-    end
+    }
   end
 
   def test_mt
@@ -122,6 +129,7 @@ class TestRand < Test::Unit::TestCase
   end
 
   def test_types
+    assert_separately [], <<-EOT
     srand(0)
     rnd = Random.new(0)
     assert_equal(44, rand(100.0))
@@ -154,9 +162,11 @@ class TestRand < Test::Unit::TestCase
     assert_equal(47, rnd.rand(o))
     assert_equal(64, rand(o))
     assert_equal(64, rnd.rand(o))
+    EOT
   end
 
   def test_srand
+    assert_separately [], <<-EOT
     srand
     assert_kind_of(Integer, rand(2))
     assert_kind_of(Integer, Random.new.rand(2))
@@ -167,13 +177,16 @@ class TestRand < Test::Unit::TestCase
       assert_equal(w.to_i, rand(0x100000000))
       assert_equal(w.to_i, rnd.rand(0x100000000))
     }
+    EOT
   end
 
   def test_shuffle
+    assert_separately [], <<-EOT
     srand(0)
     result = [*1..5].shuffle
     assert_equal([*1..5], result.sort)
     assert_equal(result, [*1..5].shuffle(random: Random.new(0)))
+    EOT
   end
 
   def test_big_seed
@@ -239,6 +252,7 @@ class TestRand < Test::Unit::TestCase
   end
 
   def test_random_state
+    assert_separately [], <<-EOT
     state = <<END
 3877134065023083674777481835852171977222677629000095857864323111193832400974413
 4782302161934463784850675209112299537259006497924090422596764895633625964527441
@@ -325,9 +339,11 @@ END
     assert_equal(state, Random.instance_eval { state })
     r.rand(0x100)
     assert_equal(state, r.instance_eval { state })
+    EOT
   end
 
   def test_random_left
+    assert_separately [], <<-EOT
     r = Random.new(0)
     assert_equal(1, r.instance_eval { left })
     r.rand(0x100)
@@ -340,25 +356,30 @@ END
     assert_equal(624, Random.instance_eval { left })
     rand(0x100)
     assert_equal(623, Random.instance_eval { left })
+    EOT
   end
 
   def test_random_bytes
-    assert_random_bytes(Random.new(0))
+    assert_random_bytes
   end
 
-  def assert_random_bytes(r)
+  def assert_random_bytes
+    assert_separately [], <<-EOT
+    r = Random.new(0)
     srand(0)
     assert_equal("", r.bytes(0))
     assert_equal("", Random.bytes(0))
-    x = "\xAC".force_encoding("ASCII-8BIT")
+    x = "\\xAC".force_encoding("ASCII-8BIT")
     assert_equal(x, r.bytes(1))
     assert_equal(x, Random.bytes(1))
-    x = "/\xAA\xC4\x97u\xA6\x16\xB7\xC0\xCC".force_encoding("ASCII-8BIT")
+    x = "/\\xAA\\xC4\\x97u\\xA6\\x16\\xB7\\xC0\\xCC".force_encoding("ASCII-8BIT")
     assert_equal(x, r.bytes(10))
     assert_equal(x, Random.bytes(10))
+    EOT
   end
 
   def test_random_range
+    assert_separately [], <<-EOT
     srand(0)
     r = Random.new(0)
     %w(9 5 8).each {|w|
@@ -387,6 +408,7 @@ END
     now = Time.now
     assert_equal(now, rand(now..now))
     assert_equal(now, r.rand(now..now))
+    EOT
   end
 
   def test_random_float
