@@ -383,6 +383,12 @@ namespace test_rb_define_method {
         rb_define_method(self, "ma", (VALUE (*)(...))(ma), -2);
         rb_define_method(self, "mv", (VALUE (*)(...))(mv), -1);
 
+        // rb_f_notimplement
+        rb_define_method(self, "m1", rb_f_notimplement, 1);
+        rb_define_method(self, "m2", rb_f_notimplement, 2);
+        rb_define_method(self, "ma", rb_f_notimplement, -2);
+        rb_define_method(self, "mv", rb_f_notimplement, -1);
+
         return self;
     }
 }
@@ -432,6 +438,12 @@ namespace test_rb_define_module_function {
         rb_define_module_function(self, "m2", (VALUE (*)(...))(m2), 2);
         rb_define_module_function(self, "ma", (VALUE (*)(...))(ma), -2);
         rb_define_module_function(self, "mv", (VALUE (*)(...))(mv), -1);
+
+        // rb_f_notimplement
+        rb_define_module_function(self, "m1", rb_f_notimplement, 1);
+        rb_define_module_function(self, "m2", rb_f_notimplement, 2);
+        rb_define_module_function(self, "ma", rb_f_notimplement, -2);
+        rb_define_module_function(self, "mv", rb_f_notimplement, -1);
 
         return self;
     }
@@ -483,6 +495,12 @@ namespace test_rb_define_singleton_method {
         rb_define_singleton_method(self, "ma", (VALUE (*)(...))(ma), -2);
         rb_define_singleton_method(self, "mv", (VALUE (*)(...))(mv), -1);
 
+        // rb_f_notimplement
+        rb_define_singleton_method(self, "m1", rb_f_notimplement, 1);
+        rb_define_singleton_method(self, "m2", rb_f_notimplement, 2);
+        rb_define_singleton_method(self, "ma", rb_f_notimplement, -2);
+        rb_define_singleton_method(self, "mv", rb_f_notimplement, -1);
+
         return self;
     }
 }
@@ -533,6 +551,12 @@ namespace test_rb_define_protected_method {
         rb_define_protected_method(self, "ma", (VALUE (*)(...))(ma), -2);
         rb_define_protected_method(self, "mv", (VALUE (*)(...))(mv), -1);
 
+        // rb_f_notimplement
+        rb_define_protected_method(self, "m1", rb_f_notimplement, 1);
+        rb_define_protected_method(self, "m2", rb_f_notimplement, 2);
+        rb_define_protected_method(self, "ma", rb_f_notimplement, -2);
+        rb_define_protected_method(self, "mv", rb_f_notimplement, -1);
+
         return self;
     }
 }
@@ -582,6 +606,12 @@ namespace test_rb_define_private_method {
         rb_define_private_method(self, "m2", (VALUE (*)(...))(m2), 2);
         rb_define_private_method(self, "ma", (VALUE (*)(...))(ma), -2);
         rb_define_private_method(self, "mv", (VALUE (*)(...))(mv), -1);
+
+        // rb_f_notimplement
+        rb_define_private_method(self, "m1", rb_f_notimplement, 1);
+        rb_define_private_method(self, "m2", rb_f_notimplement, 2);
+        rb_define_private_method(self, "ma", rb_f_notimplement, -2);
+        rb_define_private_method(self, "mv", rb_f_notimplement, -1);
 
         return self;
     }

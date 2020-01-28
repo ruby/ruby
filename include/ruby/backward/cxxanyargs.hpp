@@ -446,6 +446,9 @@ rb_ivar_foreach(VALUE q, int_type *w, VALUE e)
 /// types and provide warnings for other cases.  This is such attempt.
 namespace define_method {
 
+/// @brief type of rb_f_notimplement
+typedef VALUE notimpl_type(int, const VALUE *, VALUE, VALUE);
+
 /// @brief   Template metaprogramming to generate function prototypes.
 /// @tparam  T  Type of method id (`ID` or `const char*` in practice).
 /// @tparam  F  Definition driver e.g. ::rb_define_method.
@@ -490,6 +493,16 @@ struct driver {
         {
             F(klass, mid, reinterpret_cast<type *>(func), N);
         }
+
+        /// @brief      Defines klass#mid as func, whose arity is N.
+        /// @param[in]  klass  Where the method lives.
+        /// @param[in]  mid    Name of the method to define.
+        /// @param[in]  func   Function that implements klass#mid.
+        static inline void
+        define(VALUE klass, T mid, notimpl_type func)
+        {
+            F(klass, mid, reinterpret_cast<type *>(func), N);
+        }
     };
 
     /// @cond INTERNAL_MACRO
@@ -513,7 +526,6 @@ struct driver {
     template<bool b> struct specific<-1, b> : public engine<-1, VALUE(*)(int argc, VALUE *argv, VALUE self)> {
         using engine<-1, VALUE(*)(int argc, VALUE *argv, VALUE self)>::define;
         static inline void define(VALUE c, T m, VALUE(*f)(int argc, const VALUE *argv, VALUE self)) { F(c, m, reinterpret_cast<type *>(f), -1); }
-        static inline void define(VALUE c, T m, VALUE(*f)(int argc, const VALUE *argv, VALUE self, VALUE)) { F(c, m, reinterpret_cast<type *>(f), -1); }
     };
     template<bool b> struct specific<-2, b> : public engine<-2, VALUE(*)(VALUE, VALUE)> {};
     /// @endcond
@@ -533,6 +545,11 @@ struct driver0 {
         }
         static inline void
         define(T mid, U func)
+        {
+            F(mid, reinterpret_cast<type *>(func), N);
+        }
+        static inline void
+        define(T mid, notimpl_type func)
         {
             F(mid, reinterpret_cast<type *>(func), N);
         }
@@ -557,7 +574,6 @@ struct driver0 {
     template<bool b> struct specific< 0, b> : public engine< 0, VALUE(*)(VALUE)> {};
     template<bool b> struct specific<-1, b> : public engine<-1, VALUE(*)(int argc, VALUE *argv, VALUE self)> {
         using engine<-1, VALUE(*)(int argc, VALUE *argv, VALUE self)>::define;
-        static inline void define(T m, VALUE(*f)(int argc, const VALUE *argv, VALUE self)) { F(m, reinterpret_cast<type *>(f), -1); }
         static inline void define(T m, VALUE(*f)(int argc, const VALUE *argv, VALUE self, VALUE)) { F(m, reinterpret_cast<type *>(f), -1); }
     };
     template<bool b> struct specific<-2, b> : public engine<-2, VALUE(*)(VALUE, VALUE)> {};
