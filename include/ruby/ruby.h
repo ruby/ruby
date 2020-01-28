@@ -2670,38 +2670,17 @@ RUBY_SYMBOL_EXPORT_END
 #endif
 #endif
 
-#if defined(RB_METHOD_DEFINITION_DECL_C) || defined(__cplusplus)
-#ifndef RB_METHOD_DEFINITION_DECL_C
-#define RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,vars,funcargs) \
-    static inline void defname(RB_UNWRAP_MACRO decl,VALUE(*func)funcargs,int arity) \
-    { \
-        def(RB_UNWRAP_MACRO vars,(VALUE(*)(ANYARGS))(func),arity); \
-    }
-#endif
-
+#if defined(RB_METHOD_DEFINITION_DECL_C)
 #if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
 #define rb_define_method_if_constexpr(x, t, f)    __builtin_choose_expr(__builtin_choose_expr(__builtin_constant_p(x),(x),0),(t),(f))
 #endif
 
 #define RB_UNWRAP_MACRO(...) __VA_ARGS__
 
-#ifdef __cplusplus
-#define RB_METHOD_DEFINITION_DECL_CXX_BEGIN(def) template <int Arity> struct def##_tmpl {};
-#define RB_METHOD_DEFINITION_DECL_CXX(def,defname,decl,vars,funcargs,arity) \
-    template <> struct def##_tmpl<arity> { \
-        static void define(RB_UNWRAP_MACRO decl, VALUE (*func)funcargs) {::defname(RB_UNWRAP_MACRO vars, func, arity);} \
-        static void define(RB_UNWRAP_MACRO decl, VALUE (*func)(...)) {::defname(RB_UNWRAP_MACRO vars, reinterpret_cast<VALUE(*)funcargs>(func), arity);} \
-    };
-#else
-#define RB_METHOD_DEFINITION_DECL_CXX_BEGIN(def) /* nothing */
-#define RB_METHOD_DEFINITION_DECL_CXX(def,defname,decl,vars,funcargs,arity) /* nothing */
-#endif
 #define RB_METHOD_DEFINITION_DECL_1(def,nonnull,defname,arity,decl,vars,funcargs) \
-    RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,vars,funcargs) \
-    RB_METHOD_DEFINITION_DECL_CXX(def,defname,decl,vars,funcargs,arity)
+    RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,vars,funcargs)
 
 #define RB_METHOD_DEFINITION_DECL(def,nonnull,decl,vars) \
-RB_METHOD_DEFINITION_DECL_CXX_BEGIN(def) \
 RB_METHOD_DEFINITION_DECL_1(def,nonnull,def##0 ,0 ,decl,vars,(VALUE)) \
 RB_METHOD_DEFINITION_DECL_1(def,nonnull,def##1 ,1 ,decl,vars,(VALUE,VALUE)) \
 RB_METHOD_DEFINITION_DECL_1(def,nonnull,def##2 ,2 ,decl,vars,(VALUE,VALUE,VALUE)) \
@@ -2721,34 +2700,16 @@ RB_METHOD_DEFINITION_DECL_1(def,nonnull,def##15,15,decl,vars,(VALUE,VALUE,VALUE,
 RB_METHOD_DEFINITION_DECL_M3(def,nonnull,def##m3,decl,vars) \
 RB_METHOD_DEFINITION_DECL_1(def,nonnull,def##m2,-2,decl,vars,(VALUE,VALUE)) \
 RB_METHOD_DEFINITION_DECL_M1(def,nonnull,def##m1,decl,vars) /* END */
-#ifdef __cplusplus
-#define RB_METHOD_DEFINITION_DECL_M1(def,nonnull,defname,decl,vars) \
-    RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,vars,(int,VALUE*,VALUE)) \
-    RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,vars,(int,const VALUE*,VALUE)) \
-    RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,vars,(int,const VALUE*,VALUE,VALUE)) \
-    RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,vars,(...)) \
-    template <> struct def##_tmpl<-1> { \
-        static void define(RB_UNWRAP_MACRO decl, VALUE (*func)(int,VALUE*,VALUE)) {::defname(RB_UNWRAP_MACRO vars, func, -1);} \
-        static void define(RB_UNWRAP_MACRO decl, VALUE (*func)(int,const VALUE*,VALUE)) {::defname(RB_UNWRAP_MACRO vars, func, -1);} \
-        static void define(RB_UNWRAP_MACRO decl, VALUE (*func)(int,const VALUE*,VALUE,VALUE)) {::defname(RB_UNWRAP_MACRO vars, func, -1);} \
-        static void define(RB_UNWRAP_MACRO decl, VALUE (*func)(...)) {::defname(RB_UNWRAP_MACRO vars, func, -1);} \
-    };
-#define RB_METHOD_DEFINITION_DECL_M3(def,nonnull,defname,decl,vars) /* nothing */
-#else
 #define RB_METHOD_DEFINITION_DECL_M1(def,nonnull,defname,decl,vars) \
     RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,vars,(int,union{VALUE*x;const VALUE*y;}__attribute__((__transparent_union__)),VALUE))
 #define RB_METHOD_DEFINITION_DECL_M3(def,nonnull,defname,decl,vars) \
     RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,vars,())
-#endif
 
 #endif
 
 #ifdef RB_METHOD_DEFINITION_DECL
 
 RB_METHOD_DEFINITION_DECL(rb_define_method_id, (3), (VALUE klass, ID name), (klass, name))
-#ifdef __cplusplus
-#define rb_define_method_id(m, n, f, a) rb_define_method_id_tmpl<a>::define(m, n, f)
-#else
 #define rb_define_method_id_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_method_id15,rb_define_method_idm3)
 #define rb_define_method_id_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_method_id14,rb_define_method_id_choose_prototype15(n))
 #define rb_define_method_id_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_method_id13,rb_define_method_id_choose_prototype14(n))
@@ -2769,12 +2730,8 @@ RB_METHOD_DEFINITION_DECL(rb_define_method_id, (3), (VALUE klass, ID name), (kla
 #define rb_define_method_id_choose_prototypem2(n)    rb_define_method_if_constexpr((n)==-2,rb_define_method_idm2,rb_define_method_id_choose_prototypem1(n))
 #define rb_define_method_id_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_method_idm3,rb_define_method_id_choose_prototypem2(n))
 #define rb_define_method_id(klass, mid, func, arity) rb_define_method_id_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
-#endif
 
 RB_METHOD_DEFINITION_DECL(rb_define_protected_method, (2,3), (VALUE klass, const char *name), (klass, name))
-#ifdef __cplusplus
-#define rb_define_protected_method(m, n, f, a) rb_define_protected_method_tmpl<a>::define(m, n, f)
-#else
 #define rb_define_protected_method_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_protected_method15,rb_define_protected_methodm3)
 #define rb_define_protected_method_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_protected_method14,rb_define_protected_method_choose_prototype15(n))
 #define rb_define_protected_method_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_protected_method13,rb_define_protected_method_choose_prototype14(n))
@@ -2795,12 +2752,8 @@ RB_METHOD_DEFINITION_DECL(rb_define_protected_method, (2,3), (VALUE klass, const
 #define rb_define_protected_method_choose_prototypem2(n)    rb_define_method_if_constexpr((n)==-2,rb_define_protected_methodm2,rb_define_protected_method_choose_prototypem1(n))
 #define rb_define_protected_method_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_protected_methodm3,rb_define_protected_method_choose_prototypem2(n))
 #define rb_define_protected_method(klass, mid, func, arity) rb_define_protected_method_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
-#endif
 
 RB_METHOD_DEFINITION_DECL(rb_define_private_method, (2,3), (VALUE klass, const char *name), (klass, name))
-#ifdef __cplusplus
-#define rb_define_private_method(m, n, f, a) rb_define_private_method_tmpl<a>::define(m, n, f)
-#else
 #define rb_define_private_method_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_private_method15,rb_define_private_methodm3)
 #define rb_define_private_method_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_private_method14,rb_define_private_method_choose_prototype15(n))
 #define rb_define_private_method_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_private_method13,rb_define_private_method_choose_prototype14(n))
@@ -2821,12 +2774,8 @@ RB_METHOD_DEFINITION_DECL(rb_define_private_method, (2,3), (VALUE klass, const c
 #define rb_define_private_method_choose_prototypem2(n)    rb_define_method_if_constexpr((n)==-2,rb_define_private_methodm2,rb_define_private_method_choose_prototypem1(n))
 #define rb_define_private_method_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_private_methodm3,rb_define_private_method_choose_prototypem2(n))
 #define rb_define_private_method(klass, mid, func, arity) rb_define_private_method_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
-#endif
 
 RB_METHOD_DEFINITION_DECL(rb_define_singleton_method, (2,3), (VALUE klass, const char *name), (klass, name))
-#ifdef __cplusplus
-#define rb_define_singleton_method(m, n, f, a) rb_define_singleton_method_tmpl<a>::define(m, n, f)
-#else
 #define rb_define_singleton_method_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_singleton_method15,rb_define_singleton_methodm3)
 #define rb_define_singleton_method_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_singleton_method14,rb_define_singleton_method_choose_prototype15(n))
 #define rb_define_singleton_method_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_singleton_method13,rb_define_singleton_method_choose_prototype14(n))
@@ -2847,16 +2796,8 @@ RB_METHOD_DEFINITION_DECL(rb_define_singleton_method, (2,3), (VALUE klass, const
 #define rb_define_singleton_method_choose_prototypem2(n)    rb_define_method_if_constexpr((n)==-2,rb_define_singleton_methodm2,rb_define_singleton_method_choose_prototypem1(n))
 #define rb_define_singleton_method_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_singleton_methodm3,rb_define_singleton_method_choose_prototypem2(n))
 #define rb_define_singleton_method(klass, mid, func, arity) rb_define_singleton_method_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
-#endif
-
-#endif
-
-#ifdef RB_METHOD_DEFINITION_DECL
 
 RB_METHOD_DEFINITION_DECL(rb_define_method, (2,3), (VALUE klass, const char *name), (klass, name))
-#ifdef __cplusplus
-#define rb_define_method(m, n, f, a) rb_define_method_tmpl<a>::define(m, n, f)
-#else
 #define rb_define_method_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_method15,rb_define_methodm3)
 #define rb_define_method_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_method14,rb_define_method_choose_prototype15(n))
 #define rb_define_method_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_method13,rb_define_method_choose_prototype14(n))
@@ -2877,12 +2818,8 @@ RB_METHOD_DEFINITION_DECL(rb_define_method, (2,3), (VALUE klass, const char *nam
 #define rb_define_method_choose_prototypem2(n)    rb_define_method_if_constexpr((n)==-2,rb_define_methodm2,rb_define_method_choose_prototypem1(n))
 #define rb_define_method_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_methodm3,rb_define_method_choose_prototypem2(n))
 #define rb_define_method(klass, mid, func, arity) rb_define_method_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
-#endif
 
 RB_METHOD_DEFINITION_DECL(rb_define_module_function, (2,3), (VALUE klass, const char *name), (klass, name))
-#ifdef __cplusplus
-#define rb_define_module_function(m, n, f, a) rb_define_module_function_tmpl<a>::define(m, n, f)
-#else
 #define rb_define_module_function_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_module_function15,rb_define_module_functionm3)
 #define rb_define_module_function_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_module_function14,rb_define_module_function_choose_prototype15(n))
 #define rb_define_module_function_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_module_function13,rb_define_module_function_choose_prototype14(n))
@@ -2903,12 +2840,8 @@ RB_METHOD_DEFINITION_DECL(rb_define_module_function, (2,3), (VALUE klass, const 
 #define rb_define_module_function_choose_prototypem2(n)    rb_define_method_if_constexpr((n)==-2,rb_define_module_functionm2,rb_define_module_function_choose_prototypem1(n))
 #define rb_define_module_function_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_module_functionm3,rb_define_module_function_choose_prototypem2(n))
 #define rb_define_module_function(klass, mid, func, arity) rb_define_module_function_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
-#endif
 
 RB_METHOD_DEFINITION_DECL(rb_define_global_function, (1,2), (const char *name), (name))
-#ifdef __cplusplus
-#define rb_define_global_function(n, f, a) rb_define_global_function_tmpl<a>::define(n, f)
-#else
 #define rb_define_global_function_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_global_function15,rb_define_global_functionm3)
 #define rb_define_global_function_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_global_function14,rb_define_global_function_choose_prototype15(n))
 #define rb_define_global_function_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_global_function13,rb_define_global_function_choose_prototype14(n))
@@ -2929,7 +2862,6 @@ RB_METHOD_DEFINITION_DECL(rb_define_global_function, (1,2), (const char *name), 
 #define rb_define_global_function_choose_prototypem2(n)    rb_define_method_if_constexpr((n)==-2,rb_define_global_functionm2,rb_define_global_function_choose_prototypem1(n))
 #define rb_define_global_function_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_global_functionm3,rb_define_global_function_choose_prototypem2(n))
 #define rb_define_global_function(mid, func, arity) rb_define_global_function_choose_prototypem3((arity),(func))((mid),(func),(arity));
-#endif
 
 #endif
 
