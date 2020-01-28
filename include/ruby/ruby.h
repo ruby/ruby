@@ -2654,12 +2654,8 @@ void ruby_sig_finalize(void);
 RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-extern "C++" {
-#endif
+#include "backward/cxxanyargs.hpp"
+#else
 
 #if defined(HAVE_BUILTIN___BUILTIN_TYPES_COMPATIBLE_P)
 # define rb_f_notimplement_p(f) __builtin_types_compatible_p(__typeof__(f),__typeof__(rb_f_notimplement))
@@ -2937,6 +2933,8 @@ RB_METHOD_DEFINITION_DECL(rb_define_global_function, (1,2), (const char *name), 
 
 #endif
 
+#endif /* __cplusplus */
+
 #if defined(RUBY_DEVEL) && RUBY_DEVEL && (!defined(__cplusplus) || defined(RB_METHOD_DEFINITION_DECL))
 # define RUBY_METHOD_FUNC(func) (func)
 #else
@@ -2944,8 +2942,6 @@ RB_METHOD_DEFINITION_DECL(rb_define_global_function, (1,2), (const char *name), 
 #endif
 
 #ifdef __cplusplus
-#include "backward/cxxanyargs.hpp"
-
 #if 0
 { /* satisfy cc-mode */
 #endif
