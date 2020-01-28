@@ -66,6 +66,8 @@ p Foo::Bar
   end
 
   def test_autoload_with_unqualified_file_name # [ruby-core:69206]
+    Object.send(:remove_const, :A) if Object.const_defined?(:A)
+
     lp = $LOAD_PATH.dup
     lf = $LOADED_FEATURES.dup
 
