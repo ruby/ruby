@@ -682,11 +682,13 @@ static int leap_year_p(long y);
 static VALUE tm_from_time(VALUE klass, VALUE time);
 
 bool ruby_tz_uptodate_p;
+void ruby_reset_leap_second_info(void);
 
 void
 ruby_reset_timezone(void)
 {
     ruby_tz_uptodate_p = false;
+    ruby_reset_leap_second_info();
 }
 
 static void

@@ -219,7 +219,6 @@ class TestTimeTZ < Test::Unit::TestCase
 
   def test_right_utc
     with_tz(tz="right/UTC") {
-      ::Bug::Time.reset_leap_second_info
       assert_time_constructor(tz, "2008-12-31 23:59:59 UTC", :utc, [2008,12,31,23,59,59])
       assert_time_constructor(tz, "2008-12-31 23:59:60 UTC", :utc, [2008,12,31,23,59,60])
       assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2008,12,31,24,0,0])
@@ -229,25 +228,23 @@ class TestTimeTZ < Test::Unit::TestCase
 
   def test_right_utc_switching
     with_tz("UTC") { # ensure no leap second timezone
-      ::Bug::Time.reset_leap_second_info
       assert_equal(4102444800, Time.utc(2100,1,1,0,0,0).to_i)
       with_tz(tz="right/UTC") {
         assert_time_constructor(tz, "2008-12-31 23:59:59 UTC", :utc, [2008,12,31,23,59,59])
-        assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2008,12,31,23,59,60])
+        assert_time_constructor(tz, "2008-12-31 23:59:60 UTC", :utc, [2008,12,31,23,59,60])
         assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2008,12,31,24,0,0])
         assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2009,1,1,0,0,0])
-        assert_equal(4102444800, Time.utc(2100,1,1,0,0,0).to_i)
+        assert_not_equal(4102444800, Time.utc(2100,1,1,0,0,0).to_i)
       }
     }
     with_tz("right/UTC") {
-      ::Bug::Time.reset_leap_second_info
       assert_not_equal(4102444800, Time.utc(2100,1,1,0,0,0).to_i)
       with_tz(tz="UTC") {
         assert_time_constructor(tz, "2008-12-31 23:59:59 UTC", :utc, [2008,12,31,23,59,59])
         assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2008,12,31,23,59,60])
         assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2008,12,31,24,0,0])
         assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2009,1,1,0,0,0])
-        assert_not_equal(4102444800, Time.utc(2100,1,1,0,0,0).to_i)
+        assert_equal(4102444800, Time.utc(2100,1,1,0,0,0).to_i)
       }
     }
   end if has_right_tz
@@ -376,7 +373,6 @@ class TestTimeTZ < Test::Unit::TestCase
       mesg = "#{mesg_utc}.localtime"
       define_method(gen_test_name(tz)) {
         with_tz(tz) {
-          ::Bug::Time.reset_leap_second_info
           t = nil
           assert_nothing_raised(mesg) { t = Time.utc(*u) }
           assert_equal(expected_utc, time_to_s(t), mesg_utc)
