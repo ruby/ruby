@@ -137,6 +137,10 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal(["c-call", 9, :set_trace_func, Kernel],
                  events.shift)
     assert_equal([], events)
+
+    self.class.class_eval do
+      remove_const :Foo
+    end
   end
 
   def test_return # [ruby-dev:38701]
@@ -362,6 +366,11 @@ class TestSetTraceFunc < Test::Unit::TestCase
     end
     assert_equal([], events[:set])
     assert_equal([], events[:add])
+
+    # cleanup
+    self.class.class_eval do
+      remove_const :ThreadTraceInnerClass
+    end
   end
 
   def test_trace_defined_method
