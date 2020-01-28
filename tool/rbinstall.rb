@@ -261,7 +261,8 @@ def install_recursive(srcdir, dest, options = {})
   end
   for src, d, dir in found
     if dir
-      makedirs(d)
+      next
+      # makedirs(d)
     else
       makedirs(d[/.*(?=\/)/m])
       if block_given?
