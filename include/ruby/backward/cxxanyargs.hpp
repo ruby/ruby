@@ -11,6 +11,8 @@
 ///             meant to  be a backwards  compatibility shim.  Please  stick to
 ///             C++ 98 and never use newer features, like `constexpr`.
 
+extern "C++" {
+
 /// @brief  The main namespace.
 /// @note   The name  "ruby" might  already be  taken, but that  must not  be a
 ///         problem because namespaces are allowed to reopen.
@@ -433,7 +435,189 @@ rb_ivar_foreach(VALUE q, int_type *w, VALUE e)
 }
 
 /// @}
-}}}
+
+/// @brief Driver for *_define_method
+///
+/// ::rb_define_method  function for  instance  takes a  pointer to  ANYARGS-ed
+/// functions, which in fact varies 18  different prototypes.  We still need to
+/// preserve  ANYARGS for  storages  but  why not  check  the consistencies  if
+/// possible.  In C++ a function has its own prototype, which is a compile-time
+/// constant (static  type) by nature.  We  can list up all  the possible input
+/// types and provide warnings for other cases.  This is such attempt.
+namespace define_method {
+
+/// @brief   Template metaprogramming to generate function prototypes.
+/// @tparam  T  Type of method id (`ID` or `const char*` in practice).
+/// @tparam  F  Definition driver e.g. ::rb_define_method.
+template<typename T, void (*F)(VALUE klass, T mid, type *func, int arity)>
+struct driver {
+
+    /// @brief      Defines a method
+    /// @tparam     N  Arity of the function.
+    /// @tparam     U  The function in question
+    template<int N, typename U>
+    struct engine {
+
+        /* :TODO: Following deprecation attribute renders tons of warnings (one
+         * per  every  method  definitions),  which  is  annoying.   Of  course
+         * annoyance is the  core feature of deprecation  warnings...  But that
+         * could be  too much,  especially when the  warnings happen  inside of
+         * machine-generated programs.   And SWIG  is known  to do  such thing.
+         * The new  (granular) API was  introduced in  API version 2.7.   As of
+         * this writing the  version is 2.8.  Let's warn this  later, some time
+         * during 3.x.   Hopefully codes in  old (ANYARGS-ed) format  should be
+         * less than now. */
+#if (RUBY_API_VERSION_MAJOR * 100 + RUBY_API_VERSION_MINOR) >= 301
+        RUBY_CXX_DEPRECATED("use of ANYARGS is deprecated")
+#endif
+        /// @brief       Defines klass#mid as func, whose arity is N.
+        /// @param[in]   klass  Where the method lives.
+        /// @param[in]   mid    Name of the method to define.
+        /// @param[in]   func   Function that implements klass#mid.
+        /// @deprecated  Pass corrctly typed function instead.
+        static inline void
+        define(VALUE klass, T mid, type func)
+        {
+            F(klass, mid, func, N);
+        }
+
+        /// @brief      Defines klass#mid as func, whose arity is N.
+        /// @param[in]  klass  Where the method lives.
+        /// @param[in]  mid    Name of the method to define.
+        /// @param[in]  func   Function that implements klass#mid.
+        static inline void
+        define(VALUE klass, T mid, U func)
+        {
+            F(klass, mid, reinterpret_cast<type *>(func), N);
+        }
+    };
+
+    /// @cond INTERNAL_MACRO
+    template<int N, bool = false> struct specific : public engine<N, type *> {};
+    template<bool b> struct specific<15, b> : public engine<15, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific<14, b> : public engine<14, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific<13, b> : public engine<13, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific<12, b> : public engine<12, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific<11, b> : public engine<11, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific<10, b> : public engine<10, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific< 9, b> : public engine< 9, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific< 8, b> : public engine< 8, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific< 7, b> : public engine< 7, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific< 6, b> : public engine< 6, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific< 5, b> : public engine< 5, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific< 4, b> : public engine< 4, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific< 3, b> : public engine< 3, VALUE(*)(VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific< 2, b> : public engine< 2, VALUE(*)(VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific< 1, b> : public engine< 1, VALUE(*)(VALUE, VALUE)> {};
+    template<bool b> struct specific< 0, b> : public engine< 0, VALUE(*)(VALUE)> {};
+    template<bool b> struct specific<-1, b> : public engine<-1, VALUE(*)(int argc, VALUE argv, VALUE self)> {
+        using engine<-1, VALUE(*)(int argc, VALUE argv, VALUE self)>::define;
+        static inline void define(VALUE c, T m, VALUE(*f)(int argc, VALUE *argv, VALUE self)) { F(c, m, reinterpret_cast<type *>(f), -1); }
+        static inline void define(VALUE c, T m, VALUE(*f)(int argc, const VALUE *argv, VALUE self)) { F(c, m, reinterpret_cast<type *>(f), -1); }
+        static inline void define(VALUE c, T m, VALUE(*f)(int argc, const VALUE *argv, VALUE self, VALUE)) { F(c, m, reinterpret_cast<type *>(f), -1); }
+    };
+    template<bool b> struct specific<-2, b> : public engine<-2, VALUE(*)(VALUE, VALUE)> {};
+    /// @endcond
+};
+
+/* We could perhaps merge this struct into the one above using variadic
+ * template parameters if we could assume C++11, but sadly we cannot. */
+template<typename T, void (*F)(T mid, type func, int arity)>
+struct driver0 {
+    template<int N, typename U>
+    struct engine {
+        RUBY_CXX_DEPRECATED("use of ANYARGS is deprecated")
+        static inline void
+        define(T mid, type func)
+        {
+            F(mid, func, N);
+        }
+        static inline void
+        define(T mid, U func)
+        {
+            F(mid, reinterpret_cast<type *>(func), N);
+        }
+    };
+    /// @cond INTERNAL_MACRO
+    template<int N, bool = false> struct specific : public engine<N, type *> {};
+    template<bool b> struct specific<15, b> : public engine<15, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific<14, b> : public engine<14, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific<13, b> : public engine<13, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific<12, b> : public engine<12, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific<11, b> : public engine<11, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific<10, b> : public engine<10, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific< 9, b> : public engine< 9, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific< 8, b> : public engine< 8, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific< 7, b> : public engine< 7, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific< 6, b> : public engine< 6, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific< 5, b> : public engine< 5, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific< 4, b> : public engine< 4, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific< 3, b> : public engine< 3, VALUE(*)(VALUE, VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific< 2, b> : public engine< 2, VALUE(*)(VALUE, VALUE, VALUE)> {};
+    template<bool b> struct specific< 1, b> : public engine< 1, VALUE(*)(VALUE, VALUE)> {};
+    template<bool b> struct specific< 0, b> : public engine< 0, VALUE(*)(VALUE)> {};
+    template<bool b> struct specific<-1, b> : public engine<-1, VALUE(*)(int argc, VALUE argv, VALUE self)> {
+        using engine<-1, VALUE(*)(int argc, VALUE argv, VALUE self)>::define;
+        static inline void define(T m, VALUE(*f)(int argc, VALUE *argv, VALUE self)) { F(m, reinterpret_cast<type *>(f), -1); }
+        static inline void define(T m, VALUE(*f)(int argc, const VALUE *argv, VALUE self)) { F(m, reinterpret_cast<type *>(f), -1); }
+        static inline void define(T m, VALUE(*f)(int argc, const VALUE *argv, VALUE self, VALUE)) { F(m, reinterpret_cast<type *>(f), -1); }
+    };
+    template<bool b> struct specific<-2, b> : public engine<-2, VALUE(*)(VALUE, VALUE)> {};
+    /// @endcond
+};
+
+/// @brief Dispatches appropriate driver for ::rb_define_method
+struct rb_define_method           : public driver <const char *, ::rb_define_method> {};
+
+/// @brief Dispatches appropriate driver for ::rb_define_method_id
+struct rb_define_method_id        : public driver <ID,           ::rb_define_method_id> {};
+
+/// @brief Dispatches appropriate driver for ::rb_define_private_method
+struct rb_define_private_method   : public driver <const char *, ::rb_define_private_method> {};
+
+/// @brief Dispatches appropriate driver for ::rb_define_protected_method
+struct rb_define_protected_method : public driver <const char *, ::rb_define_protected_method> {};
+
+/// @brief Dispatches appropriate driver for ::rb_define_singleton_method
+struct rb_define_singleton_method : public driver <const char *, ::rb_define_singleton_method> {};
+
+/// @brief Dispatches appropriate driver for ::rb_define_module_function
+struct rb_define_module_function  : public driver <const char *, ::rb_define_module_function> {};
+
+/// @brief Dispatches appropriate driver for ::rb_define_global_function
+struct rb_define_global_function  : public driver0<const char *, ::rb_define_global_function> {};
+
+/// @brief        Defines klass\#mid.
+/// @param        klass  Where the method lives.
+/// @copydetails  #rb_define_global_function
+#define rb_define_method(klass, mid, func, arity)           ruby::backward::cxxanyargs::define_method::rb_define_method::specific<arity>::define(klass, mid, func)
+
+/// @copydoc #rb_define_method
+#define rb_define_method_id(klass, mid, func, arity)        ruby::backward::cxxanyargs::define_method::rb_define_method_id::specific<arity>::define(klass, mid, func)
+
+/// @brief        Defines klass\#mid and makes it private.
+/// @copydetails  #rb_define_method
+#define rb_define_private_method(klass, mid, func, arity)   ruby::backward::cxxanyargs::define_method::rb_define_private_method::specific<arity>::define(klass, mid, func)
+
+/// @brief        Defines klass\#mid and makes it protected.
+/// @copydetails  #rb_define_method
+#define rb_define_protected_method(klass, mid, func, arity) ruby::backward::cxxanyargs::define_method::rb_define_protected_method::specific<arity>::define(klass, mid, func)
+
+/// @brief        Defines klass.mid.
+/// @copydetails  #rb_define_method
+#define rb_define_singleton_method(klass, mid, func, arity) ruby::backward::cxxanyargs::define_method::rb_define_singleton_method::specific<arity>::define(klass, mid, func)
+
+/// @brief        Defines klass\#mid and makes it a module function.
+/// @copydetails  #rb_define_method
+#define rb_define_module_function(klass, mid, func, arity)  ruby::backward::cxxanyargs::define_method::rb_define_module_function::specific<arity>::define(klass, mid, func)
+
+/// @brief Defines ::rb_cKerbel \#mid.
+/// @param mid    Name of the defining method.
+/// @param func   Implementation of \#mid.
+/// @param arity  Arity of \#mid.
+#define rb_define_global_function(mid, func, arity)         ruby::backward::cxxanyargs::define_method::rb_define_global_function::specific<arity>::define(mid, func)
+
+}}}}}
 
 using namespace ruby::backward::cxxanyargs;
 #endif // RUBY_BACKWARD_CXXANYARGS_HPP
