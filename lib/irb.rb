@@ -21,6 +21,7 @@ require "irb/locale"
 require "irb/color"
 
 require "irb/version"
+require "irb/easter-egg"
 
 # IRB stands for "interactive Ruby" and is a tool to interactively execute Ruby
 # expressions read from the standard input.
