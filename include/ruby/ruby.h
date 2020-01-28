@@ -2663,53 +2663,36 @@ RUBY_SYMBOL_EXPORT_END
 # define rb_f_notimplement_p(f) 0
 #endif
 
-#if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P) && !defined(_WIN32) && !defined(__CYGWIN__)
-#if defined(__has_attribute) && __has_attribute(transparent_union) && __has_attribute(unused) && __has_attribute(weakref) && __has_attribute(nonnull)
-#define RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,vars,funcargs) \
-    __attribute__((__unused__,__weakref__(#def),__nonnull__ nonnull))static void defname(RB_UNWRAP_MACRO decl,VALUE(*func)funcargs,int arity);
-#endif
-#endif
-
-#if defined(RB_METHOD_DEFINITION_DECL_C)
 #if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
 #define rb_define_method_if_constexpr(x, t, f)    __builtin_choose_expr(__builtin_choose_expr(__builtin_constant_p(x),(x),0),(t),(f))
 #endif
 
-#define RB_UNWRAP_MACRO(...) __VA_ARGS__
-
-#define RB_METHOD_DEFINITION_DECL_1(def,nonnull,defname,arity,decl,vars,funcargs) \
-    RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,vars,funcargs)
-
-#define RB_METHOD_DEFINITION_DECL(def,nonnull,decl,vars) \
-RB_METHOD_DEFINITION_DECL_1(def,nonnull,def##0 ,0 ,decl,vars,(VALUE)) \
-RB_METHOD_DEFINITION_DECL_1(def,nonnull,def##1 ,1 ,decl,vars,(VALUE,VALUE)) \
-RB_METHOD_DEFINITION_DECL_1(def,nonnull,def##2 ,2 ,decl,vars,(VALUE,VALUE,VALUE)) \
-RB_METHOD_DEFINITION_DECL_1(def,nonnull,def##3 ,3 ,decl,vars,(VALUE,VALUE,VALUE,VALUE)) \
-RB_METHOD_DEFINITION_DECL_1(def,nonnull,def##4 ,4 ,decl,vars,(VALUE,VALUE,VALUE,VALUE,VALUE)) \
-RB_METHOD_DEFINITION_DECL_1(def,nonnull,def##5 ,5 ,decl,vars,(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE)) \
-RB_METHOD_DEFINITION_DECL_1(def,nonnull,def##6 ,6 ,decl,vars,(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE)) \
-RB_METHOD_DEFINITION_DECL_1(def,nonnull,def##7 ,7 ,decl,vars,(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE)) \
-RB_METHOD_DEFINITION_DECL_1(def,nonnull,def##8 ,8 ,decl,vars,(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE)) \
-RB_METHOD_DEFINITION_DECL_1(def,nonnull,def##9 ,9 ,decl,vars,(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE)) \
-RB_METHOD_DEFINITION_DECL_1(def,nonnull,def##10,10,decl,vars,(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE)) \
-RB_METHOD_DEFINITION_DECL_1(def,nonnull,def##11,11,decl,vars,(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE)) \
-RB_METHOD_DEFINITION_DECL_1(def,nonnull,def##12,12,decl,vars,(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE)) \
-RB_METHOD_DEFINITION_DECL_1(def,nonnull,def##13,13,decl,vars,(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE)) \
-RB_METHOD_DEFINITION_DECL_1(def,nonnull,def##14,14,decl,vars,(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE)) \
-RB_METHOD_DEFINITION_DECL_1(def,nonnull,def##15,15,decl,vars,(VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE)) \
-RB_METHOD_DEFINITION_DECL_M3(def,nonnull,def##m3,decl,vars) \
-RB_METHOD_DEFINITION_DECL_1(def,nonnull,def##m2,-2,decl,vars,(VALUE,VALUE)) \
-RB_METHOD_DEFINITION_DECL_M1(def,nonnull,def##m1,decl,vars) /* END */
-#define RB_METHOD_DEFINITION_DECL_M1(def,nonnull,defname,decl,vars) \
-    RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,vars,(int,union{VALUE*x;const VALUE*y;}__attribute__((__transparent_union__)),VALUE))
-#define RB_METHOD_DEFINITION_DECL_M3(def,nonnull,defname,decl,vars) \
-    RB_METHOD_DEFINITION_DECL_C(def,nonnull,defname,decl,vars,())
-
+#if defined(__has_attribute) && __has_attribute(transparent_union) && __has_attribute(unused) && __has_attribute(weakref) && __has_attribute(nonnull)
+#define RB_METHOD_DEFINITION_DECL(def, nonnull, ...) \
+__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ## m3(__VA_ARGS__, VALUE(*)(ANYARGS), int); \
+__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ## m2(__VA_ARGS__, VALUE(*)(VALUE, VALUE), int); \
+__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ## m1(__VA_ARGS__, VALUE(*)(int, union { VALUE *x; const VALUE *y; } __attribute__((__transparent_union__)), VALUE), int); \
+__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ##  0(__VA_ARGS__, VALUE(*)(VALUE), int); \
+__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ##  1(__VA_ARGS__, VALUE(*)(VALUE, VALUE), int); \
+__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ##  2(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE), int); \
+__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ##  3(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE), int); \
+__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ##  4(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ##  5(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ##  6(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ##  7(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ##  8(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ##  9(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ## 10(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ## 11(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ## 12(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ## 13(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ## 14(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ## 15(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int);
 #endif
 
-#ifdef RB_METHOD_DEFINITION_DECL
+#if defined(RB_METHOD_DEFINITION_DECL) && !defined(_WIN32) && !defined(__CYGWIN__)
 
-RB_METHOD_DEFINITION_DECL(rb_define_method_id, (3), (VALUE klass, ID name), (klass, name))
+RB_METHOD_DEFINITION_DECL(rb_define_method_id, (3), VALUE klass, ID name)
 #define rb_define_method_id_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_method_id15,rb_define_method_idm3)
 #define rb_define_method_id_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_method_id14,rb_define_method_id_choose_prototype15(n))
 #define rb_define_method_id_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_method_id13,rb_define_method_id_choose_prototype14(n))
@@ -2731,7 +2714,7 @@ RB_METHOD_DEFINITION_DECL(rb_define_method_id, (3), (VALUE klass, ID name), (kla
 #define rb_define_method_id_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_method_idm3,rb_define_method_id_choose_prototypem2(n))
 #define rb_define_method_id(klass, mid, func, arity) rb_define_method_id_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
 
-RB_METHOD_DEFINITION_DECL(rb_define_protected_method, (2,3), (VALUE klass, const char *name), (klass, name))
+RB_METHOD_DEFINITION_DECL(rb_define_protected_method, (2,3), VALUE klass, const char *name)
 #define rb_define_protected_method_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_protected_method15,rb_define_protected_methodm3)
 #define rb_define_protected_method_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_protected_method14,rb_define_protected_method_choose_prototype15(n))
 #define rb_define_protected_method_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_protected_method13,rb_define_protected_method_choose_prototype14(n))
@@ -2753,7 +2736,7 @@ RB_METHOD_DEFINITION_DECL(rb_define_protected_method, (2,3), (VALUE klass, const
 #define rb_define_protected_method_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_protected_methodm3,rb_define_protected_method_choose_prototypem2(n))
 #define rb_define_protected_method(klass, mid, func, arity) rb_define_protected_method_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
 
-RB_METHOD_DEFINITION_DECL(rb_define_private_method, (2,3), (VALUE klass, const char *name), (klass, name))
+RB_METHOD_DEFINITION_DECL(rb_define_private_method, (2,3), VALUE klass, const char *name)
 #define rb_define_private_method_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_private_method15,rb_define_private_methodm3)
 #define rb_define_private_method_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_private_method14,rb_define_private_method_choose_prototype15(n))
 #define rb_define_private_method_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_private_method13,rb_define_private_method_choose_prototype14(n))
@@ -2775,7 +2758,7 @@ RB_METHOD_DEFINITION_DECL(rb_define_private_method, (2,3), (VALUE klass, const c
 #define rb_define_private_method_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_private_methodm3,rb_define_private_method_choose_prototypem2(n))
 #define rb_define_private_method(klass, mid, func, arity) rb_define_private_method_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
 
-RB_METHOD_DEFINITION_DECL(rb_define_singleton_method, (2,3), (VALUE klass, const char *name), (klass, name))
+RB_METHOD_DEFINITION_DECL(rb_define_singleton_method, (2,3), VALUE klass, const char *name)
 #define rb_define_singleton_method_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_singleton_method15,rb_define_singleton_methodm3)
 #define rb_define_singleton_method_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_singleton_method14,rb_define_singleton_method_choose_prototype15(n))
 #define rb_define_singleton_method_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_singleton_method13,rb_define_singleton_method_choose_prototype14(n))
@@ -2797,7 +2780,7 @@ RB_METHOD_DEFINITION_DECL(rb_define_singleton_method, (2,3), (VALUE klass, const
 #define rb_define_singleton_method_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_singleton_methodm3,rb_define_singleton_method_choose_prototypem2(n))
 #define rb_define_singleton_method(klass, mid, func, arity) rb_define_singleton_method_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
 
-RB_METHOD_DEFINITION_DECL(rb_define_method, (2,3), (VALUE klass, const char *name), (klass, name))
+RB_METHOD_DEFINITION_DECL(rb_define_method, (2,3), VALUE klass, const char *name)
 #define rb_define_method_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_method15,rb_define_methodm3)
 #define rb_define_method_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_method14,rb_define_method_choose_prototype15(n))
 #define rb_define_method_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_method13,rb_define_method_choose_prototype14(n))
@@ -2819,7 +2802,7 @@ RB_METHOD_DEFINITION_DECL(rb_define_method, (2,3), (VALUE klass, const char *nam
 #define rb_define_method_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_methodm3,rb_define_method_choose_prototypem2(n))
 #define rb_define_method(klass, mid, func, arity) rb_define_method_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
 
-RB_METHOD_DEFINITION_DECL(rb_define_module_function, (2,3), (VALUE klass, const char *name), (klass, name))
+RB_METHOD_DEFINITION_DECL(rb_define_module_function, (2,3), VALUE klass, const char *name)
 #define rb_define_module_function_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_module_function15,rb_define_module_functionm3)
 #define rb_define_module_function_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_module_function14,rb_define_module_function_choose_prototype15(n))
 #define rb_define_module_function_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_module_function13,rb_define_module_function_choose_prototype14(n))
@@ -2841,7 +2824,7 @@ RB_METHOD_DEFINITION_DECL(rb_define_module_function, (2,3), (VALUE klass, const 
 #define rb_define_module_function_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_module_functionm3,rb_define_module_function_choose_prototypem2(n))
 #define rb_define_module_function(klass, mid, func, arity) rb_define_module_function_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
 
-RB_METHOD_DEFINITION_DECL(rb_define_global_function, (1,2), (const char *name), (name))
+RB_METHOD_DEFINITION_DECL(rb_define_global_function, (1,2), const char *name)
 #define rb_define_global_function_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_global_function15,rb_define_global_functionm3)
 #define rb_define_global_function_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_global_function14,rb_define_global_function_choose_prototype15(n))
 #define rb_define_global_function_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_global_function13,rb_define_global_function_choose_prototype14(n))
@@ -2863,7 +2846,7 @@ RB_METHOD_DEFINITION_DECL(rb_define_global_function, (1,2), (const char *name), 
 #define rb_define_global_function_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_global_functionm3,rb_define_global_function_choose_prototypem2(n))
 #define rb_define_global_function(mid, func, arity) rb_define_global_function_choose_prototypem3((arity),(func))((mid),(func),(arity));
 
-#endif
+#endif  /* ! _WIN32 && ! __CYGWIN__ */
 
 #endif /* __cplusplus */
 
