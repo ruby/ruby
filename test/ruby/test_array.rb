@@ -2629,18 +2629,17 @@ class TestArray < Test::Unit::TestCase
     assert_not_equal([0, 1, 2], [0, 1, 3])
   end
 
-  A = Array.new(3, &:to_s)
-  B = A.dup
-
   def test_equal_resize
+    $test_equal_resize_a = Array.new(3, &:to_s)
+    $test_equal_resize_b = $test_equal_resize_a.dup
     o = Object.new
     def o.==(o)
-      A.clear
-      B.clear
+      $test_equal_resize_a.clear
+      $test_equal_resize_b.clear
       true
     end
-    A[1] = o
-    assert_equal(A, B)
+    $test_equal_resize_a[1] = o
+    assert_equal($test_equal_resize_a, $test_equal_resize_b)
   end
 
   def test_flatten_error
