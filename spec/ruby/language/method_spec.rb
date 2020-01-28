@@ -1363,7 +1363,9 @@ describe "A method" do
 
         h = mock("keyword splat")
         h.should_receive(:to_hash).and_return({a: 1})
-        m(h).should == {}
+        suppress_keyword_warning do
+          m(h).should == {a: 1}
+        end
       end
 
       evaluate <<-ruby do
@@ -1375,28 +1377,34 @@ describe "A method" do
         m(a: 1).should == [nil, {a: 1}]
         m("a" => 1, a: 1).should == [nil, {"a" => 1, a: 1}]
         m({ "a" => 1 }, a: 1).should == [{"a" => 1}, {a: 1}]
-        ->{m({a: 1}, {})}.should raise_error(ArgumentError)
+        suppress_keyword_warning do
+          m({a: 1}, {}).should == [{a: 1}, {}]
+        end
 
         h = {"a" => 1, b: 2}
-        m(h).should == [{"a" => 1, b: 2}, {}]
+        suppress_keyword_warning do
+          m(h).should == [{"a" => 1}, {b: 2}]
+        end
         h.should == {"a" => 1, b: 2}
 
         h = {"a" => 1}
         m(h).first.should == h
 
         h = {}
-        r = m(h)
-        r.first.should == {}
-        r.last.should == {}
+        suppress_keyword_warning do
+          m(h).should == [nil, {}]
+        end
 
         hh = {}
         h = mock("keyword splat empty hash")
-        h.should_not_receive(:to_hash)
-        m(h).should == [{}, {}]
+        h.should_receive(:to_hash).and_return({a: 1})
+        suppress_keyword_warning do
+          m(h).should == [nil, {a: 1}]
+        end
 
         h = mock("keyword splat")
-        h.should_not_receive(:to_hash)
-        m(h).should == [{"a" => 1, a: 2}, {}]
+        h.should_receive(:to_hash).and_return({"a" => 1})
+        m(h).should == [h, {}]
       end
 
       evaluate <<-ruby do
@@ -1412,7 +1420,9 @@ describe "A method" do
         m(a: 1).should == [[], {a: 1}]
         m("a" => 1, a: 1).should == [[], {"a" => 1, a: 1}]
         m({ "a" => 1 }, a: 1).should == [[{"a" => 1}], {a: 1}]
-        m({a: 1}, {}).should == [[{a: 1}, {}], {}]
+        suppress_keyword_warning do
+          m({a: 1}, {}).should == [[{a: 1}], {}]
+        end
         m({a: 1}, {"a" => 1}).should == [[{a: 1}, {"a" => 1}], {}]
 
         bo = BasicObject.new
