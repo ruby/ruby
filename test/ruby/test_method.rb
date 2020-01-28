@@ -1108,7 +1108,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([:bar, :foo], b.local_variables.sort, bug11012)
   end
 
-  setup_for_test_method_in_method_visibility_should_be_public_proc = -> do
+  MethodInMethodClass_Setup = -> do
     remove_const :MethodInMethodClass if defined? MethodInMethodClass
 
     class MethodInMethodClass
@@ -1121,12 +1121,8 @@ class TestMethod < Test::Unit::TestCase
     end
   end
 
-  define_method :setup_for_test_method_in_method_visibility_should_be_public do
-    setup_for_test_method_in_method_visibility_should_be_public_proc.call
-  end
-
   def test_method_in_method_visibility_should_be_public
-    setup_for_test_method_in_method_visibility_should_be_public
+    MethodInMethodClass_Setup.call
 
     assert_equal([:m1].sort, MethodInMethodClass.public_instance_methods(false).sort)
     assert_equal([].sort, MethodInMethodClass.private_instance_methods(false).sort)

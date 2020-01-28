@@ -4,7 +4,7 @@ require 'test/unit'
 
 class TestConst < Test::Unit::TestCase
 
-  setup_constants_proc = -> do
+  Constants_Setup = -> do
     remove_const :TEST1  if defined? ::TestConst::TEST1
     remove_const :TEST2  if defined? ::TestConst::TEST2
     remove_const :Const  if defined? ::TestConst::Const
@@ -24,12 +24,9 @@ class TestConst < Test::Unit::TestCase
     end
   end
 
-  define_method :setup_constants do
-    setup_constants_proc.call
-  end
-
   def test_const
-    setup_constants
+    Constants_Setup.call
+
     assert defined?(TEST1)
     assert_equal 1, TEST1
     assert defined?(TEST2)
