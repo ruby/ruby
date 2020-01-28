@@ -347,6 +347,10 @@ class TestEval < Test::Unit::TestCase
       assert_equal(55, eval("foo22"))
       assert_equal(55, foo22)
     }.call
+
+    self.class.class_eval do
+      remove_const :EvTest
+    end
   end
 
   def test_nil_instance_eval_cvar
