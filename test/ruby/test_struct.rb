@@ -23,6 +23,10 @@ module TestStruct
 
     test.bar = 47
     assert_equal(47, test.bar)
+
+    @Struct.class_eval do
+      remove_const :Test
+    end
   end
 
   # [ruby-dev:26247] more than 10 struct members causes segmentation fault
@@ -325,15 +329,19 @@ module TestStruct
   end
 
   def test_redefinition_warning
-    @Struct.new("RedefinitionWarning")
+    @Struct.new(name = "RedefinitionWarning")
     e = EnvUtil.verbose_warning do
       @Struct.new("RedefinitionWarning")
     end
     assert_match(/redefining constant #@Struct::RedefinitionWarning/, e)
+
+    @Struct.class_eval do
+      remove_const name
+    end
   end
 
   def test_nonascii
-    struct_test = @Struct.new("R\u{e9}sum\u{e9}", :"r\u{e9}sum\u{e9}")
+    struct_test = @Struct.new(name = "R\u{e9}sum\u{e9}", :"r\u{e9}sum\u{e9}")
     assert_equal(@Struct.const_get("R\u{e9}sum\u{e9}"), struct_test, '[ruby-core:24849]')
     a = struct_test.new(42)
     assert_equal("#<struct #@Struct::R\u{e9}sum\u{e9} r\u{e9}sum\u{e9}=42>", a.inspect, '[ruby-core:24849]')
@@ -342,6 +350,10 @@ module TestStruct
     end
     assert_nothing_raised(Encoding::CompatibilityError) do
       assert_match(/redefining constant #@Struct::R\u{e9}sum\u{e9}/, e)
+    end
+
+    @Struct.class_eval do
+      remove_const name
     end
   end
 
