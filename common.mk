@@ -2491,6 +2491,7 @@ hash.$(OBJEXT): $(hdrdir)/ruby.h
 hash.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 hash.$(OBJEXT): $(top_srcdir)/internal/array.h
 hash.$(OBJEXT): $(top_srcdir)/internal/bignum.h
+hash.$(OBJEXT): $(top_srcdir)/internal/bits.h
 hash.$(OBJEXT): $(top_srcdir)/internal/class.h
 hash.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 hash.$(OBJEXT): $(top_srcdir)/internal/cont.h
@@ -2504,6 +2505,7 @@ hash.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 hash.$(OBJEXT): $(top_srcdir)/internal/stdbool.h
 hash.$(OBJEXT): $(top_srcdir)/internal/string.h
 hash.$(OBJEXT): $(top_srcdir)/internal/symbol.h
+hash.$(OBJEXT): $(top_srcdir)/internal/time.h
 hash.$(OBJEXT): $(top_srcdir)/internal/vm.h
 hash.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 hash.$(OBJEXT): {$(VPATH)}assert.h
