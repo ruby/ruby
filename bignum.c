@@ -4898,7 +4898,7 @@ big_shift3_mpz(const mpz_t mx, int lshift_p, const size_t shift_numdigits, const
         return z;
     }
     else /* ! lshift_p */ {
-        if (LONG_MAX < shift_numdigits || (x_bits + BITSPERDIG - 1)/BITSPERDIG <= shift_numdigits) {
+        if (LONG_MAX < shift_numdigits || x_bits <= shift) {
             if (mpz_sgn(mx) >= 0)
                 return INT2FIX(0);
             else
