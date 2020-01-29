@@ -718,6 +718,8 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def assert_segv(args, message=nil)
+    skip if ENV['RUBY_ON_BUG']
+
     test_stdin = ""
     opt = SEGVTest::ExecOptions.dup
     list = SEGVTest::ExpectedStderrList
