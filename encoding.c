@@ -1475,7 +1475,7 @@ rb_enc_default_external(void)
  * encoding may not be valid.  Be sure to check String#valid_encoding?.
  *
  * File data written to disk will be transcoded to the default external
- * encoding when written.
+ * encoding when written, if default_internal is not nil.
  *
  * The default external encoding is initialized by the locale or -E option.
  */
@@ -1560,8 +1560,7 @@ rb_enc_default_internal(void)
  * The script encoding (__ENCODING__), not default_internal, is used as the
  * encoding of created strings.
  *
- * Encoding::default_internal is initialized by the source file's
- * internal_encoding or -E option.
+ * Encoding::default_internal is initialized with -E option or nil otherwise.
  */
 static VALUE
 get_default_internal(VALUE klass)
