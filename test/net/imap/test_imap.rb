@@ -489,7 +489,16 @@ class IMAPTest < Test::Unit::TestCase
           server: @@h[:server].inspect,
           t: Process.clock_gettime(Process::CLOCK_MONOTONIC),
         }
-        super
+        #super
+        s = Socket.tcp(host, port, :connect_timeout => @open_timeout)
+        @@h[:in_tcp_socket_2] = {
+          s: s.inspect,
+          local_address: s.local_address,
+          remote_address: s.remote_address,
+          t: Process.clock_gettime(Process::CLOCK_MONOTONIC),
+        }
+        s.setsockopt(:SOL_SOCKET, :SO_KEEPALIVE, true)
+        s
       end
     end
     start_server do
@@ -523,7 +532,7 @@ class IMAPTest < Test::Unit::TestCase
           raise Errno::EINVAL
         end
       end
-    rescue Errno::EINVAL => e # for debug on OpenCSW
+    rescue SystemCallError => e # for debug on OpenCSW
       h[:in_rescue] = {
         e: e,
         server_addr: server_addr,
