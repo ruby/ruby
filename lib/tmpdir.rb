@@ -110,6 +110,14 @@ class Dir
 
     UNUSABLE_CHARS = [File::SEPARATOR, File::ALT_SEPARATOR, File::PATH_SEPARATOR, ":"].uniq.join("").freeze
 
+    class << (RANDOM = Random.new)
+      MAX = 36**6 # < 0x100000000
+      def next
+        rand(MAX).to_s(36)
+      end
+    end
+    private_constant :RANDOM
+
     def create(basename, tmpdir=nil, max_try: nil, **opts)
       origdir = tmpdir
       tmpdir ||= tmpdir()
@@ -123,7 +131,7 @@ class Dir
       suffix &&= suffix.delete(UNUSABLE_CHARS)
       begin
         t = Time.now.strftime("%Y%m%d")
-        path = "#{prefix}#{t}-#{$$}-#{rand(0x100000000).to_s(36)}"\
+        path = "#{prefix}#{t}-#{$$}-#{RANDOM.next}"\
                "#{n ? %[-#{n}] : ''}#{suffix||''}"
         path = File.join(tmpdir, path)
         yield(path, n, opts, origdir)
