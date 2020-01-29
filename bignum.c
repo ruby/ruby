@@ -4536,7 +4536,7 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
     digits_end = digits_start + len;
 
 #ifdef USE_GMP
-    if (GMP_STR2BIG_DIGITS < num_digits) {
+    if (BIGNUM_EMBED_LEN_MAX < num_digits) {
         int digits_per_bdigits_dbl;
         maxpow_in_bdigit_dbl(base, &digits_per_bdigits_dbl);
         num_bdigits = roomof(num_digits, digits_per_bdigits_dbl)*2;
