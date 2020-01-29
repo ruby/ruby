@@ -7961,7 +7961,17 @@ rb_big_hash(VALUE x)
 {
     st_index_t hash;
 
-    hash = rb_memhash(BDIGITS(x), sizeof(BDIGIT)*BIGNUM_LEN(x)) ^ BIGNUM_SIGN(x);
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        const mp_limb_t *limbs = mpz_limbs_read(BIGNUM_MPZ(x));
+        const size_t len = mpz_size(BIGNUM_MPZ(x));
+        hash = rb_memhash(limbs, sizeof(mp_limb_t)*len) ^ BIGNUM_SIGN(x);
+    }
+    else
+#endif
+    {
+        hash = rb_memhash(BDIGITS(x), sizeof(BDIGIT)*BIGNUM_LEN(x)) ^ BIGNUM_SIGN(x);
+    }
     return ST2FIX(hash);
 }
 
