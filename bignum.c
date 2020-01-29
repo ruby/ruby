@@ -6205,7 +6205,9 @@ bigadd_int(VALUE x, long y)
     BDIGIT_DBL num;
     long i;
 
+#ifdef USE_GMP
     assert(BIGNUM_EMBED_P(x));
+#endif
 
     xds = BDIGITS(x);
     xn = BIGNUM_LEN(x);
