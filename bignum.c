@@ -8213,32 +8213,12 @@ rb_big_isqrt(VALUE n)
     return x;
 }
 
-#ifdef USE_GMP
-static void
-bary_powm_gmp(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn, const BDIGIT *mds, size_t mn)
-{
-    mpz_t z, x, y, m;
-    size_t count;
-    mpz_init_set_bdigits(x, xds, xn);
-    mpz_init_set_bdigits(y, yds, yn);
-    mpz_init_set_bdigits(m, mds, mn);
-    mpz_init(z);
-    mpz_powm(z, x, y, m);
-    bdigits_from_mpz(z, zds, &count);
-    BDIGITS_ZERO(zds+count, zn-count);
-    mpz_clear(x);
-    mpz_clear(y);
-    mpz_clear(m);
-    mpz_clear(z);
-}
-#endif
-
 static VALUE
 int_pow_tmp3(VALUE x, VALUE y, VALUE m, int nega_flg)
 {
 #ifdef USE_GMP
+    mpz_t mz, mx, my, mm;
     VALUE z;
-    size_t xn, yn, mn, zn;
 
     if (FIXNUM_P(x)) {
        x = rb_int2big(FIX2LONG(x));
@@ -8247,19 +8227,82 @@ int_pow_tmp3(VALUE x, VALUE y, VALUE m, int nega_flg)
        y = rb_int2big(FIX2LONG(y));
     }
     assert(RB_BIGNUM_TYPE_P(m));
-    xn = BIGNUM_LEN(x);
-    yn = BIGNUM_LEN(y);
-    mn = BIGNUM_LEN(m);
-    zn = mn;
-    z = bignew(zn, 1);
-    bary_powm_gmp(BDIGITS(z), zn, BDIGITS(x), xn, BDIGITS(y), yn, BDIGITS(m), mn);
-    if (nega_flg & BIGNUM_POSITIVE_P(z)) {
-        z = rb_big_minus(z, m);
+    mpz_init(mz);
+    if (BIGNUM_EMBED_P(x)) {
+        mpz_init_set_bignum(mx, x);
+
+        if (BIGNUM_EMBED_P(y)) {
+            mpz_init_set_bignum(my, y);
+
+            if (BIGNUM_EMBED_P(m)) {
+                /* embed x, embed y, embed m */
+                mpz_init_set_bignum(mm, m);
+                mpz_powm(mz, mx, my, mm);
+            }
+            else {
+                /* embed x, embed y, noembed m */
+                mpz_powm(mz, mx, my, BIGNUM_MPZ(m));
+            }
+
+            mpz_clear(my);
+        }
+        else {
+            if (BIGNUM_EMBED_P(m)) {
+                /* embed x, noembed y, embed m */
+                mpz_init_set_bignum(mm, m);
+                mpz_powm(mz, mx, BIGNUM_MPZ(y), BIGNUM_MPZ(m));
+            }
+            else {
+                /* embed x, noembed y, noembed m */
+                mpz_powm(mz, mx, BIGNUM_MPZ(y), BIGNUM_MPZ(m));
+            }
+        }
+
+        mpz_clear(mx);
+    }
+    else {
+        if (BIGNUM_EMBED_P(y)) {
+            mpz_init_set_bignum(my, y);
+
+            if (BIGNUM_EMBED_P(m)) {
+                /* noembed x, embed y, embed m */
+                mpz_init_set_bignum(mm, m);
+                mpz_powm(mz, BIGNUM_MPZ(x), my, mm);
+            }
+            else {
+                /* noembed x, embed y, noembed m */
+                mpz_powm(mz, BIGNUM_MPZ(x), my, BIGNUM_MPZ(m));
+            }
+
+            mpz_clear(my);
+        }
+        else {
+            if (BIGNUM_EMBED_P(m)) {
+                /* noembed x, noembed y, embed m */
+                mpz_init_set_bignum(mm, m);
+                mpz_powm(mz, BIGNUM_MPZ(x), BIGNUM_MPZ(y), mm);
+            }
+            else {
+                /* noembed x, noembed y, noembed m */
+                mpz_powm(mz, BIGNUM_MPZ(x), BIGNUM_MPZ(y), BIGNUM_MPZ(m));
+            }
+        }
+    }
+    if (nega_flg && mpz_sgn(mz) >= 0) {
+        if (BIGNUM_EMBED_P(m)) {
+            mpz_sub(mz, mz, mm);
+            mpz_clear(mm);
+        }
+        else {
+            mpz_sub(mz, mz, BIGNUM_MPZ(m));
+        }
     }
     RB_GC_GUARD(x);
     RB_GC_GUARD(y);
     RB_GC_GUARD(m);
-    return rb_big_norm(z);
+    z = bignew_mpz_set(mz);
+    mpz_clear(mz);
+    return z;
 #else
     VALUE tmp = LONG2FIX(1L);
     long yy;
