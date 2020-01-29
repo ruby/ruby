@@ -9651,6 +9651,84 @@ struct ibf_load {
     struct ibf_load_buffer *current_buffer;
 };
 
+struct pinned_list {
+    long size;
+    VALUE * buffer;
+};
+
+static void
+pinned_list_mark(void *ptr)
+{
+    long i;
+    struct pinned_list *list = (struct pinned_list *)ptr;
+    for (i = 0; i < list->size; i++) {
+        if (list->buffer[i]) {
+            rb_gc_mark(list->buffer[i]);
+        }
+    }
+}
+
+static void
+pinned_list_free(void *ptr)
+{
+    struct pinned_list *list = (struct pinned_list *)ptr;
+    xfree(list->buffer);
+    xfree(ptr);
+}
+
+static size_t
+pinned_list_memsize(const void *ptr)
+{
+    struct pinned_list *list = (struct pinned_list *)ptr;
+    return sizeof(struct pinned_list) + (list->size * sizeof(VALUE *));
+}
+
+static const rb_data_type_t pinned_list_type = {
+    "pinned_list",
+    {pinned_list_mark, pinned_list_free, pinned_list_memsize,},
+    0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+static VALUE
+pinned_list_fetch(VALUE list, long offset)
+{
+    struct pinned_list * ptr;
+
+    TypedData_Get_Struct(list, struct pinned_list, &pinned_list_type, ptr);
+
+    if (offset >= ptr->size) {
+        rb_raise(rb_eIndexError, "object index out of range: %ld", offset);
+    }
+
+    return ptr->buffer[offset];
+}
+
+static void
+pinned_list_store(VALUE list, long offset, VALUE object)
+{
+    struct pinned_list * ptr;
+
+    TypedData_Get_Struct(list, struct pinned_list, &pinned_list_type, ptr);
+
+    if (offset >= ptr->size) {
+        rb_raise(rb_eIndexError, "object index out of range: %ld", offset);
+    }
+
+    RB_OBJ_WRITE(list, &ptr->buffer[offset], object);
+}
+
+static VALUE
+pinned_list_new(long size)
+{
+    struct pinned_list * ptr;
+
+    ptr = xmalloc(sizeof(struct pinned_list));
+    ptr->size = size;
+    ptr->buffer = xcalloc(size, sizeof(VALUE));
+
+    return TypedData_Wrap_Struct(0, &pinned_list_type, ptr);
+}
+
 static ibf_offset_t
 ibf_dump_pos(struct ibf_dump *dump)
 {
@@ -10584,8 +10662,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     buffer.size = iseq_length_bytes;
     buffer.obj_list_offset = (ibf_offset_t)ibf_load_small_value(load, &reading_pos);
     buffer.obj_list_size = (ibf_offset_t)ibf_load_small_value(load, &reading_pos);
-    buffer.obj_list = rb_ary_tmp_new(buffer.obj_list_size);
-    rb_ary_resize(buffer.obj_list, buffer.obj_list_size);
+    buffer.obj_list = pinned_list_new(buffer.obj_list_size);
 
     load->current_buffer = &buffer;
     reading_pos = body_offset;
@@ -11352,12 +11429,9 @@ ibf_load_object(const struct ibf_load *load, VALUE object_index)
     if (object_index == 0) {
         return Qnil;
     }
-    else if (object_index >= (VALUE)RARRAY_LEN(load->current_buffer->obj_list)) {
-        rb_raise(rb_eIndexError, "object index out of range: %"PRIdVALUE, object_index);
-    }
     else {
-        VALUE obj = rb_ary_entry(load->current_buffer->obj_list, (long)object_index);
-        if (obj == Qnil) { /* TODO: avoid multiple Qnil load */
+        VALUE obj = pinned_list_fetch(load->current_buffer->obj_list, (long)object_index);
+        if (!obj) {
             ibf_offset_t *offsets = (ibf_offset_t *)(load->current_buffer->obj_list_offset + load->current_buffer->buff);
             ibf_offset_t offset = offsets[object_index];
             const struct ibf_object_header header = ibf_load_object_object_header(load, &offset);
@@ -11381,7 +11455,7 @@ ibf_load_object(const struct ibf_load *load, VALUE object_index)
                 obj = (*load_object_functions[header.type])(load, &header, offset);
             }
 
-            rb_ary_store(load->current_buffer->obj_list, (long)object_index, obj);
+            pinned_list_store(load->current_buffer->obj_list, (long)object_index, obj);
         }
 #if IBF_ISEQ_DEBUG
         fprintf(stderr, "ibf_load_object: index=%#"PRIxVALUE" obj=%#"PRIxVALUE"\n",
@@ -11588,12 +11662,12 @@ ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
 	return NULL;
     }
     else {
-	VALUE iseqv = rb_ary_entry(load->iseq_list, iseq_index);
+	VALUE iseqv = pinned_list_fetch(load->iseq_list, iseq_index);
 
 #if IBF_ISEQ_DEBUG
 	fprintf(stderr, "ibf_load_iseq: iseqv=%p\n", (void *)iseqv);
 #endif
-	if (iseqv != Qnil) {
+	if (iseqv) {
 	    return (rb_iseq_t *)iseqv;
 	}
 	else {
@@ -11608,7 +11682,7 @@ ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
 	    fprintf(stderr, "ibf_load_iseq: iseq=%p loader_obj=%p index=%d\n",
 		    (void *)iseq, (void *)load->loader_obj, iseq_index);
 #endif
-	    rb_ary_store(load->iseq_list, iseq_index, (VALUE)iseq);
+	    pinned_list_store(load->iseq_list, iseq_index, (VALUE)iseq);
 
 #if !USE_LAZY_LOAD
 #if IBF_ISEQ_DEBUG
@@ -11639,9 +11713,8 @@ ibf_load_setup_bytes(struct ibf_load *load, VALUE loader_obj, const char *bytes,
     load->global_buffer.size = load->header->size;
     load->global_buffer.obj_list_offset = load->header->global_object_list_offset;
     load->global_buffer.obj_list_size = load->header->global_object_list_size;
-    RB_OBJ_WRITE(loader_obj, &load->iseq_list, rb_ary_tmp_new(0));
-    RB_OBJ_WRITE(loader_obj, &load->global_buffer.obj_list, rb_ary_tmp_new(load->global_buffer.obj_list_size));
-    rb_ary_resize(load->global_buffer.obj_list, load->global_buffer.obj_list_size);
+    RB_OBJ_WRITE(loader_obj, &load->iseq_list, pinned_list_new(load->header->iseq_list_size));
+    RB_OBJ_WRITE(loader_obj, &load->global_buffer.obj_list, pinned_list_new(load->global_buffer.obj_list_size));
     load->iseq = NULL;
 
     load->current_buffer = &load->global_buffer;
