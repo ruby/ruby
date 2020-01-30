@@ -5486,8 +5486,17 @@ big2ulong(VALUE x, const char *type)
     if (len == 0)
         return 0;
     if (BIGSIZE(x) > sizeof(long)) {
+      overflow:
         rb_raise(rb_eRangeError, "bignum too big to convert into `%s'", type);
     }
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        if (mpz_cmp_ui(BIGNUM_MPZ(x), ULONG_MAX) > 0) {
+            goto overflow;
+        }
+        return mpz_get_ui(BIGNUM_MPZ(x));
+    }
+#endif
     ds = BDIGITS(x);
 #if SIZEOF_LONG <= SIZEOF_BDIGIT
     num = (unsigned long)ds[0];
