@@ -1044,7 +1044,7 @@ module Net
     TIME_PARSER = ->(value, local = false) {
       unless /\A(?<year>\d{4})(?<month>\d{2})(?<day>\d{2})
             (?<hour>\d{2})(?<min>\d{2})(?<sec>\d{2})
-            (\.(?<fractions>\d+))?/x =~ value
+            (?:\.(?<fractions>\d+))?/x =~ value
         raise FTPProtoError, "invalid time-val: #{value}"
       end
       usec = fractions.to_i * 10 ** (6 - fractions.to_s.size)
@@ -1369,7 +1369,7 @@ module Net
       if !resp.start_with?("227")
         raise FTPReplyError, resp
       end
-      if m = /\((?<host>\d+(,\d+){3}),(?<port>\d+,\d+)\)/.match(resp)
+      if m = /\((?<host>\d+(?:,\d+){3}),(?<port>\d+,\d+)\)/.match(resp)
         return parse_pasv_ipv4_host(m["host"]), parse_pasv_port(m["port"])
       else
         raise FTPProtoError, resp
@@ -1385,9 +1385,9 @@ module Net
       if !resp.start_with?("228")
         raise FTPReplyError, resp
       end
-      if m = /\(4,4,(?<host>\d+(,\d+){3}),2,(?<port>\d+,\d+)\)/.match(resp)
+      if m = /\(4,4,(?<host>\d+(?:,\d+){3}),2,(?<port>\d+,\d+)\)/.match(resp)
         return parse_pasv_ipv4_host(m["host"]), parse_pasv_port(m["port"])
-      elsif m = /\(6,16,(?<host>\d+(,(\d+)){15}),2,(?<port>\d+,\d+)\)/.match(resp)
+      elsif m = /\(6,16,(?<host>\d+(?:,\d+){15}),2,(?<port>\d+,\d+)\)/.match(resp)
         return parse_pasv_ipv6_host(m["host"]), parse_pasv_port(m["port"])
       else
         raise FTPProtoError, resp
