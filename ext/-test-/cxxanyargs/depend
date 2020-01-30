@@ -1,9 +1,6 @@
 $(TARGET_SO) $(STATIC_LIB): $(FAILURES:.cpp=.failed)
 
 .SUFFIXES: .failed
-!INDEF COMSPEC
-.IGNORE: failure.o failurem1.o
-!ENDIF
 
 .cpp.failed:
 	$(Q)$(RUBY) -rfileutils \
