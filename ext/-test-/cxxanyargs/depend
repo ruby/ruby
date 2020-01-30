@@ -1,6 +1,7 @@
 $(TARGET_SO) $(STATIC_LIB): $(FAILURES:.cpp=.failed)
 
 .SUFFIXES: .failed
+.IGNORE: failure.o failurem1.o
 
 .cpp.failed:
 	$(Q)$(RUBY) -rfileutils \
