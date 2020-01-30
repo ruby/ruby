@@ -397,7 +397,7 @@ void
 rb_gvar_val_marker(VALUE *var)
 {
     VALUE data = (VALUE)var;
-    if (data) rb_gc_mark_maybe(data);
+    if (data) rb_gc_mark(data);
 }
 
 VALUE
