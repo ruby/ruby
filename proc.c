@@ -3759,7 +3759,7 @@ proc_ruby2_keywords(VALUE procval)
  *
  *      p = proc {|x, y| x }
  *      l = lambda {|x, y| x }
- *      [[1, 2], [3, 4]].map(&p) #=> [1, 2]
+ *      [[1, 2], [3, 4]].map(&p) #=> [1, 3]
  *      [[1, 2], [3, 4]].map(&l) # ArgumentError: wrong number of arguments (given 1, expected 2)
  *
  * The only exception is dynamic method definition: even if defined by
