@@ -238,7 +238,7 @@ class Reline::Windows
 
   def self.scroll_down(val)
     return if val.zero?
-    scroll_rectangle = [0, val, get_screen_size.first, get_screen_size.last].pack('s4')
+    scroll_rectangle = [0, val, get_screen_size.last, get_screen_size.first].pack('s4')
     destination_origin = 0 # y * 65536 + x
     fill = [' '.ord, 0].pack('SS')
     @@ScrollConsoleScreenBuffer.call(@@hConsoleHandle, scroll_rectangle, nil, destination_origin, fill)
