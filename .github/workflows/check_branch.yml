@@ -1,6 +1,6 @@
-# We bidirectionally synchronize github.com/ruby/ruby.git's master branch and
-# git.ruby-lang.org/ruby.git's master branch.
-# We can use a pull request's merge button only on the master branch.
+# We bidirectionally synchronize github.com/ruby/ruby.git's ruby_2_7 branch and
+# git.ruby-lang.org/ruby.git's ruby_2_7 branch.
+# We can use a pull request's merge button only on the ruby_2_7 branch.
 #
 # Therefore, we require to pass this "check_branch" on all protected branches
 # to prevent us from accidentally pushing commits to GitHub directly.
@@ -12,10 +12,10 @@ jobs:
   check_branch:
     runs-on: ubuntu-latest
     steps:
-      - name: Check if branch is master
+      - name: Check if branch is ruby_2_7
         run: |
-          if [ "$BASE_REF" != master ]; then
-            echo "Only master branch accepts a pull request, but it's '$BASE_REF'."
+          if [ "$BASE_REF" != ruby_2_7 ]; then
+            echo "Only ruby_2_7 branch accepts a pull request, but it's '$BASE_REF'."
             exit 1
           fi
         env:
