@@ -105,7 +105,7 @@ module MJITHeader
     su2_regex = /{([^{}]|#{su1_regex})*}/
     su3_regex = /{([^{}]|#{su2_regex})*}/ # 3 nested structs/unions is probably enough
     reduced_decl.gsub!(su3_regex, '') # remove structs/unions in the header
-    id_seq_regex = /\s*(#{ident_regex}(\s+|\s*[*]+\s*))*/
+    id_seq_regex = /\s*(?:#{ident_regex}(?:\s+|\s*[*]+\s*))*/
     # Process function header:
     match = /\A#{id_seq_regex}(?<name>#{ident_regex})\s*\(/.match(reduced_decl)
     return match[:name] if match
