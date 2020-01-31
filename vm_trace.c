@@ -1559,7 +1559,7 @@ enum postponed_job_register_result {
 /* Async-signal-safe */
 static enum postponed_job_register_result
 postponed_job_register(rb_execution_context_t *ec, rb_vm_t *vm,
-                       unsigned int flags, rb_postponed_job_func_t func, void *data, int max, int expected_index)
+                       unsigned int flags, rb_postponed_job_func_t func, void *data, rb_atomic_t max, rb_atomic_t expected_index)
 {
     rb_postponed_job_t *pjob;
 
@@ -1610,7 +1610,7 @@ rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, 
     rb_execution_context_t *ec = GET_EC();
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
     rb_postponed_job_t *pjob;
-    int i, index;
+    rb_atomic_t i, index;
 
   begin:
     index = vm->postponed_job_index;
@@ -1673,7 +1673,7 @@ rb_postponed_job_flush(rb_vm_t *vm)
     {
 	EC_PUSH_TAG(ec);
 	if (EC_EXEC_TAG() == TAG_NONE) {
-            int index;
+            rb_atomic_t index;
             struct rb_workqueue_job *wq_job;
 
             while ((index = vm->postponed_job_index) > 0) {

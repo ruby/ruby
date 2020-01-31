@@ -642,7 +642,7 @@ typedef struct rb_vm_struct {
 
     /* postponed_job (async-signal-safe, NOT thread-safe) */
     struct rb_postponed_job_struct *postponed_job_buffer;
-    int postponed_job_index;
+    rb_atomic_t postponed_job_index;
 
     int src_encoding_index;
 
