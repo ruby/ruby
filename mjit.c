@@ -464,7 +464,7 @@ rb_mjit_recompile_iseq(const rb_iseq_t *iseq)
 
     CRITICAL_SECTION_START(3, "in rb_mjit_recompile_iseq");
     remove_from_list(iseq->body->jit_unit, &active_units);
-    iseq->body->jit_func = (void *)NOT_ADDED_JIT_ISEQ_FUNC;
+    iseq->body->jit_func = (mjit_func_t)NOT_ADDED_JIT_ISEQ_FUNC;
     add_to_list(iseq->body->jit_unit, &stale_units);
     CRITICAL_SECTION_FINISH(3, "in rb_mjit_recompile_iseq");
 
