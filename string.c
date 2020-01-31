@@ -215,14 +215,6 @@ str_make_independent(VALUE str)
 /* symbols for [up|down|swap]case/capitalize options */
 static VALUE sym_ascii, sym_turkic, sym_lithuanian, sym_fold;
 
-static const struct RString empty_fake_string = {
-    {
-	T_STRING | STR_FAKESTR |
-	ENC_CODERANGE_7BIT | (ENCINDEX_US_ASCII << ENCODING_SHIFT)
-    }
-};
-#define empty_string ((VALUE)&empty_fake_string)
-
 static rb_encoding *
 get_actual_encoding(const int encidx, VALUE str)
 {
@@ -4889,16 +4881,78 @@ rb_str_insert(VALUE str, VALUE idx, VALUE str2)
 static VALUE
 rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
 {
-    VALUE result;
-    VALUE buf[3];
+    VALUE result = Qnil;
+    VALUE indx;
+    long beg, len = 1;
+    char *p;
 
     rb_check_arity(argc, 1, 2);
-    MEMCPY(buf, argv, VALUE, argc);
     str_modify_keep_cr(str);
-    result = rb_str_aref_m(argc, buf, str);
-    if (!NIL_P(result)) {
-        buf[argc] = empty_string;
-        rb_str_aset_m(argc+1, buf, str);
+    indx = argv[0];
+    if (RB_TYPE_P(indx, T_REGEXP)) {
+	if (rb_reg_search(indx, str, 0, 0) < 0) return Qnil;
+	VALUE match = rb_backref_get();
+	struct re_registers *regs = RMATCH_REGS(match);
+	int nth = 0;
+	if (argc > 1 && (nth = rb_reg_backref_number(match, argv[1])) < 0) {
+	    if ((nth += regs->num_regs) <= 0) return Qnil;
+	}
+	else if (nth >= regs->num_regs) return Qnil;
+	beg = BEG(nth);
+	len = END(nth) - beg;
+      subseq:
+        result = rb_str_new_with_class(str, RSTRING_PTR(str)+beg, len);
+	rb_enc_cr_str_copy_for_substr(result, str);
+    }
+    else if (argc == 2) {
+	beg = NUM2LONG(indx);
+	len = NUM2LONG(argv[1]);
+      num_index:
+	if (!(p = rb_str_subpos(str, beg, &len))) return Qnil;
+	beg = p - RSTRING_PTR(str);
+	goto subseq;
+    }
+    else if (FIXNUM_P(indx)) {
+	beg = FIX2LONG(indx);
+	if (!(p = rb_str_subpos(str, beg, &len))) return Qnil;
+	if (!len) return Qnil;
+	beg = p - RSTRING_PTR(str);
+	goto subseq;
+    }
+    else if (RB_TYPE_P(indx, T_STRING)) {
+	beg = rb_str_index(str, indx, 0);
+	if (beg == -1) return Qnil;
+	len = RSTRING_LEN(indx);
+	result = rb_str_dup(indx);
+    }
+    else {
+	switch (rb_range_beg_len(indx, &beg, &len, str_strlen(str, NULL), 0)) {
+	  case Qnil:
+	    return Qnil;
+	  case Qfalse:
+	    beg = NUM2LONG(indx);
+	    goto num_index;
+	  default:
+	    goto num_index;
+	}
+    }
+
+    if (len > 0) {
+	if (beg == 0) {
+	    rb_str_drop_bytes(str, len);
+	}
+	else {
+	    char *sptr = RSTRING_PTR(str);
+	    long slen = RSTRING_LEN(str);
+	    if (beg + len > slen) /* pathological check */
+		len = slen - beg;
+	    memmove(sptr + beg,
+		    sptr + beg + len,
+		    slen - (beg + len));
+	    slen -= len;
+	    STR_SET_LEN(str, slen);
+	    TERM_FILL(&sptr[slen], TERM_LEN(str));
+	}
     }
     return result;
 }
