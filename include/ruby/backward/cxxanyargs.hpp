@@ -22,36 +22,27 @@ extern "C++" {
 ///         problem because namespaces are allowed to reopen.
 namespace ruby {
 
-/// @brief  Backwards compatibility layer.
+/// Backwards compatibility layer.
 namespace backward {
 
-/// @brief  Provides ANYARGS deprecation warnings.
-///
-/// In C,  ANYARGS means there  is no function prototype.   Literally anything,
-/// even including  nothing, can be  a valid  ANYARGS.  So passing  a correctly
-/// prototyped function pointer  to an ANYARGS-ed function  parameter is valid,
-/// at the same time passing an ANYARGS-ed function pointer to a granular typed
-/// function  parameter is  also  valid.  However  on the  other  hand in  C++,
-/// ANYARGS doesn't actually mean any number of arguments.  C++'s ANYARGS means
-/// _variadic_ number of arguments.  This is incompatible with ordinal, correct
-/// function prototypes.
+/// Provides  ANYARGS deprecation  warnings. In  C, ANYARGS  means there  is no
+/// function prototype.  Literally  anything, even including nothing,  can be a
+/// valid ANYARGS.   So passing a  correctly prototyped function pointer  to an
+/// ANYARGS-ed  function  parameter is  valid,  at  the  same time  passing  an
+/// ANYARGS-ed function pointer to a  granular typed function parameter is also
+/// valid.  However on the other hand in C++, ANYARGS doesn't actually mean any
+/// number of arguments.   C++'s ANYARGS means _variadic_  number of arguments.
+/// This is incompatible with ordinal, correct function prototypes.
 ///
 /// Luckily, function  prototypes being distinct  each other means they  can be
 /// overloaded.  We can provide a compatibility layer for older Ruby APIs which
 /// used to have ANYARGS.  This namespace includes such attempts.
 namespace cxxanyargs {
 
-/// @brief ANYARGS-ed function type.
-typedef VALUE type(ANYARGS);
-
-/// @brief ANYARGS-ed function type, void variant.
-typedef void void_type(ANYARGS);
-
-/// @brief ANYARGS-ed function type, int variant.
-typedef int int_type(ANYARGS);
-
-/// @brief single-argumented function type.
-typedef VALUE onearg_type(VALUE);
+typedef VALUE type(ANYARGS);      ///< ANYARGS-ed function type.
+typedef void void_type(ANYARGS);  ///< ANYARGS-ed function type, void variant.
+typedef int int_type(ANYARGS);    ///< ANYARGS-ed function type, int variant.
+typedef VALUE onearg_type(VALUE); ///< Single-argumented function type.
 
 /// @name Hooking global variables
 /// @{
@@ -73,13 +64,6 @@ rb_define_virtual_variable(const char *q, type *w, void_type *e)
 }
 
 RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprecated")
-/// @brief       Define a function-backended global variable.
-/// @param[in]   q  Name of the variable.
-/// @param[in]   w  Getter function.
-/// @param[in]   e  Setter function.
-/// @note        Both functions can be nullptr.
-/// @see         rb_define_hooked_variable()
-/// @deprecated  Use glanular typed overload instead.
 inline void
 rb_define_virtual_variable(const char *q, rb_gvar_getter_t *w, void_type *e)
 {
@@ -88,13 +72,6 @@ rb_define_virtual_variable(const char *q, rb_gvar_getter_t *w, void_type *e)
 }
 
 RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprecated")
-/// @brief       Define a function-backended global variable.
-/// @param[in]   q  Name of the variable.
-/// @param[in]   w  Getter function.
-/// @param[in]   e  Setter function.
-/// @note        Both functions can be nullptr.
-/// @see         rb_define_hooked_variable()
-/// @deprecated  Use glanular typed overload instead.
 inline void
 rb_define_virtual_variable(const char *q, type *w, rb_gvar_setter_t *e)
 {
@@ -103,11 +80,6 @@ rb_define_virtual_variable(const char *q, type *w, rb_gvar_setter_t *e)
 }
 
 #ifdef HAVE_NULLPTR
-/// @brief       Define a function-backended global variable.
-/// @param[in]   q  Name of the variable.
-/// @param[in]   w  Getter function.
-/// @param[in]   e  Setter function.
-/// @see         rb_define_hooked_variable()
 inline void
 rb_define_virtual_variable(const char *q, rb_gvar_getter_t *w, std::nullptr_t e)
 {
@@ -115,12 +87,6 @@ rb_define_virtual_variable(const char *q, rb_gvar_getter_t *w, std::nullptr_t e)
 }
 
 RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprecated")
-/// @brief       Define a function-backended global variable.
-/// @param[in]   q  Name of the variable.
-/// @param[in]   w  Getter function.
-/// @param[in]   e  Setter function.
-/// @see         rb_define_hooked_variable()
-/// @deprecated  Use glanular typed overload instead.
 inline void
 rb_define_virtual_variable(const char *q, type *w, std::nullptr_t e)
 {
@@ -128,11 +94,6 @@ rb_define_virtual_variable(const char *q, type *w, std::nullptr_t e)
     ::rb_define_virtual_variable(q, r, e);
 }
 
-/// @brief       Define a function-backended global variable.
-/// @param[in]   q  Name of the variable.
-/// @param[in]   w  Getter function.
-/// @param[in]   e  Setter function.
-/// @see         rb_define_hooked_variable()
 inline void
 rb_define_virtual_variable(const char *q, std::nullptr_t w, rb_gvar_setter_t *e)
 {
@@ -140,12 +101,6 @@ rb_define_virtual_variable(const char *q, std::nullptr_t w, rb_gvar_setter_t *e)
 }
 
 RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprecated")
-/// @brief       Define a function-backended global variable.
-/// @param[in]   q  Name of the variable.
-/// @param[in]   w  Getter function.
-/// @param[in]   e  Setter function.
-/// @see         rb_define_hooked_variable()
-/// @deprecated  Use glanular typed overload instead.
 inline void
 rb_define_virtual_variable(const char *q, std::nullptr_t w, void_type *e)
 {
@@ -172,14 +127,6 @@ rb_define_hooked_variable(const char *q, VALUE *w, type *e, void_type *r)
 }
 
 RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprecated")
-/// @brief       Define a function-backended global variable.
-/// @param[in]   q  Name of the variable.
-/// @param[in]   w  Variable storage.
-/// @param[in]   e  Getter function.
-/// @param[in]   r  Setter function.
-/// @note        Both functions can be nullptr.
-/// @see         rb_define_virtual_variable()
-/// @deprecated  Use glanular typed overload instead.
 inline void
 rb_define_hooked_variable(const char *q, VALUE *w, rb_gvar_getter_t *e, void_type *r)
 {
@@ -188,14 +135,6 @@ rb_define_hooked_variable(const char *q, VALUE *w, rb_gvar_getter_t *e, void_typ
 }
 
 RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprecated")
-/// @brief       Define a function-backended global variable.
-/// @param[in]   q  Name of the variable.
-/// @param[in]   w  Variable storage.
-/// @param[in]   e  Getter function.
-/// @param[in]   r  Setter function.
-/// @note        Both functions can be nullptr.
-/// @see         rb_define_virtual_variable()
-/// @deprecated  Use glanular typed overload instead.
 inline void
 rb_define_hooked_variable(const char *q, VALUE *w, type *e, rb_gvar_setter_t *r)
 {
@@ -204,12 +143,6 @@ rb_define_hooked_variable(const char *q, VALUE *w, type *e, rb_gvar_setter_t *r)
 }
 
 #ifdef HAVE_NULLPTR
-/// @brief       Define a function-backended global variable.
-/// @param[in]   q  Name of the variable.
-/// @param[in]   w  Variable storage.
-/// @param[in]   e  Getter function.
-/// @param[in]   r  Setter function.
-/// @see         rb_define_virtual_variable()
 inline void
 rb_define_hooked_variable(const char *q, VALUE *w, rb_gvar_getter_t *e, std::nullptr_t r)
 {
@@ -217,13 +150,6 @@ rb_define_hooked_variable(const char *q, VALUE *w, rb_gvar_getter_t *e, std::nul
 }
 
 RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprecated")
-/// @brief       Define a function-backended global variable.
-/// @param[in]   q  Name of the variable.
-/// @param[in]   w  Variable storage.
-/// @param[in]   e  Getter function.
-/// @param[in]   r  Setter function.
-/// @see         rb_define_virtual_variable()
-/// @deprecated  Use glanular typed overload instead.
 inline void
 rb_define_hooked_variable(const char *q, VALUE *w, type *e, std::nullptr_t r)
 {
@@ -231,12 +157,6 @@ rb_define_hooked_variable(const char *q, VALUE *w, type *e, std::nullptr_t r)
     ::rb_define_hooked_variable(q, w, y, r);
 }
 
-/// @brief       Define a function-backended global variable.
-/// @param[in]   q  Name of the variable.
-/// @param[in]   w  Variable storage.
-/// @param[in]   e  Getter function.
-/// @param[in]   r  Setter function.
-/// @see         rb_define_virtual_variable()
 inline void
 rb_define_hooked_variable(const char *q, VALUE *w, std::nullptr_t e, rb_gvar_setter_t *r)
 {
@@ -244,13 +164,6 @@ rb_define_hooked_variable(const char *q, VALUE *w, std::nullptr_t e, rb_gvar_set
 }
 
 RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprecated")
-/// @brief       Define a function-backended global variable.
-/// @param[in]   q  Name of the variable.
-/// @param[in]   w  Variable storage.
-/// @param[in]   e  Getter function.
-/// @param[in]   r  Setter function.
-/// @see         rb_define_virtual_variable()
-/// @deprecated  Use glanular typed overload instead.
 inline void
 rb_define_hooked_variable(const char *q, VALUE *w, std::nullptr_t e, void_type *r)
 {
@@ -281,14 +194,6 @@ rb_iterate(onearg_type *q, VALUE w, type *e, VALUE r)
 }
 
 #ifdef HAVE_NULLPTR
-/// @brief       Old way to implement iterators.
-/// @param[in]   q  A function that can yield.
-/// @param[in]   w  Passed to `q`.
-/// @param[in]   e  What is to be yielded.
-/// @param[in]   r  Passed to `e`.
-/// @return      The return value of `q`.
-/// @deprecated  This function is obsolated since  long before 2.x era.  Do not
-///              use it any longer.  rb_block_call() is provided instead.
 inline VALUE
 rb_iterate(onearg_type *q, VALUE w, std::nullptr_t e, VALUE r)
 {
@@ -315,14 +220,6 @@ rb_block_call(VALUE q, ID w, int e, const VALUE *r, type *t, VALUE y)
 }
 
 #ifdef HAVE_NULLPTR
-/// @brief       Call a method with a block.
-/// @param[in]   q  The self.
-/// @param[in]   w  The method.
-/// @param[in]   e  The # of elems of `r`
-/// @param[in]   r  The arguments.
-/// @param[in]   t  What is to be yielded.
-/// @param[in]   y  Passed to `t`
-/// @return      Return value of `q#w(*r,&t)`
 inline VALUE
 rb_block_call(VALUE q, ID w, int e, const VALUE *r, std::nullptr_t t, VALUE y)
 {
@@ -422,15 +319,6 @@ rb_catch(const char *q, type *w, VALUE e)
 }
 
 #ifdef HAVE_NULLPTR
-/// @brief       An equivalent of `Kernel#catch`.
-/// @param[in]   q  The "tag" string.
-/// @param[in]   w  A function that can throw.
-/// @param[in]   e  Passed to `w`.
-/// @return      What was thrown.
-/// @see         rb_block_call()
-/// @see         rb_protect()
-/// @see         rb_rb_catch_obj()
-/// @see         rb_rescue()
 inline VALUE
 rb_catch(const char *q, std::nullptr_t w, VALUE e)
 {
@@ -600,17 +488,16 @@ rb_ivar_foreach(VALUE q, int_type *w, VALUE e)
 
 /// @}
 
-/// @brief Driver for *_define_method
-///
-/// ::rb_define_method  function for  instance  takes a  pointer to  ANYARGS-ed
-/// functions, which in fact varies 18  different prototypes.  We still need to
-/// preserve  ANYARGS for  storages  but  why not  check  the consistencies  if
-/// possible.  In C++ a function has its own prototype, which is a compile-time
-/// constant (static  type) by nature.  We  can list up all  the possible input
-/// types and provide warnings for other cases.  This is such attempt.
+/// Driver for *_define_method.  ::rb_define_method function for instance takes
+/// a  pointer to  ANYARGS-ed  functions,  which in  fact  varies 18  different
+/// prototypes.  We  still need to  preserve ANYARGS  for storages but  why not
+/// check  the consistencies  if  possible.   In C++  a  function  has its  own
+/// prototype, which  is a compile-time  constant (static type) by  nature.  We
+/// can list  up all the  possible input types  and provide warnings  for other
+/// cases.  This is such attempt.
 namespace define_method {
 
-/// @brief type of rb_f_notimplement
+/// Type of ::rb_f_notimplement().
 typedef VALUE notimpl_type(int, const VALUE *, VALUE, VALUE);
 
 /// @brief   Template metaprogramming to generate function prototypes.
@@ -637,10 +524,7 @@ struct driver {
 #if (RUBY_API_VERSION_MAJOR * 100 + RUBY_API_VERSION_MINOR) >= 301
         RUBY_CXX_DEPRECATED("use of ANYARGS is deprecated")
 #endif
-        /// @brief       Defines klass#mid as func, whose arity is N.
-        /// @param[in]   klass  Where the method lives.
-        /// @param[in]   mid    Name of the method to define.
-        /// @param[in]   func   Function that implements klass#mid.
+        /// @copydoc define(VALUE klass, T mid, U func)
         /// @deprecated  Pass corrctly typed function instead.
         static inline void
         define(VALUE klass, T mid, type func)
@@ -658,10 +542,7 @@ struct driver {
             F(klass, mid, reinterpret_cast<type *>(func), N);
         }
 
-        /// @brief      Defines klass#mid as func, whose arity is N.
-        /// @param[in]  klass  Where the method lives.
-        /// @param[in]  mid    Name of the method to define.
-        /// @param[in]  func   Function that implements klass#mid.
+        /// @copydoc define(VALUE klass, T mid, U func)
         static inline void
         define(VALUE klass, T mid, notimpl_type func)
         {
@@ -744,49 +625,36 @@ struct driver0 {
     /// @endcond
 };
 
-/// @brief Dispatches appropriate driver for ::rb_define_method
-struct rb_define_method           : public driver <const char *, ::rb_define_method> {};
-
-/// @brief Dispatches appropriate driver for ::rb_define_method_id
-struct rb_define_method_id        : public driver <ID,           ::rb_define_method_id> {};
-
-/// @brief Dispatches appropriate driver for ::rb_define_private_method
-struct rb_define_private_method   : public driver <const char *, ::rb_define_private_method> {};
-
-/// @brief Dispatches appropriate driver for ::rb_define_protected_method
-struct rb_define_protected_method : public driver <const char *, ::rb_define_protected_method> {};
-
-/// @brief Dispatches appropriate driver for ::rb_define_singleton_method
-struct rb_define_singleton_method : public driver <const char *, ::rb_define_singleton_method> {};
-
-/// @brief Dispatches appropriate driver for ::rb_define_module_function
-struct rb_define_module_function  : public driver <const char *, ::rb_define_module_function> {};
-
-/// @brief Dispatches appropriate driver for ::rb_define_global_function
-struct rb_define_global_function  : public driver0<const char *, ::rb_define_global_function> {};
+struct rb_define_method           : public driver <const char *, ::rb_define_method> {};           ///< Dispatches appropriate driver for ::rb_define_method.
+struct rb_define_method_id        : public driver <ID,           ::rb_define_method_id> {};        ///< Dispatches appropriate driver for ::rb_define_method_id.
+struct rb_define_private_method   : public driver <const char *, ::rb_define_private_method> {};   ///< Dispatches appropriate driver for ::rb_define_private_method.
+struct rb_define_protected_method : public driver <const char *, ::rb_define_protected_method> {}; ///< Dispatches appropriate driver for ::rb_define_protected_method.
+struct rb_define_singleton_method : public driver <const char *, ::rb_define_singleton_method> {}; ///< Dispatches appropriate driver for ::rb_define_singleton_method.
+struct rb_define_module_function  : public driver <const char *, ::rb_define_module_function> {};  ///< Dispatches appropriate driver for ::rb_define_module_function.
+struct rb_define_global_function  : public driver0<const char *, ::rb_define_global_function> {};  ///< Dispatches appropriate driver for ::rb_define_global_function.
 
 /// @brief        Defines klass\#mid.
 /// @param        klass  Where the method lives.
-/// @copydetails  #rb_define_global_function
+/// @copydetails  #rb_define_global_function(mid, func, arity)
 #define rb_define_method(klass, mid, func, arity)           ruby::backward::cxxanyargs::define_method::rb_define_method::specific<arity>::define(klass, mid, func)
 
-/// @copydoc #rb_define_method
+/// @copydoc #rb_define_method(klass, mid, func, arity)
 #define rb_define_method_id(klass, mid, func, arity)        ruby::backward::cxxanyargs::define_method::rb_define_method_id::specific<arity>::define(klass, mid, func)
 
 /// @brief        Defines klass\#mid and makes it private.
-/// @copydetails  #rb_define_method
+/// @copydetails  #rb_define_method(klass, mid, func, arity)
 #define rb_define_private_method(klass, mid, func, arity)   ruby::backward::cxxanyargs::define_method::rb_define_private_method::specific<arity>::define(klass, mid, func)
 
 /// @brief        Defines klass\#mid and makes it protected.
 /// @copydetails  #rb_define_method
 #define rb_define_protected_method(klass, mid, func, arity) ruby::backward::cxxanyargs::define_method::rb_define_protected_method::specific<arity>::define(klass, mid, func)
 
-/// @brief        Defines klass.mid.
+/// @brief        Defines klass.mid.(klass, mid, func, arity)
 /// @copydetails  #rb_define_method
 #define rb_define_singleton_method(klass, mid, func, arity) ruby::backward::cxxanyargs::define_method::rb_define_singleton_method::specific<arity>::define(klass, mid, func)
 
 /// @brief        Defines klass\#mid and makes it a module function.
-/// @copydetails  #rb_define_method
+/// @copydetails  #rb_define_method(klass, mid, func, arity)
 #define rb_define_module_function(klass, mid, func, arity)  ruby::backward::cxxanyargs::define_method::rb_define_module_function::specific<arity>::define(klass, mid, func)
 
 /// @brief Defines ::rb_mKernel \#mid.
