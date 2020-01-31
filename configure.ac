@@ -1437,6 +1437,17 @@ AS_IF([test "$rb_cv_CentOS6_CXX_workaround" != no],[
   AC_DEFINE([RUBY_CXX_DEPRECATED(msg)],
     [__attribute__((__deprecated__(msg)))])])
 
+AC_CACHE_CHECK([for std::nullptr_t], rb_cv_CXX_nullptr, [
+  AC_LANG_PUSH([C++])
+  AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM(
+      [@%:@include <cstddef>],
+      [static std::nullptr_t const *const conftest = nullptr;])],
+    [rb_cv_CXX_nullptr=yes],
+    [rb_cv_CXX_nullptr=no])
+  AC_LANG_POP()])
+AS_IF([test "$rb_cv_CXX_nullptr" != no],[AC_DEFINE(HAVE_NULLPTR)])
+
 if_i386=${universal_binary+[defined __i386__]}
 RUBY_FUNC_ATTRIBUTE(__stdcall__,  FUNC_STDCALL,  rb_cv_func_stdcall,  ${if_i386})
 RUBY_FUNC_ATTRIBUTE(__cdecl__,    FUNC_CDECL,    rb_cv_func_cdecl,    ${if_i386})

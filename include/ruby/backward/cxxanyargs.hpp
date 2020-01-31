@@ -13,6 +13,10 @@
 
 extern "C++" {
 
+#ifdef HAVE_NULLPTR
+#include <cstddef>
+#endif
+
 /// @brief  The main namespace.
 /// @note   The name  "ruby" might  already be  taken, but that  must not  be a
 ///         problem because namespaces are allowed to reopen.
@@ -45,6 +49,9 @@ typedef void void_type(ANYARGS);
 
 /// @brief ANYARGS-ed function type, int variant.
 typedef int int_type(ANYARGS);
+
+/// @brief single-argumented function type.
+typedef VALUE onearg_type(VALUE);
 
 /// @name Hooking global variables
 /// @{
@@ -95,6 +102,58 @@ rb_define_virtual_variable(const char *q, type *w, rb_gvar_setter_t *e)
     ::rb_define_virtual_variable(q, r, e);
 }
 
+#ifdef HAVE_NULLPTR
+/// @brief       Define a function-backended global variable.
+/// @param[in]   q  Name of the variable.
+/// @param[in]   w  Getter function.
+/// @param[in]   e  Setter function.
+/// @see         rb_define_hooked_variable()
+inline void
+rb_define_virtual_variable(const char *q, rb_gvar_getter_t *w, std::nullptr_t e)
+{
+    ::rb_define_virtual_variable(q, w, e);
+}
+
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprecated")
+/// @brief       Define a function-backended global variable.
+/// @param[in]   q  Name of the variable.
+/// @param[in]   w  Getter function.
+/// @param[in]   e  Setter function.
+/// @see         rb_define_hooked_variable()
+/// @deprecated  Use glanular typed overload instead.
+inline void
+rb_define_virtual_variable(const char *q, type *w, std::nullptr_t e)
+{
+    rb_gvar_getter_t *r = reinterpret_cast<rb_gvar_getter_t *>(w);
+    ::rb_define_virtual_variable(q, r, e);
+}
+
+/// @brief       Define a function-backended global variable.
+/// @param[in]   q  Name of the variable.
+/// @param[in]   w  Getter function.
+/// @param[in]   e  Setter function.
+/// @see         rb_define_hooked_variable()
+inline void
+rb_define_virtual_variable(const char *q, std::nullptr_t w, rb_gvar_setter_t *e)
+{
+    ::rb_define_virtual_variable(q, w, e);
+}
+
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprecated")
+/// @brief       Define a function-backended global variable.
+/// @param[in]   q  Name of the variable.
+/// @param[in]   w  Getter function.
+/// @param[in]   e  Setter function.
+/// @see         rb_define_hooked_variable()
+/// @deprecated  Use glanular typed overload instead.
+inline void
+rb_define_virtual_variable(const char *q, std::nullptr_t w, void_type *e)
+{
+    rb_gvar_setter_t *r = reinterpret_cast<rb_gvar_setter_t *>(e);
+    ::rb_define_virtual_variable(q, w, r);
+}
+#endif
+
 RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprecated")
 /// @brief       Define a function-backended global variable.
 /// @param[in]   q  Name of the variable.
@@ -144,6 +203,62 @@ rb_define_hooked_variable(const char *q, VALUE *w, type *e, rb_gvar_setter_t *r)
     ::rb_define_hooked_variable(q, w, t, r);
 }
 
+#ifdef HAVE_NULLPTR
+/// @brief       Define a function-backended global variable.
+/// @param[in]   q  Name of the variable.
+/// @param[in]   w  Variable storage.
+/// @param[in]   e  Getter function.
+/// @param[in]   r  Setter function.
+/// @see         rb_define_virtual_variable()
+inline void
+rb_define_hooked_variable(const char *q, VALUE *w, rb_gvar_getter_t *e, std::nullptr_t r)
+{
+    ::rb_define_hooked_variable(q, w, e, r);
+}
+
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprecated")
+/// @brief       Define a function-backended global variable.
+/// @param[in]   q  Name of the variable.
+/// @param[in]   w  Variable storage.
+/// @param[in]   e  Getter function.
+/// @param[in]   r  Setter function.
+/// @see         rb_define_virtual_variable()
+/// @deprecated  Use glanular typed overload instead.
+inline void
+rb_define_hooked_variable(const char *q, VALUE *w, type *e, std::nullptr_t r)
+{
+    rb_gvar_getter_t *y = reinterpret_cast<rb_gvar_getter_t *>(e);
+    ::rb_define_hooked_variable(q, w, y, r);
+}
+
+/// @brief       Define a function-backended global variable.
+/// @param[in]   q  Name of the variable.
+/// @param[in]   w  Variable storage.
+/// @param[in]   e  Getter function.
+/// @param[in]   r  Setter function.
+/// @see         rb_define_virtual_variable()
+inline void
+rb_define_hooked_variable(const char *q, VALUE *w, std::nullptr_t e, rb_gvar_setter_t *r)
+{
+    ::rb_define_hooked_variable(q, w, e, r);
+}
+
+RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprecated")
+/// @brief       Define a function-backended global variable.
+/// @param[in]   q  Name of the variable.
+/// @param[in]   w  Variable storage.
+/// @param[in]   e  Getter function.
+/// @param[in]   r  Setter function.
+/// @see         rb_define_virtual_variable()
+/// @deprecated  Use glanular typed overload instead.
+inline void
+rb_define_hooked_variable(const char *q, VALUE *w, std::nullptr_t e, void_type *r)
+{
+    rb_gvar_setter_t *y = reinterpret_cast<rb_gvar_setter_t *>(r);
+    ::rb_define_hooked_variable(q, w, e, y);
+}
+#endif
+
 /// @}
 /// @name Exceptions and tag jumps
 /// @{
@@ -159,11 +274,27 @@ RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprecated")
 /// @deprecated  This function is obsolated since  long before 2.x era.  Do not
 ///              use it any longer.  rb_block_call() is provided instead.
 inline VALUE
-rb_iterate(VALUE(*q)(VALUE), VALUE w, type *e, VALUE r)
+rb_iterate(onearg_type *q, VALUE w, type *e, VALUE r)
 {
     rb_block_call_func_t t = reinterpret_cast<rb_block_call_func_t>(e);
     return ::rb_iterate(q, w, t, r);
 }
+
+#ifdef HAVE_NULLPTR
+/// @brief       Old way to implement iterators.
+/// @param[in]   q  A function that can yield.
+/// @param[in]   w  Passed to `q`.
+/// @param[in]   e  What is to be yielded.
+/// @param[in]   r  Passed to `e`.
+/// @return      The return value of `q`.
+/// @deprecated  This function is obsolated since  long before 2.x era.  Do not
+///              use it any longer.  rb_block_call() is provided instead.
+inline VALUE
+rb_iterate(onearg_type *q, VALUE w, std::nullptr_t e, VALUE r)
+{
+    return ::rb_iterate(q, w, e, r);
+}
+#endif
 
 RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprecated")
 /// @brief       Call a method with a block.
@@ -182,6 +313,22 @@ rb_block_call(VALUE q, ID w, int e, const VALUE *r, type *t, VALUE y)
     rb_block_call_func_t u = reinterpret_cast<rb_block_call_func_t>(t);
     return ::rb_block_call(q, w, e, r, u, y);
 }
+
+#ifdef HAVE_NULLPTR
+/// @brief       Call a method with a block.
+/// @param[in]   q  The self.
+/// @param[in]   w  The method.
+/// @param[in]   e  The # of elems of `r`
+/// @param[in]   r  The arguments.
+/// @param[in]   t  What is to be yielded.
+/// @param[in]   y  Passed to `t`
+/// @return      Return value of `q#w(*r,&t)`
+inline VALUE
+rb_block_call(VALUE q, ID w, int e, const VALUE *r, std::nullptr_t t, VALUE y)
+{
+    return ::rb_block_call(q, w, e, r, t, y);
+}
+#endif
 
 RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprecated")
 /// @brief       An equivalent of `rescue` clause.
@@ -273,6 +420,23 @@ rb_catch(const char *q, type *w, VALUE e)
     rb_block_call_func_t r = reinterpret_cast<rb_block_call_func_t>(w);
     return ::rb_catch(q, r, e);
 }
+
+#ifdef HAVE_NULLPTR
+/// @brief       An equivalent of `Kernel#catch`.
+/// @param[in]   q  The "tag" string.
+/// @param[in]   w  A function that can throw.
+/// @param[in]   e  Passed to `w`.
+/// @return      What was thrown.
+/// @see         rb_block_call()
+/// @see         rb_protect()
+/// @see         rb_rb_catch_obj()
+/// @see         rb_rescue()
+inline VALUE
+rb_catch(const char *q, std::nullptr_t w, VALUE e)
+{
+    return ::rb_catch(q, w, e);
+}
+#endif
 
 RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprecated")
 /// @brief       An equivalent of `Kernel#catch`.
