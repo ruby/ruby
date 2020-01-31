@@ -825,7 +825,12 @@ rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE rea
     rb_iseq_t *iseq = iseq_alloc();
     rb_compile_option_t new_opt;
 
-    new_opt = option ? *option : COMPILE_OPTION_DEFAULT;
+    if (option) {
+        new_opt = *option;
+    }
+    else {
+        new_opt = COMPILE_OPTION_DEFAULT;
+    }
     if (ast && ast->compile_option) rb_iseq_make_compile_option(&new_opt, ast->compile_option);
 
     prepare_iseq_build(iseq, name, path, realpath, first_lineno, node ? &node->nd_loc : NULL, node ? nd_node_id(node) : -1, parent, type, &new_opt);
