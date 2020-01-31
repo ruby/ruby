@@ -105,7 +105,7 @@ typedef unsigned int rb_atomic_t;
 # define ATOMIC_EXCHANGE(var, val) atomic_swap_uint(&(var), (val))
 # define ATOMIC_CAS(var, oldval, newval) atomic_cas_uint(&(var), (oldval), (newval))
 
-# if SIZEOF_SIZE_T == SIZEOF_LONG
+# if defined(_LP64) || defined(_I32LPx)
 #  define ATOMIC_SIZE_ADD(var, val) atomic_add_long(&(var), (val))
 #  define ATOMIC_SIZE_SUB(var, val) atomic_add_long(&(var), -(val))
 #  define ATOMIC_SIZE_INC(var) atomic_inc_ulong(&(var))
