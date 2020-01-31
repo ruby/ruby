@@ -5912,9 +5912,8 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
       }
       case NODE_HASH: {
         NODE *n;
-        LABEL *match_failed, *fin;
+        LABEL *match_failed;
         match_failed = NEW_LABEL(line);
-        fin = NEW_LABEL(line);
 
         n = node->nd_head;
         if (! (nd_type(n) == NODE_LIST && n->nd_alen == 2)) {
