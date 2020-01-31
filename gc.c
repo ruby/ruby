@@ -2548,14 +2548,14 @@ make_io_zombie(rb_objspace_t *objspace, VALUE obj)
 static void
 obj_free_object_id(rb_objspace_t *objspace, VALUE obj)
 {
-    VALUE id;
+    st_data_t o = (st_data_t)obj, id;
 
     GC_ASSERT(FL_TEST(obj, FL_SEEN_OBJ_ID));
     FL_UNSET(obj, FL_SEEN_OBJ_ID);
 
-    if (st_delete(objspace->obj_to_id_tbl, (st_data_t *)&obj, &id)) {
+    if (st_delete(objspace->obj_to_id_tbl, &o, &id)) {
         GC_ASSERT(id);
-        st_delete(objspace->id_to_obj_tbl, (st_data_t *)&id, NULL);
+        st_delete(objspace->id_to_obj_tbl, &id, NULL);
     }
     else {
         rb_bug("Object ID seen, but not in mapping table: %s\n", obj_info(obj));
@@ -5760,8 +5760,10 @@ static int
 allrefs_add(struct allrefs *data, VALUE obj)
 {
     struct reflist *refs;
+    st_data_t r;
 
-    if (st_lookup(data->references, obj, (st_data_t *)&refs)) {
+    if (st_lookup(data->references, obj, &r)) {
+        refs = (struct reflist *)r;
 	reflist_add(refs, data->root_obj);
 	return 0;
     }
@@ -7568,7 +7570,6 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
       case T_MOVED:
       case T_ZOMBIE:
         return FALSE;
-        break;
       case T_SYMBOL:
         if (DYNAMIC_SYM_P(obj) && (RSYMBOL(obj)->id & ~ID_SCOPE_MASK)) {
             return FALSE;
@@ -7598,7 +7599,6 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
             }
         }
         return !RVALUE_PINNED(obj);
-        break;
 
       default:
         rb_bug("gc_is_moveable_obj: unreachable (%d)", (int)BUILTIN_TYPE(obj));
@@ -7641,14 +7641,14 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, VALUE moved_list)
         rb_mv_generic_ivar((VALUE)src, (VALUE)dest);
     }
 
-    VALUE id;
+    st_data_t srcid = (st_data_t)src, id;
 
     /* If the source object's object_id has been seen, we need to update
      * the object to object id mapping. */
-    if (st_lookup(objspace->obj_to_id_tbl, (VALUE)src, &id)) {
+    if (st_lookup(objspace->obj_to_id_tbl, srcid, &id)) {
         gc_report(4, objspace, "Moving object with seen id: %p -> %p\n", (void *)src, (void *)dest);
-        st_delete(objspace->obj_to_id_tbl, (st_data_t *)&src, 0);
-        st_insert(objspace->obj_to_id_tbl, (VALUE)dest, id);
+        st_delete(objspace->obj_to_id_tbl, &srcid, 0);
+        st_insert(objspace->obj_to_id_tbl, (st_data_t)dest, id);
     }
 
     /* Move the object */
@@ -10008,14 +10008,15 @@ objspace_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
       found:;
 
         {
-            st_data_t key = (st_data_t)info->file;
+            st_data_t key = (st_data_t)info->file, d;
             size_t *data;
 
             if (malloc_info_file_table == NULL) {
                 malloc_info_file_table = st_init_numtable_with_size(1024);
             }
-            if (st_lookup(malloc_info_file_table, key, (st_data_t *)&data)) {
+            if (st_lookup(malloc_info_file_table, key, &d)) {
                 /* hit */
+                data = (size_t *)d;
             }
             else {
                 data = malloc(xmalloc2_size(2, sizeof(size_t)));
