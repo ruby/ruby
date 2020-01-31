@@ -215,7 +215,13 @@ str_make_independent(VALUE str)
 /* symbols for [up|down|swap]case/capitalize options */
 static VALUE sym_ascii, sym_turkic, sym_lithuanian, sym_fold;
 
-static VALUE empty_string;
+static const struct RString empty_fake_string = {
+    {
+	T_STRING | STR_FAKESTR |
+	ENC_CODERANGE_7BIT | (ENCINDEX_US_ASCII << ENCODING_SHIFT)
+    }
+};
+#define empty_string ((VALUE)&empty_fake_string)
 
 static rb_encoding *
 get_actual_encoding(const int encidx, VALUE str)
@@ -4885,16 +4891,13 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
 {
     VALUE result;
     VALUE buf[3];
-    int i;
 
     rb_check_arity(argc, 1, 2);
-    for (i=0; i<argc; i++) {
-        buf[i] = argv[i];
-    }
+    MEMCPY(buf, argv, VALUE, argc);
     str_modify_keep_cr(str);
     result = rb_str_aref_m(argc, buf, str);
     if (!NIL_P(result)) {
-        buf[i] = empty_string;
+        buf[argc] = empty_string;
         rb_str_aset_m(argc+1, buf, str);
     }
     return result;
@@ -11381,9 +11384,6 @@ Init_String(void)
     rb_define_method(rb_cString, "unicode_normalize", rb_str_unicode_normalize, -1);
     rb_define_method(rb_cString, "unicode_normalize!", rb_str_unicode_normalize_bang, -1);
     rb_define_method(rb_cString, "unicode_normalized?", rb_str_unicode_normalized_p, -1);
-
-    empty_string = rb_fstring_enc_lit("", rb_usascii_encoding());
-    rb_gc_register_mark_object(empty_string);
 
     rb_fs = Qnil;
     rb_define_hooked_variable("$;", &rb_fs, 0, rb_fs_setter);
