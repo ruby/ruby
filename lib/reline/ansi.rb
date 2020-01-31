@@ -5,6 +5,10 @@ class Reline::ANSI
     Encoding.default_external
   end
 
+  def self.win?
+    false
+  end
+
   RAW_KEYSTROKE_CONFIG = {
     [27, 91, 65] => :ed_prev_history,     # ↑
     [27, 91, 66] => :ed_next_history,     # ↓
