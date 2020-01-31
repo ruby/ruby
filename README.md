@@ -88,7 +88,7 @@ in the mail body (not subject) to the address
     environment. Specify `optflags=..` and `warnflags=..` as necessary to
     override them.
 
-4.  Edit `defines.h` if you need. Usually this step will not be needed.
+4.  Edit `include/ruby/defines.h` if you need. Usually this step will not be needed.
 
 5.  Remove comment mark(`#`) before the module names from `ext/Setup` (or add
     module names if not present), if you want to link modules statically.

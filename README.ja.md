@@ -102,7 +102,7 @@ Ruby拡張モジュールについて話し合うruby-extメーリングリス�
     環境によってはデフォルトのCコンパイラ用オプションが付きます． `configure` オプションで `optflags=..`
     `warnflags=..` 等で上書きできます．
 
-3.  (必要ならば)`defines.h` を編集する
+3.  (必要ならば)`include/ruby/defines.h` を編集する
 
     多分，必要無いと思います．
 
