@@ -4305,9 +4305,15 @@ gc_sweep_start_heap(rb_objspace_t *objspace, rb_heap_t *heap)
 #if defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 4
 __attribute__((noinline))
 #endif
+static void gc_compact(rb_objspace_t *, int, int, int, int);
+
 static void
 gc_sweep_start(rb_objspace_t *objspace)
 {
+    if (!objspace->flags.during_minor_gc) {
+        gc_compact(objspace, FALSE, FALSE, FALSE, FALSE);
+    }
+
     gc_mode_transition(objspace, gc_mode_sweeping);
     gc_sweep_start_heap(objspace, heap_eden);
 }
@@ -5212,8 +5218,8 @@ gc_mark_ptr(rb_objspace_t *objspace, VALUE obj)
 static inline void
 gc_pin(rb_objspace_t *objspace, VALUE obj)
 {
-    GC_ASSERT(is_markable_object(objspace, obj));
-    if (UNLIKELY(objspace->flags.during_compacting)) {
+    if (LIKELY(objspace->mark_func_data == NULL)) {
+        GC_ASSERT(is_markable_object(objspace, obj));
         MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj);
     }
 }
@@ -6862,6 +6868,7 @@ rb_gc_writebarrier(VALUE a, VALUE b)
     }
     else { /* slow path */
 	gc_writebarrier_incremental(a, b, objspace);
+        gc_pin(objspace, b);
     }
 }
 
@@ -7597,7 +7604,7 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
                 return FALSE;
             }
         }
-        return !RVALUE_PINNED(obj);
+        return !(RVALUE_PINNED(obj) || RVALUE_REMEMBERED(obj));
         break;
 
       default:
@@ -8478,18 +8485,20 @@ gc_compact_stats(rb_objspace_t *objspace)
     return h;
 }
 
-static void gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_double_pages, int use_verifier);
+static void gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_double_pages, int use_verifier, int);
 
 static void
-gc_compact(rb_objspace_t *objspace, int use_toward_empty, int use_double_pages, int use_verifier)
+gc_compact(rb_objspace_t *objspace, int use_toward_empty, int use_double_pages, int use_verifier, int should_collect)
 {
 
     objspace->flags.during_compacting = TRUE;
     {
         /* pin objects referenced by maybe pointers */
-        garbage_collect(objspace, GPR_DEFAULT_REASON);
+        if (should_collect) {
+            garbage_collect(objspace, GPR_DEFAULT_REASON);
+        }
         /* compact */
-        gc_compact_after_gc(objspace, use_toward_empty, use_double_pages, use_verifier);
+        gc_compact_after_gc(objspace, use_toward_empty, use_double_pages, use_verifier, should_collect);
     }
     objspace->flags.during_compacting = FALSE;
 }
@@ -8500,7 +8509,7 @@ rb_gc_compact(rb_execution_context_t *ec, VALUE self)
     rb_objspace_t *objspace = &rb_objspace;
     if (dont_gc) return Qnil;
 
-    gc_compact(objspace, FALSE, FALSE, FALSE);
+    gc_compact(objspace, FALSE, FALSE, FALSE, TRUE);
     return gc_compact_stats(objspace);
 }
 
@@ -8560,7 +8569,7 @@ gc_check_references_for_moved(rb_objspace_t *objspace)
 }
 
 static void
-gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_double_pages, int use_verifier)
+gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_double_pages, int use_verifier, int should_collect)
 {
     if (0) fprintf(stderr, "gc_compact_after_gc: %d,%d,%d\n", use_toward_empty, use_double_pages, use_verifier);
 
@@ -8578,8 +8587,11 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
     }
 
     VALUE moved_list_head;
-    VALUE disabled = rb_gc_disable();
+    VALUE disabled;
 
+    if (should_collect) {
+        disabled = rb_gc_disable();
+    }
     if (use_toward_empty) {
         moved_list_head = gc_compact_heap(objspace, compare_free_slots);
     }
@@ -8589,7 +8601,9 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
     heap_eden->freelist = NULL;
 
     gc_update_references(objspace);
-    if (!RTEST(disabled)) rb_gc_enable();
+    if (should_collect) {
+        if (!RTEST(disabled)) rb_gc_enable();
+    }
 
     if (use_verifier) {
         gc_check_references_for_moved(objspace);
@@ -8640,6 +8654,10 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
         heap_eden->free_pages = heap_eden->free_pages->free_next;
     }
 
+    if (use_double_pages) {
+        heap_pages_free_unused_pages(objspace);
+    }
+
     if (use_verifier) {
         gc_verify_internal_consistency(objspace);
     }
@@ -8656,7 +8674,7 @@ gc_verify_compaction_references(rb_execution_context_t *ec, VALUE mod, VALUE tow
         (Check_Type(toward, T_SYMBOL), toward == ID2SYM(id_empty));
     const int use_double_pages = RTEST(double_heap);
 
-    gc_compact(objspace, use_toward_empty, use_double_pages, TRUE);
+    gc_compact(objspace, use_toward_empty, use_double_pages, TRUE, TRUE);
     return gc_compact_stats(objspace);
 }
 
