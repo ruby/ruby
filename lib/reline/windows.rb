@@ -5,6 +5,10 @@ class Reline::Windows
     Encoding::UTF_8
   end
 
+  def self.win?
+    true
+  end
+
   RAW_KEYSTROKE_CONFIG = {
     [224, 72] => :ed_prev_history, # ↑
     [224, 80] => :ed_next_history, # ↓
