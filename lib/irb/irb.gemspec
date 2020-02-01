@@ -17,6 +17,7 @@ Gem::Specification.new do |spec|
   spec.license       = "BSD-2-Clause"
 
   spec.files         = [
+    ".document",
     "Gemfile",
     "LICENSE.txt",
     "README.md",
@@ -52,7 +53,6 @@ Gem::Specification.new do |spec|
     "lib/irb/init.rb",
     "lib/irb/input-method.rb",
     "lib/irb/inspector.rb",
-    "lib/irb/lc/.document",
     "lib/irb/lc/error.rb",
     "lib/irb/lc/help-message",
     "lib/irb/lc/ja/encoding_aliases.rb",
