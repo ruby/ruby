@@ -904,7 +904,8 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     Gem.instance_variable_set(:@ruby, with_destdir(File.join(bindir, ruby_install_name)))
     silent = Gem::SilentUI.new
     gems.each do |gem|
-      inst = Gem::Installer.new(gem, options)
+      package = Gem::Package.new(gem)
+      inst = Gem::Installer.new(package, options)
       inst.spec.extension_dir = with_destdir(inst.spec.extension_dir)
       begin
         Gem::DefaultUserInteraction.use_ui(silent) {inst.install}
