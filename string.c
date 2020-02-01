@@ -2647,12 +2647,11 @@ rb_str_freeze(VALUE str)
 static VALUE
 str_uplus(VALUE str)
 {
-    if (OBJ_FROZEN(str)) {
-	return rb_str_dup(str);
+    if (RB_OBJ_CHILLED(str)) {
+        return rb_str_dup(str);
     }
-    else {
-	return str;
-    }
+
+    return str;
 }
 
 /*
@@ -10870,7 +10869,9 @@ sym_inspect(VALUE sym)
 VALUE
 rb_sym_to_s(VALUE sym)
 {
-    return str_new_shared(rb_cString, rb_sym2str(sym));
+    VALUE str = str_new_shared(rb_cString, rb_sym2str(sym));
+    RB_OBJ_WILL_FREEZE(str);
+    return str;
 }
 
 

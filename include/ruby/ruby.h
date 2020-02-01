@@ -808,11 +808,13 @@ enum ruby_fl_type {
     RUBY_FL_PROMOTED1 = (1<<6),
     RUBY_FL_PROMOTED  = RUBY_FL_PROMOTED0|RUBY_FL_PROMOTED1,
     RUBY_FL_FINALIZE  = (1<<7),
-    RUBY_FL_TAINT     = (1<<8),
+    RUBY_FL_TAINT     = (0),
     RUBY_FL_UNTRUSTED = RUBY_FL_TAINT,
+    RUBY_FL_WILL_FREEZE = (1<<8),
     RUBY_FL_SEEN_OBJ_ID = (1<<9),
     RUBY_FL_EXIVAR    = (1<<10),
     RUBY_FL_FREEZE    = (1<<11),
+    RUBY_FL_CHILLED   = RUBY_FL_FREEZE|RUBY_FL_WILL_FREEZE,
 
     RUBY_FL_USHIFT    = 12,
 
@@ -1249,6 +1251,9 @@ int rb_big_sign(VALUE);
 #define FL_SEEN_OBJ_ID  ((VALUE)RUBY_FL_SEEN_OBJ_ID)
 #define FL_EXIVAR       ((VALUE)RUBY_FL_EXIVAR)
 #define FL_FREEZE       ((VALUE)RUBY_FL_FREEZE)
+#define FL_WILL_FREEZE  ((VALUE)RUBY_FL_WILL_FREEZE)
+#define FL_FREEZE       ((VALUE)RUBY_FL_FREEZE)
+#define FL_CHILLED      ((VALUE)RUBY_FL_CHILLED)
 
 #define FL_USHIFT       ((VALUE)RUBY_FL_USHIFT)
 
@@ -1306,7 +1311,12 @@ int rb_big_sign(VALUE);
 #define RB_OBJ_FROZEN(x) (!RB_FL_ABLE(x) || RB_OBJ_FROZEN_RAW(x))
 #define RB_OBJ_FREEZE_RAW(x) (void)(RBASIC(x)->flags |= RUBY_FL_FREEZE)
 #define RB_OBJ_FREEZE(x) rb_obj_freeze_inline((VALUE)x)
-
+#define RB_OBJ_WILL_BE_FROZEN_RAW(x) (RBASIC(x)->flags&RUBY_FL_WILL_FREEZE)
+#define RB_OBJ_WILL_BE_FROZEN(x) (!RB_FL_ABLE(x) || RB_OBJ_WILL_BE_FROZEN_RAW(x))
+#define RB_OBJ_WILL_FREEZE_RAW(x) (void)(RBASIC(x)->flags |= RUBY_FL_WILL_FREEZE)
+#define RB_OBJ_WILL_FREEZE(x) rb_obj_will_freeze_inline((VALUE)x)
+#define RB_OBJ_CHILLED_RAW(x) (RBASIC(x)->flags&RUBY_FL_CHILLED)
+#define RB_OBJ_CHILLED(x) (!RB_FL_ABLE(x) || RB_OBJ_CHILLED_RAW(x))
 /*!
  * \defgroup deprecated_macros deprecated macro APIs
  * \{
@@ -1343,6 +1353,7 @@ int rb_big_sign(VALUE);
 /* \} */
 
 void rb_freeze_singleton_class(VALUE klass);
+void rb_will_freeze_singleton_class(VALUE klass);
 
 static inline void
 rb_obj_freeze_inline(VALUE x)
@@ -1352,6 +1363,17 @@ rb_obj_freeze_inline(VALUE x)
 	if (RBASIC_CLASS(x) && !(RBASIC(x)->flags & RUBY_FL_SINGLETON)) {
 	    rb_freeze_singleton_class(x);
 	}
+    }
+}
+
+static inline void
+rb_obj_will_freeze_inline(VALUE x)
+{
+    if (RB_FL_ABLE(x)) {
+        RB_OBJ_WILL_FREEZE_RAW(x);
+        if (RBASIC_CLASS(x) && !(RBASIC(x)->flags & RUBY_FL_SINGLETON)) {
+            rb_will_freeze_singleton_class(x);
+        }
     }
 }
 
