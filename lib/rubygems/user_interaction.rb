@@ -359,14 +359,6 @@ class Gem::StreamUI
   end
 
   ##
-  # Display a debug message on the same location as error messages.
-
-  def debug(statement)
-    @errs.puts statement
-  end
-  deprecate :debug, :none, 2018, 12
-
-  ##
   # Terminate the application with exit code +status+, running any exit
   # handlers that might have been defined.
 

@@ -147,7 +147,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     error = @ui.error.split "\n"
     assert_equal "WARNING:  licenses is empty, but is recommended.  Use a license identifier from", error.shift
     assert_equal "http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.", error.shift
-    assert_equal "WARNING:  See http://guides.rubygems.org/specification-reference/ for help", error.shift
+    assert_equal "WARNING:  See https://guides.rubygems.org/specification-reference/ for help", error.shift
     assert_equal [], error
 
     gem_file = File.join @tempdir, File.basename(@gem.cache_file)

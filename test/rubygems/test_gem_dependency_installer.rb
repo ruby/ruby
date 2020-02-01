@@ -440,7 +440,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     e1 = util_spec 'e', '1', nil, 'extconf.rb' do |s|
       s.extensions << 'extconf.rb'
     end
-    e1_gem = File.join @tempdir, 'gems', "#{e1.full_name}.gem"
+    e1_gem = e1.cache_file
 
     _, f1_gem = util_gem 'f', '1', 'e' => nil
 

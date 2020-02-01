@@ -6,6 +6,7 @@
 #++
 
 require 'rubygems/command'
+require 'rubygems/installer_uninstaller_utils'
 require 'rubygems/exceptions'
 require 'rubygems/deprecate'
 require 'rubygems/package'
@@ -42,6 +43,8 @@ class Gem::Installer
   ExtensionBuildError = Gem::Ext::BuildError # :nodoc:
 
   include Gem::UserInteraction
+
+  include Gem::InstallerUninstallerUtils
 
   ##
   # Filename of the gem being installed.
@@ -180,15 +183,7 @@ class Gem::Installer
     require 'fileutils'
 
     @options = options
-    if package.is_a? String
-      security_policy = options[:security_policy]
-      @package = Gem::Package.new package, security_policy
-      if $VERBOSE
-        warn "constructing an Installer object with a string is deprecated. Please use Gem::Installer.at (called from: #{caller.first})"
-      end
-    else
-      @package = package
-    end
+    @package = package
 
     process_options
 
@@ -330,6 +325,7 @@ class Gem::Installer
     end
 
     generate_bin
+    generate_plugins
 
     unless @options[:install_as_default]
       write_spec
@@ -520,7 +516,17 @@ class Gem::Installer
       else
         generate_bin_symlink filename, @bin_dir
       end
+    end
+  end
 
+  def generate_plugins # :nodoc:
+    latest = Gem::Specification.latest_spec_for(spec.name)
+    return if latest && latest.version > spec.version
+
+    if spec.plugins.empty?
+      remove_plugins_for(spec)
+    else
+      regenerate_plugins_for(spec)
     end
   end
 
@@ -810,7 +816,7 @@ TEXT
     ruby_exe = "ruby.exe" if ruby_exe.empty?
 
     if File.exist?(File.join bindir, ruby_exe)
-      # stub & ruby.exe withing same folder.  Portable
+      # stub & ruby.exe within same folder.  Portable
       <<-TEXT
 @ECHO OFF
 @"%~dp0#{ruby_exe}" "%~dpn0" %*
@@ -843,18 +849,6 @@ TEXT
 
     builder.build_extensions
   end
-
-  ##
-  # Logs the build +output+ in +build_dir+, then raises Gem::Ext::BuildError.
-  #
-  # TODO:  Delete this for RubyGems 4.  It remains for API compatibility
-
-  def extension_build_error(build_dir, output, backtrace = nil) # :nodoc:
-    builder = Gem::Ext::Builder.new spec, @build_args
-
-    builder.build_error build_dir, output, backtrace
-  end
-  deprecate :extension_build_error, :none, 2018, 12
 
   ##
   # Reads the file index and extracts each file into the gem directory.

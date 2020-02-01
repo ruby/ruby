@@ -18,6 +18,7 @@ class Gem::SpecificationPolicy
     mailing_list_uri
     source_code_uri
     wiki_uri
+    funding_uri
   ].freeze # :nodoc:
 
   def initialize(specification)
@@ -421,7 +422,7 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
   end
 
   def help_text # :nodoc:
-    "See http://guides.rubygems.org/specification-reference/ for help"
+    "See https://guides.rubygems.org/specification-reference/ for help"
   end
 
 end

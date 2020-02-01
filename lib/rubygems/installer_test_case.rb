@@ -171,10 +171,10 @@ class Gem::InstallerTestCase < Gem::TestCase
   ##
   # Sets up the base @gem, builds it and returns an installer for it.
   #
-  def util_setup_installer
+  def util_setup_installer(&block)
     @gem = setup_base_gem
 
-    util_setup_gem
+    util_setup_gem(&block)
   end
 
   ##

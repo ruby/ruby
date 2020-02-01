@@ -169,20 +169,24 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
   # original value when the block ends
   #
   def bindir(value)
-    bindir = RbConfig::CONFIG['bindir']
+    with_clean_path_to_ruby do
+      bindir = RbConfig::CONFIG['bindir']
 
-    if value
-      RbConfig::CONFIG['bindir'] = value
-    else
-      RbConfig::CONFIG.delete 'bindir'
-    end
+      if value
+        RbConfig::CONFIG['bindir'] = value
+      else
+        RbConfig::CONFIG.delete 'bindir'
+      end
 
-    yield
-  ensure
-    if bindir
-      RbConfig::CONFIG['bindir'] = bindir
-    else
-      RbConfig::CONFIG.delete 'bindir'
+      begin
+        yield
+      ensure
+        if bindir
+          RbConfig::CONFIG['bindir'] = bindir
+        else
+          RbConfig::CONFIG.delete 'bindir'
+        end
+      end
     end
   end
 
@@ -321,6 +325,11 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
       @tempdir.tap(&Gem::UNTAINT)
     end
 
+    @orig_SYSTEM_WIDE_CONFIG_FILE = Gem::ConfigFile::SYSTEM_WIDE_CONFIG_FILE
+    Gem::ConfigFile.send :remove_const, :SYSTEM_WIDE_CONFIG_FILE
+    Gem::ConfigFile.send :const_set, :SYSTEM_WIDE_CONFIG_FILE,
+                         File.join(@tempdir, 'system-gemrc')
+
     @gemhome  = File.join @tempdir, 'gemhome'
     @userhome = File.join @tempdir, 'userhome'
     ENV["GEM_SPEC_CACHE"] = File.join @tempdir, 'spec_cache'
@@ -331,7 +340,7 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
                    ruby
                  end
 
-    @git = ENV['GIT'] || 'git'
+    @git = ENV['GIT'] || (win_platform? ? 'git.exe' : 'git')
 
     Gem.ensure_gem_subdirectories @gemhome
 
@@ -441,6 +450,10 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
     FileUtils.rm_rf @tempdir
 
     ENV.replace(@orig_env)
+
+    Gem::ConfigFile.send :remove_const, :SYSTEM_WIDE_CONFIG_FILE
+    Gem::ConfigFile.send :const_set, :SYSTEM_WIDE_CONFIG_FILE,
+                         @orig_SYSTEM_WIDE_CONFIG_FILE
 
     Gem.ruby = @orig_ruby if @orig_ruby
 
@@ -562,7 +575,7 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
   def install_gem(spec, options = {})
     require 'rubygems/installer'
 
-    gem = File.join @tempdir, "gems", "#{spec.full_name}.gem"
+    gem = spec.cache_file
 
     unless File.exist? gem
       use_ui Gem::MockGemUi.new do
@@ -571,7 +584,7 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
         end
       end
 
-      gem = File.join(@tempdir, File.basename(spec.cache_file)).tap(&Gem::UNTAINT)
+      gem = File.join(@tempdir, File.basename(gem)).tap(&Gem::UNTAINT)
     end
 
     Gem::Installer.at(gem, options.merge({:wrappers => true})).install
@@ -666,8 +679,6 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
 
       yield(s) if block_given?
     end
-
-    Gem::Specification.map # HACK: force specs to (re-)load before we write
 
     written_path = write_file spec.spec_file do |io|
       io.write spec.to_ruby_for_cache
@@ -833,9 +844,6 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
 
       util_build_gem spec
 
-      cache_file = File.join @tempdir, 'gems', "#{spec.full_name}.gem"
-      FileUtils.mkdir_p File.dirname cache_file
-      FileUtils.mv spec.cache_file, cache_file
       FileUtils.rm spec.spec_file
     end
 
@@ -1245,6 +1253,16 @@ Also, a list:
     rescue LoadError
       "ruby"
     end
+  end
+
+  def with_clean_path_to_ruby
+    orig_ruby = Gem.ruby
+
+    Gem.instance_variable_set :@ruby, nil
+
+    yield
+  ensure
+    Gem.instance_variable_set :@ruby, orig_ruby
   end
 
   class << self

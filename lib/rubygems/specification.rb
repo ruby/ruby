@@ -384,6 +384,7 @@ class Gem::Specification < Gem::BasicSpecification
   #     "mailing_list_uri"  => "https://groups.example.com/bestgemever",
   #     "source_code_uri"   => "https://example.com/user/bestgemever",
   #     "wiki_uri"          => "https://example.com/user/bestgemever/wiki"
+  #     "funding_uri"       => "https://example.com/donate"
   #   }
   #
   # These links will be used on your gem's page on rubygems.org and must pass
@@ -1086,6 +1087,13 @@ class Gem::Specification < Gem::BasicSpecification
     _latest_specs Gem::Specification._all, prerelease
   end
 
+  ##
+  # Return the latest installed spec for gem +name+.
+
+  def self.latest_spec_for(name)
+    latest_specs(true).find { |installed_spec| installed_spec.name == name }
+  end
+
   def self._latest_specs(specs, prerelease = false) # :nodoc:
     result = Hash.new { |h,k| h[k] = {} }
     native = {}
@@ -1752,10 +1760,11 @@ class Gem::Specification < Gem::BasicSpecification
   #
   #   [depending_gem, dependency, [list_of_gems_that_satisfy_dependency]]
 
-  def dependent_gems
+  def dependent_gems(check_dev=true)
     out = []
     Gem::Specification.each do |spec|
-      spec.dependencies.each do |dep|
+      deps = check_dev ? spec.dependencies : spec.runtime_dependencies
+      deps.each do |dep|
         if self.satisfies_requirement?(dep)
           sats = []
           find_all_satisfiers(dep) do |sat|
@@ -1847,29 +1856,23 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Sets executables to +value+, ensuring it is an array. Don't
-  # use this, push onto the array instead.
+  # Sets executables to +value+, ensuring it is an array.
 
   def executables=(value)
-    # TODO: warn about setting instead of pushing
     @executables = Array(value)
   end
 
   ##
-  # Sets extensions to +extensions+, ensuring it is an array. Don't
-  # use this, push onto the array instead.
+  # Sets extensions to +extensions+, ensuring it is an array.
 
   def extensions=(extensions)
-    # TODO: warn about setting instead of pushing
     @extensions = Array extensions
   end
 
   ##
-  # Sets extra_rdoc_files to +files+, ensuring it is an array. Don't
-  # use this, push onto the array instead.
+  # Sets extra_rdoc_files to +files+, ensuring it is an array.
 
   def extra_rdoc_files=(files)
-    # TODO: warn about setting instead of pushing
     @extra_rdoc_files = Array files
   end
 
@@ -2245,11 +2248,9 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Sets rdoc_options to +value+, ensuring it is an array. Don't
-  # use this, push onto the array instead.
+  # Sets rdoc_options to +value+, ensuring it is an array.
 
   def rdoc_options=(options)
-    # TODO: warn about setting instead of pushing
     @rdoc_options = Array options
   end
 
@@ -2268,11 +2269,9 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Set requirements to +req+, ensuring it is an array. Don't
-  # use this, push onto the array instead.
+  # Set requirements to +req+, ensuring it is an array.
 
   def requirements=(req)
-    # TODO: warn about setting instead of pushing
     @requirements = Array req
   end
 

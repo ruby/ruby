@@ -235,7 +235,7 @@ class Gem::RequestSet::GemDependencyAPI
     return unless (groups & @without_groups).empty?
 
     dependencies.each do |dep|
-      @set.gem dep.name, *dep.requirement
+      @set.gem dep.name, *dep.requirement.as_list
     end
   end
 

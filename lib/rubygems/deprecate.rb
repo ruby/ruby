@@ -65,6 +65,22 @@ module Gem::Deprecate
     end
   end
 
-  module_function :deprecate, :skip_during
+  # Deprecation method to deprecate Rubygems commands
+  def deprecate_command(year, month)
+    class_eval do
+      define_method "deprecated?" do
+        true
+      end
+
+      define_method "deprecation_warning" do
+        msg = [ "#{self.command} command is deprecated",
+                ". It will be removed on or after %4d-%02d-01.\n" % [year, month],
+        ]
+
+        alert_warning "#{msg.join}" unless Gem::Deprecate.skip
+      end
+    end
+  end
+  module_function :deprecate, :deprecate_command, :skip_during
 
 end

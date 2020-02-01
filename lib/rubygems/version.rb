@@ -151,7 +151,7 @@
 
 class Gem::Version
 
-  autoload :Requirement, 'rubygems/requirement'
+  autoload :Requirement, File.expand_path('requirement', __dir__)
 
   include Comparable
 

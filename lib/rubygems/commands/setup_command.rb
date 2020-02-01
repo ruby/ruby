@@ -20,7 +20,8 @@ class Gem::Commands::SetupCommand < Gem::Command
           :force => true,
           :site_or_vendor => 'sitelibdir',
           :destdir => '', :prefix => '', :previous_version => '',
-          :regenerate_binstubs => true
+          :regenerate_binstubs => true,
+          :regenerate_plugins => true
 
     add_option '--previous-version=VERSION',
                'Previous version of RubyGems',
@@ -87,6 +88,11 @@ class Gem::Commands::SetupCommand < Gem::Command
     add_option '--[no-]regenerate-binstubs',
                'Regenerate gem binstubs' do |value, options|
       options[:regenerate_binstubs] = value
+    end
+
+    add_option '--[no-]regenerate-plugins',
+               'Regenerate gem plugins' do |value, options|
+      options[:regenerate_plugins] = value
     end
 
     add_option '-f', '--[no-]force',
@@ -181,6 +187,7 @@ By default, this RubyGems will install gem as:
     say "RubyGems #{Gem::VERSION} installed"
 
     regenerate_binstubs if options[:regenerate_binstubs]
+    regenerate_plugins if options[:regenerate_plugins]
 
     uninstall_old_gemcutter
 
@@ -621,6 +628,16 @@ abort "#{deprecation_message}"
     if options[:env_shebang]
       args << "--env-shebang"
     end
+
+    command = Gem::Commands::PristineCommand.new
+    command.invoke(*args)
+  end
+
+  def regenerate_plugins
+    require "rubygems/commands/pristine_command"
+    say "Regenerating plugins"
+
+    args = %w[--all --only-plugins --silent]
 
     command = Gem::Commands::PristineCommand.new
     command.invoke(*args)

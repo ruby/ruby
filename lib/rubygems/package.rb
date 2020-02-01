@@ -8,7 +8,8 @@
 # Example using a Gem::Package
 #
 # Builds a .gem file given a Gem::Specification. A .gem file is a tarball
-# which contains a data.tar.gz and metadata.gz, and possibly signatures.
+# which contains a data.tar.gz, metadata.gz, checksums.yaml.gz and possibly
+# signatures.
 #
 #   require 'rubygems'
 #   require 'rubygems/package'

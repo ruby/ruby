@@ -169,6 +169,41 @@ class TestGemUninstaller < Gem::InstallerTestCase
     end
   end
 
+  def test_remove_plugins
+    write_file File.join(@tempdir, 'lib', 'rubygems_plugin.rb') do |io|
+      io.write "puts __FILE__"
+    end
+
+    @spec.files += %w[lib/rubygems_plugin.rb]
+
+    Gem::Installer.at(Gem::Package.build(@spec)).install
+
+    plugin_path = File.join Gem.plugins_dir, 'a_plugin.rb'
+    assert File.exist?(plugin_path), 'plugin not written'
+
+    Gem::Uninstaller.new(nil).remove_plugins @spec
+
+    refute File.exist?(plugin_path), 'plugin not removed'
+  end
+
+  def test_regenerate_plugins_for
+    write_file File.join(@tempdir, 'lib', 'rubygems_plugin.rb') do |io|
+      io.write "puts __FILE__"
+    end
+
+    @spec.files += %w[lib/rubygems_plugin.rb]
+
+    Gem::Installer.at(Gem::Package.build(@spec)).install
+
+    plugin_path = File.join Gem.plugins_dir, 'a_plugin.rb'
+    assert File.exist?(plugin_path), 'plugin not written'
+
+    FileUtils.rm plugin_path
+    Gem::Uninstaller.new(nil).regenerate_plugins_for @spec
+
+    assert File.exist?(plugin_path), 'plugin not regenerated'
+  end
+
   def test_path_ok_eh
     uninstaller = Gem::Uninstaller.new nil
 
@@ -524,6 +559,35 @@ create_makefile '#{@spec.name}'
     assert_match %r!Successfully uninstalled q-1!, lines.last
   end
 
+  def test_uninstall_prompt_only_lists_the_dependents_that_prevented_uninstallation
+    quick_gem 'r', '1' do |s|
+      s.add_development_dependency 'q', '= 1'
+    end
+
+    quick_gem 's', '1' do |s|
+      s.add_dependency 'q', '= 1'
+    end
+
+    quick_gem 'q', '1'
+
+    un = Gem::Uninstaller.new('q', :check_dev => false)
+    ui = Gem::MockGemUi.new("y\n")
+
+    use_ui ui do
+      un.uninstall
+    end
+
+    lines = ui.output.split("\n")
+    lines.shift
+
+    assert_match %r!You have requested to uninstall the gem:!, lines.shift
+    lines.shift
+    lines.shift
+
+    assert_match %r!s-1 depends on q \(= 1\)!, lines.shift
+    assert_match %r!Successfully uninstalled q-1!, lines.last
+  end
+
   def test_uninstall_no_permission
     uninstaller = Gem::Uninstaller.new @spec.name, :executables => true
 
@@ -540,6 +604,46 @@ create_makefile '#{@spec.name}'
         uninstaller.uninstall
       end
     end
+  end
+
+  def test_uninstall_keeps_plugins_up_to_date
+    write_file File.join(@tempdir, 'lib', 'rubygems_plugin.rb') do |io|
+      io.write "puts __FILE__"
+    end
+
+    plugin_path = File.join Gem.plugins_dir, 'a_plugin.rb'
+
+    @spec.version = '1'
+    Gem::Installer.at(Gem::Package.build(@spec)).install
+
+    refute File.exist?(plugin_path), 'version without plugin installed, but plugin written'
+
+    @spec.files += %w[lib/rubygems_plugin.rb]
+    @spec.version = '2'
+    Gem::Installer.at(Gem::Package.build(@spec)).install
+
+    assert File.exist?(plugin_path), 'version with plugin installed, but plugin not written'
+    assert_match %r{\Arequire.*a-2/lib/rubygems_plugin\.rb}, File.read(plugin_path), 'written plugin has incorrect content'
+
+    @spec.version = '3'
+    Gem::Installer.at(Gem::Package.build(@spec)).install
+
+    assert File.exist?(plugin_path), 'version with plugin installed, but plugin removed'
+    assert_match %r{\Arequire.*a-3/lib/rubygems_plugin\.rb}, File.read(plugin_path), 'old version installed, but plugin updated'
+
+    Gem::Uninstaller.new('a', :version => '1', :executables => true).uninstall
+
+    assert File.exist?(plugin_path), 'plugin removed when old version uninstalled'
+    assert_match %r{\Arequire.*a-3/lib/rubygems_plugin\.rb}, File.read(plugin_path), 'old version uninstalled, but plugin updated'
+
+    Gem::Uninstaller.new('a', version: '3', :executables => true).uninstall
+
+    assert File.exist?(plugin_path), 'plugin removed when old version uninstalled and another version with plugin still present'
+    assert_match %r{\Arequire.*a-2/lib/rubygems_plugin\.rb}, File.read(plugin_path), 'latest version uninstalled, but plugin not updated to previous version'
+
+    Gem::Uninstaller.new('a', version: '2', :executables => true).uninstall
+
+    refute File.exist?(plugin_path), 'last version uninstalled, but plugin still present'
   end
 
 end

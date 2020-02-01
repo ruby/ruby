@@ -26,6 +26,7 @@ class Gem::Doctor
     ['doc',            ''],
     ['extensions',     ''],
     ['gems',           ''],
+    ['plugins',        ''],
   ].freeze
 
   missing =
@@ -112,6 +113,7 @@ class Gem::Doctor
       next if installed_specs.include? basename
       next if /^rubygems-\d/ =~ basename
       next if 'specifications' == sub_directory and 'default' == basename
+      next if 'plugins' == sub_directory and Gem.plugin_suffix_regexp =~ basename
 
       type = File.directory?(child) ? 'directory' : 'file'
 

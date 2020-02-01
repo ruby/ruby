@@ -73,8 +73,6 @@ command to remove old versions.
       say "Latest version already installed. Done."
       terminate_interaction
     end
-
-    options[:user_install] = false
   end
 
   def check_update_arguments # :nodoc:
@@ -90,9 +88,10 @@ command to remove old versions.
       return
     end
 
-    hig = highest_installed_gems
-
-    gems_to_update = which_to_update hig, options[:args].uniq
+    gems_to_update = which_to_update(
+      highest_installed_gems,
+      options[:args].uniq
+    )
 
     if options[:explain]
       say "Gems to update:"
@@ -137,6 +136,9 @@ command to remove old versions.
   def highest_installed_gems # :nodoc:
     hig = {} # highest installed gems
 
+    # Get only gem specifications installed as --user-install
+    Gem::Specification.dirs = Gem.user_dir if options[:user_install]
+
     Gem::Specification.each do |spec|
       if hig[spec.name].nil? or hig[spec.name].version < spec.version
         hig[spec.name] = spec
@@ -168,8 +170,31 @@ command to remove old versions.
     Dir.chdir update_dir do
       say "Installing RubyGems #{version}"
 
-      installed = system Gem.ruby, '--disable-gems', 'setup.rb', *args
+      installed = preparing_gem_layout_for(version) do
+        system Gem.ruby, '--disable-gems', 'setup.rb', *args
+      end
+
       say "RubyGems system software updated" if installed
+    end
+  end
+
+  def preparing_gem_layout_for(version)
+    if Gem::Version.new(version) >= Gem::Version.new("3.2.a")
+      yield
+    else
+      require "tmpdir"
+      tmpdir = Dir.mktmpdir
+      FileUtils.mv Gem.plugins_dir, tmpdir
+
+      status = yield
+
+      if status
+        FileUtils.rm_rf tmpdir
+      else
+        FileUtils.mv File.join(tmpdir, "plugins"), Gem.plugins_dir
+      end
+
+      status
     end
   end
 

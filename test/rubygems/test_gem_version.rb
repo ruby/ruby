@@ -236,7 +236,7 @@ class TestGemVersion < Gem::TestCase
     assert_equal expected, v(version).approximate_recommendation
   end
 
-  # Assert that the "approximate" recommendation for +version+ satifies +version+.
+  # Assert that the "approximate" recommendation for +version+ satisfies +version+.
 
   def assert_approximate_satisfies_itself(version)
     gem_version = v(version)

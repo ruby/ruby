@@ -5,18 +5,7 @@ require 'rubygems/deprecate'
 ##
 # Base exception class for RubyGems.  All exception raised by RubyGems are a
 # subclass of this one.
-class Gem::Exception < RuntimeError
-
-  ##
-  #--
-  # TODO: remove in RubyGems 4, nobody sets this
-
-  attr_accessor :source_exception # :nodoc:
-
-  extend Gem::Deprecate
-  deprecate :source_exception, :none, 2018, 12
-
-end
+class Gem::Exception < RuntimeError; end
 
 class Gem::CommandLineError < Gem::Exception; end
 

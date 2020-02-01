@@ -98,6 +98,18 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     File.join @gemhome, 'bin', name
   end
 
+  def gem_install_with_plugin(name)
+    gem = util_spec name do |s|
+      s.files = %W[lib/rubygems_plugin.rb]
+    end
+    write_file File.join @tempdir, 'lib', 'rubygems_plugin.rb' do |f|
+      f.puts "require '#{gem.plugins.first}'"
+    end
+    install_gem gem
+
+    File.join Gem.plugins_dir, "#{name}_plugin.rb"
+  end
+
   def test_execute_regenerate_binstubs
     gem_bin_path = gem_install 'a'
     write_file gem_bin_path do |io|
@@ -121,6 +133,31 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     @cmd.execute
 
     assert_equal "I changed it!\n", File.read(gem_bin_path)
+  end
+
+  def test_execute_regenerate_plugins
+    gem_plugin_path = gem_install_with_plugin 'a'
+    write_file gem_plugin_path do |io|
+      io.puts 'I changed it!'
+    end
+
+    @cmd.options[:document] = []
+    @cmd.execute
+
+    assert_match %r{\Arequire}, File.read(gem_plugin_path)
+  end
+
+  def test_execute_no_regenerate_plugins
+    gem_plugin_path = gem_install_with_plugin 'a'
+    write_file gem_plugin_path do |io|
+      io.puts 'I changed it!'
+    end
+
+    @cmd.options[:document] = []
+    @cmd.options[:regenerate_plugins] = false
+    @cmd.execute
+
+    assert_equal "I changed it!\n", File.read(gem_plugin_path)
   end
 
   def test_execute_informs_about_installed_executables

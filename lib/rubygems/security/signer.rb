@@ -39,7 +39,7 @@ class Gem::Security::Signer
   }.freeze
 
   ##
-  # Attemps to re-sign an expired cert with a given private key
+  # Attempts to re-sign an expired cert with a given private key
   def self.re_sign_cert(expired_cert, expired_cert_path, private_key)
     return unless expired_cert.not_after < Time.now
 

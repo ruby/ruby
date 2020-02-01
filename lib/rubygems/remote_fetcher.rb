@@ -7,7 +7,6 @@ require 'rubygems/uri_formatter'
 require 'rubygems/uri_parsing'
 require 'rubygems/user_interaction'
 require 'resolv'
-require 'rubygems/deprecate'
 
 ##
 # RemoteFetcher handles the details of fetching gems and gem information from
@@ -16,8 +15,6 @@ require 'rubygems/deprecate'
 class Gem::RemoteFetcher
 
   include Gem::UserInteraction
-  extend Gem::Deprecate
-
   include Gem::UriParsing
 
   ##
@@ -308,17 +305,6 @@ class Gem::RemoteFetcher
 
     data
   end
-
-  ##
-  # Returns the size of +uri+ in bytes.
-
-  def fetch_size(uri)
-    response = fetch_path(uri, nil, true)
-
-    response['content-length'].to_i
-  end
-
-  deprecate :fetch_size, :none, 2019, 12
 
   ##
   # Performs a Net::HTTP request of type +request_class+ on +uri+ returning

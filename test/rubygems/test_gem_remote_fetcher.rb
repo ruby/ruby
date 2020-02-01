@@ -153,20 +153,18 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     assert_equal proxy_uri, fetcher.instance_variable_get(:@proxy).to_s
   end
 
-  def test_fetch_size_bad_uri
+  def test_fetch_path_bad_uri
     fetcher = Gem::RemoteFetcher.new nil
     @fetcher = fetcher
 
     e = assert_raises ArgumentError do
-      Gem::Deprecate.skip_during do
-        fetcher.fetch_size 'gems.example.com/yaml'
-      end
+      @fetcher.fetch_path("gems.example.com/yaml", nil, true)
     end
 
     assert_equal 'uri scheme is invalid: nil', e.message
   end
 
-  def test_fetch_size_socket_error
+  def test_fetch_path_socket_error
     fetcher = Gem::RemoteFetcher.new nil
     @fetcher = fetcher
     def fetcher.request(uri, request_class, last_modified = nil)
@@ -175,9 +173,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     uri = 'http://gems.example.com/yaml'
     e = assert_raises Gem::RemoteFetcher::FetchError do
-      Gem::Deprecate.skip_during do
-        fetcher.fetch_size uri
-      end
+      @fetcher.fetch_path(uri, nil, true)
     end
 
     assert_equal "SocketError: oops (#{uri})", e.message
@@ -186,9 +182,8 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   def test_no_proxy
     use_ui @stub_ui do
       assert_data_from_server @fetcher.fetch_path(@server_uri)
-      Gem::Deprecate.skip_during do
-        assert_equal SERVER_DATA.size, @fetcher.fetch_size(@server_uri)
-      end
+      response = @fetcher.fetch_path(@server_uri, nil, true)
+      assert_equal SERVER_DATA.size, response['content-length'].to_i
     end
   end
 
@@ -917,7 +912,6 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_ssl_client_cert_auth_connection
-    skip 'openssl is missing' unless defined?(OpenSSL::SSL)
     skip 'openssl in jruby fails' if java_platform?
 
     ssl_server = self.class.start_ssl_server({
@@ -935,8 +929,6 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_do_not_allow_invalid_client_cert_auth_connection
-    skip 'openssl is missing' unless defined?(OpenSSL::SSL)
-
     ssl_server = self.class.start_ssl_server({
       :SSLVerifyClient =>
         OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT})
@@ -1083,9 +1075,6 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     DIR = File.expand_path(File.dirname(__FILE__))
 
     def start_ssl_server(config = {})
-      raise MiniTest::Skip, 'openssl not installed' unless
-        defined?(OpenSSL::SSL)
-
       null_logger = NilLog.new
       server = WEBrick::HTTPServer.new({
         :Port => 0,
@@ -1109,8 +1098,8 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
         begin
           server.start
         rescue Exception => ex
-          abort ex.message
           puts "ERROR during server thread: #{ex.message}"
+          raise
         ensure
           server.shutdown
         end

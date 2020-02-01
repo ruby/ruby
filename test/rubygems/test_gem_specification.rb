@@ -2784,7 +2784,7 @@ end
     add_runtime_dependency 'l', '~> 1.2', '> 1.2.3'
 #{w}:  open-ended dependency on o (>= 0) is not recommended
   use a bounded requirement, such as '~> x.y'
-#{w}:  See http://guides.rubygems.org/specification-reference/ for help
+#{w}:  See https://guides.rubygems.org/specification-reference/ for help
       EXPECTED
 
       assert_equal expected, @ui.error, 'warning'
@@ -2816,7 +2816,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
       end
 
       assert_equal <<-EXPECTED, @ui.error
-#{w}:  See http://guides.rubygems.org/specification-reference/ for help
+#{w}:  See https://guides.rubygems.org/specification-reference/ for help
       EXPECTED
     end
   end
@@ -2927,7 +2927,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
       end
     end
 
-    assert_match 'See http://guides.rubygems.org/specification-reference/ for help', @ui.error
+    assert_match 'See https://guides.rubygems.org/specification-reference/ for help', @ui.error
   end
 
   def test_validate_executables
@@ -3100,7 +3100,7 @@ Please report a bug if this causes problems.
 
       assert_equal '"ftp://rubygems.org" is not a valid HTTP URI', e.message
 
-      @a1.homepage = 'http://rubygems.org'
+      @a1.homepage = 'https://rubygems.org/'
       assert_equal true, @a1.validate
 
       @a1.homepage = 'https://rubygems.org'
@@ -3430,7 +3430,7 @@ Did you mean 'Ruby'?
       @a1.validate
     end
 
-    assert_match 'See http://guides.rubygems.org/specification-reference/ for help', @ui.error
+    assert_match 'See https://guides.rubygems.org/specification-reference/ for help', @ui.error
   end
 
   def test_version
@@ -3532,7 +3532,8 @@ Did you mean 'Ruby'?
         s.metadata = {
           "one"          => "two",
           "home"         => "three",
-          "homepage_uri" => "https://example.com/user/repo"
+          "homepage_uri" => "https://example.com/user/repo",
+          "funding_uri"  => "https://example.com/donate"
         }
       end
 

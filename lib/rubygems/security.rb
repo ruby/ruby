@@ -62,11 +62,11 @@ end
 #
 #   $ tar tf your-gem-1.0.gem
 #   metadata.gz
-#   metadata.gz.sum
 #   metadata.gz.sig # metadata signature
 #   data.tar.gz
-#   data.tar.gz.sum
 #   data.tar.gz.sig # data signature
+#   checksums.yaml.gz
+#   checksums.yaml.gz.sig # checksums signature
 #
 # === Manually signing gems
 #
@@ -161,6 +161,8 @@ end
 #     -K, --private-key KEY            Key for --sign or --build
 #     -s, --sign CERT                  Signs CERT with the key from -K
 #                                      and the certificate from -C
+#     -d, --days NUMBER_OF_DAYS        Days before the certificate expires
+#     -R, --re-sign                    Re-signs the certificate from -C with the key from -K
 #
 # We've already covered the <code>--build</code> option, and the
 # <code>--add</code>, <code>--list</code>, and <code>--remove</code> commands
@@ -265,7 +267,7 @@ end
 # 2. Grab the public key from the gemspec
 #
 #      gem spec some_signed_gem-1.0.gem cert_chain | \
-#        ruby -ryaml -e 'puts YAML.load_documents($stdin)' > public_key.crt
+#        ruby -ryaml -e 'puts YAML.load($stdin)' > public_key.crt
 #
 # 3. Generate a SHA1 hash of the data.tar.gz
 #

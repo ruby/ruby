@@ -11,12 +11,6 @@ if File.exist?(File.join(Dir.tmpdir, "Gemfile"))
   raise "rubygems/bundler tests do not work correctly if there is #{ File.join(Dir.tmpdir, "Gemfile") }"
 end
 
-# TODO: push this up to test_case.rb once battle tested
-
-$LOAD_PATH.map! do |path|
-  path.dup.tap(&Gem::UNTAINT)
-end
-
 class TestGem < Gem::TestCase
 
   PLUGINS_LOADED = [] # rubocop:disable Style/MutableConstant
@@ -161,10 +155,8 @@ class TestGem < Gem::TestCase
 
   def test_self_install_permissions_with_format_executable_and_non_standard_ruby_install_name
     Gem::Installer.exec_format = nil
-    with_clean_path_to_ruby do
-      ruby_install_name 'ruby27' do
-        assert_self_install_permissions(format_executable: true)
-      end
+    ruby_install_name 'ruby27' do
+      assert_self_install_permissions(format_executable: true)
     end
   ensure
     Gem::Installer.exec_format = nil
@@ -1024,21 +1016,17 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_ruby_escaping_spaces_in_path
-    with_clean_path_to_ruby do
-      with_bindir_and_exeext("C:/Ruby 1.8/bin", ".exe") do
-        ruby_install_name "ruby" do
-          assert_equal "\"C:/Ruby 1.8/bin/ruby.exe\"", Gem.ruby
-        end
+    with_bindir_and_exeext("C:/Ruby 1.8/bin", ".exe") do
+      ruby_install_name "ruby" do
+        assert_equal "\"C:/Ruby 1.8/bin/ruby.exe\"", Gem.ruby
       end
     end
   end
 
   def test_self_ruby_path_without_spaces
-    with_clean_path_to_ruby do
-      with_bindir_and_exeext("C:/Ruby18/bin", ".exe") do
-        ruby_install_name "ruby" do
-          assert_equal "C:/Ruby18/bin/ruby.exe", Gem.ruby
-        end
+    with_bindir_and_exeext("C:/Ruby18/bin", ".exe") do
+      ruby_install_name "ruby" do
+        assert_equal "C:/Ruby18/bin/ruby.exe", Gem.ruby
       end
     end
   end
@@ -1090,10 +1078,18 @@ class TestGem < Gem::TestCase
     util_restore_RUBY_VERSION
   end
 
-  def test_self_ruby_version_with_prerelease
+  def test_self_ruby_version_with_svn_prerelease
     util_set_RUBY_VERSION '2.6.0', -1, 63539, 'ruby 2.6.0preview2 (2018-05-31 trunk 63539) [x86_64-linux]'
 
     assert_equal Gem::Version.new('2.6.0.preview2'), Gem.ruby_version
+  ensure
+    util_restore_RUBY_VERSION
+  end
+
+  def test_self_ruby_version_with_git_prerelease
+    util_set_RUBY_VERSION '2.7.0', -1, 'b563439274a402e33541f5695b1bfd4ac1085638', 'ruby 2.7.0preview3 (2019-11-23 master b563439274) [x86_64-linux]'
+
+    assert_equal Gem::Version.new('2.7.0.preview3'), Gem.ruby_version
   ensure
     util_restore_RUBY_VERSION
   end
@@ -1106,10 +1102,18 @@ class TestGem < Gem::TestCase
     util_restore_RUBY_VERSION
   end
 
-  def test_self_ruby_version_with_trunk
+  def test_self_ruby_version_with_svn_trunk
     util_set_RUBY_VERSION '1.9.2', -1, 23493, 'ruby 1.9.2dev (2009-05-20 trunk 23493) [x86_64-linux]'
 
     assert_equal Gem::Version.new('1.9.2.dev'), Gem.ruby_version
+  ensure
+    util_restore_RUBY_VERSION
+  end
+
+  def test_self_ruby_version_with_git_master
+    util_set_RUBY_VERSION '2.7.0', -1, '5de284ec78220e75643f89b454ce999da0c1c195', 'ruby 2.7.0dev (2019-12-23T01:37:30Z master 5de284ec78) [x86_64-linux]'
+
+    assert_equal Gem::Version.new('2.7.0.dev'), Gem.ruby_version
   ensure
     util_restore_RUBY_VERSION
   end
@@ -1470,7 +1474,6 @@ class TestGem < Gem::TestCase
       install_gem foo2
     end
 
-    Gem.searcher = nil
     Gem::Specification.reset
 
     gem 'foo'
@@ -1904,15 +1907,19 @@ You may need to `gem install -g` to install missing gems
   end
 
   def ruby_install_name(name)
-    orig_RUBY_INSTALL_NAME = RbConfig::CONFIG['ruby_install_name']
-    RbConfig::CONFIG['ruby_install_name'] = name
+    with_clean_path_to_ruby do
+      orig_RUBY_INSTALL_NAME = RbConfig::CONFIG['ruby_install_name']
+      RbConfig::CONFIG['ruby_install_name'] = name
 
-    yield
-  ensure
-    if orig_RUBY_INSTALL_NAME
-      RbConfig::CONFIG['ruby_install_name'] = orig_RUBY_INSTALL_NAME
-    else
-      RbConfig::CONFIG.delete 'ruby_install_name'
+      begin
+        yield
+      ensure
+        if orig_RUBY_INSTALL_NAME
+          RbConfig::CONFIG['ruby_install_name'] = orig_RUBY_INSTALL_NAME
+        else
+          RbConfig::CONFIG.delete 'ruby_install_name'
+        end
+      end
     end
   end
 
@@ -1922,16 +1929,6 @@ You may need to `gem install -g` to install missing gems
         yield
       end
     end
-  end
-
-  def with_clean_path_to_ruby
-    orig_ruby = Gem.ruby
-
-    Gem.instance_variable_set :@ruby, nil
-
-    yield
-  ensure
-    Gem.instance_variable_set :@ruby, orig_ruby
   end
 
   def with_plugin(path)

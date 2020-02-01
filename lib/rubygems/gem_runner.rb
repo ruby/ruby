@@ -26,13 +26,9 @@ Gem.load_env_plugins rescue nil
 
 class Gem::GemRunner
 
-  def initialize(options={})
-    if !options.empty? && !Gem::Deprecate.skip
-      Kernel.warn "NOTE: passing options to Gem::GemRunner.new is deprecated with no replacement. It will be removed on or after 2016-10-01."
-    end
-
-    @command_manager_class = options[:command_manager] || Gem::CommandManager
-    @config_file_class = options[:config_file] || Gem::ConfigFile
+  def initialize
+    @command_manager_class = Gem::CommandManager
+    @config_file_class = Gem::ConfigFile
   end
 
   ##

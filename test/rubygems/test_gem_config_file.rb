@@ -11,10 +11,6 @@ class TestGemConfigFile < Gem::TestCase
 
     @cfg_args = %W[--config-file #{@temp_conf}]
 
-    @orig_SYSTEM_WIDE_CONFIG_FILE = Gem::ConfigFile::SYSTEM_WIDE_CONFIG_FILE
-    Gem::ConfigFile.send :remove_const, :SYSTEM_WIDE_CONFIG_FILE
-    Gem::ConfigFile.send :const_set, :SYSTEM_WIDE_CONFIG_FILE,
-                         File.join(@tempdir, 'system-gemrc')
     Gem::ConfigFile::OPERATING_SYSTEM_DEFAULTS.clear
     Gem::ConfigFile::PLATFORM_DEFAULTS.clear
 
@@ -27,9 +23,6 @@ class TestGemConfigFile < Gem::TestCase
   def teardown
     Gem::ConfigFile::OPERATING_SYSTEM_DEFAULTS.clear
     Gem::ConfigFile::PLATFORM_DEFAULTS.clear
-    Gem::ConfigFile.send :remove_const, :SYSTEM_WIDE_CONFIG_FILE
-    Gem::ConfigFile.send :const_set, :SYSTEM_WIDE_CONFIG_FILE,
-                         @orig_SYSTEM_WIDE_CONFIG_FILE
 
     ENV['GEMRC'] = @env_gemrc
 
