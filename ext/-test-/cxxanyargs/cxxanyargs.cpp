@@ -156,7 +156,7 @@ namespace test_rb_rescue {
     {
 #ifdef HAVE_NULLPTR
         rb_rescue(RUBY_METHOD_FUNC(begin), self, nullptr, self);
-        return rb_rescue(begin, self, nullptr, self);
+        rb_rescue(begin, self, nullptr, self);
 #endif
 
         rb_rescue(RUBY_METHOD_FUNC(begin), self, RUBY_METHOD_FUNC(rescue), self); // old
