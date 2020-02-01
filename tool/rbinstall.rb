@@ -724,7 +724,8 @@ module RbInstall
     end
 
     def initialize(spec, *options)
-      super(spec.loaded_from, *options)
+      package = Gem::Package.new(spec.loaded_from)
+      super(package, *options)
       @package.extend(DirPackage).spec = spec
     end
 
