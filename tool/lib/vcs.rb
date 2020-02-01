@@ -636,6 +636,7 @@ class VCS
       cmd << date
       cmd.concat(arg)
       File.open(path, 'w') do |w|
+        w.print "-*- coding: utf-8 -*-\n\n"
         cmd_pipe(env, cmd, chdir: @srcdir) do |r|
           while s = r.gets("\ncommit ")
             if s.sub!(/\nNotes \(log-fix\):\n((?: +.*\n)+)/, '')
