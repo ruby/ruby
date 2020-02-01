@@ -1,4 +1,3 @@
-#!/usr/bin/ruby
 class Array
   # call-seq:
   #    ary.shuffle!              -> ary
