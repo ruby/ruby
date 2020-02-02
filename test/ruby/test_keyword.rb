@@ -2095,6 +2095,64 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(ArgumentError) { m.call(42, a: 1, **h2) }
   end
 
+  def test_rest_args_delegation
+    o = Object.new
+    empty_hash = {}
+    def o.delegate(*args)
+      target(*args)
+    end
+
+    def o.target(*args, **kwargs)
+      [args, kwargs]
+    end
+
+    target = -> *args, **kwargs {
+      [args, kwargs]
+    }
+    delegate_b = -> *args {
+      target.call(*args)
+    }
+
+    builders = [
+      -> args { "target.call(#{args})" },
+      -> args { "o.target(#{args})" },
+      -> args { "delegate_b.call(#{args})" },
+      -> args { "o.delegate(#{args})" },
+    ]
+    builders.each { |builder|
+      delegate = -> args { eval(builder.call(args)) }
+      assert_equal([[], {}], delegate.(""))
+      assert_equal([[1, 2], {}], delegate.("1, 2"))
+      assert_equal([[{}], {}], delegate.("{}"))
+      assert_equal([[{}], {}], delegate.("empty_hash"))
+      assert_equal([[], {}], delegate.("**{}"))
+      assert_equal([[], {}], delegate.("**empty_hash"))
+      assert_equal([[], {a: 1}], delegate.("**{a: 1}"))
+      assert_equal([[1, 2], {foo: 3}], delegate.("1, 2, foo: 3"))
+      assert_equal([[1, 2, {foo: 3}], {}], delegate.("1, 2, {foo: 3}"))
+    }
+
+    def o.target(*args)
+      args
+    end
+    target = -> *args {
+      args
+    }
+
+    builders.each { |builder|
+      delegate = -> args { eval(builder.call(args)) }
+      assert_equal([], delegate.(""))
+      assert_equal([1, 2], delegate.("1, 2"))
+      assert_equal([{}], delegate.("{}"))
+      assert_equal([{}], delegate.("empty_hash"))
+      assert_equal([], delegate.("**{}"))
+      assert_equal([], delegate.("**empty_hash"))
+      assert_equal([{a: 1}], delegate.("**{a: 1}"))
+      assert_equal([1, 2, {foo: 3}], delegate.("1, 2, foo: 3"))
+      assert_equal([1, 2, {foo: 3}], delegate.("1, 2, {foo: 3}"))
+    }
+  end
+
   def test_proc_ruby2_keywords
     h1 = {:a=>1}
     foo = ->(*args, &block){block.call(*args)}
