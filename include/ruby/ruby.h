@@ -2482,7 +2482,7 @@ rb_scan_args_set(int argc, const VALUE *argv,
 # endif
 {
     int i, argi = 0, vari = 0;
-    VALUE *var, hash = Qnil, last_hash = 0;
+    VALUE *var, hash = Qnil;
     const int n_mand = n_lead + n_trail;
 
     if (f_hash && argc > 0 && rb_keyword_given_p()) {
@@ -2517,11 +2517,7 @@ rb_scan_args_set(int argc, const VALUE *argv,
 
 	var = vars[vari++];
 	if (0 < n_var) {
-	    if (var) {
-		int f_last = (argc == n_trail);
-		*var = rb_ary_new4(n_var-f_last, &argv[argi]);
-		if (f_last) rb_ary_push(*var, last_hash);
-	    }
+	    if (var) *var = rb_ary_new4(n_var, &argv[argi]);
 	    argi += n_var;
 	}
 	else {

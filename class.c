@@ -1964,7 +1964,6 @@ struct rb_scan_args_t {
     int n_mand;
     int argi;
     VALUE hash;
-    VALUE last_hash;
 };
 
 static void
@@ -2065,11 +2064,7 @@ rb_scan_args_assign(struct rb_scan_args_t *arg, va_list vargs)
 
 	var = va_arg(vargs, VALUE *);
 	if (0 < n_var) {
-	    if (var) {
-                int f_last = (arg->argc == arg->n_trail);
-                *var = rb_ary_new4(n_var - f_last, &arg->argv[argi]);
-                if (f_last) rb_ary_push(*var, arg->last_hash);
-	    }
+	    if (var) *var = rb_ary_new4(n_var, &arg->argv[argi]);
 	    argi += n_var;
 	}
 	else {
