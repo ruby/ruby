@@ -1954,7 +1954,6 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
 struct rb_scan_args_t {
     int argc;
     const VALUE *argv;
-    va_list vargs;
     int f_var;
     int f_hash;
     int f_block;
