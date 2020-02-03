@@ -2009,19 +2009,7 @@ rb_scan_args_assign(const struct rb_scan_args_t *arg, int argc, const VALUE *con
 
     if (arg->f_hash && argc > 0) {
         VALUE last = argv[argc - 1];
-        int keyword_given = 0;
-        switch (arg->kw_flag) {
-          case RB_SCAN_ARGS_PASS_CALLED_KEYWORDS:
-            keyword_given = rb_keyword_given_p();
-            break;
-          case RB_SCAN_ARGS_KEYWORDS:
-            keyword_given = 1;
-            break;
-          case RB_SCAN_ARGS_LAST_HASH_KEYWORDS:
-            keyword_given = RB_TYPE_P(last, T_HASH);
-            break;
-        }
-        if (keyword_given) {
+        if (rb_scan_args_keyword_p(arg->kw_flag, last)) {
             hash = rb_hash_dup(last);
             argc--;
         }
@@ -2107,6 +2095,7 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
     return argc;
 }
 
+#undef rb_scan_args_kw
 int
 rb_scan_args_kw(int kw_flag, int argc, const VALUE *argv, const char *fmt, ...)
 {

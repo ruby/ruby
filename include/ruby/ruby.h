@@ -2293,6 +2293,20 @@ unsigned long ruby_strtoul(const char *str, char **endptr, int base);
 PRINTF_ARGS(int ruby_snprintf(char *str, size_t n, char const *fmt, ...), 3, 4);
 int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 
+static inline int
+rb_scan_args_keyword_p(int kw_flag, VALUE last)
+{
+    switch (kw_flag) {
+      case RB_SCAN_ARGS_PASS_CALLED_KEYWORDS:
+	return rb_keyword_given_p();
+      case RB_SCAN_ARGS_KEYWORDS:
+	return 1;
+      case RB_SCAN_ARGS_LAST_HASH_KEYWORDS:
+	return RB_TYPE_P(last, T_HASH);
+    }
+    return 0;
+}
+
 #if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P) && defined(HAVE_VA_ARGS_MACRO) && defined(__OPTIMIZE__)
 # define rb_scan_args(argc,argvp,fmt,...) \
     __builtin_choose_expr(__builtin_constant_p(fmt), \
@@ -2300,6 +2314,12 @@ int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 		      (sizeof((VALUE*[]){__VA_ARGS__})/sizeof(VALUE*)), \
 		      ((VALUE*[]){__VA_ARGS__})), \
         rb_scan_args(argc,argvp,fmt,##__VA_ARGS__))
+# define rb_scan_args_kw(kw_flag,argc,argvp,fmt,...) \
+    __builtin_choose_expr(__builtin_constant_p(fmt), \
+	rb_scan_args_kw0(kw_flag,argc,argvp,fmt,	\
+		      (sizeof((VALUE*[]){__VA_ARGS__})/sizeof(VALUE*)), \
+		      ((VALUE*[]){__VA_ARGS__})), \
+	rb_scan_args_kw(kw_flag,argc,argvp,fmt,##__VA_ARGS__))
 # if HAVE_ATTRIBUTE_ERRORFUNC
 ERRORFUNC(("bad scan arg format"), void rb_scan_args_bad_format(const char*));
 ERRORFUNC(("variable argument length doesn't match"), void rb_scan_args_length_mismatch(const char*,int));
@@ -2457,7 +2477,16 @@ rb_scan_args_end_idx(const char *fmt)
 /* NOTE: Use `char *fmt` instead of `const char *fmt` because of clang's bug*/
 /* https://bugs.llvm.org/show_bug.cgi?id=38095 */
 # define rb_scan_args0(argc, argv, fmt, varc, vars) \
-    rb_scan_args_set(argc, argv, \
+    rb_scan_args_set(RB_SCAN_ARGS_PASS_CALLED_KEYWORDS, argc, argv, \
+		     rb_scan_args_n_lead(fmt), \
+		     rb_scan_args_n_opt(fmt), \
+		     rb_scan_args_n_trail(fmt), \
+		     rb_scan_args_f_var(fmt), \
+		     rb_scan_args_f_hash(fmt), \
+		     rb_scan_args_f_block(fmt), \
+		     (rb_scan_args_verify(fmt, varc), vars), (char *)fmt, varc)
+# define rb_scan_args_kw0(kw_flag, argc, argv, fmt, varc, vars) \
+    rb_scan_args_set(kw_flag, argc, argv, \
 		     rb_scan_args_n_lead(fmt), \
 		     rb_scan_args_n_opt(fmt), \
 		     rb_scan_args_n_trail(fmt), \
@@ -2466,13 +2495,13 @@ rb_scan_args_end_idx(const char *fmt)
 		     rb_scan_args_f_block(fmt), \
 		     (rb_scan_args_verify(fmt, varc), vars), (char *)fmt, varc)
 ALWAYS_INLINE(static int
-rb_scan_args_set(int argc, const VALUE *argv,
+rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
 		 int n_lead, int n_opt, int n_trail,
 		 int f_var, int f_hash, int f_block,
 		 VALUE *vars[], char *fmt, int varc));
 
 inline int
-rb_scan_args_set(int argc, const VALUE *argv,
+rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
 		 int n_lead, int n_opt, int n_trail,
 		 int f_var, int f_hash, int f_block,
 		 VALUE *vars[], RB_UNUSED_VAR(char *fmt), RB_UNUSED_VAR(int varc))
@@ -2485,9 +2514,12 @@ rb_scan_args_set(int argc, const VALUE *argv,
     VALUE *var, hash = Qnil;
     const int n_mand = n_lead + n_trail;
 
-    if (f_hash && argc > 0 && rb_keyword_given_p()) {
-        hash = rb_hash_dup(argv[argc - 1]);
-        argc--;
+    if (f_hash && argc > 0) {
+	VALUE last = argv[argc - 1];
+	if (rb_scan_args_keyword_p(kw_flag, last)) {
+	    hash = rb_hash_dup(last);
+	    argc--;
+	}
     }
 
     if (argc < n_mand) {
