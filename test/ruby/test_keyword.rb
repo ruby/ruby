@@ -4076,4 +4076,10 @@ class TestKeywordArgumentsSymProcRefinements < Test::Unit::TestCase
       mock.new.foo
     end
   end
+
+  def test_splat_fixnum
+    bug16603 = '[ruby-core:97047] [Bug #16603]'
+    assert_raise(TypeError, bug16603) { p(**42) }
+    assert_raise(TypeError, bug16603) { p(k:1, **42) }
+  end
 end
