@@ -344,6 +344,20 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_raise(NoMethodError, /undefined method `foo' for/) { delegate.foo }
   end
 
+  def test_basicobject_respond_to
+    o = BasicObject.new
+    def o.bar
+      nil
+    end
+
+    def o.respond_to?(method, include_private=false)
+      return false if method == :bar
+      ::Kernel.instance_method(:respond_to?).bind_call(self, method, include_private)
+    end
+    delegate = SimpleDelegator.new(o)
+    refute delegate.respond_to?(:bar)
+  end
+
   def test_keyword_argument
     k = EnvUtil.labeled_class("Target") do
       def test(a, k:) [a, k]; end
