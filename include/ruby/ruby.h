@@ -2331,37 +2331,37 @@ ERRORFUNC(("variable argument length doesn't match"), void rb_scan_args_length_m
 # define rb_scan_args_isdigit(c) ((unsigned char)((c)-'0')<10)
 
 #  define rb_scan_args_count_end(fmt, ofs, vari) \
-     (fmt[ofs] ? -1 : (vari))
+     ((fmt)[ofs] ? -1 : (vari))
 
 # define rb_scan_args_count_block(fmt, ofs, vari) \
-    (fmt[ofs]!='&' ? \
+    ((fmt)[ofs]!='&' ? \
      rb_scan_args_count_end(fmt, ofs, vari) : \
-     rb_scan_args_count_end(fmt, ofs+1, vari+1))
+     rb_scan_args_count_end(fmt, (ofs)+1, (vari)+1))
 
 # define rb_scan_args_count_hash(fmt, ofs, vari) \
-    (fmt[ofs]!=':' ? \
+    ((fmt)[ofs]!=':' ? \
      rb_scan_args_count_block(fmt, ofs, vari) : \
-     rb_scan_args_count_block(fmt, ofs+1, vari+1))
+     rb_scan_args_count_block(fmt, (ofs)+1, (vari)+1))
 
 # define rb_scan_args_count_trail(fmt, ofs, vari) \
-    (!rb_scan_args_isdigit(fmt[ofs]) ? \
+    (!rb_scan_args_isdigit((fmt)[ofs]) ? \
      rb_scan_args_count_hash(fmt, ofs, vari) : \
-     rb_scan_args_count_hash(fmt, ofs+1, vari+(fmt[ofs]-'0')))
+     rb_scan_args_count_hash(fmt, (ofs)+1, (vari)+((fmt)[ofs]-'0')))
 
 # define rb_scan_args_count_var(fmt, ofs, vari) \
-    (fmt[ofs]!='*' ? \
+    ((fmt)[ofs]!='*' ? \
      rb_scan_args_count_trail(fmt, ofs, vari) : \
-     rb_scan_args_count_trail(fmt, ofs+1, vari+1))
+     rb_scan_args_count_trail(fmt, (ofs)+1, (vari)+1))
 
 # define rb_scan_args_count_opt(fmt, ofs, vari) \
-    (!rb_scan_args_isdigit(fmt[ofs]) ? \
+    (!rb_scan_args_isdigit((fmt)[ofs]) ? \
      rb_scan_args_count_var(fmt, ofs, vari) : \
-     rb_scan_args_count_var(fmt, ofs+1, vari+fmt[ofs]-'0'))
+     rb_scan_args_count_var(fmt, (ofs)+1, (vari)+(fmt)[ofs]-'0'))
 
 # define rb_scan_args_count_lead(fmt, ofs, vari) \
-    (!rb_scan_args_isdigit(fmt[ofs]) ? \
-      rb_scan_args_count_var(fmt, ofs, vari) : \
-      rb_scan_args_count_opt(fmt, ofs+1, vari+fmt[ofs]-'0'))
+    (!rb_scan_args_isdigit((fmt)[ofs]) ? \
+     rb_scan_args_count_var(fmt, ofs, vari) : \
+     rb_scan_args_count_opt(fmt, (ofs)+1, (vari)+(fmt)[ofs]-'0'))
 
 # define rb_scan_args_count(fmt) rb_scan_args_count_lead(fmt, 0, 0)
 
