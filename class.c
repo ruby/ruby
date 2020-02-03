@@ -1952,8 +1952,7 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
 }
 
 struct rb_scan_args_t {
-    int argc;
-    const VALUE *argv;
+    int kw_flag;
     int f_var;
     int f_hash;
     int f_block;
@@ -1962,30 +1961,15 @@ struct rb_scan_args_t {
     int n_trail;
     int n_mand;
     int argi;
-    VALUE hash;
 };
 
 static void
-rb_scan_args_parse(int kw_flag, int argc, const VALUE *argv, const char *fmt, struct rb_scan_args_t *arg)
+rb_scan_args_parse(int kw_flag, const char *fmt, struct rb_scan_args_t *arg)
 {
     const char *p = fmt;
-    int keyword_given = 0;
-    int last_hash_keyword = 0;
 
     memset(arg, 0, sizeof(*arg));
-    arg->hash = Qnil;
-
-    switch (kw_flag) {
-      case RB_SCAN_ARGS_PASS_CALLED_KEYWORDS:
-        keyword_given = rb_keyword_given_p();
-        break;
-      case RB_SCAN_ARGS_KEYWORDS:
-        keyword_given = 1;
-        break;
-      case RB_SCAN_ARGS_LAST_HASH_KEYWORDS:
-        last_hash_keyword = 1;
-        break;
-    }
+    arg->kw_flag = kw_flag;
 
     if (ISDIGIT(*p)) {
         arg->n_lead = *p - '0';
@@ -2015,42 +1999,49 @@ rb_scan_args_parse(int kw_flag, int argc, const VALUE *argv, const char *fmt, st
 	rb_fatal("bad scan arg format: %s", fmt);
     }
     arg->n_mand = arg->n_lead + arg->n_trail;
+}
+
+static int
+rb_scan_args_assign(const struct rb_scan_args_t *arg, int argc, const VALUE *const argv, va_list vargs)
+{
+    int i, argi = 0;
+    VALUE *var, hash = Qnil;
 
     if (arg->f_hash && argc > 0) {
         VALUE last = argv[argc - 1];
-
-        if (keyword_given || (last_hash_keyword && RB_TYPE_P(last, T_HASH))) {
-            arg->hash = rb_hash_dup(last);
+        int keyword_given = 0;
+        switch (arg->kw_flag) {
+          case RB_SCAN_ARGS_PASS_CALLED_KEYWORDS:
+            keyword_given = rb_keyword_given_p();
+            break;
+          case RB_SCAN_ARGS_KEYWORDS:
+            keyword_given = 1;
+            break;
+          case RB_SCAN_ARGS_LAST_HASH_KEYWORDS:
+            keyword_given = RB_TYPE_P(last, T_HASH);
+            break;
+        }
+        if (keyword_given) {
+            hash = rb_hash_dup(last);
             argc--;
         }
     }
 
-    arg->argc = argc;
-    arg->argv = argv;
-}
-
-static int
-rb_scan_args_assign(struct rb_scan_args_t *arg, va_list vargs)
-{
-    int argi = 0;
-    int i;
-    VALUE *var;
-
-    if (arg->argc < arg->n_mand) {
-        return 1;
+    if (argc < arg->n_mand) {
+        goto argc_error;
     }
 
     /* capture leading mandatory arguments */
     for (i = arg->n_lead; i-- > 0; ) {
 	var = va_arg(vargs, VALUE *);
-        if (var) *var = arg->argv[argi];
+        if (var) *var = argv[argi];
 	argi++;
     }
     /* capture optional arguments */
     for (i = arg->n_opt; i-- > 0; ) {
 	var = va_arg(vargs, VALUE *);
-        if (argi < arg->argc - arg->n_trail) {
-            if (var) *var = arg->argv[argi];
+        if (argi < argc - arg->n_trail) {
+            if (var) *var = argv[argi];
 	    argi++;
 	}
 	else {
@@ -2059,11 +2050,11 @@ rb_scan_args_assign(struct rb_scan_args_t *arg, va_list vargs)
     }
     /* capture variable length arguments */
     if (arg->f_var) {
-        int n_var = arg->argc - argi - arg->n_trail;
+        int n_var = argc - argi - arg->n_trail;
 
 	var = va_arg(vargs, VALUE *);
 	if (0 < n_var) {
-	    if (var) *var = rb_ary_new4(n_var, &arg->argv[argi]);
+            if (var) *var = rb_ary_new4(n_var, &argv[argi]);
 	    argi += n_var;
 	}
 	else {
@@ -2073,13 +2064,13 @@ rb_scan_args_assign(struct rb_scan_args_t *arg, va_list vargs)
     /* capture trailing mandatory arguments */
     for (i = arg->n_trail; i-- > 0; ) {
 	var = va_arg(vargs, VALUE *);
-        if (var) *var = arg->argv[argi];
+        if (var) *var = argv[argi];
 	argi++;
     }
     /* capture an option hash - phase 2: assignment */
     if (arg->f_hash) {
 	var = va_arg(vargs, VALUE *);
-        if (var) *var = arg->hash;
+        if (var) *var = hash;
     }
     /* capture iterator block */
     if (arg->f_block) {
@@ -2092,42 +2083,43 @@ rb_scan_args_assign(struct rb_scan_args_t *arg, va_list vargs)
 	}
     }
 
-    if (argi < arg->argc) return 1;
+    if (argi < argc) {
+      argc_error:
+        return -(argc + 1);
+    }
 
-    return 0;
+    return argc;
 }
 
 #undef rb_scan_args
 int
 rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
 {
-    int error;
     va_list vargs;
     struct rb_scan_args_t arg;
-    rb_scan_args_parse(RB_SCAN_ARGS_PASS_CALLED_KEYWORDS, argc, argv, fmt, &arg);
+    rb_scan_args_parse(RB_SCAN_ARGS_PASS_CALLED_KEYWORDS, fmt, &arg);
     va_start(vargs,fmt);
-    error = rb_scan_args_assign(&arg, vargs);
+    argc = rb_scan_args_assign(&arg, argc, argv, vargs);
     va_end(vargs);
-    if (error) {
-        rb_error_arity(arg.argc, arg.n_mand, arg.f_var ? UNLIMITED_ARGUMENTS : arg.n_mand + arg.n_opt);
+    if (argc < 0) {
+        rb_error_arity(-1-argc, arg.n_mand, arg.f_var ? UNLIMITED_ARGUMENTS : arg.n_mand + arg.n_opt);
     }
-    return arg.argc;
+    return argc;
 }
 
 int
 rb_scan_args_kw(int kw_flag, int argc, const VALUE *argv, const char *fmt, ...)
 {
-    int error;
     va_list vargs;
     struct rb_scan_args_t arg;
-    rb_scan_args_parse(kw_flag, argc, argv, fmt, &arg);
+    rb_scan_args_parse(kw_flag, fmt, &arg);
     va_start(vargs,fmt);
-    error = rb_scan_args_assign(&arg, vargs);
+    argc = rb_scan_args_assign(&arg, argc, argv, vargs);
     va_end(vargs);
-    if (error) {
-        rb_error_arity(arg.argc, arg.n_mand, arg.f_var ? UNLIMITED_ARGUMENTS : arg.n_mand + arg.n_opt);
+    if (argc < 0) {
+        rb_error_arity(-1-argc, arg.n_mand, arg.f_var ? UNLIMITED_ARGUMENTS : arg.n_mand + arg.n_opt);
     }
-    return arg.argc;
+    return argc;
 }
 
 int
