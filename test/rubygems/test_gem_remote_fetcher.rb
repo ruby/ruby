@@ -164,21 +164,6 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     assert_equal 'uri scheme is invalid: nil', e.message
   end
 
-  def test_fetch_path_socket_error
-    fetcher = Gem::RemoteFetcher.new nil
-    @fetcher = fetcher
-    def fetcher.request(uri, request_class, last_modified = nil)
-      raise SocketError, "oops"
-    end
-
-    uri = 'http://gems.example.com/yaml'
-    e = assert_raises Gem::RemoteFetcher::FetchError do
-      @fetcher.fetch_path(uri, nil, true)
-    end
-
-    assert_equal "SocketError: oops (#{uri})", e.message
-  end
-
   def test_no_proxy
     use_ui @stub_ui do
       assert_data_from_server @fetcher.fetch_path(@server_uri)
