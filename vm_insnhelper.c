@@ -217,7 +217,8 @@ vm_check_frame(VALUE type,
 static VALUE vm_stack_canary; /* Initialized later */
 static bool vm_stack_canary_was_born = false;
 
-static void
+#ifndef MJIT_HEADER
+MJIT_FUNC_EXPORTED void
 vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
 {
     const struct rb_control_frame_struct *reg_cfp = ec->cfp;
@@ -264,6 +265,8 @@ vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
         name, stri, pos, strd);
     rb_bug("see above.");
 }
+#endif
+
 #else
 #define vm_check_canary(ec, sp)
 #define vm_check_frame(a, b, c, d)
@@ -4818,7 +4821,8 @@ Init_vm_stack_canary(void)
     VM_ASSERT(n == 0);
 }
 
-static void
+#ifndef MJIT_HEADER
+MJIT_FUNC_EXPORTED void
 vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)
 {
     /* Because a method has already been called, why not call
@@ -4829,6 +4833,7 @@ vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)
 
     rb_bug("dead canary found at %s: %s", insn, str);
 }
+#endif
 
 #else
 void Init_vm_stack_canary(void) { /* nothing to do */ }
