@@ -110,11 +110,13 @@ module Test
           file ||= loc.path
           line ||= loc.lineno
         end
+        res_p, res_c = IO.pipe
+        opt[res_c.fileno] = res_c.fileno
         src = <<eom
 # -*- coding: #{line += __LINE__; src.encoding}; -*-
-  require "test/unit";include Test::Unit::Assertions;require #{(__dir__ + "/core_assertions").dump};include Test::Unit::CoreAssertions
+  require "test/unit";out=IO.new(#{res_c.fileno});include Test::Unit::Assertions;require #{(__dir__ + "/core_assertions").dump};include Test::Unit::CoreAssertions
   END {
-    puts [Marshal.dump($!)].pack('m'), "assertions=\#{self._assertions}"
+    out.puts [Marshal.dump($!)].pack('m'), "assertions=\#{self._assertions}"
   }
 #{line -= __LINE__; src}
   class Test::Unit::Runner
@@ -128,7 +130,10 @@ eom
         assert(!abort, FailDesc[status, nil, stderr])
         self._assertions += stdout[/^assertions=(\d+)/, 1].to_i
         begin
-          res = Marshal.load(stdout.unpack("m")[0])
+          res_c.close
+          puts stdout
+          STDERR.puts stderr
+          res = Marshal.load(res_p.read.unpack("m")[0])
         rescue => marshal_error
           ignore_stderr = nil
         end
