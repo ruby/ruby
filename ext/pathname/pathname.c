@@ -657,6 +657,13 @@ path_make_link(VALUE self, VALUE old)
 }
 
 /*
+ * call-seq:
+ *   pathname.open()
+ *   pathname.open(mode="r" [, opt])                        -> file
+ *   pathname.open([mode [, perm]] [, opt])                 -> file
+ *   pathname.open(mode="r" [, opt]) {|file| block }        -> obj
+ *   pathname.open([mode [, perm]] [, opt]) {|file| block } -> obj
+ *
  * Opens the file for reading or writing.
  *
  * See File.open.
