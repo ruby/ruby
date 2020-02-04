@@ -110,14 +110,16 @@ module Test
           file ||= loc.path
           line ||= loc.lineno
         end
-        if /mswin|mingw/ !~ RUBY_PLATFORM
+        if /mswin|mingw/ =~ RUBY_PLATFORM
+          res_out = "STDOUT"
+        else
           res_p, res_c = IO.pipe
           opt[res_c.fileno] = res_c.fileno
-          res_fd = res_c.fileno
+          res_out = "IO.new(#{res_c.fileno}, 'w')"
         end
         src = <<eom
 # -*- coding: #{line += __LINE__; src.encoding}; -*-
-  require "test/unit";out=#{res_fd ? "IO.new(#{res_fd})" : "STDOUT"};include Test::Unit::Assertions;require #{(__dir__ + "/core_assertions").dump};include Test::Unit::CoreAssertions
+  require "test/unit";out=#{res_out};include Test::Unit::Assertions;require #{(__dir__ + "/core_assertions").dump};include Test::Unit::CoreAssertions
   END {
     out.puts [Marshal.dump($!)].pack('m'), "assertions=\#{self._assertions}"
   }
