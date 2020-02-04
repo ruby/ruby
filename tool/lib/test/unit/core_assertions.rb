@@ -110,11 +110,16 @@ module Test
           file ||= loc.path
           line ||= loc.lineno
         end
-        res_p, res_c = IO.pipe
-        opt[res_c.fileno] = res_c.fileno
+        if /mswin|mingw/ =~ RUBY_PLATFORM
+          res_fd = 1 # STDOUT
+        else
+          res_p, res_c = IO.pipe
+          opt[res_c.fileno] = res_c.fileno
+          res_fd = res_c.fileno
+        end
         src = <<eom
 # -*- coding: #{line += __LINE__; src.encoding}; -*-
-  require "test/unit";out=IO.new(#{res_c.fileno});include Test::Unit::Assertions;require #{(__dir__ + "/core_assertions").dump};include Test::Unit::CoreAssertions
+  require "test/unit";out=IO.new(#{res_fd});include Test::Unit::Assertions;require #{(__dir__ + "/core_assertions").dump};include Test::Unit::CoreAssertions
   END {
     out.puts [Marshal.dump($!)].pack('m'), "assertions=\#{self._assertions}"
   }
@@ -130,10 +135,13 @@ eom
         assert(!abort, FailDesc[status, nil, stderr])
         self._assertions += stdout[/^assertions=(\d+)/, 1].to_i
         begin
-          res_c.close
-          puts stdout
-          STDERR.puts stderr
-          res = Marshal.load(res_p.read.unpack("m")[0])
+          if res_c
+            res_c.close
+            print stdout
+            res = Marshal.load(res_p.read.unpack("m")[0])
+          else
+            res = Marshal.load(stdout.unpack("m")[0])
+          end
         rescue => marshal_error
           ignore_stderr = nil
         end
