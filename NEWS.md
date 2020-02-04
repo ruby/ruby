@@ -54,6 +54,13 @@ sufficient information, see the ChangeLog file or Redmine
 
 ## Command line options
 
+### `--help` option
+
+When the environment variable `RUBY_PAGER` or `PAGER` is present and has
+non-empty value, and the standard input and output are tty, `--help`
+option shows the help message via the pager designated by the value.
+[[Feature #16754]]
+
 ## Core classes updates
 
 Outstanding ones only.
@@ -192,4 +199,5 @@ Excluding feature bug fixes.
 [Feature #15921]: https://bugs.ruby-lang.org/issues/15921
 [Feature #16555]: https://bugs.ruby-lang.org/issues/16555
 [Feature #16746]: https://bugs.ruby-lang.org/issues/16746
+[Feature #16754]: https://bugs.ruby-lang.org/issues/16754
 [GH-2991]:        https://github.com/ruby/ruby/pull/2991

@@ -1606,6 +1606,35 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	    (argc > 0 && argv && argv[0] ? argv[0] :
 	     origarg.argc > 0 && origarg.argv && origarg.argv[0] ? origarg.argv[0] :
 	     ruby_engine);
+#ifdef HAVE_WORKING_FORK
+        if (opt->dump & DUMP_BIT(help)) {
+            const char *pager_env = getenv("RUBY_PAGER");
+            if (!pager_env) pager_env = getenv("PAGER");
+            if (pager_env && *pager_env && isatty(0) && isatty(1)) {
+                VALUE pager = rb_str_new_cstr(pager_env);
+                int fds[2];
+                if (rb_pipe(fds) == 0) {
+                    rb_pid_t pid = fork();
+                    if (pid > 0) {
+                        /* exec PAGER with reading from child */
+                        dup2(fds[0], 0);
+                    }
+                    else if (pid == 0) {
+                        /* send the help message to the parent PAGER */
+                        dup2(fds[1], 1);
+                        dup2(fds[1], 2);
+                    }
+                    close(fds[0]);
+                    close(fds[1]);
+                    if (pid > 0) {
+                        rb_f_exec(1, &pager);
+                        kill(SIGTERM, pid);
+                        rb_waitpid(pid, 0, 0);
+                    }
+                }
+            }
+        }
+#endif
 	usage(progname, (opt->dump & DUMP_BIT(help)));
 	return Qtrue;
     }
