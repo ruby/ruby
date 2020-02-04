@@ -1606,12 +1606,12 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	    (argc > 0 && argv && argv[0] ? argv[0] :
 	     origarg.argc > 0 && origarg.argv && origarg.argv[0] ? origarg.argv[0] :
 	     ruby_engine);
-#ifdef HAVE_WORKING_FORK
         if (opt->dump & DUMP_BIT(help)) {
             const char *pager_env = getenv("RUBY_PAGER");
             if (!pager_env) pager_env = getenv("PAGER");
             if (pager_env && *pager_env && isatty(0) && isatty(1)) {
                 VALUE pager = rb_str_new_cstr(pager_env);
+#ifdef HAVE_WORKING_FORK
                 int fds[2];
                 if (rb_pipe(fds) == 0) {
                     rb_pid_t pid = fork();
@@ -1632,9 +1632,24 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
                         rb_waitpid(pid, 0, 0);
                     }
                 }
+#else
+                VALUE port = rb_io_popen(pager, rb_str_new_lit("w"), Qnil, Qnil);
+                if (!NIL_P(port)) {
+                    int oldout = dup(1);
+                    int olderr = dup(2);
+                    int fd = RFILE(port)->fptr->fd;
+                    dup2(fd, 1);
+                    dup2(fd, 2);
+                    usage(progname, 1);
+                    fflush(stdout);
+                    dup2(oldout, 1);
+                    dup2(olderr, 2);
+                    rb_io_close(port);
+                    return Qtrue;
+                }
+#endif
             }
         }
-#endif
 	usage(progname, (opt->dump & DUMP_BIT(help)));
 	return Qtrue;
     }

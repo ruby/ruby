@@ -6868,6 +6868,8 @@ pipe_close(VALUE io)
     return Qnil;
 }
 
+static VALUE popen_finish(VALUE port, VALUE klass);
+
 /*
  *  call-seq:
  *     IO.popen([env,] cmd, mode="r" [, opt])               -> io
@@ -6957,10 +6959,7 @@ pipe_close(VALUE io)
 static VALUE
 rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
 {
-    const char *modestr;
-    VALUE pname, pmode = Qnil, port, tmp, opt = Qnil, env = Qnil, execarg_obj = Qnil;
-    int oflags, fmode;
-    convconfig_t convconfig;
+    VALUE pname, pmode = Qnil, opt = Qnil, env = Qnil;
 
     if (argc > 1 && !NIL_P(opt = rb_check_hash_type(argv[argc-1]))) --argc;
     if (argc > 1 && !NIL_P(env = rb_check_hash_type(argv[0]))) --argc, ++argv;
@@ -6976,6 +6975,16 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
 	    rb_error_arity(argc + ex, 1 + ex, 2 + ex);
 	}
     }
+    return popen_finish(rb_io_popen(pname, pmode, env, opt), klass);
+}
+
+VALUE
+rb_io_popen(VALUE pname, VALUE pmode, VALUE env, VALUE opt)
+{
+    const char *modestr;
+    VALUE tmp, execarg_obj = Qnil;
+    int oflags, fmode;
+    convconfig_t convconfig;
 
     tmp = rb_check_array_type(pname);
     if (!NIL_P(tmp)) {
@@ -7003,7 +7012,12 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
     rb_io_extract_modeenc(&pmode, 0, opt, &oflags, &fmode, &convconfig);
     modestr = rb_io_oflags_modestr(oflags);
 
-    port = pipe_open(execarg_obj, modestr, fmode, &convconfig);
+    return pipe_open(execarg_obj, modestr, fmode, &convconfig);
+}
+
+static VALUE
+popen_finish(VALUE port, VALUE klass)
+{
     if (NIL_P(port)) {
 	/* child */
 	if (rb_block_given_p()) {
