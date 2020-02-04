@@ -532,6 +532,8 @@ class TestGemRequire < Gem::TestCase
     end
   end
 
+  private
+
   def silence_warnings
     old_verbose, $VERBOSE = $VERBOSE, false
     yield
