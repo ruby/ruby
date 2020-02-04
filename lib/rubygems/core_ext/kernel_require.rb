@@ -43,18 +43,18 @@ module Kernel
     # https://github.com/rubygems/rubygems/pull/1868
     resolved_path = begin
       rp = nil
-      $LOAD_PATH[0...Gem.load_path_insert_index || -1].each do |lp|
-        safe_lp = lp.dup.tap(&Gem::UNTAINT)
-        begin
-          if File.symlink? safe_lp # for backward compatibility
-            next
+      Gem.suffixes.each do |s|
+        $LOAD_PATH[0...Gem.load_path_insert_index || -1].each do |lp|
+          safe_lp = lp.dup.tap(&Gem::UNTAINT)
+          begin
+            if File.symlink? safe_lp # for backward compatibility
+              next
+            end
+          rescue SecurityError
+            RUBYGEMS_ACTIVATION_MONITOR.exit
+            raise
           end
-        rescue SecurityError
-          RUBYGEMS_ACTIVATION_MONITOR.exit
-          raise
-        end
 
-        Gem.suffixes.each do |s|
           full_path = File.expand_path(File.join(safe_lp, "#{path}#{s}"))
           if File.file?(full_path)
             rp = full_path
@@ -67,12 +67,8 @@ module Kernel
     end
 
     if resolved_path
-      begin
-        RUBYGEMS_ACTIVATION_MONITOR.exit
-        return gem_original_require(resolved_path)
-      rescue LoadError
-        RUBYGEMS_ACTIVATION_MONITOR.enter
-      end
+      RUBYGEMS_ACTIVATION_MONITOR.exit
+      return gem_original_require(resolved_path)
     end
 
     if spec = Gem.find_unresolved_default_spec(path)

@@ -120,6 +120,24 @@ class TestGemRequire < Gem::TestCase
     Object.send :remove_const, :HELLO if Object.const_defined? :HELLO
   end
 
+  def test_dash_i_respects_default_library_extension_priority
+    skip "extensions don't quite work on jruby" if Gem.java_platform?
+
+    dash_i_ext_arg = util_install_extension_file('a')
+    dash_i_lib_arg = util_install_ruby_file('a')
+
+    lp = $LOAD_PATH.dup
+
+    begin
+      $LOAD_PATH.unshift dash_i_lib_arg
+      $LOAD_PATH.unshift dash_i_ext_arg
+      assert_require 'a'
+      assert_match(/a\.rb$/, $LOADED_FEATURES.last)
+    ensure
+      $LOAD_PATH.replace lp
+    end
+  end
+
   def test_concurrent_require
     Object.const_set :FILE_ENTERED_LATCH, Latch.new(2)
     Object.const_set :FILE_EXIT_LATCH, Latch.new(1)
@@ -539,6 +557,50 @@ class TestGemRequire < Gem::TestCase
     yield
   ensure
     $VERBOSE = old_verbose
+  end
+
+  def util_install_extension_file(name)
+    spec = quick_gem name
+    util_build_gem spec
+
+    spec.extensions << "extconf.rb"
+    write_file File.join(@tempdir, "extconf.rb") do |io|
+      io.write <<-RUBY
+        require "mkmf"
+        create_makefile("#{name}")
+      RUBY
+    end
+
+    write_file File.join(@tempdir, "#{name}.c") do |io|
+      io.write <<-C
+        #include <ruby.h>
+        void Init_#{name}() { }
+      C
+    end
+
+    spec.files += ["extconf.rb", "#{name}.c"]
+
+    so = File.join(spec.gem_dir, "#{name}.#{RbConfig::CONFIG["DLEXT"]}")
+    refute_path_exists so
+
+    path = Gem::Package.build spec
+    installer = Gem::Installer.at path
+    installer.install
+    assert_path_exists so
+
+    spec.gem_dir
+  end
+
+  def util_install_ruby_file(name)
+    dir_lib = Dir.mktmpdir("test_require_lib", @tempdir)
+    dash_i_lib_arg = File.join dir_lib
+
+    a_rb = File.join dash_i_lib_arg, "#{name}.rb"
+
+    FileUtils.mkdir_p File.dirname a_rb
+    File.open(a_rb, 'w') { |f| f.write "# #{name}.rb" }
+
+    dash_i_lib_arg
   end
 
 end
