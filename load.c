@@ -1007,7 +1007,6 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
 		result = 0;
 	    }
 	    else if (!*ftptr) {
-		rb_provide_feature(path);
 		result = TAG_RETURN;
 	    }
 	    else {
@@ -1022,7 +1021,6 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
 		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
 		    break;
 		}
-                rb_provide_feature(path);
                 result = TAG_RETURN;
 	    }
 	}
@@ -1056,6 +1054,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
         rb_exc_raise(ec->errinfo);
     }
 
+    if (result == TAG_RETURN) rb_provide_feature(path);
     ec->errinfo = errinfo;
 
     RUBY_DTRACE_HOOK(REQUIRE_RETURN, RSTRING_PTR(fname));

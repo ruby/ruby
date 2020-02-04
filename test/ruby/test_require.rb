@@ -214,6 +214,13 @@ class TestRequire < Test::Unit::TestCase
     assert_syntax_error_backtrace {|req| require req}
   end
 
+  def test_require_syntax_error_rescued
+    assert_syntax_error_backtrace do |req|
+      assert_raise_with_message(SyntaxError, /unexpected/) {require req}
+      require req
+    end
+  end
+
   def test_load_syntax_error
     assert_syntax_error_backtrace {|req| load req}
   end
