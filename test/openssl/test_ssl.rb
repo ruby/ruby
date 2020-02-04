@@ -186,8 +186,107 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_add_certificate_chain_file
-    ctx = OpenSSL::SSL::SSLContext.new
-    assert ctx.add_certificate_chain_file(Fixtures.file_path("chain", "server.crt"))
+    # Create chain certificates file
+    certs = Tempfile.open { |f| f << @svr_cert.to_pem << @ca_cert.to_pem; f }
+    pkey = Tempfile.open { |f| f << @svr_key.to_pem; f }
+
+    ctx_proc = -> ctx {
+      # Unset values set by start_server
+      ctx.cert = ctx.key = ctx.extra_chain_cert = nil
+      assert_nothing_raised { ctx.add_certificate_chain_file(certs.path, pkey.path) }
+    }
+
+    start_server(ctx_proc: ctx_proc) { |port|
+      server_connect(port) { |ssl|
+        assert_equal @svr_cert.subject, ssl.peer_cert.subject
+        assert_equal [@svr_cert.subject, @ca_cert.subject],
+          ssl.peer_cert_chain.map(&:subject)
+
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+      }
+    }
+  ensure
+    certs&.close
+    pkey&.close
+    certs&.unlink
+    pkey&.unlink
+  end
+
+  def test_add_certificate_chain_file_multiple_certs
+    pend "EC is not supported" unless defined?(OpenSSL::PKey::EC)
+    pend "TLS 1.2 is not supported" unless tls12_supported?
+
+    # SSL_CTX_set0_chain() is needed for setting multiple certificate chains
+    add0_chain_supported = openssl?(1, 0, 2)
+
+    if add0_chain_supported
+      ca2_key = Fixtures.pkey("rsa2048")
+      ca2_exts = [
+        ["basicConstraints", "CA:TRUE", true],
+        ["keyUsage", "cRLSign, keyCertSign", true],
+      ]
+      ca2_dn = OpenSSL::X509::Name.parse_rfc2253("CN=CA2")
+      ca2_cert = issue_cert(ca2_dn, ca2_key, 123, ca2_exts, nil, nil)
+    else
+      # Use the same CA as @svr_cert
+      ca2_key = @ca_key; ca2_cert = @ca_cert
+    end
+
+    ecdsa_key = Fixtures.pkey("p256")
+    exts = [
+      ["keyUsage", "digitalSignature", false],
+    ]
+    ecdsa_dn = OpenSSL::X509::Name.parse_rfc2253("CN=localhost2")
+    ecdsa_cert = issue_cert(ecdsa_dn, ecdsa_key, 456, exts, ca2_cert, ca2_key)
+
+    # Create chain certificates file
+    certs1 = Tempfile.open { |f| f << @svr_cert.to_pem << @ca_cert.to_pem; f }
+    pkey1 = Tempfile.open { |f| f << @svr_key.to_pem; f }
+    certs2 = Tempfile.open { |f| f << ecdsa_cert.to_pem << ca2_cert.to_pem; f }
+    pkey2 = Tempfile.open { |f| f << ecdsa_key.to_pem; f }
+
+    ctx_proc = -> ctx {
+      # Unset values set by start_server
+      ctx.cert = ctx.key = ctx.extra_chain_cert = nil
+      ctx.ecdh_curves = "P-256" unless openssl?(1, 0, 2)
+      assert_nothing_raised {
+        ctx.add_certificate_chain_file(certs1.path, pkey1.path) # RSA
+        ctx.add_certificate_chain_file(certs2.path, pkey2.path) # ECDSA
+      }
+    }
+
+    start_server(ctx_proc: ctx_proc) do |port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.max_version = :TLS1_2
+      ctx.ciphers = "aRSA"
+      server_connect(port, ctx) { |ssl|
+        assert_equal @svr_cert.subject, ssl.peer_cert.subject
+        assert_equal [@svr_cert.subject, @ca_cert.subject],
+          ssl.peer_cert_chain.map(&:subject)
+
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+      }
+
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.max_version = :TLS1_2
+      ctx.ciphers = "aECDSA"
+      server_connect(port, ctx) { |ssl|
+        assert_equal ecdsa_cert.subject, ssl.peer_cert.subject
+        assert_equal [ecdsa_cert.subject, ca2_cert.subject],
+          ssl.peer_cert_chain.map(&:subject)
+
+        ssl.puts "123"; assert_equal "123\n", ssl.gets
+      }
+    end
+  ensure
+    certs1&.close
+    pkey1&.close
+    certs1&.unlink
+    pkey1&.unlink
+    certs2&.close
+    pkey2&.close
+    certs2&.unlink
+    pkey2&.unlink
   end
 
   def test_sysread_and_syswrite

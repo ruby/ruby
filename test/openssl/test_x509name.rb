@@ -404,8 +404,8 @@ class OpenSSL::TestX509Name < OpenSSL::TestCase
 
     assert_equal n1, n2
 
-    assert_equal false, n1 == 'abc'
-    assert_equal false, n2 == nil
+    assert_equal(false, n1 == 'abc')
+    assert_equal(false, n2 == nil)
   end
 
   def test_spaceship
@@ -413,15 +413,15 @@ class OpenSSL::TestX509Name < OpenSSL::TestCase
     n2 = OpenSSL::X509::Name.new([["CN", "a"]])
     n3 = OpenSSL::X509::Name.new([["CN", "ab"]])
 
-    assert_equal 0, n1 <=> n2
+    assert_equal(0, n1 <=> n2)
     assert_equal(-1, n1 <=> n3)
-    assert_equal 0, n2 <=> n1
+    assert_equal(0, n2 <=> n1)
     assert_equal(-1, n2 <=> n3)
-    assert_equal 1, n3 <=> n1
-    assert_equal 1, n3 <=> n2
-    assert_equal nil, n1 <=> 'abc'
-    assert_equal nil, n2 <=> 123
-    assert_equal nil, n3 <=> nil
+    assert_equal(1, n3 <=> n1)
+    assert_equal(1, n3 <=> n2)
+    assert_equal(nil, n1 <=> 'abc')
+    assert_equal(nil, n2 <=> 123)
+    assert_equal(nil, n3 <=> nil)
   end
 
   def name_hash(name)
