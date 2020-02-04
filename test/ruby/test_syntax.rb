@@ -949,9 +949,14 @@ eom
 
   def test_warning_for_cr
     feature8699 = '[ruby-core:56240] [Feature #8699]'
-    assert_warning(/encountered \\r/, feature8699) do
-      eval("\r""__id__\r")
+    s = assert_warning(/encountered \\r/, feature8699) do
+      eval("'\r'\r")
     end
+    assert_equal("\r", s)
+    s = assert_warning('') do
+      eval("'\r'\r\n")
+    end
+    assert_equal("\r", s)
   end
 
   def test_unexpected_fraction

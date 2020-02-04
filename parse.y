@@ -6260,11 +6260,6 @@ parser_cr(struct parser_params *p, int c)
 	p->lex.pcur++;
 	c = '\n';
     }
-    else if (!p->cr_seen) {
-	p->cr_seen = TRUE;
-	/* carried over with p->lex.nextline for nextc() */
-	rb_warn0("encountered \\r in middle of line, treated as a mere space");
-    }
     return c;
 }
 
@@ -8833,7 +8828,14 @@ parser_yylex(struct parser_params *p)
 	return 0;
 
 	/* white spaces */
-      case ' ': case '\t': case '\f': case '\r':
+      case '\r':
+	if (!p->cr_seen) {
+	    p->cr_seen = TRUE;
+	    /* carried over with p->lex.nextline for nextc() */
+	    rb_warn0("encountered \\r in middle of line, treated as a mere space");
+	}
+	/* fall through */
+      case ' ': case '\t': case '\f':
       case '\13': /* '\v' */
 	space_seen = 1;
 #ifdef RIPPER
