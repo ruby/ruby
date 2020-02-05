@@ -172,7 +172,7 @@ class Reline::ANSI
 
   def self.cursor_pos
     begin
-      res = ''
+      res = String.new
       m = nil
       @@input.raw do |stdin|
         @@output << "\e[6n"
