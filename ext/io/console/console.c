@@ -1914,6 +1914,55 @@ console_ttyname(VALUE io)
 # define console_ttyname rb_f_notimplement
 #endif
 
+#if defined _WIN32 || defined __CYGWIN__
+static VALUE
+console_wintty_p(int argc, VALUE *argv, VALUE io)
+{
+    HANDLE h;
+    union {
+	FILE_NAME_INFO info;
+	WCHAR rest[MAX_PATH];
+    } buffer;
+    WCHAR *const name = buffer.info.FileName;
+    const WCHAR *ptr;
+    DWORD len;
+    static const WCHAR msys_prefix[] = L"\\msys-";
+    static const WCHAR cygwin_prefix[] = L"\\cygwin-";
+    VALUE ret;
+    enum {mode_normal, mode_cygwin, mode_msys} mode = mode_normal;
+
+    if (rb_check_arity(argc, 0, 1)) {
+	VALUE m = argv[0];
+	if (!NIL_P(m)) {
+	    Check_Type(m, T_SYMBOL);
+	    if (m == ID2SYM(rb_intern("cygwin"))) {
+		mode = mode_cygwin;
+	    }
+	    else if (m == ID2SYM(rb_intern("msys"))) {
+		mode = mode_msys;
+	    }
+	}
+    }
+    ret = rb_call_super(0, 0);
+    if (mode == mode_normal || RTEST(ret)) return ret;
+    h = (HANDLE)rb_w32_get_osfhandle(GetReadFD(io));
+    if (GetFileType(h) != FILE_TYPE_PIPE) return Qfalse;
+    if (!GetFileInformationByHandleEx(h, FileNameInfo, &buffer, sizeof(buffer))) return Qfalse;
+    len = buffer.info.FileNameLength / sizeof(WCHAR);
+    name[len] = L'\0';
+    if (memcmp(name, cygwin_prefix, sizeof(cygwin_prefix)-sizeof(WCHAR)) == 0) {
+	ptr = name + sizeof(cygwin_prefix)/sizeof(WCHAR) - 1;
+    }
+    else if (mode == mode_msys && memcmp(name, msys_prefix, sizeof(msys_prefix)-sizeof(WCHAR)) == 0) {
+	ptr = name + sizeof(msys_prefix)/sizeof(WCHAR) - 1;
+    }
+    else {
+	return Qfalse;
+    }
+    return wcsstr(ptr, L"-pty") ? Qtrue : Qfalse;
+}
+#endif
+
 /*
  * IO console methods
  */
@@ -1982,6 +2031,14 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "check_winsize_changed", console_check_winsize_changed, 0);
     rb_define_method(rb_cIO, "getpass", console_getpass, -1);
     rb_define_method(rb_cIO, "ttyname", console_ttyname, 0);
+#if defined _WIN32 || defined __CYGWIN__
+    {
+	VALUE wintty = rb_module_new();
+	rb_define_method(wintty, "tty?", console_wintty_p, -1);
+	rb_define_method(wintty, "isatty", console_wintty_p, -1);
+	rb_prepend_module(rb_cIO, wintty);
+    }
+#endif
     rb_define_singleton_method(rb_cIO, "console", console_dev, -1);
     {
 	/* :nodoc: */
