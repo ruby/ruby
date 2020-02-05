@@ -139,6 +139,7 @@ eom
             res_c.close
             print stdout
             res = Marshal.load(res_p.read.unpack("m")[0])
+            res_p.close
           else
             res = Marshal.load(stdout.unpack("m")[0])
           end
