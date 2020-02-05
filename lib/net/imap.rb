@@ -363,6 +363,30 @@ module Net
       end
     end
 
+    # Sends an ID command, and returns a hash of the server's
+    # response, or nil if the server does not identify itself.
+    #
+    # Note that the user should first check if the server supports the ID
+    # capability. For example:
+    #
+    #    capabilities = imap.capability
+    #    if capabilities.include?("ID")
+    #      id = imap.id(
+    #        name: "my IMAP client (ruby)",
+    #        version: MyIMAP::VERSION,
+    #        "support-url": "mailto:bugs@example.com",
+    #        os: RbConfig::CONFIG["host_os"],
+    #      )
+    #    end
+    #
+    # See RFC 2971, Section 3.3, for defined fields.
+    def id(client_id=nil)
+      synchronize do
+        send_command("ID", ClientID.new(client_id))
+        return @responses.delete("ID")[-1]
+      end
+    end
+
     # Sends a NOOP command to the server. It does nothing.
     def noop
       send_command("NOOP")
@@ -1654,6 +1678,74 @@ module Net
       end
     end
 
+    class ClientID # :nodoc:
+
+      def send_data(imap, tag)
+        imap.send(:send_data, format_internal(@data), tag)
+      end
+
+      def validate
+        validate_internal(@data)
+      end
+
+      private
+
+      def initialize(data)
+        @data = data
+      end
+
+      def validate_internal(client_id)
+        client_id.to_h.each do |k,v|
+          unless StringFormatter.valid_string?(k)
+            raise DataFormatError, client_id.inspect
+          end
+        end
+      rescue NoMethodError, TypeError # to_h failed
+        raise DataFormatError, client_id.inspect
+      end
+
+      def format_internal(client_id)
+        return nil if client_id.nil?
+        client_id.to_h.flat_map {|k,v|
+          [StringFormatter.string(k), StringFormatter.nstring(v)]
+        }
+      end
+
+    end
+
+    module StringFormatter
+
+      LITERAL_REGEX = /[\x80-\xff\r\n]/n
+
+      module_function
+
+      # Allows symbols in addition to strings
+      def valid_string?(str)
+        str.is_a?(Symbol) || str.respond_to?(:to_str)
+      end
+
+      # Allows nil, symbols, and strings
+      def valid_nstring?(str)
+        str.nil? || valid_string?(str)
+      end
+
+      # coerces using +to_s+
+      def string(str)
+        str = str.to_s
+        if str =~ LITERAL_REGEX
+          Literal.new(str)
+        else
+          QuotedString.new(str)
+        end
+      end
+
+      # coerces non-nil using +to_s+
+      def nstring(str)
+        str.nil? ? nil : string(str)
+      end
+
+    end
+
     # Common validators of number and nz_number types
     module NumValidator # :nodoc
       class << self
@@ -2305,6 +2397,8 @@ module Net
             return status_response
           when /\A(?:CAPABILITY)\z/ni
             return capability_response
+          when /\A(?:ID)\z/ni
+            return id_response
           else
             return text_response
           end
@@ -3125,6 +3219,35 @@ module Net
           data.push(atom.upcase)
         end
         return UntaggedResponse.new(name, data, @str)
+      end
+
+      def id_response
+        token = match(T_ATOM)
+        name = token.value.upcase
+        match(T_SPACE)
+        token = match(T_LPAR, T_NIL)
+        if token.symbol == T_NIL
+          return UntaggedResponse.new(name, nil, @str)
+        else
+          data = {}
+          while true
+            token = lookahead
+            case token.symbol
+            when T_RPAR
+              shift_token
+              break
+            when T_SPACE
+              shift_token
+              next
+            else
+              key = string
+              match(T_SPACE)
+              val = nstring
+              data[key] = val
+            end
+          end
+          return UntaggedResponse.new(name, data, @str)
+        end
       end
 
       def resp_text

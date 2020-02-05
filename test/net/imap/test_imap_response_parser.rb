@@ -236,6 +236,18 @@ EOF
     assert_equal("AUTH=PLAIN", response.data.last)
   end
 
+  def test_id
+    parser = Net::IMAP::ResponseParser.new
+    response = parser.parse("* ID NIL\r\n")
+    assert_equal("ID", response.name)
+    assert_equal(nil, response.data)
+    response = parser.parse("* ID (\"name\" \"GImap\" \"vendor\" \"Google, Inc.\" \"support-url\" NIL)\r\n")
+    assert_equal("ID", response.name)
+    assert_equal("GImap", response.data["name"])
+    assert_equal("Google, Inc.", response.data["vendor"])
+    assert_equal(nil, response.data.fetch("support-url"))
+  end
+
   def test_mixed_boundary
     parser = Net::IMAP::ResponseParser.new
     response = parser.parse("* 2688 FETCH (UID 179161 BODYSTRUCTURE (" \
