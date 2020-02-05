@@ -137,7 +137,7 @@ eom
         begin
           if res_c
             res_c.close
-            print stdout
+            MiniTest::Unit.output.print stdout
             res = Marshal.load(res_p.read.unpack("m")[0])
             res_p.close
           else
