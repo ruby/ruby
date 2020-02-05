@@ -2,7 +2,7 @@
 begin
   require_relative "lib/openssl/version"
 rescue LoadError
-  require_relative "version"
+  require_relative "lib/version"
 end
 
 Gem::Specification.new do |spec|
