@@ -2,33 +2,6 @@ require_relative '../../spec_helper'
 require 'thread'
 
 describe "ConditionVariable#signal" do
-  it "returns self if nothing to signal" do
-    cv = ConditionVariable.new
-    cv.signal.should == cv
-  end
-
-  it "returns self if something is waiting for a signal" do
-    m = Mutex.new
-    cv = ConditionVariable.new
-    in_synchronize = false
-
-    th = Thread.new do
-      m.synchronize do
-        in_synchronize = true
-        cv.wait(m)
-      end
-    end
-
-    # wait for m to acquire the mutex
-    Thread.pass until in_synchronize
-    # wait until th is sleeping (ie waiting)
-    Thread.pass until th.stop?
-
-    m.synchronize { cv.signal }.should == cv
-
-    th.join
-  end
-
   it "releases the first thread waiting in line for this resource" do
     m = Mutex.new
     cv = ConditionVariable.new

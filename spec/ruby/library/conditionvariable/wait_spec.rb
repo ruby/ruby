@@ -11,7 +11,7 @@ describe "ConditionVariable#wait" do
     cv.wait(o, 1234)
   end
 
-  it "returns self" do
+  it "can be woken up by ConditionVariable#signal" do
     m = Mutex.new
     cv = ConditionVariable.new
     in_synchronize = false
@@ -19,8 +19,9 @@ describe "ConditionVariable#wait" do
     th = Thread.new do
       m.synchronize do
         in_synchronize = true
-        cv.wait(m).should == cv
+        cv.wait(m)
       end
+      :success
     end
 
     # wait for m to acquire the mutex
@@ -29,7 +30,7 @@ describe "ConditionVariable#wait" do
     Thread.pass until th.stop?
 
     m.synchronize { cv.signal }
-    th.join
+    th.value.should == :success
   end
 
   it "can be interrupted by Thread#run" do
