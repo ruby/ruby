@@ -99,6 +99,9 @@ jobs:
       - name: make all
         timeout-minutes: 20
         run: |
+          # Hopefully, GitHub will remove these files
+          ren C:\Windows\System32\libcrypto-1_1-x64.dll libcrypto-1_1-x64.dll_
+          ren C:\Windows\System32\libssl-1_1-x64.dll libssl-1_1-x64.dll_
           $jobs = [int]$env:NUMBER_OF_PROCESSORS + 1
           make -C build -j $jobs V=1
 
