@@ -9520,7 +9520,6 @@ struct ibf_header {
 
 struct ibf_dump_buffer {
     VALUE str;
-    VALUE obj_list;      /* [objs] */
     st_table *obj_table; /* obj -> obj number */
 };
 
@@ -9665,27 +9664,19 @@ static void ibf_dump_object_list(struct ibf_dump *dump, ibf_offset_t *obj_list_o
 static VALUE ibf_load_object(const struct ibf_load *load, VALUE object_index);
 static rb_iseq_t *ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq);
 
-static VALUE
-ibf_dump_object_list_new(st_table **obj_table)
+static st_table *
+ibf_dump_object_table_new(void)
 {
-    VALUE obj_list = rb_ary_tmp_new(1);
-    rb_ary_push(obj_list, Qnil); /* 0th is nil */
+    st_table *obj_table = st_init_numtable(); /* need free */
+    st_insert(obj_table, (st_data_t)Qnil, (st_data_t)0); /* 0th is nil */
 
-    *obj_table = st_init_numtable(); /* need free */
-    rb_st_insert(*obj_table, (st_data_t)Qnil, (st_data_t)0); /* 0th is nil */
-
-    return obj_list;
+    return obj_table;
 }
 
 static VALUE
 ibf_dump_object(struct ibf_dump *dump, VALUE obj)
 {
-    int obj_index = ibf_table_lookup(dump->current_buffer->obj_table, (st_data_t)obj);
-    if (obj_index < 0) {
-        obj_index = ibf_table_find_or_insert(dump->current_buffer->obj_table, (st_data_t)obj);
-        rb_ary_push(dump->current_buffer->obj_list, obj);
-    }
-    return obj_index;
+    return ibf_table_find_or_insert(dump->current_buffer->obj_table, (st_data_t)obj);
 }
 
 static VALUE
@@ -10368,7 +10359,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     struct ibf_dump_buffer *saved_buffer = dump->current_buffer;
     struct ibf_dump_buffer buffer;
     buffer.str = rb_str_new(0, 0);
-    buffer.obj_list = ibf_dump_object_list_new(&buffer.obj_table);
+    buffer.obj_table = ibf_dump_object_table_new();
     dump->current_buffer = &buffer;
 #endif
 
@@ -10473,7 +10464,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, local_obj_list_offset);
     ibf_dump_write_small_value(dump, local_obj_list_size);
 
-    rb_st_free_table(buffer.obj_table);
+    st_free_table(buffer.obj_table); // TODO: this leaks in case of exception
 
     return offset;
 #else
@@ -11203,7 +11194,7 @@ ibf_load_object_object_header(const struct ibf_load *load, ibf_offset_t *offset)
 }
 
 static ibf_offset_t
-ibf_dump_object_object(struct ibf_dump *dump, VALUE obj_list, VALUE obj)
+ibf_dump_object_object(struct ibf_dump *dump, VALUE obj)
 {
     struct ibf_object_header obj_header;
     ibf_offset_t current_offset;
@@ -11318,28 +11309,48 @@ ibf_load_object(const struct ibf_load *load, VALUE object_index)
     }
 }
 
+struct ibf_dump_object_list_arg
+{
+    struct ibf_dump *dump;
+    VALUE offset_list;
+};
+
+static int
+ibf_dump_object_list_i(st_data_t key, st_data_t val, st_data_t ptr)
+{
+    VALUE obj = (VALUE)key;
+    struct ibf_dump_object_list_arg *args = (struct ibf_dump_object_list_arg *)ptr;
+
+    ibf_offset_t offset = ibf_dump_object_object(args->dump, obj);
+    rb_ary_push(args->offset_list, UINT2NUM(offset));
+
+    return ST_CONTINUE;
+}
+
 static void
 ibf_dump_object_list(struct ibf_dump *dump, ibf_offset_t *obj_list_offset, unsigned int *obj_list_size)
 {
-    VALUE obj_list = dump->current_buffer->obj_list;
-    VALUE list = rb_ary_tmp_new(RARRAY_LEN(obj_list));
-    int i, size;
+    st_table *obj_table = dump->current_buffer->obj_table;
+    VALUE offset_list = rb_ary_tmp_new(obj_table->num_entries);
 
-    for (i=0; i<RARRAY_LEN(obj_list); i++) {
-        VALUE obj = RARRAY_AREF(obj_list, i);
-        ibf_offset_t offset = ibf_dump_object_object(dump, obj_list, obj);
-        rb_ary_push(list, UINT2NUM(offset));
-    }
-    size = i;
+    struct ibf_dump_object_list_arg args;
+    args.dump = dump;
+    args.offset_list = offset_list;
+
+    st_foreach(obj_table, ibf_dump_object_list_i, (st_data_t)&args);
+
     IBF_W_ALIGN(ibf_offset_t);
     *obj_list_offset = ibf_dump_pos(dump);
 
+    st_index_t size = obj_table->num_entries;
+    st_index_t i;
+
     for (i=0; i<size; i++) {
-        ibf_offset_t offset = NUM2UINT(RARRAY_AREF(list, i));
+        ibf_offset_t offset = NUM2UINT(RARRAY_AREF(offset_list, i));
         IBF_WV(offset);
     }
 
-    *obj_list_size = size;
+    *obj_list_size = (unsigned int)size;
 }
 
 static void
@@ -11347,8 +11358,8 @@ ibf_dump_mark(void *ptr)
 {
     struct ibf_dump *dump = (struct ibf_dump *)ptr;
     rb_gc_mark(dump->global_buffer.str);
-    rb_gc_mark(dump->global_buffer.obj_list);
 
+    rb_mark_set(dump->global_buffer.obj_table);
     rb_mark_set(dump->iseq_table);
 }
 
@@ -11386,10 +11397,11 @@ static const rb_data_type_t ibf_dump_type = {
 static void
 ibf_dump_setup(struct ibf_dump *dump, VALUE dumper_obj)
 {
+    dump->global_buffer.obj_table = NULL; // GC may run before a value is assigned
     dump->iseq_table = NULL;
 
-    RB_OBJ_WRITE(dumper_obj, &dump->global_buffer.obj_list, ibf_dump_object_list_new(&dump->global_buffer.obj_table));
     RB_OBJ_WRITE(dumper_obj, &dump->global_buffer.str, rb_str_new(0, 0));
+    dump->global_buffer.obj_table = ibf_dump_object_table_new();
     dump->iseq_table = st_init_numtable(); /* need free */
 
     dump->current_buffer = &dump->global_buffer;
