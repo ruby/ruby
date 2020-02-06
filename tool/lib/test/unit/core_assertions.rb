@@ -131,20 +131,21 @@ eom
         args = args.dup
         args.insert((Hash === args.first ? 1 : 0), "-w", "--disable=gems", *$:.map {|l| "-I#{l}"})
         stdout, stderr, status = EnvUtil.invoke_ruby(args, src, true, true, **opt)
+        if res_c
+          res_c.close
+          res = res_p.read
+          res_p.close
+        else
+          res = stdout
+        end
         abort = status.coredump? || (status.signaled? && ABORT_SIGNALS.include?(status.termsig))
         assert(!abort, FailDesc[status, nil, stderr])
-        self._assertions += stdout[/^assertions=(\d+)/, 1].to_i
+        self._assertions += res[/^assertions=(\d+)/, 1].to_i
         begin
-          if res_c
-            res_c.close
-            MiniTest::Unit.output.print stdout
-            res = Marshal.load(res_p.read.unpack("m")[0])
-            res_p.close
-          else
-            res = Marshal.load(stdout.unpack("m")[0])
-          end
+          res = Marshal.load(res.unpack1("m"))
         rescue => marshal_error
           ignore_stderr = nil
+          res = nil
         end
         if res
           if bt = res.backtrace
