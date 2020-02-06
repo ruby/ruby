@@ -9525,7 +9525,6 @@ struct ibf_dump_buffer {
 };
 
 struct ibf_dump {
-    VALUE iseq_list;      /* [iseqs] */
     st_table *iseq_table; /* iseq -> iseq number */
     struct ibf_dump_buffer global_buffer;
     struct ibf_dump_buffer *current_buffer;
@@ -9647,7 +9646,7 @@ ibf_table_lookup(struct st_table *table, st_data_t key)
 }
 
 static int
-ibf_table_index(struct st_table *table, st_data_t key)
+ibf_table_find_or_insert(struct st_table *table, st_data_t key)
 {
     int index = ibf_table_lookup(table, key);
 
@@ -9683,7 +9682,7 @@ ibf_dump_object(struct ibf_dump *dump, VALUE obj)
 {
     int obj_index = ibf_table_lookup(dump->current_buffer->obj_table, (st_data_t)obj);
     if (obj_index < 0) {
-        obj_index = ibf_table_index(dump->current_buffer->obj_table, (st_data_t)obj);
+        obj_index = ibf_table_find_or_insert(dump->current_buffer->obj_table, (st_data_t)obj);
         rb_ary_push(dump->current_buffer->obj_list, obj);
     }
     return obj_index;
@@ -9725,12 +9724,7 @@ ibf_dump_iseq(struct ibf_dump *dump, const rb_iseq_t *iseq)
         return -1;
     }
     else {
-        int iseq_index = ibf_table_lookup(dump->iseq_table, (st_data_t)iseq);
-        if (iseq_index < 0) {
-            iseq_index = ibf_table_index(dump->iseq_table, (st_data_t)iseq);
-            rb_ary_push(dump->iseq_list, (VALUE)iseq);
-        }
-        return iseq_index;
+        return ibf_table_find_or_insert(dump->iseq_table, (st_data_t)iseq);
     }
 }
 
@@ -10668,22 +10662,41 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     verify_call_cache(iseq);
 }
 
+struct ibf_dump_iseq_list_arg
+{
+    struct ibf_dump *dump;
+    VALUE offset_list;
+};
+
+static int
+ibf_dump_iseq_list_i(st_data_t key, st_data_t val, st_data_t ptr)
+{
+    const rb_iseq_t *iseq = (const rb_iseq_t *)key;
+    struct ibf_dump_iseq_list_arg *args = (struct ibf_dump_iseq_list_arg *)ptr;
+
+    ibf_offset_t offset = ibf_dump_iseq_each(args->dump, iseq);
+    rb_ary_push(args->offset_list, UINT2NUM(offset));
+
+    return ST_CONTINUE;
+}
+
 static void
 ibf_dump_iseq_list(struct ibf_dump *dump, struct ibf_header *header)
 {
-    VALUE list = rb_ary_tmp_new(RARRAY_LEN(dump->iseq_list));
-    long i;
+    VALUE offset_list = rb_ary_tmp_new(dump->iseq_table->num_entries);
 
-    for (i = 0; i < RARRAY_LEN(dump->iseq_list); i++) {
-        ibf_offset_t offset = ibf_dump_iseq_each(dump, (rb_iseq_t *)RARRAY_AREF(dump->iseq_list, i));
-        rb_ary_push(list, UINT2NUM(offset));
-    }
+    struct ibf_dump_iseq_list_arg args;
+    args.dump = dump;
+    args.offset_list = offset_list;
 
-    long size = RARRAY_LEN(dump->iseq_list);
+    st_foreach(dump->iseq_table, ibf_dump_iseq_list_i, (st_data_t)&args);
+
+    st_index_t i;
+    st_index_t size = dump->iseq_table->num_entries;
     ibf_offset_t *offsets = ALLOCA_N(ibf_offset_t, size);
 
     for (i = 0; i < size; i++) {
-        offsets[i] = NUM2UINT(RARRAY_AREF(list, i));
+        offsets[i] = NUM2UINT(RARRAY_AREF(offset_list, i));
     }
 
     ibf_dump_align(dump, sizeof(ibf_offset_t));
@@ -11335,7 +11348,8 @@ ibf_dump_mark(void *ptr)
     struct ibf_dump *dump = (struct ibf_dump *)ptr;
     rb_gc_mark(dump->global_buffer.str);
     rb_gc_mark(dump->global_buffer.obj_list);
-    rb_gc_mark(dump->iseq_list);
+
+    rb_mark_set(dump->iseq_table);
 }
 
 static void
@@ -11372,7 +11386,8 @@ static const rb_data_type_t ibf_dump_type = {
 static void
 ibf_dump_setup(struct ibf_dump *dump, VALUE dumper_obj)
 {
-    RB_OBJ_WRITE(dumper_obj, &dump->iseq_list, rb_ary_tmp_new(0));
+    dump->iseq_table = NULL;
+
     RB_OBJ_WRITE(dumper_obj, &dump->global_buffer.obj_list, ibf_dump_object_list_new(&dump->global_buffer.obj_table));
     RB_OBJ_WRITE(dumper_obj, &dump->global_buffer.str, rb_str_new(0, 0));
     dump->iseq_table = st_init_numtable(); /* need free */
