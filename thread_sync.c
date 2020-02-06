@@ -457,8 +457,8 @@ rb_mutex_wait_for(VALUE time)
 {
     rb_hrtime_t *rel = (rb_hrtime_t *)time;
     /* permit spurious check */
-    sleep_hrtime(GET_THREAD(), *rel, 0);
-    return Qnil;
+    if (sleep_hrtime(GET_THREAD(), *rel, 0)) return Qtrue;
+    return Qfalse;
 }
 
 VALUE
@@ -466,6 +466,7 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
 {
     time_t beg, end;
     struct timeval t;
+    VALUE woken = Qtrue;
 
     if (!NIL_P(timeout)) {
         t = rb_time_interval(timeout);
@@ -479,17 +480,18 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
     else {
         rb_hrtime_t rel = rb_timeval2hrtime(&t);
 
-        rb_ensure(rb_mutex_wait_for, (VALUE)&rel,
-                  mutex_lock_uninterruptible, self);
+        woken = rb_ensure(rb_mutex_wait_for, (VALUE)&rel,
+                          mutex_lock_uninterruptible, self);
     }
     RUBY_VM_CHECK_INTS_BLOCKING(GET_EC());
+    if (!woken) return Qnil;
     end = time(0) - beg;
     return INT2FIX(end);
 }
 
 /*
  * call-seq:
- *    mutex.sleep(timeout = nil)    -> number
+ *    mutex.sleep(timeout = nil)    -> number or nil
  *
  * Releases the lock and sleeps +timeout+ seconds if it is given and
  * non-nil or forever.  Raises +ThreadError+ if +mutex+ wasn't locked by
@@ -500,6 +502,8 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
  *
  * Note that this method can wakeup without explicit Thread#wakeup call.
  * For example, receiving signal and so on.
+ *
+ * Returns the slept time in seconds if woken up, or +nil+ if timed out.
  */
 static VALUE
 mutex_sleep(int argc, VALUE *argv, VALUE self)
@@ -1391,6 +1395,8 @@ delete_from_waitq(VALUE v)
  *
  * If +timeout+ is given, this method returns after +timeout+ seconds passed,
  * even if no other thread doesn't signal.
+ *
+ * Returns the slept result on +mutex+.
  */
 
 static VALUE
@@ -1404,9 +1410,7 @@ rb_condvar_wait(int argc, VALUE *argv, VALUE self)
 
     w.th = GET_THREAD();
     list_add_tail(&cv->waitq, &w.node);
-    rb_ensure(do_sleep, (VALUE)&args, delete_from_waitq, (VALUE)&w);
-
-    return self;
+    return rb_ensure(do_sleep, (VALUE)&args, delete_from_waitq, (VALUE)&w);
 }
 
 /*
