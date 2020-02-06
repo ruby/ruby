@@ -22,7 +22,7 @@ describe "ConditionVariable#broadcast" do
     # wait for m to acquire the mutex
     Thread.pass until in_synchronize
     # wait until th is sleeping (ie waiting)
-    Thread.pass while th.status and th.status != "sleep"
+    Thread.pass until th.stop?
 
     m.synchronize { cv.broadcast }.should == cv
 
@@ -50,7 +50,7 @@ describe "ConditionVariable#broadcast" do
     # wait for all threads to acquire the mutex the first time
     Thread.pass until m.synchronize { r1.size == threads.size }
     # wait until all threads are sleeping (ie waiting)
-    Thread.pass until threads.all? {|th| th.status == "sleep" }
+    Thread.pass until threads.all?(&:stop?)
 
     r2.should be_empty
     m.synchronize do

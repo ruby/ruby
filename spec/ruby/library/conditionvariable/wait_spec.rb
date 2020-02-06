@@ -26,7 +26,7 @@ describe "ConditionVariable#wait" do
     # wait for m to acquire the mutex
     Thread.pass until in_synchronize
     # wait until th is sleeping (ie waiting)
-    Thread.pass while th.status and th.status != "sleep"
+    Thread.pass until th.stop?
 
     m.synchronize { cv.signal }
     th.join
@@ -48,7 +48,7 @@ describe "ConditionVariable#wait" do
     # wait for m to acquire the mutex
     Thread.pass until in_synchronize
     # wait until th is sleeping (ie waiting)
-    Thread.pass while th.status and th.status != "sleep"
+    Thread.pass until th.stop?
 
     th.run
     th.value.should == :success
@@ -70,7 +70,7 @@ describe "ConditionVariable#wait" do
     # wait for m to acquire the mutex
     Thread.pass until in_synchronize
     # wait until th is sleeping (ie waiting)
-    Thread.pass while th.status and th.status != "sleep"
+    Thread.pass until th.stop?
 
     th.wakeup
     th.value.should == :success
@@ -97,7 +97,7 @@ describe "ConditionVariable#wait" do
     # wait for m to acquire the mutex
     Thread.pass until in_synchronize
     # wait until th is sleeping (ie waiting)
-    Thread.pass while th.status and th.status != "sleep"
+    Thread.pass until th.stop?
 
     th.kill
     th.join
@@ -127,7 +127,7 @@ describe "ConditionVariable#wait" do
       # wait for m to acquire the mutex
       Thread.pass until in_synchronize
       # wait until th is sleeping (ie waiting)
-      Thread.pass while th.status and th.status != "sleep"
+      Thread.pass until th.stop?
 
       m.synchronize {
         cv.signal
@@ -158,7 +158,7 @@ describe "ConditionVariable#wait" do
     }
 
     Thread.pass until m.synchronize { events.size } == n_threads
-    Thread.pass while threads.any? { |th| th.status and th.status != "sleep" }
+    Thread.pass until threads.any?(&:stop?)
     m.synchronize do
       threads.each { |t|
         # Cause interactions with the waiting threads.
