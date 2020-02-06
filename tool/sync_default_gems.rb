@@ -267,8 +267,10 @@ def sync_default_gems(gem)
     sync_lib "net-smtp"
     mv "lib/net-smtp.gemspec", "lib/net/smtp"
   when "readline-ext"
-    sync_lib "readline-ext"
-    mv "lib/readline-ext.gemspec", "ext/readline"
+    rm_rf(%w[ext/readline test/readline])
+    cp_r("#{upstream}/ext/readline", "ext")
+    cp_r("#{upstream}/test/readline", "test")
+    cp_r("#{upstream}/readline-ext.gemspec", "ext/readline")
   when "did_you_mean"
     rm_rf(%w[lib/did_you_mean* test/did_you_mean])
     cp_r(Dir.glob("#{upstream}/lib/did_you_mean*"), "lib")
