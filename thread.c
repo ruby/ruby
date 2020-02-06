@@ -132,7 +132,7 @@ rb_thread_local_storage(VALUE thread)
     return rb_ivar_get(thread, idLocals);
 }
 
-static void sleep_hrtime(rb_thread_t *, rb_hrtime_t, unsigned int fl);
+static int sleep_hrtime(rb_thread_t *, rb_hrtime_t, unsigned int fl);
 static void sleep_forever(rb_thread_t *th, unsigned int fl);
 static void rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker);
 static int rb_threadptr_dead(rb_thread_t *th);
@@ -1479,7 +1479,7 @@ hrtime_update_expire(rb_hrtime_t *timeout, const rb_hrtime_t end)
 }
 COMPILER_WARNING_POP
 
-static void
+static int
 sleep_hrtime(rb_thread_t *th, rb_hrtime_t rel, unsigned int fl)
 {
     enum rb_thread_status prev_status = th->status;
@@ -1495,8 +1495,10 @@ sleep_hrtime(rb_thread_t *th, rb_hrtime_t rel, unsigned int fl)
 	    break;
 	if (hrtime_update_expire(&rel, end))
 	    break;
+        woke = 1;
     }
     th->status = prev_status;
+    return woke;
 }
 
 void
