@@ -110,9 +110,12 @@ module Test
           file ||= loc.path
           line ||= loc.lineno
         end
+        capture_stdout = true
         if /mswin|mingw/ =~ RUBY_PLATFORM
           res_out = "STDOUT"
         else
+          capture_stdout = false
+          opt[:out] = MiniTest::Unit.output
           res_p, res_c = IO.pipe
           opt[res_c.fileno] = res_c.fileno
           res_out = "IO.new(#{res_c.fileno}, 'w')"
@@ -130,7 +133,7 @@ module Test
 eom
         args = args.dup
         args.insert((Hash === args.first ? 1 : 0), "-w", "--disable=gems", *$:.map {|l| "-I#{l}"})
-        stdout, stderr, status = EnvUtil.invoke_ruby(args, src, true, true, **opt)
+        stdout, stderr, status = EnvUtil.invoke_ruby(args, src, capture_stdout, true, **opt)
         if res_c
           res_c.close
           res = res_p.read
