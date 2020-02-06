@@ -1034,6 +1034,7 @@ EOY
     end
 
 	def test_ruby_struct
+		Struct.send(:remove_const, :MyBookStruct) if Struct.const_defined?(:MyBookStruct)
 		# Ruby structures
 		book_struct = Struct::new( "MyBookStruct", :author, :title, :year, :isbn )
 		assert_to_yaml(
