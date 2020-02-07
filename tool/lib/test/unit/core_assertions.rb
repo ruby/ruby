@@ -150,7 +150,7 @@ eom
           ignore_stderr = nil
           res = nil
         end
-        if res
+        if res and !(SystemExit === res)
           if bt = res.backtrace
             bt.each do |l|
               l.sub!(/\A-:(\d+)/){"#{file}:#{line + $1.to_i}"}
@@ -159,7 +159,7 @@ eom
           else
             res.set_backtrace(caller)
           end
-          raise res unless SystemExit === res
+          raise res
         end
 
         # really is it succeed?
