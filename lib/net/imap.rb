@@ -3112,19 +3112,23 @@ module Net
         token = match(T_ATOM)
         name = token.value.upcase
         match(T_SPACE)
+        UntaggedResponse.new(name, capability_data, @str)
+      end
+
+      def capability_data
         data = []
         while true
           token = lookahead
           case token.symbol
-          when T_CRLF
+          when T_CRLF, T_RBRA
             break
           when T_SPACE
             shift_token
             next
           end
-          data.push(atom.upcase)
+          data.push(strict_atom.upcase)
         end
-        return UntaggedResponse.new(name, data, @str)
+        data
       end
 
       def resp_text
@@ -3154,6 +3158,8 @@ module Net
         when /\A(?:UIDVALIDITY|UIDNEXT|UNSEEN)\z/n
           match(T_SPACE)
           result = ResponseCode.new(name, number)
+        when /\A(?:CAPABILITY)\z/ni
+          result = ResponseCode.new(name, capability_data)
         else
           token = lookahead
           if token.symbol == T_SPACE
@@ -3295,6 +3301,22 @@ module Net
         end
         token = match(T_QUOTED, T_LITERAL)
         return token.value.upcase
+      end
+
+      # ATOM-CHAR in RFC3501 does not allow T_RBRA
+      def strict_atom
+        result = String.new
+        token = lookahead
+        while [T_ATOM, T_NUMBER, T_NIL, T_LBRA, T_PLUS].include? token.symbol
+          result.concat token.value.upcase
+          shift_token
+          token = lookahead
+        end
+        if result.empty?
+          parse_error("unexpected token %s", token.symbol)
+        else
+          return result
+        end
       end
 
       def atom

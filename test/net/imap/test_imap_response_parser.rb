@@ -234,6 +234,15 @@ EOF
     response = parser.parse("* CAPABILITY st11p00mm-iscream009 1Q49 XAPPLEPUSHSERVICE IMAP4 IMAP4rev1 SASL-IR AUTH=ATOKEN AUTH=PLAIN \r\n")
     assert_equal("CAPABILITY", response.name)
     assert_equal("AUTH=PLAIN", response.data.last)
+    response = parser.parse("* OK [CAPABILITY IMAP4rev1 SASL-IR 1234 NIL THIS+THAT + AUTH=PLAIN ID] IMAP4rev1 Hello\r\n")
+    assert_equal("OK", response.name)
+    assert_equal(" IMAP4rev1 Hello", response.data.text)
+    code = response.data.code
+    assert_equal("CAPABILITY", code.name)
+    assert_equal(
+      ["IMAP4REV1", "SASL-IR", "1234", "NIL", "THIS+THAT", "+", "AUTH=PLAIN", "ID"],
+      code.data
+    )
   end
 
   def test_mixed_boundary
