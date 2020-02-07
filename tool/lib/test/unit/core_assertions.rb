@@ -104,6 +104,14 @@ module Test
 
       ABORT_SIGNALS = Signal.list.values_at(*%w"ILL ABRT BUS SEGV TERM")
 
+      def separated_runner(out = nil)
+        out = out ? IO.new(out, 'w') : STDOUT
+        at_exit {
+          out.puts [Marshal.dump($!)].pack('m'), "assertions=\#{self._assertions}"
+        }
+        Test::Unit::Runner.class_variable_set(:@@stop_auto_run, true)
+      end
+
       def assert_separately(args, file = nil, line = nil, src, ignore_stderr: nil, **opt)
         unless file and line
           loc, = caller_locations(1,1)
@@ -111,25 +119,19 @@ module Test
           line ||= loc.lineno
         end
         capture_stdout = true
-        if /mswin|mingw/ =~ RUBY_PLATFORM
-          res_out = "STDOUT"
-        else
+        unless /mswin|mingw/ =~ RUBY_PLATFORM
           capture_stdout = false
           opt[:out] = MiniTest::Unit.output
           res_p, res_c = IO.pipe
           opt[res_c.fileno] = res_c.fileno
-          res_out = "IO.new(#{res_c.fileno}, 'w')"
         end
         src = <<eom
 # -*- coding: #{line += __LINE__; src.encoding}; -*-
-  require "test/unit";out=#{res_out};include Test::Unit::Assertions;require #{(__dir__ + "/core_assertions").dump};include Test::Unit::CoreAssertions
-  END {
-    out.puts [Marshal.dump($!)].pack('m'), "assertions=\#{self._assertions}"
-  }
+BEGIN {
+  require "test/unit";include Test::Unit::Assertions;require #{(__dir__ + "/core_assertions").dump};include Test::Unit::CoreAssertions
+  separated_runner #{res_c&.fileno}
+}
 #{line -= __LINE__; src}
-  class Test::Unit::Runner
-    @@stop_auto_run = true
-  end
 eom
         args = args.dup
         args.insert((Hash === args.first ? 1 : 0), "-w", "--disable=gems", *$:.map {|l| "-I#{l}"})
