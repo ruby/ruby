@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative "utils"
 
 if defined?(OpenSSL)
@@ -292,18 +292,31 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   def test_sysread_and_syswrite
     start_server { |port|
       server_connect(port) { |ssl|
-        str = "x" * 100 + "\n"
+        str = +("x" * 100 + "\n")
         ssl.syswrite(str)
         newstr = ssl.sysread(str.bytesize)
         assert_equal(str, newstr)
 
-        buf = ""
+        buf = String.new
         ssl.syswrite(str)
         assert_same buf, ssl.sysread(str.size, buf)
         assert_equal(str, buf)
       }
     }
   end
+
+  # TODO fix this test
+  # def test_sysread_nonblock_and_syswrite_nonblock_keywords
+  #   start_server do |port|
+  #     server_connect(port) do |ssl|
+  #       assert_warning("") do
+  #         ssl.send(:syswrite_nonblock, "12", exception: false)
+  #         ssl.send(:sysread_nonblock, 1, exception: false) rescue nil
+  #         ssl.send(:sysread_nonblock, 1, String.new, exception: false) rescue nil
+  #       end
+  #     end
+  #   end
+  # end
 
   def test_sync_close
     start_server do |port|
@@ -1769,8 +1782,8 @@ end
 
   def assert_handshake_error
     # different OpenSSL versions react differently when facing a SSL/TLS version
-    # that has been marked as forbidden, therefore either of these may be raised
-    assert_raise(OpenSSL::SSL::SSLError, Errno::ECONNRESET) {
+    # that has been marked as forbidden, therefore any of these may be raised
+    assert_raise(OpenSSL::SSL::SSLError, Errno::ECONNRESET, Errno::EPIPE) {
       yield
     }
   end

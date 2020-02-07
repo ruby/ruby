@@ -1,5 +1,5 @@
 # -*- coding: us-ascii -*-
-# frozen_string_literal: false
+# frozen_string_literal: true
 =begin
 = Info
   'OpenSSL for Ruby 2' project
@@ -19,7 +19,7 @@ dir_config("kerberos")
 
 Logging::message "=== OpenSSL for Ruby configurator ===\n"
 
-# Check with -Werror=deprecated-declarations if available
+# Add -Werror=deprecated-declarations to $warnflags if available
 OpenSSL.deprecated_warning_flag
 
 ##
@@ -185,6 +185,5 @@ have_func("SSL_CTX_set_post_handshake_auth")
 Logging::message "=== Checking done. ===\n"
 
 create_header
-OpenSSL.restore_warning_flag
 create_makefile("openssl")
 Logging::message "Done.\n"

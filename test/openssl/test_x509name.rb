@@ -1,5 +1,5 @@
 # coding: ASCII-8BIT
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative 'utils'
 
 if defined?(OpenSSL)
@@ -242,16 +242,15 @@ class OpenSSL::TestX509Name < OpenSSL::TestCase
       assert_match(/^multi-valued RDN is not supported: #{dn_r}/, ex.message)
     }
 
-    bad_dc = "exa#{"pm"}le"     # <- typo of "example"
     [
-      ["DC=org,DC=#{bad_dc},CN", "CN"],
+      ["DC=org,DC=exapmle,CN", "CN"],
       ["DC=org,DC=example,", ""],
-      ["DC=org,DC=#{bad_dc},CN=www.example.org;", "CN=www.example.org;"],
-      ["DC=org,DC=#{bad_dc},CN=#www.example.org", "CN=#www.example.org"],
-      ["DC=org,DC=#{bad_dc},CN=#777777.example.org", "CN=#777777.example.org"],
-      ["DC=org,DC=#{bad_dc},CN=\"www.example\".org", "CN=\"www.example\".org"],
-      ["DC=org,DC=#{bad_dc},CN=www.\"example.org\"", "CN=www.\"example.org\""],
-      ["DC=org,DC=#{bad_dc},CN=www.\"example\".org", "CN=www.\"example\".org"],
+      ["DC=org,DC=exapmle,CN=www.example.org;", "CN=www.example.org;"],
+      ["DC=org,DC=exapmle,CN=#www.example.org", "CN=#www.example.org"],
+      ["DC=org,DC=exapmle,CN=#777777.example.org", "CN=#777777.example.org"],
+      ["DC=org,DC=exapmle,CN=\"www.example\".org", "CN=\"www.example\".org"],
+      ["DC=org,DC=exapmle,CN=www.\"example.org\"", "CN=www.\"example.org\""],
+      ["DC=org,DC=exapmle,CN=www.\"example\".org", "CN=www.\"example\".org"],
     ].each{|dn, msg|
       ex = scanner.call(dn) rescue $!
       assert_match(/^malformed RDN: .*=>#{Regexp.escape(msg)}/, ex.message)
@@ -390,7 +389,7 @@ class OpenSSL::TestX509Name < OpenSSL::TestCase
     dn.each { |x| name.add_entry(*x) }
 
     str = name.to_utf8
-    expected = "CN=フー\\, バー,DC=ruby-lang,DC=org".force_encoding("UTF-8")
+    expected = String.new("CN=フー\\, バー,DC=ruby-lang,DC=org").force_encoding("UTF-8")
     assert_equal expected, str
     assert_equal Encoding.find("UTF-8"), str.encoding
 
