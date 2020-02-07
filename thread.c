@@ -488,7 +488,7 @@ static void
 unblock_function_clear(rb_thread_t *th)
 {
     rb_native_mutex_lock(&th->interrupt_lock);
-    th->unblock.func = NULL;
+    th->unblock.func = 0;
     rb_native_mutex_unlock(&th->interrupt_lock);
 }
 
@@ -961,7 +961,7 @@ thread_initialize(VALUE thread, VALUE args)
         }
     }
     else {
-        return thread_create_core(thread, args, NULL);
+        return thread_create_core(thread, args, 0);
     }
 }
 
@@ -4582,7 +4582,7 @@ thgroup_memsize(const void *ptr)
 
 static const rb_data_type_t thgroup_data_type = {
     "thgroup",
-    {NULL, RUBY_TYPED_DEFAULT_FREE, thgroup_memsize,},
+    {0, RUBY_TYPED_DEFAULT_FREE, thgroup_memsize,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 

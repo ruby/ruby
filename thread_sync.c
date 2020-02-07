@@ -78,7 +78,7 @@ static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th);
  *
  */
 
-#define mutex_mark NULL
+#define mutex_mark ((void(*)(void*))0)
 
 static size_t
 rb_mutex_num_waiting(rb_mutex_t *mutex)

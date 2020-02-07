@@ -98,7 +98,7 @@ rb_universal_newline = {
     2, /* max_output */
     asciicompat_converter, /* asciicompat_type */
     2, universal_newline_init, universal_newline_init, /* state_size, state_init, state_fini */
-    NULL, NULL, NULL, fun_so_universal_newline,
+    0, 0, 0, fun_so_universal_newline,
     universal_newline_finish
 };
 
@@ -110,8 +110,8 @@ rb_crlf_newline = {
     1, /* max_input */
     2, /* max_output */
     asciicompat_converter, /* asciicompat_type */
-    0, NULL, NULL, /* state_size, state_init, state_fini */
-    NULL, NULL, NULL, NULL
+    0, 0, 0, /* state_size, state_init, state_fini */
+    0, 0, 0, 0
 };
 
 static const rb_transcoder
@@ -122,8 +122,8 @@ rb_cr_newline = {
     1, /* max_input */
     1, /* max_output */
     asciicompat_converter, /* asciicompat_type */
-    0, NULL, NULL, /* state_size, state_init, state_fini */
-    NULL, NULL, NULL, NULL
+    0, 0, 0, /* state_size, state_init, state_fini */
+    0, 0, 0, 0
 };
 
 void

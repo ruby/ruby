@@ -895,9 +895,9 @@ static const rb_transcoder
     #{max_input}, /* max_input */
     #{max_output}, /* max_output */
     #{ascii_compatibility}, /* asciicompat_type */
-    0, NULL, NULL, /* state_size, state_init, state_fini */
-    NULL, NULL, NULL, NULL,
-    NULL, NULL, NULL
+    0, 0, 0, /* state_size, state_init, state_fini */
+    0, 0, 0, 0,
+    0, 0, 0
 };
 End
   TRANSCODE_GENERATED_TRANSCODER_CODE << transcoder_code

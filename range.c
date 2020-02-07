@@ -1569,7 +1569,7 @@ r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val)
         return TRUE;
     }
 
-    val_max = rb_rescue2(r_call_max, val, NULL, Qnil, rb_eTypeError, (VALUE)0);
+    val_max = rb_rescue2(r_call_max, val, 0, Qnil, rb_eTypeError, (VALUE)0);
     if (val_max == Qnil) return FALSE;
 
     return r_less(end, val_max) >= 0;

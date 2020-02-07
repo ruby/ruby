@@ -587,7 +587,7 @@ Init_native_thread(rb_thread_t *th)
         if (r) condattr_monotonic = NULL;
     }
 #endif
-    pthread_key_create(&ruby_native_thread_key, NULL);
+    pthread_key_create(&ruby_native_thread_key, 0);
     th->thread_id = pthread_self();
     fill_thread_id_str(th);
     native_thread_init(th);

@@ -1966,7 +1966,7 @@ Init_Encoding(void)
 	rb_ary_push(list, enc_new(enc_table.list[i].enc));
     }
 
-    rb_marshal_define_compat(rb_cEncoding, Qnil, NULL, enc_m_loader);
+    rb_marshal_define_compat(rb_cEncoding, Qnil, 0, enc_m_loader);
 }
 
 void

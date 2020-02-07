@@ -1721,7 +1721,7 @@ int
 st_foreach(st_table *tab, st_foreach_callback_func *func, st_data_t arg)
 {
     const struct functor f = { func, arg };
-    return st_general_foreach(tab, apply_functor, NULL, (st_data_t)&f, FALSE);
+    return st_general_foreach(tab, apply_functor, 0, (st_data_t)&f, FALSE);
 }
 
 /* See comments for function st_delete_safe.  */
@@ -1729,7 +1729,7 @@ int
 st_foreach_check(st_table *tab, st_foreach_check_callback_func *func, st_data_t arg,
                  st_data_t never ATTRIBUTE_UNUSED)
 {
-    return st_general_foreach(tab, func, NULL, arg, TRUE);
+    return st_general_foreach(tab, func, 0, arg, TRUE);
 }
 
 /* Set up array KEYS by at most SIZE keys of head table TAB entries.

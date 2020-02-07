@@ -1254,7 +1254,8 @@ static bool
 dln_incompatible_library_p(void *handle)
 {
     void *ex = dlsym(handle, EXTERNAL_PREFIX"ruby_xmalloc");
-    return ex && ex != ruby_xmalloc;
+    void *const fp = (void *)ruby_xmalloc;
+    return ex && ex != fp;
 }
 COMPILER_WARNING_POP
 #endif

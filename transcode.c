@@ -2925,7 +2925,7 @@ econv_memsize(const void *ptr)
 
 static const rb_data_type_t econv_data_type = {
     "econv",
-    {NULL, econv_free, econv_memsize,},
+    {0, econv_free, econv_memsize,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 

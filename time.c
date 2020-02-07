@@ -5314,8 +5314,8 @@ time_mload(VALUE time, VALUE str)
     get_attr(nano_num, {});
     get_attr(nano_den, {});
     get_attr(submicro, {});
-    get_attr(offset, (offset = rb_rescue(validate_utc_offset, offset, NULL, Qnil)));
-    get_attr(zone, (zone = rb_rescue(validate_zone_name, zone, NULL, Qnil)));
+    get_attr(offset, (offset = rb_rescue(validate_utc_offset, offset, 0, Qnil)));
+    get_attr(zone, (zone = rb_rescue(validate_zone_name, zone, 0, Qnil)));
     get_attr(year, {});
 
 #undef get_attr
