@@ -2393,7 +2393,10 @@ class TestModule < Test::Unit::TestCase
 
   def test_inspect_segfault
     bug_10282 = '[ruby-core:65214] [Bug #10282]'
-    assert_separately [], <<-RUBY
+    assert_separately [], "#{<<~"begin;"}\n#{<<~'end;'}"
+    bug_10282 = "#{bug_10282}"
+    begin;
+      line = __LINE__ + 2
       module ShallowInspect
         def shallow_inspect
           "foo"
@@ -2410,9 +2413,9 @@ class TestModule < Test::Unit::TestCase
 
       A.prepend InspectIsShallow
 
-      expect = "#<Method: A(ShallowInspect)#inspect(shallow_inspect)() -:7>"
-      assert_equal expect, A.new.method(:inspect).inspect, "#{bug_10282}"
-    RUBY
+      expect = "#<Method: A(ShallowInspect)#inspect(shallow_inspect)() -:#{line}>"
+      assert_equal expect, A.new.method(:inspect).inspect, bug_10282
+    end;
   end
 
   def test_define_method_with_unbound_method
