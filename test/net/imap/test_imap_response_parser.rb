@@ -236,7 +236,7 @@ EOF
     assert_equal("AUTH=PLAIN", response.data.last)
     response = parser.parse("* OK [CAPABILITY IMAP4rev1 SASL-IR 1234 NIL THIS+THAT + AUTH=PLAIN ID] IMAP4rev1 Hello\r\n")
     assert_equal("OK", response.name)
-    assert_equal(" IMAP4rev1 Hello", response.data.text)
+    assert_equal("IMAP4rev1 Hello", response.data.text)
     code = response.data.code
     assert_equal("CAPABILITY", code.name)
     assert_equal(
