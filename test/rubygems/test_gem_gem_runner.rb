@@ -8,6 +8,7 @@ class TestGemGemRunner < Gem::TestCase
 
     require 'rubygems/command'
     @orig_args = Gem::Command.build_args
+    @orig_specific_extra_args = Gem::Command.specific_extra_args_hash.dup
 
     require 'rubygems/gem_runner'
     @runner = Gem::GemRunner.new
@@ -17,6 +18,7 @@ class TestGemGemRunner < Gem::TestCase
     super
 
     Gem::Command.build_args = @orig_args
+    Gem::Command.specific_extra_args_hash = @orig_specific_extra_args
   end
 
   def test_do_configuration

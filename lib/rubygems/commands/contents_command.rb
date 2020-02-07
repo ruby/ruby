@@ -167,7 +167,7 @@ prefix or only the files that are requireable.
   end
 
   def spec_for(name)
-    spec = Gem::Specification.find_all_by_name(name, @version).last
+    spec = Gem::Specification.find_all_by_name(name, @version).first
 
     return spec if spec
 

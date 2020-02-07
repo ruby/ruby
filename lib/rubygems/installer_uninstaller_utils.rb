@@ -5,9 +5,9 @@
 
 module Gem::InstallerUninstallerUtils
 
-  def regenerate_plugins_for(spec)
+  def regenerate_plugins_for(spec, plugins_dir)
     spec.plugins.each do |plugin|
-      plugin_script_path = File.join Gem.plugins_dir, "#{spec.name}_plugin#{File.extname(plugin)}"
+      plugin_script_path = File.join plugins_dir, "#{spec.name}_plugin#{File.extname(plugin)}"
 
       File.open plugin_script_path, 'wb' do |file|
         file.puts "require '#{plugin}'"
@@ -17,8 +17,8 @@ module Gem::InstallerUninstallerUtils
     end
   end
 
-  def remove_plugins_for(spec)
-    FileUtils.rm_f Gem::Util.glob_files_in_dir("#{spec.name}#{Gem.plugin_suffix_pattern}", Gem.plugins_dir)
+  def remove_plugins_for(spec, plugins_dir)
+    FileUtils.rm_f Gem::Util.glob_files_in_dir("#{spec.name}#{Gem.plugin_suffix_pattern}", plugins_dir)
   end
 
 end

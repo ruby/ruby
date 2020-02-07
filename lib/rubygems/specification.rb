@@ -790,16 +790,6 @@ class Gem::Specification < Gem::BasicSpecification
   end
   private_class_method :map_stubs
 
-  def self.uniq_by(list, &block) # :nodoc:
-    list.uniq(&block)
-  end
-  private_class_method :uniq_by
-
-  def self.sort_by!(list, &block)
-    list.sort_by!(&block)
-  end
-  private_class_method :sort_by!
-
   def self.each_spec(dirs) # :nodoc:
     each_gemspec(dirs) do |path|
       spec = self.load path
@@ -814,7 +804,7 @@ class Gem::Specification < Gem::BasicSpecification
     @@stubs ||= begin
       pattern = "*.gemspec"
       stubs = Gem.loaded_specs.values + installed_stubs(dirs, pattern) + default_stubs(pattern)
-      stubs = uniq_by(stubs) { |stub| stub.full_name }
+      stubs = stubs.uniq { |stub| stub.full_name }
 
       _resort!(stubs)
       @@stubs_by_name = stubs.select { |s| Gem::Platform.match s.platform }.group_by(&:name)
@@ -847,7 +837,7 @@ class Gem::Specification < Gem::BasicSpecification
       stubs = Gem.loaded_specs.values +
         installed_stubs(dirs, pattern).select { |s| Gem::Platform.match s.platform } +
         default_stubs(pattern)
-      stubs = uniq_by(stubs) { |stub| stub.full_name }.group_by(&:name)
+      stubs = stubs.uniq { |stub| stub.full_name }.group_by(&:name)
       stubs.each_value { |v| _resort!(v) }
 
       @@stubs_by_name.merge! stubs

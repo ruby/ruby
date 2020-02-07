@@ -1016,16 +1016,16 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_ruby_escaping_spaces_in_path
-    with_bindir_and_exeext("C:/Ruby 1.8/bin", ".exe") do
-      ruby_install_name "ruby" do
+    with_clean_path_to_ruby do
+      with_rb_config_ruby("C:/Ruby 1.8/bin/ruby.exe") do
         assert_equal "\"C:/Ruby 1.8/bin/ruby.exe\"", Gem.ruby
       end
     end
   end
 
   def test_self_ruby_path_without_spaces
-    with_bindir_and_exeext("C:/Ruby18/bin", ".exe") do
-      ruby_install_name "ruby" do
+    with_clean_path_to_ruby do
+      with_rb_config_ruby("C:/Ruby18/bin/ruby.exe") do
         assert_equal "C:/Ruby18/bin/ruby.exe", Gem.ruby
       end
     end
@@ -1906,6 +1906,24 @@ You may need to `gem install -g` to install missing gems
     assert platform_defaults.is_a? Hash
   end
 
+  # Ensure that `Gem.source_date_epoch` is consistent even if
+  # $SOURCE_DATE_EPOCH has not been set.
+  def test_default_source_date_epoch_doesnt_change
+    old_epoch = ENV['SOURCE_DATE_EPOCH']
+    ENV['SOURCE_DATE_EPOCH'] = nil
+
+    # Unfortunately, there is no real way to test this aside from waiting
+    # enough for `Time.now.to_i` to change -- which is a whole second.
+    #
+    # Fortunately, we only need to do this once.
+    a = Gem.source_date_epoch
+    sleep 1
+    b = Gem.source_date_epoch
+    assert_equal a, b
+  ensure
+    ENV['SOURCE_DATE_EPOCH'] = old_epoch
+  end
+
   def ruby_install_name(name)
     with_clean_path_to_ruby do
       orig_RUBY_INSTALL_NAME = RbConfig::CONFIG['ruby_install_name']
@@ -1923,11 +1941,24 @@ You may need to `gem install -g` to install missing gems
     end
   end
 
-  def with_bindir_and_exeext(bindir, exeext)
-    bindir(bindir) do
-      exeext(exeext) do
-        yield
-      end
+  def with_rb_config_ruby(path)
+    rb_config_singleton_class = class << RbConfig; self; end
+    orig_path = RbConfig.ruby
+
+    redefine_method(rb_config_singleton_class, :ruby, path)
+
+    yield
+  ensure
+    redefine_method(rb_config_singleton_class, :ruby, orig_path)
+  end
+
+  def redefine_method(base, method, new_result)
+    if RUBY_VERSION >= "2.5"
+      base.alias_method(method, method)
+      base.define_method(method) { new_result }
+    else
+      base.send(:alias_method, method, method)
+      base.send(:define_method, method) { new_result }
     end
   end
 

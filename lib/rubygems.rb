@@ -190,6 +190,8 @@ module Gem
   @pre_reset_hooks      ||= []
   @post_reset_hooks     ||= []
 
+  @default_source_date_epoch = nil
+
   ##
   # Try to activate a gem containing +path+. Returns true if
   # activation succeeded or wasn't needed because it was already
@@ -317,6 +319,13 @@ module Gem
   end
 
   ##
+  # The path were rubygems plugins are to be installed.
+
+  def self.plugindir(install_dir=Gem.dir)
+    File.join install_dir, 'plugins'
+  end
+
+  ##
   # Reset the +dir+ and +path+ values.  The next time +dir+ or +path+
   # is requested, the values will be calculated from scratch.  This is
   # mainly used by the unit tests to provide test isolation.
@@ -423,10 +432,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     paths.spec_cache_dir
   end
 
-  def self.plugins_dir
-    File.join(dir, "plugins")
-  end
-
   ##
   # Quietly ensure the Gem directory +dir+ contains all the proper
   # subdirectories.  If we can't create a directory due to a permission
@@ -466,7 +471,10 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     subdirs.each do |name|
       subdir = File.join dir, name
       next if File.exist? subdir
-      FileUtils.mkdir_p subdir, **options rescue nil
+      begin
+        FileUtils.mkdir_p subdir, **options
+      rescue Errno::EACCES
+      end
     end
   ensure
     File.umask old_umask
@@ -863,8 +871,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   def self.ruby
     if @ruby.nil?
-      @ruby = File.join(RbConfig::CONFIG['bindir'],
-                        "#{RbConfig::CONFIG['ruby_install_name']}#{RbConfig::CONFIG['EXEEXT']}")
+      @ruby = RbConfig.ruby
 
       @ruby = "\"#{@ruby}\"" if @ruby =~ /\s/
     end
@@ -1099,7 +1106,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Find rubygems plugin files in the standard location and load them
 
   def self.load_plugins
-    load_plugin_files Gem::Util.glob_files_in_dir("*#{Gem.plugin_suffix_pattern}", plugins_dir)
+    load_plugin_files Gem::Util.glob_files_in_dir("*#{Gem.plugin_suffix_pattern}", plugindir)
   end
 
   ##
@@ -1182,20 +1189,43 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
-  # The SOURCE_DATE_EPOCH environment variable (or, if that's not set, the current time), converted to Time object.
-  # This is used throughout RubyGems for enabling reproducible builds.
+  # If the SOURCE_DATE_EPOCH environment variable is set, returns it's value.
+  # Otherwise, returns the time that `Gem.source_date_epoch_string` was
+  # first called in the same format as SOURCE_DATE_EPOCH.
   #
-  # If it is not set as an environment variable already, this also sets it.
+  # NOTE(@duckinator): The implementation is a tad weird because we want to:
+  #   1. Make builds reproducible by default, by having this function always
+  #      return the same result during a given run.
+  #   2. Allow changing ENV['SOURCE_DATE_EPOCH'] at runtime, since multiple
+  #      tests that set this variable will be run in a single process.
+  #
+  # If you simplify this function and a lot of tests fail, that is likely
+  # due to #2 above.
   #
   # Details on SOURCE_DATE_EPOCH:
   # https://reproducible-builds.org/specs/source-date-epoch/
 
-  def self.source_date_epoch
-    if ENV["SOURCE_DATE_EPOCH"].nil? || ENV["SOURCE_DATE_EPOCH"].empty?
-      ENV["SOURCE_DATE_EPOCH"] = Time.now.to_i.to_s
-    end
+  def self.source_date_epoch_string
+    # The value used if $SOURCE_DATE_EPOCH is not set.
+    @default_source_date_epoch ||= Time.now.to_i.to_s
 
-    Time.at(ENV["SOURCE_DATE_EPOCH"].to_i).utc.freeze
+    specified_epoch = ENV["SOURCE_DATE_EPOCH"]
+
+    # If it's empty or just whitespace, treat it like it wasn't set at all.
+    specified_epoch = nil if !specified_epoch.nil? && specified_epoch.strip.empty?
+
+    epoch = specified_epoch || @default_source_date_epoch
+
+    epoch.strip
+  end
+
+  ##
+  # Returns the value of Gem.source_date_epoch_string, as a Time object.
+  #
+  # This is used throughout RubyGems for enabling reproducible builds.
+
+  def self.source_date_epoch
+    Time.at(self.source_date_epoch_string.to_i).utc.freeze
   end
 
   # FIX: Almost everywhere else we use the `def self.` way of defining class

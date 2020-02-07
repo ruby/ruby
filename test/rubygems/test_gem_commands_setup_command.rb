@@ -107,7 +107,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     end
     install_gem gem
 
-    File.join Gem.plugins_dir, "#{name}_plugin.rb"
+    File.join Gem.plugindir, "#{name}_plugin.rb"
   end
 
   def test_execute_regenerate_binstubs
@@ -160,6 +160,18 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     assert_equal "I changed it!\n", File.read(gem_plugin_path)
   end
 
+  def test_execute_regenerate_plugins_creates_plugins_dir_if_not_there
+    gem_plugin_path = gem_install_with_plugin 'a'
+
+    # Simulate gem installed with an older rubygems without a plugins layout
+    FileUtils.rm_rf Gem.plugindir
+
+    @cmd.options[:document] = []
+    @cmd.execute
+
+    assert_match %r{\Arequire}, File.read(gem_plugin_path)
+  end
+
   def test_execute_informs_about_installed_executables
     use_ui @ui do
       @cmd.execute
@@ -184,11 +196,15 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
     ruby_exec = sprintf Gem.default_exec_format, 'ruby'
 
-    bin_env = win_platform? ? "" : %w(/usr/bin/env /bin/env).find {|f| File.executable?(f) }
-
-    assert_match %r%\A#!#{bin_env}\s*#{ruby_exec}%, File.read(default_gem_bin_path)
-    assert_match %r%\A#!#{bin_env}\s*#{ruby_exec}%, File.read(default_bundle_bin_path)
-    assert_match %r%\A#!#{bin_env}\s*#{ruby_exec}%, File.read(gem_bin_path)
+    if Gem.win_platform?
+      assert_match %r%\A#!\s*#{ruby_exec}%, File.read(default_gem_bin_path)
+      assert_match %r%\A#!\s*#{ruby_exec}%, File.read(default_bundle_bin_path)
+      assert_match %r%\A#!\s*#{ruby_exec}%, File.read(gem_bin_path)
+    else
+      assert_match %r%\A#!/usr/bin/env #{ruby_exec}%, File.read(default_gem_bin_path)
+      assert_match %r%\A#!/usr/bin/env #{ruby_exec}%, File.read(default_bundle_bin_path)
+      assert_match %r%\A#!/usr/bin/env #{ruby_exec}%, File.read(gem_bin_path)
+    end
   end
 
   def test_pem_files_in

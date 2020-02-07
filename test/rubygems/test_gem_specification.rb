@@ -83,6 +83,11 @@ end
   def setup
     super
 
+    # Setting `@default_source_date_epoch` to `nil` effectively resets the
+    # value used for `Gem.source_date_epoch` whenever `$SOURCE_DATE_EPOCH`
+    # is not set.
+    Gem.instance_variable_set(:'@default_source_date_epoch', nil)
+
     @a1 = util_spec 'a', '1' do |s|
       s.executable = 'exec'
       s.test_file = 'test/suite.rb'

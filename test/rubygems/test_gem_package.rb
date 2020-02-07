@@ -106,7 +106,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_equal expected, YAML.load(checksums)
   end
 
-  def test_build_time_source_date_epoch
+  def test_build_time_uses_source_date_epoch
     epoch = ENV["SOURCE_DATE_EPOCH"]
     ENV["SOURCE_DATE_EPOCH"] = "123456789"
 
@@ -124,11 +124,9 @@ class TestGemPackage < Gem::Package::TarTestCase
     ENV["SOURCE_DATE_EPOCH"] = epoch
   end
 
-  def test_build_time_source_date_epoch_automatically_set
+  def test_build_time_without_source_date_epoch
     epoch = ENV["SOURCE_DATE_EPOCH"]
     ENV["SOURCE_DATE_EPOCH"] = nil
-
-    start_time = Time.now.utc.to_i
 
     spec = Gem::Specification.new 'build', '1'
     spec.summary = 'build'
@@ -138,14 +136,11 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     package = Gem::Package.new spec.file_name
 
-    end_time = Time.now.utc.to_i
-
     assert_kind_of Time, package.build_time
 
     build_time = package.build_time.to_i
 
-    assert_operator(start_time, :<=, build_time)
-    assert_operator(build_time, :<=, end_time)
+    assert_equal Gem.source_date_epoch.to_i, build_time
   ensure
     ENV["SOURCE_DATE_EPOCH"] = epoch
   end

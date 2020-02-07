@@ -897,8 +897,6 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_ssl_client_cert_auth_connection
-    skip 'openssl in jruby fails' if java_platform?
-
     ssl_server = self.class.start_ssl_server({
       :SSLVerifyClient =>
         OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT})
