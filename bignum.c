@@ -3611,7 +3611,7 @@ rb_integer_pack(VALUE val, void *words, size_t numwords, size_t wordsize, size_t
 }
 
 /*
- * Import an integer into a buffer.
+ * Import an integer from a buffer.
  *
  * [words] buffer to import.
  * [numwords] the size of given buffer as number of words.
