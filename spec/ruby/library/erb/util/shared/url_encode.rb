@@ -6,16 +6,8 @@ describe :erb_util_url_encode, shared: true do
     ERB::Util.__send__(@method, input).should == expected
   end
 
-  ruby_version_is ""..."2.5" do
-    it "escapes tilde" do
-      ERB::Util.__send__(@method, "~").should == "%7E"
-    end
-  end
-
-  ruby_version_is "2.5" do
-    it "does not escape tilde" do
-      ERB::Util.__send__(@method, "~").should == "~"
-    end
+  it "does not escape tilde" do
+    ERB::Util.__send__(@method, "~").should == "~"
   end
 
   it "encode unicode string" do

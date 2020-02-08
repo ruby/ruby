@@ -12,15 +12,7 @@ describe "CGI.escape" do
     CGI.escape(input).should == expected
   end
 
-  ruby_version_is ""..."2.5" do
-    it "escapes tilde" do
-      CGI.escape("~").should == "%7E"
-    end
-  end
-
-  ruby_version_is "2.5" do
-    it "does not escape tilde" do
-      CGI.escape("~").should == "~"
-    end
+  it "does not escape tilde" do
+    CGI.escape("~").should == "~"
   end
 end

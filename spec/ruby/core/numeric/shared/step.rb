@@ -224,33 +224,25 @@ describe :numeric_step, :shared => true do
   end
 
   describe "when step is a String" do
-    error = nil
-    ruby_version_is "2.4"..."2.5" do
-      error = TypeError
-    end
-    ruby_version_is "2.5" do
-      error = ArgumentError
-    end
-
     describe "with self and stop as Fixnums" do
-      it "raises an #{error} when step is a numeric representation" do
-        -> { @step.call(1, 5, "1") {} }.should raise_error(error)
-        -> { @step.call(1, 5, "0.1") {} }.should raise_error(error)
-        -> { @step.call(1, 5, "1/3") {} }.should raise_error(error)
+      it "raises an ArgumentError when step is a numeric representation" do
+        -> { @step.call(1, 5, "1") {} }.should raise_error(ArgumentError)
+        -> { @step.call(1, 5, "0.1") {} }.should raise_error(ArgumentError)
+        -> { @step.call(1, 5, "1/3") {} }.should raise_error(ArgumentError)
       end
-      it "raises an #{error} with step as an alphanumeric string" do
-        -> { @step.call(1, 5, "foo") {} }.should raise_error(error)
+      it "raises an ArgumentError with step as an alphanumeric string" do
+        -> { @step.call(1, 5, "foo") {} }.should raise_error(ArgumentError)
       end
     end
 
     describe "with self and stop as Floats" do
-      it "raises an #{error} when step is a numeric representation" do
-        -> { @step.call(1.1, 5.1, "1") {} }.should raise_error(error)
-        -> { @step.call(1.1, 5.1, "0.1") {} }.should raise_error(error)
-        -> { @step.call(1.1, 5.1, "1/3") {} }.should raise_error(error)
+      it "raises an ArgumentError when step is a numeric representation" do
+        -> { @step.call(1.1, 5.1, "1") {} }.should raise_error(ArgumentError)
+        -> { @step.call(1.1, 5.1, "0.1") {} }.should raise_error(ArgumentError)
+        -> { @step.call(1.1, 5.1, "1/3") {} }.should raise_error(ArgumentError)
       end
-      it "raises an #{error} with step as an alphanumeric string" do
-        -> { @step.call(1.1, 5.1, "foo") {} }.should raise_error(error)
+      it "raises an ArgumentError with step as an alphanumeric string" do
+        -> { @step.call(1.1, 5.1, "foo") {} }.should raise_error(ArgumentError)
       end
     end
   end
@@ -302,33 +294,25 @@ describe :numeric_step, :shared => true do
     describe "returned Enumerator" do
       describe "size" do
         describe "when step is a String" do
-          error = nil
-          ruby_version_is "2.4"..."2.5" do
-            error = TypeError
-          end
-          ruby_version_is "2.5" do
-            error = ArgumentError
-          end
-
           describe "with self and stop as Fixnums" do
-            it "raises an #{error} when step is a numeric representation" do
-              -> { @step.call(1, 5, "1").size }.should raise_error(error)
-              -> { @step.call(1, 5, "0.1").size }.should raise_error(error)
-              -> { @step.call(1, 5, "1/3").size }.should raise_error(error)
+            it "raises an ArgumentError when step is a numeric representation" do
+              -> { @step.call(1, 5, "1").size }.should raise_error(ArgumentError)
+              -> { @step.call(1, 5, "0.1").size }.should raise_error(ArgumentError)
+              -> { @step.call(1, 5, "1/3").size }.should raise_error(ArgumentError)
             end
-            it "raises an #{error} with step as an alphanumeric string" do
-              -> { @step.call(1, 5, "foo").size }.should raise_error(error)
+            it "raises an ArgumentError with step as an alphanumeric string" do
+              -> { @step.call(1, 5, "foo").size }.should raise_error(ArgumentError)
             end
           end
 
           describe "with self and stop as Floats" do
-            it "raises an #{error} when step is a numeric representation" do
-              -> { @step.call(1.1, 5.1, "1").size }.should raise_error(error)
-              -> { @step.call(1.1, 5.1, "0.1").size }.should raise_error(error)
-              -> { @step.call(1.1, 5.1, "1/3").size }.should raise_error(error)
+            it "raises an ArgumentError when step is a numeric representation" do
+              -> { @step.call(1.1, 5.1, "1").size }.should raise_error(ArgumentError)
+              -> { @step.call(1.1, 5.1, "0.1").size }.should raise_error(ArgumentError)
+              -> { @step.call(1.1, 5.1, "1/3").size }.should raise_error(ArgumentError)
             end
-            it "raises an #{error} with step as an alphanumeric string" do
-              -> { @step.call(1.1, 5.1, "foo").size }.should raise_error(error)
+            it "raises an ArgumentError with step as an alphanumeric string" do
+              -> { @step.call(1.1, 5.1, "foo").size }.should raise_error(ArgumentError)
             end
           end
         end

@@ -51,16 +51,14 @@ describe "Warning.warn" do
     end
   end
 
-  ruby_version_is "2.5" do
-    it "is called by Kernel.warn" do
-      Warning.should_receive(:warn).with("Chunky bacon!\n")
-      verbose = $VERBOSE
-      $VERBOSE = false
-      begin
-        Kernel.warn("Chunky bacon!")
-      ensure
-        $VERBOSE = verbose
-      end
+  it "is called by Kernel.warn" do
+    Warning.should_receive(:warn).with("Chunky bacon!\n")
+    verbose = $VERBOSE
+    $VERBOSE = false
+    begin
+      Kernel.warn("Chunky bacon!")
+    ensure
+      $VERBOSE = verbose
     end
   end
 end

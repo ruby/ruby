@@ -87,71 +87,69 @@ describe "Kernel#warn" do
     }.should output(nil, "to_s called\n")
   end
 
-  ruby_version_is "2.5" do
-    describe ":uplevel keyword argument" do
-      before :each do
-        $VERBOSE = true
-      end
-
-      it "prepends a message with specified line from the backtrace" do
-        w = KernelSpecs::WarnInNestedCall.new
-
-        -> { w.f4("foo", 0) }.should output(nil, %r|core/kernel/fixtures/classes.rb:#{w.warn_call_lineno}: warning: foo|)
-        -> { w.f4("foo", 1) }.should output(nil, %r|core/kernel/fixtures/classes.rb:#{w.f1_call_lineno}: warning: foo|)
-        -> { w.f4("foo", 2) }.should output(nil, %r|core/kernel/fixtures/classes.rb:#{w.f2_call_lineno}: warning: foo|)
-        -> { w.f4("foo", 3) }.should output(nil, %r|core/kernel/fixtures/classes.rb:#{w.f3_call_lineno}: warning: foo|)
-      end
-
-      it "converts first arg using to_s" do
-        w = KernelSpecs::WarnInNestedCall.new
-
-        -> { w.f4(false, 0) }.should output(nil, %r|core/kernel/fixtures/classes.rb:#{w.warn_call_lineno}: warning: false|)
-        -> { w.f4(nil, 1) }.should output(nil, %r|core/kernel/fixtures/classes.rb:#{w.f1_call_lineno}: warning: |)
-        obj = mock("obj")
-        obj.should_receive(:to_s).and_return("to_s called")
-        -> { w.f4(obj, 2) }.should output(nil, %r|core/kernel/fixtures/classes.rb:#{w.f2_call_lineno}: warning: to_s called|)
-      end
-
-      it "does not prepend caller information if the uplevel argument is too large" do
-        w = KernelSpecs::WarnInNestedCall.new
-        -> { w.f4("foo", 100) }.should output(nil, "warning: foo\n")
-      end
-
-      it "prepends even if a message is empty or nil" do
-        w = KernelSpecs::WarnInNestedCall.new
-
-        -> { w.f4("", 0) }.should output(nil, %r|core/kernel/fixtures/classes.rb:#{w.warn_call_lineno}: warning: \n$|)
-        -> { w.f4(nil, 0) }.should output(nil, %r|core/kernel/fixtures/classes.rb:#{w.warn_call_lineno}: warning: \n$|)
-      end
-
-      it "converts value to Integer" do
-        w = KernelSpecs::WarnInNestedCall.new
-
-        -> { w.f4(0.1) }.should output(nil, %r|classes.rb:#{w.warn_call_lineno}:|)
-        -> { w.f4(Rational(1, 2)) }.should output(nil, %r|classes.rb:#{w.warn_call_lineno}:|)
-      end
-
-      it "raises ArgumentError if passed negative value" do
-        -> { warn "", uplevel: -2 }.should raise_error(ArgumentError)
-        -> { warn "", uplevel: -100 }.should raise_error(ArgumentError)
-      end
-
-      it "raises ArgumentError if passed -1" do
-        -> { warn "", uplevel: -1 }.should raise_error(ArgumentError)
-      end
-
-      it "raises TypeError if passed not Integer" do
-        -> { warn "", uplevel: "" }.should raise_error(TypeError)
-        -> { warn "", uplevel: [] }.should raise_error(TypeError)
-        -> { warn "", uplevel: {} }.should raise_error(TypeError)
-        -> { warn "", uplevel: Object.new }.should raise_error(TypeError)
-      end
+  describe ":uplevel keyword argument" do
+    before :each do
+      $VERBOSE = true
     end
 
-    it "treats empty hash as no keyword argument" do
-      h = {}
-      -> { warn(**h) }.should_not complain(verbose: true)
-      -> { warn('foo', **h) }.should complain("foo\n")
+    it "prepends a message with specified line from the backtrace" do
+      w = KernelSpecs::WarnInNestedCall.new
+
+      -> { w.f4("foo", 0) }.should output(nil, %r|core/kernel/fixtures/classes.rb:#{w.warn_call_lineno}: warning: foo|)
+      -> { w.f4("foo", 1) }.should output(nil, %r|core/kernel/fixtures/classes.rb:#{w.f1_call_lineno}: warning: foo|)
+      -> { w.f4("foo", 2) }.should output(nil, %r|core/kernel/fixtures/classes.rb:#{w.f2_call_lineno}: warning: foo|)
+      -> { w.f4("foo", 3) }.should output(nil, %r|core/kernel/fixtures/classes.rb:#{w.f3_call_lineno}: warning: foo|)
     end
+
+    it "converts first arg using to_s" do
+      w = KernelSpecs::WarnInNestedCall.new
+
+      -> { w.f4(false, 0) }.should output(nil, %r|core/kernel/fixtures/classes.rb:#{w.warn_call_lineno}: warning: false|)
+      -> { w.f4(nil, 1) }.should output(nil, %r|core/kernel/fixtures/classes.rb:#{w.f1_call_lineno}: warning: |)
+      obj = mock("obj")
+      obj.should_receive(:to_s).and_return("to_s called")
+      -> { w.f4(obj, 2) }.should output(nil, %r|core/kernel/fixtures/classes.rb:#{w.f2_call_lineno}: warning: to_s called|)
+    end
+
+    it "does not prepend caller information if the uplevel argument is too large" do
+      w = KernelSpecs::WarnInNestedCall.new
+      -> { w.f4("foo", 100) }.should output(nil, "warning: foo\n")
+    end
+
+    it "prepends even if a message is empty or nil" do
+      w = KernelSpecs::WarnInNestedCall.new
+
+      -> { w.f4("", 0) }.should output(nil, %r|core/kernel/fixtures/classes.rb:#{w.warn_call_lineno}: warning: \n$|)
+      -> { w.f4(nil, 0) }.should output(nil, %r|core/kernel/fixtures/classes.rb:#{w.warn_call_lineno}: warning: \n$|)
+    end
+
+    it "converts value to Integer" do
+      w = KernelSpecs::WarnInNestedCall.new
+
+      -> { w.f4(0.1) }.should output(nil, %r|classes.rb:#{w.warn_call_lineno}:|)
+      -> { w.f4(Rational(1, 2)) }.should output(nil, %r|classes.rb:#{w.warn_call_lineno}:|)
+    end
+
+    it "raises ArgumentError if passed negative value" do
+      -> { warn "", uplevel: -2 }.should raise_error(ArgumentError)
+      -> { warn "", uplevel: -100 }.should raise_error(ArgumentError)
+    end
+
+    it "raises ArgumentError if passed -1" do
+      -> { warn "", uplevel: -1 }.should raise_error(ArgumentError)
+    end
+
+    it "raises TypeError if passed not Integer" do
+      -> { warn "", uplevel: "" }.should raise_error(TypeError)
+      -> { warn "", uplevel: [] }.should raise_error(TypeError)
+      -> { warn "", uplevel: {} }.should raise_error(TypeError)
+      -> { warn "", uplevel: Object.new }.should raise_error(TypeError)
+    end
+  end
+
+  it "treats empty hash as no keyword argument" do
+    h = {}
+    -> { warn(**h) }.should_not complain(verbose: true)
+    -> { warn('foo', **h) }.should complain("foo\n")
   end
 end

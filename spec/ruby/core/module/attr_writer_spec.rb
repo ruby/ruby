@@ -58,14 +58,7 @@ describe "Module#attr_writer" do
     -> { c.new.foo=1 }.should raise_error(NoMethodError)
   end
 
-  ruby_version_is ''...'2.5' do
-    it "is a private method" do
-      Module.should have_private_instance_method(:attr_writer, false)
-    end
-  end
-  ruby_version_is '2.5' do
-    it "is a public method" do
-      Module.should have_public_instance_method(:attr_writer, false)
-    end
+  it "is a public method" do
+    Module.should have_public_instance_method(:attr_writer, false)
   end
 end

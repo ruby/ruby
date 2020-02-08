@@ -1,20 +1,6 @@
 require 'mspec/guards/version'
 
 if RUBY_ENGINE == "ruby"
-  ruby_version_is "2.4"..."2.5" do
-    # Kernel#warn does not delegate to Warning.warn in 2.4
-    module Kernel
-      remove_method :warn
-      def warn(*messages)
-        return if $VERBOSE == nil or messages.empty?
-        msg = messages.join("\n")
-        msg += "\n" unless msg.end_with?("\n")
-        Warning.warn(msg)
-      end
-      private :warn
-    end
-  end
-
   def Warning.warn(message)
     # Suppress any warning inside the method to prevent recursion
     verbose = $VERBOSE

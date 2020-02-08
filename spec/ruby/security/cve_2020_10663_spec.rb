@@ -18,7 +18,6 @@ module JSONSpecs
 end
 
 guard -> {
-  ruby_version_is "2.4.10"..."2.5.0" or
   ruby_version_is "2.5.8"..."2.6.0" or
   ruby_version_is "2.6.6" or
   JSON.const_defined?(:Pure) or

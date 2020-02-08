@@ -425,18 +425,8 @@ end
 
 describe "top-level constant lookup" do
   context "on a class" do
-    ruby_version_is "" ... "2.5" do
-      it "searches Object successfully after searching other scopes" do
-        -> {
-          String::Hash.should == Hash
-        }.should complain(/toplevel constant Hash referenced by/)
-      end
-    end
-
-    ruby_version_is "2.5" do
-      it "does not search Object after searching other scopes" do
-        -> { String::Hash }.should raise_error(NameError)
-      end
+    it "does not search Object after searching other scopes" do
+      -> { String::Hash }.should raise_error(NameError)
     end
   end
 

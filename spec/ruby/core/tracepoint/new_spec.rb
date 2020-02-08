@@ -55,10 +55,8 @@ describe 'TracePoint.new' do
     -> { TracePoint.new(o) {}}.should raise_error(TypeError)
   end
 
-  ruby_version_is "2.5" do
-    it 'expects to be called with a block' do
-      -> { TracePoint.new(:line) }.should raise_error(ArgumentError, "must be called with a block")
-    end
+  it 'expects to be called with a block' do
+    -> { TracePoint.new(:line) }.should raise_error(ArgumentError, "must be called with a block")
   end
 
   it "raises a Argument error when the given argument doesn't match an event name" do

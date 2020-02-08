@@ -13,25 +13,23 @@ describe "Process.times" do
     Process.times.utime.should > user
   end
 
-  ruby_version_is "2.5" do
-    platform_is_not :windows do
-      it "uses getrusage when available to improve precision beyond milliseconds" do
-        max = 10_000
-        has_getrusage = max.times.find do
-          time = Process.clock_gettime(:GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID)
-          ('%.6f' % time).end_with?('000')
-        end
-        unless has_getrusage
-          skip "getrusage is not supported on this environment"
-        end
-
-        found = (max * 100).times.find do
-          time = Process.times.utime
-          ('%.6f' % time).end_with?('000')
-        end
-
-        found.should_not == nil
+  platform_is_not :windows do
+    it "uses getrusage when available to improve precision beyond milliseconds" do
+      max = 10_000
+      has_getrusage = max.times.find do
+        time = Process.clock_gettime(:GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID)
+        ('%.6f' % time).end_with?('000')
       end
+      unless has_getrusage
+        skip "getrusage is not supported on this environment"
+      end
+
+      found = (max * 100).times.find do
+        time = Process.times.utime
+        ('%.6f' % time).end_with?('000')
+      end
+
+      found.should_not == nil
     end
   end
 end

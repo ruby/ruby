@@ -109,20 +109,10 @@ describe "Array#flatten" do
       -> { [@obj].flatten }.should raise_error(TypeError)
     end
 
-    ruby_version_is ""..."2.5" do
-      it "calls respond_to_missing?(:to_ary, false) to try coercing" do
-        def @obj.respond_to_missing?(*args) ScratchPad << args; false end
-        [@obj].flatten.should == [@obj]
-        ScratchPad.recorded.should == [[:to_ary, false]]
-      end
-    end
-
-    ruby_version_is "2.5" do
-      it "calls respond_to_missing?(:to_ary, true) to try coercing" do
-        def @obj.respond_to_missing?(*args) ScratchPad << args; false end
-        [@obj].flatten.should == [@obj]
-        ScratchPad.recorded.should == [[:to_ary, true]]
-      end
+    it "calls respond_to_missing?(:to_ary, true) to try coercing" do
+      def @obj.respond_to_missing?(*args) ScratchPad << args; false end
+      [@obj].flatten.should == [@obj]
+      ScratchPad.recorded.should == [[:to_ary, true]]
     end
 
     it "does not call #to_ary if not defined when #respond_to_missing? returns false" do

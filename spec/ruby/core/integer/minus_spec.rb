@@ -2,13 +2,7 @@ require_relative '../../spec_helper'
 require_relative 'shared/arithmetic_coerce'
 
 describe "Integer#-" do
-  ruby_version_is "2.4"..."2.5" do
-    it_behaves_like :integer_arithmetic_coerce_rescue, :-
-  end
-
-  ruby_version_is "2.5" do
-    it_behaves_like :integer_arithmetic_coerce_not_rescue, :-
-  end
+  it_behaves_like :integer_arithmetic_coerce_not_rescue, :-
 
   context "fixnum" do
     it "returns self minus the given Integer" do

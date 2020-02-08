@@ -25,14 +25,12 @@ describe "Struct#hash" do
     s1.hash.should_not == s2.hash
   end
 
-  ruby_version_is "2.5" do
-    it "returns different hashes for structs with different values when using keyword_init: true" do
-      key = :"1 non symbol member"
-      struct_class = Struct.new(key, keyword_init: true)
-      t1 = struct_class.new(key => 1)
-      t2 = struct_class.new(key => 2)
-      t1.hash.should_not == t2.hash
-    end
+  it "returns different hashes for structs with different values when using keyword_init: true" do
+    key = :"1 non symbol member"
+    struct_class = Struct.new(key, keyword_init: true)
+    t1 = struct_class.new(key => 1)
+    t2 = struct_class.new(key => 2)
+    t1.hash.should_not == t2.hash
   end
 
   it "allows for overriding methods in an included module" do

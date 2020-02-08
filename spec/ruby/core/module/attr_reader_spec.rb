@@ -58,14 +58,7 @@ describe "Module#attr_reader" do
     -> { c.new.foo }.should raise_error(NoMethodError)
   end
 
-  ruby_version_is ''...'2.5' do
-    it "is a private method" do
-      Module.should have_private_instance_method(:attr_reader, false)
-    end
-  end
-  ruby_version_is '2.5' do
-    it "is a public method" do
-      Module.should have_public_instance_method(:attr_reader, false)
-    end
+  it "is a public method" do
+    Module.should have_public_instance_method(:attr_reader, false)
   end
 end
