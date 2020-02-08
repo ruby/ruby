@@ -351,12 +351,9 @@ describe "A lambda expression 'lambda { ... }'" do
     lambda { lambda }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is "2.5" do
-    it "may include a rescue clause" do
-      eval('lambda do raise ArgumentError; rescue ArgumentError; 7; end').should be_an_instance_of(Proc)
-    end
+  it "may include a rescue clause" do
+    eval('lambda do raise ArgumentError; rescue ArgumentError; 7; end').should be_an_instance_of(Proc)
   end
-
 
   context "with an implicit block" do
     before do

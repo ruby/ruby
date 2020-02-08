@@ -39,8 +39,8 @@ class MSpecScript
   end
 
   def initialize
-    ruby_version_is ""..."2.4" do
-      abort "MSpec needs Ruby 2.4 or more recent"
+    ruby_version_is ""..."2.5" do
+      abort "MSpec needs Ruby 2.5 or more recent"
     end
 
     config[:formatter] = nil

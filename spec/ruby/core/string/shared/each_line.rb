@@ -54,28 +54,14 @@ describe :string_each_line, shared: true do
     a.should == ["one\ntwo\r\nthree"]
   end
 
-  ruby_version_is ''...'2.5' do
-    it "yields paragraphs (broken by 2 or more successive newlines) when passed ''" do
-      a = []
-      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\n".send(@method, '') { |s| a << s }
-      a.should == ["hello\nworld\n\n\n", "and\nuniverse\n\n\n\n\n"]
+  it "yields paragraphs (broken by 2 or more successive newlines) when passed '' and replaces multiple newlines with only two ones" do
+    a = []
+    "hello\nworld\n\n\nand\nuniverse\n\n\n\n\n".send(@method, '') { |s| a << s }
+    a.should == ["hello\nworld\n\n", "and\nuniverse\n\n"]
 
-      a = []
-      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\ndog".send(@method, '') { |s| a << s }
-      a.should == ["hello\nworld\n\n\n", "and\nuniverse\n\n\n\n\n", "dog"]
-    end
-  end
-
-  ruby_version_is '2.5' do
-    it "yields paragraphs (broken by 2 or more successive newlines) when passed '' and replaces multiple newlines with only two ones" do
-      a = []
-      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\n".send(@method, '') { |s| a << s }
-      a.should == ["hello\nworld\n\n", "and\nuniverse\n\n"]
-
-      a = []
-      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\ndog".send(@method, '') { |s| a << s }
-      a.should == ["hello\nworld\n\n", "and\nuniverse\n\n", "dog"]
-    end
+    a = []
+    "hello\nworld\n\n\nand\nuniverse\n\n\n\n\ndog".send(@method, '') { |s| a << s }
+    a.should == ["hello\nworld\n\n", "and\nuniverse\n\n", "dog"]
   end
 
   describe "uses $/" do

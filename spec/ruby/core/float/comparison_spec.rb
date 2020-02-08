@@ -33,19 +33,17 @@ describe "Float#<=>" do
     coercible.call_count.should == 3
   end
 
-  ruby_version_is "2.5" do
-    it "raises TypeError when #coerce misbehaves" do
-      klass = Class.new do
-        def coerce(other)
-          :incorrect
-        end
+  it "raises TypeError when #coerce misbehaves" do
+    klass = Class.new do
+      def coerce(other)
+        :incorrect
       end
-
-      bad_coercible = klass.new
-      -> {
-        4.2 <=> bad_coercible
-      }.should raise_error(TypeError, "coerce must return [x, y]")
     end
+
+    bad_coercible = klass.new
+    -> {
+      4.2 <=> bad_coercible
+    }.should raise_error(TypeError, "coerce must return [x, y]")
   end
 
   # The 4 tests below are taken from matz's revision 23730 for Ruby trunk

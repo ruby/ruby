@@ -7,9 +7,7 @@ describe "Data" do
     end
   end
 
-  ruby_version_is "2.5" do
-    it "is deprecated" do
-      -> { Data }.should complain(/constant ::Data is deprecated/)
-    end
+  it "is deprecated" do
+    -> { Data }.should complain(/constant ::Data is deprecated/)
   end
 end

@@ -251,15 +251,14 @@ describe "An ensure block inside {} block" do
   end
 end
 
-ruby_version_is "2.5" do
-  describe "An ensure block inside 'do end' block" do
-    before :each do
-      ScratchPad.record []
-    end
+describe "An ensure block inside 'do end' block" do
+  before :each do
+    ScratchPad.record []
+  end
 
-    it "is executed when an exception is raised in it's corresponding begin block" do
-      -> {
-        eval(<<-ruby).call
+  it "is executed when an exception is raised in it's corresponding begin block" do
+    -> {
+      eval(<<-ruby).call
           lambda do
             ScratchPad << :begin
             raise EnsureSpec::Error
@@ -267,13 +266,13 @@ ruby_version_is "2.5" do
             ScratchPad << :ensure
           end
         ruby
-      }.should raise_error(EnsureSpec::Error)
+    }.should raise_error(EnsureSpec::Error)
 
-      ScratchPad.recorded.should == [:begin, :ensure]
-    end
+    ScratchPad.recorded.should == [:begin, :ensure]
+  end
 
-    it "is executed when an exception is raised and rescued in it's corresponding begin block" do
-      eval(<<-ruby).call
+  it "is executed when an exception is raised and rescued in it's corresponding begin block" do
+    eval(<<-ruby).call
         lambda do
           ScratchPad << :begin
           raise "An exception occurred!"
@@ -284,12 +283,12 @@ ruby_version_is "2.5" do
         end
       ruby
 
-      ScratchPad.recorded.should == [:begin, :rescue, :ensure]
-    end
+    ScratchPad.recorded.should == [:begin, :rescue, :ensure]
+  end
 
-    it "is executed even when a symbol is thrown in it's corresponding begin block" do
-      catch(:symbol) do
-        eval(<<-ruby).call
+  it "is executed even when a symbol is thrown in it's corresponding begin block" do
+    catch(:symbol) do
+      eval(<<-ruby).call
           lambda do
             ScratchPad << :begin
             throw(:symbol)
@@ -299,13 +298,13 @@ ruby_version_is "2.5" do
             ScratchPad << :ensure
           end
         ruby
-      end
-
-      ScratchPad.recorded.should == [:begin, :ensure]
     end
 
-    it "is executed when nothing is raised or thrown in it's corresponding begin block" do
-      eval(<<-ruby).call
+    ScratchPad.recorded.should == [:begin, :ensure]
+  end
+
+  it "is executed when nothing is raised or thrown in it's corresponding begin block" do
+    eval(<<-ruby).call
         lambda do
           ScratchPad << :begin
         rescue
@@ -315,11 +314,11 @@ ruby_version_is "2.5" do
         end
       ruby
 
-      ScratchPad.recorded.should == [:begin, :ensure]
-    end
+    ScratchPad.recorded.should == [:begin, :ensure]
+  end
 
-    it "has no return value" do
-      result = eval(<<-ruby).call
+  it "has no return value" do
+    result = eval(<<-ruby).call
         lambda do
           :begin
         ensure
@@ -327,7 +326,6 @@ ruby_version_is "2.5" do
         end
       ruby
 
-      result.should == :begin
-    end
+    result.should == :begin
   end
 end

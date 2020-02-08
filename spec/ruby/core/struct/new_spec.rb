@@ -62,16 +62,8 @@ describe "Struct.new" do
     -> { Struct.new(:animal, ['chris', 'evan'])    }.should raise_error(TypeError)
   end
 
-  ruby_version_is ""..."2.5" do
-    it "raises a TypeError if an argument is a Hash" do
-      -> { Struct.new(:animal, { name: 'chris' }) }.should raise_error(TypeError)
-    end
-  end
-
-  ruby_version_is "2.5" do
-    it "raises a ArgumentError if passed a Hash with an unknown key" do
-      -> { Struct.new(:animal, { name: 'chris' }) }.should raise_error(ArgumentError)
-    end
+  it "raises a ArgumentError if passed a Hash with an unknown key" do
+    -> { Struct.new(:animal, { name: 'chris' }) }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError when there is a duplicate member" do
@@ -147,71 +139,69 @@ describe "Struct.new" do
     end
   end
 
-  ruby_version_is "2.5" do
-    context "keyword_init: true option" do
-      before :all do
-        @struct_with_kwa = Struct.new(:name, :legs, keyword_init: true)
-      end
-
-      it "creates a class that accepts keyword arguments to initialize" do
-        obj = @struct_with_kwa.new(name: "elefant", legs: 4)
-        obj.name.should == "elefant"
-        obj.legs.should == 4
-      end
-
-      it "raises when there is a duplicate member" do
-        -> { Struct.new(:foo, :foo, keyword_init: true) }.should raise_error(ArgumentError, "duplicate member: foo")
-      end
-
-      describe "new class instantiation" do
-        it "accepts arguments as hash as well" do
-          obj = @struct_with_kwa.new({name: "elefant", legs: 4})
-          obj.name.should == "elefant"
-          obj.legs.should == 4
-        end
-
-        it "allows missing arguments" do
-          obj = @struct_with_kwa.new(name: "elefant")
-          obj.name.should == "elefant"
-          obj.legs.should be_nil
-        end
-
-        it "allows no arguments" do
-          obj = @struct_with_kwa.new
-          obj.name.should be_nil
-          obj.legs.should be_nil
-        end
-
-        it "raises ArgumentError when passed not declared keyword argument" do
-          -> {
-            @struct_with_kwa.new(name: "elefant", legs: 4, foo: "bar")
-          }.should raise_error(ArgumentError, /unknown keywords: foo/)
-        end
-
-        it "raises ArgumentError when passed a list of arguments" do
-          -> {
-            @struct_with_kwa.new("elefant", 4)
-          }.should raise_error(ArgumentError, /wrong number of arguments/)
-        end
-
-        it "raises ArgumentError when passed a single non-hash argument" do
-          -> {
-            @struct_with_kwa.new("elefant")
-          }.should raise_error(ArgumentError, /wrong number of arguments/)
-        end
-      end
+  context "keyword_init: true option" do
+    before :all do
+      @struct_with_kwa = Struct.new(:name, :legs, keyword_init: true)
     end
 
-    context "keyword_init: false option" do
-      before :all do
-        @struct_without_kwa = Struct.new(:name, :legs, keyword_init: false)
-      end
+    it "creates a class that accepts keyword arguments to initialize" do
+      obj = @struct_with_kwa.new(name: "elefant", legs: 4)
+      obj.name.should == "elefant"
+      obj.legs.should == 4
+    end
 
-      it "behaves like it does without :keyword_init option" do
-        obj = @struct_without_kwa.new("elefant", 4)
+    it "raises when there is a duplicate member" do
+      -> { Struct.new(:foo, :foo, keyword_init: true) }.should raise_error(ArgumentError, "duplicate member: foo")
+    end
+
+    describe "new class instantiation" do
+      it "accepts arguments as hash as well" do
+        obj = @struct_with_kwa.new({name: "elefant", legs: 4})
         obj.name.should == "elefant"
         obj.legs.should == 4
       end
+
+      it "allows missing arguments" do
+        obj = @struct_with_kwa.new(name: "elefant")
+        obj.name.should == "elefant"
+        obj.legs.should be_nil
+      end
+
+      it "allows no arguments" do
+        obj = @struct_with_kwa.new
+        obj.name.should be_nil
+        obj.legs.should be_nil
+      end
+
+      it "raises ArgumentError when passed not declared keyword argument" do
+        -> {
+          @struct_with_kwa.new(name: "elefant", legs: 4, foo: "bar")
+        }.should raise_error(ArgumentError, /unknown keywords: foo/)
+      end
+
+      it "raises ArgumentError when passed a list of arguments" do
+        -> {
+          @struct_with_kwa.new("elefant", 4)
+        }.should raise_error(ArgumentError, /wrong number of arguments/)
+      end
+
+      it "raises ArgumentError when passed a single non-hash argument" do
+        -> {
+          @struct_with_kwa.new("elefant")
+        }.should raise_error(ArgumentError, /wrong number of arguments/)
+      end
+    end
+  end
+
+  context "keyword_init: false option" do
+    before :all do
+      @struct_without_kwa = Struct.new(:name, :legs, keyword_init: false)
+    end
+
+    it "behaves like it does without :keyword_init option" do
+      obj = @struct_without_kwa.new("elefant", 4)
+      obj.name.should == "elefant"
+      obj.legs.should == 4
     end
   end
 end

@@ -2,13 +2,7 @@ require_relative '../../spec_helper'
 require_relative 'shared/comparison_coerce'
 
 describe "Integer#>" do
-  ruby_version_is "2.4"..."2.5" do
-    it_behaves_like :integer_comparison_coerce_rescue, :>
-  end
-
-  ruby_version_is "2.5" do
-    it_behaves_like :integer_comparison_coerce_not_rescue, :>
-  end
+  it_behaves_like :integer_comparison_coerce_not_rescue, :>
 
   context "fixnum" do
     it "returns true if self is greater than the given argument" do

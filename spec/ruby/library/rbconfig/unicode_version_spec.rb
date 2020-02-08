@@ -2,12 +2,6 @@ require_relative '../../spec_helper'
 require 'rbconfig'
 
 describe "RbConfig::CONFIG['UNICODE_VERSION']" do
-  ruby_version_is ""..."2.5" do
-    it "is 9.0.0 for Ruby 2.4" do
-      RbConfig::CONFIG['UNICODE_VERSION'].should == "9.0.0"
-    end
-  end
-
   ruby_version_is "2.5"..."2.6" do
     it "is 10.0.0 for Ruby 2.5" do
       RbConfig::CONFIG['UNICODE_VERSION'].should == "10.0.0"

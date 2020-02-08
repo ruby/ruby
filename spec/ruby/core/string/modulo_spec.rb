@@ -50,18 +50,9 @@ describe "String#%" do
     end
   end
 
-  ruby_version_is ""..."2.5" do
-    it "formats single % character at the end as literal %" do
-      ("%" % []).should == "%"
-      ("foo%" % []).should == "foo%"
-    end
-  end
-
-  ruby_version_is "2.5" do
-    it "raises an error if single % appears at the end" do
-      -> { ("%" % []) }.should raise_error(ArgumentError)
-      -> { ("foo%" % [])}.should raise_error(ArgumentError)
-    end
+  it "raises an error if single % appears at the end" do
+    -> { ("%" % []) }.should raise_error(ArgumentError)
+    -> { ("foo%" % [])}.should raise_error(ArgumentError)
   end
 
   it "formats single % character before a newline as literal %" do

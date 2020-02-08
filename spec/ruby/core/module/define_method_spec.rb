@@ -355,15 +355,8 @@ describe "Module#define_method" do
     klass.new.string_test.should == "string_test result"
   end
 
-  ruby_version_is ''...'2.5' do
-    it "is a private method" do
-      Module.should have_private_instance_method(:define_method)
-    end
-  end
-  ruby_version_is '2.5' do
-    it "is a public method" do
-      Module.should have_public_instance_method(:define_method)
-    end
+  it "is a public method" do
+    Module.should have_public_instance_method(:define_method)
   end
 
   it "returns its symbol" do

@@ -393,44 +393,22 @@ describe "Module#refine" do
       end
     end
 
-    ruby_version_is "" ... "2.5" do
-      it "is not honored by string interpolation" do
-        refinement = Module.new do
-          refine Integer do
-            def to_s
-              "foo"
-            end
+    it "is honored by string interpolation" do
+      refinement = Module.new do
+        refine Integer do
+          def to_s
+            "foo"
           end
         end
-
-        result = nil
-        Module.new do
-          using refinement
-          result = "#{1}"
-        end
-
-        result.should == "1"
       end
-    end
 
-    ruby_version_is "2.5" do
-      it "is honored by string interpolation" do
-        refinement = Module.new do
-          refine Integer do
-            def to_s
-              "foo"
-            end
-          end
-        end
-
-        result = nil
-        Module.new do
-          using refinement
-          result = "#{1}"
-        end
-
-        result.should == "foo"
+      result = nil
+      Module.new do
+        using refinement
+        result = "#{1}"
       end
+
+      result.should == "foo"
     end
 
     it "is honored by Kernel#binding" do

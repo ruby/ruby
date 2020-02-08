@@ -31,12 +31,6 @@ describe "C-API constant" do
     @s.rb_mComparable.should == Comparable
   end
 
-  ruby_version_is ""..."2.5" do
-    specify "rb_cData references the Data class" do
-      @s.rb_cData.should == Data
-    end
-  end
-
   specify "rb_cDir references the Dir class" do
     @s.rb_cDir.should == Dir
   end
@@ -89,11 +83,8 @@ describe "C-API constant" do
     @s.rb_mKernel.should == Kernel
   end
 
-  # On 2.4 with require 'mathn', Math is redefined as CMath
-  ruby_version_is "2.5" do
-    specify "rb_mMath references the Math module" do
-      @s.rb_mMath.should == Math
-    end
+  specify "rb_mMath references the Math module" do
+    @s.rb_mMath.should == Math
   end
 
   specify "rb_cMatch references the MatchData class" do
@@ -216,10 +207,8 @@ describe "C-API exception constant" do
     @s.rb_eFloatDomainError.should == FloatDomainError
   end
 
-  ruby_version_is "2.5" do
-    specify "rb_eFrozenError references the FrozenError class" do
-      @s.rb_eFrozenError.should == FrozenError
-    end
+  specify "rb_eFrozenError references the FrozenError class" do
+    @s.rb_eFrozenError.should == FrozenError
   end
 
   specify "rb_eIndexError references the IndexError class" do
