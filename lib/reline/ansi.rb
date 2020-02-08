@@ -10,21 +10,40 @@ class Reline::ANSI
   end
 
   RAW_KEYSTROKE_CONFIG = {
+    # Console (80x25)
+    [27, 91, 49, 126] => :ed_move_to_beg, # Home
+    [27, 91, 52, 126] => :ed_move_to_end, # End
+    [27, 91, 51, 126] => :key_delete,     # Del
     [27, 91, 65] => :ed_prev_history,     # ↑
     [27, 91, 66] => :ed_next_history,     # ↓
     [27, 91, 67] => :ed_next_char,        # →
     [27, 91, 68] => :ed_prev_char,        # ←
-    [27, 91, 51, 126] => :key_delete,     # Del
-    [27, 91, 49, 126] => :ed_move_to_beg, # Home
-    [27, 91, 52, 126] => :ed_move_to_end, # End
+
+    # KDE
     [27, 91, 72] => :ed_move_to_beg,      # Home
     [27, 91, 70] => :ed_move_to_end,      # End
+    # Del is 0x08
+    [27, 71, 65] => :ed_prev_history,     # ↑
+    [27, 71, 66] => :ed_next_history,     # ↓
+    [27, 71, 67] => :ed_next_char,        # →
+    [27, 71, 68] => :ed_prev_char,        # ←
+
+    # GNOME
     [27, 79, 72] => :ed_move_to_beg,      # Home
     [27, 79, 70] => :ed_move_to_end,      # End
+    # Del is 0x08
+    # Arrow keys are the same of KDE
+
+    # others
     [27, 32] => :em_set_mark,             # M-<space>
     [24, 24] => :em_exchange_mark,        # C-x C-x TODO also add Windows
     [27, 91, 49, 59, 53, 67] => :em_next_word, # Ctrl+→
     [27, 91, 49, 59, 53, 68] => :ed_prev_word, # Ctrl+←
+
+    [27, 79, 65] => :ed_prev_history,     # ↑
+    [27, 79, 66] => :ed_next_history,     # ↓
+    [27, 79, 67] => :ed_next_char,        # →
+    [27, 79, 68] => :ed_prev_char,        # ←
   }
 
   @@input = STDIN
