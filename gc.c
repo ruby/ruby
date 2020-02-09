@@ -4690,7 +4690,14 @@ stack_check(rb_execution_context_t *ec, int water_mark)
 #define stack_check(ec, water_mark) FALSE
 #endif
 
+#ifdef __s390x__
+/* Experimentally make the stack overflow detection earlier under s390x
+ * https://rubyci.org/logs/rubyci.s3.amazonaws.com/rhel_zlinux/ruby-master/log/20200205T223421Z.fail.html.gz
+ */
+#define STACKFRAME_FOR_CALL_CFUNC 8192
+#else
 #define STACKFRAME_FOR_CALL_CFUNC 2048
+#endif
 
 MJIT_FUNC_EXPORTED int
 rb_ec_stack_check(rb_execution_context_t *ec)
