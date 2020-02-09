@@ -45,7 +45,7 @@ module BasetestReadline
       # Work around lack of SecurityError in Reline
       # test mode with tainted prompt.
       # Also skip test on Ruby 2.7+, where $SAFE/taint is deprecated.
-      if RUBY_VERSION < '2.7' && !kind_of?(TestRelineAsReadline)
+      if RUBY_VERSION < '2.7' && defined?(TestRelineAsReadline) && !kind_of?(TestRelineAsReadline)
         begin
           Thread.start {
             $SAFE = 1
