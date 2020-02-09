@@ -64,6 +64,10 @@ $ make test-all TESTS=ruby/foo
 $ make test-all TESTS="test/ruby/test_foo.rb -n /test_bar/"
 ```
 
+```
+$ make test-spec MSPECOPT=spec/ruby/core/foo/bar_spec.rb
+```
+
 ## How to measure coverage of C and Ruby code
 
 You need to be able to use gcc (gcov) and lcov visualizer.
