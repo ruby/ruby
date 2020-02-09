@@ -1150,6 +1150,7 @@ q.pop
                     "0 thread_machine_stack_size")
     assert_operator(h_default[:thread_machine_stack_size], :<=, h_large[:thread_machine_stack_size],
                     "large thread_machine_stack_size")
+    assert_equal("ok", invoke_rec('print :ok', 1024 * 1024 * 100, nil, false))
   end
 
   def test_vm_machine_stack_size
