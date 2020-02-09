@@ -72,11 +72,13 @@ describe "File.utime" do
 
   platform_is :linux do
     platform_is wordsize: 64 do
-      it "allows Time instances in the far future to set mtime and atime" do
+      it "allows Time instances in the far future to set mtime and atime (but some filesystems limit it up to 2446-05-10)" do
+        # https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout#Inode_Timestamps
+        # "Therefore, timestamps should not overflow until May 2446."
         time = Time.at(1<<44)
         File.utime(time, time, @file1)
-        File.atime(@file1).year.should == 559444
-        File.mtime(@file1).year.should == 559444
+        [559444, 2446].should.include? File.atime(@file1).year
+        [559444, 2446].should.include? File.mtime(@file1).year
       end
     end
   end
