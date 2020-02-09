@@ -1589,6 +1589,7 @@ rb_objspace_alloc(void)
     malloc_limit = gc_params.malloc_limit_min;
     list_head_init(&objspace->eden_heap.pages);
     list_head_init(&objspace->tomb_heap.pages);
+    dont_gc = TRUE;
 
     return objspace;
 }
