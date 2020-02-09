@@ -38,7 +38,7 @@ module ExceptionForMatrix # :nodoc:
   class ErrOperationNotDefined < StandardError
     def initialize(vals)
       if vals.is_a?(Array)
-        super("Operation(#{vals[0]}) can\\'t be defined: #{vals[1]} op #{vals[2]}")
+        super("Operation(#{vals[0]}) can't be defined: #{vals[1]} op #{vals[2]}")
       else
         super(vals)
       end
