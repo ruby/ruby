@@ -3806,35 +3806,6 @@ arith_seq_each(VALUE self)
     return self;
 }
 
-static double
-arith_seq_float_step_size(double beg, double end, double step, int excl)
-{
-    double const epsilon = DBL_EPSILON;
-    double n, err;
-
-    if (step == 0) {
-        return HUGE_VAL;
-    }
-    n = (end - beg) / step;
-    err = (fabs(beg) + fabs(end) + fabs(end - beg)) / fabs(step) * epsilon;
-    if (isinf(step)) {
-        return step > 0 ? beg <= end : beg >= end;
-    }
-    if (err > 0.5) err = 0.5;
-    if (excl) {
-        if (n <= 0) return 0;
-        if (n < 1)
-            n = 0;
-        else
-            n = floor(n - err);
-    }
-    else {
-        if (n < 0) return 0;
-        n = floor(n + err);
-    }
-    return n + 1;
-}
-
 /*
  * call-seq:
  *   aseq.size -> num or nil
@@ -3868,7 +3839,7 @@ arith_seq_size(VALUE self)
             ee = NUM2DBL(e);
         }
 
-        n = arith_seq_float_step_size(NUM2DBL(b), ee, NUM2DBL(s), x);
+        n = ruby_float_step_size(NUM2DBL(b), ee, NUM2DBL(s), x);
         if (isinf(n)) return DBL2NUM(n);
         if (POSFIXABLE(n)) return LONG2FIX(n);
         return rb_dbl2big(n);
