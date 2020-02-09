@@ -277,7 +277,7 @@ module Bundler
         "* Circle CI:      https://circleci.com/\n" \
         "* Gitlab CI:      https://docs.gitlab.com/ee/ci/\n\n"
 
-        result = Bundler.ui.ask "Type 'github', 'travis', 'gitlab' or 'circle' to generate those test files now and " \
+        result = Bundler.ui.ask "Type 'github', 'travis', 'gitlab' or 'circle' to generate the CI configuration now and " \
           "in the future. github/travis/gitlab/circle/(none):"
         if result =~ /github|travis|gitlab|circle/
           ci_template = result
