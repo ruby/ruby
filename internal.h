@@ -1635,6 +1635,8 @@ void Init_heap(void);
 void *ruby_mimmalloc(size_t size) RUBY_ATTR_MALLOC;
 void ruby_mimfree(void *ptr);
 void rb_objspace_set_event_hook(const rb_event_flag_t event);
+VALUE rb_objspace_gc_enable(struct rb_objspace *);
+VALUE rb_objspace_gc_disable(struct rb_objspace *);
 #if USE_RGENGC
 void rb_gc_writebarrier_remember(VALUE obj);
 #else
@@ -2339,6 +2341,7 @@ enum method_missing_reason {
 struct rb_callable_method_entry_struct;
 struct rb_method_definition_struct;
 struct rb_execution_context_struct;
+struct rb_objspace; /* in vm_core.h */
 struct rb_control_frame_struct;
 struct rb_calling_info;
 struct rb_call_data;
