@@ -2386,6 +2386,25 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal(0, Bug13446::GenericEnumerable.new.sum)
   end
 
+  def test_unbound_refine_method
+    a = EnvUtil.labeled_class("A") do
+      def foo
+        self.class
+      end
+    end
+    b = EnvUtil.labeled_class("B")
+    bar = EnvUtil.labeled_module("R") do
+      break refine a do
+        def foo
+          super
+        end
+      end
+    end
+    assert_raise(TypeError) do
+      bar.instance_method(:foo).bind(b.new)
+    end
+  end
+
   private
 
   def eval_using(mod, s)

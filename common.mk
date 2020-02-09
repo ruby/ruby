@@ -3224,6 +3224,7 @@ proc.$(OBJEXT): $(top_srcdir)/internal/array.h
 proc.$(OBJEXT): $(top_srcdir)/internal/class.h
 proc.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 proc.$(OBJEXT): $(top_srcdir)/internal/error.h
+proc.$(OBJEXT): $(top_srcdir)/internal/eval.h
 proc.$(OBJEXT): $(top_srcdir)/internal/gc.h
 proc.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 proc.$(OBJEXT): $(top_srcdir)/internal/object.h

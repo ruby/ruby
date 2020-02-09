@@ -14,6 +14,7 @@
 #include "internal.h"
 #include "internal/class.h"
 #include "internal/error.h"
+#include "internal/eval.h"
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/symbol.h"
@@ -2366,6 +2367,10 @@ convert_umethod_to_method_components(VALUE method, VALUE recv, VALUE *methclass_
     VALUE iclass = data->me->defined_class;
     VALUE klass = CLASS_OF(recv);
 
+    if (RB_TYPE_P(methclass, T_MODULE)) {
+        VALUE refined_class = rb_refinement_module_get_refined_class(methclass);
+        if (!NIL_P(refined_class)) methclass = refined_class;
+    }
     if (!RB_TYPE_P(methclass, T_MODULE) &&
 	methclass != CLASS_OF(recv) && !rb_obj_is_kind_of(recv, methclass)) {
 	if (FL_TEST(methclass, FL_SINGLETON)) {
