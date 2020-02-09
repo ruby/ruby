@@ -9,8 +9,10 @@ def use_ext_readline # Use ext/readline as Readline
   Object.const_set(:Readline, ReadlineSo)
 end
 
-unless ENV['DONT_RUN_RELINE_TEST']
+begin
   require "reline"
+rescue LoadError
+else
   def use_lib_reline # Use lib/reline as Readline
     Reline.send(:remove_const, 'IOGate') if Reline.const_defined?('IOGate')
     Reline.const_set('IOGate', Reline::GeneralIO)
