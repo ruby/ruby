@@ -572,6 +572,7 @@ class TestThreadQueue < Test::Unit::TestCase
       Thread.new{
         loop{
           Process.kill :INT, $$
+          sleep 0.1
         }
       }
       puts q.pop
