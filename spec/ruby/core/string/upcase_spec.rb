@@ -179,8 +179,8 @@ describe "String#upcase!" do
     a.should == "HELLO"
   end
 
-  it "raises a #{frozen_error_class} when self is frozen" do
-    -> { "HeLlo".freeze.upcase! }.should raise_error(frozen_error_class)
-    -> { "HELLO".freeze.upcase! }.should raise_error(frozen_error_class)
+  it "raises a FrozenError when self is frozen" do
+    -> { "HeLlo".freeze.upcase! }.should raise_error(FrozenError)
+    -> { "HELLO".freeze.upcase! }.should raise_error(FrozenError)
   end
 end

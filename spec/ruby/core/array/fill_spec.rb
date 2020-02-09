@@ -43,12 +43,12 @@ describe "Array#fill" do
     [nil, nil, nil, nil].fill { |i| i * 2 }.should == [0, 2, 4, 6]
   end
 
-  it "raises a #{frozen_error_class} on a frozen array" do
-    -> { ArraySpecs.frozen_array.fill('x') }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen array" do
+    -> { ArraySpecs.frozen_array.fill('x') }.should raise_error(FrozenError)
   end
 
-  it "raises a #{frozen_error_class} on an empty frozen array" do
-    -> { ArraySpecs.empty_frozen_array.fill('x') }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on an empty frozen array" do
+    -> { ArraySpecs.empty_frozen_array.fill('x') }.should raise_error(FrozenError)
   end
 
   it "raises an ArgumentError if 4 or more arguments are passed when no block given" do

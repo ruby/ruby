@@ -61,9 +61,9 @@ describe "Module#alias_method" do
     }
   end
 
-  it "raises #{frozen_error_class} if frozen" do
+  it "raises FrozenError if frozen" do
     @class.freeze
-    -> { @class.make_alias :uno, :public_one }.should raise_error(frozen_error_class)
+    -> { @class.make_alias :uno, :public_one }.should raise_error(FrozenError)
   end
 
   it "converts the names using #to_str" do

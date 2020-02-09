@@ -25,13 +25,13 @@ describe "Module#class_variable_set" do
     c.send(:class_variable_get, "@@mvar").should == :new_mvar
   end
 
-  it "raises a #{frozen_error_class} when self is frozen" do
+  it "raises a FrozenError when self is frozen" do
     -> {
       Class.new.freeze.send(:class_variable_set, :@@test, "test")
-    }.should raise_error(frozen_error_class)
+    }.should raise_error(FrozenError)
     -> {
       Module.new.freeze.send(:class_variable_set, :@@test, "test")
-    }.should raise_error(frozen_error_class)
+    }.should raise_error(FrozenError)
   end
 
   it "raises a NameError when the given name is not allowed" do

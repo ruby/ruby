@@ -122,10 +122,10 @@ describe "String#tr!" do
     s.should == "hello"
   end
 
-  it "raises a #{frozen_error_class} if self is frozen" do
+  it "raises a FrozenError if self is frozen" do
     s = "abcdefghijklmnopqR".freeze
-    -> { s.tr!("cdefg", "12") }.should raise_error(frozen_error_class)
-    -> { s.tr!("R", "S")      }.should raise_error(frozen_error_class)
-    -> { s.tr!("", "")        }.should raise_error(frozen_error_class)
+    -> { s.tr!("cdefg", "12") }.should raise_error(FrozenError)
+    -> { s.tr!("R", "S")      }.should raise_error(FrozenError)
+    -> { s.tr!("", "")        }.should raise_error(FrozenError)
   end
 end

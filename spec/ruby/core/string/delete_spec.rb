@@ -111,11 +111,11 @@ describe "String#delete!" do
     a.should == "hello"
   end
 
-  it "raises a #{frozen_error_class} when self is frozen" do
+  it "raises a FrozenError when self is frozen" do
     a = "hello"
     a.freeze
 
-    -> { a.delete!("")            }.should raise_error(frozen_error_class)
-    -> { a.delete!("aeiou", "^e") }.should raise_error(frozen_error_class)
+    -> { a.delete!("")            }.should raise_error(FrozenError)
+    -> { a.delete!("aeiou", "^e") }.should raise_error(FrozenError)
   end
 end

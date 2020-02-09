@@ -86,8 +86,8 @@ describe :hash_store, shared: true do
     h.keys.last.should_not equal(key2)
   end
 
-  it "raises a #{frozen_error_class} if called on a frozen instance" do
-    -> { HashSpecs.frozen_hash.send(@method, 1, 2) }.should raise_error(frozen_error_class)
+  it "raises a FrozenError if called on a frozen instance" do
+    -> { HashSpecs.frozen_hash.send(@method, 1, 2) }.should raise_error(FrozenError)
   end
 
   it "does not raise an exception if changing the value of an existing key during iteration" do

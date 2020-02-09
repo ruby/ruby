@@ -83,8 +83,8 @@ describe :string_succ_bang, shared: true do
     end
   end
 
-  it "raises a #{frozen_error_class} if self is frozen" do
-    -> { "".freeze.send(@method)     }.should raise_error(frozen_error_class)
-    -> { "abcd".freeze.send(@method) }.should raise_error(frozen_error_class)
+  it "raises a FrozenError if self is frozen" do
+    -> { "".freeze.send(@method)     }.should raise_error(FrozenError)
+    -> { "abcd".freeze.send(@method) }.should raise_error(FrozenError)
   end
 end

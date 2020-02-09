@@ -52,11 +52,11 @@ describe "String#[]= with Fixnum index" do
     str.should == "hello"
   end
 
-  it "raises a #{frozen_error_class} when self is frozen" do
+  it "raises a FrozenError when self is frozen" do
     a = "hello"
     a.freeze
 
-    -> { a[0] = "bam" }.should raise_error(frozen_error_class)
+    -> { a[0] = "bam" }.should raise_error(FrozenError)
   end
 
   it "calls to_int on index" do

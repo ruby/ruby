@@ -57,8 +57,8 @@ describe "Kernel#autoload" do
   end
 
   describe "when Object is frozen" do
-    it "raises a #{frozen_error_class} before defining the constant" do
-      ruby_exe(fixture(__FILE__, "autoload_frozen.rb")).should == "#{frozen_error_class} - nil"
+    it "raises a FrozenError before defining the constant" do
+      ruby_exe(fixture(__FILE__, "autoload_frozen.rb")).should == "FrozenError - nil"
     end
   end
 

@@ -44,9 +44,9 @@ describe "Array#clear" do
     end
   end
 
-  it "raises a #{frozen_error_class} on a frozen array" do
+  it "raises a FrozenError on a frozen array" do
     a = [1]
     a.freeze
-    -> { a.clear }.should raise_error(frozen_error_class)
+    -> { a.clear }.should raise_error(FrozenError)
   end
 end

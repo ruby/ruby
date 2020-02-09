@@ -30,8 +30,8 @@ describe "Array#<<" do
     a.should == [:foo]
   end
 
-  it "raises a #{frozen_error_class} on a frozen array" do
-    -> { ArraySpecs.frozen_array << 5 }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen array" do
+    -> { ArraySpecs.frozen_array << 5 }.should raise_error(FrozenError)
   end
 end
 

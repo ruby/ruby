@@ -336,19 +336,19 @@ describe "String#chomp!" do
     end
   end
 
-  it "raises a #{frozen_error_class} on a frozen instance when it is modified" do
+  it "raises a FrozenError on a frozen instance when it is modified" do
     a = "string\n\r"
     a.freeze
 
-    -> { a.chomp! }.should raise_error(frozen_error_class)
+    -> { a.chomp! }.should raise_error(FrozenError)
   end
 
   # see [ruby-core:23666]
-  it "raises a #{frozen_error_class} on a frozen instance when it would not be modified" do
+  it "raises a FrozenError on a frozen instance when it would not be modified" do
     a = "string\n\r"
     a.freeze
-    -> { a.chomp!(nil) }.should raise_error(frozen_error_class)
-    -> { a.chomp!("x") }.should raise_error(frozen_error_class)
+    -> { a.chomp!(nil) }.should raise_error(FrozenError)
+    -> { a.chomp!("x") }.should raise_error(FrozenError)
   end
 end
 

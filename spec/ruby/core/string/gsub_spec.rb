@@ -613,13 +613,13 @@ describe "String#gsub! with pattern and replacement" do
   end
 
   # See [ruby-core:23666]
-  it "raises a #{frozen_error_class} when self is frozen" do
+  it "raises a FrozenError when self is frozen" do
     s = "hello"
     s.freeze
 
-    -> { s.gsub!(/ROAR/, "x")    }.should raise_error(frozen_error_class)
-    -> { s.gsub!(/e/, "e")       }.should raise_error(frozen_error_class)
-    -> { s.gsub!(/[aeiou]/, '*') }.should raise_error(frozen_error_class)
+    -> { s.gsub!(/ROAR/, "x")    }.should raise_error(FrozenError)
+    -> { s.gsub!(/e/, "e")       }.should raise_error(FrozenError)
+    -> { s.gsub!(/[aeiou]/, '*') }.should raise_error(FrozenError)
   end
 end
 
@@ -652,13 +652,13 @@ describe "String#gsub! with pattern and block" do
   end
 
   # See [ruby-core:23663]
-  it "raises a #{frozen_error_class} when self is frozen" do
+  it "raises a FrozenError when self is frozen" do
     s = "hello"
     s.freeze
 
-    -> { s.gsub!(/ROAR/)    { "x" } }.should raise_error(frozen_error_class)
-    -> { s.gsub!(/e/)       { "e" } }.should raise_error(frozen_error_class)
-    -> { s.gsub!(/[aeiou]/) { '*' } }.should raise_error(frozen_error_class)
+    -> { s.gsub!(/ROAR/)    { "x" } }.should raise_error(FrozenError)
+    -> { s.gsub!(/e/)       { "e" } }.should raise_error(FrozenError)
+    -> { s.gsub!(/[aeiou]/) { '*' } }.should raise_error(FrozenError)
   end
 
   it "uses the compatible encoding if they are compatible" do

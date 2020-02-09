@@ -14,9 +14,9 @@ describe "Kernel#trust" do
       o.untrusted?.should == false
     end
 
-    it "raises #{frozen_error_class} on an untrusted, frozen object" do
+    it "raises FrozenError on an untrusted, frozen object" do
       o = Object.new.untrust.freeze
-      -> { o.trust }.should raise_error(frozen_error_class)
+      -> { o.trust }.should raise_error(FrozenError)
     end
 
     it "does not raise an error on a trusted, frozen object" do

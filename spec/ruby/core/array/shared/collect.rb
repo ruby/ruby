@@ -114,22 +114,22 @@ describe :array_collect_b, shared: true do
   end
 
   describe "when frozen" do
-    it "raises a #{frozen_error_class}" do
-      -> { ArraySpecs.frozen_array.send(@method) {} }.should raise_error(frozen_error_class)
+    it "raises a FrozenError" do
+      -> { ArraySpecs.frozen_array.send(@method) {} }.should raise_error(FrozenError)
     end
 
-    it "raises a #{frozen_error_class} when empty" do
-      -> { ArraySpecs.empty_frozen_array.send(@method) {} }.should raise_error(frozen_error_class)
+    it "raises a FrozenError when empty" do
+      -> { ArraySpecs.empty_frozen_array.send(@method) {} }.should raise_error(FrozenError)
     end
 
-    it "raises a #{frozen_error_class} when calling #each on the returned Enumerator" do
+    it "raises a FrozenError when calling #each on the returned Enumerator" do
       enumerator = ArraySpecs.frozen_array.send(@method)
-      -> { enumerator.each {|x| x } }.should raise_error(frozen_error_class)
+      -> { enumerator.each {|x| x } }.should raise_error(FrozenError)
     end
 
-    it "raises a #{frozen_error_class} when calling #each on the returned Enumerator when empty" do
+    it "raises a FrozenError when calling #each on the returned Enumerator when empty" do
       enumerator = ArraySpecs.empty_frozen_array.send(@method)
-      -> { enumerator.each {|x| x } }.should raise_error(frozen_error_class)
+      -> { enumerator.each {|x| x } }.should raise_error(FrozenError)
     end
   end
 

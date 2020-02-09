@@ -74,10 +74,10 @@ ruby_version_is '2.5' do
       'hello'.delete_prefix!(o).should == 'o'
     end
 
-    it "raises a #{frozen_error_class} when self is frozen" do
-      -> { 'hello'.freeze.delete_prefix!('hell') }.should raise_error(frozen_error_class)
-      -> { 'hello'.freeze.delete_prefix!('') }.should raise_error(frozen_error_class)
-      -> { ''.freeze.delete_prefix!('') }.should raise_error(frozen_error_class)
+    it "raises a FrozenError when self is frozen" do
+      -> { 'hello'.freeze.delete_prefix!('hell') }.should raise_error(FrozenError)
+      -> { 'hello'.freeze.delete_prefix!('') }.should raise_error(FrozenError)
+      -> { ''.freeze.delete_prefix!('') }.should raise_error(FrozenError)
     end
   end
 end

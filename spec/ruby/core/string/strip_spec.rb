@@ -50,13 +50,13 @@ describe "String#strip!" do
     a.should == "\x00 goodbye"
   end
 
-  it "raises a #{frozen_error_class} on a frozen instance that is modified" do
-    -> { "  hello  ".freeze.strip! }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen instance that is modified" do
+    -> { "  hello  ".freeze.strip! }.should raise_error(FrozenError)
   end
 
   # see #1552
-  it "raises a #{frozen_error_class} on a frozen instance that would not be modified" do
-    -> {"hello".freeze.strip! }.should raise_error(frozen_error_class)
-    -> {"".freeze.strip!      }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen instance that would not be modified" do
+    -> {"hello".freeze.strip! }.should raise_error(FrozenError)
+    -> {"".freeze.strip!      }.should raise_error(FrozenError)
   end
 end

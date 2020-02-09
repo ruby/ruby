@@ -14,9 +14,9 @@ describe "Kernel#untaint" do
       o.tainted?.should == false
     end
 
-    it "raises #{frozen_error_class} on a tainted, frozen object" do
+    it "raises FrozenError on a tainted, frozen object" do
       o = Object.new.taint.freeze
-      -> { o.untaint }.should raise_error(frozen_error_class)
+      -> { o.untaint }.should raise_error(FrozenError)
     end
 
     it "does not raise an error on an untainted, frozen object" do

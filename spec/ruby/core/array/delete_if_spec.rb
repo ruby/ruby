@@ -39,12 +39,12 @@ describe "Array#delete_if" do
     @a.freeze.delete_if.should be_an_instance_of(Enumerator)
   end
 
-  it "raises a #{frozen_error_class} on a frozen array" do
-    -> { ArraySpecs.frozen_array.delete_if {} }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen array" do
+    -> { ArraySpecs.frozen_array.delete_if {} }.should raise_error(FrozenError)
   end
 
-  it "raises a #{frozen_error_class} on an empty frozen array" do
-    -> { ArraySpecs.empty_frozen_array.delete_if {} }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on an empty frozen array" do
+    -> { ArraySpecs.empty_frozen_array.delete_if {} }.should raise_error(FrozenError)
   end
 
   ruby_version_is ''...'2.7' do

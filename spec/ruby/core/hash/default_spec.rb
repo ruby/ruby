@@ -39,8 +39,8 @@ describe "Hash#default=" do
     end
   end
 
-  it "raises a #{frozen_error_class} if called on a frozen instance" do
-    -> { HashSpecs.frozen_hash.default = nil }.should raise_error(frozen_error_class)
-    -> { HashSpecs.empty_frozen_hash.default = nil }.should raise_error(frozen_error_class)
+  it "raises a FrozenError if called on a frozen instance" do
+    -> { HashSpecs.frozen_hash.default = nil }.should raise_error(FrozenError)
+    -> { HashSpecs.empty_frozen_hash.default = nil }.should raise_error(FrozenError)
   end
 end

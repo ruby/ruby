@@ -32,13 +32,13 @@ describe "Array#concat" do
     [].concat(obj).should == [5, 6, 7]
   end
 
-  it "raises a #{frozen_error_class} when Array is frozen and modification occurs" do
-    -> { ArraySpecs.frozen_array.concat [1] }.should raise_error(frozen_error_class)
+  it "raises a FrozenError when Array is frozen and modification occurs" do
+    -> { ArraySpecs.frozen_array.concat [1] }.should raise_error(FrozenError)
   end
 
   # see [ruby-core:23666]
-  it "raises a #{frozen_error_class} when Array is frozen and no modification occurs" do
-    -> { ArraySpecs.frozen_array.concat([]) }.should raise_error(frozen_error_class)
+  it "raises a FrozenError when Array is frozen and no modification occurs" do
+    -> { ArraySpecs.frozen_array.concat([]) }.should raise_error(FrozenError)
   end
 
   ruby_version_is ''...'2.7' do
