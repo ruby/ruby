@@ -17,6 +17,7 @@
 #include "ruby/ruby.h"          /* for rb_event_flag_t */
 
 struct rb_execution_context_struct; /* in vm_core.h */
+struct rb_objspace; /* in vm_core.h */
 
 #ifdef NEWOBJ_OF
 # undef NEWOBJ_OF
@@ -60,6 +61,8 @@ extern int ruby_disable_gc;
 void *ruby_mimmalloc(size_t size) RUBY_ATTR_MALLOC;
 void ruby_mimfree(void *ptr);
 void rb_objspace_set_event_hook(const rb_event_flag_t event);
+VALUE rb_objspace_gc_enable(struct rb_objspace *);
+VALUE rb_objspace_gc_disable(struct rb_objspace *);
 void ruby_gc_set_params(void);
 void rb_copy_wb_protected_attribute(VALUE dest, VALUE obj);
 #if __has_attribute(alloc_align)
