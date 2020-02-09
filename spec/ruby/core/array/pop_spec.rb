@@ -40,12 +40,12 @@ describe "Array#pop" do
     end
   end
 
-  it "raises a #{frozen_error_class} on a frozen array" do
-    -> { ArraySpecs.frozen_array.pop }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen array" do
+    -> { ArraySpecs.frozen_array.pop }.should raise_error(FrozenError)
   end
 
-  it "raises a #{frozen_error_class} on an empty frozen array" do
-    -> { ArraySpecs.empty_frozen_array.pop }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on an empty frozen array" do
+    -> { ArraySpecs.empty_frozen_array.pop }.should raise_error(FrozenError)
   end
 
   ruby_version_is ''...'2.7' do
@@ -158,9 +158,9 @@ describe "Array#pop" do
       end
     end
 
-    it "raises a #{frozen_error_class} on a frozen array" do
-      -> { ArraySpecs.frozen_array.pop(2) }.should raise_error(frozen_error_class)
-      -> { ArraySpecs.frozen_array.pop(0) }.should raise_error(frozen_error_class)
+    it "raises a FrozenError on a frozen array" do
+      -> { ArraySpecs.frozen_array.pop(2) }.should raise_error(FrozenError)
+      -> { ArraySpecs.frozen_array.pop(0) }.should raise_error(FrozenError)
     end
 
     ruby_version_is ''...'2.7' do

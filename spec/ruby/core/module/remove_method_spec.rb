@@ -97,12 +97,12 @@ describe "Module#remove_method" do
       @frozen = @module.dup.freeze
     end
 
-    it "raises a #{frozen_error_class} when passed a name" do
-      -> { @frozen.send :remove_method, :method_to_remove }.should raise_error(frozen_error_class)
+    it "raises a FrozenError when passed a name" do
+      -> { @frozen.send :remove_method, :method_to_remove }.should raise_error(FrozenError)
     end
 
-    it "raises a #{frozen_error_class} when passed a missing name" do
-      -> { @frozen.send :remove_method, :not_exist }.should raise_error(frozen_error_class)
+    it "raises a FrozenError when passed a missing name" do
+      -> { @frozen.send :remove_method, :not_exist }.should raise_error(FrozenError)
     end
 
     it "raises a TypeError when passed a not name" do

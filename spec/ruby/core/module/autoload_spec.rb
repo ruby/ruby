@@ -737,9 +737,9 @@ describe "Module#autoload" do
   end
 
   describe "on a frozen module" do
-    it "raises a #{frozen_error_class} before setting the name" do
+    it "raises a FrozenError before setting the name" do
       frozen_module = Module.new.freeze
-      -> { frozen_module.autoload :Foo, @non_existent }.should raise_error(frozen_error_class)
+      -> { frozen_module.autoload :Foo, @non_existent }.should raise_error(FrozenError)
       frozen_module.should_not have_constant(:Foo)
     end
   end

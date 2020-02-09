@@ -32,13 +32,13 @@ describe "Array#initialize" do
     end.should raise_error(ArgumentError)
   end
 
-  it "raises a #{frozen_error_class} on frozen arrays" do
+  it "raises a FrozenError on frozen arrays" do
     -> do
       ArraySpecs.frozen_array.send :initialize
-    end.should raise_error(frozen_error_class)
+    end.should raise_error(FrozenError)
     -> do
       ArraySpecs.frozen_array.send :initialize, ArraySpecs.frozen_array
-    end.should raise_error(frozen_error_class)
+    end.should raise_error(FrozenError)
   end
 
   it "calls #to_ary to convert the value to an array, even if it's private" do

@@ -121,9 +121,9 @@ describe "Array#rotate!" do
     a.should == []
   end
 
-  it "raises a #{frozen_error_class} on a frozen array" do
-    -> { [1, 2, 3].freeze.rotate!(0) }.should raise_error(frozen_error_class)
-    -> { [1].freeze.rotate!(42) }.should raise_error(frozen_error_class)
-    -> { [].freeze.rotate! }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen array" do
+    -> { [1, 2, 3].freeze.rotate!(0) }.should raise_error(FrozenError)
+    -> { [1].freeze.rotate!(42) }.should raise_error(FrozenError)
+    -> { [].freeze.rotate! }.should raise_error(FrozenError)
   end
 end

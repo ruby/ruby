@@ -105,11 +105,11 @@ describe "String#squeeze!" do
     -> { s.squeeze!("^e-b") }.should raise_error(ArgumentError)
   end
 
-  it "raises a #{frozen_error_class} when self is frozen" do
+  it "raises a FrozenError when self is frozen" do
     a = "yellow moon"
     a.freeze
 
-    -> { a.squeeze!("") }.should raise_error(frozen_error_class)
-    -> { a.squeeze!     }.should raise_error(frozen_error_class)
+    -> { a.squeeze!("") }.should raise_error(FrozenError)
+    -> { a.squeeze!     }.should raise_error(FrozenError)
   end
 end

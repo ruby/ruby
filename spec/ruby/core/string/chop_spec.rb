@@ -113,14 +113,14 @@ describe "String#chop!" do
     "".chop!.should be_nil
   end
 
-  it "raises a #{frozen_error_class} on a frozen instance that is modified" do
-    -> { "string\n\r".freeze.chop! }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen instance that is modified" do
+    -> { "string\n\r".freeze.chop! }.should raise_error(FrozenError)
   end
 
   # see [ruby-core:23666]
-  it "raises a #{frozen_error_class} on a frozen instance that would not be modified" do
+  it "raises a FrozenError on a frozen instance that would not be modified" do
     a = ""
     a.freeze
-    -> { a.chop! }.should raise_error(frozen_error_class)
+    -> { a.chop! }.should raise_error(FrozenError)
   end
 end

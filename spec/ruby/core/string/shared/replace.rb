@@ -64,14 +64,14 @@ describe :string_replace, shared: true do
     -> { "hello".send(@method, mock('x')) }.should raise_error(TypeError)
   end
 
-  it "raises a #{frozen_error_class} on a frozen instance that is modified" do
+  it "raises a FrozenError on a frozen instance that is modified" do
     a = "hello".freeze
-    -> { a.send(@method, "world") }.should raise_error(frozen_error_class)
+    -> { a.send(@method, "world") }.should raise_error(FrozenError)
   end
 
   # see [ruby-core:23666]
-  it "raises a #{frozen_error_class} on a frozen instance when self-replacing" do
+  it "raises a FrozenError on a frozen instance when self-replacing" do
     a = "hello".freeze
-    -> { a.send(@method, a) }.should raise_error(frozen_error_class)
+    -> { a.send(@method, a) }.should raise_error(FrozenError)
   end
 end

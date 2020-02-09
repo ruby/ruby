@@ -125,8 +125,8 @@ describe "Module#const_set" do
       @name = :Foo
     end
 
-    it "raises a #{frozen_error_class} before setting the name" do
-      -> { @frozen.const_set @name, nil }.should raise_error(frozen_error_class)
+    it "raises a FrozenError before setting the name" do
+      -> { @frozen.const_set @name, nil }.should raise_error(FrozenError)
       @frozen.should_not have_constant(@name)
     end
   end

@@ -188,9 +188,9 @@ describe "C-API Struct function" do
       -> { @s.rb_struct_aset(@struct, 3, 1) }.should raise_error(IndexError)
     end
 
-    it "raises a #{frozen_error_class} if the struct is frozen" do
+    it "raises a FrozenError if the struct is frozen" do
       @struct.freeze
-      -> { @s.rb_struct_aset(@struct, :a, 1) }.should raise_error(frozen_error_class)
+      -> { @s.rb_struct_aset(@struct, :a, 1) }.should raise_error(FrozenError)
     end
   end
 

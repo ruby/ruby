@@ -53,10 +53,10 @@ describe "String#slice! with index" do
     a.should == "hello"
   end
 
-  it "raises a #{frozen_error_class} if self is frozen" do
-    -> { "hello".freeze.slice!(1)  }.should raise_error(frozen_error_class)
-    -> { "hello".freeze.slice!(10) }.should raise_error(frozen_error_class)
-    -> { "".freeze.slice!(0)       }.should raise_error(frozen_error_class)
+  it "raises a FrozenError if self is frozen" do
+    -> { "hello".freeze.slice!(1)  }.should raise_error(FrozenError)
+    -> { "hello".freeze.slice!(10) }.should raise_error(FrozenError)
+    -> { "".freeze.slice!(0)       }.should raise_error(FrozenError)
   end
 
   it "calls to_int on index" do
@@ -119,14 +119,14 @@ describe "String#slice! with index, length" do
     a.should == "hello"
   end
 
-  it "raises a #{frozen_error_class} if self is frozen" do
-    -> { "hello".freeze.slice!(1, 2)  }.should raise_error(frozen_error_class)
-    -> { "hello".freeze.slice!(10, 3) }.should raise_error(frozen_error_class)
-    -> { "hello".freeze.slice!(-10, 3)}.should raise_error(frozen_error_class)
-    -> { "hello".freeze.slice!(4, -3) }.should raise_error(frozen_error_class)
-    -> { "hello".freeze.slice!(10, 3) }.should raise_error(frozen_error_class)
-    -> { "hello".freeze.slice!(-10, 3)}.should raise_error(frozen_error_class)
-    -> { "hello".freeze.slice!(4, -3) }.should raise_error(frozen_error_class)
+  it "raises a FrozenError if self is frozen" do
+    -> { "hello".freeze.slice!(1, 2)  }.should raise_error(FrozenError)
+    -> { "hello".freeze.slice!(10, 3) }.should raise_error(FrozenError)
+    -> { "hello".freeze.slice!(-10, 3)}.should raise_error(FrozenError)
+    -> { "hello".freeze.slice!(4, -3) }.should raise_error(FrozenError)
+    -> { "hello".freeze.slice!(10, 3) }.should raise_error(FrozenError)
+    -> { "hello".freeze.slice!(-10, 3)}.should raise_error(FrozenError)
+    -> { "hello".freeze.slice!(4, -3) }.should raise_error(FrozenError)
   end
 
   it "calls to_int on idx and length" do
@@ -248,13 +248,13 @@ describe "String#slice! Range" do
   end
 
 
-  it "raises a #{frozen_error_class} on a frozen instance that is modified" do
-    -> { "hello".freeze.slice!(1..3)  }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen instance that is modified" do
+    -> { "hello".freeze.slice!(1..3)  }.should raise_error(FrozenError)
   end
 
   # see redmine #1551
-  it "raises a #{frozen_error_class} on a frozen instance that would not be modified" do
-    -> { "hello".freeze.slice!(10..20)}.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen instance that would not be modified" do
+    -> { "hello".freeze.slice!(10..20)}.should raise_error(FrozenError)
   end
 end
 
@@ -318,12 +318,12 @@ describe "String#slice! with Regexp" do
     $~.should == nil
   end
 
-  it "raises a #{frozen_error_class} on a frozen instance that is modified" do
-    -> { "this is a string".freeze.slice!(/s.*t/) }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen instance that is modified" do
+    -> { "this is a string".freeze.slice!(/s.*t/) }.should raise_error(FrozenError)
   end
 
-  it "raises a #{frozen_error_class} on a frozen instance that would not be modified" do
-    -> { "this is a string".freeze.slice!(/zzz/)  }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen instance that would not be modified" do
+    -> { "this is a string".freeze.slice!(/zzz/)  }.should raise_error(FrozenError)
   end
 end
 
@@ -410,10 +410,10 @@ describe "String#slice! with Regexp, index" do
     $~.should == nil
   end
 
-  it "raises a #{frozen_error_class} if self is frozen" do
-    -> { "this is a string".freeze.slice!(/s.*t/)  }.should raise_error(frozen_error_class)
-    -> { "this is a string".freeze.slice!(/zzz/, 0)}.should raise_error(frozen_error_class)
-    -> { "this is a string".freeze.slice!(/(.)/, 2)}.should raise_error(frozen_error_class)
+  it "raises a FrozenError if self is frozen" do
+    -> { "this is a string".freeze.slice!(/s.*t/)  }.should raise_error(FrozenError)
+    -> { "this is a string".freeze.slice!(/zzz/, 0)}.should raise_error(FrozenError)
+    -> { "this is a string".freeze.slice!(/(.)/, 2)}.should raise_error(FrozenError)
   end
 end
 
@@ -468,9 +468,9 @@ describe "String#slice! with String" do
     r.should be_an_instance_of(StringSpecs::MyString)
   end
 
-  it "raises a #{frozen_error_class} if self is frozen" do
-    -> { "hello hello".freeze.slice!('llo')     }.should raise_error(frozen_error_class)
-    -> { "this is a string".freeze.slice!('zzz')}.should raise_error(frozen_error_class)
-    -> { "this is a string".freeze.slice!('zzz')}.should raise_error(frozen_error_class)
+  it "raises a FrozenError if self is frozen" do
+    -> { "hello hello".freeze.slice!('llo')     }.should raise_error(FrozenError)
+    -> { "this is a string".freeze.slice!('zzz')}.should raise_error(FrozenError)
+    -> { "this is a string".freeze.slice!('zzz')}.should raise_error(FrozenError)
   end
 end

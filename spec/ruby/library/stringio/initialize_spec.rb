@@ -110,9 +110,9 @@ describe "StringIO#initialize when passed [Object, mode]" do
     io.closed_write?.should be_false
   end
 
-  it "raises a #{frozen_error_class} when passed a frozen String in truncate mode as StringIO backend" do
+  it "raises a FrozenError when passed a frozen String in truncate mode as StringIO backend" do
     io = StringIO.allocate
-    -> { io.send(:initialize, "example".freeze, IO::TRUNC) }.should raise_error(frozen_error_class)
+    -> { io.send(:initialize, "example".freeze, IO::TRUNC) }.should raise_error(FrozenError)
   end
 
   it "tries to convert the passed mode to a String using #to_str" do

@@ -59,10 +59,10 @@ describe "String#insert with index, other" do
     -> { "abcd".insert(-6, mock('x')) }.should raise_error(TypeError)
   end
 
-  it "raises a #{frozen_error_class} if self is frozen" do
+  it "raises a FrozenError if self is frozen" do
     str = "abcd".freeze
-    -> { str.insert(4, '')  }.should raise_error(frozen_error_class)
-    -> { str.insert(4, 'X') }.should raise_error(frozen_error_class)
+    -> { str.insert(4, '')  }.should raise_error(FrozenError)
+    -> { str.insert(4, 'X') }.should raise_error(FrozenError)
   end
 
   it "inserts a character into a multibyte encoded string" do

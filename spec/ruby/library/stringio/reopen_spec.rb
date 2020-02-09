@@ -50,8 +50,8 @@ describe "StringIO#reopen when passed [Object, Integer]" do
     -> { @io.reopen("burn".freeze, IO::WRONLY | IO::APPEND) }.should raise_error(Errno::EACCES)
   end
 
-  it "raises a #{frozen_error_class} when trying to reopen self with a frozen String in truncate-mode" do
-    -> { @io.reopen("burn".freeze, IO::RDONLY | IO::TRUNC) }.should raise_error(frozen_error_class)
+  it "raises a FrozenError when trying to reopen self with a frozen String in truncate-mode" do
+    -> { @io.reopen("burn".freeze, IO::RDONLY | IO::TRUNC) }.should raise_error(FrozenError)
   end
 
   it "does not raise IOError when passed a frozen String in read-mode" do

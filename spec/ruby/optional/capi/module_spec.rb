@@ -336,12 +336,12 @@ describe "CApiModule" do
         @frozen = @class.dup.freeze
       end
 
-      it "raises a #{frozen_error_class} when passed a name" do
-        -> { @m.rb_undef_method @frozen, "ruby_test_method" }.should raise_error(frozen_error_class)
+      it "raises a FrozenError when passed a name" do
+        -> { @m.rb_undef_method @frozen, "ruby_test_method" }.should raise_error(FrozenError)
       end
 
-      it "raises a #{frozen_error_class} when passed a missing name" do
-        -> { @m.rb_undef_method @frozen, "not_exist" }.should raise_error(frozen_error_class)
+      it "raises a FrozenError when passed a missing name" do
+        -> { @m.rb_undef_method @frozen, "not_exist" }.should raise_error(FrozenError)
       end
     end
   end
