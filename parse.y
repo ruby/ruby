@@ -1479,7 +1479,6 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 command_asgn	: lhs '=' command_rhs
 		    {
 		    /*%%%*/
-			value_expr($3);
 			$$ = node_assign(p, $1, $3, &@$);
 		    /*% %*/
 		    /*% ripper: assign!($1, $3) %*/
@@ -1487,7 +1486,6 @@ command_asgn	: lhs '=' command_rhs
 		| var_lhs tOP_ASGN command_rhs
 		    {
 		    /*%%%*/
-			value_expr($3);
 			$$ = new_op_assign(p, $1, $2, $3, &@$);
 		    /*% %*/
 		    /*% ripper: opassign!($1, $2, $3) %*/
@@ -1495,7 +1493,6 @@ command_asgn	: lhs '=' command_rhs
 		| primary_value '[' opt_call_args rbracket tOP_ASGN command_rhs
 		    {
 		    /*%%%*/
-			value_expr($6);
 			$$ = new_ary_op_assign(p, $1, $3, $5, $6, &@3, &@$);
 		    /*% %*/
 		    /*% ripper: opassign!(aref_field!($1, escape_Qundef($3)), $5, $6) %*/
@@ -1504,7 +1501,6 @@ command_asgn	: lhs '=' command_rhs
 		| primary_value call_op tIDENTIFIER tOP_ASGN command_rhs
 		    {
 		    /*%%%*/
-			value_expr($5);
 			$$ = new_attr_op_assign(p, $1, $2, $3, $4, $5, &@$);
 		    /*% %*/
 		    /*% ripper: opassign!(field!($1, $2, $3), $4, $5) %*/
@@ -1512,7 +1508,6 @@ command_asgn	: lhs '=' command_rhs
 		| primary_value call_op tCONSTANT tOP_ASGN command_rhs
 		    {
 		    /*%%%*/
-			value_expr($5);
 			$$ = new_attr_op_assign(p, $1, $2, $3, $4, $5, &@$);
 		    /*% %*/
 		    /*% ripper: opassign!(field!($1, $2, $3), $4, $5) %*/
@@ -1528,7 +1523,6 @@ command_asgn	: lhs '=' command_rhs
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN command_rhs
 		    {
 		    /*%%%*/
-			value_expr($5);
 			$$ = new_attr_op_assign(p, $1, ID2VAL(idCOLON2), $3, $4, $5, &@$);
 		    /*% %*/
 		    /*% ripper: opassign!(field!($1, ID2VAL(idCOLON2), $3), $4, $5) %*/
