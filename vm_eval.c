@@ -1748,13 +1748,6 @@ rb_eval_cmd_kw(VALUE cmd, VALUE arg, int kw_splat)
     return val;
 }
 
-VALUE
-rb_eval_cmd(VALUE cmd, VALUE arg, int _level)
-{
-    rb_warn("rb_eval_cmd will be removed in Ruby 3.0");
-    return rb_eval_cmd_kw(cmd, arg, RB_NO_KEYWORDS);
-}
-
 /* block eval under the class/module context */
 
 static VALUE
