@@ -38,6 +38,7 @@ It runs (about) three test suites:
 * `make test` (a test suite for the interpreter core)
 * `make test-all` : (for all builtin classes and libraries)
 * `make test-spec` : (a conformance test suite for Ruby implementations)
+* `make test-bundler` : (a test suite for the bundler examples)
 
 ## How to run the test suite with log
 
@@ -66,6 +67,8 @@ $ make test-all TESTS="test/ruby/test_foo.rb -n /test_bar/"
 
 ```
 $ make test-spec MSPECOPT=spec/ruby/core/foo/bar_spec.rb
+
+$ make test-bundler BUNDLER_SPECS=commands/exec_spec.rb:58
 ```
 
 ## How to measure coverage of C and Ruby code
