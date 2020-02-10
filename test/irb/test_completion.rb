@@ -31,5 +31,9 @@ module TestIRB
       assert_include(IRB::InputCompletor.retrieve_completion_data(":a", bind: binding), ":aiueo")
       assert_empty(IRB::InputCompletor.retrieve_completion_data(":abcdefg", bind: binding))
     end
+
+    def test_complete_symbol_failure
+      assert_nil(IRB::InputCompletor::PerfectMatchedProc.(":aiueo", bind: binding))
+    end
   end
 end

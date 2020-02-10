@@ -265,14 +265,14 @@ module IRB
       end
     end
 
-    PerfectMatchedProc = ->(matched) {
+    PerfectMatchedProc = ->(matched, bind: IRB.conf[:MAIN_CONTEXT].workspace.binding) {
       RDocRIDriver ||= RDoc::RI::Driver.new
       if matched =~ /\A(?:::)?RubyVM/ and not ENV['RUBY_YES_I_AM_NOT_A_NORMAL_USER']
         IRB.send(:easter_egg)
         return
       end
-      namespace = retrieve_completion_data(matched, doc_namespace: true)
-      return unless matched
+      namespace = retrieve_completion_data(matched, bind: bind, doc_namespace: true)
+      return unless namespace
       if namespace.is_a?(Array)
         out = RDoc::Markup::Document.new
         namespace.each do |m|
