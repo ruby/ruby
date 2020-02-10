@@ -1166,6 +1166,12 @@ x = __ENCODING__
     assert_valid_syntax('let () { m(a) do; end }')
   end
 
+  def test_void_value_in_command_rhs
+    w = "void value expression"
+    ex = assert_syntax_error("x = return 1", w)
+    assert_equal(1, ex.message.scan(w).size, "same #{w.inspect} warning should be just once")
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}
