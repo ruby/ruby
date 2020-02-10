@@ -919,7 +919,7 @@ enc_compatible_latter(VALUE str1, VALUE str2, int idx1, int idx2)
     if (isstr2 && RSTRING_LEN(str2) == 0)
 	return enc1;
     isstr1 = RB_TYPE_P(str1, T_STRING);
-    if (isstr1 && RSTRING_LEN(str1) == 0)
+    if (isstr1 && isstr2 && RSTRING_LEN(str1) == 0)
 	return (rb_enc_asciicompat(enc1) && rb_enc_str_asciionly_p(str2)) ? enc1 : enc2;
     if (!rb_enc_asciicompat(enc1) || !rb_enc_asciicompat(enc2)) {
 	return 0;
