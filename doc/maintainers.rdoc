@@ -124,8 +124,6 @@ Zachary Scott (zzak)
   Tanaka Akira (akr)
 [ext/pty]
   _unmaintained_
-[ext/readline]
-  TAKAO Kouji (kouji)
 [ext/ripper]
   _unmaintained_
 [ext/socket]
@@ -318,6 +316,10 @@ Zachary Scott (zzak)
   Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/racc
   https://rubygems.org/gems/racc
+[ext/readline]
+  TAKAO Kouji (kouji)
+  https://github.com/ruby/readline-ext
+  http:://rubygems.org/gems/readline-ext
 [ext/sdbm]
   Yukihiro Matsumoto (matz)
   https://github.com/ruby/sdbm
