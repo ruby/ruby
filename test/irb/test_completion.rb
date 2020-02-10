@@ -25,5 +25,11 @@ module TestIRB
       assert_include(IRB::InputCompletor.retrieve_completion_data("1r.positi", bind: binding), "1r.positive?")
       assert_empty(IRB::InputCompletor.retrieve_completion_data("1i.positi", bind: binding))
     end
+
+    def test_complete_symbol
+      :aiueo
+      assert_include(IRB::InputCompletor.retrieve_completion_data(":a", bind: binding), ":aiueo")
+      assert_empty(IRB::InputCompletor.retrieve_completion_data(":abcdefg", bind: binding))
+    end
   end
 end
