@@ -5697,8 +5697,9 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
 
 /*
  *  Time is an abstraction of dates and times. Time is stored internally as
- *  the number of seconds with fraction since the _Epoch_, January 1, 1970
- *  00:00 UTC. Also see the library module Date. The Time class treats GMT
+ *  the number of seconds with fraction since the _Epoch_,
+ *  1970-01-01 00:00:00 UTC.
+ *  The Time class treats GMT
  *  (Greenwich Mean Time) and UTC (Coordinated Universal Time) as equivalent.
  *  GMT is the older way of referring to these baseline times but persists in
  *  the names of calls on POSIX systems.
