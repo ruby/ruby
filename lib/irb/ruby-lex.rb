@@ -394,6 +394,7 @@ class RubyLex
           spaces_of_nest.pop
           corresponding_token_depth = nil
         end
+        open_brace_on_line -= 1
       when :on_kw
         next if index > 0 and @tokens[index - 1][3].allbits?(Ripper::EXPR_FNAME)
         case t[2]
