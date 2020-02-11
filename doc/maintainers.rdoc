@@ -99,8 +99,6 @@ Zachary Scott (zzak)
   WATANABE Hirofumi (eban)
 [lib/unicode_normalize.rb, lib/unicode_normalize/*]
   Martin J. Dürst
-[lib/weakref.rb]
-  _unmaintained_
 
 === Extensions
 
@@ -261,6 +259,9 @@ Zachary Scott (zzak)
 [lib/yaml.rb, lib/yaml/*]
   Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/yaml
+[lib/weakref.rb]
+  _unmaintained_
+  https://github.com/ruby/weakref
 
 === Extensions
 
