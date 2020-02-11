@@ -5792,7 +5792,8 @@ env_clear(VALUE _)
  * call-seq:
  *   ENV.to_s -> "ENV"
  *
- * Returns "ENV"
+ * Returns String 'ENV':
+ *   ENV.to_s # => "ENV"
  */
 static VALUE
 env_to_s(VALUE _)
@@ -5804,7 +5805,9 @@ env_to_s(VALUE _)
  * call-seq:
  *   ENV.inspect -> string
  *
- * Returns the contents of the environment as a String.
+ * Returns the contents of the environment as a String:
+ *   ENV.replace('foo' => '0', 'bar' => '1')
+ *   ENV.inspect # => "{\"bar\"=>\"1\", \"foo\"=>\"0\"}"
  */
 static VALUE
 env_inspect(VALUE _)
@@ -5839,10 +5842,10 @@ env_inspect(VALUE _)
  * call-seq:
  *   ENV.to_a -> Array
  *
- * Converts the environment variables into an array of names and value arrays.
- *
- *   ENV.to_a # => [["TERM", "xterm-color"], ["SHELL", "/bin/bash"], ...]
- *
+ * Returns the contents of ENV as an Array of 2-element Arrays,
+ * each of which is a name/value pair:
+ *   ENV.replace('foo' => '0', 'bar' => '1')
+ *   ENV.to_a # => [["bar", "1"], ["foo", "0"]]
  */
 static VALUE
 env_to_a(VALUE _)
@@ -5866,10 +5869,14 @@ env_to_a(VALUE _)
 
 /*
  * call-seq:
- *   ENV.rehash
+ *   ENV.rehash -> nil
  *
- * Re-hashing the environment variables does nothing.  It is provided for
- * compatibility with Hash.
+ * (Provided for compatibility with Hash.)
+ *
+ * Does not modify ENV; returns +nil+:
+ *   ENV.replace('foo' => '0', 'bar' => '1')
+ *   ENV.rehash # => nil
+ *   ENV # => {"bar"=>"1", "foo"=>"0"}
  */
 static VALUE
 env_none(VALUE _)
@@ -5879,10 +5886,13 @@ env_none(VALUE _)
 
 /*
  * call-seq:
- *   ENV.length
- *   ENV.size
+ *   ENV.length -> Integer
+ *   ENV.size   -> Integer
  *
- * Returns the number of environment variables.
+ * Returns the count of environment variables:
+ *   ENV.replace('foo' => '0', 'bar' => '1')
+ *   ENV.length # => 2
+ *   ENV.size # => 2
  */
 static VALUE
 env_size(VALUE _)
@@ -5901,7 +5911,11 @@ env_size(VALUE _)
  * call-seq:
  *   ENV.empty? -> true or false
  *
- * Returns true when there are no environment variables
+ * Returns +true+ when there are no environment variables, +false+ otherwise:
+ *   ENV.clear
+ *   ENV.empty? # =? true
+ *   ENV['foo'] = '0'
+ *   ENV.empty? # => false
  */
 static VALUE
 env_empty_p(VALUE _)
@@ -5959,12 +5973,12 @@ env_has_key(VALUE env, VALUE key)
  * Returns a 2-element Array containing the name and value of the environment variable
  * for +name+ if it exists:
  *   ENV.replace('foo' => '0', 'bar' => '1')
- *   ENV.assoc('foo') # => ['foo' '0']
+ *   ENV.assoc('foo') # => ['foo', '0']
  * Returns +nil+ if +name+ is a valid String and there is no such environment variable:
- *   ENV.assoc('baz') # => false
+ *   ENV.assoc('baz') # => nil
  * Returns +nil+ if +name+ is the empty String or is a String containing character <code>'='</code>:
- *   ENV.assoc('') # => false
- *   ENV.assoc('=') # => false
+ *   ENV.assoc('') # => nil
+ *   ENV.assoc('=') # => nil
  * Raises an exception if +name+ is a String containing the NUL character <code>"\0"</code>:
  *   ENV.assoc("\0") # Raises ArgumentError (bad environment variable name: contains null byte)
  * Raises an exception if +name+ has an encoding that is not ASCII-compatible:
@@ -5989,7 +6003,12 @@ env_assoc(VALUE env, VALUE key)
  *   ENV.value?(value) -> true or false
  *   ENV.has_value?(value) -> true or false
  *
- * Returns +true+ if there is an environment variable with the given +value+.
+ * Returns +true+ if +value+ is the value for some environment variable name, +false+ otherwise.:
+ *   ENV.replace('foo' => '0', 'bar' => '1')
+ *   ENV.value?('0') # => true
+ *   ENV.has_value?('0') # => true
+ *   ENV.value?('2') # => false
+ *   ENV.has_value?('2') # => false
  */
 static VALUE
 env_has_value(VALUE dmy, VALUE obj)
@@ -6018,8 +6037,17 @@ env_has_value(VALUE dmy, VALUE obj)
  * call-seq:
  *   ENV.rassoc(value)
  *
- * Returns an Array of the name and value of the environment variable with
- * +value+ or +nil+ if the value cannot be found.
+ * Returns a 2-element Array containing the value and name of the *first* *found* environment variable
+ * that has value +value+, if one exists (see {About Ordering}[#class-ENV-label-About+Ordering]):
+ *   ENV.replace('foo' => '0', 'bar' => '0')
+ *   ENV.rassoc('0') # => ["bar", "0"]
+ * Returns +nil+ if there is no such environment variable:
+ *   ENV.rassoc('2') # => nil
+ *   ENV.rassoc('') # => nil
+ *   ENV.rassoc('=') # => nil
+ *   ENV.rassoc("\0") # => nil
+ *   ENV.rassoc(Object.new) # => nil
+ *   ENV.rassoc("\xa1\xa1".force_encoding(Encoding::UTF_16LE)) # => nil
  */
 static VALUE
 env_rassoc(VALUE dmy, VALUE obj)
