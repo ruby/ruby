@@ -117,6 +117,7 @@ lcov*.info
 /rename2.h
 /repack
 /revision.h
+/revision.tmp
 /riscos
 /rubicon
 /ruby
