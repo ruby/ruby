@@ -12,6 +12,8 @@ sufficient information, see the ChangeLog file or Redmine
 
 * $SAFE is now a normal global variable with no special behavior. [Feature #16131]
 
+* yield in singleton class definitions in methods is now a SyntaxError. [Feature #15575]
+
 ## Command line options
 
 ## Core classes updates (outstanding ones only)
