@@ -550,6 +550,60 @@ module Net
       end
     end
 
+    # Sends a NAMESPACE command [RFC2342] and returns the namespaces that are
+    # available. The NAMESPACE command allows a client to discover the prefixes
+    # of namespaces used by a server for personal mailboxes, other users'
+    # mailboxes, and shared mailboxes.
+    #
+    # This extension predates IMAP4rev1 (RFC3501), so most IMAP servers support
+    # it. Many popular IMAP servers are configured with the default personal
+    # namespaces as `("" "/")`: no prefix and "/" hierarchy delimiter. In that
+    # common case, the naive client may not have any trouble naming mailboxes.
+    #
+    # But many servers are configured with the default personal namespace as
+    # e.g. `("INBOX." ".")`, placing all personal folders under INBOX, with "."
+    # as the hierarchy delimiter. If the client does not check for this, but
+    # naively assumes it can use the same folder names for all servers, then
+    # folder creation (and listing, moving, etc) can lead to errors.
+    #
+    # From RFC2342:
+    #
+    #    Although typically a server will support only a single Personal
+    #    Namespace, and a single Other User's Namespace, circumstances exist
+    #    where there MAY be multiples of these, and a client MUST be prepared
+    #    for them. If a client is configured such that it is required to create
+    #    a certain mailbox, there can be circumstances where it is unclear which
+    #    Personal Namespaces it should create the mailbox in. In these
+    #    situations a client SHOULD let the user select which namespaces to
+    #    create the mailbox in.
+    #
+    # The user of this method should first check if the server supports the
+    # NAMESPACE capability.  The return value is a +Net::IMAP::Namespaces+
+    # object which has +personal+, +other+, and +shared+ fields, each an array
+    # of +Net::IMAP::Namespace+ objects. These arrays will be empty when the
+    # server responds with nil.
+    #
+    # For example:
+    #
+    #    capabilities = imap.capability
+    #    if capabilities.include?("NAMESPACE")
+    #      namespaces = imap.namespace
+    #      if namespace = namespaces.personal.first
+    #        prefix = namespace.prefix  # e.g. "" or "INBOX."
+    #        delim  = namespace.delim   # e.g. "/" or "."
+    #        # personal folders should use the prefix and delimiter
+    #        imap.create(prefix + "foo")
+    #        imap.create(prefix + "bar")
+    #        imap.create(prefix + %w[path to my folder].join(delim))
+    #      end
+    #    end
+    def namespace
+      synchronize do
+        send_command("NAMESPACE")
+        return @responses.delete("NAMESPACE")[-1]
+      end
+    end
+
     # Sends a XLIST command, and returns a subset of names from
     # the complete set of all names available to the client.
     # +refname+ provides a context (for instance, a base directory
@@ -1870,6 +1924,39 @@ module Net
     #
     MailboxACLItem = Struct.new(:user, :rights, :mailbox)
 
+    # Net::IMAP::Namespace represents a single [RFC-2342] namespace.
+    #
+    #    Namespace = nil / "(" 1*( "(" string SP  (<"> QUOTED_CHAR <"> /
+    #       nil) *(Namespace_Response_Extension) ")" ) ")"
+    #
+    #    Namespace_Response_Extension = SP string SP "(" string *(SP string)
+    #       ")"
+    #
+    # ==== Fields:
+    #
+    # prefix:: Returns the namespace prefix string.
+    # delim:: Returns nil or the hierarchy delimiter character.
+    # extensions:: Returns a hash of extension names to extension flag arrays.
+    #
+    Namespace = Struct.new(:prefix, :delim, :extensions)
+
+    # Net::IMAP::Namespaces represents the response from [RFC-2342] NAMESPACE.
+    #
+    #    Namespace_Response = "*" SP "NAMESPACE" SP Namespace SP Namespace SP
+    #       Namespace
+    #
+    #       ; The first Namespace is the Personal Namespace(s)
+    #       ; The second Namespace is the Other Users' Namespace(s)
+    #       ; The third Namespace is the Shared Namespace(s)
+    #
+    # ==== Fields:
+    #
+    # personal:: Returns an array of Personal Net::IMAP::Namespace objects.
+    # other:: Returns an array of Other Users' Net::IMAP::Namespace objects.
+    # shared:: Returns an array of Shared Net::IMAP::Namespace objects.
+    #
+    Namespaces = Struct.new(:personal, :other, :shared)
+
     # Net::IMAP::StatusData represents the contents of the STATUS response.
     #
     # ==== Fields:
@@ -2305,6 +2392,8 @@ module Net
             return status_response
           when /\A(?:CAPABILITY)\z/ni
             return capability_response
+          when /\A(?:NAMESPACE)\z/ni
+            return namespace_response
           else
             return text_response
           end
@@ -3125,6 +3214,69 @@ module Net
           data.push(atom.upcase)
         end
         return UntaggedResponse.new(name, data, @str)
+      end
+
+      def namespace_response
+        @lex_state = EXPR_DATA
+        token = lookahead
+        token = match(T_ATOM)
+        name = token.value.upcase
+        match(T_SPACE)
+        personal = namespaces
+        match(T_SPACE)
+        other = namespaces
+        match(T_SPACE)
+        shared = namespaces
+        @lex_state = EXPR_BEG
+        data = Namespaces.new(personal, other, shared)
+        return UntaggedResponse.new(name, data, @str)
+      end
+
+      def namespaces
+        token = lookahead
+        # empty () is not allowed, so nil is functionally identical to empty.
+        data = []
+        if token.symbol == T_NIL
+          shift_token
+        else
+          match(T_LPAR)
+          loop do
+            data << namespace
+            break unless lookahead.symbol == T_SPACE
+            shift_token
+          end
+          match(T_RPAR)
+        end
+        data
+      end
+
+      def namespace
+        match(T_LPAR)
+        prefix = match(T_QUOTED, T_LITERAL).value
+        match(T_SPACE)
+        delimiter = string
+        extensions = namespace_response_extensions
+        match(T_RPAR)
+        Namespace.new(prefix, delimiter, extensions)
+      end
+
+      def namespace_response_extensions
+        data = {}
+        token = lookahead
+        if token.symbol == T_SPACE
+          shift_token
+          name = match(T_QUOTED, T_LITERAL).value
+          data[name] ||= []
+          match(T_SPACE)
+          match(T_LPAR)
+          loop do
+            data[name].push match(T_QUOTED, T_LITERAL).value
+            break unless lookahead.symbol == T_SPACE
+            shift_token
+          end
+          match(T_RPAR)
+        end
+        data
       end
 
       def resp_text

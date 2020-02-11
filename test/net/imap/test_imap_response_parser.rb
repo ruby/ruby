@@ -308,4 +308,37 @@ EOF
     assert_equal(nil, response.data.code)
     assert_equal("", response.data.text)
   end
+
+  def test_namespace
+    parser = Net::IMAP::ResponseParser.new
+    # RFC2342 Example 5.1
+    response = parser.parse(%Q{* NAMESPACE (("" "/")) NIL NIL\r\n})
+    assert_equal("NAMESPACE", response.name)
+    assert_equal([Net::IMAP::Namespace.new("", "/", {})], response.data.personal)
+    assert_equal([], response.data.other)
+    assert_equal([], response.data.shared)
+    # RFC2342 Example 5.4
+    response = parser.parse(%Q{* NAMESPACE (("" "/")) (("~" "/")) (("#shared/" "/")} +
+                            %Q{ ("#public/" "/") ("#ftp/" "/") ("#news." "."))\r\n})
+    assert_equal("NAMESPACE", response.name)
+    assert_equal([Net::IMAP::Namespace.new("", "/", {})], response.data.personal)
+    assert_equal([Net::IMAP::Namespace.new("~", "/", {})], response.data.other)
+    assert_equal(
+      [
+        Net::IMAP::Namespace.new("#shared/", "/", {}),
+        Net::IMAP::Namespace.new("#public/", "/", {}),
+        Net::IMAP::Namespace.new("#ftp/", "/", {}),
+        Net::IMAP::Namespace.new("#news.", ".", {}),
+      ],
+      response.data.shared
+    )
+    # RFC2342 Example 5.6
+    response = parser.parse(%Q{* NAMESPACE (("" "/") ("#mh/" "/" "X-PARAM" ("FLAG1" "FLAG2"))) NIL NIL\r\n})
+    assert_equal("NAMESPACE", response.name)
+    namespace = response.data.personal.last
+    assert_equal("#mh/", namespace.prefix)
+    assert_equal("/", namespace.delim)
+    assert_equal({"X-PARAM" => ["FLAG1", "FLAG2"]}, namespace.extensions)
+  end
+
 end
