@@ -296,14 +296,19 @@ assert_equal "true", %q{
   s.return_eigenclass == class << s; self; end
 }, '[ruby-core:21379]'
 
-assert_equal "true", %q{
-  class Object
-    def yield_eigenclass
-      class << self
-        yield self
+assert_match %r{Invalid yield}, %q{
+STDERR.reopen(STDOUT)
+begin
+  eval %q{
+    class Object
+      def yield_eigenclass
+        class << self
+          yield self
+        end
       end
     end
-  end
-  s = "foo"
-  s.yield_eigenclass {|c| c == class << s; self; end }
-}, '[ruby-dev:40975]'
+  }
+rescue SyntaxError => e
+  e.message
+end
+}

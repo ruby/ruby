@@ -312,7 +312,7 @@ class TestClass < Test::Unit::TestCase
   end
 
   def test_invalid_yield_from_class_definition
-    assert_raise(LocalJumpError) {
+    assert_raise(SyntaxError) {
       EnvUtil.suppress_warning {eval("class C; yield; end")}
     }
   end
