@@ -113,6 +113,51 @@ module Test
         end
       end
 
+      def assert_no_memory_leak(args, prepare, code, message=nil, limit: 2.0, rss: false, **opt)
+        # TODO: consider choosing some appropriate limit for MJIT and stop skipping this once it does not randomly fail
+        pend 'assert_no_memory_leak may consider MJIT memory usage as leak' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+
+        require_relative '../../memory_status'
+        raise MiniTest::Skip, "unsupported platform" unless defined?(Memory::Status)
+
+        token = "\e[7;1m#{$$.to_s}:#{Time.now.strftime('%s.%L')}:#{rand(0x10000).to_s(16)}:\e[m"
+        token_dump = token.dump
+        token_re = Regexp.quote(token)
+        envs = args.shift if Array === args and Hash === args.first
+        args = [
+          "--disable=gems",
+          "-r", File.expand_path("../../../memory_status", __FILE__),
+          *args,
+          "-v", "-",
+        ]
+        if defined? Memory::NO_MEMORY_LEAK_ENVS then
+          envs ||= {}
+          newenvs = envs.merge(Memory::NO_MEMORY_LEAK_ENVS) { |_, _, _| break }
+          envs = newenvs if newenvs
+        end
+        args.unshift(envs) if envs
+        cmd = [
+          'END {STDERR.puts '"#{token_dump}"'"FINAL=#{Memory::Status.new}"}',
+          prepare,
+          'STDERR.puts('"#{token_dump}"'"START=#{$initial_status = Memory::Status.new}")',
+          '$initial_size = $initial_status.size',
+          code,
+          'GC.start',
+        ].join("\n")
+        _, err, status = EnvUtil.invoke_ruby(args, cmd, true, true, **opt)
+        before = err.sub!(/^#{token_re}START=(\{.*\})\n/, '') && Memory::Status.parse($1)
+        after = err.sub!(/^#{token_re}FINAL=(\{.*\})\n/, '') && Memory::Status.parse($1)
+        assert(status.success?, FailDesc[status, message, err])
+        ([:size, (rss && :rss)] & after.members).each do |n|
+          b = before[n]
+          a = after[n]
+          next unless a > 0 and b > 0
+          assert_operator(a.fdiv(b), :<, limit, message(message) {"#{n}: #{b} => #{a}"})
+        end
+      rescue LoadError
+        pend
+      end
+
       # :call-seq:
       #   assert_nothing_raised( *args, &block )
       #
