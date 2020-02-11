@@ -2399,6 +2399,15 @@ EOS
     r.close if r
   end if defined?(fork)
 
+  def test_rescue_exec_fail
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_raise(Errno::ENOENT) do
+        exec("", in: "")
+      end
+    end;
+  end
+
   def test_many_args
     bug11418 = '[ruby-core:70251] [Bug #11418]'
     assert_in_out_err([], <<-"end;", ["x"]*256, [], bug11418, timeout: 60)

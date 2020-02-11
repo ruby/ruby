@@ -2885,13 +2885,20 @@ rb_f_exec(int argc, const VALUE *argv)
     struct rb_execarg *eargp;
 #define CHILD_ERRMSG_BUFLEN 80
     char errmsg[CHILD_ERRMSG_BUFLEN] = { '\0' };
-    int err;
+    int err, state;
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE, FALSE);
     eargp = rb_execarg_get(execarg_obj);
     if (mjit_enabled) mjit_finish(false); // avoid leaking resources, and do not leave files. XXX: JIT-ed handle can leak after exec error is rescued.
     before_exec(); /* stop timer thread before redirects */
-    rb_execarg_parent_start(execarg_obj);
+
+    rb_protect(rb_execarg_parent_start1, execarg_obj, &state);
+    if (state) {
+        execarg_parent_end(execarg_obj);
+        after_exec(); /* restart timer thread */
+        rb_jump_tag(state);
+    }
+
     fail_str = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
 
     err = exec_async_signal_safe(eargp, errmsg, sizeof(errmsg));
