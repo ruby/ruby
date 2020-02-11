@@ -6038,9 +6038,12 @@ env_has_value(VALUE dmy, VALUE obj)
  *   ENV.rassoc(value)
  *
  * Returns a 2-element Array containing the value and name of the *first* *found* environment variable
- * that has value +value+, if one exists (see {About Ordering}[#class-ENV-label-About+Ordering]):
+ * that has value +value+, if one exists:
  *   ENV.replace('foo' => '0', 'bar' => '0')
  *   ENV.rassoc('0') # => ["bar", "0"]
+ * The order in which environment variables are examined is OS-dependent.
+ * See {About Ordering}[#class-ENV-label-About+Ordering].
+ *
  * Returns +nil+ if there is no such environment variable:
  *   ENV.rassoc('2') # => nil
  *   ENV.rassoc('') # => nil
@@ -6077,16 +6080,17 @@ env_rassoc(VALUE dmy, VALUE obj)
  * call-seq:
  *   ENV.key(value) -> name or nil
  *
- * Returns the name of the first environment variable with +value+ if it exists:
- *   ENV.replace('foo' => '0', 'bar' => '1')
- *   ENV.key('0') # =>'foo'
+ * Returns the name of the first environment variable with +value+, if it exists:
+ *   ENV.replace('foo' => '0', 'bar' => '0')
+ *   ENV.key('0') # =>"foo"
  * The order in which environment variables are examined is OS-dependent.
  * See {About Ordering}[#class-ENV-label-About+Ordering].
  *
  * Returns +nil+ if there is no such value:
  *   ENV.key('2') # => nil
- * Raises an exception if +value+ is not a String:
+ * Raises an exception if +value+ is invalid:
  *   ENV.key(Object.new) # raises TypeError (no implicit conversion of Object into String)
+ * See {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values]
  */
 static VALUE
 env_key(VALUE dmy, VALUE value)
@@ -6116,7 +6120,7 @@ env_key(VALUE dmy, VALUE value)
  * call-seq:
  *   ENV.index(value) -> key
  *
- * Deprecated method that is equivalent to ENV.key
+ * Deprecated method that is equivalent to ENV.key.
  */
 static VALUE
 env_index(VALUE dmy, VALUE value)
@@ -6147,10 +6151,11 @@ env_to_hash(void)
 
 /*
  * call-seq:
- *   ENV.to_hash -> hash
+ *   ENV.to_hash -> Hash
  *
- * Creates a hash with a copy of the environment variables.
- *
+ * Returns a Hash containing all name/value pairs from ENV:
+ *   ENV.replace('foo' => '0', 'bar' => '1')
+ *   ENV>to_hash # => {"bar"=>"1", "foo"=>"0"}
  */
 
 static VALUE
