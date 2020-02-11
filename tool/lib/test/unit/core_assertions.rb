@@ -94,6 +94,112 @@ module Test
         end
       end
 
+      if defined?(RubyVM::InstructionSequence)
+        def syntax_check(code, fname, line)
+          code = code.dup.force_encoding(Encoding::UTF_8)
+          RubyVM::InstructionSequence.compile(code, fname, fname, line)
+          :ok
+        ensure
+          raise if SyntaxError === $!
+        end
+      else
+        def syntax_check(code, fname, line)
+          code = code.b
+          code.sub!(/\A(?:\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
+            "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ok}\n"
+          }
+          code = code.force_encoding(Encoding::UTF_8)
+          catch {|tag| eval(code, binding, fname, line - 1)}
+        end
+      end
+
+      # :call-seq:
+      #   assert_nothing_raised( *args, &block )
+      #
+      #If any exceptions are given as arguments, the assertion will
+      #fail if one of those exceptions are raised. Otherwise, the test fails
+      #if any exceptions are raised.
+      #
+      #The final argument may be a failure message.
+      #
+      #    assert_nothing_raised RuntimeError do
+      #      raise Exception #Assertion passes, Exception is not a RuntimeError
+      #    end
+      #
+      #    assert_nothing_raised do
+      #      raise Exception #Assertion fails
+      #    end
+      def assert_nothing_raised(*args)
+        self._assertions += 1
+        if Module === args.last
+          msg = nil
+        else
+          msg = args.pop
+        end
+        begin
+          line = __LINE__; yield
+        rescue MiniTest::Skip
+          raise
+        rescue Exception => e
+          bt = e.backtrace
+          as = e.instance_of?(MiniTest::Assertion)
+          if as
+            ans = /\A#{Regexp.quote(__FILE__)}:#{line}:in /o
+            bt.reject! {|ln| ans =~ ln}
+          end
+          if ((args.empty? && !as) ||
+              args.any? {|a| a.instance_of?(Module) ? e.is_a?(a) : e.class == a })
+            msg = message(msg) { "Exception raised:\n<#{mu_pp(e)}>" }
+            raise MiniTest::Assertion, msg.call, bt
+          else
+            raise
+          end
+        end
+      end
+
+      def prepare_syntax_check(code, fname = nil, mesg = nil, verbose: nil)
+        fname ||= caller_locations(2, 1)[0]
+        mesg ||= fname.to_s
+        verbose, $VERBOSE = $VERBOSE, verbose
+        case
+        when Array === fname
+          fname, line = *fname
+        when defined?(fname.path) && defined?(fname.lineno)
+          fname, line = fname.path, fname.lineno
+        else
+          line = 1
+        end
+        yield(code, fname, line, message(mesg) {
+                if code.end_with?("\n")
+                  "```\n#{code}```\n"
+                else
+                  "```\n#{code}\n```\n""no-newline"
+                end
+              })
+      ensure
+        $VERBOSE = verbose
+      end
+
+      def assert_valid_syntax(code, *args, **opt)
+        prepare_syntax_check(code, *args, **opt) do |src, fname, line, mesg|
+          yield if defined?(yield)
+          assert_nothing_raised(SyntaxError, mesg) do
+            assert_equal(:ok, syntax_check(src, fname, line), mesg)
+          end
+        end
+      end
+
+      def assert_normal_exit(testsrc, message = '', child_env: nil, **opt)
+        assert_valid_syntax(testsrc, caller_locations(1, 1)[0])
+        if child_env
+          child_env = [child_env]
+        else
+          child_env = []
+        end
+        out, _, status = EnvUtil.invoke_ruby(child_env + %W'-W0', testsrc, true, :merge_to_stdout, **opt)
+        assert !status.signaled?, FailDesc[status, message, out]
+      end
+
       def assert_ruby_status(args, test_stdin="", message=nil, **opt)
         out, _, status = EnvUtil.invoke_ruby(args, test_stdin, true, :merge_to_stdout, **opt)
         desc = FailDesc[status, message, out]
