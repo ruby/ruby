@@ -1134,9 +1134,12 @@ static st_table *
 iv_index_tbl_make(VALUE obj)
 {
     VALUE klass = rb_obj_class(obj);
-    st_table *iv_index_tbl = RCLASS_IV_INDEX_TBL(klass);
+    st_table *iv_index_tbl;
 
-    if (!iv_index_tbl) {
+    if (!klass) {
+        rb_raise(rb_eTypeError, "hidden object cannot have instance variables");
+    }
+    if (!(iv_index_tbl = RCLASS_IV_INDEX_TBL(klass))) {
 	iv_index_tbl = RCLASS_IV_INDEX_TBL(klass) = st_init_numtable();
     }
 

@@ -65,6 +65,18 @@ class TestEncoding < Test::Unit::TestCase
     END;
   end
 
+  def test_extra_encoding
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      200.times {|i|
+        Encoding::UTF_8.replicate("dummy#{i}")
+      }
+      e = Encoding.list.last
+      format = "%d".force_encoding(e)
+      assert_raise(TypeError) {format % 0}
+    end;
+  end
+
   def test_dummy_p
     assert_equal(true, Encoding::ISO_2022_JP.dummy?)
     assert_equal(false, Encoding::UTF_8.dummy?)
