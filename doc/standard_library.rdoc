@@ -16,7 +16,6 @@ English.rb:: Require 'English.rb' to reference global variables with less crypti
 ERB:: An easy to use but powerful templating system for Ruby
 Find:: This module supports top-down traversal of a set of file paths
 MakeMakefile:: Module used to generate a Makefile for C extensions
-Monitor:: Provides an object or module to use safely by more than one thread
 Net::FTP:: Support for the File Transfer Protocol
 Net::HTTP:: HTTP client api for Ruby
 Net::IMAP:: Ruby client api for Internet Message Access Protocol
@@ -43,6 +42,7 @@ un.rb:: Utilities to replace common UNIX commands
 Coverage:: Provides coverage measurement for Ruby
 Digest:: Provides a framework for message digest libraries
 IO:: Extensions for Ruby IO class, including #wait and ::console
+Monitor:: Provides an object or module to use safely by more than one thread
 NKF:: Ruby extension for Network Kanji Filter
 objspace:: Extends ObjectSpace module to add methods for internal statistics
 Pathname:: Representation of the name of a file or directory on the filesystem

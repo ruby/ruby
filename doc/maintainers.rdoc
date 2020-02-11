@@ -54,8 +54,6 @@ Zachary Scott (zzak)
   Kazuki Tsujimoto (ktsj)
 [lib/mkmf.rb]
   _unmaintained_
-[lib/monitor.rb]
-  Shugo Maeda (shugo)
 [lib/net/ftp.rb]
   Shugo Maeda (shugo)
 [lib/net/imap.rb]
@@ -114,6 +112,8 @@ Zachary Scott (zzak)
   Nobuyuki Nakada (nobu)
 [ext/io/wait]
   Nobuyuki Nakada (nobu)
+[ext/monitor]
+  Koichi Sasada (ko1)
 [ext/nkf]
   NARUSE, Yui (naruse)
 [ext/objspace]
