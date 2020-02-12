@@ -199,6 +199,7 @@ VALUE rb_cSymbol;
 static VALUE str_replace_shared_without_enc(VALUE str2, VALUE str);
 static VALUE str_new_shared(VALUE klass, VALUE str);
 static VALUE str_new_frozen(VALUE klass, VALUE orig);
+static VALUE str_new_frozen_buffer(VALUE klass, VALUE orig, int copy_encoding);
 static VALUE str_new_static(VALUE klass, const char *ptr, long len, int encindex);
 static void str_make_independent_expand(VALUE str, long len, long expand, const int termlen);
 static inline void str_modifiable(VALUE str);
@@ -1225,7 +1226,7 @@ VALUE
 rb_str_tmp_frozen_acquire(VALUE orig)
 {
     if (OBJ_FROZEN_RAW(orig)) return orig;
-    return str_new_frozen(0, orig);
+    return str_new_frozen_buffer(0, orig, FALSE);
 }
 
 void
@@ -1256,6 +1257,12 @@ rb_str_tmp_frozen_release(VALUE orig, VALUE tmp)
 
 static VALUE
 str_new_frozen(VALUE klass, VALUE orig)
+{
+    return str_new_frozen_buffer(klass, orig, TRUE);
+}
+
+static VALUE
+str_new_frozen_buffer(VALUE klass, VALUE orig, int copy_encoding)
 {
     VALUE str;
 
@@ -1304,7 +1311,7 @@ str_new_frozen(VALUE klass, VALUE orig)
 	}
     }
 
-    rb_enc_cr_str_exact_copy(str, orig);
+    if (copy_encoding) rb_enc_cr_str_exact_copy(str, orig);
     OBJ_FREEZE(str);
     return str;
 }

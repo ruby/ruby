@@ -257,7 +257,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     blen = 0;
     bsiz = 120;
     result = rb_str_buf_new(bsiz);
-    rb_enc_copy(result, fmt);
+    rb_enc_associate(result, enc);
     buf = RSTRING_PTR(result);
     memset(buf, 0, bsiz);
     ENC_CODERANGE_SET(result, coderange);

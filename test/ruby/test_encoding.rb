@@ -73,7 +73,7 @@ class TestEncoding < Test::Unit::TestCase
       }
       e = Encoding.list.last
       format = "%d".force_encoding(e)
-      assert_raise(TypeError) {format % 0}
+      assert_equal("0", format % 0)
     end;
   end
 
