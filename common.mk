@@ -3270,6 +3270,7 @@ process.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 process.$(OBJEXT): $(top_srcdir)/internal/array.h
 process.$(OBJEXT): $(top_srcdir)/internal/bits.h
 process.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+process.$(OBJEXT): $(top_srcdir)/internal/dir.h
 process.$(OBJEXT): $(top_srcdir)/internal/error.h
 process.$(OBJEXT): $(top_srcdir)/internal/eval.h
 process.$(OBJEXT): $(top_srcdir)/internal/gc.h

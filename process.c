@@ -97,6 +97,7 @@ int initgroups(const char *, rb_gid_t);
 #include "hrtime.h"
 #include "internal.h"
 #include "internal/bits.h"
+#include "internal/dir.h"
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/hash.h"
@@ -3493,10 +3494,8 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
 
     if (eargp->chdir_given) {
         if (sargp) {
-            char *cwd = ruby_getcwd();
             sargp->chdir_given = 1;
-            sargp->chdir_dir = hide_obj(rb_str_new2(cwd));
-            xfree(cwd);
+            sargp->chdir_dir = hide_obj(rb_dir_getwd_ospath());
         }
         if (chdir(RSTRING_PTR(eargp->chdir_dir)) == -1) { /* async-signal-safe */
             ERRMSG("chdir");
