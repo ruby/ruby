@@ -85,8 +85,6 @@ Zachary Scott (zzak)
   Tanaka Akira (akr)
 [lib/shellwords.rb]
   Akinori MUSHA (knu)
-[lib/tempfile.rb]
-  _unmaintained_
 [lib/tmpdir.rb]
   _unmaintained_
 [lib/time.rb]
@@ -239,6 +237,9 @@ Zachary Scott (zzak)
   Yukihiro Matsumoto (matz)
   https://github.com/ruby/singleton
   https://rubygems.org/gems/singleton
+[lib/tempfile.rb]
+  _unmaintained_
+  https://github.com/ruby/tempfile
 [lib/timeout.rb]
   Yukihiro Matsumoto (matz)
   https://github.com/ruby/timeout
