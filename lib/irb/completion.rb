@@ -17,11 +17,12 @@ module IRB
     # Set of reserved words used by Ruby, you should not use these for
     # constants or variables
     ReservedWords = %w[
+      __ENCODING__ __LINE__ __FILE__
       BEGIN END
       alias and
       begin break
       case class
-      def defined do
+      def defined? do
       else elsif end ensure
       false for
       if in
@@ -255,7 +256,7 @@ module IRB
 
       else
         candidates = eval("methods | private_methods | local_variables | instance_variables | self.class.constants", bind).collect{|m| m.to_s}
-        conditions |= ReservedWords
+        candidates |= ReservedWords
 
         if doc_namespace
           candidates.find{ |i| i == input }
