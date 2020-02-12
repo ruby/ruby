@@ -10,7 +10,7 @@
 # prelude
 prelude.rb
 rbconfig.rb
-
+array.rb
 ast.rb
 gc.rb
 io.rb
