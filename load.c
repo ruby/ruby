@@ -870,7 +870,7 @@ search_required(VALUE fname, volatile VALUE *path, feature_func rb_feature_p)
 	    }
 	    tmp = rb_str_subseq(fname, 0, ext - RSTRING_PTR(fname));
 #ifdef DLEXT2
-	    OBJ_FREEZE(tmp);
+	    rb_str_freeze(tmp);
             if (rb_find_file_ext(&tmp, loadable_ext + 1)) {
 		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
 		if (!rb_feature_p(ftptr, ext, FALSE, TRUE, &loading) || loading)
@@ -879,7 +879,7 @@ search_required(VALUE fname, volatile VALUE *path, feature_func rb_feature_p)
 	    }
 #else
 	    rb_str_cat2(tmp, DLEXT);
-	    OBJ_FREEZE(tmp);
+	    rb_str_freeze(tmp);
             if ((tmp = rb_find_file(tmp)) != 0) {
 		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
 		if (!rb_feature_p(ftptr, ext, FALSE, TRUE, &loading) || loading)

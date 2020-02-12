@@ -1305,7 +1305,7 @@ str_new_frozen(VALUE klass, VALUE orig)
     }
 
     rb_enc_cr_str_exact_copy(str, orig);
-    OBJ_FREEZE(str);
+    rb_str_freeze(str);
     return str;
 }
 
@@ -2726,7 +2726,7 @@ rb_str_resize(VALUE str, long len)
     long slen;
     int independent;
 
-    if (len < 0) {
+    if (UNLIKELY(len < 0)) {
 	rb_raise(rb_eArgError, "negative string size (or size too big)");
     }
 
@@ -2761,7 +2761,7 @@ rb_str_resize(VALUE str, long len)
 	    str_make_independent_expand(str, slen, len - slen, termlen);
 	}
 	else if ((capa = RSTRING(str)->as.heap.aux.capa) < len ||
-		 (capa - len) > (len < 1024 ? len : 1024)) {
+		 (capa - len) > (len < 1024 ? len : 1024) || (len == slen && capa > slen)) {
 	    SIZED_REALLOC_N(RSTRING(str)->as.heap.ptr, char,
 	                    (size_t)len + termlen, STR_HEAP_SIZE(str));
 	    RSTRING(str)->as.heap.aux.capa = len;
