@@ -56,6 +56,7 @@
 # * https://github.com/ruby/openssl
 # * https://github.com/ruby/did_you_mean
 # * https://github.com/ruby/weakref
+# * https://github.com/ruby/tempfile
 #
 
 require 'fileutils'
@@ -110,6 +111,7 @@ $repositories = {
   openssl: "ruby/openssl",
   did_you_mean: "ruby/did_you_mean",
   weakref: "ruby/weakref",
+  tempfile: "ruby/tempfile",
 }
 
 def sync_default_gems(gem)
