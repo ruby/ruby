@@ -44,7 +44,7 @@ class TestEtc < Test::Unit::TestCase
     unless s.empty?
       assert_include(s, Etc.getpwuid)
     end
-  end
+  end unless RUBY_PLATFORM.include?("android")
 
   def test_getpwnam
     passwd = {}
@@ -54,7 +54,7 @@ class TestEtc < Test::Unit::TestCase
     passwd.each_value do |s|
       assert_equal(s, Etc.getpwnam(s.name))
     end
-  end
+  end unless RUBY_PLATFORM.include?("android")
 
   def test_passwd_with_low_level_api
     a = []
