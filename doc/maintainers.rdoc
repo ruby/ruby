@@ -85,8 +85,6 @@ Zachary Scott (zzak)
   Tanaka Akira (akr)
 [lib/shellwords.rb]
   Akinori MUSHA (knu)
-[lib/tmpdir.rb]
-  _unmaintained_
 [lib/time.rb]
   Tanaka Akira (akr)
 [lib/tsort.rb]
@@ -247,6 +245,9 @@ Zachary Scott (zzak)
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/thwait
   https://rubygems.org/gems/thwait
+[lib/tmpdir.rb]
+  _unmaintained_
+  https://github.com/ruby/tmpdir
 [lib/tracer.rb]
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/tracer
