@@ -585,15 +585,22 @@ class TestSuper < Test::Unit::TestCase
   end
 
   def test_super_with_define_method
-    superklass = Class.new do
+    superklass1 = Class.new do
       def foo; :foo; end
       def bar; :bar; end
+      def boo; :boo; end
     end
-    subklass = Class.new(superklass)
-    [:foo, :bar].each do |sym|
+    superklass2 = Class.new(superklass1) do
+      alias baz boo
+      def boo; :boo2; end
+    end
+    subklass = Class.new(superklass2)
+    [:foo, :bar, :baz, :boo].each do |sym|
       subklass.define_method(sym){ super() }
     end
     assert_equal :foo, subklass.new.foo
     assert_equal :bar, subklass.new.bar
+    assert_equal :boo, subklass.new.baz
+    assert_equal :boo2, subklass.new.boo
   end
 end

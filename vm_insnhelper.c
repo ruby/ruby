@@ -3161,7 +3161,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
 	if (LIKELY(RB_DEBUG_COUNTER_INC_UNLESS(mc_global_state_miss,
 			GET_GLOBAL_METHOD_STATE() == cc->method_state) &&
 			cc->class_serial[0] == RCLASS_SERIAL(klass)) &&
-			cc->me && ci->mid == cc->me->def->original_id) {
+			cc->me && ci->mid == cc->me->called_id) {
 	    VM_ASSERT(cc->call != NULL);
 	    RB_DEBUG_COUNTER_INC(mc_inline_hit);
 	    return;
