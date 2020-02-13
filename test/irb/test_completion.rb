@@ -27,7 +27,7 @@ module TestIRB
     end
 
     def test_complete_symbol
-      :aiueo
+      _ = :aiueo
       assert_include(IRB::InputCompletor.retrieve_completion_data(":a", bind: binding), ":aiueo")
       assert_empty(IRB::InputCompletor.retrieve_completion_data(":irb_unknown_symbol_abcdefg", bind: binding))
     end
