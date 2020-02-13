@@ -871,7 +871,7 @@ VALUE rb_obj_reveal(VALUE obj, VALUE klass); /* do not use this API to change kl
 
 #define RVALUE_EMBED_LEN_MAX RVALUE_EMBED_LEN_MAX
 enum ruby_rvalue_flags {
-    RVALUE_EMBED_LEN_MAX = 3,
+    RVALUE_EMBED_LEN_MAX = 3
 };
 
 #define ROBJECT_EMBED_LEN_MAX ROBJECT_EMBED_LEN_MAX
