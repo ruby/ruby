@@ -1,5 +1,9 @@
 #ifndef RUBY_RUBY_BACKWARD_H
 #define RUBY_RUBY_BACKWARD_H 1
+#include "ruby/3/core/rbasic.h"
+#include "ruby/3/value.h"
+#include "ruby/3/interpreter.h"
+#include "ruby/backward/2/attributes.h"
 
 #define RClass RClassDeprecated
 #ifndef __cplusplus
