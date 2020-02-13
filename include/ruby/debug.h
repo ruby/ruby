@@ -12,6 +12,8 @@
 #ifndef RB_DEBUG_H
 #define RB_DEBUG_H 1
 
+#include "ruby/3/event.h"
+
 #if defined(__cplusplus)
 extern "C" {
 #if 0

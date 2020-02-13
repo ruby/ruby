@@ -23,32 +23,10 @@ extern "C" {
 #include <stdio.h>
 
 #include "ruby/regex.h"
+#include "ruby/3/core/rmatch.h"
+#include "ruby/3/dllexport.h"
 
 RUBY_SYMBOL_EXPORT_BEGIN
-
-typedef struct re_pattern_buffer Regexp;
-
-struct rmatch_offset {
-    long beg;
-    long end;
-};
-
-struct rmatch {
-    struct re_registers regs;
-
-    struct rmatch_offset *char_offset;
-    int char_offset_num_allocated;
-};
-
-struct RMatch {
-    struct RBasic basic;
-    VALUE str;
-    struct rmatch *rmatch;
-    VALUE regexp;  /* RRegexp */
-};
-
-#define RMATCH(obj)  (R_CAST(RMatch)(obj))
-#define RMATCH_REGS(obj)  (&(R_CAST(RMatch)(obj))->rmatch->regs)
 
 VALUE rb_reg_regcomp(VALUE);
 long rb_reg_search(VALUE, VALUE, long, int);
