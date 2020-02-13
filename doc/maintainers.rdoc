@@ -38,8 +38,6 @@ Zachary Scott (zzak)
 
 === Libraries
 
-[lib/English.rb]
-  _unmaintained_
 [lib/abbrev.rb]
   Akinori MUSHA (knu)
 [lib/base64.rb]
@@ -150,6 +148,9 @@ Zachary Scott (zzak)
   Kenta Murata (mrkn), Kouhei Sutou (kou)
   https://github.com/ruby/csv
   https://rubygems.org/gems/csv
+[lib/English.rb]
+  _unmaintained_
+  https://github.com/ruby/English
 [lib/delegate.rb]
   _unmaintained_
   https://github.com/ruby/delegate
