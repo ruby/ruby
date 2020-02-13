@@ -189,6 +189,7 @@ const ID rb_iseq_shared_exc_local_tbl[] = {idERROR_INFO};
 #endif
 
 #if CPDEBUG > 1 || CPDEBUG < 0
+#undef printf
 #define printf ruby_debug_printf
 #define debugs if (compile_debug_print_indent(1)) ruby_debug_printf
 #define debug_compile(msg, v) ((void)(compile_debug_print_indent(1) && fputs((msg), stderr)), (v))
