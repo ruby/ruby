@@ -1,12 +1,10 @@
 # -*- encoding: utf-8 -*-
 # frozen_string_literal: true
 
-begin
-  require_relative 'lib/psych/versions'
-rescue LoadError
-  # for Ruby core repository
-  require_relative 'versions'
-end
+lib_path = File.expand_path('lib', __dir__)
+$LOAD_PATH.unshift lib_path if File.exist?(lib_path)
+
+require 'psych/versions'
 
 Gem::Specification.new do |s|
   s.name = "psych"
