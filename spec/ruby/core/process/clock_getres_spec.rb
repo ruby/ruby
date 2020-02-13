@@ -4,7 +4,7 @@ require_relative 'fixtures/clocks'
 describe "Process.clock_getres" do
   # clock_getres() seems completely buggy on FreeBSD:
   # https://rubyci.org/logs/rubyci.s3.amazonaws.com/freebsd11zfs/ruby-trunk/log/20190428T093003Z.fail.html.gz
-  platform_is_not :freebsd, :openbsd do
+  platform_is_not :freebsd, :openbsd, :android do
     # NOTE: Look at fixtures/clocks.rb for clock and OS-specific exclusions
     ProcessSpecs.clock_constants_for_resolution_checks.each do |name, value|
       it "matches the clock in practice for Process::#{name}" do
