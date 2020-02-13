@@ -76,6 +76,9 @@ class TestEncoding < Test::Unit::TestCase
       assert_equal("0", format % 0)
       assert_equal(e, format.dup.encoding)
       assert_equal(e, (format*1).encoding)
+
+      assert_equal(e, (("x"*30).force_encoding(e)*1).encoding)
+      GC.start
     end;
   end
 
