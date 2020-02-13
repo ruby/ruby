@@ -309,7 +309,7 @@ static int rb_thread_debug_enabled;
  */
 
 static VALUE
-rb_thread_s_debug(void)
+rb_thread_s_debug(VALUE _)
 {
     return INT2NUM(rb_thread_debug_enabled);
 }
