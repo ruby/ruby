@@ -419,7 +419,7 @@ describe "Process.spawn" do
 
       it "kills extra chdir processes" do
         pid = nil
-        Dir.chdir("/tmp") do
+        Dir.chdir("/") do
           pid = Process.spawn("sleep 10")
         end
 
