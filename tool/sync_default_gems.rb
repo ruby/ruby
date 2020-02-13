@@ -58,6 +58,7 @@
 # * https://github.com/ruby/weakref
 # * https://github.com/ruby/tempfile
 # * https://github.com/ruby/tmpdir
+# * https://github.com/ruby/English
 #
 
 require 'fileutils'
@@ -114,6 +115,7 @@ $repositories = {
   weakref: "ruby/weakref",
   tempfile: "ruby/tempfile",
   tmpdir: "ruby/tmpdir",
+  English: "ruby/English",
 }
 
 def sync_default_gems(gem)
