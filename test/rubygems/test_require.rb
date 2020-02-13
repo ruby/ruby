@@ -24,16 +24,6 @@ class TestGemRequire < Gem::TestCase
     end
   end
 
-  def setup
-    super
-
-    @old_loaded_features = $LOADED_FEATURES.dup
-    assert_raise LoadError do
-      require 'test_gem_require_a'
-    end
-    $LOADED_FEATURES.replace @old_loaded_features
-  end
-
   def assert_require(path)
     assert require(path), "'#{path}' was already required"
   end
