@@ -10,12 +10,14 @@ jobs:
   make:
     strategy:
       matrix:
-        test_task: [ "check", "test-bundler", "test-bundled-gems" ]
+        test_task: [ "check", "test-bundler", "test-bundled-gems", "test-all TESTS=--repeat-count=2" ]
         os: [ubuntu-latest, ubuntu-16.04]
         exclude:
           - test_task: test-bundler
             os: ubuntu-16.04
           - test_task: test-bundled-gems
+            os: ubuntu-16.04
+          - test_task: "test-all TESTS=--repeat-count=2"
             os: ubuntu-16.04
       fail-fast: false
     runs-on: ${{ matrix.os }}
