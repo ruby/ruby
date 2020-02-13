@@ -1,7 +1,7 @@
 require File.expand_path('../../../spec_helper', __FILE__)
 require 'etc'
 
-platform_is_not :windows do
+platform_is_not :windows, :android do
   describe "Etc.confstr" do
     it "returns a String for Etc::CS_PATH" do
       Etc.confstr(Etc::CS_PATH).should be_an_instance_of(String)
