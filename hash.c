@@ -6268,8 +6268,16 @@ env_shift(VALUE _)
  * call-seq:
  *   ENV.invert -> Hash
  *
- * Returns a new hash created by using environment variable names as values
- * and values as names.
+ * Returns a Hash whose keys are the ENV values,
+ * and whose values are the corresponding ENV names:
+ *   ENV.replace('foo' => '0', 'bar' => '1')
+ *   ENV.invert # => {"1"=>"bar", "0"=>"foo"}
+ * For a duplicate ENV value, overwrites the hash entry:
+ *   ENV.replace('foo' => '0', 'bar' => '0')
+ *   ENV.invert # => {"0"=>"foo"}
+ * Note that the order of the ENV processing is OS-dependent,
+ * which means that the order of overwriting is also OS-dependent.
+ * See {About Ordering}[#class-ENV-label-About+Ordering].
  */
 static VALUE
 env_invert(VALUE _)
