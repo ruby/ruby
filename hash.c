@@ -6197,8 +6197,15 @@ env_to_h(VALUE _)
  *   ENV.reject { |name, value| block } -> Hash
  *   ENV.reject                         -> Enumerator
  *
- * Same as ENV.delete_if, but works on (and returns) a copy of the
- * environment.
+ * Yields each environment variable name and its value as a 2-element Array.
+ * Returns a Hash whose items are determined by the block.
+ * When the block returns a truthy value, the name/value pair is added to the return Hash;
+ * otherwise the pair is ignored:
+ *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
+ *   ENV.reject { |name, value| name.start_with?('b') } # => {"foo"=>"0"}
+ * Returns an Enumerator if no block given:
+ *   e = ENV.reject
+ *   e.each { |name, value| name.start_with?('b') } # => {"foo"=>"0"}
  */
 static VALUE
 env_reject(VALUE _)
