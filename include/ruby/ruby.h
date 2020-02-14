@@ -2498,13 +2498,13 @@ ALWAYS_INLINE(static int
 rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
 		 int n_lead, int n_opt, int n_trail,
 		 int f_var, int f_hash, int f_block,
-		 VALUE *vars[], char *fmt, int varc));
+		 VALUE *vars[], const char *fmt, int varc));
 
 inline int
 rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
 		 int n_lead, int n_opt, int n_trail,
 		 int f_var, int f_hash, int f_block,
-		 VALUE *vars[], RB_UNUSED_VAR(char *fmt), RB_UNUSED_VAR(int varc))
+		 VALUE *vars[], RB_UNUSED_VAR(const char *fmt), RB_UNUSED_VAR(int varc))
 # if defined(__has_attribute) && __has_attribute(diagnose_if)
     __attribute__((diagnose_if(rb_scan_args_count(fmt)<0,"bad scan arg format","error")))
     __attribute__((diagnose_if(rb_scan_args_count(fmt)!=varc,"variable argument length doesn't match","error")))
