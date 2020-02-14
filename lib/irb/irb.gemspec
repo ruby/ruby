@@ -39,6 +39,7 @@ Gem::Specification.new do |spec|
     "lib/irb/color.rb",
     "lib/irb/completion.rb",
     "lib/irb/context.rb",
+    "lib/irb/easter-egg.rb",
     "lib/irb/ext/change-ws.rb",
     "lib/irb/ext/history.rb",
     "lib/irb/ext/loader.rb",
