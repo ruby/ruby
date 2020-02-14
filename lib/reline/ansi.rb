@@ -124,12 +124,12 @@ class Reline::ANSI
   end
 
   def self.move_cursor_column(x)
-    print "\e[#{x + 1}G"
+    @@output.write "\e[#{x + 1}G"
   end
 
   def self.move_cursor_up(x)
     if x > 0
-      print "\e[#{x}A" if x > 0
+      @@output.write "\e[#{x}A" if x > 0
     elsif x < 0
       move_cursor_down(-x)
     end
@@ -137,24 +137,24 @@ class Reline::ANSI
 
   def self.move_cursor_down(x)
     if x > 0
-      print "\e[#{x}B" if x > 0
+      @@output.write "\e[#{x}B" if x > 0
     elsif x < 0
       move_cursor_up(-x)
     end
   end
 
   def self.erase_after_cursor
-    print "\e[K"
+    @@output.write "\e[K"
   end
 
   def self.scroll_down(x)
     return if x.zero?
-    print "\e[#{x}S"
+    @@output.write "\e[#{x}S"
   end
 
   def self.clear_screen
-    print "\e[2J"
-    print "\e[1;1H"
+    @@output.write "\e[2J"
+    @@output.write "\e[1;1H"
   end
 
   @@old_winch_handler = nil
