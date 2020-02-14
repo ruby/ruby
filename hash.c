@@ -5727,12 +5727,16 @@ env_keep_if(VALUE ehash)
 }
 
 /*
- *  call-seq:
- *     ENV.slice(*keys) -> a_hash
+ * call-seq:
+ *   ENV.slice(*names) -> Hash
  *
- *  Returns a hash containing only the given keys from ENV and their values.
- *
- *     ENV.slice("TERM","HOME")  #=> {"TERM"=>"xterm-256color", "HOME"=>"/Users/rhc"}
+ * Returns a Hash of the given ENV names and their corresponding values:
+ *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2', 'bat' => '3')
+ *   ENV.slice('foo', 'baz') # => {"foo"=>"0", "baz"=>"2"}
+ *   ENV.slice('baz', 'foo') # => {"baz"=>"2", "foo"=>"0"}
+ * Raises an exception if any of the +names+ is invalid
+ * (see {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values]):
+ *   ENV.slice('foo', 'bar', :bat) # Raises TypeError (no implicit conversion of Symbol into String)
  */
 static VALUE
 env_slice(int argc, VALUE *argv, VALUE _)
