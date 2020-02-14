@@ -319,7 +319,7 @@ class Reline::LineEditor
       @rerender_all = true
       @menu_info.list.sort!.each do |item|
         Reline::IOGate.move_cursor_column(0)
-        @output.print item
+        @output.write item
         @output.flush
         scroll_down(1)
       end
@@ -516,7 +516,7 @@ class Reline::LineEditor
         end
         next
       end
-      @output.print line
+      @output.write line
       if Reline::IOGate.win? and calculate_width(line, true) == Reline::IOGate.get_screen_size.last
         # A newline is automatically inserted if a character is rendered at eol on command prompt.
         @rest_height -= 1 if @rest_height > 0
