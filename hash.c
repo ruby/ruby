@@ -6307,8 +6307,11 @@ env_replace_i(VALUE key, VALUE val, VALUE keys)
  *   ENV.replace('foo' => '0', 'bar' => '1') # => ENV
  *   ENV.to_hash # => {"bar"=>"1", "foo"=>"0"}
  *
- * Raises an exception if a name or value is invalid.
- * See {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values].
+ * Raises an exception if a name or value is invalid
+ * (see {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values]):
+ *   ENV.replace('foo' => '0', :bar => '1') # Raises TypeError (no implicit conversion of Symbol into String)
+ *   ENV.replace('foo' => '0', 'bar' => 1) # Raises TypeError (no implicit conversion of Integer into String)
+ *   ENV.to_hash # => {"bar"=>"1", "foo"=>"0"}
  */
 static VALUE
 env_replace(VALUE env, VALUE hash)
