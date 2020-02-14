@@ -5913,7 +5913,7 @@ env_size(VALUE _)
  *
  * Returns +true+ when there are no environment variables, +false+ otherwise:
  *   ENV.clear
- *   ENV.empty? # =? true
+ *   ENV.empty? # => true
  *   ENV['foo'] = '0'
  *   ENV.empty? # => false
  */
@@ -6082,7 +6082,7 @@ env_rassoc(VALUE dmy, VALUE obj)
  *
  * Returns the name of the first environment variable with +value+, if it exists:
  *   ENV.replace('foo' => '0', 'bar' => '0')
- *   ENV.key('0') # =>"foo"
+ *   ENV.key('0') # => "foo"
  * The order in which environment variables are examined is OS-dependent.
  * See {About Ordering}[#class-ENV-label-About+Ordering].
  *
@@ -6155,7 +6155,7 @@ env_to_hash(void)
  *
  * Returns a Hash containing all name/value pairs from ENV:
  *   ENV.replace('foo' => '0', 'bar' => '1')
- *   ENV>to_hash # => {"bar"=>"1", "foo"=>"0"}
+ *   ENV.to_hash # => {"bar"=>"1", "foo"=>"0"}
  */
 
 static VALUE
