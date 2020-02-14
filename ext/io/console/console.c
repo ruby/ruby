@@ -111,6 +111,9 @@ rawmode_opt(int *argcp, VALUE *argv, int min_argc, int max_argc, rawmode_arg_t *
     int argc = *argcp;
     rawmode_arg_t *optp = NULL;
     VALUE vopts = Qnil;
+#ifdef RB_SCAN_ARGS_PASS_CALLED_KEYWORDS
+    argc = rb_scan_args(argc, argv, "*:", NULL, &vopts);
+#else
     if (argc > min_argc)  {
 	vopts = rb_check_hash_type(argv[argc-1]);
 	if (!NIL_P(vopts)) {
@@ -120,6 +123,7 @@ rawmode_opt(int *argcp, VALUE *argv, int min_argc, int max_argc, rawmode_arg_t *
 	    if (!vopts) vopts = Qnil;
 	}
     }
+#endif
     rb_check_arity(argc, min_argc, max_argc);
     if (!NIL_P(vopts)) {
 	VALUE vmin = rb_hash_aref(vopts, ID2SYM(id_min));
