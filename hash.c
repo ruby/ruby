@@ -6351,15 +6351,38 @@ env_update_block_i(VALUE key, VALUE val, VALUE _)
 
 /*
  * call-seq:
- *   ENV.update(hash)                                        -> ENV
- *   ENV.update(hash) { |name, old_value, new_value| block } -> ENV
- *   ENV.merge!(hash)                                        -> ENV
- *   ENV.merge!(hash) { |name, old_value, new_value| block } -> ENV
+ *   ENV.update(hash)                                         -> ENV
+ *   ENV.update(hash) { |name, env_val, hash_val| block } -> ENV
+ *   ENV.merge!(hash)                                         -> ENV
+ *   ENV.merge!(hash) { |name, env_val, hash_val| block } -> ENV
  *
- * Adds the contents of +hash+ to the environment variables.  If no block is
- * specified entries with duplicate keys are overwritten, otherwise the value
- * of each duplicate name is determined by calling the block with the key, its
- * value from the environment and its value from the hash.
+ * ENV.update is an alias for ENV.merge!.
+ *
+ * Adds to ENV each key/value pair in the given +hash+; returns ENV:
+ *   ENV.replace('foo' => '0', 'bar' => '1')
+ *   ENV.merge!('baz' => '2', 'bat' => '3') # => {"bar"=>"1", "bat"=>"3", "baz"=>"2", "foo"=>"0"}
+ * Deletes the ENV entry for a hash value that is +nil+:
+ *   ENV.merge!('baz' => nil, 'bat' => nil) # => {"bar"=>"1", "foo"=>"0"}
+ * For an already-existing name, if no block given, overwrites the ENV value:
+ *   ENV.merge!('foo' => '4') # => {"bar"=>"1", "foo"=>"4"}
+ * For an already-existing name, if block given,
+ * yields the name, its ENV value, and its hash value;
+ * the  block's return value becomes the new name:
+ *   ENV.merge!('foo' => '5') { |name, env_val, hash_val | env_val + hash_val } # => {"bar"=>"1", "foo"=>"45"}
+ * Raises an exception if a name or value is invalid
+ * (see {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values]);
+ *   ENV.merge!('foo' => '6', :bar => '7', 'baz' => '9') # Raises TypeError (no implicit conversion of Symbol into String)
+ *   ENV # => {"bar"=>"1", "baz"=>"2", "foo"=>"6"}
+ *   ENV.merge!('foo' => '7', 'bar' => 8, 'baz' => '9')
+ *   ENV # => {"bar"=>"1", "baz"=>"2", "foo"=>"7"} TypeError (no implicit conversion of Integer into String)
+ * Raises an exception if the block returns an invalid name:
+ * (see {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values]):
+ *   ENV.merge!('bat' => '8', 'foo' => '9') { |name, env_val, hash_val | 10 } # Raises TypeError (no implicit conversion of Integer into String)
+ *   ENV # => {"bar"=>"1", "bat"=>"8", "baz"=>"2", "foo"=>"75"}
+ *
+ * Note that for the exceptions above,
+ * hash pairs preceding an invalid name or value are processed normally;
+ * those following are ignored.
  */
 static VALUE
 env_update(VALUE env, VALUE hash)
