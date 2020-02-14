@@ -6215,10 +6215,10 @@ env_reject(VALUE _)
 
 /*
  * call-seq:
- *   ENV.freeze -> raises TypeError
+ *   ENV.freeze
  *
- * Ruby does not allow ENV to be frozen, so calling ENV.freeze
- * raises TypeError.
+ * Raises an exception:
+ *   ENV.freeze # Raises TypeError (cannot freeze ENV)
  */
 static VALUE
 env_freeze(VALUE self)
