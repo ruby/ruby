@@ -2079,6 +2079,15 @@ rb_scan_args_assign(const struct rb_scan_args_t *arg, int argc, const VALUE *con
     return argc;
 }
 
+static int
+rb_scan_args_result(const struct rb_scan_args_t *const arg, int argc)
+{
+    if (argc < 0) {
+        rb_error_arity(-1-argc, arg->n_mand, arg->f_var ? UNLIMITED_ARGUMENTS : arg->n_mand + arg->n_opt);
+    }
+    return argc;
+}
+
 #undef rb_scan_args
 int
 rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
@@ -2089,10 +2098,7 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
     va_start(vargs,fmt);
     argc = rb_scan_args_assign(&arg, argc, argv, vargs);
     va_end(vargs);
-    if (argc < 0) {
-        rb_error_arity(-1-argc, arg.n_mand, arg.f_var ? UNLIMITED_ARGUMENTS : arg.n_mand + arg.n_opt);
-    }
-    return argc;
+    return rb_scan_args_result(&arg, argc);
 }
 
 #undef rb_scan_args_kw
@@ -2105,10 +2111,7 @@ rb_scan_args_kw(int kw_flag, int argc, const VALUE *argv, const char *fmt, ...)
     va_start(vargs,fmt);
     argc = rb_scan_args_assign(&arg, argc, argv, vargs);
     va_end(vargs);
-    if (argc < 0) {
-        rb_error_arity(-1-argc, arg.n_mand, arg.f_var ? UNLIMITED_ARGUMENTS : arg.n_mand + arg.n_opt);
-    }
-    return argc;
+    return rb_scan_args_result(&arg, argc);
 }
 
 int
