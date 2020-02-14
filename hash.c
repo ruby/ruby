@@ -6169,8 +6169,18 @@ env_f_to_hash(VALUE _)
  *   ENV.to_h                        -> hash
  *   ENV.to_h {|name, value| block } -> hash
  *
- * Creates a hash with a copy of the environment variables.
- *
+ * With no block, returns a Hash containing all name/value pairs from ENV:
+ *   ENV.replace('foo' => '0', 'bar' => '1')
+ *   ENV.to_h # => {"bar"=>"1", "foo"=>"0"}
+ * With a block, returns a Hash whose items are determined by the block.
+ * Each name/value pair in ENV is yielded to the block as a 2-element Array.
+ * The block must return a 2-element Array (name/value pair)
+ * that is added to the return Hash as a key and value:
+ *   ENV.to_h { |name, value| [name.to_sym, value.to_i] } # => {:bar=>1, :foo=>0}
+ * Raises an exception if the block does not return an Array:
+ *   ENV.to_h { |name, value| name } # Raises TypeError (wrong element type String (expected array))
+ * Raises an exception if the block returns an Array of the wrong size:
+ *   ENV.to_h { |name, value| [name] } # Raises ArgumentError (element has wrong array length (expected 2, was 1))
  */
 static VALUE
 env_to_h(VALUE _)
