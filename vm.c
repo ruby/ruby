@@ -156,7 +156,7 @@ VM_EP_IN_HEAP_P(const rb_execution_context_t *ec, const VALUE *ep)
     }
 }
 
-int
+static int
 vm_ep_in_heap_p_(const rb_execution_context_t *ec, const VALUE *ep)
 {
     if (VM_EP_IN_HEAP_P(ec, ep)) {
