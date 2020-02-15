@@ -186,30 +186,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_add_certificate_chain_file
-    # Create chain certificates file
-    certs = Tempfile.open { |f| f << @svr_cert.to_pem << @ca_cert.to_pem; f }
-    pkey = Tempfile.open { |f| f << @svr_key.to_pem; f }
-
-    ctx_proc = -> ctx {
-      # Unset values set by start_server
-      ctx.cert = ctx.key = ctx.extra_chain_cert = nil
-      assert_nothing_raised { ctx.add_certificate_chain_file(certs.path, pkey.path) }
-    }
-
-    start_server(ctx_proc: ctx_proc) { |port|
-      server_connect(port) { |ssl|
-        assert_equal @svr_cert.subject, ssl.peer_cert.subject
-        assert_equal [@svr_cert.subject, @ca_cert.subject],
-          ssl.peer_cert_chain.map(&:subject)
-
-        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
-      }
-    }
-  ensure
-    certs&.close
-    pkey&.close
-    certs&.unlink
-    pkey&.unlink
+    ctx = OpenSSL::SSL::SSLContext.new
+    assert ctx.add_certificate_chain_file(Fixtures.file_path("chain", "server.crt"))
   end
 
   def test_add_certificate_chain_file_multiple_certs

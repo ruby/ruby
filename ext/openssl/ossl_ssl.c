@@ -1322,92 +1322,15 @@ ossl_sslctx_add_certificate(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
-/*
- * call-seq:
- *    ctx.add_certificate_chain_file(certs_path, pkey_path) -> self
- *
- * Loads chain certificates from _certs_path_ and a private key from
- * _pkey_path_.
- *
- * === Parameters
- * _certs_path_::
- *   A path to a chain certificates file. It may be a single certificate.
- *   An instance of String.
- * _pkey_path_::
- *   A path to a private key file. An instance of String.
- *
- * === Example
- *   ctx.add_certificate_chain_file(rsa_and_intermediate_certs_path, rsa_key_path)
- *
- *   ctx.add_certificate_chain_file(ecdsa_and_intermediate_certs_path, ecdsa_key_path)
- *
- * === Note
- * The file format of the certificate and private key must be PEM.
- *
- * The certificate file must be starting with the subject's certificate and
- * followed by intermediate CA certificate(s).
- *
- * OpenSSL before the version 1.0.2 could handle only one extra chain across
- * all key types. Calling this method discards the chain set previously.
- */
 static VALUE
-ossl_sslctx_add_certificate_chain_file(VALUE self, VALUE certs_path, VALUE pkey_path)
+ossl_sslctx_add_certificate_chain_file(VALUE self, VALUE path)
 {
-    SSL_CTX *ctx;
-    X509 *x509;
-    char *ccerts_path, *cpkey_path;
-    FILE *fp;
-    EVP_PKEY *pkey, *pub_pkey;
+    StringValue(path);
+    SSL_CTX *ctx = NULL;
 
     GetSSLCTX(self, ctx);
 
-    /* Retrieve private key */
-    cpkey_path = StringValueCStr(pkey_path);
-    fp = fopen(cpkey_path, "r");
-    if (!fp)
-        rb_raise(rb_eArgError, "failed to open pkey file");
-    pkey = PEM_read_PrivateKey(fp, NULL, 0, NULL);
-    fclose(fp);
-    if (!pkey)
-        rb_raise(rb_eArgError, "failed to open pkey file");
-
-    /* Retrieve public key */
-    ccerts_path = StringValueCStr(certs_path);
-    fp = fopen(ccerts_path, "r");
-    if (!fp) {
-        EVP_PKEY_free(pkey);
-        rb_raise(rb_eArgError, "failed to open certs file");
-    }
-    x509 = PEM_read_X509(fp, NULL, 0, NULL);
-    fclose(fp);
-    if (!x509) {
-        EVP_PKEY_free(pkey);
-        rb_raise(rb_eArgError, "failed to open certs file");
-    }
-    pub_pkey = X509_get_pubkey(x509);
-    if (!pub_pkey) {
-        EVP_PKEY_free(pkey);
-        X509_free(x509);
-        rb_raise(rb_eArgError, "certificate does not contain public key");
-    }
-    if (EVP_PKEY_cmp(pub_pkey, pkey) != 1) {
-        EVP_PKEY_free(pkey);
-        X509_free(x509);
-        EVP_PKEY_free(pub_pkey);
-        rb_raise(rb_eArgError, "public key mismatch");
-    }
-    EVP_PKEY_free(pkey);
-    X509_free(x509);
-    EVP_PKEY_free(pub_pkey);
-
-    /* SSL_CTX_use_certificate_chain_file() loads PEM format file. */
-    if (SSL_CTX_use_certificate_chain_file(ctx, ccerts_path) != 1)
-        ossl_raise(eSSLError, "SSL_CTX_use_certificate_chain_file");
-
-    if (SSL_CTX_use_PrivateKey_file(ctx, cpkey_path, SSL_FILETYPE_PEM) != 1)
-        ossl_raise(eSSLError, "SSL_CTX_use_PrivateKey_file");
-
-    return self;
+    return SSL_CTX_use_certificate_chain_file(ctx, RSTRING_PTR(path)) == 1 ? Qtrue : Qfalse;
 }
 
 /*
@@ -2861,7 +2784,7 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLContext, "enable_fallback_scsv", ossl_sslctx_enable_fallback_scsv, 0);
 #endif
     rb_define_method(cSSLContext, "add_certificate", ossl_sslctx_add_certificate, -1);
-    rb_define_method(cSSLContext, "add_certificate_chain_file", ossl_sslctx_add_certificate_chain_file, 2);
+    rb_define_method(cSSLContext, "add_certificate_chain_file", ossl_sslctx_add_certificate_chain_file, 1);
 
     rb_define_method(cSSLContext, "setup", ossl_sslctx_setup, 0);
     rb_define_alias(cSSLContext, "freeze", "setup");
