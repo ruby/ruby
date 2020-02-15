@@ -14,7 +14,7 @@ environment:
       GEMS_FOR_TEST: ""
     - build: vs
       vs: 140
-      ssl: OpenSSL
+      ssl: OpenSSL-v111
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GEMS_FOR_TEST: ""
   RELINE_TEST_ENCODING: "Windows-31J"
