@@ -1,4 +1,4 @@
-#!/usr/bin/ruby -pi
+#!/usr/bin/ruby -pi.bak
 BEGIN {
   require_relative 'lib/colorize'
 
