@@ -349,4 +349,20 @@ class TestDRbTCP < Test::Unit::TestCase
   end
 end
 
+class TestBug16634 < Test::Unit::TestCase
+  include DRbBase
+
+  def setup
+    super
+    setup_service 'ut_drb.rb'
+  end
+
+  def test_bug16634
+    assert_equal(42, @there.keyword_test1(a: 42))
+    assert_equal("default", @there.keyword_test2)
+    assert_equal(42, @there.keyword_test2(b: 42))
+    assert_equal({:a=>42, :b=>42}, @there.keyword_test3(a: 42, b: 42))
+  end
+end
+
 end

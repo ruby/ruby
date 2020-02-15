@@ -148,6 +148,18 @@ class DRbEx
     end
   end
 
+  def keyword_test1(a:)
+    a
+  end
+
+  def keyword_test2(b: "default")
+    b
+  end
+
+  def keyword_test3(**opt)
+    opt
+  end
+
   private
   def call_private_method
     true
