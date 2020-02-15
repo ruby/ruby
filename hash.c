@@ -5301,7 +5301,7 @@ env_keys(void)
 
 /*
  * call-seq:
- *   ENV.keys -> Array
+ *   ENV.keys -> array
  *
  * Returns all variable names in an Array:
  *   ENV.replace('foo' => '0', 'bar' => '1')
@@ -5339,7 +5339,7 @@ rb_env_size(VALUE ehash, VALUE args, VALUE eobj)
 /*
  * call-seq:
  *   ENV.each_key { |name| block } -> ENV
- *   ENV.each_key                  -> Enumerator
+ *   ENV.each_key                  -> enumerator
  *
  * Yields each environment variable name:
  *   ENV.replace('foo' => '0', 'bar' => '1') # => ENV
@@ -5388,7 +5388,7 @@ env_values(void)
 
 /*
  * call-seq:
- *   ENV.values -> Array
+ *   ENV.values -> array
  *
  * Returns all environment variable values in an Array:
  *   ENV.replace('foo' => '0', 'bar' => '1')
@@ -5409,7 +5409,7 @@ env_f_values(VALUE _)
 /*
  * call-seq:
  *   ENV.each_value { |value| block } -> ENV
- *   ENV.each_value                   -> Enumerator
+ *   ENV.each_value                   -> enumerator
  *
  * Yields each environment variable value:
  *   ENV.replace('foo' => '0', 'bar' => '1') # => ENV
@@ -5440,9 +5440,9 @@ env_each_value(VALUE ehash)
 /*
  * call-seq:
  *   ENV.each      { |name, value| block } -> ENV
- *   ENV.each                              -> Enumerator
+ *   ENV.each                              -> enumerator
  *   ENV.each_pair { |name, value| block } -> ENV
- *   ENV.each_pair                         -> Enumerator
+ *   ENV.each_pair                         -> enumerator
  *
  * Yields each environment variable name and its value as a 2-element Array:
  *   h = {}
@@ -5492,7 +5492,7 @@ env_each_pair(VALUE ehash)
 /*
  * call-seq:
  *   ENV.reject! { |name, value| block } -> ENV or nil
- *   ENV.reject!                         -> Enumerator
+ *   ENV.reject!                         -> enumerator
  *
  * Similar to ENV.delete_if, but returns +nil+ if no changes were made.
  *
@@ -5538,7 +5538,7 @@ env_reject_bang(VALUE ehash)
 /*
  * call-seq:
  *   ENV.delete_if { |name, value| block } -> ENV
- *   ENV.delete_if                         -> Enumerator
+ *   ENV.delete_if                         -> enumerator
  *
  * Yields each environment variable name and its value as a 2-element Array,
  * deleting each environment variable for which the block returns a truthy value,
@@ -5565,7 +5565,7 @@ env_delete_if(VALUE ehash)
 
 /*
  * call-seq:
- *   ENV.values_at(*names) -> Array
+ *   ENV.values_at(*names) -> array
  *
  * Returns an Array containing the environment variable values associated with
  * the given names:
@@ -5596,10 +5596,10 @@ env_values_at(int argc, VALUE *argv, VALUE _)
 
 /*
  * call-seq:
- *   ENV.select { |name, value| block } -> Hash
- *   ENV.select                         -> Enumerator
- *   ENV.filter { |name, value| block } -> Hash
- *   ENV.filter                         -> Enumerator
+ *   ENV.select { |name, value| block } -> hash
+ *   ENV.select                         -> enumerator
+ *   ENV.filter { |name, value| block } -> hash
+ *   ENV.filter                         -> enumerator
  *
  * ENV.filter is an alias for ENV.select.
  *
@@ -5642,9 +5642,9 @@ env_select(VALUE ehash)
 /*
  * call-seq:
  *   ENV.select! { |name, value| block } -> ENV or nil
- *   ENV.select!                         -> Enumerator
+ *   ENV.select!                         -> enumerator
  *   ENV.filter! { |name, value| block } -> ENV or nil
- *   ENV.filter!                         -> Enumerator
+ *   ENV.filter!                         -> enumerator
  *
  * ENV.filter! is an alias for ENV.select!.
  *
@@ -5703,7 +5703,7 @@ env_select_bang(VALUE ehash)
 /*
  * call-seq:
  *   ENV.keep_if { |name, value| block } -> ENV
- *   ENV.keep_if                         -> Enumerator
+ *   ENV.keep_if                         -> enumerator
  *
  * Yields each environment variable name and its value as a 2-element Array,
  * deleting each environment variable for which the block returns +false+ or +nil+,
@@ -5840,7 +5840,7 @@ env_inspect(VALUE _)
 
 /*
  * call-seq:
- *   ENV.to_a -> Array
+ *   ENV.to_a -> array
  *
  * Returns the contents of ENV as an Array of 2-element Arrays,
  * each of which is a name/value pair:
@@ -5886,8 +5886,8 @@ env_none(VALUE _)
 
 /*
  * call-seq:
- *   ENV.length -> Integer
- *   ENV.size   -> Integer
+ *   ENV.length -> integer
+ *   ENV.size   -> integer
  *
  * Returns the count of environment variables:
  *   ENV.replace('foo' => '0', 'bar' => '1')
@@ -5968,7 +5968,7 @@ env_has_key(VALUE env, VALUE key)
 
 /*
  * call-seq:
- *   ENV.assoc(name) -> Array or nil
+ *   ENV.assoc(name) -> array or nil
  *
  * Returns a 2-element Array containing the name and value of the environment variable
  * for +name+ if it exists:
@@ -6151,7 +6151,7 @@ env_to_hash(void)
 
 /*
  * call-seq:
- *   ENV.to_hash -> Hash
+ *   ENV.to_hash -> hash
  *
  * Returns a Hash containing all name/value pairs from ENV:
  *   ENV.replace('foo' => '0', 'bar' => '1')
@@ -6184,8 +6184,8 @@ env_to_h(VALUE _)
 
 /*
  * call-seq:
- *   ENV.reject { |name, value| block } -> Hash
- *   ENV.reject                         -> Enumerator
+ *   ENV.reject { |name, value| block } -> hash
+ *   ENV.reject                         -> enumerator
  *
  * Same as ENV.delete_if, but works on (and returns) a copy of the
  * environment.
@@ -6249,7 +6249,7 @@ env_shift(VALUE _)
 
 /*
  * call-seq:
- *   ENV.invert -> Hash
+ *   ENV.invert -> hash
  *
  * Returns a new hash created by using environment variable names as values
  * and values as names.
