@@ -38,8 +38,8 @@ sufficient information, see the ChangeLog file or Redmine
 
     * New method
 
-        * Add #verify_hostname= and #verify_hostname to skip hostname verification
-          [[Feature #16555]]
+        * Add Net::HTTP#verify_hostname= and Net::HTTP#verify_hostname
+          to skip hostname verification.  [Feature #16555]
 
 ## Compatibility issues (excluding feature bug fixes)
 
