@@ -19,7 +19,7 @@ dir_config("kerberos")
 
 Logging::message "=== OpenSSL for Ruby configurator ===\n"
 
-# Add -Werror=deprecated-declarations to $warnflags if available
+# Check with -Werror=deprecated-declarations if available
 OpenSSL.deprecated_warning_flag
 
 ##
@@ -185,5 +185,6 @@ have_func("SSL_CTX_set_post_handshake_auth")
 Logging::message "=== Checking done. ===\n"
 
 create_header
+OpenSSL.restore_warning_flag
 create_makefile("openssl")
 Logging::message "Done.\n"

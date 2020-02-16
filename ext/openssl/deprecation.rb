@@ -12,6 +12,10 @@ module OpenSSL
     flag
   end
 
+  def self.restore_warning_flag
+    $warnflags = @warnflags
+  end
+
   def self.check_func(func, header)
     have_func(func, header, deprecated_warning_flag)
   end
