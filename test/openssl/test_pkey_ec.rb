@@ -290,13 +290,18 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
   end
 
   def test_ec_point_add
-    group = OpenSSL::PKey::EC::Group.new(:GFp, 17, 2, 2)
-    group.point_conversion_form = :uncompressed
-    gen = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 05 01 }))
-    group.set_generator(gen, 19, 1)
+    begin
+      group = OpenSSL::PKey::EC::Group.new(:GFp, 17, 2, 2)
+      group.point_conversion_form = :uncompressed
+      gen = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 05 01 }))
+      group.set_generator(gen, 19, 1)
 
-    point_a = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 06 03 }))
-    point_b = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 10 0D }))
+      point_a = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 06 03 }))
+      point_b = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 10 0D }))
+    rescue OpenSSL::PKey::EC::Group::Error
+      pend "Patched OpenSSL rejected curve" if /unsupported field/ =~ $!.message
+      raise
+    end
 
     result = point_a.add(point_b)
     assert_equal B(%w{ 04 0D 07 }), result.to_octet_string(:uncompressed)
