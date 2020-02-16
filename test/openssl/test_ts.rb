@@ -67,17 +67,15 @@ _end_of_pem_
     @ts_cert_ee ||= OpenSSL::Certs.ts_cert_ee(ee_key, intermediate_cert, intermediate_key)
   end
 
-  # Tentatively, skip this test to make CentOS 6.9 CI green.
-  # After it become green, I'll remove CentOS 6.9 + ruby master from CI matrix
-  #def test_create_request
-  #  req = OpenSSL::Timestamp::Request.new
-  #  assert_equal(true, req.cert_requested?)
-  #  assert_equal(1, req.version)
-  #  assert_nil(req.algorithm)
-  #  assert_equal("", req.message_imprint)
-  #  assert_nil(req.policy_id)
-  #  assert_nil(req.nonce)
-  #end
+  def test_create_request
+    req = OpenSSL::Timestamp::Request.new
+    assert_equal(true, req.cert_requested?)
+    assert_equal(1, req.version)
+    assert_nil(req.algorithm)
+    assert_equal("", req.message_imprint)
+    assert_nil(req.policy_id)
+    assert_nil(req.nonce)
+  end
 
   def test_request_mandatory_fields
     req = OpenSSL::Timestamp::Request.new
