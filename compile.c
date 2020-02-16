@@ -5180,7 +5180,15 @@ compile_named_capture_assign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
 static int
 optimizable_range_item_p(const NODE *n)
 {
-    return (n && nd_type(n) == NODE_LIT && RB_INTEGER_TYPE_P(n->nd_lit)) || (n && nd_type(n) == NODE_NIL);
+    if (!n) return FALSE;
+    switch (nd_type(n)) {
+      case NODE_LIT:
+        return RB_INTEGER_TYPE_P(n->nd_lit);
+      case NODE_NIL:
+        return TRUE;
+      default:
+        return FALSE;
+    }
 }
 
 static int
