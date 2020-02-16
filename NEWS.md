@@ -49,11 +49,12 @@ sufficient information, see the ChangeLog file or Redmine
     /foo/.frozen? #=> true
     ```
 
-* The bundled gems
+* Bundled gems
 
-    net-telnet and xmlrpc has been removed from the bundled gems.
-    If you interested in the maintain them, Please comment your plan
-    to https://github.com/ruby/xmlrpc or https://github.com/ruby/net-telnet.
+    * net-telnet and xmlrpc have been removed from the bundled gems.
+      If you are interested in maintaining them, please comment on
+      your plan to https://github.com/ruby/xmlrpc
+      or https://github.com/ruby/net-telnet.
 
 ## Stdlib compatibility issues (excluding feature bug fixes)
 
