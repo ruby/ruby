@@ -352,8 +352,6 @@ Init_ossl_digest(void)
      * * SHA, SHA1, SHA224, SHA256, SHA384 and SHA512
      * * MD2, MD4, MDC2 and MD5
      * * RIPEMD160
-     * * DSS, DSS1 (Pseudo algorithms to be used for DSA signatures. DSS is
-     *   equal to SHA and DSS1 is equal to SHA1)
      *
      * For each of these algorithms, there is a sub-class of Digest that
      * can be instantiated as simply as e.g.

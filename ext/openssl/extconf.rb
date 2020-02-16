@@ -1,5 +1,5 @@
 # -*- coding: us-ascii -*-
-# frozen_string_literal: false
+# frozen_string_literal: true
 =begin
 = Info
   'OpenSSL for Ruby 2' project
@@ -19,7 +19,7 @@ dir_config("kerberos")
 
 Logging::message "=== OpenSSL for Ruby configurator ===\n"
 
-# Check with -Werror=deprecated-declarations if available
+# Add -Werror=deprecated-declarations to $warnflags if available
 OpenSSL.deprecated_warning_flag
 
 ##
@@ -39,6 +39,12 @@ end
 
 Logging::message "=== Checking for required stuff... ===\n"
 result = pkg_config("openssl") && have_header("openssl/ssl.h")
+
+if $mingw
+  append_cflags '-D_FORTIFY_SOURCE=2'
+  append_ldflags '-fstack-protector'
+  have_library 'ssp'
+end
 
 def find_openssl_library
   if $mswin || $mingw
@@ -109,7 +115,8 @@ Logging::message "=== Checking for OpenSSL features... ===\n"
 # compile options
 have_func("RAND_egd")
 engines = %w{builtin_engines openbsd_dev_crypto dynamic 4758cca aep atalla chil
-             cswift nuron sureware ubsec padlock capi gmp gost cryptodev aesni}
+             cswift nuron sureware ubsec padlock capi gmp gost cryptodev aesni
+             cloudhsm}
 engines.each { |name|
   OpenSSL.check_func_or_macro("ENGINE_load_#{name}", "openssl/engine.h")
 }
@@ -144,6 +151,7 @@ have_func("HMAC_CTX_free")
 OpenSSL.check_func("RAND_pseudo_bytes", "openssl/rand.h") # deprecated
 have_func("X509_STORE_get_ex_data")
 have_func("X509_STORE_set_ex_data")
+have_func("X509_STORE_get_ex_new_index")
 have_func("X509_CRL_get0_signature")
 have_func("X509_REQ_get0_signature")
 have_func("X509_REVOKED_get0_serialNumber")
@@ -164,11 +172,18 @@ OpenSSL.check_func_or_macro("SSL_CTX_set_min_proto_version", "openssl/ssl.h")
 have_func("SSL_CTX_get_security_level")
 have_func("X509_get0_notBefore")
 have_func("SSL_SESSION_get_protocol_version")
+have_func("TS_STATUS_INFO_get0_status")
+have_func("TS_STATUS_INFO_get0_text")
+have_func("TS_STATUS_INFO_get0_failure_info")
+have_func("TS_VERIFY_CTS_set_certs")
+have_func("TS_VERIFY_CTX_set_store")
+have_func("TS_VERIFY_CTX_add_flags")
+have_func("TS_RESP_CTX_set_time_cb")
 have_func("EVP_PBE_scrypt")
+have_func("SSL_CTX_set_post_handshake_auth")
 
 Logging::message "=== Checking done. ===\n"
 
 create_header
-OpenSSL.restore_warning_flag
 create_makefile("openssl")
 Logging::message "Done.\n"

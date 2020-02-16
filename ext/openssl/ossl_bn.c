@@ -173,7 +173,6 @@ ossl_bn_alloc(VALUE klass)
 
 /*
  * call-seq:
- *    OpenSSL::BN.new => aBN
  *    OpenSSL::BN.new(bn) => aBN
  *    OpenSSL::BN.new(integer) => aBN
  *    OpenSSL::BN.new(string) => aBN
@@ -191,6 +190,10 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 
     if (rb_scan_args(argc, argv, "11", &str, &bs) == 2) {
 	base = NUM2INT(bs);
+    }
+
+    if (NIL_P(str)) {
+        ossl_raise(rb_eArgError, "invalid argument");
     }
 
     if (RB_INTEGER_TYPE_P(str)) {

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 =begin
 = Ruby-space definitions that completes C-space funcs for Config
 
@@ -53,9 +53,8 @@ module OpenSSL
       def parse_config(io)
         begin
           parse_config_lines(io)
-        rescue ConfigError => e
-          e.message.replace("error in line #{io.lineno}: " + e.message)
-          raise
+        rescue => error
+          raise ConfigError, "error in line #{io.lineno}: " + error.message
         end
       end
 
