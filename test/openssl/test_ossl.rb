@@ -52,10 +52,13 @@ class OpenSSL::OSSL < OpenSSL::SSLTestCase
     c = "y#{a}"
     a = "#{a}x"
 
-    n = 10_000
-    a_b_time = Benchmark.measure { n.times { OpenSSL.fixed_length_secure_compare(a, b) } }.real
-    a_c_time = Benchmark.measure { n.times { OpenSSL.fixed_length_secure_compare(a, c) } }.real
-    assert_in_delta(a_b_time, a_c_time, 1, "fixed_length_secure_compare timing test failed")
+    a_b_time = a_c_time = 0
+    100.times do
+      a_b_time += Benchmark.measure { 100.times { OpenSSL.fixed_length_secure_compare(a, b) } }.real
+      a_c_time += Benchmark.measure { 100.times { OpenSSL.fixed_length_secure_compare(a, c) } }.real
+    end
+    assert_operator(a_b_time, :<, a_c_time * 10, "fixed_length_secure_compare timing test failed")
+    assert_operator(a_c_time, :<, a_b_time * 10, "fixed_length_secure_compare timing test failed")
   end
 end
 
