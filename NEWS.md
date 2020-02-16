@@ -10,9 +10,11 @@ sufficient information, see the ChangeLog file or Redmine
 
 ## Language changes
 
-* $SAFE is now a normal global variable with no special behavior. [Feature #16131]
+* $SAFE is now a normal global variable with no special behavior.
+  [[Feature #16131]]
 
-* yield in singleton class definitions in methods is now a SyntaxError. [Feature #15575]
+* yield in singleton class definitions in methods is now a SyntaxError.
+  [[Feature #15575]]
 
 ## Command line options
 
@@ -39,7 +41,7 @@ sufficient information, see the ChangeLog file or Redmine
     * New method
 
         * Add Net::HTTP#verify_hostname= and Net::HTTP#verify_hostname
-          to skip hostname verification.  [Feature #16555]
+          to skip hostname verification.  [[Feature #16555]]
 
 ## Compatibility issues (excluding feature bug fixes)
 
@@ -67,5 +69,8 @@ sufficient information, see the ChangeLog file or Redmine
 
 [Feature #8709]:  https://bugs.ruby-lang.org/issues/8709
 [Feature #8948]:  https://bugs.ruby-lang.org/issues/8948
+[Feature #15575]: https://bugs.ruby-lang.org/issues/15575
+[Feature #16131]: https://bugs.ruby-lang.org/issues/16131
 [Feature #16274]: https://bugs.ruby-lang.org/issues/16274
 [Feature #16377]: https://bugs.ruby-lang.org/issues/16377
+[Feature #16555]: https://bugs.ruby-lang.org/issues/16555
