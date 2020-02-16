@@ -488,13 +488,13 @@ static VALUE
 ossl_rsa_private_encrypt(int argc, VALUE *argv, VALUE self)
 {
     RSA *rsa;
-    const BIGNUM *rsa_n, *rsa_d;
+    const BIGNUM *rsa_n;
     int buf_len, pad;
     VALUE str, buffer, padding;
 
     GetRSA(self, rsa);
-    RSA_get0_key(rsa, &rsa_n, NULL, &rsa_d);
-    if (!rsa_n || !rsa_d)
+    RSA_get0_key(rsa, &rsa_n, NULL, NULL);
+    if (!rsa_n)
 	ossl_raise(eRSAError, "incomplete RSA");
     if (!RSA_PRIVATE(self, rsa))
 	ossl_raise(eRSAError, "private key needed.");
@@ -522,13 +522,13 @@ static VALUE
 ossl_rsa_private_decrypt(int argc, VALUE *argv, VALUE self)
 {
     RSA *rsa;
-    const BIGNUM *rsa_n, *rsa_d;
+    const BIGNUM *rsa_n;
     int buf_len, pad;
     VALUE str, buffer, padding;
 
     GetRSA(self, rsa);
-    RSA_get0_key(rsa, &rsa_n, NULL, &rsa_d);
-    if (!rsa_n || !rsa_d)
+    RSA_get0_key(rsa, &rsa_n, NULL, NULL);
+    if (!rsa_n)
 	ossl_raise(eRSAError, "incomplete RSA");
     if (!RSA_PRIVATE(self, rsa))
 	ossl_raise(eRSAError, "private key needed.");

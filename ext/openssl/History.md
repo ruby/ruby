@@ -30,8 +30,6 @@ Version 2.2.0 (not yet released)
 * Make `OpenSSL::PKey::RSA#{export,to_der}` correctly check `key`,
   `factors`, and `crt_params`.
   [[GitHub #258]](https://github.com/ruby/openssl/pull/258)
-* Add `OpenSSL::SSL::SSLContext#add_certificate_chain_file` for
-  handling certificate chains.
 * Add `OpenSSL::SSL::{SSLSocket,SSLServer}#fileno`, returning the
   underlying socket file descriptor number.
   [[GitHub #247]](https://github.com/ruby/openssl/pull/247)
