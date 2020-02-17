@@ -1256,6 +1256,7 @@ class TestTime < Test::Unit::TestCase
   def test_memsize
     # Time objects are common in some code, try to keep them small
     skip "Time object size test" if /^(?:i.?86|x86_64)-linux/ !~ RUBY_PLATFORM
+    skip "GC is in debug" if GC::INTERNAL_CONSTANTS[:DEBUG]
     require 'objspace'
     t = Time.at(0)
     size = GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
