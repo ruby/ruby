@@ -217,7 +217,7 @@ ossl_ts_req_initialize(int argc, VALUE *argv, VALUE self)
  * algorithm that was used to create the message imprint digest.
  *
  *  call-seq:
- *       request.get_algorithm    -> string or nil
+ *       request.algorithm    -> string
  */
 static VALUE
 ossl_ts_req_get_algorithm(VALUE self)
@@ -225,15 +225,10 @@ ossl_ts_req_get_algorithm(VALUE self)
     TS_REQ *req;
     TS_MSG_IMPRINT *mi;
     X509_ALGOR *algor;
-    int algi;
 
     GetTSRequest(self, req);
     mi = TS_REQ_get_msg_imprint(req);
     algor = TS_MSG_IMPRINT_get_algo(mi);
-    algi = OBJ_obj2nid(algor->algorithm);
-    if (algi == NID_undef || algi == NID_ccitt)
-        return Qnil;
-
     return get_asn1obj(algor->algorithm);
 }
 
