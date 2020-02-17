@@ -360,9 +360,9 @@ ttymode_with_io(VALUE io, VALUE (*func)(VALUE, VALUE), VALUE farg, void (*setter
 
 /*
  * call-seq:
- *   io.raw(min: nil, time: nil) {|io| }
+ *   io.raw(min: nil, time: nil, intr: nil) {|io| }
  *
- * Yields +self+ within raw mode.
+ * Yields +self+ within raw mode, and returns the result of the block.
  *
  *   STDIN.raw(&:gets)
  *
@@ -373,6 +373,9 @@ ttymode_with_io(VALUE io, VALUE (*func)(VALUE, VALUE), VALUE farg, void (*setter
  *
  * The parameter +time+ specifies the timeout in _seconds_ with a
  * precision of 1/10 of a second. (default: 0)
+ *
+ * If the parameter +intr+ is +true+, enables break, interrupt, quit,
+ * and suspend special characters.
  *
  * Refer to the manual page of termios for further details.
  *
@@ -387,11 +390,11 @@ console_raw(int argc, VALUE *argv, VALUE io)
 
 /*
  * call-seq:
- *   io.raw!(min: nil, time: nil)
+ *   io.raw!(min: nil, time: nil, intr: nil) -> io
  *
- * Enables raw mode.
+ * Enables raw mode, and returns +io+.
  *
- * If the terminal mode needs to be back, use io.raw { ... }.
+ * If the terminal mode needs to be back, use <code>io.raw { ... }</code>.
  *
  * See IO#raw for details on the parameters.
  *
@@ -487,7 +490,7 @@ nogvl_getch(void *p)
 
 /*
  * call-seq:
- *   io.getch(min: nil, time: nil)       -> char
+ *   io.getch(min: nil, time: nil, intr: nil) -> char
  *
  * Reads and returns a character in raw mode.
  *
@@ -1494,7 +1497,7 @@ console_dev(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *   io.getch(min: nil, time: nil)       -> char
+ *   io.getch(min: nil, time: nil, intr: nil) -> char
  *
  * See IO#getch.
  */
