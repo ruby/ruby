@@ -472,12 +472,12 @@ eom
       # "" if you require it to be silent. Pass in a regexp if you want
       # to pattern match.
       #
-      # NOTE: this uses #capture_io, not #capture_subprocess_io.
+      # NOTE: this uses #capture_output, not #capture_subprocess_io.
       #
       # See also: #assert_silent
 
       def assert_output stdout = nil, stderr = nil
-        out, err = capture_io do
+        out, err = capture_output do
           yield
         end
 
