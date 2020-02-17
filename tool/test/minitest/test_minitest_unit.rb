@@ -678,6 +678,8 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
 
     MiniTest::Unit::TestCase.reset
 
+    MiniTest::Unit::TestCase.include Test::Unit::CoreAssertions
+
     @tc = MiniTest::Unit::TestCase.new 'fake tc'
     @zomg = "zomg ponies!"
     @assertion_count = 1

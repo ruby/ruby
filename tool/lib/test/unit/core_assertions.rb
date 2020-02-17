@@ -42,7 +42,7 @@ module Test
         include Test::Unit::Assertions
       end
 
-      def mu_pp(obj) #:nodoc:
+      def mu_pretty_pp(obj) #:nodoc:
         obj.pretty_inspect.chomp
       end
 
@@ -194,7 +194,7 @@ module Test
           end
           if ((args.empty? && !as) ||
               args.any? {|a| a.instance_of?(Module) ? e.is_a?(a) : e.class == a })
-            msg = message(msg) { "Exception raised:\n<#{mu_pp(e)}>" }
+            msg = message(msg) { "Exception raised:\n<#{mu_pretty_pp(e)}>" }
             raise MiniTest::Assertion, msg.call, bt
           else
             raise
@@ -344,7 +344,7 @@ eom
             thrown = e.tag
           end
           msg = message(msg) {
-            "Expected #{mu_pp(tag)} to have been thrown"\
+            "Expected #{mu_pretty_pp(tag)} to have been thrown"\
             "#{%Q[, not #{thrown}] if thrown}"
           }
           assert(false, msg)
@@ -387,7 +387,7 @@ eom
           }
 
           assert expected, proc {
-            flunk(message(msg) {"#{mu_pp(exp)} exception expected, not #{mu_pp(e)}"})
+            flunk(message(msg) {"#{mu_pretty_pp(exp)} exception expected, not #{mu_pretty_pp(e)}"})
           }
 
           return e
@@ -395,7 +395,7 @@ eom
           unless e
             exp = exp.first if exp.size == 1
 
-            flunk(message(msg) {"#{mu_pp(exp)} expected but nothing was raised"})
+            flunk(message(msg) {"#{mu_pretty_pp(exp)} expected but nothing was raised"})
           end
         end
       end
@@ -443,7 +443,7 @@ eom
         if assert == :assert_equal
           assert_equal(expected, m, msg)
         else
-          msg = message(msg) { "Expected #{mu_pp expected} to match #{mu_pp m}" }
+          msg = message(msg) { "Expected #{mu_pretty_pp expected} to match #{mu_pretty_pp m}" }
           assert expected =~ m, msg
           block.binding.eval("proc{|_|$~=_}").call($~)
         end
@@ -501,7 +501,7 @@ eom
           result = !result if neg
           mesg = "Expected file ".dup << args.shift.inspect
           mesg << "#{neg} to be #{predicate}"
-          mesg << mu_pp(args).sub(/\A\[(.*)\]\z/m, '(\1)') unless args.empty?
+          mesg << mu_pretty_pp(args).sub(/\A\[(.*)\]\z/m, '(\1)') unless args.empty?
           mesg << " #{failure_message}" if failure_message
           assert(result, mesg)
         end
