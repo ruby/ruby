@@ -1426,7 +1426,6 @@ end
 
     pend "Fallback SCSV is not supported" unless \
       OpenSSL::SSL::SSLContext.method_defined?(:enable_fallback_scsv)
-    pend "This test seems to fail on OpenSSL 1.1.1d or later" if OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10101040
 
     start_server do |port|
       ctx = OpenSSL::SSL::SSLContext.new
