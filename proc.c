@@ -1090,6 +1090,10 @@ rb_vm_block_min_max_arity(const struct rb_block *block, int *max)
 	    return ifunc->argc.min;
 	}
       case block_type_symbol:
+	{
+	    *max = 1;
+	    return 1;
+	}
 	break;
     }
     *max = UNLIMITED_ARGUMENTS;

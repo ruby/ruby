@@ -121,9 +121,13 @@ class TestProc < Test::Unit::TestCase
     assert_equal(-3, lambda{|x, y=0, z, **o|}.arity)
     assert_equal(-3, lambda{|x, y=0, *z, w, **o|}.arity)
 
+    assert_equal(1, proc(&:hash).arity)
+    assert_equal(1, lambda(&:hash).arity)
+
     assert_arity(0) {}
     assert_arity(0) {||}
     assert_arity(1) {|x|}
+    assert_arity(1, &:hash)
     assert_arity(2) {|x, y|}
     assert_arity(-2) {|x, *y|}
     assert_arity(-3) {|x, *y, z|}

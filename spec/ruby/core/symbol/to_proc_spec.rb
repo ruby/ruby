@@ -12,18 +12,18 @@ describe "Symbol#to_proc" do
     :to_s.to_proc.call(obj).should == "Received #to_s"
   end
 
-  it "produces a proc with arity -1" do
+  it "produces a proc with arity 1" do
     pr = :to_s.to_proc
-    pr.arity.should == -1
+    pr.arity.should == 1
   end
 
   it "raises an ArgumentError when calling #call on the Proc without receiver" do
     -> { :object_id.to_proc.call }.should raise_error(ArgumentError, "no receiver given")
   end
 
-  it "produces a proc that always returns [[:rest]] for #parameters" do
+  it "produces a proc that always returns [[:req]] for #parameters" do
     pr = :to_s.to_proc
-    pr.parameters.should == [[:rest]]
+    pr.parameters.should == [[:req]]
   end
 
   it "passes along the block passed to Proc#call" do
