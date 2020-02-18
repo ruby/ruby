@@ -288,7 +288,7 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
 	    setup_method_cfunc_struct(UNALIGNED_MEMBER_PTR(def, body.cfunc), rb_f_notimplement, -1);
 	    return;
 	  case VM_METHOD_TYPE_OPTIMIZED:
-	    def->body.optimize_type = (enum method_optimized_type)opts;
+            def->body.optimize_type = (enum method_optimized_type)(intptr_t)opts;
 	    return;
 	  case VM_METHOD_TYPE_REFINED:
 	    {
