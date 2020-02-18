@@ -12399,10 +12399,14 @@ argf_block_call_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, argf))
     return Qnil;
 }
 
+#define ARGF_block_call(mid, argc, argv, func, argf) \
+    rb_block_call_kw(ARGF.current_file, mid, argc, argv, \
+                     func, argf, rb_keyword_given_p())
+
 static void
 argf_block_call(ID mid, int argc, VALUE *argv, VALUE argf)
 {
-    VALUE ret = rb_block_call(ARGF.current_file, mid, argc, argv, argf_block_call_i, argf);
+    VALUE ret = ARGF_block_call(mid, argc, argv, argf_block_call_i, argf);
     if (ret != Qundef) ARGF.next_p = 1;
 }
 
@@ -12418,7 +12422,7 @@ argf_block_call_line_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, argf))
 static void
 argf_block_call_line(ID mid, int argc, VALUE *argv, VALUE argf)
 {
-    VALUE ret = rb_block_call(ARGF.current_file, mid, argc, argv, argf_block_call_line_i, argf);
+    VALUE ret = ARGF_block_call(mid, argc, argv, argf_block_call_line_i, argf);
     if (ret != Qundef) ARGF.next_p = 1;
 }
 
