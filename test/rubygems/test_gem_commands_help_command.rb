@@ -48,7 +48,7 @@ class TestGemCommandsHelpCommand < Gem::TestCase
       if Gem::HAVE_OPENSSL
         assert_empty err
 
-        refute_match 'No command found for ', out
+        refute_match %r|No command found for |, out
       end
     end
   end
