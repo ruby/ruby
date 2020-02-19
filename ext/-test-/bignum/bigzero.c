@@ -4,8 +4,21 @@ static VALUE
 bug_big_zero(VALUE self, VALUE length)
 {
     long len = NUM2ULONG(length);
-    VALUE z = rb_big_new(len, 1);
-    MEMZERO(BIGNUM_DIGITS(z), BDIGIT, len);
+    VALUE z;
+#ifdef USE_GMP
+    if (BIGNUM_EMBED_LEN_MAX < len) {
+        VALUE tmp;
+        BDIGIT *zds = ALLOCV_N(BDIGIT, tmp, len);
+        MEMZERO(zds, BDIGIT, len);
+        z = rb_big_new_mpz_set_bdigits(zds, len);
+        ALLOCV_END(tmp);
+    }
+    else
+#endif
+    {
+        z = rb_big_new(len, 1);
+        MEMZERO(BIGNUM_DIGITS(z), BDIGIT, len);
+    }
     return z;
 }
 

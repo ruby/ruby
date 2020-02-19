@@ -56,6 +56,11 @@ Init_mul(VALUE klass)
 {
     rb_define_const(rb_cInteger, "SIZEOF_BDIGIT", INT2NUM(SIZEOF_BDIGIT));
     rb_define_const(rb_cInteger, "BITSPERDIG", INT2NUM(SIZEOF_BDIGIT * CHAR_BIT));
+#ifdef USE_GMP
+    rb_define_const(rb_cInteger, "USE_GMP", Qtrue);
+#else
+    rb_define_const(rb_cInteger, "USE_GMP", Qfalse);
+#endif
     rb_define_method(rb_cInteger, "big_mul_normal", mul_normal, 1);
     rb_define_method(rb_cInteger, "big_sq_fast", sq_fast, 0);
     rb_define_method(rb_cInteger, "big_mul_balance", mul_balance, 1);

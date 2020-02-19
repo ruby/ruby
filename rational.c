@@ -15,14 +15,10 @@
 #include <ieeefp.h>
 #endif
 
-#if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
-#define USE_GMP
-#include <gmp.h>
-#endif
-
 #define NDEBUG
 #include "id.h"
 #include "internal.h"
+#include "internal/bignum.h"
 #include "internal/complex.h"
 #include "internal/error.h"
 #include "internal/gc.h"
@@ -244,30 +240,13 @@ k_rational_p(VALUE x)
 VALUE
 rb_gcd_gmp(VALUE x, VALUE y)
 {
-    const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGIT)*CHAR_BIT;
-    mpz_t mx, my, mz;
-    size_t count;
-    VALUE z;
-    long zn;
-
-    mpz_init(mx);
-    mpz_init(my);
-    mpz_init(mz);
-    mpz_import(mx, BIGNUM_LEN(x), -1, sizeof(BDIGIT), 0, nails, BIGNUM_DIGITS(x));
-    mpz_import(my, BIGNUM_LEN(y), -1, sizeof(BDIGIT), 0, nails, BIGNUM_DIGITS(y));
-
-    mpz_gcd(mz, mx, my);
-
-    mpz_clear(mx);
-    mpz_clear(my);
-
-    zn = (mpz_sizeinbase(mz, 16) + SIZEOF_BDIGIT*2 - 1) / (SIZEOF_BDIGIT*2);
-    z = rb_big_new(zn, 1);
-    mpz_export(BIGNUM_DIGITS(z), &count, -1, sizeof(BDIGIT), 0, nails, mz);
-
-    mpz_clear(mz);
-
-    return rb_big_norm(z);
+    assert(! (BIGNUM_EMBED_P(x) && BIGNUM_EMBED_P(y)));
+    if (! BIGNUM_EMBED_P(x)) {
+        return rb_big_gcd_mpz(BIGNUM_MPZ(x), y);
+    }
+    else {
+        return rb_big_gcd_mpz(BIGNUM_MPZ(y), x);
+    }
 }
 #endif
 
@@ -358,12 +337,13 @@ inline static VALUE
 f_gcd(VALUE x, VALUE y)
 {
 #ifdef USE_GMP
-    if (RB_TYPE_P(x, T_BIGNUM) && RB_TYPE_P(y, T_BIGNUM)) {
-        size_t xn = BIGNUM_LEN(x);
-        size_t yn = BIGNUM_LEN(y);
-        if (GMP_GCD_DIGITS <= xn || GMP_GCD_DIGITS <= yn)
-            return rb_gcd_gmp(x, y);
+    if (RB_TYPE_P(x, T_BIGNUM) && ! BIGNUM_EMBED_P(x)) {
+        return rb_gcd_gmp(x, y);
     }
+    else if (RB_TYPE_P(y, T_BIGNUM) && ! BIGNUM_EMBED_P(y)) {
+        return rb_gcd_gmp(y, x);
+    }
+    else
 #endif
     return f_gcd_normal(x, y);
 }

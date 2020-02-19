@@ -533,6 +533,7 @@ before_script:
   - echo "raise 'do not load ~/.irbrc in test'" > ~/.irbrc
 
 script:
+  - ulimit -a
   - $SETARCH make -s test -o showflags TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
   - travis_wait 50 $SETARCH make -s test-all -o exts TESTOPTS="${TESTOPTS} ${TEST_ALL_OPTS}" RUBYOPT="-w"
   - $SETARCH make -s test-spec MSPECOPT=-ff # not using `-j` because sometimes `mspec -j` silently dies

@@ -877,6 +877,36 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 
 	  case T_BIGNUM:
 	    w_byte(TYPE_BIGNUM, arg);
+#ifdef USE_GMP
+            if (! BIGNUM_EMBED_P(obj)) {
+                const size_t nbytes = rb_absint_size_mpz(BIGNUM_MPZ(obj), NULL);
+
+                const size_t slen = (nbytes+1)/2;
+                if (LONG_MAX < slen) {
+                    rb_raise(rb_eTypeError, "too big Bignum can't be dumped");
+                }
+
+                const char sign = BIGNUM_SIGN(obj) ? '+' : '-';
+                w_byte(sign, arg);
+                w_long((long)slen, arg);
+
+                const int bytes_per_limb = mp_bits_per_limb / CHAR_BIT;
+                const size_t nlimbs = mpz_size(BIGNUM_MPZ(obj));
+                const mp_limb_t *limbs = mpz_limbs_read(BIGNUM_MPZ(obj));
+                size_t j;
+                for (j = 0; j < nlimbs; j++) {
+                    mp_limb_t num = limbs[j];
+                    int i;
+
+                    for (i = 0; i < bytes_per_limb; i += SIZEOF_SHORT) {
+                        w_short(num & SHORTMASK, arg);
+                        num = SHORTDN(num);
+                        if (j == nlimbs - 1 && num == 0) break;
+                    }
+                }
+            }
+            else
+#endif
 	    {
 		char sign = BIGNUM_SIGN(obj) ? '+' : '-';
 		size_t len = BIGNUM_LEN(obj);

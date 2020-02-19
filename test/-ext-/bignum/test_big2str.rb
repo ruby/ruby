@@ -12,13 +12,13 @@ class Test_Bignum < Test::Unit::TestCase
     def test_big2str_generic
       x = 10**1000
       assert_equal("1" + "0" * 1000, x.big2str_generic(10))
-    end
+    end unless Integer::USE_GMP
 
     def test_big2str_poweroftwo
       e = BITSPERDIG*2
       x = 0b10**e
       assert_equal("1" + "0" * e, x.big2str_poweroftwo(2))
-    end
+    end unless Integer::USE_GMP
 
     def test_big2str_gmp
       x = 10**1000

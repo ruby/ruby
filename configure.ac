@@ -1114,8 +1114,9 @@ AC_ARG_WITH([gmp],
 AS_IF([test "x$with_gmp" != xno],
   [AC_CHECK_HEADERS(gmp.h)
    AS_IF([test "x$ac_cv_header_gmp_h" != xno],
-     AC_SEARCH_LIBS([__gmpz_init], [gmp],
-       [AC_DEFINE(HAVE_LIBGMP, 1)]))])
+     [RUBY_CHECK_SIZEOF(mp_limb_t, [], [], [@%:@include <gmp.h>])
+      AC_SEARCH_LIBS([__gmpz_init], [gmp],
+        [AC_DEFINE(HAVE_LIBGMP, 1)])])])
 
 AC_ARG_WITH([jemalloc],
   [AS_HELP_STRING([--with-jemalloc],[use jemalloc allocator])],

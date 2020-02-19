@@ -23,11 +23,6 @@
 # include <ieeefp.h>
 #endif
 
-#if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
-# define USE_GMP
-# include <gmp.h>
-#endif
-
 #include "id.h"
 #include "internal.h"
 #include "internal/bignum.h"
@@ -58,6 +53,7 @@ const char ruby_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 # endif
 #endif
 
+STATIC_ASSERT(RBignum_size, sizeof(struct RBignum) == sizeof(struct RObject));
 STATIC_ASSERT(sizeof_bdigit_dbl, sizeof(BDIGIT_DBL) == SIZEOF_BDIGIT_DBL);
 STATIC_ASSERT(sizeof_bdigit_dbl_signed, sizeof(BDIGIT_DBL_SIGNED) == SIZEOF_BDIGIT_DBL);
 STATIC_ASSERT(sizeof_bdigit, SIZEOF_BDIGIT <= sizeof(BDIGIT));
@@ -104,13 +100,29 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGIT % SIZEOF_LONG == 0);
 #   define swap_bdigit(x) swap64(x)
 #endif
 
-#define BIGZEROP(x) (BIGNUM_LEN(x) == 0 || \
-		     (BDIGITS(x)[0] == 0 && \
-		      (BIGNUM_LEN(x) == 1 || bigzero_p(x))))
-#define BIGSIZE(x) (BIGNUM_LEN(x) == 0 ? (size_t)0 : \
+#ifdef USE_GMP
+# define BIGZEROP(x) (BIGNUM_LEN(x) == 0 || \
+                      (BIGNUM_EMBED_P(x) ? (BDIGITS(x)[0] == 0 && \
+                                            (BIGNUM_LEN(x) == 1 || bigzero_p(x))) \
+                                         : mpz_sgn(BIGNUM_MPZ(x)) == 0))
+#else
+# define BIGZEROP(x) (BIGNUM_LEN(x) == 0 || \
+                      (BDIGITS(x)[0] == 0 && \
+                       (BIGNUM_LEN(x) == 1 || bigzero_p(x))))
+#endif
+
+#define BIGSIZE_EMBED(x) (BIGNUM_LEN(x) == 0 ? (size_t)0 : \
     BDIGITS(x)[BIGNUM_LEN(x)-1] ? \
         (size_t)(BIGNUM_LEN(x)*SIZEOF_BDIGIT - nlz(BDIGITS(x)[BIGNUM_LEN(x)-1])/CHAR_BIT) : \
     rb_absint_size(x, NULL))
+
+#ifdef USE_GMP
+# define BIGSIZE_NOEMBED(x) rb_absint_size(x, NULL)
+#else
+# define BIGSIZE_NOEMBED(x) BIGSIZE_EMBED(x)
+#endif
+
+#define BIGSIZE(x) (BIGNUM_EMBED_P(x) ? BIGSIZE_EMBED(x) : BIGSIZE_NOEMBED(x))
 
 #define BIGDIVREM_EXTRA_WORDS 1
 #define bdigit_roomof(n) roomof(n, SIZEOF_BDIGIT)
@@ -126,6 +138,12 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGIT % SIZEOF_LONG == 0);
 #define BIGNUM_SET_POSITIVE_SIGN(b) BIGNUM_SET_SIGN(b, 1)
 
 #define bignew(len,sign) bignew_1(rb_cInteger,(len),(sign))
+#ifdef USE_GMP
+# define bignew_mpz() bignew_mpz_1(rb_cInteger)
+# define bignew_mpz_init2(bits) bignew_mpz_init2_1(rb_cInteger,(bits))
+# define bignew_mpz_set(mp) bignew_mpz_set_1(rb_cInteger,(mp))
+# define bignew_mpz_set_bdigits(digits, len) bignew_mpz_set_bdigits_1(rb_cInteger,(digits),(len))
+#endif
 
 #define BDIGITS_ZERO(ptr, n) do { \
   BDIGIT *bdigitz_zero_ptr = (ptr); \
@@ -167,6 +185,9 @@ static void bary_divmod(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BD
 static VALUE bigmul0(VALUE x, VALUE y);
 static void bary_mul_toom3(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn, BDIGIT *wds, size_t wn);
 static VALUE bignew_1(VALUE klass, size_t len, int sign);
+#ifdef USE_GMP
+static VALUE bignew_mpz_1(VALUE klass);
+#endif
 static inline VALUE bigtrunc(VALUE x);
 
 static VALUE bigsq(VALUE x);
@@ -181,6 +202,18 @@ static int nlz(BDIGIT x) { return nlz_long((unsigned long)x) - (SIZEOF_LONG-SIZE
 static int nlz(BDIGIT x) { return nlz_long_long((unsigned LONG_LONG)x) - (SIZEOF_LONG_LONG-SIZEOF_BDIGIT) * CHAR_BIT; }
 #elif SIZEOF_BDIGIT <= SIZEOF_INT128_T
 static int nlz(BDIGIT x) { return nlz_int128((uint128_t)x) - (SIZEOF_INT128_T-SIZEOF_BDIGIT) * CHAR_BIT; }
+#endif
+
+#ifdef USE_GMP
+# if SIZEOF_MP_LIMB_T <= SIZEOF_INT
+static int nlz_mp_limb_t(mp_limb_t x) { return nlz_int((unsigned int)x) - (SIZEOF_INT - SIZEOF_MP_LIMB_T) * CHAR_BIT; }
+# elif SIZEOF_MP_LIMB_T <= SIZEOF_LONG
+static int nlz_mp_limb_t(mp_limb_t x) { return nlz_long((unsigned long)x) - (SIZEOF_LONG - SIZEOF_MP_LIMB_T) * CHAR_BIT; }
+# elif SIZEOF_MP_LIMB_T <= SIZEOF_LONG_LONG
+static int nlz_mp_limb_t(mp_limb_t x) { return nlz_long_long((unsigned LONG_LONG)x) - (SIZEOF_LONG_LONG - SIZEOF_MP_LIMB_T) * CHAR_BIT; }
+# elif SIZEOF_MP_LIMB_T <= SIZEOF_INT128_T
+static int nlz_mp_limb_t(mp_limb_t x) { return nlz_int128((uint128_t)x) - (SIZEOF_INT128_T - SIZEOF_MP_LIMB_T) * CHAR_BIT; }
+# endif
 #endif
 
 #define U16(a) ((uint16_t)(a))
@@ -976,6 +1009,31 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
 #undef FILL_DD
 #undef TAKE_LOWBITS
 }
+
+#ifdef USE_GMP
+static inline void bdigits_from_mpz(const mpz_t mp, BDIGIT *digits, size_t *len);
+
+static int
+mpz_pack(const mpz_t mx, void *words, size_t numwords, size_t wordsize, size_t nails, int flags)
+{
+    // FIXME: stop using bdigits_from_mpz
+
+    int sign = mpz_sgn(mx);
+    const size_t nbytes = rb_absint_size_mpz(mx, NULL);
+    const size_t len = (nbytes + SIZEOF_BDIGIT - 1) / SIZEOF_BDIGIT;
+
+    VALUE tmp;
+    BDIGIT *ds = ALLOCV_N(BDIGIT, tmp, len);
+    size_t num_bdigits;
+    bdigits_from_mpz(mx, ds, &num_bdigits);
+    assert(num_bdigits <= len);
+
+    sign = bary_pack(sign, ds, num_bdigits, words, numwords, wordsize, nails, flags);
+
+    ALLOCV_END(tmp);
+    return sign;
+}
+#endif
 
 static size_t
 integer_unpack_num_bdigits_small(size_t numwords, size_t wordsize, size_t nails, int *nlp_bits_ret)
@@ -2291,14 +2349,33 @@ rb_big_mul_toom3(VALUE x, VALUE y)
 
 #ifdef USE_GMP
 static inline void
-bdigits_to_mpz(mpz_t mp, const BDIGIT *digits, size_t len)
+mpz_set_bdigits(mpz_t mp, const BDIGIT *digits, size_t len)
 {
     const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGIT)*CHAR_BIT;
     mpz_import(mp, len, -1, sizeof(BDIGIT), 0, nails, digits);
 }
 
 static inline void
-bdigits_from_mpz(mpz_t mp, BDIGIT *digits, size_t *len)
+mpz_init_set_bdigits(mpz_t mp, const BDIGIT *digits, size_t len)
+{
+    mpz_init2(mp, len*SIZEOF_BDIGIT*CHAR_BIT);
+    mpz_set_bdigits(mp, digits, len);
+}
+
+static inline void
+mpz_init_set_bignum(mpz_t mp, VALUE x)
+{
+    if (BIGNUM_EMBED_P(x)) {
+        mpz_init_set_bdigits(mp, BDIGITS(x), BIGNUM_LEN(x));
+        if (BIGNUM_NEGATIVE_P(x)) mpz_neg(mp, mp);
+    }
+    else {
+        mpz_init_set(mp, BIGNUM_MPZ(x));
+    }
+}
+
+static inline void
+bdigits_from_mpz(const mpz_t mp, BDIGIT *digits, size_t *len)
 {
     const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGIT)*CHAR_BIT;
     mpz_export(digits, len, -1, sizeof(BDIGIT), 0, nails, mp);
@@ -2312,21 +2389,19 @@ bary_mul_gmp(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT 
 
     assert(xn + yn <= zn);
 
-    mpz_init(x);
-    mpz_init(y);
+    mpz_init_set_bdigits(x, xds, xn);
     mpz_init(z);
-    bdigits_to_mpz(x, xds, xn);
     if (xds == yds && xn == yn) {
         mpz_mul(z, x, x);
     }
     else {
-        bdigits_to_mpz(y, yds, yn);
+        mpz_init_set_bdigits(y, yds, yn);
         mpz_mul(z, x, y);
+        mpz_clear(y);
     }
     bdigits_from_mpz(z, zds, &count);
     BDIGITS_ZERO(zds+count, zn-count);
     mpz_clear(x);
-    mpz_clear(y);
     mpz_clear(z);
 }
 
@@ -2782,13 +2857,11 @@ bary_divmod_gmp(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xd
     assert(rds ? yn <= rn : 1);
     assert(qds || rds);
 
-    mpz_init(x);
-    mpz_init(y);
+    mpz_init_set_bdigits(x, xds, xn);
+    mpz_init_set_bdigits(y, yds, yn);
+
     if (qds) mpz_init(q);
     if (rds) mpz_init(r);
-
-    bdigits_to_mpz(x, xds, xn);
-    bdigits_to_mpz(y, yds, yn);
 
     if (!rds) {
         mpz_fdiv_q(q, x, y);
@@ -2968,13 +3041,22 @@ rb_cmpint(VALUE val, VALUE a, VALUE b)
     return 0;
 }
 
+#ifdef USE_GMP
+# define BIGNUM_SET_HEAP_LEN(b, l) \
+     assert(BIGNUM_EMBED_P(b)) /* DO NOT ALLOW FOR MPZ */
+#else
+# define BIGNUM_SET_HEAP_LEN(b, l) \
+    (void)(RBIGNUM(b)->as.heap.len = (l))
+#endif
+
 #define BIGNUM_SET_LEN(b,l) \
     (BIGNUM_EMBED_P(b) ? \
      (void)(RBASIC(b)->flags = \
 	    (RBASIC(b)->flags & ~BIGNUM_EMBED_LEN_MASK) | \
 	    ((l) << BIGNUM_EMBED_LEN_SHIFT)) : \
-     (void)(RBIGNUM(b)->as.heap.len = (l)))
+     BIGNUM_SET_HEAP_LEN(b,l))
 
+#ifndef USE_GMP
 static void
 rb_big_realloc(VALUE big, size_t len)
 {
@@ -3009,31 +3091,102 @@ rb_big_realloc(VALUE big, size_t len)
 	}
     }
 }
+#endif
 
 void
 rb_big_resize(VALUE big, size_t len)
 {
+#ifdef USE_GMP
+    assert(BIGNUM_EMBED_P(big) && len <= BIGNUM_EMBED_LEN_MAX);
+    BIGNUM_SET_LEN(big, len);
+#else
     rb_big_realloc(big, len);
     BIGNUM_SET_LEN(big, len);
+#endif
 }
 
 static VALUE
 bignew_1(VALUE klass, size_t len, int sign)
 {
+#ifdef USE_GMP
+    assert(len <= BIGNUM_EMBED_LEN_MAX);
+#endif
     NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0));
-    BIGNUM_SET_SIGN((VALUE)big, sign);
-    if (len <= BIGNUM_EMBED_LEN_MAX) {
+#ifndef USE_GMP
+    if (BIGNUM_EMBED_LEN_MAX < len) {
+	RBIGNUM(big)->as.heap.digits = ALLOC_N(BDIGIT, len);
+	RBIGNUM(big)->as.heap.len = len;
+    }
+    else
+#endif
+    {
         FL_SET_RAW(big, BIGNUM_EMBED_FLAG);
 	BIGNUM_SET_LEN((VALUE)big, len);
         (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)RBIGNUM(big)->as.ary, sizeof(RBIGNUM(big)->as.ary));
     }
+    BIGNUM_SET_SIGN((VALUE)big, sign);
+    OBJ_FREEZE(big);
+    return (VALUE)big;
+}
+
+#ifdef USE_GMP
+static VALUE
+bignew_mpz_1(VALUE klass)
+{
+    NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0));
+    mpz_init(RBIGNUM(big)->as.mpz);
+    OBJ_FREEZE(big);
+    return (VALUE)big;
+}
+
+static inline int
+mpz_fits_bignum_embed_p(const mpz_t mp)
+{
+    return BIGNUM_MPZ_LEN(mp) <= BIGNUM_EMBED_LEN_MAX;
+}
+
+static VALUE
+bignew_mpz_init2_1(VALUE klass, size_t bits)
+{
+    NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0));
+    mpz_init2(RBIGNUM(big)->as.mpz, bits);
+    OBJ_FREEZE(big);
+    return (VALUE)big;
+}
+
+static VALUE
+bignew_mpz_set_1(VALUE klass, mpz_t mp)
+{
+    NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0));
+    if (mpz_fits_bignum_embed_p(mp)) {
+        size_t len;
+        FL_SET_RAW(big, BIGNUM_EMBED_FLAG);
+        bdigits_from_mpz(mp, BDIGITS((VALUE)big), &len);
+        BIGNUM_SET_LEN((VALUE)big, len);
+        BIGNUM_SET_SIGN((VALUE)big, mpz_sgn(mp) >= 0);
+    }
     else {
-	RBIGNUM(big)->as.heap.digits = ALLOC_N(BDIGIT, len);
-	RBIGNUM(big)->as.heap.len = len;
+        mpz_init_set(RBIGNUM(big)->as.mpz, mp);
     }
     OBJ_FREEZE(big);
     return (VALUE)big;
 }
+
+static VALUE
+bignew_mpz_set_bdigits_1(VALUE klass, const BDIGIT *digits, size_t len)
+{
+    NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0));
+    mpz_init_set_bdigits(RBIGNUM(big)->as.mpz, digits, len);
+    OBJ_FREEZE(big);
+    return (VALUE)big;
+}
+
+VALUE
+rb_big_new_mpz_set_bdigits(const BDIGIT *digits, size_t len)
+{
+    return bignew_mpz_set_bdigits(digits, len);
+}
+#endif
 
 VALUE
 rb_big_new(size_t len, int sign)
@@ -3044,6 +3197,11 @@ rb_big_new(size_t len, int sign)
 VALUE
 rb_big_clone(VALUE x)
 {
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return bignew_mpz_set_1(CLASS_OF(x), BIGNUM_MPZ(x));
+    }
+#endif
     size_t len = BIGNUM_LEN(x);
     VALUE z = bignew_1(CLASS_OF(x), len, BIGNUM_SIGN(x));
 
@@ -3054,8 +3212,24 @@ rb_big_clone(VALUE x)
 static void
 big_extend_carry(VALUE x)
 {
-    rb_big_resize(x, BIGNUM_LEN(x)+1);
-    BDIGITS(x)[BIGNUM_LEN(x)-1] = 1;
+#ifdef USE_GMP
+    assert(BIGNUM_EMBED_P(x));
+    if (BIGNUM_LEN(x) == BIGNUM_EMBED_LEN_MAX) {
+        BDIGIT xds[BIGNUM_EMBED_LEN_MAX + 1];
+        MEMCPY(xds, BDIGITS(x), BDIGIT, BIGNUM_EMBED_LEN_MAX);
+        xds[BIGNUM_EMBED_LEN_MAX] = 1;
+
+        int sign = BIGNUM_SIGN(x);
+        FL_UNSET_RAW(x, BIGNUM_EMBED_FLAG);
+        mpz_init_set_bdigits(BIGNUM_MPZ(x), xds, BIGNUM_EMBED_LEN_MAX+1);
+        BIGNUM_SET_SIGN(x, sign);
+    }
+    else
+#endif
+    {
+        rb_big_resize(x, BIGNUM_LEN(x)+1);
+        BDIGITS(x)[BIGNUM_LEN(x)-1] = 1;
+    }
 }
 
 /* modify a bignum by 2's complement */
@@ -3109,6 +3283,11 @@ twocomp2abs_bang(VALUE x, int hibits)
 static inline VALUE
 bigtrunc(VALUE x)
 {
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+      return x;
+    }
+#endif
     size_t len = BIGNUM_LEN(x);
     BDIGIT *ds = BDIGITS(x);
 
@@ -3120,9 +3299,43 @@ bigtrunc(VALUE x)
     return x;
 }
 
+#ifdef USE_GMP
+static inline VALUE
+bigfixize_mpz(VALUE x)
+{
+    assert(! BIGNUM_EMBED_P(x));
+
+    int fits_long = mpz_fits_slong_p(BIGNUM_MPZ(x));
+    if (fits_long) {
+        long l = mpz_get_si(BIGNUM_MPZ(x));
+        if (FIXABLE(l))
+            return LONG2FIX(l);
+    }
+    else if (mpz_fits_bignum_embed_p(BIGNUM_MPZ(x))) {
+        BDIGIT xds[BIGNUM_EMBED_LEN_MAX];
+        size_t xn;
+        bdigits_from_mpz(BIGNUM_MPZ(x), xds, &xn);
+        const int sign = mpz_sgn(BIGNUM_MPZ(x)) >= 0;
+        mpz_clear(BIGNUM_MPZ(x));
+
+        FL_SET_RAW(x, BIGNUM_EMBED_FLAG);
+        MEMCPY(BDIGITS(x), xds, BDIGIT, xn);
+        BIGNUM_SET_LEN(x, xn);
+        BIGNUM_SET_SIGN(x, sign);
+    }
+    return x;
+}
+#endif
+
 static inline VALUE
 bigfixize(VALUE x)
 {
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return bigfixize_mpz(x);
+    }
+#endif
+
     size_t n = BIGNUM_LEN(x);
     BDIGIT *ds = BDIGITS(x);
 #if SIZEOF_BDIGIT < SIZEOF_LONG
@@ -3252,6 +3465,33 @@ rb_big_unpack(unsigned long *buf, long num_longs)
             INTEGER_PACK_2COMP);
 }
 
+#ifdef USE_GMP
+// mpz_t version of rb_absint_size
+size_t
+rb_absint_size_mpz(const mpz_t mx, int *nlz_bits_ret)
+{
+    const size_t nails = sizeof(mp_limb_t)*CHAR_BIT - mp_bits_per_limb;
+    const size_t mp_bytes_per_limb = (mp_bits_per_limb + CHAR_BIT - 1) / CHAR_BIT;
+    const size_t nlimbs = mpz_size(mx);
+    if (nlimbs == 0) return INT2FIX(0);
+
+    const mp_limb_t *dp = mpz_limbs_read(mx);
+    const mp_limb_t *de = dp + nlimbs;
+    while (dp < de && de[-1] == 0)
+        --de;
+    if (dp == de) {
+        if (nlz_bits_ret)
+            *nlz_bits_ret = 0;
+        return 0;
+    }
+
+    const size_t num_leading_zeros = nlz_mp_limb_t(de[-1]) - nails;
+    if (nlz_bits_ret)
+        *nlz_bits_ret = num_leading_zeros % CHAR_BIT;
+    return (de - dp) * mp_bytes_per_limb - num_leading_zeros/CHAR_BIT;
+}
+#endif
+
 /*
  * Calculate the number of bytes to be required to represent
  * the absolute value of the integer given as _val_.
@@ -3298,6 +3538,11 @@ rb_absint_size(VALUE val, int *nlz_bits_ret)
         dp = fixbuf;
         de = fixbuf + numberof(fixbuf);
     }
+#ifdef USE_GMP
+    else if (! BIGNUM_EMBED_P(val)) {
+        return rb_absint_size_mpz(BIGNUM_MPZ(val), nlz_bits_ret);
+    }
+#endif
     else {
         dp = BDIGITS(val);
         de = dp + BIGNUM_LEN(val);
@@ -3439,6 +3684,28 @@ rb_absint_numwords(VALUE val, size_t word_numbits, size_t *nlz_bits_ret)
     return numwords;
 }
 
+#ifdef USE_GMP
+// mpz_t version of rb_absint_singlebit_p
+static int
+rb_absint_singlebit_p_mpz(const mpz_t mx)
+{
+    const size_t nlimbs = mpz_size(mx);
+    const mp_limb_t *dp = mpz_limbs_read(mx);
+    const mp_limb_t *de = dp + nlimbs;
+
+    while (dp < de && de[-1] == 0)
+        --de;
+    while (dp < de && dp[0] == 0)
+        ++dp;
+    if (dp == de) // no bit set.
+        return 0;
+    if (dp != de-1) // two non-zero words. two bits set, at least.
+        return 0;
+    const mp_limb_t d = *dp;
+    return POW2_P(d);
+}
+#endif
+
 /* Test abs(val) consists only a bit or not.
  *
  * Returns 1 if abs(val) == 1 << n for some n >= 0.
@@ -3496,6 +3763,11 @@ rb_absint_singlebit_p(VALUE val)
         dp = fixbuf;
         de = fixbuf + numberof(fixbuf);
     }
+#ifdef USE_GMP
+    else if (! BIGNUM_EMBED_P(val)) {
+        return rb_absint_singlebit_p_mpz(BIGNUM_MPZ(val));
+    }
+#endif
     else {
         dp = BDIGITS(val);
         de = dp + BIGNUM_LEN(val);
@@ -3601,6 +3873,11 @@ rb_integer_pack(VALUE val, void *words, size_t numwords, size_t wordsize, size_t
         ds = fixbuf;
         num_bdigits = numberof(fixbuf);
     }
+#ifdef USE_GMP
+    else if (! BIGNUM_EMBED_P(val)) {
+        return mpz_pack(BIGNUM_MPZ(val), words, numwords, wordsize, nails, flags);
+    }
+#endif
     else {
         sign = BIGNUM_POSITIVE_P(val) ? 1 : -1;
         ds = BDIGITS(val);
@@ -3683,6 +3960,12 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
         val = Qfalse;
         ds = fixbuf;
     }
+#ifdef USE_GMP
+    else if (BIGNUM_EMBED_LEN_MAX < num_bdigits) {
+        ds = ALLOCV_N(BDIGIT, val, num_bdigits + 1);
+        if (!val) val = Qtrue; // mark use of ALLOCV_N
+    }
+#endif
     else {
         val = bignew((long)num_bdigits, 0);
         ds = BDIGITS(val);
@@ -3691,6 +3974,13 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
 
     if (sign == -2) {
         if (val) {
+#ifdef USE_GMP
+            if (BIGNUM_EMBED_LEN_MAX < num_bdigits) {
+                ++num_bdigits;
+                ds[num_bdigits - 1] = 1;
+            }
+            else
+#endif
             big_extend_carry(val);
         }
         else if (num_bdigits == numberof(fixbuf)) {
@@ -3715,6 +4005,14 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
         val = bignew((long)num_bdigits, 0 <= sign);
         MEMCPY(BDIGITS(val), fixbuf, BDIGIT, num_bdigits);
     }
+#ifdef USE_GMP
+    else if (BIGNUM_EMBED_LEN_MAX < num_bdigits) {
+        VALUE tmp = val;
+        val = bignew_mpz_set_bdigits(ds, num_bdigits);
+        if (tmp != Qtrue)
+            ALLOCV_END(tmp);
+    }
+#endif
 
     if ((flags & INTEGER_PACK_FORCE_BIGNUM) && sign != 0 &&
         bary_zero_p(BDIGITS(val), BIGNUM_LEN(val)))
@@ -3998,14 +4296,21 @@ str2big_gmp(
     }
     *p = '\0';
 
-    mpz_init(mz);
-    mpz_set_str(mz, buf, base);
-    zn = num_bdigits;
-    z = bignew(zn, sign);
-    zds = BDIGITS(z);
-    bdigits_from_mpz(mz, BDIGITS(z), &count);
-    BDIGITS_ZERO(zds+count, zn-count);
-    mpz_clear(mz);
+    if (num_bdigits <= BIGNUM_EMBED_LEN_MAX) {
+        mpz_init(mz);
+        mpz_set_str(mz, buf, base);
+        zn = num_bdigits;
+        z = bignew(zn, sign);
+        zds = BDIGITS(z);
+        bdigits_from_mpz(mz, BDIGITS(z), &count);
+        BDIGITS_ZERO(zds+count, zn-count);
+        mpz_clear(mz);
+    }
+    else {
+        z = bignew_mpz();
+        mpz_set_str(BIGNUM_MPZ(z), buf, base);
+        if (!sign) mpz_neg(BIGNUM_MPZ(z), BIGNUM_MPZ(z));
+    }
 
     if (tmps)
         ALLOCV_END(tmps);
@@ -4230,6 +4535,17 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
     if (ndigits) *ndigits += num_digits;
     digits_end = digits_start + len;
 
+#ifdef USE_GMP
+    if (BIGNUM_EMBED_LEN_MAX < num_digits) {
+        int digits_per_bdigits_dbl;
+        maxpow_in_bdigit_dbl(base, &digits_per_bdigits_dbl);
+        num_bdigits = roomof(num_digits, digits_per_bdigits_dbl)*2;
+
+        z = str2big_gmp(sign, digits_start, digits_end, num_digits,
+                        num_bdigits, base);
+    }
+    else
+#endif
     if (POW2_P(base)) {
         z = str2big_poweroftwo(sign, digits_start, digits_end, num_digits,
 			       bit_length(base-1));
@@ -4239,13 +4555,6 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
         maxpow_in_bdigit_dbl(base, &digits_per_bdigits_dbl);
         num_bdigits = roomof(num_digits, digits_per_bdigits_dbl)*2;
 
-#ifdef USE_GMP
-        if (GMP_STR2BIG_DIGITS < num_bdigits) {
-            z = str2big_gmp(sign, digits_start, digits_end, num_digits,
-                    num_bdigits, base);
-        }
-        else
-#endif
         if (num_bdigits < KARATSUBA_MUL_DIGITS) {
             z = str2big_normal(sign, digits_start, digits_end,
                     num_bdigits, base);
@@ -4570,6 +4879,46 @@ rb_str2inum(VALUE str, int base)
     return rb_str_to_inum(str, base, base==0);
 }
 
+#ifdef USE_GMP
+static VALUE
+big_shift3_mpz(const mpz_t mx, int lshift_p, const size_t shift_numdigits, const int shift_numbits)
+{
+    assert(shift_numbits >= 0);
+
+    const size_t shift = shift_numdigits*BITSPERDIG + (size_t)shift_numbits;
+    const size_t x_bits = mpz_sizeinbase(mx, 2);
+
+    if (lshift_p) {
+        if (LONG_MAX < shift_numdigits) {
+            rb_raise(rb_eArgError, "too big number");
+        }
+
+        VALUE z = bignew_mpz_init2(x_bits + shift);
+        mpz_mul_2exp(BIGNUM_MPZ(z), mx, shift);
+        return z;
+    }
+    else /* ! lshift_p */ {
+        // When shift_numdigits is too large, shift can be overflowed.
+        // In that case, we have shift < x_bits, so we must check shift < shift_numdigits.
+        if (LONG_MAX < shift_numdigits || shift < shift_numdigits || x_bits <= shift) {
+            if (mpz_sgn(mx) >= 0)
+                return INT2FIX(0);
+            else
+                return INT2FIX(-1);
+        }
+
+        VALUE z = bignew_mpz_init2(x_bits - shift);
+        if (mpz_sgn(mx) >= 0) {
+            mpz_tdiv_q_2exp(BIGNUM_MPZ(z), mx, shift);
+        }
+        else {
+            mpz_fdiv_q_2exp(BIGNUM_MPZ(z), mx, shift);
+        }
+        return z;
+    }
+}
+#endif
+
 static VALUE
 big_shift3(VALUE x, int lshift_p, size_t shift_numdigits, int shift_numbits)
 {
@@ -4586,6 +4935,15 @@ big_shift3(VALUE x, int lshift_p, size_t shift_numdigits, int shift_numbits)
         s1 = shift_numdigits;
         s2 = shift_numbits;
         xn = BIGNUM_LEN(x);
+#ifdef USE_GMP
+        if (xn+s1+1 >= BIGNUM_EMBED_LEN_MAX) {
+            mpz_t mx;
+            mpz_init_set_bignum(mx, x);
+            z = big_shift3_mpz(mx, lshift_p, s1, s2);
+            mpz_clear(mx);
+            return z;
+        }
+#endif
         z = bignew(xn+s1+1, BIGNUM_SIGN(x));
         zds = BDIGITS(z);
         BDIGITS_ZERO(zds, s1);
@@ -4622,17 +4980,14 @@ big_shift3(VALUE x, int lshift_p, size_t shift_numdigits, int shift_numbits)
 static VALUE
 big_shift2(VALUE x, int lshift_p, VALUE y)
 {
-    int sign;
-    size_t lens[2];
-    size_t shift_numdigits;
-    int shift_numbits;
-
     assert(POW2_P(CHAR_BIT));
     assert(POW2_P(BITSPERDIG));
 
     if (BIGZEROP(x))
         return INT2FIX(0);
-    sign = rb_integer_pack(y, lens, numberof(lens), sizeof(size_t), 0,
+
+    size_t lens[2];
+    int sign = rb_integer_pack(y, lens, numberof(lens), sizeof(size_t), 0,
         INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
     if (sign < 0) {
         lshift_p = !lshift_p;
@@ -4646,9 +5001,16 @@ big_shift2(VALUE x, int lshift_p, VALUE y)
         if (1 < sign || CHAR_BIT <= lens[1])
             return BIGNUM_POSITIVE_P(x) ? INT2FIX(0) : INT2FIX(-1);
     }
-    shift_numbits = (int)(lens[0] & (BITSPERDIG-1));
-    shift_numdigits = (lens[0] >> bit_length(BITSPERDIG-1)) |
+
+    const int shift_numbits = (int)(lens[0] & (BITSPERDIG-1));
+    const size_t shift_numdigits = (lens[0] >> bit_length(BITSPERDIG-1)) |
       (lens[1] << (CHAR_BIT*SIZEOF_SIZE_T - bit_length(BITSPERDIG-1)));
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return big_shift3_mpz(BIGNUM_MPZ(x), lshift_p, shift_numdigits, shift_numbits);
+    }
+    else
+#endif
     return big_shift3(x, lshift_p, shift_numdigits, shift_numbits);
 }
 
@@ -5037,16 +5399,12 @@ big2str_gmp(VALUE x, int base)
     mpz_t mx;
     size_t size;
     VALUE str;
-    BDIGIT *xds = BDIGITS(x);
-    size_t xn = BIGNUM_LEN(x);
 
-    mpz_init(mx);
-    bdigits_to_mpz(mx, xds, xn);
-
+    /* TODO: stop mpz_set when ! BIGNUM_EMBED_P(x) */
+    mpz_init_set_bignum(mx, x);
     size = mpz_sizeinbase(mx, base);
 
     if (BIGNUM_NEGATIVE_P(x)) {
-        mpz_neg(mx, mx);
         str = rb_usascii_str_new(0, size+1);
     }
     else {
@@ -5080,10 +5438,7 @@ rb_big2str1(VALUE x, int base)
 	return rb_fix2str(x, base);
     }
 
-    bigtrunc(x);
-    xds = BDIGITS(x);
     xn = BIGNUM_LEN(x);
-    BARY_TRUNC(xds, xn);
 
     if (xn == 0) {
 	return rb_usascii_str_new2("0");
@@ -5096,16 +5451,20 @@ rb_big2str1(VALUE x, int base)
         rb_raise(rb_eRangeError, "bignum too big to convert into `string'");
     }
 
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return big2str_gmp(x, base);
+    }
+#endif
+
+    bigtrunc(x);
+    xds = BDIGITS(x);
+    BARY_TRUNC(xds, xn);
+
     if (POW2_P(base)) {
         /* base == 2 || base == 4 || base == 8 || base == 16 || base == 32 */
         return big2str_base_poweroftwo(x, base);
     }
-
-#ifdef USE_GMP
-    if (GMP_BIG2STR_DIGITS < xn) {
-        return big2str_gmp(x, base);
-    }
-#endif
 
     return big2str_generic(x, base);
 }
@@ -5129,8 +5488,17 @@ big2ulong(VALUE x, const char *type)
     if (len == 0)
         return 0;
     if (BIGSIZE(x) > sizeof(long)) {
+      overflow:
         rb_raise(rb_eRangeError, "bignum too big to convert into `%s'", type);
     }
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        if (mpz_cmp_ui(BIGNUM_MPZ(x), ULONG_MAX) > 0) {
+            goto overflow;
+        }
+        return mpz_get_ui(BIGNUM_MPZ(x));
+    }
+#endif
     ds = BDIGITS(x);
 #if SIZEOF_LONG <= SIZEOF_BDIGIT
     num = (unsigned long)ds[0];
@@ -5256,6 +5624,13 @@ dbl2big(double d)
 	u /= (double)(BIGRAD);
 	i++;
     }
+#ifdef USE_GMP
+    if (BIGNUM_EMBED_LEN_MAX < i) {
+        z = bignew_mpz_init2(i*BITSPERDIG);
+        mpz_set_d(BIGNUM_MPZ(z), d);
+        return z;
+    }
+#endif
     z = bignew(i, d>=0);
     digits = BDIGITS(z);
     while (i--) {
@@ -5277,9 +5652,30 @@ rb_dbl2big(double d)
 static double
 big2dbl(VALUE x)
 {
+    BDIGIT *ds;
+    long i;
+
+#ifdef USE_GMP
+    VALUE tmp = 0;
+    if (! BIGNUM_EMBED_P(x)) {
+        // NOTE: Since mpz_get_d and mpz_get_d_2exp truncate the value,
+        //       we cannot use them.
+        size_t n = BIGNUM_MPZ_LEN(BIGNUM_MPZ(x));
+        ds = ALLOCV_N(BDIGIT, tmp, n);
+        if (!tmp) tmp = Qtrue; // mark of use ALLOCV_N
+        bdigits_from_mpz(BIGNUM_MPZ(x), ds, &n);
+        i = (long)n;
+    }
+    else
+#endif
+    {
+        i = (bigtrunc(x), BIGNUM_LEN(x));
+        ds = BDIGITS(x);
+    }
+
     double d = 0.0;
-    long i = (bigtrunc(x), BIGNUM_LEN(x)), lo = 0, bits;
-    BDIGIT *ds = BDIGITS(x), dl;
+    long lo = 0, bits;
+    BDIGIT dl;
 
     if (i) {
 	bits = i * BITSPERDIG - nlz(ds[i-1]);
@@ -5326,6 +5722,10 @@ big2dbl(VALUE x)
 	}
     }
     if (BIGNUM_NEGATIVE_P(x)) d = -d;
+#ifdef USE_GMP
+    if (tmp && tmp != Qtrue)
+        ALLOCV_END(tmp);
+#endif
     return d;
 }
 
@@ -5435,6 +5835,28 @@ rb_integer_float_eq(VALUE x, VALUE y)
     return rb_big_eq(x, y);
 }
 
+#ifdef USE_GMP
+static int
+big_cmp_mpz(const mpz_t mx, VALUE y)
+{
+    if (BIGNUM_EMBED_P(y)) {
+        if (! mpz_fits_bignum_embed_p(mx)) {
+            return mpz_sgn(mx) >= 0 ? 1 : -1;
+        }
+
+        BDIGIT xds[BIGNUM_EMBED_LEN_MAX];
+        size_t xn;
+        bdigits_from_mpz(mx, xds, &xn);
+
+        return bary_cmp(xds, xn, BDIGITS(y), BIGNUM_LEN(y));
+    }
+    else {
+        int cmp = mpz_cmp(mx, BIGNUM_MPZ(y));
+        if (cmp < 0) return -1;
+        return cmp > 0;
+    }
+}
+#endif
 
 VALUE
 rb_big_cmp(VALUE x, VALUE y)
@@ -5451,6 +5873,16 @@ rb_big_cmp(VALUE x, VALUE y)
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
 	if (BIGNUM_SIGN(x) == BIGNUM_SIGN(y)) {
+#ifdef USE_GMP
+            if (! BIGNUM_EMBED_P(x)) {
+                int cmp = big_cmp_mpz(BIGNUM_MPZ(x), y);
+                return INT2FIX(cmp);
+            }
+            else if (! BIGNUM_EMBED_P(y)) {
+                int cmp = -big_cmp_mpz(BIGNUM_MPZ(y), x);
+                return INT2FIX(cmp);
+            }
+#endif
 	    int cmp = bary_cmp(BDIGITS(x), BIGNUM_LEN(x), BDIGITS(y), BIGNUM_LEN(y));
 	    return INT2FIX(BIGNUM_SIGN(x) ? cmp : -cmp);
 	}
@@ -5530,6 +5962,25 @@ rb_big_le(VALUE x, VALUE y)
     return big_op(x, y, big_op_le);
 }
 
+#ifdef USE_GMP
+static VALUE
+big_eq_mpz(mpz_t mx, VALUE y)
+{
+    int cmp;
+    if (BIGNUM_EMBED_P(y)) {
+        mpz_t my;
+        mpz_init_set_bignum(my, y);
+        cmp = mpz_cmp(mx, my);
+        mpz_clear(my);
+    }
+    else {
+        cmp = mpz_cmp(mx, BIGNUM_MPZ(y));
+    }
+
+    return cmp == 0 ? Qtrue : Qfalse;
+}
+#endif
+
 /*
  *  call-seq:
  *     big == obj  -> true or false
@@ -5556,6 +6007,14 @@ rb_big_eq(VALUE x, VALUE y)
 	return rb_equal(y, x);
     }
     if (BIGNUM_SIGN(x) != BIGNUM_SIGN(y)) return Qfalse;
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return big_eq_mpz(BIGNUM_MPZ(x), y);
+    }
+    else if (! BIGNUM_EMBED_P(y)) {
+        return big_eq_mpz(BIGNUM_MPZ(y), x);
+    }
+#endif
     if (BIGNUM_LEN(x) != BIGNUM_LEN(y)) return Qfalse;
     if (MEMCMP(BDIGITS(x),BDIGITS(y),BDIGIT,BIGNUM_LEN(y)) != 0) return Qfalse;
     return Qtrue;
@@ -5566,6 +6025,15 @@ rb_big_eql(VALUE x, VALUE y)
 {
     if (!RB_BIGNUM_TYPE_P(y)) return Qfalse;
     if (BIGNUM_SIGN(x) != BIGNUM_SIGN(y)) return Qfalse;
+
+#ifdef USE_GMP
+    if (BIGNUM_EMBED_P(x) != BIGNUM_EMBED_P(y)) return Qfalse;
+    if (! BIGNUM_EMBED_P(x)) {
+        if (mpz_cmpabs(BIGNUM_MPZ(x), BIGNUM_MPZ(y)) != 0) return Qfalse;
+        return Qtrue;
+    }
+#endif
+
     if (BIGNUM_LEN(x) != BIGNUM_LEN(y)) return Qfalse;
     if (MEMCMP(BDIGITS(x),BDIGITS(y),BDIGIT,BIGNUM_LEN(y)) != 0) return Qfalse;
     return Qtrue;
@@ -5584,6 +6052,14 @@ rb_big_uminus(VALUE x)
 VALUE
 rb_big_comp(VALUE x)
 {
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        VALUE z = bignew_mpz_init2(mpz_sizeinbase(BIGNUM_MPZ(x), 2));
+        mpz_com(BIGNUM_MPZ(z), BIGNUM_MPZ(x));
+        return z;
+    }
+#endif
+
     VALUE z = rb_big_clone(x);
     BDIGIT *ds = BDIGITS(z);
     long n = BIGNUM_LEN(z);
@@ -5735,10 +6211,14 @@ static VALUE
 bigadd_int(VALUE x, long y)
 {
     VALUE z;
-    BDIGIT *xds, *zds;
+    BDIGIT *xds, zds[BIGNUM_EMBED_LEN_MAX+1];
     long xn, zn;
     BDIGIT_DBL num;
     long i;
+
+#ifdef USE_GMP
+    assert(BIGNUM_EMBED_P(x));
+#endif
 
     xds = BDIGITS(x);
     xn = BIGNUM_LEN(x);
@@ -5751,10 +6231,8 @@ bigadd_int(VALUE x, long y)
     if (zn < bdigit_roomof(SIZEOF_LONG))
         zn = bdigit_roomof(SIZEOF_LONG);
 #endif
+    // NOTE: we can assume zn <= BIGNUM_EMBED_LEN_MAX
     zn++;
-
-    z = bignew(zn, BIGNUM_SIGN(x));
-    zds = BDIGITS(z);
 
 #if SIZEOF_BDIGIT >= SIZEOF_LONG
     num = (BDIGIT_DBL)xds[0] + y;
@@ -5768,17 +6246,17 @@ bigadd_int(VALUE x, long y)
     num = 0;
     for (i=0; i < xn; i++) {
         if (y == 0) goto y_is_zero_x;
-	num += (BDIGIT_DBL)xds[i] + BIGLO(y);
-	zds[i] = BIGLO(num);
-	num = BIGDN(num);
-	y = BIGDN(y);
+        num += (BDIGIT_DBL)xds[i] + BIGLO(y);
+        zds[i] = BIGLO(num);
+        num = BIGDN(num);
+        y = BIGDN(y);
     }
     for (; i < zn; i++) {
         if (y == 0) goto y_is_zero_z;
-	num += BIGLO(y);
-	zds[i] = BIGLO(num);
-	num = BIGDN(num);
-	y = BIGDN(y);
+        num += BIGLO(y);
+        zds[i] = BIGLO(num);
+        num = BIGDN(num);
+        y = BIGDN(y);
     }
     goto finish;
 
@@ -5787,31 +6265,44 @@ bigadd_int(VALUE x, long y)
     for (;i < xn; i++) {
       y_is_zero_x:
         if (num == 0) goto num_is_zero_x;
-	num += (BDIGIT_DBL)xds[i];
-	zds[i] = BIGLO(num);
-	num = BIGDN(num);
+        num += (BDIGIT_DBL)xds[i];
+        zds[i] = BIGLO(num);
+        num = BIGDN(num);
     }
     for (; i < zn; i++) {
       y_is_zero_z:
         if (num == 0) goto num_is_zero_z;
-	zds[i] = BIGLO(num);
-	num = BIGDN(num);
+        zds[i] = BIGLO(num);
+        num = BIGDN(num);
     }
     goto finish;
 
     for (;i < xn; i++) {
       num_is_zero_x:
-	zds[i] = xds[i];
+        zds[i] = xds[i];
     }
     for (; i < zn; i++) {
       num_is_zero_z:
-	zds[i] = 0;
+        zds[i] = 0;
     }
     goto finish;
 
   finish:
     RB_GC_GUARD(x);
-    return bignorm(z);
+    BARY_TRUNC(zds, zn);
+#ifdef USE_GMP
+    if (BIGNUM_EMBED_LEN_MAX < zn) {
+        z = bignew_mpz_set_bdigits(zds, zn);
+        BIGNUM_SET_SIGN(z, BIGNUM_SIGN(x));
+        return z;
+    }
+    else
+#endif
+    {
+        z = bignew(zn, BIGNUM_SIGN(x));
+        MEMCPY(BDIGITS(z), zds, BDIGIT, zn);
+        return bignorm(z);
+    }
 }
 
 static VALUE
@@ -5832,19 +6323,87 @@ bigadd(VALUE x, VALUE y, int sign)
     else {
 	len = BIGNUM_LEN(y) + 1;
     }
-    z = bignew(len, sign);
 
-    bary_add(BDIGITS(z), BIGNUM_LEN(z),
-             BDIGITS(x), BIGNUM_LEN(x),
-             BDIGITS(y), BIGNUM_LEN(y));
+#ifdef USE_GMP
+    // len should be less than or equal to BIGNUM_EMBED_LEN_MAX + 1
+    // because both x and y are embed when USE_GMP.
+    if (len == BIGNUM_EMBED_LEN_MAX + 1) {
+        VALUE tmpz = 0;
+        BDIGIT *zds;
+        zds = ALLOCV_N(BDIGIT, tmpz, BIGNUM_EMBED_LEN_MAX + 1);
+
+        bary_add(zds, sizeof(zds),
+                 BDIGITS(x), BIGNUM_LEN(x),
+                 BDIGITS(y), BIGNUM_LEN(y));
+
+        if (zds[BIGNUM_EMBED_LEN_MAX] == 0) {
+            z = bignew(BIGNUM_EMBED_LEN_MAX, sign);
+            MEMCPY(BDIGITS(z), zds, BDIGIT, BIGNUM_EMBED_LEN_MAX);
+        }
+        else {
+            z = bignew_mpz_set_bdigits(zds, len);
+            BIGNUM_SET_SIGN(z, sign);
+        }
+        if (tmpz)
+            ALLOCV_END(tmpz);
+    }
+    else
+#endif
+    {
+        z = bignew(len, sign);
+
+        bary_add(BDIGITS(z), BIGNUM_LEN(z),
+                 BDIGITS(x), BIGNUM_LEN(x),
+                 BDIGITS(y), BIGNUM_LEN(y));
+    }
 
     return z;
 }
+
+#ifdef USE_GMP
+static VALUE
+big_plus_mpz(mpz_t mx, VALUE y)
+{
+    assert(RB_INTEGER_TYPE_P(y));
+
+    VALUE z = bignew_mpz();
+
+    if (FIXNUM_P(y)) {
+        long yy = FIX2LONG(y);
+        if (yy >= 0) {
+            mpz_add_ui(BIGNUM_MPZ(z), mx, (unsigned long)yy);
+        }
+        else {
+            mpz_sub_ui(BIGNUM_MPZ(z), mx, (unsigned long)(-yy));
+        }
+    }
+    else if (BIGNUM_EMBED_P(y)) {
+        mpz_t my;
+        mpz_init_set_bignum(my, y);
+        mpz_add(BIGNUM_MPZ(z), mx, my);
+        mpz_clear(my);
+    }
+    else {
+        mpz_add(BIGNUM_MPZ(z), mx, BIGNUM_MPZ(y));
+    }
+
+    return z;
+}
+#endif
 
 VALUE
 rb_big_plus(VALUE x, VALUE y)
 {
     long n;
+
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x) && RB_INTEGER_TYPE_P(y)) {
+        if (y == INT2FIX(0)) {
+            return x;
+        }
+        return big_plus_mpz(BIGNUM_MPZ(x), y);
+    }
+#endif
 
     if (FIXNUM_P(y)) {
 	n = FIX2LONG(y);
@@ -5860,6 +6419,12 @@ rb_big_plus(VALUE x, VALUE y)
 	return bigadd_int(x, n);
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
+#ifdef USE_GMP
+        if (! BIGNUM_EMBED_P(y)) {
+            return big_plus_mpz(BIGNUM_MPZ(y), x);
+        }
+        else
+#endif
 	return bignorm(bigadd(x, y, 1));
     }
     else if (RB_FLOAT_TYPE_P(y)) {
@@ -5870,10 +6435,50 @@ rb_big_plus(VALUE x, VALUE y)
     }
 }
 
+#ifdef USE_GMP
+static VALUE
+big_minus_mpz(mpz_t mx, VALUE y)
+{
+    assert(RB_INTEGER_TYPE_P(y));
+
+    VALUE z = bignew_mpz();
+
+    if (FIXNUM_P(y)) {
+        long yy = FIX2LONG(y);
+        if (yy >= 0) {
+            mpz_sub_ui(BIGNUM_MPZ(z), mx, (unsigned long)yy);
+        }
+        else {
+            mpz_add_ui(BIGNUM_MPZ(z), mx, (unsigned long)(-yy));
+        }
+    }
+    else if (BIGNUM_EMBED_P(y)) {
+        mpz_t my;
+        mpz_init_set_bignum(my, y);
+        mpz_sub(BIGNUM_MPZ(z), mx, my);
+        mpz_clear(my);
+    }
+    else {
+        mpz_sub(BIGNUM_MPZ(z), mx, BIGNUM_MPZ(y));
+    }
+
+    return z;
+}
+#endif
+
 VALUE
 rb_big_minus(VALUE x, VALUE y)
 {
     long n;
+
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x) && RB_INTEGER_TYPE_P(y)) {
+        if (y == INT2FIX(0)) {
+            return x;
+        }
+        return big_minus_mpz(BIGNUM_MPZ(x), y);
+    }
+#endif
 
     if (FIXNUM_P(y)) {
 	n = FIX2LONG(y);
@@ -5889,6 +6494,16 @@ rb_big_minus(VALUE x, VALUE y)
 	return bigsub_int(x, n);
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
+#ifdef USE_GMP
+        if (! BIGNUM_EMBED_P(y)) {
+            mpz_t mx;
+            mpz_init_set_bignum(mx, x);
+            VALUE z = big_minus_mpz(mx, y);
+            mpz_clear(mx);
+            return z;
+        }
+        else
+#endif
 	return bignorm(bigadd(x, y, 0));
     }
     else if (RB_FLOAT_TYPE_P(y)) {
@@ -5899,6 +6514,17 @@ rb_big_minus(VALUE x, VALUE y)
     }
 }
 
+#ifdef USE_GMP
+static VALUE
+bigsq_mpz(mpz_t mx)
+{
+    long xn = BIGNUM_MPZ_LEN(mx);
+    VALUE z = bignew_mpz_init2(2*xn);
+    mpz_mul(BIGNUM_MPZ(z), mx, mx);
+    return z;
+}
+#endif
+
 static VALUE
 bigsq(VALUE x)
 {
@@ -5906,8 +6532,24 @@ bigsq(VALUE x)
     VALUE z;
     BDIGIT *xds, *zds;
 
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return bigsq_mpz(BIGNUM_MPZ(x));
+    }
+#endif
+
     xn = BIGNUM_LEN(x);
     zn = 2 * xn;
+
+#ifdef USE_GMP
+    if (zn > BIGNUM_EMBED_LEN_MAX) {
+        mpz_t mx;
+        mpz_init_set_bdigits(mx, BDIGITS(x), xn);
+        z = bigsq_mpz(mx);
+        mpz_clear(mx);
+        return z;
+    }
+#endif
 
     z = bignew(zn, 1);
 
@@ -5923,6 +6565,33 @@ bigsq(VALUE x)
     return z;
 }
 
+#ifdef USE_GMP
+static VALUE
+bigmul0_mpz(mpz_t mx, VALUE y)
+{
+    long xn, yn, zn;
+    VALUE z;
+
+    xn = BIGNUM_MPZ_LEN(mx);
+    yn = BIGNUM_LEN(y);
+    zn = xn + yn;
+
+    z = bignew_mpz_init2(zn*BITSPERDIG);
+    if (BIGNUM_EMBED_P(y)) {
+        mpz_t my;
+        mpz_init_set_bdigits(my, BDIGITS(y), yn);
+        if (BIGNUM_NEGATIVE_P(y)) mpz_neg(my, my);
+        mpz_mul(BIGNUM_MPZ(z), mx, my);
+        mpz_clear(my);
+    }
+    else {
+        mpz_mul(BIGNUM_MPZ(z), mx, BIGNUM_MPZ(y));
+    }
+
+    return z;
+}
+#endif
+
 static VALUE
 bigmul0(VALUE x, VALUE y)
 {
@@ -5933,9 +6602,29 @@ bigmul0(VALUE x, VALUE y)
     if (x == y)
         return bigsq(x);
 
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return bigmul0_mpz(BIGNUM_MPZ(x), y);
+    }
+    else if (! BIGNUM_EMBED_P(y)) {
+        return bigmul0_mpz(BIGNUM_MPZ(y), x);
+    }
+#endif
+
     xn = BIGNUM_LEN(x);
     yn = BIGNUM_LEN(y);
     zn = xn + yn;
+
+#ifdef USE_GMP
+    if (zn > BIGNUM_EMBED_LEN_MAX) {
+        mpz_t mx;
+        mpz_init_set_bdigits(mx, BDIGITS(x), xn);
+        if (BIGNUM_NEGATIVE_P(x)) mpz_neg(mx, mx);
+        z = bigmul0_mpz(mx, y);
+        mpz_clear(mx);
+        return z;
+    }
+#endif
 
     z = bignew(zn, BIGNUM_SIGN(x)==BIGNUM_SIGN(y));
 
@@ -5968,9 +6657,91 @@ rb_big_mul(VALUE x, VALUE y)
     return bignorm(bigmul0(x, y));
 }
 
+#ifdef USE_GMP
+static VALUE
+bigdivrem_mpz(mpz_t mx, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
+{
+    mpz_t mq, mr;
+
+    assert(divp || modp);
+
+    if (divp) mpz_init(mq);
+    if (modp) mpz_init(mr);
+
+    if (BIGNUM_EMBED_P(y)) {
+        mpz_t my;
+        mpz_init_set_bignum(my, y);
+
+        if (0 == mpz_cmp_ui(my, 0))
+          rb_num_zerodiv();
+
+        if (!modp) {
+            mpz_tdiv_q(mq, mx, my);
+        }
+        else if (!divp) {
+            mpz_tdiv_r(mr, mx, my);
+        }
+        else {
+            mpz_tdiv_qr(mq, mr, mx, my);
+        }
+
+        mpz_clear(my);
+    }
+    else {
+        if (0 == mpz_cmp_ui(BIGNUM_MPZ(y), 0))
+          rb_num_zerodiv();
+
+        if (!modp) {
+            mpz_tdiv_q(mq, mx, BIGNUM_MPZ(y));
+        }
+        else if (!divp) {
+            mpz_tdiv_r(mr, mx, BIGNUM_MPZ(y));
+        }
+        else {
+            mpz_tdiv_qr(mq, mr, mx, BIGNUM_MPZ(y));
+        }
+    }
+
+    if (divp) {
+        if (mpz_fits_slong_p(mq)) {
+            *divp = LONG2NUM(mpz_get_si(mq));
+        }
+        else {
+            *divp = bignew_mpz_set(mq);
+        }
+        mpz_clear(mq);
+    }
+
+    if (modp) {
+        if (mpz_fits_slong_p(mr)) {
+            *modp = LONG2NUM(mpz_get_si(mr));
+        }
+        else {
+            *modp = bignew_mpz_set(mr);
+        }
+        mpz_clear(mr);
+    }
+
+    return Qnil;
+}
+#endif
+
 static VALUE
 bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
 {
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return bigdivrem_mpz(BIGNUM_MPZ(x), y, divp, modp);
+    }
+    else if (! BIGNUM_EMBED_P(y)) {
+        mpz_t mx;
+        mpz_init_set_bignum(mx, x);
+        VALUE res = bigdivrem_mpz(mx, y, divp, modp);
+        mpz_clear(mx);
+        return res;
+    }
+#endif
+
     long xn = BIGNUM_LEN(x), yn = BIGNUM_LEN(y);
     VALUE z;
     BDIGIT *xds, *yds, *zds;
@@ -6029,8 +6800,20 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
 
     if (divp) {
         qn = xn + BIGDIVREM_EXTRA_WORDS;
-        q = bignew(qn, BIGNUM_SIGN(x)==BIGNUM_SIGN(y));
-        qds = BDIGITS(q);
+#ifdef USE_GMP
+        if (BIGNUM_EMBED_LEN_MAX < qn) {
+            mpz_t mx;
+            mpz_init_set_bignum(mx, x);
+            bigdivrem_mpz(mx, y, divp, modp);
+            mpz_clear(mx);
+            return Qnil;
+        }
+        else
+#endif
+        {
+            q = bignew(qn, BIGNUM_SIGN(x)==BIGNUM_SIGN(y));
+            qds = BDIGITS(q);
+        }
     }
     else {
         qn = 0;
@@ -6061,10 +6844,91 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
     return Qnil;
 }
 
+#ifdef USE_GMP
+static void
+bigdivmod_mpz(const mpz_t mx, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
+{
+    mpz_t mq, mr;
+
+    assert(divp || modp);
+
+    if (divp) mpz_init(mq);
+    if (modp) mpz_init(mr);
+
+    if (BIGNUM_EMBED_P(y)) {
+        mpz_t my;
+        mpz_init_set_bignum(my, y);
+
+        if (0 == mpz_cmp_ui(my, 0))
+          rb_num_zerodiv();
+
+        if (!modp) {
+            mpz_fdiv_q(mq, mx, my);
+        }
+        else if (!divp) {
+            mpz_fdiv_r(mr, mx, my);
+        }
+        else {
+            mpz_fdiv_qr(mq, mr, mx, my);
+        }
+
+        mpz_clear(my);
+    }
+    else {
+        if (0 == mpz_cmp_ui(BIGNUM_MPZ(y), 0))
+          rb_num_zerodiv();
+
+        if (!modp) {
+            mpz_fdiv_q(mq, mx, BIGNUM_MPZ(y));
+        }
+        else if (!divp) {
+            mpz_fdiv_r(mr, mx, BIGNUM_MPZ(y));
+        }
+        else {
+            mpz_fdiv_qr(mq, mr, mx, BIGNUM_MPZ(y));
+        }
+    }
+
+    if (divp) {
+        if (mpz_fits_slong_p(mq)) {
+            *divp = LONG2NUM(mpz_get_si(mq));
+        }
+        else {
+            *divp = bignew_mpz_set(mq);
+        }
+        mpz_clear(mq);
+    }
+
+    if (modp) {
+        if (mpz_fits_slong_p(mr)) {
+            *modp = LONG2NUM(mpz_get_si(mr));
+        }
+        else {
+            *modp = bignew_mpz_set(mr);
+        }
+        mpz_clear(mr);
+    }
+}
+#endif
+
 static void
 bigdivmod(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
 {
     VALUE mod;
+
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        bigdivmod_mpz(BIGNUM_MPZ(x), y, divp, modp);
+        return;
+    }
+    else if (BIGNUM_LEN(x) == BIGNUM_EMBED_LEN_MAX || ! BIGNUM_EMBED_P(y)) {
+        mpz_t mx;
+        mpz_init_set_bignum(mx, x);
+        bigdivmod_mpz(mx, y, divp, modp);
+        mpz_clear(mx);
+        return;
+    }
+#endif
 
     bigdivrem(x, y, divp, &mod);
     if (BIGNUM_SIGN(x) != BIGNUM_SIGN(y) && !BIGZEROP(mod)) {
@@ -6076,6 +6940,45 @@ bigdivmod(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
     }
 }
 
+// Let `n` be a numerator, `d` be a denominator, `q` be a quotient,
+// and `r` be remainder.  Assume they satisfy `n = q*d + r`.
+//
+// There are three kinds of division in GMP.
+//
+// (1) `cdiv` rounds `q` up towards +Inf, and `r` will have the opposite sign to `d`.
+// (2) `fdiv` rounds `q` down towards -Inf, and `r` will have the same sign as `d`.
+// (3) `tdiv` rounds `q` towards zero, and `r` will have the same sign as `n`.
+//
+// `c` in `cdiv` stands for "ceil", `f` in `fdiv` stands for "floor",
+// and `t` in `tdiv` stands for "truncate".
+//
+// Ruby's Numeric#divmod, Numeric#div, and Numeric#modulo behave as `fdiv` in GMP.
+// Ruby's Numeric#remainder behaves as `tdiv` in GMP.
+
+#ifdef USE_GMP
+static VALUE
+rb_big_divide_mpz_si(mpz_t mx, long y)
+{
+    if (y == 0) {
+        rb_num_zerodiv();
+    }
+
+    VALUE z = bignew_mpz();
+    if (y > 0) {
+        mpz_fdiv_q_ui(BIGNUM_MPZ(z), mx, (unsigned long)y);
+    }
+    else /* y < 0 */ {
+        if (mpz_sgn(mx) >= 0) {
+            mpz_cdiv_q_ui(BIGNUM_MPZ(z), mx, (unsigned long)(-y));
+        }
+        else {
+            mpz_tdiv_q_ui(BIGNUM_MPZ(z), mx, (unsigned long)(-y));
+        }
+        mpz_neg(BIGNUM_MPZ(z), BIGNUM_MPZ(z));
+    }
+    return z;
+}
+#endif
 
 static VALUE
 rb_big_divide(VALUE x, VALUE y, ID op)
@@ -6083,7 +6986,15 @@ rb_big_divide(VALUE x, VALUE y, ID op)
     VALUE z;
 
     if (FIXNUM_P(y)) {
-	y = rb_int2big(FIX2LONG(y));
+        long l = FIX2LONG(y);
+
+#ifdef USE_GMP
+        if (! BIGNUM_EMBED_P(x)) {
+            return rb_big_divide_mpz_si(BIGNUM_MPZ(x), l);
+        }
+#endif
+
+	y = rb_int2big(l);
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
     }
@@ -6180,6 +7091,54 @@ big_shift(VALUE x, long n)
 
 enum {DBL_BIGDIG = ((DBL_MANT_DIG + BITSPERDIG) / BITSPERDIG)};
 
+#ifdef USE_GMP
+static void
+mpz_shift(mpz_t z, const mpz_t x, long shift)
+{
+    if (shift > 0) {
+        mpz_tdiv_q_2exp(z, x, (size_t)shift);
+    }
+    else if (shift < 0) {
+        mpz_mul_2exp(z, x, (size_t)-shift);
+    }
+}
+
+static double
+big_fdiv_mpz_2(const mpz_t mx, const mpz_t my, long ey)
+{
+    long ex = mpz_sizeinbase(mx, 2) - 2*DBL_MANT_DIG;
+    mpz_t mu;
+    mpz_init2(mu, 2*DBL_MANT_DIG);
+    mpz_shift(mu, mx, ex);
+
+    mpz_t mz;
+    mpz_init2(mz, 2*DBL_MANT_DIG);
+    mpz_tdiv_q(mz, mu, my);
+
+    double dz = ldexp(mpz_get_d(mz), (int)(ex - ey));
+
+    mpz_clear(mu);
+    mpz_clear(mz);
+
+    return dz;
+}
+
+static double
+big_fdiv_mpz(const mpz_t mx, VALUE y, long ey)
+{
+    if (BIGNUM_EMBED_P(y)) {
+        mpz_t my;
+        mpz_init_set_bignum(my, y);
+        double dz = big_fdiv_mpz_2(mx, my, ey);
+        mpz_clear(my);
+        return dz;
+    }
+    else {
+        return big_fdiv_mpz_2(mx, BIGNUM_MPZ(y), ey);
+    }
+}
+#endif
+
 static double
 big_fdiv(VALUE x, VALUE y, long ey)
 {
@@ -6206,6 +7165,68 @@ big_fdiv(VALUE x, VALUE y, long ey)
     return ldexp(big2dbl(z), (int)l);
 }
 
+#ifdef USE_GMP
+static double
+big_fdiv_int_mpz_si(mpz_t mx, long y)
+{
+    long ex, ey;
+# if SIZEOF_LONG * CHAR_BIT < DBL_MANT_DIG // assume FLT_RADIX == 2
+    ey = 0;
+# else
+    ey = SIZEOF_LONG*CHAR_BIT - DBL_MANT_DIG;
+# endif
+    y >>= ey;
+
+    ex = mpz_sizeinbase(mx, 2) - 2*DBL_MANT_DIG;
+
+    mpz_t mu;
+    mpz_init2(mu, 2*DBL_MANT_DIG);
+    mpz_tdiv_q_2exp(mu, mx, ex);
+
+    mpz_t mz;
+    mpz_init2(mz, DBL_MANT_DIG);
+    mpz_tdiv_q_ui(mz, mu, y);
+
+    double dz = ldexp(mpz_get_d(mz), (int)(ex - ey));
+
+    mpz_clear(mu);
+    mpz_clear(mz);
+
+    return dz;
+}
+
+static double
+big_fdiv_int_mpz_2(mpz_t mx, mpz_t my)
+{
+    long ey = mpz_sizeinbase(my, 2) - DBL_MANT_DIG;
+    mpz_t mw;
+    mpz_init2(mw, DBL_MANT_DIG);
+    mpz_shift(mw, my, ey);
+
+    double dz = big_fdiv_mpz_2(mx, mw, ey);
+
+    mpz_clear(mw);
+
+    return dz;
+}
+
+static double
+big_fdiv_int_mpz(mpz_t mx, VALUE y)
+{
+    assert(RB_BIGNUM_TYPE_P(y));
+
+    if (BIGNUM_EMBED_P(y)) {
+        mpz_t my;
+        mpz_init_set_bignum(my, y);
+        double dz = big_fdiv_int_mpz_2(mx, my);
+        mpz_clear(my);
+        return dz;
+    }
+    else {
+        return big_fdiv_int_mpz_2(mx, BIGNUM_MPZ(y));
+    }
+}
+#else
 static double
 big_fdiv_int(VALUE x, VALUE y)
 {
@@ -6217,12 +7238,19 @@ big_fdiv_int(VALUE x, VALUE y)
     if (ey) y = big_shift(y, ey);
     return big_fdiv(x, y, ey);
 }
+#endif
 
 static double
 big_fdiv_float(VALUE x, VALUE y)
 {
     int i;
     y = dbl2big(ldexp(frexp(RFLOAT_VALUE(y), &i), DBL_MANT_DIG));
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return big_fdiv_mpz(BIGNUM_MPZ(x), y, i - DBL_MANT_DIG);
+    }
+    else
+#endif
     return big_fdiv(x, y, i - DBL_MANT_DIG);
 }
 
@@ -6234,19 +7262,37 @@ rb_big_fdiv_double(VALUE x, VALUE y)
 
     dx = big2dbl(x);
     if (FIXNUM_P(y)) {
-	dy = (double)FIX2LONG(y);
-	if (isinf(dx))
-	    return big_fdiv_int(x, rb_int2big(FIX2LONG(y)));
+        dy = (double)FIX2LONG(y);
+        if (isinf(dx)) {
+#ifdef USE_GMP
+            return big_fdiv_int_mpz_si(BIGNUM_MPZ(x), FIX2LONG(y));
+#else
+            return big_fdiv_int(x, rb_int2big(FIX2LONG(y)));
+#endif
+        }
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
-	return big_fdiv_int(x, y);
+#ifdef USE_GMP
+        if (! BIGNUM_EMBED_P(x)) {
+            return big_fdiv_int_mpz(BIGNUM_MPZ(x), y);
+        }
+        else {
+            mpz_t mx;
+            mpz_init_set_bignum(mx, x);
+            double dz = big_fdiv_int_mpz(mx, y);
+            mpz_clear(mx);
+            return dz;
+        }
+#else
+        return big_fdiv_int(x, y);
+#endif
     }
     else if (RB_FLOAT_TYPE_P(y)) {
-	dy = RFLOAT_VALUE(y);
-	if (isnan(dy))
-	    return dy;
-	if (isinf(dx))
-	    return big_fdiv_float(x, y);
+        dy = RFLOAT_VALUE(y);
+        if (isnan(dy))
+            return dy;
+        if (isinf(dx))
+            return big_fdiv_float(x, y);
     }
     else {
         return NUM2DBL(rb_num_coerce_bin(x, y, idFdiv));
@@ -6260,6 +7306,16 @@ rb_big_fdiv(VALUE x, VALUE y)
 {
     return DBL2NUM(rb_big_fdiv_double(x, y));
 }
+
+#ifdef USE_GMP
+static VALUE
+big_pow_mpz_ui(const mpz_t mx, unsigned long y)
+{
+    VALUE z = bignew_mpz();
+    mpz_pow_ui(BIGNUM_MPZ(z), mx, y);
+    return z;
+}
+#endif
 
 VALUE
 rb_big_pow(VALUE x, VALUE y)
@@ -6293,6 +7349,11 @@ rb_big_pow(VALUE x, VALUE y)
             else
                 return DBL2NUM(1.0 / NUM2DBL(x));
         }
+#ifdef USE_GMP
+        else if (! BIGNUM_EMBED_P(x)) {
+            return big_pow_mpz_ui(BIGNUM_MPZ(x), (unsigned long)yy);
+        }
+#endif
 	else {
 	    VALUE z = 0;
 	    SIGNED_VALUE mask;
@@ -6377,6 +7438,34 @@ bigand_int(VALUE x, long xn, BDIGIT hibitsx, long y)
     return bignorm(z);
 }
 
+#ifdef USE_GMP
+static VALUE
+big_and_mpz(const mpz_t mx, VALUE y)
+{
+    assert(RB_INTEGER_TYPE_P(y));
+
+    VALUE z = bignew_mpz();
+
+    if (FIXNUM_P(y)) {
+        mpz_t my;
+        mpz_init_set_si(my, FIX2LONG(y));
+        mpz_and(BIGNUM_MPZ(z), mx, my);
+        mpz_clear(my);
+    }
+    else if (BIGNUM_EMBED_P(y)) {
+        mpz_t my;
+        mpz_init_set_bignum(my, y);
+        mpz_and(BIGNUM_MPZ(z), mx, my);
+        mpz_clear(my);
+    }
+    else {
+        mpz_and(BIGNUM_MPZ(z), mx, BIGNUM_MPZ(y));
+    }
+
+    return bignorm(z);
+}
+#endif
+
 VALUE
 rb_big_and(VALUE x, VALUE y)
 {
@@ -6392,6 +7481,15 @@ rb_big_and(VALUE x, VALUE y)
     if (!RB_INTEGER_TYPE_P(y)) {
 	return rb_num_coerce_bit(x, y, '&');
     }
+
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return big_and_mpz(BIGNUM_MPZ(x), y);
+    }
+    else if (RB_BIGNUM_TYPE_P(y) && ! BIGNUM_EMBED_P(y)) {
+        return big_and_mpz(BIGNUM_MPZ(y), x);
+    }
+#endif
 
     hibitsx = abs2twocomp(&x, &xn);
     if (FIXNUM_P(y)) {
@@ -6496,6 +7594,34 @@ bigor_int(VALUE x, long xn, BDIGIT hibitsx, long y)
     return bignorm(z);
 }
 
+#ifdef USE_GMP
+static VALUE
+big_or_mpz(const mpz_t mx, VALUE y)
+{
+    assert(RB_INTEGER_TYPE_P(y));
+
+    VALUE z = bignew_mpz();
+
+    if (FIXNUM_P(y)) {
+        mpz_t my;
+        mpz_init_set_si(my, FIX2LONG(y));
+        mpz_ior(BIGNUM_MPZ(z), mx, my);
+        mpz_clear(my);
+    }
+    else if (BIGNUM_EMBED_P(y)) {
+        mpz_t my;
+        mpz_init_set_bignum(my, y);
+        mpz_ior(BIGNUM_MPZ(z), mx, my);
+        mpz_clear(my);
+    }
+    else {
+        mpz_ior(BIGNUM_MPZ(z), mx, BIGNUM_MPZ(y));
+    }
+
+    return bignorm(z);
+}
+#endif
+
 VALUE
 rb_big_or(VALUE x, VALUE y)
 {
@@ -6511,6 +7637,15 @@ rb_big_or(VALUE x, VALUE y)
     if (!RB_INTEGER_TYPE_P(y)) {
 	return rb_num_coerce_bit(x, y, '|');
     }
+
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return big_or_mpz(BIGNUM_MPZ(x), y);
+    }
+    else if (RB_BIGNUM_TYPE_P(y) && ! BIGNUM_EMBED_P(y)) {
+        return big_or_mpz(BIGNUM_MPZ(y), x);
+    }
+#endif
 
     hibitsx = abs2twocomp(&x, &xn);
     if (FIXNUM_P(y)) {
@@ -6590,6 +7725,34 @@ bigxor_int(VALUE x, long xn, BDIGIT hibitsx, long y)
     return bignorm(z);
 }
 
+#ifdef USE_GMP
+static VALUE
+big_xor_mpz(const mpz_t mx, VALUE y)
+{
+    assert(RB_INTEGER_TYPE_P(y));
+
+    VALUE z = bignew_mpz();
+
+    if (FIXNUM_P(y)) {
+        mpz_t my;
+        mpz_init_set_si(my, FIX2LONG(y));
+        mpz_xor(BIGNUM_MPZ(z), mx, my);
+        mpz_clear(my);
+    }
+    else if (BIGNUM_EMBED_P(y)) {
+        mpz_t my;
+        mpz_init_set_bignum(my, y);
+        mpz_xor(BIGNUM_MPZ(z), mx, my);
+        mpz_clear(my);
+    }
+    else {
+        mpz_xor(BIGNUM_MPZ(z), mx, BIGNUM_MPZ(y));
+    }
+
+    return bignorm(z);
+}
+#endif
+
 VALUE
 rb_big_xor(VALUE x, VALUE y)
 {
@@ -6605,6 +7768,15 @@ rb_big_xor(VALUE x, VALUE y)
     if (!RB_INTEGER_TYPE_P(y)) {
 	return rb_num_coerce_bit(x, y, '^');
     }
+
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return big_xor_mpz(BIGNUM_MPZ(x), y);
+    }
+    else if (RB_BIGNUM_TYPE_P(y) && ! BIGNUM_EMBED_P(y)) {
+        return big_xor_mpz(BIGNUM_MPZ(y), x);
+    }
+#endif
 
     hibitsx = abs2twocomp(&x, &xn);
     if (FIXNUM_P(y)) {
@@ -6659,6 +7831,11 @@ rb_big_lshift(VALUE x, VALUE y)
 	    }
             shift_numbits = (int)(shift & (BITSPERDIG-1));
             shift_numdigits = shift >> bit_length(BITSPERDIG-1);
+#ifdef USE_GMP
+            if (! BIGNUM_EMBED_P(x)) {
+                return big_shift3_mpz(BIGNUM_MPZ(x), lshift_p, shift_numdigits, shift_numbits);
+            }
+#endif
             return bignorm(big_shift3(x, lshift_p, shift_numdigits, shift_numbits));
 	}
 	else if (RB_BIGNUM_TYPE_P(y)) {
@@ -6689,6 +7866,12 @@ rb_big_rshift(VALUE x, VALUE y)
 	    }
             shift_numbits = (int)(shift & (BITSPERDIG-1));
             shift_numdigits = shift >> bit_length(BITSPERDIG-1);
+#ifdef USE_GMP
+            if (! BIGNUM_EMBED_P(x)) {
+                return big_shift3_mpz(BIGNUM_MPZ(x), lshift_p, shift_numdigits, shift_numbits);
+            }
+            else
+#endif
             return bignorm(big_shift3(x, lshift_p, shift_numdigits, shift_numbits));
 	}
 	else if (RB_BIGNUM_TYPE_P(y)) {
@@ -6697,6 +7880,40 @@ rb_big_rshift(VALUE x, VALUE y)
 	y = rb_to_int(y);
     }
 }
+
+#ifdef USE_GMP
+static VALUE
+big_aref_mpz_ui(const mpz_t mx, size_t shift)
+{
+    const size_t s1 = shift / mp_bits_per_limb;
+    const bool positive_p = mpz_sgn(mx) >= 0;
+
+    if ((size_t)s1 >= mpz_size(mx)) {
+        return positive_p ? INT2FIX(0) : INT2FIX(1);
+    }
+
+    const size_t s2 = shift % mp_bits_per_limb;
+    const mp_limb_t bit = (mp_limb_t)1 << s2;
+    const mp_limb_t limb = mpz_getlimbn(mx, s1);
+
+    if (positive_p) {
+        return (limb & bit) ? INT2FIX(1) : INT2FIX(0);
+    }
+    else if (limb & (bit - 1)) {
+        return (limb & bit) ? INT2FIX(0) : INT2FIX(1);
+    }
+    else {
+        const mp_limb_t* limbs = mpz_limbs_read(mx);
+        size_t i;
+        for (i = 0; i < s1; ++i) {
+            if (limbs[i]) {
+                return (limbs[s1] & bit) ? INT2FIX(0) : INT2FIX(1);
+            }
+        }
+        return (limbs[s1] & bit) ? INT2FIX(1) : INT2FIX(0);
+    }
+}
+#endif
 
 VALUE
 rb_big_aref(VALUE x, VALUE y)
@@ -6726,6 +7943,13 @@ rb_big_aref(VALUE x, VALUE y)
 	if (l < 0) return INT2FIX(0);
 	shift = (size_t)l;
     }
+
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        return big_aref_mpz_ui(BIGNUM_MPZ(x), shift);
+    }
+#endif
+
     s1 = shift/BITSPERDIG;
     s2 = shift%BITSPERDIG;
     bit = (BDIGIT)1 << s2;
@@ -6748,7 +7972,17 @@ rb_big_hash(VALUE x)
 {
     st_index_t hash;
 
-    hash = rb_memhash(BDIGITS(x), sizeof(BDIGIT)*BIGNUM_LEN(x)) ^ BIGNUM_SIGN(x);
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(x)) {
+        const mp_limb_t *limbs = mpz_limbs_read(BIGNUM_MPZ(x));
+        const size_t len = mpz_size(BIGNUM_MPZ(x));
+        hash = rb_memhash(limbs, sizeof(mp_limb_t)*len) ^ BIGNUM_SIGN(x);
+    }
+    else
+#endif
+    {
+        hash = rb_memhash(BDIGITS(x), sizeof(BDIGIT)*BIGNUM_LEN(x)) ^ BIGNUM_SIGN(x);
+    }
     return ST2FIX(hash);
 }
 
@@ -6851,6 +8085,12 @@ rb_big_bit_length(VALUE big)
 VALUE
 rb_big_odd_p(VALUE num)
 {
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(num)) {
+        return mpz_odd_p(BIGNUM_MPZ(num)) ? Qtrue : Qfalse;
+    }
+    else
+#endif
     if (BIGNUM_LEN(num) != 0 && BDIGITS(num)[0] & 1) {
 	return Qtrue;
     }
@@ -6860,6 +8100,12 @@ rb_big_odd_p(VALUE num)
 VALUE
 rb_big_even_p(VALUE num)
 {
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(num)) {
+        return mpz_even_p(BIGNUM_MPZ(num)) ? Qtrue : Qfalse;
+    }
+    else
+#endif
     if (BIGNUM_LEN(num) != 0 && BDIGITS(num)[0] & 1) {
 	return Qfalse;
     }
@@ -6931,6 +8177,14 @@ estimate_initial_sqrt(VALUE *xp, const size_t xn, const BDIGIT *nds, size_t len)
 VALUE
 rb_big_isqrt(VALUE n)
 {
+#ifdef USE_GMP
+    if (! BIGNUM_EMBED_P(n)) {
+        VALUE z = bignew_mpz();
+        mpz_sqrt(BIGNUM_MPZ(z), BIGNUM_MPZ(n));
+        return z;
+    }
+#endif
+
     BDIGIT *nds = BDIGITS(n);
     size_t len = BIGNUM_LEN(n);
     size_t xn = (len+1) / 2;
@@ -6939,11 +8193,11 @@ rb_big_isqrt(VALUE n)
 
     if (len <= 2) {
 	BDIGIT sq = rb_bdigit_dbl_isqrt(bary2bdigitdbl(nds, len));
-#if SIZEOF_BDIGIT > SIZEOF_LONG
+# if SIZEOF_BDIGIT > SIZEOF_LONG
 	return ULL2NUM(sq);
-#else
+# else
 	return ULONG2NUM(sq);
-#endif
+# endif
     }
     else if ((xds = estimate_initial_sqrt(&x, xn, nds, len)) != 0) {
 	size_t tn = xn + BIGDIVREM_EXTRA_WORDS;
@@ -6961,42 +8215,21 @@ rb_big_isqrt(VALUE n)
 	    bary_small_rshift(xds, xds, xn, 1, carry);
 	    tn = BIGNUM_LEN(t);
 	}
+#ifndef USE_GMP
 	rb_big_realloc(t, 0);
+#endif
 	rb_gc_force_recycle(t);
     }
     RBASIC_SET_CLASS_RAW(x, rb_cInteger);
     return x;
 }
 
-#ifdef USE_GMP
-static void
-bary_powm_gmp(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn, const BDIGIT *mds, size_t mn)
-{
-    mpz_t z, x, y, m;
-    size_t count;
-    mpz_init(x);
-    mpz_init(y);
-    mpz_init(m);
-    mpz_init(z);
-    bdigits_to_mpz(x, xds, xn);
-    bdigits_to_mpz(y, yds, yn);
-    bdigits_to_mpz(m, mds, mn);
-    mpz_powm(z, x, y, m);
-    bdigits_from_mpz(z, zds, &count);
-    BDIGITS_ZERO(zds+count, zn-count);
-    mpz_clear(x);
-    mpz_clear(y);
-    mpz_clear(m);
-    mpz_clear(z);
-}
-#endif
-
 static VALUE
 int_pow_tmp3(VALUE x, VALUE y, VALUE m, int nega_flg)
 {
 #ifdef USE_GMP
+    mpz_t mz, mx, my, mm;
     VALUE z;
-    size_t xn, yn, mn, zn;
 
     if (FIXNUM_P(x)) {
        x = rb_int2big(FIX2LONG(x));
@@ -7005,19 +8238,82 @@ int_pow_tmp3(VALUE x, VALUE y, VALUE m, int nega_flg)
        y = rb_int2big(FIX2LONG(y));
     }
     assert(RB_BIGNUM_TYPE_P(m));
-    xn = BIGNUM_LEN(x);
-    yn = BIGNUM_LEN(y);
-    mn = BIGNUM_LEN(m);
-    zn = mn;
-    z = bignew(zn, 1);
-    bary_powm_gmp(BDIGITS(z), zn, BDIGITS(x), xn, BDIGITS(y), yn, BDIGITS(m), mn);
-    if (nega_flg & BIGNUM_POSITIVE_P(z)) {
-        z = rb_big_minus(z, m);
+    mpz_init(mz);
+    if (BIGNUM_EMBED_P(x)) {
+        mpz_init_set_bignum(mx, x);
+
+        if (BIGNUM_EMBED_P(y)) {
+            mpz_init_set_bignum(my, y);
+
+            if (BIGNUM_EMBED_P(m)) {
+                /* embed x, embed y, embed m */
+                mpz_init_set_bignum(mm, m);
+                mpz_powm(mz, mx, my, mm);
+            }
+            else {
+                /* embed x, embed y, noembed m */
+                mpz_powm(mz, mx, my, BIGNUM_MPZ(m));
+            }
+
+            mpz_clear(my);
+        }
+        else {
+            if (BIGNUM_EMBED_P(m)) {
+                /* embed x, noembed y, embed m */
+                mpz_init_set_bignum(mm, m);
+                mpz_powm(mz, mx, BIGNUM_MPZ(y), BIGNUM_MPZ(m));
+            }
+            else {
+                /* embed x, noembed y, noembed m */
+                mpz_powm(mz, mx, BIGNUM_MPZ(y), BIGNUM_MPZ(m));
+            }
+        }
+
+        mpz_clear(mx);
+    }
+    else {
+        if (BIGNUM_EMBED_P(y)) {
+            mpz_init_set_bignum(my, y);
+
+            if (BIGNUM_EMBED_P(m)) {
+                /* noembed x, embed y, embed m */
+                mpz_init_set_bignum(mm, m);
+                mpz_powm(mz, BIGNUM_MPZ(x), my, mm);
+            }
+            else {
+                /* noembed x, embed y, noembed m */
+                mpz_powm(mz, BIGNUM_MPZ(x), my, BIGNUM_MPZ(m));
+            }
+
+            mpz_clear(my);
+        }
+        else {
+            if (BIGNUM_EMBED_P(m)) {
+                /* noembed x, noembed y, embed m */
+                mpz_init_set_bignum(mm, m);
+                mpz_powm(mz, BIGNUM_MPZ(x), BIGNUM_MPZ(y), mm);
+            }
+            else {
+                /* noembed x, noembed y, noembed m */
+                mpz_powm(mz, BIGNUM_MPZ(x), BIGNUM_MPZ(y), BIGNUM_MPZ(m));
+            }
+        }
+    }
+    if (nega_flg && mpz_sgn(mz) >= 0) {
+        if (BIGNUM_EMBED_P(m)) {
+            mpz_sub(mz, mz, mm);
+            mpz_clear(mm);
+        }
+        else {
+            mpz_sub(mz, mz, BIGNUM_MPZ(m));
+        }
     }
     RB_GC_GUARD(x);
     RB_GC_GUARD(y);
     RB_GC_GUARD(m);
-    return rb_big_norm(z);
+    z = bignew_mpz_set(mz);
+    mpz_clear(mz);
+    return z;
 #else
     VALUE tmp = LONG2FIX(1L);
     long yy;
@@ -7174,6 +8470,35 @@ rb_int_powm(int const argc, VALUE * const argv, VALUE const num)
     }
     UNREACHABLE_RETURN(Qnil);
 }
+
+#ifdef USE_GMP
+VALUE
+rb_big_gcd_mpz(mpz_t mx, VALUE y)
+{
+    VALUE z = bignew_mpz();
+
+    if (FIXNUM_P(y)) {
+        long l = FIX2LONG(y);
+        if (l >= 0) {
+            mpz_gcd_ui(BIGNUM_MPZ(z), mx, (unsigned long)l);
+        }
+        else {
+            mpz_gcd_ui(BIGNUM_MPZ(z), mx, (unsigned long)-l);
+        }
+    }
+    else if (BIGNUM_EMBED_P(y)) {
+        mpz_t my;
+        mpz_init_set_bignum(my, y);
+        mpz_gcd(BIGNUM_MPZ(z), mx, my);
+        mpz_clear(my);
+    }
+    else {
+        mpz_gcd(BIGNUM_MPZ(z), mx, BIGNUM_MPZ(y));
+    }
+
+    return z;
+}
+#endif
 
 /*
  *  Bignum objects hold integers outside the range of
