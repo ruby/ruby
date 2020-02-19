@@ -163,7 +163,7 @@ This directory does not appear to be a RubyGems repository, skipping
 
     doctor = Gem::Doctor.new @gemhome
 
-    capture_io do
+    capture_output do
       use_ui @ui do
         doctor.doctor
       end
