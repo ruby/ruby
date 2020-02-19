@@ -784,7 +784,7 @@ class TestReadline < Test::Unit::TestCase
     use_ext_readline
     super
   end
-end if defined?(ReadlineSo)
+end if defined?(ReadlineSo) && ENV["TEST_READLINE_OR_RELINE"] != "Reline"
 
 class TestRelineAsReadline < Test::Unit::TestCase
   include BasetestReadline
@@ -801,4 +801,4 @@ class TestRelineAsReadline < Test::Unit::TestCase
       super
     end
   end
-end if defined?(Reline)
+end if defined?(Reline) && ENV["TEST_READLINE_OR_RELINE"] != "Readline"

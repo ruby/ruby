@@ -260,6 +260,7 @@ class TestReadlineHistory < Test::Unit::TestCase
     super
   end
 end if defined?(::ReadlineSo) && defined?(::ReadlineSo::HISTORY) &&
+  ENV["TEST_READLINE_OR_RELINE"] != "Reline" &&
   (
    begin
      ReadlineSo::HISTORY.clear
@@ -283,4 +284,4 @@ class TestRelineAsReadlineHistory < Test::Unit::TestCase
       super
     end
   end
-end if defined?(Reline)
+end if defined?(Reline) && ENV["TEST_READLINE_OR_RELINE"] != "Readline"
