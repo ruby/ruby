@@ -150,6 +150,10 @@ __EOC__
 
       # Include a file by relative path
       c1 = OpenSSL::Config.parse(include_file)
+      if c1["sec-main"][".include"]
+        # OpenSSL < 1.1.1 parses '.include =' as a normal assignment
+        pend ".include directive is not supported"
+      end
       assert_equal(["default", "sec-a", "sec-b", "sec-main"], c1.sections.sort)
       assert_equal(["file-a", "file-b", "file-main"], c1["default"].keys.sort)
       assert_equal({"a" => "123"}, c1["sec-a"])
@@ -157,9 +161,9 @@ __EOC__
       assert_equal({"main" => "123", "key_outside_section" => "value_a"}, c1["sec-main"])
 
       # Relative paths are from the working directory
-      assert_raise(OpenSSL::ConfigError) do
-        Dir.chdir("child") { OpenSSL::Config.parse(include_file) }
-      end
+      # Inclusion fails, but the error is ignored silently
+      c2 = Dir.chdir("child") { OpenSSL::Config.parse(include_file) }
+      assert_equal(["default", "sec-main"], c2.sections.sort)
     end
   end
 
