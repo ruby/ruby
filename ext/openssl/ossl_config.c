@@ -25,7 +25,7 @@ static const rb_data_type_t ossl_config_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
 };
 
-static CONF *
+CONF *
 GetConfig(VALUE obj)
 {
     CONF *conf;
@@ -49,42 +49,6 @@ config_s_alloc(VALUE klass)
     RTYPEDDATA_DATA(obj) = conf;
     return obj;
 }
-
-/*
- * DupConfigPtr is a public C-level function for getting OpenSSL CONF struct
- * from an OpenSSL::Config(eConfig) instance.  We decided to implement
- * OpenSSL::Config in Ruby level but we need to pass native CONF struct for
- * some OpenSSL features such as X509V3_EXT_*.
- */
-CONF *
-DupConfigPtr(VALUE obj)
-{
-    CONF *conf;
-    VALUE str;
-    BIO *bio;
-    long eline = -1;
-
-    OSSL_Check_Kind(obj, cConfig);
-    str = rb_funcall(obj, rb_intern("to_s"), 0);
-    bio = ossl_obj2bio(&str);
-    conf = NCONF_new(NULL);
-    if(!conf){
-	BIO_free(bio);
-	ossl_raise(eConfigError, NULL);
-    }
-    if(!NCONF_load_bio(conf, bio, &eline)){
-	BIO_free(bio);
-	NCONF_free(conf);
-	if (eline <= 0)
-	    ossl_raise(eConfigError, "wrong config format");
-	else
-	    ossl_raise(eConfigError, "error in line %d", eline);
-    }
-    BIO_free(bio);
-
-    return conf;
-}
-
 
 static void
 config_load_bio(CONF *conf, BIO *bio)

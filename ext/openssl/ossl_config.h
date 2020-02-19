@@ -10,7 +10,7 @@
 #ifndef OSSL_CONFIG_H
 #define OSSL_CONFIG_H
 
-CONF *DupConfigPtr(VALUE obj);
+CONF *GetConfig(VALUE obj);
 void Init_ossl_config(void);
 
 #endif /* OSSL_CONFIG_H */
