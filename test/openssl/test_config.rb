@@ -177,6 +177,12 @@ __EOC__
     }
   end
 
+  def test_s_parse_config
+    ret = OpenSSL::Config.parse_config(@it.to_s)
+    assert_equal(@it.sections.sort, ret.keys.sort)
+    assert_equal(@it["default"], ret["default"])
+  end
+
   def test_initialize
     c = OpenSSL::Config.new
     assert_equal("", c.to_s)
