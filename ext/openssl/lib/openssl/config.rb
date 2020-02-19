@@ -298,50 +298,6 @@ module OpenSSL
     end
 
     ##
-    #
-    # *Deprecated*
-    #
-    # Use #get_value instead
-    def value(arg1, arg2 = nil) # :nodoc:
-      warn('Config#value is deprecated; use Config#get_value')
-      if arg2.nil?
-        section, key = 'default', arg1
-      else
-        section, key = arg1, arg2
-      end
-      section ||= 'default'
-      section = 'default' if section.empty?
-      get_key_string(section, key)
-    end
-
-    ##
-    # *Deprecated in v2.2.0*. This method will be removed in a future release.
-    #
-    # Set the target _key_ with a given _value_ under a specific _section_.
-    #
-    # Given the following configurating file being loaded:
-    #
-    #   config = OpenSSL::Config.load('foo.cnf')
-    #     #=> #<OpenSSL::Config sections=["default"]>
-    #   puts config.to_s
-    #     #=> [ default ]
-    #     #   foo=bar
-    #
-    # You can set the value of _foo_ under the _default_ section to a new
-    # value:
-    #
-    #   config.add_value('default', 'foo', 'buzz')
-    #     #=> "buzz"
-    #   puts config.to_s
-    #     #=> [ default ]
-    #     #   foo=buzz
-    #
-    def add_value(section, key, value)
-      check_modify
-      (@data[section] ||= {})[key] = value
-    end
-
-    ##
     # Get a specific _section_ from the current configuration
     #
     # Given the following configurating file being loaded:
@@ -359,46 +315,6 @@ module OpenSSL
     #
     def [](section)
       @data[section] || {}
-    end
-
-    ##
-    # Deprecated
-    #
-    # Use #[] instead
-    def section(name) # :nodoc:
-      warn('Config#section is deprecated; use Config#[]')
-      @data[name] || {}
-    end
-
-    ##
-    # *Deprecated in v2.2.0*. This method will be removed in a future release.
-    #
-    # Sets a specific _section_ name with a Hash _pairs_.
-    #
-    # Given the following configuration being created:
-    #
-    #   config = OpenSSL::Config.new
-    #     #=> #<OpenSSL::Config sections=[]>
-    #   config['default'] = {"foo"=>"bar","baz"=>"buz"}
-    #     #=> {"foo"=>"bar", "baz"=>"buz"}
-    #   puts config.to_s
-    #     #=> [ default ]
-    #     #   foo=bar
-    #     #   baz=buz
-    #
-    # It's important to note that this will essentially merge any of the keys
-    # in _pairs_ with the existing _section_. For example:
-    #
-    #   config['default']
-    #     #=> {"foo"=>"bar", "baz"=>"buz"}
-    #   config['default'] = {"foo" => "changed"}
-    #     #=> {"foo"=>"changed"}
-    #   config['default']
-    #     #=> {"foo"=>"changed", "baz"=>"buz"}
-    #
-    def []=(section, pairs)
-      check_modify
-      set_section(section, pairs)
     end
 
     def set_section(section, pairs) # :nodoc:
@@ -486,12 +402,6 @@ module OpenSSL
 
     def initialize_copy(other)
       @data = other.data.dup
-    end
-
-    def check_modify
-      warn "#{caller(2, 1)[0]}: warning: do not modify OpenSSL::Config; this " \
-        "method is deprecated and will be removed in a future release."
-      raise TypeError.new("Insecure: can't modify OpenSSL config") if frozen?
     end
 
     def get_key_string(section, key)
