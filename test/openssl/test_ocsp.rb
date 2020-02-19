@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative "utils"
 
 if defined?(OpenSSL)
@@ -84,6 +84,7 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     assert_equal [cid.issuer_key_hash].pack("H*"), asn1.value[2].value
     assert_equal @cert.serial, asn1.value[3].value
     assert_equal der, OpenSSL::OCSP::CertificateId.new(der).to_der
+    assert_equal der, OpenSSL::OCSP::CertificateId.new(asn1).to_der
   end
 
   def test_certificate_id_dup

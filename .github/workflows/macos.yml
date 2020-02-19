@@ -36,7 +36,7 @@ jobs:
         run: |
           export WAITS='5 60'
           cd src
-          tool/travis_retry.sh brew update
+          tool/travis_retry.sh brew upgrade
           tool/travis_retry.sh brew install gdbm gmp libffi openssl@1.1 zlib autoconf automake libtool readline
       - name: Set ENV
         run: |

@@ -59,6 +59,7 @@
 # * https://github.com/ruby/tempfile
 # * https://github.com/ruby/tmpdir
 # * https://github.com/ruby/English
+# * https://github.com/ruby/net-protocol
 #
 
 require 'fileutils'
@@ -116,6 +117,7 @@ $repositories = {
   tempfile: "ruby/tempfile",
   tmpdir: "ruby/tmpdir",
   English: "ruby/English",
+  "net-protocol": "ruby/net-protocol",
 }
 
 def sync_default_gems(gem)
@@ -274,6 +276,9 @@ def sync_default_gems(gem)
   when "net-smtp"
     sync_lib "net-smtp"
     mv "lib/net-smtp.gemspec", "lib/net/smtp"
+  when "net-protocol"
+    sync_lib "net-protocol"
+    mv "lib/net-protocol.gemspec", "lib/net/protocol"
   when "readline-ext"
     rm_rf(%w[ext/readline test/readline])
     cp_r("#{upstream}/ext/readline", "ext")

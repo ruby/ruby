@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative 'utils'
 
 if defined?(OpenSSL)
@@ -53,14 +53,21 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
     assert_equal(dig1, dig2, "reset")
   end
 
-  def test_digest_constants
-    algs = %w(MD4 MD5 RIPEMD160 SHA1 SHA224 SHA256 SHA384 SHA512)
-    if !libressl? && !openssl?(1, 1, 0)
-      algs += %w(DSS1 SHA)
+  def test_required_digests
+    algorithms = OpenSSL::Digest::ALGORITHMS
+    required = %w{MD4 MD5 RIPEMD160 SHA1 SHA224 SHA256 SHA384 SHA512}
+
+    required.each do |name|
+      assert_include(algorithms, name)
     end
-    algs.each do |alg|
-      assert_not_nil(OpenSSL::Digest.new(alg))
-      klass = OpenSSL::Digest.const_get(alg)
+  end
+
+  def test_digest_constants
+    algorithms = OpenSSL::Digest::ALGORITHMS
+
+    algorithms.each do |name|
+      assert_not_nil(OpenSSL::Digest.new(name))
+      klass = OpenSSL::Digest.const_get(name.tr('-', '_'))
       assert_not_nil(klass.new)
     end
   end
@@ -89,6 +96,18 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
     assert_equal(sha256_a, encode16(OpenSSL::Digest::SHA256.digest("a")))
     assert_equal(sha384_a, encode16(OpenSSL::Digest::SHA384.digest("a")))
     assert_equal(sha512_a, encode16(OpenSSL::Digest::SHA512.digest("a")))
+  end
+
+  def test_sha3
+    pend "SHA3 is not implemented" unless OpenSSL::Digest.const_defined?(:SHA3_224)
+    s224 = '6b4e03423667dbb73b6e15454f0eb1abd4597f9a1b078e3f5b5a6bc7'
+    s256 = 'a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a'
+    s384 = '0c63a75b845e4f7d01107d852e4c2485c51a50aaaa94fc61995e71bbee983a2ac3713831264adb47fb6bd1e058d5f004'
+    s512 = 'a69f73cca23a9ac5c8b567dc185a756e97c982164fe25859e0d1dcc1475c80a615b2123af1f5f94c11e3e9402c3ac558f500199d95b6d3e301758586281dcd26'
+    assert_equal(OpenSSL::Digest::SHA3_224.hexdigest(""), s224)
+    assert_equal(OpenSSL::Digest::SHA3_256.hexdigest(""), s256)
+    assert_equal(OpenSSL::Digest::SHA3_384.hexdigest(""), s384)
+    assert_equal(OpenSSL::Digest::SHA3_512.hexdigest(""), s512)
   end
 
   def test_digest_by_oid_and_name_sha2

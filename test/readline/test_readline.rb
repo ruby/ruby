@@ -21,6 +21,8 @@ module BasetestReadline
       Readline.point = 0
     rescue NotImplementedError
     end
+    Readline.special_prefixes = ""
+    Readline.completion_append_character = nil
     Readline.input = nil
     Readline.output = nil
     SAVED_ENV.each_with_index {|k, i| ENV[k] = @saved_env[i] }

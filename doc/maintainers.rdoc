@@ -58,8 +58,6 @@ Zachary Scott (zzak)
   Shugo Maeda (shugo)
 [lib/net/http.rb, lib/net/https.rb]
   NARUSE, Yui (naruse)
-[lib/net/protocol.rb]
-  _unmaintained_
 [lib/open-uri.rb]
   Tanaka Akira (akr)
 [lib/optparse.rb, lib/optparse/*]
@@ -198,6 +196,9 @@ Zachary Scott (zzak)
   _unmaintained_
   https://github.com/ruby/net-smtp
   https://rubygems.org/gems/net-smtp
+[lib/net/protocol.rb]
+  _unmaintained_
+  https://github.com/ruby/net-protocol
 [lib/observer.rb]
   _unmaintained_
   https://github.com/ruby/observer

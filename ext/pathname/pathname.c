@@ -554,7 +554,7 @@ path_mtime(VALUE self)
 
 /*
  * call-seq:
- *   pathname.chmod	-> integer
+ *   pathname.chmod(mode_int)	-> integer
  *
  * Changes file permissions.
  *
@@ -568,7 +568,7 @@ path_chmod(VALUE self, VALUE mode)
 
 /*
  * call-seq:
- *   pathname.lchmod	-> integer
+ *   pathname.lchmod(mode_int)	-> integer
  *
  * Same as Pathname.chmod, but does not follow symbolic links.
  *
@@ -582,7 +582,7 @@ path_lchmod(VALUE self, VALUE mode)
 
 /*
  * call-seq:
- *   pathname.chown	-> integer
+ *   pathname.chown(owner_int, group_int)	-> integer
  *
  * Change owner and group of the file.
  *
@@ -596,7 +596,7 @@ path_chown(VALUE self, VALUE owner, VALUE group)
 
 /*
  * call-seq:
- *   pathname.lchown	-> integer
+ *   pathname.lchown(owner_int, group_int)	-> integer
  *
  * Same as Pathname.chown, but does not follow symbolic links.
  *

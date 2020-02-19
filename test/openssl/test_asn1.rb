@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative 'utils'
 
 if defined?(OpenSSL)
@@ -167,7 +167,7 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     assert_equal(OpenSSL::ASN1::OctetString, ext.value[2].class)
     extv = OpenSSL::ASN1.decode(ext.value[2].value)
     assert_equal(OpenSSL::ASN1::BitString, extv.class)
-    str = "\000"; str[0] = 0b00000110.chr
+    str = +"\000"; str[0] = 0b00000110.chr
     assert_equal(str, extv.value)
 
     ext = extensions.value[0].value[2]  # subjetKeyIdentifier
@@ -332,6 +332,32 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
       pend "OBJ_obj2txt() not working (LibreSSL?)" if $!.message =~ /OBJ_obj2txt/
       raise
     end
+
+    aki = [
+      OpenSSL::ASN1::ObjectId.new("authorityKeyIdentifier"),
+      OpenSSL::ASN1::ObjectId.new("X509v3 Authority Key Identifier"),
+      OpenSSL::ASN1::ObjectId.new("2.5.29.35")
+    ]
+
+    ski = [
+      OpenSSL::ASN1::ObjectId.new("subjectKeyIdentifier"),
+      OpenSSL::ASN1::ObjectId.new("X509v3 Subject Key Identifier"),
+      OpenSSL::ASN1::ObjectId.new("2.5.29.14")
+    ]
+
+    aki.each do |a|
+      aki.each do |b|
+        assert a == b
+      end
+
+      ski.each do |b|
+        refute a == b
+      end
+    end
+
+    assert_raise(TypeError) {
+      OpenSSL::ASN1::ObjectId.new("authorityKeyIdentifier") == nil
+    }
   end
 
   def test_sequence
@@ -635,10 +661,10 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     assert_equal data, seq.entries
   end
 
-  def test_gc_stress
-    skip "very time consuming test"
-    assert_ruby_status(['--disable-gems', '-eGC.stress=true', '-erequire "openssl.so"'])
-  end
+  # Very time consuming test.
+  # def test_gc_stress
+  #   assert_ruby_status(['--disable-gems', '-eGC.stress=true', '-erequire "openssl.so"'])
+  # end
 
   private
 
