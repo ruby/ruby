@@ -6037,8 +6037,9 @@ env_has_value(VALUE dmy, VALUE obj)
  * call-seq:
  *   ENV.rassoc(value)
  *
- * Returns a 2-element Array containing the value and name of the *first* *found* environment variable
- * that has value +value+, if one exists:
+ * Returns a 2-element Array containing the name and value of the
+ * *first* *found* environment variable that has value +value+, if one
+ * exists:
  *   ENV.replace('foo' => '0', 'bar' => '0')
  *   ENV.rassoc('0') # => ["bar", "0"]
  * The order in which environment variables are examined is OS-dependent.
