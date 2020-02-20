@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative "utils"
 
 if defined?(OpenSSL)
@@ -149,6 +149,13 @@ class OpenSSL::TestX509Request < OpenSSL::TestCase
     assert_equal false, req1 == 12345
     assert_equal true, req1 == req2
     assert_equal false, req1 == req3
+  end
+
+  def test_marshal
+    req = issue_csr(0, @dn, @rsa1024, "sha256")
+    deserialized = Marshal.load(Marshal.dump(req))
+
+    assert_equal req.to_der, deserialized.to_der
   end
 
   private

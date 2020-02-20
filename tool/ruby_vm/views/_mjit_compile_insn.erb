@@ -76,9 +76,14 @@
     }
     fprintf(f, "}\n");
 %
-% # compiler: If insn has conditional JUMP, the branch which is not targeted by JUMP should be compiled too.
+% # compiler: If insn has conditional JUMP, the code should go to the branch not targeted by JUMP next.
 % if insn.expr.expr =~ /if\s+\([^{}]+\)\s+\{[^{}]+JUMP\([^)]+\);[^{}]+\}/
-    compile_insns(f, body, b->stack_size, pos + insn_len(insn), status);
+    if (ALREADY_COMPILED_P(status, pos + insn_len(insn))) {
+        fprintf(f, "goto label_%d;\n", pos + insn_len(insn));
+    }
+    else {
+        compile_insns(f, body, b->stack_size, pos + insn_len(insn), status);
+    }
 % end
 %
 % # compiler: If insn returns (leave) or does longjmp (throw), the branch should no longer be compiled. TODO: create attr for it?

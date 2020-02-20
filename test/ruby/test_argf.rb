@@ -725,6 +725,13 @@ class TestArgf < Test::Unit::TestCase
                       ["\"a\\n\\n\"", "\"b\\n\""], [])
   end
 
+  def test_each_line_chomp
+    assert_in_out_err(['-e', 'ARGF.each_line(chomp: false) {|para| p para}'], "a\nb\n",
+                      ["\"a\\n\"", "\"b\\n\""], [])
+    assert_in_out_err(['-e', 'ARGF.each_line(chomp: true) {|para| p para}'], "a\nb\n",
+                      ["\"a\"", "\"b\""], [])
+  end
+
   def test_each_byte
     ruby('-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
       {#

@@ -27,6 +27,9 @@
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
 #include <openssl/conf.h>
+#ifndef OPENSSL_NO_TS
+  #include <openssl/ts.h>
+#endif
 #include <openssl/crypto.h>
 #if !defined(OPENSSL_NO_ENGINE)
 #  include <openssl/engine.h>
@@ -167,7 +170,9 @@ void ossl_debug(const char *, ...);
 #include "ossl_pkey.h"
 #include "ossl_rand.h"
 #include "ossl_ssl.h"
-#include "ossl_version.h"
+#ifndef OPENSSL_NO_TS
+  #include "ossl_ts.h"
+#endif
 #include "ossl_x509.h"
 #include "ossl_engine.h"
 #include "ossl_kdf.h"

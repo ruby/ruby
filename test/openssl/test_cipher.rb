@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative 'utils'
 
 if defined?(OpenSSL)
@@ -303,6 +303,21 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
       cipher = OpenSSL::Cipher.new("aes-128-cfb").encrypt
       cipher.auth_data = "123"
     }
+  end
+
+  def test_crypt_after_key
+    key = ["2b7e151628aed2a6abf7158809cf4f3c"].pack("H*")
+    %w'ecb cbc cfb ctr gcm'.each do |c|
+      cipher = OpenSSL::Cipher.new("aes-128-#{c}")
+      cipher.key = key
+      cipher.encrypt
+      assert_raise(OpenSSL::Cipher::CipherError) { cipher.update("") }
+
+      cipher = OpenSSL::Cipher.new("aes-128-#{c}")
+      cipher.key = key
+      cipher.decrypt
+      assert_raise(OpenSSL::Cipher::CipherError) { cipher.update("") }
+    end
   end
 
   private

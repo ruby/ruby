@@ -1131,7 +1131,7 @@ module DRb
     end
 
     # Routes method calls to the referenced remote object.
-    def method_missing(msg_id, *a, &b)
+    ruby2_keywords def method_missing(msg_id, *a, &b)
       if DRb.here?(@uri)
         obj = DRb.to_obj(@ref)
         DRb.current_server.check_insecure_method(obj, msg_id)

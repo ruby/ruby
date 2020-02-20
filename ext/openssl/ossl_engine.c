@@ -150,6 +150,9 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
 #if HAVE_ENGINE_LOAD_AESNI
     OSSL_ENGINE_LOAD_IF_MATCH(aesni, AESNI);
 #endif
+#if HAVE_ENGINE_LOAD_CLOUDHSM
+    OSSL_ENGINE_LOAD_IF_MATCH(cloudhsm, CLOUDHSM);
+#endif
 #endif
 #ifdef HAVE_ENGINE_LOAD_OPENBSD_DEV_CRYPTO
     OSSL_ENGINE_LOAD_IF_MATCH(openbsd_dev_crypto, OPENBSD_DEV_CRYPTO);

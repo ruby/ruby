@@ -5542,7 +5542,7 @@ env_reject_bang(VALUE ehash)
  *
  * Yields each environment variable name and its value as a 2-element Array,
  * deleting each environment variable for which the block returns a truthy value,
- * and returning ENV (regardless or whether any deletions):
+ * and returning ENV (regardless of whether any deletions):
  *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
  *   ENV.delete_if { |name, value| name.start_with?('b') } # => ENV
  *   ENV # => {"foo"=>"0"}
@@ -6007,7 +6007,7 @@ env_assoc(VALUE env, VALUE key)
  *   ENV.value?(value)     -> true or false
  *   ENV.has_value?(value) -> true or false
  *
- * Returns +true+ if +value+ is the value for some environment variable name, +false+ otherwise.:
+ * Returns +true+ if +value+ is the value for some environment variable name, +false+ otherwise:
  *   ENV.replace('foo' => '0', 'bar' => '1')
  *   ENV.value?('0') # => true
  *   ENV.has_value?('0') # => true
@@ -6094,7 +6094,7 @@ env_rassoc(VALUE dmy, VALUE obj)
  *   ENV.key('2') # => nil
  * Raises an exception if +value+ is invalid:
  *   ENV.key(Object.new) # raises TypeError (no implicit conversion of Object into String)
- * See {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values]
+ * See {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values].
  */
 static VALUE
 env_key(VALUE dmy, VALUE value)

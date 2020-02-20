@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 begin
   require "openssl"
 
@@ -52,15 +52,18 @@ module OpenSSL::TestUtils
       @file_cache[[category, name]] ||=
         File.read(File.join(__dir__, "fixtures", category, name + ".pem"))
     end
+
+    def file_path(category, name)
+      File.join(__dir__, "fixtures", category, name)
+    end
   end
 
   module_function
 
-  def issue_cert(dn, key, serial, extensions, issuer, issuer_key,
-                 not_before: nil, not_after: nil, digest: "sha256")
+  def generate_cert(dn, key, serial, issuer,
+                    not_before: nil, not_after: nil)
     cert = OpenSSL::X509::Certificate.new
     issuer = cert unless issuer
-    issuer_key = key unless issuer_key
     cert.version = 2
     cert.serial = serial
     cert.subject = dn
@@ -69,6 +72,16 @@ module OpenSSL::TestUtils
     now = Time.now
     cert.not_before = not_before || now - 3600
     cert.not_after = not_after || now + 3600
+    cert
+  end
+
+
+  def issue_cert(dn, key, serial, extensions, issuer, issuer_key,
+                 not_before: nil, not_after: nil, digest: "sha256")
+    cert = generate_cert(dn, key, serial, issuer,
+                         not_before: not_before, not_after: not_after)
+    issuer = cert unless issuer
+    issuer_key = key unless issuer_key
     ef = OpenSSL::X509::ExtensionFactory.new
     ef.subject_certificate = cert
     ef.issuer_certificate = issuer
@@ -107,13 +120,18 @@ module OpenSSL::TestUtils
     crl
   end
 
-  def get_subject_key_id(cert)
+  def get_subject_key_id(cert, hex: true)
     asn1_cert = OpenSSL::ASN1.decode(cert)
     tbscert   = asn1_cert.value[0]
     pkinfo    = tbscert.value[6]
     publickey = pkinfo.value[1]
     pkvalue   = publickey.value
-    OpenSSL::Digest::SHA1.hexdigest(pkvalue).scan(/../).join(":").upcase
+    digest = OpenSSL::Digest::SHA1.digest(pkvalue)
+    if hex
+      digest.unpack("H2"*20).join(":").upcase
+    else
+      digest
+    end
   end
 
   def openssl?(major = nil, minor = nil, fix = nil, patch = 0)
@@ -189,6 +207,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
 
   def start_server(verify_mode: OpenSSL::SSL::VERIFY_NONE, start_immediately: true,
                    ctx_proc: nil, server_proc: method(:readwrite_loop),
+                   accept_proc: proc{},
                    ignore_listener_error: false, &block)
     IO.pipe {|stop_pipe_r, stop_pipe_w|
       store = OpenSSL::X509::Store.new
@@ -222,6 +241,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
                 readable, = IO.select([ssls, stop_pipe_r])
                 break if readable.include? stop_pipe_r
                 ssl = ssls.accept
+                accept_proc.call(ssl)
               rescue OpenSSL::SSL::SSLError, IOError, Errno::EBADF, Errno::EINVAL,
                      Errno::ECONNABORTED, Errno::ENOTSOCK, Errno::ECONNRESET
                 retry if ignore_listener_error
@@ -268,7 +288,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
           begin
             timeout = EnvUtil.apply_timeout_scale(30)
             th.join(timeout) or
-              th.raise(RuntimeError, "[start_server] thread did not exit in #{ timeout } secs")
+              th.raise(RuntimeError, "[start_server] thread did not exit in #{timeout} secs")
           rescue (defined?(MiniTest::Skip) ? MiniTest::Skip : Test::Unit::PendedError)
             # MiniTest::Skip is for the Ruby tree
             pend = $!
@@ -313,6 +333,64 @@ class OpenSSL::PKeyTestCase < OpenSSL::TestCase
         raise "unknown key type"
       end
     end
+  end
+end
+
+module OpenSSL::Certs
+  include OpenSSL::TestUtils
+
+  module_function
+
+  def ca_cert
+    ca = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=Timestamp Root CA")
+
+    ca_exts = [
+      ["basicConstraints","CA:TRUE,pathlen:1",true],
+      ["keyUsage","keyCertSign, cRLSign",true],
+      ["subjectKeyIdentifier","hash",false],
+      ["authorityKeyIdentifier","keyid:always",false],
+    ]
+    OpenSSL::TestUtils.issue_cert(ca, Fixtures.pkey("rsa2048"), 1, ca_exts, nil, nil)
+  end
+
+  def ts_cert_direct(key, ca_cert)
+    dn = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/OU=Timestamp/CN=Server Direct")
+
+    exts = [
+      ["basicConstraints","CA:FALSE",true],
+      ["keyUsage","digitalSignature, nonRepudiation", true],
+      ["subjectKeyIdentifier", "hash",false],
+      ["authorityKeyIdentifier","keyid,issuer", false],
+      ["extendedKeyUsage", "timeStamping", true]
+    ]
+
+    OpenSSL::TestUtils.issue_cert(dn, key, 2, exts, ca_cert, Fixtures.pkey("rsa2048"))
+  end
+
+  def intermediate_cert(key, ca_cert)
+    dn = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/OU=Timestamp/CN=Timestamp Intermediate CA")
+
+    exts = [
+      ["basicConstraints","CA:TRUE,pathlen:0",true],
+      ["keyUsage","keyCertSign, cRLSign",true],
+      ["subjectKeyIdentifier","hash",false],
+      ["authorityKeyIdentifier","keyid:always",false],
+    ]
+
+    OpenSSL::TestUtils.issue_cert(dn, key, 3, exts, ca_cert, Fixtures.pkey("rsa2048"))
+  end
+
+  def ts_cert_ee(key, intermediate, im_key)
+    dn = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/OU=Timestamp/CN=Server End Entity")
+
+    exts = [
+      ["keyUsage","digitalSignature, nonRepudiation", true],
+      ["subjectKeyIdentifier", "hash",false],
+      ["authorityKeyIdentifier","keyid,issuer", false],
+      ["extendedKeyUsage", "timeStamping", true]
+    ]
+
+    OpenSSL::TestUtils.issue_cert(dn, key, 4, exts, intermediate, im_key)
   end
 end
 

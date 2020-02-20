@@ -72,6 +72,9 @@ void ossl_HMAC_CTX_free(HMAC_CTX *);
 #if !defined(HAVE_X509_STORE_SET_EX_DATA)
 #  define X509_STORE_set_ex_data(x, idx, data) \
 	CRYPTO_set_ex_data(&(x)->ex_data, (idx), (data))
+#endif
+
+#if !defined(HAVE_X509_STORE_GET_EX_NEW_INDEX) && !defined(X509_STORE_get_ex_new_index)
 #  define X509_STORE_get_ex_new_index(l, p, newf, dupf, freef) \
 	CRYPTO_get_ex_new_index(CRYPTO_EX_INDEX_X509_STORE, (l), (p), \
 				(newf), (dupf), (freef))
@@ -144,7 +147,8 @@ void ossl_X509_REQ_get0_signature(const X509_REQ *, const ASN1_BIT_STRING **, co
 	CRYPTO_add(&(x)->references, 1, CRYPTO_LOCK_EVP_PKEY);
 #endif
 
-#if !defined(HAVE_OPAQUE_OPENSSL)
+#if !defined(HAVE_OPAQUE_OPENSSL) && \
+    (!defined(LIBRESSL_VERSION_NUMBER) || LIBRESSL_VERSION_NUMBER < 0x2070000fL)
 #define IMPL_PKEY_GETTER(_type, _name) \
 static inline _type *EVP_PKEY_get0_##_type(EVP_PKEY *pkey) { \
 	return pkey->pkey._name; }
@@ -217,6 +221,37 @@ IMPL_PKEY_GETTER(EC_KEY, ec)
 
 #if !defined(HAVE_SSL_SESSION_GET_PROTOCOL_VERSION)
 #  define SSL_SESSION_get_protocol_version(s) ((s)->ssl_version)
+#endif
+
+#if !defined(HAVE_TS_STATUS_INFO_GET0_STATUS)
+#  define TS_STATUS_INFO_get0_status(a) ((a)->status)
+#endif
+
+#if !defined(HAVE_TS_STATUS_INFO_GET0_TEXT)
+#  define TS_STATUS_INFO_get0_text(a) ((a)->text)
+#endif
+
+#if !defined(HAVE_TS_STATUS_INFO_GET0_FAILURE_INFO)
+#  define TS_STATUS_INFO_get0_failure_info(a) ((a)->failure_info)
+#endif
+
+#if !defined(HAVE_TS_VERIFY_CTS_SET_CERTS)
+#  define TS_VERIFY_CTS_set_certs(ctx, crts) ((ctx)->certs=(crts))
+#endif
+
+#if !defined(HAVE_TS_VERIFY_CTX_SET_STORE)
+#  define TS_VERIFY_CTX_set_store(ctx, str) ((ctx)->store=(str))
+#endif
+
+#if !defined(HAVE_TS_VERIFY_CTX_ADD_FLAGS)
+#  define TS_VERIFY_CTX_add_flags(ctx, f) ((ctx)->flags |= (f))
+#endif
+
+#if !defined(HAVE_TS_RESP_CTX_SET_TIME_CB)
+#   define TS_RESP_CTX_set_time_cb(ctx, callback, dta) do { \
+        (ctx)->time_cb = (callback); \
+        (ctx)->time_cb_data = (dta); \
+    } while (0)
 #endif
 
 #endif /* _OSSL_OPENSSL_MISSING_H_ */

@@ -104,7 +104,7 @@ ossl_cipher_alloc(VALUE klass)
  *  call-seq:
  *     Cipher.new(string) -> cipher
  *
- *  The string must be a valid cipher name like "AES-128-CBC" or "3DES".
+ *  The string must contain a valid cipher name like "AES-256-CBC".
  *
  *  A list of cipher names is available by calling OpenSSL::Cipher.ciphers.
  */
@@ -237,8 +237,7 @@ ossl_cipher_init(int argc, VALUE *argv, VALUE self, int mode)
 	ossl_raise(eCipherError, NULL);
     }
 
-    if (p_key)
-	rb_ivar_set(self, id_key_set, Qtrue);
+    rb_ivar_set(self, id_key_set, p_key ? Qtrue : Qfalse);
 
     return self;
 }
@@ -896,7 +895,7 @@ Init_ossl_cipher(void)
      * without processing the password further. A simple and secure way to
      * create a key for a particular Cipher is
      *
-     *  cipher = OpenSSL::AES256.new(:CFB)
+     *  cipher = OpenSSL::Cipher::AES256.new(:CFB)
      *  cipher.encrypt
      *  key = cipher.random_key # also sets the generated key on the Cipher
      *

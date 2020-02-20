@@ -5178,9 +5178,17 @@ compile_named_capture_assign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
 }
 
 static int
-number_literal_p(const NODE *n)
+optimizable_range_item_p(const NODE *n)
 {
-    return (n && nd_type(n) == NODE_LIT && RB_INTEGER_TYPE_P(n->nd_lit));
+    if (!n) return FALSE;
+    switch (nd_type(n)) {
+      case NODE_LIT:
+        return RB_INTEGER_TYPE_P(n->nd_lit);
+      case NODE_NIL:
+        return TRUE;
+      default:
+        return FALSE;
+    }
 }
 
 static int
@@ -8307,10 +8315,12 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	VALUE flag = INT2FIX(excl);
 	const NODE *b = node->nd_beg;
 	const NODE *e = node->nd_end;
-	if (number_literal_p(b) && number_literal_p(e)) {
+	if (optimizable_range_item_p(b) && optimizable_range_item_p(e)) {
 	    if (!popped) {
-		VALUE val = rb_range_new(b->nd_lit, e->nd_lit, excl);
-		ADD_INSN1(ret, line, putobject, val);
+                VALUE bv = nd_type(b) == NODE_LIT ? b->nd_lit : Qnil;
+                VALUE ev = nd_type(e) == NODE_LIT ? e->nd_lit : Qnil;
+                VALUE val = rb_range_new(bv, ev, excl);
+                ADD_INSN1(ret, line, putobject, val);
                 RB_OBJ_WRITTEN(iseq, Qundef, val);
 	    }
 	}

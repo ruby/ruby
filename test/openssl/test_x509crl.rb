@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative "utils"
 
 if defined?(OpenSSL)
@@ -118,7 +118,7 @@ class OpenSSL::TestX509CRL < OpenSSL::TestCase
       ["keyUsage", "cRLSign, keyCertSign", true],
     ]
     crl_exts = [
-      ["authorityKeyIdentifier", "keyid:always", false],
+      ["authorityKeyIdentifier", "issuer:always,keyid:always", false],
       ["issuerAltName", "issuer:copy", false],
     ]
 
@@ -130,6 +130,9 @@ class OpenSSL::TestX509CRL < OpenSSL::TestCase
     assert_equal("1", exts[0].value)
     assert_equal("crlNumber", exts[0].oid)
     assert_equal(false, exts[0].critical?)
+
+    expected_keyid = OpenSSL::TestUtils.get_subject_key_id(cert, hex: false)
+    assert_equal expected_keyid, crl.authority_key_identifier
 
     assert_equal("authorityKeyIdentifier", exts[1].oid)
     keyid = OpenSSL::TestUtils.get_subject_key_id(cert)
@@ -155,6 +158,10 @@ class OpenSSL::TestX509CRL < OpenSSL::TestCase
     assert_equal("issuerAltName", exts[2].oid)
     assert_equal("email:xyzzy@ruby-lang.org", exts[2].value)
     assert_equal(false, exts[2].critical?)
+
+    no_ext_crl = issue_crl([], 1, Time.now, Time.now+1600, [],
+      cert, @rsa2048, OpenSSL::Digest::SHA1.new)
+    assert_equal nil, no_ext_crl.authority_key_identifier
   end
 
   def test_crlnumber
@@ -247,6 +254,22 @@ class OpenSSL::TestX509CRL < OpenSSL::TestCase
     assert_equal true, rev1 == crl2.revoked[0]
     assert_equal false, rev1 == crl2.revoked[1]
     assert_equal true, rev2 == crl2.revoked[1]
+  end
+
+  def test_marshal
+    now = Time.now
+
+    cacert = issue_cert(@ca, @rsa1024, 1, [], nil, nil)
+    crl = issue_crl([], 1, now, now + 3600, [], cacert, @rsa1024, "sha256")
+    rev = OpenSSL::X509::Revoked.new.tap { |rev|
+      rev.serial = 1
+      rev.time = now
+    }
+    crl.add_revoked(rev)
+    deserialized = Marshal.load(Marshal.dump(crl))
+
+    assert_equal crl.to_der, deserialized.to_der
+    assert_equal crl.revoked[0].to_der, deserialized.revoked[0].to_der
   end
 
   private
