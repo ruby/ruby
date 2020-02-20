@@ -6039,7 +6039,7 @@ env_has_value(VALUE dmy, VALUE obj)
 
 /*
  * call-seq:
- *   ENV.rassoc(value) -> [value, name] or nil
+ *   ENV.rassoc(value) -> [name, value] or nil
  *
  * Returns a 2-element Array containing the value and name of the *first* *found* environment variable
  * that has value +value+, if one exists:
