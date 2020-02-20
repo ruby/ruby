@@ -60,6 +60,7 @@
 # * https://github.com/ruby/tmpdir
 # * https://github.com/ruby/English
 # * https://github.com/ruby/net-protocol
+# * https://github.com/ruby/net-imap
 #
 
 require 'fileutils'
@@ -118,6 +119,7 @@ $repositories = {
   tmpdir: "ruby/tmpdir",
   English: "ruby/English",
   "net-protocol": "ruby/net-protocol",
+  "net-imap": "ruby/net-imap",
 }
 
 def sync_default_gems(gem)
@@ -279,6 +281,9 @@ def sync_default_gems(gem)
   when "net-protocol"
     sync_lib "net-protocol"
     mv "lib/net-protocol.gemspec", "lib/net/protocol"
+  when "net-imap"
+    sync_lib "net-imap"
+    mv "lib/net-imap.gemspec", "lib/net/imap"
   when "readline-ext"
     rm_rf(%w[ext/readline test/readline])
     cp_r("#{upstream}/ext/readline", "ext")
