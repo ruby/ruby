@@ -30,17 +30,44 @@ class Integer
     Prime.prime_division(self, generator)
   end
 
+
+
   # Returns true if +self+ is a prime number, else returns false.
   def prime?
-    return self >= 2 if self <= 3
-    return true if self == 5
-    return false unless 30.gcd(self) == 1
-    (7..Integer.sqrt(self)).step(30) do |p|
-      return false if
-        self%(p)    == 0 || self%(p+4)  == 0 || self%(p+6)  == 0 || self%(p+10) == 0 ||
-        self%(p+12) == 0 || self%(p+16) == 0 || self%(p+22) == 0 || self%(p+24) == 0
+    # https://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test
+    # https://arxiv.org/pdf/1509.00864.pdf
+    #
+    # if n < 3,317,044,064,679,887,385,961,981,
+    # it is enough to test a = 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, and 41.
+    # and the result will be deterministic.
+
+    return false     if self < 2
+    return self != 4 if self < 6
+    return false     if self.even? || self % 3 == 0 || self % 5 == 0
+
+    unless self < 3317044064679887385961981
+      raise ArgumentError, ".prime? is only valid for values less than 3,317,044,064,679,887,385,961,981"
     end
-    true
+
+    r = 0
+    d = self / 2
+
+    while d.even?
+      d /= 2
+      r += 1
+    end
+
+    sufficient_miller_rabin_bases.each do |a|
+      x = a.pow(d, self)
+      next if x == 1 || x == (self-1) || a == self
+
+      return false if r.times do
+        x = x.pow(2, self)
+        break if x == (self-1)
+      end
+
+    end
+    return true
   end
 
   # Iterates the given block over all prime numbers.
@@ -49,6 +76,27 @@ class Integer
   def Integer.each_prime(ubound, &block) # :yields: prime
     Prime.each(ubound, &block)
   end
+
+  private def sufficient_miller_rabin_bases
+    # Miller-Rabin's complexity is O(k log^3n).
+    # So we can reduce the complexity by reducing the number of bases tested.
+    # Using values from https://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test
+    return [2]                                  if self < 2_047
+    return [2,3]                                if self < 1_373_653
+    return [31,73]                              if self < 9_080_191
+    return [2,3,5]                              if self < 25_326_001
+    return [2,3,5,7]                            if self < 3_215_031_751
+    return [2,7,61]                             if self < 4_759_123_141
+    return [2,13,23,1662803]                    if self < 1_122_004_669_633
+    return [2,3,5,7,11]                         if self < 2_152_302_898_747
+    return [2,3,5,7,11,13]                      if self < 3_474_749_660_383
+    return [2,3,5,7,11,13,17]                   if self < 341_550_071_728_321
+    return [2,3,5,7,11,13,17,19,23]             if self < 3_825_123_056_546_413_051
+    return [2,3,5,7,11,13,17,19,23,29,31,37]    if self < 318_665_857_834_031_151_167_461
+    return [2,3,5,7,11,13,17,19,23,29,31,37,41] if self < 3_317_044_064_679_887_385_961_981
+  end
+
+
 end
 
 #
