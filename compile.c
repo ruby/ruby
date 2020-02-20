@@ -9758,6 +9758,7 @@ ibf_dump_write_small_value(struct ibf_dump *dump, VALUE x)
 {
     if (sizeof(VALUE) > 8 || CHAR_BIT != 8) {
         ibf_dump_write(dump, &x, sizeof(VALUE));
+        return;
     }
 
     enum { max_byte_length = sizeof(VALUE) + 1 };
