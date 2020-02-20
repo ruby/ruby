@@ -6177,7 +6177,7 @@ env_f_to_hash(VALUE _)
  *   ENV.replace('foo' => '0', 'bar' => '1')
  *   ENV.to_h # => {"bar"=>"1", "foo"=>"0"}
  * With a block, returns a Hash whose items are determined by the block.
- * Each name/value pair in ENV is yielded to the block as a 2-element Array.
+ * Each name/value pair in ENV is yielded to the block.
  * The block must return a 2-element Array (name/value pair)
  * that is added to the return Hash as a key and value:
  *   ENV.to_h { |name, value| [name.to_sym, value.to_i] } # => {:bar=>1, :foo=>0}
