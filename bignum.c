@@ -3409,7 +3409,7 @@ rb_absint_numwords(VALUE val, size_t word_numbits, size_t *nlz_bits_ret)
     size_t numbytes;
     int nlz_bits_in_msbyte;
     size_t numwords;
-    size_t nlz_bits;
+    size_t nlz_bits = 0;
 
     if (word_numbits == 0)
         return (size_t)-1;

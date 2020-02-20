@@ -894,7 +894,7 @@ rb_method_entry_at(VALUE klass, ID id)
 static inline rb_method_entry_t*
 search_method(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
-    rb_method_entry_t *me;
+    rb_method_entry_t *me = NULL;
 
     RB_DEBUG_COUNTER_INC(mc_search);
 
