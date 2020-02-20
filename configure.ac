@@ -1359,10 +1359,11 @@ AS_IF([test "$rb_cv_va_args_macro" = yes], [
 
 AC_CACHE_CHECK([for alignas() syntax], rb_cv_have_alignas, [
 rb_cv_have_alignas=no
+# Prefer alignas over _Alignas to allow C++ compiler to read ruby.h
 RUBY_WERROR_FLAG([
 for attr in \
-    "_Alignas(x)" \
     "alignas(x)" \
+    "_Alignas(x)" \
     "@<:@@<:@alignas(x)@:>@@:>@" \
     "__declspec(aligned(x))" \
     "__attribute__((__aligned__(x)))" \
@@ -1371,8 +1372,11 @@ do
     # C11 _Alignas and GCC __attribute__((__aligned__)) behave
     # slightly differently.  What we want is GCC's.  Check that
     # here by something C11 does not allow (`struct ALIGNAS ...`)
-    AC_TRY_COMPILE(
-	[@%:@define ALIGNAS(x) $attr
+    AC_TRY_COMPILE([
+       @%:@ifdef HAVE_STDALIGN_H
+        @%:@include <stdalign.h>
+        @%:@endif
+        @%:@define ALIGNAS(x) $attr
 	struct ALIGNAS(128) conftest_tag { int foo; } foo; ], [],
         [rb_cv_have_alignas="$attr"; break], [])
 done
@@ -1383,6 +1387,7 @@ AS_IF([test "$rb_cv_have_alignas" != no], [
 
 AC_CACHE_CHECK([for alignof() syntax], rb_cv_have_alignof,[
 rb_cv_have_alignof=no
+# Prefer alignof over _Alignof to allow C++ compiler to read ruby.h
 RUBY_WERROR_FLAG([
 for expr in \
     "alignof" \
