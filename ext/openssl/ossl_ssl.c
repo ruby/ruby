@@ -828,10 +828,17 @@ ossl_sslctx_setup(VALUE self)
     ca_file = NIL_P(val) ? NULL : StringValueCStr(val);
     val = rb_attr_get(self, id_i_ca_path);
     ca_path = NIL_P(val) ? NULL : StringValueCStr(val);
+#ifdef HAVE_SSL_CTX_LOAD_VERIFY_FILE
+    if (ca_file && !SSL_CTX_load_verify_file(ctx, ca_file))
+        ossl_raise(eSSLError, "SSL_CTX_load_verify_file");
+    if (ca_path && !SSL_CTX_load_verify_dir(ctx, ca_path))
+        ossl_raise(eSSLError, "SSL_CTX_load_verify_dir");
+#else
     if(ca_file || ca_path){
 	if (!SSL_CTX_load_verify_locations(ctx, ca_file, ca_path))
 	    rb_warning("can't set verify locations");
     }
+#endif
 
     val = rb_attr_get(self, id_i_verify_mode);
     verify_mode = NIL_P(val) ? SSL_VERIFY_NONE : NUM2INT(val);
