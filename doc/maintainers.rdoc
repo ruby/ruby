@@ -52,8 +52,6 @@ Zachary Scott (zzak)
   Kazuki Tsujimoto (ktsj)
 [lib/mkmf.rb]
   _unmaintained_
-[lib/net/ftp.rb]
-  Shugo Maeda (shugo)
 [lib/net/http.rb, lib/net/https.rb]
   NARUSE, Yui (naruse)
 [lib/open-uri.rb]
@@ -186,6 +184,9 @@ Zachary Scott (zzak)
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/mutex_m
   https://rubygems.org/gems/mutex_m
+[lib/net/ftp.rb]
+  Shugo Maeda (shugo)
+  https://github.com/ruby/net-ftp
 [lib/net/imap.rb]
   Shugo Maeda (shugo)
   https://github.com/ruby/net-imap

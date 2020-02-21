@@ -15,7 +15,6 @@ DRb:: Distributed object system for Ruby
 ERB:: An easy to use but powerful templating system for Ruby
 Find:: This module supports top-down traversal of a set of file paths
 MakeMakefile:: Module used to generate a Makefile for C extensions
-Net::FTP:: Support for the File Transfer Protocol
 Net::HTTP:: HTTP client api for Ruby
 OpenURI:: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
 OptionParser:: Ruby-oriented class for command-line option analysis
@@ -67,6 +66,7 @@ IRB:: Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
 Logger:: Provides a simple logging utility for outputting messages
 Matrix:: Represents a mathematical matrix.
 Mutex_m:: Mixin to extend objects to be handled like a Mutex
+Net::FTP:: Support for the File Transfer Protocol
 Net::IMAP:: Ruby client api for Internet Message Access Protocol
 Net::POP3:: Ruby client library for POP3
 Net::SMTP:: Simple Mail Transfer Protocol client library for Ruby
