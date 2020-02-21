@@ -187,7 +187,7 @@ sufficient information, see the ChangeLog file or Redmine
   This warning can be suppressed with {-W:no-deprecated option}[#label-Warning+option].
 
 * Setting <code>$,</code> to a non-nil value will now display a warning. [Feature #14240]
-  This include the usage in Array#join.
+  This includes the usage in Array#join.
   This warning can be suppressed with {-W:no-deprecated option}[#label-Warning+option].
 
 * Quoted here-document identifiers must end within the same line.
