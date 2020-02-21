@@ -7,8 +7,8 @@ end
 Gem::Specification.new do |spec|
   spec.name          = "net-ftp"
   spec.version       = Net::Ftp::VERSION
-  spec.authors       = ["Hiroshi SHIBATA"]
-  spec.email         = ["hsbt@ruby-lang.org"]
+  spec.authors       = ["Shugo Maeda"]
+  spec.email         = ["shugo@ruby-lang.org"]
 
   spec.summary       = %q{Support for the File Transfer Protocol.}
   spec.description   = %q{Support for the File Transfer Protocol.}
