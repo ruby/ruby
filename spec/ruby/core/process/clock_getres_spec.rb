@@ -24,7 +24,9 @@ describe "Process.clock_getres" do
         # The clock should not be less accurate than reported (times should
         # not all be a multiple of the next precision up, assuming precisions
         # are multiples of ten.)
-        times.select { |t| t % (reported * 10) == 0 }.size.should_not == times.size
+        if times.all? { |t| t % (reported * 10) == 0 }
+          times.uniq.should be_empty
+        end
       end
     end
   end
