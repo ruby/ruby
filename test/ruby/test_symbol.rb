@@ -153,6 +153,10 @@ class TestSymbol < Test::Unit::TestCase
     end;
   end
 
+  def test_to_proc_lambda?
+    assert_predicate(:itself.to_proc, :lambda?)
+  end
+
   def test_to_proc_call_with_symbol_proc
     first = 1
     bug11594 = "[ruby-core:71088] [Bug #11594] corrupted the first local variable"
