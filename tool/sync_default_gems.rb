@@ -277,17 +277,29 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/HISTORY.md", "ext/openssl")
     `git checkout ext/openssl/depend`
   when "net-pop"
-    sync_lib "net-pop"
-    mv "lib/net-pop.gemspec", "lib/net/pop"
+    rm_rf(%w[lib/net/pop.rb lib/net/pop test/net/pop])
+    cp_r("#{upstream}/lib/net/pop.rb", "lib/net")
+    cp_r("#{upstream}/lib/net/pop", "lib/net")
+    cp_r("#{upstream}/test/net/pop", "test/net")
+    cp_r("#{upstream}/net-pop.gemspec", "lib/net/pop")
   when "net-smtp"
-    sync_lib "net-smtp"
-    mv "lib/net-smtp.gemspec", "lib/net/smtp"
+    rm_rf(%w[lib/net/smtp.rb lib/net/smtp test/net/smtp])
+    cp_r("#{upstream}/lib/net/smtp.rb", "lib/net")
+    cp_r("#{upstream}/lib/net/smtp", "lib/net")
+    cp_r("#{upstream}/test/net/smtp", "test/net")
+    cp_r("#{upstream}/net-smtp.gemspec", "lib/net/smtp")
   when "net-protocol"
-    sync_lib "net-protocol"
-    mv "lib/net-protocol.gemspec", "lib/net/protocol"
+    rm_rf(%w[lib/net/protocol.rb lib/net/protocol test/net/protocol])
+    cp_r("#{upstream}/lib/net/protocol.rb", "lib/net")
+    cp_r("#{upstream}/lib/net/protocol", "lib/net")
+    cp_r("#{upstream}/test/net/protocol", "test/net")
+    cp_r("#{upstream}/net-protocol.gemspec", "lib/net/protocol")
   when "net-imap"
-    sync_lib "net-imap"
-    mv "lib/net-imap.gemspec", "lib/net/imap"
+    rm_rf(%w[lib/net/imap.rb lib/net/imap test/net/imap])
+    cp_r("#{upstream}/lib/net/imap.rb", "lib/net")
+    cp_r("#{upstream}/lib/net/imap", "lib/net")
+    cp_r("#{upstream}/test/net/imap", "test/net")
+    cp_r("#{upstream}/net-imap.gemspec", "lib/net/imap")
   when "net-ftp"
     rm_rf(%w[lib/net/ftp.rb lib/net/ftp test/net/ftp])
     cp_r("#{upstream}/lib/net/ftp.rb", "lib/net")
