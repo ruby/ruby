@@ -169,6 +169,9 @@ class TestSymbol < Test::Unit::TestCase
   def _test_to_proc_arg_with_refinements_call(&block)
     block.call TestToPRocArgWithRefinements.new
   end
+  def _test_to_proc_with_refinements_call(&block)
+    block
+  end
   using Module.new {
     refine TestToPRocArgWithRefinements do
       def hoge
@@ -178,6 +181,10 @@ class TestSymbol < Test::Unit::TestCase
   }
   def test_to_proc_arg_with_refinements
     assert_equal(:hoge, _test_to_proc_arg_with_refinements_call(&:hoge))
+  end
+
+  def test_to_proc_lambda_with_refinements
+    assert_predicate(_test_to_proc_with_refinements_call(&:hoge), :lambda?)
   end
 
   def self._test_to_proc_arg_with_refinements_call(&block)

@@ -739,7 +739,7 @@ rb_func_proc_new(rb_block_call_func_t func, VALUE val)
     return cfunc_proc_new(rb_cProc, (VALUE)ifunc, 0);
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_func_lambda_new(rb_block_call_func_t func, VALUE val, int min_argc, int max_argc)
 {
     struct vm_ifunc *ifunc = rb_vm_ifunc_new(func, (void *)val, min_argc, max_argc);
