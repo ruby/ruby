@@ -9081,11 +9081,11 @@ mk_ary_of_str(long len, const char *a[])
 	    e = Qnil;
 	else {
 	    e = rb_usascii_str_new2(a[i]);
-	    rb_obj_freeze(e);
+	    rb_str_freeze(e);
 	}
 	rb_ary_push(o, e);
     }
-    rb_obj_freeze(o);
+    rb_ary_freeze(o);
     return o;
 }
 

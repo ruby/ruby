@@ -659,6 +659,10 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
 VALUE
 rb_ary_freeze(VALUE ary)
 {
+    if (OBJ_FROZEN(ary)) return ary;
+    if (!ARY_SHARED_P(ary) && !ARY_SHARED_ROOT_P(ary)) {
+        ary_resize_capa(ary, RARRAY_LEN(ary));
+    }
     return rb_obj_freeze(ary);
 }
 
@@ -879,7 +883,7 @@ ary_make_shared(VALUE ary)
 	FL_SET_SHARED(ary);
         RB_DEBUG_COUNTER_INC(obj_ary_shared_create);
 	ARY_SET_SHARED(ary, (VALUE)shared);
-	OBJ_FREEZE(shared);
+	rb_ary_freeze((VALUE)shared);
 
         ary_verify((VALUE)shared);
         ary_verify(ary);
@@ -6934,6 +6938,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "fill", rb_ary_fill, -1);
     rb_define_method(rb_cArray, "include?", rb_ary_includes, 1);
     rb_define_method(rb_cArray, "<=>", rb_ary_cmp, 1);
+    rb_define_method(rb_cArray, "freeze", rb_ary_freeze, 0);
 
     rb_define_method(rb_cArray, "slice", rb_ary_aref, -1);
     rb_define_method(rb_cArray, "slice!", rb_ary_slice_bang, -1);

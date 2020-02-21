@@ -120,7 +120,7 @@ initialize(int argc, VALUE argv[], VALUE self)
 	(void)INT2FFI_TYPE(type); /* raise */
 	if (INT2FIX(type) != a) rb_ary_store(ary, i, INT2FIX(type));
     }
-    OBJ_FREEZE(ary);
+    rb_ary_freeze(ary);
 
     rb_iv_set(self, "@ptr", ptr);
     rb_iv_set(self, "@args", args);

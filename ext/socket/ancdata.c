@@ -1441,7 +1441,7 @@ make_io_for_unix_rights(VALUE ctl, struct cmsghdr *cmh, char *msg_end)
             rb_ary_push(ary, io);
             fdp++;
         }
-	OBJ_FREEZE(ary);
+	rb_ary_freeze(ary);
     }
 }
 #endif

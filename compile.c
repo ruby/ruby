@@ -3978,7 +3978,7 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
             VALUE lit;
             VALUE debug_info = rb_ary_new_from_args(2, rb_iseq_path(iseq), INT2FIX((int)nd_line(node)));
             lit = rb_str_dup(node->nd_lit);
-            rb_ivar_set(lit, id_debug_created_info, rb_obj_freeze(debug_info));
+            rb_ivar_set(lit, id_debug_created_info, rb_ary_freeze(debug_info));
             return rb_str_freeze(lit);
         }
         else {
@@ -4077,7 +4077,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
                 /* Create a hidden array */
                 for (; count; count--, node = node->nd_next)
                     rb_ary_push(ary, static_literal_value(node, iseq));
-                OBJ_FREEZE(ary);
+                rb_ary_freeze(ary);
 
                 /* Emit optimized code */
                 FLUSH_CHUNK(newarray);
@@ -8006,7 +8006,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 		if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
 		    VALUE debug_info = rb_ary_new_from_args(2, rb_iseq_path(iseq), INT2FIX(line));
 		    lit = rb_str_dup(lit);
-		    rb_ivar_set(lit, id_debug_created_info, rb_obj_freeze(debug_info));
+		    rb_ivar_set(lit, id_debug_created_info, rb_ary_freeze(debug_info));
 		    lit = rb_str_freeze(lit);
 		}
 		else {
@@ -8032,7 +8032,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 		}
 		ADD_INSN1(ret, line, freezestring, debug_info);
                 if (!NIL_P(debug_info)) {
-                    RB_OBJ_WRITTEN(iseq, Qundef, rb_obj_freeze(debug_info));
+                    RB_OBJ_WRITTEN(iseq, Qundef, rb_ary_freeze(debug_info));
                 }
 	    }
 	}
@@ -8772,7 +8772,7 @@ rb_insns_name_array(void)
     for (i = 0; i < VM_INSTRUCTION_SIZE; i++) {
 	rb_ary_push(ary, rb_fstring_cstr(insn_name(i)));
     }
-    return rb_obj_freeze(ary);
+    return rb_ary_freeze(ary);
 }
 
 static LABEL *
@@ -10948,7 +10948,7 @@ ibf_load_object_array(const struct ibf_load *load, const struct ibf_object_heade
     }
 
     if (header->internal) rb_obj_hide(ary);
-    if (header->frozen)   rb_obj_freeze(ary);
+    if (header->frozen)   rb_ary_freeze(ary);
 
     return ary;
 }
