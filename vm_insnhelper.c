@@ -3217,7 +3217,7 @@ vm_yield_with_cfunc(rb_execution_context_t *ec,
 
     frame_flag = VM_FRAME_MAGIC_IFUNC | VM_FRAME_FLAG_CFRAME | (me ? VM_FRAME_FLAG_BMETHOD : 0);
     if (kw_splat) {
-      frame_flag |= VM_FRAME_FLAG_CFRAME_KW;
+        frame_flag |= VM_FRAME_FLAG_CFRAME_KW;
     }
 
     vm_push_frame(ec, (const rb_iseq_t *)captured->code.ifunc,
