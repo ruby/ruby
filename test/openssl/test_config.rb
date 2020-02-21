@@ -215,6 +215,9 @@ __EOC__
   end
 
   def test_get_value_ENV
+    # LibreSSL removed support for NCONF_get_string(conf, "ENV", str)
+    return if libressl?
+
     key = ENV.keys.first
     assert_not_nil(key) # make sure we have at least one ENV var.
     assert_equal(ENV[key], @it.get_value('ENV', key))
