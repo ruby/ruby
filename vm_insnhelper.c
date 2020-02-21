@@ -1620,9 +1620,9 @@ vm_search_method_fastpath(struct rb_call_data *cd, VALUE klass)
     struct rb_call_cache *cc = &cd->cc;
 
 #if OPT_INLINE_METHOD_CACHE
-    if (LIKELY(RB_DEBUG_COUNTER_INC_UNLESS(mc_global_state_miss,
+    if (RB_DEBUG_COUNTER_INC_UNLESS(mc_global_state_miss,
 					   GET_GLOBAL_METHOD_STATE() == cc->method_state) &&
-               vm_cache_check_for_class_serial(cc, RCLASS_SERIAL(klass)))) {
+               vm_cache_check_for_class_serial(cc, RCLASS_SERIAL(klass))) {
 	/* cache hit! */
 	VM_ASSERT(cc->call != NULL);
 	RB_DEBUG_COUNTER_INC(mc_inline_hit);
