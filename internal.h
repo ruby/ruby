@@ -86,7 +86,7 @@ void ruby_debug_breakpoint(void);
 PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
 
 // show obj data structure without any side-effect
-#define rp(obj) rb_obj_info_dump_loc((VALUE)(obj), __FILE__, __LINE__, __func__)
+#define rp(obj) rb_obj_info_dump_loc((VALUE)(obj), __FILE__, __LINE__, RUBY_FUNCTION_NAME_STRING)
 
 // same as rp, but add message header
 #define rp_m(msg, obj) do { \
