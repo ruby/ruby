@@ -17,7 +17,7 @@
 
 require "socket"
 require "monitor"
-require_relative "protocol"
+require "net/protocol"
 require "time"
 begin
   require "openssl"
