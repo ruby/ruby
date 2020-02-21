@@ -4877,7 +4877,7 @@ env_delete(VALUE name)
  *   ENV['foo'] = '0'
  *   ENV.delete('foo') { |name| fail 'ignored' } # => "0"
  * Raises an exception if +name+ is invalid.
- * See {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values].
+ * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
  */
 static VALUE
 env_delete_m(VALUE obj, VALUE name)
@@ -4900,7 +4900,7 @@ env_delete_m(VALUE obj, VALUE name)
  *   ENV.clear
  *   ENV['foo'] # => nil
  * Raises an exception if +name+ is invalid.
- * See {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values].
+ * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
  */
 static VALUE
 rb_f_getenv(VALUE obj, VALUE name)
@@ -4938,7 +4938,7 @@ rb_f_getenv(VALUE obj, VALUE name)
  * and neither default value nor block is given:
  *   ENV.fetch('foo') # Raises KeyError (key not found: "foo")
  * Raises an exception if +name+ is invalid.
- * See {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values].
+ * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
  */
 static VALUE
 env_fetch(int argc, VALUE *argv, VALUE _)
@@ -5735,7 +5735,7 @@ env_keep_if(VALUE ehash)
  *   ENV.slice('foo', 'baz') # => {"foo"=>"0", "baz"=>"2"}
  *   ENV.slice('baz', 'foo') # => {"baz"=>"2", "foo"=>"0"}
  * Raises an exception if any of the +names+ is invalid
- * (see {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values]):
+ * (see {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values]):
  *   ENV.slice('foo', 'bar', :bat) # Raises TypeError (no implicit conversion of Symbol into String)
  */
 static VALUE
@@ -6094,7 +6094,7 @@ env_rassoc(VALUE dmy, VALUE obj)
  *   ENV.key('2') # => nil
  * Raises an exception if +value+ is invalid:
  *   ENV.key(Object.new) # raises TypeError (no implicit conversion of Object into String)
- * See {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values].
+ * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
  */
 static VALUE
 env_key(VALUE dmy, VALUE value)
@@ -6312,7 +6312,7 @@ env_replace_i(VALUE key, VALUE val, VALUE keys)
  *   ENV.to_hash # => {"bar"=>"1", "foo"=>"0"}
  *
  * Raises an exception if a name or value is invalid
- * (see {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values]):
+ * (see {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values]):
  *   ENV.replace('foo' => '0', :bar => '1') # Raises TypeError (no implicit conversion of Symbol into String)
  *   ENV.replace('foo' => '0', 'bar' => 1) # Raises TypeError (no implicit conversion of Integer into String)
  *   ENV.to_hash # => {"bar"=>"1", "foo"=>"0"}
@@ -6374,13 +6374,13 @@ env_update_block_i(VALUE key, VALUE val, VALUE _)
  * the  block's return value becomes the new name:
  *   ENV.merge!('foo' => '5') { |name, env_val, hash_val | env_val + hash_val } # => {"bar"=>"1", "foo"=>"45"}
  * Raises an exception if a name or value is invalid
- * (see {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values]);
+ * (see {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values]);
  *   ENV.merge!('foo' => '6', :bar => '7', 'baz' => '9') # Raises TypeError (no implicit conversion of Symbol into String)
  *   ENV # => {"bar"=>"1", "baz"=>"2", "foo"=>"6"}
  *   ENV.merge!('foo' => '7', 'bar' => 8, 'baz' => '9')
  *   ENV # => {"bar"=>"1", "baz"=>"2", "foo"=>"7"} TypeError (no implicit conversion of Integer into String)
  * Raises an exception if the block returns an invalid name:
- * (see {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values]):
+ * (see {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values]):
  *   ENV.merge!('bat' => '8', 'foo' => '9') { |name, env_val, hash_val | 10 } # Raises TypeError (no implicit conversion of Integer into String)
  *   ENV # => {"bar"=>"1", "bat"=>"8", "baz"=>"2", "foo"=>"75"}
  *
