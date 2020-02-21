@@ -160,7 +160,7 @@ have_func("SSL_SESSION_get_protocol_version")
 have_func("TS_STATUS_INFO_get0_status")
 have_func("TS_STATUS_INFO_get0_text")
 have_func("TS_STATUS_INFO_get0_failure_info")
-have_func("TS_VERIFY_CTS_set_certs")
+have_func("TS_VERIFY_CTS_set_certs(NULL, NULL)", "openssl/ts.h")
 have_func("TS_VERIFY_CTX_set_store")
 have_func("TS_VERIFY_CTX_add_flags")
 have_func("TS_RESP_CTX_set_time_cb")
@@ -173,6 +173,7 @@ have_func("EVP_PKEY_check")
 # added in 3.0.0
 have_func("SSL_set0_tmp_dh_pkey")
 have_func("ERR_get_error_all")
+have_func("TS_VERIFY_CTX_set_certs(NULL, NULL)", "openssl/ts.h")
 
 Logging::message "=== Checking done. ===\n"
 

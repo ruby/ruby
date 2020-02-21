@@ -826,7 +826,7 @@ ossl_ts_resp_verify(int argc, VALUE *argv, VALUE self)
         X509_up_ref(cert);
     }
 
-    TS_VERIFY_CTS_set_certs(ctx, x509inter);
+    TS_VERIFY_CTX_set_certs(ctx, x509inter);
     TS_VERIFY_CTX_add_flags(ctx, TS_VFY_SIGNATURE);
     TS_VERIFY_CTX_set_store(ctx, x509st);
 

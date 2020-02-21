@@ -214,4 +214,9 @@ IMPL_PKEY_GETTER(EC_KEY, ec)
     } while (0)
 #endif
 
+/* added in 3.0.0 */
+#if !defined(HAVE_TS_VERIFY_CTX_SET_CERTS)
+#  define TS_VERIFY_CTX_set_certs(ctx, crts) TS_VERIFY_CTS_set_certs(ctx, crts)
+#endif
+
 #endif /* _OSSL_OPENSSL_MISSING_H_ */
