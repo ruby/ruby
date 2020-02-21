@@ -12,14 +12,14 @@ end
 class TestNetHTTPS < Test::Unit::TestCase
   include TestNetHTTPUtils
 
-  def self.fixture(key)
+  def self.read_fixture(key)
     File.read(File.expand_path("../fixtures/#{key}", __dir__))
   end
 
-  CA_CERT = OpenSSL::X509::Certificate.new(fixture("cacert.pem"))
-  SERVER_KEY = OpenSSL::PKey.read(fixture("server.key"))
-  SERVER_CERT = OpenSSL::X509::Certificate.new(fixture("server.crt"))
-  DHPARAMS = OpenSSL::PKey::DH.new(fixture("dhparams.pem"))
+  CA_CERT = OpenSSL::X509::Certificate.new(read_fixture("cacert.pem"))
+  SERVER_KEY = OpenSSL::PKey.read(read_fixture("server.key"))
+  SERVER_CERT = OpenSSL::X509::Certificate.new(read_fixture("server.crt"))
+  DHPARAMS = OpenSSL::PKey::DH.new(read_fixture("dhparams.pem"))
   TEST_STORE = OpenSSL::X509::Store.new.tap {|s| s.add_cert(CA_CERT) }
 
   CONFIG = {
