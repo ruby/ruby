@@ -1118,34 +1118,29 @@ ossl_bn_hash(VALUE self)
  *    bn.prime? => true | false
  *    bn.prime?(checks) => true | false
  *
- * Performs a Miller-Rabin probabilistic primality test with _checks_
- * iterations. If _checks_ is not specified, a number of iterations is used
- * that yields a false positive rate of at most 2^-80 for random input.
+ * Performs a Miller-Rabin probabilistic primality test for +bn+.
  *
- * === Parameters
- * * _checks_ - integer
+ * <b>+checks+ parameter is deprecated in version 3.0.</b> It has no effect.
  */
 static VALUE
 ossl_bn_is_prime(int argc, VALUE *argv, VALUE self)
 {
     BIGNUM *bn;
-    VALUE vchecks;
-    int checks = BN_prime_checks;
+    int ret;
 
-    if (rb_scan_args(argc, argv, "01", &vchecks) == 1) {
-	checks = NUM2INT(vchecks);
-    }
+    rb_check_arity(argc, 0, 1);
     GetBN(self, bn);
-    switch (BN_is_prime_ex(bn, checks, ossl_bn_ctx, NULL)) {
-    case 1:
-	return Qtrue;
-    case 0:
-	return Qfalse;
-    default:
-	ossl_raise(eBNError, NULL);
-    }
-    /* not reachable */
-    return Qnil;
+
+#ifdef HAVE_BN_CHECK_PRIME
+    ret = BN_check_prime(bn, ossl_bn_ctx, NULL);
+    if (ret < 0)
+        ossl_raise(eBNError, "BN_check_prime");
+#else
+    ret = BN_is_prime_fasttest_ex(bn, BN_prime_checks, ossl_bn_ctx, 1, NULL);
+    if (ret < 0)
+        ossl_raise(eBNError, "BN_is_prime_fasttest_ex");
+#endif
+    return ret ? Qtrue : Qfalse;
 }
 
 /*
@@ -1154,40 +1149,17 @@ ossl_bn_is_prime(int argc, VALUE *argv, VALUE self)
  *    bn.prime_fasttest?(checks) => true | false
  *    bn.prime_fasttest?(checks, trial_div) => true | false
  *
- * Performs a Miller-Rabin primality test. This is same as #prime? except this
- * first attempts trial divisions with some small primes.
+ * Performs a Miller-Rabin probabilistic primality test for +bn+.
  *
- * === Parameters
- * * _checks_ - integer
- * * _trial_div_ - boolean
+ * <b>Deprecated in version 3.0.</b> Use #prime? instead.
+ *
+ * +checks+ and +trial_div+ parameters no longer have any effect.
  */
 static VALUE
 ossl_bn_is_prime_fasttest(int argc, VALUE *argv, VALUE self)
 {
-    BIGNUM *bn;
-    VALUE vchecks, vtrivdiv;
-    int checks = BN_prime_checks, do_trial_division = 1;
-
-    rb_scan_args(argc, argv, "02", &vchecks, &vtrivdiv);
-
-    if (!NIL_P(vchecks)) {
-	checks = NUM2INT(vchecks);
-    }
-    GetBN(self, bn);
-    /* handle true/false */
-    if (vtrivdiv == Qfalse) {
-	do_trial_division = 0;
-    }
-    switch (BN_is_prime_fasttest_ex(bn, checks, ossl_bn_ctx, do_trial_division, NULL)) {
-    case 1:
-	return Qtrue;
-    case 0:
-	return Qfalse;
-    default:
-	ossl_raise(eBNError, NULL);
-    }
-    /* not reachable */
-    return Qnil;
+    rb_check_arity(argc, 0, 2);
+    return ossl_bn_is_prime(0, argv, self);
 }
 
 /*
