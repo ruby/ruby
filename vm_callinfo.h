@@ -225,7 +225,7 @@ typedef VALUE (*vm_call_handler)(
 // imemo_callcache
 
 struct rb_callcache {
-    const VALUE flags; 
+    const VALUE flags;
 
     /* inline cache: key */
     const VALUE klass; // should not mark it because klass can not be free'd
