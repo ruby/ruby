@@ -157,6 +157,10 @@ class TestSymbol < Test::Unit::TestCase
     assert_predicate(:itself.to_proc, :lambda?)
   end
 
+  def test_to_proc_arity
+    assert_equal(-2, :itself.to_proc.arity)
+  end
+
   def test_to_proc_call_with_symbol_proc
     first = 1
     bug11594 = "[ruby-core:71088] [Bug #11594] corrupted the first local variable"
@@ -185,6 +189,10 @@ class TestSymbol < Test::Unit::TestCase
 
   def test_to_proc_lambda_with_refinements
     assert_predicate(_test_to_proc_with_refinements_call(&:hoge), :lambda?)
+  end
+
+  def test_to_proc_arity_with_refinements
+    assert_equal(-2, _test_to_proc_with_refinements_call(&:hoge).arity)
   end
 
   def self._test_to_proc_arg_with_refinements_call(&block)
@@ -230,11 +238,11 @@ class TestSymbol < Test::Unit::TestCase
     begin;
       bug11845 = '[ruby-core:72381] [Bug #11845]'
       assert_nil(:class.to_proc.source_location, bug11845)
-      assert_equal([[:rest]], :class.to_proc.parameters, bug11845)
+      assert_equal([[:req], [:rest]], :class.to_proc.parameters, bug11845)
       c = Class.new {define_method(:klass, :class.to_proc)}
       m = c.instance_method(:klass)
       assert_nil(m.source_location, bug11845)
-      assert_equal([[:rest]], m.parameters, bug11845)
+      assert_equal([[:req], [:rest]], m.parameters, bug11845)
     end;
   end
 
