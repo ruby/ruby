@@ -10294,21 +10294,27 @@ ibf_dump_ci_entries(struct ibf_dump *dump, const rb_iseq_t *iseq)
 
     for (i = 0; i < ci_size; i++) {
         const struct rb_callinfo *ci = cds[i].ci;
-        ibf_dump_write_small_value(dump, ibf_dump_id(dump, vm_ci_mid(ci)));
-        ibf_dump_write_small_value(dump, vm_ci_flag(ci));
-        ibf_dump_write_small_value(dump, vm_ci_argc(ci));
+        if (ci != NULL) {
+            ibf_dump_write_small_value(dump, ibf_dump_id(dump, vm_ci_mid(ci)));
+            ibf_dump_write_small_value(dump, vm_ci_flag(ci));
+            ibf_dump_write_small_value(dump, vm_ci_argc(ci));
 
-        const struct rb_callinfo_kwarg *kwarg = vm_ci_kwarg(ci);
-        if (kwarg) {
-            int len = kwarg->keyword_len;
-            ibf_dump_write_small_value(dump, len);
-            for (int j=0; j<len; j++) {
-                VALUE keyword = ibf_dump_object(dump, kwarg->keywords[j]);
-                ibf_dump_write_small_value(dump, keyword);
+            const struct rb_callinfo_kwarg *kwarg = vm_ci_kwarg(ci);
+            if (kwarg) {
+                int len = kwarg->keyword_len;
+                ibf_dump_write_small_value(dump, len);
+                for (int j=0; j<len; j++) {
+                    VALUE keyword = ibf_dump_object(dump, kwarg->keywords[j]);
+                    ibf_dump_write_small_value(dump, keyword);
+                }
+            }
+            else {
+                ibf_dump_write_small_value(dump, 0);
             }
         }
         else {
-            ibf_dump_write_small_value(dump, 0);
+            // TODO: truncate NULL ci from call_data.
+            ibf_dump_write_small_value(dump, (VALUE)-1);
         }
     }
 
@@ -10331,24 +10337,31 @@ ibf_load_ci_entries(const struct ibf_load *load,
 
     for (i = 0; i < ci_size; i++) {
         VALUE mid_index = ibf_load_small_value(load, &reading_pos);
-        ID mid = ibf_load_id(load, mid_index);
-        unsigned int flag = (unsigned int)ibf_load_small_value(load, &reading_pos);
-        unsigned int argc = (unsigned int)ibf_load_small_value(load, &reading_pos);
+        if (mid_index != (VALUE)-1) {
+            ID mid = ibf_load_id(load, mid_index);
+            unsigned int flag = (unsigned int)ibf_load_small_value(load, &reading_pos);
+            unsigned int argc = (unsigned int)ibf_load_small_value(load, &reading_pos);
 
-        struct rb_callinfo_kwarg *kwarg = NULL;
-        int kwlen = (int)ibf_load_small_value(load, &reading_pos);
-        if (kwlen > 0) {
-            kwarg = rb_xmalloc_mul_add(kwlen - 1, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));;
-            kwarg->keyword_len = kwlen;
-            for (int j=0; j<kwlen; j++) {
-                VALUE keyword = ibf_load_small_value(load, &reading_pos);
-                kwarg->keywords[j] = ibf_load_object(load, keyword);
+            struct rb_callinfo_kwarg *kwarg = NULL;
+            int kwlen = (int)ibf_load_small_value(load, &reading_pos);
+            if (kwlen > 0) {
+                kwarg = rb_xmalloc_mul_add(kwlen - 1, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));;
+                kwarg->keyword_len = kwlen;
+                for (int j=0; j<kwlen; j++) {
+                    VALUE keyword = ibf_load_small_value(load, &reading_pos);
+                    kwarg->keywords[j] = ibf_load_object(load, keyword);
+                }
             }
-        }
 
-        cds[i].ci = vm_ci_new(mid, flag, argc, kwarg);
-        RB_OBJ_WRITTEN(load->iseq, Qundef, cds[i].ci);
-        cds[i].cc = vm_cc_empty();
+            cds[i].ci = vm_ci_new(mid, flag, argc, kwarg);
+            RB_OBJ_WRITTEN(load->iseq, Qundef, cds[i].ci);
+            cds[i].cc = vm_cc_empty();
+        }
+        else {
+            // NULL ci
+            cds[i].ci = NULL;
+            cds[i].cc = NULL;
+        }
     }
 }
 
