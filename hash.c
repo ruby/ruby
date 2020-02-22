@@ -4877,7 +4877,7 @@ env_delete(VALUE name)
  *   ENV['foo'] = '0'
  *   ENV.delete('foo') { |name| fail 'ignored' } # => "0"
  * Raises an exception if +name+ is invalid.
- * See {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values].
+ * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
  */
 static VALUE
 env_delete_m(VALUE obj, VALUE name)
@@ -4900,7 +4900,7 @@ env_delete_m(VALUE obj, VALUE name)
  *   ENV.clear
  *   ENV['foo'] # => nil
  * Raises an exception if +name+ is invalid.
- * See {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values].
+ * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
  */
 static VALUE
 rb_f_getenv(VALUE obj, VALUE name)
@@ -4938,7 +4938,7 @@ rb_f_getenv(VALUE obj, VALUE name)
  * and neither default value nor block is given:
  *   ENV.fetch('foo') # Raises KeyError (key not found: "foo")
  * Raises an exception if +name+ is invalid.
- * See {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values].
+ * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
  */
 static VALUE
 env_fetch(int argc, VALUE *argv, VALUE _)
@@ -5206,7 +5206,7 @@ ruby_unsetenv(const char *name)
 
 /*
  * call-seq:
- *   ENV[name] = value -> value
+ *   ENV[name] = value      -> value
  *   ENV.store(name, value) -> value
  *
  * ENV.store is an alias for ENV.[]=.
@@ -5301,7 +5301,7 @@ env_keys(void)
 
 /*
  * call-seq:
- *   ENV.keys -> array
+ *   ENV.keys -> array of names
  *
  * Returns all variable names in an Array:
  *   ENV.replace('foo' => '0', 'bar' => '1')
@@ -5339,7 +5339,7 @@ rb_env_size(VALUE ehash, VALUE args, VALUE eobj)
 /*
  * call-seq:
  *   ENV.each_key { |name| block } -> ENV
- *   ENV.each_key                  -> enumerator
+ *   ENV.each_key                  -> an_enumerator
  *
  * Yields each environment variable name:
  *   ENV.replace('foo' => '0', 'bar' => '1') # => ENV
@@ -5388,7 +5388,7 @@ env_values(void)
 
 /*
  * call-seq:
- *   ENV.values -> array
+ *   ENV.values -> array of values
  *
  * Returns all environment variable values in an Array:
  *   ENV.replace('foo' => '0', 'bar' => '1')
@@ -5409,7 +5409,7 @@ env_f_values(VALUE _)
 /*
  * call-seq:
  *   ENV.each_value { |value| block } -> ENV
- *   ENV.each_value                   -> enumerator
+ *   ENV.each_value                   -> an_enumerator
  *
  * Yields each environment variable value:
  *   ENV.replace('foo' => '0', 'bar' => '1') # => ENV
@@ -5440,9 +5440,9 @@ env_each_value(VALUE ehash)
 /*
  * call-seq:
  *   ENV.each      { |name, value| block } -> ENV
- *   ENV.each                              -> enumerator
+ *   ENV.each                              -> an_enumerator
  *   ENV.each_pair { |name, value| block } -> ENV
- *   ENV.each_pair                         -> enumerator
+ *   ENV.each_pair                         -> an_enumerator
  *
  * Yields each environment variable name and its value as a 2-element Array:
  *   h = {}
@@ -5492,7 +5492,7 @@ env_each_pair(VALUE ehash)
 /*
  * call-seq:
  *   ENV.reject! { |name, value| block } -> ENV or nil
- *   ENV.reject!                         -> enumerator
+ *   ENV.reject!                         -> an_enumerator
  *
  * Similar to ENV.delete_if, but returns +nil+ if no changes were made.
  *
@@ -5538,7 +5538,7 @@ env_reject_bang(VALUE ehash)
 /*
  * call-seq:
  *   ENV.delete_if { |name, value| block } -> ENV
- *   ENV.delete_if                         -> enumerator
+ *   ENV.delete_if                         -> an_enumerator
  *
  * Yields each environment variable name and its value as a 2-element Array,
  * deleting each environment variable for which the block returns a truthy value,
@@ -5565,7 +5565,7 @@ env_delete_if(VALUE ehash)
 
 /*
  * call-seq:
- *   ENV.values_at(*names) -> array
+ *   ENV.values_at(*names) -> array of values
  *
  * Returns an Array containing the environment variable values associated with
  * the given names:
@@ -5596,10 +5596,10 @@ env_values_at(int argc, VALUE *argv, VALUE _)
 
 /*
  * call-seq:
- *   ENV.select { |name, value| block } -> hash
- *   ENV.select                         -> enumerator
- *   ENV.filter { |name, value| block } -> hash
- *   ENV.filter                         -> enumerator
+ *   ENV.select { |name, value| block } -> hash of name/value pairs
+ *   ENV.select                         -> an_enumerator
+ *   ENV.filter { |name, value| block } -> hash of name/value pairs
+ *   ENV.filter                         -> an_enumerator
  *
  * ENV.filter is an alias for ENV.select.
  *
@@ -5642,9 +5642,9 @@ env_select(VALUE ehash)
 /*
  * call-seq:
  *   ENV.select! { |name, value| block } -> ENV or nil
- *   ENV.select!                         -> enumerator
+ *   ENV.select!                         -> an_enumerator
  *   ENV.filter! { |name, value| block } -> ENV or nil
- *   ENV.filter!                         -> enumerator
+ *   ENV.filter!                         -> an_enumerator
  *
  * ENV.filter! is an alias for ENV.select!.
  *
@@ -5703,7 +5703,7 @@ env_select_bang(VALUE ehash)
 /*
  * call-seq:
  *   ENV.keep_if { |name, value| block } -> ENV
- *   ENV.keep_if                         -> enumerator
+ *   ENV.keep_if                         -> an_enumerator
  *
  * Yields each environment variable name and its value as a 2-element Array,
  * deleting each environment variable for which the block returns +false+ or +nil+,
@@ -5727,12 +5727,16 @@ env_keep_if(VALUE ehash)
 }
 
 /*
- *  call-seq:
- *     ENV.slice(*keys) -> a_hash
+ * call-seq:
+ *   ENV.slice(*names) -> hash of name/value pairs
  *
- *  Returns a hash containing only the given keys from ENV and their values.
- *
- *     ENV.slice("TERM","HOME")  #=> {"TERM"=>"xterm-256color", "HOME"=>"/Users/rhc"}
+ * Returns a Hash of the given ENV names and their corresponding values:
+ *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2', 'bat' => '3')
+ *   ENV.slice('foo', 'baz') # => {"foo"=>"0", "baz"=>"2"}
+ *   ENV.slice('baz', 'foo') # => {"baz"=>"2", "foo"=>"0"}
+ * Raises an exception if any of the +names+ is invalid
+ * (see {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values]):
+ *   ENV.slice('foo', 'bar', :bat) # Raises TypeError (no implicit conversion of Symbol into String)
  */
 static VALUE
 env_slice(int argc, VALUE *argv, VALUE _)
@@ -5803,7 +5807,7 @@ env_to_s(VALUE _)
 
 /*
  * call-seq:
- *   ENV.inspect -> string
+ *   ENV.inspect -> a_string
  *
  * Returns the contents of the environment as a String:
  *   ENV.replace('foo' => '0', 'bar' => '1')
@@ -5840,7 +5844,7 @@ env_inspect(VALUE _)
 
 /*
  * call-seq:
- *   ENV.to_a -> array
+ *   ENV.to_a -> array of 2-element arrays
  *
  * Returns the contents of ENV as an Array of 2-element Arrays,
  * each of which is a name/value pair:
@@ -5886,8 +5890,8 @@ env_none(VALUE _)
 
 /*
  * call-seq:
- *   ENV.length -> integer
- *   ENV.size   -> integer
+ *   ENV.length -> an_integer
+ *   ENV.size   -> an_integer
  *
  * Returns the count of environment variables:
  *   ENV.replace('foo' => '0', 'bar' => '1')
@@ -5968,7 +5972,7 @@ env_has_key(VALUE env, VALUE key)
 
 /*
  * call-seq:
- *   ENV.assoc(name) -> array or nil
+ *   ENV.assoc(name) -> [name, value] or nil
  *
  * Returns a 2-element Array containing the name and value of the environment variable
  * for +name+ if it exists:
@@ -6000,7 +6004,7 @@ env_assoc(VALUE env, VALUE key)
 
 /*
  * call-seq:
- *   ENV.value?(value) -> true or false
+ *   ENV.value?(value)     -> true or false
  *   ENV.has_value?(value) -> true or false
  *
  * Returns +true+ if +value+ is the value for some environment variable name, +false+ otherwise:
@@ -6035,7 +6039,7 @@ env_has_value(VALUE dmy, VALUE obj)
 
 /*
  * call-seq:
- *   ENV.rassoc(value)
+ *   ENV.rassoc(value) -> [name, value] or nil
  *
  * Returns a 2-element Array containing the name and value of the
  * *first* *found* environment variable that has value +value+, if one
@@ -6091,7 +6095,7 @@ env_rassoc(VALUE dmy, VALUE obj)
  *   ENV.key('2') # => nil
  * Raises an exception if +value+ is invalid:
  *   ENV.key(Object.new) # raises TypeError (no implicit conversion of Object into String)
- * See {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values].
+ * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
  */
 static VALUE
 env_key(VALUE dmy, VALUE value)
@@ -6119,7 +6123,7 @@ env_key(VALUE dmy, VALUE value)
 
 /*
  * call-seq:
- *   ENV.index(value) -> key
+ *   ENV.index(value) -> name
  *
  * Deprecated method that is equivalent to ENV.key.
  */
@@ -6152,7 +6156,7 @@ env_to_hash(void)
 
 /*
  * call-seq:
- *   ENV.to_hash -> hash
+ *   ENV.to_hash -> hash of name/value pairs
  *
  * Returns a Hash containing all name/value pairs from ENV:
  *   ENV.replace('foo' => '0', 'bar' => '1')
@@ -6167,11 +6171,21 @@ env_f_to_hash(VALUE _)
 
 /*
  * call-seq:
- *   ENV.to_h                        -> hash
- *   ENV.to_h {|name, value| block } -> hash
+ *   ENV.to_h                        -> hash of name/value pairs
+ *   ENV.to_h {|name, value| block } -> hash of name/value pairs
  *
- * Creates a hash with a copy of the environment variables.
- *
+ * With no block, returns a Hash containing all name/value pairs from ENV:
+ *   ENV.replace('foo' => '0', 'bar' => '1')
+ *   ENV.to_h # => {"bar"=>"1", "foo"=>"0"}
+ * With a block, returns a Hash whose items are determined by the block.
+ * Each name/value pair in ENV is yielded to the block.
+ * The block must return a 2-element Array (name/value pair)
+ * that is added to the return Hash as a key and value:
+ *   ENV.to_h { |name, value| [name.to_sym, value.to_i] } # => {:bar=>1, :foo=>0}
+ * Raises an exception if the block does not return an Array:
+ *   ENV.to_h { |name, value| name } # Raises TypeError (wrong element type String (expected array))
+ * Raises an exception if the block returns an Array of the wrong size:
+ *   ENV.to_h { |name, value| [name] } # Raises ArgumentError (element has wrong array length (expected 2, was 1))
  */
 static VALUE
 env_to_h(VALUE _)
@@ -6185,11 +6199,18 @@ env_to_h(VALUE _)
 
 /*
  * call-seq:
- *   ENV.reject { |name, value| block } -> hash
- *   ENV.reject                         -> enumerator
+ *   ENV.reject { |name, value| block } -> hash of name/value pairs
+ *   ENV.reject                         -> an_enumerator
  *
- * Same as ENV.delete_if, but works on (and returns) a copy of the
- * environment.
+ * Yields each environment variable name and its value as a 2-element Array.
+ * Returns a Hash whose items are determined by the block.
+ * When the block returns a truthy value, the name/value pair is added to the return Hash;
+ * otherwise the pair is ignored:
+ *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
+ *   ENV.reject { |name, value| name.start_with?('b') } # => {"foo"=>"0"}
+ * Returns an Enumerator if no block given:
+ *   e = ENV.reject
+ *   e.each { |name, value| name.start_with?('b') } # => {"foo"=>"0"}
  */
 static VALUE
 env_reject(VALUE _)
@@ -6199,10 +6220,10 @@ env_reject(VALUE _)
 
 /*
  * call-seq:
- *   ENV.freeze -> raises TypeError
+ *   ENV.freeze
  *
- * Ruby does not allow ENV to be frozen, so calling ENV.freeze
- * raises TypeError.
+ * Raises an exception:
+ *   ENV.freeze # Raises TypeError (cannot freeze ENV)
  */
 static VALUE
 env_freeze(VALUE self)
@@ -6250,10 +6271,18 @@ env_shift(VALUE _)
 
 /*
  * call-seq:
- *   ENV.invert -> hash
+ *   ENV.invert -> hash of value/name pairs
  *
- * Returns a new hash created by using environment variable names as values
- * and values as names.
+ * Returns a Hash whose keys are the ENV values,
+ * and whose values are the corresponding ENV names:
+ *   ENV.replace('foo' => '0', 'bar' => '1')
+ *   ENV.invert # => {"1"=>"bar", "0"=>"foo"}
+ * For a duplicate ENV value, overwrites the hash entry:
+ *   ENV.replace('foo' => '0', 'bar' => '0')
+ *   ENV.invert # => {"0"=>"foo"}
+ * Note that the order of the ENV processing is OS-dependent,
+ * which means that the order of overwriting is also OS-dependent.
+ * See {About Ordering}[#class-ENV-label-About+Ordering].
  */
 static VALUE
 env_invert(VALUE _)
@@ -6283,8 +6312,11 @@ env_replace_i(VALUE key, VALUE val, VALUE keys)
  *   ENV.replace('foo' => '0', 'bar' => '1') # => ENV
  *   ENV.to_hash # => {"bar"=>"1", "foo"=>"0"}
  *
- * Raises an exception if a name or value is invalid.
- * See {Invalid Names and Values}[#class-ENV-label-Invalid-Names+and+Values].
+ * Raises an exception if a name or value is invalid
+ * (see {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values]):
+ *   ENV.replace('foo' => '0', :bar => '1') # Raises TypeError (no implicit conversion of Symbol into String)
+ *   ENV.replace('foo' => '0', 'bar' => 1) # Raises TypeError (no implicit conversion of Integer into String)
+ *   ENV.to_hash # => {"bar"=>"1", "foo"=>"0"}
  */
 static VALUE
 env_replace(VALUE env, VALUE hash)
@@ -6324,15 +6356,38 @@ env_update_block_i(VALUE key, VALUE val, VALUE _)
 
 /*
  * call-seq:
- *   ENV.update(hash)                                        -> ENV
- *   ENV.update(hash) { |name, old_value, new_value| block } -> ENV
- *   ENV.merge!(hash)                                        -> ENV
- *   ENV.merge!(hash) { |name, old_value, new_value| block } -> ENV
+ *   ENV.update(hash)                                     -> ENV
+ *   ENV.update(hash) { |name, env_val, hash_val| block } -> ENV
+ *   ENV.merge!(hash)                                     -> ENV
+ *   ENV.merge!(hash) { |name, env_val, hash_val| block } -> ENV
  *
- * Adds the contents of +hash+ to the environment variables.  If no block is
- * specified entries with duplicate keys are overwritten, otherwise the value
- * of each duplicate name is determined by calling the block with the key, its
- * value from the environment and its value from the hash.
+ * ENV.update is an alias for ENV.merge!.
+ *
+ * Adds to ENV each key/value pair in the given +hash+; returns ENV:
+ *   ENV.replace('foo' => '0', 'bar' => '1')
+ *   ENV.merge!('baz' => '2', 'bat' => '3') # => {"bar"=>"1", "bat"=>"3", "baz"=>"2", "foo"=>"0"}
+ * Deletes the ENV entry for a hash value that is +nil+:
+ *   ENV.merge!('baz' => nil, 'bat' => nil) # => {"bar"=>"1", "foo"=>"0"}
+ * For an already-existing name, if no block given, overwrites the ENV value:
+ *   ENV.merge!('foo' => '4') # => {"bar"=>"1", "foo"=>"4"}
+ * For an already-existing name, if block given,
+ * yields the name, its ENV value, and its hash value;
+ * the  block's return value becomes the new name:
+ *   ENV.merge!('foo' => '5') { |name, env_val, hash_val | env_val + hash_val } # => {"bar"=>"1", "foo"=>"45"}
+ * Raises an exception if a name or value is invalid
+ * (see {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values]);
+ *   ENV.merge!('foo' => '6', :bar => '7', 'baz' => '9') # Raises TypeError (no implicit conversion of Symbol into String)
+ *   ENV # => {"bar"=>"1", "baz"=>"2", "foo"=>"6"}
+ *   ENV.merge!('foo' => '7', 'bar' => 8, 'baz' => '9')
+ *   ENV # => {"bar"=>"1", "baz"=>"2", "foo"=>"7"} TypeError (no implicit conversion of Integer into String)
+ * Raises an exception if the block returns an invalid name:
+ * (see {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values]):
+ *   ENV.merge!('bat' => '8', 'foo' => '9') { |name, env_val, hash_val | 10 } # Raises TypeError (no implicit conversion of Integer into String)
+ *   ENV # => {"bar"=>"1", "bat"=>"8", "baz"=>"2", "foo"=>"75"}
+ *
+ * Note that for the exceptions above,
+ * hash pairs preceding an invalid name or value are processed normally;
+ * those following are ignored.
  */
 static VALUE
 env_update(VALUE env, VALUE hash)
