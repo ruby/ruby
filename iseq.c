@@ -358,6 +358,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 	    }
 	}
 
+#if USE_MJIT
         if (body->jit_unit && body->jit_unit->cc_entries != NULL) {
             // TODO: move to mjit.c?
             for (unsigned int i=0; i<body->ci_size; i++) {
@@ -365,6 +366,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
                 rb_gc_mark((VALUE)cc); // pindown
             }
         }
+#endif
     }
 
     if (FL_TEST_RAW(iseq, ISEQ_NOT_LOADED_YET)) {
