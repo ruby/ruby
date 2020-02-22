@@ -1045,42 +1045,77 @@ chdir_restore(VALUE v)
 
 /*
  *  call-seq:
- *     Dir.chdir( [ string] ) -> 0
- *     Dir.chdir( [ string] ) {| path | block }  -> anObject
+ *     Dir.chdir(dirpath) -> 0
+ *     Dir.chdir -> 0
+ *     Dir.chdir(dirpath) { |dirpath| ... }  -> block return value
+ *     Dir.chdir { |dirpath| ... }  -> block return value
  *
- *  Changes the current working directory of the process to the given
- *  string. When called without an argument, changes the directory to
- *  the value of the environment variable <code>HOME</code>, or
- *  <code>LOGDIR</code>. SystemCallError (probably Errno::ENOENT) if
- *  the target directory does not exist.
+ *  Changes the current working directory of the process,
+ *  returning <code>0</code> if no block given,
+ *  or otherwise returning the block's return value.
  *
- *  If a block is given, it is passed the name of the new current
- *  directory, and the block is executed with that as the current
- *  directory. The original working directory is restored when the block
- *  exits. The return value of <code>chdir</code> is the value of the
- *  block. <code>chdir</code> blocks can be nested, but in a
- *  multi-threaded program an error will be raised if a thread attempts
- *  to open a <code>chdir</code> block while another thread has one
+ *  The new directory path, which may be absolute or relative, is specified by:
+ *  * The optional String argument, if given.
+ *  * Otherwise, by the value of environment variable <code>HOME</code>, if defined.
+ *  * Otherwise, by the value of environment variable <code>LOGDIR</code>, if defined.
+ *
+ *  To change to a specified directory (absolute path):
+ *    Dir.pwd # => "/usr/me"
+ *    Dir.chdir('/var/log') # => 0
+ *    Dir.pwd # => "/var/log"
+ *  To change to specified directory (relative path).
+ *    Dir.chdir('..') # => 0
+ *    Dir.pwd # => "/var"
+ *  To change to directory given by environment variable <code>HOME</code>.
+ *    ENV.store('HOME', 'home/me')
+ *    Dir.chdir # => 0
+ *    Dir.pwd # => "/home/me"
+ *  To change to directory given by environment variable <code>LOGDIR</code>.
+ *    ENV.delete('HOME')
+ *    ENV.store('LOGDIR', '/var/log')
+ *    DIR.chdir # => 0
+ *    Dir.pwd # => "/var/log"
+ *
+ *  If a block is given, yields to it the directory name:
+ *  * The block executes in the new current directory.
+ *  * The previous current directory is restored.
+ *  * Dir.chdir returns the block's return value.
+ *
+ *  Examples:
+ *    Dir.chdir('/tmp') do
+ *      "I was in #{Dir.pwd}"
+ *    end # => "I was in /tmp"
+ *    ENV.store('HOME', '/home/me')
+ *    Dir.chdir do
+ *      "I was in #{Dir.pwd}"
+ *    end # => "I was in /home/me"
+ *
+ *  <code>Dir.chdir</code> blocks can be nested, but in a
+ *  multi-threaded program, an error will be raised if a thread attempts
+ *  to open a <code>Dir.chdir</code> block while another thread has one
  *  open.
  *
- *     Dir.chdir("/var/spool/mail")
- *     puts Dir.pwd
- *     Dir.chdir("/tmp") do
- *       puts Dir.pwd
- *       Dir.chdir("/usr") do
- *         puts Dir.pwd
- *       end
- *       puts Dir.pwd
- *     end
- *     puts Dir.pwd
+ *  Raises an exception
+ *  if no path is specified by a given argument, or by environment variable
+ *  <code>HOME</code> or <code>LOGDIR</code>:
+ *    ENV.delete('HOME')
+ *    ENV.delete('LOGDIR')
+ *    Dir.chdir # Raises ArgumentError (HOME/LOGDIR not set)
  *
- *  <em>produces:</em>
+ *  Raises an exception
+ *  if the path specified by a given argument, or by environment variable
+ *  <code>HOME</code> or <code>LOGDIR</code>, does not exist:
+ *    Dir.chdir('nosuch') # Raises Errno::ENOENT (No such file or directory @ dir_s_chdir - nosuch)
  *
- *     /var/spool/mail
- *     /tmp
- *     /usr
- *     /tmp
- *     /var/spool/mail
+ *  Raises an exception
+ *  f the path specified by a given argument, or by environment variable
+ *  <code>HOME</code> or <code>LOGDIR</code>, is actually a file:
+ *    File.write('t.txt', 'some text')
+ *    Dir.chdir('t.txt') # Raises Errno::EINVAL (Invalid argument @ dir_s_chdir - t.txt)
+ *
+ *  Raises an exception
+ *  if the path specified by the given argument is not a String:
+ *    Dir.chdir(:not_a_string) # => TypeError (no implicit conversion of Symbol into String)
  */
 static VALUE
 dir_s_chdir(int argc, VALUE *argv, VALUE obj)
@@ -3582,14 +3617,16 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
 }
 
 /*
- *  Objects of class Dir are directory streams representing
- *  directories in the underlying file system. They provide a variety
- *  of ways to list directories and their contents. See also File.
+ *  An instance of class Dir represents a directory in the underlying file system.
+ *  The class and its instances provide a variety of ways
+ *  to query and manipulate directories.
  *
- *  The directory used in these examples contains the two regular files
- *  (<code>config.h</code> and <code>main.rb</code>), the parent
- *  directory (<code>..</code>), and the directory itself
- *  (<code>.</code>).
+ *  Many of the examples below assume the existence of this directory tree:
+ *  * <code>testdir/</code>
+ *    * <code>./</code>, <code>testdir</code> itself
+ *    * <code>../</code>, the parent directory
+ *    * <code>config.h</code>, a regular file
+ *    * <code>main.rb</code>, a regular file
  */
 void
 Init_Dir(void)
