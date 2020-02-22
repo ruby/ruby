@@ -172,6 +172,7 @@ have_func("EVP_PKEY_check")
 
 # added in 3.0.0
 have_func("SSL_set0_tmp_dh_pkey")
+have_func("ERR_get_error_all")
 
 Logging::message "=== Checking done. ===\n"
 

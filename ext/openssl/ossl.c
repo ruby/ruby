@@ -313,27 +313,31 @@ void
 ossl_clear_error(void)
 {
     if (dOSSL == Qtrue) {
-	unsigned long e;
-	const char *file, *data, *errstr;
-	int line, flags;
+        unsigned long e;
+        const char *file, *data, *func, *lib, *reason;
+        char append[256] = "";
+        int line, flags;
 
-	while ((e = ERR_get_error_line_data(&file, &line, &data, &flags))) {
-	    errstr = ERR_error_string(e, NULL);
-	    if (!errstr)
-		errstr = "(null)";
+#ifdef HAVE_ERR_GET_ERROR_ALL
+        while ((e = ERR_get_error_all(&file, &line, &func, &data, &flags))) {
+#else
+        while ((e = ERR_get_error_line_data(&file, &line, &data, &flags))) {
+            func = ERR_func_error_string(e);
+#endif
+            lib = ERR_lib_error_string(e);
+            reason = ERR_reason_error_string(e);
 
-	    if (flags & ERR_TXT_STRING) {
-		if (!data)
-		    data = "(null)";
-		rb_warn("error on stack: %s (%s)", errstr, data);
-	    }
-	    else {
-		rb_warn("error on stack: %s", errstr);
-	    }
-	}
+            if (flags & ERR_TXT_STRING) {
+                if (!data)
+                    data = "(null)";
+                snprintf(append, sizeof(append), " (%s)", data);
+            }
+            rb_warn("error on stack: error:%08lX:%s:%s:%s%s", e, lib ? lib : "",
+                    func ? func : "", reason ? reason : "", append);
+        }
     }
     else {
-	ERR_clear_error();
+        ERR_clear_error();
     }
 }
 
