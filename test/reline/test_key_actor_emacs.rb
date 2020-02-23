@@ -1896,6 +1896,15 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_equal([0, 0], @line_editor.instance_variable_get(:@mark_pointer))
   end
 
+  def test_modify_lines_with_wrong_rs
+    original_global_slash = $/
+    $/ = 'b'
+    @line_editor.output_modifier_proc = proc { |output| Reline::Unicode.escape_for_print(output) }
+    input_keys("abcdef\n")
+    assert_equal(['abcdef'], @line_editor.__send__(:modify_lines, @line_editor.whole_lines))
+    $/ = original_global_slash
+  end
+
 =begin # TODO: move KeyStroke instance from Reline to LineEditor
   def test_key_delete
     input_keys('ab')
