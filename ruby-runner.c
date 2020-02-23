@@ -17,7 +17,7 @@ const char MJIT_HEADER[] = BUILDDIR "/" MJIT_MIN_HEADER;
 #define STRINGIZE0(expr) #expr
 
 static void
-insert_env_path(const char *envname, const char *paths, size_t size, int prepend, int add)
+insert_env_path(const char *envname, const char *paths, size_t size, int prepend)
 {
     const char *env = getenv(envname);
     char c = 0;
@@ -27,9 +27,6 @@ insert_env_path(const char *envname, const char *paths, size_t size, int prepend
 	while ((c = *env) == PATH_SEP) ++env;
 	n = strlen(env);
 	while (n > 0 && env[n-1] == PATH_SEP) --n;
-    }
-    else if (!add) {
-        return;
     }
     if (c) {
 	char *e = malloc(size+n+1);
@@ -59,7 +56,6 @@ int
 main(int argc, char **argv)
 {
     static const char builddir[] = BUILDDIR;
-    static const char exedir[] = BUILDDIR"/"STRINGIZE(RUBY_RUNNER_PATH);
     static const char rubypath[] = BUILDDIR"/"STRINGIZE(RUBY_INSTALL_NAME);
     static const char rubylib[] =
 	ABS_SRCDIR"/lib"
@@ -77,12 +73,11 @@ main(int argc, char **argv)
     const char *rubyname = rubypath + dirsize;
     char *arg0 = argv[0], *p;
 
-    insert_env_path(LIBPATHENV, builddir, dirsize, 1, 1);
-    insert_env_path("RUBYLIB", rubylib, sizeof(rubylib), 0, 1);
-    insert_env_path("PATH", exedir, sizeof(exedir), 1, 0);
+    insert_env_path(LIBPATHENV, builddir, dirsize, 1);
+    insert_env_path("RUBYLIB", rubylib, sizeof(rubylib), 0);
 #ifndef LOAD_RELATIVE
     if (PRELOADENV[0] && stat(mjit_build_dir, &stbuf) == 0) {
-        insert_env_path(PRELOADENV, mjit_build_dir, sizeof(mjit_build_dir), 1, 1);
+        insert_env_path(PRELOADENV, mjit_build_dir, sizeof(mjit_build_dir), 1);
         setenv("MJIT_SEARCH_BUILD_DIR", "true", 0);
     }
 #endif
