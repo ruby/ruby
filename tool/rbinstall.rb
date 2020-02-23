@@ -878,11 +878,14 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
   }
   gem_ext_dir = "#$extout/gems/#{CONFIG['arch']}"
   extensions_dir = Gem::StubSpecification.gemspec_stub("", gem_dir, gem_dir).extensions_dir
-  dirs = Gem::Util.glob_files_in_dir "*/", "#{srcdir}/gems"
-  Gem::Specification.each_gemspec(dirs) do |path|
+  File.foreach("#{srcdir}/gems/bundled_gems") do |name|
+    next unless /^(\S+)\s+(S+).*/ =~ name
+    gem_name = "#$1-#$2"
+    path = "#{srcdir}/.bundle/gems/#{gem_name}/#$1.gemspec"
+    next unless File.exist?(path)
     spec = load_gemspec(path)
     next unless spec.platform == Gem::Platform::RUBY
-    next unless spec.full_name == path[srcdir.size..-1][/\A\/gems\/([^\/]+)/, 1]
+    next unless spec.full_name == gem_name
     spec.extension_dir = "#{extensions_dir}/#{spec.full_name}"
     if File.directory?(ext = "#{gem_ext_dir}/#{spec.full_name}")
       spec.extensions[0] ||= "-"
