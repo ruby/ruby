@@ -1290,11 +1290,12 @@ update-gems: PHONY
 
 extract-gems: PHONY
 	$(ECHO) Extracting bundled gem files...
-	$(Q) $(RUNRUBY) -C "$(srcdir)/gems" \
-	    -I../tool -rgem-unpack -answ \
+	$(Q) $(RUNRUBY) -C "$(srcdir)" \
+	    -Itool -rgem-unpack -answ \
+	    -e 'BEGIN {FileUtils.mkdir_p(d = ".bundle/gems")}' \
 	    -e 'gem, ver = *$$F' \
-	    -e 'Gem.unpack("#{gem}-#{ver}.gem")' \
-	    bundled_gems
+	    -e 'Gem.unpack("gems/#{gem}-#{ver}.gem", d)' \
+	    gems/bundled_gems
 
 update-bundled_gems: PHONY
 	$(Q) $(RUNRUBY) -rrubygems \
