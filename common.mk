@@ -3037,6 +3037,7 @@ transcode.$(OBJEXT): {$(VPATH)}assert.h
 transcode.$(OBJEXT): {$(VPATH)}config.h
 transcode.$(OBJEXT): {$(VPATH)}defines.h
 transcode.$(OBJEXT): {$(VPATH)}encoding.h
+transcode.$(OBJEXT): {$(VPATH)}id.h
 transcode.$(OBJEXT): {$(VPATH)}intern.h
 transcode.$(OBJEXT): {$(VPATH)}internal.h
 transcode.$(OBJEXT): {$(VPATH)}missing.h

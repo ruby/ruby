@@ -2183,6 +2183,14 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("U+3042", "\u{3042}".encode("US-ASCII", fallback: fallback.method(:escape)))
   end
 
+  def test_fallback_aref
+    fallback = Object.new
+    def fallback.[](x)
+      "U+%.4X" % x.unpack("U")
+    end
+    assert_equal("U+3042", "\u{3042}".encode("US-ASCII", fallback: fallback))
+  end
+
   bug8940 = '[ruby-core:57318] [Bug #8940]'
   %w[UTF-32 UTF-16].each do |enc|
     define_method("test_pseudo_encoding_inspect(#{enc})") do
