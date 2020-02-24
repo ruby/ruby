@@ -3918,20 +3918,27 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 
     if (root_node->nd_head && nd_type(root_node->nd_head) == NODE_LIST) {
 	const NODE *node = root_node->nd_head;
+        int seen_nodes = 0;
 
 	while (node) {
 	    const NODE *key_node = node->nd_head;
+            seen_nodes++;
 
 	    assert(nd_type(node) == NODE_LIST);
-	    if (!key_node) {
-		if (flag) *flag |= VM_CALL_KW_SPLAT;
-		return FALSE;
-	    }
-	    else if (nd_type(key_node) == NODE_LIT && RB_TYPE_P(key_node->nd_lit, T_SYMBOL)) {
+            if (key_node && nd_type(key_node) == NODE_LIT && RB_TYPE_P(key_node->nd_lit, T_SYMBOL)) {
 		/* can be keywords */
 	    }
 	    else {
-		if (flag) *flag |= VM_CALL_KW_SPLAT;
+                if (flag) {
+                    *flag |= VM_CALL_KW_SPLAT;
+                    if (seen_nodes > 1 || node->nd_next->nd_next) {
+                        /* A new hash will be created for the keyword arguments
+                         * in this case, so mark the method as passing mutable
+                         * keyword splat.
+                         */
+                        *flag |= VM_CALL_KW_SPLAT_MUT;
+                    }
+                }
 		return FALSE;
 	    }
 	    node = node->nd_next; /* skip value node */
@@ -4312,31 +4319,47 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popp
 
                 if (empty_kw) {
                     if (only_kw && method_call_keywords) {
-                        /* **{} appears at the last, so it won't be modified.
+                        /* **{} appears at the only keyword argument in method call,
+                         * so it won't be modified.
                          * kw is a special NODE_LIT that contains a special empty hash,
-                         * so this emits: putobject {}
+                         * so this emits: putobject {}.
+                         * This is only done for method calls and not for literal hashes,
+                         * because literal hashes should always result in a new hash.
                          */
                         NO_CHECK(COMPILE(ret, "keyword splat", kw));
                     }
                     else if (first_kw) {
-                        /* **{} appears at the first, so it may be modified.
+                        /* **{} appears as the first keyword argument, so it may be modified.
                          * We need to create a fresh hash object.
                          */
                         ADD_INSN1(ret, line, newhash, INT2FIX(0));
                     }
+                    /* Any empty keyword splats that are not the first can be ignored.
+                     * since merging an empty hash into the existing hash is the same
+                     * as not merging it. */
                 }
                 else {
-                    /* This is not empty hash: **{k:1}.
-                     * We need to clone the hash (if first), or merge the hash to
-                     * the accumulated hash (if not first).
-                     */
-                    ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                    if (first_kw) ADD_INSN1(ret, line, newhash, INT2FIX(0));
-                    else ADD_INSN(ret, line, swap);
+                    if (only_kw && method_call_keywords) {
+                        /* **kw is only keyword argument in method call.
+                         * Use directly.  This will be not be flagged as mutable.
+                         * This is only done for method calls and not for literal hashes,
+                         * because literal hashes should always result in a new hash.
+                         */
+                        NO_CHECK(COMPILE(ret, "keyword splat", kw));
+                    }
+                    else {
+                        /* There is more than one keyword argument, or this is not a method
+                         * call.  In that case, we need to add an empty hash (if first keyword),
+                         * or merge the hash to the accumulated hash (if not the first keyword).
+                         */
+                        ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                        if (first_kw) ADD_INSN1(ret, line, newhash, INT2FIX(0));
+                        else ADD_INSN(ret, line, swap);
 
-                    NO_CHECK(COMPILE(ret, "keyword splat", kw));
+                        NO_CHECK(COMPILE(ret, "keyword splat", kw));
 
-                    ADD_SEND(ret, line, id_core_hash_merge_kwd, INT2FIX(2));
+                        ADD_SEND(ret, line, id_core_hash_merge_kwd, INT2FIX(2));
+                    }
                 }
 
                 first_chunk = 0;
@@ -7808,10 +7831,10 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 		if (local_body->param.flags.has_kwrest) {
 		    int idx = local_body->local_table_size - local_kwd->rest_start;
 		    ADD_GETLOCAL(args, line, idx, lvar_level);
-		    ADD_SEND (args, line, rb_intern("dup"), INT2FIX(0));
 		}
 		else {
 		    ADD_INSN1(args, line, newhash, INT2FIX(0));
+                    flag |= VM_CALL_KW_SPLAT_MUT;
 		}
 		for (i = 0; i < local_kwd->num; ++i) {
 		    ID id = local_kwd->table[i];
@@ -7831,7 +7854,6 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 		int idx = local_body->local_table_size - local_kwd->rest_start;
 		ADD_GETLOCAL(args, line, idx, lvar_level);
 
-		ADD_SEND (args, line, rb_intern("dup"), INT2FIX(0));
 		if (local_body->param.flags.has_rest) {
 		    ADD_INSN1(args, line, newarray, INT2FIX(1));
 		    ADD_INSN (args, line, concatarray);
