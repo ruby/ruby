@@ -26,4 +26,8 @@ else
   puts "retrieving #{n} ..."
   system(*%W"git clone #{u} #{n}") or abort
 end
-system(*%W"git checkout #{v}", chdir: n) or abort
+unless system(*%W"git checkout #{v}", chdir: n)
+  unless v.sub!(/\Av/, '') and system(*%W"git checkout #{v}", chdir: n)
+    abort
+  end
+end
