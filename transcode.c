@@ -21,6 +21,7 @@
 #include "ruby/encoding.h"
 
 #include "transcode_data.h"
+#include "id.h"
 
 #define ENABLE_ECONV_NEWLINE_OPTION 1
 
@@ -31,7 +32,7 @@ static VALUE rb_eConverterNotFoundError;
 
 VALUE rb_cEncodingConverter;
 
-static VALUE sym_invalid, sym_undef, sym_replace, sym_fallback, sym_aref;
+static VALUE sym_invalid, sym_undef, sym_replace, sym_fallback;
 static VALUE sym_xml, sym_text, sym_attr;
 static VALUE sym_universal_newline;
 static VALUE sym_crlf_newline;
@@ -2249,7 +2250,7 @@ method_fallback(VALUE fallback, VALUE c)
 static VALUE
 aref_fallback(VALUE fallback, VALUE c)
 {
-    return rb_funcall3(fallback, sym_aref, 1, &c);
+    return rb_funcallv_public(fallback, idAREF, 1, &c);
 }
 
 static void
@@ -2550,7 +2551,7 @@ rb_econv_prepare_options(VALUE opthash, VALUE *opts, int ecflags)
     if (!NIL_P(v)) {
 	VALUE h = rb_check_hash_type(v);
 	if (NIL_P(h)
-	    ? (rb_obj_is_proc(v) || rb_obj_is_method(v) || rb_respond_to(v, sym_aref))
+	    ? (rb_obj_is_proc(v) || rb_obj_is_method(v) || rb_respond_to(v, idAREF))
 	    : (v = h, 1)) {
 	    if (NIL_P(newhash))
 		newhash = rb_hash_new();
@@ -4423,7 +4424,6 @@ Init_transcode(void)
     sym_undef = ID2SYM(rb_intern("undef"));
     sym_replace = ID2SYM(rb_intern("replace"));
     sym_fallback = ID2SYM(rb_intern("fallback"));
-    sym_aref = ID2SYM(rb_intern("[]"));
     sym_xml = ID2SYM(rb_intern("xml"));
     sym_text = ID2SYM(rb_intern("text"));
     sym_attr = ID2SYM(rb_intern("attr"));
