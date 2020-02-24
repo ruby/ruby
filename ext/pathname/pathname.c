@@ -610,8 +610,8 @@ path_lchown(VALUE self, VALUE owner, VALUE group)
 
 /*
  * call-seq:
- *    pathname.fnmatch(pattern, [flags])        -> string
- *    pathname.fnmatch?(pattern, [flags])       -> string
+ *    pathname.fnmatch(pattern, [flags])        -> true or false
+ *    pathname.fnmatch?(pattern, [flags])       -> true or false
  *
  * Return +true+ if the receiver matches the given pattern.
  *
