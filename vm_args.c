@@ -821,6 +821,10 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                         kw_flag &= ~VM_CALL_KW_SPLAT;
                     }
                     else {
+                        if (RB_TYPE_P(rest_last, T_HASH) && rb_obj_frozen_p(rest_last)) {
+                            rest_last = rb_hash_new();
+                            RARRAY_ASET(args->rest, len - 1, rest_last);
+                        }
                         flag_keyword_hash = rest_last;
                     }
                 }
@@ -844,6 +848,10 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                         kw_flag &= ~VM_CALL_KW_SPLAT;
                     }
                     else {
+                        if (RB_TYPE_P(last_arg, T_HASH) && rb_obj_frozen_p(last_arg)) {
+                            last_arg = rb_hash_new();
+                            args->argv[args->argc-1] = last_arg;
+                        }
                         flag_keyword_hash = last_arg;
                     }
                 }

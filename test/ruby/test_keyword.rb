@@ -5051,4 +5051,18 @@ class TestKeywordArgumentsSymProcRefinements < Test::Unit::TestCase
       mock.new.foo
     end
   end
+
+  def test_ruby2_keywords_hash_empty_kw_splat
+    def self.foo(*a) a.last end
+    singleton_class.send(:ruby2_keywords, :foo)
+    bug16642 = '[ruby-core:97203] [Bug #16642]'
+
+    res = foo(**{})
+    assert_equal({}, res, bug16642)
+    assert_equal(false, res.frozen?, bug16642)
+
+    res = foo(*[], **{})
+    assert_equal({}, res, bug16642)
+    assert_equal(false, res.frozen?, bug16642)
+  end
 end
