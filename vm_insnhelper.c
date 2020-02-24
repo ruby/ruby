@@ -1985,12 +1985,27 @@ CALLER_SETUP_ARG(struct rb_control_frame_struct *restrict cfp,
             calling->kw_splat = 1;
         }
     }
-    if (UNLIKELY(IS_ARGS_KEYWORD(ci))) {
-        /* This converts VM_CALL_KWARG style to VM_CALL_KW_SPLAT style
-         * by creating a keyword hash.
-         * So, vm_ci_flag(ci) & VM_CALL_KWARG is now inconsistent.
-         */
-        vm_caller_setup_arg_kw(cfp, calling, ci);
+    if (UNLIKELY(IS_ARGS_KW_OR_KW_SPLAT(ci))) {
+        if (IS_ARGS_KEYWORD(ci)) {
+            /* This converts VM_CALL_KWARG style to VM_CALL_KW_SPLAT style
+             * by creating a keyword hash.
+             * So, vm_ci_flag(ci) & VM_CALL_KWARG is now inconsistent.
+             */
+            vm_caller_setup_arg_kw(cfp, calling, ci);
+        }
+        else {
+            VALUE keyword_hash = cfp->sp[-1];
+            if (!RB_TYPE_P(keyword_hash, T_HASH)) {
+                /* Convert a non-hash keyword splat to a new hash */
+                cfp->sp[-1] = rb_hash_dup(rb_to_hash_type(keyword_hash));
+            }
+            else if (!IS_ARGS_KW_SPLAT_MUT(ci)) {
+                /* Convert a hash keyword splat to a new hash unless
+                 * a mutable keyword splat was passed.
+                 */
+                cfp->sp[-1] = rb_hash_dup(keyword_hash);
+            }
+        }
     }
 }
 

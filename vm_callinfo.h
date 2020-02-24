@@ -13,6 +13,7 @@ enum vm_call_flag_bits {
     VM_CALL_SUPER_bit,          /* super */
     VM_CALL_ZSUPER_bit,         /* zsuper */
     VM_CALL_OPT_SEND_bit,       /* internal flag */
+    VM_CALL_KW_SPLAT_MUT_bit,   /* kw splat hash can be modified (to avoid allocating a new one) */
     VM_CALL__END
 };
 
@@ -28,6 +29,7 @@ enum vm_call_flag_bits {
 #define VM_CALL_SUPER           (0x01 << VM_CALL_SUPER_bit)
 #define VM_CALL_ZSUPER          (0x01 << VM_CALL_ZSUPER_bit)
 #define VM_CALL_OPT_SEND        (0x01 << VM_CALL_OPT_SEND_bit)
+#define VM_CALL_KW_SPLAT_MUT    (0x01 << VM_CALL_KW_SPLAT_MUT_bit)
 
 struct rb_callinfo_kwarg {
     int keyword_len;
@@ -64,8 +66,8 @@ struct rb_callinfo {
 #define CI_EMBED_ID_bits   32
 #elif SIZEOF_VALUE == 4
 #define CI_EMBED_TAG_bits   1
-#define CI_EMBED_ARGC_bits  4
-#define CI_EMBED_FLAG_bits 12
+#define CI_EMBED_ARGC_bits  3
+#define CI_EMBED_FLAG_bits 13
 #define CI_EMBED_ID_bits   15
 #endif
 

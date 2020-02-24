@@ -1868,7 +1868,7 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
     return hash;
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_to_hash_type(VALUE hash)
 {
     return rb_convert_type_with_id(hash, T_HASH, "Hash", idTo_hash);

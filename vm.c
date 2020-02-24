@@ -1223,9 +1223,16 @@ invoke_block_from_c_proc(rb_execution_context_t *ec, const rb_proc_t *proc,
       case block_type_iseq:
         return invoke_iseq_block_from_c(ec, &block->as.captured, self, argc, argv, kw_splat, passed_block_handler, NULL, is_lambda, me);
       case block_type_ifunc:
-        if (kw_splat == 1 && RHASH_EMPTY_P(argv[argc-1])) {
-            argc--;
-            kw_splat = 2;
+        if (kw_splat == 1) {
+            VALUE keyword_hash = argv[argc-1];
+            if (!RB_TYPE_P(keyword_hash, T_HASH)) {
+                keyword_hash = rb_to_hash_type(keyword_hash);
+            }
+            if (RHASH_EMPTY_P(keyword_hash)) {
+                argc--;
+            } else {
+                ((VALUE *)argv)[argc-1] = rb_hash_dup(keyword_hash);
+            }
         }
         return vm_yield_with_cfunc(ec, &block->as.captured, self, argc, argv, kw_splat, passed_block_handler, me);
       case block_type_symbol:

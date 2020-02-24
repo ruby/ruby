@@ -1,0 +1,13 @@
+prelude: |
+  h = {a: 1}
+  def kw(a: 1) a end
+  def kws(**kw) kw end
+benchmark:
+  kw_to_kw: "kw(a: 1)"
+  kw_splat_to_kw: "kw(**h)"
+  kw_to_kw_splat: "kws(a: 1)"
+  kw_splat_to_kw_splat: "kws(**h)"
+  kw_and_splat_to_kw: "kw(a: 1, **h)"
+  kw_splats_to_kw: "kw(**h, **h)"
+  kw_and_splat_to_kw_splat: "kws(a: 1, **h)"
+  kw_splats_to_kw_splat: "kws(**h, **h)"

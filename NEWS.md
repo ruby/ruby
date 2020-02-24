@@ -139,6 +139,11 @@ Excluding feature bug fixes.
 
 ## Implementation improvements
 
+* The number of hashes allocated when using a keyword splat in
+  a method call has been reduced to a maximum of 1, and passing
+  a keyword splat to a method that accepts specific keywords
+  does not allocate a hash.
+
 ## Miscellaneous changes
 
 * Methods using `ruby2_keywords` will no longer keep empty keyword
