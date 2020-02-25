@@ -216,9 +216,11 @@ ary_verify_(VALUE ary, const char *file, int line)
 #endif
     }
 
+#if USE_TRANSIENT_HEAP
     if (RARRAY_TRANSIENT_P(ary)) {
         assert(rb_transient_heap_managed_ptr_p(RARRAY_CONST_PTR_TRANSIENT(ary)));
     }
+#endif
 
     rb_transient_heap_verify();
 
