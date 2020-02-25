@@ -9,7 +9,7 @@ cxx = MakeMakefile["C++"]
 
 cxx.instance_variable_set(:'@have_devel', true)
 
-ok = cxx.try_compile(<<~'begin', "") do |x|
+ok = cxx.try_link(<<~'begin', "") do |x|
   #include "ruby/config.h"
 
   namespace {
