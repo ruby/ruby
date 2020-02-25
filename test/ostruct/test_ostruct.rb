@@ -179,7 +179,7 @@ class TC_OpenStruct < Test::Unit::TestCase
 
   def test_accessor_defines_method
     os = OpenStruct.new(foo: 42)
-    assert os.respond_to? :foo
+    assert_respond_to(os, :foo)
     assert_equal([], os.singleton_methods)
     assert_equal(42, os.foo)
     assert_equal([:foo, :foo=], os.singleton_methods.sort)
