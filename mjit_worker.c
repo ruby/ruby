@@ -1131,6 +1131,20 @@ mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq, union iseq_inline_storag
     CRITICAL_SECTION_FINISH(3, "in mjit_copy_cache_from_main_thread");
 
     if (UNLIKELY(mjit_opts.wait)) {
+        // setup pseudo jit_unit
+        if (iseq->body->jit_unit == NULL) {
+            // This function is invoked in mjit worker thread, so GC should not be invoked.
+            // To prevent GC with xmalloc(), use malloc() directly here.
+            // However, mixing xmalloc() and malloc() will cause another issue.
+            // TODO: fix this allocation code.
+            iseq->body->jit_unit = (struct rb_mjit_unit *)malloc(sizeof(struct rb_mjit_unit));
+            if (iseq->body->jit_unit == NULL) rb_fatal("malloc failed");
+            if (iseq->body->ci_size > 0) {
+                iseq->body->jit_unit->cc_entries =
+                  (const struct rb_callcache **)malloc(sizeof(const struct rb_callcache *) * iseq->body->ci_size);
+                if (iseq->body->jit_unit->cc_entries == NULL) rb_fatal("malloc failed");
+            }
+        }
         mjit_copy_job_handler((void *)job);
     }
     else if (rb_workqueue_register(0, mjit_copy_job_handler, (void *)job)) {

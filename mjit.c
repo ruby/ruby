@@ -54,13 +54,13 @@ mjit_copy_job_handler(void *data)
     }
 
     const struct rb_iseq_constant_body *body = job->iseq->body;
-    unsigned int ci_size = body->ci_size;
+    const unsigned int ci_size = body->ci_size;
     if (ci_size > 0) {
-        const struct rb_callcache **cc_entries = ALLOC_N(const struct rb_callcache *, ci_size);
-        if (body->jit_unit == NULL) {
-            create_unit(job->iseq);
-        }
-        body->jit_unit->cc_entries = cc_entries;
+        VM_ASSERT(body->jit_unit != NULL);
+        VM_ASSERT(body->jit_unit->cc_entries != NULL);
+
+        const struct rb_callcache **cc_entries = body->jit_unit->cc_entries;
+
         for (unsigned int i=0; i<ci_size; i++) {
             cc_entries[i] = body->call_data[i].cc;
         }
@@ -294,6 +294,9 @@ create_unit(const rb_iseq_t *iseq)
 
     unit->id = current_unit_num++;
     unit->iseq = (rb_iseq_t *)iseq;
+    if (iseq->body->ci_size > 0) {
+        unit->cc_entries = ALLOC_N(const struct rb_callcache *, iseq->body->ci_size);
+    }
     iseq->body->jit_unit = unit;
 }
 
