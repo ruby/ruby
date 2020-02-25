@@ -738,7 +738,7 @@ module IRB
 
     def output_value # :nodoc:
       str = @context.inspect_last_value
-      multiline_p = /\A.*\Z/ !~ str
+      multiline_p = str.include?("\n")
       if multiline_p && @context.newline_before_multiline_output?
         printf @context.return_format, "\n#{str}"
       else
