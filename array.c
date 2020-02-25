@@ -1774,6 +1774,8 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *     a.index("b")              #=> 1
  *     a.index("z")              #=> nil
  *     a.index {|x| x == "b"}    #=> 1
+ *
+ *  Array#index is an alias for Array#find_index.
  */
 
 static VALUE
