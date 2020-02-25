@@ -295,7 +295,7 @@ create_unit(const rb_iseq_t *iseq)
     unit->id = current_unit_num++;
     unit->iseq = (rb_iseq_t *)iseq;
     if (iseq->body->ci_size > 0) {
-        unit->cc_entries = ALLOC_N(const struct rb_callcache *, iseq->body->ci_size);
+        unit->cc_entries = ZALLOC_N(const struct rb_callcache *, iseq->body->ci_size);
     }
     iseq->body->jit_unit = unit;
 }

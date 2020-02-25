@@ -1141,7 +1141,7 @@ mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq, union iseq_inline_storag
             if (iseq->body->jit_unit == NULL) rb_fatal("malloc failed");
             if (iseq->body->ci_size > 0) {
                 iseq->body->jit_unit->cc_entries =
-                  (const struct rb_callcache **)malloc(sizeof(const struct rb_callcache *) * iseq->body->ci_size);
+                  (const struct rb_callcache **)calloc(iseq->body->ci_size, sizeof(const struct rb_callcache *));
                 if (iseq->body->jit_unit->cc_entries == NULL) rb_fatal("malloc failed");
             }
         }
