@@ -11331,7 +11331,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 	}
 
 #if GC_PROFILE_MORE_DETAIL
-	append(out, rb_str_new_cstr("\n\n" \
+        const char *str = "\n\n" \
 				    "More detail.\n" \
 				    "Prepare Time = Previously GC's rest sweep time\n"
 				    "Index Flags          Allocate Inc.  Allocate Limit"
@@ -11345,7 +11345,8 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 #if GC_PROFILE_DETAIL_MEMORY
 				    " MaxRSS(KB) MinorFLT MajorFLT"
 #endif
-				    "\n"));
+                                    "\n";
+        append(out, rb_str_new_cstr(str));
 
 	for (i = 0; i < count; i++) {
 	    record = &objspace->profile.records[i];
