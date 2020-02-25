@@ -266,10 +266,13 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_AREF_fstring_key
+    # warmup ObjectSpace.count_objects
+    ObjectSpace.count_objects
+
     h = {"abc" => 1}
-    before = GC.stat(:total_allocated_objects)
+    before = ObjectSpace.count_objects[:T_STRING]
     5.times{ h["abc"] }
-    assert_equal before, GC.stat(:total_allocated_objects)
+    assert_equal before, ObjectSpace.count_objects[:T_STRING]
   end
 
   def test_ASET_fstring_key
