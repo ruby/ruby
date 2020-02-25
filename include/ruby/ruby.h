@@ -751,15 +751,12 @@ VALUE rb_obj_setup(VALUE obj, VALUE klass, VALUE type);
 #define CLONESETUP(clone,obj) rb_clone_setup(clone,obj)
 #define DUPSETUP(dup,obj) rb_dup_setup(dup,obj)
 
-#ifndef USE_RGENGC
+#ifdef USE_RGENGC
+#undef USE_RGENGC
+#endif
 #define USE_RGENGC 1
 #ifndef USE_RINCGC
 #define USE_RINCGC 1
-#endif
-#endif
-
-#if USE_RGENGC == 0
-#define USE_RINCGC 0
 #endif
 
 #ifndef RGENGC_WB_PROTECTED_ARRAY
@@ -1442,7 +1439,6 @@ rb_data_typed_object_alloc(VALUE klass, void *datap, const rb_data_type_t *type)
 #define rb_data_object_make   RUBY_MACRO_SELECT(rb_data_object_make_, RUBY_UNTYPED_DATA_WARNING)
 #endif
 
-#if USE_RGENGC
 #define RB_OBJ_PROMOTED_RAW(x)      RB_FL_ALL_RAW(x, RUBY_FL_PROMOTED)
 #define RB_OBJ_PROMOTED(x)          (RB_SPECIAL_CONST_P(x) ? 0 : RB_OBJ_PROMOTED_RAW(x))
 #define RB_OBJ_WB_UNPROTECT(x)      rb_obj_wb_unprotect(x, __FILE__, __LINE__)
@@ -1450,10 +1446,6 @@ rb_data_typed_object_alloc(VALUE klass, void *datap, const rb_data_type_t *type)
 void rb_gc_writebarrier(VALUE a, VALUE b);
 void rb_gc_writebarrier_unprotect(VALUE obj);
 
-#else /* USE_RGENGC */
-#define RB_OBJ_PROMOTED(x)          0
-#define RB_OBJ_WB_UNPROTECT(x)      rb_obj_wb_unprotect(x, __FILE__, __LINE__)
-#endif
 #define OBJ_PROMOTED_RAW(x)         RB_OBJ_PROMOTED_RAW(x)
 #define OBJ_PROMOTED(x)             RB_OBJ_PROMOTED(x)
 #define OBJ_WB_UNPROTECT(x)         RB_OBJ_WB_UNPROTECT(x)
@@ -1487,9 +1479,7 @@ rb_obj_wb_unprotect(VALUE x, RB_UNUSED_VAR(const char *filename), RB_UNUSED_VAR(
 #ifdef RGENGC_LOGGING_WB_UNPROTECT
     RGENGC_LOGGING_WB_UNPROTECT((void *)x, filename, line);
 #endif
-#if USE_RGENGC
     rb_gc_writebarrier_unprotect(x);
-#endif
     return x;
 }
 
@@ -1500,11 +1490,9 @@ rb_obj_written(VALUE a, RB_UNUSED_VAR(VALUE oldv), VALUE b, RB_UNUSED_VAR(const 
     RGENGC_LOGGING_OBJ_WRITTEN(a, oldv, b, filename, line);
 #endif
 
-#if USE_RGENGC
     if (!RB_SPECIAL_CONST_P(b)) {
 	rb_gc_writebarrier(a, b);
     }
-#endif
 
     return a;
 }
@@ -1518,9 +1506,7 @@ rb_obj_write(VALUE a, VALUE *slot, VALUE b, RB_UNUSED_VAR(const char *filename),
 
     *slot = b;
 
-#if USE_RGENGC
     rb_obj_written(a, RUBY_Qundef /* ignore `oldv' now */, b, filename, line);
-#endif
     return a;
 }
 
