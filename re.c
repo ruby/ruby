@@ -2964,12 +2964,13 @@ reg_lit_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int exi
 {
     VALUE *new_re = (VALUE *)arg;
     VALUE re = (VALUE)*key;
+    VALUE src = (VALUE)*value;
 
     if (existing) {
         /* because of lazy sweep, str may be unmarked already and swept
         * at next time */
 
-        if (rb_objspace_garbage_object_p(re)) {
+        if (rb_objspace_garbage_object_p(re) || rb_objspace_garbage_object_p(src)) {
             *new_re = Qundef;
             return ST_DELETE;
         }
