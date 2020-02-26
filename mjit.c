@@ -45,7 +45,7 @@ mjit_copy_job_handler(void *data)
         CRITICAL_SECTION_FINISH(3, "in mjit_copy_job_handler");
         return;
     }
-    else if (job->iseq == NULL) { // ISeq GC notified in mjit_mark_iseq
+    else if (job->iseq == NULL) { // ISeq GC notified in mjit_free_iseq
         job->finish_p = true;
         CRITICAL_SECTION_FINISH(3, "in mjit_copy_job_handler");
         return;
@@ -1017,6 +1017,12 @@ mjit_mark(void)
     CRITICAL_SECTION_FINISH(4, "mjit_mark");
 
     RUBY_MARK_LEAVE("mjit");
+}
+
+const struct rb_callcache **
+mjit_iseq_cc_entries(const struct rb_iseq_constant_body *const body)
+{
+    return body->jit_unit->cc_entries;
 }
 
 // A hook to update valid_class_serials.

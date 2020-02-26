@@ -393,7 +393,7 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
         if (insn == BIN(opt_send_without_block)) { // `compile_inlined_cancel_handler` supports only `opt_send_without_block`
             CALL_DATA cd = (CALL_DATA)body->iseq_encoded[pos + 1];
             const struct rb_callinfo *ci = cd->ci;
-            const struct rb_callcache *cc = iseq->body->jit_unit->cc_entries[call_data_index(cd, body)]; // use copy to avoid race condition
+            const struct rb_callcache *cc = mjit_iseq_cc_entries(iseq->body)[call_data_index(cd, body)]; // use copy to avoid race condition
 
             const rb_iseq_t *child_iseq;
             if (has_valid_method_type(cc) &&
