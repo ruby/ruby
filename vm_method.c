@@ -44,12 +44,12 @@ vm_ccs_dump(VALUE klass, ID target_mid)
         const struct rb_class_cc_entries *ccs;
         if (target_mid) {
             if (rb_id_table_lookup(cc_tbl, target_mid, (VALUE *)&ccs)) {
-                fprintf(stderr, "  [CCTB] %p\n", cc_tbl);
+                fprintf(stderr, "  [CCTB] %p\n", (void *)cc_tbl);
                 vm_ccs_dump_i(target_mid, (VALUE)ccs, NULL);
             }
         }
         else {
-            fprintf(stderr, "  [CCTB] %p\n", cc_tbl);
+            fprintf(stderr, "  [CCTB] %p\n", (void *)cc_tbl);
             rb_id_table_foreach(cc_tbl, vm_ccs_dump_i, (void *)target_mid);
         }
     }
@@ -80,7 +80,7 @@ vm_mtbl_dump(VALUE klass, ID target_mid)
                 }
             }
             else {
-                fprintf(stderr, "  ## RCLASS_M_TBL (%p)\n", RCLASS_M_TBL(klass));
+                fprintf(stderr, "  ## RCLASS_M_TBL (%p)\n", (void *)RCLASS_M_TBL(klass));
                 rb_id_table_foreach(RCLASS_M_TBL(klass), vm_cme_dump_i, NULL);
             }
         }
