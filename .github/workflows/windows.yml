@@ -46,28 +46,29 @@ jobs:
       - run: ./src/tool/actions-commit-info.sh
         shell: bash
         id: commit_info
+      - run: md build
+        shell: cmd
       - name: Configure
         run: |
-          md build
-          cd build
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           ../src/win32/configure.bat --disable-install-doc --without-ext=+,dbm,gdbm --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows --with-openssl-dir="C:/Program Files/OpenSSL-Win64"
+        working-directory: build
         shell: cmd
       - name: nmake
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           set YACC=win_bison
-          cd build
           echo on
           nmake up
           nmake extract-gems
           nmake
+        working-directory: build
         shell: cmd
       - name: nmake test
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          cd build
           nmake ${{ matrix.test_task }}
+        working-directory: build
         shell: cmd
       - uses: k0kubun/action-slack@v2.0.0
         with:

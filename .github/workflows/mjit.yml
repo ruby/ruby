@@ -9,6 +9,9 @@ jobs:
       fail-fast: false
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    env:
+      TESTOPTS: '-q --tty=no'
+      RUN_OPTS: '--disable-gems --jit-warnings ${{ matrix.jit_opts }}'
     steps:
       - name: Install libraries
         run: |
@@ -35,25 +38,24 @@ jobs:
       - name: Set ENV
         run: |
           echo '::set-env name=JOBS::'-j$((1 + $(nproc --all)))
-      - name: Autoconf
-        run: cd src && exec autoconf
+      - run: autoconf
+        working-directory: src
+      - run: mkdir build
       - name: configure
-        run: |
-          mkdir build
-          cd build
-          ../src/configure -C --disable-install-doc
-      - name: make all
-        run: make -C build $JOBS
-      - name: make install
-        run: sudo make -C build $JOBS install
-      - name: make test
-        run: "make -C build $JOBS -s test TESTOPTS='-q --tty=no' RUN_OPTS='--disable-gems --jit-warnings ${{ matrix.jit_opts }}'"
-      - name: make test-all
-        run: "make -C build $JOBS -s test-all TESTOPTS='-q --tty=no' RUN_OPTS='--disable-gems --jit-warnings ${{ matrix.jit_opts }}'"
-      - name: make test-spec
-        run: "make -C build $JOBS -s test-spec RUN_OPTS='--disable-gems --jit-warnings ${{ matrix.jit_opts }}'"
-      - name: Leaked Globals
-        run: make -C build -s leaked-globals
+        run: ../src/configure -C --disable-install-doc
+        working-directory: build
+      - run: make $JOBS
+        working-directory: build
+      - run: sudo make $JOBS -s install
+        working-directory: build
+      - run: make $JOBS -s test
+        working-directory: build
+      - run: make $JOBS -s test-all
+        working-directory: build
+      - run: make $JOBS -s test-spec
+        working-directory: build
+      - run: make -s leaked-globals
+        working-directory: build
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |
