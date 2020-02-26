@@ -29,35 +29,31 @@ jobs:
       - name: Install libraries
         run: |
           export WAITS='5 60'
-          cd src
           tool/travis_retry.sh brew upgrade
           tool/travis_retry.sh brew install gdbm gmp libffi openssl@1.1 zlib autoconf automake libtool readline
+        working-directory: src
       - name: Set ENV
         run: |
           echo '::set-env name=JOBS::'-j$((1 + $(sysctl -n hw.activecpu)))
-      - name: Autoconf
-        run: |
-          cd src
-          autoconf
-      - name: Configure
-        run: |
-          mkdir build
-          cd build
-          ../src/configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
-      - name: Make
-        run: make -C build $JOBS
-      - name: Extract gems
-        run: make -C build update-gems extract-gems
+      - run: autoconf
+        working-directory: src
+      - run: mkdir build
+      - run: ../src/configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
+        working-directory: build
+      - run: make $JOBS
+        working-directory: build
+      - run: make update-gems extract-gems
+        working-directory: build
         if: matrix.test_task == 'check'
-      - name: Tests
-        run: make -C build $JOBS -s ${{ matrix.test_task }}
+      - run: make $JOBS -s ${{ matrix.test_task }}
+        working-directory: build
         env:
           RUBY_TESTOPTS: "-q --tty=no"
           # Remove minitest from TEST_BUNDLED_GEMS_ALLOW_FAILURES if https://github.com/seattlerb/minitest/pull/798 is resolved
           # rss needs to add workaround for the non rexml environment
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: "minitest,xmlrpc,rss,rexml"
-      - name: Leaked Globals
-        run: make -C build -s leaked-globals
+      - run: make -s leaked-globals
+        working-directory: build
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |

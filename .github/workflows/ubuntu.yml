@@ -42,32 +42,30 @@ jobs:
       - name: Set ENV
         run: |
           echo '::set-env name=JOBS::'-j$((1 + $(nproc --all)))
-      - name: Autoconf
-        run: cd src && exec autoconf
-      - name: configure
-        run: |
-          mkdir build
-          cd build
-          ../src/configure -C --disable-install-doc
-      - name: Make
-        run: make -C build $JOBS
-      - name: Extract gems
-        run: make -C build update-gems extract-gems
+      - run: autoconf
+        working-directory: src
+      - run: mkdir build
+      - run: ../src/configure -C --disable-install-doc
+        working-directory: build
+      - run: make $JOBS
+        working-directory: build
+      - run: make update-gems extract-gems
+        working-directory: build
         if: matrix.test_task == 'check'
       - name: Create dummy files in build dir
         run: |
-          cd build
           ./miniruby -e '(("a".."z").to_a+("A".."Z").to_a+("0".."9").to_a+%w[foo bar test zzz]).each{|basename|File.write("#{basename}.rb", "raise %(do not load #{basename}.rb)")}'
+        working-directory: build
         if: matrix.test_task == 'check'
-      - name: Tests
-        run: make -C build $JOBS -s ${{ matrix.test_task }}
+      - run: make $JOBS -s ${{ matrix.test_task }}
+        working-directory: build
         env:
           RUBY_TESTOPTS: "-q --tty=no"
           # Remove minitest from TEST_BUNDLED_GEMS_ALLOW_FAILURES if https://github.com/seattlerb/minitest/pull/798 is resolved
           # rss needs to add workaround for the non rexml environment
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: "minitest,xmlrpc,rss"
-      - name: Leaked Globals
-        run: make -C build -s leaked-globals
+      - run: make -s leaked-globals
+        working-directory: build
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |

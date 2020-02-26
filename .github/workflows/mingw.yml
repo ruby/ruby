@@ -71,12 +71,12 @@ jobs:
           sh -c "autoreconf -fi"
 
       - name: configure
+        working-directory: build
         run: |
           # Actions uses UTF8, causes test failures, similar to normal OS setup
           $PSDefaultParameterValues['*:Encoding'] = 'utf8'
           [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
           [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
-          cd build
           $config_args = "--build=$env:CHOST --host=$env:CHOST --target=$env:CHOST"
           Write-Host $config_args
           sh -c "../src/configure --disable-install-doc --prefix=/install $config_args"
@@ -84,54 +84,58 @@ jobs:
           # Get-Content ./config.log | foreach {Write-Output $_}
 
       - name: download unicode, gems, etc
+        working-directory: build
         run: |
           $jobs = [int]$env:NUMBER_OF_PROCESSORS + 1
-          cd build
           make -j $jobs update-unicode
           make -j $jobs update-gems
 
       - name: make all
         timeout-minutes: 20
+        working-directory: build
         run: |
           $jobs = [int]$env:NUMBER_OF_PROCESSORS + 1
-          make -C build -j $jobs V=1
+          make -j $jobs V=1
 
       - name: make install
+        working-directory: build
         run: |
           # Actions uses UTF8, causes test failures, similar to normal OS setup
           $PSDefaultParameterValues['*:Encoding'] = 'utf8'
           [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
           [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
-          make -C build DESTDIR=.. install-nodoc
+          make DESTDIR=.. install-nodoc
 
       - name: test
         timeout-minutes: 5
+        working-directory: build
         run: |
-          $env:TMPDIR = "$pwd/temp"
-          make -C build test
+          $env:TMPDIR = "$pwd/../temp"
+          make test
 
       - name: test-all
         timeout-minutes: 25
+        working-directory: build
         run: |
-          $env:TMPDIR = "$pwd/temp"
+          $env:TMPDIR = "$pwd/../temp"
           # Actions uses UTF8, causes test failures, similar to normal OS setup
           $PSDefaultParameterValues['*:Encoding'] = 'utf8'
           [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
           [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
           $jobs = [int]$env:NUMBER_OF_PROCESSORS
-          make -C build test-all TESTOPTS="-j $jobs --retry --job-status=normal --show-skip --timeout-scale=1.5"
+          make test-all TESTOPTS="-j $jobs --retry --job-status=normal --show-skip --timeout-scale=1.5"
 
       - name: test-spec
         timeout-minutes: 10
+        working-directory: src/spec/ruby
         run: |
-          $env:TMPDIR = "$pwd/temp"
-          $env:PATH = "$pwd/install/bin;$env:PATH"
+          $env:TMPDIR = "$pwd/../temp"
+          $env:PATH = "$pwd/../install/bin;$env:PATH"
           # Actions uses UTF8, causes test failures, similar to normal OS setup
           $PSDefaultParameterValues['*:Encoding'] = 'utf8'
           [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
           [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
           ruby -v
-          cd src/spec/ruby
           ruby ../mspec/bin/mspec -j
 
       - uses: k0kubun/action-slack@v2.0.0
