@@ -1145,6 +1145,11 @@ mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq, union iseq_inline_storag
 
     if (UNLIKELY(mjit_opts.wait)) {
         // setup pseudo jit_unit
+        //
+        // Usually jit_unit is created in `rb_mjit_add_iseq_to_process`.
+        // However, this copy job can be used for inlined ISeqs too, and
+        // inlined ISeq doesn't have a jit_unit.
+        // TODO: Manage the cc in outer ISeq's jit_unit.
         if (iseq->body->jit_unit == NULL) {
             // This function is invoked in mjit worker thread, so GC should not be invoked.
             // To prevent GC with xmalloc(), use malloc() directly here.
