@@ -27,8 +27,6 @@
 #include "mjit_worker.c"
 #include "vm_callinfo.h"
 
-static void create_unit(const rb_iseq_t *iseq);
-
 // Copy ISeq's states so that race condition does not happen on compilation.
 static void
 mjit_copy_job_handler(void *data)
