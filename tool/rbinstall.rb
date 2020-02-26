@@ -820,11 +820,10 @@ end
 def install_default_gem(dir, srcdir)
   gem_dir = Gem.default_dir
   install_dir = with_destdir(gem_dir)
-  directories = Gem.ensure_gem_subdirectories(install_dir, $dir_mode)
+  directories = Gem.ensure_default_gem_subdirectories(install_dir, $dir_mode)
   prepare "default gems from #{dir}", gem_dir, directories
 
-  spec_dir = File.join(gem_dir, directories.grep(/^spec/)[0])
-  default_spec_dir = "#{spec_dir}/default"
+  default_spec_dir = File.join(gem_dir, directories.grep(/^spec/)[0])
   makedirs(default_spec_dir)
 
   gems = Dir.glob("#{srcdir}/#{dir}/**/*.gemspec").map {|src|
