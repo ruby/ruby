@@ -10,6 +10,19 @@
 // call Ruby methods (C functions that may call rb_funcall) or trigger
 // GC (using ZALLOC, xmalloc, xfree, etc.) in this file.
 
+/* However, note that calling `free` for resources `xmalloc`-ed in mjit.c,
+   which is currently done in some places, is sometimes problematic in the
+   following situations:
+
+   * malloc library could be different between interpreter and extensions
+     on Windows (perhaps not applicable to MJIT because CC is the same)
+   * xmalloc -> free leaks extra space used for USE_GC_MALLOC_OBJ_INFO_DETAILS
+     (not enabled by default)
+
+   ...in short, it's usually not a problem in MJIT. But maybe it's worth
+   fixing for consistency or for USE_GC_MALLOC_OBJ_INFO_DETAILS support.
+*/
+
 /* We utilize widely used C compilers (GCC and LLVM Clang) to
    implement MJIT.  We feed them a C code generated from ISEQ.  The
    industrial C compilers are slower than regular JIT engines.
