@@ -1,11 +1,5 @@
 name: MinGW
-on:
-  push:
-    branches:
-      - '*'
-  pull_request:
-    branches:
-      - '*'
+on: [push, pull_request]
 
 # Notes:
 # Action ENV TEMP and TMP are short 8.3 paths, but the long path differs.
