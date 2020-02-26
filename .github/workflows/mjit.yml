@@ -54,8 +54,6 @@ jobs:
         working-directory: build
       - run: make $JOBS -s test-spec
         working-directory: build
-      - run: make -s leaked-globals
-        working-directory: build
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |
