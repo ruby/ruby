@@ -1297,6 +1297,8 @@ module MiniTest
         start_time = Time.now
 
         result = ""
+        srand(runner.options[:seed])
+
         begin
           @passed = nil
           self.before_setup

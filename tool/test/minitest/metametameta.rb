@@ -47,6 +47,7 @@ class MetaMetaMetaTestCase < MiniTest::Unit::TestCase
     srand 42
     MiniTest::Unit::TestCase.reset
     @tu = MiniTest::Unit.new
+    @tu.options[:seed] = 42
 
     MiniTest::Unit.runner = nil # protect the outer runner from the inner tests
   end
