@@ -763,7 +763,7 @@ module MiniTest
     # Lazy accessor for options.
 
     def options
-      @options ||= {}
+      @options ||= {seed: 42}
     end
 
     @@installed_at_exit ||= false
