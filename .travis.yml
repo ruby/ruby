@@ -461,7 +461,6 @@ matrix:
   fast_finish: true
 
 before_script:
-  - date # Debugging "Permission defined" failure on darwin like https://travis-ci.org/ruby/ruby/jobs/508683759
   - dpkg --print-architecture
   - dpkg --print-foreign-architectures
   - setarch --list
@@ -479,9 +478,9 @@ before_script:
   - "> config.status"
   - "> .rbconfig.time"
   - sed -f tool/prereq.status template/Makefile.in common.mk > Makefile
-  - date; make touch-unicode-files
-  - date; make -s $JOBS $UPDATE_UNICODE up
-  - date; make -s $JOBS srcs
+  - make touch-unicode-files
+  - make -s $JOBS $UPDATE_UNICODE up
+  - make -s $JOBS srcs
   - rm -f config.status Makefile rbconfig.rb .rbconfig.time
   - |-
     if [ -d ~/config_2nd ]; then
@@ -513,19 +512,7 @@ before_script:
   - mv ../config_2nd ~
   - chmod u-w ..
   - $SETARCH make -s $JOBS
-  - |-
-    date; : # Debugging "Permission defined" failure on darwin like https://travis-ci.org/ruby/ruby/jobs/508683759
-    if ! make install; then
-      if [ "$(uname)" = Darwin ]; then
-        # Debugging "Permission defined" failure on darwin like https://travis-ci.org/ruby/ruby/jobs/508683759
-        set -x
-        date
-        ./miniruby -e 'ARGV.map{|path|[path,File.stat(path)]}.sort_by{|path,st|st.mtime}.each{|path,st|p mtime:st.mtime.to_f, ctime:st.ctime.to_f, path:path}' .ext/.timestamp/.RUBYCOMMONDIR*time .ext/common/bigdecimal/*.rb ../ext/bigdecimal/lib/bigdecimal/*.rb . .. .ext .ext/common .ext/common/bigdecimal ext/bigdecimal ../ext ../ext/bigdecimal ../ext/bigdecimal/lib ../ext/bigdecimal/lib/bigdecimal
-        make COPY='cp -f' install
-      else
-        exit 1
-      fi
-    fi
+  - $SETARCH make -s install
   - ccache --show-stats
   - |-
     [ -z "${GEMS_FOR_TEST}" ] ||
