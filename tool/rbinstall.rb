@@ -675,7 +675,7 @@ module RbInstall
             remove_prefix(prefix, ruby_source)
           end
         else
-          [remove_prefix(File.dirname(@gemspec) + '/', @gemspec.gsub(/gemspec/, 'rb'))]
+          [File.basename(@gemspec, '.gemspec') + '.rb']
         end
       end
 
