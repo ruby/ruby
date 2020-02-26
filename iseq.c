@@ -359,9 +359,10 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 	}
 
 #if USE_MJIT
-        if (body->jit_unit && mjit_iseq_cc_entries(body) != NULL) {
+        const struct rb_callcache **cc_entries;
+        if (body->jit_unit && (cc_entries = mjit_iseq_cc_entries(body)) != NULL) {
             for (unsigned int i=0; i<body->ci_size; i++) {
-                const struct rb_callcache *cc = mjit_iseq_cc_entries(body)[i];
+                const struct rb_callcache *cc = cc_entries[i];
                 if (cc != NULL) {
                     rb_gc_mark((VALUE)cc); // pindown
                 }
