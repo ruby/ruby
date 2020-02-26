@@ -457,7 +457,6 @@ matrix:
   allow_failures:
     - name: -fsanitize=address
     - name: -fsanitize=memory
-    - name: -fsanitize=undefined
   fast_finish: true
 
 before_script:
@@ -512,7 +511,7 @@ before_script:
   - mv ../config_2nd ~
   - chmod u-w ..
   - $SETARCH make -s $JOBS
-  - $SETARCH make -s install
+  - make -s install
   - ccache --show-stats
   - |-
     [ -z "${GEMS_FOR_TEST}" ] ||
