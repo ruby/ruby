@@ -819,7 +819,7 @@ end
 
 def install_default_gem(dir, srcdir)
   gem_dir = Gem.default_dir
-  directories = Gem.ensure_gem_subdirectories(gem_dir, :mode => $dir_mode)
+  directories = Gem.ensure_gem_subdirectories(gem_dir, $dir_mode)
   prepare "default gems from #{dir}", gem_dir, directories
 
   spec_dir = File.join(gem_dir, directories.grep(/^spec/)[0])
@@ -866,7 +866,7 @@ end
 
 install?(:ext, :comm, :gem, :'bundled-gems') do
   gem_dir = Gem.default_dir
-  directories = Gem.ensure_gem_subdirectories(gem_dir, :mode => $dir_mode)
+  directories = Gem.ensure_gem_subdirectories(gem_dir, $dir_mode)
   prepare "bundled gems", gem_dir, directories
   install_dir = with_destdir(gem_dir)
   installed_gems = {}
