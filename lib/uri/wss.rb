@@ -3,7 +3,6 @@
 #
 # Author:: Matt Muller <mamuller@amazon.com>
 # License:: You can redistribute it and/or modify it under the same term as Ruby.
-# Revision:: $Id$
 #
 # See URI for general documentation
 #
