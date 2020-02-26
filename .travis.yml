@@ -460,16 +460,7 @@ matrix:
   fast_finish: true
 
 before_script:
-  - dpkg --print-architecture
-  - dpkg --print-foreign-architectures
-  - setarch --list
-  - echo JOBS=${JOBS} SETARCH=${SETARCH}
-  - $SETARCH uname -a
-  - $SETARCH uname -r
-  - ip a
-  - cat /etc/hosts
   - rm -fr .ext autom4te.cache
-  - echo $TERM
   - |-
     [ -d ~/.downloaded-cache ] ||
     mkdir ~/.downloaded-cache
@@ -491,7 +482,6 @@ before_script:
   - chmod -R a-w .
   - chmod -R u+w build config_1st config_2nd
   - cd build
-  - ccache --show-stats
   - |-
     case "$CC" in
     gcc*)   CC="ccache $CC${GCC_FLAGS:+ }$GCC_FLAGS -fno-diagnostics-color";;
@@ -512,7 +502,6 @@ before_script:
   - chmod u-w ..
   - $SETARCH make -s $JOBS
   - make -s install
-  - ccache --show-stats
   - |-
     [ -z "${GEMS_FOR_TEST}" ] ||
     $RUBY_PREFIX/bin/gem install --no-document $GEMS_FOR_TEST
