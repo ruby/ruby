@@ -1,14 +1,14 @@
-#ifndef INTERNAL_STDBOOL_H /* -*- C -*- */
-#define INTERNAL_STDBOOL_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Thin wrapper to <stdbool.h>
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Thin wrapper to <stdbool.h>
  */
+#ifndef INTERNAL_STDBOOL_H
+#define INTERNAL_STDBOOL_H
 #include "ruby/config.h" /* for HAVE_STDBOOL_H */
 
 #ifdef HAVE_STDBOOL_H

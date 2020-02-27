@@ -1,7 +1,5 @@
-#ifndef RUBY_BACKWARD_CXXANYARGS_HPP // -*- C++ -*-
-#define RUBY_BACKWARD_CXXANYARGS_HPP
+///                                                     \noop-*-C++-*-vi:ft=cpp
 /// @file
-/// @brief      Provides old prototypes for C++ programs.
 /// @author     \@shyouhei
 /// @copyright  This  file  is  a  part   of  the  programming  language  Ruby.
 ///             Permission  is hereby  granted, to  either redistribute  and/or
@@ -10,6 +8,9 @@
 /// @note       DO NOT  MODERNIZE THIS FILE!   As the  file name implies  it is
 ///             meant to  be a backwards  compatibility shim.  Please  stick to
 ///             C++ 98 and never use newer features, like `constexpr`.
+/// @brief      Provides old prototypes for C++ programs.
+#ifndef RUBY_BACKWARD_CXXANYARGS_HPP
+#define RUBY_BACKWARD_CXXANYARGS_HPP
 #include "ruby/3/config.h"
 #include "ruby/3/intern/class.h"
 #include "ruby/3/intern/cont.h"
