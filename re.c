@@ -2993,7 +2993,7 @@ reg_lit_hash(VALUE re)
     st_index_t hashval;
     hashval = rb_reg_options(re);
     hashval ^= ENCODING_GET(re);
-    hashval = rb_hash_uint(hashval, rb_memhash(RREGEXP_SRC_PTR(re), RREGEXP_SRC_LEN(re)));
+    hashval = rb_hash_uint(hashval, rb_str_hash(RREGEXP_SRC(re)));
     return rb_hash_end(hashval);
 }
 
@@ -3050,10 +3050,10 @@ rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline)
 void
 rb_reg_free(VALUE re) {
     if (FL_TEST(re, REG_LITERAL)) {
-        st_data_t regexp_literal = (st_data_t)re;
         if (rb_objspace_garbage_object_p(re) || rb_objspace_garbage_object_p(RREGEXP_SRC(re)) || !RREGEXP_PTR(re) || !RREGEXP_SRC(re) || !RREGEXP_SRC_PTR(re)) {
                 // TODO: cleanup dead refs with foreach?
         } else {
+            st_data_t regexp_literal = (st_data_t)re;
             st_delete(rb_vm_regexp_literals_table(), &regexp_literal, NULL);
         }
     }
