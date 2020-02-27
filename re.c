@@ -2965,13 +2965,12 @@ reg_lit_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int exi
 {
     VALUE *new_re = (VALUE *)arg;
     VALUE re = (VALUE)*key;
-    VALUE src = (VALUE)*value;
 
     if (existing) {
         /* because of lazy sweep, str may be unmarked already and swept
         * at next time */
 
-        if (rb_objspace_garbage_object_p(re) || rb_objspace_garbage_object_p(src)) {
+        if (rb_objspace_garbage_object_p(re) || rb_objspace_garbage_object_p(RREGEXP_SRC(re))) {
             *new_re = Qundef;
             return ST_DELETE;
         }
@@ -2983,7 +2982,7 @@ reg_lit_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int exi
         rb_obj_freeze(re);
 
         *key = *new_re = re;
-        *value = RREGEXP_SRC(re);
+        *value = re;
         return ST_CONTINUE;
     }
 }
@@ -3052,7 +3051,11 @@ void
 rb_reg_free(VALUE re) {
     if (FL_TEST(re, REG_LITERAL)) {
         st_data_t regexp_literal = (st_data_t)re;
-        st_delete(rb_vm_regexp_literals_table(), &regexp_literal, NULL);
+        if (rb_objspace_garbage_object_p(re) || rb_objspace_garbage_object_p(RREGEXP_SRC(re))) {
+                // TODO: cleanup dead refs with foreach?
+        } else {
+            st_delete(rb_vm_regexp_literals_table(), &regexp_literal, NULL);
+        }
     }
 
     onig_free(RREGEXP_PTR(re));

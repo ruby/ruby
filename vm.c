@@ -2299,7 +2299,6 @@ rb_vm_mark(void *ptr)
 	rb_hook_list_mark(&vm->global_hooks);
 
 	rb_gc_mark_values(RUBY_NSIG, vm->trap_list.cmd);
-        rb_mark_tbl_no_pin(vm->regexp_literals);
         mjit_mark();
     }
 
