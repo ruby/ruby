@@ -3898,10 +3898,14 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
     return COMPILE_OK;
 }
 
+#define HASH_NO_BRACE 0
+#define HASH_BRACE 1
+#define METHOD_CALL_KEYWORDS 2
+
 static int
 keyword_node_p(const NODE *const node)
 {
-    return nd_type(node) == NODE_HASH && node->nd_brace == FALSE;
+    return nd_type(node) == NODE_HASH && (node->nd_brace & HASH_BRACE) != HASH_BRACE;
 }
 
 static int
@@ -3912,7 +3916,7 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 {
     if (kw_arg_ptr == NULL) return FALSE;
 
-    if (keyword_node_p(root_node) && root_node->nd_head && nd_type(root_node->nd_head) == NODE_LIST) {
+    if (root_node->nd_head && nd_type(root_node->nd_head) == NODE_LIST) {
 	const NODE *node = root_node->nd_head;
 
 	while (node) {
@@ -3970,9 +3974,18 @@ compile_args(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node,
             EXPECT_NODE("compile_args", node, NODE_LIST, -1);
         }
 
-        if (node->nd_next == NULL /* last node */ &&
-            compile_keyword_arg(iseq, ret, node->nd_head, keywords_ptr, flag)) {
-            len--;
+        if (node->nd_next == NULL && keyword_node_p(node->nd_head)) { /* last node */
+            if (compile_keyword_arg(iseq, ret, node->nd_head, keywords_ptr, flag)) {
+                len--;
+            }
+            else {
+                /* Bad Hack: temporarily mark hash node with flag so compile_hash
+                 * can compile call differently.
+                */
+                node->nd_head->nd_brace = METHOD_CALL_KEYWORDS;
+                NO_CHECK(COMPILE_(ret, "array element", node->nd_head, FALSE));
+                node->nd_head->nd_brace = HASH_NO_BRACE;
+            }
         }
         else {
             NO_CHECK(COMPILE_(ret, "array element", node->nd_head, FALSE));
@@ -4165,6 +4178,7 @@ static int
 compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped)
 {
     int line = (int)nd_line(node);
+    int method_call_keywords = node->nd_brace == METHOD_CALL_KEYWORDS;
 
     node = node->nd_head;
 
@@ -4297,7 +4311,7 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popp
                 int only_kw = last_kw && first_kw;            /* foo(1,2,3, **kw) */
 
                 if (empty_kw) {
-                    if (only_kw) {
+                    if (only_kw && method_call_keywords) {
                         /* **{} appears at the last, so it won't be modified.
                          * kw is a special NODE_LIT that contains a special empty hash,
                          * so this emits: putobject {}

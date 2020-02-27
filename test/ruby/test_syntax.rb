@@ -93,6 +93,17 @@ class TestSyntax < Test::Unit::TestCase
     assert_valid_syntax("tap (proc do end)", __FILE__, bug9726)
   end
 
+  def test_hash_kwsplat_hash
+    kw = {}
+    h = {a: 1}
+    assert_equal({}, {**{}})
+    assert_equal({}, {**kw})
+    assert_equal(h, {**h})
+    assert_equal(false, {**{}}.frozen?)
+    assert_equal(false, {**kw}.equal?(kw))
+    assert_equal(false, {**h}.equal?(h))
+  end
+
   def test_array_kwsplat_hash
     kw = {}
     h = {a: 1}
