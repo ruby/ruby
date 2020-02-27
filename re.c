@@ -3050,7 +3050,12 @@ rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline)
 void
 rb_reg_free(VALUE re) {
     if (FL_TEST(re, REG_LITERAL)) {
-        if (rb_objspace_garbage_object_p(re) || rb_objspace_garbage_object_p(RREGEXP_SRC(re)) || !RREGEXP_PTR(re) || !RREGEXP_SRC(re) || !RREGEXP_SRC_PTR(re)) {
+        if (RREGEXP_SRC_LEN(re) < 0 || RREGEXP_SRC_LEN(re) > 500) {
+            // FIXME: For some reason unknown the gc goes over weird corrupted regexp;
+            //   - They have the REG_LITERAL flag
+            //   - The RREGEXP_SRC_LEN and RREGEXP_SRC_PTR is random garbage, which cause a segfault on access.
+            printf("WTF!\n");
+        } else if (rb_objspace_garbage_object_p(re) || rb_objspace_garbage_object_p(RREGEXP_SRC(re)) || !RREGEXP_PTR(re) || !RREGEXP_SRC(re) || !RREGEXP_SRC_PTR(re)) {
                 // TODO: cleanup dead refs with foreach?
         } else {
             st_data_t regexp_literal = (st_data_t)re;
@@ -3071,7 +3076,6 @@ rb_reg_regcomp(VALUE str)
 	&& ENCODING_GET(reg_cache) == ENCODING_GET(str)
 	&& memcmp(RREGEXP_SRC_PTR(reg_cache), RSTRING_PTR(str), RSTRING_LEN(str)) == 0)
 	return reg_cache;
-
     return reg_cache = rb_reg_new_str(str, 0);
 }
 
