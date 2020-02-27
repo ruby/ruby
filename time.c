@@ -2810,7 +2810,7 @@ get_scale(VALUE unit)
  *
  *  If +in+ argument is given, the result is in that timezone or UTC offset, or
  *  if a numeric argument is given, the result is in local time.
- *  The +in+ argument accepts timezones in +HH:MM or -HH:MM format along with 
+ *  The +in+ argument accepts timezones in +HH:MM or -HH:MM format along with
  *  accepting military timezones and UTC.
  *
  *     Time.at(0)                                #=> 1969-12-31 18:00:00 -0600
