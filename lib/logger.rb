@@ -368,6 +368,8 @@ class Logger
   #   Date and time format. Default value is '%Y-%m-%d %H:%M:%S'.
   # +binmode+::
   #   Use binary mode on the log device. Default value is false.
+  # +skip_header+::
+  #   Skip header line in logfile created by the log device. Default value is false.
   # +shift_period_suffix+::
   #   The log file suffix format for +daily+, +weekly+ or +monthly+ rotation.
   #   Default is '%Y%m%d'.
@@ -378,7 +380,7 @@ class Logger
   #
   def initialize(logdev, shift_age = 0, shift_size = 1048576, level: DEBUG,
                  progname: nil, formatter: nil, datetime_format: nil,
-                 binmode: false, shift_period_suffix: '%Y%m%d')
+                 binmode: false, shift_period_suffix: '%Y%m%d', skip_header: false)
     self.level = level
     self.progname = progname
     @default_formatter = Formatter.new
@@ -389,7 +391,7 @@ class Logger
       @logdev = LogDevice.new(logdev, shift_age: shift_age,
         shift_size: shift_size,
         shift_period_suffix: shift_period_suffix,
-        binmode: binmode)
+        binmode: binmode, skip_header: skip_header)
     end
   end
 
