@@ -1,6 +1,6 @@
 #--
 #
-# $Id: 31aa4331c08dfd4609c06eb5f94b7ef38dc708e1 $
+#
 #
 # Copyright (c) 1999-2006 Minero Aoki
 #
