@@ -117,11 +117,18 @@ callable_class_p(VALUE klass)
 static int
 callable_method_entry_p(const rb_callable_method_entry_t *cme)
 {
-    if (cme == NULL || callable_class_p(cme->defined_class)) {
-	return TRUE;
+    if (cme == NULL) {
+        return TRUE;
     }
     else {
-	return FALSE;
+        VM_ASSERT(IMEMO_TYPE_P((VALUE)cme, imemo_ment));
+
+        if (callable_class_p(cme->defined_class)) {
+            return TRUE;
+        }
+        else {
+            return FALSE;
+        }
     }
 }
 
