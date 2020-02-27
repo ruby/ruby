@@ -2806,10 +2806,12 @@ get_scale(VALUE unit)
  *  +seconds+ and +microseconds_with_frac+ since the Epoch.
  *  +seconds_with_frac+ and +microseconds_with_frac+
  *  can be an Integer, Float, Rational, or other Numeric.
- *  non-portable feature allows the offset to be negative on some systems.
+ *  A non-portable feature allows the offset to be negative on some systems.
  *
  *  If +in+ argument is given, the result is in that timezone or UTC offset, or
  *  if a numeric argument is given, the result is in local time.
+ *  The +in+ argument accepts timezones in +HH:MM or -HH:MM format along with
+ *  accepting military timezones and UTC.
  *
  *     Time.at(0)                                #=> 1969-12-31 18:00:00 -0600
  *     Time.at(Time.at(0))                       #=> 1969-12-31 18:00:00 -0600
@@ -2818,6 +2820,9 @@ get_scale(VALUE unit)
  *     Time.at(946684800.2).usec                 #=> 200000
  *     Time.at(946684800, 123456.789).nsec       #=> 123456789
  *     Time.at(946684800, 123456789, :nsec).nsec #=> 123456789
+ *     Time.at(1582721899, in: "+09:00")         #=> 2020-02-26 21:58:19 +0900
+ *     Time.at(1582721899, in: "UTC")            #=> 2020-02-26 12:58:19 UTC
+ *     Time.at(1582721899, in: "C")              #=> 2020-02-26 13:58:19 +0300
  */
 
 static VALUE
