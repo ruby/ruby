@@ -3051,7 +3051,7 @@ void
 rb_reg_free(VALUE re) {
     if (FL_TEST(re, REG_LITERAL)) {
         st_data_t regexp_literal = (st_data_t)re;
-        if (rb_objspace_garbage_object_p(re) || rb_objspace_garbage_object_p(RREGEXP_SRC(re))) {
+        if (rb_objspace_garbage_object_p(re) || rb_objspace_garbage_object_p(RREGEXP_SRC(re)) || !RREGEXP_PTR(re) || !RREGEXP_SRC(re) || !RREGEXP_SRC_PTR(re)) {
                 // TODO: cleanup dead refs with foreach?
         } else {
             st_delete(rb_vm_regexp_literals_table(), &regexp_literal, NULL);
