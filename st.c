@@ -1162,7 +1162,7 @@ st_insert2(st_table *tab, st_data_t key, st_data_t value,
 {
     st_table_entry *entry;
     st_index_t bin;
-    st_index_t ind, check;
+    st_index_t ind;
     st_hash_t hash_value;
     st_index_t bin_ind;
     int new_p;
@@ -1188,7 +1188,6 @@ st_insert2(st_table *tab, st_data_t key, st_data_t value,
 	bin -= ENTRY_BASE;
     }
     if (new_p) {
-        check = tab->rebuilds_num;
         key = (*func)(key);
         ind = tab->entries_bound++;
         entry = &tab->entries[ind];
@@ -1389,7 +1388,6 @@ st_update(st_table *tab, st_data_t key,
     st_table_entry *entries;
     st_index_t bin_ind;
     st_data_t value = 0, old_key;
-    st_index_t check;
     int retval, existing;
     st_hash_t hash = do_hash(key, tab);
 
@@ -1418,7 +1416,6 @@ st_update(st_table *tab, st_data_t key,
         value = entry->record;
     }
     old_key = key;
-    check = tab->rebuilds_num;
     retval = (*func)(&key, &value, arg, existing);
     switch (retval) {
       case ST_CONTINUE:
