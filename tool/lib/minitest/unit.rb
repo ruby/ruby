@@ -1387,11 +1387,16 @@ module MiniTest
       end
 
       def self.test_order # :nodoc:
-        :random
+        :sorted
       end
 
       def self.test_suites # :nodoc:
-        @@test_suites.keys.sort_by { |ts| ts.name.to_s }
+        case self.test_order
+        when :random
+          @@test_suites.keys.shuffle
+        else
+          @@test_suites.keys.sort_by { |ts| ts.name.to_s }
+        end
       end
 
       def self.test_methods # :nodoc:
