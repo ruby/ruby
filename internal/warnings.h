@@ -1,14 +1,14 @@
-#ifndef INTERNAL_WARNINGS_H /* -*- C -*- */
-#define INTERNAL_WARNINGS_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Internal header to suppress / mandate warnings.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header to suppres / mandate warnings.
  */
+#ifndef INTERNAL_WARNINGS_H
+#define INTERNAL_WARNINGS_H
 #include "internal/compilers.h" /* for MSC_VERSION_SINCE */
 
 #if MSC_VERSION_SINCE(1200)

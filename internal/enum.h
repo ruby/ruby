@@ -1,14 +1,14 @@
-#ifndef INTERNAL_ENUM_H /* -*- C -*- */
-#define INTERNAL_ENUM_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Internal header for Enumerable.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for Enumerable.
  */
+#ifndef INTERNAL_ENUM_H
+#define INTERNAL_ENUM_H
 #include "ruby/ruby.h"          /* for VALUE */
 
 /* enum.c */

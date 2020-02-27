@@ -1,14 +1,14 @@
-#ifndef INTERNAL_LOAD_H /* -*- C -*- */
-#define INTERNAL_LOAD_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Internal header for require.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for require.
  */
+#ifndef INTERNAL_LOAD_H
+#define INTERNAL_LOAD_H
 #include "ruby/ruby.h"          /* for VALUE */
 
 /* load.c */

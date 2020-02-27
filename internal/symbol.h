@@ -1,14 +1,14 @@
-#ifndef INTERNAL_SYMBOL_H /* -*- C -*- */
-#define INTERNAL_SYMBOL_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Internal header for Symbol.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for Symbol.
  */
+#ifndef INTERNAL_SYMBOL_H
+#define INTERNAL_SYMBOL_H
 #include "ruby/ruby.h"          /* for VALUE */
 #include "ruby/encoding.h"      /* for rb_encoding */
 #include "internal/compilers.h" /* for __has_builtin */

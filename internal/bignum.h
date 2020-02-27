@@ -1,14 +1,14 @@
-#ifndef INTERNAL_BIGNUM_H /* -*- C -*- */
-#define INTERNAL_BIGNUM_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Internal header for Bignums.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for Bignums.
  */
+#ifndef INTERNAL_BIGNUM_H
+#define INTERNAL_BIGNUM_H
 #include "ruby/config.h"        /* for HAVE_LIBGMP */
 #include <stddef.h>             /* for size_t */
 

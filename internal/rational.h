@@ -1,14 +1,14 @@
-#ifndef INTERNAL_RATIONAL_H /* -*- C -*- */
-#define INTERNAL_RATIONAL_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Internal header for Rational.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for Rational.
  */
+#ifndef INTERNAL_RATIONAL_H
+#define INTERNAL_RATIONAL_H
 #include "ruby/config.h"        /* for HAVE_LIBGMP */
 #include "ruby/ruby.h"          /* for struct RBasic */
 #include "internal/gc.h"        /* for RB_OBJ_WRITE */

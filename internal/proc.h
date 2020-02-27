@@ -1,14 +1,14 @@
-#ifndef INTERNAL_PROC_H /* -*- C -*- */
-#define INTERNAL_PROC_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Internal header for Proc.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for Proc.
  */
+#ifndef INTERNAL_PROC_H
+#define INTERNAL_PROC_H
 #include "ruby/ruby.h"          /* for rb_block_call_func_t */
 #include "ruby/st.h"            /* for st_index_t */
 struct rb_block;                /* in vm_core.h */

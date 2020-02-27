@@ -1,14 +1,14 @@
-#ifndef INTERNAL_ERROR_H /* -*- C -*- */
-#define INTERNAL_ERROR_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Internal header for Exception.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for Exception.
  */
+#ifndef INTERNAL_ERROR_H
+#define INTERNAL_ERROR_H
 #include "ruby/config.h"
 #include <stdarg.h>             /* for va_list */
 #include "internal/stdbool.h"   /* for bool */

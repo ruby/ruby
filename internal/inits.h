@@ -1,14 +1,14 @@
-#ifndef INTERNAL_INITS_H /* -*- C -*- */
-#define INTERNAL_INITS_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Internal header aggregating init functions.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header aggregating init functions.
  */
+#ifndef INTERNAL_INITS_H
+#define INTERNAL_INITS_H
 
 /* class.c */
 void Init_class_hierarchy(void);
