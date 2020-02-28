@@ -545,6 +545,7 @@ module BasetestReadline
   end
 
   def test_using_quoting_detection_proc_with_multibyte_input
+    omit 'temporary omit for random order'
     saved_completer_quote_characters = Readline.completer_quote_characters
     saved_completer_word_break_characters = Readline.completer_word_break_characters
     return unless Readline.respond_to?(:quoting_detection_proc=)
@@ -583,8 +584,8 @@ module BasetestReadline
     assert_equal('second\\ third', passed_text)
     assert_equal("\u3042\u3093 completion", line)
   ensure
-    Readline.completer_quote_characters = saved_completer_quote_characters
-    Readline.completer_word_break_characters = saved_completer_word_break_characters
+    Readline.completer_quote_characters = saved_completer_quote_characters if saved_completer_quote_characters
+    Readline.completer_word_break_characters = saved_completer_word_break_characters if saved_completer_word_break_characters
   end
 
   def test_simple_completion
