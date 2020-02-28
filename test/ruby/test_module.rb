@@ -302,6 +302,8 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_nested_get
+    OtherSetup.call
+
     assert_equal Other, Object.const_get([self.class, 'Other'].join('::'))
     assert_equal User::USER, self.class.const_get([User, 'USER'].join('::'))
     assert_raise(NameError) {
@@ -310,6 +312,8 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_nested_get_symbol
+    OtherSetup.call
+
     const = [self.class, Other].join('::').to_sym
     assert_raise(NameError) {Object.const_get(const)}
 
@@ -345,6 +349,8 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_nested_defined_symbol
+    OtherSetup.call
+
     const = [self.class, Other].join('::').to_sym
     assert_raise(NameError) {Object.const_defined?(const)}
 
