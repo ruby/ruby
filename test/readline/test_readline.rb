@@ -527,6 +527,7 @@ module BasetestReadline
   end
 
   def test_using_quoting_detection_proc_with_multibyte_input
+    Readline.completion_append_character = nil
     saved_completer_quote_characters = Readline.completer_quote_characters
     saved_completer_word_break_characters = Readline.completer_word_break_characters
 
