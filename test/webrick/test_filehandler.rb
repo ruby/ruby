@@ -177,7 +177,8 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
         assert_equal("206", res.code, log.call)
         assert_equal("multipart/byteranges", res.content_type, log.call)
       }
-
+    ensure
+      server[:DocumentRootOptions].delete :NondisclosureName
     end
   end
 
