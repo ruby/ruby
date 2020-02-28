@@ -326,9 +326,7 @@ static VALUE
 setup_struct(VALUE nstr, VALUE members, int keyword_init)
 {
     long i, len;
-    VALUE (*new_func)(int, const VALUE *, VALUE) = rb_class_new_instance;
-
-    if (keyword_init) new_func = struct_new_kw;
+    VALUE (*new_func)(int, const VALUE *, VALUE) = struct_new_kw;
 
     members = struct_set_members(nstr, members);
 

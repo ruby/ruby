@@ -117,9 +117,6 @@ module TestStruct
     assert_equal @Struct::KeywordInitTrue.new(a: 1, b: 2).values, @Struct::KeywordInitFalse.new(1, 2).values
     assert_equal "#{@Struct}::KeywordInitFalse", @Struct::KeywordInitFalse.inspect
     assert_equal "#{@Struct}::KeywordInitTrue(keyword_init: true)", @Struct::KeywordInitTrue.inspect
-    # eval is needed to prevent the warning duplication filter
-    k = eval("Class.new(@Struct::KeywordInitFalse) {def initialize(**) end}")
-    assert_raise(ArgumentError) { k.new(a: 1, b: 2) }
     k = Class.new(@Struct::KeywordInitTrue) {def initialize(**) end}
     assert_warn('') {k.new(a: 1, b: 2)}
 
@@ -137,6 +134,17 @@ module TestStruct
     end
 
     assert_equal(3, struct.new(a: 1, b: 2).c)
+  end
+
+  def test_struct_subclass_with_keywords
+    struct = @Struct.new(:args, :foo)
+    klass = Class.new(struct) do
+      def initialize(*args, foo:)
+        super(args, foo)
+      end
+    end
+
+    assert_equal("#<struct args=[1], foo=2>", klass.new(1, foo: 2).inspect)
   end
 
   def test_initialize
