@@ -780,6 +780,9 @@ NORETURN(void rb_ec_stack_overflow(rb_execution_context_t *ec, int crit));
 # if defined __HAIKU__
 #   define USE_UCONTEXT_REG 1
 # elif !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__ || defined __amd64__))
+# if defined __OpenBSD__
+#   define USE_UCONTEXT_REG 1
+# endif
 # elif defined __linux__
 #   define USE_UCONTEXT_REG 1
 # elif defined __APPLE__
@@ -812,7 +815,9 @@ reset_sigmask(int sig)
 static void
 check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
 {
+# if !defined(__OpenBSD__)
     const DEFINE_MCONTEXT_PTR(mctx, ctx);
+# endif
 # if defined __linux__
 #   if defined REG_RSP
     const greg_t sp = mctx->gregs[REG_RSP];
@@ -841,6 +846,14 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
 #   else
     const __register_t sp = mctx->mc_esp;
     const __register_t bp = mctx->mc_ebp;
+#   endif
+# elif defined __OpenBSD__
+#   if defined(__amd64__)
+    const __register_t sp = ctx->sc_rsp;
+    const __register_t bp = ctx->sc_rbp;
+#   else
+    const __register_t sp = ctx->sc_esp;
+    const __register_t bp = ctx->sc_ebp;
 #   endif
 # elif defined __HAIKU__
 #   if defined(__amd64__)
