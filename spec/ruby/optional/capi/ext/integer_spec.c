@@ -30,5 +30,5 @@ void Init_integer_spec(void) {
 }
 
 #ifdef __cplusplus
-extern "C" {
+}
 #endif

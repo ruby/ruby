@@ -68,7 +68,7 @@ VALUE rb_block_call_extra_data(VALUE self, VALUE object) {
 }
 
 VALUE kernel_spec_rb_block_call_no_func(VALUE self, VALUE ary) {
-  return rb_block_call(ary, rb_intern("map"), 0, NULL, NULL, Qnil);
+  return rb_block_call(ary, rb_intern("map"), 0, NULL, (rb_block_call_func_t)NULL, Qnil);
 }
 
 
@@ -152,6 +152,10 @@ VALUE kernel_spec_rb_rescue(VALUE self, VALUE main_proc, VALUE arg,
   main_array = rb_ary_new();
   rb_ary_push(main_array, main_proc);
   rb_ary_push(main_array, arg);
+
+  if (raise_proc == Qnil) {
+    return rb_rescue(kernel_spec_call_proc, main_array, NULL, arg2);
+  }
 
   raise_array = rb_ary_new();
   rb_ary_push(raise_array, raise_proc);

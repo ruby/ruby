@@ -23,6 +23,10 @@ VALUE proc_spec_rb_proc_call(VALUE self, VALUE prc, VALUE args) {
   return rb_proc_call(prc, args);
 }
 
+VALUE proc_spec_rb_obj_is_proc(VALUE self, VALUE prc) {
+  return rb_obj_is_proc(prc);
+}
+
 /* This helper is not strictly necessary but reflects the code in wxRuby that
  * originally exposed issues with this Proc.new behavior.
  */
@@ -61,6 +65,7 @@ void Init_proc_spec(void) {
   rb_define_method(cls, "rb_proc_arity", proc_spec_rb_proc_arity, 1);
   rb_define_method(cls, "rb_proc_call", proc_spec_rb_proc_call, 2);
   rb_define_method(cls, "rb_Proc_new", proc_spec_rb_Proc_new, 1);
+  rb_define_method(cls, "rb_obj_is_proc", proc_spec_rb_obj_is_proc, 1);
 }
 
 #ifdef __cplusplus

@@ -43,7 +43,7 @@ VALUE io_spec_rb_io_addstr(VALUE self, VALUE io, VALUE str) {
 
 VALUE io_spec_rb_io_printf(VALUE self, VALUE io, VALUE ary) {
   long argc = RARRAY_LEN(ary);
-  VALUE *argv = alloca(sizeof(VALUE) * argc);
+  VALUE *argv = (VALUE*) alloca(sizeof(VALUE) * argc);
   int i;
 
   for (i = 0; i < argc; i++) {
@@ -55,7 +55,7 @@ VALUE io_spec_rb_io_printf(VALUE self, VALUE io, VALUE ary) {
 
 VALUE io_spec_rb_io_print(VALUE self, VALUE io, VALUE ary) {
   long argc = RARRAY_LEN(ary);
-  VALUE *argv = alloca(sizeof(VALUE) * argc);
+  VALUE *argv = (VALUE*) alloca(sizeof(VALUE) * argc);
   int i;
 
   for (i = 0; i < argc; i++) {
@@ -67,7 +67,7 @@ VALUE io_spec_rb_io_print(VALUE self, VALUE io, VALUE ary) {
 
 VALUE io_spec_rb_io_puts(VALUE self, VALUE io, VALUE ary) {
   long argc = RARRAY_LEN(ary);
-  VALUE *argv = alloca(sizeof(VALUE) * argc);
+  VALUE *argv = (VALUE*) alloca(sizeof(VALUE) * argc);
   int i;
 
   for (i = 0; i < argc; i++) {

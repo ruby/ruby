@@ -402,6 +402,17 @@ ruby_version_is "2.7" do
           RUBY
         }.should raise_error(SyntaxError, /illegal variable in alternative pattern/)
       end
+
+      it "support undescore prefixed variables in alternation" do
+        eval(<<~RUBY).should == true
+          case [0, 1]
+            in [1, _]
+              false
+            in [0, 0] | [0, _a]
+              true
+          end
+        RUBY
+      end
     end
 
     describe "AS pattern" do
@@ -960,6 +971,80 @@ ruby_version_is "2.7" do
               true
           end
         RUBY
+      end
+    end
+
+    describe "refinements" do
+      it "are used for #deconstruct" do
+        refinery = Module.new do
+          refine Array do
+            def deconstruct
+              [0]
+            end
+          end
+        end
+
+        result = nil
+        Module.new do
+          using refinery
+
+          result = eval(<<~RUBY)
+            case []
+              in [0]
+                true
+            end
+          RUBY
+        end
+
+        result.should == true
+      end
+
+      it "are used for #deconstruct_keys" do
+        refinery = Module.new do
+          refine Hash do
+            def deconstruct_keys(_)
+              {a: 0}
+            end
+          end
+        end
+
+        result = nil
+        Module.new do
+          using refinery
+
+          result = eval(<<~RUBY)
+            case {}
+              in a: 0
+                true
+            end
+          RUBY
+        end
+
+        result.should == true
+      end
+
+      it "are used for #=== in constant pattern" do
+        refinery = Module.new do
+          refine Array.singleton_class do
+            def ===(obj)
+              obj.is_a?(Hash)
+            end
+          end
+        end
+
+        result = nil
+        Module.new do
+          using refinery
+
+          result = eval(<<~RUBY)
+            case {}
+              in Array
+                true
+            end
+          RUBY
+        end
+
+        result.should == true
       end
     end
   end

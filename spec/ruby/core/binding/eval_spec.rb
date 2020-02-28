@@ -131,4 +131,10 @@ describe "Binding#eval" do
     bind, meth = obj.get_binding_with_send_and_method
     bind.eval("__method__").should == meth
   end
+
+  it "reflects refinements activated in the binding scope" do
+    bind = BindingSpecs::Refined.refined_binding
+
+    bind.eval("'bar'.foo").should == "foo"
+  end
 end

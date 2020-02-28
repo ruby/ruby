@@ -284,6 +284,26 @@ VALUE string_spec_RSTRING_PTR_iterate(VALUE self, VALUE str) {
   return Qnil;
 }
 
+VALUE string_spec_RSTRING_PTR_iterate_uint32(VALUE self, VALUE str) {
+  int i;
+  uint32_t* ptr;
+  int l = RSTRING_LEN(str) / sizeof(uint32_t);
+
+  ptr = (uint32_t *)RSTRING_PTR(str);
+  for(i = 0; i < l; i++) {
+    rb_yield(UINT2NUM(ptr[i]));
+  }
+  return Qnil;
+}
+
+VALUE string_spec_RSTRING_PTR_short_memcpy(VALUE self, VALUE str) {
+  // Short memcpy operations may be optimised by the compiler to a single write.
+  if (RSTRING_LEN(str) >= 8) {
+    memcpy(RSTRING_PTR(str), "Infinity", 8);
+  }
+  return str;
+}
+
 VALUE string_spec_RSTRING_PTR_assign(VALUE self, VALUE str, VALUE chr) {
   int i;
   char c;
@@ -362,11 +382,11 @@ static VALUE string_spec_rb_sprintf2(VALUE self, VALUE str, VALUE repl1, VALUE r
 }
 
 static VALUE string_spec_rb_sprintf3(VALUE self, VALUE str) {
-  return rb_sprintf("Result: %"PRIsVALUE".", str);
+  return rb_sprintf("Result: %" PRIsVALUE ".", str);
 }
 
 static VALUE string_spec_rb_sprintf4(VALUE self, VALUE str) {
-  return rb_sprintf("Result: %+"PRIsVALUE".", str);
+  return rb_sprintf("Result: %+" PRIsVALUE ".", str);
 }
 
 static VALUE string_spec_rb_vsprintf_worker(char* fmt, ...) {
@@ -477,6 +497,8 @@ void Init_string_spec(void) {
   rb_define_method(cls, "RSTRING_LEN", string_spec_RSTRING_LEN, 1);
   rb_define_method(cls, "RSTRING_LENINT", string_spec_RSTRING_LENINT, 1);
   rb_define_method(cls, "RSTRING_PTR_iterate", string_spec_RSTRING_PTR_iterate, 1);
+  rb_define_method(cls, "RSTRING_PTR_iterate_uint32", string_spec_RSTRING_PTR_iterate_uint32, 1);
+  rb_define_method(cls, "RSTRING_PTR_short_memcpy", string_spec_RSTRING_PTR_short_memcpy, 1);
   rb_define_method(cls, "RSTRING_PTR_assign", string_spec_RSTRING_PTR_assign, 2);
   rb_define_method(cls, "RSTRING_PTR_set", string_spec_RSTRING_PTR_set, 3);
   rb_define_method(cls, "RSTRING_PTR_after_funcall", string_spec_RSTRING_PTR_after_funcall, 2);

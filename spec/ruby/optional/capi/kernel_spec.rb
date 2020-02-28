@@ -261,28 +261,28 @@ describe "C-API Kernel function" do
   describe "rb_protect" do
     it "will run a function with an argument" do
       proof = [] # Hold proof of work performed after the yield.
-      res = @s.rb_protect_yield(7, proof) { |x| x + 1 }
-      res.should == 8
+      res = @s.rb_protect_yield(77, proof) { |x| x + 1 }
+      res.should == 78
       proof[0].should == 23
     end
 
     it "will allow cleanup code to run after break" do
       proof = [] # Hold proof of work performed after the yield.
-      @s.rb_protect_yield(7, proof) { |x| break }
+      @s.rb_protect_yield(77, proof) { |x| break }
       proof[0].should == 23
     end
 
     it "will allow cleanup code to run after break with value" do
       proof = [] # Hold proof of work performed after the yield.
-      res = @s.rb_protect_yield(7, proof) { |x| break x + 1 }
-      res.should == 8
+      res = @s.rb_protect_yield(77, proof) { |x| break x + 1 }
+      res.should == 78
       proof[0].should == 23
     end
 
     it "will allow cleanup code to run after a raise" do
       proof = [] # Hold proof of work performed after the yield.
       -> do
-        @s.rb_protect_yield(7, proof) { |x| raise NameError}
+        @s.rb_protect_yield(77, proof) { |x| raise NameError}
       end.should raise_error(NameError)
       proof[0].should == 23
     end
@@ -290,7 +290,7 @@ describe "C-API Kernel function" do
     it "will return nil if an error was raised" do
       proof = [] # Hold proof of work performed after the yield.
       -> do
-        @s.rb_protect_yield(7, proof) { |x| raise NameError}
+        @s.rb_protect_yield(77, proof) { |x| raise NameError}
       end.should raise_error(NameError)
       proof[0].should == 23
       proof[1].should == nil
@@ -316,47 +316,47 @@ describe "C-API Kernel function" do
   describe "rb_rescue" do
     before :each do
       @proc = -> x { x }
-      @raise_proc_returns_sentinel = -> *_ { :raise_proc_executed }
-      @raise_proc_returns_arg = -> *a { a }
+      @rescue_proc_returns_sentinel = -> *_ { :rescue_proc_executed }
+      @rescue_proc_returns_arg = -> *a { a }
       @arg_error_proc = -> *_ { raise ArgumentError, '' }
       @std_error_proc = -> *_ { raise StandardError, '' }
       @exc_error_proc = -> *_ { raise Exception, '' }
     end
 
     it "executes passed function" do
-      @s.rb_rescue(@proc, :no_exc, @raise_proc_returns_arg, :exc).should == :no_exc
+      @s.rb_rescue(@proc, :no_exc, @rescue_proc_returns_arg, :exc).should == :no_exc
     end
 
-    it "executes passed 'raise function' if a StandardError exception is raised" do
-      @s.rb_rescue(@arg_error_proc, nil, @raise_proc_returns_sentinel, :exc).should == :raise_proc_executed
-      @s.rb_rescue(@std_error_proc, nil, @raise_proc_returns_sentinel, :exc).should == :raise_proc_executed
+    it "executes the passed 'rescue function' if a StandardError exception is raised" do
+      @s.rb_rescue(@arg_error_proc, nil, @rescue_proc_returns_sentinel, :exc).should == :rescue_proc_executed
+      @s.rb_rescue(@std_error_proc, nil, @rescue_proc_returns_sentinel, :exc).should == :rescue_proc_executed
     end
 
-    it "passes the user supplied argument to the 'raise function' if a StandardError exception is raised" do
-      arg1, _ = @s.rb_rescue(@arg_error_proc, nil, @raise_proc_returns_arg, :exc1)
+    it "passes the user supplied argument to the 'rescue function' if a StandardError exception is raised" do
+      arg1, _ = @s.rb_rescue(@arg_error_proc, nil, @rescue_proc_returns_arg, :exc1)
       arg1.should == :exc1
 
-      arg2, _ = @s.rb_rescue(@std_error_proc, nil, @raise_proc_returns_arg, :exc2)
+      arg2, _ = @s.rb_rescue(@std_error_proc, nil, @rescue_proc_returns_arg, :exc2)
       arg2.should == :exc2
     end
 
-    it "passes the raised exception to the 'raise function' if a StandardError exception is raised" do
-      _, exc1 = @s.rb_rescue(@arg_error_proc, nil, @raise_proc_returns_arg, :exc)
+    it "passes the raised exception to the 'rescue function' if a StandardError exception is raised" do
+      _, exc1 = @s.rb_rescue(@arg_error_proc, nil, @rescue_proc_returns_arg, :exc)
       exc1.class.should == ArgumentError
 
-      _, exc2 = @s.rb_rescue(@std_error_proc, nil, @raise_proc_returns_arg, :exc)
+      _, exc2 = @s.rb_rescue(@std_error_proc, nil, @rescue_proc_returns_arg, :exc)
       exc2.class.should == StandardError
     end
 
     it "raises an exception if passed function raises an exception other than StandardError" do
-      -> { @s.rb_rescue(@exc_error_proc, nil, @raise_proc_returns_arg, nil) }.should raise_error(Exception)
+      -> { @s.rb_rescue(@exc_error_proc, nil, @rescue_proc_returns_arg, nil) }.should raise_error(Exception)
     end
 
-    it "raises an exception if any exception is raised inside 'raise function'" do
+    it "raises an exception if any exception is raised inside the 'rescue function'" do
       -> { @s.rb_rescue(@std_error_proc, nil, @std_error_proc, nil) }.should raise_error(StandardError)
     end
 
-    it "makes $! available only during 'raise function' execution" do
+    it "makes $! available only during the 'rescue function' execution" do
       @s.rb_rescue(@std_error_proc, nil, -> *_ { $! }, nil).class.should == StandardError
       $!.should == nil
     end
@@ -367,6 +367,10 @@ describe "C-API Kernel function" do
       end
 
       proc_caller { break :value }.should == :value
+    end
+
+    it "returns nil if the 'rescue function' is null" do
+      @s.rb_rescue(@std_error_proc, nil, nil, nil).should == nil
     end
   end
 

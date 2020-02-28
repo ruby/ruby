@@ -45,7 +45,7 @@ static VALUE class_spec_rb_class_new_instance(VALUE self,
                                       VALUE nargs, VALUE args,
                                       VALUE klass) {
   int c_nargs = FIX2INT(nargs);
-  VALUE *c_args = alloca(sizeof(VALUE) * c_nargs);
+  VALUE *c_args = (VALUE*)alloca(sizeof(VALUE) * c_nargs);
   int i;
 
   for (i = 0; i < c_nargs; i++)
