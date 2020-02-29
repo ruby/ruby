@@ -11,13 +11,6 @@
 #ifndef RUBY_MISSING_H
 #define RUBY_MISSING_H 1
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
 #include "ruby/3/config.h"
 #include <stddef.h>
 #include <math.h> /* for INFINITY and NAN */
@@ -74,7 +67,9 @@ struct timezone {
 #define RUBY_EXTERN extern
 #endif
 
-RUBY_SYMBOL_EXPORT_BEGIN
+#include "ruby/3/dllexport.h"
+
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 #ifndef HAVE_ACOSH
 RUBY_EXTERN double acosh(double);
@@ -263,13 +258,6 @@ RUBY_EXTERN void explicit_bzero(void *b, size_t len);
 # endif
 #endif
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_MISSING_H */

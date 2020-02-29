@@ -14,13 +14,6 @@
 #ifndef RUBY_INTERN_H
 #define RUBY_INTERN_H 1
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
 #include "ruby/3/config.h"
 #include "ruby/defines.h"
 
@@ -31,8 +24,6 @@ extern "C" {
 #endif
 
 #include "ruby/st.h"
-
-RUBY_SYMBOL_EXPORT_BEGIN
 
 /*
  * Functions and variables that are used by more than one source file of
@@ -75,14 +66,5 @@ RUBY_SYMBOL_EXPORT_BEGIN
 #include "ruby/3/intern/time.h"
 #include "ruby/3/intern/variable.h"
 #include "ruby/3/intern/vm.h"
-
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C++" { */
-#endif
 
 #endif /* RUBY_INTERN_H */

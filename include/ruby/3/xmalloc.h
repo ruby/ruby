@@ -24,14 +24,7 @@
 #include "ruby/3/dllexport.h"
 #include "ruby/backward/2/attributes.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 #define xmalloc ruby_xmalloc
 #define xmalloc2 ruby_xmalloc2
@@ -124,13 +117,6 @@ ruby_xrealloc2_with_location(void *ptr, size_t s1, size_t s2, const char *file, 
 }
 #endif
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_XMALLOC_H */

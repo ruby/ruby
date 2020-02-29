@@ -33,14 +33,7 @@
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 /* time.c */
 void rb_timespec_now(struct timespec *);
@@ -55,13 +48,6 @@ struct timespec rb_time_timespec_interval(VALUE num);
 VALUE rb_time_utc_offset(VALUE time);
 VALUE rb_time_succ(VALUE);
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_INTERN_TIME_H */

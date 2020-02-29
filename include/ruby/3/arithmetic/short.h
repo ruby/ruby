@@ -27,14 +27,7 @@
 #include "ruby/3/dllexport.h"
 #include "ruby/3/special_consts.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 short rb_num2short(VALUE);
 unsigned short rb_num2ushort(VALUE);
@@ -58,13 +51,6 @@ rb_num2short_inline(VALUE x)
 
 #define USHORT2NUM(x) RB_INT2FIX(x)
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_ARITHMETIC_SOHRT_H */

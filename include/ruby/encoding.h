@@ -12,18 +12,13 @@
 #ifndef RUBY_ENCODING_H
 #define RUBY_ENCODING_H 1
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
+#include "ruby/3/config.h"
 #include <stdarg.h>
 #include "ruby/ruby.h"
 #include "ruby/oniguruma.h"
+#include "ruby/3/dllexport.h"
 
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 enum ruby_encoding_consts {
     RUBY_ENCODING_INLINE_MAX = 127,
@@ -413,13 +408,6 @@ enum ruby_econv_flag_type {
 /* end of flags for rb_econv_convert */
 RUBY_ECONV_FLAGS_PLACEHOLDER};
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_ENCODING_H */

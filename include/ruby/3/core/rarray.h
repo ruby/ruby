@@ -25,14 +25,7 @@
 #include "ruby/3/fl_type.h"
 #include "ruby/backward/2/r_cast.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 #ifndef USE_TRANSIENT_HEAP
 #define USE_TRANSIENT_HEAP 1
@@ -190,13 +183,6 @@ rb_array_ptr_use_end(VALUE a, int allow_transient)
     (void)allow_transient;
 }
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_RARRAY_H */

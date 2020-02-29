@@ -25,14 +25,7 @@
 #include "ruby/3/fl_type.h"
 #include "ruby/3/value.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 VALUE rb_newobj(void);
 VALUE rb_newobj_of(VALUE, VALUE);
@@ -65,13 +58,6 @@ rb_dup_setup(VALUE dup, VALUE obj)
     if (RB_FL_TEST(obj, RUBY_FL_EXIVAR)) rb_copy_generic_ivar(dup, obj);
 }
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_NEWOBJ_H */

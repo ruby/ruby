@@ -24,14 +24,7 @@
 #include "ruby/3/value.h"
 #include "ruby/3/arithmetic/long.h" /* INT2FIX is here. */
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 /* rational.c */
 VALUE rb_rational_raw(VALUE, VALUE);
@@ -48,13 +41,6 @@ VALUE rb_rational_den(VALUE rat);
 VALUE rb_flt_rationalize_with_prec(VALUE, VALUE);
 VALUE rb_flt_rationalize(VALUE);
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_INTERN_RATIONAL_H */

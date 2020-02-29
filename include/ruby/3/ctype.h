@@ -28,14 +28,7 @@
 
 #include "ruby/3/dllexport.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 /* locale insensitive functions */
 
@@ -81,13 +74,6 @@ int st_locale_insensitive_strncasecmp(const char *s1, const char *s2, size_t n);
 unsigned long ruby_strtoul(const char *str, char **endptr, int base);
 #define STRTOUL(str, endptr, base) (ruby_strtoul((str), (endptr), (base)))
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_CTYPE_H */

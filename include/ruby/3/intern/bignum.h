@@ -30,14 +30,7 @@
 #include "ruby/3/value.h"
 #include "ruby/backward/2/long_long.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 /* bignum.c */
 VALUE rb_big_new(size_t, int);
@@ -107,13 +100,6 @@ size_t rb_absint_size(VALUE val, int *nlz_bits_ret);
 size_t rb_absint_numwords(VALUE val, size_t word_numbits, size_t *nlz_bits_ret);
 int rb_absint_singlebit_p(VALUE val);
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_INTERN_BIGNUM_H */

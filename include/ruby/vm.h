@@ -12,14 +12,9 @@
 #ifndef RUBY_VM_H
 #define RUBY_VM_H 1
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
+#include "ruby/3/dllexport.h"
 
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 /* Place holder.
  *
@@ -51,13 +46,6 @@ int ruby_vm_destruct(ruby_vm_t *vm);
  */
 void ruby_vm_at_exit(void(*func)(ruby_vm_t *));
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_VM_H */

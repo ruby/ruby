@@ -26,14 +26,7 @@
 #include "ruby/3/value.h"
 #include "ruby/backward/2/gcc_version_since.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 enum ruby_value_type {
     RUBY_T_NONE   = 0x00,
@@ -188,13 +181,6 @@ rb_special_const_p(VALUE obj)
 void rb_check_type(VALUE,int);
 #define Check_Type(v,t) rb_check_type((VALUE)(v),(t))
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_VALUE_TYPE_H */

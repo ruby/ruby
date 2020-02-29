@@ -23,14 +23,7 @@
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 /* traditional set_trace_func events */
 #define RUBY_EVENT_NONE      0x0000
@@ -77,13 +70,6 @@ typedef void (*rb_event_hook_func_t)(rb_event_flag_t evflag, VALUE data, VALUE s
 void rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data);
 int rb_remove_event_hook(rb_event_hook_func_t func);
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_EVENT_H */

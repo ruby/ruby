@@ -23,14 +23,7 @@
 #include "ruby/3/value.h"
 #include "ruby/3/dllexport.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 double rb_num2dbl(VALUE);
 #define NUM2DBL(x) rb_num2dbl((VALUE)(x))
@@ -42,13 +35,6 @@ VALUE rb_float_new_in_heap(double);
 #define RFLOAT_VALUE(v) rb_float_value(v)
 #define DBL2NUM(dbl)  rb_float_new(dbl)
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_ARITHMETIC_DOUBLE_H */

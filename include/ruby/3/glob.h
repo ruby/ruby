@@ -23,27 +23,13 @@
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 typedef int ruby_glob_func(const char*,VALUE, void*);
 void rb_glob(const char*,void(*)(const char*,VALUE,void*),VALUE);
 int ruby_glob(const char*,int,ruby_glob_func*,VALUE);
 int ruby_brace_glob(const char*,int,ruby_glob_func*,VALUE);
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_GLOB_H */

@@ -28,14 +28,7 @@
 #include "ruby/3/special_consts.h"
 #include "ruby/3/value.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 #if SIZEOF_INT < SIZEOF_LONG
 long rb_num2int(VALUE);
@@ -94,13 +87,6 @@ rb_uint2num_inline(unsigned int v)
 #define INT2NUM(x) RB_INT2NUM(x)
 #define UINT2NUM(x) RB_UINT2NUM(x)
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_ARITHMETIC_INT_H */

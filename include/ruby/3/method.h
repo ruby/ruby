@@ -24,14 +24,7 @@
 #include "ruby/3/value.h"
 #include "ruby/backward/2/stdarg.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 void rb_define_method(VALUE,const char*,VALUE(*)(ANYARGS),int);
 void rb_define_module_function(VALUE,const char*,VALUE(*)(ANYARGS),int);
@@ -41,13 +34,6 @@ void rb_undef_method(VALUE,const char*);
 void rb_define_alias(VALUE,const char*,const char*);
 void rb_define_attr(VALUE,const char*,int,int);
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_METHOD_H */

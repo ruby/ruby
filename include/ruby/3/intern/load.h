@@ -23,14 +23,7 @@
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 /* load.c */
 void rb_load(VALUE, int);
@@ -42,13 +35,6 @@ VALUE rb_f_require(VALUE, VALUE);
 VALUE rb_require_safe(VALUE, int); /* Remove in 3.0 */
 VALUE rb_require_string(VALUE);
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_INTERN_LOAD_H */

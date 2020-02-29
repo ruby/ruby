@@ -24,14 +24,7 @@
 #include "ruby/3/value.h"
 #include "ruby/backward/2/attributes.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 /* variable.c */
 VALUE rb_mod_name(VALUE);
@@ -83,13 +76,6 @@ void rb_define_class_variable(VALUE, const char*, VALUE);
 VALUE rb_mod_class_variables(int, const VALUE*, VALUE);
 VALUE rb_mod_remove_cvar(VALUE, VALUE);
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_INTERN_VARIABLE_H */

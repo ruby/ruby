@@ -26,14 +26,7 @@
 #include "ruby/3/config.h"
 #include "ruby/3/value.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 #define UNLIMITED_ARGUMENTS (-1)
 
@@ -351,13 +344,6 @@ rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
 }
 #endif
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_SCAN_ARGS_H */

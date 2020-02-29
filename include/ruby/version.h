@@ -36,14 +36,10 @@
 #define RUBY_API_VERSION_CODE (RUBY_API_VERSION_MAJOR*10000+RUBY_API_VERSION_MINOR*100+RUBY_API_VERSION_TEENY)
 
 #ifdef RUBY_EXTERN
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+/* Internal note: this file could be included from verconf.mk _before_
+ * generating config.h, on Windows.  The #ifdef above is to trick such
+ * situation. */
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 /*
  * Interfaces from extension libraries.
@@ -61,14 +57,7 @@ RUBY_EXTERN const char ruby_description[];
 RUBY_EXTERN const char ruby_copyright[];
 RUBY_EXTERN const char ruby_engine[];
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 #endif
 
 #endif

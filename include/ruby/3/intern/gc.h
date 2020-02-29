@@ -24,14 +24,7 @@
 #include "ruby/3/value.h"
 #include "ruby/backward/2/attributes.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 /* gc.c */
 COLDFUNC NORETURN(void rb_memerror(void));
@@ -59,13 +52,6 @@ size_t rb_gc_stat(VALUE);
 VALUE rb_gc_latest_gc_info(VALUE);
 void rb_gc_adjust_memory_usage(ssize_t);
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_INTERN_GC_H */

@@ -66,4 +66,24 @@
 # define MJIT_STATIC
 #endif
 
+/** Shortcut macro equivalent to `RUBY_SYMBOL_EXPORT_BEGIN extern "C" {`.
+ * \@shyouhei finds it handy. */
+#if defined(__DOXYGEN__)
+# define RUBY3_SYMBOL_EXPORT_BEGIN() /* void */
+#elif defined(__cplusplus)
+# define RUBY3_SYMBOL_EXPORT_BEGIN() RUBY_SYMBOL_EXPORT_BEGIN extern "C" {
+#else
+# define RUBY3_SYMBOL_EXPORT_BEGIN() RUBY_SYMBOL_EXPORT_BEGIN
+#endif
+
+/** Counterpart of #RUBY3_SYMBOL_EXPORT_BEGIN */
+#if defined(__DOXYGEN__)
+# define RUBY3_SYMBOL_EXPORT_END() /* void */
+#elif defined(__cplusplus)
+# define RUBY3_SYMBOL_EXPORT_END() } RUBY_SYMBOL_EXPORT_END
+#else
+# define RUBY3_SYMBOL_EXPORT_END()   RUBY_SYMBOL_EXPORT_END
+#endif
+
+
 #endif /* RUBY3_DLLEXPORT_H */

@@ -27,14 +27,7 @@
 #include "ruby/backward/2/gcc_version_since.h"
 #include "ruby/backward/2/r_cast.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 #define RSTRING_NOEMBED RSTRING_NOEMBED
 #define RSTRING_EMBED_LEN_MASK RSTRING_EMBED_LEN_MASK
@@ -113,13 +106,6 @@ VALUE rb_str_export(VALUE);
 } while (0)
 VALUE rb_str_export_locale(VALUE);
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_RSTRING_H */

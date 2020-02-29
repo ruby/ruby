@@ -24,14 +24,7 @@
 #include "ruby/3/value.h"
 #include "ruby/3/iterator.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 /* cont.c */
 VALUE rb_fiber_new(rb_block_call_func_t, VALUE);
@@ -42,13 +35,6 @@ VALUE rb_fiber_yield_kw(int argc, const VALUE *argv, int kw_splat);
 VALUE rb_fiber_current(void);
 VALUE rb_fiber_alive_p(VALUE);
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_INTERN_CONT_H */

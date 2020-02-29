@@ -36,14 +36,7 @@
 #include "ruby/3/special_consts.h"
 #include "ruby/3/value.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 #define RB_INT2FIX(i) (((VALUE)(i))<<1 | RUBY_FIXNUM_FLAG)
 #define INT2FIX(i) RB_INT2FIX(i)
@@ -131,13 +124,6 @@ rb_ulong2num_inline(unsigned long v)
 #define LONG2NUM(x) RB_LONG2NUM(x)
 #define ULONG2NUM(x) RB_ULONG2NUM(x)
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_ARITHMETIC_LONG_H */
