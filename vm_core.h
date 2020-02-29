@@ -46,7 +46,7 @@
 #define VMDEBUG 3
 #endif
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 
 #include <stddef.h>
 #include <signal.h>

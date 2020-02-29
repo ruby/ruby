@@ -13,7 +13,7 @@
 # define MINGW_HAS_SECURE_API 1
 #endif
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 
 #include <ctype.h>
 #include <errno.h>

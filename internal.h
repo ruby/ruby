@@ -12,7 +12,7 @@
 #ifndef RUBY_INTERNAL_H
 #define RUBY_INTERNAL_H 1
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 
 #ifdef __cplusplus
 # error not for C++

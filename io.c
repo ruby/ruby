@@ -11,7 +11,7 @@
 
 **********************************************************************/
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 
 #ifdef _WIN32
 # include "ruby/ruby.h"

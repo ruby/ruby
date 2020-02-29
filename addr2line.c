@@ -13,7 +13,7 @@
 #pragma clang diagnostic ignored "-Wgcc-compat"
 #endif
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 #include "ruby/defines.h"
 #include "ruby/missing.h"
 #include "addr2line.h"

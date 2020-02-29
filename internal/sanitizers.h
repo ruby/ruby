@@ -9,7 +9,7 @@
  */
 #ifndef INTERNAL_SANITIZERS_H
 #define INTERNAL_SANITIZERS_H
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 #include "internal/compilers.h" /* for __has_feature */
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H

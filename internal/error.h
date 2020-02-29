@@ -9,7 +9,7 @@
  */
 #ifndef INTERNAL_ERROR_H
 #define INTERNAL_ERROR_H
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 #include <stdarg.h>             /* for va_list */
 #include "internal/stdbool.h"   /* for bool */
 #include "internal/string.h"    /* for rb_fstring_cstr */

@@ -8,7 +8,7 @@
 
 **********************************************************************/
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 
 #include <math.h>
 
@@ -22,7 +22,6 @@
 #include "internal/proc.h"
 #include "internal/random.h"
 #include "internal/variable.h"
-#include "ruby/config.h"
 #include "variable.h"
 
 /* finish iseq array */

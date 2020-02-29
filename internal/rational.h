@@ -9,7 +9,7 @@
  */
 #ifndef INTERNAL_RATIONAL_H
 #define INTERNAL_RATIONAL_H
-#include "ruby/config.h"        /* for HAVE_LIBGMP */
+#include "ruby/3/config.h"      /* for HAVE_LIBGMP */
 #include "ruby/ruby.h"          /* for struct RBasic */
 #include "internal/gc.h"        /* for RB_OBJ_WRITE */
 #include "internal/numeric.h"   /* for INT_POSITIVE_P */

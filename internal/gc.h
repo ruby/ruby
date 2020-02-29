@@ -9,7 +9,7 @@
  */
 #ifndef INTERNAL_GC_H
 #define INTERNAL_GC_H
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 
 #include <stddef.h>             /* for size_t */
 

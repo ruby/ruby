@@ -9,7 +9,7 @@ reference - Haruhiko Okumura: C-gengo niyoru saishin algorithm jiten
 /***********************************************************
     gamma.c -- Gamma function
 ***********************************************************/
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 #include "ruby/missing.h"
 #include <math.h>
 #include <errno.h>

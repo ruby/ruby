@@ -9,7 +9,7 @@
  */
 #ifndef INTERNAL_STDBOOL_H
 #define INTERNAL_STDBOOL_H
-#include "ruby/config.h" /* for HAVE_STDBOOL_H */
+#include "ruby/3/config.h"      /* for HAVE_STDBOOL_H */
 
 #ifdef HAVE_STDBOOL_H
 # include <stdbool.h>
