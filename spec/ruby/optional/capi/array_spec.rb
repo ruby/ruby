@@ -272,6 +272,16 @@ describe "C-API Array function" do
     end
   end
 
+  describe "RARRAY_ASET" do
+    # This macro does NOT do any bounds checking!
+    it "writes an element in the array" do
+      ary = [1, 2, 3]
+      @s.RARRAY_ASET(ary, 0, 0)
+      @s.RARRAY_ASET(ary, 2, 42)
+      ary.should == [0, 2, 42]
+    end
+  end
+
   describe "rb_assoc_new" do
     it "returns an array containing the two elements" do
       @s.rb_assoc_new(1, 2).should == [1, 2]

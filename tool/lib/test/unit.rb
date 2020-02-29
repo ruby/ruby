@@ -474,6 +474,14 @@ module Test
         # Require needed thing for parallel running
         require 'timeout'
         @tasks = @files.dup # Array of filenames.
+
+        case MiniTest::Unit::TestCase.test_order
+        when :random
+          @tasks.shuffle!
+        else
+          # sorted
+        end
+
         @need_quit = false
         @dead_workers = []  # Array of dead workers.
         @warnings = []

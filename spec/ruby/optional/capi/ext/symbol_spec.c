@@ -7,6 +7,10 @@
 extern "C" {
 #endif
 
+VALUE symbol_spec_SYMBOL_P(VALUE self, VALUE obj) {
+  return SYMBOL_P(obj) ? Qtrue : Qfalse;
+}
+
 VALUE symbol_spec_rb_intern(VALUE self, VALUE string) {
   return ID2SYM(rb_intern(RSTRING_PTR(string)));
 }
@@ -73,6 +77,7 @@ VALUE symbol_spec_rb_sym2str(VALUE self, VALUE sym) {
 
 void Init_symbol_spec(void) {
   VALUE cls = rb_define_class("CApiSymbolSpecs", rb_cObject);
+  rb_define_method(cls, "SYMBOL_P", symbol_spec_SYMBOL_P, 1);
   rb_define_method(cls, "rb_intern", symbol_spec_rb_intern, 1);
   rb_define_method(cls, "rb_intern2", symbol_spec_rb_intern2, 2);
   rb_define_method(cls, "rb_intern_const", symbol_spec_rb_intern_const, 1);

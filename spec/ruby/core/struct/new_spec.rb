@@ -15,7 +15,7 @@ describe "Struct.new" do
     second = nil
     -> {
       second = Struct.new('Person', :hair, :sex)
-    }.should complain(/redefining constant/)
+    }.should complain(/constant/)
     second.should == Struct::Person
 
     first.members.should_not == second.members

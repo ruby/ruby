@@ -15,5 +15,9 @@ ruby_version_is "2.6" do
         (o =~ true).should       be_nil
       end
     end
+
+    it "should not warn" do
+      -> { nil =~ /a/ }.should_not complain(verbose: true)
+    end
   end
 end

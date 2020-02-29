@@ -8,12 +8,17 @@ require 'rbconfig'
 OBJDIR ||= File.expand_path("../../../ext/#{RUBY_ENGINE}/#{RUBY_VERSION}", __FILE__)
 
 def object_path
-  mkdir_p(OBJDIR)
-  OBJDIR
+  path = OBJDIR
+  if ENV['SPEC_CAPI_CXX'] == 'true'
+    path = "#{path}/cxx"
+  end
+  mkdir_p(path)
+  path
 end
 
 def compile_extension(name)
   debug = false
+  cxx = ENV['SPEC_CAPI_CXX'] == 'true'
   run_mkmf_in_process = RUBY_ENGINE == 'truffleruby'
 
   core_ext_dir = File.expand_path("../ext", __FILE__)
@@ -54,7 +59,11 @@ def compile_extension(name)
   Dir.mkdir(tmpdir)
   begin
     ["#{core_ext_dir}/rubyspec.h", "#{spec_ext_dir}/#{ext}.c"].each do |file|
-      cp file, "#{tmpdir}/#{File.basename(file)}"
+      if cxx and file.end_with?('.c')
+        cp file, "#{tmpdir}/#{File.basename(file, '.c')}.cpp"
+      else
+        cp file, "#{tmpdir}/#{File.basename(file)}"
+      end
     end
 
     Dir.chdir(tmpdir) do
@@ -64,11 +73,13 @@ def compile_extension(name)
         init_mkmf unless required
         create_makefile(ext, tmpdir)
       else
-        File.write("extconf.rb", "require 'mkmf'\n" +
-          "$ruby = ENV.values_at('RUBY_EXE', 'RUBY_FLAGS').join(' ')\n" +
+        File.write("extconf.rb", <<-RUBY)
+          require 'mkmf'
+          $ruby = ENV.values_at('RUBY_EXE', 'RUBY_FLAGS').join(' ')
           # MRI magic to consider building non-bundled extensions
-          "$extout = nil\n" +
-          "create_makefile(#{ext.inspect})\n")
+          $extout = nil
+          create_makefile(#{ext.inspect})
+        RUBY
         output = ruby_exe("extconf.rb")
         raise "extconf failed:\n#{output}" unless $?.success?
         $stderr.puts output if debug

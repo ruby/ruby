@@ -1,6 +1,6 @@
 #--
 #
-# $Id: 4c5f4311663b6d03050953d64d6a0e7905ff2216 $
+#
 #
 # Copyright (c) 1999-2006 Minero Aoki
 #
@@ -198,7 +198,7 @@ module Racc
     def mkmapexp(arr)
       i = ii = 0
       as = arr.size
-      map = ''
+      map = String.new
       maxdup = RE_DUP_MAX
       curr = nil
       while i < as

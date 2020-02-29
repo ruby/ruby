@@ -13,8 +13,15 @@ class Test_NotImplement < Test::Unit::TestCase
   end
 
   def test_respond_to
+    assert_include(Bug.methods(false), :notimplement)
+    assert_include(Bug::NotImplement.instance_methods(false), :notimplement)
     assert_not_respond_to(Bug, :notimplement)
     assert_not_respond_to(Bug::NotImplement.new, :notimplement)
+  end
+
+  def test_method_inspect_notimplement
+    assert_match(/not-implemented/, Bug.method(:notimplement).inspect)
+    assert_match(/not-implemented/, Bug::NotImplement.instance_method(:notimplement).inspect)
   end
 
   def test_not_method_defined

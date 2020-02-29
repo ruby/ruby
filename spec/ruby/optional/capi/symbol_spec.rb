@@ -8,6 +8,16 @@ describe "C-API Symbol function" do
     @s = CApiSymbolSpecs.new
   end
 
+  describe "SYMBOL_P" do
+    it "returns true for a Symbol" do
+      @s.SYMBOL_P(:foo).should == true
+    end
+
+    it "returns false for non-Symbols" do
+      @s.SYMBOL_P('bar').should == false
+    end
+  end
+
   describe "rb_intern" do
     it "converts a string to a symbol, uniquely" do
       @s.rb_intern("test_symbol").should == :test_symbol

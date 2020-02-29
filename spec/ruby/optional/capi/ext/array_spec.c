@@ -54,6 +54,11 @@ static VALUE array_spec_RARRAY_AREF(VALUE self, VALUE array, VALUE index) {
   return RARRAY_AREF(array, FIX2INT(index));
 }
 
+static VALUE array_spec_RARRAY_ASET(VALUE self, VALUE array, VALUE index, VALUE value) {
+  RARRAY_ASET(array, FIX2INT(index), value);
+  return value;
+}
+
 static VALUE array_spec_rb_ary_aref(int argc, VALUE *argv, VALUE self) {
   VALUE ary, args;
   rb_scan_args(argc, argv, "1*", &ary, &args);
@@ -244,6 +249,7 @@ void Init_array_spec(void) {
   rb_define_method(cls, "RARRAY_PTR_assign", array_spec_RARRAY_PTR_assign, 2);
   rb_define_method(cls, "RARRAY_PTR_memcpy", array_spec_RARRAY_PTR_memcpy, 2);
   rb_define_method(cls, "RARRAY_AREF", array_spec_RARRAY_AREF, 2);
+  rb_define_method(cls, "RARRAY_ASET", array_spec_RARRAY_ASET, 3);
   rb_define_method(cls, "rb_ary_aref", array_spec_rb_ary_aref, -1);
   rb_define_method(cls, "rb_ary_clear", array_spec_rb_ary_clear, 1);
   rb_define_method(cls, "rb_ary_delete", array_spec_rb_ary_delete, 2);

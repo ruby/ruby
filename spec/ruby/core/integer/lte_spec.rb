@@ -46,6 +46,11 @@ describe "Integer#<=" do
       (@bignum <= (@bignum + 0.5)).should == false
     end
 
+    it "returns true for bignums compare to a bigger float" do
+      (18446744073709551616 <= 1.8446744073709552e+19).should == true
+      (@bignum <= (@bignum + 9999.0)).should == true
+    end
+
     it "raises an ArgumentError when given a non-Integer" do
       -> { @bignum <= "4" }.should raise_error(ArgumentError)
       -> { @bignum <= mock('str') }.should raise_error(ArgumentError)

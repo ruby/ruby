@@ -16,15 +16,15 @@ static VALUE registered_reference_address(VALUE self) {
   return registered_reference_value;
 }
 
-static VALUE gc_spec_rb_gc_enable() {
+static VALUE gc_spec_rb_gc_enable(VALUE self) {
   return rb_gc_enable();
 }
 
-static VALUE gc_spec_rb_gc_disable() {
+static VALUE gc_spec_rb_gc_disable(VALUE self) {
   return rb_gc_disable();
 }
 
-static VALUE gc_spec_rb_gc() {
+static VALUE gc_spec_rb_gc(VALUE self) {
   rb_gc();
   return Qnil;
 }

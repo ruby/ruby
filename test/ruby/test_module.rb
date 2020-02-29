@@ -302,6 +302,8 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_nested_get
+    OtherSetup.call
+
     assert_equal Other, Object.const_get([self.class, 'Other'].join('::'))
     assert_equal User::USER, self.class.const_get([User, 'USER'].join('::'))
     assert_raise(NameError) {
@@ -310,6 +312,8 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_nested_get_symbol
+    OtherSetup.call
+
     const = [self.class, Other].join('::').to_sym
     assert_raise(NameError) {Object.const_get(const)}
 
@@ -345,6 +349,8 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_nested_defined_symbol
+    OtherSetup.call
+
     const = [self.class, Other].join('::').to_sym
     assert_raise(NameError) {Object.const_defined?(const)}
 
@@ -471,6 +477,57 @@ class TestModule < Test::Unit::TestCase
 
   def test_include_with_no_args
     assert_raise(ArgumentError) { Module.new { include } }
+  end
+
+  def test_include_into_module_already_included
+    c = Class.new{def foo; [:c] end}
+    modules = lambda do ||
+      sub = Class.new(c){def foo; [:sc] + super end}
+      [
+        Module.new{def foo; [:m1] + super end},
+        Module.new{def foo; [:m2] + super end},
+        Module.new{def foo; [:m3] + super end},
+        sub,
+        sub.new
+      ]
+    end
+
+    m1, m2, m3, sc, o = modules.call
+    assert_equal([:sc, :c], o.foo)
+    sc.include m1
+    assert_equal([:sc, :m1, :c], o.foo)
+    m1.include m2
+    assert_equal([:sc, :m1, :m2, :c], o.foo)
+    m2.include m3
+    assert_equal([:sc, :m1, :m2, :m3, :c], o.foo)
+
+    m1, m2, m3, sc, o = modules.call
+    sc.prepend m1
+    assert_equal([:m1, :sc, :c], o.foo)
+    m1.include m2
+    assert_equal([:m1, :m2, :sc, :c], o.foo)
+    m2.include m3
+    assert_equal([:m1, :m2, :m3, :sc, :c], o.foo)
+
+    m1, m2, m3, sc, o = modules.call
+    sc.include m2
+    assert_equal([:sc, :m2, :c], o.foo)
+    sc.prepend m1
+    assert_equal([:m1, :sc, :m2, :c], o.foo)
+    m1.include m2
+    assert_equal([:m1, :sc, :m2, :c], o.foo)
+    m1.include m3
+    assert_equal([:m1, :m3, :sc, :m2, :c], o.foo)
+
+    m1, m2, m3, sc, o = modules.call
+    sc.include m3
+    sc.include m2
+    assert_equal([:sc, :m2, :m3, :c], o.foo)
+    sc.prepend m1
+    assert_equal([:m1, :sc, :m2, :m3, :c], o.foo)
+    m1.include m2
+    m1.include m3
+    assert_equal([:m1, :sc, :m2, :m3, :c], o.foo)
   end
 
   def test_included_modules

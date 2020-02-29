@@ -60,8 +60,8 @@ static VALUE util_spec_rb_get_kwargs(VALUE self, VALUE keyword_hash, VALUE keys,
   int values_len = req + (opt < 0 ? -1 - opt : opt);
   int i = 0;
 
-  ID *ids = malloc(sizeof(VALUE) * len);
-  VALUE *results = malloc(sizeof(VALUE) * values_len);
+  ID *ids = (ID*) malloc(sizeof(VALUE) * len);
+  VALUE *results = (VALUE*) malloc(sizeof(VALUE) * values_len);
   int extracted = 0;
   VALUE ary = Qundef;
 

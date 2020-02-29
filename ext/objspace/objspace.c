@@ -665,12 +665,12 @@ static const rb_data_type_t iow_data_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-static VALUE rb_mInternalObjectWrapper;
+static VALUE rb_cInternalObjectWrapper;
 
 static VALUE
 iow_newobj(VALUE obj)
 {
-    return TypedData_Wrap_Struct(rb_mInternalObjectWrapper, &iow_data_type, (void *)obj);
+    return TypedData_Wrap_Struct(rb_cInternalObjectWrapper, &iow_data_type, (void *)obj);
 }
 
 /* Returns the type of the internal object. */
@@ -866,7 +866,8 @@ wrap_klass_iow(VALUE klass)
     if (!RTEST(klass)) {
 	return Qnil;
     }
-    else if (RB_TYPE_P(klass, T_ICLASS)) {
+    else if (RB_TYPE_P(klass, T_ICLASS) ||
+             CLASS_OF(klass) == Qfalse /* hidden object */) {
 	return iow_newobj(klass);
     }
     else {
@@ -979,10 +980,10 @@ Init_objspace(void)
      *
      * You can use the #type method to check the type of the internal object.
      */
-    rb_mInternalObjectWrapper = rb_define_class_under(rb_mObjSpace, "InternalObjectWrapper", rb_cObject);
-    rb_define_method(rb_mInternalObjectWrapper, "type", iow_type, 0);
-    rb_define_method(rb_mInternalObjectWrapper, "inspect", iow_inspect, 0);
-    rb_define_method(rb_mInternalObjectWrapper, "internal_object_id", iow_internal_object_id, 0);
+    rb_cInternalObjectWrapper = rb_define_class_under(rb_mObjSpace, "InternalObjectWrapper", rb_cObject);
+    rb_define_method(rb_cInternalObjectWrapper, "type", iow_type, 0);
+    rb_define_method(rb_cInternalObjectWrapper, "inspect", iow_inspect, 0);
+    rb_define_method(rb_cInternalObjectWrapper, "internal_object_id", iow_internal_object_id, 0);
 
     Init_object_tracing(rb_mObjSpace);
     Init_objspace_dump(rb_mObjSpace);

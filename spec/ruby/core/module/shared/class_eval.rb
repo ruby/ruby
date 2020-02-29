@@ -112,4 +112,48 @@ describe :module_class_eval, shared: true do
     a.attribute.should == "A"
     b.attribute.should == "B"
   end
+
+  it "activates refinements from the eval scope" do
+    refinery = Module.new do
+      refine ModuleSpecs::NamedClass do
+        def foo
+          "bar"
+        end
+      end
+    end
+
+    mid = @method
+    result = nil
+
+    Class.new do
+      using refinery
+
+      result = send(mid, "ModuleSpecs::NamedClass.new.foo")
+    end
+
+    result.should == "bar"
+  end
+
+  it "activates refinements from the eval scope with block" do
+    refinery = Module.new do
+      refine ModuleSpecs::NamedClass do
+        def foo
+          "bar"
+        end
+      end
+    end
+
+    mid = @method
+    result = nil
+
+    Class.new do
+      using refinery
+
+      result = send(mid) do
+        ModuleSpecs::NamedClass.new.foo
+      end
+    end
+
+    result.should == "bar"
+  end
 end

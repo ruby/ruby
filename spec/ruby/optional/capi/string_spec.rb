@@ -513,6 +513,24 @@ describe "C-API String function" do
       end
       chars.should == [55, 48, 227, 131, 145, 227, 130, 175]
     end
+
+    it "returns a pointer which can be cast and used as another type" do
+      s = "70パク".
+        encode(Encoding::UTF_16LE).
+        force_encoding(Encoding::UTF_16LE).
+        encode(Encoding::UTF_8)
+
+      ints = []
+      @s.RSTRING_PTR_iterate_uint32(s) do |i|
+        ints << i
+      end
+      ints.should == s.unpack('LL')
+    end
+
+    it "allows a short memcpy to the string which may be converted to a single write operation by the compiler" do
+      str = "        "
+      @s.RSTRING_PTR_short_memcpy(str).should == "Infinity"
+    end
   end
 
   describe "RSTRING_LEN" do

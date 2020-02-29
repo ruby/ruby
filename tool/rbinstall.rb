@@ -884,7 +884,7 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
   gem_ext_dir = "#$extout/gems/#{CONFIG['arch']}"
   extensions_dir = Gem::StubSpecification.gemspec_stub("", gem_dir, gem_dir).extensions_dir
   File.foreach("#{srcdir}/gems/bundled_gems") do |name|
-    next unless /^(\S+)\s+(S+).*/ =~ name
+    next unless /^(\S+)\s+(\S+).*/ =~ name
     gem_name = "#$1-#$2"
     path = "#{srcdir}/.bundle/gems/#{gem_name}/#$1.gemspec"
     next unless File.exist?(path)

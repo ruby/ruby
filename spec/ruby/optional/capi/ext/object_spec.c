@@ -102,7 +102,7 @@ static VALUE so_rb_obj_dup(VALUE self, VALUE klass) {
 static VALUE so_rb_obj_call_init(VALUE self, VALUE object,
                                  VALUE nargs, VALUE args) {
   int c_nargs = FIX2INT(nargs);
-  VALUE *c_args = alloca(sizeof(VALUE) * c_nargs);
+  VALUE *c_args = (VALUE*) alloca(sizeof(VALUE) * c_nargs);
   int i;
 
   for (i = 0; i < c_nargs; i++)

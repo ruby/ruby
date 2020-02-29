@@ -36,10 +36,11 @@ ruby_version_is "2.7" do
     it "copies own timezone to the returning value" do
       @time.zone.should == @time.ceil.zone
 
-      with_timezone "JST-9" do
-        time = Time.at 0, 1
-        time.zone.should == time.ceil.zone
+      time = with_timezone "JST-9" do
+        Time.at 0, 1
       end
+
+      time.zone.should == time.ceil.zone
     end
   end
 end
