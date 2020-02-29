@@ -1060,7 +1060,7 @@ static int looking_at_eol_p(struct parser_params *p);
 %token <id>   tIVAR          "instance variable"
 %token <id>   tCONSTANT      "constant"
 %token <id>   tCVAR          "class variable"
-%token <id>   tLABEL
+%token <id>   tLABEL         "label"
 %token <node> tINTEGER       "integer literal"
 %token <node> tFLOAT         "float literal"
 %token <node> tRATIONAL      "rational literal"
