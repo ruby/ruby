@@ -19,6 +19,7 @@
 #include "id_table.h"
 #include "internal.h"
 #include "internal/class.h"
+#include "internal/cont.h"
 #include "internal/file.h"
 #include "internal/hash.h"
 #include "internal/mjit.h"
@@ -810,6 +811,9 @@ mjit_init(const struct mjit_options *opts)
     rb_native_cond_initialize(&mjit_client_wakeup);
     rb_native_cond_initialize(&mjit_worker_wakeup);
     rb_native_cond_initialize(&mjit_gc_wakeup);
+
+    // Make sure root_fiber's saved_ec is scanned by mark_ec_units
+    rb_fiber_init_mjit_cont(GET_EC()->fiber_ptr);
 
     // Initialize class_serials cache for compilation
     valid_class_serials = rb_hash_new();

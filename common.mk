@@ -2907,6 +2907,7 @@ mjit.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/array.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/class.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+mjit.$(OBJEXT): $(top_srcdir)/internal/cont.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/file.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/gc.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/hash.h

@@ -1104,6 +1104,15 @@ cont_save_thread(rb_context_t *cont, rb_thread_t *th)
 }
 
 static void
+cont_init_mjit_cont(rb_context_t *cont)
+{
+    VM_ASSERT(cont->mjit_cont == NULL);
+    if (mjit_enabled) {
+        cont->mjit_cont = mjit_cont_new(&(cont->saved_ec));
+    }
+}
+
+static void
 cont_init(rb_context_t *cont, rb_thread_t *th)
 {
     /* save thread context */
@@ -1112,9 +1121,7 @@ cont_init(rb_context_t *cont, rb_thread_t *th)
     cont->saved_ec.local_storage = NULL;
     cont->saved_ec.local_storage_recursive_hash = Qnil;
     cont->saved_ec.local_storage_recursive_hash_for_trace = Qnil;
-    if (mjit_enabled) {
-        cont->mjit_cont = mjit_cont_new(&cont->saved_ec);
-    }
+    cont_init_mjit_cont(cont);
 }
 
 static rb_context_t *
@@ -1129,6 +1136,14 @@ cont_new(VALUE klass)
     cont->self = contval;
     cont_init(cont, th);
     return cont;
+}
+
+void
+rb_fiber_init_mjit_cont(struct rb_fiber_struct *fiber)
+{
+    // Currently this function is meant for root_fiber. Others go through cont_new.
+    // XXX: Is this mjit_cont `mjit_cont_free`d?
+    cont_init_mjit_cont(&fiber->cont);
 }
 
 #if 0
