@@ -78,7 +78,7 @@ module TestIRB
       end
     end
 
-    def test_braces_on_thier_own_line
+    def test_braces_on_their_own_line
       input_with_correct_indents = [
         Row.new(%q(if true), nil, 2),
         Row.new(%q(  [), nil, 4),
