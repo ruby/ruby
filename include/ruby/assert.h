@@ -1,12 +1,8 @@
 #ifndef RUBY_ASSERT_H
 #define RUBY_ASSERT_H
+#include "ruby/3/dllexport.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 NORETURN(void rb_assert_failure(const char *, int, const char *, const char *));
 #ifdef RUBY_FUNCTION_NAME_STRING
@@ -44,11 +40,6 @@ NORETURN(void rb_assert_failure(const char *, int, const char *, const char *));
 # endif
 #endif
 
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif

@@ -26,14 +26,7 @@
 #include "ruby/3/special_consts.h"
 #include "ruby/backward/2/long_long.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 #ifdef HAVE_LONG_LONG
 VALUE rb_ll2inum(LONG_LONG);
@@ -59,13 +52,6 @@ rb_num2ll_inline(VALUE x)
 # define NUM2ULL(x) RB_NUM2ULL(x)
 #endif
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_ARITHMETIC_LONG_LONG_H */

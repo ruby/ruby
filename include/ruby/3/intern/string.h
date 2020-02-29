@@ -24,14 +24,7 @@
 #include "ruby/3/value.h"
 #include "ruby/backward/2/attributes.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 /* string.c */
 VALUE rb_str_new(const char*, long);
@@ -202,13 +195,6 @@ VALUE rb_str_succ(VALUE);
 #define rb_utf8_str_new_literal(str) rb_utf8_str_new_lit(str)
 #define rb_enc_str_new_literal(str, enc) rb_enc_str_new_lit(str, enc)
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_INTERN_STRING_H */

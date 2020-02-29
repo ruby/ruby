@@ -49,14 +49,7 @@ void *alloca();
 #include "ruby/3/xmalloc.h"
 #include "ruby/backward/2/attributes.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 #ifdef __GNUC__
 #define RB_GC_GUARD(v) \
@@ -177,13 +170,6 @@ ruby_nonempty_memcpy(void *dest, const void *src, size_t n)
 #define memcpy(p1,p2,n) ruby_nonempty_memcpy(p1, p2, n)
 #endif
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_MEMORY_H */

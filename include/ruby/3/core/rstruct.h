@@ -26,14 +26,7 @@
 # include "ruby/backward.h"
 #endif
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 VALUE rb_struct_size(VALUE s);
 VALUE rb_struct_aref(VALUE, VALUE);
@@ -43,13 +36,6 @@ VALUE rb_struct_aset(VALUE, VALUE, VALUE);
 #define RSTRUCT_SET(st, idx, v) rb_struct_aset(st, INT2NUM(idx), (v))
 #define RSTRUCT_GET(st, idx)    rb_struct_aref(st, INT2NUM(idx))
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_RSTRUCT_H */

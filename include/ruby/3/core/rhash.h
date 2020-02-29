@@ -38,14 +38,7 @@
 # include "ruby/backward.h"
 #endif
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 /* RHash is defined at internal.h */
 size_t rb_hash_size_num(VALUE hash);
@@ -59,13 +52,6 @@ VALUE rb_hash_set_ifnone(VALUE hash, VALUE ifnone);
 #define RHASH_EMPTY_P(h) (RHASH_SIZE(h) == 0)
 #define RHASH_SET_IFNONE(h, ifnone) rb_hash_set_ifnone((VALUE)h, ifnone)
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_RHASH_H */

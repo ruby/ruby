@@ -10,13 +10,6 @@
 #ifndef RUBY_DEFINES_H
 #define RUBY_DEFINES_H 1
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
 #include "ruby/3/config.h"
 
 #ifdef __GNUC__
@@ -94,20 +87,13 @@ extern "C" {
         /* MB_CUR_MAX will not work well in C locale */
 #endif
 
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 #if defined(__sparc)
 void rb_sparc_flush_register_windows(void);
 #  define FLUSH_REGISTER_WINDOWS rb_sparc_flush_register_windows()
 #else
 #  define FLUSH_REGISTER_WINDOWS ((void)0)
 #endif
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_DEFINES_H */

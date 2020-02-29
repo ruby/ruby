@@ -24,14 +24,7 @@
 #include "ruby/3/dllexport.h"
 #include "ruby/backward/2/r_cast.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 struct RUBY_ALIGNAS(SIZEOF_VALUE) RBasic {
     VALUE flags;
@@ -49,13 +42,6 @@ enum ruby_rvalue_flags {
 VALUE rb_obj_hide(VALUE obj);
 VALUE rb_obj_reveal(VALUE obj, VALUE klass); /* do not use this API to change klass information */
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_RBASIC_H */

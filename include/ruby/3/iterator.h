@@ -24,14 +24,7 @@
 #include "ruby/3/value.h"
 #include "ruby/backward/2/attributes.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 #define RB_BLOCK_CALL_FUNC_STRICT 1
 #define RUBY_BLOCK_CALL_FUNC_TAKES_BLOCKARG 1
@@ -63,13 +56,6 @@ VALUE rb_catch_obj(VALUE,rb_block_call_func_t,VALUE);
 NORETURN(void rb_throw(const char*,VALUE));
 NORETURN(void rb_throw_obj(VALUE,VALUE));
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_ITERATOR_H */

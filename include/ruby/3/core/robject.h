@@ -26,14 +26,7 @@
 #include "ruby/3/value.h"
 #include "ruby/backward/2/r_cast.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 #define ROBJECT_EMBED_LEN_MAX ROBJECT_EMBED_LEN_MAX
 #define ROBJECT_EMBED ROBJECT_EMBED
@@ -69,13 +62,6 @@ struct RObject {
      ROBJECT(o)->as.heap.iv_index_tbl)
 #define ROBJECT(obj) (R_CAST(RObject)(obj))
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_ROBJECT_H */

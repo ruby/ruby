@@ -23,14 +23,7 @@
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 VALUE rb_eval_string(const char*);
 VALUE rb_eval_string_protect(const char*, int*);
@@ -52,13 +45,6 @@ VALUE rb_current_receiver(void);
 int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *);
 VALUE rb_extract_keywords(VALUE *orighash);
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_EVAL_H */

@@ -14,13 +14,6 @@
 #ifndef RUBY_RUBY_H
 #define RUBY_RUBY_H 1
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
 #include "ruby/3/config.h"
 
 #ifdef HAVE_INTRINSICS_H
@@ -61,7 +54,7 @@ extern "C" {
 #include "ruby/backward/2/limits.h"
 #include "ruby/backward/2/rmodule.h"
 
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 /* Module#methods, #singleton_methods and so on return Symbols */
 #define USE_SYMBOL_AS_METHOD_NAME 1
@@ -155,13 +148,6 @@ __extension__({ \
 # include "ruby/backward.h"
 #endif
 
-RUBY_SYMBOL_EXPORT_END
-
-#ifdef __cplusplus
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C++" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_RUBY_H */

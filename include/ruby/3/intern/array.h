@@ -23,14 +23,7 @@
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 /* array.c */
 void rb_mem_clear(VALUE*, long);
@@ -80,13 +73,6 @@ VALUE rb_ary_resize(VALUE ary, long len);
 #define rb_ary_new3 rb_ary_new_from_args
 #define rb_ary_new4 rb_ary_new_from_values
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_INTERN_ARRAY_H */

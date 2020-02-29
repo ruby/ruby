@@ -175,14 +175,7 @@ enum ruby_fl_type {
 #define RUBY_ELTS_SHARED RUBY_ELTS_SHARED
 #define ELTS_SHARED RUBY_ELTS_SHARED
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 void rb_obj_infect(VALUE victim, VALUE carrier);
 
@@ -199,13 +192,6 @@ rb_obj_freeze_inline(VALUE x)
     }
 }
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_FL_TYPE_H */

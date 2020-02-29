@@ -25,14 +25,7 @@
 #include "ruby/3/value.h"
 #include "ruby/backward/2/attributes.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 /* process.c */
 void rb_last_status_set(int status, rb_pid_t pid);
@@ -46,13 +39,6 @@ rb_pid_t rb_spawn_err(int, const VALUE*, char*, size_t);
 VALUE rb_proc_times(VALUE);
 VALUE rb_detach_process(rb_pid_t pid);
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_INTERN_PROCESS_H */

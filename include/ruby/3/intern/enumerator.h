@@ -25,14 +25,7 @@
 #include "ruby/3/symbol.h"
 #include "ruby/3/value.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 /* enumerator.c */
 VALUE rb_enumeratorize(VALUE, VALUE, int, const VALUE *);
@@ -69,13 +62,6 @@ typedef struct {
 } rb_arithmetic_sequence_components_t;
 int rb_arithmetic_sequence_extract(VALUE, rb_arithmetic_sequence_components_t *);
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_INTERN_ENUMERATOR_H */
