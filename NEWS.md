@@ -10,11 +10,16 @@ sufficient information, see the ChangeLog file or Redmine
 
 ## Language changes
 
+* Keyword arguments are now separated from positional arguments.
+  Code that resulted in deprecation warnings in Ruby 2.7 will now
+  result in ArgumentError or different behavior. [[Feature #14183]]
+
 * $SAFE is now a normal global variable with no special behavior.
   [[Feature #16131]]
 
-* yield in singleton class definitions in methods is now a SyntaxError.
-  [[Feature #15575]]
+* yield in singleton class definitions in methods is now a SyntaxError
+  instead of a warning. yield in a class definition outside of a method
+  is now a SyntaxError instead of a LocalJumpError.  [[Feature #15575]]
 
 ## Command line options
 
@@ -33,6 +38,28 @@ sufficient information, see the ChangeLog file or Redmine
 
         * Hash#transform_keys now accepts a hash that maps keys to new
           keys.  [[Feature #16274]]
+
+* Kernel
+
+    * Modified method
+
+        * Kernel#clone when called with freeze: false keyword will call
+          #initialize_clone with the freeze: false keyword.
+          [[Bug #14266]]
+
+        * Kernel#eval when called with two arguments will use "(eval)"
+          for __FILE__ and 1 for __LINE__ in the evaluated code.
+          [[Bug #4352]]
+
+* Module
+
+    * Modified method
+
+        * Module#include now includes the arguments in modules and
+          classes that have already included or prepended the receiver,
+          mirroring the behavior if the arguments were included in the
+          receiver before the other modules and classes included or
+          prepended the receiver.  [[Feature #9573]]
 
 * Symbol
 
@@ -69,9 +96,19 @@ sufficient information, see the ChangeLog file or Redmine
 
 ## C API updates
 
+* C API functions related to $SAFE have been removed.
+  [[Feature #16131]]
+
 ## Implementation improvements
 
 ## Miscellaneous changes
+
+* Methods using ruby2_keywords will no longer keep empty keyword
+  splats, those are now removed just as they are for methods not
+  using ruby2_keywords.
+
+* Taint deprecation warnings are now issued in regular mode in
+  addition to verbose warning mode.  [[Feature #16131]]
 
 
 [Feature #8709]:  https://bugs.ruby-lang.org/issues/8709
