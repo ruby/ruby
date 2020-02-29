@@ -285,9 +285,8 @@ VALUE string_spec_RSTRING_PTR_iterate(VALUE self, VALUE str) {
 }
 
 VALUE string_spec_RSTRING_PTR_iterate_uint32(VALUE self, VALUE str) {
-  int i;
   uint32_t* ptr;
-  int l = RSTRING_LEN(str) / sizeof(uint32_t);
+  long i, l = RSTRING_LEN(str) / sizeof(uint32_t);
 
   ptr = (uint32_t *)RSTRING_PTR(str);
   for(i = 0; i < l; i++) {
