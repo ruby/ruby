@@ -88,6 +88,7 @@ class TestRequire < Test::Unit::TestCase
   end
 
   def prepare_require_path(dir, encoding)
+    require 'enc/trans/single_byte'
     Dir.mktmpdir {|tmp|
       begin
         require_path = File.join(tmp, dir, 'foo.rb').encode(encoding)
