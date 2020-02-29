@@ -111,8 +111,12 @@ sufficient information, see the ChangeLog file or Redmine
   addition to verbose warning mode.  [[Feature #16131]]
 
 
+[Bug #4352]:      https://bugs.ruby-lang.org/issues/4352
 [Feature #8709]:  https://bugs.ruby-lang.org/issues/8709
 [Feature #8948]:  https://bugs.ruby-lang.org/issues/8948
+[Feature #9573]:  https://bugs.ruby-lang.org/issues/9573
+[Feature #14183]: https://bugs.ruby-lang.org/issues/14183
+[Bug #14266]:     https://bugs.ruby-lang.org/issues/14266
 [Feature #15575]: https://bugs.ruby-lang.org/issues/15575
 [Feature #16131]: https://bugs.ruby-lang.org/issues/16131
 [Feature #16260]: https://bugs.ruby-lang.org/issues/16260
