@@ -10,7 +10,7 @@
  */
 #ifndef INTERNAL_UTIL_H /* -*- C -*- */
 #define INTERNAL_UTIL_H
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 #include <stddef.h>             /* for size_t */
 
 #ifdef HAVE_SYS_TYPES_H

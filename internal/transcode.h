@@ -9,7 +9,7 @@
  */
 #ifndef INTERNAL_TRANSCODE_H
 #define INTERNAL_TRANSCODE_H
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 #include <stddef.h>             /* for size_t */
 #include "ruby/ruby.h"          /* for VALUE */
 #include "ruby/encoding.h"      /* for rb_econv_t */

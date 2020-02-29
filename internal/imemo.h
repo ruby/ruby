@@ -9,7 +9,7 @@
  */
 #ifndef INTERNAL_IMEMO_H
 #define INTERNAL_IMEMO_H
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 #include <stddef.h>             /* for size_t */
 #include "internal/array.h"     /* for rb_ary_tmp_new_fill */
 #include "internal/gc.h"        /* for RB_OBJ_WRITE */

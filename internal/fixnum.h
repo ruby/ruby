@@ -9,7 +9,7 @@
  */
 #ifndef INTERNAL_FIXNUM_H
 #define INTERNAL_FIXNUM_H
-#include "ruby/config.h"        /* for HAVE_LONG_LONG */
+#include "ruby/3/config.h"      /* for HAVE_LONG_LONG */
 #include <limits.h>             /* for CHAR_BIT */
 #include "internal/compilers.h" /* for __has_builtin */
 #include "internal/stdbool.h"   /* for bool */

@@ -9,7 +9,7 @@
  */
 #ifndef INTERNAL_BIGNUM_H
 #define INTERNAL_BIGNUM_H
-#include "ruby/config.h"        /* for HAVE_LIBGMP */
+#include "ruby/3/config.h"      /* for HAVE_LIBGMP */
 #include <stddef.h>             /* for size_t */
 
 #ifdef HAVE_SYS_TYPES_H

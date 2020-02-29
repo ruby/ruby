@@ -19,6 +19,8 @@ extern "C" {
 #endif
 #endif
 
+#include "ruby/3/config.h"
+
 #include <stdio.h>
 #include "ruby/encoding.h"
 
@@ -26,7 +28,6 @@ extern "C" {
 #include <stdio_ext.h>
 #endif
 
-#include "ruby/config.h"
 #include <errno.h>
 #if defined(HAVE_POLL)
 #  ifdef _AIX

@@ -9,7 +9,7 @@
  */
 #ifndef INTERNAL_STRING_H
 #define INTERNAL_STRING_H
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 #include <stddef.h>             /* for size_t */
 #include "internal/compilers.h" /* for __has_builtin */
 #include "internal/stdbool.h"   /* for bool */

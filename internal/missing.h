@@ -9,7 +9,7 @@
  */
 #ifndef INTERNAL_MISSING_H
 #define INTERNAL_MISSING_H
-#include "ruby/config.h"        /* for HAVE_SETPROCTITLE */
+#include "ruby/3/config.h"      /* for HAVE_SETPROCTITLE */
 
 /* missing/setproctitle.c */
 #ifndef HAVE_SETPROCTITLE

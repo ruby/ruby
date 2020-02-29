@@ -9,7 +9,7 @@
  */
 #ifndef INTERNAL_PROCESS_H
 #define INTERNAL_PROCESS_H
-#include "ruby/config.h"        /* for rb_pid_t */
+#include "ruby/3/config.h"      /* for rb_pid_t */
 #include <stddef.h>             /* for size_t */
 
 #ifdef HAVE_SYS_TYPES_H

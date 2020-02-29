@@ -9,7 +9,7 @@
 #ifndef RUBY_MJIT_H
 #define RUBY_MJIT_H 1
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 
 #if USE_MJIT
 

@@ -9,7 +9,7 @@
 
 **********************************************************************/
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 
 #ifdef _MSC_VER
 # define _USE_MATH_DEFINES 1

@@ -9,7 +9,7 @@
  */
 #ifndef INTERNAL_HASH_H
 #define INTERNAL_HASH_H
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 #include <stddef.h>             /* for size_t */
 #include "internal/stdbool.h"   /* for bool */
 #include "ruby/ruby.h"          /* for struct RBasic */

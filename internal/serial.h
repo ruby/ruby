@@ -9,7 +9,7 @@
  */
 #ifndef INTERNAL_SERIAL_H
 #define INTERNAL_SERIAL_H
-#include "ruby/config.h"        /* for HAVE_LONG_LONG */
+#include "ruby/3/config.h"      /* for HAVE_LONG_LONG */
 #include "ruby/defines.h"       /* for LONG_LONG */
 
 #ifndef HAVE_LONG_LONG

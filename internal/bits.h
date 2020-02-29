@@ -26,7 +26,7 @@
  */
 #ifndef INTERNAL_BITS_H
 #define INTERNAL_BITS_H
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 #include <limits.h>             /* for CHAR_BITS */
 #include <stdint.h>             /* for uintptr_t */
 #include "internal/compilers.h" /* for MSC_VERSION_SINCE */

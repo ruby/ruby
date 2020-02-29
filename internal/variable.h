@@ -9,7 +9,7 @@
  */
 #ifndef INTERNAL_VARIABLE_H
 #define INTERNAL_VARIABLE_H
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 #include <stddef.h>             /* for size_t */
 #include "constant.h"           /* for rb_const_entry_t */
 #include "internal/stdbool.h"   /* for bool */

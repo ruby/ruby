@@ -9,7 +9,7 @@
  */
 #ifndef INTERNAL_TIME_H
 #define INTERNAL_TIME_H
-#include "ruby/config.h"        /* for SIGNEDNESS_OF_TIME_T */
+#include "ruby/3/config.h"      /* for SIGNEDNESS_OF_TIME_T */
 #include "internal/bits.h"      /* for SIGNED_INTEGER_MAX */
 #include "ruby/ruby.h"          /* for VALUE */
 

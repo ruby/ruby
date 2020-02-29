@@ -18,14 +18,11 @@ extern "C" {
 #endif
 #endif
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 #include <stddef.h>
 #include <math.h> /* for INFINITY and NAN */
 #ifdef RUBY_ALTERNATIVE_MALLOC_HEADER
 # include RUBY_ALTERNATIVE_MALLOC_HEADER
-#endif
-#ifdef RUBY_EXTCONF_H
-#include RUBY_EXTCONF_H
 #endif
 
 #if !defined(HAVE_STRUCT_TIMEVAL) || !defined(HAVE_STRUCT_TIMESPEC)

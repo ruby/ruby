@@ -11,7 +11,7 @@
 
 **********************************************************************/
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 #include <stddef.h>
 #include "constant.h"
 #include "debug_counter.h"
