@@ -43,12 +43,12 @@ sufficient information, see the ChangeLog file or Redmine
 
     * Modified method
 
-        * Kernel#clone when called with freeze: false keyword will call
-          #initialize_clone with the freeze: false keyword.
+        * Kernel#clone when called with `freeze: false` keyword will call
+          #initialize_clone with the `freeze: false` keyword.
           [[Bug #14266]]
 
         * Kernel#eval when called with two arguments will use "(eval)"
-          for __FILE__ and 1 for __LINE__ in the evaluated code.
+          for `__FILE__` and 1 for `__LINE__` in the evaluated code.
           [[Bug #4352]]
 
 * Module
@@ -103,9 +103,9 @@ sufficient information, see the ChangeLog file or Redmine
 
 ## Miscellaneous changes
 
-* Methods using ruby2_keywords will no longer keep empty keyword
+* Methods using `ruby2_keywords` will no longer keep empty keyword
   splats, those are now removed just as they are for methods not
-  using ruby2_keywords.
+  using `ruby2_keywords`.
 
 * Taint deprecation warnings are now issued in regular mode in
   addition to verbose warning mode.  [[Feature #16131]]
