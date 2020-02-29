@@ -12,6 +12,10 @@ class TestJIT < Test::Unit::TestCase
     /\AJIT inline: .+\n\z/,
     /\ASuccessful MJIT finish\n\z/,
   ]
+  MAX_CACHE_PATTERNS = [
+    /\AJIT compaction \([^)]+\): .+\n\z/,
+    /\ANo units can be unloaded -- .+\n\z/,
+  ]
 
   # trace_* insns are not compiled for now...
   TEST_PENDING_INSNS = RubyVM::INSTRUCTION_NAMES.select { |n| n.start_with?('trace_') }.map(&:to_sym) + [
@@ -611,11 +615,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_nothing_to_unload_with_jit_wait
-    ignorable_patterns = [
-      /\AJIT compaction \([^)]+\): .+\n\z/,
-      /\ANo units can be unloaded -- .+\n\z/,
-    ]
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'hello', success_count: 11, max_cache: 10, ignorable_patterns: ignorable_patterns)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'hello', success_count: 11, max_cache: 10, ignorable_patterns: MAX_CACHE_PATTERNS)
     begin;
       def a1() a2() end
       def a2() a3() end
@@ -627,6 +627,28 @@ class TestJIT < Test::Unit::TestCase
       def a8() a9() end
       def a9() a10() end
       def a10() a11() end
+      def a11() print('hello') end
+      a1
+    end;
+  end
+
+  def test_unload_units_on_fiber
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'hello', success_count: 12, max_cache: 10, ignorable_patterns: MAX_CACHE_PATTERNS)
+    begin;
+      def a1() a2(false); a2(true) end
+      def a2(a) a3(a) end
+      def a3(a) a4(a) end
+      def a4(a) a5(a) end
+      def a5(a) a6(a) end
+      def a6(a) a7(a) end
+      def a7(a) a8(a) end
+      def a8(a) a9(a) end
+      def a9(a) a10(a) end
+      def a10(a)
+        if a
+          Fiber.new { a11 }.resume
+        end
+      end
       def a11() print('hello') end
       a1
     end;
