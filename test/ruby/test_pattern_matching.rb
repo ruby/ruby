@@ -1042,6 +1042,15 @@ END
       end
     end
 
+    assert_block do
+      case {a: 0, b: 1}
+      in {a: 1,}
+        false
+      in {a:,}
+        true
+      end
+    end
+
     assert_syntax_error(%q{
       case _
       in "a-b":
