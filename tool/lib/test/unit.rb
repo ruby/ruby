@@ -70,7 +70,7 @@ module Test
         else
           seed = options[:seed] = srand % 100_000
           srand(seed)
-          orig_args << "--seed=#{seed}"
+          orig_args.unshift "--seed=#{seed}"
         end
 
         @help = "\n" + orig_args.map { |s|
