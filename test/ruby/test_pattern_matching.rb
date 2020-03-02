@@ -1047,6 +1047,7 @@ END
       in {a: 1,}
         false
       in {a:,}
+        _a = a
         true
       end
     end
@@ -1061,6 +1062,7 @@ END
         false
       in {a:
       }
+        _a = a
         true
       end
     end
