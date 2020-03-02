@@ -38,7 +38,8 @@ jobs:
       - run: autoconf
         working-directory: src
       - run: mkdir build
-      - run: ../src/configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
+      - name: Run configure
+        run: ../src/configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
         working-directory: build
       - run: make $JOBS
         working-directory: build

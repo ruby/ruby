@@ -41,7 +41,7 @@ jobs:
       - run: autoconf
         working-directory: src
       - run: mkdir build
-      - name: configure
+      - name: Run configure
         run: ../src/configure -C --disable-install-doc
         working-directory: build
       - run: make $JOBS
