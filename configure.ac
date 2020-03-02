@@ -487,7 +487,11 @@ AS_IF([test x"${RPATHFLAG}" = x], [
     rpathflag=`echo "$RPATHFLAG" | sed 's/%.*//'`
 ])
 
-RUBY_TRY_CFLAGS(-fdeclspec, [RUBY_APPEND_OPTIONS(XCFLAGS, -fdeclspec)])
+RUBY_TRY_CFLAGS(-fdeclspec, [
+  RUBY_APPEND_OPTIONS(CC, -fdeclspec)
+  RUBY_APPEND_OPTIONS(MJIT_CC, -fdeclspec)
+])
+RUBY_TRY_CXXFLAGS(-fdeclspec, [RUBY_APPEND_OPTIONS(CXX, -fdeclspec)])
 
 AS_CASE([$RUBY_PATCHLEVEL], [-*],
 	[RUBY_DEVEL=yes], [RUBY_DEVEL=no])

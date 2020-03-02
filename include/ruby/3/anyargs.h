@@ -25,19 +25,17 @@
 #ifndef  RUBY3_ANYARGS_H
 #define  RUBY3_ANYARGS_H
 #include "ruby/3/config.h"
-#include "ruby/3/value.h"
-#include "ruby/3/method.h"
+#include "ruby/3/cast.h"
+#include "ruby/3/has/attribute.h"
 #include "ruby/3/intern/class.h"
 #include "ruby/3/intern/vm.h"
+#include "ruby/3/method.h"
+#include "ruby/3/value.h"
 #include "ruby/backward/2/stdarg.h"
 
 #if defined(__cplusplus)
 #include "ruby/backward/cxxanyargs.hpp"
 #else
-
-#if !defined(__has_attribute)
-#define __has_attribute(x) 0
-#endif
 
 #if defined(HAVE_BUILTIN___BUILTIN_TYPES_COMPATIBLE_P)
 # define rb_f_notimplement_p(f) __builtin_types_compatible_p(__typeof__(f),__typeof__(rb_f_notimplement))
@@ -49,7 +47,7 @@
 #define rb_define_method_if_constexpr(x, t, f)    __builtin_choose_expr(__builtin_choose_expr(__builtin_constant_p(x),(x),0),(t),(f))
 #endif
 
-#if defined(__has_attribute) && __has_attribute(transparent_union) && __has_attribute(unused) && __has_attribute(weakref) && __has_attribute(nonnull)
+#if RUBY3_HAS_ATTRIBUTE(transparent_union) && RUBY3_HAS_ATTRIBUTE(unused) && RUBY3_HAS_ATTRIBUTE(weakref) && RUBY3_HAS_ATTRIBUTE(nonnull)
 #define RB_METHOD_DEFINITION_DECL(def, nonnull, ...) \
 __attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ## m3(__VA_ARGS__, VALUE(*)(ANYARGS), int); \
 __attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ## m2(__VA_ARGS__, VALUE(*)(VALUE, VALUE), int); \
@@ -235,7 +233,7 @@ RB_METHOD_DEFINITION_DECL(rb_define_global_function, (1,2), const char *name)
 #if defined(RUBY_DEVEL) && RUBY_DEVEL && (!defined(__cplusplus) || defined(RB_METHOD_DEFINITION_DECL))
 # define RUBY_METHOD_FUNC(func) (func)
 #else
-# define RUBY_METHOD_FUNC(func) ((VALUE (*)(ANYARGS))(func))
+# define RUBY_METHOD_FUNC(func) RUBY3_CAST((VALUE (*)(ANYARGS))(func))
 #endif
 
 #endif /* RUBY3_ANYARGS_H */
