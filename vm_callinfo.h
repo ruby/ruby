@@ -239,6 +239,7 @@ struct rb_callcache {
     union {
         const unsigned int attr_index;
         const enum method_missing_reason method_missing_reason; /* used by method_missing */
+        VALUE v;
     } aux_;
 };
 
@@ -265,6 +266,7 @@ vm_cc_fill(struct rb_callcache *cc,
         .klass = klass,
         .cme_ = cme,
         .call_ = call,
+        .aux_.v = 0,
     };
     MEMCPY(cc, &cc_body, struct rb_callcache, 1);
     return cc;
