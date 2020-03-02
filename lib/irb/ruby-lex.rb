@@ -324,7 +324,7 @@ class RubyLex
         when 'def', 'case', 'for', 'begin', 'class', 'module'
           indent += 1
         when 'if', 'unless', 'while', 'until'
-          # postfix if/unless/while/until/rescue must be Ripper::EXPR_LABEL
+          # postfix if/unless/while/until must be Ripper::EXPR_LABEL
           indent += 1 unless t[3].allbits?(Ripper::EXPR_LABEL)
         when 'end'
           indent -= 1
@@ -369,12 +369,12 @@ class RubyLex
           end
         when 'def', 'case', 'for', 'begin', 'class', 'module'
           depth_difference += 1
-        when 'if', 'unless', 'while', 'until'
+        when 'if', 'unless', 'while', 'until', 'rescue'
           # postfix if/unless/while/until/rescue must be Ripper::EXPR_LABEL
           unless t[3].allbits?(Ripper::EXPR_LABEL)
             depth_difference += 1
           end
-        when 'else', 'elsif', 'rescue', 'ensure', 'when', 'in'
+        when 'else', 'elsif', 'ensure', 'when', 'in'
           depth_difference += 1
         end
       end
@@ -420,12 +420,16 @@ class RubyLex
         case t[2]
         when 'def', 'do', 'case', 'for', 'begin', 'class', 'module'
           spaces_of_nest.push(spaces_at_line_head)
+        when 'rescue'
+          unless t[3].allbits?(Ripper::EXPR_LABEL)
+            corresponding_token_depth = spaces_of_nest.last
+          end
         when 'if', 'unless', 'while', 'until'
-          # postfix if/unless/while/until/rescue must be Ripper::EXPR_LABEL
+          # postfix if/unless/while/until must be Ripper::EXPR_LABEL
           unless t[3].allbits?(Ripper::EXPR_LABEL)
             spaces_of_nest.push(spaces_at_line_head)
           end
-        when 'else', 'elsif', 'rescue', 'ensure', 'when', 'in'
+        when 'else', 'elsif', 'ensure', 'when', 'in'
           corresponding_token_depth = spaces_of_nest.last
         when 'end'
           if is_first_printable_of_line

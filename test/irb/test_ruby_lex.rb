@@ -178,5 +178,32 @@ module TestIRB
         assert_indenting(lines, row.new_line_spaces, true)
       end
     end
+
+    def test_mixed_rescue
+      input_with_correct_indents = [
+        Row.new(%q(def m), nil, 2),
+        Row.new(%q(  begin), nil, 4),
+        Row.new(%q(    begin), nil, 6),
+        Row.new(%q(      x = a rescue 4), nil, 6),
+        Row.new(%q(      y = [(a rescue 5)]), nil, 6),
+        Row.new(%q(      [x, y]), nil, 6),
+        Row.new(%q(    rescue => e), 4, 6),
+        Row.new(%q(      raise e rescue 8), nil, 6),
+        Row.new(%q(    end), 4, 4),
+        Row.new(%q(  rescue), 2, 4),
+        Row.new(%q(    raise rescue 11), nil, 4),
+        Row.new(%q(  end), 2, 2),
+        Row.new(%q(rescue => e), 0, 2),
+        Row.new(%q(  raise e rescue 14), nil, 2),
+        Row.new(%q(end), 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+      end
+    end
   end
 end
