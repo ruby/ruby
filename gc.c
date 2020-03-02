@@ -9872,8 +9872,6 @@ objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
         info->gen = objspace->profile.count;
         info->file = ruby_malloc_info_file;
         info->line = info->file ? ruby_malloc_info_line : 0;
-#else
-        info->file = NULL;
 #endif
         mem = info + 1;
     }
@@ -10269,8 +10267,6 @@ ruby_mimmalloc(size_t size)
         info->gen = 0;
         info->file = NULL;
         info->line = 0;
-#else
-        info->file = NULL;
 #endif
         mem = info + 1;
     }
