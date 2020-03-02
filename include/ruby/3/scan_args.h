@@ -24,6 +24,7 @@
 #ifndef  RUBY3_SCAN_ARGS_H
 #define  RUBY3_SCAN_ARGS_H
 #include "ruby/3/config.h"
+#include "ruby/3/has/attribute.h"
 #include "ruby/3/value.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
@@ -122,7 +123,7 @@ ERRORFUNC(("variable argument length doesn't match"), void rb_scan_args_length_m
 
 # define rb_scan_args_count(fmt) rb_scan_args_count_lead(fmt, 0, 0)
 
-# if defined(__has_attribute) && __has_attribute(diagnose_if)
+# if RUBY3_HAS_ATTRIBUTE(diagnose_if)
 #  define rb_scan_args_verify(fmt, varc) (void)0
 # else
 # define rb_scan_args_verify(fmt, varc) \
@@ -262,7 +263,7 @@ rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
                  int n_lead, int n_opt, int n_trail,
                  int f_var, int f_hash, int f_block,
                  VALUE *vars[], RB_UNUSED_VAR(const char *fmt), RB_UNUSED_VAR(int varc))
-# if defined(__has_attribute) && __has_attribute(diagnose_if)
+# if RUBY3_HAS_ATTRIBUTE(diagnose_if)
     __attribute__((diagnose_if(rb_scan_args_count(fmt)<0,"bad scan arg format","error")))
     __attribute__((diagnose_if(rb_scan_args_count(fmt)!=varc,"variable argument length doesn't match","error")))
 # endif
