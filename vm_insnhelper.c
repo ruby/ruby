@@ -2696,6 +2696,7 @@ vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct
 	TOPN(i) = rb_str_intern(sym);
         mid = idMethodMissing;
         missing_reason = ci_missing_reason(orig_cd->ci);
+        ec->method_missing_reason = missing_reason;
     }
     else {
 	/* shift arguments */
