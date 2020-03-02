@@ -3003,9 +3003,7 @@ primary		: literal
 			local_push(p, 0);
 			$<id>$ = p->cur_arg;
 			p->cur_arg = 0;
-		    }
-		    {
-			$<flags>$ = p->in;
+			$<flags>1 = p->in;
 			p->in.def = 1;
 		    }
 		  f_arglist
@@ -3013,15 +3011,15 @@ primary		: literal
 		  k_end
 		    {
 		    /*%%%*/
-			NODE *body = remove_begin($6);
+			NODE *body = remove_begin($5);
 			reduce_nodes(p, &body);
-			$$ = NEW_DEFN($2, $5, body, &@$);
-			nd_set_line($$->nd_defn, @7.end_pos.lineno);
+			$$ = NEW_DEFN($2, $4, body, &@$);
+			nd_set_line($$->nd_defn, @6.end_pos.lineno);
 			set_line_body(body, @1.beg_pos.lineno);
 		    /*% %*/
-		    /*% ripper: def!($2, $5, $6) %*/
+		    /*% ripper: def!($2, $4, $5) %*/
 			local_pop(p);
-			p->in.def = $<flags>4.def;
+			p->in.def = $<flags>1.def;
 			p->cur_arg = $<id>3;
 		    }
 		| k_def singleton dot_or_colon {SET_LEX_STATE(EXPR_FNAME);} fname
@@ -3810,22 +3808,24 @@ p_case_body	: keyword_in
 			p->command_start = FALSE;
 			$<flags>1 = p->in;
 			p->in.kwarg = 1;
+			$<tbl>$ = push_pvtbl(p);
 		    }
-		    {$<tbl>$ = push_pvtbl(p);}
-		    {$<tbl>$ = push_pktbl(p);}
-		  p_top_expr then
-		    {pop_pktbl(p, $<tbl>4);}
-		    {pop_pvtbl(p, $<tbl>3);}
 		    {
+			$<tbl>$ = push_pktbl(p);
+		    }
+		  p_top_expr then
+		    {
+			pop_pktbl(p, $<tbl>3);
+			pop_pvtbl(p, $<tbl>2);
 			p->in.kwarg = $<flags>1.kwarg;
 		    }
 		  compstmt
 		  p_cases
 		    {
 		    /*%%%*/
-			$$ = NEW_IN($5, $10, $11, &@$);
+			$$ = NEW_IN($4, $7, $8, &@$);
 		    /*% %*/
-		    /*% ripper: in!($5, $10, escape_Qundef($11)) %*/
+		    /*% ripper: in!($4, $7, escape_Qundef($8)) %*/
 		    }
 		;
 
