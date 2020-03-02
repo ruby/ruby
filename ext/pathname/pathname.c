@@ -1489,6 +1489,8 @@ path_f_pathname(VALUE self, VALUE str)
  * - #binread(*args)
  * - #readlines(*args)
  * - #sysopen(*args)
+ * - #write(*args)
+ * - #binwrite(*args)
  *
  * === Utilities
  *
