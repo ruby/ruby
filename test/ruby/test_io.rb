@@ -3303,7 +3303,7 @@ __END__
     assert_equal(0, STDIN.fileno)
     assert_equal(1, STDOUT.fileno)
     assert_equal(2, STDERR.fileno)
-    assert_equal(0, $stdin.fileno, "#fileno on #{$stdin.class}")
+    assert_equal(0, $stdin.fileno)
     assert_equal(1, $stdout.fileno)
     assert_equal(2, $stderr.fileno)
   end
