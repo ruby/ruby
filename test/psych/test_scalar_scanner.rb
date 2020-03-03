@@ -120,6 +120,7 @@ module Psych
       assert_equal 123_456_789, ss.tokenize('123_456_789')
       assert_equal 123_456_789, ss.tokenize('123,456,789')
       assert_equal 123_456_789, ss.tokenize('1_2,3,4_5,6_789')
+      assert_equal 123_456_789, ss.tokenize('1_2,3,4_5,6_789_')
 
       assert_equal 0b010101010, ss.tokenize('0b010101010')
       assert_equal 0b010101010, ss.tokenize('0b0,1_0,1_,0,1_01,0')
@@ -129,6 +130,8 @@ module Psych
 
       assert_equal 0x123456789abcdef, ss.tokenize('0x123456789abcdef')
       assert_equal 0x123456789abcdef, ss.tokenize('0x12_,34,_56,_789abcdef')
+      assert_equal 0x123456789abcdef, ss.tokenize('0x_12_,34,_56,_789abcdef')
+      assert_equal 0x123456789abcdef, ss.tokenize('0x12_,34,_56,_789abcdef__')
     end
   end
 end
