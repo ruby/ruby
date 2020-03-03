@@ -26,11 +26,11 @@
 #include <errno.h>
 #include <stdio.h>
 
-struct lex_flags {
-    unsigned int defined: 1;
-    unsigned int kwarg: 1;
-    unsigned int def: 1;
-    unsigned int class: 1;
+struct lex_context {
+    unsigned int in_defined: 1;
+    unsigned int in_kwarg: 1;
+    unsigned int in_def: 1;
+    unsigned int in_class: 1;
 };
 
 #include "internal.h"
@@ -298,7 +298,7 @@ struct parser_params {
 
     int max_numparam;
 
-    struct lex_flags in;
+    struct lex_context ctxt;
 
     unsigned int command_start:1;
     unsigned int eofp: 1;
@@ -1006,7 +1006,7 @@ static int looking_at_eol_p(struct parser_params *p);
     st_table *tbl;
     const struct vtable *vars;
     struct rb_strterm_struct *strterm;
-    struct lex_flags flags;
+    struct lex_context ctxt;
 }
 
 %token <id>
@@ -1434,7 +1434,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    }
 		| keyword_END '{' compstmt '}'
 		    {
-			if (p->in.def) {
+			if (p->ctxt.in_def) {
 			    rb_warn0("END in method; use at_exit");
 			}
 		    /*%%%*/
@@ -1582,14 +1582,14 @@ expr		: command_call
 			value_expr($1);
 			SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
 			p->command_start = FALSE;
-			$<flags>$ = p->in;
-			p->in.kwarg = 1;
+			$<ctxt>$ = p->ctxt;
+			p->ctxt.in_kwarg = 1;
 		    }
 		    {$<tbl>$ = push_pvtbl(p);}
 		  p_expr
 		    {pop_pvtbl(p, $<tbl>4);}
 		    {
-			p->in.kwarg = $<flags>3.kwarg;
+			p->ctxt.in_kwarg = $<ctxt>3.in_kwarg;
 		    /*%%%*/
 			$$ = new_case3(p, $1, NEW_IN($5, 0, 0, &@5), &@$);
 		    /*% %*/
@@ -2357,9 +2357,9 @@ arg		: lhs '=' arg_rhs
 		    {
 			$$ = logop(p, idOROP, $1, $3, &@2, &@$);
 		    }
-		| keyword_defined opt_nl {p->in.defined = 1;} arg
+		| keyword_defined opt_nl {p->ctxt.in_defined = 1;} arg
 		    {
-			p->in.defined = 0;
+			p->ctxt.in_defined = 0;
 			$$ = new_defined(p, $4, &@$);
 		    }
 		| arg '?' arg opt_nl ':' arg
@@ -2760,9 +2760,9 @@ primary		: literal
 		    /*% %*/
 		    /*% ripper: yield0! %*/
 		    }
-		| keyword_defined opt_nl '(' {p->in.defined = 1;} expr rparen
+		| keyword_defined opt_nl '(' {p->ctxt.in_defined = 1;} expr rparen
 		    {
-			p->in.defined = 0;
+			p->ctxt.in_defined = 0;
 			$$ = new_defined(p, $5, &@$);
 		    }
 		| keyword_not '(' expr rparen
@@ -2931,12 +2931,12 @@ primary		: literal
 		    }
 		| k_class cpath superclass
 		    {
-			if (p->in.def) {
+			if (p->ctxt.in_def) {
 			    YYLTYPE loc = code_loc_gen(&@1, &@2);
 			    yyerror1(&loc, "class definition in method body");
 			}
-			$<flags>1 = p->in;
-			p->in.class = 1;
+			$<ctxt>1 = p->ctxt;
+			p->ctxt.in_class = 1;
 			local_push(p, 0);
 		    }
 		  bodystmt
@@ -2950,13 +2950,13 @@ primary		: literal
 		    /*% %*/
 		    /*% ripper: class!($2, $3, $5) %*/
 			local_pop(p);
-			p->in.class = $<flags>1.class;
+			p->ctxt.in_class = $<ctxt>1.in_class;
 		    }
 		| k_class tLSHFT expr
 		    {
-			$<flags>$ = p->in;
-			p->in.def = 0;
-			p->in.class = 0;
+			$<ctxt>$ = p->ctxt;
+			p->ctxt.in_def = 0;
+			p->ctxt.in_class = 0;
 			local_push(p, 0);
 		    }
 		  term
@@ -2971,17 +2971,17 @@ primary		: literal
 		    /*% %*/
 		    /*% ripper: sclass!($3, $6) %*/
 			local_pop(p);
-			p->in.def = $<flags>4.def;
-			p->in.class = $<flags>4.class;
+			p->ctxt.in_def = $<ctxt>4.in_def;
+			p->ctxt.in_class = $<ctxt>4.in_class;
 		    }
 		| k_module cpath
 		    {
-			if (p->in.def) {
+			if (p->ctxt.in_def) {
 			    YYLTYPE loc = code_loc_gen(&@1, &@2);
 			    yyerror1(&loc, "module definition in method body");
 			}
-			$<flags>1 = p->in;
-			p->in.class = 1;
+			$<ctxt>1 = p->ctxt;
+			p->ctxt.in_class = 1;
 			local_push(p, 0);
 		    }
 		  bodystmt
@@ -2995,7 +2995,7 @@ primary		: literal
 		    /*% %*/
 		    /*% ripper: module!($2, $4) %*/
 			local_pop(p);
-			p->in.class = $<flags>1.class;
+			p->ctxt.in_class = $<ctxt>1.in_class;
 		    }
 		| k_def fname
 		    {
@@ -3003,8 +3003,8 @@ primary		: literal
 			local_push(p, 0);
 			$<id>$ = p->cur_arg;
 			p->cur_arg = 0;
-			$<flags>1 = p->in;
-			p->in.def = 1;
+			$<ctxt>1 = p->ctxt;
+			p->ctxt.in_def = 1;
 		    }
 		  f_arglist
 		  bodystmt
@@ -3019,14 +3019,14 @@ primary		: literal
 		    /*% %*/
 		    /*% ripper: def!($2, $4, $5) %*/
 			local_pop(p);
-			p->in.def = $<flags>1.def;
+			p->ctxt.in_def = $<ctxt>1.in_def;
 			p->cur_arg = $<id>3;
 		    }
 		| k_def singleton dot_or_colon {SET_LEX_STATE(EXPR_FNAME);} fname
 		    {
 			numparam_name(p, get_id($5));
-			$<flags>1 = p->in;
-			p->in.def = 1;
+			$<ctxt>1 = p->ctxt;
+			p->ctxt.in_def = 1;
 			SET_LEX_STATE(EXPR_ENDFN|EXPR_LABEL); /* force for args */
 			local_push(p, 0);
 			$<id>$ = p->cur_arg;
@@ -3045,7 +3045,7 @@ primary		: literal
 		    /*% %*/
 		    /*% ripper: defs!($2, $3, $5, $7, $8) %*/
 			local_pop(p);
-			p->in.def = $<flags>1.def;
+			p->ctxt.in_def = $<ctxt>1.in_def;
 			p->cur_arg = $<id>6;
 		    }
 		| keyword_break
@@ -3216,7 +3216,7 @@ k_end		: keyword_end
 
 k_return	: keyword_return
 		    {
-			if (p->in.class && !p->in.def && !dyna_in_block(p))
+			if (p->ctxt.in_class && !p->ctxt.in_def && !dyna_in_block(p))
 			    yyerror1(&@1, "Invalid return in class/module body");
 		    }
 		;
@@ -3806,8 +3806,8 @@ p_case_body	: keyword_in
 		    {
 			SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
 			p->command_start = FALSE;
-			$<flags>1 = p->in;
-			p->in.kwarg = 1;
+			$<ctxt>1 = p->ctxt;
+			p->ctxt.in_kwarg = 1;
 			$<tbl>$ = push_pvtbl(p);
 		    }
 		    {
@@ -3817,7 +3817,7 @@ p_case_body	: keyword_in
 		    {
 			pop_pktbl(p, $<tbl>3);
 			pop_pvtbl(p, $<tbl>2);
-			p->in.kwarg = $<flags>1.kwarg;
+			p->ctxt.in_kwarg = $<ctxt>1.in_kwarg;
 		    }
 		  compstmt
 		  p_cases
@@ -3964,13 +3964,13 @@ p_expr_basic	: p_value
 		| tLBRACE
 		    {
 			$<tbl>$ = push_pktbl(p);
-			$<flags>1 = p->in;
-			p->in.kwarg = 0;
+			$<ctxt>1 = p->ctxt;
+			p->ctxt.in_kwarg = 0;
 		    }
 		  p_kwargs rbrace
 		    {
 			pop_pktbl(p, $<tbl>2);
-			p->in.kwarg = $<flags>1.kwarg;
+			p->ctxt.in_kwarg = $<ctxt>1.in_kwarg;
 			$$ = new_hash_pattern(p, Qnone, $3, &@$);
 		    }
 		| tLBRACE rbrace
@@ -4864,13 +4864,13 @@ f_arglist	: '(' f_args rparen
 			p->command_start = TRUE;
 		    }
 		|   {
-			$<flags>$ = p->in;
-			p->in.kwarg = 1;
+			$<ctxt>$ = p->ctxt;
+			p->ctxt.in_kwarg = 1;
 			SET_LEX_STATE(p->lex.state|EXPR_LABEL); /* force for args */
 		    }
 		  f_args term
 		    {
-			p->in.kwarg = $<flags>1.kwarg;
+			p->ctxt.in_kwarg = $<ctxt>1.in_kwarg;
 			$$ = $2;
 			SET_LEX_STATE(EXPR_BEG);
 			p->command_start = TRUE;
@@ -8889,7 +8889,7 @@ parser_yylex(struct parser_params *p)
                 dispatch_scan_event(p, tIGNORED_NL);
             }
             fallthru = FALSE;
-	    if (!c && p->in.kwarg) {
+	    if (!c && p->ctxt.in_kwarg) {
 		goto normal_newline;
 	    }
 	    goto retry;
@@ -10013,7 +10013,7 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
 	    return node;
 	}
 # if WARN_PAST_SCOPE
-	if (!p->in.defined && RTEST(ruby_verbose) && past_dvar_p(p, id)) {
+	if (!p->ctxt.in_defined && RTEST(ruby_verbose) && past_dvar_p(p, id)) {
 	    rb_warning1("possible reference to past scope - %"PRIsWARN, rb_id2str(id));
 	}
 # endif
@@ -10487,7 +10487,7 @@ assignable0(struct parser_params *p, ID id, const char **err)
       case ID_GLOBAL: return NODE_GASGN;
       case ID_INSTANCE: return NODE_IASGN;
       case ID_CONST:
-	if (!p->in.def) return NODE_CDECL;
+	if (!p->ctxt.in_def) return NODE_CDECL;
 	*err = "dynamic constant assignment";
 	return -1;
       case ID_CLASS: return NODE_CVASGN;
@@ -11699,7 +11699,7 @@ new_const_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, const 
 static NODE *
 const_decl(struct parser_params *p, NODE *path, const YYLTYPE *loc)
 {
-    if (p->in.def) {
+    if (p->ctxt.in_def) {
 	yyerror1(loc, "dynamic constant assignment");
     }
     return NEW_CDECL(0, 0, (path), loc);
@@ -11708,7 +11708,7 @@ const_decl(struct parser_params *p, NODE *path, const YYLTYPE *loc)
 static VALUE
 const_decl(struct parser_params *p, VALUE path)
 {
-    if (p->in.def) {
+    if (p->ctxt.in_def) {
 	path = dispatch1(assign_error, path);
 	ripper_error(p);
     }
