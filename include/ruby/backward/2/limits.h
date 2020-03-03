@@ -44,8 +44,6 @@
 
 #ifdef LLONG_MAX
 # /* Take that. */
-#elif ! defined(HAVE_LONG_LONG)
-# /* Nothing to do */
 #elif defined(LONG_LONG_MAX)
 # define LLONG_MAX  LONG_LONG_MAX
 #elif defined(_I64_MAX)
@@ -57,8 +55,6 @@
 
 #ifdef LLONG_MIN
 # /* Take that. */
-#elif ! defined(HAVE_LONG_LONG)
-# /* Nothing to do */
 #elif defined(LONG_LONG_MIN)
 # define LLONG_MIN  LONG_LONG_MIN
 #elif defined(_I64_MAX)
@@ -69,7 +65,7 @@
 
 #ifdef SIZE_MAX
 # /* Take that. */
-#elif SIZEOF_SIZE_T == SIZEOF_LONG_LONG && defined(HAVE_LONG_LONG)
+#elif SIZEOF_SIZE_T == SIZEOF_LONG_LONG
 # define SIZE_MAX ULLONG_MAX
 # define SIZE_MIN ULLONG_MIN
 #elif SIZEOF_SIZE_T == SIZEOF_LONG
@@ -85,7 +81,7 @@
 
 #ifdef SSIZE_MAX
 # /* Take that. */
-#elif SIZEOF_SIZE_T == SIZEOF_LONG_LONG && defined(HAVE_LONG_LONG)
+#elif SIZEOF_SIZE_T == SIZEOF_LONG_LONG
 # define SSIZE_MAX LLONG_MAX
 # define SSIZE_MIN LLONG_MIN
 #elif SIZEOF_SIZE_T == SIZEOF_LONG
