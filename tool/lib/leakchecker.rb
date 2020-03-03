@@ -11,7 +11,7 @@ class LeakChecker
   end
 
   def check(test_name)
-    GC.verify_internal_consistency if /solaris/ =~ RUBY_PLATFORM
+    GC.verify_internal_consistency if /i386-solaris/ =~ RUBY_PLATFORM
     leaks = [
       check_fd_leak(test_name),
       check_thread_leak(test_name),
