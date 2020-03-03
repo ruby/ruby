@@ -99,7 +99,9 @@ module IRB
         return nil if doc_namespace
         if Symbol.respond_to?(:all_symbols)
           sym = $1
-          candidates = Symbol.all_symbols.collect{|s| ":" + s.id2name}
+          candidates = Symbol.all_symbols.collect do |s|
+            ":" + s.id2name.encode(Encoding.default_external)
+          end
           candidates.grep(/^#{Regexp.quote(sym)}/)
         else
           []
