@@ -23,7 +23,9 @@ sufficient information, see the ChangeLog file or Redmine
 
 ## Command line options
 
-## Core classes updates (outstanding ones only)
+## Core classes updates
+
+Outstanding ones only.
 
 * Dir
 
@@ -68,7 +70,9 @@ sufficient information, see the ChangeLog file or Redmine
         * Symbol#to_proc now returns a lambda Proc.
           [[Feature #16260]]
 
-## Stdlib updates (outstanding ones only)
+## Stdlib updates
+
+Outstanding ones only.
 
 * Net::HTTP
 
@@ -77,7 +81,9 @@ sufficient information, see the ChangeLog file or Redmine
         * Add Net::HTTP#verify_hostname= and Net::HTTP#verify_hostname
           to skip hostname verification.  [[Feature #16555]]
 
-## Compatibility issues (excluding feature bug fixes)
+## Compatibility issues
+
+Excluding feature bug fixes.
 
 * Regexp literals are frozen [[Feature #8948]] [[Feature #16377]]
 
@@ -92,7 +98,9 @@ sufficient information, see the ChangeLog file or Redmine
       your plan to https://github.com/ruby/xmlrpc
       or https://github.com/ruby/net-telnet.
 
-## Stdlib compatibility issues (excluding feature bug fixes)
+## Stdlib compatibility issues
+
+Excluding feature bug fixes.
 
 ## C API updates
 
