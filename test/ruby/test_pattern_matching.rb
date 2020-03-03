@@ -1060,6 +1060,8 @@ END
       in {a:
             2}
         false
+      in a: {b:}, c:
+        p c
       in {a:
       }
         _a = a

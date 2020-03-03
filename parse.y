@@ -3940,11 +3940,13 @@ p_expr_basic	: p_value
 		| tLBRACE
 		    {
 			$<tbl>$ = push_pktbl(p);
+			$<num>1 = p->in_kwarg;
 			p->in_kwarg = 0;
 		    }
 		  p_kwargs rbrace
 		    {
 			pop_pktbl(p, $<tbl>2);
+			p->in_kwarg = $<num>1;
 			$$ = new_hash_pattern(p, Qnone, $3, &@$);
 		    }
 		| tLBRACE rbrace
