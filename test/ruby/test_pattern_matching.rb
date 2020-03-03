@@ -1061,6 +1061,7 @@ END
             2}
         false
       in a: {b:}, c:
+        _b = b
         p c
       in {a:
       }
