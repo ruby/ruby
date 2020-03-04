@@ -146,6 +146,7 @@ class TestGc < Test::Unit::TestCase
     eom
 
     GC.start
+    GC.start
     assert_equal :force, GC.latest_gc_info[:major_by] if use_rgengc?
     assert_equal :method, GC.latest_gc_info[:gc_by]
     assert_equal true, GC.latest_gc_info[:immediate_sweep]
