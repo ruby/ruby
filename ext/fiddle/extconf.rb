@@ -114,8 +114,9 @@ end
 
 if ver
   ver = ver.gsub(/-rc\d+/, '') # If ver contains rc version, just ignored.
-  ver = (ver.split('.') + [0,0])[0,3]
+  ver = (ver.split('.').map(&:to_i) + [0,0])[0,3]
   $defs.push(%{-DRUBY_LIBFFI_MODVERSION=#{ '%d%03d%03d' % ver }})
+  $defs << "-DUSE_FFI_CLOSURE_ALLOC=1" if (ver <=> [3, 2]) >= 0
 end
 
 have_header 'sys/mman.h'
@@ -153,9 +154,6 @@ end
 if libffi
   $LOCAL_LIBS.prepend("./#{libffi.a} ").strip! # to exts.mk
   $INCFLAGS.gsub!(/-I#{libffi.dir}/, '-I$(LIBFFI_DIR)')
-  $defs << "-DUSE_FFI_CLOSURE_ALLOC=1"
-else
-  have_func('ffi_closure_alloc', ffi_header)
 end
 $INCFLAGS << " -I$(top_srcdir)"
 create_makefile 'fiddle' do |conf|
