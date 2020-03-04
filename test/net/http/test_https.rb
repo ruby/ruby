@@ -212,6 +212,8 @@ class TestNetHTTPS < Test::Unit::TestCase
       http.cert_store = TEST_STORE
       http.verify_hostname = false
       assert_nothing_raised { http.start }
+    ensure
+      http&.finish
     end
   end
 
