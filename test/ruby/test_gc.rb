@@ -56,8 +56,9 @@ class TestGc < Test::Unit::TestCase
     return unless use_rgengc?
     skip 'stress' if GC.stress
 
+    GC.start # full mark and next time it should be minor mark
     GC.start(full_mark: false)
-    assert_nil GC.latest_gc_info(:major_by)
+    assert_nil GC.latest_gc_info(:major_by, msg)
 
     GC.start(full_mark: true)
     assert_not_nil GC.latest_gc_info(:major_by)
