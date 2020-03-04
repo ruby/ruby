@@ -428,7 +428,8 @@ free_unit(struct rb_mjit_unit *unit)
         unit->iseq->body->jit_unit = NULL;
     }
     if (unit->cc_entries) {
-        free(unit->cc_entries);
+        void *entries = (void *)unit->cc_entries;
+        free(entries);
     }
     if (unit->handle && dlclose(unit->handle)) { // handle is NULL if it's in queue
         mjit_warning("failed to close handle for u%d: %s", unit->id, dlerror());
