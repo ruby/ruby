@@ -135,7 +135,6 @@ elsif have_header "windows.h"
 end
 
 have_const('FFI_STDCALL', ffi_header)
-have_func('ffi_closure_alloc', ffi_header)
 
 config = File.read(RbConfig.expand(File.join($arch_hdrdir, "ruby/config.h")))
 types = {"SIZE_T"=>"SSIZE_T", "PTRDIFF_T"=>nil, "INTPTR_T"=>nil}
@@ -154,6 +153,9 @@ end
 if libffi
   $LOCAL_LIBS.prepend("./#{libffi.a} ").strip! # to exts.mk
   $INCFLAGS.gsub!(/-I#{libffi.dir}/, '-I$(LIBFFI_DIR)')
+  $defs << "-DUSE_FFI_CLOSURE_ALLOC=1"
+else
+  have_func('ffi_closure_alloc', ffi_header)
 end
 $INCFLAGS << " -I$(top_srcdir)"
 create_makefile 'fiddle' do |conf|
