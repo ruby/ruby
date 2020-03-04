@@ -5271,7 +5271,7 @@ static int
 wrename(const WCHAR *oldpath, const WCHAR *newpath)
 {
     int res = 0;
-    DWORD oldatts, newatts = (DWORD)-1;
+    DWORD oldatts = 0, newatts = (DWORD)-1;
     DWORD oldvsn = 0, newvsn = 0, e;
 
     e = get_attr_vsn(oldpath, &oldatts, &oldvsn);
