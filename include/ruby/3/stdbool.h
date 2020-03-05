@@ -16,18 +16,32 @@
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
  *             extension libraries. They could be written in C++98.
- * @brief      Defines old #TRUE / #FALSE
+ * @brief      C99 shim for <stdbool.h>
  */
-#include "ruby/3/stdbool.h"
+#include "ruby/3/config.h"
 
-#ifndef FALSE
-# define FALSE false
-#elif FALSE
-# error FALSE must be false
-#endif
+#if defined(__bool_true_false_are_defined)
+# /* Take that. */
 
-#ifndef TRUE
-# define TRUE true
-#elif ! TRUE
-# error TRUE must be true
+#elif defined(__cplusplus)
+# /* bool is a keyword in C++. */
+# if defined(HAVE_STDBOOL_H) && (__cplusplus >= 201103L)
+#  include <cstdbool>
+# endif
+#
+# ifndef __bool_true_false_are_defined
+#  define __bool_true_false_are_defined
+# endif
+
+#elif defined(HAVE_STDBOOL_H)
+# /* Take stdbool.h definition. */
+# include <stdbool.h>
+
+#else
+typedef unsigned char _Bool;
+# /* See also http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2229.htm */
+# define bool  _Bool
+# define true  ((_Bool)+1)
+# define false ((_Bool)+0)
+# define __bool_true_false_are_defined
 #endif
