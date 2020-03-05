@@ -21,10 +21,25 @@
 #ifndef  RUBY3_XMALLOC_H
 #define  RUBY3_XMALLOC_H
 #include "ruby/3/config.h"
-#include "ruby/3/dllexport.h"
-#include "ruby/backward/2/attributes.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+#ifdef STDC_HEADERS
+# include <stddef.h>
+#endif
+
+#ifdef HAVE_STDLIB_H
+# include <stdlib.h>
+#endif
+
+#include "ruby/3/attr/alloc_size.h"
+#include "ruby/3/attr/nodiscard.h"
+#include "ruby/3/attr/noexcept.h"
+#include "ruby/3/attr/restrict.h"
+#include "ruby/3/attr/returns_nonnull.h"
+#include "ruby/3/dllexport.h"
+
+#ifndef USE_GC_MALLOC_OBJ_INFO_DETAILS
+# define USE_GC_MALLOC_OBJ_INFO_DETAILS 0
+#endif
 
 #define xmalloc ruby_xmalloc
 #define xmalloc2 ruby_xmalloc2
@@ -33,33 +48,97 @@ RUBY3_SYMBOL_EXPORT_BEGIN()
 #define xrealloc2 ruby_xrealloc2
 #define xfree ruby_xfree
 
-void *ruby_xmalloc(size_t) RUBY_ATTR_MALLOC RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((1));
-void *ruby_xmalloc2(size_t,size_t) RUBY_ATTR_MALLOC RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((1,2));
-void *ruby_xcalloc(size_t,size_t) RUBY_ATTR_MALLOC RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((1,2));
-void *ruby_xrealloc(void*,size_t) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
-void *ruby_xrealloc2(void*,size_t,size_t) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2,3));
-void ruby_xfree(void*);
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
-#ifndef USE_GC_MALLOC_OBJ_INFO_DETAILS
-#define USE_GC_MALLOC_OBJ_INFO_DETAILS 0
-#endif
+RUBY3_ATTR_NODISCARD()
+RUBY3_ATTR_RESTRICT()
+RUBY3_ATTR_RETURNS_NONNULL()
+RUBY3_ATTR_ALLOC_SIZE((1))
+void *ruby_xmalloc(size_t size)
+RUBY3_ATTR_NOEXCEPT(malloc(size))
+;
 
-#if USE_GC_MALLOC_OBJ_INFO_DETAILS
+RUBY3_ATTR_NODISCARD()
+RUBY3_ATTR_RESTRICT()
+RUBY3_ATTR_RETURNS_NONNULL()
+RUBY3_ATTR_ALLOC_SIZE((1,2))
+void *ruby_xmalloc2(size_t nelems, size_t elemsiz)
+RUBY3_ATTR_NOEXCEPT(malloc(nelems * elemsiz))
+;
 
-void *ruby_xmalloc_body(size_t) RUBY_ATTR_MALLOC RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((1));
-void *ruby_xmalloc2_body(size_t,size_t) RUBY_ATTR_MALLOC RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((1,2));
-void *ruby_xcalloc_body(size_t,size_t) RUBY_ATTR_MALLOC RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((1,2));
-void *ruby_xrealloc_body(void*,size_t) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
-void *ruby_xrealloc2_body(void*,size_t,size_t) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2,3));
+RUBY3_ATTR_NODISCARD()
+RUBY3_ATTR_RESTRICT()
+RUBY3_ATTR_RETURNS_NONNULL()
+RUBY3_ATTR_ALLOC_SIZE((1,2))
+void *ruby_xcalloc(size_t nelems, size_t elemsiz)
+RUBY3_ATTR_NOEXCEPT(calloc(nelems, elemsiz))
+;
 
-#define ruby_xmalloc(s1)            ruby_xmalloc_with_location(s1, __FILE__, __LINE__)
-#define ruby_xmalloc2(s1, s2)       ruby_xmalloc2_with_location(s1, s2, __FILE__, __LINE__)
-#define ruby_xcalloc(s1, s2)        ruby_xcalloc_with_location(s1, s2, __FILE__, __LINE__)
-#define ruby_xrealloc(ptr, s1)      ruby_xrealloc_with_location(ptr, s1, __FILE__, __LINE__)
-#define ruby_xrealloc2(ptr, s1, s2) ruby_xrealloc2_with_location(ptr, s1, s2, __FILE__, __LINE__)
+RUBY3_ATTR_NODISCARD()
+RUBY3_ATTR_RETURNS_NONNULL()
+RUBY3_ATTR_ALLOC_SIZE((2))
+void *ruby_xrealloc(void *ptr, size_t newsiz)
+RUBY3_ATTR_NOEXCEPT(realloc(ptr, newsiz))
+;
 
-extern const char *ruby_malloc_info_file;
-extern int ruby_malloc_info_line;
+RUBY3_ATTR_NODISCARD()
+RUBY3_ATTR_RETURNS_NONNULL()
+RUBY3_ATTR_ALLOC_SIZE((2,3))
+void *ruby_xrealloc2(void *ptr, size_t newelems, size_t newsiz)
+RUBY3_ATTR_NOEXCEPT(realloc(ptr, newelems * newsiz))
+;
+
+void ruby_xfree(void *ptr)
+RUBY3_ATTR_NOEXCEPT(free(ptr))
+;
+
+#if USE_GC_MALLOC_OBJ_INFO_DETAILS || defined(__DOXYGEN)
+# define ruby_xmalloc(s1)            ruby_xmalloc_with_location(s1, __FILE__, __LINE__)
+# define ruby_xmalloc2(s1, s2)       ruby_xmalloc2_with_location(s1, s2, __FILE__, __LINE__)
+# define ruby_xcalloc(s1, s2)        ruby_xcalloc_with_location(s1, s2, __FILE__, __LINE__)
+# define ruby_xrealloc(ptr, s1)      ruby_xrealloc_with_location(ptr, s1, __FILE__, __LINE__)
+# define ruby_xrealloc2(ptr, s1, s2) ruby_xrealloc2_with_location(ptr, s1, s2, __FILE__, __LINE__)
+
+RUBY3_ATTR_NODISCARD()
+RUBY3_ATTR_RESTRICT()
+RUBY3_ATTR_RETURNS_NONNULL()
+RUBY3_ATTR_ALLOC_SIZE((1))
+void *ruby_xmalloc_body(size_t size)
+RUBY3_ATTR_NOEXCEPT(malloc(size))
+;
+
+RUBY3_ATTR_NODISCARD()
+RUBY3_ATTR_RESTRICT()
+RUBY3_ATTR_RETURNS_NONNULL()
+RUBY3_ATTR_ALLOC_SIZE((1,2))
+void *ruby_xmalloc2_body(size_t nelems, size_t elemsiz)
+RUBY3_ATTR_NOEXCEPT(malloc(nelems * elemsiz))
+;
+
+RUBY3_ATTR_NODISCARD()
+RUBY3_ATTR_RESTRICT()
+RUBY3_ATTR_RETURNS_NONNULL()
+RUBY3_ATTR_ALLOC_SIZE((1,2))
+void *ruby_xcalloc_body(size_t nelems, size_t elemsiz)
+RUBY3_ATTR_NOEXCEPT(calloc(nelems, elemsiz))
+;
+
+RUBY3_ATTR_NODISCARD()
+RUBY3_ATTR_RETURNS_NONNULL()
+RUBY3_ATTR_ALLOC_SIZE((2))
+void *ruby_xrealloc_body(void *ptr, size_t newsiz)
+RUBY3_ATTR_NOEXCEPT(realloc(ptr, newsiz))
+;
+
+RUBY3_ATTR_NODISCARD()
+RUBY3_ATTR_RETURNS_NONNULL()
+RUBY3_ATTR_ALLOC_SIZE((2,3))
+void *ruby_xrealloc2_body(void *ptr, size_t newelems, size_t newsiz)
+RUBY3_ATTR_NOEXCEPT(realloc(ptr, newelems * newsiz))
+;
+
+RUBY_EXTERN const char *ruby_malloc_info_file;
+RUBY_EXTERN int ruby_malloc_info_line;
 
 static inline void *
 ruby_xmalloc_with_location(size_t s, const char *file, int line)
