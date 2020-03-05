@@ -120,7 +120,7 @@ end
 
 warn "libffi_version: #{ver}"
 case
-when $mswin, $minor, (ver && (ver <=> [3, 2]) >= 0)
+when $mswin, $mingw, (ver && (ver <=> [3, 2]) >= 0)
   $defs << "-DUSE_FFI_CLOSURE_ALLOC=1"
 end
 
