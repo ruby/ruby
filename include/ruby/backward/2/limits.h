@@ -21,85 +21,80 @@
  * The macros in this header file are obsolescent.  Does anyone really need our
  * own definition of #CHAR_BIT today?
  */
-#ifndef  RUBY_BACKWARD2_LIMITS_H
-#define  RUBY_BACKWARD2_LIMITS_H
 #include "ruby/3/config.h"
 
-#ifdef __STDC__
+#ifdef HAVE_LIMITS_H
 # include <limits.h>
+#endif
+
+#include "ruby/backward/2/long_long.h"
+
+#ifndef LONG_MAX
+# /* assuming 32bit(2's complement) long */
+# define LONG_MAX 2147483647L
+#endif
+
+#ifndef LONG_MIN
+# define LONG_MIN (-LONG_MAX-1)
+#endif
+
+#ifndef CHAR_BIT
+# define CHAR_BIT 8
+#endif
+
+#ifdef LLONG_MAX
+# /* Take that. */
+#elif ! defined(HAVE_LONG_LONG)
+# /* Nothing to do */
+#elif defined(LONG_LONG_MAX)
+# define LLONG_MAX  LONG_LONG_MAX
+#elif defined(_I64_MAX)
+# define LLONG_MAX _I64_MAX
 #else
-# ifndef LONG_MAX
-#  ifdef HAVE_LIMITS_H
-#   include <limits.h>
-#  else
-    /* assuming 32bit(2's complement) long */
-#   define LONG_MAX 2147483647
-#  endif
-# endif
-# ifndef LONG_MIN
-#  define LONG_MIN (-LONG_MAX-1)
-# endif
-# ifndef CHAR_BIT
-#  define CHAR_BIT 8
-# endif
+# /* assuming 64bit(2's complement) long long */
+# define LLONG_MAX 9223372036854775807LL
 #endif
 
-#ifdef HAVE_LONG_LONG
-# ifndef LLONG_MAX
-#  ifdef LONG_LONG_MAX
-#   define LLONG_MAX  LONG_LONG_MAX
-#  else
-#   ifdef _I64_MAX
-#    define LLONG_MAX _I64_MAX
-#   else
-    /* assuming 64bit(2's complement) long long */
-#    define LLONG_MAX 9223372036854775807LL
-#   endif
-#  endif
-# endif
-# ifndef LLONG_MIN
-#  ifdef LONG_LONG_MIN
-#   define LLONG_MIN  LONG_LONG_MIN
-#  else
-#   ifdef _I64_MIN
-#    define LLONG_MIN _I64_MIN
-#   else
-#    define LLONG_MIN (-LLONG_MAX-1)
-#   endif
-#  endif
-# endif
+#ifdef LLONG_MIN
+# /* Take that. */
+#elif ! defined(HAVE_LONG_LONG)
+# /* Nothing to do */
+#elif defined(LONG_LONG_MIN)
+# define LLONG_MIN  LONG_LONG_MIN
+#elif defined(_I64_MAX)
+# define LLONG_MIN _I64_MIN
+#else
+# define LLONG_MIN (-LLONG_MAX-1)
 #endif
 
-#ifndef SIZE_MAX
-# if SIZEOF_SIZE_T > SIZEOF_LONG && defined(HAVE_LONG_LONG)
-#   define SIZE_MAX ULLONG_MAX
-#   define SIZE_MIN ULLONG_MIN
-# elif SIZEOF_SIZE_T == SIZEOF_LONG
-#   define SIZE_MAX ULONG_MAX
-#   define SIZE_MIN ULONG_MIN
-# elif SIZEOF_SIZE_T == SIZEOF_INT
-#   define SIZE_MAX UINT_MAX
-#   define SIZE_MIN UINT_MIN
-# else
-#   define SIZE_MAX USHRT_MAX
-#   define SIZE_MIN USHRT_MIN
-# endif
+#ifdef SIZE_MAX
+# /* Take that. */
+#elif SIZEOF_SIZE_T == SIZEOF_LONG_LONG && defined(HAVE_LONG_LONG)
+# define SIZE_MAX ULLONG_MAX
+# define SIZE_MIN ULLONG_MIN
+#elif SIZEOF_SIZE_T == SIZEOF_LONG
+# define SIZE_MAX ULONG_MAX
+# define SIZE_MIN ULONG_MIN
+#elif SIZEOF_SIZE_T == SIZEOF_INT
+# define SIZE_MAX UINT_MAX
+# define SIZE_MIN UINT_MIN
+#else
+# define SIZE_MAX USHRT_MAX
+# define SIZE_MIN USHRT_MIN
 #endif
 
-#ifndef SSIZE_MAX
-# if SIZEOF_SIZE_T > SIZEOF_LONG && defined(HAVE_LONG_LONG)
-#   define SSIZE_MAX LLONG_MAX
-#   define SSIZE_MIN LLONG_MIN
-# elif SIZEOF_SIZE_T == SIZEOF_LONG
-#   define SSIZE_MAX LONG_MAX
-#   define SSIZE_MIN LONG_MIN
-# elif SIZEOF_SIZE_T == SIZEOF_INT
-#   define SSIZE_MAX INT_MAX
-#   define SSIZE_MIN INT_MIN
-# else
-#   define SSIZE_MAX SHRT_MAX
-#   define SSIZE_MIN SHRT_MIN
-# endif
+#ifdef SSIZE_MAX
+# /* Take that. */
+#elif SIZEOF_SIZE_T == SIZEOF_LONG_LONG && defined(HAVE_LONG_LONG)
+# define SSIZE_MAX LLONG_MAX
+# define SSIZE_MIN LLONG_MIN
+#elif SIZEOF_SIZE_T == SIZEOF_LONG
+# define SSIZE_MAX LONG_MAX
+# define SSIZE_MIN LONG_MIN
+#elif SIZEOF_SIZE_T == SIZEOF_INT
+# define SSIZE_MAX INT_MAX
+# define SSIZE_MIN INT_MIN
+#else
+# define SSIZE_MAX SHRT_MAX
+# define SSIZE_MIN SHRT_MIN
 #endif
-
-#endif /* RUBY_BACKWARD2_LIMITS_H */
