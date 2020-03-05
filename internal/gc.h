@@ -58,7 +58,7 @@ struct rb_objspace; /* in vm_core.h */
 /* gc.c */
 extern VALUE *ruby_initial_gc_stress_ptr;
 extern int ruby_disable_gc;
-void *ruby_mimmalloc(size_t size) RUBY_ATTR_MALLOC;
+RUBY_ATTR_MALLOC void *ruby_mimmalloc(size_t size);
 void ruby_mimfree(void *ptr);
 void rb_objspace_set_event_hook(const rb_event_flag_t event);
 VALUE rb_objspace_gc_enable(struct rb_objspace *);
@@ -68,13 +68,13 @@ void rb_copy_wb_protected_attribute(VALUE dest, VALUE obj);
 #if __has_attribute(alloc_align)
 __attribute__((__alloc_align__(1)))
 #endif
-void *rb_aligned_malloc(size_t, size_t) RUBY_ATTR_MALLOC RUBY_ATTR_ALLOC_SIZE((2));
+RUBY_ATTR_MALLOC void *rb_aligned_malloc(size_t, size_t) RUBY_ATTR_ALLOC_SIZE((2));
 size_t rb_size_mul_or_raise(size_t, size_t, VALUE); /* used in compile.c */
 size_t rb_size_mul_add_or_raise(size_t, size_t, size_t, VALUE); /* used in iseq.h */
-void *rb_xmalloc_mul_add(size_t, size_t, size_t) RUBY_ATTR_MALLOC;
+RUBY_ATTR_MALLOC void *rb_xmalloc_mul_add(size_t, size_t, size_t);
 void *rb_xrealloc_mul_add(const void *, size_t, size_t, size_t);
-void *rb_xmalloc_mul_add_mul(size_t, size_t, size_t, size_t) RUBY_ATTR_MALLOC;
-void *rb_xcalloc_mul_add_mul(size_t, size_t, size_t, size_t) RUBY_ATTR_MALLOC;
+RUBY_ATTR_MALLOC void *rb_xmalloc_mul_add_mul(size_t, size_t, size_t, size_t);
+RUBY_ATTR_MALLOC void *rb_xcalloc_mul_add_mul(size_t, size_t, size_t, size_t);
 static inline void *ruby_sized_xrealloc_inlined(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
 static inline void *ruby_sized_xrealloc2_inlined(void *ptr, size_t new_count, size_t elemsiz, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
 static inline void ruby_sized_xfree_inlined(void *ptr, size_t size);
