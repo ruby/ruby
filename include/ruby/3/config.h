@@ -39,6 +39,20 @@
 
 # undef  HAVE_STDARG_PROTOTYPES
 # define HAVE_STDARG_PROTOTYPES 1
+
+/* HAVE_VA_ARGS_MACRO is for C.  C++ situations might be different. */
+# undef HAVE_VA_ARGS_MACRO
+# if __cplusplus >= 201103L
+#  define HAVE_VA_ARGS_MACRO
+# elif defined(__GXX_EXPERIMENTAL_CXX0X__) && __GXX_EXPERIMENTAL_CXX0X__
+#  define HAVE_VA_ARGS_MACRO
+# elif defined(__INTEL_CXX11_MODE__)
+#  define HAVE_VA_ARGS_MACRO
+# elif RUBY3_COMPILER_SINCE(MSVC, 16, 0, 0)
+#  define HAVE_VA_ARGS_MACRO
+# else
+#  /* NG, not known. */
+# endif
 #endif
 
 #if RUBY3_COMPILER_BEFORE(GCC, 4, 9, 0)
