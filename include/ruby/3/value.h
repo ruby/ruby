@@ -30,6 +30,7 @@
 # include <stdint.h>
 #endif
 
+#include "ruby/3/static_assert.h"
 #include "ruby/backward/2/long_long.h"
 
 #if defined HAVE_UINTPTR_T && 0
@@ -55,10 +56,8 @@ typedef unsigned LONG_LONG ID;
 # error ---->> ruby requires sizeof(void*) == sizeof(long) or sizeof(LONG_LONG) to be compiled. <<----
 #endif
 
-typedef char ruby_check_sizeof_int[SIZEOF_INT == sizeof(int) ? 1 : -1];
-typedef char ruby_check_sizeof_long[SIZEOF_LONG == sizeof(long) ? 1 : -1];
-#ifdef HAVE_LONG_LONG
-typedef char ruby_check_sizeof_long_long[SIZEOF_LONG_LONG == sizeof(LONG_LONG) ? 1 : -1];
-#endif
-typedef char ruby_check_sizeof_voidp[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];
+RUBY3_STATIC_ASSERT(sizeof_int, SIZEOF_INT == sizeof(int));
+RUBY3_STATIC_ASSERT(sizeof_long, SIZEOF_LONG == sizeof(long));
+RUBY3_STATIC_ASSERT(sizeof_long_long, SIZEOF_LONG_LONG == sizeof(LONG_LONG));
+RUBY3_STATIC_ASSERT(sizeof_voidp, SIZEOF_VOIDP == sizeof(void *));
 #endif /* RUBY3_VALUE_H */
