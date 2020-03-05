@@ -116,7 +116,12 @@ if ver
   ver = ver.gsub(/-rc\d+/, '') # If ver contains rc version, just ignored.
   ver = (ver.split('.').map(&:to_i) + [0,0])[0,3]
   $defs.push(%{-DRUBY_LIBFFI_MODVERSION=#{ '%d%03d%03d' % ver }})
-  $defs << "-DUSE_FFI_CLOSURE_ALLOC=1" if (ver <=> [3, 2]) >= 0
+end
+
+warn "libffi_version: #{ver}"
+case
+when $mswin, $minor, (ver && (ver <=> [3, 2]) >= 0)
+  $defs << "-DUSE_FFI_CLOSURE_ALLOC=1"
 end
 
 have_header 'sys/mman.h'
