@@ -16,16 +16,62 @@
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
  *             extension libraries. They could be written in C++98.
- * @brief      C counterpart of include/backward/cxxanyargs.hpp
+ * @brief      Function overloads to issue warnings around #ANYARGS.
  *
- * With those  complex macro  overlays defined  in this header  file, use  of a
- * function  pointer gets  checked  against the  corresponding arity  argument.
- * This of course improves overall code quality.
+ * For instance ::rb_define_method  takes a pointer to  #ANYARGS -ed functions,
+ * which in  fact varies 18  different prototypes.   We still need  to preserve
+ * #ANYARGS for storages but why not check the consistencies if possible.  With
+ * those complex macro overlays defined in  this header file, use of a function
+ * pointer gets checked against the corresponding arity argument.
+ *
+ * ### Q&A ###
+ *
+ * - Q: Where did the magic number "18" came from in the description above?
+ *
+ * - A: Count the case branch of `vm_method.c:call_cfunc_invoker_func()`.  Note
+ *      also that the 18  branches has lasted for at least  25 years.  See also
+ *      commit 200e0ee2fd3c1c006c528874a88f684447215524.
+ *
+ * - Q: What is this `__weakref__` thing?
+ *
+ * - A: That is a kind of function overloading mechanism that GCC provides.  In
+ *      this   case  for   instance  `rb_define_method_00`   is  an   alias  of
+ *      ::rb_define_method, with a strong type.
+ *
+ * - Q: What is this `__transparent_union__` thing?
+ *
+ *   A: That  is  another  kind  of function  overloading  mechanism  that  GCC
+ *      provides.   In this  case  the attributed  function  pointer is  either
+ *      `VALUE(*)(int,VALUE*,VALUE)` or `VALUE(*)(int,const VALUE*,VALUE)`.
+ *
+ *      This is better than `void*` or #ANYARGS because we can reject all other
+ *      possibilities than the two.
+ *
+ * - Q: What does this #rb_define_method macro mean?
+ *
+ * - A: It  selects  appropriate  alias  of  the  ::rb_define_method  function,
+ *      depending on the last (arity) argument.
+ *
+ * - Q: Why the special case for ::rb_f_notimplement ?
+ *
+ * - A: Function   pointer  to   ::rb_f_notimplement   is   special  cased   in
+ *      `vm_method.c:rb_add_method_cfunc()`.   That should  be  handled by  the
+ *      `__builtin_choose_expr`   chain  inside   of  #rb_define_method   macro
+ *      expansion.      In    order     to    do     so,    comparison     like
+ *      `(func == rb_f_notimplement)`        is        inappropriate        for
+ *      `__builtin_choose_expr`'s  expression  (which  must be  a  compile-time
+ *      integer constant  but the address  of ::rb_f_notimplement is  not fixed
+ *      until      the      linker).        Instead      we      are      using
+ *      `__builtin_types_compatible_p`, and in doing  so we need to distinguish
+ *      ::rb_f_notimplement from others, by type.
  */
 #ifndef  RUBY3_ANYARGS_H
 #define  RUBY3_ANYARGS_H
-#include "ruby/3/config.h"
+#include "ruby/3/attr/maybe_unused.h"
+#include "ruby/3/attr/nonnull.h"
+#include "ruby/3/attr/weakref.h"
 #include "ruby/3/cast.h"
+#include "ruby/3/config.h"
 #include "ruby/3/has/attribute.h"
 #include "ruby/3/intern/class.h"
 #include "ruby/3/intern/vm.h"
@@ -34,206 +80,296 @@
 #include "ruby/backward/2/stdarg.h"
 
 #if defined(__cplusplus)
-#include "ruby/backward/cxxanyargs.hpp"
+# include "ruby/backward/cxxanyargs.hpp"
+
+#elif defined(_WIN32) || defined(__CYGWIN__)
+# /* Skip due to [Bug #16134] */
+
+#elif ! RUBY3_HAS_ATTRIBUTE(transparent_union)
+# /* :TODO: improve here, please find a way to support. */
+
+#elif ! defined(HAVE_VA_ARGS_MACRO)
+# /* :TODO: improve here, please find a way to support. */
+
 #else
+# /** @cond INTERNAL_MACRO */
+# if ! defined(HAVE_BUILTIN___BUILTIN_TYPES_COMPATIBLE_P)
+#  define RUBY3_CFUNC_IS_rb_f_notimplement(f) 0
+# else
+#  define RUBY3_CFUNC_IS_rb_f_notimplement(f) \
+    __builtin_types_compatible_p(             \
+        __typeof__(f),                        \
+        __typeof__(rb_f_notimplement))
+# endif
 
-#if defined(HAVE_BUILTIN___BUILTIN_TYPES_COMPATIBLE_P)
-# define rb_f_notimplement_p(f) __builtin_types_compatible_p(__typeof__(f),__typeof__(rb_f_notimplement))
-#else
-# define rb_f_notimplement_p(f) 0
-#endif
+# if ! defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
+#  define RUBY3_ANYARGS_DISPATCH(expr, truthy, falsy) (falsy)
+# else
+#  define RUBY3_ANYARGS_DISPATCH(expr, truthy, falsy) \
+    __builtin_choose_expr(                            \
+        __builtin_choose_expr(                        \
+            __builtin_constant_p(expr),               \
+            (expr), 0),                               \
+        (truthy), (falsy))
+# endif
 
-#if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
-#define rb_define_method_if_constexpr(x, t, f)    __builtin_choose_expr(__builtin_choose_expr(__builtin_constant_p(x),(x),0),(t),(f))
-#endif
+# define RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_m2(n) RUBY3_ANYARGS_DISPATCH((n) == -2, rb_define_singleton_method_m2, rb_define_singleton_method_m3)
+# define RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_m1(n) RUBY3_ANYARGS_DISPATCH((n) == -1, rb_define_singleton_method_m1, RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_m2(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_00(n) RUBY3_ANYARGS_DISPATCH((n) ==  0, rb_define_singleton_method_00, RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_m1(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_01(n) RUBY3_ANYARGS_DISPATCH((n) ==  1, rb_define_singleton_method_01, RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_00(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_02(n) RUBY3_ANYARGS_DISPATCH((n) ==  2, rb_define_singleton_method_02, RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_01(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_03(n) RUBY3_ANYARGS_DISPATCH((n) ==  3, rb_define_singleton_method_03, RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_02(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_04(n) RUBY3_ANYARGS_DISPATCH((n) ==  4, rb_define_singleton_method_04, RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_03(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_05(n) RUBY3_ANYARGS_DISPATCH((n) ==  5, rb_define_singleton_method_05, RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_04(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_06(n) RUBY3_ANYARGS_DISPATCH((n) ==  6, rb_define_singleton_method_06, RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_05(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_07(n) RUBY3_ANYARGS_DISPATCH((n) ==  7, rb_define_singleton_method_07, RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_06(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_08(n) RUBY3_ANYARGS_DISPATCH((n) ==  8, rb_define_singleton_method_08, RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_07(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_09(n) RUBY3_ANYARGS_DISPATCH((n) ==  9, rb_define_singleton_method_09, RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_08(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_10(n) RUBY3_ANYARGS_DISPATCH((n) == 10, rb_define_singleton_method_10, RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_09(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_11(n) RUBY3_ANYARGS_DISPATCH((n) == 11, rb_define_singleton_method_11, RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_10(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_12(n) RUBY3_ANYARGS_DISPATCH((n) == 12, rb_define_singleton_method_12, RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_11(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_13(n) RUBY3_ANYARGS_DISPATCH((n) == 13, rb_define_singleton_method_13, RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_12(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_14(n) RUBY3_ANYARGS_DISPATCH((n) == 14, rb_define_singleton_method_14, RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_13(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_15(n) RUBY3_ANYARGS_DISPATCH((n) == 15, rb_define_singleton_method_15, RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_14(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_m2(n) RUBY3_ANYARGS_DISPATCH((n) == -2, rb_define_protected_method_m2, rb_define_protected_method_m3)
+# define RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_m1(n) RUBY3_ANYARGS_DISPATCH((n) == -1, rb_define_protected_method_m1, RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_m2(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_00(n) RUBY3_ANYARGS_DISPATCH((n) ==  0, rb_define_protected_method_00, RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_m1(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_01(n) RUBY3_ANYARGS_DISPATCH((n) ==  1, rb_define_protected_method_01, RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_00(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_02(n) RUBY3_ANYARGS_DISPATCH((n) ==  2, rb_define_protected_method_02, RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_01(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_03(n) RUBY3_ANYARGS_DISPATCH((n) ==  3, rb_define_protected_method_03, RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_02(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_04(n) RUBY3_ANYARGS_DISPATCH((n) ==  4, rb_define_protected_method_04, RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_03(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_05(n) RUBY3_ANYARGS_DISPATCH((n) ==  5, rb_define_protected_method_05, RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_04(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_06(n) RUBY3_ANYARGS_DISPATCH((n) ==  6, rb_define_protected_method_06, RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_05(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_07(n) RUBY3_ANYARGS_DISPATCH((n) ==  7, rb_define_protected_method_07, RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_06(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_08(n) RUBY3_ANYARGS_DISPATCH((n) ==  8, rb_define_protected_method_08, RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_07(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_09(n) RUBY3_ANYARGS_DISPATCH((n) ==  9, rb_define_protected_method_09, RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_08(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_10(n) RUBY3_ANYARGS_DISPATCH((n) == 10, rb_define_protected_method_10, RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_09(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_11(n) RUBY3_ANYARGS_DISPATCH((n) == 11, rb_define_protected_method_11, RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_10(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_12(n) RUBY3_ANYARGS_DISPATCH((n) == 12, rb_define_protected_method_12, RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_11(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_13(n) RUBY3_ANYARGS_DISPATCH((n) == 13, rb_define_protected_method_13, RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_12(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_14(n) RUBY3_ANYARGS_DISPATCH((n) == 14, rb_define_protected_method_14, RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_13(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_15(n) RUBY3_ANYARGS_DISPATCH((n) == 15, rb_define_protected_method_15, RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_14(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_private_method_m2(n)   RUBY3_ANYARGS_DISPATCH((n) == -2, rb_define_private_method_m2,   rb_define_private_method_m3)
+# define RUBY3_ANYARGS_DISPATCH_rb_define_private_method_m1(n)   RUBY3_ANYARGS_DISPATCH((n) == -1, rb_define_private_method_m1,   RUBY3_ANYARGS_DISPATCH_rb_define_private_method_m2(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_private_method_00(n)   RUBY3_ANYARGS_DISPATCH((n) ==  0, rb_define_private_method_00,   RUBY3_ANYARGS_DISPATCH_rb_define_private_method_m1(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_private_method_01(n)   RUBY3_ANYARGS_DISPATCH((n) ==  1, rb_define_private_method_01,   RUBY3_ANYARGS_DISPATCH_rb_define_private_method_00(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_private_method_02(n)   RUBY3_ANYARGS_DISPATCH((n) ==  2, rb_define_private_method_02,   RUBY3_ANYARGS_DISPATCH_rb_define_private_method_01(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_private_method_03(n)   RUBY3_ANYARGS_DISPATCH((n) ==  3, rb_define_private_method_03,   RUBY3_ANYARGS_DISPATCH_rb_define_private_method_02(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_private_method_04(n)   RUBY3_ANYARGS_DISPATCH((n) ==  4, rb_define_private_method_04,   RUBY3_ANYARGS_DISPATCH_rb_define_private_method_03(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_private_method_05(n)   RUBY3_ANYARGS_DISPATCH((n) ==  5, rb_define_private_method_05,   RUBY3_ANYARGS_DISPATCH_rb_define_private_method_04(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_private_method_06(n)   RUBY3_ANYARGS_DISPATCH((n) ==  6, rb_define_private_method_06,   RUBY3_ANYARGS_DISPATCH_rb_define_private_method_05(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_private_method_07(n)   RUBY3_ANYARGS_DISPATCH((n) ==  7, rb_define_private_method_07,   RUBY3_ANYARGS_DISPATCH_rb_define_private_method_06(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_private_method_08(n)   RUBY3_ANYARGS_DISPATCH((n) ==  8, rb_define_private_method_08,   RUBY3_ANYARGS_DISPATCH_rb_define_private_method_07(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_private_method_09(n)   RUBY3_ANYARGS_DISPATCH((n) ==  9, rb_define_private_method_09,   RUBY3_ANYARGS_DISPATCH_rb_define_private_method_08(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_private_method_10(n)   RUBY3_ANYARGS_DISPATCH((n) == 10, rb_define_private_method_10,   RUBY3_ANYARGS_DISPATCH_rb_define_private_method_09(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_private_method_11(n)   RUBY3_ANYARGS_DISPATCH((n) == 11, rb_define_private_method_11,   RUBY3_ANYARGS_DISPATCH_rb_define_private_method_10(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_private_method_12(n)   RUBY3_ANYARGS_DISPATCH((n) == 12, rb_define_private_method_12,   RUBY3_ANYARGS_DISPATCH_rb_define_private_method_11(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_private_method_13(n)   RUBY3_ANYARGS_DISPATCH((n) == 13, rb_define_private_method_13,   RUBY3_ANYARGS_DISPATCH_rb_define_private_method_12(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_private_method_14(n)   RUBY3_ANYARGS_DISPATCH((n) == 14, rb_define_private_method_14,   RUBY3_ANYARGS_DISPATCH_rb_define_private_method_13(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_private_method_15(n)   RUBY3_ANYARGS_DISPATCH((n) == 15, rb_define_private_method_15,   RUBY3_ANYARGS_DISPATCH_rb_define_private_method_14(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_module_function_m2(n)  RUBY3_ANYARGS_DISPATCH((n) == -2, rb_define_module_function_m2,  rb_define_module_function_m3)
+# define RUBY3_ANYARGS_DISPATCH_rb_define_module_function_m1(n)  RUBY3_ANYARGS_DISPATCH((n) == -1, rb_define_module_function_m1,  RUBY3_ANYARGS_DISPATCH_rb_define_module_function_m2(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_module_function_00(n)  RUBY3_ANYARGS_DISPATCH((n) ==  0, rb_define_module_function_00,  RUBY3_ANYARGS_DISPATCH_rb_define_module_function_m1(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_module_function_01(n)  RUBY3_ANYARGS_DISPATCH((n) ==  1, rb_define_module_function_01,  RUBY3_ANYARGS_DISPATCH_rb_define_module_function_00(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_module_function_02(n)  RUBY3_ANYARGS_DISPATCH((n) ==  2, rb_define_module_function_02,  RUBY3_ANYARGS_DISPATCH_rb_define_module_function_01(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_module_function_03(n)  RUBY3_ANYARGS_DISPATCH((n) ==  3, rb_define_module_function_03,  RUBY3_ANYARGS_DISPATCH_rb_define_module_function_02(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_module_function_04(n)  RUBY3_ANYARGS_DISPATCH((n) ==  4, rb_define_module_function_04,  RUBY3_ANYARGS_DISPATCH_rb_define_module_function_03(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_module_function_05(n)  RUBY3_ANYARGS_DISPATCH((n) ==  5, rb_define_module_function_05,  RUBY3_ANYARGS_DISPATCH_rb_define_module_function_04(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_module_function_06(n)  RUBY3_ANYARGS_DISPATCH((n) ==  6, rb_define_module_function_06,  RUBY3_ANYARGS_DISPATCH_rb_define_module_function_05(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_module_function_07(n)  RUBY3_ANYARGS_DISPATCH((n) ==  7, rb_define_module_function_07,  RUBY3_ANYARGS_DISPATCH_rb_define_module_function_06(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_module_function_08(n)  RUBY3_ANYARGS_DISPATCH((n) ==  8, rb_define_module_function_08,  RUBY3_ANYARGS_DISPATCH_rb_define_module_function_07(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_module_function_09(n)  RUBY3_ANYARGS_DISPATCH((n) ==  9, rb_define_module_function_09,  RUBY3_ANYARGS_DISPATCH_rb_define_module_function_08(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_module_function_10(n)  RUBY3_ANYARGS_DISPATCH((n) == 10, rb_define_module_function_10,  RUBY3_ANYARGS_DISPATCH_rb_define_module_function_09(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_module_function_11(n)  RUBY3_ANYARGS_DISPATCH((n) == 11, rb_define_module_function_11,  RUBY3_ANYARGS_DISPATCH_rb_define_module_function_10(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_module_function_12(n)  RUBY3_ANYARGS_DISPATCH((n) == 12, rb_define_module_function_12,  RUBY3_ANYARGS_DISPATCH_rb_define_module_function_11(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_module_function_13(n)  RUBY3_ANYARGS_DISPATCH((n) == 13, rb_define_module_function_13,  RUBY3_ANYARGS_DISPATCH_rb_define_module_function_12(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_module_function_14(n)  RUBY3_ANYARGS_DISPATCH((n) == 14, rb_define_module_function_14,  RUBY3_ANYARGS_DISPATCH_rb_define_module_function_13(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_module_function_15(n)  RUBY3_ANYARGS_DISPATCH((n) == 15, rb_define_module_function_15,  RUBY3_ANYARGS_DISPATCH_rb_define_module_function_14(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_global_function_m2(n)  RUBY3_ANYARGS_DISPATCH((n) == -2, rb_define_global_function_m2,  rb_define_global_function_m3)
+# define RUBY3_ANYARGS_DISPATCH_rb_define_global_function_m1(n)  RUBY3_ANYARGS_DISPATCH((n) == -1, rb_define_global_function_m1,  RUBY3_ANYARGS_DISPATCH_rb_define_global_function_m2(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_global_function_00(n)  RUBY3_ANYARGS_DISPATCH((n) ==  0, rb_define_global_function_00,  RUBY3_ANYARGS_DISPATCH_rb_define_global_function_m1(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_global_function_01(n)  RUBY3_ANYARGS_DISPATCH((n) ==  1, rb_define_global_function_01,  RUBY3_ANYARGS_DISPATCH_rb_define_global_function_00(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_global_function_02(n)  RUBY3_ANYARGS_DISPATCH((n) ==  2, rb_define_global_function_02,  RUBY3_ANYARGS_DISPATCH_rb_define_global_function_01(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_global_function_03(n)  RUBY3_ANYARGS_DISPATCH((n) ==  3, rb_define_global_function_03,  RUBY3_ANYARGS_DISPATCH_rb_define_global_function_02(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_global_function_04(n)  RUBY3_ANYARGS_DISPATCH((n) ==  4, rb_define_global_function_04,  RUBY3_ANYARGS_DISPATCH_rb_define_global_function_03(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_global_function_05(n)  RUBY3_ANYARGS_DISPATCH((n) ==  5, rb_define_global_function_05,  RUBY3_ANYARGS_DISPATCH_rb_define_global_function_04(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_global_function_06(n)  RUBY3_ANYARGS_DISPATCH((n) ==  6, rb_define_global_function_06,  RUBY3_ANYARGS_DISPATCH_rb_define_global_function_05(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_global_function_07(n)  RUBY3_ANYARGS_DISPATCH((n) ==  7, rb_define_global_function_07,  RUBY3_ANYARGS_DISPATCH_rb_define_global_function_06(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_global_function_08(n)  RUBY3_ANYARGS_DISPATCH((n) ==  8, rb_define_global_function_08,  RUBY3_ANYARGS_DISPATCH_rb_define_global_function_07(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_global_function_09(n)  RUBY3_ANYARGS_DISPATCH((n) ==  9, rb_define_global_function_09,  RUBY3_ANYARGS_DISPATCH_rb_define_global_function_08(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_global_function_10(n)  RUBY3_ANYARGS_DISPATCH((n) == 10, rb_define_global_function_10,  RUBY3_ANYARGS_DISPATCH_rb_define_global_function_09(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_global_function_11(n)  RUBY3_ANYARGS_DISPATCH((n) == 11, rb_define_global_function_11,  RUBY3_ANYARGS_DISPATCH_rb_define_global_function_10(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_global_function_12(n)  RUBY3_ANYARGS_DISPATCH((n) == 12, rb_define_global_function_12,  RUBY3_ANYARGS_DISPATCH_rb_define_global_function_11(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_global_function_13(n)  RUBY3_ANYARGS_DISPATCH((n) == 13, rb_define_global_function_13,  RUBY3_ANYARGS_DISPATCH_rb_define_global_function_12(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_global_function_14(n)  RUBY3_ANYARGS_DISPATCH((n) == 14, rb_define_global_function_14,  RUBY3_ANYARGS_DISPATCH_rb_define_global_function_13(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_global_function_15(n)  RUBY3_ANYARGS_DISPATCH((n) == 15, rb_define_global_function_15,  RUBY3_ANYARGS_DISPATCH_rb_define_global_function_14(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_id_m2(n)        RUBY3_ANYARGS_DISPATCH((n) == -2, rb_define_method_id_m2,        rb_define_method_id_m3)
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_id_m1(n)        RUBY3_ANYARGS_DISPATCH((n) == -1, rb_define_method_id_m1,        RUBY3_ANYARGS_DISPATCH_rb_define_method_id_m2(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_id_00(n)        RUBY3_ANYARGS_DISPATCH((n) ==  0, rb_define_method_id_00,        RUBY3_ANYARGS_DISPATCH_rb_define_method_id_m1(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_id_01(n)        RUBY3_ANYARGS_DISPATCH((n) ==  1, rb_define_method_id_01,        RUBY3_ANYARGS_DISPATCH_rb_define_method_id_00(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_id_02(n)        RUBY3_ANYARGS_DISPATCH((n) ==  2, rb_define_method_id_02,        RUBY3_ANYARGS_DISPATCH_rb_define_method_id_01(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_id_03(n)        RUBY3_ANYARGS_DISPATCH((n) ==  3, rb_define_method_id_03,        RUBY3_ANYARGS_DISPATCH_rb_define_method_id_02(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_id_04(n)        RUBY3_ANYARGS_DISPATCH((n) ==  4, rb_define_method_id_04,        RUBY3_ANYARGS_DISPATCH_rb_define_method_id_03(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_id_05(n)        RUBY3_ANYARGS_DISPATCH((n) ==  5, rb_define_method_id_05,        RUBY3_ANYARGS_DISPATCH_rb_define_method_id_04(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_id_06(n)        RUBY3_ANYARGS_DISPATCH((n) ==  6, rb_define_method_id_06,        RUBY3_ANYARGS_DISPATCH_rb_define_method_id_05(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_id_07(n)        RUBY3_ANYARGS_DISPATCH((n) ==  7, rb_define_method_id_07,        RUBY3_ANYARGS_DISPATCH_rb_define_method_id_06(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_id_08(n)        RUBY3_ANYARGS_DISPATCH((n) ==  8, rb_define_method_id_08,        RUBY3_ANYARGS_DISPATCH_rb_define_method_id_07(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_id_09(n)        RUBY3_ANYARGS_DISPATCH((n) ==  9, rb_define_method_id_09,        RUBY3_ANYARGS_DISPATCH_rb_define_method_id_08(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_id_10(n)        RUBY3_ANYARGS_DISPATCH((n) == 10, rb_define_method_id_10,        RUBY3_ANYARGS_DISPATCH_rb_define_method_id_09(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_id_11(n)        RUBY3_ANYARGS_DISPATCH((n) == 11, rb_define_method_id_11,        RUBY3_ANYARGS_DISPATCH_rb_define_method_id_10(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_id_12(n)        RUBY3_ANYARGS_DISPATCH((n) == 12, rb_define_method_id_12,        RUBY3_ANYARGS_DISPATCH_rb_define_method_id_11(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_id_13(n)        RUBY3_ANYARGS_DISPATCH((n) == 13, rb_define_method_id_13,        RUBY3_ANYARGS_DISPATCH_rb_define_method_id_12(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_id_14(n)        RUBY3_ANYARGS_DISPATCH((n) == 14, rb_define_method_id_14,        RUBY3_ANYARGS_DISPATCH_rb_define_method_id_13(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_id_15(n)        RUBY3_ANYARGS_DISPATCH((n) == 15, rb_define_method_id_15,        RUBY3_ANYARGS_DISPATCH_rb_define_method_id_14(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_m2(n)           RUBY3_ANYARGS_DISPATCH((n) == -2, rb_define_method_m2,           rb_define_method_m3)
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_m1(n)           RUBY3_ANYARGS_DISPATCH((n) == -1, rb_define_method_m1,           RUBY3_ANYARGS_DISPATCH_rb_define_method_m2(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_00(n)           RUBY3_ANYARGS_DISPATCH((n) ==  0, rb_define_method_00,           RUBY3_ANYARGS_DISPATCH_rb_define_method_m1(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_01(n)           RUBY3_ANYARGS_DISPATCH((n) ==  1, rb_define_method_01,           RUBY3_ANYARGS_DISPATCH_rb_define_method_00(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_02(n)           RUBY3_ANYARGS_DISPATCH((n) ==  2, rb_define_method_02,           RUBY3_ANYARGS_DISPATCH_rb_define_method_01(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_03(n)           RUBY3_ANYARGS_DISPATCH((n) ==  3, rb_define_method_03,           RUBY3_ANYARGS_DISPATCH_rb_define_method_02(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_04(n)           RUBY3_ANYARGS_DISPATCH((n) ==  4, rb_define_method_04,           RUBY3_ANYARGS_DISPATCH_rb_define_method_03(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_05(n)           RUBY3_ANYARGS_DISPATCH((n) ==  5, rb_define_method_05,           RUBY3_ANYARGS_DISPATCH_rb_define_method_04(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_06(n)           RUBY3_ANYARGS_DISPATCH((n) ==  6, rb_define_method_06,           RUBY3_ANYARGS_DISPATCH_rb_define_method_05(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_07(n)           RUBY3_ANYARGS_DISPATCH((n) ==  7, rb_define_method_07,           RUBY3_ANYARGS_DISPATCH_rb_define_method_06(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_08(n)           RUBY3_ANYARGS_DISPATCH((n) ==  8, rb_define_method_08,           RUBY3_ANYARGS_DISPATCH_rb_define_method_07(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_09(n)           RUBY3_ANYARGS_DISPATCH((n) ==  9, rb_define_method_09,           RUBY3_ANYARGS_DISPATCH_rb_define_method_08(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_10(n)           RUBY3_ANYARGS_DISPATCH((n) == 10, rb_define_method_10,           RUBY3_ANYARGS_DISPATCH_rb_define_method_09(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_11(n)           RUBY3_ANYARGS_DISPATCH((n) == 11, rb_define_method_11,           RUBY3_ANYARGS_DISPATCH_rb_define_method_10(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_12(n)           RUBY3_ANYARGS_DISPATCH((n) == 12, rb_define_method_12,           RUBY3_ANYARGS_DISPATCH_rb_define_method_11(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_13(n)           RUBY3_ANYARGS_DISPATCH((n) == 13, rb_define_method_13,           RUBY3_ANYARGS_DISPATCH_rb_define_method_12(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_14(n)           RUBY3_ANYARGS_DISPATCH((n) == 14, rb_define_method_14,           RUBY3_ANYARGS_DISPATCH_rb_define_method_13(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_15(n)           RUBY3_ANYARGS_DISPATCH((n) == 15, rb_define_method_15,           RUBY3_ANYARGS_DISPATCH_rb_define_method_14(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method(n, f) RUBY3_ANYARGS_DISPATCH(RUBY3_CFUNC_IS_rb_f_notimplement(f), rb_define_singleton_method_m3, RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method_15(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_protected_method(n, f) RUBY3_ANYARGS_DISPATCH(RUBY3_CFUNC_IS_rb_f_notimplement(f), rb_define_protected_method_m3, RUBY3_ANYARGS_DISPATCH_rb_define_protected_method_15(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_private_method(n, f)   RUBY3_ANYARGS_DISPATCH(RUBY3_CFUNC_IS_rb_f_notimplement(f), rb_define_private_method_m3,   RUBY3_ANYARGS_DISPATCH_rb_define_private_method_15(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_module_function(n, f)  RUBY3_ANYARGS_DISPATCH(RUBY3_CFUNC_IS_rb_f_notimplement(f), rb_define_module_function_m3,  RUBY3_ANYARGS_DISPATCH_rb_define_module_function_15(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_global_function(n, f)  RUBY3_ANYARGS_DISPATCH(RUBY3_CFUNC_IS_rb_f_notimplement(f), rb_define_global_function_m3,  RUBY3_ANYARGS_DISPATCH_rb_define_global_function_15(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method_id(n, f)        RUBY3_ANYARGS_DISPATCH(RUBY3_CFUNC_IS_rb_f_notimplement(f), rb_define_method_id_m3,        RUBY3_ANYARGS_DISPATCH_rb_define_method_id_15(n))
+# define RUBY3_ANYARGS_DISPATCH_rb_define_method(n, f)           RUBY3_ANYARGS_DISPATCH(RUBY3_CFUNC_IS_rb_f_notimplement(f), rb_define_method_m3,           RUBY3_ANYARGS_DISPATCH_rb_define_method_15(n))
+# define RUBY3_ANYARGS_ATTRSET(sym) RUBY3_ATTR_MAYBE_UNUSED() RUBY3_ATTR_NONNULL() RUBY3_ATTR_WEAKREF(sym)
+# define RUBY3_ANYARGS_DECL(sym, ...) \
+RUBY3_ANYARGS_ATTRSET(sym) static void sym ## _m3(__VA_ARGS__, VALUE(*)(ANYARGS), int); \
+RUBY3_ANYARGS_ATTRSET(sym) static void sym ## _m2(__VA_ARGS__, VALUE(*)(VALUE, VALUE), int); \
+RUBY3_ANYARGS_ATTRSET(sym) static void sym ## _m1(__VA_ARGS__, VALUE(*)(int, union { VALUE *x; const VALUE *y; } __attribute__((__transparent_union__)), VALUE), int); \
+RUBY3_ANYARGS_ATTRSET(sym) static void sym ## _00(__VA_ARGS__, VALUE(*)(VALUE), int); \
+RUBY3_ANYARGS_ATTRSET(sym) static void sym ## _01(__VA_ARGS__, VALUE(*)(VALUE, VALUE), int); \
+RUBY3_ANYARGS_ATTRSET(sym) static void sym ## _02(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE), int); \
+RUBY3_ANYARGS_ATTRSET(sym) static void sym ## _03(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE), int); \
+RUBY3_ANYARGS_ATTRSET(sym) static void sym ## _04(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+RUBY3_ANYARGS_ATTRSET(sym) static void sym ## _05(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+RUBY3_ANYARGS_ATTRSET(sym) static void sym ## _06(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+RUBY3_ANYARGS_ATTRSET(sym) static void sym ## _07(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+RUBY3_ANYARGS_ATTRSET(sym) static void sym ## _08(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+RUBY3_ANYARGS_ATTRSET(sym) static void sym ## _09(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+RUBY3_ANYARGS_ATTRSET(sym) static void sym ## _10(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+RUBY3_ANYARGS_ATTRSET(sym) static void sym ## _11(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+RUBY3_ANYARGS_ATTRSET(sym) static void sym ## _12(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+RUBY3_ANYARGS_ATTRSET(sym) static void sym ## _13(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+RUBY3_ANYARGS_ATTRSET(sym) static void sym ## _14(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+RUBY3_ANYARGS_ATTRSET(sym) static void sym ## _15(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int);
+RUBY3_ANYARGS_DECL(rb_define_singleton_method, VALUE, const char *)
+RUBY3_ANYARGS_DECL(rb_define_protected_method, VALUE, const char *)
+RUBY3_ANYARGS_DECL(rb_define_private_method, VALUE, const char *)
+RUBY3_ANYARGS_DECL(rb_define_module_function, VALUE, const char *)
+RUBY3_ANYARGS_DECL(rb_define_global_function, const char *)
+RUBY3_ANYARGS_DECL(rb_define_method_id, VALUE, ID)
+RUBY3_ANYARGS_DECL(rb_define_method, VALUE, const char *)
+/** @endcond */
 
-#if RUBY3_HAS_ATTRIBUTE(transparent_union) && RUBY3_HAS_ATTRIBUTE(unused) && RUBY3_HAS_ATTRIBUTE(weakref) && RUBY3_HAS_ATTRIBUTE(nonnull)
-#define RB_METHOD_DEFINITION_DECL(def, nonnull, ...) \
-__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ## m3(__VA_ARGS__, VALUE(*)(ANYARGS), int); \
-__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ## m2(__VA_ARGS__, VALUE(*)(VALUE, VALUE), int); \
-__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ## m1(__VA_ARGS__, VALUE(*)(int, union { VALUE *x; const VALUE *y; } __attribute__((__transparent_union__)), VALUE), int); \
-__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ##  0(__VA_ARGS__, VALUE(*)(VALUE), int); \
-__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ##  1(__VA_ARGS__, VALUE(*)(VALUE, VALUE), int); \
-__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ##  2(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE), int); \
-__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ##  3(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE), int); \
-__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ##  4(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE), int); \
-__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ##  5(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
-__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ##  6(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
-__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ##  7(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
-__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ##  8(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
-__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ##  9(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
-__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ## 10(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
-__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ## 11(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
-__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ## 12(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
-__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ## 13(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
-__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ## 14(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
-__attribute__((__unused__, __weakref__(#def), __nonnull__ nonnull)) static void def ## 15(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int);
-#endif
+/**
+ * @brief  Defines klass\#mid.
+ * @see    ::rb_define_method
+ * @param  klass  Where the method lives.
+ * @param  mid    Name of the defining method.
+ * @param  func   Implementation of klass\#mid.
+ * @param  arity  Arity of klass\#mid.
+ */
+#define rb_define_method(klass, mid, func, arity)           RUBY3_ANYARGS_DISPATCH_rb_define_method((arity), (func))((klass), (mid), (func), (arity))
 
-#if defined(RB_METHOD_DEFINITION_DECL) && !defined(_WIN32) && !defined(__CYGWIN__)
+/**
+ * @brief  Defines klass\#mid.
+ * @see    ::rb_define_method_id
+ * @param  klass  Where the method lives.
+ * @param  mid    Name of the defining method.
+ * @param  func   Implementation of klass\#mid.
+ * @param  arity  Arity of klass\#mid.
+ */
+#define rb_define_method_id(klass, mid, func, arity)        RUBY3_ANYARGS_DISPATCH_rb_define_method_id((arity), (func))((klass), (mid), (func), (arity))
 
-RB_METHOD_DEFINITION_DECL(rb_define_method_id, (3), VALUE klass, ID name)
-#define rb_define_method_id_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_method_id15,rb_define_method_idm3)
-#define rb_define_method_id_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_method_id14,rb_define_method_id_choose_prototype15(n))
-#define rb_define_method_id_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_method_id13,rb_define_method_id_choose_prototype14(n))
-#define rb_define_method_id_choose_prototype12(n)    rb_define_method_if_constexpr((n)==12,rb_define_method_id12,rb_define_method_id_choose_prototype13(n))
-#define rb_define_method_id_choose_prototype11(n)    rb_define_method_if_constexpr((n)==11,rb_define_method_id11,rb_define_method_id_choose_prototype12(n))
-#define rb_define_method_id_choose_prototype10(n)    rb_define_method_if_constexpr((n)==10,rb_define_method_id10,rb_define_method_id_choose_prototype11(n))
-#define rb_define_method_id_choose_prototype9(n)     rb_define_method_if_constexpr((n)== 9,rb_define_method_id9, rb_define_method_id_choose_prototype10(n))
-#define rb_define_method_id_choose_prototype8(n)     rb_define_method_if_constexpr((n)== 8,rb_define_method_id8, rb_define_method_id_choose_prototype9(n))
-#define rb_define_method_id_choose_prototype7(n)     rb_define_method_if_constexpr((n)== 7,rb_define_method_id7, rb_define_method_id_choose_prototype8(n))
-#define rb_define_method_id_choose_prototype6(n)     rb_define_method_if_constexpr((n)== 6,rb_define_method_id6, rb_define_method_id_choose_prototype7(n))
-#define rb_define_method_id_choose_prototype5(n)     rb_define_method_if_constexpr((n)== 5,rb_define_method_id5, rb_define_method_id_choose_prototype6(n))
-#define rb_define_method_id_choose_prototype4(n)     rb_define_method_if_constexpr((n)== 4,rb_define_method_id4, rb_define_method_id_choose_prototype5(n))
-#define rb_define_method_id_choose_prototype3(n)     rb_define_method_if_constexpr((n)== 3,rb_define_method_id3, rb_define_method_id_choose_prototype4(n))
-#define rb_define_method_id_choose_prototype2(n)     rb_define_method_if_constexpr((n)== 2,rb_define_method_id2, rb_define_method_id_choose_prototype3(n))
-#define rb_define_method_id_choose_prototype1(n)     rb_define_method_if_constexpr((n)== 1,rb_define_method_id1, rb_define_method_id_choose_prototype2(n))
-#define rb_define_method_id_choose_prototype0(n)     rb_define_method_if_constexpr((n)== 0,rb_define_method_id0, rb_define_method_id_choose_prototype1(n))
-#define rb_define_method_id_choose_prototypem1(n)    rb_define_method_if_constexpr((n)==-1,rb_define_method_idm1,rb_define_method_id_choose_prototype0(n))
-#define rb_define_method_id_choose_prototypem2(n)    rb_define_method_if_constexpr((n)==-2,rb_define_method_idm2,rb_define_method_id_choose_prototypem1(n))
-#define rb_define_method_id_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_method_idm3,rb_define_method_id_choose_prototypem2(n))
-#define rb_define_method_id(klass, mid, func, arity) rb_define_method_id_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
+/**
+ * @brief  Defines obj.mid.
+ * @see    ::rb_define_singleton_method
+ * @param  obj    Where the method lives.
+ * @param  mid    Name of the defining method.
+ * @param  func   Implementation of obj.mid.
+ * @param  arity  Arity of obj.mid.
+ */
+#define rb_define_singleton_method(obj, mid, func, arity)   RUBY3_ANYARGS_DISPATCH_rb_define_singleton_method((arity), (func))((obj), (mid), (func), (arity))
 
-RB_METHOD_DEFINITION_DECL(rb_define_protected_method, (2,3), VALUE klass, const char *name)
-#define rb_define_protected_method_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_protected_method15,rb_define_protected_methodm3)
-#define rb_define_protected_method_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_protected_method14,rb_define_protected_method_choose_prototype15(n))
-#define rb_define_protected_method_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_protected_method13,rb_define_protected_method_choose_prototype14(n))
-#define rb_define_protected_method_choose_prototype12(n)    rb_define_method_if_constexpr((n)==12,rb_define_protected_method12,rb_define_protected_method_choose_prototype13(n))
-#define rb_define_protected_method_choose_prototype11(n)    rb_define_method_if_constexpr((n)==11,rb_define_protected_method11,rb_define_protected_method_choose_prototype12(n))
-#define rb_define_protected_method_choose_prototype10(n)    rb_define_method_if_constexpr((n)==10,rb_define_protected_method10,rb_define_protected_method_choose_prototype11(n))
-#define rb_define_protected_method_choose_prototype9(n)     rb_define_method_if_constexpr((n)== 9,rb_define_protected_method9, rb_define_protected_method_choose_prototype10(n))
-#define rb_define_protected_method_choose_prototype8(n)     rb_define_method_if_constexpr((n)== 8,rb_define_protected_method8, rb_define_protected_method_choose_prototype9(n))
-#define rb_define_protected_method_choose_prototype7(n)     rb_define_method_if_constexpr((n)== 7,rb_define_protected_method7, rb_define_protected_method_choose_prototype8(n))
-#define rb_define_protected_method_choose_prototype6(n)     rb_define_method_if_constexpr((n)== 6,rb_define_protected_method6, rb_define_protected_method_choose_prototype7(n))
-#define rb_define_protected_method_choose_prototype5(n)     rb_define_method_if_constexpr((n)== 5,rb_define_protected_method5, rb_define_protected_method_choose_prototype6(n))
-#define rb_define_protected_method_choose_prototype4(n)     rb_define_method_if_constexpr((n)== 4,rb_define_protected_method4, rb_define_protected_method_choose_prototype5(n))
-#define rb_define_protected_method_choose_prototype3(n)     rb_define_method_if_constexpr((n)== 3,rb_define_protected_method3, rb_define_protected_method_choose_prototype4(n))
-#define rb_define_protected_method_choose_prototype2(n)     rb_define_method_if_constexpr((n)== 2,rb_define_protected_method2, rb_define_protected_method_choose_prototype3(n))
-#define rb_define_protected_method_choose_prototype1(n)     rb_define_method_if_constexpr((n)== 1,rb_define_protected_method1, rb_define_protected_method_choose_prototype2(n))
-#define rb_define_protected_method_choose_prototype0(n)     rb_define_method_if_constexpr((n)== 0,rb_define_protected_method0, rb_define_protected_method_choose_prototype1(n))
-#define rb_define_protected_method_choose_prototypem1(n)    rb_define_method_if_constexpr((n)==-1,rb_define_protected_methodm1,rb_define_protected_method_choose_prototype0(n))
-#define rb_define_protected_method_choose_prototypem2(n)    rb_define_method_if_constexpr((n)==-2,rb_define_protected_methodm2,rb_define_protected_method_choose_prototypem1(n))
-#define rb_define_protected_method_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_protected_methodm3,rb_define_protected_method_choose_prototypem2(n))
-#define rb_define_protected_method(klass, mid, func, arity) rb_define_protected_method_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
+/**
+ * @brief  Defines klass\#mid and make it protected.
+ * @see    ::rb_define_protected_method
+ * @param  klass  Where the method lives.
+ * @param  mid    Name of the defining method.
+ * @param  func   Implementation of klass\#mid.
+ * @param  arity  Arity of klass\#mid.
+ */
+#define rb_define_protected_method(klass, mid, func, arity) RUBY3_ANYARGS_DISPATCH_rb_define_protected_method((arity), (func))((klass), (mid), (func), (arity))
 
-RB_METHOD_DEFINITION_DECL(rb_define_private_method, (2,3), VALUE klass, const char *name)
-#define rb_define_private_method_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_private_method15,rb_define_private_methodm3)
-#define rb_define_private_method_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_private_method14,rb_define_private_method_choose_prototype15(n))
-#define rb_define_private_method_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_private_method13,rb_define_private_method_choose_prototype14(n))
-#define rb_define_private_method_choose_prototype12(n)    rb_define_method_if_constexpr((n)==12,rb_define_private_method12,rb_define_private_method_choose_prototype13(n))
-#define rb_define_private_method_choose_prototype11(n)    rb_define_method_if_constexpr((n)==11,rb_define_private_method11,rb_define_private_method_choose_prototype12(n))
-#define rb_define_private_method_choose_prototype10(n)    rb_define_method_if_constexpr((n)==10,rb_define_private_method10,rb_define_private_method_choose_prototype11(n))
-#define rb_define_private_method_choose_prototype9(n)     rb_define_method_if_constexpr((n)== 9,rb_define_private_method9, rb_define_private_method_choose_prototype10(n))
-#define rb_define_private_method_choose_prototype8(n)     rb_define_method_if_constexpr((n)== 8,rb_define_private_method8, rb_define_private_method_choose_prototype9(n))
-#define rb_define_private_method_choose_prototype7(n)     rb_define_method_if_constexpr((n)== 7,rb_define_private_method7, rb_define_private_method_choose_prototype8(n))
-#define rb_define_private_method_choose_prototype6(n)     rb_define_method_if_constexpr((n)== 6,rb_define_private_method6, rb_define_private_method_choose_prototype7(n))
-#define rb_define_private_method_choose_prototype5(n)     rb_define_method_if_constexpr((n)== 5,rb_define_private_method5, rb_define_private_method_choose_prototype6(n))
-#define rb_define_private_method_choose_prototype4(n)     rb_define_method_if_constexpr((n)== 4,rb_define_private_method4, rb_define_private_method_choose_prototype5(n))
-#define rb_define_private_method_choose_prototype3(n)     rb_define_method_if_constexpr((n)== 3,rb_define_private_method3, rb_define_private_method_choose_prototype4(n))
-#define rb_define_private_method_choose_prototype2(n)     rb_define_method_if_constexpr((n)== 2,rb_define_private_method2, rb_define_private_method_choose_prototype3(n))
-#define rb_define_private_method_choose_prototype1(n)     rb_define_method_if_constexpr((n)== 1,rb_define_private_method1, rb_define_private_method_choose_prototype2(n))
-#define rb_define_private_method_choose_prototype0(n)     rb_define_method_if_constexpr((n)== 0,rb_define_private_method0, rb_define_private_method_choose_prototype1(n))
-#define rb_define_private_method_choose_prototypem1(n)    rb_define_method_if_constexpr((n)==-1,rb_define_private_methodm1,rb_define_private_method_choose_prototype0(n))
-#define rb_define_private_method_choose_prototypem2(n)    rb_define_method_if_constexpr((n)==-2,rb_define_private_methodm2,rb_define_private_method_choose_prototypem1(n))
-#define rb_define_private_method_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_private_methodm3,rb_define_private_method_choose_prototypem2(n))
-#define rb_define_private_method(klass, mid, func, arity) rb_define_private_method_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
+/**
+ * @brief  Defines klass\#mid and make it private.
+ * @see    ::rb_define_private_method
+ * @param  klass  Where the method lives.
+ * @param  mid    Name of the defining method.
+ * @param  func   Implementation of klass\#mid.
+ * @param  arity  Arity of klass\#mid.
+ */
+#define rb_define_private_method(klass, mid, func, arity)   RUBY3_ANYARGS_DISPATCH_rb_define_private_method((arity), (func))((klass), (mid), (func), (arity))
 
-RB_METHOD_DEFINITION_DECL(rb_define_singleton_method, (2,3), VALUE klass, const char *name)
-#define rb_define_singleton_method_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_singleton_method15,rb_define_singleton_methodm3)
-#define rb_define_singleton_method_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_singleton_method14,rb_define_singleton_method_choose_prototype15(n))
-#define rb_define_singleton_method_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_singleton_method13,rb_define_singleton_method_choose_prototype14(n))
-#define rb_define_singleton_method_choose_prototype12(n)    rb_define_method_if_constexpr((n)==12,rb_define_singleton_method12,rb_define_singleton_method_choose_prototype13(n))
-#define rb_define_singleton_method_choose_prototype11(n)    rb_define_method_if_constexpr((n)==11,rb_define_singleton_method11,rb_define_singleton_method_choose_prototype12(n))
-#define rb_define_singleton_method_choose_prototype10(n)    rb_define_method_if_constexpr((n)==10,rb_define_singleton_method10,rb_define_singleton_method_choose_prototype11(n))
-#define rb_define_singleton_method_choose_prototype9(n)     rb_define_method_if_constexpr((n)== 9,rb_define_singleton_method9, rb_define_singleton_method_choose_prototype10(n))
-#define rb_define_singleton_method_choose_prototype8(n)     rb_define_method_if_constexpr((n)== 8,rb_define_singleton_method8, rb_define_singleton_method_choose_prototype9(n))
-#define rb_define_singleton_method_choose_prototype7(n)     rb_define_method_if_constexpr((n)== 7,rb_define_singleton_method7, rb_define_singleton_method_choose_prototype8(n))
-#define rb_define_singleton_method_choose_prototype6(n)     rb_define_method_if_constexpr((n)== 6,rb_define_singleton_method6, rb_define_singleton_method_choose_prototype7(n))
-#define rb_define_singleton_method_choose_prototype5(n)     rb_define_method_if_constexpr((n)== 5,rb_define_singleton_method5, rb_define_singleton_method_choose_prototype6(n))
-#define rb_define_singleton_method_choose_prototype4(n)     rb_define_method_if_constexpr((n)== 4,rb_define_singleton_method4, rb_define_singleton_method_choose_prototype5(n))
-#define rb_define_singleton_method_choose_prototype3(n)     rb_define_method_if_constexpr((n)== 3,rb_define_singleton_method3, rb_define_singleton_method_choose_prototype4(n))
-#define rb_define_singleton_method_choose_prototype2(n)     rb_define_method_if_constexpr((n)== 2,rb_define_singleton_method2, rb_define_singleton_method_choose_prototype3(n))
-#define rb_define_singleton_method_choose_prototype1(n)     rb_define_method_if_constexpr((n)== 1,rb_define_singleton_method1, rb_define_singleton_method_choose_prototype2(n))
-#define rb_define_singleton_method_choose_prototype0(n)     rb_define_method_if_constexpr((n)== 0,rb_define_singleton_method0, rb_define_singleton_method_choose_prototype1(n))
-#define rb_define_singleton_method_choose_prototypem1(n)    rb_define_method_if_constexpr((n)==-1,rb_define_singleton_methodm1,rb_define_singleton_method_choose_prototype0(n))
-#define rb_define_singleton_method_choose_prototypem2(n)    rb_define_method_if_constexpr((n)==-2,rb_define_singleton_methodm2,rb_define_singleton_method_choose_prototypem1(n))
-#define rb_define_singleton_method_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_singleton_methodm3,rb_define_singleton_method_choose_prototypem2(n))
-#define rb_define_singleton_method(klass, mid, func, arity) rb_define_singleton_method_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
+/**
+ * @brief  Defines mod\#mid and make it a module function.
+ * @see    ::rb_define_module_function
+ * @param  mod    Where the method lives.
+ * @param  mid    Name of the defining method.
+ * @param  func   Implementation of mod\#mid.
+ * @param  arity  Arity of mod\#mid.
+ */
+#define rb_define_module_function(mod, mid, func, arity)    RUBY3_ANYARGS_DISPATCH_rb_define_module_function((arity), (func))((mod), (mid), (func), (arity))
 
-RB_METHOD_DEFINITION_DECL(rb_define_method, (2,3), VALUE klass, const char *name)
-#define rb_define_method_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_method15,rb_define_methodm3)
-#define rb_define_method_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_method14,rb_define_method_choose_prototype15(n))
-#define rb_define_method_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_method13,rb_define_method_choose_prototype14(n))
-#define rb_define_method_choose_prototype12(n)    rb_define_method_if_constexpr((n)==12,rb_define_method12,rb_define_method_choose_prototype13(n))
-#define rb_define_method_choose_prototype11(n)    rb_define_method_if_constexpr((n)==11,rb_define_method11,rb_define_method_choose_prototype12(n))
-#define rb_define_method_choose_prototype10(n)    rb_define_method_if_constexpr((n)==10,rb_define_method10,rb_define_method_choose_prototype11(n))
-#define rb_define_method_choose_prototype9(n)     rb_define_method_if_constexpr((n)== 9,rb_define_method9, rb_define_method_choose_prototype10(n))
-#define rb_define_method_choose_prototype8(n)     rb_define_method_if_constexpr((n)== 8,rb_define_method8, rb_define_method_choose_prototype9(n))
-#define rb_define_method_choose_prototype7(n)     rb_define_method_if_constexpr((n)== 7,rb_define_method7, rb_define_method_choose_prototype8(n))
-#define rb_define_method_choose_prototype6(n)     rb_define_method_if_constexpr((n)== 6,rb_define_method6, rb_define_method_choose_prototype7(n))
-#define rb_define_method_choose_prototype5(n)     rb_define_method_if_constexpr((n)== 5,rb_define_method5, rb_define_method_choose_prototype6(n))
-#define rb_define_method_choose_prototype4(n)     rb_define_method_if_constexpr((n)== 4,rb_define_method4, rb_define_method_choose_prototype5(n))
-#define rb_define_method_choose_prototype3(n)     rb_define_method_if_constexpr((n)== 3,rb_define_method3, rb_define_method_choose_prototype4(n))
-#define rb_define_method_choose_prototype2(n)     rb_define_method_if_constexpr((n)== 2,rb_define_method2, rb_define_method_choose_prototype3(n))
-#define rb_define_method_choose_prototype1(n)     rb_define_method_if_constexpr((n)== 1,rb_define_method1, rb_define_method_choose_prototype2(n))
-#define rb_define_method_choose_prototype0(n)     rb_define_method_if_constexpr((n)== 0,rb_define_method0, rb_define_method_choose_prototype1(n))
-#define rb_define_method_choose_prototypem1(n)    rb_define_method_if_constexpr((n)==-1,rb_define_methodm1,rb_define_method_choose_prototype0(n))
-#define rb_define_method_choose_prototypem2(n)    rb_define_method_if_constexpr((n)==-2,rb_define_methodm2,rb_define_method_choose_prototypem1(n))
-#define rb_define_method_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_methodm3,rb_define_method_choose_prototypem2(n))
-#define rb_define_method(klass, mid, func, arity) rb_define_method_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
-
-RB_METHOD_DEFINITION_DECL(rb_define_module_function, (2,3), VALUE klass, const char *name)
-#define rb_define_module_function_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_module_function15,rb_define_module_functionm3)
-#define rb_define_module_function_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_module_function14,rb_define_module_function_choose_prototype15(n))
-#define rb_define_module_function_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_module_function13,rb_define_module_function_choose_prototype14(n))
-#define rb_define_module_function_choose_prototype12(n)    rb_define_method_if_constexpr((n)==12,rb_define_module_function12,rb_define_module_function_choose_prototype13(n))
-#define rb_define_module_function_choose_prototype11(n)    rb_define_method_if_constexpr((n)==11,rb_define_module_function11,rb_define_module_function_choose_prototype12(n))
-#define rb_define_module_function_choose_prototype10(n)    rb_define_method_if_constexpr((n)==10,rb_define_module_function10,rb_define_module_function_choose_prototype11(n))
-#define rb_define_module_function_choose_prototype9(n)     rb_define_method_if_constexpr((n)== 9,rb_define_module_function9, rb_define_module_function_choose_prototype10(n))
-#define rb_define_module_function_choose_prototype8(n)     rb_define_method_if_constexpr((n)== 8,rb_define_module_function8, rb_define_module_function_choose_prototype9(n))
-#define rb_define_module_function_choose_prototype7(n)     rb_define_method_if_constexpr((n)== 7,rb_define_module_function7, rb_define_module_function_choose_prototype8(n))
-#define rb_define_module_function_choose_prototype6(n)     rb_define_method_if_constexpr((n)== 6,rb_define_module_function6, rb_define_module_function_choose_prototype7(n))
-#define rb_define_module_function_choose_prototype5(n)     rb_define_method_if_constexpr((n)== 5,rb_define_module_function5, rb_define_module_function_choose_prototype6(n))
-#define rb_define_module_function_choose_prototype4(n)     rb_define_method_if_constexpr((n)== 4,rb_define_module_function4, rb_define_module_function_choose_prototype5(n))
-#define rb_define_module_function_choose_prototype3(n)     rb_define_method_if_constexpr((n)== 3,rb_define_module_function3, rb_define_module_function_choose_prototype4(n))
-#define rb_define_module_function_choose_prototype2(n)     rb_define_method_if_constexpr((n)== 2,rb_define_module_function2, rb_define_module_function_choose_prototype3(n))
-#define rb_define_module_function_choose_prototype1(n)     rb_define_method_if_constexpr((n)== 1,rb_define_module_function1, rb_define_module_function_choose_prototype2(n))
-#define rb_define_module_function_choose_prototype0(n)     rb_define_method_if_constexpr((n)== 0,rb_define_module_function0, rb_define_module_function_choose_prototype1(n))
-#define rb_define_module_function_choose_prototypem1(n)    rb_define_method_if_constexpr((n)==-1,rb_define_module_functionm1,rb_define_module_function_choose_prototype0(n))
-#define rb_define_module_function_choose_prototypem2(n)    rb_define_method_if_constexpr((n)==-2,rb_define_module_functionm2,rb_define_module_function_choose_prototypem1(n))
-#define rb_define_module_function_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_module_functionm3,rb_define_module_function_choose_prototypem2(n))
-#define rb_define_module_function(klass, mid, func, arity) rb_define_module_function_choose_prototypem3((arity),(func))((klass),(mid),(func),(arity));
-
-RB_METHOD_DEFINITION_DECL(rb_define_global_function, (1,2), const char *name)
-#define rb_define_global_function_choose_prototype15(n)    rb_define_method_if_constexpr((n)==15,rb_define_global_function15,rb_define_global_functionm3)
-#define rb_define_global_function_choose_prototype14(n)    rb_define_method_if_constexpr((n)==14,rb_define_global_function14,rb_define_global_function_choose_prototype15(n))
-#define rb_define_global_function_choose_prototype13(n)    rb_define_method_if_constexpr((n)==13,rb_define_global_function13,rb_define_global_function_choose_prototype14(n))
-#define rb_define_global_function_choose_prototype12(n)    rb_define_method_if_constexpr((n)==12,rb_define_global_function12,rb_define_global_function_choose_prototype13(n))
-#define rb_define_global_function_choose_prototype11(n)    rb_define_method_if_constexpr((n)==11,rb_define_global_function11,rb_define_global_function_choose_prototype12(n))
-#define rb_define_global_function_choose_prototype10(n)    rb_define_method_if_constexpr((n)==10,rb_define_global_function10,rb_define_global_function_choose_prototype11(n))
-#define rb_define_global_function_choose_prototype9(n)     rb_define_method_if_constexpr((n)== 9,rb_define_global_function9, rb_define_global_function_choose_prototype10(n))
-#define rb_define_global_function_choose_prototype8(n)     rb_define_method_if_constexpr((n)== 8,rb_define_global_function8, rb_define_global_function_choose_prototype9(n))
-#define rb_define_global_function_choose_prototype7(n)     rb_define_method_if_constexpr((n)== 7,rb_define_global_function7, rb_define_global_function_choose_prototype8(n))
-#define rb_define_global_function_choose_prototype6(n)     rb_define_method_if_constexpr((n)== 6,rb_define_global_function6, rb_define_global_function_choose_prototype7(n))
-#define rb_define_global_function_choose_prototype5(n)     rb_define_method_if_constexpr((n)== 5,rb_define_global_function5, rb_define_global_function_choose_prototype6(n))
-#define rb_define_global_function_choose_prototype4(n)     rb_define_method_if_constexpr((n)== 4,rb_define_global_function4, rb_define_global_function_choose_prototype5(n))
-#define rb_define_global_function_choose_prototype3(n)     rb_define_method_if_constexpr((n)== 3,rb_define_global_function3, rb_define_global_function_choose_prototype4(n))
-#define rb_define_global_function_choose_prototype2(n)     rb_define_method_if_constexpr((n)== 2,rb_define_global_function2, rb_define_global_function_choose_prototype3(n))
-#define rb_define_global_function_choose_prototype1(n)     rb_define_method_if_constexpr((n)== 1,rb_define_global_function1, rb_define_global_function_choose_prototype2(n))
-#define rb_define_global_function_choose_prototype0(n)     rb_define_method_if_constexpr((n)== 0,rb_define_global_function0, rb_define_global_function_choose_prototype1(n))
-#define rb_define_global_function_choose_prototypem1(n)    rb_define_method_if_constexpr((n)==-1,rb_define_global_functionm1,rb_define_global_function_choose_prototype0(n))
-#define rb_define_global_function_choose_prototypem2(n)    rb_define_method_if_constexpr((n)==-2,rb_define_global_functionm2,rb_define_global_function_choose_prototypem1(n))
-#define rb_define_global_function_choose_prototypem3(n, f) rb_define_method_if_constexpr(rb_f_notimplement_p(f),rb_define_global_functionm3,rb_define_global_function_choose_prototypem2(n))
-#define rb_define_global_function(mid, func, arity) rb_define_global_function_choose_prototypem3((arity),(func))((mid),(func),(arity));
-
-#endif  /* ! _WIN32 && ! __CYGWIN__ */
+/**
+ * @brief  Defines ::rb_mKerbel \#mid.
+ * @see    ::rb_define_gobal_function
+ * @param  mid    Name of the defining method.
+ * @param  func   Implementation of ::rb_mKernel \#mid.
+ * @param  arity  Arity of ::rb_mKernel \#mid.
+ */
+#define rb_define_global_function(mid, func, arity)         RUBY3_ANYARGS_DISPATCH_rb_define_global_function((arity), (func))((mid), (func), (arity))
 
 #endif /* __cplusplus */
 
-#if defined(RUBY_DEVEL) && RUBY_DEVEL && (!defined(__cplusplus) || defined(RB_METHOD_DEFINITION_DECL))
-# define RUBY_METHOD_FUNC(func) (func)
-#else
+/**
+ * This  macro is  to properly  cast  a function  parameter of  *_define_method
+ * family.  It  has been  around since  1.x era so  you can  maximize backwards
+ * compatibility by using it.
+ *
+ * ```CXX
+ * rb_define_method(klass, "method", RUBY_METHOD_FUNC(func), arity);
+ * ```
+ *
+ * @param  func  A pointer to a function that implements a method.
+ */
+#if ! defined(RUBY_DEVEL)
 # define RUBY_METHOD_FUNC(func) RUBY3_CAST((VALUE (*)(ANYARGS))(func))
+
+#elif ! RUBY_DEVEL
+# define RUBY_METHOD_FUNC(func) RUBY3_CAST((VALUE (*)(ANYARGS))(func))
+
+#elif ! defined(rb_define_method)
+# define RUBY_METHOD_FUNC(func) RUBY3_CAST((VALUE (*)(ANYARGS))(func))
+
+#else
+# define RUBY_METHOD_FUNC(func) (func)
+
 #endif
 
-#endif /* RUBY3_ANYARGS_H */
+#endif  /* RUBY3_ANYARGS_H */
