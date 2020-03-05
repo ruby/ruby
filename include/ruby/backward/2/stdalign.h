@@ -18,18 +18,9 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RUBY_ALIGNAS / #RUBY_ALIGNOF
  */
-#include "ruby/3/config.h"
+#include "ruby/3/stdalign.h"
 
-#ifndef RUBY_ALIGNAS
-#define RUBY_ALIGNAS(x) /* x */
-#endif
-
-#ifdef RUBY_ALIGNOF
-/* OK, take that definition */
-#elif defined(__cplusplus) && (__cplusplus >= 201103L)
-#define RUBY_ALIGNOF alignof
-#elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
-#define RUBY_ALIGNOF _Alignof
-#else
-#define RUBY_ALIGNOF(type) ((size_t)offsetof(struct { char f1; type f2; }, f2))
-#endif
+#undef RUBY_ALIGNAS
+#undef RUBY_ALIGNOF
+#define RUBY_ALIGNAS RUBY3_ALIGNAS
+#define RUBY_ALIGNOF RUBY3_ALIGNOF
