@@ -27,16 +27,13 @@
 #endif
 #endif
 
+#include "ruby/3/dllexport.h"
+
 #ifndef M_PI
 # define M_PI 3.14159265358979323846
 #endif
 #ifndef M_PI_2
 # define M_PI_2 (M_PI/2)
-#endif
-
-#ifndef RUBY_SYMBOL_EXPORT_BEGIN
-# define RUBY_SYMBOL_EXPORT_BEGIN /* begin */
-# define RUBY_SYMBOL_EXPORT_END   /* end */
 #endif
 
 #if !defined(HAVE_STRUCT_TIMEVAL)
@@ -59,15 +56,6 @@ struct timezone {
     int tz_dsttime;
 };
 #endif
-
-#ifdef RUBY_EXPORT
-#undef RUBY_EXTERN
-#endif
-#ifndef RUBY_EXTERN
-#define RUBY_EXTERN extern
-#endif
-
-#include "ruby/3/dllexport.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 
