@@ -1,33 +1,28 @@
-/************************************************
-
-  defines.h -
-
-  $Author$
-  created at: Wed May 18 00:21:44 JST 1994
-
-************************************************/
-
+/**                                                     \noop-*-C++-*-vi:ft=cpp
+ * @file
+ * @author     $Author$
+ * @date       Wed May 18 00:21:44 JST 1994
+ * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
+ *             Permission  is hereby  granted,  to  either redistribute  and/or
+ *             modify this file, provided that  the conditions mentioned in the
+ *             file COPYING are met.  Consult the file for details.
+ */
 #ifndef RUBY_DEFINES_H
 #define RUBY_DEFINES_H 1
 
 #include "ruby/3/config.h"
 
-#ifdef __GNUC__
-#define RB_GNUC_EXTENSION __extension__
-#define RB_GNUC_EXTENSION_BLOCK(x) __extension__ ({ x; })
-#else
-#define RB_GNUC_EXTENSION
-#define RB_GNUC_EXTENSION_BLOCK(x) (x)
-#endif
-
 /* AC_INCLUDES_DEFAULT */
 #include <stdio.h>
+
 #ifdef HAVE_SYS_TYPES_H
 # include <sys/types.h>
 #endif
+
 #ifdef HAVE_SYS_STAT_H
 # include <sys/stat.h>
 #endif
+
 #ifdef STDC_HEADERS
 # include <stdlib.h>
 # include <stddef.h>
@@ -36,24 +31,30 @@
 #  include <stdlib.h>
 # endif
 #endif
+
 #ifdef HAVE_STRING_H
 # if !defined STDC_HEADERS && defined HAVE_MEMORY_H
 #  include <memory.h>
 # endif
 # include <string.h>
 #endif
+
 #ifdef HAVE_STRINGS_H
 # include <strings.h>
 #endif
+
 #ifdef HAVE_INTTYPES_H
 # include <inttypes.h>
 #endif
+
 #ifdef HAVE_STDINT_H
 # include <stdint.h>
 #endif
+
 #ifdef HAVE_STDALIGN_H
 # include <stdalign.h>
 #endif
+
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
@@ -63,12 +64,8 @@
 #endif
 
 #ifdef RUBY_USE_SETJMPEX
-#include <setjmpex.h>
+# include <setjmpex.h>
 #endif
-
-#include "ruby/missing.h"
-
-#define RUBY
 
 #include "ruby/3/dllexport.h"
 #include "ruby/3/dosish.h"
@@ -81,19 +78,33 @@
 #include "ruby/backward/2/long_long.h"
 #include "ruby/backward/2/stdalign.h"
 #include "ruby/backward/2/stdarg.h"
+#include "ruby/missing.h"
 
-#ifndef RUBY_MBCHAR_MAXSIZE
-#define RUBY_MBCHAR_MAXSIZE INT_MAX
-        /* MB_CUR_MAX will not work well in C locale */
-#endif
+#define RUBY
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
-#if defined(__sparc)
-void rb_sparc_flush_register_windows(void);
-#  define FLUSH_REGISTER_WINDOWS rb_sparc_flush_register_windows()
+#ifdef __GNUC__
+# define RB_GNUC_EXTENSION __extension__
+# define RB_GNUC_EXTENSION_BLOCK(x) __extension__ ({ x; })
 #else
-#  define FLUSH_REGISTER_WINDOWS ((void)0)
+# define RB_GNUC_EXTENSION
+# define RB_GNUC_EXTENSION_BLOCK(x) (x)
 #endif
+
+/* :FIXME:  Can someone  tell us  why is  this macro  defined here?   @shyouhei
+ * thinks this  is a  truly internal  macro but cannot  move around  because he
+ * doesn't understand the reason of this arrangement. */
+#ifndef RUBY_MBCHAR_MAXSIZE
+# define RUBY_MBCHAR_MAXSIZE INT_MAX
+# /* MB_CUR_MAX will not work well in C locale */
+#endif
+
+#if defined(__sparc)
+RUBY3_SYMBOL_EXPORT_BEGIN()
+void rb_sparc_flush_register_windows(void);
 RUBY3_SYMBOL_EXPORT_END()
+# define FLUSH_REGISTER_WINDOWS rb_sparc_flush_register_windows()
+#else
+# define FLUSH_REGISTER_WINDOWS ((void)0)
+#endif
 
 #endif /* RUBY_DEFINES_H */
