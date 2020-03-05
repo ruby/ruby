@@ -18,16 +18,28 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines old #EXTERN
  */
+#include "ruby/3/config.h"      /* for STRINGIZE */
 
-#ifndef EXTERN
-# if defined __GNUC__
-#   define EXTERN _Pragma("message \"EXTERN is deprecated, use RUBY_EXTERN instead\""); \
+/**
+ * @brief      Synonym of #RUBY_EXTERN.
+ * @deprecated #EXTERN is deprecated, use #RUBY_EXTERN instead.
+ */
+#ifdef EXTERN
+# /* Stop bothering then. */
+
+#elif defined __GNUC__
+# define EXTERN \
+    _Pragma("message \"EXTERN is deprecated, use RUBY_EXTERN instead\""); \
     RUBY_EXTERN
-# elif defined _MSC_VER
-#   define EXTERN __pragma(message(__FILE__"("STRINGIZE(__LINE__)"): warning: "\
-                                   "EXTERN is deprecated, use RUBY_EXTERN instead")); \
+
+#elif defined _MSC_VER
+# pragma deprecated(EXTERN)
+# define EXTERN \
+    __pragma(message(__FILE__"("STRINGIZE(__LINE__)"): warning: " \
+                     "EXTERN is deprecated, use RUBY_EXTERN instead")) \
     RUBY_EXTERN
-# else
-#   define EXTERN <-<-"EXTERN is deprecated, use RUBY_EXTERN instead"->->
-# endif
+
+#else
+# define EXTERN <-<-"EXTERN is deprecated, use RUBY_EXTERN instead"->->
+
 #endif
