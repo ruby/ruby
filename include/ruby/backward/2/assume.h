@@ -18,30 +18,22 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #ASSUME / #RB_LIKELY / #UNREACHABLE
  */
+#include "ruby/3/config.h"
+#include "ruby/3/assume.h"
+#include "ruby/3/has/builtin.h"
+
+#undef  ASSUME             /* Kill config.h definition */
+#undef  UNREACHABLE        /* Kill config.h definition */
+#define ASSUME             RUBY3_ASSUME
+#define UNREACHABLE        RUBY3_UNREACHABLE()
+#define UNREACHABLE_RETURN RUBY3_UNREACHABLE_RETURN
 
 /* likely */
-#if __GNUC__ >= 3
-#define RB_LIKELY(x)   (__builtin_expect(!!(x), 1))
-#define RB_UNLIKELY(x) (__builtin_expect(!!(x), 0))
-#else /* __GNUC__ >= 3 */
-#define RB_LIKELY(x)   (x)
-#define RB_UNLIKELY(x) (x)
-#endif /* __GNUC__ >= 3 */
+#if RUBY3_HAS_BUILTIN(__builtin_expect)
+# define RB_LIKELY(x)   (__builtin_expect(!!(x), 1))
+# define RB_UNLIKELY(x) (__builtin_expect(!!(x), 0))
 
-#ifndef ASSUME
-# ifdef UNREACHABLE
-#   define ASSUME(x) (RB_LIKELY(!!(x)) ? (void)0 : UNREACHABLE)
-# else
-#   define ASSUME(x) ((void)(x))
-# endif
-#endif
-#ifndef UNREACHABLE_RETURN
-# ifdef UNREACHABLE
-#  define UNREACHABLE_RETURN(val) UNREACHABLE
-# else
-#  define UNREACHABLE_RETURN(val) return (val)
-# endif
-#endif
-#ifndef UNREACHABLE
-# define UNREACHABLE ((void)0)  /* unreachable */
+#else
+# define RB_LIKELY(x)   (x)
+# define RB_UNLIKELY(x) (x)
 #endif
