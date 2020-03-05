@@ -29,108 +29,85 @@
 #ifndef  RUBY_BACKWARD2_ATTRIBUTES_H
 #define  RUBY_BACKWARD2_ATTRIBUTES_H
 #include "ruby/3/config.h"
-#include "ruby/backward/2/gcc_version_since.h"
+#include "ruby/3/attr/alloc_size.h"
+#include "ruby/3/attr/cold.h"
+#include "ruby/3/attr/const.h"
+#include "ruby/3/attr/deprecated.h"
+#include "ruby/3/attr/error.h"
+#include "ruby/3/attr/forceinline.h"
+#include "ruby/3/attr/format.h"
+#include "ruby/3/attr/maybe_unused.h"
+#include "ruby/3/attr/noinline.h"
+#include "ruby/3/attr/nonnull.h"
+#include "ruby/3/attr/noreturn.h"
+#include "ruby/3/attr/pure.h"
+#include "ruby/3/attr/restrict.h"
+#include "ruby/3/attr/returns_nonnull.h"
+#include "ruby/3/attr/warning.h"
+#include "ruby/3/has/attribute.h"
 
 /* function attributes */
-#ifndef CONSTFUNC
-# define CONSTFUNC(x) x
+#undef CONSTFUNC
+#define CONSTFUNC(x) RUBY3_ATTR_CONST() x
+
+#undef PUREFUNC
+#define PUREFUNC(x) RUBY3_ATTR_PURE() x
+
+#undef DEPRECATED
+#define DEPRECATED(x) RUBY3_ATTR_DEPRECATED(("")) x
+
+#undef DEPRECATED_BY
+#define DEPRECATED_BY(n,x) RUBY3_ATTR_DEPRECATED(("by: " # n)) x
+
+#undef DEPRECATED_TYPE
+#define DEPRECATED_TYPE(mseg, decl) decl RUBY3_ATTR_DEPRECATED(mseg)
+
+#undef RUBY_CXX_DEPRECATED
+#define RUBY_CXX_DEPRECATED(mseg) RUBY3_ATTR_DEPRECATED((mseg))
+
+#undef NOINLINE
+#define NOINLINE(x) RUBY3_ATTR_NOINLINE() x
+
+#ifndef MJIT_HEADER
+# undef ALWAYS_INLINE
+# define ALWAYS_INLINE(x) RUBY3_ATTR_FORCEINLINE() x
 #endif
 
-#ifndef PUREFUNC
-# define PUREFUNC(x) x
-#endif
-
-#ifndef DEPRECATED
-# define DEPRECATED(x) x
-#endif
-
-#ifndef DEPRECATED_BY
-# define DEPRECATED_BY(n,x) DEPRECATED(x)
-#endif
-
-#ifndef DEPRECATED_TYPE
-# define DEPRECATED_TYPE(mesg, decl) decl
-#endif
-
-#ifndef RUBY_CXX_DEPRECATED
-# define RUBY_CXX_DEPRECATED(mesg) /* nothing */
-#endif
-
-#ifndef NOINLINE
-# define NOINLINE(x) x
-#endif
-
-#ifndef ALWAYS_INLINE
-# define ALWAYS_INLINE(x) x
-#endif
-
-#ifndef ERRORFUNC
-# define HAVE_ATTRIBUTE_ERRORFUNC 0
-# define ERRORFUNC(mesg, x) x
-#else
+#undef ERRORFUNC
+#define ERRORFUNC(mesg, x) RUBY3_ATTR_ERROR(mesg) x
+#if RUBY3_HAS_ATTRIBUTE(error)
 # define HAVE_ATTRIBUTE_ERRORFUNC 1
+#else
+# define HAVE_ATTRIBUTE_ERRORFUNC 0
 #endif
 
-#ifndef WARNINGFUNC
-# define HAVE_ATTRIBUTE_WARNINGFUNC 0
-# define WARNINGFUNC(mesg, x) x
-#else
+#undef WARNINGFUNC
+#define WARNINGFUNC(mesg, x) RUBY3_ATTR_WARNING(mesg) x
+#if RUBY3_HAS_ATTRIBUTE(warning)
 # define HAVE_ATTRIBUTE_WARNINGFUNC 1
+#else
+# define HAVE_ATTRIBUTE_WARNINGFUNC 0
 #endif
 
 /*
   cold attribute for code layout improvements
   RUBY_FUNC_ATTRIBUTE not used because MSVC does not like nested func macros
  */
-#if defined(__clang__) || GCC_VERSION_SINCE(4, 3, 0)
-#define COLDFUNC __attribute__((cold))
-#else
-#define COLDFUNC
-#endif
+#undef COLDFUNC
+#define COLDFUNC RUBY3_ATTR_COLD()
 
-#ifdef __GNUC__
-#if defined __MINGW_PRINTF_FORMAT
 #define PRINTF_ARGS(decl, string_index, first_to_check) \
-  decl __attribute__((format(__MINGW_PRINTF_FORMAT, string_index, first_to_check)))
-#else
-#define PRINTF_ARGS(decl, string_index, first_to_check) \
-  decl __attribute__((format(printf, string_index, first_to_check)))
-#endif
-#else
-#define PRINTF_ARGS(decl, string_index, first_to_check) decl
-#endif
+    RUBY3_ATTR_FORMAT(RUBY3_PRINTF_FORMAT, (string_index), (first_to_check)) \
+    decl
 
-#if GCC_VERSION_SINCE(4,3,0)
-# define RUBY_ATTR_ALLOC_SIZE(params) __attribute__ ((alloc_size params))
-#elif defined(__has_attribute)
-# if __has_attribute(alloc_size)
-#  define RUBY_ATTR_ALLOC_SIZE(params) __attribute__((__alloc_size__ params))
-# endif
-#endif
+#undef RUBY_ATTR_ALLOC_SIZE
+#define RUBY_ATTR_ALLOC_SIZE RUBY3_ATTR_ALLOC_SIZE
 
-#ifndef RUBY_ATTR_ALLOC_SIZE
-# define RUBY_ATTR_ALLOC_SIZE(params)
-#endif
+#undef RUBY_ATTR_MALLOC
+#define RUBY_ATTR_MALLOC RUBY3_ATTR_RESTRICT()
 
-#ifdef __has_attribute
-# if __has_attribute(malloc)
-#  define RUBY_ATTR_MALLOC __attribute__((__malloc__))
-# endif
-#endif
-
-#ifndef RUBY_ATTR_MALLOC
-# define RUBY_ATTR_MALLOC
-#endif
-
-#ifdef __has_attribute
-# if __has_attribute(returns_nonnull)
-#  define RUBY_ATTR_RETURNS_NONNULL __attribute__((__returns_nonnull__))
-# endif
-#endif
-
-#ifndef RUBY_ATTR_RETURNS_NONNULL
-# define RUBY_ATTR_RETURNS_NONNULL
-#endif
+#undef RUBY_ATTR_RETURNS_NONNULL
+#define RUBY_ATTR_RETURNS_NONNULL RUBY3_ATTR_RETURNS_NONNULL()
 
 #ifndef FUNC_MINIMIZED
 #define FUNC_MINIMIZED(x) x
@@ -155,20 +132,12 @@
     RUBY_ALIAS_FUNCTION_TYPE(VALUE, prot, name, args)
 #endif
 
-#ifndef RUBY_FUNC_NONNULL
-#define RUBY_FUNC_NONNULL(n, x) x
-#endif
+#undef RUBY_FUNC_NONNULL
+#define RUBY_FUNC_NONNULL(n, x) RUBY3_ATTR_NONNULL(n) x
 
-#define NORETURN_STYLE_NEW 1
-#ifdef NORETURN
-/* OK, take that definition */
-#elif defined(__cplusplus) && (__cplusplus >= 201103L)
-#define NORETURN(x) [[ noreturn ]] x
-#elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
-#define NORETURN(x) _Noreturn x
-#else
-#define NORETURN(x) x
-#endif
+#undef  NORETURN
+#define NORETURN(x) RUBY3_ATTR_NORETURN() x
+#define NORETURN_STYLE_NEW
 
 #ifndef PACKED_STRUCT
 # define PACKED_STRUCT(x) x
@@ -182,10 +151,7 @@
 # endif
 #endif
 
-#ifdef __GNUC__
-#define RB_UNUSED_VAR(x) x __attribute__ ((unused))
-#else
-#define RB_UNUSED_VAR(x) x
-#endif
+#undef RB_UNUSED_VAR
+#define RB_UNUSED_VAR(x) x RUBY3_ATTR_MAYBE_UNUSED()
 
 #endif /* RUBY_BACKWARD2_ATTRIBUTES_H */
