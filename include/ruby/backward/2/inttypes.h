@@ -18,8 +18,6 @@
  *             extension libraries. They could be written in C++98.
  * @brief      C99 shim for `<inttypes.h>`
  */
-#ifndef  RUBY_BACKWARD2_INTTYPES_H
-#define  RUBY_BACKWARD2_INTTYPES_H
 #include "ruby/3/config.h"      /* PRI_LL_PREFIX etc. are here */
 
 #ifdef HAVE_INTTYPES_H
@@ -29,65 +27,70 @@
 #include "ruby/3/value.h"       /* PRI_VALUE_PREFIX is here. */
 
 #ifndef PRI_INT_PREFIX
-#define PRI_INT_PREFIX ""
+# define PRI_INT_PREFIX ""
 #endif
 
 #ifndef PRI_LONG_PREFIX
-#define PRI_LONG_PREFIX "l"
+# define PRI_LONG_PREFIX "l"
 #endif
 
 #ifndef PRI_SHORT_PREFIX
-#define PRI_SHORT_PREFIX "h"
+# define PRI_SHORT_PREFIX "h"
 #endif
 
-#ifndef PRI_64_PREFIX
-#if SIZEOF_LONG == 8
-#define PRI_64_PREFIX PRI_LONG_PREFIX
+#ifdef PRI_64_PREFIX
+# /* Take that. */
+#elif SIZEOF_LONG == 8
+# define PRI_64_PREFIX PRI_LONG_PREFIX
 #elif SIZEOF_LONG_LONG == 8
-#define PRI_64_PREFIX PRI_LL_PREFIX
-#endif
+# define PRI_64_PREFIX PRI_LL_PREFIX
 #endif
 
 #ifndef PRIdPTR
-#define PRIdPTR PRI_PTR_PREFIX"d"
-#define PRIiPTR PRI_PTR_PREFIX"i"
-#define PRIoPTR PRI_PTR_PREFIX"o"
-#define PRIuPTR PRI_PTR_PREFIX"u"
-#define PRIxPTR PRI_PTR_PREFIX"x"
-#define PRIXPTR PRI_PTR_PREFIX"X"
+# define PRIdPTR PRI_PTR_PREFIX"d"
+# define PRIiPTR PRI_PTR_PREFIX"i"
+# define PRIoPTR PRI_PTR_PREFIX"o"
+# define PRIuPTR PRI_PTR_PREFIX"u"
+# define PRIxPTR PRI_PTR_PREFIX"x"
+# define PRIXPTR PRI_PTR_PREFIX"X"
 #endif
 
-#define RUBY_PRI_VALUE_MARK "\v"
-#if defined PRIdPTR && !defined PRI_VALUE_PREFIX
-#define PRIdVALUE PRIdPTR
-#define PRIoVALUE PRIoPTR
-#define PRIuVALUE PRIuPTR
-#define PRIxVALUE PRIxPTR
-#define PRIXVALUE PRIXPTR
-#define PRIsVALUE PRIiPTR"" RUBY_PRI_VALUE_MARK
-#else
-#define PRIdVALUE PRI_VALUE_PREFIX"d"
-#define PRIoVALUE PRI_VALUE_PREFIX"o"
-#define PRIuVALUE PRI_VALUE_PREFIX"u"
-#define PRIxVALUE PRI_VALUE_PREFIX"x"
-#define PRIXVALUE PRI_VALUE_PREFIX"X"
-#define PRIsVALUE PRI_VALUE_PREFIX"i" RUBY_PRI_VALUE_MARK
+#ifndef RUBY_PRI_VALUE_MARK
+# define RUBY_PRI_VALUE_MARK "\v"
 #endif
+
+#if defined PRIdPTR && !defined PRI_VALUE_PREFIX
+# define PRIdVALUE PRIdPTR
+# define PRIoVALUE PRIoPTR
+# define PRIuVALUE PRIuPTR
+# define PRIxVALUE PRIxPTR
+# define PRIXVALUE PRIXPTR
+# define PRIsVALUE PRIiPTR"" RUBY_PRI_VALUE_MARK
+#else
+# define PRIdVALUE PRI_VALUE_PREFIX"d"
+# define PRIoVALUE PRI_VALUE_PREFIX"o"
+# define PRIuVALUE PRI_VALUE_PREFIX"u"
+# define PRIxVALUE PRI_VALUE_PREFIX"x"
+# define PRIXVALUE PRI_VALUE_PREFIX"X"
+# define PRIsVALUE PRI_VALUE_PREFIX"i" RUBY_PRI_VALUE_MARK
+#endif
+
 #ifndef PRI_VALUE_PREFIX
 # define PRI_VALUE_PREFIX ""
 #endif
 
-#ifndef PRI_TIMET_PREFIX
-# if SIZEOF_TIME_T == SIZEOF_INT
-#  define PRI_TIMET_PREFIX
-# elif SIZEOF_TIME_T == SIZEOF_LONG
-#  define PRI_TIMET_PREFIX "l"
-# elif SIZEOF_TIME_T == SIZEOF_LONG_LONG
-#  define PRI_TIMET_PREFIX PRI_LL_PREFIX
-# endif
+#ifdef PRI_TIMET_PREFIX
+# /* Take that. */
+#elif SIZEOF_TIME_T == SIZEOF_INT
+# define PRI_TIMET_PREFIX
+#elif SIZEOF_TIME_T == SIZEOF_LONG
+# define PRI_TIMET_PREFIX "l"
+#elif SIZEOF_TIME_T == SIZEOF_LONG_LONG
+# define PRI_TIMET_PREFIX PRI_LL_PREFIX
 #endif
 
-#if defined PRI_PTRDIFF_PREFIX
+#ifdef PRI_PTRDIFF_PREFIX
+# /* Take that. */
 #elif SIZEOF_PTRDIFF_T == SIZEOF_INT
 # define PRI_PTRDIFF_PREFIX ""
 #elif SIZEOF_PTRDIFF_T == SIZEOF_LONG
@@ -95,14 +98,18 @@
 #elif SIZEOF_PTRDIFF_T == SIZEOF_LONG_LONG
 # define PRI_PTRDIFF_PREFIX PRI_LL_PREFIX
 #endif
-#define PRIdPTRDIFF PRI_PTRDIFF_PREFIX"d"
-#define PRIiPTRDIFF PRI_PTRDIFF_PREFIX"i"
-#define PRIoPTRDIFF PRI_PTRDIFF_PREFIX"o"
-#define PRIuPTRDIFF PRI_PTRDIFF_PREFIX"u"
-#define PRIxPTRDIFF PRI_PTRDIFF_PREFIX"x"
-#define PRIXPTRDIFF PRI_PTRDIFF_PREFIX"X"
 
-#if defined PRI_SIZE_PREFIX
+#ifndef PRIdPTRDIFF
+# define PRIdPTRDIFF PRI_PTRDIFF_PREFIX"d"
+# define PRIiPTRDIFF PRI_PTRDIFF_PREFIX"i"
+# define PRIoPTRDIFF PRI_PTRDIFF_PREFIX"o"
+# define PRIuPTRDIFF PRI_PTRDIFF_PREFIX"u"
+# define PRIxPTRDIFF PRI_PTRDIFF_PREFIX"x"
+# define PRIXPTRDIFF PRI_PTRDIFF_PREFIX"X"
+#endif
+
+#ifdef PRI_SIZE_PREFIX
+# /* Take that. */
 #elif SIZEOF_SIZE_T == SIZEOF_INT
 # define PRI_SIZE_PREFIX ""
 #elif SIZEOF_SIZE_T == SIZEOF_LONG
@@ -110,11 +117,12 @@
 #elif SIZEOF_SIZE_T == SIZEOF_LONG_LONG
 # define PRI_SIZE_PREFIX PRI_LL_PREFIX
 #endif
-#define PRIdSIZE PRI_SIZE_PREFIX"d"
-#define PRIiSIZE PRI_SIZE_PREFIX"i"
-#define PRIoSIZE PRI_SIZE_PREFIX"o"
-#define PRIuSIZE PRI_SIZE_PREFIX"u"
-#define PRIxSIZE PRI_SIZE_PREFIX"x"
-#define PRIXSIZE PRI_SIZE_PREFIX"X"
 
-#endif /* RUBY_BACKWARD2_INTTYPES_H */
+#ifndef PRIdSIZE
+# define PRIdSIZE PRI_SIZE_PREFIX"d"
+# define PRIiSIZE PRI_SIZE_PREFIX"i"
+# define PRIoSIZE PRI_SIZE_PREFIX"o"
+# define PRIuSIZE PRI_SIZE_PREFIX"u"
+# define PRIxSIZE PRI_SIZE_PREFIX"x"
+# define PRIXSIZE PRI_SIZE_PREFIX"X"
+#endif
