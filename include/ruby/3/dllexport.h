@@ -21,41 +21,46 @@
 #ifndef  RUBY3_DLLEXPORT_H
 #define  RUBY3_DLLEXPORT_H
 #include "ruby/3/config.h"
+#include "ruby/3/compiler_is.h"
+
+/* For MinGW, we need __declspec(dllimport) for RUBY_EXTERN on MJIT.
+   mswin's RUBY_EXTERN already has that. See also: win32/Makefile.sub */
+#undef RUBY_EXTERN
+#if defined(MJIT_HEADER) && defined(_WIN32)
+# define RUBY_EXTERN extern __declspec(dllimport)
+#elif defined(RUBY_EXPORT)
+# define RUBY_EXTERN extern
+#elif defined(_WIN32)
+# define RUBY_EXTERN extern __declspec(dllimport)
+#else
+# define RUBY_EXTERN extern
+#endif
 
 #ifndef RUBY_SYMBOL_EXPORT_BEGIN
 # define RUBY_SYMBOL_EXPORT_BEGIN /* begin */
+#endif
+
+#ifndef RUBY_SYMBOL_EXPORT_END
 # define RUBY_SYMBOL_EXPORT_END   /* end */
 #endif
 
-#ifdef RUBY_EXPORT
-#undef RUBY_EXTERN
-#endif
-
 #ifndef RUBY_FUNC_EXPORTED
-#define RUBY_FUNC_EXPORTED
+# define RUBY_FUNC_EXPORTED /* void */
 #endif
 
 /* These macros are used for functions which are exported only for MJIT
    and NOT ensured to be exported in future versions. */
-#define MJIT_FUNC_EXPORTED RUBY_FUNC_EXPORTED
-#define MJIT_SYMBOL_EXPORT_BEGIN RUBY_SYMBOL_EXPORT_BEGIN
-#define MJIT_SYMBOL_EXPORT_END RUBY_SYMBOL_EXPORT_END
 
-#if defined(MJIT_HEADER) && defined(_MSC_VER)
-# undef MJIT_FUNC_EXPORTED
+#if ! defined(MJIT_HEADER)
+# define MJIT_FUNC_EXPORTED RUBY_FUNC_EXPORTED
+#elif ! RUBY3_COMPILER_IS(MSVC)
+# define MJIT_FUNC_EXPORTED RUBY_FUNC_EXPORTED
+#else
 # define MJIT_FUNC_EXPORTED static
 #endif
 
-#ifndef RUBY_EXTERN
-#define RUBY_EXTERN extern
-#endif
-
-/* For MinGW, we need __declspec(dllimport) for RUBY_EXTERN on MJIT.
-   mswin's RUBY_EXTERN already has that. See also: win32/Makefile.sub */
-#if defined(MJIT_HEADER) && defined(_WIN32) && defined(__GNUC__)
-# undef RUBY_EXTERN
-# define RUBY_EXTERN extern __declspec(dllimport)
-#endif
+#define MJIT_SYMBOL_EXPORT_BEGIN RUBY_SYMBOL_EXPORT_BEGIN
+#define MJIT_SYMBOL_EXPORT_END   RUBY_SYMBOL_EXPORT_END
 
 /* On mswin, MJIT header transformation can't be used since cl.exe can't output
    preprocessed output preserving macros. So this `MJIT_STATIC` is needed
@@ -84,6 +89,4 @@
 #else
 # define RUBY3_SYMBOL_EXPORT_END()   RUBY_SYMBOL_EXPORT_END
 #endif
-
-
 #endif /* RUBY3_DLLEXPORT_H */
