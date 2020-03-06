@@ -20,18 +20,9 @@
  */
 #ifndef  RUBY3_VALUE_H
 #define  RUBY3_VALUE_H
-#include "ruby/3/config.h"
-
-#ifdef STDC_HEADERS
-# include <stddef.h>
-#endif
-
-#ifdef HAVE_STDINT_H
-# include <stdint.h>
-#endif
-
 #include "ruby/3/static_assert.h"
 #include "ruby/backward/2/long_long.h"
+#include "ruby/backward/2/limits.h"
 
 #if defined HAVE_UINTPTR_T && 0
 typedef uintptr_t VALUE;
@@ -39,12 +30,20 @@ typedef uintptr_t ID;
 # define SIGNED_VALUE intptr_t
 # define SIZEOF_VALUE SIZEOF_UINTPTR_T
 # undef PRI_VALUE_PREFIX
+# define RUBY3_VALUE_NULL UINTPTR_C(0)
+# define RUBY3_VALUE_ONE  UINTPTR_C(1)
+# define RUBY3_VALUE_FULL UINTPTR_MAX
+
 #elif SIZEOF_LONG == SIZEOF_VOIDP
 typedef unsigned long VALUE;
 typedef unsigned long ID;
 # define SIGNED_VALUE long
 # define SIZEOF_VALUE SIZEOF_LONG
 # define PRI_VALUE_PREFIX "l"
+# define RUBY3_VALUE_NULL 0UL
+# define RUBY3_VALUE_ONE  1UL
+# define RUBY3_VALUE_FULL ULONG_MAX
+
 #elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
 typedef unsigned LONG_LONG VALUE;
 typedef unsigned LONG_LONG ID;
@@ -52,6 +51,10 @@ typedef unsigned LONG_LONG ID;
 # define LONG_LONG_VALUE 1
 # define SIZEOF_VALUE SIZEOF_LONG_LONG
 # define PRI_VALUE_PREFIX PRI_LL_PREFIX
+# define RUBY3_VALUE_NULL 0ULL
+# define RUBY3_VALUE_ONE  1ULL
+# define RUBY3_VALUE_FULL ULLONG_MAX
+
 #else
 # error ---->> ruby requires sizeof(void*) == sizeof(long) or sizeof(LONG_LONG) to be compiled. <<----
 #endif
