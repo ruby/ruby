@@ -53,6 +53,7 @@
 #include "ruby/backward/2/assume.h"
 #include "ruby/backward/2/inttypes.h"
 #include "ruby/backward/2/limits.h"
+#include "ruby/backward/2/looser_macros.h"
 #include "ruby/backward/2/rmodule.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
