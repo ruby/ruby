@@ -22,6 +22,7 @@
 #define  RUBY_BACKWARD2_LOOSER_MACROS_H
 #include "ruby/3/cast.h"
 #include "ruby/3/core/rbasic.h"
+#include "ruby/3/fl_type.h"
 #include "ruby/3/special_consts.h"
 #include "ruby/3/value_type.h"
 
@@ -39,5 +40,26 @@
 
 #undef SYMBOL_P
 #define SYMBOL_P(_) RB_SYMBOL_P(RUBY3_CAST((VALUE)(_)))
+
+#undef RB_FL_TEST
+#define RB_FL_TEST(_, __) ((RB_FL_TEST)((VALUE)(_), __))
+
+#undef RB_FL_TEST_RAW
+#define RB_FL_TEST_RAW(_, __) RUBY3_CAST((int)((RB_FL_TEST_RAW)((VALUE)(_), __)))
+
+#undef RB_FL_SET
+#define RB_FL_SET(_, __) ((RB_FL_SET)(RUBY3_CAST((VALUE)(_)), __))
+
+#undef RB_FL_SET_RAW
+#define RB_FL_SET_RAW(_, __) ((RB_FL_SET_RAW)(RUBY3_CAST((VALUE)(_)), __))
+
+#undef RB_FL_UNSET
+#define RB_FL_UNSET(_, __) ((RB_FL_UNSET)(RUBY3_CAST((VALUE)(_)), __))
+
+#undef RB_OBJ_FREEZE
+#define RB_OBJ_FREEZE(_) rb_obj_freeze_inline(RUBY3_CAST((VALUE)(_)))
+
+#undef RB_OBJ_FREEZE_RAW
+#define RB_OBJ_FREEZE_RAW(_) ((RB_OBJ_FREEZE_RAW)(RUBY3_CAST((VALUE)(_))))
 
 #endif /* RUBY_BACKWARD2_LOOSER_MACROS_H */
