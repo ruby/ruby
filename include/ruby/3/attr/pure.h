@@ -20,6 +20,7 @@
  */
 #include "ruby/3/compiler_since.h"
 #include "ruby/3/has/attribute.h"
+#include "ruby/assert.h"
 
 /** Wraps (or simulates) `__attribute__((pure))` */
 #if defined(RUBY3_ATTR_PURE)
@@ -33,4 +34,15 @@
 
 #else
 # define RUBY3_ATTR_PURE() /* void */
+#endif
+
+/** Enables #RUBY3_ATTR_PURE iff. #RUBY_NDEBUG. */
+#if defined(RUBY3_ATTR_PURE_ON_NDEBUG)
+# /* Take that. */
+
+#elif RUBY_NDEBUG
+# define RUBY3_ATTR_PURE_ON_NDEBUG() RUBY3_ATTR_PURE()
+
+#else
+# define RUBY3_ATTR_PURE_ON_NDEBUG() /* void */
 #endif

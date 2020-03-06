@@ -20,6 +20,7 @@
  */
 #ifndef  RUBY_ASSERT_H
 #define  RUBY_ASSERT_H
+#include "ruby/3/assume.h"
 #include "ruby/3/attr/cold.h"
 #include "ruby/3/attr/noreturn.h"
 #include "ruby/3/cast.h"
@@ -59,13 +60,13 @@ RUBY3_SYMBOL_EXPORT_END()
 # define RUBY3_ASSERT_FUNC RUBY3_CAST((const char *)0)
 #endif
 
-#define RUBY3_ASSERT_NOTHING RUBY3_CAST((void)0)
+#define RUBY3_ASSERT_NOTHING(expr) RUBY3_CAST((void)(expr))
 
 #define RUBY_ASSERT_FAIL(expr) \
     rb_assert_failure(__FILE__, __LINE__, RUBY3_ASSERT_FUNC, #expr)
 
 #define RUBY_ASSERT_MESG(expr, mesg) \
-    (RB_LIKELY(expr) ? RUBY3_ASSERT_NOTHING : RUBY_ASSERT_FAIL(mesg))
+    (RB_LIKELY(expr) ? RUBY3_ASSERT_NOTHING(0) : RUBY_ASSERT_FAIL(mesg))
 
 # define RUBY_ASSERT_MESG_WHEN(cond, expr, mesg) \
     RUBY_ASSERT_MESG(!((RUBY_DEBUG+0) || (cond)) || (expr), mesg)
@@ -82,7 +83,18 @@ RUBY3_SYMBOL_EXPORT_END()
         __builtin_constant_p(cond), \
         __builtin_choose_expr(cond, \
             RUBY_ASSERT_MESG(expr, mesg), \
-            RUBY3_ASSERT_NOTHING), \
+            RUBY3_ASSERT_NOTHING(0)),     \
         RUBY_ASSERT_MESG(!(cond) || (expr), mesg)))
 #endif /* HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P */
+
+#if ! RUBY_NDEBUG
+# define RUBY3_ASSERT_OR_ASSUME RUBY_ASSERT
+#elif defined(RUBY3_HAVE___ASSUME)
+# define RUBY3_ASSERT_OR_ASSUME RUBY3_ASSUME
+#elif RUBY3_HAS_BUILTIN(__builtin_assume)
+# define RUBY3_ASSERT_OR_ASSUME RUBY3_ASSUME
+#else
+# define RUBY3_ASSERT_OR_ASSUME RUBY3_ASSERT_NOTHING
+#endif
+
 #endif /* RUBY_ASSERT_H */
