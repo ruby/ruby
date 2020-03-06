@@ -43,6 +43,13 @@ class TestJIT < Test::Unit::TestCase
       skip 'JIT seems not supported on this platform'
     end
 
+    # freebsd12: cc1 internal failure https://rubyci.org/logs/rubyci.s3.amazonaws.com/freebsd12/ruby-master/log/20200306T103003Z.fail.html.gz
+    # rhel8: one or more PCH files were found, but they were invalid https://rubyci.org/logs/rubyci.s3.amazonaws.com/rhel8/ruby-master/log/20200306T153003Z.fail.html.gz
+    case ENV['RUBYCI_NICKNAME']
+    when 'freebsd12', 'rhel8'
+      skip 'investigating failures on RubyCI'
+    end
+
     # ruby -w -Itest/lib test/ruby/test_jit.rb
     if $VERBOSE && !defined?(@@at_exit_hooked)
       at_exit do
