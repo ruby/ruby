@@ -4,6 +4,16 @@
 #include "ruby/config.h"
 #include RUBY_EXTCONF_H
 
+#ifdef __sun
+/* (Recent?)  Solaris' <nfs/nfs.h> have conflicting definition of T_DATA.  Let
+ * us honour system definition by undefining ours.
+ *
+ * See also [ruby-core:4261]
+ */
+# include "ruby/ruby.h"
+# undef T_DATA
+#endif
+
 #include <errno.h>
 #include <stdio.h>
 
