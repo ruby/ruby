@@ -547,14 +547,25 @@ rb_sigaltstack_size(void)
     return size;
 }
 
+static int rb_sigaltstack_size_value = 0;
+
+void *
+rb_allocate_sigaltstack(void)
+{
+    if (!rb_sigaltstack_size_value) {
+	rb_sigaltstack_size_value = rb_sigaltstack_size();
+    }
+    return xmalloc(rb_sigaltstack_size_value);
+}
+
 /* alternate stack for SIGSEGV */
 void *
-rb_register_sigaltstack(void)
+rb_register_sigaltstack(void *altstack)
 {
     stack_t newSS, oldSS;
 
-    newSS.ss_size = rb_sigaltstack_size();
-    newSS.ss_sp = xmalloc(newSS.ss_size);
+    newSS.ss_size = rb_sigaltstack_size_value;
+    newSS.ss_sp = altstack;
     newSS.ss_flags = 0;
 
     sigaltstack(&newSS, &oldSS); /* ignore error. */
@@ -1561,7 +1572,7 @@ Init_signal(void)
 	force_install_sighandler(SIGILL, (sighandler_t)sigill, &default_sigill_handler);
 #endif
 #ifdef SIGSEGV
-	RB_ALTSTACK_INIT(GET_VM()->main_altstack);
+	RB_ALTSTACK_INIT(GET_VM()->main_altstack, rb_allocate_sigaltstack());
 	force_install_sighandler(SIGSEGV, (sighandler_t)sigsegv, &default_sigsegv_handler);
 #endif
     }

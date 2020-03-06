@@ -141,12 +141,13 @@
 
 #if defined(SIGSEGV) && defined(HAVE_SIGALTSTACK) && defined(SA_SIGINFO) && !defined(__NetBSD__)
 #  define USE_SIGALTSTACK
-void *rb_register_sigaltstack(void);
-#  define RB_ALTSTACK_INIT(var) var = rb_register_sigaltstack()
+void *rb_allocate_sigaltstack(void);
+void *rb_register_sigaltstack(void *);
+#  define RB_ALTSTACK_INIT(var, altstack) var = rb_register_sigaltstack(altstack)
 #  define RB_ALTSTACK_FREE(var) xfree(var)
 #  define RB_ALTSTACK(var)  var
 #else /* noop */
-#  define RB_ALTSTACK_INIT(var)
+#  define RB_ALTSTACK_INIT(var, altstack)
 #  define RB_ALTSTACK_FREE(var)
 #  define RB_ALTSTACK(var) (0)
 #endif
@@ -973,6 +974,10 @@ typedef struct rb_thread_struct {
 
     /* misc */
     VALUE name;
+
+#ifdef USE_SIGALTSTACK
+    void *altstack;
+#endif
 
 } rb_thread_t;
 
