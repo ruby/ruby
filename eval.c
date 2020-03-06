@@ -1996,7 +1996,10 @@ f_current_dirname(VALUE _)
  *  call-seq:
  *     global_variables    -> array
  *
- *  Returns an array of the names of global variables.
+ *  Returns an array of the names of global variables. This includes
+ *  special regexp global variables such as <tt>$~</tt> and <tt>$+</tt>,
+ *  but does not include the numbered regexp global variables (<tt>$1</tt>,
+ *  <tt>$2</tt>, etc.).
  *
  *     global_variables.grep /std/   #=> [:$stdin, :$stdout, :$stderr]
  */
