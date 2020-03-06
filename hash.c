@@ -763,11 +763,14 @@ ar_free_and_clear_table(VALUE hash)
 static void
 ar_try_convert_table(VALUE hash)
 {
-    st_table *new_tab;
+    if (!RHASH_AR_TABLE_P(hash)) return;
+
     const unsigned size = RHASH_AR_TABLE_SIZE(hash);
+
+    st_table *new_tab;
     st_index_t i;
 
-    if (!RHASH_AR_TABLE_P(hash) || size < RHASH_AR_TABLE_MAX_SIZE) {
+    if (size < RHASH_AR_TABLE_MAX_SIZE) {
         return;
     }
 
