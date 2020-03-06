@@ -163,21 +163,6 @@ rb_type(VALUE obj)
 #define rb_type_p(obj, type) (rb_type(obj) == (type))
 #endif
 
-#ifdef __GNUC__
-#define rb_special_const_p(obj) \
-    __extension__ ({ \
-        VALUE special_const_obj = (obj); \
-        (int)(RB_SPECIAL_CONST_P(special_const_obj) ? RUBY_Qtrue : RUBY_Qfalse); \
-    })
-#else
-static inline int
-rb_special_const_p(VALUE obj)
-{
-    if (RB_SPECIAL_CONST_P(obj)) return (int)RUBY_Qtrue;
-    return (int)RUBY_Qfalse;
-}
-#endif
-
 void rb_check_type(VALUE,int);
 #define Check_Type(v,t) rb_check_type((VALUE)(v),(t))
 
