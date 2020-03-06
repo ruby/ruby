@@ -1012,6 +1012,11 @@ ar_update(VALUE hash, st_data_t key,
     st_data_t value = 0, old_key;
     st_hash_t hash_value = ar_do_hash(key);
 
+    if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
+        // `#hash` changes ar_table -> st_table
+        return -1;
+    }
+
     if (RHASH_AR_TABLE_SIZE(hash) > 0) {
         bin = ar_find_entry(hash, hash_value, key);
         existing = (bin != RHASH_AR_TABLE_MAX_BOUND) ? TRUE : FALSE;
@@ -1061,6 +1066,11 @@ ar_insert(VALUE hash, st_data_t key, st_data_t value)
     unsigned bin = RHASH_AR_TABLE_BOUND(hash);
     st_hash_t hash_value = ar_do_hash(key);
 
+    if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
+        // `#hash` changes ar_table -> st_table
+        return -1;
+    }
+
     hash_ar_table(hash); /* prepare ltbl */
 
     bin = ar_find_entry(hash, hash_value, key);
@@ -1093,6 +1103,10 @@ ar_lookup(VALUE hash, st_data_t key, st_data_t *value)
     }
     else {
         st_hash_t hash_value = ar_do_hash(key);
+        if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
+            // `#hash` changes ar_table -> st_table
+            return st_lookup(RHASH_ST_TABLE(hash), key, value);
+        }
         unsigned bin = ar_find_entry(hash, hash_value, key);
 
         if (bin == RHASH_AR_TABLE_MAX_BOUND) {
@@ -1114,6 +1128,10 @@ ar_delete(VALUE hash, st_data_t *key, st_data_t *value)
     unsigned bin;
     st_hash_t hash_value = ar_do_hash(*key);
 
+    if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
+        // `#hash` changes ar_table -> st_table
+        return st_delete(RHASH_ST_TABLE(hash), key, value);
+    }
 
     bin = ar_find_entry(hash, hash_value, *key);
 

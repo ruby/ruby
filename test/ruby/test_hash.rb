@@ -1783,4 +1783,62 @@ class TestHash < Test::Unit::TestCase
     assert_equal(1, check_flagged_hash(*[hash]))
     assert_raise(TypeError) { Hash.ruby2_keywords_hash(1) }
   end
+
+  def test_ar2st
+    # insert
+    obj = Object.new
+    obj.instance_variable_set(:@h, h = {})
+    def obj.hash
+      10.times{|i| @h[i] = i}
+      0
+    end
+    def obj.inspect
+      'test'
+    end
+    h[obj] = true
+    assert_equal '{0=>0, 1=>1, 2=>2, 3=>3, 4=>4, 5=>5, 6=>6, 7=>7, 8=>8, 9=>9, test=>true}', h.inspect
+
+    # delete
+    obj = Object.new
+    obj.instance_variable_set(:@h, h = {})
+    def obj.hash
+      10.times{|i| @h[i] = i}
+      0
+    end
+    def obj.inspect
+      'test'
+    end
+    def obj.eql? other
+      other.class == Object
+    end
+    obj2 = Object.new
+    def obj2.hash
+      0
+    end
+
+    h[obj2] = true
+    h.delete obj
+    assert_equal '{0=>0, 1=>1, 2=>2, 3=>3, 4=>4, 5=>5, 6=>6, 7=>7, 8=>8, 9=>9}', h.inspect
+
+    # lookup
+    obj = Object.new
+    obj.instance_variable_set(:@h, h = {})
+    def obj.hash
+      10.times{|i| @h[i] = i}
+      0
+    end
+    def obj.inspect
+      'test'
+    end
+    def obj.eql? other
+      other.class == Object
+    end
+    obj2 = Object.new
+    def obj2.hash
+      0
+    end
+
+    h[obj2] = true
+    assert_equal true, h[obj]
+  end
 end
