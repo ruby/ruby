@@ -763,6 +763,16 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_jump_to_precompiled_branch
+    assert_eval_with_jit("#{<<~'begin;'}\n#{<<~'end;'}", stdout: ".0", success_count: 1, min_calls: 1)
+    begin;
+      def test(foo)
+        ".#{foo unless foo == 1}" if true
+      end
+      print test(0)
+    end;
+  end
+
   def test_clean_so
     if appveyor_mswin?
       skip 'Removing so file is failing on AppVeyor mswin due to Permission Denied.'
