@@ -92,6 +92,10 @@ module TestStruct
     assert_equal([:utime, :stime, :cutime, :cstime], Process.times.members)
   end
 
+  def test_struct_new_with_empty_hash
+    assert_equal({:a=>1}, Struct.new(:a, {}).new({:a=>1}).a)
+  end
+
   def test_struct_new_with_keyword_init
     @Struct.new("KeywordInitTrue", :a, :b, keyword_init: true)
     @Struct.new("KeywordInitFalse", :a, :b, keyword_init: false)
