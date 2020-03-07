@@ -539,5 +539,12 @@ notifications:
     on_success: never
     on_failure: always
 
+  webhooks:
+    urls:
+      - secure: mRsoS/UbqDkKkW5p3AEqM27d4SZnV6Gsylo3bm8T/deltQzTsGzZwrm7OIBXZv0UFZdE68XmPlyHfZFLSP2V9QZ7apXMf9/vw0GtcSe1gchtnjpAPF6lYBn7nMCbVPPx9cS0dwL927fjdRM1vj7IKZ2bk4F0lAJ25R25S6teqdk= # simpler alerts (travis)
+    on_pull_requests: false
+    on_success: never
+    on_failure: always
+
   email:
     - ko1c-failure@atdot.net
