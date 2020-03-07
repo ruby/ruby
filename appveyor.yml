@@ -92,3 +92,21 @@ notifications:
     on_build_success: false
     on_build_failure: true
     on_build_status_changed: false
+  # New Slack notification (experimental)
+  - provider: Webhook
+    method: POST
+    url:
+      secure: CcFlJNDJ/a6to7u3Z4Fnz6dScEPNx7hTha2GkSRlV+1U6dqmxY/7uBcLXYb9gR3jfQk6w+2o/HrjNAyXMNGU/JOka3s2WRI4VKitzM+lQ08owvJIh0R7LxrGH0J2e81U # simpler alerts
+    body: >-
+      {{^isPullRequest}}
+        {
+          "ci": "AppVeyor CI",
+          "env": "Visual Studio 2013 / 2015",
+          "url": "{{buildUrl}}",
+          "commit": "{{commitId}}",
+          "branch": "{{branch}}"
+        }
+      {{/isPullRequest}}
+    on_build_success: false
+    on_build_failure: true
+    on_build_status_changed: false
