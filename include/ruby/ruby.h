@@ -603,7 +603,6 @@ char *rb_string_value_cstr(volatile VALUE*);
 #define StringValuePtr(v) rb_string_value_ptr(&(v))
 #define StringValueCStr(v) rb_string_value_cstr(&(v))
 
-void rb_check_safe_obj(VALUE);
 #define SafeStringValue(v) StringValue(v)
 #if GCC_VERSION_SINCE(4,4,0)
 void rb_check_safe_str(VALUE) __attribute__((error("rb_check_safe_str() and Check_SafeStr() are obsolete; use StringValue() instead")));
