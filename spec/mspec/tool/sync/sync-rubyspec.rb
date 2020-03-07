@@ -135,7 +135,7 @@ def rebase_commits(impl)
       else
         last_merge = `git log --grep='^#{impl.last_merge_message}' -n 1 --format='%H %ct'`
       end
-      last_merge, commit_timestamp = last_merge.chomp.split(' ')
+      last_merge, commit_timestamp = last_merge.split(' ')
 
       raise "Could not find last merge" unless last_merge
       puts "Last merge is #{last_merge}"
