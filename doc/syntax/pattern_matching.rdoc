@@ -1,6 +1,6 @@
 = Pattern matching
 
-Pattern matching is an experimental feature allowing deep matching of structured values: checking the structure, and binding the matched parts to local variables.
+Pattern matching is an experimental feature allowing deep matching of structured values: checking the structure and binding the matched parts to local variables.
 
 Pattern matching in Ruby is implemented with the +in+ operator, which can be used in a standalone expression:
 
@@ -23,39 +23,28 @@ or within the +case+ statement:
 
 Pattern matching is _exhaustive_: if variable doesn't match pattern (in a separate +in+ statement), or doesn't matches any branch of +case+ statement (and +else+ branch is absent), +NoMatchingPatternError+ is raised.
 
-Therefore, standalone +in+ statement is most useful when expected data structure is known beforehand, to unpack parts of it:
+Therefore, +case+ statement might be used for conditional matching and unpacking:
 
-   def connect_to_db(config) # imagine config is a huge configuration hash from YAML
-     # this statement will either unpack parts of the config into local variables,
-     # or raise if config's structure is unexpected
-     config in {connections: {db: {user:, password:}}, logging: {level: log_level}}
-     p [user, passsword, log_level] # local variables now contain relevant parts of the config
-     # ...
-   end
-
-whilst +case+ form can be used for matching and unpacking simultaneously:
+  config = {db: {user: 'admin', password: 'abc123'}}
 
   case config
-  in String
-    JSON.parse(config)                    # ...and then probably try to match it again
-
-  in version: '1', db:
-    # hash with {version: '1'} is expected to have db: key
-    puts "database configuration: #{db}"
-
-  in version: '2', connections: {database:}
-    # hash with {version: '2'} is expected to have nested connection: database: structure
-    puts "database configuration: #{database}"
-
-  in String => user, String => password
-    # sometimes connection is passed as just a pair of (user, password)
-    puts "database configuration: #{user}:#{password}"
-
-  in Hash | Array
-    raise "Malformed config structure: #{config}"
+  in db: {user:} # matches subhash and puts matched value in variable user
+    puts "Connect with user '#{user}'"
+  in connection: {username: }
+    puts "Connect with user '#{username}'"
   else
-    raise "Unrecognized config type: #{config.class}"
+    puts "Unrecognized structure of config"
   end
+  # Prints: "connect with user 'admin'"
+
+whilst standalone +in+ statement is most useful when expected data structure is known beforehand, to just unpack parts of it:
+
+  config = {db: {user: 'admin', password: 'abc123'}}
+
+  config in {db: {user:}} # will raise if the config's structure is unexpected
+
+  puts "Connect with user '#{user}'"
+  # Prints: "connect with user 'admin'"
 
 See below for more examples and explanations of the syntax.
 
