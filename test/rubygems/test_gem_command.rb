@@ -57,6 +57,27 @@ class TestGemCommand < Gem::TestCase
     assert_equal [], h
   end
 
+  def test_self_extra_args
+    verbose, $VERBOSE, separator = $VERBOSE, nil, $;
+    extra_args = Gem::Command.extra_args
+
+    Gem::Command.extra_args = %w[--all]
+    assert_equal %w[--all], Gem::Command.extra_args
+
+    Gem::Command.extra_args = "--file --help"
+    assert_equal %w[--file --help], Gem::Command.extra_args
+
+    $; = "="
+
+    Gem::Command.extra_args = "--awesome=true --verbose"
+    assert_equal %w[--awesome=true --verbose], Gem::Command.extra_args
+
+  ensure
+    Gem::Command.extra_args = extra_args
+    $; = separator
+    $VERBOSE = verbose
+  end
+
   def test_basic_accessors
     assert_equal "doit", @cmd.command
     assert_equal "gem doit", @cmd.program_name
