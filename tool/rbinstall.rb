@@ -819,12 +819,11 @@ end
 
 def install_default_gem(dir, srcdir)
   gem_dir = Gem.default_dir
-  directories = Gem.ensure_gem_subdirectories(gem_dir, :mode => $dir_mode)
-  prepare "default gems from #{dir}", gem_dir, directories
+  install_dir = with_destdir(gem_dir)
+  Gem.ensure_default_gem_subdirectories(install_dir, $dir_mode)
+  prepare "default gems from #{dir}", gem_dir
 
-  spec_dir = File.join(gem_dir, directories.grep(/^spec/)[0])
-  default_spec_dir = "#{spec_dir}/default"
-  makedirs(default_spec_dir)
+  default_spec_dir = Gem.default_specifications_dir
 
   gems = Dir.glob("#{srcdir}/#{dir}/**/*.gemspec").map {|src|
     spec = load_gemspec(src)
@@ -866,9 +865,9 @@ end
 
 install?(:ext, :comm, :gem, :'bundled-gems') do
   gem_dir = Gem.default_dir
-  directories = Gem.ensure_gem_subdirectories(gem_dir, :mode => $dir_mode)
-  prepare "bundled gems", gem_dir, directories
   install_dir = with_destdir(gem_dir)
+  Gem.ensure_gem_subdirectories(install_dir, $dir_mode)
+  prepare "bundled gems", gem_dir
   installed_gems = {}
   options = {
     :install_dir => install_dir,
