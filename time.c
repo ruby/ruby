@@ -2810,8 +2810,9 @@ get_scale(VALUE unit)
  *
  *  If +in+ argument is given, the result is in that timezone or UTC offset, or
  *  if a numeric argument is given, the result is in local time.
- *  The +in+ argument accepts timezones in +HH:MM or -HH:MM format along with
- *  accepting military timezones and UTC.
+ *  The +in+ argument accepts the same types of arguments as +tz+ argument of
+ *  Time::new: string, number of seconds, or a timezone object.
+ *
  *
  *     Time.at(0)                                #=> 1969-12-31 18:00:00 -0600
  *     Time.at(Time.at(0))                       #=> 1969-12-31 18:00:00 -0600
@@ -2820,9 +2821,15 @@ get_scale(VALUE unit)
  *     Time.at(946684800.2).usec                 #=> 200000
  *     Time.at(946684800, 123456.789).nsec       #=> 123456789
  *     Time.at(946684800, 123456789, :nsec).nsec #=> 123456789
+ *
  *     Time.at(1582721899, in: "+09:00")         #=> 2020-02-26 21:58:19 +0900
  *     Time.at(1582721899, in: "UTC")            #=> 2020-02-26 12:58:19 UTC
  *     Time.at(1582721899, in: "C")              #=> 2020-02-26 13:58:19 +0300
+ *     Time.at(1582721899, in: 32400)            #=> 2020-02-26 21:58:19 +0900
+ *
+ *     require 'tzinfo'
+ *     Time.at(1582721899, in: TZInfo::Timezone.get('Europe/Kiev'))
+ *                                               #=> 2020-02-26 14:58:19 +0200
  */
 
 static VALUE
