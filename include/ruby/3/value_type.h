@@ -33,6 +33,7 @@
 #include "ruby/3/special_consts.h"
 #include "ruby/3/stdbool.h"
 #include "ruby/3/value.h"
+#include "ruby/assert.h"
 
 #if defined(T_DATA)
 /*
@@ -92,6 +93,12 @@
 #define RB_FLOAT_TYPE_P   RB_FLOAT_TYPE_P
 #define RB_SYMBOL_P       RB_SYMBOL_P
 #define RB_TYPE_P         RB_TYPE_P
+
+#if RUBY_NDEBUG
+# define RUBY3_ASSERT_TYPE(v, t) RUBY3_ASSUME(RB_TYPE_P((v), (t)))
+#else
+# define RUBY3_ASSERT_TYPE Check_Type
+#endif
 /** @endcond */
 
 #define TYPE(_)           RUBY3_CAST((int)rb_type(_))
