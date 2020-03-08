@@ -158,7 +158,7 @@ class RDoc::RubygemsHook
 
     case config_args = Gem.configuration[:rdoc]
     when String then
-      args = args.concat config_args.split
+      args = args.concat config_args.split(' ')
     when Array then
       args = args.concat config_args
     end

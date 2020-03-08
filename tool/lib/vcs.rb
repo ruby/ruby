@@ -728,7 +728,7 @@ class VCS
 
       commits = cmd_read([COMMAND, "log", "--reverse", "--format=%H %ae %ce", "#{com}..@"], "rb").split("\n")
       commits.each_with_index do |l, i|
-        r, a, c = l.split
+        r, a, c = l.split(' ')
         dcommit = [COMMAND, "svn", "dcommit"]
         dcommit.insert(-2, "-n") if dryrun
         dcommit << "--add-author-from" unless a == c

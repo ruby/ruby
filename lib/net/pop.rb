@@ -970,7 +970,7 @@ module Net
           getok('UIDL')
           table = {}
           @socket.each_list_item do |line|
-            num, uid = line.split
+            num, uid = line.split(' ')
             table[num.to_i] = uid
           end
           return table

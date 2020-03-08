@@ -2222,7 +2222,7 @@ RULES
     message "creating Makefile\n"
     MakeMakefile.rm_f "#{CONFTEST}*"
     if CONFIG["DLEXT"] == $OBJEXT
-      for lib in libs = $libs.split
+      for lib in libs = $libs.split(' ')
         lib.sub!(/-l(.*)/, %%"lib\\1.#{$LIBEXT}"%)
       end
       $defs.push(format("-DEXTLIB='%s'", libs.join(",")))

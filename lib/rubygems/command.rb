@@ -77,7 +77,7 @@ class Gem::Command
     when Array
       @extra_args = value
     when String
-      @extra_args = value.split
+      @extra_args = value.split(' ')
     end
   end
 
