@@ -367,17 +367,17 @@ pkgconfig-data: $(ruby_pc)
 $(ruby_pc): $(srcdir)/template/ruby.pc.in config.status
 
 install-all: docs pre-install-all do-install-all post-install-all
-pre-install-all:: all pre-install-local pre-install-ext pre-install-doc
+pre-install-all:: all pre-install-local pre-install-ext pre-install-gem pre-install-doc
 do-install-all: pre-install-all
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) $(INSTALL_DOC_OPTS)
-post-install-all:: post-install-local post-install-ext post-install-doc
+post-install-all:: post-install-local post-install-ext post-install-gem post-install-doc
 	@$(NULLCMD)
 
 install-nodoc: pre-install-nodoc do-install-nodoc post-install-nodoc
-pre-install-nodoc:: pre-install-local pre-install-ext
+pre-install-nodoc:: pre-install-local pre-install-ext pre-install-gem
 do-install-nodoc: main pre-install-nodoc
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --exclude=doc
-post-install-nodoc:: post-install-local post-install-ext
+post-install-nodoc:: post-install-local post-install-ext post-install-gem
 
 install-local: pre-install-local do-install-local post-install-local
 pre-install-local:: pre-install-bin pre-install-lib pre-install-man
@@ -543,7 +543,7 @@ post-install-doc::
 	@$(NULLCMD)
 
 install-gem: pre-install-gem do-install-gem post-install-gem
-pre-install-gem:: pre-install-bin pre-install-lib pre-install-man
+pre-install-gem:: prepare-gems pre-install-bin pre-install-lib pre-install-man
 do-install-gem: $(PROGRAM) pre-install-gem
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=gem
 post-install-gem::
