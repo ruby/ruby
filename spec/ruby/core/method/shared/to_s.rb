@@ -38,7 +38,7 @@ describe :method_to_s, shared: true do
       obj.singleton_class
       @m = obj.method(:bar)
       @string = @m.send(@method).sub(/0x\w+/, '0xXXXXXX')
-      @string.should =~ /MethodSpecs::MySub\(MethodSpecs::MyMod\)/
+      @string.should =~ /\A#<Method: MethodSpecs::MySub\(MethodSpecs::MyMod\)#bar\(\) /
     end
   end
 
@@ -47,6 +47,6 @@ describe :method_to_s, shared: true do
     def obj.bar; end
     @m = obj.method(:bar)
     @string = @m.send(@method).sub(/0x\w+/, '0xXXXXXX')
-    @string.should =~ /MethodSpecs::MySub:0xXXXXXX/
+    @string.should =~ /\A#<Method: #<MethodSpecs::MySub:0xXXXXXX>\.bar\(\) /
   end
 end
