@@ -20,18 +20,25 @@
  */
 #ifndef  RUBY3_ARITHMETIC_FIXNUM_H
 #define  RUBY3_ARITHMETIC_FIXNUM_H
-#include "ruby/3/config.h"
 #include "ruby/backward/2/limits.h"
 
-#define RUBY_FIXNUM_MAX (LONG_MAX>>1)
-#define RUBY_FIXNUM_MIN RSHIFT((long)LONG_MIN,1)
+#define FIXABLE    RB_FIXABLE
 #define FIXNUM_MAX RUBY_FIXNUM_MAX
 #define FIXNUM_MIN RUBY_FIXNUM_MIN
-#define RB_POSFIXABLE(f) ((f) < RUBY_FIXNUM_MAX+1)
-#define RB_NEGFIXABLE(f) ((f) >= RUBY_FIXNUM_MIN)
-#define RB_FIXABLE(f) (RB_POSFIXABLE(f) && RB_NEGFIXABLE(f))
-#define POSFIXABLE(f) RB_POSFIXABLE(f)
-#define NEGFIXABLE(f) RB_NEGFIXABLE(f)
-#define FIXABLE(f) RB_FIXABLE(f)
+#define NEGFIXABLE RB_NEGFIXABLE
+#define POSFIXABLE RB_POSFIXABLE
+
+/*
+ * FIXABLE can be applied to anything, from double to intmax_t.  The problem is
+ * double.   On a  64bit system  RUBY_FIXNUM_MAX is  4,611,686,018,427,387,903,
+ * which is not representable by a double.  The nearest value that a double can
+ * represent  is   4,611,686,018,427,387,904,  which   is  not   fixable.   The
+ * seemingly-stragne "< FIXNUM_MAX + 1" expression below is due to this.
+ */
+#define RB_POSFIXABLE(_) ((_) <  RUBY_FIXNUM_MAX + 1)
+#define RB_NEGFIXABLE(_) ((_) >= RUBY_FIXNUM_MIN)
+#define RB_FIXABLE(_)    (RB_POSFIXABLE(_) && RB_NEGFIXABLE(_))
+#define RUBY_FIXNUM_MAX  (LONG_MAX / 2)
+#define RUBY_FIXNUM_MIN  (LONG_MIN / 2)
 
 #endif /* RUBY3_ARITHMETIC_FIXNUM_H */
