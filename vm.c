@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  vm.c -
+  Vm.c -
 
   $Author$
 
@@ -34,6 +34,8 @@
 #include "vm_debug.h"
 #include "vm_exec.h"
 #include "vm_insnhelper.h"
+#include "ractor.h"
+#include "vm_sync.h"
 
 #include "builtin.h"
 
@@ -376,7 +378,7 @@ VALUE rb_block_param_proxy;
 #define ruby_vm_redefined_flag GET_VM()->redefined_flag
 VALUE ruby_vm_const_missing_count = 0;
 rb_vm_t *ruby_current_vm_ptr = NULL;
-rb_execution_context_t *ruby_current_execution_context_ptr = NULL;
+native_tls_key_t ruby_current_ec_key;
 
 rb_event_flag_t ruby_vm_event_flags;
 rb_event_flag_t ruby_vm_event_enabled_global_flags;
@@ -397,6 +399,8 @@ static const struct rb_callcache vm_empty_cc = {
 };
 
 static void thread_free(void *ptr);
+
+//
 
 void
 rb_vm_inc_const_missing_count(void)
@@ -568,7 +572,6 @@ rb_vm_get_binding_creatable_next_cfp(const rb_execution_context_t *ec, const rb_
 MJIT_FUNC_EXPORTED rb_control_frame_t *
 rb_vm_get_ruby_level_next_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
-    if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(ec, cfp)) bp();
     while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(ec, cfp)) {
 	if (VM_FRAME_RUBYFRAME_P(cfp)) {
 	    return (rb_control_frame_t *)cfp;
@@ -944,6 +947,27 @@ rb_proc_dup(VALUE self)
     return procval;
 }
 
+VALUE
+rb_proc_isolate_bang(VALUE self)
+{
+    // check accesses
+    const rb_iseq_t *iseq = vm_proc_iseq(self);
+    if (iseq && iseq->body->access_outer_variables) {
+        rb_raise(rb_eArgError, "can not isolate a Proc because it can accesses outer variables.");
+    }
+
+    rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(self);
+    proc->is_isolated = TRUE;
+    return self;
+}
+
+VALUE
+rb_proc_isolate(VALUE self)
+{
+    VALUE dst = rb_proc_dup(self);
+    rb_proc_isolate_bang(dst);
+    return dst;
+}
 
 MJIT_FUNC_EXPORTED VALUE
 rb_vm_make_proc_lambda(const rb_execution_context_t *ec, const struct rb_captured_block *captured, VALUE klass, int8_t is_lambda)
@@ -1273,6 +1297,20 @@ rb_vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc,
 		  int argc, const VALUE *argv, int kw_splat, VALUE passed_block_handler)
 {
     VALUE self = vm_block_self(&proc->block);
+    vm_block_handler_verify(passed_block_handler);
+
+    if (proc->is_from_method) {
+        return rb_vm_invoke_bmethod(ec, proc, self, argc, argv, kw_splat, passed_block_handler, NULL);
+    }
+    else {
+	return vm_invoke_proc(ec, proc, self, argc, argv, kw_splat, passed_block_handler);
+    }
+}
+
+VALUE
+rb_vm_invoke_proc_with_self(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
+                            int argc, const VALUE *argv, int kw_splat, VALUE passed_block_handler)
+{
     vm_block_handler_verify(passed_block_handler);
 
     if (proc->is_from_method) {
@@ -2257,17 +2295,9 @@ rb_vm_update_references(void *ptr)
 {
     if (ptr) {
         rb_vm_t *vm = ptr;
-        rb_thread_t *th = 0;
 
         rb_gc_update_tbl_refs(vm->frozen_strings);
-
-        list_for_each(&vm->living_threads, th, vmlt_node) {
-            th->self = rb_gc_location(th->self);
-        }
-
-        vm->thgroup_default = rb_gc_location(vm->thgroup_default);
         vm->mark_object_ary = rb_gc_location(vm->mark_object_ary);
-
         vm->load_path = rb_gc_location(vm->load_path);
         vm->load_path_snapshot = rb_gc_location(vm->load_path_snapshot);
 
@@ -2294,14 +2324,17 @@ rb_vm_mark(void *ptr)
     RUBY_GC_INFO("-------------------------------------------------\n");
     if (ptr) {
 	rb_vm_t *vm = ptr;
-	rb_thread_t *th = 0;
+        rb_ractor_t *r;
         long i, len;
         const VALUE *obj_ary;
 
-        list_for_each(&vm->living_threads, th, vmlt_node) {
-            rb_gc_mark_movable(th->self);
-        }
-        rb_gc_mark_movable(vm->thgroup_default);
+	list_for_each(&vm->ractor.set, r, vmlr_node) {
+            // ractor.set only contains blocking or running ractors
+            VM_ASSERT(rb_ractor_status_p(r, ractor_blocking) ||
+                      rb_ractor_status_p(r, ractor_running));
+            rb_gc_mark(rb_ractor_self(r));
+	}
+
         rb_gc_mark_movable(vm->mark_object_ary);
 
         len = RARRAY_LEN(vm->mark_object_ary);
@@ -2379,10 +2412,11 @@ ruby_vm_destruct(rb_vm_t *vm)
     RUBY_FREE_ENTER("vm");
 
     if (vm) {
-	rb_thread_t *th = vm->main_thread;
+	rb_thread_t *th = vm->ractor.main_thread;
 	struct rb_objspace *objspace = vm->objspace;
-	vm->main_thread = 0;
-	if (th) {
+        vm->ractor.main_thread = NULL;
+
+        if (th) {
             rb_fiber_reset_root_local_storage(th);
 	    thread_free(th);
 	}
@@ -2397,7 +2431,6 @@ ruby_vm_destruct(rb_vm_t *vm)
 	    st_free_table(vm->frozen_strings);
 	    vm->frozen_strings = 0;
 	}
-	rb_vm_gvl_destroy(vm);
 	RB_ALTSTACK_FREE(vm->main_altstack);
 	if (objspace) {
 	    rb_objspace_free(objspace);
@@ -2416,7 +2449,8 @@ vm_memsize(const void *ptr)
     const rb_vm_t *vmobj = ptr;
     size_t size = sizeof(rb_vm_t);
 
-    size += vmobj->living_thread_num * sizeof(rb_thread_t);
+    // TODO
+    // size += vmobj->ractor_num * sizeof(rb_ractor_t);
 
     if (vmobj->defined_strings) {
 	size += DEFINED_EXPR * sizeof(VALUE);
@@ -2573,6 +2607,7 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 	rb_control_frame_t *cfp = ec->cfp;
 	rb_control_frame_t *limit_cfp = (void *)(ec->vm_stack + ec->vm_stack_size);
 
+        VM_ASSERT(sp == ec->cfp->sp);
         rb_gc_mark_vm_stack_values((long)(sp - p), p);
 
 	while (cfp != limit_cfp) {
@@ -2640,6 +2675,7 @@ thread_mark(void *ptr)
     /* mark ruby objects */
     switch (th->invoke_type) {
       case thread_invoke_type_proc:
+      case thread_invoke_type_ractor_proc:
         RUBY_MARK_UNLESS_NULL(th->invoke_arg.proc.proc);
         RUBY_MARK_UNLESS_NULL(th->invoke_arg.proc.args);
         break;
@@ -2650,6 +2686,7 @@ thread_mark(void *ptr)
         break;
     }
 
+    rb_gc_mark(rb_ractor_self(th->ractor));
     RUBY_MARK_UNLESS_NULL(th->thgroup);
     RUBY_MARK_UNLESS_NULL(th->value);
     RUBY_MARK_UNLESS_NULL(th->pending_interrupt_queue);
@@ -2685,8 +2722,8 @@ thread_free(void *ptr)
 
     rb_threadptr_root_fiber_release(th);
 
-    if (th->vm && th->vm->main_thread == th) {
-	RUBY_GC_INFO("main thread\n");
+    if (th->vm && th->vm->ractor.main_thread == th) {
+	RUBY_GC_INFO("MRI main thread\n");
     }
     else {
 	ruby_xfree(ptr);
@@ -2815,15 +2852,17 @@ th_init(rb_thread_t *th, VALUE self)
 static VALUE
 ruby_thread_init(VALUE self)
 {
-    rb_thread_t *th = rb_thread_ptr(self);
-    rb_vm_t *vm = GET_THREAD()->vm;
+    rb_thread_t *th = GET_THREAD();
+    rb_thread_t *targe_th = rb_thread_ptr(self);
+    rb_vm_t *vm = th->vm;
 
-    th->vm = vm;
-    th_init(th, self);
+    targe_th->vm = vm;
+    th_init(targe_th, self);
 
-    th->top_wrapper = 0;
-    th->top_self = rb_vm_top_self();
-    th->ec->root_svar = Qfalse;
+    targe_th->top_wrapper = 0;
+    targe_th->top_self = rb_vm_top_self();
+    targe_th->ec->root_svar = Qfalse;
+    targe_th->ractor = th->ractor;
     return self;
 }
 
@@ -3341,23 +3380,21 @@ Init_VM(void)
 	VALUE filename = rb_fstring_lit("<main>");
 	const rb_iseq_t *iseq = rb_iseq_new(0, filename, filename, Qnil, 0, ISEQ_TYPE_TOP);
 
+        // Ractor setup
+        rb_ractor_main_setup(vm, th->ractor, th);
+
 	/* create vm object */
 	vm->self = TypedData_Wrap_Struct(rb_cRubyVM, &vm_data_type, vm);
 
 	/* create main thread */
-	th->self = TypedData_Wrap_Struct(rb_cThread, &thread_data_type, th);
-
-	vm->main_thread = th;
-	vm->running_thread = th;
+        th->self = TypedData_Wrap_Struct(rb_cThread, &thread_data_type, th);
+	vm->ractor.main_thread = th;
+        vm->ractor.main_ractor = th->ractor;
 	th->vm = vm;
 	th->top_wrapper = 0;
 	th->top_self = rb_vm_top_self();
 
-	rb_thread_set_current(th);
-
-	rb_vm_living_threads_insert(vm, th);
-
-	rb_gc_register_mark_object((VALUE)iseq);
+        rb_gc_register_mark_object((VALUE)iseq);
 	th->ec->cfp->iseq = iseq;
 	th->ec->cfp->pc = iseq->body->iseq_encoded;
 	th->ec->cfp->self = th->top_self;
@@ -3385,7 +3422,7 @@ Init_VM(void)
 void
 rb_vm_set_progname(VALUE filename)
 {
-    rb_thread_t *th = GET_VM()->main_thread;
+    rb_thread_t *th = GET_VM()->ractor.main_thread;
     rb_control_frame_t *cfp = (void *)(th->ec->vm_stack + th->ec->vm_stack_size);
     --cfp;
 
@@ -3413,8 +3450,13 @@ Init_BareVM(void)
     Init_native_thread(th);
     th->vm = vm;
     th_init(th, 0);
-    rb_thread_set_current_raw(th);
+    vm->ractor.main_ractor = th->ractor = rb_ractor_main_alloc();
+    rb_ractor_set_current_ec(th->ractor, th->ec);
     ruby_thread_init_stack(th);
+
+    rb_native_mutex_initialize(&vm->ractor.sync.lock);
+    rb_native_cond_initialize(&vm->ractor.sync.barrier_cond);
+    rb_native_cond_initialize(&vm->ractor.sync.terminate_cond);
 }
 
 void

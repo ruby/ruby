@@ -448,7 +448,7 @@ rb_f_kill(int argc, const VALUE *argv)
 	}
     }
     else {
-	const rb_pid_t self = (GET_THREAD() == GET_VM()->main_thread) ? getpid() : -1;
+	const rb_pid_t self = (GET_THREAD() == GET_VM()->ractor.main_thread) ? getpid() : -1;
 	int wakeup = 0;
 
 	for (i=1; i<argc; i++) {
@@ -495,7 +495,7 @@ rb_f_kill(int argc, const VALUE *argv)
 	    }
 	}
 	if (wakeup) {
-	    rb_threadptr_check_signal(GET_VM()->main_thread);
+	    rb_threadptr_check_signal(GET_VM()->ractor.main_thread);
 	}
     }
     rb_thread_execute_interrupts(rb_thread_current());

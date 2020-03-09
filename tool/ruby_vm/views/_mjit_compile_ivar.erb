@@ -82,7 +82,7 @@
 % # JIT: cache hit path of vm_getivar, or cancel JIT (recompile it without any ivar optimization)
         fprintf(f, "    struct gen_ivtbl *ivtbl;\n");
         fprintf(f, "    VALUE val;\n");
-        fprintf(f, "    if (LIKELY(FL_TEST_RAW(obj, FL_EXIVAR) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && st_lookup(rb_ivar_generic_ivtbl(), (st_data_t)obj, (st_data_t *)&ivtbl) && index < ivtbl->numiv && (val = ivtbl->ivptr[index]) != Qundef)) {\n");
+        fprintf(f, "    if (LIKELY(FL_TEST_RAW(obj, FL_EXIVAR) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && st_lookup(rb_ivar_generic_ivtbl(obj), (st_data_t)obj, (st_data_t *)&ivtbl) && index < ivtbl->numiv && (val = ivtbl->ivptr[index]) != Qundef)) {\n");
         fprintf(f, "        stack[%d] = val;\n", b->stack_size);
         fprintf(f, "    }\n");
         fprintf(f, "    else {\n");

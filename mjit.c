@@ -309,8 +309,8 @@ mark_ec_units(rb_execution_context_t *ec)
 static void
 unload_units(void)
 {
-    rb_vm_t *vm = GET_THREAD()->vm;
-    rb_thread_t *th = NULL;
+    //rb_vm_t *vm = GET_THREAD()->vm;
+    //rb_thread_t *th = NULL;
     struct rb_mjit_unit *unit = 0, *next, *worst;
     struct mjit_cont *cont;
     int delete_num, units_num = active_units.length;
@@ -329,9 +329,10 @@ unload_units(void)
         assert(unit->iseq != NULL && unit->handle != NULL);
         unit->used_code_p = FALSE;
     }
-    list_for_each(&vm->living_threads, th, vmlt_node) {
-        mark_ec_units(th->ec);
-    }
+    // TODO
+    //list_for_each(&vm->living_threads, th, lt_node) {
+    //    mark_ec_units(th->ec);
+    //}
     for (cont = first_cont; cont != NULL; cont = cont->next) {
         mark_ec_units(cont->ec);
     }

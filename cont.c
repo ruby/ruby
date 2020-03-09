@@ -28,6 +28,7 @@
 #include "mjit.h"
 #include "vm_core.h"
 #include "id_table.h"
+#include "ractor.h"
 
 static const int DEBUG = 0;
 
@@ -808,14 +809,15 @@ static inline void
 ec_switch(rb_thread_t *th, rb_fiber_t *fiber)
 {
     rb_execution_context_t *ec = &fiber->cont.saved_ec;
-
-    ruby_current_execution_context_ptr = th->ec = ec;
+    rb_ractor_set_current_ec(th->ractor, th->ec = ec);
+    // ruby_current_execution_context_ptr = th->ec = ec;
 
     /*
      * timer-thread may set trap interrupt on previous th->ec at any time;
      * ensure we do not delay (or lose) the trap interrupt handling.
      */
-    if (th->vm->main_thread == th && rb_signal_buff_size() > 0) {
+    if (th->vm->ractor.main_thread == th &&
+        rb_signal_buff_size() > 0) {
         RUBY_VM_SET_TRAP_INTERRUPT(ec);
     }
 
@@ -1873,7 +1875,7 @@ rb_fiber_start(void)
     enum ruby_tag_type state;
     int need_interrupt = TRUE;
 
-    VM_ASSERT(th->ec == ruby_current_execution_context_ptr);
+    VM_ASSERT(th->ec == GET_EC());
     VM_ASSERT(FIBER_RESUMED_P(fiber));
 
     if (fiber->blocking) {
@@ -1964,13 +1966,15 @@ rb_threadptr_root_fiber_release(rb_thread_t *th)
         /* ignore. A root fiber object will free th->ec */
     }
     else {
+        rb_execution_context_t *ec = GET_EC();
+
         VM_ASSERT(th->ec->fiber_ptr->cont.type == FIBER_CONTEXT);
         VM_ASSERT(th->ec->fiber_ptr->cont.self == 0);
-        fiber_free(th->ec->fiber_ptr);
 
-        if (th->ec == ruby_current_execution_context_ptr) {
-            ruby_current_execution_context_ptr = NULL;
+        if (th->ec == ec) {
+            rb_ractor_set_current_ec(th->ractor, NULL);
         }
+        fiber_free(th->ec->fiber_ptr);
         th->ec = NULL;
     }
 }

@@ -35,6 +35,7 @@
 #include "probes_helper.h"
 #include "ruby/vm.h"
 #include "vm_core.h"
+#include "ractor.h"
 
 NORETURN(void rb_raise_jump(VALUE, VALUE));
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
@@ -227,7 +228,7 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
 	th->status = THREAD_KILLED;
 
         errs[0] = ec->errinfo;
-	SAVE_ROOT_JMPBUF(th, rb_thread_terminate_all());
+	SAVE_ROOT_JMPBUF(th, rb_ractor_terminate_all());
     }
     else {
 	switch (step) {

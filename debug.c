@@ -26,6 +26,7 @@
 #include "vm_debug.h"
 #include "vm_callinfo.h"
 #include "ruby/thread_native.h"
+#include "ractor.h"
 
 /* This is the only place struct RIMemo is actually used */
 struct RIMemo {
@@ -422,7 +423,6 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
         len += r;
     }
 
-#if 0 // not yet
     // ractor information
     if (GET_VM()->ractor.cnt > 1) {
         rb_ractor_t *cr = GET_RACTOR();
@@ -433,7 +433,6 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
             len += r;
         }
     }
-#endif
 
     // thread information
     if (!rb_thread_alone()) {

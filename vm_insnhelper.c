@@ -985,7 +985,13 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
 			if (is_defined) {
 			    return 1;
 			}
-			else {
+                        else {
+                            if (UNLIKELY(!rb_ractor_main_p())) {
+                                if (!rb_ractor_shareable_p(val)) {
+                                    rb_raise(rb_eNameError,
+                                             "can not access non-sharable objects in constant %"PRIsVALUE"::%s by non-main ractor.", rb_class_path(klass), rb_id2name(id));
+                                }
+                            }
 			    return val;
 			}
 		    }
@@ -1084,7 +1090,7 @@ vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
         else if (FL_TEST_RAW(obj, FL_EXIVAR)) {
             struct gen_ivtbl *ivtbl;
 
-            if (LIKELY(st_lookup(rb_ivar_generic_ivtbl(), (st_data_t)obj, (st_data_t *)&ivtbl)) &&
+            if (LIKELY(st_lookup(rb_ivar_generic_ivtbl(obj), (st_data_t)obj, (st_data_t *)&ivtbl)) &&
                 LIKELY(index < ivtbl->numiv)) {
                 val = ivtbl->ivptr[index];
             }
@@ -1106,8 +1112,7 @@ vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
 	}
         else if (FL_TEST_RAW(obj, FL_EXIVAR)) {
             struct gen_ivtbl *ivtbl;
-
-            if (LIKELY(st_lookup(rb_ivar_generic_ivtbl(), (st_data_t)obj, (st_data_t *)&ivtbl))) {
+            if (LIKELY(st_lookup(rb_ivar_generic_ivtbl(obj), (st_data_t)obj, (st_data_t *)&ivtbl))) {
                 numiv = ivtbl->numiv;
                 ivptr = ivtbl->ivptr;
                 iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
@@ -1634,26 +1639,30 @@ vm_search_cc(VALUE klass, const struct rb_callinfo *ci)
 MJIT_FUNC_EXPORTED void
 rb_vm_search_method_slowpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 {
-    const struct rb_callcache *cc = vm_search_cc(klass, cd->ci);
+    RB_VM_LOCK_ENTER();
+    {
+        const struct rb_callcache *cc = vm_search_cc(klass, cd->ci);
 
-    VM_ASSERT(cc);
-    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+        VM_ASSERT(cc);
+        VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
 
-    if (! cd_owner) {
-        cd->cc = cc;
-    }
-    else if (cc == &vm_empty_cc) {
-        cd->cc = cc;
-    }
-    else {
-        VM_ASSERT(vm_cc_markable(cc));
-        RB_OBJ_WRITE(cd_owner, &cd->cc, cc);
-    }
+        if (! cd_owner) {
+            cd->cc = cc;
+        }
+        else if (cc == &vm_empty_cc) {
+            cd->cc = cc;
+        }
+        else {
+            VM_ASSERT(vm_cc_markable(cc));
+            RB_OBJ_WRITE(cd_owner, &cd->cc, cc);
+        }
 
-    VM_ASSERT(cc == vm_cc_empty() || cc->klass == klass);
-    VM_ASSERT(cc == vm_cc_empty() || callable_method_entry_p(vm_cc_cme(cc)));
-    VM_ASSERT(cc == vm_cc_empty() || !METHOD_ENTRY_INVALIDATED(vm_cc_cme(cc)));
-    VM_ASSERT(cc == vm_cc_empty() || vm_cc_cme(cc)->called_id == vm_ci_mid(cd->ci));
+        VM_ASSERT(cc == vm_cc_empty() || cc->klass == klass);
+        VM_ASSERT(cc == vm_cc_empty() || callable_method_entry_p(vm_cc_cme(cc)));
+        VM_ASSERT(cc == vm_cc_empty() || !METHOD_ENTRY_INVALIDATED(vm_cc_cme(cc)));
+        VM_ASSERT(cc == vm_cc_empty() || vm_cc_cme(cc)->called_id == vm_ci_mid(cd->ci));
+    }
+    RB_VM_LOCK_LEAVE();
 }
 #endif
 
@@ -4297,7 +4306,8 @@ vm_opt_newarray_min(rb_num_t num, const VALUE *ptr)
 static int
 vm_ic_hit_p(IC ic, const VALUE *reg_ep)
 {
-    if (ic->ic_serial == GET_GLOBAL_CONSTANT_STATE()) {
+    if (ic->ic_serial == GET_GLOBAL_CONSTANT_STATE() &&
+        rb_ractor_main_p()) {
         return (ic->ic_cref == NULL || // no need to check CREF
                 ic->ic_cref == vm_get_cref(reg_ep));
     }
@@ -5023,6 +5033,7 @@ Init_vm_stack_canary(void)
 {
     /* This has to be called _after_ our PRNG is properly set up. */
     int n = ruby_fill_random_bytes(&vm_stack_canary, sizeof vm_stack_canary, false);
+    vm_stack_canary |= 0x01; // valid VALUE (Fixnum)
 
     vm_stack_canary_was_born = true;
     VM_ASSERT(n == 0);

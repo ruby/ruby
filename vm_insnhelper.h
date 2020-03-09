@@ -93,7 +93,7 @@ enum vm_regan_acttype {
 #define SET_SP(x)  (VM_REG_SP  = (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
 #define INC_SP(x)  (VM_REG_SP += (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
 #define DEC_SP(x)  (VM_REG_SP -= (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
-#define SET_SV(x)  (*GET_SP() = (x))
+#define SET_SV(x)  (*GET_SP() = rb_ractor_confirm_belonging(x))
   /* set current stack value as x */
 
 /* instruction sequence C struct */
