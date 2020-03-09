@@ -13,6 +13,10 @@ typedef struct {
     ffi_type **argv;
 } fiddle_closure;
 
+#if defined(__OpenBSD__)
+# define USE_FFI_CLOSURE_ALLOC 0
+#endif
+
 #if defined(USE_FFI_CLOSURE_ALLOC)
 #elif !defined(HAVE_FFI_CLOSURE_ALLOC)
 # define USE_FFI_CLOSURE_ALLOC 0
