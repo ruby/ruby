@@ -2929,7 +2929,6 @@ rb_num2ulong(VALUE val)
     return rb_num2ulong_internal(val, NULL);
 }
 
-#if SIZEOF_INT < SIZEOF_LONG
 void
 rb_out_of_int(SIGNED_VALUE num)
 {
@@ -2937,6 +2936,7 @@ rb_out_of_int(SIGNED_VALUE num)
 	     num, num < 0 ? "small" : "big");
 }
 
+#if SIZEOF_INT < SIZEOF_LONG
 static void
 check_int(long num)
 {
