@@ -29,18 +29,14 @@
 #include "ruby/3/value.h"
 #include "ruby/3/dllexport.h"
 
+#define rb_int_new  rb_int2inum
+#define rb_uint_new rb_uint2inum
+
 RUBY3_SYMBOL_EXPORT_BEGIN()
-
-VALUE rb_int2inum(intptr_t);
-
-#define rb_int_new(v) rb_int2inum(v)
-VALUE rb_uint2inum(uintptr_t);
-
-#define rb_uint_new(v) rb_uint2inum(v)
-
-VALUE rb_uint2big(uintptr_t);
-VALUE rb_int2big(intptr_t);
-
+VALUE rb_int2big(intptr_t i);
+VALUE rb_int2inum(intptr_t i);
+VALUE rb_uint2big(uintptr_t i);
+VALUE rb_uint2inum(uintptr_t i);
 RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_ARITHMETIC_INTPTR_T_H */
