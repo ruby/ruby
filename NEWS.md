@@ -14,6 +14,21 @@ sufficient information, see the ChangeLog file or Redmine
   Code that resulted in deprecation warnings in Ruby 2.7 will now
   result in ArgumentError or different behavior. [[Feature #14183]]
 
+* Procs accepting a single rest argument and keywords are no longer
+  subject to autosplatting.  This now matches the behavior of Procs
+  accepting a single rest argument and no keywords.
+  [[Feature #16166]]
+
+    pr = proc{|*a, **kw| [a, kw]}
+
+    pr.call([1])
+    # 2.7 => [[1], {}]
+    # 3.0 => [[[1]], {}]
+
+    pr.call([1, {a: 1}])
+    # 2.7 => [[1], {:a=>1}] # and deprecation warning
+    # 3.0 => [[[1, {:a=>1}]], {}]
+
 * $SAFE is now a normal global variable with no special behavior.
   [[Feature #16131]]
 
