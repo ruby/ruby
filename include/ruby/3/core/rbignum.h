@@ -22,14 +22,30 @@
 #define  RUBY3_RBIGNUM_H
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
+#include "ruby/3/value_type.h"
+#include "ruby/3/stdbool.h"
+
+#define RBIGNUM_SIGN rb_big_sign
+
+/** @cond INTERNAL_MACRO */
+#define RBIGNUM_POSITIVE_P RBIGNUM_POSITIVE_P
+#define RBIGNUM_NEGATIVE_P RBIGNUM_NEGATIVE_P
+/** @endcond */
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
-
-int rb_big_sign(VALUE);
-#define RBIGNUM_SIGN(b) (rb_big_sign(b))
-#define RBIGNUM_POSITIVE_P(b) (RBIGNUM_SIGN(b)!=0)
-#define RBIGNUM_NEGATIVE_P(b) (RBIGNUM_SIGN(b)==0)
-
+int rb_big_sign(VALUE num);
 RUBY3_SYMBOL_EXPORT_END()
+
+static inline bool
+RBIGNUM_POSITIVE_P(VALUE b) {
+    RUBY3_ASSERT_TYPE(b, RUBY_T_BIGNUM);
+    return RBIGNUM_SIGN(b);
+}
+
+static inline bool
+RBIGNUM_NEGATIVE_P(VALUE b) {
+    RUBY3_ASSERT_TYPE(b, RUBY_T_BIGNUM);
+    return ! RBIGNUM_POSITIVE_P(b);
+}
 
 #endif /* RUBY3_RBIGNUM_H */
