@@ -71,7 +71,7 @@ class Downloader
 
   class Unicode < self
     INDEX = {}  # cache index file information across files in the same directory
-    UNICODE_PUBLIC = "http://www.unicode.org/Public/"
+    UNICODE_PUBLIC = "https://www.unicode.org/Public/"
 
     def self.download(name, dir = nil, since = true, options = {})
       options = options.dup
