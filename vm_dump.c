@@ -35,6 +35,7 @@
 #include "internal/vm.h"
 #include "iseq.h"
 #include "vm_core.h"
+#include "ractor.h"
 
 #define MAX_POSBUF 128
 
@@ -1092,12 +1093,13 @@ const char *ruby_fill_thread_id_string(rb_nativethread_id_t thid, rb_thread_id_s
 void
 rb_vmdebug_stack_dump_all_threads(void)
 {
-    rb_vm_t *vm = GET_VM();
     rb_thread_t *th = NULL;
+    rb_ractor_t *r = GET_RACTOR();
 
-    list_for_each(&vm->living_threads, th, vmlt_node) {
+    // TODO: now it only shows current ractor
+    list_for_each(&r->threads.set, th, lt_node) {
 #ifdef NON_SCALAR_THREAD_ID
-	rb_thread_id_string_t buf;
+        rb_thread_id_string_t buf;
 	ruby_fill_thread_id_string(th->thread_id, buf);
 	fprintf(stderr, "th: %p, native_id: %s\n", th, buf);
 #else

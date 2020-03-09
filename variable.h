@@ -16,6 +16,6 @@ struct gen_ivtbl {
     VALUE ivptr[FLEX_ARY_LEN];
 };
 
-struct st_table *rb_ivar_generic_ivtbl(void);
+struct st_table *rb_ivar_generic_ivtbl(VALUE obj);
 
 #endif /* RUBY_TOPLEVEL_VARIABLE_H */

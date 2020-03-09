@@ -132,6 +132,7 @@
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby_atomic.h"
+#include "ractor_pub.h"
 
 #if !USE_POLL
 #  include "vm_core.h"
@@ -1478,7 +1479,7 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
         fptr->wbuf.len = 0;
         fptr->wbuf.capa = IO_WBUF_CAPA_MIN;
         fptr->wbuf.ptr = ALLOC_N(char, fptr->wbuf.capa);
-	fptr->write_lock = rb_mutex_new();
+        fptr->write_lock = rb_mutex_new();
 	rb_mutex_allow_trap(fptr->write_lock, 1);
     }
     if ((!nosync && (fptr->mode & (FMODE_SYNC|FMODE_TTY))) ||
@@ -1491,7 +1492,7 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
 	arg.ptr = ptr + offset;
 	arg.length = n;
 	if (fptr->write_lock) {
-	    r = rb_mutex_synchronize(fptr->write_lock, io_binwrite_string, (VALUE)&arg);
+            r = rb_mutex_synchronize(fptr->write_lock, io_binwrite_string, (VALUE)&arg);
 	}
 	else {
 	    r = io_binwrite_string((VALUE)&arg);
@@ -1877,7 +1878,7 @@ static VALUE
 rb_io_writev(VALUE io, int argc, const VALUE *argv)
 {
     if (argc > 1 && rb_obj_method_arity(io, id_write) == 1) {
-	if (io != rb_stderr && RTEST(ruby_verbose)) {
+	if (io != rb_ractor_stderr() && RTEST(ruby_verbose)) {
 	    VALUE klass = CLASS_OF(io);
 	    char sep = FL_TEST(klass, FL_SINGLETON) ? (klass = io, '.') : '#';
 	    rb_warning("%+"PRIsVALUE"%c""write is outdated interface"
@@ -4291,11 +4292,12 @@ rb_io_getbyte(VALUE io)
     GetOpenFile(io, fptr);
     rb_io_check_byte_readable(fptr);
     READ_CHECK(fptr);
-    if (fptr->fd == 0 && (fptr->mode & FMODE_TTY) && RB_TYPE_P(rb_stdout, T_FILE)) {
+    VALUE r_stdout = rb_ractor_stdout();
+    if (fptr->fd == 0 && (fptr->mode & FMODE_TTY) && RB_TYPE_P(r_stdout, T_FILE)) {
         rb_io_t *ofp;
-        GetOpenFile(rb_stdout, ofp);
+        GetOpenFile(r_stdout, ofp);
         if (ofp->mode & FMODE_TTY) {
-            rb_io_flush(rb_stdout);
+            rb_io_flush(r_stdout);
         }
     }
     if (io_fillbuf(fptr) < 0) {
@@ -7034,8 +7036,8 @@ popen_finish(VALUE port, VALUE klass)
 	/* child */
 	if (rb_block_given_p()) {
 	    rb_yield(Qnil);
-            rb_io_flush(rb_stdout);
-            rb_io_flush(rb_stderr);
+            rb_io_flush(rb_ractor_stdout());
+            rb_io_flush(rb_ractor_stderr());
 	    _exit(0);
 	}
 	return Qnil;
@@ -7624,7 +7626,7 @@ rb_f_printf(int argc, VALUE *argv, VALUE _)
 
     if (argc == 0) return Qnil;
     if (RB_TYPE_P(argv[0], T_STRING)) {
-	out = rb_stdout;
+	out = rb_ractor_stdout();
     }
     else {
 	out = argv[0];
@@ -7724,7 +7726,7 @@ rb_io_print(int argc, const VALUE *argv, VALUE out)
 static VALUE
 rb_f_print(int argc, const VALUE *argv, VALUE _)
 {
-    rb_io_print(argc, argv, rb_stdout);
+    rb_io_print(argc, argv, rb_ractor_stdout());
     return Qnil;
 }
 
@@ -7775,10 +7777,11 @@ rb_io_putc(VALUE io, VALUE ch)
 static VALUE
 rb_f_putc(VALUE recv, VALUE ch)
 {
-    if (recv == rb_stdout) {
+    VALUE r_stdout = rb_ractor_stdout();
+    if (recv == r_stdout) {
 	return rb_io_putc(recv, ch);
     }
-    return rb_funcallv(rb_stdout, rb_intern("putc"), 1, &ch);
+    return rb_funcallv(r_stdout, rb_intern("putc"), 1, &ch);
 }
 
 
@@ -7889,10 +7892,11 @@ rb_io_puts(int argc, const VALUE *argv, VALUE out)
 static VALUE
 rb_f_puts(int argc, VALUE *argv, VALUE recv)
 {
-    if (recv == rb_stdout) {
+    VALUE r_stdout = rb_ractor_stdout();
+    if (recv == r_stdout) {
 	return rb_io_puts(argc, argv, recv);
     }
-    return rb_funcallv(rb_stdout, rb_intern("puts"), argc, argv);
+    return rb_funcallv(r_stdout, rb_intern("puts"), argc, argv);
 }
 
 static VALUE
@@ -7901,12 +7905,13 @@ rb_p_write(VALUE str)
     VALUE args[2];
     args[0] = str;
     args[1] = rb_default_rs;
-    if (RB_TYPE_P(rb_stdout, T_FILE) &&
-        rb_method_basic_definition_p(CLASS_OF(rb_stdout), id_write)) {
-	io_writev(2, args, rb_stdout);
+    VALUE r_stdout = rb_ractor_stdout();
+    if (RB_TYPE_P(r_stdout, T_FILE) &&
+        rb_method_basic_definition_p(CLASS_OF(r_stdout), id_write)) {
+	io_writev(2, args, r_stdout);
     }
     else {
-	rb_io_writev(rb_stdout, 2, args);
+	rb_io_writev(r_stdout, 2, args);
     }
     return Qnil;
 }
@@ -7928,8 +7933,9 @@ rb_p_result(int argc, const VALUE *argv)
     else if (argc > 1) {
 	ret = rb_ary_new4(argc, argv);
     }
-    if (RB_TYPE_P(rb_stdout, T_FILE)) {
-	rb_io_flush(rb_stdout);
+    VALUE r_stdout = rb_ractor_stdout();
+    if (RB_TYPE_P(r_stdout, T_FILE)) {
+	rb_io_flush(r_stdout);
     }
     return ret;
 }
@@ -7992,7 +7998,7 @@ rb_obj_display(int argc, VALUE *argv, VALUE self)
 {
     VALUE out;
 
-    out = (!rb_check_arity(argc, 0, 1) ? rb_stdout : argv[0]);
+    out = (!rb_check_arity(argc, 0, 1) ? rb_ractor_stdout() : argv[0]);
     rb_io_write(out, self);
 
     return Qnil;
@@ -8001,7 +8007,7 @@ rb_obj_display(int argc, VALUE *argv, VALUE self)
 static int
 rb_stderr_to_original_p(void)
 {
-    return (rb_stderr == orig_stderr || RFILE(orig_stderr)->fptr->fd < 0);
+    return (rb_ractor_stderr() == orig_stderr || RFILE(orig_stderr)->fptr->fd < 0);
 }
 
 void
@@ -8019,7 +8025,7 @@ rb_write_error2(const char *mesg, long len)
 	}
     }
     else {
-	rb_io_write(rb_stderr, rb_str_new(mesg, len));
+	rb_io_write(rb_ractor_stderr(), rb_str_new(mesg, len));
     }
 }
 
@@ -8047,7 +8053,7 @@ rb_write_error_str(VALUE mesg)
     }
     else {
 	/* may unlock GVL, and  */
-	rb_io_write(rb_stderr, mesg);
+	rb_io_write(rb_ractor_stderr(), mesg);
     }
 }
 
@@ -8070,10 +8076,41 @@ must_respond_to(ID mid, VALUE val, ID id)
 }
 
 static void
-stdout_setter(VALUE val, ID id, VALUE *variable)
+stdin_setter(VALUE val, ID id, VALUE *ptr)
+{
+    rb_ractor_stdin_set(val);
+}
+
+static VALUE
+stdin_getter(ID id, VALUE *ptr)
+{
+    return rb_ractor_stdin();
+}
+
+static void
+stdout_setter(VALUE val, ID id, VALUE *ptr)
 {
     must_respond_to(id_write, val, id);
-    *variable = val;
+    rb_ractor_stdout_set(val);
+}
+
+static VALUE
+stdout_getter(ID id, VALUE *ptr)
+{
+    return rb_ractor_stdout();
+}
+
+static void
+stderr_setter(VALUE val, ID id, VALUE *ptr)
+{
+    must_respond_to(id_write, val, id);
+    rb_ractor_stderr_set(val);
+}
+
+static VALUE
+stderr_getter(ID id, VALUE *ptr)
+{
+    return rb_ractor_stderr();
 }
 
 static VALUE
@@ -8123,6 +8160,24 @@ prep_stdio(FILE *f, int fmode, VALUE klass, const char *path)
     fptr->stdio_file = f;
 
     return io;
+}
+
+VALUE
+rb_io_prep_stdin(void)
+{
+    return prep_stdio(stdin,  FMODE_READABLE, rb_cIO, "<STDIN>");
+}
+
+VALUE
+rb_io_prep_stdout(void)
+{
+    return prep_stdio(stdout, FMODE_WRITABLE|FMODE_SIGNAL_ON_EPIPE, rb_cIO, "<STDOUT>");
+}
+
+VALUE
+rb_io_prep_stderr(void)
+{
+    return prep_stdio(stderr, FMODE_WRITABLE|FMODE_SYNC, rb_cIO, "<STDERR>");
 }
 
 FILE *
@@ -8707,8 +8762,10 @@ argf_next_argv(VALUE argf)
     int stdout_binmode = 0;
     int fmode;
 
-    if (RB_TYPE_P(rb_stdout, T_FILE)) {
-        GetOpenFile(rb_stdout, fptr);
+    VALUE r_stdout = rb_ractor_stdout();
+
+    if (RB_TYPE_P(r_stdout, T_FILE)) {
+        GetOpenFile(r_stdout, fptr);
         if (fptr->mode & FMODE_BINMODE)
             stdout_binmode = 1;
     }
@@ -8759,8 +8816,8 @@ argf_next_argv(VALUE argf)
 		    VALUE str;
 		    int fw;
 
-		    if (RB_TYPE_P(rb_stdout, T_FILE) && rb_stdout != orig_stdout) {
-			rb_io_close(rb_stdout);
+		    if (RB_TYPE_P(r_stdout, T_FILE) && r_stdout != orig_stdout) {
+			rb_io_close(r_stdout);
 		    }
 		    fstat(fr, &st);
 		    str = filename;
@@ -8829,7 +8886,7 @@ argf_next_argv(VALUE argf)
 		    }
 #endif
 		    write_io = prep_io(fw, FMODE_WRITABLE, rb_cFile, fn);
-		    rb_stdout = write_io;
+		    rb_ractor_stdout_set(write_io);
 		    if (stdout_binmode) rb_io_binmode(rb_stdout);
 		}
 		fmode = FMODE_READABLE;
@@ -8869,7 +8926,7 @@ argf_next_argv(VALUE argf)
 	ARGF.filename = rb_str_new2("-");
 	if (ARGF.inplace) {
 	    rb_warn("Can't do inplace edit for stdio");
-	    rb_stdout = orig_stdout;
+	    rb_ractor_stdout_set(orig_stdout);
 	}
     }
     if (ARGF.init_p == -1) ARGF.init_p = 1;
@@ -13500,13 +13557,24 @@ Init_IO(void)
     rb_define_method(rb_cIO, "autoclose?", rb_io_autoclose_p, 0);
     rb_define_method(rb_cIO, "autoclose=", rb_io_set_autoclose, 1);
 
-    rb_define_variable("$stdin", &rb_stdin);
-    rb_stdin = prep_stdio(stdin, FMODE_READABLE, rb_cIO, "<STDIN>");
-    rb_define_hooked_variable("$stdout", &rb_stdout, 0, stdout_setter);
-    rb_stdout = prep_stdio(stdout, FMODE_WRITABLE|FMODE_SIGNAL_ON_EPIPE, rb_cIO, "<STDOUT>");
-    rb_define_hooked_variable("$stderr", &rb_stderr, 0, stdout_setter);
-    rb_stderr = prep_stdio(stderr, FMODE_WRITABLE|FMODE_SYNC, rb_cIO, "<STDERR>");
-    rb_define_hooked_variable("$>", &rb_stdout, 0, stdout_setter);
+    rb_define_virtual_variable("$stdin",  stdin_getter,  stdin_setter);
+    rb_define_virtual_variable("$stdout", stdout_getter, stdout_setter);
+    rb_define_virtual_variable("$>",      stdout_getter, stdout_setter);
+    rb_define_virtual_variable("$stderr", stderr_getter, stderr_setter);
+
+    rb_gvar_ractor_local("$stdin");
+    rb_gvar_ractor_local("$stdout");
+    rb_gvar_ractor_local("$>");
+    rb_gvar_ractor_local("$stderr");
+
+    rb_stdin  = rb_io_prep_stdin();
+    rb_stdout = rb_io_prep_stdout();
+    rb_stderr = rb_io_prep_stderr();
+
+    rb_global_variable(&rb_stdin);
+    rb_global_variable(&rb_stdout);
+    rb_global_variable(&rb_stderr);
+
     orig_stdout = rb_stdout;
     orig_stderr = rb_stderr;
 

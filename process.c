@@ -112,6 +112,7 @@ int initgroups(const char *, rb_gid_t);
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "vm_core.h"
+#include "ractor_pub.h"
 
 /* define system APIs */
 #ifdef _WIN32
@@ -4342,7 +4343,7 @@ rb_f_abort(int argc, const VALUE *argv)
 
 	args[1] = args[0] = argv[0];
 	StringValue(args[0]);
-	rb_io_puts(1, args, rb_stderr);
+	rb_io_puts(1, args, rb_ractor_stderr());
 	args[0] = INT2NUM(EXIT_FAILURE);
 	rb_exc_raise(rb_class_new_instance(2, args, rb_eSystemExit));
     }

@@ -20,6 +20,7 @@
 #include "ruby_assert.h"
 #include "transient_heap.h"
 #include "vm_debug.h"
+#include "vm_sync.h"
 
 #if USE_TRANSIENT_HEAP /* USE_TRANSIENT_HEAP */
 /*
@@ -364,68 +365,76 @@ transient_heap_allocatable_header(struct transient_heap* theap, size_t size)
 void *
 rb_transient_heap_alloc(VALUE obj, size_t req_size)
 {
-    struct transient_heap* theap = transient_heap_get();
-    size_t size = ROUND_UP(req_size + sizeof(struct transient_alloc_header), TRANSIENT_HEAP_ALLOC_ALIGN);
+    void *ret;
 
-    TH_ASSERT(RB_TYPE_P(obj, T_ARRAY)  ||
-              RB_TYPE_P(obj, T_OBJECT) ||
-              RB_TYPE_P(obj, T_STRUCT) ||
-              RB_TYPE_P(obj, T_HASH)); /* supported types */
+    RB_VM_LOCK_ENTER();
+    {
+        struct transient_heap* theap = transient_heap_get();
+        size_t size = ROUND_UP(req_size + sizeof(struct transient_alloc_header), TRANSIENT_HEAP_ALLOC_ALIGN);
 
-    if (size > TRANSIENT_HEAP_ALLOC_MAX) {
-        if (TRANSIENT_HEAP_DEBUG >= 3) fprintf(stderr, "rb_transient_heap_alloc: [too big: %ld] %s\n", (long)size, rb_obj_info(obj));
-        return NULL;
-    }
+        TH_ASSERT(RB_TYPE_P(obj, T_ARRAY)  ||
+                  RB_TYPE_P(obj, T_OBJECT) ||
+                  RB_TYPE_P(obj, T_STRUCT) ||
+                  RB_TYPE_P(obj, T_HASH)); /* supported types */
+
+        if (size > TRANSIENT_HEAP_ALLOC_MAX) {
+            if (TRANSIENT_HEAP_DEBUG >= 3) fprintf(stderr, "rb_transient_heap_alloc: [too big: %ld] %s\n", (long)size, rb_obj_info(obj));
+            ret = NULL;
+        }
 #if TRANSIENT_HEAP_DEBUG_DONT_PROMOTE == 0
-    else if (RB_OBJ_PROMOTED_RAW(obj)) {
-        if (TRANSIENT_HEAP_DEBUG >= 3)  fprintf(stderr, "rb_transient_heap_alloc: [promoted object] %s\n", rb_obj_info(obj));
-        return NULL;
-    }
+        else if (RB_OBJ_PROMOTED_RAW(obj)) {
+            if (TRANSIENT_HEAP_DEBUG >= 3)  fprintf(stderr, "rb_transient_heap_alloc: [promoted object] %s\n", rb_obj_info(obj));
+            ret = NULL;
+        }
 #else
-    else if (RBASIC_CLASS(obj) == 0) {
-        if (TRANSIENT_HEAP_DEBUG >= 3)  fprintf(stderr, "rb_transient_heap_alloc: [hidden object] %s\n", rb_obj_info(obj));
-        return NULL;
-    }
+        else if (RBASIC_CLASS(obj) == 0) {
+            if (TRANSIENT_HEAP_DEBUG >= 3)  fprintf(stderr, "rb_transient_heap_alloc: [hidden object] %s\n", rb_obj_info(obj));
+            ret = NULL;
+        }
 #endif
-    else {
-        struct transient_alloc_header *header = transient_heap_allocatable_header(theap, size);
-        if (header) {
-            void *ptr;
+        else {
+            struct transient_alloc_header *header = transient_heap_allocatable_header(theap, size);
+            if (header) {
+                void *ptr;
 
-            /* header is poisoned to prevent buffer overflow, should
-             * unpoison first... */
-            asan_unpoison_memory_region(header, sizeof *header, true);
+                /* header is poisoned to prevent buffer overflow, should
+                 * unpoison first... */
+                asan_unpoison_memory_region(header, sizeof *header, true);
 
-            header->size = size;
-            header->magic = TRANSIENT_HEAP_ALLOC_MAGIC;
-            header->next_marked_index = TRANSIENT_HEAP_ALLOC_MARKING_FREE;
-            header->obj = obj; /* TODO: can we eliminate it? */
+                header->size = size;
+                header->magic = TRANSIENT_HEAP_ALLOC_MAGIC;
+                header->next_marked_index = TRANSIENT_HEAP_ALLOC_MARKING_FREE;
+                header->obj = obj; /* TODO: can we eliminate it? */
 
-            /* header is fixed; shall poison again */
-            asan_poison_memory_region(header, sizeof *header);
-            ptr = header + 1;
+                /* header is fixed; shall poison again */
+                asan_poison_memory_region(header, sizeof *header);
+                ptr = header + 1;
 
-            theap->total_objects++; /* statistics */
+                theap->total_objects++; /* statistics */
 
 #if TRANSIENT_HEAP_DEBUG_DONT_PROMOTE
-            if (RB_OBJ_PROMOTED_RAW(obj)) {
-                transient_heap_promote_add(theap, obj);
-            }
+                if (RB_OBJ_PROMOTED_RAW(obj)) {
+                    transient_heap_promote_add(theap, obj);
+                }
 #endif
-            if (TRANSIENT_HEAP_DEBUG >= 3) fprintf(stderr, "rb_transient_heap_alloc: header:%p ptr:%p size:%d obj:%s\n", (void *)header, ptr, (int)size, rb_obj_info(obj));
+                if (TRANSIENT_HEAP_DEBUG >= 3) fprintf(stderr, "rb_transient_heap_alloc: header:%p ptr:%p size:%d obj:%s\n", (void *)header, ptr, (int)size, rb_obj_info(obj));
 
-            RB_DEBUG_COUNTER_INC(theap_alloc);
+                RB_DEBUG_COUNTER_INC(theap_alloc);
 
-            /* ptr is set up; OK to unpoison. */
-            asan_unpoison_memory_region(ptr, size - sizeof *header, true);
-            return ptr;
-        }
-        else {
-            if (TRANSIENT_HEAP_DEBUG >= 3) fprintf(stderr, "rb_transient_heap_alloc: [no enough space: %ld] %s\n", (long)size, rb_obj_info(obj));
-            RB_DEBUG_COUNTER_INC(theap_alloc_fail);
-            return NULL;
+                /* ptr is set up; OK to unpoison. */
+                asan_unpoison_memory_region(ptr, size - sizeof *header, true);
+                ret = ptr;
+            }
+            else {
+                if (TRANSIENT_HEAP_DEBUG >= 3) fprintf(stderr, "rb_transient_heap_alloc: [no enough space: %ld] %s\n", (long)size, rb_obj_info(obj));
+                RB_DEBUG_COUNTER_INC(theap_alloc_fail);
+                ret = NULL;
+            }
         }
     }
+    RB_VM_LOCK_LEAVE();
+
+    return ret;
 }
 
 void
@@ -534,6 +543,8 @@ alloc_header_to_block(struct transient_heap *theap, struct transient_alloc_heade
 void
 rb_transient_heap_mark(VALUE obj, const void *ptr)
 {
+    ASSERT_vm_locking();
+
     struct transient_alloc_header *header = ptr_to_alloc_header(ptr);
     asan_unpoison_memory_region(header, sizeof *header, false);
     if (header->magic != TRANSIENT_HEAP_ALLOC_MAGIC) rb_bug("rb_transient_heap_mark: wrong header, %s (%p)", rb_obj_info(obj), ptr);
@@ -645,6 +656,8 @@ transient_heap_promote_add(struct transient_heap* theap, VALUE obj)
 void
 rb_transient_heap_promote(VALUE obj)
 {
+    ASSERT_vm_locking();
+
     if (transient_heap_ptr(obj, FALSE)) {
         struct transient_heap* theap = transient_heap_get();
         transient_heap_promote_add(theap, obj);
@@ -663,6 +676,8 @@ alloc_header(struct transient_heap_block* block, int index)
 static void
 transient_heap_reset(void)
 {
+    ASSERT_vm_locking();
+
     struct transient_heap* theap = transient_heap_get();
     struct transient_heap_block* block;
 
@@ -759,53 +774,61 @@ transient_heap_update_status(struct transient_heap* theap, enum transient_heap_s
 static void
 transient_heap_evacuate(void *dmy)
 {
-    struct transient_heap* theap = transient_heap_get();
+    RB_VM_LOCK_ENTER();
+    {
+        struct transient_heap* theap = transient_heap_get();
 
-    if (theap->status == transient_heap_marking) {
-        if (TRANSIENT_HEAP_DEBUG >= 1) fprintf(stderr, "!! transient_heap_evacuate: skip while transient_heap_marking\n");
-    }
-    else {
-        VALUE gc_disabled = rb_gc_disable_no_rest();
-        struct transient_heap_block* block;
+        if (theap->status == transient_heap_marking) {
+            if (TRANSIENT_HEAP_DEBUG >= 1) fprintf(stderr, "!! transient_heap_evacuate: skip while transient_heap_marking\n");
+        }
+        else {
+            VALUE gc_disabled = rb_gc_disable_no_rest();
+            struct transient_heap_block* block;
 
-        if (TRANSIENT_HEAP_DEBUG >= 1) {
-            int i;
-            fprintf(stderr, "!! transient_heap_evacuate start total_blocks:%d\n", theap->total_blocks);
-            if (TRANSIENT_HEAP_DEBUG >= 4) {
-                for (i=0; i<theap->promoted_objects_index; i++) fprintf(stderr, "%4d %s\n", i, rb_obj_info(theap->promoted_objects[i]));
+            RUBY_DEBUG_LOG("start gc_disabled:%d", RTEST(gc_disabled));
+
+            if (TRANSIENT_HEAP_DEBUG >= 1) {
+                int i;
+                fprintf(stderr, "!! transient_heap_evacuate start total_blocks:%d\n", theap->total_blocks);
+                if (TRANSIENT_HEAP_DEBUG >= 4) {
+                    for (i=0; i<theap->promoted_objects_index; i++) fprintf(stderr, "%4d %s\n", i, rb_obj_info(theap->promoted_objects[i]));
+                }
             }
-        }
-        if (TRANSIENT_HEAP_DEBUG >= 2) transient_heap_dump(theap);
+            if (TRANSIENT_HEAP_DEBUG >= 2) transient_heap_dump(theap);
 
-        TH_ASSERT(theap->status == transient_heap_none);
-        transient_heap_update_status(theap, transient_heap_escaping);
+            TH_ASSERT(theap->status == transient_heap_none);
+            transient_heap_update_status(theap, transient_heap_escaping);
 
-        /* evacuate from marked blocks */
-        block = theap->marked_blocks;
-        while (block) {
-            transient_heap_block_evacuate(theap, block);
-            block = block->info.next_block;
-        }
+            /* evacuate from marked blocks */
+            block = theap->marked_blocks;
+            while (block) {
+                transient_heap_block_evacuate(theap, block);
+                block = block->info.next_block;
+            }
 
-        /* evacuate from using blocks
+            /* evacuate from using blocks
            only affect incremental marking */
-        block = theap->using_blocks;
-        while (block) {
-            transient_heap_block_evacuate(theap, block);
-            block = block->info.next_block;
+            block = theap->using_blocks;
+            while (block) {
+                transient_heap_block_evacuate(theap, block);
+                block = block->info.next_block;
+            }
+
+            /* all objects in marked_objects are escaped. */
+            transient_heap_reset();
+
+            if (TRANSIENT_HEAP_DEBUG > 0) {
+                fprintf(stderr, "!! transient_heap_evacuate end total_blocks:%d\n", theap->total_blocks);
+            }
+
+            transient_heap_verify(theap);
+            transient_heap_update_status(theap, transient_heap_none);
+
+            if (gc_disabled != Qtrue) rb_gc_enable();
+            RUBY_DEBUG_LOG("finish", 0);
         }
-
-        /* all objects in marked_objects are escaped. */
-        transient_heap_reset();
-
-        if (TRANSIENT_HEAP_DEBUG > 0) {
-            fprintf(stderr, "!! transient_heap_evacuate end total_blocks:%d\n", theap->total_blocks);
-        }
-
-        transient_heap_verify(theap);
-        transient_heap_update_status(theap, transient_heap_none);
-        if (gc_disabled != Qtrue) rb_gc_enable();
     }
+    RB_VM_LOCK_LEAVE();
 }
 
 static void
@@ -875,6 +898,8 @@ transient_heap_blocks_update_refs(struct transient_heap* theap, struct transient
 void
 rb_transient_heap_update_references(void)
 {
+    ASSERT_vm_locking();
+
     struct transient_heap* theap = transient_heap_get();
     int i;
 
@@ -890,6 +915,7 @@ rb_transient_heap_update_references(void)
 void
 rb_transient_heap_start_marking(int full_marking)
 {
+    ASSERT_vm_locking();
     RUBY_DEBUG_LOG("full?:%d", full_marking);
 
     struct transient_heap* theap = transient_heap_get();
@@ -940,6 +966,7 @@ rb_transient_heap_start_marking(int full_marking)
 void
 rb_transient_heap_finish_marking(void)
 {
+    ASSERT_vm_locking();
     RUBY_DEBUG_LOG("", 0);
 
     struct transient_heap* theap = transient_heap_get();

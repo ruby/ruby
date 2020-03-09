@@ -1601,6 +1601,16 @@ iseq_block_param_id_p(const rb_iseq_t *iseq, ID id, int *pidx, int *plevel)
 }
 
 static void
+check_access_outer_variables(const rb_iseq_t *iseq, int level)
+{
+    // set access_outer_variables
+    for (int i=0; i<level; i++) {
+        iseq->body->access_outer_variables = TRUE;
+        iseq = iseq->body->parent_iseq;
+    }
+}
+
+static void
 iseq_add_getlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int idx, int level)
 {
     if (iseq_local_block_param_p(iseq, idx, level)) {
@@ -1609,6 +1619,7 @@ iseq_add_getlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int idx, in
     else {
 	ADD_INSN2(seq, line, getlocal, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
     }
+    check_access_outer_variables(iseq, level);
 }
 
 static void
@@ -1620,6 +1631,7 @@ iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int idx, in
     else {
 	ADD_INSN2(seq, line, setlocal, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
     }
+    check_access_outer_variables(iseq, level);
 }
 
 
@@ -8222,6 +8234,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	if (popped) {
 	    ADD_INSN(ret, line, pop);
 	}
+
+        iseq->body->access_outer_variables = TRUE;
 	break;
       }
       case NODE_LVAR:{
@@ -8680,7 +8694,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	VALUE flag = INT2FIX(excl);
 	const NODE *b = node->nd_beg;
 	const NODE *e = node->nd_end;
-	if (optimizable_range_item_p(b) && optimizable_range_item_p(e)) {
+        // TODO: Ractor can not use cached Range objects
+	if (0 && optimizable_range_item_p(b) && optimizable_range_item_p(e)) {
 	    if (!popped) {
                 VALUE bv = nd_type(b) == NODE_LIT ? b->nd_lit : Qnil;
                 VALUE ev = nd_type(e) == NODE_LIT ? e->nd_lit : Qnil;

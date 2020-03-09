@@ -8,7 +8,6 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
-
 #include "ruby/assert.h"
 #undef assert
 #define assert RUBY_ASSERT_NDEBUG

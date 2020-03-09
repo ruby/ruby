@@ -36,6 +36,7 @@
 #include "transient_heap.h"
 #include "variable.h"
 #include "vm_core.h"
+#include "ractor_pub.h"
 
 typedef void rb_gvar_compact_t(void *var);
 
@@ -46,7 +47,7 @@ static VALUE autoload_featuremap; /* feature => autoload_i */
 static void check_before_mod_set(VALUE, ID, VALUE, const char *);
 static void setup_const_entry(rb_const_entry_t *, VALUE, VALUE, rb_const_flag_t);
 static VALUE rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility);
-static st_table *generic_iv_tbl;
+static st_table *generic_iv_tbl_;
 
 struct ivar_update {
     union {
@@ -61,7 +62,7 @@ void
 Init_var_tables(void)
 {
     rb_global_tbl = rb_id_table_create(0);
-    generic_iv_tbl = st_init_numtable();
+    generic_iv_tbl_ = st_init_numtable();
     autoload = rb_intern_const("__autoload__");
     /* __classpath__: fully qualified class path */
     classpath = rb_intern_const("__classpath__");
@@ -329,13 +330,8 @@ struct rb_global_variable {
 struct rb_global_entry {
     struct rb_global_variable *var;
     ID id;
+    bool ractor_local;
 };
-
-static struct rb_id_table *
-global_tbl(void)
-{
-    return rb_global_tbl;
-}
 
 static struct rb_global_entry*
 rb_find_global_entry(ID id)
@@ -343,12 +339,26 @@ rb_find_global_entry(ID id)
     struct rb_global_entry *entry;
     VALUE data;
 
-    if (!rb_id_table_lookup(global_tbl(), id, &data)) {
-        return NULL;
+    if (!rb_id_table_lookup(rb_global_tbl, id, &data)) {
+        entry = NULL;
     }
-    entry = (struct rb_global_entry *)data;
-    ASSUME(entry != NULL);
+    else {
+        entry = (struct rb_global_entry *)data;
+        RUBY_ASSERT(entry != NULL);
+    }
+
+    if (UNLIKELY(!rb_ractor_main_p()) && (!entry || !entry->ractor_local)) {
+        rb_raise(rb_eRuntimeError, "can not access global variables %s from non-main Ractors", rb_id2name(id));
+    }
+
     return entry;
+}
+
+void
+rb_gvar_ractor_local(const char *name)
+{
+    struct rb_global_entry *entry = rb_find_global_entry(rb_intern(name));
+    entry->ractor_local = true;
 }
 
 static void
@@ -366,6 +376,7 @@ rb_global_entry(ID id)
 	var = ALLOC(struct rb_global_variable);
 	entry->id = id;
 	entry->var = var;
+        entry->ractor_local = false;
 	var->counter = 1;
 	var->data = 0;
 	var->getter = rb_gvar_undef_getter;
@@ -375,7 +386,7 @@ rb_global_entry(ID id)
 
 	var->block_trace = 0;
 	var->trace = 0;
-	rb_id_table_insert(global_tbl(), id, (VALUE)entry);
+	rb_id_table_insert(rb_global_tbl, id, (VALUE)entry);
     }
     return entry;
 }
@@ -502,8 +513,9 @@ update_global_entry(VALUE v, void *ignored)
 void
 rb_gc_update_global_tbl(void)
 {
-    if (rb_global_tbl)
+    if (rb_global_tbl) {
         rb_id_table_foreach_values(rb_global_tbl, update_global_entry, 0);
+    }
 }
 
 static ID
@@ -646,18 +658,17 @@ rb_f_untrace_var(int argc, const VALUE *argv)
     ID id;
     struct rb_global_entry *entry;
     struct trace_var *trace;
-    VALUE data;
 
     rb_scan_args(argc, argv, "11", &var, &cmd);
     id = rb_check_id(&var);
     if (!id) {
 	rb_name_error_str(var, "undefined global variable %"PRIsVALUE"", QUOTE(var));
     }
-    if (!rb_id_table_lookup(global_tbl(), id, &data)) {
+    if ((entry = rb_find_global_entry(id)) == NULL) {
 	rb_name_error(id, "undefined global variable %"PRIsVALUE"", QUOTE_ID(id));
     }
 
-    trace = (entry = (struct rb_global_entry *)data)->var->trace;
+    trace = entry->var->trace;
     if (NIL_P(cmd)) {
 	VALUE ary = rb_ary_new();
 
@@ -801,7 +812,11 @@ rb_f_global_variables(void)
     VALUE ary = rb_ary_new();
     VALUE sym, backref = rb_backref_get();
 
-    rb_id_table_foreach(global_tbl(), gvar_i, (void *)ary);
+    if (!rb_ractor_main_p()) {
+        rb_raise(rb_eRuntimeError, "can not access global variables from non-main Ractors");
+    }
+
+    rb_id_table_foreach(rb_global_tbl, gvar_i, (void *)ary);
     if (!NIL_P(backref)) {
 	char buf[2];
 	int i, nmatch = rb_match_count(backref);
@@ -828,7 +843,11 @@ rb_alias_variable(ID name1, ID name2)
 {
     struct rb_global_entry *entry1, *entry2;
     VALUE data1;
-    struct rb_id_table *gtbl = global_tbl();
+    struct rb_id_table *gtbl = rb_global_tbl;
+
+    if (!rb_ractor_main_p()) {
+        rb_raise(rb_eRuntimeError, "can not access global variables from non-main Ractors");
+    }
 
     entry2 = rb_global_entry(name2);
     if (!rb_id_table_lookup(gtbl, name1, &data1)) {
@@ -859,22 +878,53 @@ rb_alias_variable(ID name1, ID name2)
     entry1->var = entry2->var;
 }
 
+static void
+IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(ID id)
+{
+    if (UNLIKELY(!rb_ractor_main_p())) {
+        if (rb_is_instance_id(id)) { // check only normal ivars
+            rb_raise(rb_eRuntimeError, "can not access instance variables of classes/modules from non-main Ractors");
+        }
+    }
+}
+
+#define CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR() \
+  if (UNLIKELY(!rb_ractor_main_p())) { \
+      rb_raise(rb_eRuntimeError, "can not access class variables from non-main Ractors"); \
+  }
+
+static inline struct st_table *
+generic_ivtbl(VALUE obj, ID id, bool force_check_ractor)
+{
+    if ((force_check_ractor || rb_is_instance_id(id)) && // not internal ID
+        UNLIKELY(rb_ractor_shareable_p(obj) && !rb_ractor_main_p())) {
+        rb_raise(rb_eRuntimeError, "can not access instance variables of shareable objects from non-main Ractors");
+    }
+    return generic_iv_tbl_;
+}
+
+static inline struct st_table *
+generic_ivtbl_no_ractor_check(VALUE obj)
+{
+    return generic_ivtbl(obj, 0, false);
+}
+
+MJIT_FUNC_EXPORTED struct st_table *
+rb_ivar_generic_ivtbl(VALUE obj)
+{
+    return generic_ivtbl(obj, 0, true);
+}
+
 static int
-gen_ivtbl_get(VALUE obj, struct gen_ivtbl **ivtbl)
+gen_ivtbl_get(VALUE obj, ID id, struct gen_ivtbl **ivtbl)
 {
     st_data_t data;
 
-    if (st_lookup(generic_iv_tbl, (st_data_t)obj, &data)) {
+    if (st_lookup(generic_ivtbl(obj, id, false), (st_data_t)obj, &data)) {
 	*ivtbl = (struct gen_ivtbl *)data;
 	return 1;
     }
     return 0;
-}
-
-MJIT_FUNC_EXPORTED struct st_table *
-rb_ivar_generic_ivtbl(void)
-{
-    return generic_iv_tbl;
 }
 
 static VALUE
@@ -882,7 +932,7 @@ generic_ivar_delete(VALUE obj, ID id, VALUE undef)
 {
     struct gen_ivtbl *ivtbl;
 
-    if (gen_ivtbl_get(obj, &ivtbl)) {
+    if (gen_ivtbl_get(obj, id, &ivtbl)) {
 	st_table *iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
 	st_data_t index;
 
@@ -903,7 +953,7 @@ generic_ivar_get(VALUE obj, ID id, VALUE undef)
 {
     struct gen_ivtbl *ivtbl;
 
-    if (gen_ivtbl_get(obj, &ivtbl)) {
+    if (gen_ivtbl_get(obj, id, &ivtbl)) {
 	st_table *iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
 	st_data_t index;
 
@@ -993,7 +1043,7 @@ generic_ivar_defined(VALUE obj, ID id)
 
     if (!iv_index_tbl) return Qfalse;
     if (!st_lookup(iv_index_tbl, (st_data_t)id, &index)) return Qfalse;
-    if (!gen_ivtbl_get(obj, &ivtbl)) return Qfalse;
+    if (!gen_ivtbl_get(obj, id, &ivtbl)) return Qfalse;
 
     if ((index < ivtbl->numiv) && (ivtbl->ivptr[index] != Qundef))
 	return Qtrue;
@@ -1011,7 +1061,7 @@ generic_ivar_remove(VALUE obj, ID id, VALUE *valp)
 
     if (!iv_index_tbl) return 0;
     if (!st_lookup(iv_index_tbl, key, &index)) return 0;
-    if (!gen_ivtbl_get(obj, &ivtbl)) return 0;
+    if (!gen_ivtbl_get(obj, id, &ivtbl)) return 0;
 
     if (index < ivtbl->numiv) {
 	if (ivtbl->ivptr[index] != Qundef) {
@@ -1038,7 +1088,7 @@ rb_mark_generic_ivar(VALUE obj)
 {
     struct gen_ivtbl *ivtbl;
 
-    if (gen_ivtbl_get(obj, &ivtbl)) {
+    if (gen_ivtbl_get(obj, 0, &ivtbl)) {
 	gen_ivtbl_mark(ivtbl);
     }
 }
@@ -1049,8 +1099,8 @@ rb_mv_generic_ivar(VALUE rsrc, VALUE dst)
     st_data_t key = (st_data_t)rsrc;
     struct gen_ivtbl *ivtbl;
 
-    if (st_delete(generic_iv_tbl, &key, (st_data_t *)&ivtbl))
-        st_insert(generic_iv_tbl, (st_data_t)dst, (st_data_t)ivtbl);
+    if (st_delete(generic_ivtbl_no_ractor_check(rsrc), &key, (st_data_t *)&ivtbl))
+        st_insert(generic_ivtbl_no_ractor_check(dst), (st_data_t)dst, (st_data_t)ivtbl);
 }
 
 void
@@ -1059,7 +1109,7 @@ rb_free_generic_ivar(VALUE obj)
     st_data_t key = (st_data_t)obj;
     struct gen_ivtbl *ivtbl;
 
-    if (st_delete(generic_iv_tbl, &key, (st_data_t *)&ivtbl))
+    if (st_delete(generic_ivtbl_no_ractor_check(obj), &key, (st_data_t *)&ivtbl))
 	xfree(ivtbl);
 }
 
@@ -1068,7 +1118,7 @@ rb_generic_ivar_memsize(VALUE obj)
 {
     struct gen_ivtbl *ivtbl;
 
-    if (gen_ivtbl_get(obj, &ivtbl))
+    if (gen_ivtbl_get(obj, 0, &ivtbl))
 	return gen_ivtbl_bytes(ivtbl->numiv);
     return 0;
 }
@@ -1111,6 +1161,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
 	break;
       case T_CLASS:
       case T_MODULE:
+        IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
 	if (RCLASS_IV_TBL(obj) &&
 		st_lookup(RCLASS_IV_TBL(obj), (st_data_t)id, &index))
 	    return (VALUE)index;
@@ -1167,6 +1218,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
 	break;
       case T_CLASS:
       case T_MODULE:
+        IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
 	if (RCLASS_IV_TBL(obj) &&
 		st_delete(RCLASS_IV_TBL(obj), (st_data_t *)&id, &index))
 	    return (VALUE)index;
@@ -1223,7 +1275,7 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
     ivup.iv_extended = 0;
     ivup.u.iv_index_tbl = iv_index_tbl_make(obj);
     iv_index_tbl_extend(&ivup, id);
-    st_update(generic_iv_tbl, (st_data_t)obj, generic_ivar_update,
+    st_update(generic_ivtbl(obj, id, false), (st_data_t)obj, generic_ivar_update,
 	      (st_data_t)&ivup);
 
     ivup.u.ivtbl->ivptr[ivup.index] = val;
@@ -1347,6 +1399,7 @@ ivar_set(VALUE obj, ID id, VALUE val)
         break;
       case T_CLASS:
       case T_MODULE:
+        IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
         if (!RCLASS_IV_TBL(obj)) RCLASS_IV_TBL(obj) = st_init_numtable();
         rb_class_ivar_set(obj, id, val);
         break;
@@ -1393,6 +1446,7 @@ rb_ivar_defined(VALUE obj, ID id)
 	break;
       case T_CLASS:
       case T_MODULE:
+        IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
 	if (RCLASS_IV_TBL(obj) && st_is_member(RCLASS_IV_TBL(obj), (st_data_t)id))
 	    return Qtrue;
 	break;
@@ -1469,7 +1523,7 @@ gen_ivar_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg)
     st_table *iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
 
     if (!iv_index_tbl) return;
-    if (!gen_ivtbl_get(obj, &data.ivtbl)) return;
+    if (!gen_ivtbl_get(obj, 0, &data.ivtbl)) return;
 
     data.func = (int (*)(ID key, VALUE val, st_data_t arg))func;
     data.arg = arg;
@@ -1513,14 +1567,14 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
     if (!FL_TEST(obj, FL_EXIVAR)) {
         goto clear;
     }
-    if (gen_ivtbl_get(obj, &ivtbl)) {
+    if (gen_ivtbl_get(obj, 0, &ivtbl)) {
 	struct givar_copy c;
 	uint32_t i;
 
 	if (gen_ivtbl_count(ivtbl) == 0)
 	    goto clear;
 
-	if (gen_ivtbl_get(clone, &c.ivtbl)) {
+	if (gen_ivtbl_get(clone, 0, &c.ivtbl)) {
 	    for (i = 0; i < c.ivtbl->numiv; i++)
 		c.ivtbl->ivptr[i] = Qundef;
 	}
@@ -1536,7 +1590,8 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
 	 * c.ivtbl may change in gen_ivar_copy due to realloc,
 	 * no need to free
 	 */
-	st_insert(generic_iv_tbl, (st_data_t)clone, (st_data_t)c.ivtbl);
+        generic_ivtbl_no_ractor_check(clone);
+	st_insert(generic_ivtbl_no_ractor_check(obj), (st_data_t)clone, (st_data_t)c.ivtbl);
     }
     return;
 
@@ -1557,6 +1612,7 @@ rb_ivar_foreach(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg)
 	break;
       case T_CLASS:
       case T_MODULE:
+        IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(0);
 	if (RCLASS_IV_TBL(obj)) {
 	    st_foreach_safe(RCLASS_IV_TBL(obj), func, arg);
 	}
@@ -1599,7 +1655,7 @@ rb_ivar_count(VALUE obj)
 	if (FL_TEST(obj, FL_EXIVAR)) {
 	    struct gen_ivtbl *ivtbl;
 
-	    if (gen_ivtbl_get(obj, &ivtbl)) {
+	    if (gen_ivtbl_get(obj, 0, &ivtbl)) {
 		return gen_ivtbl_count(ivtbl);
 	    }
 	}
@@ -1720,6 +1776,7 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
 	break;
       case T_CLASS:
       case T_MODULE:
+        IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
 	n = id;
 	if (RCLASS_IV_TBL(obj) && st_delete(RCLASS_IV_TBL(obj), &n, &v)) {
 	    return (VALUE)v;
@@ -2383,7 +2440,14 @@ static VALUE
 rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 {
     VALUE c = rb_const_search(klass, id, exclude, recurse, visibility);
-    if (c != Qundef) return c;
+    if (c != Qundef) {
+        if (UNLIKELY(!rb_ractor_main_p())) {
+            if (!rb_ractor_shareable_p(c)) {
+                rb_raise(rb_eNameError, "can not access non-sharable objects in constant %"PRIsVALUE"::%s by non-main Ractor.", rb_class_path(klass), rb_id2name(id));
+            }
+        }
+        return c;
+    }
     return rb_const_missing(klass, ID2SYM(id));
 }
 
@@ -2824,6 +2888,10 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 		 QUOTE_ID(id));
     }
 
+    if (!rb_ractor_shareable_p(val) && !rb_ractor_main_p()) {
+        rb_raise(rb_eNameError, "can not set constants with non-shareable objects by non-main Ractors");
+    }
+
     check_before_mod_set(klass, id, val, "constant");
     if (!tbl) {
 	RCLASS_CONST_TBL(klass) = tbl = rb_id_table_create(0);
@@ -3141,6 +3209,7 @@ cvar_overtaken(VALUE front, VALUE target, ID id)
     }
 
 #define CVAR_LOOKUP(v,r) do {\
+    CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(); \
     if (cvar_lookup_at(klass, id, (v))) {r;}\
     CVAR_FOREACH_ANCESTORS(klass, v, r);\
 } while(0)

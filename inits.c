@@ -60,6 +60,7 @@ rb_call_inits(void)
     CALL(Math);
     CALL(GC);
     CALL(Enumerator);
+    CALL(Ractor);
     CALL(VM);
     CALL(ISeq);
     CALL(Thread);
@@ -82,6 +83,7 @@ rb_call_builtin_inits(void)
 {
 #define BUILTIN(n) CALL(builtin_##n)
     BUILTIN(gc);
+    BUILTIN(ractor);
     BUILTIN(integer);
     BUILTIN(io);
     BUILTIN(dir);

@@ -58,6 +58,7 @@ struct lex_context {
 #include "ruby/st.h"
 #include "ruby/util.h"
 #include "symbol.h"
+#include "ractor_pub.h"
 
 #define AREF(ary, i) RARRAY_AREF(ary, i)
 
@@ -10514,8 +10515,8 @@ rb_parser_fatal(struct parser_params *p, const char *fmt, ...)
     rb_str_resize(mesg, 0);
     append_bitstack_value(p->cmdarg_stack, mesg);
     compile_error(p, "cmdarg_stack: %"PRIsVALUE, mesg);
-    if (p->debug_output == rb_stdout)
-	p->debug_output = rb_stderr;
+    if (p->debug_output == rb_ractor_stdout())
+	p->debug_output = rb_ractor_stderr();
     p->debug = TRUE;
 }
 
@@ -12554,7 +12555,7 @@ parser_initialize(struct parser_params *p)
     p->error_buffer = Qfalse;
 #endif
     p->debug_buffer = Qnil;
-    p->debug_output = rb_stdout;
+    p->debug_output = rb_ractor_stdout();
     p->enc = rb_utf8_encoding();
 }
 
