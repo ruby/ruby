@@ -44,9 +44,6 @@
 #ifndef FLT_RADIX
 #define FLT_RADIX 2
 #endif
-#ifndef FLT_ROUNDS
-#define FLT_ROUNDS 1
-#endif
 #ifndef DBL_MIN
 #define DBL_MIN 2.2250738585072014e-308
 #endif
@@ -5702,23 +5699,6 @@ Init_Numeric(void)
     rb_undef_alloc_func(rb_cFloat);
     rb_undef_method(CLASS_OF(rb_cFloat), "new");
 
-    /*
-     *  Deprecated, do not use.
-     *
-     *  Represents the rounding mode for floating point addition at the start time.
-     *
-     *  Usually defaults to 1, rounding to the nearest number.
-     *
-     *  Other modes include:
-     *
-     *  -1::	Indeterminable
-     *	0::	Rounding towards zero
-     *	1::	Rounding to the nearest number
-     *	2::	Rounding towards positive infinity
-     *	3::	Rounding towards negative infinity
-     */
-    rb_define_const(rb_cFloat, "ROUNDS", INT2FIX(FLT_ROUNDS));
-    rb_deprecate_constant(rb_cFloat, "ROUNDS");
     /*
      *	The base of the floating point, or number of unique digits used to
      *	represent the number.
