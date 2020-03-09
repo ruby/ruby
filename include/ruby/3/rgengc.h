@@ -24,108 +24,146 @@
  */
 #ifndef  RUBY3_RGENGC_H
 #define  RUBY3_RGENGC_H
-#include "ruby/3/value.h"
+#include "ruby/3/attr/artificial.h"
+#include "ruby/3/attr/pure.h"
 #include "ruby/3/dllexport.h"
 #include "ruby/3/special_consts.h"
+#include "ruby/3/stdbool.h"
+#include "ruby/3/value.h"
+#include "ruby/assert.h"
+#include "ruby/backward/2/attributes.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
-
-#ifdef USE_RGENGC
 #undef USE_RGENGC
-#endif
 #define USE_RGENGC 1
+
 #ifndef USE_RINCGC
-#define USE_RINCGC 1
+# define USE_RINCGC 1
+#endif
+
+#ifndef USE_RGENGC_LOGGING_WB_UNPROTECT
+# define USE_RGENGC_LOGGING_WB_UNPROTECT 0
 #endif
 
 #ifndef RGENGC_WB_PROTECTED_ARRAY
-#define RGENGC_WB_PROTECTED_ARRAY 1
+# define RGENGC_WB_PROTECTED_ARRAY 1
 #endif
+
 #ifndef RGENGC_WB_PROTECTED_HASH
-#define RGENGC_WB_PROTECTED_HASH 1
+# define RGENGC_WB_PROTECTED_HASH 1
 #endif
+
 #ifndef RGENGC_WB_PROTECTED_STRUCT
-#define RGENGC_WB_PROTECTED_STRUCT 1
+# define RGENGC_WB_PROTECTED_STRUCT 1
 #endif
+
 #ifndef RGENGC_WB_PROTECTED_STRING
-#define RGENGC_WB_PROTECTED_STRING 1
+# define RGENGC_WB_PROTECTED_STRING 1
 #endif
+
 #ifndef RGENGC_WB_PROTECTED_OBJECT
-#define RGENGC_WB_PROTECTED_OBJECT 1
+# define RGENGC_WB_PROTECTED_OBJECT 1
 #endif
+
 #ifndef RGENGC_WB_PROTECTED_REGEXP
-#define RGENGC_WB_PROTECTED_REGEXP 1
+# define RGENGC_WB_PROTECTED_REGEXP 1
 #endif
+
 #ifndef RGENGC_WB_PROTECTED_CLASS
-#define RGENGC_WB_PROTECTED_CLASS 1
+# define RGENGC_WB_PROTECTED_CLASS 1
 #endif
+
 #ifndef RGENGC_WB_PROTECTED_FLOAT
-#define RGENGC_WB_PROTECTED_FLOAT 1
+# define RGENGC_WB_PROTECTED_FLOAT 1
 #endif
+
 #ifndef RGENGC_WB_PROTECTED_COMPLEX
-#define RGENGC_WB_PROTECTED_COMPLEX 1
+# define RGENGC_WB_PROTECTED_COMPLEX 1
 #endif
+
 #ifndef RGENGC_WB_PROTECTED_RATIONAL
-#define RGENGC_WB_PROTECTED_RATIONAL 1
+# define RGENGC_WB_PROTECTED_RATIONAL 1
 #endif
+
 #ifndef RGENGC_WB_PROTECTED_BIGNUM
-#define RGENGC_WB_PROTECTED_BIGNUM 1
+# define RGENGC_WB_PROTECTED_BIGNUM 1
 #endif
+
 #ifndef RGENGC_WB_PROTECTED_NODE_CREF
-#define RGENGC_WB_PROTECTED_NODE_CREF 1
+# define RGENGC_WB_PROTECTED_NODE_CREF 1
 #endif
 
-#if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
-# define RB_OBJ_WB_UNPROTECT_FOR(type, obj) \
-    __extension__( \
-        __builtin_choose_expr( \
-            RGENGC_WB_PROTECTED_##type, \
-            OBJ_WB_UNPROTECT((VALUE)(obj)), ((VALUE)(obj))))
-#else
-# define RB_OBJ_WB_UNPROTECT_FOR(type, obj) \
-    (RGENGC_WB_PROTECTED_##type ? \
-     OBJ_WB_UNPROTECT((VALUE)(obj)) : ((VALUE)(obj)))
-#endif
+/**
+ * @name Write barrier (WB) interfaces:
+ * @{
+ *
+ * @note The following  core interfaces can  be changed in the  future.  Please
+ *       catch up if you want to insert WB into C-extensions correctly.
+ */
 
-#define RB_OBJ_PROMOTED_RAW(x)      RB_FL_ALL_RAW(x, RUBY_FL_PROMOTED)
-#define RB_OBJ_PROMOTED(x)          (RB_SPECIAL_CONST_P(x) ? 0 : RB_OBJ_PROMOTED_RAW(x))
-#define RB_OBJ_WB_UNPROTECT(x)      rb_obj_wb_unprotect(x, __FILE__, __LINE__)
+/**
+ * WB for new  reference from `a' to  `b'. Write `b' into `*slot'.  `slot' is a
+ * pointer in `a'.
+ */
+#define RB_OBJ_WRITE(a, slot, b) \
+    RUBY3_CAST(rb_obj_write((VALUE)(a), (VALUE *)(slot), (VALUE)(b), __FILE__, __LINE__))
+/**
+ * WB for new  reference from `a' to  `b'.  This doesn't write  any values, but
+ * only  a WB  declaration.  `oldv'  is replaced  value with  `b' (not  used in
+ * current Ruby).
+ */
+#define RB_OBJ_WRITTEN(a, oldv, b) \
+    RUBY3_CAST(rb_obj_written((VALUE)(a), (VALUE)(oldv), (VALUE)(b), __FILE__, __LINE__))
+/** @} */
 
+#define OBJ_PROMOTED_RAW RB_OBJ_PROMOTED_RAW
+#define OBJ_PROMOTED     RB_OBJ_PROMOTED
+#define OBJ_WB_UNPROTECT RB_OBJ_WB_UNPROTECT
+
+#define RB_OBJ_WB_UNPROTECT(x) rb_obj_wb_unprotect(x, __FILE__, __LINE__)
+#define RB_OBJ_WB_UNPROTECT_FOR(type, obj) \
+    (RGENGC_WB_PROTECTED_##type ? OBJ_WB_UNPROTECT(obj) : obj)
+#define RGENGC_LOGGING_WB_UNPROTECT rb_gc_unprotect_logging
+
+/** @cond INTERNAL_MACRO */
+#define RB_OBJ_PROMOTED_RAW RB_OBJ_PROMOTED_RAW
+#define RB_OBJ_PROMOTED     RB_OBJ_PROMOTED
+/** @endcond */
+
+RUBY3_SYMBOL_EXPORT_BEGIN()
 void rb_gc_writebarrier(VALUE a, VALUE b);
 void rb_gc_writebarrier_unprotect(VALUE obj);
-
-#define OBJ_PROMOTED_RAW(x)         RB_OBJ_PROMOTED_RAW(x)
-#define OBJ_PROMOTED(x)             RB_OBJ_PROMOTED(x)
-#define OBJ_WB_UNPROTECT(x)         RB_OBJ_WB_UNPROTECT(x)
-
-/* Write barrier (WB) interfaces:
- * - RB_OBJ_WRITE(a, slot, b): WB for new reference from `a' to `b'.
- *     Write `b' into `*slot'. `slot' is a pointer in `a'.
- * - RB_OBJ_WRITTEN(a, oldv, b): WB for new reference from `a' to `b'.
- *     This doesn't write any values, but only a WB declaration.
- *     `oldv' is replaced value with `b' (not used in current Ruby).
- *
- * NOTE: The following core interfaces can be changed in the future.
- *       Please catch up if you want to insert WB into C-extensions
- *       correctly.
- */
-#define RB_OBJ_WRITE(a, slot, b)       rb_obj_write((VALUE)(a), (VALUE *)(slot), (VALUE)(b), __FILE__, __LINE__)
-#define RB_OBJ_WRITTEN(a, oldv, b)     rb_obj_written((VALUE)(a), (VALUE)(oldv), (VALUE)(b), __FILE__, __LINE__)
-
-#ifndef USE_RGENGC_LOGGING_WB_UNPROTECT
-#define USE_RGENGC_LOGGING_WB_UNPROTECT 0
-#endif
-
 #if USE_RGENGC_LOGGING_WB_UNPROTECT
 void rb_gc_unprotect_logging(void *objptr, const char *filename, int line);
-#define RGENGC_LOGGING_WB_UNPROTECT rb_gc_unprotect_logging
 #endif
+RUBY3_SYMBOL_EXPORT_END()
+
+RUBY3_ATTR_PURE_ON_NDEBUG()
+RUBY3_ATTR_ARTIFICIAL()
+static inline bool
+RB_OBJ_PROMOTED_RAW(VALUE obj)
+{
+    RUBY3_ASSERT_OR_ASSUME(RB_FL_ABLE(obj));
+    return RB_FL_ANY_RAW(obj,  RUBY_FL_PROMOTED);
+}
+
+RUBY3_ATTR_PURE_ON_NDEBUG()
+RUBY3_ATTR_ARTIFICIAL()
+static inline bool
+RB_OBJ_PROMOTED(VALUE obj)
+{
+    if (! RB_FL_ABLE(obj)) {
+        return false;
+    }
+    else {
+        return RB_OBJ_PROMOTED_RAW(obj);
+    }
+}
 
 static inline VALUE
 rb_obj_wb_unprotect(VALUE x, RB_UNUSED_VAR(const char *filename), RB_UNUSED_VAR(int line))
 {
-#ifdef RGENGC_LOGGING_WB_UNPROTECT
-    RGENGC_LOGGING_WB_UNPROTECT((void *)x, filename, line);
+#if USE_RGENGC_LOGGING_WB_UNPROTECT
+    RGENGC_LOGGING_WB_UNPROTECT(RUBY3_CAST((void *)x), filename, line);
 #endif
     rb_gc_writebarrier_unprotect(x);
     return x;
@@ -134,7 +172,7 @@ rb_obj_wb_unprotect(VALUE x, RB_UNUSED_VAR(const char *filename), RB_UNUSED_VAR(
 static inline VALUE
 rb_obj_written(VALUE a, RB_UNUSED_VAR(VALUE oldv), VALUE b, RB_UNUSED_VAR(const char *filename), RB_UNUSED_VAR(int line))
 {
-#ifdef RGENGC_LOGGING_OBJ_WRITTEN
+#if USE_RGENGC_LOGGING_WB_UNPROTECT
     RGENGC_LOGGING_OBJ_WRITTEN(a, oldv, b, filename, line);
 #endif
 
@@ -157,7 +195,5 @@ rb_obj_write(VALUE a, VALUE *slot, VALUE b, RB_UNUSED_VAR(const char *filename),
     rb_obj_written(a, RUBY_Qundef /* ignore `oldv' now */, b, filename, line);
     return a;
 }
-
-RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_RGENGC_H */
