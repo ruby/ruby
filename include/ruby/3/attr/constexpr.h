@@ -78,3 +78,14 @@
 #else
 # define RUBY3_ATTR_CONSTEXPR(_) /* void */
 #endif
+
+/** Enables #RUBY3_ATTR_CONSTEXPR iff. #RUBY_NDEBUG. */
+#if defined(RUBY3_ATTR_CONSTEXPR_ON_NDEBUG)
+# /* Take that. */
+
+#elif RUBY_NDEBUG
+# define RUBY3_ATTR_CONSTEXPR_ON_NDEBUG(_) RUBY3_ATTR_CONSTEXPR(_)
+
+#else
+# define RUBY3_ATTR_CONSTEXPR_ON_NDEBUG(_) /* void */
+#endif

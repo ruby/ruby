@@ -29,57 +29,152 @@
 #ifndef  RUBY3_ARITHMETIC_LONG_H
 #define  RUBY3_ARITHMETIC_LONG_H
 #include "ruby/3/config.h"
-#include "ruby/3/special_consts.h"
-#include "ruby/3/arithmetic/fixnum.h"
-#include "ruby/3/arithmetic/intptr_t.h"
+#include "ruby/3/arithmetic/fixnum.h"   /* FIXABLE */
+#include "ruby/3/arithmetic/intptr_t.h" /* rb_int2big etc.*/
+#include "ruby/3/assume.h"
+#include "ruby/3/attr/artificial.h"
+#include "ruby/3/attr/cold.h"
+#include "ruby/3/attr/const.h"
+#include "ruby/3/attr/constexpr.h"
+#include "ruby/3/attr/noreturn.h"
+#include "ruby/3/cast.h"
 #include "ruby/3/dllexport.h"
-#include "ruby/3/special_consts.h"
+#include "ruby/3/special_consts.h"      /* FIXNUM_FLAG */
 #include "ruby/3/value.h"
+#include "ruby/assert.h"
+
+#define FIX2LONG     RB_FIX2LONG
+#define FIX2ULONG    RB_FIX2ULONG
+#define INT2FIX      RB_INT2FIX
+#define LONG2FIX     RB_INT2FIX
+#define LONG2NUM     RB_LONG2NUM
+#define NUM2LONG     RB_NUM2LONG
+#define NUM2ULONG    RB_NUM2ULONG
+#define RB_FIX2LONG  rb_fix2long
+#define RB_FIX2ULONG rb_fix2ulong
+#define RB_LONG2FIX  RB_INT2FIX
+#define RB_LONG2NUM  rb_long2num_inline
+#define RB_NUM2LONG  rb_num2long_inline
+#define RB_NUM2ULONG rb_num2ulong_inline
+#define RB_ULONG2NUM rb_ulong2num_inline
+#define ULONG2NUM    RB_ULONG2NUM
+#define rb_fix_new   RB_INT2FIX
+#define rb_long2int  rb_long2int_inline
+
+/** @cond INTERNAL_MACRO */
+#define RB_INT2FIX RB_INT2FIX
+/** @endcond */
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 
-#define RB_INT2FIX(i) (((VALUE)(i))<<1 | RUBY_FIXNUM_FLAG)
-#define INT2FIX(i) RB_INT2FIX(i)
-#define RB_LONG2FIX(i) RB_INT2FIX(i)
-#define LONG2FIX(i) RB_INT2FIX(i)
-#define rb_fix_new(v) RB_INT2FIX(v)
+RUBY3_ATTR_NORETURN()
+RUBY3_ATTR_COLD()
+void rb_out_of_int(SIGNED_VALUE num);
 
-#if SIZEOF_INT < SIZEOF_VALUE
-NORETURN(void rb_out_of_int(SIGNED_VALUE num));
-#endif
+long rb_num2long(VALUE num);
+unsigned long rb_num2ulong(VALUE num);
+RUBY3_SYMBOL_EXPORT_END()
 
-#if SIZEOF_INT < SIZEOF_LONG
+RUBY3_ATTR_CONST_ON_NDEBUG()
+RUBY3_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
+RUBY3_ATTR_ARTIFICIAL()
+static inline VALUE
+RB_INT2FIX(long i)
+{
+    RUBY3_ASSERT_OR_ASSUME(RB_FIXABLE(i));
+
+    /* :NOTE: VALUE can be wider than long.  As j being unsigned, 2j+1 is fully
+     * defined. Also it can be compiled into a single LEA instruction. */
+    const unsigned long j = i;
+    const unsigned long k = 2 * j + RUBY_FIXNUM_FLAG;
+    const long          l = k;
+    const SIGNED_VALUE  m = l; /* Sign extend */
+    const VALUE         n = m;
+
+    RUBY3_ASSERT_OR_ASSUME(RB_FIXNUM_P(n));
+    return n;
+}
+
 static inline int
 rb_long2int_inline(long n)
 {
-    int i = (int)n;
-    if ((long)i != n)
+    int i = RUBY3_CAST((int)n);
+
+    if /* constexpr */ (sizeof(long) <= sizeof(int)) {
+        RUBY3_ASSUME(i == n);
+    }
+
+    if (i != n)
         rb_out_of_int(n);
 
     return i;
 }
-#define rb_long2int(n) rb_long2int_inline(n)
-#else
-#define rb_long2int(n) ((int)(n))
-#endif
 
-#define RB_FIX2LONG(x) ((long)RSHIFT((SIGNED_VALUE)(x),1))
+RUBY3_ATTR_CONST_ON_NDEBUG()
+RUBY3_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
+static inline long
+ruby3_fix2long_by_idiv(VALUE x)
+{
+    RUBY3_ASSERT_OR_ASSUME(RB_FIXNUM_P(x));
+
+    /* :NOTE: VALUE  can be wider  than long.  (x-1)/2 never  overflows because
+     * RB_FIXNUM_P(x)  holds.   Also it  has  no  portability issue  like  y>>1
+     * below. */
+    const SIGNED_VALUE y = x - RUBY_FIXNUM_FLAG;
+    const SIGNED_VALUE z = y / 2;
+    const long         w = RUBY3_CAST((long)z);
+
+    RUBY3_ASSERT_OR_ASSUME(RB_FIXABLE(w));
+    return w;
+}
+
+RUBY3_ATTR_CONST_ON_NDEBUG()
+RUBY3_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
+static inline long
+ruby3_fix2long_by_shift(VALUE x)
+{
+    RUBY3_ASSERT_OR_ASSUME(RB_FIXNUM_P(x));
+
+    /* :NOTE: VALUE can be wider than long.  If right shift is arithmetic, this
+     * is noticably faster than above. */
+    const SIGNED_VALUE y = x;
+    const SIGNED_VALUE z = y >> 1;
+    const long         w = RUBY3_CAST((long)z);
+
+    RUBY3_ASSERT_OR_ASSUME(RB_FIXABLE(w));
+    return w;
+}
+
+RUBY3_ATTR_CONST()
+RUBY3_ATTR_CONSTEXPR(CXX11)
+static inline bool
+ruby3_right_shift_is_arithmetic_p(void)
+{
+    return (-1 >> 1) == -1;
+}
+
+RUBY3_ATTR_CONST_ON_NDEBUG()
+RUBY3_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
 static inline long
 rb_fix2long(VALUE x)
 {
-    return RB_FIX2LONG(x);
+    if /* constexpr */ (ruby3_right_shift_is_arithmetic_p()) {
+        return ruby3_fix2long_by_shift(x);
+    }
+    else {
+        return ruby3_fix2long_by_idiv(x);
+    }
 }
-#define RB_FIX2ULONG(x) ((unsigned long)RB_FIX2LONG(x))
+
+RUBY3_ATTR_CONST_ON_NDEBUG()
+RUBY3_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
 static inline unsigned long
 rb_fix2ulong(VALUE x)
 {
-    return RB_FIX2ULONG(x);
+    RUBY3_ASSERT_OR_ASSUME(RB_FIXNUM_P(x));
+    return rb_fix2long(x);
 }
-#define FIX2LONG(x) RB_FIX2LONG(x)
-#define FIX2ULONG(x) RB_FIX2ULONG(x)
 
-long rb_num2long(VALUE);
-unsigned long rb_num2ulong(VALUE);
 static inline long
 rb_num2long_inline(VALUE x)
 {
@@ -88,18 +183,20 @@ rb_num2long_inline(VALUE x)
     else
         return rb_num2long(x);
 }
-#define RB_NUM2LONG(x) rb_num2long_inline(x)
-#define NUM2LONG(x) RB_NUM2LONG(x)
+
 static inline unsigned long
 rb_num2ulong_inline(VALUE x)
 {
+    /* This (negative fixnum would become  a large unsigned long while negative
+     * bignum is  an exception) has been  THE behaviour of NUM2ULONG  since the
+     * beginning.  It is strange,  but we can no longer change  how it works at
+     * this moment.  We have to get by with it.  See also:
+     * https://bugs.ruby-lang.org/issues/9089 */
     if (RB_FIXNUM_P(x))
         return RB_FIX2ULONG(x);
     else
         return rb_num2ulong(x);
 }
-#define RB_NUM2ULONG(x) rb_num2ulong_inline(x)
-#define NUM2ULONG(x) RB_NUM2ULONG(x)
 
 static inline VALUE
 rb_long2num_inline(long v)
@@ -109,7 +206,6 @@ rb_long2num_inline(long v)
     else
         return rb_int2big(v);
 }
-#define RB_LONG2NUM(x) rb_long2num_inline(x)
 
 static inline VALUE
 rb_ulong2num_inline(unsigned long v)
@@ -119,11 +215,30 @@ rb_ulong2num_inline(unsigned long v)
     else
         return rb_uint2big(v);
 }
-#define RB_ULONG2NUM(x) rb_ulong2num_inline(x)
 
-#define LONG2NUM(x) RB_LONG2NUM(x)
-#define ULONG2NUM(x) RB_ULONG2NUM(x)
+/**
+ * @cond INTERNAL_MACRO
+ *
+ * Following overload is necessary because sometimes  INT2FIX is used as a enum
+ * value (e.g. `enum {  FOO = INT2FIX(0) };`).  THIS IS NG  in theory because a
+ * VALUE does not fit into an enum (which must be a signed int).  But we cannot
+ * break existing codes.
+ */
+#if RUBY3_HAS_ATTR_CONSTEXPR_CXX14
+# /* C++ can write constexpr as enum values. */
 
-RUBY3_SYMBOL_EXPORT_END()
+#elif ! defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
+# undef INT2FIX
+# define INT2FIX(i) (RUBY3_CAST((VALUE)(i)) << 1 | RUBY_FIXNUM_FLAG)
+
+#else
+# undef INT2FIX
+# define INT2FIX(i)                                     \
+    __builtin_choose_expr(                              \
+        __builtin_constant_p(i),                        \
+        RUBY3_CAST((VALUE)(i)) << 1 | RUBY_FIXNUM_FLAG, \
+        RB_INT2FIX(i))
+#endif
+/** @endcond */
 
 #endif /* RUBY3_ARITHMETIC_LONG_H */

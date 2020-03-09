@@ -39,3 +39,14 @@
 #else
 # define RUBY3_ATTR_CONST() /* void */
 #endif
+
+/** Enables #RUBY3_ATTR_CONST iff. #RUBY_NDEBUG. */
+#if defined(RUBY3_ATTR_CONST_ON_NDEBUG)
+# /* Take that. */
+
+#elif RUBY_NDEBUG
+# define RUBY3_ATTR_CONST_ON_NDEBUG() RUBY3_ATTR_CONST()
+
+#else
+# define RUBY3_ATTR_CONST_ON_NDEBUG() /* void */
+#endif
