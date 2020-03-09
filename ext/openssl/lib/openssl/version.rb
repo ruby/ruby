@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
 module OpenSSL
-  VERSION = "2.2.0" unless defined?(VERSION)
+  VERSION = "2.2.0"
 end

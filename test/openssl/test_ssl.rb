@@ -89,13 +89,17 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   def test_socket_open_with_local_address_port_context
     start_server { |port|
       begin
+        # Guess a free port number
+        random_port = rand(49152..65535)
         ctx = OpenSSL::SSL::SSLContext.new
-        ssl = OpenSSL::SSL::SSLSocket.open("127.0.0.1", port, "127.0.0.1", 8000, context: ctx)
+        ssl = OpenSSL::SSL::SSLSocket.open("127.0.0.1", port, "127.0.0.1", random_port, context: ctx)
         ssl.sync_close = true
         ssl.connect
 
-        assert_equal ssl.context, ctx
+        assert_equal ctx, ssl.context
+        assert_equal random_port, ssl.io.local_address.ip_port
         ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+      rescue Errno::EADDRINUSE
       ensure
         ssl&.close
       end
@@ -127,7 +131,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     add0_chain_supported = openssl?(1, 0, 2)
 
     if add0_chain_supported
-      ca2_key = Fixtures.pkey("rsa2048")
+      ca2_key = Fixtures.pkey("rsa-3")
       ca2_exts = [
         ["basicConstraints", "CA:TRUE", true],
         ["keyUsage", "cRLSign, keyCertSign", true],
@@ -186,9 +190,31 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_add_certificate_chain_file
-    pend "The current server.crt seems too short for OpenSSL 1.1.1d or later" if OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10101040
-    ctx = OpenSSL::SSL::SSLContext.new
-    assert ctx.add_certificate_chain_file(Fixtures.file_path("chain", "server.crt"))
+    # Create chain certificates file
+    certs = Tempfile.open { |f| f << @svr_cert.to_pem << @ca_cert.to_pem; f }
+    pkey = Tempfile.open { |f| f << @svr_key.to_pem; f }
+
+    ctx_proc = -> ctx {
+      # FIXME: This is a temporary test case written just to match the current
+      # state. ctx.add_certificate_chain_file should take two arguments.
+      ctx.add_certificate_chain_file(certs.path)
+      # # Unset values set by start_server
+      # ctx.cert = ctx.key = ctx.extra_chain_cert = nil
+      # assert_nothing_raised { ctx.add_certificate_chain_file(certs.path, pkey.path) }
+    }
+
+    start_server(ctx_proc: ctx_proc) { |port|
+      server_connect(port) { |ssl|
+        assert_equal @svr_cert.subject, ssl.peer_cert.subject
+        assert_equal [@svr_cert.subject, @ca_cert.subject],
+          ssl.peer_cert_chain.map(&:subject)
+
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+      }
+    }
+  ensure
+    certs&.unlink
+    pkey&.unlink
   end
 
   def test_sysread_and_syswrite
@@ -206,19 +232,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       }
     }
   end
-
-  # TODO fix this test
-  # def test_sysread_nonblock_and_syswrite_nonblock_keywords
-  #   start_server do |port|
-  #     server_connect(port) do |ssl|
-  #       assert_warning("") do
-  #         ssl.send(:syswrite_nonblock, "12", exception: false)
-  #         ssl.send(:sysread_nonblock, 1, exception: false) rescue nil
-  #         ssl.send(:sysread_nonblock, 1, String.new, exception: false) rescue nil
-  #       end
-  #     end
-  #   end
-  # end
 
   def test_sync_close
     start_server do |port|
@@ -497,12 +510,14 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.verify_mode = OpenSSL::SSL::VERIFY_NONE
       server_connect(port, ctx) { |ssl|
+        ssl.puts "abc"; ssl.gets
+
         client_finished = ssl.finished_message
         client_peer_finished = ssl.peer_finished_message
-        sleep 0.05
-        ssl.send :stop
       }
     }
+    assert_not_nil(server_finished)
+    assert_not_nil(client_finished)
     assert_equal(server_finished, client_peer_finished)
     assert_equal(server_peer_finished, client_finished)
   end
@@ -920,6 +935,46 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
           ssl.close if ssl
           sock.close if sock
         end
+      end
+    end
+  end
+
+  def test_verify_hostname_failure_error_code
+    ctx_proc = proc { |ctx|
+      exts = [
+        ["keyUsage", "keyEncipherment,digitalSignature", true],
+        ["subjectAltName", "DNS:a.example.com"],
+      ]
+      ctx.cert = issue_cert(@svr, @svr_key, 4, exts, @ca_cert, @ca_key)
+      ctx.key = @svr_key
+    }
+
+    start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
+      verify_callback_ok = verify_callback_err = nil
+
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.verify_hostname = true
+      ctx.cert_store = OpenSSL::X509::Store.new
+      ctx.cert_store.add_cert(@ca_cert)
+      ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER
+      ctx.verify_callback = -> (preverify_ok, store_ctx) {
+        verify_callback_ok = preverify_ok
+        verify_callback_err = store_ctx.error
+        preverify_ok
+      }
+
+      begin
+        sock = TCPSocket.new("127.0.0.1", port)
+        ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+        ssl.hostname = "b.example.com"
+        assert_handshake_error { ssl.connect }
+        assert_equal false, verify_callback_ok
+        code_expected = openssl?(1, 0, 2) || defined?(OpenSSL::X509::V_ERR_HOSTNAME_MISMATCH) ?
+          OpenSSL::X509::V_ERR_HOSTNAME_MISMATCH :
+          OpenSSL::X509::V_ERR_CERT_REJECTED
+        assert_equal code_expected, verify_callback_err
+      ensure
+        sock&.close
       end
     end
   end
@@ -1377,11 +1432,16 @@ end
         ctx.ssl_version = :TLSv1_2
         ctx.ciphers = "kRSA"
       }
-      start_server(ctx_proc: ctx_proc1) do |port|
+      start_server(ctx_proc: ctx_proc1, ignore_listener_error: true) do |port|
         ctx = OpenSSL::SSL::SSLContext.new
         ctx.ssl_version = :TLSv1_2
         ctx.ciphers = "kRSA"
-        server_connect(port, ctx) { |ssl| assert_nil ssl.tmp_key }
+        begin
+          server_connect(port, ctx) { |ssl| assert_nil ssl.tmp_key }
+        rescue OpenSSL::SSL::SSLError
+          # kRSA seems disabled
+          raise unless $!.message =~ /no cipher/
+        end
       end
     end
 

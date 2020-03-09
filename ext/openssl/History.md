@@ -1,34 +1,55 @@
 Version 2.2.0 (not yet released)
 =============
 
+Compatibility notes
+-------------------
+
+* Remove unsupported MDC2, DSS, DSS1, and SHA algorithms.
+* Remove `OpenSSL::PKCS7::SignerInfo#name` alias for `#issuer`.
+  [[GitHub #266]](https://github.com/ruby/openssl/pull/266)
+* Deprecate `OpenSSL::Config#add_value` and `#[]=` for future removal.
+  [[GitHub #322]](https://github.com/ruby/openssl/pull/322)
+
+
+Notable changes
+---------------
+
 * Change default `OpenSSL::SSL::SSLServer#listen` backlog argument from
   5 to `Socket::SOMAXCONN`.
+  [[GitHub #286]](https://github.com/ruby/openssl/issues/286)
 * Make `OpenSSL::HMAC#==` use a timing safe string comparison.
-* Remove unsupported MDC2, DSS, DSS1, and SHA algorithms.
+  [[GitHub #284]](https://github.com/ruby/openssl/pull/284)
 * Add support for SHA3 and BLAKE digests.
+  [[GitHub #282]](https://github.com/ruby/openssl/pull/282)
 * Add `OpenSSL::SSL::SSLSocket.open` for opening a `TCPSocket` and
   returning an `OpenSSL::SSL::SSLSocket` for it.
+  [[GitHub #225]](https://github.com/ruby/openssl/issues/225)
 * Support marshalling of `OpenSSL::X509` objects.
+  [[GitHub #281]](https://github.com/ruby/openssl/pull/281)
 * Add `OpenSSL.secure_compare` for timing safe string comparison for
   strings of possibly unequal length.
+  [[GitHub #280]](https://github.com/ruby/openssl/pull/280)
 * Add `OpenSSL.fixed_length_secure_compare` for timing safe string
   comparison for strings of equal length.
+  [[GitHub #269]](https://github.com/ruby/openssl/pull/269)
 * Add `OpenSSL::SSL::SSLSocket#{finished_message,peer_finished_message}`
   for last finished message sent and received.
+  [[GitHub #250]](https://github.com/ruby/openssl/pull/250)
 * Add `OpenSSL::Timestamp` module for handing timestamp requests and
   responses.
+  [[GitHub #204]](https://github.com/ruby/openssl/pull/204)
 * Add helper methods for `OpenSSL::X509::Certificate`:
   `find_extension`, `subject_key_identifier`,
   `authority_key_identifier`, `crl_uris`, `ca_issuer_uris` and
-  `ocsp_uris`.
-* Add helper methods for `OpenSSL::X509::CRL`:
+  `ocsp_uris`, and for `OpenSSL::X509::CRL`:
   `find_extension` and `subject_key_identifier`.
-* Remove `OpenSSL::PKCS7::SignerInfo#name` alias for `#issuer`.
-* Add `OpenSSL::ECPoint#add` for adding points to an elliptic curve
-  group.
+  [[GitHub #260]](https://github.com/ruby/openssl/pull/260)
+  [[GitHub #275]](https://github.com/ruby/openssl/pull/275)
+  [[GitHub #293]](https://github.com/ruby/openssl/pull/293)
+* Add `OpenSSL::ECPoint#add` for performing elliptic curve point addition.
   [[GitHub #261]](https://github.com/ruby/openssl/pull/261)
-* Make `OpenSSL::PKey::RSA#{export,to_der}` correctly check `key`,
-  `factors`, and `crt_params`.
+* Make `OpenSSL::PKey::RSA#{export,to_der}` check `key`, `factors`, and
+  `crt_params` to do proper private key serialization.
   [[GitHub #258]](https://github.com/ruby/openssl/pull/258)
 * Add `OpenSSL::SSL::{SSLSocket,SSLServer}#fileno`, returning the
   underlying socket file descriptor number.
@@ -40,16 +61,18 @@ Version 2.2.0 (not yet released)
 * Add `OpenSSL::X509::Extension#value_der` for the raw value of
   the extension.
   [[GitHub #234]](https://github.com/ruby/openssl/pull/234)
-* Signficantly reduce allocated memory in `OpenSSL::Buffering#do_write`.
+* Significantly reduce allocated memory in `OpenSSL::Buffering#do_write`.
   [[GitHub #212]](https://github.com/ruby/openssl/pull/212)
 * Ensure all valid IPv6 addresses are considered valid as elements
   of subjectAlternativeName in certificates.
   [[GitHub #185]](https://github.com/ruby/openssl/pull/185)
 * Allow recipient's certificate to be omitted in PCKS7#decrypt.
   [[GitHub #183]](https://github.com/ruby/openssl/pull/183)
-* Add support for reading keys in PKCS8 format and export via instance methods
+* Add support for reading keys in PKCS #8 format and export via instance methods
   added to `OpenSSL::PKey` classes: `private_to_der`, `private_to_pem`,
   `public_to_der` and `public_to_pem`.
+  [[GitHub #297]](https://github.com/ruby/openssl/pull/297)
+
 
 Version 2.1.2
 =============

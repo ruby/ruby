@@ -21,6 +21,7 @@ require_relative 'openssl/hmac'
 require_relative 'openssl/x509'
 require_relative 'openssl/ssl'
 require_relative 'openssl/pkcs5'
+require_relative 'openssl/version'
 
 module OpenSSL
   # call-seq:

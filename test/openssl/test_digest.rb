@@ -98,6 +98,18 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
     assert_equal(sha512_a, encode16(OpenSSL::Digest::SHA512.digest("a")))
   end
 
+  def test_sha512_truncate
+    pend "SHA512_224 is not implemented" unless OpenSSL::Digest.const_defined?(:SHA512_224)
+    sha512_224_a = "d5cdb9ccc769a5121d4175f2bfdd13d6310e0d3d361ea75d82108327"
+    sha512_256_a = "455e518824bc0601f9fb858ff5c37d417d67c2f8e0df2babe4808858aea830f8"
+
+    assert_equal(sha512_224_a, OpenSSL::Digest::SHA512_224.hexdigest("a"))
+    assert_equal(sha512_256_a, OpenSSL::Digest::SHA512_256.hexdigest("a"))
+
+    assert_equal(sha512_224_a, encode16(OpenSSL::Digest::SHA512_224.digest("a")))
+    assert_equal(sha512_256_a, encode16(OpenSSL::Digest::SHA512_256.digest("a")))
+  end
+
   def test_sha3
     pend "SHA3 is not implemented" unless OpenSSL::Digest.const_defined?(:SHA3_224)
     s224 = '6b4e03423667dbb73b6e15454f0eb1abd4597f9a1b078e3f5b5a6bc7'

@@ -359,7 +359,14 @@ ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 	    rb_ivar_set(ssl_obj, ID_callback_state, INT2NUM(status));
 	    return 0;
 	}
-	preverify_ok = ret == Qtrue;
+        if (ret != Qtrue) {
+            preverify_ok = 0;
+#if defined(X509_V_ERR_HOSTNAME_MISMATCH)
+            X509_STORE_CTX_set_error(ctx, X509_V_ERR_HOSTNAME_MISMATCH);
+#else
+            X509_STORE_CTX_set_error(ctx, X509_V_ERR_CERT_REJECTED);
+#endif
+        }
     }
 
     return ossl_verify_cb_call(cb, preverify_ok, ctx);
@@ -1325,12 +1332,16 @@ ossl_sslctx_add_certificate(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_sslctx_add_certificate_chain_file(VALUE self, VALUE path)
 {
-    StringValue(path);
-    SSL_CTX *ctx = NULL;
+    SSL_CTX *ctx;
+    int ret;
 
     GetSSLCTX(self, ctx);
+    StringValueCStr(path);
+    ret = SSL_CTX_use_certificate_chain_file(ctx, RSTRING_PTR(path));
+    if (ret != 1)
+        ossl_raise(eSSLError, "SSL_CTX_use_certificate_chain_file");
 
-    return SSL_CTX_use_certificate_chain_file(ctx, RSTRING_PTR(path)) == 1 ? Qtrue : Qfalse;
+    return Qtrue;
 }
 
 /*
@@ -2327,16 +2338,16 @@ static VALUE
 ossl_ssl_get_finished(VALUE self)
 {
     SSL *ssl;
+    char sizer[1], *buf;
+    size_t len;
 
     GetSSL(self, ssl);
 
-    char sizer[1];
-    size_t len = SSL_get_finished(ssl, sizer, 0);
+    len = SSL_get_finished(ssl, sizer, 0);
+    if (len == 0)
+        return Qnil;
 
-    if(len == 0)
-      return Qnil;
-
-    char* buf = ALLOCA_N(char, len);
+    buf = ALLOCA_N(char, len);
     SSL_get_finished(ssl, buf, len);
     return rb_str_new(buf, len);
 }
@@ -2352,16 +2363,16 @@ static VALUE
 ossl_ssl_get_peer_finished(VALUE self)
 {
     SSL *ssl;
+    char sizer[1], *buf;
+    size_t len;
 
     GetSSL(self, ssl);
 
-    char sizer[1];
-    size_t len = SSL_get_peer_finished(ssl, sizer, 0);
+    len = SSL_get_peer_finished(ssl, sizer, 0);
+    if (len == 0)
+        return Qnil;
 
-    if(len == 0)
-      return Qnil;
-
-    char* buf = ALLOCA_N(char, len);
+    buf = ALLOCA_N(char, len);
     SSL_get_peer_finished(ssl, buf, len);
     return rb_str_new(buf, len);
 }

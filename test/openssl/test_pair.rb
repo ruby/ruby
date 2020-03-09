@@ -156,20 +156,6 @@ module OpenSSL::TestPairM
     }
   end
 
-  def test_puts_meta
-    ssl_pair {|s1, s2|
-      begin
-        old = $/
-        EnvUtil.suppress_warning {$/ = '*'}
-        s1.puts 'a'
-      ensure
-        EnvUtil.suppress_warning {$/ = old}
-      end
-      s1.close
-      assert_equal("a\n", s2.read)
-    }
-  end
-
   def test_puts_empty
     ssl_pair {|s1, s2|
       s1.puts
