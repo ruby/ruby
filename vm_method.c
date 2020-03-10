@@ -166,15 +166,20 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
             // invalidate cme if found to invalidate the inline method cache.
 
             if (METHOD_ENTRY_CACHED(cme)) {
-                // invalidate cc by invalidating cc->cme
-                VALUE owner = cme->owner;
-                rb_callable_method_entry_t *new_cme =
-                  (rb_callable_method_entry_t *)rb_method_entry_clone((const rb_method_entry_t *)cme);
-                struct rb_id_table *mtbl = RCLASS_M_TBL(RCLASS_ORIGIN(owner));
-                rb_id_table_insert(mtbl, mid, (VALUE)new_cme);
-                RB_OBJ_WRITTEN(owner, cme, new_cme);
+                if (METHOD_ENTRY_COMPLEMENTED(cme)) {
+                    // do nothing
+                }
+                else {
+                    // invalidate cc by invalidating cc->cme
+                    VALUE owner = cme->owner;
+                    VM_ASSERT(BUILTIN_TYPE(owner) == T_CLASS);
+                    rb_callable_method_entry_t *new_cme =
+                      (rb_callable_method_entry_t *)rb_method_entry_clone((const rb_method_entry_t *)cme);
+                    struct rb_id_table *mtbl = RCLASS_M_TBL(RCLASS_ORIGIN(owner));
+                    rb_id_table_insert(mtbl, mid, (VALUE)new_cme);
+                    RB_OBJ_WRITTEN(owner, cme, new_cme);
+                }
                 vm_me_invalidate_cache((rb_callable_method_entry_t *)cme);
-
                 RB_DEBUG_COUNTER_INC(cc_invalidate_tree_cme);
             }
 
