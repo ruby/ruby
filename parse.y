@@ -1107,8 +1107,8 @@ static int looking_at_eol_p(struct parser_params *p);
 %type <id>   keyword_variable user_variable sym operation operation2 operation3
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
 %type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords relop dot_or_colon
-%type <id>   p_kwrest p_kwnorest p_kw_label
-%type <id>   f_no_kwarg args_forward
+%type <id>   p_kwrest p_kwnorest p_any_kwrest p_kw_label
+%type <id>   f_no_kwarg f_any_kwrest args_forward
 %token END_OF_INPUT 0	"end-of-input"
 %token <id> '.'
 /* escaped chars, should be ignored otherwise */
@@ -3344,6 +3344,10 @@ f_rest_marg	: tSTAR f_norm_arg
 		    }
 		;
 
+f_any_kwrest	: f_kwrest
+		| f_no_kwarg {$$ = ID2VAL(idNil);}
+		;
+
 block_args_tail	: f_block_kwarg ',' f_kwrest opt_f_block_arg
 		    {
 			$$ = new_args_tail(p, $1, $3, $4, &@3);
@@ -3352,13 +3356,9 @@ block_args_tail	: f_block_kwarg ',' f_kwrest opt_f_block_arg
 		    {
 			$$ = new_args_tail(p, $1, Qnone, $2, &@1);
 		    }
-		| f_kwrest opt_f_block_arg
+		| f_any_kwrest opt_f_block_arg
 		    {
 			$$ = new_args_tail(p, Qnone, $1, $2, &@1);
-		    }
-		| f_no_kwarg opt_f_block_arg
-		    {
-			$$ = new_args_tail(p, Qnone, ID2VAL(idNil), $2, &@1);
 		    }
 		| f_block_arg
 		    {
@@ -4076,7 +4076,7 @@ p_arg		: p_expr
 		    }
 		;
 
-p_kwargs	: p_kwarg ',' p_kwrest
+p_kwargs	: p_kwarg ',' p_any_kwrest
 		    {
 			$$ =  new_hash_pattern_tail(p, new_unique_key_hash(p, $1, &@$), $3, &@$);
 		    }
@@ -4088,17 +4088,9 @@ p_kwargs	: p_kwarg ',' p_kwrest
 		    {
 			$$ =  new_hash_pattern_tail(p, new_unique_key_hash(p, $1, &@$), 0, &@$);
 		    }
-		| p_kwrest
+		| p_any_kwrest
 		    {
 			$$ =  new_hash_pattern_tail(p, new_hash(p, Qnone, &@$), $1, &@$);
-		    }
-		| p_kwarg ',' p_kwnorest
-		    {
-			$$ =  new_hash_pattern_tail(p, new_unique_key_hash(p, $1, &@$), ID2VAL(idNil), &@$);
-		    }
-		| p_kwnorest
-		    {
-			$$ =  new_hash_pattern_tail(p, new_hash(p, Qnone, &@$), ID2VAL(idNil), &@$);
 		    }
 		;
 
@@ -4173,6 +4165,10 @@ p_kwnorest	: kwrest_mark keyword_nil
 		    {
 		        $$ = 0;
 		    }
+		;
+
+p_any_kwrest	: p_kwrest
+		| p_kwnorest {$$ = ID2VAL(idNil);}
 		;
 
 p_value 	: p_primitive
@@ -4885,13 +4881,9 @@ args_tail	: f_kwarg ',' f_kwrest opt_f_block_arg
 		    {
 			$$ = new_args_tail(p, $1, Qnone, $2, &@1);
 		    }
-		| f_kwrest opt_f_block_arg
+		| f_any_kwrest opt_f_block_arg
 		    {
 			$$ = new_args_tail(p, Qnone, $1, $2, &@1);
-		    }
-		| f_no_kwarg opt_f_block_arg
-		    {
-			$$ = new_args_tail(p, Qnone, ID2VAL(idNil), $2, &@1);
 		    }
 		| f_block_arg
 		    {
