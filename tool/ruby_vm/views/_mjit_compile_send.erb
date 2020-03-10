@@ -41,7 +41,6 @@
             fprintf(f, "    const struct rb_call_data *cd = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)cd);
             fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
             fprintf(f, "    if (UNLIKELY(cd->cc != cc || !vm_cc_valid_p(cc, CLASS_OF(stack[%d])))) {\n", b->stack_size - 1 - argc);
-            // TODO: need to free cc
             fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
             fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
             fprintf(f, "        goto send_cancel;\n");
