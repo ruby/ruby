@@ -2968,7 +2968,14 @@ f_lambda(VALUE _)
 static VALUE
 vm_mtbl(VALUE self, VALUE obj, VALUE sym)
 {
-    vm_mtbl_dump(CLASS_OF(obj), SYM2ID(sym));
+    vm_mtbl_dump(CLASS_OF(obj), RTEST(sym) ? SYM2ID(sym) : 0);
+    return Qnil;
+}
+
+static VALUE
+vm_mtbl2(VALUE self, VALUE obj, VALUE sym)
+{
+    vm_mtbl_dump(obj, RTEST(sym) ? SYM2ID(sym) : 0);
     return Qnil;
 }
 
@@ -3260,10 +3267,13 @@ Init_VM(void)
     rb_define_singleton_method(rb_cRubyVM, "SDR", sdr, 0);
     rb_define_singleton_method(rb_cRubyVM, "NSDR", nsdr, 0);
     rb_define_singleton_method(rb_cRubyVM, "mtbl", vm_mtbl, 2);
+    rb_define_singleton_method(rb_cRubyVM, "mtbl", vm_mtbl, 2);
+    rb_define_singleton_method(rb_cRubyVM, "mtbl2", vm_mtbl2, 2);
 #else
     (void)sdr;
     (void)nsdr;
     (void)vm_mtbl;
+    (void)vm_mtbl2;
 #endif
 
     /* VM bootstrap: phase 2 */
