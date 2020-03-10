@@ -11665,7 +11665,8 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
                              (void *)me->defined_class)); //obj_info(me->defined_class)));
 
                     if (me->def->type == VM_METHOD_TYPE_ISEQ) {
-                        APPENDF((BUFF_ARGS, " (iseq:%p)", (void *)me->def->body.iseq.iseqptr));
+                        // APPENDF((BUFF_ARGS, " (iseq:%p)", (void *)me->def->body.iseq.iseqptr));
+                        APPENDF((BUFF_ARGS, " (iseq:%s)", obj_info(me->def->body.iseq.iseqptr)));
                     }
 		}
 		else {
