@@ -34,10 +34,12 @@ class Array
   end
 
   # call-seq:
-  #    ary.sample                  -> obj
-  #    ary.sample(random: rng)     -> obj
-  #    ary.sample(n)               -> new_ary
-  #    ary.sample(n, random: rng)  -> new_ary
+  #    ary.sample                                 -> obj
+  #    ary.sample(random: rng)                    -> obj
+  #    ary.sample(n)                              -> new_ary
+  #    ary.sample(n, random: rng)                 -> new_ary
+  #    ary.sample(n, replace: false)              -> new_ary
+  #    ary.sample(n, random: rng, replace: false) -> new_ary
   #
   # Choose a random element or +n+ random elements from the array.
   #
@@ -56,7 +58,13 @@ class Array
   #
   #    a.sample(random: Random.new(1))     #=> 6
   #    a.sample(4, random: Random.new(1))  #=> [6, 10, 9, 2]
-  def sample(n = (ary = false), random: Random)
-    __builtin_rb_ary_sample(random, n, ary)
+  #
+  # The optional +replace+ argument is +true+, samples with replacement.  The
+  # elements in the result array may be duplicated.
+  #
+  #    a = [ 1, 2, 3 ]
+  #    a.sample(6, replace: true) #=> [2, 1, 3, 1, 1, 3]
+  def sample(n = (ary = false), random: Random, replace: false)
+    __builtin_rb_ary_sample(random, n, ary, replace)
   end
 end
