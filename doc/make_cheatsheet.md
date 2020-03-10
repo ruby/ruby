@@ -94,3 +94,7 @@ Note that `test-coverage.dat` accumulates all runs of `make test-all`.
 Make sure that you remove the file if you want to measure one test run.
 
 You can see the coverage result of CI: https://rubyci.org/coverage
+
+## How to benchmark
+
+see <../benchmark/README.md>
