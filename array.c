@@ -6341,7 +6341,7 @@ rb_ary_shuffle(rb_execution_context_t *ec, VALUE ary, VALUE randgen)
 }
 
 static VALUE
-rb_ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE to_array)
+rb_ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE to_array, VALUE replace)
 {
     VALUE result;
     long n, len, i, j, k, idx[10];
@@ -6359,6 +6359,16 @@ rb_ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VA
     }
     n = NUM2LONG(nv);
     if (n < 0) rb_raise(rb_eArgError, "negative sample number");
+    if (rb_bool_expected(replace, "replace")) {
+        result = rb_ary_new_capa(n);
+        while (n-- > 0) {
+            i = RAND_UPTO(len);
+            len = RARRAY_LEN(ary);
+            if (i < 0 || i >= len) break;
+            rb_ary_push(result, RARRAY_AREF(ary, i));
+        }
+        return result;
+    }
     if (n > len) n = len;
     if (n <= numberof(idx)) {
 	for (i = 0; i < n; ++i) {
