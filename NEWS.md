@@ -19,6 +19,7 @@ sufficient information, see the ChangeLog file or Redmine
   accepting a single rest argument and no keywords.
   [[Feature #16166]]
 
+    ```ruby
     pr = proc{|*a, **kw| [a, kw]}
 
     pr.call([1])
@@ -28,6 +29,7 @@ sufficient information, see the ChangeLog file or Redmine
     pr.call([1, {a: 1}])
     # 2.7 => [[1], {:a=>1}] # and deprecation warning
     # 3.0 => [[[1, {:a=>1}]], {}]
+    ```
 
 * $SAFE is now a normal global variable with no special behavior.
   [[Feature #16131]]
