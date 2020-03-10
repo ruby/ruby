@@ -97,4 +97,4 @@ You can see the coverage result of CI: https://rubyci.org/coverage
 
 ## How to benchmark
 
-see <../benchmark/README.md>
+see https://github.com/ruby/ruby/tree/master/benchmark#make-benchmark
