@@ -4261,6 +4261,8 @@ VALUE
 rb_io_ungetbyte(VALUE io, VALUE b)
 {
     rb_io_t *fptr;
+    VALUE v;
+    unsigned char c;
 
     GetOpenFile(io, fptr);
     rb_io_check_byte_readable(fptr);
@@ -4269,8 +4271,8 @@ rb_io_ungetbyte(VALUE io, VALUE b)
         return Qnil;
       case T_FIXNUM:
       case T_BIGNUM: ;
-        VALUE v = rb_int_modulo(b, INT2FIX(256));
-        unsigned char c = NUM2INT(v) & 0xFF;
+        v = rb_int_modulo(b, INT2FIX(256));
+        c = NUM2INT(v) & 0xFF;
         b = rb_str_new((const char *)&c, 1);
         break;
       default:
