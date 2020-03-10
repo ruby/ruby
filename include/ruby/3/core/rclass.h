@@ -22,25 +22,26 @@
 #define  RUBY3_RCLASS_H
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
+#include "ruby/3/cast.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
-
-VALUE rb_class_get_superclass(VALUE);
-#define RCLASS_SUPER(c) rb_class_get_superclass(c)
-#define RMODULE_IS_OVERLAID RMODULE_IS_OVERLAID
-#define RMODULE_IS_REFINEMENT RMODULE_IS_REFINEMENT
+#define RMODULE_IS_OVERLAID              RMODULE_IS_OVERLAID
+#define RMODULE_IS_REFINEMENT            RMODULE_IS_REFINEMENT
 #define RMODULE_INCLUDED_INTO_REFINEMENT RMODULE_INCLUDED_INTO_REFINEMENT
-enum ruby_rmodule_flags {
-    RMODULE_IS_OVERLAID = RUBY_FL_USER2,
-    RMODULE_IS_REFINEMENT = RUBY_FL_USER3,
-    RMODULE_INCLUDED_INTO_REFINEMENT = RUBY_FL_USER4,
 
-    RMODULE_ENUM_END
+#define RCLASS(obj)  RUBY3_CAST((struct RClass *)(obj))
+#define RMODULE      RCLASS
+#define RCLASS_SUPER rb_class_get_superclass
+
+enum ruby_rmodule_flags {
+    RMODULE_IS_OVERLAID              = RUBY_FL_USER2,
+    RMODULE_IS_REFINEMENT            = RUBY_FL_USER3,
+    RMODULE_INCLUDED_INTO_REFINEMENT = RUBY_FL_USER4
 };
 
-#define RCLASS(obj)  (R_CAST(RClass)(obj))
-#define RMODULE(obj) RCLASS(obj)
+struct RClass; /* Opaque, declared here for RCLASS() macro. */
 
+RUBY3_SYMBOL_EXPORT_BEGIN()
+VALUE rb_class_get_superclass(VALUE);
 RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_RCLASS_H */
