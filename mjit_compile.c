@@ -32,12 +32,6 @@
 #define NOT_COMPILED_STACK_SIZE -1
 #define ALREADY_COMPILED_P(status, pos) (status->stack_size_for_pos[pos] != NOT_COMPILED_STACK_SIZE)
 
-static size_t
-call_data_index(CALL_DATA cd, const struct rb_iseq_constant_body *body)
-{
-    return cd - body->call_data;
-}
-
 // For propagating information needed for lazily pushing a frame.
 struct inlined_call_context {
     int orig_argc; // ci->orig_argc
@@ -55,8 +49,12 @@ struct compile_status {
     // If true, JIT-ed code will use local variables to store pushed values instead of
     // using VM's stack and moving stack pointer.
     bool local_stack_p;
-    // Safely-accessible cache entries copied from main thread.
+    // Safely-accessible ivar cache entries copied from main thread.
     union iseq_inline_storage_entry *is_entries;
+    // Safely-accessible call cache entries captured to compiled_iseq to be marked on GC
+    const struct rb_callcache **cc_entries;
+    // A pointer to root (i.e. not inlined) iseq being compiled.
+    const struct rb_iseq_constant_body *compiled_iseq;
     // Mutated optimization levels
     struct rb_mjit_compile_info *compile_info;
     // If `inlined_iseqs[pos]` is not NULL, `mjit_compile_body` tries to inline ISeq there.
@@ -77,6 +75,12 @@ struct case_dispatch_var {
     unsigned int base_pos;
     VALUE last_value;
 };
+
+static size_t
+call_data_index(CALL_DATA cd, const struct rb_iseq_constant_body *body)
+{
+    return cd - body->call_data;
+}
 
 // Returns true if call cache is still not obsoleted and vm_cc_cme(cc)->def->type is available.
 static bool
@@ -273,6 +277,9 @@ compile_cancel_handler(FILE *f, const struct rb_iseq_constant_body *body, struct
     fprintf(f, "    return Qundef;\n");
 }
 
+extern const struct rb_callcache **
+mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const struct rb_iseq_constant_body *captured_iseq);
+
 extern bool mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq,
                                              union iseq_inline_storage_entry *is_entries);
 
@@ -368,6 +375,9 @@ inlinable_iseq_p(const struct rb_iseq_constant_body *body)
             alloca(sizeof(const struct rb_iseq_constant_body *) * body->iseq_size) : NULL, \
         .is_entries = (body->is_size > 0) ? \
             alloca(sizeof(union iseq_inline_storage_entry) * body->is_size) : NULL, \
+        .cc_entries = (body->ci_size > 0) ? \
+            mjit_capture_cc_entries(status.compiled_iseq, body) : NULL, \
+        .compiled_iseq = status.compiled_iseq, \
         .compile_info = compile_root_p ? \
             rb_mjit_iseq_compile_info(body) : alloca(sizeof(struct rb_mjit_compile_info)) \
     }; \
@@ -393,7 +403,7 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
         if (insn == BIN(opt_send_without_block)) { // `compile_inlined_cancel_handler` supports only `opt_send_without_block`
             CALL_DATA cd = (CALL_DATA)body->iseq_encoded[pos + 1];
             const struct rb_callinfo *ci = cd->ci;
-            const struct rb_callcache *cc = mjit_iseq_cc_entries(iseq->body)[call_data_index(cd, body)]; // use copy to avoid race condition
+            const struct rb_callcache *cc = status->cc_entries[call_data_index(cd, body)]; // use copy to avoid race condition
 
             const rb_iseq_t *child_iseq;
             if (has_valid_method_type(cc) &&
@@ -411,7 +421,7 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
                             RSTRING_PTR(child_iseq->body->location.label),
                             RSTRING_PTR(rb_iseq_path(child_iseq)), FIX2INT(child_iseq->body->location.first_lineno));
 
-                struct compile_status child_status;
+                struct compile_status child_status = { .compiled_iseq = status->compiled_iseq };
                 INIT_COMPILE_STATUS(child_status, child_iseq->body, false);
                 child_status.inline_context = (struct inlined_call_context){
                     .orig_argc = vm_ci_argc(ci),
@@ -419,9 +429,10 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
                     .param_size = child_iseq->body->param.size,
                     .local_size = child_iseq->body->local_table_size
                 };
-                if ((child_iseq->body->ci_size > 0 || child_status.is_entries != NULL)
-                        && !mjit_copy_cache_from_main_thread(child_iseq, child_status.is_entries))
+                if ((child_iseq->body->ci_size > 0 && child_status.cc_entries == NULL)
+                    || (child_status.is_entries != NULL && !mjit_copy_cache_from_main_thread(child_iseq, child_status.is_entries))) {
                     return false;
+                }
 
                 fprintf(f, "ALWAYS_INLINE(static VALUE _mjit_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq));\n", pos);
                 fprintf(f, "static inline VALUE\n_mjit_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq)\n{\n", pos);
@@ -449,10 +460,10 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname)
         fprintf(f, "#define OPT_CHECKED_RUN 0\n\n");
     }
 
-    struct compile_status status;
+    struct compile_status status = { .compiled_iseq = iseq->body };
     INIT_COMPILE_STATUS(status, iseq->body, true);
-    if ((iseq->body->ci_size > 0 || status.is_entries != NULL)
-        && !mjit_copy_cache_from_main_thread(iseq, status.is_entries)) {
+    if ((iseq->body->ci_size > 0 && status.cc_entries == NULL)
+        || (status.is_entries != NULL && !mjit_copy_cache_from_main_thread(iseq, status.is_entries))) {
         return false;
     }
 

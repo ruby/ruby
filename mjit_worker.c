@@ -86,6 +86,7 @@
 #endif
 
 #include "vm_core.h"
+#include "vm_callinfo.h"
 #include "mjit.h"
 #include "gc.h"
 #include "ruby_assert.h"
@@ -160,7 +161,8 @@ struct rb_mjit_unit {
     // mjit_compile's optimization switches
     struct rb_mjit_compile_info compile_info;
     // captured CC values, they should be marked with iseq.
-    const struct rb_callcache **cc_entries; // size: iseq->body->ci_size
+    const struct rb_callcache **cc_entries;
+    unsigned int cc_entries_size; // iseq->body->ci_size + ones of inlined iseqs
 };
 
 // Linked list of struct rb_mjit_unit.
@@ -1149,6 +1151,40 @@ static void mjit_copy_job_handler(void *data);
 // vm_trace.c
 int rb_workqueue_register(unsigned flags, rb_postponed_job_func_t , void *);
 
+// Capture cc entries of `captured_iseq` and append them to `compiled_iseq->jit_unit->cc_entries`.
+// This is needed when `captured_iseq` is inlined by `compiled_iseq` and GC needs to mark inlined cc.
+//
+// This assumes that it's safe to reference cc without acquiring GVL.
+const struct rb_callcache **
+mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const struct rb_iseq_constant_body *captured_iseq)
+{
+    struct rb_mjit_unit *unit = compiled_iseq->jit_unit;
+    unsigned int new_entries_size = unit->cc_entries_size + captured_iseq->ci_size;
+    VM_ASSERT(captured_iseq->ci_size > 0);
+
+    // Allocate new cc_entries and append them to unit->cc_entries
+    const struct rb_callcache **cc_entries;
+    if (unit->cc_entries_size == 0) {
+        VM_ASSERT(unit->cc_entries == NULL);
+        unit->cc_entries = cc_entries = malloc(sizeof(struct rb_callcache *) * new_entries_size);
+        if (cc_entries == NULL) return NULL;
+    }
+    else {
+        cc_entries = realloc(unit->cc_entries, sizeof(struct rb_callcache *) * new_entries_size);
+        if (cc_entries == NULL) return NULL;
+        unit->cc_entries = cc_entries;
+        cc_entries += unit->cc_entries_size;
+    }
+    unit->cc_entries_size = new_entries_size;
+
+    // Capture cc to cc_enties
+    for (unsigned int i = 0; i < captured_iseq->ci_size; i++) {
+        cc_entries[i] = captured_iseq->call_data[i].cc;
+    }
+
+    return cc_entries;
+}
+
 // Copy inline cache values of `iseq` to `cc_entries` and `is_entries`.
 // These buffers should be pre-allocated properly prior to calling this function.
 // Return true if copy succeeds or is not needed.
@@ -1176,25 +1212,6 @@ mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq, union iseq_inline_storag
     CRITICAL_SECTION_FINISH(3, "in mjit_copy_cache_from_main_thread");
 
     if (UNLIKELY(mjit_opts.wait)) {
-        // setup pseudo jit_unit
-        //
-        // Usually jit_unit is created in `rb_mjit_add_iseq_to_process`.
-        // However, this copy job can be used for inlined ISeqs too, and
-        // inlined ISeq doesn't have a jit_unit.
-        // TODO: Manage the cc in outer ISeq's jit_unit.
-        if (iseq->body->jit_unit == NULL) {
-            // This function is invoked in mjit worker thread, so GC should not be invoked.
-            // To prevent GC with xmalloc(), use malloc() directly here.
-            // However, mixing xmalloc() and malloc() will cause another issue.
-            // TODO: fix this allocation code.
-            iseq->body->jit_unit = (struct rb_mjit_unit *)malloc(sizeof(struct rb_mjit_unit));
-            if (iseq->body->jit_unit == NULL) rb_fatal("malloc failed");
-            if (iseq->body->ci_size > 0) {
-                iseq->body->jit_unit->cc_entries =
-                  (const struct rb_callcache **)calloc(iseq->body->ci_size, sizeof(const struct rb_callcache *));
-                if (iseq->body->jit_unit->cc_entries == NULL) rb_fatal("malloc failed");
-            }
-        }
         mjit_copy_job_handler((void *)job);
     }
     else if (rb_workqueue_register(0, mjit_copy_job_handler, (void *)job)) {
