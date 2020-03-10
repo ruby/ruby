@@ -2374,12 +2374,6 @@ rb_data_object_wrap(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FU
     return newobj_of(klass, T_DATA, (VALUE)dmark, (VALUE)dfree, (VALUE)datap, FALSE);
 }
 
-#undef rb_data_object_alloc
-RUBY_ALIAS_FUNCTION(rb_data_object_alloc(VALUE klass, void *datap,
-					 RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree),
-		    rb_data_object_wrap, (klass, datap, dmark, dfree))
-
-
 VALUE
 rb_data_object_zalloc(VALUE klass, size_t size, RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree)
 {

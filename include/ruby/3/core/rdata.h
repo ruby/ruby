@@ -26,111 +26,127 @@
 # include <stddef.h>
 #endif
 
+#include "ruby/3/attr/deprecated.h"
+#include "ruby/3/attr/warning.h"
+#include "ruby/3/cast.h"
+#include "ruby/3/core/rbasic.h"
 #include "ruby/3/dllexport.h"
 #include "ruby/3/fl_type.h"
-#include "ruby/3/core/rbasic.h"
+#include "ruby/3/token_paste.h"
 #include "ruby/3/value.h"
 #include "ruby/3/value_type.h"
-#include "ruby/backward/2/gcc_version_since.h"
-#include "ruby/backward/2/r_cast.h"
+#include "ruby/defines.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+#ifdef RUBY_UNTYPED_DATA_WARNING
+# /* Take that. */
+#elif defined(RUBY_EXPORT)
+# define RUBY_UNTYPED_DATA_WARNING 1
+#else
+# define RUBY_UNTYPED_DATA_WARNING 0
+#endif
 
-#define RUBY_MACRO_SELECT(base, n) TOKEN_PASTE(base, n)
+/** @cond INTERNAL_MACRO */
+#define RUBY3_DATA_FUNC(f) RUBY3_CAST((void (*)(void *))(f))
+#define RUBY3_ATTRSET_UNTYPED_DATA_FUNC() \
+    RUBY3_ATTR_WARNING(("untyped Data is unsafe; use TypedData instead")) \
+    RUBY3_ATTR_DEPRECATED(("by TypedData"))
+/** @endcond */
 
-#define RDATA(obj)   (R_CAST(RData)(obj))
-
-struct RData {
-    struct RBasic basic;
-    void (*dmark)(void*);
-    void (*dfree)(void*);
-    void *data;
-};
-
-#define DATA_PTR(dta) (RDATA(dta)->data)
+#define RDATA(obj)                RUBY3_CAST((struct RData *)(obj))
+#define DATA_PTR(obj)             RDATA(obj)->data
+#define RUBY_MACRO_SELECT         RUBY3_TOKEN_PASTE
+#define RUBY_DEFAULT_FREE         RUBY3_DATA_FUNC(-1)
+#define RUBY_NEVER_FREE           RUBY3_DATA_FUNC(0)
+#define RUBY_UNTYPED_DATA_FUNC(f) f RUBY3_ATTRSET_UNTYPED_DATA_FUNC()
 
 /*
 #define RUBY_DATA_FUNC(func) ((void (*)(void*))(func))
 */
 typedef void (*RUBY_DATA_FUNC)(void*);
 
-#ifndef RUBY_UNTYPED_DATA_WARNING
-# if defined RUBY_EXPORT
-#   define RUBY_UNTYPED_DATA_WARNING 1
-# else
-#   define RUBY_UNTYPED_DATA_WARNING 0
-# endif
-#endif
-VALUE rb_data_object_wrap(VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC);
-VALUE rb_data_object_zalloc(VALUE,size_t,RUBY_DATA_FUNC,RUBY_DATA_FUNC);
+struct RData {
+    struct RBasic basic;
+    RUBY_DATA_FUNC dmark;
+    RUBY_DATA_FUNC dfree;
+    void *data;
+};
 
-#define RUBY_DEFAULT_FREE ((RUBY_DATA_FUNC)-1)
-#define RUBY_NEVER_FREE   ((RUBY_DATA_FUNC)0)
+RUBY3_SYMBOL_EXPORT_BEGIN()
+VALUE rb_data_object_wrap(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree);
+VALUE rb_data_object_zalloc(VALUE klass, size_t size, RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree);
+RUBY3_SYMBOL_EXPORT_END()
 
-#define Data_Wrap_Struct(klass,mark,free,sval)\
-    rb_data_object_wrap((klass),(sval),(RUBY_DATA_FUNC)(mark),(RUBY_DATA_FUNC)(free))
+#define Data_Wrap_Struct(klass, mark, free, sval) \
+    rb_data_object_wrap(                          \
+        (klass),                                  \
+        (sval),                                   \
+        RUBY3_DATA_FUNC(mark),                    \
+        RUBY3_DATA_FUNC(free))
 
-#define Data_Make_Struct0(result, klass, type, size, mark, free, sval) \
-    VALUE result = rb_data_object_zalloc((klass), (size), \
-                                         (RUBY_DATA_FUNC)(mark), \
-                                         (RUBY_DATA_FUNC)(free)); \
-    (void)((sval) = (type *)DATA_PTR(result));
+#define Data_Make_Struct0(result, klass, type, size, mark, free, sval)  \
+    VALUE result = rb_data_object_zalloc(          \
+        (klass),                                   \
+        (size),                                    \
+        RUBY3_DATA_FUNC(mark),                     \
+        RUBY3_DATA_FUNC(free));                    \
+    (sval) = RUBY3_CAST((type *)DATA_PTR(result)); \
+    RUBY3_CAST(/*suppress unused variable warnings*/(void)(sval))
 
-#ifdef __GNUC__
-#define Data_Make_Struct(klass,type,mark,free,sval) RB_GNUC_EXTENSION_BLOCK(\
-    Data_Make_Struct0(data_struct_obj, klass, type, sizeof(type), mark, free, sval); \
-    data_struct_obj \
-)
+#ifdef HAVE_STMT_AND_DECL_IN_EXPR
+#define Data_Make_Struct(klass, type, mark, free, sval) \
+    RB_GNUC_EXTENSION({      \
+        Data_Make_Struct0(   \
+            data_struct_obj, \
+            klass,           \
+            type,            \
+            sizeof(type),    \
+            mark,            \
+            free,            \
+            sval);           \
+        data_struct_obj;     \
+    })
 #else
-#define Data_Make_Struct(klass,type,mark,free,sval) (\
-    rb_data_object_make((klass),(RUBY_DATA_FUNC)(mark),(RUBY_DATA_FUNC)(free),(void **)&(sval),sizeof(type)) \
-)
+#define Data_Make_Struct(klass, type, mark, free, sval) \
+    rb_data_object_make(              \
+        (klass),                      \
+        RUBY3_DATA_FUNC(mark),        \
+        RUBY3_DATA_FUNC(free),        \
+        RUBY3_CAST((void **)&(sval)), \
+        sizeof(type))
 #endif
 
-#define Data_Get_Struct(obj,type,sval) \
-    ((sval) = (type*)rb_data_object_get(obj))
+#define Data_Get_Struct(obj, type, sval) \
+    ((sval) = RUBY3_CAST((type*)rb_data_object_get(obj)))
 
-#if GCC_VERSION_SINCE(4,4,0)
-# define RUBY_UNTYPED_DATA_FUNC(func) func __attribute__((warning("untyped Data is unsafe; use TypedData instead")))
-#else
-# define RUBY_UNTYPED_DATA_FUNC(func) DEPRECATED(func)
-#endif
-
-#if defined(__GNUC__) && !defined(__NO_INLINE__)
-#if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
-RUBY_UNTYPED_DATA_FUNC(static inline VALUE rb_data_object_wrap_warning(VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC));
-#endif
-RUBY_UNTYPED_DATA_FUNC(static inline void *rb_data_object_get_warning(VALUE));
-
+RUBY3_ATTRSET_UNTYPED_DATA_FUNC()
 static inline VALUE
 rb_data_object_wrap_warning(VALUE klass, void *ptr, RUBY_DATA_FUNC mark, RUBY_DATA_FUNC free)
 {
     return rb_data_object_wrap(klass, ptr, mark, free);
 }
 
-#if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
-#define rb_data_object_wrap_warning(klass, ptr, mark, free) \
-    __extension__( \
-        __builtin_choose_expr( \
-            __builtin_constant_p(klass) && !(klass), \
-            rb_data_object_wrap(klass, ptr, mark, free), \
-            rb_data_object_wrap_warning(klass, ptr, mark, free)))
-#endif
-#endif
-
 static inline void *
 rb_data_object_get(VALUE obj)
 {
-    Check_Type(obj, RUBY_T_DATA);
-    return ((struct RData *)obj)->data;
+    RUBY3_ASSERT_TYPE(obj, RUBY_T_DATA);
+
+    return DATA_PTR(obj);
 }
 
-#if defined(__GNUC__) && !defined(__NO_INLINE__)
+RUBY3_ATTRSET_UNTYPED_DATA_FUNC()
 static inline void *
 rb_data_object_get_warning(VALUE obj)
 {
     return rb_data_object_get(obj);
 }
+
+#if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
+# define rb_data_object_wrap_warning(klass, ptr, mark, free) \
+    RB_GNUC_EXTENSION(                                       \
+        __builtin_choose_expr(                               \
+            __builtin_constant_p(klass) && !(klass),         \
+            rb_data_object_wrap(klass, ptr, mark, free),     \
+            (rb_data_object_wrap_warning)(klass, ptr, mark, free)))
 #endif
 
 static inline VALUE
@@ -140,27 +156,20 @@ rb_data_object_make(VALUE klass, RUBY_DATA_FUNC mark_func, RUBY_DATA_FUNC free_f
     return result;
 }
 
-#ifndef rb_data_object_alloc
-DEPRECATED_BY(rb_data_object_wrap, static inline VALUE rb_data_object_alloc(VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC));
+RUBY3_ATTR_DEPRECATED(("by: rb_data_object_wrap"))
 static inline VALUE
 rb_data_object_alloc(VALUE klass, void *data, RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree)
 {
     return rb_data_object_wrap(klass, data, dmark, dfree);
 }
-#endif
 
-#if defined(__GNUC__) && !defined(__NO_INLINE__)
 #define rb_data_object_wrap_0 rb_data_object_wrap
 #define rb_data_object_wrap_1 rb_data_object_wrap_warning
-#define rb_data_object_wrap  RUBY_MACRO_SELECT(rb_data_object_wrap_, RUBY_UNTYPED_DATA_WARNING)
-#define rb_data_object_get_0 rb_data_object_get
-#define rb_data_object_get_1 rb_data_object_get_warning
-#define rb_data_object_get  RUBY_MACRO_SELECT(rb_data_object_get_, RUBY_UNTYPED_DATA_WARNING)
+#define rb_data_object_wrap   RUBY_MACRO_SELECT(rb_data_object_wrap_, RUBY_UNTYPED_DATA_WARNING)
+#define rb_data_object_get_0  rb_data_object_get
+#define rb_data_object_get_1  rb_data_object_get_warning
+#define rb_data_object_get    RUBY_MACRO_SELECT(rb_data_object_get_, RUBY_UNTYPED_DATA_WARNING)
 #define rb_data_object_make_0 rb_data_object_make
 #define rb_data_object_make_1 rb_data_object_make_warning
 #define rb_data_object_make   RUBY_MACRO_SELECT(rb_data_object_make_, RUBY_UNTYPED_DATA_WARNING)
-#endif
-
-RUBY3_SYMBOL_EXPORT_END()
-
 #endif /* RUBY3_RDATA_H */
