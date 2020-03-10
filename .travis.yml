@@ -532,16 +532,9 @@ notifications:
     template:
       - "%{message} by @%{author}: See %{build_url}"
 
-  slack:
-    rooms:
-      - secure: ah7UEHBvncXT7bM5mvYIQAO+tIyV/wl7nXLb7wQD16dO2v8Gragy0mWjB79Q09hrrMGmp6H9bCDpdGS80boIA5EHaHoG4QaP0i9bsSt8U2AMWgZtfyIgQKJ4H2kXkGlrjO+AXTgnIkP7LNjdgAVUUTGQPb26T3QmoN2Splt+fIQ= # ruby:<token>#alerts
-    on_pull_requests: false
-    on_success: never
-    on_failure: always
-
   webhooks:
     urls:
-      - secure: mRsoS/UbqDkKkW5p3AEqM27d4SZnV6Gsylo3bm8T/deltQzTsGzZwrm7OIBXZv0UFZdE68XmPlyHfZFLSP2V9QZ7apXMf9/vw0GtcSe1gchtnjpAPF6lYBn7nMCbVPPx9cS0dwL927fjdRM1vj7IKZ2bk4F0lAJ25R25S6teqdk= # simpler alerts (travis)
+      - secure: mRsoS/UbqDkKkW5p3AEqM27d4SZnV6Gsylo3bm8T/deltQzTsGzZwrm7OIBXZv0UFZdE68XmPlyHfZFLSP2V9QZ7apXMf9/vw0GtcSe1gchtnjpAPF6lYBn7nMCbVPPx9cS0dwL927fjdRM1vj7IKZ2bk4F0lAJ25R25S6teqdk= # ruby-lang slack: ruby/simpler-alerts-bot (travis)
     on_pull_requests: false
     on_success: never
     on_failure: always
