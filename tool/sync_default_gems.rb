@@ -268,13 +268,11 @@ def sync_default_gems(gem)
   when "openssl"
     rm_rf(%w[ext/openssl test/openssl])
     cp_r("#{upstream}/ext/openssl", "ext")
-    mkdir_p("ext/openssl/lib")
-    cp_r("#{upstream}/lib/openssl", "ext/openssl/lib")
-    cp_r("#{upstream}/lib/openssl.rb", "ext/openssl/lib")
-    cp_r("#{upstream}/test", "test/openssl")
+    cp_r("#{upstream}/lib", "ext/openssl")
+    cp_r("#{upstream}/test/openssl", "test")
     rm_rf("test/openssl/envutil.rb")
     cp_r("#{upstream}/openssl.gemspec", "ext/openssl")
-    cp_r("#{upstream}/HISTORY.md", "ext/openssl")
+    cp_r("#{upstream}/History.md", "ext/openssl")
     `git checkout ext/openssl/depend`
   when "net-pop"
     rm_rf(%w[lib/net/pop.rb lib/net/pop test/net/pop])
