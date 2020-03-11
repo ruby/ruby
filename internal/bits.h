@@ -230,7 +230,7 @@ static inline unsigned int
 nlz_int32(uint32_t x)
 {
 #if defined(_MSC_VER) && defined(__AVX2__)
-    /* Note: It seems there is no such tihng like __LZCNT__ predefined in MSVC.
+    /* Note: It seems there is no such thing like __LZCNT__ predefined in MSVC.
      * AMD  CPUs have  had this  instruction for  decades (since  K10) but  for
      * Intel, Haswell is  the oldest one.  We need to  use __AVX2__ for maximum
      * safety. */
