@@ -23,6 +23,7 @@
 #include "ruby/3/cast.h"
 #include "ruby/3/core/rbasic.h"
 #include "ruby/3/core/rarray.h"
+#include "ruby/3/core/rtypeddata.h"
 #include "ruby/3/fl_type.h"
 #include "ruby/3/special_consts.h"
 #include "ruby/3/value_type.h"
@@ -65,5 +66,8 @@
 
 #undef RARRAY_TRANSIENT_P
 #define RARRAY_TRANSIENT_P(_) ((RARRAY_TRANSIENT_P)(RUBY3_CAST((VALUE)(_))))
+
+#undef RTYPEDDATA_P
+#define RTYPEDDATA_P(_) ((RTYPEDDATA_P)(RUBY3_CAST((VALUE)(_))))
 
 #endif /* RUBY_BACKWARD2_LOOSER_MACROS_H */

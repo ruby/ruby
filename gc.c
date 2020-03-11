@@ -2389,11 +2389,6 @@ rb_data_typed_object_wrap(VALUE klass, void *datap, const rb_data_type_t *type)
     return newobj_of(klass, T_DATA, (VALUE)type, (VALUE)1, (VALUE)datap, type->flags & RUBY_FL_WB_PROTECTED);
 }
 
-#undef rb_data_typed_object_alloc
-RUBY_ALIAS_FUNCTION(rb_data_typed_object_alloc(VALUE klass, void *datap,
-					       const rb_data_type_t *type),
-		    rb_data_typed_object_wrap, (klass, datap, type))
-
 VALUE
 rb_data_typed_object_zalloc(VALUE klass, size_t size, const rb_data_type_t *type)
 {
