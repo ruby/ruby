@@ -427,7 +427,7 @@ module Net   #:nodoc:
     #
     # Gets the body text from the target and outputs it to $stdout.  The
     # target can either be specified as
-    # (+uri+), or as (+host+, +path+, +port+ = 80); so:
+    # (+uri+, +headers+), or as (+host+, +path+, +port+ = 80); so:
     #
     #    Net::HTTP.get_print URI('http://www.example.com/index.html')
     #
@@ -435,8 +435,12 @@ module Net   #:nodoc:
     #
     #    Net::HTTP.get_print 'www.example.com', '/index.html'
     #
-    def HTTP.get_print(uri_or_host, path = nil, port = nil)
-      get_response(uri_or_host, path, port) {|res|
+    # you can also specify request headers:
+    #
+    #    Net::HTTP.get_print URI('http://www.example.com/index.html'), { 'Accept' => 'text/html' }
+    #
+    def HTTP.get_print(uri_or_host, path_or_headers = nil, port = nil)
+      get_response(uri_or_host, path_or_headers, port) {|res|
         res.read_body do |chunk|
           $stdout.print chunk
         end
@@ -446,7 +450,7 @@ module Net   #:nodoc:
 
     # Sends a GET request to the target and returns the HTTP response
     # as a string.  The target can either be specified as
-    # (+uri+), or as (+host+, +path+, +port+ = 80); so:
+    # (+uri+, +headers+), or as (+host+, +path+, +port+ = 80); so:
     #
     #    print Net::HTTP.get(URI('http://www.example.com/index.html'))
     #
@@ -454,13 +458,17 @@ module Net   #:nodoc:
     #
     #    print Net::HTTP.get('www.example.com', '/index.html')
     #
-    def HTTP.get(uri_or_host, path = nil, port = nil)
-      get_response(uri_or_host, path, port).body
+    # you can also specify request headers:
+    #
+    #    Net::HTTP.get_response(URI('http://www.example.com/index.html'), { 'Accept' => 'text/html' })
+    #
+    def HTTP.get(uri_or_host, path_or_headers = nil, port = nil)
+      get_response(uri_or_host, path_or_headers, port).body
     end
 
     # Sends a GET request to the target and returns the HTTP response
     # as a Net::HTTPResponse object.  The target can either be specified as
-    # (+uri+), or as (+host+, +path+, +port+ = 80); so:
+    # (+uri+, +headers+), or as (+host+, +path+, +port+ = 80); so:
     #
     #    res = Net::HTTP.get_response(URI('http://www.example.com/index.html'))
     #    print res.body
@@ -470,17 +478,23 @@ module Net   #:nodoc:
     #    res = Net::HTTP.get_response('www.example.com', '/index.html')
     #    print res.body
     #
-    def HTTP.get_response(uri_or_host, path = nil, port = nil, &block)
-      if path
+    # you can also specify request headers:
+    #
+    #    Net::HTTP.get_response(URI('http://www.example.com/index.html'), { 'Accept' => 'text/html' })
+    #
+    def HTTP.get_response(uri_or_host, path_or_headers = nil, port = nil, &block)
+      if path_or_headers && !path_or_headers.is_a?(Hash)
         host = uri_or_host
+        path = path_or_headers
         new(host, port || HTTP.default_port).start {|http|
           return http.request_get(path, &block)
         }
       else
         uri = uri_or_host
+        headers = path_or_headers
         start(uri.hostname, uri.port,
               :use_ssl => uri.scheme == 'https') {|http|
-          return http.request_get(uri, &block)
+          return http.request_get(uri, headers, &block)
         }
       end
     end
