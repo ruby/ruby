@@ -21,12 +21,16 @@
 #ifndef  RUBY3_RFILE_H
 #define  RUBY3_RFILE_H
 #include "ruby/3/core/rbasic.h"
-#include "ruby/backward/2/r_cast.h"
+#include "ruby/3/cast.h"
+
+/* rb_io_t is in ruby/io.h.  The header file has historically not been included
+ * into ruby/ruby.h.  We follow that tradition. */
+struct rb_io_t;
 
 struct RFile {
     struct RBasic basic;
     struct rb_io_t *fptr;
 };
 
-#define RFILE(obj)   (R_CAST(RFile)(obj))
+#define RFILE(obj) RUBY3_CAST((struct RFile *)(obj))
 #endif /* RUBY3_RFILE_H */
