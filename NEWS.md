@@ -101,8 +101,8 @@ Outstanding ones only.
     * Modified method
 
         * Net::HTTP.get, Net::HTTP.get_response, and Net::HTTP.get_print can
-          take request headers as Hash in the second argument when the first
-          argument is an URI.
+          take request headers as a Hash in the second argument when the first
+          argument is a URI.
 
 ## Compatibility issues
 
