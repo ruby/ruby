@@ -2821,6 +2821,36 @@ class TestArray < Test::Unit::TestCase
     }
   end
 
+  def test_repeated_sample
+    100.times do
+      samples = [2, 1, 0].repeated_sample(6)
+      assert_equal(6, samples.size)
+      samples.each {|sample|
+        assert_include([0, 1, 2], sample)
+      }
+    end
+  end
+
+  def test_repeated_sample_random
+    ary = (0...10000).to_a
+    gen0 = proc do |max|
+      max/2
+    end
+    class << gen0
+      alias rand call
+    end
+    gen1 = proc do |max|
+      ary.replace([])
+      max/2
+    end
+    class << gen1
+      alias rand call
+    end
+    assert_equal([5000, 5000, 5000, 5000], ary.repeated_sample(4, random: gen0))
+    assert_equal([], ary.repeated_sample(4, random: gen1))
+    assert_equal([], ary)
+  end
+
   def test_cycle
     a = []
     [0, 1, 2].cycle do |i|

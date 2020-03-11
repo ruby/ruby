@@ -5504,6 +5504,18 @@ rb_ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VA
 }
 
 static VALUE
+rb_ary_repeated_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv)
+{
+    long i, n = NUM2LONG(nv), len = RARRAY_LEN(ary);
+    if (n < 0) rb_raise(rb_eArgError, "negative sample number");
+    VALUE result = rb_ary_new_capa(n);
+    while (n-- > 0 && (i = RAND_UPTO(len)) >= 0 && i < (len = RARRAY_LEN(ary))) {
+        rb_ary_push(result, RARRAY_AREF(ary, i));
+    }
+    return result;
+}
+
+static VALUE
 rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
 {
     long mul;

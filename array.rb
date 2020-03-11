@@ -59,4 +59,17 @@ class Array
   def sample(n = (ary = false), random: Random)
     __builtin_rb_ary_sample(random, n, ary)
   end
+
+  # call-seq:
+  #    ary.repeated_sample(n)               -> new_ary
+  #    ary.repeated_sample(n, random: rng)  -> new_ary
+  #
+  # Chooses +n+ random elements with replacement from the array.  The
+  # elements in the result array may be duplicated.
+  #
+  #    a = [ 1, 2, 3 ]
+  #    a.repeated_sample(6) #=> [2, 1, 3, 1, 1, 3]
+  def repeated_sample(n, random: Random)
+    __builtin_rb_ary_repeated_sample(random, n)
+  end
 end
