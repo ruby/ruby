@@ -17,7 +17,6 @@
 #include "internal/array.h"
 #include "internal/compar.h"
 #include "internal/enum.h"
-#include "internal/error.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/numeric.h"
