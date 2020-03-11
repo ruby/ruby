@@ -33,9 +33,6 @@
 /* Following macros were formerly defined in this header but moved to somewhere
  * else.  In order to detect them we undef here. */
 
-/* internal/error.h */
-#undef Check_Type
-
 /* internal/class.h */
 #undef RClass
 #undef RCLASS_SUPER

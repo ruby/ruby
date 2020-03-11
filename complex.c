@@ -20,7 +20,6 @@
 #include "internal.h"
 #include "internal/class.h"
 #include "internal/complex.h"
-#include "internal/error.h"
 #include "internal/math.h"
 #include "internal/numeric.h"
 #include "internal/object.h"

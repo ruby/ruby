@@ -24,7 +24,6 @@
 #include "id.h"
 #include "internal.h"
 #include "internal/complex.h"
-#include "internal/error.h"
 #include "internal/gc.h"
 #include "internal/numeric.h"
 #include "internal/object.h"

@@ -56,7 +56,6 @@
 
 #include "internal.h"
 #include "internal/compilers.h"
-#include "internal/error.h"
 #include "internal/numeric.h"
 #include "internal/random.h"
 #include "internal/sanitizers.h"

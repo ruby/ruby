@@ -13,7 +13,6 @@
 #include "internal.h"
 #include "internal/compar.h"
 #include "internal/enum.h"
-#include "internal/error.h"
 #include "internal/hash.h"
 #include "internal/imemo.h"
 #include "internal/numeric.h"
