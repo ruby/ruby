@@ -364,8 +364,9 @@ rb_iseq_mark(const rb_iseq_t *iseq)
             for (unsigned int i=0; i<body->ci_size; i++) {
                 const struct rb_callcache *cc = cc_entries[i];
                 if (cc != NULL) {
-                    // Pin cc against GC.compact as the the address may be written in JIT-ed code.
+                    // Pin `cc` and `cc->cme` against GC.compact as their addresses may be written in JIT-ed code.
                     rb_gc_mark((VALUE)cc);
+                    rb_gc_mark((VALUE)vm_cc_cme(cc));
                 }
             }
         }

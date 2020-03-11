@@ -39,7 +39,8 @@
 
 % # JIT: Invalidate call cache if it requires vm_search_method. This allows to inline some of following things.
             fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
-            fprintf(f, "    if (UNLIKELY(!vm_cc_valid_p(cc, CLASS_OF(stack[%d])))) {\n", b->stack_size - 1 - argc);
+            fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+            fprintf(f, "    if (UNLIKELY(!vm_cc_valid_p(cc, cc_cme, CLASS_OF(stack[%d])))) {\n", b->stack_size - 1 - argc);
             fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
             fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
             fprintf(f, "        goto send_cancel;\n");
@@ -72,7 +73,7 @@
 % # JIT: Special CALL_METHOD. Bypass captured_cc->call and inline vm_call_iseq_setup_normal for vm_call_iseq_setup_func FASTPATH.
                 fprintf(f, "        {\n");
                 fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, vm_cc_cme(cc), 0, %d, %d);\n",
+                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n",
                            param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
