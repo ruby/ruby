@@ -285,11 +285,20 @@ module TestNetHTTP_version_1_1_methods
         Net::HTTP.get(config('host'), '/', config('port'))
 
     assert_equal $test_net_http_data, Net::HTTP.get(
+      URI.parse("http://#{config('host')}:#{config('port')}")
+    )
+    assert_equal $test_net_http_data, Net::HTTP.get(
       URI.parse("http://#{config('host')}:#{config('port')}"), "Accept" => "text/plain"
     )
   end
 
   def test_s_get_response
+    res = Net::HTTP.get_response(
+      URI.parse("http://#{config('host')}:#{config('port')}")
+    )
+    assert_equal "application/octet-stream", res["Content-Type"]
+    assert_equal $test_net_http_data, res.body
+
     res = Net::HTTP.get_response(
       URI.parse("http://#{config('host')}:#{config('port')}"), "Accept" => "text/plain"
     )
