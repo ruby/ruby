@@ -435,6 +435,10 @@ module Net   #:nodoc:
     #
     #    Net::HTTP.get_print 'www.example.com', '/index.html'
     #
+    # you can also specify request headers:
+    #
+    #    Net::HTTP.get_print URI('http://www.example.com/index.html'), { 'Accept' => 'text/html' }
+    #
     def HTTP.get_print(uri_or_host, path_or_headers = nil, port = nil)
       get_response(uri_or_host, path_or_headers, port) {|res|
         res.read_body do |chunk|
@@ -454,6 +458,10 @@ module Net   #:nodoc:
     #
     #    print Net::HTTP.get('www.example.com', '/index.html')
     #
+    # you can also specify request headers:
+    #
+    #    Net::HTTP.get_response(URI('http://www.example.com/index.html'), { 'Accept' => 'text/html' })
+    #
     def HTTP.get(uri_or_host, path_or_headers = nil, port = nil)
       get_response(uri_or_host, path_or_headers, port).body
     end
@@ -469,6 +477,10 @@ module Net   #:nodoc:
     #
     #    res = Net::HTTP.get_response('www.example.com', '/index.html')
     #    print res.body
+    #
+    # you can also specify request headers:
+    #
+    #    Net::HTTP.get_response(URI('http://www.example.com/index.html'), { 'Accept' => 'text/html' })
     #
     def HTTP.get_response(uri_or_host, path_or_headers = nil, port = nil, &block)
       if path_or_headers && !path_or_headers.is_a?(Hash)
