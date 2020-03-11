@@ -1073,7 +1073,7 @@ rebuild_table_if_necessary (st_table *tab)
 }
 
 /* Insert (KEY, VALUE) into table TAB and return zero.  If there is
-   already entry with KEY in the table, return nonzero and and update
+   already entry with KEY in the table, return nonzero and update
    the value of the found entry.  */
 int
 st_insert(st_table *tab, st_data_t key, st_data_t value)
@@ -1155,7 +1155,7 @@ st_add_direct(st_table *tab, st_data_t key, st_data_t value)
 
 /* Insert (FUNC(KEY), VALUE) into table TAB and return zero.  If
    there is already entry with KEY in the table, return nonzero and
-   and update the value of the found entry.  */
+   update the value of the found entry.  */
 int
 st_insert2(st_table *tab, st_data_t key, st_data_t value,
            st_data_t (*func)(st_data_t))
@@ -1464,7 +1464,7 @@ st_general_foreach(st_table *tab, st_foreach_check_callback_func *func, st_updat
 
     entries = tab->entries;
     /* The bound can change inside the loop even without rebuilding
-       the table, e.g. by an entry inesrtion.  */
+       the table, e.g. by an entry insertion.  */
     for (i = tab->entries_start; i < tab->entries_bound; i++) {
         curr_entry_ptr = &entries[i];
 	if (EXPECT(DELETED_ENTRY_P(curr_entry_ptr), 0))
