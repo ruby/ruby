@@ -26,14 +26,17 @@
 # include <stddef.h>
 #endif
 
+#include "ruby/3/assume.h"
 #include "ruby/3/attr/artificial.h"
 #include "ruby/3/attr/pure.h"
 #include "ruby/3/cast.h"
 #include "ruby/3/core/rbasic.h"
 #include "ruby/3/core/rdata.h"
 #include "ruby/3/dllexport.h"
+#include "ruby/3/error.h"
 #include "ruby/3/fl_type.h"
 #include "ruby/3/stdbool.h"
+#include "ruby/3/value_type.h"
 
 #define HAVE_TYPE_RB_DATA_TYPE_T     1
 #define HAVE_RB_DATA_TYPE_T_FUNCTION 1
@@ -128,9 +131,24 @@ RUBY3_SYMBOL_EXPORT_END()
 RUBY3_ATTR_PURE()
 RUBY3_ATTR_ARTIFICIAL()
 static inline bool
-RTYPEDDATA_P(VALUE obj)
+ruby3_rtypeddata_p(VALUE obj)
 {
     return RTYPEDDATA(obj)->typed_flag == 1;
+}
+
+RUBY3_ATTR_PURE_ON_NDEBUG()
+RUBY3_ATTR_ARTIFICIAL()
+static inline bool
+RTYPEDDATA_P(VALUE obj)
+{
+#if ! RUBY_NDEBUG
+    if (RB_UNLIKELY(! RB_TYPE_P(obj, RUBY_T_DATA))) {
+        Check_Type(obj, RUBY_T_DATA);
+        RUBY3_UNREACHABLE_RETURN(false);
+    }
+#endif
+
+    return ruby3_rtypeddata_p(obj);
 }
 
 RUBY3_ATTR_PURE_ON_NDEBUG()
@@ -139,7 +157,13 @@ RUBY3_ATTR_ARTIFICIAL()
 static inline const struct rb_data_type_struct *
 RTYPEDDATA_TYPE(VALUE obj)
 {
-    RUBY_ASSERT(RTYPEDDATA_P(obj));
+#if ! RUBY_NDEBUG
+    if (RB_UNLIKELY(! RTYPEDDATA_P(obj))) {
+        rb_unexpected_type(obj, RUBY_T_DATA);
+        RUBY3_UNREACHABLE_RETURN(NULL);
+    }
+#endif
+
     return RTYPEDDATA(obj)->type;
 }
 

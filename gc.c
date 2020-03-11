@@ -3590,10 +3590,10 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 		if (rb_obj_is_thread((VALUE)p)) break;
 		if (rb_obj_is_mutex((VALUE)p)) break;
 		if (rb_obj_is_fiber((VALUE)p)) break;
-		p->as.free.flags = 0;
 		if (RTYPEDDATA_P(p)) {
 		    RDATA(p)->dfree = RANY(p)->as.typeddata.type->function.dfree;
 		}
+                p->as.free.flags = 0;
 		if (RANY(p)->as.data.dfree == RUBY_DEFAULT_FREE) {
 		    xfree(DATA_PTR(p));
 		}
