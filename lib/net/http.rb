@@ -460,7 +460,7 @@ module Net   #:nodoc:
     #
     # you can also specify request headers:
     #
-    #    Net::HTTP.get_response(URI('http://www.example.com/index.html'), { 'Accept' => 'text/html' })
+    #    Net::HTTP.get(URI('http://www.example.com/index.html'), { 'Accept' => 'text/html' })
     #
     def HTTP.get(uri_or_host, path_or_headers = nil, port = nil)
       get_response(uri_or_host, path_or_headers, port).body
