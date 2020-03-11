@@ -22,6 +22,7 @@
 #define  RUBY3_VALUE_TYPE_H
 #include "ruby/3/assume.h"
 #include "ruby/3/attr/artificial.h"
+#include "ruby/3/attr/cold.h"
 #include "ruby/3/attr/enum_extensibility.h"
 #include "ruby/3/attr/forceinline.h"
 #include "ruby/3/attr/pure.h"
@@ -81,7 +82,6 @@
 #define T_ZOMBIE   RUBY_T_ZOMBIE
 
 #define BUILTIN_TYPE      RB_BUILTIN_TYPE
-#define Check_Type        rb_check_type
 #define DYNAMIC_SYM_P     RB_DYNAMIC_SYM_P
 #define RB_INTEGER_TYPE_P rb_integer_type_p
 #define SYMBOL_P          RB_SYMBOL_P
@@ -93,6 +93,7 @@
 #define RB_FLOAT_TYPE_P   RB_FLOAT_TYPE_P
 #define RB_SYMBOL_P       RB_SYMBOL_P
 #define RB_TYPE_P         RB_TYPE_P
+#define Check_Type        Check_Type
 
 #if RUBY_NDEBUG
 # define RUBY3_ASSERT_TYPE(v, t) RUBY3_ASSUME(RB_TYPE_P((v), (t)))
@@ -142,6 +143,7 @@ ruby_value_type {
 };
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
+RUBY3_ATTR_COLD()
 void rb_check_type(VALUE obj, int t);
 RUBY3_SYMBOL_EXPORT_END()
 
@@ -324,5 +326,38 @@ RB_TYPE_P(VALUE obj, enum ruby_value_type t)
     })
 #endif
 /** @endcond */
+
+RUBY3_ATTR_PURE()
+RUBY3_ATTR_ARTIFICIAL()
+/* Defined in ruby/3/core/rtypeddata.h */
+static inline bool ruby3_rtypeddata_p(VALUE obj);
+
+RUBY3_ATTR_FORCEINLINE()
+RUBY3_ATTR_ARTIFICIAL()
+static void
+Check_Type(VALUE v, enum ruby_value_type t)
+{
+    if (RB_UNLIKELY(! RB_TYPE_P(v, t))) {
+        goto slowpath;
+    }
+    else if (t != RUBY_T_DATA) {
+        goto fastpath;
+    }
+    else if (ruby3_rtypeddata_p(v)) {
+        /* The intention itself is not necessarily clear to me, but at least it
+         * is  intentional   to  rule   out  typed   data  here.    See  commit
+         * a7c32bf81d3391cfb78cfda278f469717d0fb794. */
+        goto slowpath;
+    }
+    else {
+        goto fastpath;
+    }
+
+  fastpath:
+    return;
+
+  slowpath: /* <- :TODO: mark this label as cold. */
+    rb_check_type(v, t);
+}
 
 #endif /* RUBY3_VALUE_TYPE_H */
