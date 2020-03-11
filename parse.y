@@ -454,6 +454,7 @@ set_line_body(NODE *body, int line)
 static NODE* cond(struct parser_params *p, NODE *node, const YYLTYPE *loc);
 static NODE* method_cond(struct parser_params *p, NODE *node, const YYLTYPE *loc);
 #define new_nil(loc) NEW_NIL(loc)
+static NODE *new_nil_at(struct parser_params *p, const rb_code_position_t *pos);
 static NODE *new_if(struct parser_params*,NODE*,NODE*,NODE*,const YYLTYPE*);
 static NODE *new_unless(struct parser_params*,NODE*,NODE*,NODE*,const YYLTYPE*);
 static NODE *logop(struct parser_params*,ID,NODE*,NODE*,const YYLTYPE*,const YYLTYPE*);
@@ -2215,48 +2216,32 @@ arg		: lhs '=' arg_rhs
 		| arg tDOT2
 		    {
 		    /*%%%*/
-                        YYLTYPE loc;
-                        loc.beg_pos = @2.end_pos;
-                        loc.end_pos = @2.end_pos;
-
 			value_expr($1);
-			$$ = NEW_DOT2($1, new_nil(&loc), &@$);
+			$$ = NEW_DOT2($1, new_nil_at(p, &@2.end_pos), &@$);
 		    /*% %*/
 		    /*% ripper: dot2!($1, Qnil) %*/
 		    }
 		| arg tDOT3
 		    {
 		    /*%%%*/
-                        YYLTYPE loc;
-                        loc.beg_pos = @2.end_pos;
-                        loc.end_pos = @2.end_pos;
-
 			value_expr($1);
-			$$ = NEW_DOT3($1, new_nil(&loc), &@$);
+			$$ = NEW_DOT3($1, new_nil_at(p, &@2.end_pos), &@$);
 		    /*% %*/
 		    /*% ripper: dot3!($1, Qnil) %*/
 		    }
 		| tBDOT2 arg
 		    {
 		    /*%%%*/
-                        YYLTYPE loc;
-                        loc.beg_pos = @1.beg_pos;
-                        loc.end_pos = @1.beg_pos;
-
 			value_expr($2);
-			$$ = NEW_DOT2(new_nil(&loc), $2, &@$);
+			$$ = NEW_DOT2(new_nil_at(p, &@1.beg_pos), $2, &@$);
 		    /*% %*/
 		    /*% ripper: dot2!(Qnil, $2) %*/
 		    }
 		| tBDOT3 arg
 		    {
 		    /*%%%*/
-                        YYLTYPE loc;
-                        loc.beg_pos = @1.beg_pos;
-                        loc.end_pos = @1.beg_pos;
-
 			value_expr($2);
-			$$ = NEW_DOT3(new_nil(&loc), $2, &@$);
+			$$ = NEW_DOT3(new_nil_at(p, &@1.beg_pos), $2, &@$);
 		    /*% %*/
 		    /*% ripper: dot3!(Qnil, $2) %*/
 		    }
@@ -4192,25 +4177,17 @@ p_value 	: p_primitive
 		    }
 		| p_primitive tDOT2
 		    {
-			/*%%%*/
-			YYLTYPE loc;
-			loc.beg_pos = @2.end_pos;
-			loc.end_pos = @2.end_pos;
-
+		    /*%%%*/
 			value_expr($1);
-			$$ = NEW_DOT2($1, new_nil(&loc), &@$);
+			$$ = NEW_DOT2($1, new_nil_at(p, &@2.end_pos), &@$);
 		    /*% %*/
 		    /*% ripper: dot2!($1, Qnil) %*/
 		    }
 		| p_primitive tDOT3
 		    {
 		    /*%%%*/
-			YYLTYPE loc;
-			loc.beg_pos = @2.end_pos;
-			loc.end_pos = @2.end_pos;
-
 			value_expr($1);
-			$$ = NEW_DOT3($1, new_nil(&loc), &@$);
+			$$ = NEW_DOT3($1, new_nil_at(p, &@2.end_pos), &@$);
 		    /*% %*/
 		    /*% ripper: dot3!($1, Qnil) %*/
 		    }
@@ -4220,24 +4197,16 @@ p_value 	: p_primitive
 		| tBDOT2 p_primitive
 		    {
 		    /*%%%*/
-			YYLTYPE loc;
-			loc.beg_pos = @1.beg_pos;
-			loc.end_pos = @1.beg_pos;
-
 			value_expr($2);
-			$$ = NEW_DOT2(new_nil(&loc), $2, &@$);
+			$$ = NEW_DOT2(new_nil_at(p, &@1.beg_pos), $2, &@$);
 		    /*% %*/
 		    /*% ripper: dot2!(Qnil, $2) %*/
 		    }
 		| tBDOT3 p_primitive
 		    {
 		    /*%%%*/
-			YYLTYPE loc;
-			loc.beg_pos = @1.beg_pos;
-			loc.end_pos = @1.beg_pos;
-
 			value_expr($2);
-			$$ = NEW_DOT3(new_nil(&loc), $2, &@$);
+			$$ = NEW_DOT3(new_nil_at(p, &@1.beg_pos), $2, &@$);
 		    /*% %*/
 		    /*% ripper: dot3!(Qnil, $2) %*/
 		    }
@@ -11155,6 +11124,13 @@ method_cond(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 {
     if (node == 0) return 0;
     return cond0(p, node, COND_IN_OP, loc);
+}
+
+static NODE*
+new_nil_at(struct parser_params *p, const rb_code_position_t *pos)
+{
+    YYLTYPE loc = {*pos, *pos};
+    return NEW_NIL(&loc);
 }
 
 static NODE*
