@@ -32,26 +32,31 @@
  */
 #ifndef  RUBY3_RHASH_H
 #define  RUBY3_RHASH_H
+#include "ruby/3/config.h"
+
+#ifdef STDC_HEADERS
+# include <stddef.h>
+#endif
+
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
 #if !defined RUBY_EXPORT && !defined RUBY_NO_OLD_COMPATIBILITY
 # include "ruby/backward.h"
 #endif
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+#define RHASH_TBL(h)                rb_hash_tbl(h, __FILE__, __LINE__)
+#define RHASH_ITER_LEV(h)           rb_hash_iter_lev(h)
+#define RHASH_IFNONE(h)             rb_hash_ifnone(h)
+#define RHASH_SIZE(h)               rb_hash_size_num(h)
+#define RHASH_EMPTY_P(h)            (RHASH_SIZE(h) == 0)
+#define RHASH_SET_IFNONE(h, ifnone) rb_hash_set_ifnone((VALUE)h, ifnone)
 
-/* RHash is defined at internal.h */
+struct st_table;  /* in ruby/st.h */
+
+RUBY3_SYMBOL_EXPORT_BEGIN()
 size_t rb_hash_size_num(VALUE hash);
 struct st_table *rb_hash_tbl(VALUE, const char *file, int line);
 VALUE rb_hash_set_ifnone(VALUE hash, VALUE ifnone);
-
-#define RHASH_TBL(h) rb_hash_tbl(h, __FILE__, __LINE__)
-#define RHASH_ITER_LEV(h) rb_hash_iter_lev(h)
-#define RHASH_IFNONE(h) rb_hash_ifnone(h)
-#define RHASH_SIZE(h) rb_hash_size_num(h)
-#define RHASH_EMPTY_P(h) (RHASH_SIZE(h) == 0)
-#define RHASH_SET_IFNONE(h, ifnone) rb_hash_set_ifnone((VALUE)h, ifnone)
-
 RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_RHASH_H */
