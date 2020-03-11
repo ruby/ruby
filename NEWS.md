@@ -98,6 +98,12 @@ Outstanding ones only.
         * Add Net::HTTP#verify_hostname= and Net::HTTP#verify_hostname
           to skip hostname verification.  [[Feature #16555]]
 
+    * Modified method
+
+        * Net::HTTP.get, Net::HTTP.get_response, and Net::HTTP.get_print can
+          take request headers as Hash in the second argument when the first
+          argument is an URI.
+
 ## Compatibility issues
 
 Excluding feature bug fixes.
