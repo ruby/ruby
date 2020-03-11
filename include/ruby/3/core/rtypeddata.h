@@ -26,23 +26,49 @@
 # include <stddef.h>
 #endif
 
+#include "ruby/3/attr/artificial.h"
+#include "ruby/3/attr/pure.h"
+#include "ruby/3/cast.h"
+#include "ruby/3/core/rbasic.h"
 #include "ruby/3/core/rdata.h"
 #include "ruby/3/dllexport.h"
-#include "ruby/backward/2/r_cast.h"
+#include "ruby/3/fl_type.h"
+#include "ruby/3/stdbool.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+#define HAVE_TYPE_RB_DATA_TYPE_T     1
+#define HAVE_RB_DATA_TYPE_T_FUNCTION 1
+#define HAVE_RB_DATA_TYPE_T_PARENT   1
+#define RUBY_TYPED_DEFAULT_FREE      RUBY_DEFAULT_FREE
+#define RUBY_TYPED_NEVER_FREE        RUBY_NEVER_FREE
+#define RTYPEDDATA(obj)              RUBY3_CAST((struct RTypedData *)(obj))
+#define RTYPEDDATA_DATA(v)           (RTYPEDDATA(v)->data)
+#define Check_TypedStruct(v, t)      \
+    rb_check_typeddata(RUBY3_CAST((VALUE)(v)), (t))
 
-#define RTYPEDDATA(obj)   (R_CAST(RTypedData)(obj))
+/** @cond INTERNAL_MACRO */
+#define RTYPEDDATA_P                 RTYPEDDATA_P
+#define RTYPEDDATA_TYPE              RTYPEDDATA_TYPE
+#define RUBY_TYPED_FREE_IMMEDIATELY  RUBY_TYPED_FREE_IMMEDIATELY
+#define RUBY_TYPED_WB_PROTECTED      RUBY_TYPED_WB_PROTECTED
+#define RUBY_TYPED_PROMOTED1         RUBY_TYPED_PROMOTED1
+/** @endcond */
+
+/* bits for rb_data_type_struct::flags */
+enum ruby3_typeddata_flags {
+    RUBY_TYPED_FREE_IMMEDIATELY = 1,
+    RUBY_TYPED_WB_PROTECTED     = RUBY_FL_WB_PROTECTED, /* THIS FLAG DEPENDS ON Ruby version */
+    RUBY_TYPED_PROMOTED1        = RUBY_FL_PROMOTED1     /* THIS FLAG DEPENDS ON Ruby version */
+};
 
 typedef struct rb_data_type_struct rb_data_type_t;
 
 struct rb_data_type_struct {
     const char *wrap_struct_name;
     struct {
-        void (*dmark)(void*);
-        void (*dfree)(void*);
+        RUBY_DATA_FUNC dmark;
+        RUBY_DATA_FUNC dfree;
         size_t (*dsize)(const void *);
-        void (*dcompact)(void*);
+        RUBY_DATA_FUNC dcompact;
         void *reserved[1]; /* For future extension.
                               This array *must* be filled with ZERO. */
     } function;
@@ -52,10 +78,6 @@ struct rb_data_type_struct {
     VALUE flags;       /* RUBY_FL_WB_PROTECTED */
 };
 
-#define HAVE_TYPE_RB_DATA_TYPE_T 1
-#define HAVE_RB_DATA_TYPE_T_FUNCTION 1
-#define HAVE_RB_DATA_TYPE_T_PARENT 1
-
 struct RTypedData {
     struct RBasic basic;
     const rb_data_type_t *type;
@@ -63,45 +85,63 @@ struct RTypedData {
     void *data;
 };
 
-#define RTYPEDDATA_P(v)    (RTYPEDDATA(v)->typed_flag == 1)
-#define RTYPEDDATA_TYPE(v) (RTYPEDDATA(v)->type)
-#define RTYPEDDATA_DATA(v) (RTYPEDDATA(v)->data)
-
+RUBY3_SYMBOL_EXPORT_BEGIN()
 VALUE rb_data_typed_object_wrap(VALUE klass, void *datap, const rb_data_type_t *);
 VALUE rb_data_typed_object_zalloc(VALUE klass, size_t size, const rb_data_type_t *type);
 int rb_typeddata_inherited_p(const rb_data_type_t *child, const rb_data_type_t *parent);
-int rb_typeddata_is_kind_of(VALUE, const rb_data_type_t *);
-void *rb_check_typeddata(VALUE, const rb_data_type_t *);
-#define Check_TypedStruct(v,t) rb_check_typeddata((VALUE)(v),(t))
-
-#define RUBY_TYPED_DEFAULT_FREE RUBY_DEFAULT_FREE
-#define RUBY_TYPED_NEVER_FREE   RUBY_NEVER_FREE
-
-/* bits for rb_data_type_struct::flags */
-#define RUBY_TYPED_FREE_IMMEDIATELY  1 /* TYPE field */
-#define RUBY_TYPED_WB_PROTECTED      RUBY_FL_WB_PROTECTED /* THIS FLAG DEPENDS ON Ruby version */
-#define RUBY_TYPED_PROMOTED1         RUBY_FL_PROMOTED1    /* THIS FLAG DEPENDS ON Ruby version */
+int rb_typeddata_is_kind_of(VALUE obj, const rb_data_type_t *data_type);
+void *rb_check_typeddata(VALUE obj, const rb_data_type_t *data_type);
+RUBY3_SYMBOL_EXPORT_END()
 
 #define TypedData_Wrap_Struct(klass,data_type,sval)\
   rb_data_typed_object_wrap((klass),(sval),(data_type))
 
 #define TypedData_Make_Struct0(result, klass, type, size, data_type, sval) \
-    VALUE result = rb_data_typed_object_zalloc(klass, size, data_type); \
-    (void)((sval) = (type *)DATA_PTR(result));
+    VALUE result = rb_data_typed_object_zalloc(klass, size, data_type);    \
+    (sval) = RUBY3_CAST((type *)RTYPEDDATA_DATA(result));                  \
+    RUBY3_CAST(/*suppress unused variable warnings*/(void)(sval))
 
-#ifdef __GNUC__
-#define TypedData_Make_Struct(klass, type, data_type, sval) RB_GNUC_EXTENSION_BLOCK(\
-    TypedData_Make_Struct0(data_struct_obj, klass, type, sizeof(type), data_type, sval); \
-    data_struct_obj \
-)
+#ifdef HAVE_STMT_AND_DECL_IN_EXPR
+#define TypedData_Make_Struct(klass, type, data_type, sval) \
+    RB_GNUC_EXTENSION({         \
+        TypedData_Make_Struct0( \
+            data_struct_obj,    \
+            klass,              \
+            type,               \
+            sizeof(type),       \
+            data_type,          \
+            sval);              \
+        data_struct_obj;        \
+    })
 #else
-#define TypedData_Make_Struct(klass, type, data_type, sval) (\
-    rb_data_typed_object_make((klass),(data_type),(void **)&(sval),sizeof(type)) \
-)
+#define TypedData_Make_Struct(klass, type, data_type, sval) \
+    rb_data_typed_object_make(        \
+        (klass),                      \
+        (data_type),                  \
+        RUBY3_CAST((void **)&(sval)), \
+        sizeof(type))
 #endif
 
 #define TypedData_Get_Struct(obj,type,data_type,sval) \
-    ((sval) = (type*)rb_check_typeddata((obj), (data_type)))
+    ((sval) = RUBY3_CAST((type *)rb_check_typeddata((obj), (data_type))))
+
+RUBY3_ATTR_PURE()
+RUBY3_ATTR_ARTIFICIAL()
+static inline bool
+RTYPEDDATA_P(VALUE obj)
+{
+    return RTYPEDDATA(obj)->typed_flag == 1;
+}
+
+RUBY3_ATTR_PURE_ON_NDEBUG()
+RUBY3_ATTR_ARTIFICIAL()
+/* :TODO: can this function be __attribute__((returns_nonnull)) or not? */
+static inline const struct rb_data_type_struct *
+RTYPEDDATA_TYPE(VALUE obj)
+{
+    RUBY_ASSERT(RTYPEDDATA_P(obj));
+    return RTYPEDDATA(obj)->type;
+}
 
 static inline VALUE
 rb_data_typed_object_make(VALUE klass, const rb_data_type_t *type, void **datap, size_t size)
@@ -110,15 +150,11 @@ rb_data_typed_object_make(VALUE klass, const rb_data_type_t *type, void **datap,
     return result;
 }
 
-#ifndef rb_data_typed_object_alloc
-DEPRECATED_BY(rb_data_typed_object_wrap, static inline VALUE rb_data_typed_object_alloc(VALUE,void*,const rb_data_type_t*));
+RUBY3_ATTR_DEPRECATED(("by: rb_data_typed_object_wrap"))
 static inline VALUE
 rb_data_typed_object_alloc(VALUE klass, void *datap, const rb_data_type_t *type)
 {
     return rb_data_typed_object_wrap(klass, datap, type);
 }
-#endif
-
-RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_RTYPEDDATA_H */
