@@ -363,7 +363,12 @@ strio_init(int argc, VALUE *argv, struct StringIO *ptr, VALUE self)
 	rb_str_resize(string, 0);
     }
     ptr->string = string;
-    ptr->enc = convconfig.enc;
+    if (argc == 1) {
+	ptr->enc = rb_enc_get(string);
+    }
+    else {
+	ptr->enc = convconfig.enc;
+    }
     ptr->pos = 0;
     ptr->lineno = 0;
     if (ptr->flags & FMODE_SETENC_BY_BOM) set_encoding_by_bom(ptr);
@@ -1759,9 +1764,6 @@ strio_set_encoding_by_bom(VALUE self)
 {
     struct StringIO *ptr = StringIO(self);
 
-    if (ptr->enc) {
-	rb_raise(rb_eArgError, "encoding conversion is set");
-    }
     if (!set_encoding_by_bom(ptr)) return Qnil;
     return rb_enc_from_encoding(ptr->enc);
 }

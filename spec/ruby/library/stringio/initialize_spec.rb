@@ -187,11 +187,14 @@ end
 describe "StringIO#initialize sets the encoding to" do
   before :each do
     @external = Encoding.default_external
+    @internal = Encoding.default_internal
     Encoding.default_external = Encoding::ISO_8859_2
+    Encoding.default_internal = Encoding::ISO_8859_2
   end
 
   after :each do
     Encoding.default_external = @external
+    Encoding.default_internal = @internal
   end
 
   it "Encoding.default_external when passed no arguments" do

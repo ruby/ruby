@@ -797,6 +797,18 @@ class TestStringIO < Test::Unit::TestCase
     end
   end
 
+  def test_binary_encoding_read_and_default_internal
+    verbose, $VERBOSE = $VERBOSE, nil
+    default_internal = Encoding.default_internal
+    Encoding.default_internal = Encoding::UTF_8
+    $VERBOSE = verbose
+    assert_equal Encoding::BINARY, StringIO.new("Hello".b).read.encoding
+  ensure
+    $VERBOSE = nil
+    Encoding.default_internal = default_internal
+    $VERBOSE = verbose
+  end
+
   def assert_string(content, encoding, str, mesg = nil)
     assert_equal([content, encoding], [str, str.encoding], mesg)
   end
