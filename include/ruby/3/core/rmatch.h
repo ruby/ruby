@@ -20,10 +20,24 @@
  */
 #ifndef  RUBY3_RMATCH_H
 #define  RUBY3_RMATCH_H
-#include "ruby/3/value.h"
+#include "ruby/3/attr/artificial.h"
+#include "ruby/3/attr/pure.h"
+#include "ruby/3/attr/returns_nonnull.h"
+#include "ruby/3/cast.h"
 #include "ruby/3/core/rbasic.h"
-#include "ruby/backward/2/r_cast.h"
+#include "ruby/3/value.h"
+#include "ruby/3/value_type.h"
+#include "ruby/assert.h"
 
+#define RMATCH(obj) RUBY3_CAST((struct RMatch *)(obj))
+/** @cond INTERNAL_MACRO */
+#define RMATCH_REGS RMATCH_REGS
+/** @endcond */
+
+struct re_patter_buffer; /* a.k.a. OnigRegexType, defined in onigmo.h */
+struct re_registers;     /* Also in onigmo.h */
+
+/* @shyouhei wonders: is anyone actively using this typedef ...? */
 typedef struct re_pattern_buffer Regexp;
 
 struct rmatch_offset {
@@ -45,7 +59,15 @@ struct RMatch {
     VALUE regexp;  /* RRegexp */
 };
 
-#define RMATCH(obj)  (R_CAST(RMatch)(obj))
-#define RMATCH_REGS(obj)  (&(R_CAST(RMatch)(obj))->rmatch->regs)
+RUBY3_ATTR_PURE_ON_NDEBUG()
+RUBY3_ATTR_RETURNS_NONNULL()
+RUBY3_ATTR_ARTIFICIAL()
+static inline struct re_registers *
+RMATCH_REGS(VALUE match)
+{
+    RUBY3_ASSERT_TYPE(match, RUBY_T_MATCH);
+    RUBY3_ASSERT_OR_ASSUME(RMATCH(match)->rmatch != NULL);
+    return &RMATCH(match)->rmatch->regs;
+}
 
 #endif /* RUBY3_RMATCH_H */
