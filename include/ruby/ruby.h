@@ -55,6 +55,7 @@
 #include "ruby/backward/2/limits.h"
 #include "ruby/backward/2/looser_macros.h"
 #include "ruby/backward/2/rmodule.h"
+#include "ruby/backward/2/r_cast.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 
