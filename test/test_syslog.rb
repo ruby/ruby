@@ -113,7 +113,7 @@ class TestSyslog < Test::Unit::TestCase
   end
 
   def syslog_line_regex(ident, message)
-    /(?:^| )#{Regexp.quote(ident)}(?:\[([1-9][0-9]*)\])?(?: |[: ].* )#{Regexp.quote(message)}$/
+    /(?:^| )#{Regexp.quote(ident)}(?:\[([1-9][0-9]*)\])?(?: | ([1-9][0-9]*) - - ||[: ].* )#{Regexp.quote(message)}$/
   end
 
   def test_log
@@ -170,8 +170,9 @@ class TestSyslog < Test::Unit::TestCase
         end
         m = re.match(line)
         assert_not_nil(m)
-        assert_not_nil(m[1])
-        assert_equal(pid, m[1].to_i)
+        output_pid = m[1] || m[2]
+        assert_not_nil(output_pid)
+        assert_equal(pid, output_pid.to_i)
       }
     }
   end
