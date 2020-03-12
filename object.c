@@ -493,7 +493,7 @@ mutable_obj_clone(VALUE obj, int kwfreeze)
 
         argv[0] = obj;
         argv[1] = freeze_false_hash;
-        rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_CALLED_KEYWORDS);
+        rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
     }
 
     return clone;
