@@ -20,10 +20,24 @@
  */
 #ifndef  RUBY3_RREGEXP_H
 #define  RUBY3_RREGEXP_H
+#include "ruby/3/attr/artificial.h"
+#include "ruby/3/attr/pure.h"
+#include "ruby/3/cast.h"
 #include "ruby/3/core/rbasic.h"
 #include "ruby/3/core/rstring.h"
 #include "ruby/3/value.h"
-#include "ruby/backward/2/r_cast.h"
+#include "ruby/3/value_type.h"
+
+#define RREGEXP(obj)     RUBY3_CAST((struct RRegexp *)(obj))
+#define RREGEXP_PTR(obj) (RREGEXP(obj)->ptr)
+/** @cond INTERNAL_MACRO */
+#define RREGEXP_SRC      RREGEXP_SRC
+#define RREGEXP_SRC_PTR  RREGEXP_SRC_PTR
+#define RREGEXP_SRC_LEN  RREGEXP_SRC_LEN
+#define RREGEXP_SRC_END  RREGEXP_SRC_END
+/** @endcond */
+
+struct re_patter_buffer; /* a.k.a. OnigRegexType, defined in onigmo.h */
 
 struct RRegexp {
     struct RBasic basic;
@@ -31,12 +45,40 @@ struct RRegexp {
     const VALUE src;
     unsigned long usecnt;
 };
-#define RREGEXP_PTR(r) (RREGEXP(r)->ptr)
-#define RREGEXP_SRC(r) (RREGEXP(r)->src)
-#define RREGEXP_SRC_PTR(r) RSTRING_PTR(RREGEXP(r)->src)
-#define RREGEXP_SRC_LEN(r) RSTRING_LEN(RREGEXP(r)->src)
-#define RREGEXP_SRC_END(r) RSTRING_END(RREGEXP(r)->src)
 
-#define RREGEXP(obj) (R_CAST(RRegexp)(obj))
+RUBY3_ATTR_PURE_ON_NDEBUG()
+RUBY3_ATTR_ARTIFICIAL()
+static inline VALUE
+RREGEXP_SRC(VALUE rexp)
+{
+    RUBY3_ASSERT_TYPE(rexp, RUBY_T_REGEXP);
+    VALUE ret = RREGEXP(rexp)->src;
+    RUBY3_ASSERT_TYPE(ret, RUBY_T_STRING);
+    return ret;
+}
+
+RUBY3_ATTR_PURE_ON_NDEBUG()
+RUBY3_ATTR_ARTIFICIAL()
+static inline char *
+RREGEXP_SRC_PTR(VALUE rexp)
+{
+    return RSTRING_PTR(RREGEXP_SRC(rexp));
+}
+
+RUBY3_ATTR_PURE_ON_NDEBUG()
+RUBY3_ATTR_ARTIFICIAL()
+static inline long
+RREGEXP_SRC_LEN(VALUE rexp)
+{
+    return RSTRING_LEN(RREGEXP_SRC(rexp));
+}
+
+RUBY3_ATTR_PURE_ON_NDEBUG()
+RUBY3_ATTR_ARTIFICIAL()
+static inline char *
+RREGEXP_SRC_END(VALUE rexp)
+{
+    return RSTRING_END(RREGEXP_SRC(rexp));
+}
 
 #endif /* RUBY3_RREGEXP_H */
