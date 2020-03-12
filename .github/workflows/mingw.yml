@@ -91,7 +91,7 @@ jobs:
           make -j $jobs update-gems
 
       - name: make all
-        timeout-minutes: 20
+        timeout-minutes: 40
         working-directory: build
         run: |
           $jobs = [int]$env:NUMBER_OF_PROCESSORS + 1
@@ -114,7 +114,7 @@ jobs:
           make test
 
       - name: test-all
-        timeout-minutes: 25
+        timeout-minutes: 50
         working-directory: build
         run: |
           $env:TMPDIR = "$pwd/../temp"
