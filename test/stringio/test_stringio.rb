@@ -797,6 +797,14 @@ class TestStringIO < Test::Unit::TestCase
     end
   end
 
+  def test_binary_encoding_read_and_default_internal
+    default_internal = Encoding.default_internal
+    Encoding.default_internal = Encoding::UTF_8
+    assert_equal Encoding::BINARY, StringIO.new("Hello".b).read.encoding
+  ensure
+    Encoding.default_internal = default_internal
+  end
+
   def assert_string(content, encoding, str, mesg = nil)
     assert_equal([content, encoding], [str, str.encoding], mesg)
   end
