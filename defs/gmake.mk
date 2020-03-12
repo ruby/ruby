@@ -243,14 +243,13 @@ HELP_EXTRA_TASKS = \
 	"  update-github:       merge master branch and push it to Pull Request [PR=1234]" \
 	""
 
-ifneq ($(filter refresh-gems,$(MAKECMDGOALS)),)
+ifneq ($(filter extract-gems refresh-gems prepare-gems,$(MAKECMDGOALS)),)
 extract-gems: update-gems
+endif
+ifneq ($(filter refresh-gems,$(MAKECMDGOALS)),)
 update-gems: update-bundled_gems
 endif
-ifneq ($(filter extract-gems,$(MAKECMDGOALS)),)
-extract-gems: $(filter update-gems update-bundled_gems,$(MAKECMDGOALS))
-endif
-ifneq ($(filter update-gems,$(MAKECMDGOALS)),)
+ifneq ($(filter update-gems prepare-gems,$(MAKECMDGOALS)),)
 update-gems: $(filter update-bundled_gems,$(MAKECMDGOALS))
 endif
 
