@@ -841,6 +841,16 @@ rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
   #define STRICT_ALIGNMENT
 #endif
 
+/*
+ * Some OpenBSD platforms (including sparc64) require strict alignment.
+ */
+#if defined(__OpenBSD__)
+  #include <sys/endian.h>
+  #ifdef __STRICT_ALIGNMENT
+    #define STRICT_ALIGNMENT
+  #endif
+#endif
+
 #ifdef STRICT_ALIGNMENT
   #if defined(HAVE_TRUE_LONG_LONG) && SIZEOF_LONG_LONG > SIZEOF_VALUE
     #define ALIGNMENT_SIZE SIZEOF_LONG_LONG
