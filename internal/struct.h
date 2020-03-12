@@ -50,6 +50,10 @@ struct RStruct {
 # undef RSTRUCT_GET
 #endif
 
+#define RSTRUCT_LEN internal_RSTRUCT_LEN
+#define RSTRUCT_SET internal_RSTRUCT_SET
+#define RSTRUCT_GET internal_RSTRUCT_GET
+
 /* struct.c */
 VALUE rb_struct_init_copy(VALUE copy, VALUE s);
 VALUE rb_struct_lookup(VALUE s, VALUE idx);
