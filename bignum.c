@@ -6744,6 +6744,41 @@ rb_big_aref(VALUE x, VALUE y)
 }
 
 VALUE
+rb_big_positive_aref2(VALUE num, VALUE beg, VALUE len)
+{
+    beg = rb_to_int(beg);
+    len = rb_to_int(len);
+    ssize_t shift = NUM2SSIZET(beg);
+    ssize_t length = NUM2SSIZET(len);
+    if (length < 0) return rb_big_rshift(num, beg);
+    ssize_t shift_numdigits = shift >> bit_length(BITSPERDIG - 1);
+    size_t shift_numbits = shift & (BITSPERDIG - 1);
+    size_t v_numdigits = (length + BITSPERDIG - 1) / BITSPERDIG;
+    size_t mask = ((size_t)1 << (1 + (length + BITSPERDIG - 1) % BITSPERDIG)) - 1;
+    size_t n_numdigits = BIGNUM_LEN(num);
+    BDIGIT *nds = BDIGITS(num);
+    VALUE v = bignew(v_numdigits, 1);
+    BDIGIT *vds = BDIGITS(v);
+    BDIGIT low = 0 <= shift_numdigits && (size_t)shift_numdigits < n_numdigits ? nds[shift_numdigits] : 0;
+    size_t i;
+    BDIGITS_ZERO(vds, v_numdigits);
+    for (i = (shift_numdigits < 0 ? -shift_numdigits - 1 : 0); i < v_numdigits; i++) {
+        if (i + shift_numdigits + 1 < n_numdigits) {
+            BDIGIT high = nds[i + shift_numdigits + 1];
+            vds[i] = BIGLO((BIGUP(high) | low) >> shift_numbits);
+            low = high;
+        }
+        else {
+            vds[i] = low >> shift_numbits;
+            break;
+        }
+    }
+    vds[v_numdigits - 1] &= mask;
+    return bignorm(v);
+}
+
+
+VALUE
 rb_big_hash(VALUE x)
 {
     st_index_t hash;

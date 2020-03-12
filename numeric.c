@@ -175,6 +175,7 @@ static VALUE fix_lshift(long, unsigned long);
 static VALUE fix_rshift(long, unsigned long);
 static VALUE int_pow(long x, unsigned long y);
 static VALUE int_even_p(VALUE x);
+static VALUE int_aref2(VALUE num, VALUE beg, VALUE len);
 static int int_round_zero_p(VALUE num, int ndigits);
 VALUE rb_int_floor(VALUE num, int ndigits);
 VALUE rb_int_ceil(VALUE num, int ndigits);
@@ -4703,7 +4704,7 @@ generate_mask(VALUE len)
 static VALUE
 int_aref1(VALUE num, VALUE arg)
 {
-    VALUE orig_num = num, beg, end;
+    VALUE beg, end;
     int excl;
 
     if (rb_range_values(arg, &beg, &end, &excl)) {
@@ -4723,22 +4724,19 @@ int_aref1(VALUE num, VALUE arg)
                 return INT2FIX(0);
             }
         }
-        num = rb_int_rshift(num, beg);
 
         int cmp = compare_indexes(beg, end);
         if (!NIL_P(end) && cmp < 0) {
             VALUE len = rb_int_minus(end, beg);
             if (!excl) len = rb_int_plus(len, INT2FIX(1));
-            VALUE mask = generate_mask(len);
-            num = rb_int_and(num, mask);
+            return int_aref2(num, beg, len);
         }
         else if (cmp == 0) {
             if (excl) return INT2FIX(0);
-            num = orig_num;
             arg = beg;
             goto one_bit;
         }
-        return num;
+        return rb_int_rshift(num, beg);
     }
 
 one_bit:
@@ -4754,10 +4752,14 @@ one_bit:
 static VALUE
 int_aref2(VALUE num, VALUE beg, VALUE len)
 {
-    num = rb_int_rshift(num, beg);
-    VALUE mask = generate_mask(len);
-    num = rb_int_and(num, mask);
-    return num;
+    if (RB_TYPE_P(num, T_BIGNUM) && BIGNUM_POSITIVE_P(num)) {
+        return rb_big_positive_aref2(num, beg, len);
+    }
+    else {
+        num = rb_int_rshift(num, beg);
+        VALUE mask = generate_mask(len);
+        return rb_int_and(num, mask);
+    }
 }
 
 /*
