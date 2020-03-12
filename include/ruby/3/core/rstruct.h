@@ -20,22 +20,54 @@
  */
 #ifndef  RUBY3_RSTRUCT_H
 #define  RUBY3_RSTRUCT_H
+#include "ruby/3/attr/artificial.h"
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
+#include "ruby/3/value_type.h"
+#include "ruby/3/arithmetic/long.h"
+#include "ruby/3/arithmetic/int.h"
 #if !defined RUBY_EXPORT && !defined RUBY_NO_OLD_COMPATIBILITY
 # include "ruby/backward.h"
 #endif
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+#define RSTRUCT_PTR(st) rb_struct_ptr(st)
+/** @cond INTERNAL_MACRO */
+#define RSTRUCT_LEN RSTRUCT_LEN
+#define RSTRUCT_SET RSTRUCT_SET
+#define RSTRUCT_GET RSTRUCT_GET
+/** @endcond */
 
+RUBY3_SYMBOL_EXPORT_BEGIN()
 VALUE rb_struct_size(VALUE s);
 VALUE rb_struct_aref(VALUE, VALUE);
 VALUE rb_struct_aset(VALUE, VALUE, VALUE);
-#define RSTRUCT_LEN(st)         NUM2LONG(rb_struct_size(st))
-#define RSTRUCT_PTR(st)         rb_struct_ptr(st)
-#define RSTRUCT_SET(st, idx, v) rb_struct_aset(st, INT2NUM(idx), (v))
-#define RSTRUCT_GET(st, idx)    rb_struct_aref(st, INT2NUM(idx))
-
 RUBY3_SYMBOL_EXPORT_END()
+
+RUBY3_ATTR_ARTIFICIAL()
+static inline long
+RSTRUCT_LEN(VALUE st)
+{
+    RUBY3_ASSERT_TYPE(st, RUBY_T_STRUCT);
+
+    return RB_NUM2LONG(rb_struct_size(st));
+}
+
+RUBY3_ATTR_ARTIFICIAL()
+static inline VALUE
+RSTRUCT_SET(VALUE st, int k, VALUE v)
+{
+    RUBY3_ASSERT_TYPE(st, RUBY_T_STRUCT);
+
+    return rb_struct_aset(st, INT2NUM(k), (v));
+}
+
+RUBY3_ATTR_ARTIFICIAL()
+static inline VALUE
+RSTRUCT_GET(VALUE st, int k)
+{
+    RUBY3_ASSERT_TYPE(st, RUBY_T_STRUCT);
+
+    return rb_struct_aref(st, INT2NUM(k));
+}
 
 #endif /* RUBY3_RSTRUCT_H */
