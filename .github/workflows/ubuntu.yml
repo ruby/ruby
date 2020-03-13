@@ -52,7 +52,7 @@ jobs:
         working-directory: build
       - run: make $JOBS
         working-directory: build
-      - run: make update-gems extract-gems
+      - run: make prepare-gems
         working-directory: build
         if: matrix.test_task == 'check'
       - name: Create dummy files in build dir
