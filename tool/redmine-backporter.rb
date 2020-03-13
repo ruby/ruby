@@ -241,7 +241,7 @@ def find_svn_log(pattern)
 end
 
 def find_git_log(pattern)
-  `git #{RUBY_REPO_PATH ? "-C #{RUBY_REPO_PATH.shellecape}" : ""} log --grep="#{pattern}"`
+  `git #{RUBY_REPO_PATH ? "-C #{RUBY_REPO_PATH.shellescape}" : ""} log --grep="#{pattern}"`
 end
 
 def show_last_journal(http, uri)
@@ -447,8 +447,12 @@ eom
     end
     if log && rev
       str = log[/merge revision\(s\) ([^:]+)(?=:)/]
-      str.insert(5, "d")
-      str = "ruby_#{TARGET_VERSION.tr('.','_')} #{rev} #{str}."
+      if str
+        str.insert(5, "d")
+        str = "ruby_#{TARGET_VERSION.tr('.','_')} #{rev} #{str}."
+      else
+        str = "ruby_#{TARGET_VERSION.tr('.','_')} #{rev}."
+      end
       if notes
         str << "\n"
         str << notes
