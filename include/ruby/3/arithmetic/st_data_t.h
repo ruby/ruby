@@ -20,15 +20,40 @@
  */
 #ifndef  RUBY3_ARITHMERIC_ST_DATA_T_H
 #define  RUBY3_ARITHMERIC_ST_DATA_T_H
-#include "ruby/3/config.h"
+#include "ruby/3/arithmetic/fixnum.h"
 #include "ruby/3/arithmetic/long.h"
+#include "ruby/3/attr/artificial.h"
+#include "ruby/3/attr/const.h"
+#include "ruby/3/attr/constexpr.h"
+#include "ruby/3/cast.h"
+#include "ruby/3/value.h"
+#include "ruby/assert.h"
 #include "ruby/st.h"
 
-#if SIZEOF_LONG < SIZEOF_VALUE
-#define RB_ST2FIX(h) RB_LONG2FIX((long)((h) > 0 ? (h) & (unsigned long)-1 >> 2 : (h) | ~((unsigned long)-1 >> 2)))
-#else
-#define RB_ST2FIX(h) RB_LONG2FIX((long)(h))
-#endif
-#define ST2FIX(h) RB_ST2FIX(h)
+#define ST2FIX    RB_ST2FIX
+/** @cond INTERNAL_MACRO */
+#define RB_ST2FIX RB_ST2FIX
+/** @endcond */
+
+RUBY3_ATTR_CONST_ON_NDEBUG()
+RUBY3_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
+RUBY3_ATTR_ARTIFICIAL()
+/* See also [ruby-core:84395] [Bug #14218] [ruby-core:82687] [Bug #13877] */
+static inline VALUE
+RB_ST2FIX(st_data_t i)
+{
+    SIGNED_VALUE x = i;
+
+    if (x >= 0) {
+        x &= RUBY_FIXNUM_MAX;
+    }
+    else {
+        x |= RUBY_FIXNUM_MIN;
+    }
+
+    RUBY3_ASSERT_OR_ASSUME(RB_FIXABLE(x));
+    unsigned long y = RUBY3_CAST((unsigned long)x);
+    return RB_LONG2FIX(y);
+}
 
 #endif /* RUBY3_ARITHMERIC_ST_DATA_T_H */
