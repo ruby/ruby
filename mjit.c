@@ -980,6 +980,7 @@ mjit_finish(bool close_handle_p)
     verbose(1, "Successful MJIT finish");
 }
 
+// Called by rb_vm_mark() to mark iseq being JIT-ed and iseqs in the unit queue.
 void
 mjit_mark(void)
 {
@@ -1014,10 +1015,21 @@ mjit_mark(void)
     RUBY_MARK_LEAVE("mjit");
 }
 
-const struct rb_callcache **
-mjit_iseq_cc_entries(const struct rb_iseq_constant_body *const body)
+// Called by rb_iseq_mark() to mark cc_entries captured for MJIT
+void
+mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body)
 {
-    return body->jit_unit->cc_entries;
+    const struct rb_callcache **cc_entries;
+    if (body->jit_unit && (cc_entries = body->jit_unit->cc_entries) != NULL) {
+        for (unsigned int i = 0; i < body->ci_size; i++) {
+            const struct rb_callcache *cc = cc_entries[i];
+            if (cc != NULL) {
+                // Pin `cc` and `cc->cme` against GC.compact as their addresses may be written in JIT-ed code.
+                rb_gc_mark((VALUE)cc);
+                rb_gc_mark((VALUE)vm_cc_cme(cc));
+            }
+        }
+    }
 }
 
 // A hook to update valid_class_serials.
