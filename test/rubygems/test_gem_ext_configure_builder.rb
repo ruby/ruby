@@ -18,10 +18,6 @@ class TestGemExtConfigureBuilder < Gem::TestCase
   end
 
   def test_self_build
-    if java_platform? && ENV["CI"]
-      skip("failing on jruby")
-    end
-
     skip("test_self_build skipped on MS Windows (VC++)") if vc_windows?
 
     File.open File.join(@ext, './configure'), 'w' do |configure|
@@ -49,10 +45,6 @@ class TestGemExtConfigureBuilder < Gem::TestCase
   end
 
   def test_self_build_fail
-    if java_platform? && ENV["CI"]
-      skip("failing on jruby")
-    end
-
     skip("test_self_build_fail skipped on MS Windows (VC++)") if vc_windows?
     output = []
 
