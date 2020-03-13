@@ -51,8 +51,8 @@ struct compile_status {
     bool local_stack_p;
     // Safely-accessible ivar cache entries copied from main thread.
     union iseq_inline_storage_entry *is_entries;
-    // Safely-accessible call cache entries captured to compiled_iseq to be marked on GC
-    const struct rb_callcache **cc_entries;
+    // Index of call cache entries captured to compiled_iseq to be marked on GC
+    int cc_entries_index;
     // A pointer to root (i.e. not inlined) iseq being compiled.
     const struct rb_iseq_constant_body *compiled_iseq;
     // Mutated optimization levels
@@ -80,6 +80,18 @@ static size_t
 call_data_index(CALL_DATA cd, const struct rb_iseq_constant_body *body)
 {
     return cd - body->call_data;
+}
+
+const struct rb_callcache ** mjit_iseq_cc_entries(const struct rb_iseq_constant_body *const body);
+
+// Using this function to refer to cc_entries allocated by `mjit_capture_cc_entries`
+// instead of storing cc_entries in status directly so that we always refer to a new address
+// returned by `realloc` inside it.
+static const struct rb_callcache **
+captured_cc_entries(const struct compile_status *status)
+{
+    VM_ASSERT(status->cc_entries_index != -1);
+    return mjit_iseq_cc_entries(status->compiled_iseq) + status->cc_entries_index;
 }
 
 // Returns true if call cache is still not obsoleted and vm_cc_cme(cc)->def->type is available.
@@ -277,7 +289,7 @@ compile_cancel_handler(FILE *f, const struct rb_iseq_constant_body *body, struct
     fprintf(f, "    return Qundef;\n");
 }
 
-extern const struct rb_callcache **
+extern int
 mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const struct rb_iseq_constant_body *captured_iseq);
 
 extern bool mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq,
@@ -375,8 +387,8 @@ inlinable_iseq_p(const struct rb_iseq_constant_body *body)
             alloca(sizeof(const struct rb_iseq_constant_body *) * body->iseq_size) : NULL, \
         .is_entries = (body->is_size > 0) ? \
             alloca(sizeof(union iseq_inline_storage_entry) * body->is_size) : NULL, \
-        .cc_entries = (body->ci_size > 0) ? \
-            mjit_capture_cc_entries(status.compiled_iseq, body) : NULL, \
+        .cc_entries_index = (body->ci_size > 0) ? \
+            mjit_capture_cc_entries(status.compiled_iseq, body) : -1, \
         .compiled_iseq = status.compiled_iseq, \
         .compile_info = compile_root_p ? \
             rb_mjit_iseq_compile_info(body) : alloca(sizeof(struct rb_mjit_compile_info)) \
@@ -403,7 +415,7 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
         if (insn == BIN(opt_send_without_block)) { // `compile_inlined_cancel_handler` supports only `opt_send_without_block`
             CALL_DATA cd = (CALL_DATA)body->iseq_encoded[pos + 1];
             const struct rb_callinfo *ci = cd->ci;
-            const struct rb_callcache *cc = status->cc_entries[call_data_index(cd, body)]; // use copy to avoid race condition
+            const struct rb_callcache *cc = captured_cc_entries(status)[call_data_index(cd, body)]; // use copy to avoid race condition
 
             const rb_iseq_t *child_iseq;
             if (has_valid_method_type(cc) &&
@@ -429,7 +441,7 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
                     .param_size = child_iseq->body->param.size,
                     .local_size = child_iseq->body->local_table_size
                 };
-                if ((child_iseq->body->ci_size > 0 && child_status.cc_entries == NULL)
+                if ((child_iseq->body->ci_size > 0 && child_status.cc_entries_index == -1)
                     || (child_status.is_entries != NULL && !mjit_copy_cache_from_main_thread(child_iseq, child_status.is_entries))) {
                     return false;
                 }
@@ -462,7 +474,7 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname)
 
     struct compile_status status = { .compiled_iseq = iseq->body };
     INIT_COMPILE_STATUS(status, iseq->body, true);
-    if ((iseq->body->ci_size > 0 && status.cc_entries == NULL)
+    if ((iseq->body->ci_size > 0 && status.cc_entries_index == -1)
         || (status.is_entries != NULL && !mjit_copy_cache_from_main_thread(iseq, status.is_entries))) {
         return false;
     }

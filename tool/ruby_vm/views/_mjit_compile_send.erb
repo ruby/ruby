@@ -14,7 +14,7 @@
     MAYBE_UNUSED(<%= ope.fetch(:decl) %>) = (<%= ope.fetch(:type) %>)operands[<%= i %>];
 % end
 % # compiler: Use copied cc to avoid race condition
-    const struct rb_callcache *captured_cc = status->cc_entries[call_data_index(cd, body)];
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
 %
     if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc)) {
         const rb_iseq_t *iseq;

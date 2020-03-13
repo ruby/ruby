@@ -1151,11 +1151,21 @@ static void mjit_copy_job_handler(void *data);
 // vm_trace.c
 int rb_workqueue_register(unsigned flags, rb_postponed_job_func_t , void *);
 
+// To see cc_entries using index returned by `mjit_capture_cc_entries` in mjit_compile.c
+const struct rb_callcache **
+mjit_iseq_cc_entries(const struct rb_iseq_constant_body *const body)
+{
+    return body->jit_unit->cc_entries;
+}
+
 // Capture cc entries of `captured_iseq` and append them to `compiled_iseq->jit_unit->cc_entries`.
 // This is needed when `captured_iseq` is inlined by `compiled_iseq` and GC needs to mark inlined cc.
 //
+// Index to refer to `compiled_iseq->jit_unit->cc_entries` is returned instead of the address
+// because old addresses may be invalidated by `realloc` later. -1 is returned on failure.
+//
 // This assumes that it's safe to reference cc without acquiring GVL.
-const struct rb_callcache **
+int
 mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const struct rb_iseq_constant_body *captured_iseq)
 {
     struct rb_mjit_unit *unit = compiled_iseq->jit_unit;
@@ -1164,16 +1174,17 @@ mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const
 
     // Allocate new cc_entries and append them to unit->cc_entries
     const struct rb_callcache **cc_entries;
+    int cc_entries_index = unit->cc_entries_size;
     if (unit->cc_entries_size == 0) {
         VM_ASSERT(unit->cc_entries == NULL);
         unit->cc_entries = cc_entries = malloc(sizeof(struct rb_callcache *) * new_entries_size);
-        if (cc_entries == NULL) return NULL;
+        if (cc_entries == NULL) return -1;
     }
     else {
         cc_entries = realloc(unit->cc_entries, sizeof(struct rb_callcache *) * new_entries_size);
-        if (cc_entries == NULL) return NULL;
+        if (cc_entries == NULL) return -1;
         unit->cc_entries = cc_entries;
-        cc_entries += unit->cc_entries_size;
+        cc_entries += cc_entries_index;
     }
     unit->cc_entries_size = new_entries_size;
 
@@ -1182,7 +1193,7 @@ mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const
         cc_entries[i] = captured_iseq->call_data[i].cc;
     }
 
-    return cc_entries;
+    return cc_entries_index;
 }
 
 // Copy inline cache values of `iseq` to `cc_entries` and `is_entries`.
