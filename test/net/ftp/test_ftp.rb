@@ -2183,6 +2183,8 @@ EOF
 
   def test_abort_tls
     return unless defined?(OpenSSL)
+    # http://ci.rvm.jp/results/trunk-mjit-wait@silicon-docker/2789353
+    skip 'This is unstable with --jit-wait. TODO: debug it' if RubyVM::MJIT.enabled?
 
     commands = []
     server = create_ftp_server { |sock|
