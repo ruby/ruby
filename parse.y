@@ -11377,7 +11377,11 @@ static NODE *
 args_with_numbered(struct parser_params *p, NODE *args, int max_numparam)
 {
     if (max_numparam > NO_PARAM) {
-	if (!args) args = new_args_tail(p, 0, 0, 0, 0);
+	if (!args) {
+	    YYLTYPE loc = RUBY_INIT_YYLLOC();
+	    args = new_args_tail(p, 0, 0, 0, 0);
+	    nd_set_loc(args, &loc);
+	}
 	args->nd_ainfo->pre_args_num = max_numparam;
     }
     return args;

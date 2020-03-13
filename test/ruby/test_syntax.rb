@@ -1451,6 +1451,8 @@ eom
       assert_valid_syntax("->{#{c};->{_1};end;_1}\n")
       assert_valid_syntax("->{_1;#{c};->{_1};end}\n")
     end
+
+    1.times {_1}
   end
 
   def test_value_expr_in_condition
