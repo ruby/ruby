@@ -1021,7 +1021,8 @@ mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body)
 {
     const struct rb_callcache **cc_entries;
     if (body->jit_unit && (cc_entries = body->jit_unit->cc_entries) != NULL) {
-        for (unsigned int i = 0; i < body->ci_size; i++) {
+        // It must be `body->jit_unit->cc_entries_size` instead of `body->ci_size` to mark children's cc_entries
+        for (unsigned int i = 0; i < body->jit_unit->cc_entries_size; i++) {
             const struct rb_callcache *cc = cc_entries[i];
             if (cc != NULL) {
                 // Pin `cc` and `cc->cme` against GC.compact as their addresses may be written in JIT-ed code.
