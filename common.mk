@@ -1276,7 +1276,7 @@ update-config_files: PHONY
 refresh-gems: update-bundled_gems prepare-gems
 prepare-gems: update-gems extract-gems
 
-update-gems: PHONY
+update-gems$(gnumake:yes=-nongnumake): PHONY
 	$(ECHO) Downloading bundled gem files...
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -I./tool -rdownloader -answ \
@@ -1289,7 +1289,7 @@ update-gems: PHONY
 	    -e 'FileUtils.rm_rf(old.map{'"|n|"'n.chomp(".gem")})' \
 	    gems/bundled_gems
 
-extract-gems: PHONY
+extract-gems$(gnumake:yes=-nongnumake): PHONY
 	$(ECHO) Extracting bundled gem files...
 	$(Q) $(RUNRUBY) -C "$(srcdir)" \
 	    -Itool -rgem-unpack -answ \

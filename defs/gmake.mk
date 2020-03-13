@@ -1,6 +1,5 @@
 # -*- mode: makefile-gmake; indent-tabs-mode: t -*-
 
-gnumake = yes
 override gnumake_recursive := $(if $(findstring n,$(firstword $(MFLAGS))),,+)
 override mflags := $(filter-out -j%,$(MFLAGS))
 MSPECOPT += $(if $(filter -j%,$(MFLAGS)),-j)
@@ -243,9 +242,34 @@ HELP_EXTRA_TASKS = \
 	"  update-github:       merge master branch and push it to Pull Request [PR=1234]" \
 	""
 
-ifneq ($(filter refresh-gems prepare-gems,$(MAKECMDGOALS)),)
 extract-gems: update-gems
-endif
+
+BUNDLED_GEMS := $(shell sed 's/[ 	][ 	]*/-/;s/[ 	].*//' $(srcdir)/gems/bundled_gems)
+
+update-gems: | $(patsubst %,gems/%.gem,$(BUNDLED_GEMS))
+
+gems/%.gem:
+	$(ECHO) Downloading bundled gem $*...
+	$(Q) $(BASERUBY) -C "$(srcdir)" \
+	    -I./tool -rdownloader \
+	    -e 'gem = "$(@F)"' \
+	    -e 'old = Dir.glob("gems/"+gem.sub(/-[^-]*$$/, "-*.gem"))' \
+	    -e 'Downloader::RubyGems.download(gem, "gems", nil) and' \
+	    -e '(old.delete("gems/#{gem}"); !old.empty?) and' \
+	    -e 'File.unlink(*old) and' \
+	    -e 'FileUtils.rm_rf(old.map{'"|n|"'n.chomp(".gem")})'
+
+extract-gems: | $(patsubst %,.bundle/gems/%,$(BUNDLED_GEMS))
+
+.bundle/gems/%: gems/%.gem | .bundle/gems
+	$(ECHO) Extracting bundle gem $*...
+	$(Q) $(RUNRUBY) -C "$(srcdir)" \
+	    -Itool -rgem-unpack \
+	    -e 'Gem.unpack("gems/$(@F).gem", ".bundle/gems")'
+
+$(srcdir)/.bundle/gems:
+	$(MAKEDIRS) $@
+
 ifneq ($(filter update-bundled_gems refresh-gems,$(MAKECMDGOALS)),)
 update-gems: update-bundled_gems
 endif
