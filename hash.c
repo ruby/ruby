@@ -3156,7 +3156,8 @@ static int
 transform_values_foreach_replace(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
 {
     VALUE new_value = rb_yield((VALUE)*value);
-    *value = new_value;
+    VALUE hash = (VALUE)argp;
+    RB_OBJ_WRITE(hash, value, new_value);
     return ST_CONTINUE;
 }
 
@@ -3186,7 +3187,7 @@ rb_hash_transform_values(VALUE hash)
     result = hash_dup(hash, rb_cHash, 0);
 
     if (!RHASH_EMPTY_P(hash)) {
-        rb_hash_stlike_foreach_with_replace(result, transform_values_foreach_func, transform_values_foreach_replace, 0);
+        rb_hash_stlike_foreach_with_replace(result, transform_values_foreach_func, transform_values_foreach_replace, result);
     }
 
     return result;
@@ -3216,7 +3217,7 @@ rb_hash_transform_values_bang(VALUE hash)
     rb_hash_modify_check(hash);
 
     if (!RHASH_TABLE_EMPTY_P(hash)) {
-        rb_hash_stlike_foreach_with_replace(hash, transform_values_foreach_func, transform_values_foreach_replace, 0);
+        rb_hash_stlike_foreach_with_replace(hash, transform_values_foreach_func, transform_values_foreach_replace, hash);
     }
 
     return hash;
