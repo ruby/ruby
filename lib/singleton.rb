@@ -13,7 +13,7 @@
 #
 # This ensures that only one instance of Klass can be created.
 #
-#      a,b  = Klass.instance, Klass.instance
+#      a,b = Klass.instance, Klass.instance
 #
 #      a == b
 #      # => true
