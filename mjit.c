@@ -377,6 +377,7 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
     if (!mjit_enabled || pch_status == PCH_FAILED)
         return;
 
+    RB_DEBUG_COUNTER_INC(mjit_add_iseq_to_process);
     iseq->body->jit_func = (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC;
     create_unit(iseq);
     if (iseq->body->jit_unit == NULL)
@@ -388,6 +389,7 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
     CRITICAL_SECTION_START(3, "in add_iseq_to_process");
     add_to_list(iseq->body->jit_unit, &unit_queue);
     if (active_units.length >= mjit_opts.max_cache_size) {
+        RB_DEBUG_COUNTER_INC(mjit_unload_units);
         unload_units();
     }
     verbose(3, "Sending wakeup signal to workers in mjit_add_iseq_to_process");

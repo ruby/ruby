@@ -138,7 +138,6 @@ mjit_exec(rb_execution_context_t *ec)
           case NOT_ADDED_JIT_ISEQ_FUNC:
             RB_DEBUG_COUNTER_INC(mjit_exec_not_added);
             if (total_calls == mjit_opts.min_calls && mjit_target_iseq_p(body)) {
-                RB_DEBUG_COUNTER_INC(mjit_exec_not_added_add_iseq);
                 rb_mjit_add_iseq_to_process(iseq);
                 if (UNLIKELY(mjit_opts.wait)) {
                     return rb_mjit_wait_call(ec, body);
