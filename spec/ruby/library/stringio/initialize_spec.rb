@@ -2,17 +2,19 @@ require_relative '../../spec_helper'
 require 'stringio'
 
 bug_guard = Class.new(VersionGuard) do
-  VERSION = StringIO.const_defined?(:VERSION) ? StringIO::VERSION : "0.0.2"
+  self::VERSION = StringIO.const_defined?(:VERSION) ? StringIO::VERSION : "0.0.2"
+
   def initialize(bug, version)
     @bug = bug
     super(version)
     @parameters = [bug, version]
   end
   def match?
+    version = self.class::VERSION
     if Range === @version
-      @version.include? VERSION
+      @version.include? version
     else
-      VERSION >= @version
+      version >= @version
     end
   end
 
