@@ -92,7 +92,8 @@ rb_debug_counter_show_results(const char *msg)
 VALUE
 rb_debug_counter_show(RB_UNUSED_VAR(VALUE klass))
 {
-    rb_debug_counter_show_results("method call");
+    rb_debug_counter_show_results("show_debug_counters");
+    ruby_debug_counter_show_at_exit(FALSE);
     return Qnil;
 }
 
