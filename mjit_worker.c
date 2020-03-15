@@ -92,6 +92,7 @@
 #include "ruby_assert.h"
 #include "ruby/debug.h"
 #include "ruby/thread.h"
+#include "ruby/version.h"
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -688,6 +689,40 @@ remove_so_file(const char *so_file, struct rb_mjit_unit *unit)
 #endif
 }
 
+// Print _mjitX, but make a human-readable funcname when --jit-debug is used
+static void
+sprint_funcname(char *funcname, const struct rb_mjit_unit *unit)
+{
+    const rb_iseq_t *iseq = unit->iseq;
+    if (iseq == NULL || (!mjit_opts.debug && !mjit_opts.debug_flags)) {
+        sprintf(funcname, "_mjit%d", unit->id);
+        return;
+    }
+
+    // Generate a short path
+    const char *path = RSTRING_PTR(rb_iseq_path(iseq));
+    const char *lib = "/lib/";
+    const char *version = "/" STRINGIZE(RUBY_API_VERSION_MAJOR) "." STRINGIZE(RUBY_API_VERSION_MINOR) "." STRINGIZE(RUBY_API_VERSION_TEENY) "/";
+    while (strstr(path, lib)) // skip "/lib/"
+        path = strstr(path, lib) + strlen(lib);
+    while (strstr(path, version)) // skip "/x.y.z/"
+        path = strstr(path, version) + strlen(version);
+
+    // Annotate all-normalized method names
+    const char *method = RSTRING_PTR(iseq->body->location.label);
+    if (!strcmp(method, "[]")) method = "AREF";
+    if (!strcmp(method, "[]=")) method = "ASET";
+
+    // Print and normalize
+    sprintf(funcname, "_mjit%d_%s_%s", unit->id, path, method);
+    for (size_t i = 0; i < strlen(funcname); i++) {
+        char c = funcname[i];
+        if (!(('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9') || c == '_')) {
+            funcname[i] = '_';
+        }
+    }
+}
+
 #define append_str2(p, str, len) ((char *)memcpy((p), str, (len))+(len))
 #define append_str(p, str) append_str2(p, str, sizeof(str)-1)
 #define append_lit(p, str) append_str2(p, str, rb_strlen_lit(str))
@@ -912,8 +947,8 @@ compact_all_jit_code(void)
         CRITICAL_SECTION_START(3, "in compact_all_jit_code to read list");
         list_for_each(&active_units.head, cur, unode) {
             void *func;
-            char funcname[35]; // TODO: reconsider `35`
-            sprintf(funcname, "_mjit%d", cur->id);
+            char funcname[MAXPATHLEN];
+            sprint_funcname(funcname, unit);
 
             if ((func = dlsym(handle, funcname)) == NULL) {
                 mjit_warning("skipping to reload '%s' from '%s': %s", funcname, so_file, dlerror());
@@ -1001,7 +1036,7 @@ compile_prelude(FILE *f)
 static mjit_func_t
 convert_unit_to_func(struct rb_mjit_unit *unit)
 {
-    char c_file_buff[MAXPATHLEN], *c_file = c_file_buff, *so_file, funcname[35]; // TODO: reconsider `35`
+    char c_file_buff[MAXPATHLEN], *c_file = c_file_buff, *so_file, funcname[MAXPATHLEN];
     int fd;
     FILE *f;
     void *func;
@@ -1036,7 +1071,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     memcpy(so_file, c_file, c_file_len - sizeof(c_ext));
     memcpy(&so_file[c_file_len - sizeof(c_ext)], so_ext, sizeof(so_ext));
 
-    sprintf(funcname, "_mjit%d", unit->id);
+    sprint_funcname(funcname, unit);
 
     fd = rb_cloexec_open(c_file, access_mode, 0600);
     if (fd < 0 || (f = fdopen(fd, "w")) == NULL) {
