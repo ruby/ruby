@@ -121,6 +121,13 @@ Excluding feature bug fixes.
       your plan to https://github.com/ruby/xmlrpc
       or https://github.com/ruby/net-telnet.
 
+* EXPERIMENTAL: Hash#each consistently yields a 2-element array [[Bug #12706]]
+
+    * Now `{ a: 1 }.each(&->(k, v) { })` raises an ArgumentError
+      due to lambda's arity check.
+    * This is experimental; if it brings a big incompatibility issue,
+      it may be reverted until 2.8/3.0 release.
+
 ## Stdlib compatibility issues
 
 Excluding feature bug fixes.

@@ -1145,6 +1145,41 @@ block_setup(struct rb_block *block, VALUE block_handler)
 }
 
 int
+rb_block_pair_yield_optimizable(void)
+{
+    int min, max;
+    const rb_execution_context_t *ec = GET_EC();
+    rb_control_frame_t *cfp = ec->cfp;
+    VALUE block_handler = rb_vm_frame_block_handler(cfp);
+    struct rb_block block;
+
+    if (block_handler == VM_BLOCK_HANDLER_NONE) {
+	rb_raise(rb_eArgError, "no block given");
+    }
+
+    block_setup(&block, block_handler);
+    min = rb_vm_block_min_max_arity(&block, &max);
+
+    switch (vm_block_type(&block)) {
+      case block_handler_type_symbol:
+        return 0;
+
+      case block_handler_type_proc:
+	{
+	    VALUE procval = block_handler;
+	    rb_proc_t *proc;
+	    GetProcPtr(procval, proc);
+            if (proc->is_lambda) return 0;
+            if (min != max) return 0;
+            return min > 1;
+	}
+
+      default:
+        return min > 1;
+    }
+}
+
+int
 rb_block_arity(void)
 {
     int min, max;

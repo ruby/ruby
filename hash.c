@@ -3105,7 +3105,7 @@ static VALUE
 rb_hash_each_pair(VALUE hash)
 {
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
-    if (rb_block_arity() > 1)
+    if (rb_block_pair_yield_optimizable())
 	rb_hash_foreach(hash, each_pair_i_fast, 0);
     else
 	rb_hash_foreach(hash, each_pair_i, 0);
@@ -4446,7 +4446,7 @@ rb_hash_any_p(int argc, VALUE *argv, VALUE hash)
 	    /* yields pairs, never false */
 	    return Qtrue;
 	}
-	if (rb_block_arity() > 1)
+        if (rb_block_pair_yield_optimizable())
 	    rb_hash_foreach(hash, any_p_i_fast, (VALUE)args);
 	else
 	    rb_hash_foreach(hash, any_p_i, (VALUE)args);
@@ -5500,7 +5500,7 @@ env_each_pair(VALUE ehash)
     }
     FREE_ENVIRON(environ);
 
-    if (rb_block_arity() > 1) {
+    if (rb_block_pair_yield_optimizable()) {
 	for (i=0; i<RARRAY_LEN(ary); i+=2) {
 	    rb_yield_values(2, RARRAY_AREF(ary, i), RARRAY_AREF(ary, i+1));
 	}

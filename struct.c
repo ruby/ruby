@@ -821,7 +821,7 @@ rb_struct_each_pair(VALUE s)
 
     RETURN_SIZED_ENUMERATOR(s, 0, 0, struct_enum_size);
     members = rb_struct_members(s);
-    if (rb_block_arity() > 1) {
+    if (rb_block_pair_yield_optimizable()) {
 	for (i=0; i<RSTRUCT_LEN(s); i++) {
 	    VALUE key = rb_ary_entry(members, i);
 	    VALUE value = RSTRUCT_GET(s, i);

@@ -1841,4 +1841,10 @@ class TestHash < Test::Unit::TestCase
     h[obj2] = true
     assert_equal true, h[obj]
   end
+
+  def test_bug_12706
+    assert_raise(ArgumentError) do
+      {a: 1}.each(&->(k, v) {})
+    end
+  end
 end
