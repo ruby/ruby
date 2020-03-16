@@ -302,6 +302,21 @@ class TestGem < Gem::TestCase
     assert_equal %w[a-1 b-2 c-1], loaded_spec_names
   end
 
+  def test_activate_bin_path_in_debug_mode
+    a1 = util_spec 'a', '1' do |s|
+      s.executables = ['exec']
+    end
+
+    install_specs a1
+
+    output, status = Open3.capture2e(
+      { "GEM_HOME" => Gem.paths.home, "DEBUG_RESOLVER" => "1" },
+      Gem.ruby, "-I", File.expand_path("../../lib", __dir__), "-e", "\"Gem.activate_bin_path('a', 'exec', '>= 0')\""
+    )
+
+    assert status.success?, output
+  end
+
   def test_activate_bin_path_gives_proper_error_for_bundler
     bundler = util_spec 'bundler', '2' do |s|
       s.executables = ['bundle']
