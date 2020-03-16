@@ -406,7 +406,7 @@ rb_obj_clone2(rb_execution_context_t *ec, VALUE obj, VALUE freeze)
 {
     int kwfreeze = obj_freeze_opt(freeze);
     if (!special_object_p(obj))
-    	return mutable_obj_clone(obj, kwfreeze);
+	return mutable_obj_clone(obj, kwfreeze);
     return immutable_obj_clone(obj, kwfreeze);
 }
 
@@ -432,7 +432,7 @@ freeze_opt(int argc, VALUE *argv)
     rb_scan_args(argc, argv, "0:", &opt);
     if (!NIL_P(opt)) {
 	rb_get_kwargs(opt, keyword_ids, 0, 1, &kwfreeze);
-    ret = obj_freeze_opt(kwfreeze);    
+        ret = obj_freeze_opt(kwfreeze);
     }
     return ret;
 }
