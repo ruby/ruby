@@ -19,8 +19,16 @@ describe "Hash#to_proc" do
       @proc = @hash.to_proc
     end
 
-    it "is not a lambda" do
-      @proc.lambda?.should == false
+    ruby_version_is ""..."2.8" do
+      it "is not a lambda" do
+        @proc.lambda?.should == false
+      end
+    end
+
+    ruby_version_is "2.8" do
+      it "is a lambda" do
+        @proc.lambda?.should == true
+      end
     end
 
     it "raises ArgumentError if not passed exactly one argument" do

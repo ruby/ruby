@@ -1627,6 +1627,8 @@ class TestHash < Test::Unit::TestCase
     }
 
     assert_equal([10, 20, 30], [1, 2, 3].map(&h))
+
+    assert_equal(true, h.to_proc.lambda?)
   end
 
   def test_transform_keys

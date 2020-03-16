@@ -667,7 +667,7 @@ bind_location(VALUE bindval)
 }
 
 static VALUE
-cfunc_proc_new(VALUE klass, VALUE ifunc, int8_t is_lambda)
+cfunc_proc_new(VALUE klass, VALUE ifunc)
 {
     rb_proc_t *proc;
     cfunc_proc_t *sproc;
@@ -685,7 +685,7 @@ cfunc_proc_new(VALUE klass, VALUE ifunc, int8_t is_lambda)
 
     /* self? */
     RB_OBJ_WRITE(procval, &proc->block.as.captured.code.ifunc, ifunc);
-    proc->is_lambda = is_lambda;
+    proc->is_lambda = TRUE;
     return procval;
 }
 
@@ -736,14 +736,14 @@ MJIT_FUNC_EXPORTED VALUE
 rb_func_proc_new(rb_block_call_func_t func, VALUE val)
 {
     struct vm_ifunc *ifunc = rb_vm_ifunc_proc_new(func, (void *)val);
-    return cfunc_proc_new(rb_cProc, (VALUE)ifunc, 0);
+    return cfunc_proc_new(rb_cProc, (VALUE)ifunc);
 }
 
 MJIT_FUNC_EXPORTED VALUE
 rb_func_lambda_new(rb_block_call_func_t func, VALUE val, int min_argc, int max_argc)
 {
     struct vm_ifunc *ifunc = rb_vm_ifunc_new(func, (void *)val, min_argc, max_argc);
-    return cfunc_proc_new(rb_cProc, (VALUE)ifunc, 1);
+    return cfunc_proc_new(rb_cProc, (VALUE)ifunc);
 }
 
 static const char proc_without_block[] = "tried to create Proc object without a block";
