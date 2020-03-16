@@ -19,7 +19,7 @@ RB_DEBUG_COUNTER(mc_inline_hit)              // IMC hit
 RB_DEBUG_COUNTER(mc_inline_miss_klass)       // IMC miss by different class
 RB_DEBUG_COUNTER(mc_inline_miss_invalidated) // IMC miss by invalidated ME
 RB_DEBUG_COUNTER(mc_cme_complement)          // number of acquiring complement CME
-RB_DEBUG_COUNTER(mc_cme_complement_hit)      // number of cahche hit for complemented CME
+RB_DEBUG_COUNTER(mc_cme_complement_hit)      // number of cache hit for complemented CME
 
 RB_DEBUG_COUNTER(mc_search)                  // count for method lookup in class tree
 RB_DEBUG_COUNTER(mc_search_notfound)         //           method lookup, but not found
@@ -34,10 +34,10 @@ RB_DEBUG_COUNTER(ci_runtime) //           creating temporary CI
 // callcache
 RB_DEBUG_COUNTER(cc_new)        // number of CC
 RB_DEBUG_COUNTER(cc_temp)       //           dummy CC (stack-allocated)
-RB_DEBUG_COUNTER(cc_found_ccs)  // count for CC lookup sucess in CCS
+RB_DEBUG_COUNTER(cc_found_ccs)  // count for CC lookup success in CCS
 
 RB_DEBUG_COUNTER(cc_ent_invalidate) // count for invalidating cc (cc->klass = 0)
-RB_DEBUG_COUNTER(cc_cme_invalidate) // coutn for invalidating CME
+RB_DEBUG_COUNTER(cc_cme_invalidate) // count for invalidating CME
 
 RB_DEBUG_COUNTER(cc_invalidate_leaf)          // count for invalidating klass if klass has no-sublcasses
 RB_DEBUG_COUNTER(cc_invalidate_leaf_ccs)      //                        corresponding CCS
@@ -169,7 +169,7 @@ RB_DEBUG_COUNTER(gc_isptr_maybe)
  *
  * * obj_newobj: newobj counts
  * * obj_newobj_slowpath: newobj with slowpath counts
- * * obj_newobj_wb_unprotected: newobj for wb_unprotecte.
+ * * obj_newobj_wb_unprotected: newobj for wb_unprotected.
  * * obj_free: obj_free() counts
  * * obj_promote: promoted counts (oldgen)
  * * obj_wb_unprotect: wb unprotect counts
