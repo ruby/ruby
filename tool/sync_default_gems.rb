@@ -9,7 +9,6 @@
 # $ ruby tool/sync_default_gems.rb rubygems 97e9768612..9e53702832
 #
 # * https://github.com/rubygems/rubygems
-# * https://github.com/rubygems/bundler
 # * https://github.com/ruby/rdoc
 # * https://github.com/ruby/reline
 # * https://github.com/flori/json
@@ -70,7 +69,7 @@ include FileUtils
 
 $repositories = {
   rubygems: 'rubygems/rubygems',
-  bundler: 'rubygems/bundler',
+  bundler: 'rubygems/rubygems',
   rdoc: 'ruby/rdoc',
   reline: 'ruby/reline',
   json: 'flori/json',
@@ -138,11 +137,11 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/test/rubygems", "test")
   when "bundler"
     rm_rf(%w[lib/bundler* libexec/bundler libexec/bundle spec/bundler man/bundle* man/gemfile*])
-    cp_r(Dir.glob("#{upstream}/lib/bundler*"), "lib")
-    cp_r(Dir.glob("#{upstream}/exe/bundle*"), "libexec")
-    cp_r("#{upstream}/bundler.gemspec", "lib/bundler")
-    cp_r("#{upstream}/spec", "spec/bundler")
-    cp_r(Dir.glob("#{upstream}/man/*.{1,5,1\.txt,5\.txt,ronn}"), "man")
+    cp_r(Dir.glob("#{upstream}/bundler/lib/bundler*"), "lib")
+    cp_r(Dir.glob("#{upstream}/bundler/exe/bundle*"), "libexec")
+    cp_r("#{upstream}/bundler/bundler.gemspec", "lib/bundler")
+    cp_r("#{upstream}/bundler/spec", "spec/bundler")
+    cp_r(Dir.glob("#{upstream}/bundler/man/*.{1,5,1\.txt,5\.txt,ronn}"), "man")
     rm_rf(%w[spec/bundler/support/artifice/vcr_cassettes])
   when "rdoc"
     rm_rf(%w[lib/rdoc* test/rdoc libexec/rdoc libexec/ri])

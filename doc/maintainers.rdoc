@@ -130,7 +130,7 @@ Zachary Scott (zzak)
   https://rubygems.org/gems/benchmark
 [lib/bundler.rb, lib/bundler/*]
   Hiroshi SHIBATA (hsbt)
-  https://github.com/rubygems/bundler
+  https://github.com/rubygems/rubygems
   https://rubygems.org/gems/bundler
 [lib/cgi.rb, lib/cgi/*]
   Takeyuki Fujioka (xibbar)
