@@ -36,6 +36,7 @@
 #include "ruby/encoding.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
+#include "builtin.h"
 
 /*!
  * \defgroup object Core objects and their operations
@@ -389,37 +390,23 @@ special_object_p(VALUE obj)
     }
 }
 
-/*
- *  call-seq:
- *     obj.clone(freeze: true) -> an_object
- *
- *  Produces a shallow copy of <i>obj</i>---the instance variables of
- *  <i>obj</i> are copied, but not the objects they reference.
- *  #clone copies the frozen (unless +:freeze+ keyword argument is
- *  given with a false value) state of <i>obj</i>.  See
- *  also the discussion under Object#dup.
- *
- *     class Klass
- *        attr_accessor :str
- *     end
- *     s1 = Klass.new      #=> #<Klass:0x401b3a38>
- *     s1.str = "Hello"    #=> "Hello"
- *     s2 = s1.clone       #=> #<Klass:0x401b3998 @str="Hello">
- *     s2.str[1,4] = "i"   #=> "i"
- *     s1.inspect          #=> "#<Klass:0x401b3a38 @str=\"Hi\">"
- *     s2.inspect          #=> "#<Klass:0x401b3998 @str=\"Hi\">"
- *
- *  This method may have class-specific behavior.  If so, that
- *  behavior will be documented under the #+initialize_copy+ method of
- *  the class.
- */
+static int
+obj_freeze_opt(VALUE freeze)
+{
+    if (freeze == Qfalse) return FALSE;
+
+    if (freeze != Qtrue)
+        rb_raise(rb_eArgError, "unexpected value for freeze: %"PRIsVALUE, rb_obj_class(freeze));
+
+    return TRUE;
+}
 
 static VALUE
-rb_obj_clone2(int argc, VALUE *argv, VALUE obj)
+rb_obj_clone2(rb_execution_context_t *ec, VALUE obj, VALUE freeze)
 {
-    int kwfreeze = freeze_opt(argc, argv);
+    int kwfreeze = obj_freeze_opt(freeze);
     if (!special_object_p(obj))
-	return mutable_obj_clone(obj, kwfreeze);
+    	return mutable_obj_clone(obj, kwfreeze);
     return immutable_obj_clone(obj, kwfreeze);
 }
 
@@ -437,6 +424,7 @@ freeze_opt(int argc, VALUE *argv)
     static ID keyword_ids[1];
     VALUE opt;
     VALUE kwfreeze;
+    int ret = 1;
 
     if (!keyword_ids[0]) {
 	CONST_ID(keyword_ids[0], "freeze");
@@ -444,13 +432,9 @@ freeze_opt(int argc, VALUE *argv)
     rb_scan_args(argc, argv, "0:", &opt);
     if (!NIL_P(opt)) {
 	rb_get_kwargs(opt, keyword_ids, 0, 1, &kwfreeze);
-	if (kwfreeze == Qfalse) return FALSE;
-	if (kwfreeze != Qundef && kwfreeze != Qtrue) {
-	    rb_raise(rb_eArgError, "unexpected value for freeze: %"PRIsVALUE,
-		     rb_obj_class(kwfreeze));
-	}
+    ret = obj_freeze_opt(kwfreeze);    
     }
-    return TRUE;
+    return ret;
 }
 
 static VALUE
@@ -4612,7 +4596,6 @@ InitVM_Object(void)
 
     rb_define_method(rb_mKernel, "class", rb_obj_class, 0);
     rb_define_method(rb_mKernel, "singleton_class", rb_obj_singleton_class, 0);
-    rb_define_method(rb_mKernel, "clone", rb_obj_clone2, -1);
     rb_define_method(rb_mKernel, "dup", rb_obj_dup, 0);
     rb_define_method(rb_mKernel, "itself", rb_obj_itself, 0);
     rb_define_method(rb_mKernel, "yield_self", rb_obj_yield_self, 0);
@@ -4789,6 +4772,8 @@ InitVM_Object(void)
     rb_define_global_const("FALSE", Qfalse);
     rb_deprecate_constant(rb_cObject, "FALSE");
 }
+
+#include "kernel.rbinc"
 
 void
 Init_Object(void)

@@ -1003,6 +1003,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/trace_point.rb \
 		$(srcdir)/warning.rb \
 		$(srcdir)/array.rb \
+		$(srcdir)/kernel.rb \
 		$(srcdir)/prelude.rb \
 		$(srcdir)/gem_prelude.rb \
 		$(empty)
@@ -2848,6 +2849,7 @@ miniinit.$(OBJEXT): {$(VPATH)}intern.h
 miniinit.$(OBJEXT): {$(VPATH)}internal.h
 miniinit.$(OBJEXT): {$(VPATH)}io.rb
 miniinit.$(OBJEXT): {$(VPATH)}iseq.h
+miniinit.$(OBJEXT): {$(VPATH)}kernel.rb
 miniinit.$(OBJEXT): {$(VPATH)}method.h
 miniinit.$(OBJEXT): {$(VPATH)}mini_builtin.c
 miniinit.$(OBJEXT): {$(VPATH)}miniinit.c
@@ -3101,6 +3103,7 @@ object.$(OBJEXT): $(top_srcdir)/internal/variable.h
 object.$(OBJEXT): $(top_srcdir)/internal/vm.h
 object.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 object.$(OBJEXT): {$(VPATH)}assert.h
+object.$(OBJEXT): {$(VPATH)}builtin.h
 object.$(OBJEXT): {$(VPATH)}config.h
 object.$(OBJEXT): {$(VPATH)}constant.h
 object.$(OBJEXT): {$(VPATH)}defines.h
@@ -3109,6 +3112,7 @@ object.$(OBJEXT): {$(VPATH)}id.h
 object.$(OBJEXT): {$(VPATH)}id_table.h
 object.$(OBJEXT): {$(VPATH)}intern.h
 object.$(OBJEXT): {$(VPATH)}internal.h
+object.$(OBJEXT): {$(VPATH)}kernel.rbinc
 object.$(OBJEXT): {$(VPATH)}missing.h
 object.$(OBJEXT): {$(VPATH)}object.c
 object.$(OBJEXT): {$(VPATH)}onigmo.h
