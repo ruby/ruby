@@ -26,54 +26,178 @@
 # include <ctype.h>
 #endif
 
+#include "ruby/3/attr/artificial.h"
+#include "ruby/3/attr/const.h"
+#include "ruby/3/attr/constexpr.h"
 #include "ruby/3/dllexport.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
-
-/* locale insensitive functions */
-
-static inline int rb_isascii(int c){ return '\0' <= c && c <= '\x7f'; }
-static inline int rb_isupper(int c){ return 'A' <= c && c <= 'Z'; }
-static inline int rb_islower(int c){ return 'a' <= c && c <= 'z'; }
-static inline int rb_isalpha(int c){ return rb_isupper(c) || rb_islower(c); }
-static inline int rb_isdigit(int c){ return '0' <= c && c <= '9'; }
-static inline int rb_isalnum(int c){ return rb_isalpha(c) || rb_isdigit(c); }
-static inline int rb_isxdigit(int c){ return rb_isdigit(c) || ('A' <= c && c <= 'F') || ('a' <= c && c <= 'f'); }
-static inline int rb_isblank(int c){ return c == ' ' || c == '\t'; }
-static inline int rb_isspace(int c){ return c == ' ' || ('\t' <= c && c <= '\r'); }
-static inline int rb_iscntrl(int c){ return ('\0' <= c && c < ' ') || c == '\x7f'; }
-static inline int rb_isprint(int c){ return ' ' <= c && c <= '\x7e'; }
-static inline int rb_ispunct(int c){ return !rb_isalnum(c); }
-static inline int rb_isgraph(int c){ return '!' <= c && c <= '\x7e'; }
-static inline int rb_tolower(int c) { return rb_isupper(c) ? (c|0x20) : c; }
-static inline int rb_toupper(int c) { return rb_islower(c) ? (c&0x5f) : c; }
-
 #ifndef ISPRINT
-#define ISASCII(c) rb_isascii(c)
-#define ISPRINT(c) rb_isprint(c)
-#define ISGRAPH(c) rb_isgraph(c)
-#define ISSPACE(c) rb_isspace(c)
-#define ISUPPER(c) rb_isupper(c)
-#define ISLOWER(c) rb_islower(c)
-#define ISALNUM(c) rb_isalnum(c)
-#define ISALPHA(c) rb_isalpha(c)
-#define ISDIGIT(c) rb_isdigit(c)
-#define ISXDIGIT(c) rb_isxdigit(c)
-#define ISBLANK(c) rb_isblank(c)
-#define ISCNTRL(c) rb_iscntrl(c)
-#define ISPUNCT(c) rb_ispunct(c)
+# define ISASCII  rb_isascii
+# define ISPRINT  rb_isprint
+# define ISGRAPH  rb_isgraph
+# define ISSPACE  rb_isspace
+# define ISUPPER  rb_isupper
+# define ISLOWER  rb_islower
+# define ISALNUM  rb_isalnum
+# define ISALPHA  rb_isalpha
+# define ISDIGIT  rb_isdigit
+# define ISXDIGIT rb_isxdigit
+# define ISBLANK  rb_isblank
+# define ISCNTRL  rb_iscntrl
+# define ISPUNCT  rb_ispunct
 #endif
-#define TOUPPER(c) rb_toupper(c)
-#define TOLOWER(c) rb_tolower(c)
 
+#define TOUPPER     rb_toupper
+#define TOLOWER     rb_tolower
+#define STRCASECMP  st_locale_insensitive_strcasecmp
+#define STRNCASECMP st_locale_insensitive_strncasecmp
+#define STRTOUL     ruby_strtoul
+
+RUBY3_SYMBOL_EXPORT_BEGIN()
+/* locale insensitive functions */
 int st_locale_insensitive_strcasecmp(const char *s1, const char *s2);
 int st_locale_insensitive_strncasecmp(const char *s1, const char *s2, size_t n);
-#define STRCASECMP(s1, s2) (st_locale_insensitive_strcasecmp((s1), (s2)))
-#define STRNCASECMP(s1, s2, n) (st_locale_insensitive_strncasecmp((s1), (s2), (n)))
-
 unsigned long ruby_strtoul(const char *str, char **endptr, int base);
-#define STRTOUL(str, endptr, base) (ruby_strtoul((str), (endptr), (base)))
-
 RUBY3_SYMBOL_EXPORT_END()
+
+/*
+ * We are making  the functions below to return `int`  instead of `bool`.  They
+ * have been as such since their birth at 5f237d79033b2109afb768bc889611fa9630.
+ */
+
+RUBY3_ATTR_CONST()
+RUBY3_ATTR_CONSTEXPR(CXX11)
+RUBY3_ATTR_ARTIFICIAL()
+static inline int
+rb_isascii(int c)
+{
+    return '\0' <= c && c <= '\x7f';
+}
+
+RUBY3_ATTR_CONST()
+RUBY3_ATTR_CONSTEXPR(CXX11)
+RUBY3_ATTR_ARTIFICIAL()
+static inline int
+rb_isupper(int c)
+{
+    return 'A' <= c && c <= 'Z';
+}
+
+RUBY3_ATTR_CONST()
+RUBY3_ATTR_CONSTEXPR(CXX11)
+RUBY3_ATTR_ARTIFICIAL()
+static inline int
+rb_islower(int c)
+{
+    return 'a' <= c && c <= 'z';
+}
+
+RUBY3_ATTR_CONST()
+RUBY3_ATTR_CONSTEXPR(CXX11)
+RUBY3_ATTR_ARTIFICIAL()
+static inline int
+rb_isalpha(int c)
+{
+    return rb_isupper(c) || rb_islower(c);
+}
+
+RUBY3_ATTR_CONST()
+RUBY3_ATTR_CONSTEXPR(CXX11)
+RUBY3_ATTR_ARTIFICIAL()
+static inline int
+rb_isdigit(int c)
+{
+    return '0' <= c && c <= '9';
+}
+
+RUBY3_ATTR_CONST()
+RUBY3_ATTR_CONSTEXPR(CXX11)
+RUBY3_ATTR_ARTIFICIAL()
+static inline int
+rb_isalnum(int c)
+{
+    return rb_isalpha(c) || rb_isdigit(c);
+}
+
+RUBY3_ATTR_CONST()
+RUBY3_ATTR_CONSTEXPR(CXX11)
+RUBY3_ATTR_ARTIFICIAL()
+static inline int
+rb_isxdigit(int c)
+{
+    return rb_isdigit(c) || ('A' <= c && c <= 'F') || ('a' <= c && c <= 'f');
+}
+
+RUBY3_ATTR_CONST()
+RUBY3_ATTR_CONSTEXPR(CXX11)
+RUBY3_ATTR_ARTIFICIAL()
+static inline int
+rb_isblank(int c)
+{
+    return c == ' ' || c == '\t';
+}
+
+RUBY3_ATTR_CONST()
+RUBY3_ATTR_CONSTEXPR(CXX11)
+RUBY3_ATTR_ARTIFICIAL()
+static inline int
+rb_isspace(int c)
+{
+    return c == ' ' || ('\t' <= c && c <= '\r');
+}
+
+RUBY3_ATTR_CONST()
+RUBY3_ATTR_CONSTEXPR(CXX11)
+RUBY3_ATTR_ARTIFICIAL()
+static inline int
+rb_iscntrl(int c)
+{
+    return ('\0' <= c && c < ' ') || c == '\x7f';
+}
+
+RUBY3_ATTR_CONST()
+RUBY3_ATTR_CONSTEXPR(CXX11)
+RUBY3_ATTR_ARTIFICIAL()
+static inline int
+rb_isprint(int c)
+{
+    return ' ' <= c && c <= '\x7e';
+}
+
+RUBY3_ATTR_CONST()
+RUBY3_ATTR_CONSTEXPR(CXX11)
+RUBY3_ATTR_ARTIFICIAL()
+static inline int
+rb_ispunct(int c)
+{
+    return !rb_isalnum(c);
+}
+
+RUBY3_ATTR_CONST()
+RUBY3_ATTR_CONSTEXPR(CXX11)
+RUBY3_ATTR_ARTIFICIAL()
+static inline int
+rb_isgraph(int c)
+{
+    return '!' <= c && c <= '\x7e';
+}
+
+RUBY3_ATTR_CONST()
+RUBY3_ATTR_CONSTEXPR(CXX11)
+RUBY3_ATTR_ARTIFICIAL()
+static inline int
+rb_tolower(int c)
+{
+    return rb_isupper(c) ? (c|0x20) : c;
+}
+
+RUBY3_ATTR_CONST()
+RUBY3_ATTR_CONSTEXPR(CXX11)
+RUBY3_ATTR_ARTIFICIAL()
+static inline int
+rb_toupper(int c)
+{
+    return rb_islower(c) ? (c&0x5f) : c;
+}
 
 #endif /* RUBY3_CTYPE_H */
