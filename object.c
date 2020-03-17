@@ -432,7 +432,7 @@ freeze_opt(int argc, VALUE *argv)
     rb_scan_args(argc, argv, "0:", &opt);
     if (!NIL_P(opt)) {
 	rb_get_kwargs(opt, keyword_ids, 0, 1, &kwfreeze);
-        ret = obj_freeze_opt(kwfreeze);
+        if (kwfreeze != Qundef) ret = obj_freeze_opt(kwfreeze);
     }
     return ret;
 }
