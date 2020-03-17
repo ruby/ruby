@@ -1216,7 +1216,8 @@ mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const
         if (cc_entries == NULL) return -1;
     }
     else {
-        cc_entries = realloc(unit->cc_entries, sizeof(struct rb_callcache *) * new_entries_size);
+        void *cc_ptr = (void *)unit->cc_entries; // get rid of bogus warning by VC
+        cc_entries = realloc(cc_ptr, sizeof(struct rb_callcache *) * new_entries_size);
         if (cc_entries == NULL) return -1;
         unit->cc_entries = cc_entries;
         cc_entries += cc_entries_index;
