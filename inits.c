@@ -84,6 +84,7 @@ rb_call_inits(void)
     BUILTIN(pack);
     BUILTIN(warning);
     BUILTIN(array);
+    BUILTIN(kernel);
     Init_builtin_prelude();
 }
 #undef CALL
