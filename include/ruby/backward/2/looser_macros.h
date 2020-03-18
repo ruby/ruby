@@ -20,9 +20,10 @@
  */
 #ifndef  RUBY_BACKWARD2_LOOSER_MACROS_H
 #define  RUBY_BACKWARD2_LOOSER_MACROS_H
+#include "ruby/3/arithmetic/int.h"
 #include "ruby/3/cast.h"
-#include "ruby/3/core/rbasic.h"
 #include "ruby/3/core/rarray.h"
+#include "ruby/3/core/rbasic.h"
 #include "ruby/3/core/rtypeddata.h"
 #include "ruby/3/fl_type.h"
 #include "ruby/3/special_consts.h"
@@ -69,5 +70,11 @@
 
 #undef RTYPEDDATA_P
 #define RTYPEDDATA_P(_) ((RTYPEDDATA_P)(RUBY3_CAST((VALUE)(_))))
+
+#undef INT2NUM
+#define INT2NUM(_) rb_int2num_inline(RUBY3_CAST((int)(_)))
+
+#undef UINT2NUM
+#define UINT2NUM(_) rb_uint2num_inline(RUBY3_CAST((unsigned)(_)))
 
 #endif /* RUBY_BACKWARD2_LOOSER_MACROS_H */
