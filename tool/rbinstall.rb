@@ -330,10 +330,14 @@ rubyhdrdir = CONFIG["rubyhdrdir", true]
 archhdrdir = CONFIG["rubyarchhdrdir"] || (rubyhdrdir + "/" + CONFIG['arch'])
 rubylibdir = CONFIG["rubylibdir", true]
 archlibdir = CONFIG["rubyarchdir", true]
-sitelibdir = CONFIG["sitelibdir"]
-sitearchlibdir = CONFIG["sitearchdir"]
-vendorlibdir = CONFIG["vendorlibdir"]
-vendorarchlibdir = CONFIG["vendorarchdir"]
+if CONFIG["sitedir"]
+  sitelibdir = CONFIG["sitelibdir"]
+  sitearchlibdir = CONFIG["sitearchdir"]
+end
+if CONFIG["vendordir"]
+  vendorlibdir = CONFIG["vendorlibdir"]
+  vendorarchlibdir = CONFIG["vendorarchdir"]
+end
 mandir = CONFIG["mandir", true]
 docdir = CONFIG["docdir", true]
 enable_shared = CONFIG["ENABLE_SHARED"] == 'yes'
