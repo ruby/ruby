@@ -24,46 +24,115 @@
 #include "ruby/3/arithmetic/fixnum.h"
 #include "ruby/3/arithmetic/intptr_t.h"
 #include "ruby/3/arithmetic/long.h"
+#include "ruby/3/attr/artificial.h"
+#include "ruby/3/attr/const.h"
+#include "ruby/3/attr/constexpr.h"
+#include "ruby/3/compiler_is.h"
 #include "ruby/3/dllexport.h"
 #include "ruby/3/special_consts.h"
 #include "ruby/3/value.h"
+#include "ruby/3/warning_push.h"
+#include "ruby/assert.h"
+
+#define RB_INT2NUM  rb_int2num_inline
+#define RB_NUM2INT  rb_num2int_inline
+#define RB_UINT2NUM rb_uint2num_inline
+
+#define FIX2INT    RB_FIX2INT
+#define FIX2UINT   RB_FIX2UINT
+#define INT2NUM    RB_INT2NUM
+#define NUM2INT    RB_NUM2INT
+#define NUM2UINT   RB_NUM2UINT
+#define UINT2NUM   RB_UINT2NUM
+
+/** @cond INTERNAL_MACRO */
+#define RB_FIX2INT  RB_FIX2INT
+#define RB_NUM2UINT RB_NUM2UINT
+#define RB_FIX2UINT RB_FIX2UINT
+/** @endcond */
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
-
-#if SIZEOF_INT < SIZEOF_LONG
 long rb_num2int(VALUE);
 long rb_fix2int(VALUE);
-#define RB_FIX2INT(x) ((int)rb_fix2int((VALUE)(x)))
+unsigned long rb_num2uint(VALUE);
+unsigned long rb_fix2uint(VALUE);
+RUBY3_SYMBOL_EXPORT_END()
+
+RUBY3_ATTR_ARTIFICIAL()
+static inline int
+RB_FIX2INT(VALUE x)
+{
+    RUBY3_ASSERT_OR_ASSUME(RB_FIXNUM_P(x));
+    long ret;
+
+    if /* constexpr */ (sizeof(int) < sizeof(long)) {
+        ret = rb_fix2int(x);
+    }
+    else {
+        ret = RB_FIX2LONG(x);
+    }
+
+    return RUBY3_CAST((int)ret);
+}
 
 static inline int
 rb_num2int_inline(VALUE x)
 {
-    if (RB_FIXNUM_P(x))
-        return (int)rb_fix2int(x);
-    else
-        return (int)rb_num2int(x);
+    long ret;
+
+    if /* constexpr */ (sizeof(int) == sizeof(long)) {
+        ret = RB_NUM2LONG(x);
+    }
+    else if (RB_FIXNUM_P(x)) {
+        ret = rb_fix2int(x);
+    }
+    else {
+        ret = rb_num2int(x);
+    }
+
+    return RUBY3_CAST((int)ret);
 }
-#define RB_NUM2INT(x) rb_num2int_inline(x)
 
-unsigned long rb_num2uint(VALUE);
-#define RB_NUM2UINT(x) ((unsigned int)rb_num2uint(x))
-unsigned long rb_fix2uint(VALUE);
-#define RB_FIX2UINT(x) ((unsigned int)rb_fix2uint(x))
-#else /* SIZEOF_INT < SIZEOF_LONG */
-#define RB_NUM2INT(x) ((int)RB_NUM2LONG(x))
-#define RB_NUM2UINT(x) ((unsigned int)RB_NUM2ULONG(x))
-#define RB_FIX2INT(x) ((int)RB_FIX2LONG(x))
-#define RB_FIX2UINT(x) ((unsigned int)RB_FIX2ULONG(x))
-#endif /* SIZEOF_INT < SIZEOF_LONG */
-#define NUM2INT(x)  RB_NUM2INT(x)
-#define NUM2UINT(x) RB_NUM2UINT(x)
-#define FIX2INT(x)  RB_FIX2INT(x)
-#define FIX2UINT(x) RB_FIX2UINT(x)
+RUBY3_ATTR_ARTIFICIAL()
+static inline unsigned int
+RB_NUM2UINT(VALUE x)
+{
+    unsigned long ret;
 
-#if SIZEOF_INT < SIZEOF_LONG
-# define RB_INT2NUM(v) RB_INT2FIX((int)(v))
-# define RB_UINT2NUM(v) RB_LONG2FIX((unsigned int)(v))
-#else
+    if /* constexpr */ (sizeof(int) < sizeof(long)) {
+        ret = rb_num2uint(x);
+    }
+    else {
+        ret = RB_NUM2ULONG(x);
+    }
+
+    return RUBY3_CAST((unsigned int)ret);
+}
+
+RUBY3_ATTR_ARTIFICIAL()
+static inline unsigned int
+RB_FIX2UINT(VALUE x)
+{
+    RUBY3_ASSERT_OR_ASSUME(RB_FIXNUM_P(x));
+    unsigned long ret;
+
+    if /* constexpr */ (sizeof(int) < sizeof(long)) {
+        ret = rb_fix2uint(x);
+    }
+    else {
+        ret = RB_FIX2ULONG(x);
+    }
+
+    return RUBY3_CAST((unsigned int)ret);
+}
+
+RUBY3_WARNING_PUSH()
+#if RUBY3_COMPILER_IS(GCC)
+RUBY3_WARNING_IGNORED(-Wtype-limits) /* We can ignore them here. */
+#elif RUBY3_HAS_WARNING("-Wtautological-constant-out-of-range-compare")
+RUBY3_WARNING_IGNORED(-Wtautological-constant-out-of-range-compare)
+#endif
+
 static inline VALUE
 rb_int2num_inline(int v)
 {
@@ -72,7 +141,6 @@ rb_int2num_inline(int v)
     else
         return rb_int2big(v);
 }
-#define RB_INT2NUM(x) rb_int2num_inline(x)
 
 static inline VALUE
 rb_uint2num_inline(unsigned int v)
@@ -82,11 +150,7 @@ rb_uint2num_inline(unsigned int v)
     else
         return rb_uint2big(v);
 }
-#define RB_UINT2NUM(x) rb_uint2num_inline(x)
-#endif
-#define INT2NUM(x) RB_INT2NUM(x)
-#define UINT2NUM(x) RB_UINT2NUM(x)
 
-RUBY3_SYMBOL_EXPORT_END()
+RUBY3_WARNING_POP()
 
 #endif /* RUBY3_ARITHMETIC_INT_H */
