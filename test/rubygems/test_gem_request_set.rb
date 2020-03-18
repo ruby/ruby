@@ -87,9 +87,10 @@ Gems to install:
   a-2
       EXPECTED
 
-      assert_output expected do
+      actual, _= capture_output do
         rs.install_from_gemdeps :gemdeps => io.path, :explain => true
       end
+      assert_equal(expected, actual)
     end
   end
 
