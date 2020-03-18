@@ -133,8 +133,6 @@ env:
     name: s390x-linux
     arch: s390x
     <<: *gcc-8
-    env:
-      - BEFORE_INSTALL="tool/travis_disable_ipv6.sh"
 
   - &jemalloc
     name: --with-jemalloc
