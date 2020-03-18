@@ -3021,9 +3021,11 @@ WARN: Clearing out unresolved specs. Try 'gem cleanup <gem>'
 Please report a bug if this causes problems.
     EXPECTED
 
-    assert_output nil, expected do
+    actual_stdout, actual_stderr = capture_output do
       specification.reset
     end
+    assert_empty actual_stdout
+    assert_equal(expected, actual_stderr)
   end
 
   def test_unresolved_specs_with_versions
@@ -3052,9 +3054,11 @@ WARN: Clearing out unresolved specs. Try 'gem cleanup <gem>'
 Please report a bug if this causes problems.
     EXPECTED
 
-    assert_output nil, expected do
+    actual_stdout, actual_stderr = capture_output do
       specification.reset
     end
+    assert_empty actual_stdout
+    assert_equal(expected, actual_stderr)
   end
 
   def test_duplicate_runtime_dependency

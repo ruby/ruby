@@ -1966,9 +1966,11 @@ You may need to `gem install -g` to install missing gems
     EXPECTED
 
     Gem::Deprecate.skip_during do
-      assert_output nil, expected do
+      actual_stdout, actual_stderr = capture_output do
         Gem.use_gemdeps
       end
+      assert_empty actual_stdout
+      assert_equal(expected, actual_stderr)
     end
   ensure
     ENV['RUBYGEMS_GEMDEPS'] = rubygems_gemdeps
