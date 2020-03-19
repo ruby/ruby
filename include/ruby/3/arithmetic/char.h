@@ -20,9 +20,33 @@
  */
 #ifndef  RUBY3_ARITHMETIC_CHAR_H
 #define  RUBY3_ARITHMETIC_CHAR_H
-#include "ruby/3/arithmetic/int.h"
+#include "ruby/3/arithmetic/int.h"  /* NUM2INT is here, but */
+#include "ruby/3/arithmetic/long.h" /* INT2FIX is here.*/
+#include "ruby/3/attr/artificial.h"
+#include "ruby/3/attr/const.h"
+#include "ruby/3/attr/constexpr.h"
+#include "ruby/3/attr/forceinline.h"
+#include "ruby/3/cast.h"
 #include "ruby/3/core/rstring.h"
 #include "ruby/3/value_type.h"
+
+#define RB_NUM2CHR rb_num2char_inline
+#define NUM2CHR    RB_NUM2CHR
+#define CHR2FIX    RB_CHR2FIX
+
+/** @cond INTERNAL_MACRO */
+#define RB_CHR2FIX RB_CHR2FIX
+/** @endcond */
+
+RUBY3_ATTR_CONST_ON_NDEBUG()
+RUBY3_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
+RUBY3_ATTR_ARTIFICIAL()
+RUBY3_ATTR_FORCEINLINE()
+static VALUE
+RB_CHR2FIX(unsigned char c)
+{
+    return RB_INT2FIX(c);
+}
 
 static inline char
 rb_num2char_inline(VALUE x)
@@ -30,12 +54,7 @@ rb_num2char_inline(VALUE x)
     if (RB_TYPE_P(x, RUBY_T_STRING) && (RSTRING_LEN(x)>=1))
         return RSTRING_PTR(x)[0];
     else
-        return (char)(NUM2INT(x) & 0xff);
+        return RUBY3_CAST((char)RB_NUM2INT(x));
 }
-#define RB_NUM2CHR(x) rb_num2char_inline(x)
-#define RB_CHR2FIX(x) RB_INT2FIX((long)((x)&0xff))
-
-#define NUM2CHR(x) RB_NUM2CHR(x)
-#define CHR2FIX(x) RB_CHR2FIX(x)
 
 #endif /* RUBY3_ARITHMETIC_CHAR_H */
