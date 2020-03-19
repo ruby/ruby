@@ -457,6 +457,7 @@ matrix:
   allow_failures:
     - name: -fsanitize=address
     - name: -fsanitize=memory
+    - name: arm32-linux
   fast_finish: true
 
 before_script:
