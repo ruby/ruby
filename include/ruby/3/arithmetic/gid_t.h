@@ -18,22 +18,13 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Arithmetic conversion between C's `gid_t` and Ruby's.
  */
-#ifndef  RUBY3_ARITHMERIC_GID_T_H
-#define  RUBY3_ARITHMERIC_GID_T_H
 #include "ruby/3/config.h"
-
-#ifdef SYS_TYPES_H
-# include <sys/types.h>
-#endif
-
 #include "ruby/3/arithmetic/long.h"
 
 #ifndef GIDT2NUM
-#define GIDT2NUM(v) LONG2NUM(v)
+# define GIDT2NUM RB_LONG2NUM
 #endif
 
 #ifndef NUM2GIDT
-#define NUM2GIDT(v) NUM2LONG(v)
+# define NUM2GIDT RB_NUM2LONG
 #endif
-
-#endif /* RUBY3_ARITHMERIC_GID_T_H */

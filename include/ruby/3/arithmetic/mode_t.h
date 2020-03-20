@@ -18,22 +18,13 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Arithmetic conversion between C's `mode_t` and Ruby's.
  */
-#ifndef  RUBY3_ARITHMERIC_MODE_T_H
-#define  RUBY3_ARITHMERIC_MODE_T_H
 #include "ruby/3/config.h"
-
-#ifdef SYS_TYPES_H
-# include <sys/types.h>
-#endif
-
-#include "ruby/3/arithmetic/long.h"
+#include "ruby/3/arithmetic/int.h"
 
 #ifndef NUM2MODET
-#define NUM2MODET(v) NUM2INT(v)
+# define NUM2MODET RB_NUM2INT
 #endif
 
 #ifndef MODET2NUM
-#define MODET2NUM(v) INT2NUM(v)
+# define MODET2NUM RB_INT2NUM
 #endif
-
-#endif /* RUBY3_ARITHMERIC_MODE_T_H */
