@@ -62,7 +62,7 @@ File.foreach "config.status" do |line|
     when /^(?:X|(?:MINI|RUN|(?:HAVE_)?BASE|BOOTSTRAP|BTEST)RUBY(?:_COMMAND)?$)/; next
     when /^INSTALLDOC|TARGET$/; next
     when /^DTRACE/; next
-    when /^MJIT_SUPPORT/; # pass
+    when /^MJIT_(CC|SUPPORT)/; # pass
     when /^MJIT_/; next
     when /^(?:MAJOR|MINOR|TEENY)$/; vars[name] = val; next
     when /^LIBRUBY_D?LD/; next

@@ -4,7 +4,7 @@ module JITSupport
   JIT_TIMEOUT = 600 # 10min for each...
   JIT_SUCCESS_PREFIX = 'JIT success \(\d+\.\dms\)'
   UNSUPPORTED_COMPILERS = [
-    %r[\Aicc\b],
+    %r[\A.*/bin/intel64/icc\b],
     %r[\A/opt/developerstudio\d+\.\d+/bin/cc\z],
   ]
 
@@ -44,8 +44,8 @@ module JITSupport
   def supported?
     return @supported if defined?(@supported)
     @supported = UNSUPPORTED_COMPILERS.all? do |regexp|
-      !regexp.match?(RbConfig::CONFIG['CC'])
-    end
+      !regexp.match?(RbConfig::CONFIG['MJIT_CC'])
+    end && RbConfig::CONFIG["MJIT_SUPPORT"] != 'no'
   end
 
   def remove_mjit_logs(stderr)
