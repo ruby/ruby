@@ -6536,6 +6536,94 @@ env_update(VALUE env, VALUE hash)
  *    reviews.length #=> 1
  *
  *  See also Object#hash and Object#eql?
+ *
+ *  === Default Values
+ *
+ *  For a key that is not found,
+ *  method #[] returns a default value
+ *  based on two settings in the Hash:
+ *
+ *  - Its default value.
+ *  - Its default proc.
+ *
+ *  ==== Default Value
+ *
+ *  The simplest case for the default value is seen
+ *  when the default proc for a \Hash has not been set (i.e., is +nil+).
+ *  In that case the value of method #default (initially +nil+) is returned:
+ *
+ *    h = Hash.new
+ *    h.default_proc # => nil
+ *    h.default # => nil
+ *    h[:nosuch] # => nil
+ *
+ *  You can initialize the default value by passing an argument to method Hash.new:
+ *
+ *    h = Hash.new(false)
+ *    h.default # => false
+ *    h[:nosuch] # => false
+ *
+ *  You can update the default value with method #default=:
+ *
+ *    h.default = false
+ *    h[:nosuch] # => false
+ *
+ *  For certain kinds of default values (e.g., Strings), a default value can be modified thus:
+ *
+ *    h = Hash.new('Foo')
+ *    h[:nosuch] # => "Foo"
+ *    h[:nosuch_0].upcase! # => "FOO"
+ *    h[:nosuch_1] # => "FOO"
+ *
+ *  ==== Default \Proc
+ *
+ *  When the default proc for a \Hash is set,
+ *  the returned default value is determined by the default proc alone
+ *  (and the default value is ignored).
+ *
+ *  you can initialize the default proc by by calling Hash.new with a block:
+ *
+ *    h = Hash.new { |hash, key| "Default value for #{key}" }
+ *    h.default_proc.class # => Proc
+ *
+ *  You can update the default proc with method #default_proc=:
+ *
+ *    h = Hash.new
+ *    h.default_proc # => nil
+ *    h.default_proc = proc { |hash, key| "Default value for #{key}" }
+ *    h.default_proc.class # => Proc
+ *
+ *  When the default proc is set (i.e., not +nil+)
+ *  and method #[] is called with with a non-existent key,
+ *  the block is called with both the \Hash object itself and the missing key;
+ *  the block's return value is returned as the key's value:
+ *
+ *    h = Hash.new { |hash, key| "Default value for #{key}" }
+ *    h[:nosuch] # => "Default value for nosuch"
+ *
+ *  In this case, the default value is ignored:
+ *
+ *    h.default = false
+ *    h[:nosuch] # => "Default value for nosuch"
+ *
+ *  Note also that in the example above no entry for key +:nosuch+ is created:
+ *
+ *    h.include?(:nosuch) # => false
+ *
+ *  However, the block itself can add a new entry:
+ *
+ *    h = Hash.new { |hash, key| hash[key] = "Subsequent value for #{key}"; "First value for #{key}" }
+ *    h.include?(:nosuch) # => false
+ *    h[:nosuch] # => "First value for nosuch"
+ *    h.include?(:nosuch) # => true
+ *    h[:nosuch] # => "Subsequent value for nosuch"
+ *    h[:nosuch] # => "Subsequent value for nosuch"
+ *
+ *  Setting the default proc to +nil+ causes a missing-key reference to return the default value:
+ *
+ *    h.default_proc = nil
+ *    h.default = false
+ *    h[:nosuch] # => false
  */
 
 void
