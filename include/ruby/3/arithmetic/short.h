@@ -27,14 +27,21 @@
 #include "ruby/3/dllexport.h"
 #include "ruby/3/special_consts.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+#define RB_NUM2SHORT  rb_num2short_inline
+#define RB_NUM2USHORT rb_num2ushort
+#define NUM2SHORT     RB_NUM2SHORT
+#define NUM2USHORT    RB_NUM2USHORT
+#define USHORT2NUM    RB_INT2FIX
+#define RB_FIX2SHORT  rb_fix2short
+#define FIX2SHORT     RB_FIX2SHORT
 
+RUBY3_SYMBOL_EXPORT_BEGIN()
 short rb_num2short(VALUE);
 unsigned short rb_num2ushort(VALUE);
 short rb_fix2short(VALUE);
 unsigned short rb_fix2ushort(VALUE);
-#define RB_FIX2SHORT(x) (rb_fix2short((VALUE)(x)))
-#define FIX2SHORT(x) RB_FIX2SHORT(x)
+RUBY3_SYMBOL_EXPORT_END()
+
 static inline short
 rb_num2short_inline(VALUE x)
 {
@@ -43,14 +50,5 @@ rb_num2short_inline(VALUE x)
     else
         return rb_num2short(x);
 }
-
-#define RB_NUM2SHORT(x) rb_num2short_inline(x)
-#define RB_NUM2USHORT(x) rb_num2ushort(x)
-#define NUM2SHORT(x) RB_NUM2SHORT(x)
-#define NUM2USHORT(x) RB_NUM2USHORT(x)
-
-#define USHORT2NUM(x) RB_INT2FIX(x)
-
-RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_ARITHMETIC_SOHRT_H */
