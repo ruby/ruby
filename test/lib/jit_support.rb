@@ -4,7 +4,8 @@ module JITSupport
   JIT_TIMEOUT = 600 # 10min for each...
   JIT_SUCCESS_PREFIX = 'JIT success \(\d+\.\dms\)'
   UNSUPPORTED_COMPILERS = [
-    'icc',
+    %r[\Aicc\b],
+    %r[\A/opt/developerstudio\d+\.\d+/bin/cc\z],
   ]
 
   module_function
@@ -42,7 +43,9 @@ module JITSupport
 
   def supported?
     return @supported if defined?(@supported)
-    @supported = !UNSUPPORTED_COMPILERS.include?(RbConfig::CONFIG['CC'])
+    @supported = UNSUPPORTED_COMPILERS.all? do |regexp|
+      !regexp.match?(RbConfig::CONFIG['CC'])
+    end
   end
 
   def remove_mjit_logs(stderr)
@@ -54,7 +57,7 @@ module JITSupport
   end
 
   def code_block(code)
-    "```\n#{code}\n```\n\n"
+    %Q["""\n#{code}\n"""\n\n]
   end
 
   # We're retrying cc1 not found error on gcc, which should be solved in the future but ignored for now.
