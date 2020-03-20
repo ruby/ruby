@@ -22,19 +22,17 @@
 #define  RUBY3_ARITHMETIC_DOUBLE_H
 #include "ruby/3/value.h"
 #include "ruby/3/dllexport.h"
+#include "ruby/backward/2/attributes.h"
+
+#define NUM2DBL      rb_num2dbl
+#define RFLOAT_VALUE rb_float_value
+#define DBL2NUM      rb_float_new
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
-
 double rb_num2dbl(VALUE);
-#define NUM2DBL(x) rb_num2dbl((VALUE)(x))
-
 PUREFUNC(double rb_float_value(VALUE));
 VALUE rb_float_new(double);
 VALUE rb_float_new_in_heap(double);
-
-#define RFLOAT_VALUE(v) rb_float_value(v)
-#define DBL2NUM(dbl)  rb_float_new(dbl)
-
 RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_ARITHMETIC_DOUBLE_H */
