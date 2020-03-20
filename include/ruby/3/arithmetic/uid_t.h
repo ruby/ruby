@@ -18,22 +18,13 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Arithmetic conversion between C's `uid_t` and Ruby's.
  */
-#ifndef  RUBY3_ARITHMERIC_UID_T_H
-#define  RUBY3_ARITHMERIC_UID_T_H
 #include "ruby/3/config.h"
-
-#ifdef SYS_TYPES_H
-# include <sys/types.h>
-#endif
-
 #include "ruby/3/arithmetic/long.h"
 
 #ifndef UIDT2NUM
-#define UIDT2NUM(v) LONG2NUM(v)
+# define UIDT2NUM RB_LONG2NUM
 #endif
 
 #ifndef NUM2UIDT
-#define NUM2UIDT(v) NUM2LONG(v)
+# define NUM2UIDT RB_NUM2LONG
 #endif
-
-#endif /* RUBY3_ARITHMERIC_UID_T_H */

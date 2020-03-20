@@ -18,41 +18,30 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Arithmetic conversion between C's `size_t` and Ruby's.
  */
-#ifndef  RUBY3_ARITHMERIC_SIZE_T_H
-#define  RUBY3_ARITHMERIC_SIZE_T_H
 #include "ruby/3/config.h"
-
-#ifdef STDC_HEADERS
-# include <stddef.h>
-#endif
-
-#ifdef SYS_TYPES_H
-# include <sys/types.h>
-#endif
-
 #include "ruby/3/arithmetic/int.h"
 #include "ruby/3/arithmetic/long.h"
 #include "ruby/3/arithmetic/long_long.h"
-#include "ruby/3/value.h"
 #include "ruby/backward/2/long_long.h"
 
-#if SIZEOF_SIZE_T > SIZEOF_LONG && defined(HAVE_LONG_LONG)
-# define SIZET2NUM(v) ULL2NUM(v)
-# define SSIZET2NUM(v) LL2NUM(v)
+#if SIZEOF_SIZE_T == SIZEOF_LONG_LONG
+# define SIZET2NUM  RB_ULL2NUM
+# define SSIZET2NUM RB_LL2NUM
 #elif SIZEOF_SIZE_T == SIZEOF_LONG
-# define SIZET2NUM(v) ULONG2NUM(v)
-# define SSIZET2NUM(v) LONG2NUM(v)
+# define SIZET2NUM  RB_ULONG2NUM
+# define SSIZET2NUM RB_LONG2NUM
 #else
-# define SIZET2NUM(v) UINT2NUM(v)
-# define SSIZET2NUM(v) INT2NUM(v)
+# define SIZET2NUM  RB_UINT2NUM
+# define SSIZET2NUM RB_INT2NUM
 #endif
 
-#if defined(HAVE_LONG_LONG) && SIZEOF_SIZE_T > SIZEOF_LONG
-# define NUM2SIZET(x) ((size_t)NUM2ULL(x))
-# define NUM2SSIZET(x) ((ssize_t)NUM2LL(x))
+#if SIZEOF_SIZE_T == SIZEOF_LONG_LONG
+# define NUM2SIZET  RB_NUM2ULL
+# define NUM2SSIZET RB_NUM2LL
+#elif SIZEOF_SIZE_T == SIZEOF_LONG
+# define NUM2SIZET  RB_NUM2ULONG
+# define NUM2SSIZET RB_NUM2LONG
 #else
-# define NUM2SIZET(x) NUM2ULONG(x)
-# define NUM2SSIZET(x) NUM2LONG(x)
+# define NUM2SIZET  RB_NUM2UINT
+# define NUM2SSIZET RB_NUM2INT
 #endif
-
-#endif /* RUBY3_ARITHMERIC_SIZE_T_H */

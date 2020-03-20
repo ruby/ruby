@@ -18,34 +18,28 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Arithmetic conversion between C's `off_t` and Ruby's.
  */
-#ifndef  RUBY3_ARITHMERIC_OFF_T_H
-#define  RUBY3_ARITHMERIC_OFF_T_H
 #include "ruby/3/config.h"
-
-#ifdef HAVE_SYS_TYPES_H
-# include <sys/types.h>
-#endif
-
 #include "ruby/3/arithmetic/int.h"
 #include "ruby/3/arithmetic/long.h"
 #include "ruby/3/arithmetic/long_long.h"
 #include "ruby/backward/2/long_long.h"
 
-#ifndef OFFT2NUM
-#if SIZEOF_OFF_T > SIZEOF_LONG && defined(HAVE_LONG_LONG)
-# define OFFT2NUM(v) LL2NUM(v)
+#ifdef OFFT2NUM
+# /* take that. */
+#elif SIZEOF_OFF_T == SIZEOF_LONG_LONG
+# define OFFT2NUM RB_LL2NUM
 #elif SIZEOF_OFF_T == SIZEOF_LONG
-# define OFFT2NUM(v) LONG2NUM(v)
+# define OFFT2NUM RB_LONG2NUM
 #else
-# define OFFT2NUM(v) INT2NUM(v)
-#endif
+# define OFFT2NUM RB_INT2NUM
 #endif
 
-#if !defined(NUM2OFFT)
-# if defined(HAVE_LONG_LONG) && SIZEOF_OFF_T > SIZEOF_LONG
-#  define NUM2OFFT(x) ((off_t)NUM2LL(x))
-# else
-#  define NUM2OFFT(x) NUM2LONG(x)
-# endif
+#ifdef NUM2OFFT
+# /* take that. */
+#elif SIZEOF_OFF_T == SIZEOF_LONG_LONG
+# define NUM2OFFT RB_NUM2LL
+#elif SIZEOF_OFF_T == SIZEOF_LONG
+# define NUM2OFFT RB_NUM2LONG
+#else
+# define NUM2OFFT RB_NUM2INT
 #endif
-#endif /* RUBY3_ARITHMERIC_OFF_T_H */
