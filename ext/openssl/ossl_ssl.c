@@ -1896,7 +1896,17 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 			rb_eof_error();
 		    }
 		}
-                /* fall through */
+		/* fall through */
+#ifdef SSL_R_UNEXPECTED_EOF_WHILE_READING
+	    case SSL_ERROR_SSL:
+		/* defined for OpenSSL versions 1.1.1e and later */
+		if (OpenSSL_version_num() >= 0x1010105fL &&
+		    ERR_GET_REASON(ERR_peek_last_error()) == SSL_R_UNEXPECTED_EOF_WHILE_READING) {
+		    rb_eof_error();
+		    continue;
+		}
+		/* fall through */
+#endif
 	    default:
 		ossl_raise(eSSLError, "SSL_read");
 	    }
