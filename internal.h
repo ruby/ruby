@@ -1384,9 +1384,11 @@ VALUE rb_dbl_complex_new_polar_pi(double abs, double ang);
 
 struct rb_thread_struct;
 /* cont.c */
+struct rb_fiber_struct;
 VALUE rb_obj_is_fiber(VALUE);
 void rb_fiber_reset_root_local_storage(struct rb_thread_struct *);
 void ruby_register_rollback_func_for_ensure(VALUE (*ensure_func)(ANYARGS), VALUE (*rollback_func)(ANYARGS));
+void rb_fiber_init_mjit_cont(struct rb_fiber_struct *fiber);
 
 /* debug.c */
 PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
