@@ -567,6 +567,28 @@ class TestJIT < Test::Unit::TestCase
     assert_match(/^Successful MJIT finish$/, err)
   end
 
+  def test_nothing_to_unload_with_jit_wait
+    ignorable_patterns = [
+      /\AJIT compaction \([^)]+\): .+\n\z/,
+      /\ANo units can be unloaded -- .+\n\z/,
+    ]
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'hello', success_count: 11, max_cache: 10, ignorable_patterns: ignorable_patterns)
+    begin;
+      def a1() a2() end
+      def a2() a3() end
+      def a3() a4() end
+      def a4() a5() end
+      def a5() a6() end
+      def a6() a7() end
+      def a7() a8() end
+      def a8() a9() end
+      def a9() a10() end
+      def a10() a11() end
+      def a11() print('hello') end
+      a1
+    end;
+  end
+
   def test_unload_units_and_compaction
     Dir.mktmpdir("jit_test_unload_units_") do |dir|
       # MIN_CACHE_SIZE is 10
@@ -937,13 +959,13 @@ class TestJIT < Test::Unit::TestCase
   end
 
   # Shorthand for normal test cases
-  def assert_eval_with_jit(script, stdout: nil, success_count:, min_calls: 1, insns: [], uplevel: 1)
-    out, err = eval_with_jit(script, verbose: 1, min_calls: min_calls)
+  def assert_eval_with_jit(script, stdout: nil, success_count:, min_calls: 1, max_cache: 1000, insns: [], uplevel: 1, ignorable_patterns: [])
+    out, err = eval_with_jit(script, verbose: 1, min_calls: min_calls, max_cache: max_cache)
     actual = err.scan(/^#{JIT_SUCCESS_PREFIX}:/).size
     # Add --jit-verbose=2 logs for cl.exe because compiler's error message is suppressed
     # for cl.exe with --jit-verbose=1. See `start_process` in mjit_worker.c.
     if RUBY_PLATFORM.match?(/mswin/) && success_count != actual
-      out2, err2 = eval_with_jit(script, verbose: 2, min_calls: min_calls)
+      out2, err2 = eval_with_jit(script, verbose: 2, min_calls: min_calls, max_cache: max_cache)
     end
 
     # Make sure that the script has insns expected to be tested
@@ -967,7 +989,7 @@ class TestJIT < Test::Unit::TestCase
       assert_equal(stdout, out, "Expected stdout #{out.inspect} to match #{stdout.inspect} with script:\n#{code_block(script)}")
     end
     err_lines = err.lines.reject! do |l|
-      l.chomp.empty? || l.match?(/\A#{JIT_SUCCESS_PREFIX}/) || IGNORABLE_PATTERNS.any? { |pat| pat.match?(l) }
+      l.chomp.empty? || l.match?(/\A#{JIT_SUCCESS_PREFIX}/) || (IGNORABLE_PATTERNS + ignorable_patterns).any? { |pat| pat.match?(l) }
     end
     unless err_lines.empty?
       warn err_lines.join(''), uplevel: uplevel
