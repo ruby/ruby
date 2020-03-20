@@ -20,24 +20,27 @@
  */
 #ifndef  RUBY3_ARITHMETIC_LONG_LONG_H
 #define  RUBY3_ARITHMETIC_LONG_LONG_H
-#include "ruby/3/config.h"
 #include "ruby/3/value.h"
 #include "ruby/3/dllexport.h"
 #include "ruby/3/special_consts.h"
 #include "ruby/backward/2/long_long.h"
 
+#define RB_LL2NUM  rb_ll2inum
+#define RB_ULL2NUM rb_ull2inum
+#define LL2NUM     RB_LL2NUM
+#define ULL2NUM    RB_ULL2NUM
+#define RB_NUM2LL  rb_num2ll_inline
+#define RB_NUM2ULL rb_num2ull
+#define NUM2LL     RB_NUM2LL
+#define NUM2ULL    RB_NUM2ULL
+
 RUBY3_SYMBOL_EXPORT_BEGIN()
-
-#ifdef HAVE_LONG_LONG
 VALUE rb_ll2inum(LONG_LONG);
-#define LL2NUM(v) rb_ll2inum(v)
 VALUE rb_ull2inum(unsigned LONG_LONG);
-#define ULL2NUM(v) rb_ull2inum(v)
-#endif
-
-#ifdef HAVE_LONG_LONG
 LONG_LONG rb_num2ll(VALUE);
 unsigned LONG_LONG rb_num2ull(VALUE);
+RUBY3_SYMBOL_EXPORT_END()
+
 static inline LONG_LONG
 rb_num2ll_inline(VALUE x)
 {
@@ -46,12 +49,5 @@ rb_num2ll_inline(VALUE x)
     else
         return rb_num2ll(x);
 }
-# define RB_NUM2LL(x) rb_num2ll_inline(x)
-# define RB_NUM2ULL(x) rb_num2ull(x)
-# define NUM2LL(x) RB_NUM2LL(x)
-# define NUM2ULL(x) RB_NUM2ULL(x)
-#endif
-
-RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_ARITHMETIC_LONG_LONG_H */
