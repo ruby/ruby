@@ -192,9 +192,6 @@ static ID id_coerce;
 VALUE rb_cNumeric;
 VALUE rb_cFloat;
 VALUE rb_cInteger;
-#ifndef RUBY_INTEGER_UNIFICATION
-VALUE rb_cFixnum;
-#endif
 
 VALUE rb_eZeroDivError;
 VALUE rb_eFloatDomainError;
@@ -5687,9 +5684,6 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "bit_length", rb_int_bit_length, 0);
     rb_define_method(rb_cInteger, "digits", rb_int_digits, -1);
 
-#ifndef RUBY_INTEGER_UNIFICATION
-    rb_cFixnum = rb_cInteger;
-#endif
     /* An obsolete class, use Integer */
     rb_define_const(rb_cObject, "Fixnum", rb_cInteger);
     rb_deprecate_constant(rb_cObject, "Fixnum");

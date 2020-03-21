@@ -45,9 +45,6 @@
 
 #define RB_BIGNUM_TYPE_P(x) RB_TYPE_P((x), T_BIGNUM)
 
-#ifndef RUBY_INTEGER_UNIFICATION
-VALUE rb_cBignum;
-#endif
 const char ruby_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 
 #ifndef SIZEOF_BDIGIT_DBL
@@ -7190,9 +7187,6 @@ rb_int_powm(int const argc, VALUE * const argv, VALUE const num)
 void
 Init_Bignum(void)
 {
-#ifndef RUBY_INTEGER_UNIFICATION
-    rb_cBignum = rb_cInteger;
-#endif
     /* An obsolete class, use Integer */
     rb_define_const(rb_cObject, "Bignum", rb_cInteger);
     rb_deprecate_constant(rb_cObject, "Bignum");

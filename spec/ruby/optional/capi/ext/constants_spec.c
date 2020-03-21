@@ -9,12 +9,6 @@ static VALUE constants_spec_rb_cArray(VALUE self) {
   return rb_cArray;
 }
 
-#ifndef RUBY_INTEGER_UNIFICATION
-static VALUE constants_spec_rb_cBignum(VALUE self) {
-  return rb_cBignum;
-}
-#endif
-
 static VALUE constants_spec_rb_cClass(VALUE self) {
   return rb_cClass;
 }
@@ -30,12 +24,6 @@ static VALUE constants_spec_rb_cFalseClass(VALUE self) {
 static VALUE constants_spec_rb_cFile(VALUE self) {
   return rb_cFile;
 }
-
-#ifndef RUBY_INTEGER_UNIFICATION
-static VALUE constants_spec_rb_cFixnum(VALUE self) {
-  return rb_cFixnum;
-}
-#endif
 
 static VALUE constants_spec_rb_cFloat(VALUE self) {
   return rb_cFloat;
@@ -264,17 +252,11 @@ static VALUE constants_spec_rb_cDir(VALUE self) {
 void Init_constants_spec(void) {
   VALUE cls = rb_define_class("CApiConstantsSpecs", rb_cObject);
   rb_define_method(cls, "rb_cArray", constants_spec_rb_cArray, 0);
-#ifndef RUBY_INTEGER_UNIFICATION
-  rb_define_method(cls, "rb_cBignum", constants_spec_rb_cBignum, 0);
-#endif
 
   rb_define_method(cls, "rb_cClass", constants_spec_rb_cClass, 0);
   rb_define_method(cls, "rb_cData", constants_spec_rb_cData, 0);
   rb_define_method(cls, "rb_cFalseClass", constants_spec_rb_cFalseClass, 0);
   rb_define_method(cls, "rb_cFile", constants_spec_rb_cFile, 0);
-#ifndef RUBY_INTEGER_UNIFICATION
-  rb_define_method(cls, "rb_cFixnum", constants_spec_rb_cFixnum, 0);
-#endif
 
   rb_define_method(cls, "rb_cFloat", constants_spec_rb_cFloat, 0);
   rb_define_method(cls, "rb_cHash", constants_spec_rb_cHash, 0);
