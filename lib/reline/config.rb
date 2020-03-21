@@ -83,8 +83,17 @@ class Reline::Config
     @key_actors[@keymap_label]
   end
 
+  def inputrc_path
+    case ENV['INPUTRC']
+    when nil, ''
+      DEFAULT_PATH
+    else
+      ENV['INPUTRC']
+    end
+  end
+
   def read(file = nil)
-    file ||= File.expand_path(ENV['INPUTRC'] || DEFAULT_PATH)
+    file ||= File.expand_path(inputrc_path)
     begin
       if file.respond_to?(:readlines)
         lines = file.readlines

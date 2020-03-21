@@ -206,4 +206,13 @@ class Reline::Config::Test < Reline::TestCase
     history << "a\n"
     assert_equal 1, history.size
   end
+
+  def test_empty_inputrc_env
+    inputrc_backup = ENV['INPUTRC']
+    ENV['INPUTRC'] = ''
+    assert_nothing_raised do
+      @config.read
+    end
+    ENV['INPUTRC'] = inputrc_backup
+  end
 end
