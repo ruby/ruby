@@ -1433,7 +1433,7 @@ flo_hash(VALUE num)
 static VALUE
 rb_dbl_hash(double d)
 {
-    return LONG2FIX(rb_dbl_long_hash(d));
+    return ST2FIX(rb_dbl_long_hash(d));
 }
 
 VALUE
