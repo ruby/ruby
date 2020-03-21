@@ -4676,12 +4676,6 @@ static size_t base36_numdigits_cache[35][MAX_BASE36_POWER_TABLE_ENTRIES];
 static void
 power_cache_init(void)
 {
-    int i, j;
-    for (i = 0; i < 35; ++i) {
-	for (j = 0; j < MAX_BASE36_POWER_TABLE_ENTRIES; ++j) {
-	    base36_power_cache[i][j] = Qnil;
-	}
-    }
 }
 
 static inline VALUE
@@ -4704,8 +4698,8 @@ power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
     if (MAX_BASE36_POWER_TABLE_ENTRIES <= power_level)
         rb_bug("too big power number requested: maxpow_in_bdigit_dbl(%d)**(2**%d)", base, power_level);
 
-    if (NIL_P(base36_power_cache[base - 2][power_level])) {
-        VALUE power;
+    VALUE power = base36_power_cache[base - 2][power_level];
+    if (!power) {
         size_t numdigits;
         if (power_level == 0) {
             int numdigits0;
@@ -4725,7 +4719,7 @@ power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
     }
     if (numdigits_ret)
         *numdigits_ret = base36_numdigits_cache[base - 2][power_level];
-    return base36_power_cache[base - 2][power_level];
+    return power;
 }
 
 struct big2str_struct {
