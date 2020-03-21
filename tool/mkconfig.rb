@@ -333,8 +333,8 @@ print <<EOS
   # :nodoc:
   # call-seq:
   #
-  #   RbConfig.fire_update!(key, val)               -> string
-  #   RbConfig.fire_update!(key, val, mkconf, conf) -> string
+  #   RbConfig.fire_update!(key, val)               -> array
+  #   RbConfig.fire_update!(key, val, mkconf, conf) -> array
   #
   # updates +key+ in +mkconf+ with +val+, and all values depending on
   # the +key+ in +mkconf+.
