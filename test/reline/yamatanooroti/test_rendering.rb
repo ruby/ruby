@@ -35,5 +35,7 @@ begin
       EOC
     end
   end
-rescue LoadError, NameError # yamatanooroti gem not found
+rescue LoadError, NameError
+  # On Ruby repository, this test suit doesn't run because Ruby repo doesn't
+  # have the yamatanooroti gem.
 end
