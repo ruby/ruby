@@ -1,7 +1,9 @@
+require 'reline'
+
 begin
   require 'yamatanooroti'
 
-  class Yamatanooroti::TestMultiplatform < Yamatanooroti::TestCase
+  class Reline::TestRendering < Yamatanooroti::TestCase
     def setup
       inputrc_backup = ENV['INPUTRC']
       ENV['INPUTRC'] = 'nonexistent_file'
