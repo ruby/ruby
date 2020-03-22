@@ -21,27 +21,36 @@ targets = Dir.glob(File.join(srcdir, 'vm*.*')) - SKIPPED_FILES.map { |f| File.jo
 sources = {}
 mtimes = {}
 
-if skip = targets.any? { |target| !File.writable?(target) }
-  puts "tool/run_without_tabs.rb: srcdir has non-writable files. Skipping tab expansion."
-end
-
 targets.each do |target|
-  sources[target] = File.read(target)
+  unless File.writable?(target)
+    puts "tool/run_without_tabs.rb: Skipping #{target.dump} as it's not writable."
+    next
+  end
+  source = File.read(target)
+  begin
+    expanded = source.gsub(/^\t+/) { |tab| ' ' * 8 * tab.length }
+  rescue ArgumentError # invalid byte sequence in UTF-8 (Travis, RubyCI)
+    puts "tool/run_without_tabs.rb: Skipping #{target.dump} as the encoding is #{source.encoding}."
+    next
+  end
+
+  sources[target] = source
   mtimes[target] = File.mtime(target)
 
-  expanded = sources[target].force_encoding('UTF-8').gsub(/^\t+/) { |tab| ' ' * 8 * tab.length }
   if sources[target] == expanded
     puts "#{target.dump} has no hard tab indentation. This should be ignored in tool/run_without_tabs.rb."
   end
   File.write(target, expanded)
   FileUtils.touch(target, mtime: mtimes[target])
-end unless skip
+end
 
 result = system(*ARGV)
 
 targets.each do |target|
-  File.write(target, sources.fetch(target))
-  FileUtils.touch(target, mtime: mtimes.fetch(target))
-end unless skip
+  if sources.key?(target)
+    File.write(target, sources[target])
+    FileUtils.touch(target, mtime: mtimes.fetch(target))
+  end
+end
 
 exit result
