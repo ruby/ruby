@@ -8,7 +8,12 @@
 
 require 'fileutils'
 
-# These files have no hard tab indentations. Skip normalizing these files.
+EXPAND_TARGETS = %w[
+  vm*.*
+  include/ruby/ruby.h
+]
+
+# These files have no hard tab indentations. Skip normalizing these files from the glob result.
 SKIPPED_FILES = %w[
   vm_callinfo.h
   vm_debug.h
@@ -17,7 +22,7 @@ SKIPPED_FILES = %w[
 ]
 
 srcdir = File.expand_path('..', __dir__)
-targets = Dir.glob(File.join(srcdir, 'vm*.*')) - SKIPPED_FILES.map { |f| File.join(srcdir, f) }
+targets = EXPAND_TARGETS.flat_map { |t| Dir.glob(File.join(srcdir, t)) } - SKIPPED_FILES.map { |f| File.join(srcdir, f) }
 sources = {}
 mtimes = {}
 
