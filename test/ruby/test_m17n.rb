@@ -310,6 +310,36 @@ class TestM17N < Test::Unit::TestCase
     def o.inspect
       "abc".encode(Encoding.default_external)
     end
+
+    # debugging code for http://ci.rvm.jp/logfiles/brlog.trunk-test-random.20200322-221411
+    begin
+      "abc".encode(Encoding.default_external)
+    rescue Encoding::CompatibilityError
+      p :debug_1
+      p $!
+      p *$!.backtrace
+      p "abc".encoding
+      p Encoding.default_external
+    end
+    begin
+      [o].inspect
+    rescue Encoding::CompatibilityError
+      p :debug_2
+      p $!
+      p *$!.backtrace
+      p "abc".encoding
+      p Encoding.default_external
+      begin
+        p o.inspect
+        p :debug_3
+      rescue Encoding::CompatibilityError
+        p :debug_4
+        p $!
+        p *$!.backtrace
+      end
+    end
+    # debugging code end
+
     assert_equal '[abc]', [o].inspect
 
     Encoding.default_external = Encoding::US_ASCII
