@@ -200,9 +200,15 @@ class Pathname
   # Returns +true+ if +self+ points to a mountpoint.
   def mountpoint?
     begin
-      stat1 = self.lstat
-      stat2 = self.parent.lstat
-      stat1.dev != stat2.dev || stat1.ino == stat2.ino
+      if File.exist? "/proc/self/mountinfo"
+        File.foreach("/proc/self/mountinfo"){ |line|
+          break true if line.split(" ")[4] == File.expand_path(self)
+        } or false
+      else
+        stat1 = self.lstat
+        stat2 = self.parent.lstat
+        stat1.dev != stat2.dev || stat1.ino == stat2.ino
+      end
     rescue Errno::ENOENT
       false
     end
