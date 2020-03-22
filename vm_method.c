@@ -1807,7 +1807,7 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
 
 	alias_me = method_entry_set(target_klass, alias_name, orig_me, visi, orig_me->owner);
 	RB_OBJ_WRITE(alias_me, &alias_me->owner, target_klass);
-	RB_OBJ_WRITE(alias_me, &alias_me->defined_class, defined_class);
+        RB_OBJ_WRITE(alias_me, &alias_me->defined_class, orig_me->defined_class);
     }
 }
 
