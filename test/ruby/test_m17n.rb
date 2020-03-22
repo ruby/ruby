@@ -315,27 +315,27 @@ class TestM17N < Test::Unit::TestCase
     begin
       "abc".encode(Encoding.default_external)
     rescue Encoding::CompatibilityError
-      p :debug_1
-      p $!
-      p *$!.backtrace
-      p "abc".encoding
-      p Encoding.default_external
+      $stderr.puts :debug_1.inspect
+      $stderr.puts $!.inspect
+      $stderr.puts *$!.backtrace
+      $stderr.puts "abc".encoding.inspect
+      $stderr.puts Encoding.default_external.inspect
     end
     begin
       [o].inspect
     rescue Encoding::CompatibilityError
-      p :debug_2
-      p $!
-      p *$!.backtrace
-      p "abc".encoding
-      p Encoding.default_external
+      $stderr.puts :debug_2.inspect
+      $stderr.puts $!.inspect
+      $stderr.puts *$!.backtrace
+      $stderr.puts "abc".encoding.inspect
+      $stderr.puts Encoding.default_external.inspect
       begin
-        p o.inspect
-        p :debug_3
+        $stderr.puts o.inspect.inspect
+        $stderr.puts :debug_3.inspect
       rescue Encoding::CompatibilityError
-        p :debug_4
-        p $!
-        p *$!.backtrace
+        $stderr.puts :debug_4.inspect
+        $stderr.puts $!.inspect
+        $stderr.puts *$!.backtrace
       end
     end
     # debugging code end
