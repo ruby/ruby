@@ -279,7 +279,7 @@ while (decl_range = MJITHeader.find_decl(code, stop_pos))
     decl[match.begin(0)...match.end(0)] = ''
 
     if decl =~ /\bstatic\b/
-      transform_logs[:static_inside_extern] << decl_name
+      abort "#{PROGRAM}: a static decl was found inside external definition #{decl_name.dump}"
     end
 
     header.sub!(/(extern|inline) /, ' ')
@@ -301,7 +301,6 @@ messages = {
   def_to_decl: 'changing definition to declaration',
   static_inline_def: 'making external definition static inline',
   static_inline_decl: 'making declaration static inline',
-  static_inside_extern: 'a static decl inside external definition',
   skipped: 'SKIPPED to transform',
 }
 transform_logs.each do |key, decl_names|
