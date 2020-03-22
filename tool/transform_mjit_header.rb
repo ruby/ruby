@@ -243,10 +243,10 @@ end
 
 # Check initial file correctness in the manner of final output.
 MJITHeader.check_code!(code_to_check, cc, cflags, 'initial')
-puts "\nTransforming external functions to static:"
 
-stop_pos     = -1
-extern_names = []
+stop_pos       = -1
+extern_names   = []
+transform_logs = Hash.new { |h, k| h[k] = [] }
 
 # This loop changes function declarations to static inline.
 while (decl_range = MJITHeader.find_decl(code, stop_pos))
@@ -255,7 +255,7 @@ while (decl_range = MJITHeader.find_decl(code, stop_pos))
   decl_name = MJITHeader.decl_name_of(decl)
 
   if MJITHeader::IGNORED_FUNCTIONS.include?(decl_name) && /#{MJITHeader::FUNC_HEADER_REGEXP}{/.match(decl)
-    puts "#{PROGRAM}: changing definition of '#{decl_name}' to declaration"
+    transform_logs[:def_to_decl] << decl_name
     code[decl_range] = decl.sub(/{.+}/m, ';')
   elsif MJITHeader::ALWAYS_INLINED_FUNCTIONS.include?(decl_name) && match = /#{MJITHeader::FUNC_HEADER_REGEXP}{/.match(decl)
     header = match[0].sub(/{\z/, '').strip
@@ -265,13 +265,13 @@ while (decl_range = MJITHeader.find_decl(code, stop_pos))
   elsif extern_names.include?(decl_name) && (decl =~ /#{MJITHeader::FUNC_HEADER_REGEXP};/)
     decl.sub!(/(extern|static|inline) /, ' ')
     unless decl_name =~ /\Aattr_\w+_\w+\z/ # skip too-many false-positive warnings in insns_info.inc.
-      puts "#{PROGRAM}: making declaration of '#{decl_name}' static inline"
+      transform_logs[:static_inline_decl] << decl_name
     end
 
     code[decl_range] = "static inline #{decl}"
   elsif (match = /#{MJITHeader::FUNC_HEADER_REGEXP}{/.match(decl)) && (header = match[0]) !~ /static/
     unless decl_name.match(MJITHeader::TARGET_NAME_REGEXP)
-      puts "#{PROGRAM}: SKIPPED to transform #{decl_name}"
+      transform_logs[:skipped] << decl_name
       next
     end
 
@@ -279,12 +279,12 @@ while (decl_range = MJITHeader.find_decl(code, stop_pos))
     decl[match.begin(0)...match.end(0)] = ''
 
     if decl =~ /\bstatic\b/
-      puts "warning: a static decl inside external definition of '#{decl_name}'"
+      transform_logs[:static_inside_extern] << decl_name
     end
 
     header.sub!(/(extern|inline) /, ' ')
     unless decl_name =~ /\Aattr_\w+_\w+\z/ # skip too-many false-positive warnings in insns_info.inc.
-      puts "#{PROGRAM}: making external definition of '#{decl_name}' static inline"
+      transform_logs[:static_inline_def] << decl_name
     end
     code[decl_range] = "static inline #{header}#{decl}"
   end
@@ -296,3 +296,14 @@ code << macro
 MJITHeader.check_code!(code, cc, cflags, 'final')
 
 MJITHeader.write(code, outfile)
+
+messages = {
+  def_to_decl: 'changing definition to declaration',
+  static_inline_def: 'making external definition static inline',
+  static_inline_decl: 'making declaration static inline',
+  static_inside_extern: 'a static decl inside external definition',
+  skipped: 'SKIPPED to transform',
+}
+transform_logs.each do |key, decl_names|
+  puts("#{PROGRAM}: #{messages.fetch(key)}: #{decl_names.map { |s| "\e[1m#{s}\e[0m" }.join(', ')}")
+end
