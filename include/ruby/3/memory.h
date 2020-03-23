@@ -22,34 +22,61 @@
 #define  RUBY3_MEMORY_H
 #include "ruby/3/config.h"
 
+#ifdef STDC_HEADERS
+# include <stddef.h>
+#endif
+
 #ifdef HAVE_STRING_H
 # include <string.h>
 #endif
 
-/* Make alloca work the best possible way.  */
-#ifdef __GNUC__
-# ifndef alloca
-#  define alloca __builtin_alloca
-# endif
-#else
-# ifdef HAVE_ALLOCA_H
-#  include <alloca.h>
-# else
-#  ifdef _AIX
-#pragma alloca
-#  else
-#   ifndef alloca               /* predefined by HP cc +Olibcalls */
-void *alloca();
-#   endif
-#  endif /* AIX */
-# endif /* HAVE_ALLOCA_H */
-#endif /* __GNUC__ */
+#ifdef HAVE_STDINT_H
+# include <stdint.h>
+#endif
 
+#ifdef HAVE_ALLOCA_H
+# include <alloca.h>
+#endif
+
+#include "ruby/3/attr/alloc_size.h"
+#include "ruby/3/attr/noalias.h"
+#include "ruby/3/attr/nonnull.h"
+#include "ruby/3/attr/noreturn.h"
+#include "ruby/3/attr/restrict.h"
+#include "ruby/3/attr/returns_nonnull.h"
+#include "ruby/3/cast.h"
 #include "ruby/3/dllexport.h"
+#include "ruby/3/has/builtin.h"
 #include "ruby/3/xmalloc.h"
-#include "ruby/backward/2/attributes.h"
+#include "ruby/3/stdalign.h"
+#include "ruby/backward/2/limits.h"
+#include "ruby/backward/2/long_long.h"
+#include "ruby/defines.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+/* Make alloca work the best possible way.  */
+#if defined(alloca)
+# /* Take that. */
+#elif RUBY3_HAS_BUILTIN(__builtin_alloca)
+# define alloca __builtin_alloca
+#elif defined(_AIX)
+# pragma alloca
+#elif defined(__cplusplus)
+extern "C" void *alloca(size_t);
+#else
+extern void *alloca();
+#endif
+
+#if defined(HAVE_INT128_T) && SIZEOF_SIZE_T <= 8
+# define DSIZE_T uint128_t
+#elif SIZEOF_SIZE_T * 2 <= SIZEOF_LONG_LONG
+# define DSIZE_T unsigned LONG_LONG
+#endif
+
+#ifdef C_ALLOCA
+# define RUBY_ALLOCV_LIMIT 0
+#else
+# define RUBY_ALLOCV_LIMIT 1024
+#endif
 
 #ifdef __GNUC__
 #define RB_GC_GUARD(v) \
@@ -59,63 +86,108 @@ RUBY3_SYMBOL_EXPORT_BEGIN()
         rb_gc_guarded_ptr; \
     }))
 #elif defined _MSC_VER
-#pragma optimize("", off)
-static inline volatile VALUE *rb_gc_guarded_ptr(volatile VALUE *ptr) {return ptr;}
-#pragma optimize("", on)
 #define RB_GC_GUARD(v) (*rb_gc_guarded_ptr(&(v)))
 #else
-volatile VALUE *rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val);
 #define HAVE_RB_GC_GUARDED_PTR_VAL 1
 #define RB_GC_GUARD(v) (*rb_gc_guarded_ptr_val(&(v),(v)))
 #endif
 
-#define RB_ALLOC_N(type,n) ((type*)ruby_xmalloc2((size_t)(n),sizeof(type)))
-#define RB_ALLOC(type) ((type*)ruby_xmalloc(sizeof(type)))
-#define RB_ZALLOC_N(type,n) ((type*)ruby_xcalloc((size_t)(n),sizeof(type)))
-#define RB_ZALLOC(type) (RB_ZALLOC_N(type,1))
-#define RB_REALLOC_N(var,type,n) ((var)=(type*)ruby_xrealloc2((char*)(var),(size_t)(n),sizeof(type)))
+/* Casts needed because void* is NOT compaible with others in C++. */
+#define RB_ALLOC_N(type,n)  RUBY3_CAST((type *)ruby_xmalloc2((n), sizeof(type)))
+#define RB_ALLOC(type)      RUBY3_CAST((type *)ruby_xmalloc(sizeof(type)))
+#define RB_ZALLOC_N(type,n) RUBY3_CAST((type *)ruby_xcalloc((n), sizeof(type)))
+#define RB_ZALLOC(type)     (RB_ZALLOC_N(type, 1))
+#define RB_REALLOC_N(var,type,n) \
+    ((var) = RUBY3_CAST((type *)ruby_xrealloc2((void *)(var), (n), sizeof(type))))
 
-#define ALLOC_N(type,n) RB_ALLOC_N(type,n)
-#define ALLOC(type) RB_ALLOC(type)
-#define ZALLOC_N(type,n) RB_ZALLOC_N(type,n)
-#define ZALLOC(type) RB_ZALLOC(type)
-#define REALLOC_N(var,type,n) RB_REALLOC_N(var,type,n)
-
-#if defined(HAVE_BUILTIN___BUILTIN_ALLOCA_WITH_ALIGN) && defined(RUBY_ALIGNOF)
 /* I don't know why but __builtin_alloca_with_align's second argument
    takes bits rather than bytes. */
-#define ALLOCA_N(type, n) \
-    (type*)__builtin_alloca_with_align((sizeof(type)*(n)), \
-        RUBY_ALIGNOF(type) * CHAR_BIT)
+#if RUBY3_HAS_BUILTIN(__builtin_alloca_with_align)
+# define ALLOCA_N(type, n)           \
+    RUBY3_CAST((type *)              \
+        __builtin_alloca_with_align( \
+            (sizeof(type) * (n)), RUBY_ALIGNOF(type) * CHAR_BIT))
 #else
-#define ALLOCA_N(type,n) ((type*)alloca(sizeof(type)*(n)))
+# define ALLOCA_N(type,n) RUBY3_CAST((type *)alloca(sizeof(type) * (n)))
 #endif
 
-void *rb_alloc_tmp_buffer(volatile VALUE *store, long len) RUBY_ATTR_ALLOC_SIZE((2));
-void *rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t len,size_t count) RUBY_ATTR_ALLOC_SIZE((2,3));
+/* allocates _n_ bytes temporary buffer and stores VALUE including it
+ * in _v_.  _n_ may be evaluated twice. */
+#define RB_ALLOCV(v, n)        \
+    ((n) < RUBY_ALLOCV_LIMIT ? \
+     ((v) = 0, alloca(n)) :    \
+     rb_alloc_tmp_buffer(&(v), (n)))
+#define RB_ALLOCV_N(type, v, n)                             \
+    RUBY3_CAST((type *)                                     \
+        (((size_t)(n) < RUBY_ALLOCV_LIMIT / sizeof(type)) ? \
+         ((v) = 0, alloca((n) * sizeof(type))) :            \
+         rb_alloc_tmp_buffer2(&(v), (n), sizeof(type))))
+#define RB_ALLOCV_END(v) rb_free_tmp_buffer(&(v))
+
+#define MEMZERO(p,type,n) memset((p), 0, sizeof(type)*(size_t)(n))
+#define MEMCPY(p1,p2,type,n) memcpy((p1), (p2), sizeof(type)*(size_t)(n))
+#define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(size_t)(n))
+#define MEMCMP(p1,p2,type,n) memcmp((p1), (p2), sizeof(type)*(size_t)(n))
+
+#define ALLOC_N    RB_ALLOC_N
+#define ALLOC      RB_ALLOC
+#define ZALLOC_N   RB_ZALLOC_N
+#define ZALLOC     RB_ZALLOC
+#define REALLOC_N  RB_REALLOC_N
+#define ALLOCV     RB_ALLOCV
+#define ALLOCV_N   RB_ALLOCV_N
+#define ALLOCV_END RB_ALLOCV_END
+
+RUBY3_SYMBOL_EXPORT_BEGIN()
+RUBY3_ATTR_RESTRICT()
+RUBY3_ATTR_RETURNS_NONNULL()
+RUBY3_ATTR_ALLOC_SIZE((2))
+void *rb_alloc_tmp_buffer(volatile VALUE *store, long len);
+
+RUBY3_ATTR_RESTRICT()
+RUBY3_ATTR_RETURNS_NONNULL()
+RUBY3_ATTR_ALLOC_SIZE((2,3))
+void *rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t len,size_t count);
+
 void rb_free_tmp_buffer(volatile VALUE *store);
-NORETURN(void ruby_malloc_size_overflow(size_t, size_t));
-#if HAVE_LONG_LONG && SIZEOF_SIZE_T * 2 <= SIZEOF_LONG_LONG
-# define DSIZE_T unsigned LONG_LONG
-#elif defined(HAVE_INT128_T)
-# define DSIZE_T uint128_t
+
+RUBY3_ATTR_NORETURN()
+void ruby_malloc_size_overflow(size_t, size_t);
+
+#ifdef HAVE_RB_GC_GUARDED_PTR_VAL
+volatile VALUE *rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val);
 #endif
+RUBY3_SYMBOL_EXPORT_END()
+
+#ifdef _MSC_VER
+# pragma optimize("", off)
+
+static inline volatile VALUE *
+rb_gc_guarded_ptr(volatile VALUE *ptr)
+{
+    return ptr;
+}
+
+# pragma optimize("", on)
+#endif
+
 static inline int
 rb_mul_size_overflow(size_t a, size_t b, size_t max, size_t *c)
 {
 #ifdef DSIZE_T
-# ifdef __GNUC__
-    __extension__
-# endif
-    DSIZE_T c2 = (DSIZE_T)a * (DSIZE_T)b;
+    RB_GNUC_EXTENSION DSIZE_T da, db, c2;
+    da = a;
+    db = b;
+    c2 = da * db;
     if (c2 > max) return 1;
-    *c = (size_t)c2;
+    *c = RUBY3_CAST((size_t)c2);
 #else
     if (b != 0 && a > max / b) return 1;
     *c = a * b;
 #endif
     return 0;
 }
+
 static inline void *
 rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
 {
@@ -134,42 +206,24 @@ rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
     }
     return rb_alloc_tmp_buffer_with_count(store, cnt * sizeof(VALUE), cnt);
 }
-/* allocates _n_ bytes temporary buffer and stores VALUE including it
- * in _v_.  _n_ may be evaluated twice. */
-#ifdef C_ALLOCA
-# define RB_ALLOCV(v, n) rb_alloc_tmp_buffer(&(v), (n))
-# define RB_ALLOCV_N(type, v, n) \
-     rb_alloc_tmp_buffer2(&(v), (n), sizeof(type))
-#else
-# define RUBY_ALLOCV_LIMIT 1024
-# define RB_ALLOCV(v, n) ((n) < RUBY_ALLOCV_LIMIT ? \
-                       ((v) = 0, alloca(n)) : \
-                       rb_alloc_tmp_buffer(&(v), (n)))
-# define RB_ALLOCV_N(type, v, n) \
-    ((type*)(((size_t)(n) < RUBY_ALLOCV_LIMIT / sizeof(type)) ? \
-             ((v) = 0, alloca((size_t)(n) * sizeof(type))) : \
-             rb_alloc_tmp_buffer2(&(v), (long)(n), sizeof(type))))
-#endif
-#define RB_ALLOCV_END(v) rb_free_tmp_buffer(&(v))
 
-#define ALLOCV(v, n) RB_ALLOCV(v, n)
-#define ALLOCV_N(type, v, n) RB_ALLOCV_N(type, v, n)
-#define ALLOCV_END(v) RB_ALLOCV_END(v)
-
-#define MEMZERO(p,type,n) memset((p), 0, sizeof(type)*(size_t)(n))
-#define MEMCPY(p1,p2,type,n) memcpy((p1), (p2), sizeof(type)*(size_t)(n))
-#define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(size_t)(n))
-#define MEMCMP(p1,p2,type,n) memcmp((p1), (p2), sizeof(type)*(size_t)(n))
-#ifdef __GLIBC__
+RUBY3_ATTR_NOALIAS()
+RUBY3_ATTR_NONNULL((1))
+RUBY3_ATTR_RETURNS_NONNULL()
+/* At least since 2004, glibc's <string.h> annotates memcpy to be
+ * __attribute__((__nonnull__(1, 2))).  However it is safe to pass NULL to the
+ * source pointer, if n is 0.  Let's wrap memcpy. */
 static inline void *
 ruby_nonempty_memcpy(void *dest, const void *src, size_t n)
 {
-    /* if nothing to be copied, src may be NULL */
-    return (n ? memcpy(dest, src, n) : dest);
+    if (n) {
+        return memcpy(dest, src, n);
+    }
+    else {
+        return dest;
+    }
 }
-#define memcpy(p1,p2,n) ruby_nonempty_memcpy(p1, p2, n)
-#endif
-
-RUBY3_SYMBOL_EXPORT_END()
+#undef memcpy
+#define memcpy ruby_nonempty_memcpy
 
 #endif /* RUBY3_MEMORY_H */
