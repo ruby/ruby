@@ -315,28 +315,9 @@ class TestM17N < Test::Unit::TestCase
     begin
       "abc".encode(Encoding.default_external)
     rescue Encoding::CompatibilityError
-      $stderr.puts :debug_1.inspect
-      $stderr.puts $!.inspect
-      $stderr.puts *$!.backtrace
-      $stderr.puts "abc".encoding.inspect
-      $stderr.puts Encoding.default_external.inspect
-    end
-    begin
-      [o].inspect
-    rescue Encoding::CompatibilityError
-      $stderr.puts :debug_2.inspect
-      $stderr.puts $!.inspect
-      $stderr.puts *$!.backtrace
-      $stderr.puts "abc".encoding.inspect
-      $stderr.puts Encoding.default_external.inspect
-      begin
-        $stderr.puts o.inspect.inspect
-        $stderr.puts :debug_3.inspect
-      rescue Encoding::CompatibilityError
-        $stderr.puts :debug_4.inspect
-        $stderr.puts $!.inspect
-        $stderr.puts *$!.backtrace
-      end
+      TracePoint.new(:raise) do |tp|
+        Process.kill(:SEGV, $$)
+      end.enable { "abc".encode(Encoding.default_external) }
     end
     # debugging code end
 
