@@ -229,7 +229,7 @@ MJIT_WITHOUT_TABS=true
 $(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time: probes.h vm.$(OBJEXT) \
 		$(TIMESTAMPDIR)/$(arch)/.time $(srcdir)/tool/run_without_tabs.rb
 	$(ECHO) building $(@F:.time=.h)
-	$(Q) $(BASERUBY) $(srcdir)/tool/run_without_tabs.rb $(MJIT_WITHOUT_TABS) \
+	$(Q) $(BASERUBY) $(srcdir)/tool/run_without_tabs.rb "$(MJIT_WITHOUT_TABS)" \
 		$(CPP) -DMJIT_HEADER $(MJIT_HEADER_FLAGS) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(srcdir)/vm.c $(CPPOUTFLAG)$(@F:.time=.h).new
 	$(Q) $(IFCHANGE) "--timestamp=$@" $(@F:.time=.h) $(@F:.time=.h).new
 
