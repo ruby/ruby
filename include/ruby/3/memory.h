@@ -38,7 +38,14 @@
 # include <alloca.h>
 #endif
 
+#if defined(_MSC_VER) && defined(_WIN64)
+# include <intrin.h>
+# pragma intrinsic(_umul128)
+#endif
+
 #include "ruby/3/attr/alloc_size.h"
+#include "ruby/3/attr/const.h"
+#include "ruby/3/attr/constexpr.h"
 #include "ruby/3/attr/noalias.h"
 #include "ruby/3/attr/nonnull.h"
 #include "ruby/3/attr/noreturn.h"
@@ -47,10 +54,12 @@
 #include "ruby/3/cast.h"
 #include "ruby/3/dllexport.h"
 #include "ruby/3/has/builtin.h"
-#include "ruby/3/xmalloc.h"
 #include "ruby/3/stdalign.h"
+#include "ruby/3/stdbool.h"
+#include "ruby/3/xmalloc.h"
 #include "ruby/backward/2/limits.h"
 #include "ruby/backward/2/long_long.h"
+#include "ruby/backward/2/assume.h"
 #include "ruby/defines.h"
 
 /* Make alloca work the best possible way.  */
@@ -103,12 +112,14 @@ extern void *alloca();
 /* I don't know why but __builtin_alloca_with_align's second argument
    takes bits rather than bytes. */
 #if RUBY3_HAS_BUILTIN(__builtin_alloca_with_align)
-# define ALLOCA_N(type, n)           \
-    RUBY3_CAST((type *)              \
-        __builtin_alloca_with_align( \
-            (sizeof(type) * (n)), RUBY_ALIGNOF(type) * CHAR_BIT))
+# define ALLOCA_N(type, n)                              \
+    RUBY3_CAST((type *)                                 \
+        __builtin_alloca_with_align(                    \
+            ruby3_size_mul_or_raise(sizeof(type), (n)), \
+            RUBY_ALIGNOF(type) * CHAR_BIT))
 #else
-# define ALLOCA_N(type,n) RUBY3_CAST((type *)alloca(sizeof(type) * (n)))
+# define ALLOCA_N(type,n) \
+    RUBY3_CAST((type *)alloca(ruby3_size_mul_or_raise(sizeof(type), (n))))
 #endif
 
 /* allocates _n_ bytes temporary buffer and stores VALUE including it
@@ -124,10 +135,10 @@ extern void *alloca();
          rb_alloc_tmp_buffer2(&(v), (n), sizeof(type))))
 #define RB_ALLOCV_END(v) rb_free_tmp_buffer(&(v))
 
-#define MEMZERO(p,type,n) memset((p), 0, sizeof(type)*(size_t)(n))
-#define MEMCPY(p1,p2,type,n) memcpy((p1), (p2), sizeof(type)*(size_t)(n))
-#define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(size_t)(n))
-#define MEMCMP(p1,p2,type,n) memcmp((p1), (p2), sizeof(type)*(size_t)(n))
+#define MEMZERO(p,type,n) memset((p), 0, ruby3_size_mul_or_raise(sizeof(type), (n)))
+#define MEMCPY(p1,p2,type,n) memcpy((p1), (p2), ruby3_size_mul_or_raise(sizeof(type), (n)))
+#define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), ruby3_size_mul_or_raise(sizeof(type), (n)))
+#define MEMCMP(p1,p2,type,n) memcmp((p1), (p2), ruby3_size_mul_or_raise(sizeof(type), (n)))
 
 #define ALLOC_N    RB_ALLOC_N
 #define ALLOC      RB_ALLOC
@@ -137,6 +148,12 @@ extern void *alloca();
 #define ALLOCV     RB_ALLOCV
 #define ALLOCV_N   RB_ALLOCV_N
 #define ALLOCV_END RB_ALLOCV_END
+
+/* Expecting this struct to be eliminated by function inlinings */
+struct ruby3_size_mul_overflow_tag {
+    bool left;
+    size_t right;
+};
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 RUBY3_ATTR_RESTRICT()
@@ -171,6 +188,7 @@ rb_gc_guarded_ptr(volatile VALUE *ptr)
 # pragma optimize("", on)
 #endif
 
+/* Does anyone use it?  Just here for backwards compatibility. */
 static inline int
 rb_mul_size_overflow(size_t a, size_t b, size_t max, size_t *c)
 {
@@ -188,23 +206,62 @@ rb_mul_size_overflow(size_t a, size_t b, size_t max, size_t *c)
     return 0;
 }
 
+#if RUBY3_COMPILER_SINCE(GCC, 7, 0, 0)
+RUBY3_ATTR_CONSTEXPR(CXX14) /* https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70507 */
+#elif RUBY3_COMPILER_SINCE(Clang, 7, 0, 0)
+RUBY3_ATTR_CONSTEXPR(CXX14) /* https://bugs.llvm.org/show_bug.cgi?id=37633 */
+#endif
+RUBY3_ATTR_CONST()
+static inline struct ruby3_size_mul_overflow_tag
+ruby3_size_mul_overflow(size_t x, size_t y)
+{
+    struct ruby3_size_mul_overflow_tag ret = { false,  0, };
+
+#if RUBY3_HAS_BUILTIN(__builtin_mul_overflow)
+    ret.left = __builtin_mul_overflow(x, y, &ret.right);
+
+#elif defined(DSIZE_T)
+    RB_GNUC_EXTENSION DSIZE_T dx = x;
+    RB_GNUC_EXTENSION DSIZE_T dy = y;
+    RB_GNUC_EXTENSION DSIZE_T dz = dx * dy;
+    ret.left  = dz > SIZE_MAX;
+    ret.right = RUBY3_CAST((size_t)dz);
+
+#elif defined(_MSC_VER) && defined(_WIN64)
+    unsigned __int64 dp = 0;
+    unsigned __int64 dz = _umul128(x, y, &dp);
+    ret.left  = RUBY3_CAST((bool)dp);
+    ret.right = RUBY3_CAST((size_t)dz);
+
+#else
+    /* https://wiki.sei.cmu.edu/confluence/display/c/INT30-C.+Ensure+that+unsigned+integer+operations+do+not+wrap */
+    ret.left  = (y != 0) && (x > SIZE_MAX / y);
+    ret.right = x * y;
+#endif
+
+    return ret;
+}
+
+static inline size_t
+ruby3_size_mul_or_raise(size_t x, size_t y)
+{
+    struct ruby3_size_mul_overflow_tag size =
+        ruby3_size_mul_overflow(x, y);
+
+    if (RB_LIKELY(! size.left)) {
+        return size.right;
+    }
+    else {
+        ruby_malloc_size_overflow(x, y);
+        RUBY3_UNREACHABLE_RETURN(0);
+    }
+}
+
 static inline void *
 rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
 {
-    size_t cnt = (size_t)count;
-    if (elsize == sizeof(VALUE)) {
-        if (RB_UNLIKELY(cnt > LONG_MAX / sizeof(VALUE))) {
-            ruby_malloc_size_overflow(cnt, elsize);
-        }
-    }
-    else {
-        size_t size, max = LONG_MAX - sizeof(VALUE) + 1;
-        if (RB_UNLIKELY(rb_mul_size_overflow(cnt, elsize, max, &size))) {
-            ruby_malloc_size_overflow(cnt, elsize);
-        }
-        cnt = (size + sizeof(VALUE) - 1) / sizeof(VALUE);
-    }
-    return rb_alloc_tmp_buffer_with_count(store, cnt * sizeof(VALUE), cnt);
+    return rb_alloc_tmp_buffer_with_count(
+        store, ruby3_size_mul_or_raise(count, elsize), count);
 }
 
 RUBY3_ATTR_NOALIAS()

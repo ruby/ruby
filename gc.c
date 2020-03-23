@@ -62,11 +62,6 @@
 
 #include <sys/types.h>
 
-#if defined(_MSC_VER) && defined(_WIN64)
-# include <intrin.h>
-# pragma intrinsic(_umul128)
-#endif
-
 #include "constant.h"
 #include "debug_counter.h"
 #include "eval_intern.h"
@@ -114,52 +109,14 @@
 #define rb_jmp_buf rb_jmpbuf_t
 #undef rb_data_object_wrap
 
-/* Expecting this struct to be eliminated by function inlinings */
-struct optional {
-    bool left;
-    size_t right;
-};
-
-static inline struct optional
-size_mul_overflow(size_t x, size_t y)
-{
-    bool p;
-    size_t z;
-#if 0
-
-#elif defined(HAVE_BUILTIN___BUILTIN_MUL_OVERFLOW)
-    p = __builtin_mul_overflow(x, y, &z);
-
-#elif defined(DSIZE_T)
-    RB_GNUC_EXTENSION DSIZE_T dx = x;
-    RB_GNUC_EXTENSION DSIZE_T dy = y;
-    RB_GNUC_EXTENSION DSIZE_T dz = dx * dy;
-    p = dz > SIZE_MAX;
-    z = (size_t)dz;
-
-#elif defined(_MSC_VER) && defined(_WIN64)
-    unsigned __int64 dp;
-    unsigned __int64 dz = _umul128(x, y, &dp);
-    p = (bool)dp;
-    z = (size_t)dz;
-
-#else
-    /* https://wiki.sei.cmu.edu/confluence/display/c/INT30-C.+Ensure+that+unsigned+integer+operations+do+not+wrap */
-    p = (y != 0) && (x > SIZE_MAX / y);
-    z = x * y;
-
-#endif
-    return (struct optional) { p, z, };
-}
-
-static inline struct optional
+static inline struct ruby3_size_mul_overflow_tag
 size_add_overflow(size_t x, size_t y)
 {
     size_t z;
     bool p;
 #if 0
 
-#elif defined(HAVE_BUILTIN___BUILTIN_ADD_OVERFLOW)
+#elif __has_builtin(__builtin_add_overflow)
     p = __builtin_add_overflow(x, y, &z);
 
 #elif defined(DSIZE_T)
@@ -174,24 +131,24 @@ size_add_overflow(size_t x, size_t y)
     p = z < y;
 
 #endif
-    return (struct optional) { p, z, };
+    return (struct ruby3_size_mul_overflow_tag) { p, z, };
 }
 
-static inline struct optional
+static inline struct ruby3_size_mul_overflow_tag
 size_mul_add_overflow(size_t x, size_t y, size_t z) /* x * y + z */
 {
-    struct optional t = size_mul_overflow(x, y);
-    struct optional u = size_add_overflow(t.right, z);
-    return (struct optional) { t.left || u.left, u.right };
+    struct ruby3_size_mul_overflow_tag t = ruby3_size_mul_overflow(x, y);
+    struct ruby3_size_mul_overflow_tag u = size_add_overflow(t.right, z);
+    return (struct ruby3_size_mul_overflow_tag) { t.left || u.left, u.right };
 }
 
-static inline struct optional
+static inline struct ruby3_size_mul_overflow_tag
 size_mul_add_mul_overflow(size_t x, size_t y, size_t z, size_t w) /* x * y + z * w */
 {
-    struct optional t = size_mul_overflow(x, y);
-    struct optional u = size_mul_overflow(z, w);
-    struct optional v = size_add_overflow(t.right, u.right);
-    return (struct optional) { t.left || u.left || v.left, v.right };
+    struct ruby3_size_mul_overflow_tag t = ruby3_size_mul_overflow(x, y);
+    struct ruby3_size_mul_overflow_tag u = ruby3_size_mul_overflow(z, w);
+    struct ruby3_size_mul_overflow_tag v = size_add_overflow(t.right, u.right);
+    return (struct ruby3_size_mul_overflow_tag) { t.left || u.left || v.left, v.right };
 }
 
 PRINTF_ARGS(NORETURN(static void gc_raise(VALUE, const char*, ...)), 2, 3);
@@ -199,7 +156,7 @@ PRINTF_ARGS(NORETURN(static void gc_raise(VALUE, const char*, ...)), 2, 3);
 static inline size_t
 size_mul_or_raise(size_t x, size_t y, VALUE exc)
 {
-    struct optional t = size_mul_overflow(x, y);
+    struct ruby3_size_mul_overflow_tag t = ruby3_size_mul_overflow(x, y);
     if (LIKELY(!t.left)) {
         return t.right;
     }
@@ -225,7 +182,7 @@ rb_size_mul_or_raise(size_t x, size_t y, VALUE exc)
 static inline size_t
 size_mul_add_or_raise(size_t x, size_t y, size_t z, VALUE exc)
 {
-    struct optional t = size_mul_add_overflow(x, y, z);
+    struct ruby3_size_mul_overflow_tag t = size_mul_add_overflow(x, y, z);
     if (LIKELY(!t.left)) {
         return t.right;
     }
@@ -252,7 +209,7 @@ rb_size_mul_add_or_raise(size_t x, size_t y, size_t z, VALUE exc)
 static inline size_t
 size_mul_add_mul_or_raise(size_t x, size_t y, size_t z, size_t w, VALUE exc)
 {
-    struct optional t = size_mul_add_mul_overflow(x, y, z, w);
+    struct ruby3_size_mul_overflow_tag t = size_mul_add_mul_overflow(x, y, z, w);
     if (LIKELY(!t.left)) {
         return t.right;
     }
