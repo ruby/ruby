@@ -32,14 +32,14 @@ flag, *command = ARGV
 targets.each do |target|
   next if flag != 'true'
   unless File.writable?(target)
-    puts "tool/run_without_tabs.rb: Skipping #{target.dump} as it's not writable."
+    puts "tool/mjit_without_tabs.rb: Skipping #{target.dump} as it's not writable."
     next
   end
   source = File.read(target)
   begin
     expanded = source.gsub(/^\t+/) { |tab| ' ' * 8 * tab.length }
   rescue ArgumentError # invalid byte sequence in UTF-8 (Travis, RubyCI)
-    puts "tool/run_without_tabs.rb: Skipping #{target.dump} as the encoding is #{source.encoding}."
+    puts "tool/mjit_without_tabs.rb: Skipping #{target.dump} as the encoding is #{source.encoding}."
     next
   end
 
@@ -47,7 +47,7 @@ targets.each do |target|
   mtimes[target] = File.mtime(target)
 
   if sources[target] == expanded
-    puts "#{target.dump} has no hard tab indentation. This should be ignored in tool/run_without_tabs.rb."
+    puts "#{target.dump} has no hard tab indentation. This should be ignored in tool/mjit_without_tabs.rb."
   end
   File.write(target, expanded)
   FileUtils.touch(target, mtime: mtimes[target])
