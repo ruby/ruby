@@ -749,12 +749,12 @@ gem 'other', version
   end
 
   def test_generate_plugins_with_install_dir
-    spec = quick_gem 'a' do |spec|
+    spec = quick_gem 'a' do |s|
       write_file File.join(@tempdir, 'lib', 'rubygems_plugin.rb') do |io|
         io.write "puts __FILE__"
       end
 
-      spec.files += %w[lib/rubygems_plugin.rb]
+      s.files += %w[lib/rubygems_plugin.rb]
     end
 
     util_build_gem spec
