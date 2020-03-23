@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 # This is a script to run a command in ARGV, expanding tabs in some files
-# included by vm.c to normalize indentation of MJIT header.
+# included by vm.c to normalize indentation of MJIT header when debugflags
+# is -ggdb3 (default).
 #
 # Note that preprocessor of GCC converts a hard tab to one spaces, where
 # we expect it to be shown as 8 spaces. To obviate this script, we need
@@ -21,12 +22,18 @@ SKIPPED_FILES = %w[
   vm_opts.h
 ]
 
+unless split_index = ARGV.index('--')
+  abort "Usage: #{$0} [debugflags] -- [cmmand...]"
+end
+debugflags, command = ARGV[0...split_index], ARGV[(split_index + 1)..-1]
+
 srcdir = File.expand_path('..', __dir__)
 targets = EXPAND_TARGETS.flat_map { |t| Dir.glob(File.join(srcdir, t)) } - SKIPPED_FILES.map { |f| File.join(srcdir, f) }
 sources = {}
 mtimes = {}
 
 targets.each do |target|
+  next unless debugflags.include?('-ggdb3')
   unless File.writable?(target)
     puts "tool/run_without_tabs.rb: Skipping #{target.dump} as it's not writable."
     next
@@ -49,7 +56,7 @@ targets.each do |target|
   FileUtils.touch(target, mtime: mtimes[target])
 end
 
-result = system(*ARGV)
+result = system(*command)
 
 targets.each do |target|
   if sources.key?(target)
