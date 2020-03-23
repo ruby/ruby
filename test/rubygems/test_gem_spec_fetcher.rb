@@ -176,7 +176,7 @@ class TestGemSpecFetcher < Gem::TestCase
       fetcher.spec 'examp', 1
     end
 
-    suggestions = @sf.suggest_gems_from_name('examplw', type = :latest, num_results = 1)
+    suggestions = @sf.suggest_gems_from_name('examplw', :latest, 1)
     assert_equal ['example'], suggestions
 
     suggestions = @sf.suggest_gems_from_name('other')
