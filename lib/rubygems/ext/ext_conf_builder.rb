@@ -27,7 +27,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
     # Details: https://github.com/rubygems/rubygems/issues/977#issuecomment-171544940
     tmp_dest = get_relative_path(tmp_dest)
 
-    Tempfile.open %w"siteconf .rb", "." do |siteconf|
+    Tempfile.open %w[siteconf .rb], "." do |siteconf|
       siteconf.puts "require 'rbconfig'"
       siteconf.puts "dest_path = #{tmp_dest.dump}"
       %w[sitearchdir sitelibdir].each do |dir|

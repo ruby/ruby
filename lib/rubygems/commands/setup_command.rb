@@ -546,7 +546,7 @@ abort "#{deprecation_message}"
       next unless Gem.win_platform?
 
       File.open "#{old_bin_path}.bat", 'w' do |fp|
-        fp.puts %{@ECHO.#{deprecation_message}}
+        fp.puts %(@ECHO.#{deprecation_message})
       end
     end
   end

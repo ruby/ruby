@@ -337,7 +337,7 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
     errs = @ui.error.split("\n")
 
     assert_match(/ould not find a valid gem 'nonexistent'/, errs.shift)
-    assert_match(%r!Unable to download data from http://not-there.nothing!, errs.shift)
+    assert_match(%r{Unable to download data from http://not-there.nothing}, errs.shift)
   end
 
   def test_execute_nonexistent_hint_disabled
@@ -582,7 +582,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       fetcher.gem 'a', 2
     end
 
-    args = %w!--with-awesome=true --more-awesome=yes!
+    args = %w[--with-awesome=true --more-awesome=yes]
 
     Gem::Command.build_args = args
 
@@ -886,7 +886,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     end
 
     assert_equal 2, e.exit_code
-    assert_match %r!Could not find a valid gem 'a' \(= 10.0\)!, @ui.error
+    assert_match %r{Could not find a valid gem 'a' \(= 10.0\)}, @ui.error
   end
 
   def test_show_errors_on_failure

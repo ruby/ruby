@@ -70,7 +70,7 @@ class TestGemRequire < Gem::TestCase
     assert_require 'test_gem_require_a'
     assert_require 'b/c' # this should be required from -I
     assert_equal "world", ::Object::HELLO
-    assert_equal %w(a-1 b-1), loaded_spec_names
+    assert_equal %w[a-1 b-1], loaded_spec_names
   ensure
     $LOAD_PATH.replace lp
     Object.send :remove_const, :HELLO if Object.const_defined? :HELLO
@@ -114,7 +114,7 @@ class TestGemRequire < Gem::TestCase
     assert_require 'b/c'
     assert_require 'c/c' # this should be required from -I
     assert_equal "world", ::Object::HELLO
-    assert_equal %w(a-1 b-1), loaded_spec_names
+    assert_equal %w[a-1 b-1], loaded_spec_names
   ensure
     $LOAD_PATH.replace lp
     Object.send :remove_const, :HELLO if Object.const_defined? :HELLO
@@ -171,11 +171,11 @@ class TestGemRequire < Gem::TestCase
     install_specs b1, b2, a1
 
     assert_require 'test_gem_require_a'
-    assert_equal %w(a-1 b-1), loaded_spec_names
+    assert_equal %w[a-1 b-1], loaded_spec_names
     assert_equal unresolved_names, []
 
     assert_require "b/c"
-    assert_equal %w(a-1 b-1), loaded_spec_names
+    assert_equal %w[a-1 b-1], loaded_spec_names
   end
 
   def test_require_is_lazy_with_inexact_req
@@ -186,11 +186,11 @@ class TestGemRequire < Gem::TestCase
     install_specs b1, b2, a1
 
     assert_require 'test_gem_require_a'
-    assert_equal %w(a-1), loaded_spec_names
+    assert_equal %w[a-1], loaded_spec_names
     assert_equal unresolved_names, ["b (>= 1)"]
 
     assert_require "b/c"
-    assert_equal %w(a-1 b-2), loaded_spec_names
+    assert_equal %w[a-1 b-2], loaded_spec_names
   end
 
   def test_require_is_not_lazy_with_one_possible
@@ -200,11 +200,11 @@ class TestGemRequire < Gem::TestCase
     install_specs b1, a1
 
     assert_require 'test_gem_require_a'
-    assert_equal %w(a-1 b-1), loaded_spec_names
+    assert_equal %w[a-1 b-1], loaded_spec_names
     assert_equal unresolved_names, []
 
     assert_require "b/c"
-    assert_equal %w(a-1 b-1), loaded_spec_names
+    assert_equal %w[a-1 b-1], loaded_spec_names
   end
 
   def test_require_can_use_a_pathname_object
@@ -213,7 +213,7 @@ class TestGemRequire < Gem::TestCase
     install_specs a1
 
     assert_require Pathname.new 'test_gem_require_a'
-    assert_equal %w(a-1), loaded_spec_names
+    assert_equal %w[a-1], loaded_spec_names
     assert_equal unresolved_names, []
   end
 
@@ -246,7 +246,7 @@ class TestGemRequire < Gem::TestCase
     # This case is fine because our lazy loading is provided exactly
     # the same behavior as eager loading would have.
 
-    assert_equal %w(a-1 b-2), loaded_spec_names
+    assert_equal %w[a-1 b-2], loaded_spec_names
   ensure
     $LOAD_PATH.replace lp unless java_platform?
   end
@@ -262,12 +262,12 @@ class TestGemRequire < Gem::TestCase
 
     a1.activate
     c1.activate
-    assert_equal %w(a-1 c-1), loaded_spec_names
+    assert_equal %w[a-1 c-1], loaded_spec_names
     assert_equal ["b (> 0)"], unresolved_names
 
     assert require("ib")
 
-    assert_equal %w(a-1 b-1 c-1), loaded_spec_names
+    assert_equal %w[a-1 b-1 c-1], loaded_spec_names
     assert_equal [], unresolved_names
   end
 
@@ -284,7 +284,7 @@ class TestGemRequire < Gem::TestCase
 
     a1.activate
     c1.activate
-    assert_equal %w(a-1 c-1), loaded_spec_names
+    assert_equal %w[a-1 c-1], loaded_spec_names
     assert_equal ["b (> 0)", "x (> 0)"], unresolved_names
 
     e = assert_raises(Gem::LoadError) do
@@ -307,7 +307,7 @@ class TestGemRequire < Gem::TestCase
 
     a1.activate
     c1.activate
-    assert_equal %w(a-1 c-1), loaded_spec_names
+    assert_equal %w[a-1 c-1], loaded_spec_names
     assert_equal ["b (> 0)"], unresolved_names
 
     e = assert_raises(Gem::LoadError) do
@@ -338,9 +338,9 @@ class TestGemRequire < Gem::TestCase
 
     # Require gems that have not been removed.
     assert_require 'a/b'
-    assert_equal %w(a-1.0), loaded_spec_names
+    assert_equal %w[a-1.0], loaded_spec_names
     assert_require 'b/d'
-    assert_equal %w(a-1.0 b-2.0), loaded_spec_names
+    assert_equal %w[a-1.0 b-2.0], loaded_spec_names
   end
 
   def test_require_doesnt_traverse_development_dependencies
@@ -352,7 +352,7 @@ class TestGemRequire < Gem::TestCase
     install_specs a, w1, w2, z
 
     assert gem("z")
-    assert_equal %w(z-1), loaded_spec_names
+    assert_equal %w[z-1], loaded_spec_names
     assert_equal ["w (> 0)"], unresolved_names
 
     assert require("a#{$$}")
@@ -363,7 +363,7 @@ class TestGemRequire < Gem::TestCase
                                         nil, "default/gem.rb")
     install_default_specs(default_gem_spec)
     assert_require "default/gem"
-    assert_equal %w(default-2.0.0.0), loaded_spec_names
+    assert_equal %w[default-2.0.0.0], loaded_spec_names
   end
 
   def test_default_gem_require_activates_just_once
@@ -403,7 +403,7 @@ class TestGemRequire < Gem::TestCase
                                "lib/default/gem.rb")
     install_specs(normal_gem_spec)
     assert_require "default/gem"
-    assert_equal %w(default-3.0), loaded_spec_names
+    assert_equal %w[default-3.0], loaded_spec_names
   end
 
   def test_default_gem_prerelease
@@ -416,7 +416,7 @@ class TestGemRequire < Gem::TestCase
     install_default_specs(normal_gem_higher_prerelease_spec)
 
     assert_require "default/gem"
-    assert_equal %w(default-3.0.0.rc2), loaded_spec_names
+    assert_equal %w[default-3.0.0.rc2], loaded_spec_names
   end
 
   def loaded_spec_names
@@ -462,7 +462,7 @@ class TestGemRequire < Gem::TestCase
       end
     end
     assert c.send(:require, "default/gem")
-    assert_equal %w(default-2.0.0.0), loaded_spec_names
+    assert_equal %w[default-2.0.0.0], loaded_spec_names
   end
 
   def test_require_default_when_gem_defined
@@ -474,7 +474,7 @@ class TestGemRequire < Gem::TestCase
       end
     end
     assert c.send(:require, "a#{$$}")
-    assert_equal %W(a#{$$}-1), loaded_spec_names
+    assert_equal %W[a#{$$}-1], loaded_spec_names
   end
 
   def test_require_bundler

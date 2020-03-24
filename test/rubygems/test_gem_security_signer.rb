@@ -191,7 +191,7 @@ toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
       signer.sign 'hello'
     end
 
-    assert_match %r%certificate /CN=nobody/DC=example not valid%, e.message
+    assert_match %r{certificate /CN=nobody/DC=example not valid}, e.message
   end
 
   def test_sign_no_key

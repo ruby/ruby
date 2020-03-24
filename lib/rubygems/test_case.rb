@@ -576,7 +576,7 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
   end
 
   def in_path?(executable) # :nodoc:
-    return true if %r%\A([A-Z]:|/)% =~ executable and File.exist? executable
+    return true if %r{\A([A-Z]:|/)} =~ executable and File.exist? executable
 
     ENV['PATH'].split(File::PATH_SEPARATOR).any? do |directory|
       File.exist? File.join directory, executable
@@ -1286,7 +1286,7 @@ Also, a list:
 
     def escape_path(*path)
       path = File.join(*path)
-      if %r'\A[-+:/=@,.\w]+\z' =~ path
+      if %r{\A[-+:/=@,.\w]+\z} =~ path
         path
       else
         "\"#{path.gsub(/[`$"]/, '\\&')}\""

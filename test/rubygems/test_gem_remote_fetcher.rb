@@ -499,7 +499,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       fetcher.fetch_path url
     end
 
-    assert_match %r|ECONNREFUSED:.*connect\(2\) \(#{Regexp.escape url}\)\z|,
+    assert_match %r{ECONNREFUSED:.*connect\(2\) \(#{Regexp.escape url}\)\z},
                  e.message
     assert_equal url, e.uri
   end

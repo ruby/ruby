@@ -119,7 +119,7 @@ EOF
     end
     Gem.configuration.load_api_keys
 
-    @cmd.handle_options %w(-k other)
+    @cmd.handle_options %w[-k other]
     @cmd.show_owners('freewill')
 
     assert_equal '701229f217cdf23b1344c7b4b54ca97', @stub_fetcher.last_request['Authorization']
@@ -177,7 +177,7 @@ EOF
     end
     Gem.configuration.load_api_keys
 
-    @cmd.handle_options %w(-k other)
+    @cmd.handle_options %w[-k other]
     @cmd.add_owners('freewill', ['user-new1@example.com'])
 
     assert_equal '701229f217cdf23b1344c7b4b54ca97', @stub_fetcher.last_request['Authorization']
@@ -217,7 +217,7 @@ EOF
     end
     Gem.configuration.load_api_keys
 
-    @cmd.handle_options %w(-k other)
+    @cmd.handle_options %w[-k other]
     @cmd.remove_owners('freewill', ['user-remove1@example.com'])
 
     assert_equal '701229f217cdf23b1344c7b4b54ca97', @stub_fetcher.last_request['Authorization']

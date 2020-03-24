@@ -228,8 +228,8 @@ class Gem::Source::Git < Gem::Source
     require 'digest' # required here to avoid deadlocking in Gem.activate_bin_path (because digest is a gem on 2.5+)
 
     normalized =
-      if @repository =~ %r%^\w+://(\w+@)?%
-        uri = URI(@repository).normalize.to_s.sub %r%/$%,''
+      if @repository =~ %r{^\w+://(\w+@)?}
+        uri = URI(@repository).normalize.to_s.sub %r{/$},''
         uri.sub(/\A(\w+)/) { $1.downcase }
       else
         @repository

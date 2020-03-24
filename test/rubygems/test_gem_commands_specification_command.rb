@@ -21,8 +21,8 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_match %r|Gem::Specification|, @ui.output
-    assert_match %r|name: foo|, @ui.output
+    assert_match %r{Gem::Specification}, @ui.output
+    assert_match %r{name: foo}, @ui.output
     assert_equal '', @ui.error
   end
 
@@ -37,10 +37,10 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_match %r|Gem::Specification|, @ui.output
-    assert_match %r|name: foo|, @ui.output
-    assert_match %r|version: 0.0.1|, @ui.output
-    assert_match %r|version: 0.0.2|, @ui.output
+    assert_match %r{Gem::Specification}, @ui.output
+    assert_match %r{name: foo}, @ui.output
+    assert_match %r{version: 0.0.1}, @ui.output
+    assert_match %r{version: 0.0.2}, @ui.output
     assert_equal '', @ui.error
   end
 
@@ -99,8 +99,8 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_match %r|Gem::Specification|, @ui.output
-    assert_match %r|name: foo|, @ui.output
+    assert_match %r{Gem::Specification}, @ui.output
+    assert_match %r{name: foo}, @ui.output
     assert_equal '', @ui.error
   end
 
@@ -131,8 +131,8 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_match %r|Gem::Specification|, @ui.output
-    assert_match %r|name: foo|, @ui.output
+    assert_match %r{Gem::Specification}, @ui.output
+    assert_match %r{name: foo}, @ui.output
     assert_equal '', @ui.error
   end
 
@@ -164,8 +164,8 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_match %r|\A--- !ruby/object:Gem::Specification|, @ui.output
-    assert_match %r|name: foo|, @ui.output
+    assert_match %r{\A--- !ruby/object:Gem::Specification}, @ui.output
+    assert_match %r{name: foo}, @ui.output
   end
 
   def test_execute_remote_with_version
@@ -200,8 +200,8 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_match %r|\A--- !ruby/object:Gem::Specification|, @ui.output
-    assert_match %r|name: foo|, @ui.output
+    assert_match %r{\A--- !ruby/object:Gem::Specification}, @ui.output
+    assert_match %r{name: foo}, @ui.output
 
     spec = YAML.load @ui.output
 
@@ -222,8 +222,8 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_match %r|\A--- !ruby/object:Gem::Specification|, @ui.output
-    assert_match %r|name: foo|, @ui.output
+    assert_match %r{\A--- !ruby/object:Gem::Specification}, @ui.output
+    assert_match %r{name: foo}, @ui.output
 
     spec = YAML.load @ui.output
 
@@ -242,8 +242,8 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_match %r|Gem::Specification.new|, @ui.output
-    assert_match %r|s.name = "foo"|, @ui.output
+    assert_match %r{Gem::Specification.new}, @ui.output
+    assert_match %r{s.name = "foo"}, @ui.output
     assert_equal '', @ui.error
   end
 

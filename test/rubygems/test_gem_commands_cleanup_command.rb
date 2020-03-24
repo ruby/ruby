@@ -220,7 +220,7 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_match %r%^Skipped default gems: b-2%, @ui.output
+    assert_match %r{^Skipped default gems: b-2}, @ui.output
     assert_empty @ui.error
   end
 

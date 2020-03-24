@@ -49,7 +49,7 @@ class Gem::FakeFetcher
 
     path = path.to_s
     @paths << path
-    raise ArgumentError, 'need full URI' unless path =~ %r'^https?://'
+    raise ArgumentError, 'need full URI' unless path =~ %r{^https?://}
 
     unless @data.key? path
       raise Gem::RemoteFetcher::FetchError.new("no data for #{path}", path)
@@ -121,7 +121,7 @@ class Gem::FakeFetcher
     path = path.to_s
     @paths << path
 
-    raise ArgumentError, 'need full URI' unless path =~ %r'^http://'
+    raise ArgumentError, 'need full URI' unless path =~ %r{^http://}
 
     unless @data.key? path
       raise Gem::RemoteFetcher::FetchError.new("no data for #{path}", path)

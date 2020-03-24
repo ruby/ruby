@@ -88,7 +88,7 @@ class TestGemServer < Gem::TestCase
     end
 
     assert_equal 200, @res.status, @res.body
-    assert_match %r| \d\d:\d\d:\d\d |, @res['date']
+    assert_match %r{ \d\d:\d\d:\d\d }, @res['date']
     assert_equal 'application/octet-stream', @res['content-type']
     assert_equal [['a', Gem::Version.new(2), Gem::Platform::RUBY]],
     Marshal.load(@res.body)
@@ -127,7 +127,7 @@ class TestGemServer < Gem::TestCase
     end
 
     assert_equal 200, @res.status, @res.body
-    assert_match %r| \d\d:\d\d:\d\d |, @res['date']
+    assert_match %r{ \d\d:\d\d:\d\d }, @res['date']
     assert_equal 'application/x-gzip', @res['content-type']
     assert_equal [['a', Gem::Version.new(2), Gem::Platform::RUBY]],
                  Marshal.load(Gem::Util.gunzip(@res.body))
@@ -162,7 +162,7 @@ class TestGemServer < Gem::TestCase
     end
 
     assert_equal 200, @res.status, @res.body
-    assert_match %r| \d\d:\d\d:\d\d |, @res['date']
+    assert_match %r{ \d\d:\d\d:\d\d }, @res['date']
     assert_equal 'application/octet-stream', @res['content-type']
     assert_equal [['a', v('3.a'), Gem::Platform::RUBY]],
                  Marshal.load(@res.body)
@@ -177,7 +177,7 @@ class TestGemServer < Gem::TestCase
     end
 
     assert_equal 200, @res.status, @res.body
-    assert_match %r| \d\d:\d\d:\d\d |, @res['date']
+    assert_match %r{ \d\d:\d\d:\d\d }, @res['date']
     assert_equal 'application/x-gzip', @res['content-type']
     assert_equal [['a', v('3.a'), Gem::Platform::RUBY]],
                  Marshal.load(Gem::Util.gunzip(@res.body))
@@ -223,7 +223,7 @@ class TestGemServer < Gem::TestCase
     @server.quick @req, @res
 
     assert_equal 404, @res.status, @res.body
-    assert_match %r| \d\d:\d\d:\d\d |, @res['date']
+    assert_match %r{ \d\d:\d\d:\d\d }, @res['date']
     assert_equal 'text/plain', @res['content-type']
     assert_equal 'No gems found matching "z-9"', @res.body
     assert_equal 404, @res.status
@@ -320,7 +320,7 @@ class TestGemServer < Gem::TestCase
     @server.rdoc @req, @res
 
     assert_equal 200, @res.status, @res.body
-    assert_match %r|No documentation found|, @res.body
+    assert_match %r{No documentation found}, @res.body
     assert_equal 'text/html', @res['content-type']
   end
 
@@ -331,7 +331,7 @@ class TestGemServer < Gem::TestCase
     @server.root @req, @res
 
     assert_equal 200, @res.status, @res.body
-    assert_match %r| \d\d:\d\d:\d\d |, @res['date']
+    assert_match %r{ \d\d:\d\d:\d\d }, @res['date']
     assert_equal 'text/html', @res['content-type']
   end
 
@@ -529,7 +529,7 @@ class TestGemServer < Gem::TestCase
     @server.specs @req, @res
 
     assert_equal 200, @res.status, @res.body
-    assert_match %r| \d\d:\d\d:\d\d |, @res['date']
+    assert_match %r{ \d\d:\d\d:\d\d }, @res['date']
     assert_equal 'application/octet-stream', @res['content-type']
 
     assert_equal [['a', Gem::Version.new(1), Gem::Platform::RUBY],
@@ -569,7 +569,7 @@ class TestGemServer < Gem::TestCase
     @server.specs @req, @res
 
     assert_equal 200, @res.status, @res.body
-    assert_match %r| \d\d:\d\d:\d\d |, @res['date']
+    assert_match %r{ \d\d:\d\d:\d\d }, @res['date']
     assert_equal 'application/x-gzip', @res['content-type']
 
     assert_equal [['a', Gem::Version.new(1), Gem::Platform::RUBY],
@@ -591,7 +591,7 @@ class TestGemServer < Gem::TestCase
 
     @server.root @req, @res
 
-    refute_match %r|%3A%2F%2F|, @res.body
+    refute_match %r{%3A%2F%2F}, @res.body
   end
 
   def util_listen

@@ -140,12 +140,12 @@ end
       install_specs c1, c2, b1, b2, a1
 
       a1.activate
-      assert_equal %w(a-1), loaded_spec_names
+      assert_equal %w[a-1], loaded_spec_names
       assert_equal ["b (> 0)"], unresolved_names
 
       require "d#{$$}"
 
-      assert_equal %w(a-1 b-2 c-2), loaded_spec_names
+      assert_equal %w[a-1 b-2 c-2], loaded_spec_names
       assert_equal [], unresolved_names
     end
   end
@@ -187,12 +187,12 @@ end
       install_specs c1, c2, b1, b2, a1
 
       a1.activate
-      assert_equal %w(a-1), loaded_spec_names
+      assert_equal %w[a-1], loaded_spec_names
       assert_equal ["b (> 0)"], unresolved_names
 
       require "d#{$$}"
 
-      assert_equal %w(a-1 b-2 c-2), loaded_spec_names
+      assert_equal %w[a-1 b-2 c-2], loaded_spec_names
       assert_equal [], unresolved_names
     end
   end
@@ -209,12 +209,12 @@ end
       install_specs c1, b1, a1, a2, c2, b2
 
       a2.activate
-      assert_equal %w(a-2), loaded_spec_names
+      assert_equal %w[a-2], loaded_spec_names
       assert_equal ["b (> 0)"], unresolved_names
 
       require "d#{$$}"
 
-      assert_equal %w(a-2 b-1 c-1), loaded_spec_names
+      assert_equal %w[a-2 b-1 c-1], loaded_spec_names
       assert_equal [], unresolved_names
     end
   end
@@ -231,12 +231,12 @@ end
       install_specs d1, c1, c2, b1, b2, a1
 
       a1.activate
-      assert_equal %w(a-1), loaded_spec_names
+      assert_equal %w[a-1], loaded_spec_names
       assert_equal ["b (> 0)"], unresolved_names
 
       require "d#{$$}"
 
-      assert_equal %w(a-1 d-1), loaded_spec_names
+      assert_equal %w[a-1 d-1], loaded_spec_names
       assert_equal ["b (> 0)"], unresolved_names
     end
   end
@@ -255,7 +255,7 @@ end
 
       require "c#{$$}"
 
-      assert_equal %w(a-1 b-2 c-2), loaded_spec_names
+      assert_equal %w[a-1 b-2 c-2], loaded_spec_names
     end
   end
 
@@ -275,7 +275,7 @@ end
 
       require "d#{$$}"
 
-      assert_equal %w(a-1 b-2 c-2 d-2), loaded_spec_names
+      assert_equal %w[a-1 b-2 c-2 d-2], loaded_spec_names
     end
   end
 
@@ -296,7 +296,7 @@ end
 
       require "d#{$$}"
 
-      assert_equal %w(a-1 b-2 c-2 d-2), loaded_spec_names
+      assert_equal %w[a-1 b-2 c-2 d-2], loaded_spec_names
     end
   end
 
@@ -318,7 +318,7 @@ end
 
       require "d#{$$}"
 
-      assert_equal %w(a-1 b-2 c-2 d-2), loaded_spec_names
+      assert_equal %w[a-1 b-2 c-2 d-2], loaded_spec_names
     end
   end
 
@@ -336,12 +336,12 @@ end
       install_specs c1, c2, c3, b1, b2, a1, a2, base
 
       base.activate
-      assert_equal %w(0-1), loaded_spec_names
+      assert_equal %w[0-1], loaded_spec_names
       assert_equal ["A (>= 1)"], unresolved_names
 
       require "d#{$$}"
 
-      assert_equal %w(0-1 A-2 b-2 c-2), loaded_spec_names
+      assert_equal %w[0-1 A-2 b-2 c-2], loaded_spec_names
       assert_equal [], unresolved_names
     end
   end
@@ -364,7 +364,7 @@ end
 
       require "d#{$$}"
 
-      assert_includes [%w(a-1 b-2 c-3 d-2),%w(a-1 b-2 d-2)], loaded_spec_names
+      assert_includes [%w[a-1 b-2 c-3 d-2],%w[a-1 b-2 d-2]], loaded_spec_names
     end
   end
 
@@ -386,7 +386,7 @@ end
 
       require "d#{$$}"
 
-      assert_includes [%w(a-1 b-2 d-2 xc-3), %w(a-1 b-2 d-2)], loaded_spec_names
+      assert_includes [%w[a-1 b-2 d-2 xc-3], %w[a-1 b-2 d-2]], loaded_spec_names
     end
   end
 
@@ -515,7 +515,7 @@ end
       require "b/c"
     end
 
-    assert_equal %w(a-1 b-1), loaded_spec_names
+    assert_equal %w[a-1 b-1], loaded_spec_names
   end
 
   def test_self_activate_via_require_wtf
@@ -532,7 +532,7 @@ end
 
       a1.activate
 
-      assert_equal %w(a-1), loaded_spec_names
+      assert_equal %w[a-1], loaded_spec_names
       assert_equal ["b (> 0)", "d (> 0)"], unresolved_names
 
       require "b#{$$}"
@@ -543,7 +543,7 @@ end
 
       assert_equal "unable to find a version of 'd' to activate", e.message
 
-      assert_equal %w(a-1 b-2 c-2), loaded_spec_names
+      assert_equal %w[a-1 b-2 c-2], loaded_spec_names
       assert_equal ["d (> 0)"], unresolved_names
     end
   end
@@ -558,7 +558,7 @@ end
     install_specs c1, c2, b1, b2, a1
 
     a1.activate
-    assert_equal %w(a-1 b-1 c-1), loaded_spec_names
+    assert_equal %w[a-1 b-1 c-1], loaded_spec_names
   end
 
   def test_self_activate_loaded
@@ -795,7 +795,7 @@ bindir:
     op = spec.dependencies.first.requirement.requirements.first.first
     refute_kind_of YAML::Syck::DefaultKey, op
 
-    refute_match %r%DefaultKey%, spec.to_ruby
+    refute_match %r{DefaultKey}, spec.to_ruby
   end
 
   def test_self_from_yaml_cleans_up_defaultkey
@@ -829,7 +829,7 @@ bindir:
     op = spec.dependencies.first.requirement.requirements.first.first
     refute_kind_of YAML::Syck::DefaultKey, op
 
-    refute_match %r%DefaultKey%, spec.to_ruby
+    refute_match %r{DefaultKey}, spec.to_ruby
   end
 
   def test_self_from_yaml_cleans_up_defaultkey_from_newer_192
@@ -863,7 +863,7 @@ bindir:
     op = spec.dependencies.first.requirement.requirements.first.first
     refute_kind_of YAML::Syck::DefaultKey, op
 
-    refute_match %r%DefaultKey%, spec.to_ruby
+    refute_match %r{DefaultKey}, spec.to_ruby
   end
 
   def test_self_from_yaml_cleans_up_Date_objects
@@ -1886,11 +1886,11 @@ dependencies: []
   end
 
   def test_files
-    @a1.files = %w(files bin/common)
-    @a1.test_files = %w(test_files bin/common)
-    @a1.executables = %w(executables common)
-    @a1.extra_rdoc_files = %w(extra_rdoc_files bin/common)
-    @a1.extensions = %w(extensions bin/common)
+    @a1.files = %w[files bin/common]
+    @a1.test_files = %w[test_files bin/common]
+    @a1.executables = %w[executables common]
+    @a1.extra_rdoc_files = %w[extra_rdoc_files bin/common]
+    @a1.extensions = %w[extensions bin/common]
 
     expected = %w[
       bin/common
@@ -1904,11 +1904,11 @@ dependencies: []
   end
 
   def test_files_append
-    @a1.files            = %w(files bin/common)
-    @a1.test_files       = %w(test_files bin/common)
-    @a1.executables      = %w(executables common)
-    @a1.extra_rdoc_files = %w(extra_rdoc_files bin/common)
-    @a1.extensions       = %w(extensions bin/common)
+    @a1.files            = %w[files bin/common]
+    @a1.test_files       = %w[test_files bin/common]
+    @a1.executables      = %w[executables common]
+    @a1.extra_rdoc_files = %w[extra_rdoc_files bin/common]
+    @a1.extensions       = %w[extensions bin/common]
 
     expected = %w[
       bin/common
@@ -2297,12 +2297,12 @@ dependencies: []
       install_specs a1 # , a2, b1, b2, c1, c2
 
       a1.activate
-      assert_equal %w(a-1), loaded_spec_names
+      assert_equal %w[a-1], loaded_spec_names
       assert_equal [], unresolved_names
 
       assert require "d#{$$}"
 
-      assert_equal %w(a-1), loaded_spec_names
+      assert_equal %w[a-1], loaded_spec_names
       assert_equal [], unresolved_names
     end
   end
@@ -2320,12 +2320,12 @@ dependencies: []
 
       a1.activate
       c1.activate
-      assert_equal %w(a-1 c-1), loaded_spec_names
+      assert_equal %w[a-1 c-1], loaded_spec_names
       assert_equal ["b (> 0)"], unresolved_names
 
       assert require "d#{$$}"
 
-      assert_equal %w(a-1 c-1), loaded_spec_names
+      assert_equal %w[a-1 c-1], loaded_spec_names
       assert_equal ["b (> 0)"], unresolved_names
     end
   end
@@ -2661,7 +2661,7 @@ end
   def test_to_yaml_platform_empty_string
     @a1.instance_variable_set :@original_platform, ''
 
-    assert_match %r|^platform: ruby$|, @a1.to_yaml
+    assert_match %r{^platform: ruby$}, @a1.to_yaml
   end
 
   def test_to_yaml_platform_legacy
@@ -2679,7 +2679,7 @@ end
   def test_to_yaml_platform_nil
     @a1.instance_variable_set :@original_platform, nil
 
-    assert_match %r|^platform: ruby$|, @a1.to_yaml
+    assert_match %r{^platform: ruby$}, @a1.to_yaml
   end
 
   def test_validate
@@ -2723,7 +2723,7 @@ end
         @a1.validate
       end
 
-      assert_equal %{"#{f}" or "#{t}" is not an author}, e.message
+      assert_equal %("#{f}" or "#{t}" is not an author), e.message
 
       @a1.authors = ["#{t} (who is writing this software)"]
 
@@ -2731,7 +2731,7 @@ end
         @a1.validate
       end
 
-      assert_equal %{"#{f}" or "#{t}" is not an author}, e.message
+      assert_equal %("#{f}" or "#{t}" is not an author), e.message
     end
   end
 
@@ -2883,7 +2883,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
         @a1.validate
       end
 
-      assert_equal %{"#{f}" or "#{t}" is not a description}, e.message
+      assert_equal %("#{f}" or "#{t}" is not a description), e.message
 
       @a1.description = "#{t} (describe your package)"
 
@@ -2891,7 +2891,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
         @a1.validate
       end
 
-      assert_equal %{"#{f}" or "#{t}" is not a description}, e.message
+      assert_equal %("#{f}" or "#{t}" is not a description), e.message
     end
   end
 
@@ -2905,7 +2905,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
         @a1.validate
       end
 
-      assert_equal %{"#{f}" or "#{t}" is not an email}, e.message
+      assert_equal %("#{f}" or "#{t}" is not an email), e.message
 
       @a1.email = "#{t} (your e-mail)"
 
@@ -2913,7 +2913,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
         @a1.validate
       end
 
-      assert_equal %{"#{f}" or "#{t}" is not an email}, e.message
+      assert_equal %("#{f}" or "#{t}" is not an email), e.message
     end
   end
 
@@ -3315,7 +3315,7 @@ Did you mean 'Ruby'?
           spec.validate
         end
 
-        assert_match %r%^#{name}%, e.message
+        assert_match %r{^#{name}}, e.message
       end
     end
   end
@@ -3415,7 +3415,7 @@ Did you mean 'Ruby'?
         @a1.validate
       end
 
-      assert_equal %{"#{f}" or "#{t}" is not a summary}, e.message
+      assert_equal %("#{f}" or "#{t}" is not a summary), e.message
 
       @a1.summary = "#{t} (describe your package)"
 
@@ -3423,7 +3423,7 @@ Did you mean 'Ruby'?
         @a1.validate
       end
 
-      assert_equal %{"#{f}" or "#{t}" is not a summary}, e.message
+      assert_equal %("#{f}" or "#{t}" is not a summary), e.message
     end
   end
 

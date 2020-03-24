@@ -69,7 +69,7 @@ class TestGemExtConfigureBuilder < Gem::TestCase
 
     assert_match(/^current directory:/, output.shift)
     assert_equal "#{sh_prefix_configure}#{@dest_path}", output.shift
-    assert_match %r(#{shell_error_msg}), output.shift
+    assert_match %r{#{shell_error_msg}}, output.shift
     assert_equal true, output.empty?
   end
 

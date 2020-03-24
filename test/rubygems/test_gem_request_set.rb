@@ -493,7 +493,7 @@ ruby "0"
     rs.resolve StaticSet.new([a, b, c])
 
     names = rs.sorted_requests.map { |s| s.full_name }
-    assert_equal %w!c-2 b-2 a-2!, names
+    assert_equal %w[c-2 b-2 a-2], names
   end
 
   def test_install
@@ -551,7 +551,7 @@ ruby "0"
     assert_path_exists File.join @tempdir, 'specifications', 'a-1.gemspec'
     assert_path_exists File.join @tempdir, 'specifications', 'b-1.gemspec'
 
-    assert_equal %w!b-1 a-1!, installed.map { |s| s.full_name }
+    assert_equal %w[b-1 a-1], installed.map { |s| s.full_name }
   end
 
   def test_install_into_development_shallow

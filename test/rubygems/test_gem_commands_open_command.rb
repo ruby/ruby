@@ -51,7 +51,7 @@ class TestGemCommandsOpenCommand < Gem::TestCase
       end
     end
 
-    assert_match %r|Unable to find gem 'foo'|, @ui.output
+    assert_match %r{Unable to find gem 'foo'}, @ui.output
     assert_equal "", @ui.error
   end
 
@@ -64,7 +64,7 @@ class TestGemCommandsOpenCommand < Gem::TestCase
       end
     end
 
-    assert_match %r|Unable to find gem 'foo'|, @ui.output
+    assert_match %r{Unable to find gem 'foo'}, @ui.output
     assert_equal "", @ui.error
   end
 
@@ -93,7 +93,7 @@ class TestGemCommandsOpenCommand < Gem::TestCase
       end
     end
 
-    assert_match %r|'foo' is a default gem and can't be opened\.| , @ui.output
+    assert_match %r{'foo' is a default gem and can't be opened\.} , @ui.output
     assert_equal "", @ui.error
   end
 
