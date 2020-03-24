@@ -133,7 +133,7 @@ rb_class_of(VALUE obj)
     return RBASIC(obj)->klass;
 }
 
-#define CLASS_OF(v) rb_class_of((VALUE)(v))
+#define CLASS_OF rb_class_of
 
 RUBY3_SYMBOL_EXPORT_END()
 
