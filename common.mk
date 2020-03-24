@@ -1006,6 +1006,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/warning.rb \
 		$(srcdir)/array.rb \
 		$(srcdir)/kernel.rb \
+		$(srcdir)/numeric.rb \
 		$(srcdir)/prelude.rb \
 		$(srcdir)/gem_prelude.rb \
 		$(empty)
@@ -2192,6 +2193,7 @@ bignum.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 bignum.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 bignum.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 bignum.$(OBJEXT): {$(VPATH)}bignum.c
+bignum.$(OBJEXT): {$(VPATH)}builtin.h
 bignum.$(OBJEXT): {$(VPATH)}config.h
 bignum.$(OBJEXT): {$(VPATH)}constant.h
 bignum.$(OBJEXT): {$(VPATH)}defines.h
@@ -2566,6 +2568,7 @@ class.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 class.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 class.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 class.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+class.$(OBJEXT): {$(VPATH)}builtin.h
 class.$(OBJEXT): {$(VPATH)}class.c
 class.$(OBJEXT): {$(VPATH)}config.h
 class.$(OBJEXT): {$(VPATH)}constant.h
@@ -3155,6 +3158,7 @@ complex.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 complex.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 complex.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 complex.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+complex.$(OBJEXT): {$(VPATH)}builtin.h
 complex.$(OBJEXT): {$(VPATH)}complex.c
 complex.$(OBJEXT): {$(VPATH)}config.h
 complex.$(OBJEXT): {$(VPATH)}defines.h
@@ -4604,6 +4608,7 @@ encoding.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 encoding.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 encoding.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 encoding.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+encoding.$(OBJEXT): {$(VPATH)}builtin.h
 encoding.$(OBJEXT): {$(VPATH)}config.h
 encoding.$(OBJEXT): {$(VPATH)}defines.h
 encoding.$(OBJEXT): {$(VPATH)}encindex.h
@@ -4792,6 +4797,7 @@ enum.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 enum.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 enum.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 enum.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+enum.$(OBJEXT): {$(VPATH)}builtin.h
 enum.$(OBJEXT): {$(VPATH)}config.h
 enum.$(OBJEXT): {$(VPATH)}defines.h
 enum.$(OBJEXT): {$(VPATH)}encoding.h
@@ -5372,6 +5378,7 @@ eval.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 eval.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 eval.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 eval.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+eval.$(OBJEXT): {$(VPATH)}builtin.h
 eval.$(OBJEXT): {$(VPATH)}config.h
 eval.$(OBJEXT): {$(VPATH)}constant.h
 eval.$(OBJEXT): {$(VPATH)}debug_counter.h
@@ -5595,6 +5602,7 @@ file.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 file.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 file.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 file.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+file.$(OBJEXT): {$(VPATH)}builtin.h
 file.$(OBJEXT): {$(VPATH)}config.h
 file.$(OBJEXT): {$(VPATH)}defines.h
 file.$(OBJEXT): {$(VPATH)}dln.h
@@ -6366,6 +6374,7 @@ hash.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 hash.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 hash.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 hash.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+hash.$(OBJEXT): {$(VPATH)}builtin.h
 hash.$(OBJEXT): {$(VPATH)}config.h
 hash.$(OBJEXT): {$(VPATH)}debug_counter.h
 hash.$(OBJEXT): {$(VPATH)}defines.h
@@ -7845,6 +7854,7 @@ marshal.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 marshal.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 marshal.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 marshal.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+marshal.$(OBJEXT): {$(VPATH)}builtin.h
 marshal.$(OBJEXT): {$(VPATH)}config.h
 marshal.$(OBJEXT): {$(VPATH)}defines.h
 marshal.$(OBJEXT): {$(VPATH)}encindex.h
@@ -8023,6 +8033,7 @@ math.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 math.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 math.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 math.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+math.$(OBJEXT): {$(VPATH)}builtin.h
 math.$(OBJEXT): {$(VPATH)}config.h
 math.$(OBJEXT): {$(VPATH)}defines.h
 math.$(OBJEXT): {$(VPATH)}intern.h
@@ -8219,6 +8230,7 @@ miniinit.$(OBJEXT): {$(VPATH)}miniinit.c
 miniinit.$(OBJEXT): {$(VPATH)}miniprelude.c
 miniinit.$(OBJEXT): {$(VPATH)}missing.h
 miniinit.$(OBJEXT): {$(VPATH)}node.h
+miniinit.$(OBJEXT): {$(VPATH)}numeric.rb
 miniinit.$(OBJEXT): {$(VPATH)}onigmo.h
 miniinit.$(OBJEXT): {$(VPATH)}oniguruma.h
 miniinit.$(OBJEXT): {$(VPATH)}pack.rb
@@ -9030,6 +9042,7 @@ numeric.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 numeric.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 numeric.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 numeric.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+numeric.$(OBJEXT): {$(VPATH)}builtin.h
 numeric.$(OBJEXT): {$(VPATH)}config.h
 numeric.$(OBJEXT): {$(VPATH)}constant.h
 numeric.$(OBJEXT): {$(VPATH)}defines.h
@@ -9040,6 +9053,7 @@ numeric.$(OBJEXT): {$(VPATH)}intern.h
 numeric.$(OBJEXT): {$(VPATH)}internal.h
 numeric.$(OBJEXT): {$(VPATH)}missing.h
 numeric.$(OBJEXT): {$(VPATH)}numeric.c
+numeric.$(OBJEXT): {$(VPATH)}numeric.rbinc
 numeric.$(OBJEXT): {$(VPATH)}onigmo.h
 numeric.$(OBJEXT): {$(VPATH)}oniguruma.h
 numeric.$(OBJEXT): {$(VPATH)}ruby_assert.h
@@ -9825,6 +9839,7 @@ proc.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 proc.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 proc.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 proc.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+proc.$(OBJEXT): {$(VPATH)}builtin.h
 proc.$(OBJEXT): {$(VPATH)}config.h
 proc.$(OBJEXT): {$(VPATH)}defines.h
 proc.$(OBJEXT): {$(VPATH)}encoding.h
@@ -10027,6 +10042,7 @@ process.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 process.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 process.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 process.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+process.$(OBJEXT): {$(VPATH)}builtin.h
 process.$(OBJEXT): {$(VPATH)}config.h
 process.$(OBJEXT): {$(VPATH)}constant.h
 process.$(OBJEXT): {$(VPATH)}defines.h
@@ -10591,6 +10607,7 @@ rational.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 rational.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 rational.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 rational.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+rational.$(OBJEXT): {$(VPATH)}builtin.h
 rational.$(OBJEXT): {$(VPATH)}config.h
 rational.$(OBJEXT): {$(VPATH)}defines.h
 rational.$(OBJEXT): {$(VPATH)}encoding.h
@@ -11968,6 +11985,7 @@ ruby.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 ruby.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 ruby.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 ruby.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+ruby.$(OBJEXT): {$(VPATH)}builtin.h
 ruby.$(OBJEXT): {$(VPATH)}config.h
 ruby.$(OBJEXT): {$(VPATH)}constant.h
 ruby.$(OBJEXT): {$(VPATH)}debug_counter.h
@@ -12525,6 +12543,7 @@ sprintf.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 sprintf.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 sprintf.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 sprintf.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+sprintf.$(OBJEXT): {$(VPATH)}builtin.h
 sprintf.$(OBJEXT): {$(VPATH)}config.h
 sprintf.$(OBJEXT): {$(VPATH)}defines.h
 sprintf.$(OBJEXT): {$(VPATH)}encoding.h
@@ -13057,6 +13076,7 @@ string.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 string.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 string.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 string.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+string.$(OBJEXT): {$(VPATH)}builtin.h
 string.$(OBJEXT): {$(VPATH)}config.h
 string.$(OBJEXT): {$(VPATH)}crypt.h
 string.$(OBJEXT): {$(VPATH)}debug_counter.h
@@ -13288,6 +13308,7 @@ struct.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 struct.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 struct.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 struct.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+struct.$(OBJEXT): {$(VPATH)}builtin.h
 struct.$(OBJEXT): {$(VPATH)}config.h
 struct.$(OBJEXT): {$(VPATH)}defines.h
 struct.$(OBJEXT): {$(VPATH)}encoding.h
@@ -13476,6 +13497,7 @@ symbol.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 symbol.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 symbol.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 symbol.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+symbol.$(OBJEXT): {$(VPATH)}builtin.h
 symbol.$(OBJEXT): {$(VPATH)}config.h
 symbol.$(OBJEXT): {$(VPATH)}defines.h
 symbol.$(OBJEXT): {$(VPATH)}encoding.h
@@ -13674,6 +13696,7 @@ thread.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 thread.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 thread.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 thread.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+thread.$(OBJEXT): {$(VPATH)}builtin.h
 thread.$(OBJEXT): {$(VPATH)}config.h
 thread.$(OBJEXT): {$(VPATH)}debug.h
 thread.$(OBJEXT): {$(VPATH)}debug_counter.h
@@ -14054,6 +14077,7 @@ transcode.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 transcode.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 transcode.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 transcode.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+transcode.$(OBJEXT): {$(VPATH)}builtin.h
 transcode.$(OBJEXT): {$(VPATH)}config.h
 transcode.$(OBJEXT): {$(VPATH)}defines.h
 transcode.$(OBJEXT): {$(VPATH)}encoding.h

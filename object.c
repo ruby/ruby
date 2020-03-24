@@ -416,10 +416,9 @@ rb_obj_clone2(rb_execution_context_t *ec, VALUE obj, VALUE freeze)
 
 /*! \private */
 VALUE
-rb_immutable_obj_clone(int argc, VALUE *argv, VALUE obj)
+rb_immutable_obj_clone(rb_execution_context_t *ec, VALUE obj, VALUE freeze)
 {
-    VALUE kwfreeze = freeze_opt(argc, argv);
-    return immutable_obj_clone(obj, kwfreeze);
+    return immutable_obj_clone(obj, freeze);
 }
 
 static VALUE

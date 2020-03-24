@@ -39,6 +39,7 @@
 #include "internal/variable.h"
 #include "ruby/encoding.h"
 #include "ruby/util.h"
+#include "builtin.h"
 
 /* use IEEE 64bit values if not defined */
 #ifndef FLT_RADIX
@@ -502,16 +503,10 @@ num_sadded(VALUE x, VALUE name)
 }
 
 #if 0
-/*
- *  call-seq:
- *     num.clone(freeze: true)  ->  num
- *
- *  Returns the receiver.  +freeze+ cannot be +false+.
- */
 static VALUE
-num_clone(int argc, VALUE *argv, VALUE x)
+num_clone(rb_execution_context_t *ec, VALUE x, VALUE freeze)
 {
-    return rb_immutable_obj_clone(argc, argv, x);
+    return rb_immutable_obj_clone(ec, x, freeze);
 }
 #else
 # define num_clone rb_immutable_obj_clone
@@ -5594,7 +5589,6 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "singleton_method_added", num_sadded, 1);
     rb_include_module(rb_cNumeric, rb_mComparable);
     rb_define_method(rb_cNumeric, "coerce", num_coerce, 1);
-    rb_define_method(rb_cNumeric, "clone", num_clone, -1);
     rb_define_method(rb_cNumeric, "dup", num_dup, 0);
 
     rb_define_method(rb_cNumeric, "i", num_imaginary, 0);
@@ -5842,3 +5836,5 @@ rb_float_new(double d)
 {
     return rb_float_new_inline(d);
 }
+
+#include "numeric.rbinc"

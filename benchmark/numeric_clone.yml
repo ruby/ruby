@@ -1,0 +1,5 @@
+prelude: "num = 42"
+benchmark:
+  clone: "num.clone"
+  clone_true: "num.clone(freeze: true)"
+loop_count: 10000
