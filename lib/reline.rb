@@ -336,8 +336,14 @@ module Reline
       @ambiguous_width = 2 if Reline::IOGate == Reline::GeneralIO or STDOUT.is_a?(File)
       return if ambiguous_width
       Reline::IOGate.move_cursor_column(0)
-      output.write "\u{25bd}"
-      @ambiguous_width = Reline::IOGate.cursor_pos.x
+      begin
+        output.write "\u{25bd}"
+      rescue Encoding::UndefinedConversionError
+        # LANG=C
+        @ambiguous_width = 1
+      else
+        @ambiguous_width = Reline::IOGate.cursor_pos.x
+      end
       Reline::IOGate.move_cursor_column(0)
       Reline::IOGate.erase_after_cursor
     end
