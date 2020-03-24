@@ -311,16 +311,6 @@ class TestM17N < Test::Unit::TestCase
       "abc".encode(Encoding.default_external)
     end
 
-    # debugging code for http://ci.rvm.jp/logfiles/brlog.trunk-test-random.20200322-221411
-    begin
-      "abc".encode(Encoding.default_external)
-    rescue Encoding::CompatibilityError
-      TracePoint.new(:raise) do |tp|
-        Process.kill(:SEGV, $$)
-      end.enable { "abc".encode(Encoding.default_external) }
-    end
-    # debugging code end
-
     assert_equal '[abc]', [o].inspect
 
     Encoding.default_external = Encoding::US_ASCII
