@@ -150,10 +150,12 @@ rb_hash(VALUE obj)
             unsigned long ul;
             sign = rb_integer_pack(hval, &ul, 1, sizeof(ul), 0,
                     INTEGER_PACK_NATIVE_BYTE_ORDER);
-            ul &= (1UL << (sizeof(long)*CHAR_BIT-1)) - 1;
-            if (sign < 0)
-                return LONG2FIX(-(long)ul);
-            return LONG2FIX((long)ul);
+            if (sign < 0) {
+                hval = LONG2FIX(ul | FIXNUM_MIN);
+            }
+            else {
+                hval = LONG2FIX(ul & FIXNUM_MAX);
+            }
         }
 	hval = rb_to_int(hval);
     }
