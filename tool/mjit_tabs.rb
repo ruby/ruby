@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 # This is a script to run a command in ARGV, expanding tabs in some files
-# included by vm.c to normalize indentation of MJIT header. You can disable
-# this feature by setting MJIT_WITHOUT_TABS=false make variable.
+# included by vm.c to normalize indentation of MJIT header. You can enable
+# this feature by passing `--without-mjit-tabs` in configure.
 #
 # Note that preprocessor of GCC converts a hard tab to one spaces, where
 # we expect it to be shown as 8 spaces. To obviate this script, we need
@@ -27,10 +27,10 @@ targets = EXPAND_TARGETS.flat_map { |t| Dir.glob(File.join(srcdir, t)) } - SKIPP
 sources = {}
 mtimes = {}
 
-flag, *command = ARGV
+mjit_tabs, *command = ARGV
 
 targets.each do |target|
-  next if flag != 'true'
+  next if mjit_tabs != 'false'
   unless File.writable?(target)
     puts "tool/mjit_without_tabs.rb: Skipping #{target.dump} as it's not writable."
     next

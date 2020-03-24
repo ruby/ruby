@@ -224,9 +224,9 @@ mjit_config.h: Makefile
 # Other `-Dxxx`s preceding `-DMJIT_HEADER` will be removed in transform_mjit_header.rb.
 # So `-DMJIT_HEADER` should be passed first when rb_mjit_header.h is generated.
 $(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time: probes.h vm.$(OBJEXT) \
-		$(TIMESTAMPDIR)/$(arch)/.time $(srcdir)/tool/mjit_without_tabs.rb
+		$(TIMESTAMPDIR)/$(arch)/.time $(srcdir)/tool/mjit_tabs.rb
 	$(ECHO) building $(@F:.time=.h)
-	$(Q) $(BASERUBY) $(srcdir)/tool/mjit_without_tabs.rb "$(MJIT_WITHOUT_TABS)" \
+	$(Q) $(BASERUBY) $(srcdir)/tool/mjit_tabs.rb "$(MJIT_TABS)" \
 		$(CPP) -DMJIT_HEADER $(MJIT_HEADER_FLAGS) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(srcdir)/vm.c $(CPPOUTFLAG)$(@F:.time=.h).new
 	$(Q) $(IFCHANGE) "--timestamp=$@" $(@F:.time=.h) $(@F:.time=.h).new
 
