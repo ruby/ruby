@@ -171,22 +171,25 @@ class Gem::SpecFetcher
   # Suggests gems based on the supplied +gem_name+. Returns an array of
   # alternative gem names.
 
-  def suggest_gems_from_name(gem_name, type = :latest)
+  def suggest_gems_from_name(gem_name, type = :latest, num_results = 5)
     gem_name        = gem_name.downcase.tr('_-', '')
     max             = gem_name.size / 2
     names           = available_specs(type).first.values.flatten(1)
 
     matches = names.map do |n|
       next unless n.match_platform?
-
-      distance = levenshtein_distance gem_name, n.name.downcase.tr('_-', '')
-
-      next if distance >= max
-
-      return [n.name] if distance == 0
-
-      [n.name, distance]
+      [n.name, 0] if n.name.downcase.tr('_-', '').include?(gem_name)
     end.compact
+
+    if matches.length < num_results
+      matches += names.map do |n|
+        next unless n.match_platform?
+        distance = levenshtein_distance gem_name, n.name.downcase.tr('_-', '')
+        next if distance >= max
+        return [n.name] if distance == 0
+        [n.name, distance]
+      end.compact
+    end
 
     matches = if matches.empty? && type != :prerelease
                 suggest_gems_from_name gem_name, :prerelease
@@ -194,7 +197,7 @@ class Gem::SpecFetcher
                 matches.uniq.sort_by { |name, dist| dist }
               end
 
-    matches.first(5).map { |name, dist| name }
+    matches.map { |name, dist| name }.uniq.first(num_results)
   end
 
   ##

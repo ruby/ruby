@@ -77,7 +77,7 @@ class Gem::Command
     when Array
       @extra_args = value
     when String
-      @extra_args = value.split(' ')
+      @extra_args = value.split
     end
   end
 
@@ -174,8 +174,7 @@ class Gem::Command
     alert_error msg
 
     unless suppress_suggestions
-      suggestions = Gem::SpecFetcher.fetcher.suggest_gems_from_name gem_name
-
+      suggestions = Gem::SpecFetcher.fetcher.suggest_gems_from_name(gem_name, :latest, 10)
       unless suggestions.empty?
         alert_error "Possible alternatives: #{suggestions.join(", ")}"
       end
@@ -625,8 +624,7 @@ class Gem::Command
   # :stopdoc:
 
   HELP = <<-HELP.freeze
-RubyGems is a sophisticated package manager for Ruby.  This is a
-basic help message containing pointers to more information.
+RubyGems is a package manager for Ruby.
 
   Usage:
     gem -h/--help

@@ -50,6 +50,7 @@ class Gem::Uninstaller
     @gem                = gem
     @version            = options[:version] || Gem::Requirement.default
     @gem_home           = File.realpath(options[:install_dir] || Gem.dir)
+    @plugins_dir        = Gem.plugindir(@gem_home)
     @force_executables  = options[:executables]
     @force_all          = options[:all]
     @force_ignore       = options[:ignore]
@@ -281,7 +282,7 @@ class Gem::Uninstaller
   def remove_plugins(spec) # :nodoc:
     return if spec.plugins.empty?
 
-    remove_plugins_for(spec)
+    remove_plugins_for(spec, @plugins_dir)
   end
 
   ##
@@ -291,7 +292,7 @@ class Gem::Uninstaller
     latest = Gem::Specification.latest_spec_for(@spec.name)
     return if latest.nil?
 
-    regenerate_plugins_for(latest)
+    regenerate_plugins_for(latest, @plugins_dir)
   end
 
   ##

@@ -7,7 +7,6 @@ require 'rubygems/spec_fetcher'
 require 'rubygems/user_interaction'
 require 'rubygems/source'
 require 'rubygems/available_set'
-require 'rubygems/deprecate'
 
 ##
 # Installs a gem along with all its dependencies from local and remote gems.
@@ -15,7 +14,6 @@ require 'rubygems/deprecate'
 class Gem::DependencyInstaller
 
   include Gem::UserInteraction
-  extend Gem::Deprecate
 
   DEFAULT_OPTIONS = { # :nodoc:
     :env_shebang         => false,
@@ -107,27 +105,6 @@ class Gem::DependencyInstaller
   end
 
   ##
-  # Creates an AvailableSet to install from based on +dep_or_name+ and
-  # +version+
-
-  def available_set_for(dep_or_name, version) # :nodoc:
-    if String === dep_or_name
-      Gem::Deprecate.skip_during do
-        find_spec_by_name_and_version dep_or_name, version, @prerelease
-      end
-    else
-      dep = dep_or_name.dup
-      dep.prerelease = @prerelease
-      @available = Gem::Deprecate.skip_during do
-        find_gems_with_sources dep
-      end
-    end
-
-    @available.pick_best!
-  end
-  deprecate :available_set_for, :none, 2019, 12
-
-  ##
   # Indicated, based on the requested domain, if local
   # gems should be considered.
 
@@ -142,131 +119,6 @@ class Gem::DependencyInstaller
   def consider_remote?
     @domain == :both or @domain == :remote
   end
-
-  ##
-  # Returns a list of pairs of gemspecs and source_uris that match
-  # Gem::Dependency +dep+ from both local (Dir.pwd) and remote (Gem.sources)
-  # sources.  Gems are sorted with newer gems preferred over older gems, and
-  # local gems preferred over remote gems.
-
-  def find_gems_with_sources(dep, best_only=false) # :nodoc:
-    set = Gem::AvailableSet.new
-
-    if consider_local?
-      sl = Gem::Source::Local.new
-
-      if spec = sl.find_gem(dep.name)
-        if dep.matches_spec? spec
-          set.add spec, sl
-        end
-      end
-    end
-
-    if consider_remote?
-      begin
-        # This is pulled from #spec_for_dependency to allow
-        # us to filter tuples before fetching specs.
-        tuples, errors = Gem::SpecFetcher.fetcher.search_for_dependency dep
-
-        if best_only && !tuples.empty?
-          tuples.sort! do |a,b|
-            if b[0].version == a[0].version
-              if b[0].platform != Gem::Platform::RUBY
-                1
-              else
-                -1
-              end
-            else
-              b[0].version <=> a[0].version
-            end
-          end
-          tuples = [tuples.first]
-        end
-
-        specs = []
-        tuples.each do |tup, source|
-          begin
-            spec = source.fetch_spec(tup)
-          rescue Gem::RemoteFetcher::FetchError => e
-            errors << Gem::SourceFetchProblem.new(source, e)
-          else
-            specs << [spec, source]
-          end
-        end
-
-        if @errors
-          @errors += errors
-        else
-          @errors = errors
-        end
-
-        set << specs
-
-      rescue Gem::RemoteFetcher::FetchError => e
-        # FIX if there is a problem talking to the network, we either need to always tell
-        # the user (no really_verbose) or fail hard, not silently tell them that we just
-        # couldn't find their requested gem.
-        verbose do
-          "Error fetching remote data:\t\t#{e.message}\n" \
-            "Falling back to local-only install"
-        end
-        @domain = :local
-      end
-    end
-
-    set
-  end
-  deprecate :find_gems_with_sources, :none, 2019, 12
-
-  ##
-  # Finds a spec and the source_uri it came from for gem +gem_name+ and
-  # +version+.  Returns an Array of specs and sources required for
-  # installation of the gem.
-
-  def find_spec_by_name_and_version(gem_name,
-                                    version = Gem::Requirement.default,
-                                    prerelease = false)
-    set = Gem::AvailableSet.new
-
-    if consider_local?
-      if gem_name =~ /\.gem$/ and File.file? gem_name
-        src = Gem::Source::SpecificFile.new(gem_name)
-        set.add src.spec, src
-      elsif gem_name =~ /\.gem$/
-        Dir[gem_name].each do |name|
-          begin
-            src = Gem::Source::SpecificFile.new name
-            set.add src.spec, src
-          rescue Gem::Package::FormatError
-          end
-        end
-      else
-        local = Gem::Source::Local.new
-
-        if s = local.find_gem(gem_name, version)
-          set.add s, local
-        end
-      end
-    end
-
-    if set.empty?
-      dep = Gem::Dependency.new gem_name, version
-      dep.prerelease = true if prerelease
-
-      set = Gem::Deprecate.skip_during do
-        find_gems_with_sources(dep, true)
-      end
-
-      set.match_platform!
-    end
-
-    if set.empty?
-      raise Gem::SpecificGemNotFoundException.new(gem_name, version, @errors)
-    end
-
-    @available = set
-  end
-  deprecate :find_spec_by_name_and_version, :none, 2019, 12
 
   def in_background(what) # :nodoc:
     fork_happened = false

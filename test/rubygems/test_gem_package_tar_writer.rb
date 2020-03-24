@@ -8,6 +8,11 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
   def setup
     super
 
+    # Setting `@default_source_date_epoch` to `nil` effectively resets the
+    # value used for `Gem.source_date_epoch` whenever `$SOURCE_DATE_EPOCH`
+    # is not set.
+    Gem.instance_variable_set(:'@default_source_date_epoch', nil)
+
     @data = 'abcde12345'
     @io = TempIO.new
     @tar_writer = Gem::Package::TarWriter.new @io

@@ -160,9 +160,11 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
     ruby_exec = sprintf Gem.default_exec_format, 'ruby'
 
-    bin_env = win_platform? ? "" : %w(/usr/bin/env /bin/env).find {|f| File.executable?(f) }
-
-    assert_match %r%\A#!\s*#{bin_env} #{ruby_exec}%, File.read(gem_exec)
+    if win_platform?
+      assert_match %r%\A#!\s*#{ruby_exec}%, File.read(gem_exec)
+    else
+      assert_match %r%\A#!\s*/usr/bin/env #{ruby_exec}%, File.read(gem_exec)
+    end
   end
 
   def test_execute_extensions_explicit

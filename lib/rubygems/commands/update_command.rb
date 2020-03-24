@@ -184,14 +184,14 @@ command to remove old versions.
     else
       require "tmpdir"
       tmpdir = Dir.mktmpdir
-      FileUtils.mv Gem.plugins_dir, tmpdir
+      FileUtils.mv Gem.plugindir, tmpdir
 
       status = yield
 
       if status
         FileUtils.rm_rf tmpdir
       else
-        FileUtils.mv File.join(tmpdir, "plugins"), Gem.plugins_dir
+        FileUtils.mv File.join(tmpdir, "plugins"), Gem.plugindir
       end
 
       status

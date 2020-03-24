@@ -47,11 +47,6 @@ class Gem::Installer
   include Gem::InstallerUninstallerUtils
 
   ##
-  # Filename of the gem being installed.
-
-  attr_reader :gem
-
-  ##
   # The directory a gem's executables will be installed into
 
   attr_reader :bin_dir
@@ -487,13 +482,7 @@ class Gem::Installer
   def generate_bin # :nodoc:
     return if spec.executables.nil? or spec.executables.empty?
 
-    begin
-      Dir.mkdir @bin_dir, *[options[:dir_mode] && 0755].compact
-    rescue SystemCallError
-      raise unless File.directory? @bin_dir
-    end
-
-    raise Gem::FilePermissionError.new(@bin_dir) unless File.writable? @bin_dir
+    ensure_writable_dir @bin_dir
 
     spec.executables.each do |filename|
       filename.tap(&Gem::UNTAINT)
@@ -523,10 +512,12 @@ class Gem::Installer
     latest = Gem::Specification.latest_spec_for(spec.name)
     return if latest && latest.version > spec.version
 
+    ensure_writable_dir @plugins_dir
+
     if spec.plugins.empty?
-      remove_plugins_for(spec)
+      remove_plugins_for(spec, @plugins_dir)
     else
-      regenerate_plugins_for(spec)
+      regenerate_plugins_for(spec, @plugins_dir)
     end
   end
 
@@ -690,6 +681,7 @@ class Gem::Installer
     @force               = options[:force]
     @install_dir         = options[:install_dir]
     @gem_home            = options[:install_dir] || Gem.dir
+    @plugins_dir         = Gem.plugindir(@gem_home)
     @ignore_dependencies = options[:ignore_dependencies]
     @format_executable   = options[:format_executable]
     @wrappers            = options[:wrappers]
@@ -890,6 +882,13 @@ TEXT
   end
 
   ##
+  # Filename of the gem being installed.
+
+  def gem
+    @package.gem.path
+  end
+
+  ##
   # Performs various checks before installing the gem such as the install
   # repository is writable and its directories exist, required Ruby and
   # rubygems versions are met and that dependencies are installed.
@@ -951,6 +950,16 @@ TEXT
   def write_cache_file
     cache_file = File.join gem_home, 'cache', spec.file_name
     @package.copy_to cache_file
+  end
+
+  def ensure_writable_dir(dir) # :nodoc:
+    begin
+      Dir.mkdir dir, *[options[:dir_mode] && 0755].compact
+    rescue SystemCallError
+      raise unless File.directory? dir
+    end
+
+    raise Gem::FilePermissionError.new(dir) unless File.writable? dir
   end
 
 end
