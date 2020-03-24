@@ -1824,9 +1824,9 @@ gem 'other', version
 
     shebang = installer.shebang 'executable'
 
-    env_shebang = "/usr/bin/env" unless Gem.win_platform?
+    bin_env = get_bin_env
 
-    assert_equal("#!#{env_shebang} #{RbConfig::CONFIG['ruby_install_name']}",
+    assert_equal("#!#{bin_env} #{RbConfig::CONFIG['ruby_install_name']}",
                  shebang)
   end
 
@@ -1905,10 +1905,18 @@ gem 'other', version
     assert_equal "#!test", shebang
   end
 
+  def get_bin_env
+    if win_platform?
+      ""
+    else
+      %w(/usr/bin/env /bin/env).find {|f| File.executable?(f) }
+    end
+  end
+
   def test_shebang_custom_with_expands
     installer = setup_base_installer
 
-    bin_env = win_platform? ? '' : '/usr/bin/env'
+    bin_env = get_bin_env
     conf = Gem::ConfigFile.new []
     conf[:custom_shebang] = '1 $env 2 $ruby 3 $exec 4 $name'
 
@@ -1924,7 +1932,7 @@ gem 'other', version
   def test_shebang_custom_with_expands_and_arguments
     installer = setup_base_installer
 
-    bin_env = win_platform? ? '' : '/usr/bin/env'
+    bin_env = get_bin_env
     conf = Gem::ConfigFile.new []
     conf[:custom_shebang] = '1 $env 2 $ruby 3 $exec'
 

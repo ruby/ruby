@@ -196,15 +196,10 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
     ruby_exec = sprintf Gem.default_exec_format, 'ruby'
 
-    if Gem.win_platform?
-      assert_match %r%\A#!\s*#{ruby_exec}%, File.read(default_gem_bin_path)
-      assert_match %r%\A#!\s*#{ruby_exec}%, File.read(default_bundle_bin_path)
-      assert_match %r%\A#!\s*#{ruby_exec}%, File.read(gem_bin_path)
-    else
-      assert_match %r%\A#!/usr/bin/env #{ruby_exec}%, File.read(default_gem_bin_path)
-      assert_match %r%\A#!/usr/bin/env #{ruby_exec}%, File.read(default_bundle_bin_path)
-      assert_match %r%\A#!/usr/bin/env #{ruby_exec}%, File.read(gem_bin_path)
-    end
+    bin_env = win_platform? ? "" : %w(/usr/bin/env /bin/env).find {|f| File.executable?(f) } + " "
+    assert_match %r%\A#!\s*#{bin_env}#{ruby_exec}%, File.read(default_gem_bin_path)
+    assert_match %r%\A#!\s*#{bin_env}#{ruby_exec}%, File.read(default_bundle_bin_path)
+    assert_match %r%\A#!\s*#{bin_env}#{ruby_exec}%, File.read(gem_bin_path)
   end
 
   def test_pem_files_in
