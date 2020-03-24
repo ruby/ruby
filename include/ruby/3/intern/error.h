@@ -24,6 +24,8 @@
 #include "ruby/3/value.h"
 #include "ruby/backward/2/attributes.h"
 
+#define UNLIMITED_ARGUMENTS (-1)
+
 RUBY3_SYMBOL_EXPORT_BEGIN()
 
 /* error.c */
