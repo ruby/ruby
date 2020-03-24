@@ -517,4 +517,16 @@ class TestDir < Test::Unit::TestCase
       assert_equal([*"a".."z"], list)
     end;
   end if defined?(Process::RLIMIT_NOFILE)
+
+  def test_glob_array_with_destructive_element
+    args = Array.new(100, "")
+    pat = Struct.new(:ary).new(args)
+    args.push(pat, *Array.new(100) {"."*40})
+    def pat.to_path
+      ary.clear
+      GC.start
+      ""
+    end
+    assert_empty(Dir.glob(args))
+  end
 end

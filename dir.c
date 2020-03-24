@@ -3096,7 +3096,7 @@ dir_s_glob(int argc, VALUE *argv, VALUE obj)
 	ary = rb_push_glob(str, base, flags);
     }
     else {
-	VALUE v = ary;
+        VALUE v = rb_ary_replace(rb_ary_tmp_new(0), ary);
 	ary = dir_globs(RARRAY_LEN(v), RARRAY_CONST_PTR(v), base, flags);
 	RB_GC_GUARD(v);
     }
