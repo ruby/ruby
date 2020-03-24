@@ -2898,6 +2898,28 @@ dir_globs(long argc, const VALUE *argv, VALUE base, int flags)
     return ary;
 }
 
+static VALUE
+dir_glob_option_base(VALUE base)
+{
+    if (base == Qundef || NIL_P(base)) {
+	return Qnil;
+    }
+#if USE_OPENDIR_AT
+    if (rb_typeddata_is_kind_of(base, &dir_data_type)) {
+	return base;
+    }
+#endif
+    FilePathValue(base);
+    if (!RSTRING_LEN(base)) return Qnil;
+    return base;
+}
+
+static int
+dir_glob_option_sort(VALUE sort)
+{
+    return (sort ? 0 : FNM_GLOB_NOSORT);
+}
+
 static void
 dir_glob_options(VALUE opt, VALUE *base, int *sort, int *flags)
 {
@@ -2909,19 +2931,7 @@ dir_glob_options(VALUE opt, VALUE *base, int *sort, int *flags)
         kw[2] = rb_intern_const("flags");
     }
     rb_get_kwargs(opt, kw, 0, flags ? 3 : 2, args);
-    if (args[0] == Qundef || NIL_P(args[0])) {
-	*base = Qnil;
-    }
-#if USE_OPENDIR_AT
-    else if (rb_typeddata_is_kind_of(args[0], &dir_data_type)) {
-	*base = args[0];
-    }
-#endif
-    else {
-	FilePathValue(args[0]);
-	if (!RSTRING_LEN(args[0])) args[0] = Qnil;
-	*base = args[0];
-    }
+    *base = dir_glob_option_base(args[0]);
     if (sort && args[1] == Qfalse) *sort |= FNM_GLOB_NOSORT;
     if (flags && args[2] != Qundef) *flags = NUM2INT(args[2]);
 }
@@ -2947,113 +2957,12 @@ dir_s_aref(int argc, VALUE *argv, VALUE obj)
     return dir_globs(argc, argv, base, sort);
 }
 
-/*
- *  call-seq:
- *     Dir.glob( pattern, [flags], [base: path] [, sort: true] )                       -> array
- *     Dir.glob( pattern, [flags], [base: path] [, sort: true] ) { |filename| block }  -> nil
- *
- *  Expands +pattern+, which is a pattern string or an Array of pattern
- *  strings, and returns an array containing the matching filenames.
- *  If a block is given, calls the block once for each matching filename,
- *  passing the filename as a parameter to the block.
- *
- *  The optional +base+ keyword argument specifies the base directory for
- *  interpreting relative pathnames instead of the current working directory.
- *  As the results are not prefixed with the base directory name in this
- *  case, you will need to prepend the base directory name if you want real
- *  paths.
- *
- *  The results which matched single wildcard or character set are sorted in
- *  binary ascending order, unless false is given as the optional +sort+
- *  keyword argument.  The order of an Array of pattern strings and braces
- *  are preserved.
- *
- *  Note that the pattern is not a regexp, it's closer to a shell glob.
- *  See File::fnmatch for the meaning of the +flags+ parameter.
- *  Case sensitivity depends on your system (File::FNM_CASEFOLD is ignored).
- *
- *  <code>*</code>::
- *    Matches any file. Can be restricted by other values in the glob.
- *    Equivalent to <code>/ .* /mx</code> in regexp.
- *
- *    <code>*</code>::     Matches all files
- *    <code>c*</code>::    Matches all files beginning with <code>c</code>
- *    <code>*c</code>::    Matches all files ending with <code>c</code>
- *    <code>\*c\*</code>:: Match all files that have <code>c</code> in them
- *                         (including at the beginning or end).
- *
- *    Note, this will not match Unix-like hidden files (dotfiles).  In order
- *    to include those in the match results, you must use the
- *    File::FNM_DOTMATCH flag or something like <code>"{*,.*}"</code>.
- *
- *  <code>**</code>::
- *    Matches directories recursively.
- *
- *  <code>?</code>::
- *    Matches any one character. Equivalent to <code>/.{1}/</code> in regexp.
- *
- *  <code>[set]</code>::
- *    Matches any one character in +set+.  Behaves exactly like character sets
- *    in Regexp, including set negation (<code>[^a-z]</code>).
- *
- *  <code>{p,q}</code>::
- *    Matches either literal <code>p</code> or literal <code>q</code>.
- *    Equivalent to pattern alternation in regexp.
- *
- *    Matching literals may be more than one character in length.  More than
- *    two literals may be specified.
- *
- *  <code> \\ </code>::
- *    Escapes the next metacharacter.
- *
- *    Note that this means you cannot use backslash on windows as part of a
- *    glob, i.e.  <code>Dir["c:\\foo*"]</code> will not work, use
- *    <code>Dir["c:/foo*"]</code> instead.
- *
- *  Examples:
- *
- *     Dir["config.?"]                     #=> ["config.h"]
- *     Dir.glob("config.?")                #=> ["config.h"]
- *     Dir.glob("*.[a-z][a-z]")            #=> ["main.rb"]
- *     Dir.glob("*.[^r]*")                 #=> ["config.h"]
- *     Dir.glob("*.{rb,h}")                #=> ["main.rb", "config.h"]
- *     Dir.glob("*")                       #=> ["config.h", "main.rb"]
- *     Dir.glob("*", File::FNM_DOTMATCH)   #=> [".", "..", "config.h", "main.rb"]
- *     Dir.glob(["*.rb", "*.h"])           #=> ["main.rb", "config.h"]
- *
- *     rbfiles = File.join("**", "*.rb")
- *     Dir.glob(rbfiles)                   #=> ["main.rb",
- *                                         #    "lib/song.rb",
- *                                         #    "lib/song/karaoke.rb"]
- *
- *     Dir.glob(rbfiles, base: "lib")      #=> ["song.rb",
- *                                         #    "song/karaoke.rb"]
- *
- *     libdirs = File.join("**", "lib")
- *     Dir.glob(libdirs)                   #=> ["lib"]
- *
- *     librbfiles = File.join("**", "lib", "**", "*.rb")
- *     Dir.glob(librbfiles)                #=> ["lib/song.rb",
- *                                         #    "lib/song/karaoke.rb"]
- *
- *     librbfiles = File.join("**", "lib", "*.rb")
- *     Dir.glob(librbfiles)                #=> ["lib/song.rb"]
- */
 static VALUE
-dir_s_glob(int argc, VALUE *argv, VALUE obj)
+dir_s_glob(rb_execution_context_t *ec, VALUE obj, VALUE str, VALUE rflags, VALUE base, VALUE sort)
 {
-    VALUE str, rflags, ary, opts, base;
-    int flags, sort = 0;
-
-    argc = rb_scan_args(argc, argv, "11:", &str, &rflags, &opts);
-    if (argc == 2)
-	flags = NUM2INT(rflags);
-    else
-	flags = 0;
-    dir_glob_options(opts, &base, &sort, &flags);
-    flags |= sort;
-
-    ary = rb_check_array_type(str);
+    VALUE ary = rb_check_array_type(str);
+    const int flags = NUM2INT(rflags) | dir_glob_option_sort(sort);
+    base = dir_glob_option_base(base);
     if (NIL_P(ary)) {
 	ary = rb_push_glob(str, base, flags);
     }
@@ -3591,7 +3500,6 @@ Init_Dir(void)
     rb_define_singleton_method(rb_cDir,"unlink", dir_s_rmdir, 1);
     rb_define_singleton_method(rb_cDir,"home", dir_s_home, -1);
 
-    rb_define_singleton_method(rb_cDir,"glob", dir_s_glob, -1);
     rb_define_singleton_method(rb_cDir,"[]", dir_s_aref, -1);
     rb_define_singleton_method(rb_cDir,"exist?", rb_file_directory_p, 1);
     rb_define_singleton_method(rb_cDir,"exists?", rb_dir_exists_p, 1);
