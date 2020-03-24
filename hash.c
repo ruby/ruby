@@ -6555,6 +6555,13 @@ env_update(VALUE env, VALUE hash)
  *    h.default = false
  *    h.default # => false
  *
+ *  Incidentally, updating the default value (even to +nil+)
+ *  also sets the default proc to +nil+:
+ *
+ *    h.default_proc = proc { }
+ *    h.default = nil
+ *    h.default_proc # => nil
+ *
  *  When the default proc is +nil+,
  *  method #[] returns the value of method #default:
  *
@@ -6597,17 +6604,19 @@ env_update(VALUE env, VALUE hash)
  *    h.default_proc = proc { |hash, key| "Default value for #{key}" }
  *    h.default_proc.class # => Proc
  *
+ *  Incidentally, updating the default proc (even to +nil+)
+ *  also sets the default value to +nil+:
+ *
+ *    h.default = false
+ *    h.default_proc = nil
+ *    h.default # => nil
+ *
  *  When the default proc is set (i.e., not +nil+)
  *  and method #[] is called with with a non-existent key,
  *  #[] calls the default proc with both the \Hash object itself and the missing key,
  *  then returns the proc's return value:
  *
  *    h = Hash.new { |hash, key| "Default value for #{key}" }
- *    h[:nosuch] # => "Default value for nosuch"
- *
- *  And the default value is ignored:
- *
- *    h.default = false
  *    h[:nosuch] # => "Default value for nosuch"
  *
  *  Note that in the example above no entry for key +:nosuch+ is created:
