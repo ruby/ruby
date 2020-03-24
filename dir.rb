@@ -35,6 +35,14 @@ class Dir
     __builtin_dir_initialize(name, encoding)
   end
 
+  #    Dir[ string [, string ...] [, base: path] [, sort: true] ] -> array
+  #
+  # Equivalent to calling
+  # <code>Dir.glob([</code><i>string,...</i><code>], 0)</code>.
+  def self.[](*args, base: nil, sort: true)
+    __builtin_dir_s_aref(args, base, sort)
+  end
+
   #    Dir.glob( pattern, [flags], [base: path] [, sort: true] )                       -> array
   #    Dir.glob( pattern, [flags], [base: path] [, sort: true] ) { |filename| block }  -> nil
   #

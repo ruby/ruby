@@ -2882,18 +2882,19 @@ rb_push_glob(VALUE str, VALUE base, int flags) /* '\0' is delimiter */
 }
 
 static VALUE
-dir_globs(long argc, const VALUE *argv, VALUE base, int flags)
+dir_globs(VALUE args, VALUE base, int flags)
 {
     VALUE ary = rb_ary_new();
     long i;
 
-    for (i = 0; i < argc; ++i) {
+    for (i = 0; i < RARRAY_LEN(args); ++i) {
 	int status;
-	VALUE str = argv[i];
+	VALUE str = RARRAY_AREF(args, i);
 	FilePathValue(str);
 	status = push_glob(ary, str, base, flags);
 	if (status) GLOB_JUMP_TAG(status);
     }
+    RB_GC_GUARD(args);
 
     return ary;
 }
@@ -2920,41 +2921,15 @@ dir_glob_option_sort(VALUE sort)
     return (sort ? 0 : FNM_GLOB_NOSORT);
 }
 
-static void
-dir_glob_options(VALUE opt, VALUE *base, int *sort, int *flags)
-{
-    static ID kw[3];
-    VALUE args[3];
-    if (!kw[0]) {
-        kw[0] = rb_intern_const("base");
-        kw[1] = rb_intern_const("sort");
-        kw[2] = rb_intern_const("flags");
-    }
-    rb_get_kwargs(opt, kw, 0, flags ? 3 : 2, args);
-    *base = dir_glob_option_base(args[0]);
-    if (sort && args[1] == Qfalse) *sort |= FNM_GLOB_NOSORT;
-    if (flags && args[2] != Qundef) *flags = NUM2INT(args[2]);
-}
-
-/*
- *  call-seq:
- *     Dir[ string [, string ...] [, base: path] [, sort: true] ] -> array
- *
- *  Equivalent to calling
- *  <code>Dir.glob([</code><i>string,...</i><code>], 0)</code>.
- *
- */
 static VALUE
-dir_s_aref(int argc, VALUE *argv, VALUE obj)
+dir_s_aref(rb_execution_context_t *ec, VALUE obj, VALUE args, VALUE base, VALUE sort)
 {
-    VALUE opts, base;
-    int sort = 0;
-    argc = rb_scan_args(argc, argv, "*:", NULL, &opts);
-    dir_glob_options(opts, &base, &sort, NULL);
-    if (argc == 1) {
-	return rb_push_glob(argv[0], base, sort);
+    const int flags = dir_glob_option_sort(sort);
+    base = dir_glob_option_base(base);
+    if (RARRAY_LEN(args) == 1) {
+	return rb_push_glob(RARRAY_AREF(args, 0), base, flags);
     }
-    return dir_globs(argc, argv, base, sort);
+    return dir_globs(args, base, flags);
 }
 
 static VALUE
@@ -2967,9 +2942,7 @@ dir_s_glob(rb_execution_context_t *ec, VALUE obj, VALUE str, VALUE rflags, VALUE
 	ary = rb_push_glob(str, base, flags);
     }
     else {
-        VALUE v = rb_ary_replace(rb_ary_tmp_new(0), ary);
-	ary = dir_globs(RARRAY_LEN(v), RARRAY_CONST_PTR(v), base, flags);
-	RB_GC_GUARD(v);
+        ary = dir_globs(ary, base, flags);
     }
 
     if (rb_block_given_p()) {
@@ -3500,7 +3473,6 @@ Init_Dir(void)
     rb_define_singleton_method(rb_cDir,"unlink", dir_s_rmdir, 1);
     rb_define_singleton_method(rb_cDir,"home", dir_s_home, -1);
 
-    rb_define_singleton_method(rb_cDir,"[]", dir_s_aref, -1);
     rb_define_singleton_method(rb_cDir,"exist?", rb_file_directory_p, 1);
     rb_define_singleton_method(rb_cDir,"exists?", rb_dir_exists_p, 1);
     rb_define_singleton_method(rb_cDir,"empty?", rb_dir_s_empty_p, 1);
