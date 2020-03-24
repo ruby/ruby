@@ -69,8 +69,9 @@ class TestGemSourceGit < Gem::TestCase
     git_gem 'b'
 
     Dir.chdir 'git/a' do
-      Gem::Util.silent_system @git, 'submodule', '--quiet',
-                              'add', File.expand_path('../b'), 'b'
+      output, status = Open3.capture2e(@git, 'submodule', '--quiet', 'add', File.expand_path('../b'), 'b')
+      assert status.success?, output
+
       system @git, 'commit', '--quiet', '-m', 'add submodule b'
     end
 
