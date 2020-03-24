@@ -80,6 +80,7 @@ class TestGemBundlerVersionFinder < Gem::TestCase
 
   def test_deleted_directory
     skip "Cannot perform this test on windows" if win_platform?
+    skip "Cannot perform this test on Solaris" if /solaris/ =~ RUBY_PLATFORM
     require "tmpdir"
 
     orig_dir = Dir.pwd
