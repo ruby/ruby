@@ -1,6 +1,6 @@
 ---
 version: '{build}'
-shallow_clone: true
+clone_depth: 10
 platform:
   - x64
 environment:
