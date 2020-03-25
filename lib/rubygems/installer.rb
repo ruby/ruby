@@ -509,7 +509,7 @@ class Gem::Installer
   end
 
   def generate_plugins # :nodoc:
-    latest = Gem::Specification.latest_spec_for(spec.name)
+    latest = Gem::Installer.install_lock.synchronize { Gem::Specification.latest_spec_for(spec.name) }
     return if latest && latest.version > spec.version
 
     ensure_writable_dir @plugins_dir
