@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name = "racc"
-  s.version = "1.4.16"
+  s.version = "1.5.0"
   s.summary = "Racc is a LALR(1) parser generator"
   s.description = <<DESC
 Racc is a LALR(1) parser generator.
@@ -18,7 +18,7 @@ DESC
   s.licenses = ["MIT"]
   s.executables = ["racc"]
   s.files = [
-    "COPYING", "ChangeLog", "DEPENDS",
+    "COPYING", "ChangeLog",
     "README.ja.rdoc", "README.rdoc", "Rakefile", "TODO", "bin/racc",
     "ext/racc/MANIFEST",
     "ext/racc/com/headius/racc/Cparse.java", "ext/racc/cparse/cparse.c",
@@ -99,9 +99,4 @@ DESC
   else
     s.extensions = ["ext/racc/cparse/extconf.rb"]
   end
-
-  s.add_development_dependency("rake-compiler", [">= 0.4.1"])
-  s.add_development_dependency("minitest", ["~> 4.7"])
-  s.add_development_dependency("rdoc", [">= 4.0", "< 7"])
-  s.add_development_dependency("hoe", ["~> 3.18"])
 end
