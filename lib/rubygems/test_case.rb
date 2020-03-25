@@ -803,6 +803,7 @@ class Gem::TestCase < Minitest::Test
 
     lib_dir = File.join(@tempdir, "default_gems", "lib")
     lib_dir.instance_variable_set(:@gem_prelude_index, lib_dir)
+    Gem.instance_variable_set(:@default_gem_load_paths, [*Gem.instance_variable_get(:@default_gem_load_paths), lib_dir])
     $LOAD_PATH.unshift(lib_dir)
     files.each do |file|
       rb_path = File.join(lib_dir, file)
