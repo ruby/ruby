@@ -109,4 +109,23 @@
 # define UNALIGNED_WORD_ACCESS 0
 #endif
 
+/* Detection of __VA_OPT__ */
+#if ! defined(HAVE_VA_ARGS_MACRO)
+# undef HAVE___VA_OPT__
+
+#else
+# /* Idea taken from: https://stackoverflow.com/a/48045656 */
+# define RUBY3_TEST3(q, w, e, ...) e
+# define RUBY3_TEST2(...)          RUBY3_TEST3(__VA_OPT__(,),1,0,0)
+# define RUBY3_TEST1()             RUBY3_TEST2("ruby")
+# if RUBY3_TEST1()
+#  define HAVE___VA_OPT__
+# else
+#  undef HAVE___VA_OPT__
+# endif
+# undef RUBY3_TEST1
+# undef RUBY3_TEST2
+# undef RUBY3_TEST3
+#endif /* HAVE_VA_ARGS_MACRO */
+
 #endif /* RUBY3_CONFIG_H */

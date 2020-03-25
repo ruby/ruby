@@ -35,6 +35,7 @@
 #include "ruby/3/gc.h"
 #include "ruby/3/glob.h"
 #include "ruby/3/globals.h"
+#include "ruby/3/has/warning.h"
 #include "ruby/3/interpreter.h"
 #include "ruby/3/iterator.h"
 #include "ruby/3/memory.h"
@@ -116,7 +117,9 @@ int ruby_native_thread_p(void);
 PRINTF_ARGS(int ruby_snprintf(char *str, size_t n, char const *fmt, ...), 3, 4);
 int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 
-#if defined(__GNUC__) && defined(HAVE_VA_ARGS_MACRO) && defined(__OPTIMIZE__)
+#if RUBY3_HAS_WARNING("-Wgnu-zero-variadic-macro-arguments")
+# /* Skip it; clang -pedantic doesn't like the following */
+#elif defined(__GNUC__) && defined(HAVE_VA_ARGS_MACRO) && defined(__OPTIMIZE__)
 # define rb_yield_values(argc, ...) \
 __extension__({ \
 	const int rb_yield_values_argc = (argc); \

@@ -65,7 +65,28 @@ rb_scan_args_keyword_p(int kw_flag, VALUE last)
     return 0;
 }
 
-#if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P) && defined(HAVE_VA_ARGS_MACRO) && defined(__OPTIMIZE__)
+#if ! defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
+# /* skip */
+#elif ! defined(HAVE_VA_ARGS_MACRO)
+# /* skip */
+#elif ! defined(__OPTIMIZE__)
+# /* skip */
+#elif defined(HAVE___VA_OPT__)
+# define RUBY3_STATIC_SCAN_ARGS
+# define rb_scan_args(argc,argvp,fmt,...)            \
+    __builtin_choose_expr(__builtin_constant_p(fmt), \
+        rb_scan_args0(argc,argvp,fmt,\
+                      (sizeof((VALUE*[]){__VA_ARGS__})/sizeof(VALUE*)), \
+                      ((VALUE*[]){__VA_ARGS__})), \
+        rb_scan_args(argc,argvp,fmt __VA_OPT__(, __VA_ARGS__)))
+# define rb_scan_args_kw(kw_flag,argc,argvp,fmt,...) \
+    __builtin_choose_expr(__builtin_constant_p(fmt), \
+        rb_scan_args_kw0(kw_flag,argc,argvp,fmt,        \
+                      (sizeof((VALUE*[]){__VA_ARGS__})/sizeof(VALUE*)), \
+                      ((VALUE*[]){__VA_ARGS__})), \
+        rb_scan_args_kw(kw_flag,argc,argvp,fmt __VA_OPT__(, __VA_ARGS__)))
+#elif defined(__GUNC__)
+# define RUBY3_STATIC_SCAN_ARGS
 # define rb_scan_args(argc,argvp,fmt,...)            \
     __builtin_choose_expr(__builtin_constant_p(fmt), \
         rb_scan_args0(argc,argvp,fmt,\
@@ -78,6 +99,9 @@ rb_scan_args_keyword_p(int kw_flag, VALUE last)
                       (sizeof((VALUE*[]){__VA_ARGS__})/sizeof(VALUE*)), \
                       ((VALUE*[]){__VA_ARGS__})), \
         rb_scan_args_kw(kw_flag,argc,argvp,fmt,##__VA_ARGS__))
+#endif
+
+#if defined(RUBY3_STATIC_SCAN_ARGS)
 # if HAVE_ATTRIBUTE_ERRORFUNC
 ERRORFUNC(("bad scan arg format"), void rb_scan_args_bad_format(const char*));
 ERRORFUNC(("variable argument length doesn't match"), void rb_scan_args_length_mismatch(const char*,int));

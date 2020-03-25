@@ -1350,10 +1350,13 @@ AS_IF([test "$rb_cv_stdarg" = yes], [
   AC_DEFINE(HAVE_STDARG_PROTOTYPES)
 ])
 
+# __VA_ARGS__ is also tested in AC_PROG_CC_C99 since autoconf 2.60a (around
+# 2006). The check below is redundant and should always success.  Remain not
+# deleted for backward compat.
 AC_CACHE_CHECK(for variable length macro, rb_cv_va_args_macro,
   [AC_TRY_COMPILE([
-int foo(int x, ...);
-@%:@define FOO(a, ...) foo(a, @%:@@%:@__VA_ARGS__)
+int foo(const char*);
+@%:@define FOO(...) foo(@%:@__VA_ARGS__)
 ], [FOO(1);FOO(1,2);FOO(1,2,3);],
   rb_cv_va_args_macro=yes,
   rb_cv_va_args_macro=no)])
