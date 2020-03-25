@@ -300,6 +300,24 @@ class TestGemRequire < Gem::TestCase
     $LOAD_PATH.replace lp if load_path_changed
   end
 
+  def test_activate_via_require_respects_loaded_default_from_default_gems
+    a1 = new_default_spec "a", "1", nil, "a.rb"
+
+    # simulate requiring a default gem before rubygems is loaded
+    Kernel.send(:gem_original_require, "a")
+
+    # simulate registering default specs on loading rubygems
+    install_default_gems a1
+
+    a2 = util_spec "a", "2", nil, "lib/a.rb"
+
+    install_specs a2
+
+    refute_require 'a'
+
+    assert_equal %w[a-1], loaded_spec_names
+  end
+
   def test_already_activated_direct_conflict
     a1 = util_spec "a", "1", { "b" => "> 0" }
     b1 = util_spec "b", "1", { "c" => ">= 1" }, "lib/ib.rb"
