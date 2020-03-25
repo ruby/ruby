@@ -6593,7 +6593,7 @@ env_update(VALUE env, VALUE hash)
  *    h = Hash.new
  *    h.default_proc # => nil
  *
- *  You can initialize the default proc by by calling Hash.new with a block:
+ *  You can initialize the default proc by calling Hash.new with a block:
  *
  *    h = Hash.new { |hash, key| "Default value for #{key}" }
  *    h.default_proc.class # => Proc
