@@ -268,7 +268,7 @@ print <<EOS if $unicode_emoji_version
   CONFIG["UNICODE_EMOJI_VERSION"] = #{$unicode_emoji_version.dump}
 EOS
 print <<EOS if /darwin/ =~ arch
-  CONFIG["SDKROOT"] = ENV["SDKROOT"] || "" # don't run xcrun every time, usually useless.
+  CONFIG["SDKROOT"] = "\#{ENV['SDKROOT']}" # don't run xcrun every time, usually useless.
 EOS
 print <<EOS
   CONFIG["archdir"] = "$(rubyarchdir)"

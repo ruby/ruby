@@ -51,4 +51,13 @@ class TestRbConfig < Test::Unit::TestCase
       assert_match(/\$\(sitearch|\$\(rubysitearchprefix\)/, val, "#{key} #{bug7823}")
     end
   end
+
+  if /darwin/ =~ RUBY_PLATFORM
+    def test_sdkroot
+      assert_separately([{"SDKROOT" => "$(prefix)/SDKRoot"}], "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        assert_equal RbConfig::CONFIG["prefix"]+"/SDKRoot", RbConfig::CONFIG["SDKROOT"]
+      end;
+    end
+  end
 end
