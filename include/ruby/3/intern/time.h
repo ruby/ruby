@@ -26,14 +26,13 @@
 # include <time.h>              /* for time_t */
 #endif
 
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>          /* for struct timespec, struct timeval */
-#endif
-
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
+
+struct timespec;
+struct timeval;
 
 /* time.c */
 void rb_timespec_now(struct timespec *);
