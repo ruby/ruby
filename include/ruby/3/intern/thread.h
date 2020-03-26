@@ -22,14 +22,13 @@
 #define  RUBY3_INTERN_THREAD_H
 #include "ruby/3/config.h"
 
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>          /* for struct timeval */
-#endif
-
+#include "ruby/3/cast.h"
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
+
+struct timeval;
 
 /* thread.c */
 void rb_thread_schedule(void);
@@ -63,8 +62,8 @@ typedef VALUE rb_blocking_function_t(void *);
 void rb_thread_check_ints(void);
 int rb_thread_interrupted(VALUE thval);
 
-#define RUBY_UBF_IO ((rb_unblock_function_t *)-1)
-#define RUBY_UBF_PROCESS ((rb_unblock_function_t *)-1)
+#define RUBY_UBF_IO RUBY3_CAST((rb_unblock_function_t *)-1)
+#define RUBY_UBF_PROCESS RUBY3_CAST((rb_unblock_function_t *)-1)
 VALUE rb_mutex_new(void);
 VALUE rb_mutex_locked_p(VALUE mutex);
 VALUE rb_mutex_trylock(VALUE mutex);
