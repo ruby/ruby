@@ -554,7 +554,8 @@ module IRB
 
     def handle_exception(exc)
       if exc.backtrace && exc.backtrace[0] =~ /\/irb(2)?(\/.*|-.*|\.rb)?:/ && exc.class.to_s !~ /^IRB/ &&
-         !(SyntaxError === exc)
+         !(SyntaxError === exc) && !(EncodingError === exc)
+        # The backtrace of invalid encoding hash (ex. {"\xAE": 1}) raises EncodingError without lineno.
         irb_bug = true
       else
         irb_bug = false
