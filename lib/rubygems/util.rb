@@ -3,9 +3,6 @@
 # This module contains various utility methods as module methods.
 
 module Gem::Util
-
-  @silent_mutex = nil
-
   ##
   # Zlib::GzipReader wrapper that unzips +data+.
 
