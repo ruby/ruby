@@ -735,6 +735,8 @@ class FTPTest < Test::Unit::TestCase
   end
 
   def test_getbinaryfile
+    # http://ci.rvm.jp/logfiles/brlog.trunk-mjit-wait.20200326-025942
+    skip 'This has been too unstable with --jit-wait' if RubyVM::MJIT.enabled?
     commands = []
     binary_data = (0..0xff).map {|i| i.chr}.join * 4 * 3
     server = create_ftp_server { |sock|
