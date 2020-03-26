@@ -722,9 +722,9 @@ enumerator_with_object_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, memo))
  *     puts "#{string}: #{x}"
  *   end
  *
- *   # => foo:0
- *   # => foo:1
- *   # => foo:2
+ *   # => foo: 0
+ *   # => foo: 1
+ *   # => foo: 2
  */
 static VALUE
 enumerator_with_object(VALUE obj, VALUE memo)
