@@ -1175,15 +1175,16 @@ exc_inspect(VALUE exc)
 
     klass = CLASS_OF(exc);
     exc = rb_obj_as_string(exc);
-    if (RSTRING_LEN(exc) == 0) {
-        return rb_class_name(klass);
-    }
 
     str = rb_str_buf_new2("#<");
     klass = rb_class_name(klass);
     rb_str_buf_append(str, klass);
-    rb_str_buf_cat(str, ": ", 2);
-    rb_str_buf_append(str, exc);
+
+    if (RSTRING_LEN(exc) != 0) {
+        rb_str_buf_cat(str, ": ", 2);
+        rb_str_buf_append(str, exc);
+    }
+
     rb_str_buf_cat(str, ">", 1);
 
     return str;
