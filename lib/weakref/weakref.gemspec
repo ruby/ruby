@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.authors = ["Yukihiro Matsumoto"]
   spec.email = ["matz@ruby-lang.org"]
 
-  spec.summary       = %q{TODO: Write a short summary, because RubyGems requires one.}
-  spec.description   = %q{TODO: Write a longer description or delete this line.}
+  spec.summary       = %q{Allows a referenced object to be garbage-collected.}
+  spec.description   = %q{Allows a referenced object to be garbage-collected.}
   spec.homepage      = "https://github.com/ruby/weakref"
 
   spec.metadata["homepage_uri"] = spec.homepage
