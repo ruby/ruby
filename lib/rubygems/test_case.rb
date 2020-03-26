@@ -844,9 +844,7 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
     end
 
     if deps
-      # Since Hash#each is unordered in 1.8, sort the keys and iterate that
-      # way so the tests are deterministic on all implementations.
-      deps.keys.sort.each do |n|
+      deps.keys.each do |n|
         spec.add_dependency n, (deps[n] || '>= 0')
       end
     end
@@ -873,10 +871,7 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
   def util_gem(name, version, deps = nil, &block)
     if deps
       block = proc do |s|
-        # Since Hash#each is unordered in 1.8, sort
-        # the keys and iterate that way so the tests are
-        # deterministic on all implementations.
-        deps.keys.sort.each do |n|
+        deps.keys.each do |n|
           s.add_dependency n, (deps[n] || '>= 0')
         end
       end

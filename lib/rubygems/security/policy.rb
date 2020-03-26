@@ -139,7 +139,7 @@ class Gem::Security::Policy
     raise Gem::Security::Exception,
           "root certificate #{root.subject} is not self-signed " +
           "(issuer #{root.issuer})" if
-      root.issuer.to_s != root.subject.to_s # HACK to_s is for ruby 1.8
+      root.issuer != root.subject
 
     check_cert root, root, time
   end
