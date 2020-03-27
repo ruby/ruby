@@ -20,17 +20,21 @@
  */
 #ifndef  RUBY3_INTERN_SPRINTF_H
 #define  RUBY3_INTERN_SPRINTF_H
+#include "ruby/3/attr/format.h"
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
-#include "ruby/backward/2/attributes.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 
 /* sprintf.c */
 VALUE rb_f_sprintf(int, const VALUE*);
-PRINTF_ARGS(VALUE rb_sprintf(const char*, ...), 1, 2);
+
+RUBY3_ATTR_FORMAT(RUBY3_PRINTF_FORMAT, 1, 2)
+VALUE rb_sprintf(const char*, ...);
 VALUE rb_vsprintf(const char*, va_list);
-PRINTF_ARGS(VALUE rb_str_catf(VALUE, const char*, ...), 2, 3);
+
+RUBY3_ATTR_FORMAT(RUBY3_PRINTF_FORMAT, 2, 3)
+VALUE rb_str_catf(VALUE, const char*, ...);
 VALUE rb_str_vcatf(VALUE, const char*, va_list);
 VALUE rb_str_format(int, const VALUE *, VALUE);
 

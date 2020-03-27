@@ -20,10 +20,10 @@
  */
 #ifndef  RUBY3_INTERN_PROCESS_H
 #define  RUBY3_INTERN_PROCESS_H
+#include "ruby/3/attr/noreturn.h"
 #include "ruby/3/config.h"      /* rb_pid_t is defined here. */
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
-#include "ruby/backward/2/attributes.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 
@@ -31,7 +31,9 @@ RUBY3_SYMBOL_EXPORT_BEGIN()
 void rb_last_status_set(int status, rb_pid_t pid);
 VALUE rb_last_status_get(void);
 int rb_proc_exec(const char*);
-NORETURN(VALUE rb_f_exec(int, const VALUE*));
+
+RUBY3_ATTR_NORETURN()
+VALUE rb_f_exec(int, const VALUE*);
 rb_pid_t rb_waitpid(rb_pid_t pid, int *status, int flags);
 void rb_syswait(rb_pid_t pid);
 rb_pid_t rb_spawn(int, const VALUE*);

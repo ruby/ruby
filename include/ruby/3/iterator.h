@@ -20,9 +20,9 @@
  */
 #ifndef  RUBY3_ITERATOR_H
 #define  RUBY3_ITERATOR_H
+#include "ruby/3/attr/noreturn.h"
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
-#include "ruby/backward/2/attributes.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 
@@ -53,8 +53,12 @@ VALUE rb_vrescue2(VALUE(*)(VALUE),VALUE,VALUE(*)(VALUE,VALUE),VALUE,va_list);
 VALUE rb_ensure(VALUE(*)(VALUE),VALUE,VALUE(*)(VALUE),VALUE);
 VALUE rb_catch(const char*,rb_block_call_func_t,VALUE);
 VALUE rb_catch_obj(VALUE,rb_block_call_func_t,VALUE);
-NORETURN(void rb_throw(const char*,VALUE));
-NORETURN(void rb_throw_obj(VALUE,VALUE));
+
+RUBY3_ATTR_NORETURN()
+void rb_throw(const char*,VALUE);
+
+RUBY3_ATTR_NORETURN()
+void rb_throw_obj(VALUE,VALUE);
 
 RUBY3_SYMBOL_EXPORT_END()
 
