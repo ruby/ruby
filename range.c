@@ -1001,7 +1001,7 @@ first_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, cbarg))
     }
     rb_ary_push(ary[1], i);
     n--;
-    ary[0] = INT2NUM(n);
+    ary[0] = LONG2NUM(n);
     return Qnil;
 }
 

@@ -3018,18 +3018,19 @@ static VALUE
 bignew_1(VALUE klass, size_t len, int sign)
 {
     NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0));
-    BIGNUM_SET_SIGN((VALUE)big, sign);
+    VALUE bigv = (VALUE)big;
+    BIGNUM_SET_SIGN(bigv, sign);
     if (len <= BIGNUM_EMBED_LEN_MAX) {
-        FL_SET_RAW(big, BIGNUM_EMBED_FLAG);
-	BIGNUM_SET_LEN((VALUE)big, len);
-        (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)RBIGNUM(big)->as.ary, sizeof(RBIGNUM(big)->as.ary));
+        FL_SET_RAW(bigv, BIGNUM_EMBED_FLAG);
+        BIGNUM_SET_LEN(bigv, len);
+        (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)big->as.ary, sizeof(big->as.ary));
     }
     else {
-	RBIGNUM(big)->as.heap.digits = ALLOC_N(BDIGIT, len);
-	RBIGNUM(big)->as.heap.len = len;
+        big->as.heap.digits = ALLOC_N(BDIGIT, len);
+        big->as.heap.len = len;
     }
-    OBJ_FREEZE(big);
-    return (VALUE)big;
+    OBJ_FREEZE(bigv);
+    return bigv;
 }
 
 VALUE
@@ -6278,7 +6279,7 @@ rb_big_pow(VALUE x, VALUE y)
 	yy = FIX2LONG(y);
 
         if (yy < 0) {
-            x = rb_big_pow(x, INT2NUM(-yy));
+            x = rb_big_pow(x, LONG2NUM(-yy));
             if (RB_INTEGER_TYPE_P(x))
                 return rb_rational_raw(INT2FIX(1), x);
             else

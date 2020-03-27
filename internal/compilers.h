@@ -71,7 +71,7 @@
 __extension__({ \
     VALUE arg_obj = (obj); \
     RB_SPECIAL_CONST_P(arg_obj) ? -1 : \
-        RB_BUILTIN_TYPE(arg_obj); \
+        (int)RB_BUILTIN_TYPE(arg_obj);    \
     })
 #else
 # include "ruby/ruby.h"
@@ -79,7 +79,7 @@ static inline int
 rb_obj_builtin_type(VALUE obj)
 {
     return RB_SPECIAL_CONST_P(obj) ? -1 :
-        RB_BUILTIN_TYPE(obj);
+        (int)RB_BUILTIN_TYPE(obj);
 }
 #endif
 

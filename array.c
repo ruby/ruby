@@ -868,25 +868,26 @@ ary_make_shared(VALUE ary)
 	long capa = ARY_CAPA(ary), len = RARRAY_LEN(ary);
         const VALUE *ptr;
 	NEWOBJ_OF(shared, struct RArray, 0, T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0));
+        VALUE vshared = (VALUE)shared;
 
         rb_ary_transient_heap_evacuate(ary, TRUE);
         ptr = ARY_HEAP_PTR(ary);
 
-        FL_UNSET_EMBED(shared);
-	ARY_SET_LEN((VALUE)shared, capa);
-        ARY_SET_PTR((VALUE)shared, ptr);
-        ary_mem_clear((VALUE)shared, len, capa - len);
-	FL_SET_SHARED_ROOT(shared);
-        ARY_SET_SHARED_ROOT_REFCNT((VALUE)shared, 1);
+        FL_UNSET_EMBED(vshared);
+        ARY_SET_LEN(vshared, capa);
+        ARY_SET_PTR(vshared, ptr);
+        ary_mem_clear(vshared, len, capa - len);
+        FL_SET_SHARED_ROOT(vshared);
+        ARY_SET_SHARED_ROOT_REFCNT(vshared, 1);
 	FL_SET_SHARED(ary);
         RB_DEBUG_COUNTER_INC(obj_ary_shared_create);
-	ARY_SET_SHARED(ary, (VALUE)shared);
-	OBJ_FREEZE(shared);
+        ARY_SET_SHARED(ary, vshared);
+        OBJ_FREEZE(vshared);
 
-        ary_verify((VALUE)shared);
+        ary_verify(vshared);
         ary_verify(ary);
 
-        return (VALUE)shared;
+        return vshared;
     }
 }
 
