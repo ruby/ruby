@@ -46,12 +46,12 @@ class TestGemSourceSpecificFile < Gem::TestCase
     installed = Gem::Source::Installed.new
     local     = Gem::Source::Local.new
 
-    assert_equal(0, specific. <=>(specific),  'specific  <=> specific')
+    assert_equal(0, specific.<=>(specific),  'specific  <=> specific')
 
-    assert_equal(-1, remote.   <=>(specific),  'remote    <=> specific')
-    assert_equal(1, specific. <=>(remote),    'specific  <=> remote')
+    assert_equal(-1, remote.<=>(specific),  'remote    <=> specific')
+    assert_equal(1, specific.<=>(remote),    'specific  <=> remote')
 
-    assert_equal(-1, specific. <=>(local),     'specific  <=> local')
+    assert_equal(-1, specific.<=>(local),     'specific  <=> local')
     assert_equal(1, local.    <=>(specific),  'local     <=> specific')
 
     assert_equal(-1, specific. <=>(installed), 'specific  <=> installed')
