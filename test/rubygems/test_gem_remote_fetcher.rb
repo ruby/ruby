@@ -108,10 +108,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     @server_uri = base_server_uri + "/yaml"
     @server_z_uri = base_server_uri + "/yaml.Z"
 
-    # REFACTOR: copied from test_gem_dependency_installer.rb
-    @gems_dir = File.join @tempdir, 'gems'
     @cache_dir = File.join @gemhome, "cache"
-    FileUtils.mkdir @gems_dir
 
     # TODO: why does the remote fetcher need it written to disk?
     @a1, @a1_gem = util_gem 'a', '1' do |s|
