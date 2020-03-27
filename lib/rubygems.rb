@@ -555,7 +555,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   #
   #   % irb
   #   >> Gem.install "minitest"
-  #   Fetching: minitest-3.0.1.gem (100%)
+  #   Fetching: minitest-5.14.0.gem (100%)
   #   => [#<Gem::Specification:0x1013b4528 @name="minitest", ...>]
 
   def self.install(name, version = Gem::Requirement.default, *options)
