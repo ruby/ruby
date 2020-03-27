@@ -22,6 +22,7 @@
 #define  RUBY3_VARIABLE_H
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
+#include "ruby/3/attr/noreturn.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 
@@ -41,7 +42,8 @@ rb_gvar_getter_t rb_gvar_var_getter;
 rb_gvar_setter_t rb_gvar_var_setter;
 rb_gvar_marker_t rb_gvar_var_marker;
 
-NORETURN(rb_gvar_setter_t rb_gvar_readonly_setter);
+RUBY3_ATTR_NORETURN()
+rb_gvar_setter_t rb_gvar_readonly_setter;
 
 void rb_define_variable(const char*,VALUE*);
 void rb_define_virtual_variable(const char*,rb_gvar_getter_t*,rb_gvar_setter_t*);
