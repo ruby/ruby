@@ -17,36 +17,71 @@
  *             We assume C99  for ruby itself but we don't  assume languages of
  *             extension libraries. They could be written in C++98.
  * @brief      Public APIs to provide ::rb_fd_select().
- * @note       Functions  and  structs defined  in  this  header file  are  not
- *             necessarily ruby-specific.  They don't need ::VALUE etc.
  */
-#ifndef  RUBY3_INTERN_SELECT_H
-#define  RUBY3_INTERN_SELECT_H
+#ifndef  RUBY3_INTERN_SELECT_POSIX_H
+#define  RUBY3_INTERN_SELECT_POSIX_H
 #include "ruby/3/config.h"
 
 #ifdef HAVE_SYS_TYPES_H
 # include <sys/types.h>         /* for NFDBITS (BSD Net/2) */
 #endif
 
-#include "ruby/3/dllexport.h"
-
-/* thread.c */
-#if defined(NFDBITS) && defined(HAVE_RB_FD_INIT)
-# include "ruby/3/intern/select/largesize.h"
-#elif defined(_WIN32)
-# include "ruby/3/intern/select/win32.h"
-# define rb_fd_resize(n, f) ((void)(f))
-#else
-# include "ruby/3/intern/select/posix.h"
-# define rb_fd_resize(n, f) ((void)(f))
+#ifdef HAVE_SYS_SELECT_H
+# include <sys/select.h>        /* for select(2) (modern POSIX) */
 #endif
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>            /* for select(2) (archaic UNIX) */
+#endif
 
-struct timeval;
+#include "ruby/3/attr/nonnull.h"
+#include "ruby/3/attr/pure.h"
+#include "ruby/3/attr/const.h"
 
-int rb_thread_fd_select(int, rb_fdset_t *, rb_fdset_t *, rb_fdset_t *, struct timeval *);
+typedef fd_set rb_fdset_t;
 
-RUBY3_SYMBOL_EXPORT_END()
+#define rb_fd_zero   FD_ZERO
+#define rb_fd_set    FD_SET
+#define rb_fd_clr    FD_CLR
+#define rb_fd_isset  FD_ISSET
+#define rb_fd_init   FD_ZERO
+#define rb_fd_select select
+/**@cond INTERNAL_MACRO */
+#define rb_fd_copy  rb_fd_copy
+#define rb_fd_dup   rb_fd_dup
+#define rb_fd_ptr   rb_fd_ptr
+#define rb_fd_max   rb_fd_max
+/** @endcond */
 
-#endif /* RUBY3_INTERN_SELECT_H */
+static inline void
+rb_fd_copy(rb_fdset_t *dst, const fd_set *src, int n)
+{
+    *dst = *src;
+}
+
+static inline void
+rb_fd_dup(rb_fdset_t *dst, const fd_set *src, int n)
+{
+    *dst = *src;
+}
+
+RUBY3_ATTR_PURE()
+/* :TODO: can this function be __attribute__((returns_nonnull)) or not? */
+static inline fd_set *
+rb_fd_ptr(rb_fdset_t *f)
+{
+    return f;
+}
+
+RUBY3_ATTR_CONST()
+static inline int
+rb_fd_max(const rb_fdset_t *f)
+{
+    return FD_SETSIZE;
+}
+
+/* :FIXME: What are these?  They don't exist for shibling implementations. */
+#define rb_fd_init_copy(d, s) (*(d) = *(s))
+#define rb_fd_term(f)   ((void)(f))
+
+#endif /* RUBY3_INTERN_SELECT_POSIX_H */
