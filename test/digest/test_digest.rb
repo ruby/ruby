@@ -247,10 +247,10 @@ module TestDigest
     end
 
     def test_race
-      assert_separately(['-rdigest', "-I#{File.dirname(__FILE__)}"], <<-'end;')
+      assert_separately(['-rdigest', "-I#{File.dirname(__FILE__)}"], <<-"end;")
         assert_nothing_raised {
           t = Thread.start {
-            sleep 0.1
+            sleep #{ EnvUtil.apply_timeout_scale(0.1) }
             Digest(:Foo).new
           }
           Digest(:Foo).new
@@ -260,10 +260,10 @@ module TestDigest
     end
 
     def test_race_mixed
-      assert_separately(['-rdigest', "-I#{File.dirname(__FILE__)}"], <<-'end;')
+      assert_separately(['-rdigest', "-I#{File.dirname(__FILE__)}"], <<-"end;")
         assert_nothing_raised {
           t = Thread.start {
-            sleep 0.1
+            sleep #{ EnvUtil.apply_timeout_scale(0.1) }
             Thread.current.report_on_exception = false
             Digest::Foo.new
           }
