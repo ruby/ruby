@@ -34,5 +34,35 @@ describe :enumerable_collect, shared: true do
     enum.each { |i| -i }.should == [-2, -5, -3, -6, -1, -4]
   end
 
+  it "reports the same arity as the given block" do
+    entries = [0, 1, 3, 4, 5, 6]
+    numerous = EnumerableSpecs::Numerous.new(*entries)
+
+    def numerous.each(&block)
+      ScratchPad << block.arity
+      super
+    end
+
+    numerous.send(@method) { |a, b| a % 2 }.should == [0, 1, 1, 0, 1, 0]
+    ScratchPad.recorded.should == [2]
+    ScratchPad.clear
+    ScratchPad.record []
+    numerous.send(@method) { |i| i }.should == entries
+    ScratchPad.recorded.should == [1]
+  end
+
+  it "yields 2 arguments for a Hash" do
+    c = Class.new do
+      def register(a, b)
+        ScratchPad << [a, b]
+      end
+    end
+    m = c.new.method(:register)
+
+    ScratchPad.record []
+    { 1 => 'a', 2 => 'b' }.map(&m)
+    ScratchPad.recorded.should == [[1, 'a'], [2, 'b']]
+  end
+
   it_should_behave_like :enumerable_enumeratorized_with_origin_size
 end

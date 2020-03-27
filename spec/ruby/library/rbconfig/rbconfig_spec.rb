@@ -28,12 +28,25 @@ describe 'RbConfig::CONFIG' do
     ruby_exe(<<-RUBY, options: '--enable-frozen-string-literal').should == "Done\n"
       require 'rbconfig'
       RbConfig::CONFIG.each do |k, v|
-        if v.frozen?
+        # SDKROOT excluded here to workaround the issue: https://bugs.ruby-lang.org/issues/16738
+        if v.frozen? && k != 'SDKROOT'
           puts "\#{k} Failure"
         end
       end
       puts 'Done'
     RUBY
+  end
+
+  platform_is_not :windows do
+    it "libdir/LIBRUBY_SO is the path to libruby and it exists if and only if ENABLE_SHARED" do
+      if RbConfig::CONFIG['ENABLE_SHARED'] == 'yes'
+        libdir = RbConfig::CONFIG['libdir']
+        File.should.exist?("#{libdir}/#{RbConfig::CONFIG['LIBRUBY_SO']}")
+      elsif RbConfig::CONFIG['ENABLE_SHARED'] == 'no'
+        libdir = RbConfig::CONFIG['libdir']
+        File.should_not.exist?("#{libdir}/#{RbConfig::CONFIG['LIBRUBY_SO']}")
+      end
+    end
   end
 end
 

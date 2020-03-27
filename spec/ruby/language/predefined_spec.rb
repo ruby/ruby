@@ -399,15 +399,18 @@ describe "Predefined global $!" do
     end
 
     it "should be cleared when an exception is rescued even when a non-local return from block" do
-      [ 1 ].each do
-        begin
-          raise StandardError.new('err')
-        rescue => e
-          $!.should == e
-          return
+      def foo
+        [ 1 ].each do
+          begin
+            raise StandardError.new('err')
+          rescue => e
+            $!.should == e
+            return
+          end
         end
       end
 
+      foo
       $!.should == nil
     end
 

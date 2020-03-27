@@ -42,3 +42,9 @@ describe "Errno::EAGAIN" do
     end
   end
 end
+
+describe "Errno::ENOTSUP" do
+  it "is defined" do
+    Errno.should have_constant(:ENOTSUP)
+  end
+end

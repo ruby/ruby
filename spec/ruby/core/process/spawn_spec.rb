@@ -207,13 +207,9 @@ describe "Process.spawn" do
 
   it "unsets environment variables whose value is nil" do
     ENV["FOO"] = "BAR"
-    Process.wait Process.spawn({"FOO" => nil}, "echo #{@var}>#{@name}")
-    expected = "\n"
-    platform_is :windows do
-      # Windows does not expand the variable if it is unset
-      expected = "#{@var}\n"
-    end
-    File.read(@name).should == expected
+    -> do
+      Process.wait Process.spawn({"FOO" => nil}, ruby_cmd("p ENV['FOO']"))
+    end.should output_to_fd("nil\n")
   end
 
   it "calls #to_hash to convert the environment" do

@@ -1,6 +1,6 @@
 require_relative 'spec_helper'
 
-load_extension("kernel")
+kernel_path = load_extension("kernel")
 
 describe "C-API Kernel function" do
   before :each do
@@ -295,6 +295,11 @@ describe "C-API Kernel function" do
       proof[0].should == 23
       proof[1].should == nil
     end
+
+    it "accepts NULL as status and returns nil if it failed" do
+      @s.rb_protect_null_status(42) { |x| x + 1 }.should == 43
+      @s.rb_protect_null_status(42) { |x| raise }.should == nil
+    end
   end
 
   describe "rb_eval_string_protect" do
@@ -384,6 +389,18 @@ describe "C-API Kernel function" do
       @s.rb_rescue2(run_error_proc, :no_exc, proc, :exc, ArgumentError, RuntimeError).should == :exc
       -> {
         @s.rb_rescue2(type_error_proc, :no_exc, proc, :exc, ArgumentError, RuntimeError)
+      }.should raise_error(TypeError)
+    end
+
+    it "works when the terminating argument has not been sizes as a VALUE" do
+      proc = -> x { x }
+      arg_error_proc = -> *_ { raise ArgumentError, '' }
+      run_error_proc = -> *_ { raise RuntimeError, '' }
+      type_error_proc = -> *_ { raise TypeError, '' }
+      @s.rb_rescue2_wrong_arg_type(arg_error_proc, :no_exc, proc, :exc, ArgumentError, RuntimeError).should == :exc
+      @s.rb_rescue2_wrong_arg_type(run_error_proc, :no_exc, proc, :exc, ArgumentError, RuntimeError).should == :exc
+      -> {
+        @s.rb_rescue2_wrong_arg_type(type_error_proc, :no_exc, proc, :exc, ArgumentError, RuntimeError)
       }.should raise_error(TypeError)
     end
   end
@@ -514,25 +531,9 @@ describe "C-API Kernel function" do
     end
   end
 
-  platform_is_not :windows do
-    describe "rb_set_end_proc" do
-      before :each do
-        @r, @w = IO.pipe
-      end
-
-      after :each do
-        @r.close
-        @w.close
-        Process.wait @pid
-      end
-
-      it "runs a C function on shutdown" do
-        @pid = fork {
-          @s.rb_set_end_proc(@w)
-        }
-
-        @r.read(1).should == "e"
-      end
+  describe "rb_set_end_proc" do
+    it "runs a C function on shutdown" do
+      ruby_exe("require #{kernel_path.inspect}; CApiKernelSpecs.new.rb_set_end_proc(STDOUT)").should == "in write_io"
     end
   end
 
@@ -592,7 +593,7 @@ describe "C-API Kernel function" do
       end
     end
 
-    it "can call a public method with 10 arguments" do
+    it "can call a public method with 15 arguments" do
       @s.rb_funcall_many_args(@obj, :many_args).should == 15.downto(1).to_a
     end
   end

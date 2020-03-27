@@ -158,6 +158,20 @@ describe "C-API String function" do
     end
   end
 
+  describe "rb_str_tmp_new" do
+    it "returns a hidden string (RBasic->klass is NULL)" do
+      @s.rb_str_tmp_new_klass(4).should == false
+    end
+
+    it "returns a new String object filled with \\0 bytes" do
+      s = @s.rb_str_tmp_new(4)
+      s.encoding.should == Encoding::BINARY
+      s.bytesize.should == 4
+      s.size.should == 4
+      s.should == "\x00\x00\x00\x00"
+    end
+  end
+
   describe "rb_str_new" do
     it "creates a new String with BINARY Encoding" do
       @s.rb_str_new("", 0).encoding.should == Encoding::BINARY

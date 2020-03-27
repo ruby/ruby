@@ -175,6 +175,22 @@ describe "Kernel#BigDecimal" do
     BigDecimal(3).add(1 << 50, 3).should == BigDecimal('0.113e16')
   end
 
+  it "does not call to_s when calling inspect" do
+    value = BigDecimal('44.44')
+    value.to_s.should == '0.4444e2'
+    value.inspect.should == '0.4444e2'
+
+    ruby_exe( <<-'EOF').should == "cheese 0.4444e2"
+      require 'bigdecimal'
+      module BigDecimalOverride
+        def to_s; "cheese"; end
+      end
+      BigDecimal.prepend BigDecimalOverride
+      value = BigDecimal('44.44')
+      print "#{value.to_s} #{value.inspect}"
+    EOF
+  end
+
   describe "when interacting with Rational" do
     before :each do
       @a = BigDecimal('166.666666666')

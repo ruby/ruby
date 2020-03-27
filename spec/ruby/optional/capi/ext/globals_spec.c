@@ -68,6 +68,10 @@ static VALUE global_spec_rb_defout(VALUE self) {
   return rb_defout;
 }
 
+static VALUE global_spec_rb_fs(VALUE self) {
+  return rb_fs;
+}
+
 static VALUE global_spec_rb_rs(VALUE self) {
   return rb_rs;
 }
@@ -109,6 +113,7 @@ void Init_globals_spec(void) {
   rb_define_method(cls, "rb_stdout", global_spec_rb_stdout, 0);
   rb_define_method(cls, "rb_stderr", global_spec_rb_stderr, 0);
   rb_define_method(cls, "rb_defout", global_spec_rb_defout, 0);
+  rb_define_method(cls, "rb_fs", global_spec_rb_fs, 0);
   rb_define_method(cls, "rb_rs", global_spec_rb_rs, 0);
   rb_define_method(cls, "rb_default_rs", global_spec_rb_default_rs, 0);
   rb_define_method(cls, "rb_output_rs", global_spec_rb_output_rs, 0);

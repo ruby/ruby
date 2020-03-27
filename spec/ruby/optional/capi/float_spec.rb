@@ -27,4 +27,17 @@ describe "CApiFloatSpecs" do
       f.should eql(101.99)
     end
   end
+
+  describe "RB_FLOAT_TYPE_P" do
+    it "returns true for floats" do
+      @f.RB_FLOAT_TYPE_P(2.0).should == true
+    end
+
+    it "returns false for non-floats" do
+      @f.RB_FLOAT_TYPE_P(nil).should == false
+      @f.RB_FLOAT_TYPE_P(10).should == false
+      @f.RB_FLOAT_TYPE_P("string").should == false
+      @f.RB_FLOAT_TYPE_P(Object.new).should == false
+    end
+  end
 end

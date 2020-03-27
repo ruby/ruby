@@ -348,9 +348,9 @@ static VALUE object_spec_rb_class_inherited_p(VALUE self, VALUE mod, VALUE arg) 
 static VALUE speced_allocator(VALUE klass) {
   VALUE flags = 0;
   VALUE instance;
-  if (rb_class_inherited_p(klass, rb_cString)) {
+  if (RTEST(rb_class_inherited_p(klass, rb_cString))) {
     flags = T_STRING;
-  } else if (rb_class_inherited_p(klass, rb_cArray)) {
+  } else if (RTEST(rb_class_inherited_p(klass, rb_cArray))) {
     flags = T_ARRAY;
   } else {
     flags = T_OBJECT;

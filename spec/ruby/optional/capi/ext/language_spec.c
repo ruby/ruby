@@ -24,9 +24,17 @@ static VALUE language_spec_switch(VALUE self, VALUE value) {
   }
 }
 
+/* Defining a local variable rb_mProcess which already exists as a global variable
+ * For instance eventmachine does this in Init_rubyeventmachine() */
+static VALUE language_spec_global_local_var(VALUE self) {
+  VALUE rb_mProcess = rb_const_get(rb_cObject, rb_intern("Process"));
+  return rb_mProcess;
+}
+
 void Init_language_spec(void) {
   VALUE cls = rb_define_class("CApiLanguageSpecs", rb_cObject);
   rb_define_method(cls, "switch", language_spec_switch, 1);
+  rb_define_method(cls, "global_local_var", language_spec_global_local_var, 0);
 }
 
 #ifdef __cplusplus

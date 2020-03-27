@@ -116,4 +116,16 @@ describe "Regexps with encoding modifiers" do
   it "raises Encoding::CompatibilityError when trying =~ against different encodings" do
     -> { /\A[[:space:]]*\z/ =~ " ".encode("UTF-16LE") }.should raise_error(Encoding::CompatibilityError)
   end
+
+  it "computes the Regexp Encoding for each interpolated Regexp instance" do
+    make_regexp = -> str { /#{str}/ }
+
+    r = make_regexp.call("été".force_encoding(Encoding::UTF_8))
+    r.fixed_encoding?.should == true
+    r.encoding.should == Encoding::UTF_8
+
+    r = make_regexp.call("abc".force_encoding(Encoding::UTF_8))
+    r.fixed_encoding?.should == false
+    r.encoding.should == Encoding::US_ASCII
+  end
 end

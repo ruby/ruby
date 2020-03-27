@@ -64,7 +64,7 @@ describe "NoMethodError#message" do
       NoMethodErrorSpecs::NoMethodErrorC.new.a_private_method
     rescue Exception => e
       e.should be_kind_of(NoMethodError)
-      e.message.match(/private method/).should_not == nil
+      e.message.lines[0].should =~ /private method `a_private_method' called for #<NoMethodErrorSpecs::NoMethodErrorC:0x[\h]+>/
     end
   end
 

@@ -704,6 +704,17 @@ describe "Module#refine" do
     -> { [1,2].orig_count }.should raise_error(NoMethodError)
   end
 
+  it "and instance_methods returns a list of methods including those of the refined module" do
+    methods = Array.instance_methods
+    methods_2 = []
+    Module.new do
+      refine Array do
+        methods_2 = instance_methods
+      end
+    end
+    methods.should == methods_2
+  end
+
   # Refinements are inherited by module inclusion.
   # That is, using activates all refinements in the ancestors of the specified module.
   # Refinements in a descendant have priority over refinements in an ancestor.

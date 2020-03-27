@@ -42,6 +42,18 @@ describe "Module#alias_method" do
     @object.was_private_one.should == 1
   end
 
+  it "handles aliasing a method only present in a refinement" do
+    c = @class
+    Module.new do
+      refine c do
+        def uno_refined_method
+        end
+        alias_method :double_refined_method, :uno_refined_method
+        instance_method(:uno_refined_method).should == instance_method(:double_refined_method)
+      end
+    end
+  end
+
   it "fails if origin method not found" do
     -> { @class.make_alias :ni, :san }.should raise_error(NameError) { |e|
       # a NameError and not a NoMethodError

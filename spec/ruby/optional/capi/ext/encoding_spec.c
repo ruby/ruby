@@ -175,6 +175,21 @@ static VALUE encoding_spec_rb_to_encoding(VALUE self, VALUE obj) {
   return rb_str_new2(rb_to_encoding(obj)->name);
 }
 
+static rb_encoding** native_rb_encoding_pointer;
+
+static VALUE encoding_spec_rb_to_encoding_native_store(VALUE self, VALUE obj) {
+  rb_encoding* enc = rb_to_encoding(obj);
+  VALUE address = SIZET2NUM((size_t) native_rb_encoding_pointer);
+  *native_rb_encoding_pointer = enc;
+  return address;
+}
+
+static VALUE encoding_spec_rb_to_encoding_native_name(VALUE self, VALUE address) {
+  rb_encoding** ptr = (rb_encoding**) NUM2SIZET(address);
+  rb_encoding* enc = *ptr;
+  return rb_str_new2(enc->name);
+}
+
 static VALUE encoding_spec_rb_to_encoding_index(VALUE self, VALUE obj) {
   return INT2NUM(rb_to_encoding_index(obj));
 }
@@ -205,7 +220,10 @@ static VALUE encoding_spec_rb_enc_str_asciionly_p(VALUE self, VALUE str) {
 }
 
 void Init_encoding_spec(void) {
-  VALUE cls = rb_define_class("CApiEncodingSpecs", rb_cObject);
+  VALUE cls;
+  native_rb_encoding_pointer = (rb_encoding**) malloc(sizeof(rb_encoding*));
+
+  cls = rb_define_class("CApiEncodingSpecs", rb_cObject);
   rb_define_method(cls, "ENC_CODERANGE_ASCIIONLY",
                    encoding_spec_ENC_CODERANGE_ASCIIONLY, 1);
 
@@ -247,6 +265,8 @@ void Init_encoding_spec(void) {
   rb_define_method(cls, "ENCODING_SET", encoding_spec_ENCODING_SET, 2);
   rb_define_method(cls, "rb_enc_to_index", encoding_spec_rb_enc_to_index, 1);
   rb_define_method(cls, "rb_to_encoding", encoding_spec_rb_to_encoding, 1);
+  rb_define_method(cls, "rb_to_encoding_native_store", encoding_spec_rb_to_encoding_native_store, 1);
+  rb_define_method(cls, "rb_to_encoding_native_name", encoding_spec_rb_to_encoding_native_name, 1);
   rb_define_method(cls, "rb_to_encoding_index", encoding_spec_rb_to_encoding_index, 1);
   rb_define_method(cls, "rb_enc_nth", encoding_spec_rb_enc_nth, 2);
   rb_define_method(cls, "rb_enc_codepoint_len", encoding_spec_rb_enc_codepoint_len, 1);

@@ -1,28 +1,6 @@
 require_relative '../../spec_helper'
 require 'stringio'
 
-bug_guard = Class.new(VersionGuard) do
-  self::VERSION = StringIO.const_defined?(:VERSION) ? StringIO::VERSION : "0.0.2"
-
-  def initialize(bug, version)
-    @bug = bug
-    super(version)
-    @parameters = [bug, version]
-  end
-  def match?
-    version = self.class::VERSION
-    if Range === @version
-      @version.include? version
-    else
-      version >= @version
-    end
-  end
-
-  def self.against(*args, &block)
-    new(*args).run_unless(:stringio_version_is, &block)
-  end
-end
-
 describe "StringIO#initialize when passed [Object, mode]" do
   before :each do
     @io = StringIO.allocate
@@ -206,7 +184,7 @@ describe "StringIO#initialize when passed no arguments" do
   end
 end
 
-describe "StringIO#initialize sets the encoding to" do
+describe "StringIO#initialize sets" do
   before :each do
     @external = Encoding.default_external
     @internal = Encoding.default_internal
@@ -219,18 +197,26 @@ describe "StringIO#initialize sets the encoding to" do
     Encoding.default_internal = @internal
   end
 
-  it "Encoding.default_external when passed no arguments" do
+  it "the encoding to Encoding.default_external when passed no arguments" do
     io = StringIO.new
     io.external_encoding.should == Encoding::ISO_8859_2
     io.string.encoding.should == Encoding::ISO_8859_2
   end
 
-  it "the same as the encoding of the String when passed a String" do
+  it "the encoding to the encoding of the String when passed a String" do
     s = ''.force_encoding(Encoding::EUC_JP)
     io = StringIO.new(s)
-    bug_guard.against("[Bug #16497]", "0.0.3"..."0.1.1") do
+    io.string.encoding.should == Encoding::EUC_JP
+  end
+
+  guard_not -> { # [Bug #16497]
+    stringio_version = StringIO.const_defined?(:VERSION) ? StringIO::VERSION : "0.0.2"
+    version_is(stringio_version, "0.0.3"..."0.1.1")
+  } do
+    it "the #external_encoding to the encoding of the String when passed a String" do
+      s = ''.force_encoding(Encoding::EUC_JP)
+      io = StringIO.new(s)
       io.external_encoding.should == Encoding::EUC_JP
     end
-    io.string.encoding.should == Encoding::EUC_JP
   end
 end

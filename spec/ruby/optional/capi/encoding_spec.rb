@@ -257,6 +257,14 @@ describe "C-API Encoding function" do
 
       @s.rb_to_encoding(obj).should == "UTF-8"
     end
+
+    describe "when the rb_encoding struct is stored in native memory" do
+      it "can still read the name of the encoding" do
+        address = @s.rb_to_encoding_native_store(Encoding::UTF_8)
+        address.should be_kind_of(Integer)
+        @s.rb_to_encoding_native_name(address).should == "UTF-8"
+      end
+    end
   end
 
   describe "rb_to_encoding_index" do

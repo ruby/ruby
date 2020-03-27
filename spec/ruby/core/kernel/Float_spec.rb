@@ -54,6 +54,12 @@ describe :kernel_float, shared: true do
     -> { @object.send(:Float, "float") }.should raise_error(ArgumentError)
   end
 
+  it "raises an ArgumentError for a String with string in error message" do
+    -> { @object.send(:Float, "foo") }.should raise_error(ArgumentError) { |e|
+      e.message.should == 'invalid value for Float(): "foo"'
+    }
+  end
+
   it "raises an ArgumentError if there are two decimal points in the String" do
     -> { @object.send(:Float, "10.0.0") }.should raise_error(ArgumentError)
   end

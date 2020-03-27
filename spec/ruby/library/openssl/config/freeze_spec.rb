@@ -1,10 +1,9 @@
 require_relative '../../../spec_helper'
 require_relative '../shared/constants'
-require_relative '../shared/version'
 
 require 'openssl'
 
-openssl_version_is(""..."2.2") do
+version_is(OpenSSL::VERSION, ""..."2.2") do
   describe "OpenSSL::Config#freeze" do
     it "needs to be reviewed for completeness"
 
