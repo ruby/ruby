@@ -199,15 +199,15 @@ class TestGemSource < Gem::TestCase
     installed = Gem::Source::Installed.new
     local     = Gem::Source::Local.new
 
-    assert_equal(0, remote.<=>(remote),    'remote    <=> remote')
+    assert_equal(0, remote.<=>(remote),    'remote <=> remote')
 
-    assert_equal(-1, remote.<=>(specific),  'remote    <=> specific')
-    assert_equal(1, specific.<=>(remote),    'specific  <=> remote')
+    assert_equal(-1, remote.<=>(specific),  'remote <=> specific')
+    assert_equal(1, specific.<=>(remote),    'specific <=> remote')
 
-    assert_equal(-1, remote.<=>(local),     'remote    <=> local')
-    assert_equal(1, local.<=>(remote),    'local     <=> remote')
+    assert_equal(-1, remote.<=>(local),     'remote <=> local')
+    assert_equal(1, local.<=>(remote),    'local <=> remote')
 
-    assert_equal(-1, remote.<=>(installed), 'remote    <=> installed')
+    assert_equal(-1, remote.<=>(installed), 'remote <=> installed')
     assert_equal(1, installed.<=>(remote),    'installed <=> remote')
 
     no_uri = @source.dup

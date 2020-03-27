@@ -59,14 +59,14 @@ class TestGemSourceLock < Gem::TestCase
     lock = Gem::Source::Lock.new git
 
     assert_equal(1, lock.<=>(git),  'lock <=> git')
-    assert_equal(-1, git.<=>(lock), 'git  <=> lock')
+    assert_equal(-1, git.<=>(lock), 'git <=> lock')
   end
 
   def test_spaceship_installed
     installed = Gem::Source::Installed.new
     lock      = Gem::Source::Lock.new installed
 
-    assert_equal(1, lock.<=>(installed),  'lock      <=> installed')
+    assert_equal(1, lock.<=>(installed),  'lock <=> installed')
     assert_equal(-1, installed.<=>(lock),       'installed <=> lock')
   end
 
@@ -74,7 +74,7 @@ class TestGemSourceLock < Gem::TestCase
     local = Gem::Source::Local.new
     lock  = Gem::Source::Lock.new local # nonsense
 
-    assert_equal(1, lock.<=>(local), 'lock  <=> local')
+    assert_equal(1, lock.<=>(local), 'lock <=> local')
     assert_equal(-1, local.<=>(lock),  'local <=> lock')
   end
 
@@ -82,7 +82,7 @@ class TestGemSourceLock < Gem::TestCase
     remote = Gem::Source.new @gem_repo
     lock   = Gem::Source::Lock.new remote
 
-    assert_equal(1, lock.<=>(remote), 'lock   <=> remote')
+    assert_equal(1, lock.<=>(remote), 'lock <=> remote')
     assert_equal(-1, remote.<=>(lock),   'remote <=> lock')
   end
 
@@ -92,7 +92,7 @@ class TestGemSourceLock < Gem::TestCase
     specific = Gem::Source::SpecificFile.new gem
     lock     = Gem::Source::Lock.new specific # nonsense
 
-    assert_equal(1, lock.<=>(specific),  'lock     <=> specific')
+    assert_equal(1, lock.<=>(specific),  'lock <=> specific')
     assert_equal(-1, specific.<=>(lock),      'specific <=> lock')
   end
 
@@ -100,7 +100,7 @@ class TestGemSourceLock < Gem::TestCase
     vendor = Gem::Source::Vendor.new 'vendor/a'
     lock   = Gem::Source::Lock.new vendor
 
-    assert_equal(1, lock.<=>(vendor), 'lock   <=>    vendor')
+    assert_equal(1, lock.<=>(vendor), 'lock <=> vendor')
     assert_equal(-1, vendor.<=>(lock),   'vendor <=> lock')
   end
 
