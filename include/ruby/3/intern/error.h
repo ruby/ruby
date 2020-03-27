@@ -22,9 +22,16 @@
 #define  RUBY3_INTERN_ERROR_H
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
+#include "ruby/3/fl_type.h"
+#include "ruby/backward/2/assume.h"
 #include "ruby/backward/2/attributes.h"
 
-#define UNLIMITED_ARGUMENTS (-1)
+#define UNLIMITED_ARGUMENTS     (-1)
+#define rb_exc_new2             rb_exc_new_cstr
+#define rb_exc_new3             rb_exc_new_str
+#define rb_check_trusted        rb_check_trusted
+#define rb_check_trusted_inline rb_check_trusted
+#define rb_check_arity          rb_check_arity
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 
@@ -32,8 +39,6 @@ RUBY3_SYMBOL_EXPORT_BEGIN()
 VALUE rb_exc_new(VALUE, const char*, long);
 VALUE rb_exc_new_cstr(VALUE, const char*);
 VALUE rb_exc_new_str(VALUE, VALUE);
-#define rb_exc_new2 rb_exc_new_cstr
-#define rb_exc_new3 rb_exc_new_str
 PRINTF_ARGS(NORETURN(void rb_loaderror(const char*, ...)), 1, 2);
 PRINTF_ARGS(NORETURN(void rb_loaderror_with_path(VALUE path, const char*, ...)), 2, 3);
 PRINTF_ARGS(NORETURN(void rb_name_error(ID, const char*, ...)), 2, 3);
@@ -45,31 +50,27 @@ NORETURN(void rb_error_frozen_object(VALUE));
 void rb_error_untrusted(VALUE);
 void rb_check_frozen(VALUE);
 void rb_check_trusted(VALUE);
+void rb_check_copyable(VALUE obj, VALUE orig);
+NORETURN(MJIT_STATIC void rb_error_arity(int, int, int));
+RUBY3_SYMBOL_EXPORT_END()
+
+/* Does anyone use this?  Remain not deleted for compatibility. */
 #define rb_check_frozen_internal(obj) do { \
         VALUE frozen_obj = (obj); \
         if (RB_UNLIKELY(RB_OBJ_FROZEN(frozen_obj))) { \
             rb_error_frozen_object(frozen_obj); \
         } \
     } while (0)
-#ifdef __GNUC__
-#define rb_check_frozen(obj) __extension__({rb_check_frozen_internal(obj);})
-#else
+
 static inline void
 rb_check_frozen_inline(VALUE obj)
 {
-    rb_check_frozen_internal(obj);
+    if (RB_UNLIKELY(RB_OBJ_FROZEN(obj))) {
+        rb_error_frozen_object(obj);
+    }
 }
-#define rb_check_frozen(obj) rb_check_frozen_inline(obj)
-static inline void
-rb_check_trusted_inline(VALUE obj)
-{
-    rb_check_trusted(obj);
-}
-#define rb_check_trusted(obj) rb_check_trusted_inline(obj)
-#endif
-void rb_check_copyable(VALUE obj, VALUE orig);
+#define rb_check_frozen rb_check_frozen_inline
 
-NORETURN(MJIT_STATIC void rb_error_arity(int, int, int));
 static inline int
 rb_check_arity(int argc, int min, int max)
 {
@@ -77,8 +78,5 @@ rb_check_arity(int argc, int min, int max)
         rb_error_arity(argc, min, max);
     return argc;
 }
-#define rb_check_arity rb_check_arity /* for ifdef */
-
-RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY3_INTERN_ERROR_H */
