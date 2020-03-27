@@ -239,20 +239,27 @@ static struct {
     char **argv;
 } origarg;
 
+static const char esc_standout[] = "\n\033[1;7m";
+static const char esc_bold[] = "\033[1m";
+static const char esc_reset[] = "\033[0m";
+static const char esc_none[] = "";
+
 static void
-show_usage_line(const char *str, unsigned int namelen, unsigned int secondlen, int help)
+show_usage_line(const char *str, unsigned int namelen, unsigned int secondlen, int help, int highlight)
 {
+    const char *sb = highlight ? esc_bold : esc_none;
+    const char *se = highlight ? esc_reset : esc_none;
     const unsigned int w = 16;
     const int wrap = help && namelen + secondlen - 1 > w;
-    printf("  %.*s%-*.*s%-*s%s\n", namelen-1, str,
+    printf("  %s%.*s%-*.*s%s%-*s%s\n", sb, namelen-1, str,
 	   (wrap ? 0 : w - namelen + 1),
-	   (help ? secondlen-1 : 0), str + namelen,
+	   (help ? secondlen-1 : 0), str + namelen, se,
 	   (wrap ? w + 3 : 0), (wrap ? "\n" : ""),
 	   str + namelen + secondlen);
 }
 
 static void
-usage(const char *name, int help)
+usage(const char *name, int help, int highlight)
 {
     /* This message really ought to be max 23 lines.
      * Removed -h because the user already knows that option. Others? */
@@ -330,27 +337,31 @@ usage(const char *name, int help)
         M("--jit-min-calls=num", "", "Number of calls to trigger JIT (for testing, default: 10000)"),
     };
     int i;
+    const char *sb = highlight ? esc_standout+1 : esc_none;
+    const char *se = highlight ? esc_reset : esc_none;
     const int num = numberof(usage_msg) - (help ? 1 : 0);
-#define SHOW(m) show_usage_line((m).str, (m).namelen, (m).secondlen, help)
+#define SHOW(m) show_usage_line((m).str, (m).namelen, (m).secondlen, help, highlight)
 
-    printf("Usage: %s [switches] [--] [programfile] [arguments]\n", name);
+    printf("%sUsage:%s %s [switches] [--] [programfile] [arguments]\n", sb, se, name);
     for (i = 0; i < num; ++i)
 	SHOW(usage_msg[i]);
 
     if (!help) return;
 
+    if (highlight) sb = esc_standout;
+
     for (i = 0; i < numberof(help_msg); ++i)
 	SHOW(help_msg[i]);
-    puts("Dump List:");
+    printf("%s""Dump List:%s\n", sb, se);
     for (i = 0; i < numberof(dumps); ++i)
 	SHOW(dumps[i]);
-    puts("Features:");
+    printf("%s""Features:%s\n", sb, se);
     for (i = 0; i < numberof(features); ++i)
 	SHOW(features[i]);
-    puts("Warning categories:");
+    printf("%s""Warning categories:%s\n", sb, se);
     for (i = 0; i < numberof(warn_categories); ++i)
 	SHOW(warn_categories[i]);
-    puts("JIT options (experimental):");
+    printf("%s""JIT options (experimental):%s\n", sb, se);
     for (i = 0; i < numberof(mjit_options); ++i)
 	SHOW(mjit_options[i]);
 }
@@ -1608,14 +1619,15 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     unsigned int dump = opt->dump & dump_exit_bits;
 
     if (opt->dump & (DUMP_BIT(usage)|DUMP_BIT(help))) {
+        int tty = isatty(1);
 	const char *const progname =
 	    (argc > 0 && argv && argv[0] ? argv[0] :
 	     origarg.argc > 0 && origarg.argv && origarg.argv[0] ? origarg.argv[0] :
 	     ruby_engine);
-        if (opt->dump & DUMP_BIT(help)) {
+        if ((opt->dump & DUMP_BIT(help)) && tty) {
             const char *pager_env = getenv("RUBY_PAGER");
             if (!pager_env) pager_env = getenv("PAGER");
-            if (pager_env && *pager_env && isatty(0) && isatty(1)) {
+            if (pager_env && *pager_env && isatty(0)) {
                 VALUE pager = rb_str_new_cstr(pager_env);
 #ifdef HAVE_WORKING_FORK
                 int fds[2];
@@ -1648,7 +1660,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
                     int fd = RFILE(port)->fptr->fd;
                     dup2(fd, 1);
                     dup2(fd, 2);
-                    usage(progname, 1);
+                    /* more.com doesn't support CSI sequence */
+                    usage(progname, 1, 0);
                     fflush(stdout);
                     dup2(oldout, 1);
                     dup2(olderr, 2);
@@ -1658,7 +1671,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #endif
             }
         }
-	usage(progname, (opt->dump & DUMP_BIT(help)));
+	usage(progname, (opt->dump & DUMP_BIT(help)), tty);
 	return Qtrue;
     }
 
