@@ -20,9 +20,26 @@
  */
 #ifndef  RUBY3_INTERN_STRING_H
 #define  RUBY3_INTERN_STRING_H
+#include "ruby/3/config.h"
+
+#ifdef STDC_HEADERS
+# include <stddef.h>
+#endif
+
+#ifdef HAVE_STRING_H
+# include <string.h>
+#endif
+
+#ifdef HAVE_STDINT_H
+# include <stdint.h>
+#endif
+
+#include "ruby/3/attr/nonnull.h"
+#include "ruby/3/attr/pure.h"
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
-#include "ruby/backward/2/attributes.h"
+#include "ruby/3/variable.h" /* rb_gvar_setter_t */
+#include "ruby/st.h"         /* st_index_t */
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 
@@ -107,74 +124,195 @@ VALUE rb_sym_to_s(VALUE);
 long rb_str_strlen(VALUE);
 VALUE rb_str_length(VALUE);
 long rb_str_offset(VALUE, long);
-PUREFUNC(size_t rb_str_capacity(VALUE));
+RUBY3_ATTR_PURE()
+size_t rb_str_capacity(VALUE);
 VALUE rb_str_ellipsize(VALUE, long);
 VALUE rb_str_scrub(VALUE, VALUE);
 VALUE rb_str_succ(VALUE);
 
-#ifdef HAVE_BUILTIN___BUILTIN_CONSTANT_P
-#define rb_str_new(str, len) RB_GNUC_EXTENSION_BLOCK(   \
-    (__builtin_constant_p(str) && __builtin_constant_p(len)) ? \
-        rb_str_new_static((str), (len)) : \
-        rb_str_new((str), (len))          \
-)
-#define rb_str_new_cstr(str) RB_GNUC_EXTENSION_BLOCK(   \
-    (__builtin_constant_p(str)) ?               \
-        rb_str_new_static((str), (long)strlen(str)) : \
-        rb_str_new_cstr(str)                    \
-)
-#define rb_usascii_str_new(str, len) RB_GNUC_EXTENSION_BLOCK( \
-    (__builtin_constant_p(str) && __builtin_constant_p(len)) ? \
-        rb_usascii_str_new_static((str), (len)) : \
-        rb_usascii_str_new((str), (len))          \
-)
-#define rb_utf8_str_new(str, len) RB_GNUC_EXTENSION_BLOCK( \
-    (__builtin_constant_p(str) && __builtin_constant_p(len)) ? \
-        rb_utf8_str_new_static((str), (len)) : \
-        rb_utf8_str_new((str), (len))     \
-)
-#define rb_tainted_str_new_cstr(str) RB_GNUC_EXTENSION_BLOCK( \
-    (__builtin_constant_p(str)) ?              \
-        rb_tainted_str_new((str), (long)strlen(str)) : \
-        rb_tainted_str_new_cstr(str)           \
-)
-#define rb_usascii_str_new_cstr(str) RB_GNUC_EXTENSION_BLOCK( \
-    (__builtin_constant_p(str)) ?              \
-        rb_usascii_str_new_static((str), (long)strlen(str)) : \
-        rb_usascii_str_new_cstr(str)           \
-)
-#define rb_utf8_str_new_cstr(str) RB_GNUC_EXTENSION_BLOCK( \
-    (__builtin_constant_p(str)) ?               \
-        rb_utf8_str_new_static((str), (long)strlen(str)) : \
-        rb_utf8_str_new_cstr(str)               \
-)
-#define rb_external_str_new_cstr(str) RB_GNUC_EXTENSION_BLOCK( \
-    (__builtin_constant_p(str)) ?               \
-        rb_external_str_new((str), (long)strlen(str)) : \
-        rb_external_str_new_cstr(str)           \
-)
-#define rb_locale_str_new_cstr(str) RB_GNUC_EXTENSION_BLOCK( \
-    (__builtin_constant_p(str)) ?              \
-        rb_locale_str_new((str), (long)strlen(str)) :  \
-        rb_locale_str_new_cstr(str)            \
-)
-#define rb_str_buf_new_cstr(str) RB_GNUC_EXTENSION_BLOCK( \
-    (__builtin_constant_p(str)) ?               \
-        rb_str_buf_cat(rb_str_buf_new((long)strlen(str)), \
-                       (str), (long)strlen(str)) : \
-        rb_str_buf_new_cstr(str)                \
-)
-#define rb_str_cat_cstr(str, ptr) RB_GNUC_EXTENSION_BLOCK( \
-    (__builtin_constant_p(ptr)) ?               \
-        rb_str_cat((str), (ptr), (long)strlen(ptr)) : \
-        rb_str_cat_cstr((str), (ptr))           \
-)
-#define rb_exc_new_cstr(klass, ptr) RB_GNUC_EXTENSION_BLOCK( \
-    (__builtin_constant_p(ptr)) ?               \
-        rb_exc_new((klass), (ptr), (long)strlen(ptr)) : \
-        rb_exc_new_cstr((klass), (ptr))         \
-)
+RUBY3_ATTR_NONNULL(())
+static inline long
+ruby3_strlen(const char *str)
+{
+    return RUBY3_CAST((long)strlen(str));
+}
+
+/* Note that __builtin_constant_p can be applicable inside of inline functions,
+ * according to GCC manual.
+ * See https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html
+ *
+ * Clang lacks that feature, though.
+ * See https://bugs.llvm.org/show_bug.cgi?id=4898
+ */
+#if RUBY3_HAS_BUILTIN(__builtin_constant_p)
+# define RUBY3_CONSTANT_P(expr) __builtin_constant_p(expr)
+#else
+# define RUBY3_CONSTANT_P(expr) 0
 #endif
+
+static inline VALUE
+ruby3_str_new(const char *str, long len)
+{
+    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+        return rb_str_new(str, len);
+    }
+    else if  /* constexpr */ (! RUBY3_CONSTANT_P(len)) {
+        return rb_str_new(str, len);
+    }
+    else {
+        return rb_str_new_static(str, len);
+    }
+}
+
+static inline VALUE
+ruby3_str_new_cstr(const char *str)
+{
+    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+        return rb_str_new_cstr(str);
+    }
+    else {
+        long len = ruby3_strlen(str);
+        return rb_str_new_static(str, len);
+    }
+}
+
+static inline VALUE
+ruby3_usascii_str_new(const char *str, long len)
+{
+    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+        return rb_usascii_str_new(str, len);
+    }
+    else if  /* constexpr */ (! RUBY3_CONSTANT_P(len)) {
+        return rb_usascii_str_new(str, len);
+    }
+    else {
+        return rb_usascii_str_new_static(str, len);
+    }
+}
+
+static inline VALUE
+ruby3_utf8_str_new(const char *str, long len)
+{
+    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+        return rb_utf8_str_new(str, len);
+    }
+    else if  /* constexpr */ (! RUBY3_CONSTANT_P(len)) {
+        return rb_utf8_str_new(str, len);
+    }
+    else {
+        return rb_utf8_str_new_static(str, len);
+    }
+}
+
+static inline VALUE
+ruby3_tainted_str_new_cstr(const char *str)
+{
+    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+        return rb_tainted_str_new_cstr(str);
+    }
+    else {
+        long len = ruby3_strlen(str);
+        return rb_tainted_str_new(str, len);
+    }
+}
+
+static inline VALUE
+ruby3_usascii_str_new_cstr(const char *str)
+{
+    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+        return rb_usascii_str_new_cstr(str);
+    }
+    else {
+        long len = ruby3_strlen(str);
+        return rb_usascii_str_new_static(str, len);
+    }
+}
+
+static inline VALUE
+ruby3_utf8_str_new_cstr(const char *str)
+{
+    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+        return rb_utf8_str_new_cstr(str);
+    }
+    else {
+        long len = ruby3_strlen(str);
+        return rb_utf8_str_new_static(str, len);
+    }
+}
+
+static inline VALUE
+ruby3_external_str_new_cstr(const char *str)
+{
+    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+        return rb_external_str_new_cstr(str);
+    }
+    else {
+        long len = ruby3_strlen(str);
+        return rb_external_str_new(str, len);
+    }
+}
+
+static inline VALUE
+ruby3_locale_str_new_cstr(const char *str)
+{
+    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+        return rb_locale_str_new_cstr(str);
+    }
+    else {
+        long len = ruby3_strlen(str);
+        return rb_locale_str_new(str, len);
+    }
+}
+
+static inline VALUE
+ruby3_str_buf_new_cstr(const char *str)
+{
+    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+        return rb_str_buf_new_cstr(str);
+    }
+    else {
+        long len = ruby3_strlen(str);
+        VALUE buf = rb_str_buf_new(len);
+        return rb_str_buf_cat(buf, str, len);
+    }
+}
+
+static inline VALUE
+ruby3_str_cat_cstr(VALUE buf, const char *str)
+{
+    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+        return rb_str_cat_cstr(buf, str);
+    }
+    else {
+        long len = ruby3_strlen(str);
+        return rb_str_cat(buf, str, len);
+    }
+}
+
+static inline VALUE
+ruby3_exc_new_cstr(VALUE exc, const char *str)
+{
+    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+        return rb_exc_new_cstr(exc, str);
+    }
+    else {
+        long len = ruby3_strlen(str);
+        return rb_exc_new(exc, str, len);
+    }
+}
+
+#define rb_str_new ruby3_str_new
+#define rb_str_new_cstr ruby3_str_new_cstr
+#define rb_usascii_str_new ruby3_usascii_str_new
+#define rb_utf8_str_new ruby3_utf8_str_new
+#define rb_tainted_str_new_cstr ruby3_tainted_str_new_cstr
+#define rb_usascii_str_new_cstr ruby3_usascii_str_new_cstr
+#define rb_utf8_str_new_cstr ruby3_utf8_str_new_cstr
+#define rb_external_str_new_cstr ruby3_external_str_new_cstr
+#define rb_locale_str_new_cstr ruby3_locale_str_new_cstr
+#define rb_str_buf_new_cstr ruby3_str_buf_new_cstr
+#define rb_str_cat_cstr ruby3_str_cat_cstr
+#define rb_exc_new_cstr ruby3_exc_new_cstr
 #define rb_str_new2 rb_str_new_cstr
 #define rb_str_new3 rb_str_new_shared
 #define rb_str_new4 rb_str_new_frozen
