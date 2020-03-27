@@ -22,7 +22,6 @@
 #define  RUBY3_INTERN_RANGE_H
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
-#include "ruby/backward/2/attributes.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 
