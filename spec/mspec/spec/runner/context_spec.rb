@@ -55,22 +55,6 @@ describe ContextState, "#to_s" do
   it "returns a description string for self when passed a String" do
     ContextState.new("SomeClass").to_s.should == "SomeClass"
   end
-
-  it "returns a description string for self when passed a Module, String" do
-    ContextState.new(Object, "when empty").to_s.should == "Object when empty"
-  end
-
-  it "returns a description string for self when passed a Module and String beginning with '#'" do
-    ContextState.new(Object, "#to_s").to_s.should == "Object#to_s"
-  end
-
-  it "returns a description string for self when passed a Module and String beginning with '.'" do
-    ContextState.new(Object, ".to_s").to_s.should == "Object.to_s"
-  end
-
-  it "returns a description string for self when passed a Module and String beginning with '::'" do
-    ContextState.new(Object, "::to_s").to_s.should == "Object::to_s"
-  end
 end
 
 describe ContextState, "#description" do
@@ -464,11 +448,14 @@ describe ContextState, "#process" do
   end
 
   it "shuffles the spec list if MSpec.randomize? is true" do
-    MSpec.randomize
-    MSpec.should_receive(:shuffle)
-    @state.it("") { }
-    @state.process
-    MSpec.randomize false
+    MSpec.randomize = true
+    begin
+      MSpec.should_receive(:shuffle)
+      @state.it("") { }
+      @state.process
+    ensure
+      MSpec.randomize = false
+    end
   end
 
   it "sets the current MSpec ContextState" do

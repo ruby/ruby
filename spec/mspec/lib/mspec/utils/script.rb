@@ -127,7 +127,7 @@ class MSpecScript
 
     if formatter = config_formatter
       formatter.register
-      MSpec.store :formatter, formatter
+      MSpec.formatter = formatter
     end
 
     MatchFilter.new(:include, *config[:includes]).register    unless config[:includes].empty?

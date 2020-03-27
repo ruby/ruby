@@ -14,7 +14,7 @@ end
 
 describe ExampleState, "#describe" do
   before :each do
-    @context = ContextState.new Object, "#to_s"
+    @context = ContextState.new "Object#to_s"
     @state = ExampleState.new @context, "it"
   end
 
@@ -64,16 +64,16 @@ end
 
 describe ExampleState, "#filtered?" do
   before :each do
-    MSpec.store :include, nil
-    MSpec.store :exclude, nil
+    MSpec.store :include, []
+    MSpec.store :exclude, []
 
     @state = ExampleState.new ContextState.new("describe"), "it"
     @filter = double("filter")
   end
 
   after :each do
-    MSpec.store :include, nil
-    MSpec.store :exclude, nil
+    MSpec.store :include, []
+    MSpec.store :exclude, []
   end
 
   it "returns false if MSpec include filters list is empty" do

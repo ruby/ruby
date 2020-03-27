@@ -254,7 +254,7 @@ describe Object, "#guard" do
   end
 
   it "allows to combine guards" do
-    guard1 = VersionGuard.new 'x.x.x'
+    guard1 = VersionGuard.new '1.2.3', 'x.x.x'
     VersionGuard.stub(:new).and_return(guard1)
     guard2 = PlatformGuard.new :dummy
     PlatformGuard.stub(:new).and_return(guard2)
@@ -360,7 +360,7 @@ describe Object, "#guard_not" do
   end
 
   it "allows to combine guards" do
-    guard1 = VersionGuard.new 'x.x.x'
+    guard1 = VersionGuard.new '1.2.3', 'x.x.x'
     VersionGuard.stub(:new).and_return(guard1)
     guard2 = PlatformGuard.new :dummy
     PlatformGuard.stub(:new).and_return(guard2)

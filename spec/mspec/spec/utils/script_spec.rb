@@ -250,8 +250,8 @@ describe MSpecScript, "#register" do
 
   it "registers :formatter with the formatter instance" do
     @formatter.stub(:new).and_return(@formatter)
-    MSpec.should_receive(:store).with(:formatter, @formatter)
     @script.register
+    MSpec.formatter.should be(@formatter)
   end
 
   it "does not register :formatter if config[:formatter] is false" do

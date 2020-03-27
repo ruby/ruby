@@ -1044,7 +1044,7 @@ describe "The -H, --random option" do
   end
 
   it "registers the MSpec randomize mode" do
-    MSpec.should_receive(:randomize).twice
+    MSpec.should_receive(:randomize=).twice
     ["-H", "--random"].each do |opt|
       @options.parse opt
     end

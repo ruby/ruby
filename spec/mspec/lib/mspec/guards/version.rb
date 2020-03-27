@@ -5,33 +5,40 @@ require 'mspec/guards/guard'
 class VersionGuard < SpecGuard
   FULL_RUBY_VERSION = SpecVersion.new SpecGuard.ruby_version(:full)
 
-  def initialize(version)
-    case version
+  def initialize(version, requirement)
+    version = SpecVersion.new(version) unless SpecVersion === version
+    @version = version
+
+    case requirement
     when String
-      @version = SpecVersion.new version
+      @requirement = SpecVersion.new requirement
     when Range
-      MSpec.deprecate "an empty version range end", 'a specific version' if version.end.empty?
-      a = SpecVersion.new version.begin
-      b = SpecVersion.new version.end
-      unless version.exclude_end?
+      MSpec.deprecate "an empty version range end", 'a specific version' if requirement.end.empty?
+      a = SpecVersion.new requirement.begin
+      b = SpecVersion.new requirement.end
+      unless requirement.exclude_end?
         MSpec.deprecate "ruby_version_is with an inclusive range", 'an exclusive range ("2.1"..."2.3")'
       end
-      @version = version.exclude_end? ? a...b : a..b
+      @requirement = requirement.exclude_end? ? a...b : a..b
     else
-      raise "version must be a String or Range but was a #{version.class}"
+      raise "version must be a String or Range but was a #{requirement.class}"
     end
-    @parameters = [version]
+    super(@version, @requirement)
   end
 
   def match?
-    if Range === @version
-      @version.include? FULL_RUBY_VERSION
+    if Range === @requirement
+      @requirement.include? @version
     else
-      FULL_RUBY_VERSION >= @version
+      @version >= @requirement
     end
   end
 end
 
-def ruby_version_is(*args, &block)
-  VersionGuard.new(*args).run_if(:ruby_version_is, &block)
+def version_is(base_version, requirement, &block)
+  VersionGuard.new(base_version, requirement).run_if(:version_is, &block)
+end
+
+def ruby_version_is(requirement, &block)
+  VersionGuard.new(VersionGuard::FULL_RUBY_VERSION, requirement).run_if(:ruby_version_is, &block)
 end
