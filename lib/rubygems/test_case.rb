@@ -12,7 +12,7 @@ if File.exist?(bundler_gemspec)
 end
 
 begin
-  gem 'minitest', '~> 5.0'
+  gem 'minitest', '~> 5.13'
 rescue Gem::LoadError
 end
 
