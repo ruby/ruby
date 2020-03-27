@@ -20,9 +20,9 @@
  */
 #ifndef  RUBY3_INTERPRETER_H
 #define  RUBY3_INTERPRETER_H
+#include "ruby/3/attr/noreturn.h"
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
-#include "ruby/backward/2/attributes.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 
@@ -68,7 +68,9 @@ int ruby_setup(void);
 int ruby_cleanup(volatile int);
 
 void ruby_finalize(void);
-NORETURN(void ruby_stop(int));
+
+RUBY3_ATTR_NORETURN()
+void ruby_stop(int);
 
 void ruby_set_stack_size(size_t);
 int ruby_stack_check(void);

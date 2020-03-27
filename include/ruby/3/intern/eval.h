@@ -20,20 +20,31 @@
  */
 #ifndef  RUBY3_INTERN_EVAL_H
 #define  RUBY3_INTERN_EVAL_H
+#include "ruby/3/attr/noreturn.h"
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
-#include "ruby/backward/2/attributes.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 
 /* eval.c */
-NORETURN(void rb_exc_raise(VALUE));
-NORETURN(void rb_exc_fatal(VALUE));
-NORETURN(VALUE rb_f_exit(int, const VALUE*));
-NORETURN(VALUE rb_f_abort(int, const VALUE*));
-NORETURN(void rb_interrupt(void));
+RUBY3_ATTR_NORETURN()
+void rb_exc_raise(VALUE);
+
+RUBY3_ATTR_NORETURN()
+void rb_exc_fatal(VALUE);
+
+RUBY3_ATTR_NORETURN()
+VALUE rb_f_exit(int, const VALUE*);
+
+RUBY3_ATTR_NORETURN()
+VALUE rb_f_abort(int, const VALUE*);
+
+RUBY3_ATTR_NORETURN()
+void rb_interrupt(void);
 ID rb_frame_this_func(void);
-NORETURN(void rb_jump_tag(int));
+
+RUBY3_ATTR_NORETURN()
+void rb_jump_tag(int);
 void rb_obj_call_init(VALUE, int, const VALUE*);
 void rb_obj_call_init_kw(VALUE, int, const VALUE*, int);
 VALUE rb_protect(VALUE (*)(VALUE), VALUE, int*);

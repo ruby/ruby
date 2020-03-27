@@ -20,21 +20,35 @@
  */
 #ifndef  RUBY3_INTERN_PARSE_H
 #define  RUBY3_INTERN_PARSE_H
+#include "ruby/3/attr/const.h"
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
-#include "ruby/backward/2/attributes.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 
 /* parse.y */
 ID rb_id_attrset(ID);
-CONSTFUNC(int rb_is_const_id(ID));
-CONSTFUNC(int rb_is_global_id(ID));
-CONSTFUNC(int rb_is_instance_id(ID));
-CONSTFUNC(int rb_is_attrset_id(ID));
-CONSTFUNC(int rb_is_class_id(ID));
-CONSTFUNC(int rb_is_local_id(ID));
-CONSTFUNC(int rb_is_junk_id(ID));
+
+RUBY3_ATTR_CONST()
+int rb_is_const_id(ID);
+
+RUBY3_ATTR_CONST()
+int rb_is_global_id(ID);
+
+RUBY3_ATTR_CONST()
+int rb_is_instance_id(ID);
+
+RUBY3_ATTR_CONST()
+int rb_is_attrset_id(ID);
+
+RUBY3_ATTR_CONST()
+int rb_is_class_id(ID);
+
+RUBY3_ATTR_CONST()
+int rb_is_local_id(ID);
+
+RUBY3_ATTR_CONST()
+int rb_is_junk_id(ID);
 int rb_symname_p(const char*);
 int rb_sym_interned_p(VALUE);
 VALUE rb_backref_get(void);

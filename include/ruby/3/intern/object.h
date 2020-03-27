@@ -20,9 +20,9 @@
  */
 #ifndef  RUBY3_INTERN_OBJECT_H
 #define  RUBY3_INTERN_OBJECT_H
+#include "ruby/3/attr/pure.h"
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
-#include "ruby/backward/2/attributes.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 
@@ -44,18 +44,29 @@ VALUE rb_obj_clone(VALUE);
 VALUE rb_obj_dup(VALUE);
 VALUE rb_obj_init_copy(VALUE,VALUE);
 VALUE rb_obj_taint(VALUE);
-PUREFUNC(VALUE rb_obj_tainted(VALUE));
+
+RUBY3_ATTR_PURE()
+VALUE rb_obj_tainted(VALUE);
 VALUE rb_obj_untaint(VALUE);
 VALUE rb_obj_untrust(VALUE);
-PUREFUNC(VALUE rb_obj_untrusted(VALUE));
+
+RUBY3_ATTR_PURE()
+VALUE rb_obj_untrusted(VALUE);
 VALUE rb_obj_trust(VALUE);
 VALUE rb_obj_freeze(VALUE);
-PUREFUNC(VALUE rb_obj_frozen_p(VALUE));
+
+RUBY3_ATTR_PURE()
+VALUE rb_obj_frozen_p(VALUE);
+
 VALUE rb_obj_id(VALUE);
 VALUE rb_memory_id(VALUE);
 VALUE rb_obj_class(VALUE);
-PUREFUNC(VALUE rb_class_real(VALUE));
-PUREFUNC(VALUE rb_class_inherited_p(VALUE, VALUE));
+
+RUBY3_ATTR_PURE()
+VALUE rb_class_real(VALUE);
+
+RUBY3_ATTR_PURE()
+VALUE rb_class_inherited_p(VALUE, VALUE);
 VALUE rb_class_superclass(VALUE);
 VALUE rb_class_get_superclass(VALUE);
 VALUE rb_convert_type(VALUE,int,const char*,const char*);

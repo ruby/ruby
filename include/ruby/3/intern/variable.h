@@ -20,9 +20,10 @@
  */
 #ifndef  RUBY3_INTERN_VARIABLE_H
 #define  RUBY3_INTERN_VARIABLE_H
+#include "ruby/3/attr/noreturn.h"
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
-#include "ruby/backward/2/attributes.h"
+#include "ruby/st.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 
@@ -65,7 +66,8 @@ VALUE rb_const_get_from(VALUE, ID);
 void rb_const_set(VALUE, ID, VALUE);
 VALUE rb_const_remove(VALUE, ID);
 #if 0 /* EXPERIMENTAL: remove if no problem */
-NORETURN(VALUE rb_mod_const_missing(VALUE,VALUE));
+RUBY3_ATTR_NORETURN()
+VALUE rb_mod_const_missing(VALUE,VALUE);
 #endif
 VALUE rb_cvar_defined(VALUE, ID);
 void rb_cvar_set(VALUE, ID, VALUE);
