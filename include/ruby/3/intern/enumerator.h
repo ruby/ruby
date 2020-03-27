@@ -22,46 +22,58 @@
 #define  RUBY3_INTERN_ENUMERATOR_H
 #include "ruby/3/dllexport.h"
 #include "ruby/3/intern/eval.h" /* rb_frame_this_func */
+#include "ruby/3/iterator.h"    /* rb_block_given_p */
 #include "ruby/3/symbol.h"
 #include "ruby/3/value.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 
-/* enumerator.c */
-VALUE rb_enumeratorize(VALUE, VALUE, int, const VALUE *);
 typedef VALUE rb_enumerator_size_func(VALUE, VALUE, VALUE);
-VALUE rb_enumeratorize_with_size(VALUE, VALUE, int, const VALUE *, rb_enumerator_size_func *);
-VALUE rb_enumeratorize_with_size_kw(VALUE, VALUE, int, const VALUE *, rb_enumerator_size_func *, int);
-#ifndef RUBY_EXPORT
-#define rb_enumeratorize_with_size(obj, id, argc, argv, size_fn) \
-    rb_enumeratorize_with_size(obj, id, argc, argv, (rb_enumerator_size_func *)(size_fn))
-#define rb_enumeratorize_with_size_kw(obj, id, argc, argv, size_fn, kw_splat) \
-    rb_enumeratorize_with_size_kw(obj, id, argc, argv, (rb_enumerator_size_func *)(size_fn), kw_splat)
-#endif
-#define SIZED_ENUMERATOR(obj, argc, argv, size_fn) \
-    rb_enumeratorize_with_size((obj), ID2SYM(rb_frame_this_func()), \
-                               (argc), (argv), (size_fn))
-#define SIZED_ENUMERATOR_KW(obj, argc, argv, size_fn, kw_splat) \
-    rb_enumeratorize_with_size_kw((obj), ID2SYM(rb_frame_this_func()), \
-                                  (argc), (argv), (size_fn), (kw_splat))
-#define RETURN_SIZED_ENUMERATOR(obj, argc, argv, size_fn) do {          \
-        if (!rb_block_given_p())                                        \
-            return SIZED_ENUMERATOR(obj, argc, argv, size_fn);          \
-    } while (0)
-#define RETURN_SIZED_ENUMERATOR_KW(obj, argc, argv, size_fn, kw_splat) do { \
-        if (!rb_block_given_p())                                            \
-            return SIZED_ENUMERATOR_KW(obj, argc, argv, size_fn, kw_splat);              \
-    } while (0)
-#define RETURN_ENUMERATOR(obj, argc, argv) RETURN_SIZED_ENUMERATOR(obj, argc, argv, 0)
-#define RETURN_ENUMERATOR_KW(obj, argc, argv, kw_splat) RETURN_SIZED_ENUMERATOR_KW(obj, argc, argv, 0, kw_splat)
+
 typedef struct {
     VALUE begin;
     VALUE end;
     VALUE step;
     int exclude_end;
 } rb_arithmetic_sequence_components_t;
+
+/* enumerator.c */
+VALUE rb_enumeratorize(VALUE, VALUE, int, const VALUE *);
+VALUE rb_enumeratorize_with_size(VALUE, VALUE, int, const VALUE *, rb_enumerator_size_func *);
+VALUE rb_enumeratorize_with_size_kw(VALUE, VALUE, int, const VALUE *, rb_enumerator_size_func *, int);
 int rb_arithmetic_sequence_extract(VALUE, rb_arithmetic_sequence_components_t *);
 
 RUBY3_SYMBOL_EXPORT_END()
+
+#ifndef RUBY_EXPORT
+# define rb_enumeratorize_with_size(obj, id, argc, argv, size_fn) \
+    rb_enumeratorize_with_size(obj, id, argc, argv, (rb_enumerator_size_func *)(size_fn))
+# define rb_enumeratorize_with_size_kw(obj, id, argc, argv, size_fn, kw_splat) \
+    rb_enumeratorize_with_size_kw(obj, id, argc, argv, (rb_enumerator_size_func *)(size_fn), kw_splat)
+#endif
+
+#define SIZED_ENUMERATOR(obj, argc, argv, size_fn)                  \
+    rb_enumeratorize_with_size((obj), ID2SYM(rb_frame_this_func()), \
+                               (argc), (argv), (size_fn))
+
+#define SIZED_ENUMERATOR_KW(obj, argc, argv, size_fn, kw_splat)        \
+    rb_enumeratorize_with_size_kw((obj), ID2SYM(rb_frame_this_func()), \
+                                  (argc), (argv), (size_fn), (kw_splat))
+
+#define RETURN_SIZED_ENUMERATOR(obj, argc, argv, size_fn) do {          \
+        if (!rb_block_given_p())                                        \
+            return SIZED_ENUMERATOR(obj, argc, argv, size_fn);          \
+    } while (0)
+
+#define RETURN_SIZED_ENUMERATOR_KW(obj, argc, argv, size_fn, kw_splat) do { \
+        if (!rb_block_given_p())                                            \
+            return SIZED_ENUMERATOR_KW(obj, argc, argv, size_fn, kw_splat);              \
+    } while (0)
+
+#define RETURN_ENUMERATOR(obj, argc, argv) \
+    RETURN_SIZED_ENUMERATOR(obj, argc, argv, 0)
+
+#define RETURN_ENUMERATOR_KW(obj, argc, argv, kw_splat) \
+    RETURN_SIZED_ENUMERATOR_KW(obj, argc, argv, 0, kw_splat)
 
 #endif /* RUBY3_INTERN_ENUMERATOR_H */
