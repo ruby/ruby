@@ -797,7 +797,7 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
 	encoded[i] = (VALUE)table[insn];
 	i += len;
     }
-    FL_SET(iseq, ISEQ_TRANSLATED);
+    FL_SET((VALUE)iseq, ISEQ_TRANSLATED);
 #endif
     return COMPILE_OK;
 }
@@ -2075,6 +2075,7 @@ add_adjust_info(struct iseq_insn_info_entry *insns_info, unsigned int *positions
 static int
 iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 {
+    VALUE iseqv = (VALUE)iseq;
     struct iseq_insn_info_entry *insns_info;
     struct rb_iseq_constant_body *const body = iseq->body;
     unsigned int *positions;
@@ -2204,7 +2205,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			    freeze_hide_obj(map);
 			    generated_iseq[code_index + 1 + j] = map;
 			    RB_OBJ_WRITTEN(iseq, Qundef, map);
-			    FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
+                            FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
 			    break;
 			}
 		      case TS_LINDEX:
@@ -2219,13 +2220,13 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			    /* to mark ruby object */
 			    if (!SPECIAL_CONST_P(v)) {
 				RB_OBJ_WRITTEN(iseq, Qundef, v);
-				FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
+                                FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
 			    }
 			    break;
 			}
 		      case TS_ISE: /* inline storage entry */
 			/* Treated as an IC, but may contain a markable VALUE */
-                        FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
+                        FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
                         /* fall through */
 		      case TS_IC: /* inline cache */
 		      case TS_IVC: /* inline ivar cache */
@@ -8668,9 +8669,8 @@ calc_sp_depth(int depth, INSN *insn)
 static VALUE
 opobj_inspect(VALUE obj)
 {
-    struct RBasic *r = (struct RBasic *) obj;
-    if (!SPECIAL_CONST_P(r)  && r->klass == 0) {
-	switch (BUILTIN_TYPE(r)) {
+    if (!SPECIAL_CONST_P(obj) && !RBASIC_CLASS(obj)) {
+        switch (BUILTIN_TYPE(obj)) {
 	  case T_STRING:
 	    obj = rb_str_new_cstr(RSTRING_PTR(obj));
 	    break;
@@ -9126,7 +9126,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 			argv[j] = (VALUE)rb_global_entry(SYM2ID(op));
 			break;
 		      case TS_ISE:
-			FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
+                        FL_SET((VALUE)iseq, ISEQ_MARKABLE_ISEQ);
                         /* fall through */
 		      case TS_IC:
                       case TS_IVC:  /* inline ivar cache */
@@ -10006,8 +10006,9 @@ ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
 }
 
 static VALUE *
-ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, ibf_offset_t bytecode_offset, ibf_offset_t bytecode_size, unsigned int iseq_size)
+ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecode_offset, ibf_offset_t bytecode_size, unsigned int iseq_size)
 {
+    VALUE iseqv = (VALUE)iseq;
     unsigned int code_index;
     ibf_offset_t reading_pos = bytecode_offset;
     VALUE *code = ALLOC_N(VALUE, iseq_size);
@@ -10032,8 +10033,8 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, ibf_offset_t b
                     VALUE v = ibf_load_object(load, op);
                     code[code_index] = v;
                     if (!SPECIAL_CONST_P(v)) {
-                        RB_OBJ_WRITTEN(iseq, Qundef, v);
-                        FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
+                        RB_OBJ_WRITTEN(iseqv, Qundef, v);
+                        FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
                     }
                     break;
                 }
@@ -10043,13 +10044,13 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, ibf_offset_t b
                     VALUE v = (VALUE)ibf_load_iseq(load, (const rb_iseq_t *)op);
                     code[code_index] = v;
                     if (!SPECIAL_CONST_P(v)) {
-                        RB_OBJ_WRITTEN(iseq, Qundef, v);
-                        FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
+                        RB_OBJ_WRITTEN(iseqv, Qundef, v);
+                        FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
                     }
                     break;
                 }
               case TS_ISE:
-                FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
+                FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
                 /* fall through */
               case TS_IC:
               case TS_IVC:
@@ -11547,7 +11548,7 @@ rb_ibf_load_iseq_complete(rb_iseq_t *iseq)
 #endif
     ibf_load_iseq_each(load, iseq, offset);
     ISEQ_COMPILE_DATA_CLEAR(iseq);
-    FL_UNSET(iseq, ISEQ_NOT_LOADED_YET);
+    FL_UNSET((VALUE)iseq, ISEQ_NOT_LOADED_YET);
     rb_iseq_init_trace(iseq);
     load->iseq = prev_src_iseq;
 }
@@ -11587,7 +11588,7 @@ ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
 #if IBF_ISEQ_DEBUG
 	    fprintf(stderr, "ibf_load_iseq: new iseq=%p\n", (void *)iseq);
 #endif
-	    FL_SET(iseq, ISEQ_NOT_LOADED_YET);
+	    FL_SET((VALUE)iseq, ISEQ_NOT_LOADED_YET);
 	    iseq->aux.loader.obj = load->loader_obj;
 	    iseq->aux.loader.index = iseq_index;
 #if IBF_ISEQ_DEBUG

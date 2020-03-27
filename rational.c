@@ -403,7 +403,7 @@ nurat_s_new_internal(VALUE klass, VALUE num, VALUE den)
 
     RATIONAL_SET_NUM((VALUE)obj, num);
     RATIONAL_SET_DEN((VALUE)obj, den);
-    OBJ_FREEZE_RAW(obj);
+    OBJ_FREEZE_RAW((VALUE)obj);
 
     return (VALUE)obj;
 }

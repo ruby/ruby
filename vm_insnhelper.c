@@ -3212,7 +3212,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
             static const struct rb_callcache *empty_cc_for_super = NULL;
             if (empty_cc_for_super == NULL) {
                 empty_cc_for_super = vm_cc_new(0, NULL, vm_call_super_method);
-                FL_SET_RAW(empty_cc_for_super, VM_CALLCACHE_UNMARKABLE);
+                FL_SET_RAW((VALUE)empty_cc_for_super, VM_CALLCACHE_UNMARKABLE);
                 rb_gc_register_mark_object((VALUE)empty_cc_for_super);
             }
             RB_OBJ_WRITE(reg_cfp->iseq, &cd->cc, empty_cc_for_super);

@@ -12157,7 +12157,7 @@ argf_read(int argc, VALUE *argv, VALUE argf)
 	long slen = RSTRING_LEN(str);
 	if (slen < len) {
 	    len -= slen;
-	    argv[0] = INT2NUM(len);
+            argv[0] = LONG2NUM(len);
 	    goto retry;
 	}
     }

@@ -200,9 +200,9 @@ RHASH_ST_CLEAR(VALUE h)
 static inline unsigned
 RHASH_AR_TABLE_SIZE_RAW(VALUE h)
 {
-    unsigned ret = FL_TEST_RAW(h, RHASH_AR_TABLE_SIZE_MASK);
+    VALUE ret = FL_TEST_RAW(h, RHASH_AR_TABLE_SIZE_MASK);
     ret >>= RHASH_AR_TABLE_SIZE_SHIFT;
-    return ret;
+    return (unsigned)ret;
 }
 
 static inline bool

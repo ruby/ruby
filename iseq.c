@@ -205,7 +205,7 @@ rb_iseq_each_value(const rb_iseq_t *iseq, iseq_value_itr_t * func, void *data)
     size_t n;
     rb_vm_insns_translator_t *const translator =
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-        (FL_TEST(iseq, ISEQ_TRANSLATED)) ? rb_vm_insn_addr2insn2 :
+        (FL_TEST((VALUE)iseq, ISEQ_TRANSLATED)) ? rb_vm_insn_addr2insn2 :
 #endif
         rb_vm_insn_null_translator;
     const struct rb_iseq_constant_body *const body = iseq->body;
@@ -244,13 +244,13 @@ rb_iseq_update_references(rb_iseq_t *iseq)
         if (body->call_data) {
             for (unsigned int i=0; i<body->ci_size; i++) {
                 struct rb_call_data *cds = body->call_data;
-                if (!SPECIAL_CONST_P(cds[i].ci)) {
+                if (!SPECIAL_CONST_P((VALUE)cds[i].ci)) {
                     cds[i].ci = (struct rb_callinfo *)rb_gc_location((VALUE)cds[i].ci);
                 }
                 cds[i].cc = (struct rb_callcache *)rb_gc_location((VALUE)cds[i].cc);
             }
         }
-        if (FL_TEST(iseq, ISEQ_MARKABLE_ISEQ)) {
+        if (FL_TEST((VALUE)iseq, ISEQ_MARKABLE_ISEQ)) {
             rb_iseq_each_value(iseq, update_each_insn_value, NULL);
             VALUE *original_iseq = ISEQ_ORIGINAL_ISEQ(iseq);
             if (original_iseq) {
@@ -309,7 +309,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
     if (iseq->body) {
 	const struct rb_iseq_constant_body *const body = iseq->body;
 
-	if (FL_TEST(iseq, ISEQ_MARKABLE_ISEQ)) {
+        if (FL_TEST((VALUE)iseq, ISEQ_MARKABLE_ISEQ)) {
 	    rb_iseq_each_value(iseq, each_insn_value, NULL);
 	}
 
@@ -363,10 +363,10 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 #endif
     }
 
-    if (FL_TEST_RAW(iseq, ISEQ_NOT_LOADED_YET)) {
+    if (FL_TEST_RAW((VALUE)iseq, ISEQ_NOT_LOADED_YET)) {
 	rb_gc_mark(iseq->aux.loader.obj);
     }
-    else if (FL_TEST_RAW(iseq, ISEQ_USE_COMPILE_DATA)) {
+    else if (FL_TEST_RAW((VALUE)iseq, ISEQ_USE_COMPILE_DATA)) {
 	const struct iseq_compile_data *const compile_data = ISEQ_COMPILE_DATA(iseq);
 
         rb_iseq_mark_insn_storage(compile_data->insn.storage_head);

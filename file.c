@@ -682,7 +682,20 @@ rb_stat_mode(VALUE self)
 static VALUE
 rb_stat_nlink(VALUE self)
 {
-    return UINT2NUM(get_stat(self)->st_nlink);
+    nlink_t n = get_stat(self)->st_nlink;
+
+    if (sizeof(nlink_t) <= sizeof(int)) {
+        return UINT2NUM((unsigned)n);
+    }
+    else if (sizeof(nlink_t) == sizeof(long)) {
+        return ULONG2NUM((unsigned long)n);
+    }
+    else if (sizeof(nlink_t) == sizeof(LONG_LONG)) {
+        return ULL2NUM((unsigned LONG_LONG)n);
+    }
+    else {
+        rb_bug(":FIXME: don't know what to do");
+    }
 }
 
 /*
