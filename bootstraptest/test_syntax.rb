@@ -268,8 +268,10 @@ assert_equal %q{}, %q{
   defined?(@@a)
 }
 assert_equal %q{class variable}, %q{
-  @@a = 1
-  defined?(@@a)
+  class A
+    @@a = 1
+    defined?(@@a)
+  end
 }
 assert_equal %q{}, %q{
   defined?($a)

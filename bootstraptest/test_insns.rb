@@ -64,8 +64,8 @@ tests = [
   [ 'setinstancevariable', %q{ @x = true }, ],
   [ 'getinstancevariable', %q{ @x = true; @x }, ],
 
-  [ 'setclassvariable', %q{ @@x = true }, ],
-  [ 'getclassvariable', %q{ @@x = true; @@x }, ],
+  [ 'setclassvariable', %q{ class A; @@x = true; end }, ],
+  [ 'getclassvariable', %q{ class A; @@x = true; @@x end }, ],
 
   [ 'setconstant', %q{ X = true }, ],
   [ 'setconstant', %q{ Object::X = true }, ],
