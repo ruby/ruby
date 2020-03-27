@@ -27,11 +27,7 @@ if ENV["CI"] || ENV["TEST_SSL"]
     end
 
     def assert_https(host)
-      if self.respond_to? :_assertions # minitest <= 4
-        self._assertions += 1
-      else # minitest >= 5
-        self.assertions += 1
-      end
+      self.assertions += 1
       http = Net::HTTP.new(host, 443)
       http.use_ssl = true
       http.verify_mode = OpenSSL::SSL::VERIFY_PEER
