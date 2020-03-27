@@ -36,6 +36,7 @@
 
 #include "ruby/3/attr/nonnull.h"
 #include "ruby/3/attr/pure.h"
+#include "ruby/3/constant_p.h"
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
 #include "ruby/3/variable.h" /* rb_gvar_setter_t */
@@ -136,19 +137,6 @@ ruby3_strlen(const char *str)
 {
     return RUBY3_CAST((long)strlen(str));
 }
-
-/* Note that __builtin_constant_p can be applicable inside of inline functions,
- * according to GCC manual.
- * See https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html
- *
- * Clang lacks that feature, though.
- * See https://bugs.llvm.org/show_bug.cgi?id=4898
- */
-#if RUBY3_HAS_BUILTIN(__builtin_constant_p)
-# define RUBY3_CONSTANT_P(expr) __builtin_constant_p(expr)
-#else
-# define RUBY3_CONSTANT_P(expr) 0
-#endif
 
 static inline VALUE
 ruby3_str_new(const char *str, long len)

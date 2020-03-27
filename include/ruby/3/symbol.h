@@ -34,6 +34,7 @@
 #include "ruby/3/attr/pure.h"
 #include "ruby/3/attr/noalias.h"
 #include "ruby/3/cast.h"
+#include "ruby/3/constant_p.h"
 #include "ruby/3/dllexport.h"
 #include "ruby/3/has/builtin.h"
 #include "ruby/3/value.h"
@@ -98,17 +99,16 @@ ruby3_intern_const(ID *ptr, const char *str)
         (var) = ruby3_intern_const(&ruby3_id, (str)); \
     } while (0)
 
-#if RUBY3_HAS_BUILTIN(__builtin_constant_p) && defined(HAVE_STMT_AND_DECL_IN_EXPR)
+#if defined(HAVE_STMT_AND_DECL_IN_EXPR)
 /* __builtin_constant_p and statement expression is available
  * since gcc-2.7.2.3 at least. */
 #define rb_intern(str) \
-    (__builtin_constant_p(str) ? \
+    (RUBY3_CONSTANT_P(str) ? \
      __extension__ ({ \
          static ID ruby3_id; \
          ruby3_intern_const(&ruby3_id, (str)); \
      }) : \
      (rb_intern)(str))
 #endif
-
 
 #endif /* RUBY3_SYMBOL_H */

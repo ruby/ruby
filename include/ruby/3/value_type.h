@@ -26,7 +26,7 @@
 #include "ruby/3/attr/enum_extensibility.h"
 #include "ruby/3/attr/pure.h"
 #include "ruby/3/cast.h"
-#include "ruby/3/compiler_is.h"
+#include "ruby/3/constant_p.h"
 #include "ruby/3/core/rbasic.h"
 #include "ruby/3/dllexport.h"
 #include "ruby/3/has/builtin.h"
@@ -282,16 +282,7 @@ RUBY3_ATTR_ARTIFICIAL()
 static inline bool
 RB_TYPE_P(VALUE obj, enum ruby_value_type t)
 {
-    const bool enable_fastpath =
-#if RUBY3_HAS_BUILTIN(__builtin_constant_p)
-        /* Note that  __builtin_constant_p can  be applicable inside  of inline
-         * functions, according to GCC manual.
-         * See https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html */
-        __builtin_constant_p(t) ? true :
-#endif
-        false;
-
-    if (enable_fastpath) {
+    if (RUBY3_CONSTANT_P(t)) {
         return ruby3_RB_TYPE_P_fastpath(obj, t);
     }
     else {
@@ -302,10 +293,10 @@ RB_TYPE_P(VALUE obj, enum ruby_value_type t)
 /** @cond INTERNAL_MACRO */
 /* Clang, unlike GCC, cannot propagate __builtin_constant_p beyond function
  * boundary. */
-#if RUBY3_HAS_BUILTIN(__builtin_constant_p) && ! RUBY3_COMPILER_IS(GCC)
+#if defined(__clang__)
 # undef RB_TYPE_P
 # define RB_TYPE_P(obj, t)                  \
-    (__builtin_constant_p(t)              ? \
+    (RUBY3_CONSTANT_P(t)                  ? \
      ruby3_RB_TYPE_P_fastpath((obj), (t)) : \
      (RB_TYPE_P)((obj), (t)))
 #endif
