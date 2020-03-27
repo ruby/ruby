@@ -26,7 +26,7 @@ class TestGemCommandsOpenCommand < Gem::TestCase
 
     gem 'foo', '1.0.0'
     spec = gem 'foo', '1.0.1'
-    mock = MiniTest::Mock.new
+    mock = Minitest::Mock.new
     mock.expect(:call, true, [spec.full_gem_path])
 
     Dir.stub(:chdir, mock) do
