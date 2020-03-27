@@ -11,10 +11,7 @@ if File.exist?(bundler_gemspec)
   Gem::Specification.dirs.shift
 end
 
-begin
-  gem 'minitest', '~> 5.13'
-rescue Gem::LoadError
-end
+gem 'minitest', '~> 5.13'
 
 begin
   require 'simplecov'
