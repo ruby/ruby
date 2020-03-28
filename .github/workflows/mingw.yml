@@ -129,8 +129,8 @@ jobs:
         timeout-minutes: 10
         working-directory: src/spec/ruby
         run: |
-          $env:TMPDIR = "$pwd/../temp"
-          $env:PATH = "$pwd/../install/bin;$env:PATH"
+          $env:TMPDIR = "$pwd/../../../temp"
+          $env:PATH = "$pwd/../../../install/bin;$env:PATH"
           # Actions uses UTF8, causes test failures, similar to normal OS setup
           $PSDefaultParameterValues['*:Encoding'] = 'utf8'
           [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
