@@ -11,6 +11,7 @@
 #
 
 require "ripper"
+require "jruby" if RUBY_ENGINE == "jruby"
 
 # :stopdoc:
 class RubyLex
