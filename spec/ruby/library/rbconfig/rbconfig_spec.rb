@@ -37,7 +37,7 @@ describe 'RbConfig::CONFIG' do
     RUBY
   end
 
-  platform_is_not :windows do
+  guard -> {RbConfig::TOPDIR} do
     it "libdir/LIBRUBY_SO is the path to libruby and it exists if and only if ENABLE_SHARED" do
       if RbConfig::CONFIG['ENABLE_SHARED'] == 'yes'
         libdir = RbConfig::CONFIG['libdir']
