@@ -216,6 +216,13 @@ class TestLogger < Test::Unit::TestCase
     assert_equal(STDOUT, logger.instance_variable_get(:@logdev).dev)
   end
 
+  def test_reopen_nil_logdevice
+    logger = Logger.new(File::NULL)
+    assert_nothing_raised do
+      logger.reopen(STDOUT)
+    end
+  end
+
   def test_add
     logger = Logger.new(nil)
     logger.progname = "my_progname"
