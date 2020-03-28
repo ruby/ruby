@@ -37,17 +37,15 @@ describe 'RbConfig::CONFIG' do
     RUBY
   end
 
-  platform_is_not :windows do
-    guard -> {RbConfig::TOPDIR} do
-      it "libdir/LIBRUBY_SO is the path to libruby and it exists if and only if ENABLE_SHARED" do
-        libdir = RbConfig::CONFIG[RbConfig::CONFIG['libdirname'] || 'libdir']
-        libruby_so = "#{libdir}/#{RbConfig::CONFIG['LIBRUBY_SO']}"
-        case RbConfig::CONFIG['ENABLE_SHARED']
-        when 'yes'
-          File.should.exist?(libruby_so)
-        when 'no'
-          File.should_not.exist?(libruby_so)
-        end
+  guard -> {RbConfig::TOPDIR} do
+    it "libdir/LIBRUBY_SO is the path to libruby and it exists if and only if ENABLE_SHARED" do
+      libdir = RbConfig::CONFIG[RbConfig::CONFIG['libdirname'] || 'libdir']
+      libruby_so = "#{libdir}/#{RbConfig::CONFIG['LIBRUBY_SO']}"
+      case RbConfig::CONFIG['ENABLE_SHARED']
+      when 'yes'
+        File.should.exist?(libruby_so)
+      when 'no'
+        File.should_not.exist?(libruby_so)
       end
     end
   end
