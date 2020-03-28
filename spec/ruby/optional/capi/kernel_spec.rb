@@ -391,26 +391,6 @@ describe "C-API Kernel function" do
         @s.rb_rescue2(type_error_proc, :no_exc, proc, :exc, ArgumentError, RuntimeError)
       }.should raise_error(TypeError)
     end
-
-    if false # pending
-      # This spec causes core dump on many platforms:
-      # * https://rubyci.org/logs/rubyci.s3.amazonaws.com/centos7/ruby-master/log/20200328T003002Z.fail.html.gz
-      # * https://rubyci.org/logs/rubyci.s3.amazonaws.com/archlinux/ruby-master/log/20200328T003503Z.fail.html.gz
-      # * https://rubyci.org/logs/rubyci.s3.amazonaws.com/android28-x86_64/ruby-master/log/20200328T014134Z.fail.html.gz
-      # * http://ci.rvm.jp/results/trunk_gcc4@silicon-docker/2829165
-      # * http://ci.rvm.jp/results/trunk_clang_60@silicon-docker/2829309
-      it "works when the terminating argument has not been sizes as a VALUE" do
-        proc = -> x { x }
-        arg_error_proc = -> *_ { raise ArgumentError, '' }
-        run_error_proc = -> *_ { raise RuntimeError, '' }
-        type_error_proc = -> *_ { raise TypeError, '' }
-        @s.rb_rescue2_wrong_arg_type(arg_error_proc, :no_exc, proc, :exc, ArgumentError, RuntimeError).should == :exc
-        @s.rb_rescue2_wrong_arg_type(run_error_proc, :no_exc, proc, :exc, ArgumentError, RuntimeError).should == :exc
-        -> {
-          @s.rb_rescue2_wrong_arg_type(type_error_proc, :no_exc, proc, :exc, ArgumentError, RuntimeError)
-        }.should raise_error(TypeError)
-      end
-    end
   end
 
   describe "rb_catch" do
