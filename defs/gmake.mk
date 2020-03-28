@@ -263,7 +263,7 @@ extract-gems: | $(patsubst %,.bundle/gems/%,$(BUNDLED_GEMS))
 
 .bundle/gems/%: gems/%.gem | .bundle/gems
 	$(ECHO) Extracting bundle gem $*...
-	$(Q) $(RUNRUBY) -C "$(srcdir)" \
+	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -Itool -rgem-unpack \
 	    -e 'Gem.unpack("gems/$(@F).gem", ".bundle/gems")'
 
