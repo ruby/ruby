@@ -23,7 +23,6 @@ describe "Process.times" do
 
         times = 1000.times.map { Process.times }
         times.count { |t| !('%.6f' % t.utime).end_with?('000') }.should > 0
-        times.count { |t| !('%.6f' % t.stime).end_with?('000') }.should > 0
       end
     end
   end
