@@ -410,7 +410,7 @@ class Logger
   # Reopen a log device.
   #
   def reopen(logdev = nil)
-    @logdev.reopen(logdev)
+    @logdev&.reopen(logdev)
     self
   end
 
