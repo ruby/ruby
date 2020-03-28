@@ -115,4 +115,9 @@ describe "Logger#new" do
     rm_r path, shifted_path
   end
 
+  it "does not instantiate a log device for File::NULL" do
+    l = Logger.new(File::NULL)
+    l.instance_variable_get(:@logdev).should == nil
+    l.close
+  end
 end
