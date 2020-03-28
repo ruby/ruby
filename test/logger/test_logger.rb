@@ -378,4 +378,9 @@ class TestLogger < Test::Unit::TestCase
     log = log(logger, :debug) { "msg" }
     assert_nil log.msg
   end
+
+  def test_does_not_instantiate_log_device_for_File_NULL
+    l = Logger.new(File::NULL)
+    assert_nil(l.instance_variable_get(:@logdev))
+  end
 end
