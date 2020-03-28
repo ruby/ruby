@@ -974,7 +974,7 @@ rb_rescue2(VALUE (* b_proc) (VALUE), VALUE data1,
 
 /*!
  * \copydoc rb_rescue2
- * \param[in] args exception classes, terminated by 0.
+ * \param[in] args exception classes, terminated by (VALUE)0.
  */
 VALUE
 rb_vrescue2(VALUE (* b_proc) (VALUE), VALUE data1,

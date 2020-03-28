@@ -181,13 +181,13 @@ namespace test_rb_rescue2 {
     test(VALUE self)
     {
 #ifdef HAVE_NULLPTR
-        rb_rescue2(RUBY_METHOD_FUNC(begin), self, nullptr, self, rb_eStandardError, rb_eFatal, 0);
-        rb_rescue2(begin, self, nullptr, self, rb_eStandardError, rb_eFatal, 0);
+        rb_rescue2(RUBY_METHOD_FUNC(begin), self, nullptr, self, rb_eStandardError, rb_eFatal, (VALUE)0);
+        rb_rescue2(begin, self, nullptr, self, rb_eStandardError, rb_eFatal, (VALUE)0);
 #endif
 
         rb_rescue2(RUBY_METHOD_FUNC(begin), self, RUBY_METHOD_FUNC(rescue), self,
-                   rb_eStandardError, rb_eFatal, 0); // old
-        return rb_rescue2(begin, self, rescue, self, rb_eStandardError, rb_eFatal, 0); // new
+                   rb_eStandardError, rb_eFatal, (VALUE)0); // old
+        return rb_rescue2(begin, self, rescue, self, rb_eStandardError, rb_eFatal, (VALUE)0); // new
     }
 }
 
