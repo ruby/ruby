@@ -45,9 +45,9 @@ module Gem::Deprecate
   # Simple deprecation method that deprecates +name+ by wrapping it up
   # in a dummy method. It warns on each call to the dummy method
   # telling the user of +repl+ (unless +repl+ is :none) and the
-  #Rubygems version that it is planned to go away.
+  # Rubygems version that it is planned to go away.
 
-  def deprecate(name:, replacement:, rubygems_version:)
+  def deprecate(name:, replacement:)
     class_eval do
       old = "_deprecated_#{name}"
       alias_method old, name
@@ -66,7 +66,8 @@ module Gem::Deprecate
   end
 
   # Deprecation method to deprecate Rubygems commands
-  def deprecate_command(rubygems_version:)
+  def deprecate_command
+    next_rubygems_major_version = Gem.rubygems_version + 1
     class_eval do
       define_method "deprecated?" do
         true
@@ -74,7 +75,7 @@ module Gem::Deprecate
 
       define_method "deprecation_warning" do
         msg = [ "#{self.command} command is deprecated",
-                ". It will be removed in Rubygems #{rubygems_version}.\n",
+                ". It will be removed in Rubygems #{next_rubygems_major_version}.\n",
         ]
 
         alert_warning "#{msg.join}" unless Gem::Deprecate.skip
@@ -82,46 +83,6 @@ module Gem::Deprecate
     end
   end
 
-  ##
-  # Simple deprecation method that deprecates +name+ by wrapping it up
-  # in a dummy method. It warns on each call to the dummy method
-  # telling the user of +repl+ (unless +repl+ is :none) and the
-  # year/month that it is planned to go away.
-
-  def deprecate(name, repl, year, month)
-    class_eval do
-      old = "_deprecated_#{name}"
-      alias_method old, name
-      define_method name do |*args, &block|
-        klass = self.kind_of? Module
-        target = klass ? "#{self}." : "#{self.class}#"
-        msg = [ "NOTE: #{target}#{name} is deprecated",
-                repl == :none ? " with no replacement" : "; use #{repl} instead",
-                ". It will be removed on or after %4d-%02d-01." % [year, month],
-                "\n#{target}#{name} called from #{Gem.location_of_caller.join(":")}",
-        ]
-        warn "#{msg.join}." unless Gem::Deprecate.skip
-        send old, *args, &block
-      end
-    end
-  end
-
-  # Deprecation method to deprecate Rubygems commands
-  def deprecate_command(year, month)
-    class_eval do
-      define_method "deprecated?" do
-        true
-      end
-
-      define_method "deprecation_warning" do
-        msg = [ "#{self.command} command is deprecated",
-                ". It will be removed on or after %4d-%02d-01.\n" % [year, month],
-        ]
-
-        alert_warning "#{msg.join}" unless Gem::Deprecate.skip
-      end
-    end
-  end
   module_function :deprecate, :deprecate_command, :skip_during
 
 end
