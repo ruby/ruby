@@ -25,7 +25,7 @@ describe "Process.times" do
           skip "getrusage is not supported on this environment"
         end
 
-        found = (max * 10).times.find do
+        found = (max * 100).times.find do
           time = Process.times.utime
           ('%.6f' % time).end_with?('000')
         end
