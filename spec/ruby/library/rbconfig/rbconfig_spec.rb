@@ -39,7 +39,9 @@ describe 'RbConfig::CONFIG' do
 
   guard -> {RbConfig::TOPDIR} do
     it "libdir/LIBRUBY_SO is the path to libruby and it exists if and only if ENABLE_SHARED" do
-      libdir = RbConfig::CONFIG[RbConfig::CONFIG['libdirname'] || 'libdir']
+      libdirname = RbConfig::CONFIG['LIBPATHENV'] == 'PATH' ? 'bindir' :
+                     RbConfig::CONFIG['libdirname']
+      libdir = RbConfig::CONFIG[libdirname]
       libruby_so = "#{libdir}/#{RbConfig::CONFIG['LIBRUBY_SO']}"
       case RbConfig::CONFIG['ENABLE_SHARED']
       when 'yes'
