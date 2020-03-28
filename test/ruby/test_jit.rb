@@ -38,20 +38,35 @@ class TestJIT < Test::Unit::TestCase
     @untested_insns ||= (RubyVM::INSTRUCTION_NAMES.map(&:to_sym) - TEST_PENDING_INSNS)
   end
 
-  def setup
-    unless JITSupport.supported?
-      skip 'JIT seems not supported on this platform'
+  def self.setup
+    return if defined?(@setup_hooked)
+    @setup_hooked = true
+
+    # ci.rvm.jp caches its build environment. Clean up temporary files left by SEGV.
+    if ENV['RUBY_DEBUG']&.include?('ci')
+      Dir.glob("#{ENV.fetch('TMPDIR', '/tmp')}/_ruby_mjit_p*u*.*").each do |file|
+        if File.mtime(file) < Time.now - 60 * 60 * 24
+          puts "test/ruby/test_jit.rb: removing #{file}"
+          File.unlink(file)
+        end
+      end
     end
 
     # ruby -w -Itest/lib test/ruby/test_jit.rb
-    if $VERBOSE && !defined?(@@at_exit_hooked)
+    if $VERBOSE
       at_exit do
         unless TestJIT.untested_insns.empty?
           warn "you may want to add tests for following insns, when you have a chance: #{TestJIT.untested_insns.join(' ')}"
         end
       end
-      @@at_exit_hooked = true
     end
+  end
+
+  def setup
+    unless JITSupport.supported?
+      skip 'JIT seems not supported on this platform'
+    end
+    self.class.setup
   end
 
   def test_compile_insn_nop
