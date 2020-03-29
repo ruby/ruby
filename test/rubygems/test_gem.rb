@@ -1750,6 +1750,18 @@ class TestGem < Gem::TestCase
     assert_nil              Gem.find_unresolved_default_spec("README")
   end
 
+  def test_register_default_spec_old_style_with_folder_starting_with_lib
+    Gem.clear_default_specs
+
+    old_style = Gem::Specification.new do |spec|
+      spec.files = ["libexec/bundle", "foo.rb", "bar.rb"]
+    end
+
+    Gem.register_default_spec old_style
+
+    assert_equal old_style, Gem.find_unresolved_default_spec("foo.rb")
+  end
+
   def test_use_gemdeps
     gem_deps_file = 'gem.deps.rb'.tap(&Gem::UNTAINT)
     spec = util_spec 'a', 1
