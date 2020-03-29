@@ -281,7 +281,7 @@ class TestGemCommandManager < Gem::TestCase
     foo_command = Class.new(Gem::Command) do
       extend Gem::Deprecate
 
-      deprecate_command(2099, 4)
+      deprecate_command
 
       def execute
         say "pew pew!"
@@ -296,7 +296,7 @@ class TestGemCommandManager < Gem::TestCase
     end
 
     assert_equal "pew pew!\n", @ui.output
-    assert_equal("WARNING:  foo command is deprecated. It will be removed on or after 2099-04-01.\n", @ui.error)
+    assert_match(/WARNING:  foo command is deprecated. It will be removed in Rubygems [0-9]+/, @ui.error)
   ensure
     Gem::Commands.send(:remove_const, :FooCommand)
   end
