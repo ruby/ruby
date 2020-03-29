@@ -195,7 +195,7 @@ class Gem::DependencyInstaller
 
     set
   end
-  deprecate :find_gems_with_sources, :none, 2020, 12
+  deprecate :find_gems_with_sources
 
   def in_background(what) # :nodoc:
     fork_happened = false

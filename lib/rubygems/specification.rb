@@ -720,7 +720,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Deprecated: You must now specify the executable name to  Gem.bin_path.
 
   attr_writer :default_executable
-  deprecate :default_executable=, :none, 2018, 12
+  deprecate :default_executable=
 
   ##
   # Allows deinstallation of gems with legacy platforms.
@@ -733,7 +733,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Formerly used to set rubyforge project.
 
   attr_writer :rubyforge_project
-  deprecate :rubyforge_project=, :none, 2019, 12
+  deprecate :rubyforge_project=
 
   ##
   # The Gem::Specification version of this gemspec.
@@ -1725,7 +1725,7 @@ class Gem::Specification < Gem::BasicSpecification
     end
     result
   end
-  deprecate :default_executable, :none, 2018, 12
+  deprecate :default_executable
 
   ##
   # The default value for specification attribute +name+
@@ -1928,7 +1928,7 @@ class Gem::Specification < Gem::BasicSpecification
   def has_rdoc # :nodoc:
     true
   end
-  deprecate :has_rdoc, :none, 2018, 12
+  deprecate :has_rdoc
 
   ##
   # Deprecated and ignored.
@@ -1938,10 +1938,10 @@ class Gem::Specification < Gem::BasicSpecification
   def has_rdoc=(ignored) # :nodoc:
     @has_rdoc = true
   end
-  deprecate :has_rdoc=, :none, 2018, 12
+  deprecate :has_rdoc=
 
   alias :has_rdoc? :has_rdoc # :nodoc:
-  deprecate :has_rdoc?, :none, 2018, 12
+  deprecate :has_rdoc?
 
   ##
   # True if this gem has files in test_files
