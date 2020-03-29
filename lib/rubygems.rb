@@ -1216,10 +1216,11 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     #
 
     def register_default_spec(spec)
+      extended_require_paths = spec.require_paths.map {|f| f + "/"}
       new_format = spec.require_paths.any? {|path| spec.files.any? {|f| f.start_with? path } }
 
       if new_format
-        prefix_group = spec.require_paths.map {|f| f + "/"}.join("|")
+        prefix_group = extended_require_paths.join("|")
         prefix_pattern = /^(#{prefix_group})/
       end
 
