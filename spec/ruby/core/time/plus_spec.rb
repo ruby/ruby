@@ -50,17 +50,17 @@ describe "Time#+" do
 
   it "preserves time zone" do
     time_with_zone = Time.now.utc
-    time_with_zone.zone.should == (time_with_zone + 60*60).zone
+    time_with_zone.zone.should == (time_with_zone + 1).zone
 
     time_with_zone = Time.now
-    time_with_zone.zone.should == (time_with_zone + 60*60).zone
+    time_with_zone.zone.should == (time_with_zone + 1).zone
   end
 
   ruby_version_is "2.6" do
     context "zone is a timezone object" do
       it "preserves time zone" do
         zone = TimeSpecs::Timezone.new(offset: (5*3600+30*60))
-        time = Time.new(2012, 1, 1, 12, 0, 0, zone) + 60*60
+        time = Time.new(2012, 1, 1, 12, 0, 0, zone) + 1
 
         time.zone.should == zone
       end
