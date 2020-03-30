@@ -156,6 +156,10 @@ class TestRegexp < Test::Unit::TestCase
     s = "foo"
     s[/(?<bar>o)/, "bar"] = "baz"
     assert_equal("fbazo", s)
+
+    /.*/ =~ "abc"
+    "a".sub("a", "")
+    assert_raise(IndexError) {Regexp.last_match(:_id)}
   end
 
   def test_named_capture_with_nul
