@@ -2,6 +2,6 @@ did_you_mean 1.2.0 https://github.com/yuki24/did_you_mean
 minitest 5.10.3 https://github.com/seattlerb/minitest
 net-telnet 0.1.1 https://github.com/ruby/net-telnet
 power_assert 1.1.1 https://github.com/k-tsj/power_assert
-rake 12.3.0 https://github.com/ruby/rake
+rake 12.3.3 https://github.com/ruby/rake
 test-unit 3.2.7 https://github.com/test-unit/test-unit
 xmlrpc 0.3.0 https://github.com/ruby/xmlrpc
