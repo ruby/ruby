@@ -1252,14 +1252,12 @@ dist:
 up:: update-remote
 
 up::
-	-$(Q)$(MAKE) $(mflags) Q=$(Q) REVISION_FORCE=PHONY "$(REVISION_H)"
-
-up::
-	-$(Q)$(MAKE) $(mflags) Q=$(Q) after-update
+	-$(Q)$(MAKE) $(mflags) Q=$(Q) REVISION_FORCE=PHONY after-update
 
 yes::
 no::
 
+after-update:: $(REVISION_H)
 after-update:: extract-extlibs
 after-update:: extract-gems
 
