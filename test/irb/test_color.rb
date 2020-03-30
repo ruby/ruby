@@ -29,7 +29,7 @@ module TestIRB
         "def self.foo; bar; end" => "#{GREEN}def#{CLEAR} #{CYAN}#{BOLD}self#{CLEAR}.#{BLUE}#{BOLD}foo#{CLEAR}; bar; #{GREEN}end#{CLEAR}",
         'erb = ERB.new("a#{nil}b", trim_mode: "-")' => "erb = #{BLUE}#{BOLD}#{UNDERLINE}ERB#{CLEAR}.new(#{RED}#{BOLD}\"#{CLEAR}#{RED}a#{CLEAR}#{RED}\#{#{CLEAR}#{CYAN}#{BOLD}nil#{CLEAR}#{RED}}#{CLEAR}#{RED}b#{CLEAR}#{RED}#{BOLD}\"#{CLEAR}, #{MAGENTA}trim_mode:#{CLEAR} #{RED}#{BOLD}\"#{CLEAR}#{RED}-#{CLEAR}#{RED}#{BOLD}\"#{CLEAR})",
         "# comment" => "#{BLUE}#{BOLD}# comment#{CLEAR}",
-        "yield(hello)" => "#{GREEN}yield#{CLEAR}(hello)",
+        "def f;yield(hello);end" => "#{GREEN}def#{CLEAR} #{BLUE}#{BOLD}f#{CLEAR};#{GREEN}yield#{CLEAR}(hello);#{GREEN}end#{CLEAR}",
         '"##@var]"' => "#{RED}#{BOLD}\"#{CLEAR}#{RED}\##{CLEAR}#{RED}\##{CLEAR}@var#{RED}]#{CLEAR}#{RED}#{BOLD}\"#{CLEAR}",
         '"foo#{a} #{b}"' => "#{RED}#{BOLD}\"#{CLEAR}#{RED}foo#{CLEAR}#{RED}\#{#{CLEAR}a#{RED}}#{CLEAR}#{RED} #{CLEAR}#{RED}\#{#{CLEAR}b#{RED}}#{CLEAR}#{RED}#{BOLD}\"#{CLEAR}",
         '/r#{e}g/' => "#{RED}#{BOLD}/#{CLEAR}#{RED}r#{CLEAR}#{RED}\#{#{CLEAR}e#{RED}}#{CLEAR}#{RED}g#{CLEAR}#{RED}#{BOLD}/#{CLEAR}",

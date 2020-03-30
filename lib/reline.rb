@@ -45,40 +45,44 @@ module Reline
       @completion_quote_character = nil
     end
 
+    def encoding
+      Reline::IOGate.encoding
+    end
+
     def completion_append_character=(val)
       if val.nil?
         @completion_append_character = nil
       elsif val.size == 1
-        @completion_append_character = val.encode(Encoding::default_external)
+        @completion_append_character = val.encode(Reline::IOGate.encoding)
       elsif val.size > 1
-        @completion_append_character = val[0].encode(Encoding::default_external)
+        @completion_append_character = val[0].encode(Reline::IOGate.encoding)
       else
         @completion_append_character = nil
       end
     end
 
     def basic_word_break_characters=(v)
-      @basic_word_break_characters = v.encode(Encoding::default_external)
+      @basic_word_break_characters = v.encode(Reline::IOGate.encoding)
     end
 
     def completer_word_break_characters=(v)
-      @completer_word_break_characters = v.encode(Encoding::default_external)
+      @completer_word_break_characters = v.encode(Reline::IOGate.encoding)
     end
 
     def basic_quote_characters=(v)
-      @basic_quote_characters = v.encode(Encoding::default_external)
+      @basic_quote_characters = v.encode(Reline::IOGate.encoding)
     end
 
     def completer_quote_characters=(v)
-      @completer_quote_characters = v.encode(Encoding::default_external)
+      @completer_quote_characters = v.encode(Reline::IOGate.encoding)
     end
 
     def filename_quote_characters=(v)
-      @filename_quote_characters = v.encode(Encoding::default_external)
+      @filename_quote_characters = v.encode(Reline::IOGate.encoding)
     end
 
     def special_prefixes=(v)
-      @special_prefixes = v.encode(Encoding::default_external)
+      @special_prefixes = v.encode(Reline::IOGate.encoding)
     end
 
     def completion_case_fold=(v)
@@ -171,7 +175,7 @@ module Reline
 
       whole_buffer = line_editor.whole_buffer.dup
       whole_buffer.taint if RUBY_VERSION < '2.7'
-      if add_hist and whole_buffer and whole_buffer.chomp.size > 0
+      if add_hist and whole_buffer and whole_buffer.chomp("\n").size > 0
         Reline::HISTORY << whole_buffer
       end
 
@@ -184,8 +188,8 @@ module Reline
 
       line = line_editor.line.dup
       line.taint if RUBY_VERSION < '2.7'
-      if add_hist and line and line.chomp.size > 0
-        Reline::HISTORY << line.chomp
+      if add_hist and line and line.chomp("\n").size > 0
+        Reline::HISTORY << line.chomp("\n")
       end
 
       line_editor.reset_line if line_editor.line.nil?
@@ -201,7 +205,7 @@ module Reline
       otio = Reline::IOGate.prep
 
       may_req_ambiguous_char_width
-      line_editor.reset(prompt)
+      line_editor.reset(prompt, encoding: Reline::IOGate.encoding)
       if multiline
         line_editor.multiline_on
         if block_given?
@@ -332,8 +336,14 @@ module Reline
       @ambiguous_width = 2 if Reline::IOGate == Reline::GeneralIO or STDOUT.is_a?(File)
       return if ambiguous_width
       Reline::IOGate.move_cursor_column(0)
-      print "\u{25bd}"
-      @ambiguous_width = Reline::IOGate.cursor_pos.x
+      begin
+        output.write "\u{25bd}"
+      rescue Encoding::UndefinedConversionError
+        # LANG=C
+        @ambiguous_width = 1
+      else
+        @ambiguous_width = Reline::IOGate.cursor_pos.x
+      end
       Reline::IOGate.move_cursor_column(0)
       Reline::IOGate.erase_after_cursor
     end
@@ -387,11 +397,15 @@ module Reline
   def_instance_delegators self, :readmultiline
   private :readmultiline
 
+  def self.encoding_system_needs
+    self.core.encoding
+  end
+
   def self.core
     @core ||= Core.new { |core|
       core.config = Reline::Config.new
       core.key_stroke = Reline::KeyStroke.new(core.config)
-      core.line_editor = Reline::LineEditor.new(core.config)
+      core.line_editor = Reline::LineEditor.new(core.config, Reline::IOGate.encoding)
 
       core.basic_word_break_characters = " \t\n`><=;|&{("
       core.completer_word_break_characters = " \t\n`><=;|&{("
@@ -405,14 +419,11 @@ module Reline
   def self.line_editor
     core.line_editor
   end
-
-  HISTORY = History.new(core.config)
 end
 
 if RbConfig::CONFIG['host_os'] =~ /mswin|msys|mingw|cygwin|bccwin|wince|emc/
   require 'reline/windows'
-  if Reline::Windows.get_screen_size == [0, 0]
-    # Maybe Mintty on Cygwin
+  if Reline::Windows.msys_tty?
     require 'reline/ansi'
     Reline::IOGate = Reline::ANSI
   else
@@ -422,4 +433,5 @@ else
   require 'reline/ansi'
   Reline::IOGate = Reline::ANSI
 end
+Reline::HISTORY = Reline::History.new(Reline.core.config)
 require 'reline/general_io'

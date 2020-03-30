@@ -3,11 +3,6 @@ require_relative '../../../../uri/lib/uri'
 require 'cgi' # for escaping
 require_relative '../../../../connection_pool/lib/connection_pool'
 
-begin
-  require 'net/http/pipeline'
-rescue LoadError
-end
-
 autoload :OpenSSL, 'openssl'
 
 ##
@@ -771,23 +766,6 @@ class Bundler::Persistent::Net::HTTP::Persistent
 
   def normalize_uri uri
     (uri =~ /^https?:/) ? uri : "http://#{uri}"
-  end
-
-  ##
-  # Pipelines +requests+ to the HTTP server at +uri+ yielding responses if a
-  # block is given.  Returns all responses received.
-  #
-  # See
-  # Net::HTTP::Pipeline[http://docs.seattlerb.org/net-http-pipeline/Net/HTTP/Pipeline.html]
-  # for further details.
-  #
-  # Only if <tt>net-http-pipeline</tt> was required before
-  # <tt>net-http-persistent</tt> #pipeline will be present.
-
-  def pipeline uri, requests, &block # :yields: responses
-    connection_for uri do |connection|
-      connection.http.pipeline requests, &block
-    end
   end
 
   ##

@@ -364,6 +364,11 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
         assert_ctrl("#{cc.ord}", cc, r, w)
         assert_ctrl("#{cc.ord}", cc, r, w)
       end
+      if cc = ctrl["stop"]
+        assert_ctrl("#{cc.ord}", cc, r, w)
+        assert_ctrl("#{cc.ord}", cc, r, w)
+        assert_ctrl("#{cc.ord}", cc, r, w)
+      end
     end
   end
 
@@ -457,7 +462,7 @@ defined?(IO.console) and TestIO_Console.class_eval do
     noctty = [EnvUtil.rubybin, "-e", "Process.daemon(true)"]
   when !(rubyw = RbConfig::CONFIG["RUBYW_INSTALL_NAME"]).empty?
     dir, base = File.split(EnvUtil.rubybin)
-    noctty = [File.join(dir, base.sub(/ruby/, rubyw))]
+    noctty = [File.join(dir, base.sub(RUBY_ENGINE, rubyw))]
   end
 
   if noctty

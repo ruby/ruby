@@ -1464,7 +1464,7 @@ rb_nogvl(void *(*func)(void *), void *data1,
 	data2 = th;
     }
     else if (ubf && vm_living_thread_num(th->vm) == 1) {
-        if (RB_NOGVL_UBF_ASYNC_SAFE) {
+        if (flags & RB_NOGVL_UBF_ASYNC_SAFE) {
             th->vm->ubf_async_safe = 1;
         }
         else {

@@ -79,4 +79,8 @@ class TestTracepointObj < Test::Unit::TestCase
     end
   end
 
+  def test_teardown_with_active_GC_end_hook
+    assert_separately([], 'require("-test-/tracepoint"); Bug.after_gc_exit_hook = proc {}')
+  end
+
 end

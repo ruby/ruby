@@ -3937,12 +3937,19 @@ p_expr_basic	: p_value
 			$$ = new_array_pattern_tail(p, Qnone, 0, 0, Qnone, &@$);
 			$$ = new_array_pattern(p, Qnone, Qnone, $$, &@$);
 		    }
-		| tLBRACE {$<tbl>$ = push_pktbl(p);} p_kwargs '}'
+		| tLBRACE
+		    {
+			$<tbl>$ = push_pktbl(p);
+			$<num>1 = p->in_kwarg;
+			p->in_kwarg = 0;
+		    }
+		  p_kwargs rbrace
 		    {
 			pop_pktbl(p, $<tbl>2);
+			p->in_kwarg = $<num>1;
 			$$ = new_hash_pattern(p, Qnone, $3, &@$);
 		    }
-		| tLBRACE '}'
+		| tLBRACE rbrace
 		    {
 			$$ = new_hash_pattern_tail(p, Qnone, 0, &@$);
 			$$ = new_hash_pattern(p, Qnone, $$, &@$);
@@ -4050,6 +4057,10 @@ p_kwargs	: p_kwarg ',' p_kwrest
 			$$ =  new_hash_pattern_tail(p, new_unique_key_hash(p, $1, &@$), $3, &@$);
 		    }
 		| p_kwarg
+		    {
+			$$ =  new_hash_pattern_tail(p, new_unique_key_hash(p, $1, &@$), 0, &@$);
+		    }
+		| p_kwarg ','
 		    {
 			$$ =  new_hash_pattern_tail(p, new_unique_key_hash(p, $1, &@$), 0, &@$);
 		    }
@@ -5396,6 +5407,9 @@ rparen		: opt_nl ')'
 		;
 
 rbracket	: opt_nl ']'
+		;
+
+rbrace		: opt_nl '}'
 		;
 
 trailer		: /* none */

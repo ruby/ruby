@@ -26,6 +26,7 @@
 
 NORETURN(void rb_raise_jump(VALUE, VALUE));
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
+void rb_ec_clear_all_trace_func(const rb_execution_context_t *ec);
 
 static int rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex);
 static int rb_ec_exec_node(rb_execution_context_t *ec, void *n);
@@ -140,7 +141,7 @@ rb_ec_teardown(rb_execution_context_t *ec)
     }
     EC_POP_TAG();
     rb_ec_exec_end_proc(ec);
-    rb_ec_clear_current_thread_trace_func(ec);
+    rb_ec_clear_all_trace_func(ec);
 }
 
 static void

@@ -1,6 +1,6 @@
 minitest 5.13.0 https://github.com/seattlerb/minitest
 net-telnet 0.2.0 https://github.com/ruby/net-telnet
-power_assert 1.1.5 https://github.com/k-tsj/power_assert
+power_assert 1.1.7 https://github.com/k-tsj/power_assert
 rake 13.0.1 https://github.com/ruby/rake
 test-unit 3.3.4 https://github.com/test-unit/test-unit
 xmlrpc 0.3.0 https://github.com/ruby/xmlrpc

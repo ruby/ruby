@@ -57,10 +57,10 @@ class Reline::LineEditor
   NON_PRINTING_END = "\2"
   WIDTH_SCANNER = /\G(?:#{NON_PRINTING_START}|#{NON_PRINTING_END}|#{CSI_REGEXP}|#{OSC_REGEXP}|\X)/
 
-  def initialize(config)
+  def initialize(config, encoding)
     @config = config
     @completion_append_character = ''
-    reset_variables
+    reset_variables(encoding: encoding)
   end
 
   private def check_multiline_prompt(buffer, prompt)
@@ -85,10 +85,10 @@ class Reline::LineEditor
     end
   end
 
-  def reset(prompt = '', encoding = Encoding.default_external)
+  def reset(prompt = '', encoding:)
     @rest_height = (Reline::IOGate.get_screen_size.first - 1) - Reline::IOGate.cursor_pos.y
     @screen_size = Reline::IOGate.get_screen_size
-    reset_variables(prompt, encoding)
+    reset_variables(prompt, encoding: encoding)
     @old_trap = Signal.trap('SIGINT') {
       @old_trap.call if @old_trap.respond_to?(:call) # can also be string, ex: "DEFAULT"
       raise Interrupt
@@ -139,7 +139,7 @@ class Reline::LineEditor
     @eof
   end
 
-  def reset_variables(prompt = '', encoding = Encoding.default_external)
+  def reset_variables(prompt = '', encoding:)
     @prompt = prompt
     @mark_pointer = nil
     @encoding = encoding
@@ -317,9 +317,9 @@ class Reline::LineEditor
     if @menu_info
       scroll_down(@highest_in_all - @first_line_started_from)
       @rerender_all = true
-      @menu_info.list.each do |item|
+      @menu_info.list.sort!.each do |item|
         Reline::IOGate.move_cursor_column(0)
-        @output.print item
+        @output.write item
         @output.flush
         scroll_down(1)
       end
@@ -507,12 +507,20 @@ class Reline::LineEditor
     Reline::IOGate.move_cursor_column(0)
     visual_lines.each_with_index do |line, index|
       if line.nil?
-        Reline::IOGate.erase_after_cursor
-        move_cursor_down(1)
-        Reline::IOGate.move_cursor_column(0)
+        if Reline::IOGate.win? and calculate_width(visual_lines[index - 1], true) == Reline::IOGate.get_screen_size.last
+          # A newline is automatically inserted if a character is rendered at eol on command prompt.
+        else
+          Reline::IOGate.erase_after_cursor
+          move_cursor_down(1)
+          Reline::IOGate.move_cursor_column(0)
+        end
         next
       end
-      @output.print line
+      @output.write line
+      if Reline::IOGate.win? and calculate_width(line, true) == Reline::IOGate.get_screen_size.last
+        # A newline is automatically inserted if a character is rendered at eol on command prompt.
+        @rest_height -= 1 if @rest_height > 0
+      end
       @output.flush
       if @first_prompt
         @first_prompt = false
@@ -535,7 +543,7 @@ class Reline::LineEditor
     return before if before.nil? || before.empty?
 
     if after = @output_modifier_proc&.call("#{before.join("\n")}\n", complete: finished?)
-      after.lines(chomp: true)
+      after.lines("\n", chomp: true)
     else
       before
     end
@@ -905,7 +913,6 @@ class Reline::LineEditor
         quote = nil
         i += 1
         rest = nil
-        break_pointer = nil
       elsif quote and slice.start_with?(escaped_quote)
         # skip
         i += 2
@@ -915,7 +922,7 @@ class Reline::LineEditor
         closing_quote = /(?!\\)#{Regexp.escape(quote)}/
         escaped_quote = /\\#{Regexp.escape(quote)}/
         i += 1
-        break_pointer = i
+        break_pointer = i - 1
       elsif not quote and slice =~ word_break_regexp
         rest = $'
         i += 1
@@ -937,6 +944,11 @@ class Reline::LineEditor
       end
     else
       preposing = ''
+      if break_pointer
+        preposing = @line.byteslice(0, break_pointer)
+      else
+        preposing = ''
+      end
       target = before
     end
     [preposing.encode(@encoding), target.encode(@encoding), postposing.encode(@encoding)]
@@ -1091,6 +1103,11 @@ class Reline::LineEditor
 
   private def ed_insert(key)
     if key.instance_of?(String)
+      begin
+        key.encode(Encoding::UTF_8)
+      rescue Encoding::UndefinedConversionError
+        return
+      end
       width = Reline::Unicode.get_mbchar_width(key)
       if @cursor == @cursor_max
         @line += key
@@ -1101,6 +1118,11 @@ class Reline::LineEditor
       @cursor += width
       @cursor_max += width
     else
+      begin
+        key.chr.encode(Encoding::UTF_8)
+      rescue Encoding::UndefinedConversionError
+        return
+      end
       if @cursor == @cursor_max
         @line += key.chr
       else
@@ -1876,6 +1898,16 @@ class Reline::LineEditor
     end
   end
 
+  private def vi_insert_at_bol(key)
+    ed_move_to_beg(key)
+    @config.editing_mode = :vi_insert
+  end
+
+  private def vi_add_at_eol(key)
+    ed_move_to_end(key)
+    @config.editing_mode = :vi_insert
+  end
+
   private def ed_delete_prev_char(key, arg: 1)
     deleted = ''
     arg.times do
@@ -1898,6 +1930,18 @@ class Reline::LineEditor
   end
 
   private def vi_change_meta(key)
+    @waiting_operator_proc = proc { |cursor_diff, byte_pointer_diff|
+      if byte_pointer_diff > 0
+        @line, cut = byteslice!(@line, @byte_pointer, byte_pointer_diff)
+      elsif byte_pointer_diff < 0
+        @line, cut = byteslice!(@line, @byte_pointer + byte_pointer_diff, -byte_pointer_diff)
+      end
+      copy_for_vi(cut)
+      @cursor += cursor_diff if cursor_diff < 0
+      @cursor_max -= cursor_diff.abs
+      @byte_pointer += byte_pointer_diff if byte_pointer_diff < 0
+      @config.editing_mode = :vi_insert
+    }
   end
 
   private def vi_delete_meta(key)
@@ -2063,12 +2107,17 @@ class Reline::LineEditor
     @waiting_proc = ->(key_for_proc) { search_next_char(key_for_proc, arg) }
   end
 
-  private def search_next_char(key, arg)
+  private def vi_to_next_char(key, arg: 1)
+    @waiting_proc = ->(key_for_proc) { search_next_char(key_for_proc, arg, true) }
+  end
+
+  private def search_next_char(key, arg, need_prev_char = false)
     if key.instance_of?(String)
       inputed_char = key
     else
       inputed_char = key.chr
     end
+    prev_total = nil
     total = nil
     found = false
     @line.byteslice(@byte_pointer..-1).grapheme_clusters.each do |mbchar|
@@ -2086,13 +2135,66 @@ class Reline::LineEditor
           end
         end
         width = Reline::Unicode.get_mbchar_width(mbchar)
+        prev_total = total
         total = [total.first + mbchar.bytesize, total.last + width]
       end
     end
-    if found and total
+    if not need_prev_char and found and total
       byte_size, width = total
       @byte_pointer += byte_size
       @cursor += width
+    elsif need_prev_char and found and prev_total
+      byte_size, width = prev_total
+      @byte_pointer += byte_size
+      @cursor += width
+    end
+    @waiting_proc = nil
+  end
+
+  private def vi_prev_char(key, arg: 1)
+    @waiting_proc = ->(key_for_proc) { search_prev_char(key_for_proc, arg) }
+  end
+
+  private def vi_to_prev_char(key, arg: 1)
+    @waiting_proc = ->(key_for_proc) { search_prev_char(key_for_proc, arg, true) }
+  end
+
+  private def search_prev_char(key, arg, need_next_char = false)
+    if key.instance_of?(String)
+      inputed_char = key
+    else
+      inputed_char = key.chr
+    end
+    prev_total = nil
+    total = nil
+    found = false
+    @line.byteslice(0..@byte_pointer).grapheme_clusters.reverse_each do |mbchar|
+      # total has [byte_size, cursor]
+      unless total
+        # skip cursor point
+        width = Reline::Unicode.get_mbchar_width(mbchar)
+        total = [mbchar.bytesize, width]
+      else
+        if inputed_char == mbchar
+          arg -= 1
+          if arg.zero?
+            found = true
+            break
+          end
+        end
+        width = Reline::Unicode.get_mbchar_width(mbchar)
+        prev_total = total
+        total = [total.first + mbchar.bytesize, total.last + width]
+      end
+    end
+    if not need_next_char and found and total
+      byte_size, width = total
+      @byte_pointer -= byte_size
+      @cursor -= width
+    elsif need_next_char and found and prev_total
+      byte_size, width = prev_total
+      @byte_pointer -= byte_size
+      @cursor -= width
     end
     @waiting_proc = nil
   end

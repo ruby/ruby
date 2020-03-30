@@ -73,8 +73,16 @@ set_after_gc_start(VALUE module, VALUE proc)
 		       "__set_after_gc_start_tpval__", "__set_after_gc_start_proc__");
 }
 
+static VALUE
+start_after_gc_exit(VALUE module, VALUE proc)
+{
+    return set_gc_hook(module, proc, RUBY_INTERNAL_EVENT_GC_EXIT,
+                       "__set_after_gc_exit_tpval__", "__set_after_gc_exit_proc__");
+}
+
 void
 Init_gc_hook(VALUE module)
 {
     rb_define_module_function(module, "after_gc_start_hook=", set_after_gc_start, 1);
+    rb_define_module_function(module, "after_gc_exit_hook=", start_after_gc_exit, 1);
 }

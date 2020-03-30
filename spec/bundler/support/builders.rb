@@ -611,7 +611,7 @@ module Spec
         unless options[:no_default]
           gem_source = options[:source] || "path@#{path}"
           @files = _default_files.
-                   merge("lib/#{name}/source.rb" => "#{Builders.constantize(name)}_SOURCE = #{gem_source.to_s.dump}").
+                   merge("lib/#{entrypoint}/source.rb" => "#{Builders.constantize(name)}_SOURCE = #{gem_source.to_s.dump}").
                    merge(@files)
         end
 
@@ -627,14 +627,19 @@ module Spec
       end
 
       def _default_files
-        @_default_files ||= begin
-          platform_string = " #{@spec.platform}" unless @spec.platform == Gem::Platform::RUBY
-          { "lib/#{name}.rb" => "#{Builders.constantize(name)} = '#{version}#{platform_string}'" }
-        end
+        @_default_files ||= { "lib/#{entrypoint}.rb" => "#{Builders.constantize(name)} = '#{version}#{platform_string}'" }
+      end
+
+      def entrypoint
+        name.tr("-", "/")
       end
 
       def _default_path
         @context.tmp("libs", @spec.full_name)
+      end
+
+      def platform_string
+        " #{@spec.platform}" unless @spec.platform == Gem::Platform::RUBY
       end
     end
 
@@ -755,7 +760,10 @@ module Spec
 
     class PluginBuilder < GemBuilder
       def _default_files
-        @_default_files ||= super.merge("plugins.rb" => "")
+        @_default_files ||= {
+          "lib/#{name}.rb" => "#{Builders.constantize(name)} = '#{version}#{platform_string}'",
+          "plugins.rb" => "",
+        }
       end
     end
 

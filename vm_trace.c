@@ -276,6 +276,12 @@ rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec)
     rb_threadptr_remove_event_hook(ec, rb_ec_thread_ptr(ec), 0, Qundef);
 }
 
+void
+rb_ec_clear_all_trace_func(const rb_execution_context_t *ec)
+{
+    rb_threadptr_remove_event_hook(ec, MATCH_ANY_FILTER_TH, 0, Qundef);
+}
+
 /* invoke hooks */
 
 static void

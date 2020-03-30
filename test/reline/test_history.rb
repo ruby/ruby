@@ -2,6 +2,10 @@ require_relative 'helper'
 require "reline/history"
 
 class Reline::History::Test < Reline::TestCase
+  def setup
+    Reline.send(:test_mode)
+  end
+
   def test_ancestors
     assert_equal(Reline::History.ancestors.include?(Array), true)
   end
@@ -268,6 +272,10 @@ class Reline::History::Test < Reline::TestCase
   end
 
   def get_default_internal_encoding
-    return Encoding.default_internal || Encoding.find("locale")
+    if RUBY_PLATFORM =~ /mswin|mingw/
+      Encoding.default_internal || Encoding::UTF_8
+    else
+      Encoding.default_internal || Encoding.find("locale")
+    end
   end
 end

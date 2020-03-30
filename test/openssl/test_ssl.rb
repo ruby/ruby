@@ -1270,8 +1270,13 @@ end
     }
   end
 
+  def readwrite_loop_safe(ctx, ssl)
+    readwrite_loop(ctx, ssl)
+  rescue OpenSSL::SSL::SSLError
+  end
+
   def test_close_after_socket_close
-    start_server { |port|
+    start_server(server_proc: method(:readwrite_loop_safe)) { |port|
       sock = TCPSocket.new("127.0.0.1", port)
       ssl = OpenSSL::SSL::SSLSocket.new(sock)
       ssl.connect

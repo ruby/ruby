@@ -210,7 +210,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     build_lib("foo", :path => bundled_app)
     gemspec = bundled_app("foo.gemspec").read
     bundled_app("foo.gemspec").open("w") do |f|
-      f.write "#{gemspec.strip}.tap { gem 'rack-obama'; require 'rack-obama' }"
+      f.write "#{gemspec.strip}.tap { gem 'rack-obama'; require 'rack/obama' }"
     end
 
     install_gemfile! <<-G

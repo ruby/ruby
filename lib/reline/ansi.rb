@@ -1,20 +1,49 @@
 require 'io/console'
 
 class Reline::ANSI
+  def self.encoding
+    Encoding.default_external
+  end
+
+  def self.win?
+    false
+  end
+
   RAW_KEYSTROKE_CONFIG = {
+    # Console (80x25)
+    [27, 91, 49, 126] => :ed_move_to_beg, # Home
+    [27, 91, 52, 126] => :ed_move_to_end, # End
+    [27, 91, 51, 126] => :key_delete,     # Del
     [27, 91, 65] => :ed_prev_history,     # ↑
     [27, 91, 66] => :ed_next_history,     # ↓
     [27, 91, 67] => :ed_next_char,        # →
     [27, 91, 68] => :ed_prev_char,        # ←
-    [27, 91, 51, 126] => :key_delete,     # Del
-    [27, 91, 49, 126] => :ed_move_to_beg, # Home
-    [27, 91, 52, 126] => :ed_move_to_end, # End
+
+    # KDE
     [27, 91, 72] => :ed_move_to_beg,      # Home
     [27, 91, 70] => :ed_move_to_end,      # End
+    # Del is 0x08
+    [27, 71, 65] => :ed_prev_history,     # ↑
+    [27, 71, 66] => :ed_next_history,     # ↓
+    [27, 71, 67] => :ed_next_char,        # →
+    [27, 71, 68] => :ed_prev_char,        # ←
+
+    # GNOME
+    [27, 79, 72] => :ed_move_to_beg,      # Home
+    [27, 79, 70] => :ed_move_to_end,      # End
+    # Del is 0x08
+    # Arrow keys are the same of KDE
+
+    # others
     [27, 32] => :em_set_mark,             # M-<space>
     [24, 24] => :em_exchange_mark,        # C-x C-x TODO also add Windows
     [27, 91, 49, 59, 53, 67] => :em_next_word, # Ctrl+→
     [27, 91, 49, 59, 53, 68] => :ed_prev_word, # Ctrl+←
+
+    [27, 79, 65] => :ed_prev_history,     # ↑
+    [27, 79, 66] => :ed_next_history,     # ↓
+    [27, 79, 67] => :ed_next_char,        # →
+    [27, 79, 68] => :ed_prev_char,        # ←
   }
 
   @@input = STDIN
@@ -41,16 +70,23 @@ class Reline::ANSI
   end
 
   def self.retrieve_keybuffer
+    begin
       result = select([@@input], [], [], 0.001)
       return if result.nil?
       str = @@input.read_nonblock(1024)
       str.bytes.each do |c|
         @@buf.push(c)
       end
+    rescue EOFError
+    end
   end
 
   def self.get_screen_size
-    @@input.winsize
+    s = @@input.winsize
+    return s if s[0] > 0 && s[1] > 0
+    s = [ENV["LINES"].to_i, ENV["COLUMNS"].to_i]
+    return s if s[0] > 0 && s[1] > 0
+    [24, 80]
   rescue Errno::ENOTTY
     [24, 80]
   end
@@ -88,12 +124,12 @@ class Reline::ANSI
   end
 
   def self.move_cursor_column(x)
-    print "\e[#{x + 1}G"
+    @@output.write "\e[#{x + 1}G"
   end
 
   def self.move_cursor_up(x)
     if x > 0
-      print "\e[#{x}A" if x > 0
+      @@output.write "\e[#{x}A" if x > 0
     elsif x < 0
       move_cursor_down(-x)
     end
@@ -101,24 +137,24 @@ class Reline::ANSI
 
   def self.move_cursor_down(x)
     if x > 0
-      print "\e[#{x}B" if x > 0
+      @@output.write "\e[#{x}B" if x > 0
     elsif x < 0
       move_cursor_up(-x)
     end
   end
 
   def self.erase_after_cursor
-    print "\e[K"
+    @@output.write "\e[K"
   end
 
   def self.scroll_down(x)
     return if x.zero?
-    print "\e[#{x}S"
+    @@output.write "\e[#{x}S"
   end
 
   def self.clear_screen
-    print "\e[2J"
-    print "\e[1;1H"
+    @@output.write "\e[2J"
+    @@output.write "\e[1;1H"
   end
 
   @@old_winch_handler = nil

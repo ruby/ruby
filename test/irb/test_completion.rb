@@ -25,5 +25,27 @@ module TestIRB
       assert_include(IRB::InputCompletor.retrieve_completion_data("1r.positi", bind: binding), "1r.positive?")
       assert_empty(IRB::InputCompletor.retrieve_completion_data("1i.positi", bind: binding))
     end
+
+    def test_complete_symbol
+      _ = :aiueo
+      assert_include(IRB::InputCompletor.retrieve_completion_data(":a", bind: binding), ":aiueo")
+      assert_empty(IRB::InputCompletor.retrieve_completion_data(":irb_unknown_symbol_abcdefg", bind: binding))
+    end
+
+    def test_complete_symbol_failure
+      assert_nil(IRB::InputCompletor::PerfectMatchedProc.(":aiueo", bind: binding))
+    end
+
+    def test_complete_reserved_words
+      candidates = IRB::InputCompletor.retrieve_completion_data("de", bind: binding)
+      %w[def defined?].each do |word|
+        assert_include candidates, word
+      end
+
+      candidates = IRB::InputCompletor.retrieve_completion_data("__", bind: binding)
+      %w[__ENCODING__ __LINE__ __FILE__].each do |word|
+        assert_include candidates, word
+      end
+    end
   end
 end

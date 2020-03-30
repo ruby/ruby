@@ -83,8 +83,17 @@ class Reline::Config
     @key_actors[@keymap_label]
   end
 
+  def inputrc_path
+    case ENV['INPUTRC']
+    when nil, ''
+      DEFAULT_PATH
+    else
+      ENV['INPUTRC']
+    end
+  end
+
   def read(file = nil)
-    file ||= File.expand_path(ENV['INPUTRC'] || DEFAULT_PATH)
+    file ||= File.expand_path(inputrc_path)
     begin
       if file.respond_to?(:readlines)
         lines = file.readlines
@@ -184,9 +193,8 @@ class Reline::Config
 
   def bind_variable(name, value)
     case name
-    when *VARIABLE_NAMES then
-      variable_name = :"@#{name.tr(?-, ?_)}"
-      instance_variable_set(variable_name, value.nil? || value == '1' || value == 'on')
+    when 'history-size'
+      @history_size = value.to_i
     when 'bell-style'
       @bell_style =
         case value
@@ -225,6 +233,9 @@ class Reline::Config
       end
     when 'keyseq-timeout'
       @keyseq_timeout = value.to_i
+    when *VARIABLE_NAMES then
+      variable_name = :"@#{name.tr(?-, ?_)}"
+      instance_variable_set(variable_name, value.nil? || value == '1' || value == 'on')
     end
   end
 

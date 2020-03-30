@@ -210,8 +210,10 @@ module Spec
         yield stdin, stdout, wait_thr if block_given?
         stdin.close
 
-        command_execution.stdout = Thread.new { stdout.read }.value.strip
-        command_execution.stderr = Thread.new { stderr.read }.value.strip
+        stdout_read_thread = Thread.new { stdout.read }
+        stderr_read_thread = Thread.new { stderr.read }
+        command_execution.stdout = stdout_read_thread.value.strip
+        command_execution.stderr = stderr_read_thread.value.strip
         command_execution.exitstatus = wait_thr && wait_thr.value.exitstatus
       end
 

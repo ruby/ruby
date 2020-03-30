@@ -747,11 +747,14 @@ ar_free_and_clear_table(VALUE hash)
 static void
 ar_try_convert_table(VALUE hash)
 {
-    st_table *new_tab;
+    if (!RHASH_AR_TABLE_P(hash)) return;
+
     const unsigned size = RHASH_AR_TABLE_SIZE(hash);
+
+    st_table *new_tab;
     st_index_t i;
 
-    if (!RHASH_AR_TABLE_P(hash) || size < RHASH_AR_TABLE_MAX_SIZE) {
+    if (size < RHASH_AR_TABLE_MAX_SIZE) {
         return;
     }
 
@@ -996,6 +999,11 @@ ar_update(VALUE hash, st_data_t key,
     st_data_t value = 0, old_key;
     st_hash_t hash_value = ar_do_hash(key);
 
+    if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
+        // `#hash` changes ar_table -> st_table
+        return -1;
+    }
+
     if (RHASH_AR_TABLE_SIZE(hash) > 0) {
         bin = ar_find_entry(hash, hash_value, key);
         existing = (bin != RHASH_AR_TABLE_MAX_BOUND) ? TRUE : FALSE;
@@ -1045,6 +1053,11 @@ ar_insert(VALUE hash, st_data_t key, st_data_t value)
     unsigned bin = RHASH_AR_TABLE_BOUND(hash);
     st_hash_t hash_value = ar_do_hash(key);
 
+    if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
+        // `#hash` changes ar_table -> st_table
+        return -1;
+    }
+
     hash_ar_table(hash); /* prepare ltbl */
 
     bin = ar_find_entry(hash, hash_value, key);
@@ -1077,6 +1090,10 @@ ar_lookup(VALUE hash, st_data_t key, st_data_t *value)
     }
     else {
         st_hash_t hash_value = ar_do_hash(key);
+        if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
+            // `#hash` changes ar_table -> st_table
+            return st_lookup(RHASH_ST_TABLE(hash), key, value);
+        }
         unsigned bin = ar_find_entry(hash, hash_value, key);
 
         if (bin == RHASH_AR_TABLE_MAX_BOUND) {
@@ -1098,6 +1115,10 @@ ar_delete(VALUE hash, st_data_t *key, st_data_t *value)
     unsigned bin;
     st_hash_t hash_value = ar_do_hash(*key);
 
+    if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
+        // `#hash` changes ar_table -> st_table
+        return st_delete(RHASH_ST_TABLE(hash), key, value);
+    }
 
     bin = ar_find_entry(hash, hash_value, *key);
 
@@ -3156,7 +3177,8 @@ static int
 transform_values_foreach_replace(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
 {
     VALUE new_value = rb_yield((VALUE)*value);
-    *value = new_value;
+    VALUE hash = (VALUE)argp;
+    RB_OBJ_WRITE(hash, value, new_value);
     return ST_CONTINUE;
 }
 
@@ -3186,7 +3208,7 @@ rb_hash_transform_values(VALUE hash)
     result = hash_dup(hash, rb_cHash, 0);
 
     if (!RHASH_EMPTY_P(hash)) {
-        rb_hash_stlike_foreach_with_replace(result, transform_values_foreach_func, transform_values_foreach_replace, 0);
+        rb_hash_stlike_foreach_with_replace(result, transform_values_foreach_func, transform_values_foreach_replace, result);
     }
 
     return result;
@@ -3216,7 +3238,7 @@ rb_hash_transform_values_bang(VALUE hash)
     rb_hash_modify_check(hash);
 
     if (!RHASH_TABLE_EMPTY_P(hash)) {
-        rb_hash_stlike_foreach_with_replace(hash, transform_values_foreach_func, transform_values_foreach_replace, 0);
+        rb_hash_stlike_foreach_with_replace(hash, transform_values_foreach_func, transform_values_foreach_replace, hash);
     }
 
     return hash;

@@ -1,6 +1,14 @@
 require 'timeout'
 
 class Reline::GeneralIO
+  def self.encoding
+    RUBY_PLATFORM =~ /mswin|mingw/ ? Encoding::UTF_8 : Encoding::default_external
+  end
+
+  def self.win?
+    false
+  end
+
   RAW_KEYSTROKE_CONFIG = {}
 
   @@buf = []

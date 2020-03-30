@@ -72,7 +72,7 @@ module IRB
       end
       history_file = IRB.rc_file("_history") unless history_file
       if File.exist?(history_file)
-        open(history_file) do |f|
+        open(history_file, "r:#{IRB.conf[:LC_MESSAGES].encoding}") do |f|
           f.each { |l|
             l = l.chomp
             if self.class == ReidlineInputMethod and history.last&.end_with?("\\")
@@ -107,7 +107,7 @@ module IRB
           raise
         end
 
-        open(history_file, 'w', 0600 ) do |f|
+        open(history_file, "w:#{IRB.conf[:LC_MESSAGES].encoding}", 0600) do |f|
           hist = history.map{ |l| l.split("\n").join("\\\n") }
           f.puts(hist[-num..-1] || hist)
         end

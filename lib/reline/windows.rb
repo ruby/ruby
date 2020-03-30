@@ -1,6 +1,14 @@
 require 'fiddle/import'
 
 class Reline::Windows
+  def self.encoding
+    Encoding::UTF_8
+  end
+
+  def self.win?
+    true
+  end
+
   RAW_KEYSTROKE_CONFIG = {
     [224, 72] => :ed_prev_history, # ↑
     [224, 80] => :ed_next_history, # ↓
@@ -68,6 +76,8 @@ class Reline::Windows
   STD_INPUT_HANDLE = -10
   STD_OUTPUT_HANDLE = -11
   WINDOW_BUFFER_SIZE_EVENT = 0x04
+  FILE_TYPE_PIPE = 0x0003
+  FILE_NAME_INFO = 2
   @@getwch = Win32API.new('msvcrt', '_getwch', [], 'I')
   @@kbhit = Win32API.new('msvcrt', '_kbhit', [], 'I')
   @@GetKeyState = Win32API.new('user32', 'GetKeyState', ['L'], 'L')
@@ -80,8 +90,35 @@ class Reline::Windows
   @@hConsoleInputHandle = @@GetStdHandle.call(STD_INPUT_HANDLE)
   @@GetNumberOfConsoleInputEvents = Win32API.new('kernel32', 'GetNumberOfConsoleInputEvents', ['L', 'P'], 'L')
   @@ReadConsoleInput = Win32API.new('kernel32', 'ReadConsoleInput', ['L', 'P', 'L', 'P'], 'L')
+  @@GetFileType = Win32API.new('kernel32', 'GetFileType', ['L'], 'L')
+  @@GetFileInformationByHandleEx = Win32API.new('kernel32', 'GetFileInformationByHandleEx', ['L', 'I', 'P', 'L'], 'I')
+
   @@input_buf = []
   @@output_buf = []
+
+  def self.msys_tty?(io=@@hConsoleInputHandle)
+    # check if fd is a pipe
+    if @@GetFileType.call(io) != FILE_TYPE_PIPE
+      return false
+    end
+
+    bufsize = 1024
+    p_buffer = "\0" * bufsize
+    res = @@GetFileInformationByHandleEx.call(io, FILE_NAME_INFO, p_buffer, bufsize - 2)
+    return false if res == 0
+
+    # get pipe name: p_buffer layout is:
+    #   struct _FILE_NAME_INFO {
+    #     DWORD FileNameLength;
+    #     WCHAR FileName[1];
+    #   } FILE_NAME_INFO
+    len = p_buffer[0, 4].unpack("L")[0]
+    name = p_buffer[4, len].encode(Encoding::UTF_8, Encoding::UTF_16LE, invalid: :replace)
+
+    # Check if this could be a MSYS2 pty pipe ('\msys-XXXX-ptyN-XX')
+    # or a cygwin pty pipe ('\cygwin-XXXX-ptyN-XX')
+    name =~ /(msys-|cygwin-).*-pty/ ? true : false
+  end
 
   def self.getwch
     unless @@input_buf.empty?
@@ -99,7 +136,7 @@ class Reline::Windows
         return @@input_buf.shift
       end
       begin
-        bytes = ret.chr(Encoding::UTF_8).encode(Encoding.default_external).bytes
+        bytes = ret.chr(Encoding::UTF_8).bytes
         @@input_buf.push(*bytes)
       rescue Encoding::UndefinedConversionError
         @@input_buf << ret
@@ -205,7 +242,7 @@ class Reline::Windows
 
   def self.scroll_down(val)
     return if val.zero?
-    scroll_rectangle = [0, val, get_screen_size.first, get_screen_size.last].pack('s4')
+    scroll_rectangle = [0, val, get_screen_size.last, get_screen_size.first].pack('s4')
     destination_origin = 0 # y * 65536 + x
     fill = [' '.ord, 0].pack('SS')
     @@ScrollConsoleScreenBuffer.call(@@hConsoleHandle, scroll_rectangle, nil, destination_origin, fill)
@@ -213,8 +250,8 @@ class Reline::Windows
 
   def self.clear_screen
     # TODO: Use FillConsoleOutputCharacter and FillConsoleOutputAttribute
-    print "\e[2J"
-    print "\e[1;1H"
+    write "\e[2J"
+    write "\e[1;1H"
   end
 
   def self.set_screen_size(rows, columns)
