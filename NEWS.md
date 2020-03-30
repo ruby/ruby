@@ -137,6 +137,9 @@ Excluding feature bug fixes.
 * C API functions related to $SAFE have been removed.
   [[Feature #16131]]
 
+* C API header file `ruby/ruby.h` was split. [[GH-2991]] Should have no implact
+  on extension libraries, but users might experience slow compilations.
+
 ## Implementation improvements
 
 * The number of hashes allocated when using a keyword splat in
@@ -168,3 +171,4 @@ Excluding feature bug fixes.
 [Feature #16377]: https://bugs.ruby-lang.org/issues/16377
 [Bug #12706]:     https://bugs.ruby-lang.org/issues/12706
 [Feature #16555]: https://bugs.ruby-lang.org/issues/16555
+[GH-2991]:        https://github.com/ruby/ruby/pull/2991
