@@ -2043,7 +2043,7 @@ static void
 str_make_independent_expand(VALUE str, long len, long expand, const int termlen)
 {
     char *ptr;
-    const char *oldptr;
+    char *oldptr;
     long capa = len + expand;
 
     if (len > capa) len = capa;
@@ -2061,6 +2061,9 @@ str_make_independent_expand(VALUE str, long len, long expand, const int termlen)
     oldptr = RSTRING_PTR(str);
     if (oldptr) {
 	memcpy(ptr, oldptr, len);
+    }
+    if (FL_TEST_RAW(str, STR_NOEMBED|STR_NOFREE|STR_SHARED) == STR_NOEMBED) {
+        xfree(oldptr);
     }
     STR_SET_NOEMBED(str);
     FL_UNSET(str, STR_SHARED|STR_NOFREE);
