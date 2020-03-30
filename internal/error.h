@@ -11,8 +11,8 @@
 #define INTERNAL_ERROR_H
 #include "ruby/3/config.h"
 #include <stdarg.h>             /* for va_list */
-#include "internal/stdbool.h"   /* for bool */
 #include "internal/string.h"    /* for rb_fstring_cstr */
+#include "ruby/3/stdbool.h"     /* for bool */
 #include "ruby/encoding.h"      /* for rb_encoding */
 #include "ruby/intern.h"        /* for rb_exc_raise */
 #include "ruby/ruby.h"          /* for enum ruby_value_type */

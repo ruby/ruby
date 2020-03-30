@@ -16,7 +16,7 @@
 # include <sys/types.h>         /* for ssize_t (note: on Windows ssize_t is */
 #endif                          /* `#define`d in ruby/config.h) */
 
-#include "internal/stdbool.h"   /* for bool */
+#include "ruby/3/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for struct RBasic */
 
 #ifndef BDIGIT

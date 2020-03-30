@@ -13,7 +13,7 @@
 #include <stddef.h>             /* for size_t */
 #include "internal/array.h"     /* for rb_ary_tmp_new_fill */
 #include "internal/gc.h"        /* for RB_OBJ_WRITE */
-#include "internal/stdbool.h"   /* for bool */
+#include "ruby/3/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for rb_block_call_func_t */
 
 #ifndef IMEMO_DEBUG

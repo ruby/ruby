@@ -682,16 +682,17 @@ rb_stat_mode(VALUE self)
 static VALUE
 rb_stat_nlink(VALUE self)
 {
-    nlink_t n = get_stat(self)->st_nlink;
+    /* struct stat::st_nlink is nlink_t in POSIX.  Not the case for Windows. */
+    const struct stat *ptr = get_stat(self);
 
-    if (sizeof(nlink_t) <= sizeof(int)) {
-        return UINT2NUM((unsigned)n);
+    if (sizeof(ptr->st_nlink) <= sizeof(int)) {
+        return UINT2NUM((unsigned)ptr->st_nlink);
     }
-    else if (sizeof(nlink_t) == sizeof(long)) {
-        return ULONG2NUM((unsigned long)n);
+    else if (sizeof(ptr->st_nlink) == sizeof(long)) {
+        return ULONG2NUM((unsigned long)ptr->st_nlink);
     }
-    else if (sizeof(nlink_t) == sizeof(LONG_LONG)) {
-        return ULL2NUM((unsigned LONG_LONG)n);
+    else if (sizeof(ptr->st_nlink) == sizeof(LONG_LONG)) {
+        return ULL2NUM((unsigned LONG_LONG)ptr->st_nlink);
     }
     else {
         rb_bug(":FIXME: don't know what to do");

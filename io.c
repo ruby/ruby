@@ -112,6 +112,8 @@
 # include <copyfile.h>
 #endif
 
+#include "ruby/3/stdbool.h"
+#include "ccan/list/list.h"
 #include "dln.h"
 #include "encindex.h"
 #include "id.h"
@@ -123,8 +125,6 @@
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/process.h"
-#include "internal/stdbool.h"
-#include "ccan/list/list.h"
 #include "internal/thread.h"
 #include "internal/transcode.h"
 #include "internal/variable.h"

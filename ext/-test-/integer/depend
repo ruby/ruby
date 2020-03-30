@@ -18,7 +18,6 @@ core_ext.o: $(top_srcdir)/internal/fixnum.h
 core_ext.o: $(top_srcdir)/internal/numeric.h
 core_ext.o: $(top_srcdir)/internal/serial.h
 core_ext.o: $(top_srcdir)/internal/static_assert.h
-core_ext.o: $(top_srcdir)/internal/stdbool.h
 core_ext.o: $(top_srcdir)/internal/vm.h
 core_ext.o: core_ext.c
 init.o: $(RUBY_EXTCONF_H)

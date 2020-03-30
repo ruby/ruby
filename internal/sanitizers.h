@@ -26,7 +26,7 @@
 # endif
 #endif
 
-#include "internal/stdbool.h"   /* for bool */
+#include "ruby/3/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for VALUE */
 
 #if 0

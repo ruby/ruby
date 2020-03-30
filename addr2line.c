@@ -25,7 +25,7 @@
 #include <libproc.h>
 #endif
 
-#include "internal/stdbool.h"
+#include "ruby/3/stdbool.h"
 
 #if defined(USE_ELF) || defined(HAVE_MACH_O_LOADER_H)
 

@@ -9,9 +9,9 @@
  */
 #ifndef INTERNAL_VM_H
 #define INTERNAL_VM_H
+#include "ruby/3/stdbool.h"         /* for bool */
 #include "internal/serial.h"        /* for rb_serial_t */
 #include "internal/static_assert.h" /* for STATIC_ASSERT */
-#include "internal/stdbool.h"       /* for bool */
 #include "ruby/ruby.h"              /* for ID */
 #include "ruby/st.h"                /* for st_table */
 

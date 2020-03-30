@@ -24,7 +24,6 @@ coverage.o: $(top_srcdir)/internal/hash.h
 coverage.o: $(top_srcdir)/internal/imemo.h
 coverage.o: $(top_srcdir)/internal/serial.h
 coverage.o: $(top_srcdir)/internal/static_assert.h
-coverage.o: $(top_srcdir)/internal/stdbool.h
 coverage.o: $(top_srcdir)/internal/thread.h
 coverage.o: $(top_srcdir)/internal/vm.h
 coverage.o: $(top_srcdir)/internal/warnings.h

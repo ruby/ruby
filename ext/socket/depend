@@ -35,7 +35,6 @@ ancdata.o: $(top_srcdir)/internal/gc.h
 ancdata.o: $(top_srcdir)/internal/io.h
 ancdata.o: $(top_srcdir)/internal/serial.h
 ancdata.o: $(top_srcdir)/internal/static_assert.h
-ancdata.o: $(top_srcdir)/internal/stdbool.h
 ancdata.o: $(top_srcdir)/internal/string.h
 ancdata.o: $(top_srcdir)/internal/thread.h
 ancdata.o: $(top_srcdir)/internal/vm.h
@@ -69,7 +68,6 @@ basicsocket.o: $(top_srcdir)/internal/gc.h
 basicsocket.o: $(top_srcdir)/internal/io.h
 basicsocket.o: $(top_srcdir)/internal/serial.h
 basicsocket.o: $(top_srcdir)/internal/static_assert.h
-basicsocket.o: $(top_srcdir)/internal/stdbool.h
 basicsocket.o: $(top_srcdir)/internal/string.h
 basicsocket.o: $(top_srcdir)/internal/thread.h
 basicsocket.o: $(top_srcdir)/internal/vm.h
@@ -103,7 +101,6 @@ constants.o: $(top_srcdir)/internal/gc.h
 constants.o: $(top_srcdir)/internal/io.h
 constants.o: $(top_srcdir)/internal/serial.h
 constants.o: $(top_srcdir)/internal/static_assert.h
-constants.o: $(top_srcdir)/internal/stdbool.h
 constants.o: $(top_srcdir)/internal/string.h
 constants.o: $(top_srcdir)/internal/thread.h
 constants.o: $(top_srcdir)/internal/vm.h
@@ -138,7 +135,6 @@ ifaddr.o: $(top_srcdir)/internal/gc.h
 ifaddr.o: $(top_srcdir)/internal/io.h
 ifaddr.o: $(top_srcdir)/internal/serial.h
 ifaddr.o: $(top_srcdir)/internal/static_assert.h
-ifaddr.o: $(top_srcdir)/internal/stdbool.h
 ifaddr.o: $(top_srcdir)/internal/string.h
 ifaddr.o: $(top_srcdir)/internal/thread.h
 ifaddr.o: $(top_srcdir)/internal/vm.h
@@ -172,7 +168,6 @@ init.o: $(top_srcdir)/internal/gc.h
 init.o: $(top_srcdir)/internal/io.h
 init.o: $(top_srcdir)/internal/serial.h
 init.o: $(top_srcdir)/internal/static_assert.h
-init.o: $(top_srcdir)/internal/stdbool.h
 init.o: $(top_srcdir)/internal/string.h
 init.o: $(top_srcdir)/internal/thread.h
 init.o: $(top_srcdir)/internal/vm.h
@@ -206,7 +201,6 @@ ipsocket.o: $(top_srcdir)/internal/gc.h
 ipsocket.o: $(top_srcdir)/internal/io.h
 ipsocket.o: $(top_srcdir)/internal/serial.h
 ipsocket.o: $(top_srcdir)/internal/static_assert.h
-ipsocket.o: $(top_srcdir)/internal/stdbool.h
 ipsocket.o: $(top_srcdir)/internal/string.h
 ipsocket.o: $(top_srcdir)/internal/thread.h
 ipsocket.o: $(top_srcdir)/internal/vm.h
@@ -240,7 +234,6 @@ option.o: $(top_srcdir)/internal/gc.h
 option.o: $(top_srcdir)/internal/io.h
 option.o: $(top_srcdir)/internal/serial.h
 option.o: $(top_srcdir)/internal/static_assert.h
-option.o: $(top_srcdir)/internal/stdbool.h
 option.o: $(top_srcdir)/internal/string.h
 option.o: $(top_srcdir)/internal/thread.h
 option.o: $(top_srcdir)/internal/vm.h
@@ -274,7 +267,6 @@ raddrinfo.o: $(top_srcdir)/internal/gc.h
 raddrinfo.o: $(top_srcdir)/internal/io.h
 raddrinfo.o: $(top_srcdir)/internal/serial.h
 raddrinfo.o: $(top_srcdir)/internal/static_assert.h
-raddrinfo.o: $(top_srcdir)/internal/stdbool.h
 raddrinfo.o: $(top_srcdir)/internal/string.h
 raddrinfo.o: $(top_srcdir)/internal/thread.h
 raddrinfo.o: $(top_srcdir)/internal/vm.h
@@ -308,7 +300,6 @@ socket.o: $(top_srcdir)/internal/gc.h
 socket.o: $(top_srcdir)/internal/io.h
 socket.o: $(top_srcdir)/internal/serial.h
 socket.o: $(top_srcdir)/internal/static_assert.h
-socket.o: $(top_srcdir)/internal/stdbool.h
 socket.o: $(top_srcdir)/internal/string.h
 socket.o: $(top_srcdir)/internal/thread.h
 socket.o: $(top_srcdir)/internal/vm.h
@@ -342,7 +333,6 @@ sockssocket.o: $(top_srcdir)/internal/gc.h
 sockssocket.o: $(top_srcdir)/internal/io.h
 sockssocket.o: $(top_srcdir)/internal/serial.h
 sockssocket.o: $(top_srcdir)/internal/static_assert.h
-sockssocket.o: $(top_srcdir)/internal/stdbool.h
 sockssocket.o: $(top_srcdir)/internal/string.h
 sockssocket.o: $(top_srcdir)/internal/thread.h
 sockssocket.o: $(top_srcdir)/internal/vm.h
@@ -376,7 +366,6 @@ tcpserver.o: $(top_srcdir)/internal/gc.h
 tcpserver.o: $(top_srcdir)/internal/io.h
 tcpserver.o: $(top_srcdir)/internal/serial.h
 tcpserver.o: $(top_srcdir)/internal/static_assert.h
-tcpserver.o: $(top_srcdir)/internal/stdbool.h
 tcpserver.o: $(top_srcdir)/internal/string.h
 tcpserver.o: $(top_srcdir)/internal/thread.h
 tcpserver.o: $(top_srcdir)/internal/vm.h
@@ -410,7 +399,6 @@ tcpsocket.o: $(top_srcdir)/internal/gc.h
 tcpsocket.o: $(top_srcdir)/internal/io.h
 tcpsocket.o: $(top_srcdir)/internal/serial.h
 tcpsocket.o: $(top_srcdir)/internal/static_assert.h
-tcpsocket.o: $(top_srcdir)/internal/stdbool.h
 tcpsocket.o: $(top_srcdir)/internal/string.h
 tcpsocket.o: $(top_srcdir)/internal/thread.h
 tcpsocket.o: $(top_srcdir)/internal/vm.h
@@ -444,7 +432,6 @@ udpsocket.o: $(top_srcdir)/internal/gc.h
 udpsocket.o: $(top_srcdir)/internal/io.h
 udpsocket.o: $(top_srcdir)/internal/serial.h
 udpsocket.o: $(top_srcdir)/internal/static_assert.h
-udpsocket.o: $(top_srcdir)/internal/stdbool.h
 udpsocket.o: $(top_srcdir)/internal/string.h
 udpsocket.o: $(top_srcdir)/internal/thread.h
 udpsocket.o: $(top_srcdir)/internal/vm.h
@@ -478,7 +465,6 @@ unixserver.o: $(top_srcdir)/internal/gc.h
 unixserver.o: $(top_srcdir)/internal/io.h
 unixserver.o: $(top_srcdir)/internal/serial.h
 unixserver.o: $(top_srcdir)/internal/static_assert.h
-unixserver.o: $(top_srcdir)/internal/stdbool.h
 unixserver.o: $(top_srcdir)/internal/string.h
 unixserver.o: $(top_srcdir)/internal/thread.h
 unixserver.o: $(top_srcdir)/internal/vm.h
@@ -512,7 +498,6 @@ unixsocket.o: $(top_srcdir)/internal/gc.h
 unixsocket.o: $(top_srcdir)/internal/io.h
 unixsocket.o: $(top_srcdir)/internal/serial.h
 unixsocket.o: $(top_srcdir)/internal/static_assert.h
-unixsocket.o: $(top_srcdir)/internal/stdbool.h
 unixsocket.o: $(top_srcdir)/internal/string.h
 unixsocket.o: $(top_srcdir)/internal/thread.h
 unixsocket.o: $(top_srcdir)/internal/vm.h
