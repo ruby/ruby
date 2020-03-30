@@ -11,7 +11,10 @@ if File.exist?(bundler_gemspec)
   Gem::Specification.dirs.shift
 end
 
-gem 'minitest', '~> 5.13'
+begin
+  gem 'minitest', '~> 5.13'
+rescue Gem::LoadError
+end
 
 begin
   require 'simplecov'
@@ -95,7 +98,7 @@ end
 # and uninstall gems, fetch remote gems through a stub fetcher and be assured
 # your normal set of gems is not affected.
 
-class Gem::TestCase < Minitest::Test
+class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Unit::TestCase)
 
   extend Gem::Deprecate
 
@@ -122,6 +125,11 @@ class Gem::TestCase < Minitest::Test
     loaded = Gem.loaded_specs.values.map(&:full_name)
 
     assert_equal expected.sort, loaded.sort if expected
+  end
+
+  def assert_path_exists(path, msg = nil)
+    msg = message(msg) { "Expected path '#{path}' to exist" }
+    assert File.exist?(path), msg
   end
 
   def assert_directory_exists(path, msg = nil)
@@ -215,6 +223,11 @@ class Gem::TestCase < Minitest::Test
     else
       RbConfig::CONFIG.delete 'EXEEXT'
     end
+  end
+
+  def refute_path_exists(path, msg = nil)
+    msg = message(msg) { "Expected path '#{path}' to not exist" }
+    refute File.exist?(path), msg
   end
 
   def scan_make_command_lines(output)
