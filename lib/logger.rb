@@ -349,8 +349,8 @@ class Logger
   # === Args
   #
   # +logdev+::
-  #   The log device.  This is a filename (String) or IO object (typically
-  #   +STDOUT+, +STDERR+, or an open file).
+  #   The log device.  This is a filename (String), IO object (typically
+  #   +STDOUT+, +STDERR+, or an open file) or nil (it writes nothing).
   # +shift_age+::
   #   Number of old log files to keep, *or* frequency of rotation (+daily+,
   #   +weekly+ or +monthly+). Default value is 0, which disables log file
