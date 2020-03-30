@@ -46,7 +46,7 @@ jobs:
         shell: bash
       - name: Checkout a pull request
         run: |
-          git clone --single-branch --shallow-since=yesterday --branch=${{ github.event.pull_request.head.ref }} https://github.com/${{ github.event.pull_request.head.repo.full_name }} src
+          git clone --single-branch --depth=50 --branch=${{ github.event.pull_request.head.ref }} https://github.com/${{ github.event.pull_request.head.repo.full_name }} src
           git -C src reset --hard ${{ github.event.pull_request.head.sha }}
         if: github.event_name == 'pull_request'
       - run: ./src/tool/actions-commit-info.sh
