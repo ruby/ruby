@@ -1511,12 +1511,10 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 
 command_asgn	: lhs '=' command_rhs
 		    {
-			value_expr($3);
 			$$ = node_assign($1, $3, &@$);
 		    }
 		| var_lhs tOP_ASGN command_rhs
 		    {
-			value_expr($3);
 			$$ = new_op_assign($1, $2, $3, &@$);
 		    }
 		| primary_value '[' opt_call_args rbracket tOP_ASGN command_rhs
@@ -1524,7 +1522,6 @@ command_asgn	: lhs '=' command_rhs
 		    /*%%%*/
 			NODE *args;
 
-			value_expr($6);
 			$3 = make_array($3, &@3);
 			args = arg_concat($3, $6, &@$);
 			if ($5 == tOROP) {
@@ -1543,12 +1540,10 @@ command_asgn	: lhs '=' command_rhs
 		    }
 		| primary_value call_op tIDENTIFIER tOP_ASGN command_rhs
 		    {
-			value_expr($5);
 			$$ = new_attr_op_assign($1, $2, $3, $4, $5, &@$);
 		    }
 		| primary_value call_op tCONSTANT tOP_ASGN command_rhs
 		    {
-			value_expr($5);
 			$$ = new_attr_op_assign($1, $2, $3, $4, $5, &@$);
 		    }
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN command_rhs
@@ -1564,7 +1559,6 @@ command_asgn	: lhs '=' command_rhs
 		    }
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN command_rhs
 		    {
-			value_expr($5);
 			$$ = new_attr_op_assign($1, ID2VAL(idCOLON2), $3, $4, $5, &@$);
 		    }
 		| backref tOP_ASGN command_rhs
