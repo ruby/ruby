@@ -98,7 +98,7 @@ end
 # and uninstall gems, fetch remote gems through a stub fetcher and be assured
 # your normal set of gems is not affected.
 
-class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Unit::TestCase)
+class Gem::TestCase < Minitest::Test
 
   extend Gem::Deprecate
 
