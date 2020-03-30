@@ -446,6 +446,16 @@ module MiniTest
       assert caught, message(msg) { default }
     end
 
+    def assert_path_exists(path, msg = nil)
+      msg = message(msg) { "Expected path '#{path}' to exist" }
+      assert File.exist?(path), msg
+    end
+
+    def refute_path_exists(path, msg = nil)
+      msg = message(msg) { "Expected path '#{path}' to not exist" }
+      refute File.exist?(path), msg
+    end
+
     ##
     # Captures $stdout and $stderr into strings:
     #
