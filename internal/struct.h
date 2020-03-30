@@ -9,10 +9,9 @@
  */
 #ifndef INTERNAL_STRUCT_H
 #define INTERNAL_STRUCT_H
+#include "ruby/3/stdbool.h"     /* for bool */
 #include "internal/gc.h"        /* for RB_OBJ_WRITE */
-#include "internal/stdbool.h"   /* for bool */
 #include "ruby/ruby.h"          /* for struct RBasic */
-#include "internal/gc.h"        /* for RB_OBJ_WRITE */
 
 enum {
     RSTRUCT_EMBED_LEN_MAX = RVALUE_EMBED_LEN_MAX,

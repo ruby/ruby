@@ -15,7 +15,6 @@ capacity.o: $(hdrdir)/ruby/st.h
 capacity.o: $(hdrdir)/ruby/subst.h
 capacity.o: $(top_srcdir)/internal.h
 capacity.o: $(top_srcdir)/internal/compilers.h
-capacity.o: $(top_srcdir)/internal/stdbool.h
 capacity.o: $(top_srcdir)/internal/string.h
 capacity.o: capacity.c
 coderange.o: $(RUBY_EXTCONF_H)
@@ -49,7 +48,6 @@ cstr.o: $(hdrdir)/ruby/subst.h
 cstr.o: $(top_srcdir)/internal.h
 cstr.o: $(top_srcdir)/internal/compilers.h
 cstr.o: $(top_srcdir)/internal/error.h
-cstr.o: $(top_srcdir)/internal/stdbool.h
 cstr.o: $(top_srcdir)/internal/string.h
 cstr.o: cstr.c
 ellipsize.o: $(RUBY_EXTCONF_H)

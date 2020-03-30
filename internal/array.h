@@ -12,7 +12,7 @@
 #include "ruby/3/config.h"
 #include <stddef.h>                 /* for size_t */
 #include "internal/static_assert.h" /* for STATIC_ASSERT */
-#include "internal/stdbool.h"       /* for bool */
+#include "ruby/3/stdbool.h"         /* for bool */
 #include "ruby/ruby.h"              /* for RARRAY_LEN */
 
 #ifndef ARRAY_DEBUG

@@ -9,7 +9,7 @@
  */
 #ifndef INTERNAL_MJIT_H
 #define INTERNAL_MJIT_H
-#include "internal/stdbool.h"   /* for bool */
+#include "ruby/3/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for VALUE */
 
 /* mjit.c */

@@ -12,7 +12,7 @@
 #include "ruby/3/config.h"      /* for HAVE_LONG_LONG */
 #include <limits.h>             /* for CHAR_BIT */
 #include "internal/compilers.h" /* for __has_builtin */
-#include "internal/stdbool.h"   /* for bool */
+#include "ruby/3/stdbool.h"     /* for bool */
 #include "ruby/intern.h"        /* for rb_big_mul */
 #include "ruby/ruby.h"          /* for RB_FIXABLE */
 
