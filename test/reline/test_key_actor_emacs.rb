@@ -8,8 +8,8 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     Reline::HISTORY.instance_variable_set(:@config, @config)
     Reline::HISTORY.clear
     @encoding = (RELINE_TEST_ENCODING rescue Encoding.default_external)
-    @line_editor = Reline::LineEditor.new(@config)
-    @line_editor.reset(@prompt, @encoding)
+    @line_editor = Reline::LineEditor.new(@config, @encoding)
+    @line_editor.reset(@prompt, encoding: @encoding)
   end
 
   def test_ed_insert_one
@@ -1325,6 +1325,68 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line('foo_ba')
   end
 
+  def test_completion_with_indent
+    @line_editor.completion_proc = proc { |word|
+      %w{
+        foo_foo
+        foo_bar
+        foo_baz
+        qux
+      }.map { |i|
+        i.encode(@encoding)
+      }
+    }
+    input_keys('  fo')
+    assert_byte_pointer_size('  fo')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('  fo')
+    assert_equal(nil, @line_editor.instance_variable_get(:@menu_info))
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('  foo_')
+    assert_cursor(6)
+    assert_cursor_max(6)
+    assert_line('  foo_')
+    assert_equal(nil, @line_editor.instance_variable_get(:@menu_info))
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('  foo_')
+    assert_cursor(6)
+    assert_cursor_max(6)
+    assert_line('  foo_')
+    assert_equal(%w{foo_foo foo_bar foo_baz}, @line_editor.instance_variable_get(:@menu_info).list)
+  end
+
+  def test_completion_with_indent_and_completer_quote_characters
+    @line_editor.completion_proc = proc { |word|
+      %w{
+        "".foo_foo
+        "".foo_bar
+        "".foo_baz
+        "".qux
+      }.map { |i|
+        i.encode(@encoding)
+      }
+    }
+    input_keys('  "".fo')
+    assert_byte_pointer_size('  "".fo')
+    assert_cursor(7)
+    assert_cursor_max(7)
+    assert_line('  "".fo')
+    assert_equal(nil, @line_editor.instance_variable_get(:@menu_info))
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('  "".foo_')
+    assert_cursor(9)
+    assert_cursor_max(9)
+    assert_line('  "".foo_')
+    assert_equal(nil, @line_editor.instance_variable_get(:@menu_info))
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('  "".foo_')
+    assert_cursor(9)
+    assert_cursor_max(9)
+    assert_line('  "".foo_')
+    assert_equal(%w{"".foo_foo "".foo_bar "".foo_baz}, @line_editor.instance_variable_get(:@menu_info).list)
+  end
+
   def test_completion_with_perfect_match
     @line_editor.completion_proc = proc { |word|
       %w{
@@ -1832,6 +1894,15 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_cursor_max(15)
     assert_line('aaa bbb ccc ddd')
     assert_equal([0, 0], @line_editor.instance_variable_get(:@mark_pointer))
+  end
+
+  def test_modify_lines_with_wrong_rs
+    original_global_slash = $/
+    $/ = 'b'
+    @line_editor.output_modifier_proc = proc { |output| Reline::Unicode.escape_for_print(output) }
+    input_keys("abcdef\n")
+    assert_equal(['abcdef'], @line_editor.__send__(:modify_lines, @line_editor.whole_lines))
+    $/ = original_global_slash
   end
 
 =begin # TODO: move KeyStroke instance from Reline to LineEditor

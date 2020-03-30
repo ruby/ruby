@@ -13,6 +13,7 @@ class Reline::WithinPipeTest < Reline::TestCase
   def teardown
     Reline.input = STDIN
     Reline.output = STDOUT
+    Reline.point = 0
     @reader.close
     @writer.close
     @output.close

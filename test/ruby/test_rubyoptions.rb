@@ -285,7 +285,7 @@ class TestRubyOptions < Test::Unit::TestCase
                       /unknown encoding name - test_ruby_test_rubyoptions_foobarbazqux \(RuntimeError\)/)
 
     if /mswin|mingw|aix|android/ =~ RUBY_PLATFORM &&
-      (str = "\u3042".force_encoding(Encoding.find("locale"))).valid_encoding?
+      (str = "\u3042".force_encoding(Encoding.find("external"))).valid_encoding?
       # This result depends on locale because LANG=C doesn't affect locale
       # on Windows.
       # On AIX, the source encoding of stdin with LANG=C is ISO-8859-1,
@@ -836,11 +836,11 @@ class TestRubyOptions < Test::Unit::TestCase
     def test_command_line_glob_nonascii
       bug10555 = '[ruby-dev:48752] [Bug #10555]'
       name = "\u{3042}.txt"
-      expected = name.encode("locale") rescue "?.txt"
+      expected = name.encode("external") rescue "?.txt"
       with_tmpchdir do |dir|
         open(name, "w") {}
         assert_in_out_err(["-e", "puts ARGV", "?.txt"], "", [expected], [],
-                          bug10555, encoding: "locale")
+                          bug10555, encoding: "external")
       end
     end
 
@@ -875,7 +875,7 @@ class TestRubyOptions < Test::Unit::TestCase
       with_tmpchdir do |dir|
         Ougai.each {|f| open(f, "w") {}}
         assert_in_out_err(["-Eutf-8", "-e", "puts ARGV", "*"], "", Ougai, encoding: "utf-8")
-        ougai = Ougai.map {|f| f.encode("locale", replace: "?")}
+        ougai = Ougai.map {|f| f.encode("external", replace: "?")}
         assert_in_out_err(["-e", "puts ARGV", "*.txt"], "", ougai)
       end
     end

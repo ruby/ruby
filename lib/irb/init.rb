@@ -296,15 +296,18 @@ module IRB # :nodoc:
   DefaultEncodings = Struct.new(:external, :internal)
   class << IRB
     private
-    def set_encoding(extern, intern = nil)
+    def set_encoding(extern, intern = nil, override: true)
       verbose, $VERBOSE = $VERBOSE, nil
       Encoding.default_external = extern unless extern.nil? || extern.empty?
       Encoding.default_internal = intern unless intern.nil? || intern.empty?
-      @CONF[:ENCODINGS] = IRB::DefaultEncodings.new(extern, intern)
       [$stdin, $stdout, $stderr].each do |io|
         io.set_encoding(extern, intern)
       end
-      @CONF[:LC_MESSAGES].instance_variable_set(:@encoding, extern)
+      if override
+        @CONF[:LC_MESSAGES].instance_variable_set(:@override_encoding, extern)
+      else
+        @CONF[:LC_MESSAGES].instance_variable_set(:@encoding, extern)
+      end
     ensure
       $VERBOSE = verbose
     end

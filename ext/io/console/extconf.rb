@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 require 'mkmf'
 
-ok = true
+ok = true if RUBY_ENGINE == "ruby"
 hdr = nil
 case
 when macro_defined?("_WIN32", "")
@@ -14,8 +14,9 @@ when have_header(hdr = "sgtty.h")
   %w"stty gtty".each {|f| have_func(f, hdr)}
 else
   ok = false
-end
-if ok
+end if ok
+case ok
+when true
   have_header("sys/ioctl.h") if hdr
   # rb_check_hash_type: 1.9.3
   # rb_io_get_write_io: 1.9.1
@@ -27,4 +28,6 @@ if ok
   create_makefile("io/console") {|conf|
     conf << "\n""VK_HEADER = #{vk_header}\n"
   }
+when nil
+  File.write("Makefile", dummy_makefile($srcdir).join(""))
 end
