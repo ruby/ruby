@@ -1,5 +1,5 @@
-http://sourceware.org/pub/libffi/libffi-3.2.1.tar.gz \
-  md5:83b89587607e3eb65c70d361f13bab43 \
-  sha512:980ca30a8d76f963fca722432b1fe5af77d7a4e4d2eac5144fbc5374d4c596609a293440573f4294207e1bdd9fda80ad1e1cafb2ffb543df5a275bc3bd546483 \
+https://github.com/libffi/libffi/archive/v3.2.1.tar.gz \
+  md5:9066486bcab807f7ddaaf2596348c1db \
+  sha512:e947ff66a9f3bc77c05dd2d4b7c6edc1c607374922879d0099bbef144a16c612eb283f6d067ed6c7e1ee39f98c8be0d41856e91234d810218fc7ae439d73d10f \
   #
 	win32/libffi-3.2.1-mswin.patch -p0
