@@ -127,11 +127,6 @@ class Gem::TestCase < Minitest::Test
     assert_equal expected.sort, loaded.sort if expected
   end
 
-  def assert_path_exists(path, msg = nil)
-    msg = message(msg) { "Expected path '#{path}' to exist" }
-    assert File.exist?(path), msg
-  end
-
   def assert_directory_exists(path, msg = nil)
     msg = message(msg) { "Expected path '#{path}' to be a directory" }
     assert_path_exists path
@@ -223,11 +218,6 @@ class Gem::TestCase < Minitest::Test
     else
       RbConfig::CONFIG.delete 'EXEEXT'
     end
-  end
-
-  def refute_path_exists(path, msg = nil)
-    msg = message(msg) { "Expected path '#{path}' to not exist" }
-    refute File.exist?(path), msg
   end
 
   def scan_make_command_lines(output)
