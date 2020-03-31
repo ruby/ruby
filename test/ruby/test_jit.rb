@@ -778,6 +778,25 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_inlined_exivar
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "aaa", success_count: 3, recompile_count: 1, min_calls: 2)
+    begin;
+      class Foo < Hash
+        def initialize
+          @a = :a
+        end
+
+        def bar
+          @a
+        end
+      end
+
+      print(Foo.new.bar)
+      print(Foo.new.bar) # compile #initialize, #bar -> recompile #bar
+      print(Foo.new.bar) # compile #bar with exivar
+    end;
+  end
+
   def test_inlined_undefined_ivar
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "bbb", success_count: 3, min_calls: 3)
     begin;
@@ -1065,12 +1084,13 @@ class TestJIT < Test::Unit::TestCase
   end
 
   # Shorthand for normal test cases
-  def assert_eval_with_jit(script, stdout: nil, success_count:, min_calls: 1, max_cache: 1000, insns: [], uplevel: 1, ignorable_patterns: [])
+  def assert_eval_with_jit(script, stdout: nil, success_count:, recompile_count: nil, min_calls: 1, max_cache: 1000, insns: [], uplevel: 1, ignorable_patterns: [])
     out, err = eval_with_jit(script, verbose: 1, min_calls: min_calls, max_cache: max_cache)
-    actual = err.scan(/^#{JIT_SUCCESS_PREFIX}:/).size
+    success_actual = err.scan(/^#{JIT_SUCCESS_PREFIX}:/).size
+    recompile_actual = err.scan(/^#{JIT_RECOMPILE_PREFIX}:/).size
     # Add --jit-verbose=2 logs for cl.exe because compiler's error message is suppressed
     # for cl.exe with --jit-verbose=1. See `start_process` in mjit_worker.c.
-    if RUBY_PLATFORM.match?(/mswin/) && success_count != actual
+    if RUBY_PLATFORM.match?(/mswin/) && success_count != success_actual
       out2, err2 = eval_with_jit(script, verbose: 2, min_calls: min_calls, max_cache: max_cache)
     end
 
@@ -1080,13 +1100,19 @@ class TestJIT < Test::Unit::TestCase
       mark_tested_insn(insn, used_insns: used_insns, uplevel: uplevel + 3)
     end
 
+    suffix = "script:\n#{code_block(script)}\nstderr:\n#{code_block(err)}#{(
+      "\nstdout(verbose=2 retry):\n#{code_block(out2)}\nstderr(verbose=2 retry):\n#{code_block(err2)}" if out2 || err2
+    )}"
     assert_equal(
-      success_count, actual,
-      "Expected #{success_count} times of JIT success, but succeeded #{actual} times.\n\n"\
-      "script:\n#{code_block(script)}\nstderr:\n#{code_block(err)}#{(
-        "\nstdout(verbose=2 retry):\n#{code_block(out2)}\nstderr(verbose=2 retry):\n#{code_block(err2)}" if out2 || err2
-      )}",
+      success_count, success_actual,
+      "Expected #{success_count} times of JIT success, but succeeded #{success_actual} times.\n\n#{suffix}",
     )
+    if recompile_count
+      assert_equal(
+        recompile_count, recompile_actual,
+        "Expected #{success_count} times of JIT recompile, but recompiled #{success_actual} times.\n\n#{suffix}",
+      )
+    end
     if stdout
       assert_equal(stdout, out, "Expected stdout #{out.inspect} to match #{stdout.inspect} with script:\n#{code_block(script)}")
     end

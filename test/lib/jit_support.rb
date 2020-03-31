@@ -3,6 +3,7 @@ require 'rbconfig'
 module JITSupport
   JIT_TIMEOUT = 600 # 10min for each...
   JIT_SUCCESS_PREFIX = 'JIT success \(\d+\.\dms\)'
+  JIT_RECOMPILE_PREFIX = 'JIT recompile'
   JIT_COMPACTION_PREFIX = 'JIT compaction \(\d+\.\dms\)'
   UNSUPPORTED_COMPILERS = [
     %r[\A.*/bin/intel64/icc\b],

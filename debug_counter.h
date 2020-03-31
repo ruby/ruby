@@ -328,6 +328,7 @@ RB_DEBUG_COUNTER(mjit_frame_JT2VM)
 /* MJIT cancel counters */
 RB_DEBUG_COUNTER(mjit_cancel)
 RB_DEBUG_COUNTER(mjit_cancel_ivar_inline)
+RB_DEBUG_COUNTER(mjit_cancel_exivar_inline)
 RB_DEBUG_COUNTER(mjit_cancel_send_inline)
 RB_DEBUG_COUNTER(mjit_cancel_opt_insn) /* CALL_SIMPLE_METHOD */
 RB_DEBUG_COUNTER(mjit_cancel_invalidate_all)

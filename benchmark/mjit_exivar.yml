@@ -1,0 +1,32 @@
+prelude: |
+  # frozen_string_literal: true
+  class Bench < Hash
+    def initialize
+      @exivar = nil
+    end
+
+    def exivar
+      @exivar
+    end
+  end
+
+  bench = Bench.new
+
+  if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+    jit_min_calls = 10000
+    i = 0
+    while i < jit_min_calls
+      bench.exivar
+      i += 1
+    end
+    RubyVM::MJIT.pause # compile (1)
+    # issue recompile
+    bench.exivar
+    RubyVM::MJIT.resume
+    RubyVM::MJIT.pause # compile (2)
+  end
+
+benchmark:
+  mjit_exivar: bench.exivar
+
+loop_count: 200000000

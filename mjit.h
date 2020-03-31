@@ -62,8 +62,10 @@ struct mjit_options {
 
 // State of optimization switches
 struct rb_mjit_compile_info {
-    // Disable getinstancevariable/setinstancevariable optimizations based on inline cache
+    // Disable getinstancevariable/setinstancevariable optimizations based on inline cache (T_OBJECT)
     bool disable_ivar_cache;
+    // Disable getinstancevariable/setinstancevariable optimizations based on inline cache (FL_EXIVAR)
+    bool disable_exivar_cache;
     // Disable send/opt_send_without_block optimizations based on inline cache
     bool disable_send_cache;
     // Disable method inlining
