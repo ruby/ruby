@@ -248,6 +248,12 @@ BUNDLED_GEMS := $(shell sed 's/[ 	][ 	]*/-/;s/[ 	].*//' $(srcdir)/gems/bundled_g
 
 update-gems: | $(patsubst %,gems/%.gem,$(BUNDLED_GEMS))
 
+test-bundler-precheck: | $(srcdir)/.bundle/cache
+
+$(srcdir)/.bundle/cache:
+	$(MAKEDIRS) $(@D)
+	$(LN_S) ../.downloaded-cache $@
+
 gems/%.gem:
 	$(ECHO) Downloading bundled gem $*...
 	$(Q) $(BASERUBY) -C "$(srcdir)" \

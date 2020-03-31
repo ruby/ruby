@@ -206,6 +206,7 @@ RM            = rm -f
 RMDIR         = @RMDIR@
 RMDIRS        = @RMDIRS@
 RMALL         = @RMALL@
+LN_S          = @LN_S@
 NM            = @NM@
 AR            = @AR@
 ARFLAGS       = @ARFLAGS@$(empty)
