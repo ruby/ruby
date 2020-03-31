@@ -3013,6 +3013,18 @@ rb_fix2int(VALUE val)
 {
     return FIX2INT(val);
 }
+
+unsigned long
+rb_num2uint(VALUE val)
+{
+    return rb_num2ulong(val);
+}
+
+unsigned long
+rb_fix2uint(VALUE val)
+{
+    return RB_FIX2ULONG(val);
+}
 #endif
 
 NORETURN(static void rb_out_of_short(SIGNED_VALUE num));
