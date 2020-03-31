@@ -41,6 +41,10 @@ module Gem::Deprecate
     Gem::Deprecate.skip = original
   end
 
+  def self.next_rubygems_major_version # :nodoc:
+    Gem::Version.new(Gem.rubygems_version.segments.first).bump
+  end
+
   ##
   # Simple deprecation method that deprecates +name+ by wrapping it up
   # in a dummy method. It warns on each call to the dummy method
@@ -48,9 +52,6 @@ module Gem::Deprecate
   # Rubygems version that it is planned to go away.
 
   def deprecate(name, replacement=:none)
-    current_major = Gem::Version.new(Gem.rubygems_version.segments.first)
-    next_rubygems_major_version = current_major.bump
-
     class_eval do
       old = "_deprecated_#{name}"
       alias_method old, name
@@ -59,7 +60,7 @@ module Gem::Deprecate
         target = klass ? "#{self}." : "#{self.class}#"
         msg = [ "NOTE: #{target}#{name} is deprecated",
                 replacement == :none ? " with no replacement" : "; use #{replacement} instead",
-                ". It will be removed in Rubygems #{next_rubygems_major_version}",
+                ". It will be removed in Rubygems #{Gem::Deprecate.next_rubygems_major_version}",
                 "\n#{target}#{name} called from #{Gem.location_of_caller.join(":")}",
         ]
         warn "#{msg.join}." unless Gem::Deprecate.skip
@@ -70,9 +71,6 @@ module Gem::Deprecate
 
   # Deprecation method to deprecate Rubygems commands
   def deprecate_command
-    current_major = Gem::Version.new(Gem.rubygems_version.segments.first)
-    next_rubygems_major_version = current_major.bump
-
     class_eval do
       define_method "deprecated?" do
         true
@@ -80,7 +78,7 @@ module Gem::Deprecate
 
       define_method "deprecation_warning" do
         msg = [ "#{self.command} command is deprecated",
-                ". It will be removed in Rubygems #{next_rubygems_major_version}.\n",
+                ". It will be removed in Rubygems #{Gem::Deprecate.next_rubygems_major_version}.\n",
         ]
 
         alert_warning "#{msg.join}" unless Gem::Deprecate.skip
