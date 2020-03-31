@@ -76,7 +76,7 @@ class TestGemGemRunner < Gem::TestCase
       assert_nil @runner.run(args)
     end
 
-    assert_match /WARNING:  query command is deprecated. It will be removed in Rubygems [0-9]+/, @ui.error
+    assert_match(/WARNING:  query command is deprecated. It will be removed in Rubygems [0-9]+/, @ui.error)
   end
 
   def test_info_succeeds
