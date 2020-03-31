@@ -176,6 +176,11 @@ class PPSingleLineTest < Test::Unit::TestCase
     assert_equal("{1=>1}", PP.singleline_pp({ 1 => 1}, ''.dup)) # [ruby-core:02699]
     assert_equal("[1#{', 1'*99}]", PP.singleline_pp([1]*100, ''.dup))
   end
+
+  def test_hash_in_array
+    assert_equal("[{}]", PP.singleline_pp([->(*a){a.last}.ruby2_keywords.call(**{})], ''.dup))
+    assert_equal("[{}]", PP.singleline_pp([Hash.ruby2_keywords_hash({})], ''.dup))
+  end
 end
 
 class PPDelegateTest < Test::Unit::TestCase
