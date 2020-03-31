@@ -350,7 +350,8 @@ class Logger
   #
   # +logdev+::
   #   The log device.  This is a filename (String), IO object (typically
-  #   +STDOUT+, +STDERR+, or an open file) or nil (it writes nothing).
+  #   +STDOUT+, +STDERR+, or an open file), +nil+ (it writes nothing) or
+  #   +File::NULL+ (same as +nil+).
   # +shift_age+::
   #   Number of old log files to keep, *or* frequency of rotation (+daily+,
   #   +weekly+ or +monthly+). Default value is 0, which disables log file
