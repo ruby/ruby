@@ -121,6 +121,7 @@ rsock_send_blocking(void *data)
 struct recvfrom_arg {
     int fd, flags;
     VALUE str;
+    size_t length;
     socklen_t alen;
     union_sockaddr buf;
 };
@@ -131,10 +132,11 @@ recvfrom_blocking(void *data)
     struct recvfrom_arg *arg = data;
     socklen_t len0 = arg->alen;
     ssize_t ret;
-    ret = recvfrom(arg->fd, RSTRING_PTR(arg->str), RSTRING_LEN(arg->str),
+    ret = recvfrom(arg->fd, RSTRING_PTR(arg->str), arg->length,
                    arg->flags, &arg->buf.addr, &arg->alen);
     if (ret != -1 && len0 < arg->alen)
         arg->alen = len0;
+
     return (VALUE)ret;
 }
 
@@ -152,7 +154,6 @@ rsock_strbuf(VALUE str, long buflen)
     } else {
 	rb_str_modify_expand(str, buflen - len);
     }
-    rb_str_set_len(str, buflen);
     return str;
 }
 
@@ -188,6 +189,7 @@ rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
     arg.fd = fptr->fd;
     arg.alen = (socklen_t)sizeof(arg.buf);
     arg.str = str;
+    arg.length = buflen;
 
     while (rb_io_check_closed(fptr),
 	   rsock_maybe_wait_fd(arg.fd),
@@ -198,9 +200,8 @@ rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
         }
     }
 
-    if (slen != RSTRING_LEN(str)) {
-	rb_str_set_len(str, slen);
-    }
+    /* Resize the string to the amount of data received */
+    rb_str_set_len(str, slen);
     switch (from) {
       case RECV_RECV:
 	return str;
@@ -330,6 +331,7 @@ rsock_read_nonblock(VALUE sock, VALUE length, VALUE buf, VALUE ex)
     GetOpenFile(sock, fptr);
 
     if (len == 0) {
+	rb_str_set_len(str, 0);
 	return str;
     }
 
@@ -347,12 +349,9 @@ rsock_read_nonblock(VALUE sock, VALUE length, VALUE buf, VALUE ex)
 	    rb_syserr_fail_path(e, fptr->pathv);
 	}
     }
-    if (len != n) {
+    if (n != RSTRING_LEN(str)) {
 	rb_str_modify(str);
 	rb_str_set_len(str, n);
-	if (str != buf) {
-	    rb_str_resize(str, n);
-	}
     }
     if (n == 0) {
 	if (ex == Qfalse) return Qnil;
