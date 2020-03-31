@@ -1,5 +1,4 @@
 prelude: |
-  # frozen_string_literal: true
   class Bench < Hash
     def initialize
       @exivar = nil
