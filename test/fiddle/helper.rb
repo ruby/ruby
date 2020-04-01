@@ -31,12 +31,8 @@ when /linux/
       # In the ARM 32-bit libc package such as libc6:armhf libc6:armel,
       # libc.so and libm.so are installed to /lib/arm-linux-gnu*.
       # It's not installed to /lib32.
-      dirs = Dir.glob('/lib/arm-linux-gnu*')
-      if dirs.length > 0
-        libdir = dirs[0] if dirs && File.directory?(dirs[0])
-      else # handle alpine environment
-        libdir = '/lib' if File.directory? '/lib'
-      end
+      dir, = Dir.glob('/lib/arm-linux-gnu*')
+      libdir = dir if dir && File.directory?(dir)
     else
       libdir = '/lib32' if File.directory? '/lib32'
     end
@@ -46,10 +42,9 @@ when /linux/
   end
 
   # Handle musl libc
-  libc = Dir.glob(File.join(libdir, "libc.musl*.so*"))
-  if libc && libc.length > 0
-    libc_so = libc[0]
-    libm_so = libc[0]
+  libc_so, = Dir.glob(File.join(libdir, "libc.musl*.so*"))
+  if libc_so
+    libm_so = libc_so
   else
     # glibc
     libc_so = File.join(libdir, "libc.so.6")
