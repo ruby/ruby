@@ -32,7 +32,11 @@ when /linux/
       # libc.so and libm.so are installed to /lib/arm-linux-gnu*.
       # It's not installed to /lib32.
       dirs = Dir.glob('/lib/arm-linux-gnu*')
-      libdir = dirs[0] if dirs && File.directory?(dirs[0])
+      if dirs.length > 0
+        libdir = dirs[0] if dirs && File.directory?(dirs[0])
+      else # handle alpine environment
+        libdir = '/lib' if File.directory? '/lib'
+      end
     else
       libdir = '/lib32' if File.directory? '/lib32'
     end
@@ -40,8 +44,17 @@ when /linux/
     # 64-bit ruby
     libdir = '/lib64' if File.directory? '/lib64'
   end
-  libc_so = File.join(libdir, "libc.so.6")
-  libm_so = File.join(libdir, "libm.so.6")
+
+  # Handle musl libc
+  libc = Dir.glob(File.join(libdir, "libc.musl*.so*"))
+  if libc && libc.length > 0
+    libc_so = libc[0]
+    libm_so = libc[0]
+  else
+    # glibc
+    libc_so = File.join(libdir, "libc.so.6")
+    libm_so = File.join(libdir, "libm.so.6")
+  end
 when /mingw/, /mswin/
   require "rbconfig"
   crtname = RbConfig::CONFIG["RUBY_SO_NAME"][/msvc\w+/] || 'ucrtbase'
