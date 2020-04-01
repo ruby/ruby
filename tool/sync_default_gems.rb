@@ -326,7 +326,7 @@ def sync_default_gems(gem)
   end
 end
 
-IGNORE_FILE_PATTERN = /(\.travis.yml|appveyor\.yml|azure\-pipelines\.yml|\.gitignore|Gemfile|README\.md|History\.txt|Rakefile|CODE_OF_CONDUCT\.md)/
+IGNORE_FILE_PATTERN = /\A(?:\.travis.yml|appveyor\.yml|azure\-pipelines\.yml|\.git(?:ignore|hub)|Gemfile|README\.md|History\.txt|Rakefile|CODE_OF_CONDUCT\.md)/
 
 def sync_default_gems_with_commits(gem, range)
   puts "Sync #{$repositories[gem.to_sym]} with commit history."
