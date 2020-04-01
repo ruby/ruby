@@ -5,9 +5,13 @@
 ##  Copyright, 2018, by Samuel Williams.
 ##
 
+.file "Context.S"
 .text
-
 .globl coroutine_transfer
+.align 2
+.type coroutine_transfer,%function
+.syntax unified
+
 coroutine_transfer:
 	# Save caller state (8 registers + return address)
 	push {r4-r11,lr}
