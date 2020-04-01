@@ -29,7 +29,6 @@ Gem::Specification.new do |spec|
     ext/etc/etc.c
     ext/etc/extconf.rb
     ext/etc/mkconstants.rb
-    stub/etc.rb
     test/etc/test_etc.rb
   ]
   spec.bindir        = "exe"
