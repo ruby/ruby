@@ -1,0 +1,7 @@
+prelude: |
+  def leave
+    nil
+  end
+benchmark:
+  mjit_leave: leave
+loop_count: 200000000
