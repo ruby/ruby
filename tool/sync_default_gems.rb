@@ -366,7 +366,7 @@ def sync_default_gems_with_commits(gem, range)
     puts "Pick #{sha} from #{$repositories[gem.to_sym]}."
 
     skipped = false
-    result = IO.popen(%W"git cherry-pick #{sha}").read
+    result = IO.popen(%W"git cherry-pick #{sha}", &:read)
     if result =~ /nothing\ to\ commit/
       `git reset`
       skipped = true
