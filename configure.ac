@@ -2353,8 +2353,8 @@ AS_CASE([$rb_cv_coroutine], [yes|''], [
         [*86-mingw32], [
             rb_cv_coroutine=win32
         ],
-        [armv7*-linux*], [
-            rb_cv_coroutine=ucontext
+        [arm*-linux*], [
+            rb_cv_coroutine=arm32
         ],
         [aarch64-linux*], [
             rb_cv_coroutine=arm64
