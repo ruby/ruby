@@ -348,9 +348,7 @@ def sync_default_gems_with_commits(gem, range)
 
   # Ignore Merge commit and insufficiency commit for ruby core repository.
   commits.delete_if do |sha, subject|
-    files = IO.popen(%W"git diff-tree --no-commit-id --name-only -r #{sha}") do |f|
-      f.readlines
-    end
+    files = IO.popen(%W"git diff-tree --no-commit-id --name-only -r #{sha}", &:readlines)
     subject =~ /^Merge/ || subject =~ /^Auto Merge/ || files.all?{|file| file =~ IGNORE_FILE_PATTERN}
   end
 
@@ -375,12 +373,21 @@ def sync_default_gems_with_commits(gem, range)
     next if skipped
 
     if result.empty?
+      skipped = true
+    elsif result.start_with?("CONFLICT")
+      result = IO.popen(%W"git status --porcelain", &:readlines).each(&:chomp!)
+      ignore = result.map {|line| /^DU / =~ line and IGNORE_FILE_PATTERN =~ (name = $') and name}
+      ignore.compact!
+      system(*%W"git reset", *ignore) unless ignore.empty?
+      skipped = !system({"GIT_EDITOR"=>"true"}, *%W"git cherry-pick --no-edit --continue")
+    end
+
+    if skipped
       failed_commits << sha
       `git reset` && `git checkout .` && `git clean -fd`
-      skipped = true
       puts "Failed to pick #{sha}"
+      next
     end
-    next if skipped
 
     puts "Update commit message: #{sha}"
 
