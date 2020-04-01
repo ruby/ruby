@@ -1414,6 +1414,13 @@ eom
     assert_equal(line, e.backtrace_locations[0].lineno)
   end
 
+  def test_methoddef_endless
+    assert_valid_syntax('private def foo = 42')
+    assert_valid_syntax('private def inc(x) = x + 1')
+    assert_valid_syntax('private def obj.foo = 42')
+    assert_valid_syntax('private def obj.inc(x) = x + 1')
+  end
+
   def test_methoddef_in_cond
     assert_valid_syntax('while def foo; tap do end; end; break; end')
     assert_valid_syntax('while def foo a = tap do end; end; break; end')

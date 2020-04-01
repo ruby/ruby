@@ -59,6 +59,8 @@ struct lex_context {
 #include "ruby/util.h"
 #include "symbol.h"
 
+#define AREF(ary, i) RARRAY_AREF(ary, i)
+
 #ifndef WARN_PAST_SCOPE
 # define WARN_PAST_SCOPE 0
 #endif
@@ -906,7 +908,26 @@ static VALUE heredoc_dedent(struct parser_params*,VALUE);
 #define ID2VAL(id) (id)
 #define TOKEN2VAL(t) ID2VAL(t)
 #define KWD2EID(t, v) keyword_##t
+
+static NODE *
+set_defun_body(struct parser_params *p, NODE *n, NODE *args, NODE *body, const YYLTYPE *loc)
+{
+    body = remove_begin(body);
+    reduce_nodes(p, &body);
+    n->nd_defn = NEW_SCOPE(args, body, loc);
+    n->nd_loc = *loc;
+    nd_set_line(n->nd_defn, loc->end_pos.lineno);
+    set_line_body(body, loc->beg_pos.lineno);
+    return n;
+}
 #endif /* RIPPER */
+
+static void
+restore_defun(struct parser_params *p, NODE *name)
+{
+    p->cur_arg = name->nd_vid;
+    p->ctxt.in_def = name->nd_state & 1;
+}
 
 #ifndef RIPPER
 # define Qnone 0
@@ -1082,7 +1103,7 @@ static int looking_at_eol_p(struct parser_params *p);
 %type <node> singleton strings string string1 xstring regexp
 %type <node> string_contents xstring_contents regexp_contents string_content
 %type <node> words symbols symbol_list qwords qsymbols word_list qword_list qsym_list word
-%type <node> literal numeric simple_numeric ssym dsym symbol cpath
+%type <node> literal numeric simple_numeric ssym dsym symbol cpath def_name defn_head defs_head
 %type <node> top_compstmt top_stmts top_stmt begin_block rassign
 %type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
 %type <node> expr_value expr_value_do arg_value primary_value fcall rel_expr
@@ -1093,7 +1114,7 @@ static int looking_at_eol_p(struct parser_params *p);
 %type <node> command_rhs arg_rhs
 %type <node> command_asgn mrhs mrhs_arg superclass block_call block_command
 %type <node> f_block_optarg f_block_opt
-%type <node> f_arglist f_args f_arg f_arg_item f_optarg f_marg f_marg_list f_margs f_rest_marg
+%type <node> f_arglist f_arglist_opt f_args f_arg f_arg_item f_optarg f_marg f_marg_list f_margs f_rest_marg
 %type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
 %type <node> block_param opt_block_param block_param_def f_opt
 %type <node> f_kwarg f_kw f_block_kwarg f_block_kw
@@ -1633,6 +1654,46 @@ expr		: command_call
 		    /*% ripper: case!($1, in!($5, Qnil, Qnil)) %*/
 		    }
 		| arg %prec tLBRACE_ARG
+		;
+
+def_name	: fname
+		    {
+			ID fname = get_id($1);
+			ID cur_arg = p->cur_arg;
+			int in_def = p->ctxt.in_def;
+			numparam_name(p, fname);
+			local_push(p, 0);
+			p->cur_arg = 0;
+			p->ctxt.in_def = 1;
+			$<node>$ = NEW_NODE(NODE_SELF, /*vid*/cur_arg, /*mid*/fname, /*state*/in_def, &@$);
+		    /*%%%*/
+		    /*%
+			$$ = NEW_RIPPER(fname, get_value($1), $$, &NULL_LOC);
+		    %*/
+		    }
+		;
+
+defn_head	: k_def def_name
+		    {
+			$$ = $2;
+		    /*%%%*/
+			$$ = NEW_NODE(NODE_DEFN, 0, $$->nd_mid, $$, &@$);
+		    /*% %*/
+		    }
+		;
+
+defs_head	: k_def singleton dot_or_colon {SET_LEX_STATE(EXPR_FNAME);} def_name
+		    {
+			SET_LEX_STATE(EXPR_ENDFN|EXPR_LABEL); /* force for args */
+			$$ = $5;
+		    /*%%%*/
+			$$ = NEW_NODE(NODE_DEFS, $2, $$->nd_mid, $$, &@$);
+		    /*%
+			VALUE ary = rb_ary_new_from_args(3, $2, $3, get_value($$));
+			add_mark_object(p, ary);
+			$<node>$->nd_rval = ary;
+		    %*/
+		    }
 		;
 
 expr_value	: expr
@@ -2392,6 +2453,26 @@ arg		: lhs '=' arg_rhs
 		    /*% %*/
 		    /*% ripper: ifop!($1, $3, $6) %*/
 		    }
+		| defn_head f_arglist_opt '=' arg
+		    {
+			restore_defun(p, $<node>1->nd_defn);
+		    /*%%%*/
+			$$ = set_defun_body(p, $1, $2, $4, &@$);
+		    /*% %*/
+		    /*% ripper: def!(get_value($1), $2, $4) %*/
+			local_pop(p);
+		    }
+		| defs_head f_arglist_opt '=' arg
+		    {
+			restore_defun(p, $<node>1->nd_defn);
+		    /*%%%*/
+			$$ = set_defun_body(p, $1, $2, $4, &@$);
+		    /*%
+			$1 = get_value($1);
+		    %*/
+		    /*% ripper: defs!(AREF($1, 0), AREF($1, 1), AREF($1, 2), $2, $4) %*/
+			local_pop(p);
+		    }
 		| primary
 		    {
 			$$ = $1;
@@ -3018,56 +3099,31 @@ primary		: literal
 			local_pop(p);
 			p->ctxt.in_class = $<ctxt>1.in_class;
 		    }
-		| k_def fname
-		    {
-			numparam_name(p, get_id($2));
-			local_push(p, 0);
-			$<id>$ = p->cur_arg;
-			p->cur_arg = 0;
-			$<ctxt>1 = p->ctxt;
-			p->ctxt.in_def = 1;
-		    }
+		| defn_head
 		  f_arglist
 		  bodystmt
 		  k_end
 		    {
+			restore_defun(p, $<node>1->nd_defn);
 		    /*%%%*/
-			NODE *body = remove_begin($5);
-			reduce_nodes(p, &body);
-			$$ = NEW_DEFN($2, $4, body, &@$);
-			nd_set_line($$->nd_defn, @6.end_pos.lineno);
-			set_line_body(body, @1.beg_pos.lineno);
+			$$ = set_defun_body(p, $1, $2, $3, &@$);
 		    /*% %*/
-		    /*% ripper: def!($2, $4, $5) %*/
+		    /*% ripper: def!(get_value($1), $2, $3) %*/
 			local_pop(p);
-			p->ctxt.in_def = $<ctxt>1.in_def;
-			p->cur_arg = $<id>3;
 		    }
-		| k_def singleton dot_or_colon {SET_LEX_STATE(EXPR_FNAME);} fname
-		    {
-			numparam_name(p, get_id($5));
-			$<ctxt>1 = p->ctxt;
-			p->ctxt.in_def = 1;
-			SET_LEX_STATE(EXPR_ENDFN|EXPR_LABEL); /* force for args */
-			local_push(p, 0);
-			$<id>$ = p->cur_arg;
-			p->cur_arg = 0;
-		    }
+		| defs_head
 		  f_arglist
 		  bodystmt
 		  k_end
 		    {
+			restore_defun(p, $<node>1->nd_defn);
 		    /*%%%*/
-			NODE *body = remove_begin($8);
-			reduce_nodes(p, &body);
-			$$ = NEW_DEFS($2, $5, $7, body, &@$);
-			nd_set_line($$->nd_defn, @9.end_pos.lineno);
-			set_line_body(body, @1.beg_pos.lineno);
-		    /*% %*/
-		    /*% ripper: defs!($2, $3, $5, $7, $8) %*/
+			$$ = set_defun_body(p, $1, $2, $3, &@$);
+		    /*%
+			$1 = get_value($1);
+		    %*/
+		    /*% ripper: defs!(AREF($1, 0), AREF($1, 1), AREF($1, 2), $2, $3) %*/
 			local_pop(p);
-			p->ctxt.in_def = $<ctxt>1.in_def;
-			p->cur_arg = $<id>6;
 		    }
 		| keyword_break
 		    {
@@ -4835,6 +4891,17 @@ superclass	: '<'
 		    {
 		    /*%%%*/
 			$$ = 0;
+		    /*% %*/
+		    /*% ripper: Qnil %*/
+		    }
+		;
+
+f_arglist_opt	: f_arglist
+		| /* none */
+		    {
+		    /*%%%*/
+			$$ = new_args_tail(p, Qnone, Qnone, Qnone, &@0);
+			$$ = new_args(p, Qnone, Qnone, Qnone, Qnone, $$, &@0);
 		    /*% %*/
 		    /*% ripper: Qnil %*/
 		    }

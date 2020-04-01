@@ -1766,3 +1766,16 @@ describe "An array-dereference method ([])" do
     end
   end
 end
+
+ruby_version_is '2.8' do
+  describe "An endless method definition" do
+    evaluate <<-ruby do
+      def m(a) = a
+    ruby
+
+      a = b = m 1
+      a.should == 1
+      b.should == 1
+    end
+  end
+end

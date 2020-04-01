@@ -45,6 +45,13 @@ sufficient information, see the ChangeLog file or Redmine
     fib(10) => x
     ```
 
+* Endless method definition is added.  [EXPERIMENTAL]
+  [[Feature #16746]]
+
+    ```ruby
+    def square(x) = x * x
+    ```
+
 ## Command line options
 
 ## Core classes updates
