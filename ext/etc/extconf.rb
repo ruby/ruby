@@ -50,13 +50,7 @@ end
 decl = [
   "void rb_deprecate_constant(VALUE, const char *);",
 ]
-begin
-  # Hack to get rid of linking against static library
-  extmk, $extmk = $extmk, false
-  have_func('rb_deprecate_constant(Qnil, "None")', [decl])
-ensure
-  $extmk = extmk
-end
+have_func('rb_deprecate_constant(Qnil, "None")', [decl])
 
 $distcleanfiles << "constdefs.h"
 
