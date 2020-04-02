@@ -5,8 +5,8 @@ class BugGuard < VersionGuard
     @bug = bug
     if String === requirement
       MSpec.deprecate "ruby_bug with a single version", 'an exclusive range ("2.1"..."2.3")'
-      @requirement = SpecVersion.new requirement, true
       super(FULL_RUBY_VERSION, requirement)
+      @requirement = SpecVersion.new requirement, true
     else
       super(FULL_RUBY_VERSION, requirement)
     end
