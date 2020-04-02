@@ -559,6 +559,7 @@ static void check_literal_when(struct parser_params *p, NODE *args, const YYLTYP
 #define get_num(num) (num)
 #else  /* RIPPER */
 #define NODE_RIPPER NODE_CDECL
+#define NEW_RIPPER(a,b,c,loc) (VALUE)NEW_CDECL(a,b,c,loc)
 
 static inline int ripper_is_node_yylval(VALUE n);
 
@@ -568,7 +569,7 @@ ripper_new_yylval(struct parser_params *p, ID a, VALUE b, VALUE c)
     if (ripper_is_node_yylval(c)) c = RNODE(c)->nd_cval;
     add_mark_object(p, b);
     add_mark_object(p, c);
-    return (VALUE)NEW_CDECL(a, b, c, &NULL_LOC);
+    return NEW_RIPPER(a, b, c, &NULL_LOC);
 }
 
 static inline int
