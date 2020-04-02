@@ -4629,6 +4629,18 @@ free_stack_chunks(mark_stack_t *stack)
 static void
 push_mark_stack(mark_stack_t *stack, VALUE data)
 {
+    VALUE obj = data;
+    switch (BUILTIN_TYPE(obj)) {
+      case T_NIL:
+      case T_FIXNUM:
+	rb_bug("push_mark_stack() called for broken object");
+	break;
+
+      case T_NODE:
+	UNEXPECTED_NODE(push_mark_stack);
+        break;
+    }
+
     if (stack->index == stack->limit) {
         push_mark_stack_chunk(stack);
     }
