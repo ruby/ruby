@@ -251,7 +251,7 @@ update-gems: | $(patsubst %,gems/%.gem,$(BUNDLED_GEMS))
 test-bundler-precheck: | $(srcdir)/.bundle/cache
 
 $(srcdir)/.bundle/cache:
-	$(MAKEDIRS) $(@D)
+	$(MAKEDIRS) $(@D) $(CACHE_DIR)
 	$(LN_S) ../.downloaded-cache $@
 
 gems/%.gem:
