@@ -300,6 +300,7 @@ class Gem::TestCase < Minitest::Test
     ENV['GEM_VENDOR'] = nil
     ENV['GEMRC'] = nil
     ENV['SOURCE_DATE_EPOCH'] = nil
+    ENV["TMPDIR"] = File.expand_path("tmp")
 
     @current_dir = Dir.pwd
     @fetcher     = nil
