@@ -7,10 +7,6 @@ require 'pathname'
 require 'tmpdir'
 require 'rbconfig'
 
-if File.exist?(File.join(Dir.tmpdir, "Gemfile"))
-  raise "rubygems/bundler tests do not work correctly if there is #{ File.join(Dir.tmpdir, "Gemfile") }"
-end
-
 class TestGem < Gem::TestCase
 
   PLUGINS_LOADED = [] # rubocop:disable Style/MutableConstant
