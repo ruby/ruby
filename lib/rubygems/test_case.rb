@@ -318,17 +318,6 @@ class Gem::TestCase < Minitest::Test
 
     FileUtils.mkdir_p @tempdir
 
-    # This makes the tempdir consistent on Windows.
-    # Dir.tmpdir may return short path name, but Dir[Dir.tmpdir] returns long
-    # path name. https://bugs.ruby-lang.org/issues/10819
-    # File.expand_path or File.realpath doesn't convert path name to long path
-    # name. Only Dir[] (= Dir.glob) works.
-    # Short and long path name is specific to Windows filesystem.
-    if win_platform?
-      @tempdir = Dir[@tempdir][0]
-      @tempdir.tap(&Gem::UNTAINT)
-    end
-
     @orig_SYSTEM_WIDE_CONFIG_FILE = Gem::ConfigFile::SYSTEM_WIDE_CONFIG_FILE
     Gem::ConfigFile.send :remove_const, :SYSTEM_WIDE_CONFIG_FILE
     Gem::ConfigFile.send :const_set, :SYSTEM_WIDE_CONFIG_FILE,
