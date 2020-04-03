@@ -290,8 +290,12 @@ trace_object_allocations_stop(VALUE self)
     }
 
     if (arg->running == 0) {
-	rb_tracepoint_disable(arg->newobj_trace);
-	rb_tracepoint_disable(arg->freeobj_trace);
+        if (arg->newobj_trace != 0) {
+            rb_tracepoint_disable(arg->newobj_trace);
+        }
+        if (arg->freeobj_trace != 0) {
+            rb_tracepoint_disable(arg->freeobj_trace);
+        }
     }
 
     return Qnil;
