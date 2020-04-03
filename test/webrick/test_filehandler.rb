@@ -3,6 +3,7 @@ require "test/unit"
 require_relative "utils.rb"
 require "webrick"
 require "stringio"
+require "tmpdir"
 
 class WEBrick::TestFileHandler < Test::Unit::TestCase
   def teardown
@@ -284,6 +285,18 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
       http.request(req) {|res| assert_equal("404", res.code, log.call) }
       req = Net::HTTP::Get.new("/HTACCE~1")
       http.request(req) {|res| assert_equal("404", res.code, log.call) }
+    end
+  end
+
+  def test_cjk_in_path
+    Dir.mktmpdir("\u3042") do |dir|
+      File.write("#{dir}/\u3042.txt", "test_cjk_in_path")
+      config = { :DocumentRoot => dir }
+      TestWEBrick.start_httpserver(config) do |server, addr, port, log|
+        http = Net::HTTP.new(addr, port)
+        req = Net::HTTP::Get.new("/%E3%81%82.txt")
+        http.request(req){|res| assert_equal("200", res.code, log.call) }
+      end
     end
   end
 
