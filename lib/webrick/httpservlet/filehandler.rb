@@ -324,7 +324,7 @@ module WEBrick
       end
 
       def set_filename(req, res)
-        res.filename = @root.dup
+        res.filename = @root.b
         path_info = req.path_info.scan(%r|/[^/]*|)
 
         path_info.unshift("")  # dummy for checking @root dir
