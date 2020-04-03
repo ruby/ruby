@@ -164,6 +164,15 @@ class TestObjSpace < Test::Unit::TestCase
     end;
   end
 
+  def test_trace_object_allocations_stop_first
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      require "objspace"
+      # Make sure stoping before the tracepoints are initialized doesn't raise. See [Bug #17020]
+      ObjectSpace.trace_object_allocations_stop
+    end;
+  end
+
   def test_trace_object_allocations
     Class.name
     o0 = Object.new
