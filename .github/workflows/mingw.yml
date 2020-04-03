@@ -95,7 +95,7 @@ jobs:
         working-directory: build
         run: |
           $jobs = [int]$env:NUMBER_OF_PROCESSORS + 1
-          make -j $jobs V=1
+          make -j $jobs
 
       - name: make install
         working-directory: build
