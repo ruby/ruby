@@ -3,7 +3,6 @@ require 'mspec/guards/version'
 require 'mspec/utils/warnings'
 
 # MSpecScript provides a skeleton for all the MSpec runner scripts.
-
 class MSpecScript
   # Returns the config object. Maintained at the class
   # level to easily enable simple config files. See the
