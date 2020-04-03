@@ -437,12 +437,12 @@ describe "The rescue keyword" do
 
   it "allows rescue in 'do end' block" do
     lambda = eval <<-ruby
-        lambda do
-          raise SpecificExampleException
-        rescue SpecificExampleException
-          ScratchPad << :caught
-        end.call
-      ruby
+      lambda do
+        raise SpecificExampleException
+      rescue SpecificExampleException
+        ScratchPad << :caught
+      end.call
+    ruby
 
     ScratchPad.recorded.should == [:caught]
   end

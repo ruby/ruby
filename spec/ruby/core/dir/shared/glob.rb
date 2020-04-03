@@ -296,10 +296,10 @@ describe :dir_glob, shared: true do
       @mock_dir = File.expand_path tmp('dir_glob_mock')
 
       %w[
-          a/b/x
-          a/b/c/y
-          a/b/c/d/z
-        ].each do |path|
+        a/b/x
+        a/b/c/y
+        a/b/c/d/z
+      ].each do |path|
         file = File.join @mock_dir, path
         mkdir_p File.dirname(file)
         touch file

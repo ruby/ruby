@@ -259,13 +259,13 @@ describe "An ensure block inside 'do end' block" do
   it "is executed when an exception is raised in it's corresponding begin block" do
     -> {
       eval(<<-ruby).call
-          lambda do
-            ScratchPad << :begin
-            raise EnsureSpec::Error
-          ensure
-            ScratchPad << :ensure
-          end
-        ruby
+        lambda do
+          ScratchPad << :begin
+          raise EnsureSpec::Error
+        ensure
+          ScratchPad << :ensure
+        end
+      ruby
     }.should raise_error(EnsureSpec::Error)
 
     ScratchPad.recorded.should == [:begin, :ensure]
@@ -273,15 +273,15 @@ describe "An ensure block inside 'do end' block" do
 
   it "is executed when an exception is raised and rescued in it's corresponding begin block" do
     eval(<<-ruby).call
-        lambda do
-          ScratchPad << :begin
-          raise "An exception occurred!"
-        rescue
-          ScratchPad << :rescue
-        ensure
-          ScratchPad << :ensure
-        end
-      ruby
+      lambda do
+        ScratchPad << :begin
+        raise "An exception occurred!"
+      rescue
+        ScratchPad << :rescue
+      ensure
+        ScratchPad << :ensure
+      end
+    ruby
 
     ScratchPad.recorded.should == [:begin, :rescue, :ensure]
   end
@@ -289,15 +289,15 @@ describe "An ensure block inside 'do end' block" do
   it "is executed even when a symbol is thrown in it's corresponding begin block" do
     catch(:symbol) do
       eval(<<-ruby).call
-          lambda do
-            ScratchPad << :begin
-            throw(:symbol)
-          rescue
-            ScratchPad << :rescue
-          ensure
-            ScratchPad << :ensure
-          end
-        ruby
+        lambda do
+          ScratchPad << :begin
+          throw(:symbol)
+        rescue
+          ScratchPad << :rescue
+        ensure
+          ScratchPad << :ensure
+        end
+      ruby
     end
 
     ScratchPad.recorded.should == [:begin, :ensure]
@@ -305,26 +305,26 @@ describe "An ensure block inside 'do end' block" do
 
   it "is executed when nothing is raised or thrown in it's corresponding begin block" do
     eval(<<-ruby).call
-        lambda do
-          ScratchPad << :begin
-        rescue
-          ScratchPad << :rescue
-        ensure
-          ScratchPad << :ensure
-        end
-      ruby
+      lambda do
+        ScratchPad << :begin
+      rescue
+        ScratchPad << :rescue
+      ensure
+        ScratchPad << :ensure
+      end
+    ruby
 
     ScratchPad.recorded.should == [:begin, :ensure]
   end
 
   it "has no return value" do
     result = eval(<<-ruby).call
-        lambda do
-          :begin
-        ensure
-          :ensure
-        end
-      ruby
+      lambda do
+        :begin
+      ensure
+        :ensure
+      end
+    ruby
 
     result.should == :begin
   end

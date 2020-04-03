@@ -262,11 +262,11 @@ describe "The return keyword" do
 
     it "stops file execution" do
       ruby_exe(<<-END_OF_CODE).should == "before return\n"
-          puts "before return"
-          return
+        puts "before return"
+        return
 
-          puts "after return"
-        END_OF_CODE
+        puts "after return"
+      END_OF_CODE
 
       $?.exitstatus.should == 0
     end
@@ -274,13 +274,13 @@ describe "The return keyword" do
     describe "within if" do
       it "is allowed" do
         File.write(@filename, <<-END_OF_CODE)
-            ScratchPad << "before if"
-            if true
-              return
-            end
+          ScratchPad << "before if"
+          if true
+            return
+          end
 
-            ScratchPad << "after if"
-          END_OF_CODE
+          ScratchPad << "after if"
+        END_OF_CODE
 
         load @filename
         ScratchPad.recorded.should == ["before if"]
@@ -290,13 +290,13 @@ describe "The return keyword" do
     describe "within while loop" do
       it "is allowed" do
         File.write(@filename, <<-END_OF_CODE)
-            ScratchPad << "before while"
-            while true
-              return
-            end
+          ScratchPad << "before while"
+          while true
+            return
+          end
 
-            ScratchPad << "after while"
-          END_OF_CODE
+          ScratchPad << "after while"
+        END_OF_CODE
 
         load @filename
         ScratchPad.recorded.should == ["before while"]
@@ -306,13 +306,13 @@ describe "The return keyword" do
     describe "within a begin" do
       it "is allowed in begin block" do
         File.write(@filename, <<-END_OF_CODE)
-            ScratchPad << "before begin"
-            begin
-              return
-            end
+          ScratchPad << "before begin"
+          begin
+            return
+          end
 
-            ScratchPad << "after begin"
-          END_OF_CODE
+          ScratchPad << "after begin"
+        END_OF_CODE
 
         load @filename
         ScratchPad.recorded.should == ["before begin"]
@@ -320,14 +320,14 @@ describe "The return keyword" do
 
       it "is allowed in ensure block" do
         File.write(@filename, <<-END_OF_CODE)
-            ScratchPad << "before begin"
-            begin
-            ensure
-              return
-            end
+          ScratchPad << "before begin"
+          begin
+          ensure
+            return
+          end
 
-            ScratchPad << "after begin"
-          END_OF_CODE
+          ScratchPad << "after begin"
+        END_OF_CODE
 
         load @filename
         ScratchPad.recorded.should == ["before begin"]
@@ -335,15 +335,15 @@ describe "The return keyword" do
 
       it "is allowed in rescue block" do
         File.write(@filename, <<-END_OF_CODE)
-            ScratchPad << "before begin"
-            begin
-              raise
-            rescue RuntimeError
-              return
-            end
+          ScratchPad << "before begin"
+          begin
+            raise
+          rescue RuntimeError
+            return
+          end
 
-            ScratchPad << "after begin"
-          END_OF_CODE
+          ScratchPad << "after begin"
+        END_OF_CODE
 
         load @filename
         ScratchPad.recorded.should == ["before begin"]
@@ -351,25 +351,41 @@ describe "The return keyword" do
 
       it "fires ensure block before returning" do
         ruby_exe(<<-END_OF_CODE).should == "within ensure\n"
-            begin
-              return
-            ensure
-              puts "within ensure"
-            end
+          begin
+            return
+          ensure
+            puts "within ensure"
+          end
 
-            puts "after begin"
-          END_OF_CODE
+          puts "after begin"
+        END_OF_CODE
+      end
+
+      it "fires ensure block before returning while loads file" do
+        File.write(@filename, <<-END_OF_CODE)
+          ScratchPad << "before begin"
+          begin
+            return
+          ensure
+            ScratchPad << "within ensure"
+          end
+
+          ScratchPad << "after begin"
+        END_OF_CODE
+
+        load @filename
+        ScratchPad.recorded.should == ["before begin", "within ensure"]
       end
 
       it "swallows exception if returns in ensure block" do
         File.write(@filename, <<-END_OF_CODE)
-            begin
-              raise
-            ensure
-              ScratchPad << "before return"
-              return
-            end
-          END_OF_CODE
+          begin
+            raise
+          ensure
+            ScratchPad << "before return"
+            return
+          end
+        END_OF_CODE
 
         load @filename
         ScratchPad.recorded.should == ["before return"]
@@ -379,11 +395,11 @@ describe "The return keyword" do
     describe "within a block" do
       it "is allowed" do
         File.write(@filename, <<-END_OF_CODE)
-            ScratchPad << "before call"
-            proc { return }.call
+          ScratchPad << "before call"
+          proc { return }.call
 
-            ScratchPad << "after call"
-          END_OF_CODE
+          ScratchPad << "after call"
+        END_OF_CODE
 
         load @filename
         ScratchPad.recorded.should == ["before call"]
@@ -393,13 +409,13 @@ describe "The return keyword" do
     describe "within a class" do
       it "raises a SyntaxError" do
         File.write(@filename, <<-END_OF_CODE)
-              class ReturnSpecs::A
-                ScratchPad << "before return"
-                return
+          class ReturnSpecs::A
+            ScratchPad << "before return"
+            return
 
-                ScratchPad << "after return"
-              end
-            END_OF_CODE
+            ScratchPad << "after return"
+          end
+        END_OF_CODE
 
         -> { load @filename }.should raise_error(SyntaxError)
       end
@@ -409,12 +425,12 @@ describe "The return keyword" do
       ruby_version_is "2.7" do
         it "is not allowed" do
           File.write(@filename, <<-END_OF_CODE)
-              class ReturnSpecs::A
-                ScratchPad << "before return"
-                1.times { return }
-                ScratchPad << "after return"
-              end
-            END_OF_CODE
+            class ReturnSpecs::A
+              ScratchPad << "before return"
+              1.times { return }
+              ScratchPad << "after return"
+            end
+          END_OF_CODE
 
           -> { load @filename }.should raise_error(LocalJumpError)
         end
@@ -424,10 +440,10 @@ describe "The return keyword" do
     describe "file loading" do
       it "stops file loading and execution" do
         File.write(@filename, <<-END_OF_CODE)
-            ScratchPad << "before return"
-            return
-            ScratchPad << "after return"
-          END_OF_CODE
+          ScratchPad << "before return"
+          return
+          ScratchPad << "after return"
+        END_OF_CODE
 
         load @filename
         ScratchPad.recorded.should == ["before return"]
@@ -437,10 +453,10 @@ describe "The return keyword" do
     describe "file requiring" do
       it "stops file loading and execution" do
         File.write(@filename, <<-END_OF_CODE)
-            ScratchPad << "before return"
-            return
-            ScratchPad << "after return"
-          END_OF_CODE
+          ScratchPad << "before return"
+          return
+          ScratchPad << "after return"
+        END_OF_CODE
 
         require @filename
         ScratchPad.recorded.should == ["before return"]
@@ -451,8 +467,8 @@ describe "The return keyword" do
       ruby_version_is ""..."2.7" do
         it "does not affect exit status" do
           ruby_exe(<<-END_OF_CODE).should == ""
-              return 10
-            END_OF_CODE
+            return 10
+          END_OF_CODE
 
           $?.exitstatus.should == 0
         end
@@ -461,8 +477,8 @@ describe "The return keyword" do
       ruby_version_is "2.7" do
         it "warns but does not affect exit status" do
           err = ruby_exe(<<-END_OF_CODE, args: "2>&1")
-              return 10
-            END_OF_CODE
+            return 10
+          END_OF_CODE
           $?.exitstatus.should == 0
 
           err.should =~ /warning: argument of top-level return is ignored/

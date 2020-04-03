@@ -23,8 +23,8 @@ describe "Integer#pow" do
     end
 
     it "handles sign like #divmod does" do
-      2.pow(5,  12).should ==  8
-      2.pow(5, -12).should == -4
+       2.pow(5,  12).should ==  8
+       2.pow(5, -12).should == -4
       -2.pow(5,  12).should ==  4
       -2.pow(5, -12).should == -8
     end
