@@ -230,7 +230,7 @@ module MonitorMixin
   def mon_initialize
     if defined?(@mon_data)
       if defined?(@mon_initialized_by_new_cond)
-        return # already initalized.
+        return # already initialized.
       elsif @mon_data_owner_object_id == self.object_id
         raise ThreadError, "already initialized"
       end
