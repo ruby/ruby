@@ -36,7 +36,7 @@ def collect_builtin base, iseq_ary, name, bs, inlines
   else
   end
 
-  code = iseq_ary[13]
+  code = iseq_ary[13] + iseq_ary[12]
   params = iseq_ary[10]
   prev_insn = nil
   lineno = nil
