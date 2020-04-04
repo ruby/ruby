@@ -407,13 +407,14 @@ def package(vcs, rev, destdir, tmp = nil)
     end
     unless File.exist?("configure")
       print "creating configure..."
-      unless system([ENV["AUTOCONF"]]*2)
+      unless system(ENV["AUTOCONF"], "-I", "tool/m4", "-o", "configure")
         puts $colorize.fail(" failed")
         return
       end
       puts $colorize.pass(" done")
     end
     clean.add("autom4te.cache")
+    clean.add("tool/m4/autom4te.cache")
     clean.add("enc/unicode/data")
     print "creating prerequisites..."
     if File.file?("common.mk") && /^prereq/ =~ commonmk = IO.read("common.mk")

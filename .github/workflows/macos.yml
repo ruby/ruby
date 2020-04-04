@@ -35,7 +35,7 @@ jobs:
       - name: Set ENV
         run: |
           echo '::set-env name=JOBS::'-j$((1 + $(sysctl -n hw.activecpu)))
-      - run: autoconf
+      - run: autoconf -I tool/m4
         working-directory: src
       - run: mkdir build
       - name: Run configure
