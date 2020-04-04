@@ -31,4 +31,31 @@ class Dir
   def self.open(path, encoding: Encoding.find("filesystem"))
     __builtin_dir_s_open(path, encoding)
   end
+
+  #
+  #  call-seq:
+  #     Dir.foreach( dirname ) {| filename | block }                 -> nil
+  #     Dir.foreach( dirname, encoding: enc ) {| filename | block }  -> nil
+  #     Dir.foreach( dirname )                                       -> an_enumerator
+  #     Dir.foreach( dirname, encoding: enc )                        -> an_enumerator
+  #
+  #  Calls the block once for each entry in the named directory, passing
+  #  the filename of each entry as a parameter to the block.
+  #
+  #  If no block is given, an enumerator is returned instead.
+  #
+  #     Dir.foreach("testdir") {|x| puts "Got #{x}" }
+  #
+  #  <em>produces:</em>
+  #
+  #     Got .
+  #     Got ..
+  #     Got config.h
+  #     Got main.rb
+  #
+  #
+  def self.foreach(path, encoding: Encoding.find("filesystem"))
+    return Enumerator.new(Dir.new(path, encoding: encoding)) if !block_given?
+    __builtin_dir_foreach(path, encoding)
+  end
 end

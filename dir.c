@@ -3076,42 +3076,33 @@ dir_s_glob(int argc, VALUE *argv, VALUE obj)
 static VALUE
 dir_open_dir(int argc, VALUE *argv)
 {
-    VALUE dir = rb_funcallv_kw(rb_cDir, rb_intern("open"), argc, argv, RB_PASS_CALLED_KEYWORDS);
+    VALUE dir = rb_funcallv_kw(rb_cDir, rb_intern("open"), argc, argv, RB_PASS_KEYWORDS);
 
     rb_check_typeddata(dir, &dir_data_type);
     return dir;
 }
 
+static void
+dir_open_argv(VALUE *argv, VALUE path, VALUE enc)
+{
+    VALUE kw_hash = rb_hash_new();
+    rb_gc_register_mark_object(kw_hash);
+    rb_hash_aset(kw_hash, ID2SYM(rb_intern("encoding")), enc);
+    rb_obj_freeze(kw_hash);
 
-/*
- *  call-seq:
- *     Dir.foreach( dirname ) {| filename | block }                 -> nil
- *     Dir.foreach( dirname, encoding: enc ) {| filename | block }  -> nil
- *     Dir.foreach( dirname )                                       -> an_enumerator
- *     Dir.foreach( dirname, encoding: enc )                        -> an_enumerator
- *
- *  Calls the block once for each entry in the named directory, passing
- *  the filename of each entry as a parameter to the block.
- *
- *  If no block is given, an enumerator is returned instead.
- *
- *     Dir.foreach("testdir") {|x| puts "Got #{x}" }
- *
- *  <em>produces:</em>
- *
- *     Got .
- *     Got ..
- *     Got config.h
- *     Got main.rb
- *
- */
+    argv[0] = path;
+    argv[1] = kw_hash;
+} 
+
 static VALUE
-dir_foreach(int argc, VALUE *argv, VALUE io)
+dir_foreach(rb_execution_context_t *ec, VALUE io, VALUE path, VALUE enc)
 {
     VALUE dir;
+    VALUE argv[2];
 
-    RETURN_ENUMERATOR(io, argc, argv);
-    dir = dir_open_dir(argc, argv);
+    dir_open_argv(argv, path, enc);
+
+    dir = dir_open_dir(2, argv);
     rb_ensure(dir_each, dir, dir_close, dir);
     return Qnil;
 }
@@ -3564,7 +3555,6 @@ Init_Dir(void)
     rb_include_module(rb_cDir, rb_mEnumerable);
 
     rb_define_alloc_func(rb_cDir, dir_s_alloc);
-    rb_define_singleton_method(rb_cDir, "foreach", dir_foreach, -1);
     rb_define_singleton_method(rb_cDir, "entries", dir_entries, -1);
     rb_define_singleton_method(rb_cDir, "each_child", dir_s_each_child, -1);
     rb_define_singleton_method(rb_cDir, "children", dir_s_children, -1);
