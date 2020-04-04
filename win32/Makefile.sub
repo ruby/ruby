@@ -383,7 +383,7 @@ MINIRUBY = .\miniruby$(EXEEXT) -I$(srcdir)/lib -I.
 RUNRUBY = .\$(PROGRAM) -I$(srcdir)/lib -I"$(EXTOUT)/$(arch)" -I.
 !endif
 MINIRUBY = $(MINIRUBY) $(MINIRUBYOPT)
-RUNRUBY = $(RUNRUBY) "$(srcdir)/tool/runruby.rb" --extout="$(EXTOUT)" $(RUNRUBYOPT) -- $(RUN_OPTS)
+RUNRUBY = $(RUNRUBY) "$(tooldir)/runruby.rb" --extout="$(EXTOUT)" $(RUNRUBYOPT) -- $(RUN_OPTS)
 !if "$(CROSS_COMPILING)" == "yes"
 XRUBY = $(MINIRUBY)
 BOOTSTRAPRUBY = $(BASERUBY)
@@ -473,6 +473,7 @@ EXTOBJS = dmyext.$(OBJEXT)
 arch_hdrdir = $(EXTOUT)/include/$(arch)
 top_srcdir = $(srcdir)
 hdrdir = $(srcdir)/include
+tooldir = $(srcdir)/tool
 VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/missing;$(win_srcdir)
 
 !ifndef GIT
@@ -1226,7 +1227,7 @@ update-benchmark-driver:
 	  $(GIT) -C $(srcdir)/benchmark/benchmark-driver pull origin master
 
 $(ruby_pc): $(RBCONFIG)
-	@$(BOOTSTRAPRUBY) $(srcdir)/tool/expand-config.rb \
+	@$(BOOTSTRAPRUBY) $(tooldir)/expand-config.rb \
 		-output=$@ -mode=$(INSTALL_DATA_MODE) -config=rbconfig.rb \
 		$(srcdir)/template/ruby.pc.in
 
@@ -1360,9 +1361,9 @@ INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 	@for %J in (\
 "%I: $$(srcdir)/insns.def {$$(VPATH)}vm_opts.h \" \
 "	  $$(srcdir)/defs/opt_operand.def $$(srcdir)/defs/opt_insn_unif.def \" \
-"	  $$(srcdir)/tool/insns2vm.rb" \
+"	  $$(tooldir)/insns2vm.rb" \
 "	@$$(RM) $$(PROGRAM)" \
-"	$$(Q) $$(BASERUBY) -Ku $$(srcdir)/tool/insns2vm.rb $$(INSNS2VMOPT) %I" \
+"	$$(Q) $$(BASERUBY) -Ku $$(tooldir)/insns2vm.rb $$(INSNS2VMOPT) %I" \
 "" \
 ) do @echo.%~J>>insns_rules.mk]
 !else
