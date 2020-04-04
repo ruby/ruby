@@ -3952,4 +3952,20 @@ __END__
       assert_raise(TypeError) {Marshal.dump(w)}
     }
   end
+
+  def test_stdout_to_closed_pipe
+    EnvUtil.invoke_ruby(["-e", "loop {puts :ok}"], "", true, true) do
+      |in_p, out_p, err_p, pid|
+      assert_equal("ok\n", out_p.gets)
+      out_p.close
+      assert_empty(err_p.read)
+      ok = true
+    ensure
+      status = Process.wait2(pid)[1]
+      if ok
+        assert_predicate(status, :signaled?)
+        assert_equal("PIPE", Signal.signame(status.termsig) || status.termsig)
+      end
+    end
+  end
 end
