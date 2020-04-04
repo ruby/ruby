@@ -1970,7 +1970,7 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
     else
       sep = ""
     end
-    possible_command = (proc {|s| s if /top_srcdir/ !~ s} unless $extmk)
+    possible_command = (proc {|s| s if /top_srcdir|tooldir/ !~ s} unless $extmk)
     extconf_h = $extconf_h ? "-DRUBY_EXTCONF_H=\\\"$(RUBY_EXTCONF_H)\\\" " : $defs.join(" ") << " "
     headers = %w[
       $(hdrdir)/ruby.h

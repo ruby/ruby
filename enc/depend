@@ -97,7 +97,7 @@ $(ENCSOS) $(TRANSSOS): $(ENC_TRANS_SO_D)
 
 <%=transvpath_prefix%>.trans<%=transvpath_prefix%>.c:
 	$(ECHO) generating table from $@
-	$(Q)$(MINIRUBY) "$(srcdir)/tool/transcode-tblgen.rb" -vo "$@" "$<"
+	$(Q)$(MINIRUBY) "$(tooldir)/transcode-tblgen.rb" -vo "$@" "$<"
 
 % unless ENCS.empty? or TRANS.empty?
 
@@ -113,7 +113,7 @@ enc/<%=e%>.$(OBJEXT): <%=deps.map {|n| rule_subst % n}.join(' ')%>
 %     if src.empty?
 %       src = trans.scan(/^\s*transcode_tblgen_\w+\s+[\'\"]([^\'\"]*)/).flatten.map{|c|c.downcase+"-tbl.rb"}
 %     end
-<%=transvpath % "#{e}.c"%>: <%= src.map {|s| transvpath % "#{s}"}.join(" ")%> $(srcdir)/tool/transcode-tblgen.rb
+<%=transvpath % "#{e}.c"%>: <%= src.map {|s| transvpath % "#{s}"}.join(" ")%> $(tooldir)/transcode-tblgen.rb
 %   end
 
 % end
