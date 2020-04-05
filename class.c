@@ -837,7 +837,7 @@ rb_include_class_new(VALUE module, VALUE super)
     RCLASS_M_TBL(OBJ_WB_UNPROTECT(klass)) =
       RCLASS_M_TBL(OBJ_WB_UNPROTECT(module)); /* TODO: unprotected? */
 
-    RCLASS_SET_ORIGIN(klass, module == RCLASS_ORIGIN(module) ? klass : RCLASS_ORIGIN(module));
+    RCLASS_SET_ORIGIN(klass, klass);
     if (BUILTIN_TYPE(module) == T_ICLASS) {
 	module = RBASIC(module)->klass;
     }
@@ -925,8 +925,9 @@ clear_module_cache_i(ID id, VALUE val, void *data)
 static int
 include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
 {
-    VALUE p, iclass;
-    int method_changed = 0, constant_changed = 0;
+    VALUE p, iclass, origin_stack = 0;
+    int method_changed = 0, constant_changed = 0, add_subclass;
+    long origin_len;
     struct rb_id_table *const klass_m_tbl = RCLASS_M_TBL(RCLASS_ORIGIN(klass));
     VALUE original_klass = klass;
 
@@ -979,11 +980,24 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
 	iclass = rb_include_class_new(module, super_class);
 	c = RCLASS_SET_SUPER(c, iclass);
         RCLASS_SET_INCLUDER(iclass, klass);
+        add_subclass = TRUE;
+        if (module != RCLASS_ORIGIN(module)) {
+            if (!origin_stack) origin_stack = rb_ary_tmp_new(2);
+            VALUE origin[2] = {iclass, RCLASS_ORIGIN(module)};
+            rb_ary_cat(origin_stack, origin, 2);
+        }
+        else if (origin_stack && (origin_len = RARRAY_LEN(origin_stack)) > 1 &&
+                 RARRAY_AREF(origin_stack, origin_len - 1) == module) {
+            RCLASS_SET_ORIGIN(RARRAY_AREF(origin_stack, (origin_len -= 2)), iclass);
+            RICLASS_SET_ORIGIN_SHARED_MTBL(iclass);
+            rb_ary_resize(origin_stack, origin_len);
+            add_subclass = FALSE;
+        }
 
 	{
 	    VALUE m = module;
             if (BUILTIN_TYPE(m) == T_ICLASS) m = RBASIC(m)->klass;
-            rb_module_add_to_subclasses_list(m, iclass);
+            if (add_subclass) rb_module_add_to_subclasses_list(m, iclass);
 	}
 
 	if (FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
@@ -1093,7 +1107,7 @@ rb_mod_included_modules(VALUE mod)
     VALUE origin = RCLASS_ORIGIN(mod);
 
     for (p = RCLASS_SUPER(mod); p; p = RCLASS_SUPER(p)) {
-	if (p != origin && BUILTIN_TYPE(p) == T_ICLASS) {
+        if (p != origin && RCLASS_ORIGIN(p) == p && BUILTIN_TYPE(p) == T_ICLASS) {
 	    VALUE m = RBASIC(p)->klass;
 	    if (RB_TYPE_P(m, T_MODULE))
 		rb_ary_push(ary, m);
