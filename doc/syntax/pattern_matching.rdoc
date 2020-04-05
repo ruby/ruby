@@ -35,7 +35,7 @@ Therefore, +case+ statement might be used for conditional matching and unpacking
   else
     puts "Unrecognized structure of config"
   end
-  # Prints: "connect with user 'admin'"
+  # Prints: "Connect with user 'admin'"
 
 whilst standalone +in+ statement is most useful when expected data structure is known beforehand, to just unpack parts of it:
 
@@ -44,7 +44,7 @@ whilst standalone +in+ statement is most useful when expected data structure is 
   config in {db: {user:}} # will raise if the config's structure is unexpected
 
   puts "Connect with user '#{user}'"
-  # Prints: "connect with user 'admin'"
+  # Prints: "Connect with user 'admin'"
 
 See below for more examples and explanations of the syntax.
 
