@@ -25,7 +25,8 @@ class RubyVM::Dumper
   end
 
   def new_erb spec
-    path  = Pathname.new(__FILE__).relative_path_from(Pathname.pwd).dirname
+    path  = Pathname.new(__FILE__)
+    path  = (path.relative_path_from(Pathname.pwd) rescue path).dirname
     path += '../views'
     path += spec
     src   = path.read mode: 'rt:utf-8:utf-8'
