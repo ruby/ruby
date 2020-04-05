@@ -89,6 +89,20 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
     assert_equal para("<a href=\"C1.html#method-c-25\"><code>C1::%</code></a>"), result
   end
 
+  def test_convert_RDOCLINK_rdoc_ref_method_escape_html
+    m = @c1.add_method RDoc::AnyMethod.new nil, '<<'
+    m.singleton = false
+
+    result = @to.convert 'rdoc-ref:C1#<<'
+
+    assert_equal para("<a href=\"C1.html#method-i-3C-3C\"><code>C1#&lt;&lt;</code></a>"), result
+    m.singleton = true
+
+    result = @to.convert 'rdoc-ref:C1::<<'
+
+    assert_equal para("<a href=\"C1.html#method-c-3C-3C\"><code>C1::&lt;&lt;</code></a>"), result
+  end
+
   def test_convert_RDOCLINK_rdoc_ref_method_percent_label
     m = @c1.add_method RDoc::AnyMethod.new nil, '%'
     m.singleton = false
