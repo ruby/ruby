@@ -95,9 +95,10 @@ typedef struct rb_classext_struct rb_classext_t;
 #endif
 #define RCLASS_INCLUDER(c) (RCLASS_EXT(c)->includer)
 
-#define RCLASS_CLONED     FL_USER6
 #define RICLASS_IS_ORIGIN FL_USER5
+#define RCLASS_CLONED     FL_USER6
 #define RCLASS_REFINED_BY_ANY FL_USER7
+#define RICLASS_ORIGIN_SHARED_MTBL FL_USER8
 
 /* class.c */
 void rb_class_subclass_add(VALUE super, VALUE klass);
@@ -120,6 +121,7 @@ VALUE rb_singleton_class_get(VALUE obj);
 int rb_class_has_methods(VALUE c);
 void rb_undef_methods_from(VALUE klass, VALUE super);
 static inline void RCLASS_SET_ORIGIN(VALUE klass, VALUE origin);
+static inline void RICLASS_SET_ORIGIN_SHARED_MTBL(VALUE iclass);
 static inline VALUE RCLASS_SUPER(VALUE klass);
 static inline VALUE RCLASS_SET_SUPER(VALUE klass, VALUE super);
 static inline void RCLASS_SET_INCLUDER(VALUE iclass, VALUE klass);
@@ -134,6 +136,12 @@ RCLASS_SET_ORIGIN(VALUE klass, VALUE origin)
 {
     RB_OBJ_WRITE(klass, &RCLASS_ORIGIN(klass), origin);
     if (klass != origin) FL_SET(origin, RICLASS_IS_ORIGIN);
+}
+
+static inline void
+RICLASS_SET_ORIGIN_SHARED_MTBL(VALUE iclass)
+{
+    FL_SET(iclass, RICLASS_ORIGIN_SHARED_MTBL);
 }
 
 static inline void
