@@ -16,7 +16,7 @@
  * This file contains wrapper APIs for native thread primitives
  * which Ruby interpreter uses.
  *
- * Now, we only suppors pthread and Windows threads.
+ * Now, we only support pthread and Windows threads.
  *
  * If you want to use Ruby's Mutex and so on to synchronize Ruby Threads,
  * please use Mutex directly.
