@@ -944,7 +944,7 @@ dependencies: []
     assert_equal File.join(@tempdir, 'a-2.gemspec'), spec.loaded_from
   end
 
-  if RUBY_VERSION < '2.7'
+  if RUBY_ENGINE == 'ruby' and RUBY_VERSION < '2.7'
     def test_self_load_tainted
       full_path = @a2.spec_file
       write_file full_path do |io|
