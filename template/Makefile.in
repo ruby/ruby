@@ -366,12 +366,12 @@ reconfig config.status:	$(srcdir)/$(CONFIGURE) $(srcdir)/enc/Makefile.in \
 	@PWD= MINIRUBY="$(MINIRUBY)"; export MINIRUBY; \
 	set $(SHELL) $($@-args); $(reconfig-exec-$(V))
 
-$(srcdir)/$(CONFIGURE): $(srcdir)/configure.ac $(tooldir)/m4/aclocal.m4
-	$(CHDIR) $(srcdir) && exec $(AUTOCONF) -I tool/m4 -o $(@F)
+$(srcdir)/$(CONFIGURE): $(srcdir)/configure.ac $(srcdir)/aclocal.m4
+	$(CHDIR) $(srcdir) && exec $(AUTOCONF) -o $(@F)
 
-$(tooldir)/m4/aclocal.m4:
+$(srcdir)/aclocal.m4:
 	$(CHDIR) $(srcdir) && \
-	type $(ACLOCAL) >/dev/null 2>&1 && exec $(ACLOCAL) --output=tool/m4/$(@F); \
+	type $(ACLOCAL) >/dev/null 2>&1 && exec $(ACLOCAL); \
 	touch $(@F)
 
 prereq: $(srcdir)/$(CONFIGURE)

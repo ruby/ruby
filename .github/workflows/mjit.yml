@@ -38,7 +38,7 @@ jobs:
       - name: Set ENV
         run: |
           echo '::set-env name=JOBS::'-j$((1 + $(nproc --all)))
-      - run: autoconf -I tool/m4
+      - run: autoconf
         working-directory: src
       - run: mkdir build
       - name: Run configure

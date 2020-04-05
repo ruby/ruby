@@ -460,7 +460,7 @@ matrix:
   fast_finish: true
 
 before_script:
-  - rm -fr .ext tool/m4/autom4te.cache
+  - rm -fr .ext autom4te.cache
   - |-
     [ -d ~/.downloaded-cache ] ||
     mkdir ~/.downloaded-cache

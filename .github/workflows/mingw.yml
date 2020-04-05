@@ -68,7 +68,7 @@ jobs:
           mkdir install
           mkdir temp
           cd src
-          sh -c "autoreconf -fi -I tool/m4"
+          sh -c "autoreconf -fi"
 
       - name: configure
         working-directory: build
