@@ -2,9 +2,7 @@
 
 *.rb
 
-bundler/[^v]*
-bundler/version*
-
+bundler
 cgi
 csv
 drb
