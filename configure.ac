@@ -6,6 +6,8 @@ AC_CONFIG_MACRO_DIRS(tool/m4)
 
 AC_PREREQ(2.67)
 
+tooldir="$srcdir/tool"
+
 dnl   override AC_CHECKING
 dnl   placed here due to aclocal(1)'s
 dnl   ignoring this definition in separate files
@@ -294,7 +296,7 @@ AS_CASE(["$build_os"],
     echo 'int main(void) {return 0;}' > conftest.c
     AS_IF([$CC -framework Foundation -o conftest conftest.c 2>&1 |
 	   grep '^ld: warning: text-based stub file' >/dev/null], [
-	CC_WRAPPER=`cd -P "$srcdir/tool" && pwd`/darwin-cc
+	CC_WRAPPER=`cd -P "${tooldir}" && pwd`/darwin-cc
 	CC="$CC_WRAPPER $CC"
     ])
     rm -fr conftest*
@@ -3949,7 +3951,7 @@ guard=INCLUDE_RUBY_CONFIG_H
 } | tr -d '\015' |
 (
   AS_IF([test "x$CONFIGURE_TTY" = xyes], [color=--color], [color=])
-  exec ${srcdir}/tool/ifchange $color "${config_h}" -
+  exec ${tooldir}/ifchange $color "${config_h}" -
 ) >&AS_MESSAGE_FD || AC_MSG_ERROR([failed to create ${config_h}])
 tr -d '\015' < largefile.h > confdefs.h
 rm largefile.h
