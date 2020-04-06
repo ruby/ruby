@@ -23,6 +23,7 @@
 #include "ruby/3/config.h"      /* for ENUM_OVER_INT */
 #include "ruby/3/attr/artificial.h"
 #include "ruby/3/attr/flag_enum.h"
+#include "ruby/3/attr/forceinline.h"
 #include "ruby/3/attr/noalias.h"
 #include "ruby/3/attr/pure.h"
 #include "ruby/3/cast.h"
@@ -210,7 +211,8 @@ RUBY3_SYMBOL_EXPORT_END()
 
 RUBY3_ATTR_PURE_ON_NDEBUG()
 RUBY3_ATTR_ARTIFICIAL()
-static inline bool
+RUBY3_ATTR_FORCEINLINE()
+static bool
 RB_FL_ABLE(VALUE obj)
 {
     if (RB_SPECIAL_CONST_P(obj)) {
