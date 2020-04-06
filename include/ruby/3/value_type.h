@@ -24,6 +24,7 @@
 #include "ruby/3/attr/artificial.h"
 #include "ruby/3/attr/cold.h"
 #include "ruby/3/attr/enum_extensibility.h"
+#include "ruby/3/attr/forceinline.h"
 #include "ruby/3/attr/pure.h"
 #include "ruby/3/cast.h"
 #include "ruby/3/constant_p.h"
@@ -242,7 +243,8 @@ RB_SYMBOL_P(VALUE obj)
 
 RUBY3_ATTR_PURE_ON_NDEBUG()
 RUBY3_ATTR_ARTIFICIAL()
-static inline bool
+RUBY3_ATTR_FORCEINLINE()
+static bool
 ruby3_RB_TYPE_P_fastpath(VALUE obj, enum ruby_value_type t)
 {
     if (t == RUBY_T_TRUE) {
