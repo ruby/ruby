@@ -69,6 +69,31 @@ class Dir
     __builtin_dir_entries(path, encoding)
   end
 
+  #
+  #  call-seq:
+  #     Dir.each_child( dirname ) {| filename | block }                 -> nil
+  #     Dir.each_child( dirname, encoding: enc ) {| filename | block }  -> nil
+  #     Dir.each_child( dirname )                                       -> an_enumerator
+  #     Dir.each_child( dirname, encoding: enc )                        -> an_enumerator
+  #
+  #  Calls the block once for each entry except for "." and ".." in the
+  #  named directory, passing the filename of each entry as a parameter
+  #  to the block.
+  #
+  #  If no block is given, an enumerator is returned instead.
+  #
+  #     Dir.each_child("testdir") {|x| puts "Got #{x}" }
+  #
+  #  <em>produces:</em>
+  #
+  #     Got config.h
+  #     Got main.rb
+  #
+  #
+  def self.each_child(path, encoding: Encoding.find("filesystem"))
+    __builtin_dir_s_each_child(path, encoding)
+  end
+
   #    Dir.new( string ) -> aDir
   #    Dir.new( string, encoding: enc ) -> aDir
   #

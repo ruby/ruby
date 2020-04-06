@@ -2989,34 +2989,16 @@ dir_each_child(VALUE dir)
     return dir_each_entry(dir, dir_yield, Qnil, TRUE);
 }
 
-/*
- *  call-seq:
- *     Dir.each_child( dirname ) {| filename | block }                 -> nil
- *     Dir.each_child( dirname, encoding: enc ) {| filename | block }  -> nil
- *     Dir.each_child( dirname )                                       -> an_enumerator
- *     Dir.each_child( dirname, encoding: enc )                        -> an_enumerator
- *
- *  Calls the block once for each entry except for "." and ".." in the
- *  named directory, passing the filename of each entry as a parameter
- *  to the block.
- *
- *  If no block is given, an enumerator is returned instead.
- *
- *     Dir.each_child("testdir") {|x| puts "Got #{x}" }
- *
- *  <em>produces:</em>
- *
- *     Got config.h
- *     Got main.rb
- *
- */
 static VALUE
-dir_s_each_child(int argc, VALUE *argv, VALUE io)
+dir_s_each_child(rb_execution_context_t *ec, VALUE io, VALUE path, VALUE enc)
 {
     VALUE dir;
+    VALUE argv[1];
+    argv[0] = path;
 
-    RETURN_ENUMERATOR(io, argc, argv);
-    dir = dir_open_dir(argc, argv);
+    RETURN_ENUMERATOR(io, 1, argv);
+
+    dir = dir_s_open(ec, io, path, enc);
     rb_ensure(dir_each_child, dir, dir_close, dir);
     return Qnil;
 }
@@ -3394,7 +3376,6 @@ Init_Dir(void)
     rb_include_module(rb_cDir, rb_mEnumerable);
 
     rb_define_alloc_func(rb_cDir, dir_s_alloc);
-    rb_define_singleton_method(rb_cDir, "each_child", dir_s_each_child, -1);
     rb_define_singleton_method(rb_cDir, "children", dir_s_children, -1);
 
     rb_define_method(rb_cDir,"fileno", dir_fileno, 0);
