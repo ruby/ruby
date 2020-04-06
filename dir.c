@@ -3333,12 +3333,7 @@ rb_file_directory_p(void)
 }
 #endif
 
-/*
- * call-seq:
- *   Dir.exists?(file_name)  ->  true or false
- *
- * Deprecated method. Don't use.
- */
+/* :nodoc: */
 static VALUE
 rb_dir_exists_p(VALUE obj, VALUE fname)
 {

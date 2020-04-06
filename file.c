@@ -1773,12 +1773,7 @@ rb_file_exist_p(VALUE obj, VALUE fname)
     return Qtrue;
 }
 
-/*
- * call-seq:
- *    File.exists?(file_name)   ->  true or false
- *
- * Deprecated method. Don't use.
- */
+/* :nodoc: */
 static VALUE
 rb_file_exists_p(VALUE obj, VALUE fname)
 {
