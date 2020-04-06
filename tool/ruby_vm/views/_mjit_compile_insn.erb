@@ -7,7 +7,6 @@
 % # details.
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
 % # compiler: Prepare operands which may be used by `insn.call_attribute`
 % insn.opes.each_with_index do |ope, i|
         MAYBE_UNUSED(<%= ope.fetch(:decl) %>) = (<%= ope.fetch(:type) %>)operands[<%= i %>];
