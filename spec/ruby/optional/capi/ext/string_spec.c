@@ -366,11 +366,7 @@ static VALUE string_spec_SafeStringValue(VALUE self, VALUE str) {
 static VALUE string_spec_rb_str_hash(VALUE self, VALUE str) {
   st_index_t val = rb_str_hash(str);
 
-#if SIZEOF_LONG == SIZEOF_VOIDP || SIZEOF_LONG_LONG == SIZEOF_VOIDP
-  return LONG2FIX((long)val);
-#else
-#error unsupported platform
-#endif
+  return ST2FIX(val);
 }
 
 static VALUE string_spec_rb_str_update(VALUE self, VALUE str, VALUE beg, VALUE end, VALUE replacement) {
