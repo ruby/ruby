@@ -3049,27 +3049,12 @@ dir_collect_children(VALUE dir)
     return ary;
 }
 
-/*
- *  call-seq:
- *     Dir.children( dirname )                -> array
- *     Dir.children( dirname, encoding: enc ) -> array
- *
- *  Returns an array containing all of the filenames except for "."
- *  and ".." in the given directory. Will raise a SystemCallError if
- *  the named directory doesn't exist.
- *
- *  The optional <i>encoding</i> keyword argument specifies the encoding of the
- *  directory. If not specified, the filesystem encoding is used.
- *
- *     Dir.children("testdir")   #=> ["config.h", "main.rb"]
- *
- */
 static VALUE
-dir_s_children(int argc, VALUE *argv, VALUE io)
+dir_s_children(rb_execution_context_t *ec, VALUE io, VALUE path, VALUE enc)
 {
     VALUE dir;
 
-    dir = dir_open_dir(argc, argv);
+    dir = dir_s_open(ec, io, path, enc);
     return rb_ensure(dir_collect_children, dir, dir_close, dir);
 }
 
@@ -3376,7 +3361,6 @@ Init_Dir(void)
     rb_include_module(rb_cDir, rb_mEnumerable);
 
     rb_define_alloc_func(rb_cDir, dir_s_alloc);
-    rb_define_singleton_method(rb_cDir, "children", dir_s_children, -1);
 
     rb_define_method(rb_cDir,"fileno", dir_fileno, 0);
     rb_define_method(rb_cDir,"path", dir_path, 0);

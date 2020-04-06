@@ -94,6 +94,25 @@ class Dir
     __builtin_dir_s_each_child(path, encoding)
   end
 
+  #
+  #  call-seq:
+  #     Dir.children( dirname )                -> array
+  #     Dir.children( dirname, encoding: enc ) -> array
+  #
+  #  Returns an array containing all of the filenames except for "."
+  #  and ".." in the given directory. Will raise a SystemCallError if
+  #  the named directory doesn't exist.
+  #
+  #  The optional <i>encoding</i> keyword argument specifies the encoding of the
+  #  directory. If not specified, the filesystem encoding is used.
+  #
+  #     Dir.children("testdir")   #=> ["config.h", "main.rb"]
+  #
+  #
+  def self.children(path, encoding: Encoding.find("filesystem"))
+    __builtin_dir_s_children(path, encoding)
+  end
+
   #    Dir.new( string ) -> aDir
   #    Dir.new( string, encoding: enc ) -> aDir
   #
