@@ -25,10 +25,7 @@
         && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))) {
 
         int param_size = iseq->body->param.size;
-        unsigned int argc = vm_ci_argc(ci); // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
-% if insn.name == 'send'
-        argc += ((vm_ci_flag(ci) & VM_CALL_ARGS_BLOCKARG) ? 1 : 0); // simulate `vm_caller_setup_arg_block`'s `--reg_cfp->sp`
-% end
+        int sp_inc = sp_inc_of_sendish(ci);
 
         fprintf(f, "{\n");
 % # JIT: Declare stack_size to be used in some macro of _mjit_compile_insn_body.erb
@@ -39,7 +36,7 @@
 % # JIT: Invalidate call cache if it requires vm_search_method. This allows to inline some of following things.
         fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
         fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
-        fprintf(f, "    if (UNLIKELY(!vm_cc_valid_p(cc, cc_cme, CLASS_OF(stack[%d])))) {\n", b->stack_size - 1 - argc);
+        fprintf(f, "    if (UNLIKELY(!vm_cc_valid_p(cc, cc_cme, CLASS_OF(stack[%d])))) {\n", b->stack_size + sp_inc - 1);
         fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
         fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         fprintf(f, "        goto send_cancel;\n");
@@ -52,8 +49,8 @@
         if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
             fprintf(f, "    {\n");
             fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-            fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, pos);
             fprintf(f, "        reg_cfp->self = orig_self;\n");
             fprintf(f, "    }\n");
         }
@@ -68,7 +65,7 @@
             fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
 % end
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
-            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
 
 %           # fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
             fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", param_size, iseq->body->local_table_size);
@@ -82,7 +79,7 @@
                 fprintf(f, "            val = vm_exec(ec, FALSE);\n");
                 fprintf(f, "        }\n");
             }
-            fprintf(f, "        stack[%d] = val;\n", b->stack_size - argc - 1);
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
             fprintf(f, "    }\n");
 
 % # JIT: We should evaluate ISeq modified for TracePoint if it's enabled. Note: This is slow.
