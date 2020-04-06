@@ -9,7 +9,7 @@ class Dir
   #  The optional <i>encoding</i> keyword argument specifies the encoding of the directory.
   #  If not specified, the filesystem encoding is used.
   #
-  def initialize(path, encoding: Encoding.find("filesystem"))
+  def initialize(path, encoding: nil)
     __builtin_dir_initialize(path, encoding)
   end
 
@@ -28,7 +28,7 @@ class Dir
   #  directory is closed at the end of the block, and Dir::open returns
   #  the value of the block.
   #
-  def self.open(path, encoding: Encoding.find("filesystem"))
+  def self.open(path, encoding: nil)
     __builtin_dir_s_open(path, encoding)
   end
 
