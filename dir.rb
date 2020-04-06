@@ -50,6 +50,25 @@ class Dir
     __builtin_dir_foreach(path, encoding)
   end
 
+  #
+  #  call-seq:
+  #     Dir.entries( dirname )                -> array
+  #     Dir.entries( dirname, encoding: enc ) -> array
+  #
+  #  Returns an array containing all of the filenames in the given
+  #  directory. Will raise a SystemCallError if the named directory
+  #  doesn't exist.
+  #
+  #  The optional <i>encoding</i> keyword argument specifies the encoding of the
+  #  directory. If not specified, the filesystem encoding is used.
+  #
+  #     Dir.entries("testdir")   #=> [".", "..", "config.h", "main.rb"]
+  #
+  #
+  def self.entries(path, encoding: Encoding.find("filesystem"))
+    __builtin_dir_entries(path, encoding)
+  end
+
   #    Dir.new( string ) -> aDir
   #    Dir.new( string, encoding: enc ) -> aDir
   #
