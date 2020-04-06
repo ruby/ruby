@@ -25,7 +25,7 @@
         && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))) {
 
         int param_size = iseq->body->param.size;
-        int sp_inc = sp_inc_of_sendish(ci);
+        int sp_inc = (int)sp_inc_of_sendish(ci);
 
         fprintf(f, "{\n");
 % # JIT: Declare stack_size to be used in some macro of _mjit_compile_insn_body.erb
