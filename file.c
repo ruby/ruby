@@ -1782,16 +1782,16 @@ rb_file_exist_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_exists_p(VALUE obj, VALUE fname)
 {
-    const char *s = "FileTest#";
+    const char *s = "FileTest#exist?";
     if (obj == rb_mFileTest) {
-	s = "FileTest.";
+	s = "FileTest.exist?";
     }
     else if (obj == rb_cFile ||
 	     (RB_TYPE_P(obj, T_CLASS) &&
 	      RTEST(rb_class_inherited_p(obj, rb_cFile)))) {
-	s = "File.";
+	s = "File.exist?";
     }
-    rb_warning("%sexists? is a deprecated name, use %sexist? instead", s, s);
+    rb_warn_deprecated("", s);
     return rb_file_exist_p(obj, fname);
 }
 
