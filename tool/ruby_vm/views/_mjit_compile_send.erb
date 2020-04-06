@@ -13,7 +13,7 @@
 % insn.opes.each_with_index do |ope, i|
     MAYBE_UNUSED(<%= ope.fetch(:decl) %>) = (<%= ope.fetch(:type) %>)operands[<%= i %>];
 % end
-% # compiler: Use copied cc to avoid race condition
+% # compiler: Use captured cc to avoid race condition
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
 %
     const rb_iseq_t *iseq;
@@ -58,8 +58,9 @@
             fprintf(f, "    }\n");
         }
         else {
-% # JIT: Print insn body in insns.def
+% # JIT: Forked `vm_sendish` to inline various things
             fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
             fprintf(f, "        struct rb_calling_info calling;\n");
 % if insn.name == 'send'
             fprintf(f, "        calling.block_handler = vm_caller_setup_arg_block(ec, reg_cfp, (const struct rb_callinfo *)0x%"PRIxVALUE", (rb_iseq_t *)0x%"PRIxVALUE", FALSE);\n", (VALUE)ci, (VALUE)blockiseq);
@@ -69,24 +70,19 @@
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
             fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
 
-% # JIT: Special CALL_METHOD. Bypass captured_cc->call and inline vm_call_iseq_setup_normal for vm_call_iseq_setup_func FASTPATH.
-            fprintf(f, "        {\n");
-            fprintf(f, "            VALUE v;\n");
-            fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n",
-                       param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+%           # fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", param_size, iseq->body->local_table_size);
             if (iseq->body->catch_except_p) {
-                fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                fprintf(f, "        val = vm_exec(ec, TRUE);\n");
             }
             else {
-                fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                fprintf(f, "            }\n");
+                fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                fprintf(f, "        }\n");
             }
-            fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-            fprintf(f, "        }\n");
-
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size - argc - 1);
             fprintf(f, "    }\n");
 
 % # JIT: We should evaluate ISeq modified for TracePoint if it's enabled. Note: This is slow.
