@@ -240,7 +240,7 @@ module IRB
     attr_accessor :ignore_eof
     # Whether to echo the return value to output or not.
     #
-    # Uses IRB.conf[:ECHO] if available, or defaults to +true+.
+    # Uses <code>IRB.conf[:ECHO]</code> if available, or defaults to +true+.
     #
     #     puts "hello"
     #     # hello
@@ -251,7 +251,7 @@ module IRB
     attr_accessor :echo
     # Whether to echo for assignment expressions
     #
-    # Uses IRB.conf[:ECHO_ON_ASSIGNMENT] if available, or defaults to +false+.
+    # Uses <code>IRB.conf[:ECHO_ON_ASSIGNMENT]</code> if available, or defaults to +false+.
     #
     #     a = "omg"
     #     IRB.CurrentContext.echo_on_assignment = true
@@ -260,7 +260,7 @@ module IRB
     attr_accessor :echo_on_assignment
     # Whether a newline is put before multiline output.
     #
-    # Uses IRB.conf[:NEWLINE_BEFORE_MULTILINE_OUTPUT] if available,
+    # Uses <code>IRB.conf[:NEWLINE_BEFORE_MULTILINE_OUTPUT]</code> if available,
     # or defaults to +true+.
     #
     #     "abc\ndef"

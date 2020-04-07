@@ -744,7 +744,7 @@ module OpenURI
       OpenURI.open_uri(self, *rest, &block)
     end
 
-    # OpenURI::OpenRead#read([options]) reads a content referenced by self and
+    # OpenURI::OpenRead#read([ options ]) reads a content referenced by self and
     # returns the content as string.
     # The string is extended with OpenURI::Meta.
     # The argument +options+ is same as OpenURI::OpenRead#open.
