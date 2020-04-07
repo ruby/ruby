@@ -82,7 +82,7 @@ CFLAGS = $(CFLAGS_NO_ARCH) $(ARCH_FLAG)
 cflags = @cflags@
 optflags = @optflags@
 debugflags = @debugflags@
-warnflags = @warnflags@ @strict_warnflags@
+warnflags = @warnflags@
 cppflags = @cppflags@
 MATHN = @MATHN@
 XCFLAGS = @XCFLAGS@ $(MATHN:yes=-DCANONICALIZATION_FOR_MATHN) $(INCFLAGS)
