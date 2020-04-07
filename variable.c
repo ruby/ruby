@@ -2123,9 +2123,8 @@ autoload_defined_p(VALUE mod, ID id)
 static void const_tbl_update(struct autoload_const *);
 
 static VALUE
-autoload_const_set(VALUE arg)
+autoload_const_set(struct autoload_const *ac)
 {
-    struct autoload_const *ac = (struct autoload_const *)arg;
     VALUE klass = ac->mod;
     ID id = ac->id;
     check_before_mod_set(klass, id, ac->value, "constant");
@@ -2169,7 +2168,7 @@ autoload_reset(VALUE arg)
 
         list_for_each_safe(&ele->constants, ac, next, cnode) {
             if (ac->value != Qundef) {
-                autoload_const_set((VALUE)ac);
+                autoload_const_set(ac);
             }
         }
     }
