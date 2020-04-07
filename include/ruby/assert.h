@@ -20,6 +20,7 @@
  */
 #ifndef  RUBY_ASSERT_H
 #define  RUBY_ASSERT_H
+#include "ruby/3/assume.h"
 #include "ruby/3/attr/cold.h"
 #include "ruby/3/attr/noreturn.h"
 #include "ruby/3/cast.h"
@@ -84,5 +85,15 @@ RUBY3_SYMBOL_EXPORT_END()
 #define RUBY_ASSERT(expr) RUBY_ASSERT_MESG_WHEN((!RUBY_NDEBUG+0), expr, #expr)
 #define RUBY_ASSERT_WHEN(cond, expr) RUBY_ASSERT_MESG_WHEN(cond, expr, #expr)
 #define RUBY_ASSERT_ALWAYS(expr) RUBY_ASSERT_MESG_WHEN(TRUE, expr, #expr)
+
+#if ! RUBY_NDEBUG
+# define RUBY3_ASSERT_OR_ASSUME(_) RUBY_ASSERT(_)
+#elif defined(RUBY3_HAVE___ASSUME)
+# define RUBY3_ASSERT_OR_ASSUME(_) RUBY3_ASSUME(_)
+#elif RUBY3_HAS_BUILTIN(__builtin_assume)
+# define RUBY3_ASSERT_OR_ASSUME(_) RUBY3_ASSUME(_)
+#else
+# define RUBY3_ASSERT_OR_ASSUME(_) /* void */
+#endif
 
 #endif /* RUBY_ASSERT_H */

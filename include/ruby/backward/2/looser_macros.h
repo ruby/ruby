@@ -22,11 +22,15 @@
 #define  RUBY_BACKWARD2_LOOSER_MACROS_H
 #include "ruby/3/cast.h"
 #include "ruby/3/special_consts.h"
+#include "ruby/3/core/rbasic.h"
 
 #undef RB_SPECIAL_CONST_P
 #define RB_SPECIAL_CONST_P(_) ((RB_SPECIAL_CONST_P)(RUBY3_CAST((VALUE)(_))))
 
 #undef RB_STATIC_SYM_P
 #define RB_STATIC_SYM_P(_) ((RB_STATIC_SYM_P)(RUBY3_CAST((VALUE)(_))))
+
+#undef RBASIC_CLASS
+#define RBASIC_CLASS(_) ((RBASIC_CLASS)(RUBY3_CAST((VALUE)(_))))
 
 #endif /* RUBY_BACKWARD2_LOOSER_MACROS_H */
