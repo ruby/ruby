@@ -1786,7 +1786,7 @@ rb_file_exists_p(VALUE obj, VALUE fname)
 	      RTEST(rb_class_inherited_p(obj, rb_cFile)))) {
 	s = "File.exist?";
     }
-    rb_warn_deprecated("", s);
+    rb_warn_deprecated("%.*ss?", s, (int)(strlen(s)-1), s);
     return rb_file_exist_p(obj, fname);
 }
 

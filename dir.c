@@ -3337,7 +3337,7 @@ rb_file_directory_p(void)
 static VALUE
 rb_dir_exists_p(VALUE obj, VALUE fname)
 {
-    rb_warn_deprecated("", "Dir.exist?");
+    rb_warn_deprecated("Dir.exists?", "Dir.exist?");
     return rb_file_directory_p(obj, fname);
 }
 
