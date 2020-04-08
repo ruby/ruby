@@ -86,6 +86,7 @@
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/rational.h"
+#include "internal/re.h"
 #include "internal/sanitizers.h"
 #include "internal/struct.h"
 #include "internal/symbol.h"
@@ -2781,11 +2782,8 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         }
 	break;
       case T_REGEXP:
-	if (RANY(obj)->as.regexp.ptr) {
-	    onig_free(RANY(obj)->as.regexp.ptr);
-            RB_DEBUG_COUNTER_INC(obj_regexp_ptr);
-	}
-	break;
+          rb_reg_free(obj);
+          break;
       case T_DATA:
 	if (DATA_PTR(obj)) {
 	    int free_immediately = FALSE;

@@ -2251,6 +2251,7 @@ rb_vm_update_references(void *ptr)
     if (ptr) {
         rb_vm_t *vm = ptr;
         rb_gc_update_tbl_refs(vm->frozen_strings);
+        rb_gc_update_tbl_refs(vm->regexp_literals);
     }
 }
 
@@ -2305,7 +2306,6 @@ rb_vm_mark(void *ptr)
 	rb_hook_list_mark(&vm->global_hooks);
 
 	rb_gc_mark_values(RUBY_NSIG, vm->trap_list.cmd);
-
         mjit_mark();
     }
 
@@ -2363,6 +2363,10 @@ ruby_vm_destruct(rb_vm_t *vm)
 	if (vm->frozen_strings) {
 	    st_free_table(vm->frozen_strings);
 	    vm->frozen_strings = 0;
+	}
+	if (vm->regexp_literals) {
+	    st_free_table(vm->regexp_literals);
+	    vm->regexp_literals = 0;
 	}
 	rb_vm_gvl_destroy(vm);
 	RB_ALTSTACK_FREE(vm->main_altstack);
@@ -3340,6 +3344,7 @@ rb_vm_set_progname(VALUE filename)
 }
 
 extern const struct st_hash_type rb_fstring_hash_type;
+extern const struct st_hash_type rb_regexp_literal_hash_type;
 
 void
 Init_BareVM(void)
@@ -3375,6 +3380,7 @@ Init_vm_objects(void)
     vm->mark_object_ary = rb_ary_tmp_new(128);
     vm->loading_table = st_init_strtable();
     vm->frozen_strings = st_init_table_with_size(&rb_fstring_hash_type, 10000);
+    vm->regexp_literals = st_init_table_with_size(&rb_regexp_literal_hash_type, 1000);
 
     rb_objspace_gc_enable(vm->objspace);
 
@@ -3440,6 +3446,12 @@ st_table *
 rb_vm_fstring_table(void)
 {
     return GET_VM()->frozen_strings;
+}
+
+st_table *
+rb_vm_regexp_literals_table(void)
+{
+    return GET_VM()->regexp_literals;
 }
 
 #if VM_COLLECT_USAGE_DETAILS
