@@ -65,7 +65,7 @@
 
 #else
 # /* Take config.h definition when available */
-# define RUBY3_HAS_BUILTIN(_) RUBY3_TOKEN_PASTE(RUBY3_HAS_BUILTIN_, _)
+# define RUBY3_HAS_BUILTIN(_) (RUBY3_TOKEN_PASTE(RUBY3_HAS_BUILTIN_, _)+0)
 # define RUBY3_HAS_BUILTIN___builtin_add_overflow      HAVE_BUILTIN___BUILTIN_ADD_OVERFLOW
 # define RUBY3_HAS_BUILTIN___builtin_alloca_with_align HAVE_BUILTIN___BUILTIN_ALLOCA_WITH_ALIGN
 # define RUBY3_HAS_BUILTIN___builtin_assume_aligned    HAVE_BUILTIN___BUILTIN_ASSUME_ALIGNED
