@@ -253,7 +253,9 @@ ruby3_size_mul_or_raise(size_t x, size_t y)
     }
     else {
         ruby_malloc_size_overflow(x, y);
+# if ! defined(__sun)
         RUBY3_UNREACHABLE_RETURN(0);
+# endif
     }
 }
 
