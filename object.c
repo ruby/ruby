@@ -1373,7 +1373,7 @@ rb_obj_freeze(VALUE obj)
 VALUE
 rb_obj_frozen_p(VALUE obj)
 {
-    return OBJ_FROZEN(obj) ? Qtrue : Qfalse;
+    return RB_OBJ_CHILLED(obj) ? Qtrue : Qfalse;
 }
 
 

@@ -299,15 +299,15 @@ PRINTF_ARGS(NORETURN(void rb_frozen_error_raise(VALUE, const char*, ...)), 2, 3)
 NORETURN(void rb_invalid_str(const char*, const char*));
 NORETURN(void rb_error_frozen(const char*));
 NORETURN(void rb_error_frozen_object(VALUE));
+void rb_warning_future_frozen_object(VALUE);
 void rb_error_untrusted(VALUE);
 void rb_check_frozen(VALUE);
 void rb_check_trusted(VALUE);
 #define rb_check_frozen_internal(obj) do { \
-	VALUE frozen_obj = (obj); \
-	if (RB_UNLIKELY(RB_OBJ_FROZEN(frozen_obj))) { \
-	    rb_error_frozen_object(frozen_obj); \
-	} \
-    } while (0)
+    VALUE frozen_obj = (obj); \
+    if (RB_UNLIKELY(RB_OBJ_CHILLED(frozen_obj))) \
+        RB_OBJ_FROZEN(frozen_obj) ? rb_error_frozen_object(frozen_obj) : rb_warning_future_frozen_object(frozen_obj); \
+} while (0)
 #ifdef __GNUC__
 #define rb_check_frozen(obj) __extension__({rb_check_frozen_internal(obj);})
 #else
