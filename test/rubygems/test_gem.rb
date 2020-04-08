@@ -1637,8 +1637,8 @@ class TestGem < Gem::TestCase
     assert_equal expected_specs, Gem.use_gemdeps.sort_by { |s| s.name }
   end
 
-  LIB_PATH = File.expand_path "../../../lib".dup, __FILE__.dup
-  BUNDLER_LIB_PATH = File.expand_path $LOAD_PATH.find {|lp| File.file?(File.join(lp, "bundler.rb")) }.dup
+  LIB_PATH = File.expand_path "../../../lib", __FILE__
+  BUNDLER_LIB_PATH = File.expand_path $LOAD_PATH.find {|lp| File.file?(File.join(lp, "bundler.rb")) }
   BUNDLER_FULL_NAME = "bundler-#{Bundler::VERSION}".freeze
 
   def add_bundler_full_name(names)
@@ -1665,7 +1665,7 @@ class TestGem < Gem::TestCase
     ENV['RUBYGEMS_GEMDEPS'] = "-"
 
     path = File.join @tempdir, "gem.deps.rb"
-    cmd = [Gem.ruby.dup, "-I#{LIB_PATH}",
+    cmd = [Gem.ruby, "-I#{LIB_PATH}",
            "-I#{BUNDLER_LIB_PATH}", "-rrubygems"]
     cmd << "-eputs Gem.loaded_specs.values.map(&:full_name).sort"
 
@@ -1703,7 +1703,7 @@ class TestGem < Gem::TestCase
     Dir.mkdir "sub1"
 
     path = File.join @tempdir, "gem.deps.rb"
-    cmd = [Gem.ruby.dup, "-Csub1", "-I#{LIB_PATH}",
+    cmd = [Gem.ruby, "-Csub1", "-I#{LIB_PATH}",
            "-I#{BUNDLER_LIB_PATH}", "-rrubygems"]
     cmd << "-eputs Gem.loaded_specs.values.map(&:full_name).sort"
 
