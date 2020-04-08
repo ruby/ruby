@@ -1217,6 +1217,15 @@ ins_methods_pub_i(st_data_t name, st_data_t type, st_data_t ary)
     return ST_CONTINUE;
 }
 
+static int
+ins_methods_undef_i(st_data_t name, st_data_t type, st_data_t ary)
+{
+    if ((rb_method_visibility_t)type == METHOD_VISI_UNDEF) {
+	ins_methods_push(name, ary);
+    }
+    return ST_CONTINUE;
+}
+
 struct method_entry_arg {
     st_table *list;
     int recur;
@@ -1387,6 +1396,21 @@ rb_class_public_instance_methods(int argc, const VALUE *argv, VALUE mod)
 
 /*
  *  call-seq:
+ *     mod.undefined_instance_methods(include_super=true)   -> array
+ *
+ *  Returns a list of the undefined instance methods defined in <i>mod</i>.
+ *  If the optional parameter is <code>false</code>, the methods of
+ *  any ancestors are not included.
+ */
+
+VALUE
+rb_class_undefined_instance_methods(int argc, const VALUE *argv, VALUE mod)
+{
+    return class_instance_method_list(argc, argv, mod, 0, ins_methods_undef_i);
+}
+
+/*
+ *  call-seq:
  *     obj.methods(regular=true)    -> array
  *
  *  Returns a list of the names of public and protected methods of
@@ -1468,6 +1492,21 @@ VALUE
 rb_obj_public_methods(int argc, const VALUE *argv, VALUE obj)
 {
     return class_instance_method_list(argc, argv, CLASS_OF(obj), 1, ins_methods_pub_i);
+}
+
+/*
+ *  call-seq:
+ *     obj.undefined_methods(all=true)   -> array
+ *
+ *  Returns the list of undefined methods accessible to <i>obj</i>. If
+ *  the <i>all</i> parameter is set to <code>false</code>, only those methods
+ *  in the receiver will be listed.
+ */
+
+VALUE
+rb_obj_undefined_methods(int argc, const VALUE *argv, VALUE obj)
+{
+    return class_instance_method_list(argc, argv, CLASS_OF(obj), 1, ins_methods_undef_i);
 }
 
 /*
@@ -1788,6 +1827,46 @@ rb_singleton_class(VALUE obj)
     if (RB_TYPE_P(obj, T_CLASS)) (void)ENSURE_EIGENCLASS(klass);
 
     return klass;
+}
+
+/*!
+ * Returns the singleton instance of \a klass, or nil if \a klass is
+ * not a singleton class.
+ *
+ * \param klass a singleton class.
+ * \throw TypeError if \a obj is a Fixnum or a Symbol.
+ * \return the singleton class.
+ *
+ * \post \a obj has its own singleton class.
+ * \post if \a obj is a class,
+ *       the returned singleton class also has its own
+ *       singleton class in order to keep consistency of the
+ *       inheritance structure of metaclasses.
+ * \note a new singleton class will be created
+ *       if \a obj does not have it.
+ * \note the singleton classes for nil, true and false are:
+ *       NilClass, TrueClass and FalseClass.
+ */
+
+/*
+ *  call-seq:
+ *     class.singleton_instance -> object or nil
+ *
+ *  Returns the singleton instance of <i>class</i>, or <code>nil</code>.
+ */
+VALUE
+rb_class_singleton_instance(VALUE klass)
+{
+    VALUE obj;
+
+    Check_Type(klass, T_CLASS);
+    if (klass == rb_cNilClass) return Qnil;
+    if (klass == rb_cFalseClass) return Qfalse;
+    if (klass == rb_cTrueClass) return Qtrue;
+    if (!FL_TEST_RAW(klass, FL_SINGLETON)) return Qnil;
+    obj = rb_attr_get(klass, id_attached);
+    if (SPECIAL_CONST_P(obj) || RBASIC_CLASS(obj) != klass) return Qnil;
+    return obj;
 }
 
 /*!
