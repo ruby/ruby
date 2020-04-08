@@ -608,7 +608,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #ifndef $(guard)
 #define $(guard) 1
 #if _MSC_VER != $(MSC_VER)
-#error MSC version unmatch: _MSC_VER: $(MSC_VER) is expected.
+#error MSC version unmatch: $(MSC_VER) is expected.
 #endif
 #define RUBY_MSVCRT_VERSION $(RT_VER)
 #define STDC_HEADERS 1
