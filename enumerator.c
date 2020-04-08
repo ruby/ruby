@@ -3841,7 +3841,7 @@ arith_seq_size(VALUE self)
 
         n = ruby_float_step_size(NUM2DBL(b), ee, NUM2DBL(s), x);
         if (isinf(n)) return DBL2NUM(n);
-        if (POSFIXABLE(n)) return LONG2FIX(n);
+        if (POSFIXABLE(n)) return LONG2FIX((long)n);
         return rb_dbl2big(n);
     }
 

@@ -108,7 +108,7 @@ RSTRING_EMBED_LEN(VALUE str)
     VALUE f = RBASIC(str)->flags;
     f &= RSTRING_EMBED_LEN_MASK;
     f >>= RSTRING_EMBED_LEN_SHIFT;
-    return f;
+    return (long)f;
 }
 
 RUBY3_ATTR_PURE_ON_NDEBUG()

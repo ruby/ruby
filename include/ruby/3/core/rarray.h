@@ -123,7 +123,7 @@ RARRAY_EMBED_LEN(VALUE ary)
     VALUE f = RBASIC(ary)->flags;
     f &= RARRAY_EMBED_LEN_MASK;
     f >>= RARRAY_EMBED_LEN_SHIFT;
-    return f;
+    return (long)f;
 }
 
 RUBY3_ATTR_PURE_ON_NDEBUG()
