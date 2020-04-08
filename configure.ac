@@ -219,6 +219,11 @@ AS_CASE(["$build_os:${CXX}"],
         AC_MSG_RESULT([$CXX])],
     [openbsd*:*], [
         AC_CHECK_TOOLS(CXX, [c++])
+    ],
+    [solaris*:*], [
+        dnl C++ compiler of Sun OpenStudio is not supported
+        AS_CASE(["/$CC "],
+            [*@<:@\ /@:>@"cc "*],      [CXX=no-c++])
     ])
 test -z "$CXX" || ac_cv_prog_CXX="$CXX"
 
