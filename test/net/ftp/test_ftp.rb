@@ -736,7 +736,7 @@ class FTPTest < Test::Unit::TestCase
 
   def test_getbinaryfile
     # http://ci.rvm.jp/logfiles/brlog.trunk-mjit-wait.20200326-025942
-    skip 'This has been too unstable with --jit-wait' if RubyVM::MJIT.enabled?
+    skip 'This has been too unstable with --jit-wait' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
     commands = []
     binary_data = (0..0xff).map {|i| i.chr}.join * 4 * 3
     server = create_ftp_server { |sock|
@@ -2186,7 +2186,7 @@ EOF
   def test_abort_tls
     return unless defined?(OpenSSL)
     # http://ci.rvm.jp/results/trunk-mjit-wait@silicon-docker/2789353
-    skip 'This is unstable with --jit-wait. TODO: debug it' if RubyVM::MJIT.enabled?
+    skip 'This is unstable with --jit-wait. TODO: debug it' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
 
     commands = []
     server = create_ftp_server { |sock|
