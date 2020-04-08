@@ -343,8 +343,8 @@ BigDecimal_prec(VALUE self)
     VALUE obj;
 
     GUARD_OBJ(p, GetVpValue(self, 1));
-    obj = rb_assoc_new(INT2NUM(p->Prec*VpBaseFig()),
-		       INT2NUM(p->MaxPrec*VpBaseFig()));
+    obj = rb_assoc_new(SIZET2NUM(p->Prec*VpBaseFig()),
+		       SIZET2NUM(p->MaxPrec*VpBaseFig()));
     return obj;
 }
 
@@ -2132,7 +2132,7 @@ BigDecimal_split(VALUE self)
     rb_ary_push(obj, str);
     rb_str_resize(str, strlen(psz1));
     rb_ary_push(obj, INT2FIX(10));
-    rb_ary_push(obj, INT2NUM(e));
+    rb_ary_push(obj, SSIZET2NUM(e));
     return obj;
 }
 
@@ -2145,7 +2145,7 @@ static VALUE
 BigDecimal_exponent(VALUE self)
 {
     ssize_t e = VpExponent10(GetVpValue(self, 1));
-    return INT2NUM(e);
+    return SSIZET2NUM(e);
 }
 
 /* Returns a string representation of self.
@@ -2765,7 +2765,7 @@ static VALUE
 BigDecimal_limit(int argc, VALUE *argv, VALUE self)
 {
     VALUE  nFig;
-    VALUE  nCur = INT2NUM(VpGetPrecLimit());
+    VALUE  nCur = SIZET2NUM(VpGetPrecLimit());
 
     if (rb_scan_args(argc, argv, "01", &nFig) == 1) {
 	int nf;

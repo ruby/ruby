@@ -11,9 +11,9 @@ static VALUE libyaml_version(VALUE module)
 
     yaml_get_version(&major, &minor, &patch);
 
-    list[0] = INT2NUM((long)major);
-    list[1] = INT2NUM((long)minor);
-    list[2] = INT2NUM((long)patch);
+    list[0] = INT2NUM(major);
+    list[1] = INT2NUM(minor);
+    list[2] = INT2NUM(patch);
 
     return rb_ary_new4((long)3, list);
 }

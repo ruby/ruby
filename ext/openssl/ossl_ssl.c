@@ -2324,7 +2324,7 @@ ossl_ssl_get_verify_result(VALUE self)
 
     GetSSL(self, ssl);
 
-    return INT2NUM(SSL_get_verify_result(ssl));
+    return LONG2NUM(SSL_get_verify_result(ssl));
 }
 
 /*

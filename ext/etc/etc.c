@@ -142,7 +142,7 @@ setup_passwd(struct passwd *pwd)
 			 safe_setup_filesystem_str(pwd->pw_dir),
 			 safe_setup_filesystem_str(pwd->pw_shell),
 #ifdef HAVE_STRUCT_PASSWD_PW_CHANGE
-			 INT2NUM(pwd->pw_change),
+			 TIMET2NUM(pwd->pw_change),
 #endif
 #ifdef HAVE_STRUCT_PASSWD_PW_QUOTA
 			 INT2NUM(pwd->pw_quota),
@@ -157,7 +157,7 @@ setup_passwd(struct passwd *pwd)
 			 safe_setup_locale_str(pwd->pw_comment),
 #endif
 #ifdef HAVE_STRUCT_PASSWD_PW_EXPIRE
-			 INT2NUM(pwd->pw_expire),
+			 TIMET2NUM(pwd->pw_expire),
 #endif
 			 0		/*dummy*/
 	);

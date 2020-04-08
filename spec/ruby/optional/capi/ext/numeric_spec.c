@@ -54,7 +54,7 @@ static VALUE numeric_spec_NUM2INT(VALUE self, VALUE num) {
 }
 
 static VALUE numeric_spec_INT2NUM(VALUE self, VALUE num) {
-  return INT2NUM(NUM2LONG(num));
+  return INT2NUM(NUM2INT(num));
 }
 
 static VALUE numeric_spec_NUM2LONG(VALUE self, VALUE num) {

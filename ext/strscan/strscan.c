@@ -447,7 +447,7 @@ strscan_get_charpos(VALUE self)
 
     GET_SCANNER(self, p);
 
-    substr = rb_funcall(p->str, id_byteslice, 2, INT2FIX(0), INT2NUM(p->curr));
+    substr = rb_funcall(p->str, id_byteslice, 2, INT2FIX(0), LONG2NUM(p->curr));
 
     return rb_str_length(substr);
 }
@@ -473,7 +473,7 @@ strscan_set_pos(VALUE self, VALUE v)
     if (i < 0) rb_raise(rb_eRangeError, "index out of range");
     if (i > S_LEN(p)) rb_raise(rb_eRangeError, "index out of range");
     p->curr = i;
-    return INT2NUM(i);
+    return LONG2NUM(i);
 }
 
 static inline UChar *
@@ -1107,7 +1107,7 @@ strscan_matched_size(VALUE self)
 
     GET_SCANNER(self, p);
     if (! MATCHED_P(p)) return Qnil;
-    return INT2NUM(p->regs.end[0] - p->regs.beg[0]);
+    return LONG2NUM(p->regs.end[0] - p->regs.beg[0]);
 }
 
 static int

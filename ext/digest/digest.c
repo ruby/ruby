@@ -406,7 +406,7 @@ rb_digest_instance_digest_length(VALUE self)
 
     /* never blindly assume that #digest() returns a string */
     StringValue(digest);
-    return INT2NUM(RSTRING_LEN(digest));
+    return LONG2NUM(RSTRING_LEN(digest));
 }
 
 /*
@@ -725,7 +725,7 @@ rb_digest_base_digest_length(VALUE self)
 
     algo = get_digest_obj_metadata(self);
 
-    return INT2NUM(algo->digest_len);
+    return SIZET2NUM(algo->digest_len);
 }
 
 /*
@@ -740,7 +740,7 @@ rb_digest_base_block_length(VALUE self)
 
     algo = get_digest_obj_metadata(self);
 
-    return INT2NUM(algo->block_len);
+    return SIZET2NUM(algo->block_len);
 }
 
 void
