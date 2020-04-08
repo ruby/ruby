@@ -98,9 +98,7 @@ class TestKernel < Gem::TestCase
 
     output, _ = Open3.capture2e(
       { "GEM_HOME" => Gem.paths.home },
-      Gem.ruby,
-      "-I",
-      File.expand_path("../../lib", __dir__),
+      *ruby_with_rubygems_in_load_path,
       "-r",
       "./activate.rb"
     )
