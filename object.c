@@ -3917,6 +3917,8 @@ rb_num_to_dbl(VALUE val)
 	    if (basic_to_f_p(rb_cRational))
 		return rat2dbl_without_to_f(val);
 	    break;
+          default:
+	    break;
 	}
     }
     val = numeric_to_float(val);
@@ -3954,6 +3956,8 @@ rb_num2dbl(VALUE val)
 	    return rat2dbl_without_to_f(val);
 	  case T_STRING:
 	    rb_raise(rb_eTypeError, "no implicit conversion to float from string");
+          default:
+	    break;
 	}
     }
     val = rb_convert_type_with_id(val, T_FLOAT, "Float", id_to_f);
@@ -4132,6 +4136,8 @@ rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
 		    continue;
 		}
 		break;
+              default:
+                break;
 	    }
 	}
         return rb_check_funcall_with_hook_kw(obj, id_dig, argc, argv,

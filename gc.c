@@ -2594,6 +2594,8 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_FALSE:
 	rb_bug("obj_free() called for broken object");
 	break;
+      default:
+        break;
     }
 
     if (FL_TEST(obj, FL_EXIVAR)) {
@@ -3564,6 +3566,8 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
                     make_io_zombie(objspace, vp);
 		}
 		break;
+              default:
+                break;
 	    }
             if (poisoned) {
                 GC_ASSERT(BUILTIN_TYPE(vp) == T_NONE);
@@ -3634,6 +3638,8 @@ is_live_object(rb_objspace_t *objspace, VALUE ptr)
       case T_NONE:
       case T_ZOMBIE:
 	return FALSE;
+      default:
+        break;
     }
 
     if (!is_garbage_object(objspace, ptr)) {
@@ -4588,6 +4594,9 @@ push_mark_stack(mark_stack_t *stack, VALUE data)
       case T_NODE:
 	UNEXPECTED_NODE(push_mark_stack);
         break;
+
+      default:
+        break;
     }
 
     if (stack->index == stack->limit) {
@@ -5397,6 +5406,9 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
       case T_IMEMO:
 	gc_mark_imemo(objspace, obj);
 	return;
+
+      default:
+        break;
     }
 
     gc_mark(objspace, any->as.basic.klass);

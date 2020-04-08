@@ -2390,6 +2390,8 @@ check_hash(VALUE obj)
       case T_STRING:
       case T_ARRAY:
 	return Qnil;
+      default:
+        break;
     }
     return rb_check_hash_type(obj);
 }

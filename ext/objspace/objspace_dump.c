@@ -135,6 +135,7 @@ obj_type(VALUE obj)
 	CASE_TYPE(NODE);
 	CASE_TYPE(ZOMBIE);
 #undef CASE_TYPE
+      default: break;
     }
     return "UNKNOWN";
 }
@@ -315,6 +316,9 @@ dump_object(VALUE obj, struct dump_config *dc)
       case T_ZOMBIE:
 	dump_append(dc, "}\n");
 	return;
+
+      default:
+        break;
     }
 
     rb_objspace_reachable_objects_from(obj, reachable_object_i, dc);

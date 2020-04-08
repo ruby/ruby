@@ -1712,6 +1712,8 @@ singleton_class_of(VALUE obj)
 	  case T_STRING:
 	    if (FL_TEST_RAW(obj, RSTRING_FSTR)) goto no_singleton;
 	    break;
+          default:
+            break;
 	}
     }
 

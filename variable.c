@@ -72,6 +72,7 @@ rb_namespace_p(VALUE obj)
     if (RB_SPECIAL_CONST_P(obj)) return false;
     switch (RB_BUILTIN_TYPE(obj)) {
       case T_MODULE: case T_CLASS: return true;
+      default: break;
     }
     return false;
 }

@@ -318,6 +318,8 @@ linear_object_p(VALUE obj)
       case T_FLOAT:
       case T_BIGNUM:
 	return TRUE;
+      default:
+        break;
     }
     if (rb_obj_is_kind_of(obj, rb_cNumeric)) return TRUE;
     if (rb_obj_is_kind_of(obj, rb_cTime)) return TRUE;

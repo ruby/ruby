@@ -468,6 +468,8 @@ rb_class_modify_check(VALUE klass)
 		  case T_CLASS:
 		    desc = "Class";
 		    break;
+                  default:
+                    break;
 		}
 	    }
 	}

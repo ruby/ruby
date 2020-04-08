@@ -8677,6 +8677,8 @@ opobj_inspect(VALUE obj)
 	  case T_ARRAY:
 	    obj = rb_ary_dup(obj);
 	    break;
+          default:
+            break;
 	}
     }
     return rb_inspect(obj);

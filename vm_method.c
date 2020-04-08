@@ -524,6 +524,8 @@ filter_defined_class(VALUE klass)
 	return 0;
       case T_ICLASS:
 	break;
+      default:
+        break;
     }
     rb_bug("filter_defined_class: %s", rb_obj_info(klass));
 }

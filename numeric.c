@@ -4147,6 +4147,8 @@ rb_num_pow(VALUE x, VALUE y)
         return rb_complex_pow(x, y);
       case T_RATIONAL:
         return rb_rational_pow(x, y);
+      default:
+        break;
     }
     return Qnil;
 }
