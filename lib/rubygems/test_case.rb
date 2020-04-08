@@ -1220,7 +1220,7 @@ Also, a list:
 
   def build_rake_in(good=true)
     gem_ruby = Gem.ruby
-    Gem.ruby = @@ruby
+    Gem.ruby = self.class.rubybin
     env_rake = ENV["rake"]
     rake = (good ? @@good_rake : @@bad_rake)
     ENV["rake"] = rake
@@ -1289,7 +1289,6 @@ Also, a list:
 
   end
 
-  @@ruby = rubybin
   @@good_rake = "#{rubybin} #{escape_path(TEST_PATH, 'good_rake.rb')}"
   @@bad_rake = "#{rubybin} #{escape_path(TEST_PATH, 'bad_rake.rb')}"
 
