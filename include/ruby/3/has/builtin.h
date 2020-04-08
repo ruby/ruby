@@ -26,7 +26,10 @@
 #if defined(RUBY3_HAS_BUILTIN)
 # /* Take that. */
 
-#elif defined(__has_builtin)
+#elif defined(__has_builtin) && ! RUBY3_COMPILER_IS(Intel)
+# /* :TODO:  Intel C  Compiler has  __has_builtin (since  19.1 maybe?),  and is
+#  * reportedly  broken.  We  have to  skip  them.  However  the situation  can
+#  * change.  They might improve someday.  We need to revisit here later. */
 # define RUBY3_HAS_BUILTIN(_) __has_builtin(_)
 
 #elif RUBY3_COMPILER_IS(GCC)
