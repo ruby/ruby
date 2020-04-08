@@ -2956,10 +2956,21 @@ static VALUE
 dir_foreach(rb_execution_context_t *ec, VALUE io, VALUE path, VALUE enc)
 {
     VALUE dir;
-    VALUE argv[1];
+    VALUE argv[2];
     argv[0] = path;
 
+    if (NIL_P(enc)) {
     RETURN_ENUMERATOR(io, 1, argv);
+    } else {
+    VALUE kw_hash = rb_hash_new();
+
+    rb_gc_register_mark_object(kw_hash);
+    rb_hash_aset(kw_hash, ID2SYM(rb_intern("encoding")), enc);
+    rb_obj_freeze(kw_hash);
+    argv[1] = kw_hash;
+
+    RETURN_ENUMERATOR_KW(io, 2, argv, RB_PASS_KEYWORDS);
+    }
 
     dir = dir_s_open(ec, io, path, enc);
     rb_ensure(dir_each, dir, dir_close, dir);
@@ -2993,10 +3004,21 @@ static VALUE
 dir_s_each_child(rb_execution_context_t *ec, VALUE io, VALUE path, VALUE enc)
 {
     VALUE dir;
-    VALUE argv[1];
+    VALUE argv[2];
     argv[0] = path;
 
+    if (NIL_P(enc)) {
     RETURN_ENUMERATOR(io, 1, argv);
+    } else {
+    VALUE kw_hash = rb_hash_new();
+
+    rb_gc_register_mark_object(kw_hash);
+    rb_hash_aset(kw_hash, ID2SYM(rb_intern("encoding")), enc);
+    rb_obj_freeze(kw_hash);
+    argv[1] = kw_hash;
+
+    RETURN_ENUMERATOR_KW(io, 2, argv, RB_PASS_KEYWORDS);
+    }
 
     dir = dir_s_open(ec, io, path, enc);
     rb_ensure(dir_each_child, dir, dir_close, dir);
