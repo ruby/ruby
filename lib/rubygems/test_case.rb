@@ -1260,6 +1260,10 @@ Also, a list:
     end
   end
 
+  def ruby_with_rubygems_in_load_path
+    [Gem.ruby, "-I", File.expand_path("..", __dir__)]
+  end
+
   def with_clean_path_to_ruby
     orig_ruby = Gem.ruby
 

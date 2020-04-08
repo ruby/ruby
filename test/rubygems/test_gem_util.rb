@@ -6,7 +6,7 @@ class TestGemUtil < Gem::TestCase
 
   def test_class_popen
     skip "popen with a block does not behave well on jruby" if Gem.java_platform?
-    assert_equal "0\n", Gem::Util.popen(Gem.ruby, '-I', File.expand_path('../../../lib', __FILE__), '-e', 'p 0')
+    assert_equal "0\n", Gem::Util.popen(*ruby_with_rubygems_in_load_path, '-e', 'p 0')
 
     assert_raises Errno::ECHILD do
       Process.wait(-1)
@@ -16,7 +16,7 @@ class TestGemUtil < Gem::TestCase
   def test_silent_system
     skip if Gem.java_platform?
     assert_silent do
-      Gem::Util.silent_system Gem.ruby, '-I', File.expand_path('../../../lib', __FILE__), '-e', 'puts "hello"; warn "hello"'
+      Gem::Util.silent_system(*ruby_with_rubygems_in_load_path, '-e', 'puts "hello"; warn "hello"')
     end
   end
 
