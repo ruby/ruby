@@ -46,7 +46,7 @@ class Dir
   #     Got main.rb
   #
   #
-  def self.foreach(path, encoding: Encoding.find("filesystem"))
+  def self.foreach(path, encoding: nil, &block)
     __builtin_dir_foreach(path, encoding)
   end
 
@@ -65,7 +65,7 @@ class Dir
   #     Dir.entries("testdir")   #=> [".", "..", "config.h", "main.rb"]
   #
   #
-  def self.entries(path, encoding: Encoding.find("filesystem"))
+  def self.entries(path, encoding: nil)
     __builtin_dir_entries(path, encoding)
   end
 
@@ -90,7 +90,7 @@ class Dir
   #     Got main.rb
   #
   #
-  def self.each_child(path, encoding: Encoding.find("filesystem"))
+  def self.each_child(path, encoding: nil)
     __builtin_dir_s_each_child(path, encoding)
   end
 
@@ -109,7 +109,7 @@ class Dir
   #     Dir.children("testdir")   #=> ["config.h", "main.rb"]
   #
   #
-  def self.children(path, encoding: Encoding.find("filesystem"))
+  def self.children(path, encoding: nil)
     __builtin_dir_s_children(path, encoding)
   end
 
