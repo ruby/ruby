@@ -391,7 +391,8 @@ class TestGemRequire < Gem::TestCase
       require "json"
       puts Gem.loaded_specs["json"]
     RUBY
-    output = Gem::Util.popen(Gem.ruby, "-e", cmd).strip
+    rubygems_libdir = File.expand_path('../../../lib', __FILE__)
+    output = Gem::Util.popen(Gem.ruby, "-I#{rubygems_libdir}", "-e", cmd).strip
     refute_empty output
   end
 
