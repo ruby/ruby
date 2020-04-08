@@ -160,7 +160,7 @@ RTYPEDDATA_TYPE(VALUE obj)
 #if ! RUBY_NDEBUG
     if (RB_UNLIKELY(! RTYPEDDATA_P(obj))) {
         rb_unexpected_type(obj, RUBY_T_DATA);
-# if ! defined(__sun)
+# if ! defined(__sun) && ! RUBY3_COMPILER_IS(Intel)
         RUBY3_UNREACHABLE_RETURN(NULL);
 # endif
     }
