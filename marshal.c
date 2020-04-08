@@ -9,7 +9,7 @@
 
 **********************************************************************/
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 
 #include <math.h>
 #ifdef HAVE_FLOAT_H

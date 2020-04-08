@@ -1,18 +1,18 @@
-#ifndef INTERNAL_ERROR_H /* -*- C -*- */
-#define INTERNAL_ERROR_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Internal header for Exception.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for Exception.
  */
-#include "ruby/config.h"
+#ifndef INTERNAL_ERROR_H
+#define INTERNAL_ERROR_H
+#include "ruby/3/config.h"
 #include <stdarg.h>             /* for va_list */
-#include "internal/stdbool.h"   /* for bool */
 #include "internal/string.h"    /* for rb_fstring_cstr */
+#include "ruby/3/stdbool.h"     /* for bool */
 #include "ruby/encoding.h"      /* for rb_encoding */
 #include "ruby/intern.h"        /* for rb_exc_raise */
 #include "ruby/ruby.h"          /* for enum ruby_value_type */
@@ -76,7 +76,6 @@ static inline bool rb_typeddata_is_instance_of_inline(VALUE obj, const rb_data_t
 RUBY_SYMBOL_EXPORT_BEGIN
 /* error.c (export) */
 int rb_bug_reporter_add(void (*func)(FILE *, void *), void *data);
-NORETURN(void rb_unexpected_type(VALUE,int));
 #ifdef RUBY_FUNCTION_NAME_STRING
 NORETURN(void rb_sys_fail_path_in(const char *func_name, VALUE path));
 NORETURN(void rb_syserr_fail_path_in(const char *func_name, int err, VALUE path));
@@ -116,25 +115,6 @@ rb_key_err_raise(VALUE mesg, VALUE recv, VALUE name)
 {
     VALUE exc = rb_key_err_new(mesg, recv, name);
     rb_exc_raise(exc);
-}
-
-static inline void
-Check_Type(VALUE v, enum ruby_value_type t)
-{
-    if (! RB_TYPE_P(v, (int)t)) {
-        goto unexpected;
-    }
-    else if (t != T_DATA) {
-        return;
-    }
-    else if (! RTYPEDDATA_P(v)) {
-        goto unexpected;
-    }
-    else {
-        return;
-    }
-  unexpected:
-    rb_unexpected_type(v, t);
 }
 
 static inline bool

@@ -14,7 +14,7 @@
 #define rb_data_object_alloc rb_data_object_alloc
 #define rb_data_typed_object_alloc rb_data_typed_object_alloc
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 #ifdef _WIN32
 # include "ruby/ruby.h"
 #endif
@@ -61,11 +61,6 @@
 #endif
 
 #include <sys/types.h>
-
-#if defined(_MSC_VER) && defined(_WIN64)
-# include <intrin.h>
-# pragma intrinsic(_umul128)
-#endif
 
 #include "constant.h"
 #include "debug_counter.h"
@@ -114,52 +109,14 @@
 #define rb_jmp_buf rb_jmpbuf_t
 #undef rb_data_object_wrap
 
-/* Expecting this struct to be eliminated by function inlinings */
-struct optional {
-    bool left;
-    size_t right;
-};
-
-static inline struct optional
-size_mul_overflow(size_t x, size_t y)
-{
-    bool p;
-    size_t z;
-#if 0
-
-#elif defined(HAVE_BUILTIN___BUILTIN_MUL_OVERFLOW)
-    p = __builtin_mul_overflow(x, y, &z);
-
-#elif defined(DSIZE_T)
-    RB_GNUC_EXTENSION DSIZE_T dx = x;
-    RB_GNUC_EXTENSION DSIZE_T dy = y;
-    RB_GNUC_EXTENSION DSIZE_T dz = dx * dy;
-    p = dz > SIZE_MAX;
-    z = (size_t)dz;
-
-#elif defined(_MSC_VER) && defined(_WIN64)
-    unsigned __int64 dp;
-    unsigned __int64 dz = _umul128(x, y, &dp);
-    p = (bool)dp;
-    z = (size_t)dz;
-
-#else
-    /* https://wiki.sei.cmu.edu/confluence/display/c/INT30-C.+Ensure+that+unsigned+integer+operations+do+not+wrap */
-    p = (y != 0) && (x > SIZE_MAX / y);
-    z = x * y;
-
-#endif
-    return (struct optional) { p, z, };
-}
-
-static inline struct optional
+static inline struct ruby3_size_mul_overflow_tag
 size_add_overflow(size_t x, size_t y)
 {
     size_t z;
     bool p;
 #if 0
 
-#elif defined(HAVE_BUILTIN___BUILTIN_ADD_OVERFLOW)
+#elif __has_builtin(__builtin_add_overflow)
     p = __builtin_add_overflow(x, y, &z);
 
 #elif defined(DSIZE_T)
@@ -174,24 +131,24 @@ size_add_overflow(size_t x, size_t y)
     p = z < y;
 
 #endif
-    return (struct optional) { p, z, };
+    return (struct ruby3_size_mul_overflow_tag) { p, z, };
 }
 
-static inline struct optional
+static inline struct ruby3_size_mul_overflow_tag
 size_mul_add_overflow(size_t x, size_t y, size_t z) /* x * y + z */
 {
-    struct optional t = size_mul_overflow(x, y);
-    struct optional u = size_add_overflow(t.right, z);
-    return (struct optional) { t.left || u.left, u.right };
+    struct ruby3_size_mul_overflow_tag t = ruby3_size_mul_overflow(x, y);
+    struct ruby3_size_mul_overflow_tag u = size_add_overflow(t.right, z);
+    return (struct ruby3_size_mul_overflow_tag) { t.left || u.left, u.right };
 }
 
-static inline struct optional
+static inline struct ruby3_size_mul_overflow_tag
 size_mul_add_mul_overflow(size_t x, size_t y, size_t z, size_t w) /* x * y + z * w */
 {
-    struct optional t = size_mul_overflow(x, y);
-    struct optional u = size_mul_overflow(z, w);
-    struct optional v = size_add_overflow(t.right, u.right);
-    return (struct optional) { t.left || u.left || v.left, v.right };
+    struct ruby3_size_mul_overflow_tag t = ruby3_size_mul_overflow(x, y);
+    struct ruby3_size_mul_overflow_tag u = ruby3_size_mul_overflow(z, w);
+    struct ruby3_size_mul_overflow_tag v = size_add_overflow(t.right, u.right);
+    return (struct ruby3_size_mul_overflow_tag) { t.left || u.left || v.left, v.right };
 }
 
 PRINTF_ARGS(NORETURN(static void gc_raise(VALUE, const char*, ...)), 2, 3);
@@ -199,7 +156,7 @@ PRINTF_ARGS(NORETURN(static void gc_raise(VALUE, const char*, ...)), 2, 3);
 static inline size_t
 size_mul_or_raise(size_t x, size_t y, VALUE exc)
 {
-    struct optional t = size_mul_overflow(x, y);
+    struct ruby3_size_mul_overflow_tag t = ruby3_size_mul_overflow(x, y);
     if (LIKELY(!t.left)) {
         return t.right;
     }
@@ -225,7 +182,7 @@ rb_size_mul_or_raise(size_t x, size_t y, VALUE exc)
 static inline size_t
 size_mul_add_or_raise(size_t x, size_t y, size_t z, VALUE exc)
 {
-    struct optional t = size_mul_add_overflow(x, y, z);
+    struct ruby3_size_mul_overflow_tag t = size_mul_add_overflow(x, y, z);
     if (LIKELY(!t.left)) {
         return t.right;
     }
@@ -252,7 +209,7 @@ rb_size_mul_add_or_raise(size_t x, size_t y, size_t z, VALUE exc)
 static inline size_t
 size_mul_add_mul_or_raise(size_t x, size_t y, size_t z, size_t w, VALUE exc)
 {
-    struct optional t = size_mul_add_mul_overflow(x, y, z, w);
+    struct ruby3_size_mul_overflow_tag t = size_mul_add_mul_overflow(x, y, z, w);
     if (LIKELY(!t.left)) {
         return t.right;
     }
@@ -2374,12 +2331,6 @@ rb_data_object_wrap(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FU
     return newobj_of(klass, T_DATA, (VALUE)dmark, (VALUE)dfree, (VALUE)datap, FALSE);
 }
 
-#undef rb_data_object_alloc
-RUBY_ALIAS_FUNCTION(rb_data_object_alloc(VALUE klass, void *datap,
-					 RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree),
-		    rb_data_object_wrap, (klass, datap, dmark, dfree))
-
-
 VALUE
 rb_data_object_zalloc(VALUE klass, size_t size, RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree)
 {
@@ -2394,11 +2345,6 @@ rb_data_typed_object_wrap(VALUE klass, void *datap, const rb_data_type_t *type)
     if (klass) Check_Type(klass, T_CLASS);
     return newobj_of(klass, T_DATA, (VALUE)type, (VALUE)1, (VALUE)datap, type->flags & RUBY_FL_WB_PROTECTED);
 }
-
-#undef rb_data_typed_object_alloc
-RUBY_ALIAS_FUNCTION(rb_data_typed_object_alloc(VALUE klass, void *datap,
-					       const rb_data_type_t *type),
-		    rb_data_typed_object_wrap, (klass, datap, type))
 
 VALUE
 rb_data_typed_object_zalloc(VALUE klass, size_t size, const rb_data_type_t *type)
@@ -3175,7 +3121,7 @@ internal_object_p(VALUE obj)
     bool used_p = p->as.basic.flags;
 
     if (used_p) {
-	switch (BUILTIN_TYPE(p)) {
+        switch (BUILTIN_TYPE(obj)) {
 	  case T_NODE:
 	    UNEXPECTED_NODE(internal_object_p);
 	    break;
@@ -3593,34 +3539,35 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     for (i = 0; i < heap_allocated_pages; i++) {
 	p = heap_pages_sorted[i]->start; pend = p + heap_pages_sorted[i]->total_slots;
 	while (p < pend) {
-            void *poisoned = asan_poisoned_object_p((VALUE)p);
-            asan_unpoison_object((VALUE)p, false);
-	    switch (BUILTIN_TYPE(p)) {
+            VALUE vp = (VALUE)p;
+            void *poisoned = asan_poisoned_object_p(vp);
+            asan_unpoison_object(vp, false);
+            switch (BUILTIN_TYPE(vp)) {
 	      case T_DATA:
 		if (!DATA_PTR(p) || !RANY(p)->as.data.dfree) break;
-		if (rb_obj_is_thread((VALUE)p)) break;
-		if (rb_obj_is_mutex((VALUE)p)) break;
-		if (rb_obj_is_fiber((VALUE)p)) break;
-		p->as.free.flags = 0;
-		if (RTYPEDDATA_P(p)) {
+                if (rb_obj_is_thread(vp)) break;
+                if (rb_obj_is_mutex(vp)) break;
+                if (rb_obj_is_fiber(vp)) break;
+                if (RTYPEDDATA_P(vp)) {
 		    RDATA(p)->dfree = RANY(p)->as.typeddata.type->function.dfree;
 		}
+                p->as.free.flags = 0;
 		if (RANY(p)->as.data.dfree == RUBY_DEFAULT_FREE) {
 		    xfree(DATA_PTR(p));
 		}
 		else if (RANY(p)->as.data.dfree) {
-		    make_zombie(objspace, (VALUE)p, RANY(p)->as.data.dfree, RANY(p)->as.data.data);
+                    make_zombie(objspace, vp, RANY(p)->as.data.dfree, RANY(p)->as.data.data);
 		}
 		break;
 	      case T_FILE:
 		if (RANY(p)->as.file.fptr) {
-		    make_io_zombie(objspace, (VALUE)p);
+                    make_io_zombie(objspace, vp);
 		}
 		break;
 	    }
             if (poisoned) {
-                GC_ASSERT(BUILTIN_TYPE(p) == T_NONE);
-                asan_poison_object((VALUE)p);
+                GC_ASSERT(BUILTIN_TYPE(vp) == T_NONE);
+                asan_poison_object(vp);
             }
 	    p++;
 	}
@@ -4087,7 +4034,7 @@ type_sym(size_t type)
         COUNT_TYPE(T_ZOMBIE);
         COUNT_TYPE(T_MOVED);
 #undef COUNT_TYPE
-        default:              return INT2NUM(type); break;
+        default:              return SIZET2NUM(type); break;
     }
 }
 
@@ -4152,17 +4099,18 @@ count_objects(int argc, VALUE *argv, VALUE os)
 
 	p = page->start; pend = p + page->total_slots;
 	for (;p < pend; p++) {
-            void *poisoned = asan_poisoned_object_p((VALUE)p);
-            asan_unpoison_object((VALUE)p, false);
+            VALUE vp = (VALUE)p;
+            void *poisoned = asan_poisoned_object_p(vp);
+            asan_unpoison_object(vp, false);
 	    if (p->as.basic.flags) {
-		counts[BUILTIN_TYPE(p)]++;
+                counts[BUILTIN_TYPE(vp)]++;
 	    }
 	    else {
 		freed++;
 	    }
             if (poisoned) {
-                GC_ASSERT(BUILTIN_TYPE((VALUE)p) == T_NONE);
-                asan_poison_object((VALUE)p);
+                GC_ASSERT(BUILTIN_TYPE(vp) == T_NONE);
+                asan_poison_object(vp);
             }
 	}
 	total += page->total_slots;
@@ -4242,26 +4190,27 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 	if (bitset) {
 	    p = offset  + i * BITS_BITLENGTH;
 	    do {
-                asan_unpoison_object((VALUE)p, false);
+                VALUE vp = (VALUE)p;
+                asan_unpoison_object(vp, false);
 		if (bitset & 1) {
-		    switch (BUILTIN_TYPE(p)) {
+                    switch (BUILTIN_TYPE(vp)) {
 		      default: { /* majority case */
 			  gc_report(2, objspace, "page_sweep: free %p\n", (void *)p);
 #if RGENGC_CHECK_MODE
 			  if (!is_full_marking(objspace)) {
-			      if (RVALUE_OLD_P((VALUE)p)) rb_bug("page_sweep: %p - old while minor GC.", (void *)p);
-                              if (rgengc_remembered_sweep(objspace, (VALUE)p)) rb_bug("page_sweep: %p - remembered.", (void *)p);
+                              if (RVALUE_OLD_P(vp)) rb_bug("page_sweep: %p - old while minor GC.", (void *)p);
+                              if (rgengc_remembered_sweep(objspace, vp)) rb_bug("page_sweep: %p - remembered.", (void *)p);
 			  }
 #endif
-			  if (obj_free(objspace, (VALUE)p)) {
+                          if (obj_free(objspace, vp)) {
 			      final_slots++;
 			  }
 			  else {
 			      (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
-			      heap_page_add_freeobj(objspace, sweep_page, (VALUE)p);
-			      gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info((VALUE)p));
+                              heap_page_add_freeobj(objspace, sweep_page, vp);
+                              gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info(vp));
 			      freed_slots++;
-                              asan_poison_object((VALUE)p);
+                              asan_poison_object(vp);
 			  }
 			  break;
 		      }
@@ -6192,13 +6141,14 @@ gc_verify_heap_pages_(rb_objspace_t *objspace, struct list_head *head)
         asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
         RVALUE *p = page->freelist;
         while (p) {
-            RVALUE *prev = p;
-            asan_unpoison_object((VALUE)p, false);
-            if (BUILTIN_TYPE(p) != T_NONE) {
-                fprintf(stderr, "freelist slot expected to be T_NONE but was: %s\n", obj_info((VALUE)p));
+            VALUE vp = (VALUE)p;
+            VALUE prev = vp;
+            asan_unpoison_object(vp, false);
+            if (BUILTIN_TYPE(vp) != T_NONE) {
+                fprintf(stderr, "freelist slot expected to be T_NONE but was: %s\n", obj_info(vp));
             }
             p = p->as.free.next;
-            asan_poison_object((VALUE)prev);
+            asan_poison_object(prev);
         }
         asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
 
@@ -7672,7 +7622,7 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, VALUE moved_list)
     CLEAR_IN_BITMAP(GET_HEAP_UNCOLLECTIBLE_BITS((VALUE)src), (VALUE)src);
     CLEAR_IN_BITMAP(GET_HEAP_MARKING_BITS((VALUE)src), (VALUE)src);
 
-    if (FL_TEST(src, FL_EXIVAR)) {
+    if (FL_TEST((VALUE)src, FL_EXIVAR)) {
         rb_mv_generic_ivar((VALUE)src, (VALUE)dest);
     }
 
@@ -7876,10 +7826,10 @@ gc_compact_heap(rb_objspace_t *objspace, page_compare_func_t *comparator)
         void *free_slot_poison = asan_poisoned_object_p((VALUE)free_cursor.slot);
         asan_unpoison_object((VALUE)free_cursor.slot, false);
 
-        while (BUILTIN_TYPE(free_cursor.slot) != T_NONE && not_met(&free_cursor, &scan_cursor)) {
+        while (BUILTIN_TYPE((VALUE)free_cursor.slot) != T_NONE && not_met(&free_cursor, &scan_cursor)) {
             /* Re-poison slot if it's not the one we want */
             if (free_slot_poison) {
-                GC_ASSERT(BUILTIN_TYPE(free_cursor.slot) == T_NONE);
+                GC_ASSERT(BUILTIN_TYPE((VALUE)free_cursor.slot) == T_NONE);
                 asan_poison_object((VALUE)free_cursor.slot);
             }
 
@@ -7901,7 +7851,7 @@ gc_compact_heap(rb_objspace_t *objspace, page_compare_func_t *comparator)
 
             /* Re-poison slot if it's not the one we want */
             if (scan_slot_poison) {
-                GC_ASSERT(BUILTIN_TYPE(scan_cursor.slot) == T_NONE);
+                GC_ASSERT(BUILTIN_TYPE((VALUE)scan_cursor.slot) == T_NONE);
                 asan_poison_object((VALUE)scan_cursor.slot);
             }
 
@@ -7917,15 +7867,15 @@ gc_compact_heap(rb_objspace_t *objspace, page_compare_func_t *comparator)
         if (not_met(&free_cursor, &scan_cursor)) {
             objspace->rcompactor.moved_count_table[BUILTIN_TYPE((VALUE)scan_cursor.slot)]++;
 
-            GC_ASSERT(BUILTIN_TYPE(free_cursor.slot) == T_NONE);
-            GC_ASSERT(BUILTIN_TYPE(scan_cursor.slot) != T_NONE);
-            GC_ASSERT(BUILTIN_TYPE(scan_cursor.slot) != T_MOVED);
+            GC_ASSERT(BUILTIN_TYPE((VALUE)free_cursor.slot) == T_NONE);
+            GC_ASSERT(BUILTIN_TYPE((VALUE)scan_cursor.slot) != T_NONE);
+            GC_ASSERT(BUILTIN_TYPE((VALUE)scan_cursor.slot) != T_MOVED);
 
             moved_list = gc_move(objspace, (VALUE)scan_cursor.slot, (VALUE)free_cursor.slot, moved_list);
 
-            GC_ASSERT(BUILTIN_TYPE(free_cursor.slot) != T_MOVED);
-            GC_ASSERT(BUILTIN_TYPE(free_cursor.slot) != T_NONE);
-            GC_ASSERT(BUILTIN_TYPE(scan_cursor.slot) == T_MOVED);
+            GC_ASSERT(BUILTIN_TYPE((VALUE)free_cursor.slot) != T_MOVED);
+            GC_ASSERT(BUILTIN_TYPE((VALUE)free_cursor.slot) != T_NONE);
+            GC_ASSERT(BUILTIN_TYPE((VALUE)scan_cursor.slot) == T_MOVED);
 
             advance_cursor(&free_cursor, page_list);
             retreat_cursor(&scan_cursor, page_list);
@@ -8187,7 +8137,7 @@ rb_gc_location(VALUE value)
 
     VALUE destination;
 
-    if (!SPECIAL_CONST_P((void *)value)) {
+    if (!SPECIAL_CONST_P(value)) {
         void *poisoned = asan_poisoned_object_p(value);
         asan_unpoison_object(value, false);
 

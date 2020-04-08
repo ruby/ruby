@@ -315,7 +315,7 @@ static inline int
 vm_cc_markable(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    return FL_TEST_RAW(cc, VM_CALLCACHE_UNMARKABLE) == 0;
+    return FL_TEST_RAW((VALUE)cc, VM_CALLCACHE_UNMARKABLE) == 0;
 }
 
 // For MJIT. cc_cme is supposed to have inlined `vm_cc_cme(cc)`.

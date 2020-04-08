@@ -1,18 +1,18 @@
-#ifndef INTERNAL_ARRAY_H /* -*- C -*- */
-#define INTERNAL_ARRAY_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Internal header for Array.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for Array.
  */
-#include "ruby/config.h"
+#ifndef INTERNAL_ARRAY_H
+#define INTERNAL_ARRAY_H
+#include "ruby/3/config.h"
 #include <stddef.h>                 /* for size_t */
 #include "internal/static_assert.h" /* for STATIC_ASSERT */
-#include "internal/stdbool.h"       /* for bool */
+#include "ruby/3/stdbool.h"         /* for bool */
 #include "ruby/ruby.h"              /* for RARRAY_LEN */
 
 #ifndef ARRAY_DEBUG
@@ -87,7 +87,9 @@ RARY_TRANSIENT_UNSET(VALUE ary)
 }
 
 #undef rb_ary_new_from_args
-#if defined(__GNUC__) && defined(HAVE_VA_ARGS_MACRO)
+#if RUBY3_HAS_WARNING("-Wgnu-zero-variadic-macro-arguments")
+# /* Skip it; clang -pedantic doesn't like the following */
+#elif defined(__GNUC__) && defined(HAVE_VA_ARGS_MACRO)
 #define rb_ary_new_from_args(n, ...) \
     __extension__ ({ \
         const VALUE args_to_new_ary[] = {__VA_ARGS__}; \

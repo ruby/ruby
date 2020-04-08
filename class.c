@@ -23,17 +23,17 @@
  * \{
  */
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 #include <ctype.h>
 
 #include "constant.h"
 #include "id_table.h"
 #include "internal.h"
 #include "internal/class.h"
-#include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/hash.h"
 #include "internal/object.h"
+#include "internal/string.h"
 #include "internal/variable.h"
 #include "ruby/st.h"
 #include "vm_core.h"

@@ -9,7 +9,7 @@
 
 **********************************************************************/
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 
 #include <assert.h>
 #include <ctype.h>
@@ -906,7 +906,7 @@ rb_float_new_in_heap(double d)
     NEWOBJ_OF(flt, struct RFloat, rb_cFloat, T_FLOAT | (RGENGC_WB_PROTECTED_FLOAT ? FL_WB_PROTECTED : 0));
 
     flt->float_value = d;
-    OBJ_FREEZE(flt);
+    OBJ_FREEZE((VALUE)flt);
     return (VALUE)flt;
 }
 
@@ -1433,7 +1433,7 @@ flo_hash(VALUE num)
 static VALUE
 rb_dbl_hash(double d)
 {
-    return LONG2FIX(rb_dbl_long_hash(d));
+    return ST2FIX(rb_dbl_long_hash(d));
 }
 
 VALUE
@@ -2929,7 +2929,6 @@ rb_num2ulong(VALUE val)
     return rb_num2ulong_internal(val, NULL);
 }
 
-#if SIZEOF_INT < SIZEOF_LONG
 void
 rb_out_of_int(SIGNED_VALUE num)
 {
@@ -2937,6 +2936,7 @@ rb_out_of_int(SIGNED_VALUE num)
 	     num, num < 0 ? "small" : "big");
 }
 
+#if SIZEOF_INT < SIZEOF_LONG
 static void
 check_int(long num)
 {
@@ -3012,6 +3012,18 @@ long
 rb_fix2int(VALUE val)
 {
     return FIX2INT(val);
+}
+
+unsigned long
+rb_num2uint(VALUE val)
+{
+    return rb_num2ulong(val);
+}
+
+unsigned long
+rb_fix2uint(VALUE val)
+{
+    return RB_FIX2ULONG(val);
 }
 #endif
 

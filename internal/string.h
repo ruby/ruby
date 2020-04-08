@@ -1,18 +1,18 @@
-#ifndef INTERNAL_STRING_H /* -*- C -*- */
-#define INTERNAL_STRING_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Internal header for String.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for String.
  */
-#include "ruby/config.h"
+#ifndef INTERNAL_STRING_H
+#define INTERNAL_STRING_H
+#include "ruby/3/config.h"
 #include <stddef.h>             /* for size_t */
 #include "internal/compilers.h" /* for __has_builtin */
-#include "internal/stdbool.h"   /* for bool */
+#include "ruby/3/stdbool.h"     /* for bool */
 #include "ruby/encoding.h"      /* for rb_encoding */
 #include "ruby/ruby.h"          /* for VALUE */
 

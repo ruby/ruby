@@ -1,15 +1,15 @@
-#ifndef INTERNAL_PROCESS_H /* -*- C -*- */
-#define INTERNAL_PROCESS_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Internal header for Process.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for Process.
  */
-#include "ruby/config.h"        /* for rb_pid_t */
+#ifndef INTERNAL_PROCESS_H
+#define INTERNAL_PROCESS_H
+#include "ruby/3/config.h"      /* for rb_pid_t */
 #include <stddef.h>             /* for size_t */
 
 #ifdef HAVE_SYS_TYPES_H

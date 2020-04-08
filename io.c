@@ -11,7 +11,7 @@
 
 **********************************************************************/
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 
 #ifdef _WIN32
 # include "ruby/ruby.h"
@@ -112,6 +112,8 @@
 # include <copyfile.h>
 #endif
 
+#include "ruby/3/stdbool.h"
+#include "ccan/list/list.h"
 #include "dln.h"
 #include "encindex.h"
 #include "id.h"
@@ -123,8 +125,6 @@
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/process.h"
-#include "internal/stdbool.h"
-#include "ccan/list/list.h"
 #include "internal/thread.h"
 #include "internal/transcode.h"
 #include "internal/variable.h"
@@ -12157,7 +12157,7 @@ argf_read(int argc, VALUE *argv, VALUE argf)
 	long slen = RSTRING_LEN(str);
 	if (slen < len) {
 	    len -= slen;
-	    argv[0] = INT2NUM(len);
+            argv[0] = LONG2NUM(len);
 	    goto retry;
 	}
     }

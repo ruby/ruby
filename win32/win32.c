@@ -58,7 +58,7 @@
 #include "internal/enc.h"
 #include "internal/object.h"
 #include "internal/static_assert.h"
-#include "internal/stdbool.h"
+#include "ruby/3/stdbool.h"
 #include "encindex.h"
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
 

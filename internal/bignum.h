@@ -1,22 +1,22 @@
-#ifndef INTERNAL_BIGNUM_H /* -*- C -*- */
-#define INTERNAL_BIGNUM_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Internal header for Bignums.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for Bignums.
  */
-#include "ruby/config.h"        /* for HAVE_LIBGMP */
+#ifndef INTERNAL_BIGNUM_H
+#define INTERNAL_BIGNUM_H
+#include "ruby/3/config.h"      /* for HAVE_LIBGMP */
 #include <stddef.h>             /* for size_t */
 
 #ifdef HAVE_SYS_TYPES_H
 # include <sys/types.h>         /* for ssize_t (note: on Windows ssize_t is */
 #endif                          /* `#define`d in ruby/config.h) */
 
-#include "internal/stdbool.h"   /* for bool */
+#include "ruby/3/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for struct RBasic */
 
 #ifndef BDIGIT

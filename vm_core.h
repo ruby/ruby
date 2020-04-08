@@ -46,7 +46,7 @@
 #define VMDEBUG 3
 #endif
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 
 #include <stddef.h>
 #include <signal.h>
@@ -72,12 +72,12 @@
 
 #include <setjmp.h>
 
+#include "ruby/3/stdbool.h"
+#include "ccan/list/list.h"
 #include "id.h"
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/serial.h"
-#include "internal/stdbool.h"
-#include "ccan/list/list.h"
 #include "internal/vm.h"
 #include "method.h"
 #include "node.h"

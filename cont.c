@@ -9,7 +9,7 @@
 
 **********************************************************************/
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 
 #ifndef _WIN32
 #include <unistd.h>

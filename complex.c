@@ -5,7 +5,7 @@
   which is written in ruby.
 */
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 
 #if defined _MSC_VER
 /* Microsoft Visual C does not define M_PI and others by default */
@@ -20,7 +20,6 @@
 #include "internal.h"
 #include "internal/class.h"
 #include "internal/complex.h"
-#include "internal/error.h"
 #include "internal/math.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
@@ -402,7 +401,7 @@ nucomp_s_new_internal(VALUE klass, VALUE real, VALUE imag)
 
     RCOMPLEX_SET_REAL(obj, real);
     RCOMPLEX_SET_IMAG(obj, imag);
-    OBJ_FREEZE_RAW(obj);
+    OBJ_FREEZE_RAW((VALUE)obj);
 
     return (VALUE)obj;
 }

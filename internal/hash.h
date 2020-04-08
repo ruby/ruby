@@ -1,17 +1,17 @@
-#ifndef INTERNAL_HASH_H /* -*- C -*- */
-#define INTERNAL_HASH_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Internal header for Hash.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for Hash.
  */
-#include "ruby/config.h"
+#ifndef INTERNAL_HASH_H
+#define INTERNAL_HASH_H
+#include "ruby/3/config.h"
 #include <stddef.h>             /* for size_t */
-#include "internal/stdbool.h"   /* for bool */
+#include "ruby/3/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for struct RBasic */
 #include "ruby/st.h"            /* for struct st_table */
 
@@ -200,9 +200,9 @@ RHASH_ST_CLEAR(VALUE h)
 static inline unsigned
 RHASH_AR_TABLE_SIZE_RAW(VALUE h)
 {
-    unsigned ret = FL_TEST_RAW(h, RHASH_AR_TABLE_SIZE_MASK);
+    VALUE ret = FL_TEST_RAW(h, RHASH_AR_TABLE_SIZE_MASK);
     ret >>= RHASH_AR_TABLE_SIZE_SHIFT;
-    return ret;
+    return (unsigned)ret;
 }
 
 static inline bool

@@ -12,7 +12,7 @@
 
 ************************************************/
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 
 #ifdef HAVE_FLOAT_H
 #include <float.h>

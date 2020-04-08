@@ -1,15 +1,15 @@
-#ifndef INTERNAL_SERIAL_H /* -*- C -*- */
-#define INTERNAL_SERIAL_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Internal header for rb_serial_t.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for rb_serial_t.
  */
-#include "ruby/config.h"        /* for HAVE_LONG_LONG */
+#ifndef INTERNAL_SERIAL_H
+#define INTERNAL_SERIAL_H
+#include "ruby/3/config.h"      /* for HAVE_LONG_LONG */
 #include "ruby/defines.h"       /* for LONG_LONG */
 
 #ifndef HAVE_LONG_LONG

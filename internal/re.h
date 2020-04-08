@@ -1,15 +1,15 @@
-#ifndef INTERNAL_RE_H /* -*- C -*- */
-#define INTERNAL_RE_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Internal header for Regexp.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for Regexp.
  */
-#include "internal/stdbool.h"   /* for bool */
+#ifndef INTERNAL_RE_H
+#define INTERNAL_RE_H
+#include "ruby/3/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for VALUE */
 
 /* re.c */

@@ -1,18 +1,17 @@
-#ifndef INTERNAL_STRUCT_H /* -*- C -*- */
-#define INTERNAL_STRUCT_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Internal header for Struct.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for Struct.
  */
+#ifndef INTERNAL_STRUCT_H
+#define INTERNAL_STRUCT_H
+#include "ruby/3/stdbool.h"     /* for bool */
 #include "internal/gc.h"        /* for RB_OBJ_WRITE */
-#include "internal/stdbool.h"   /* for bool */
 #include "ruby/ruby.h"          /* for struct RBasic */
-#include "internal/gc.h"        /* for RB_OBJ_WRITE */
 
 enum {
     RSTRUCT_EMBED_LEN_MAX = RVALUE_EMBED_LEN_MAX,
@@ -49,6 +48,10 @@ struct RStruct {
 #ifdef RSTRUCT_GET
 # undef RSTRUCT_GET
 #endif
+
+#define RSTRUCT_LEN internal_RSTRUCT_LEN
+#define RSTRUCT_SET internal_RSTRUCT_SET
+#define RSTRUCT_GET internal_RSTRUCT_GET
 
 /* struct.c */
 VALUE rb_struct_init_copy(VALUE copy, VALUE s);

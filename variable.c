@@ -11,8 +11,10 @@
 
 **********************************************************************/
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 #include <stddef.h>
+#include "ruby/3/stdbool.h"
+#include "ccan/list/list.h"
 #include "constant.h"
 #include "debug_counter.h"
 #include "id.h"
@@ -25,8 +27,6 @@
 #include "internal/hash.h"
 #include "internal/re.h"
 #include "internal/symbol.h"
-#include "internal/stdbool.h"
-#include "ccan/list/list.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
 #include "ruby/encoding.h"

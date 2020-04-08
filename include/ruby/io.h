@@ -12,12 +12,7 @@
 #ifndef RUBY_IO_H
 #define RUBY_IO_H 1
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
+#include "ruby/3/config.h"
 
 #include <stdio.h>
 #include "ruby/encoding.h"
@@ -26,7 +21,6 @@ extern "C" {
 #include <stdio_ext.h>
 #endif
 
-#include "ruby/config.h"
 #include <errno.h>
 #if defined(HAVE_POLL)
 #  ifdef _AIX
@@ -49,7 +43,8 @@ extern "C" {
 #  define RB_WAITFD_OUT 0x004
 #endif
 
-RUBY_SYMBOL_EXPORT_BEGIN
+#include "ruby/3/dllexport.h"
+RUBY3_SYMBOL_EXPORT_BEGIN()
 
 PACKED_STRUCT_UNALIGNED(struct rb_io_buffer_t {
     char *ptr;                  /* off + len <= capa */
@@ -169,13 +164,6 @@ VALUE rb_stat_new(const struct stat *);
 
 /* gc.c */
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RUBY3_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_IO_H */

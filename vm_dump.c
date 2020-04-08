@@ -8,7 +8,7 @@
 
 **********************************************************************/
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 
 #ifdef HAVE_UCONTEXT_H
 # include <ucontext.h>
@@ -115,7 +115,7 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
 	if (RUBY_VM_IFUNC_P(cfp->iseq)) {
 	    iseq_name = "<ifunc>";
 	}
-	else if (SYMBOL_P(cfp->iseq)) {
+        else if (SYMBOL_P((VALUE)cfp->iseq)) {
 	    tmp = rb_sym2str((VALUE)cfp->iseq);
 	    iseq_name = RSTRING_PTR(tmp);
 	    snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);

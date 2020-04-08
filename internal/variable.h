@@ -1,18 +1,18 @@
-#ifndef INTERNAL_VARIABLE_H /* -*- C -*- */
-#define INTERNAL_VARIABLE_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Internal header for variables.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for variables.
  */
-#include "ruby/config.h"
+#ifndef INTERNAL_VARIABLE_H
+#define INTERNAL_VARIABLE_H
+#include "ruby/3/config.h"
 #include <stddef.h>             /* for size_t */
 #include "constant.h"           /* for rb_const_entry_t */
-#include "internal/stdbool.h"   /* for bool */
+#include "ruby/3/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for VALUE */
 
 /* global variable */

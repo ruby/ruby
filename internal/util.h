@@ -1,16 +1,16 @@
-#ifndef INTERNAL_UTIL_H /* -*- C -*- */
-#define INTERNAL_UTIL_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Internal header corresponding util.c.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header corresponding util.c.
  * @warning    DO NOT ADD RANDOM GARBAGE HERE THIS FILE IS FOR util.c
  */
-#include "ruby/config.h"
+#ifndef INTERNAL_UTIL_H /* -*- C -*- */
+#define INTERNAL_UTIL_H
+#include "ruby/3/config.h"
 #include <stddef.h>             /* for size_t */
 
 #ifdef HAVE_SYS_TYPES_H

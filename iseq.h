@@ -81,7 +81,7 @@ ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
 #define ISEQ_TRANSLATED       IMEMO_FL_USER3
 #define ISEQ_MARKABLE_ISEQ    IMEMO_FL_USER4
 
-#define ISEQ_EXECUTABLE_P(iseq) (FL_TEST_RAW((iseq), ISEQ_NOT_LOADED_YET | ISEQ_USE_COMPILE_DATA) == 0)
+#define ISEQ_EXECUTABLE_P(iseq) (FL_TEST_RAW(((VALUE)iseq), ISEQ_NOT_LOADED_YET | ISEQ_USE_COMPILE_DATA) == 0)
 
 struct iseq_compile_data {
     /* GC is needed */

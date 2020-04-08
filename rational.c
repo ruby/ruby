@@ -5,7 +5,7 @@
   which is written in ruby.
 */
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 
 #include <ctype.h>
 #include <float.h>
@@ -24,7 +24,6 @@
 #include "id.h"
 #include "internal.h"
 #include "internal/complex.h"
-#include "internal/error.h"
 #include "internal/gc.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
@@ -404,7 +403,7 @@ nurat_s_new_internal(VALUE klass, VALUE num, VALUE den)
 
     RATIONAL_SET_NUM((VALUE)obj, num);
     RATIONAL_SET_DEN((VALUE)obj, den);
-    OBJ_FREEZE_RAW(obj);
+    OBJ_FREEZE_RAW((VALUE)obj);
 
     return (VALUE)obj;
 }

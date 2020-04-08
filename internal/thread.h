@@ -1,14 +1,14 @@
-#ifndef INTERNAL_THREAD_H /* -*- C -*- */
-#define INTERNAL_THREAD_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Internal header for Thread.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for Thread.
  */
+#ifndef INTERNAL_THREAD_H
+#define INTERNAL_THREAD_H
 #include "ruby/ruby.h"          /* for VALUE */
 #include "ruby/intern.h"        /* for rb_blocking_function_t */
 

@@ -13,7 +13,7 @@
 #pragma clang diagnostic ignored "-Wgcc-compat"
 #endif
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 #include "ruby/defines.h"
 #include "ruby/missing.h"
 #include "addr2line.h"
@@ -25,7 +25,7 @@
 #include <libproc.h>
 #endif
 
-#include "internal/stdbool.h"
+#include "ruby/3/stdbool.h"
 
 #if defined(USE_ELF) || defined(HAVE_MACH_O_LOADER_H)
 

@@ -9,7 +9,7 @@
 
 **********************************************************************/
 
-#include "ruby/config.h"
+#include "ruby/3/config.h"
 
 #include <assert.h>
 #include <math.h>
@@ -1001,7 +1001,7 @@ first_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, cbarg))
     }
     rb_ary_push(ary[1], i);
     n--;
-    ary[0] = INT2NUM(n);
+    ary[0] = LONG2NUM(n);
     return Qnil;
 }
 
@@ -1554,7 +1554,7 @@ r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val)
 
     if (!NIL_P(end) && NIL_P(val_end)) return FALSE;
     if (!NIL_P(beg) && NIL_P(val_beg)) return FALSE;
-    if (!NIL_P(val_beg) && !NIL_P(val_end) && r_less(val_beg, val_end) > -EXCL(val)) return FALSE;
+    if (!NIL_P(val_beg) && !NIL_P(val_end) && r_less(val_beg, val_end) > (EXCL(val) ? -1 : 0)) return FALSE;
     if (!NIL_P(val_beg) && !r_cover_p(range, beg, end, val_beg)) return FALSE;
 
     cmp_end = r_less(end, val_end);

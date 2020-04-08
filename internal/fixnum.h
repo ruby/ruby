@@ -1,18 +1,18 @@
-#ifndef INTERNAL_FIXNUM_H /* -*- C -*- */
-#define INTERNAL_FIXNUM_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Internal header for Fixnums.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for Fixnums.
  */
-#include "ruby/config.h"        /* for HAVE_LONG_LONG */
+#ifndef INTERNAL_FIXNUM_H
+#define INTERNAL_FIXNUM_H
+#include "ruby/3/config.h"      /* for HAVE_LONG_LONG */
 #include <limits.h>             /* for CHAR_BIT */
 #include "internal/compilers.h" /* for __has_builtin */
-#include "internal/stdbool.h"   /* for bool */
+#include "ruby/3/stdbool.h"     /* for bool */
 #include "ruby/intern.h"        /* for rb_big_mul */
 #include "ruby/ruby.h"          /* for RB_FIXABLE */
 

@@ -1,15 +1,15 @@
-#ifndef INTERNAL_COMPILE_H /* -*- C -*- */
-#define INTERNAL_COMPILE_H
-/**
+/**                                                         \noop-*-C-*-vi:ft=c
  * @file
- * @brief      Internal header for the compiler.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for the compiler.
  */
-#include "ruby/config.h"
+#ifndef INTERNAL_COMPILE_H
+#define INTERNAL_COMPILE_H
+#include "ruby/3/config.h"
 #include <stddef.h>             /* for size_t */
 #include "ruby/ruby.h"          /* for rb_event_flag_t */
 
