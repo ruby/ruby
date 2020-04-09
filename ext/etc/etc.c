@@ -125,6 +125,12 @@ safe_setup_filesystem_str(const char *str)
 #endif
 
 #ifdef HAVE_GETPWENT
+# ifdef __APPLE__
+#   define PW_EXPIRE2VAL(t) INT2NUM((int)(t))
+# else
+#   define PW_EXPIRE2VAL(t) TIMET2NUM(t)
+# endif
+
 static VALUE
 setup_passwd(struct passwd *pwd)
 {
@@ -157,7 +163,7 @@ setup_passwd(struct passwd *pwd)
 			 safe_setup_locale_str(pwd->pw_comment),
 #endif
 #ifdef HAVE_STRUCT_PASSWD_PW_EXPIRE
-			 TIMET2NUM(pwd->pw_expire),
+			 PW_EXPIRE2VAL(pwd->pw_expire),
 #endif
 			 0		/*dummy*/
 	);
