@@ -29,6 +29,7 @@
 #include "ruby/3/cast.h"
 #include "ruby/3/compiler_since.h"
 #include "ruby/3/has/builtin.h"
+#include "ruby/3/warning_push.h"
 
 /** @cond INTERNAL_MACRO */
 #if RUBY3_COMPILER_SINCE(MSVC, 13, 10, 0)
@@ -59,7 +60,16 @@
 #endif
 
 /** Wraps (or simulates) `__asume`. */
-#if defined(RUBY3_HAVE___ASSUME)
+#if RUBY3_COMPILER_SINCE(Intel, 13, 0, 0)
+# /* icc warnings are false positives.  Ignore them. */
+# /* "warning #2261: __assume expression with side effects discarded" */
+# define RUBY3_ASSUME(expr)     \
+    RUBY3_WARNING_PUSH()        \
+    RUBY3_WARNING_IGNORED(2261) \
+    __assume(expr)              \
+    RUBY3_WARNING_POP()
+
+#elif defined(RUBY3_HAVE___ASSUME)
 # define RUBY3_ASSUME __assume
 
 #elif RUBY3_HAS_BUILTIN(__builtin_assume)
