@@ -86,6 +86,6 @@
 # define RUBY3_HAS_BUILTIN___builtin_popcountll        HAVE_BUILTIN___BUILTIN_POPCOUNTLL
 # define RUBY3_HAS_BUILTIN___builtin_sub_overflow      HAVE_BUILTIN___BUILTIN_SUB_OVERFLOW
 # if defined(UNREACHABLE)
-#  define RUBY3_HAS_BUILTIN___builtin_unreachable
+#  define RUBY3_HAS_BUILTIN___builtin_unreachable 1
 # endif
 #endif
