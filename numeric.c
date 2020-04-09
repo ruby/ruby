@@ -4079,10 +4079,7 @@ fix_pow(VALUE x, VALUE y)
 
 	if (b == 0) return INT2FIX(1);
 	if (b == 1) return x;
-	if (a == 0) {
-	    if (b > 0) return INT2FIX(0);
-	    return DBL2NUM(HUGE_VAL);
-	}
+	if (a == 0) return INT2FIX(0);
 	return int_pow(a, b);
     }
     else if (RB_TYPE_P(y, T_BIGNUM)) {
