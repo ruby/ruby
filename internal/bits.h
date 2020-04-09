@@ -112,7 +112,7 @@
 /* and GCC permits bitfields for integers other than int */
 # define MUL_OVERFLOW_FIXNUM_P(a, b) \
     __extension__ ({ \
-        struct { long fixnum : sizeof(long) * CHAR_BIT - 1; } c; \
+        struct { long fixnum : sizeof(long) * CHAR_BIT - 1; } c = { 0 }; \
         __builtin_mul_overflow_p((a), (b), c.fixnum); \
     })
 #else
