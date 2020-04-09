@@ -29,6 +29,7 @@
 #include "ruby/3/dllexport.h"
 #include "ruby/3/fl_type.h"
 #include "ruby/3/value_type.h"
+#include "ruby/3/warning_push.h"
 #include "ruby/assert.h"
 
 #define RSTRING(obj)            RUBY3_CAST((struct RString *)(obj))
@@ -111,6 +112,11 @@ RSTRING_EMBED_LEN(VALUE str)
     return RUBY3_CAST((long)f);
 }
 
+RUBY3_WARNING_PUSH()
+#if RUBY3_COMPILER_IS(Intel)
+RUBY3_WARNING_IGNORED(413)
+#endif
+
 RUBY3_ATTR_PURE_ON_NDEBUG()
 RUBY3_ATTR_ARTIFICIAL()
 static inline struct RString
@@ -129,6 +135,8 @@ ruby3_rstring_getmem(VALUE str)
         return retval;
     }
 }
+
+RUBY3_WARNING_POP()
 
 RUBY3_ATTR_PURE_ON_NDEBUG()
 RUBY3_ATTR_ARTIFICIAL()
