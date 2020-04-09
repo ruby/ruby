@@ -454,7 +454,11 @@ end
 
 case ARGV[0]
 when "up"
-  $repositories.keys.each{|gem| update_default_gems(gem.to_s)}
+  if ARGV[1]
+    update_default_gems(ARGV[1])
+  else
+    $repositories.keys.each{|gem| update_default_gems(gem.to_s)}
+  end
 when "all"
   $repositories.keys.each{|gem| sync_default_gems(gem.to_s)}
 else
