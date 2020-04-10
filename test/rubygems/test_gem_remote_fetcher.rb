@@ -1051,6 +1051,8 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def start_ssl_server(config = {})
+    skip "starting this test server fails randomly on jruby" if Gem.java_platform?
+
     null_logger = NilLog.new
     server = WEBrick::HTTPServer.new({
       :Port => 0,
